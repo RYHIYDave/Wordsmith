@@ -14,7 +14,7 @@ import { RAMPAGE, RING, ringStrikes } from '../art/action_f3_fx';
 import { rampageTravel, rushStopTravel } from '../art/monster_brute';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
 import { bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -483,6 +483,12 @@ export class Game {
   private shardsAt: number[] = [-9, -9, -9];
   /** BINDING behind: when each ability last laid a snare (game/defs.ts BIND.every). */
   private snareAt: number[] = [-9, -9, -9];
+  /** THE LAST WORDS: when each ability last threw Piercing's lance, laid Bleeding's thorns, Culling's mark (defs.ts PIERCE, BLEED, CULL). */
+  private lanceAt: number[] = [-9, -9, -9];
+  private thornAt: number[] = [-9, -9, -9];
+  private reaperAt: number[] = [-9, -9, -9];
+  /** REAPING behind (THE LAST WORDS): the spirits risen from those it killed, fighting for him a while (their looks the art chat's). */
+  spirits: { id: number; x: number; y: number; t: number; life: number; next: number; skill: number; share: number }[] = [];
   private pullShown: number[] = [-9, -9, -9];
   private copying = false;
   private blowBy: number | undefined = undefined;
@@ -1337,10 +1343,16 @@ export class Game {
     this.shardsAt = [-9, -9, -9];
     this.pullShown = [-9, -9, -9];
     this.snareAt = [-9, -9, -9];
+    this.lanceAt = [-9, -9, -9];
+    this.thornAt = [-9, -9, -9];
+    this.reaperAt = [-9, -9, -9];
+    this.spirits = [];
     // (BINDING, on a monster: what roots the hero stays on its own level)
     this.hero.rootT = 0;
     this.hero.iceT = 0;
     this.hero.rootAgain = 0;
+    // (THE LAST WORDS: a monster's Bleeding stays on its own level)
+    this.hero.heroBleedT = 0;
     this.boss = null;
     this.visList = [];
     this.time = 0;
@@ -1994,6 +2006,7 @@ export class Game {
     // (BINDING: what is held stands where it stood, whatever its own steps, a charge or a leap would have done; it strikes still)
     const pins = this.monsters.filter((m) => !m.dead && (m.bindT ?? 0) > 0).map((m) => [m, m.x, m.y] as const);
     this.updateMonsters(dt);
+    if (this.spirits.length) this.updateSpirits(dt);
     for (const [m, x, y] of pins) {
       m.x = x;
       m.y = y;
@@ -4461,6 +4474,8 @@ export class Game {
     if (h.iceT) h.iceT = Math.max(0, h.iceT - dt);
     if (h.slowT) h.slowT = Math.max(0, h.slowT - dt);
     if (h.rootAgain) h.rootAgain = Math.max(0, h.rootAgain - dt);
+    // (THE LAST WORDS, on monsters: his bleeding runs out)
+    if (h.heroBleedT) h.heroBleedT = Math.max(0, h.heroBleedT - dt);
     // (Frenzied: the frenzy makes every cooldown come round faster; STILLING, on a monster, slower)
     const pace = this.frenzyPace() * ((h.stillT ?? 0) > 0 ? 1 - (h.stillK ?? 0) : 1);
     for (const s of h.skills) {
@@ -5167,6 +5182,8 @@ export class Game {
     dy /= len;
     if (front.length || behind.length) this.emit({ t: 'cast', x: x0, y: y0, dx, dy, kind: def.kind, el: r.element, words: front, behind, echo: false });
     this.boons(2);
+    // (THE LAST WORDS: SURGING behind any of his abilities, his dodge releases a surge where it begins)
+    this.dodgeSurge(x0, y0);
     if (def.kind === 'warp' && land) {
       this.emit({ t: 'burst', x: h.x, y: h.y, r: 0.8, el: 'frost', style: 'warp' });
       // (THE SKILL TREES: Frost Warp, Flame Warp; Storm Warp where she arrives, below)
@@ -8478,6 +8495,8 @@ export class Game {
         this.emit({ t: 'echo', x: ox, y: oy, dx, dy, kind: def.kind, delay: ECHO_DELAY });
         this.after(ECHO_DELAY, () => this.deliver(i, ox, oy, tx, ty, frac * r.echo, false));
       }
+      // (THE LAST WORDS: Surging's shockwave, Mirroring's reflection and its mirrors)
+      this.lastWordsCast(i, ox, oy, tx, ty, dx, dy, frac);
     }
   }
 
@@ -8520,6 +8539,8 @@ export class Game {
     const tx = best.x;
     const ty = best.y;
     this.hitMonster(best, i, frac, false);
+    // (THE LAST WORDS: PIERCING in front, the blow goes on through the first, to every enemy in a line behind it)
+    if (r.through > 0) this.pierceOn(i, best, tx, ty, dx, dy, frac * r.through);
     // (THE SKILL TREES REMADE: Sweeping Cut, the swing cleaves: every enemy in its arc is struck as hard)
     for (const o of arc) if (o !== best && !o.dead) this.hitMonster(o, i, frac, true);
     this.landed(i);
@@ -8709,11 +8730,255 @@ export class Game {
     if (r.shards > 0) this.throwShards(i, x, y, frac);
     // (BINDING behind: a snare where it ends)
     if (r.snare > 0) this.addSnare(i, x, y, r.snare);
+    // (THE LAST WORDS behind: Piercing's lance down the line; Bleeding's thorns; Culling's reaper's mark)
+    if (r.lance > 0) this.throwLance(i, x, y, frac);
+    if (r.thorns > 0) this.addThorns(i, x, y, Math.max(BLEED.thornR, rad), frac);
+    if (r.cullMark > 0) this.addReaper(i, x, y, r.cullMark);
   }
 
   /** Whether the ability leaves any of the patches `leavePatches` lays (or throws shards). */
-  private leaves(r: { cracks: number; ward: number; vortex: number; hexCircle: number; bubble: number; shards: number; snare: number }): boolean {
-    return r.cracks > 0 || r.ward > 0 || r.vortex > 0 || r.hexCircle > 0 || r.bubble > 0 || r.shards > 0 || r.snare > 0;
+  private leaves(r: { cracks: number; ward: number; vortex: number; hexCircle: number; bubble: number; shards: number; snare: number; lance: number; thorns: number; cullMark: number }): boolean {
+    return r.cracks > 0 || r.ward > 0 || r.vortex > 0 || r.hexCircle > 0 || r.bubble > 0 || r.shards > 0 || r.snare > 0 || r.lance > 0 || r.thorns > 0 || r.cullMark > 0;
+  }
+
+  // ===========================================================================================
+  // THE LAST WORDS (his seven of 8 Nov 2026, found from floor 16 down: game/defs.ts PIERCE to MIRRORING). Their looks are the art
+  // chat's, to come: what they do is told in events (game/state.ts) and the zones 'thorns', 'reaper' and 'mirror'.
+
+  /** PIERCING in front: a blow that has struck the first goes on through it, PIERCE.line tiles, striking every enemy in that line. */
+  private pierceOn(i: number, first: Monster, x: number, y: number, dx: number, dy: number, frac: number): void {
+    const L = PIERCE.line;
+    this.emit({ t: 'pierceLine', x0: x, y0: y, x1: x + dx * L, y1: y + dy * L });
+    for (const o of this.monsters) {
+      if (o.dead || o === first || this.shutIn(o)) continue;
+      const px = o.x - x;
+      const py = o.y - y;
+      const along = px * dx + py * dy;
+      if (along < 0 || along > L + o.r) continue;
+      if (Math.abs(py * dx - px * dy) <= 0.45 + o.r) this.hitMonster(o, i, frac, true);
+    }
+  }
+
+  /**
+   * PIERCING behind: a lance of light down the line from where he stands to where the attack ended (on along his facing, PIERCE
+   * line tiles at the least), landing PIERCE.lanceDelay seconds later on every enemy in it; one an ability each lanceEvery seconds.
+   */
+  private throwLance(i: number, x: number, y: number, frac: number): void {
+    if (this.time - this.lanceAt[i] < PIERCE.lanceEvery) return;
+    this.lanceAt[i] = this.time;
+    const h = this.hero;
+    const x0 = h.x;
+    const y0 = h.y;
+    const len = Math.hypot(x - x0, y - y0);
+    const dx = len > 0.3 ? (x - x0) / len : h.fx;
+    const dy = len > 0.3 ? (y - y0) / len : h.fy;
+    const L = Math.max(len, PIERCE.line);
+    const share = frac * h.skills[i].r.lance;
+    const id = h.skills[i].id;
+    this.emit({ t: 'lance', x0, y0, x1: x0 + dx * L, y1: y0 + dy * L, w: PIERCE.lanceW, delay: PIERCE.lanceDelay });
+    this.after(PIERCE.lanceDelay, () => {
+      if (this.hero.skills[i].id !== id) return;
+      for (const m of this.monsters) {
+        if (m.dead || this.shutIn(m)) continue;
+        const px = m.x - x0;
+        const py = m.y - y0;
+        const along = px * dx + py * dy;
+        if (along < -0.3 || along > L + m.r) continue;
+        if (Math.abs(py * dx - px * dy) <= PIERCE.lanceW + m.r) this.hitMonster(m, i, share, true);
+      }
+    });
+  }
+
+  /** BLEEDING: `m` bleeds for BLEED.secs, `dps` a second (the stronger of this and what it bled already), more while it walks. */
+  private bleedMonster(m: Monster, dps: number): void {
+    if (m.dead) return;
+    const fresh = (m.bleedT ?? 0) < 0.5;
+    m.bleedDps = Math.max((m.bleedT ?? 0) > 0 ? m.bleedDps ?? 0 : 0, dps);
+    m.bleedT = BLEED.secs;
+    m.bleedMove = BLEED.moving;
+    if (fresh) this.emit({ t: 'bleedOn', id: m.id, x: m.x, y: m.y, secs: BLEED.secs });
+  }
+
+  /** BLEEDING behind: thorns at (x, y), cutting whatever walks in them (`updateZones`); one an ability each BLEED.thornEvery seconds. */
+  private addThorns(i: number, x: number, y: number, rad: number, frac: number): void {
+    if (this.time - this.thornAt[i] < BLEED.thornEvery) return;
+    this.thornAt[i] = this.time;
+    if (!this.roomForZone() || !this.onFloor(x, y)) return;
+    const dmg = this.avgHit(i, frac) * this.hero.skills[i].r.thorns;
+    this.zones.push({ x, y, r: rad, t: 0, dur: BLEED.thornLife, kind: 'thorns', element: 'phys', dmg, slow: 0, tick: 0, hostile: false, skill: i, words: ['bleeding'], from: '' });
+    this.emit({ t: 'zone', kind: 'thorns', x, y, r: rad, el: 'phys', dur: BLEED.thornLife });
+  }
+
+  /**
+   * CULLING: `m` dies outright if it is under `under` of its life (an elite under CULL.elite of that; a boss never), struck down by
+   * ability `i`; whether it was. `mark`: by a reaper's mark.
+   */
+  private cullMonster(m: Monster, under: number, i: number, mark = false): boolean {
+    if (m.dead || m.boss || m.life <= 0 || this.shutIn(m)) return false;
+    if (m.life > m.maxLife * under * (m.elite || m.champion ? CULL.elite : 1)) return false;
+    this.emit({ t: 'culled', id: m.id, x: m.x, y: m.y, ...(mark ? { mark: true } : {}) });
+    this.damageMonster(m, Math.max(1, Math.ceil(m.life + (m.shield || 0))), 'phys', false, i);
+    return true;
+  }
+
+  /** CULLING behind: a reaper's mark at (x, y) for the first weak enemy to cross it (`updateZones`); one an ability each CULL.markEvery seconds. */
+  private addReaper(i: number, x: number, y: number, under: number): void {
+    if (this.time - this.reaperAt[i] < CULL.markEvery) return;
+    this.reaperAt[i] = this.time;
+    if (!this.roomForZone() || !this.onFloor(x, y)) return;
+    this.zones.push({ x, y, r: CULL.markR, t: 0, dur: CULL.markLife, kind: 'reaper', element: 'phys', dmg: under, slow: 0, tick: 0, hostile: false, skill: i, words: ['culling'], from: '' });
+    this.emit({ t: 'zone', kind: 'reaper', x, y, r: CULL.markR, el: 'phys', dur: CULL.markLife });
+  }
+
+  /**
+   * What the last words make of a use of ability `i`, made from (ox, oy) toward (tx, ty) (its way `dx`, `dy`): SURGING in front,
+   * every third use a shockwave round him; MIRRORING in front, his reflection beside him makes the same attack; a mirror lying (of
+   * any ability) makes this attack again from where it stands, and is spent; and MIRRORING behind leaves a mirror where he stands.
+   */
+  private lastWordsCast(i: number, ox: number, oy: number, tx: number, ty: number, dx: number, dy: number, frac: number): void {
+    const h = this.hero;
+    const s = h.skills[i];
+    const r = s.r;
+    const kind = SKILLS[s.id].kind;
+    if (r.surge > 0 && s.uses > 0 && s.uses % SURGE.every === 0) {
+      this.emit({ t: 'surge', x: h.x, y: h.y, r: SURGE.radius });
+      this.blast(i, h.x, h.y, SURGE.radius, frac * r.surge, 'nova', 0, true, false);
+    }
+    if (r.mirror > 0) {
+      // (beside him, to his left as he faces; to his right where that is wall; where he stands where both are)
+      const side = MIRRORING.side;
+      let mx = ox - dy * side;
+      let my = oy + dx * side;
+      if (!this.isOpen(mx, my)) {
+        mx = ox + dy * side;
+        my = oy - dx * side;
+      }
+      if (!this.isOpen(mx, my)) {
+        mx = ox;
+        my = oy;
+      }
+      this.emit({ t: 'reflection', x: mx, y: my, dx, dy, kind });
+      this.deliver(i, mx, my, tx + (mx - ox), ty + (my - oy), frac * r.mirror, false);
+    }
+    for (let k = this.zones.length - 1; k >= 0; k--) {
+      const z = this.zones[k];
+      if (z.kind !== 'mirror') continue;
+      this.zones.splice(k, 1);
+      const len = Math.hypot(tx - z.x, ty - z.y) || 1;
+      this.emit({ t: 'mirrorCast', x: z.x, y: z.y, dx: (tx - z.x) / len, dy: (ty - z.y) / len, kind });
+      this.deliver(i, z.x, z.y, tx, ty, frac * z.dmg, false);
+    }
+    if (r.mirrorLeave > 0 && this.onFloor(h.x, h.y) && this.roomForZone()) {
+      this.zones.push({ x: h.x, y: h.y, r: 0.5, t: 0, dur: MIRRORING.leaveLife, kind: 'mirror', element: 'phys', dmg: r.mirrorLeave, slow: 0, tick: 0, hostile: false, skill: i, words: ['mirroring'], from: '' });
+      this.emit({ t: 'zone', kind: 'mirror', x: h.x, y: h.y, r: 0.5, el: 'phys', dur: MIRRORING.leaveLife });
+    }
+  }
+
+  /** SURGING behind (of any of his abilities): his dodge releases a surge at (x, y), as strong as the strongest of them makes it. */
+  private dodgeSurge(x: number, y: number): void {
+    const h = this.hero;
+    let best = -1;
+    let most = 0;
+    h.skills.forEach((s, k) => {
+      const a = s.r.dodgeSurge > 0 ? this.avgHit(k, s.r.dodgeSurge) : 0;
+      if (a > most) {
+        most = a;
+        best = k;
+      }
+    });
+    if (best < 0) return;
+    this.emit({ t: 'surge', x, y, r: SURGE.dodgeRadius, dodge: true });
+    this.blast(best, x, y, SURGE.dodgeRadius, h.skills[best].r.dodgeSurge, 'nova', 0, true, false);
+  }
+
+  /** What the gold an enemy drops is worth, for Plundering: an ordinary one's, more for an elite, a guardian, a boss. */
+  private plunderGold(m: Monster): number {
+    const each = ((TUNE.goldMin + TUNE.goldMax) / 2) * Math.max(1, this.power);
+    return each * (m.boss ? 8 : m.champion ? 4 : m.elite ? 2.5 : 1);
+  }
+
+  /** What the last words of the ability that killed `m` make of the kill: Reaping's soul and spirit, Plundering's gold. */
+  private lastWordsKill(m: Monster, r: Resolved, i: number): void {
+    const h = this.hero;
+    if (r.reap > 0) {
+      for (const s of h.skills) if (s.charges < s.maxCharges) s.cd = Math.max(0.01, s.cd - r.reap);
+      this.emit({ t: 'reapSoul', x: m.x, y: m.y });
+    }
+    if (r.spirit > 0 && !m.boss && i >= 0) this.raiseSpirit(m, i, r.spirit);
+    if (r.plunder > 0 || r.plunderBurst > 0) {
+      const base = this.plunderGold(m);
+      if (r.plunder > 0) {
+        this.addDrop('gold', m.x, m.y, Math.max(1, Math.round(base * r.plunder)), null, null);
+        if (this.rng.chance(m.elite || m.champion || m.boss ? PLUNDER.eliteItem : PLUNDER.item)) this.addDrop('item', m.x, m.y, 0, this.rollGear(), null);
+      }
+      if (r.plunderBurst > 0 && !this.practice) {
+        const n = Math.max(1, Math.round(base * r.plunderBurst * (1 + h.d.stats.goldFind / 100)));
+        h.gold += n;
+        this.emit({ t: 'goldBurst', x: m.x, y: m.y, n });
+        this.emit({ t: 'text', x: h.x, y: h.y, text: `+${n}`, color: '#ffe070' });
+      }
+    }
+  }
+
+  /** REAPING behind: a spirit risen where `m` fell, fighting for him REAP.spiritSecs seconds (the oldest gives way past REAP.spirits). */
+  private raiseSpirit(m: Monster, i: number, share: number): void {
+    if (this.spirits.length >= REAP.spirits) this.spirits.shift();
+    const sp = { id: this.nextThing++, x: m.x, y: m.y, t: 0, life: REAP.spiritSecs, next: 0.3, skill: i, share };
+    this.spirits.push(sp);
+    this.emit({ t: 'spirit', id: sp.id, x: sp.x, y: sp.y, life: sp.life });
+  }
+
+  /** The spirits: each goes for the nearest enemy and strikes it each REAP.spiritEvery seconds (what it kills is no one's, and raises none); with none near, it keeps by him. */
+  private updateSpirits(dt: number): void {
+    const h = this.hero;
+    for (let k = this.spirits.length - 1; k >= 0; k--) {
+      const sp = this.spirits[k];
+      sp.t += dt;
+      sp.next -= dt;
+      if (sp.t >= sp.life) {
+        this.spirits.splice(k, 1);
+        continue;
+      }
+      let best: Monster | null = null;
+      let bd = 8;
+      for (const o of this.monsters) {
+        if (o.dead || o.state === 'sleep' || this.shutIn(o)) continue;
+        const d = Math.hypot(o.x - sp.x, o.y - sp.y);
+        if (d < bd) {
+          bd = d;
+          best = o;
+        }
+      }
+      const tx = best ? best.x : h.x;
+      const ty = best ? best.y : h.y;
+      const d = Math.hypot(tx - sp.x, ty - sp.y);
+      const stop = best ? REAP.spiritReach * 0.8 : 1.2;
+      if (d > stop) {
+        const step = Math.min(d - stop, REAP.spiritSpeed * dt);
+        sp.x += ((tx - sp.x) / d) * step;
+        sp.y += ((ty - sp.y) / d) * step;
+      }
+      if (best && d <= REAP.spiritReach + best.r && sp.next <= 0 && h.skills[sp.skill]) {
+        sp.next = REAP.spiritEvery;
+        this.emit({ t: 'spiritHit', id: sp.id, x0: sp.x, y0: sp.y, x1: best.x, y1: best.y });
+        this.damageMonster(best, Math.max(1, Math.round(this.avgHit(sp.skill, sp.share))), h.skills[sp.skill].r.element, false, -1);
+      }
+    }
+  }
+
+  /** REAPING, on a monster: it rises once, REAP.riseAfter seconds after it died, where it fell, with REAP.riseLife of its life and no words. */
+  private riseAgain(m: Monster): void {
+    const { kind, x, y, packId, maxLife } = m;
+    this.emit({ t: 'rise', id: m.id, x, y });
+    this.after(REAP.riseAfter, () => {
+      if (this.over) return;
+      const rng = new RNG((Math.imul(this.seed, 197) + m.id * 6151 + this.kills * 17) >>> 0);
+      const o = this.spawn(kind, x, y, packId, 0, false, rng);
+      o.maxLife = o.life = Math.max(1, Math.round(maxLife * REAP.riseLife));
+      o.words = [];
+      o.risen = true;
+      this.wakeUp(o);
+    });
   }
 
   /**
@@ -9193,6 +9458,9 @@ export class Game {
         const held = this.bindMonster(m, r.bind);
         if (held > 0) this.emit({ t: 'bind', id: m.id, secs: held });
       }
+      // THE LAST WORDS: BLEEDING in front makes what it hits bleed; CULLING in front takes one its hit left nearly dead
+      if (r.bleed > 0) this.bleedMonster(m, dmg * r.bleed);
+      if (r.cull > 0) this.cullMonster(m, r.cull, i);
       // PRECISE behind marks the first enemy each use hits (not one whose mark this very hit spent)
       if (r.mark && !spent && this.marked[i] !== h.skills[i].uses) {
         this.marked[i] = h.skills[i].uses;
@@ -9583,6 +9851,16 @@ export class Game {
     if (m.blightT && m.poisonT > 0) dmg = Math.max(1, Math.round(dmg * (1 + MELD_TUNE.blight.more)));
     // (THE CITY'S WORDS: Hexing in front's curse, more from everything)
     if ((m.hexT ?? 0) > 0 && m.hexMore) dmg = Math.max(1, Math.round(dmg * (1 + m.hexMore)));
+    // (THE LAST WORDS: MIRRORING, on a monster, a share of the harm he does it comes back at him; not what burns or bleeds, nor often)
+    if (skill >= 0 && !dot && !poison && (m.mirrorT ?? 0) <= 0) {
+      const mk = wordShare(m, 'mirroring');
+      if (mk > 0) {
+        m.mirrorT = MIRRORING.backEvery;
+        const back = Math.max(1, Math.round(dmg * MIRRORING.back * mk));
+        this.emit({ t: 'mirrorBack', x0: m.x, y0: m.y, x1: this.hero.x, y1: this.hero.y, n: back });
+        this.hurtHero(back, 'phys', [], null, `${m.name}'s reflection`, m.x, m.y);
+      }
+    }
     // (GUARDING, on a monster: its shield takes the harm first)
     if (m.shield > 0) {
       const soak = Math.min(m.shield, dmg);
@@ -9675,6 +9953,8 @@ export class Game {
       this.emit({ t: 'frenzyFed', x: m.x, y: m.y });
     }
     if (r && r.volatile > 0) this.explodeKill(m, r, m.lastSkill);
+    // (THE LAST WORDS: Reaping's soul and spirit, Plundering's gold)
+    if (r) this.lastWordsKill(m, r, m.lastSkill);
     // (VOLATILE'S MELDS, behind VOLT_MELDS: Shatter in front, a frozen one bursts into shards; Rupture, a poisoned one bursts its poison over those round it)
     if (r && r.meld === 'shatter' && m.frozenT > 0) this.shatterKill(m, m.lastSkill);
     if (r && r.meld === 'rupture' && m.poisonT > 0 && m.poisonDps > 0) this.ruptureKill(m, m.lastSkill);
@@ -9690,6 +9970,12 @@ export class Game {
     }
     // THE CITY'S WORDS (Version 23.8): one carrying Splitting splits in two at half its life (a minion, of its leader's, too)
     if (wordShare(m, 'splitting') > 0 && !m.split && !m.boss) this.splitMonster(m);
+    // THE LAST WORDS, on a monster: one carrying Reaping rises once; one carrying Plundering drops all it stole
+    if (wordShare(m, 'reaping') > 0 && !m.risen && !m.boss) this.riseAgain(m);
+    if ((m.stolen ?? 0) > 0) {
+      this.addDrop('gold', m.x, m.y, m.stolen ?? 0, null, null);
+      m.stolen = 0;
+    }
     this.dropLoot(m);
     // (QUESTS610: a piece of the ward-stone it carried)
     if (m.piece !== undefined) this.dropPiece(m.piece, m.x, m.y);
@@ -9918,6 +10204,8 @@ export class Game {
       const gl = Math.hypot(gx, gy);
       if (gl < 0.01 || (gx * h.fx + gy * h.fy) / gl >= VET_TALENTS.guardUp.cos) dmg *= 1 - VET_TALENTS.guardUp.less;
     }
+    // (THE LAST WORDS: CULLING, on a monster, its blows hit much harder while he is low)
+    if (k('culling') > 0 && h.life < h.d.maxLife * CULL.low) dmg *= 1 + CULL.harder * k('culling');
     dmg = Math.max(1, Math.round(dmg));
     // (Bitter Cold: what strikes him is chilled)
     if (src && !src.dead && this.now('bittercold')) {
@@ -9959,6 +10247,23 @@ export class Game {
       h.rootAgain = secs + BIND.rootAgain;
       this.emit({ t: 'rooted', x: fromX, y: fromY, secs });
       this.emit({ t: 'text', x: h.x, y: h.y, text: 'Rooted', color: '#ff8a80' });
+    }
+    // THE LAST WORDS, on a monster: BLEEDING makes him bleed; PLUNDERING steals some of his gold (the one who struck keeps it)
+    if (k('bleeding') > 0) {
+      if ((h.heroBleedT ?? 0) <= 0) {
+        this.emit({ t: 'heroBleed', x: h.x, y: h.y, secs: BLEED.heroSecs });
+        this.emit({ t: 'text', x: h.x, y: h.y, text: 'Bleeding', color: '#ff8a80' });
+      }
+      h.heroBleedDps = Math.max((h.heroBleedT ?? 0) > 0 ? h.heroBleedDps ?? 0 : 0, h.d.maxLife * BLEED.heroDps * k('bleeding'));
+      h.heroBleedT = BLEED.heroSecs;
+    }
+    const thief = src ?? (this.blowBy !== undefined ? this.monsters.find((o) => o.id === this.blowBy) : undefined);
+    if (k('plundering') > 0 && thief && h.gold > 0 && !this.practice) {
+      const n = Math.min(h.gold, Math.max(1, Math.round(Math.min(h.gold * PLUNDER.steal, PLUNDER.stealMost * Math.max(1, this.power)) * k('plundering'))));
+      h.gold -= n;
+      thief.stolen = (thief.stolen ?? 0) + n;
+      this.emit({ t: 'goldStolen', x: h.x, y: h.y, n });
+      this.emit({ t: 'text', x: h.x, y: h.y, text: `-${n}`, color: '#ff8a80' });
     }
     // GUARDING in front: the shield takes the blow first
     let soaked = 0;
@@ -10313,7 +10618,10 @@ export class Game {
       if (m.shockT > 0) m.shockT -= dt;
       if (m.staggerCd > 0) m.staggerCd -= dt;
       // (THE SKILL TREES REMADE: Honed Edge's bleeding runs out; thrown across the floor by a talent, frozen or not)
-      if (m.bleedT) m.bleedT = Math.max(0, m.bleedT - dt);
+      if (m.bleedT) {
+        m.bleedT = Math.max(0, m.bleedT - dt);
+        if (!m.bleedT) m.bleedMove = 0;
+      }
       // (THE WARLOCK: his hellfire and the curse run out)
       if (m.hellT) m.hellT = Math.max(0, m.hellT - dt);
       if (m.curseT) m.curseT = Math.max(0, m.curseT - dt);
@@ -10331,6 +10639,20 @@ export class Game {
       // (BINDING: a hold runs out, and the time before it may be held again)
       if (m.bindT) m.bindT = Math.max(0, m.bindT - dt);
       if (m.bindAgain) m.bindAgain = Math.max(0, m.bindAgain - dt);
+      // (THE LAST WORDS, on a monster: Mirroring's wait; SURGING's shockwave every few seconds while he is near, after a warning)
+      if (m.mirrorT) m.mirrorT = Math.max(0, m.mirrorT - dt);
+      if (m.frozenT <= 0 && m.stunT <= 0) {
+        const sk = wordShare(m, 'surging');
+        if (sk > 0) {
+          m.surgeT = (m.surgeT ?? SURGE.monsterEvery) - dt;
+          if (m.surgeT <= 0) {
+            m.surgeT = SURGE.monsterEvery;
+            if (Math.hypot(h.x - m.x, h.y - m.y) <= SURGE.monsterNear && !this.shutIn(m)) {
+              this.addWarn(m.x, m.y, SURGE.monsterRadius, SURGE.monsterWarn, ((m.dmgMin + m.dmgMax) / 2) * SURGE.monsterDmg * sk, this.monsterElement(m), [], `${m.name}'s surge`, m.id, this.halfOf(m));
+            }
+          }
+        }
+      }
       if (m.poisonT > 0) {
         m.poisonT -= dt;
         if (m.poisonT <= 0) {
@@ -11395,7 +11717,9 @@ export class Game {
         const nx = p.x + (p.vx / sp) * step;
         const ny = p.y + (p.vy / sp) * step;
         // (SEE_OVER_ROCK: on the descent's open ground a shot flies over the cliffs and drops, and stops only at the map's edge)
-        if (!this.isOpen(nx, ny) && !(this.overRock && nx >= 0 && ny >= 0 && nx < f.w && ny < f.h)) {
+        // (THE LAST WORDS: PIERCING, on a monster, its shots fly on through walls, to the map's edge)
+        const through = p.hostile && !p.trap && p.words.includes('piercing');
+        if (!this.isOpen(nx, ny) && !((this.overRock || through) && nx >= 0 && ny >= 0 && nx < f.w && ny < f.h)) {
           // (THE TRAPS: what the hero shoots may meet a sealed door, and open it)
           if (!p.hostile) this.unseal(p.skill, nx, ny, 0.1);
           // (THE SKILL TREES REMADE: Ricochet, a hero's arrow bounces off the wall, and flies on)
@@ -11785,6 +12109,30 @@ export class Game {
         if (z.t >= z.dur) this.zones.splice(i, 1);
         continue;
       }
+      // THE LAST WORDS behind: Bleeding's thorns cut whatever is in them, each half second, and make it bleed; Culling's reaper's
+      // mark takes the first weak enemy to cross it, and is spent; Mirroring's mirror waits for his next attack (`lastWordsCast`)
+      if (z.kind === 'thorns') {
+        z.tick -= dt;
+        if (z.tick <= 0) {
+          z.tick = 0.5;
+          for (const o of this.monsters) {
+            if (o.dead || o.kind === 'bat' || this.shutIn(o) || Math.hypot(o.x - z.x, o.y - z.y) > z.r + o.r * 0.5) continue;
+            this.damageMonster(o, Math.max(1, Math.round(z.dmg * 0.5)), 'phys', false, z.skill, false, undefined, false, true);
+            this.bleedMonster(o, z.dmg * 0.5);
+          }
+        }
+        if (z.t >= z.dur) this.zones.splice(i, 1);
+        continue;
+      }
+      if (z.kind === 'reaper') {
+        const m = this.monsters.find((o) => !o.dead && o.state !== 'sleep' && Math.hypot(o.x - z.x, o.y - z.y) <= z.r + o.r * 0.5 && this.cullMonster(o, z.dmg, z.skill, true));
+        if (m || z.t >= z.dur) this.zones.splice(i, 1);
+        continue;
+      }
+      if (z.kind === 'mirror') {
+        if (z.t >= z.dur) this.zones.splice(i, 1);
+        continue;
+      }
       if (z.kind === 'ward' || z.kind === 'hex' || z.kind === 'bubble') {
         // Guarding behind: it does its work in hurtHero, for as long as it lasts. (THE CITY'S WORDS, Version 23.8: so do Hexing's
         // circle, in hurtHero, and Stilling's bubble, in the monsters' and their shots' time: `timeOf`, updateProjectiles)
@@ -11914,7 +12262,12 @@ export class Game {
       // (WORDMELDING: Frostbite in front, a chilled enemy loses life, a frozen one twice as fast)
       if (!m.dead && m.biteDps && (m.chillT > 0 || m.frozenT > 0)) this.damageMonster(m, Math.max(1, Math.round(m.biteDps * 0.5 * (m.frozenT > 0 ? 2 : 1))), 'frost', false, m.lastSkill, false, undefined, false, true);
       // (THE SKILL TREES REMADE: Honed Edge's bleeding)
-      if (!m.dead && m.bleedT && m.bleedDps) this.damageMonster(m, Math.max(1, Math.round(m.bleedDps * 0.5)), 'phys', false, m.lastSkill, false, undefined, false, true);
+      // (THE LAST WORDS: Bleeding's, more while it walks)
+      if (!m.dead && m.bleedT && m.bleedDps) {
+        const moved = !!m.bleedAt && Math.hypot(m.x - m.bleedAt.x, m.y - m.bleedAt.y) > 0.15;
+        m.bleedAt = { x: m.x, y: m.y };
+        this.damageMonster(m, Math.max(1, Math.round(m.bleedDps * 0.5 * (moved ? m.bleedMove || 1 : 1))), 'phys', false, m.lastSkill, false, undefined, false, true);
+      }
       // (THE WARLOCK: his hellfire, and the curse's smoulder)
       if (!m.dead && (m.hellT ?? 0) > 0 && m.hellDps) this.damageMonster(m, Math.max(1, Math.round(m.hellDps * 0.5)), 'fire', false, m.lastSkill, false, undefined, false, true);
       if (!m.dead && (m.curseT ?? 0) > 0 && m.curseDps) this.damageMonster(m, Math.max(1, Math.round(m.curseDps * 0.5)), 'phys', false, m.lastSkill, false, undefined, false, true);
@@ -11928,6 +12281,18 @@ export class Game {
       this.emit({ t: 'hit', x: h.x, y: h.y, amount: dmg, crit: false, el: 'fire', onHero: true });
       if (h.life <= 0) {
         this.slainBy = 'the flames';
+        this.die();
+      }
+    }
+    // (THE LAST WORDS: a monster's Bleeding, more while he walks)
+    if ((h.heroBleedT ?? 0) > 0 && h.heroBleedDps && !this.over) {
+      const moved = !!h.heroBleedAt && Math.hypot(h.x - h.heroBleedAt.x, h.y - h.heroBleedAt.y) > 0.15;
+      h.heroBleedAt = { x: h.x, y: h.y };
+      const dmg = Math.max(1, Math.round(h.heroBleedDps * 0.5 * (moved ? BLEED.moving : 1)));
+      h.life -= dmg;
+      this.emit({ t: 'hit', x: h.x, y: h.y, amount: dmg, crit: false, el: 'phys', onHero: true });
+      if (h.life <= 0) {
+        this.slainBy = 'bleeding';
         this.die();
       }
     }

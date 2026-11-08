@@ -486,6 +486,64 @@ export const STILL = { secs: 2, slower: 0.4, most: 0.6, bubble: 4, crawl: 0.6, c
  */
 export const BIND = { secs: 1.4, most: 2.2, elite: 0.5, again: 2, snareLife: 10, every: 0.5, reach: 0.9, snareSecs: 1.8, snareMost: 2.6, rootSecs: 0.8, rootAgain: 3 };
 
+/**
+ * THE LAST WORDS (his words to the main chat, 8 Nov 2026, 06:44: “I want 6 more words for the last levels”, “At least 6”; 06:50,
+ * “Add mirroring as well”), as offered and picked that morning (game/types.ts LAST_WORD_IDS): found only from floor 16 down, and on
+ * every endless level. The numbers are the main chat's starting points, each growing a little with its attribute, to be tuned once
+ * he has played them; their looks are the art chat's (asked on the board, 8 Nov), pictures to him first.
+ *
+ * PIERCING (Dexterity). In front: a shot flies on through every enemy in its path; a blow goes on through the first it meets, to
+ * every enemy in a line `line` tiles on behind it, for `through` of the hit (a five-hundredth more a point of Dexterity, to
+ * `throughMost`). Behind: `lanceDelay` seconds after, a lance of light strikes down the line from where the attack was made to
+ * where it ended, `lanceW` wide, for `lance` of a hit (to `lanceMost`); at most one each `lanceEvery` seconds an ability. On a
+ * monster: its shots fly through walls to reach you.
+ */
+export const PIERCE = { through: 0.6, throughMost: 0.9, line: 3, lanceDelay: 0.5, lance: 0.8, lanceMost: 1.4, lanceW: 0.55, lanceEvery: 0.4 };
+/**
+ * BLEEDING (Strength). In front: what it hits bleeds for `secs` seconds, losing `dps` of the hit a second (a thousandth more a
+ * point of Strength, to `dpsMost`), `moving` times as much while it walks; struck again, the bleeding is the stronger of the two,
+ * for its time again. Behind: thorns where it ends, lying `thornLife` seconds, `thornR` wide (at most one each `thornEvery` seconds
+ * an ability): whatever walks in them is cut for `thorns` of a hit a second, and bleeds. On a monster: its blows make you bleed for
+ * `heroSecs` seconds, losing `heroDps` of your life a second (a minion's for less), `moving` times as much while you walk.
+ */
+export const BLEED = { dps: 0.15, dpsMost: 0.3, secs: 4, moving: 2, thorns: 0.25, thornsMost: 0.45, thornLife: 5, thornR: 1.4, thornEvery: 0.5, heroDps: 0.012, heroSecs: 3 };
+/**
+ * REAPING (Intelligence). In front: an enemy it kills leaves a soul that flies to you and takes `secs` seconds off every cooldown
+ * (a thousandth more a point of Intelligence, to `secsMost`). Behind: an enemy it kills rises as a spirit that fights for you for
+ * `spiritSecs` seconds, striking the nearest enemy each `spiritEvery` seconds for `spiritDmg` of a hit; at most `spirits` at once.
+ * On a monster: it rises once, `riseAfter` seconds after it dies, with `riseLife` of its life (a boss never).
+ */
+export const REAP = { secs: 1, secsMost: 1.5, spiritSecs: 6, spiritEvery: 1, spiritDmg: 0.5, spiritDmgMost: 0.8, spiritSpeed: 6, spiritReach: 1, spirits: 3, riseAfter: 1.5, riseLife: 0.5 };
+/**
+ * CULLING (Strength). In front: an enemy its hit leaves under `under` of its life dies outright (a two-thousandth more a point of
+ * Strength, to `underMost`); an elite under `elite` of that; a boss never. Behind: a reaper's mark where it ends, lying `markLife`
+ * seconds, `markR` wide: the first enemy under `markUnder` of its life to cross it is culled (an elite under half that; a boss
+ * never). On a monster: its blows hit `harder` more while you are under `low` of your life (a minion's for less).
+ */
+export const CULL = { under: 0.15, underMost: 0.22, elite: 0.5, markLife: 8, markR: 1, markUnder: 0.3, markMost: 0.4, markEvery: 0.5, low: 0.35, harder: 0.6 };
+/**
+ * SURGING (Intelligence). In front: every `every`th use of the ability releases a shockwave round you, `radius` tiles, for `dmg` of
+ * a hit (a thousandth more a point of Intelligence, to `dmgMost`). Behind: your dodge releases a surge where it ends, `dodgeRadius`
+ * tiles, for `dodge` of the ability's hit (the strongest of those it is behind). On a monster: every `monsterEvery` seconds that it
+ * is within `monsterNear` tiles of you, a shockwave `monsterRadius` tiles round it after a warning of `monsterWarn` seconds, for
+ * `monsterDmg` of its hit (a minion's for less).
+ */
+export const SURGE = { every: 3, dmg: 0.8, dmgMost: 1.2, radius: 2.6, dodge: 0.6, dodgeMost: 0.9, dodgeRadius: 2.2, monsterEvery: 5, monsterNear: 6, monsterRadius: 2.4, monsterWarn: 0.8, monsterDmg: 1 };
+/**
+ * PLUNDERING (Dexterity). In front: an enemy it kills drops `gold` more gold (a two-hundredth more a point of Dexterity, to
+ * `goldMost`), and has an `item` chance of an extra item (an elite `eliteItem`). Behind: an enemy it kills bursts with gold that
+ * flies straight to your purse, `burst` of what it drops. On a monster: each of its blows steals `steal` of your gold (at most
+ * `stealMost` times the level a blow, a minion's for less), and drops all it stole when it dies.
+ */
+export const PLUNDER = { gold: 0.5, goldMost: 1, item: 0.05, eliteItem: 0.2, burst: 0.4, burstMost: 0.8, steal: 0.02, stealMost: 6 };
+/**
+ * MIRRORING (Intelligence). In front: a reflection of you, `side` tiles to your side, makes the same attack with you, for `share` of
+ * it (a thousandth more a point of Intelligence, to `shareMost`). Behind: it leaves a mirror where you stood, lying `leaveLife`
+ * seconds (one an ability at a time): your next attack, of any ability, it makes again from there, for `leaveShare` of it, and is
+ * spent. On a monster: `back` of the harm you do it comes back at you (at most once each `backEvery` seconds; a minion's for less).
+ */
+export const MIRRORING = { share: 0.4, shareMost: 0.6, side: 0.9, leaveShare: 0.6, leaveMost: 0.8, leaveLife: 8, back: 0.15, backEvery: 0.4 };
+
 export interface WordDef {
   id: WordId;
   /** Damage or shaping (see WordKind). */
@@ -536,6 +594,14 @@ export const WORDS: Record<WordId, WordDef> = {
   stilling: { id: 'stilling', kind: 'shape', name: 'Stilling', front: 'Stilling', behind: 'of Stillness', attr: 'int', element: null, about: 'The word of the held breath. Time slows for it.', frontText: 'What it hits is slowed in time.', behindText: 'Leaves a bubble where enemies and their shots crawl.', monsterText: 'Its blows slow your cooldowns.' },
   // (BINDING, BIND above: the city's fifth, his pick of 21 Oct, its look the art chat's)
   binding: { id: 'binding', kind: 'shape', name: 'Binding', front: 'Binding', behind: 'of the Snare', attr: 'str', element: null, about: 'The word of the knot. What it holds stays held.', frontText: 'Holds the enemies it hits in place.', behindText: 'Leaves a snare for the next enemy to cross.', monsterText: 'Its blows root you to the spot.' },
+  // (THE LAST WORDS, PIERCE to MIRRORING above: his seven of 8 Nov 2026, found from floor 16 down; their looks the art chat's, to come)
+  piercing: { id: 'piercing', kind: 'shape', name: 'Piercing', front: 'Piercing', behind: 'of the Lance', attr: 'dex', element: null, about: 'The word of the point. Nothing stands in its way.', frontText: 'Goes through everything in its path.', behindText: 'A lance of light strikes down its line a moment later.', monsterText: 'Its shots fly through walls to reach you.' },
+  bleeding: { id: 'bleeding', kind: 'shape', name: 'Bleeding', front: 'Bleeding', behind: 'of Thorns', attr: 'str', element: null, about: 'The word of the open wound. It does not close.', frontText: 'Makes enemies bleed, worse while they move.', behindText: 'Leaves thorns that cut whatever walks through.', monsterText: 'Its blows make you bleed.' },
+  reaping: { id: 'reaping', kind: 'shape', name: 'Reaping', front: 'Reaping', behind: 'of Spirits', attr: 'int', element: null, about: 'The word of the harvest. What falls is gathered in.', frontText: 'Kills leave a soul that takes time off your cooldowns.', behindText: 'Kills raise a spirit that fights for you for a while.', monsterText: 'Rises once after it dies.' },
+  culling: { id: 'culling', kind: 'shape', name: 'Culling', front: 'Culling', behind: 'of the Reaper', attr: 'str', element: null, about: 'The word of the end. The weak are taken.', frontText: 'Enemies left nearly dead by its hit die outright.', behindText: 'Leaves a reaper\'s mark that culls the first weak enemy to cross it.', monsterText: 'Hits much harder when you are low.' },
+  surging: { id: 'surging', kind: 'shape', name: 'Surging', front: 'Surging', behind: 'of the Surge', attr: 'int', element: null, about: 'The word of the swell. It gathers, then breaks.', frontText: 'Every third use releases a shockwave round you.', behindText: 'Your dodge releases a surge.', monsterText: 'Sends out a shockwave every few seconds.' },
+  plundering: { id: 'plundering', kind: 'shape', name: 'Plundering', front: 'Plundering', behind: 'of Plunder', attr: 'dex', element: null, about: 'The word of the taking. What is theirs is yours.', frontText: 'Kills drop more gold, and sometimes an extra item.', behindText: 'Gold bursts from kills and flies to you.', monsterText: 'Each blow steals some of your gold, dropped when it dies.' },
+  mirroring: { id: 'mirroring', kind: 'shape', name: 'Mirroring', front: 'Mirrored', behind: 'of Mirrors', attr: 'int', element: null, about: 'The word of the reflection. Two of you, where there was one.', frontText: 'A reflection of you makes the same attack beside you, weaker.', behindText: 'Leaves a mirror that repeats your next attack from where you stood.', monsterText: 'Sends part of the harm you do it back at you.' },
   poison: { id: 'poison', kind: 'damage', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
   // WORDMELDING (behind MELD, game/melds.ts): the melded words, each made at the wordsmith from two
   // damage words; what each does in front and behind is his page's "Wordsmith: Word Combinations",
@@ -2246,6 +2312,14 @@ export const QUIPS: {
     hexing: ['Cursed.', 'Bad luck.', 'Hexed.'],
     stilling: ['Hold still.', 'Time out.', 'Slow down.'],
     binding: ['Stay.', 'Tied up.', 'Knot now.'],
+    // (THE LAST WORDS)
+    piercing: ['Right through.', 'In one side.', 'Make a point.'],
+    bleeding: ['First blood.', 'Open wide.', 'Cut deep.'],
+    reaping: ['Harvest time.', 'Gathered in.', 'Reap it.'],
+    culling: ['Too weak.', 'Thinned out.', 'Last breath.'],
+    surging: ['Here it comes.', 'Wave goodbye.', 'Swell.'],
+    plundering: ['Mine now.', 'Pay up.', 'Spoils.'],
+    mirroring: ['Seeing double.', 'Twice the me.', 'Reflect on that.'],
     // (WORDMELDING: the melded words)
     eruption: ['Lava lamp.', 'Hot rocks.', 'Blew my top.'],
     avalanche: ['Snowed under.', 'Buried.', 'Cold shoulder.'],

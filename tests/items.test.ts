@@ -191,6 +191,21 @@ function expectedImbue(word: BaseWordId, slot: Slot): ImbuePick[] {
     // (Binding, his pick of 21 Oct)
     case 'binding':
       return offence ? [['prefix', 'dmgPct'], ['suffix', 'str']] : [['prefix', 'armor'], ['suffix', 'str']];
+    // (THE LAST WORDS, his seven of 8 Nov 2026: “And those all craftable as well”)
+    case 'piercing':
+      return [['prefix', 'critMult'], ['suffix', 'dex']];
+    case 'bleeding':
+      return offence ? [['prefix', 'physPct'], ['suffix', 'str']] : [['prefix', 'lifeRegen'], ['suffix', 'str']];
+    case 'reaping':
+      return offence ? [['prefix', 'lifeOnKill'], ['suffix', 'int']] : [['prefix', 'cdr'], ['suffix', 'int']];
+    case 'culling':
+      return offence ? [['prefix', 'dmgPct'], ['suffix', 'str']] : [['prefix', 'maxLife'], ['suffix', 'str']];
+    case 'surging':
+      return offence ? [['prefix', 'areaPct'], ['suffix', 'int']] : [['prefix', 'manaRegen'], ['suffix', 'int']];
+    case 'plundering':
+      return offence ? [['prefix', 'goldFind'], ['suffix', 'dex']] : [['prefix', 'magicFind'], ['suffix', 'dex']];
+    case 'mirroring':
+      return offence ? [['prefix', 'dmgPct'], ['suffix', 'int']] : [['prefix', 'blockChance'], ['suffix', 'int']];
   }
 }
 

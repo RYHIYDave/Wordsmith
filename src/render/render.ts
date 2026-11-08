@@ -2261,6 +2261,13 @@ export class Renderer {
     }
     // (THE FIRST FIVE FLOORS: what the bosses of floors 2 to 5 warn of, leave and cast shadows of on the floor: render/bossfx.ts)
     if (game.perils.length || game.boss || game.level.act1 || game.monsters.some((m) => m.state === 'act')) this.bossFx.ground(g, this.floorAt, game, t, here);
+    // (THE LAST WORDS: Reaping's spirits, a plain stand-in in the word's colour until the art chat's look)
+    for (const sp of game.spirits) {
+      if (!here(sp.x, sp.y)) continue;
+      const fade = Math.min(1, (sp.life - sp.t) * 2, sp.t * 4);
+      ellipse(g, wx(cam, sp.x, sp.y), wy(cam, sp.x, sp.y) - 8, 0.35, WORD_COLOR.reaping, 0.6 * fade);
+      ringDots(g, wx(cam, sp.x, sp.y), wy(cam, sp.x, sp.y) - 8, 0.35, WORD_COLOR.reaping);
+    }
     for (const z of game.zones) {
       // (THE MONSTERS' ATTACKS: the line a red troll will charge along, in the red circle's own reds: art/charge_lane.ts)
       if (z.kind === 'lane') {
@@ -2299,6 +2306,14 @@ export class Renderer {
       // (Heavy's cracked ground and Guarding's ward are drawn with the new words' looks: words3.ts, floor3; and since Version 23.8
       // Pulling's vortex, Hexing's circle and Stilling's bubble)
       if (z.kind === 'cracks' || z.kind === 'ward' || z.kind === 'vortex' || z.kind === 'hex' || z.kind === 'bubble' || z.kind === 'snare') continue;
+      // (THE LAST WORDS, 8 Nov 2026: Bleeding's thorns, Culling's reaper's mark, Mirroring's mirror: plain stand-ins in the word's colour
+      // until the art chat's looks)
+      if (z.kind === 'thorns' || z.kind === 'reaper' || z.kind === 'mirror') {
+        const col = WORD_COLOR[z.kind === 'thorns' ? 'bleeding' : z.kind === 'reaper' ? 'culling' : 'mirroring'];
+        ellipse(g, cx, cy, z.r, col, 0.22 * Math.min(1, (z.dur - z.t) * 2));
+        ringDots(g, cx, cy, z.r, col);
+        continue;
+      }
       // (a melded word's patch has a look of its own, behind MELD3, off: render/melds3.ts, floorM3)
       if (ownsZone(z)) continue;
       // (Binding's snare has a look of its own, behind BINDING3, off: render/binding3.ts, floorB3)

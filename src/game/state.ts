@@ -139,6 +139,27 @@ export interface Resolved {
   /** BINDING (game/defs.ts BIND), 0 for none: in front, seconds what it hits is held; behind, seconds what crosses its snare is held. */
   bind: number;
   snare: number;
+  /**
+   * THE LAST WORDS (game/defs.ts PIERCE to MIRRORING), 0 for none. In front: Piercing's share of a blow that goes on through the
+   * first (`through`; a shot's is `pierce`); Bleeding's bleed a second, a share of the hit; Reaping's seconds off every cooldown a
+   * kill; Culling's share of life under which a hit kills; Surging's shockwave, a share of a hit; Plundering's more gold; Mirroring's
+   * reflection's share. Behind: Piercing's lance, a share of a hit; Bleeding's thorns, a share of a hit a second; Reaping's spirit's
+   * blow; Culling's mark; Surging's surge from a dodge; Plundering's gold burst; Mirroring's mirror left, its share.
+   */
+  through: number;
+  bleed: number;
+  reap: number;
+  cull: number;
+  surge: number;
+  plunder: number;
+  mirror: number;
+  lance: number;
+  thorns: number;
+  spirit: number;
+  cullMark: number;
+  dodgeSurge: number;
+  plunderBurst: number;
+  mirrorLeave: number;
   /** WORDMELDING: the melded word behind, whose twist what it leaves carries, or null. */
   meldBehind: MeldId | null;
   /** Plain-language lines for the character panel. */
@@ -267,6 +288,10 @@ export interface Hero {
   slowT?: number;
   slowBy?: number;
   rootAgain?: number;
+  /** BLEEDING on monsters (THE LAST WORDS): seconds left bleeding, its harm a second, and where he stood at the last tick of it. */
+  heroBleedT?: number;
+  heroBleedDps?: number;
+  heroBleedAt?: { x: number; y: number };
   /** Harm from monsters that carry element words. */
   burnT: number;
   burnDps: number;
@@ -505,6 +530,18 @@ export interface Monster {
    */
   bleedT?: number;
   bleedDps?: number;
+  /** BLEEDING (THE LAST WORDS): how many times as much it bleeds while it walks (Bleeding's; Honed Edge's bleeding is the same either way), and where it stood at the last tick of its harm. */
+  bleedMove?: number;
+  bleedAt?: { x: number; y: number };
+  /**
+   * THE LAST WORDS, on a monster that carries them: Reaping's, it has risen once (it does not again); Plundering's, the gold it has
+   * stolen (dropped when it dies); Surging's, seconds to its next shockwave; Mirroring's, seconds before what it sends back may come
+   * again.
+   */
+  risen?: boolean;
+  stolen?: number;
+  surgeT?: number;
+  mirrorT?: number;
   /**
    * THE WARLOCK (game/warlock.ts): burning in his hellfire (the Hellfire Bolt's), and cursed (the Curse's smoulder): each its
    * seconds left and its harm a second. A cursed one dying spreads every burn on it to those near it.
@@ -610,7 +647,7 @@ export interface Spear {
 /** ('lane': THE MONSTERS' ATTACKS, the line a red troll will charge along: from (x, y) to (x1, y1), `r` half its width.) */
 /** ('skull': THE NEW MONSTERS, a skull the Golem has hurled: thrown from (x1, y1), coming down on (x, y) at `dur`, bursting after: game/defs.ts SKULL.) */
 /** ('aim': the bone marksman's line of aim for his great shot, from (x, y) to (x1, y1), its `t` of `dur` how far he has drawn: game/defs.ts AIM. 'smoke': the high priest's burning smoke, that burns the hero in it: SMOKE.) */
-export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull' | 'aim' | 'smoke' | 'steam' | 'vortex' | 'hex' | 'bubble' | 'snare';
+export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull' | 'aim' | 'smoke' | 'steam' | 'vortex' | 'hex' | 'bubble' | 'snare' | 'thorns' | 'reaper' | 'mirror';
 
 export interface Zone {
   x: number;
@@ -1384,7 +1421,7 @@ export type GameEvent =
   /** "of Echoes": the ability will repeat from here in `delay` seconds. */
   | { t: 'echo'; x: number; y: number; dx: number; dy: number; kind: SkillKind; delay: number }
   /** A patch of ground or a rune has just been laid. (`dur`: cracks and wards, its seconds; laid again where one already is, it lasts that long from now.) */
-  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward' | 'steam' | 'vortex' | 'hex' | 'bubble' | 'snare'; x: number; y: number; r: number; el: Element; dur?: number; meld?: MeldId }
+  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward' | 'steam' | 'vortex' | 'hex' | 'bubble' | 'snare' | 'thorns' | 'reaper' | 'mirror'; x: number; y: number; r: number; el: Element; dur?: number; meld?: MeldId }
   /**
    * THE NEW WORDS AT WORK (Version 19.3), for their looks (render/words3.ts): a Heavy hit lands
    * (`big`: an area ability's, out to `r`); monster `id` is stunned for `secs` / staggered by a blow
@@ -1423,6 +1460,28 @@ export type GameEvent =
   | { t: 'snareSprung'; id: number; x: number; y: number; secs: number }
   | { t: 'rooted'; x: number; y: number; secs: number }
   | { t: 'unbind'; id: number }
+  // THE LAST WORDS (8 Nov 2026), for their looks (the art chat's, to come): Piercing's blow going on through the first (from it to the
+  // line's end) and its lance (from where the attack was made to where it ended, landing in `delay`); Bleeding's bleed on one, and
+  // on the hero; Reaping's soul flying from one killed to the hero, a spirit risen (its `id`, gone when `life` ends), a spirit's
+  // blow, and one carrying the word risen again; Culling's cull (`mark`: by a reaper's mark, a zone 'reaper'); Surging's shockwave
+  // round the hero (or the surge of his dodge; a monster's is a warning, as any); Plundering's gold burst flying to the hero, and
+  // gold stolen from him; Mirroring's reflection making an attack beside him, a mirror's attack (a mirror is a zone 'mirror'), and
+  // harm sent back at him by one carrying it. (Bleeding's thorns are a zone, 'thorns'.)
+  | { t: 'pierceLine'; x0: number; y0: number; x1: number; y1: number }
+  | { t: 'lance'; x0: number; y0: number; x1: number; y1: number; w: number; delay: number }
+  | { t: 'bleedOn'; id: number; x: number; y: number; secs: number }
+  | { t: 'heroBleed'; x: number; y: number; secs: number }
+  | { t: 'reapSoul'; x: number; y: number }
+  | { t: 'spirit'; id: number; x: number; y: number; life: number }
+  | { t: 'spiritHit'; id: number; x0: number; y0: number; x1: number; y1: number }
+  | { t: 'rise'; id: number; x: number; y: number }
+  | { t: 'culled'; id: number; x: number; y: number; mark?: boolean }
+  | { t: 'surge'; x: number; y: number; r: number; dodge?: boolean }
+  | { t: 'goldBurst'; x: number; y: number; n: number }
+  | { t: 'goldStolen'; x: number; y: number; n: number }
+  | { t: 'reflection'; x: number; y: number; dx: number; dy: number; kind: SkillKind }
+  | { t: 'mirrorCast'; x: number; y: number; dx: number; dy: number; kind: SkillKind }
+  | { t: 'mirrorBack'; x0: number; y0: number; x1: number; y1: number; n: number }
   // VOLATILE'S MELDS' own moments (behind VOLT_MELDS), for their looks (render/volatile3.ts VolFx, the art chat's): Demolition's
   // elite or boss going off at half its life; Powderkeg's blast setting one burning; Shatter's shard to one near and its rune's
   // freeze; Chain Reaction's arc to one near and its rune's link to the next; Rupture's poison splashed on one near

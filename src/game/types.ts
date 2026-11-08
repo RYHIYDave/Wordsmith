@@ -35,7 +35,9 @@ export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley'
   | 'vetpunch' | 'vetkick' | 'vetjump';
 
 /** Power words: dropped by enemies, slotted into an ability to change it. */
-export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding' | 'pulling' | 'splitting' | 'hexing' | 'stilling' | 'binding';
+export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding' | 'pulling' | 'splitting' | 'hexing' | 'stilling' | 'binding'
+  // (THE LAST WORDS: his seven of 8 Nov 2026, found from floor 16 down: LAST_WORD_IDS below)
+  | 'piercing' | 'bleeding' | 'reaping' | 'culling' | 'surging' | 'plundering' | 'mirroring';
 /**
  * WORDMELDING (behind MELD, game/melds.ts): the melded words, each made at the wordsmith from two
  * damage words. They never drop: WORD_IDS, which every random draw of a word uses, holds none of them.
@@ -56,7 +58,10 @@ export type WordId = BaseWordId | MeldId | RankId;
 // (THE CITY'S WORDS, Version 23.8: the other four, Pulling, Splitting, Hexing and Stilling, found only from floor 11 down: his words
 // to the main chat, 21 Oct 2026, 18:25 Pacific, “And let’s add some words to levels 11-15”, and his picks of the four after it.
 // Every list of words has them; what may drop on a floor is game/defs.ts `wordsAt`.)
-export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding', 'pulling', 'splitting', 'hexing', 'stilling', 'binding'];
+export const WORD_IDS: readonly WordId[] = [
+  'power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding', 'pulling', 'splitting', 'hexing', 'stilling', 'binding',
+  'piercing', 'bleeding', 'reaping', 'culling', 'surging', 'plundering', 'mirroring',
+];
 /** The city's words (the four of Version 23.8, and Binding), and the first level they are found on (game/defs.ts `wordsAt`; here for the map-maker, which reads no defs). */
 export const DEEP_WORD_IDS: readonly WordId[] = ['pulling', 'splitting', 'hexing', 'stilling', 'binding'];
 export const DEEP_WORDS_FROM = 11;
@@ -66,15 +71,22 @@ export const DEEP_WORDS_FROM = 11;
  * tiers, 8 Nov, by 12:09: “They aren’t perfect but I like that idea.  We need 6 in the prison because we have 6 characters and they
  * should each get a different word”, and of each hero's first: “I want frost for the mage and fire for the warlock.”). WORD_TIERS:
  * on `on`, the prison's six (each hero's first word one of them: game/defs.ts FIRST_WORD) on floors 1 to 5; from `mid` the rest of
- * the first thirteen; from DEEP_WORDS_FROM the city's.
+ * the first thirteen; from DEEP_WORDS_FROM the city's; from LAST_WORDS_FROM the last words.
  */
 export const PRISON_WORD_IDS: readonly WordId[] = ['power', 'poison', 'frost', 'fire', 'lightning', 'swift'];
 export const WORD_TIERS = { on: true, mid: 6 };
-/** The words that may be found at this level (its depth, or an endless level's power), in their order: the prison's six before floor 6 (WORD_TIERS), the thirteen before floor 11, then all. */
+/**
+ * THE LAST WORDS (his words to the main chat, 8 Nov 2026, 06:44: “I want 6 more words for the last levels”, “At least 6”; 06:50,
+ * “Add mirroring as well”; his picks of those offered: Piercing, Bleeding, Reaping, Culling, Surging, Plundering, Mirroring), found
+ * only from floor 16 down, and on every endless level.
+ */
+export const LAST_WORD_IDS: readonly WordId[] = ['piercing', 'bleeding', 'reaping', 'culling', 'surging', 'plundering', 'mirroring'];
+export const LAST_WORDS_FROM = 16;
+/** The words that may be found at this level (its depth, or an endless level's power), in their order: the prison's six before floor 6 (WORD_TIERS), the thirteen before floor 11, the eighteen before 16, then all. */
 export function wordsAt(power: number): readonly WordId[] {
-  if (power >= DEEP_WORDS_FROM) return WORD_IDS;
+  if (power >= LAST_WORDS_FROM) return WORD_IDS;
   if (WORD_TIERS.on && power < WORD_TIERS.mid) return WORD_IDS.filter((w) => PRISON_WORD_IDS.includes(w));
-  return WORD_IDS.filter((w) => !DEEP_WORD_IDS.includes(w));
+  return WORD_IDS.filter((w) => !LAST_WORD_IDS.includes(w) && (power >= DEEP_WORDS_FROM || !DEEP_WORD_IDS.includes(w)));
 }
 /** The melded words, in the order of his page "Wordsmith: Word Combinations" (Volatile's five left out, his pick of 13 Oct 2026, 12:36). */
 export const MELD_IDS: readonly MeldId[] = ['eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion'];
