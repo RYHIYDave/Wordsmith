@@ -38,5 +38,13 @@ export default async function (page, snap) {
   console.log(`  after GO ON: ${after}`);
   if (after !== 'none') console.log('  !! the card did not close');
   await snap('5_after');
+  // (as the game itself opens endless mode: its event, and the splash comes up of itself)
+  await page.evaluate(() => { const g = window.__dbg.game(); g.events.push({ t: 'endlessOpens' }); });
+  try {
+    await page.waitForFunction(() => window.__dbg.fanfareShown() === 'splash', null, { timeout: 10000 });
+    console.log('  the game\'s event brings up the splash');
+  } catch {
+    console.log('  !! the game\'s event did not bring up the splash');
+  }
   console.log(`  errors ${await page.evaluate(() => (window.__errors || []).length)}`);
 }
