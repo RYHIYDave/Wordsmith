@@ -104,13 +104,15 @@ function letGo(group: string): void {
   held.delete(group);
 }
 
-/** The moves now wanted: fetch their groups; let every other group go (but the slams, the last few kept). */
-export function colossusWant(moves: readonly string[]): void {
+/** The moves now wanted: fetch their groups; let every other group go (but the slams, the last few kept, unless `slams` is false: his
+ *  shovel, his tentacles under the water). */
+export function colossusWant(moves: readonly string[], slams = true): void {
   if (!man) return;
   clock += 1;
   const groups = new Set(moves.map((mv) => man?.moves[mv]?.group).filter((g): g is string => !!g));
+  if (moves.includes('hooks')) groups.add('hooks');
   for (const g of groups) want(g);
-  for (const g of [...held.keys()]) if (!groups.has(g) && !g.includes('.slam') && !(g === 'hooks' && moves.includes('hooks'))) letGo(g);
+  for (const g of [...held.keys()]) if (!groups.has(g) && (!g.includes('.slam') || !slams)) letGo(g);
 }
 /** Let every group go (his fight over, or left). */
 export function colossusLetGoAll(): void {

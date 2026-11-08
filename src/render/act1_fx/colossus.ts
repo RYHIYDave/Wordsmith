@@ -81,13 +81,16 @@ function draw(c: Act1FxCtx): void {
   // (his shovel: the part playing and the next, his snap, his hooks; the first part fetched as it comes due)
   const shk = f.shovel ? Math.floor(f.shovel.t * 30) : -1;
   const shPart = Math.floor(shk / ARM_BAKE.entrancePart);
-  const shovelWants = f.shovel ? [`shovel.${shPart}`, `shovel.${shPart + 1}`, 'shovel.snap', 'hooks'] : f.ph === 2 && f.mode === 'fight' && f.shovelIn < 4 ? ['shovel.0', 'shovel.snap', 'hooks'] : [];
+  // (in his shovel only what it wants: him at the end, his snap and hooks, his tentacles going down and up; his stand from its last part)
+  const shovelWants = f.shovel ? [`shovel.${shPart}`, `shovel.${shPart + 1}`, 'shovel.snap', 'hooks', ...base([0, 1, 2]).filter((m) => !m.includes('smash')), ...(shPart >= 3 ? ['stand'] : [])] : f.ph === 2 && f.mode === 'fight' && f.shovelIn < 4 ? ['shovel.0', 'shovel.snap', 'hooks'] : [];
   colossusWant(
-    f.ph === 1 && f.mode === 'between' ? ['lurk', 'entrance.0', ...dying]
-      : f.ph === 1 && f.mode === 'change' ? [`entrance.${part}`, `entrance.${part + 1}`, ...(part >= 2 ? ['stand', ...base([0, 1, 2])] : [])]
-        : f.ph === 1 ? ['lurk', ...base([3, 4])]
-          : f.ph === 2 ? ['stand', ...base([0, 1, 2]), ...shovelWants, ...(f.body2 || f.body2In < 3 ? ['bile', 'gaze'] : [])]
-            : ['stand'],
+    f.shovel ? shovelWants
+      : f.ph === 1 && f.mode === 'between' ? ['lurk', 'entrance.0', ...dying]
+        : f.ph === 1 && f.mode === 'change' ? [`entrance.${part}`, `entrance.${part + 1}`, ...(part >= 2 ? ['stand', ...base([0, 1, 2])] : [])]
+          : f.ph === 1 ? ['lurk', ...base([3, 4])]
+            : f.ph === 2 ? ['stand', ...base([0, 1, 2]), ...shovelWants, ...(f.body2 || (f.body2In < 3 && f.shovelIn > 4) ? ['bile', 'gaze'] : [])]
+              : ['stand'],
+    !f.shovel,
   );
   const standK = (f.body * 30) % Math.max(1, colossusFrames('stand') || 90);
   const bodyAt = (u: number, v: number, move: string, k: number, otherwise: () => void): void => {
