@@ -410,6 +410,25 @@ function nearFace(v: number, px: number, _py: number, _x: number, _y: number): R
   return c;
 }
 
+/**
+ * THE CANYON'S TOPS SET APART (his words of 7 Nov 2026, 11:52, read as: the plateau tops and the canyon floor hard to tell apart; a
+ * mock-up, behind this switch, on since his yes). The rock stands 75 game pixels over the bed, and near cliffs are cut away (his
+ * rule: nothing stands over the walkable floor), so a top can never be lifted where it is: the eye has to be told by colour and
+ * light which ground is high. So: the mesa's earth turned to a dry olive scrubland, darker than the bed (its pale caprock rim kept,
+ * the edge sharp); the riverbed a shade lighter; the near cliff's shadow across the bed deeper and further.
+ */
+// (ON SINCE VERSION 25.2.10: shown the game now beside a rough 3D model and the mock-up, his answer, 8 Nov 2026 by 10:28, “Yes, put
+// it in (Recommended)”)
+export const CANYON_APART = { on: true, earth: 0.42, dark: 0.16, bed: 0.07 };
+const SCRUBLAND: RGB = [104, 104, 70];
+function apartTop(c: RGB): RGB {
+  // (the caprock rim and its cracks are kept as they are: the high edge stays pale and clear)
+  if (C_CAP.some((k) => k[0] === c[0] && k[1] === c[1] && k[2] === c[2])) return c;
+  const m = mixc(c, SCRUBLAND, CANYON_APART.earth);
+  return [m[0] * (1 - CANYON_APART.dark), m[1] * (1 - CANYON_APART.dark), m[2] * (1 - CANYON_APART.dark)];
+}
+const lighter = (c: RGB, t: number): RGB => mixc(c, [255, 244, 228], t);
+
 /** ECHO CANYON'S GROUND. */
 export const CANYON_LOOK: TerrainLook = {
   // the planning chat's 150 (75 game pixels: nearly three heroes high), as he said yes to: the walls close in
@@ -419,14 +438,17 @@ export const CANYON_LOOK: TerrainLook = {
   rag: 0.32,
   fine: 0.06,
   seed: 81,
-  floor: riverbed,
+  floor: (x, y, px, py, inside) => (CANYON_APART.on ? lighter(riverbed(x, y, px, py, inside), CANYON_APART.bed) : riverbed(x, y, px, py, inside)),
   face: sandstone,
-  top: mesa,
+  top: (x, y, px, py, back) => (CANYON_APART.on ? apartTop(mesa(x, y, px, py, back)) : mesa(x, y, px, py, back)),
   nearFace,
   brow: (c) => mixc(c, [255, 246, 232], 0.3),
   foot: [0.36, 0.2],
   // the near wall felt where the canyon turns across the screen (the mock-up's 1.6 tiles)
-  nearShadow: { reach: 1.6, dark: [0.38, 0.24] },
+  // (CANYON_APART: deeper and further, the near cliff felt the more)
+  get nearShadow() {
+    return CANYON_APART.on ? { reach: 2.1, dark: [0.5, 0.3] as const } : { reach: 1.6, dark: [0.38, 0.24] as const };
+  },
   // (F8F9_FIX, off: his “I should be able to see the walls of the canyons when points of the plateau jut out”: every far wall's face
   // drawn down to the riverbed below it, the jutting near cliff cut away over it as over the bed: art/terrain.ts)
   downFaces: true,

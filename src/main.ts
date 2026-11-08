@@ -89,6 +89,7 @@ import { ARRIVALS } from './game/arrivals';
 import { PILLARS, QUESTS610 } from './game/quests610';
 import { CANDLES_BY_WALL } from './game/first5';
 import { drawBossCard, drawFloorCard } from './ui/cards';
+import { CANYON_APART } from './art/canyon';
 import { ENDLESS_FANFARE, drawEndlessCard, drawEndlessSplash } from './ui/endless_fanfare';
 import type { BossCard, FloorCard } from './ui/cards';
 import { DOORS, doorMiddle, doorTiles } from './game/doors';
@@ -2595,6 +2596,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     questMarks: QUEST_MARKS,
     /** THE LOADING SCREEN as a game begins (LOADING in main.ts), on at his yes: `loading.on` (dbg.run and dbg.first begin without it). */
     loading: LOADING,
+    /** THE CANYON'S TOPS SET APART (art/canyon.ts CANYON_APART), a mock-up, off: `canyonApart.on` for its pictures. */
+    canyonApart: CANYON_APART,
     /** THE LOADING SCREEN BETWEEN FLOORS: whether it is up now (and since how long), and, for a playtest begun without it, the level counted as loaded (so that the next is put up between). */
     loadingNow: (): { t: number; frames: number } | null => (loading ? { t: loading.t, frames: loading.frames } : null),
     loadedHere: (): void => {
