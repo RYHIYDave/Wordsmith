@@ -8,8 +8,8 @@
 
 import { colossusOf, colossusOn } from '../../game/act1_rules/colossus';
 import {
-  ARM, CHANGE3, CRASH, EYE_SLAM, FORWARD, GAZE, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAVE,
-  hookFront, rootAt, stoneToWorld, waveFront,
+  ARM, BODY2, CHANGE3, CRASH, EYE_SLAM, FORWARD, GAZE, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAVE,
+  hookFront, poolR, rootAt, stoneToWorld, waveFront,
 } from '../../game/colossus_fight';
 import type { Arm } from '../../game/colossus_fight';
 import type { Act1Fx, Act1FxCtx } from './types';
@@ -86,7 +86,7 @@ function draw(c: Act1FxCtx): void {
     f.ph === 1 && f.mode === 'between' ? ['lurk', 'entrance.0', ...dying]
       : f.ph === 1 && f.mode === 'change' ? [`entrance.${part}`, `entrance.${part + 1}`, ...(part >= 2 ? ['stand', ...base([0, 1, 2])] : [])]
         : f.ph === 1 ? ['lurk', ...base([3, 4])]
-          : f.ph === 2 ? ['stand', ...base([0, 1, 2]), ...shovelWants]
+          : f.ph === 2 ? ['stand', ...base([0, 1, 2]), ...shovelWants, ...(f.body2 || f.body2In < 3 ? ['bile', 'gaze'] : [])]
             : ['stand'],
   );
   const standK = (f.body * 30) % Math.max(1, colossusFrames('stand') || 90);
@@ -173,6 +173,7 @@ function draw(c: Act1FxCtx): void {
     const k = Math.floor(f.phT * 30);
     bodyAt(HIS_PLACE.u, HIS_PLACE.v, `entrance.${Math.floor(k / ARM_BAKE.entrancePart)}`, k % ARM_BAKE.entrancePart, () => himAt(HIS_PLACE.u, HIS_PLACE.v, Math.min(1, f.phT / 3)));
   }
+  else if (risen && f.body2) bodyAt(HIS_PLACE.u, HIS_PLACE.v, f.body2.kind, Math.floor(f.body2.t * 30), () => bodyAt(HIS_PLACE.u, HIS_PLACE.v, 'stand', standK, () => himAt(HIS_PLACE.u, HIS_PLACE.v, 1)));
   else if (risen) bodyAt(HIS_PLACE.u, HIS_PLACE.v, 'stand', standK, () => himAt(HIS_PLACE.u, HIS_PLACE.v, 1));
   else {
     // (under the water, his lurk; or his eye's fire seen through it)
@@ -185,8 +186,42 @@ function draw(c: Act1FxCtx): void {
     });
   }
 
-  // PHASE 3, HIS EYE: the gaze's arc laid and its beam swept; the eye slam's circle, and the eye lying where it came down
-  const E = f.eye;
+  // PHASE 2, HIS BODY'S OWN ATTACKS (the game's parts of them, in the enemy's colours, the art's bile): the bile arc's warning where it
+  // will land; the glob arcing over from his throat; its splash; the burning pools; the gaze as phase 3's, below
+  const B = f.body2;
+  if (B && B.kind === 'bile') {
+    const L = BODY2.bile;
+    if (B.t < L.land) {
+      const k = B.t / L.land;
+      disc(B.at.u, B.at.v, L.splash, null, warnColor(k), [4, 3]);
+      disc(B.at.u, B.at.v, L.splash * k, 'rgba(255, 61, 139, 0.16)');
+    }
+    if (B.t >= L.release && B.t < L.land) {
+      // (from his throat, over in a high arc: 6.1 tiles up at the top)
+      const throat = { u: 7.79, v: -7.14 };
+      const s = (B.t - L.release) / (L.land - L.release);
+      const [x0, y0] = P(throat.u + (B.at.u - throat.u) * s, throat.v + (B.at.v - throat.v) * s);
+      const up = (1 + 6.1 * 4 * s * (1 - s)) * 16;
+      g.fillStyle = '#4a4e14';
+      g.beginPath();
+      g.ellipse(x0, y0 - up, 7, 6, 0, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#b4ac34';
+      g.beginPath();
+      g.ellipse(x0 - 2, y0 - up - 2, 3, 2, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  for (const pool of f.pools) {
+    const r = poolR(pool.t);
+    if (r <= 0) continue;
+    disc(pool.u, pool.v, r, 'rgba(58, 62, 16, 0.78)', `rgba(255, 176, 112, ${0.5 + 0.3 * Math.sin(c.t * 9)})`);
+    disc(pool.u, pool.v, r * 0.6, 'rgba(180, 172, 52, 0.25)');
+    if (pool.t < 0.3) disc(pool.u, pool.v, BODY2.bile.splash * (0.4 + pool.t * 2), null, 'rgba(180, 172, 52, 0.7)');
+  }
+  // PHASE 3, HIS EYE: the gaze's arc laid and its beam swept; the eye slam's circle, and the eye lying where it came down (phase 2's
+  // gaze the same, from the water under his eye at his place)
+  const E = f.eye ?? (B && B.kind === 'gaze' ? B : null);
   if (E && E.kind === 'gaze') {
     const ray = (deg: number, len: number): [number, number] => [E.at.u + Math.sin((deg * Math.PI) / 180) * len, E.at.v + Math.cos((deg * Math.PI) / 180) * len];
     if (E.t < GAZE.warn) {
@@ -234,6 +269,7 @@ function draw(c: Act1FxCtx): void {
       return true;
     }
     if (a.state === 'rise') return drawColossusArm(g, w, `a${w}.burst`, F(a.t), mx, my);
+    if (a.state === 'duck') return drawColossusArm(g, w, `a${w}.duck`, F(a.t), mx, my);
     if (a.state === 'stand') {
       // (struck: its flinch from the nearest point of its stand it is baked from)
       const m = c.game.monsters.find((q) => !q.dead && (q.a1 as { arm?: number } | undefined)?.arm === a.id);
