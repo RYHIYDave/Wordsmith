@@ -18,6 +18,10 @@ frames tools/eye_moves_pics.ts lays together (the phone's screen, 1014 x 468 pic
                                                                                    caught), the gaze twice (the same); each close up at
                                                                                    half speed
    python3 tools/eye_shovel_sheet.py sheet5 <frames dir> <close dir> <out.png>    their key frames at the game's size and at twice
+   python3 tools/eye_shovel_sheet.py film6 <frames dir> <close dir> <out.mp4>     PART 5: HIS PHASE 3 (art/eye_phase3.ts): the slide,
+                                                                                   the pillars, the bolts, the slam twice, the gaze,
+                                                                                   his eye struck; close-ups at half speed
+   python3 tools/eye_shovel_sheet.py sheet6 <frames dir> <close dir> <out.png>    its key frames at the game's size and at twice
 (the beats' frames as art/eye_shovel.ts SHOVEL, SCRAPERS, SCRAPE and SNAP set them; the close-ups from tools/eye_moves_pics.ts close,
 each piece's in its own folder of <close dir>)
 """
@@ -482,9 +486,153 @@ def sheet5(d, c, out):
     print(out, s.size)
 
 
+# =============================================================================================
+# PART 5: HIS PHASE 3 (art/eye_phase3.ts P3_TAKES: q1 the slide; q2 shielded, the left pillar put out; q3 the right pillar broken; q4 the
+# near pillar put out, his ward broken; q5 the slam, just clear; q6 the slam, struck as it lies; q7 the gaze from his new place; q8 his
+# eye struck)
+P3_FRAMES = {'q1': 204, 'q2': 150, 'q3': 196, 'q4': 104, 'q5': 120, 'q6': 120, 'q7': 124, 'q8': 64}
+P3_AT = {'q1': 24, 'q2': 0, 'q3': 0, 'q4': 0, 'q5': 10, 'q6': 10, 'q7': 10, 'q8': 14}
+SLIDE_GRIP, SLAM_HIT, SLAM_UP, Q2_SET, Q3_CUT, Q3_BREAK, Q4_SET = 103, 28, 66, 108, 80, 141, 42
+P3_TITLE = {'q1': 'PHASE 3: HE SLIDES FORWARD', 'q2': 'SHIELDED; THE LEFT PILLAR PUT OUT', 'q3': 'THE RIGHT PILLAR BROKEN', 'q4': 'THE LAST PILLAR OUT, HIS WARD BROKEN',
+            'q5': 'THE EYE SLAM: JUST CLEAR', 'q6': 'THE EYE SLAM: STRUCK AS IT LIES', 'q7': 'THE GAZE FROM HIS NEW PLACE', 'q8': 'HIS EYE STRUCK'}
+
+
+def beat6(shot, k):
+    f = k - P3_AT[shot]
+    if shot == 'q1':
+        if f < 0: return 'his last tentacle going down into the water; his stand at his place'
+        if f < SLIDE_GRIP: return 'THE SLIDE (4 s): three heaving lunges forward, the water heaped before him'
+        if f < SLIDE_GRIP + 17: return 'he hauls himself up against the stone\'s edge, gripping it: it cracks, water surges over'
+        if f < 122: return 'his tongue droops out over the edge, his eye low over the stone, within reach'
+        return 'THE PILLARS BLAZE with the siege\'s fire, their lines into him: his ward'
+    if shot == 'q2':
+        if k < 31: return 'shielded: a blow at his eye glances off his ward, flashing'
+        if k < 60: return 'the siege\'s bolts: warned 1.1 s, the first at the Warrior; he runs'
+        if k < 70: return 'a piece of the ward-stone, lying on the stone, picked up'
+        if k < 100: return 'carried to the left pillar'
+        if k < Q2_SET: return 'set into its foot'
+        return 'the pillar goes dark, its line into him dying; out of the bolts\' way'
+    if shot == 'q3':
+        if k < 20: return 'to the right pillar, a bolt coming down behind him'
+        if k < Q3_CUT: return 'blows at its foot: 1, 2 (each cracks it)'
+        if k < 109: return '(blows 3 to 10 left out) 11'
+        if k < 129: return 'a bolt warned at his feet: he leaps out of its way, and back'
+        if k < Q3_BREAK: return 'the twelfth blow'
+        return 'it cracks across, topples into the water, breaks; its line snaps'
+    if shot == 'q4':
+        if k < Q4_SET: return 'the near pillar: a piece of the ward-stone held up and set'
+        if k < Q4_SET + 30: return 'the last pillar goes dark: his ward breaks; the bolts are done'
+        return 'the siege broken: he can be hurt'
+    if shot in ('q5', 'q6'):
+        if f < 0: return 'his stand at the edge, his eye weaving low over the stone'
+        if f < 27: return 'THE WIND-UP, HELD 0.93 s: his eye reared up and back; the warning at the Warrior'
+        if f < SLAM_HIT + 1: return 'THE STRIKE (smeared): slammed down onto the stone, cracking it'
+        if f < SLAM_UP:
+            if shot == 'q6' and f >= 46: return 'LYING, TWITCHING, SLIME POOLING: struck, its dark ichor'
+            return 'LYING, TWITCHING, ITS LIDS CLENCHED, SLIME POOLING (to 2.2 s)' if shot == 'q6' else 'the Warrior just clear; it lies to 2.2 s, twitching, slime pooling'
+        if f < 84: return 'THE WIND-DOWN: dragged back up over the edge (by 2.8 s)'
+        return 'his stand again'
+    if shot == 'q7':
+        if f < 0: return 'his stand at the edge'
+        if f < 27: return 'THE WIND-UP, HELD 0.9 s: his eye rears up; the arc warned, 32\u00b0 each side of him'
+        if f < 29: return 'THE STRIKE (smeared): the beam blasts on'
+        if f < 63: return 'THE SWEEP, 1.2 s, across the stone from his new place; the Warrior out of its arc'
+        if f < 72: return 'it gutters out just short of the Warrior'
+        return 'THE WIND-DOWN: his eye sinks back into its droop, smoking'
+    if f < 0: return 'his eye weaving low over the edge, within reach'
+    if f < 20: return 'STRUCK: a big flinch, its lids clenched, its dark ichor'
+    return 'back into its weave'
+
+
+def foot6(shot, k):
+    f = k - P3_AT[shot]
+    return ('frame %d  |  %.2f s' % (f, f / FPS)) if f >= 0 else ('frame %d' % k)
+
+
+# (the close-ups: [folder, take, frames, title])
+CLOSE6 = [
+    ('grip', 'q1', range(118, 142), 'HE GRIPS THE EDGE (x2, HALF SPEED)'),
+    ('glance', 'q2', range(8, 26), 'A BLOW GLANCES OFF HIS WARD (x2, HALF SPEED)'),
+    ('bolt', 'q2', range(30, 48), 'A BOLT STRIKES (x2, HALF SPEED)'),
+    ('set', 'q2', range(96, 124), 'THE PIECE SET (x2, HALF SPEED)'),
+    ('topple', 'q3', range(136, 172), 'THE PILLAR TOPPLES (x2, HALF SPEED)'),
+    ('ward', 'q4', range(40, 74), 'HIS WARD BREAKS (x2, HALF SPEED)'),
+    ('slam', 'q6', range(34, 80), 'THE SLAM, STRUCK AS IT LIES (x2, HALF SPEED)'),
+    ('struck', 'q8', range(12, 36), 'HIS EYE STRUCK (x2, HALF SPEED)'),
+]
+
+
+def film6(d, c, out):
+    seq = []
+    for shot in ('q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8'):
+        for k in range(P3_FRAMES[shot]): seq.append(((shot, k, None), P3_TITLE[shot], beat6(shot, k), foot6(shot, k)))
+    for tag, shot, ks, title in CLOSE6:
+        for k in ks:
+            for _ in range(2): seq.append(((shot, k, tag), title, beat6(shot, k), foot6(shot, k)))
+    w, h = 1014, 468 + 72
+    from eye_moves_sheet import probe
+    for (_, title, line, foot) in seq:
+        assert probe.textlength(title, font=mid) + probe.textlength(foot, font=small) + 50 < w, title
+        assert probe.textlength(line, font=small) + 28 < w, line
+    assert len(seq) / FPS < 60, len(seq)
+    p = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', '%dx%d' % (w, h), '-framerate', str(FPS), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], stdin=subprocess.PIPE)
+    last = None
+    im = None
+    for (key, title, line, foot) in seq:
+        if key != last:
+            shot, k, tag = key
+            im = frame(d, shot, k) if tag is None else Image.open(os.path.join(c, tag, 'close_%s_%03d.png' % (shot, k))).convert('RGB')
+            last = key
+        f = Image.new('RGB', (w, h), BG)
+        f.paste(im, (0, 0))
+        f.paste(caption_bar(w, title, line, foot), (0, 468))
+        p.stdin.write(f.tobytes())
+    p.stdin.close()
+    p.wait()
+    print(out, len(seq), 'frames', '%.1f s' % (len(seq) / FPS))
+
+
+def sheet6(d, c, out, items):
+    parts = []
+    intro = ('His phase 3. The owner, 8 Nov, shown his bile arc and his gaze: \u201cYes, on to phase 3 (Recommended)\u201d; to the main chat: \u201cKill the '
+             'tentacles, and he slides forward to use the eye and you can hit him.  Let\u2019s scratch the tentacles for the third phase, and have strictly eye '
+             'attacks and spells for the final phase?  Does that sound like a good idea?\u201d. He slides forward to the stone and hauls himself up against '
+             'it; the cult\'s three obelisks blaze with the siege\'s fire and ward him while any burns, its bolts raining; a piece of the ward-stone set into '
+             'one puts it out, twelve blows break one; his eye slams down on the stone and glares its beam across it, and can be struck. Key frames as the '
+             'player sees them, at the game\'s size; close-ups at twice.')
+    hl = wrap(intro, small, W - 48)
+    hd = Image.new('RGB', (W, 76 + 26 * len(hl) + 10), BG)
+    dr = ImageDraw.Draw(hd)
+    dr.text((24, 22), 'THE SWAMP COLOSSUS: HIS PHASE 3', font=big, fill=PALE)
+    for i, l in enumerate(hl): dr.text((24, 66 + 26 * i), l, font=small, fill=GREY)
+    parts.append(hd)
+    def get(src, shot, k, x, y):
+        im = frame(d, shot, k) if src == 'f' else Image.open(os.path.join(c, src, 'close_%s_%03d.png' % (shot, k))).convert('RGB')
+        wd, ht = (540, 300)
+        x0 = max(0, min(1014 - wd, x - wd // 2)); y0 = max(0, min(468 - ht, y - ht // 2))
+        return im.crop((x0, y0, x0 + wd, y0 + ht))
+    for title, note, its in items:
+        for i in range(0, len(its), 2):
+            two = its[i:i + 2]
+            parts.append(block(title if i == 0 else '', note if i == 0 else '', row([get(*it[:5]) for it in two], [it[5] for it in two])))
+    H = sum(p.height for p in parts)
+    s = Image.new('RGB', (W, H), BG)
+    y = 0
+    for p in parts: s.paste(p, (0, y)); y += p.height
+    assert s.height <= 7000, s.height
+    s.save(out, optimize=True)
+    print(out, s.size)
+
+
 if __name__ == '__main__':
     mode, d, out = sys.argv[1], sys.argv[2], sys.argv[3]
-    if mode == 'film5':
+    if mode == 'film6':
+        film6(d, sys.argv[3], sys.argv[4])
+    elif mode == 'sheet6':
+        import json
+        L = json.load(open(sys.argv[5]))
+        sheet6(d, sys.argv[3], sys.argv[4], [(b['title'], b['note'], [tuple(x) for x in b['items']]) for b in L])
+    elif mode == 'film5':
         film5(d, sys.argv[3], sys.argv[4])
     elif mode == 'sheet5':
         sheet5(d, sys.argv[3], sys.argv[4])

@@ -1,0 +1,286 @@
+[
+ {
+  "title": "THE SLIDE: three heaving lunges to the stone, and he hauls himself up against its edge",
+  "note": "His last tentacle sinks; forward 4.24 tiles in 4 s, the water heaped before him; his heaps grip the stone's back edge (it cracks, water surging over); his eye drooped low over the stone, within reach.",
+  "items": [
+   [
+    "f",
+    "q1",
+    52,
+    507,
+    200,
+    "a lunge (frame 28 of it, 0.93 s)"
+   ],
+   [
+    "f",
+    "q1",
+    127,
+    507,
+    250,
+    "THE GRIP (frame 103, 3.43 s)"
+   ],
+   [
+    "grip",
+    "q1",
+    128,
+    507,
+    234,
+    "x2: the edge cracking, water surging over"
+   ],
+   [
+    "f",
+    "q1",
+    180,
+    760,
+    300,
+    "the pillars blaze (frame 156)"
+   ]
+  ]
+ },
+ {
+  "title": "SHIELDED: the three pillars burning, their lines into him, his ward; a blow glancing off it",
+  "note": "The siege's pink fire at each obelisk's point, its line crawling into him; his ward round him while any burns, flashing where a blow meets it.",
+  "items": [
+   [
+    "f",
+    "q1",
+    203,
+    250,
+    300,
+    "burning, its line into him; his ward"
+   ],
+   [
+    "glance",
+    "q2",
+    14,
+    507,
+    234,
+    "x2: the blow glancing off his ward"
+   ]
+  ]
+ },
+ {
+  "title": "THE SIEGE'S BOLTS: three every 2.6 s, warned 1.1 s, the first on the Warrior",
+  "note": "The warnings crawling, flaring gold as the bolts fall out of the sky (in front of him, clear of him); the strike bursting; the stone scorched.",
+  "items": [
+   [
+    "f",
+    "q2",
+    36,
+    507,
+    330,
+    "falling (warned 1.0 s)"
+   ],
+   [
+    "bolt",
+    "q2",
+    40,
+    507,
+    234,
+    "x2: striking (1.1 s)"
+   ]
+  ]
+ },
+ {
+  "title": "THE WARD-STONE: lying, picked up, set into the left pillar: put out",
+  "note": "The friend's cyan: the piece glinting where it lies, held at his side, set into the pillar's foot; its fire guttering out, its line going dark toward him.",
+  "items": [
+   [
+    "f",
+    "q2",
+    56,
+    400,
+    330,
+    "lying, glinting"
+   ],
+   [
+    "f",
+    "q2",
+    67,
+    440,
+    320,
+    "picked up"
+   ],
+   [
+    "set",
+    "q2",
+    110,
+    507,
+    234,
+    "x2: set into its foot"
+   ],
+   [
+    "f",
+    "q2",
+    125,
+    450,
+    280,
+    "put out, its line dying"
+   ]
+  ]
+ },
+ {
+  "title": "THE RIGHT PILLAR BROKEN: twelve blows at its foot",
+  "note": "Each blow cracks it further; the twelfth: it cracks across and topples outward into the water in three pieces, splashing; its line snaps back into him.",
+  "items": [
+   [
+    "f",
+    "q3",
+    34,
+    600,
+    330,
+    "blow 1 (cracks)"
+   ],
+   [
+    "f",
+    "q3",
+    141,
+    600,
+    300,
+    "the twelfth blow"
+   ],
+   [
+    "topple",
+    "q3",
+    146,
+    507,
+    234,
+    "x2: toppling"
+   ],
+   [
+    "topple",
+    "q3",
+    156,
+    507,
+    234,
+    "x2: in the water, broken"
+   ]
+  ]
+ },
+ {
+  "title": "THE LAST PILLAR OUT: his ward broken",
+  "note": "A piece set into the near pillar's foot; the last fire dies; his ward cracks and shatters off him. Now he can be hurt; the bolts are done.",
+  "items": [
+   [
+    "f",
+    "q4",
+    40,
+    507,
+    300,
+    "set into the near pillar"
+   ],
+   [
+    "f",
+    "q4",
+    52,
+    507,
+    200,
+    "his ward shattering off him"
+   ]
+  ]
+ },
+ {
+  "title": "THE EYE SLAM, JUST CLEAR",
+  "note": "The wind-up held 0.93 s, the warning on the Warrior; slammed down 1.5 tiles round on frame 28, the stone cracking, slime flung; lying to 2.2 s; dragged back up by 2.8 s.",
+  "items": [
+   [
+    "f",
+    "q5",
+    30,
+    507,
+    150,
+    "THE WIND-UP, HELD (frame 20)"
+   ],
+   [
+    "f",
+    "q5",
+    38,
+    507,
+    318,
+    "THE HIT (frame 28, 0.93 s)"
+   ],
+   [
+    "f",
+    "q5",
+    60,
+    507,
+    318,
+    "LYING (frame 50, 1.67 s)"
+   ],
+   [
+    "f",
+    "q5",
+    84,
+    507,
+    300,
+    "THE WIND-DOWN (frame 74, 2.47 s)"
+   ]
+  ]
+ },
+ {
+  "title": "THE EYE SLAM, STRUCK AS IT LIES",
+  "note": "Leapt clear, then in at it as it lies: two blows, its dark ichor; it jolts where it lies, and lies on.",
+  "items": [
+   [
+    "f",
+    "q6",
+    57,
+    507,
+    280,
+    "struck as it lies (frame 47)"
+   ],
+   [
+    "slam",
+    "q6",
+    57,
+    507,
+    234,
+    "x2: struck, its ichor"
+   ]
+  ]
+ },
+ {
+  "title": "THE GAZE FROM HIS NEW PLACE",
+  "note": "His eye rears up out of its droop; the arc laid 32 degrees each side of the Warrior from the stone's back edge; the beam swept across the stone; out at 2.4 s.",
+  "items": [
+   [
+    "f",
+    "q7",
+    30,
+    430,
+    318,
+    "THE WIND-UP: the arc warned (frame 20)"
+   ],
+   [
+    "f",
+    "q7",
+    55,
+    507,
+    200,
+    "THE SWEEP (frame 45)"
+   ]
+  ]
+ },
+ {
+  "title": "HIS EYE STRUCK",
+  "note": "A blow at his eye as it weaves low over the edge: a big flinch, its lids clenched, its dark ichor (never cyan).",
+  "items": [
+   [
+    "f",
+    "q8",
+    16,
+    507,
+    234,
+    "struck (frame 2)"
+   ],
+   [
+    "struck",
+    "q8",
+    18,
+    507,
+    234,
+    "x2: the flinch, its ichor"
+   ]
+  ]
+ }
+]

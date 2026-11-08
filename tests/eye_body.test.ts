@@ -67,7 +67,7 @@ test('1. the switch is off; nothing of the game imports his body\'s attacks', ()
   assert.equal(EYE2.on, false, 'EYE2 is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f === 'art/eye_body.ts') continue;
+    if (!f.endsWith('.ts') || f === 'art/eye_body.ts' || f === 'art/eye_phase3.ts') continue;
     if (/from ['"][^'"]*eye_body['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(', '), '', 'nothing of the game imports art/eye_body.ts');

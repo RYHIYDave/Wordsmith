@@ -140,7 +140,7 @@ export const BEAM = { w: 0.9 * TILE, eye: 10, land: 17 } as const;
 /** How far forward and down his tongue's tip rears to aim (his lengths), how far it bends across toward where it looks, and how far the
  *  eye is jolted back as it fires. */
 const AIM = { forward: 96, down: 60, across: 0.62, recoil: [8, 14] as const, pitch: (20 * Math.PI) / 180 } as const;
-const gazeQ = (f: number): number => sm(0, 12, f) * (1 - sm(GAZE_OUT + 1, GAZE.frames - 3, f));
+export const gazeQ = (f: number): number => sm(0, 12, f) * (1 - sm(GAZE_OUT + 1, GAZE.frames - 3, f));
 /** His eye's lids through the gaze: narrowing to aim, peeling back wide, blinking as it sinks back. */
 export function gazeLids(f: number): number {
   if (f < GAZE.wind) return 1 - 0.55 * sm(2, 8, f) * (1 - sm(13, 22, f));
@@ -288,24 +288,23 @@ export function gazeArc(): { ox: number; oy: number; toward: number; a0: number;
   ARC = { ox: e[0], oy: e[1], toward, a0: toward - h, a1: toward + h, far: Math.hypot(G0[0] - e[0], G0[1] - e[1]) };
   return ARC;
 }
+/** A gaze's arc (`gazeArc`'s, or one laid at another place: his phase 3, art/eye_phase3.ts). */
+export type GazeArc = ReturnType<typeof gazeArc>;
 /** The beam's angle at frame `f` of the gaze (null while it is off): laid at the arc's first side as it fires, swept evenly across it
  *  in `sweep` frames, held at its other side as it gutters out. */
-export function beamAngle(f: number): number | null {
+export function beamAngle(f: number, A: GazeArc = gazeArc()): number | null {
   if (f < GAZE_FIRE || f >= GAZE_OUT) return null;
-  const A = gazeArc();
   return lerp(A.a0, A.a1, clamp01((f - GAZE_FIRE) / GAZE.sweep));
 }
 /** Where his eye looks (the angle), frame `f` of the gaze: at the Warrior through the wind-up, cocked a little toward the arc's first side
  *  at its end; whipped round to it as it fires; with the beam after. */
-export function eyeAngle(f: number): number {
-  const A = gazeArc();
+export function eyeAngle(f: number, A: GazeArc = gazeArc()): number {
   if (f < GAZE_FIRE) return A.toward + (A.a0 - A.toward) * 0.22 * sm(17, GAZE.wind - 1, f);
   return lerp(A.a0, A.a1, clamp01((f - GAZE_FIRE) / GAZE.sweep));
 }
 /** THE BEAM'S LINE at angle `a` (the world's): where it comes onto the stone at its back edge (`sx`, `sy`), where it leaves the stone
  *  (`ex`, `ey`: its far edge or an end); where the beam comes down on it (`ax`, `ay`: as far out as the Warrior stood). */
-export function beamLine(a: number): { sx: number; sy: number; ex: number; ey: number; ax: number; ay: number } {
-  const A = gazeArc();
+export function beamLine(a: number, A: GazeArc = gazeArc()): { sx: number; sy: number; ex: number; ey: number; ax: number; ay: number } {
   const ux = Math.sin(a);
   const uy = Math.cos(a);
   const t0 = (STONE_BOX.y0 - A.oy) / uy;
@@ -316,10 +315,9 @@ export function beamLine(a: number): { sx: number; sy: number; ex: number; ey: n
 }
 /** Whether the beam is on a point of the stone (the world's) at frame `f`, the Warrior's size counted: how far inside its edge (his
  *  lengths), or less than 0 clear of it. */
-export function beamOn(p: readonly number[], f: number): number {
-  const a = beamAngle(f);
+export function beamOn(p: readonly number[], f: number, A: GazeArc = gazeArc()): number {
+  const a = beamAngle(f, A);
   if (a === null) return -1;
-  const A = gazeArc();
   const dx = p[0] - A.ox;
   const dy = p[1] - A.oy;
   const along = dx * Math.sin(a) + dy * Math.cos(a);
@@ -347,7 +345,7 @@ export function sweptAgo(b: number, f: number): number | null {
 
 /** His tongue reared and aimed along angle `a` (see `gazeArc`), from UNFURL's reared tongue: its upper part bent forward and down out
  *  over the stone, and across toward where it looks. */
-function aimedTongue(a: number, t: number, f: number): number[][] {
+export function aimedTongue(a: number, t: number, f: number): number[][] {
   const base = weaveTongue(REARED, t, 0.3);
   const dx = Math.sin(a) * AIM.across;
   // (the eye jolted back as it fires; shuddering while it sweeps)
@@ -360,12 +358,12 @@ function aimedTongue(a: number, t: number, f: number): number[][] {
     return [q[0] + dx * AIM.forward * u + jx, q[1] + AIM.forward * u * Math.cos(a) ** 0.5 - rec * u, q[2] - AIM.down * u + rec * 0.5 * u + jz, q[3]];
   });
 }
-const tipEye = (path: ReadonlyArray<readonly number[]>): [number, number, number] => {
+export const tipEye = (path: ReadonlyArray<readonly number[]>): [number, number, number] => {
   const n = path.length - 1;
   const R = TONGUE_RISEN[n];
   return [EYE_RISEN[0] + path[n][0] - R[0], EYE_RISEN[1] + path[n][1] - R[1], EYE_RISEN[2] + path[n][2] - R[2]];
 };
-const mixPath = (a: ReadonlyArray<readonly number[]>, b: ReadonlyArray<readonly number[]>, w: number): number[][] => a.map((q, i) => q.map((v, c) => lerp(v, b[i][c], w)));
+export const mixPath = (a: ReadonlyArray<readonly number[]>, b: ReadonlyArray<readonly number[]>, w: number): number[][] => a.map((q, i) => q.map((v, c) => lerp(v, b[i][c], w)));
 const body = (an: ColossusAnim, lean = 0): ColossusPose => ({ view: 'front', drop: 0, back: 0, body: true, gaze: an.gaze, arms: [], anim: an, ...(lean ? { lean: { k: lean, from: 0, ease: 60 } } : {}) });
 
 /** HIM AT FRAME `f` OF AN ATTACK (his clock `t` running on): his anim, how far he leans, back and up (his lengths). */
