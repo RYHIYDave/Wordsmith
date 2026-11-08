@@ -1,5 +1,6 @@
-// THE SWAMP COLOSSUS'S FIGHT DRAWN, STAND-INS (game/colossus_fight.ts, COLOSSUS on): until the art chat's pictures of him and his
-// tentacles are baked, plain shapes show where everything is and when: him (a dark mound with his eye) at his place or at an end,
+// THE SWAMP COLOSSUS'S FIGHT DRAWN (game/colossus_fight.ts, COLOSSUS on): him and his tentacles in the art chat's own pictures where
+// they are baked (render/colossus_baked.ts: his lurk, stand and entrance; each tentacle's stand, burst, slams, water slam, flinch and
+// death); elsewhere, until they are, plain stand-ins show where everything is and when: him (a dark mound with his eye) at his place or at an end,
 // his tentacles at their roots and lying along their lines, each slam's line laid on the stone (the game's warning: the enemy's
 // pink, flaring to its gold), the water slams' warnings, the waves rolling across, the crash and its surge, the shovel's hooks
 // scraping along the stone, his snap's reach as he twitches, the siege's bolts' circles. All drawn from one peril of his kind
@@ -10,7 +11,12 @@ import {
   ARM, CHANGE3, CRASH, EYE_SLAM, FORWARD, GAZE, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAVE,
   hookFront, rootAt, stoneToWorld, waveFront,
 } from '../../game/colossus_fight';
+import type { Arm } from '../../game/colossus_fight';
 import type { Act1Fx, Act1FxCtx } from './types';
+import { ARM_BAKE, colossusBakeAsk, colossusBaked, colossusFrames, colossusSlamTurns, colossusWant, drawColossusArm, drawColossusBody } from '../colossus_baked';
+
+/** Each tentacle struck: its hit's flash last seen, and when (the fight's clock) and from what frame of its stand it was struck. */
+const STRUCK = new Map<number, { flash: number; at: number; stand: number }>();
 
 const PINK = '#ff3d8b';
 const GOLD = '#ffc23d';
@@ -63,7 +69,32 @@ function draw(c: Act1FxCtx): void {
   };
   const warnColor = (k: number): string => (k > 0.75 ? GOLD : PINK);
 
-  // HIM: under the water in phase 1 (his eye's fire seen through it), risen from his entrance on; at an end in his shovel
+  // HIM: under the water in phase 1 (his eye's fire seen through it), risen from his entrance on; at an end in his shovel. His own
+  // pictures where they are baked (render/colossus_baked.ts), else the stand-ins.
+  colossusBakeAsk();
+  // (what this part of the fight wants held: his phase's pictures and his tentacles'; the rest let go)
+  // (his entrance in parts: the one playing and the next; his stand and phase 2's tentacles from its last part; phase 1's tentacles
+  // while they die)
+  const base = (ws: number[]): string[] => ws.flatMap((w) => [`a${w}.stand`, ...(w === 0 || w === 2 ? [`a${w}.smash`] : [])]);
+  const part = Math.floor((f.phT * 30) / ARM_BAKE.entrancePart);
+  const dying = f.arms.some((a) => a.state === 'dying') ? base([3, 4]) : [];
+  colossusWant(
+    f.ph === 1 && f.mode === 'between' ? ['lurk', 'entrance.0', ...dying]
+      : f.ph === 1 && f.mode === 'change' ? [`entrance.${part}`, `entrance.${part + 1}`, ...(part >= 2 ? ['stand', ...base([0, 1, 2])] : [])]
+        : f.ph === 1 ? ['lurk', ...base([3, 4])]
+          : f.ph === 2 ? ['stand', ...base([0, 1, 2])]
+            : ['stand'],
+  );
+  const standK = (f.body * 30) % Math.max(1, colossusFrames('stand') || 90);
+  const bodyAt = (u: number, v: number, move: string, k: number, otherwise: () => void): void => {
+    const [x, y] = P(u, v);
+    if (!drawColossusBody(g, move, k, x, y)) otherwise();
+  };
+  // (his own light in the swamp's dark: the art's pictures of him are lit as he is, his eye's fire on him)
+  {
+    const [lx, ly] = P(HIS_PLACE.u, HIS_PLACE.v);
+    c.spot(lx, ly - 60, 190, 0.75);
+  }
   const sh = f.shovel;
   const risen = !(f.ph === 1 && (f.mode === 'fight' || f.mode === 'between' || f.mode === 'idle'));
   const himAt = (u: number, v: number, up: number): void => {
@@ -115,8 +146,23 @@ function draw(c: Act1FxCtx): void {
   } else if (f.ph === 3 || (f.ph === 2 && f.mode === 'change')) {
     // (phase 3: slid forward to the stone's edge)
     const k = f.ph === 3 ? 1 : Math.min(1, f.phT / CHANGE3.long);
-    himAt(FORWARD.u, HIS_PLACE.v + (FORWARD.v - HIS_PLACE.v) * k, 1);
-  } else if (risen) himAt(HIS_PLACE.u, HIS_PLACE.v, f.mode === 'change' ? Math.min(1, f.phT / 3) : 1);
+    const v = HIS_PLACE.v + (FORWARD.v - HIS_PLACE.v) * k;
+    bodyAt(FORWARD.u, v, 'stand', standK, () => himAt(FORWARD.u, v, 1));
+  } else if (risen && f.ph === 1 && f.mode === 'change') {
+    const k = Math.floor(f.phT * 30);
+    bodyAt(HIS_PLACE.u, HIS_PLACE.v, `entrance.${Math.floor(k / ARM_BAKE.entrancePart)}`, k % ARM_BAKE.entrancePart, () => himAt(HIS_PLACE.u, HIS_PLACE.v, Math.min(1, f.phT / 3)));
+  }
+  else if (risen) bodyAt(HIS_PLACE.u, HIS_PLACE.v, 'stand', standK, () => himAt(HIS_PLACE.u, HIS_PLACE.v, 1));
+  else {
+    // (under the water, his lurk; or his eye's fire seen through it)
+    bodyAt(HIS_PLACE.u, HIS_PLACE.v, 'lurk', (f.body * 30) % Math.max(1, colossusFrames('lurk') || 90), () => {
+      const [x, y] = P(HIS_PLACE.u, HIS_PLACE.v + 3);
+      g.fillStyle = `rgba(255, 61, 139, ${0.25 + 0.15 * Math.sin(c.t * 2)})`;
+      g.beginPath();
+      g.ellipse(x, y, 26, 9, 0, 0, Math.PI * 2);
+      g.fill();
+    });
+  }
 
   // PHASE 3, HIS EYE: the gaze's arc laid and its beam swept; the eye slam's circle, and the eye lying where it came down
   const E = f.eye;
@@ -149,27 +195,61 @@ function draw(c: Act1FxCtx): void {
       g.fill();
     }
   }
-  else {
-    const [x, y] = P(HIS_PLACE.u, HIS_PLACE.v + 3);
-    g.fillStyle = `rgba(255, 61, 139, ${0.25 + 0.15 * Math.sin(c.t * 2)})`;
-    g.beginPath();
-    g.ellipse(x, y, 26, 9, 0, 0, Math.PI * 2);
-    g.fill();
-  }
 
-  // HIS TENTACLES
+  // HIS TENTACLES: each its own pictures, laid from his middle as he is (his entrance's in his entrance's pictures)
+  const [mx, my] = P(HIS_PLACE.u, HIS_PLACE.v);
+  const F = (t: number): number => Math.floor(t * 30 + 1e-6);
+  const inEntrance = f.ph === 1 && f.mode === 'change' && colossusBaked('entrance.0');
+  const armPic = (a: Arm): boolean => {
+    const w = f.ph === 1 && f.mode !== 'change' ? 3 + a.k : a.k;
+    const stand = (): boolean => drawColossusArm(g, w, `a${w}.stand`, F(f.armClock) % 45, mx, my);
+    if (inEntrance) return true;
+    if (a.state === 'rise') return drawColossusArm(g, w, `a${w}.burst`, F(a.t), mx, my);
+    if (a.state === 'stand') {
+      // (struck: its flinch from the nearest point of its stand it is baked from)
+      const m = c.game.monsters.find((q) => !q.dead && (q.a1 as { arm?: number } | undefined)?.arm === a.id);
+      const s = STRUCK.get(a.id) ?? { flash: 0, at: -9, stand: 0 };
+      if (m && m.flash > s.flash + 0.01) {
+        s.at = f.time;
+        s.stand = F(f.armClock) % 45;
+      }
+      s.flash = m ? m.flash : 0;
+      STRUCK.set(a.id, s);
+      const since = F(f.time - s.at);
+      if (since >= 0 && since < 14) {
+        const from = ARM_BAKE.flinchFrom.reduce((b, q) => (Math.min(Math.abs(q - s.stand), 45 - Math.abs(q - s.stand)) < Math.min(Math.abs(b - s.stand), 45 - Math.abs(b - s.stand)) ? q : b));
+        if (drawColossusArm(g, w, `a${w}.flinch${from}`, since, mx, my)) return true;
+      }
+      return stand();
+    }
+    if (a.state === 'slam') {
+      const turns = colossusSlamTurns(w);
+      const d = turns.length ? turns.reduce((b, q) => (Math.abs(q - a.turn) < Math.abs(b - a.turn) ? q : b)) : NaN;
+      // (only a turn baked near enough: the game turns a picture no further than half the bake's step)
+      if (Math.abs(a.turn - d) <= ARM_BAKE.turnEvery / 2 + 0.01) {
+        // (its slam's pictures still coming: its stand a moment, its wind-up begun from it)
+        return drawColossusArm(g, w, `a${w}.slam${d}`, F(a.t), mx, my, a.turn - d) || stand();
+      }
+      return false;
+    }
+    if (a.state === 'smash') return drawColossusArm(g, w, `a${w}.smash`, F(a.t), mx, my) || stand();
+    if (a.state === 'dying') return drawColossusArm(g, w, `a${w}.death`, F(a.t), mx, my);
+    return false;
+  };
   for (const a of f.arms) {
     if (a.state === 'dead' || a.state === 'under') continue;
     const r = rootAt(a.u);
     const [x, y] = P(r.u, r.v);
     const fade = a.state === 'dying' ? Math.max(0, 1 - a.t / ARM.death) : a.state === 'rise' ? Math.min(1, a.t / ARM.burst) : 1;
     g.globalAlpha = fade;
-    // its slam's line, laid as it rears, and it lying along it after
-    if (a.state === 'slam' && a.line) {
-      if (a.t < SLAM.hit) poly(strip(a.line.a, a.line.b, SLAM.width / 2), 'rgba(30, 6, 24, 0.35)', warnColor(a.t / SLAM.hit), [5, 3], 1);
-      else if (a.t < SLAM.lying[1]) poly(strip(r, a.line.b, SLAM.width / 2 * 0.8), FLESH, FLESH_LIT);
-    }
+    // its slam's line, laid as it rears (the game's warning, drawn under its pictures)
+    if (a.state === 'slam' && a.line && a.t < SLAM.hit) poly(strip(a.line.a, a.line.b, SLAM.width / 2), 'rgba(30, 6, 24, 0.35)', warnColor(a.t / SLAM.hit), [5, 3], 1);
     if (a.state === 'smash' && a.t < SMASH.hit) poly([[0, 0], [STONE.w, 0], [STONE.w, STONE.d], [0, STONE.d]], 'rgba(30, 6, 24, 0.18)', warnColor(a.t / SMASH.hit), [6, 4], 1);
+    g.globalAlpha = 1;
+    if (armPic(a)) continue;
+    g.globalAlpha = fade;
+    // (the stand-in: lying along its line after its slam, or standing at its root)
+    if (a.state === 'slam' && a.line && a.t >= SLAM.hit && a.t < SLAM.lying[1]) poly(strip(r, a.line.b, SLAM.width / 2 * 0.8), FLESH, FLESH_LIT);
     const up = a.state === 'slam' && a.t < SLAM.hit ? 1.3 : a.state === 'dying' ? 0.6 : 1;
     g.fillStyle = FLESH;
     g.fillRect(x - 9, y - 70 * up, 18, 70 * up);

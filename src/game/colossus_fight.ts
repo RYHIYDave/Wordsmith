@@ -436,7 +436,8 @@ export class ColossusFight {
   /** The pillars burn (phase 3): his body cannot be hurt (the game's, quests610.ts PILLARS). */
   shielded = false;
   private nextId = 1;
-  private armClock = 0;
+  /** The tentacles' clock (seconds): their stands are frames of it (render/colossus_baked.ts); set to 0 as they rise. */
+  armClock = 0;
 
   constructor(private rng: RNG) {}
 
@@ -460,6 +461,8 @@ export class ColossusFight {
     this.rainIn = ph === 3 ? RAIN.every : Infinity;
     this.eyeIn = ph === 3 ? EYE_PACE.first : Infinity;
     if (ph < 3 && this.arms.every((a) => a.state === 'dead')) this.raiseArms(ph, ev);
+    // (his entrance ends on his tentacles' stand's first frame: their clock begins again with the phase)
+    else if (ph === 2) this.armClock = 0;
     ev.push({ t: 'phase', ph });
   }
 
@@ -770,10 +773,14 @@ export class ColossusFight {
       ev.push({ t: 'twitch', end: S.end });
     }
     if (passes(SHOVEL.back)) ev.push({ t: 'back' });
-    if (passes(SHOVEL.armsUp)) for (const a of this.arms) if (a.state === 'under') {
-      a.state = 'rise';
-      a.t = 0;
-      ev.push({ t: 'armUp', id: a.id });
+    if (passes(SHOVEL.armsUp)) {
+      for (const a of this.arms) if (a.state === 'under') {
+        a.state = 'rise';
+        a.t = 0;
+        ev.push({ t: 'armUp', id: a.id });
+      }
+      // (their bursts begin on their stand's first frame, as they are baked)
+      this.armClock = 0;
     }
     if (S.t >= SHOVEL.long && S.snap === null) {
       this.shovel = null;

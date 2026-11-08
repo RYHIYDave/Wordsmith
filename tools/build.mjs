@@ -10,6 +10,7 @@ import path from 'node:path';
 import { RELEASE_DEFINES, ROOT, bundle, fragment, page, write } from './lib.mjs';
 import { bakeFiles, bakeHeroes } from './bake_heroes.mjs';
 import { packSounds } from './sound_packs.mjs';
+import { shipColossus } from './colossus_ship.mjs';
 
 const dev = process.argv.includes('--dev');
 // (shown small in a corner of the starting screen, so the owner can tell which version a page is showing)
@@ -36,7 +37,10 @@ if (soundFiles.length) {
   fs.mkdirSync(path.join(ROOT, 'dist', 'sounds', sounds), { recursive: true });
   soundShipped = packSounds(soundDir, path.join(ROOT, 'dist', 'sounds', sounds)).files.length;
 }
-const js = await bundle('src/main.ts', { minify: !dev, define: { ...RELEASE_DEFINES, __BUILD__: JSON.stringify(stamp), __DEV__: String(dev), __HERO_BAKE__: JSON.stringify(bake ? bake.mark : ''), __SOUNDS__: JSON.stringify(sounds) } });
+// (THE SWAMP COLOSSUS'S PICTURES, tools/colossus_ship.mjs: beside the page in colossus/<mark>/ only with --colossus, while his fight is
+// switched off nothing fetches them)
+const colossus = process.argv.includes('--colossus') ? shipColossus() : (fs.rmSync(path.join(ROOT, 'dist', 'colossus'), { recursive: true, force: true }), { mark: '', files: [] });
+const js = await bundle('src/main.ts', { minify: !dev, define: { ...RELEASE_DEFINES, __BUILD__: JSON.stringify(stamp), __DEV__: String(dev), __HERO_BAKE__: JSON.stringify(bake ? bake.mark : ''), __SOUNDS__: JSON.stringify(sounds), __COLOSSUS_BAKE__: JSON.stringify(colossus.mark) } });
 const out = write('Play.html', page(js));
 write('dist/artifact.html', fragment(js));
-console.log(`built ${out} (${(js.length / 1024).toFixed(0)} KB script, ${dev ? 'dev' : 'minified'})${bake ? `, the heroes baked: dist/heroes/${bake.mark}/ (${bakeFiles(bake.mark).length} files)` : ', no bake'}${sounds ? `, the sounds: dist/sounds/${sounds}/ (${soundFiles.length} sounds in ${soundShipped} files)` : ''}`);
+console.log(`built ${out} (${(js.length / 1024).toFixed(0)} KB script, ${dev ? 'dev' : 'minified'})${bake ? `, the heroes baked: dist/heroes/${bake.mark}/ (${bakeFiles(bake.mark).length} files)` : ', no bake'}${sounds ? `, the sounds: dist/sounds/${sounds}/ (${soundFiles.length} sounds in ${soundShipped} files)` : ''}${colossus.mark ? `, the Colossus: dist/colossus/${colossus.mark}/ (${colossus.files.length} files)` : ''}`);
