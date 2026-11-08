@@ -13,6 +13,8 @@ import { packSounds } from './sound_packs.mjs';
 import { shipColossus } from './colossus_ship.mjs';
 
 const dev = process.argv.includes('--dev');
+// (--try colossus: a page that begins at the thing to try, for the owner before it goes live: main.ts __TRY__)
+const tryOf = process.argv.includes('--try') ? process.argv[process.argv.indexOf('--try') + 1] : '';
 // (shown small in a corner of the starting screen, so the owner can tell which version a page is showing)
 const VERSION = 'V25.2.13';
 const stamp = `${VERSION} ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
@@ -40,7 +42,7 @@ if (soundFiles.length) {
 // (THE SWAMP COLOSSUS'S PICTURES, tools/colossus_ship.mjs: beside the page in colossus/<mark>/ only with --colossus, while his fight is
 // switched off nothing fetches them)
 const colossus = process.argv.includes('--colossus') ? shipColossus() : (fs.rmSync(path.join(ROOT, 'dist', 'colossus'), { recursive: true, force: true }), { mark: '', files: [] });
-const js = await bundle('src/main.ts', { minify: !dev, define: { ...RELEASE_DEFINES, __BUILD__: JSON.stringify(stamp), __DEV__: String(dev), __HERO_BAKE__: JSON.stringify(bake ? bake.mark : ''), __SOUNDS__: JSON.stringify(sounds), __COLOSSUS_BAKE__: JSON.stringify(colossus.mark) } });
+const js = await bundle('src/main.ts', { minify: !dev, define: { ...RELEASE_DEFINES, __BUILD__: JSON.stringify(stamp), __DEV__: String(dev), __HERO_BAKE__: JSON.stringify(bake ? bake.mark : ''), __SOUNDS__: JSON.stringify(sounds), __COLOSSUS_BAKE__: JSON.stringify(colossus.mark), ...(tryOf ? { __TRY__: JSON.stringify(tryOf) } : {}) } });
 const out = write('Play.html', page(js));
 write('dist/artifact.html', fragment(js));
 console.log(`built ${out} (${(js.length / 1024).toFixed(0)} KB script, ${dev ? 'dev' : 'minified'})${bake ? `, the heroes baked: dist/heroes/${bake.mark}/ (${bakeFiles(bake.mark).length} files)` : ', no bake'}${sounds ? `, the sounds: dist/sounds/${sounds}/ (${soundFiles.length} sounds in ${soundShipped} files)` : ''}${colossus.mark ? `, the Colossus: dist/colossus/${colossus.mark}/ (${colossus.files.length} files)` : ''}`);

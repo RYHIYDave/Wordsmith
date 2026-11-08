@@ -145,6 +145,8 @@ import { COLOSSUS } from './game/colossus_fight';
 import { ITEM_WORDS } from './game/items';
 
 declare const __BUILD__: string;
+/** (a page built to begin at something to try: tools/build.mjs --try) */
+declare const __TRY__: string | undefined;
 /** THE TRY-OUT PAGE (tools/build_tryout.mjs): its options offer a seasoned hero, straight to a floor. Absent in every other build. */
 declare const __TRYOUT__: boolean | undefined;
 const TRYOUT = typeof __TRYOUT__ !== 'undefined' && __TRYOUT__ === true;
@@ -2941,6 +2943,31 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   };
   (window as unknown as Record<string, unknown>).__dbg = dbg;
   (window as unknown as Record<string, unknown>).__ready = true;
+
+  // THE SWAMP COLOSSUS TRIED (his fight in his own pictures, for the owner to play before it goes live): `#try=colossus` (or a page
+  // built so: tools/build.mjs --try colossus) [&hero=mage]
+  // [&god=0]: his switch on for this page only, a seasoned hero (level 28) on floor 10 at the landing across from his stone, nothing
+  // saved, the hero not to be killed unless `god=0`.
+  if ((hash.get('try') ?? (typeof __TRY__ === 'string' ? __TRY__ : '')) === 'colossus') {
+    const cls = hash.get('hero') as ClassId | null;
+    COLOSSUS.on = true;
+    dbg.saving(false);
+    dbg.run(cls && ALL_CLASS_IDS.includes(cls) ? cls : 'warrior', 9);
+    dbg.seasoned(28);
+    dbg.god = hash.get('god') !== '0';
+    const g = game as Game | null;
+    if (g) {
+      g.depth = 10;
+      g.cleared = 9;
+      g.wayDepth = Math.max(g.wayDepth, 10);
+      g.enterDungeon();
+      const at = g.level.land?.landing;
+      if (at) {
+        g.hero.x = at.x;
+        g.hero.y = at.y;
+      }
+    }
+  }
 
   // When the page is replaced by a newer version while someone is playing, hand the run across
   // and carry straight on (in town) instead of dropping them at the title screen.
