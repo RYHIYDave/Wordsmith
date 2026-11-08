@@ -201,8 +201,8 @@ without the master rune-stone finds the fallen wordsmith again in the next.
 - **Forging:** three of the same word forge into one stronger word at the wordsmith, up to rank V.
   **Rank II (since Version 23.7):** two of the same damage word and a meld's runedust, at the
   wordsmith's melding page, make that word at rank II (Power II, Flame II, Frost II, Lightning II,
-  Poison II), half as strong again, its attribute adding on top; on attacks only; rank II the top for
-  now. Your “Yes” of 18 Oct to Poison II as shown; and of 21 Oct, “Yes, put it in (Recommended)”.
+  Poison II), half as strong again, its attribute adding on top; on attacks, and since Version 25.2.7
+  on gear (below); rank II the top for now. Your “Yes” of 18 Oct to Poison II as shown; and of 21 Oct, “Yes, put it in (Recommended)”.
   **Volatile's melds (since Version 23.9):** a damage word and Volatile, melded, make one of five,
   as your page "Wordsmith: Word Combinations" has them (your words of 21 Oct, 19:29: “Can you also
   add the volatile melds”; to their video from the game, 22 Oct, “Yes, put them live
@@ -213,6 +213,11 @@ without the master rune-stone finds the fallen wordsmith again in the next.
   then bursts. Chain Reaction (Lightning): an explosion arcs to the nearest, and those it kills
   explode too; behind, a rune going off sets off the next. Rupture (Poison): a poisoned one killed
   bursts, splashing its poison on those round it; behind, the rune bursts into a poison cloud.
+- **Every word on gear (since Version 25.2.7).** Your words of 8 Nov 2026: “Do the sounds, then I want
+  every tune in the game to be used on an item”, then “Every rune sorry”. A melded word burned into a
+  piece gives a property of each of its two words at once, each three quarters of what that word gives
+  alone (two for the room of one); a ranked word gives what its word gives, half as strong again. Neither
+  is laid on the gate or kept in the Lexicon.
 - **Words laid on the gate go for now,** to come back later as endgame (your words of 9 Oct, 22:50:
   “Let’s have the door words go for now.  I think that’ll be endgame stuff”); then they make the
   next floor harder and richer.
