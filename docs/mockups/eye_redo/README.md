@@ -1,10 +1,178 @@
-# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1; stage 3: his moves, part 2, his tentacles)
+# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1; stage 3: his moves, part 2, his tentacles; stage 4: his moves, part 3, his shovel)
 
 A MOCK-UP: NOT IN THE GAME. The art chat's, branch `art/eye-redo`. His new look is `src/art/eye_colossus.ts`, behind
 `EYE2 = { on: false }`; nothing of the game imports it (`tests/eye_colossus.test.ts` holds it). Nothing of the old Eye
 (`src/art/drowned_eye.ts`, `art/act1_figs/eye.ts`, `game/act1_rules/eye.ts`) is used in it. Stage 1 (below the moves) was his look,
 in stills; stage 2 is his first moves: his stand, his lurk under the water and his entrance, in `src/art/eye_moves.ts`; stage 3 his
-tentacles' moves, in `src/art/eye_arms.ts`.
+tentacles' moves, in `src/art/eye_arms.ts`; stage 4 his shovel, in `src/art/eye_shovel.ts`.
+
+## Stage 4: his moves, part 3: his shovel, in pictures and a film
+
+His words (7 Nov 2026):
+
+- Shown the tentacles again (5b1456d4): “Yes, on to the shovel (Recommended)”.
+- 20:29: “I’d also like it to submerge, and then pop up on a random end of the platform and try to shovel the player into its mouth.  Tentacles scrape down the platform and you find the gap in the top and bottom or dodge over.  If you get hit it knocks you closer to the mouth.  Get too close and it snaps shut for massive damage.  Goes for a few seconds, I’m thinking like a tight waveform pattern gets you through the hitboxes of the incoming tentacles”
+- 20:31, with his drawing (`docs/ref/eye_shovel_drawing_from_owner_2026-11-07.jpg`):
+  “P is the player, weaves up and down as the tentacles come in”.
+- His standing rules for the fight: nowhere safe (“Yes, nowhere safe (Recommended)”); “Action, like a movie”; Movement 9 (a big held
+  wind-up, a fast smeared strike, a big wind-down); nothing through anything; and
+  “Everything drawn should not just look like shapes.  That’s the rule”.
+- Of the old fight, 5 Nov: “You need some more time to dodge those tentacles.” So the tell before he comes up is held over a second.
+
+Read as (he was told; on the board 20:55): he sinks and bursts up at the left or right end of the stone, his V maw turned on its side,
+gaping top and bottom along the stone; tentacles come in from the far end toward his mouth, one hugging the top edge with its tip
+hooked down, the next the bottom edge with its tip curled up, alternating, so the way through weaves low, high, low (or dodge over
+one); a hit knocks you toward his mouth; too close and his jaws snap shut, massive damage; a few seconds, then he sinks back to his
+place. ("Top" is the stone's back edge, by the water he lies in; "bottom" its near edge.)
+
+`src/art/eye_shovel.ts` (behind `EYE2`, off; nothing of the game imports it: `tests/eye_shovel.test.ts`) says each frame as poses for
+the painter; `tools/eye_moves_pics.ts` paints each layer once and lays the frames together in the arena with what the game would draw
+(the boil, the burst's crown and foam, the sparks, grit and slime off each scraping tip, the lines scored in the stone, the spittle of
+the snap, the shakes); `tools/eye_shovel_sheet.py` makes the sheet and the film. The painter, `src/art/eye_colossus.ts`, can now turn
+him (`ColossusPose.orient`, his maw on its side) and lean him (`ColossusPose.lean`, his snap); everything painted before is painted the
+same (checked pixel for pixel, and the earlier layers moved to their new names).
+
+### Each beat, frame by frame (30 a second; frames from his stand; the same at both ends)
+
+WIND-UP, STRIKE and WIND-DOWN marked (Movement 9). Frame, then seconds.
+
+1. HE SINKS (the wind-down of his stand), 0 to 21 (0.00 to 0.70 s, 0.73 s): out of his stand at his place, his three tentacles going
+   down with him, quicker than his rise (his entrance rises over 78 frames: this is 22), the water closing over him, bubbles, the
+   swell, the screen rumbling (2 game pixels).
+2. THE TELL (THE WIND-UP, HELD), 22 to 55 (0.73 to 1.83 s, 1.13 s): the water boiling and heaving off the chosen end of the stone,
+   grit hopping on the stone's end as it shudders, the screen rumbling, more as it goes on; nothing of him seen. The camera follows the
+   Warrior to that end through it (160 game pixels across).
+3. HE BURSTS UP AT THAT END (THE STRIKE), 56 to 59 (1.87 to 1.97 s): four frames, the last three smeared; his maw on its side (turned a
+   quarter round, his front along the stone toward its far end, one jaw along its back edge and the other along its near edge, gaping
+   across its whole depth, teeth down both); a crown of water and slime thrown up and a ring of foam out over the water; the screen
+   jolted (9 game pixels on 59, dying over 14 frames). Each end painted, not mirrored (each turned its own way round, each seen from the
+   camera as it is: `VJ.l`, `VJ.r`).
+4. THE ROAR (THE WIND-DOWN), 60 to 83 (2.00 to 2.77 s): settling as the water pours off him (to 106), roaring (the screen shaking, 5
+   game pixels at the most), his jaws widest (1.42 open, his stand's 1) 70 to 79, easing to his gape (1.32) by 84; his throat hot.
+5. THE SHOVEL, 84 to 299 (2.80 to 9.97 s): his maw gaping (a loop of 1 s), trembling, his tongue-eye weaving in it and looking at the
+   Warrior, never still. Four tentacles, one along each edge in turn, each (frames from its first): UP out of the water past the far
+   end, 0 to 7 (its wind-up, 0.27 s); THE SCRAPE, 8 to 52 (1.5 s): along the stone toward his maw, the back edge's tip hooked down on
+   the stone, the near edge's lying along it and curled up at its end, sparks, grit and slime thrown back off where it drags, the stone
+   scored behind it (the line fading from 1.2 to 4 s after); at his maw 53 to 55; its hook DRAWN BACK off the stone into the water 56 to 61, slid back
+   along the edge 62 to 85, under 86 to 93 (its wind-down, 1.27 s). Tentacle 1, back edge, from 84 (scraping 92 to 136, 3.07 to 4.53
+   s); tentacle 2, near edge, from 128 (scraping 136 to 180); tentacle 3, back edge, from 190 (198 to 242); tentacle 4, near edge,
+   from 234 (242 to 286), under by 327. The Warrior weaves: to the near side (9.4 tiles from the back edge) as each back edge's comes, to
+   the back (2.2 tiles from it) as each near edge's (at the right end, through all four).
+6. THE HIT (the left end's film), 159 (5.30 s): the Warrior caught at the edge of the gap by tentacle 2's curled tip, a flash, the
+   screen jolted (5 game pixels), slime flung; knocked flying toward the mouth 161 to 170, from 8.4 tiles off his end to 1.9, 1.8 tiles
+   high at the top of it; down 171 to 193, getting up.
+7. THE SNAP (the left end's film): THE TWITCH (THE WIND-UP, HELD) 196 to 201 (6.53 to 6.70 s, 0.2 s): drawn back, his jaws flexing
+   wider (1.5), his throat glowing; the Warrior up and leaping away 194 to 203. THE STRIKE 202 to 203 (6.73 to 6.77 s): two smeared frames,
+   lunging up out of the water 2.04 tiles and on 0.89, tipped 15 degrees, leaning out over the stone's end, slamming shut on 203: teeth clashing, spittle, spray and gobs
+   bursting out along the stone and up, the screen jolted (10 game pixels, dying over 16 frames). HELD SHUT 204 to 211 (0.27 s). THE
+   WIND-DOWN 212 to 226 (0.5 s): back into the water and gaping again by 227. The Warrior, 3.8 tiles off the end, just clear.
+8. HE GOES BACK, 300 to 351: the last tentacle drawn back and under (to 327); he sinks at the end, 300 to 313 (0.47 s), the screen
+   rumbling; under, 314 to 317; a short rise at his place (not his entrance), 318 to 347 (1 s), the water boiling over him, the
+   screen rumbling, the camera back with him; his stand from 348. The reeds in the water off the end he came up at are crushed under
+   him, from his burst on.
+
+### The numbers, for the main chat (in the game's tiles, C_TILE, 39.19 of his lengths; the stone 17 tiles across and 11 deep)
+
+- HIS PLACE AT AN END: his middle 4.72 tiles off the stone's end, at the middle of its depth: as near as he can come up and be clear of
+  the stone (his heaps at the water are the widest of him). Gaping there, he spans the stone's whole depth and more (15 tiles at the
+  water, about 2 behind the back edge and 2 before the near edge), his front a third of a tile off the stone's end (0.31 at the left
+  end, 0.33 at the right): HIS MAW'S REACH ONTO THE STONE, GAPING: NONE (checked).
+- THE SNAP: from the end of the stone, his jaws come in over it 2.35 tiles (all their height, from a quarter of a tile over the stone up),
+  0.71 tiles at the Warrior's height; across from 1.84 to 9.80 tiles from the back edge (of its 11). Its hit on frame 203, shut to 211.
+  The game's snap's area as drawn: the end of the stone 2.35 tiles deep by the middle 8 tiles of its depth (the main chat sets the hit).
+  The film's Warrior is down 1.9 tiles off the end and leaps away as it twitches, to 3.8 tiles before it lands.
+- THE TENTACLES' SWEEP: each comes up 1.79 tiles past the far end and scrapes along the stone to 0.64 tiles from his end: 18.15 tiles in
+  1.5 s, 12 tiles a second; drawn back along the edge in 0.8 s (at the most 1.13 tiles a frame). One along each edge in turn (back,
+  near, back, near), the next starting 1.47 s after (44 frames), then 2.07 s (62, the snap between), then 1.47 s; each 3.13 s from up
+  to under.
+- THE GAPS: a back edge's hook reaches 6.75 tiles across the stone from the back edge, its gap the 4.25 tiles at the near edge; a near
+  edge's 6.64 tiles from the near edge, its gap the 4.36 tiles at the back edge. Nowhere else on its line across is safe. Over the
+  stone the hook is at the most 1.49 tiles high (its arch over the edge) and 1.30 thick; the back edge's tip is hooked down on the
+  stone, the near edge's lies on it and curls up at its end (1 tile up). Its body runs under the water 0.87 tiles outside its edge.
+  “Dodge over” one: the game's dodge through it (its hook is on the stone all across).
+- THE HIT: knocked 6.5 tiles toward his mouth in a third of a second.
+- A SCRAPING TENTACLE AS A LOOP THE GAME SLIDES: its hook (with what of it comes up out of the water over the edge) is a loop of 1 s, 30
+  paintings, writhing; its body behind it under the water a loop of 1 s, 15 paintings; each painted with its front at 0 and slid along
+  the edge by the game (here, as the film slides them), so that its speed and spacing are the main chat's. Drawn back off the stone: 6
+  paintings; drawn back, slid back: a loop of 1 s, 30 paintings; up and under: the same paintings, lowered by the game into the water.
+  Each edge and each end its own (the hook's suckers along the inside of its hook).
+
+### The pictures
+
+- `pictures/eye_moves3.png` (1200 x 6580): key frames at the game's size (the phone's screen, two picture pixels to a game pixel): he
+  sinks, the tell; the burst and the roar (4); the shovel and the hit (6); the snap (4); the last two, drawn back, he goes back (4); the
+  right end (4); then four at twice the size (the burst, a tip scraping with its sparks, the snap shut with the Warrior just clear, his
+  maw at the right end). The Warrior is in each tile of the tentacles and of the snap.
+- `pictures/eye_moves3.mp4` (26.3 s, 790 frames, 30 a second, H.264 yuv420p, 1014 x 540, captioned beat by beat), all in the arena as
+  the player sees it (the stone, the Warrior, the camera following him to the end and lowered there to see the whole depth of the
+  stone): THE LEFT END at full speed (352 frames, 11.7 s: the Warrior weaving low and high through the gaps, caught by tentacle 2 on
+  frame 159 and knocked toward the mouth, down, up and leaping away as the jaws twitch, just clear as they slam shut on 203; then
+  through the last two); THE RIGHT END at full speed (352 frames, 11.7 s: no snap, the Warrior weaving through all four); THE SNAP close
+  up, 1.4 times the size, at half speed (frames 188 to 230, 2.9 s).
+- To make them again (the layers kept on the machine's memory disk, `/dev/shm`):
+
+```
+npx tsx tools/eye_moves_pics.ts paint 0 2 s1 s2 & npx tsx tools/eye_moves_pics.ts paint 1 2 s1 s2   (about 70 minutes)
+npx tsx tools/eye_moves_pics.ts frames /dev/shm/eye_moves/frames s1      (and s2; about 50 minutes each)
+python3 tools/eye_shovel_sheet.py film /dev/shm/eye_moves/frames docs/mockups/eye_redo/pictures/eye_moves3.mp4
+python3 tools/eye_shovel_sheet.py sheet /dev/shm/eye_moves/frames docs/mockups/eye_redo/pictures/eye_moves3.png tools/eye_shovel_sheet.json
+npx tsx tools/eye_moves_pics.ts cost3                                    (what it costs, as below)
+```
+
+- Seen at the game's size, every frame of both ends (24 to a sheet), and the snap, the hit and the burst frame by frame. Seen and
+  mended: he now goes on down out of sight under the water between the end and his place (his eye's fire fading into the deep, its glow
+  never on the stone), so that nothing of him is seen crossing over; the camera eases down to the stone as it goes to the end (it was a
+  jump); the pieces on the stone are left out (below); the reeds in the water off the end he comes up at are under him, and the
+  pieces in the water (the reeds, the lily pads) are hidden where he or a tentacle is in front of them, as is the Warrior; the Warrior goes deeper into each gap, reels when struck, falls,
+  gets up and leaps clear of the snap.
+
+### What it costs
+
+- AS PAINTED HERE: 1,484 new layers (his jaws at an end 125, a painting wherever his jaws are the same: his burst, the roar, his gape's
+  loop of a second, the snap; his drool 520 and his tongue-eye 499, a painting each frame, since his eye follows the Warrior; a
+  tentacle's hook 280 and its body 60), 342 MB raw (two picture pixels to a game pixel, 4 bytes a pixel, each layer in the box round
+  it), 82 MB packed as kept here; his stand's layers at his place, as he sinks and rises, are part 1's (357). A layer on average: his
+  jaws 0.56 MB, his drool 0.11, his tongue-eye 0.20, a hook 0.28, a body 0.61. Painted in 68 minutes on two workers, and about 2 hours
+  more laying the frames (his drool and tongue-eye repainted where the Warrior's way was mended).
+- FOR THE GAME (an estimate, the main chat's to weigh): at each end his jaws 78 paintings (the snap at either end), his drool and
+  tongue-eye each a loop of 3 s (his stand's) with the roar and the snap (145 each), the hooks 140 (each edge: its writhe, drawn back,
+  slid back) and the bodies 30: 538 an end, 1,076 for both, about 290 MB raw at two picture pixels to a game pixel, 73 MB at one, about
+  18 MB packed at one. Not painted while the game runs: baked (his word of 6 Nov: the game may carry files). The boil, the burst's crown
+  and foam, the sparks, grit and slime, the scored lines, the spittle of the snap and the shakes are the game's effects drawn over, not
+  baked.
+
+### The checks (`tests/eye_shovel.test.ts`)
+
+(1) The switch off, nothing of the game importing the shovel; (2) HIS END VIEWS: each end painted (turned its own way), and in every
+other frame he is at an end, and every frame of his burst and his snap, clear of the stone (by 1.6 of his lengths at the least, at the
+snap), of the tentacles (7.0) and of the Warrior (28.0: never in him); (3) NOTHING THROUGH ANYTHING: in every frame of both films each
+tentacle clear of the stone (2.8 at the least, lying on it), of each other (181.4), and of itself (never folding through itself:
+10.3); (4) NOWHERE SAFE: each sweeps from past the far end to his maw, one along each edge in turn, reaching 6.6 to 6.8 tiles across,
+its gap 4.3 to 4.4 tiles; the Warrior never on a tentacle low enough to meet him but in the frames he is struck (61 of his lengths at the least),
+and knocked toward the mouth; (5) nothing cyan (his roar, his drool, his tongue-eye, his snap, a hook, a body), the sparks white-hot to
+gold, the enemy's; (6) NEVER STILL: him in every frame (but under the water, where the water boils), and every tentacle's hook writhing
+in every frame; (7) NO LEAPS: the Warrior no faster than a run or a roll but knocked flying; his sinking and rising eased, but his burst;
+the camera; the snap eased but in its two frames of strike; each tentacle no faster than drawn back; (8) THE CUES: he sinks quicker than
+he rose; the tell held over a second, the water boiling off that end, the screen rumbling; the burst four frames, smeared, the screen
+jolted; the roar wider than his gape; each scrape scraping and scoring; the snap's twitch held wider, two smeared frames, held shut,
+the clash jolting the screen; the Warrior struck, the screen jolted; back at his place, in his stand; (9) THE NUMBERS above, measured
+(his maw gaping never over the stone; the snap's reach; the sweep). `tests/eye_moves.test.ts`, `tests/eye_colossus.test.ts` and
+`tests/eye_arms.test.ts`: their first checks now let `art/eye_shovel.ts` import his moves, him and the tentacles (the smallest
+change).
+
+### For the owner to decide (the art chat's to put to him)
+
+1. THE TELL is held 1.13 s (his “You need some more time to dodge those tentacles.”), the water boiling off the end he will come up at.
+   More time, or less, is a number.
+2. THE GAPS: 4.3 tiles wide, at the far edge from each tentacle in turn, a tentacle every 1.5 to 2 s: the weave of his drawing. Tighter
+   (his “tight waveform”) is a number (each hook's reach across).
+3. THE SNAP: he lunges up out of the water and leans out over the end of the stone, 2.35 tiles in. Too close is the end of the stone
+   (the main chat sets where it is triggered and its damage).
+4. THE PIECES ON THE STONE (its two broken columns at the back corners, the mossy stones and the fallen drums) are left out of the
+   shovel's film: the tentacles sweep the whole length of the stone, through where each lies. To keep them in the fight, they would have
+   to go when he sinks (smashed by the first sweep, or the arena without them): his to see.
+5. The reeds in the water off the end where he comes up are under him there, crushed, from his burst on.
+
 
 ## Stage 3: his moves, part 2: his tentacles, in pictures and a film
 

@@ -434,6 +434,8 @@ export interface EyeLayer {
   pose: ColossusPose;
   drop: number;
   back: number;
+  /** Moved across (his lengths; his shovel's layers, painted where they are and laid where he is). */
+  dx?: number;
 }
 /** What the water and the air round him do in a frame (the pictures' tool paints them). */
 export interface EyeWater {
@@ -451,6 +453,8 @@ export interface EyeWater {
   /** The roar's frame (spray and goo blasted out, the water slammed flat in a ring); each tentacle's burst frame and root. */
   roar: number | null;
   bursts: Array<{ k: number; x: number; y: number }>;
+  /** Where his water is (his middle at the water, in the world: his shovel, at an end of the stone; absent, his own place). */
+  at?: [number, number];
 }
 /** What the game draws over the stone and the water for his tentacles (art/eye_arms.ts; the pictures' tool draws it). */
 export interface ArmFx {
@@ -475,22 +479,45 @@ export interface ArmFx {
   /** A tentacle sinking as it dies, where it goes under (his space, at the water), `s` seconds since it began to sink. */
   sinks: Array<{ x: number; y: number; s: number; seed: number }>;
 }
+/** WHAT THE GAME DRAWS FOR HIS SHOVEL (art/eye_shovel.ts; the pictures' tool draws it): where he is; the tell (the water boiling
+ *  and heaving off the end of the stone where he will come up, the stone's end shuddering: 0 to 1); his burst up through it (seconds
+ *  since); the water pouring off him (0 to 1); his jaws' clash in a snap (seconds since); the scraping tentacles' tips (where, which way
+ *  across and how fast, his lengths a second) and the lines they score in the stone (at a depth, from where to where, seconds since it
+ *  left the stone); the Warrior struck (where, seconds since). */
+export interface ShovelFx {
+  at: [number, number];
+  tell: number | null;
+  burst: number | null;
+  pour: number;
+  snap: number | null;
+  scrapes: Array<{ x: number; y: number; dir: number; speed: number; seed: number }>;
+  scores: Array<{ y: number; xa: number; xb: number; s: number; seed: number }>;
+  hit: { x: number; y: number; s: number } | null;
+  /** The end he has come up at (from his burst on: the reeds in the water there are under him, crushed), or none yet. */
+  up?: 'left' | 'right' | null;
+}
 /** The Warrior in a frame of the tentacles' films: where (the arena's units: across, and onto the stone from the back of the water),
  *  facing him ('back') or the camera ('front'), standing, running or striking, and the frame of it. */
 export interface HeroAt {
   du: number;
   dv: number;
   view: 'back' | 'front';
-  act: 'idle' | 'run' | 'attack';
+  act: 'idle' | 'run' | 'attack' | 'roll' | 'knock' | 'down';
   f: number;
+  /** Thrown up off the stone (his lengths: knocked flying). */
+  lift?: number;
 }
 export interface EyeFrame {
-  move: 'stand' | 'lurk' | 'entrance' | 'p1' | 'p2' | 'fan';
+  move: 'stand' | 'lurk' | 'entrance' | 'p1' | 'p2' | 'fan' | 's1' | 's2';
   /** The tentacles' films: the Warrior, how far the camera has come down from the stills' (picture pixels), and what the game draws
    *  for the tentacles. */
   hero?: HeroAt;
   camY?: number;
+  /** The camera moved across (picture pixels; his shovel: following the Warrior to the end of the stone where he is). */
+  camX?: number;
   fx?: ArmFx;
+  /** What the game draws for his shovel (art/eye_shovel.ts). */
+  sfx?: ShovelFx;
   k: number;
   /** His clock (the stand's: 0 at its first frame). */
   t: number;
@@ -509,6 +536,8 @@ const body = (anim: ColossusAnim, drop = 0, back = 0): ColossusPose => ({ view: 
 const pad = (n: number): string => String(n).padStart(3, '0');
 const mod = (a: number, n: number): number => ((a % n) + n) % n;
 
+/** His stand's layers at its frame `k` (0 to 89): for his shovel too (art/eye_shovel.ts), as he sinks out of it and rises into it. */
+export const standLayersAt = (k: number): Pick<EyeFrame, 'jaws' | 'spit' | 'tongue' | 'arms'> => standLayers(k);
 /** His stand's layers at its frame `k` (0 to 89). */
 function standLayers(k: number): Pick<EyeFrame, 'jaws' | 'spit' | 'tongue' | 'arms'> {
   const t = k / EYE_FPS;

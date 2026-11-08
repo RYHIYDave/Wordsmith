@@ -254,6 +254,15 @@ export interface ColossusPose {
   tongue?: 'under';
   /** A frame of a move (art/eye_moves.ts); absent, the still as drawn. */
   anim?: ColossusAnim;
+  /** TURNED (his shovel, art/eye_shovel.ts): where each of his own axes points in the world (x across, y toward the camera, z up), a
+   *  turn of him as a whole (his maw turned on its side). The camera's ray, the light and the way to the eye are turned into his own
+   *  space; how near each pixel is, how high over the water, and where his lights are, turned back out of it. Only as a layer
+   *  (`Frame.raw`): the water round him is the pictures' tool's. */
+  orient?: { x: readonly [number, number, number]; y: readonly [number, number, number]; z: readonly [number, number, number] };
+  /** LEANING, his snap from the end of the stone (art/eye_shovel.ts): his flesh above `from` (his height) carried forward, toward the
+   *  camera in his own space, `k` of his lengths for each of height over it (eased in over `ease`), his heaps at the water staying where
+   *  they are: so that his jaws come out over the stone and his breadth at the water does not. */
+  lean?: { k: number; from: number; ease: number };
 }
 
 /** WHAT A FRAME OF HIS MOVES SAYS (art/eye_moves.ts), beyond a still. */
@@ -1640,6 +1649,16 @@ class Scene {
   readonly lids: number = 1;
   /** How big his eye is now (1 as drawn). */
   readonly eyeK: number = 1;
+  /** Leaning (`ColossusPose.lean`): how far forward his flesh at height `z` is carried; and his distances' bound's share, leaning. */
+  readonly lean: { k: number; from: number; ease: number } | null = null;
+  readonly leanK: number = 1;
+  leanAt(z: number): number {
+    const L = this.lean;
+    if (!L) return 0;
+    const u = z - L.from;
+    if (u <= 0) return 0;
+    return L.k * (u < L.ease ? (u * u) / (2 * L.ease) : u - L.ease / 2);
+  }
   constructor(pose: ColossusPose) {
     this.arms = pose.arms.map((a) => {
       const A = armOf(a);
@@ -1649,6 +1668,10 @@ class Scene {
     this.drop = pose.drop;
     this.back = pose.back ?? 0;
     this.body = pose.body;
+    if (pose.lean && pose.lean.k) {
+      this.lean = pose.lean;
+      this.leanK = 1 / Math.hypot(1, pose.lean.k);
+    }
     const an = pose.anim;
     if (an) {
       this.now = nowOf(an);
@@ -2430,11 +2453,12 @@ class Scene {
     let d = Infinity;
     if (this.body) {
       const z = Z + this.drop;
-      const yb = y + this.back;
+      const yb = y + this.back - (this.lean ? this.leanAt(z) : 0);
       // (well clear of all of him: how far, as a bound)
       const out = ell(x, yb, z, 0, 0, 60, 440, 340, 320);
       if (out > 30) d = out;
       else d = this.bodyAt(x, yb, z, f);
+      if (this.lean) d *= this.leanK;
     }
     for (let i = 0; i < this.arms.length; i++) {
       const a = this.armAt(i, x, y, Z, f ? ARM_F : null);
@@ -2545,15 +2569,26 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
   const eps = 0.6;
   const E = S.eyeC;
   const box = raw ? fr.box : undefined;
+  // (turned, `pose.orient`: from the world into his own space, and back)
+  const OX = pose.orient?.x ?? [1, 0, 0];
+  const OY = pose.orient?.y ?? [0, 1, 0];
+  const OZ = pose.orient?.z ?? [0, 0, 1];
+  const toHis = (v: readonly number[]): [number, number, number] => [v[0] * OX[0] + v[1] * OX[1] + v[2] * OX[2], v[0] * OY[0] + v[1] * OY[1] + v[2] * OY[2], v[0] * OZ[0] + v[1] * OZ[1] + v[2] * OZ[2]];
+  const toWorld = (a: number, b: number, c: number): [number, number, number] => [a * OX[0] + b * OY[0] + c * OZ[0], a * OX[1] + b * OY[1] + c * OZ[1], a * OX[2] + b * OY[2] + c * OZ[2]];
+  const LF = toHis(L_FIG);
+  const EV = toHis(EYE_V);
   for (let j = 0; j < h; j++) {
     for (let i = 0; i < w; i++) {
       if (box && (i < box[0] || i >= box[2] || j < box[1] || j >= box[3])) continue;
       const X = (i + 0.5 - ax) / (SEEN * zoom);
       const sd = (j + 0.5 - ay) / (SEEN * zoom);
-      // the ray: from in front of him, toward the plane of the picture and on through it
-      let x = X;
-      let y = sd * SIN30 + EYE_V[1] * T0;
-      let z = -sd * COS30 + EYE_V[2] * T0;
+      // the ray: from in front of him, toward the plane of the picture and on through it (in his own space)
+      const R0 = toHis([X, sd * SIN30 + EYE_V[1] * T0, -sd * COS30 + EYE_V[2] * T0]);
+      let x = R0[0];
+      let y = R0[1];
+      let z = R0[2];
+      // (how high over the water the ray is)
+      let zw = -sd * COS30 + EYE_V[2] * T0;
       let t = 0;
       let hit = false;
       let d = 0;
@@ -2565,9 +2600,11 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
         }
         const step = d * 0.72;
         t += step;
-        y -= EYE_V[1] * step;
-        z -= EYE_V[2] * step;
-        if (z < (raw ? -120 : -360)) break;
+        x -= EV[0] * step;
+        y -= EV[1] * step;
+        z -= EV[2] * step;
+        zw -= EYE_V[2] * step;
+        if (zw < (raw ? -120 : -360)) break;
       }
       const k = j * w + i;
       // where the ray meets the water
@@ -2641,7 +2678,7 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
       const Nx = nx / nl;
       const Ny = ny / nl;
       const Nz = nz / nl;
-      let lit = Nx * L_FIG[0] + Ny * L_FIG[1] + Nz * L_FIG[2];
+      let lit = Nx * LF[0] + Ny * LF[1] + Nz * LF[2];
       // (the light's shadow: a short march toward it; his eye, wet and burning, is never lost in it)
       if (lit > -0.1 && f.mat !== M_EYE) {
         let st = 3;
@@ -2650,7 +2687,7 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
         const sz = z + Nz * 2;
         let shade = 1;
         for (let n = 0; n < 28 && st < 170; n++) {
-          const q = S.at(sx + L_FIG[0] * st, sy + L_FIG[1] * st, sz + L_FIG[2] * st, null);
+          const q = S.at(sx + LF[0] * st, sy + LF[1] * st, sz + LF[2] * st, null);
           if (q < 0.4) {
             shade = 0;
             break;
@@ -2667,15 +2704,15 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
         occ += wgt * Math.max(0, (dd - q) / dd);
       }
       // (the glint of wet: the light thrown back toward the eye)
-      const rl = 2 * (Nx * L_FIG[0] + Ny * L_FIG[1] + Nz * L_FIG[2]);
-      const rx = rl * Nx - L_FIG[0];
-      const ry = rl * Ny - L_FIG[1];
-      const rz = rl * Nz - L_FIG[2];
-      const spec = Math.max(0, rx * EYE_V[0] + ry * EYE_V[1] + rz * EYE_V[2]);
+      const rl = 2 * (Nx * LF[0] + Ny * LF[1] + Nz * LF[2]);
+      const rx = rl * Nx - LF[0];
+      const ry = rl * Ny - LF[1];
+      const rz = rl * Nz - LF[2];
+      const spec = Math.max(0, rx * EV[0] + ry * EV[1] + rz * EV[2]);
       // his own space at the point (for what grows where)
       const fx = x * S.flip;
-      const fy = y * S.flip + (f.arm < 0 && S.body ? S.back : 0);
       const fz = z + (f.arm < 0 && S.body ? S.drop : 0);
+      const fy = y * S.flip + (f.arm < 0 && S.body ? S.back - S.leanAt(fz) : 0);
       const mat = f.mat;
       const onHead = f.arm < 0 && mat !== M_EYE && mat !== M_STRAND;
       // (into the dark toward his edges: the further from the middle of him, the darker)
@@ -2915,9 +2952,10 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
       D[k * 4 + 1] = g0;
       D[k * 4 + 2] = b0;
       D[k * 4 + 3] = a;
-      near[k] = y * EYE_V[1] + z * EYE_V[2];
+      const PW = toWorld(x, y, z);
+      near[k] = PW[0] * EYE_V[0] + PW[1] * EYE_V[1] + PW[2] * EYE_V[2];
       kind[k] = kd;
-      zh[k] = z;
+      zh[k] = zw;
       mt[k] = mat;
       if (glow) fire[k] = 1;
       if (S.now) {
@@ -2992,8 +3030,11 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
     const zz = E[2] - pose.drop;
     const yy = E[1] - (pose.back ?? 0);
     const N = S.now;
-    if (!N || ((N.parts === 'tongue' || N.parts === 'all') && S.tongue)) lights.push({ x: ax + E[0] * SEEN * zoom, y: ay + zoom * (yy * SIN30 * SEEN - zz), r: 110 * zoom, color: FLAME[2], a: (zz < 0 ? 0.35 : 0.22) * (N ? 0.15 + 0.85 * S.lids : 1) });
-    if ((pose.drop < 60 || raw) && (!N || N.parts === 'jaws' || N.parts === 'all')) lights.push({ x: ax, y: ay + zoom * ((-40 - (pose.back ?? 0)) * SIN30 * SEEN - (30 - pose.drop)), r: 70 * zoom * (N ? Math.min(1.8, 0.6 + 0.4 * glowK) : 1), color: FLAME[3], a: 0.16 * (N ? Math.min(2.6, glowK * sm01(0.02, 0.5, N.open)) : 1) });
+    // (where they are in the world: turned back out of his space)
+    const EW = toWorld(E[0], yy, zz);
+    const TW = toWorld(0, -40 - (pose.back ?? 0), 30 - pose.drop);
+    if (!N || ((N.parts === 'tongue' || N.parts === 'all') && S.tongue)) lights.push({ x: ax + EW[0] * SEEN * zoom, y: ay + zoom * (EW[1] * SIN30 * SEEN - EW[2]), r: 110 * zoom, color: FLAME[2], a: (EW[2] < 0 ? 0.35 : 0.22) * (N ? 0.15 + 0.85 * S.lids : 1) });
+    if ((pose.drop < 60 || raw) && (!N || N.parts === 'jaws' || N.parts === 'all')) lights.push({ x: ax + TW[0] * SEEN * zoom, y: ay + zoom * (TW[1] * SIN30 * SEEN - TW[2]), r: 70 * zoom * (N ? Math.min(1.8, 0.6 + 0.4 * glowK) : 1), color: FLAME[3], a: 0.16 * (N ? Math.min(2.6, glowK * sm01(0.02, 0.5, N.open)) : 1) });
   }
   for (let k = 0; k < w * h; k++) if (kind[k] !== 1 && kind[k] !== 2) mt[k] = 0;
   if (raw) return { px, ax, ay, lights, near, kind, mat: mt, zh, fire, seam };
@@ -3312,6 +3353,59 @@ export function armClearances(pose: ColossusPose): { body: number; stone: number
     if (!(P[2] < 0 && P[1] + P[3] < STONE.edge)) rootsInWater = false;
   }
   return { body, stone, rootsInWater, where };
+}
+
+/**
+ * HIS SHOVEL (art/eye_shovel.ts): him turned (`pose.orient`), his middle at the water at `at` in the world. How clear he is (his lengths at
+ * the nearest; less than 0, into it) of a block whose top is at the water (the stone: from `x0` to `x1` across, `y0` to `y1` toward the
+ * camera): its top, its end faces and its sides down to 80 under the water, sampled every 3 of his lengths within 360 across of him; and
+ * how clear of him each of some tubes is (in the world: their spines and radii), and where he is nearest each.
+ */
+export function turnedClear(pose: ColossusPose, at: readonly [number, number], box: { x0: number; x1: number; y0: number; y1: number }, tubes: ReadonlyArray<ReadonlyArray<readonly number[]>> = []): { stone: number; where: number[]; tubes: number[] } {
+  const S = new Scene(pose);
+  const O = pose.orient ?? { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
+  const d = (x: number, y: number, z: number): number => {
+    const dx = x - at[0];
+    const dy = y - at[1];
+    const h = [dx * O.x[0] + dy * O.x[1] + z * O.x[2], dx * O.y[0] + dy * O.y[1] + z * O.y[2], dx * O.z[0] + dy * O.z[1] + z * O.z[2]];
+    return S.at(h[0], h[1], h[2], null);
+  };
+  let stone = Infinity;
+  let where: number[] = [];
+  const see = (x: number, y: number, z: number): void => {
+    const v = d(x, y, z);
+    if (v < stone) {
+      stone = v;
+      where = [x, y, z];
+    }
+  };
+  const xa = Math.max(box.x0, at[0] - 360);
+  const xb = Math.min(box.x1, at[0] + 360);
+  if (xa <= xb) {
+    for (let x = xa; x <= xb; x += 3) for (let y = box.y0; y <= box.y1; y += 3) see(x, y, 0);
+    for (let x = xa; x <= xb; x += 3) for (let z = -80; z <= 0; z += 3) {
+      see(x, box.y0, z);
+      see(x, box.y1, z);
+    }
+  }
+  for (const xe of [box.x0, box.x1]) if (Math.abs(xe - at[0]) < 360) for (let y = box.y0; y <= box.y1; y += 3) for (let z = -80; z <= 0; z += 3) see(xe, y, z);
+  const out = tubes.map((t) => {
+    let m = Infinity;
+    for (let i = 0; i < t.length; i++) m = Math.min(m, d(t[i][0], t[i][1], t[i][2]) - t[i][3]);
+    return m;
+  });
+  return { stone, where, tubes: out };
+}
+/** His solid at points of the world (his lengths from his skin; less than 0, inside him), him in `pose` (turned by `pose.orient`) with his
+ *  middle at `at`: how far his maw reaches over the stone, measured. */
+export function turnedAt(pose: ColossusPose, at: readonly [number, number], pts: ReadonlyArray<readonly number[]>): number[] {
+  const S = new Scene(pose);
+  const O = pose.orient ?? { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
+  return pts.map(([x, y, z]) => {
+    const dx = x - at[0];
+    const dy = y - at[1];
+    return S.at(dx * O.x[0] + dy * O.x[1] + z * O.x[2], dx * O.y[0] + dy * O.y[1] + z * O.y[2], dx * O.z[0] + dy * O.z[1] + z * O.z[2], null);
+  });
 }
 
 /**
