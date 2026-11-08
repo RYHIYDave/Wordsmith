@@ -13,7 +13,7 @@ import {
 } from '../../game/colossus_fight';
 import type { Arm } from '../../game/colossus_fight';
 import type { Act1Fx, Act1FxCtx } from './types';
-import { ARM_BAKE, colossusBakeAsk, colossusBaked, colossusFrames, colossusSlamTurns, colossusWant, drawColossusArm, drawColossusBody } from '../colossus_baked';
+import { ARM_BAKE, colossusAtEnd, colossusBakeAsk, colossusBaked, colossusFrames, colossusSlamTurns, colossusWant, drawColossusArm, drawColossusBody, drawColossusHooks } from '../colossus_baked';
 
 /** Each tentacle struck: its hit's flash last seen, and when (the fight's clock) and from what frame of its stand it was struck. */
 const STRUCK = new Map<number, { flash: number; at: number; stand: number }>();
@@ -78,11 +78,15 @@ function draw(c: Act1FxCtx): void {
   const base = (ws: number[]): string[] => ws.flatMap((w) => [`a${w}.stand`, ...(w === 0 || w === 2 ? [`a${w}.smash`] : [])]);
   const part = Math.floor((f.phT * 30) / ARM_BAKE.entrancePart);
   const dying = f.arms.some((a) => a.state === 'dying') ? base([3, 4]) : [];
+  // (his shovel: the part playing and the next, his snap, his hooks; the first part fetched as it comes due)
+  const shk = f.shovel ? Math.floor(f.shovel.t * 30) : -1;
+  const shPart = Math.floor(shk / ARM_BAKE.entrancePart);
+  const shovelWants = f.shovel ? [`shovel.${shPart}`, `shovel.${shPart + 1}`, 'shovel.snap', 'hooks'] : f.ph === 2 && f.mode === 'fight' && f.shovelIn < 4 ? ['shovel.0', 'shovel.snap', 'hooks'] : [];
   colossusWant(
     f.ph === 1 && f.mode === 'between' ? ['lurk', 'entrance.0', ...dying]
       : f.ph === 1 && f.mode === 'change' ? [`entrance.${part}`, `entrance.${part + 1}`, ...(part >= 2 ? ['stand', ...base([0, 1, 2])] : [])]
         : f.ph === 1 ? ['lurk', ...base([3, 4])]
-          : f.ph === 2 ? ['stand', ...base([0, 1, 2])]
+          : f.ph === 2 ? ['stand', ...base([0, 1, 2]), ...shovelWants]
             : ['stand'],
   );
   const standK = (f.body * 30) % Math.max(1, colossusFrames('stand') || 90);
@@ -120,7 +124,24 @@ function draw(c: Act1FxCtx): void {
     g.ellipse(x, y - 160 * up, 8, 10, 0, 0, Math.PI * 2);
     g.fill();
   };
-  if (sh) {
+  // (his shovel in his own pictures: him at the end, flipped at the right end where at the end; his snap whenever it comes; his hooks)
+  const [hx, hy] = P(HIS_PLACE.u, HIS_PLACE.v);
+  const shMove = `shovel.${shPart}`;
+  const shK = shk - shPart * ARM_BAKE.entrancePart;
+  const shovelBaked = !!sh && colossusBaked(shMove) && (sh.snap === null ? drawColossusBody(g, shMove, shK, hx, hy, sh.end === 'r' && colossusAtEnd(shMove, shK)) : drawColossusBody(g, 'shovel.snap', Math.floor(sh.snap * 30), hx, hy, sh.end === 'r'));
+  if (sh && shovelBaked) drawColossusHooks(g, shMove, shK, hx, hy, sh.end === 'r');
+  if (sh && shovelBaked) {
+    // the tell: the water boiling off that end (the game's effect)
+    if (sh.t >= SHOVEL.tell[0] && sh.t < SHOVEL.tell[1]) {
+      const endU = sh.end === 'l' ? -SHOVEL.out : STONE.w + SHOVEL.out;
+      for (let i = 0; i < 6; i++) disc(endU + Math.sin(c.t * 7 + i) * 2, STONE.d / 2 + Math.cos(c.t * 5 + i * 2) * 4, 0.4 + 0.3 * Math.abs(Math.sin(c.t * 9 + i)), null, FOAM);
+    }
+    // his snap's reach as he twitches and shuts (the game's warning)
+    if (sh.snap !== null) {
+      const u0 = sh.end === 'l' ? 0 : STONE.w - SNAP.deep;
+      poly([[u0, SNAP.across[0]], [u0 + SNAP.deep, SNAP.across[0]], [u0 + SNAP.deep, SNAP.across[1]], [u0, SNAP.across[1]]], sh.snapped ? 'rgba(255,194,61,0.45)' : 'rgba(255,61,139,0.25)', sh.snapped ? GOLD : PINK, [4, 3]);
+    }
+  } else if (sh) {
     const endU = sh.end === 'l' ? -SHOVEL.out : STONE.w + SHOVEL.out;
     if (sh.t >= SHOVEL.tell[0] && sh.t < SHOVEL.tell[1]) {
       // the tell: the water boiling off that end
@@ -204,6 +225,14 @@ function draw(c: Act1FxCtx): void {
     const w = f.ph === 1 && f.mode !== 'change' ? 3 + a.k : a.k;
     const stand = (): boolean => drawColossusArm(g, w, `a${w}.stand`, F(f.armClock) % 45, mx, my);
     if (inEntrance) return true;
+    // (his shovel: they go down with him and come up with him at his place, in his shovel's own frames; under the water between)
+    if (f.shovel && shovelBaked && a.state !== 'dying') {
+      const down = colossusFrames(`a${w}.sink`);
+      const upAt = Math.round(SHOVEL.back * 30);
+      if (shk < down) return drawColossusArm(g, w, `a${w}.sink`, shk, mx, my);
+      if (shk >= upAt) return drawColossusArm(g, w, `a${w}.up`, shk - upAt, mx, my);
+      return true;
+    }
     if (a.state === 'rise') return drawColossusArm(g, w, `a${w}.burst`, F(a.t), mx, my);
     if (a.state === 'stand') {
       // (struck: its flinch from the nearest point of its stand it is baked from)
@@ -237,7 +266,12 @@ function draw(c: Act1FxCtx): void {
     return false;
   };
   for (const a of f.arms) {
-    if (a.state === 'dead' || a.state === 'under') continue;
+    if (a.state === 'dead') continue;
+    if (a.state === 'under' && !(f.shovel && shovelBaked)) continue;
+    if (a.state === 'under') {
+      armPic(a);
+      continue;
+    }
     const r = rootAt(a.u);
     const [x, y] = P(r.u, r.v);
     const fade = a.state === 'dying' ? Math.max(0, 1 - a.t / ARM.death) : a.state === 'rise' ? Math.min(1, a.t / ARM.burst) : 1;

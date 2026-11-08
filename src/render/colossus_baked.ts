@@ -38,8 +38,10 @@ interface Manifest {
   perGamePx: number;
   /** Each group's sheets and its pictures (each: its sheet, its place on it, its corner from his middle at the water). */
   groups: Record<string, { sheets: string[]; pics: Placed[] }>;
-  /** Each move's group and its frames (30 a second) as its group's pictures. */
-  moves: Record<string, { group: string; frames: number[] }>;
+  /** Each move's group and its frames (30 a second) as its group's pictures; his shovel's, which are at the stone's end (flipped at
+   *  its right end), and its scraping tentacles in each (each a picture of the group `hooks` and how far across it lies, the bake's
+   *  pixels). */
+  moves: Record<string, { group: string; frames: number[]; ends?: boolean[]; hooks?: [number, number][][] }>;
   /** Each tentacle's root from his middle at the water (the bake's pixels). */
   roots: [number, number][];
 }
@@ -107,7 +109,7 @@ export function colossusWant(moves: readonly string[]): void {
   clock += 1;
   const groups = new Set(moves.map((mv) => man?.moves[mv]?.group).filter((g): g is string => !!g));
   for (const g of groups) want(g);
-  for (const g of [...held.keys()]) if (!groups.has(g) && !g.includes('.slam')) letGo(g);
+  for (const g of [...held.keys()]) if (!groups.has(g) && !g.includes('.slam') && !(g === 'hooks' && moves.includes('hooks'))) letGo(g);
 }
 /** Let every group go (his fight over, or left). */
 export function colossusLetGoAll(): void {
@@ -146,6 +148,41 @@ function picOf(move: string, k: number): { img: ImageBitmap; m: Placed; per: num
   const m = G.pics[mv.frames[Math.max(0, Math.min(mv.frames.length - 1, Math.floor(k)))]];
   const img = m ? h.sheets[m.s] : null;
   return m && img ? { img, m, per: man.perGamePx } : null;
+}
+
+/** Whether frame `k` of his shovel's `move` is at the stone's end (flipped at its right end). */
+export function colossusAtEnd(move: string, k: number): boolean {
+  const e = man?.moves[move]?.ends;
+  return !!e && !!e[Math.max(0, Math.min(e.length - 1, Math.floor(k)))];
+}
+
+/** His shovel's scraping tentacles in frame `k` of `move`, laid from his middle at the water at (sx, sy); at the right end flipped. */
+export function drawColossusHooks(g: CanvasRenderingContext2D, move: string, k: number, sx: number, sy: number, mirror = false): boolean {
+  const hk = man?.moves[move]?.hooks;
+  if (!man || !hk) return false;
+  const list = hk[Math.max(0, Math.min(hk.length - 1, Math.floor(k)))] ?? [];
+  if (!list.length) return true;
+  want('hooks');
+  const h = held.get('hooks');
+  const G = man.groups.hooks;
+  if (!h || !G) return false;
+  h.used = clock;
+  const per = man.perGamePx;
+  g.save();
+  g.translate(Math.round(sx), Math.round(sy));
+  if (mirror) g.scale(-1, 1);
+  let all = true;
+  for (const [id, dx] of list) {
+    const m = G.pics[id];
+    const img = m ? h.sheets[m.s] : null;
+    if (!m || !img) {
+      all = false;
+      continue;
+    }
+    g.drawImage(img, m.x, m.y, m.w, m.h, (dx + m.ox) / per, m.oy / per, m.w / per, m.h / per);
+  }
+  g.restore();
+  return all;
 }
 
 /** His body: frame `k` of `move` with his middle at the water at (sx, sy), game pixels; `mirror`, flipped about his middle. */

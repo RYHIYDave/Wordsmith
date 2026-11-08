@@ -779,8 +779,8 @@ export class ColossusFight {
         a.t = 0;
         ev.push({ t: 'armUp', id: a.id });
       }
-      // (their bursts begin on their stand's first frame, as they are baked)
-      this.armClock = 0;
+      // (they come up with him as the art's shovel has them, their stands on its clock: render/colossus_baked.ts)
+      this.armClock = SHOVEL.armsUp % ARM.stand;
     }
     if (S.t >= SHOVEL.long && S.snap === null) {
       this.shovel = null;

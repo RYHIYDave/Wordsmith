@@ -38,6 +38,7 @@ import { ARM_STAND_FRAMES, EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_STAND, armBurst,
 import type { EyeFrame, EyeLayer } from '../src/art/eye_moves';
 import { FLINCH, DEATH, SLAM, SMASH, armDeath, armFlinch, armSlam, armSmash, dense, even, evenly, liftOver, rootOf, turnsOf } from '../src/art/eye_arms';
 import type { ArmPose } from '../src/art/eye_colossus';
+import { SHOVEL as ART_SHOVEL, SNAP as ART_SNAP, atEnd, shovelFrame } from '../src/art/eye_shovel';
 import { ARM_BAKE } from '../src/render/colossus_baked';
 // @ts-ignore
 import { encodePng } from './png.mjs';
@@ -57,8 +58,14 @@ const LAYER = { w: 1100, h: 520, ax: 550, ay: 300, raw: true } as const;
 /** A tentacle's layer: taller, for one lying slammed out across the stone toward the camera (its LAYER_ARM); painted only in the box
  *  round it (its armBox). */
 const LAYER_ARM = { w: 1100, h: 660, ax: 550, ay: 300, raw: true } as const;
+/** His shovel's layers, as the art's tool boxes them: him at an end, turned (`V`); a scraping tentacle's head and its body (`AH`, `AB`),
+ *  painted where they lie across the stone's depth, at the front of the stone. */
+const LAYER_SIDE = { w: 760, h: 800, ax: 360, ay: 460, raw: true } as const;
+const LAYER_HEAD = { w: 1100, h: 540, ax: 550, ay: -60, raw: true } as const;
+const LAYER_BODY_L = { w: 1300, h: 560, ax: -230, ay: -60, raw: true } as const;
+const LAYER_BODY_R = { w: 1300, h: 560, ax: 1530, ay: -60, raw: true } as const;
 type Box = { w: number; h: number; ax: number; ay: number; raw: true; box?: readonly [number, number, number, number] };
-function armBox(pose: ColossusPose, F: typeof LAYER_ARM = LAYER_ARM): [number, number, number, number] {
+function armBox(pose: ColossusPose, F: { w: number; h: number; ax: number; ay: number } = LAYER_ARM): [number, number, number, number] {
   let i0 = Infinity;
   let j0 = Infinity;
   let i1 = -Infinity;
@@ -79,7 +86,12 @@ function armBox(pose: ColossusPose, F: typeof LAYER_ARM = LAYER_ARM): [number, n
   return [Math.max(0, Math.floor(i0 - P)), Math.max(0, Math.floor(j0 - P)), Math.min(F.w, Math.ceil(i1 + P)), Math.min(F.h, Math.ceil(j1 + P))];
 }
 /** The box a layer is painted in: his own, or a tentacle's round it. */
-const boxOf = (key: string, pose: ColossusPose): Box => (key.startsWith('A') ? { ...LAYER_ARM, box: armBox(pose) } : LAYER);
+const boxOf = (key: string, pose: ColossusPose): Box => {
+  if (key.startsWith('V')) return LAYER_SIDE;
+  if (!key.startsWith('A')) return LAYER;
+  const FR = key.startsWith('AH') ? LAYER_HEAD : key.startsWith('AB.l') ? LAYER_BODY_L : key.startsWith('AB.r') ? LAYER_BODY_R : LAYER_ARM;
+  return { ...FR, box: armBox(pose, FR) };
+};
 /** The water's colour, as the art's tool has it (its WATER): what of him is under the water is mixed toward it. */
 const WATER = [0x0e, 0x16, 0x12] as const;
 const RIM = [parseInt(ENEMY_RIM.slice(1, 3), 16), parseInt(ENEMY_RIM.slice(3, 5), 16), parseInt(ENEMY_RIM.slice(5, 7), 16)] as const;
@@ -153,6 +165,10 @@ interface MoveSpec {
   /** The sheets it is packed in. */
   group: string;
   frames: FrameSpec[];
+  /** (his shovel) Which frames are at the stone's end: those flipped at its right end (his “Mirror it”). */
+  ends?: boolean[];
+  /** (his shovel) Each frame's scraping tentacles: each its head's or its body's layer, how far down, and how far across it lies. */
+  hooks?: { key: string; drop: number; dx: number }[][];
 }
 const pad = (n: number): string => String(n).padStart(3, '0');
 const AIR = { sunk: 0, pulse: 1 };
@@ -192,6 +208,62 @@ function plan(want: readonly string[]): { moves: MoveSpec[]; layers: { key: stri
     // (his entrance in three parts of 3 s, each its own sheets: held only while it plays, the next fetched before it is wanted)
     if (mv === 'entrance') for (let c = 0; c * ARM_BAKE.entrancePart < frames.length; c++) moves.push({ name: `entrance.${c}`, group: `entrance.${c}`, frames: frames.slice(c * ARM_BAKE.entrancePart, (c + 1) * ARM_BAKE.entrancePart) });
     else moves.push({ name: mv, group: mv, frames });
+  }
+  // HIS SHOVEL, at the left end (the right end's frames there flipped, his “Mirror it”: the art's s2 is that, so its layers are taken
+  // unflipped and laid back at the left end): him, in parts of 3 s; his scraping tentacles, each frame's laid where it is (their
+  // pictures in a group of their own); his snap (the art's s1, from its first frame: played whenever the game's snap comes); his
+  // standing tentacles going down with him and coming up with him, each its own figure's.
+  const wantsShovel = want.length === 0 || want.includes('body') || want.some((w) => w === 'shovel' || w.startsWith('shovel.'));
+  if (wantsShovel) {
+    const frames: FrameSpec[] = [];
+    const ends: boolean[] = [];
+    const hooks: { key: string; drop: number; dx: number }[][] = [];
+    const sinks: Lay[][][] = [[], [], []];
+    for (let k = 0; k < ART_SHOVEL.frames; k++) {
+      const F = shovelFrame('s2', k);
+      const end = atEnd(k);
+      const left = (L: EyeLayer): EyeLayer => (L.mirror ? { ...L, dx: -(L.dx ?? 0), mirror: false } : L);
+      const ls = [F.jaws, F.spit, F.tongue].filter((L): L is EyeLayer => !!L).map((L) => ofLayer(left(L)));
+      for (const L of F.smear) if (L && L.key.startsWith('V')) ls.push(ofLayer(left(L), true));
+      frames.push({ layers: ls, sunk: F.water.sunk, pulse: F.water.pulse });
+      ends.push(end);
+      const hk: { key: string; drop: number; dx: number }[] = [];
+      for (const L of F.arms) {
+        if (!L || !(L.key.startsWith('AH') || L.key.startsWith('AB'))) continue;
+        lay(L.key, L.pose);
+        hk.push({ key: L.key, drop: L.drop, dx: L.mirror ? -(L.dx ?? 0) : L.dx ?? 0 });
+      }
+      hooks.push(hk);
+      // (his three standing tentacles, at his place: going down with him, coming up with him)
+      for (let i = 0; i < 3; i++) {
+        const L = !end ? F.arms[i] : null;
+        sinks[i].push(L && L.key.startsWith('A') && !L.key.startsWith('AH') && !L.key.startsWith('AB') ? [ofLayer(L)] : []);
+      }
+    }
+    const part = ARM_BAKE.entrancePart;
+    for (let c = 0; c * part < frames.length; c++) {
+      const name = `shovel.${c}`;
+      if (want.length && !want.includes('body') && !want.includes('shovel') && !want.includes(name)) continue;
+      moves.push({ name, group: name, frames: frames.slice(c * part, (c + 1) * part), ends: ends.slice(c * part, (c + 1) * part), hooks: hooks.slice(c * part, (c + 1) * part) });
+    }
+    // his snap: the art's s1 from its snap's first frame (its own spittle and tongue there: the lunge is in them)
+    if (want.length === 0 || want.includes('body') || want.includes('shovel') || want.includes('shovel.snap')) {
+      const snap: FrameSpec[] = [];
+      for (let k = ART_SNAP.at; k < ART_SNAP.at + ART_SNAP.frames; k++) {
+        const F = shovelFrame('s1', k);
+        const own = (L: EyeLayer): EyeLayer => (L.key.startsWith('VJ') ? L : { ...L, key: `${L.key}.snap` });
+        const ls = [F.jaws, F.spit, F.tongue].filter((L): L is EyeLayer => !!L).map((L) => ofLayer(own(L)));
+        for (const L of F.smear) if (L && L.key.startsWith('V')) ls.push(ofLayer(own(L), true));
+        snap.push({ layers: ls, sunk: F.water.sunk, pulse: F.water.pulse });
+      }
+      moves.push({ name: 'shovel.snap', group: 'shovel.snap', frames: snap, ends: snap.map(() => true) });
+    }
+    // (his standing tentacles going down with him, frames 0 to 21, and coming up with him, from frame 300)
+    for (let i = 0; i < 3; i++) {
+      if (!(want.length === 0 || want.includes('arms') || want.includes(`a${i}`) || want.includes('shovel'))) continue;
+      moves.push({ name: `a${i}.sink`, group: `a${i}`, frames: sinks[i].slice(0, ART_SHOVEL.sink[1]).map((ls) => ({ layers: ls, ...AIR })) });
+      moves.push({ name: `a${i}.up`, group: `a${i}`, frames: sinks[i].slice(ART_SHOVEL.back[0]).map((ls) => ({ layers: ls, ...AIR })) });
+    }
   }
   // HIS TENTACLES, each its own figure
   for (let w = 0; w < 5; w++) {
@@ -294,6 +366,7 @@ interface Pic {
 
 /** A FRAME LAID as the art's tool lays it (tools/eye_moves_pics.ts merge, then him over and under the water, then the pink edge). */
 function layFrame(F: FrameSpec, get: (key: string) => Raw): Pic {
+  if (F.layers.length === 0) return { w: 1, h: 1, ox: 0, oy: 0, rgba: new Uint8Array(4) };
   const placed = F.layers.map((L) => ({ L, r: get(L.key), di: Math.round(L.dx * SEEN), dj: Math.round(L.drop - L.back / R3), dz: -L.drop, dn: -L.back * 0.8660254 - L.drop * 0.5 }));
   // (the box round all of them, and a pixel round for the pink edge)
   let x0 = Infinity;
@@ -477,7 +550,8 @@ if (mode === 'paint') {
   // (`ready`: every move whose layers are all painted)
   const named = process.argv.slice(6);
   const ready = named.includes('ready');
-  const moves = plan(named.filter((m) => m !== 'ready')).moves.filter((m) => !ready || m.frames.every((F) => F.layers.every((L) => fs.existsSync(fileOf(cache, L.key)))));
+  const painted = (key: string): boolean => fs.existsSync(fileOf(cache, key));
+  const moves = plan(named.filter((m) => m !== 'ready')).moves.filter((m) => !ready || (m.frames.every((F) => F.layers.every((L) => painted(L.key))) && (m.hooks ?? []).every((hk) => hk.every((h) => painted(h.key)))));
   const memo = new Map<string, Raw>();
   const get = (key: string): Raw => {
     let r = memo.get(key);
@@ -489,9 +563,27 @@ if (mode === 'paint') {
     return r;
   };
   type Placed = { s: number; x: number; y: number; w: number; h: number; ox: number; oy: number };
-  const manifest: { perGamePx: number; groups: Record<string, { sheets: string[]; pics: Placed[] }>; moves: Record<string, { group: string; frames: number[] }>; roots: [number, number][] } = { perGamePx: half ? 1 : 2, groups: {}, moves: {}, roots: rootsPx().map(([x, y]) => [x / (half ? 2 : 1), y / (half ? 2 : 1)]) };
+  type MoveOut = { group: string; frames: number[]; ends?: boolean[]; hooks?: [number, number][][] };
+  const manifest: { perGamePx: number; groups: Record<string, { sheets: string[]; pics: Placed[] }>; moves: Record<string, MoveOut>; roots: [number, number][] } = { perGamePx: half ? 1 : 2, groups: {}, moves: {}, roots: rootsPx().map(([x, y]) => [x / (half ? 2 : 1), y / (half ? 2 : 1)]) };
+  const scale = half ? 2 : 1;
   let rawPx = 0;
   let files = 0;
+  // (his scraping tentacles' pictures: each head or body at each depth it is laid at, a group of their own; under the water, seen as
+  // the art's tool sees a tentacle swimming just under the surface)
+  const hookPics: (Pic & { id: number })[] = [];
+  const hookSig = new Map<string, number>();
+  const hookOf = (h: { key: string; drop: number }): number => {
+    const sig = `${h.key}@${h.drop}`;
+    let id = hookSig.get(sig);
+    if (id === undefined) {
+      const p = layFrame({ layers: [{ key: h.key, drop: h.drop, back: 0, dx: 0 }], sunk: 0.62, pulse: 1 }, get);
+      id = hookPics.length;
+      hookPics.push({ ...(half ? halved(p) : p), id });
+      hookSig.set(sig, id);
+    }
+    return id;
+  };
+  const groupsOut: [string, (Pic & { id: number })[]][] = [];
   for (const group of [...new Set(moves.map((m) => m.group))]) {
     // EACH FRAME'S PICTURE (frames laid the same way from the same layers share one)
     const pics: (Pic & { id: number })[] = [];
@@ -510,8 +602,14 @@ if (mode === 'paint') {
           }
           return id;
         }),
+        ...(mv.ends ? { ends: mv.ends } : {}),
+        ...(mv.hooks ? { hooks: mv.hooks.map((hk) => hk.map((h): [number, number] => [hookOf(h), Math.round(h.dx * SEEN) / scale])) } : {}),
       };
     }
+    groupsOut.push([group, pics]);
+  }
+  if (hookPics.length) groupsOut.push(['hooks', hookPics]);
+  for (const [group, pics] of groupsOut) {
     // THE SHEETS: the pictures in rows, tallest first, a new sheet whenever one would pass 16 MB of pixels (raw; packed it is far less)
     const list = [...pics].sort((a, b) => b.h - a.h);
     type Sheet = { rows: { y: number; h: number; x: number }[]; h: number; w: number; items: { c: Pic & { id: number }; x: number; y: number }[] };
