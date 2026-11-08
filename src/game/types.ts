@@ -247,7 +247,7 @@ export const RARITY_NAMES = ['Normal', 'Magic', 'Rare', 'Unique'] as const;
  * THE NEW CLASSES' WEAPONS (behind NEW_WEAPONS, game/defs.ts, off): each new class's own, found only by a hero of that
  * class (ClassWeaponKind).
  */
-export type WeaponKind = 'sword' | 'greatsword' | 'bow' | 'wand' | 'staff' | ClassWeaponKind;
+export type WeaponKind = 'sword' | 'greatsword' | 'bow' | 'wand' | 'staff' | ClassWeaponKind | WarriorWeaponKind;
 /** The five any hero may find (every list of weapons the game had before the new classes' own). */
 export const WEAPONS: readonly WeaponKind[] = ['sword', 'greatsword', 'bow', 'wand', 'staff'];
 /**
@@ -258,7 +258,13 @@ export const WEAPONS: readonly WeaponKind[] = ['sword', 'greatsword', 'bow', 'wa
 export type ClassWeaponKind = 'wraps' | 'tome' | 'wrench';
 export const CLASS_WEAPONS: readonly ClassWeaponKind[] = ['wraps', 'tome', 'wrench'];
 /** Every kind of weapon there is: the five, and the new classes' own (a saved piece of any of them loads back as itself). */
-export const ALL_WEAPONS: readonly WeaponKind[] = [...WEAPONS, ...CLASS_WEAPONS];
+/**
+ * THE WARRIOR'S THREE WEAPONS (game/talents.ts WARRIOR_TREE2): his battle axe and his warhammer, the greatsword's numbers under their
+ * own names; found only by a Warrior who has picked one (his greatswords found become it: items.ts asWarriorWeapon).
+ */
+export type WarriorWeaponKind = 'battleaxe' | 'warhammer';
+export const WARRIOR_WEAPONS: readonly WarriorWeaponKind[] = ['battleaxe', 'warhammer'];
+export const ALL_WEAPONS: readonly WeaponKind[] = [...WEAPONS, ...CLASS_WEAPONS, ...WARRIOR_WEAPONS];
 
 /** Weapons that were in the game until Version 12. A saved item of one of these becomes the kind that took its place (items.ts, migrateItem). */
 export type OldWeaponKind = 'axe' | 'mace' | 'maul' | 'longbow';

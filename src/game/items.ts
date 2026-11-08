@@ -20,7 +20,7 @@
 
 import type { RNG } from '../engine/rng';
 import { CLASSES, CLASS_WEAPON_NAME, classWeapon } from './defs';
-import type { Affix, BaseWordId, ClassId, ClassWeaponKind, IconKey, Imbue, Item, Limit, MeldId, OffhandKind, OldWeaponKind, RankId, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from './types';
+import type { Affix, BaseWordId, ClassId, ClassWeaponKind, IconKey, Imbue, Item, Limit, MeldId, OffhandKind, OldWeaponKind, RankId, Rarity, Slot, StatKey, StatMod, WarriorWeaponKind, WeaponKind, WordId } from './types';
 import { MELD_OF, RANK_OF, SLOTS } from './types';
 
 type Range = readonly [number, number];
@@ -139,7 +139,7 @@ const WEAPON_KINDS: readonly WeaponDef[] = [
 ];
 
 /** A weapon's numbers (its hands, its speed, its damage, what is built into it), under another kind and other names. */
-function asIf(like: WeaponKind, kind: ClassWeaponKind, names: Three<string>): WeaponDef {
+function asIf(like: WeaponKind, kind: ClassWeaponKind | WarriorWeaponKind, names: Three<string>): WeaponDef {
   const w = WEAPON_KINDS.find((d) => d.kind === like) as WeaponDef;
   return { ...w, kind, names };
 }
@@ -156,6 +156,10 @@ const CLASS_WEAPON_DEFS: readonly WeaponDef[] = [
   asIf('greatsword', 'wraps', ["Brawler's Wraps", 'Studded Wraps', 'War Wraps']),
   asIf('wand', 'tome', ['Demonic Tome', 'Chained Tome', 'Pact Tome']),
   asIf('sword', 'wrench', ['Iron Wrench', 'Steel Wrench', 'War Wrench']),
+  // (THE WARRIOR'S THREE WEAPONS, behind WARRIOR_TREE2: his battle axe and warhammer, the greatsword's numbers; found by none, his
+  // greatswords found become his own: asWarriorWeapon)
+  asIf('greatsword', 'battleaxe', ['Iron Battle Axe', 'Steel Battle Axe', 'War Axe']),
+  asIf('greatsword', 'warhammer', ['Iron Warhammer', 'Steel Warhammer', 'War Maul']),
 ];
 
 /**
@@ -1063,7 +1067,7 @@ export function rollItem(ilvl: number, rng: RNG, opts: RollOpts = {}): Item {
   return makeItem(base, level, rarity, affixes, nameFor(base, rarity, affixes, rng));
 }
 
-const WEAPON_KIND_NAME: Record<WeaponKind, string> = { sword: 'Sword', greatsword: 'Greatsword', bow: 'Bow', wand: 'Wand', staff: 'Staff', wraps: CLASS_WEAPON_NAME.wraps, tome: CLASS_WEAPON_NAME.tome, wrench: CLASS_WEAPON_NAME.wrench };
+const WEAPON_KIND_NAME: Record<WeaponKind, string> = { sword: 'Sword', greatsword: 'Greatsword', bow: 'Bow', wand: 'Wand', staff: 'Staff', wraps: CLASS_WEAPON_NAME.wraps, tome: CLASS_WEAPON_NAME.tome, wrench: CLASS_WEAPON_NAME.wrench , battleaxe: 'Battle Axe', warhammer: 'Warhammer' };
 const OFFHAND_KIND_NAME: Record<OffhandKind, string> = { shield: 'Shield', quiver: 'Quiver', focus: 'Focus' };
 const SLOT_KIND_NAME: Record<Slot, string> = { mainhand: 'Weapon', offhand: 'Off hand', helm: 'Helmet', chest: 'Armour', gloves: 'Gloves', belt: 'Belt', boots: 'Boots', amulet: 'Amulet', ring: 'Ring' };
 
@@ -1129,6 +1133,27 @@ export function migrateItem(it: Item): Item {
       it.implicit = base.implicit(it.ilvl);
     }
   }
+  return it;
+}
+
+/**
+ * THE WARRIOR'S THREE WEAPONS (game/talents.ts WARRIOR_TREE2): a greatsword, battle axe or warhammer made the `kind` of the same
+ * name tier, in place (and returned), as an old weapon is made new: its name, picture and numbers its new kind's (the three's are
+ * the same), its affixes, words and rarity kept. Any other piece comes back as it was. His words, 7 Nov 2026, 21:11: “These will
+ * change his current weapon drops as well.  Swords become hammers become axes.”; his pick, “Yes, his weapons change too
+ * (Recommended)”.
+ */
+export function asWarriorWeapon(it: Item, kind: 'greatsword' | WarriorWeaponKind): Item {
+  if (!it || (it.weapon !== 'greatsword' && it.weapon !== 'battleaxe' && it.weapon !== 'warhammer') || it.weapon === kind) return it;
+  const digit = Number.parseInt(String(it.baseId).slice(-1), 10);
+  const tier = Number.isFinite(digit) ? Math.max(0, Math.min(2, digit - 1)) : 0;
+  const base = ALL_BASES.find((b) => b.id === `${kind}${tier + 1}`);
+  if (!base) return it;
+  if (typeof it.name === 'string' && typeof it.baseName === 'string' && it.name.includes(it.baseName)) it.name = it.name.replace(it.baseName, base.name);
+  it.baseId = base.id;
+  it.baseName = base.name;
+  it.icon = base.icon;
+  it.weapon = base.weapon;
   return it;
 }
 

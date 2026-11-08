@@ -348,6 +348,9 @@ export const WEAPON_SKILLS: Record<WeaponKind, readonly [SkillId, SkillId]> = {
   wraps: ['strike', 'whirlwind'],
   tome: ['familiar', 'beam'],
   wrench: ['strike', 'slam'],
+  // (THE WARRIOR'S THREE WEAPONS: as the greatsword, whatever WARRIOR_TREE2 makes of his moves)
+  battleaxe: ['strike', 'whirlwind'],
+  warhammer: ['strike', 'whirlwind'],
 };
 /** With empty hands: a blow of the fist, and a slam of it. */
 const BARE_SKILLS: readonly [SkillId, SkillId] = ['strike', 'slam'];
@@ -355,7 +358,7 @@ const BARE_SKILLS: readonly [SkillId, SkillId] = ['strike', 'slam'];
  * The attribute a weapon's attacks grow with, whoever holds it: a sword with Strength, a bow with Dexterity, a staff or a wand
  * with Intelligence (the new classes' own, NEW_WEAPONS: the wraps with Strength, the tome Intelligence, the wrench Dexterity).
  */
-export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int', wraps: 'str', tome: 'int', wrench: 'dex' };
+export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int', wraps: 'str', tome: 'int', wrench: 'dex', battleaxe: 'str', warhammer: 'str' };
 
 /**
  * ATTACKS AND SPELLS (the doc "Wordsmith: The New Words", his yes at 16:53 on 8 Oct 2026): the
@@ -2344,6 +2347,8 @@ export const QUIPS: {
   weapon: {
     sword: ['Sharp answer.', 'Mightier than the pen.', 'Cut and dried.'],
     greatsword: ['Cut down to size.', 'Big sword. Short story.'],
+    battleaxe: ['Axe me anything.', 'Split decision.'],
+    warhammer: ['Hammered.', 'Nailed it.'],
     bow: ['Nock, nock.', 'Straight to the point.', 'Loosed and lost.'],
     wand: ['Wave goodbye.', 'A flick of the wrist.', 'Spelled it out.'],
     staff: ['Staff meeting adjourned.', 'Walk softly.'],

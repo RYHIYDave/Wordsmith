@@ -16,7 +16,7 @@ import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
 import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
-import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
+import { asWarriorWeapon, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
 import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
 import type { Hall } from './level';
@@ -26,7 +26,7 @@ import type { DoorInst } from './doors';
 import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
 import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
 import type { HeroMode } from './modes';
-import { COMPANIONS, TALENTS, TALENTS2, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, WARRIOR_TUNE, cleanTalents, remadeNow, takeProblem, talentById, talentMods, talentPoints, unlearnProblem, warriorKit } from './talents';
+import { COMPANIONS, TALENTS, TALENTS2, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, WARRIOR_TUNE, cleanTalents, remadeNow, takeProblem, talentById, talentMods, talentPoints, unlearnProblem, warriorKit, warriorWeapon, WARRIOR_TREE2 } from './talents';
 import { COMPANION_GROUPS, COMPANION_GROUP_IDS, COMPANION_TUNE, cleanPicks, pickedIn } from './companions';
 import { ROYALS, ROYAL_NAMES, ROYAL_TUNE, canMake, cleanCards, handCards, handPays, royalFloor } from './royal_cards';
 import type { Hand, Royal } from './royal_cards';
@@ -1473,7 +1473,7 @@ export class Game {
       v.slots.forEach((slot, i) => {
         // (what a vendor has grows with the dungeons as what drops does: plain and magic early, a
         // rare piece now and then; the last two on each shelf are a level better)
-        stock.push(rollItem(level + (i >= v.slots.length - 2 ? 1 : 0), rng, { luck: TUNE.shopLuck, slot, forWeapon: held, weapons: v.weapons, cls: this.hero.cls }));
+        stock.push(this.forHim(rollItem(level + (i >= v.slots.length - 2 ? 1 : 0), rng, { luck: TUNE.shopLuck, slot, forWeapon: held, weapons: v.weapons, cls: this.hero.cls })));
       });
       this.shops[id] = stock;
     }
@@ -11986,7 +11986,24 @@ export class Game {
     // (LOOT2: in the descent every roll the luckier)
     if (LOOT2.on && this.power >= LOOT2.from) opts.luck = [(opts.luck?.[0] ?? 1) * LOOT2.deep, (opts.luck?.[1] ?? 1) * LOOT2.deep];
     // (ENDLESS MODE: what drops grows on as the floors' depth would, `power`)
-    return rollItem(Math.max(1, this.power), this.rng, opts);
+    return this.forHim(rollItem(Math.max(1, this.power), this.rng, opts));
+  }
+
+  /**
+   * THE WARRIOR'S THREE WEAPONS (WARRIOR_TREE2): a piece found, bought or won by a Warrior, a greatsword made his own weapon's kind
+   * (his words: “Swords become hammers become axes.”); and, his weapon picked or changed, every one he carries and wears made it
+   * (`all`; his “Yes, his weapons change too (Recommended)”).
+   */
+  private forHim(it: Item): Item {
+    const h = this.hero;
+    if (h.cls === 'warrior' && WARRIOR_TREE2.on && TALENTS.on) asWarriorWeapon(it, warriorWeapon(h.talents));
+    return it;
+  }
+  private allForHim(): void {
+    const h = this.hero;
+    if (h.cls !== 'warrior' || !WARRIOR_TREE2.on || !TALENTS.on) return;
+    for (const slot of EQUIP_SLOTS) if (h.gear[slot]) this.forHim(h.gear[slot] as Item);
+    for (const it of h.bag) if (it) this.forHim(it);
   }
 
   /** The words a monster will drop when it dies: what hangs over its head. For most monsters, none. */
@@ -13076,7 +13093,7 @@ export class Game {
     const roll = this.rng.next();
     const odds = TUNE.gambleOdds;
     const rarity: Rarity = roll < odds.rare ? 2 : roll < odds.rare + odds.magic ? 1 : 0;
-    const it = rollItem(Math.max(1, this.power), this.rng, { slot: kind.slot, rarity, weapons: kind.weapon ? [kind.weapon] : undefined, cls: h.cls });
+    const it = this.forHim(rollItem(Math.max(1, this.power), this.rng, { slot: kind.slot, rarity, weapons: kind.weapon ? [kind.weapon] : undefined, cls: h.cls }));
     h.gold -= price;
     h.bag[free] = it;
     this.won = free;
@@ -13115,7 +13132,7 @@ export class Game {
     h.cards = cards;
     this.wonHand = [];
     for (let k = 0; k < pays.n; k++) {
-      const it = rollItem(Math.max(1, this.power) + pays.plus, this.rng, { rarity: pays.rarity, cls: h.cls });
+      const it = this.forHim(rollItem(Math.max(1, this.power) + pays.plus, this.rng, { rarity: pays.rarity, cls: h.cls }));
       h.bag[free[k]] = it;
       this.wonHand.push(free[k]);
     }
@@ -13245,6 +13262,7 @@ export class Game {
     if (why) return why;
     const h = this.hero;
     h.talents.push(id);
+    this.allForHim();
     this.refresh();
     this.emit({ t: 'talent', id });
     this.sfx('equip');
@@ -13294,6 +13312,7 @@ export class Game {
     const h = this.hero;
     h.gold -= this.unlearnPrice();
     h.talents = h.talents.filter((t) => t !== id);
+    this.allForHim();
     this.refresh();
     this.sfx('gold');
     return null;
