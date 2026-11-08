@@ -18,16 +18,34 @@ His words (7 Nov 2026 unless said otherwise):
   middle”.
 - Asked how a wave is got past, his answer: “Outrun or dodge through”. Read as: each wave is a wall of black water, tallest at the
   back by the water, thinning toward the front and dying before the front edge; you either dodge through it or run to the front. The
-  two waves meeting in the middle crash hard.
+  two waves meeting in the middle crash hard. (Changed by his word below: nowhere safe.)
+- Shown a0c0147e: “I don’t like that you can just stand at the back and dodge everything.  We don’t want that.  I’d like the slams to
+  have a bit more weighty impact.  Some goo  and stone fragments flying”. ("The back" is the far side of the stone, away from him,
+  where the film's Warrior stood and nothing reached him.)
+- Asked "Should the slams and the waves reach the whole stone, so there's nowhere safe and you have to dodge through? That changes
+  your earlier "Outrun or dodge through": there would be nowhere to run to.", his pick: “Yes, nowhere safe (Recommended)” (offered as:
+  slams stretch to the near edge; waves sweep the whole stone; you dodge through).
+
+FIX 1 (a0c0147e seen close; his word above): NOWHERE SAFE. Each slam's line runs from its root toward the hero right across the stone
+to where it leaves it (its near edge, or its side), the tentacle stretched out along all of it as it lashes, longer and thinner, lying
+along the whole line; drawn for a turn every 3 degrees (every 15 left two thirds of the stone's near half between the lines: 3.3
+tiles apart at the near edge, a line 1.1 wide), so that in each phase every spot of the stone lies in some tentacle's line (checked).
+Each wave sweeps the stone's whole depth, still a wall a third as tall at the near edge, and spills off it: no outrunning, you dodge
+through. THE SLAMS LAND HEAVIER: slapped down flat, squashed, held, rebounding; the screen thrown harder; the stone broken along the
+line; chunks of the paving and goo flying. THE WATER REAL (the waves and the crash, which read as a green slab and a white bush). THE
+WARRIOR at the far side of the stone, away from him, every slam and wave reaching him, dodging out of each line before it lands and
+through each wave, never on a tentacle (checked).
 
 THE MAIN CHAT'S RULES (its post of 7 Nov 00:48; it sets the final numbers): a tentacle stands where it burst up; every 3 to 4 s it
 rears, a warning of about 0.9 s, its line on the stone in the enemy's pink, laid from its root toward the hero; it slams along that
-line; it is struck and hurt where it stands, and sinks into the water as it dies. All drawn so, with three things for the main chat
-to set: (1) THE LINE is drawn 8 tiles long and 1.6 wide, not about 6 by 1.2: the tentacles as he has them (his look, fe166263) are 11
-to 17 tiles long and 3 thick at the water, and what of one lies on the stone needed that room to lie inside its line; (2) THE ROOTS
-are where his look puts them, 1.95 tiles off the stone, not 1.4: phase 1's two 4 tiles either side of the middle (at a third and two
-thirds along), phases 2 and 3's three at the middle and 8 tiles either side; (3) the films show each slam once or twice, not every 3
-to 4 s.
+line; it is struck and hurt where it stands, and sinks into the water as it dies. All drawn so. EVERY LENGTH HERE IS IN THE GAME'S
+TILES (a tile, C_TILE, is 39.19 of his lengths; the stone 17 tiles by 11. Fix 1: an earlier version of this section, and its report,
+called the code's `UNIT` a tile; `UNIT` is a tile divided by the square root of 2, 27.7 of his lengths). THE LINE is 1.1 tiles wide
+(the main chat's 1.2) and, by his word above, runs across the whole stone (each turn's length below). The tentacles as he has them
+(fe166263) are 7.9 to 12.0 tiles long and 2.1 thick at the water (the middle one 1.8); stretched along a line they grow longer and
+thinner. THE ROOTS are 1.38 tiles off the stone (the main chat's 1.4): phase 1's two 2.83 tiles either side of the middle (at a third
+and two thirds along), phases 2 and 3's three at the middle and 5.66 tiles either side. The films show each slam once or twice, not
+every 3 to 4 s.
 
 `src/art/eye_arms.ts` (behind `EYE2`, off; nothing of the game imports it: `tests/eye_arms.test.ts`) says each move frame by frame as a
 pose for the painter; `tools/eye_moves_pics.ts` paints each once and lays the frames together in the arena with what the game would
@@ -43,25 +61,55 @@ makes the sheet and the film. Each tentacle is a figure of its own, one smooth t
   and so in the last beat of his entrance).
 - THE SLAM ON THE STONE (`armSlam`), 74 frames (2.47 s):
   - WIND-UP, frames 0 to 26 (0.90 s), HELD: out of its stand fast, slowing into its rear by frame 18; reared back from its line and
-    up, an S across the line, its top rolled over into a big coil; held there quivering, the coil tightening. THE LINE on the stone
+    up, an S across the line, its top rolled over into a big coil (fix 1: a little lower, so that the camera down to see the whole
+    stone keeps it in the picture); held there quivering, the coil tightening. THE LINE on the stone, right across it,
     all through it, the game's own warning (`render/act1_fx/garden_warn.ts`): its edge dashed in the enemy's pink, marching, the stone
     inside shaded dark and dithered, flaring to the enemy's gold in its last quarter as the blow comes.
-  - STRIKE, frames 27 and 28, two smeared frames (each with the frame before it ghosted behind it): 27 flung down out of the rear, its
-    outer part still high over the line; THE HIT on frame 28 (0.93 s): lying along the line on the stone, never in it (what lies on
-    the stone is inside its line, at every turn); the stone cracks under it, slime, water and chips of the stone thrown up, the screen
-    jolted (4 game pixels, dying over 9 frames).
-  - A BEAT LYING THERE, frames 28 (the hit) to 42 (0.5 s): a rebound off the stone and settling, its tip curling.
+  - STRIKE, frames 27 and 28, two smeared frames (each with the frame before it ghosted behind it): 27 flung down out of the rear,
+    lashing out along the line, stretching, its outer part still high over it; THE HIT on frame 28 (0.93 s): stretched out along the
+    whole line to where it leaves the stone, longer than it stands and thinner (its root as thick as the square root of 1.05 over how
+    far it is stretched), lying on the stone, never in it (what lies on the stone is inside its line, at every turn), SLAPPED DOWN FLAT:
+    SQUASHED, what lies on the stone flattened to three quarters of its thickness and bulging out half as wide again (`squash` 1.2, the
+    painter's own), held so frames 28 to 31, then springing up off the stone taller than round (frames 32 to 36) and settling.
+  - A BEAT LYING THERE, frames 28 (the hit) to 42 (0.5 s): the squash held, the rebound, settling, its tip curling.
+  - THE IMPACT (the game's effects, drawn over; for the main chat): the screen thrown 8 game pixels (it was 4), dying over 14 frames;
+    the stone broken along the line: split along both sides of where it lay (a crack every 1.5 tiles each side), broken across it every
+    1.15 tiles, slabs of the paving lifted at an edge and tipped every 1.3 tiles, staying 4 s and fading by 7 s; THROWN UP all along the
+    line, 124 in all: 34 CHUNKS OF THE PAVING (broken pieces 4.5 to 10.5 picture pixels across, their tops worn and lit, moss on some,
+    their broken sides dark), flung 140 to 360 of his lengths a second up and 50 to 200 out to the sides, tumbling, arcing, bouncing
+    twice on the stone (each bounce at a third of the speed, sliding on at half), settling and lying, gone by 3.2 s; GOO, 40 gobs (2.4
+    to 5.8 across) and 12 strings and sheets of slime flung off it, 120 to 420 up, splatting on the stone (a lobed splat, flecks round
+    it) and lying a moment, soaking away by 1.4 s; 24 drops of water; 14 bits of grit.
   - WIND-DOWN, frames 43 to 73 (1.03 s): dragged back toward the water along its own length, scraping (to frame 52), peeled up off
     the stone from the water out, its tip last (to 60), rising into its stand by 72, at its own clock then, so it stands on with no
     leap; the slime trail it leaves along the line, laid as it drags, fading from 1.2 s and gone 3.2 s after.
-  - ITS TURNS: drawn for each of 9 turns of its line, every 15 degrees from 60 to the left to 60 to the right (from its root toward
-    the hero: these cover the stone from every root); the game takes the turn nearest the hero. Drawn again for each turn, not one
-    drawing turned by the game: turned, its light and its suckers would turn with it and a lying tentacle would not lie on the stone.
+  - ITS TURNS: a turn every 3 degrees, each tentacle those of them whose line crosses the stone (phase 1's: 75 to the left to 78 to
+    the right, mirrored for the right one; phases 2 and 3's left one 60 to the left to 78 to the right, the right one mirrored, the
+    middle one 78 either way); the game takes the turn nearest the hero. Every 15 degrees (as first drawn) leaves the stone's near half
+    mostly between the lines (they are 3.3 tiles apart at the near edge and 1.1 wide): every 3 degrees, from each phase's roots, every
+    spot of the stone lies in some line (checked). Drawn again for each turn, not one drawing turned by the game: turned, its light
+    and its suckers would turn with it and a lying tentacle would not lie on the stone. (A cheaper way, the main chat's to weigh: the
+    turns every 15 degrees drawn, and the game turning each up to 7.5 degrees either way.)
+  - EACH TURN'S LINE, in tiles from its root to where it leaves the stone (for the main chat; the turn, then the length):
+    - phase 1's left one (the right one: the same, its turns mirrored): -75: 5.9, -72: 6.0, -69: 6.1, -66: 6.2, -63: 6.4, -60: 6.5,
+      -57: 6.8, -54: 7.0, -51: 7.3, -48: 7.6, -45: 8.0, -42: 8.5, -39: 9.0, -36: 9.6, -33: 10.4, -30: 11.3, -27: 12.5, -24: 13.5,
+      -21: 13.3, -18: 13.0, -15: 12.8, -12: 12.7, -9: 12.5, -6: 12.4, -3 to 6: 12.4, 9: 12.5, 12: 12.7, 15: 12.8, 18: 13.0, 21: 13.3,
+      24: 13.5, 27: 13.9, 30: 14.3, 33: 14.8, 36: 15.3, 39: 15.9, 42: 16.7, 45: 16.0, 48: 15.2, 51: 14.6, 54: 14.0, 57: 13.5, 60: 13.1,
+      63: 12.7, 66: 12.4, 69: 12.1, 72: 11.9, 75: 11.7, 78: 11.6.
+    - phases 2 and 3's left one (the right one mirrored): -60: 3.3, -57: 3.4, -54: 3.5, -51: 3.6, -48: 3.8, -45: 4.0, -42: 4.2,
+      -39: 4.5, -36: 4.8, -33: 5.2, -30: 5.7, -27: 6.2, -24: 7.0, -21: 7.9, -18: 9.2, -15: 11.0, -12: 12.7, -9: 12.5, -6 to 6: 12.4,
+      9: 12.5, 12: 12.7, 15: 12.8, 18: 13.0, 21: 13.3, 24: 13.5, 27: 13.9, 30: 14.3, 33: 14.8, 36: 15.3, 39: 15.9, 42: 16.7, 45: 17.5,
+      48: 18.5, 51: 18.2, 54: 17.5, 57: 16.9, 60: 16.4, 63: 15.9, 66: 15.5, 69: 15.2, 72: 14.9, 75: 14.7, 78: 14.5.
+    - phases 2 and 3's middle one (the same either way): 0 to 6: 12.4, 9: 12.5, 12: 12.7, 15: 12.8, 18: 13.0, 21: 13.3, 24: 13.5,
+      27: 13.9, 30: 14.3, 33: 14.8, 36: 14.5, 39: 13.5, 42: 12.7, 45: 12.0, 48: 11.4, 51: 10.9, 54: 10.5, 57: 10.1, 60: 9.8, 63: 9.5,
+      66: 9.3, 69: 9.1, 72: 8.9, 75: 8.8, 78: 8.7.
+    - the line is 1.1 tiles wide; it reaches the stone 1.38 tiles from the root (straight on; more at a slant).
 - THE WATER SLAM (`armSmash`; the left and right ones in phases 2 and 3), 74 frames, the same beats: WIND-UP 0 to 26 held, reared back
   away from the stone's end and up, lower (so it is seen with the stone), coiled hard, quivering; the game's warning across the back
-  of the stone where its wave will run (the same dashed pink, over the wave's reach). STRIKE 27 and 28, smeared; THE HIT on 28: a high
-  arch flung out over the water and down into it off the stone's end (2.5 tiles off the end, 2.2 onto its depth), a crown of water and
-  foam thrown up (200 drops), the screen jolted (3 game pixels). In the water to frame 42, heaving, churning it; drawn back up out of
+  of the stone where its wave will run (the same dashed pink, over the whole stone). STRIKE 27 and 28, smeared; THE HIT on 28: a high
+  arch flung out over the water and down into it off the stone's end (1.79 tiles off the end, 1.53 onto its depth), a heavy crown of
+  water thrown up (fix 1: 320 drops, gobs and sheets of slime, flung 480 to 780 of his lengths a second up, from 200 and 380 to 580),
+  the screen thrown 6 game pixels over 12 frames (from 3 over 9). In the water to frame 42, heaving, churning it; drawn back up out of
   it, 43 to 73, into its stand by 72.
 - STRUCK (`armFlinch`), 14 frames (0.47 s): flung back from the blow in two frames, shivering out along it, back; lying slammed, it
   jerks up off the stone and slaps back down (the film shows it lying; standing, it is drawn, not filmed). His dark ichor spurts from where it was struck for 8 frames (maroon to black, never
@@ -73,41 +121,55 @@ makes the sheet and the film. Each tentacle is a figure of its own, one smooth t
 - PHASE 1: the two burst up at the fight's start out of his lurk (part 1's `armBurst`: the water bulging over each for 10 frames, the
   burst in 2, settling over 20), the right one 6 frames after the left, then stand, slam, are struck and die as above.
 
-### The water slams, for the main chat (his lengths: 27.7 to a tile; the stone 24.0 tiles across and 15.6 deep)
+### The water slams, for the main chat (in the game's tiles, C_TILE, 39.19 of his lengths; the stone 17 tiles across and 11 deep)
 
 - THE BLOWS: each lands on frame 28 of its move (0.93 s after its wind-up begins). In the film's phase 2: the middle one's slam on the
   stone lands on frame 58; the left's water slam 140; the right's 240; both at once 350.
-- EACH WAVE: formed out of the smash over 0.25 s, 1.44 tiles off the stone's end; rolls across at 8.66 tiles a second (the stone's
-  length in 2.78 s; 2.94 s from the smash to the far end), and dies as it goes off the far end (over 5 tiles). Its front leads at the
-  back (it slants, 0.35 tiles behind for every tile toward the front) and is never ruled straight (it surges and lags). ITS HEIGHT
-  along the stone's depth: 2.09 tiles at the back edge, 1.63 two tiles onto the stone, 1.16 at four, 0.66 at six, 0.11 at eight,
-  nothing past 8.3: the stone is 15.6 deep, so its front 7.3 tiles are out of the wave's reach (there it is outrun; anywhere else it is
-  dodged through). Across it: a steep face ahead (about a third of a tile), its crest curling over, a long back slope (about 2 tiles).
+- EACH WAVE: formed out of the smash over 0.25 s, 1.02 tiles off the stone's end; rolls across at 6.12 tiles a second (the stone's
+  17 tiles in 2.78 s; 2.94 s from the smash to the far end), and dies as it goes off the far end (over 3.57 tiles). Its front leads at
+  the back (it slants, 0.35 tiles behind for every tile toward the front) and is never ruled straight (its crest surges and lags, up
+  to 0.4 tiles either way). ITS HEIGHT along the stone's depth (fix 1, nowhere safe: it sweeps the whole depth): 1.48 tiles at the back
+  edge, 1.3 two tiles onto the stone, 1.2 at four, 1.0 at six, 0.8 at eight, 0.6 at ten, 0.49 at the near edge (eleven: a third of
+  its height at the back, still a wall), spilling off the near edge to nothing a tile past it. Nowhere to outrun it: it is dodged
+  through. Across it: its crest pitching forward in a lip that curls
+  down (reaching about half its height ahead of it: 0.74 tiles at the back, surging and drawing back), the hollow under the lip, the
+  face falling to its toe; behind the crest its back slope (0.87 tiles). (Fix 1 made its back slope shorter, 0.87 tiles from 1.33, and
+  gave it the lip: a wall, not a long ramp; and made it reach the whole depth. Its speed, its height at the back and its times are as
+  they were.)
 - THE CRASH: the two waves of the both-at-once meet in the middle 1.55 s (46.6 frames) after their smash, frame 75 of the move (the
-  film's frame 397): a column of water 8.3 tiles high at the back (lower toward the front, as the waves are; its top torn into
-  spouts), its width 2.5 tiles either side of the middle (falling off as e to the minus the square of the distance over that), rising
-  in 0.35 s and falling back over 1.4 s, spreading to 2.6 times as wide as it falls (6.6 tiles either side); 420 drops of spray, slime and water
-  thrown out of it; the screen thrown 7 game pixels, dying over 30 frames (1 s); the stone left wet and streaming where it fell.
+  film's frame 397): where they meet near the back of the stone (0.87 tiles onto it), a plume of water 5.87 tiles high, 1.79 tiles
+  its half-width scale (narrow at its foot, fanning out as it rises), rising in 0.35 s and falling back over 1.4 s, spreading to 2.6
+  times as wide as it falls (4.64 tiles); along the line where they meet in front of it a lower wall of spray (0.7 tiles high, lower
+  and broken toward the near edge); 420 drops of spray, slime and water flung out of it in arcs to both sides; then a surge of foamy
+  water spreading over the stone in a pool up to 6.9 tiles either side of the middle and over the whole depth, draining off by 3.2 s,
+  the stone left wet and streaming until 5 s; the screen
+  thrown 7 game pixels, dying over 30 frames (1 s).
 - What the game draws: the waves and the crash are the game's effects drawn over the stone (as his water is); the smash is the
-  tentacle's own frames. Here the pictures' tool draws them as the game would: each wave a wall of black water seen from above (its
-  crest a ragged lip of foam, the hollow under the curl black, foam torn into streaks and lace behind it, weed and slime rolled in it,
-  its back slope glossy, water running down it, thinning toward the front to a sheet of foam the stone shows through); the crash a
-  torn column of white water, its sheets falling back in streaks, slime in it, its top torn into spray.
+  tentacle's own frames. Here the pictures' tool draws them as the game would (fix 1, after they read as a green slab and a white
+  bush): each wave drawn in slices across the stone's depth, each slice its own shape as the camera sees it, so it is real rolling
+  water: the swamp's black water, lit by its curve, a glossy highlight running along it behind the crest; the crest pitching over in a
+  lip that curls down, foam riding it, spray torn off it, the lip surging and changing every frame; the hollow under it; foam spilling
+  down the face and streaming off the back in streaks; weed and slime rolled in it; thinning toward the front to a film the wet stone
+  shows through. The crash: the two walls slamming together and erupting in a plume, dark water at its core with sheets of it
+  streaming up and then falling back down it, white foam and torn sheets at its edges, a crown of spouts and spray at its top; arcs of
+  drops flung out to both sides; then collapsing into the surge, a pool of foamy water with a ragged rim (nothing ruled, no box),
+  draining off and leaving the stone wet.
 
 ### The pictures
 
-- `pictures/eye_moves2.png` (1200 x 6594): key frames at the game's size (the phone's screen, two picture pixels to a game pixel):
-  phase 1 (14 frames), phase 2 (10), the line at each of its 9 turns; then four at twice the size (the held coil, the hit, a wave's
-  crest, the crash).
+- `pictures/eye_moves2.png` (1200 x 6318): key frames at the game's size (the phone's screen, two picture pixels to a game pixel):
+  phase 1 (14 frames), phase 2 (8), the line at 11 of its turns (every 15 degrees); then four at twice the size (the held coil, the
+  hit squashed with chunks flying, a wave's crest, the crash). The Warrior is in every tile of the phases.
 - `pictures/eye_moves2.mp4` (44.8 s, 30 a second, H.264 yuv420p, 1014 x 540, captioned beat by beat), all in the arena as the player
-  sees it (the stone, the Warrior, the camera lowered 76 picture pixels from the stills' to see the stone, 168 for the water slams):
-  PHASE 1 at full speed (380 frames, 12.7 s: the two bursting up out of his lurk; the left one's slams hitting on frames 68 and 188,
-  the right one's on 128 and 250, each at its own turn toward the Warrior as he dodges; the right one struck lying on 253, struck its
-  last on 263, dying, gone under by 353); PHASE 2 at full speed (520 frames, 17.3 s: the middle one's slam hitting on 58 as he dodges;
-  he runs to the front of the stone, 100 to 150, as the camera comes down; the left's water slam 140, the right's 240, both at once
-  350, the crash 397); the both-at-once and the crash again at half speed (frames 322 to 461, 9.3 s); and the left one's first slam
-  close up, twice the size, at half speed (5.5 s), the view on its coil as it rears and holds, panning down onto the stone for the
-  strike, the hit and the wind-down.
+  sees it (the stone, the Warrior, the camera lowered 200 picture pixels from the stills' to see the whole stone, the Warrior at its
+  far side away from him): PHASE 1 at full speed (380 frames, 12.7 s: the two bursting up out of his lurk; the left one's slams
+  hitting on frames 68 and 188, the right one's on 128 and 250, each across the whole stone at its own turn toward the Warrior as he
+  steps out of the line; the right one struck lying on 253, struck its last on 263, dying, gone under by 353, the Warrior backing away
+  from its thrashing); PHASE 2 at full speed (520 frames, 17.3 s: the middle one's slam hitting on 58 as he steps out of its line;
+  the left's water slam 140, its wave sweeping the whole stone and reaching him, he dodging through it; the right's 240, the same;
+  both at once 350, he running out of the middle, the crash 397); the both-at-once and the crash again at half speed (frames 322 to
+  461, 9.3 s); and the left one's first slam close up, twice the size, at half speed (5.5 s), the view on its coil as it rears and
+  holds, panning down onto the stone for the strike, the squash, the chunks and goo flying, and the wind-down.
 - To make them again (the layers kept on the machine's memory disk, `/dev/shm`; a tentacle's layer casts its rays only in the box
   round its tube, its drips and what falls off it, checked the same pixel for pixel as without the box):
 
@@ -124,17 +186,19 @@ npx tsx tools/eye_moves_pics.ts cost                                     (what t
 
 What they cost:
 
-- AS PAINTED HERE: 1,019 tentacle layers (standing 225, 45 for each of the five; slams on the stone 327; water slams 296; bursting
-  62; struck 10; dying 90; the fan 9): 173 MB raw (two picture pixels to a game pixel, 4 bytes a pixel, each layer in the box round
-  it), 58 MB packed as kept here; painted in 31 minutes on two workers, about 4 s a layer. A layer on average: standing 0.19 MB, a slam
-  on the stone 0.13, a water slam 0.24, struck 0.07, dying 0.06. (His own layers are part 1's, unchanged.)
-- FOR THE GAME, every move of every tentacle baked: three figures cover all five (phase 1's two are the left and right ones of phases
-  2 and 3 moved along the stone, the same shape). Each: its stand 45 frames; a slam on the stone at each of the 9 turns, 666; a water
-  slam, 74 (the left and right ones); struck, standing and lying at each turn, 140; dying, from standing and from lying at each turn,
-  900. 1,825 frames each for the left and right ones, 1,751 for the middle: 5,401 in all, about 510 MB raw at two picture pixels to a
-  game pixel, 128 MB at one, about a third of that packed (170 MB and 43 MB). Dying from lying at every turn is most of it: if one
-  struck its last while lying slammed first drags back up and dies from its stand, 2,971 frames, about 370 MB raw at two to one, 92 MB
-  at one.
+- AS PAINTED HERE (fix 1): 1,021 tentacle layers (standing 225, 45 for each of the five; slams on the stone 327; water slams 296;
+  bursting 62; struck 10; dying 90; the fan 11): 178 MB raw (two picture pixels to a game pixel, 4 bytes a pixel, each layer in the box
+  round it), 59 MB packed as kept here; fix 1 repainted the 465 that changed (the slams, the struck one's dying, part of the right
+  one's water slam) in 15 minutes on two workers. A layer on average: standing 0.19 MB, a slam on the stone 0.13, a water slam 0.24,
+  struck 0.11, dying 0.09. (His own layers are part 1's, unchanged.)
+- FOR THE GAME, every move of every tentacle baked. With its lines now right across the stone, each root its own lines, so five
+  figures, not three. Turns every 3 degrees, as drawn here: 52 for each of phase 1's two, 47 for each of phases 2 and 3's left and
+  right ones, 53 for the middle one, 251 in all. Their stands 225 frames; the slams on the stone, 74 frames a turn, 18,574; the water
+  slams 148; struck standing and lying at each turn, 3,584; dying from standing and from lying at each turn, 23,040: 45,571 frames,
+  about 5.0 GB raw at two picture pixels to a game pixel, 1.2 GB at one, a third of that packed. TOO MUCH for the phone: the cheaper
+  way, the main chat's to weigh: the turns every 15 degrees drawn (55 in all) and turned by the game up to 7.5 degrees either way, and
+  a tentacle struck its last dying from its stand (dragged back up first): 5,733 frames, about 740 MB raw at two to one, 185 MB at
+  one, 61 MB packed at one.
 - Not painted while the game runs: baked (his word of 6 Nov: the game may carry files). The waves, the crash, the warnings, the
   cracks, the slime, the splashes and the ichor are the game's effects drawn over the stone, not baked.
 
@@ -148,20 +212,30 @@ corner too), of him (what of it is seen) and of each other, and every slam at ev
 tentacle moves in every frame of both shots, and every frame of its stand; (6) no leaps: frame to frame, but in the strikes, the bursts
 and the first frames of a flinch; out of its stand into each move and back into its stand after it, no bigger a step than standing's;
 (7) the cues: each wind-up held 0.9 s with its warning drawn all through it, two frames of strike each smeared, the landing along its
-line at every turn, the screen jolted, the water slams' warnings and waves, the crash where the two meet, ichor when struck, the
-sinking and the water closing over it; (8) the waves as he read them: tallest at the back, thinning toward the front, dying before the
-front edge, the Warrior out of their reach at the front, the two meeting in the middle in a crash more than two and a half times
-their height. `tests/eye_moves.test.ts` and `tests/eye_colossus.test.ts`: their first checks now let `art/eye_arms.ts` import his moves
+line at every turn and stretched out to its line's end, the screen jolted, the water slams' warnings and waves, the crash where the
+two meet, ichor when struck, the sinking and the water closing over it; NOWHERE SAFE (fix 1): in each phase every spot of the stone
+lies in some tentacle's line at some turn (sampled every 4 of his lengths), turns every 3 degrees; THE HIT HEAVY: squashed flat and
+held 4 frames, rebounding, the screen thrown 8 game pixels (6 for a smash); (8) the waves: tallest at the back, sweeping the whole
+depth, a third as tall at the near edge, spilling off it, reaching the Warrior at the far side; the two meeting in the middle in a
+crash more than two and a half times their height; every length in the game's tiles; (9) THE WARRIOR NEVER ON A TENTACLE (fix 1): in
+every frame of both films he is clear of every tentacle low enough to meet him (by 47 of his lengths at the least), and his feet are
+never on one lying on the stone. The waves and the crash are drawn by the pictures' tool, as the game would: they are looked at, frame
+by frame. `tests/eye_moves.test.ts` and `tests/eye_colossus.test.ts`: their first checks now let `art/eye_arms.ts` import his moves
 and him (the smallest change).
 
 ### For the owner to decide (the art chat's to put to him)
 
-1. The line: 8 tiles by 1.6 (the main chat's was about 6 by 1.2), to fit his tentacles as drawn. Its warning flares to the enemy's
-   gold in its last quarter, as all the game's warnings do.
-2. His dodges in the film are close (the Warrior steps out of the line in the last half second): the warning is held the full 0.9 s;
-   if he wants more time, the wind-up can be held longer.
-3. The waves: their height and reach as he read them (2 tiles at the back, gone 8.3 tiles in, the front 7.3 tiles safe). His to see.
-4. Not now: his shovel (his drawing of 7 Nov). A tentacle lying along the stone (the slam's landing, `slamKeys`) is the piece it would
+1. The line: 1.1 tiles wide and the roots 1.38 tiles off the stone, as the main chat set them (1.2 and 1.4); by his word it now runs
+   right across the stone (each turn's length above). Its warning flares to the enemy's gold in its last quarter, as all the game's
+   warnings do.
+2. Nowhere safe (his pick): every slam reaches the near edge and every wave the whole depth, so the film's Warrior, at the far side,
+   dodges out of each line before it lands and through each wave. The warning is held the full 0.9 s; if he wants more time, the
+   wind-up can be held longer.
+3. The heavier hit: the squash held 4 frames, the screen thrown 8 game pixels, chunks of the paving and goo flying (numbers above).
+   His to see.
+4. The camera in the film is down to see the whole stone with the Warrior at its far side (as the game's would follow him there):
+   his tentacles' tops are cut at the top of the screen while they stand; their wind-up coil is kept in it.
+5. Not now: his shovel (his drawing of 7 Nov). A tentacle lying along the stone (the slam's landing, `slamKeys`) is the piece it would
    reuse.
 
 

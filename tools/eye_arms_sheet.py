@@ -21,7 +21,7 @@ CRASH_AT = 46.6  # frames from the both-at-once smash to the waves meeting (CRAS
 # (the shots: each tentacle's doings, frame it begins)
 P1_FRAMES, P2_FRAMES = 380, 520
 P1 = {'A': {'burst': 0, 'slams': [40, 160]}, 'B': {'burst': 6, 'slams': [100, 222], 'struck': 253, 'death': 263}}
-P2 = {'slam': 30, 'left': [112, 322], 'right': [212, 322], 'run': (100, 150)}
+P2 = {'slam': 30, 'left': [112, 322], 'right': [212, 322], 'through': [(186, 200), (284, 298), (374, 388)]}
 
 
 def frame(d, move, k):
@@ -32,7 +32,7 @@ def slam_beat(f, who, wh):
     """A slam's beat at its frame `f` (None outside it)."""
     if f < 0 or f >= FRAMES: return None
     if f < WIND: return (3, '%s WIND-UP, HELD 0.9 s: %s rears back, coiling, quivering; its line on the stone' % (wh, who))
-    if f < HIT + LIE: return (5, '%s STRIKE (2 smeared frames), THE HIT: along the line, the stone cracked, the screen jolted' % wh)
+    if f < HIT + LIE: return (5, '%s STRIKE, THE HIT: squashed flat across the stone, chunks and goo flying' % wh)
     return (2, '%s WIND-DOWN: dragged back, scraping, peeling off the stone, a slime trail fading' % wh)
 
 
@@ -61,7 +61,8 @@ def beat2(k):
     if k < P2['slam']: bs.append((0, 'PHASE 2: his stand with his three tentacles'))
     b = slam_beat(k - P2['slam'], 'the middle one', 'A SLAM:')
     if b: bs.append(b)
-    if P2['run'][0] <= k < P2['run'][1]: bs.append((1, 'the Warrior runs to the front of the stone, out of the waves\' reach'))
+    for a, b in P2['through']:
+        if a <= k < b: bs.append((6, 'nowhere safe: the wave sweeps the whole stone; the Warrior dodges through it'))
     for name, ks, dirn in (('LEFT', P2['left'], 'right'), ('RIGHT', P2['right'], 'left')):
         for k0 in ks:
             both = k0 == 322
@@ -69,7 +70,7 @@ def beat2(k):
             nm = 'BOTH' if both else name
             if 0 <= f < WIND: bs.append((3, '%s WATER SLAM, WIND-UP, HELD 0.9 s: rearing back, coiling; the warning on the stone' % nm))
             elif WIND <= f < HIT + 4: bs.append((5, ('BOTH: STRIKE, SMASH into the water off both ends of the stone' if both else '%s: STRIKE, SMASH into the water off the stone\'s %s end' % (nm, name.lower()))))
-            elif HIT + 1 <= f < HIT + 40 and not both: bs.append((4, '%s: a wave rolls %s across the stone, tallest at the back, dying before the front' % (nm, dirn)))
+            elif HIT + 1 <= f < HIT + 40 and not both: bs.append((4, '%s: a wave sweeps %s across the whole stone, to its near edge' % (nm, dirn)))
             elif both and HIT + 1 <= f < HIT + CRASH_AT: bs.append((4, 'BOTH: the two waves race in from the ends'))
             elif both and HIT + CRASH_AT <= f < HIT + CRASH_AT + 52: bs.append((6, 'THE CRASH as they meet: a column of water, spray and slime, falling back across the stone'))
             elif HIT + 1 <= f < FRAMES: bs.append((1, '%s: the tentacle drawn back up out of the water' % nm))
@@ -81,7 +82,7 @@ def crop_slam(f):
     """The close-up of the left one's first slam in phase 1 (507 x 234 picture pixels, twice the size fills the screen), at frame `f` of
     the slam: on its coil as it rears and holds, panning down onto the stone for the strike, the hit and the wind-down."""
     t = max(0.0, min(1.0, (f - 14) / 12.0))
-    y0 = round(60 + 170 * t * t * (3 - 2 * t))
+    y0 = round(0 + 234 * t * t * (3 - 2 * t))
     return (147, y0, 654, y0 + 234)
 
 
@@ -139,17 +140,24 @@ def pairs(d, title, note, items, size=tile):
 
 
 def fan(d):
-    """The fan: one landing per turn of the line, the middle one alone (frames of `fan`), each a small part at the game's size."""
-    # (each round where it lies: toward the end its turn points to)
+    """The fan: one landing per turn shown (every 15 degrees of the middle one's turns, each frame of `fan`), each a part of the screen
+    at the game's size round the middle of where it lies (the camera down to see the whole stone)."""
     import math
-    def at(k):
-        cx = int(507 + math.sin(math.radians(-60 + 15 * k)) * 150)
-        return (cx - 190, 290, cx + 190, 468)
-    ts = [frame(d, 'fan', k).crop(at(k)) for k in range(9)]
-    labels = ['%+d deg' % a for a in (-60, -45, -30, -15, 0, 15, 30, 45, 60)]
+    turns = [-75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75]
+    # (each turn's line, in his lengths: art/eye_arms.ts lineLen for the middle one)
+    lens = {0: 12.4, 15: 12.8, 30: 14.3, 45: 12.0, 60: 9.8, 75: 8.8}
+    ts = []
+    for k, a in enumerate(turns):
+        L = lens[abs(a)] * 39.19
+        cx = 507 + math.sin(math.radians(a)) * L * 0.5 * 1.1547
+        cy = 207 + math.cos(math.radians(a)) * L * 0.5 / 1.732
+        cx = max(145, min(1014 - 145, int(cx)))
+        cy = max(100, min(468 - 100, int(cy)))
+        ts.append(frame(d, 'fan', k).crop((cx - 145, cy - 100, cx + 145, cy + 100)))
+    labels = ['%+d deg' % a for a in turns]
     out = []
-    for i in range(0, 9, 3):
-        out.append(block('THE LINE AT EVERY TURN (EVERY 15 DEGREES), AT THE GAME\'S SIZE' if i == 0 else '', 'The middle one of phase 2 landed along each turn of its line, from its root toward the hero; each drawn for its turn (9 turns cover the stone).' if i == 0 else '', row(ts[i:i + 3], labels[i:i + 3])))
+    for i in range(0, len(ts), 4):
+        out.append(block('THE LINE AT EVERY 15 DEGREES OF ITS TURNS, AT THE GAME\'S SIZE' if i == 0 else '', 'The middle one of phase 2 landed along its line at each turn (one turn in five of those drawn: a turn every 3 degrees, so that the lines cover the whole stone), squashed flat on the hit; each line runs across the stone to where it leaves it.' if i == 0 else '', row(ts[i:i + 4], labels[i:i + 4])))
     return out
 
 

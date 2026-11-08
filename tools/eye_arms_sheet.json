@@ -1,27 +1,27 @@
 [
  [
   "PHASE 1, AT THE GAME'S SIZE: HIS LURK AND HIS TWO TENTACLES",
-  "Frames of the film's phase 1 (30 a second). The two burst up out of his lurk at a third and two thirds along; each stands, never still; each slams the stone toward the Warrior, at two turns; the right one, lying slammed, is struck, struck its last, and dies.",
+  "Frames of the film's phase 1 (30 a second), the camera down to see the whole stone, the Warrior at its far side away from him. The two burst up out of his lurk; each slams the stone toward the Warrior, its line right across the stone, at two turns, as he dodges out of it; the right one, lying slammed, is struck, struck its last, and dies.",
   [
    [
     "p1",
     16,
     507,
-    190,
+    160,
     "the left one up, the right bursting"
    ],
    [
     "p1",
     24,
     507,
-    190,
+    160,
     "both up: their stand, never still"
    ],
    [
     "p1",
     50,
     400,
-    262,
+    234,
     "WIND-UP: it rears; its line",
     400
    ],
@@ -29,8 +29,8 @@
     "p1",
     64,
     400,
-    262,
-    "held: coiled, quivering; the line flaring",
+    234,
+    "held: coiled; the line flaring",
     400
    ],
    [
@@ -38,19 +38,26 @@
     67,
     400,
     300,
-    "STRIKE: frame 1 of 2, smeared"
+    "STRIKE: frame 1 of 2, lashing out"
    ],
    [
     "p1",
     68,
     420,
     318,
-    "THE HIT along the line, cracking"
+    "THE HIT: slapped flat, squashed"
+   ],
+   [
+    "p1",
+    72,
+    420,
+    318,
+    "rebounding; chunks and goo flying"
    ],
    [
     "p1",
     86,
-    430,
+    420,
     318,
     "WIND-DOWN: dragged back, slime"
    ],
@@ -59,62 +66,55 @@
     131,
     600,
     318,
-    "the right one\u2019s hit, its own turn"
+    "the right one's hit, its own turn"
    ],
    [
     "p1",
     254,
-    600,
+    520,
     318,
     "STRUCK lying: a big flinch"
    ],
    [
     "p1",
     258,
-    600,
+    520,
     318,
     "his dark ichor spurting"
    ],
    [
     "p1",
     270,
-    600,
+    560,
     300,
     "DEATH: convulsing, held"
    ],
    [
     "p1",
     290,
-    600,
-    260,
+    520,
+    300,
     "DEATH: thrashing"
    ],
    [
     "p1",
     316,
-    600,
+    560,
     300,
     "DEATH: sinking, coiling"
-   ],
-   [
-    "p1",
-    340,
-    600,
-    318,
-    "gone under: bubbles, ichor"
    ]
   ],
   false
  ],
  [
   "PHASE 2, AT THE GAME'S SIZE: HIS STAND AND HIS THREE; THE WATER SLAMS",
-  "The middle one slams the stone toward the Warrior; he runs to the front of the stone; the left one smashes the water off the left end and a wave rolls right across the stone; the right one, a wave rolling left; then both, the waves meeting in the middle in the crash.",
+  "The middle one slams the stone toward the Warrior; the left one smashes the water off the left end and a wave sweeps right across the whole stone; the right one, a wave sweeping left; then both, the waves meeting in the middle in the crash. Nowhere is safe: he dodges out of the line and through each wave.",
   [
    [
     "p2",
     50,
     480,
-    264,
+    268,
     "the middle one rears at the Warrior",
     400
    ],
@@ -122,65 +122,51 @@
     "p2",
     58,
     480,
-    264,
-    "its hit; the Warrior dodging",
+    268,
+    "its hit across the stone; he dodged",
     400
    ],
    [
     "p2",
     136,
+    330,
     300,
-    240,
     "LEFT: held; the warning"
    ],
    [
     "p2",
     140,
-    260,
-    220,
-    "SMASH off the left end"
+    330,
+    300,
+    "SMASH off the left end, heavy"
    ],
    [
     "p2",
-    160,
-    330,
-    250,
-    "its wave rolling right"
+    192,
+    400,
+    318,
+    "its wave reaching him: through it"
    ],
    [
     "p2",
     252,
-    690,
-    250,
-    "RIGHT: its wave rolling left"
-   ],
-   [
-    "p2",
-    348,
-    300,
-    240,
-    "BOTH: held; the warning"
+    700,
+    318,
+    "RIGHT: its wave sweeping left"
    ],
    [
     "p2",
     372,
-    330,
-    250,
-    "BOTH: the left one\u2019s wave racing in"
+    420,
+    300,
+    "BOTH: the waves racing in"
    ],
    [
     "p2",
     404,
-    507,
-    220,
+    560,
+    290,
     "THE CRASH as they meet"
-   ],
-   [
-    "p2",
-    424,
-    507,
-    250,
-    "the crash falling back"
    ]
   ],
   false
@@ -193,29 +179,29 @@
     "p1",
     64,
     395,
-    125,
+    75,
     "the wind-up held: its coil"
    ],
    [
     "p1",
-    68,
+    69,
     420,
-    400,
-    "the hit, smeared, the stone cracking"
+    390,
+    "the hit: squashed flat, chunks flying"
    ],
    [
     "p2",
-    160,
-    200,
-    200,
-    "a wave\u2019s crest: foam, black water"
+    192,
+    430,
+    360,
+    "a wave's crest, black water, foam"
    ],
    [
     "p2",
     402,
     507,
-    300,
-    "the crash: torn white water"
+    250,
+    "the crash: a plume of water"
    ]
   ],
   true

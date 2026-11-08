@@ -234,6 +234,11 @@ export interface ArmPose {
   /** Moving (art/eye_moves.ts): `belly` says the way its suckers face at its tip's curl outright (its rest's, `armBelly`), so that
    *  they never jump to another side of it as it curls and uncurls. */
   fixed?: boolean;
+  /** Slapped down flat on the stone (art/eye_arms.ts, a slam's hit): how squashed what of it lies low is (0 round; 1.2 flattened to
+   *  three quarters of its thickness and bulging out half as wide again; below 0, springing up taller than wide as it rebounds).
+   *  Only what lies low, from `squashFrom` along it (0 its root, 1 its tip) out, is squashed; the rest of it is round. */
+  squash?: number;
+  squashFrom?: number;
 }
 export interface ColossusPose {
   /** 'front', or 'back' (his back to the camera: the game's rulebook asks both). */
@@ -323,7 +328,11 @@ interface Arm {
   suckers: boolean;
   /** A tentacle moving (a pose of a move): its suckers flex. */
   flex?: boolean;
+  /** Squashed flat where it lies low (`ArmPose.squash`), at each sample: 0 round. */
+  sq?: Float64Array;
 }
+/** A squashed tube's cross-section (`ArmPose.squash` `q`): its height and its width against a round one's. */
+export const squashOf = (q: number): { high: number; wide: number } => ({ high: (1 + 0.55 * q) / (1 + q), wide: 1 + 0.55 * q });
 const CH = 8;
 const TAU_C = Math.PI * 2;
 /** A tentacle's own loop as it stands (seconds): its suckers' flexing and its drips repeat in it (art/eye_moves.ts ARM_LOOP). */
@@ -382,6 +391,15 @@ export function armOf(a: ArmPose, N = 120, margin = 36, suckers = true): Arm {
     box[4] = Math.max(box[4], q[1] + r + margin);
     box[5] = Math.max(box[5], q[2] + r + margin);
     if (i > 0) sig[i] = sig[i - 1] + (s[i] - s[i - 1]) / (Math.max(1.6, r * 0.19) * 3.4);
+  }
+  // (slapped flat: what of it lies low squashed, the rest round, smoothly between)
+  let sq: Float64Array | undefined;
+  if (a.squash) {
+    sq = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      const r = p[i * 4 + 3];
+      sq[i] = a.squash * Math.max(0, Math.min(1, (r * 1.6 + 6 - p[i * 4 + 2]) / (r * 0.8 + 4))) * Math.max(0, Math.min(1, (s[i] / S - (a.squashFrom ?? 0)) / 0.04));
+    }
   }
   // (its way along at each sample)
   const T = new Float64Array(N * 3);
@@ -508,13 +526,13 @@ export function armOf(a: ArmPose, N = 120, margin = 36, suckers = true): Arm {
     cy /= m;
     cz /= m;
     let rad = 0;
-    for (let k = k0; k <= k1; k++) rad = Math.max(rad, Math.hypot(p[k * 4] - cx, p[k * 4 + 1] - cy, p[k * 4 + 2] - cz) + p[k * 4 + 3]);
+    for (let k = k0; k <= k1; k++) rad = Math.max(rad, Math.hypot(p[k * 4] - cx, p[k * 4 + 1] - cy, p[k * 4 + 2] - cz) + p[k * 4 + 3] * (sq ? 1 + 0.55 * Math.max(0, sq[k]) : 1));
     ch[c * 4] = cx;
     ch[c * 4 + 1] = cy;
     ch[c * 4 + 2] = cz;
     ch[c * 4 + 3] = rad;
   }
-  return { p, inner, s, sig, n: N, box, seed: a.seed, margin, ch, suckers };
+  return { p, inner, s, sig, n: N, box, seed: a.seed, margin, ch, suckers, ...(sq ? { sq } : {}) };
 }
 
 /** The way a tentacle's tip curls at rest: its suckers held to it as it moves (`ArmPose.fixed`), so that at rest it is as drawn. */
@@ -2288,7 +2306,13 @@ class Scene {
         let t = ((x - ax) * ux + (y - ay) * uy + (z - az) * uz) / L2;
         t = t < 0 ? 0 : t > 1 ? 1 : t;
         const r = P[k * 4 + 3] + (P[k * 4 + 7] - P[k * 4 + 3]) * t;
-        const e = Math.hypot(x - ax - ux * t, y - ay - uy * t, z - az - uz * t) - r;
+        let e: number;
+        const q = A.sq ? A.sq[k] + (A.sq[k + 1] - A.sq[k]) * t : 0;
+        if (q !== 0) {
+          // (squashed: its section an ellipse, flattened and bulging out along the stone; a bound, never more than the distance)
+          const f = 1 + q;
+          e = (Math.hypot(x - ax - ux * t, y - ay - uy * t, (z - az - uz * t) * f) - r * (1 + 0.55 * q)) / Math.max(1, f);
+        } else e = Math.hypot(x - ax - ux * t, y - ay - uy * t, z - az - uz * t) - r;
         if (e < d) {
           d = e;
           bestK = k;

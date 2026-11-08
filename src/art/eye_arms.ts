@@ -11,16 +11,17 @@
 //   ITS STAND (art/eye_moves.ts armStand: a loop of ARM_LOOP, never still);
 //   THE SLAM ON THE STONE (`armSlam`): its wind-up held (rearing back and up, coiling, quivering at the top; the game's pink line
 //     on the stone under where it will fall), its strike in two smeared frames, landing ALONG THE LINE lying on the stone, a beat
-//     lying there, then dragged back up into its stand; for any turn of the line toward the hero (`ARM_TURNS`, every 15 degrees);
+//     lying there, then dragged back up into its stand; for any turn of the line toward the hero (`ARM_TURNS`, every 3 degrees),
+//     the line right across the stone (nowhere safe), the hit heavy (squashed flat, held, rebounding);
 //   THE WATER SLAMS (`armSmash`, the left and right tentacles in phases 2 and 3): reared back, smashed down into the water off the
 //     stone's end; the wave each sends across the stone and the two waves' crash in the middle are the game's own (`WAVE`, `CRASH`);
 //   STRUCK (`armFlinch`): a big flinch, standing or lying slammed, his dark ichor spurting;
 //   ITS DEATH (`armDeath`): convulsing (held), thrashing, then sinking back into the water through its root, coiling as it goes;
 //   PHASE 1: his two tentacles bursting up out of his lurk (art/eye_moves.ts armBurst) and doing all the same;
-//   and the films' shots (`fightFrame`): phase 1 and phase 2 as the player sees them, the Warrior dodging, outrunning and striking.
+//   and the films' shots (`fightFrame`): phase 1 and phase 2 as the player sees them, the Warrior dodging out of each line and through each wave, and striking.
 
 import { FLAME } from './mkit';
-import { ARM_LOOP, STONE, armOf } from './eye_colossus';
+import { ARM_LOOP, STONE, armOf, squashOf } from './eye_colossus';
 import type { ArmPose } from './eye_colossus';
 import { ARM_REST, ARM_STAND_FRAMES, EYE_FPS, armBurst, armLayer, armStand, armStandLayer, curlTip, eyeFrame } from './eye_moves';
 import type { ArmFx, EyeFrame, EyeLayer, HeroAt } from './eye_moves';
@@ -45,17 +46,18 @@ const mod = (a: number, n: number): number => ((a % n) + n) % n;
 // =============================================================================================
 // WHERE THINGS ARE
 
-/** The arena's unit (a tile: the game's 32 by 16 game pixels) in his lengths. */
+/** The films' unit, in his lengths: NOT a tile. A tile (the game's 32 by 16 game pixels) is C_TILE, 39.19 of his lengths; this is a
+ *  tile divided by the square root of 2, 27.7 of them (half a tile's diagonal). The Warrior's marks and `QUAY` are in it; every length
+ *  in the README is given in tiles. */
 export const UNIT = 32 / (2 / Math.sqrt(3));
 /** The stone's back edge (his lengths from his middle at the water toward the camera), in the arena's units from the back of the water. */
 export const QUAY = STONE.edge / UNIT;
 /** The stone: from his `x0` to `x1` across, `y0` (its back edge, at the water) to `y1` (its front) toward the camera; its top at the water's height. */
 export const STONE_BOX = { x0: -(STONE.across * Math.SQRT2 * UNIT) / 2, x1: (STONE.across * Math.SQRT2 * UNIT) / 2, y0: STONE.edge, y1: STONE.edge + STONE.deep * Math.SQRT2 * UNIT } as const;
-/** A slam's line on the stone: from its root toward the hero. The main chat's of 7 Nov 00:48 is 6 of the arena's units long and 1.2
- *  wide, for the old Eye's arms; his tentacles as drawn now are 17 long and 3 thick at the water, so this is drawn to them: 8 long and
- *  1.6 wide (what of it lies on the stone is as wide as the line). The main chat sets the final numbers. */
-export const LINE = { len: 8 * UNIT, wid: 1.6 * UNIT } as const;
-/** The turns a slam's line is drawn for (radians from straight toward the camera; positive, to the screen's right): every 15 degrees. */
+/** A slam's line on the stone, from its root toward the hero right across the stone to where it leaves it (its near edge, or its side
+ *  where it leaves that first: `lineLen`), 1.6 UNIT wide, 1.1 tiles (the main chat's 1.2). Nowhere on the stone is safe: his word, 7 Nov,
+ *  “Yes, nowhere safe (Recommended)”. What of a tentacle lies on the stone lies inside it. The main chat sets the final numbers. */
+export const LINE = { wid: 1.6 * UNIT } as const;
 /** THE COLOURS OF WHAT THE GAME DRAWS ROUND THEM: the warning on the stone the enemy's pink (render/act1_fx/garden_warn.ts: its dashed
  *  edge FLAME 2 and 3, the stone inside shaded dark red); his ichor dark, the blood of a thing of the deep, maroon to black (never the
  *  friend's cyan); the stone's chips and its cracks. */
@@ -64,10 +66,16 @@ export const ARM_COLOURS = {
   warnShade: '#1a1016',
   ichor: ['#0e0609', '#220b14', '#3c1220', '#5a1c2c', '#7e2c3a'],
   stoneLit: '#9a96a6',
+  stoneMid: '#6e6a7c',
   stoneDark: '#4a4656',
+  moss: '#3e5030',
   crack: '#16141c',
 } as const;
-export const ARM_TURNS: readonly number[] = [-60, -45, -30, -15, 0, 15, 30, 45, 60].map((d) => (d * Math.PI) / 180);
+/** The turns a slam's line is drawn for (radians from straight toward the camera; positive, to the screen's right): every 3 degrees,
+ *  87 either way, so that from each phase's roots the lines cover the whole stone (every 15 degrees leaves the stone's near half
+ *  between them: tests/eye_arms.test.ts). Each tentacle uses those whose line crosses the stone (`turnsOf`). */
+export const TURN_STEP = 3;
+export const ARM_TURNS: readonly number[] = Array.from({ length: 59 }, (_, i) => ((-87 + TURN_STEP * i) * Math.PI) / 180);
 /** The turn nearest a way (from a root to the hero), of ARM_TURNS. */
 export function turnToward(fromX: number, fromY: number, toX: number, toY: number): number {
   const a = Math.atan2(toX - fromX, toY - fromY);
@@ -77,6 +85,24 @@ export function turnToward(fromX: number, fromY: number, toX: number, toY: numbe
 }
 /** A tentacle's root (where it leaves the water: his space). */
 export const rootOf = (w: number): [number, number] => [ARM_REST[w].path[0][0], ARM_REST[w].path[0][1]];
+/** How far a slam's line runs from a tentacle's root at a turn (his lengths) to where it leaves the stone, its near edge or its side;
+ *  0 if it never crosses the stone. */
+export function lineLen(w: number, ang: number): number {
+  const [rx, ry] = rootOf(w);
+  const dx = Math.sin(ang);
+  const dy = Math.cos(ang);
+  if (dy <= 1e-6) return 0;
+  const xIn = rx + dx * ((STONE_BOX.y0 - ry) / dy);
+  if (xIn < STONE_BOX.x0 || xIn > STONE_BOX.x1) return 0;
+  let t = (STONE_BOX.y1 - ry) / dy;
+  if (dx > 1e-9) t = Math.min(t, (STONE_BOX.x1 - rx) / dx);
+  if (dx < -1e-9) t = Math.min(t, (STONE_BOX.x0 - rx) / dx);
+  return t;
+}
+/** Where a line reaches the stone (his lengths from its root, along it). */
+export const lineIn = (w: number, ang: number): number => (STONE_BOX.y0 - rootOf(w)[1]) / Math.max(0.05, Math.cos(ang));
+/** The turns of a tentacle whose line lies on the stone for a tile or more. */
+export const turnsOf = (w: number): number[] => ARM_TURNS.filter((a) => Math.abs(a) <= (78 * Math.PI) / 180 + 1e-9 && lineLen(w, a) - lineIn(w, a) > 20);
 
 // =============================================================================================
 // PATHS
@@ -161,7 +187,12 @@ function keyed(keys: ReadonlyArray<ReadonlyArray<readonly number[]>>, ks: readon
   return keys[i].map((_, p) => [0, 1, 2].map((c) => h00 * keys[i][p][c] + h10 * h * slope(i, p, c) + h01 * keys[i + 1][p][c] + h11 * h * slope(i + 1, p, c)));
 }
 void through;
-const pose = (w: number, path: P3[]): ArmPose => ({ ...ARM_REST[w], path });
+/** How thick a tentacle is at its root when it is stretched out longer than it is (its path's own length): thinner, as if drawn out. */
+function rOf(w: number, path: ReadonlyArray<readonly number[]>): number {
+  const f = polyLen(path) / ARM_LEN[w];
+  return ARM_REST[w].r * (f > 1.05 ? Math.sqrt(1.05 / f) : 1);
+}
+const pose = (w: number, path: P3[], q = 0, from = 0): ArmPose => ({ ...ARM_REST[w], path, r: rOf(w, path), ...(q ? { squash: q, squashFrom: from } : {}) });
 /** A path drawn back along itself by `pull` (into the water at its root: beyond its root it goes straight down). */
 function pullAlong(path: ReadonlyArray<readonly number[]>, pull: number): P3[] {
   const d = dense(path, 300);
@@ -181,18 +212,19 @@ function pullAlong(path: ReadonlyArray<readonly number[]>, pull: number): P3[] {
 }
 /** A tentacle's path lifted where it would go into the stone: over the stone its underside on its top at the least, and over the
  *  stone's edges clear of them (each point at its own thickness along it). */
-function liftOver(w: number, path: P3[]): P3[] {
+function liftOver(w: number, path: P3[], sq = 0, r0 = rOf(w, path), from = 0): P3[] {
   const L = polyLen(path);
-  const Lw = ARM_LEN[w];
   let s = 0;
   return path.map((q, i) => {
     if (i > 0) s += Math.hypot(q[0] - path[i - 1][0], q[1] - path[i - 1][1], q[2] - path[i - 1][2]);
-    // (how far along it this is, as its length is now: the painter tapers it by its own length)
-    const r = ARM_REST[w].r * Math.pow(Math.max(0, 1 - s / L), 1.2) + 1.4 + 2;
-    void Lw;
+    // (how far along it this is, as its length is now: the painter tapers it by its own length; squashed flat, it is lower)
+    const rr = r0 * Math.pow(Math.max(0, 1 - s / L), 1.2) + 1.4;
+    const squashed = sq !== 0 && s / L > from && q[2] < rr * 1.6 + 6;
     const dx = Math.max(STONE_BOX.x0 - q[0], 0, q[0] - STONE_BOX.x1);
     const dy = Math.max(STONE_BOX.y0 - q[1], 0, q[1] - STONE_BOX.y1);
     const d = Math.hypot(dx, dy);
+    // (over the stone, as tall as it is squashed; beside it, as wide)
+    const r = rr * (squashed ? (d > 0 ? Math.max(1, squashOf(sq).wide) : squashOf(sq).high) : 1) * (sq < 0 ? 1.02 : 1) + (squashed && d > 0 ? 4 : 2);
     if (d >= r) return q;
     const need = d === 0 ? r : Math.sqrt(r * r - d * d);
     return q[2] < need ? [q[0], q[1], need] : q;
@@ -218,6 +250,9 @@ function lineFrame(w: number, ang: number): (a: number, b: number, z: number) =>
 export const SLAM = { wind: 27, strike: 2, lie: 15, down: 30, hit: 28, frames: 74 } as const;
 
 
+/** How high it rears against its first drawing (the camera down to see the whole stone, the Warrior at its far side: its coil kept in
+ *  the picture). */
+const REAR_K = 0.72;
 /** Its part under the water, going straight down from where it leaves it (`D` long): local points from deep up to its root. */
 function under(D: number): P3[] {
   const out: P3[] = [];
@@ -227,15 +262,26 @@ function under(D: number): P3[] {
   }
   return out;
 }
+type SlamKeys = { rear: P3[]; whip: P3[]; slam: P3[]; drag: P3[]; peel: P3[]; touch: number; end: number; from: number };
+const SLAM_KEYS = new Map<string, SlamKeys>();
 /** Its rear, its strike's first frame, its landing and its wind-down's two keys, for a line at `ang`. */
-export function slamKeys(w: number, ang: number): { rear: P3[]; whip: P3[]; slam: P3[]; drag: P3[]; peel: P3[]; touch: number; end: number } {
+export function slamKeys(w: number, ang: number): SlamKeys {
+  const key = `${w}:${ang}`;
+  let K = SLAM_KEYS.get(key);
+  if (!K) {
+    K = slamKeys0(w, ang);
+    SLAM_KEYS.set(key, K);
+  }
+  return K;
+}
+function slamKeys0(w: number, ang: number): SlamKeys {
   const L = ARM_LEN[w];
   const F = lineFrame(w, ang);
   // (REARED: drawn a little down into the water, the rest of it leaning back away from its line and up, its top coiled over toward
   // it, ready)
   const Dr = L * 0.18;
   // (the short middle one of phase 2 stretched up to rear as big as the others)
-  const k = Math.max(L - Dr, 360) / 450;
+  const k = (Math.max(L - Dr, 360) / 450) * REAR_K;
   // (an S across its line, so that it reads coiled from the camera whichever way the line goes; its top a big hook rolled over
   // toward the line and in on itself, like a cobra's head drawn back)
   // (the coil: across the line, so it is seen whole, rolling up over its top and in on itself, leaning toward the line)
@@ -251,57 +297,55 @@ export function slamKeys(w: number, ang: number): { rear: P3[]; whip: P3[]; slam
   }
   const rearLocal = [...under(Dr), [0, 0, -30], ...[...trunk, ...coil].map((q) => [q[0] * k, q[1] * k, q[2] * k])];
   const rear = even(rearLocal).map((q) => F(q[0], q[1], q[2]));
-  // (LANDED: out of the water low over the stone's edge and ALONG THE LINE, lying on the stone, its tip curled up at the line's end;
-  // the rest of it down in the water, so that what lies on the stone is as wide as the line)
-  const [, ry] = rootOf(w);
-  const cosA = Math.cos(ang);
-  const edge = (STONE_BOX.y0 - ry) / Math.max(0.2, cosA);
-  const end = LINE.len - 12;
+  // (LANDED: out of the water low over the stone's edge and ALONG THE LINE right across the stone to where it leaves it, lying on the
+  // stone, its tip curled up at the line's end; stretched out longer than it stands and so thinner (`rOf`); the rest of it down in the
+  // water. Each part of it on the stone is lifted to lie on it as thick as it is there, squashed or round, by `liftOver`)
+  const edge = lineIn(w, ang);
+  const end = Math.max(edge + 4, lineLen(w, ang) - 18);
   const touch = Math.min(end - 40, edge + 8);
-  const curlLen = 34;
+  const curlLen = 30;
   const lieLen = end - touch;
   // (out of the water to the stone: a low hump over the edge)
   const hump: P3[] = [];
   for (let i = 1; i <= 16; i++) {
     const v = i / 16;
-    hump.push([touch * v, 0, -30 + 52 * Math.min(1, (v / 0.75) ** 0.8) + 10 * Math.sin(Math.PI * v)]);
+    hump.push([touch * v, 0, (-30 + 52 * Math.min(1, (v / 0.75) ** 0.8) + 10 * Math.sin(Math.PI * v)) * (v > 0.94 ? 0 : 1)]);
   }
   const humpLen = polyLen([[0, 0, -30], ...hump]);
   const D = Math.max(20, L - humpLen - lieLen - curlLen);
-  // (each part of it on the stone at its own height there, as thick as it is there)
-  const lieZ = (s: number): number => radiusAt(w, s) + 0.8;
-  const sTouch = D + humpLen;
-  hump[hump.length - 1][2] = lieZ(sTouch);
-  for (let i = hump.length - 5; i < hump.length - 1; i++) hump[i][2] = Math.max(hump[i][2], lieZ(sTouch - (hump.length - 1 - i) * (touch / 16)) + 0.4);
   const lie: P3[] = [];
-  for (let i = 1; i <= 14; i++) {
-    const a = touch + (lieLen * i) / 14;
-    lie.push([a, 4 * Math.sin(a * 0.04 + w), lieZ(sTouch + (a - touch))]);
+  const nLie = Math.max(14, Math.round(lieLen / 14));
+  for (let i = 1; i <= nLie; i++) {
+    const a = touch + (lieLen * i) / nLie;
+    lie.push([a, 4 * Math.sin(a * 0.04 + w), 0]);
   }
   const curl: P3[] = [];
   for (let i = 1; i <= 6; i++) {
     const ph = (i / 6) * Math.PI * 0.95;
     const R = curlLen / Math.PI;
-    curl.push([end + R * Math.sin(ph), 4 * Math.sin(end * 0.04 + w), lieZ(L - curlLen) + R * (1 - Math.cos(ph))]);
+    curl.push([end + R * Math.sin(ph), 4 * Math.sin(end * 0.04 + w), R * (1 - Math.cos(ph))]);
   }
   const slamLocal = [...under(D), [0, 0, -30], ...hump, ...lie, ...curl];
   const slam = liftOver(w, evenly(slamLocal, NP).map((q) => F(q[0], q[1], q[2])));
-  // (its strike's first frame: flung down out of its rear, its outer part still high in the air over the line, coming down)
+  // (its strike's first frame: flung down out of its rear, lashing out along the line, its outer part still high over it, coming down)
   const whip = evenly(slamLocal.map((q) => {
     if (q[2] < -30) return q;
     const u = clamp01(q[0] / end);
     return [q[0] * (0.7 + 0.3 * u), q[1], q[2] + 70 * Math.sin(Math.PI * Math.min(1, u * 1.3)) + 110 * u ** 1.6];
   }), NP).map((q) => F(q[0], q[1], q[2]));
-  // (wind-down: dragged back toward the water along its own length, scraping along the line; then peeled up off the stone from the
-  // water out, its tip last)
-  const drag = liftOver(w, evenly(pullAlong(slamLocal, 50), NP).map((q) => F(q[0], q[1], q[2])));
-  const pulled = pullAlong(slamLocal, 80);
+  // (wind-down: dragged back toward the water along its own length, scraping along the line, drawing in what it stretched; then peeled
+  // up off the stone from the water out, its tip last)
+  const extra = Math.max(0, polyLen(slamLocal) - L);
+  const drag = liftOver(w, evenly(pullAlong(slamLocal, 50 + 0.5 * extra), NP).map((q) => F(q[0], q[1], q[2])));
+  const pulled = pullAlong(slamLocal, 80 + 0.85 * extra);
   const peel = liftOver(w, evenly(pulled.map((q) => {
     if (q[2] < -30) return q;
-    const u = clamp01(q[0] / Math.max(1, end - 80));
+    const u = clamp01(q[0] / Math.max(1, end - 80 - 0.85 * extra));
     return [q[0], q[1], q[2] + 70 * Math.sin(Math.PI * Math.min(1, u * 1.1)) * (1 - u * 0.6)];
   }), NP).map((q) => F(q[0], q[1], q[2])));
-  return { rear, whip, slam, drag, peel, touch, end };
+  // (where along it it lies on the stone: from there out it is squashed as it hits)
+  const from = (D + humpLen) / polyLen(slamLocal);
+  return { rear, whip, slam, drag, peel, touch, end, from };
 }
 
 /**
@@ -314,6 +358,7 @@ export function armSlam(w: number, ang: number, k: number, t0: number): ArmPose 
   const t = t0 + k / EYE_FPS;
   const stand = even(armStand(w, t).path);
   let path: P3[];
+  let q = 0;
   if (k < S.wind) {
     // (rearing: fast out of its stand, slowing into the rear; then held, quivering at the top, coiling tighter)
     const u = sm(0, S.wind - 9, k);
@@ -329,19 +374,29 @@ export function armSlam(w: number, ang: number, k: number, t0: number): ArmPose 
     });
   } else if (k === S.wind) path = K.whip;
   else if (k < S.hit + S.lie) {
-    // (landed: the line's part of it rebounding a little off the stone and settling, its tip curling)
+    // (landed: slapped down flat, SQUASHED along the stone and held so, then springing up off it a little and settling, its tip curling)
     const f = k - S.hit;
-    const b = 9 * Math.exp(-f / 3.2) * Math.abs(Math.sin(f * 0.95));
-    path = K.slam.map((q, j) => {
+    q = slamSquash(f);
+    const b = f < SQUASH_HOLD ? 0 : 12 * Math.exp(-(f - SQUASH_HOLD) / 3) * Math.abs(Math.sin((f - SQUASH_HOLD) * 0.9));
+    path = K.slam.map((p, j) => {
       const v = j / (NP - 1);
-      return [q[0], q[1], q[2] + b * Math.max(0, v - 0.45) * 1.8];
+      return [p[0], p[1], p[2] + b * Math.max(0, v - 0.45) * 1.8];
     });
     path = curlTip(path, 0.25 * Math.sin((f / S.lie) * Math.PI), 0.85);
   } else {
     const f = k - (S.hit + S.lie);
     path = keyed([K.slam, K.drag, K.peel, stand], [0, 9, 17, S.down - 1], f);
   }
-  return pose(w, liftOver(w, path));
+  const r0 = rOf(w, path);
+  return pose(w, liftOver(w, path, q, r0, K.from), q, K.from);
+}
+/** How long the squash is held after the hit (frames), and how squashed it is at each frame from the hit: flat, held, then springing
+ *  up taller than round as it rebounds, settling. */
+export const SQUASH_HOLD = 4;
+export function slamSquash(f: number): number {
+  if (f < 0) return 0;
+  if (f < SQUASH_HOLD) return 1.2;
+  return [0.5, -0.2, -0.25, -0.1, 0.05][f - SQUASH_HOLD] ?? 0;
 }
 /** Where the part of it on the line lies (from its root, along the line): for the game's marks under it. */
 export function slamLies(w: number, ang: number): { a0: number; a1: number } {
@@ -429,15 +484,22 @@ export function armSmash(w: number, k: number, t0: number): ArmPose {
 
 /**
  * THE WAVES (the game's, drawn over the stone as his water is): a wall of black water rolling across the stone from where it smashed,
- * tallest at the back by the water, thinning toward the front and dying before the front edge: there, out of its reach, it is
- * outrun; anywhere it is dodged through. `speed` his lengths a second; `reach` how far onto the stone it comes from its back edge;
- * `high` how tall at the back; it forms over `form` seconds out of the smash.
+ * sweeping its whole depth: tallest at the back by the water, lower toward the front, still a wall a third as tall at the near edge,
+ * spilling off it. Nowhere is safe (his word, 7 Nov: “Yes, nowhere safe (Recommended)”): it is dodged through. `speed` his lengths a
+ * second; `reach` how far it comes from the stone's back edge (past its near edge, spilling); `high` how tall at the back; `near` how
+ * tall at the near edge against that; it forms over `form` seconds out of the smash.
  */
-export const WAVE = { speed: 240, reach: 230, high: 58, form: 0.25, from: STONE_BOX.x0 - 40 } as const;
+export const WAVE = { speed: 240, reach: STONE_BOX.y1 - STONE_BOX.y0 + 40, high: 58, near: 1 / 3, form: 0.25, from: STONE_BOX.x0 - 40 } as const;
 /** Where a wave's front is across the stone (his x), `s` seconds after its smash (`dir` 1 rolling right from the left, -1 left). */
 export const waveFront = (dir: number, s: number): number => dir * (WAVE.from + WAVE.speed * s);
-/** How tall a wave is at a depth onto the stone (his y), as it is at its full: tallest at the back, nothing at its reach. */
-export const waveHigh = (y: number): number => WAVE.high * Math.pow(clamp01(1 - (y - STONE_BOX.y0) / WAVE.reach), 0.9);
+/** How tall a wave is at a depth onto the stone (his y), as it is at its full: tallest at the back, a third as tall at the near edge,
+ *  spilling off it to nothing at its reach. */
+export function waveHigh(y: number): number {
+  const deep = STONE_BOX.y1 - STONE_BOX.y0;
+  const d = Math.max(0, y - STONE_BOX.y0);
+  if (d <= deep) return WAVE.high * (1 - (1 - WAVE.near) * (d / deep) ** 1.1);
+  return WAVE.high * WAVE.near * clamp01(1 - (d - deep) / (WAVE.reach - deep));
+}
 /** THE CRASH as the two waves meet in the middle: a column of water, spray and slime thrown up, falling back across the middle. */
 export const CRASH = { high: 230, rise: 0.35, fall: 1.4, wide: 70 } as const;
 /** When the two waves of the both-at-once slam meet (seconds after their smash). */
@@ -553,10 +615,11 @@ interface Shot {
   cam: Array<[number, number]>;
 }
 
-/** The camera lowered for the tentacles (picture pixels), so that the stone where they slam is seen (the stills' has only its edge). */
-export const CAM_ARMS = 76;
-/** And lowered further for the water slams, the stone's depth seen, where the waves run and die. */
-export const CAM_WAVES = 168;
+/** The camera lowered from the stills' (picture pixels), so that the whole stone is seen, the Warrior at its far side away from him
+ *  (where every slam and every wave still reaches him), as the game's would follow him there. */
+export const CAM_ARMS = 200;
+/** The same for the water slams. */
+export const CAM_WAVES = 200;
 
 const heroSpot = (du: number, dv: number): [number, number] => [du * UNIT, (QUAY + dv) * UNIT];
 
@@ -565,20 +628,24 @@ const heroSpot = (du: number, dv: number): [number, number] => [du * UNIT, (QUAY
 export const SHOT_P1: Shot = (() => {
   const A = 3;
   const B = 4;
+  // (at the far side of the stone, away from him, where every slam still reaches him: he is where each line is laid when it rears (40,
+  // 100, 160, 222), and out of it before it lands, staying clear of it while it lies and drags back; after his last blow he backs away
+  // from the dying one's thrashing)
   const marks: HeroMark[] = [
-    { k: 0, du: -2.0, dv: 3.0 },
-    { k: 52, du: -2.0, dv: 3.0 },
-    { k: 74, du: 1.6, dv: 2.6 },
-    { k: 112, du: 1.6, dv: 2.6 },
-    { k: 134, du: -1.0, dv: 3.4 },
-    { k: 176, du: -1.0, dv: 3.4 },
-    { k: 200, du: 3.0, dv: 3.3 },
-    { k: 234, du: 3.0, dv: 3.3 },
-    { k: 247, du: 1.2, dv: 2.6 },
-    { k: 249, du: 1.2, dv: 2.6, act: 'attack' },
-    { k: 259, du: 1.2, dv: 2.6, act: 'attack' },
-    { k: 290, du: 1.2, dv: 2.6 },
-    { k: 380, du: 1.2, dv: 2.6 },
+    { k: 0, du: -2.0, dv: 11.9 },
+    { k: 50, du: -2.0, dv: 11.9 },
+    { k: 66, du: 1.2, dv: 11.6 },
+    { k: 104, du: 1.2, dv: 11.6 },
+    { k: 122, du: -3.2, dv: 12.2 },
+    { k: 168, du: -3.2, dv: 12.2 },
+    { k: 184, du: 2.4, dv: 12.0 },
+    { k: 232, du: 2.4, dv: 12.0 },
+    { k: 246, du: 0.4, dv: 10.8 },
+    { k: 249, du: 0.4, dv: 10.8, act: 'attack' },
+    { k: 259, du: 0.4, dv: 10.8, act: 'attack' },
+    { k: 269, du: 0.4, dv: 10.8 },
+    { k: 284, du: -3.8, dv: 12.6 },
+    { k: 380, du: -3.8, dv: 12.6 },
   ];
   const at = (k: number): [number, number] => heroSpot(...heroAtMarks(marks, k));
   const [ax, ay] = rootOf(A);
@@ -603,16 +670,25 @@ export const SHOT_P1: Shot = (() => {
 /** PHASE 2: his stand with the three; the middle one slams the stone toward the Warrior as he dodges; he runs to the front of the stone
  *  as the left one rears; the water slams, left, right, then both at once, the waves meeting in the middle in the crash. */
 export const SHOT_P2: Shot = (() => {
+  // (at the far side of the stone, away from him: where the middle one's line is laid as it rears, out of it to the right before it
+  // lands, clear of it while it lies and drags back; each wave sweeps the whole stone and reaches him: he dodges through it, running
+  // through its wall as it comes, out of the middle before the crash)
   const marks: HeroMark[] = [
-    { k: 0, du: -2.6, dv: 3.0 },
-    { k: 44, du: -2.6, dv: 3.0 },
-    { k: 64, du: 0.6, dv: 2.4 },
-    { k: 100, du: 0.6, dv: 2.4 },
-    { k: 150, du: -0.8, dv: 10.6 },
-    { k: 520, du: -0.8, dv: 10.6 },
+    { k: 0, du: -2.0, dv: 11.9 },
+    { k: 36, du: -2.0, dv: 11.9 },
+    { k: 54, du: 2.0, dv: 11.6 },
+    { k: 186, du: 2.0, dv: 11.6 },
+    { k: 200, du: -1.0, dv: 11.8 },
+    { k: 284, du: -1.0, dv: 11.8 },
+    { k: 298, du: 2.6, dv: 11.8 },
+    { k: 326, du: 2.6, dv: 11.8 },
+    { k: 344, du: 4.6, dv: 12.2 },
+    { k: 374, du: 4.6, dv: 12.2 },
+    { k: 388, du: 6.0, dv: 12.0 },
+    { k: 520, du: 6.0, dv: 12.0 },
   ];
   const [mx, my] = rootOf(1);
-  const m1 = turnToward(mx, my, ...heroSpot(-2.6, 3.0));
+  const m1 = turnToward(mx, my, ...heroSpot(-2.0, 11.9));
   return {
     frames: 520,
     him: 'stand',
@@ -622,11 +698,12 @@ export const SHOT_P2: Shot = (() => {
       { w: 2, doings: [{ k0: 212, is: 'smash' }, { k0: 322, is: 'smash' }] },
     ],
     hero: marks,
-    cam: [[0, CAM_ARMS], [100, CAM_ARMS], [146, CAM_WAVES], [520, CAM_WAVES]],
+    cam: [[0, CAM_WAVES], [520, CAM_WAVES]],
   };
 })();
 /** THE SHEET'S FAN: frame `k` of it, the middle tentacle of phase 2 lying slammed along each turn (one turn a frame). */
-export const SHOT_FAN = { frames: ARM_TURNS.length } as const;
+export const FAN_TURNS: readonly number[] = turnsOf(1).filter((a) => Math.abs(Math.round((a * 180) / Math.PI) % 15) === 0);
+export const SHOT_FAN = { frames: FAN_TURNS.length } as const;
 
 function heroAtMarks(marks: HeroMark[], k: number): [number, number] {
   let i = 0;
@@ -651,10 +728,9 @@ function heroOf(marks: HeroMark[], k: number): HeroAt {
 
 /** A tentacle at a frame of a shot: its layer (and its last frame's, smeared, in a strike), and what the game draws for it. */
 function armIn(w: number, doings: Doing[], k: number, fx: ArmFx, tag: string): { layer: EyeLayer | null; smear: EyeLayer | null } {
-  const lay = (path: P3[] | ArmPose, kk: number, key: string): EyeLayer => {
-    const a = Array.isArray(path) ? pose(w, path) : path;
-    return { key, pose: armLayer(a, kk / EYE_FPS), drop: 0, back: 0 };
-  };
+  const lay = (a: ArmPose, kk: number, key: string): EyeLayer => ({ key, pose: armLayer(a, kk / EYE_FPS), drop: 0, back: 0 });
+  // (drawn with points close enough that its curve between them never cuts the stone's edge; as thick as it is, squashed or round)
+  const fine = (a: ArmPose): ArmPose => ({ ...a, path: liftOver(w, evenly(dense(a.path), 64), a.squash ?? 0, a.r, a.squashFrom ?? 0) });
   // (the doing it is in: the last begun)
   const now = doings.filter((d) => d.k0 <= k).pop();
   // (before any, or after one ends: standing)
@@ -668,25 +744,29 @@ function armIn(w: number, doings: Doing[], k: number, fx: ArmFx, tag: string): {
     return standing();
   }
   const f = k - now.k0;
-  const pathOf = (d: Doing, kk: number): P3[] | null => {
+  const pathOf = (d: Doing, kk: number): ArmPose | null => {
     const g = kk - d.k0;
-    if (d.is === 'slam') return g < SLAM.frames ? armSlam(w, d.ang, g, d.k0 / EYE_FPS).path as P3[] : null;
-    if (d.is === 'smash') return g < SMASH.frames ? armSmash(w, g, d.k0 / EYE_FPS).path as P3[] : null;
+    if (d.is === 'slam') return g < SLAM.frames ? armSlam(w, d.ang, g, d.k0 / EYE_FPS) : null;
+    if (d.is === 'smash') return g < SMASH.frames ? armSmash(w, g, d.k0 / EYE_FPS) : null;
     if (d.is === 'burst') {
       const p = armBurst(w, g - 10, kk / EYE_FPS);
-      return p && g < 10 + 21 ? (p.path as P3[]) : null;
+      return p && g < 10 + 21 ? p : null;
     }
     if (d.is === 'flinch') {
-      const base = pathOf(d.on, kk) ?? (armStand(w, kk / EYE_FPS).path as P3[]);
-      return g < FLINCH ? armFlinch(base, g, d.lying) : base;
+      const base = pathOf(d.on, kk) ?? armStand(w, kk / EYE_FPS);
+      return g < FLINCH ? { ...base, path: armFlinch(base.path, g, d.lying) } : base;
     }
-    const from = pathOf(d.on, d.k0) ?? (armStand(w, d.k0 / EYE_FPS).path as P3[]);
-    return g < DEATH.frames ? armDeath(w, even(from), g) : null;
+    // (dying: as thick as it was, round again)
+    const from = pathOf(d.on, d.k0) ?? armStand(w, d.k0 / EYE_FPS);
+    const { squash: _sq, squashFrom: _sf, ...round } = from;
+    void _sq;
+    void _sf;
+    return g < DEATH.frames ? { ...round, path: armDeath(w, even(from.path), g) } : null;
   };
   // (the game's marks for it)
   if (now.is === 'slam') {
     const [rx, ry] = rootOf(w);
-    if (f < SLAM.hit) fx.lines.push({ x: rx, y: ry, ang: now.ang, len: LINE.len, wid: LINE.wid, k: f / (SLAM.hit - 1) });
+    if (f < SLAM.hit) fx.lines.push({ x: rx, y: ry, ang: now.ang, len: lineLen(w, now.ang), wid: LINE.wid, k: f / (SLAM.hit - 1) });
     const lies = slamLies(w, now.ang);
     if (f >= SLAM.hit) fx.hits.push({ x: rx, y: ry, ang: now.ang, a0: lies.a0, a1: lies.a1, s: (f - SLAM.hit) / EYE_FPS, seed: w * 31 + now.k0 });
     if (f >= SLAM.hit + SLAM.lie) fx.trails.push({ x: rx, y: ry, ang: now.ang, a0: lies.a0 - 50, a1: lies.a1, s: (f - SLAM.hit - SLAM.lie) / EYE_FPS, seed: w * 37 + now.k0 });
@@ -706,8 +786,9 @@ function armIn(w: number, doings: Doing[], k: number, fx: ArmFx, tag: string): {
     if (now.is === 'death' && f >= DEATH.convulse + DEATH.thrash) fx.trails.push({ x: rx, y: ry, ang: under2.ang, a0: lies.a0 - 50, a1: lies.a1, s: (f - DEATH.convulse - DEATH.thrash) / EYE_FPS, seed: w * 37 + under2.k0 });
   }
   if (now.is === 'flinch' && f < 8) {
-    const p = pathOf(now, now.k0);
-    if (p) {
+    const a = pathOf(now, now.k0);
+    if (a) {
+      const p = a.path;
       const j = Math.round((now.lying ? 0.7 : 0.5) * (p.length - 1));
       fx.ichor.push({ x: p[j][0], y: p[j][1], z: p[j][2], s: f / EYE_FPS, seed: w * 13 + now.k0 });
     }
@@ -715,8 +796,9 @@ function armIn(w: number, doings: Doing[], k: number, fx: ArmFx, tag: string): {
   if (now.is === 'death') {
     const [rx, ry] = rootOf(w);
     if (f < 6) {
-      const p = pathOf(now.on, now.k0);
-      if (p) {
+      const a = pathOf(now.on, now.k0);
+      if (a) {
+        const p = a.path;
         const j = Math.round(0.65 * (p.length - 1));
         fx.ichor.push({ x: p[j][0], y: p[j][1], z: p[j][2], s: f / EYE_FPS, seed: w * 17 + now.k0 });
       }
@@ -726,8 +808,6 @@ function armIn(w: number, doings: Doing[], k: number, fx: ArmFx, tag: string): {
   }
   const p = pathOf(now, k);
   if (!p) return now.is === 'death' ? { layer: null, smear: null } : standing();
-  // (drawn with points close enough that its curve between them never cuts the stone's edge)
-  const fine = (q: P3[]): P3[] => liftOver(w, evenly(dense(q), 64));
   const layer = lay(fine(p), k, `A${w}.${now.is[0]}${tag}${now.k0}.${pad(f)}`);
   // (in a strike, its last frame behind it, smeared)
   const strike = (now.is === 'slam' && (f === SLAM.wind || f === SLAM.hit)) || (now.is === 'smash' && (f === SMASH.wind || f === SMASH.hit));
@@ -744,13 +824,13 @@ export function fightFrame(shot: 'p1' | 'p2' | 'fan', k: number): EyeFrame {
   const fx: ArmFx = { lines: [], hits: [], trails: [], smashes: [], waves: [], crash: null, waveWarn: null, ichor: [], sinks: [] };
   if (shot === 'fan') {
     // (the middle tentacle of phase 2 landed along each turn in turn, alone, him standing; the line under it)
-    const ang = ARM_TURNS[k];
+    const ang = FAN_TURNS[k];
     const base = eyeFrame('stand', 0);
     const p = armSlam(1, ang, SLAM.hit + 3, 0);
     const [rx, ry] = rootOf(1);
     const lies = slamLies(1, ang);
     fx.hits.push({ x: rx, y: ry, ang, a0: lies.a0, a1: lies.a1, s: 3 / EYE_FPS, seed: k });
-    return { ...base, move: 'fan', k, arms: [armStandLayer(0, 0), { key: `A1.fan.${pad(k)}`, pose: armLayer(p, 0), drop: 0, back: 0 }, armStandLayer(2, 0)], smear: [null, null, null], hero: { du: -1.0, dv: QUAY + 4.2 - QUAY, view: 'back', act: 'idle', f: 0 }, camY: CAM_ARMS, fx };
+    return { ...base, move: 'fan', k, arms: [armStandLayer(0, 0), { key: `A1.fan.${pad(k)}`, pose: armLayer(p, 0), drop: 0, back: 0 }, armStandLayer(2, 0)], smear: [null, null, null], hero: { du: -11.5, dv: 14.6, view: 'back', act: 'idle', f: 0 }, camY: CAM_ARMS, fx };
   }
   const S = shot === 'p1' ? SHOT_P1 : SHOT_P2;
   const base = S.him === 'lurk' ? eyeFrame('lurk', mod(k, 90)) : eyeFrame('stand', mod(k, 90));
@@ -791,7 +871,7 @@ function camAt(marks: Array<[number, number]>, k: number): number {
   return Math.round(lerp(a[1], b[1], u * u * (3 - 2 * u)));
 }
 /** THE SCREEN'S JOLTS (game pixels): a slam landing on the stone, a smash into the water, the crash. */
-export const ARM_SHAKE = { slam: 4, slamLong: 9, smash: 3, smashLong: 9, crash: 7, crashLong: 30 } as const;
+export const ARM_SHAKE = { slam: 8, slamLong: 14, smash: 6, smashLong: 12, crash: 7, crashLong: 30 } as const;
 function shakeOf(shot: 'p1' | 'p2', k: number, fx: ArmFx): [number, number] {
   let x = 0;
   let y = 0;
@@ -834,11 +914,14 @@ export function armStoneGap(a: ArmPose): { gap: number; at: number[] } {
     const x = T.p[k * 4];
     const y = T.p[k * 4 + 1];
     const z = T.p[k * 4 + 2];
-    const r = T.p[k * 4 + 3];
+    // (squashed flat, as low as it is squashed; as wide)
+    const q = T.sq ? T.sq[k] : 0;
+    const r = T.p[k * 4 + 3] * (q ? squashOf(q).wide : 1);
+    const rz = T.p[k * 4 + 3] * (q ? squashOf(q).high : 1);
     const dx = Math.max(STONE_BOX.x0 - x, 0, x - STONE_BOX.x1);
     const dy = Math.max(STONE_BOX.y0 - y, 0, y - STONE_BOX.y1);
     const dxy = Math.hypot(dx, dy);
-    const g = dxy === 0 ? z - r : z <= 0 ? dxy - r : Math.hypot(dxy, z) - r;
+    const g = dxy === 0 ? z - rz : z <= 0 ? dxy - r : Math.hypot(dxy, z) - Math.max(r, rz);
     if (g < gap) {
       gap = g;
       at = [x, y, z, r];

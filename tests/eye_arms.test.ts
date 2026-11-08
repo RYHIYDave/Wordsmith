@@ -13,8 +13,15 @@
 //   6. NO LEAPS: from frame to frame, but in the strikes' smeared frames and the bursts; out of each move back into its stand;
 //   7. THE CUES: each wind-up held 0.9 s with its warning drawn all through it; the strike two frames, smeared; the landing along
 //      the line, the screen jolted; the water slams' warnings and waves, the crash where the two meet; struck, ichor; dying, it sinks;
-//   8. THE WAVES as he read them: tallest at the back, thinning toward the front and dying before the front edge (outrun there,
-//      dodged through anywhere); the two meeting in the middle in the crash.
+//   7b. NOWHERE SAFE (his word, 7 Nov: “Yes, nowhere safe (Recommended)”): each slam's line runs across the stone to where it leaves it,
+//      the tentacle stretched out along all of it; from each phase's roots, at the turns drawn, the lines cover every spot of the stone;
+//      THE HIT HEAVY: squashed flat and held, rebounding, the screen thrown harder;
+//   8. THE WAVES: tallest at the back, sweeping the whole depth, a wall a third as tall at the near edge, spilling off it (nowhere to
+//      outrun them: dodged through); the two meeting in the middle in the crash; every length in the game's tiles (C_TILE; the films'
+//      UNIT is a tile divided by the square root of 2);
+//   9. THE WARRIOR NEVER ON A TENTACLE: in every frame of both films he is clear of every tentacle low enough to meet him, and his
+//      feet are never on one lying on the stone (he steps out of each line before it lands and stays clear while it lies and drags).
+//   (The waves and the crash are drawn by the pictures' tool, as the game would: they are looked at, frame by frame.)
 // @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
@@ -26,11 +33,11 @@ import nodePath from 'node:path';
 import { BLADE, CYAN, GLINT, SPARK } from '../src/art/kit';
 import { FLAME } from '../src/art/mkit';
 import { rgba } from '../src/engine/px';
-import { EYE2, EYE_LOOP, armClearances, paintColossus } from '../src/art/eye_colossus';
+import { C_TILE, EYE2, EYE_LOOP, armClearances, paintColossus } from '../src/art/eye_colossus';
 import type { ArmPose, ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
 import { ARM_LOOP, ARM_STAND_FRAMES, EYE_FPS, armLayer, armStand } from '../src/art/eye_moves';
 import type { EyeFrame } from '../src/art/eye_moves';
-import { ARM_COLOURS, ARM_SHAKE, ARM_TURNS, CRASH, CRASH_AT, DEATH, FLINCH, LINE, SHOTS, SHOT_P1, SHOT_P2, SLAM, SMASH, STONE_BOX, UNIT, QUAY, WAVE, armDeath, armFlinch, armSlam, armSmash, armStoneGap, armsGap, fightFrame, rootOf, tubeOf, waveFront, waveHigh } from '../src/art/eye_arms';
+import { ARM_COLOURS, ARM_SHAKE, ARM_TURNS, CRASH, CRASH_AT, DEATH, FLINCH, LINE, SHOTS, SHOT_P1, SHOT_P2, SLAM, SMASH, SQUASH_HOLD, STONE_BOX, TURN_STEP, UNIT, QUAY, WAVE, armDeath, armFlinch, armSlam, armSmash, armStoneGap, armsGap, fightFrame, lineLen, rootOf, slamSquash, tubeOf, turnsOf, waveFront, waveHigh } from '../src/art/eye_arms';
 
 interface Assert {
   equal(a: unknown, b: unknown, msg?: string): void;
@@ -142,7 +149,7 @@ test('2. each tentacle\'s stand closes on itself, a loop of its own, two in his 
 
 test('3. nothing cyan; the warning line the enemy\'s pink, the game\'s own', () => {
   // (the tentacles in each move: standing, reared and held, landed, struck lying, convulsing, thrashing, sinking, smashed in the water)
-  const ang = ARM_TURNS[5];
+  const ang = turnsOf(1)[Math.floor(turnsOf(1).length / 2) + 3];
   const landed = armSlam(1, ang, SLAM.hit + 2, 0);
   const poses: Array<[string, ArmPose]> = [
     ['standing', armStand(1, 0.4)],
@@ -205,7 +212,7 @@ test('4. nothing through anything: each tentacle clear of the stone, of him and 
     }
   }
   // (every slam at every turn of its line, each frame of it, for each tentacle that slams the stone)
-  for (const w of [1, 3, 4]) for (const ang of ARM_TURNS) for (let k = 0; k < SLAM.frames; k++) {
+  for (const w of [1, 3, 4]) for (const ang of turnsOf(w)) for (let k = 0; k < SLAM.frames; k++) {
     const g = armStoneGap(armSlam(w, ang, k, 0));
     worstStone = Math.min(worstStone, g.gap);
     assert.ok(g.gap > 0, `tentacle ${w} at ${((ang * 180) / Math.PI).toFixed(0)}, frame ${k}: clear of the stone (${g.gap.toFixed(1)})`);
@@ -290,7 +297,7 @@ test('6. no leaps: frame to frame, but in the strikes; out of each move back int
   // (a slam and a water slam hand back to its stand: their last frame a step from its stand's next)
   for (const w of [1, 3]) {
     const t0 = 0.7;
-    const last = armSlam(w, ARM_TURNS[3], SLAM.frames - 1, t0);
+    const last = armSlam(w, turnsOf(w)[5], SLAM.frames - 1, t0);
     const next = armStand(w, t0 + SLAM.frames / EYE_FPS);
     const own = step(armStand(w, t0 + (SLAM.frames - 1) / EYE_FPS), next);
     assert.ok(step(last, next) < own + 3, `tentacle ${w}: out of its slam into its stand without a leap (${step(last, next).toFixed(1)}, its stand's own ${own.toFixed(1)})`);
@@ -323,7 +330,7 @@ test('7. the cues: held wind-ups with their warnings, two-frame strikes landing 
     else assert.ok(hit.fx?.smashes.length, `${shot} ${d.k0 + SLAM.hit}: its smash in the water`);
   }
   // (lands ALONG THE LINE: what of it lies on the stone lies inside its line, at every turn, for each that slams the stone)
-  for (const w of [1, 3, 4]) for (const ang of ARM_TURNS) {
+  for (const w of [1, 3, 4]) for (const ang of turnsOf(w)) {
     const [rx, ry] = rootOf(w);
     const a = armSlam(w, ang, SLAM.hit, 0);
     let lying = 0;
@@ -332,10 +339,41 @@ test('7. the cues: held wind-ups with their warnings, two-frame strikes landing 
       lying++;
       const along = (q[0] - rx) * Math.sin(ang) + (q[1] - ry) * Math.cos(ang);
       const across = (q[0] - rx) * Math.cos(ang) - (q[1] - ry) * Math.sin(ang);
-      assert.ok(Math.abs(across) < LINE.wid / 2 && along < LINE.len + 4, `tentacle ${w} at ${((ang * 180) / Math.PI).toFixed(0)}: lies inside its line (${along.toFixed(0)} along, ${across.toFixed(0)} across)`);
+      assert.ok(Math.abs(across) < LINE.wid / 2 && along < lineLen(w, ang) + 4, `tentacle ${w} at ${((ang * 180) / Math.PI).toFixed(0)}: lies inside its line (${along.toFixed(0)} along, ${across.toFixed(0)} across)`);
     }
-    assert.ok(lying >= 6, `tentacle ${w} at ${((ang * 180) / Math.PI).toFixed(0)}: lying along it (${lying} of its points on the stone)`);
+    assert.ok(lying >= 3, `tentacle ${w} at ${((ang * 180) / Math.PI).toFixed(0)}: lying along it (${lying} of its points on the stone)`);
+    // (stretched out along all of it, to where it leaves the stone)
+    const far = Math.max(...a.path.filter((q) => q[2] < 30).map((q) => (q[0] - rx) * Math.sin(ang) + (q[1] - ry) * Math.cos(ang)));
+    assert.ok(far > lineLen(w, ang) - 40, `tentacle ${w} at ${((ang * 180) / Math.PI).toFixed(0)}: lying out to its line's end (${far.toFixed(0)} of ${lineLen(w, ang).toFixed(0)})`);
   }
+  // (NOWHERE SAFE: in each phase every spot of the stone lies in some tentacle's line at some turn)
+  for (const [name, roots] of [['phase 1', [3, 4]], ['phase 2', [0, 1, 2]]] as const) {
+    let missed = 0;
+    for (let x = STONE_BOX.x0 + 1; x < STONE_BOX.x1; x += 4) for (let y = STONE_BOX.y0 + 1; y < STONE_BOX.y1; y += 4) {
+      let hit = false;
+      for (const w of roots) {
+        const [rx, ry] = rootOf(w);
+        for (const a of turnsOf(w)) {
+          const along = (x - rx) * Math.sin(a) + (y - ry) * Math.cos(a);
+          const across = Math.abs((x - rx) * Math.cos(a) - (y - ry) * Math.sin(a));
+          if (along >= 0 && along <= lineLen(w, a) + LINE.wid / 2 && across <= LINE.wid / 2) {
+            hit = true;
+            break;
+          }
+        }
+        if (hit) break;
+      }
+      if (!hit) missed++;
+    }
+    assert.equal(missed, 0, `${name}: nowhere on the stone safe from every line (${missed} spots out of reach)`);
+  }
+  assert.ok(TURN_STEP <= 3 && ARM_TURNS.length >= 59, 'turns every 3 degrees');
+  // (THE HIT, HEAVY: slapped flat and squashed, held, then springing up; the screen thrown hard)
+  for (let f = 0; f < SQUASH_HOLD; f++) assert.ok(slamSquash(f) >= 1, `frame ${SLAM.hit + f}: squashed flat`);
+  assert.ok(SQUASH_HOLD >= 3 && slamSquash(SQUASH_HOLD + 1) < 0, 'held a few frames, then rebounding');
+  const sq = armSlam(1, 0, SLAM.hit, 0);
+  assert.ok((sq.squash ?? 0) >= 1, 'the hit\'s pose squashed');
+  assert.ok(ARM_SHAKE.slam >= 8 && ARM_SHAKE.smash >= 6, `the screen thrown harder (${ARM_SHAKE.slam} and ${ARM_SHAKE.smash} game pixels)`);
   // (the water slams: left, then right, then both; the waves after each; the crash after the both)
   const smashes = SHOT_P2.arms.flatMap((a) => a.doings.filter((d) => d.is === 'smash').map((d) => [a.w, d.k0 + SMASH.hit]));
   assert.ok(smashes.some(([w]) => w === 0) && smashes.some(([w]) => w === 2), 'the left and the right');
@@ -362,7 +400,7 @@ test('7. the cues: held wind-ups with their warnings, two-frame strikes landing 
   assert.equal(SHOTS.p1, SHOT_P1.frames, 'the shots');
 });
 
-test('8. the waves as he read them: tallest at the back, dying before the front edge; the two meeting in the middle in the crash', () => {
+test('8. the waves: tallest at the back, sweeping the whole depth to the near edge and spilling off it; the two meeting in the middle in the crash', () => {
   const deep = STONE_BOX.y1 - STONE_BOX.y0;
   assert.ok(Math.abs(waveHigh(STONE_BOX.y0) - WAVE.high) < 1e-9, `tallest at the back (${WAVE.high} of his lengths)`);
   let prev = Infinity;
@@ -371,13 +409,62 @@ test('8. the waves as he read them: tallest at the back, dying before the front 
     assert.ok(h <= prev + 1e-9, `thinning toward the front (${(y - STONE_BOX.y0).toFixed(0)} onto the stone: ${h.toFixed(1)})`);
     prev = h;
   }
-  assert.ok(WAVE.reach < deep - UNIT && waveHigh(STONE_BOX.y0 + WAVE.reach) === 0, `dying before the front edge (its reach ${(WAVE.reach / UNIT).toFixed(1)} of the stone's ${(deep / UNIT).toFixed(1)} tiles)`);
-  // (the Warrior in phase 2 runs to the front, out of its reach: outrun)
+  assert.ok(Math.abs(UNIT * Math.SQRT2 - C_TILE) < 1e-9, 'the films\' unit is a tile divided by the square root of 2');
+  assert.ok(Math.abs((STONE_BOX.x1 - STONE_BOX.x0) / C_TILE - 17) < 1e-9 && Math.abs(deep / C_TILE - 11) < 1e-9, 'the stone 17 tiles by 11');
+  // (NOWHERE SAFE: it sweeps the whole depth, still a wall a third as tall at the near edge, spilling off it)
+  const near = waveHigh(STONE_BOX.y1);
+  assert.ok(Math.abs(near / WAVE.high - 1 / 3) < 0.02, `a wall at the near edge (${(near / C_TILE).toFixed(2)} tiles, a third of ${(WAVE.high / C_TILE).toFixed(2)})`);
+  assert.ok(WAVE.reach > deep && waveHigh(STONE_BOX.y0 + WAVE.reach) === 0 && waveHigh(STONE_BOX.y1 + 10) > 0, 'spilling off the near edge');
+  // (the Warrior in phase 2 at the far side, away from him: the waves still reach him)
   const last = SHOT_P2.hero[SHOT_P2.hero.length - 1];
-  assert.ok((QUAY + last.dv) * UNIT - STONE_BOX.y0 > WAVE.reach, 'the Warrior outruns them at the front');
+  assert.ok((QUAY + last.dv) * UNIT < STONE_BOX.y1 && (QUAY + last.dv) * UNIT - STONE_BOX.y0 < WAVE.reach, 'the waves reach the Warrior at the far side');
   // (crossing the whole stone, each; the two of the both-at-once meeting in the middle)
   assert.ok(waveFront(1, 0) < STONE_BOX.x0 && waveFront(-1, 0) > STONE_BOX.x1, 'each from off its end');
   assert.ok(Math.abs(waveFront(1, CRASH_AT)) < 1e-6 && Math.abs(waveFront(-1, CRASH_AT)) < 1e-6, 'meeting in the middle');
   assert.ok(CRASH.high > 2.5 * WAVE.high, `the crash huge (${CRASH.high} of his lengths high, the waves ${WAVE.high})`);
-  process.stdout.write(`  a wave: ${(WAVE.speed / UNIT).toFixed(1)} tiles a second, ${(WAVE.reach / UNIT).toFixed(1)} tiles onto the stone, ${(WAVE.high / UNIT).toFixed(1)} tiles high at the back; they meet ${CRASH_AT.toFixed(2)} s after the smash\n`);
+  // (the line's width and the roots, in tiles: about the main chat's)
+  assert.ok(Math.abs(LINE.wid / C_TILE - 1.2) < 0.15, `the line ${(LINE.wid / C_TILE).toFixed(2)} tiles wide`);
+  for (let w = 0; w < 5; w++) assert.ok(Math.abs((STONE_BOX.y0 - rootOf(w)[1]) / C_TILE - 1.4) < 0.1, `tentacle ${w}'s root ${((STONE_BOX.y0 - rootOf(w)[1]) / C_TILE).toFixed(2)} tiles off the stone`);
+  process.stdout.write(`  a wave: ${(WAVE.speed / C_TILE).toFixed(2)} tiles a second, ${(WAVE.high / C_TILE).toFixed(2)} tiles high at the back, ${(waveHigh(STONE_BOX.y1) / C_TILE).toFixed(2)} at the near edge; they meet ${CRASH_AT.toFixed(2)} s after the smash; the crash ${(CRASH.high / C_TILE).toFixed(2)} tiles high\n`);
+});
+
+test('9. the Warrior never on a tentacle: clear of each in every frame of both films, never standing on one lying on the stone', () => {
+  const SEEN = 2 / Math.sqrt(3);
+  const R3 = Math.sqrt(3);
+  for (const [shot, S] of [['p1', SHOT_P1], ['p2', SHOT_P2]] as const) {
+    let ground = Infinity;
+    let feet = Infinity;
+    for (let k = 0; k < S.frames; k++) {
+      const F = fightFrame(shot, k);
+      const h = F.hero;
+      assert.ok(h, `${shot} ${k}: the Warrior there`);
+      if (!h) continue;
+      const hx = h.du * UNIT;
+      const hy = (QUAY + h.dv) * UNIT;
+      armsIn(F).forEach((a, n) => {
+        const T = tubeOf(a);
+        for (let i = 0; i < T.n; i++) {
+          const x = T.p[i * 4];
+          const y = T.p[i * 4 + 1];
+          const z = T.p[i * 4 + 2];
+          const r = T.p[i * 4 + 3];
+          // (low enough to meet him, he stands about 70 of his lengths tall: on the ground, he and it apart by his width at the least)
+          if (z - r < 70 && z + r > -2) {
+            const g = Math.hypot(x - hx, y - hy) - r;
+            ground = Math.min(ground, g);
+            assert.ok(g > 20, `${shot} ${k}: the Warrior clear of tentacle ${whichIn(F)[n]} (${g.toFixed(0)} of his lengths)`);
+          }
+          // (lying on the stone: on the screen his feet, 32 picture pixels across and the lowest 60 of him, never on it)
+          if (y > STONE_BOX.y0 && z - r < 30) {
+            const di = (x - hx) * SEEN;
+            const dj = (y - hy) / R3 - z;
+            const d = Math.max(Math.abs(di) - 16, 0, Math.abs(dj + 30) - 40) - r * SEEN;
+            feet = Math.min(feet, d);
+            assert.ok(d > 0, `${shot} ${k}: the Warrior's feet not on tentacle ${whichIn(F)[n]} lying on the stone (${d.toFixed(0)})`);
+          }
+        }
+      });
+    }
+    process.stdout.write(`  ${shot}: the Warrior at the least ${ground.toFixed(0)} of his lengths from a tentacle, his feet ${feet.toFixed(0)} picture pixels from one lying\n`);
+  }
 });
