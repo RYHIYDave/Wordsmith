@@ -155,7 +155,25 @@ export const FORWARD = { u: 8.5, v: -2.8, eye: 1.2, r: 1.6 } as const;
  * will sweep, the enemy's pink), swept to the other side over `sweep` seconds; `width` tiles wide; it hurts the hero once as it
  * crosses him.
  */
-export const GAZE = { warn: 0.9, sweep: 1.2, half: 32, width: 0.9, long: 2.6 } as const;
+export const GAZE = { warn: 0.9, sweep: 1.2, half: 32, width: 0.9, long: fr(102) } as const;
+/**
+ * HIS BODY'S OWN ATTACKS IN PHASE 2, between his tentacles' (the art chat's eye_body.ts, his yes of 8 Nov, “Bile arc and gaze
+ * (Recommended)”; board 14:57). His body cannot be hurt in phase 2. Each begins as his stand comes to frame `at` of its loop (the
+ * art's takes begin there, so that he goes back into his stand where he would have been), the next `every` seconds (a range) after
+ * the last ends, the first `first` into the phase; bile and gaze by turns; never in his shovel.
+ *   THE BILE ARC: the warning laid where the hero stands as it begins; he retches the glob at `release`, it lands at `land` (1.63 s),
+ *     the splash hurting within `splash` tiles; a burning pool lies there, `pool.r` tiles round (spread in `pool.spread` s, full to
+ *     `pool.hold`, gone at `pool.life`), burning whoever stands in it every `pool.tick` s. He is back in his stand at `long`.
+ *   THE GAZE: as phase 3's (GAZE), from the water under his eye at his place (`gazeAt`), swept from his left to his right as the art
+ *     paints it (its beam on at `GAZE.warn`); his middle tentacle, in the arc, ducks under the water through it (`duck` state).
+ */
+export const BODY2 = {
+  at: 24,
+  every: [5, 7] as const,
+  first: 6,
+  bile: { release: fr(28), land: fr(49), long: fr(65), splash: 2.2, pool: { r: 1.9, spread: 0.2, hold: 1.4, life: 3.0, tick: 0.5 } },
+  gazeAt: { u: 8.15, v: -4.28 },
+} as const;
 /**
  * THE EYE SLAM: his eye reared back (the warning, `warn` seconds: a circle where it will land, where the hero stands, no further
  * than `reach` tiles from his eye), slammed down on the stone at `hit`, hurting within `r`; lying there to `up` (struck there as
@@ -173,6 +191,25 @@ export const BODY_HIT = { r: 4.4 } as const;
 export function eyeHome(): P2 {
   return { u: FORWARD.u, v: FORWARD.v + FORWARD.eye };
 }
+/** A gaze's beam crosses the hero this step (from `was` to its `t` seconds): his turn from its middle between where it was and where it is, his size counted. */
+export function gazeCrosses(E: { t: number; a0: number; a1: number; at: P2 }, was: number, hero: P2): boolean {
+  const k0 = (was - GAZE.warn) / GAZE.sweep;
+  const k1 = (E.t - GAZE.warn) / GAZE.sweep;
+  const deg = Math.atan2(hero.u - E.at.u, hero.v - E.at.v) / D;
+  const lo = E.a0 + (E.a1 - E.a0) * Math.max(0, k0);
+  const hi = E.a0 + (E.a1 - E.a0) * Math.min(1, k1);
+  const far = Math.hypot(hero.u - E.at.u, hero.v - E.at.v) || 1;
+  const slack = Math.atan((GAZE.width / 2 + HERO_R) / far) / D;
+  return deg >= Math.min(lo, hi) - slack && deg <= Math.max(lo, hi) + slack;
+}
+/** How far round a pool of his bile is (tiles), `s` seconds after it landed. */
+export function poolR(s: number): number {
+  const P = BODY2.bile.pool;
+  if (s < 0 || s >= P.life) return 0;
+  if (s < P.spread) return (P.r * s) / P.spread;
+  if (s < P.hold) return P.r;
+  return P.r * (1 - (s - P.hold) / (P.life - P.hold));
+}
 /** Where his front is along the stone as he gapes at the left end (less than 0: off the stone's end; the right end the same, flipped). */
 export function bodyStrikeFront(): number {
   return -SHOVEL.out + BODY_HIT.r;
@@ -182,7 +219,7 @@ export function bodyStrikeFront(): number {
 // HOW HARD, HOW OFTEN
 
 /** How hard each hurts, times his own blow (the boss's base blow, as the game reckons it on floor 10). */
-export const HURTS = { slam: 1.2, wave: 1.0, crash: 1.8, scrape: 0.9, snap: 3.0, rain: 1.0, gaze: 1.1, eye: 1.4 } as const;
+export const HURTS = { slam: 1.2, wave: 1.0, crash: 1.8, scrape: 0.9, snap: 3.0, rain: 1.0, gaze: 1.1, eye: 1.4, bile: 1.3, pool: 0.3 } as const;
 export type HurtBy = keyof typeof HURTS;
 /**
  * EACH PHASE (index 1 to 3): a tentacle rests `rest` stand loops (a range) between its moves; the water slams come every
@@ -310,7 +347,7 @@ export function inSnap(end: 'l' | 'r', p: P2): boolean {
 // ---------------------------------------------------------------------------------------------
 // THE FIGHT
 
-export type ArmState = 'rise' | 'stand' | 'slam' | 'smash' | 'under' | 'dying' | 'dead';
+export type ArmState = 'rise' | 'stand' | 'slam' | 'smash' | 'under' | 'duck' | 'dying' | 'dead';
 export interface Arm {
   id: number;
   /** Which of the phase's: 0 left (or phase 1's left), 1 middle (or phase 1's right), 2 right. */
@@ -366,6 +403,24 @@ export interface EyeMove {
   landed: boolean;
 }
 
+/** (Phase 2) His body's attack under way: the bile arc (where it lands; its splash dealt) or the gaze (its first and last turn, from
+ *  `at`, the water under his eye; its beam's blow dealt); seconds into it. */
+export interface BodyMove {
+  kind: 'bile' | 'gaze';
+  t: number;
+  at: P2;
+  a0: number;
+  a1: number;
+  landed: boolean;
+}
+/** (Phase 2) A burning pool of his bile: where, seconds since it landed, the next burn. */
+export interface Pool {
+  u: number;
+  v: number;
+  t: number;
+  burn: number;
+}
+
 export interface Rain {
   u: number;
   v: number;
@@ -392,6 +447,9 @@ export type FightEvent =
   | { t: 'snap'; end: 'l' | 'r' }
   | { t: 'back' }
   | { t: 'gazeWarn'; a0: number; a1: number }
+  | { t: 'bileWarn'; u: number; v: number }
+  | { t: 'retch' }
+  | { t: 'bile'; u: number; v: number }
   | { t: 'gaze' }
   | { t: 'eyeWarn'; u: number; v: number }
   | { t: 'eyeSlam'; u: number; v: number }
@@ -422,6 +480,11 @@ export class ColossusFight {
   /** (Phase 3) His eye's attack now, and seconds to the next. */
   eye: EyeMove | null = null;
   eyeIn = 0;
+  /** (Phase 2) His body's attack under way, the next due in, which comes next; his bile's burning pools. */
+  body2: BodyMove | null = null;
+  body2In = Infinity;
+  body2Next: 'bile' | 'gaze' = 'bile';
+  pools: Pool[] = [];
   private eyeNext: 'gaze' | 'slam' = 'gaze';
   /** Seconds to the next water slam, and which it is (his order: left, right, both). */
   waterIn = 0;
@@ -460,6 +523,8 @@ export class ColossusFight {
     this.shovelIn = P.shovel ? P.shovelFirst : Infinity;
     this.rainIn = ph === 3 ? RAIN.every : Infinity;
     this.eyeIn = ph === 3 ? EYE_PACE.first : Infinity;
+    this.body2In = ph === 2 ? BODY2.first : Infinity;
+    this.body2 = null;
     if (ph < 3 && this.arms.every((a) => a.state === 'dead')) this.raiseArms(ph, ev);
     // (his entrance ends on his tentacles' stand's first frame: their clock begins again with the phase)
     else if (ph === 2) this.armClock = 0;
@@ -512,6 +577,7 @@ export class ColossusFight {
       this.waves = [];
       this.crash = null;
       this.rains = [];
+      this.body2 = null;
       ev.push({ t: 'flasks' });
     }
     return ev;
@@ -548,6 +614,7 @@ export class ColossusFight {
     this.stepWaves(dt, hero, ev);
     this.stepShovel(dt, hero, ev);
     this.stepRain(dt, hero, ev);
+    this.stepBody2(dt, hero, bodyWas, ev);
 
     if (this.mode === 'between') {
       this.betweenT += dt;
@@ -624,7 +691,7 @@ export class ColossusFight {
     this.waterIn -= dt;
     this.shovelIn -= dt;
     if (this.shovel) return;
-    const moving = this.arms.some((a) => a.state === 'slam' || a.state === 'smash' || a.state === 'rise');
+    const moving = !!this.body2 || this.arms.some((a) => a.state === 'slam' || a.state === 'smash' || a.state === 'rise' || a.state === 'duck');
     // THE SHOVEL: due, his tentacles still, no wave rolling, as his stand comes round
     if (this.shovelIn <= 0) {
       if (!moving && this.waves.length === 0 && bodyRound) this.beginShovel(ev);
@@ -816,19 +883,9 @@ export class ColossusFight {
     E.t += dt;
     if (E.kind === 'gaze') {
       if (was < GAZE.warn && E.t >= GAZE.warn) ev.push({ t: 'gaze' });
-      if (!E.landed && E.t >= GAZE.warn && E.t < GAZE.warn + GAZE.sweep) {
-        const k0 = (was - GAZE.warn) / GAZE.sweep;
-        const k1 = (E.t - GAZE.warn) / GAZE.sweep;
-        const deg = Math.atan2(hero.u - E.at.u, hero.v - E.at.v) / D;
-        const lo = E.a0 + (E.a1 - E.a0) * Math.max(0, k0);
-        const hi = E.a0 + (E.a1 - E.a0) * k1;
-        // (the beam crosses him this step: his turn between where it was and where it is, his size counted)
-        const far = Math.hypot(hero.u - E.at.u, hero.v - E.at.v) || 1;
-        const slack = (Math.atan((GAZE.width / 2 + HERO_R) / far) / D);
-        if (deg >= Math.min(lo, hi) - slack && deg <= Math.max(lo, hi) + slack) {
-          E.landed = true;
-          if (!hero.dodging) ev.push({ t: 'hurt', by: 'gaze', mult: HURTS.gaze, du: 0, dv: 0, secs: 0 });
-        }
+      if (!E.landed && E.t >= GAZE.warn && E.t < GAZE.warn + GAZE.sweep && gazeCrosses(E, was, hero)) {
+        E.landed = true;
+        if (!hero.dodging) ev.push({ t: 'hurt', by: 'gaze', mult: HURTS.gaze, du: 0, dv: 0, secs: 0 });
       }
       if (E.t >= GAZE.long) this.endEye();
     } else {
@@ -838,6 +895,75 @@ export class ColossusFight {
         if (!hero.dodging && Math.hypot(hero.u - E.at.u, hero.v - E.at.v) < EYE_SLAM.r + HERO_R) ev.push({ t: 'hurt', by: 'eye', mult: HURTS.eye, du: 0, dv: 0, secs: 0 });
       }
       if (E.t >= EYE_SLAM.long) this.endEye();
+    }
+  }
+
+  // ---- phase 2: his body's own attacks, the bile arc and the gaze; his bile's pools
+  private stepBody2(dt: number, hero: HeroOnStone, bodyWas: number, ev: FightEvent[]): void {
+    const P = BODY2.bile.pool;
+    for (const p of this.pools) {
+      p.t += dt;
+      if (!hero.dodging && p.t >= p.burn && Math.hypot(hero.u - p.u, hero.v - p.v) < poolR(p.t)) {
+        p.burn = p.t + P.tick;
+        ev.push({ t: 'hurt', by: 'pool', mult: HURTS.pool, du: 0, dv: 0, secs: 0 });
+      }
+    }
+    this.pools = this.pools.filter((p) => p.t < P.life);
+    if (this.ph !== 2 || this.mode !== 'fight') return;
+    const B = this.body2;
+    if (!B) {
+      this.body2In -= dt;
+      if (this.body2In > 0 || this.shovel || this.shovelIn <= 0) return;
+      // (as his stand comes to the frame the art's takes begin on)
+      const at = BODY2.at / FPS;
+      if (!(Math.floor((this.body - at) / BODY.stand) > Math.floor((bodyWas - at) / BODY.stand))) return;
+      const mid = this.arms.find((a) => a.side === 'm');
+      if (this.body2Next === 'gaze') {
+        // (his middle tentacle stands in the arc: the gaze waits for it to stand, and it ducks under through it)
+        if (mid && mid.state !== 'stand' && mid.state !== 'dying' && mid.state !== 'dead') return;
+        const o = BODY2.gazeAt;
+        const toward = Math.atan2(hero.u - o.u, hero.v - o.v) / D;
+        this.body2 = { kind: 'gaze', t: 0, at: { u: o.u, v: o.v }, a0: toward - GAZE.half, a1: toward + GAZE.half, landed: false };
+        if (mid && mid.state === 'stand') {
+          mid.state = 'duck';
+          mid.t = 0;
+        }
+        ev.push({ t: 'gazeWarn', a0: this.body2.a0, a1: this.body2.a1 });
+      } else {
+        this.body2 = { kind: 'bile', t: 0, at: { u: Math.max(0, Math.min(STONE.w, hero.u)), v: Math.max(0, Math.min(STONE.d, hero.v)) }, a0: 0, a1: 0, landed: false };
+        ev.push({ t: 'bileWarn', u: this.body2.at.u, v: this.body2.at.v });
+      }
+      this.body2Next = this.body2Next === 'gaze' ? 'bile' : 'gaze';
+      return;
+    }
+    const was = B.t;
+    B.t += dt;
+    if (B.kind === 'bile') {
+      const L = BODY2.bile;
+      if (was < L.release && B.t >= L.release) ev.push({ t: 'retch' });
+      if (!B.landed && B.t >= L.land) {
+        B.landed = true;
+        ev.push({ t: 'bile', u: B.at.u, v: B.at.v });
+        if (!hero.dodging && Math.hypot(hero.u - B.at.u, hero.v - B.at.v) < L.splash + HERO_R) ev.push({ t: 'hurt', by: 'bile', mult: HURTS.bile, du: 0, dv: 0, secs: 0 });
+        this.pools.push({ u: B.at.u, v: B.at.v, t: B.t - L.land, burn: P.tick });
+      }
+      if (B.t >= L.long) this.endBody2();
+    } else {
+      if (was < GAZE.warn && B.t >= GAZE.warn) ev.push({ t: 'gaze' });
+      if (!B.landed && B.t >= GAZE.warn && B.t < GAZE.warn + GAZE.sweep && gazeCrosses(B, was, hero)) {
+        B.landed = true;
+        if (!hero.dodging) ev.push({ t: 'hurt', by: 'gaze', mult: HURTS.gaze, du: 0, dv: 0, secs: 0 });
+      }
+      if (B.t >= GAZE.long) this.endBody2();
+    }
+  }
+
+  private endBody2(): void {
+    this.body2 = null;
+    this.body2In = this.rng.range(BODY2.every[0], BODY2.every[1]);
+    for (const a of this.arms) if (a.state === 'duck') {
+      a.state = 'stand';
+      a.t = 0;
     }
   }
 

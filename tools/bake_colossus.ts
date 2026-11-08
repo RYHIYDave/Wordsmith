@@ -39,6 +39,7 @@ import type { EyeFrame, EyeLayer } from '../src/art/eye_moves';
 import { FLINCH, DEATH, SLAM, SMASH, armDeath, armFlinch, armSlam, armSmash, dense, even, evenly, liftOver, rootOf, turnsOf } from '../src/art/eye_arms';
 import type { ArmPose } from '../src/art/eye_colossus';
 import { SHOVEL as ART_SHOVEL, SNAP as ART_SNAP, atEnd, shovelFrame } from '../src/art/eye_shovel';
+import { BILE as ART_BILE, BODY_TAKE, GAZE as ART_GAZE, bodyFrame } from '../src/art/eye_body';
 import { ARM_BAKE } from '../src/render/colossus_baked';
 // @ts-ignore
 import { encodePng } from './png.mjs';
@@ -264,6 +265,24 @@ function plan(want: readonly string[]): { moves: MoveSpec[]; layers: { key: stri
       moves.push({ name: `a${i}.sink`, group: `a${i}`, frames: sinks[i].slice(0, ART_SHOVEL.sink[1]).map((ls) => ({ layers: ls, ...AIR })) });
       moves.push({ name: `a${i}.up`, group: `a${i}`, frames: sinks[i].slice(ART_SHOVEL.back[0]).map((ls) => ({ layers: ls, ...AIR })) });
     }
+  }
+  // HIS BODY'S OWN ATTACKS IN PHASE 2 (the art's eye_body.ts, his yes of 8 Nov): the bile arc and the gaze, each from his stand at the
+  // frame of it the art's takes begin them on (`ARM_BAKE.bodyAt`), and back into it; the gaze's middle tentacle ducking under the
+  // water out of its way (its own figure's frames)
+  for (const [mv, shot, n] of [['bile', 'b1', ART_BILE.frames], ['gaze', 'g1', ART_GAZE.frames]] as const) {
+    if (!(want.length === 0 || want.includes('body') || want.includes(mv))) continue;
+    const frames: FrameSpec[] = [];
+    const duck: FrameSpec[] = [];
+    for (let f = 0; f < n; f++) {
+      const F = bodyFrame(shot, BODY_TAKE.lead + f);
+      const ls = [F.jaws, F.spit, F.tongue].filter((L): L is EyeLayer => !!L).map((L) => ofLayer(L));
+      for (const L of F.smear) if (L) ls.push(ofLayer(L, true));
+      frames.push({ layers: ls, sunk: F.water.sunk, pulse: F.water.pulse });
+      const A1 = F.arms[1];
+      duck.push({ layers: A1 ? [ofLayer(A1)] : [], ...AIR });
+    }
+    moves.push({ name: mv, group: mv, frames });
+    if (mv === 'gaze') moves.push({ name: 'a1.duck', group: 'a1', frames: duck });
   }
   // HIS TENTACLES, each its own figure
   for (let w = 0; w < 5; w++) {

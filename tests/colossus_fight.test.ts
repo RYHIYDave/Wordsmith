@@ -11,7 +11,7 @@ import { RNG } from '../src/engine/rng';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import {
-  ColossusFight, COLOSSUS, CHANGE3, ENTRANCE, HOOK, PACE, ROOTS, SHOVEL, SLAM, SNAP, STONE, TURNS, WAVE, CRASH,
+  ColossusFight, COLOSSUS, CHANGE3, ENTRANCE, HOOK, PACE, ROOTS, SHOVEL, SLAM, SNAP, STONE, TURNS, WAVE, CRASH, BODY2, GAZE, poolR,
   slamLine, turnToward, offLine, waveFront, bodyStrikeFront, stoneToWorld, worldToStone,
 } from '../src/game/colossus_fight';
 import type { FightEvent, HeroOnStone } from '../src/game/colossus_fight';
@@ -230,6 +230,54 @@ test('both at once: they meet in the middle 1.56 s after the smash, the crash hu
   surgePace = f.paceAt({ u: 8.5, v: 5 });
   assert.equal(surgePace, CRASH.slow);
   assert.equal(f.paceAt({ u: 0.5, v: 5 }), 1);
+});
+
+test("phase 2, his body's own attacks (the art's, his yes of 8 Nov): the bile arc lands where the hero stood as it began, its splash and burning pool hurt; the gaze ducks his middle tentacle and its beam hurts once as it crosses; rolled through, nothing", () => {
+  const f = inPhase2(29);
+  f.shovelIn = Infinity;
+  f.waterIn = Infinity;
+  // (his tentacles' slams aside: only his body's attacks counted)
+  const mine = (ev: FightEvent[]): Extract<FightEvent, { t: 'hurt' }>[] => hurts(ev).filter((e) => e.by === 'bile' || e.by === 'pool' || e.by === 'gaze');
+  const at = { u: 8.5, v: 6, dodging: false };
+  let warned = -1;
+  const got: FightEvent[] = [];
+  for (let i = 0; i < 60 * 14 && warned < 0; i++) {
+    const ev = f.step(DT, at);
+    got.push(...ev);
+    if (ev.some((e) => e.t === 'bileWarn')) warned = f.time;
+  }
+  assert.ok(warned > 0, 'a bile arc in phase 2');
+  assert.equal(f.body2?.kind, 'bile');
+  assert.ok(Math.abs(((f.body * 30) % 90) - BODY2.at) <= 1, `begun on his stand's frame ${BODY2.at}: ${((f.body * 30) % 90).toFixed(1)}`);
+  assert.deepEqual(f.body2?.at, { u: 8.5, v: 6 });
+  const after = run(f, BODY2.bile.long + 1.0, () => at);
+  const landed = after.findIndex((e) => e.t === 'bile');
+  assert.ok(landed >= 0);
+  const m = mine(after);
+  assert.equal(m.filter((e) => e.by === 'bile').length, 1, 'the splash');
+  assert.ok(m.filter((e) => e.by === 'pool').length >= 2, 'the pool burning him');
+  assert.ok(near(poolR(1.0), BODY2.bile.pool.r, 1e-9) && poolR(BODY2.bile.pool.life) === 0);
+  // the gaze next: his middle tentacle ducks through it, the beam hurts once
+  let gazed = false;
+  const g2: FightEvent[] = [];
+  for (let i = 0; i < 60 * 14 && !(gazed && !f.body2); i++) {
+    const ev = f.step(DT, { u: 11, v: 5, dodging: false });
+    g2.push(...ev);
+    if (ev.some((e) => e.t === 'gazeWarn')) {
+      gazed = true;
+      const mid = f.arms.find((a) => a.side === 'm');
+      assert.equal(mid?.state, 'duck', 'his middle tentacle ducks out of the arc');
+      assert.ok(Math.abs((f.body2?.a1 ?? 0) - (f.body2?.a0 ?? 0) - 2 * GAZE.half) < 1e-9);
+    }
+  }
+  assert.ok(gazed);
+  assert.equal(mine(g2).filter((e) => e.by === 'gaze').length, 1, 'the beam, once');
+  assert.notEqual(f.arms.find((a) => a.side === 'm')?.state, 'duck', 'back up after');
+  // rolled through: nothing of his body's
+  const r = inPhase2(29);
+  r.shovelIn = Infinity;
+  r.waterIn = Infinity;
+  assert.equal(mine(run(r, 30, () => ({ u: 8.5, v: 6, dodging: true }))).length, 0);
 });
 
 function shovelling(seed: number, end: 'l' | 'r'): ColossusFight {

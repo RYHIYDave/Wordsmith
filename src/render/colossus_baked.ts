@@ -12,9 +12,10 @@ declare const __COLOSSUS_BAKE__: string | undefined;
  * HIS TENTACLES AS BAKED (tools/bake_colossus.ts): a burst begins on their stand's first frame (the fight's tentacle clock is set
  * then: game/colossus_fight.ts armClock), so that its 32 frames end on its 32nd; struck standing is baked from these frames of their
  * stand (the nearest taken); their slams on the stone every `turnEvery` degrees of turn, the game turning each the rest of the way.
- * His entrance in parts of `entrancePart` frames (`entrance.0` on), each its own sheets.
+ * His entrance in parts of `entrancePart` frames (`entrance.0` on), each its own sheets. His body's own attacks in phase 2 (the bile arc,
+ * the gaze) baked as the art's takes begin them, on frame `bodyAt` of his stand (game/colossus_fight.ts begins them there).
  */
-export const ARM_BAKE = { burstAt: 0, flinchFrom: [0, 15, 30] as readonly number[], turnEvery: 15, entrancePart: 90 } as const;
+export const ARM_BAKE = { burstAt: 0, flinchFrom: [0, 15, 30] as readonly number[], turnEvery: 15, entrancePart: 90, bodyAt: 24 } as const;
 
 /** Where the bakes lie beside the page, each in a folder named by its mark (tools/colossus_ship.mjs). */
 export const COLOSSUS_BAKE = { dir: 'colossus', slamsKept: 6 };
