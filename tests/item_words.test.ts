@@ -13,11 +13,12 @@ import { Game } from '../src/game/game';
 import { seasoned } from './helpers';
 
 const on = <T>(f: () => T): T => {
+  const was = ITEM_WORDS.on;
   ITEM_WORDS.on = true;
   try {
     return f();
   } finally {
-    ITEM_WORDS.on = false;
+    ITEM_WORDS.on = was;
   }
 };
 /** A plain piece with these words burned into it (each a property). */
@@ -31,10 +32,15 @@ function piece(slot: Slot, words: string[], seed = 3): Item {
 }
 const groups = (it: Item): string[] => [...it.affixes, ...it.imbues].map((p) => statGroup(p.mods[0].stat));
 
-test('off, Splitting and Binding burn in as every word does', () => {
-  assert.equal(ITEM_WORDS.on, false);
-  assert.equal(itemWordOf('splitting'), null);
-  assert.equal(itemWordOf('binding'), null);
+test('on at his yes; off, Splitting and Binding burn in as every word does', () => {
+  assert.equal(ITEM_WORDS.on, true);
+  ITEM_WORDS.on = false;
+  try {
+    assert.equal(itemWordOf('splitting'), null);
+    assert.equal(itemWordOf('binding'), null);
+  } finally {
+    ITEM_WORDS.on = true;
+  }
 });
 
 test('Splitting: two pieces like it, its properties shared between them, each its colour by its count', () =>

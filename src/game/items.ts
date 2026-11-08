@@ -1280,9 +1280,10 @@ export function rarityFor(count: number): Rarity {
 // Offered the two words already named for it, 8 Nov: “Yes, Splitting and Binding (Recommended)”. At the bench SPLITTING shares a
 // piece's properties between it and a second like it, at random; BINDING takes a second piece of the same kind into the first,
 // which keeps its own and as many of the other's as there is room for (four in all, never two of a kind; at least one of each's,
-// the rest rolled), the second gone. Behind ITEM_WORDS, off until his yes to its pictures; off, they burn in as every word does.
+// the rest rolled), the second gone. Behind ITEM_WORDS: ON at his yes to its pictures (item_words_look.mjs), 8 Nov 2026: “Yes, put it
+// in (Recommended)”; off, they burn in as every word does.
 
-export const ITEM_WORDS = { on: false };
+export const ITEM_WORDS = { on: true };
 export type ItemWord = 'split' | 'bind';
 /** What a word does to a piece at the bench, if it changes the piece rather than burning into it. */
 export function itemWordOf(word: WordId): ItemWord | null {

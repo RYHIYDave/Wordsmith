@@ -15,6 +15,7 @@
 //     you would have access to your inventory on the right side"). The words the hero carries are
 //     the inventory's own, on its half: one of them is pressed there, and its card offers KEEP.
 
+import { itemWordOf } from '../game/items';
 import { WORD_COLOR } from '../art/icons';
 import { P } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
@@ -53,6 +54,10 @@ const SLOT_NAME: Record<Slot, string> = { mainhand: 'weapon', offhand: 'off hand
 export function gearLines(word: WordId, limit: Limit): string[] {
   // (FLAT DAMAGE: a pair named by its least, read as what it adds)
   const label = (s: StatKey): string => { const f = flatPair(s); return f ? `Adds ${f.label}` : statView(s, limit).label; };
+  // (SPLITTING AND BINDING change the piece at the bench: ITEM_WORDS)
+  const iw = itemWordOf(word);
+  if (iw === 'split') return ['At the bench: one piece made two, its properties shared between them.'];
+  if (iw === 'bind') return ['At the bench: a second piece of the same kind bound into the first, four properties in all.'];
   return imbueRules(word).map((r) => {
     const where = r.slots.map((s) => SLOT_NAME[s]).join(', ');
     const what = r.pairs ? r.pairs.map(([a, b]) => (a === b ? label(a) : `${label(a)} and ${label(b)}`)).join(', or ') : r.stats.map(label).join(' or ');
