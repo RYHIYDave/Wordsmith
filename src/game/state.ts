@@ -660,6 +660,8 @@ export interface Zone {
 export interface Riser {
   m: Monster;
   age: number;
+  /** (THE FOURTH BATCH OF SOUNDS) its rift's opening has been heard. */
+  opened?: boolean;
   /**
    * THE FIRST FIVE FLOORS (game/bosses.ts): how it comes. Absent, the Warden's way: it crawls out of the
    * ground (and so the mini fleshmancer's dead, out of the ground where a cultist's body lay). 'gather':
@@ -1564,7 +1566,7 @@ export type GameEvent =
   | { t: 'msg'; text: string; color: string }
   | { t: 'sfx'; name: Sfx; vol?: number }
   /** A sound of the sound chat's second batch by its name (engine/audio.ts sfxNamed), `or` made in code until it has come. */
-  | { t: 'rec'; name: string; vol?: number; or?: Sfx }
+  | { t: 'rec'; name: string; vol?: number; or?: Sfx; world?: boolean }
   /** A hero's own voice (engine/audio.ts heroVoice: how often each is heard is the sound's to say). */
   | { t: 'voice'; who: ClassId; cry: 'attack' | 'hurt' | 'death' }
   /** A door has begun to swing open ('open'); the boss's gate has fallen ('fall') or begun to rise ('rise'). At the middle of its doorway. */

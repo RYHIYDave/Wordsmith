@@ -65,7 +65,10 @@ import { TITLE_SMITH3, makeSmith3Title } from './art/title_smith3';
 import { TITLE_RING, makeRingTitle } from './art/title_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
-import { heroVoice, initAudio, isMuted, recordedState, setMuted, sfx, sfxNamed, speak, speakBoss, titleMusic, warmNamed, warmRecorded } from './engine/audio';
+import { footstep, heroVoice, initAudio, isMuted, recordedDetail, recordedState, setLoops, setMuffled, setMuted, sfx, sfxNamed, speak, speakBoss, titleMusic, warmNamed, warmRecorded, warmSteps, worldSound } from './engine/audio';
+import { OWL_HOOT, STEP_EVERY, WORLD_SOUNDS, byNearness, groundOf, hushFloor, loopWants } from './game/world_sounds';
+import { owlFrameAt } from './art/hall_owl';
+import { CASTLE_HALL, CASTLE_OWL_AT } from './art/castle_hall';
 import { soundsOf } from './game/sound_families';
 import type { Speaker, SpeakerVoice } from './engine/audio';
 import { MISSING_GLYPHS, drawText, textWidth } from './engine/font';
@@ -1584,7 +1587,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // (the hero's own voice, the sound chat's: engine/audio.ts heroVoice; and his voice and the combat sounds fetched once he plays)
     for (const e of g.events) if (e.t === 'voice') heroVoice(e.who, e.cry);
     // (THE SOUND CHAT'S SECOND BATCH: the enemies' and the bosses' sounds by name; a floor's fetched as it is come into)
-    for (const e of g.events) if (e.t === 'rec') sfxNamed(e.name, e.vol ?? 1, e.or);
+    for (const e of g.events) if (e.t === 'rec') (e.world ? worldSound : sfxNamed)(e.name, e.vol ?? 1, e.or);
     if (warmedLevel !== g.level && warmNamed(soundsOf(new Set(g.monsters.map((m) => m.kind))))) warmedLevel = g.level;
     if (warmedFor !== g.hero.cls) {
       warmedFor = g.hero.cls;
@@ -1693,6 +1696,64 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     }
     drawLoading(cg, l.t);
   };
+  /**
+   * THE WORLD'S SOUNDS (game/world_sounds.ts; the sound chat's fourth batch): each frame of play, his footsteps by the ground, the
+   * loops by nearness, the town's people's sounds as they are drawn doing what they do now and then, the owl in the rafters, the
+   * ring flaring as the master rune-stone is given; on the Hush floors all of it thin and muffled.
+   */
+  const worldWas = { level: null as unknown, x: 0, y: 0, step: 0, owl: -1, hoot: 25, given: -1 };
+  const worldFrame = (g: Game, dt: number, paused: boolean): void => {
+    const W = worldWas;
+    const h = g.hero;
+    const L = g.level;
+    if (W.level !== L) {
+      W.level = L;
+      W.x = h.x;
+      W.y = h.y;
+      W.step = 0;
+      warmSteps(groundOf(g));
+    }
+    setMuffled(hushFloor(g));
+    setLoops(g.over ? {} : loopWants(g, CASTLE_HALL.on));
+    // (his steps: as he goes, quicker the faster; none while he is in the air, standing, or the game stands still)
+    const moved = Math.hypot(h.x - W.x, h.y - W.y);
+    W.x = h.x;
+    W.y = h.y;
+    const pace = dt > 0 ? moved / dt : 0;
+    if (!paused && !g.over && pace > 0.6 && pace < 12 && !h.move) {
+      const ground = groundOf(g);
+      W.step += (dt * pace) / STEP_EVERY.pace;
+      if (W.step >= (ground === 'water' ? STEP_EVERY.water : STEP_EVERY.at)) {
+        W.step = 0;
+        footstep(ground);
+      }
+    } else W.step = Math.min(W.step, STEP_EVERY.at * 0.6);
+    // (the town's people, as they begin what they do now and then: render.ts)
+    for (const s of renderer.townSounds) {
+      const v = 0.85 * byNearness(Math.hypot(s.x - h.x, s.y - h.y), 3, 13);
+      if (v > 0.02) worldSound(s.name, v);
+    }
+    if (L.town) {
+      // (the owl in the rafters: its ruffle as its loop comes to it; a hoot now and then)
+      if (CASTLE_HALL.on) {
+        const f = owlFrameAt(clock, 3.1);
+        const near = byNearness(Math.hypot(CASTLE_OWL_AT[0] - h.x, CASTLE_OWL_AT[1] - h.y), 4, 16);
+        if (f === 12 && W.owl !== 12 && near > 0.02) worldSound('owl_ruffle', 0.7 * near);
+        W.owl = f;
+        W.hoot -= dt;
+        if (W.hoot <= 0) {
+          W.hoot = OWL_HOOT.from + Math.random() * (OWL_HOOT.to - OWL_HOOT.from);
+          if (near > 0.02) worldSound('owl_hoot', 0.6 * Math.max(0.35, near));
+        }
+      }
+      // (the ring flaring up as the master rune-stone is given)
+      if (QUEST3.givenAt >= 0 && QUEST3.givenAt !== W.given) {
+        W.given = QUEST3.givenAt;
+        worldSound('ring_power', 0.9);
+      }
+    }
+  };
+
   /** The loading screen: the word, and three marks under it lit one after another. */
   const drawLoading = (cg: CanvasRenderingContext2D, t: number): void => {
     cg.fillStyle = THEME.ink;
@@ -1724,6 +1785,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
 
     // (THE TITLE THEME while the title is up; let go of once it closes: engine/audio.ts titleMusic)
     titleMusic(mode === 'title' || !game);
+    // (THE WORLD'S SOUNDS: the loops fade away off the title screen)
+    if (mode === 'title' || !game) setLoops({});
     if (mode === 'title' || !game) {
       // (THE PAINTER: no place is being shown: what the last one's pictures took is given back)
       if (paintedFor) {
@@ -2061,6 +2124,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
       renderer.pactHint = GAMEPAD.on && PAD_USE.live ? 'RB: CHANGE' : input.touchMode ? 'TAP HIM' : 'R: CHANGE';
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
+      if (WORLD_SOUNDS.on) worldFrame(g, dt, paused);
       // (THE FIRST FIVE FLOORS: a film's jolts kick the screen, and are heard: render/dress.ts)
       for (const k of renderer.kicks()) {
         fx.shake = Math.max(fx.shake, k.amount);
@@ -2305,6 +2369,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     quests15: QUESTS15,
     /** THE RECORDED SOUNDS (engine/audio.ts): how many have come, are coming, failed; the title theme playing. */
     sounds: () => recordedState(),
+    /** THE SOUNDS IN DETAIL (engine/audio.ts recordedDetail): which have come and failed, the loops going round, the takes played. */
+    soundsDetail: () => recordedDetail(),
     game: () => game,
     /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
     levelSelect: LEVEL_SELECT,

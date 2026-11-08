@@ -2499,7 +2499,7 @@ export class Game {
       this.visionT = 0;
       this.emit({ t: 'door', x: at.x, y: at.y, kind: 'open' });
       this.emit({ t: 'spark', x: at.x, y: at.y, el: WORDS[w].element ?? 'phys', n: 10 });
-      this.sfx('door', 0.8);
+      this.world('sealed_door', 0.9, 'door');
       this.sfx('word', 0.6);
       this.msg(`The ${WORDS[w].name.toUpperCase()} seal breaks.`, MSG.word);
     }
@@ -2524,7 +2524,7 @@ export class Game {
     for (const m of stepMirrors(this.level, dt)) {
       const fx = m.x + m.fx * 0.6;
       const fy = m.y + m.fy * 0.6;
-      this.sfx('shatter', 0.8);
+      this.world('break_glass', 0.85, 'shatter');
       this.emit({ t: 'spark', x: fx, y: fy, el: 'phys', n: 16 });
       this.emit({ t: 'spark', x: fx + m.fx * 1.2, y: fy + m.fy * 1.2, el: 'phys', n: 10 });
       if (this.over) continue;
@@ -2566,7 +2566,7 @@ export class Game {
   private mirrorsStruck(x: number, y: number, rad: number): void {
     const cracked = strikeMirrors(this.level, x, y, rad);
     if (!cracked.length) return;
-    this.sfx('shatter', 0.3);
+    this.world('break_glass', 0.35, 'shatter');
     for (const m of cracked) this.emit({ t: 'spark', x: m.x + m.fx * 0.4, y: m.y + m.fy * 0.4, el: 'phys', n: 5 });
   }
 
@@ -2590,7 +2590,7 @@ export class Game {
       z.hit.length = 0;
       const tx = z.spot.x + z.spot.w / 2;
       const ty = z.spot.y + z.spot.h / 2;
-      if (Math.hypot(tx - h.x, ty - h.y) < 9) this.sfx('trapSet', 0.35);
+      if (Math.hypot(tx - h.x, ty - h.y) < 9) this.world('trap_spikes', 0.55, 'trapSet');
     }
     z.wasUp = up;
     if (!up || this.over) return;
@@ -2620,6 +2620,7 @@ export class Game {
     if (z.left > 0) {
       z.next -= dt;
       if (z.next <= 0) {
+        if (z.left === DART.count) this.world('trap_darts', 0.75);
         this.fireDart(z);
         z.left--;
         z.next = DART.gap;
@@ -2632,7 +2633,7 @@ export class Game {
     z.pressed = 0.6;
     z.aimX = h.x;
     z.aimY = h.y;
-    this.sfx('click', 0.9);
+    this.world('trap_plate', 0.9, 'click');
   }
 
   /** One dart leaves a dart wall's slot, at the place the hero stood as the plate clicked. */
@@ -3651,6 +3652,17 @@ export class Game {
   /** A sound of the second batch by its name (game/sound_families.ts), `or` made in code until it has come. */
   rec(name: string, vol?: number, or?: Sfx): void {
     this.emit({ t: 'rec', name, vol, or });
+  }
+
+  /**
+   * (THE SOUND CHAT'S FOURTH BATCH, 7 Nov 2026) a sound of the world (a prop breaking, a chest, a rift, a trap): heard through the
+   * world's bus (on the Hush floors thin and muffled: engine/audio.ts worldSound); not within `gap` seconds of the last of its name.
+   */
+  world(name: string, vol = 1, or?: Sfx, gap = 0.06): void {
+    const last = this.heard.get(`w:${name}`);
+    if (last !== undefined && this.time - last < gap) return;
+    this.heard.set(`w:${name}`, this.time);
+    this.emit({ t: 'rec', name, vol, or, world: true });
   }
 
   /** (THE SECOND BATCH) The blows counted, for an enemy's hurt now and then. */
@@ -10939,12 +10951,20 @@ export class Game {
     for (let k = this.risers.length - 1; k >= 0; k--) {
       const r = this.risers[k];
       r.age += dt;
+      // (THE FOURTH BATCH: a rift heard opening as it begins, and closing as what came up it is out)
+      if (r.way === 'rift' && !r.opened && r.age >= 0) {
+        r.opened = true;
+        this.world('rift_open', 0.6, undefined, 0.3);
+      }
       // (AM_ACTION: a bone mite is out as soon as it has pulled itself together)
       if (r.age < (r.way === 'form' || r.way === 'rift' ? (r.rise ?? SUMMON.rise) : SUMMON.rise)) continue;
       this.risers.splice(k, 1);
       r.m.animT = 0;
       this.monsters.push(r.m);
-      if (r.way === 'rift') this.emit({ t: 'arrive', what: 'out', x: r.m.x, y: r.m.y, delay: 0, secs: 0, r: riftSize(MONSTERS[r.m.kind]?.size) });
+      if (r.way === 'rift') {
+        this.emit({ t: 'arrive', what: 'out', x: r.m.x, y: r.m.y, delay: 0, secs: 0, r: riftSize(MONSTERS[r.m.kind]?.size) });
+        this.world('rift_close', 0.5, undefined, 0.3);
+      }
     }
   }
 
@@ -12124,7 +12144,8 @@ export class Game {
       p.solid = false;
       this.level.walk[p.ty * f.w + p.tx] = 1;
       this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 8 });
-      this.sfx('hit', 0.5);
+      // (THE FOURTH BATCH: by what it is made of: a barrel's wood; an urn's clay, or the Ossuary's bone boxes and skull jars)
+      this.world(p.kind === 'barrel' ? 'break_wood' : this.depth === 4 ? 'break_bone' : 'break_pottery', 0.7, 'hit');
       const rng = this.rng;
       if (rng.chance(0.4)) this.addDrop('gold', p.x, p.y, rng.int(1, 5) * Math.max(1, this.power), null, null);
       if (rng.chance(0.08)) this.addDrop('orb', p.x, p.y, 0, null, null);
@@ -12137,7 +12158,7 @@ export class Game {
     for (const p of this.level.props) {
       if (p.kind === 'chest' && p.state === 0 && Math.hypot(p.x - h.x, p.y - h.y) < 1.5) {
         p.state = 1;
-        this.sfx('rare');
+        this.world('chest', 0.9, 'rare');
         // A chest in a treasure vault (the end of a side branch) is richer than one found along the way,
         // and the first chest opened in each vault is the likeliest place in a dungeon to find a power word.
         const room = this.level.floor.rooms.find((r) => r.kind === 'treasure' && p.tx >= r.x && p.ty >= r.y && p.tx < r.x + r.w && p.ty < r.y + r.h);
