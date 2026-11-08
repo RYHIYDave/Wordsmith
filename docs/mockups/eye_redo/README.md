@@ -26,7 +26,10 @@ a little stiff but it’ll do.  I took all night so I’m not looking to redo it
   each end); at his place between the ends, the same as at the left; with the switch on, the painted right end still there.
 - THE COST HALVES: for the game (the estimate under stage 4, the main chat's to weigh), his paintings at one end serve both: 538 for
   the two ends where it was 1,076, about 145 MB raw at two picture pixels to a game pixel (was 290), 37 MB at one (was 73), about 9 MB
-  packed at one (was 18). As painted here: COST_HERE.
+  packed at one (was 18). As painted here (`cost3`): 1,127 new layers where there were 1,484 (239 MB raw where 342, 56 MB packed
+  where 82): his jaws at an end 75 (were 125: the right end's are the left's),
+  the hooks 140 (280), the bodies 30 (60); his drool 451 and his tongue-eye 431 (520 and 499) still a painting each frame, since his
+  eye follows the Warrior, who weaves his own way at each end. His stand at his place as before (357).
 
 ### The pieces, smashed
 
@@ -65,6 +68,46 @@ tiles), scattering grit and a little dust.
 All by tentacle 1. The shake: 5 game pixels at each smash, dying away over 8 frames; a column's shaft landing, 4 over 6 frames (13
 frames after its hit). Whether the rubble blocks the Warrior is the main chat's (it is low: a column's pieces lying 22 of his lengths
 high, a drum's 24, the rest 15 or under).
+
+### The pictures
+
+- `pictures/eye_moves4.mp4` (38.5 s, 1,154 frames, 30 a second, H.264 yuv420p, 1014 x 540, captioned beat by beat), in the arena as
+  the player sees it: HIS FIRST SHOVEL AT THE LEFT END at full speed (352 frames: the pieces whole at the start, the Warrior weaving,
+  the mossy stones toward the near edge smashed at 133 and the column by his end at 137 on the screen; the far ones smashed off it at
+  99, 105 and 110, so shown after); THE SMASHES CLOSE UP, twice the size, at half speed (each from six frames before its hit until its
+  rubble lies: 450 frames); THE NEXT SHOVEL AT THE RIGHT END (352 frames), him mirrored, his tentacles riding over the rubble.
+- `pictures/eye_moves4.png` (1200 x 5862): the pieces whole at the start; each smash close at twice the size, four beats each (the hook
+  reaching it, breaking, flying, the rubble); the column by his end at the game's size and at twice; the next shovel at the right end,
+  mirrored, over the rubble, at the game's size and at twice.
+- Seen, every frame of both shovels at the game's size (24 to a sheet) and every frame of the five close-ups. Seen and mended on the way:
+  the burst had come from inside the hook's tube (now from where its skin meets the piece); the column's shaft had stood off its middle
+  and been drawn as thick as its plinth (now on its own middle and its own thickness); a column fell straight away from you (seen only
+  shortening) and one over the back edge into the water (now each falls across the screen onto the stone, clear of the hooks and of the
+  Warrior's way); the drums had spun in the picture as they rolled (now they rock on their round); loose pieces were flat cut-outs
+  (now each has its broken side under it). Seen and not mine: where a hook's tip curls down onto the stone, a small square of its
+  flesh shows under its tube in some frames (about 11 by 8 game pixels; there in the shovel's own frames without the pieces too).
+- To make them again (the layers on the memory disk, `/dev/shm`; the close-ups' points as `tools/eye_shovel_sheet.py` PIECES has them):
+
+```
+npx tsx tools/eye_moves_pics.ts paint 0 2 s1 s2 & npx tsx tools/eye_moves_pics.ts paint 1 2 s1 s2   (79 minutes on two workers)
+npx tsx tools/eye_moves_pics.ts frames /dev/shm/eye_moves/frames s1      (and s2; about 6 minutes each)
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/close/colR s1 93,94,...,143 275 370 30   (and drums, mossB, mossN, colL)
+python3 tools/eye_shovel_sheet.py film4 /dev/shm/eye_moves/frames /dev/shm/eye_moves/close docs/mockups/eye_redo/pictures/eye_moves4.mp4
+python3 tools/eye_shovel_sheet.py sheet4 /dev/shm/eye_moves/frames /dev/shm/eye_moves/close docs/mockups/eye_redo/pictures/eye_moves4.png
+```
+
+### The checks (`tests/eye_pieces.test.ts`, and `tests/eye_shovel.test.ts` 2)
+
+(1) The switch off, nothing of the game importing the pieces' smash; (2) the five pieces on the stone at the start, as the arena lays
+them, each smashed by the first shovel; (3) NO HOOK THROUGH A PIECE WHOLE: before its hit no hook's tube in its body in any frame (the
+nearest 1.7 of his lengths), at its hit jolted back 14, ploughing in at the most 1.0; (4) OVER THE RUBBLE: every hook of both shovels,
+as laid, clear of the rubble at rest under it (riding up at the most 20.0 of his lengths); (5) each its own break (a column's shaft in
+three, falling across onto the stone, faster and faster; the drums, three flying and four rolling; the mossy stones, six halves), every
+pixel of each picture in one fragment; (6) the rubble low (24 of his lengths at the most), on the stone, at rest by 1.6 s; the Warrior
+never through a column's or a drum's pieces (25.3 at the nearest); (7) NOTHING RULED in the fragments' outlines (5.5 game pixels up,
+6.5 across at the longest), their breaks (5.5, 3) or the chips (4, 4); (8) the numbers above. `tests/eye_shovel.test.ts` 2: the right
+end the left flipped, the painted right end kept. `tests/eye_moves.test.ts`, `tests/eye_colossus.test.ts`, `tests/eye_arms.test.ts`
+and `tests/eye_shovel.test.ts`: their first checks let `art/eye_pieces.ts` import them.
 
 ## Stage 4: his moves, part 3: his shovel, in pictures and a film
 

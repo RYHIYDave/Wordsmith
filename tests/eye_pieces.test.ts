@@ -188,7 +188,7 @@ test('6. the rubble low, on the stone, at rest by the time the hooks ride over i
     const h = heroWorld(e, k);
     PIECES.forEach((P, p) => {
       const hp = H[p];
-      if (e === 'left' && (!hp || k < hp.k + 40)) return;
+      if (e === 'left' && (!hp || k < hp.k + 13)) return;
       for (const R of rubbleOf(P)) {
         if (R.h < 14) continue;
         let d: number;

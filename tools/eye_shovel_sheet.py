@@ -198,11 +198,11 @@ def mirror(d, out):
 # (Recommended)”). Each piece as art/eye_pieces.ts has it, the frame the first shovel's hook reaches it (tests/eye_pieces.test.ts prints
 # them), where its close-up looks (tools/eye_moves_pics.ts close: a point of his space), what it is and how it breaks.
 PIECES = [
-    ('colR', 99, (275, 370, 30), 'THE BROKEN COLUMN AT THE FAR BACK CORNER', 'tentacle 1 ploughs into it: its plinth bursts, its shaft topples toward you, lands and breaks across in three', 44),
-    ('drums', 105, (235, 630, 10), 'THE FALLEN DRUMS BY THE NEAR EDGE', 'the drum tentacle 1 meets cracks in three and flies; the other two roll on, cracking in two as they stop', 34),
-    ('mossB', 110, (140, 380, 10), 'THE MOSSY STONES BY THE BACK EDGE', 'each stone split in two, the halves flung tumbling, the moss torn off, grit and dust', 34),
-    ('mossN', 133, (-216, 590, 10), 'THE MOSSY STONES TOWARD THE NEAR EDGE', 'each stone split in two, the halves flung tumbling, the moss torn off, grit and dust', 34),
-    ('colL', 137, (-270, 375, 30), 'THE BROKEN COLUMN AT THE BACK CORNER BY HIS END', 'tentacle 1 ploughs into it: its plinth bursts, its shaft topples across, lands and breaks in three', 44),
+    ('colR', 99, (275, 370, 30), 'THE FAR BACK COLUMN', 'its plinth bursts, its shaft topples and breaks across in three', 44),
+    ('drums', 105, (235, 630, 10), 'THE DRUMS', 'one cracks in three and flies; the others roll on and crack in two', 34),
+    ('mossB', 110, (140, 380, 10), 'THE MOSSY STONES BY THE BACK EDGE', 'each split in two, flung tumbling, the moss torn off', 34),
+    ('mossN', 133, (-216, 590, 10), 'THE NEAR MOSSY STONES', 'each split in two, flung tumbling, the moss torn off', 34),
+    ('colL', 137, (-270, 375, 30), 'THE COLUMN BY HIS END', 'its plinth bursts, its shaft topples across and breaks in three', 44),
 ]
 BEFORE = 6
 
@@ -213,7 +213,7 @@ def smashed(k):
     for tag, h, _, name, how, _n in PIECES:
         f = k - h
         if 0 <= f < 26:
-            off = ' (off the screen to the right: close up after)' if tag in ('colR', 'drums') else ''
+            off = ' (off the screen: close up after)' if tag in ('colR', 'drums') else ''
             bs.append((6, 'SMASHED by tentacle 1: %s%s' % (name.lower(), off)))
     return bs
 
@@ -227,7 +227,7 @@ def beat4(k, shot):
     # (the next shovel: over the rubble)
     for i, (edge, k0) in enumerate(SCRAPERS):
         f = k - k0
-        if UP <= f < UP + SWEEP: return b + '; over the rubble'
+        if UP <= f < UP + SWEEP: return 'TENTACLE %d (%s edge) SCRAPES toward his maw, riding over the rubble, grit flying' % (i + 1, edge)
     return b
 
 
@@ -240,10 +240,15 @@ def film4(d, c, out):
     for k in range(FRAMES): seq.append((('s1', k), 'HIS FIRST SHOVEL AT THE LEFT END, FULL SPEED', beat4(k, 's1'), 'frame %d  |  %.2f s' % (k, k / FPS)))
     for tag, h, _, name, how, n in PIECES:
         for k in range(h - BEFORE, h + n + 1):
-            line = '%s: tentacle 1 sweeping in' % name if k < h else '%s: %s' % (name, how) if k < h + n - 8 else '%s: left lying, rubble for the rest of the fight' % name
+            line = '%s: tentacle 1 sweeping in' % name if k < h else '%s: %s' % (name, how) if k < h + n - 8 else '%s: left lying, the rubble for the rest of the fight' % name
             for _ in range(2): seq.append(((tag, k), 'THE SMASHES, CLOSE UP (twice the size), HALF SPEED', line, 'frame %d  |  %.2f s' % (k, k / FPS)))
-    for k in range(FRAMES): seq.append((('s2', k), 'THE NEXT SHOVEL AT THE RIGHT END: HIM MIRRORED, OVER THE RUBBLE', beat4(k, 's2'), 'frame %d  |  %.2f s' % (k, k / FPS)))
+    for k in range(FRAMES): seq.append((('s2', k), 'THE NEXT SHOVEL, RIGHT END: HIM MIRRORED', beat4(k, 's2'), 'frame %d  |  %.2f s' % (k, k / FPS)))
     w, h = 1014, 468 + 72
+    # (every caption fits its bar)
+    from eye_moves_sheet import probe
+    for (_, title, line, foot) in seq:
+        assert probe.textlength(title, font=mid) + probe.textlength(foot, font=small) + 50 < w, title
+        assert probe.textlength(line, font=small) + 28 < w, line
     p = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', '%dx%d' % (w, h), '-framerate', str(FPS), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], stdin=subprocess.PIPE)
     last = None
     im = None
@@ -262,7 +267,29 @@ def film4(d, c, out):
 
 # THE SHEET: [title, note, [(source, frame, x, y, label), ...], at twice]; a source 's1' or 's2' is the film's frame (a tile of it at the
 # game's size round x, y, or at twice); any other is a piece's close-up (already at twice: a tile of it round x, y)
-SHEET4 = []
+SHEET4 = [
+    ('AT THE START: THE PIECES ON THE STONE, WHOLE',
+     'As the arena lays them, before he sinks (frame 12): the broken column at the back corner by the left end, the mossy stones toward the near edge; the mossy stones by the back edge, the broken column at the far back corner, the fallen drums by the near edge.',
+     [('s1', 12, 300, 300, 'the left half of the stone'), ('s1', 12, 740, 300, 'the right half')], False),
+    ('THE BROKEN COLUMN AT THE FAR BACK CORNER (frame 99)',
+     'Tentacle 1, sweeping along the back edge, ploughs into it, jolted back; its plinth bursts, its shaft cracks across and topples toward you, a round shaft as it turns, lands (the screen jolted again) and breaks in three, the pieces sliding apart; dust and grit. Close, at twice the size.',
+     [('colR', 99, 520, 200, '99: the hook reaches it'), ('colR', 102, 520, 200, '102: cracking, its plinth bursting'), ('colR', 108, 520, 220, '108: its shaft down, broken across'), ('colR', 130, 520, 220, '130: left lying, the rubble')], True),
+    ('THE FALLEN DRUMS BY THE NEAR EDGE (frame 105)',
+     'The drum the hook meets cracks in three and flies; the other two roll on toward you, rocking, and crack in two as they stop. Close, at twice the size.',
+     [('drums', 104, 507, 234, '104: whole, the hook coming'), ('drums', 106, 507, 234, '106: smashed, the halves flying'), ('drums', 111, 507, 234, '111: rolling, cracking'), ('drums', 135, 507, 234, '135: the rubble')], True),
+    ('THE MOSSY STONES, BY THE BACK EDGE (110) AND TOWARD THE NEAR EDGE (133)',
+     'Each stone splits in two along a jagged line, the halves flung tumbling, moss torn off, bare stone under; grit and dust. Close, at twice the size.',
+     [('mossN', 132, 507, 230, '132: whole, the hook reaching them'), ('mossN', 135, 507, 230, '135: split, flying'), ('mossN', 140, 507, 230, '140: settling'), ('mossN', 160, 507, 230, '160: the rubble')], True),
+    ('THE COLUMN AT THE BACK CORNER BY HIS END (frame 137), AS THE PLAYER SEES IT',
+     'At the game\'s size, the camera on the Warrior: the mossy stones toward the near edge smashed (133), then the column (137): its shaft toppling across onto the stone, landing, breaking in three; then left lying while the snap comes.',
+     [('s1', 134, 520, 270, '134: the near mossy stones smashed'), ('s1', 140, 520, 270, '140: the column smashed, toppling'), ('s1', 146, 520, 270, '146: down, broken across'), ('s1', 200, 520, 270, '200: rubble, the snap coming')], False),
+    ('', 'The column close, at twice the size.',
+     [('colL', 138, 480, 180, '138: the hook ploughing in'), ('colL', 142, 480, 180, '142: toppling across'), ('colL', 146, 480, 200, '146: landed, breaking in three'), ('colL', 160, 480, 200, '160: lying, the dust settling')], True),
+    ('THE NEXT SHOVEL AT THE RIGHT END: HIM MIRRORED, OVER THE RUBBLE',
+     'At the right end he and his tentacles are now the left end\'s paintings flipped (“Mirror it but save the old one just in case.”); the stone, the water and the Warrior not flipped. The rubble lies where each piece stood; the hooks ride over it, scattering grit. At the game\'s size, then at twice.',
+     [('s2', 74, 720, 234, '74: the roar, mirrored'), ('s2', 141, 480, 234, '141: a hook over the column\'s rubble'), ('s2', 182, 460, 280, '182: a hook over the drums\' rubble'), ('s2', 230, 600, 234, '230: his gape, mirrored')], False),
+    ('', '', [('s2', 141, 520, 190, '141, at twice: over the column\'s rubble'), ('s2', 182, 470, 320, '182, at twice: over the drums\' rubble')], True),
+]
 
 
 def sheet4(d, c, out):
