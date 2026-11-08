@@ -20,7 +20,7 @@
 
 import type { RNG } from '../engine/rng';
 import { CLASSES, CLASS_WEAPON_NAME, classWeapon } from './defs';
-import type { Affix, BaseWordId, ClassId, ClassWeaponKind, IconKey, Imbue, Item, Limit, OffhandKind, OldWeaponKind, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from './types';
+import type { Affix, BaseWordId, ClassId, ClassWeaponKind, IconKey, Imbue, Item, Limit, MeldId, OffhandKind, OldWeaponKind, RankId, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from './types';
 import { MELD_OF, RANK_OF, SLOTS } from './types';
 
 type Range = readonly [number, number];
@@ -377,6 +377,16 @@ function suffix(id: string, stat: FamilyDef['stat'], slots: readonly Slot[], at1
 
 /** An imbue rolls in the range of a same-level affix of the same stat, times this. */
 const IMBUE_STRENGTH = 1.2;
+
+/**
+ * EVERY WORD ON GEAR (his words, 8 Nov 2026, 06:44 and 06:45, of the words: “Do the sounds, then I want every tune in the
+ * game to be used on an item”, “Every rune sorry”, and of the new ones, “And those all craftable as well”). Until then a
+ * melded word and a ranked one went on attacks only. Now a MELDED word burned into a piece gives one property of each of
+ * its two words, in the one place: each this much of what that word gives alone (two for the room of one, so each a
+ * little less); a RANKED word gives what its word gives, half as strong again (as rank II is on an attack).
+ */
+export const MELD_GEAR_STRENGTH = 0.75;
+export const RANK_GEAR_STRENGTH = 1.5;
 
 /** How many properties a piece holds in all: the affixes it came with and the words burned into it. */
 export const ITEM_ROOM = 4;
@@ -1142,33 +1152,69 @@ export interface ImbueOption {
   /** Lowest and highest value it can roll (both included). */
   min: number;
   max: number;
+  /** A MELDED word's second property, given with the first (EVERY WORD ON GEAR): its own word's, rolled on its own. */
+  also?: { kind: 'prefix' | 'suffix'; stat: StatKey; min: number; max: number };
 }
 
 /** The affix family that sets the size of each single stat. */
 const FAMILY_BY_STAT = new Map<StatKey, FamilyDef>();
 for (const f of AFFIX_FAMILIES) if (f.stat !== 'damage') FAMILY_BY_STAT.set(f.stat, f);
 
-/** What a word may become on gear, as the Lexicon tells it: for each group of slots, the stats it can turn into there. */
-export function imbueRules(word: WordId): { slots: readonly Slot[]; stats: StatKey[] }[] {
-  return (IMBUE_TABLE[word as BaseWordId] ?? IMBUE_TABLE.power).map((r) => ({ slots: r.slots, stats: r.options.map((o) => o[1]) }));
+/**
+ * What a word may become on gear, as the Lexicon tells it: for each group of slots, the stats it can turn into there (and,
+ * for a melded word, `pairs`: the two it gives together, either pair). A ranked word's are its word's.
+ */
+export function imbueRules(word: WordId): { slots: readonly Slot[]; stats: StatKey[]; pairs?: (readonly [StatKey, StatKey])[] }[] {
+  if (word in MELD_OF) {
+    // (the slots that give the same, together, in the order of SLOTS)
+    const groups = new Map<string, { slots: Slot[]; stats: StatKey[]; pairs: (readonly [StatKey, StatKey])[] }>();
+    for (const slot of SLOTS) {
+      const pairs = imbueOptions(word, slot, 1).map((o) => [o.stat, o.also ? o.also.stat : o.stat] as const);
+      const key = pairs.map((p) => p.join('+')).join('|');
+      const g = groups.get(key);
+      if (g) g.slots.push(slot);
+      else groups.set(key, { slots: [slot], stats: [...new Set(pairs.map((p) => p[0]))], pairs });
+    }
+    return [...groups.values()];
+  }
+  return (IMBUE_TABLE[baseOf(word)] ?? IMBUE_TABLE.power).map((r) => ({ slots: r.slots, stats: r.options.map((o) => o[1]) }));
 }
 
-/** The 1-2 modifiers this word can become on this slot at this item level. Never empty. */
-export function imbueOptions(word: WordId, slot: Slot, ilvl: number): ImbueOption[] {
-  // (WORDMELDING: a melded word is for attacks only, for now, his words: nothing on gear)
-  if (word in MELD_OF || word in RANK_OF) return [];
-  const level = cleanLevel(ilvl);
+/** The word whose table a word goes by on gear: a ranked word's is its word's; a melded word has two (MELD_OF), and is not asked. */
+function baseOf(word: WordId): BaseWordId {
+  return word in RANK_OF ? RANK_OF[word as RankId].word : (word as BaseWordId);
+}
+
+/** What one power word can become on this slot, at this level, this strong (the table's rule, rolled in a same-level affix's range). */
+function wordOptions(word: BaseWordId, slot: Slot, level: number, strength: number): ImbueOption[] {
   // The table covers every word and slot; the fallbacks only keep a bad save from breaking the game.
-  const rules = IMBUE_TABLE[word as BaseWordId] ?? IMBUE_TABLE.power;
+  const rules = IMBUE_TABLE[word] ?? IMBUE_TABLE.power;
   const rule = rules.find((r) => r.slots.includes(slot)) ?? rules[0];
   return rule.options.map(([kind, stat]) => {
     const family = FAMILY_BY_STAT.get(stat);
     const [lo, hi] = family ? familyRange(family, level) : [1, 1];
     const step = 1 / 10 ** STAT_INFO[stat].dp;
-    const min = Math.max(step, roundStat(stat, lo * IMBUE_STRENGTH));
-    const max = Math.max(min, roundStat(stat, hi * IMBUE_STRENGTH));
+    const min = Math.max(step, roundStat(stat, lo * strength));
+    const max = Math.max(min, roundStat(stat, hi * strength));
     return { kind, stat, min, max };
   });
+}
+
+/**
+ * The modifiers this word can become on this slot at this item level. Never empty. A power word's: one or two. A ranked
+ * word's: its word's, half as strong again. A melded word's: each of its first word's with each of its second's (two
+ * properties in one, `also`), so long as the two are not of a kind (statGroup); up to four, of which a piece is offered two.
+ */
+export function imbueOptions(word: WordId, slot: Slot, ilvl: number): ImbueOption[] {
+  const level = cleanLevel(ilvl);
+  const meld = MELD_OF[word as MeldId];
+  if (meld) {
+    const [a, b] = meld.map((w) => wordOptions(w, slot, level, IMBUE_STRENGTH * MELD_GEAR_STRENGTH));
+    const out: ImbueOption[] = [];
+    for (const x of a) for (const y of b) if (statGroup(x.stat) !== statGroup(y.stat)) out.push({ ...x, also: { ...y } });
+    return out.length ? out : a;
+  }
+  return wordOptions(baseOf(word), slot, level, IMBUE_STRENGTH * (word in RANK_OF ? RANK_GEAR_STRENGTH : 1));
 }
 
 /** How many more words a piece will take: four properties in all, less the affixes it came with and the words already in it. */
@@ -1199,13 +1245,13 @@ export function imbueOptionsFor(item: Item, word: WordId): ImbueOption[] {
   const have = carried(item);
   // (nor anything of the same group: statGroup)
   const groups = new Set([...have].map(statGroup));
-  return imbueOptions(word, item.slot, item.ilvl).filter((o) => !have.has(o.stat) && !groups.has(statGroup(o.stat)));
+  const free = (stat: StatKey): boolean => !have.has(stat) && !groups.has(statGroup(stat));
+  // (a melded word's two properties must both be free; of its pairs, the first two that are)
+  return imbueOptions(word, item.slot, item.ilvl).filter((o) => free(o.stat) && (!o.also || free(o.also.stat))).slice(0, 2);
 }
 
 /** Why this word cannot be burned into this piece, or null if it can. */
 export function imbueProblem(item: Item, word: WordId): string | null {
-  if (word in MELD_OF) return 'A melded word goes on attacks only';
-  if (word in RANK_OF) return 'A ranked word goes on attacks only';
   if (itemRoom(item) <= 0) return 'That piece is full';
   if (imbueOptionsFor(item, word).length === 0) return 'It already has what this word gives';
   return null;
@@ -1228,6 +1274,8 @@ export function imbueItem(item: Item, word: WordId, rng: RNG, choice?: number): 
     kind: option.kind,
     mods: [{ stat: option.stat, value: rollStat(option.stat, option.min, option.max, rng) }],
   };
+  // (a melded word: its second property, rolled on its own)
+  if (option.also) imbue.mods.push({ stat: option.also.stat, value: rollStat(option.also.stat, option.also.min, option.also.max, rng) });
   item.imbues.push(imbue);
   if (item.rarity < 3) item.rarity = Math.max(item.rarity, rarityFor(item.affixes.length + item.imbues.length)) as Rarity;
   return imbue;

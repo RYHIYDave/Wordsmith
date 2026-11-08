@@ -22,8 +22,8 @@ import { ATTR_NAME, WORDS, growsWith } from '../game/defs';
 import type { Game } from '../game/game';
 import { imbueRules, statView } from '../game/items';
 import type { Meta } from '../game/state';
-import { WORD_IDS } from '../game/types';
-import type { Limit, Slot, WordId } from '../game/types';
+import { RANK_OF, WORD_IDS } from '../game/types';
+import type { Limit, RankId, Slot, StatKey, WordId } from '../game/types';
 import type { Art } from '../render/render';
 import type { InvUi, Side } from './inventory';
 import { CELL, PITCH } from './panels';
@@ -49,12 +49,21 @@ export function newLexUi(): LexUi {
 
 const SLOT_NAME: Record<Slot, string> = { mainhand: 'weapon', offhand: 'off hand', helm: 'helm', chest: 'chest', gloves: 'gloves', belt: 'belt', boots: 'boots', amulet: 'amulet', ring: 'ring' };
 
-/** What a word may become on gear, slot by slot, in plain words. */
+/** What a word may become on gear, slot by slot, in plain words (a melded word: two together, "A and B"). */
 export function gearLines(word: WordId, limit: Limit): string[] {
+  const label = (s: StatKey): string => statView(s, limit).label;
   return imbueRules(word).map((r) => {
     const where = r.slots.map((s) => SLOT_NAME[s]).join(', ');
-    return `${where.charAt(0).toUpperCase()}${where.slice(1)}: ${r.stats.map((s) => statView(s, limit).label).join(' or ')}.`;
+    const what = r.pairs ? r.pairs.map(([a, b]) => (a === b ? label(a) : `${label(a)} and ${label(b)}`)).join(', or ') : r.stats.map(label).join(' or ');
+    return `${where.charAt(0).toUpperCase()}${where.slice(1)}: ${what}.`;
   });
+}
+
+/** How strong a melded or ranked word is on gear, against the words it is made of (EVERY WORD ON GEAR). */
+export function gearNote(word: WordId): string {
+  const wd = WORDS[word];
+  if (wd.kind === 'rank') return `Half as strong again as ${WORDS[RANK_OF[word as RankId].word].name}.`;
+  return 'Both at once, each a little weaker than its word alone.';
 }
 
 /** How many words have been found. */
@@ -94,9 +103,16 @@ export function wordPage(meta: Meta, w: WordId, pw: number, big: boolean, tight 
         line(k.front ? `In front (${wd.front.toUpperCase()} ...): ${wd.frontText}` : `In front: ${unknown}`, k.front),
         line(k.behind ? `Behind (... ${wd.behind.replace(/^of /, 'OF ').toUpperCase()}): ${wd.behindText}` : `Behind: ${unknown}`, k.behind),
       ]),
-      // (WORDMELDING: a melded word goes on attacks only, for now, his words)
+      // (WORDMELDING: a melded word went on attacks only, his words; and a ranked one. Since EVERY WORD ON GEAR, his words of
+      // 8 Nov 2026, 06:45, “Every rune sorry”, on gear too: what it becomes there; still not on a dungeon)
       ...(wd.kind === 'meld' || wd.kind === 'rank'
-        ? [lay(2, [head('ON GEAR, ON A DUNGEON'), line(wd.kind === 'rank' ? 'A ranked word goes on attacks only, for now.' : 'A melded word goes on attacks only.', true)])]
+        ? [
+            lay(2, [
+              head('ON GEAR'),
+              ...(!k.gear ? [line(unknown, false)] : [...(tight ? [line(gearLines(w, meta.limit).join(' '), true)] : gearLines(w, meta.limit).map((l) => line(l, true))), line(gearNote(w), true)]),
+            ]),
+            lay(2, [head('ON A DUNGEON'), line(wd.kind === 'rank' ? 'A ranked word goes on attacks and gear only.' : 'A melded word goes on attacks and gear only.', true)]),
+          ]
         : [
             // (what it may become on gear, slot by slot: a line each, or run together where room is short)
             lay(2, [head('ON GEAR'), ...(!k.gear ? [line(unknown, false)] : tight ? [line(gearLines(w, meta.limit).join(' '), true)] : gearLines(w, meta.limit).map((l) => line(l, true)))]),

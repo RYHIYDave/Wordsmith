@@ -274,7 +274,9 @@ export function rangeText(o: ImbueOption, limit: Limit): string {
   const info = statView(o.stat, limit);
   const num = (n: number): string => (n * info.mult).toFixed(info.dp);
   const span = o.min === o.max ? num(o.min) : `${num(o.min)} to ${num(o.max)}`;
-  return `${info.less ? '-' : '+'}${span}${info.pct ? '%' : ''} ${info.label}`;
+  const one = `${info.less ? '-' : '+'}${span}${info.pct ? '%' : ''} ${info.label}`;
+  // (a melded word's two properties, given together: EVERY WORD ON GEAR)
+  return o.also ? `${one} and ${rangeText({ ...o.also }, limit)}` : one;
 }
 
 // ---------------------------------------------------------------------------------------------

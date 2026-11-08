@@ -5,7 +5,7 @@
 //   - the ten: every two of the five damage words make one, and nothing else melds;
 //   - a melded word takes its side's damage-word place, and does what both its words do there;
 //   - each one's twist, in front and behind, at work in the practice room;
-//   - for now on attacks only: not burned into gear, not laid on the gate, not kept in the Lexicon;
+//   - on attacks, and since 8 Nov 2026 on gear (tests/runes_on_gear.test.ts): not laid on the gate, not kept in the Lexicon;
 //   - with MELD off, nothing of it: no melded word to be had, nothing of them in a save.
 //   run: tsx --test tests/melds.test.ts
 // @ts-ignore - node typings are not part of this project
@@ -580,17 +580,17 @@ test('Hailstorm, Frostbite and Contagion behind: a storm that slows; ice that po
   });
 });
 
-// ----- on attacks only, for now -----
+// ----- on attacks and gear (EVERY WORD ON GEAR, his words of 8 Nov 2026, 06:45, “Every rune sorry”: tests/runes_on_gear.test.ts) -----
 
-test('a melded word goes on attacks only: not burned into gear, not laid on the gate, not kept in the Lexicon', () => {
+test('a melded word goes on attacks and gear: not laid on the gate, not kept in the Lexicon', () => {
   melding(() => {
     const g = Game.forPractice('warrior', 5);
     assert.ok(g.hero.words.eruption > 0, 'the practice room hands them out');
     const i = g.hero.bag.findIndex((it) => it !== null);
     assert.ok(i >= 0);
-    assert.equal(g.imbueProblem({ kind: 'bag', i } as ItemRef, 'eruption'), 'A melded word goes on attacks only');
-    assert.deepEqual(g.imbueChoices({ kind: 'bag', i } as ItemRef, 'eruption'), []);
-    assert.equal(g.planProblem('eruption'), 'A melded word goes on attacks only');
+    const why = g.imbueProblem({ kind: 'bag', i } as ItemRef, 'eruption');
+    assert.ok(why === null || why === 'That piece is full' || why === 'It already has what this word gives', `on gear, yes: ${why}`);
+    assert.equal(g.planProblem('eruption'), 'A melded word goes on attacks and gear only');
     g.hero.gold = 1e6;
     assert.equal(g.depositWord('eruption'), 'The Lexicon keeps no melded word');
     assert.equal(g.socket(0, 'front', 'eruption'), null, 'on an attack, yes');
