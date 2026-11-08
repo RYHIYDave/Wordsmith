@@ -22,7 +22,10 @@ export type Sfx =
   | 'gust' | 'echo' | 'leech' | 'rune' | 'shatter' | 'thunder' | 'might'
   | 'wave' | 'orbSet' | 'beam' | 'beamHum' | 'whirl' | 'familiar' | 'familiarShot'
   | 'volley' | 'arrowLand'
-  | 'door' | 'gateFall' | 'gateRise';
+  | 'door' | 'gateFall' | 'gateRise'
+  // (the sound chat's second batch, 7 Nov 2026: recorded only; made in code, until they come, as the sound named in NEW_LIKE)
+  | 'poison' | 'warp' | 'lunge' | 'hellbolt' | 'curse' | 'smokestep' | 'rake' | 'damning' | 'vial' | 'mortar' | 'golemPunch'
+  | 'cannon' | 'whistle' | 'jab' | 'haymaker' | 'hook' | 'kick' | 'heavyKick' | 'punchWhoosh' | 'bowDraw' | 'arrowHit';
 
 /** Master volume until setVolume is called. */
 const DEFAULT_VOLUME = 0.35;
@@ -326,7 +329,7 @@ function notes(v: Voice, type: OscillatorType, freqs: readonly number[], step: n
 // ---------------------------------------------------------------------------------------------
 // The sounds. Frequencies are in Hz, times in seconds.
 
-const RECIPES: Record<Sfx, (v: Voice) => void> = {
+const MADE: Record<Exclude<Sfx, NewSfx>, (v: Voice) => void> = {
   // ---- attacks -------------------------------------------------------------------------------
   /** Short noise whoosh, rising. */
   swing: (v) => {
@@ -659,6 +662,18 @@ const RECIPES: Record<Sfx, (v: Voice) => void> = {
   },
 };
 
+/** The second batch's new sounds, and the sound made in code that stands in for each until its takes have come. */
+type NewSfx = 'poison' | 'warp' | 'lunge' | 'hellbolt' | 'curse' | 'smokestep' | 'rake' | 'damning' | 'vial' | 'mortar' | 'golemPunch' | 'cannon' | 'whistle' | 'jab' | 'haymaker' | 'hook' | 'kick' | 'heavyKick' | 'punchWhoosh' | 'bowDraw' | 'arrowHit';
+const NEW_LIKE: Record<NewSfx, Exclude<Sfx, NewSfx>> = {
+  poison: 'leech', warp: 'dodge', lunge: 'swing', hellbolt: 'shot', curse: 'rune', smokestep: 'dodge', rake: 'swing', damning: 'explode',
+  vial: 'shot', mortar: 'explode', golemPunch: 'hit', cannon: 'explode', whistle: 'power', jab: 'hit', haymaker: 'slam', hook: 'hit',
+  kick: 'hit', heavyKick: 'slam', punchWhoosh: 'swing', bowDraw: 'click', arrowHit: 'hit',
+};
+const RECIPES: Record<Sfx, (v: Voice) => void> = {
+  ...MADE,
+  ...(Object.fromEntries(Object.entries(NEW_LIKE).map(([k, like]) => [k, MADE[like]])) as Record<NewSfx, (v: Voice) => void>),
+};
+
 // ---------------------------------------------------------------------------------------------
 
 /** Start one play of one recipe: the part of sfx() that a spoken line shares. */
@@ -763,6 +778,14 @@ export function soundMark(): string {
   return typeof __SOUNDS__ === 'string' ? __SOUNDS__ : '';
 }
 
+/** The second batch's spells and skills, recorded (assets/sound/README.md, "Second batch"). */
+const SECOND_SFX: readonly Sfx[] = [
+  'shot', 'nova', 'trapSet', 'trapBoom', 'fire', 'frost', 'zap', 'explode', 'dodge', 'power', 'gust', 'leech', 'rune', 'shatter', 'thunder',
+  'wave', 'orbSet', 'beam', 'whirl', 'familiar', 'familiarShot', 'volley', 'arrowLand',
+  'poison', 'warp', 'lunge', 'hellbolt', 'curse', 'smokestep', 'rake', 'damning', 'vial', 'mortar', 'golemPunch', 'cannon', 'whistle', 'jab',
+  'haymaker', 'hook', 'kick', 'heavyKick', 'punchWhoosh', 'bowDraw', 'arrowHit',
+];
+
 /** The game's sounds that are recorded, and their takes (files, without .mp3). */
 export const RECORDED_SFX: Partial<Record<Sfx, readonly string[]>> = {
   swing: ['swing_1', 'swing_2'],
@@ -771,6 +794,9 @@ export const RECORDED_SFX: Partial<Record<Sfx, readonly string[]>> = {
   slam: ['slam_1', 'slam_2'],
   monsterDie: ['monster_die_1', 'monster_die_2'],
   hurt: ['hurt_1', 'hurt_2'],
+  // (THE SECOND BATCH, 7 Nov 2026, his “all good”: the spells and skills, two takes each; beamHum stays made in code, as it is
+  // played at every bite of a beam and its recording is made to loop)
+  ...Object.fromEntries(SECOND_SFX.map((n) => [n, [`${n}_1`, `${n}_2`]])),
 };
 /** A recorded take plays this loud, before `vol` (the sounds made in code are written to peak at 1 and played at VOICE_GAIN). */
 const RECORDED_GAIN = 0.5;
@@ -821,6 +847,31 @@ function fetchRecorded(c: AudioContext, file: string): void {
       recorded.set(file, false);
       report(`recorded ${file}`, err);
     });
+}
+
+/**
+ * A SOUND OF THE SECOND BATCH BY ITS NAME (an enemy's attack or voice, a boss's: game/sound_families.ts): one of its two takes
+ * (<name>_1, _2), fetched the first time it is asked for; until one has come, `or` made in code (or nothing). Never throws.
+ */
+export function sfxNamed(name: string, vol = 1, or?: Sfx): void {
+  try {
+    const c = ctx;
+    if (!c || !bus || muted || c.state !== 'running' || !(vol > 0)) return;
+    const takes = [`${name}_1`, `${name}_2`];
+    for (const t of takes) fetchRecorded(c, `${t}.mp3`);
+    if (RECORDED.on && playTake(c, bus, `rec:${name}`, takes, nowMs(), vol, undefined)) return;
+    if (or) sfx(or, { vol });
+  } catch (err) {
+    report(`sfxNamed '${name}'`, err);
+  }
+}
+
+/** Fetch these sounds of the second batch by name (a floor's enemies', as it is come into); false before the sound has started. */
+export function warmNamed(names: readonly string[]): boolean {
+  const c = ctx;
+  if (!c || !RECORDED.on) return false;
+  for (const n of names) for (const k of [1, 2]) fetchRecorded(c, `${n}_${k}.mp3`);
+  return true;
 }
 
 /** Fetch the combat sounds, and a hero's voice where one is named (the hero played). */

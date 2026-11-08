@@ -83,6 +83,7 @@ import { GOLEM_ROCKET, ROCKET, rocketAlong } from '../art/golem_rocket_fx';
 import type { Brew, Decoy, GolemRocketAt, Tar } from './state';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 import { leadPoint } from './lock';
+import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_SOUNDS, HURT_BIG, VOICE } from './sound_families';
 import { BOSS_CALLS, bossCall } from './boss_calls';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
@@ -3628,6 +3629,36 @@ export class Game {
     this.emit({ t: 'sfx', name, vol });
   }
 
+  /** (THE SECOND BATCH) An enemy's attack, by its family; a silent boss's act, the sound of what he does. */
+  atkSound(m: Monster, act?: string): void {
+    if (!ENEMY_SOUNDS.on) return;
+    const a = act ? ACT_SOUND[act] : undefined;
+    if (a) {
+      this.enemyRec(a, 0.3, 0.9);
+      return;
+    }
+    const k = ATK[m.kind];
+    if (k) this.enemyRec(k, ENEMY_GAPS.atk, m.boss ? 0.9 : 0.6);
+  }
+
+  /** A sound of the second batch by its name (game/sound_families.ts), `or` made in code until it has come. */
+  rec(name: string, vol?: number, or?: Sfx): void {
+    this.emit({ t: 'rec', name, vol, or });
+  }
+
+  /** (THE SECOND BATCH) The blows counted, for an enemy's hurt now and then. */
+  private hurtTick = 0;
+  /** When each enemy sound was last heard (its name), so that a pack or a flurry of blows is not a din. */
+  private heard = new Map<string, number>();
+  /** An enemy sound, if it has not been heard within `gap` seconds. */
+  private enemyRec(name: string, gap: number, vol: number, or?: Sfx): boolean {
+    const last = this.heard.get(name);
+    if (last !== undefined && this.time - last < gap) return false;
+    this.heard.set(name, this.time);
+    this.rec(name, vol, or);
+    return true;
+  }
+
   /**
    * True when a body of radius r fits at (x, y) on the given grid.
    *
@@ -4626,6 +4657,10 @@ export class Game {
     h.attackT = wind + follow;
     h.animT = 0;
     h.windup = { skill: i, tx, ty, t: wind };
+    // (THE SECOND BATCH: the bow drawn for a shot or a volley; the Brawler's fist through the air)
+    const begun = SKILLS[h.skills[i].id];
+    if (wind > 0.05 && (h.skills[i].id === 'shot' || begun.kind === 'volley')) this.sfx('bowDraw', 0.5);
+    else if (h.cls === 'brawler' && begun.kind === 'punch') this.sfx('punchWhoosh', 0.45);
     // (TRACK_AIM: a quick attack pressed at an enemy follows it through the wind-up)
     if (TRACK_AIM.on && i === 0) {
       const m = this.monsterNear(tx, ty, TRACK_AIM.near);
@@ -4647,8 +4682,9 @@ export class Game {
     const def = SKILLS[s.id];
     if (i === 0 && def.cooldown <= 0) {
       s.uses++;
-      if (def.kind === 'melee') this.sfx('swing', 0.8);
-      else if (def.kind === 'projectile') this.sfx('shot', 0.8);
+      // (THE SECOND BATCH: the demon's rake and the warlock's hellbolt their own)
+      if (def.kind === 'melee') this.sfx(s.id === 'rake' ? 'rake' : 'swing', 0.8);
+      else if (def.kind === 'projectile') this.sfx(s.id === 'hellbolt' ? 'hellbolt' : 'shot', 0.8);
       else if (def.kind === 'wave') this.sfx('wave', 0.8);
       // (TRACK_AIM: pressed at an enemy, he turns to where it is now as it goes off, and an arrow or a wave to where it will be
       // as it gets there)
@@ -5003,7 +5039,8 @@ export class Game {
     h.comboT = 0;
     h.step = null;
     this.face(tx, ty);
-    this.sfx('dodge');
+    // (THE SECOND BATCH: the mage's warp and the warlock's smoke step their own)
+    this.sfx(def.kind === 'warp' ? 'warp' : def.kind === 'smoke' ? 'smokestep' : 'dodge');
     // The words on it (Version 12.2: the evasive moves take words as the attacks do). In front
     // they change the hit: a leap's landing, the burst of the trap a roll leaves, the burst a warp
     // arrives in. Behind they change what is left: where the leap lands, where the trap bursts,
@@ -5045,6 +5082,7 @@ export class Game {
     if (def.kind === 'leap' && land) {
       const dist = Math.hypot(land.x - h.x, land.y - h.y);
       h.move = { kind: 'leap', t: 0, dur: 0.26 + dist * 0.03, x0: h.x, y0: h.y, x1: land.x, y1: land.y };
+      this.sfx('lunge', 0.7);
       return;
     }
     // (THE BRAWLER, game/brawler.ts: the slip. He weaves to the spot, nothing hurting him, and comes up with a counter hook:
@@ -5081,7 +5119,7 @@ export class Game {
       const demon = s.id === 'demonstep';
       h.move = { kind: 'smoke', t: 0, dur: demon ? WARLOCK_TUNE.step.demonSecs : WARLOCK_TUNE.step.secs, x0: h.x, y0: h.y, x1: land.x, y1: land.y, hit: [], demon };
       this.emit({ t: 'smoke', x0: h.x, y0: h.y, x1: land.x, y1: land.y, demon });
-      this.sfx(demon ? 'slam' : 'dodge', 0.6);
+      if (demon) this.sfx('slam', 0.6);
       // behind: left where he went up in smoke (the demon's, where it bursts out: demonLands)
       if (!demon) this.wake(2, x0, y0, def.radius * r.size, r.countDmg);
       // (HIS TREE: Phantom Step, his shadow left where he stood: the enemies near go after it, not him, a while: the decoys)
@@ -5959,7 +5997,9 @@ export class Game {
       // (what the words behind it leave, his blow leaves where it first lands, once a move)
       this.wake(i, o.x, o.y, 1, 1);
       const heavy = m.strike!.kind === 'kick' || m.share >= 1;
-      this.sfx(heavy ? 'slam' : 'hit', heavy ? 0.8 : 0.6);
+      // (THE SECOND BATCH: his kicks and his punches their own)
+      const kick = m.strike!.kind === 'kick';
+      this.sfx(kick ? (m.share >= 1 ? 'heavyKick' : 'kick') : m.share >= 1 ? 'haymaker' : 'jab', heavy ? 0.8 : 0.6);
       if (m.share >= 1.5) this.emit({ t: 'shake', amount: 3.5 });
       else if (heavy) this.emit({ t: 'shake', amount: 1.8 });
     }
@@ -6072,7 +6112,9 @@ export class Game {
     }
     this.emit({ t: 'punch', name, x: ox, y: oy, dx, dy, big: P.big, n, echo: echo || undefined, hit: hits.length > 0 });
     const words = this.fronts(i);
-    this.sfx(words.includes('power') ? 'power' : P.big ? 'slam' : 'hit', P.big ? 0.8 : 0.6);
+    // (THE SECOND BATCH: each punch its own: the jab, the hooks, the big ones)
+    const punchSound = name === 'jab' ? 'jab' : name === 'hook' || name === 'cross' || name === 'counter' ? 'hook' : 'haymaker';
+    this.sfx(words.includes('power') ? 'power' : punchSound, P.big ? 0.8 : 0.6);
     if (P.big) this.emit({ t: 'shake', amount: P.big === 2 ? 5 : 2.5 });
     const first = hits[0];
     if (first && words.includes('heavy')) this.emit({ t: 'heavy', x: first.x, y: first.y, r: P.round ? P.round * r.size : 1.1, big: !!P.round });
@@ -6500,7 +6542,7 @@ export class Game {
     this.brewVial(v);
     this.vials.push(v);
     this.emit({ t: 'vial', id: -1, x0: ox, y0: oy, x1, y1, flight: T.flight, n, echo: echo || undefined, ...(v.big ? { big: true } : {}) });
-    if (n === 0) this.sfx('shot', echo ? 0.3 : 0.5);
+    if (n === 0) this.sfx('vial', echo ? 0.3 : 0.5);
   }
 
   /**
@@ -6548,7 +6590,8 @@ export class Game {
       });
     }
     c.shotAge = 0;
-    this.sfx('zap', echo ? 0.25 : 0.4);
+    // (THE SECOND BATCH: a bomb lobbed out of it, where its talent has bombs)
+    this.sfx(this.contraptionAmmo() === 'bombs' ? 'mortar' : 'zap', echo ? 0.25 : 0.4);
     return true;
   }
 
@@ -6640,7 +6683,7 @@ export class Game {
       c.fy = (y1 - c.y) / far;
     }
     c.shotAge = 0;
-    this.sfx('trapSet', echo ? 0.3 : 0.5);
+    this.sfx('vial', echo ? 0.3 : 0.5);
     return true;
   }
 
@@ -6800,6 +6843,8 @@ export class Game {
       this.golems.sort((a, b) => a.seat - b.seat);
       this.emit({ t: 'golemArrive', x: p.x, y: p.y });
       this.emit({ t: 'shake', amount: 2 });
+      // (THE SECOND BATCH: her whistle, and the golem landing)
+      this.sfx('whistle', 0.7);
       this.sfx('slam', 0.6);
       this.overdrive();
       return;
@@ -7093,7 +7138,7 @@ export class Game {
         if (m && Math.hypot(m.x - g.x, m.y - g.y) <= reach + m.r + 0.6) {
           const s = h.skills[g.skill];
           this.emit({ t: 'golemPunch', x: m.x, y: m.y, dx: g.fx, dy: g.fy });
-          this.sfx('hit', 0.8);
+          this.sfx('golemPunch', 0.8);
           const frac = (s ? this.golemFrac(g) : 1) * this.golemMight(g) * G.punch.share;
           this.hitMonster(m, g.skill, frac, false);
           // (her tree's SHRAPNEL, while its cannon is off: its punch bursts where it lands, striking everything near)
@@ -7115,6 +7160,7 @@ export class Game {
     if (g.act === 'cannon') {
       if (!g.did && g.actT >= G.cannon.hit) {
         g.did = true;
+        this.sfx('cannon', 0.8);
         const m = this.monsters.find((q) => q.id === g.target && !q.dead);
         const x1 = m ? m.x : g.ax;
         const y1 = m ? m.y : g.ay;
@@ -8247,6 +8293,7 @@ export class Game {
       }
     } else if (def.kind === 'curse') {
       // (THE WARLOCK, game/warlock.ts: every enemy near him struck and cursed; Twin, a second a moment later)
+      if (primary) this.sfx('curse', 0.8);
       const rad = def.radius * r.size;
       for (let k = 0; k < r.count; k++) {
         if (k === 0) this.curseAll(i, ox, oy, rad, each, 0, echo);
@@ -8280,6 +8327,7 @@ export class Game {
     } else if (def.kind === 'damning') {
       // (THE WARLOCK's demon: every cursed or burning enemy near it struck, and all its burns paid out at once; Twin, a
       // second eruption a moment later under every one still burning)
+      if (primary) this.sfx('damning', 0.9);
       const rad = def.radius * r.size;
       for (let k = 0; k < r.count; k++) {
         if (k === 0) this.damningAll(i, ox, oy, rad, each, 0, echo);
@@ -9101,6 +9149,8 @@ export class Game {
       m.poisonDps = 0;
       m.poisonN = 0;
       this.emit({ t: 'poisoned', x: m.x, y: m.y });
+      // (THE SECOND BATCH: the poison taking hold)
+      this.sfx('poison', 0.5);
     }
     // (THE SKILL TREES: Venom, twice as many doses)
     const most = TUNE.poisonStacks * (this.was('venom') ? TALENT_TUNE.venom : 1);
@@ -9441,6 +9491,16 @@ export class Game {
     if (skill >= 0) m.lastSkill = skill;
     if (m.state === 'sleep') this.wakeUp(m);
     this.emit({ t: 'hit', x: m.x, y: m.y, amount: dmg, crit, el, onHero: false, heavy, words: words && words.length ? words : undefined, poison: poison || undefined });
+    // (THE SECOND BATCH: its voice as it is hurt, on a big blow only: a critical, a great share of its life, or now and then)
+    if (ENEMY_SOUNDS.on && !poison && !dot && m.life > 0) {
+      const b = m.boss ? BOSS_VOICE[m.kind] : undefined;
+      const v = m.boss ? undefined : VOICE[m.kind];
+      // (now and then by a count of the blows, not the dice: the sounds take nothing from the game's chances)
+      this.hurtTick = (this.hurtTick + 1) % HURT_BIG.one;
+      const big = crit || dmg >= m.maxLife * HURT_BIG.share || this.hurtTick === 0;
+      if (b && (crit || dmg >= m.maxLife * 0.04)) this.enemyRec(`${b}_hurt`, ENEMY_GAPS.bossHurt, 0.9);
+      else if (v && big) this.enemyRec(`${v}_hurt`, ENEMY_GAPS.hurt, 0.6);
+    }
     // (ACT 1: one whose rules hold its life up is kept there: a boss with another life bar to come, or one who must first be where his death was drawn)
     if (r1 && r1.lifeFloor) {
       const least = r1.lifeFloor(this.bosses, m);
@@ -9478,7 +9538,12 @@ export class Game {
     const cursed = (m.curseT ?? 0) > 0;
     if (cursed) this.spreadBurns(m);
     if (h.cls === 'warlock' && TALENTS.on) this.warlockKill(m, cursed);
-    this.sfx(m.boss || m.champion ? 'explode' : 'monsterDie', m.boss ? 1 : 0.7);
+    // (THE SECOND BATCH: its own death, in place of monsterDie; a boss who roars, his)
+    const dieB = ENEMY_SOUNDS.on && m.boss ? BOSS_VOICE[m.kind] : undefined;
+    const dieV = ENEMY_SOUNDS.on && !m.boss ? VOICE[m.kind] : undefined;
+    if (dieB) this.rec(`${dieB}_death`, 1, 'explode');
+    else if (dieV) this.rec(`${dieV}_death`, m.champion ? 0.9 : 0.7, m.champion ? 'explode' : 'monsterDie');
+    else this.sfx(m.boss || m.champion ? 'explode' : 'monsterDie', m.boss ? 1 : 0.7);
     if (m.champion) this.emit({ t: 'shake', amount: 4 });
     const st = h.d.stats;
     if (st.lifeOnKill > 0) this.healHero(st.lifeOnKill);
@@ -10043,6 +10108,9 @@ export class Game {
       if (o !== m && (o.packId !== pack || Math.hypot(o.x - m.x, o.y - m.y) > 14)) continue;
       o.state = 'chase';
       o.cd = this.rng.range(0.2, 0.9);
+      // (THE SECOND BATCH: its voice as it first notices him, once for its family at a time)
+      const v = ENEMY_SOUNDS.on && !o.boss ? VOICE[o.kind] : undefined;
+      if (v) this.enemyRec(`${v}_aggro`, ENEMY_GAPS.aggro, 0.7);
       if (o.champion) {
         // the player is told what they have walked in on
         this.sfx('bossRoar', 0.6);
@@ -10055,7 +10123,10 @@ export class Game {
       }
     }
     if (m.boss) {
-      this.sfx('bossRoar');
+      // (THE SECOND BATCH: a boss who roars, his own roar)
+      const b = ENEMY_SOUNDS.on ? BOSS_VOICE[m.kind] : undefined;
+      if (b) this.rec(`${b}_roar`, 1, 'bossRoar');
+      else this.sfx('bossRoar');
       // (BOSS_INTRO: his name comes up across the screen as his gate falls, in place of the line)
       if (!BOSS_INTRO.on) this.msg(m.name, MSG.foe);
     }
@@ -10384,6 +10455,8 @@ export class Game {
   }
 
   private monsterAttack(m: Monster, def: MonsterDef): void {
+    // (THE SECOND BATCH: its attack, by its family)
+    this.atkSound(m);
     const moves = movesOf(m);
     if (moves && m.move !== undefined && m.move >= 0) {
       this.landMove(m, def, moves, m.move);
@@ -11287,6 +11360,8 @@ export class Game {
     const y = m.y;
     // (THE SKILL TREES REMADE: Far Sight, an arrow flown past eight tiles a certain critical)
     const arrow = p.look === 'arrow';
+    // (THE SECOND BATCH: an arrow striking home)
+    if (arrow) this.sfx('arrowHit', 0.5);
     const far = arrow && (p.flown ?? 0) > TALENT_TUNE.farSight2.at && this.now('farsight');
     this.hitMonster(m, p.skill, p.dmg, false, far);
     // (Long Shot, the arrow knocks back what it hits; Split Shot, one that kills splits into three, flying on)
