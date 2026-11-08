@@ -1,4 +1,4 @@
-// ENDLESS MODE'S FANFARE (behind ENDLESS_FANFARE, off until his yes to pictures of it). His words to the main chat, 7 Nov 2026,
+// ENDLESS MODE'S FANFARE (behind ENDLESS_FANFARE, on since Version 25.2.8 at his yes to pictures of it). His words to the main chat, 7 Nov 2026,
 // 14:54 (Eastern): “I’d like a little more fanfare for endless mode.  Like a big splash screen and a pop up description of what
 // endless mode is.” (the rest of what he said then, the key in quarters and the final boss, comes after: THE LIST, 6d); asked what
 // next on 8 Nov, his pick, “Endless fanfare (Recommended)”.
@@ -13,7 +13,9 @@ import { P } from '../art/palette';
 import { THEME } from './ui';
 import type { Ui } from './ui';
 
-export const ENDLESS_FANFARE = { on: false, splash: 3.2, skip: 0.8, armed: 0.5 };
+// (ON SINCE VERSION 25.2.8: shown the splash and the card, his answer, 8 Nov 2026 by 08:36, “Yes, art chat splash later
+// (Recommended)”: the art chat's splash picture to come in this one's place, once he has seen it)
+export const ENDLESS_FANFARE = { on: true, splash: 3.2, skip: 0.8, armed: 0.5 };
 
 /** What endless mode is, a line each, as the card says it. */
 export const ENDLESS_CARD: readonly string[] = [
