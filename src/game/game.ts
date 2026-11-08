@@ -70,6 +70,7 @@ import { CAMP, makeCamp } from './camp';
 import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, HellWave, Hero, Level, Meta, Monster, OrbInst, Peril, Pet, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Soul, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
 import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import { FIRE, FIRE_GONE, FURNACE_WORD, KEEPER, MELDSTONE_WORDS, QUESTS15, QUEST_TEXT } from './quests15';
+import { QUEST_MARKS } from './quest_marks';
 import { STOKER_ON } from '../art/stoker';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
@@ -395,6 +396,11 @@ export class Game {
   practice = false;
   /** THE LEVEL SELECT (defs.ts LEVEL_SELECT): a test hero, made ready for the floor he was sent to (Game.forTrial). Played as any hero is, but never saved: main.ts leaves the saved run as it was. */
   trial = false;
+  /** QUEST MARKERS (game/quest_marks.ts): the line at the top, "Speak to the ...", whom, and the seconds it still shows. */
+  speakTo: { who: Station; t: number } | null = null;
+  /** (the same) who had a quest for him in town last frame, and the level that was (a level come into is not news). */
+  private giversWas: Station[] = [];
+  private speakLevel: unknown = null;
   private waveT = 0;
   private waveN = 0;
   /** The first dungeon's prompts, while a new player is being shown the game (see Guide in state.ts). */
@@ -2015,6 +2021,7 @@ export class Game {
     if (this.level.town) this.updateTags();
     if (this.monsters.some((m) => m.dead)) this.monsters = this.monsters.filter((m) => !m.dead);
     if (this.guide) this.updateGuide(dt, walked);
+    if (QUEST_MARKS.on) this.updateSpeak(dt);
   }
 
   // ===========================================================================================
@@ -12240,6 +12247,56 @@ export class Game {
     // (EXITS: and while his ring is dark, used, he gives the quest for the master rune-stone, once)
     // (QUESTS15: and once the furnace is out and the armourer has rewarded it, his ask for the Meldstone)
     return this.hero.quest ? 'stone' : this.hero.meld === 'stone' ? 'meldstone' : this.questDue() ? 'quest' : this.meldAskDue() ? 'meldAsk' : null;
+  }
+
+  /**
+   * QUEST MARKERS (game/quest_marks.ts): who in town has a quest for this hero now, to give it or to take what it asked for: the
+   * wordsmith (his first quest; the master rune-stone; his ask for the Meldstone; the Meldstone), the armourer (the furnace; its
+   * reward), the mystic (the feather; the feather brought). A marker floats over each.
+   */
+  questGivers(): Station[] {
+    if (this.practice || this.trial) return [];
+    const h = this.hero;
+    const out: Station[] = [];
+    if (h.quest || h.meld === 'stone' || this.questDue() || this.meldAskDue()) out.push('wordsmith');
+    if (QUESTS15.on && this.armourerDue()) out.push('armourer');
+    if (QUESTS610.on && this.mysticDue()) out.push('mystic');
+    return out;
+  }
+
+  /** (the same) what the hero brings back to town now, or has done for someone there: whom it is for (a marker over the waypoint home). */
+  turnInFor(): Station | null {
+    if (this.practice || this.trial) return null;
+    const h = this.hero;
+    if (h.quest || h.meld === 'stone') return 'wordsmith';
+    if (QUESTS15.on && h.ring && h.furnace === 'out') return 'armourer';
+    if (QUESTS610.on && h.feather === 'got') return 'mystic';
+    return null;
+  }
+
+  /**
+   * (the same) the line "Speak to the ...": on coming into a floor, or into town, with something to bring back; in town, when one
+   * comes due there. It goes when it has been seen its time (speakSeen), or they are seen to.
+   */
+  private updateSpeak(dt: number): void {
+    const L = this.level;
+    const now = L.town ? this.questGivers() : [];
+    if (this.speakLevel !== L) {
+      const back = this.turnInFor();
+      if (back) this.speakTo = { who: back, t: QUEST_MARKS.secs };
+    } else if (L.town) {
+      const fresh = now.find((w) => !this.giversWas.includes(w));
+      if (fresh) this.speakTo = { who: fresh, t: QUEST_MARKS.secs };
+    }
+    this.giversWas = now;
+    this.speakLevel = L;
+    const sp = this.speakTo;
+    if (sp && (sp.t <= 0 || (L.town && !now.includes(sp.who)))) this.speakTo = null;
+  }
+
+  /** (the same) the line has been on the screen for `dt` more seconds (main.ts: it waits behind a floor's name and the first dungeon's prompts). */
+  speakSeen(dt: number): void {
+    if (this.speakTo) this.speakTo.t -= dt;
   }
 
   /** QUESTS610: what the mystic has for this hero: the feather quest (the gate down the mountain open), or the feather taken from him. */

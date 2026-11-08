@@ -11,6 +11,7 @@
 
 import { PAD_USE } from '../engine/gamepad';
 import { CLASSES, FIRST_LEVELS, FIRST_WORD, HAND_IN, QUEST_ITEM, SKILLS, WORDS, firstWordSkill } from '../game/defs';
+import { QUEST_MARKS, SPEAK_BACK, SPEAK_WHERE } from '../game/quest_marks';
 import type { SkillId } from '../game/defs';
 import type { Game } from '../game/game';
 import type { GuideRow, GuideStep, SlotRef } from '../game/state';
@@ -30,7 +31,7 @@ export interface GuideLine {
 export interface Banner {
   step: GuideStep;
   /** A small caption over the prompt: what kind of thing is being shown. */
-  caption: 'HOW TO PLAY' | 'WORDSMITHING';
+  caption: 'HOW TO PLAY' | 'WORDSMITHING' | 'QUEST';
   /** One large line and a smaller one under it (every prompt but the fight's). */
   text: string;
   sub: string;
@@ -101,6 +102,15 @@ export function guideAttack(game: Game): number {
 
 /** What the first dungeon's prompt points at for that ability: its plate at the bottom of the screen, or the button of the evasive move. */
 const pointOf = (slot: number): Banner['point'] => (slot === 0 ? 'plate0' : slot === 1 ? 'plate1' : 'dodge');
+
+/** QUEST MARKERS (game/quest_marks.ts): the line "Speak to the ..." while it is due, or null. */
+export function questBanner(game: Game): Banner | null {
+  const sp = game.speakTo;
+  if (!QUEST_MARKS.on || !sp || sp.t <= 0) return null;
+  const name = sp.who.toUpperCase();
+  const sub = game.level.town ? SPEAK_WHERE[sp.who] ?? '' : SPEAK_BACK;
+  return { step: 'speak', caption: 'QUEST', text: `Speak to the ${name}`, sub, lines: [], point: null };
+}
 
 /** The prompt over the game for this moment, or null when there is none. */
 export function guideBanner(game: Game, touch: boolean): Banner | null {
@@ -176,6 +186,9 @@ export function guideBanner(game: Game, touch: boolean): Banner | null {
       const says = front ? WORDS[front].frontText : behind ? WORDS[behind].behindText : '';
       return mk('WORDSMITHING', `${press}: ${up(sk.r.name)}`, says, pointOf(set.skill));
     }
+    // (QUEST MARKERS' line is not the first dungeon's: questBanner)
+    case 'speak':
+      return null;
   }
 }
 

@@ -1076,7 +1076,7 @@ export interface StationSpot {
  *   use     the word is on: use that attack (the dead rise for it)
  */
 /** (THE FIRST LEVELS add 'carry', the quest item to be taken to town, and 'ring', to the wordsmith with it.) */
-export type GuideStep = 'move' | 'fight' | 'body' | 'take' | 'carry' | 'ring' | 'smith' | 'use' | 'quest' | 'stairs';
+export type GuideStep = 'move' | 'fight' | 'body' | 'take' | 'carry' | 'ring' | 'smith' | 'use' | 'quest' | 'stairs' | 'speak';
 
 /** One line of the fight prompt: a thing to do, and whether it has been done. */
 export interface GuideRow {
