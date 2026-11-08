@@ -25,7 +25,7 @@ import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
-import { TALENTS, TALENTS2 } from './game/talents';
+import { TALENTS, TALENTS2, WARRIOR_TREE2 } from './game/talents';
 import { VETERAN } from './game/veteran';
 import { RIME_SHADE_ON } from './art/rime_shade';
 import type { WallLook } from './art/ground';
@@ -2410,6 +2410,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     talents2: TALENTS2,
     /** THE VETERAN (game/veteran.ts), the Brawler made again, on since his yes of 3 Nov 2026 (25.0): `veteran.on` (his tree and his moves). */
     veteran: VETERAN,
+    /** THE WARRIOR'S NEW TREE, drafted (game/talents.ts WARRIOR_TREE2: his three weapons), off until his yes: `warriorTree2.on`. */
+    warriorTree2: WARRIOR_TREE2,
     /** FLOOR 20'S RIME SHADE (art/rime_shade.ts RIME_SHADE_ON, the art chat's; game/act1_rules/rshade.ts), off until he has seen it in the game and said yes: `rimeShade.on`. */
     rimeShade: RIME_SHADE_ON,
     /** THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS), off until his yes: `newWeapons.on` (the Veteran's wraps, the Warlock's demonic tome, the Tinkerer's wrench; stand-in pictures while `itemsA` is off). */

@@ -61,6 +61,9 @@ const GOLEM: readonly string[] = ['.XXXXX.', 'XoX.XoX', 'XXXXXXX', 'X.XXX.X', 'X
 const GEAR: readonly string[] = ['.X.X.X.', 'XXXXXXX', '.XXoXX.', 'XXXXXXX', '.X.X.X.'];
 const COIN: readonly string[] = ['..XXX..', '.XoooX.', '.XoXoX.', '.XoooX.', '..XXX..'];
 const QUICK: readonly string[] = ['X..X...', '.X..X..', '..X..Xo', '.X..X..', 'X..X...'];
+// (the Warrior's new tree, drafted 7 Nov 2026: an axe's head and a hammer's, on their hafts)
+const AXEHEAD: readonly string[] = ['....XX.', '....XXX', 'XXXXXoX', '....XXX', '....XX.'];
+const MAUL: readonly string[] = ['....XXX', '....XXX', 'XXXXXoX', '....XXX', '....XXX'];
 const IMPACT: readonly string[] = ['X..X..X', '.X.X.X.', '..XoX..', '.X.X.X.', 'X..X..X'];
 const KNUCKLE: readonly string[] = ['..X....', '.XX....', 'XXXXXXo', '.XX...X', '..X..X.'];
 // (the Ranger's companions, 28 Oct 2026: a paw)
@@ -90,6 +93,9 @@ const PATH_RUNE: Record<string, (color: string) => Rune> = {
   traps: (c) => ({ rows: JAWS, color: c, glow: P.white }),
   arrows: (c) => ({ rows: SPLIT, color: c, glow: P.white }),
   technique: (c) => ({ rows: BLADE, color: c, glow: P.white }),
+  gsword: (c) => ({ rows: BLADE, color: c, glow: P.white }),
+  axe: (c) => ({ rows: AXEHEAD, color: c, glow: P.white }),
+  hammer: (c) => ({ rows: MAUL, color: c, glow: P.white }),
   iron: () => wordRune('guarding'),
   cross: () => wordRune('heavy'),
   man: (c) => ({ rows: SIGIL, color: c, glow: P.white }),
