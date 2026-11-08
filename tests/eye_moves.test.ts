@@ -2,14 +2,18 @@
 // lurk under the water and his entrance. The owner, 7 Nov 2026: shown him from his sketch (fe166263), “Yes, build on this”; his
 // entrance, his pick “Rises shut, then splits”; then “Nice job that’s awesome”; and, 14:01, the entrance beat by beat: “And we want
 // the screen to rumble and water pour off as it rises in the phase transition.  It opens with a big roar, more screen shake, the eye
-// stalk comes out, let the moment breathe for a second, tentacles come up, phase 2.” His rules: “Action, like a movie”; every move a
+// stalk comes out, let the moment breathe for a second, tentacles come up, phase 2.” Then, seeing it: “NOW WE’RE FUCKIN TALKING THATS
+// AWESOME.  I want the roar as it opens tho.  Big rumble, slime and spittle going everywhere”; and, 19:07, “But I want it to roar with
+// the first open, like it needs to be part of the reveal animation.” (so nothing opens or cracks before the roar). His rules: “Action, like a movie”; every move a
 // big held wind-up, a fast strike and a big wind-down; nothing passes through anything; “have him like constantly melting and
 // dripping”; “Spittle and goo all over the place”; “And the eye waves around like its own tentacle”. What this holds:
 //   1. the switch is off and nothing of the game imports his moves;
 //   2. HIS STAND closes on itself: everything of him at the end of his loop is as at its start (his jaws, his throat, his tongue and
 //      eye, his tentacles, his sliding flesh, his drips and gobs, his spittle), painted the same;
 //   3. HIS ENTRANCE begins where his lurk is and ends on the frame before his stand's first; its beats in his order (the rise, the
-//      roar, the eye stalk, the moment breathing, the tentacles, his stand), its strikes fast after a held wind-up;
+//      wind-up, THE ROAR FROM THE FIRST PARTING, the eye stalk, the moment breathing, the tentacles, his stand); nothing opens before he
+//      roars; his jaws peeling apart fast, gaping wider than he stands, easing back onto his stand; dozens of strings across his seam,
+//      whole until he parts, all snapped by the end of his gape;
 //   4. nothing cyan; the pink edge round him while he lives, over the water;
 //   5. NOTHING THROUGH ANYTHING: his tongue and eye clear of his jaws and teeth, his spittle clear of his tongue (but where it holds
 //      a strand), his jaws clear of each other, in every third frame of his stand and every frame of his tongue's unfurling; his
@@ -32,8 +36,8 @@ import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import { ENEMY_RIM } from '../src/art/mkit';
 import { rgba } from '../src/engine/px';
 import { ARMS_RISEN, EYE2, EYE_LOOP, SLIDE, STONE, armClearances, bodyClearances, meltGobs, meltSplashes, paintColossus, spitCounts, spitStates } from '../src/art/eye_colossus';
-import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
-import { EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_SCREEN, EYE_STAND, HERO_SPOT, armBurst, armStand, darkAt, entranceAt, entranceOpen, entranceTongue, eyeFrame, lurkAt, lurkTongue, shakeAt, standAnim } from '../src/art/eye_moves';
+import type { ColossusAnim, ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
+import { EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_SCREEN, EYE_STAND, GAPE, HERO_SPOT, armBurst, armStand, darkAt, entranceAt, entranceClock, entranceOpen, entrancePuff, entranceShudder, entranceTongue, eyeFrame, lurkAt, lurkTongue, shakeAt, standAnim } from '../src/art/eye_moves';
 import type { EyeFrame } from '../src/art/eye_moves';
 
 interface Assert {
@@ -144,16 +148,34 @@ test('3. his entrance: from his lurk to the frame before his stand\'s first, his
   let fastest = 0;
   for (let k = E.rise[0]; k < E.rise[1]; k++) fastest = Math.max(fastest, entranceAt(k).drop - entranceAt(k + 1).drop);
   assert.ok(fastest < 6, `never faster than ${fastest.toFixed(1)} of his lengths a frame as he rises`);
-  // 2. the roar: the strain held, then his jaws torn apart in four frames, then settling
-  assert.ok(E.tear[0] - E.strain[0] >= 18, `the strain held ${E.tear[0] - E.strain[0]} frames`);
-  assert.ok(entranceOpen(E.tear[0] - 1) < 0.15 && entranceOpen(E.tear[1] - 1) > 1, 'torn open from shut to wide in the tear');
-  assert.ok(E.tear[1] - E.tear[0] <= 4, `the tear ${E.tear[1] - E.tear[0]} frames`);
-  let strainStep = 0;
-  for (let k = E.strain[0]; k < E.tear[0] - 1; k++) strainStep = Math.max(strainStep, entranceOpen(k + 1) - entranceOpen(k));
-  let tearStep = 0;
-  for (let k = E.tear[0] - 1; k < E.tear[1] - 1; k++) tearStep = Math.min(Infinity, Math.max(tearStep, entranceOpen(k + 1) - entranceOpen(k)));
-  assert.ok(tearStep > 10 * strainStep, `the tear far faster than the strain (${tearStep.toFixed(2)} a frame against ${strainStep.toFixed(3)})`);
-  assert.ok(E.settle[1] - E.settle[0] >= 15, `settling ${E.settle[1] - E.settle[0]} frames`);
+  // 2. the wind-up, short and big: shut, swelling and shuddering; nothing opens or cracks before he roars
+  for (let k = E.rise[0]; k < E.tear[0]; k++) assert.equal(entranceOpen(k), 0, `frame ${k}: shut until he roars`);
+  const wind = E.tear[0] - E.strain[0];
+  assert.ok(wind >= 6 && wind <= 15, `the wind-up short (${wind} frames)`);
+  let puffMax = 0;
+  let shud = 0;
+  for (let k = E.strain[0]; k < E.tear[0]; k++) {
+    puffMax = Math.max(puffMax, entrancePuff(k));
+    shud = Math.max(shud, ...entranceShudder(k).map(Math.abs));
+  }
+  assert.ok(puffMax > 0.95 && shud > 1, `the wind-up big: swelling (${puffMax.toFixed(2)}), shuddering (${shud.toFixed(1)} of his lengths)`);
+  assert.equal(entrancePuff(E.tear[0]), 0, 'let go as he roars');
+  // 2. THE ROAR from the first parting: his jaws peel apart fast, gape wider than he stands, ease back onto his stand
+  assert.ok(entranceOpen(E.tear[0]) > 0.05, 'his jaws parting on the roar\'s first frame');
+  assert.ok(entranceOpen(E.tear[0] + 5) > 0.75, `peeling apart fast (${entranceOpen(E.tear[0] + 5).toFixed(2)} open in six frames)`);
+  let gape = 0;
+  for (let k = E.tear[0]; k < E.settle[1]; k++) gape = Math.max(gape, entranceOpen(k));
+  let standMax = 0;
+  for (let k = 0; k < EYE_STAND.frames; k++) standMax = Math.max(standMax, standAnim(k / EYE_FPS).open);
+  assert.ok(gape >= GAPE - 0.01 && gape > standMax + 0.25, `gaping wider than he stands (${gape.toFixed(2)} against ${standMax.toFixed(2)})`);
+  const roarLong = (E.settle[1] - E.tear[0]) / EYE_FPS;
+  assert.ok(roarLong >= 1.2 && roarLong <= 1.8, `from the first parting to settled ${roarLong.toFixed(2)} s`);
+  assert.ok(Math.abs(entranceOpen(E.settle[1] - 1) - standAnim(entranceClock(E.settle[1] - 1)).open) < 0.02, 'eased back onto his stand');
+  // (dozens of strings across his seam: whole until he parts, all snapped by the end of his gape)
+  const before = spitStates({ ...(eyeFrame('entrance', E.tear[0] - 1).spit?.pose.anim as ColossusAnim) });
+  const after = spitStates({ ...(eyeFrame('entrance', E.gape[1]).spit?.pose.anim as ColossusAnim) });
+  assert.ok(spitCounts().seam >= 24 && before.whole >= 24, `dozens of strings across his seam (${spitCounts().seam}; ${before.whole} whole as he winds up)`);
+  assert.ok(after.whole === 0 && after.snapped >= 24, `all snapped by the end of his gape, hanging (${after.snapped})`);
   // 3. the eye stalk: his tongue out of his throat, its eye snapping open
   assert.equal(entranceTongue(E.stalk[0] - 1), null, 'his tongue drawn in until the stalk');
   const lids = [];
@@ -206,7 +228,7 @@ test('5. nothing through anything: his tongue, eye, spittle and jaws; his tentac
     assert.ok(c.tongue > 0 && c.eye > 0, `unfurling, frame ${k}: his tongue and eye clear of his jaws and teeth (${c.tongue.toFixed(1)}, ${c.eye.toFixed(1)}; ${c.where})`);
   }
   // (shut and tearing open: his jaws pressed together never through each other)
-  for (const k of [E.strain[0], E.tear[0], E.tear[0] + 1, E.tear[0] + 2]) {
+  for (const k of [E.strain[0], E.strain[0] + 5, E.tear[0], E.tear[0] + 1, E.tear[0] + 2, E.gape[0]]) {
     const c = bodyClearances(whole(eyeFrame('entrance', k)));
     assert.ok(c.jaws > 0, `frame ${k}: his jaws clear of each other (${c.jaws.toFixed(1)})`);
   }
@@ -308,7 +330,7 @@ test('7. no leaps: frame to frame in his loops, and where one move hands over to
   }
 });
 
-test('8. the screen: the rumble through his rise, the roar\'s shake bigger, the dark lifting as he roars, all gone by his stand', () => {
+test('8. the screen: the rumble through his rise, the roar\'s big rumble from the first parting, the dark lifting as he roars, all gone by his stand', () => {
   let rumble = 0;
   let roar = 0;
   for (let k = 0; k < E.frames; k++) {
@@ -318,7 +340,15 @@ test('8. the screen: the rumble through his rise, the roar\'s shake bigger, the 
     if (k >= EYE_SCREEN.roar[0] && k < EYE_SCREEN.roar[2]) roar = Math.max(roar, m);
   }
   assert.ok(rumble >= 1 && rumble <= 3, `the rumble (${rumble} game pixels)`);
-  assert.ok(roar >= 2 * rumble, `the roar's shake bigger (${roar} game pixels)`);
+  assert.ok(roar >= 2 * rumble && roar >= 7, `the roar's rumble big (${roar} game pixels)`);
+  // (it starts as his jaws part, is strongest at his gape, and rolls off)
+  const at = (a: number, b: number): number => {
+    let m = 0;
+    for (let k = a; k < b; k++) m = Math.max(m, ...shakeAt(k).map(Math.abs));
+    return m;
+  };
+  assert.ok(Math.max(...shakeAt(EYE_SCREEN.roar[0]).map(Math.abs)) > 0 || Math.max(...shakeAt(EYE_SCREEN.roar[0] + 1).map(Math.abs)) > 0, 'rumbling from the first parting');
+  assert.ok(at(E.tear[1] - 1, E.gape[1]) >= at(E.tear[0], E.tear[0] + 4) && at(E.tear[1] - 1, E.gape[1]) >= at(E.settle[0] + 8, EYE_SCREEN.roar[2]), 'strongest at his gape, rolling off');
   assert.ok(EYE_SCREEN.rumble[0] < E.rise[0] && EYE_SCREEN.rumble[1] === E.tear[0], 'rumbling all through his rise, until he roars');
   assert.ok(darkAt(E.rise[0] + 20) > 0.25 && darkAt(E.tear[0] + 20) === 0, 'dark as he rises, lit again as he roars');
   assert.equal(EYE_SCREEN.roarSound, E.tear[0], 'the roar\'s sound as his jaws tear apart');

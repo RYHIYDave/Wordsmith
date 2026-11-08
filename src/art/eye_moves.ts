@@ -159,12 +159,16 @@ export const EYE_ENTRANCE = {
   /** 1. He rises shut, a melting mound, water pouring off him (his top breaks the water at `breaks`). */
   rise: [30, 108] as const,
   breaks: 38,
-  /** 2. The strain: his seam splitting slowly, strings across it, held. */
-  strain: [108, 129] as const,
-  /** 2. THE ROAR: his jaws tear apart (four frames). */
-  tear: [129, 133] as const,
-  /** 2. ...and settle, the spray falling, the ring spreading. */
-  settle: [133, 156] as const,
+  /** 2. The wind-up, short and big: at the top of his rise the shut mound swells and shudders, the lips of his seam bulging, his
+   *  throat's fire glowing through them. Nothing opens or cracks. */
+  strain: [108, 117] as const,
+  /** 2. THE ROAR, from the very first parting of his seam (`tear[0]`): his jaws peel apart roaring, gaping wider than he stands at the
+   *  height of it (`GAPE`, at `tear[1] - 1`), the strings across his seam stretching and snapping, slime and spittle flung everywhere. */
+  tear: [117, 131] as const,
+  /** 2. ...roaring on at his full gape, his jaws trembling and his throat pulsing with it. */
+  gape: [131, 141] as const,
+  /** 2. ...then easing back onto his stand (his stand's own jaws from `settle[1]`; his tongue already starting up his gullet inside him). */
+  settle: [141, 161] as const,
   /** 3. The eye stalk: his tongue unfurls out of his throat and rears; its eye snaps open (`lids`). */
   stalk: [156, 192] as const,
   lids: [186, 189] as const,
@@ -193,26 +197,47 @@ export function entranceAt(k: number): { drop: number; back: number } {
   const v = 0.5 - 0.5 * Math.cos(Math.PI * u);
   return { drop: (COLOSSUS.sunk + 14) * (1 - v), back: (COLOSSUS.sunkBack - 12) * (1 - v) };
 }
+/** How wide his jaws gape at the height of his roar (his stand breathes between 0.95 and 1.05). */
+export const GAPE = 1.38;
 /** How open his jaws are at a frame of his entrance. */
 export function entranceOpen(k: number): number {
   if (k < E.rise[0]) return 1 - sm(10, 27, k);
-  if (k < E.strain[0]) return 0;
-  if (k < E.tear[0]) return 0.13 * sm(E.strain[0], E.tear[0] - 1, k) ** 1.4;
-  // (the tear: four frames)
-  if (k < E.tear[1]) return [0.36, 0.68, 0.95, 1.11][k - E.tear[0]];
-  // (and settling, wobbling, onto his breath)
-  const s = k - (E.tear[1] - 1);
-  const left = 1 - sm(E.tear[1] - 1, E.settle[1], k);
-  return standOpen(entranceClock(k)) + 0.11 * left * Math.cos((s / 13) * Math.PI) * Math.exp(-s / 9);
+  // (shut through his rise and his wind-up: nothing opens before he roars)
+  if (k < E.tear[0]) return 0;
+  // (the roar: peeling apart from the first frame, fast and then slower, to his full gape)
+  if (k < E.tear[1]) {
+    const u = clamp01((k - E.tear[0] + 0.5) / (E.tear[1] - E.tear[0]));
+    return GAPE * (1 - (1 - u) ** 2);
+  }
+  // (roaring on at his full gape, trembling with it)
+  if (k < E.gape[1]) return GAPE + 0.025 * Math.sin((k - E.gape[0]) * 2.1) - 0.02 * sm(E.gape[0], E.gape[1], k);
+  // (easing back onto his stand)
+  const st = standOpen(entranceClock(k));
+  const from = GAPE - 0.02 + 0.025 * Math.sin((E.gape[1] - E.gape[0]) * 2.1);
+  return lerp(from, st, sm(E.gape[1], E.settle[1], k));
+}
+/** His wind-up at a frame of his entrance (0 to 1): swelling into it, held, let go as he roars. */
+export function entrancePuff(k: number): number {
+  if (k < E.strain[0] - 2 || k >= E.tear[0]) return 0;
+  return sm(E.strain[0] - 2, E.strain[0] + 5, k);
+}
+/** His shudder as he winds up (his lengths: down, back): quick, uneven, growing. */
+export function entranceShudder(k: number): [number, number] {
+  const p = entrancePuff(k);
+  if (!p) return [0, 0];
+  return [p * 2.4 * (h1(k, 31) * 2 - 1), p * 3 * (h1(k, 32) * 2 - 1)];
 }
 /** His throat's glow at a frame of his entrance: low while he is shut; showing through his seam as it splits; flaring as he roars;
  *  dying back onto his stand's. */
 export function entranceGlow(k: number): number {
   const st = standGlow(entranceClock(k));
   if (k < E.strain[0]) return 0.7;
-  if (k < E.tear[0]) return lerp(0.7, 1.7, sm(E.strain[0], E.tear[0], k));
-  if (k < E.tear[1]) return 2.7;
-  return lerp(2.7, st, sm(E.tear[1] - 1, E.settle[1], k));
+  // (winding up: his fire rising behind his shut seam, beating)
+  if (k < E.tear[0]) return lerp(0.7, 1.9, sm(E.strain[0], E.tear[0] - 1, k)) + 0.15 * Math.sin((k - E.strain[0]) * 1.6);
+  // (roaring: flaring as he parts, pulsing with his roar)
+  const pulse = 0.35 * Math.sin((k - E.tear[0]) * 1.25);
+  if (k < E.gape[1]) return lerp(2.2, 2.6, sm(E.tear[0], E.tear[0] + 3, k)) + pulse;
+  return lerp(2.6 + pulse, st, sm(E.gape[1], E.settle[1], k));
 }
 
 /** His tongue drawn down into him (a path down out of his gullet into the dark under the water). */
@@ -313,14 +338,16 @@ export function armBurst(i: number, k: number, t: number): ArmPose | null {
 
 /**
  * THE SCREEN AT HIS ENTRANCE (frames from its first): THE RUMBLE all through his rise (from `rumble[0]`, growing to `rumble[2]`
- * game pixels at its strongest by the strain, ending as he roars); THE ROAR'S SHAKE (bigger: `roar[1]` game pixels as his jaws tear
- * apart, dying away by `roar[2]`); a jolt as each tentacle bursts (`jolt` game pixels, `joltLong` frames); THE DARK (the fen's dusk
- * dropping toward night while he rises, `dark[2]` at its deepest, lifting as he roars); THE ROAR'S SOUND from the first frame of
- * the tear.
+ * game pixels at its strongest through his wind-up, ending as he roars); THE ROAR'S BIG RUMBLE from his jaws' first parting
+ * (`roar[0]`), building to `roar[1]` game pixels at his full gape, rolling off to still by `roar[2]`; a jolt as each tentacle bursts
+ * (`jolt` game pixels, `joltLong` frames); THE DARK (the fen's dusk dropping toward night while he rises, `dark[2]` at its deepest,
+ * lifting as he roars); THE ROAR'S SOUND from the first frame his jaws part.
  */
 export const EYE_SCREEN = {
   rumble: [18, E.tear[0], 2.4] as const,
-  roar: [E.tear[0], 7, E.tear[0] + 46] as const,
+  /** THE ROAR'S RUMBLE: from the first parting, building to its strongest (game pixels) at his full gape, held while he roars there,
+   *  rolling off by the third. */
+  roar: [E.tear[0], 8, E.settle[1] + 6] as const,
   jolt: 2,
   joltLong: 6,
   dark: [4, 36, 0.32, E.tear[0], E.tear[0] + 14] as const,
@@ -338,10 +365,12 @@ export function shakeAt(k: number): [number, number] {
     y += a * 0.7 * wob(k * 0.55, 12);
   }
   if (k >= S.roar[0] && k < S.roar[2]) {
+    // (a rumble, not a swing: thrown every frame, unevenly, both ways; building as he parts, strongest at his gape, rolling off)
     const s = k - S.roar[0];
-    const a = S.roar[1] * Math.exp(-s / 13) * (1 - sm(S.roar[2] - 10, S.roar[2], k));
-    x += a * Math.cos(s * 1.9 + 0.3) * (0.6 + 0.4 * h1(s, 13));
-    y += a * Math.sin(s * 2.7 + 1.1) * (0.6 + 0.4 * h1(s, 14));
+    const build = 0.35 + 0.65 * sm(E.tear[0], E.tear[1] - 1, k);
+    const a = S.roar[1] * build * (k < E.gape[1] ? 1 : 1 - sm(E.gape[1], S.roar[2], k) ** 0.7);
+    x += a * (h1(s, 13) * 2 - 1);
+    y += a * 0.8 * (h1(s, 14) * 2 - 1);
   }
   for (const b of E.bursts) {
     const s = k - b;
@@ -450,7 +479,8 @@ export function eyeFrame(move: 'stand' | 'lurk' | 'entrance', k: number): EyeFra
   const st = standAnim(t);
   // (his tongue as it is at his entrance: drawn in, or unfurling; his spittle that his tongue holds goes with it)
   const TE = k < E.stalk[1] ? entranceTongue(k) : null;
-  const base: ColossusAnim = k < E.stalk[1] ? { ...st, open, glow, tore, knit, tongue: TE ? TE.path : null, eye: TE ? TE.eye : st.eye, gaze: TE ? TE.gaze : st.gaze, lids: TE ? TE.lids : 0, roll: TE ? TE.roll : 0, swell: TE ? TE.swell : 1 } : { ...st, open, glow, tore, knit };
+  const puff = entrancePuff(k);
+  const base: ColossusAnim = puff > 0 ? { ...st, open, glow, tore, knit, puff, tongue: null, lids: 0 } : k < E.stalk[1] ? { ...st, open, glow, tore, knit, tongue: TE ? TE.path : null, eye: TE ? TE.eye : st.eye, gaze: TE ? TE.gaze : st.gaze, lids: TE ? TE.lids : 0, roll: TE ? TE.roll : 0, swell: TE ? TE.swell : 1 } : { ...st, open, glow, tore, knit };
   // (his stand's own layers at the frame of it his entrance has come to: it ends on the frame before the stand's first)
   const SL = standLayers(mod(k - E.frames, EYE_STAND.frames));
   // (his jaws: closing under the water in ten steps; the shut mound, painted once, rising; each frame of his strain, his tear and his
@@ -468,8 +498,10 @@ export function eyeFrame(move: 'stand' | 'lurk' | 'entrance', k: number): EyeFra
     spit = { key: 'S.mound', pose: body({ ...mound, parts: 'spit' }), drop: at.drop, back: at.back };
   } else {
     // (from the end of his settling his jaws are his stand's own frames; his spittle once all of it is back on its round)
-    jaws = k >= E.settle[1] ? SL.jaws : { key: `J.e.${pad(k)}`, pose: body({ ...base, parts: 'jaws' }), drop: 0, back: 0 };
-    spit = k >= 240 ? SL.spit : { key: `S.e.${pad(k)}`, pose: body({ ...base, parts: 'spit' }), drop: 0, back: 0 };
+    // (winding up, shuddering)
+    const [sd, sb] = entranceShudder(k);
+    jaws = k >= E.settle[1] ? SL.jaws : { key: `J.e.${pad(k)}`, pose: body({ ...base, parts: 'jaws' }), drop: sd, back: sb };
+    spit = k >= 240 ? SL.spit : { key: `S.e.${pad(k)}`, pose: body({ ...base, parts: 'spit' }), drop: sd, back: sb };
   }
   // (his tongue)
   let tongue: EyeLayer | null = null;

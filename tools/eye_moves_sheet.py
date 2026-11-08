@@ -2,8 +2,9 @@
 """THE SWAMP COLOSSUS'S MOVES, PART 1, FOR THE OWNER'S PHONE (art/eye_moves.ts; a mock-up, not in the game): from the frames
 tools/eye_moves_pics.ts lays together (the phone's screen, 1014 x 468 picture pixels, two to a game pixel):
    python3 tools/eye_moves_sheet.py sheet <frames dir> <out.png>    key frames of each move, at the game's size and at twice
-   python3 tools/eye_moves_sheet.py film <frames dir> <out.mp4>     his lurk looped twice; his entrance at full speed, then at half;
-                                                                    his stand looped three times; his entrance again, close up
+   python3 tools/eye_moves_sheet.py film <frames dir> <out.mp4>     his lurk looped twice; his entrance at full speed, then slowed
+                                                                    (half speed, the roar a quarter); his stand looped three times;
+                                                                    his entrance again, close up (the roar at half speed)
 """
 import os, subprocess, sys
 from PIL import Image, ImageDraw, ImageFont
@@ -16,7 +17,7 @@ big, mid, small = ImageFont.truetype(B, 30), ImageFont.truetype(B, 22), ImageFon
 probe = ImageDraw.Draw(Image.new('RGB', (10, 10)))
 FPS = 30
 # (art/eye_moves.ts EYE_ENTRANCE and EYE_SCREEN: the beats, frames from the first of his entrance)
-STIR, RISE, BREAKS, STRAIN, TEAR, SETTLE, STALK, LIDS, BREATHE, ARMS, END = 0, 30, 38, 108, 129, 133, 156, 186, 192, 222, 270
+STIR, RISE, BREAKS, WIND, TEAR, GAPE, SETTLE, SETTLED, STALK, LIDS, BREATHE, ARMS, END = 0, 30, 38, 108, 117, 131, 141, 161, 156, 186, 192, 222, 270
 BURSTS = {'left': 232, 'right': 237, 'middle': 242}
 
 def wrap(text, font, width):
@@ -35,11 +36,12 @@ def frame(d, move, k):
 
 def beat(k):
     """What is happening at a frame of his entrance (his beats, in his words' order)."""
-    if k < RISE: return '1. THE RISE: the eye\'s fire sinks into him, his jaws shut under the water; the water stirs, then boils'
-    if k < STRAIN: return '1. HE RISES SHUT, a melting mound: the screen rumbling, water pouring off him'
-    if k < TEAR: return '2. THE STRAIN: his seam splitting, strings of flesh and spittle across it, his throat\'s glow through it'
-    if k < SETTLE: return '2. THE ROAR: his jaws tear apart (four frames), more screen shake, spray and goo blasted out'
-    if k < STALK: return '2. THE ROAR: the water slammed flat in a ring, the spray falling, his jaws settling'
+    if k < RISE: return '1. THE RISE: his eye\'s fire sinks, his jaws shut under the water; the water boils'
+    if k < WIND: return '1. HE RISES SHUT, a melting mound: the screen rumbling, water pouring off him'
+    if k < TEAR: return '2. THE WIND-UP: the shut mound swells and shudders, his seam bulging and glowing'
+    if k < GAPE: return '2. THE ROAR from the first parting: big rumble, slime and spittle flung everywhere'
+    if k < SETTLE: return '2. THE ROAR: gaping wider than he stands, throat pulsing, slime raining down'
+    if k < STALK: return '2. THE ROAR dies: easing back onto his stand, the rumble rolling off'
     if k < LIDS: return '3. THE EYE STALK: his tongue unfurls out of his throat, its eye shut'
     if k < BREATHE: return '3. THE EYE STALK: its eye snaps open to stare'
     if k < ARMS: return '4. THE MOMENT BREATHES: nothing new; he looms, melting, staring'
@@ -57,16 +59,30 @@ def caption_bar(width, title, line, foot):
 
 CROP = (254, 8, 761, 242)  # him, close: 507 x 234 picture pixels, twice the size fills the screen
 
+def crop_at(k):
+    """The close-up's view at a frame of his entrance: on his top as he rises and his eye later; down onto his maw through the roar,
+    panning smoothly between."""
+    def sm(a, b, v):
+        t = max(0.0, min(1.0, (v - a) / (b - a)))
+        return t * t * (3 - 2 * t)
+    y0 = round(8 + 92 * sm(96, 112, k) * (1 - sm(150, 166, k)))
+    return (CROP[0], y0, CROP[2], y0 + CROP[3] - CROP[1])
+
+def slow(k, inside, outside):
+    """How many times a frame of his entrance is shown in a slowed pass: `inside` through the roar, `outside` elsewhere."""
+    return inside if WIND <= k < SETTLED else outside
+
 def film(d, out):
     seq = []
     for rep in range(2):
         for k in range(90): seq.append(('lurk', k, 'HIS LURK (PHASE 1), LOOPED TWICE', 'deep under the black water: his eye\'s fire drifting and pulsing, bubbles, the swell, goo rising', '%d of 2  |  %.2f s' % (rep + 1, k / FPS), False))
     for k in range(END): seq.append(('entrance', k, 'HIS ENTRANCE, FULL SPEED (%.1f s)' % (END / FPS), beat(k), 'frame %d  |  %.2f s' % (k, k / FPS), False))
     for k in range(END):
-        for _ in range(2): seq.append(('entrance', k, 'HIS ENTRANCE, HALF SPEED', beat(k), 'frame %d  |  %.2f s' % (k, k / FPS), False))
+        for _ in range(slow(k, 4, 2)): seq.append(('entrance', k, 'HIS ENTRANCE, SLOWED (THE ROAR AT QUARTER SPEED)', beat(k), 'frame %d  |  %.2f s' % (k, k / FPS), False))
     for rep in range(3):
         for k in range(90): seq.append(('stand', k, 'HIS STAND, LOOPED THREE TIMES (%.0f s a loop)' % (90 / FPS), 'melting, dripping, spittle snapping, jaws breathing, the tongue-eye weaving, watching you', '%d of 3  |  %.2f s' % (rep + 1, k / FPS), False))
-    for k in range(END): seq.append(('entrance', k, 'HIS ENTRANCE AGAIN, CLOSE UP (TWICE THE SIZE)', beat(k), 'frame %d  |  %.2f s' % (k, k / FPS), True))
+    for k in range(END):
+        for _ in range(slow(k, 2, 1)): seq.append(('entrance', k, 'HIS ENTRANCE, CLOSE UP (THE ROAR AT HALF SPEED)', beat(k), 'frame %d  |  %.2f s' % (k, k / FPS), True))
     w, h = 1014, 468 + 72
     p = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', '%dx%d' % (w, h), '-framerate', str(FPS), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], stdin=subprocess.PIPE)
     cache = {}
@@ -75,7 +91,7 @@ def film(d, out):
         if key not in cache:
             if len(cache) > 400: cache.clear()
             im = frame(d, move, k)
-            if close: im = im.crop(CROP).resize((1014, 468), Image.NEAREST)
+            if close: im = im.crop(crop_at(k) if move == 'entrance' else CROP).resize((1014, 468), Image.NEAREST)
             cache[key] = im
         im = cache[key]
         f = Image.new('RGB', (w, h), BG)
@@ -114,18 +130,18 @@ def row(tiles, labels):
 
 def sheet(d, out):
     parts = []
-    hl = wrap('Key frames from the film, as the player sees them: the phone\'s screen at the game\'s own size (two picture pixels to a game pixel), the stone, the Warrior at his spot, the camera leaned toward him; then closer, at twice. His entrance as he set it: rises shut with the screen rumbling and water pouring off; a big roar, more shake; the eye stalk comes out; the moment breathes; the tentacles come up; phase 2.', small, W - 48)
+    hl = wrap('Key frames from the film, as the player sees them: the phone\'s screen at the game\'s own size (two picture pixels to a game pixel), the stone, the Warrior at his spot, the camera leaned toward him; then closer, at twice. His entrance as he set it: rises shut with the screen rumbling and water pouring off; the roar from the first parting of his jaws, a big rumble, slime and spittle going everywhere; the eye stalk comes out; the moment breathes; the tentacles come up; phase 2.', small, W - 48)
     hd = Image.new('RGB', (W, 76 + 26 * len(hl) + 10), BG)
     dr = ImageDraw.Draw(hd)
     dr.text((24, 22), 'THE SWAMP COLOSSUS: HIS STAND, HIS LURK, HIS ENTRANCE', font=big, fill=PALE)
-    for i, l in enumerate(wrap('Key frames from the film, as the player sees them: the phone\'s screen at the game\'s own size (two picture pixels to a game pixel), the stone, the Warrior at his spot, the camera leaned toward him; then closer, at twice. His entrance as he set it: rises shut with the screen rumbling and water pouring off; a big roar, more shake; the eye stalk comes out; the moment breathes; the tentacles come up; phase 2.', small, W - 48)):
+    for i, l in enumerate(wrap('Key frames from the film, as the player sees them: the phone\'s screen at the game\'s own size (two picture pixels to a game pixel), the stone, the Warrior at his spot, the camera leaned toward him; then closer, at twice. His entrance as he set it: rises shut with the screen rumbling and water pouring off; the roar from the first parting of his jaws, a big rumble, slime and spittle going everywhere; the eye stalk comes out; the moment breathes; the tentacles come up; phase 2.', small, W - 48)):
         dr.text((24, 66 + 26 * i), l, font=small, fill=GREY)
     parts.append(hd)
     # (his lurk: the whole screen at the game's size)
     parts.append(block('HIS LURK (PHASE 1), THE WHOLE SCREEN AT THE GAME\'S SIZE', 'The dark shape of him deep under the black water, heaving; his eye\'s fire drifting and pulsing up through it; bubbles breaking, the slow swell, slicks of his goo rising. (The two phase 1 tentacles are their own figures, drawn with their own moves later; at the end of phase 1 they are dead.)', frame(d, 'lurk', 30)))
     # (his entrance's beats at the game's size: him and the water round him, two to a row)
     G = (217, 0, 797, 316)
-    beats = [(20, '1. the eye sinks, his jaws shut, the water stirs'), (52, '1. he breaks the water, shut, rumbling'), (84, '1. rising, water pouring off him'), (118, '2. the strain: his seam splitting'), (130, '2. THE ROAR: torn apart'), (138, '2. the ring slammed out, spray and goo'), (172, '3. the eye stalk unfurls, its eye shut'), (189, '3. its eye snaps open'), (205, '4. the moment breathes'), (231, '5. the water bulges over a tentacle'), (234, '5. the left one bursts up'), (262, '6. phase 2: his stand')]
+    beats = [(20, '1. the eye sinks, his jaws shut, the water stirs'), (44, '1. the water boiling; he breaks it, shut'), (84, '1. rising, water pouring off him'), (113, '2. the wind-up: swelling, his fire behind his seam'), (119, '2. THE ROAR: his jaws parting, roaring'), (124, '2. THE ROAR: peeling apart, strings snapping'), (133, '2. THE ROAR: his full gape, slime flung everywhere'), (146, '2. easing back, slime raining down'), (172, '3. the eye stalk unfurls, its eye shut'), (189, '3. its eye snaps open'), (205, '4. the moment breathes'), (231, '5. the water bulges over a tentacle'), (234, '5. the left one bursts up'), (262, '6. phase 2: his stand')]
     for i in range(0, len(beats), 2):
         two = beats[i:i + 2]
         parts.append(block('HIS ENTRANCE, AT THE GAME\'S SIZE' if i == 0 else '', 'Frames from its first (30 a second): %s.' % ', '.join('%d (%.2f s)' % (k, k / FPS) for k, _ in two) if i == 0 else '', row([frame(d, 'entrance', k).crop(G) for k, _ in two], ['%d: %s' % (k, l) for k, l in two])))
@@ -133,7 +149,7 @@ def sheet(d, out):
     # (each closer view centred on what is happening: x, y on the screen)
     def near(move, k, cx, cy):
         return frame(d, move, k).crop((cx - 145, cy - 75, cx + 145, cy + 75)).resize((580, 300), Image.NEAREST)
-    close = [(84, 'rising shut, water pouring off', 507, 100), (124, 'the strain', 507, 96), (131, 'the roar', 507, 190), (172, 'the stalk, its eye shut', 507, 84), (189, 'its eye snaps open', 507, 90), (236, 'a tentacle bursts', 250, 260)]
+    close = [(84, 'rising shut, water pouring off', 507, 100), (113, 'the wind-up: his seam bulging, glowing', 507, 96), (119, 'the roar: the first parting', 507, 130), (124, 'the roar: strings stretching and snapping', 507, 150), (133, 'the roar: his gape, ropes swinging off his teeth', 400, 215), (166, 'slime raining down, splats on the stone', 507, 388), (172, 'the stalk, its eye shut', 507, 84), (189, 'its eye snaps open', 507, 90)]
     for i in range(0, len(close), 2):
         two = close[i:i + 2]
         parts.append(block('HIS ENTRANCE, TWICE THE SIZE' if i == 0 else '', '', row([near('entrance', k, cx, cy) for k, _, cx, cy in two], ['%d: %s' % (k, l) for k, l, _, _ in two])))

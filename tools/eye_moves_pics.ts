@@ -28,7 +28,7 @@ import { CUT_FAR, CUT_LEFT, CUT_NEAR, CUT_RIGHT, T_FLOOR, T_WALL } from '../src/
 import type { Floor } from '../src/game/types';
 import { CO_MELT, CO_SHEEN, CO_SLIME, CO_SPIT, CO_IRIS, EYE_UNDER, FALL_G, LEANED, STONE, meltLandings, meltSplashes, paintColossus } from '../src/art/eye_colossus';
 import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
-import { EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_STAND, entranceAt, eyeFrame } from '../src/art/eye_moves';
+import { HERO_SPOT, EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_STAND, entranceAt, eyeFrame } from '../src/art/eye_moves';
 import type { EyeFrame, EyeLayer } from '../src/art/eye_moves';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { RIM_ALPHA } from '../src/art/kit';
@@ -613,7 +613,8 @@ function distanceOnWater(seed: Uint8Array, w: number, h: number): Float32Array {
 }
 
 /** A thing flying through the air (spray, goo, droplets), its path from where and when it was thrown. */
-interface Flyer { x: number; y: number; z: number; vx: number; vy: number; vz: number; t0: number; kind: 0 | 1 | 2; size: number }
+/** What flies: 0 a drop of his spittle, 1 a gob of his slime, 2 a drop of water, 3 a sheet of his slime, tumbling. */
+interface Flyer { x: number; y: number; z: number; vx: number; vy: number; vz: number; t0: number; kind: 0 | 1 | 2 | 3; size: number; seed?: number }
 /** Where a flyer is `s` seconds after it was thrown (and whether it has met the water). */
 function flyAt(f: Flyer, s: number): [number, number, number] {
   return [f.x + f.vx * s, f.y + f.vy * s, f.z + f.vz * s - 0.5 * FALL_G * s * s];
@@ -623,19 +624,64 @@ function landOf(f: Flyer): number {
   const a = 0.5 * FALL_G;
   return (f.vz + Math.sqrt(f.vz * f.vz + 4 * a * f.z)) / (2 * a);
 }
-/** THE ROAR'S BLAST: spray and goo out of his maw, forward and out, arcing down into the water. */
+/** THE ROAR: all through his opening, slime and spittle flung everywhere out of his maw and off his jaws as they peel apart. A fan of
+ *  spittle spray blown out of his throat by the roar, toward you and up, in gusts with its pulses; gobs and sheets of slime flung every
+ *  way, arcing high across the screen and raining down into the water; a few landing on the stone before the hero. */
 function roarFlyers(): Flyer[] {
   const out: Flyer[] = [];
-  for (let n = 0; n < 280; n++) {
-    // (out of his maw toward you and out to both sides, up and arcing down: spray in a burst, goo in gobs and strings)
-    const a = (h3(n, 1, 0, 400) - 0.5) * 2.0;
-    const up = 0.25 + 0.7 * h3(n, 2, 0, 401);
-    const sp = 260 + 460 * h3(n, 3, 0, 402);
-    const kind = (h3(n, 4, 0, 403) < 0.35 ? 1 : 0) as 0 | 1;
+  // (when each is thrown, seconds from the first parting: thickest as he tears open, in gusts with his roar's pulses)
+  const when = (n: number, s: number): number => {
+    const u = h3(n, 0, 0, s) ** 1.6 * 0.85;
+    return u + 0.03 * Math.sin(u * 37);
+  };
+  for (let n = 0; n < 460; n++) {
+    // (spray out of his throat: a fan toward you, up and out)
+    const a = (h3(n, 1, 0, 400) - 0.5) * 2.4;
+    const up = 0.1 + 0.85 * h3(n, 2, 0, 401);
+    const sp = 380 + 520 * h3(n, 3, 0, 402);
     out.push({
-      x: (h3(n, 5, 0, 404) - 0.5) * 70, y: 10 + 60 * h3(n, 6, 0, 405), z: 30 + 80 * h3(n, 7, 0, 406),
-      vx: Math.sin(a) * sp * (1 - up * 0.45), vy: Math.cos(a) * sp * 0.85 * (1 - up * 0.45), vz: sp * up,
-      t0: (h3(n, 8, 0, 407) * 6) / EYE_FPS, kind, size: kind ? 2 + Math.floor(h3(n, 9, 0, 408) * 2.2) : 1 + (h3(n, 9, 0, 408) < 0.35 ? 1 : 0),
+      x: (h3(n, 5, 0, 404) - 0.5) * 40, y: -10 + 40 * h3(n, 6, 0, 405), z: 50 + 60 * h3(n, 7, 0, 406),
+      vx: Math.sin(a) * sp * Math.cos(up), vy: Math.cos(a) * sp * Math.cos(up), vz: sp * Math.sin(up) + 60,
+      t0: when(n, 407), kind: 0, size: h3(n, 9, 0, 408) < 0.3 ? 2 : 1, seed: n,
+    });
+  }
+  for (let n = 0; n < 150; n++) {
+    // (gobs of slime off his jaws' inner edges and out of his maw: every way, arcing high)
+    const side = h3(n, 1, 1, 410) < 0.5 ? -1 : 1;
+    const a = h3(n, 2, 1, 411) < 0.6 ? (h3(n, 3, 1, 412) - 0.5) * 2.6 : h3(n, 3, 1, 412) * TAU;
+    const up = 0.45 + 0.8 * h3(n, 4, 1, 413);
+    const sp = 260 + 360 * h3(n, 5, 1, 414);
+    const hgt = 20 + 150 * h3(n, 6, 1, 415);
+    out.push({
+      x: side * (8 + 40 * h3(n, 7, 1, 416) + hgt * 0.35), y: -20 + 50 * h3(n, 8, 1, 417), z: hgt,
+      vx: Math.sin(a) * sp * Math.cos(up) + side * 60, vy: Math.cos(a) * sp * Math.cos(up), vz: sp * Math.sin(up),
+      t0: when(n, 418), kind: 1, size: 2 + 3 * h3(n, 9, 1, 419), seed: 1000 + n,
+    });
+  }
+  for (let n = 0; n < 26; n++) {
+    // (sheets of slime torn off him, tumbling)
+    const side = n % 2 ? -1 : 1;
+    const a = (h3(n, 1, 2, 420) - 0.5) * 3.2;
+    const up = 0.6 + 0.7 * h3(n, 2, 2, 421);
+    const sp = 240 + 260 * h3(n, 3, 2, 422);
+    const hgt = 40 + 130 * h3(n, 4, 2, 423);
+    out.push({
+      x: side * (20 + 30 * h3(n, 5, 2, 424) + hgt * 0.3), y: -10 + 40 * h3(n, 6, 2, 425), z: hgt,
+      vx: Math.sin(a) * sp * Math.cos(up) + side * 80, vy: Math.cos(a) * sp * Math.cos(up), vz: sp * Math.sin(up),
+      t0: when(n, 426) * 0.7, kind: 3, size: 7 + 8 * h3(n, 7, 2, 427), seed: 2000 + n,
+    });
+  }
+  for (let n = 0; n < 14; n++) {
+    // (some landing on the stone before the hero: thrown high, coming down on it round him)
+    const tx = HERO_SPOT[0] + (h3(n, 1, 3, 430) - 0.5) * 300;
+    const ty = STONE.edge + 10 + 45 * h3(n, 2, 3, 431);
+    const tau = 1.0 + 0.6 * h3(n, 3, 3, 432);
+    const x0 = (h3(n, 4, 3, 433) - 0.5) * 60;
+    const y0 = 10;
+    const z0 = 60 + 60 * h3(n, 5, 3, 434);
+    out.push({
+      x: x0, y: y0, z: z0, vx: (tx - x0) / tau, vy: (ty - y0) / tau, vz: (0.5 * FALL_G * tau * tau - z0) / tau,
+      t0: 0.08 + 0.4 * h3(n, 6, 3, 435), kind: n % 3 === 0 ? 3 : 1, size: n % 3 === 0 ? 8 + 5 * h3(n, 7, 3, 436) : 2.5 + 2.5 * h3(n, 7, 3, 436), seed: 3000 + n,
     });
   }
   return out;
@@ -967,8 +1013,12 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       else if (dq > 0.4) pic.over(i, j, FOAM[3][0], FOAM[3][1], FOAM[3][2], 140);
       else if (dq > 0.15) pic.over(i, j, FOAM[2][0], FOAM[2][1], FOAM[2][2], 130);
       else if (dq < -0.3) pic.over(i, j, 0, 0, 0, Math.min(170, 70 + 120 * (-dq - 0.3)));
-      const fdens = sm(0.45, 0.95, hgt) * B * (0.7 + 0.5 * vn(X * 0.03 + t, Y * 0.04, 645));
-      const fl = lace(X - t * 6, Y + t * 3, fdens, 37);
+      // (its foam: in clumps and streaks riding the lumps, torn by the churn, never one even patch; parted over him where he is just
+      // under the water, his dark lumps showing through it)
+      const near = top.who[q] >= 0 && top.z[q] < -0.5 ? sm(-50, -8, top.z[q]) : 0;
+      const clump = sm(0.38, 0.68, vn(X * 0.018 + t * 0.6, Y * 0.026 - t * 0.45, 646));
+      const fdens = (sm(0.2, 0.85, hgt) * 0.75 + 0.3 * vn(X * 0.05 - t, Y * 0.07, 645)) * B * clump * (1 - 0.9 * near);
+      const fl = lace(X - t * 6 + gx * 900, Y + t * 3 + gy * 900, fdens, 37);
       if (fl) pic.over(i, j, CREAM[fl - 1][0], CREAM[fl - 1][1], CREAM[fl - 1][2], 140 + 25 * fl);
       // (the water heaving up over him before he breaks it: its swell's crest catching the light, broken)
       if (hump > 0 && Math.abs(r - 0.5 * (1 - hump * 0.3) - (vn(X * 0.02, Y * 0.02, 607) - 0.5) * 0.12) < 0.03 && vn(X * 0.1, Y * 0.08 + t, 608) > 0.45 && Math.sin(Math.atan2(dy, dx)) < 0.3) pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 200 * hump);
@@ -1206,67 +1256,183 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       }
     }
   }
-  // WHAT FLIES: the roar's spray and goo; the crowns of water thrown up round his tentacles
+  // WHAT FLIES: the roar's slime and spittle; the crowns of water thrown up round his tentacles
   const flyers: Array<[Flyer, number]> = [];
-  if (ent && roarS >= 0 && roarS < 1.6) for (const f of ROAR) flyers.push([f, roarS - f.t0]);
+  if (ent && roarS >= 0 && roarS < 3.4) for (const f of ROAR) flyers.push([f, roarS - f.t0]);
   if (ent) Wt.bursts.forEach((B, idx) => {
     const s = (k - B.k) / EYE_FPS;
     if (s >= 0 && s < 1.6) for (const f of burstFlyers(B.x, B.y, idx + 1)) flyers.push([f, s - f.t0]);
   });
+  const hiddenAt = (i: number, j: number, nr: number): boolean => {
+    if (i < 0 || j < 0 || i >= CW || j >= CH) return true;
+    const q = j * CW + i;
+    return top.who[q] >= 0 && top.z[q] >= -0.5 && top.near[q] > nr;
+  };
   for (const [f, s] of flyers) {
     if (s < 0) continue;
     const land = landOf(f);
+    const slime = f.kind === 1 || f.kind === 3;
+    const seed = f.seed ?? 0;
     if (s > land) {
-      // (landed: a splash where it met the water)
       const a2 = s - land;
-      if (a2 > 0.35) continue;
       const [x, y] = flyAt(f, land);
       const [ci, cj] = onCanvas(x, y, 0);
-      const R = 1.5 + 9 * a2;
-      for (let b = 0; b < 8; b++) {
-        const ang = (b / 8) * TAU;
-        const i = Math.round(ci + Math.cos(ang) * R);
-        const j = Math.round(cj + Math.sin(ang) * R * 0.5);
-        if (i < 0 || j < 0 || i >= CW || j >= CH || !S.water[j * CW + i]) continue;
-        if (top.who[j * CW + i] >= 0 && top.z[j * CW + i] >= -0.5) continue;
-        pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 200 * (1 - a2 / 0.35));
+      const i0 = Math.round(ci);
+      const j0 = Math.round(cj);
+      if (i0 < 2 || j0 < 2 || i0 >= CW - 2 || j0 >= CH - 2) continue;
+      const onWater = S.water[j0 * CW + i0] === 1;
+      const sz = f.kind === 3 ? f.size * 0.45 : f.kind === 1 ? f.size : f.kind === 0 ? 0.8 : 1;
+      if (onWater) {
+        // (into the water: a crown of it thrown up round where it went in, drops jumping, a ring of foam spreading)
+        const life = 0.3 + 0.12 * sz;
+        if (a2 > life) continue;
+        const u = a2 / life;
+        const R = (1.5 + 3 * sz) * (0.4 + 1.6 * Math.sqrt(u));
+        // (as many points as its rim has pixels, and more: a line, not dots)
+        const nb2 = Math.max(24, Math.ceil(R * 2 * TAU * 1.6));
+        for (let b = 0; b < nb2; b++) {
+          const ang = (b / nb2) * TAU;
+          // (its ring of water spreading, in broken arcs)
+          if (vn(ang * 2.2 + seed, u * 2, 447) < 0.35) continue;
+          const i = Math.round(ci + Math.cos(ang) * R);
+          const j = Math.round(cj + Math.sin(ang) * R * 0.45);
+          if (i < 0 || j < 0 || i >= CW || j >= CH || !S.water[j * CW + i]) continue;
+          if (top.who[j * CW + i] >= 0 && top.z[j * CW + i] >= -0.5) continue;
+          const c = u < 0.4 ? CREAM[3] : FOAM[4];
+          pic.over(i, j, c[0], c[1], c[2], 220 * (1 - u));
+        }
+        if (sz > 1.2 && u < 0.6) {
+          // (its crown: the rim of a little cup of water thrown up round it, its far side higher, and drops off its top)
+          const h = sz * 1.6 * Math.sin((u / 0.6) * Math.PI);
+          const rx = R * 0.7;
+          const na3 = Math.max(24, Math.ceil(rx * TAU * 2));
+          for (let a3 = 0; a3 < na3; a3++) {
+            const ang = (a3 / na3) * TAU;
+            // (only its far side and its ends stand up out of the water; its near side is lost in the splash)
+            if (Math.sin(ang) > 0.35) continue;
+            const far = Math.max(0, -Math.sin(ang));
+            const i = Math.round(ci + Math.cos(ang) * rx);
+            const j = Math.round(cj + Math.sin(ang) * rx * 0.4 - h * (0.4 + 0.6 * far));
+            const c = far > 0.3 ? CREAM[3] : FOAM[4];
+            pic.over(i, j, c[0], c[1], c[2], 220);
+          }
+          for (let d2 = 0; d2 < 3; d2++) {
+            const ang = h3(seed, d2, 6, 441) * Math.PI;
+            const out2 = R * 0.7 + 10 * u * h3(seed, d2, 7, 442);
+            const up2 = sz * 6 * (u / 0.6) * (1 - u / 0.6) * 4;
+            pic.over(Math.round(ci + Math.cos(ang) * out2 * (d2 % 2 ? -1 : 1)), Math.round(cj - up2 - h), SPRAY[0], SPRAY[1], SPRAY[2], 240);
+          }
+        }
+        // (slime goes in dark, a slick of it on the water a moment)
+        if (slime && u < 0.9) for (let di = -Math.round(sz); di <= Math.round(sz); di++) pic.over(i0 + di, j0, SLIME[1][0], SLIME[1][1], SLIME[1][2], 180 * (1 - u));
+        continue;
+      }
+      // (onto the stone: a splat of it, flattened, flecks thrown out round it; lying a moment, then soaking away)
+      if (!slime && f.kind !== 0) continue;
+      const fade = 1 - sm(0.55, 1.4, a2);
+      if (fade <= 0) continue;
+      const w0 = f.kind === 0 ? 1.5 : sz * 3.4 * (0.6 + 0.4 * sm(0, 0.08, a2));
+      const h0 = Math.max(1, w0 * 0.42);
+      for (let dj = -Math.ceil(h0) - 1; dj <= Math.ceil(h0) + 1; dj++) {
+        for (let di = -Math.ceil(w0) - 2; di <= Math.ceil(w0) + 2; di++) {
+          const ang = Math.atan2(dj / h0, di / w0);
+          const lobe = 1 + 0.28 * Math.sin(ang * 3 + seed) + 0.18 * Math.sin(ang * 5 + seed * 2);
+          const d = Math.hypot(di / w0, dj / h0) / lobe;
+          if (d > 1) continue;
+          const R6 = seed % 5 < 2 ? MELT : SLIME;
+          const c = f.kind === 0 ? SPIT[3] : d > 0.8 ? R6[0] : dj < -h0 * 0.2 && di < w0 * 0.2 ? R6[4] : d < 0.5 ? R6[3] : R6[2];
+          pic.over(i0 + di, j0 + dj, c[0], c[1], c[2], 255 * fade);
+        }
+      }
+      if (f.kind !== 0) {
+        pic.over(i0 - Math.round(w0 * 0.3), j0 - Math.round(h0 * 0.4), SHEEN[0], SHEEN[1], SHEEN[2], 255 * fade);
+        for (let fl = 0; fl < 5; fl++) {
+          const ang = h3(seed, fl, 8, 443) * TAU;
+          const rr = w0 * (1.3 + 0.8 * h3(seed, fl, 9, 444)) * sm(0, 0.06, a2);
+          pic.over(Math.round(ci + Math.cos(ang) * rr), Math.round(cj + Math.sin(ang) * rr * 0.42), SLIME[2][0], SLIME[2][1], SLIME[2][2], 255 * fade);
+        }
       }
       continue;
     }
     const [x, y, z] = flyAt(f, s);
-    const [x0, y0, z0] = flyAt(f, Math.max(0, s - 1.6 / EYE_FPS));
+    const [x0, y0, z0] = flyAt(f, Math.max(0, s - 1 / EYE_FPS));
     const [ci, cj] = onCanvas(x, y, z);
     const [pi, pj] = onCanvas(x0, y0, z0);
     const nr = y * 0.8660254 + z * 0.5;
-    const hidden = (i: number, j: number): boolean => {
-      if (i < 0 || j < 0 || i >= CW || j >= CH) return true;
-      const q = j * CW + i;
-      return top.who[q] >= 0 && top.z[q] >= -0.5 && top.near[q] > nr;
-    };
-    // (its trail: back along where it came from, fading)
-    const steps = Math.max(1, Math.round(Math.hypot(ci - pi, cj - pj)));
-    const trail = f.kind === 1 ? MELT[1] : FOAM[2];
-    for (let st = 1; st <= steps; st++) {
-      const i = Math.round(ci + ((pi - ci) * st) / steps);
-      const j = Math.round(cj + ((pj - cj) * st) / steps);
-      if (!hidden(i, j)) pic.over(i, j, trail[0], trail[1], trail[2], 170 * (1 - st / (steps + 1)));
-    }
+    const vi = ci - pi;
+    const vj = cj - pj;
+    const vl = Math.hypot(vi, vj) || 1;
+    const ui = vi / vl;
+    const uj = vj / vl;
     const i0 = Math.round(ci);
     const j0 = Math.round(cj);
-    if (f.kind === 1) {
-      // (a gob of goo: lit on its upper left, dark underneath, a glint)
-      const r = f.size;
-      for (let dj = 0; dj <= r; dj++) for (let di = 0; di <= r; di++) {
-        if (hidden(i0 + di, j0 + dj) || (r > 1 && (di + dj === 0 || di + dj === 2 * r))) continue;
-        const c = di + dj <= r - 1 ? MELT[3] : di + dj >= r + 1 ? MELT[0] : MELT[2];
-        pic.over(i0 + di, j0 + dj, c[0], c[1], c[2], 255);
+    if (f.kind === 0 || f.kind === 2) {
+      // (a drop: a short streak along the way it flies, its head pale and lit, a glint)
+      const len = Math.min(9, 1 + vl * 0.45);
+      for (let st = 0; st <= len; st++) {
+        const i = Math.round(ci - ui * st);
+        const j = Math.round(cj - uj * st);
+        if (hiddenAt(i, j, nr)) continue;
+        const c = f.kind === 2 ? (st === 0 ? SPRAY : FOAM[3]) : st === 0 ? CREAM[4] : st < 3 ? SPIT[4] : SPIT[3];
+        pic.over(i, j, c[0], c[1], c[2], st === 0 ? 255 : 210 * (1 - st / (len + 1)));
+        if (f.size > 1 && st === 0 && !hiddenAt(i + 1, j, nr)) pic.over(i + 1, j, c[0], c[1], c[2], 220);
       }
-      if (!hidden(i0, j0)) pic.over(i0, j0, SHEEN[0], SHEEN[1], SHEEN[2], 255);
-    } else {
-      // (a drop of water: pale, a glint)
-      const c = f.kind === 2 ? SPRAY : SPIT[3];
-      if (!hidden(i0, j0)) pic.over(i0, j0, c[0], c[1], c[2], 255);
-      if (f.size > 1 && !hidden(i0 + 1, j0)) pic.over(i0 + 1, j0, FOAM[3][0], FOAM[3][1], FOAM[3][2], 255);
+      continue;
+    }
+    if (f.kind === 1) {
+      // (a gob of slime: a drop drawn out along the way it flies, round at its head, lit on its upper left, dark beneath, a glint; a
+      // thread of it trailing)
+      const r = f.size;
+      const stretch = 1 + Math.min(1.6, vl * 0.08);
+      for (let dj = -Math.ceil(r * stretch) - 1; dj <= Math.ceil(r * stretch) + 1; dj++) {
+        for (let di = -Math.ceil(r * stretch) - 1; di <= Math.ceil(r * stretch) + 1; di++) {
+          // (along its flight and across it)
+          const al = di * ui + dj * uj;
+          const ac = -di * uj + dj * ui;
+          const back = al < 0 ? -al / stretch : al;
+          const rr = r * (al < 0 ? 1 - 0.35 * Math.min(1, -al / (r * stretch)) : 1);
+          if (Math.hypot(back, ac) > rr) continue;
+          const i = i0 + di;
+          const j = j0 + dj;
+          if (hiddenAt(i, j, nr)) continue;
+          // (slime, or the melt of his flesh; wet: its lit side pale, its rim dark)
+          const lit = -(di + dj) / (r + 1);
+          const R5 = seed % 5 < 2 ? MELT : SLIME;
+          const edge = Math.hypot(back, ac) > rr - 0.9;
+          const c = lit > 0.5 ? R5[4] : lit > 0.15 ? R5[3] : edge || lit < -0.45 ? R5[0] : R5[2];
+          pic.over(i, j, c[0], c[1], c[2], 255);
+        }
+      }
+      if (!hiddenAt(i0 - 1, j0 - 1, nr)) pic.over(i0 - Math.round(r * 0.4), j0 - Math.round(r * 0.45), 236, 240, 220, 255);
+      const tl = Math.min(10, 2 + vl * 0.5);
+      for (let st = Math.ceil(r * stretch); st <= tl + r * stretch; st++) {
+        const i = Math.round(ci - ui * st + Math.sin(st * 0.7 + seed) * 0.6);
+        const j = Math.round(cj - uj * st);
+        if (!hiddenAt(i, j, nr)) pic.over(i, j, SLIME[1][0], SLIME[1][1], SLIME[1][2], 200 * (1 - (st - r * stretch) / (tl + 1)));
+      }
+      continue;
+    }
+    // (a sheet of slime, tumbling: a ribbon of it twisting as it flies, curling at its ends, its upper edge lit, holes torn in it)
+    const L = f.size;
+    const ang = seed * 1.7 + s * (5 + 4 * h3(seed, 1, 0, 445));
+    const twist = Math.abs(Math.cos(s * 7 + seed));
+    const thick = 1 + 2.2 * twist;
+    const ca = Math.cos(ang);
+    const sa = Math.sin(ang);
+    for (let st = -L; st <= L; st += 0.5) {
+      const bend = Math.sin((st / L) * 1.6 + s * 6) * L * 0.25;
+      const cx = ci + ca * st - sa * bend;
+      const cy = cj + (sa * st + ca * bend) * 0.8;
+      const wth = thick * (1 - 0.6 * (Math.abs(st) / L) ** 2);
+      for (let w2 = -Math.ceil(wth); w2 <= Math.ceil(wth); w2++) {
+        if (Math.abs(w2) > wth) continue;
+        if (vn(st * 0.6 + seed, w2 * 0.8, 446) < 0.18) continue;
+        const i = Math.round(cx - sa * w2 * 0.6);
+        const j = Math.round(cy + ca * w2);
+        if (hiddenAt(i, j, nr)) continue;
+        const c = w2 <= -wth + 1 ? SLIME[4] : w2 >= wth - 1 ? SLIME[0] : twist > 0.6 ? SLIME[3] : SLIME[2];
+        pic.over(i, j, c[0], c[1], c[2], 255);
+      }
     }
   }
   // THE PIECES BEFORE HIM, AND THE WARRIOR AT HIS SPOT, breathing

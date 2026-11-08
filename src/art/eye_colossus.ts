@@ -272,6 +272,9 @@ export interface ColossusAnim {
   swell?: number;
   /** His throat's glow: 1 as drawn, more as it flares. */
   glow: number;
+  /** His wind-up at his entrance (0 to 1): shut, his mound swelling, the lips of his seam bulging, his throat's glow showing through
+   *  them (nothing opens). Absent: none. */
+  puff?: number;
   /** When (his clock) his jaws tore apart at his entrance: the strings of flesh and spittle across his seam hold before it and snap as
    *  he opens; his spittle across the V stays snapped until it knits again after `knit`. Absent: long ago. */
   tore?: number;
@@ -730,6 +733,8 @@ interface Now {
   /** Gobs falling off him now: x, y, z (middle), radius, how long. */
   gobs: number[];
   parts: 'jaws' | 'spit' | 'tongue' | 'all';
+  /** His wind-up (0 none). */
+  puff: number;
   /** The sheets of his flesh sliding down him now (oldest first). */
   slides: Array<{ k: number; z0: number; th: number; lk: number }>;
 }
@@ -759,10 +764,10 @@ interface Swing {
   kd: number;
   press: number;
 }
-function swingFull(side: number, open: number): Swing {
+function swingFull(side: number, open: number, puff = 0): Swing {
   const m0 = swingOf0(side, open);
   const w = pressOf(open);
-  if (w === 0) return { m: m0, inv: [m0[0], m0[3], m0[6], m0[1], m0[4], m0[7], m0[2], m0[5], m0[8]], kd: 1, press: 0 };
+  if (w === 0 && !puff) return { m: m0, inv: [m0[0], m0[3], m0[6], m0[1], m0[4], m0[7], m0[2], m0[5], m0[8]], kd: 1, press: 0 };
   // (pressed: swung up part of the way, so that his peaks rise with it as they lean in (`PRESS_TURN`); the rest of its lean taken out
   // by a shear across, about the line under the water, every height kept; then turned square to the other)
   const k = side < 0 ? 0 : 1;
@@ -795,7 +800,9 @@ function swingFull(side: number, open: number): Swing {
     return o;
   };
   const ms = mul(rz, mul(sk, ry));
-  const m = m0.map((v, i) => v + (ms[i] - v) * w);
+  // (winding up: swelling, every part of him out from the line under the water a little)
+  const sw = 1 + 0.05 * puff;
+  const m = m0.map((v, i) => (v + (ms[i] - v) * w) * sw);
   // (its inverse)
   const [A, B, C, D, E, F, G, H, I] = m;
   const det = A * (E * I - F * H) - B * (D * I - F * G) + C * (D * H - E * G);
@@ -813,8 +820,8 @@ function swingFull(side: number, open: number): Swing {
   return { m, inv, kd: Math.min(1, 0.97 / big), press: w };
 }
 /** A jaw's swing for how open he is (rows, its own frame to his space): pressed and swung (`swingFull`). */
-function swingOf(side: number, open: number): number[] {
-  return swingFull(side, open).m;
+function swingOf(side: number, open: number, puff = 0): number[] {
+  return swingFull(side, open, puff).m;
 }
 /** A jaw swung for how open he is: about the line under the water (closing, by its own lean out; shut, upright), and turned square
  *  to the other jaw as it shuts. Rows, its own frame to his space. */
@@ -1427,22 +1434,27 @@ function spitList(): Spit[] {
   }
   // (at his entrance: strings of his flesh and spittle across his seam, from low down to near his peaks, each between the points of
   // his two jaws' rims that meet across it when he is shut)
+  // (dozens of them: from each rim point, two or three, back and forth across the seam's depth, some to the points beside its match)
   for (let i = 1; i < RL.length; i++) {
     const a = RL[i];
-    if (a[2] < 10 || a[2] > 136 || h3(i, 0, 0, 290) > 0.75) continue;
+    if (a[2] < 8 || a[2] > 150) continue;
     let bi = 0;
     for (let j = 0; j < RR.length; j++) if (Math.abs(RR[j][2] - a[2]) + Math.abs(RR[j][1] - a[1]) * 0.5 < Math.abs(RR[bi][2] - a[2]) + Math.abs(RR[bi][1] - a[1]) * 0.5) bi = j;
-    const b = RR[bi];
-    const flesh = h3(i, 1, 0, 291) < 0.45;
-    const dy = (h3(i, 2, 0, 292) - 0.6) * 16;
-    out.push({ a: i, b: bi, dyA: dy, dyB: dy, r: flesh ? 2.4 + 1.8 * h3(i, 3, 0, 293) : 1.1 + 0.8 * h3(i, 3, 0, 293), sag: 0.1 + 0.2 * h3(i, 4, 0, 294), span0: Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]), seed: 90 + i, ph: 0, u: h3(i, 5, 0, 295), flesh, tear: true });
+    for (let n = 0; n < 3; n++) {
+      if (n === 2 && h3(i, 0, 2, 290) > 0.5) continue;
+      const bj = Math.max(0, Math.min(RR.length - 1, bi + (n === 0 ? 0 : h3(i, n, 6, 290) < 0.5 ? -1 : 1)));
+      const b = RR[bj];
+      const flesh = h3(i, 1, n, 291) < 0.14;
+      const dy = (h3(i, 2, n, 292) - 0.6) * 18;
+      out.push({ a: i, b: bj, dyA: dy, dyB: dy + (h3(i, 6, n, 292) - 0.5) * 6, r: flesh ? 1.8 + 1.4 * h3(i, 3, n, 293) : 0.8 + 1.1 * h3(i, 3, n, 293), sag: 0.12 + 0.3 * h3(i, 4, n, 294), span0: Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]), seed: 90 + i * 3 + n, ph: h3(i, 7, n, 295), u: h3(i, 5, n, 295), flesh, tear: true });
+    }
   }
   SPITS = out;
   return out;
 }
 /** Where a strand is in its round now: whole (`neck`: how far it has necked at its middle), or snapped (`half`: how long each half
  *  still is, of half its span; `fall`: how far down it has whipped); neither, gone. */
-function spitState(S: Spit, an: ColossusAnim): { whole: boolean; neck: number; half: number; fall: number } {
+function spitState(S: Spit, an: ColossusAnim): { whole: boolean; neck: number; half: number; fall: number; age?: number } {
   const t = an.t;
   const P = SPIT_ROUND;
   const cycle = (): { whole: boolean; neck: number; half: number; fall: number } => {
@@ -1456,17 +1468,24 @@ function spitState(S: Spit, an: ColossusAnim): { whole: boolean; neck: number; h
   const none = { whole: false, neck: 0, half: 0, fall: 0 };
   if (S.tg !== undefined) {
     // (at his entrance, his tongue's strands come only once it is out, and on their own round once `knit` has passed)
-    const n0 = Math.ceil((an.knit ?? 0) / P - S.ph - 0.8 - 1e-9);
+    const n0 = Math.ceil((an.knit ?? 0) / P + S.ph - 0.8 - 1e-9);
     return t < (n0 + 0.8 - S.ph) * P ? none : cycle();
   }
-  // (his entrance: whole across his seam until his jaws tear apart; then each snaps in its turn, the flesh last; the halves drip away)
+  // (his entrance: whole across his seam until his jaws begin to part; then, stretching as he roars them open, each snaps in its turn,
+  // the flesh last; the halves whip as they break and hang off his teeth in ropes, swinging, running longer, then dripping away)
+  if (S.tear) {
+    const sn = an.tore + (S.flesh ? 0.08 + 0.3 * S.u : 0.03 + 0.3 * S.u);
+    if (t < sn) return { whole: true, neck: sm01(sn - 0.12, sn, t), half: 0, fall: 0 };
+    const age = t - sn;
+    if (age > 1.6) return { whole: false, neck: 0, half: 0, fall: 0 };
+    return { whole: false, neck: 0, half: (1 + 0.35 * sm01(0, 0.6, age)) * (1 - sm01(0.9, 1.6, age)), fall: sm01(0, 0.16, age), age };
+  }
   const snap = an.tore + (S.flesh ? 0.04 + 0.3 * S.u : 0.02 + 0.14 * S.u);
   if (t < snap) return { whole: true, neck: sm01(snap - 0.1, snap, t), half: 0, fall: 0 };
   if (t < snap + 0.7) return { whole: false, neck: 0, half: 1 - sm01(snap, snap + 0.7, t), fall: sm01(snap, snap + 0.12, t) };
-  if (S.tear) return { whole: false, neck: 0, half: 0, fall: 0 };
   // (his spittle across the V knits again on its own round, once `knit` has passed)
   const from = Math.max(an.knit ?? 0, snap + 0.7);
-  const n = Math.ceil(from / P - S.ph - 0.8 - 1e-9);
+  const n = Math.ceil(from / P + S.ph - 0.8 - 1e-9);
   const first = (n + 0.8 - S.ph) * P;
   return t < first ? { whole: false, neck: 0, half: 0, fall: 0 } : cycle();
 }
@@ -1518,7 +1537,7 @@ function dripsNow(an: ColossusAnim, m: [number[], number[]]): { drips: number[];
 /** Where gobs off him have hit the water in a frame of a move (his space: x, y, how long ago in seconds, how big): for the water's
  *  splashes, painted by the pictures' tool. */
 export function meltSplashes(an: ColossusAnim): number[] {
-  return dripsNow(an, [swingOf(-1, an.open), swingOf(1, an.open)]).splashes;
+  return dripsNow(an, [swingOf(-1, an.open, an.puff), swingOf(1, an.open, an.puff)]).splashes;
 }
 /** While pressed, each jaw's turn alone, and how far each tooth's root has gone beyond it. */
 function teethPressed(open: number, WL: Swing, WR: Swing): { rigid: [number[], number[]] | null; teethAt: [number[][], number[][]] | null } {
@@ -1536,10 +1555,25 @@ function teethPressed(open: number, WL: Swing, WR: Swing): { rigid: [number[], n
   ) as [number[][], number[][]];
   return { rigid, teethAt: at };
 }
+/** How strongly his throat's fire glows through his shut seam as he winds up (0 none: open, or not winding up). */
+function shutGlow(pose: ColossusPose): number {
+  const an = pose.anim;
+  if (!an || !an.puff || an.open > 0.02) return 0;
+  return Math.max(0, Math.min(1, ((an.glow - 1) / 1.2) * an.puff));
+}
+/** How strongly his fire glows through his shut seam at a point of its lips (in its jaw's own frame, `f`): brightest down the seam,
+ *  fading out over its lips. */
+function seamGlow(S: Scene, pose: ColossusPose, f: Found): number {
+  const wk = shutGlow(pose);
+  if (!wk || !S.now) return 0;
+  const side = f.lx < 0 ? 0 : 1;
+  const a = faceDepth(FACES[side], f.lx, f.ly, f.lz) - CRACK - S.now.gap;
+  return wk * (1 - sm01(-6, 9, a)) ** 2;
+}
 /** The frame being painted. */
 function nowOf(an: ColossusAnim): Now {
-  const WL = swingFull(-1, an.open);
-  const WR = swingFull(1, an.open);
+  const WL = swingFull(-1, an.open, an.puff);
+  const WR = swingFull(1, an.open, an.puff);
   const mL = WL.m;
   const mR = WR.m;
   const { drips, gobs } = dripsNow(an, [mL, mR]);
@@ -1551,6 +1585,7 @@ function nowOf(an: ColossusAnim): Now {
     inv: [WL.inv, WR.inv],
     kd: [WL.kd, WR.kd],
     ...teethPressed(an.open, WL, WR),
+    puff: an.puff ?? 0,
     faces: [faceNow(FACES[0], WL), faceNow(FACES[1], WR)],
     gap: SHUT_GAP * sm01(0.15, 0.85, 1 - an.open),
     drips,
@@ -1718,9 +1753,11 @@ class Scene {
       const span = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]);
       const stretch = span / S.span0;
       if (st.whole) {
-        // (the more it is stretched, the less it sags and the thinner it is; necking at its middle before it snaps)
-        const sag = S.span0 * S.sag * Math.max(0.12, 1.25 - 0.6 * stretch) * (S.flesh ? 0.4 : 1);
-        const r = S.r / Math.sqrt(Math.max(0.6, stretch));
+        // (the more it is stretched, the less it sags and the thinner it is; necking at its middle before it snaps; one across his seam
+        // as he roars open, slack and drooping, stretching longer and thinner, sagging less as it necks)
+        const tearing = S.tear && an.tore !== undefined;
+        const sag = tearing ? span * S.sag * 0.55 * (1 - 0.7 * st.neck) * (S.flesh ? 0.6 : 1) : S.span0 * S.sag * Math.max(0.12, 1.25 - 0.6 * stretch) * (S.flesh ? 0.4 : 1);
+        const r = tearing ? S.r * Math.max(0.4, 1 / Math.sqrt(Math.max(1, stretch / 3))) : S.r / Math.sqrt(Math.max(0.6, stretch));
         const pts = sagging(A, B, Math.min(sag, span * 0.6), r, S.seed, 12);
         if (st.neck > 0) for (let i = 1; i < pts.length - 1; i++) pts[i][3] *= 1 - 0.72 * st.neck * Math.sin((i / (pts.length - 1)) * Math.PI) ** 6;
         this.strands.push({ ...strandOf(pts), flesh: S.flesh, held: S.tg !== undefined });
@@ -1735,6 +1772,11 @@ class Scene {
           const dy = (P1[1] - P0[1]) / (span || 1);
           const dz = (P1[2] - P0[2]) / (span || 1);
           const pts: number[][] = [];
+          // (a string across his seam: whipping as it breaks, a wave running down it and dying; then a rope off his teeth, swinging)
+          const age = st.age ?? -1;
+          const wl = Math.hypot(dx, dy) || 1;
+          const px = -dy / wl;
+          const py = dx / wl;
           for (let i = 0; i <= 8; i++) {
             const u = i / 8;
             // (out along where it ran, bending down: the further the more, and the longer since it snapped the more)
@@ -1743,7 +1785,15 @@ class Scene {
             const c = Math.cos(Math.min(1.45, th));
             const s = Math.sin(Math.min(1.45, th));
             const bead = i === 8 ? 1.9 : 1;
-            pts.push([P0[0] + dx * along * c, P0[1] + dy * along * c, P0[2] + dz * along * c - along * s, S.r * (1 - 0.3 * u) * bead]);
+            let ox = 0;
+            let oy = 0;
+            if (age >= 0) {
+              const whip = L * 0.3 * Math.sin(u * Math.PI * 2.4 - age * 30 + S.seed) * u * Math.exp(-age * 6);
+              const swing = L * u * 0.55 * Math.sin(age * 5.5 + S.seed * 1.7) * Math.exp(-age * 1.2);
+              ox = px * whip + swing * (P0[0] < 0 ? -1 : 1) * 0.6;
+              oy = py * whip + swing * 0.5;
+            }
+            pts.push([P0[0] + dx * along * c + ox, P0[1] + dy * along * c + oy, P0[2] + dz * along * c - along * s, S.r * (1 - 0.3 * u) * bead]);
           }
           this.strands.push({ ...strandOf(pts), flesh: S.flesh, held: S.tg !== undefined && P0 === A });
         }
@@ -1907,6 +1957,8 @@ class Scene {
     // (the raw gum lumpy and wet, never flat)
     // (while he moves: shut, the faces stand apart by SHUT_GAP, never through each other)
     const gap = N ? N.gap : 0;
+    // (winding up: the lips of his seam bulging, swelling out along it)
+    if (N && N.puff > 0) h -= N.puff * 7 * Math.exp(-(((a - CRACK - gap - 6) / 16) ** 2)) * sm01(4, 40, z);
     const cut = CRACK + wander(c) + gap - a - (vn(x * 0.09, y * 0.09, z * 0.09, 173) - 0.5) * 5;
     let d = smax(h, cut, 14);
     const cv = hollow(side, x, y, z, a - CRACK - gap);
@@ -2634,10 +2686,22 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
         // his seam's lips: rotten, swollen, wet and dark
         col = CO_LIP[Math.max(0, Math.min(4, tn))];
         gloss = 1.4;
+        // (shut and winding up: his throat's fire glowing through them, pulsing, nothing open)
+        // (shut and winding up: his throat's fire glowing through them along the seam, warm, fading out over them)
+        const g = fz > 6 ? seamGlow(S, pose, f) : 0;
+        if (g > 0.05) {
+          col = mixRGB(col, CO_IRIS[Math.max(0, Math.min(4, Math.floor(g * 4 + bayer(i, j) * 0.7)))], Math.min(0.8, g * 1.1));
+          glow = g > 0.55;
+        }
       } else if (mat === M_GUM) {
         // the raw ring his teeth are set in; shut, the deep of his seam, dark and running with drool
         col = CO_RAW[Math.max(0, Math.min(3, tn))];
         gloss = 1.8;
+        const g = fz > 6 ? seamGlow(S, pose, f) : 0;
+        if (g > 0.05) {
+          col = mixRGB(col, CO_IRIS[Math.max(0, Math.min(4, Math.floor(1 + g * 3.6 + bayer(i, j) * 0.7)))], Math.min(0.9, g * 1.3));
+          glow = g > 0.45;
+        }
       } else if (mat === M_TOOTH) {
         // yellowed, brown toward the root; a broken one's end dark and chipped
         const t2 = f.toothT;
@@ -3054,14 +3118,14 @@ export function poseArm(): ColossusPose {
 
 /** How many gobs are falling off him in a frame of a move. */
 export function meltGobs(an: ColossusAnim): number {
-  return dripsNow(an, [swingOf(-1, an.open), swingOf(1, an.open)]).gobs.length / 5;
+  return dripsNow(an, [swingOf(-1, an.open, an.puff), swingOf(1, an.open, an.puff)]).gobs.length / 5;
 }
 /** Where gobs off him have landed on what lies slumped round him at the water in a frame of a move (his space: x, y, how high, how
  *  long ago in seconds, how big): for their splats, painted by the pictures' tool. */
 export function meltLandings(an: ColossusAnim): number[] {
   const P = placed();
   const D = P.drips;
-  const m = [swingOf(-1, an.open), swingOf(1, an.open)];
+  const m = [swingOf(-1, an.open, an.puff), swingOf(1, an.open, an.puff)];
   const out: number[] = [];
   const on = sm01(0.45, 0.92, an.open);
   if (on <= 0.5) return out;
