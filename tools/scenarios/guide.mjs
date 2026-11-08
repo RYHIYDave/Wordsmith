@@ -53,7 +53,8 @@ const ORDER_FL = ['move', 'fight', 'body', 'carry', 'ring', 'smith', 'done'];
 /** The class's first word, and the attack the first dungeon suggests for it (FIRST_WORD in src/game/defs.ts). */
 // (skill: 0 the quick attack, 1 the slow one, 2 the evasive move: the ranger's Poison goes on Trap, which is the swipe since Version 12.2.
 // THE FIRST LEVELS: on the quick attack for all three, the only one open when it is given: firstWordSkill)
-const FIRST = { warrior: { word: 'power', skill: 0 }, ranger: { word: 'poison', skill: 2 }, mage: { word: 'fire', skill: 0 } };
+// (each hero's first word, game/defs.ts FIRST_WORD: the prison's six since his 8 Nov 2026 answers)
+const FIRST = { warrior: { word: 'power', skill: 0 }, ranger: { word: 'poison', skill: 2 }, mage: { word: 'frost', skill: 0 }, warlock: { word: 'fire', skill: 0 }, tinkerer: { word: 'lightning', skill: 0 }, brawler: { word: 'swift', skill: 0 } };
 
 export default async function (page, snap) {
   const cls = process.env.CLS || 'warrior';
