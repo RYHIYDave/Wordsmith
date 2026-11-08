@@ -368,9 +368,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   /** The hero whose voice has been fetched (engine/audio.ts warmRecorded). */
   let warmedFor = '';
   /** THE LOADING SCREEN while a game begins (LOADING, below): how long it has been up, and whether the world has been drawn under it. */
-  let loading: { t: number; frames: number; drawn: boolean } | null = null;
+  let loading: { t: number; frames: number; drawn: boolean; least?: number } | null = null;
   /** Its switch (ON at his yes to its picture, loading_screen.png, by 22:55: “Yes, but nicer later”: the art chat to draw a better one), the least it is up (s), and the most it waits for the hero's pictures (s). */
-  const LOADING = { on: true, least: 0.5, most: 15 };
+  // (`between`: and between floors, the level changed in play (by the stairs, a way, the waypoint), up `betweenLeast` at the
+  // least: THE LOADING SCREEN BETWEEN FLOORS, as the main chat put it to the other chats, 8 Nov 2026)
+  const LOADING = { on: true, least: 0.5, most: 15, between: true, betweenLeast: 0.2 };
+  /** The level the loading screen was last up for (THE LOADING SCREEN BETWEEN FLOORS: a level other than it, in play, puts it up again). */
+  let loadedFor: unknown = null;
   let bot: BotState | null = null;
   let last = performance.now();
   let clock = 0;
@@ -1669,6 +1673,110 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   };
 
   /**
+   * A NEW PLACE'S PICTURES (what the play frame did before drawing, each frame, made a function at THE LOADING SCREEN BETWEEN
+   * FLOORS so that the loading screen can have it done under it): the floor's own ground, pieces, gates and traps the first time
+   * it is reached; the High City's camp, the castle's hall; and the painter set to the new place, its films asked for.
+   */
+  const placeFrame = (g: Game): void => {
+    // (THE CRYPT, behind CRYPT: this floor's pictures, made the first time it is reached)
+    // (the practice room is no floor of the Crypt: it keeps the vault's stone, as it always had)
+    // (THE FIRST FIVE FLOORS: the fifth floor the Fleshmancer's lair, art/floors.ts)
+    const crypt = CRYPT.on && g.inDungeon && !g.practice ? floorLook(g.depth) : 0;
+    if (crypt !== cryptShown) {
+      art.ground = crypt ? lookGround(crypt) : vault.ground;
+      art.props = crypt ? lookProps(crypt) : vault.props;
+      // (THE FIRST FIVE FLOORS: each floor's own doors and gates, and its traps: art/floors.ts; the other floors' pieces let go of)
+      const own = FIRST5.on && crypt >= 1 && crypt <= 5;
+      // (THE HEADSMAN'S YARD with its own gate, behind YARD and YARD_GATE: floor 2's doors and gates, the boss's the yard's own)
+      // (FLOOR 3, THE BLACK IRON PRISON with its own gate, behind PRISON and PRISON_GATE: art/prison_gate.ts; FLOOR 4, THE BURIED
+      // CHAPEL with its bone grille, behind CHAPEL and CHAPEL_GATE: art/chapel_gate.ts; FLOOR 5, THE TEMPLE with its hooked bars,
+      // behind LAIR_TEMPLE and LAIR_GATE: art/lair_gate.ts)
+      art.gates = own ? (crypt === 2 && YARD.on && YARD_GATE.on ? makeYardGateArt() : crypt === 3 && PRISON.on && PRISON_GATE.on ? makePrisonGateArt() : crypt === 4 && CHAPEL.on && CHAPEL_GATE.on ? makeChapelGateArt() : crypt === 5 && LAIR_TEMPLE.on && LAIR_GATE.on ? makeLairGateArt() : crypt === 1 && TOMB.on && TOMB_GATE.on ? makeTombGateArt() : lookGates(crypt)) : vault.gates;
+      art.hazards = own ? lookHazards(crypt, FLOOR_SETS[crypt - 1].traps) : vault.hazards;
+      forgetPieces(crypt);
+      cryptShown = crypt;
+    }
+    const campNow = isCamp(g.level);
+    if (campNow !== campShown) {
+      if (campNow) {
+        if (!hallShown) hallTown = art.town;
+        cityArt ??= { town: makeTownProps(CITY), props: makeDungeonProps(CITY) };
+        art.town = cityArt.town;
+        art.props = cityArt.props;
+      } else {
+        art.town = hallTown;
+        art.props = crypt ? lookProps(crypt) : vault.props;
+      }
+      campShown = campNow;
+    }
+    // (THE FIRST TOWN AS THE CASTLE'S HALL, behind CASTLE_HALL: the town's own things in the castle's stone and timber, its
+    // braziers, barrels, urn and pillars; its floor's edges toward the eye in its stone: art/castle_hall.ts, render/castle.ts)
+    const hallNow = renderer.castle.on(g.level);
+    if (hallNow !== hallShown) {
+      if (hallNow) {
+        const A = renderer.castle.A();
+        art.town = A.town;
+        hallEdges ??= edgesOf(CASTLE_THEME);
+        art.ground = { ...vault.ground, ...hallEdges };
+        const pillar = A.pieces.find((p) => p.name === 'a pillar of the hall')?.frames?.[0] ?? vault.props.pillar;
+        art.props = { ...vault.props, brazier: A.props.brazier, barrel: A.props.barrel, urn: A.props.urn, pillar };
+      } else {
+        art.ground = crypt ? lookGround(crypt) : vault.ground;
+        if (!campNow) {
+          art.town = hallTown;
+          art.props = crypt ? lookProps(crypt) : vault.props;
+        }
+      }
+      hallShown = hallNow;
+    }
+    // (THE PAINTER: a new place: what the last one's heavy pictures took is given back, and its
+    // workers ended; this one's are asked for as it is drawn)
+    if (g.level !== paintedFor) {
+      paintedFor = g.level;
+      painter.restart();
+      // (and every other figure but this place's own monsters': ACT 1's floors each bring their own kinds)
+      art.bestiary.forgetOthers(new Set(g.monsters.map((m) => figureOf(m))));
+      // (the films this place will want: the fifth floor's cage coming down and going up; on the four
+      // above it, its stairwell breaking open where it most likely will, and where next, room allowing)
+      const W = g.level.ways;
+      if (W?.shaft && !g.level.town) {
+        painter.film('shaft:down', true);
+        painter.film('shaft:up', true);
+      }
+      // (EXITS, the art chat's ways: floor 4's wall and cave, floor 5's mouth; the town's stairs, shaft's head and gate's
+      // bars, and the cage coming up into it; floor 1's stairs up: render/dress.ts)
+      if (EXITS.on && W) {
+        if (W.cave) painter.film(`cave:${W.cave.spot.alongX ? 'x' : 'y'}`, true);
+        if (W.mouth) painter.film(`mouth:${W.mouth.alongX ? 'x' : 'y'}`, true, true);
+        // (FLOOR 3, PRISON_EXIT: the door out the back of his hall, seen shut all through his fight)
+        if (W.exit) painter.film(`exit:${W.exit.alongX ? 'x' : 'y'}`, true);
+        const gate = W.gate >= 0 ? g.level.doors[W.gate] : null;
+        if (g.level.town && gate) {
+          if (W.shaft?.state === 'arriving') painter.film('town:arrive', true, true);
+          painter.film(`town:ways:${gate.spot.alongX ? 'x' : 'y'}`, true, true);
+        }
+        if (!g.level.town && g.level.floor.depth === 1 && gate) painter.film(`up:1:${gate.spot.alongX ? 'x' : 'y'}`, true, true);
+        // (floors 6 to 10: where it begins, seen as he comes in, before all; its way on, a big film, after the monsters' pictures)
+        if (W.a1) {
+          const sk = startKey(W.a1);
+          if (sk) painter.film(sk, true, true);
+          painter.film(onwardKey(W.a1), true);
+        }
+      }
+      const look = g.inDungeon && !g.practice ? floorLook(g.depth) : 0;
+      if (W && look >= 1 && look <= 4 && W.stairs.length > 0) {
+        painter.film(stairKey(look, W.stairs[0]), true);
+        if (W.stairs[1] && !painter.small) painter.film(stairKey(look, W.stairs[1]));
+      }
+      // (and its three moments, where it is laid with them: render/pieces.ts)
+      if (g.level.dress) for (const key of momentKeys(g.level.dress.floor)) painter.film(key);
+      // (ACT 2, THE HUSH: its floor's moment around the hero, where it is laid with one: render/act1_pieces.ts)
+      for (const m of g.level.act1?.moments ?? []) painter.film(m.key);
+      // (ACT 1: what its kinds throw and leave, painted ahead: render/act1_fx/, `films`)
+      for (const kind of new Set(g.monsters.map((m) => m.kind))) for (const key of act1Fx(kind)?.films ?? []) painter.film(key, true);
+    }
+  };
+  /**
    * THE LOADING SCREEN AS A GAME BEGINS (25.2.4; his words of 7 Nov 2026, 22:02, when 25.2.3 had left him unable to move for
    * some 15 seconds as he came into the first town: “We can have loading screens”). That wait was one long stall of the first
    * frame: the hero's pictures painted here, frame by frame, before his baked ones (render/baked.ts) had even been asked for,
@@ -1685,6 +1793,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (l.drawn) {
       // (the world was drawn under the screen last frame: from the next he plays)
       loading = null;
+      loadedFor = g.level;
       drawLoading(cg, l.t);
       return;
     }
@@ -1698,8 +1807,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       waiting = !!grp && !b.settled(grp);
     }
     // (the screen up first, then, while his pictures come, the level's own made: the castle hall's, the stairs')
-    if (l.frames === 2) renderer.prepare(g);
-    if (l.frames > 2 && l.t >= LOADING.least && (!waiting || l.t >= LOADING.most)) {
+    if (l.frames === 2) {
+      // (the new place's own pictures first: its floor's ground, pieces and gates; the painter set to it)
+      placeFrame(g);
+      renderer.prepare(g);
+    }
+    if (l.frames > 2 && l.t >= (l.least ?? LOADING.least) && (!waiting || l.t >= LOADING.most)) {
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, 0);
       l.drawn = true;
     }
@@ -2034,105 +2147,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         fx.shakeY = 0;
       }
       questFromRules(g);
-      // (THE CRYPT, behind CRYPT: this floor's pictures, made the first time it is reached)
-      // (the practice room is no floor of the Crypt: it keeps the vault's stone, as it always had)
-      // (THE FIRST FIVE FLOORS: the fifth floor the Fleshmancer's lair, art/floors.ts)
-      const crypt = CRYPT.on && g.inDungeon && !g.practice ? floorLook(g.depth) : 0;
-      if (crypt !== cryptShown) {
-        art.ground = crypt ? lookGround(crypt) : vault.ground;
-        art.props = crypt ? lookProps(crypt) : vault.props;
-        // (THE FIRST FIVE FLOORS: each floor's own doors and gates, and its traps: art/floors.ts; the other floors' pieces let go of)
-        const own = FIRST5.on && crypt >= 1 && crypt <= 5;
-        // (THE HEADSMAN'S YARD with its own gate, behind YARD and YARD_GATE: floor 2's doors and gates, the boss's the yard's own)
-        // (FLOOR 3, THE BLACK IRON PRISON with its own gate, behind PRISON and PRISON_GATE: art/prison_gate.ts; FLOOR 4, THE BURIED
-        // CHAPEL with its bone grille, behind CHAPEL and CHAPEL_GATE: art/chapel_gate.ts; FLOOR 5, THE TEMPLE with its hooked bars,
-        // behind LAIR_TEMPLE and LAIR_GATE: art/lair_gate.ts)
-        art.gates = own ? (crypt === 2 && YARD.on && YARD_GATE.on ? makeYardGateArt() : crypt === 3 && PRISON.on && PRISON_GATE.on ? makePrisonGateArt() : crypt === 4 && CHAPEL.on && CHAPEL_GATE.on ? makeChapelGateArt() : crypt === 5 && LAIR_TEMPLE.on && LAIR_GATE.on ? makeLairGateArt() : crypt === 1 && TOMB.on && TOMB_GATE.on ? makeTombGateArt() : lookGates(crypt)) : vault.gates;
-        art.hazards = own ? lookHazards(crypt, FLOOR_SETS[crypt - 1].traps) : vault.hazards;
-        forgetPieces(crypt);
-        cryptShown = crypt;
-      }
-      const campNow = isCamp(g.level);
-      if (campNow !== campShown) {
-        if (campNow) {
-          if (!hallShown) hallTown = art.town;
-          cityArt ??= { town: makeTownProps(CITY), props: makeDungeonProps(CITY) };
-          art.town = cityArt.town;
-          art.props = cityArt.props;
-        } else {
-          art.town = hallTown;
-          art.props = crypt ? lookProps(crypt) : vault.props;
-        }
-        campShown = campNow;
-      }
-      // (THE FIRST TOWN AS THE CASTLE'S HALL, behind CASTLE_HALL: the town's own things in the castle's stone and timber, its
-      // braziers, barrels, urn and pillars; its floor's edges toward the eye in its stone: art/castle_hall.ts, render/castle.ts)
-      const hallNow = renderer.castle.on(g.level);
-      if (hallNow !== hallShown) {
-        if (hallNow) {
-          const A = renderer.castle.A();
-          art.town = A.town;
-          hallEdges ??= edgesOf(CASTLE_THEME);
-          art.ground = { ...vault.ground, ...hallEdges };
-          const pillar = A.pieces.find((p) => p.name === 'a pillar of the hall')?.frames?.[0] ?? vault.props.pillar;
-          art.props = { ...vault.props, brazier: A.props.brazier, barrel: A.props.barrel, urn: A.props.urn, pillar };
-        } else {
-          art.ground = crypt ? lookGround(crypt) : vault.ground;
-          if (!campNow) {
-            art.town = hallTown;
-            art.props = crypt ? lookProps(crypt) : vault.props;
-          }
-        }
-        hallShown = hallNow;
-      }
-      // (THE PAINTER: a new place: what the last one's heavy pictures took is given back, and its
-      // workers ended; this one's are asked for as it is drawn)
-      if (g.level !== paintedFor) {
-        paintedFor = g.level;
-        painter.restart();
-        // (and every other figure but this place's own monsters': ACT 1's floors each bring their own kinds)
-        art.bestiary.forgetOthers(new Set(g.monsters.map((m) => figureOf(m))));
-        // (the films this place will want: the fifth floor's cage coming down and going up; on the four
-        // above it, its stairwell breaking open where it most likely will, and where next, room allowing)
-        const W = g.level.ways;
-        if (W?.shaft && !g.level.town) {
-          painter.film('shaft:down', true);
-          painter.film('shaft:up', true);
-        }
-        // (EXITS, the art chat's ways: floor 4's wall and cave, floor 5's mouth; the town's stairs, shaft's head and gate's
-        // bars, and the cage coming up into it; floor 1's stairs up: render/dress.ts)
-        if (EXITS.on && W) {
-          if (W.cave) painter.film(`cave:${W.cave.spot.alongX ? 'x' : 'y'}`, true);
-          if (W.mouth) painter.film(`mouth:${W.mouth.alongX ? 'x' : 'y'}`, true, true);
-          // (FLOOR 3, PRISON_EXIT: the door out the back of his hall, seen shut all through his fight)
-          if (W.exit) painter.film(`exit:${W.exit.alongX ? 'x' : 'y'}`, true);
-          const gate = W.gate >= 0 ? g.level.doors[W.gate] : null;
-          if (g.level.town && gate) {
-            if (W.shaft?.state === 'arriving') painter.film('town:arrive', true, true);
-            painter.film(`town:ways:${gate.spot.alongX ? 'x' : 'y'}`, true, true);
-          }
-          if (!g.level.town && g.level.floor.depth === 1 && gate) painter.film(`up:1:${gate.spot.alongX ? 'x' : 'y'}`, true, true);
-          // (floors 6 to 10: where it begins, seen as he comes in, before all; its way on, a big film, after the monsters' pictures)
-          if (W.a1) {
-            const sk = startKey(W.a1);
-            if (sk) painter.film(sk, true, true);
-            painter.film(onwardKey(W.a1), true);
-          }
-        }
-        const look = g.inDungeon && !g.practice ? floorLook(g.depth) : 0;
-        if (W && look >= 1 && look <= 4 && W.stairs.length > 0) {
-          painter.film(stairKey(look, W.stairs[0]), true);
-          if (W.stairs[1] && !painter.small) painter.film(stairKey(look, W.stairs[1]));
-        }
-        // (and its three moments, where it is laid with them: render/pieces.ts)
-        if (g.level.dress) for (const key of momentKeys(g.level.dress.floor)) painter.film(key);
-        // (ACT 2, THE HUSH: its floor's moment around the hero, where it is laid with one: render/act1_pieces.ts)
-        for (const m of g.level.act1?.moments ?? []) painter.film(m.key);
-        // (ACT 1: what its kinds throw and leave, painted ahead: render/act1_fx/, `films`)
-        for (const kind of new Set(g.monsters.map((m) => m.kind))) for (const key of act1Fx(kind)?.films ?? []) painter.film(key, true);
-      }
+      // (THE LOADING SCREEN BETWEEN FLOORS: a level come to in play, by the stairs, a way or the waypoint: the screen up at once,
+      // this frame, before its pictures are made; the frames after make them under it (`placeFrame` in loadingFrame), as when a
+      // game begins. Up `betweenLeast` at the least.)
+      if (LOADING.on && LOADING.between && loadedFor !== null && g.level !== loadedFor && !g.over && !loading) loading = { t: 0, frames: 0, drawn: false, least: LOADING.betweenLeast };
+      if (!loading) placeFrame(g);
       renderer.pactHint = GAMEPAD.on && PAD_USE.live ? 'RB: CHANGE' : input.touchMode ? 'TAP HIM' : 'R: CHANGE';
-      renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
+      if (loading) drawLoading(cg, 0);
+      else renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
       if (WORLD_SOUNDS.on) worldFrame(g, dt, paused);
       // (THE FIRST FIVE FLOORS: a film's jolts kick the screen, and are heard: render/dress.ts)
       for (const k of renderer.kicks()) {
@@ -2573,6 +2595,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     questMarks: QUEST_MARKS,
     /** THE LOADING SCREEN as a game begins (LOADING in main.ts), on at his yes: `loading.on` (dbg.run and dbg.first begin without it). */
     loading: LOADING,
+    /** THE LOADING SCREEN BETWEEN FLOORS: whether it is up now (and since how long), and, for a playtest begun without it, the level counted as loaded (so that the next is put up between). */
+    loadingNow: (): { t: number; frames: number } | null => (loading ? { t: loading.t, frames: loading.frames } : null),
+    loadedHere: (): void => {
+      loadedFor = game ? game.level : null;
+    },
     /** FLOOR 20'S RIME SHADE (art/rime_shade.ts RIME_SHADE_ON, the art chat's; game/act1_rules/rshade.ts), off until he has seen it in the game and said yes: `rimeShade.on`. */
     rimeShade: RIME_SHADE_ON,
     /** THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS), off until his yes: `newWeapons.on` (the Veteran's wraps, the Warlock's demonic tome, the Tinkerer's wrench; stand-in pictures while `itemsA` is off). */
