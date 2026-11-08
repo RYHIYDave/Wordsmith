@@ -66,7 +66,7 @@ import { drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import { ATTR_NAME, CLASSES, ELEMENT_NAME, growsWith, FIRST_LEVELS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
 import type { Game } from '../game/game';
-import { modLines, statView } from '../game/items';
+import { modLines, statView, flatPair, flatSpan } from '../game/items';
 import type { ImbueOption } from '../game/items';
 import type { SlotRef } from '../game/state';
 import { armorReduction } from '../game/stats';
@@ -271,6 +271,13 @@ export function resetInvUi(st: InvUi, word: WordId | null = null, focus = -1): v
 
 /** "+8-12% Physical Damage": one thing a word may become on a piece of gear, with the range it rolls in. */
 export function rangeText(o: ImbueOption, limit: Limit): string {
+  // (FLAT DAMAGE: “Adds lo-hi ...”, the least it can come to and the most)
+  const pair = flatPair(o.stat);
+  if (pair) {
+    const [lo, hi] = flatSpan(o.min, o.max);
+    const one = `Adds ${lo}-${hi} ${pair.label}`;
+    return o.also ? `${one} and ${rangeText({ ...o.also }, limit)}` : one;
+  }
   const info = statView(o.stat, limit);
   const num = (n: number): string => (n * info.mult).toFixed(info.dp);
   const span = o.min === o.max ? num(o.min) : `${num(o.min)} to ${num(o.max)}`;

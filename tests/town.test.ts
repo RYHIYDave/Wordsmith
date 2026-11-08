@@ -144,8 +144,9 @@ test('burning a word into gear uses it up; what it becomes is rolled from the ou
       g.refresh();
       h.words.power = 2;
       const choices = g.imbueChoices({ kind: 'gear', slot: 'gloves' }, 'power');
-      assert.equal(choices.length, 2, 'Power on gloves has two possible outcomes, and both are shown');
-      assert.deepEqual(choices.map((c) => c.stat).sort(), ['physPct', 'str']);
+      // (FLAT DAMAGE, 8 Nov 2026: its flat damage a third)
+      assert.equal(choices.length, 3, 'Power on gloves has three possible outcomes, and all are shown');
+      assert.deepEqual(choices.map((c) => c.stat).sort(), ['dmgMin', 'physPct', 'str']);
       const str0 = h.d.str;
       g.events.length = 0;
       assert.equal(g.imbue({ kind: 'gear', slot: 'gloves' }, 'power'), null);
@@ -155,7 +156,7 @@ test('burning a word into gear uses it up; what it becomes is rolled from the ou
       assert.ok(im && im.word === 'power');
       const made = choices.find((c) => c.stat === im.mods[0].stat)!;
       assert.ok(made, 'it became one of the outcomes that were shown');
-      assert.ok(im.mods[0].value >= made.min && im.mods[0].value <= made.max, 'within the range that was shown');
+      if (im.mods[0].stat !== 'dmgMin') assert.ok(im.mods[0].value >= made.min && im.mods[0].value <= made.max, 'within the range that was shown');
       became.add(im.mods[0].stat);
       if (im.mods[0].stat === 'str') assert.equal(h.d.str, str0 + im.mods[0].value, 'the hero is stronger straight away');
       assert.ok(g.events.some((e) => e.t === 'burned' && e.word === 'power' && e.text.length > 0), 'and the player is told what it became');
@@ -184,7 +185,7 @@ test('burning a word into gear uses it up; what it becomes is rolled from the ou
         assert.deepEqual(g.imbueChoices({ kind: 'gear', slot: 'gloves' }, 'twin'), []);
       }
     }
-    assert.equal(became.size, 2, `${cls}: over 24 tries both outcomes turned up: which one is luck`);
+    assert.equal(became.size, 3, `${cls}: over 24 tries all three outcomes turned up: which one is luck`);
   }
 });
 

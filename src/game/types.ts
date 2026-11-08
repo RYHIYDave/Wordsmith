@@ -193,6 +193,13 @@ export type StatKey =
   | 'int'
   | 'dmgMin' // flat weapon damage (a weapon's own damage, and "adds X-Y damage" affixes)
   | 'dmgMax'
+  // (FLAT DAMAGE, his 8 Nov 2026 “Craftabke on weapons and gloves and rings”: “adds X-Y fire damage”, to the hero's fire hits; frost's and lightning's the same)
+  | 'fireMin'
+  | 'fireMax'
+  | 'frostMin'
+  | 'frostMax'
+  | 'lightMin'
+  | 'lightMax'
   | 'dmgPct' // % increased damage, all sources
   | 'physPct' // % increased physical damage
   | 'firePct' // % increased fire damage
@@ -221,7 +228,7 @@ export type StatKey =
   | 'pickupPct'; // % further that gold and orbs fly to the hero from (Pulling, burned into gear: Version 23.8)
 
 export const STAT_KEYS: readonly StatKey[] = [
-  'str', 'dex', 'int', 'dmgMin', 'dmgMax', 'dmgPct', 'physPct', 'firePct', 'frostPct', 'lightPct', 'atkSpeed',
+  'str', 'dex', 'int', 'dmgMin', 'dmgMax', 'fireMin', 'fireMax', 'frostMin', 'frostMax', 'lightMin', 'lightMax', 'dmgPct', 'physPct', 'firePct', 'frostPct', 'lightPct', 'atkSpeed',
   'critChance', 'critMult', 'maxLife', 'lifeRegen', 'lifeOnHit', 'lifeOnKill', 'maxMana', 'manaRegen',
   'armor', 'fireRes', 'frostRes', 'lightRes', 'moveSpeed', 'cdr', 'areaPct', 'goldFind', 'magicFind', 'stunChance', 'blockChance', 'pickupPct',
 ];

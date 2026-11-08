@@ -4300,7 +4300,19 @@ export class Game {
     const st = h.d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
     const k = r.dmgMult * (1 + (st.dmgPct + el) / 100);
-    return [Math.max(1, Math.round(h.d.dmgMin * k)), Math.max(1, Math.round(h.d.dmgMax * k))];
+    const [lo, hi] = this.baseFor(r.element);
+    return [Math.max(1, Math.round(lo * k)), Math.max(1, Math.round(hi * k))];
+  }
+
+  /**
+   * (FLAT DAMAGE, game/items.ts FLAT_PAIRS) The least and the most of a hero's hit of element `el` before what multiplies it: his
+   * weapon's and his gear's added damage, and what his gear adds to that element's hits.
+   */
+  baseFor(el: Element | undefined): [number, number] {
+    const d = this.hero.d;
+    const s = d.stats;
+    const [a, b] = el === 'fire' ? [s.fireMin, s.fireMax] : el === 'frost' ? [s.frostMin, s.frostMax] : el === 'lightning' ? [s.lightMin, s.lightMax] : [0, 0];
+    return [d.dmgMin + (a || 0), d.dmgMax + (b || 0)];
   }
 
   /** Average damage of one hit with an ability, used to size ground patches and runes. */
@@ -4309,7 +4321,8 @@ export class Game {
     const r = h.skills[i].r;
     const st = h.d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
-    return ((h.d.dmgMin + h.d.dmgMax) / 2) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
+    const [lo, hi] = this.baseFor(r.element);
+    return ((lo + hi) / 2) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
   }
 
   // ===========================================================================================
@@ -6784,7 +6797,8 @@ export class Game {
     const X = TINKER_TUNE.talents.mixture;
     const d = this.hero.d;
     const s = this.hero.skills[i];
-    const hit = ((d.dmgMin + d.dmgMax) / 2) * (s ? s.r.dmgMult : 1) * frac;
+    const [lo, hi] = this.baseFor(s ? s.r.element : 'phys');
+    const hit = ((lo + hi) / 2) * (s ? s.r.dmgMult : 1) * frac;
     for (const m of ms) {
       if (m.dead) continue;
       if (brew === 'burn') {
@@ -7494,7 +7508,8 @@ export class Game {
     const s = h.skills[g.skill];
     const frac = this.golemFrac(g) * this.golemMight(g) * Z.share;
     for (const m of hit) {
-      let dmg = this.rng.range(h.d.dmgMin, h.d.dmgMax) * (s ? s.r.dmgMult : 1) * frac * (1 + (st.dmgPct + st.lightPct + h.might) / 100);
+      const [lo, hi] = this.baseFor('lightning');
+      let dmg = this.rng.range(lo, hi) * (s ? s.r.dmgMult : 1) * frac * (1 + (st.dmgPct + st.lightPct + h.might) / 100);
       if (TALENTS.on) dmg *= this.talentHitMult(m);
       this.damageMonster(m, Math.max(1, Math.round(dmg)), 'lightning', false, g.skill);
     }
@@ -9001,7 +9016,8 @@ export class Game {
     const wasFrozen = m.frozenT > 0;
     const st = d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
-    let dmg = this.rng.range(d.dmgMin, d.dmgMax) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
+    const [lo, hi] = this.baseFor(r.element);
+    let dmg = this.rng.range(lo, hi) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
     // (THE SKILL TREES: what the talents make of a hit)
     if (TALENTS.on) dmg *= this.talentHitMult(m);
     let crit = this.rng.chance(d.critChance / 100) || sure;
@@ -13453,7 +13469,8 @@ export class Game {
     const h = this.hero;
     const st = h.d.stats;
     const pct = el === 'fire' ? st.firePct : el === 'frost' ? st.frostPct : el === 'lightning' ? st.lightPct : st.physPct;
-    return Math.max(1, Math.round(((h.d.dmgMin + h.d.dmgMax) / 2) * share * (1 + (st.dmgPct + pct) / 100)));
+    const [lo, hi] = this.baseFor(el);
+    return Math.max(1, Math.round(((lo + hi) / 2) * share * (1 + (st.dmgPct + pct) / 100)));
   }
 
   /** How high Power's and Frenzied's stacks go: five, eight with Cadence. */

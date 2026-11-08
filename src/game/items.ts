@@ -45,6 +45,12 @@ export const STAT_INFO: Record<StatKey, StatInfo> = {
   int: { label: 'Intelligence', pct: false, dp: 0 },
   dmgMin: { label: 'Minimum Damage', pct: false, dp: 0 },
   dmgMax: { label: 'Maximum Damage', pct: false, dp: 0 },
+  fireMin: { label: 'Minimum Fire Damage', pct: false, dp: 0 },
+  fireMax: { label: 'Maximum Fire Damage', pct: false, dp: 0 },
+  frostMin: { label: 'Minimum Frost Damage', pct: false, dp: 0 },
+  frostMax: { label: 'Maximum Frost Damage', pct: false, dp: 0 },
+  lightMin: { label: 'Minimum Lightning Damage', pct: false, dp: 0 },
+  lightMax: { label: 'Maximum Lightning Damage', pct: false, dp: 0 },
   dmgPct: { label: 'Damage', pct: true, dp: 0 },
   physPct: { label: 'Physical Damage', pct: true, dp: 0 },
   firePct: { label: 'Fire Damage', pct: true, dp: 0 },
@@ -405,7 +411,9 @@ interface ImbueRule {
  */
 const IMBUE_TABLE: Record<BaseWordId, readonly ImbueRule[]> = {
   power: [
-    { slots: OFFENCE_SLOTS, options: [['prefix', 'physPct'], ['suffix', 'str']] },
+    // (FLAT DAMAGE: “Adds X-Y Damage” on a weapon, gloves and a ring)
+    { slots: ['mainhand', 'gloves', 'ring'], options: [['prefix', 'physPct'], ['prefix', 'dmgMin'], ['suffix', 'str']] },
+    { slots: ['amulet'], options: [['prefix', 'physPct'], ['suffix', 'str']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'armor'], ['suffix', 'str']] },
   ],
   swift: [
@@ -417,9 +425,9 @@ const IMBUE_TABLE: Record<BaseWordId, readonly ImbueRule[]> = {
     { slots: OFFENCE_SLOTS, options: [['prefix', 'critChance'], ['suffix', 'dex']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'critMult'], ['suffix', 'dex']] },
   ],
-  fire: elementImbue('firePct', 'fireRes'),
-  frost: elementImbue('frostPct', 'frostRes'),
-  lightning: elementImbue('lightPct', 'lightRes'),
+  fire: elementImbue('firePct', 'fireRes', 'fireMin'),
+  frost: elementImbue('frostPct', 'frostRes', 'frostMin'),
+  lightning: elementImbue('lightPct', 'lightRes', 'lightMin'),
   leech: [
     { slots: OFFENCE_SLOTS, options: [['prefix', 'lifeOnHit'], ['suffix', 'lifeOnKill']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'maxLife'], ['suffix', 'lifeRegen']] },
@@ -479,10 +487,12 @@ const IMBUE_TABLE: Record<BaseWordId, readonly ImbueRule[]> = {
 };
 
 /** The three element words share one pattern: damage on the weapon, resistance on protective pieces, either on the rest. */
-function elementImbue(damage: StatKey, resistance: StatKey): ImbueRule[] {
+function elementImbue(damage: StatKey, resistance: StatKey, flat: StatKey): ImbueRule[] {
+  // (FLAT DAMAGE on a weapon, gloves and a ring: his 8 Nov 2026 “Craftabke on weapons and gloves and rings”)
   return [
-    { slots: ['mainhand'], options: [['prefix', damage]] },
-    { slots: ['gloves', 'ring', 'amulet'], options: [['prefix', damage], ['suffix', resistance]] },
+    { slots: ['mainhand'], options: [['prefix', damage], ['prefix', flat]] },
+    { slots: ['gloves', 'ring'], options: [['prefix', damage], ['prefix', flat], ['suffix', resistance]] },
+    { slots: ['amulet'], options: [['prefix', damage], ['suffix', resistance]] },
     { slots: DEFENCE_SLOTS, options: [['suffix', resistance]] },
   ];
 }
@@ -529,6 +539,12 @@ const SCORE_PER_POINT: Record<StatKey, number> = {
   int: 2.5,
   dmgMin: 0, // damage is scored through SCORE_PER_DPS instead
   dmgMax: 0,
+  fireMin: 0,
+  fireMax: 0,
+  frostMin: 0,
+  frostMax: 0,
+  lightMin: 0,
+  lightMax: 0,
   dmgPct: 2,
   physPct: 1.2,
   firePct: 1.2,
@@ -610,22 +626,24 @@ export function modText(m: StatMod, limit: Limit): string {
   return `${sign}${Math.abs(m.value * info.mult).toFixed(info.dp)}${info.pct ? '%' : ''} ${info.label}`;
 }
 
-/** Text lines for a list of mods, merging a dmgMin + dmgMax pair into one "Adds 3-7 Damage" line. */
+/** Text lines for a list of mods, merging a dmgMin + dmgMax pair into one "Adds 3-7 Damage" line (and FLAT DAMAGE's pairs of each element). */
 export function modLines(mods: readonly StatMod[], limit: Limit): string[] {
-  // The first dmgMin pairs with the first dmgMax, the second with the second, and so on.
-  const minAt: number[] = [];
-  const maxAt: number[] = [];
-  mods.forEach((m, i) => {
-    if (m.stat === 'dmgMin') minAt.push(i);
-    else if (m.stat === 'dmgMax') maxAt.push(i);
-  });
   const merged = new Map<number, string>(); // position of the pair's first half -> the combined line
   const hidden = new Set<number>(); // position of the pair's second half
-  for (let k = 0; k < Math.min(minAt.length, maxAt.length); k++) {
-    const lo = mods[minAt[k]].value.toFixed(STAT_INFO.dmgMin.dp);
-    const hi = mods[maxAt[k]].value.toFixed(STAT_INFO.dmgMax.dp);
-    merged.set(Math.min(minAt[k], maxAt[k]), `Adds ${lo}-${hi} Damage`);
-    hidden.add(Math.max(minAt[k], maxAt[k]));
+  for (const f of FLAT_PAIRS) {
+    // The first least pairs with the first most, the second with the second, and so on.
+    const minAt: number[] = [];
+    const maxAt: number[] = [];
+    mods.forEach((m, i) => {
+      if (m.stat === f.min) minAt.push(i);
+      else if (m.stat === f.max) maxAt.push(i);
+    });
+    for (let k = 0; k < Math.min(minAt.length, maxAt.length); k++) {
+      const lo = mods[minAt[k]].value.toFixed(0);
+      const hi = mods[maxAt[k]].value.toFixed(0);
+      merged.set(Math.min(minAt[k], maxAt[k]), `Adds ${lo}-${hi} ${f.label}`);
+      hidden.add(Math.max(minAt[k], maxAt[k]));
+    }
   }
   // (THE SAME MOD TWICE: lines that read the same, a piece rolled before statGroup, shown as one, their values added)
   const lines: string[] = [];
@@ -1003,6 +1021,28 @@ export function statGroup(stat: StatKey): string {
   return stat === 'maxMana' || stat === 'manaRegen' || stat === 'cdr' ? 'cdr' : stat;
 }
 
+/**
+ * FLAT DAMAGE (his 4 Nov 2026, 19:11: “We don’t have anything that adds flat damage like “2-4 damage” which would be an easy add”;
+ * asked how it should get onto gear, 8 Nov: “Craftabke on weapons and gloves and rings”). Each pair of stats is one property,
+ * “Adds X-Y ... Damage”: the plain pair to every hit (as a weapon's own damage, and the found “adds damage” affixes); the fire,
+ * frost and lightning pairs to the hero's hits of that element. Crafted by Power and by the three elements' words on a weapon,
+ * gloves and a ring (IMBUE_TABLE), rolled as the found affix is (addedDamageAt), split into its least and most (damageRange).
+ */
+export const FLAT_PAIRS: readonly { min: StatKey; max: StatKey; label: string }[] = [
+  { min: 'dmgMin', max: 'dmgMax', label: 'Damage' },
+  { min: 'fireMin', max: 'fireMax', label: 'Fire Damage to Fire Hits' },
+  { min: 'frostMin', max: 'frostMax', label: 'Frost Damage to Frost Hits' },
+  { min: 'lightMin', max: 'lightMax', label: 'Lightning Damage to Lightning Hits' },
+];
+/** The flat pair whose least is `stat`, if it is one (a crafting outcome names its pair by its least). */
+export function flatPair(stat: StatKey): { min: StatKey; max: StatKey; label: string } | undefined {
+  return FLAT_PAIRS.find((f) => f.min === stat);
+}
+/** What a flat crafting outcome can come to, its average hit from `min` to `max`: “Adds lo-hi”. */
+export function flatSpan(min: number, max: number): [number, number] {
+  return [damageRange(min)[0], damageRange(max)[1]];
+}
+
 function pickFamilies(kind: 'prefix' | 'suffix', slot: Slot, count: number, rng: RNG, taken: Set<string> = new Set()): FamilyDef[] {
   const pool = AFFIX_FAMILIES.filter((f) => f.kind === kind && f.slots.includes(slot) && !taken.has(statGroup(f.stat as StatKey)));
   const picked: FamilyDef[] = [];
@@ -1191,6 +1231,12 @@ function wordOptions(word: BaseWordId, slot: Slot, level: number, strength: numb
   const rules = IMBUE_TABLE[word] ?? IMBUE_TABLE.power;
   const rule = rules.find((r) => r.slots.includes(slot)) ?? rules[0];
   return rule.options.map(([kind, stat]) => {
+    // (FLAT DAMAGE: its average hit, as the found “adds damage” affix rolls it)
+    if (flatPair(stat)) {
+      const [lo, hi] = addedDamageAt(level);
+      const min = Math.max(1, Math.round(lo * strength));
+      return { kind, stat, min, max: Math.max(min, Math.round(hi * strength)) };
+    }
     const family = FAMILY_BY_STAT.get(stat);
     const [lo, hi] = family ? familyRange(family, level) : [1, 1];
     const step = 1 / 10 ** STAT_INFO[stat].dp;
@@ -1247,7 +1293,8 @@ export function imbueOptionsFor(item: Item, word: WordId): ImbueOption[] {
   const groups = new Set([...have].map(statGroup));
   const free = (stat: StatKey): boolean => !have.has(stat) && !groups.has(statGroup(stat));
   // (a melded word's two properties must both be free; of its pairs, the first two that are)
-  return imbueOptions(word, item.slot, item.ilvl).filter((o) => free(o.stat) && (!o.also || free(o.also.stat))).slice(0, 2);
+  const all = imbueOptions(word, item.slot, item.ilvl).filter((o) => free(o.stat) && (!o.also || free(o.also.stat)));
+  return MELD_OF[word as MeldId] ? all.slice(0, 2) : all;
 }
 
 /** Why this word cannot be burned into this piece, or null if it can. */
@@ -1269,10 +1316,12 @@ export function imbueItem(item: Item, word: WordId, rng: RNG, choice?: number): 
   if (options.length === 0) return null;
   const picked = choice !== undefined && Number.isInteger(choice) && choice >= 0 && choice < options.length ? options[choice] : undefined;
   const option = picked ?? (options.length > 1 ? rng.pick(options) : options[0]);
+  const pair = flatPair(option.stat);
   const imbue: Imbue = {
     word,
     kind: option.kind,
-    mods: [{ stat: option.stat, value: rollStat(option.stat, option.min, option.max, rng) }],
+    // (FLAT DAMAGE: an average hit rolled, then split into its least and most, as the found affix's)
+    mods: pair ? (([lo, hi]) => [{ stat: pair.min, value: lo }, { stat: pair.max, value: hi }])(damageRange(rng.range(option.min, option.max))) : [{ stat: option.stat, value: rollStat(option.stat, option.min, option.max, rng) }],
   };
   // (a melded word: its second property, rolled on its own)
   if (option.also) imbue.mods.push({ stat: option.also.stat, value: rollStat(option.also.stat, option.also.min, option.also.max, rng) });
@@ -1306,6 +1355,8 @@ export function itemScore(item: Item, cls: ClassId): number {
   let score = 0;
   for (const m of itemMods(item)) {
     if (m.stat === 'dmgMin' || m.stat === 'dmgMax') score += m.value * perDamagePoint;
+    // (FLAT DAMAGE to one element's hits: half as much, as only some hits take it)
+    else if (FLAT_PAIRS.some((f) => f.min !== 'dmgMin' && (f.min === m.stat || f.max === m.stat))) score += m.value * perDamagePoint * 0.5;
     else score += m.value * (SCORE_PER_POINT[m.stat] ?? 0) * (m.stat === CLASS_ATTRIBUTE[cls] ? CLASS_ATTRIBUTE_BONUS : 1);
   }
   return Math.round(score);

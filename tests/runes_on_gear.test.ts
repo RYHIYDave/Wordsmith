@@ -54,7 +54,8 @@ test('a melded word gives one property of each of its two words, never two of a 
   }
   assert.ok(MELD_GEAR_STRENGTH < 1 && MELD_GEAR_STRENGTH * 2 > 1, 'each weaker than a word alone, the two together more');
   // (the pairs on a weapon: Eruption, Power and Flame)
-  assert.deepEqual(imbueOptions('eruption', 'mainhand', 10).map((o) => [o.stat, o.also?.stat]), [['physPct', 'firePct'], ['str', 'firePct']]);
+  // (and, FLAT DAMAGE, 8 Nov 2026: each word's flat damage among them)
+  assert.deepEqual(imbueOptions('eruption', 'mainhand', 10).map((o) => [o.stat, o.also?.stat]), [['physPct', 'firePct'], ['physPct', 'fireMin'], ['dmgMin', 'firePct'], ['dmgMin', 'fireMin'], ['str', 'firePct'], ['str', 'fireMin']]);
 });
 
 test('a ranked word gives its word\'s, half as strong again', () => {
@@ -92,9 +93,9 @@ test('a piece never carries a property twice: a melded word is offered only wher
   const sword = rollItem(10, rng, { slot: 'mainhand', rarity: 0 });
   imbueItem(sword, 'fire', rng);
   assert.ok(sword.imbues[0].mods[0].stat === 'firePct');
-  // (Eruption's pairs both carry Flame's damage, which the sword has now)
-  assert.deepEqual(imbueOptionsFor(sword, 'eruption'), []);
-  assert.equal(imbueProblem(sword, 'eruption'), 'It already has what this word gives');
+  // (Eruption's pairs that carry Flame's damage are not offered, the sword having it now; those with its flat fire damage are)
+  const left = imbueOptionsFor(sword, 'eruption');
+  assert.ok(left.length > 0 && left.every((o) => o.stat !== 'firePct' && o.also?.stat !== 'firePct' && o.also?.stat === 'fireMin'), JSON.stringify(left.map((o) => [o.stat, o.also?.stat])));
   // (Thunder, Power and Lightning: still free)
   assert.ok(imbueOptionsFor(sword, 'thunder').length > 0);
   for (const m of MELDS) for (const slot of SLOTS) {
