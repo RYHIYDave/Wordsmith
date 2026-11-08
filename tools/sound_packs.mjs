@@ -1,6 +1,7 @@
 // THE RECORDED SOUNDS IN PACKS (8 Nov 2026). The sound chat's batches came to 574 files; the game's page on claude.ai holds at most
 // 511 files a version, so they cannot go beside it one by one. So the build packs them: every mp3 into a few packs, each its files'
-// bytes one after another (`<group>.pak`), and `index.json` saying where each lies (its pack, its start, its length); the loops
+// bytes one after another (`<group>-pack.mp3`: an mp3 by its name, as the page serves only the kinds of file it knows, and it is mp3s
+// end to end; first `<group>.pak`, which the page would not take), and `index.json` saying where each lies (its pack, its start, its length); the loops
 // (WAV) and the title theme stay files of their own. The game (engine/audio.ts) fetches the index, then a pack the first time one
 // of its sounds is wanted, and decodes each sound from its own bytes as it is wanted (never the whole pack).
 //   packSounds(fromDir, outDir) -> { files, index }
@@ -53,13 +54,13 @@ export function packSounds(fromDir, outDir) {
     let p = packs.get(g);
     if (!p) packs.set(g, (p = { parts: [], size: 0 }));
     const b = fs.readFileSync(path.join(fromDir, f));
-    index[f] = { pack: `${g}.pak`, at: p.size, len: b.length };
+    index[f] = { pack: `${g}-pack.mp3`, at: p.size, len: b.length };
     p.parts.push(b);
     p.size += b.length;
   }
   for (const [g, p] of packs) {
-    fs.writeFileSync(path.join(outDir, `${g}.pak`), Buffer.concat(p.parts));
-    files.push(`${g}.pak`);
+    fs.writeFileSync(path.join(outDir, `${g}-pack.mp3`), Buffer.concat(p.parts));
+    files.push(`${g}-pack.mp3`);
   }
   fs.writeFileSync(path.join(outDir, 'index.json'), JSON.stringify(index));
   files.push('index.json');

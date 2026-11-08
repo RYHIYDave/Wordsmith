@@ -13,7 +13,7 @@ import { packSounds } from './sound_packs.mjs';
 
 const dev = process.argv.includes('--dev');
 // (shown small in a corner of the starting screen, so the owner can tell which version a page is showing)
-const VERSION = 'V25.2.5';
+const VERSION = 'V25.2.6';
 const stamp = `${VERSION} ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
 const bake = process.argv.includes('--no-bake') ? null : await bakeHeroes();
 fs.rmSync(path.join(ROOT, 'dist', 'heroes'), { recursive: true, force: true });
@@ -30,7 +30,7 @@ let soundShipped = 0;
 fs.rmSync(path.join(ROOT, 'dist', 'sounds'), { recursive: true, force: true });
 if (soundFiles.length) {
   const h = createHash('sha256');
-  h.update('packs1');
+  h.update('packs2');
   for (const f of soundFiles) h.update(f).update(fs.readFileSync(path.join(soundDir, f)));
   sounds = h.digest('hex').slice(0, 12);
   fs.mkdirSync(path.join(ROOT, 'dist', 'sounds', sounds), { recursive: true });

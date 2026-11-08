@@ -44,9 +44,9 @@ export default async function (page, snap) {
   log('floor 1: break and chest sounds come', d3.come.filter((n) => /^(break_|chest)/.test(n)));
   log('all: come, failed', [d3.come.length, d3.failed]);
   const kinds = {};
-  for (const u of got) { const k = u.endsWith('.pak') ? 'pak' : u.endsWith('.wav') ? 'wav' : u.endsWith('.json') ? 'index' : 'other'; kinds[k] = (kinds[k] || 0) + 1; }
+  for (const u of got) { const k = u.endsWith('-pack.mp3') ? 'pak' : u.endsWith('.wav') ? 'wav' : u.endsWith('.json') ? 'index' : 'other'; kinds[k] = (kinds[k] || 0) + 1; }
   log('fetched', kinds);
-  log('packs fetched', [...new Set(got.filter((u) => u.endsWith('.pak')))]);
+  log('packs fetched', [...new Set(got.filter((u) => u.endsWith('-pack.mp3')))]);
   log('errors', errs.length);
   for (const e of errs.slice(0, 5)) console.log('ERR', e.slice(0, 600));
 }
