@@ -13,7 +13,9 @@ import { VOICE_TOGGLE } from '../src/ui/panels';
 const has = (f: string): boolean => fs.existsSync(`assets/sound/${f}`);
 
 test('every combat sound recorded has its two takes in the game\'s files: swing, hit, crit, slam, the monster\'s death, hurt', () => {
-  assert.deepEqual(Object.keys(RECORDED_SFX).sort(), ['crit', 'hit', 'hurt', 'monsterDie', 'slam', 'swing']);
+  // (and since 7 Nov 2026, the second batch's spells and skills: tests/sounds2.test.ts)
+  for (const k of ['crit', 'hit', 'hurt', 'monsterDie', 'slam', 'swing']) assert.ok(Object.keys(RECORDED_SFX).includes(k), k);
+  assert.ok(!('beamHum' in RECORDED_SFX), 'beamHum made in code: it is played at every bite of a beam');
   for (const takes of Object.values(RECORDED_SFX)) {
     assert.equal(takes!.length, 2);
     for (const t of takes!) assert.ok(has(`${t}.mp3`), t);

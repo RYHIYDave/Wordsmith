@@ -63,7 +63,8 @@ import { TITLE_SMITH3, makeSmith3Title } from './art/title_smith3';
 import { TITLE_RING, makeRingTitle } from './art/title_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
-import { heroVoice, initAudio, isMuted, recordedState, setMuted, sfx, speak, speakBoss, titleMusic, warmRecorded } from './engine/audio';
+import { heroVoice, initAudio, isMuted, recordedState, setMuted, sfx, sfxNamed, speak, speakBoss, titleMusic, warmNamed, warmRecorded } from './engine/audio';
+import { soundsOf } from './game/sound_families';
 import type { Speaker, SpeakerVoice } from './engine/audio';
 import { MISSING_GLYPHS, drawText, textWidth } from './engine/font';
 import { Input } from './engine/input';
@@ -356,6 +357,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
 
   let game: Game | null = null;
   let mode: 'title' | 'play' = 'title';
+  /** The floor whose enemies' sounds have been fetched (engine/audio.ts warmNamed). */
+  let warmedLevel: unknown = null;
   /** The hero whose voice has been fetched (engine/audio.ts warmRecorded). */
   let warmedFor = '';
   let bot: BotState | null = null;
@@ -1573,6 +1576,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     fx.handle(more.length ? [...g.events, ...more] : g.events, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
     // (the hero's own voice, the sound chat's: engine/audio.ts heroVoice; and his voice and the combat sounds fetched once he plays)
     for (const e of g.events) if (e.t === 'voice') heroVoice(e.who, e.cry);
+    // (THE SOUND CHAT'S SECOND BATCH: the enemies' and the bosses' sounds by name; a floor's fetched as it is come into)
+    for (const e of g.events) if (e.t === 'rec') sfxNamed(e.name, e.vol ?? 1, e.or);
+    if (warmedLevel !== g.level && warmNamed(soundsOf(new Set(g.monsters.map((m) => m.kind))))) warmedLevel = g.level;
     if (warmedFor !== g.hero.cls) {
       warmedFor = g.hero.cls;
       warmRecorded(g.hero.cls);

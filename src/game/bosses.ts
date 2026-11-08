@@ -805,6 +805,8 @@ export class BossRules {
     m.move = i;
     m.act = { id: a.id, t: 0, n: this.serial++, hand: handOf(G.trueBack, m.fx, m.fy), a: 0, b: 0, x: h.x, y: h.y };
     const act = m.act;
+    // (THE SECOND BATCH, game/sound_families.ts: its attack by its family, or a silent boss's, the sound of what he does)
+    g.atkSound(m, a.id);
     if (a.id === 'axe') act.a = Math.max(HEADSMAN.axe.far, Math.min(HEADSMAN.axe.most, dist + 0.7));
     else if (a.id === 'h2:vault') {
       // (THE HEADSMAN MADE NEW: where his blade will come down, marked from his warning on)
