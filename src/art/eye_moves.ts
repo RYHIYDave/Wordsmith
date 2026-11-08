@@ -35,7 +35,7 @@
 //     6. PHASE 2: his stand, from its first frame.
 //   The game's screen: `EYE_SCREEN` (rumble, shakes, darkening, the roar's sound) for the main chat and the sound chat.
 
-import { ARMS_RISEN, COLOSSUS, EYE_LOOP, EYE_RISEN, EYE_UNDER, GAZE_AT_YOU, STONE, TONGUE_RISEN, TONGUE_UNDER, armBelly, weaveTongue } from './eye_colossus';
+import { ARMS_RISEN, ARMS_UNDER, ARM_LOOP, COLOSSUS, EYE_LOOP, EYE_RISEN, EYE_UNDER, GAZE_AT_YOU, STONE, TONGUE_RISEN, TONGUE_UNDER, armBelly, weaveTongue } from './eye_colossus';
 import type { ArmPose, ColossusAnim, ColossusPose } from './eye_colossus';
 
 type V3 = readonly [number, number, number];
@@ -106,23 +106,64 @@ export function standAnim(t: number): ColossusAnim {
   return { t, open: standOpen(t), tongue: T.path, eye: T.eye, gaze: gazeAt(T.eye), lids: 1, glow: standGlow(t) };
 }
 
-/** His tentacles' rest (ARMS_RISEN), their suckers held to the way each tip curls at rest. */
-const ARM_REST: ArmPose[] = ARMS_RISEN.map((a) => ({ ...a, belly: armBelly(a), fixed: true }));
-/** How far a tentacle's tip sways as he stands (his lengths). */
-export const ARM_SWAY = 14;
-/** A tentacle at rest, swaying from its root: a slow wave out along it, the root where it is. */
-export function armStand(i: number, t: number): ArmPose {
-  const a = ARM_REST[i];
-  const ph = (TAU * t) / EYE_LOOP + i * 2.1;
+/** His tentacles' rests, their suckers held to the way each tip curls at rest: 0, 1, 2 phases 2 and 3 (ARMS_RISEN: left, middle,
+ *  right); 3, 4 phase 1 (ARMS_UNDER: at a third and two thirds along the stone). */
+export const ARM_REST: ArmPose[] = [...ARMS_RISEN, ...ARMS_UNDER].map((a) => ({ ...a, belly: armBelly(a), fixed: true }));
+export { ARM_LOOP };
+/** How far a tentacle's tip sways as it stands (his lengths), and how far its tip curls and uncurls (radians, all along its curl). */
+export const ARM_SWAY = 22;
+export const ARM_CURL = 0.34;
+/** A tentacle's frames as it stands: a loop of `ARM_LOOP` (two of them in his stand's one, so that they close together). */
+export const ARM_STAND_FRAMES = Math.round(ARM_LOOP * EYE_FPS);
+/** A point rotated about an axis (unit) through a point, by an angle. */
+function turnAbout(q: readonly number[], o: readonly number[], ax: readonly number[], a: number): number[] {
+  const v = [q[0] - o[0], q[1] - o[1], q[2] - o[2]];
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  const d = ax[0] * v[0] + ax[1] * v[1] + ax[2] * v[2];
+  const x = [ax[1] * v[2] - ax[2] * v[1], ax[2] * v[0] - ax[0] * v[2], ax[0] * v[1] - ax[1] * v[0]];
+  return [o[0] + v[0] * c + x[0] * s + ax[0] * d * (1 - c), o[1] + v[1] * c + x[1] * s + ax[1] * d * (1 - c), o[2] + v[2] * c + x[2] * s + ax[2] * d * (1 - c)];
+}
+/** A path's tip curled more (`a` radians all along it, more toward its end) from `from` (0 to 1 along its points) out. */
+export function curlTip(path: ReadonlyArray<readonly number[]>, a: number, from = 0.55): number[][] {
+  const n = path.length - 1;
+  const j0 = Math.round(from * n);
+  // (the way it curls: the turn of its tip at rest)
+  let ax = [0, 0, 0];
+  for (let j = j0; j + 2 <= n; j++) {
+    const u = [path[j + 1][0] - path[j][0], path[j + 1][1] - path[j][1], path[j + 1][2] - path[j][2]];
+    const v = [path[j + 2][0] - path[j + 1][0], path[j + 2][1] - path[j + 1][1], path[j + 2][2] - path[j + 1][2]];
+    ax = [ax[0] + u[1] * v[2] - u[2] * v[1], ax[1] + u[2] * v[0] - u[0] * v[2], ax[2] + u[0] * v[1] - u[1] * v[0]];
+  }
+  const al = Math.hypot(ax[0], ax[1], ax[2]);
+  if (al < 1e-6) return path.map((q) => [...q]);
+  ax = [ax[0] / al, ax[1] / al, ax[2] / al];
+  const out = path.map((q) => [...q]);
+  // (each point beyond the curl's start turned about the one before it, by a share of the angle growing toward the tip)
+  for (let j = j0 + 1; j <= n; j++) {
+    const w = (j - j0) / (n - j0);
+    const da = (a * 2 * w) / (n - j0);
+    for (let m = j; m <= n; m++) {
+      const r = turnAbout(out[m], out[j - 1], ax, da);
+      out[m][0] = r[0];
+      out[m][1] = r[1];
+      out[m][2] = r[2];
+    }
+  }
+  return out;
+}
+/** A tentacle as it stands (`w` of ARM_REST) at its clock `t`: never still; a slow wave of sway out along it from its root (its root
+ *  where it is), its body breathing up and down, its tip curling and uncurling. A loop of ARM_LOOP. */
+export function armStand(w: number, t: number): ArmPose {
+  const a = ARM_REST[w];
+  const ph = (TAU * t) / ARM_LOOP + w * 2.1;
   const n = a.path.length - 1;
-  return {
-    ...a,
-    path: a.path.map((q, j) => {
-      const u = j / n;
-      const A = ARM_SWAY * u ** 1.6;
-      return [q[0] + A * Math.sin(ph - 2 * u), q[1] + 0.3 * A * Math.sin(ph - 1.6 * u + 2.1), q[2] + 0.45 * A * Math.sin(ph - 2 * u + 1.2)];
-    }),
-  };
+  const swayed = a.path.map((q, j) => {
+    const u = j / n;
+    const A = ARM_SWAY * u ** 1.5;
+    return [q[0] + A * Math.sin(ph - 2.2 * u), q[1] + 0.4 * A * Math.sin(ph - 1.8 * u + 2.1), q[2] + 0.35 * A * Math.sin(ph - 2 * u + 1.2) + 5 * u * Math.sin(ph + 0.4)];
+  });
+  return { ...a, path: curlTip(swayed, ARM_CURL * Math.sin(ph + 0.8)) };
 }
 
 // =============================================================================================
@@ -411,8 +452,45 @@ export interface EyeWater {
   roar: number | null;
   bursts: Array<{ k: number; x: number; y: number }>;
 }
+/** What the game draws over the stone and the water for his tentacles (art/eye_arms.ts; the pictures' tool draws it). */
+export interface ArmFx {
+  /** Where a slam will land, on the stone, through its wind-up (the game's warning): from the root (his space, at the water) along
+   *  `ang` (radians from straight toward the camera, positive to his left... to the screen's right), `len` long, `wid` wide; `k` how far
+   *  through the wind-up (0 to 1). */
+  lines: Array<{ x: number; y: number; ang: number; len: number; wid: number; k: number }>;
+  /** A tentacle hitting the stone: where along its line it lay (from `a0` to `a1`), `s` seconds since. */
+  hits: Array<{ x: number; y: number; ang: number; a0: number; a1: number; s: number; seed: number }>;
+  /** The slime trail it leaves dragging back: the stretch of the line it lay along, `s` seconds since it began to drag. */
+  trails: Array<{ x: number; y: number; ang: number; a0: number; a1: number; s: number; seed: number }>;
+  /** A tentacle smashing into the water (a water slam), `s` seconds since. */
+  smashes: Array<{ x: number; y: number; s: number; seed: number }>;
+  /** The waves of the water slams: `dir` 1 rolling right, -1 left; `s` seconds since the smash. */
+  waves: Array<{ dir: number; s: number }>;
+  /** The two waves' crash in the middle, `s` seconds since they met (or less than 0: not yet). */
+  crash: number | null;
+  /** Where a water slam's wave will run (the game's warning, through the wind-up): `k` 0 to 1. */
+  waveWarn: number | null;
+  /** His ichor spurting where a tentacle is struck (his space), `s` seconds since. */
+  ichor: Array<{ x: number; y: number; z: number; s: number; seed: number }>;
+  /** A tentacle sinking as it dies, where it goes under (his space, at the water), `s` seconds since it began to sink. */
+  sinks: Array<{ x: number; y: number; s: number; seed: number }>;
+}
+/** The Warrior in a frame of the tentacles' films: where (the arena's units: across, and onto the stone from the back of the water),
+ *  facing him ('back') or the camera ('front'), standing, running or striking, and the frame of it. */
+export interface HeroAt {
+  du: number;
+  dv: number;
+  view: 'back' | 'front';
+  act: 'idle' | 'run' | 'attack';
+  f: number;
+}
 export interface EyeFrame {
-  move: 'stand' | 'lurk' | 'entrance';
+  move: 'stand' | 'lurk' | 'entrance' | 'p1' | 'p2' | 'fan';
+  /** The tentacles' films: the Warrior, how far the camera has come down from the stills' (picture pixels), and what the game draws
+   *  for the tentacles. */
+  hero?: HeroAt;
+  camY?: number;
+  fx?: ArmFx;
   k: number;
   /** His clock (the stand's: 0 at its first frame). */
   t: number;
@@ -439,13 +517,18 @@ function standLayers(k: number): Pick<EyeFrame, 'jaws' | 'spit' | 'tongue' | 'ar
     jaws: { key: `J.s.${pad(k)}`, pose: body({ ...an, parts: 'jaws' }), drop: 0, back: 0 },
     spit: { key: `S.s.${pad(k)}`, pose: body({ ...an, parts: 'spit' }), drop: 0, back: 0 },
     tongue: { key: `T.s.${pad(k)}`, pose: body({ ...an, parts: 'tongue' }), drop: 0, back: 0 },
-    arms: [0, 1, 2].map((i) => ({ key: `A${i}.s.${pad(k)}`, pose: armLayer(armStand(i, t), t), drop: 0, back: 0 })),
+    arms: [0, 1, 2].map((i) => armStandLayer(i, k)),
   };
 }
-function armLayer(a: ArmPose, t: number): ColossusPose {
-  // (a tentacle alone; his clock for what hangs off it)
-  const an: ColossusAnim = { t, open: 1, tongue: null, eye: EYE_RISEN, gaze: GAZE_AT_YOU, lids: 1, glow: 1 };
+/** A tentacle alone, a layer of its own; its own clock (in its loop) for its suckers' flexing and its drips. */
+export function armLayer(a: ArmPose, t: number): ColossusPose {
+  const an: ColossusAnim = { t: mod(t, ARM_LOOP), open: 1, tongue: null, eye: EYE_RISEN, gaze: GAZE_AT_YOU, lids: 1, glow: 1 };
   return { view: 'front', drop: 0, body: false, gaze: GAZE_AT_YOU, arms: [a], anim: an };
+}
+/** A tentacle's stand layer at frame `k` of its loop (any frame: its loop's frame taken). */
+export function armStandLayer(w: number, k: number): EyeLayer {
+  const f = mod(k, ARM_STAND_FRAMES);
+  return { key: `A${w}.s.${pad(f)}`, pose: armLayer(armStand(w, f / EYE_FPS), f / EYE_FPS), drop: 0, back: 0 };
 }
 const STILL_WATER: EyeWater = { sunk: 0, pulse: 1, bubbles: 0, swell: 0.15, slicks: 0, boil: 0, rising: false, roar: null, bursts: [] };
 

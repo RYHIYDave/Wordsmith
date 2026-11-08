@@ -321,8 +321,13 @@ interface Arm {
   /** Runs of CH samples, each bounded (x, y, z, radius), so that a point far from a run skips it. */
   ch: Float64Array;
   suckers: boolean;
+  /** A tentacle moving (a pose of a move): its suckers flex. */
+  flex?: boolean;
 }
 const CH = 8;
+const TAU_C = Math.PI * 2;
+/** A tentacle's own loop as it stands (seconds): its suckers' flexing and its drips repeat in it (art/eye_moves.ts ARM_LOOP). */
+export const ARM_LOOP = 1.5;
 
 /** A Catmull-Rom curve through points (any number of numbers each), `n` samples. */
 function catmull(pts: ReadonlyArray<readonly number[]>, n: number): number[][] {
@@ -1618,7 +1623,11 @@ class Scene {
   /** How big his eye is now (1 as drawn). */
   readonly eyeK: number = 1;
   constructor(pose: ColossusPose) {
-    this.arms = pose.arms.map((a) => armOf(a));
+    this.arms = pose.arms.map((a) => {
+      const A = armOf(a);
+      if (pose.anim) A.flex = true;
+      return A;
+    });
     this.drop = pose.drop;
     this.back = pose.back ?? 0;
     this.body = pose.body;
@@ -1653,7 +1662,11 @@ class Scene {
     const e = an ? an.eye : pose.tongue === 'under' ? EYE_UNDER : EYE_RISEN;
     this.eyeC = [e[0], e[1], e[2]];
     this.tongue = pose.body && path && (!this.now || this.now.parts === 'tongue' || this.now.parts === 'all') ? armOf({ path, r: 30, belly: [0, 0, -1], seed: 9 }, 120, 30, false) : null;
-    if (!pose.body) return;
+    if (!pose.body) {
+      // (a tentacle alone, moving: slime dripping off it)
+      if (an) for (const A of this.arms) this.armDrips(A, an.t);
+      return;
+    }
     if (this.now) {
       if (this.now.parts === 'spit' || this.now.parts === 'all') this.spittle(an as ColossusAnim);
       return;
@@ -1698,6 +1711,61 @@ class Scene {
       }
     }
     for (let i = 0; i < P.splashes.length; i++) this.splashes.push(P.splashes[i]);
+  }
+
+  /**
+   * SLIME DRIPPING OFF A TENTACLE (a tentacle alone, moving): from points along its underside where it hangs over (not where it runs
+   * upright: there the slime runs down it), a drip of slime running longer, its bulb swelling, letting go and falling (a gob, drawn
+   * out above as it falls), each on its own round in its loop (`ARM_LOOP`), the drip springing back short. Never below what is under
+   * it (the water and the stone at their height).
+   */
+  armDrips(A: Arm, t: number): void {
+    const P = A.p;
+    const In = A.inner;
+    const N = A.n;
+    for (let d = 0; d < 7; d++) {
+      const u = 0.28 + 0.09 * d + 0.03 * h3(d, A.seed, 0, 230);
+      const k = Math.min(N - 2, Math.round(u * (N - 1)));
+      const r = P[k * 4 + 3];
+      if (r < 3) continue;
+      const tx = P[k * 4 + 4] - P[k * 4];
+      const ty = P[k * 4 + 5] - P[k * 4 + 1];
+      const tz = P[k * 4 + 6] - P[k * 4 + 2];
+      const tl = Math.hypot(tx, ty, tz) || 1;
+      // (hanging over: its way along it not too steep)
+      if (Math.abs(tz / tl) > 0.72) continue;
+      // (its lowest point round it: straight down, off the way along it)
+      let nx = -(tz / tl) * (tx / tl);
+      let ny = -(tz / tl) * (ty / tl);
+      let nz = -1 + (tz / tl) * (tz / tl);
+      const nl = Math.hypot(nx, ny, nz) || 1;
+      nx /= nl;
+      ny /= nl;
+      nz /= nl;
+      // (its underside, its suckers' side, drips most: a little round toward it)
+      const bx = P[k * 4] + nx * (r - 0.6) + In[k * 3] * 0.1;
+      const by = P[k * 4 + 1] + ny * (r - 0.6) + In[k * 3 + 1] * 0.1;
+      const bz = P[k * 4 + 2] + nz * (r - 0.6);
+      if (bz < 14) continue;
+      const room = bz - 2;
+      const per = h3(d, A.seed, 1, 231) < 0.5 ? ARM_LOOP : ARM_LOOP / 2;
+      const q = t / per + h3(d, A.seed, 2, 232);
+      const p = q - Math.floor(q);
+      const len = Math.min(room - 3, (8 + 18 * h3(d, A.seed, 3, 233)) * (p < 0.82 ? 0.25 + 0.75 * (p / 0.82) ** 1.4 : 0.25));
+      const rb = 1.3 + 1.4 * h3(d, A.seed, 4, 234) * (p < 0.82 ? 0.5 + 0.5 * p / 0.82 : 0.5);
+      const pts: number[][] = [];
+      for (let i = 0; i <= 5; i++) {
+        const v = i / 5;
+        pts.push([bx, by, bz - len * v, i === 5 ? rb : 1.1 + 0.5 * (1 - v)]);
+      }
+      this.strands.push(strandOf(pts));
+      // (let go: the gob falling, drawn out above it)
+      if (p >= 0.82) {
+        const age = (p - 0.82) * per;
+        const z0 = bz - len - age * age * 0.5 * FALL_G;
+        if (z0 > 2) this.strands.push(strandOf([[bx, by, z0 + rb * 2.2, 0.6], [bx, by, z0, rb]]));
+      }
+    }
   }
 
   /** A rope of drool from (x, y, z) down to the water, swaying a little, beads on it, a gob at its end where it meets the water. */
@@ -2272,11 +2340,13 @@ class Scene {
     }
     let sucker = 0;
     if (A.suckers && Math.abs(phi) < 1.2 && r > 3.6 && s > 34) {
-      const sr = Math.max(1.6, r * 0.19);
-      const space = sr * 3.4;
+      const sr0 = Math.max(1.6, r * 0.19);
+      const space = sr0 * 3.4;
       for (const row of [-0.46, 0.46]) {
         const off = row > 0 ? 0.5 : 0;
         const c = Math.round(sg - off) + off;
+        // (while it moves, its suckers flexing: a wave of them opening and closing down each row, `ARM_LOOP` a round)
+        const sr = NOW && A.flex ? sr0 * (1 + 0.2 * Math.sin((TAU_C * NOW.t) / ARM_LOOP - c * 0.9 + (row > 0 ? 1.3 : 0))) : sr0;
         const du = (sg - c) * space;
         const dv = (phi - row) * r;
         const rho = Math.hypot(du, dv);
@@ -2349,6 +2419,17 @@ class Scene {
         d = a;
       }
     }
+    // (a tentacle alone: the slime dripping off it)
+    if (!this.body && this.strands.length) {
+      const s = this.strandsAt(x, y, Z);
+      if (s < d) {
+        if (f) {
+          f.mat = M_STRAND;
+          f.arm = -1;
+        }
+        d = s;
+      }
+    }
     return d;
   }
 }
@@ -2386,6 +2467,9 @@ export interface Frame {
   zoom?: number;
   /** A layer of a move: nothing of the water painted, nor the pink edge (the pictures' tool lays the layers together over the water). */
   raw?: boolean;
+  /** A layer's box (i0, j0, i1, j1 on its picture): outside it there is nothing of him, so no ray is cast there (a tentacle's layer, its
+   *  box worked out from its tube, its drips and what falls off it). */
+  box?: readonly [number, number, number, number];
 }
 
 const L_FIG: readonly [number, number, number] = (() => {
@@ -2436,8 +2520,10 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
   const T0 = 760;
   const eps = 0.6;
   const E = S.eyeC;
+  const box = raw ? fr.box : undefined;
   for (let j = 0; j < h; j++) {
     for (let i = 0; i < w; i++) {
+      if (box && (i < box[0] || i >= box[2] || j < box[1] || j >= box[3])) continue;
       const X = (i + 0.5 - ax) / (SEEN * zoom);
       const sd = (j + 0.5 - ay) / (SEEN * zoom);
       // the ray: from in front of him, toward the plane of the picture and on through it

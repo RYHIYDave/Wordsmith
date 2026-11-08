@@ -28,8 +28,9 @@ import { CUT_FAR, CUT_LEFT, CUT_NEAR, CUT_RIGHT, T_FLOOR, T_WALL } from '../src/
 import type { Floor } from '../src/game/types';
 import { CO_MELT, CO_SHEEN, CO_SLIME, CO_SPIT, CO_IRIS, EYE_UNDER, FALL_G, LEANED, STONE, meltLandings, meltSplashes, paintColossus } from '../src/art/eye_colossus';
 import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
+import { ARM_COLOURS, ARM_SHAKE, CAM_ARMS, CAM_WAVES, CRASH, LINE, SHOTS, STONE_BOX, WAVE, fightFrame, waveFront, waveHigh } from '../src/art/eye_arms';
 import { HERO_SPOT, EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_STAND, entranceAt, eyeFrame } from '../src/art/eye_moves';
-import type { EyeFrame, EyeLayer } from '../src/art/eye_moves';
+import type { ArmFx, EyeFrame, EyeLayer } from '../src/art/eye_moves';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { RIM_ALPHA } from '../src/art/kit';
 
@@ -267,7 +268,9 @@ const SW = LEANED.w * 2;
 const SH = LEANED.h * 2;
 const M = 16;
 const CW = SW + 2 * M;
-const CH = SH + 2 * M;
+/** Below the screen, room for the camera lowered over the stone for the tentacles (picture pixels). */
+const EXTRA = 200;
+const CH = SH + 2 * M + EXTRA;
 /** His middle at the water on the canvas: the camera leaned toward him as the stills have it, but `EASE` game pixels less, so that his eye
  *  at the top of its weave stays on the screen (for the main chat: his middle at the water 131 game pixels down the screen in phase 2). */
 export const EASE = 6;
@@ -320,6 +323,42 @@ function scenery(): Scenery {
 
 /** Each layer painted on this frame: wide enough for all of him and his arms, deep enough for him lying low (in his picture's pixels). */
 const LAYER = { w: 1100, h: 520, ax: 550, ay: 300, raw: true } as const;
+/** A tentacle's layer: taller, for one lying slammed out across the stone toward the camera. */
+const LAYER_ARM = { w: 1100, h: 660, ax: 550, ay: 300, raw: true } as const;
+/** A tentacle layer's box: round its tube (as thick as it is at its root, and a margin), from its top down to the water under each part
+ *  of it (its drips and what falls off it fall straight down): outside it no ray is cast, for there is nothing of it there. */
+function armBox(L: EyeLayer): [number, number, number, number] {
+  const F = LAYER_ARM;
+  let i0 = Infinity;
+  let j0 = Infinity;
+  let i1 = -Infinity;
+  let j1 = -Infinity;
+  for (const a of (L.pose as ColossusPose).arms ?? []) {
+    const R = (a.r + 3) * SEEN;
+    for (const q of a.path) {
+      const i = F.ax + q[0] * SEEN;
+      const j = F.ay + (q[1] * 0.5 - q[2] * (Math.sqrt(3) / 2)) * SEEN;
+      const jw = F.ay + q[1] * 0.5 * SEEN;
+      i0 = Math.min(i0, i - R);
+      i1 = Math.max(i1, i + R);
+      j0 = Math.min(j0, j - R);
+      j1 = Math.max(j1, j + R, jw + 4);
+    }
+  }
+  const P = 24;
+  return [Math.max(0, Math.floor(i0 - P)), Math.max(0, Math.floor(j0 - P)), Math.min(F.w, Math.ceil(i1 + P)), Math.min(F.h, Math.ceil(j1 + P))];
+}
+const BOXES = new Map<EyeLayer, [number, number, number, number]>();
+const frameFor = (L: EyeLayer): { w: number; h: number; ax: number; ay: number; raw: true; box?: readonly [number, number, number, number] } => {
+  if (!L.key.startsWith('A')) return LAYER;
+  let b = BOXES.get(L);
+  if (!b) {
+    b = armBox(L);
+    if (BOXES.size > 4000) BOXES.clear();
+    BOXES.set(L, b);
+  }
+  return { ...LAYER_ARM, box: b };
+};
 // (kept on the machine's memory disk, packed: only what of him there is, in the box round it)
 const CACHE = process.env.EYE_CACHE || '/dev/shm/eye_moves/cache';
 fs.mkdirSync(CACHE, { recursive: true });
@@ -335,17 +374,17 @@ const painterOf = (file: string): { all: string; rest: string } => {
   return { all: crypto.createHash('sha1').update(all).digest('hex'), rest: crypto.createHash('sha1').update(rest).digest('hex') };
 };
 const PAINTER = painterOf('src/art/eye_colossus.ts');
-const fileOf = (L: EyeLayer, src = L.key.startsWith('T') ? PAINTER.all : PAINTER.rest): string => path.join(CACHE, `${L.key.replace(/[^A-Za-z0-9.]/g, '_')}_${crypto.createHash('sha1').update(src + JSON.stringify(L.pose) + JSON.stringify(LAYER)).digest('hex').slice(0, 14)}.bin`);
+const fileOf = (L: EyeLayer, src = L.key.startsWith('T') ? PAINTER.all : PAINTER.rest): string => path.join(CACHE, `${L.key.replace(/[^A-Za-z0-9.]/g, '_')}_${crypto.createHash('sha1').update(src + JSON.stringify(L.pose) + JSON.stringify(frameFor(L))).digest('hex').slice(0, 14)}.bin`);
 /** A layer: the box round what of him there is (x0, y0, w, h, on his picture), and in it each pixel's kind, colour, nearness, height
  *  over the water, fire, outline and material; his lights. */
 interface Layer { x0: number; y0: number; w: number; h: number; px: Uint8Array; kind: Uint8Array; mat: Uint8Array; near: Float32Array; zh: Float32Array; fire: Uint8Array; seam: Uint8Array; lights: ColossusPicture['lights'] }
-function save(file: string, c: ColossusPicture): void {
-  const W0: number = LAYER.w;
+function save(file: string, c: ColossusPicture, FR: { w: number; h: number } = LAYER): void {
+  const W0: number = FR.w;
   let x0: number = W0;
-  let y0: number = LAYER.h;
+  let y0: number = FR.h;
   let x1 = -1;
   let y1 = -1;
-  for (let j = 0; j < LAYER.h; j++) for (let i = 0; i < W0; i++) {
+  for (let j = 0; j < FR.h; j++) for (let i = 0; i < W0; i++) {
     const kd = c.kind[j * W0 + i];
     if (kd !== 1 && kd !== 4) continue;
     if (i < x0) x0 = i;
@@ -431,7 +470,7 @@ function layer(L: EyeLayer): Layer {
   if (r) return r;
   if (!fs.existsSync(file)) {
     const t0 = Date.now();
-    save(file, paintColossus(L.pose as ColossusPose, LAYER));
+    save(file, paintColossus(L.pose as ColossusPose, frameFor(L)), frameFor(L));
     process.stdout.write(`  painted ${L.key} in ${((Date.now() - t0) / 1000).toFixed(1)} s\n`);
   }
   r = load(file);
@@ -443,8 +482,10 @@ function layer(L: EyeLayer): Layer {
 // =============================================================================================
 // THE FRAMES OF EACH MOVE
 
-const MOVES = { lurk: EYE_LURK.frames, entrance: EYE_ENTRANCE.frames, stand: EYE_STAND.frames } as const;
+const MOVES = { lurk: EYE_LURK.frames, entrance: EYE_ENTRANCE.frames, stand: EYE_STAND.frames, p1: SHOTS.p1, p2: SHOTS.p2, fan: SHOTS.fan } as const;
 type Move = keyof typeof MOVES;
+/** A frame of a move or of a tentacles' shot. */
+const frameAt = (mv: Move, k: number): EyeFrame => (mv === 'p1' || mv === 'p2' || mv === 'fan' ? fightFrame(mv, k) : eyeFrame(mv, k));
 function layersOf(F: EyeFrame): EyeLayer[] {
   return [F.jaws, F.spit, F.tongue, ...F.arms, ...F.smear].filter((L): L is EyeLayer => !!L);
 }
@@ -572,6 +613,12 @@ const SPIT = CO_SPIT as unknown as RGB[];
 const SLIME = CO_SLIME as unknown as RGB[];
 const IRIS = CO_IRIS as unknown as RGB[];
 const SHEEN = CO_SHEEN as unknown as RGB;
+/** His ichor: dark, the blood of a thing of the deep: maroon to black, wet (never the friend's cyan). */
+const ICHOR: RGB[] = ARM_COLOURS.ichor.map(hex);
+/** A chip of the stone, and the stone's cracks. */
+const STONE_LIT: RGB = hex(ARM_COLOURS.stoneLit);
+const STONE_DARK: RGB = hex(ARM_COLOURS.stoneDark);
+const CRACK_C: RGB = hex(ARM_COLOURS.crack);
 
 /** The exact distance (his lengths, on the water) from each pixel to the nearest seed: a pixel across is 1/SEEN of his lengths, one
  *  down R3 of them (the water seen from above at 30 degrees). */
@@ -614,7 +661,7 @@ function distanceOnWater(seed: Uint8Array, w: number, h: number): Float32Array {
 
 /** A thing flying through the air (spray, goo, droplets), its path from where and when it was thrown. */
 /** What flies: 0 a drop of his spittle, 1 a gob of his slime, 2 a drop of water, 3 a sheet of his slime, tumbling. */
-interface Flyer { x: number; y: number; z: number; vx: number; vy: number; vz: number; t0: number; kind: 0 | 1 | 2 | 3; size: number; seed?: number }
+interface Flyer { x: number; y: number; z: number; vx: number; vy: number; vz: number; t0: number; kind: 0 | 1 | 2 | 3 | 4 | 5; size: number; seed?: number }
 /** Where a flyer is `s` seconds after it was thrown (and whether it has met the water). */
 function flyAt(f: Flyer, s: number): [number, number, number] {
   return [f.x + f.vx * s, f.y + f.vy * s, f.z + f.vz * s - 0.5 * FALL_G * s * s];
@@ -701,6 +748,435 @@ function burstFlyers(x: number, y: number, seed: number): Flyer[] {
   return out;
 }
 const ROAR = roarFlyers();
+
+// =============================================================================================
+// THE TENTACLES' EFFECTS (the game's, drawn over the stone and the water as his water is): art/eye_arms.ts says where and when
+
+/** A point of a tentacle's line (his space): from its root (x, y) along `ang`, `a` along, `b` across. */
+const onLine = (x: number, y: number, ang: number, a: number, b: number): [number, number] => [x + a * Math.sin(ang) - b * Math.cos(ang), y + a * Math.cos(ang) + b * Math.sin(ang)];
+/** The game's warning dot (2 by 1 game pixels). */
+function warnDot(pic: Pic, i: number, j: number, c: RGB, a: number): void {
+  const x = Math.round(i / 2) * 2;
+  const y = Math.round(j / 2) * 2;
+  for (let dx = 0; dx < 4; dx++) for (let dy = 0; dy < 2; dy++) pic.over(x + dx, y + dy, c[0], c[1], c[2], a);
+}
+const WARN_SHADE: RGB = hex(ARM_COLOURS.warnShade);
+const FL2: RGB = hex(ARM_COLOURS.warnEdge[0]);
+const FL3: RGB = hex(ARM_COLOURS.warnEdge[1]);
+/**
+ * THE GAME'S WARNING ON THE FLOOR (render/act1_fx/garden_warn.ts, the Hush's warnings' own): the edge of what will be struck a dashed
+ * line of the enemy's pink, its dashes marching on as the blow comes, brightening; the floor inside darkening, a sparse dither growing
+ * thicker. `corner(u, v)` the floor point (his space) at u, v of it (each 0 to 1); `area` in the arena's tiles; on the stone only.
+ */
+function drawWarn(pic: Pic, water: Uint8Array, corner: (u: number, v: number) => [number, number], lenU: number, lenV: number, k: number, t: number): void {
+  const shown = sm(0, 0.25, k);
+  const tileL = 32 / SEEN;
+  const area = (lenU / tileL) * (lenV / tileL);
+  const n = Math.round(area * 60);
+  const onStoneAt = (i: number, j: number): boolean => i >= 0 && j >= 0 && i < CW && j < CH && water[Math.round(j) * CW + Math.round(i)] === 0;
+  for (let q = 0; q < n; q++) {
+    if (h3(q, 1, 0, 7721) > 0.3 + 0.5 * k) continue;
+    const [x, y] = corner(h3(q, 2, 0, 7722), h3(q, 3, 0, 7723));
+    const [i, j] = onCanvas(x, y, 0);
+    if (!onStoneAt(i, j)) continue;
+    warnDot(pic, i, j, WARN_SHADE, 255 * 0.35 * shown * (0.5 + 0.5 * k));
+  }
+  // (its edge, dashed and marching)
+  const STEP = 0.07 * tileL;
+  const pts: Array<[number, number]> = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  let jj = 0;
+  for (let e = 0; e < 4; e++) {
+    const [u0, v0] = pts[e];
+    const [u1, v1] = pts[(e + 1) % 4];
+    const len = Math.hypot((u1 - u0) * lenU, (v1 - v0) * lenV);
+    const m = Math.max(1, Math.round(len / STEP));
+    for (let q = 0; q < m; q++, jj++) {
+      if ((Math.floor(jj / 3 - t * 9) & 1) === 0) continue;
+      const w = q / m;
+      const [x, y] = corner(u0 + (u1 - u0) * w, v0 + (v1 - v0) * w);
+      const [i, j] = onCanvas(x, y, 0);
+      if (!onStoneAt(i, j)) continue;
+      warnDot(pic, i, j, k > 0.75 ? FL3 : FL2, 255 * shown * (0.45 + 0.55 * k));
+    }
+  }
+}
+/** A crack in the stone from a point (his space), the way `ang`, `len` long as far as it has run, jagged, a branch off it. */
+function crack(pic: Pic, water: Uint8Array, top: Top, x: number, y: number, ang: number, len: number, seed: number, a: number): void {
+  let px = x;
+  let py = y;
+  let dir = ang;
+  const step = 2.2;
+  for (let s2 = 0; s2 < len; s2 += step) {
+    dir += (h3(seed, Math.floor(s2 / 6), 1, 7801) - 0.5) * 0.9;
+    const nx = px + Math.sin(dir) * step;
+    const ny = py + Math.cos(dir) * step;
+    const [i0, j0] = onCanvas(px, py, 0);
+    const [i1, j1] = onCanvas(nx, ny, 0);
+    const m = Math.max(1, Math.round(Math.hypot(i1 - i0, j1 - j0)));
+    for (let q = 0; q <= m; q++) {
+      const i = Math.round(i0 + ((i1 - i0) * q) / m);
+      const j = Math.round(j0 + ((j1 - j0) * q) / m);
+      if (i < 1 || j < 1 || i >= CW - 1 || j >= CH - 1 || water[j * CW + i]) continue;
+      if (top.who[j * CW + i] >= 0 && top.z[j * CW + i] >= -0.5) continue;
+      // (the crack dark, its lower lip catching the light)
+      const w = s2 < len * 0.35 ? 2 : 1;
+      for (let d = 0; d < w; d++) pic.over(i + d, j, CRACK_C[0], CRACK_C[1], CRACK_C[2], 230 * a);
+      pic.over(i, j + 1, STONE_LIT[0], STONE_LIT[1], STONE_LIT[2], 110 * a);
+    }
+    if (Math.floor(s2 / step) === 4 && h3(seed, 9, 2, 7802) < 0.7) crack(pic, water, top, nx, ny, dir + (h3(seed, 8, 3, 7803) < 0.5 ? 0.9 : -0.9), len * 0.4, seed + 101, a);
+    px = nx;
+    py = ny;
+  }
+}
+/** WHAT A TENTACLE THROWS: slime, water and chips of the stone off a slam; a crown of water and slime off a smash; his ichor out of a
+ *  wound; the spray off a wave's crest; the crash's water and slime thrown up. Each with how long since it was thrown. */
+function armFlyers(fx: ArmFx): Array<[Flyer, number]> {
+  const out: Array<[Flyer, number]> = [];
+  for (const h of fx.hits) {
+    if (h.s < 0 || h.s > 2.2) continue;
+    for (let n = 0; n < 70; n++) {
+      // (from along where it struck, out to both sides and up)
+      const a = h.a0 + (h.a1 - h.a0) * h3(n, h.seed, 1, 7811);
+      const side = h3(n, h.seed, 2, 7812) < 0.5 ? -1 : 1;
+      const [x, y] = onLine(h.x, h.y, h.ang, a, side * 8);
+      const sp = 60 + 200 * h3(n, h.seed, 3, 7813);
+      const up = 80 + 260 * h3(n, h.seed, 4, 7814);
+      const kind = (n < 26 ? 1 : n < 54 ? 2 : 5) as 1 | 2 | 5;
+      const across = [-Math.cos(h.ang) * side, Math.sin(h.ang) * side];
+      out.push([{ x, y, z: 6, vx: across[0] * sp + (h3(n, h.seed, 5, 7815) - 0.5) * 60, vy: across[1] * sp + (h3(n, h.seed, 6, 7816) - 0.5) * 60, vz: up, t0: 0, kind, size: kind === 1 ? 1.5 + 2 * h3(n, h.seed, 7, 7817) : kind === 5 ? 1 + Math.floor(2 * h3(n, h.seed, 7, 7817)) : 1, seed: h.seed * 97 + n }, h.s]);
+    }
+  }
+  for (const m of fx.smashes) {
+    if (m.s < 0 || m.s > 2) continue;
+    for (let n = 0; n < 200; n++) {
+      // (a crown of water thrown up all round where it went in, and slime off it)
+      const a = h3(n, m.seed, 1, 7821) * TAU;
+      const r = 20 + 30 * h3(n, m.seed, 2, 7822);
+      const crown = n < 140;
+      const sp = crown ? 40 + 80 * h3(n, m.seed, 3, 7823) : 120 + 260 * h3(n, m.seed, 3, 7823);
+      out.push([{ x: m.x + Math.cos(a) * r, y: m.y + Math.sin(a) * r * 0.8, z: 2, vx: Math.cos(a) * sp * 0.6, vy: Math.sin(a) * sp * 0.45, vz: crown ? 380 + 200 * h3(n, m.seed, 4, 7824) : 260 + 300 * h3(n, m.seed, 4, 7824), t0: (2 * h3(n, m.seed, 5, 7825)) / EYE_FPS, kind: n % 9 === 0 ? 1 : 2, size: n % 9 === 0 ? 2 + 2 * h3(n, m.seed, 6, 7826) : 1 + (h3(n, m.seed, 6, 7826) < 0.5 ? 1 : 0), seed: m.seed * 89 + n }, m.s]);
+    }
+  }
+  for (const c of fx.ichor) {
+    if (c.s < 0 || c.s > 1.6) continue;
+    for (let n = 0; n < 34; n++) {
+      // (a spurt of it out of the wound, toward the camera and up, in gouts)
+      const a = (h3(n, c.seed, 1, 7831) - 0.5) * 2.2;
+      const sp = 90 + 200 * h3(n, c.seed, 2, 7832);
+      out.push([{ x: c.x, y: c.y + 4, z: c.z, vx: Math.sin(a) * sp, vy: Math.cos(a) * sp * 0.8, vz: 120 + 240 * h3(n, c.seed, 3, 7833), t0: (h3(n, c.seed, 4, 7834) * 5) / EYE_FPS, kind: 4, size: 1.4 + 2.4 * h3(n, c.seed, 5, 7835), seed: c.seed * 83 + n }, c.s]);
+    }
+  }
+  for (const w of fx.waves) {
+    // (spray torn off its crest as it rolls, thrown forward and up)
+    for (let n = 0; n < 160; n++) {
+      const tb = (n / 160) * 3.2;
+      if (tb > w.s || w.s - tb > 1.2) continue;
+      const y = STONE_BOX.y0 - 10 + WAVE.reach * 0.8 * h3(n, w.dir + 5, 1, 7841) ** 1.6;
+      const hgt = waveHigh(y);
+      if (hgt < 6) continue;
+      out.push([{ x: waveFront(w.dir, tb), y, z: hgt * 0.95, vx: w.dir * WAVE.speed * (0.4 + 0.5 * h3(n, w.dir + 5, 2, 7842)), vy: (h3(n, w.dir + 5, 3, 7843) - 0.5) * 60, vz: 60 + 160 * h3(n, w.dir + 5, 4, 7844), t0: 0, kind: n % 11 === 0 ? 1 : 2, size: 1 + (h3(n, w.dir + 5, 5, 7845) < 0.3 ? 1 : 0), seed: 7000 + n * 3 + w.dir }, w.s - tb]);
+    }
+  }
+  if (fx.crash !== null && fx.crash >= 0 && fx.crash < 3) {
+    for (let n = 0; n < 420; n++) {
+      // (thrown up out of the middle, high, and falling back across it: water in sheets of drops, slime in gobs and sheets)
+      const y = STONE_BOX.y0 + WAVE.reach * 0.75 * h3(n, 1, 1, 7851) ** 1.4;
+      const g = waveHigh(y) / WAVE.high;
+      const kind = (n % 13 === 0 ? 3 : n % 6 === 0 ? 1 : 2) as 1 | 2 | 3;
+      out.push([{ x: (h3(n, 2, 1, 7852) - 0.5) * 40, y, z: 10, vx: (h3(n, 3, 1, 7853) - 0.5) * 320, vy: (h3(n, 4, 1, 7854) - 0.5) * 140, vz: (260 + 360 * h3(n, 5, 1, 7855)) * (0.5 + 0.5 * g), t0: (h3(n, 6, 1, 7856) * 8) / EYE_FPS, kind, size: kind === 3 ? 6 + 6 * h3(n, 7, 1, 7857) : kind === 1 ? 2 + 2 * h3(n, 7, 1, 7857) : 1 + (h3(n, 7, 1, 7857) < 0.4 ? 1 : 0), seed: 9000 + n }, fx.crash]);
+    }
+  }
+  return out;
+}
+/** UNDER THE TENTACLES, on the stone and the water: the warnings, a slam's cracks, its slime trail, the stone wet behind a wave, a
+ *  smash's rings, and a dying one's bubbles and the slick of its ichor as the water closes over it. */
+function armFxUnder(pic: Pic, F: EyeFrame, top: Top, water: Uint8Array, t: number): void {
+  const fx = F.fx as ArmFx;
+  // (the wave's warning: the back of the stone, where it will run, out to where it dies)
+  if (fx.waveWarn !== null) drawWarn(pic, water, (u, v) => [STONE_BOX.x0 + (STONE_BOX.x1 - STONE_BOX.x0) * u, STONE_BOX.y0 + WAVE.reach * v], STONE_BOX.x1 - STONE_BOX.x0, WAVE.reach, fx.waveWarn, t);
+  for (const L of fx.lines) drawWarn(pic, water, (u, v) => onLine(L.x, L.y, L.ang, L.len * u, (v - 0.5) * L.wid), L.len, L.wid, L.k, t);
+  // (a slam's cracks, running out from where it struck, staying a while)
+  for (const h of fx.hits) {
+    if (h.s < 0) continue;
+    const a = 1 - sm(4, 7, h.s);
+    if (a <= 0) continue;
+    const grow = sm(0, 0.12, h.s);
+    for (let c = 0; c < 9; c++) {
+      const along = h.a0 + 6 + (h.a1 - h.a0 - 6) * h3(c, h.seed, 1, 7861);
+      const side = c % 2 ? 1 : -1;
+      const [x, y] = onLine(h.x, h.y, h.ang, along, side * 9);
+      const dir = h.ang + side * (Math.PI / 2) * (0.6 + 0.5 * h3(c, h.seed, 2, 7862)) + (c > 6 ? Math.PI * 0.5 * side : 0);
+      crack(pic, water, top, x, y, dir, (14 + 30 * h3(c, h.seed, 3, 7863)) * grow, h.seed * 7 + c, a);
+    }
+    // (its line's end, where the tip struck: a star of cracks)
+    const [ex, ey] = onLine(h.x, h.y, h.ang, h.a1 - 6, 0);
+    for (let c = 0; c < 5; c++) crack(pic, water, top, ex, ey, h.ang + (c - 2) * 0.7, (12 + 16 * h3(c, h.seed, 4, 7864)) * grow, h.seed * 11 + c, a);
+  }
+  // (its slime trail, where it was dragged back: glossy, streaked along the way it went, fading)
+  for (const tr of fx.trails) {
+    const a = 1 - sm(1.2, 3.2, tr.s);
+    if (a <= 0) continue;
+    for (let along = tr.a0; along < tr.a1; along += 0.8) {
+      const reach = sm(0, 0.8, tr.s);
+      // (laid as it was dragged: from its end back, as far as it has come)
+      if (along < tr.a1 - (tr.a1 - tr.a0) * reach) continue;
+      for (let b = -9; b <= 9; b += 0.8) {
+        const [x, y] = onLine(tr.x, tr.y, tr.ang, along, b);
+        const [ci, cj] = onCanvas(x, y, 0);
+        const i = Math.round(ci);
+        const j = Math.round(cj);
+        if (i < 0 || j < 0 || i >= CW || j >= CH || water[j * CW + i]) continue;
+        const edge = Math.abs(b) / 9;
+        const streak = vn(b * 0.7 + tr.seed, along * 0.04, 7871);
+        if (edge > 0.7 + 0.3 * vn(along * 0.08, tr.seed, 7872)) continue;
+        const c = streak > 0.72 ? SHEEN : streak > 0.45 ? SLIME[2] : SLIME[1];
+        pic.over(i, j, c[0], c[1], c[2], (streak > 0.72 ? 150 : 110) * a * (1 - edge * 0.5));
+      }
+    }
+  }
+  // (where a wave has passed, the stone left wet and streaming: darker, a sheen on it, water running back off it to the water)
+  for (const w of fx.waves) wetBehind(pic, water, w.dir, w.s, t, 1);
+  if (fx.crash !== null && fx.crash >= 0) wetCrash(pic, water, fx.crash, t);
+  // (a smash's rings on the water, spreading, and its foam)
+  for (const m of fx.smashes) {
+    if (m.s < 0 || m.s > 3) continue;
+    const [ci, cj] = onCanvas(m.x, m.y, 0);
+    const R0 = 30 + 200 * m.s;
+    for (let j = Math.floor(cj - R0 / R3 - 6); j <= cj + R0 / R3 + 6; j++) for (let i = Math.floor(ci - R0 * SEEN - 6); i <= ci + R0 * SEEN + 6; i++) {
+      if (i < 0 || j < 0 || i >= CW || j >= CH || !water[j * CW + i]) continue;
+      if (top.who[j * CW + i] >= 0 && top.z[j * CW + i] > -0.5) continue;
+      const [X, Y] = waterAt(i, j);
+      const d = Math.hypot(X - m.x, Y - m.y);
+      for (let r = 0; r < 3; r++) {
+        const R = 30 + 200 * Math.max(0, m.s - r * 0.25);
+        if (m.s < r * 0.25) continue;
+        if (Math.abs(d - R) < 1.2 + r * 0.3 && vn(Math.atan2(Y - m.y, X - m.x) * 5 + r, m.s, 7881) > 0.3) pic.over(i, j, CREAM[3 - Math.min(2, r)][0], CREAM[3 - Math.min(2, r)][1], CREAM[3 - Math.min(2, r)][2], 220 * (1 - m.s / 3));
+      }
+      const fl = d < 40 + 30 * m.s ? lace(X + m.s * 9, Y, (1 - d / (40 + 30 * m.s)) * (1 - m.s / 3), 61) : 0;
+      if (fl) pic.over(i, j, CREAM[fl - 1][0], CREAM[fl - 1][1], CREAM[fl - 1][2], 150 + 20 * fl);
+    }
+  }
+  // (a dying one sinking: bubbles gurgling up, a slick of its ichor spreading, rings as the water closes over it)
+  for (const sk of fx.sinks) {
+    if (sk.s < 0) continue;
+    const [ci, cj] = onCanvas(sk.x, sk.y, 0);
+    const R = Math.min(60, 12 + 30 * sk.s);
+    for (let j = Math.floor(cj - R / R3 - 8); j <= cj + R / R3 + 8; j++) for (let i = Math.floor(ci - R * SEEN - 8); i <= ci + R * SEEN + 8; i++) {
+      if (i < 0 || j < 0 || i >= CW || j >= CH || !water[j * CW + i]) continue;
+      if (top.who[j * CW + i] >= 0 && top.z[j * CW + i] > -0.5) continue;
+      const [X, Y] = waterAt(i, j);
+      const d = Math.hypot(X - sk.x, (Y - sk.y) * 1.2);
+      const edge = R * (0.85 + 0.3 * vn(Math.atan2(Y - sk.y, X - sk.x) * 3, sk.seed, 7891));
+      if (d < edge) {
+        // (his ichor on the water, oily: dark, a sheen on its far side)
+        const sheen = Y < sk.y - R * 0.3 && d > edge * 0.75 && vn(X * 0.3, Y * 0.3, 7892) > 0.45;
+        const c = sheen ? SHEEN : vn(X * 0.12, Y * 0.12, 7893) > 0.55 ? ICHOR[2] : ICHOR[1];
+        pic.over(i, j, c[0], c[1], c[2], (sheen ? 120 : 170) * (1 - sm(3.5, 6, sk.s)));
+      }
+      for (let r = 0; r < 4; r++) {
+        const rs = sk.s - 0.6 - r * 0.5;
+        if (rs < 0) continue;
+        const RR = 14 + 70 * rs;
+        if (Math.abs(Math.hypot(X - sk.x, Y - sk.y) - RR) < 0.9 && vn(Math.atan2(Y - sk.y, X - sk.x) * 4 + r, rs, 7894) > 0.35) pic.over(i, j, FOAM[3][0], FOAM[3][1], FOAM[3][2], 200 * (1 - sm(0.5, 1.6, rs)));
+      }
+    }
+    // (its bubbles, gurgling up: big and glossy, bursting)
+    for (let b = 0; b < 9; b++) {
+      const per = 0.5 + 0.4 * h3(b, sk.seed, 1, 7895);
+      const q = sk.s / per + h3(b, sk.seed, 2, 7896);
+      if (sk.s > 4) continue;
+      const rn = Math.floor(q);
+      const p2 = q - rn;
+      const bx = sk.x + (h3(b, rn, 3, 7897) - 0.5) * 50;
+      const by = sk.y + (h3(b, rn, 4, 7898) - 0.5) * 30;
+      const [bi, bj] = onCanvas(bx, by, 0);
+      if (!water[Math.round(bj) * CW + Math.round(bi)]) continue;
+      bubble(pic, Math.round(bi), Math.round(bj), (3 + 4 * h3(b, rn, 5, 7899)) * SEEN, p2, b + rn * 13, 0);
+    }
+  }
+}
+/** The stone wet where a wave has passed (`dir`, `s` seconds since its smash): darker, a sheen, water running back off it. */
+function wetBehind(pic: Pic, water: Uint8Array, dir: number, s: number, t: number, k: number): void {
+  const front = waveFront(dir, s);
+  const [, j0] = onCanvas(0, STONE_BOX.y0, 0);
+  const [, j1] = onCanvas(0, STONE_BOX.y0 + WAVE.reach + 30, 0);
+  for (let j = Math.floor(j0); j <= j1; j++) for (let i = 0; i < CW; i++) {
+    if (j < 0 || j >= CH || water[j * CW + i]) continue;
+    const [X, Y] = waterAt(i, j);
+    const behind = (front - X) * dir;
+    if (behind < 12) continue;
+    const since = behind / WAVE.speed;
+    const reachHere = 1 - (Y - STONE_BOX.y0) / WAVE.reach;
+    if (reachHere < -0.1) continue;
+    const wet = Math.exp(-since / 1.8) * clamp01(reachHere * 1.6 + 0.2) * k;
+    if (wet < 0.05) continue;
+    const q = (j * CW + i) * 4;
+    pic.d[q] *= 1 - 0.38 * wet;
+    pic.d[q + 1] *= 1 - 0.33 * wet;
+    pic.d[q + 2] *= 1 - 0.3 * wet;
+    // (water running back off it toward the water, in thin runs; a sheen here and there)
+    const run = vn(X * 0.35, Y * 0.04 + t * 3.5, 7901);
+    if (run > 0.8 - 0.1 * wet) pic.over(i, j, FOAM[3][0], FOAM[3][1], FOAM[3][2], 160 * wet);
+    else if (vn(X * 0.2, Y * 0.3, 7902) > 0.86) pic.over(i, j, SHEEN[0], SHEEN[1], SHEEN[2], 140 * wet);
+  }
+}
+/** After the crash: the middle of the stone awash, foam on it, draining back off it. */
+function wetCrash(pic: Pic, water: Uint8Array, s: number, t: number): void {
+  const spread = 60 + 200 * sm(0, 1.2, s);
+  const fade = 1 - sm(2.5, 5, s);
+  if (fade <= 0) return;
+  for (let j = 0; j < CH; j++) for (let i = 0; i < CW; i++) {
+    if (water[j * CW + i]) continue;
+    const [X, Y] = waterAt(i, j);
+    if (Y < STONE_BOX.y0 || Y > STONE_BOX.y0 + WAVE.reach * 1.2 || Math.abs(X) > spread) continue;
+    const e = (1 - Math.abs(X) / spread) * clamp01(1.3 - (Y - STONE_BOX.y0) / WAVE.reach) * fade;
+    const q = (j * CW + i) * 4;
+    pic.d[q] *= 1 - 0.4 * e;
+    pic.d[q + 1] *= 1 - 0.35 * e;
+    pic.d[q + 2] *= 1 - 0.3 * e;
+    const fl = lace(X + t * 4, Y - s * 20 - t * 6, e * 0.9, 63);
+    if (fl) pic.over(i, j, CREAM[fl - 1][0], CREAM[fl - 1][1], CREAM[fl - 1][2], 140 + 20 * fl);
+  }
+}
+/**
+ * THE WAVES AND THE CRASH, drawn as the surface of water (a height over the stone at each point), front to back, each nearer column
+ * hiding what is behind it: a wall of black water, its crest curling over in foam, its face dark with weed and slime churned in it,
+ * its back slope streaked; tallest at the back, thinning toward the front, dying. The crash a column of white water thrown up in the
+ * middle, falling back and spreading.
+ */
+function armWaves(pic: Pic, fx: ArmFx, top: Top, water: Uint8Array, t: number): void {
+  void water;
+  const height = (X: number, Y: number): { h: number; crest: number; face: number; crash: number; u: number; H: number } => {
+    let h = 0;
+    let crest = 0;
+    let face = 0;
+    let crash = 0;
+    let uu = -999;
+    let HH = 0;
+    for (const w of fx.waves) {
+      // (its front leads at the back, where it is tallest; it rises out of the smash, and dies past the far end)
+      const lag = Math.max(0, Y - STONE_BOX.y0) * 0.35;
+      // (its crest never a ruled line: surging ahead here, lagging there, as it rolls)
+      const surge = 22 * (vn(Y * 0.035 + w.s * 1.7, w.s * 0.9, 7915 + w.dir) - 0.5);
+      const xf = waveFront(w.dir, w.s) - w.dir * (lag - surge);
+      const u = (X - xf) * w.dir;
+      const grow = sm(0, WAVE.form, w.s);
+      const die = 1 - sm(STONE_BOX.x1, STONE_BOX.x1 + 140, waveFront(w.dir, w.s) * w.dir);
+      const behindStone = Y < STONE_BOX.y0 ? clamp01(1 - (STONE_BOX.y0 - Y) / 45) : 1;
+      const H = waveHigh(Math.max(Y, STONE_BOX.y0)) * grow * die * behindStone * (0.92 + 0.16 * vn(X * 0.02 - w.s, Y * 0.03, 7911));
+      if (H < 0.3) continue;
+      // (its shape across: a steep face ahead, the crest, a long slope behind)
+      const prof = u > 0 ? Math.max(0, 1 - (u / 9) ** 1.4) : Math.exp(-((u / 52) ** 2)) * 0.9 + 0.1 * Math.exp(-((u / 6) ** 2));
+      const hh = H * prof;
+      if (hh > h) {
+        h = hh;
+        crest = u > -8 && u < 3 ? 1 : 0;
+        face = u > 0 ? 1 : 0;
+        uu = u;
+        HH = H;
+      }
+    }
+    if (fx.crash !== null && fx.crash > -0.15) {
+      const s = Math.max(0, fx.crash);
+      const C = CRASH;
+      const up = s < C.rise ? Math.sin((Math.PI / 2) * (s / C.rise)) : Math.max(0, 1 - ((s - C.rise) / C.fall) ** 0.7);
+      const W2 = C.wide * (1 + 1.6 * clamp01((s - C.rise) / C.fall));
+      const g = Y < STONE_BOX.y0 ? clamp01(1 - (STONE_BOX.y0 - Y) / 50) * 0.8 : Math.pow(clamp01(1 - (Y - STONE_BOX.y0) / (WAVE.reach * 0.9)), 0.6);
+      // (its top torn into spouts and jets, never a smooth hill)
+      const ragged = 0.55 + 0.6 * vn(X * 0.07, Y * 0.05 + s * 4, 7912) + 0.35 * Math.max(0, vn(X * 0.21, s * 6, 7913) - 0.55) * 2.2;
+      const hc = C.high * up * g * Math.exp(-((X / W2) ** 2)) * ragged;
+      if (hc > h) {
+        h = hc;
+        crash = 1;
+        crest = 0;
+        face = 0;
+      }
+    }
+    return { h, crest, face, crash, u: uu, H: HH };
+  };
+  const yFront = STONE_BOX.y0 + WAVE.reach + 20;
+  const yBack = STONE_BOX.y0 - 50;
+  for (let i = 0; i < CW; i++) {
+    const X = (i + 0.5 - HX) / SEEN;
+    let ymin = Infinity;
+    for (let Y = yFront; Y >= yBack; Y -= R3 * 0.5) {
+      const { h, crash, u, H } = height(X, Y);
+      if (h < 0.6) continue;
+      const base = HY + Y / R3;
+      const jt = Math.round(base - h);
+      const jb = Math.min(Math.round(base), ymin - 1);
+      if (jt > jb) continue;
+      // (its slope across, for its light)
+      const hx = height(X + 2, Y).h - height(X - 2, Y).h;
+      const nr = Y * 0.8660254 + h * 0.5;
+      for (let j = Math.max(0, jt); j <= jb && j < CH; j++) {
+        const q = j * CW + i;
+        if (top.who[q] >= 0 && top.z[q] >= -0.5 && top.near[q] > nr) continue;
+        const v = (j - jt) / Math.max(1, base - jt);
+        let c: RGB;
+        let a = 255;
+        if (crash) {
+          // THE CRASH: a column of water thrown up, white where it is torn to foam, its sheets falling back in streaks down it (lit on
+          // its left, shaded on its right), slime and weed thrown up in it, its top torn into spray; where it has fallen back and
+          // spreads low over the stone, a sheet of black water and foam the stone shows through
+          const fallS = Math.max(0, (fx.crash ?? 0) - CRASH.rise);
+          const vs = vn(X * 0.16, (j - fallS * 150) * 0.03, 7921);
+          const sl = vn(X * 0.12, (j - fallS * 120) * 0.08, 7925);
+          if (h < 26) {
+            const fl = lace(X * 1.2 + t * 4, Y * 1.0, clamp01(h / 26) * 0.95, 75);
+            c = fl ? CREAM[Math.max(0, fl - 1)] : vs > 0.62 ? FOAM[1] : WATER;
+            a = Math.round(255 * (0.45 + 0.55 * clamp01(h / 26)));
+          } else {
+            const lit = hx > 1.5 ? 1 : hx < -1.5 ? -1 : 0;
+            c = sl > 0.83 ? SLIME[1] : vs > 0.72 ? CREAM[4] : vs > 0.48 ? (lit >= 0 ? CREAM[3] : CREAM[2]) : vs > 0.3 ? (lit > 0 ? CREAM[2] : FOAM[3]) : lit > 0 ? FOAM[3] : FOAM[2];
+            if (j - jt < 4 && bayer(i, j) > 0.35) {
+              c = SPRAY;
+              a = 140;
+            }
+          }
+        } else {
+          // A WALL OF BLACK WATER: its crest curling over ahead (black water, a lip of foam along its top, ragged, spray off it), the
+          // hollow under the curl darkest; behind the crest the water churned (foam torn into streaks and lace thinning back, weed
+          // and slime rolled in it), then its long back slope, black and glossy where it faces the light; thinning toward the
+          // front of the stone to a sheet the stone shows through, dying
+          const th = clamp01(H / (WAVE.high * 0.18));
+          // (what is seen of it is its top: shaded by where on it (u, behind its crest), its slope to the light, and the churn)
+          const gloss = hx * 0.25;
+          const streak = vn(X * 0.05 - u * 0.03, Y * 0.13, 7931);
+          // (water running down off its back toward you: streaks along the stone's depth)
+          const run = vn(X * 0.11 - u * 0.05, Y * 0.018 - t * 0.6, 7934);
+          const weed = vn(X * 0.08 - u * 0.06, Y * 0.12, 7923);
+          const lipW = 3 + 8 * vn(Y * 0.06, u * 0.02 + t * 0.5, 7933);
+          if (u > 1.5) {
+            // (ahead of its crest: the hollow under the curl, black, a lit lip-edge of foam along it)
+            c = u < 3 ? CREAM[2] : WATER;
+          } else if (u > -lipW) {
+            // (its crest: black water rolling over, frothing white on its lip; ragged, broken into clots and lace)
+            const fl = lace(X * 1.6 + t * 12, Y * 1.1, 0.75 + 0.35 * streak, 71);
+            c = fl ? CREAM[Math.min(4, fl + (u > -2 ? 1 : 0))] : u > -1 ? CREAM[1] : FOAM[0];
+            if (!fl && bayer(i, j) > 0.6) a = 170;
+          } else if (u > -46) {
+            // (just behind it: churned, foam torn into streaks and lace thinning back, weed and slime rolling)
+            const back = (u + lipW) / (46 - lipW);
+            const fl = lace(X * 1.1 - t * 5, Y * 0.9, (0.62 + 0.25 * streak) * (1 + back), 73);
+            c = weed > 0.8 ? SLIME[2] : weed > 0.74 ? SLIME[0] : fl ? CREAM[Math.max(0, fl - 1)] : run > 0.72 ? FOAM[2] : gloss > 0.4 || run > 0.6 ? FOAM[1] : run < 0.3 ? WATER : FOAM[0];
+          } else {
+            // (its back: black, glossy streaks where it faces the light, a few streaks of foam, weed)
+            const fl = lace(X * 1.2 - t * 6, Y * 0.8, 0.28 * streak, 72);
+            const shine = gloss > 0.25 && streak > 0.58 && streak < 0.66;
+            c = weed > 0.84 ? SLIME[1] : fl ? CREAM[Math.max(0, fl - 2)] : shine || (run > 0.76 && gloss > 0.1) ? FOAM[3] : run > 0.64 ? FOAM[1] : gloss > 0.45 ? FOAM[1] : run > 0.45 ? FOAM[0] : WATER;
+          }
+          // (its front: dying in a thin sheet of foam the wet stone shows through)
+          if (th < 1 && lace(X * 1.3, Y * 1.3 + t * 3, 0.9 * (1 - th), 74)) c = CREAM[1];
+          a = Math.round(a * (0.35 + 0.65 * th));
+        }
+        pic.over(i, j, c[0], c[1], c[2], a);
+      }
+      ymin = Math.min(ymin, jt);
+    }
+  }
+}
+
 
 // =============================================================================================
 // A FRAME LAID TOGETHER
@@ -1025,7 +1501,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
     }
   }
   // HIS TENTACLES' BURSTS: the water bulging over each before it, a crown of it thrown up as it bursts, a ring of foam spreading
-  if (ent) {
+  if (ent || F.move === 'p1') {
     Wt.bursts.forEach((B, idx) => {
       const s = k - B.k;
       const [ci, cj] = onCanvas(B.x, B.y, 0);
@@ -1065,6 +1541,9 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       }
     });
   }
+  // WHAT THE GAME DRAWS ON THE STONE AND THE WATER FOR THE TENTACLES, under them: the warnings, the cracks and splats of a slam, its
+  // slime trail, the stone wet where a wave has passed, a smash's rings, a dying one's ichor and bubbles
+  if (F.fx) armFxUnder(pic, F, top, S.water, t);
   // HIM OVER THE WATER, and the after-images of a strike
   for (let q = 0; q < n; q++) {
     if (ghost[q * 4 + 3] && !(top.who[q] >= 0 && top.z[q] >= -0.5)) {
@@ -1256,13 +1735,17 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       }
     }
   }
+  // THE WATER SLAMS' WAVES AND THEIR CRASH, over the stone (in front of what is behind them)
+  if (F.fx && (F.fx.waves.length || F.fx.crash !== null)) armWaves(pic, F.fx, top, S.water, t);
   // WHAT FLIES: the roar's slime and spittle; the crowns of water thrown up round his tentacles
   const flyers: Array<[Flyer, number]> = [];
   if (ent && roarS >= 0 && roarS < 3.4) for (const f of ROAR) flyers.push([f, roarS - f.t0]);
-  if (ent) Wt.bursts.forEach((B, idx) => {
+  if (ent || F.move === 'p1') Wt.bursts.forEach((B, idx) => {
     const s = (k - B.k) / EYE_FPS;
     if (s >= 0 && s < 1.6) for (const f of burstFlyers(B.x, B.y, idx + 1)) flyers.push([f, s - f.t0]);
   });
+  // (the tentacles' own: what a slam on the stone throws, a smash into the water, his ichor, the crash)
+  if (F.fx) for (const [f, s2] of armFlyers(F.fx)) flyers.push([f, s2]);
   const hiddenAt = (i: number, j: number, nr: number): boolean => {
     if (i < 0 || j < 0 || i >= CW || j >= CH) return true;
     const q = j * CW + i;
@@ -1271,8 +1754,26 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   for (const [f, s] of flyers) {
     if (s < 0) continue;
     const land = landOf(f);
-    const slime = f.kind === 1 || f.kind === 3;
+    const slime = f.kind === 1 || f.kind === 3 || f.kind === 4;
     const seed = f.seed ?? 0;
+    // (a chip of the stone: it lands and lies, grey, a moment)
+    if (f.kind === 5) {
+      const [x, y, z] = s > land ? flyAt(f, land) : flyAt(f, s);
+      const [ci, cj] = onCanvas(x, y, Math.max(0, z));
+      if (s > land + 1.2) continue;
+      const nr = y * 0.8660254 + Math.max(0, z) * 0.5;
+      const i0 = Math.round(ci);
+      const j0 = Math.round(cj);
+      const ang = seed * 1.3 + Math.min(s, land) * 9;
+      const sz = f.size;
+      for (let dj = -sz; dj <= sz; dj++) for (let di = -sz; di <= sz; di++) {
+        if (Math.abs(di * Math.cos(ang) + dj * Math.sin(ang)) + Math.abs(-di * Math.sin(ang) + dj * Math.cos(ang)) * 1.6 > sz + 0.3) continue;
+        if (hiddenAt(i0 + di, j0 + dj, nr)) continue;
+        const c = di + dj < 0 ? STONE_LIT : STONE_DARK;
+        pic.over(i0 + di, j0 + dj, c[0], c[1], c[2], 255 * (s > land ? 1 - sm(0.6, 1.2, s - land) : 1));
+      }
+      continue;
+    }
     if (s > land) {
       const a2 = s - land;
       const [x, y] = flyAt(f, land);
@@ -1281,7 +1782,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       const j0 = Math.round(cj);
       if (i0 < 2 || j0 < 2 || i0 >= CW - 2 || j0 >= CH - 2) continue;
       const onWater = S.water[j0 * CW + i0] === 1;
-      const sz = f.kind === 3 ? f.size * 0.45 : f.kind === 1 ? f.size : f.kind === 0 ? 0.8 : 1;
+      const sz = f.kind === 3 ? f.size * 0.45 : f.kind === 1 || f.kind === 4 ? f.size : f.kind === 0 ? 0.8 : 1;
       if (onWater) {
         // (into the water: a crown of it thrown up round where it went in, drops jumping, a ring of foam spreading)
         const life = 0.3 + 0.12 * sz;
@@ -1339,7 +1840,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
           const lobe = 1 + 0.28 * Math.sin(ang * 3 + seed) + 0.18 * Math.sin(ang * 5 + seed * 2);
           const d = Math.hypot(di / w0, dj / h0) / lobe;
           if (d > 1) continue;
-          const R6 = seed % 5 < 2 ? MELT : SLIME;
+          const R6 = f.kind === 4 ? ICHOR : seed % 5 < 2 ? MELT : SLIME;
           const c = f.kind === 0 ? SPIT[3] : d > 0.8 ? R6[0] : dj < -h0 * 0.2 && di < w0 * 0.2 ? R6[4] : d < 0.5 ? R6[3] : R6[2];
           pic.over(i0 + di, j0 + dj, c[0], c[1], c[2], 255 * fade);
         }
@@ -1379,7 +1880,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       }
       continue;
     }
-    if (f.kind === 1) {
+    if (f.kind === 1 || f.kind === 4) {
       // (a gob of slime: a drop drawn out along the way it flies, round at its head, lit on its upper left, dark beneath, a glint; a
       // thread of it trailing)
       const r = f.size;
@@ -1397,7 +1898,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
           if (hiddenAt(i, j, nr)) continue;
           // (slime, or the melt of his flesh; wet: its lit side pale, its rim dark)
           const lit = -(di + dj) / (r + 1);
-          const R5 = seed % 5 < 2 ? MELT : SLIME;
+          const R5 = f.kind === 4 ? ICHOR : seed % 5 < 2 ? MELT : SLIME;
           const edge = Math.hypot(back, ac) > rr - 0.9;
           const c = lit > 0.5 ? R5[4] : lit > 0.15 ? R5[3] : edge || lit < -0.45 ? R5[0] : R5[2];
           pic.over(i, j, c[0], c[1], c[2], 255);
@@ -1438,11 +1939,19 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   // THE PIECES BEFORE HIM, AND THE WARRIOR AT HIS SPOT, breathing
   pic.lay(S.front, 0, 0, 0, 0);
   {
-    const [x, y] = W(HERO_AT[0], HERO_AT[1]);
+    // (the Warrior: at his spot, breathing; or, in the tentacles' films, where he has gone: running, striking)
+    const Hh = F.hero;
+    const [x, y] = Hh ? W(Hh.du, ARENA.quay + Hh.dv) : W(HERO_AT[0], HERO_AT[1]);
     const [sx, sy] = P(CAM, x, y);
     pic.shadow(sx, sy, 13, 0.5);
-    const idle = hero.back.idle;
-    laySprite(pic, idle[Math.floor(tf * (hero.back.idleFps ?? 10)) % idle.length], sx, sy);
+    const set = Hh && Hh.view === 'front' ? hero.front : hero.back;
+    let spr = set.idle[Math.floor(tf * (set.idleFps ?? 10)) % set.idle.length];
+    if (Hh && Hh.act === 'run') spr = set.walk[Math.floor((Hh.f * (set.walkFps ?? 30)) / 30) % set.walk.length];
+    if (Hh && Hh.act === 'attack' && set.clips?.attack) {
+      const c = set.clips.attack;
+      spr = c.frames[Math.min(c.frames.length - 1, Math.floor((Hh.f / 30) * c.fps))];
+    }
+    laySprite(pic, spr, sx, sy);
     pic.light(sx, sy - 20, 60, [200, 190, 220], 0.08);
   }
   // THE DARK (the game's darkening of the screen: his fire never darkens)
@@ -1464,7 +1973,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   }
   void FIRE2;
   // (the screen, thrown by the shake: whole game pixels)
-  return pic.crop(M - F.shake[0] * 2, M - F.shake[1] * 2, SW, SH);
+  return pic.crop(M - F.shake[0] * 2, M + (F.camY ?? 0) - F.shake[1] * 2, SW, SH);
 }
 
 // =============================================================================================
@@ -1481,8 +1990,11 @@ if (mode === 'paint') {
     if (only.length && !only.some((o) => o === mv || o.startsWith(`${mv}:`))) continue;
     const pick = only.find((o) => o.startsWith(`${mv}:`));
     const [a, b] = pick ? pick.split(':')[1].split('-').map(Number) : [0, MOVES[mv] - 1];
-    for (let k = a; k <= b; k++) for (const L of layersOf(eyeFrame(mv, k))) want.set(fileOf(L), L);
+    for (let k = a; k <= b; k++) for (const L of layersOf(frameAt(mv, k))) want.set(fileOf(L), L);
   }
+  // (EYE_ONLY: only layers whose keys begin so, e.g. J,S,T)
+  const onlyKinds = (process.env.EYE_ONLY || '').split(',').filter((x) => x);
+  if (onlyKinds.length) for (const [f, L] of [...want]) if (!onlyKinds.some((o) => L.key.startsWith(o))) want.delete(f);
   const files = [...want.keys()].sort();
   // (the heavy ones, his jaws, shared out evenly first)
   const order = files.filter((f) => /[\\/]J/.test(f)).concat(files.filter((f) => !/[\\/]J/.test(f)));
@@ -1499,20 +2011,22 @@ if (mode === 'paint') {
 } else if (mode === 'frames') {
   const out = process.argv[3];
   const mv = process.argv[4] as Move;
-  const a = Number(process.argv[5] ?? 0);
-  const b = Number(process.argv[6] ?? MOVES[mv] - 1);
+  // (a range a b, or a list of frames a,b,c)
+  const list = (process.argv[5] ?? '').includes(',') ? process.argv[5].split(',').map(Number) : null;
+  const a = list ? list[0] : Number(process.argv[5] ?? 0);
+  const b = list ? list[list.length - 1] : Number(process.argv[6] ?? MOVES[mv] - 1);
   fs.mkdirSync(out, { recursive: true });
   const t0 = Date.now();
-  for (let k = a; k <= b; k++) {
-    const F = eyeFrame(mv, k);
+  for (const k of list ?? Array.from({ length: b - a + 1 }, (_, i) => a + i)) {
+    const F = frameAt(mv, k);
     const pic = frameOf(F, k / EYE_FPS);
     fs.writeFileSync(path.join(out, `${mv}_${String(k).padStart(3, '0')}.png`), pic.png());
   }
-  process.stdout.write(`${mv} ${a}-${b}: ${b - a + 1} frames in ${((Date.now() - t0) / 1000).toFixed(0)} s\n`);
+  process.stdout.write(`${mv} ${a}-${b}: ${list ? list.length : b - a + 1} frames in ${((Date.now() - t0) / 1000).toFixed(0)} s\n`);
 } else if (mode === 'rekey') {
   // (layers painted before the marks were split: each but his tongue's moved to its new name; its painting is the same)
   let moved = 0;
-  for (const mv of Object.keys(MOVES) as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(eyeFrame(mv, k))) {
+  for (const mv of Object.keys(MOVES) as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(frameAt(mv, k))) {
     if (L.key.startsWith('T')) continue;
     const from = fileOf(L, PAINTER.all);
     const to = fileOf(L);
@@ -1528,7 +2042,7 @@ if (mode === 'paint') {
   const OLD = painterOf(process.argv[3]);
   let moved = 0;
   let kept = 0;
-  for (const mv of Object.keys(MOVES) as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(eyeFrame(mv, k))) {
+  for (const mv of Object.keys(MOVES) as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(frameAt(mv, k))) {
     const an = L.pose.anim;
     if (an && (an.open < 0.9 || (L.key.startsWith('T') && an.lids < 1))) continue;
     const from = fileOf(L, L.key.startsWith('T') ? OLD.all : OLD.rest);
@@ -1539,15 +2053,59 @@ if (mode === 'paint') {
     } else if (fs.existsSync(to)) kept++;
   }
   process.stdout.write(`moved ${moved}, already there ${kept}\n`);
+} else if (mode === 'rekey3') {
+  // (after a change to the painter that only paints his tentacles: every layer but theirs painted before it moved to its new name)
+  const OLD = painterOf(process.argv[3]);
+  let moved = 0;
+  for (const mv of ['stand', 'lurk', 'entrance'] as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(frameAt(mv, k))) {
+    if (L.key.startsWith('A')) continue;
+    const from = fileOf(L, L.key.startsWith('T') ? OLD.all : OLD.rest);
+    const to = fileOf(L);
+    if (from !== to && fs.existsSync(from) && !fs.existsSync(to)) {
+      fs.renameSync(from, to);
+      moved++;
+    }
+  }
+  process.stdout.write(`moved ${moved}\n`);
 } else if (mode === 'count') {
   const want = new Set<string>();
   const byKind = new Map<string, number>();
-  for (const mv of Object.keys(MOVES) as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(eyeFrame(mv, k))) {
+  const only = process.argv.slice(3);
+  for (const mv of Object.keys(MOVES) as Move[]) if (!only.length || only.includes(mv)) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(frameAt(mv, k))) {
     const f = fileOf(L);
     if (want.has(f)) continue;
     want.add(f);
     const kd = L.key.split('.')[0];
     byKind.set(kd, (byKind.get(kd) ?? 0) + 1);
   }
-  process.stdout.write(`${want.size} layers: ${[...byKind].map(([a, b]) => `${a} ${b}`).join(', ')}; painted ${[...want].filter((f) => fs.existsSync(f)).length}\n`);
+  const missing = new Map<string, number>();
+  for (const f of want) if (!fs.existsSync(f)) {
+    const kd = path.basename(f).split('.')[0];
+    missing.set(kd, (missing.get(kd) ?? 0) + 1);
+  }
+  process.stdout.write(`${want.size} layers: ${[...byKind].map(([a, b]) => `${a} ${b}`).join(', ')}; painted ${[...want].filter((f) => fs.existsSync(f)).length}; to paint: ${[...missing].map(([a, b]) => `${a} ${b}`).join(', ')}\n`);
+}
+if (mode === 'cost') {
+  // (what the tentacles cost, as painted here: each layer's box (two picture pixels to a game pixel, 4 bytes a pixel), and its packed
+  // file; by what it is: standing, a slam or a water slam, struck, dying, bursting, the fan's)
+  const seen = new Set<string>();
+  const by = new Map<string, { n: number; raw: number; packed: number; px: number }>();
+  for (const mv of ['p1', 'p2', 'fan'] as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(frameAt(mv, k))) {
+    if (!L.key.startsWith('A')) continue;
+    const f = fileOf(L);
+    if (seen.has(f) || !fs.existsSync(f)) continue;
+    seen.add(f);
+    const b = fs.readFileSync(f);
+    const hl = b.readUInt32LE(0);
+    const meta = JSON.parse(b.subarray(4, 4 + hl).toString()) as { w: number; h: number };
+    const part = L.key.split('.')[1];
+    const kd = part === 's' ? 'stand' : part === 'fan' ? 'fan' : part[0] === 'b' ? 'burst' : part[0] === 'f' ? 'struck' : part[0] === 'd' ? 'death' : L.key[1] === '0' || L.key[1] === '2' ? 'water slam' : 'slam';
+    const e = by.get(kd) ?? { n: 0, raw: 0, packed: 0, px: 0 };
+    e.n++;
+    e.raw += meta.w * meta.h * 4;
+    e.px += meta.w * meta.h;
+    e.packed += b.length;
+    by.set(kd, e);
+  }
+  for (const [k, e] of by) process.stdout.write(`${k}: ${e.n} layers, ${(e.raw / 1e6).toFixed(1)} MB raw (${(e.raw / e.n / 1e6).toFixed(2)} MB a layer, ${(e.px / e.n / 1000).toFixed(0)}k pixels), ${(e.packed / 1e6).toFixed(1)} MB packed\n`);
 }

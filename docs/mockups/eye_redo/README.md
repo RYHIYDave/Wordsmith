@@ -1,9 +1,169 @@
-# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1)
+# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1; stage 3: his moves, part 2, his tentacles)
 
 A MOCK-UP: NOT IN THE GAME. The art chat's, branch `art/eye-redo`. His new look is `src/art/eye_colossus.ts`, behind
 `EYE2 = { on: false }`; nothing of the game imports it (`tests/eye_colossus.test.ts` holds it). Nothing of the old Eye
 (`src/art/drowned_eye.ts`, `art/act1_figs/eye.ts`, `game/act1_rules/eye.ts`) is used in it. Stage 1 (below the moves) was his look,
-in stills; stage 2 is his first moves: his stand, his lurk under the water and his entrance, in `src/art/eye_moves.ts`.
+in stills; stage 2 is his first moves: his stand, his lurk under the water and his entrance, in `src/art/eye_moves.ts`; stage 3 his
+tentacles' moves, in `src/art/eye_arms.ts`.
+
+## Stage 3: his moves, part 2: his tentacles, in pictures and a film
+
+His words (7 Nov 2026 unless said otherwise):
+
+- Shown the roar, asked whether to go on to the tentacles: “Yes, on to the tentacles (Recommended)”.
+- 5 Nov, of the old fight (his words as quoted on the board): “You need some more time to dodge those tentacles.” So every warning
+  here reads clearly and is held.
+- 20:25: “Beyond just slamming down on the platform, I’d also like the tentacles to slam the water on the left sending a wave right
+  across the platform, then on the right sending a wave to the left, then both sides simultaneously to send a big crash into the
+  middle”.
+- Asked how a wave is got past, his answer: “Outrun or dodge through”. Read as: each wave is a wall of black water, tallest at the
+  back by the water, thinning toward the front and dying before the front edge; you either dodge through it or run to the front. The
+  two waves meeting in the middle crash hard.
+
+THE MAIN CHAT'S RULES (its post of 7 Nov 00:48; it sets the final numbers): a tentacle stands where it burst up; every 3 to 4 s it
+rears, a warning of about 0.9 s, its line on the stone in the enemy's pink, laid from its root toward the hero; it slams along that
+line; it is struck and hurt where it stands, and sinks into the water as it dies. All drawn so, with three things for the main chat
+to set: (1) THE LINE is drawn 8 tiles long and 1.6 wide, not about 6 by 1.2: the tentacles as he has them (his look, fe166263) are 11
+to 17 tiles long and 3 thick at the water, and what of one lies on the stone needed that room to lie inside its line; (2) THE ROOTS
+are where his look puts them, 1.95 tiles off the stone, not 1.4: phase 1's two 4 tiles either side of the middle (at a third and two
+thirds along), phases 2 and 3's three at the middle and 8 tiles either side; (3) the films show each slam once or twice, not every 3
+to 4 s.
+
+`src/art/eye_arms.ts` (behind `EYE2`, off; nothing of the game imports it: `tests/eye_arms.test.ts`) says each move frame by frame as a
+pose for the painter; `tools/eye_moves_pics.ts` paints each once and lays the frames together in the arena with what the game would
+draw (the warnings, the cracks, the slime, the waves, the crash, the splashes, the ichor, the shakes); `tools/eye_arms_sheet.py`
+makes the sheet and the film. Each tentacle is a figure of its own, one smooth taper, no sections.
+
+### Each move, frame by frame (30 a second; frames from the move's first)
+
+- ITS STAND (`armStand`, `src/art/eye_moves.ts`): a loop of 1.5 s (45 frames), two of them in his 3 s stand, so they close together;
+  never still: a slow wave of sway out along it (22 of his lengths at its tip), its body breathing up and down, its tip curling and
+  uncurling, its suckers flexing (each ring swelling and shrinking, a fifth, in a wave along it), slime dripping off its underside
+  (up to 7 drips stretching and letting go, the gob falling into the water). It replaces the sway at the root of part 1 (in his stand
+  and so in the last beat of his entrance).
+- THE SLAM ON THE STONE (`armSlam`), 74 frames (2.47 s):
+  - WIND-UP, frames 0 to 26 (0.90 s), HELD: out of its stand fast, slowing into its rear by frame 18; reared back from its line and
+    up, an S across the line, its top rolled over into a big coil; held there quivering, the coil tightening. THE LINE on the stone
+    all through it, the game's own warning (`render/act1_fx/garden_warn.ts`): its edge dashed in the enemy's pink, marching, the stone
+    inside shaded dark and dithered, flaring to the enemy's gold in its last quarter as the blow comes.
+  - STRIKE, frames 27 and 28, two smeared frames (each with the frame before it ghosted behind it): 27 flung down out of the rear, its
+    outer part still high over the line; THE HIT on frame 28 (0.93 s): lying along the line on the stone, never in it (what lies on
+    the stone is inside its line, at every turn); the stone cracks under it, slime, water and chips of the stone thrown up, the screen
+    jolted (4 game pixels, dying over 9 frames).
+  - A BEAT LYING THERE, frames 28 (the hit) to 42 (0.5 s): a rebound off the stone and settling, its tip curling.
+  - WIND-DOWN, frames 43 to 73 (1.03 s): dragged back toward the water along its own length, scraping (to frame 52), peeled up off
+    the stone from the water out, its tip last (to 60), rising into its stand by 72, at its own clock then, so it stands on with no
+    leap; the slime trail it leaves along the line, laid as it drags, fading from 1.2 s and gone 3.2 s after.
+  - ITS TURNS: drawn for each of 9 turns of its line, every 15 degrees from 60 to the left to 60 to the right (from its root toward
+    the hero: these cover the stone from every root); the game takes the turn nearest the hero. Drawn again for each turn, not one
+    drawing turned by the game: turned, its light and its suckers would turn with it and a lying tentacle would not lie on the stone.
+- THE WATER SLAM (`armSmash`; the left and right ones in phases 2 and 3), 74 frames, the same beats: WIND-UP 0 to 26 held, reared back
+  away from the stone's end and up, lower (so it is seen with the stone), coiled hard, quivering; the game's warning across the back
+  of the stone where its wave will run (the same dashed pink, over the wave's reach). STRIKE 27 and 28, smeared; THE HIT on 28: a high
+  arch flung out over the water and down into it off the stone's end (2.5 tiles off the end, 2.2 onto its depth), a crown of water and
+  foam thrown up (200 drops), the screen jolted (3 game pixels). In the water to frame 42, heaving, churning it; drawn back up out of
+  it, 43 to 73, into its stand by 72.
+- STRUCK (`armFlinch`), 14 frames (0.47 s): flung back from the blow in two frames, shivering out along it, back; lying slammed, it
+  jerks up off the stone and slaps back down (the film shows it lying; standing, it is drawn, not filmed). His dark ichor spurts from where it was struck for 8 frames (maroon to black, never
+  cyan) and spatters the stone.
+- ITS DEATH (`armDeath`), 90 frames (3.0 s): CONVULSING, frames 0 to 19, held (shudders through all of it, its tip curling and
+  uncurling hard); THRASHING, 20 to 41 (whipping side to side, flung up off the stone and down, never into it); SINKING, 42 to 89
+  (drawn back down into the water through its root, coiling up as it goes; bubbles gurgling up, a slick of ichor spreading, rings, the
+  water closing over it).
+- PHASE 1: the two burst up at the fight's start out of his lurk (part 1's `armBurst`: the water bulging over each for 10 frames, the
+  burst in 2, settling over 20), the right one 6 frames after the left, then stand, slam, are struck and die as above.
+
+### The water slams, for the main chat (his lengths: 27.7 to a tile; the stone 24.0 tiles across and 15.6 deep)
+
+- THE BLOWS: each lands on frame 28 of its move (0.93 s after its wind-up begins). In the film's phase 2: the middle one's slam on the
+  stone lands on frame 58; the left's water slam 140; the right's 240; both at once 350.
+- EACH WAVE: formed out of the smash over 0.25 s, 1.44 tiles off the stone's end; rolls across at 8.66 tiles a second (the stone's
+  length in 2.78 s; 2.94 s from the smash to the far end), and dies as it goes off the far end (over 5 tiles). Its front leads at the
+  back (it slants, 0.35 tiles behind for every tile toward the front) and is never ruled straight (it surges and lags). ITS HEIGHT
+  along the stone's depth: 2.09 tiles at the back edge, 1.63 two tiles onto the stone, 1.16 at four, 0.66 at six, 0.11 at eight,
+  nothing past 8.3: the stone is 15.6 deep, so its front 7.3 tiles are out of the wave's reach (there it is outrun; anywhere else it is
+  dodged through). Across it: a steep face ahead (about a third of a tile), its crest curling over, a long back slope (about 2 tiles).
+- THE CRASH: the two waves of the both-at-once meet in the middle 1.55 s (46.6 frames) after their smash, frame 75 of the move (the
+  film's frame 397): a column of water 8.3 tiles high at the back (lower toward the front, as the waves are; its top torn into
+  spouts), its width 2.5 tiles either side of the middle (falling off as e to the minus the square of the distance over that), rising
+  in 0.35 s and falling back over 1.4 s, spreading to 2.6 times as wide as it falls (6.6 tiles either side); 420 drops of spray, slime and water
+  thrown out of it; the screen thrown 7 game pixels, dying over 30 frames (1 s); the stone left wet and streaming where it fell.
+- What the game draws: the waves and the crash are the game's effects drawn over the stone (as his water is); the smash is the
+  tentacle's own frames. Here the pictures' tool draws them as the game would: each wave a wall of black water seen from above (its
+  crest a ragged lip of foam, the hollow under the curl black, foam torn into streaks and lace behind it, weed and slime rolled in it,
+  its back slope glossy, water running down it, thinning toward the front to a sheet of foam the stone shows through); the crash a
+  torn column of white water, its sheets falling back in streaks, slime in it, its top torn into spray.
+
+### The pictures
+
+- `pictures/eye_moves2.png` (1200 x 6594): key frames at the game's size (the phone's screen, two picture pixels to a game pixel):
+  phase 1 (14 frames), phase 2 (10), the line at each of its 9 turns; then four at twice the size (the held coil, the hit, a wave's
+  crest, the crash).
+- `pictures/eye_moves2.mp4` (44.8 s, 30 a second, H.264 yuv420p, 1014 x 540, captioned beat by beat), all in the arena as the player
+  sees it (the stone, the Warrior, the camera lowered 76 picture pixels from the stills' to see the stone, 168 for the water slams):
+  PHASE 1 at full speed (380 frames, 12.7 s: the two bursting up out of his lurk; the left one's slams hitting on frames 68 and 188,
+  the right one's on 128 and 250, each at its own turn toward the Warrior as he dodges; the right one struck lying on 253, struck its
+  last on 263, dying, gone under by 353); PHASE 2 at full speed (520 frames, 17.3 s: the middle one's slam hitting on 58 as he dodges;
+  he runs to the front of the stone, 100 to 150, as the camera comes down; the left's water slam 140, the right's 240, both at once
+  350, the crash 397); the both-at-once and the crash again at half speed (frames 322 to 461, 9.3 s); and the left one's first slam
+  close up, twice the size, at half speed (5.5 s), the view on its coil as it rears and holds, panning down onto the stone for the
+  strike, the hit and the wind-down.
+- To make them again (the layers kept on the machine's memory disk, `/dev/shm`; a tentacle's layer casts its rays only in the box
+  round its tube, its drips and what falls off it, checked the same pixel for pixel as without the box):
+
+```
+npx tsx tools/eye_moves_pics.ts paint 0 2 p1 p2 fan & npx tsx tools/eye_moves_pics.ts paint 1 2 p1 p2 fan   (about 30 minutes)
+npx tsx tools/eye_moves_pics.ts frames /dev/shm/eye_moves/frames p1      (and p2, and fan)
+python3 tools/eye_arms_sheet.py film /dev/shm/eye_moves/frames docs/mockups/eye_redo/pictures/eye_moves2.mp4
+python3 tools/eye_arms_sheet.py sheet /dev/shm/eye_moves/frames docs/mockups/eye_redo/pictures/eye_moves2.png tools/eye_arms_sheet.json
+npx tsx tools/eye_moves_pics.ts cost                                     (what they cost, as below)
+```
+
+- Seen at the game's size, every frame of both shots (every fourth laid side by side, and the strikes, the waves and the crash frame
+  by frame).
+
+What they cost:
+
+- AS PAINTED HERE: 1,019 tentacle layers (standing 225, 45 for each of the five; slams on the stone 327; water slams 296; bursting
+  62; struck 10; dying 90; the fan 9): 173 MB raw (two picture pixels to a game pixel, 4 bytes a pixel, each layer in the box round
+  it), 58 MB packed as kept here; painted in 31 minutes on two workers, about 4 s a layer. A layer on average: standing 0.19 MB, a slam
+  on the stone 0.13, a water slam 0.24, struck 0.07, dying 0.06. (His own layers are part 1's, unchanged.)
+- FOR THE GAME, every move of every tentacle baked: three figures cover all five (phase 1's two are the left and right ones of phases
+  2 and 3 moved along the stone, the same shape). Each: its stand 45 frames; a slam on the stone at each of the 9 turns, 666; a water
+  slam, 74 (the left and right ones); struck, standing and lying at each turn, 140; dying, from standing and from lying at each turn,
+  900. 1,825 frames each for the left and right ones, 1,751 for the middle: 5,401 in all, about 510 MB raw at two picture pixels to a
+  game pixel, 128 MB at one, about a third of that packed (170 MB and 43 MB). Dying from lying at every turn is most of it: if one
+  struck its last while lying slammed first drags back up and dies from its stand, 2,971 frames, about 370 MB raw at two to one, 92 MB
+  at one.
+- Not painted while the game runs: baked (his word of 6 Nov: the game may carry files). The waves, the crash, the warnings, the
+  cracks, the slime, the splashes and the ichor are the game's effects drawn over the stone, not baked.
+
+### The checks (`tests/eye_arms.test.ts`)
+
+(1) The switch off, nothing of the game importing the tentacles' moves; (2) each one's stand closing on itself, a loop of 1.5 s, two in
+his stand, painted the same at the end of its loop as at its start; (3) nothing cyan (the tentacles in every move, his ichor, the
+stone's chips and cracks), the warning the game's own colours, the enemy's pink flaring to its gold; (4) NOTHING THROUGH ANYTHING: in
+every frame of both shots each tentacle clear of the stone (lying on it, never in it: its tube against the stone's block, the edge's
+corner too), of him (what of it is seen) and of each other, and every slam at every turn for each that slams; (5) never still: every
+tentacle moves in every frame of both shots, and every frame of its stand; (6) no leaps: frame to frame, but in the strikes, the bursts
+and the first frames of a flinch; out of its stand into each move and back into its stand after it, no bigger a step than standing's;
+(7) the cues: each wind-up held 0.9 s with its warning drawn all through it, two frames of strike each smeared, the landing along its
+line at every turn, the screen jolted, the water slams' warnings and waves, the crash where the two meet, ichor when struck, the
+sinking and the water closing over it; (8) the waves as he read them: tallest at the back, thinning toward the front, dying before the
+front edge, the Warrior out of their reach at the front, the two meeting in the middle in a crash more than two and a half times
+their height. `tests/eye_moves.test.ts` and `tests/eye_colossus.test.ts`: their first checks now let `art/eye_arms.ts` import his moves
+and him (the smallest change).
+
+### For the owner to decide (the art chat's to put to him)
+
+1. The line: 8 tiles by 1.6 (the main chat's was about 6 by 1.2), to fit his tentacles as drawn. Its warning flares to the enemy's
+   gold in its last quarter, as all the game's warnings do.
+2. His dodges in the film are close (the Warrior steps out of the line in the last half second): the warning is held the full 0.9 s;
+   if he wants more time, the wind-up can be held longer.
+3. The waves: their height and reach as he read them (2 tiles at the back, gone 8.3 tiles in, the front 7.3 tiles safe). His to see.
+4. Not now: his shovel (his drawing of 7 Nov). A tentacle lying along the stone (the slam's landing, `slamKeys`) is the piece it would
+   reuse.
+
 
 ## Stage 2: his moves, part 1 (his stand, his lurk under the water, his entrance), in pictures and a film
 
@@ -193,7 +353,7 @@ moves file import him (the smallest change).
 4. Shut, his teeth are meshed into his other jaw's gum along his seam (they bite in, hidden in it; pressed shut, his teeth are only turned,
    not stretched with his flesh); as he tears open they pull out of it. Said here because it is the one place anything of him is inside anything else; nothing else of him is.
 5. His tentacles sway at their roots as he stands, and burst up at his entrance (their own move, `armBurst`); their attacks and their
-   phase 1 moves are for later. In his lurk the phase 1 tentacles are left out (they are dead by his entrance).
+   phase 1 moves are for later. (Stage 3, above: their stand is now their own loop, and their moves are drawn.) In his lurk the phase 1 tentacles are left out (they are dead by his entrance).
 6. The spray and goo of his roar, the splashes, the water pouring off him, the swell, the bubbles and the slicks are drawn here as the
    game would draw them over him (the pictures' tool), not baked into him: the main chat would bring them in as effects.
 

@@ -99,8 +99,9 @@ test('1. the switch is off; nothing of the game imports him; nothing of the old 
   assert.equal(EYE2.on, false, 'EYE2 is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    // (his moves, art/eye_moves.ts, are his own mock-up's: tests/eye_moves.test.ts holds that nothing of the game imports them)
-    if (!f.endsWith('.ts') || f === 'art/eye_colossus.ts' || f === 'art/eye_moves.ts') continue;
+    // (his moves, art/eye_moves.ts and art/eye_arms.ts, are his own mock-up's: tests/eye_moves.test.ts and tests/eye_arms.test.ts hold
+    // that nothing of the game imports them)
+    if (!f.endsWith('.ts') || f === 'art/eye_colossus.ts' || f === 'art/eye_moves.ts' || f === 'art/eye_arms.ts') continue;
     if (/eye_colossus/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(', '), '', 'nothing of the game imports art/eye_colossus.ts');
