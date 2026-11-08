@@ -1018,9 +1018,6 @@ function rollAffix(f: FamilyDef, ilvl: number, rng: RNG): Affix {
  * as one line (modLines).
  */
 export function statGroup(stat: StatKey): string {
-  // (FLAT DAMAGE: an added pair, its least and its most, is one property)
-  const flat = FLAT_PAIRS.find((f) => f.min === stat || f.max === stat);
-  if (flat) return `add:${flat.min}`;
   return stat === 'maxMana' || stat === 'manaRegen' || stat === 'cdr' ? 'cdr' : stat;
 }
 
@@ -1237,8 +1234,8 @@ function wordOptions(word: BaseWordId, slot: Slot, level: number, strength: numb
     // (FLAT DAMAGE: its average hit, as the found “adds damage” affix rolls it)
     if (flatPair(stat)) {
       const [lo, hi] = addedDamageAt(level);
-      const min = Math.max(1, Math.round(lo * strength * 2) / 2);
-      return { kind, stat, min, max: Math.max(min, Math.round(hi * strength * 2) / 2) };
+      const min = Math.max(1, Math.round(lo * strength));
+      return { kind, stat, min, max: Math.max(min, Math.round(hi * strength)) };
     }
     const family = FAMILY_BY_STAT.get(stat);
     const [lo, hi] = family ? familyRange(family, level) : [1, 1];
@@ -1359,7 +1356,7 @@ export function itemScore(item: Item, cls: ClassId): number {
   for (const m of itemMods(item)) {
     if (m.stat === 'dmgMin' || m.stat === 'dmgMax') score += m.value * perDamagePoint;
     // (FLAT DAMAGE to one element's hits: half as much, as only some hits take it)
-    else if (statGroup(m.stat).startsWith('add:')) score += m.value * perDamagePoint * 0.5;
+    else if (FLAT_PAIRS.some((f) => f.min !== 'dmgMin' && (f.min === m.stat || f.max === m.stat))) score += m.value * perDamagePoint * 0.5;
     else score += m.value * (SCORE_PER_POINT[m.stat] ?? 0) * (m.stat === CLASS_ATTRIBUTE[cls] ? CLASS_ATTRIBUTE_BONUS : 1);
   }
   return Math.round(score);
