@@ -13,7 +13,7 @@ import { packSounds } from './sound_packs.mjs';
 
 const dev = process.argv.includes('--dev');
 // (shown small in a corner of the starting screen, so the owner can tell which version a page is showing)
-const VERSION = 'V25.2.11';
+const VERSION = 'V25.2.12';
 const stamp = `${VERSION} ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
 const bake = process.argv.includes('--no-bake') ? null : await bakeHeroes();
 fs.rmSync(path.join(ROOT, 'dist', 'heroes'), { recursive: true, force: true });
