@@ -57,6 +57,10 @@ import { rallyOf } from './act1_rules/kknight';
 import { blobDist, inHold } from './act1_layout';
 import { ARRIVALS, riftSize } from './arrivals';
 import { EYRIE_LINES, EYRIE_SCENE, PILLARS, QUEST610_TEXT, QUESTS610, lightPillars, pillarsBurning, piecesInHand, piecesTaken } from './quests610';
+import { JETTY, STONE, stoneToWorld, worldToStone } from './colossus_fight';
+import type { ColossusFight } from './colossus_fight';
+/** (COLOSSUS) How near the landing on the boss's ground carries the hero across to the stone (tiles). */
+const STONE_LANDING = 0.8;
 import { eyePhase } from './act1_rules/eye';
 import type { Pillar } from './quests610';
 import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
@@ -108,7 +112,7 @@ const VOLATILE_ONLY: readonly WordId[] = ['volatile'];
 const RISEN_PACK = -7;
 
 /** THE WAYS (ways.ts): where a way out of a level goes: down the stairwell; through the gate into the first floor, or out of it to town; by a waypoint to town, or back from town. */
-type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut' | 'stairsIn' | 'quarry' | 'towerUp' | 'towerDown';
+type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut' | 'stairsIn' | 'quarry' | 'towerUp' | 'towerDown' | 'stoneIn' | 'stoneOut';
 
 /**
  * What survives closing the game in the middle of a run: the character and how far they have got.
@@ -1964,6 +1968,7 @@ export class Game {
     if (this.level.furnace) this.furnaceStep(dt);
     this.meetOutdoorBoss();
     if (this.level.holds) this.updateHolds();
+    if (this.level.land?.landing) this.updateStone();
     if (this.level.bells) this.updateBells(dt);
     // (THE WAYS: and where a way out of it has been taken, the rest is the next level's, from its next step)
     if (this.level.ways && this.updateWays(dt)) return;
@@ -2236,6 +2241,10 @@ export class Game {
       this.throughHoldDoor(to === 'holdIn');
       return;
     }
+    if (to === 'stoneIn' || to === 'stoneOut') {
+      this.acrossToStone(to === 'stoneIn');
+      return;
+    }
     // (THE HIGH CITY, FLOOR 20: up the tower's stair onto its top, or down through the trapdoor: game/act2/tower_rules.ts)
     if (to === 'towerUp' || to === 'towerDown') {
       this.throughTower(to === 'towerUp');
@@ -2401,7 +2410,7 @@ export class Game {
   /** THE WAYS: how dark the screen is, 0 to 1: darkening as he goes down a stairwell or through a gate, lightening as he comes into the next level. (A warp needs none: its column of light hides him.) */
   curtain(): number {
     const l = this.leaving;
-    if (l && (l.to === 'down' || l.to === 'on' || l.to === 'holdIn' || l.to === 'holdOut' || l.to === 'towerUp' || l.to === 'towerDown' || l.to === 'gateIn' || l.to === 'gateOut' || l.to === 'stairsIn' || l.to === 'quarry')) return Math.min(1, l.t / CURTAIN_SECS);
+    if (l && (l.to === 'down' || l.to === 'on' || l.to === 'holdIn' || l.to === 'holdOut' || l.to === 'stoneIn' || l.to === 'stoneOut' || l.to === 'towerUp' || l.to === 'towerDown' || l.to === 'gateIn' || l.to === 'gateOut' || l.to === 'stairsIn' || l.to === 'quarry')) return Math.min(1, l.t / CURTAIN_SECS);
     // (up the shaft: the cage goes up into the dark, and over the ride's last moments the screen darkens)
     if (l && l.to === 'up') return Math.max(0, Math.min(1, (l.t - (SHAFT.up - CURTAIN_SECS)) / CURTAIN_SECS));
     return Math.max(0, 1 - this.cameT / CURTAIN_SECS);
@@ -3377,6 +3386,49 @@ export class Game {
     this.sfx('power', 0.9);
     this.msg(`The altar takes ${st.words.length === 1 ? 'the word' : `${st.words.length} words`}. The door's seal breaks.`, MSG.word);
     return true;
+  }
+
+  /**
+   * (THE SWAMP COLOSSUS, game/colossus_fight.ts COLOSSUS) Across to his stone from the landing on the boss's ground; back from
+   * the far end of its jetty, before his fight begins or once it is won (not in the middle of it).
+   */
+  private updateStone(): void {
+    const land = this.level.land;
+    if (!land?.stone || !land.landing || this.leaving) return;
+    const h = this.hero;
+    if (Math.hypot(h.x - land.landing.x, h.y - land.landing.y) < STONE_LANDING) {
+      this.leave('stoneIn');
+      return;
+    }
+    const p = worldToStone(land.stone, h.x, h.y);
+    if (p.v > STONE.d + JETTY.out && Math.abs(p.u - STONE.w / 2) < JETTY.half + 0.5) {
+      const boss = this.monsters.find((m) => m.boss && !m.dead);
+      const f = boss ? (boss.a1 as { fight?: ColossusFight } | undefined)?.fight : undefined;
+      if (!f || f.mode === 'idle' || f.mode === 'won') this.leave('stoneOut');
+    }
+  }
+
+  private acrossToStone(inward: boolean): void {
+    const land = this.level.land;
+    if (!land?.stone || !land.landing) return;
+    const h = this.hero;
+    this.cameT = 0;
+    h.step = null;
+    if (inward) {
+      const p = stoneToWorld(land.stone, STONE.w / 2, STONE.d + JETTY.in);
+      h.x = p.x;
+      h.y = p.y;
+      h.fx = -Math.SQRT1_2;
+      h.fy = -Math.SQRT1_2;
+      const boss = this.monsters.find((m) => m.boss && !m.dead);
+      if (boss) this.wakeUp(boss);
+    } else {
+      h.x = land.landing.x + 1.4;
+      h.y = land.landing.y + 1.4;
+      h.fx = Math.SQRT1_2;
+      h.fy = Math.SQRT1_2;
+    }
+    this.visionT = 0;
   }
 
   /** A step of the strongholds: through an open door into the hall, out of the hall by its threshold; its last fight won. */
@@ -10928,7 +10980,11 @@ export class Game {
    */
   private arriveFrom(from: number): void {
     if (!ARRIVALS.on || from >= this.monsters.length) return;
-    const come = this.monsters.splice(from);
+    const taken = this.monsters.splice(from);
+    // (the Swamp Colossus's tentacles burst up out of the water in their own way, not out of a rift: act1_rules/colossus.ts)
+    const own = taken.filter((m) => (m.a1 as { arm?: number } | undefined)?.arm !== undefined);
+    this.monsters.push(...own);
+    const come = taken.filter((m) => !own.includes(m));
     const h = this.hero;
     const base = this.risers.filter((r) => r.way === 'rift' && r.age <= 0).length;
     come.forEach((m, k) => {

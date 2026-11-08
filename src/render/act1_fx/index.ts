@@ -36,7 +36,14 @@ import { FX as unfinished } from './unfinished';
 import { FX as queen } from './queen';
 import { FX as cantor } from './cantor';
 import { FX as stag } from './stag';
-import { FX as eye } from './eye';
+import { FX as EYE_FX } from './eye';
+import { COLOSSUS_FX } from './colossus';
+import { COLOSSUS } from '../../game/colossus_fight';
+/** Floor 10's boss drawn: the Drowned Eye's pictures, or (COLOSSUS on) the Swamp Colossus's stand-ins. */
+const eye: Act1Fx = new Proxy({} as Act1Fx, {
+  get: (_t, k: string | symbol) => (COLOSSUS.on ? (COLOSSUS_FX as unknown as Record<string | symbol, unknown>)[k] : (EYE_FX as unknown as Record<string | symbol, unknown>)[k]),
+  has: (_t, k: string | symbol) => k in (COLOSSUS.on ? COLOSSUS_FX : EYE_FX),
+});
 // ACT 2, THE HUSH (game/act1.ts ACT2): the city's own, each floor's own, the five bosses
 import { FX as hushed } from './hushed';
 import { FX as watch } from './watch';

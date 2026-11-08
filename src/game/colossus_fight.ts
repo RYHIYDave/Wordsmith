@@ -219,6 +219,38 @@ export function offLine(p: P2, s: Seg): number {
   return Math.hypot(p.u - (s.a.u + ex * k), p.v - (s.a.v + ey * k));
 }
 
+// ---------------------------------------------------------------------------------------------
+// THE STONE IN THE WORLD (game/act1_layout.ts lays it, on floor 10 with the switch on: an island of its own beside the open
+// ground, as a stronghold's hall is, water all round it but for a jetty down from the middle of its near edge; the hero is
+// carried there from the boss's ground: game.ts 'stoneIn'). Its axes are the screen's: `u` across, `v` down it.
+
+/** Where the stone is: the world point (tiles) of its middle. */
+export interface StoneAt {
+  cx: number;
+  cy: number;
+}
+export function stoneToWorld(s: StoneAt, u: number, v: number): { x: number; y: number } {
+  const du = u - STONE.w / 2;
+  const dv = v - STONE.d / 2;
+  return { x: s.cx + (du + dv) / Math.SQRT2, y: s.cy + (dv - du) / Math.SQRT2 };
+}
+export function worldToStone(s: StoneAt, x: number, y: number): P2 {
+  const dx = x - s.cx;
+  const dy = y - s.cy;
+  return { u: STONE.w / 2 + (dx - dy) / Math.SQRT2, v: STONE.d / 2 + (dx + dy) / Math.SQRT2 };
+}
+/** The jetty down from the middle of the near edge: `half` tiles either side of the middle, `long` past the edge; the hero set down `in` past the edge, and carried back from beyond `out`. */
+export const JETTY = { half: 1.1, long: 3.6, in: 2.4, out: 3.2 } as const;
+/** On the stone (its whole rectangle), or on its jetty. */
+export function onStoneOrJetty(p: P2): boolean {
+  if (p.u >= 0 && p.u <= STONE.w && p.v >= 0 && p.v <= STONE.d) return true;
+  return Math.abs(p.u - STONE.w / 2) <= JETTY.half && p.v > STONE.d - 0.5 && p.v <= STONE.d + JETTY.long;
+}
+/** On the stone itself (the fight begins as the hero steps onto it). */
+export function onStone(p: P2): boolean {
+  return p.u >= 0 && p.u <= STONE.w && p.v >= 0 && p.v <= STONE.d;
+}
+
 /** The hero's size on the stone (tiles round him: the game's TUNE.heroRadius). */
 export const HERO_R = 0.3;
 

@@ -15,6 +15,7 @@
 // laid behind the ground where the drop shows nothing, its horizon fixed on the screen, sliding across at half
 // the ground's speed (the art chat's note: "lay the sky behind the ground and slide it slower").
 
+import { onStone, onStoneOrJetty, worldToStone } from '../game/colossus_fight';
 import { CANYON_LOOK } from '../art/canyon';
 // (FLOORS 8 AND 9 FROM HIS PHONE, behind F8F9_FIX, off: game/f8f9.ts)
 import { F8F9_FIX } from '../game/f8f9';
@@ -333,13 +334,18 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
       };
       const ringD = ring ? ell(ring) : null;
       const prog = progressOf(land.way);
+      // (THE SWAMP COLOSSUS'S STONE, COLOSSUS on: its paving, and its jetty's planks)
+      const stone = land.stone;
+      const onIt = stone ? (x: number, y: number) => onStone(worldToStone(stone, x, y)) : null;
+      const jetty = stone ? (x: number, y: number) => { const p = worldToStone(stone, x, y); return !onStone(p) && onStoneOrJetty(p); } : null;
       return fenLook({
         boards: (x, y) => {
+          if (jetty && jetty(x, y)) return true;
           const tx = Math.floor(x);
           const ty = Math.floor(y);
           return tx >= 0 && ty >= 0 && tx < W && ty < H && boards[ty * W + tx] === 1;
         },
-        paved: ringD ? (x, y) => ringD(x, y) < 1 : undefined,
+        paved: onIt ?? (ringD ? (x, y) => ringD(x, y) < 1 : undefined),
         pool: pool ? ell(pool) : undefined,
         sick: (x, y) => 0.3 + 0.6 * prog(x, y),
       });

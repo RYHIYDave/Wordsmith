@@ -2,6 +2,9 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
+import { COLOSSUS, onStoneOrJetty, worldToStone } from '../game/colossus_fight';
+/** (COLOSSUS) How far the picture leans up toward him on his stone (game pixels). */
+const COLOSSUS_LEAN = 55;
 import { CRANK_TURN, FIRE_WALL, FURNACE_OUT, FURNACE_ROAR, STOKER_ROOM } from '../art/stoker_room';
 import { STOKER_ON } from '../art/stoker';
 import { CRANK_TIMES } from '../game/quests15';
@@ -2756,6 +2759,10 @@ export class Renderer {
       tx = Math.max(-W * MOTH_LEAN.most, Math.min(W * MOTH_LEAN.most, ((m.x - m.y - (h.x - h.y)) * 16) * MOTH_LEAN.share));
       ty = Math.max(-H * MOTH_LEAN.most, Math.min(H * MOTH_LEAN.most, ((m.x + m.y - (h.x + h.y)) * 8 - up) * MOTH_LEAN.share));
     }
+    // (THE SWAMP COLOSSUS, COLOSSUS on: on his stone the picture leans up toward him in the water, the hero low on the screen but
+    // clear of the buttons at its foot: the art chat's camera leans 97 game pixels, on a screen with nothing over its foot)
+    const stone = L.land?.stone;
+    if (stone && COLOSSUS.on && onStoneOrJetty(worldToStone(stone, h.x, h.y))) ty = -Math.min(COLOSSUS_LEAN, H * 0.24);
     // (QUESTS610, THE EYRIE'S SCENE: the picture panned out over the drop toward the town far below, and back: game/quests610.ts)
     if (game.scene) {
       const pan = game.scenePan();

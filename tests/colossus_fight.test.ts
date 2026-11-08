@@ -7,12 +7,12 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-// @ts-ignore
-import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { RNG } from '../src/engine/rng';
+import { Game } from '../src/game/game';
+import { emptyControls } from '../src/game/state';
 import {
   ColossusFight, COLOSSUS, ENTRANCE, HOOK, PACE, ROOTS, SHOVEL, SLAM, SNAP, STONE, TURNS, WAVE, CRASH,
-  slamLine, turnToward, offLine, waveFront, bodyStrikeFront,
+  slamLine, turnToward, offLine, waveFront, bodyStrikeFront, stoneToWorld, worldToStone,
 } from '../src/game/colossus_fight';
 import type { FightEvent, HeroOnStone } from '../src/game/colossus_fight';
 
@@ -27,11 +27,61 @@ function run(f: ColossusFight, secs: number, hero: (t: number) => HeroOnStone): 
   return all;
 }
 
-test('the switch is off, and nothing of the game uses the fight yet', () => {
+test('the switch is off: floor 10 is laid as it was, the Drowned Eye in his pool in its ring, his old rules', () => {
   assert.equal(COLOSSUS.on, false);
-  const walk = (d: string): string[] => readdirSync(d).flatMap((n: string) => (statSync(`${d}/${n}`).isDirectory() ? walk(`${d}/${n}`) : [`${d}/${n}`]));
-  const users = walk('src').filter((p) => p.endsWith('.ts') && !p.endsWith('colossus_fight.ts') && readFileSync(p, 'utf8').includes('colossus_fight'));
-  assert.deepEqual(users, []);
+  const g = new Game('warrior', 9);
+  g.depth = 10;
+  g.cleared = 9;
+  g.enterDungeon();
+  const land = g.level.land!;
+  assert.ok(land.pool && land.ring, 'the pool and the ring');
+  assert.equal(land.stone, undefined);
+  assert.equal(land.landing, undefined);
+  const boss = g.monsters.find((m) => m.boss)!;
+  assert.equal(boss.kind, 'eye');
+  assert.ok(Math.hypot(boss.x - land.pool!.x, boss.y - land.pool!.y) < 0.6, 'in the middle of his pool');
+});
+
+test('the switch on: his stone laid on floor 10, an island with its jetty; the hero carried across from the landing; his fight begins as he steps onto it', () => {
+  COLOSSUS.on = true;
+  try {
+    const g = new Game('warrior', 9);
+    g.depth = 10;
+    g.cleared = 9;
+    g.enterDungeon();
+    const L = g.level;
+    const S = L.land!.stone!;
+    assert.ok(S && L.land!.landing);
+    let walk = 0;
+    for (let u = 0.5; u < STONE.w; u += 1) for (let v = 0.5; v < STONE.d; v += 1) {
+      const p = stoneToWorld(S, u, v);
+      walk += L.walk[Math.floor(p.y) * L.floor.w + Math.floor(p.x)];
+    }
+    assert.ok(walk >= 160, `${walk} of 187 of the stone's tiles walked`);
+    const boss = g.monsters.find((m) => m.boss)!;
+    const at = worldToStone(S, boss.x, boss.y);
+    assert.ok(near(at.u, 8.5, 0.01) && near(at.v, -7.9, 0.01), 'at his place in the water');
+    const c = emptyControls();
+    g.hero.x = L.land!.landing!.x;
+    g.hero.y = L.land!.landing!.y;
+    for (let i = 0; i < 180; i++) g.update(1 / 60, c);
+    const on = worldToStone(S, g.hero.x, g.hero.y);
+    assert.ok(near(on.u, 8.5, 0.01) && on.v > STONE.d, 'set down on the jetty');
+    const mid = stoneToWorld(S, 8.5, 8);
+    for (let i = 0; i < 60 * 12; i++) {
+      g.hero.x = mid.x;
+      g.hero.y = mid.y;
+      g.hero.life = g.hero.d.maxLife;
+      g.update(1 / 60, c);
+    }
+    const f = (boss.a1 as { fight?: ColossusFight }).fight!;
+    assert.equal(f.mode, 'fight');
+    const arms = g.monsters.filter((m) => m.kind === 'eye' && !m.boss && !m.dead);
+    assert.equal(arms.length, 2, 'his two tentacles, monsters of their own');
+    for (const m of arms) assert.ok(near(m.maxLife, boss.maxLife / 2, 1));
+  } finally {
+    COLOSSUS.on = false;
+  }
 });
 
 test("every slam's line is the art chat's (the README's table, in tiles from its root)", () => {
