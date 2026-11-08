@@ -104,7 +104,7 @@ import { CHAPEL_GATE, chapelGateDropAt, chapelGateSlam } from '../art/chapel_gat
 import { LAIR_GATE, lairGateDropAt, lairGateSlam } from '../art/lair_gate';
 import { EXIT_LABELS, exitLabels } from '../game/exit_labels';
 import type { Stage } from './dress';
-import { floorLook, lookWays } from '../art/floors';
+import { floorLook, lookStairs, lookWays } from '../art/floors';
 import { OutdoorGround, PIECE as GROUND_PIECE, gateWardLand } from './outdoor';
 // (ACT 2: the walls toward the eye standing whole, seen through round whoever is behind them; behind ACT2_WALLS, on at his word)
 import { HERO_WINDOW, WINDOW_FAINT, WallWindows, drawHoled, wallsThick } from './act2_walls';
@@ -836,9 +836,9 @@ export class Renderer {
 
   /** THE WAYS' PICTURES for this level: its floor's; the town's the first floor's (THE CAMP, game/camp.ts: its waypoint in the city's grey stone, art/hub2.ts CITY). */
   private waysOf(L: Game['level']): ReturnType<typeof lookWays> {
-    if (isCamp(L)) return (this.cityWays ??= { stair: lookWays(1).stair, way: makeWaypointArt(CITY) });
+    if (isCamp(L)) return (this.cityWays ??= { stair: lookStairs(1), way: makeWaypointArt(CITY) });
     // (THE FIRST TOWN AS THE CASTLE'S HALL: its waypoint's dais in the castle's stone: art/castle_hall.ts)
-    if (this.castle.on(L)) return (this.hallWays ??= { stair: lookWays(1).stair, way: this.castle.A().way });
+    if (this.castle.on(L)) return (this.hallWays ??= { stair: lookStairs(1), way: this.castle.A().way });
     return lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
   }
   private cityWays: ReturnType<typeof lookWays> | null = null;
@@ -2822,6 +2822,17 @@ export class Renderer {
    * air every frame (flames off burning ground, snow, sparks) is thrown at that rate, so the game
    * looks the same on a fast screen and a slow one. It also thins out when the air is full.
    */
+  /**
+   * (THE LOADING SCREEN, main.ts LOADING) the level's own pictures made ahead, nothing drawn: its look's (the castle hall's, the
+   * Headsman's yard's, a floor's), and its ways' (the stairwell, the waypoint), while the hero's baked pictures come in.
+   */
+  prepare(game: Game): void {
+    const L = game.level;
+    if (this.yard.on(L.floor)) this.yard.warm();
+    this.lookOf(L)?.warm();
+    if (L.ways) this.waysOf(L);
+  }
+
   draw(g: CanvasRenderingContext2D, W: number, H: number, game: Game, fx: Fx, t: number, pace = 1): Cam {
     // (heavy frames not yet painted are shown as their nearest painted ones, for the side painter to paint: art/kit.ts HEAVY)
     HEAVY.defer = PAINT_DEFER.on;
