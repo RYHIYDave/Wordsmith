@@ -48,7 +48,9 @@ import { WARP_FRAMES, WAY_FRAMES, makeWaypointArt } from '../art/crypt_ways';
 import { CITY } from '../art/hub2';
 import { TALK_FPS, TALK_FRAMES, campFolkFrame } from '../art/hub2_folk';
 import { CAMP_DUSK, campFolk, isCamp } from '../game/camp';
-import { columnSprite, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
+import { columnSprite, folkActAt, folkActLong, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
+import { FOLK_SOUND, WORLD_SOUNDS } from '../game/world_sounds';
+import type { TownArt } from '../art/townscene';
 import type { Facing } from '../art/townsfolk';
 import type { Townsfolk } from '../art/townsfolk';
 import { drawText, textWidth } from '../engine/font';
@@ -1339,6 +1341,22 @@ export class Renderer {
   goal: Station | null = null;
   /** QUEST MARKERS (game/quest_marks.ts): where each floats this frame (its point; screen pixels). */
   private questMarks: { x: number; y: number }[] = [];
+  /** THE WORLD'S SOUNDS (game/world_sounds.ts): the town's people's sounds begun this frame (main.ts plays them, by nearness). */
+  townSounds: { name: string; x: number; y: number }[] = [];
+  private folkActWas = new Map<string, number>();
+  private folkSound(art: TownArt, kind: string, x: number, y: number, t: number): void {
+    const name = FOLK_SOUND[kind];
+    if (!name) return;
+    const a = folkActAt(art, kind, t);
+    const was = this.folkActWas.get(kind) ?? -1;
+    this.folkActWas.set(kind, a);
+    if (a >= 0 && was < 0) this.townSounds.push({ name, x, y });
+    // (the wordsmith drives the rune he wrote into his ring, half way through)
+    if (kind === 'wordsmith' && a >= 0) {
+      const half = folkActLong(art, kind) / 2;
+      if (was < half && a >= half) this.townSounds.push({ name: 'rune_drive', x, y });
+    }
+  }
   /** (the same) the top of each of the town's people's heads as last drawn (screen pixels), by their kind. */
   private folkHeads = new Map<string, { x: number; y: number }>();
   /** Touch: the monster the hero is locked onto (its id): a ring is drawn round its feet. Set every frame by the controls. */
@@ -2852,6 +2870,7 @@ export class Renderer {
   }
 
   private drawWorld(g: CanvasRenderingContext2D, W: number, H: number, game: Game, fx: Fx, t: number, pace = 1): Cam {
+    this.townSounds.length = 0;
     // (the hero as he was last drawn, before this frame: THE WARLOCK's Phantom Step leaves him so as his shadow)
     this.heroBefore = this.heroWas;
     this.bossFx.begin();
@@ -3223,6 +3242,8 @@ export class Renderer {
             const to = turnedTo(p.x, p.y, game.hero.x, game.hero.y, this.folkTurn.get(p.kind) ?? null);
             this.folkTurn.set(p.kind, to);
             sp = townSprite(art, p.kind, p.variant, t, to);
+            // (THE WORLD'S SOUNDS: what each does now and then heard as it begins: the anvil, the crystal, the rune, the coin)
+            if (WORLD_SOUNDS.on) this.folkSound(art, p.kind, p.x, p.y, t);
             // (QUEST MARKERS: where the top of their head is, this frame)
             if (sp) this.folkHeads.set(p.kind, { x: sx, y: sy - sp.ay });
           } else sp = L.town && !isTownFlat(p.kind) ? townSprite(art, p.kind, p.variant, t) : null;
