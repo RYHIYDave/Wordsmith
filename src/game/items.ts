@@ -1273,6 +1273,91 @@ export function rarityFor(count: number): Rarity {
   return count >= 3 ? 2 : count >= 1 ? 1 : 0;
 }
 
+// =============================================================================================
+// SPLITTING AND BINDING CHANGE THE ITEM. His words, 4 Nov 2026, 19:15: “And I really love the erasing type words that don’t craft a
+// specific mod but change the item in a different way.  Like splitting would make take a single item and turn it into two items and
+// divide the mods up between them.  And maybe another that takes two items and slaps them into 1 item and takes mods from both.”
+// Offered the two words already named for it, 8 Nov: “Yes, Splitting and Binding (Recommended)”. At the bench SPLITTING shares a
+// piece's properties between it and a second like it, at random; BINDING takes a second piece of the same kind into the first,
+// which keeps its own and as many of the other's as there is room for (four in all, never two of a kind; at least one of each's,
+// the rest rolled), the second gone. Behind ITEM_WORDS: ON at his yes to its pictures (item_words_look.mjs), 8 Nov 2026: “Yes, put it
+// in (Recommended)”; off, they burn in as every word does.
+
+export const ITEM_WORDS = { on: true };
+export type ItemWord = 'split' | 'bind';
+/** What a word does to a piece at the bench, if it changes the piece rather than burning into it. */
+export function itemWordOf(word: WordId): ItemWord | null {
+  if (!ITEM_WORDS.on) return null;
+  return word === 'splitting' ? 'split' : word === 'binding' ? 'bind' : null;
+}
+
+type Prop = { a: Affix } | { i: Imbue };
+const propsOf = (it: Item): Prop[] => [...it.affixes.map((a) => ({ a })), ...it.imbues.map((i) => ({ i }))];
+const groupOf = (p: Prop): string => statGroup(('a' in p ? p.a.mods[0] : p.i.mods[0]).stat);
+function withProps(it: Item, ps: readonly Prop[], uid: number): Item {
+  const out: Item = JSON.parse(JSON.stringify(it));
+  out.uid = uid;
+  out.affixes = ps.flatMap((p) => ('a' in p ? [JSON.parse(JSON.stringify(p.a)) as Affix] : []));
+  out.imbues = ps.flatMap((p) => ('i' in p ? [JSON.parse(JSON.stringify(p.i)) as Imbue] : []));
+  if (out.rarity !== 3) out.rarity = rarityFor(out.affixes.length + out.imbues.length);
+  return out;
+}
+
+/** A piece's own properties' mods (its affixes' and its words'), not its base's. */
+export function itemModsOwn(item: Item): StatMod[] {
+  return [...item.affixes.flatMap((a) => a.mods), ...item.imbues.flatMap((i) => i.mods)].map((m) => ({ stat: m.stat, value: m.value }));
+}
+
+/** Why Splitting will not split this piece, or null. */
+export function splitProblem(item: Item): string | null {
+  if (item.rarity === 3) return 'A unique piece will not split';
+  if (item.affixes.length + item.imbues.length < 2) return 'Nothing on it to share between two';
+  return null;
+}
+
+/** Splitting: the piece and a second like it, its properties shared between the two at random (the first the odd one, if any). */
+export function splitItem(item: Item, rng: RNG): [Item, Item] {
+  const ps = propsOf(item);
+  rng.shuffle(ps);
+  const half = Math.ceil(ps.length / 2);
+  return [withProps(item, ps.slice(0, half), item.uid), withProps(item, ps.slice(half), nextUid++)];
+}
+
+/** Why Binding will not bind `other` into `into`, or null. */
+export function bindProblem(into: Item, other: Item): string | null {
+  if (into === other || into.uid === other.uid) return 'Bind it to another piece';
+  if (into.slot !== other.slot) return 'Only two pieces of the same kind bind';
+  if (into.rarity === 3 || other.rarity === 3) return 'A unique piece will not bind';
+  return null;
+}
+
+/**
+ * Binding: `into` with as many of its own properties and `other`'s as there is room for (four), never two of a kind (where both
+ * have one, its own kept); with more than there is room for, at least one of each's and the rest rolled.
+ */
+export function bindItems(into: Item, other: Item, rng: RNG): Item {
+  const mine = propsOf(into);
+  const groups = new Set(mine.map(groupOf));
+  const theirs = propsOf(other).filter((p) => !groups.has(groupOf(p)));
+  let keep: Prop[];
+  if (mine.length + theirs.length <= ITEM_ROOM) keep = [...mine, ...theirs];
+  else {
+    const a = [...mine];
+    const b = [...theirs];
+    rng.shuffle(a);
+    rng.shuffle(b);
+    keep = [];
+    if (a.length) keep.push(a.shift() as Prop);
+    if (b.length) keep.push(b.shift() as Prop);
+    const rest = [...a, ...b];
+    rng.shuffle(rest);
+    while (keep.length < ITEM_ROOM && rest.length) keep.push(rest.shift() as Prop);
+    // (in the piece's own order: its affixes, then the words burned in)
+    keep.sort((x, y) => Number('i' in x) - Number('i' in y));
+  }
+  return withProps(into, keep, into.uid);
+}
+
 /** The properties a piece already carries: those of its affixes and of the words burned into it. (What is built into its base does not count: an affix may repeat that too.) */
 function carried(item: Item): Set<StatKey> {
   const have = new Set<StatKey>();
