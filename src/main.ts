@@ -12,6 +12,7 @@ import { GROUNDS_ALL } from './render/grounds';
 import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
+import type { HeroPlace } from './art/heroes';
 import { makeHeroArt3, THRUST } from './art/heroes3';
 import { GOLEM_ROCKET } from './art/golem_rocket_fx';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
@@ -361,6 +362,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let warmedLevel: unknown = null;
   /** The hero whose voice has been fetched (engine/audio.ts warmRecorded). */
   let warmedFor = '';
+  /** THE LOADING SCREEN while a game begins (LOADING, below): how long it has been up, and whether the world has been drawn under it. */
+  let loading: { t: number; frames: number; drawn: boolean } | null = null;
+  /** Its switch (ON at his yes to its picture, loading_screen.png, by 22:55: “Yes, but nicer later”: the art chat to draw a better one), the least it is up (s), and the most it waits for the hero's pictures (s). */
+  const LOADING = { on: true, least: 0.5, most: 15 };
   let bot: BotState | null = null;
   let last = performance.now();
   let clock = 0;
@@ -574,6 +579,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     panels.pick = null;
     panels.pick2 = null;
     mode = 'play';
+    loading = LOADING.on ? { t: 0, frames: 0, drawn: false } : null;
     confirm = null;
     saveT = 0;
     deathSaved = false;
@@ -1649,6 +1655,58 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     }
   };
 
+  /**
+   * THE LOADING SCREEN AS A GAME BEGINS (25.2.4; his words of 7 Nov 2026, 22:02, when 25.2.3 had left him unable to move for
+   * some 15 seconds as he came into the first town: “We can have loading screens”). That wait was one long stall of the first
+   * frame: the hero's pictures painted here, frame by frame, before his baked ones (render/baked.ts) had even been asked for,
+   * and the town's own pictures made (the castle hall's, the stairs' look). Now, as a game begins (a new hero, one continued,
+   * the practice room), the screen says LOADING; his baked pictures are asked for at once and waited for (never painted here
+   * when they can be had), the level's own pictures made meanwhile (renderer.prepare); then the world is drawn once under the
+   * screen; and the next frame he plays, able to move at once. Off: the game begins as before.
+   */
+  const loadingFrame = (g: Game, dt: number, cg: CanvasRenderingContext2D): void => {
+    const l = loading;
+    if (!l) return;
+    l.t += dt;
+    l.frames++;
+    if (l.drawn) {
+      // (the world was drawn under the screen last frame: from the next he plays)
+      loading = null;
+      drawLoading(cg, l.t);
+      return;
+    }
+    // (his baked pictures for where he is, asked for as render.ts would on his first frame, and waited for)
+    let waiting = false;
+    const b = painter.baked;
+    if (b && art.heroes.give) {
+      const place: HeroPlace = g.level.town ? 'town' : 'dungeon';
+      painter.hero(g.hero.cls, place);
+      const grp = b.group(g.hero.cls, place, g.hero.cls === 'brawler' && VETERAN.on);
+      waiting = !!grp && !b.settled(grp);
+    }
+    // (the screen up first, then, while his pictures come, the level's own made: the castle hall's, the stairs')
+    if (l.frames === 2) renderer.prepare(g);
+    if (l.frames > 2 && l.t >= LOADING.least && (!waiting || l.t >= LOADING.most)) {
+      renderer.draw(cg, scr.w, scr.h, g, fx, clock, 0);
+      l.drawn = true;
+    }
+    drawLoading(cg, l.t);
+  };
+  /** The loading screen: the word, and three marks under it lit one after another. */
+  const drawLoading = (cg: CanvasRenderingContext2D, t: number): void => {
+    cg.fillStyle = THEME.ink;
+    cg.fillRect(0, 0, scr.w, scr.h);
+    const s = scr.h >= 180 ? 2 : 1;
+    const cx = Math.round(scr.w / 2);
+    const y = Math.round(scr.h / 2) - 9 * s;
+    drawText(cg, 'LOADING', cx, y, THEME.text, { align: 'center', scale: s });
+    const lit = Math.floor(t * 3) % 3;
+    for (let i = 0; i < 3; i++) {
+      cg.fillStyle = i === lit ? THEME.accent : THEME.accentLo;
+      cg.fillRect(cx + (i - 1) * 6 * s - s, y + 14 * s, 2 * s, 2 * s);
+    }
+  };
+
   const frame = (now: number): void => {
     // (playtests can slow time down to photograph effects that last a fraction of a second)
     const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000)) * dbg.slowmo;
@@ -1786,6 +1844,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         } else if (titleUi.page === 'options' && input.pressed('Escape')) titleUi.page = 'menu';
         else if (titleUi.page === 'floors' && input.pressed('Escape')) titleUi.page = 'options';
       }
+    } else if (loading) {
+      loadingFrame(game, dt, cg);
     } else {
       const g = game;
       if (!g.over) {
@@ -2373,12 +2433,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       saving = false;
       saved = null;
       newRun(cls, seed, false);
+      loading = null;
     },
     /** A new player's first character: in the first dungeon, with its prompts. */
     first: (cls: ClassId, seed?: number) => {
       saving = false;
       saved = null;
       newRun(cls, seed, true);
+      loading = null;
     },
     /**
      * THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS; the game's own since Version 19.5): a hero who
@@ -2412,6 +2474,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     veteran: VETERAN,
     /** THE WARRIOR'S NEW TREE, drafted (game/talents.ts WARRIOR_TREE2: his three weapons), off until his yes: `warriorTree2.on`. */
     warriorTree2: WARRIOR_TREE2,
+    /** THE LOADING SCREEN as a game begins (LOADING in main.ts), on at his yes: `loading.on` (dbg.run and dbg.first begin without it). */
+    loading: LOADING,
     /** FLOOR 20'S RIME SHADE (art/rime_shade.ts RIME_SHADE_ON, the art chat's; game/act1_rules/rshade.ts), off until he has seen it in the game and said yes: `rimeShade.on`. */
     rimeShade: RIME_SHADE_ON,
     /** THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS), off until his yes: `newWeapons.on` (the Veteran's wraps, the Warlock's demonic tome, the Tinkerer's wrench; stand-in pictures while `itemsA` is off). */

@@ -822,7 +822,19 @@ export const TITLE = { file: 'title.mp4', loop: [94.024, 162.275] as const, vol:
 /** What has been fetched and decoded (a buffer), is coming (null), or could not be had (false). */
 const recorded = new Map<string, AudioBuffer | null | false>();
 
-function fetchRecorded(c: AudioContext, file: string): void {
+/**
+ * THE SOUNDS FETCHED A FEW AT A TIME (25.2.3; his words of 7 Nov 2026, 21:33, after 25.2.2: “Uh so I can’t even move in the first
+ * town before the game crashes”, on his phone in the Claude app, the page reloading or going blank). As the game began, 25.2.2
+ * asked for a hundred and more sounds at once (the spells and skills of every hero, two takes each), each fetched and decoded at
+ * the same moment: too much at once for a phone. Now they wait their turn, FETCH_AT_ONCE at a time; a sound asked for in play goes
+ * to the front, those fetched ahead of need (warmRecorded, warmNamed) to the back; and as the game begins only the first batch's
+ * and the hero's voice are fetched ahead, the second batch's when first played (made in code till then).
+ */
+export const FETCH_AT_ONCE = 2;
+const waiting: { c: AudioContext; file: string }[] = [];
+let fetching = 0;
+
+function fetchRecorded(c: AudioContext, file: string, soon = true): void {
   if (recorded.has(file)) return;
   const mark = soundMark();
   if (!RECORDED.on || !mark || typeof fetch !== 'function' || typeof location === 'undefined' || (location.protocol !== 'http:' && location.protocol !== 'https:')) {
@@ -830,23 +842,39 @@ function fetchRecorded(c: AudioContext, file: string): void {
     return;
   }
   recorded.set(file, null);
-  fetch(`${SOUND_DIR}/${mark}/${file}`)
-    .then((r) => {
-      if (!r.ok) throw new Error(`${file}: ${r.status}`);
-      return r.arrayBuffer();
-    })
-    .then((b) => new Promise<AudioBuffer>((ok, no) => {
-      // (the old form, with callbacks, as the oldest Safari has it; the promise where there is one)
-      const p = c.decodeAudioData(b, ok, no) as unknown as Promise<AudioBuffer> | undefined;
-      if (p && typeof p.then === 'function') p.then(ok, no);
-    }))
-    .then((buf) => {
-      if (recorded.get(file) === null) recorded.set(file, buf);
-    })
-    .catch((err) => {
-      recorded.set(file, false);
-      report(`recorded ${file}`, err);
-    });
+  if (soon) waiting.unshift({ c, file });
+  else waiting.push({ c, file });
+  pumpFetches();
+}
+
+/** The next sounds waiting, fetched and decoded, no more than FETCH_AT_ONCE at once. */
+function pumpFetches(): void {
+  while (fetching < FETCH_AT_ONCE && waiting.length) {
+    const { c, file } = waiting.shift()!;
+    const mark = soundMark();
+    fetching++;
+    fetch(`${SOUND_DIR}/${mark}/${file}`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`${file}: ${r.status}`);
+        return r.arrayBuffer();
+      })
+      .then((b) => new Promise<AudioBuffer>((ok, no) => {
+        // (the old form, with callbacks, as the oldest Safari has it; the promise where there is one)
+        const p = c.decodeAudioData(b, ok, no) as unknown as Promise<AudioBuffer> | undefined;
+        if (p && typeof p.then === 'function') p.then(ok, no);
+      }))
+      .then((buf) => {
+        if (recorded.get(file) === null) recorded.set(file, buf);
+      })
+      .catch((err) => {
+        recorded.set(file, false);
+        report(`recorded ${file}`, err);
+      })
+      .then(() => {
+        fetching--;
+        pumpFetches();
+      });
+  }
 }
 
 /**
@@ -870,7 +898,7 @@ export function sfxNamed(name: string, vol = 1, or?: Sfx): void {
 export function warmNamed(names: readonly string[]): boolean {
   const c = ctx;
   if (!c || !RECORDED.on) return false;
-  for (const n of names) for (const k of [1, 2]) fetchRecorded(c, `${n}_${k}.mp3`);
+  for (const n of names) for (const k of [1, 2]) fetchRecorded(c, `${n}_${k}.mp3`, false);
   return true;
 }
 
@@ -878,8 +906,10 @@ export function warmNamed(names: readonly string[]): boolean {
 export function warmRecorded(hero?: Speaker): void {
   const c = ctx;
   if (!c || !RECORDED.on) return;
-  for (const takes of Object.values(RECORDED_SFX)) for (const t of takes ?? []) fetchRecorded(c, `${t}.mp3`);
-  if (hero) for (const takes of Object.values(CRIES)) for (const t of takes) fetchRecorded(c, `${hero}_${t}.mp3`);
+  // (25.2.3: the first batch's only, and the hero's voice; the second batch's spells and skills as each is first played)
+  const later = new Set<string>(SECOND_SFX);
+  for (const [name, takes] of Object.entries(RECORDED_SFX)) if (!later.has(name)) for (const t of takes ?? []) fetchRecorded(c, `${t}.mp3`, false);
+  if (hero) for (const takes of Object.values(CRIES)) for (const t of takes) fetchRecorded(c, `${hero}_${t}.mp3`, false);
 }
 
 /** A recorded take, played; false where none of its takes has come (the caller then makes the sound itself). */

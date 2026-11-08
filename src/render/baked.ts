@@ -154,6 +154,12 @@ export class BakedHeroes {
     return true;
   }
 
+  /** Has the group come whole, or failed (nothing more to wait for)? */
+  settled(group: string): boolean {
+    const st = this.state.get(group);
+    return st === 'done' || st === 'failed';
+  }
+
   /** Has the group come whole? */
   done(group: string): boolean {
     return this.state.get(group) === 'done';

@@ -1372,6 +1372,10 @@ let made: TombArt | null = null;
 export function forgetMade(): void {
   made = null;
 }
+/** Its stairwell (each way down), alone: the same picture as its art's `stairwell`, without making the rest of its pictures. */
+export function tombStairwell(way: 'x' | 'y'): Sprite {
+  return makeStairwell(TOMB_THEME, way);
+}
 /** The place's pictures, made the first time they are asked for and kept (the archway, the stairs and the stairwell when first asked for). */
 export function makeTombArt(): TombArt {
   if (made) return made;
