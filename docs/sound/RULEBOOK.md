@@ -1,5 +1,7 @@
 # Wordsmith Sound and Music Rulebook
 
+> **RETIRED, 6 Nov 2026, at his word** (relayed to the main chat by the sound chat, 23:14: “The old sound rulebook (docs/sound/RULEBOOK.md) is retired at his word. The sound chat is writing new rules.”). Kept for the record only; the sound chat's new rules will take its place. Town and quest talking stays as it is for now.
+
 > **APPROVED BY THE OWNER, 9 Oct 2026, by 14:04: “Yes, as it is (Recommended)”.** Every chat that
 > makes sound or music for Wordsmith follows it; it changes only with his yes. Written by the sound
 > chat from his answers (`docs/sound/interview.md` has every question and answer in his exact
@@ -202,7 +204,7 @@ A sample you can play, your yes, then one chat puts it in.
 2. **A page with play buttons.** Samples come on a page for your phone, every sound with a button, old beside new. No films.
 3. **Questions as pop-ups.** Every question comes with options, the recommended one first, and your own words always possible.
 4. **One chat puts it in.** The sound chat works on branches of its own. Only the main chat puts sound into the game and publishes.
-5. **Made in code.** No sound files: every sound and every note of music is a recipe in code. One exception since 9 Oct, with your yes to Music, rule 2: the band's guitars, bass and drums are recordings of real instruments. How they get into the game is still open.
+5. **Made in code.** No sound files: every sound and every note of music is a recipe in code. One exception since 9 Oct, with your yes to Music, rule 2: the band's guitars, bass and drums are recordings of real instruments. How they get into the game is still open. Changed by your word, 6 Nov 2026: this is not a browser game but a game in an app, and music and sounds may also be made as files that go into the game. In your words: “I’d like you to put somewhere in the rule sets or at the top of the chats that this is not a browser game.  It will be a game in an app.  So not everything needs to be done and coded in Java.  We can have files and create things that go into the game like music and art”.
 6. **Original only.** Nothing is copied from a game, a film or a band. Dead Cells, Diablo / Path of Exile and Astronoid are for feel only.
 7. **Your ears are the test.** The sound chat cannot hear. It checks each sound by measuring it and by looking at a picture of it. What you say after listening is the real test.
 8. **Your words, exactly.** When a rule quotes you, the quote is exact.

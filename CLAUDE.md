@@ -13,10 +13,14 @@ directs and playtests, and Claude writes and tests everything.
 - `docs/gameplay/RULEBOOK.md`, `docs/art/RULEBOOK.md` and `docs/sound/RULEBOOK.md`: the game's
   three rulebooks, his. Gameplay follows the first, art the second, sound and music the third;
   each changes only with his yes. The first two were approved 8 Oct 2026; the third 9 Oct 2026
-  (by 14:04), and put here at his word by 16:05: "Yes, add it (Recommended)".
+  (by 14:04), and put here at his word by 16:05: "Yes, add it (Recommended)". THE SOUND RULEBOOK IS
+  RETIRED at his word (6 Nov 2026, from the sound chat); the sound chat is writing new rules.
 
 ## The owner's standing rules
 
+- THIS IS NOT A BROWSER GAME. It will be a game in an app. Not everything has to be made in code:
+  the game may carry files made for it, art and music among them. His words, 6 Nov 2026, 16:32:
+  “I’d like you to put somewhere in the rule sets or at the top of the chats that this is not a browser game.  It will be a game in an app.  So not everything needs to be done and coded in Java.  We can have files and create things that go into the game like music and art”.
 - He does no coding. Never ask him to run a command or edit a file.
 - Plain language. Short messages. No menus of options where a recommendation will do.
 - Every question to him goes as a pop-up with options to tap, our pick first and marked, his own
@@ -33,14 +37,29 @@ directs and playtests, and Claude writes and tests everything.
 
 ## How the game is built and tested
 
-- TypeScript, bundled by esbuild into one file, `Play.html`. All art is painted in code: there are
-  no art files.
+- TypeScript, bundled by esbuild into one file, `Play.html`. The art is painted in code; since his
+  word of 6 Nov 2026 (above) files may go into the game too (the heroes' pictures baked into files
+  as the game is built: `tools/bake_heroes.mjs`).
 - `node tools/build.mjs` makes the release; `node tools/build_to.mjs dist/<name>.html` makes a
   page to look at and leaves the game alone.
-- `tsc --noEmit -p tsconfig.json`; the unit tests, `tsx --test tests/*.test.ts`; a browser
-  playtest, `node tools/playtest.mjs --scenario tools/scenarios/<name>.mjs`; all of them,
-  `tools/regress.sh`.
-- A version goes live only after the whole unit suite, the full regression on a frozen copy, and
+- `tsc --noEmit -p tsconfig.json`; the unit tests, `node tools/unit.mjs` (never `tsx --test
+  tests/*.test.ts` as one run); a browser playtest, `node tools/playtest.mjs --scenario
+  tools/scenarios/<name>.mjs`; all of them, `tools/regress.sh`.
+- THE UNIT SUITE IS RUN ONCE, NOT AGAIN. His words, 6 Nov 2026, 18:21: “This always happens and you
+  always have to rerun checks so I need you to figure out a way to not have that happen”. So:
+  commit first, then `node tools/unit.mjs` (in the background). It tests a frozen copy of the commit,
+  each file on its own, keeps each result as it goes (stopped, it is run again and goes on where it
+  stopped, never from the start), and tries a failed file again alone (one that passes alone failed
+  only because the machine was busy). Do nothing heavy beside it (no bake, no build, no playtests),
+  and read its last line, `UNIT DONE ...`, and `.unit/<commit>/summary.txt`.
+- HOW MUCH IS CHECKED BEFORE AN UPDATE GOES LIVE: for a small update, only what changed and the core,
+  `node tools/unit.mjs --changed` (the tests of what changed since the commit last checked, and a core
+  of the game's main ways, minutes); the whole suite only for a big version. His pick, 6 Nov 2026,
+  21:01, asked after a day of whole runs (“But why did you need to test all that stuff?  We did a
+  massive test before you put out v25 that took hours and now you’ve been testing for hours again”):
+  “Only what changed (Recommended)”.
+- A version goes live only after its checks (below: the whole suite for a big version, only what
+  changed and the core for a small update), the playtests of what it changes on a frozen copy, and
   the published page's own playtests. The handoff and section 8 of the design notes say how.
 
 ## More than one chat

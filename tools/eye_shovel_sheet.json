@@ -1,0 +1,262 @@
+{
+ "intro": "Key frames from the film, as the player sees them: the phone's screen at the game's own size (two picture pixels to a game pixel), the stone, the Warrior, the camera following him to the end where the Colossus comes up; then closer, at twice. His shovel, beat by beat: he sinks; the tell, held over a second, the water boiling off one end; he bursts up there, his maw turned on its side, gaping across the stone; his tentacles scrape along the stone toward his mouth, one along each edge in turn, the Warrior weaving through the gaps; a hit knocks him toward the mouth; too close and the jaws snap shut; then he goes back to his place.",
+ "blocks": [
+  [
+   "HE SINKS; THE TELL, HELD",
+   "Frames from his stand (30 a second). He sinks out of his stand in 0.73 s, his tentacles with him, the last of him his eye's fire fading into the deep; then the tell, held 1.13 s: the water boiling and heaving off the end he will come up at, the camera following the Warrior there.",
+   [
+    [
+     "s1",
+     10,
+     507,
+     150,
+     "sinking, his tentacles with him"
+    ],
+    [
+     "s1",
+     44,
+     330,
+     290,
+     "THE TELL, held: the left end boiling"
+    ]
+   ],
+   false
+  ],
+  [
+   "HE BURSTS UP AT THE END; THE ROAR",
+   "The strike: four frames, smeared, the screen jolted; his maw on its side, one jaw along each edge of the stone, gaping across its whole depth; water pouring off him; the roar; then his gape, his tongue-eye weaving, never still.",
+   [
+    [
+     "s1",
+     57,
+     250,
+     234,
+     "BURST: smeared, bursting up"
+    ],
+    [
+     "s1",
+     59,
+     250,
+     234,
+     "BURST: up, the screen jolted"
+    ],
+    [
+     "s1",
+     72,
+     260,
+     234,
+     "THE ROAR: his jaws widest"
+    ],
+    [
+     "s1",
+     96,
+     300,
+     234,
+     "his gape, his tongue-eye weaving"
+    ]
+   ],
+   false
+  ],
+  [
+   "THE SHOVEL: THE TENTACLES SCRAPE ALONG THE STONE; THE HIT",
+   "One along each edge in turn, out of the water past the far end, scraping to his maw at 12 tiles a second, sparks, grit and slime thrown back, the stone scored: the back edge's tip hooked down, its gap at the near edge; the near edge's curled up, its gap at the back. The Warrior weaves low, then high, and is caught at the edge of a gap and knocked toward the mouth.",
+   [
+    [
+     "s1",
+     114,
+     760,
+     300,
+     "tentacle 1 along the back edge",
+     360
+    ],
+    [
+     "s1",
+     126,
+     650,
+     300,
+     "the Warrior low, in its gap",
+     360
+    ],
+    [
+     "s1",
+     156,
+     800,
+     300,
+     "tentacle 2 along the near edge",
+     360
+    ],
+    [
+     "s1",
+     161,
+     650,
+     260,
+     "HIT: caught by its curled tip",
+     360
+    ],
+    [
+     "s1",
+     165,
+     520,
+     200,
+     "knocked flying toward the mouth"
+    ],
+    [
+     "s1",
+     178,
+     420,
+     234,
+     "down by his maw; tentacle 2 at it"
+    ]
+   ],
+   false
+  ],
+  [
+   "THE SNAP",
+   "The Warrior too close: the twitch, held (his jaws flexing wider, his tongue-eye drawn in) as he gets up and leaps away; the strike, two smeared frames, lunging up out of the water and leaning out over the stone's end, slamming shut; held clenched, his teeth clashed, spittle and spray bursting from between them, splinters of his teeth flying; back, gaping again.",
+   [
+    [
+     "s1",
+     199,
+     330,
+     234,
+     "THE TWITCH, held: jaws wider",
+     420
+    ],
+    [
+     "s1",
+     202,
+     400,
+     234,
+     "STRIKE, 1 of 2: lunging, smeared",
+     420
+    ],
+    [
+     "s1",
+     203,
+     420,
+     234,
+     "STRIKE, 2 of 2: slammed shut",
+     420
+    ],
+    [
+     "s1",
+     208,
+     420,
+     234,
+     "held clenched: teeth clashed, spittle",
+     420
+    ]
+   ],
+   false
+  ],
+  [
+   "THE LAST TWO; DRAWN BACK; HE GOES BACK",
+   "Each tentacle drawn back off the stone into the water at his maw and slid back under; tentacles 3 and 4; then he sinks at the end and comes up at his place, a short rise, into his stand.",
+   [
+    [
+     "s1",
+     250,
+     500,
+     234,
+     "tentacle 3 drawn back into the water"
+    ],
+    [
+     "s1",
+     270,
+     650,
+     300,
+     "tentacle 4, the Warrior high"
+    ],
+    [
+     "s1",
+     306,
+     300,
+     234,
+     "sinking at the end"
+    ],
+    [
+     "s1",
+     334,
+     507,
+     150,
+     "up at his place, into his stand"
+    ]
+   ],
+   false
+  ],
+  [
+   "AT THE RIGHT END",
+   "Each end painted, not mirrored (each turned its own way round, as the camera sees it there): the same shovel at the right end, the Warrior weaving through all four.",
+   [
+    [
+     "s2",
+     59,
+     760,
+     234,
+     "bursting up at the right end"
+    ],
+    [
+     "s2",
+     120,
+     300,
+     234,
+     "tentacle 1; the Warrior low"
+    ],
+    [
+     "s2",
+     162,
+     300,
+     234,
+     "tentacle 2; the Warrior high"
+    ],
+    [
+     "s2",
+     226,
+     300,
+     234,
+     "tentacle 3; the Warrior low"
+    ]
+   ],
+   false
+  ],
+  [
+   "CLOSER, AT TWICE THE SIZE",
+   "",
+   [
+    [
+     "s1",
+     59,
+     230,
+     240,
+     "the burst",
+     200
+    ],
+    [
+     "s1",
+     128,
+     745,
+     310,
+     "a tip scraping: sparks, grit, slime",
+     200
+    ],
+    [
+     "s1",
+     203,
+     560,
+     180,
+     "the clash, the Warrior just clear",
+     200
+    ],
+    [
+     "s2",
+     100,
+     740,
+     300,
+     "his maw at the right end",
+     200
+    ]
+   ],
+   true
+  ]
+ ]
+}
