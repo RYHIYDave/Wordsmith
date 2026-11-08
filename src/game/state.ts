@@ -395,6 +395,8 @@ export interface Monster {
    * (its attack broken off), and the seconds before cracked ground may stagger it again.
    */
   stunT: number;
+  /** (SUNDER, game/melds8.ts) How much more it takes while stunned, stunned by a Sunder hit. */
+  sunder?: number;
   staggerT: number;
   staggerCd: number;
   /** Precise behind: seconds the mark on it has left (the hero's next hit on it is a certain critical). */

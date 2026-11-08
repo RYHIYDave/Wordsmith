@@ -1,6 +1,7 @@
 // The rules of the game: one Game object holds a run (one character's life) and advances it
 // frame by frame. It knows nothing about drawing or input; it reads Controls and emits GameEvents.
 
+import { MELDS8, MELD8_TUNE as M8 } from './melds8';
 import { BARS_LASTS, BARS_PERIL, RAIN_LASTS, RAIN_PERIL, cageHero } from './action_f1';
 import { RIME_LASTS, RIME_PERIL, SIGIL_LASTS, SIGIL_PERIL } from './action_f2';
 import { RAMPAGE_BLOWS, RING_LASTS, RING_PERIL, chargeOf, greenTroll, rushMayEnd } from './action_f3';
@@ -68,7 +69,7 @@ import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT
 import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
 import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, HellWave, Hero, Level, Meta, Monster, OrbInst, Peril, Pet, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Soul, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
-import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
+import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS, MELD8_IDS } from './types';
 import { FIRE, FIRE_GONE, FURNACE_WORD, KEEPER, MELDSTONE_WORDS, QUESTS15, QUEST_TEXT } from './quests15';
 import { QUEST_MARKS } from './quest_marks';
 import { STOKER_ON } from '../art/stoker';
@@ -615,6 +616,7 @@ export class Game {
       for (const w of wordsAt(d)) h.words[w] = PRACTICE.words;
       if (MELD.on) for (const w of MELD_IDS) h.words[w] = PRACTICE.words;
       if (MELD.on && VOLT_MELDS.on) for (const w of VOLT_MELD_IDS) h.words[w] = PRACTICE.words;
+    if (MELD.on && MELDS8.on) for (const w of MELD8_IDS) h.words[w] = PRACTICE.words;
       if (MELD.on && RANK2.on) for (const w of RANK_IDS) h.words[w] = PRACTICE.words;
       this.refresh();
       h.life = h.d.maxLife;
@@ -690,6 +692,7 @@ export class Game {
     if (MELD.on) for (const w of MELD_IDS) h.words[w] = PRACTICE.words;
     // (VOLATILE'S MELDS, behind VOLT_MELDS)
     if (MELD.on && VOLT_MELDS.on) for (const w of VOLT_MELD_IDS) h.words[w] = PRACTICE.words;
+    if (MELD.on && MELDS8.on) for (const w of MELD8_IDS) h.words[w] = PRACTICE.words;
     // (RANK II: and the ranked words)
     if (MELD.on && RANK2.on) for (const w of RANK_IDS) h.words[w] = PRACTICE.words;
     this.refresh();
@@ -2011,6 +2014,7 @@ export class Game {
     this.updateZones(dt);
     if (this.perils.length || this.corpses.length) this.bosses.stepPerils(dt);
     this.updateDots(dt);
+    if (MELDS8.on) this.updateMelds8(dt);
     if (this.ringWord) {
       this.ringWord.t -= dt;
       if (this.ringWord.t <= 0) this.giveRingWord();
@@ -4287,6 +4291,50 @@ export class Game {
   private healHero(n: number): void {
     const h = this.hero;
     h.life = Math.min(h.d.maxLife, h.life + n);
+  }
+
+  // ---- THE EIGHT MELDS ACROSS THE GROUPS (game/melds8.ts, behind MELDS8) --------------------------------------------------------------
+  /** IMPLODE's bursts to come: where, how long still, how hard, how wide. */
+  private implosions: { x: number; y: number; t: number; dmg: number; r: number; i: number; el: Element }[] = [];
+  /** FERVOR: kills counted (at most `most`) and the seconds they last. */
+  private fervorN = 0;
+  private fervorT = 0;
+  /** How strongly ability `i` carries meld `id`: 1 in front, MELD8_TUNE.behind behind, 0 not at all. */
+  private meld8(i: number, id: MeldId): number {
+    const s = this.hero.skills[i];
+    if (!s) return 0;
+    return s.r.meld === id ? 1 : s.r.meldBehind === id ? M8.behind : 0;
+  }
+  /** FERVOR's fire harm now (percent). */
+  private fervorPct(): number {
+    return MELDS8.on && this.fervorT > 0 ? this.fervorN * M8.fervor.burn * 100 : 0;
+  }
+  /** After a hero's hit lands: SHIVER (a critical hit freezes), SUNDER (one it stunned takes more), CAUTERIZE and FERVOR (a kill). */
+  private meld8Struck(m: Monster, i: number, crit: boolean, wasBurning: boolean): void {
+    const shiver = this.meld8(i, 'shiver');
+    if (crit && shiver > 0 && !m.dead && !m.boss) m.frozenT = Math.max(m.frozenT, M8.shiver.secs * shiver * (m.elite ? 0.5 : 1));
+    const sunder = this.meld8(i, 'sunder');
+    if (sunder > 0 && !m.dead) m.sunder = M8.sunder.more * sunder;
+    if (!m.dead) return;
+    const caut = this.meld8(i, 'cauterize');
+    if (caut > 0 && wasBurning) this.healHero(this.hero.d.maxLife * M8.cauterize.heal * caut);
+    const ferv = this.meld8(i, 'fervor');
+    if (ferv > 0) {
+      this.fervorN = Math.min(M8.fervor.most, (this.fervorT > 0 ? this.fervorN : 0) + ferv);
+      this.fervorT = M8.fervor.secs;
+    }
+  }
+  /** A step of IMPLODE's bursts and FERVOR's time. */
+  private updateMelds8(dt: number): void {
+    if (this.fervorT > 0) this.fervorT = Math.max(0, this.fervorT - dt);
+    if (!this.implosions.length) return;
+    for (const b of this.implosions) {
+      b.t -= dt;
+      if (b.t > 0) continue;
+      this.emit({ t: 'burst', x: b.x, y: b.y, r: b.r, el: b.el, style: 'shock' });
+      for (const o of this.monsters) if (!o.dead && Math.hypot(o.x - b.x, o.y - b.y) < b.r) this.damageMonster(o, b.dmg, b.el, false, b.i);
+    }
+    this.implosions = this.implosions.filter((b) => b.t > 0);
   }
 
   /**
@@ -9015,7 +9063,8 @@ export class Game {
     const unaware = m.state === 'sleep';
     const wasFrozen = m.frozenT > 0;
     const st = d.stats;
-    const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
+    // (FERVOR, game/melds8.ts: its kills burning hotter a while)
+    const el = r.element === 'fire' ? st.firePct + this.fervorPct() : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
     const [lo, hi] = this.baseFor(r.element);
     let dmg = this.rng.range(lo, hi) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
     // (THE SKILL TREES: what the talents make of a hit)
@@ -9077,6 +9126,8 @@ export class Game {
     // (THE CITY'S WORDS: a cursed one struck, its curse flares)
     if (!quiet && (m.hexT ?? 0) > 0) this.emit({ t: 'hexFlare', id: m.id });
     this.damageMonster(m, dmg, r.element, crit, i, !quiet && this.fronts(i).includes('power'), front);
+    // (THE EIGHT MELDS ACROSS THE GROUPS, game/melds8.ts: SHIVER, a critical hit freezes; CAUTERIZE and FERVOR, a kill)
+    if (MELDS8.on) this.meld8Struck(m, i, crit, wasBurning);
     // (THE WARLOCK, game/warlock.ts: his bolt sets it burning in his hellfire; the curse, the smoke steps and the rakes curse it; and every hit feeds his pact)
     if (h.cls === 'warlock') this.warlockHit(m, i, dmg);
     // (THE CITY'S WORDS: SPLITTING in front, its first hit each use breaks into copies that fly on)
@@ -9225,6 +9276,28 @@ export class Game {
     const r = h.skills[i].r;
     const T = MELD_TUNE;
     const mf = r.meld;
+    // (THE EIGHT MELDS ACROSS THE GROUPS: FORKING's arc, IMPLODE's burst to come)
+    if (MELDS8.on && !quiet) {
+      const fork = this.meld8(i, 'forking');
+      if (fork > 0) {
+        let near: Monster | null = null;
+        let best: number = M8.forking.reach;
+        for (const o of this.monsters) {
+          if (o === m || o.dead) continue;
+          const dd = Math.hypot(o.x - m.x, o.y - m.y);
+          if (dd < best) {
+            best = dd;
+            near = o;
+          }
+        }
+        if (near) {
+          this.emit({ t: 'arc', x0: m.x, y0: m.y, x1: near.x, y1: near.y });
+          this.damageMonster(near, dmg * M8.forking.share * fork, r.element, false, i);
+        }
+      }
+      const imp = this.meld8(i, 'implode');
+      if (imp > 0) this.implosions.push({ x, y, t: M8.implode.wait, dmg: dmg * M8.implode.share * imp, r: M8.implode.r * (imp < 1 ? 0.7 : 1), i, el: r.element });
+    }
     if (mf === 'eruption' && !quiet) {
       // the blast leaves a pool of molten ground
       this.meldPatch(i, 'burn', x, y, T.eruption.pool, T.eruption.poolDur, dmg * T.eruption.poolDps, 'fire');
@@ -9455,6 +9528,8 @@ export class Game {
   private damageMonster(m: Monster, dmg: number, el: Element, crit: boolean, skill: number, heavy = false, words?: readonly WordId[], poison = false, dot = false): void {
     // (what is shut in a room is out of reach, of an arc of lightning and of what burns on the ground too: `shutIn`)
     if (m.dead || this.shutIn(m)) return;
+    // (SUNDER, game/melds8.ts: stunned by a Sunder hit, it takes more from everything while the stun lasts)
+    if (m.sunder && m.stunT > 0) dmg *= 1 + m.sunder;
     // (BOSS_INTRO: nor is a boss who waits, until his gate has fallen and his line is said: `bossWaits`)
     if (this.bossWaits(m)) {
       if (this.time - this.waitTold > 0.7) {
@@ -9800,6 +9875,11 @@ export class Game {
     // GUARDING burned into gear: a chance to block the blow, which then does nothing at all
     const block = Math.min(GUARD.blockCap, d.stats.blockChance);
     if (block > 0 && this.rng.chance(block / 100)) {
+      // (RIME WARD, game/melds8.ts: what he blocks, chilled)
+      if (MELDS8.on && src && !src.dead) {
+        const k = Math.max(0, ...h.skills.map((_s, j) => this.meld8(j, 'rimeward')));
+        if (k > 0) src.chillT = Math.max(src.chillT, M8.rimeward.secs * k);
+      }
       this.emit({ t: 'blocked', x: h.x, y: h.y, fromX, fromY });
       this.emit({ t: 'text', x: h.x, y: h.y, text: 'Blocked', color: '#9fe8c0' });
       this.sfx('hit', 0.5);
@@ -11829,7 +11909,15 @@ export class Game {
     this.dotT += 0.5;
     for (const m of this.monsters) {
       if (!m.dead && m.burnT > 0) this.damageMonster(m, Math.max(1, Math.round(m.burnDps * 0.5)), 'fire', false, m.lastSkill, false, undefined, false, true);
-      if (!m.dead && m.poisonT > 0 && m.poisonDps > 0) this.damageMonster(m, Math.max(1, Math.round(m.poisonDps * 0.5)), 'phys', false, m.lastSkill, false, undefined, true);
+      if (!m.dead && m.poisonT > 0 && m.poisonDps > 0) {
+        const tick = Math.max(1, Math.round(m.poisonDps * 0.5));
+        this.damageMonster(m, tick, 'phys', false, m.lastSkill, false, undefined, true);
+        // (SIPHON, game/melds8.ts: the poison of an attack carrying it heals the hero as it eats)
+        if (MELDS8.on && m.lastSkill >= 0) {
+          const k = this.meld8(m.lastSkill, 'siphon');
+          if (k > 0) this.healHero(tick * M8.siphon.heal * k);
+        }
+      }
       // (WORDMELDING: Frostbite in front, a chilled enemy loses life, a frozen one twice as fast)
       if (!m.dead && m.biteDps && (m.chillT > 0 || m.frozenT > 0)) this.damageMonster(m, Math.max(1, Math.round(m.biteDps * 0.5 * (m.frozenT > 0 ? 2 : 1))), 'frost', false, m.lastSkill, false, undefined, false, true);
       // (THE SKILL TREES REMADE: Honed Edge's bleeding)
