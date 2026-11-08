@@ -2298,6 +2298,8 @@ export class Game {
         this.sfx('portal');
         this.msg(from === 10 ? `${floorTitle(from).level} cleared. The siege is broken.` : from === 15 ? `${floorTitle(from).level} cleared. The stolen words fly home. High above, the gates of the High City swing shut.` : `${floorTitle(from).level} cleared.`, MSG.good);
         if (opens) this.msg(ENDLESS_OPENS, MSG.word);
+        // (ENDLESS MODE'S FANFARE: the splash and the card, ui/endless_fanfare.ts, behind its switch)
+        if (opens) this.emit({ t: 'endlessOpens' });
         return;
       }
       this.depth++;
