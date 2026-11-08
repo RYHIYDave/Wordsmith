@@ -84,8 +84,8 @@ high, a drum's 24, the rest 15 or under).
   and been drawn as thick as its plinth (now on its own middle and its own thickness); a column fell straight away from you (seen only
   shortening) and one over the back edge into the water (now each falls across the screen onto the stone, clear of the hooks and of the
   Warrior's way); the drums had spun in the picture as they rolled (now they rock on their round); loose pieces were flat cut-outs
-  (now each has its broken side under it). Seen and not mine: where a hook's tip curls down onto the stone, a small square of its
-  flesh shows under its tube in some frames (about 11 by 8 game pixels; there in the shovel's own frames without the pieces too).
+  (now each has its broken side under it). Seen and mended after (fix 2, stage 4): a small square by a hook's tip in some frames (a gob of
+  slime thrown off it, drawn as a box in its first frame), and the body behind each hook (a flat band with a seam).
 - To make them again (the layers on the memory disk, `/dev/shm`; the close-ups' points as `tools/eye_shovel_sheet.py` PIECES has them):
 
 ```
@@ -168,7 +168,26 @@ HIS WORD ON IT, 8 Nov 2026 (by 09:03), shown fix 1 (3bb3ca46, `eye_moves3`) and 
   water, the hero and the game's effects never flipped; the light on him then from the right there). THE PAINTED RIGHT END IS KEPT
   (its poses in `src/art/eye_shovel.ts`, its pictures) so it can be brought back.
 - Asked what happens to the pieces on the stone (the broken columns, mossy stones and fallen drums), in the tentacles' way:
-  “Smashed by the first sweep (Recommended)” (offered as: the first shovel breaks them, chunks flying; rubble left after). To draw next.
+  “Smashed by the first sweep (Recommended)” (offered as: the first shovel breaks them, chunks flying; rubble left after). Drawn in
+  stage 4b.
+- 8 Nov (by 10:52), asked “Is the smashing of the stone pieces right (eye_moves4.mp4 and eye_moves4.png)?”:
+  “Yes, it's right (Recommended)”.
+
+FIX 2 (8 Nov, two flaws in the scraping tentacles; every beat and number kept; `eye_moves4` remade): (1) a small square (about 11 by 8
+game pixels) showed by a hook's tip as it scraped: a gob of slime thrown off the tip drawn in the frame it was thrown, before it had a
+way to fly, as a box. Now it is drawn along its own flight from its first frame, a drop drawn out. (2) The BODY behind each hook showed
+as a flat band with a straight top edge along the stone's back edge, and a hard upright seam where the hook's flesh ended. Now it is the
+same tube running on from the hook (`bodyWorld`: from the hook's root, which now curves on down into the deep, `ROOT`; as thick; its
+suckers held the way the hook's face there, `bodyBelly`), swimming: humped, its humps a wave running back along it, each crest's back
+just breaking the surface, the troughs out of sight, swaying, swimming out from the stone so that the water is in front of it; the
+rest of it seen darker and greener through the water, its outline wavering and soft; ripples spreading from each crest as it goes, a
+wake, the water churned where its back comes out and goes in (the tool's `bodyWake`). Checked (`tests/eye_shovel.test.ts` 11): the body
+starts at its hook's root, as thick, going on its way within 20 degrees, its suckers within 15 degrees of the hook's, painted alike
+where they meet, under the water there; its back breaking the surface here and there; no straight run over 12 game pixels, exactly
+across or up, in its outline where it is seen or its waterline (the longest 8.5); and every painted body measured the same way
+(`eye_moves_pics.ts bodyRuns`: the 60 paintings, its outline 12 game pixels at the longest, its waterline 10). Only the hooks and
+the bodies repainted (200 layers, 9 minutes on two workers); `eye_moves4.mp4` and `.png` remade, same layout, every frame of both
+shovels looked at.
 
 ### Each beat, frame by frame (30 a second; frames from his stand; the same at both ends)
 

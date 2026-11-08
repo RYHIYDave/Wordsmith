@@ -30,7 +30,7 @@ import { CO_MELT, CO_SHEEN, CO_SLIME, CO_SPIT, CO_IRIS, EYE_UNDER, FALL_G, LEANE
 import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
 import { ARM_COLOURS, ARM_SHAKE, CAM_ARMS, CAM_WAVES, CRASH, LINE, SHOTS, STONE_BOX, WAVE, fightFrame, waveFront, waveHigh } from '../src/art/eye_arms';
 import { HERO_SPOT, EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_STAND, entranceAt, eyeFrame } from '../src/art/eye_moves';
-import { SHOVEL, SHOVEL_COLOURS, SHOVEL_FRAMES, SHOVEL_PAINTED_RIGHT, SNAP, SCRAPERS, pourRope, pourSheet, scoreMarks, scraperAt, scrapeAt, shovelFrame, sideOf } from '../src/art/eye_shovel';
+import { BODY, SHOVEL, SHOVEL_COLOURS, SHOVEL_FRAMES, SHOVEL_PAINTED_RIGHT, SNAP, SCRAPERS, bodyPath, pourRope, pourSheet, scoreMarks, scraperAt, scrapeAt, shovelFrame, sideOf } from '../src/art/eye_shovel';
 import type { End } from '../src/art/eye_shovel';
 import { COLUMN_FALL, PIECES as STONE_PIECES, SHAFT, bodyOf, brokenOf, chipAt, chipPicture, chipsOf, fragAt, partition, pieceHit, piecesFrame } from '../src/art/eye_pieces';
 import type { Chip, Frag, FragAt, Piece, PiecesNow } from '../src/art/eye_pieces';
@@ -2111,6 +2111,72 @@ function piecesFlyers(PN: PiecesNow): Array<[Flyer, number]> {
   return out;
 }
 
+/** A SCRAPING TENTACLE'S WAKE (the game's, drawn on the water): where its humps' backs break the surface, as they go through the water,
+ *  rings of ripples spreading from where each crest has been over the last half second, broken, fading as they spread (together a wake
+ *  behind each), and the water churned to foam along the backs where they come out of it and go into it. Hidden where he or a tentacle is
+ *  over the water. */
+function bodyWake(pic: Pic, F: EyeFrame, top: Top, water: Uint8Array): void {
+  const e: End = F.move === 's1' ? 'left' : 'right';
+  const k = F.k;
+  const overHim = (q: number): boolean => top.who[q] >= 0 && top.z[q] >= -0.5;
+  for (let i = 0; i < SCRAPERS.length; i++) {
+    for (let g = k - 16; g <= k; g++) {
+      const P = bodyPath(e, i, g);
+      if (P.length < 2) continue;
+      const age = (k - g) / EYE_FPS;
+      // (its crests out of the water: each run of it above the surface, its highest point, and where it comes out and goes in)
+      const runs: Array<{ c: number[]; a: number[]; b: number[] }> = [];
+      let run: number[][] = [];
+      for (const q of [...P, [0, 0, -999, 0]]) {
+        if (q[2] + q[3] > 1) run.push(q);
+        else if (run.length) {
+          let c = run[0];
+          for (const r of run) if (r[2] + r[3] > c[2] + c[3]) c = r;
+          runs.push({ c, a: run[0], b: run[run.length - 1] });
+          run = [];
+        }
+      }
+      for (const R of runs) {
+        const seed = i * 977 + Math.round(R.c[0] / 40) * 13;
+        // (rings from where the crest was: every other frame, spreading, broken)
+        if ((k - g) % 2 === 0 && age > 0) {
+          const rad = R.c[3] * 0.8 + 75 * age;
+          const fade = 1 - sm(0.25, 0.55, age);
+          const [ci, cj] = onCanvas(R.c[0], R.c[1], 0);
+          const n = Math.max(24, Math.ceil(rad * SEEN * TAU * 1.4));
+          for (let m = 0; m < n; m++) {
+            const ang = (m / n) * TAU;
+            if (vn(ang * 3.1 + g * 0.7, rad * 0.05, 7963 + i) < 0.42) continue;
+            const ii = Math.round(ci + Math.cos(ang) * rad * SEEN);
+            const jj = Math.round(cj + Math.sin(ang) * (rad / R3) + 0.6 * Math.sin(ang * 5 + g));
+            if (ii < 0 || jj < 0 || ii >= CW || jj >= CH) continue;
+            const qq = jj * CW + ii;
+            if (!water[qq] || overHim(qq)) continue;
+            const c = age < 0.12 ? FOAM[4] : FOAM[3];
+            pic.over(ii, jj, c[0], c[1], c[2], 190 * fade);
+          }
+        }
+        // (the water churned where its back comes out and goes in, now and trailing behind: lace, thinning)
+        if (age < 0.3) for (const E of [R.a, R.b]) {
+          const [ci, cj] = onCanvas(E[0], E[1], 0);
+          const rr = (E[3] * 0.9 + 10 * age) * (1 - age * 1.5);
+          for (let dj = -Math.ceil(rr / R3) - 1; dj <= Math.ceil(rr / R3) + 1; dj++) for (let di = -Math.ceil(rr * SEEN); di <= Math.ceil(rr * SEEN); di++) {
+            const ii = Math.round(ci + di);
+            const jj = Math.round(cj + dj);
+            if (ii < 0 || jj < 0 || ii >= CW || jj >= CH) continue;
+            const qq = jj * CW + ii;
+            if (!water[qq] || overHim(qq)) continue;
+            const d = Math.hypot(di / SEEN, dj * R3) / Math.max(1, rr);
+            if (d > 1) continue;
+            const [WX, WY] = waterAt(ii, jj);
+            const fl = lace(WX + g * 2.3 + seed, WY - g * 1.7, (1 - d) * (1 - age / 0.3) * 0.9, 7964);
+            if (fl) pic.over(ii, jj, CREAM[fl - 1][0], CREAM[fl - 1][1], CREAM[fl - 1][2], 120 + 25 * fl);
+          }
+        }
+      }
+    }
+  }
+}
 /** THE FRAME: the phone's screen (SW x SH picture pixels), thrown by the shake. `tf` the film's own clock (for the hero's breath). */
 function frameOf(F: EyeFrame, tf: number): Pic {
   const S = scenery();
@@ -2179,20 +2245,38 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       const q = j * CW + i;
       if (!S.water[q]) continue;
       const [X, Y] = waterAt(i, j);
-      const under = top.who[q] >= 0 && top.z[q] < -0.5;
+      // (his shovel: a tentacle under the water seen through it wavering, its outline soft: what is seen here is what is a little aside,
+      // shifting as the water moves)
+      let qs = q;
+      let soft = false;
+      if (F.sfx) {
+        const armU = (r: number): boolean => top.who[r] >= 3 && top.z[r] < -0.5;
+        const wi = Math.round(1.7 * Math.sin(j * 0.29 + t * 7.1 + 5 * vn(i * 0.045, j * 0.07, 7961)));
+        const wj = Math.round(1.1 * Math.sin(i * 0.13 - t * 5.3 + 3 * vn(i * 0.06, j * 0.05, 7962)));
+        const i2 = Math.max(1, Math.min(CW - 2, i + wi));
+        const j2 = Math.max(1, Math.min(CH - 2, j + wj));
+        const q2 = j2 * CW + i2;
+        if (armU(q) || armU(q2)) {
+          qs = armU(q2) ? q2 : -1;
+          if (qs >= 0) soft = !(armU(qs + 1) && armU(qs - 1) && armU(qs + CW) && armU(qs - CW) && armU(qs + 2) && armU(qs - 2));
+        }
+      }
+      const under = qs >= 0 && top.who[qs] >= 0 && top.z[qs] < -0.5;
       if (under) {
         // (him under the water: darker and greener the deeper; only fire seen deep down)
-        const deep = -top.z[q];
-        const fire = top.fire[q];
-        const keep = fire ? Math.exp(-deep / 220) : Math.exp(-deep / keepDen);
-        const vis = fire ? Math.min(1, Math.exp(-deep / 280) * 1.5) * Wt.pulse : Math.max(0, 1 - deep / seenDeep);
+        const deep = -top.z[qs];
+        const fire = top.fire[qs];
+        // (his shovel: a tentacle swimming just under the surface seen through it, darker and greener the deeper, lost by 110 down)
+        const armUnder = !!F.sfx && top.who[qs] >= 3;
+        const keep = fire ? Math.exp(-deep / 220) : Math.exp(-deep / (armUnder ? 38 : keepDen));
+        const vis = (fire ? Math.min(1, Math.exp(-deep / 280) * 1.5) * Wt.pulse : Math.max(0, 1 - deep / (armUnder ? 110 : seenDeep))) * (soft ? 0.55 : 1);
         const qd = Math.max(0, Math.min(4, Math.floor(vis * 4 + bayer(i, j) + 0.5)));
         if (qd > 0) {
           const a = [0, 80, 140, 200, 240][qd];
-          pic.over(i, j, WATER[0] + (top.col[q * 3] - WATER[0]) * keep, WATER[1] + (top.col[q * 3 + 1] - WATER[1]) * keep, WATER[2] + (top.col[q * 3 + 2] - WATER[2]) * keep, a);
+          pic.over(i, j, WATER[0] + (top.col[qs * 3] - WATER[0]) * keep, WATER[1] + (top.col[qs * 3 + 1] - WATER[1]) * keep, WATER[2] + (top.col[qs * 3 + 2] - WATER[2]) * keep, a);
         }
       }
-      if (top.who[q] >= 0 && !under) continue;
+      if (top.who[q] >= 0 && top.z[q] >= -0.5) continue;
       // (the water's face: its marks over what is under it)
       const w = wd[q];
       const sh = h3(i, j, 5, 0);
@@ -2417,6 +2501,8 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       }
     });
   }
+  // (his shovel: each tentacle's wake where its humps' backs break the water)
+  if (F.sfx) bodyWake(pic, F, top, S.water);
   // WHAT THE GAME DRAWS ON THE STONE AND THE WATER FOR THE TENTACLES, under them: the warnings, the cracks and splats of a slam, its
   // slime trail, the stone wet where a wave has passed, a smash's rings, a dying one's ichor and bubbles
   if (F.fx) armFxUnder(pic, F, top, S.water, t);
@@ -2818,7 +2904,9 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       continue;
     }
     const [x, y, z] = flyAt(f, s);
-    const [x0, y0, z0] = flyAt(f, Math.max(0, s - 1 / EYE_FPS));
+    // (the way it flies: from where it would have been a frame before, along its own flight; at its launch too, so that it is never drawn
+    // with no way at all, as a box)
+    const [x0, y0, z0] = flyAt(f, s - 1 / EYE_FPS);
     const [ci, cj] = onCanvas(x, y, z);
     const [pi, pj] = onCanvas(x0, y0, z0);
     const nr = y * 0.8660254 + z * 0.5;
@@ -3037,6 +3125,80 @@ if (mode === 'paint') {
     fs.writeFileSync(path.join(out, `${mv}_${String(k).padStart(3, '0')}.png`), pic.png());
   }
   process.stdout.write(`${mv} ${a}-${b}: ${list ? list.length : b - a + 1} frames in ${((Date.now() - t0) / 1000).toFixed(0)} s\n`);
+} else if (mode === 'prune') {
+  // (the layers kept that none of the moves named uses any more, deleted: those painted before a change)
+  const only = process.argv.slice(3);
+  const want = new Set<string>();
+  for (const mv of Object.keys(MOVES) as Move[]) if (!only.length || only.includes(mv)) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(frameAt(mv, k))) want.add(path.basename(fileOf(L)));
+  const fsx = nodeFs as unknown as { readdirSync(p: string): string[]; unlinkSync(p: string): void };
+  let gone = 0;
+  for (const f of fsx.readdirSync(CACHE)) if (f.endsWith('.bin') && !want.has(f)) {
+    fsx.unlinkSync(path.join(CACHE, f));
+    gone++;
+  }
+  process.stdout.write(`kept ${want.size}, deleted ${gone}\n`);
+} else if (mode === 'bodyRuns') {
+  // (every painting of a scraping tentacle's body in the shovels: the longest straight run, exactly across or up, of its outline where it
+  // is seen (within 40 of the surface, short of where it goes down out of sight) and of its waterline; picture pixels, two to a game
+  // pixel)
+  const seen = new Set<string>();
+  let worst = { o: 0, w: 0, at: '' };
+  for (const mv of ['s1', 's2'] as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of frameAt(mv, k).arms) {
+    if (!L || !L.key.startsWith('AB') || seen.has(L.key)) continue;
+    seen.add(L.key);
+    const p = layer(L);
+    const FR = frameFor(L);
+    const { w, h } = p;
+    const M = (q: number): boolean => p.kind[q] === 1 || p.kind[q] === 4;
+    const vis = (q: number): boolean => M(q) && p.zh[q] >= -40 && ((q % w) + p.x0 - FR.ax) / SEEN < BODY.dive;
+    let o = 0;
+    let wl = 0;
+    for (let j = 0; j < h - 1; j++) {
+      let ro = 0;
+      let rw = 0;
+      for (let i = 0; i < w; i++) {
+        const q = j * w + i;
+        const r = q + w;
+        const edge = M(q) !== M(r) && (vis(q) || vis(r));
+        ro = edge ? ro + 1 : 0;
+        const wat = M(q) && M(r) && (p.zh[q] >= -0.5) !== (p.zh[r] >= -0.5);
+        rw = wat ? rw + 1 : 0;
+        o = Math.max(o, ro);
+        wl = Math.max(wl, rw);
+      }
+    }
+    if (Math.max(o, wl) > Math.max(worst.o, worst.w)) worst = { o, w: wl, at: L.key };
+    else worst = { o: Math.max(worst.o, o), w: Math.max(worst.w, wl), at: worst.at };
+  }
+  process.stdout.write(`${seen.size} bodies: the longest straight run across, its outline ${worst.o / 2} game px, its waterline ${worst.w / 2} (the worst ${worst.at})\n`);
+} else if (mode === 'whoAt') {
+  // (what is at screen pixels of a frame: which layer, how high, how near; and whether it is water)
+  const [, , , mv, kS, ...pts] = process.argv;
+  const F = frameAt(mv as Move, Number(kS));
+  const { top } = merge(F);
+  const W0 = scenery().water;
+  for (const pt of pts) {
+    const [sx, sy] = pt.split(',').map(Number);
+    const i = sx + M + XM + (F.camX ?? 0) - F.shake[0] * 2;
+    const j = sy + M + (F.camY ?? 0) - F.shake[1] * 2;
+    const q = j * CW + i;
+    const L = top.who[q] >= 3 ? F.arms[top.who[q] - 3] : null;
+    process.stdout.write(`${pt}: who ${top.who[q]} ${L ? L.key : ""} z ${top.z[q].toFixed(1)} water ${W0[q]} camX ${F.camX} x ${((i - HX) / SEEN).toFixed(0)} dx ${L ? L.dx : ""}\n`);
+  }
+} else if (mode === 'colz') {
+  // (a frame's layer: the highest of it in each column, every 20th, and where that column is in the world)
+  const [, , , mv, kS, key] = process.argv;
+  const F = frameAt(mv as Move, Number(kS));
+  const L = [...F.arms].find((a) => a && a.key === key) as EyeLayer;
+  const p = layer(L);
+  const FR = frameFor(L);
+  const out: string[] = [];
+  for (let ib = 0; ib < p.w; ib += 40) {
+    let zt = -Infinity;
+    for (let jb = 0; jb < p.h; jb++) if (p.kind[jb * p.w + ib]) zt = Math.max(zt, p.zh[jb * p.w + ib]);
+    out.push(`${((ib + p.x0 - FR.ax) / SEEN).toFixed(0)}:${zt.toFixed(0)}`);
+  }
+  process.stdout.write(out.join(' ') + '\n');
 } else if (mode === 'close') {
   // (a close-up: the camera on a point of his space (x, y, z), half the screen about it at twice the size, as the phone's screen)
   const [, , , out, mv, listS, xs, ys, zs] = process.argv;
