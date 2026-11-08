@@ -16,23 +16,12 @@
 //   RIME WARD  Guarding + Frost    blocking a hit chills the attacker
 //   IMPLODE    Pulling + Volatile  drags enemies together, then the spot bursts
 
-import type { BaseWordId } from './types';
 
 /** Off: none of the eight is made or found; on at his yes to their looks at work. */
 export const MELDS8 = { on: false };
 
 export type Meld8Id = 'siphon' | 'cauterize' | 'forking' | 'shiver' | 'sunder' | 'fervor' | 'rimeward' | 'implode';
-export const MELD8_IDS: readonly Meld8Id[] = ['siphon', 'cauterize', 'forking', 'shiver', 'sunder', 'fervor', 'rimeward', 'implode'];
-export const MELD8_OF: Readonly<Record<Meld8Id, readonly [BaseWordId, BaseWordId]>> = {
-  siphon: ['leech', 'poison'],
-  cauterize: ['leech', 'fire'],
-  forking: ['twin', 'lightning'],
-  shiver: ['precise', 'frost'],
-  sunder: ['heavy', 'power'],
-  fervor: ['frenzied', 'fire'],
-  rimeward: ['guarding', 'frost'],
-  implode: ['pulling', 'volatile'],
-};
+// (their ids and their two words: game/types.ts MELD8_IDS, MELD_OF)
 export const MELD8_NAME: Readonly<Record<Meld8Id, { name: string; front: string; behind: string }>> = {
   siphon: { name: 'Siphon', front: 'Siphon', behind: 'of Siphoning' },
   cauterize: { name: 'Cauterize', front: 'Cauterizing', behind: 'of Cautery' },

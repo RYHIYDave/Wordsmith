@@ -559,6 +559,16 @@ export const WORDS: Record<WordId, WordDef> = {
   shatter: { id: 'shatter', kind: 'meld', of: MELD_OF.shatter, name: 'Shatter', front: 'Shatter', behind: 'of Shattering', attr: 'int', element: 'frost', about: 'Frost and Volatile, melded.', frontText: 'Frozen enemies burst into shards that hit those around them.', behindText: 'The rune freezes what is near, then bursts.', monsterText: '' },
   chainreaction: { id: 'chainreaction', kind: 'meld', of: MELD_OF.chainreaction, name: 'Chain Reaction', front: 'Chain Reaction', behind: 'of Chain Reaction', attr: 'int', element: 'lightning', about: 'Lightning and Volatile, melded.', frontText: 'An exploding enemy sends arcs to the nearest enemies. Those it kills explode too.', behindText: 'Runes are linked. One going off sets off the rest.', monsterText: '' },
   rupture: { id: 'rupture', kind: 'meld', of: MELD_OF.rupture, name: 'Rupture', front: 'Rupture', behind: 'of Rupture', attr: 'dex', element: null, about: 'Poison and Volatile, melded.', frontText: 'Poisoned enemies burst when killed, splashing their poison on those around.', behindText: 'The rune bursts into a poison cloud.', monsterText: '' },
+  // THE EIGHT MELDS ACROSS THE GROUPS (behind MELDS8, game/melds8.ts): his picks of 8 Nov 2026 of the draft offered him. Each a
+  // damage word's place on its side, doing the work of its two words and a twist of its own.
+  siphon: { id: 'siphon', kind: 'meld', of: MELD_OF.siphon, name: 'Siphon', front: 'Siphon', behind: 'of Siphoning', attr: 'dex', element: null, about: 'Leech and Poison, melded.', frontText: 'Your poison heals you while it eats them.', behindText: 'Your poison heals you a little.', monsterText: '' },
+  cauterize: { id: 'cauterize', kind: 'meld', of: MELD_OF.cauterize, name: 'Cauterize', front: 'Cauterizing', behind: 'of Cautery', attr: 'int', element: 'fire', about: 'Leech and Flame, melded.', frontText: 'Killing a burning enemy heals you a chunk.', behindText: 'Killing a burning enemy heals you a little.', monsterText: '' },
+  forking: { id: 'forking', kind: 'meld', of: MELD_OF.forking, name: 'Forking', front: 'Forking', behind: 'of Forks', attr: 'dex', element: 'lightning', about: 'Twin and Lightning, melded.', frontText: 'Every hit arcs to a second enemy nearby.', behindText: 'Every hit arcs to a second enemy nearby, weaker.', monsterText: '' },
+  shiver: { id: 'shiver', kind: 'meld', of: MELD_OF.shiver, name: 'Shiver', front: 'Shivering', behind: 'of Shivers', attr: 'dex', element: 'frost', about: 'Precise and Frost, melded.', frontText: 'Critical hits freeze the target for a moment.', behindText: 'Critical hits freeze the target for an instant.', monsterText: '' },
+  sunder: { id: 'sunder', kind: 'meld', of: MELD_OF.sunder, name: 'Sunder', front: 'Sundering', behind: 'of Sundering', attr: 'str', element: null, about: 'Heavy and Power, melded.', frontText: 'Stunned enemies take extra damage.', behindText: 'Stunned enemies take a little extra damage.', monsterText: '' },
+  fervor: { id: 'fervor', kind: 'meld', of: MELD_OF.fervor, name: 'Fervor', front: 'Fervent', behind: 'of Fervor', attr: 'str', element: 'fire', about: 'Frenzied and Flame, melded.', frontText: 'Each kill makes you attack faster and burn hotter for a few seconds.', behindText: 'Each kill quickens you and your fire a little.', monsterText: '' },
+  rimeward: { id: 'rimeward', kind: 'meld', of: MELD_OF.rimeward, name: 'Rime Ward', front: 'Rime', behind: 'of the Rime Ward', attr: 'str', element: 'frost', about: 'Guarding and Frost, melded.', frontText: 'Blocking a hit chills the attacker.', behindText: 'Blocking a hit chills the attacker a little.', monsterText: '' },
+  implode: { id: 'implode', kind: 'meld', of: MELD_OF.implode, name: 'Implode', front: 'Imploding', behind: 'of Implosion', attr: 'int', element: null, about: 'Pulling and Volatile, melded.', frontText: 'Drags enemies together, then the spot bursts.', behindText: 'Drags enemies together a little, then a small burst.', monsterText: '' },
   // (RANK II, behind RANK2: each a damage word at its second rank, two of it melded at the wordsmith; it reads as
   // its word in an attack's name, and its rune stone and its own name carry the rank)
   power2: { id: 'power2', kind: 'rank', name: 'Power II', front: 'Power', behind: 'of Power', attr: 'str', element: null, about: 'Two Power, melded: Power at rank II.', frontText: 'As Power, half as strong again.', behindText: 'As of Power, half as strong again.', monsterText: '' },
@@ -582,7 +592,9 @@ export const ATTR_SPLIT: { on: boolean; melds: Readonly<Record<MeldId, Attr>>; b
   on: true,
   melds: { eruption: 'str', avalanche: 'str', thunder: 'str', blight: 'str', fumes: 'dex', frostbite: 'dex', contagion: 'dex', scald: 'int', wildfire: 'int', hailstorm: 'int',
     // (Volatile's five, by the same rule: Power's Strength, Poison's Dexterity, the rest Intelligence)
-    demolition: 'str', rupture: 'dex', powderkeg: 'int', shatter: 'int', chainreaction: 'int' },
+    demolition: 'str', rupture: 'dex', powderkeg: 'int', shatter: 'int', chainreaction: 'int',
+    // (the eight across the groups, each its own word's attribute)
+    siphon: 'dex', cauterize: 'int', forking: 'dex', shiver: 'dex', sunder: 'str', fervor: 'str', rimeward: 'str', implode: 'int' },
   byWeapon: ['fire', 'frost', 'lightning'],
 };
 
@@ -2269,6 +2281,15 @@ export const QUIPS: {
     frost2: [],
     lightning2: [],
     poison2: [],
+    // (THE EIGHT MELDS ACROSS THE GROUPS)
+    siphon: ['Drink up.', 'Every drop counts.', 'Mine now.'],
+    cauterize: ['That should seal it.', 'Burn it closed.', 'All better.'],
+    forking: ['Two for one.', 'Pass it on.', 'Split the difference.'],
+    shiver: ['Frozen stiff.', 'Hold still.', 'Brittle.'],
+    sunder: ['Crack it open.', 'Down and broken.', 'Hit them while they reel.'],
+    fervor: ['Faster.', 'Hotter.', 'Keep it burning.'],
+    rimeward: ['Cold shoulder.', 'Ice to meet you.', 'Try again.'],
+    implode: ['Come closer.', 'Everyone together.', 'Collapse.'],
   },
   /** By the attack that made the kill. */
   skill: {

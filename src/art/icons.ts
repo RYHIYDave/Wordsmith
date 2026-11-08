@@ -86,6 +86,15 @@ export const WORD_COLOR: Record<WordId, string> = {
   frost2: P.bu4,
   lightning2: P.lt3,
   poison2: P.vn4,
+  // (THE EIGHT MELDS ACROSS THE GROUPS, game/melds8.ts: stand-ins from their words until the art chat's)
+  siphon: P.vn4,
+  cauterize: P.fr4,
+  forking: P.lt3,
+  shiver: P.bu4,
+  sunder: P.bl4,
+  fervor: P.fr4,
+  rimeward: P.bu4,
+  implode: P.pu4,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -1101,6 +1110,15 @@ export const GLYPH: Record<WordId, readonly string[]> = {
   frost2: [],
   lightning2: [],
   poison2: [],
+  // (THE EIGHT MELDS ACROSS THE GROUPS, game/melds8.ts: stand-ins from their words until the art chat's)
+  siphon: ['.XXXX.', 'XXXXXX', 'X.XX.X', 'XXXXXX', '.XooX.', '.X..X.'],
+  cauterize: ['..X...', '..XX..', 'X.XXX.', 'XXXoXX', 'XXooXX', '.XooX.'],
+  forking: ['...XX.', '..XX..', '.XoooX', '...XX.', '..XX..', '.XX...'],
+  shiver: ['X..X..X', '.X.X.X.', '..XoX..', 'XXoooXX', '..XoX..', '.X.X.X.', 'X..X..X'],
+  sunder: ['..oo..', '.XXXX.', 'XX..XX', '..oo..', '.XXXX.', 'XX..XX'],
+  fervor: ['..X...', '..XX..', 'X.XXX.', 'XXXoXX', 'XXooXX', '.XooX.'],
+  rimeward: ['X..X..X', '.X.X.X.', '..XoX..', 'XXoooXX', '..XoX..', '.X.X.X.', 'X..X..X'],
+  implode: ['X.XX.X', '.XXXX.', 'XXooXX', 'XXooXX', '.XXXX.', 'X.XX.X'],
 };
 for (const r of RANK_IDS) GLYPH[r] = GLYPH[RANK_OF[r].word];
 
@@ -1147,6 +1165,15 @@ export const WORD_GLOW: Record<WordId, string> = {
   frost2: '',
   lightning2: '',
   poison2: '',
+  // (THE EIGHT MELDS ACROSS THE GROUPS, game/melds8.ts: stand-ins from their words until the art chat's)
+  siphon: P.vn5,
+  cauterize: P.fr6,
+  forking: P.lt4,
+  shiver: P.bu5,
+  sunder: P.bl5,
+  fervor: P.fr6,
+  rimeward: P.bu5,
+  implode: P.pu5,
 };
 for (const r of RANK_IDS) WORD_GLOW[r] = WORD_GLOW[RANK_OF[r].word];
 

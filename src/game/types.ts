@@ -42,7 +42,9 @@ export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightn
  */
 export type MeldId = 'eruption' | 'avalanche' | 'thunder' | 'blight' | 'scald' | 'wildfire' | 'fumes' | 'hailstorm' | 'frostbite' | 'contagion'
   // (VOLATILE'S MELDS, behind VOLT_MELDS, game/melds.ts: the five of his page left out on 13 Oct, put in at his word of 21 Oct 2026)
-  | 'demolition' | 'powderkeg' | 'shatter' | 'chainreaction' | 'rupture';
+  | 'demolition' | 'powderkeg' | 'shatter' | 'chainreaction' | 'rupture'
+  // (THE EIGHT MELDS ACROSS THE GROUPS, behind MELDS8, game/melds8.ts: his picks of 8 Nov 2026)
+  | 'siphon' | 'cauterize' | 'forking' | 'shiver' | 'sunder' | 'fervor' | 'rimeward' | 'implode';
 /**
  * RANK II (behind RANK2, game/melds.ts): a damage word at its second rank, made at the wordsmith by
  * melding two of the word. The owner, 18 Oct 2026, 08:49: "Please add the second level (poison+poison)
@@ -96,12 +98,23 @@ export const MELD_OF: Readonly<Record<MeldId, readonly [BaseWordId, BaseWordId]>
   shatter: ['frost', 'volatile'],
   chainreaction: ['lightning', 'volatile'],
   rupture: ['poison', 'volatile'],
+  // (THE EIGHT MELDS ACROSS THE GROUPS: game/melds8.ts)
+  siphon: ['leech', 'poison'],
+  cauterize: ['leech', 'fire'],
+  forking: ['twin', 'lightning'],
+  shiver: ['precise', 'frost'],
+  sunder: ['heavy', 'power'],
+  fervor: ['frenzied', 'fire'],
+  rimeward: ['guarding', 'frost'],
+  implode: ['pulling', 'volatile'],
 };
 /**
  * VOLATILE'S MELDS (behind VOLT_MELDS, game/melds.ts): a damage word and Volatile, melded. MELD_IDS stays the ten, whose looks
  * are drawn (render/melds3.ts); these five are apart until theirs are.
  */
 export const VOLT_MELD_IDS: readonly MeldId[] = ['demolition', 'powderkeg', 'shatter', 'chainreaction', 'rupture'];
+/** THE EIGHT MELDS ACROSS THE GROUPS (behind MELDS8, game/melds8.ts): apart from the rest until their looks are drawn. */
+export const MELD8_IDS: readonly MeldId[] = ['siphon', 'cauterize', 'forking', 'shiver', 'sunder', 'fervor', 'rimeward', 'implode'];
 /** RANK II: the five damage words' second ranks. */
 export const RANK_IDS: readonly RankId[] = ['power2', 'fire2', 'frost2', 'lightning2', 'poison2'];
 /** Each ranked word's word and rank. */
