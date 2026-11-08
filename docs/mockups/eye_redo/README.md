@@ -57,6 +57,16 @@ the rule”, nothing ruled; every beat and number kept):
    (twice would cut either his teeth or the Warrior), on his maw as it twitches, panning with the strike onto the clash and the Warrior
    just clear, down with him as he runs on, and back over the maw as it gapes again.
 
+HIS WORD ON IT, 8 Nov 2026 (by 09:03), shown fix 1 (3bb3ca46, `eye_moves3`) and the mirror test (994f9e41, `eye_mirror.png`):
+- Asked if the shovel is right: “It’s a little stiff but it’ll do.  I took all night so I’m not looking to redo it at this moment”.
+  Read as (told him): it stays as it is; “a little stiff” kept here, for a later pass if he wants it looser.
+- Asked “Mirror him at the right end (eye_mirror.png), or keep both ends painted?”: “Mirror it but save the old one just in case.”
+  Read as (told him): IN THE GAME THE RIGHT END IS THE LEFT END FLIPPED (him and his tentacles, about his own middle; the stone, the
+  water, the hero and the game's effects never flipped; the light on him then from the right there). THE PAINTED RIGHT END IS KEPT
+  (its poses in `src/art/eye_shovel.ts`, its pictures) so it can be brought back.
+- Asked what happens to the pieces on the stone (the broken columns, mossy stones and fallen drums), in the tentacles' way:
+  “Smashed by the first sweep (Recommended)” (offered as: the first shovel breaks them, chunks flying; rubble left after). To draw next.
+
 ### Each beat, frame by frame (30 a second; frames from his stand; the same at both ends)
 
 WIND-UP, STRIKE and WIND-DOWN marked (Movement 9). Frame, then seconds.
@@ -213,7 +223,8 @@ change).
    (the main chat sets where it is triggered and its damage).
 4. THE PIECES ON THE STONE (its two broken columns at the back corners, the mossy stones and the fallen drums) are left out of the
    shovel's film: the tentacles sweep the whole length of the stone, through where each lies. To keep them in the fight, they would have
-   to go when he sinks (smashed by the first sweep, or the arena without them): his to see.
+   to go when he sinks (smashed by the first sweep, or the arena without them): his to see. HIS PICK, 8 Nov: “Smashed by the first
+   sweep (Recommended)”.
 5. The reeds in the water off the end where he comes up are under him there, crushed, from his burst on.
 
 
