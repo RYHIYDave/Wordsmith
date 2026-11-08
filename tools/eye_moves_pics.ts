@@ -34,7 +34,8 @@ import { BODY, SHOVEL, SHOVEL_COLOURS, SHOVEL_FRAMES, SHOVEL_PAINTED_RIGHT, SNAP
 import type { End } from '../src/art/eye_shovel';
 import { COLUMN_FALL, PIECES as STONE_PIECES, SHAFT, bodyOf, brokenOf, chipAt, chipPicture, chipsOf, fragAt, partition, pieceHit, piecesFrame } from '../src/art/eye_pieces';
 import type { Chip, Frag, FragAt, Piece, PiecesNow } from '../src/art/eye_pieces';
-import type { ArmFx, EyeFrame, EyeLayer } from '../src/art/eye_moves';
+import { BEAM, BEAM_COLOURS, BILE_COLOURS, BODY_TAKE, GAZE, GAZE_FIRE, POOL, SPLASH_R, THROAT, arcEdge, beamAngle, beamEdge, beamLine, bodyFrame, fireEdge, globBlobs, poolEdge, poolR, scorchEdge, warnEdge } from '../src/art/eye_body';
+import type { ArmFx, BodyFx, EyeFrame, EyeLayer } from '../src/art/eye_moves';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { RIM_ALPHA } from '../src/art/kit';
 
@@ -521,10 +522,10 @@ function layer(L: EyeLayer): Layer {
 // =============================================================================================
 // THE FRAMES OF EACH MOVE
 
-const MOVES = { lurk: EYE_LURK.frames, entrance: EYE_ENTRANCE.frames, stand: EYE_STAND.frames, p1: SHOTS.p1, p2: SHOTS.p2, fan: SHOTS.fan, s1: SHOVEL_FRAMES.s1, s2: SHOVEL_FRAMES.s2 } as const;
+const MOVES = { lurk: EYE_LURK.frames, entrance: EYE_ENTRANCE.frames, stand: EYE_STAND.frames, p1: SHOTS.p1, p2: SHOTS.p2, fan: SHOTS.fan, s1: SHOVEL_FRAMES.s1, s2: SHOVEL_FRAMES.s2, b1: BODY_TAKE.frames, b2: BODY_TAKE.frames, g1: BODY_TAKE.frames, g2: BODY_TAKE.frames } as const;
 type Move = keyof typeof MOVES;
 /** A frame of a move or of a tentacles' shot. */
-const frameAt = (mv: Move, k: number): EyeFrame => (mv === 's1' || mv === 's2' ? piecesFrame(mv, k) : mv === 'p1' || mv === 'p2' || mv === 'fan' ? fightFrame(mv, k) : eyeFrame(mv, k));
+const frameAt = (mv: Move, k: number): EyeFrame => (mv === 'b1' || mv === 'b2' || mv === 'g1' || mv === 'g2' ? bodyFrame(mv, k) : mv === 's1' || mv === 's2' ? piecesFrame(mv, k) : mv === 'p1' || mv === 'p2' || mv === 'fan' ? fightFrame(mv, k) : eyeFrame(mv, k));
 function layersOf(F: EyeFrame): EyeLayer[] {
   return [F.jaws, F.spit, F.tongue, ...F.arms, ...F.smear].filter((L): L is EyeLayer => !!L);
 }
@@ -704,7 +705,7 @@ function distanceOnWater(seed: Uint8Array, w: number, h: number): Float32Array {
 
 /** A thing flying through the air (spray, goo, droplets), its path from where and when it was thrown. */
 /** What flies: 0 a drop of his spittle, 1 a gob of his slime, 2 a drop of water, 3 a sheet of his slime, tumbling. */
-interface Flyer { x: number; y: number; z: number; vx: number; vy: number; vz: number; t0: number; kind: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; size: number; seed?: number }
+interface Flyer { x: number; y: number; z: number; vx: number; vy: number; vz: number; t0: number; kind: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11; size: number; seed?: number }
 /** A CHUNK OF THE PAVING (kind 6) flung up by a slam: where it is `s` seconds after it was thrown, tumbling, arcing, bouncing twice on
  *  the stone (each bounce a third as high, sliding on), settling and lying; how far it has turned; whether it has come to rest. */
 function chunkAt(f: Flyer, s: number): { x: number; y: number; z: number; turn: number; rest: boolean } {
@@ -2177,6 +2178,736 @@ function bodyWake(pic: Pic, F: EyeFrame, top: Top, water: Uint8Array): void {
     }
   }
 }
+// =============================================================================================
+// HIS BODY'S OWN ATTACKS (art/eye_body.ts): what the game draws for them. THE BILE ARC: its warning on the stone, the bile welling in
+// his maw and spilling off him, the glob in flight, its crashing splash, the burning pool (bubbling, its rim burning, smoking, eating
+// the stone). THE GAZE: the stone darkening round the aiming line, the line, the beam out of his eye, the fire bursting along the line,
+// the scorch smouldering after, the eye's flare and its smoke. Each pixel hidden where he or a tentacle is in front of it.
+
+const lerp = (a: number, b: number, k: number): number => a + (b - a) * k;
+const BILE_RAMP: RGB[] = BILE_COLOURS.bile.map(hex);
+const BILE_BLACK: RGB = hex(BILE_COLOURS.black);
+const WEED_C: RGB[] = BILE_COLOURS.weed.map(hex);
+const BONE_C: RGB[] = BILE_COLOURS.bone.map(hex);
+const BURN: RGB[] = BILE_COLOURS.burn.map(hex);
+const BEAMC: RGB[] = BEAM_COLOURS.map(hex);
+const SMOKE_C: RGB[] = [[44, 42, 40], [66, 64, 60], [94, 92, 86], [126, 122, 112]];
+const CHAR: RGB[] = [[14, 11, 12], [26, 20, 20], [40, 32, 30]];
+/** Whether a pixel is free to draw at nearness `nr` (him or a tentacle not in front of it), and on the screen's canvas. */
+function freeAt(top: Top, i: number, j: number, nr: number): boolean {
+  if (i < 0 || j < 0 || i >= CW || j >= CH) return false;
+  const q = j * CW + i;
+  return !(top.who[q] >= 0 && top.z[q] >= -0.5 && top.near[q] > nr);
+}
+/** Each pixel of the ground (the water's plane) round a point (his space) within `R` of it: its place on the ground. */
+function groundRound(x: number, y: number, R: number, fn: (i: number, j: number, X: number, Y: number, q: number) => void): void {
+  const [ci, cj] = onCanvas(x, y, 0);
+  const ri = Math.ceil(R * SEEN) + 3;
+  const rj = Math.ceil(R / R3) + 3;
+  for (let j = Math.max(0, Math.floor(cj - rj)); j <= Math.min(CH - 1, cj + rj); j++) {
+    for (let i = Math.max(0, Math.floor(ci - ri)); i <= Math.min(CW - 1, ci + ri); i++) {
+      const [X, Y] = waterAt(i, j);
+      fn(i, j, X, Y, j * CW + i);
+    }
+  }
+}
+/** A FLAME from its foot (canvas), `h` high and `w` wide (picture pixels): two or three licks rising from one foot, each swaying its own
+ *  way and flaring and dying by turns, ragged at its edges, forking at its tips; pale gold at its heart low down, gold, the enemy's pink
+ *  at its edges and tips, its tips thinning away; `a` how strong, `hot` how hot its heart. */
+function flameTongue(pic: Pic, top: Top, i0: number, j0: number, h: number, w: number, seed: number, t: number, nr: number, a: number, hot = 1): void {
+  const licks = 2 + (seed % 2);
+  for (let L = 0; L < licks; L++) {
+    const hl = h * (L === 0 ? 1 : 0.5 + 0.35 * h3(seed, L, 0, 8604)) * (0.75 + 0.5 * vn(t * 7 + L * 3.1, seed * 0.13, 8605));
+    const side = L === 0 ? 0 : L === 1 ? -1 : 1;
+    const H = Math.max(2, Math.round(hl));
+    for (let d = 0; d < H; d++) {
+      const u = d / H;
+      const half = w * (L === 0 ? 1 : 0.6) * (1 - u) ** 0.6 * (0.8 + 0.4 * vn(d * 0.3 - t * 12, seed + L, 8601));
+      const sway = side * w * 0.45 * (1 - u * 0.5) + Math.sin(u * 3.4 + t * 11 + seed + L * 2) * u * w * 0.9 + (vn(u * 2.5 - t * 6, seed + L * 7, 8602) - 0.5) * u * w * 1.2;
+      for (let di = -Math.ceil(half); di <= Math.ceil(half); di++) {
+        const e = Math.abs(di) / Math.max(0.6, half);
+        if (e > 1) continue;
+        if (e > 0.5 && vn((di + 40) * 0.6, d * 0.4 - t * 14, seed + 8603 + L) < 0.45 * e) continue;
+        const i = Math.round(i0 + di + sway);
+        const j = Math.round(j0 - d);
+        if (!freeAt(top, i, j, nr + d * 0.5)) continue;
+        const heat = (1 - u) ** 1.2 * (1 - e * 0.7) * hot;
+        const c = heat > 0.75 ? BEAMC[4] : heat > 0.5 ? BEAMC[3] : heat > 0.28 ? BEAMC[2] : BEAMC[1];
+        pic.over(i, j, c[0], c[1], c[2], a * (e > 0.75 || u > 0.75 ? 175 : 245));
+      }
+    }
+  }
+}
+/** SMOKE rising from a point (his space): soft ragged curling puffs, grainy, drifting up and aside, thinning; hidden where he is in front. */
+function smokeFrom(pic: Pic, top: Top, x: number, y: number, z: number, s: number, seed: number, big: number, life: number): void {
+  if (s < 0) return;
+  const nPuff = Math.round(3 + 4 * big);
+  for (let n = 0; n < nPuff; n++) {
+    // (each puff its own, born in turn, rising and growing, fading)
+    const born = (n / nPuff) * 0.6 + h3(n, seed, 1, 8611) * 0.2;
+    const per = 0.9 + 0.5 * h3(n, seed, 2, 8612);
+    const ph = s - born;
+    if (ph < 0) continue;
+    const age = ph % per;
+    if (s - age > life) continue;
+    const u = age / per;
+    const px = x + (h3(n, seed, 3, 8613) - 0.5) * 20 * big + Math.sin(u * 3 + n) * 8 * u;
+    const py = y + (h3(n, seed, 4, 8614) - 0.5) * 10 * big;
+    const pz = z + 6 + 70 * big * u;
+    const [ci, cj] = onCanvas(px, py, pz);
+    const R = (3 + 9 * big * Math.sqrt(u)) * (0.8 + 0.4 * h3(n, seed, 5, 8615));
+    const dens = (1 - u) * sm(0, 0.12, u);
+    const nr = py * 0.8660254 + pz * 0.5;
+    for (let dj = -Math.ceil(R * 1.3); dj <= Math.ceil(R * 1.3); dj++) for (let di = -Math.ceil(R * 1.5); di <= Math.ceil(R * 1.5); di++) {
+      const i = Math.round(ci + di);
+      const j = Math.round(cj + dj);
+      if (!freeAt(top, i, j, nr)) continue;
+      // (a soft billow: its edge ragged and curling, thicker in its heart, lit on its top)
+      const ang = Math.atan2(dj, di);
+      const rr = R * (1 + 0.25 * (vn(ang * 1.6 + seed + n * 3, age * 2, 8618) - 0.5) * 2);
+      const d = Math.hypot(di / 1.2, dj) / rr;
+      if (d > 1) continue;
+      const rag = vn((ci + di) * 0.18 + seed, (cj + dj) * 0.18 + age * 3, 8616);
+      const v = dens * (1 - d * d) * (0.55 + 0.7 * rag);
+      if (v < 0.1) continue;
+      // (thin at its edge: every other pixel)
+      if (v < 0.22 && (i + j) % 2) continue;
+      const c = SMOKE_C[Math.max(0, Math.min(3, Math.floor(rag * 2.2 + (dj < -R * 0.3 ? 1.2 : 0) + (d < 0.5 ? 0.4 : 0))))];
+      pic.over(i, j, c[0], c[1], c[2], Math.min(210, 80 + 260 * v));
+    }
+  }
+}
+/** Where the bile leaves him and wells in his maw, now (the world's): as he draws back and lunges. */
+const mawAt = (B: BodyFx): [number, number, number] => [THROAT[0], THROAT[1] - (B.lunge?.back ?? 0), THROAT[2] - (B.lunge?.drop ?? 0)];
+/** A BLOB OF BILE (canvas, `R` picture pixels round): sick yellow-green, lit on its upper left, dark under, a black clot in it, its wet
+ *  shine, flecks of its burning gold. */
+function bileBlob(pic: Pic, top: Top, ci: number, cj: number, R: number, nr: number, seed: number, t: number, a = 255): void {
+  for (let dj = -Math.ceil(R) - 1; dj <= Math.ceil(R) + 1; dj++) for (let di = -Math.ceil(R) - 1; di <= Math.ceil(R) + 1; di++) {
+    const ang = Math.atan2(dj, di);
+    const rr = R * (1 + 0.16 * Math.sin(ang * 3 + seed + t * 5) + 0.1 * Math.sin(ang * 5 - seed * 2 - t * 7));
+    const d = Math.hypot(di, dj);
+    if (d > rr) continue;
+    const i = Math.round(ci + di);
+    const j = Math.round(cj + dj);
+    if (!freeAt(top, i, j, nr)) continue;
+    const lit = -(di * 0.6 + dj * 0.8) / (rr + 1);
+    const clot = vn((di + seed * 13) * 0.3, (dj - t * 20) * 0.3, 8621) > 0.72;
+    let c = lit > 0.62 ? BILE_RAMP[4] : lit > 0.28 ? BILE_RAMP[3] : lit > -0.25 ? BILE_RAMP[2] : BILE_RAMP[1];
+    if (d > rr - 1) c = BILE_RAMP[0];
+    if (clot && d < rr - 1.5) c = BILE_BLACK;
+    if (h3(i, j, Math.floor(t * 20), 8622) < 0.04 && lit < 0.3) c = BURN[2];
+    pic.over(i, j, c[0], c[1], c[2], a);
+  }
+  if (R > 3 && freeAt(top, Math.round(ci - R * 0.35), Math.round(cj - R * 0.45), nr)) pic.over(Math.round(ci - R * 0.35), Math.round(cj - R * 0.45), 238, 236, 190, a);
+}
+/** A rope of bile off him into the water: from `a` to the water under it (his space), wavering, necking into beads, its gobs dropping. */
+function bileRope(pic: Pic, top: Top, x: number, y: number, z: number, seed: number, t: number, k: number): void {
+  const len = Math.round(z * k);
+  const [ci, cj] = onCanvas(x, y, z);
+  const nr = y * 0.8660254 + 4;
+  for (let d = 0; d <= len; d++) {
+    const u = d / Math.max(1, z);
+    const neck = 0.55 + 0.45 * Math.sin(d * 0.7 - t * 14 + seed);
+    const w = (1.4 + 1.2 * (1 - u)) * neck;
+    const sway = Math.sin(d * 0.15 + t * 3 + seed) * 1.6 * u;
+    for (let di = -Math.ceil(w); di <= Math.ceil(w); di++) {
+      if (Math.abs(di) > w) continue;
+      const i = Math.round(ci + sway + di);
+      const j = Math.round(cj + d);
+      if (!freeAt(top, i, j, nr)) continue;
+      const c = di < 0 ? BILE_RAMP[3] : di > 0.5 ? BILE_RAMP[1] : BILE_RAMP[2];
+      pic.over(i, j, c[0], c[1], c[2], 255);
+    }
+  }
+  // (a gob let go, dropping; a ring where it meets the water)
+  const per = 0.5 + 0.3 * h3(seed, 1, 0, 8631);
+  const ph = ((t + h3(seed, 2, 0, 8632)) % per) / per;
+  const [gi, gj] = onCanvas(x, y, z * (1 - ph));
+  if (freeAt(top, Math.round(gi), Math.round(gj), nr)) bileBlob(pic, top, gi, gj, 2.2, nr, seed, t);
+  if (ph > 0.85) for (let a2 = 0; a2 < 14; a2++) {
+    const ang = (a2 / 14) * TAU;
+    if (h3(seed, a2, Math.floor(t * 4), 8633) < 0.35) continue;
+    const [wi, wj] = onCanvas(x, y, 0);
+    const R = 2 + 8 * (ph - 0.85) / 0.15;
+    pic.over(Math.round(wi + Math.cos(ang) * R), Math.round(wj + Math.sin(ang) * R * 0.45), BILE_RAMP[3][0], BILE_RAMP[3][1], BILE_RAMP[3][2], 180);
+  }
+}
+/** WHAT THE GAME DRAWS FOR HIS BODY'S ATTACKS ON THE STONE AND THE WATER, under what flies: the bile's warning, the burning pool and
+ *  the stone it eats; the dark round the gaze's line, the line, the fire bursting along it, the scorch. */
+function bodyUnder(pic: Pic, F: EyeFrame, top: Top, water: Uint8Array): void {
+  const B = F.bfx as BodyFx;
+  const t = F.t;
+  const D = pic.d;
+  const overHim = (q: number): boolean => top.who[q] >= 0 && top.z[q] >= -0.5;
+  if (B.warn) {
+    const W = B.warn;
+    const shown = sm(0, 0.12, W.k);
+    groundRound(W.x, W.y, SPLASH_R * 1.25, (i, j, X, Y, q) => {
+      if (water[q] || overHim(q)) return;
+      const d = Math.hypot(X - W.x, Y - W.y);
+      const a = Math.atan2(Y - W.y, X - W.x);
+      const e = SPLASH_R * warnEdge(a, B.f);
+      if (d > e + 1.6) return;
+      if (d > e - 2.2) {
+        // (its edge, dashed, marching round; flaring gold as it comes down)
+        if ((Math.floor((a * e) / 10 - t * 9) & 1) === 0 && W.flare < 0.5) return;
+        const c = W.flare > 0.5 ? FL3 : FL2;
+        pic.over(i, j, c[0], c[1], c[2], 255 * shown * (0.5 + 0.5 * W.k));
+        return;
+      }
+      if (h3(i >> 1, j >> 1, 0, 7731) < 0.22 + 0.4 * W.k) pic.over(i, j, WARN_SHADE[0], WARN_SHADE[1], WARN_SHADE[2], 255 * 0.4 * shown * (0.5 + 0.5 * W.k));
+      if (W.flare > 0 && h3(i, j, Math.floor(t * 20), 7732) < 0.18 * W.flare * (1 - d / e)) pic.over(i, j, FL3[0], FL3[1], FL3[2], 170 * W.flare);
+    });
+  }
+  if (B.splash) {
+    const P = B.splash;
+    const s = P.s;
+    const R = poolR(s);
+    const reach = POOL.r * Math.min(1, s / POOL.spread);
+    const fade = 1 - sm(POOL.life - 0.5, POOL.life, s);
+    const scar = 1 - sm(POOL.life, POOL.life + 0.6, s);
+    groundRound(P.x, P.y, POOL.r * 1.5, (i, j, X, Y, q) => {
+      if (water[q] || overHim(q)) return;
+      const d = Math.hypot(X - P.x, Y - P.y);
+      const a = Math.atan2(Y - P.y, X - P.x);
+      const e = poolEdge(a, s);
+      if (R > 0 && d < R * e) {
+        // (the pool: black and sick green, clots and scum drifting in it, its rim burning)
+        // (slow swirls of it, dark, its scum in wandering lines catching the light, its burning glowing gold under it)
+        const n1 = vn(X * 0.045 + s * 0.35 + Math.sin(Y * 0.03 + s) * 0.6, Y * 0.07 - s * 0.25, 8641);
+        const glow = vn(X * 0.05 + s * 0.8, Y * 0.08 - s * 0.5, 8642);
+        const rim = d / (R * e);
+        let c = n1 > 0.7 ? BILE_RAMP[2] : n1 > 0.45 ? BILE_RAMP[1] : BILE_BLACK;
+        if (Math.abs(n1 - 0.62) < 0.018 || Math.abs(n1 - 0.4) < 0.012) c = BILE_RAMP[3];
+        if (Math.abs(n1 - 0.62) < 0.008 && (i + j) % 3 === 0) c = BILE_RAMP[4];
+        if (glow > 0.86) c = glow > 0.9 ? BURN[3] : BURN[2];
+        else if (glow > 0.83) c = BURN[1];
+        if (rim > 0.88) {
+          // (its rim burning gold, sizzling dark against the stone)
+          const r2 = vn(a * 22 + s * 4, d * 0.15 - s * 3, 8644);
+          c = r2 > 0.58 ? BURN[3] : r2 > 0.4 ? BURN[2] : r2 > 0.28 ? BURN[1] : CHAR[1];
+        }
+        pic.over(i, j, c[0], c[1], c[2], 255 * fade);
+        return;
+      }
+      if (d < reach * e * 1.14) {
+        // (the stone it has eaten: pitted, black and scorched, fizzing at its edge)
+        const pit = vn(X * 0.3, Y * 0.45, 8645);
+        const c = pit > 0.6 ? CHAR[0] : pit > 0.35 ? CHAR[1] : CHAR[2];
+        pic.over(i, j, c[0], c[1], c[2], 190 * scar * (0.5 + 0.5 * sm(reach * e * 1.14, reach * e * 0.9, d)));
+        if (R > 0 && d < R * e * 1.1 && vn(X * 0.4 + s * 9, Y * 0.6, 8646) > 0.8) pic.over(i, j, BURN[2][0], BURN[2][1], BURN[2][2], 200 * fade);
+      }
+    });
+    // (bubbles welling up in it and bursting)
+    if (R > 6) for (let n = 0; n < 16; n++) {
+      const per = 0.35 + 0.3 * h3(n, 3, 0, 8647);
+      const ph = s / per + h3(n, 4, 0, 8648);
+      const life = ph - Math.floor(ph);
+      const cyc = Math.floor(ph);
+      const a = h3(n, cyc, 5, 8649) * TAU;
+      const r0 = Math.sqrt(h3(n, cyc, 6, 8650)) * R * 0.75;
+      const [bi, bj] = onCanvas(P.x + Math.cos(a) * r0, P.y + Math.sin(a) * r0, 0);
+      const br = 1 + 3 * h3(n, cyc, 7, 8651) * Math.min(1, life / 0.7);
+      if (life < 0.7) {
+        for (let dj = -Math.ceil(br); dj <= 0; dj++) for (let di = -Math.ceil(br); di <= Math.ceil(br); di++) {
+          if (Math.hypot(di, dj * 1.4) > br) continue;
+          const c = dj < -br * 0.5 && di < 0 ? BILE_RAMP[4] : BILE_RAMP[2];
+          pic.over(Math.round(bi + di), Math.round(bj + dj), c[0], c[1], c[2], 255 * fade);
+        }
+      } else {
+        const rr = br + 3 * (life - 0.7) / 0.3;
+        for (let q = 0; q < 12; q++) {
+          if (h3(n, q, cyc, 8652) < 0.4) continue;
+          const ang = (q / 12) * TAU;
+          pic.over(Math.round(bi + Math.cos(ang) * rr), Math.round(bj + Math.sin(ang) * rr * 0.5), BILE_RAMP[4][0], BILE_RAMP[4][1], BILE_RAMP[4][2], 200 * fade);
+        }
+      }
+    }
+  }
+  // THE GAZE
+  const fan = B.arc ?? B.scorch;
+  if (fan && (B.dark ?? 0) > 0.005) {
+    // (the stone darkening in the arc it will sweep, softly at its sides, coming on out over the water toward the stone)
+    const dk = B.dark as number;
+    for (let j = 0; j < CH; j++) for (let i = 0; i < CW; i++) {
+      const q = j * CW + i;
+      if (overHim(q)) continue;
+      const [X, Y] = waterAt(i, j);
+      const dx = X - fan.ox;
+      const dy = Y - fan.oy;
+      const r = Math.hypot(dx, dy);
+      if (r < 60) continue;
+      const b = Math.atan2(dx, dy);
+      const out = b < fan.a0 ? r * Math.sin(Math.min(1.5, fan.a0 - b)) : b > fan.a1 ? r * Math.sin(Math.min(1.5, b - fan.a1)) : 0;
+      const f = dk * (1 - sm(0, 34, out)) * sm(80, 170, r);
+      if (f <= 0) continue;
+      D[q * 4] *= 1 - f;
+      D[q * 4 + 1] *= 1 - f;
+      D[q * 4 + 2] *= 1 - f * 0.85;
+    }
+  }
+  if (B.arc) {
+    // (THE WARNING: the arc it will sweep, on the stone. Its sides wavering lines of the enemy's pink, marching outward; its first side,
+    // where the beam will fire, the brighter, pulsing, flaring gold as it fires; a shimmer of pink running across it the way the beam
+    // will go; while the beam sweeps, only the part still to come, fading)
+    const A = B.arc;
+    const shown = sm(0, 0.12, A.k);
+    const sweeping = A.from > A.a0 + 1e-6;
+    const pulse = 0.5 + 0.5 * Math.sin(F.k * 1.3);
+    for (let j = 0; j < CH; j++) for (let i = 0; i < CW; i++) {
+      const q = j * CW + i;
+      if (water[q] || overHim(q)) continue;
+      const [X, Y] = waterAt(i, j);
+      const dx = X - A.ox;
+      const dy = Y - A.oy;
+      const r = Math.hypot(dx, dy);
+      const b = Math.atan2(dx, dy);
+      if (b < A.a0 - 0.2 || b > A.a1 + 0.2) continue;
+      const l0 = r * Math.sin(b - A.a0) - arcEdge(r, t, -1);
+      const l1 = r * Math.sin(A.a1 - b) - arcEdge(r, t, 1);
+      // (its first side)
+      if (!sweeping && Math.abs(l0) < 2.1) {
+        if ((Math.floor(r / 11 - t * 6) & 3) === 0 && A.flare < 0.4) continue;
+        const c = A.flare > 0.45 ? FL3 : FL2;
+        pic.over(i, j, c[0], c[1], c[2], 255 * shown * (0.7 + 0.3 * pulse * (1 - A.flare)));
+        continue;
+      }
+      // (its other side, where it stops)
+      if (Math.abs(l1) < 1.7) {
+        if ((Math.floor(r / 11 - t * 6) & 1) === 0) continue;
+        pic.over(i, j, FL2[0], FL2[1], FL2[2], 255 * shown * (sweeping ? 0.45 : 0.6));
+        continue;
+      }
+      if (l0 < 0 || l1 < 0 || (sweeping && b < A.from)) continue;
+      // (in it: a dither of the warning's shade)
+      if (h3(i >> 1, j >> 1, 0, 7741) < (sweeping ? 0.12 : 0.18 + 0.3 * A.k)) pic.over(i, j, WARN_SHADE[0], WARN_SHADE[1], WARN_SHADE[2], 255 * 0.35 * shown);
+    }
+    // (motes of the enemy's pink drifting across it the way the beam will sweep, each a short streak along its way, fading in and out)
+    if (!sweeping) for (let n = 0; n < 90; n++) {
+      const per = 0.7 + 0.5 * h3(n, 1, 0, 7744);
+      const ph = (t / per + h3(n, 2, 0, 7745)) % 1;
+      const cyc = Math.floor(t / per + h3(n, 2, 0, 7745));
+      const r = 180 + 420 * h3(n, cyc, 3, 7746);
+      const fade = Math.sin(Math.PI * ph) * shown;
+      for (let st = 0; st < 9; st++) {
+        const b = lerp(A.a0, A.a1, ph) - (st * 1.6) / r;
+        const [ci, cj] = onCanvas(A.ox + Math.sin(b) * r, A.oy + Math.cos(b) * r, 0);
+        const i = Math.round(ci);
+        const j = Math.round(cj);
+        if (i < 0 || j < 0 || i >= CW || j >= CH || water[j * CW + i] || overHim(j * CW + i)) continue;
+        const c = st < 2 ? FL3 : FL2;
+        pic.over(i, j, c[0], c[1], c[2], 255 * fade * (1 - st / 9));
+        if (st < 3) pic.over(i, j - 1, c[0], c[1], c[2], 160 * fade * (1 - st / 3));
+      }
+    }
+  }
+  if (B.scorch) {
+    // (THE SCORCH: the stone where the beam has passed, glowing in its joints and cracks just behind it, its faces flushed, cooling to
+    // soot-black, embers left in its cracks winking out; hottest where the beam came down; fading)
+    const Sc = B.scorch;
+    const lum = new Float32Array(CW * CH);
+    for (let q = 0; q < CW * CH; q++) lum[q] = D[q * 4] * 0.3 + D[q * 4 + 1] * 0.55 + D[q * 4 + 2] * 0.15;
+    const far = Math.hypot(beamLine(Sc.a0).ax - Sc.ox, beamLine(Sc.a0).ay - Sc.oy);
+    for (let j = 2; j < CH - 2; j++) for (let i = 2; i < CW - 2; i++) {
+      const q = j * CW + i;
+      if (water[q] || overHim(q)) continue;
+      const [X, Y] = waterAt(i, j);
+      const dx = X - Sc.ox;
+      const dy = Y - Sc.oy;
+      const r = Math.hypot(dx, dy);
+      const b = Math.atan2(dx, dy);
+      if (b < Sc.a0 - 0.15 || b > Sc.to + 0.15) continue;
+      const l0 = r * Math.sin(b - Sc.a0) + scorchEdge(r, -1);
+      const lt = r * Math.sin(Sc.to - b) + scorchEdge(r, 1);
+      if (l0 < 0 || lt < 0) continue;
+      const u = clamp01((b - Sc.a0) / (Sc.a1 - Sc.a0));
+      const age = (Sc.f - (GAZE_FIRE + u * GAZE.sweep)) / EYE_FPS;
+      if (age < 0.04 || age > GAZE.scorch) continue;
+      const wr = 0.5 + 0.5 * Math.exp(-(((r - far) / 120) ** 2));
+      const edge = Math.min(1, Math.min(l0, lt) / 8);
+      // (soot: the stone darkened, unevenly)
+      const soot = 0.55 * wr * edge * (1 - sm(GAZE.scorch * 0.45, GAZE.scorch, age)) * (0.7 + 0.6 * (vn(X * 0.07, Y * 0.11, 8681) - 0.5));
+      D[q * 4] *= 1 - soot * 0.9;
+      D[q * 4 + 1] *= 1 - soot;
+      D[q * 4 + 2] *= 1 - soot;
+      // (its joints and cracks: darker than round them)
+      const round = (lum[q - 2] + lum[q + 2] + lum[q - 2 * CW] + lum[q + 2 * CW]) / 4;
+      const crack = lum[q] < round * 0.78;
+      const heat = wr * edge * (1 - sm(0, 0.55, age));
+      if (heat > 0.04) {
+        if (crack) {
+          const c = heat > 0.7 ? BEAMC[4] : heat > 0.45 ? BEAMC[3] : heat > 0.22 ? BEAMC[2] : BEAMC[1];
+          pic.over(i, j, c[0], c[1], c[2], 255 * Math.min(1, heat * 1.6));
+        } else {
+          const c = heat > 0.6 ? BEAMC[2] : BEAMC[1];
+          pic.over(i, j, c[0], c[1], c[2], 150 * heat * (0.6 + 0.8 * (vn(X * 0.15, Y * 0.2, 8682) - 0.5)));
+        }
+        continue;
+      }
+      // (embers left in its cracks, winking out)
+      const warm = 1 - sm(0.45, 1.8, age);
+      if (crack && warm > 0 && vn(X * 0.3 + 3, Y * 0.45, 8672) > 0.74 && h3(i >> 1, j >> 1, Math.floor((age + h3(i, j, 1, 8674)) * 6), 8673) < 0.6 * warm) {
+        const ec = warm > 0.65 ? BEAMC[3] : warm > 0.35 ? BEAMC[2] : BEAMC[1];
+        pic.over(i, j, ec[0], ec[1], ec[2], 255 * warm);
+      }
+    }
+  }
+  if (B.beam) {
+    // (the stone burning along the beam's line: from where it comes down out to both ends as it bursts, glowing gold and pink, ragged)
+    const Bm = B.beam;
+    const len = Math.hypot(Bm.ex - Bm.sx, Bm.ey - Bm.sy) || 1;
+    const ux = (Bm.ex - Bm.sx) / len;
+    const uy = (Bm.ey - Bm.sy) / len;
+    const va = (Bm.ax - Bm.sx) * ux + (Bm.ay - Bm.sy) * uy;
+    const out = Bm.reach * Math.max(va, len - va);
+    for (let j = 0; j < CH; j++) for (let i = 0; i < CW; i++) {
+      const q = j * CW + i;
+      if (water[q] || overHim(q)) continue;
+      const [X, Y] = waterAt(i, j);
+      const v = (X - Bm.sx) * ux + (Y - Bm.sy) * uy;
+      if (v < -4 || v > len + 4 || Math.abs(v - va) > out) continue;
+      const side = -(X - Bm.sx) * uy + (Y - Bm.sy) * ux;
+      const hw = fireEdge(v, Bm.s, side > 0 ? 1 : -1) * (0.55 + 0.45 * Bm.k);
+      const e = Math.abs(side) / hw;
+      if (e > 1) continue;
+      // (the stone glowing as it burns under the flames: gold in its heart, the enemy's pink at its edges, flickering)
+      const n = vn(v * 0.12 - Bm.s * 20, side * 0.2, 8661);
+      const heat = (1 - e) * (0.55 + 0.6 * n) * Bm.k;
+      const c = heat > 0.7 ? BEAMC[4] : heat > 0.45 ? BEAMC[3] : heat > 0.22 ? BEAMC[2] : BEAMC[1];
+      pic.over(i, j, c[0], c[1], c[2], (e > 0.75 ? 150 : 215) * Math.min(1, 0.4 + Bm.k));
+    }
+  }
+}
+/** WHAT THE GAME DRAWS FOR HIS BODY'S ATTACKS OVER EVERYTHING ELSE: the bile in his maw and off him, the glob, the splash's crown, the
+ *  pool's flames and smoke; the beam, the fire's flames along the line, the scorch's smoke, the eye's flare and smoke. */
+function bodyOver(pic: Pic, F: EyeFrame, top: Top): void {
+  const B = F.bfx as BodyFx;
+  const t = F.t;
+  if (B.kind === 'bile') {
+    const M = mawAt(B);
+    const [mi, mj] = onCanvas(M[0], M[1], M[2]);
+    const nrM = M[1] * 0.8660254 + M[2] * 0.5 + 6;
+    // (the bile welling up in his maw, heaving with his gullet, spilling over)
+    if ((B.well ?? 0) > 0.02) {
+      const w = B.well as number;
+      const hv = B.heave ?? 0;
+      // (a heaving mass of it across the floor of his maw, lobes of it rolling, swelling with each heave)
+      for (let n = 0; n < 11; n++) {
+        const a = (n / 11) * TAU + t * 2 + h3(n, 2, 0, 8683);
+        const spread = (8 + 28 * w + 4 * hv) * (0.6 + 0.4 * h3(n, 3, 0, 8684));
+        const R = (6 + 10 * w + 2 * hv) * (0.7 + 0.3 * h3(n, 1, 0, 8681));
+        bileBlob(pic, top, mi + Math.cos(a) * spread * 1.15, mj + 4 - w * 10 + Math.sin(a) * spread * 0.35 - hv * 2, R * 0.75, nrM, n + 1, t);
+      }
+    }
+    if ((B.drool ?? 0) > 0.02 || (B.well ?? 0) > 0.4) {
+      const k = Math.max(B.drool ?? 0, (B.well ?? 0) - 0.3);
+      for (let n = 0; n < 4; n++) bileRope(pic, top, M[0] - 22 + n * 15, M[1] + 6 + (n % 2) * 6, M[2] - 4, 50 + n, t, Math.min(1, k * (1.2 - n * 0.12)));
+    }
+    if (B.glob) {
+      // (the glob: huge, heaving and tumbling, its strands trailing; its shadow on the stone under it, growing as it comes down)
+      const g = B.glob;
+      const [ci, cj] = onCanvas(g.x, g.y, g.z);
+      const [ni, nj] = onCanvas(g.x + g.vx / 30, g.y + g.vy / 30, g.z + g.vz / 30);
+      const nr = g.y * 0.8660254 + g.z * 0.5;
+      const [si, sj] = onCanvas(g.x, g.y, 0);
+      const shR = 10 + 30 * (1 - Math.min(1, g.z / 300));
+      for (let dj = -Math.ceil(shR / 2); dj <= Math.ceil(shR / 2); dj++) for (let di = -Math.ceil(shR); di <= Math.ceil(shR); di++) {
+        const d = Math.hypot(di / shR, (dj * 2) / shR);
+        const rag = vn((si + di) * 0.3, (sj + dj) * 0.5, 8682);
+        if (d > 0.8 + 0.3 * rag) continue;
+        const q = Math.round(sj + dj) * CW + Math.round(si + di);
+        if (q < 0 || q >= CW * CH || top.who[q] >= 0) continue;
+        pic.over(Math.round(si + di), Math.round(sj + dj), 8, 8, 10, 110 * (1 - d));
+      }
+      for (const b of globBlobs(g.s, ni - ci, nj - cj)) {
+        const bi = ci + b.di;
+        const bj = cj + b.dj;
+        if (b.kind === 'bile' || b.kind === 'strand') bileBlob(pic, top, bi, bj, b.r, nr, Math.round(b.r * 7 + b.di), t);
+        else if (b.kind === 'black') bileBlob(pic, top, bi, bj, b.r, nr + 1, 3, t);
+        else {
+          // (weed and bone caught in it)
+          const C2 = b.kind === 'weed' ? WEED_C : BONE_C;
+          for (let q = -Math.ceil(b.r * 1.6); q <= Math.ceil(b.r * 1.6); q++) {
+            const i = Math.round(bi + q);
+            const j = Math.round(bj + Math.sin(q * 0.8 + g.s * 9) * 1.2 * (b.kind === 'weed' ? 1 : 0.2));
+            if (!freeAt(top, i, j, nr + 2)) continue;
+            const c = q < 0 ? C2[1] : C2[0];
+            pic.over(i, j, c[0], c[1], c[2], 255);
+            if (b.kind === 'bone') pic.over(i, j - 1, C2[1][0], C2[1][1], C2[1][2], 255);
+          }
+        }
+      }
+      // (its burning: gold licking off it)
+      for (let n = 0; n < 4; n++) {
+        const a = n * 1.7 + g.s * 13;
+        flameTongue(pic, top, Math.round(ci + Math.cos(a) * 16), Math.round(cj + Math.sin(a) * 10), 7 + 5 * h3(n, Math.floor(g.s * 30), 0, 8683), 2.5, n + 70, t, nr + 3, 0.85);
+      }
+    }
+    if (B.splash) {
+      const P = B.splash;
+      const s = P.s;
+      const [ci, cj] = onCanvas(P.x, P.y, 0);
+      const nr = P.y * 0.8660254;
+      // (the crash: bile thrown up and out all round in thick tongues, each flung on its own arc, thinning, necking into beads at its tip
+      // and letting them go, its foot falling back as it breaks; a churned collar of it where it struck; gone in under half a second, its
+      // gobs flying on)
+      if (s < 0.45) {
+        const u = s / 0.45;
+        // (the collar: heaped, lumpy, sloshing out and sinking)
+        if (s < 0.22) {
+          const cr = 24 + 60 * Math.sqrt(s / 0.22);
+          const ch = 14 * (1 - s / 0.22);
+          const nC = 48;
+          for (let n = 0; n < nC; n++) {
+            const ang = (n / nC) * TAU + h3(n, 7, 0, 8690) * 0.12;
+            const rr = cr * (0.9 + 0.2 * h3(n, 8, 0, 8689));
+            const [bi, bj] = onCanvas(P.x + Math.cos(ang) * rr, P.y + Math.sin(ang) * rr * 0.92, ch * (0.5 + 0.5 * h3(n, 9, 0, 8688)));
+            bileBlob(pic, top, bi, bj, 3 + 3 * h3(n, 10, 0, 8687) * (1 - s / 0.22), nr + Math.sin(ang) * rr * 0.8, n + 40, t);
+          }
+        }
+        const nJ = 18;
+        for (let n = 0; n < nJ; n++) {
+          const ang = (n / nJ) * TAU + (h3(n, 1, 0, 8691) - 0.5) * 0.18;
+          const r0 = 26 + 10 * h3(n, 2, 0, 8692);
+          const out = (60 + 80 * h3(n, 3, 0, 8693)) * Math.sqrt(Math.min(1, u * 1.6));
+          const Hm = (22 + 40 * h3(n, 4, 0, 8694)) * (0.45 + 0.55 * Math.abs(Math.cos(ang))) * Math.sin(Math.PI * Math.min(1, u * 1.15)) ** 0.7;
+          if (Hm < 2) continue;
+          // (its foot falling back as it breaks; its tip let go)
+          const vb = sm(0.25, 0.75, u) * 0.8;
+          const vt = 1 - 0.25 * sm(0.5, 1, u);
+          const lean = (h3(n, 5, 0, 8695) - 0.5) * 0.7;
+          let lastI = 0;
+          let lastJ = 0;
+          for (let v = vb; v <= vt; v += 0.015) {
+            const rr = r0 + out * v;
+            const a2 = ang + lean * v;
+            const z = Hm * Math.sin(v * Math.PI * 0.62) * (1 + 0.12 * Math.sin(v * 9 + n));
+            const x = P.x + Math.cos(a2) * rr;
+            const y = P.y + Math.sin(a2) * rr * 0.92;
+            const [qi, qj] = onCanvas(x, y, z);
+            // (thick at its foot, thinning, necking into beads toward its tip)
+            let w = (8.5 - 5.5 * v) * (1 - 0.3 * u) * (0.8 + 0.4 * h3(n, 11, 0, 8686));
+            if (v > 0.62) w *= 0.5 + 0.5 * Math.abs(Math.sin(v * 22 + n * 1.7));
+            const nrJ = y * 0.8660254 + z * 0.5;
+            for (let dj = -Math.ceil(w); dj <= Math.ceil(w); dj++) for (let di = -Math.ceil(w); di <= Math.ceil(w); di++) {
+              const d = Math.hypot(di, dj);
+              if (d > w) continue;
+              const i = Math.round(qi + di);
+              const j = Math.round(qj + dj);
+              if (!freeAt(top, i, j, nrJ)) continue;
+              // (lit on its upper left, dark under; streaked black where it runs)
+              const lit = -(di * 0.6 + dj * 0.8) / (w + 0.5);
+              const streak = vn(n * 5 + v * 9, d * 0.6 - s * 6, 8696) > 0.8;
+              let c = lit > 0.55 ? BILE_RAMP[4] : lit > -0.1 ? BILE_RAMP[3] : lit > -0.55 ? BILE_RAMP[2] : BILE_RAMP[1];
+              if (streak && lit < 0.5) c = BILE_BLACK;
+              pic.over(i, j, c[0], c[1], c[2], 245);
+            }
+            lastI = qi;
+            lastJ = qj;
+          }
+          // (the bead at its tip, let go and flying on)
+          if (u > 0.2) {
+            const fly = (u - 0.2) * 30;
+            bileBlob(pic, top, lastI + Math.cos(ang) * fly * SEEN, lastJ - fly * 0.6 + fly * fly * 0.04, 3 + 2 * h3(n, 6, 0, 8697), nr + 20, n + 90, t);
+          }
+        }
+        // (a burst of its fire as it crashes)
+        if (s < 0.25) for (let n = 0; n < 10; n++) {
+          const ang = (n / 10) * TAU + 0.3;
+          const r2 = 20 + 50 * (s / 0.25);
+          const [fi, fj] = onCanvas(P.x + Math.cos(ang) * r2, P.y + Math.sin(ang) * r2 * 0.8, 0);
+          flameTongue(pic, top, Math.round(fi), Math.round(fj), 34 * (1 - s / 0.25) + 10, 5, 80 + n, t, nr + 10, 1);
+        }
+      }
+      // (the pool's rim burning: tongues of fire licking up round it; its smoke rising)
+      const R = poolR(s);
+      if (R > 4) {
+        const nT = 14;
+        for (let n = 0; n < nT; n++) {
+          // (each its own: where round the rim, how tall, flaring and dying down by turns; some out)
+          const ang = (n / nT) * TAU + (h3(n, 1, 0, 8697) - 0.5) * 0.4;
+          const life = vn(n * 3.1 + s * 2.2, 2, 8696);
+          if (life < 0.3) continue;
+          const e = poolEdge(ang, s) * R * (0.78 + 0.18 * h3(n, 2, 0, 8698));
+          const [fi, fj] = onCanvas(P.x + Math.cos(ang) * e, P.y + Math.sin(ang) * e, 0);
+          const h = (12 + 40 * (life - 0.3) * (0.4 + 0.6 * h3(n, 3, 0, 8699))) * Math.min(1, R / POOL.r + 0.2);
+          flameTongue(pic, top, Math.round(fi), Math.round(fj), h, 3 + h * 0.16, n + 20, t, P.y * 0.8660254 + Math.sin(ang) * e * 0.87, 0.95, 1.2);
+        }
+      }
+      if (s > 0.15) smokeFrom(pic, top, P.x, P.y, 6, s - 0.15, 911, 1.4, POOL.life - 0.2);
+    }
+    return;
+  }
+  // THE GAZE
+  if (B.beam && B.eye && B.gaze) {
+    // (THE BEAM: out of his eye's front down to where it lands, licking at its edges, a white-hot core; breaking up as it gutters)
+    const Bm = B.beam;
+    const g = B.gaze;
+    const sw = B.swell ?? 1;
+    const E0: [number, number, number] = [B.eye[0] + g[0] * 22 * sw, B.eye[1] + g[1] * 22 * sw, B.eye[2] + g[2] * 22 * sw];
+    const E1: [number, number, number] = [Bm.ax, Bm.ay, 2];
+    const [i0, j0] = onCanvas(E0[0], E0[1], E0[2]);
+    const [i1, j1] = onCanvas(E1[0], E1[1], E1[2]);
+    const len = Math.hypot(i1 - i0, j1 - j0);
+    const ui = (i1 - i0) / len;
+    const uj = (j1 - j0) / len;
+    // (its thickness on the screen for a thickness across it in the world: as seen across)
+    const sx = SEEN * Math.abs(uj) + (1 / R3) * Math.abs(ui);
+    for (let st = 0; st <= len; st += 0.5) {
+      const u = st / len;
+      // (guttering: gouts of it, gaps between, each gout narrowing raggedly to its ends)
+      const gap = Bm.k < 1 ? vn(u * 8 - Bm.s * 25, 3, 8701) - (Bm.k + 0.1) : -1;
+      if (gap > 0) continue;
+      const taper = Math.sqrt(clamp01(-gap / 0.14));
+      const ci = i0 + ui * st;
+      const cj = j0 + uj * st;
+      const x = lerp(E0[0], E1[0], u);
+      const y = lerp(E0[1], E1[1], u);
+      const z = lerp(E0[2], E1[2], u);
+      const nr = y * 0.8660254 + z * 0.5 + 30;
+      const hw0 = beamEdge(u, Bm.s, -1) * sx * (0.45 + 0.55 * Bm.k) * taper;
+      const hw1 = beamEdge(u, Bm.s, 1) * sx * (0.45 + 0.55 * Bm.k) * taper;
+      if (hw0 + hw1 < 1) continue;
+      for (let o = -Math.ceil(hw0); o <= Math.ceil(hw1); o++) {
+        const hw = o < 0 ? hw0 : hw1;
+        const e = Math.abs(o) / Math.max(0.7, hw);
+        if (e > 1) continue;
+        const i = Math.round(ci - uj * o);
+        const j = Math.round(cj + ui * o);
+        if (!freeAt(top, i, j, nr)) continue;
+        // (streaked along its length, hottest in its heart)
+        const heat = (1 - e) * (0.8 + 0.35 * vn(u * 7 - Bm.s * 45, o * 0.55, 8702));
+        const c = heat > 0.75 ? BEAMC[5] : heat > 0.55 ? BEAMC[4] : heat > 0.36 ? BEAMC[3] : heat > 0.18 ? BEAMC[2] : BEAMC[1];
+        pic.over(i, j, c[0], c[1], c[2], e > 0.85 ? 170 : 255);
+      }
+    }
+    // (where it lands: a burst of fire, flames licking up along the line from it)
+    const G = Math.hypot(Bm.ex - Bm.sx, Bm.ey - Bm.sy);
+    const ux = (Bm.ex - Bm.sx) / G;
+    const uy = (Bm.ey - Bm.sy) / G;
+    const va = (Bm.ax - Bm.sx) * ux + (Bm.ay - Bm.sy) * uy;
+    const out = Bm.reach * Math.max(va, G - va);
+    for (let v = 0; v <= G; v += 7) {
+      if (Math.abs(v - va) > out) continue;
+      const side = (vn(v * 0.3, Math.floor(Bm.s * 20), 8703) - 0.5) * BEAM.w * 0.5;
+      const x = Bm.sx + ux * v - uy * side;
+      const y = Bm.sy + uy * v + ux * side;
+      const [fi, fj] = onCanvas(x, y, 0);
+      const near = 1 - Math.min(1, Math.abs(v - va) / 160);
+      const h = (12 + 22 * vn(v * 0.1 + Bm.s * 7, 5, 8704) + 18 * near) * (0.35 + 0.65 * Bm.k);
+      flameTongue(pic, top, Math.round(fi), Math.round(fj), h, 3 + h * 0.15, Math.round(v) + 300, t, y * 0.8660254, 1, 1.25);
+    }
+  }
+  if (B.scorch) {
+    // (flames dying just behind the beam where it has passed; smoke rising off the scorch, each wisp from when the beam passed there)
+    const Sc = B.scorch;
+    for (let n = 0; n < 26; n++) {
+      const u = (n + 0.5) / 26;
+      const age = (Sc.f - (GAZE_FIRE + u * GAZE.sweep)) / EYE_FPS;
+      if (age < 0.05 || age > 0.45) continue;
+      const ang = lerp(Sc.a0, Sc.a1, u) + (h3(n, 1, 0, 8741) - 0.5) * 0.02;
+      const Ln = beamLine(ang);
+      const len = Math.hypot(Ln.ex - Ln.sx, Ln.ey - Ln.sy);
+      for (let m = 0; m < 4; m++) {
+        const v = len * (0.08 + 0.84 * h3(n, m, 2, 8742));
+        const x = Ln.sx + ((Ln.ex - Ln.sx) * v) / len;
+        const y = Ln.sy + ((Ln.ey - Ln.sy) * v) / len;
+        const [fi, fj] = onCanvas(x, y, 0);
+        const h = (8 + 16 * h3(n, m, 3, 8743)) * (1 - age / 0.45);
+        flameTongue(pic, top, Math.round(fi), Math.round(fj), h, 2 + h * 0.15, n * 7 + m + 500, t, y * 0.8660254, 0.9, 1);
+      }
+    }
+    for (let n = 0; n < 9; n++) {
+      const u = (n + 0.5) / 9;
+      const age = (Sc.f - (GAZE_FIRE + u * GAZE.sweep)) / EYE_FPS;
+      if (age < 0.15) continue;
+      const Ln = beamLine(lerp(Sc.a0, Sc.a1, u));
+      const len = Math.hypot(Ln.ex - Ln.sx, Ln.ey - Ln.sy);
+      const v = len * (0.2 + 0.5 * h3(n, 1, 0, 8744));
+      smokeFrom(pic, top, Ln.sx + ((Ln.ex - Ln.sx) * v) / len, Ln.sy + ((Ln.ey - Ln.sy) * v) / len, 2, age - 0.15, 930 + n, 1.15, GAZE.scorch - 0.3);
+    }
+  }
+  if (B.eye && B.gaze && (B.flare ?? 0) > 0.02) {
+    // (his iris flaring: a white-gold star at its middle, growing)
+    const g = B.gaze;
+    const sw = B.swell ?? 1;
+    const P0: [number, number, number] = [B.eye[0] + g[0] * 22 * sw, B.eye[1] + g[1] * 22 * sw, B.eye[2] + g[2] * 22 * sw];
+    const [ci, cj] = onCanvas(P0[0], P0[1], P0[2]);
+    const fl = B.flare as number;
+    const R = 2 + 7 * fl;
+    for (let dj = -Math.ceil(R * 1.6); dj <= Math.ceil(R * 1.6); dj++) for (let di = -Math.ceil(R * 1.6); di <= Math.ceil(R * 1.6); di++) {
+      const ang = Math.atan2(dj, di);
+      const ray = 1 + 0.6 * Math.max(0, Math.cos(ang * 4 + F.k * 0.7)) * vn(ang * 3 + F.k * 0.5, 1, 8711);
+      const d = Math.hypot(di, dj) / (R * ray);
+      if (d > 1) continue;
+      const c = d < 0.35 ? BEAMC[5] : d < 0.65 ? BEAMC[4] : fl > 0.5 ? BEAMC[3] : BEAMC[2];
+      pic.over(Math.round(ci + di), Math.round(cj + dj), c[0], c[1], c[2], 255 * Math.min(1, fl * 1.6) * (d > 0.8 ? 0.6 : 1));
+    }
+  }
+  if (B.eye && B.smoke !== undefined) smokeFrom(pic, top, B.eye[0], B.eye[1], B.eye[2] + 10, B.smoke, 940, 0.7, 1.6);
+}
+/** The lights of his body's attacks: the glob's and the pool's burning, the beam along its line, his eye's flare. */
+function bodyLights(pic: Pic, F: EyeFrame): void {
+  const B = F.bfx as BodyFx;
+  const GOLD = hex(FLAME[3]);
+  const PINK = hex(FLAME[2]);
+  if (B.glob) {
+    const [ci, cj] = onCanvas(B.glob.x, B.glob.y, B.glob.z);
+    pic.light(ci, cj, 60, GOLD, 0.18);
+  }
+  if (B.splash) {
+    const R = poolR(B.splash.s);
+    const [ci, cj] = onCanvas(B.splash.x, B.splash.y, 0);
+    if (R > 0) pic.light(ci, cj - 6, 40 + R * 1.2, GOLD, 0.16 * Math.min(1, R / POOL.r + 0.3));
+    if (B.splash.s < 0.3) pic.light(ci, cj - 10, 160, [255, 240, 200], 0.3 * (1 - B.splash.s / 0.3));
+  }
+  if (B.beam) {
+    const Bm = B.beam;
+    for (let n = 0; n <= 4; n++) {
+      const [ci, cj] = onCanvas(lerp(Bm.sx, Bm.ex, n / 4), lerp(Bm.sy, Bm.ey, n / 4), 0);
+      pic.light(ci, cj, 110, GOLD, 0.2 * Bm.k);
+    }
+    const [ai, aj] = onCanvas(Bm.ax, Bm.ay, 0);
+    pic.light(ai, aj, 150, [255, 245, 220], 0.28 * Bm.k);
+  }
+  if (B.eye && (B.flare ?? 0) > 0.02) {
+    const [ci, cj] = onCanvas(B.eye[0], B.eye[1], B.eye[2]);
+    const fl = B.flare as number;
+    pic.light(ci, cj, 50 + 90 * fl, fl > 0.6 ? GOLD : PINK, 0.15 + 0.3 * fl);
+  }
+}
+/** WHAT HIS BODY'S ATTACKS FLING: the splash's gobs and spatter of bile (kinds 10 and 11), flung out all round and burning where they
+ *  fall; sparks and chips of stone where the beam lands. */
+function bodyFlyers(F: EyeFrame): Array<[Flyer, number]> {
+  const B = F.bfx as BodyFx;
+  const out: Array<[Flyer, number]> = [];
+  if (B.splash && B.splash.s < 1.6) {
+    const P = B.splash;
+    for (let n = 0; n < 70; n++) {
+      const kind = (n % 3 === 0 ? 10 : 11) as 10 | 11;
+      const a = h3(n, 1, 0, 8721) * TAU;
+      const sp = 60 + 220 * h3(n, 2, 0, 8722);
+      out.push([{ x: P.x + Math.cos(a) * 20, y: P.y + Math.sin(a) * 16, z: 6, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.8, vz: 120 + 260 * h3(n, 3, 0, 8723), t0: 0, kind, size: kind === 10 ? 2.4 + 3 * h3(n, 4, 0, 8724) : 1 + (h3(n, 4, 0, 8724) < 0.4 ? 1 : 0), seed: 8720 + n }, P.s]);
+    }
+  }
+  if (B.beam && B.beam.k > 0.3) {
+    // (sparks and chips of stone flung up where the beam comes down, all along its sweep: born there each frame, flying, falling)
+    for (let back = 0; back < 14; back++) {
+      const a = beamAngle(B.f - back);
+      if (a === null) continue;
+      const Ln = beamLine(a);
+      for (let n = 0; n < 4; n++) {
+        const seed = (B.f - back) * 4 + n;
+        const ang = h3(seed, 1, 0, 8731) * TAU;
+        const sp = 140 + 240 * h3(seed, 2, 0, 8732);
+        const v = (h3(seed, 5, 0, 8735) - 0.5) * 70;
+        out.push([{ x: Ln.ax + Math.sin(a) * v, y: Ln.ay + Math.cos(a) * v, z: 4, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp * 0.7, vz: 60 + 220 * h3(seed, 3, 0, 8733), t0: 0, kind: n % 4 === 0 ? 5 : 7, size: 1, seed: 8730 + seed }, back / EYE_FPS]);
+      }
+    }
+  }
+  return out;
+}
+
 /** THE FRAME: the phone's screen (SW x SH picture pixels), thrown by the shake. `tf` the film's own clock (for the hero's breath). */
 function frameOf(F: EyeFrame, tf: number): Pic {
   const S = scenery();
@@ -2507,6 +3238,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   // slime trail, the stone wet where a wave has passed, a smash's rings, a dying one's ichor and bubbles
   if (F.fx) armFxUnder(pic, F, top, S.water, t);
   if (F.sfx) shovelUnder(pic, F, top, S.water, t);
+  if (F.bfx) bodyUnder(pic, F, top, S.water);
   // HIM OVER THE WATER, and the after-images of a strike
   for (let q = 0; q < n; q++) {
     if (ghost[q * 4 + 3] && !(top.who[q] >= 0 && top.z[q] >= -0.5)) {
@@ -2719,6 +3451,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   // (the tentacles' own: what a slam on the stone throws, a smash into the water, his ichor, the crash)
   if (F.fx) for (const [f, s2] of armFlyers(F.fx)) flyers.push([f, s2]);
   if (F.sfx) for (const [f, s2] of shovelFlyers(F)) flyers.push([f, s2]);
+  if (F.bfx) for (const [f, s2] of bodyFlyers(F)) flyers.push([f, s2]);
   if (PN) for (const [f, s2] of piecesFlyers(PN)) flyers.push([f, s2]);
   const hiddenAt = (i: number, j: number, nr: number): boolean => {
     if (i < 0 || j < 0 || i >= CW || j >= CH) return true;
@@ -2728,7 +3461,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   for (const [f, s] of flyers) {
     if (s < 0) continue;
     const land = landOf(f);
-    const slime = f.kind === 1 || f.kind === 3 || f.kind === 4;
+    const slime = f.kind === 1 || f.kind === 3 || f.kind === 4 || f.kind === 10 || f.kind === 11;
     const seed = f.seed ?? 0;
     // (A CHUNK OF THE PAVING: a broken piece, its top worn and lit, its broken sides dark, tumbling as it flies, bouncing on the stone,
     // settling and lying a while)
@@ -2830,7 +3563,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       const j0 = Math.round(cj);
       if (i0 < 2 || j0 < 2 || i0 >= CW - 2 || j0 >= CH - 2) continue;
       const onWater = S.water[j0 * CW + i0] === 1;
-      const sz = f.kind === 3 ? f.size * 0.45 : f.kind === 1 || f.kind === 4 ? f.size : f.kind === 0 ? 0.8 : 1;
+      const sz = f.kind === 3 ? f.size * 0.45 : f.kind === 1 || f.kind === 4 || f.kind === 10 ? f.size : f.kind === 0 ? 0.8 : 1;
       if (onWater) {
         // (into the water: a crown of it thrown up round where it went in, drops jumping, a ring of foam spreading)
         const life = 0.3 + 0.12 * sz;
@@ -2888,7 +3621,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
           const lobe = 1 + 0.28 * Math.sin(ang * 3 + seed) + 0.18 * Math.sin(ang * 5 + seed * 2);
           const d = Math.hypot(di / w0, dj / h0) / lobe;
           if (d > 1) continue;
-          const R6 = f.kind === 4 ? ICHOR : seed % 5 < 2 ? MELT : SLIME;
+          const R6 = f.kind === 10 || f.kind === 11 ? BILE_RAMP : f.kind === 4 ? ICHOR : seed % 5 < 2 ? MELT : SLIME;
           const c = f.kind === 0 ? SPIT[3] : d > 0.8 ? R6[0] : dj < -h0 * 0.2 && di < w0 * 0.2 ? R6[4] : d < 0.5 ? R6[3] : R6[2];
           pic.over(i0 + di, j0 + dj, c[0], c[1], c[2], 255 * fade);
         }
@@ -2917,20 +3650,20 @@ function frameOf(F: EyeFrame, tf: number): Pic {
     const uj = vj / vl;
     const i0 = Math.round(ci);
     const j0 = Math.round(cj);
-    if (f.kind === 0 || f.kind === 2) {
+    if (f.kind === 0 || f.kind === 2 || f.kind === 11) {
       // (a drop: a short streak along the way it flies, its head pale and lit, a glint)
       const len = Math.min(9, 1 + vl * 0.45);
       for (let st = 0; st <= len; st++) {
         const i = Math.round(ci - ui * st);
         const j = Math.round(cj - uj * st);
         if (hiddenAt(i, j, nr)) continue;
-        const c = f.kind === 2 ? (st === 0 ? SPRAY : FOAM[3]) : st === 0 ? CREAM[4] : st < 3 ? SPIT[4] : SPIT[3];
+        const c = f.kind === 11 ? BILE_RAMP[st === 0 ? 4 : st < 3 ? 3 : 2] : f.kind === 2 ? (st === 0 ? SPRAY : FOAM[3]) : st === 0 ? CREAM[4] : st < 3 ? SPIT[4] : SPIT[3];
         pic.over(i, j, c[0], c[1], c[2], st === 0 ? 255 : 210 * (1 - st / (len + 1)));
         if (f.size > 1 && st === 0 && !hiddenAt(i + 1, j, nr)) pic.over(i + 1, j, c[0], c[1], c[2], 220);
       }
       continue;
     }
-    if (f.kind === 1 || f.kind === 4) {
+    if (f.kind === 1 || f.kind === 4 || f.kind === 10) {
       // (a gob of slime: a drop drawn out along the way it flies, round at its head, lit on its upper left, dark beneath, a glint; a
       // thread of it trailing)
       const r = f.size;
@@ -2948,7 +3681,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
           if (hiddenAt(i, j, nr)) continue;
           // (slime, or the melt of his flesh; wet: its lit side pale, its rim dark)
           const lit = -(di + dj) / (r + 1);
-          const R5 = f.kind === 4 ? ICHOR : seed % 5 < 2 ? MELT : SLIME;
+          const R5 = f.kind === 10 ? BILE_RAMP : f.kind === 4 ? ICHOR : seed % 5 < 2 ? MELT : SLIME;
           const edge = Math.hypot(back, ac) > rr - 0.9;
           const c = lit > 0.5 ? R5[4] : lit > 0.15 ? R5[3] : edge || lit < -0.45 ? R5[0] : R5[2];
           pic.over(i, j, c[0], c[1], c[2], 255);
@@ -2986,6 +3719,8 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       }
     }
   }
+  // HIS BODY'S ATTACKS, over what is round them
+  if (F.bfx) bodyOver(pic, F, top);
   // THE PIECES BEFORE HIM, AND THE WARRIOR AT HIS SPOT, breathing (his shovel: but those on the stone, and the reeds off the end where
   // he is up; each where nothing of him or his tentacles is in front of it)
   if (!F.sfx) pic.lay(S.front, 0, 0, 0, 0);
@@ -3064,6 +3799,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   }
   // HIS LIGHTS (his eye's fire pulsing through the water; his throat's, flaring as he roars)
   for (const l of lights) pic.light(l.x, l.y, l.r, l.c, Math.min(0.6, l.a * (F.move === 'lurk' || (ent && k < 22) ? Wt.pulse : 1)));
+  if (F.bfx) bodyLights(pic, F);
   if (ent && roarS >= -0.05 && roarS < 1) {
     const fl = Math.exp(-Math.max(0, roarS) / 0.25);
     const [mi, mj] = onCanvas(0, -20, 50);
@@ -3366,6 +4102,37 @@ if (mode === 'paint') {
     missing.set(kd, (missing.get(kd) ?? 0) + 1);
   }
   process.stdout.write(`${want.size} layers: ${[...byKind].map(([a, b]) => `${a} ${b}`).join(', ')}; painted ${[...want].filter((f) => fs.existsSync(f)).length}; to paint: ${[...missing].map(([a, b]) => `${a} ${b}`).join(', ')}\n`);
+}
+if (mode === 'cost5') {
+  // (what his body's two attacks cost, as painted here: their own layers only (his stand's are his stand's): each layer's box (two
+  // picture pixels to a game pixel, 4 bytes a pixel) and its packed file; by what it is)
+  const seen = new Set<string>();
+  const by = new Map<string, { n: number; raw: number; packed: number }>();
+  for (const mv of ['b1', 'g1'] as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(frameAt(mv, k))) {
+    const kd = L.key.startsWith('J.b') ? 'the bile: his jaws' : L.key.startsWith('S.b') ? 'the bile: his drool' : L.key.startsWith('T.b') ? 'the bile: his tongue-eye' : L.key.startsWith('T.g') ? 'the gaze: his tongue-eye' : '';
+    if (!kd) continue;
+    const f = fileOf(L);
+    if (seen.has(f) || !fs.existsSync(f)) continue;
+    seen.add(f);
+    const b = fs.readFileSync(f);
+    const hl = b.readUInt32LE(0);
+    const meta = JSON.parse(b.subarray(4, 4 + hl).toString()) as { w: number; h: number };
+    const e = by.get(kd) ?? { n: 0, raw: 0, packed: 0 };
+    e.n++;
+    e.raw += meta.w * meta.h * 4;
+    e.packed += b.length;
+    by.set(kd, e);
+  }
+  let n = 0;
+  let raw = 0;
+  let packed = 0;
+  for (const [k, e] of by) {
+    process.stdout.write(`${k}: ${e.n} layers, ${(e.raw / 1e6).toFixed(1)} MB raw (${(e.raw / e.n / 1e6).toFixed(2)} MB a layer), ${(e.packed / 1e6).toFixed(1)} MB packed\n`);
+    n += e.n;
+    raw += e.raw;
+    packed += e.packed;
+  }
+  process.stdout.write(`all: ${n} layers, ${(raw / 1e6).toFixed(1)} MB raw, ${(packed / 1e6).toFixed(1)} MB packed\n`);
 }
 if (mode === 'cost3') {
   // (what his shovel costs, as painted here: each layer's box (two picture pixels to a game pixel, 4 bytes a pixel) and its packed file;
