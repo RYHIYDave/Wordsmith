@@ -1339,6 +1339,8 @@ export class Renderer {
   goal: Station | null = null;
   /** QUEST MARKERS (game/quest_marks.ts): where each floats this frame (its point; screen pixels). */
   private questMarks: { x: number; y: number }[] = [];
+  /** (the same) the top of each of the town's people's heads as last drawn (screen pixels), by their kind. */
+  private folkHeads = new Map<string, { x: number; y: number }>();
   /** Touch: the monster the hero is locked onto (its id): a ring is drawn round its feet. Set every frame by the controls. */
   lockId: number | null = null;
   /** THE WARLOCK: what his full pact bar says to do, by what is played with (main.ts sets it each frame). */
@@ -3164,6 +3166,7 @@ export class Renderer {
         if (ts.lights) this.propLit.push({ s: ts, x: Math.round(tx), y: Math.round(ty) });
       }
     }
+    this.folkHeads.clear();
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx] && !this.openGround) continue;
       // (THE HEADSMAN'S YARD: its scaffold and its gallows, in strips each in its place; what stands on their other tiles is nothing to see)
@@ -3220,6 +3223,8 @@ export class Renderer {
             const to = turnedTo(p.x, p.y, game.hero.x, game.hero.y, this.folkTurn.get(p.kind) ?? null);
             this.folkTurn.set(p.kind, to);
             sp = townSprite(art, p.kind, p.variant, t, to);
+            // (QUEST MARKERS: where the top of their head is, this frame)
+            if (sp) this.folkHeads.set(p.kind, { x: sx, y: sy - sp.ay });
           } else sp = L.town && !isTownFlat(p.kind) ? townSprite(art, p.kind, p.variant, t) : null;
           break;
       }
@@ -3298,7 +3303,14 @@ export class Renderer {
     if (QUEST_MARKS.on) {
       if (L.town) {
         const who = game.questGivers();
-        for (const st of L.stations) if (who.includes(st.kind)) this.questMarks.push({ x: wx(cam, st.x, st.y), y: wy(cam, st.x, st.y) - (st.lift ?? NAME_LIFT[st.kind]) - 4 });
+        // (over the person's head where they are drawn standing; else over their name)
+        for (const st of L.stations) {
+          if (!who.includes(st.kind)) continue;
+          const head = this.folkHeads.get(st.kind);
+          const name = { x: wx(cam, st.x, st.y), y: wy(cam, st.x, st.y) - (st.lift ?? NAME_LIFT[st.kind]) };
+          // (over the name instead where the name is written at the head, so that the two do not lie one on the other)
+          this.questMarks.push(head && Math.abs(head.y - name.y) > 14 ? { x: head.x, y: head.y - 4 } : { x: name.x, y: name.y - 4 });
+        }
       } else {
         const w = L.ways?.way;
         if (w && game.turnInFor() && L.explored[Math.floor(w.y) * f.w + Math.floor(w.x)]) this.questMarks.push({ x: wx(cam, w.x, w.y), y: wy(cam, w.x, w.y) - WAY_MARK_LIFT });
