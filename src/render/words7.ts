@@ -17,11 +17,14 @@
 // and the hero's glass reflection (heroW7, Mirroring). The playtest plays the looks by hand through
 // `__dbg.words7` (demoW7, at the foot of this file); the rules will one day call `playW7`.
 
-import { FIGURE_SIZE, figureOf } from '../art/bestiary';
+import type { ActorArt, Clip } from '../art/actor_types';
+import { FIGURE_SIZE, figureOf, makeBestiary } from '../art/bestiary';
+import type { Bestiary } from '../art/bestiary';
 import { P } from '../art/palette';
-import { Px } from '../engine/px';
+import { Px, flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
+import { MONSTERS } from '../game/defs';
 import type { Game } from '../game/game';
 import type { Monster } from '../game/state';
 import type { Cam, Fallen, Fx } from './fx';
@@ -148,6 +151,11 @@ export const W7_TIME = {
   spirit: 6,
   spiritBuild: 0.45,
   spiritFade: 0.6,
+  /** ...a little Shade, this much of the Shade's size (his word: “Maybe 30% smaller”); its claw rake: the claws across in this, the gashes closing up after over this, its own follow-through this. */
+  spiritScale: 0.7,
+  rakeStrike: 0.06,
+  rakeFade: 0.26,
+  rakeFollow: 0.4,
   rise: 0.8,
   /**
    * Culling: after his blow lands, an instant held (the one it takes stopped, a violet glint on it); then the scythe's crescent
@@ -190,8 +198,8 @@ export const W7_BEATS: Record<string, { build: number; hit: number; fade: number
   'bleeding:behind': { build: 0.22, hit: 0, fade: 0.5, is: 'the briars burst up out of the floor; they stand, swaying, cutting what walks in them; they sink back' },
   'bleeding:monster': { build: 0.05, hit: 0.3, fade: 0.3, is: 'the slash across him; his blood flung off; then drips while he bleeds' },
   'reaping:front': { build: 0.15, hit: 0.55, fade: 0.25, is: 'the soul torn out of the body; it streaks to him; a flare of soul-light as he takes it in' },
-  'reaping:behind': { build: 0.45, hit: 0, fade: 0.6, is: "the spirit rises out of the body; fights for him (the rules' 6 s), its edge his cyan; rises away and is gone" },
-  'reaping:behind:hit': { build: 0.05, hit: 0.06, fade: 0.24, is: "the spirit's blow: a slash of soul-light" },
+  'reaping:behind': { build: 0.45, hit: 0, fade: 0.6, is: "the spirit rises out of the body in soul-light: always a little Shade, the early floors' Shade in greys at 0.7 its size, its edge his cyan, moving as the Shade moves; fights for him (the rules' 6 s); rises away and is gone" },
+  'reaping:behind:hit': { build: 0, hit: 0.06, fade: 0.26, is: "its claw rake: its claws drawn back and held while the rules wind its blow up (the Shade's own wind-up, shown on it); at the blow, a fast rake, four curved claw gashes torn across what it strikes in grey-white, smeared, its cyan glinting at their points; they close up from their tails, dimming (its own follow-through 0.4 s)" },
   'reaping:monster': { build: 0.2, hit: 0.8, fade: 0.4, is: "the enemy's fire kindles round the body; it lurches up out of its fall; the fire dies" },
   'culling:front': { build: 0.16, hit: 0.07, fade: 0.3, is: "his blow lands: an instant held, the one it takes stopped, a violet glint on it; the scythe's crescent sweeps through it in two pictures, smeared, and it is cut in two, its halves sliding apart as it falls; the crescent sweeps on, dimming and thinning away" },
   'culling:behind': { build: 0.3, hit: 0, fade: 0.3, is: 'the mark written on the floor, breathing, for as long as it lies; gone over its last 0.3 s' },
@@ -1439,7 +1447,7 @@ function reapBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game, l
   const [bx, by] = S(cam, a.x, a.y);
   if (layer === 'floor') {
     // a pool of pale light under it, and a thread of mist back to the body it rose from while it rises
-    mist(g, sx, sy, 14, 6, [C[1], C[2], C[3]], 0.45 * k, a.seed, a.t, 0.2);
+    mist(g, sx, sy, 12, 5, [C[1], C[2], C[3]], 0.45 * (1 - build) + 0.2 * k, a.seed, a.t, 0.2);
     const thread = clamp01(1 - (a.t - W7_TIME.spiritBuild) / 0.8);
     if (thread > 0) {
       for (let i = 0; i <= 12; i++) {
@@ -1460,30 +1468,78 @@ function reapBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game, l
     mist(g, bx, by - 3, 8, 5, [C[2], C[3], C[4]], 1.1 * (1 - build), a.seed + 2, a.t, 1.4);
   }
   // grave-mist curling up round its feet, motes of soul-light rising off it (faster as it goes)
-  mist(g, sx, sy - 4, 11, 6, [C[2], C[3], C[4]], 0.55 * k + 0.4 * (1 - going), a.seed + 1, a.t, 1.2);
+  mist(g, sx, sy - 4, 9, 5, [C[2], C[3], C[4]], 0.55 * (1 - build) + 0.5 * (1 - going), a.seed + 1, a.t, 1.2);
   for (let i = 0; i < 7 + Math.round(8 * (1 - going)); i++) {
     const ph = (a.t * (0.8 + 1.5 * (1 - going)) + hash2(i, a.seed, 1)) % 1;
     dot(g, sx - 9 + hash2(i, a.seed, 2) * 18 + Math.sin(ph * 6 + i) * 2, sy - 4 - ph * 34, ph < 0.5 ? C[5] : C[4]);
   }
   // (a blow at a moment of its own, as the stills had it)
   const foe = live(a, game, 1);
-  if (foe && a.pts.length && a.t >= a.pts[0] && a.t - a.pts[0] < 0.3) spiritSlash(g, cam, foe.x, foe.y, topOf(foe), a.t - a.pts[0]);
+  if (foe && a.pts.length && a.t >= a.pts[0] && a.t - a.pts[0] < 0.32) clawRake(g, cam, foe.x, foe.y, topOf(foe), a.t - a.pts[0], Math.sign(wx(cam, foe.x, foe.y) - wx(cam, sp.x, sp.y)) || 1, a.seed);
 }
 
-/** A spirit's blow (spiritHit): a pale slash of soul-light on what it strikes, its edge cyan (a friend's). */
+/** A spirit's blow (spiritHit): its claw rake across what it strikes. */
 function spiritBlow(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game, layer: 'floor' | 'air'): void {
   if (layer !== 'air') return;
   const foe = live(a, game, 0);
-  spiritSlash(g, cam, foe ? foe.x : a.x, foe ? foe.y : a.y, foe ? topOf(foe) : 26, a.t);
+  const way = Math.sign(wx(cam, foe ? foe.x : a.x, foe ? foe.y : a.y) - wx(cam, a.x1, a.y1)) || 1;
+  clawRake(g, cam, foe ? foe.x : a.x, foe ? foe.y : a.y, foe ? topOf(foe) : 26, a.t, way, a.seed);
 }
 
-function spiritSlash(g: CanvasRenderingContext2D, cam: Cam, x: number, y: number, top: number, since: number): void {
-  const C = W7_RAMP.reaping;
-  if (since >= 0.3) return;
-  const [fx0, fy0] = S(cam, x, y, top * 0.5);
-  const k = clamp01(since / 0.05);
-  const fade = clamp01(1 - (since - 0.06) / 0.24);
-  smear(g, fx0 - 2, fy0, 13, 10, -2.3, -2.3 + 2.6 * k, 4, [C[1], C[2], C[3], C[4], W7_FRIEND[3], C[5]], 0.15, fade);
+/** Grey-white of the claws' gashes, darkest to brightest. */
+const CLAW: readonly string[] = ['#3a3a42', '#6a6a74', '#9c9ca6', '#cacad2', '#f2f2f6'];
+
+/**
+ * A CLAW RAKE across what it strikes (`since` seconds after the blow): four curved gashes side by side, slashed down across it
+ * the way the rake went (`way`, across the screen), torn across in the rake's two pictures, tapered at both ends, thickest a
+ * little past their start; grey-white, his cyan glinting at their points as they go; then they close up from their tails,
+ * dimming a tone at a time. Never a ruled line: each is a curve, bowed, its width rising and falling along it.
+ */
+function clawRake(g: CanvasRenderingContext2D, cam: Cam, x: number, y: number, top: number, since: number, way: number, seed: number): void {
+  const strike = W7_TIME.rakeStrike;
+  const fade = W7_TIME.rakeFade;
+  if (since < 0 || since >= strike + fade) return;
+  const [cx, cy] = S(cam, x, y, top * 0.55);
+  const k = clamp01(since / strike);
+  const after = clamp01((since - strike) / fade);
+  const dim = after < 0.35 ? 0 : after < 0.6 ? 1 : after < 0.85 ? 2 : 3;
+  const tone = (i: number): string => CLAW[Math.max(0, i - dim)];
+  // the rake's way down across it: from up on its near side to low on its far side; the gashes side by side square to that
+  const dx = way * 19;
+  const dy = 14;
+  const L = Math.hypot(dx, dy);
+  const nx = -dy / L;
+  const ny = dx / L;
+  for (let j = 0; j < 4; j++) {
+    const off = (j - 1.5) * 5;
+    const len = 1 - Math.abs(j - 1.4) * 0.12;
+    const x0 = cx - dx * 0.5 * len + nx * off;
+    const y0 = cy - dy * 0.5 * len + ny * off - j * 0.6;
+    const x2 = cx + dx * 0.5 * len + nx * off;
+    const y2 = cy + dy * 0.5 * len + ny * off - j * 0.6;
+    // bowed: its middle pushed out the way a claw's sweep curves
+    const bow = 3.6 + hash2(j, seed, 3) * 1.4;
+    const x1 = (x0 + x2) / 2 - nx * bow;
+    const y1 = (y0 + y2) / 2 - ny * bow;
+    const q0 = after;
+    const q1 = k;
+    const n = Math.ceil(L * len * 1.4);
+    let tip: [number, number] | null = null;
+    for (let i = 0; i <= n; i++) {
+      const q = i / n;
+      if (q < q0 || q > q1) continue;
+      const [px, py] = quad(x0, y0, x1, y1, x2, y2, q);
+      // thickest a little past its start, drawn to a point at both ends: a bright line, edged dark where it is widest
+      const w = Math.sin(Math.PI * Math.min(1, Math.max(0, q) ** 0.75)) * (1 - 0.4 * after);
+      dot(g, px, py, tone(w > 0.45 ? 4 : 3));
+      if (w > 0.7) {
+        dot(g, px + nx, py + ny, tone(2));
+        dot(g, px - nx, py - ny, tone(1));
+      }
+      tip = [px, py];
+    }
+    if (tip && since < strike + 0.05) dot(g, tip[0], tip[1], W7_FRIEND[3]);
+  }
 }
 
 /** On a monster: once dead it rises again, lurching up out of its fall, the enemy's fire licking up round it, its mist pink. */
@@ -2792,8 +2848,7 @@ export function lookW7(m: Monster, sp: Sprite): { sp: Sprite; alpha: number; tin
   for (const a of W7.acts) {
     if (a.word === 'reaping' && a.side === 'behind' && a.part === '' && a.ids[0] === m.id) {
       const [build, going] = spiritK(a);
-      const bob = Math.round(Math.sin(W7.clock * 3 + m.id) * 0.8);
-      return { sp: remade(sp, 'soul'), alpha: 0.88 * build * going, tint: null, lift: Math.round(3 * build + 8 * (1 - going)) + bob };
+      return { sp: spiritPicture(m, sp), alpha: 0.92 * build * going, tint: null, lift: Math.round(2 * build + 8 * (1 - going)) };
     }
     if (a.word === 'culling' && a.side === 'front' && a.ids[0] === m.id) {
       // (one still standing when the rules cull it: held, glinting; split as the blade goes through)
@@ -2816,8 +2871,130 @@ export function lookW7(m: Monster, sp: Sprite): { sp: Sprite; alpha: number; tin
     }
     if (a.word === 'mirroring' && a.side === 'monster' && a.ids[0] === m.id && a.t < 0.15) return { sp, alpha: 1, tint: ['#ffd8e8', 0.4 * (1 - a.t / 0.15)], lift: 0 };
   }
-  if ((m as { spirit?: unknown }).spirit) return { sp: remade(sp, 'soul'), alpha: 0.88, tint: null, lift: 3 + Math.round(Math.sin(W7.clock * 3 + m.id) * 0.8) };
+  if ((m as { spirit?: unknown }).spirit) return { sp: spiritPicture(m, sp), alpha: 0.92, tint: null, lift: 2 };
   return null;
+}
+
+/**
+ * REAPING'S SPIRIT, AT HIS WORD (9 Nov, 13:38): always a little Shade, whatever was slain: the early floors' Shade (its picture
+ * as the game shows it: the bestiary's, which is the frost Shade while floor 2's look is on, as it is), in greys, 0.7 its
+ * size, its edge his cyan. It moves as the Shade moves: its own stand and walk at their own paces; its claws drawn back as the
+ * rules wind its blow up (its wind-up played to the rules' clock, as a monster's is); its rake and follow-through from the blow
+ * (spiritHit) on.
+ */
+let shadeBook: Bestiary | null = null;
+export function shadeArt(): ActorArt {
+  if (!shadeBook) shadeBook = makeBestiary();
+  return shadeBook.of('shade');
+}
+const clipAt = (c: Clip, t: number): Sprite => c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(t * c.fps + 1e-6)))];
+/** The Shade's own picture the spirit `m` shows now, as it stands, walks, winds up or rakes (before it is greyed). */
+export function shadeFrameOf(m: Monster): Sprite {
+  const art = shadeArt();
+  const set = m.fx + m.fy < -0.2 ? art.back : art.front;
+  const clip = set.clips?.attack;
+  const hit = W7.acts.find((a) => a.word === 'reaping' && a.part === 'hit' && a.ids[1] === m.id);
+  if (clip && hit) return clipAt(clip, (clip.hit ?? 0) + hit.t);
+  if (clip && m.anim === 'attack' && m.state === 'windup') {
+    const W = (MONSTERS as Record<string, { windup: number } | undefined>)[m.kind]?.windup ?? MONSTERS.shade.windup;
+    return clipAt(clip, (1 - clamp01(m.t / Math.max(0.01, W))) * (clip.hit ?? 0));
+  }
+  if (m.anim === 'walk') return set.walk[Math.floor((m.animT ?? 0) * (set.walkFps ?? 8)) % set.walk.length];
+  return set.idle[Math.floor(W7.clock * (set.idleFps ?? 2)) % set.idle.length];
+}
+function spiritPicture(m: Monster, sp: Sprite): Sprite {
+  // (no canvas to paint on: only in the unit tests that do not give one)
+  if (typeof document === 'undefined') return sp;
+  const grey = greyShade(shadeFrameOf(m));
+  return m.fx - m.fy < 0 ? flipSprite(grey) : grey;
+}
+
+/**
+ * A picture in greys at `scale` its size, on the smaller grid: each new pixel is the part of the picture it covers (its body
+ * there if the body covers half of it, and then the body's light and shade there, averaged, every colour turned to grey); its
+ * edge, all round its body, his cyan (the enemy's rim of light it had is left out): a pixel of room is left round it for that.
+ * Pure: picture pixels (RGBA) in and out.
+ */
+export function greyShadePixels(src: ArrayLike<number>, W: number, H: number, scale: number): { data: Uint8ClampedArray; w: number; h: number } {
+  const iw = Math.max(1, Math.round(W * scale));
+  const ih = Math.max(1, Math.round(H * scale));
+  const w = iw + 2;
+  const h = ih + 2;
+  const out = new Uint8ClampedArray(w * h * 4);
+  const body = new Uint8Array(w * h);
+  const step = 1 / scale;
+  for (let y = 1; y <= ih; y++) {
+    for (let x = 1; x <= iw; x++) {
+      // the source box this pixel covers, and how much of it is body (wholly there), and its light
+      const x0 = (x - 1) * step;
+      const y0 = (y - 1) * step;
+      let cover = 0;
+      let lum = 0;
+      let area = 0;
+      for (let sy = Math.floor(y0); sy < Math.min(H, Math.ceil(y0 + step)); sy++) {
+        const fy = Math.min(sy + 1, y0 + step) - Math.max(sy, y0);
+        for (let sx = Math.floor(x0); sx < Math.min(W, Math.ceil(x0 + step)); sx++) {
+          const fx = Math.min(sx + 1, x0 + step) - Math.max(sx, x0);
+          const f = fx * fy;
+          area += f;
+          const i = (sy * W + sx) * 4;
+          if (src[i + 3] < 200) continue;
+          cover += f;
+          lum += f * (src[i] * 0.3 + src[i + 1] * 0.59 + src[i + 2] * 0.11);
+        }
+      }
+      if (cover < area * 0.5) continue;
+      // (lifted a little out of the dark, as the floors' light would show it)
+      const v = Math.round(Math.min(255, 34 + (lum / cover) * 1.25));
+      const o = (y * w + x) * 4;
+      out[o] = v;
+      out[o + 1] = v;
+      out[o + 2] = v;
+      out[o + 3] = 255;
+      body[y * w + x] = 1;
+    }
+  }
+  // his cyan all round its edge
+  const n = parseInt(W7_FRIEND[2].slice(1), 16);
+  const at = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < w && y < h && body[y * w + x] === 1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (body[y * w + x] || !(at(x - 1, y) || at(x + 1, y) || at(x, y - 1) || at(x, y + 1))) continue;
+      const o = (y * w + x) * 4;
+      out[o] = (n >> 16) & 255;
+      out[o + 1] = (n >> 8) & 255;
+      out[o + 2] = n & 255;
+      out[o + 3] = 190;
+    }
+  }
+  return { data: out, w, h };
+}
+const greyMade = new WeakMap<Sprite, Sprite>();
+function greyShade(sp: Sprite): Sprite {
+  const had = greyMade.get(sp);
+  if (had) return had;
+  const W = sp.img.width;
+  const H = sp.img.height;
+  const src = document.createElement('canvas');
+  src.width = W;
+  src.height = H;
+  const sg = src.getContext('2d') as CanvasRenderingContext2D;
+  sg.drawImage(sp.img, 0, 0);
+  const k = W7_TIME.spiritScale;
+  const px = greyShadePixels(sg.getImageData(0, 0, W, H).data, W, H, k);
+  const cv = document.createElement('canvas');
+  cv.width = px.w;
+  cv.height = px.h;
+  const g = cv.getContext('2d') as CanvasRenderingContext2D;
+  const im = g.createImageData(px.w, px.h);
+  im.data.set(px.data);
+  g.putImageData(im, 0, 0);
+  const dn = sp.density ?? 1;
+  // (its anchor as far into it, 0.7 as far, and the pixel of room round it)
+  const made: Sprite = { img: cv, w: px.w / dn, h: px.h / dn, ax: (Math.round(sp.ax * dn * k) + 1) / dn, ay: (Math.round(sp.ay * dn * k) + 1) / dn };
+  if (sp.density !== undefined) made.density = sp.density;
+  greyMade.set(sp, made);
+  return made;
 }
 
 /** When the cull's blade is through the middle of the one it takes (seconds into its look). */
@@ -3288,8 +3465,10 @@ export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
         break;
       }
       case 'spiritHit': {
+        // (what it strikes; and the spirit striking, `id`, whose picture rakes)
         const m = mon(e.target);
-        playW7('reaping', 'behind', { part: 'hit', x: m?.x ?? e.x ?? h.x, y: m?.y ?? e.y ?? h.y, ids: m ? [m.id] : [], dur: 0.32 });
+        const sp = mon(e.id);
+        playW7('reaping', 'behind', { part: 'hit', x: m?.x ?? e.x ?? h.x, y: m?.y ?? e.y ?? h.y, x1: sp?.x ?? h.x, y1: sp?.y ?? h.y, ids: [m ? m.id : -1, sp ? sp.id : -1], dur: W7_TIME.rakeFollow + 0.02 });
         break;
       }
       case 'rise': {

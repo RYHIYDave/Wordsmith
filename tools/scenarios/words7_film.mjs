@@ -162,8 +162,36 @@ const SCENES = [
   },
 ];
 
+// REAPING'S SPIRIT, AT HIS WORD (9 Nov, 13:38): the short film (SET=shade): a kill raising the little grey Shade; it glides to
+// one and rakes it with its claws, then to another; it rises away at 6 s; then its rise and its first rake again, twice the
+// size, half speed. And a still of the early floors' own Shade standing beside the little grey one, for the picture.
+const CARD_SHADE = ['Behind, at his word: the spirit is a little grey Shade,', 'raking with its claws; then again, twice the size, half speed.'];
+const SHADE_SCENES = [
+  {
+    word: 'reaping', side: 'shade', frames: 200, cap: 'Behind: a kill rises as a little grey Shade, rakes with its claws, rises away at 6 s', card: CARD_SHADE,
+    // (it glides at about the Shade's own pace, 3 tiles a second)
+    mobs: [['skeleton', 1.85, 0.2, 'a'], ['cultist', 5.2, 0.2, 'foe'], ['skeleton', 5.0, 3.0, 'foe2']],
+    at: {
+      3: [['swing', 'a']], 13: [['kill', 'a'], ['spirit', 'a', 'sp', 6]],
+      30: [['walk', 'sp', 4.0, 0.2, 0.1]], 44: [['rakeup', 'sp', 'foe']], 55: [['rake', 'sp', 'foe']],
+      80: [['walk', 'sp', 3.8, 3.0, 0.1]], 112: [['rakeup', 'sp', 'foe2']], 123: [['rake', 'sp', 'foe2']],
+      193: [['gone', 'sp']],
+    },
+    focus: [3.2, 1.2], best: [12, 64],
+  },
+  {
+    // (for the picture: the early floors' Shade, an enemy, beside the little grey one his kill raised; and nothing else)
+    word: 'reaping', side: 'pair', frames: 30, cap: "The early floors' Shade, and the little grey Shade Reaping raises", still: true,
+    // (both facing down the screen, as a picture of them would show them)
+    mobs: [['shade', 1.6, 0.6, 'enemy'], ['skeleton', 2.9, 1.3, 'a']],
+    at: { 2: [['corpse', 'a'], ['spirit', 'a', 'sp', 60, 0.6], ['face', 'sp', 1, 1], ['face', 'enemy', 1, 1]] },
+    focus: [2.4, 0.2],
+  },
+];
+
 export default async function (page, snap) {
   const only = (process.env.ONLY || '').split(',').filter(Boolean);
+  const scenes = process.env.SET === 'shade' ? SHADE_SCENES : SCENES;
   const stills = process.env.STILLS === '1';
   const bad = (s) => console.log(`  !! ${s}`);
   await page.evaluate(() => {
@@ -196,7 +224,7 @@ export default async function (page, snap) {
           if (!m.walkTo || m.dead) continue;
           const dx = m.walkTo.x - m.x; const dy = m.walkTo.y - m.y; const dd = Math.hypot(dx, dy);
           if (dd < 0.05) { m.walkTo = null; m.anim = 'idle'; continue; }
-          const s = Math.min(dd, 0.045 * k); m.x += (dx / dd) * s; m.y += (dy / dd) * s; m.fx = dx / dd; m.fy = dy / dd; m.anim = 'walk'; m.animT = (m.animT || 0) + k / 30;
+          const s = Math.min(dd, (m.walkPace ?? 0.045) * k); m.x += (dx / dd) * s; m.y += (dy / dd) * s; m.fx = dx / dd; m.fy = dy / dd; m.anim = 'walk'; m.animT = (m.animT || 0) + k / 30;
         }
         // (no numbers of the game's own over the looks)
         window.__dbg.fx.floaters.length = 0;
@@ -219,6 +247,13 @@ export default async function (page, snap) {
           if (meet(him, mb)) out.push(`${m.kind} ${m.id} in him`);
           for (const [what, b] of glass) if (meet(b, mb)) out.push(`${m.kind} ${m.id} in ${what}`);
           if (stone.some((b) => meet(b, mb))) out.push(`${m.kind} ${m.id} in a pillar`);
+        }
+        // (a spirit, a little Shade: never in a monster, nor in him)
+        const sp = window.__w7.mon('sp');
+        if (sp && !sp.dead) {
+          const sb = box(sp.x, sp.y, 7, 24);
+          if (meet(him, sb)) out.push('the spirit in him');
+          for (const m of g.monsters) if (m !== sp && !m.dead && meet(sb, box(m.x, m.y, 10, 30))) out.push(`the spirit in ${m.kind} ${m.id}`);
         }
         for (const [what, b] of glass) if (what === 'the mirror' && meet(b, him)) out.push('he is in the mirror');
         if (stone.some((b) => meet(b, him))) out.push('he is in a pillar');
@@ -287,7 +322,7 @@ export default async function (page, snap) {
     }
     if (what === 'set') { const m = mon(args[0]); if (!m) return `set: no ${args[0]}`; m[args[1]] = args[2]; return 'ok'; }
     if (what === 'hero') { h[args[0]] = args[1]; return 'ok'; }
-    if (what === 'walk') { const m = mon(args[0]); if (!m) return `walk: no ${args[0]}`; const [x, y] = W7.at(args[1], args[2]); m.walkTo = { x, y }; m.anim = 'walk'; return 'ok'; }
+    if (what === 'walk') { const m = mon(args[0]); if (!m) return `walk: no ${args[0]}`; const [x, y] = W7.at(args[1], args[2]); m.walkTo = { x, y }; m.walkPace = args[3] ?? 0.045; m.anim = 'walk'; return 'ok'; }
     if (what === 'lay') { const [x, y] = W7.at(args[1], args[2]); w7.lay(args[0], x, y, args[3], args[4]); return 'ok'; }
     if (what === 'kill') {
       const m = mon(args[0]); if (!m) return `kill: no ${args[0]}`;
@@ -306,8 +341,9 @@ export default async function (page, snap) {
     if (what === 'spirit') {
       // the kill rises as a spirit: a copy of it, fighting for him (the rules' spirits; drawn here by its own picture through the look)
       const was = W7.dead && W7.dead[args[0]]; if (!was) return 'spirit: none';
-      // (risen a step on from the body toward its foe, out of his own reach: he does not strike his own)
-      const m = g.spawn(was.kind, was.x + 0.75, was.y - 0.75, 1, 0, false, g.rng); g.wakeUp(m);
+      // (risen a step on from the body toward its foe, out of his own reach: he does not strike his own; `args[3]`: how far)
+      const step = args[3] ?? 0.75;
+      const m = g.spawn(was.kind, was.x + step, was.y - step, 1, 0, false, g.rng); g.wakeUp(m);
       m.life = m.maxLife = 1e7; m.words = []; m.state = 'recover'; m.t = 1e9; m.anim = 'idle'; m.cd = 1e9; m.moveCd = 1e9; m.heldSpeed = m.speed; m.speed = 0;
       const foe = mon('foe');
       if (foe) { const far = Math.hypot(foe.x - m.x, foe.y - m.y) || 1; m.fx = (foe.x - m.x) / far; m.fy = (foe.y - m.y) / far; }
@@ -316,6 +352,31 @@ export default async function (page, snap) {
       return 'ok';
     }
     if (what === 'gone') { const m = mon(args[0]); if (m) g.monsters.splice(g.monsters.indexOf(m), 1); return 'ok'; }
+    if (what === 'face') {
+      const m = mon(args[0]); if (!m) return 'face: none';
+      const l = Math.hypot(args[1], args[2]) || 1; m.fx = args[1] / l; m.fy = args[2] / l; return 'ok';
+    }
+    if (what === 'corpse') {
+      // (laid down dead at once: the body a spirit rises from, for a still)
+      const m = mon(args[0]); if (!m) return 'corpse: none';
+      W7.dead = W7.dead || {}; W7.dead[args[0]] = { x: m.x, y: m.y, kind: m.kind };
+      w7.corpse(m.id, 5); return 'ok';
+    }
+    if (what === 'rakeup') {
+      // (the rules winding the spirit's blow up, turned to what it strikes: its kind's wind-up, a skeleton's 0.4 s, counted down;
+      // the look draws its claws back)
+      const m = mon(args[0]); const foe = mon(args[1]); if (!m || !foe) return 'rakeup: none';
+      const far = Math.hypot(foe.x - m.x, foe.y - m.y) || 1; m.fx = (foe.x - m.x) / far; m.fy = (foe.y - m.y) / far;
+      m.anim = 'attack'; m.animT = 0; m.state = 'windup'; m.t = 0.4; return 'ok';
+    }
+    if (what === 'rake') {
+      // (its blow lands: the rules let it go back to waiting before they would strike for real; the look rakes)
+      const m = mon(args[0]); const foe = mon(args[1]); if (!m || !foe) return 'rake: none';
+      m.state = 'recover'; m.t = 1e9; m.anim = 'idle'; m.animT = 0;
+      const far = Math.hypot(foe.x - m.x, foe.y - m.y) || 1; m.fx = (foe.x - m.x) / far; m.fy = (foe.y - m.y) / far;
+      w7.send({ t: 'spiritHit', id: m.id, target: foe.id });
+      return 'ok';
+    }
     if (what === 'take') {
       // the reaper's mark takes it: it dies, and the mark is used up
       const m = mon(args[0]); if (!m) return 'take: none';
@@ -356,7 +417,7 @@ export default async function (page, snap) {
   const where = async (focus) => page.evaluate((f) => { const [x, y] = window.__w7.at(f[0], f[1]); const p = window.__dbg.at(x, y); return { x: p.x, y: p.y, w: window.__dbg.screen.w, h: window.__dbg.screen.h }; }, focus);
 
   let last = '';
-  for (const sc of SCENES) {
+  for (const sc of scenes) {
     if (only.length && !only.includes(sc.word)) continue;
     const name = `${sc.word}_${sc.side}`;
     for (const pass of sc.best && !stills ? ['full', 'best'] : ['full']) {
@@ -368,7 +429,7 @@ export default async function (page, snap) {
       const step = pass === 'best' ? 1 / 60 : 1 / 30;
       const [b0, b1] = sc.best || [0, sc.frames];
       const count = pass === 'best' ? (b1 - b0) * 2 : sc.frames;
-      const piece = { word: sc.word, side: sc.side, name: `${name}_${pass}`, frames: 0, cap: sc.cap, title: W[sc.word], best: pass === 'best', ramp: ramps[sc.word], focus: null };
+      const piece = { word: sc.word, side: sc.side, name: `${name}_${pass}`, frames: 0, cap: sc.cap, title: W[sc.word], best: pass === 'best', ramp: ramps[sc.word], focus: null, ...(sc.card ? { card: sc.card } : {}), ...(sc.still ? { still: true } : {}) };
       let did = -1;
       const crowded = new Map();
       for (let i = 0; i < (pass === 'best' ? b1 * 2 : sc.frames); i++) {

@@ -47,7 +47,7 @@ def caption(im, word, text, colour, note=None):
     return im
 
 
-def card(word, ramp):
+def card(word, ramp, lines=None):
     im = Image.new('RGB', (W, H), BG)
     d = ImageDraw.Draw(im)
     st = Image.open(io.BytesIO(base64.b64decode(runes[word].split(',', 1)[1]))).convert('RGBA')
@@ -59,8 +59,9 @@ def card(word, ramp):
     for j, c in enumerate(ramp):
         d.rectangle((330 + j * 70, 260, 330 + j * 70 + 62, 296), fill=(8, 6, 12))
         d.rectangle((332 + j * 70, 262, 330 + j * 70 + 60, 294), fill=hexrgb(c))
-    d.text((330, 320), 'In front, behind, and on a monster;', font=small, fill=GREY)
-    d.text((330, 348), 'then its best moment again, twice the size, half speed.', font=small, fill=GREY)
+    lines = lines or ['In front, behind, and on a monster;', 'then its best moment again, twice the size, half speed.']
+    for j, line in enumerate(lines):
+        d.text((330, 320 + 28 * j), line, font=small, fill=GREY)
     return im
 
 
@@ -77,9 +78,12 @@ def put(im):
 
 last = None
 for p in plan:
+    # (a still, for a picture, is not in the film)
+    if p.get('still'):
+        continue
     word = p['word']
     if word != last:
-        c = card(word, p['ramp'])
+        c = card(word, p['ramp'], p.get('card'))
         for _ in range(21):
             put(c)
         last = word

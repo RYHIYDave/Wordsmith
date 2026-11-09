@@ -17,6 +17,12 @@ Shown `words7_film.mp4` (at ba499585) and asked “Are the seven new words right
 9 Nov: “Yes, hand them to main (Recommended)” (offered as: the main chat puts them in the game behind their switch and
 wires them to the rules). THE SEVEN WORDS' LOOKS ARE DONE, WITH HIS YES.
 
+Right after, 9 Nov, 13:38: “Maybe change the shade from the reaping.  Just a little grey scale version of the shades we have
+in the early levels.  Maybe 30% smaller.  Claw rake attacks”. Read as (and he was told so): the spirit Reaping raises is
+always a little Shade, like the early floors' Shade, in greys, 30% smaller, raking with its claws, keeping a thin cyan edge
+to show it is his. Step 3, below: `pictures/reaping_shade.png` and `pictures/reaping_shade.mp4`, for his yes. (Until then
+the main film, `words7_film.mp4`, still shows the spirit as it was: a pale copy of what was slain.)
+
 ## The picture
 
 `pictures/words7_looks.png` (1200 by 4706): a row for each word: its rune stone (big, and at the game's size), its name in
@@ -82,7 +88,7 @@ its beats (`W7_BEATS`, seconds):
 | Bleeding behind | 0.22 | (while it lies) | 0.5 | the briars burst up; stand swaying, cutting what walks in them; sink back |
 | Bleeding on a monster | 0.05 | 0.3 | 0.3 | the slash across him, his blood flung off; then drips and splashes while he bleeds |
 | Reaping in front | 0.15 | 0.55 | 0.25 | the soul torn out of the body; it streaks to him; a flare as he takes it in |
-| Reaping behind | 0.45 | (its 6 s) | 0.6 | the spirit rises out of the body in a stream of soul-light, hovering; fights, its edge his cyan; rises away; each blow 0.05 / 0.06 / 0.24 |
+| Reaping behind | 0.45 | (its 6 s) | 0.6 | (step 3, at his word) the spirit rises out of the body in a stream of soul-light: always a little grey Shade (below); fights, its edge his cyan; rises away; each blow its claw rake: held / 0.06 / 0.26 |
 | Reaping on a monster | 0.2 | 0.8 | 0.4 | the enemy's fire kindles round the body; it lurches up out of its fall; the fire dies |
 | Culling in front | 0.16 (held) | 0.07 | 0.3 | his blow lands; an instant held, the one it takes stopped, a violet glint on it; the scythe's crescent sweeps through it in two pictures, smeared, dusk violet and bone; it comes apart in two whole halves of it as it stood: its legs fold back to the floor (down at 0.22 s), its top slides off the cut, tips and falls, landing on its side beside them a beat after (0.3 s); both lie there and fade with the body; the crescent sweeps on, dimming and thinning away |
 | Culling behind | 0.3 | (while it lies) | 0.3 | the mark written in, breathing, gone over its last 0.3 s; taking one: it flares 0.05, a blade rises through it 0.2, it burns out 0.4 |
@@ -112,8 +118,8 @@ main chat's board post of 8 Nov 07:55 (its branch `words7` was not to be seen): 
 | zone `thorns` | `x, y, r, t, dur` (kind or `look` 'thorns') | Bleeding behind; what walks in it is cut |
 | `heroBleed` | `id` (the monster) or `x, y` (where it stood) | the slash on him; **Hero.heroBleedT** (> 0): drips and splashes |
 | `reapSoul` | `x, y` (the kill) | Reaping in front |
-| `spirit` | `id` (the spirit, a monster drawn by the game), `x, y` (the body it rose from), `secs` (6) | Reaping behind; any monster carrying `spirit: true` is drawn as a spirit too |
-| `spiritHit` | `target` (the struck monster's id) or `x, y` | its blow |
+| `spirit` | `id` (the spirit, a monster drawn by the game), `x, y` (the body it rose from), `secs` (6) | Reaping behind; any monster carrying `spirit: true` is drawn as a spirit too; drawn always as the little grey Shade, whatever its `kind`, by its `anim`, `animT`, `fx, fy`, and, as the rules wind its blow up, `state` 'windup' and `t` (counted down from its kind's `windup`) |
+| `spiritHit` | `target` (the struck monster's id) or `x, y`; **`id` (the spirit striking: new in step 3)**, sent as its blow lands | its claw rake on the struck, and the spirit's own rake and follow-through |
 | `rise` | `x, y` (or `id`): the body there (fx.fallen) lurches up | Reaping on a monster |
 | `culled` | `id`, `x, y` (where it was: by then it is gone from the list); `mark` (`{x, y}`, or true: the nearest zone 'reaper'); its body in **fx.fallen** near `x, y` is held still an instant, then comes down in two halves, and lies so, fading as the game fades it | Culling in front, or the mark taking it |
 | zone `reaper` | `x, y, r, t, dur` | the mark as it lies |
@@ -130,7 +136,7 @@ main chat's board post of 8 Nov 07:55 (its branch `words7` was not to be seen): 
 WHAT THE MAIN CHAT MUST ADD, or say otherwise:
 1. **`goldSpray { x, y, item }`** for Plundering in front (its post names no event for it): the spray, the extra piece when `item`.
 2. **Spirits drawn as monsters**: put each in the game's monster list (or draw it with the monster loop) carrying `spirit: true`,
-   or send `spirit` with its `id`; the look paints its own picture in soul-light with his cyan edge, hovering.
+   or send `spirit` with its `id`; the look paints it as the little grey Shade (step 3), whatever was slain.
 3. **`rise` as the body begins to rise** (0.2 s of fire, then 0.8 s lurching up out of its fall), the risen monster standing
    1.0 s after it.
 4. **`cullBlow { id }`** (optional) when a monster with Culling strikes him while he is low: its blow's burst. Its fire burns
@@ -144,6 +150,35 @@ WHAT THE MAIN CHAT MUST ADD, or say otherwise:
    chat may want it stood among the figures by its depth instead.
 9. **`lance` from a step in front of him** (the film's starts 1.5 tiles out): its spear comes down at a slant from over the
    line's start, so a line starting at his feet would bring it down across him.
+
+## Step 3: Reaping's spirit, a little grey Shade (at his word, 9 Nov 13:38)
+
+Only Reaping behind (the spirit and its blows) changed; everything else he has said yes to is as it was.
+
+- **The spirit** is always the early floors' Shade, whatever was slain: its picture as the live game shows it (the frost Shade,
+  `makeFrostShadeArt`, while `SHADE_FROST` is on, as it is; else `makeShadeArt3`), in greys (each colour turned to grey,
+  its light and shade kept, a little lifted out of the dark), 0.7 its size (taken down by area, not by dropping pixels), its
+  edge all round his cyan (the friend's glow) in place of the enemy's pink rim. It moves as the Shade moves: its own stand and
+  glide at their own paces; its claws drawn back as the rules wind its blow up; its rake and follow-through from the blow on
+  (all its own pictures, 30 a second). It rises out of the body in soul-light as before (0.45 s), fights its 6 s, and rises
+  away (0.6 s); the grave-mist round it only as it rises and goes, so it reads as a grey Shade.
+- **Its blow, a claw rake**: held (its claws drawn back while the rules wind it up: a skeleton's 0.4 s in the film); then
+  in 0.06 s four curved claw gashes torn down across what it strikes, side by side, each bowed and tapered at both ends,
+  grey-white, his cyan glinting at their points; they close up from their tails and dim a tone at a time over 0.26 s; the
+  Shade's own follow-through runs 0.4 s. `W7_BEATS['reaping:behind:hit']`: build 0 (its wind-up is the rules'), hit 0.06,
+  fade 0.26.
+- `pictures/reaping_shade.png` (1200 by 732): the early floors' Shade (an enemy) beside the little grey Shade his kill rose
+  as, at the game's size and at twice; and its claw rake at the instant it lands, at the game's size and at twice.
+- `pictures/reaping_shade.mp4` (11.2 s, 1266 by 540, 30 a second, H.264 yuv420p, captioned): in the practice room with the
+  Warrior: his kill rises as the little grey Shade; it glides to a cultist and rakes it, then to a skeleton and rakes it, and
+  rises away at 6 s; then its rise and its first rake again at twice the size and half speed. Every picture checked: the Shade
+  never in a monster or in him.
+- For the main chat: `spiritHit` now also reads `id` (the spirit striking), to play its rake; without it the gashes still
+  show on what is struck. Nothing else changes in what it must send.
+- Made by `tools/scenarios/words7_film.mjs` with `SET=shade`, `tools/words7_film.py` and `tools/words7_shade_sheet.py`.
+  `tests/words7_shade.test.ts` (3): the spirit is the game's own Shade picture in greys at 0.7 its size, its light and shade
+  the Shade's, its edge all round his cyan, whatever was slain (painted on a real canvas); it moves as the Shade moves; its
+  rake grey-white with his cyan at the points, gone when its time is up.
 
 ## How it was made and checked
 
