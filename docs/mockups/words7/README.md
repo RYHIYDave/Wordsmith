@@ -20,8 +20,10 @@ wires them to the rules). THE SEVEN WORDS' LOOKS ARE DONE, WITH HIS YES.
 Right after, 9 Nov, 13:38: “Maybe change the shade from the reaping.  Just a little grey scale version of the shades we have
 in the early levels.  Maybe 30% smaller.  Claw rake attacks”. Read as (and he was told so): the spirit Reaping raises is
 always a little Shade, like the early floors' Shade, in greys, 30% smaller, raking with its claws, keeping a thin cyan edge
-to show it is his. Step 3, below: `pictures/reaping_shade.png` and `pictures/reaping_shade.mp4`, for his yes. (Until then
-the main film, `words7_film.mp4`, still shows the spirit as it was: a pale copy of what was slain.)
+to show it is his. Step 3, below: `pictures/reaping_shade.png` and `pictures/reaping_shade.mp4`. Shown both (at 52f9dfdd)
+and asked “Is Reaping's little grey Shade right (reaping_shade.png and reaping_shade.mp4)?”, by 14:09 on 9 Nov: “Yes, hand
+it to main (Recommended)” (offered as: it goes in with the other six). (The main film, `words7_film.mp4`, still shows the
+spirit as it was, a pale copy of what was slain; the code draws the little grey Shade.)
 
 ## The picture
 
