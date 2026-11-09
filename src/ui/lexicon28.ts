@@ -51,14 +51,15 @@ export const TOUCH_MIN = 18;
 
 /**
  * 'groups': the Lexicon's pages, its 28 words sorted by what they do (his “By what they do”, 9 Nov 2026), each word on one page;
- * `tab`, its name as its tab writes it, in two lines. At most nine words a page: one row of stones across the half.
+ * `tab`, its name as its tab writes it: one plain word each (his, 9 Nov by 17:10: “I don’t really like the tabs names.  Too
+ * wordy”, then “Damage, Strike, Time, Control, Spoils (Recommended)”). At most nine words a page: one row of stones across the half.
  */
-export const LEX_PAGES: readonly { name: string; tab: readonly [string, string]; words: readonly WordId[] }[] = [
-  { name: 'FORCE AND ELEMENTS', tab: ['FORCE AND', 'ELEMENTS'], words: ['power', 'poison', 'fire', 'frost', 'lightning'] },
-  { name: 'HOW IT STRIKES', tab: ['HOW IT', 'STRIKES'], words: ['twin', 'heavy', 'precise', 'splitting', 'piercing', 'volatile', 'vast', 'surging', 'mirroring'] },
-  { name: 'SPEED AND TIME', tab: ['SPEED AND', 'TIME'], words: ['swift', 'frenzied', 'stilling', 'lasting', 'fleeting'] },
-  { name: 'HOLD, CURSE AND GUARD', tab: ['HOLD, CURSE', 'AND GUARD'], words: ['pulling', 'binding', 'hexing', 'guarding'] },
-  { name: 'BLOOD AND SPOILS', tab: ['BLOOD AND', 'SPOILS'], words: ['leech', 'bleeding', 'reaping', 'culling', 'plundering'] },
+export const LEX_PAGES: readonly { name: string; tab: readonly string[]; words: readonly WordId[] }[] = [
+  { name: 'DAMAGE', tab: ['DAMAGE'], words: ['power', 'poison', 'fire', 'frost', 'lightning'] },
+  { name: 'STRIKE', tab: ['STRIKE'], words: ['twin', 'heavy', 'precise', 'splitting', 'piercing', 'volatile', 'vast', 'surging', 'mirroring'] },
+  { name: 'TIME', tab: ['TIME'], words: ['swift', 'frenzied', 'stilling', 'lasting', 'fleeting'] },
+  { name: 'CONTROL', tab: ['CONTROL'], words: ['pulling', 'binding', 'hexing', 'guarding'] },
+  { name: 'SPOILS', tab: ['SPOILS'], words: ['leech', 'bleeding', 'reaping', 'culling', 'plundering'] },
 ];
 
 /** Which of the Lexicon's pages a word is on ('groups'). */
@@ -163,7 +164,7 @@ export function pageHeight(meta: Meta, w: WordId, pw: number): number {
 }
 
 /**
- * 'groups': the row of tabs, each its page's name in two lines; the open one lit in the friend's cyan, the rest with the rim that
+ * 'groups': the row of tabs, each its page's name, one word, in the middle of it; the open one lit in the friend's cyan, the rest with the rim that
  * says a thing can be pressed. The tab of a page holding a word found since the Lexicon was last looked at (LEX28.fresh) carries
  * a small cyan stud on its top right corner (the open page's none: it is being looked at).
  */
@@ -172,11 +173,11 @@ function drawTabs(ui: Ui, meta: Meta, tabs: Rect[], at: number): void {
   tabs.forEach((t, i) => {
     const on = i === at;
     ui.box(t.x, t.y, t.w, t.h, on ? THEME.accentBg : THEME.bg2, on ? THEME.accent : THEME.edgeHi);
-    const [a, b] = LEX_PAGES[i].tab;
-    const ty = t.y + Math.floor((t.h - 11) / 2);
+    // (its name, one word, in the middle of it each way: the odd pixel, if any, to the right and below)
+    const lines = LEX_PAGES[i].tab;
+    const ty = t.y + Math.floor((t.h - (lines.length * 6 - 1)) / 2);
     const col = on ? THEME.accent : THEME.dim;
-    drawText(g, a, t.x + Math.floor(t.w / 2), ty, col, { align: 'center', font: 'small' });
-    drawText(g, b, t.x + Math.floor(t.w / 2), ty + 6, col, { align: 'center', font: 'small' });
+    lines.forEach((ln, k) => drawText(g, ln, t.x + Math.floor((t.w - textWidth(ln, 'small')) / 2), ty + k * 6, col, { font: 'small' }));
     if (!on && LEX28.fresh.some((w) => meta.known[w].found && LEX_PAGES[i].words.includes(w))) {
       // (a round stud 5 across, a glint at its top left, ringed in ink where it lies over the tab's rim; clear of the name under it)
       const mx = t.x + t.w - 5;

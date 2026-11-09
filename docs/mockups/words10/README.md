@@ -217,7 +217,7 @@ could be written in its dust (`#c4a47e`). The colour is the three words' work, n
 
 ### The picture
 
-`pictures/lexicon_pages.png` (1200 by 4858): the five pages listed; then the Lexicon at its lectern in town on a phone held sideways,
+`pictures/lexicon_pages.png` (1200 by 4858; made again in step 1d, below, its tabs one word each): the five pages listed; then the Lexicon at its lectern in town on a phone held sideways,
 each at the game's size and at twice: (1) all 28 found, open on HOW IT STRIKES at Vast; (2) open on BLOOD AND SPOILS at Reaping,
 the longest page; (3) part way through a game, 12 of 28 found, open on HOW IT STRIKES at Heavy (only its use in front known), Leech
 just found and its page's tab marked. Captioned in plain words; the ten new words show the art chat's stones.
@@ -241,3 +241,28 @@ just found and its page's tab marked. Captioned in plain words; the ten new word
   before this step), `words` 26 of 29 (the rules' loadouts: it counts 162 where words10's words make 397) and `word_room` 1 of 4
   (the inventory's room for every word at a service); these two reach no Lexicon code at all: the main chat's, with its new words.
 - Not run: the regression; a real phone.
+
+## Step 1d: the Lexicon's tabs, one word each (his word)
+
+### His words
+
+9 Nov by 17:10. Shown lexicon_pages.png and asked “Are the Lexicon's pages right (lexicon_pages.png)?”, he wrote: “I don’t really like the tabs names.  Too wordy”. Then asked “Too wordy, got it: one word per tab. Which set of tab names?”, he answered “Damage, Strike, Time, Control, Spoils (Recommended)” (offered as: one plain word each, in the same order).
+
+### The tabs
+
+The same five pages, the same words on each, in the same order; only their names, each one word, written once across the middle
+of its tab (`LEX_PAGES`, its `name` and `tab`, in `src/ui/lexicon28.ts`; still behind `LEX28`, `'rows'` the game's own):
+
+| Tab | Was | Its words |
+|---|---|---|
+| DAMAGE | FORCE AND ELEMENTS | Power, Poison, Flame, Frost, Lightning |
+| STRIKE | HOW IT STRIKES | Twin, Heavy, Precise, Splitting, Piercing, Volatile, Vast, Surging, Mirroring |
+| TIME | SPEED AND TIME | Swift, Frenzied, Stilling, Lasting, Fleeting |
+| CONTROL | HOLD, CURSE AND GUARD | Pulling, Binding, Hexing, Guarding |
+| SPOILS | BLOOD AND SPOILS | Leech, Bleeding, Reaping, Culling, Plundering |
+
+`pictures/lexicon_pages.png` made again with its own tool (`tools/scenarios/words10_lexpages.mjs`, `tools/words10_sheet.py pages`),
+the same three pictures and its list of the five pages by their new names (1200 by 4858). Looked at close, at the game's size and
+on the phone's own pixels: each name whole and in the middle of its tab, the same room to either side (where the room left over
+is odd, the odd pixel to the right: CONTROL 9 and 10, SPOILS 11 and 12, game pixels), 6 above and 7 below; the new-word stud on
+SPOILS clear of its name. `tests/words10.test.ts` 8 now also holds the five names, one word each, in his order.

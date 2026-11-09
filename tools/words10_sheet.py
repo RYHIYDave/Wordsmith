@@ -9,7 +9,7 @@
            open on the longest page: the game's own rows as they are, then each way to lay out its stones, at the game's size and
            at twice, the pick marked.
   pages:   docs/mockups/words10/pictures/lexicon_pages.png: the Lexicon's words in five pages by what they do (way 'groups'), a
-           tab each: open on HOW IT STRIKES at Vast, on BLOOD AND SPOILS at Reaping (the longest page), and part way through a
+           tab each, its name one word: open on STRIKE at Vast, on SPOILS at Reaping (the longest page), and part way through a
            game, some words not yet found; each at the game's size and at twice (tools/scenarios/words10_lexpages.mjs).
 
 The stills are the game's own pictures (tools/scenarios/words10_looks.mjs and words10_lexicon.mjs, at five screen pixels a game
@@ -264,31 +264,32 @@ elif mode == 'pages':
     # THE LEXICON IN PAGES BY WHAT THEY DO (ui/lexicon28.ts, way 'groups'): tools/scenarios/words10_lexpages.mjs's three pictures
     #   python3 tools/words10_sheet.py pages <prefix, e.g. /dev/shm/w10p/pg> <out.png>
     PAGES = [
-        ('FORCE AND ELEMENTS', 'Power, Poison, Flame, Frost, Lightning'),
-        ('HOW IT STRIKES', 'Twin, Heavy, Precise, Splitting, Piercing, Volatile, Vast, Surging, Mirroring'),
-        ('SPEED AND TIME', 'Swift, Frenzied, Stilling, Lasting, Fleeting'),
-        ('HOLD, CURSE AND GUARD', 'Pulling, Binding, Hexing, Guarding'),
-        ('BLOOD AND SPOILS', 'Leech, Bleeding, Reaping, Culling, Plundering'),
+        ('DAMAGE', 'Power, Poison, Flame, Frost, Lightning'),
+        ('STRIKE', 'Twin, Heavy, Precise, Splitting, Piercing, Volatile, Vast, Surging, Mirroring'),
+        ('TIME', 'Swift, Frenzied, Stilling, Lasting, Fleeting'),
+        ('CONTROL', 'Pulling, Binding, Hexing, Guarding'),
+        ('SPOILS', 'Leech, Bleeding, Reaping, Culling, Plundering'),
     ]
     SHOTS = [
-        ('vast', '1. OPEN ON HOW IT STRIKES, AT VAST',
+        ('vast', '1. OPEN ON STRIKE, AT VAST',
          ['All 28 words found, every use known.',
-          'The HOW IT STRIKES tab is lit in cyan; under it its nine stones in one row, Vast’s lit; under them Vast’s page, the whole width of the Lexicon’s half.',
+          'The STRIKE tab is lit in cyan; under it its nine stones in one row, Vast’s lit; under them Vast’s page, the whole width of the Lexicon’s half.',
           'Its page has {w} by {h} game pixels of room; Vast’s needs {need}.']),
-        ('reaping', '2. OPEN ON BLOOD AND SPOILS, AT REAPING (THE LONGEST PAGE)',
+        ('reaping', '2. OPEN ON SPOILS, AT REAPING (THE LONGEST PAGE)',
          ['Reaping’s page is the longest of all 28: it needs {need} of the {h} there is, so it is written whole, down to ON A DUNGEON.',
           'The Lexicon as it is now has room for only {old} and leaves that last part off.']),
         ('early', '3. PART WAY THROUGH A GAME: 12 OF 28 FOUND',
          ['The words not found yet show as now: a dark stone with a question mark.',
           'Heavy is open: only its use in front known so far, the rest still “Undiscovered.”',
-          'The small cyan dot on the BLOOD AND SPOILS tab: a word found there since the Lexicon was last looked at (here Leech). It goes when that page is opened.']),
+          'The small cyan dot on the SPOILS tab: a word found there since the Lexicon was last looked at (here Leech). It goes when that page is opened.']),
     ]
     blocks = []
     head = Image.new('RGB', (W, 130), BG)
     d = ImageDraw.Draw(head)
     d.text((14, 10), 'THE LEXICON IN PAGES, BY WHAT THEY DO', font=big, fill=PALE)
     intro = ('At its lectern in town, on a phone held sideways (the game’s own screen). Your words: “Categorize them into pages”, then '
-             '“By what they do”. Five tabs across the top, a page of words each. The ten new words show their new stones.')
+             '“By what they do”; of the tabs, “Too wordy”, then “Damage, Strike, Time, Control, Spoils”. Five tabs across the top, '
+             'one plain word each, a page of words each. The ten new words show their new stones.')
     for k, part in enumerate(wrap(d, intro, small, W - 28)):
         d.text((14, 54 + 24 * k), part, font=small, fill=GREY)
     blocks.append(head)

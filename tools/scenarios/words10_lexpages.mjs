@@ -1,8 +1,8 @@
 // THE LEXICON'S 28 WORDS IN PAGES BY WHAT THEY DO (ui/lexicon28.ts, way 'groups', behind LEX28: 'rows', the game's own): the
 // Lexicon at its lectern in town on a phone held sideways, for the sheet (tools/words10_sheet.py pages). His words, 9 Nov 2026:
-// “Categorize them into pages”, then “By what they do”. Three pictures: all 28 found, every use known, open on HOW IT STRIKES with
-// Vast's page; the same, open on BLOOD AND SPOILS with Reaping's page (the longest); and a player's part way through, twelve found,
-// open on HOW IT STRIKES with Heavy's page, Leech just found (its page's tab marked). The ten new words' stones are the art chat's
+// “Categorize them into pages”, then “By what they do”. Three pictures: all 28 found, every use known, open on STRIKE with
+// Vast's page; the same, open on SPOILS with Reaping's page (the longest); and a player's part way through, twelve found,
+// open on STRIKE with Heavy's page, Leech just found (its page's tab marked). The ten new words' stones are the art chat's
 // runes (render/words7.ts, render/words10.ts), laid in for the picture.
 //   node tools/build_to.mjs dist/words10_looks.html
 //   node tools/playtest.mjs --file dist/words10_looks.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words10_lexpages.mjs --out /dev/shm/w10p/pg
@@ -56,9 +56,9 @@ export default async function (page, snap) {
     await snap(name);
   };
 
-  // 1. all found, open on HOW IT STRIKES with Vast's page
+  // 1. all found, open on STRIKE with Vast's page
   await shot('vast', 'vast');
-  // 2. all found, open on BLOOD AND SPOILS with Reaping's page (the longest)
+  // 2. all found, open on SPOILS with Reaping's page (the longest)
   await shot('reaping', 'reaping');
   // 3. part way through a game: twelve found, some uses not yet known; Leech just found, not yet looked at (its tab marked)
   await page.evaluate(() => {

@@ -410,6 +410,9 @@ test("8. the Lexicon in pages by what they do ('groups'): all 28 words, each onc
   assert.equal(new Set(all).size, 28, 'no word on two pages');
   assert.deepEqual([...all].sort(), [...WORD_IDS].sort(), 'every word on a page');
   for (const w of WORD_IDS) assert.ok(LEX_PAGES[lexPageOf(w)].words.includes(w), `${w}: its page`);
+  // its tabs' names, one plain word each, in his order (9 Nov by 17:10: “Damage, Strike, Time, Control, Spoils (Recommended)”)
+  assert.deepEqual(LEX_PAGES.map((p) => p.tab.join(' ')), ['DAMAGE', 'STRIKE', 'TIME', 'CONTROL', 'SPOILS']);
+  for (const p of LEX_PAGES) assert.ok(p.tab.length === 1 && !/\s/.test(p.tab[0]) && p.name === p.tab[0], `${p.name}: one word`);
   // the lectern's half on a phone held sideways, every word found and every use known
   const half = { x: 0, y: 0, w: 254, h: 234 };
   const meta = newMeta();
@@ -423,7 +426,7 @@ test("8. the Lexicon in pages by what they do ('groups'): all 28 words, each onc
     for (const L of [lex28Layout(half, true, 'groups', p.words[p.words.length - 1]), lex28Layout(half, true, 'groups', null, i), lex28Layout(half, true, 'groups', 'power', i)]) {
       assert.equal(L.tab, i, `${p.name}: the open tab`);
       assert.deepEqual(L.cells.map((c) => c.w), [...p.words], `${p.name}: its own stones, in order`);
-      // the tabs: five, a row across the top, the touch size, inside the half, apart; each name's two lines inside its tab
+      // the tabs: five, a row across the top, the touch size, inside the half, apart; each name inside its tab
       assert.equal(L.tabs?.length, 5);
       const tabs = L.tabs ?? [];
       tabs.forEach((t, j) => {
@@ -431,7 +434,7 @@ test("8. the Lexicon in pages by what they do ('groups'): all 28 words, each onc
         assert.ok(within(t, half), `${LEX_PAGES[j].name}'s tab off the half`);
         for (const u of tabs) if (u !== t) assert.ok(apart(t, u), 'two tabs on one another');
         for (const line of LEX_PAGES[j].tab) assert.ok(textWidth(line, 'small') <= t.w - 4, `"${line}" (${textWidth(line, 'small')}) in a tab ${t.w} across`);
-        assert.ok(11 <= t.h - 4, 'two lines of its name in its height');
+        assert.ok(LEX_PAGES[j].tab.length * 6 - 1 <= t.h - 4, 'its name in its height');
         assert.ok(t.y + t.h <= L.page.y, 'a tab on the page');
       });
       // the stones: the touch size, inside the half, apart from one another and from the tabs, above the page and the shelf
