@@ -12,7 +12,7 @@ import type { BossRules } from '../bosses';
 import type { Level, Monster } from '../state';
 import type { Act1Rules } from './types';
 import { RULES as EYE_RULES } from './eye';
-import { ARM, CHANGE3, COLOSSUS, ColossusFight, EYE3, FORWARD, HIS_PLACE, LIFE, SHOVEL, STONE, eyeHome, onStone, rootAt, stoneToWorld, worldToStone } from '../colossus_fight';
+import { ARM, CHANGE3, COLOSSUS, ColossusFight, DEATH, EYE3, FORWARD, HIS_PLACE, LIFE, SHOVEL, STONE, eyeHome, onStone, rootAt, stoneToWorld, worldToStone } from '../colossus_fight';
 import { QUESTS610, pillarsBurning } from '../quests610';
 import type { FightEvent, StoneAt } from '../colossus_fight';
 import type { Game } from '../game';
@@ -244,6 +244,23 @@ export const COLOSSUS_RULES: Act1Rules = {
       return;
     }
     if (me.fight) me.fight.bodyKilled();
+    // (his death plays out on the peril his fight is drawn by, its own clock from the killing blow: render/act1_fx/colossus.ts)
+    const fp = R.g.perils.find((q) => q.kind === 'act1' && q.a1 === 'eye:fight');
+    if (fp) {
+      fp.a = 1;
+      fp.c = fp.t;
+    }
+  },
+
+  peril(R, p, dt) {
+    // HIS DEATH: kept by the hero while it plays; the screen shaken at its beats; gone when it is done
+    if (p.a1 !== 'eye:fight' || p.a !== 1) return;
+    const g = R.g;
+    p.x = g.hero.x;
+    p.y = g.hero.y;
+    const s = p.t - p.c;
+    for (const [f, amount] of DEATH.shakes) if (s >= f / 30 && s - dt < f / 30 + 1e-9) g.emit({ t: 'shake', amount });
+    if (s >= DEATH.long) p.dur = p.t;
   },
 };
 

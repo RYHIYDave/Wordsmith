@@ -41,6 +41,7 @@ import { FLINCH, DEATH, SLAM, SMASH, armDeath, armFlinch, armSlam, armSmash, den
 import type { ArmPose } from '../src/art/eye_colossus';
 import { SHOVEL as ART_SHOVEL, SNAP as ART_SNAP, atEnd, shovelFrame } from '../src/art/eye_shovel';
 import { BILE as ART_BILE, BODY_TAKE, GAZE as ART_GAZE, TILE, beamLine, bodyFrame, eyeAngle, gazeLids, gazeSwell, tipEye } from '../src/art/eye_body';
+import { DEATH, DEATH_GONE, deathLayers } from '../src/art/eye_death';
 import { P3, SLIDE, gazeArc3, gazePath3, gazeQ3, p3Frame, p3Spit, p3StandTongue, slamAnim, struckAnim, toWorld } from '../src/art/eye_phase3';
 import type { ColossusAnim } from '../src/art/eye_colossus';
 import { STONE as ART_STONE } from '../src/art/eye_colossus';
@@ -295,7 +296,7 @@ function plan(want: readonly string[]): { moves: MoveSpec[]; layers: { key: stri
   // it as his stand is on frame `P3_BAKE.slideAt`); at his new place his body (his jaws and drool) and his tongue apart, so that his eye's
   // moves take his tongue's place: the eye slam at each spot it may come down on (`P3_BAKE.slams`), the gaze at each aim
   // (`P3_BAKE.aims`, degrees), his eye struck; each begun on his stand's first frame (the game begins them so)
-  const wants3 = want.length === 0 || want.includes('body') || want.includes('phase3') || want.some((w) => /^(slide|p3|slam3|gaze3|struck3)/.test(w));
+  const wants3 = want.length === 0 || want.includes('body') || want.includes('phase3') || want.some((w) => /^(slide|p3|slam3|gaze3|struck3|death)/.test(w));
   if (wants3) {
     const laid = (L: EyeLayer, fwd: number = P3.fwd, rise: number = P3.rise): EyeLayer => ({ ...L, back: L.back - fwd, drop: L.drop - rise });
     const tongueOf = (key: string, an: ColossusAnim): EyeLayer => laid({ key, pose: { view: 'front', drop: 0, back: 0, body: true, gaze: an.gaze, arms: [], anim: { ...an, parts: 'tongue' } } as ColossusPose, drop: 0, back: 0 });
@@ -373,6 +374,19 @@ function plan(want: readonly string[]): { moves: MoveSpec[]; layers: { key: stri
         Array.from({ length: ART_GAZE.frames }, (_, f) => tongueAt(f, [tongueOf(`P3G${j}.${pad(f)}`, anOf(f))], [f >= ART_GAZE.wind && f < ART_GAZE.wind + ART_GAZE.strike ? tongueOf(`P3G${j}.${pad(f - 1)}`, anOf(f - 1)) : null])),
       );
     });
+    // (HIS DEATH, the art's eye_death.ts, his yes of 8 Nov: from the killing blow landing, his stand on its frame 0 then: his eye seizing
+    // in his stand's jaws and drool; from its burst all of him one layer a frame, painted sunk as he goes under; to a second past his
+    // going under, the water closing over him)
+    const sm = (a: number, b: number, x: number): number => {
+      const u = Math.max(0, Math.min(1, (x - a) / (b - a)));
+      return u * u * (3 - 2 * u);
+    };
+    add('death', 'death', () =>
+      Array.from({ length: DEATH_GONE + 30 }, (_, f) => {
+        const L = deathLayers(f, 0);
+        return { ...fr([L.jaws, L.spit, L.tongue], L.smear), sunk: sm(DEATH.sink[0], DEATH.sink[1], f), pulse: f < DEATH.burst ? 1 : 0 };
+      }),
+    );
   }
   // HIS TENTACLES, each its own figure
   for (let w = 0; w < 5; w++) {

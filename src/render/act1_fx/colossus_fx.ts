@@ -13,7 +13,7 @@
 // Each slam, smash and splash is kept here from the frame it is first seen (by the fight's clock), so that what it leaves lasts after
 // the rules have done with it.
 
-import { BODY2, CHANGE3, CRASH, EYE3, EYE_SLAM, GAZE, HIS_PLACE, RAIN, ROOTS, SLAM, SMASH, STONE, WAKE, WAVE, poolR, rootAt, waveFront } from '../../game/colossus_fight';
+import { BODY2, CHANGE3, CRASH, DEATH, EYE3, EYE_SLAM, GAZE, HIS_PLACE, RAIN, ROOTS, SLAM, SMASH, STONE, WAKE, WAVE, poolR, rootAt, waveFront } from '../../game/colossus_fight';
 import type { ColossusFight, Seg } from '../../game/colossus_fight';
 import type { ColossusOn } from '../../game/act1_rules/colossus';
 import type { Game } from '../../game/game';
@@ -167,67 +167,70 @@ const sm2 = (a: number, b: number, x: number): number => {
   return u * u * (3 - 2 * u);
 };
 
+/** Bubbles coming up at each spot (stone tiles, a seed), `k` of a boil (0 to 1): a few swelling and popping, then many, the water heaving
+ *  pale over each. */
+function drawBubbles(g: CanvasRenderingContext2D, P: StoneAt, spots: readonly (readonly [number, number, number])[], k: number, t: number): void {
+  for (const [su, sv, si] of spots) {
+    const R = 0.25 + 1.0 * k;
+    const n = Math.round(2 + 16 * k);
+    // (the boil: the water heaving pale over the spot)
+    if (k > 0.55) {
+      const b = (k - 0.55) / 0.45;
+      g.globalAlpha = 0.22 * b;
+      g.fillStyle = C.foam[1];
+      g.beginPath();
+      for (let i = 0; i <= 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const r = R * 0.8 * (0.7 + 0.5 * n1(i * 0.8 + t * 2.5, si * 13 + 5));
+        const [x, y] = P(su + Math.cos(a) * r, sv + Math.sin(a) * r * 0.9);
+        if (i === 0) g.moveTo(x, y);
+        else g.lineTo(x, y);
+      }
+      g.closePath();
+      g.fill();
+    }
+    for (let i = 0; i < n; i++) {
+      const per = 0.55 + 0.6 * h(si, i, 31);
+      const ph = (t / per + h(si, i, 32)) % 1;
+      const cyc = Math.floor(t / per + h(si, i, 32));
+      const a = h(si, i, cyc) * Math.PI * 2;
+      const d = R * Math.sqrt(h(si, i, cyc + 7));
+      const [x, y] = P(su + Math.cos(a) * d, sv + Math.sin(a) * d);
+      if (ph < 0.82) {
+        // (swelling as it comes up)
+        const r = 0.6 + 2.2 * (ph / 0.82) * (0.6 + 0.6 * h(si, i, 33));
+        g.globalAlpha = 0.85;
+        g.strokeStyle = i % 3 ? C.foam[2] : C.foam[3];
+        g.lineWidth = 1;
+        g.beginPath();
+        g.ellipse(Math.round(x) + 0.5, Math.round(y) + 0.5, r, r * 0.7, 0, 0, Math.PI * 2);
+        g.stroke();
+        g.globalAlpha = 0.6;
+        g.fillStyle = C.foam[3];
+        g.fillRect(Math.round(x - r * 0.4), Math.round(y - r * 0.4), 1, 1);
+      } else {
+        // (popped: a few drops flung up)
+        const q = (ph - 0.82) / 0.18;
+        g.globalAlpha = 0.8 * (1 - q);
+        g.fillStyle = C.foam[2];
+        for (let j = 0; j < 3; j++) {
+          const aj = (j / 3) * Math.PI * 2 + a;
+          g.fillRect(Math.round(x + Math.cos(aj) * 3 * q), Math.round(y - 4 * q + 6 * q * q + Math.sin(aj) * 1.5 * q), 1, 1);
+        }
+      }
+    }
+  }
+  g.globalAlpha = 1;
+}
+
 export function drawColossusGround(g: CanvasRenderingContext2D, P: StoneAt, f: ColossusFight, t: number): void {
   const now = f.time;
   // HIS WAKING (WAKE): bubbles coming up where his two tentacles will burst and over his eye, a few and then a boil, after the water has
   // lain still a moment; going on a little as they burst
   if (f.ph === 1 && (f.wakeT !== null || f.phT < WAKE.rise + 0.8) && f.mode === 'fight') {
-    const w = f.wakeT ?? WAKE.rise + (f.phT - WAKE.rise);
+    const w = f.wakeT ?? f.phT;
     const k = sm2(WAKE.still, WAKE.rise, w) * (1 - sm2(WAKE.rise, WAKE.rise + 0.8, w));
-    if (k > 0) {
-      const spots: [number, number, number][] = [...ROOTS[1].map((u, i): [number, number, number] => [rootAt(u).u, rootAt(u).v, i]), [HIS_PLACE.u, HIS_PLACE.v + 3.2, 2], [HIS_PLACE.u - 2, HIS_PLACE.v + 2.4, 3], [HIS_PLACE.u + 2, HIS_PLACE.v + 2.4, 4]];
-      for (const [su, sv, si] of spots) {
-        const R = 0.25 + 1.0 * k;
-        const n = Math.round(2 + 16 * k);
-        // (the boil: the water heaving pale over the spot)
-        if (k > 0.55) {
-          const b = (k - 0.55) / 0.45;
-          g.globalAlpha = 0.22 * b;
-          g.fillStyle = C.foam[1];
-          g.beginPath();
-          for (let i = 0; i <= 16; i++) {
-            const a = (i / 16) * Math.PI * 2;
-            const r = R * 0.8 * (0.7 + 0.5 * n1(i * 0.8 + t * 2.5, si * 13 + 5));
-            const [x, y] = P(su + Math.cos(a) * r, sv + Math.sin(a) * r * 0.9);
-            if (i === 0) g.moveTo(x, y);
-            else g.lineTo(x, y);
-          }
-          g.closePath();
-          g.fill();
-        }
-        for (let i = 0; i < n; i++) {
-          const per = 0.55 + 0.6 * h(si, i, 31);
-          const ph = (t / per + h(si, i, 32)) % 1;
-          const cyc = Math.floor(t / per + h(si, i, 32));
-          const a = h(si, i, cyc) * Math.PI * 2;
-          const d = R * Math.sqrt(h(si, i, cyc + 7));
-          const [x, y] = P(su + Math.cos(a) * d, sv + Math.sin(a) * d);
-          if (ph < 0.82) {
-            // (swelling as it comes up)
-            const r = 0.6 + 2.2 * (ph / 0.82) * (0.6 + 0.6 * h(si, i, 33));
-            g.globalAlpha = 0.85;
-            g.strokeStyle = i % 3 ? C.foam[2] : C.foam[3];
-            g.lineWidth = 1;
-            g.beginPath();
-            g.ellipse(Math.round(x) + 0.5, Math.round(y) + 0.5, r, r * 0.7, 0, 0, Math.PI * 2);
-            g.stroke();
-            g.globalAlpha = 0.6;
-            g.fillStyle = C.foam[3];
-            g.fillRect(Math.round(x - r * 0.4), Math.round(y - r * 0.4), 1, 1);
-          } else {
-            // (popped: a few drops flung up)
-            const q = (ph - 0.82) / 0.18;
-            g.globalAlpha = 0.8 * (1 - q);
-            g.fillStyle = C.foam[2];
-            for (let j = 0; j < 3; j++) {
-              const aj = (j / 3) * Math.PI * 2 + a;
-              g.fillRect(Math.round(x + Math.cos(aj) * 3 * q), Math.round(y - 4 * q + 6 * q * q + Math.sin(aj) * 1.5 * q), 1, 1);
-            }
-          }
-        }
-      }
-      g.globalAlpha = 1;
-    }
+    if (k > 0) drawBubbles(g, P, [...ROOTS[1].map((u, i): [number, number, number] => [rootAt(u).u, rootAt(u).v, i]), [HIS_PLACE.u, HIS_PLACE.v + 3.2, 2], [HIS_PLACE.u - 2, HIS_PLACE.v + 2.4, 3], [HIS_PLACE.u + 2, HIS_PLACE.v + 2.4, 4]], k, t);
   }
   // THE STONE WET where a wave has passed, darker and sheened, drying from its far side
   for (const w of KEPT.wet) {
@@ -1322,5 +1325,202 @@ export function drawColossusP3(g: CanvasRenderingContext2D, P: StoneAt, f: Colos
       g.fillRect(Math.round(x), Math.round(y), i % 3 ? 2 : 3, 2);
     }
     g.globalAlpha = 1;
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------
+// HIS DEATH (the art chat's README stage 7: “THE BURST ... 80 gobs, 220 drops, 9 ropes and a veil of his dark ichor, most landing 3 to 8
+// tiles out over 1 to 2 s; the gore lying 9 s, fading from 5.4 s. His sludge over the edge: 3.4 tiles in, along the middle 11 tiles of
+// it, gone 4 s after he is under. 46 teeth falling; 4 bones lying in the shallows from 196; the water boiling 170–300”): his pictures
+// are baked; these are the game's, drawn as its film draws them. `s`: seconds from the killing blow.
+
+/** Where his eye bursts (stone tiles, and how high). */
+const BURST3 = { u: 8.71, v: 0.72, up: 5.68 } as const;
+/** One gob or drop of his ichor: where it is flung (tiles out, the way), how high it arcs, how long it flies; gob or drop. */
+function spray(i: number): { ang: number; d: number; arc: number; T: number; gob: boolean } {
+  const gob = i < 80;
+  const ang = (h(i, 701) - 0.5) * 2.6 + (h(i, 702) - 0.5) * 0.6;
+  return { ang, d: (gob ? 3 : 2.4) + 5 * h(i, 703) ** 0.8, arc: 0.6 + 2.4 * h(i, 704), T: 1 + h(i, 705), gob };
+}
+const sprayAt = (i: number, q: number): [number, number, number] => {
+  const S = spray(i);
+  return [BURST3.u + Math.sin(S.ang) * S.d * q, BURST3.v + Math.cos(S.ang) * S.d * q, BURST3.up * (1 - q) + 4 * S.arc * q * (1 - q)];
+};
+const onStone = (u: number, v: number): boolean => u >= 0 && u <= STONE.w && v >= 0 && v <= STONE.d;
+
+export function drawColossusDeath(g: CanvasRenderingContext2D, P: StoneAt, s: number, t: number, pass: 'ground' | 'air'): void {
+  const f = s * 30;
+  const burstS = s - DEATH.burst / 30;
+  if (pass === 'ground') {
+    // THE WATER over him: churned as he thrashes and slides back; boiling and heaving as he goes under; still at the end
+    const boil = f >= DEATH.boil[0] ? Math.sin(Math.PI * sm(DEATH.boil[0], DEATH.boil[1], f)) ** 0.7 : 0;
+    const churn = f >= 38 && f < DEATH.melt[0] + 40 ? 0.5 * (1 - sm(DEATH.melt[0], DEATH.melt[0] + 40, f)) : 0;
+    const k = Math.max(boil, churn);
+    if (k > 0.02) drawBubbles(g, P, [[5.2, -2.2, 21], [8.5, -1.6, 22], [11.8, -2.2, 23], [6.8, -4.6, 24], [10.2, -4.6, 25], [8.5, -6.5, 26]], k, t);
+    // HIS BONES in the shallows off the back edge, as the water clears over them
+    if (f >= DEATH.sink[0] + 20) {
+      const a = sm(DEATH.sink[0] + 20, DEATH.sink[1] + 10, f);
+      ([[6.2, -0.9, 0.5], [7.8, -1.35, -0.3], [9.6, -0.75, 0.2], [11.0, -1.2, -0.6]] as const).forEach(([u, v, rot], i) => {
+        const [x, y] = P(u, v);
+        const L = 9 + 4 * h(i, 711);
+        g.save();
+        g.translate(Math.round(x), Math.round(y));
+        g.rotate(rot);
+        g.globalAlpha = 0.55 * a;
+        g.fillStyle = '#b8b09a';
+        g.fillRect(-L / 2, -1, L, 2);
+        g.fillRect(-L / 2 - 1, -2, 3, 4);
+        g.fillRect(L / 2 - 2, -2, 3, 4);
+        g.globalAlpha = 0.35 * a;
+        g.fillStyle = '#e4dcc4';
+        g.fillRect(-L / 2 + 1, -1, L - 2, 1);
+        g.restore();
+      });
+      g.globalAlpha = 1;
+    }
+    // HIS SLUDGE: run out over the stone's back edge as he melts, along its middle; drawn back off it after he is under
+    if (f >= DEATH.melt[0]) {
+      const grow = sm(DEATH.melt[0], DEATH.melt[1], f);
+      const drain = sm(DEATH.gone + 20, DEATH.gone + 120, f);
+      const reach = (u: number): number => 3.4 * grow * (1 - drain) * Math.max(0, 1 - ((u - 8.5) / 5.5) ** 2) ** 0.55 * (0.72 + 0.4 * n1(u * 0.9 + s * 0.15, 731));
+      if (grow * (1 - drain) > 0.01) {
+        g.globalAlpha = 0.92;
+        g.fillStyle = '#0b0a0d';
+        g.beginPath();
+        const [x0, y0] = P(3, 0);
+        g.moveTo(x0, y0);
+        for (let u = 3; u <= 14.001; u += 0.2) {
+          const [x, y] = P(u, reach(u) + 0.15 * (n1(u * 3 + s * 0.8, 732) - 0.5));
+          g.lineTo(x, y);
+        }
+        const [x1, y1] = P(14, 0);
+        g.lineTo(x1, y1);
+        g.closePath();
+        g.fill();
+        // (its wet sheen along its running edge)
+        g.fillStyle = '#2e3138';
+        for (let u = 3.2; u <= 13.8; u += 0.25) {
+          const r = reach(u);
+          if (r < 0.1) continue;
+          const [x, y] = P(u, r * 0.85);
+          if (h(Math.round(u * 4), Math.floor(t * 4), 733) < 0.6) g.fillRect(Math.round(x), Math.round(y), 2, 1);
+        }
+        g.globalAlpha = 1;
+      }
+    }
+    // HIS GORE on the stone where the spray came down: lying, fading from 5.4 s
+    if (burstS > 0) {
+      const fade = 1 - sm(5.4, 9, burstS);
+      if (fade > 0) {
+        for (let i = 0; i < 300; i++) {
+          const S = spray(i);
+          if (burstS < S.T) continue;
+          const [u, v] = sprayAt(i, 1);
+          if (!onStone(u, v)) continue;
+          const [x, y] = P(u, v);
+          g.globalAlpha = 0.9 * fade;
+          g.fillStyle = ICHOR[i % 3];
+          if (S.gob) {
+            const r = 2 + 2.5 * h(i, 712);
+            g.beginPath();
+            for (let j = 0; j <= 10; j++) {
+              const a = (j / 10) * Math.PI * 2;
+              const rr = r * (0.6 + 0.6 * h(i, j, 713));
+              if (j === 0) g.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.55);
+              else g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.55);
+            }
+            g.closePath();
+            g.fill();
+            g.fillStyle = '#4a2030';
+            g.fillRect(Math.round(x - r * 0.3), Math.round(y - 1), 1, 1);
+          } else g.fillRect(Math.round(x), Math.round(y), 1 + (i % 2), 1);
+        }
+        g.globalAlpha = 1;
+      }
+    }
+    return;
+  }
+  // OVER IT: THE BURST, a flash of his fire and then out; the spray flying, its ropes; his teeth dropping out
+  const [bx, by0] = P(BURST3.u, BURST3.v);
+  const by = by0 - BURST3.up * UP;
+  if (burstS >= 0 && burstS < 0.12) {
+    const k = 1 - burstS / 0.12;
+    g.globalAlpha = k;
+    g.fillStyle = FIRE[4];
+    g.beginPath();
+    g.arc(bx, by, 10 + 30 * (1 - k), 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 0.5 * k;
+    g.fillStyle = FIRE[2];
+    g.beginPath();
+    g.arc(bx, by, 22 + 40 * (1 - k), 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 1;
+  }
+  if (burstS >= 0 && burstS < 2.2) {
+    // (the veil: a dark mist thrown out and thinning)
+    if (burstS < 0.7) {
+      g.globalAlpha = 0.35 * (1 - burstS / 0.7);
+      g.fillStyle = ICHOR[1];
+      g.beginPath();
+      g.ellipse(bx, by + 10 * burstS, 18 + 90 * burstS, 10 + 40 * burstS, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    // (its ropes, stretched out between the burst and gobs flying, snapping)
+    for (let i = 0; i < 9 && burstS < 0.6; i++) {
+      const S = spray(i);
+      const [u, v, z] = sprayAt(i, Math.min(1, burstS / S.T));
+      const [x, y0] = P(u, v);
+      const y = y0 - z * UP;
+      g.globalAlpha = 0.8 * (1 - burstS / 0.6);
+      g.strokeStyle = ICHOR[2];
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(bx, by);
+      g.quadraticCurveTo((bx + x) / 2, (by + y) / 2 + 14, x, y);
+      g.stroke();
+    }
+    for (let i = 0; i < 300; i++) {
+      const S = spray(i);
+      if (burstS >= S.T) continue;
+      const q = burstS / S.T;
+      const [u, v, z] = sprayAt(i, q);
+      const [x, y0] = P(u, v);
+      g.globalAlpha = 1;
+      g.fillStyle = ICHOR[(i + 1) % 4];
+      const sz = S.gob ? 2 + Math.round(2 * h(i, 714)) : 1;
+      g.fillRect(Math.round(x), Math.round(y0 - z * UP), sz, sz);
+    }
+    g.globalAlpha = 1;
+  }
+  // HIS TEETH, dropping out of his melting jaws one by one into the water (a pale tooth falling, its plop)
+  if (f >= DEATH.teeth[0] && f < DEATH.teeth[1] + 30) {
+    for (let i = 0; i < 46; i++) {
+      const f0 = DEATH.teeth[0] + (i / 46) * (DEATH.teeth[1] - DEATH.teeth[0]) + 6 * (h(i, 721) - 0.5);
+      const ts = (f - f0) / 30;
+      if (ts < 0) continue;
+      const u = 4.6 + 7.8 * h(i, 722);
+      const v = -1.0 - 1.6 * h(i, 723);
+      const z0 = 1.6 + 2.4 * h(i, 724);
+      const z = z0 - 0.5 * 14 * ts * ts;
+      const [x, y0] = P(u + 0.4 * ts * (h(i, 725) - 0.5), v);
+      if (z > 0) {
+        g.fillStyle = '#d6cdb0';
+        g.fillRect(Math.round(x), Math.round(y0 - z * UP) - 2, 1, 3);
+        g.fillStyle = '#3a3428';
+        g.fillRect(Math.round(x) + 1, Math.round(y0 - z * UP) - 2, 1, 3);
+      } else {
+        const ps = ts - Math.sqrt((2 * z0) / 14);
+        if (ps < 0.45) {
+          g.globalAlpha = 0.7 * (1 - ps / 0.45);
+          g.strokeStyle = C.foam[2];
+          g.lineWidth = 1;
+          g.beginPath();
+          g.ellipse(Math.round(x) + 0.5, Math.round(y0) + 0.5, 1 + 5 * ps, 0.6 + 2.2 * ps, 0, 0, Math.PI * 2);
+          g.stroke();
+          g.globalAlpha = 1;
+        }
+      }
+    }
   }
 }

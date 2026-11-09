@@ -8,11 +8,12 @@
 
 import { colossusOf, colossusOn } from '../../game/act1_rules/colossus';
 import {
-  ARM, BODY2, CHANGE3, CRASH, EYE_SLAM, FORWARD, GAZE, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAKE, WAVE,
+  ARM, BODY2, CHANGE3, CRASH, DEATH, EYE_SLAM, FORWARD, GAZE, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAKE, WAVE,
   eyeSpotNear, gazeAimNear, hookFront, poolR, rootAt, stoneToWorld, waveFront, worldToStone,
 } from '../../game/colossus_fight';
 import type { Arm, ColossusFight } from '../../game/colossus_fight';
-import { drawColossusAir, drawColossusGround, drawColossusP3, drawColossusRings, drawColossusWard, keepColossusFx } from './colossus_fx';
+import type { Peril } from '../../game/state';
+import { drawColossusAir, drawColossusDeath, drawColossusGround, drawColossusP3, drawColossusRings, drawColossusWard, keepColossusFx } from './colossus_fx';
 import type { Act1Fx, Act1FxCtx } from './types';
 import { ARM_BAKE, colossusAtEnd, colossusBakeAsk, colossusBaked, colossusEye, colossusFrames, colossusSlamTurns, colossusWant, drawColossusArm, drawColossusBody, drawColossusHooks } from '../colossus_baked';
 
@@ -100,7 +101,7 @@ function draw(c: Act1FxCtx): void {
   const shovelWants = f.shovel ? [`shovel.${shPart}`, `shovel.${shPart + 1}`, 'shovel.snap', 'hooks', ...base([0, 1, 2]).filter((m) => !m.includes('smash')), ...(shPart >= 3 ? ['stand'] : [])] : f.ph === 2 && f.mode === 'fight' && f.shovelIn < 4 ? ['shovel.0', 'shovel.snap', 'hooks'] : [];
   // (phase 3: his body and droop; his eye's attack under way, and the one coming where the hero is now)
   const hs = worldToStone(S, c.game.hero.x, c.game.hero.y);
-  const p3Wants = (): string[] => ['p3body', colossusTongue3(f)[0], ...(f.eye ? [] : [f.eyeNext === 'slam' ? `slam3.${eyeSpotNear(hs)}` : `gaze3.${gazeAimNear(hs)}`])];
+  const p3Wants = (): string[] => ['p3body', colossusTongue3(f)[0], ...(f.eye ? [] : [f.eyeNext === 'slam' ? `slam3.${eyeSpotNear(hs)}` : `gaze3.${gazeAimNear(hs)}`]), ...(f.siege ? [] : ['death'])];
   colossusWant(
     f.shovel ? shovelWants
       : f.ph === 1 && f.mode === 'between' ? ['lurk', 'entrance.0', ...dying]
@@ -379,13 +380,47 @@ function eyeAt3(f: ColossusFight, hx: number, hy: number): [number, number] | nu
   return e ? [hx + e[0], hy + e[1]] : null;
 }
 
+/**
+ * HIS DEATH (game/colossus_fight.ts DEATH; the art's eye_death.ts, baked as `death`): played on his fight's peril from the killing blow
+ * (its clock then `p.c`, game/act1_rules/colossus.ts), his own pictures from his middle at his place, the game's parts of it round them.
+ */
+function drawDeath(c: Act1FxCtx, p: Peril, pass: 'ground' | 'air'): void {
+  const g = c.g;
+  const S = c.game.level.land?.stone;
+  if (!g || !S) return;
+  const P = (u: number, v: number): readonly [number, number] => {
+    const w = stoneToWorld(S, u, v);
+    return c.at(w.x, w.y);
+  };
+  const s = p.t - p.c;
+  const k = Math.floor(s * 30 + 1e-6);
+  if (pass === 'air') {
+    drawColossusDeath(g, P, s, c.t, 'air');
+    return;
+  }
+  colossusBakeAsk();
+  colossusWant(['death'], []);
+  const [hx, hy] = P(HIS_PLACE.u, HIS_PLACE.v);
+  const lit = 1 - Math.max(0, Math.min(1, (k - DEATH.melt[0]) / (DEATH.gone - DEATH.melt[0])));
+  if (lit > 0) c.spot(hx, hy - 60, 190, 0.75 * lit);
+  drawColossusDeath(g, P, s, c.t, 'ground');
+  if (k < colossusFrames('death')) drawColossusBody(g, 'death', k, hx, hy);
+}
+
 export const COLOSSUS_FX: Act1Fx = {
   // (his figure and his tentacles' are the stand-ins above, not his old pictures: nothing of the Drowned Eye's is drawn)
   hidden: () => true,
   ground(c, _m, p) {
-    if (p && p.a1 === 'eye:fight') draw(c);
+    if (p && p.a1 === 'eye:fight') {
+      if (p.a === 1) drawDeath(c, p, 'ground');
+      else draw(c);
+    }
   },
   air(c, _m, p) {
+    if (p && p.a1 === 'eye:fight' && p.a === 1) {
+      drawDeath(c, p, 'air');
+      return;
+    }
     if (!p || p.a1 !== 'eye:fight' || !c.g) return;
     const S = c.game.level.land?.stone;
     const boss = colossusOf(c.game);

@@ -293,6 +293,13 @@ export const LIFE = { 1: 1 / 2, 2: 1 / 3, 3: 1 / 3, body: 1 } as const;
  * his two tentacles bursting up at `rise`, his eye's fire coming up under the water from `lurk[0]` to `lurk[1]`. Nothing hurts before.
  */
 export const WAKE = { still: 1.2, rise: 4.2, lurk: [3.4, 4.8] as readonly [number, number] } as const;
+/**
+ * HIS DEATH (the art's eye_death.ts, his yes of 8 Nov: “Eye bursts, he melts (Recommended)”; shown it, “Yes, he's done
+ * (Recommended)”): from the killing blow landing, his eye seizing and swelling to its burst at `burst`, his grip tearing loose at `tear`,
+ * his last roar from `roar`, melting across `melt`, sinking across `sink`, gone under at `gone`, the water still at `still`; `long` in
+ * all (frames at 30 a second). It hurts nothing. The screen's shakes at its beats (game px).
+ */
+export const DEATH = { burst: 36, tear: 58, roar: 64, melt: [96, 196] as const, teeth: [100, 180] as const, sink: [176, 250] as const, boil: [170, 300] as const, gone: 250, still: 316, long: 12.5, shakes: [[0, 5], [36, 14], [58, 7], [64, 6], [176, 3]] as readonly (readonly [number, number])[] } as const;
 /** After the last of a phase's tentacles is killed: the flasks refilled at once; his change begins no sooner than this (seconds), as his stand (or lurk) comes round. */
 export const BETWEEN = { least: 1.0 } as const;
 
