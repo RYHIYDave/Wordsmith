@@ -521,6 +521,9 @@ export interface BodyFx {
   glob?: { x: number; y: number; z: number; vx: number; vy: number; vz: number; s: number };
   splash?: { x: number; y: number; s: number };
   arc?: { ox: number; oy: number; a0: number; a1: number; from: number; k: number; flare: number };
+  /** The gaze's arc when it is laid at another place than his (phase 2's) own (art/eye_phase3.ts): where its line turns, toward whom,
+   *  its sides, how far out the beam comes down. */
+  geo?: { ox: number; oy: number; toward: number; a0: number; a1: number; far: number };
   dark?: number;
   beam?: { sx: number; sy: number; ex: number; ey: number; ax: number; ay: number; a: number; s: number; reach: number; k: number };
   scorch?: { ox: number; oy: number; a0: number; a1: number; to: number; f: number };
@@ -529,6 +532,26 @@ export interface BodyFx {
   flare?: number;
   swell?: number;
   smoke?: number;
+}
+/** WHAT THE GAME DRAWS IN HIS PHASE 3 (art/eye_phase3.ts; the pictures' tool draws it). THE PILLARS, the cult's three obelisks (where each
+ *  stands, the world's; burning, put out by a piece of the ward-stone set into it, or broken by blows; seconds since it was so; blows
+ *  taken; for one broken, which way it falls), and THE LINES of the siege's magic from each into him (`to`, the world's); HIS SHIELD (how
+ *  strong, 0 to 1; a blow glancing off it, where and seconds since); THE SIEGE'S BOLTS (where each comes down, the world's; seconds
+ *  since it was warned: it strikes `warn` seconds after); THE WARD-STONE PIECE (lying, held in the Warrior's hand, or flying from his
+ *  hand into a pillar's foot); THE SLIDE (how hard he heaves, his front against the stone's edge, seconds since it gripped); THE EYE
+ *  SLAM (where it comes down, the warning's progress, seconds since it struck, how far the eye is up off the stone); HIS EYE STRUCK
+ *  (where, seconds since, blow by blow); the blows the Warrior strikes (where each lands, seconds since). */
+export interface P3Fx {
+  shot: string;
+  f: number;
+  pillars: Array<{ x: number; y: number; state: 'dark' | 'lit' | 'out' | 'broken'; s: number; hits: number; to: [number, number, number]; fall?: [number, number]; lit?: number }>;
+  shield: { k: number; flash?: { x: number; y: number; z: number; s: number } };
+  bolts: Array<{ x: number; y: number; s: number; seed: number; warn: number }>;
+  piece?: { x: number; y: number; z: number; held: boolean; set?: number };
+  slide?: { heave: number; grip?: number; fwd: number; rise: number; v: number; tear?: number };
+  slam?: { x: number; y: number; k: number; flare: number; s: number; lift: number };
+  struck?: Array<{ x: number; y: number; z: number; s: number }>;
+  blows?: Array<{ x: number; y: number; z: number; s: number; on: 'eye' | 'ward' | 'pillar' }>;
 }
 /** The Warrior in a frame of the tentacles' films: where (the arena's units: across, and onto the stone from the back of the water),
  *  facing him ('back') or the camera ('front'), standing, running or striking, and the frame of it. */
@@ -542,7 +565,7 @@ export interface HeroAt {
   lift?: number;
 }
 export interface EyeFrame {
-  move: 'stand' | 'lurk' | 'entrance' | 'p1' | 'p2' | 'fan' | 's1' | 's2' | 'b1' | 'b2' | 'g1' | 'g2';
+  move: 'stand' | 'lurk' | 'entrance' | 'p1' | 'p2' | 'fan' | 's1' | 's2' | 'b1' | 'b2' | 'g1' | 'g2' | 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'q6' | 'q7' | 'q8';
   /** The tentacles' films: the Warrior, how far the camera has come down from the stills' (picture pixels), and what the game draws
    *  for the tentacles. */
   hero?: HeroAt;
@@ -554,6 +577,8 @@ export interface EyeFrame {
   sfx?: ShovelFx;
   /** What the game draws for his body's own attacks (art/eye_body.ts). */
   bfx?: BodyFx;
+  /** What the game draws in his phase 3 (art/eye_phase3.ts). */
+  p3?: P3Fx;
   k: number;
   /** His clock (the stand's: 0 at its first frame). */
   t: number;

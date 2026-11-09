@@ -35,9 +35,11 @@ import type { End } from '../src/art/eye_shovel';
 import { COLUMN_FALL, PIECES as STONE_PIECES, SHAFT, bodyOf, brokenOf, chipAt, chipPicture, chipsOf, fragAt, partition, pieceHit, piecesFrame } from '../src/art/eye_pieces';
 import type { Chip, Frag, FragAt, Piece, PiecesNow } from '../src/art/eye_pieces';
 import { BEAM, BEAM_COLOURS, BILE_COLOURS, BODY_TAKE, GAZE, GAZE_FIRE, POOL, SPLASH_R, THROAT, arcEdge, beamAngle, beamEdge, beamLine, bodyFrame, fireEdge, globBlobs, poolEdge, poolR, scorchEdge, warnEdge } from '../src/art/eye_body';
-import type { ArmFx, BodyFx, EyeFrame, EyeLayer } from '../src/art/eye_moves';
+import type { ArmFx, BodyFx, EyeFrame, EyeLayer, P3Fx } from '../src/art/eye_moves';
+import { BOLT_SLANT, P3_TAKES, PILLAR_OUT, PILLAR_TOP, Q4_PIECE, RAIN as P3_RAIN, SLAM, TOPPLE, p3Frame, siegeWobble, slimeEdge, wardEdge } from '../src/art/eye_phase3';
+import type { P3Shot } from '../src/art/eye_phase3';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
-import { RIM_ALPHA } from '../src/art/kit';
+import { CYAN, GLINT, RIM_ALPHA } from '../src/art/kit';
 
 (Px.prototype as unknown as { toCanvas: (this: Px) => unknown }).toCanvas = function (this: Px): unknown {
   return this;
@@ -384,11 +386,14 @@ const BOXES = new Map<EyeLayer, [number, number, number, number]>();
 /** His shovel: him at an end, turned (`V` layers); a scraping tentacle's head and its body (`AH`, `AB`), painted where they lie across the
  *  stone's depth, at the front of the stone. */
 const LAYER_SIDE = { w: 760, h: 800, ax: 360, ay: 460, raw: true } as const;
+/** His tongue slammed out over the stone (his phase 3's eye slam): taller, for the eye lying far out before him. */
+const LAYER_SLAM = { w: 1100, h: 620, ax: 550, ay: 300, raw: true } as const;
 const LAYER_HEAD = { w: 1100, h: 540, ax: 550, ay: -60, raw: true } as const;
 const LAYER_BODY_L = { w: 1300, h: 560, ax: -230, ay: -60, raw: true } as const;
 const LAYER_BODY_R = { w: 1300, h: 560, ax: 1530, ay: -60, raw: true } as const;
 const frameFor = (L: EyeLayer): { w: number; h: number; ax: number; ay: number; raw: true; box?: readonly [number, number, number, number] } => {
   if (L.key.startsWith('V')) return LAYER_SIDE;
+  if (L.key.startsWith('T.e')) return LAYER_SLAM;
   if (!L.key.startsWith('A')) return LAYER;
   let b = BOXES.get(L);
   const FR = L.key.startsWith('AH') ? LAYER_HEAD : L.key.startsWith('AB.l') ? LAYER_BODY_L : L.key.startsWith('AB.r') ? LAYER_BODY_R : LAYER_ARM;
@@ -522,10 +527,10 @@ function layer(L: EyeLayer): Layer {
 // =============================================================================================
 // THE FRAMES OF EACH MOVE
 
-const MOVES = { lurk: EYE_LURK.frames, entrance: EYE_ENTRANCE.frames, stand: EYE_STAND.frames, p1: SHOTS.p1, p2: SHOTS.p2, fan: SHOTS.fan, s1: SHOVEL_FRAMES.s1, s2: SHOVEL_FRAMES.s2, b1: BODY_TAKE.frames, b2: BODY_TAKE.frames, g1: BODY_TAKE.frames, g2: BODY_TAKE.frames } as const;
+const MOVES = { lurk: EYE_LURK.frames, entrance: EYE_ENTRANCE.frames, stand: EYE_STAND.frames, p1: SHOTS.p1, p2: SHOTS.p2, fan: SHOTS.fan, s1: SHOVEL_FRAMES.s1, s2: SHOVEL_FRAMES.s2, b1: BODY_TAKE.frames, b2: BODY_TAKE.frames, g1: BODY_TAKE.frames, g2: BODY_TAKE.frames, q1: P3_TAKES.q1.frames, q2: P3_TAKES.q2.frames, q3: P3_TAKES.q3.frames, q4: P3_TAKES.q4.frames, q5: P3_TAKES.q5.frames, q6: P3_TAKES.q6.frames, q7: P3_TAKES.q7.frames, q8: P3_TAKES.q8.frames } as const;
 type Move = keyof typeof MOVES;
 /** A frame of a move or of a tentacles' shot. */
-const frameAt = (mv: Move, k: number): EyeFrame => (mv === 'b1' || mv === 'b2' || mv === 'g1' || mv === 'g2' ? bodyFrame(mv, k) : mv === 's1' || mv === 's2' ? piecesFrame(mv, k) : mv === 'p1' || mv === 'p2' || mv === 'fan' ? fightFrame(mv, k) : eyeFrame(mv, k));
+const frameAt = (mv: Move, k: number): EyeFrame => (mv[0] === 'q' ? p3Frame(mv as P3Shot, k) : mv === 'b1' || mv === 'b2' || mv === 'g1' || mv === 'g2' ? bodyFrame(mv, k) : mv === 's1' || mv === 's2' ? piecesFrame(mv, k) : mv === 'p1' || mv === 'p2' || mv === 'fan' ? fightFrame(mv, k) : eyeFrame(mv, k));
 function layersOf(F: EyeFrame): EyeLayer[] {
   return [F.jaws, F.spit, F.tongue, ...F.arms, ...F.smear].filter((L): L is EyeLayer => !!L);
 }
@@ -705,7 +710,7 @@ function distanceOnWater(seed: Uint8Array, w: number, h: number): Float32Array {
 
 /** A thing flying through the air (spray, goo, droplets), its path from where and when it was thrown. */
 /** What flies: 0 a drop of his spittle, 1 a gob of his slime, 2 a drop of water, 3 a sheet of his slime, tumbling. */
-interface Flyer { x: number; y: number; z: number; vx: number; vy: number; vz: number; t0: number; kind: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11; size: number; seed?: number }
+interface Flyer { x: number; y: number; z: number; vx: number; vy: number; vz: number; t0: number; kind: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12; size: number; seed?: number }
 /** A CHUNK OF THE PAVING (kind 6) flung up by a slam: where it is `s` seconds after it was thrown, tumbling, arcing, bouncing twice on
  *  the stone (each bounce a third as high, sliding on), settling and lying; how far it has turned; whether it has come to rest. */
 function chunkAt(f: Flyer, s: number): { x: number; y: number; z: number; turn: number; rest: boolean } {
@@ -2214,7 +2219,7 @@ function groundRound(x: number, y: number, R: number, fn: (i: number, j: number,
 /** A FLAME from its foot (canvas), `h` high and `w` wide (picture pixels): two or three licks rising from one foot, each swaying its own
  *  way and flaring and dying by turns, ragged at its edges, forking at its tips; pale gold at its heart low down, gold, the enemy's pink
  *  at its edges and tips, its tips thinning away; `a` how strong, `hot` how hot its heart. */
-function flameTongue(pic: Pic, top: Top, i0: number, j0: number, h: number, w: number, seed: number, t: number, nr: number, a: number, hot = 1): void {
+function flameTongue(pic: Pic, top: Top, i0: number, j0: number, h: number, w: number, seed: number, t: number, nr: number, a: number, hot = 1, mark = false): void {
   const licks = 2 + (seed % 2);
   for (let L = 0; L < licks; L++) {
     const hl = h * (L === 0 ? 1 : 0.5 + 0.35 * h3(seed, L, 0, 8604)) * (0.75 + 0.5 * vn(t * 7 + L * 3.1, seed * 0.13, 8605));
@@ -2234,6 +2239,8 @@ function flameTongue(pic: Pic, top: Top, i0: number, j0: number, h: number, w: n
         const heat = (1 - u) ** 1.2 * (1 - e * 0.7) * hot;
         const c = heat > 0.75 ? BEAMC[4] : heat > 0.5 ? BEAMC[3] : heat > 0.28 ? BEAMC[2] : BEAMC[1];
         pic.over(i, j, c[0], c[1], c[2], a * (e > 0.75 || u > 0.75 ? 175 : 245));
+        // (an obelisk's fire: how near it is kept, so that what lies behind it (the lily pads on the water) is not laid over it)
+        if (mark && i >= 0 && j >= 0 && i < CW && j < CH && PNEAR[j * CW + i] < nr + d * 0.5) PNEAR[j * CW + i] = nr + d * 0.5;
       }
     }
   }
@@ -2507,7 +2514,7 @@ function bodyUnder(pic: Pic, F: EyeFrame, top: Top, water: Uint8Array): void {
     const Sc = B.scorch;
     const lum = new Float32Array(CW * CH);
     for (let q = 0; q < CW * CH; q++) lum[q] = D[q * 4] * 0.3 + D[q * 4 + 1] * 0.55 + D[q * 4 + 2] * 0.15;
-    const far = Math.hypot(beamLine(Sc.a0).ax - Sc.ox, beamLine(Sc.a0).ay - Sc.oy);
+    const far = Math.hypot(beamLine(Sc.a0, B.geo).ax - Sc.ox, beamLine(Sc.a0, B.geo).ay - Sc.oy);
     for (let j = 2; j < CH - 2; j++) for (let i = 2; i < CW - 2; i++) {
       const q = j * CW + i;
       if (water[q] || overHim(q)) continue;
@@ -2806,7 +2813,7 @@ function bodyOver(pic: Pic, F: EyeFrame, top: Top): void {
       const age = (Sc.f - (GAZE_FIRE + u * GAZE.sweep)) / EYE_FPS;
       if (age < 0.05 || age > 0.45) continue;
       const ang = lerp(Sc.a0, Sc.a1, u) + (h3(n, 1, 0, 8741) - 0.5) * 0.02;
-      const Ln = beamLine(ang);
+      const Ln = beamLine(ang, B.geo);
       const len = Math.hypot(Ln.ex - Ln.sx, Ln.ey - Ln.sy);
       for (let m = 0; m < 4; m++) {
         const v = len * (0.08 + 0.84 * h3(n, m, 2, 8742));
@@ -2821,7 +2828,7 @@ function bodyOver(pic: Pic, F: EyeFrame, top: Top): void {
       const u = (n + 0.5) / 9;
       const age = (Sc.f - (GAZE_FIRE + u * GAZE.sweep)) / EYE_FPS;
       if (age < 0.15) continue;
-      const Ln = beamLine(lerp(Sc.a0, Sc.a1, u));
+      const Ln = beamLine(lerp(Sc.a0, Sc.a1, u), B.geo);
       const len = Math.hypot(Ln.ex - Ln.sx, Ln.ey - Ln.sy);
       const v = len * (0.2 + 0.5 * h3(n, 1, 0, 8744));
       smokeFrom(pic, top, Ln.sx + ((Ln.ex - Ln.sx) * v) / len, Ln.sy + ((Ln.ey - Ln.sy) * v) / len, 2, age - 0.15, 930 + n, 1.15, GAZE.scorch - 0.3);
@@ -2893,9 +2900,9 @@ function bodyFlyers(F: EyeFrame): Array<[Flyer, number]> {
   if (B.beam && B.beam.k > 0.3) {
     // (sparks and chips of stone flung up where the beam comes down, all along its sweep: born there each frame, flying, falling)
     for (let back = 0; back < 14; back++) {
-      const a = beamAngle(B.f - back);
+      const a = beamAngle(B.f - back, B.geo);
       if (a === null) continue;
-      const Ln = beamLine(a);
+      const Ln = beamLine(a, B.geo);
       for (let n = 0; n < 4; n++) {
         const seed = (B.f - back) * 4 + n;
         const ang = h3(seed, 1, 0, 8731) * TAU;
@@ -2904,6 +2911,756 @@ function bodyFlyers(F: EyeFrame): Array<[Flyer, number]> {
         out.push([{ x: Ln.ax + Math.sin(a) * v, y: Ln.ay + Math.cos(a) * v, z: 4, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp * 0.7, vz: 60 + 220 * h3(seed, 3, 0, 8733), t0: 0, kind: n % 4 === 0 ? 5 : 7, size: 1, seed: 8730 + seed }, back / EYE_FPS]);
       }
     }
+  }
+  return out;
+}
+
+// =============================================================================================
+// HIS PHASE 3 (art/eye_phase3.ts): WHAT THE GAME DRAWS. The cult's three obelisks (the arena's own piece, art/floor10.ts), burning with
+// the siege's fire, put out, broken; the lines of the siege's magic from each into him; his ward; the siege's bolts; the eye slam's
+// warning, its cracks and its slime; his eye's dark ichor struck out of it; the piece of the ward-stone (the friend's cyan); the slide's
+// surge and the edge he grips.
+
+/** The rubble the first shovel left (phase 3 comes after it): every piece lying broken, at rest. */
+const RUBBLE: PiecesNow = { since: STONE_PIECES.map(() => 60), scatter: [] };
+const FLAME_C: RGB[] = FLAME.map(hex);
+const FLAME_SET = new Set(FLAME.map((c) => hex(c).join(',')));
+const CYAN_C: RGB[] = CYAN.map(hex);
+const GLINT_C: RGB = hex(GLINT);
+/** The ward-stone: a pale, hard stone, the friend's cyan in its veins. */
+const WARD_STONE: RGB[] = ['#4c545c', '#7a848c', '#aab4ba', '#d6dee2'].map(hex);
+/** An obelisk's runes gone dark: cut hollows of soot-dark stone. */
+const OB_DARK: RGB[] = [[26, 23, 28], [40, 36, 42], [56, 51, 56]];
+const MURK: RGB = [12, 18, 15];
+
+/** THE CULT'S OBELISK as the arena's piece paints it (its four frames, its fire pulsing): each pixel's colour, and which are its fire. */
+interface ObPic { w: number; h: number; ax: number; ay: number; d: Uint8ClampedArray; fire: Uint8Array; top: number }
+const OB_PICS = new Map<number, ObPic>();
+function obPic(f: number): ObPic {
+  const n = modP(f, 4);
+  const got = OB_PICS.get(n);
+  if (got) return got;
+  const sp = piece("the cult's obelisk", n);
+  const im = imgOf(sp) as unknown as { w: number; h: number; d: Uint8ClampedArray };
+  const dn = sp.density ?? 1;
+  const fire = new Uint8Array(im.w * im.h);
+  let top = im.h;
+  for (let q = 0; q < im.w * im.h; q++) {
+    if (im.d[q * 4 + 3] < 128) continue;
+    top = Math.min(top, Math.floor(q / im.w));
+    if (FLAME_SET.has(`${im.d[q * 4]},${im.d[q * 4 + 1]},${im.d[q * 4 + 2]}`)) fire[q] = 1;
+  }
+  const P = { w: im.w, h: im.h, ax: Math.round(sp.ax * dn), ay: Math.round(sp.ay * dn), d: im.d, fire, top };
+  OB_PICS.set(n, P);
+  return P;
+}
+const modP = (a: number, n: number): number => ((a % n) + n) % n;
+/** How much of an obelisk's fire burns (0 to 1) at a pixel `up` of the way up its runes (0 its foot, 1 its point). */
+function obFire(P: P3Fx['pillars'][number], up: number, i: number, j: number): number {
+  if (P.state === 'dark') return 0;
+  if (P.state === 'lit') {
+    const l = P.lit ?? 1;
+    return l >= 1 ? 1 : clamp01((l * 1.25 - up) * 6 + (h3(i, j, 1, 9901) - 0.5) * 0.6);
+  }
+  if (P.state === 'out') return h3(i, j, 2, 9902) > P.s / (PILLAR_OUT / EYE_FPS) ? 1 - sm(0, PILLAR_OUT / EYE_FPS, P.s) * 0.5 : 0;
+  return P.s < 0 ? 1 : h3(i, j, 3, 9903) > P.s / 0.35 ? 1 : 0;
+}
+/** Where an obelisk's foot is on the canvas, and its shaft's cut (picture rows from its foot) where it breaks. */
+const CUT_UP = 24;
+/** The jagged line it cracks along, across its foot (rows up from its foot, across its picture). */
+const crackRow = (u: number): number => CUT_UP + 5 * (vn(u * 0.25, 0, 9910) - 0.5) + 2 * Math.sin(u * 0.9);
+/** AN OBELISK: lit, kindling, going out, dark; struck and cracking, toppling, broken in the water; standing in the water, its foot ringed
+ *  by it; hidden where he is in front of it, and in front of the Warrior where it is nearer. */
+function drawObelisk(pic: Pic, top: Top, water: Uint8Array, P: P3Fx['pillars'][number], t: number): void {
+  const O = obPic(Math.floor(t * 6));
+  const [fi, fj] = onCanvas(P.x, P.y, 0);
+  const ox = Math.round(fi) - O.ax;
+  const oy = Math.round(fj) - O.ay;
+  const tall = O.ay - O.top;
+  const broken = P.state === 'broken';
+  const T = TOPPLE.frames / EYE_FPS;
+  const phi = broken && P.s >= 0 ? (P.s < T ? (Math.PI / 2) * (P.s / T) ** 2 : Math.PI / 2) : 0;
+  const sink = broken && P.s >= T ? 20 * sm(T, T + 0.4, P.s) : 0;
+  const nr0 = P.y * 0.8660254;
+  // (its colour at a pixel of its picture: its fire burning or gone dark; cracks from the blows it has taken)
+  const colourAt = (u: number, v: number): RGB | null => {
+    const q = v * O.w + u;
+    if (O.d[q * 4 + 3] < 128) return null;
+    let c: RGB = [O.d[q * 4], O.d[q * 4 + 1], O.d[q * 4 + 2]];
+    if (O.fire[q]) {
+      const up = clamp01((O.ay - v) / tall);
+      const f = obFire(P, up, u, v);
+      if (f < 0.5) {
+        const lum = (c[0] + c[1] + c[2]) / 3;
+        c = OB_DARK[lum > 170 ? 2 : lum > 110 ? 1 : 0];
+      }
+    }
+    // (cracks: one more with each blow, jagged, up from its foot; the fire inside glowing in them while it burns)
+    if (P.hits > 0) {
+      const ry = O.ay - v;
+      for (let n = 0; n < Math.min(P.hits, 12); n++) {
+        const a0 = 0.15 + 0.7 * h3(n, 1, 0, 9920);
+        const len = 10 + 26 * h3(n, 2, 0, 9921) + n * 2.5;
+        const y0 = CUT_UP - 6 + 14 * h3(n, 3, 0, 9922);
+        const along = ry - y0;
+        if (along < 0 || along > len) continue;
+        const cx = a0 * O.w + (h3(n, 4, 0, 9923) - 0.5) * along * 0.9 + 3 * (vn(along * 0.4, n, 9924) - 0.5);
+        if (Math.abs(u - cx) < 0.7 + 0.5 * (1 - along / len)) return P.state === 'broken' && P.s >= 0 ? CHAR[0] : FLAME_C[2];
+      }
+      if (P.hits >= 12 && Math.abs(ry - crackRow(u)) < 0.8) return FLAME_C[3];
+    }
+    return c;
+  };
+  const put = (i: number, j: number, c: RGB, nr: number, a = 255): void => {
+    if (!freeAt(top, i, j, nr)) return;
+    pic.over(i, j, c[0], c[1], c[2], a);
+    const q = j * CW + i;
+    if (i >= 0 && j >= 0 && i < CW && j < CH && PNEAR[q] < nr) PNEAR[q] = nr;
+  };
+  // (what stands: all of it; broken, its foot below the crack)
+  for (let v = 0; v < O.h; v++) for (let u = 0; u < O.w; u++) {
+    const ry = O.ay - v;
+    if (broken && P.s >= 0 && ry > crackRow(u)) continue;
+    // (its foot in the water)
+    if (ry < 2) continue;
+    const c = colourAt(u, v);
+    if (!c) continue;
+    put(ox + u, oy + v, c, nr0 + ry * 0.5);
+  }
+  // (broken: its shaft toppling over outward about the crack's far side, falling into the water, broken in three as it lands, half sunk)
+  if (broken && P.s >= 0) {
+    const dir = P.fall ? P.fall[0] : 1;
+    const piv: [number, number] = [ox + (dir > 0 ? O.w * 0.62 : O.w * 0.38), oy + O.ay - CUT_UP];
+    const L = tall - CUT_UP;
+    const gap = sm(T, T + 0.25, P.s);
+    const ca = Math.cos(phi);
+    const sa = Math.sin(phi) * dir;
+    const R = Math.ceil(L + O.w);
+    for (let piece3 = 0; piece3 < 3; piece3++) {
+      const off = piece3 * 7 * gap * dir;
+      const drop = piece3 === 1 ? 2 * gap : 0;
+      for (let dj = -R; dj <= R; dj++) for (let di = -R; di <= R; di++) {
+        // (back to its picture: unturned)
+        const x = di - off;
+        const y = dj - drop;
+        const su = x * ca + y * sa;
+        const sv = -x * sa + y * ca;
+        const u = Math.round(piv[0] - ox + su);
+        const v = Math.round(piv[1] - oy + sv);
+        if (u < 0 || v < 0 || u >= O.w || v >= O.h) continue;
+        const ry = O.ay - v;
+        if (ry <= crackRow(u)) continue;
+        const along = (ry - CUT_UP) / L;
+        const cut1 = 0.36 + 0.05 * (vn(u * 0.3, 1, 9930) - 0.5);
+        const cut2 = 0.68 + 0.05 * (vn(u * 0.3, 2, 9931) - 0.5);
+        const which = along < cut1 ? 0 : along < cut2 ? 1 : 2;
+        if (which !== piece3) continue;
+        let c = colourAt(u, v);
+        if (!c) continue;
+        // (its broken ends dark and rough)
+        if (gap > 0 && (Math.abs(along - cut1) < 0.012 || Math.abs(along - cut2) < 0.012)) c = CHAR[1];
+        const i = Math.round(piv[0] + di);
+        const j = Math.round(piv[1] + dj);
+        // (how high it is over the water: its foot's crack as it turns, sinking once it lies)
+        const z = CUT_UP - dj - sink;
+        if (z < 0) {
+          // (under the water: dim, green, wavering)
+          if (z > -16 && i >= 0 && j >= 0 && i < CW && j < CH && water[j * CW + i] && h3(i, j, Math.floor(t * 8), 9932) < 0.5) pic.over(i, j, MURK[0] + c[0] * 0.25, MURK[1] + c[1] * 0.3, MURK[2] + c[2] * 0.25, 160);
+          continue;
+        }
+        put(i, j, c, nr0 + z * 0.5 + 2);
+      }
+    }
+  }
+  // (the water round its foot: rings, and a wet dark line where it stands in it)
+  for (let a = 0; a < 60; a++) {
+    const ang = (a / 60) * TAU;
+    for (let r = 0; r < 3; r++) {
+      const rr = O.w * 0.36 + r * 7 + 3 * Math.sin(t * 2 + r);
+      if (h3(a, r, Math.floor(t * 3 + r), 9935) < 0.4) continue;
+      const i = Math.round(fi + Math.cos(ang) * rr);
+      const j = Math.round(fj - 2 + Math.sin(ang) * rr * 0.45);
+      if (i < 0 || j < 0 || i >= CW || j >= CH || !water[j * CW + i]) continue;
+      if (!freeAt(top, i, j, nr0)) continue;
+      pic.over(i, j, FOAM[2 + (r === 0 ? 1 : 0)][0], FOAM[2][1], FOAM[2][2], 150 - r * 40);
+    }
+  }
+  // (THE SIEGE'S FIRE on it while it burns: licking up off its point and its runes, pink edged, gold at heart)
+  const burn = P.state === 'lit' ? (P.lit ?? 1) : P.state === 'out' ? 1 - sm(0, PILLAR_OUT / EYE_FPS, P.s) : P.state === 'broken' && P.s < 0 ? 1 : 0;
+  if (burn > 0.02 && !(broken && P.s >= 0)) {
+    const [ti, tj] = onCanvas(P.x, P.y, PILLAR_TOP);
+    for (let n = 0; n < 4; n++) {
+      const h = (22 + 18 * vn(t * 3 + n, n, 9940)) * burn;
+      flameTongue(pic, top, Math.round(ti + (n - 1.5) * 4), Math.round(tj + 6), h, 3 + h * 0.12, 600 + n, t, nr0 + PILLAR_TOP * 0.5 + 2, 0.9, 1.15, true);
+    }
+    for (let n = 0; n < 5; n++) {
+      const up = 0.15 + 0.15 * n;
+      const [ri, rj] = onCanvas(P.x, P.y, 6 + up * 136);
+      const h = (8 + 10 * vn(t * 4 + n * 1.7, n, 9941)) * burn * (h3(n, Math.floor(t * 2), 0, 9942) < 0.7 ? 1 : 0.3);
+      flameTongue(pic, top, Math.round(ri + 4), Math.round(rj), h, 2 + h * 0.15, 620 + n, t, nr0 + up * 68 + 3, 0.75, 1, true);
+    }
+  }
+}
+
+/** THE SIEGE'S MAGIC from an obelisk's point into him: a wavering crackling cord of its fire, pink at its edges and gold at its heart,
+ *  sagging a little, motes of it running along it into him; `from` to `u1` of its way drawn (`u0` on: gone dark from its pillar's end);
+ *  how strong. */
+function siegeLine(pic: Pic, top: Top, a: readonly number[], b: readonly number[], u0: number, u1: number, k: number, t: number, seed: number): void {
+  const [ai, aj] = onCanvas(a[0], a[1], a[2]);
+  const [bi, bj] = onCanvas(b[0], b[1], b[2]);
+  const len = Math.hypot(bi - ai, bj - aj);
+  const n = Math.ceil(len);
+  const ni = -(bj - aj) / (len || 1);
+  const nj = (bi - ai) / (len || 1);
+  for (let s = Math.floor(n * u0); s <= n * u1; s++) {
+    const u = s / n;
+    const sag = 18 * Math.sin(Math.PI * u);
+    const wob = siegeWobble(u, t, seed);
+    const ci = ai + (bi - ai) * u + ni * wob;
+    const cj = aj + (bj - aj) * u + nj * wob + sag;
+    const x = a[0] + (b[0] - a[0]) * u;
+    const y = a[1] + (b[1] - a[1]) * u;
+    const z = a[2] + (b[2] - a[2]) * u - sag;
+    const nr = y * 0.8660254 + z * 0.5;
+    // (motes running into him: bright knots moving along it)
+    const mote = Math.max(0, Math.sin((u * 9 - t * 3.2 + seed) * TAU * 0.5)) ** 8;
+    const flick = 0.75 + 0.25 * vn(u * 13 + t * 14, seed, 9952);
+    const w = (2.0 + 1.6 * mote) * flick;
+    for (let d = -Math.ceil(w + 1.5); d <= Math.ceil(w + 1.5); d++) {
+      const i = Math.round(ci + ni * d);
+      const j = Math.round(cj + nj * d);
+      if (!freeAt(top, i, j, nr)) continue;
+      const e = Math.abs(d) / (w + 1.5);
+      const c = e < 0.3 ? (mote > 0.5 ? FLAME_C[4] : FLAME_C[3]) : e < 0.65 ? FLAME_C[2] : FLAME_C[1];
+      pic.over(i, j, c[0], c[1], c[2], 255 * k * (e < 0.65 ? 1 : 0.55) * flick);
+      if (i >= 0 && j >= 0 && i < CW && j < CH && PNEAR[j * CW + i] < nr) PNEAR[j * CW + i] = nr;
+    }
+  }
+}
+
+/** HIS WARD (while any pillar burns): a film of the siege's pink round him, its edge ragged and crawling with its fire; flashing where a
+ *  blow meets it, the flash running out round it; breaking apart with the last pillar. */
+function drawWard(pic: Pic, top: Top, W: P3Fx['shield'], t: number): void {
+  if (W.k < 0.01 && !W.flash) return;
+  // (how far each pixel is from him, out to 18: his mask, grown)
+  let i0 = CW;
+  let i1 = 0;
+  let j0 = CH;
+  let j1 = 0;
+  for (let q = 0; q < CW * CH; q++) {
+    if (top.who[q] < 0 || top.who[q] > 2 || top.z[q] < -0.5) continue;
+    const i = q % CW;
+    const j = (q - i) / CW;
+    i0 = Math.min(i0, i);
+    i1 = Math.max(i1, i);
+    j0 = Math.min(j0, j);
+    j1 = Math.max(j1, j);
+  }
+  if (i1 < i0) return;
+  const M = 20;
+  i0 = Math.max(0, i0 - M);
+  j0 = Math.max(0, j0 - M);
+  i1 = Math.min(CW - 1, i1 + M);
+  j1 = Math.min(CH - 1, j1 + M);
+  const w = i1 - i0 + 1;
+  const h = j1 - j0 + 1;
+  const D = new Float32Array(w * h).fill(99);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const q = (j + j0) * CW + i + i0;
+    if (top.who[q] >= 0 && top.who[q] <= 2 && top.z[q] >= -0.5) D[j * w + i] = 0;
+  }
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    let v = D[j * w + i];
+    if (i > 0) v = Math.min(v, D[j * w + i - 1] + 1);
+    if (j > 0) v = Math.min(v, D[(j - 1) * w + i] + 1);
+    if (i > 0 && j > 0) v = Math.min(v, D[(j - 1) * w + i - 1] + 1.414);
+    if (i < w - 1 && j > 0) v = Math.min(v, D[(j - 1) * w + i + 1] + 1.414);
+    D[j * w + i] = v;
+  }
+  for (let j = h - 1; j >= 0; j--) for (let i = w - 1; i >= 0; i--) {
+    let v = D[j * w + i];
+    if (i < w - 1) v = Math.min(v, D[j * w + i + 1] + 1);
+    if (j < h - 1) v = Math.min(v, D[(j + 1) * w + i] + 1);
+    if (i < w - 1 && j < h - 1) v = Math.min(v, D[(j + 1) * w + i + 1] + 1.414);
+    if (i > 0 && j < h - 1) v = Math.min(v, D[(j + 1) * w + i - 1] + 1.414);
+    D[j * w + i] = v;
+  }
+  const F = W.flash;
+  const [hi, hj] = F ? onCanvas(F.x, F.y, F.z) : [0, 0];
+  const rip = F ? 12 + 420 * F.s : 0;
+  const flashK = F ? 1 - sm(0.1, 0.55, F.s) : 0;
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const d = D[j * w + i];
+    if (d <= 0 || d > 18) continue;
+    const I = i + i0;
+    const J = j + j0;
+    // (its edge: ragged, breathing, crawling)
+    const R = wardEdge(I, J, t);
+    if (d > R + 1.2) continue;
+    // (breaking: falling away in shards from the inside out)
+    const k = W.k;
+    if (k < 1 && vn(I * 0.07, J * 0.09, 9961) * 1.25 > k) continue;
+    const rimE = Math.abs(d - R);
+    let a = 0;
+    let c: RGB = FLAME_C[2];
+    if (rimE < 1.2) {
+      const crawl = vn(I * 0.12 - t * 4, J * 0.12 + t * 2, 9962);
+      c = crawl > 0.72 ? FLAME_C[4] : crawl > 0.55 ? FLAME_C[3] : FLAME_C[2];
+      a = (crawl > 0.3 ? 210 : 120) * Math.min(1, k * 1.6);
+    } else if ((I + J) % 2 === 0 || d < R * 0.4) {
+      const film = vn(I * 0.08 + t * 1.2, J * 0.08, 9963);
+      c = film > 0.6 ? FLAME_C[2] : FLAME_C[1];
+      a = 70 * (0.4 + 0.6 * (d / R)) * k * (0.6 + 0.6 * film);
+    }
+    // (a blow's flash, running out round it)
+    if (F && flashK > 0) {
+      const dd = Math.hypot(I - hi, J - hj);
+      const ring = Math.abs(dd - rip);
+      if (ring < 7) {
+        const b = (1 - ring / 7) * flashK;
+        c = b > 0.6 ? FLAME_C[4] : FLAME_C[3];
+        a = Math.max(a, 255 * b);
+      } else if (dd < rip) a = Math.max(a, 90 * flashK * (1 - dd / (rip + 1)));
+    }
+    if (a > 2) pic.over(I, J, c[0], c[1], c[2], a);
+  }
+  // (where the blow meets it: a star of its fire and white)
+  if (F && F.s < 0.15) {
+    const R = 10 + 40 * (F.s / 0.15);
+    for (let a = 0; a < 16; a++) {
+      const ang = (a / 16) * TAU + 0.3;
+      const ray = R * (a % 2 ? 0.45 : 1) * (0.8 + 0.4 * h3(a, 1, 0, 9965));
+      for (let r = 0; r < ray; r += 0.7) {
+        const e = r / ray;
+        const c = e < 0.3 ? ([255, 248, 230] as RGB) : e < 0.6 ? FLAME_C[4] : FLAME_C[3];
+        pic.over(Math.round(hi + Math.cos(ang) * r), Math.round(hj + Math.sin(ang) * r * 0.8), c[0], c[1], c[2], 255 * (1 - F.s / 0.15) * (1 - e * 0.5));
+      }
+    }
+  }
+}
+
+/** A WARNING ON THE STONE (the game's: the enemy's pink, a ragged ring crawling round, dashed; flaring gold as it comes down), `R` round,
+ *  `k` through it. */
+function warnRing(pic: Pic, top: Top, water: Uint8Array, x: number, y: number, R: number, k: number, flare: number, f: number, t: number, seed: number): void {
+  const shown = sm(0, 0.1, k);
+  groundRound(x, y, R * 1.3, (i, j, X, Y, q) => {
+    if (top.who[q] >= 0 && top.z[q] >= -0.5) return;
+    const d = Math.hypot(X - x, Y - y);
+    const a = Math.atan2(Y - y, X - x);
+    const e = R * warnEdge(a, f + seed);
+    if (d > e + 1.6) return;
+    if (d > e - 2.2) {
+      if ((Math.floor((a * e) / 10 - t * 9) & 1) === 0 && flare < 0.5) return;
+      const c = flare > 0.5 ? FL3 : FL2;
+      pic.over(i, j, c[0], c[1], c[2], 255 * shown * (0.5 + 0.5 * k));
+      return;
+    }
+    if (water[q]) return;
+    if (h3(i >> 1, j >> 1, seed, 7731) < 0.22 + 0.4 * k) pic.over(i, j, WARN_SHADE[0], WARN_SHADE[1], WARN_SHADE[2], 255 * 0.4 * shown * (0.5 + 0.5 * k));
+    if (flare > 0 && h3(i, j, Math.floor(t * 20), 7732 + seed) < 0.16 * flare * (1 - d / e)) pic.over(i, j, FL3[0], FL3[1], FL3[2], 160 * flare);
+  });
+}
+
+/** CRACKS IN THE STONE: jagged, branching, from a point out (`n` of them, as long as `len`, the world's); dark in their depths, the edge
+ *  of each lit; grit at their ends. */
+function stoneCracks(pic: Pic, top: Top, water: Uint8Array, x: number, y: number, n: number, len: number, a0: number, spread: number, k: number, seed: number): void {
+  for (let c = 0; c < n; c++) {
+    let ang = a0 + (n > 1 ? (c / (n - 1) - 0.5) * spread : 0) + (h3(c, seed, 1, 9970) - 0.5) * 0.5;
+    let px = x + Math.cos(ang) * 14;
+    let py = y + Math.sin(ang) * 14;
+    const L = len * (0.55 + 0.6 * h3(c, seed, 2, 9971)) * k;
+    for (let s = 0; s < L; s += 1.5) {
+      ang += (vn(s * 0.12, c + seed, 9972) - 0.5) * 0.5;
+      px += Math.cos(ang) * 1.5;
+      py += Math.sin(ang) * 1.5;
+      const [ci, cj] = onCanvas(px, py, 0);
+      const i = Math.round(ci);
+      const j = Math.round(cj);
+      if (i < 1 || j < 1 || i >= CW - 1 || j >= CH - 1) continue;
+      const q = j * CW + i;
+      if (water[q] || (top.who[q] >= 0 && top.z[q] >= -0.5)) continue;
+      const wdt = s < L * 0.6 ? 1 : 0;
+      pic.over(i, j, CHAR[0][0], CHAR[0][1], CHAR[0][2], 235);
+      if (wdt) pic.over(i + 1, j, CHAR[1][0], CHAR[1][1], CHAR[1][2], 200);
+      pic.over(i, j - 1, STONE_LIT[0], STONE_LIT[1], STONE_LIT[2], 90);
+      // (a branch off it now and then)
+      if (h3(c, Math.floor(s), seed, 9973) < 0.025 && s < L * 0.7) {
+        let ba = ang + (h3(c, Math.floor(s), seed, 9974) < 0.5 ? -1 : 1) * 0.8;
+        let bx = px;
+        let by = py;
+        for (let b = 0; b < L * 0.3; b += 1.5) {
+          ba += (vn(b * 0.2, c * 3 + seed, 9975) - 0.5) * 0.5;
+          bx += Math.cos(ba) * 1.5;
+          by += Math.sin(ba) * 1.5;
+          const [bi, bj] = onCanvas(bx, by, 0);
+          const I = Math.round(bi);
+          const J = Math.round(bj);
+          if (I < 0 || J < 0 || I >= CW || J >= CH || water[J * CW + I]) continue;
+          pic.over(I, J, CHAR[1][0], CHAR[1][1], CHAR[1][2], 210);
+        }
+      }
+    }
+  }
+}
+
+/** UNDER WHAT FLIES: the bolts' warnings and scorches, the slam's warning, cracks and slime, the slide's surge and the edge he grips. */
+function p3Under(pic: Pic, F: EyeFrame, top: Top, water: Uint8Array): void {
+  const X = F.p3 as P3Fx;
+  const t = F.t;
+  // THE BOLTS: their warnings; where each has struck, the stone scorched and smouldering
+  for (const B of X.bolts) {
+    if (B.s < B.warn) warnRing(pic, top, water, B.x, B.y, P3_RAIN.r, B.s / B.warn, sm(B.warn - 0.28, B.warn - 0.04, B.s), Math.floor(B.s * 30), t, B.seed);
+    else {
+      const g = B.s - B.warn;
+      const fade = 1 - sm(1.2, 2.2, g);
+      groundRound(B.x, B.y, P3_RAIN.r, (i, j, Xw, Yw, q) => {
+        if (water[q] || (top.who[q] >= 0 && top.z[q] >= -0.5)) return;
+        const d = Math.hypot(Xw - B.x, Yw - B.y);
+        const a = Math.atan2(Yw - B.y, Xw - B.x);
+        const e = P3_RAIN.r * 0.62 * warnEdge(a, B.seed * 7 + 3) * (0.85 + 0.3 * vn(a * 3, B.seed, 9980));
+        if (d > e) return;
+        const n = vn(Xw * 0.3, Yw * 0.45, 9981);
+        const c = n > 0.6 ? CHAR[0] : n > 0.3 ? CHAR[1] : CHAR[2];
+        pic.over(i, j, c[0], c[1], c[2], 220 * fade * (d > e * 0.8 ? 0.6 : 1));
+        const warm = 1 - sm(0, 1.4, g);
+        if (vn(Xw * 0.5, Yw * 0.7, 9982) > 0.74 && h3(i, j, Math.floor(g * 10), 9983) < 0.7 * warm) {
+          const ec = warm > 0.6 ? BEAMC[3] : warm > 0.3 ? BEAMC[2] : BEAMC[1];
+          pic.over(i, j, ec[0], ec[1], ec[2], 255 * fade);
+        }
+      });
+    }
+  }
+  // THE EYE SLAM: its warning where it will come down; struck, the stone cracked under it and its slime pooling
+  if (X.slam) {
+    const S = X.slam;
+    if (S.s < 0) warnRing(pic, top, water, S.x, S.y, SLAM.r, S.k, S.flare, Math.floor(S.k * 30), t, 41);
+    else {
+      stoneCracks(pic, top, water, S.x, S.y, 13, 118, 0, TAU * 0.95, sm(0, 0.1, S.s), 51);
+      // (the stone dented dark round where it came down, out past its rim)
+      groundRound(S.x, S.y, SLAM.r * 1.25, (i, j, Xw, Yw, q) => {
+        if (water[q] || (top.who[q] >= 0 && top.z[q] >= -0.5)) return;
+        const a = Math.atan2(Yw - S.y, Xw - S.x);
+        const d = Math.hypot(Xw - S.x, Yw - S.y) / (SLAM.r * (1.02 + 0.2 * vn(a * 2.5, 3, 9987)));
+        if (d > 1) return;
+        pic.over(i, j, CHAR[1][0], CHAR[1][1], CHAR[1][2], 110 * (1 - d * d) * (1 - sm(1.5, 3.0, S.s)));
+      });
+      // (THE SHOCK: a ring of spray, slime and grit thrown out across the stone from under its rim, racing out and dying in a third of a
+      // second)
+      if (S.s < 0.34) {
+        const u = S.s / 0.34;
+        const R = SLAM.r * (0.9 + 1.5 * u ** 0.6);
+        const w = 14 * (1 - u) + 5;
+        groundRound(S.x, S.y, R + w, (i, j, Xw, Yw, q) => {
+          if (top.who[q] >= 0 && top.z[q] >= -0.5) return;
+          const a = Math.atan2(Yw - S.y, Xw - S.x);
+          const rr = R * (0.92 + 0.16 * vn(a * 3 + u * 2, 5, 9988));
+          const d = Math.abs(Math.hypot(Xw - S.x, Yw - S.y) - rr);
+          if (d > w) return;
+          const n = vn(Xw * 0.25 - u * 9, Yw * 0.35, 9989);
+          if (n < 0.3 + 0.35 * (d / w)) return;
+          const c = n > 0.78 ? CREAM[4] : n > 0.6 ? CREAM[3] : n > 0.45 ? CREAM[2] : FOAM[3];
+          pic.over(i, j, c[0], c[1], c[2], 235 * (1 - u * u) * (1 - (d / w) ** 2));
+        });
+      }
+      // (its slime: pooling under it as it lies, a wet sheen on it; drying and fading after)
+      const lying = S.lift < 20 ? 1 : 0;
+      const pr = 46 * sm(0, 1.0, S.s) * (lying ? 1 : 1);
+      const fade = lying ? 1 : 1 - sm(0, 1.6, S.s - (SLAM.up - SLAM.hit) / EYE_FPS);
+      if (pr > 2 && fade > 0) groundRound(S.x, S.y + 6, pr * 1.3, (i, j, Xw, Yw, q) => {
+        if (water[q] || (top.who[q] >= 0 && top.z[q] >= -0.5)) return;
+        const d = Math.hypot(Xw - S.x, (Yw - S.y - 6) * 1.1);
+        const a = Math.atan2(Yw - S.y, Xw - S.x);
+        const e = pr * slimeEdge(a);
+        if (d > e) return;
+        const sh = vn(Xw * 0.08 + S.s * 0.3, Yw * 0.12, 9986);
+        const c = sh > 0.72 ? SLIME[3] : sh > 0.45 ? SLIME[2] : SLIME[1];
+        pic.over(i, j, c[0], c[1], c[2], 170 * fade * (d > e * 0.85 ? 0.6 : 1));
+      });
+    }
+  }
+  // THE SLIDE: the water heaped up before him as he comes on; as his front comes up against the edge, water surging over it; the edge he
+  // grips cracked and grinding
+  if (X.slide) {
+    const S = X.slide;
+    // (the surge: a heaped, foaming bank of water before his front at the water)
+    const push = clamp01(S.v / 4) + 0.6 * S.heave;
+    if (push > 0.05) for (let j = 1; j < CH - 14; j++) for (let i = 0; i < CW; i++) {
+      const q = j * CW + i;
+      if (!water[q] || (top.who[q] >= 0 && top.z[q] >= -0.5)) continue;
+      // (him just above: within 12 of his waterline)
+      let near = 0;
+      for (let d = 1; d <= 12; d++) {
+        const qq = q - d * CW;
+        if (top.who[qq] >= 0 && top.who[qq] <= 2 && Math.abs(top.z[qq]) < 4) {
+          near = 1 - d / 13;
+          break;
+        }
+      }
+      if (near <= 0) continue;
+      const n = vn(i * 0.08 + t * 2, j * 0.3 - t * 6, 9990);
+      if (n < 0.35 - 0.2 * push) continue;
+      const c = n > 0.75 ? CREAM[3] : n > 0.55 ? CREAM[2] : FOAM[3];
+      pic.over(i, j, c[0], c[1], c[2], 255 * Math.min(1, push) * near);
+    }
+    // (water over the edge: thrown onto the stone by the last lunge and as he grips it, spreading and running back)
+    const spill = S.fwd > 110 ? sm(110, 150, S.fwd) * (S.grip === undefined ? 0.6 + 0.4 * S.heave : Math.max(0, 1 - S.grip / 1.4)) : 0;
+    if (spill > 0.02) {
+      const reach = 70 * spill;
+      for (let x = -230; x <= 230; x += 1) {
+        const r0 = reach * (0.5 + 0.7 * vn(x * 0.03, 1, 9991)) * (1 - (Math.abs(x) / 240) ** 2);
+        for (let d = 0; d < r0; d += 1) {
+          const [ci, cj] = onCanvas(x, STONE_BOX.y0 + d, 0);
+          const i = Math.round(ci);
+          const j = Math.round(cj);
+          if (i < 0 || j < 0 || i >= CW || j >= CH) continue;
+          const q = j * CW + i;
+          if (water[q] || (top.who[q] >= 0 && top.z[q] >= -0.5)) continue;
+          const n = vn(x * 0.07 + t * 1.5, d * 0.12 - t * 3, 9992);
+          const e = d / Math.max(1, r0);
+          const c = n > 0.7 || e > 0.85 ? CREAM[2] : n > 0.45 ? FOAM[3] : FOAM[2];
+          pic.over(i, j, c[0], c[1], c[2], (e > 0.85 ? 220 : 150) * spill);
+        }
+      }
+    }
+    // (the edge he grips, cracked under him)
+    if (S.grip !== undefined) for (const gx of [-120, -40, 50, 130]) stoneCracks(pic, top, water, gx, STONE_BOX.y0 + 2, 2, 46, Math.PI / 2, 1.2, sm(0, 0.15, S.grip), 61 + gx);
+  }
+}
+
+/** A SHARD OF THE WARD-STONE (canvas, its middle): a pale hard stone broken from a bigger one, five-sided, its lit face and its dark, the
+ *  friend's cyan glowing in its veins, a glint running over it. */
+function wardShard(pic: Pic, top: Top, ci: number, cj: number, nr: number, t: number, glow: number): void {
+  const pts: Array<[number, number]> = [[-8, -1], [-2, -9], [8, -5], [9, 3], [-3, 6]];
+  for (let dj = -10; dj <= 7; dj++) for (let di = -9; di <= 10; di++) {
+    let inside = true;
+    for (let p = 0; p < pts.length; p++) {
+      const a = pts[p];
+      const b = pts[(p + 1) % pts.length];
+      if ((b[0] - a[0]) * (dj - a[1]) - (b[1] - a[1]) * (di - a[0]) < 0) inside = false;
+    }
+    if (!inside) continue;
+    const i = Math.round(ci + di);
+    const j = Math.round(cj + dj);
+    if (!freeAt(top, i, j, nr)) continue;
+    // (its faces: lit up and to the left, dark below; a vein of the friend's cyan across it)
+    let c = di + dj < -4 ? WARD_STONE[3] : di + dj < 3 ? WARD_STONE[2] : dj > 2 ? WARD_STONE[0] : WARD_STONE[1];
+    if (Math.abs(dj - di * 0.4 + 0.5) < 0.8 || Math.abs(di + 3 - dj * 0.6) < 0.6) c = glow > 0.5 ? CYAN_C[3] : CYAN_C[2];
+    pic.over(i, j, c[0], c[1], c[2], 255);
+  }
+  // (a glint running over it now and then)
+  const g = (t * 1.3) % 1;
+  if (g < 0.18) {
+    const r = 2 + 4 * Math.sin((Math.PI * g) / 0.18);
+    for (let s = -r; s <= r; s++) {
+      for (const [di, dj] of [[s, 0], [0, s * 0.8]] as Array<[number, number]>) {
+        const i = Math.round(ci + 2 + di);
+        const j = Math.round(cj - 2 + dj);
+        if (freeAt(top, i, j, nr + 1)) pic.over(i, j, GLINT_C[0], GLINT_C[1], GLINT_C[2], 255 * (1 - Math.abs(s) / (r + 1)));
+      }
+    }
+  }
+}
+
+/** OVER WHAT IS ROUND: the obelisks, the siege's lines, his ward, the bolts falling and striking, the piece of the ward-stone. */
+function p3Over(pic: Pic, F: EyeFrame, top: Top, water: Uint8Array): void {
+  const X = F.p3 as P3Fx;
+  const t = F.t;
+  // (his ward first: round him, under the lines that feed it)
+  drawWard(pic, top, X.shield, t);
+  X.pillars.forEach((P, n) => {
+    // THE LINE into him: kindling out from the point, burning, going dark from its pillar's end, snapping
+    const a = [P.x, P.y, PILLAR_TOP + 3];
+    if (P.state === 'lit') {
+      const grow = P.lit === undefined ? 1 : sm(0.25, 0.85, P.lit);
+      if (grow > 0.01) siegeLine(pic, top, a, P.to, 0, grow, Math.min(1, (P.lit ?? 1) * 1.5), t, n * 3 + 1);
+    } else if (P.state === 'out' && P.s < 1.0) siegeLine(pic, top, a, P.to, sm(0, 0.9, P.s), 1, (1 - sm(0.2, 1.0, P.s)) * (0.6 + 0.4 * vn(t * 20, n, 9995)), t, n * 3 + 1);
+    else if (P.state === 'broken' && P.s < 0.35) {
+      // (snapped: the half toward him whipping back into him, gone)
+      siegeLine(pic, top, a, P.to, 0.4 + 0.6 * sm(0, 0.3, P.s), 1, 1 - sm(0.1, 0.35, P.s), t, n * 3 + 1);
+    } else if (P.state === 'broken' && P.s < 0) siegeLine(pic, top, a, P.to, 0, 1, 1, t, n * 3 + 1);
+    drawObelisk(pic, top, water, P, t + n * 0.37);
+  });
+  // THE BOLTS: falling out of the sky onto their warnings, a head of the siege's fire trailing flame and smoke; bursting as they strike
+  for (const B of X.bolts) {
+    const fall = 0.3;
+    if (B.s >= B.warn - fall && B.s < B.warn) {
+      const u = (B.s - (B.warn - fall)) / fall;
+      const at = (v: number): [number, number, number] => {
+        const z = 760 * (1 - v) ** 1.15;
+        return [B.x + BOLT_SLANT[0] * z, B.y + BOLT_SLANT[1] * z, z];
+      };
+      const H = at(u);
+      const [hi, hj] = onCanvas(H[0], H[1], H[2]);
+      const Tl = at(Math.max(0, u - 0.3));
+      const [ti, tj] = onCanvas(Tl[0], Tl[1], Tl[2]);
+      const len = Math.hypot(hi - ti, hj - tj);
+      const di = (ti - hi) / (len || 1);
+      const dj = (tj - hj) / (len || 1);
+      const nr = H[1] * 0.8660254 + H[2] * 0.5;
+      for (let s = 0; s < len; s += 0.6) {
+        const e = s / len;
+        const w = 6 * (1 - e) ** 0.8 + 0.6;
+        const wob = (vn(s * 0.15 - t * 20, B.seed, 9996) - 0.5) * 4 * e;
+        for (let o = -Math.ceil(w); o <= Math.ceil(w); o++) {
+          const ee = Math.abs(o) / w;
+          if (ee > 1) continue;
+          if (ee > 0.6 && vn(s * 0.4 + o, t * 30, 9997) < 0.4) continue;
+          const i = Math.round(hi + di * s - dj * (o + wob));
+          const j = Math.round(hj + dj * s + di * (o + wob));
+          if (!freeAt(top, i, j, nr)) continue;
+          const heat = (1 - ee) * (1 - e * 0.8);
+          const c = heat > 0.75 ? BEAMC[5] : heat > 0.5 ? BEAMC[4] : heat > 0.3 ? BEAMC[3] : heat > 0.15 ? BEAMC[2] : BEAMC[1];
+          pic.over(i, j, c[0], c[1], c[2], 255 * (e > 0.7 ? 1 - (e - 0.7) / 0.3 : 1));
+        }
+      }
+    }
+    // (struck: a burst of the siege's fire, licking up round where it came down, dying; smoke rising off the scorch)
+    const g = B.s - B.warn;
+    if (g >= 0 && g < 0.5) {
+      for (let n = 0; n < 9; n++) {
+        const ang = (n / 9) * TAU + B.seed;
+        const r = 4 + 34 * sm(0, 0.2, g) * (0.6 + 0.4 * h3(n, B.seed, 1, 9998));
+        const [fi, fj] = onCanvas(B.x + Math.cos(ang) * r, B.y + Math.sin(ang) * r * 0.8, 0);
+        const h = (46 - n * 2) * (1 - g / 0.5) * (0.6 + 0.4 * h3(n, B.seed, 2, 9999));
+        flameTongue(pic, top, Math.round(fi), Math.round(fj), h, 3 + h * 0.14, 700 + n + B.seed * 13, t, (B.y + Math.sin(ang) * r) * 0.8660254 + 2, 1, 1.25);
+      }
+    }
+    if (g >= 0.12 && g < 2.2) smokeFrom(pic, top, B.x, B.y, 2, g - 0.12, 950 + B.seed, 0.8, 1.9);
+  }
+  // THE PIECE OF THE WARD-STONE: lying where it fell, glinting; flying from his hand into the obelisk's foot; set there, flaring
+  const Pc = X.piece;
+  if (Pc && !Pc.held) {
+    const [ci, cj] = onCanvas(Pc.x, Pc.y, Pc.z + 4);
+    wardShard(pic, top, ci, cj, Pc.y * 0.8660254 + Pc.z * 0.5 + 3, t, Pc.set !== undefined ? 1 : 0.3);
+    if (Pc.set !== undefined && Pc.set < 0.45) {
+      // (flaring as it is set: a burst of the friend's cyan)
+      const R = 6 + 60 * (Pc.set / 0.45);
+      for (let a = 0; a < 20; a++) {
+        const ang = (a / 20) * TAU;
+        const ray = R * (a % 2 ? 0.5 : 1);
+        for (let r = 3; r < ray; r += 0.8) {
+          const e = r / ray;
+          const c = e < 0.4 ? GLINT_C : e < 0.7 ? CYAN_C[3] : CYAN_C[2];
+          pic.over(Math.round(ci + Math.cos(ang) * r), Math.round(cj + Math.sin(ang) * r * 0.7), c[0], c[1], c[2], 255 * (1 - Pc.set / 0.45) * (1 - e * 0.6));
+        }
+      }
+    }
+  }
+}
+/** The piece in the Warrior's hand (held up as he goes to set it). */
+function p3Held(pic: Pic, top: Top, F: EyeFrame, sx: number, sy: number, t: number): void {
+  const Pc = F.p3?.piece;
+  if (!Pc || !Pc.held) return;
+  const lift = Math.max(0, Pc.z - 26);
+  wardShard(pic, top, sx + 10, sy - 30 - lift, 1e9, t, 0.5);
+}
+/** Their lights: the obelisks' fire, the lines', the bolts' as they strike, the shard's cyan, his ward's glow. */
+function p3Lights(pic: Pic, F: EyeFrame): void {
+  const X = F.p3 as P3Fx;
+  const PINK = FLAME_C[2];
+  const GOLD = FLAME_C[3];
+  for (const P of X.pillars) {
+    const burn = P.state === 'lit' ? (P.lit ?? 1) : P.state === 'out' ? 1 - sm(0, PILLAR_OUT / EYE_FPS, P.s) : P.state === 'broken' && P.s < 0 ? 1 : 0;
+    if (burn > 0.02) {
+      const [ti, tj] = onCanvas(P.x, P.y, PILLAR_TOP);
+      pic.light(ti, tj, 70, GOLD, 0.22 * burn);
+      const [mi, mj] = onCanvas(P.x, P.y, 70);
+      pic.light(mi, mj, 90, PINK, 0.16 * burn);
+    }
+  }
+  for (const B of X.bolts) {
+    const g = B.s - B.warn;
+    if (g >= -0.3 && g < 0.4) {
+      const [ci, cj] = onCanvas(B.x, B.y, 4);
+      pic.light(ci, cj, 120, g < 0.06 ? ([255, 245, 225] as RGB) : GOLD, 0.35 * (g < 0 ? 0.4 : 1 - g / 0.4));
+    }
+  }
+  const Pc = X.piece;
+  if (Pc) {
+    const [ci, cj] = onCanvas(Pc.x, Pc.y, Pc.z + 4);
+    const big = Pc.set !== undefined ? (Pc.set < 0.45 ? 1.6 - Pc.set : 0.6) : 0.25;
+    pic.light(ci, cj, 30 + 60 * big, CYAN_C[2], 0.14 + 0.18 * Math.min(1, big));
+  }
+  if (X.shield.k > 0.02) {
+    const [mi, mj] = onCanvas(0, -F.jaws.back, 150 - F.jaws.drop);
+    pic.light(mi, mj, 420, PINK, 0.05 * X.shield.k);
+  }
+  if (X.shield.flash && X.shield.flash.s < 0.3) {
+    const [hi, hj] = onCanvas(X.shield.flash.x, X.shield.flash.y, X.shield.flash.z);
+    pic.light(hi, hj, 140, [255, 236, 214], 0.35 * (1 - X.shield.flash.s / 0.3));
+  }
+  for (const S of X.struck ?? []) if (S.s < 0.2) {
+    const [hi, hj] = onCanvas(S.x, S.y, S.z);
+    pic.light(hi, hj, 90, [255, 230, 230], 0.3 * (1 - S.s / 0.2));
+  }
+}
+/** WHAT FLIES: sparks glancing off his ward and off the obelisk his blows strike; chips off it; the water it falls into; the bolts'
+ *  sparks and chips; the slam's slime; his eye's dark ichor; the slide's spray and grit; the friend's motes as a piece is set; his ward's
+ *  shards as it breaks. */
+function p3Flyers(F: EyeFrame): Array<[Flyer, number]> {
+  const X = F.p3 as P3Fx;
+  const out: Array<[Flyer, number]> = [];
+  const burst = (x: number, y: number, z: number, n: number, kind: Flyer['kind'], sp: [number, number], up: [number, number], s: number, seed: number, size = 1, dir?: [number, number]): void => {
+    for (let q = 0; q < n; q++) {
+      let a = h3(q, seed, 1, 9101) * TAU;
+      if (dir) a = Math.atan2(dir[1], dir[0]) + (h3(q, seed, 1, 9101) - 0.5) * 2.2;
+      const v = sp[0] + (sp[1] - sp[0]) * h3(q, seed, 2, 9102);
+      out.push([{ x, y, z, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.75, vz: up[0] + (up[1] - up[0]) * h3(q, seed, 3, 9103), t0: 0, kind, size: kind === 1 ? 2 + 2.5 * h3(q, seed, 4, 9104) : kind === 4 ? 1.6 + 2.2 * h3(q, seed, 4, 9104) : kind === 6 ? 4 + 4 * h3(q, seed, 4, 9104) : size, seed: seed * 131 + q }, s]);
+    }
+  };
+  for (const B of X.bolts) {
+    const g = B.s - B.warn;
+    if (g >= 0 && g < 1.4) {
+      burst(B.x, B.y, 4, 20, 7, [120, 320], [80, 260], g, 300 + B.seed);
+      burst(B.x, B.y, 4, 8, 5, [60, 180], [100, 220], g, 400 + B.seed, 1);
+    }
+  }
+  for (const b of X.blows ?? []) {
+    if (b.on === 'ward') burst(b.x, b.y, b.z, 18, 7, [140, 340], [40, 220], b.s, 500, 1, [0.3, 1]);
+    if (b.on === 'pillar') {
+      burst(b.x, b.y, b.z, 7, 5, [60, 160], [80, 200], b.s, 520 + Math.round(b.x), 1, [-1, 0.3]);
+      burst(b.x, b.y, b.z, 6, 7, [100, 220], [40, 160], b.s, 540, 1, [-1, 0.2]);
+    }
+  }
+  for (const S of X.struck ?? []) burst(S.x, S.y + 10, S.z, 22, 4, [80, 260], [60, 240], S.s, 600 + Math.round(S.s * 0), 1, [0.2, 1]);
+  if (X.slam && X.slam.s >= 0 && X.slam.s < 1.4) {
+    // (from under its rim, flung out hard all round: slime, spray, chips and chunks of the paving)
+    const rim = (n: number, kind: Flyer['kind'], sp: [number, number], up: [number, number], seed: number, size = 1): void => {
+      for (let q = 0; q < n; q++) {
+        const a = h3(q, seed, 1, 9101) * TAU;
+        const v = sp[0] + (sp[1] - sp[0]) * h3(q, seed, 2, 9102);
+        const x = X.slam!.x + Math.cos(a) * 52;
+        const y = X.slam!.y + Math.sin(a) * 30;
+        out.push([{ x, y, z: 6, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.75, vz: up[0] + (up[1] - up[0]) * h3(q, seed, 3, 9103), t0: 0, kind, size: kind === 1 ? 2 + 2.5 * h3(q, seed, 4, 9104) : kind === 6 ? 4 + 4 * h3(q, seed, 4, 9104) : size, seed: seed * 131 + q }, X.slam!.s]);
+      }
+    };
+    rim(30, 1, [160, 380], [140, 320], 700);
+    rim(26, 2, [200, 420], [60, 200], 705, 1);
+    rim(12, 5, [90, 260], [100, 240], 720);
+    rim(5, 6, [70, 170], [140, 260], 725);
+  }
+  X.pillars.forEach((P, n) => {
+    if (P.state === 'broken' && P.s >= TOPPLE.frames / EYE_FPS && P.s < 2) {
+      const g = P.s - TOPPLE.frames / EYE_FPS;
+      for (let m = 0; m < 4; m++) burst(P.x + 30 + m * 32, P.y, 2, 9, m % 2 ? 0 : 2, [40, 160], [220, 420], g, 800 + m);
+      burst(P.x + 60, P.y, 6, 8, 5, [60, 160], [100, 220], g, 840, 1);
+    }
+    if (P.state === 'broken' && P.s >= 0 && P.s < 0.6) burst(P.x, P.y, PILLAR_TOP * 0.6, 16, 7, [120, 280], [40, 200], P.s, 860 + n, 1);
+  });
+  if (X.piece && X.piece.set !== undefined && X.piece.set < 1) burst(X.piece.x, X.piece.y, X.piece.z + 4, 16, 12, [60, 200], [80, 240], X.piece.set, 900);
+  if (X.slide) {
+    const S = X.slide;
+    // (his spittle across his maw torn by his tongue thrust out through it: gobs of it flung off)
+    if (S.tear !== undefined && S.tear < 1.2) for (let m = 0; m < 7; m++) burst(-60 + m * 20, S.fwd + 40 + 10 * h3(m, 2, 0, 9130), S.rise + 80 + 30 * h3(m, 3, 0, 9131), 4, 1, [40, 140], [20, 120], S.tear, 1100 + m);
+    if (S.grip !== undefined && S.grip < 1.4) {
+      for (const gx of [-120, -40, 50, 130]) burst(gx, STONE_BOX.y0 + 4, 4, 6, 5, [60, 180], [80, 200], S.grip, 950 + gx, 1, [0, 1]);
+      burst(0, STONE_BOX.y0 - 6, 4, 30, 0, [80, 260], [180, 380], S.grip, 990);
+    }
+  }
+  if (F.move === 'q4') {
+    // (his ward breaking: its shards of fire flung off him)
+    const s = (F.k - Q4_PIECE.set - 4) / EYE_FPS;
+    if (s >= 0 && s < 1.2) for (let m = 0; m < 10; m++) burst(-240 + m * 52, 150 - F.jaws.back * 0, 120 + 60 * h3(m, 1, 0, 9120), 4, 7, [80, 220], [40, 200], s, 1000 + m, 1, [m < 5 ? -1 : 1, 0.6]);
   }
   return out;
 }
@@ -3239,6 +3996,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   if (F.fx) armFxUnder(pic, F, top, S.water, t);
   if (F.sfx) shovelUnder(pic, F, top, S.water, t);
   if (F.bfx) bodyUnder(pic, F, top, S.water);
+  if (F.p3) p3Under(pic, F, top, S.water);
   // HIM OVER THE WATER, and the after-images of a strike
   for (let q = 0; q < n; q++) {
     if (ghost[q * 4 + 3] && !(top.who[q] >= 0 && top.z[q] >= -0.5)) {
@@ -3434,7 +4192,8 @@ function frameOf(F: EyeFrame, tf: number): Pic {
     }
   }
   // THE PIECES ON THE STONE (his shovel: each whole until a hook reaches it, then smashed; its rubble after), and the dust off them
-  const PN = (F as EyeFrame & { pieces?: PiecesNow }).pieces;
+  // (phase 3: the pieces his first shovel smashed lie as rubble)
+  const PN = (F as EyeFrame & { pieces?: PiecesNow }).pieces ?? (F.p3 ? RUBBLE : undefined);
   if (PN) {
     layPieces(pic, top, PN, S.water);
     piecesDust(pic, top, PN);
@@ -3452,6 +4211,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   if (F.fx) for (const [f, s2] of armFlyers(F.fx)) flyers.push([f, s2]);
   if (F.sfx) for (const [f, s2] of shovelFlyers(F)) flyers.push([f, s2]);
   if (F.bfx) for (const [f, s2] of bodyFlyers(F)) flyers.push([f, s2]);
+  if (F.p3) for (const [f, s2] of p3Flyers(F)) flyers.push([f, s2]);
   if (PN) for (const [f, s2] of piecesFlyers(PN)) flyers.push([f, s2]);
   const hiddenAt = (i: number, j: number, nr: number): boolean => {
     if (i < 0 || j < 0 || i >= CW || j >= CH) return true;
@@ -3503,9 +4263,9 @@ function frameOf(F: EyeFrame, tf: number): Pic {
     }
     // (a spark struck off the stone: a short bright streak along the way it flies, white-hot, cooling to gold and an ember, gone in a third
     // of a second)
-    if (f.kind === 7) {
-      if (s > 0.3) continue;
-      const c = SPARK_C[s < 0.06 ? 0 : s < 0.13 ? 1 : s < 0.21 ? 2 : 3];
+    if (f.kind === 7 || f.kind === 12) {
+      if (s > 0.3 * (f.kind === 12 ? 2 : 1)) continue;
+      const c = f.kind === 12 ? [GLINT_C, CYAN_C[3], CYAN_C[2], CYAN_C[1]][s < 0.1 ? 0 : s < 0.25 ? 1 : s < 0.42 ? 2 : 3] : SPARK_C[s < 0.06 ? 0 : s < 0.13 ? 1 : s < 0.21 ? 2 : 3];
       const [x1, y1, z1] = flyAt(f, s);
       const [x0, y0, z0] = flyAt(f, Math.max(0, s - 0.03));
       const [i1, j1] = onCanvas(x1, y1, Math.max(0, z1));
@@ -3723,12 +4483,16 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   if (F.bfx) bodyOver(pic, F, top);
   // THE PIECES BEFORE HIM, AND THE WARRIOR AT HIS SPOT, breathing (his shovel: but those on the stone, and the reeds off the end where
   // he is up; each where nothing of him or his tentacles is in front of it)
-  if (!F.sfx) pic.lay(S.front, 0, 0, 0, 0);
+  // HIS PHASE 3: the pillars, their lines, his ward, the bolts, the piece of the ward-stone
+  if (F.p3) p3Over(pic, F, top, S.water);
+  if (!F.sfx && !F.p3) pic.lay(S.front, 0, 0, 0, 0);
   else {
-    const P0 = S.shovel[F.sfx.up ?? 'none'];
+    const P0 = S.shovel[F.sfx?.up ?? 'none'];
     for (let q = 0; q < n; q++) {
       if (P0.pic.d[q * 4 + 3] === 0) continue;
       if (top.who[q] >= 0 && top.z[q] >= -0.5 && top.near[q] > P0.near[q]) continue;
+      // (phase 3: and where an obelisk, or a piece on the stone, is in front of it: the lily pads on the water behind an obelisk's point)
+      if (F.p3 && PNEAR[q] > P0.near[q]) continue;
       pic.over(q % CW, Math.floor(q / CW), P0.pic.d[q * 4], P0.pic.d[q * 4 + 1], P0.pic.d[q * 4 + 2], P0.pic.d[q * 4 + 3]);
     }
   }
@@ -3763,7 +4527,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       const fi = Hh.act === 'down' ? Math.min(c.frames.length - 1, Math.floor(c.frames.length * 0.55)) : Hh.act === 'knock' ? Math.floor(Hh.f * 0.9) % c.frames.length : Math.min(c.frames.length - 1, Math.floor((Hh.f / 30) * c.fps * 1.6));
       spr = c.frames[fi];
     }
-    if (!F.sfx || !Hh) laySprite(pic, spr, sx, sy);
+    if ((!F.sfx && !F.p3) || !Hh) laySprite(pic, spr, sx, sy);
     else {
       // (his shovel: the Warrior hidden where a tentacle or he is in front of him; how near each pixel of him is, as his own layers'
       // nearness, each as high as it is over his feet)
@@ -3784,6 +4548,8 @@ function frameOf(F: EyeFrame, tf: number): Pic {
         pic.over(i, j, one.d[q * 4], one.d[q * 4 + 1], one.d[q * 4 + 2], one.d[q * 4 + 3]);
       }
     }
+    // (phase 3: the piece of the ward-stone in his hand)
+    if (F.p3 && Hh) p3Held(pic, top, F, sx, sy, t);
     // (struck: a flash of him, white and the enemy's red, for a few frames)
     if (Hh && Hh.act === 'knock' && Hh.f < 6 && Hh.f % 2 === 0) pic.light(sx, sy - 18, 34, [255, 230, 230], 0.5);
     pic.light(sx, sy - 20, 60, [200, 190, 220], 0.08);
@@ -3800,6 +4566,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   // HIS LIGHTS (his eye's fire pulsing through the water; his throat's, flaring as he roars)
   for (const l of lights) pic.light(l.x, l.y, l.r, l.c, Math.min(0.6, l.a * (F.move === 'lurk' || (ent && k < 22) ? Wt.pulse : 1)));
   if (F.bfx) bodyLights(pic, F);
+  if (F.p3) p3Lights(pic, F);
   if (ent && roarS >= -0.05 && roarS < 1) {
     const fl = Math.exp(-Math.max(0, roarS) / 0.25);
     const [mi, mj] = onCanvas(0, -20, 50);
@@ -4102,6 +4869,38 @@ if (mode === 'paint') {
     missing.set(kd, (missing.get(kd) ?? 0) + 1);
   }
   process.stdout.write(`${want.size} layers: ${[...byKind].map(([a, b]) => `${a} ${b}`).join(', ')}; painted ${[...want].filter((f) => fs.existsSync(f)).length}; to paint: ${[...missing].map(([a, b]) => `${a} ${b}`).join(', ')}\n`);
+}
+if (mode === 'cost6') {
+  // (what his phase 3 costs, as painted here: its own new layers (his stand's jaws are his stand's, laid at his new place): each layer's
+  // box (two picture pixels to a game pixel, 4 bytes a pixel) and its packed file; by what it is)
+  const seen = new Set<string>();
+  const by = new Map<string, { n: number; raw: number; packed: number }>();
+  const KIND: Record<string, string> = { 'T.p': 'his tongue-eye drooping as he stands', 'S.p': 'his drool as he stands', 'T.q': 'his tongue as he slides', 'T.e': 'the eye slam', 'T.e2': 'the eye slam, struck as it lies', 'T.k': 'his eye struck', 'T.h': 'the gaze from his new place' };
+  for (const mv of ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8'] as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(frameAt(mv, k))) {
+    const kd = KIND[L.key.split('.').slice(0, 2).join('.')];
+    if (!kd) continue;
+    const f = fileOf(L);
+    if (seen.has(f) || !fs.existsSync(f)) continue;
+    seen.add(f);
+    const b = fs.readFileSync(f);
+    const hl = b.readUInt32LE(0);
+    const meta = JSON.parse(b.subarray(4, 4 + hl).toString()) as { w: number; h: number };
+    const e = by.get(kd) ?? { n: 0, raw: 0, packed: 0 };
+    e.n++;
+    e.raw += meta.w * meta.h * 4;
+    e.packed += b.length;
+    by.set(kd, e);
+  }
+  let n = 0;
+  let raw = 0;
+  let packed = 0;
+  for (const [k, e] of by) {
+    process.stdout.write(`${k}: ${e.n} layers, ${(e.raw / 1e6).toFixed(1)} MB raw (${(e.raw / e.n / 1e6).toFixed(2)} MB a layer), ${(e.packed / 1e6).toFixed(1)} MB packed\n`);
+    n += e.n;
+    raw += e.raw;
+    packed += e.packed;
+  }
+  process.stdout.write(`all: ${n} layers, ${(raw / 1e6).toFixed(1)} MB raw, ${(packed / 1e6).toFixed(1)} MB packed\n`);
 }
 if (mode === 'cost5') {
   // (what his body's two attacks cost, as painted here: their own layers only (his stand's are his stand's): each layer's box (two

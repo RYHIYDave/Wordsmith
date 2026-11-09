@@ -1,4 +1,4 @@
-# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1; stage 3: his moves, part 2, his tentacles; stage 4: his moves, part 3, his shovel; stage 4b: the pieces on the stone smashed by it, and his mirror; stage 5: his body's own attacks, the bile arc and the gaze)
+# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1; stage 3: his moves, part 2, his tentacles; stage 4: his moves, part 3, his shovel; stage 4b: the pieces on the stone smashed by it, and his mirror; stage 5: his body's own attacks, the bile arc and the gaze; stage 6: his phase 3)
 
 A MOCK-UP: NOT IN THE GAME. The art chat's, branch `art/eye-redo`. His new look is `src/art/eye_colossus.ts`, behind
 `EYE2 = { on: false }`; nothing of the game imports it (`tests/eye_colossus.test.ts` holds it). Nothing of the old Eye
@@ -6,7 +6,183 @@ A MOCK-UP: NOT IN THE GAME. The art chat's, branch `art/eye-redo`. His new look 
 in stills; stage 2 is his first moves: his stand, his lurk under the water and his entrance, in `src/art/eye_moves.ts`; stage 3 his
 tentacles' moves, in `src/art/eye_arms.ts`; stage 4 his shovel, in `src/art/eye_shovel.ts`; stage 4b the pieces on the stone smashed
 by his first shovel, in `src/art/eye_pieces.ts`, and at the right end the left end's paintings of him mirrored; stage 5 his body's own
-attacks, the bile arc and the gaze, in `src/art/eye_body.ts`.
+attacks, the bile arc and the gaze, in `src/art/eye_body.ts`; stage 6 his phase 3 (his slide forward, the three pillars and his ward,
+the siege's bolts, the eye slam, the gaze from his new place, his eye struck), in `src/art/eye_phase3.ts`.
+
+## Stage 6: his phase 3: his slide forward, the three pillars and his ward, the siege's bolts, the eye slam, the gaze from his new place, his eye struck
+
+His words. Shown the bile arc and the gaze (564e9796), 8 Nov 2026 (by 14:57): “Yes, on to phase 3 (Recommended)”. To the main chat,
+asked how a hero who fights close reaches his body in phase 3 (board, the main chat's post of 8 Nov 11:42): “Kill the tentacles, and he
+slides forward to use the eye and you can hit him.  Let’s scratch the tentacles for the third phase, and have strictly eye attacks and
+spells for the final phase?  Does that sound like a good idea?” (he was told yes). The pillars, 7 Nov 00:18 (the main chat's posts of 7
+Nov 00:48 and 03:15): “maybe you use them on three pillars during the swamp fight to deactive the seige magic”.
+
+THE MAIN CHAT'S RULES, drawn to (board, 8 Nov 11:42; “Change any number your pictures want; the rules follow your frames”): no
+tentacles in phase 3 (the last of phase 2's sink as it begins); he slides forward (about 4 s) to the stone, nothing through it; the
+three pillars, each burning, put out by a piece of the ward-stone set into it, or broken by 12 blows; his ward while any burns; the
+siege's bolts, 3 every 2.6 s, warned 1.1 s; his eye's two attacks by turns, the gaze and the eye slam (wind-up held 0.93 s, 1.5 tiles
+round, lying to 2.2 s, back up by 2.8 s); his eye struck. The numbers it changed are marked CHANGED below.
+
+`src/art/eye_phase3.ts`, behind EYE2 (off); nothing of the game imports it (`tests/eye_phase3.test.ts`). His moves are his paintings
+(baked, a layer each); the pillars, the lines, the ward, the bolts, the warnings, the slime, the cracks, the splashes and the shakes are
+the game's effects drawn over (`P3Fx`; their shapes in `eye_phase3.ts`, the pictures' tool draws them). In phase 3 he has no tentacles:
+the middle one, the last up, sinks as the slide begins. His jaws and drool at his new place are his stand's paintings laid there (his
+heaps hauled up 1.53 tiles and 4.24 forward); his tongue-eye droops low out over the stone's edge, painted again for it.
+
+### Each move, frame by frame (30 a second; frames from the move's first)
+
+THE SLIDE (`SLIDE`; the film's first take, from its frame 24):
+
+| beat | frames | seconds | what |
+|---|---|---|---|
+| his last tentacle down | (before it) | | Sinking into the water as he stands. |
+| THREE HEAVING LUNGES | 4 to 30, 42 to 68, 78 to 104 | 4.0 in all | Each a heave of his whole bulk forward, the water heaped and foaming before him and flung over his heaps, settling between; his eye riding high, swinging. |
+| HAULING UP | 62 to 102 | 1.3 | Rising out of the water as his heaps meet the stone's back edge: forward any more, they would cut into it, so he hauls himself up against it instead (1.53 tiles up). |
+| THE GRIP (the hit) | 103 | 3.43 | His heaps clamp onto the edge: the stone cracking and grinding along it, grit flung up, water surging over it onto the stone, the screen jolted. |
+| THE DROOP (the wind-down) | 80 to 119 | 1.3 | His tongue lowers his eye out over the edge, low over the stone, within reach; his spittle torn as the tongue comes down through it (frame 112). |
+| THE PILLARS BLAZE | 122, 127, 132 (each over 26) | | The left, the right, the near: the siege's pink fire kindling at each point, its line crawling out to him; his ward coming on round him from 132 (over 20 frames). |
+
+HIS STAND at his new place (`p3StandTongue`, 90 frames, 3 s, looping): never still, his eye weaving low over the stone's edge, his jaws
+breathing, his drool swinging.
+
+THE EYE SLAM (`SLAM`; at the Warrior where he stands as it begins):
+
+| beat | frames | seconds | what |
+|---|---|---|---|
+| THE WIND-UP, HELD | 0 to 26 | 0.9 | His tongue rears his eye up and back over his maw (0 to 16), held there quivering, its lids narrowing; the game's warning where it will land, on the Warrior's spot, the enemy's pink, crawling round, flaring gold as it comes down. |
+| THE STRIKE (smeared) | 27, 28 | 0.07 | Whipped up over the edge and down; it hits on frame 28 (0.93 s). |
+| THE HIT | 28 | 0.93 | Down on the stone 1.5 tiles round: the stone cracking out from it, slime and water flung up and out, chips, the screen jolted. |
+| LYING THERE | 29 to 65 | 1.2 (to 2.2) | Twitching, its lids clenched, slime pooling round it; his tongue arched high over the stone's edge, never through it. The time to strike it. |
+| THE WIND-DOWN | 66 to 83 | 0.6 (to 2.8) | Dragged back up over the edge into his droop, slime stringing off it; his stand again from 84 (2.8 s). |
+
+HIS EYE STRUCK (`STRUCK`): frames 0 to 19 (0.67 s) from the blow: a big flinch, jerked back and up, its lids clenched, its dark ichor
+spurting (never cyan), weaving back into his droop. Struck as it lies after the slam, it jolts where it lies, and lies on.
+
+THE GAZE from his new place (`gazeArc3`, `gazePath3`): phase 2's beats (wind-up held 0 to 26, strike 27 and 28, the sweep 27 to 63,
+guttering to 71, out at 72, wind-down 72 to 101), his eye rearing up out of its droop over frames 0 to 16. PAINTED AGAIN: his tongue-eye
+through it (104 layers), carried out before his jaws as it rears and sinks; his jaws and drool are his stand's. The arc turns about the
+stone's back edge under his eye as it aims.
+
+THE PILLARS, HIS WARD, THE BOLTS (frames from the event):
+
+| beat | frames | seconds | what |
+|---|---|---|---|
+| a blow at him, shielded | the blow | | His ward flashes where it meets it, the flash running out round him; the blow glances off in pink sparks. |
+| THE PIECE OF THE WARD-STONE | | | Lying on the stone, glinting the friend's cyan; picked up (10 frames), held at his side, set into a pillar's foot. |
+| A PILLAR PUT OUT | 0 to 30 | 1.0 | The piece set in its foot glowing cyan; the siege's fire guttering out at its point; its line going dark from the pillar's end toward him. |
+| A PILLAR BROKEN | the 12th blow, then 0 to 14 | 0.47 | Each blow cracks its foot further (chips flying); the twelfth: it cracks across, its shaft topples outward into the water in three pieces, splashing; its line snaps, the half toward him whipping back into him (0.35 s); the screen jolted. |
+| HIS WARD BROKEN | 4 to 28 after the last is put out | 0.8 | Cracking and shattering off him in shards. |
+| A BOLT | warned 0 to 32, falls 24 to 32, strikes 33 | 1.1 | The game's warning on the stone, the enemy's pink, flaring gold as the bolt falls out of the sky (from in front of him, clear of him); the strike bursting in pink fire and sparks, the screen jolted; the stone scorched, smouldering 2.2 s. |
+
+THE WARRIOR plays it (the takes): the slide watched from the stone; a blow at the eye glancing off the ward, the bolts dodged, the piece
+picked up and set into the left pillar; the right pillar broken (blows 1 and 2, the cut, 11, a leap out of a bolt's way, 12); a piece
+set into the near pillar and the ward broken; the slam just clear (going as it comes down, out of its warning as it hits); the slam
+again, leapt clear, then two blows at the eye as it lies; the gaze dodged out of its arc; his eye struck at the edge.
+
+### The numbers, for the main chat (in the game's tiles, 39.19 of his lengths; the stone 17 across and 11 deep; places as (tiles from its left end, from its back edge))
+
+- HIS PLACE. CHANGED: his middle stops 3.67 tiles off the stone's back edge (the main chat's 2.8): forward any more, his heaps would cut
+  into the stone; so he hauls himself up 1.53 tiles against its back edge, his heaps gripping it. He slides 4.24 tiles forward (from
+  his phase-2 place, 7.9 out) in 4.0 s. His eye weaves 0.89 to 1.56 tiles in over the stone from its back edge (1.52 at rest; the main
+  chat's 1.6), 2.24 to 2.86 tiles up; so a blow from the stone reaches it from anywhere along the back edge's middle. His tongue is
+  7.85 tiles long.
+- THE EYE SLAM: 1.5 tiles round (the main chat's); landing on the Warrior's spot as it begins. CHANGED: its reach is 4 tiles from under
+  his eye at the most (the main chat's 9): his tongue's root is 5.0 tiles back behind the edge, and to reach 4 tiles straight out it
+  stretches to 1.62 times its length; 9 straight out would need 2.20 times. Here it lands 2.23 tiles from under his eye, at (9.37, 3.32), his
+  tongue stretched 1.37 times. It hurts on frame 28 (0.93 s); it lies to 2.2 s (the time to strike it); up by 2.8 s.
+- THE PILLARS (the cult's obelisks, 3.85 tiles to the fire at the point; the plan's spots, `eye_arena.png`): the left at (-0.90, 6.05),
+  off the stone's left end; the right at (17.90, 6.05), off its right end; the near at (8.50, 11.90), off its near edge. Each line from
+  its fire into him (deep in his heaps; the near one into the foot of his left jaw, clear of his eye and of a Warrior striking at it).
+  Put out 1.0 s after the piece is set; broken on the 12th blow, toppling 0.47 s outward into the water. The ward-stone piece here lies
+  at (4.16, 3.06).
+- HIS WARD: on him while any pillar burns, coming on over 0.67 s as they blaze, breaking over 0.8 s as the last goes out; it hugs
+  him, about 0.1 to 0.4 tiles out from him (for the game, my suggestion: his own hurt-box grown a quarter tile).
+- THE BOLTS (the main chat's RAIN): 3 every 2.6 s, warned 1.1 s, hurting within 1.0 tile of where each strikes (as RAIN.r has it,
+  a radius: 2 tiles across; the brief said 1 across: the main chat's to say); the first on the Warrior's spot, the others 1.5 to 3.5
+  tiles round him; none once the last pillar is out. Each falls in the warning's last 0.3 s; the scorch lasts 2.2 s.
+- THE GAZE from his new place: the arc turns about (8.15, -0.05), the stone's back edge under his eye as it aims; 32 degrees each side
+  of the Warrior; the Warrior here 2.93 tiles out from it; its line on the stone 11.0 to 13.6 tiles long across the arc, the whole stone; its beats
+  phase 2's.
+- THE SHAKES (game pixels, dying away over the frames given): his grip on the edge 7 over 10; the slam 9 over 10; a pillar toppling 6
+  over 8; a bolt striking 3 over 5; his ward breaking 5 over 8.
+- NOWHERE SAFE. The bolts follow the Warrior wherever he goes, three at a time; the slam comes down on him; the gaze's arc is laid on
+  him; and to stop the bolts he must go to the pillars, at the stone's ends and off its near edge, under them.
+
+### The pictures
+
+- `pictures/eye_moves6.mp4` (51.3 s, 1538 frames, 30 a second, H.264 yuv420p, 1014 x 540, captioned beat by beat), in the arena as the player sees it, the Warrior playing it, eight takes at full speed: THE SLIDE
+  (his last tentacle sinking, three lunges, the grip, the droop, the pillars blazing and his ward coming on); SHIELDED (a blow at his eye
+  glancing off his ward, the bolts dodged, the ward-stone piece picked up and set into the left pillar, put out; the bolts again); THE
+  RIGHT PILLAR BROKEN (blows 1 and 2, the cut, 11, a leap out of a bolt's way, 12: it topples); THE LAST PILLAR OUT (a piece set into
+  the near one, his ward broken); THE EYE SLAM just clear; THE EYE SLAM struck as it lies; THE GAZE from his new place; HIS EYE STRUCK.
+  Then close up, twice the size, at half speed: the grip on the edge, the blow glancing off his ward, a bolt striking, the piece set,
+  the pillar toppling, his ward breaking, the slam struck as it lies, his eye struck.
+- `pictures/eye_moves6.png` (1200 x 6188): each of them at the game's size and close at twice.
+- Seen, every frame of all eight takes at the game's size and every frame of the eight close-ups. Seen and mended on the way:
+  the siege's lines ending in the air beside him (now aimed deep into his heaps, each seen going into him and hidden where it meets him), and the near one running across the Warrior as he struck at the eye, and before
+  that across his drooping eye (now into the foot of his left jaw: tested clear of both); the bolts falling from behind him through his
+  drooping eye and his heaps (now from in front of him, clear of him: tested); the lily pads on the water behind the obelisks laid over
+  their fire (now hidden behind it); the slam's hit and its eye lying at the screen's foot, cut off, and its rearing off the screen's
+  top (the camera now follows it down as it slams and back up after; the rearing a fifth lower, 27 layers painted again); the slam's
+  hit hardly seen, its splash hidden under the eye (now a ring of spray and grit racing out from under its rim, the stone dented dark
+  round it, the cracks longer, slime, chips and chunks of the paving flung from its rim); the gaze's arc and the stone mostly below the
+  screen (the camera lower); the Warrior at the screen's foot as he backs off from the left pillar (the camera follows him); his ward
+  breaking off the top of the screen as the piece was set in the near pillar (the camera now goes up to him as it breaks and back
+  down after; the close-up lower on him). And on the way to them: his spittle strung through his drooping tongue (now torn as the tongue comes down through it, the slide's frame
+  112); his slammed eye sunk into the stone (now lying on it); his eye drooping too high to be reached (lowered); his eye through his
+  jaws on the slam's strike and in the gaze's wind-down (now carried out before them); the Warrior running faster than a run in three
+  places (slowed); bolts coming down where the Warrior was going (now laid clear of where he will be); his eye whipping up too fast as
+  it rears, a leap (the rearing now over 16 frames, smooth); the siege's lines and his ward's edge crinkled in even zigzags (now ragged);
+  the Warrior hidden behind the near pillar (now beside it).
+- To make them again (the layers on the memory disk, `/dev/shm`):
+
+```
+npx tsx tools/eye_moves_pics.ts paint 0 2 q1 q2 q3 q4 q5 q6 q7 q8 & npx tsx tools/eye_moves_pics.ts paint 1 2 q1 q2 q3 q4 q5 q6 q7 q8
+npx tsx tools/eye_moves_pics.ts frames /dev/shm/eye_moves/f6 q1 0 203   (and q2 0 149, q3 0 195, q4 0 103, q5 0 119, q6 0 119, q7 0 123, q8 0 63)
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c6/grip q1 118,...,141 0 300 30
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c6/glance q2 8,...,25 40 360 100
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c6/bolt q2 30,...,47 40 352 10
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c6/set q2 96,...,123 -368 547 30
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c6/topple q3 136,...,171 420 547 30
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c6/ward q4 40,...,73 0 150 105
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c6/slam q6 34,...,79 60 440 20
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c6/struck q8 12,...,35 24 350 100
+npx tsx tools/eye_moves_pics.ts cost6      (what its own layers cost)
+python3 tools/eye_shovel_sheet.py film6 /dev/shm/eye_moves/f6 /dev/shm/eye_moves/c6 docs/mockups/eye_redo/pictures/eye_moves6.mp4
+python3 tools/eye_shovel_sheet.py sheet6 /dev/shm/eye_moves/f6 /dev/shm/eye_moves/c6 docs/mockups/eye_redo/pictures/eye_moves6.png tools/eye_phase3_sheet.json
+```
+
+### What it costs (as painted here: its own new layers; his jaws and drool at his new place are his stand's, laid there)
+
+444 new layers: his tongue-eye drooping as he stands 90 (10.7 MB raw), his drool as he stands 90 (3.6 MB; his stand's drool with the
+strands his drooping tongue would pass through torn away), his tongue as he slides 40 (4.2 MB), the eye slam 84 (13.2 MB), the slam
+struck as it lies 16 (3.1 MB), his eye struck 20 (1.6 MB), the gaze from his new place 104 (11.1 MB): 47.4 MB raw at two picture
+pixels to a game pixel, 14.6 MB packed. At the game's own pixel size about a quarter: about 12 MB raw, about 4 MB packed (an estimate:
+the main chat's to weigh). The slide is his stand's paintings moved (no new jaws); the pillars, the lines, the ward, the bolts and the
+rest are the game's effects, drawn as it runs.
+
+### The checks (`tests/eye_phase3.test.ts`)
+
+(1) The switch off; nothing of the game imports `art/eye_phase3.ts`. (2) THE BEATS: the slide 4.0 s in three lunges, gripping the
+edge on frame 103; the slam's wind-up held with its warning all through it, its strike two smeared frames, the hit on frame 28 (0.93 s),
+lying to 2.2 s, back up by 2.8 s; his eye struck, a flinch of 20 frames; the gaze's beats; each out of his stand at his new place and
+back into it. (3) NOTHING THROUGH ANYTHING in every frame of his moves and every third of his stand: his tongue and eye clear of his
+jaws (1.4 and 0.2 of his lengths at the nearest), his spittle of his tongue (0.2), his jaws of each other (28.5), him clear of the stone
+(2.7: sliding, gripping it, his eye slammed down on it); the Warrior never under a bolt as it strikes (0.17 tiles clear at the least),
+just clear of the slam as it hits, just clear of the gaze (0.30); the siege's lines clear of his eye (29.3 of his lengths) and, on the
+screen, of the Warrior striking at it (85.2 picture pixels); the bolts falling clear of him (12.4). (4) NEVER STILL: him moving in every
+frame of every take. (5) NO LEAPS: him no more than 3.4 of his lengths a frame as he slides; his eye no more than 12.2 a frame but in
+the strikes and its rearing (24.1 rearing for the slam, smooth); the Warrior no faster than a run (8.3). (6) THE CUES: the pillars
+dark through the slide, kindling as it ends; the left out as its piece is set, the right broken on the twelfth blow (two before the cut),
+falling outward, the near out as its piece is set; his ward while any burns, broken with the last, a blow at him glancing off it; the
+bolts every 2.6 s, in threes, each warned 1.1 s, the first on the Warrior, none once the siege is broken; the slam at the Warrior,
+within reach; the gaze's arc from his new place; the blows where they land; the shakes. (7) NOTHING CYAN in him as he slams, lies
+struck, is struck and stands (his layers painted and looked at), nor in the siege's, the ward's, the bolts' and the slime's colours;
+the friend's cyan only in the ward-stone piece's glow. (8) NOTHING RULED (no straight run over 12 game pixels, exactly across or up;
+the longest, up and across): a bolt's warning 2, 4.5; the slam's warning 2.5, 5.5; the slime 2.5, 6; the siege's lines 11, 0; his
+ward's edge 5, 8. (9) The numbers above. `tests/eye_moves.test.ts`, `tests/eye_colossus.test.ts` and `tests/eye_arms.test.ts`: their
+first checks let `art/eye_phase3.ts` import them (its name added to each one's list); `tests/eye_body.test.ts` 1 likewise. Each test
+file run on its own: eye_phase3 9 of 9, eye_body 9, eye_moves 8, eye_colossus 7, eye_arms 9, eye_shovel 11, eye_pieces 8, all passing.
 
 ## Stage 5: his body's own attacks in phase 2: the bile arc and the gaze
 
