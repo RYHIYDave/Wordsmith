@@ -26,6 +26,7 @@ Lasting, Fleeting and Vast, plus room for 28 rune stones in the Lexicon; then al
   507 by 234 game pixels, the Lexicon's half 254 by 234), all 28 words found and every use of each known, open on Reaping,
   the longest page at the game's own width. As it is now, then three ways, each at the game's size and at twice; the pick marked.
   The ten new words show the art chat's rune stones (laid in for the picture only).
+- `pictures/lexicon_pages.png` (step 1c, below): the Lexicon in five pages by what they do, his pick.
 
 ## The three
 
@@ -170,3 +171,73 @@ as it is. (The game's touch size taken: 18 game pixels each way, a button's heig
   colour check leaves out the main chat's stand-ins for these very ten words (they are what the art's colours replace), and the
   new spirits hook is held behind the switch with the others.
 - Not run: the regression; a real phone; the film (the next step).
+
+## Step 1c: the Lexicon in pages by what they do (his pick)
+
+### His words
+
+9 Nov. Shown lexicon28.png and asked “With 28 words, how should the Lexicon lay out its rune stones (lexicon28.png)?” (offered: a block down the left, recommended; smaller, tighter rows; one row, paged through), by 16:37 he wrote his own: “Categorize them into pages”. Asked “You said to sort the Lexicon's stones into pages. Which pages?”, by 16:45: “By what they do” (offered as: damage and elements on one page, the words that change a skill's shape on the others). He was then told the draft below, as a picture to come. Also, by 16:45, shown words3_looks.png and asked “Are the three new words' looks right (words3_looks.png)?”: “Yes, animate them (Recommended)” (offered as: next, a short film of all three at work, then all ten words go to the main chat).
+
+### The pages
+
+As told to him; none moved, none renamed (each word sits where what it does says; each name reads whole at the game's size, in
+two lines on its tab). `src/ui/lexicon28.ts` `LEX_PAGES`, the way `'groups'`, behind `LEX28` (still `'rows'`, the game's own).
+
+| Page (its tab) | Its words |
+|---|---|
+| FORCE AND ELEMENTS (FORCE AND / ELEMENTS) | Power, Poison, Flame, Frost, Lightning |
+| HOW IT STRIKES (HOW IT / STRIKES) | Twin, Heavy, Precise, Splitting, Piercing, Volatile, Vast, Surging, Mirroring |
+| SPEED AND TIME (SPEED AND / TIME) | Swift, Frenzied, Stilling, Lasting, Fleeting |
+| HOLD, CURSE AND GUARD (HOLD, CURSE / AND GUARD) | Pulling, Binding, Hexing, Guarding |
+| BLOOD AND SPOILS (BLOOD AND / SPOILS) | Leech, Bleeding, Reaping, Culling, Plundering |
+
+### The room, in game pixels
+
+The Lexicon's half on a phone held sideways: 254 by 234 (its title line as now, the shelf of kept words along the foot as now).
+
+- THE TABS: a row of five across the top, 18 tall (the touch size), 47, 47, 47, 47 and 46 wide, 2 apart. Each its page's name in
+  two lines of the small letters (the widest line, HOLD, CURSE, 41 across). The open one lit in the friend's cyan (cyan rim,
+  cyan name, a deep teal inside); the rest with the rim that says a thing can be pressed.
+- THE STONES: under the tabs, the open page's in one row, at their own size (20 across, 22 apart: nine, the most a page has, take
+  196 of the 242). A word not found yet shows as the game shows one now: a dark stone with a question mark.
+- THE PAGE: under the stones, the half's whole width: 242 wide, 111 tall. The longest pages need 109 (Reaping's and Mirroring's,
+  every use known): written whole, down to ON A DUNGEON, 2 to spare. (The game's own three rows leave 88.)
+- A NEW WORD'S MARK: the tab of a page holding a word found since the Lexicon was last looked at carries a round cyan stud, 5
+  across, on its top right corner, clear of the name; it reads at the game's size. The open page's tab has none (it is being
+  looked at). THE GAME KEEPS NO SUCH RECORD YET: for the main chat, it would keep, word by word, whether its page has been seen
+  since it was found (in the save), and clear it as its page is opened. In the mock-up, `LEX28.fresh`, set by the pictures only.
+
+HOW THE TAPS WOULD GO (drawn only; what is pressed is still the game's own rows'): tap a tab, and its page opens, at its first
+word found (`LEX28.tab` in the mock-up; else the page of the open word). Tap a stone, and its word's page opens under it. A
+question mark does nothing. A word picked up in the inventory opens its own page here, turning to its tab, as it does now.
+
+SEEN ON A CLOSE LOOK, NOT CHANGED: Vast's name on its page is written in its word's colour, the main chat's stand-in `#7a5a3a`
+(the art's `#6e4e2e` darker still): the dimmest line on its page. It reads at the game's size; to make it stand out, its name
+could be written in its dust (`#c4a47e`). The colour is the three words' work, not the Lexicon's.
+
+### The picture
+
+`pictures/lexicon_pages.png` (1200 by 4858): the five pages listed; then the Lexicon at its lectern in town on a phone held sideways,
+each at the game's size and at twice: (1) all 28 found, open on HOW IT STRIKES at Vast; (2) open on BLOOD AND SPOILS at Reaping,
+the longest page; (3) part way through a game, 12 of 28 found, open on HOW IT STRIKES at Heavy (only its use in front known), Leech
+just found and its page's tab marked. Captioned in plain words; the ten new words show the art chat's stones.
+
+### How it was made and checked
+
+- `tools/scenarios/words10_lexpages.mjs` (on a page made by `node tools/build_to.mjs dist/words10_looks.html`, `--touch --size
+  844x390 --dpr 3`), then `python3 tools/words10_sheet.py pages <prefix> <out.png>`. The sheet is made from the phone's own pixels,
+  reduced evenly, not taken back to whole game pixels as the earlier sheets were: the rims of the tabs and stones are half a game
+  pixel, and that way they are lost (an unfound stone drawn as an open box).
+- Looked at close, at the game's size and at four times: every tab name and page line readable, nothing cut off, nothing on
+  anything else.
+- `tests/words10.test.ts` 8 (new): the five pages hold all 28 words, each once, nine at most a page; each page, opened by one of
+  its words or by its tab, shows its own stones in order; tabs and stones at least the touch size, inside the half, apart, each
+  tab's name inside it, above the page; the longest page of all written whole on every page; with `LEX28` on `'rows'` nothing
+  changes (no tab opened, nothing marked, the layout the game's own). Test 7 counts `'groups'` among the ways (its stones are one
+  page's, as `'pages'`' are).
+- `tsc --noEmit`: clean. Each Lexicon and words test file run on its own: `words10` 8 of 8, `runes_on_gear` 6, `words7` 7,
+  `words7_names` 7, `words7_shade` 3, `words7_fixes` 8, `words7_beats` 5, `words3` 18, `word_kinds` 4, all passing. Failing, on
+  what this step does not touch: `sides` 2 of 5 (the game's own rows, unchanged, leave a page 88 where it asks 108: as above,
+  before this step), `words` 26 of 29 (the rules' loadouts: it counts 162 where words10's words make 397) and `word_room` 1 of 4
+  (the inventory's room for every word at a service); these two reach no Lexicon code at all: the main chat's, with its new words.
+- Not run: the regression; a real phone.

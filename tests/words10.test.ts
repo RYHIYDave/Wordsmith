@@ -14,6 +14,10 @@
 //      a new level;
 //   7. the Lexicon: its switch on the game's own rows; each way's stones at least the game's touch size, inside the half, none on
 //      another; the way picked gives every word's page its room on a phone held sideways, as the game's own rows do not.
+//   8. the Lexicon in pages by what they do (way 'groups', his “Categorize them into pages”, “By what they do”, 9 Nov 2026): the
+//      five pages hold all 28 words, each once, nine at most a page; each page, opened by its word or by its tab, shows its own
+//      stones; tabs and stones at the touch size, inside the half, apart, each tab's name inside it; the longest page of all has
+//      its room; with LEX28 'rows' nothing changes.
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
 // @ts-ignore
@@ -37,7 +41,9 @@ import { W7_GLYPH, W7_RAMP } from '../src/render/words7';
 import {
   W10, W10_ENEMY, W10_GLYPH, W10_RAMP, W10_TIME, W10_WORDS, WORDS10_LOOK, airW10, clearW10, eventsW10, floorW10, heroW10, lightsW10, playW10, thingW10, tickW10, timeWord,
 } from '../src/render/words10';
-import { LEX28, LEX28_WAYS, TOUCH_MIN, lex28Layout, pageHeight } from '../src/ui/lexicon28';
+import { LEX28, LEX28_WAYS, LEX_PAGES, TOUCH_MIN, lex28Layout, lexPageOf, pageHeight } from '../src/ui/lexicon28';
+import { lexLayout } from '../src/ui/lexicon';
+import { textWidth } from '../src/engine/font';
 
 const cam: Cam = { ox: 300, oy: -150, lift: null } as unknown as Cam;
 const everywhere = (): boolean => true;
@@ -381,7 +387,7 @@ test("7. the Lexicon's 28 stones: the switch on the game's own rows; every way's
   const room: Record<string, boolean> = {};
   for (const way of LEX28_WAYS) {
     const L = lex28Layout(half, true, way, 'reaping');
-    if (way !== 'pages') assert.equal(L.cells.length, 28, `${way}: every stone`);
+    if (way !== 'pages' && way !== 'groups') assert.equal(L.cells.length, 28, `${way}: every stone`);
     for (const c of L.cells) {
       assert.ok(c.r.w >= TOUCH_MIN && c.r.h >= TOUCH_MIN, `${way}: ${c.w}'s stone ${c.r.w} by ${c.r.h}`);
       assert.ok(c.r.x >= half.x && c.r.y >= half.y && c.r.x + c.r.w <= half.x + half.w && c.r.y + c.r.h <= L.shelfY, `${way}: ${c.w}'s stone off the half`);
@@ -394,4 +400,68 @@ test("7. the Lexicon's 28 stones: the switch on the game's own rows; every way's
     if (way === 'side') assert.ok(room[way], `the way picked: ${w}'s page is ${h} tall, its room ${L.page.h}`);
   }
   assert.equal(room.rows, false, "the game's own rows leave too little room (why the ways were drawn)");
+});
+
+test("8. the Lexicon in pages by what they do ('groups'): all 28 words, each once; each page's tabs and stones at the touch size, inside, apart; the longest page fits; with LEX28 'rows' nothing changes", () => {
+  // the five pages: every word on one, none on two, none left out; nine at most a page (one row of stones)
+  const all = LEX_PAGES.flatMap((p) => [...p.words]);
+  assert.equal(LEX_PAGES.length, 5);
+  assert.equal(all.length, 28, 'twenty-eight places');
+  assert.equal(new Set(all).size, 28, 'no word on two pages');
+  assert.deepEqual([...all].sort(), [...WORD_IDS].sort(), 'every word on a page');
+  for (const w of WORD_IDS) assert.ok(LEX_PAGES[lexPageOf(w)].words.includes(w), `${w}: its page`);
+  // the lectern's half on a phone held sideways, every word found and every use known
+  const half = { x: 0, y: 0, w: 254, h: 234 };
+  const meta = newMeta();
+  for (const w of WORD_IDS) Object.assign(meta.known[w], { found: true, front: true, behind: true, gear: true, dungeon: true });
+  type R = { x: number; y: number; w: number; h: number };
+  const apart = (a: R, b: R): boolean => a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y;
+  const within = (a: R, b: R): boolean => a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h;
+  LEX_PAGES.forEach((p, i) => {
+    assert.ok(p.words.length >= 1 && p.words.length <= 9, `${p.name}: ${p.words.length} words`);
+    // opened by one of its words, or by its tab: the same page
+    for (const L of [lex28Layout(half, true, 'groups', p.words[p.words.length - 1]), lex28Layout(half, true, 'groups', null, i), lex28Layout(half, true, 'groups', 'power', i)]) {
+      assert.equal(L.tab, i, `${p.name}: the open tab`);
+      assert.deepEqual(L.cells.map((c) => c.w), [...p.words], `${p.name}: its own stones, in order`);
+      // the tabs: five, a row across the top, the touch size, inside the half, apart; each name's two lines inside its tab
+      assert.equal(L.tabs?.length, 5);
+      const tabs = L.tabs ?? [];
+      tabs.forEach((t, j) => {
+        assert.ok(t.w >= TOUCH_MIN && t.h >= TOUCH_MIN, `${LEX_PAGES[j].name}'s tab ${t.w} by ${t.h}`);
+        assert.ok(within(t, half), `${LEX_PAGES[j].name}'s tab off the half`);
+        for (const u of tabs) if (u !== t) assert.ok(apart(t, u), 'two tabs on one another');
+        for (const line of LEX_PAGES[j].tab) assert.ok(textWidth(line, 'small') <= t.w - 4, `"${line}" (${textWidth(line, 'small')}) in a tab ${t.w} across`);
+        assert.ok(11 <= t.h - 4, 'two lines of its name in its height');
+        assert.ok(t.y + t.h <= L.page.y, 'a tab on the page');
+      });
+      // the stones: the touch size, inside the half, apart from one another and from the tabs, above the page and the shelf
+      for (const c of L.cells) {
+        assert.ok(c.r.w >= TOUCH_MIN && c.r.h >= TOUCH_MIN, `${c.w}'s stone ${c.r.w} by ${c.r.h}`);
+        assert.ok(within(c.r, half) && c.r.y + c.r.h <= L.shelfY, `${c.w}'s stone off the half`);
+        for (const d of L.cells) if (d !== c) assert.ok(apart(c.r, d.r), `${c.w} on ${d.w}`);
+        for (const t of tabs) assert.ok(apart(c.r, t), `${c.w} on a tab`);
+        assert.ok(c.r.y + c.r.h <= L.page.y, `${c.w} on the page`);
+      }
+      // the open word's page: the half's width, above the shelf; the longest page of all (every word's) written whole in it
+      assert.ok(within(L.page, half) && L.page.y + L.page.h <= L.shelfY, 'the page off the half');
+      const tallest = WORD_IDS.map((w) => [w, pageHeight(meta, w, L.page.w)] as [string, number]).sort((a, b) => b[1] - a[1])[0];
+      assert.ok(tallest[1] <= L.page.h, `${p.name}: ${tallest[0]}'s page is ${tallest[1]} tall, its room ${L.page.h}`);
+    }
+  });
+  // Reaping's page (the longest, as before) whole on its own page, where the game's own rows leave it short
+  const G = lex28Layout(half, true, 'groups', 'reaping');
+  assert.ok(pageHeight(meta, 'reaping', G.page.w) <= G.page.h, `Reaping's page ${pageHeight(meta, 'reaping', G.page.w)}, its room ${G.page.h}`);
+  assert.equal(G.page.w, 242, "the half's whole width");
+  // with LEX28 'rows' (the game's own) nothing changes: the switch as it is, no page opened by a tab, nothing marked; its layout the
+  // game's own (ui/lexicon.ts lexLayout, lexiconSide's stones), no tabs
+  assert.equal(LEX28.way, 'rows');
+  assert.equal(LEX28.tab, null);
+  assert.deepEqual(LEX28.fresh, []);
+  const own = lexLayout(half, true);
+  for (const tab of [null, 2]) {
+    const L = lex28Layout(half, true, 'rows', 'reaping', tab);
+    assert.equal(L.tabs, null);
+    assert.deepEqual(L.page, { x: own.x0, y: own.pageY, w: own.bw, h: own.pageH });
+    assert.deepEqual(L.cells.map((c) => c.r), WORD_IDS.map((_, i) => ({ x: own.x0 + (i % own.perRow) * own.pitch, y: own.bodyY + Math.floor(i / own.perRow) * 22, w: 20, h: 20 })));
+  }
 });

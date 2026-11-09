@@ -8,11 +8,15 @@
   lexicon: docs/mockups/words10/pictures/lexicon28.png: the Lexicon at its lectern on a phone held sideways, all 28 words found,
            open on the longest page: the game's own rows as they are, then each way to lay out its stones, at the game's size and
            at twice, the pick marked.
+  pages:   docs/mockups/words10/pictures/lexicon_pages.png: the Lexicon's words in five pages by what they do (way 'groups'), a
+           tab each: open on HOW IT STRIKES at Vast, on BLOOD AND SPOILS at Reaping (the longest page), and part way through a
+           game, some words not yet found; each at the game's size and at twice (tools/scenarios/words10_lexpages.mjs).
 
 The stills are the game's own pictures (tools/scenarios/words10_looks.mjs and words10_lexicon.mjs, at five screen pixels a game
 pixel): each is taken back to the game's own pixels, then drawn two or four sheet pixels to one, so every pixel stays crisp.
    python3 tools/words10_sheet.py looks <stills dir and prefix, e.g. /dev/shm/w10/s> <out.png>
-   python3 tools/words10_sheet.py lexicon <prefix, e.g. /dev/shm/w10/lex> <out.png>"""
+   python3 tools/words10_sheet.py lexicon <prefix, e.g. /dev/shm/w10/lex> <out.png>
+   python3 tools/words10_sheet.py pages <prefix, e.g. /dev/shm/w10p/pg> <out.png>"""
 import base64
 import io
 import json
@@ -252,5 +256,91 @@ elif mode == 'lexicon':
     d = ImageDraw.Draw(foot)
     d.text((14, 8), 'Every stone is at least the game’s touch size (18 game pixels across: a button’s height with fingers). The shelf of', font=tiny, fill=GREY)
     d.text((14, 26), 'kept words along the foot is as it is now.', font=tiny, fill=GREY)
+    blocks.append(foot)
+    save(blocks)
+
+# =====================================================================================================================
+elif mode == 'pages':
+    # THE LEXICON IN PAGES BY WHAT THEY DO (ui/lexicon28.ts, way 'groups'): tools/scenarios/words10_lexpages.mjs's three pictures
+    #   python3 tools/words10_sheet.py pages <prefix, e.g. /dev/shm/w10p/pg> <out.png>
+    PAGES = [
+        ('FORCE AND ELEMENTS', 'Power, Poison, Flame, Frost, Lightning'),
+        ('HOW IT STRIKES', 'Twin, Heavy, Precise, Splitting, Piercing, Volatile, Vast, Surging, Mirroring'),
+        ('SPEED AND TIME', 'Swift, Frenzied, Stilling, Lasting, Fleeting'),
+        ('HOLD, CURSE AND GUARD', 'Pulling, Binding, Hexing, Guarding'),
+        ('BLOOD AND SPOILS', 'Leech, Bleeding, Reaping, Culling, Plundering'),
+    ]
+    SHOTS = [
+        ('vast', '1. OPEN ON HOW IT STRIKES, AT VAST',
+         ['All 28 words found, every use known.',
+          'The HOW IT STRIKES tab is lit in cyan; under it its nine stones in one row, Vast’s lit; under them Vast’s page, the whole width of the Lexicon’s half.',
+          'Its page has {w} by {h} game pixels of room; Vast’s needs {need}.']),
+        ('reaping', '2. OPEN ON BLOOD AND SPOILS, AT REAPING (THE LONGEST PAGE)',
+         ['Reaping’s page is the longest of all 28: it needs {need} of the {h} there is, so it is written whole, down to ON A DUNGEON.',
+          'The Lexicon as it is now has room for only {old} and leaves that last part off.']),
+        ('early', '3. PART WAY THROUGH A GAME: 12 OF 28 FOUND',
+         ['The words not found yet show as now: a dark stone with a question mark.',
+          'Heavy is open: only its use in front known so far, the rest still “Undiscovered.”',
+          'The small cyan dot on the BLOOD AND SPOILS tab: a word found there since the Lexicon was last looked at (here Leech). It goes when that page is opened.']),
+    ]
+    blocks = []
+    head = Image.new('RGB', (W, 130), BG)
+    d = ImageDraw.Draw(head)
+    d.text((14, 10), 'THE LEXICON IN PAGES, BY WHAT THEY DO', font=big, fill=PALE)
+    intro = ('At its lectern in town, on a phone held sideways (the game’s own screen). Your words: “Categorize them into pages”, then '
+             '“By what they do”. Five tabs across the top, a page of words each. The ten new words show their new stones.')
+    for k, part in enumerate(wrap(d, intro, small, W - 28)):
+        d.text((14, 54 + 24 * k), part, font=small, fill=GREY)
+    blocks.append(head)
+    pb = Image.new('RGB', (W, 30 + 26 * len(PAGES) + 10), BAND)
+    d = ImageDraw.Draw(pb)
+    d.text((14, 8), 'THE FIVE PAGES', font=mid, fill=PALE)
+    for i, (name, words) in enumerate(PAGES):
+        y = 38 + 26 * i
+        d.text((14, y), name, font=small, fill=PALE)
+        d.text((290, y), words, font=small, fill=GREY)
+    blocks.append(pb)
+    old = json.load(open(f'{pre}_reaping.json')).get('old', 88)
+    for name, title, lines in SHOTS:
+        note = json.load(open(f'{pre}_{name}.json'))
+        # (from the phone's own pixels, reduced evenly: the rims of the tabs and stones are half a game pixel, and taken back to
+        # whole game pixels they are lost, an unfound stone drawn as an open box)
+        s = note['screen']['scale']
+        full = Image.open(f'{pre}_{name}.png').convert('RGB')
+        half = full.crop((0, 0, 254 * s, 234 * s))
+        L = note['last']
+        vals = {'w': L['page']['w'], 'h': L['page']['h'], 'need': note['need'], 'old': old}
+        tb = Image.new('RGB', (W, 46), BAND)
+        d = ImageDraw.Draw(tb)
+        d.text((14, 9), title, font=mid, fill=PALE)
+        blocks.append(tb)
+        row = Image.new('RGB', (W, 468 + 12), BG)
+        gs = half.resize((508, 468), Image.BOX)
+        label(gs, 'game size')
+        row.paste(gs, (6, 6))
+        d = ImageDraw.Draw(row)
+        y = 14
+        for ln in lines:
+            for part in wrap(d, ln.format(**vals), small, W - 540):
+                d.text((530, y), part, font=small, fill=GREY)
+                y += 24
+            y += 8
+        blocks.append(row)
+        tw2 = half.resize((1016, 936), Image.BOX)
+        label(tw2, 'twice')
+        r2 = Image.new('RGB', (W, 936 + 16), BG)
+        r2.paste(tw2, (6, 4))
+        blocks.append(r2)
+    foot = Image.new('RGB', (W, 124), BG)
+    d = ImageDraw.Draw(foot)
+    y = 8
+    for ln in ['HOW THE TAPS WOULD GO: tap a tab, and its page opens, at its first word found. Tap a stone, and its word’s page opens under it. '
+               'A question mark does nothing. A word picked up in the inventory opens its own page here, turning to its tab, as it does now.',
+               'The tabs and stones are all at least the game’s touch size (18 game pixels: a button’s height with fingers). The shelf of '
+               'kept words along the foot is as it is now.']:
+        for part in wrap(d, ln, tiny, W - 28):
+            d.text((14, y), part, font=tiny, fill=GREY)
+            y += 20
+        y += 6
     blocks.append(foot)
     save(blocks)
