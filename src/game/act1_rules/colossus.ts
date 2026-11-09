@@ -147,7 +147,8 @@ function sounds(g: Game, f: ColossusFight, e: FightEvent): void {
       if (!(f.mode === 'change' && f.ph === 1)) g.rec('colossus_tentacle', 0.9);
       break;
     case 'change':
-      if (e.to === 2) g.rec('colossus_entrance', 1);
+      // (at its own pitch and length: timed by the sound chat to the art's frames, the roar on 117)
+      if (e.to === 2) g.rec('colossus_entrance', 1, undefined, true);
       break;
     case 'slide':
       g.rec('colossus_pour', 1);

@@ -926,13 +926,14 @@ function pumpFetches(): void {
  * A SOUND OF THE SECOND BATCH BY ITS NAME (an enemy's attack or voice, a boss's: game/sound_families.ts): one of its two takes
  * (<name>_1, _2), fetched the first time it is asked for; until one has come, `or` made in code (or nothing). Never throws.
  */
-export function sfxNamed(name: string, vol = 1, or?: Sfx): void {
+export function sfxNamed(name: string, vol = 1, or?: Sfx, exact = false): void {
   try {
     const c = ctx;
     if (!c || !bus || muted || c.state !== 'running' || !(vol > 0)) return;
     const takes = [`${name}_1`, `${name}_2`];
     for (const t of takes) fetchRecorded(c, `${t}.mp3`);
-    if (RECORDED.on && playTake(c, bus, `rec:${name}`, takes, nowMs(), vol, undefined)) return;
+    // (`exact`: played at its own pitch and length, a sound timed to a picture's frames: the Swamp Colossus's entrance)
+    if (RECORDED.on && playTake(c, bus, `rec:${name}`, takes, nowMs(), vol, undefined, !exact)) return;
     if (or) sfx(or, { vol });
   } catch (err) {
     report(`sfxNamed '${name}'`, err);
@@ -1125,10 +1126,14 @@ function playTake(c: AudioContext, into: AudioNode, key: string, takes: readonly
   src.start(t);
   voiceEnds.push(t + buf.duration / pitch);
   takesPlayed++;
+  heardLast.push(key);
+  if (heardLast.length > 40) heardLast.shift();
   return true;
 }
 /** How many recorded takes have been played (recordedDetail). */
 let takesPlayed = 0;
+/** The last takes played, by their sound's key (`rec:colossus_roar`): for the playtests (recordedDetail). */
+const heardLast: string[] = [];
 
 function playRecorded(c: AudioContext, into: AudioNode, name: Sfx, ms: number, vol: number, asked: number | undefined): boolean {
   if (!RECORDED.on) return false;
@@ -1182,14 +1187,14 @@ export function recordedState(): { come: number; coming: number; failed: number;
 }
 
 /** (for the playtests) the recorded sounds come so far, by file, the loops going round, and how many takes have been played. */
-export function recordedDetail(): { come: string[]; failed: string[]; loops: string[]; played: number } {
+export function recordedDetail(): { come: string[]; failed: string[]; loops: string[]; played: number; heard: string[] } {
   const come: string[] = [];
   const failed: string[] = [];
   for (const [k, v] of recorded) {
     if (v) come.push(k);
     else if (v === false) failed.push(k);
   }
-  return { come, failed, loops: [...loops.keys()], played: takesPlayed };
+  return { come, failed, loops: [...loops.keys()], played: takesPlayed, heard: [...heardLast] };
 }
 
 let titleSrc: AudioBufferSourceNode | null = null;

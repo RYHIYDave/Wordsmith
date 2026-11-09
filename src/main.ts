@@ -1629,7 +1629,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // (the hero's own voice, the sound chat's: engine/audio.ts heroVoice; and his voice and the combat sounds fetched once he plays)
     for (const e of g.events) if (e.t === 'voice') heroVoice(e.who, e.cry);
     // (THE SOUND CHAT'S SECOND BATCH: the enemies' and the bosses' sounds by name; a floor's fetched as it is come into)
-    for (const e of g.events) if (e.t === 'rec') (e.world ? worldSound : sfxNamed)(e.name, e.vol ?? 1, e.or);
+    for (const e of g.events) if (e.t === 'rec') {
+      if (e.world) worldSound(e.name, e.vol ?? 1, e.or);
+      else sfxNamed(e.name, e.vol ?? 1, e.or, !!e.exact);
+    }
     if (warmedLevel !== g.level && warmNamed(soundsOf(new Set(g.monsters.map((m) => m.kind))))) warmedLevel = g.level;
     if (warmedFor !== g.hero.cls) {
       warmedFor = g.hero.cls;
