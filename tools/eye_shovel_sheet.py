@@ -624,9 +624,106 @@ def sheet6(d, c, out, items):
     print(out, s.size)
 
 
+# HIS DEATH (art/eye_death.ts): the take d1, the blow landing on frame 14 of it
+D_LEAD = 14
+D_BURST, D_THRASH, D_ROAR, D_TEAR, D_MELT, D_SINK, D_STILL, D_END = 36, 38, 64, 58, (96, 196), (176, 250), 316, 300
+
+
+def beat7(k):
+    f = k - D_LEAD
+    if f < 0: return 'his eye weaving low over the edge; the Warrior swings at it'
+    if f < D_BURST: return 'THE KILLING BLOW (the wind-up, held 1.2 s): his eye seizes, swelling, its pupil blown wide'
+    if f < D_BURST + 2: return 'THE BURST (the strike, smeared): his eye ruptures in a spray of his dark ichor'
+    if f < D_TEAR: return 'he thrashes, his tongue whipping blind, gore raining over the stone'
+    if f < D_ROAR: return 'his grip on the edge tears loose: the stone cracking, he slides back into the water'
+    if f < D_MELT[0]: return 'HIS LAST ROAR, his jaws flung wide, slime and spittle everywhere'
+    if f < D_SINK[0]: return 'HE MELTS: his flesh running to black sludge, his teeth dropping out, his jaws sagging'
+    if f < D_SINK[1]: return 'HE SINKS: what is left goes under, the water boiling and heaving'
+    if f < D_STILL: return 'the water boiling, bubbles and slicks; his sludge on the stone drying away'
+    return 'still and dark: his bones and broken teeth lying in the shallows; the fight can end'
+
+
+def foot7(k):
+    f = k - D_LEAD
+    return ('frame %d  |  %.2f s' % (f, f / FPS)) if f >= 0 else ('frame %d' % k)
+
+
+# (the close-ups: [folder, frames of the take, title])
+CLOSE7 = [
+    ('blow', range(D_LEAD - 6, D_LEAD + 16), 'THE KILLING BLOW (x2, HALF SPEED)'),
+    ('burst', range(D_LEAD + 30, D_LEAD + 66), 'THE BURST (x2, HALF SPEED)'),
+    ('melt', range(D_LEAD + 96, D_LEAD + 206, 1), 'HE MELTS AND SINKS (x2, HALF SPEED)'),
+]
+
+
+def film7(d, c, out, frames=374):
+    seq = []
+    for k in range(frames): seq.append((('d1', k, None), 'HIS DEATH', beat7(k), foot7(k)))
+    for tag, ks, title in CLOSE7:
+        for k in ks:
+            for _ in range(2): seq.append((('d1', k, tag), title, beat7(k), foot7(k)))
+    w, h = 1014, 468 + 72
+    from eye_moves_sheet import probe
+    for (_, title, line, foot) in seq:
+        assert probe.textlength(title, font=mid) + probe.textlength(foot, font=small) + 50 < w, title
+        assert probe.textlength(line, font=small) + 28 < w, line
+    assert len(seq) / FPS < 60, len(seq)
+    p = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', '%dx%d' % (w, h), '-framerate', str(FPS), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], stdin=subprocess.PIPE)
+    last = None
+    im = None
+    for (key, title, line, foot) in seq:
+        if key != last:
+            shot, k, tag = key
+            im = frame(d, shot, k) if tag is None else Image.open(os.path.join(c, tag, 'close_%s_%03d.png' % (shot, k))).convert('RGB')
+            last = key
+        f = Image.new('RGB', (w, h), BG)
+        f.paste(im, (0, 0))
+        f.paste(caption_bar(w, title, line, foot), (0, 468))
+        p.stdin.write(f.tobytes())
+    p.stdin.close()
+    p.wait()
+    print(out, len(seq), 'frames', '%.1f s' % (len(seq) / FPS))
+
+
+def sheet7(d, c, out, items):
+    parts = []
+    intro = ('His death. The owner, 8 Nov, shown his phase 3: \u201cYes, on to his death (Recommended)\u201d; asked how he should die, his pick: '
+             '\u201cEye bursts, he melts (Recommended)\u201d. The killing blow lands on his eye: it seizes, swelling, then bursts in a spray of his dark '
+             'ichor; he thrashes and roars, his grip on the edge tearing loose; he melts into black sludge and sinks, the water boiling, then still; '
+             'his bones and broken teeth left in the shallows. Key frames as the player sees them, at the game\'s size; close-ups at twice.')
+    hl = wrap(intro, small, W - 48)
+    hd = Image.new('RGB', (W, 76 + 26 * len(hl) + 10), BG)
+    dr = ImageDraw.Draw(hd)
+    dr.text((24, 22), 'THE SWAMP COLOSSUS: HIS DEATH', font=big, fill=PALE)
+    for i, l in enumerate(hl): dr.text((24, 66 + 26 * i), l, font=small, fill=GREY)
+    parts.append(hd)
+    def get(src, shot, k, x, y):
+        im = frame(d, shot, k) if src == 'f' else Image.open(os.path.join(c, src, 'close_%s_%03d.png' % (shot, k))).convert('RGB')
+        wd, ht = (540, 300)
+        x0 = max(0, min(1014 - wd, x - wd // 2)); y0 = max(0, min(468 - ht, y - ht // 2))
+        return im.crop((x0, y0, x0 + wd, y0 + ht))
+    for title, note, its in items:
+        for i in range(0, len(its), 2):
+            two = its[i:i + 2]
+            parts.append(block(title if i == 0 else '', note if i == 0 else '', row([get(*it[:5]) for it in two], [it[5] for it in two])))
+    H = sum(p.height for p in parts)
+    s = Image.new('RGB', (W, H), BG)
+    y = 0
+    for p in parts: s.paste(p, (0, y)); y += p.height
+    assert s.height <= 7000, s.height
+    s.save(out, optimize=True)
+    print(out, s.size)
+
+
 if __name__ == '__main__':
     mode, d, out = sys.argv[1], sys.argv[2], sys.argv[3]
-    if mode == 'film6':
+    if mode == 'film7':
+        film7(d, sys.argv[3], sys.argv[4])
+    elif mode == 'sheet7':
+        import json
+        L = json.load(open(sys.argv[5]))
+        sheet7(d, sys.argv[3], sys.argv[4], [(b['title'], b['note'], [tuple(x) for x in b['items']]) for b in L])
+    elif mode == 'film6':
         film6(d, sys.argv[3], sys.argv[4])
     elif mode == 'sheet6':
         import json

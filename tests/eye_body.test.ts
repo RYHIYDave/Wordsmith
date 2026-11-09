@@ -16,7 +16,9 @@
 //   7. nothing cyan: him, and the colours of what the game draws;
 //   8. NOTHING RULED: no straight run over 12 game pixels, exactly across or up, in the glob, the pool, the warning, the gaze's arc, the
 //      beam, the fire along its line or the scorch's first side;
-//   9. the numbers, in the game's tiles.
+//   9. the numbers, in the game's tiles;
+//  10. THE GAZE AIMED ANYWHERE (the main chat's ask, 8 Nov): the film's takes as they were; aimed every 15 degrees, its arc and tongue-eye
+//      turned to the aim, clear of him.
 // @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
@@ -25,6 +27,8 @@ import nodeAssert from 'node:assert/strict';
 import nodeFs from 'node:fs';
 // @ts-ignore
 import nodePath from 'node:path';
+// @ts-ignore
+import nodeCrypto from 'node:crypto';
 import { BLADE, CYAN, GLINT, SPARK } from '../src/art/kit';
 import { rgba } from '../src/engine/px';
 import { EYE2, armClearances, bodyClearances, paintColossus, turnedClear } from '../src/art/eye_colossus';
@@ -32,7 +36,7 @@ import type { ArmPose, ColossusPicture, ColossusPose } from '../src/art/eye_colo
 import { STONE_BOX } from '../src/art/eye_arms';
 import { EYE_FPS, eyeFrame, standAnim } from '../src/art/eye_moves';
 import type { EyeFrame, EyeLayer } from '../src/art/eye_moves';
-import { BEAM, BEAM_COLOURS, BILE, BILE_COLOURS, BILE_LAND, BILE_RELEASE, BODY_SHAKE, BODY_TAKE, DUCK, GAZE, GAZE_FIRE, GAZE_OUT, GAZE_SWEPT, POOL, SPLASH_R, TILE, arcEdge, beamAngle, beamEdge, beamLine, beamOn, bileTarget, bodyFrame, bodyNumbers, fireEdge, gazeArc, globAt, globBlobs, heroWorldB, poolEdge, poolR, scorchEdge, warnEdge } from '../src/art/eye_body';
+import { BEAM, BEAM_COLOURS, BILE, BILE_COLOURS, BILE_LAND, BILE_RELEASE, BODY_SHAKE, BODY_TAKE, DUCK, GAZE, GAZE_FIRE, GAZE_LIM, GAZE_OUT, GAZE_SWEPT, POOL, SPLASH_R, TILE, arcEdge, beamAngle, beamEdge, beamLine, beamOn, bileTarget, bodyFrame, bodyNumbers, fireEdge, gazeArc, gazeArcAt, globAt, globBlobs, heroWorldB, poolEdge, poolR, scorchEdge, warnEdge } from '../src/art/eye_body';
 import type { BodyShot } from '../src/art/eye_body';
 
 interface Assert {
@@ -67,7 +71,7 @@ test('1. the switch is off; nothing of the game imports his body\'s attacks', ()
   assert.equal(EYE2.on, false, 'EYE2 is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f === 'art/eye_body.ts' || f === 'art/eye_phase3.ts') continue;
+    if (!f.endsWith('.ts') || f === 'art/eye_body.ts' || f === 'art/eye_phase3.ts' || f === 'art/eye_death.ts') continue;
     if (/from ['"][^'"]*eye_body['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(', '), '', 'nothing of the game imports art/eye_body.ts');
@@ -440,4 +444,49 @@ test('9. the numbers, in the game\'s tiles', () => {
   process.stdout.write(`  the bile: the glob ${N.glob.tiles.toFixed(1)} tiles in ${N.glob.s.toFixed(2)} s, ${N.glob.apexTiles.toFixed(1)} tiles high; the splash ${N.splashTiles.toFixed(1)} tiles round; the pool ${N.pool.tiles.toFixed(1)} tiles round, ${N.pool.s.toFixed(1)} s\n`);
   process.stdout.write(`  the gaze: the beam ${N.beam.wideTiles.toFixed(1)} tiles wide, swept ${N.beam.deg} degrees; its line on the stone ${N.beam.longTiles[0].toFixed(1)} to ${N.beam.longTiles[1].toFixed(1)} tiles long (${N.beam.reachTiles.toFixed(1)} from under his eye at the most); fired at frame ${N.beam.fire}, at its other side at ${N.beam.swept}, out at ${N.beam.out}\n`);
   void eyeFrame;
+});
+
+// (the main chat's ask, 8 Nov: the gaze taking its aim, so that its bake can paint it every 15 degrees and the game take the nearest)
+test('10. the gaze aimed anywhere: the film\'s takes as they were; aimed, its arc and its tongue-eye turned to the aim, clear of him', () => {
+  // (the film's takes, every layer and what the game draws, as they were before the aim (their fingerprint then))
+  const print = (shot: BodyShot): string => {
+    const h = nodeCrypto.createHash('sha1');
+    for (let k = 0; k < BODY_TAKE.frames; k++) {
+      const F = bodyFrame(shot, k);
+      h.update(JSON.stringify([F.jaws, F.spit, F.tongue, F.smear, F.bfx ?? null]));
+    }
+    return h.digest('hex').slice(0, 16);
+  };
+  assert.equal(print('g1'), 'c31f7929f8bda917', 'the gaze\'s first take as it was');
+  assert.equal(print('g2'), '199b41b4b6b287f5', 'its second take as it was');
+  const L = BODY_TAKE.lead;
+  const A0 = gazeArc();
+  // (aimed at the film's own aim: its tongue-eye the film's but where it looks as it begins)
+  for (let f = 0; f < GAZE.frames; f += 5) {
+    const a = bodyFrame('g1', L + f, A0.toward).tongue?.pose.anim;
+    const b = bodyFrame('g1', L + f).tongue?.pose.anim;
+    assert.equal(JSON.stringify(a?.tongue), JSON.stringify(b?.tongue), `${f}: aimed as the film, its tongue the film's`);
+  }
+  let least = Infinity;
+  for (let deg = -75; deg <= 75; deg += 15) {
+    const aim = (deg * Math.PI) / 180;
+    const A = gazeArcAt(aim);
+    assert.ok(Math.abs(A.toward - aim) < 1e-9 && A.a0 >= -GAZE_LIM - 1e-9 && A.a1 <= GAZE_LIM + 1e-9, `${deg}: its arc laid about the aim, never back over the water`);
+    // (the beam swept across its arc; its layers named for the aim)
+    const mid = bodyFrame('g1', L + GAZE_FIRE + GAZE.sweep / 2, aim);
+    assert.ok(mid.tongue?.key.includes(`ga${deg}.`), `${deg}: its layers named for it (${mid.tongue?.key})`);
+    assert.ok(Math.abs((mid.bfx?.beam?.a ?? 99) - (A.a0 + A.a1) / 2) < 1e-6, `${deg}: the beam across its arc`);
+    // (his tongue-eye turned toward it as it fires: across the way it aims)
+    const e = mid.tongue?.pose.anim?.eye as readonly number[];
+    if (Math.abs(deg) >= 30) assert.ok(Math.sign(e[0] - (bodyFrame('g1', L + GAZE_FIRE + GAZE.sweep / 2, 0).tongue?.pose.anim?.eye as readonly number[])[0]) === Math.sign(deg), `${deg}: his eye turned toward it`);
+    for (let f = 0; f < GAZE.frames; f += 6) {
+      const F = bodyFrame('g1', L + f, aim);
+      const an = F.jaws.pose.anim as NonNullable<ColossusPose['anim']>;
+      const T = F.tongue?.pose.anim as NonNullable<ColossusPose['anim']>;
+      const c = bodyClearances({ ...F.jaws.pose, drop: 0, back: 0, anim: { ...an, tore: F.spit?.pose.anim?.tore, knit: F.spit?.pose.anim?.knit, tongue: T.tongue, eye: T.eye, gaze: T.gaze, lids: T.lids, swell: T.swell, parts: undefined }, arms: [] }, 0);
+      least = Math.min(least, c.tongue, c.eye, c.spit);
+      assert.ok(c.tongue > 0 && c.eye > 0 && c.spit > 0, `${deg} ${f}: aimed, clear of his jaws and drool (${c.where})`);
+    }
+  }
+  process.stdout.write(`  aimed every 15 degrees from -75 to 75: his tongue-eye clear of him by ${least.toFixed(1)} of his lengths at the least\n`);
 });

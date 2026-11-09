@@ -101,7 +101,7 @@ test('1. the switch is off; nothing of the game imports him; nothing of the old 
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (his moves, art/eye_moves.ts, art/eye_arms.ts, art/eye_shovel.ts and art/eye_pieces.ts, are his own mock-up's: tests/eye_moves.test.ts,
     // tests/eye_arms.test.ts, tests/eye_shovel.test.ts and tests/eye_pieces.test.ts hold that nothing of the game imports them)
-    if (!f.endsWith('.ts') || f === 'art/eye_colossus.ts' || f === 'art/eye_moves.ts' || f === 'art/eye_arms.ts' || f === 'art/eye_shovel.ts' || f === 'art/eye_pieces.ts' || f === 'art/eye_body.ts' || f === 'art/eye_phase3.ts') continue;
+    if (!f.endsWith('.ts') || f === 'art/eye_colossus.ts' || f === 'art/eye_moves.ts' || f === 'art/eye_arms.ts' || f === 'art/eye_shovel.ts' || f === 'art/eye_pieces.ts' || f === 'art/eye_body.ts' || f === 'art/eye_phase3.ts' || f === 'art/eye_death.ts') continue;
     if (/eye_colossus/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(', '), '', 'nothing of the game imports art/eye_colossus.ts');

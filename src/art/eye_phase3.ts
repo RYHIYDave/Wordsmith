@@ -34,7 +34,7 @@ import type { ColossusAnim, ColossusPose } from './eye_colossus';
 import { QUAY, STONE_BOX, UNIT } from './eye_arms';
 import { EYE_FPS, eyeFrame, standAnim } from './eye_moves';
 import type { BodyFx, EyeFrame, EyeLayer, HeroAt, P3Fx } from './eye_moves';
-import { BEAM, BODY_SHAKE, GAZE, GAZE_FIRE, GAZE_OUT, GAZE_SWEPT, TILE, aimedTongue, beamAngle, beamLine, beamOn, eyeAngle, gazeFlare, gazeLids, gazeSwell, mixPath, tipEye } from './eye_body';
+import { BEAM, BODY_SHAKE, GAZE, GAZE_FIRE, GAZE_LIM, GAZE_OUT, GAZE_SWEPT, TILE, aimedTongue, beamAngle, beamLine, beamOn, eyeAngle, gazeFlare, gazeLids, gazeSwell, mixPath, tipEye } from './eye_body';
 import type { GazeArc } from './eye_body';
 
 const TAU = Math.PI * 2;
@@ -77,7 +77,7 @@ export const p3Tongue = (t: number): number[][] => weaveTongue(P3_TONGUE, t, 0.8
 export const toWorld = (p: readonly number[], fwd: number = P3.fwd, rise: number = P3.rise): [number, number, number] => [p[0], p[1] + fwd, p[2] + rise];
 export const toHis = (p: readonly number[]): [number, number, number] => [p[0], p[1] - P3.fwd, p[2] - P3.rise];
 /** Where his eye looks as he stands: down at the Warrior, wherever he is (the world's). */
-function lookAt(eye: readonly number[], at: readonly number[] | null): [number, number, number] {
+export function lookAt(eye: readonly number[], at: readonly number[] | null): [number, number, number] {
   if (!at) return norm([0.05, 0.9, -0.35]);
   const w = toWorld(eye);
   return norm([at[0] - w[0], at[1] - w[1], 30 - w[2]]);
@@ -86,7 +86,7 @@ const body = (an: ColossusAnim): ColossusPose => ({ view: 'front', drop: 0, back
 /** His stand's frame at frame `k` of a take: his clock runs on through every take. */
 const standK = (k: number): number => mod(k, 90);
 /** A layer laid at his place in phase 3 (forward `fwd`, raised `rise`). */
-const laid = (L: EyeLayer, fwd: number, rise: number, jolt: readonly number[] = [0, 0]): EyeLayer => ({ ...L, back: L.back - fwd - jolt[0], drop: L.drop - rise - jolt[1] });
+export const laid = (L: EyeLayer, fwd: number, rise: number, jolt: readonly number[] = [0, 0]): EyeLayer => ({ ...L, back: L.back - fwd - jolt[0], drop: L.drop - rise - jolt[1] });
 
 // =============================================================================================
 // THE SLIDE
@@ -294,7 +294,7 @@ const SLAM_CLEAR: [number, number] = [SLAM_AT[0] + 82, SLAM_AT[1] + 12];
 /** Beside the eye as it lies (clear of it), where the Warrior strikes it. */
 const SLAM_BY: [number, number] = [SLAM_AT[0] + 74, SLAM_AT[1] + 26];
 const G7: [number, number] = [-40, 420];
-const H8: [number, number] = [24, 344];
+export const H8: [number, number] = [24, 344];
 export const P3_HERO: Record<P3Shot, Mark[]> = {
   // (the slide: he stands back from the edge, watching him come)
   q1: [{ k: 0, x: 60, y: 470 }, { k: 204, x: 60, y: 470 }],
@@ -437,7 +437,7 @@ const Q4_SET = Q4_PIECE.set;
 export const Q3_BREAK = 129 + BLOW_AT;
 
 /** Each pillar's state in frame `k` of a take: dark, lit (with how lit: kindling), out, broken; seconds since; blows taken. */
-function pillarsAt(shot: P3Shot, k: number): P3Fx['pillars'] {
+export function pillarsAt(shot: P3Shot, k: number): P3Fx['pillars'] {
   return PILLARS.map((P, i) => {
     const to = toWorld(P.to);
     const base = { x: P.x, y: P.y, to, hits: 0 } as const;
@@ -484,7 +484,7 @@ const CAMS: Record<P3Shot, Array<[number, number, number]>> = {
   q7: [[0, 0, 115], [124, 0, 115]],
   q8: [[0, 0, 70], [64, 0, 70]],
 };
-function camAt(marks: Array<[number, number, number]>, k: number): [number, number] {
+export function camAt(marks: Array<[number, number, number]>, k: number): [number, number] {
   let i = 0;
   while (i < marks.length - 2 && k >= marks[i + 1][0]) i++;
   const a = marks[i];
@@ -493,7 +493,7 @@ function camAt(marks: Array<[number, number, number]>, k: number): [number, numb
   const e = u * u * (3 - 2 * u);
   return [Math.round(lerp(a[1], b[1], e)), Math.round(lerp(a[2], b[2], e))];
 }
-const jolt = (g: number, a: number, long: number, s: number): [number, number] => {
+export const jolt = (g: number, a: number, long: number, s: number): [number, number] => {
   if (g < 0 || g >= long) return [0, 0];
   const v = a * (1 - g / long);
   return [Math.round(v * 0.5 * (h1(g, s) * 2 - 1)), Math.round(v * (g % 2 ? -1 : 1))];
@@ -698,6 +698,95 @@ export function p3Frame(shot: P3Shot, k: number): EyeFrame {
     ...(bfx ? { bfx } : {}),
     p3: fx,
   };
+}
+
+// =============================================================================================
+// MOVE BY MOVE, FOR THE GAME'S BAKE (the main chat's ask, 8 Nov: frame functions as `eyeFrame` and `shovelFrame`, layers with key, pose,
+// drop, back)
+
+/** His phase-3 moves, each from its first frame (his stand at the edge loops): how many frames. */
+export type P3Move = 'slide' | 'edge' | 'slam' | 'struck' | 'gaze';
+export const P3_MOVES: Record<P3Move, number> = { slide: SLIDE.frames, edge: 90, slam: SLAM.frames, struck: STRUCK.frames, gaze: GAZE.frames };
+/** Each move's clock (his stand's, frames) at its first frame: as the film plays it, so that its layers are the film's. */
+export const P3_CLOCK: Record<P3Move, number> = { slide: P3_TAKES.q1.at, edge: 0, slam: P3_TAKES.q5.clock + P3_TAKES.q5.at, struck: P3_TAKES.q8.clock + P3_TAKES.q8.at, gaze: P3_TAKES.q7.clock + P3_TAKES.q7.at };
+/** A FRAME OF A MOVE OF HIS PHASE 3 (`f` from 0): his layers laid where he is (forward `fwd`, raised `rise`: in `back` and `drop`), the
+ *  strike's frames with the frame before behind them (`smear`). The slam comes down at `at` (the world's; the film's spot if not given),
+ *  struck as it lies on the frames `hits`; the gaze aimed at `aim` (radians, as art/eye_body.ts `gazeArcAt`; the film's if not given:
+ *  its tongue-eye painted aimed so, its layers named for the aim to the degree). The film's takes are made of these. */
+export function phase3Frame(move: P3Move, f: number, opt: { at?: readonly [number, number]; aim?: number; hits?: readonly number[] } = {}): { move: P3Move; f: number; t: number; jaws: EyeLayer; spit: EyeLayer | null; tongue: EyeLayer; smear: EyeLayer[]; fwd: number; rise: number } {
+  const c = standK(P3_CLOCK[move] + f);
+  const t = c / EYE_FPS;
+  const base = eyeFrame('stand', c);
+  let fwd: number = P3.fwd;
+  let rise: number = P3.rise;
+  let tongue: EyeLayer = p3StandTongue(c);
+  let spit: EyeLayer | null = p3Spit(c);
+  const smear: EyeLayer[] = [];
+  if (move === 'slide') {
+    const S = slideAt(f);
+    fwd = S.fwd;
+    rise = S.rise;
+    if (f < SLIDE.tongue[0]) {
+      tongue = base.tongue as EyeLayer;
+      spit = base.spit;
+    } else {
+      const w = sm(SLIDE.tongue[0], SLIDE.tongue[1], f);
+      const St = standAnim(t);
+      const path = mixPath(St.tongue as number[][], p3Tongue(t), w);
+      const eye = tipEye(path);
+      tongue = tongueLayer(`T.q.${pad(f)}`, { ...St, tongue: path, eye, gaze: lookAt(eye, null), lids: 1 });
+      spit = f < SLIDE.tear ? base.spit : p3Spit(c);
+    }
+  } else if (move === 'slam') {
+    const at = opt.at ?? SLAM_AT;
+    const hits = opt.hits ?? [];
+    const struckNow = hits.some((h) => f >= h && f < h + 8);
+    // (the film's spot and no blows: its layers the film's; elsewhere, named for where it comes down)
+    const where = opt.at ? `${Math.round(at[0])}_${Math.round(at[1])}.` : '';
+    tongue = tongueLayer(`T.${struckNow ? 'e2' : 'e'}.${where}${pad(f)}`, slamAnim(f, t, at, hits));
+    if (f >= SLAM.wind && f < SLAM.hit + 1) smear.push(tongueLayer(`T.e.${where}${pad(f - 1)}`, slamAnim(f - 1, standK(P3_CLOCK.slam + f - 1) / EYE_FPS, at, hits)));
+  } else if (move === 'struck') {
+    tongue = tongueLayer(`T.k.${pad(f)}`, struckAnim(f, t, toWorldHero('q8', P3_TAKES.q8.at + f)));
+  } else if (move === 'gaze') {
+    const A = opt.aim === undefined ? gazeArc3() : gazeArc3At(opt.aim);
+    const aimKey = opt.aim === undefined ? '' : `a${Math.round((opt.aim * 180) / Math.PI)}.`;
+    const layerAt = (g: number, tg: number, gazeOf?: readonly [number, number, number]): EyeLayer => {
+      const q = gazeQ3(g);
+      const a = eyeAngle(g, A);
+      const path = gazePath3(g, tg, a);
+      const eye = tipEye(path);
+      const L0 = beamLine(a, A);
+      const ew = toWorld(eye);
+      const hl = Math.hypot(L0.ax - ew[0], L0.ay - ew[1]) || 1;
+      const pitch = (20 * Math.PI) / 180;
+      const aimed = norm([((L0.ax - ew[0]) / hl) * Math.cos(pitch), ((L0.ay - ew[1]) / hl) * Math.cos(pitch), -Math.sin(pitch)]);
+      // (as it begins, fixed on the Warrior: the film's where he stands; aimed anywhere, at the arc's middle as far out as it lands)
+      let st = lookAt(eye, opt.aim === undefined ? toWorldHero('q7', P3_TAKES.q7.at + g) : [A.ox + Math.sin(A.toward) * A.far, A.oy + Math.cos(A.toward) * A.far, 30]);
+      // (aimed anywhere: as it sinks back into its droop, its look going back to its stand's)
+      if (opt.aim !== undefined) {
+        const home = lookAt(eye, null);
+        const w = sm(GAZE_OUT, GAZE.frames - 6, g);
+        st = norm([lerp(st[0], home[0], w), lerp(st[1], home[1], w), lerp(st[2], home[2], w)]);
+      }
+      const gaze = gazeOf ?? norm([lerp(st[0], aimed[0], q), lerp(st[1], aimed[1], q), lerp(st[2], aimed[2], q)]);
+      return tongueLayer(`T.h.${aimKey}${pad(g)}`, { ...standAnim(tg), tongue: path, eye, gaze, lids: gazeLids(g), swell: gazeSwell(g) });
+    };
+    tongue = layerAt(f, t);
+    // (the strike's frame before, behind it: its tongue then, looking as it looks now, as the film has it)
+    if (f >= GAZE.wind && f < GAZE.wind + GAZE.strike) smear.push(layerAt(f - 1, standK(P3_CLOCK.gaze + f - 1) / EYE_FPS, (tongue.pose.anim as ColossusAnim).gaze));
+  }
+  return { move, f, t, jaws: laid(base.jaws, fwd, rise), spit: spit ? laid(spit, fwd, rise) : null, tongue: laid(tongue, fwd, rise), smear: smear.map((L) => laid(L, fwd, rise)), fwd, rise };
+}
+/** The film's Warrior where he stands in frame `k` of a take (the world's, at the height he is looked at). */
+const toWorldHero = (shot: P3Shot, k: number): [number, number, number] => {
+  const h = heroP3(shot, k);
+  return [h.x, h.y, 30];
+};
+/** The gaze from his new place aimed anywhere (`aim`, radians): its arc about the same water under his eye. */
+export function gazeArc3At(aim: number, far: number = gazeArc3().far): GazeArc {
+  const A = gazeArc3();
+  const h = (GAZE.half * Math.PI) / 180;
+  return { ox: A.ox, oy: A.oy, toward: aim, a0: Math.max(-GAZE_LIM, aim - h), a1: Math.min(GAZE_LIM, aim + h), far };
 }
 
 // =============================================================================================

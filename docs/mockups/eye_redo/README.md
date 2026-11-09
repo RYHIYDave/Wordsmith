@@ -1,4 +1,4 @@
-# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1; stage 3: his moves, part 2, his tentacles; stage 4: his moves, part 3, his shovel; stage 4b: the pieces on the stone smashed by it, and his mirror; stage 5: his body's own attacks, the bile arc and the gaze; stage 6: his phase 3)
+# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1; stage 3: his moves, part 2, his tentacles; stage 4: his moves, part 3, his shovel; stage 4b: the pieces on the stone smashed by it, and his mirror; stage 5: his body's own attacks, the bile arc and the gaze; stage 6: his phase 3; stage 7: his death)
 
 A MOCK-UP: NOT IN THE GAME. The art chat's, branch `art/eye-redo`. His new look is `src/art/eye_colossus.ts`, behind
 `EYE2 = { on: false }`; nothing of the game imports it (`tests/eye_colossus.test.ts` holds it). Nothing of the old Eye
@@ -7,7 +7,160 @@ in stills; stage 2 is his first moves: his stand, his lurk under the water and h
 tentacles' moves, in `src/art/eye_arms.ts`; stage 4 his shovel, in `src/art/eye_shovel.ts`; stage 4b the pieces on the stone smashed
 by his first shovel, in `src/art/eye_pieces.ts`, and at the right end the left end's paintings of him mirrored; stage 5 his body's own
 attacks, the bile arc and the gaze, in `src/art/eye_body.ts`; stage 6 his phase 3 (his slide forward, the three pillars and his ward,
-the siege's bolts, the eye slam, the gaze from his new place, his eye struck), in `src/art/eye_phase3.ts`.
+the siege's bolts, the eye slam, the gaze from his new place, his eye struck), in `src/art/eye_phase3.ts`; stage 7 his death (his eye bursts, he
+melts), in `src/art/eye_death.ts`.
+
+## Stage 7: his death: his eye bursts, he melts
+
+His words, 8 Nov 2026 (by 18:44). Shown his phase 3 (6f498433): “Yes, on to his death (Recommended)”. Asked “How should the Swamp
+colossus die?”, his pick: “Eye bursts, he melts (Recommended)” (offered as: his eye ruptures in a spray of dark ichor; he thrashes and
+roars, then melts down into black sludge and sinks, the water boiling and going still).
+
+Shown his death (cad8db7b, `eye_moves7`), 8 Nov by 22:29, asked “Is his death right (eye_moves7.mp4 and eye_moves7.png)?”: “Yes,
+he's done (Recommended)”. THE SWAMP COLOSSUS IS WHOLE: every move of his has his yes.
+
+`src/art/eye_death.ts`, behind EYE2 (off); nothing of the game imports it (`tests/eye_death.test.ts`). From his phase-3 place (hauled up
+against the stone's back edge, his eye low over it), on the killing blow. His moves are his paintings; the ichor's spray and gore, the
+sludge on the stone, his teeth falling, the bones in the shallows, the splashes, the boiling and the shakes are the game's effects drawn
+over (`DeathFx`; their shapes in `eye_death.ts`, the pictures' tool draws them). Movement 9: the blow taken is the held wind-up, the burst
+the smeared strike, the melt and the sink the long wind-down.
+
+HIS PAINTER, FOR HIS DEATH (`src/art/eye_colossus.ts`, `ColossusAnim.seize`, `burst`, `melt`): his eye SEIZED (its veins bulging, its
+pupil blown wide, its iris a thin ring flaring white-gold); BURST (its ball torn open and spilled, a ragged sac sunk into its cup, dark
+and raw, running with his ichor, its fire out); MELTING (all of him settling toward the water, keeping 44 per cent of his height at the
+end, spreading at his foot, running down in streaks, his skin sloughing, going to black sludge where he runs furthest and low down, all of
+him at the end; drips off all of him, many and long, going black; his teeth dropping out of his gums one by one). Every pose without them
+paints as before, pixel for pixel (33 layers of every kind of his moves painted by both and compared: all the same).
+
+### Each beat, frame by frame (30 a second; frames from the killing blow landing)
+
+| beat | frames | seconds | what |
+|---|---|---|---|
+| THE KILLING BLOW TAKEN (the wind-up, held) | 0 to 35 | 1.2 | The Warrior's blow lands on his eye: jerked back as it is struck, then drawn up rigid, held, trembling harder and harder; his eye swelling (to 1.42 times), seizing: veins bulging, its pupil blown wide, its iris a thin ring flaring white-gold, its fire's glow pulsing round it; his throat's fire flaring; the screen trembling (to 3 game pixels). |
+| THE BURST (the strike, smeared) | 36, 37 | 0.07 | It ruptures on frame 36: a flash of his fire and then it is out; his tongue whipped up and back, his jaws flung wide; a great spray of his dark ichor out of it (80 gobs, 220 drops, 9 ropes of it, and a veil of it torn into drops as it spreads); the screen thrown hard (14 game pixels). |
+| THRASHING, BLIND | 38 to 63 | 0.9 | His tongue whipping blind side to side and up and down, the whip running out along it, the torn sac flailing; his jaws flexing; slime and spittle flung off him; the water churning; the gore raining down over the stone and lying there. |
+| HIS GRIP TEARS LOOSE | 58 to 100 | 1.4 | The stone's edge he gripped cracking further, three heaves, and he slides back down off it into the water (0.97 tiles back, 1.12 down). |
+| HIS LAST ROAR | 64 to 99 | 1.2 | His jaws flung wide, held trembling, failing; his throat's fire flaring and dying. |
+| HE MELTS (the wind-down) | 96 to 196 | 3.3 | All of him slumping and running, going to black sludge; his teeth dropping out one by one (46 of them, frames 101 to 179), each falling, tumbling, clacking on the stone or splashing in; his jaws sagging and folding in; his tongue lying limp out over the edge on the stone, running away to sludge from its end (gone by 200); the sludge running off his front onto the stone, spreading, bubbling, pouring back off the edge into the water. |
+| HE SINKS | 176 to 250 | 2.5 | What is left goes under (7.65 tiles down), the water boiling and heaving over him, bubbles and slicks; out of sight by 250. |
+| STILL | 250 to 359 | 3.7 | The boiling dying away, the water still and dark by 316; the gore on the stone soaked away by 306, the sludge drying away 4 s after he is under; his bones and broken teeth lying in the shallows behind the edge. THE FIGHT CAN END at 300 (10.0 s). |
+
+THE WARRIOR (the film): at the edge before his eye, his blow landing on frame 0 (his swing from 14 frames before); leaping back out of the
+spray as it bursts, backing off to watch him die.
+
+### The numbers, for the main chat (in the game's tiles; places as (tiles from the stone's left end, from its back edge))
+
+- HIS PLACE: his phase-3 place as it begins (his middle 3.67 tiles off the stone's back edge, 1.53 up). His grip torn loose, he slides back
+  0.97 tiles and down 1.12 into the water (frames 58 to 100); melting, he settles to 44 per cent of his height; sinking, he goes 7.65 tiles
+  down (frames 176 to 250).
+- THE BURST: at his eye where it is held up, at (8.71, 0.72), 5.68 tiles up. Its spray flies out mostly forward over the stone, some
+  back over him: gobs 2.4 to 6 game pixels round, drops, ropes; most of it comes down 3 to 8 tiles out from under his eye, over 1 to 2 s;
+  its gore lies on the stone 9 s from the burst, fading from 5.4 s. It hurts no one (my suggestion: his death harms nothing; the main
+  chat's to say).
+- HIS SLUDGE ON THE STONE: running off his front onto the stone as he melts and spreading, out to 3.4 tiles from the back edge at its
+  furthest (across the middle 11 tiles of the edge), pouring back off the edge into the water; dried away 4 s after he is under.
+- HIS TEETH: 46 drop out, one by one, frames 101 to 179 (3.4 s to 6.0 s), falling from where each is; those on the stone lying there,
+  those in the water near the edge seen in the shallows.
+- HIS BONES: four of them, with his teeth, lying in the shallows behind the edge from frame 196 (6.5 s), seen as the water goes still.
+- THE WATER: churned as he thrashes and slides back into it; boiling and heaving over him from frame 170 to 300 (most at 235), bubbles
+  and slicks of his sludge; still and dark by 316 (10.5 s).
+- THE SHAKES (game pixels, dying away over the frames given): the blow 5 over 6; trembling through the wind-up, rising to 3; THE BURST 14
+  over 16 (the hardest); thrashing, a rumble of 3; his grip tearing 7 over 10; his last roar 6, failing; going under, a rumble of 3.
+- THE FIGHT CAN END at frame 300 (10.0 s from the killing blow): he is out of sight under the water at 250 (8.3 s), the water still by 316.
+  His death is 12.0 s in all.
+
+### The sound's cues (frames from the killing blow; the sound chat's to make)
+
+| frame | seconds | what |
+|---|---|---|
+| 0 | 0.00 | the killing blow lands: a wet, heavy hit; his shriek begins, high and rising |
+| 6 | 0.20 | his eye seizing: a strained, rising whine under a slow, hard heartbeat, the water trembling |
+| 36 | 1.20 | THE BURST: a wet, tearing rupture, a great splatter across the stone |
+| 38 | 1.27 | thrashing: his tongue whipping and slapping, gurgling, the water churning |
+| 58 | 1.93 | his grip tearing loose: stone grinding and cracking, a heavy slide back into the water |
+| 64 | 2.13 | his last roar: deep, ragged, breaking into a gurgle |
+| 96 | 3.20 | melting: a long wet sizzle, bubbling, sludge running and pouring off the stone |
+| 101 to 179 | 3.37 to 5.97 | his teeth dropping out, one by one (each tooth's frame in `fallingTeeth`): a clack on the stone, a plop in the water |
+| 176 | 5.87 | going under: a deep gurgle, the water boiling, big bubbles bursting |
+| 316 | 10.53 | still: silence but for drips; the fen's own sounds come back |
+
+### For the main chat's bake (its asks of 8 Nov, board 16:02 and 17:13)
+
+1. THE GAZE'S AIM AS A PARAMETER. Phase 2: `bodyFrame(shot, k, aim)` and `gazeArcAt(aim)` (`src/art/eye_body.ts`; `aim` the arc's middle,
+   in radians round from straight out over the stone toward his right, as `GazeArc.toward`; `aimAt(x, y)` gives it toward a spot), its
+   tongue-eye layers named for the aim to the degree (`T.ga-30.042`). Phase 3: `phase3Frame('gaze', f, { aim })` and `gazeArc3At(aim)`
+   (`src/art/eye_phase3.ts`; layers `T.h.a-30.042`). Same layers otherwise (his jaws and drool his stand's); the arc's sides held within
+   85 degrees of straight out (`GAZE_LIM`: never swept back over the water behind the edge). The films' takes unchanged (their layers
+   fingerprinted before and after: `tests/eye_body.test.ts` 10). Aimed, as it sinks back into his stand its look goes back to his
+   stand's (phase 3). Clear of him (his tongue, eye and drool clear of his jaws) every 15 degrees from -75 to 75 in both phases
+   (`tests/eye_body.test.ts` 10, `tests/eye_phase3.test.ts` 10).
+2. FRAME FUNCTIONS. Phase 3: `phase3Frame(move, f, opt)` for `slide` (120 frames), `edge` (his stand at the edge, 90, looping), `slam`
+   (84; `at` where it comes down, `hits` the frames it is struck as it lies), `struck` (20) and `gaze` (102; `aim`): each frame's layers
+   (key, pose, drop, back) laid where he is, the strike's frames with the frame before (`smear`); each move starts from his stand's clock
+   `P3_CLOCK[move]`, so that its layers are the film's (`tests/eye_phase3.test.ts` 10: the same, frame for frame). His death:
+   `deathLayers(f)` (`src/art/eye_death.ts`, f from -14 to 359): through the wind-up his stand's jaws and drool and his own tongue
+   (`T.d.###`), from the burst all of him in one layer (`D.###`, painted sunk as he goes under, `pose.drop`); `deathFrame(k)` the film's
+   take, `DeathFx` what the game draws. `src/art/eye_arms.ts`: its line `export { dense, evenly, liftOver, even };` added, as on the
+   branch `colossus`, so that the two agree.
+
+### The pictures
+
+- `pictures/eye_moves7.mp4` (23.7 s, 710 frames, 30 a second, H.264 yuv420p, 1014 x 540, captioned beat by beat), in the arena as the
+  player sees it: the Warrior's killing blow on his eye and his whole death at full speed (374 frames: 14 before the blow lands, 360
+  after); then close up, twice the size, at half speed: the killing blow, the burst, the melt and the sink.
+- `pictures/eye_moves7.png` (1200 x 3570): key frames at the game's size and close at twice.
+- Seen, every frame of the take at the game's size and every frame of the three close-ups. Seen and mended on the way: his spittle
+  strung through his tongue as it whipped up at the burst (now torn as it comes, as in phase 3); his limp tongue through the stone and
+  his jaws, and his hanging eye into his heaps (now arched out over his heaps, tapering, running away to sludge from its end, gone by
+  frame 200); him a hair into the stone as he melts (frame 189: now held clear); his eye leaping as the thrash began (now eased in, the
+  thrash slower and smooth); the ropes of gore lying on the stone as straight lines and the splats like arrows (now beads where each came
+  down, the tails shorter); drool strings off his teeth all over as he melts (now as before); his roar's gape too wide (less); most of
+  his melt hidden under the water (the melt now before the sink); the spray flung off the stone into the water (slower); the sludge's
+  edge ruled (now ragged); the Warrior faster than a run as he rolled back from the burst (the roll longer). Then, looking again at
+  every frame: each falling tooth drawn with a ruled line across its point, the box's whole width (now ended at its point); the gore's
+  splats shaded as lumps, like red crystals (now lying flat and wet, rounder); the burst's sheet a cloud of single dots (now a membrane
+  of his ichor, torn as it spreads) and its drops each glinting, a cloud of beads (now dark, their threads his ichor and not slime); his
+  teeth come to lie standing upright in the shallows (now tipped over flat); the close-ups framed low (the burst's eye and his melting
+  jaws off their tops: raised).
+- To make them again (the layers on the memory disk, `/dev/shm`):
+
+```
+npx tsx tools/eye_moves_pics.ts paint 0 2 d1 & npx tsx tools/eye_moves_pics.ts paint 1 2 d1
+npx tsx tools/eye_moves_pics.ts frames /dev/shm/eye_moves/f7 d1 0 373
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c7/blow d1 8,...,29 0 355 70
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c7/burst d1 44,...,79 5 345 205
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c7/melt d1 110,...,219 0 310 80
+python3 tools/eye_shovel_sheet.py film7 /dev/shm/eye_moves/f7 /dev/shm/eye_moves/c7 docs/mockups/eye_redo/pictures/eye_moves7.mp4
+python3 tools/eye_shovel_sheet.py sheet7 /dev/shm/eye_moves/f7 /dev/shm/eye_moves/c7 docs/mockups/eye_redo/pictures/eye_moves7.png tools/eye_death_sheet.json
+npx tsx tools/eye_moves_pics.ts cost7      (what its own layers cost)
+```
+
+### What it costs (as painted here: its own new layers; his stand's jaws and drool at the edge, through the wind-up, are his phase 3's)
+
+251 new layers: his tongue-eye seizing through the wind-up 36 (3.5 MB raw), and from the burst on all of him in one layer a frame
+(bursting, thrashing, melting, sinking) 215 (180.7 MB raw, 0.84 MB a layer): 184.2 MB raw at two picture pixels to a game pixel,
+66.4 MB packed. At the game's own pixel size about a quarter: about 46 MB raw, about 17 MB packed (an estimate: the main chat's to
+weigh). The heaviest of his moves so far. The melt and the sink change slowly: painted every other frame from frame 96 and each shown
+twice, they would cost about a third less (61.5 MB raw saved; my suggestion, the main chat's to say). The spray, the gore, the sludge,
+his falling teeth, the bones, the water and the shakes are the game's effects, drawn as it runs.
+
+### The checks (`tests/eye_death.test.ts`)
+
+(1) The switch off; nothing of the game imports `art/eye_death.ts`. (2) THE BEATS: the wind-up held 1.2 s, his eye seizing through it;
+the burst on frame 36, its two frames the only smeared; the thrash, his grip tearing, his last roar in turn, his jaws flung wide in it;
+the melt from nothing to all of him, all his teeth gone, his jaws sagged and folded in; under by frame 250; the fight's end as the water
+goes still. (3) NOTHING THROUGH ANYTHING in every frame to 250: his tongue and eye clear of his jaws (the least gaps 0.7 and 7.2 of his lengths), his spittle of his tongue,
+his jaws of each other; him clear of the stone as he is drawn, melting too (the least 1.6); the Warrior on the stone, never in him. (4) NEVER
+STILL: him moving in every frame of the take. (5) NO LEAPS: his place no more than 4.3 of his lengths a frame; his eye no more than
+13.9 a frame but in the burst; thrashing, whipped round no more than 28.6 (its speed changing 7.7 a frame at the most) a frame, smoothly; the Warrior no faster than a run (7.7 a frame at the most).
+(6) THE CUES: the burst on frame 36, a great spray; his sludge on the stone as he melts, drying away after; 46 teeth, each let go while
+they drop; his bones in the shallows as the water goes still; the water boiling as he goes under, still at the end; the burst's shake
+the hardest; the sound's cues in order. (7) NOTHING CYAN in him as he seizes, bursts, thrashes, melts (his layers painted and looked at),
+nor in the colours of his ichor, sludge and bones. (8) NOTHING RULED (no straight run over 12 game pixels, exactly across or up; the
+longest, up and across): the gore's splats 9 game px up and 9 across at the longest; the sludge's edge 3.5 up and 5.5 across. (9) The numbers above.
+`tests/eye_body.test.ts` 10 and `tests/eye_phase3.test.ts` 10: the main chat's asks (above). `tests/eye_moves.test.ts`,
+`tests/eye_colossus.test.ts`, `tests/eye_arms.test.ts`, `tests/eye_body.test.ts` 1 and `tests/eye_phase3.test.ts` 1 let
+`art/eye_death.ts` import them (its name added to each one's list). Each test file run on its own: eye_death 9 of 9, eye_phase3 10, eye_body 10, eye_moves 8, eye_colossus 7, eye_arms 9, eye_shovel 11, eye_pieces 8, all passing; tsc clean.
 
 ## Stage 6: his phase 3: his slide forward, the three pillars and his ward, the siege's bolts, the eye slam, the gaze from his new place, his eye struck
 

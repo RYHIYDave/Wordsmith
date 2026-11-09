@@ -1,0 +1,15 @@
+[
+ {"title": "THE KILLING BLOW: his eye seizes (the wind-up, held 1.2 s)", "note": "The Warrior's blow lands on his eye: jerked back, drawn up rigid, swelling, its veins bulging, its pupil blown wide, trembling harder and harder, the screen trembling.",
+  "items": [["f", "d1", 14, 507, 300, "the blow lands (frame 0)"], ["blow", "d1", 16, 507, 234, "x2: struck (frame 2)"],
+            ["f", "d1", 34, 507, 240, "seizing (frame 20, 0.67 s)"], ["f", "d1", 49, 507, 180, "held, about to burst (frame 35)"]]},
+ {"title": "THE BURST (the strike, smeared)", "note": "On frame 36 it ruptures: a flash of his fire, then out; a great spray of his dark ichor, gobs, drops, ropes and a veil of it, over the stone; the screen thrown hard.",
+  "items": [["f", "d1", 50, 507, 200, "it bursts (frame 36, 1.2 s)"], ["burst", "d1", 52, 507, 234, "x2: the spray (frame 38)"],
+            ["burst", "d1", 60, 507, 234, "x2: the spray flung out (frame 46)"], ["f", "d1", 104, 507, 330, "the gore on the stone (frame 90)"]]},
+ {"title": "HE THRASHES AND ROARS; HIS GRIP TEARS LOOSE", "note": "His tongue whipping blind, the torn sac flailing; his grip on the edge tearing loose, the stone cracking, sliding back into the water; his last roar, his jaws flung wide, his fire dying.",
+  "items": [["f", "d1", 66, 507, 220, "thrashing, blind (frame 52)"], ["f", "d1", 92, 507, 220, "his last roar (frame 78)"]]},
+ {"title": "HE MELTS (the wind-down)", "note": "All of him slumping and running, going to black sludge; his teeth dropping out one by one; his jaws sagging and folding in; his tongue running away to sludge on the stone; the sludge spreading and pouring back off the edge.",
+  "items": [["f", "d1", 130, 507, 260, "melting (frame 116, 3.9 s)"], ["melt", "d1", 150, 507, 234, "x2: his jaws sagging, his teeth letting go (frame 136)"],
+            ["f", "d1", 170, 507, 260, "black sludge (frame 156)"], ["melt", "d1", 196, 507, 234, "x2: going under (frame 182)"]]},
+ {"title": "HE SINKS; STILL", "note": "What is left goes under, the water boiling and heaving; then still and dark, his sludge drying away on the stone, his bones and broken teeth lying in the shallows. The fight can end at 10 s.",
+  "items": [["f", "d1", 236, 507, 260, "boiling over him (frame 222)"], ["f", "d1", 360, 507, 280, "still (frame 346): his bones in the shallows"]]}
+]
