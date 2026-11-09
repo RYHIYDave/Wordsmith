@@ -16,7 +16,7 @@ const dev = process.argv.includes('--dev');
 // (--try colossus: a page that begins at the thing to try, for the owner before it goes live: main.ts __TRY__)
 const tryOf = process.argv.includes('--try') ? process.argv[process.argv.indexOf('--try') + 1] : '';
 // (shown small in a corner of the starting screen, so the owner can tell which version a page is showing)
-const VERSION = 'V25.2.13';
+const VERSION = 'V25.3.0';
 const stamp = `${VERSION} ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
 const bake = process.argv.includes('--no-bake') ? null : await bakeHeroes();
 fs.rmSync(path.join(ROOT, 'dist', 'heroes'), { recursive: true, force: true });
@@ -39,9 +39,9 @@ if (soundFiles.length) {
   fs.mkdirSync(path.join(ROOT, 'dist', 'sounds', sounds), { recursive: true });
   soundShipped = packSounds(soundDir, path.join(ROOT, 'dist', 'sounds', sounds)).files.length;
 }
-// (THE SWAMP COLOSSUS'S PICTURES, tools/colossus_ship.mjs: beside the page in colossus/<mark>/ only with --colossus, while his fight is
-// switched off nothing fetches them)
-const colossus = process.argv.includes('--colossus') ? shipColossus() : (fs.rmSync(path.join(ROOT, 'dist', 'colossus'), { recursive: true, force: true }), { mark: '', files: [] });
+// (THE SWAMP COLOSSUS'S PICTURES, tools/colossus_ship.mjs: beside the page in colossus/<mark>/; his fight is on since 25.3.0, so always,
+// but with --no-colossus)
+const colossus = !process.argv.includes('--no-colossus') ? shipColossus() : (fs.rmSync(path.join(ROOT, 'dist', 'colossus'), { recursive: true, force: true }), { mark: '', files: [] });
 const js = await bundle('src/main.ts', { minify: !dev, define: { ...RELEASE_DEFINES, __BUILD__: JSON.stringify(stamp), __DEV__: String(dev), __HERO_BAKE__: JSON.stringify(bake ? bake.mark : ''), __SOUNDS__: JSON.stringify(sounds), __COLOSSUS_BAKE__: JSON.stringify(colossus.mark), ...(tryOf ? { __TRY__: JSON.stringify(tryOf) } : {}) } });
 const out = write('Play.html', page(js));
 write('dist/artifact.html', fragment(js));

@@ -1,4 +1,4 @@
-// THE SWAMP COLOSSUS'S FIGHT, ITS RULES (game/colossus_fight.ts; COLOSSUS off: nothing of the game uses it yet). Held here: every
+// THE SWAMP COLOSSUS'S FIGHT, ITS RULES (game/colossus_fight.ts; COLOSSUS on since 25.3.0). Held here: every
 // line his tentacles slam along is the art chat's (docs/mockups/eye_redo/README.md, "EACH TURN'S LINE"); nowhere safe (his pick); a
 // slam stepped out of misses; his waves sweep the whole stone, dodged through; both at once crash in the middle; his shovel's gaps,
 // its hit knocking the hero toward his mouth, his snap too near; his maw reaching nothing onto the stone; the phases in his order,
@@ -27,8 +27,10 @@ function run(f: ColossusFight, secs: number, hero: (t: number) => HeroOnStone): 
   return all;
 }
 
-test('the switch is off: floor 10 is laid as it was, the Drowned Eye in his pool in its ring, his old rules', () => {
-  assert.equal(COLOSSUS.on, false);
+test('the switch off: floor 10 is laid as it was, the Drowned Eye in his pool in its ring, his old rules', () => {
+  assert.equal(COLOSSUS.on, true, 'on in the game');
+  COLOSSUS.on = false;
+  try {
   const g = new Game('warrior', 9);
   g.depth = 10;
   g.cleared = 9;
@@ -40,6 +42,9 @@ test('the switch is off: floor 10 is laid as it was, the Drowned Eye in his pool
   const boss = g.monsters.find((m) => m.boss)!;
   assert.equal(boss.kind, 'eye');
   assert.ok(Math.hypot(boss.x - land.pool!.x, boss.y - land.pool!.y) < 0.6, 'in the middle of his pool');
+  } finally {
+    COLOSSUS.on = true;
+  }
 });
 
 test('the switch on: his stone laid on floor 10, an island with its jetty; the hero carried across from the landing; his fight begins as he steps onto it', () => {
@@ -80,7 +85,7 @@ test('the switch on: his stone laid on floor 10, an island with its jetty; the h
     assert.equal(arms.length, 2, 'his two tentacles, monsters of their own');
     for (const m of arms) assert.ok(near(m.maxLife, boss.maxLife / 2, 1));
   } finally {
-    COLOSSUS.on = false;
+    COLOSSUS.on = true;
   }
 });
 

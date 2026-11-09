@@ -27,8 +27,8 @@
 
 import type { RNG } from '../engine/rng';
 
-/** Off: the fight of floor 10 is the old Drowned Eye's. On only at his yes to its pictures in play. */
-export const COLOSSUS = { on: false };
+/** On (his 9 Nov 2026, 08:22, “It’s good.”, and “Yes, release it (Recommended)”): floor 10 is the Swamp Colossus's. Off, the old Drowned Eye's. */
+export const COLOSSUS = { on: true };
 
 const FPS = 30;
 const fr = (n: number): number => n / FPS;
