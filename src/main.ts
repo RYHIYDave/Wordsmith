@@ -2952,15 +2952,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const cls = hash.get('hero') as ClassId | null;
     COLOSSUS.on = true;
     dbg.saving(false);
-    dbg.run(cls && ALL_CLASS_IDS.includes(cls) ? cls : 'warrior', 9);
-    dbg.seasoned(28);
+    // (the level select's test hero for floor 10: his level, his points spent, a full set of gear of the floor, and every word that can
+    // be found down to it in his pouch, to set in his attacks: his 9 Nov 07:21, “You didn’t give me any words in the test page so I don’t
+    // do any damage so I can’t kill him”)
+    saving = false;
+    saved = null;
+    begin(Game.forTrial(cls && ALL_CLASS_IDS.includes(cls) ? cls : 'warrior', 9, 10, meta));
+    loading = null;
     dbg.god = hash.get('god') !== '0';
     const g = game as Game | null;
     if (g) {
-      g.depth = 10;
-      g.cleared = 9;
-      g.wayDepth = Math.max(g.wayDepth, 10);
-      g.enterDungeon();
       const at = g.level.land?.landing;
       if (at) {
         g.hero.x = at.x;

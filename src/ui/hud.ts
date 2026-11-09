@@ -1242,7 +1242,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
 
   // ---- boss bar -----------------------------------------------------------------------------
   const boss = game.boss;
-  const bossUp = !!boss && !boss.dead && boss.state !== 'sleep';
+  const bossUp = !!boss && !boss.dead && boss.state !== 'sleep' && game.bossShown(boss);
   // (FLOOR 13'S DOUBLE BOSS: while both stand, a bar each, the Scraper's first, between the place's name and the small map:
   // side by side where both bars and both names fit there, else one under the other, each named in full where that fits,
   // else by its own kind's name, "The Scraper", "The Quill" (its full name is on its card as they are met); `bossRows` how

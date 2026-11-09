@@ -252,6 +252,12 @@ export const COLOSSUS_RULES: Act1Rules = {
     }
   },
 
+  hittable(_R, m) {
+    // (his bar comes up as his first tentacles stand, after his waking)
+    const f = colossusOn(m).fight;
+    return !!f && f.mode !== 'idle' && f.wakeT === null && f.arms.some((a) => a.state !== 'rise');
+  },
+
   peril(R, p, dt) {
     // HIS DEATH: kept by the hero while it plays; the screen shaken at its beats; gone when it is done
     if (p.a1 !== 'eye:fight' || p.a !== 1) return;

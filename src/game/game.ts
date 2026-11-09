@@ -2825,6 +2825,21 @@ export class Game {
   }
 
   /**
+   * THE BOSS'S BAR at the top of the screen (ui/hud.ts) comes up only once he can be hit: never while he waits for his line and his
+   * name to come up (bossWaits), nor before his own rules say he can be hit (act 1's `hittable`); and stays from then on. His 9 Nov
+   * 07:24: “I’d like the health bar of the boss to appear only once they are able to be hit.  We make them invulnerable so they can say
+   * their line, and we have the cool splash screen that says their name so let all that happen before the health bar shows up.”
+   */
+  bossShown(m: Monster): boolean {
+    if (m.barUp) return true;
+    if (this.bossWaits(m) || this.introT > 0) return false;
+    const r1 = ACT1.on ? act1Rules(m.kind) : null;
+    if (r1 && r1.hittable && !r1.hittable(this.bosses, m)) return false;
+    m.barUp = true;
+    return true;
+  }
+
+  /**
    * (BOSS_INTRO, ACT 1: game/act1_layout.ts) OUT ON THE OPEN GROUND THE BOSS WAITS for the hero to come into
    * his ground (its area: well inside it, or within a few tiles of him), and then says his line as a boss
    * whose gate has fallen does; he is woken by it.
