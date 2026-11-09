@@ -522,6 +522,9 @@ export type FightEvent =
   | { t: 'eyeWarn'; u: number; v: number }
   | { t: 'eyeSlam'; u: number; v: number }
   | { t: 'grip' }
+  /** (for his sounds, 25.3.1) his waking's water first stirring; phase 3's slide forward beginning */
+  | { t: 'stir' }
+  | { t: 'slide' }
   | { t: 'rainWarn'; u: number; v: number }
   | { t: 'rain'; u: number; v: number }
   | { t: 'hurt'; by: HurtBy; mult: number; du: number; dv: number; secs: number }
@@ -691,6 +694,7 @@ export class ColossusFight {
     // (his waking: his two tentacles burst up when it is time)
     if (this.wakeT !== null) {
       this.wakeT += dt;
+      if (this.wakeT >= WAKE.still && this.wakeT - dt < WAKE.still) ev.push({ t: 'stir' });
       if (this.wakeT >= WAKE.rise) {
         this.wakeT = null;
         this.raiseArms(1, ev);
@@ -716,6 +720,7 @@ export class ColossusFight {
     } else if (this.mode === 'change') {
       const C = this.ph === 1 ? ENTRANCE : CHANGE3;
       if (C.armsUp < C.long && this.phT >= C.armsUp && this.phT - dt < C.armsUp) this.raiseArms((this.ph + 1) as 2 | 3, ev);
+      if (this.ph === 2 && this.phT >= CHANGE3.slide && this.phT - dt < CHANGE3.slide) ev.push({ t: 'slide' });
       if (this.ph === 2 && this.phT >= CHANGE3.grip && this.phT - dt < CHANGE3.grip) ev.push({ t: 'grip' });
       if (this.phT >= C.long) {
         // (into phase 2 his stand begins again; into phase 3 it runs on from his slide, as the art's take has it)

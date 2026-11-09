@@ -112,6 +112,9 @@ function handle(R: BossRules, m: Monster, S: StoneAt, ev: readonly FightEvent[])
       default:
         break;
     }
+    // (HIS SOUNDS, 25.3.1: the sound chat's fifth batch, made for his entrance and fight, assets/sound/README.md; the slams the first
+    // batch's own until his are made)
+    sounds(g, f, e);
     if (e.t === 'slam' || e.t === 'smash') g.emit({ t: 'shake', amount: e.t === 'slam' ? 8 : 6 });
     if (e.t === 'burst') g.emit({ t: 'shake', amount: 9 });
     if (e.t === 'snap') g.emit({ t: 'shake', amount: 10 });
@@ -124,6 +127,52 @@ function handle(R: BossRules, m: Monster, S: StoneAt, ev: readonly FightEvent[])
     if (e.t === 'retch') g.emit({ t: 'shake', amount: 4 });
     if (e.t === 'bile') g.emit({ t: 'shake', amount: 8 });
     if (e.t === 'gaze') g.emit({ t: 'shake', amount: 9 });
+  }
+}
+
+/**
+ * HIS SOUNDS (the sound chat's fifth batch, 7 Nov 2026, “All good, hand over (Recommended)”; played from 25.3.1): the rumble building
+ * as the water first stirs at his waking; a tentacle bursting up as each comes up (but in his entrance, whose one sound has its
+ * three); his whole entrance as one sound from its first frame, as the sound chat made it; the water pouring off him as he slides
+ * forward into phase 3; at his shovel his burst and roar; slime and spittle at his snap, his retch and his eye slammed down. The
+ * slams of his tentacles and his eye, and his grip, the first batch's slam until his own are made. His last roar: `peril` below.
+ * (Fetched ahead as his floor is come into: game/sound_families.ts COLOSSUS_SOUND_NAMES.)
+ */
+function sounds(g: Game, f: ColossusFight, e: FightEvent): void {
+  switch (e.t) {
+    case 'stir':
+      g.rec('colossus_rise', 1);
+      break;
+    case 'armUp':
+      if (!(f.mode === 'change' && f.ph === 1)) g.rec('colossus_tentacle', 0.9);
+      break;
+    case 'change':
+      if (e.to === 2) g.rec('colossus_entrance', 1);
+      break;
+    case 'slide':
+      g.rec('colossus_pour', 1);
+      break;
+    case 'burst':
+      g.rec('colossus_pour', 0.9);
+      g.rec('colossus_roar', 1);
+      break;
+    case 'snap':
+    case 'retch':
+      g.rec('colossus_slime', 1);
+      break;
+    case 'eyeSlam':
+      g.sfx('slam', 1);
+      g.rec('colossus_slime', 0.9);
+      break;
+    case 'slam':
+    case 'smash':
+      g.sfx('slam', 0.8);
+      break;
+    case 'grip':
+      g.sfx('slam', 0.9);
+      break;
+    default:
+      break;
   }
 }
 
@@ -266,6 +315,8 @@ export const COLOSSUS_RULES: Act1Rules = {
     p.y = g.hero.y;
     const s = p.t - p.c;
     for (const [f, amount] of DEATH.shakes) if (s >= f / 30 && s - dt < f / 30 + 1e-9) g.emit({ t: 'shake', amount });
+    // (his last roar, the sound chat's: the art's “The entrance's colossus_roar may serve the last roar if it fits”)
+    if (s >= DEATH.roar / 30 && s - dt < DEATH.roar / 30 + 1e-9) g.rec('colossus_roar', 1);
     if (s >= DEATH.long) p.dur = p.t;
   },
 };
