@@ -188,9 +188,10 @@ test('the ten melded words: every two of the five damage words make one, both wa
 
 test('the words found in the dungeon are the thirteen they were and the city\'s five; the melded words are made, never found', () => {
   // (THE CITY'S WORDS, Version 23.8: Pulling, Splitting, Hexing and Stilling, found from floor 11 down; Binding with them since 23.9)
-  assert.equal(WORD_IDS.length, 18);
+  // (THE LAST WORDS, 8 Nov 2026, seven more; HIS THREE NEW WORDS, 9 Nov 2026, Lasting, Fleeting and Vast)
+  assert.equal(WORD_IDS.length, 28);
   for (const m of MELD_IDS) assert.ok(!WORD_IDS.includes(m), m);
-  assert.equal(ALL_WORD_IDS.length, 28);
+  assert.equal(ALL_WORD_IDS.length, 38);
   for (const w of ALL_WORD_IDS) assert.ok(WORDS[w], w);
   for (const m of MELD_IDS) {
     const d = WORDS[m];

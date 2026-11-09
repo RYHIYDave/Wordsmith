@@ -64,16 +64,16 @@ export const WORD_COLOR: Record<WordId, string> = {
   // (THE LAST WORDS, 8 Nov 2026: the main chat's placeholders until the art chat's, pictures to him first; each picked away from the
   // other words, the friend's cyan and the enemy's pink and gold)
   piercing: '#d8e0e8',
-  bleeding: '#c0303a',
+  bleeding: '#a0203a',
   reaping: '#6a8a7a',
   culling: '#5a4a6a',
   surging: '#3a78c8',
   plundering: '#b8a040',
   mirroring: '#a0b8c8',
   // (HIS THREE NEW WORDS, 9 Nov 2026: placeholders until the art chat's, pictures to him first)
-  lasting: '#6fc4a8',
-  fleeting: '#9fb0ff',
-  vast: '#c08a4a',
+  lasting: '#b09080',
+  fleeting: '#e8d0f8',
+  vast: '#7a5a3a',
   // (WORDMELDING: the melded words' colours, the planning chat's placeholders until the art chat's,
   // pictures to him first; each picked as far, as the eye sees colour, from every other word, the
   // friend's cyan and the enemy's pink and gold as it could be)
@@ -1163,9 +1163,9 @@ export const WORD_GLOW: Record<WordId, string> = {
   surging: '#a8ccf2',
   plundering: '#ecdca0',
   mirroring: '#dce8f0',
-  lasting: '#c8f0e2',
-  fleeting: '#dde3ff',
-  vast: '#f0d0a8',
+  lasting: '#e4d4c8',
+  fleeting: '#f8f0fc',
+  vast: '#c8a888',
   // (WORDMELDING: halfway to white from each one's colour)
   eruption: '#ffccac',
   avalanche: '#dcedff',

@@ -97,7 +97,9 @@ test('the seven: in every list of words, found only from floor 16 down, each wit
     for (const slot of SLOTS) assert.ok(imbueOptions(w, slot, 16).length > 0, `${w} on ${slot}`);
   }
   assert.ok(wordsAt(11).includes('binding') && !wordsAt(10).includes('binding'), 'the city\'s words as before');
-  assert.equal(wordsAt(5).length, 13, 'the first floors\' thirteen as before');
+  // (the first floors as before: the prison's six on floors 1 to 5 (WORD_TIERS, 25.2.11); none of the seven before floor 16)
+  assert.equal(wordsAt(5).length, 6, 'the prison\'s six');
+  assert.ok(!wordsAt(15).some((w) => LAST_WORD_IDS.includes(w)), 'none of the seven on floor 15');
 });
 
 test('PIERCING: a blow goes on through the first; the lance strikes down the line; a monster\'s shots go through walls', () => {

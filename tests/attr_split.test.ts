@@ -29,10 +29,11 @@ test('the split as he said yes to it: Power\'s melds Strength, Poison\'s other t
   assert.equal(ATTR_SPLIT.on, true, 'on, his word');
   const of = (a: string | null): string[] => ALL_WORD_IDS.filter((w) => wordAttr(w) === a);
   // (BINDING, the city's fifth, his pick of 21 Oct: by Strength, the main chat's pick, shown him in its video)
-  assert.deepEqual(of('str'), ['power', 'leech', 'heavy', 'frenzied', 'guarding', 'binding', 'eruption', 'avalanche', 'thunder', 'blight'], 'Strength, ten');
+  // (THE LAST WORDS, 8 Nov 2026, each by its own; HIS THREE NEW WORDS, 9 Nov 2026: Vast Strength, Fleeting Dexterity, Lasting Intelligence)
+  assert.deepEqual(of('str'), ['power', 'leech', 'heavy', 'frenzied', 'guarding', 'binding', 'bleeding', 'culling', 'vast', 'eruption', 'avalanche', 'thunder', 'blight'], 'Strength, thirteen');
   // (THE CITY'S WORDS, Version 23.8: Splitting by Dexterity, Pulling, Hexing and Stilling by Intelligence, as his doc has them)
-  assert.deepEqual(of('dex'), ['swift', 'twin', 'poison', 'precise', 'splitting', 'fumes', 'frostbite', 'contagion'], 'Dexterity, eight');
-  assert.deepEqual(of('int'), ['volatile', 'pulling', 'hexing', 'stilling', 'scald', 'wildfire', 'hailstorm'], 'Intelligence, seven of its own');
+  assert.deepEqual(of('dex'), ['swift', 'twin', 'poison', 'precise', 'splitting', 'piercing', 'plundering', 'fleeting', 'fumes', 'frostbite', 'contagion'], 'Dexterity, eleven');
+  assert.deepEqual(of('int'), ['volatile', 'pulling', 'hexing', 'stilling', 'reaping', 'surging', 'mirroring', 'lasting', 'scald', 'wildfire', 'hailstorm'], 'Intelligence, eleven of its own');
   assert.deepEqual(of(null), ['fire', 'frost', 'lightning'], 'and the three elements by the weapon (on the mage\'s staff and wand, Intelligence: seven)');
   for (const m of MELD_IDS) {
     const [a, b] = MELD_OF[m];

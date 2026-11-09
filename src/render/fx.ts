@@ -445,9 +445,9 @@ export const WORD_HUE: Record<WordId, string> = { power: P.bl4, swift: P.gn4, tw
   // (the city's words, Version 23.8)
   pulling: '#7a76e0', splitting: '#dcaaf6', hexing: '#b8b4c8', stilling: '#86eaae', binding: '#c8b48a',
   // (THE LAST WORDS, 8 Nov 2026: as art/icons.ts has them, placeholders until the art chat's)
-  piercing: '#d8e0e8', bleeding: '#c0303a', reaping: '#6a8a7a', culling: '#5a4a6a', surging: '#3a78c8', plundering: '#b8a040', mirroring: '#a0b8c8',
+  piercing: '#d8e0e8', bleeding: '#a0203a', reaping: '#6a8a7a', culling: '#5a4a6a', surging: '#3a78c8', plundering: '#b8a040', mirroring: '#a0b8c8',
   // (HIS THREE NEW WORDS, 9 Nov 2026: as art/icons.ts has them, placeholders)
-  lasting: '#6fc4a8', fleeting: '#9fb0ff', vast: '#c08a4a',
+  lasting: '#b09080', fleeting: '#e8d0f8', vast: '#7a5a3a',
   // (WORDMELDING: the melded words take their colours from art/icons.ts)
   eruption: '#ff9a5a', avalanche: '#b8dcff', thunder: '#c8a8ff', blight: '#8aa040', scald: '#e0b0c0', wildfire: '#d86040', fumes: '#c89838', hailstorm: '#e8f0c0', frostbite: '#6898b0', contagion: '#90e0a0',
   // (Volatile's melds, behind VOLT_MELDS, off: placeholders until the art chat's)
