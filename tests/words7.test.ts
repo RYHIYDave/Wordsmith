@@ -164,7 +164,7 @@ function stage(word: W7Word, side: W7Side): { gm: Game; at: number } {
 
 test('1. the switch is off, everything the renderer asks of it is behind it, and nothing else of the game reaches it', () => {
   assert.equal(WORDS7_LOOK.on, false);
-  const calls = ['tickW7(', 'floorW7(', 'airW7(', 'lightsW7(', 'lookW7(', 'heroW7(', 'fallenW7(', 'lyingW7('];
+  const calls = ['tickW7(', 'floorW7(', 'airW7(', 'lightsW7(', 'lookW7(', 'heroW7(', 'fallenW7(', 'lyingW7(', 'spiritsW7('];
   const lines = (readFileSync(new URL('../src/render/render.ts', import.meta.url), 'utf8') as string).split('\n');
   let found = 0;
   lines.forEach((line, i) => {
@@ -226,6 +226,9 @@ test('3. their colours: six tones, told apart from every word, the melds, the fr
   for (const [w, r] of Object.entries(NEW_RAMP)) others[`new ${w}`] = r[3];
   for (const [w, r] of Object.entries(MELD_RAMP)) others[`meld ${w}`] = r[3];
   for (const k of Object.keys(others)) if (/2$/.test(k)) delete others[k];
+  // (the main chat's stand-ins for these seven and his three, in art/icons.ts since its words10, are what these colours replace:
+  // the three are the art chat's, render/words10.ts, and are held apart from these in tests/words10.test.ts)
+  for (const k of ['piercing', 'bleeding', 'reaping', 'culling', 'surging', 'plundering', 'mirroring', 'lasting', 'fleeting', 'vast']) delete others[k];
   let nearest = 99;
   for (const w of W7_WORDS) {
     const R = W7_RAMP[w];

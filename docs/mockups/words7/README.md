@@ -106,6 +106,10 @@ its beats (`W7_BEATS`, seconds):
 
 ## For the main chat: the events and fields it reads
 
+(On `art/words10`, 9 Nov: the main chat's rules for these seven are on its `words10`, and some names differ from those below;
+`words7.ts` reads the real ones now, these as the fallback, no look changed: see `docs/mockups/words10/README.md`, "the seven,
+read by words10's real names".)
+
 All of it only while `WORDS7_LOOK.on` (off). main.ts calls `eventsW7(g.events, g, fx)` (beside Binding's); render.ts calls
 `tickW7`, `floorW7`, `airW7`, `lightsW7`, `lookW7` (a monster's picture: a spirit, one cut down, a flash), `fallenW7` (one
 culled comes down in two halves), `lyingW7` (and lies so, drawn with the floor once its fall is done), `heroW7` (his reflection), and leaves the three zones to it (`ownsZoneW7`). Drawn to the names of the

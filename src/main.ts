@@ -129,6 +129,8 @@ import { AISLES_CLEAR } from './game/act2/library';
 import { LEAP_WATER } from './game/water';
 import type { Side } from './ui/inventory';
 import { drawLexicon, lexiconSide, newLexUi } from './ui/lexicon';
+// (THE LEXICON'S 28 WORDS: the art chat's ways to lay out its stones, a mock-up behind LEX28: its playtest's hands only)
+import { demoLex28 } from './ui/lexicon28';
 import { CARDS3, ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
 import type { SmithPicture } from './ui/panels';
 import { altarSide, gateSide, stashSide, vendorSide } from './ui/town';
@@ -141,6 +143,8 @@ import { MELD3, MELD_GLYPH, MELD_RAMP, demoM3, eventsM3 } from './render/melds3'
 import { BINDING3, demoB3, eventsB3 } from './render/binding3';
 // (THE SEVEN NEW WORDS' LOOKS, the art chat's mock-up behind a switch that is off: its playtest's hands only)
 import { WORDS7_LOOK, demoW7, eventsW7 } from './render/words7';
+// (HIS THREE NEW WORDS' LOOKS, the art chat's mock-up behind a switch that is off: its playtest's hands only)
+import { WORDS10_LOOK, demoW10, eventsW10 } from './render/words10';
 import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
 import { act1Fx } from './render/act1_fx';
 import { COLOSSUS, onStoneOrJetty, worldToStone } from './game/colossus_fight';
@@ -1625,6 +1629,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (BINDING3.on) eventsB3(g.events, g, fx);
     // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: render/words7.ts, called up by what the rules say happened)
     if (WORDS7_LOOK.on) eventsW7(g.events, g, fx);
+    // (HIS THREE NEW WORDS' LOOKS, behind a switch that is off: render/words10.ts, called up by what the rules say happened)
+    if (WORDS10_LOOK.on) eventsW10(g.events, g, fx);
     // (THE FIVE VOLATILE MELDS' looks, behind a switch that is off: render/volatile3.ts, called up by what the rules say happened)
     if (VOLATILE3.on) eventsV3(g.events, g, fx);
     // (RUNEDUST AND THE MELDSTONE's moments, behind a switch that is off: render/meld_drops.ts)
@@ -2815,6 +2821,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     binding3: demoB3(fx, () => game),
     /** THE SEVEN NEW WORDS' LOOKS (render/words7.ts): a mock-up behind a switch that is off; its playtest switches it on for its own page. */
     words7: demoW7(fx, () => game),
+    /** HIS THREE NEW WORDS' LOOKS (render/words10.ts): a mock-up behind a switch that is off; its playtest switches it on for its own page. */
+    words10: demoW10(fx, () => game),
+    /** THE LEXICON'S 28 WORDS (ui/lexicon28.ts): the art chat's ways to lay out its stones, behind LEX28 ('rows', the game's own). */
+    lex28: demoLex28(() => meta),
     /** THE FIVE VOLATILE MELDS' looks (render/volatile3.ts): Demolition, Powderkeg, Shatter, Chain Reaction and Rupture at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */
     volatile3: demoV3(fx, () => game),
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */

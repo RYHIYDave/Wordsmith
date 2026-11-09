@@ -92,7 +92,9 @@ import { MELD3, airM3, floorM3, heroAlphaM3, lightsM3, overM3, ownsZone, rotting
 import { BINDING3, airB3, floorB3, lightsB3, ownsZoneB3, tickB3, tintB3 } from './binding3';
 import { VOLATILE3, airV3, floorV3, lightsV3, overV3, ownsZoneV3, shiftV3, tickV3, tintV3 } from './volatile3';
 // (THE SEVEN NEW WORDS' LOOKS, a mock-up of the art chat's behind a switch that is off: render/words7.ts)
-import { WORDS7_LOOK, airW7, fallenW7, floorW7, heroW7, lightsW7, lookW7, lyingW7, ownsZoneW7, tickW7 } from './words7';
+import { WORDS7_LOOK, airW7, fallenW7, floorW7, heroW7, lightsW7, lookW7, lyingW7, ownsZoneW7, spiritsW7, tickW7 } from './words7';
+// (HIS THREE NEW WORDS' LOOKS, Lasting, Fleeting and Vast, a mock-up of the art chat's behind a switch that is off: render/words10.ts)
+import { WORDS10_LOOK, airW10, floorW10, heroW10, lightsW10, thingW10, tickW10 } from './words10';
 import { BossFx } from './bossfx';
 import { FloorDress } from './dress';
 import type { Kick } from './dress';
@@ -2263,9 +2265,10 @@ export class Renderer {
     }
     // (THE FIRST FIVE FLOORS: what the bosses of floors 2 to 5 warn of, leave and cast shadows of on the floor: render/bossfx.ts)
     if (game.perils.length || game.boss || game.level.act1 || game.monsters.some((m) => m.state === 'act')) this.bossFx.ground(g, this.floorAt, game, t, here);
-    // (THE LAST WORDS: Reaping's spirits, a plain stand-in in the word's colour until the art chat's look)
+    // (THE LAST WORDS: Reaping's spirits, a plain stand-in in the word's colour until the art chat's look; with its look on, the
+    // little grey Shade stands among the figures instead: render/words7.ts spiritsW7)
     for (const sp of game.spirits) {
-      if (!here(sp.x, sp.y)) continue;
+      if (WORDS7_LOOK.on || !here(sp.x, sp.y)) continue;
       const fade = Math.min(1, (sp.life - sp.t) * 2, sp.t * 4);
       ellipse(g, wx(cam, sp.x, sp.y), wy(cam, sp.x, sp.y) - 8, 0.35, WORD_COLOR.reaping, 0.6 * fade);
       ringDots(g, wx(cam, sp.x, sp.y), wy(cam, sp.x, sp.y) - 8, 0.35, WORD_COLOR.reaping);
@@ -2465,6 +2468,7 @@ export class Renderer {
     if (BINDING3.on && !this.skip.has('ground')) floorB3(g, cam, t, game, here);
     if (VOLATILE3.on && !this.skip.has('ground')) floorV3(g, cam, t, game, here);
     if (WORDS7_LOOK.on && !this.skip.has('ground')) floorW7(g, cam, t, game, here);
+    if (WORDS10_LOOK.on && !this.skip.has('ground')) floorW10(g, cam, t, game, here);
     for (const tr of game.traps) {
       if (!here(tr.x, tr.y)) continue;
       const frames = art.icons.trap[tr.element];
@@ -2952,6 +2956,8 @@ export class Renderer {
     if (VOLATILE3.on) tickV3(pace / 60, game, fx);
     // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: render/words7.ts)
     if (WORDS7_LOOK.on) tickW7(pace / 60, game, fx);
+    // (HIS THREE NEW WORDS' LOOKS, behind a switch that is off: render/words10.ts)
+    if (WORDS10_LOOK.on) tickW10(pace / 60, game, fx);
     const cam = this.cam;
     // Where on the screen the hero stands: the middle, or the middle of the part left to the world.
     // The picture glides from the one to the other, by the wall clock (the world may be standing
@@ -3635,6 +3641,8 @@ export class Renderer {
       // a guardian smoulders in the colour of its first word
       if (m.champion && m.words.length && Math.random() < 0.25 * amb) fx.mote(m.x + (Math.random() - 0.5) * 0.8, m.y + (Math.random() - 0.5) * 0.8, [WORD_COLOR[m.words[0]], P.white]);
     }
+    // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: the rules' spirits (game.spirits), each the little grey Shade: render/words7.ts)
+    if (WORDS7_LOOK.on) for (const c of spiritsW7(game, cam)) this.stand(c.depth, c.sp, c.x, c.y, null, 0, 1, c.alpha);
 
     {
       const sx = wx(cam, h.x, h.y);
@@ -3763,6 +3771,8 @@ export class Renderer {
         if (copies) for (const dx of copies.dx) this.stand(h.x + h.y - 0.01, silhouette(sp, copies.color), sx + dx, sy, null, 0, 1, copies.alpha);
         // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: Mirroring's reflection of him, in glass, beside him: render/words7.ts)
         if (WORDS7_LOOK.on) for (const c of heroW7(sp, h, cam)) this.stand(c.depth, c.sp, c.x, c.y, null, 0, 1, c.alpha);
+        // (HIS THREE NEW WORDS' LOOKS, behind a switch that is off: a boost Fleeting gave him, a stutter of after-images: render/words10.ts)
+        if (WORDS10_LOOK.on) for (const c of heroW10(sp, h, cam, game)) this.stand(c.depth, c.sp, c.x, c.y, null, 0, 1, c.alpha);
         if (relief && !h.move) this.hide(h.x, h.y, heroLift);
         this.heroLit = { x: Math.round(sx), y: Math.round(sy) };
         // BIG AND WILD (art/moves3.ts, WILD): where the power she holds burns, and how hot, for the
@@ -3821,6 +3831,8 @@ export class Renderer {
       // (it does not flicker out of sight as it goes: it shrinks, and blinks in its last moments)
       if (dying < 0.5 && Math.floor(t * 24) % 2 === 0) continue;
       this.stand(o.x + o.y + 0.01, sp, sx, sy - 13 + bob, tint ? silhouette(sp, tint) : null, tintA, scale);
+      // (HIS THREE NEW WORDS' LOOKS, behind a switch that is off: Fleeting on its ability, a stutter of after-images of it: render/words10.ts)
+      if (WORDS10_LOOK.on) for (const c of thingW10(game, o.skill, o.id, sp, sx, sy - 13 + bob)) this.stand(o.x + o.y + 0.005, c.sp, c.x, c.y, null, 0, scale, c.alpha);
       if (live && Math.random() < 0.35 * amb) fx.mote(o.x + (Math.random() - 0.5) * 0.7, o.y + (Math.random() - 0.5) * 0.7, SPELL_TONES[o.element].slice(1));
     }
     // Familiars: small sprites of energy that keep to the hero's shoulder, bobbing. One that has
@@ -4390,6 +4402,7 @@ export class Renderer {
     if (BINDING3.on && !this.skip.has('fx')) airB3(g, cam, t, game);
     if (VOLATILE3.on && !this.skip.has('fx')) airV3(g, cam, t, game);
     if (WORDS7_LOOK.on && !this.skip.has('fx')) airW7(g, cam, t, game);
+    if (WORDS10_LOOK.on && !this.skip.has('fx')) airW10(g, cam, t, game);
     if (!this.skip.has('fx')) fx.drawAir(g, cam);
     // (THE VETERAN's over everything: his smears, his force, the bursts of his blows; his globes: render/veteran_fx.ts)
     if (!this.skip.has('fx')) this.vetFx.drawAir(g, cam, game);
@@ -5064,6 +5077,7 @@ export class Renderer {
     if (BINDING3.on) lightsB3(spot, cam, game, t);
     if (VOLATILE3.on) lightsV3(spot, cam, game, t);
     if (WORDS7_LOOK.on) lightsW7(spot, cam, game, t);
+    if (WORDS10_LOOK.on) lightsW10(spot, cam, game, t);
     // (THE FIRST FIVE FLOORS: what of the bosses' doings lights the dark)
     this.bossFx.lights(spot);
     // a burst of fire or a bolt of lightning lights up the room for a moment

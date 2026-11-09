@@ -32,6 +32,8 @@ import { SIDE_M, putDown, sideBody, sideFrame } from './town';
 import { THEME, inside } from './ui';
 import type { Rect, Ui } from './ui';
 import { drawWordTile } from './words';
+// (THE LEXICON'S 28 WORDS: the art chat's ways to lay out its stones, a mock-up behind LEX28, whose way 'rows' is this file's own)
+import { LEX28, drawLex28 } from './lexicon28';
 
 export interface LexUi {
   /** The word whose page is open. */
@@ -249,6 +251,8 @@ export function lexiconSide(ui: Ui, art: Art, meta: Meta, game: Game, st: LexUi,
     wordButtons: (w) => [{ label: `KEEP: ${cost} GOLD`, act: () => game.depositWord(w), lit: game.hero.gold >= cost, disabled: game.hero.gold < cost }],
 
     draw(): void {
+      // (the art chat's ways for 28 words, behind a switch whose way 'rows' is the game's own: ui/lexicon28.ts)
+      if (LEX28.way !== 'rows') return drawLex28(ui, art, meta, game, st, r);
       sideFrame(ui, r, 'LEXICON', `${found.length} OF ${WORD_IDS.length} FOUND`);
       for (const c of cells) {
         if (!meta.known[c.w].found) {

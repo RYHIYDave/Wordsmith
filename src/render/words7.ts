@@ -24,7 +24,7 @@ import { P } from '../art/palette';
 import { Px, flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { MONSTERS } from '../game/defs';
+import { MONSTERS, REAP, wordShare } from '../game/defs';
 import type { Game } from '../game/game';
 import type { Monster } from '../game/state';
 import type { Cam, Fallen, Fx } from './fx';
@@ -255,6 +255,8 @@ export interface Act {
   /** Reaping on a monster: how far into its fall the corpse lay (seconds), and the corpse itself while it rises. */
   dieT: number;
   fall: Fallen | null;
+  /** Reaping behind: its spirit is the rules' own (game.spirits, its id there), not a monster drawn as one. */
+  rules: boolean;
 }
 
 /** A splash of blood on the floor, drying. */
@@ -290,6 +292,12 @@ export const W7 = {
   swing: null as { x: number; y: number; dx: number; dy: number; reach: number; at: number } | null,
   /** The bodies Culling cut in two (fx.fallen), and the way the cut went: they lie so. */
   cut: new WeakMap<object, { way: number; src?: Sprite }>(),
+  /** The rules' spirits (game.spirits): where each was last, the way it faces, whether it moves, how far into its glide. */
+  spiritWas: new Map<number, { x: number; y: number; fx: number; fy: number; walkT: number; moving: boolean }>(),
+  /** Risings the rules told of as the monster died (their `rise`), waiting for its body to have lain long enough. */
+  rising: [] as { x: number; y: number; id?: number; left: number }[],
+  /** The warnings of monsters' surges (the rules' 'warn' zones, from "...'s surge"), and where each was: its wave when it ends. */
+  surgeWarns: new Map<object, { x: number; y: number; r: number; src?: number; t: number; dur: number }>(),
 };
 
 export function clearW7(): void {
@@ -302,6 +310,9 @@ export function clearW7(): void {
   W7.panes = new WeakMap<object, number>();
   W7.swing = null;
   W7.cut = new WeakMap<object, { way: number; src?: Sprite }>();
+  W7.spiritWas.clear();
+  W7.rising.length = 0;
+  W7.surgeWarns.clear();
 }
 
 export type W7Options = Partial<Omit<Act, 'id' | 'word' | 'side' | 'seed'>> & { seed?: number };
@@ -330,6 +341,7 @@ export function playW7(word: W7Word, side: W7Side, o: W7Options): Act {
     stone: o.stone ?? false,
     dieT: o.dieT ?? 0,
     fall: o.fall ?? null,
+    rules: o.rules ?? false,
   };
   W7.acts.push(a);
   return a;
@@ -343,6 +355,11 @@ const smooth = (q: number): number => {
   return k * k * (3 - 2 * k);
 };
 const live = (a: Act, game: Game, i = 0): Monster | undefined => game.monsters.find((m) => m.id === a.ids[i] && !m.dead);
+/** The rules' spirits (game/game.ts `spirits`: REAPING behind), each where it is and how long it has fought. */
+type RuleSpirit = { id: number; x: number; y: number; t: number; life: number; next: number };
+const ruleSpirits = (game: Game): readonly RuleSpirit[] => (game as unknown as { spirits?: RuleSpirit[] }).spirits ?? [];
+/** A spirit an act is about: the rules' own (game.spirits), or a monster drawn as one. */
+const spiritOf = (a: Act, game: Game): { x: number; y: number } | undefined => (a.rules ? ruleSpirits(game).find((q) => q.id === a.ids[0]) : live(a, game, 0));
 const topOf = (m: Monster): number => FIGURE_SIZE[figureOf(m)].top;
 
 // =============================================================================================
@@ -1439,7 +1456,7 @@ function spiritK(a: Act): [number, number] {
 function reapBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game, layer: 'floor' | 'air'): void {
   const C = W7_RAMP.reaping;
   if (a.part === 'hit') return spiritBlow(g, cam, a, game, layer);
-  const sp = live(a, game, 0);
+  const sp = spiritOf(a, game);
   if (!sp) return;
   const [build, going] = spiritK(a);
   const k = build * going;
@@ -2738,7 +2755,7 @@ type ZoneLike = { x: number; y: number; r: number; t: number; dur: number; kind?
 const zoneSeed = (z: ZoneLike): number => Math.floor(Math.abs(z.x * 97 + z.y * 131)) % 100000;
 /** An act standing for a zone as it lies (its own clock the zone's). */
 function zoneAct(z: ZoneLike, word: W7Word, side: W7Side): Act {
-  return { id: -1, word, side, part: 'zone', t: z.t, dur: z.dur, seed: zoneSeed(z), x: z.x, y: z.y, x1: z.x, y1: z.y, dx: 1, dy: 0, ids: [], pts: [], r: z.r, delay: 0, width: 1, stone: false, dieT: 0, fall: null };
+  return { id: -1, word, side, part: 'zone', t: z.t, dur: z.dur, seed: zoneSeed(z), x: z.x, y: z.y, x1: z.x, y1: z.y, dx: 1, dy: 0, ids: [], pts: [], r: z.r, delay: 0, width: 1, stone: false, dieT: 0, fall: null, rules: false };
 }
 /**
  * A mirror rises where he stood only once he has stepped off it, and clear of it (it stands over what is in front of it, so it
@@ -2846,7 +2863,7 @@ export function lightsW7(spot: (x: number, y: number, r: number, a: number) => v
 export function lookW7(m: Monster, sp: Sprite): { sp: Sprite; alpha: number; tint: [string, number] | null; lift: number } | null {
   if (!WORDS7_LOOK.on) return null;
   for (const a of W7.acts) {
-    if (a.word === 'reaping' && a.side === 'behind' && a.part === '' && a.ids[0] === m.id) {
+    if (a.word === 'reaping' && a.side === 'behind' && a.part === '' && !a.rules && a.ids[0] === m.id) {
       const [build, going] = spiritK(a);
       return { sp: spiritPicture(m, sp), alpha: 0.92 * build * going, tint: null, lift: Math.round(2 * build + 8 * (1 - going)) };
     }
@@ -3244,6 +3261,41 @@ export function heroW7(sp: Sprite, h: { x: number; y: number; fx: number; fy: nu
   return out;
 }
 
+/**
+ * THE RULES' SPIRITS (game.spirits: REAPING behind, not monsters), drawn as the little grey Shade the look draws a spirit as
+ * (lookW7, step 3): render.ts stands each among the figures. Each faces the way it glides (or the one it fights), glides while
+ * it moves, draws its claws back as its next blow comes (the rules' `next`, while one is in reach), rakes as its blow lands
+ * (spiritHit), rises in and goes as the look's own spirit does.
+ */
+export function spiritsW7(game: Game, cam: Cam): { sp: Sprite; x: number; y: number; depth: number; alpha: number }[] {
+  if (!WORDS7_LOOK.on || typeof document === 'undefined') return [];
+  const out: { sp: Sprite; x: number; y: number; depth: number; alpha: number }[] = [];
+  for (const s of ruleSpirits(game)) {
+    const was = W7.spiritWas.get(s.id);
+    const m = { id: s.id, kind: 'shade', x: s.x, y: s.y, fx: was?.fx ?? 1, fy: was?.fy ?? 0, anim: was?.moving ? 'walk' : 'idle', animT: was?.walkT ?? 0, state: 'idle', t: 0, dead: false } as unknown as Monster;
+    let foe: Monster | undefined;
+    let bd = REAP.spiritReach + 0.6;
+    for (const o of game.monsters) {
+      if (o.dead) continue;
+      const d = Math.hypot(o.x - s.x, o.y - s.y);
+      if (d < bd) {
+        bd = d;
+        foe = o;
+      }
+    }
+    const W = MONSTERS.shade.windup;
+    if (foe && !was?.moving && s.next > 0 && s.next < W) {
+      const d = Math.hypot(foe.x - s.x, foe.y - s.y) || 1;
+      Object.assign(m, { anim: 'attack', state: 'windup', t: s.next, fx: (foe.x - s.x) / d, fy: (foe.y - s.y) / d });
+    }
+    const build = clamp01(s.t / W7_TIME.spiritBuild);
+    const going = clamp01((s.life - s.t) / W7_TIME.spiritFade);
+    const lift = Math.round(2 * build + 8 * (1 - going));
+    out.push({ sp: spiritPicture(m, null as unknown as Sprite), x: Math.round(wx(cam, s.x, s.y)), y: Math.round(wy(cam, s.x, s.y)) - lift, depth: s.x + s.y, alpha: 0.92 * build * going });
+  }
+  return out;
+}
+
 // =============================================================================================
 // The clock.
 
@@ -3334,11 +3386,57 @@ export function tickW7(dt: number, game: Game, fx: Fx): void {
   const hero = game.hero as { life?: number; d?: { maxLife?: number } };
   const low = (hero.life ?? 1) / Math.max(1, hero.d?.maxLife ?? 1) < W7_TIME.low;
   for (const m of game.monsters) {
-    const culls = !m.dead && ((m.words ?? []) as readonly string[]).includes('culling');
+    // (its words, as the rules read them: game/defs.ts wordShare)
+    const culls = !m.dead && wordShare({ words: m.words ?? [] }, 'culling') > 0;
     const was = W7.hot.get(m.id) ?? 0;
     const k = Math.max(0, Math.min(1, was + (culls && low ? dt : -dt) / 0.3));
     if (k > 0) W7.hot.set(m.id, k);
     else W7.hot.delete(m.id);
+  }
+  // the rules' spirits: where each goes, the way it faces, whether it glides
+  const sps = ruleSpirits(game);
+  for (const s of sps) {
+    const was = W7.spiritWas.get(s.id);
+    if (!was) {
+      const near = game.monsters.filter((m) => !m.dead).sort((p, q) => Math.hypot(p.x - s.x, p.y - s.y) - Math.hypot(q.x - s.x, q.y - s.y))[0];
+      const d = near ? Math.hypot(near.x - s.x, near.y - s.y) || 1 : 1;
+      W7.spiritWas.set(s.id, { x: s.x, y: s.y, fx: near ? (near.x - s.x) / d : 1, fy: near ? (near.y - s.y) / d : 0, walkT: 0, moving: false });
+      continue;
+    }
+    const d = Math.hypot(s.x - was.x, s.y - was.y);
+    if (dt > 0) was.moving = d / dt > 0.4;
+    if (d > 1e-4) {
+      was.fx = (s.x - was.x) / d;
+      was.fy = (s.y - was.y) / d;
+      was.walkT += dt;
+    }
+    was.x = s.x;
+    was.y = s.y;
+  }
+  for (const id of [...W7.spiritWas.keys()]) if (!sps.some((s) => s.id === id)) W7.spiritWas.delete(id);
+  // risings the rules told of as the monster died: begun once its body has lain long enough that it stands up as the rules
+  // raise it (REAP.riseAfter after its death)
+  for (let i = W7.rising.length - 1; i >= 0; i--) {
+    const r = W7.rising[i];
+    r.left -= dt;
+    if (r.left > 0) continue;
+    W7.rising.splice(i, 1);
+    startRise(game, fx, r.x, r.y);
+  }
+  // a monster's surge (the rules lay the game's own warning, 'warn', from "...'s surge"): when its warning runs out, its wave
+  const warned = new Set<object>();
+  for (const raw of game.zones) {
+    const z = raw as unknown as { kind: string; from?: string; x: number; y: number; r: number; t: number; dur: number; src?: number };
+    if (z.kind !== 'warn' || !/'s surge$/.test(z.from ?? '')) continue;
+    warned.add(raw);
+    W7.surgeWarns.set(raw, { x: z.x, y: z.y, r: z.r, src: z.src, t: z.t, dur: z.dur });
+  }
+  for (const [raw, w] of [...W7.surgeWarns]) {
+    if (warned.has(raw)) continue;
+    W7.surgeWarns.delete(raw);
+    // (broken off before its time, by a stun or a stagger: no wave)
+    if (w.t < w.dur - 0.12) continue;
+    playW7('surging', 'monster', { part: 'wave', x: w.x, y: w.y, ids: w.src !== undefined ? [w.src] : [], r: w.r, dur: W7_TIME.surge * 1.3 });
   }
   // a monster's shot through a wall (Piercing on a monster): where it goes into the stone and where it comes out, a passage of light
   const L = game.level as unknown as { open?: ArrayLike<number>; floor?: { w: number } };
@@ -3397,7 +3495,41 @@ type Seen = {
   dx?: number;
   dy?: number;
   reach?: number;
+  /** (the rules' own names, words10: a lance's width, a spirit's life) */
+  w?: number;
+  life?: number;
 };
+
+/** The live monster nearest (x, y) within `within` tiles that passes `ok`. */
+function nearestTo(game: Game, x: number | undefined, y: number | undefined, within: number, ok: (m: Monster) => boolean = () => true): Monster | undefined {
+  if (x === undefined || y === undefined) return undefined;
+  let best: Monster | undefined;
+  let bd = within;
+  for (const m of game.monsters) {
+    if (m.dead || !ok(m)) continue;
+    const d = Math.hypot(m.x - x, m.y - y);
+    if (d < bd) {
+      bd = d;
+      best = m;
+    }
+  }
+  return best;
+}
+
+/** Reaping on a monster: its body lying at (x, y) lurches up out of its fall (fx.fallen, played back). */
+function startRise(game: Game, fx: Fx, x: number, y: number): void {
+  let best: Fallen | null = null;
+  let bd = 0.8;
+  for (const f of fx.fallen) {
+    const d = Math.hypot(f.x - x, f.y - y);
+    if (d < bd) {
+      bd = d;
+      best = f;
+    }
+  }
+  playW7('reaping', 'monster', { x, y, fall: best, dieT: best ? Math.min(best.t, 1.0) : 0, dur: 0.2 + W7_TIME.rise + 0.4 });
+  void game;
+}
 
 export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
   if (!WORDS7_LOOK.on) return;
@@ -3412,7 +3544,8 @@ export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
         break;
       case 'pierceLine': {
         // a shot or blow through a line: from where it began (or him) to where it ends
-        const [x, y] = ptOf(e.from, e.x ?? h.x, e.y ?? h.y);
+        // (the rules send x0, y0 to x1, y1; the names first drawn to, from and to, or x, y)
+        const [x, y] = ptOf(e.from, e.x0 ?? e.x ?? h.x, e.y0 ?? e.y ?? h.y);
         const [x1, y1] = ptOf(e.to, e.x1 ?? x + h.fx * 6, e.y1 ?? y + h.fy * 6);
         let L = Math.hypot(x1 - x, y1 - y) || 1;
         const dx = (x1 - x) / L;
@@ -3435,12 +3568,14 @@ export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
         break;
       }
       case 'lance': {
-        const [x, y] = ptOf(e.from, e.x ?? h.x, e.y ?? h.y);
+        // (the rules send x0, y0, x1, y1 and its width as `w`)
+        const [x, y] = ptOf(e.from, e.x0 ?? e.x ?? h.x, e.y0 ?? e.y ?? h.y);
         const [x1, y1] = ptOf(e.to, e.x1 ?? x, e.y1 ?? y);
         const delay = e.delay ?? W7_TIME.lanceWait;
+        const width = e.width ?? e.w ?? 1;
         const L = Math.hypot(x1 - x, y1 - y) || 1;
-        const ids = game.monsters.filter((m) => !m.dead && Math.abs(-(m.x - x) * (y1 - y) + (m.y - y) * (x1 - x)) / L < (e.width ?? 1)).map((m) => m.id);
-        playW7('piercing', 'behind', { x, y, x1, y1, delay, width: e.width ?? 1, ids, dur: delay + W7_TIME.lanceFall + W7_TIME.lanceRun + W7_TIME.crack });
+        const ids = game.monsters.filter((m) => !m.dead && Math.abs(-(m.x - x) * (y1 - y) + (m.y - y) * (x1 - x)) / L < width).map((m) => m.id);
+        playW7('piercing', 'behind', { x, y, x1, y1, delay, width, ids, dur: delay + W7_TIME.lanceFall + W7_TIME.lanceRun + W7_TIME.crack });
         break;
       }
       case 'bleedOn': {
@@ -3449,10 +3584,11 @@ export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
         break;
       }
       case 'heroBleed': {
-        // (cut by a monster: `id` it, or where it stood)
-        const m = mon(e.id);
-        const fx0 = m ? m.x : e.x ?? h.x - 1;
-        const fy0 = m ? m.y : e.y ?? h.y;
+        // (cut by a monster: `id` it, or where it stood; the rules send x, y where HE stands, and no id: then the nearest one)
+        const at = e.x !== undefined && e.y !== undefined && Math.hypot(e.x - h.x, e.y - h.y) > 0.3;
+        const m = mon(e.id) ?? (at ? undefined : nearestTo(game, h.x, h.y, 3));
+        const fx0 = m ? m.x : at ? (e.x as number) : h.x - 1;
+        const fy0 = m ? m.y : at ? (e.y as number) : h.y;
         playW7('bleeding', 'monster', { x: h.x, y: h.y, dx: h.x - fx0, dy: h.y - fy0, dur: 0.65 });
         break;
       }
@@ -3460,31 +3596,30 @@ export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
         playW7('reaping', 'front', { x: e.x ?? h.x, y: e.y ?? h.y, dur: 0.15 + W7_TIME.soulFlight + 0.3 });
         break;
       case 'spirit': {
-        const m = mon(e.id);
-        playW7('reaping', 'behind', { x: e.x ?? m?.x ?? h.x, y: e.y ?? m?.y ?? h.y, ids: e.id !== undefined ? [e.id] : [], dur: e.secs ?? W7_TIME.spirit });
+        // (the rules' spirit is one of game.spirits, its id there, its time `life`; or a monster drawn as one)
+        const rules = e.id !== undefined && ruleSpirits(game).some((q) => q.id === e.id);
+        const m = rules ? undefined : mon(e.id);
+        playW7('reaping', 'behind', { x: e.x ?? m?.x ?? h.x, y: e.y ?? m?.y ?? h.y, ids: e.id !== undefined ? [e.id] : [], dur: e.secs ?? e.life ?? W7_TIME.spirit, rules });
         break;
       }
       case 'spiritHit': {
-        // (what it strikes; and the spirit striking, `id`, whose picture rakes)
-        const m = mon(e.target);
-        const sp = mon(e.id);
-        playW7('reaping', 'behind', { part: 'hit', x: m?.x ?? e.x ?? h.x, y: m?.y ?? e.y ?? h.y, x1: sp?.x ?? h.x, y1: sp?.y ?? h.y, ids: [m ? m.id : -1, sp ? sp.id : -1], dur: W7_TIME.rakeFollow + 0.02 });
+        // (what it strikes, `target` or the one at x1, y1 (the rules'); and the spirit striking, `id`, whose picture rakes: one of
+        // the rules' spirits, or a monster drawn as one)
+        const m = mon(e.target) ?? nearestTo(game, e.x1, e.y1, 0.6);
+        const ruled = e.id !== undefined ? ruleSpirits(game).find((q) => q.id === e.id) : undefined;
+        const sp = ruled ?? mon(e.id);
+        playW7('reaping', 'behind', { part: 'hit', x: m?.x ?? e.x1 ?? e.x ?? h.x, y: m?.y ?? e.y1 ?? e.y ?? h.y, x1: sp?.x ?? e.x0 ?? h.x, y1: sp?.y ?? e.y0 ?? h.y, ids: [m ? m.id : -1, sp ? sp.id : -1], dur: W7_TIME.rakeFollow + 0.02 });
         break;
       }
       case 'rise': {
-        // its body lurches up out of its fall: the fallen nearest where it lies, played back
+        // its body lurches up out of its fall: the fallen nearest where it lies, played back. (The rules send `rise` as it dies,
+        // and raise it REAP.riseAfter later: its look then waits, so that it stands as the rules raise it.)
         const x = e.x ?? mon(e.id)?.x ?? h.x;
         const y = e.y ?? mon(e.id)?.y ?? h.y;
-        let best: Fallen | null = null;
-        let bd = 0.8;
-        for (const f of fx.fallen) {
-          const d = Math.hypot(f.x - x, f.y - y);
-          if (d < bd) {
-            bd = d;
-            best = f;
-          }
-        }
-        playW7('reaping', 'monster', { x, y, fall: best, dieT: best ? Math.min(best.t, 1.0) : 0, dur: 0.2 + W7_TIME.rise + 0.4 });
+        const lain = fx.fallen.some((f) => Math.hypot(f.x - x, f.y - y) < 0.8 && f.t >= 0.3);
+        const wait = REAP.riseAfter - (0.2 + W7_TIME.rise);
+        if (!lain && wait > 0) W7.rising.push({ x, y, id: e.id, left: wait });
+        else startRise(game, fx, x, y);
         break;
       }
       case 'culled': {
@@ -3544,7 +3679,8 @@ export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
         playW7('plundering', 'behind', { x: e.x ?? h.x, y: e.y ?? h.y, dur: 1.15 });
         break;
       case 'goldStolen': {
-        const m = mon(e.id);
+        // (the one that took it, `id`; the rules send where HE stands, and no id: then the one nearest him now carrying his gold)
+        const m = mon(e.id) ?? nearestTo(game, e.x ?? h.x, e.y ?? h.y, 3.5, (q) => ((q as { stolen?: number }).stolen ?? 0) > 0);
         if (m) playW7('plundering', 'monster', { x: m.x, y: m.y, ids: [m.id], dur: 0.8 });
         break;
       }
@@ -3567,11 +3703,12 @@ export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
             }
           }
         }
-        playW7('mirroring', 'behind', { part: 'cast', x, y, dx: h.fx, dy: h.fy, dur: W7_TIME.cast + W7_TIME.breaking + W7_TIME.shatter });
+        playW7('mirroring', 'behind', { part: 'cast', x, y, dx: e.dx ?? h.fx, dy: e.dy ?? h.fy, dur: W7_TIME.cast + W7_TIME.breaking + W7_TIME.shatter });
         break;
       }
       case 'mirrorBack': {
-        const m = mon(e.id);
+        // (the one it flashes on, `id`; the rules send its place, x0, y0, and his, x1, y1)
+        const m = mon(e.id) ?? nearestTo(game, e.x0, e.y0, 0.6);
         if (m) playW7('mirroring', 'monster', { x: m.x, y: m.y, ids: [m.id], dur: W7_TIME.mirrorBeat + W7_TIME.shards + 0.2 });
         break;
       }
