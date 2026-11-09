@@ -519,15 +519,38 @@ export function drawColossusAir(g: CanvasRenderingContext2D, P: StoneAt, f: Colo
     }
     const [lx, ly] = P(E.at.u + Math.sin(r) * land, E.at.v + Math.cos(r) * land);
     const [fx, fy] = P(E.at.u + Math.sin(r) * end, E.at.v + Math.cos(r) * end);
-    for (const [w, col, al] of [[9, C.beam[0], 0.35], [6, C.beam[2], 0.6], [3, C.beam[4], 0.9], [1, C.beam[5], 1]] as const) {
-      g.strokeStyle = col;
+    // (down from his eye, widening to where it comes onto the stone; along the stone 0.9 tiles wide; each a glow round a white heart)
+    const lu = E.at.u + Math.sin(r) * land;
+    const lv = E.at.v + Math.cos(r) * land;
+    const fu = E.at.u + Math.sin(r) * end;
+    const fv = E.at.v + Math.cos(r) * end;
+    const nu = Math.cos(r);
+    const nv = -Math.sin(r);
+    for (const [k, col, al] of [[1.5, C.beam[0], 0.3], [1.0, C.beam[2], 0.55], [0.55, C.beam[3], 0.8], [0.22, C.beam[5], 1]] as const) {
+      const flick = 0.9 + 0.2 * Math.sin(t * 37 + k * 9);
+      const half = (GAZE.width / 2) * k * flick;
+      g.fillStyle = col;
       g.globalAlpha = al * gut;
-      g.lineWidth = w * (0.85 + 0.3 * Math.sin(t * 40 + w));
+      const a0 = P(lu + nu * half, lv + nv * half);
+      const a1 = P(fu + nu * half, fv + nv * half);
+      const b1 = P(fu - nu * half, fv - nv * half);
+      const b0 = P(lu - nu * half, lv - nv * half);
       g.beginPath();
-      g.moveTo(ex, ey);
-      g.lineTo(lx, ly);
-      g.lineTo(fx, fy);
-      g.stroke();
+      g.moveTo(a0[0], a0[1]);
+      g.lineTo(a1[0], a1[1]);
+      g.lineTo(b1[0], b1[1]);
+      g.lineTo(b0[0], b0[1]);
+      g.closePath();
+      g.fill();
+      const wEye = 2.5 * k * 2 * flick;
+      const wLand = Math.max(wEye, Math.abs(a0[0] - b0[0]) / 2 + 2);
+      g.beginPath();
+      g.moveTo(ex - wEye, ey);
+      g.lineTo(ex + wEye, ey);
+      g.lineTo(lx + wLand, ly);
+      g.lineTo(lx - wLand, ly);
+      g.closePath();
+      g.fill();
     }
     g.globalAlpha = 1;
     // (the fire along its line, and sparks thrown up)
