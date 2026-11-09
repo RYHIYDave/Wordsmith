@@ -37,7 +37,9 @@ export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley'
 /** Power words: dropped by enemies, slotted into an ability to change it. */
 export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding' | 'pulling' | 'splitting' | 'hexing' | 'stilling' | 'binding'
   // (THE LAST WORDS: his seven of 8 Nov 2026, found from floor 16 down: LAST_WORD_IDS below)
-  | 'piercing' | 'bleeding' | 'reaping' | 'culling' | 'surging' | 'plundering' | 'mirroring';
+  | 'piercing' | 'bleeding' | 'reaping' | 'culling' | 'surging' | 'plundering' | 'mirroring'
+  // (HIS THREE NEW WORDS, 9 Nov 2026: Lasting, Fleeting and Vast, found from floor 6 like Precise and Heavy: game/defs.ts LASTING)
+  | 'lasting' | 'fleeting' | 'vast';
 /**
  * WORDMELDING (behind MELD, game/melds.ts): the melded words, each made at the wordsmith from two
  * damage words. They never drop: WORD_IDS, which every random draw of a word uses, holds none of them.
@@ -61,6 +63,7 @@ export type WordId = BaseWordId | MeldId | RankId;
 export const WORD_IDS: readonly WordId[] = [
   'power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding', 'pulling', 'splitting', 'hexing', 'stilling', 'binding',
   'piercing', 'bleeding', 'reaping', 'culling', 'surging', 'plundering', 'mirroring',
+  'lasting', 'fleeting', 'vast',
 ];
 /** The city's words (the four of Version 23.8, and Binding), and the first level they are found on (game/defs.ts `wordsAt`; here for the map-maker, which reads no defs). */
 export const DEEP_WORD_IDS: readonly WordId[] = ['pulling', 'splitting', 'hexing', 'stilling', 'binding'];

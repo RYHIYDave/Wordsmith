@@ -14,7 +14,7 @@ import { RAMPAGE, RING, ringStrikes } from '../art/action_f3_fx';
 import { rampageTravel, rushStopTravel } from '../art/monster_brute';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, LASTING, FLEETING, VAST, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
 import { bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -4887,8 +4887,9 @@ export class Game {
     if (!ch) return;
     const s = h.skills[ch.skill];
     const def = SKILLS[s.id];
-    const length = def.channel ?? 0;
-    const tick = def.tick ?? 0.25;
+    // (LASTING and FLEETING: held longer or shorter; FLEETING's bites coming faster, as many in all)
+    const length = (def.channel ?? 0) * s.r.last;
+    const tick = (def.tick ?? 0.25) / s.r.pace;
     const byMana = s.r.mana > 0;
     if (ch.bites > 0) {
       const spent = byMana ? h.mana <= 0 : ch.t >= length - 1e-6;
@@ -4941,7 +4942,7 @@ export class Game {
     const s = h.skills[ch.skill];
     const def = SKILLS[s.id];
     const r = s.r;
-    const length = def.channel ?? 0;
+    const length = (def.channel ?? 0) * r.last;
     const part = length > 0 ? Math.max(0, Math.min(1, ch.t / length)) : 1;
     if (s.charges > 0) s.charges--;
     // (when mana is the limit the wait is only a moment, whatever the length)
@@ -5069,7 +5070,8 @@ export class Game {
     if (!s || s.r.might <= 0) return;
     const r = s.r;
     h.might = Math.min(r.might * (this.has('cadence') ? TALENT_TUNE.cadence : 5), h.might + r.might);
-    h.mightT = 5;
+    // (LASTING and FLEETING: as long as everything its ability gives)
+    h.mightT = Math.max(h.mightT, 5 * r.last);
     this.emit({ t: 'buff', kind: 'might', x: h.x, y: h.y, stacks: Math.max(1, Math.round(h.might / r.might)) });
   }
 
@@ -5079,21 +5081,34 @@ export class Game {
     const r = h.skills[i].r;
     if (r.haste > 0) {
       h.haste = r.haste;
-      h.hasteT = 3;
+      h.hasteT = 3 * r.last;
       this.emit({ t: 'buff', kind: 'haste', x: h.x, y: h.y, stacks: 1 });
     }
     // FRENZIED in front: each use adds to the frenzy, up to its most, and holds it a while longer
     if (r.frenzy) {
       h.frenzy = Math.min(this.stackMax(), h.frenzy + 1);
-      h.frenzyT = Math.max(h.frenzyT, FRENZY.hold);
+      h.frenzyT = Math.max(h.frenzyT, FRENZY.hold * r.last);
       this.emit({ t: 'frenzy', x: h.x, y: h.y, dx: h.fx, dy: h.fy, n: h.frenzy });
     }
     // GUARDING in front: each use gives a shield (a new one is never weaker than what is left of the last)
     if (r.shield > 0) {
       h.shield = Math.max(h.shield, Math.round(h.d.maxLife * r.shield * (this.was('shieldwall') ? TALENT_TUNE.shieldwall : 1)));
-      h.shieldT = GUARD.shieldTime;
-      this.emit({ t: 'shield', x: h.x, y: h.y, secs: GUARD.shieldTime });
+      h.shieldT = GUARD.shieldTime * r.last;
+      this.emit({ t: 'shield', x: h.x, y: h.y, secs: h.shieldT });
     }
+  }
+
+  /**
+   * HIS THREE NEW WORDS (9 Nov 2026; game/defs.ts LASTING): how long what ability `i` makes and gives lasts, as a share of its own
+   * time (Lasting longer, Fleeting shorter), and how fast it ticks (Fleeting's, the same in all in its shorter time). 1 for none.
+   */
+  lastOf(i: number): number {
+    const s = i >= 0 ? this.hero.skills[i] : undefined;
+    return s ? s.r.last : 1;
+  }
+  paceOf(i: number): number {
+    const s = i >= 0 ? this.hero.skills[i] : undefined;
+    return s ? s.r.pace : 1;
   }
 
   /** How much faster the frenzy makes the hero's attacks and cooldowns (1: no frenzy). */
@@ -7138,7 +7153,8 @@ export class Game {
         continue;
       }
       const s = h.skills[c.skill];
-      if (!s || SKILLS[s.id].kind !== 'contraption' || c.t >= C.set + C.life || this.over) {
+      // (LASTING and FLEETING: it stands longer or shorter, and Fleeting's shoots faster, as many in all)
+      if (!s || SKILLS[s.id].kind !== 'contraption' || c.t >= C.set + C.life * s.r.last || this.over) {
         this.breakContraption(c);
         continue;
       }
@@ -7155,7 +7171,7 @@ export class Game {
         this.after(0.2, () => c.broke < 0 && (energy ? this.contraptionBolt(c, share, true) : this.lobVial(c, share, true)));
       }
       // (her tap's Swift, and her Frenzied pace, quicken its shots: throwing them faster no longer helps)
-      const pace = (s.r.rate || 1) * this.frenzyPace();
+      const pace = (s.r.rate || 1) * this.frenzyPace() * s.r.pace;
       c.next = shot ? (energy ? C.boltEvery : C.every) / pace : 0.2;
     }
     // (HER VIALS: each bursts where it comes down; Cluster Vials' little ones, thrown out as one bursts, come down after)
@@ -8349,7 +8365,8 @@ export class Game {
           this.emit({ t: 'orbEnd', x: old.x, y: old.y, el: old.element });
           this.orbs.splice(this.orbs.indexOf(old), 1);
         }
-        this.orbs.push({ id: this.nextThing++, x: p.x, y: p.y, t: 0, life: TUNE.orbLife, next: TUNE.orbEvery, waves: 1, skill: i, frac: each, element: r.element });
+        // (LASTING and FLEETING: out longer or shorter, and Fleeting's waves coming faster, as many in all)
+        this.orbs.push({ id: this.nextThing++, x: p.x, y: p.y, t: 0, life: TUNE.orbLife * r.last, next: TUNE.orbEvery / r.pace, waves: 1, skill: i, frac: each, element: r.element });
         this.emit({ t: 'orbSet', x: p.x, y: p.y, r: rad, el: r.element, words });
         this.orbWave(i, p.x, p.y, rad, each, false, true);
       } else {
@@ -8370,7 +8387,7 @@ export class Game {
       }
       let seat = 0;
       while (mine.some((q) => q.seat === seat)) seat++;
-      this.familiars.push({ id: this.nextThing++, x: h.x, y: h.y, t: 0, life: TUNE.familiarLife, next: 0.3, seat, skill: i, frac, element: r.element, echo, fx: dx, fy: dy, shotAge: 9 });
+      this.familiars.push({ id: this.nextThing++, x: h.x, y: h.y, t: 0, life: TUNE.familiarLife * r.last, next: 0.3, seat, skill: i, frac, element: r.element, echo, fx: dx, fy: dy, shotAge: 9 });
       this.emit({ t: 'familiar', x: h.x, y: h.y, el: r.element, echo });
     } else if (def.kind === 'wave') {
       // A wide front of force: it travels a short way and goes through everything it meets, each
@@ -8639,7 +8656,7 @@ export class Game {
       }
       o.next -= dt;
       if (o.next <= 0) {
-        o.next += TUNE.orbEvery;
+        o.next += TUNE.orbEvery / s.r.pace;
         o.waves++;
         this.orbWave(o.skill, o.x, o.y, SKILLS[s.id].radius * s.r.size, o.frac, false, false);
       }
@@ -8686,7 +8703,8 @@ export class Game {
         q.next = 0.15;
         continue;
       }
-      q.next = TUNE.familiarEvery;
+      // (FLEETING: its shots coming faster, as many in all in its shorter time)
+      q.next = TUNE.familiarEvery / this.paceOf(q.skill);
       const base = Math.atan2(best.y - q.y, best.x - q.x);
       q.fx = Math.cos(base);
       q.fy = Math.sin(base);
@@ -8790,13 +8808,13 @@ export class Game {
   }
 
   /** BLEEDING: `m` bleeds for BLEED.secs, `dps` a second (the stronger of this and what it bled already), more while it walks. */
-  private bleedMonster(m: Monster, dps: number): void {
+  private bleedMonster(m: Monster, dps: number, secs: number = BLEED.secs): void {
     if (m.dead) return;
     const fresh = (m.bleedT ?? 0) < 0.5;
     m.bleedDps = Math.max((m.bleedT ?? 0) > 0 ? m.bleedDps ?? 0 : 0, dps);
-    m.bleedT = BLEED.secs;
+    m.bleedT = secs;
     m.bleedMove = BLEED.moving;
-    if (fresh) this.emit({ t: 'bleedOn', id: m.id, x: m.x, y: m.y, secs: BLEED.secs });
+    if (fresh) this.emit({ t: 'bleedOn', id: m.id, x: m.x, y: m.y, secs });
   }
 
   /** BLEEDING behind: thorns at (x, y), cutting whatever walks in them (`updateZones`); one an ability each BLEED.thornEvery seconds. */
@@ -8804,9 +8822,10 @@ export class Game {
     if (this.time - this.thornAt[i] < BLEED.thornEvery) return;
     this.thornAt[i] = this.time;
     if (!this.roomForZone() || !this.onFloor(x, y)) return;
-    const dmg = this.avgHit(i, frac) * this.hero.skills[i].r.thorns;
-    this.zones.push({ x, y, r: rad, t: 0, dur: BLEED.thornLife, kind: 'thorns', element: 'phys', dmg, slow: 0, tick: 0, hostile: false, skill: i, words: ['bleeding'], from: '' });
-    this.emit({ t: 'zone', kind: 'thorns', x, y, r: rad, el: 'phys', dur: BLEED.thornLife });
+    const dmg = this.avgHit(i, frac) * this.hero.skills[i].r.thorns * this.paceOf(i);
+    const dur = BLEED.thornLife * this.lastOf(i);
+    this.zones.push({ x, y, r: rad, t: 0, dur, kind: 'thorns', element: 'phys', dmg, slow: 0, tick: 0, hostile: false, skill: i, words: ['bleeding'], from: '' });
+    this.emit({ t: 'zone', kind: 'thorns', x, y, r: rad, el: 'phys', dur });
   }
 
   /**
@@ -8826,8 +8845,9 @@ export class Game {
     if (this.time - this.reaperAt[i] < CULL.markEvery) return;
     this.reaperAt[i] = this.time;
     if (!this.roomForZone() || !this.onFloor(x, y)) return;
-    this.zones.push({ x, y, r: CULL.markR, t: 0, dur: CULL.markLife, kind: 'reaper', element: 'phys', dmg: under, slow: 0, tick: 0, hostile: false, skill: i, words: ['culling'], from: '' });
-    this.emit({ t: 'zone', kind: 'reaper', x, y, r: CULL.markR, el: 'phys', dur: CULL.markLife });
+    const dur = CULL.markLife * this.lastOf(i);
+    this.zones.push({ x, y, r: CULL.markR, t: 0, dur, kind: 'reaper', element: 'phys', dmg: under, slow: 0, tick: 0, hostile: false, skill: i, words: ['culling'], from: '' });
+    this.emit({ t: 'zone', kind: 'reaper', x, y, r: CULL.markR, el: 'phys', dur });
   }
 
   /**
@@ -8869,8 +8889,8 @@ export class Game {
       this.deliver(i, z.x, z.y, tx, ty, frac * z.dmg, false);
     }
     if (r.mirrorLeave > 0 && this.onFloor(h.x, h.y) && this.roomForZone()) {
-      this.zones.push({ x: h.x, y: h.y, r: 0.5, t: 0, dur: MIRRORING.leaveLife, kind: 'mirror', element: 'phys', dmg: r.mirrorLeave, slow: 0, tick: 0, hostile: false, skill: i, words: ['mirroring'], from: '' });
-      this.emit({ t: 'zone', kind: 'mirror', x: h.x, y: h.y, r: 0.5, el: 'phys', dur: MIRRORING.leaveLife });
+      this.zones.push({ x: h.x, y: h.y, r: 0.5, t: 0, dur: MIRRORING.leaveLife * r.last, kind: 'mirror', element: 'phys', dmg: r.mirrorLeave, slow: 0, tick: 0, hostile: false, skill: i, words: ['mirroring'], from: '' });
+      this.emit({ t: 'zone', kind: 'mirror', x: h.x, y: h.y, r: 0.5, el: 'phys', dur: MIRRORING.leaveLife * r.last });
     }
   }
 
@@ -9229,6 +9249,8 @@ export class Game {
    * Laid again where one already is, that one lasts as long again from now: they do not pile up.
    */
   private addPatch(i: number, kind: 'cracks' | 'ward' | 'vortex' | 'hex' | 'bubble', x: number, y: number, rad: number, dur: number, share: number): void {
+    // (LASTING and FLEETING: as long as everything its ability makes)
+    dur *= this.lastOf(i);
     for (const o of this.zones) {
       if (o.kind === kind && Math.hypot(o.x - x, o.y - y) < 0.6 && o.r >= rad - 0.1) {
         o.t = 0;
@@ -9299,7 +9321,7 @@ export class Game {
       }
     }
     if (!this.roomForZone() || !this.onFloor(x, y)) return;
-    const nz: Zone = { x, y, r: rad, t: 0, dur: 5, kind: 'venom', element: 'phys', dmg: this.avgHit(i, frac) * r.cloud, slow: 0, tick: 0.2, hostile: false, skill: i, words: [], from: '' };
+    const nz: Zone = { x, y, r: rad, t: 0, dur: 5 * r.last, kind: 'venom', element: 'phys', dmg: this.avgHit(i, frac) * r.cloud * r.pace, slow: 0, tick: 0.2, hostile: false, skill: i, words: [], from: '' };
     if (r.meldBehind) nz.meld = r.meldBehind;
     this.zones.push(nz);
     this.emit({ t: 'zone', kind: 'venom', x, y, r: rad, el: 'phys', ...(r.meldBehind ? { meld: r.meldBehind } : {}) });
@@ -9325,6 +9347,9 @@ export class Game {
   addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string, src?: number, half?: HalfWords, mark = false): void {
     // (a warning is never left out: if the floor is full, the oldest of the hero's own patches gives way to it)
     this.roomForZone();
+    // (HIS THREE NEW WORDS: VAST, on a monster, its warned blows wider; a minion's, of its leader's words, at half)
+    const vast = wordShare({ words, half: half ? half.words : undefined }, 'vast');
+    if (vast > 0) rad *= 1 + VAST.monster * vast;
     const z: Zone = { x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from, src };
     if (half) z.half = half;
     if (mark) z.mark = true;
@@ -9390,10 +9415,11 @@ export class Game {
     if (r.ignite > 0) {
       // (Searing: it burns longer, and harder)
       const sear = this.was('searing');
-      const dps = ((dmg * r.ignite) / 3) * (sear ? TALENT_TUNE.searing.mult : 1);
+      // (LASTING: as hard a second, for longer; FLEETING: harder a second, the same in all in its shorter time)
+      const dps = ((dmg * r.ignite) / 3) * (sear ? TALENT_TUNE.searing.mult : 1) * r.pace;
       if (m.burnT <= 0) this.emit({ t: 'ignite', x, y });
       if (m.burnT <= 0 || dps > m.burnDps) m.burnDps = dps;
-      m.burnT = 3 + (sear ? TALENT_TUNE.searing.secs : 0);
+      m.burnT = (3 + (sear ? TALENT_TUNE.searing.secs : 0)) * r.last;
     }
     if (r.chill > 0) this.chillMonster(m, r.chill);
     // (WORDMELDING: Thunder in front, one big bolt out of the sky in place of the arcs)
@@ -9417,6 +9443,17 @@ export class Game {
     // (THE CITY'S WORDS: a cursed one struck, its curse flares)
     if (!quiet && (m.hexT ?? 0) > 0) this.emit({ t: 'hexFlare', id: m.id });
     this.damageMonster(m, dmg, r.element, crit, i, !quiet && this.fronts(i).includes('power'), front);
+    // (HIS THREE NEW WORDS: VAST behind, each hit, not a splash's, splashes a share of itself onto every other enemy near what it hit;
+    // a stand-in look, the burst's shock ring, till the art chat's)
+    if (r.vast > 0 && !quiet) {
+      let splashed = 0;
+      for (const o of this.monsters) {
+        if (o === m || o.dead || this.shutIn(o) || Math.hypot(o.x - x, o.y - y) > VAST.splashR + o.r) continue;
+        this.damageMonster(o, Math.max(1, Math.round(dmg * r.vast)), r.element, false, i);
+        splashed++;
+      }
+      if (splashed > 0) this.emit({ t: 'burst', x, y, r: VAST.splashR, el: r.element, style: 'shock', words: [], n: 0, echo: false });
+    }
     // (THE WARLOCK, game/warlock.ts: his bolt sets it burning in his hellfire; the curse, the smoke steps and the rakes curse it; and every hit feeds his pact)
     if (h.cls === 'warlock') this.warlockHit(m, i, dmg);
     // (THE CITY'S WORDS: SPLITTING in front, its first hit each use breaks into copies that fly on)
@@ -9431,7 +9468,8 @@ export class Game {
     if (wasFrozen && !m.dead && !m.boss && this.now('deepfreeze')) this.throwMonster(m, h.x, h.y, TALENT_TUNE.deepFreeze2.far, TALENT_TUNE.deepFreeze2.secs, true);
     // (WORDMELDING: Blight in front, its poison biting harder the lower the enemy's life)
     const blight = r.meld === 'blight' && !m.dead ? 1 + (MELD_TUNE.blight.most - 1) * (1 - Math.max(0, m.life) / m.maxLife) : 1;
-    if (r.poison > 0) this.poisonMonster(m, dmg * r.poison * blight, i);
+    // (LASTING: as hard a second, for longer; FLEETING: harder a second, the same in all in its shorter time)
+    if (r.poison > 0) this.poisonMonster(m, dmg * r.poison * blight * r.pace, i, TUNE.poisonTime * r.last);
     if (r.meld || r.meldBehind) this.meldHit(m, i, dmg, x, y, quiet, wasBurning, wasChilled);
     if (!m.dead) {
       // HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too
@@ -9459,7 +9497,7 @@ export class Game {
         if (held > 0) this.emit({ t: 'bind', id: m.id, secs: held });
       }
       // THE LAST WORDS: BLEEDING in front makes what it hits bleed; CULLING in front takes one its hit left nearly dead
-      if (r.bleed > 0) this.bleedMonster(m, dmg * r.bleed);
+      if (r.bleed > 0) this.bleedMonster(m, dmg * r.bleed * r.pace, BLEED.secs * r.last);
       if (r.cull > 0) this.cullMonster(m, r.cull, i);
       // PRECISE behind marks the first enemy each use hits (not one whose mark this very hit spent)
       if (r.mark && !spent && this.marked[i] !== h.skills[i].uses) {
@@ -9523,7 +9561,7 @@ export class Game {
    * A dose of poison: `dps` damage a second for as long as the poison lasts. Doses add up (to a
    * limit), and each new one starts the time again, so a thing that keeps being hit sickens fast.
    */
-  private poisonMonster(m: Monster, dps: number, skill: number): void {
+  private poisonMonster(m: Monster, dps: number, skill: number, secs: number = TUNE.poisonTime): void {
     if (m.dead) return;
     if (m.poisonT <= 0) {
       m.poisonDps = 0;
@@ -9538,7 +9576,7 @@ export class Game {
       m.poisonDps += dps;
       m.poisonN++;
     } else m.poisonDps = Math.max(m.poisonDps, dps * most);
-    m.poisonT = TUNE.poisonTime;
+    m.poisonT = secs;
     if (skill >= 0) m.lastSkill = skill;
   }
 
@@ -9949,7 +9987,7 @@ export class Game {
     if (r && r.frenzyFeed) {
       // FRENZIED behind: a kill adds to the frenzy and holds it longer (to three times its usual hold)
       h.frenzy = Math.min(this.stackMax(), h.frenzy + 1);
-      h.frenzyT = Math.min(FRENZY.hold * 3, h.frenzyT + FRENZY.hold);
+      h.frenzyT = Math.min(FRENZY.hold * 3 * r.last, h.frenzyT + FRENZY.hold * r.last);
       this.emit({ t: 'frenzyFed', x: m.x, y: m.y });
     }
     if (r && r.volatile > 0) this.explodeKill(m, r, m.lastSkill);
@@ -10288,19 +10326,23 @@ export class Game {
     this.emit({ t: 'shake', amount: Math.min(5, 1 + dmg / 8) });
     this.sfx('hurt', 0.8);
     this.emit({ t: 'voice', who: h.cls, cry: 'hurt' });
+    // (HIS THREE NEW WORDS, on a monster: LASTING, its poison, burning and chill on him last longer, as hard a second; FLEETING, its
+    // poison and burning hurt him sooner, the same in all; a minion's, of its leader's words, at half)
+    const longer = 1 + LASTING.monster * k('lasting');
+    const lasts = longer * (1 - FLEETING.monster * k('fleeting'));
     if (k('poison') > 0) {
       // a monster with Poison: most of the blow again, over the next few seconds
-      h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, (dmg * 0.6 * k('poison')) / TUNE.poisonTime);
-      h.poisonT = TUNE.poisonTime;
+      h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, ((dmg * 0.6 * k('poison')) / TUNE.poisonTime) * (longer / lasts));
+      h.poisonT = TUNE.poisonTime * lasts;
     }
     // (what each element of the blow leaves: a minion's half of Flame burns half as hard)
     for (const [e, share] of parts) {
       if (e === 'fire') {
-        h.burnDps = Math.max(h.burnT > 0 ? h.burnDps : 0, (dmg * 0.3 * share) / 3);
-        h.burnT = 3;
+        h.burnDps = Math.max(h.burnT > 0 ? h.burnDps : 0, ((dmg * 0.3 * share) / 3) * (longer / lasts));
+        h.burnT = 3 * lasts;
       } else if (e === 'frost') {
         h.chill = Math.max(h.chillT > 0 ? h.chill : 0, 0.3 * share);
-        h.chillT = 2;
+        h.chillT = 2 * longer;
       } else if (e === 'lightning') {
         h.shockT = Math.max(h.shockT, 3 * share);
       }
@@ -10931,7 +10973,8 @@ export class Game {
       this.sfx(m.kind === 'archer' ? 'shot' : 'fire', 0.5);
       return;
     }
-    const reach = def.range + (m.r - 0.32) + 0.45 + TUNE.heroRadius;
+    // (VAST, on a monster: its blow reaches further)
+    const reach = def.range * (1 + VAST.monster * wordShare(m, 'vast')) + (m.r - 0.32) + 0.45 + TUNE.heroRadius;
     if (dist <= reach) this.hurtHero(this.rollMonsterDmg(m), el, m.words, m);
     this.sfx('swing', 0.4);
     // (FLOOR 2, MORE ACTION: the Shade's rake, cold: a patch of rime before it as it lands: game/action_f2.ts)

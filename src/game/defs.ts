@@ -543,6 +543,29 @@ export const PLUNDER = { gold: 0.5, goldMost: 1, item: 0.05, eliteItem: 0.2, bur
  * spent. On a monster: `back` of the harm you do it comes back at you (at most once each `backEvery` seconds; a minion's for less).
  */
 export const MIRRORING = { share: 0.4, shareMost: 0.6, side: 0.9, leaveShare: 0.6, leaveMost: 0.8, leaveLife: 8, back: 0.15, backEvery: 0.4 };
+/**
+ * HIS THREE NEW WORDS (9 Nov 2026, 08:24 and 08:26; his picks by 09:12; his “Well it makes everything connected to lasting last
+ * longer”): found from floor 6, like Precise and Heavy. LASTING and FLEETING do the same wherever they sit, in front or behind.
+ *
+ * LASTING (Intelligence): everything its ability makes and gives lasts `longer` more (a thousandth more a point of Intelligence,
+ * to `longerMost`): what it leaves (its ground, its cloud, its cracks, its ward, its vortex, its hex, its bubble, its thorns), the
+ * orb, the turrets and the familiars, the whirlwind's and the beam's hold, the boosts it gives (Power's might, Swift's haste,
+ * Frenzy's hold, Guarding's shield), and its poison, burning and bleeding (as hard a second, for longer: more in all). What holds
+ * an enemy (a stun, a freeze, a chill, a bind) is as it was. On a monster: its poison, burning and chill on you last `monster` more.
+ *
+ * FLEETING (Dexterity): all of that a third shorter (`shorter`), doing the same in that time: its poison, burning, bleeding and
+ * ground harder a second (the same in all), the orb's waves, the whirlwind's cuts and the beam's bites, the turrets' and the
+ * familiars' shots coming faster; the boosts it gives `stronger` stronger. On a monster: its poison and burning on you hurt
+ * `monster` sooner, the same in all.
+ *
+ * VAST (Strength), the opposite of Precise (his “We need like the opposite of precise”): in front, `wider` bigger an area (a
+ * thousandth more a point of Strength, to `widerMost`) for `softer` less damage. Behind: each hit splashes `splash` of itself (to
+ * `splashMost`) onto every other enemy within `splashR` tiles of what it hits. On a monster: its warned blows and its reach
+ * `monster` wider.
+ */
+export const LASTING = { longer: 0.5, longerMost: 0.7, monster: 0.5 };
+export const FLEETING = { shorter: 1 / 3, stronger: 1 / 3, monster: 1 / 3 };
+export const VAST = { wider: 0.4, widerMost: 0.6, softer: 0.15, splash: 0.25, splashMost: 0.4, splashR: 1.5, monster: 0.3 };
 
 export interface WordDef {
   id: WordId;
@@ -602,6 +625,10 @@ export const WORDS: Record<WordId, WordDef> = {
   surging: { id: 'surging', kind: 'shape', name: 'Surging', front: 'Surging', behind: 'of the Surge', attr: 'int', element: null, about: 'The word of the swell. It gathers, then breaks.', frontText: 'Every third use releases a shockwave round you.', behindText: 'Your dodge releases a surge.', monsterText: 'Sends out a shockwave every few seconds.' },
   plundering: { id: 'plundering', kind: 'shape', name: 'Plundering', front: 'Plundering', behind: 'of Plunder', attr: 'dex', element: null, about: 'The word of the taking. What is theirs is yours.', frontText: 'Kills drop more gold, and sometimes an extra item.', behindText: 'Gold bursts from kills and flies to you.', monsterText: 'Each blow steals some of your gold, dropped when it dies.' },
   mirroring: { id: 'mirroring', kind: 'shape', name: 'Mirroring', front: 'Mirrored', behind: 'of Mirrors', attr: 'int', element: null, about: 'The word of the reflection. Two of you, where there was one.', frontText: 'A reflection of you makes the same attack beside you, weaker.', behindText: 'Leaves a mirror that repeats your next attack from where you stood.', monsterText: 'Sends part of the harm you do it back at you.' },
+  // (HIS THREE NEW WORDS, 9 Nov 2026: LASTING above)
+  lasting: { id: 'lasting', kind: 'shape', name: 'Lasting', front: 'Lasting', behind: 'of Ages', attr: 'int', element: null, about: 'The word of the long hour. What it makes, stays.', frontText: 'Everything it makes and gives lasts half again as long.', behindText: 'Everything it makes and gives lasts half again as long.', monsterText: 'Its poison, burning and chill last longer on you.' },
+  fleeting: { id: 'fleeting', kind: 'shape', name: 'Fleeting', front: 'Fleeting', behind: 'of Moments', attr: 'dex', element: null, about: 'The word of the moment. All of it, sooner.', frontText: 'Everything it makes and gives is a third shorter, and does as much in that time.', behindText: 'Everything it makes and gives is a third shorter, and does as much in that time.', monsterText: 'Its poison and burning hurt you faster.' },
+  vast: { id: 'vast', kind: 'shape', name: 'Vast', front: 'Vast', behind: 'of the Expanse', attr: 'str', element: null, about: 'The word of the wide. Broad, and lighter.', frontText: 'A much bigger area, a little less damage.', behindText: 'Each hit splashes onto the enemies near what it hits.', monsterText: 'Its attacks reach wider.' },
   poison: { id: 'poison', kind: 'damage', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
   // WORDMELDING (behind MELD, game/melds.ts): the melded words, each made at the wordsmith from two
   // damage words; what each does in front and behind is his page's "Wordsmith: Word Combinations",
@@ -2320,6 +2347,9 @@ export const QUIPS: {
     surging: ['Here it comes.', 'Wave goodbye.', 'Swell.'],
     plundering: ['Mine now.', 'Pay up.', 'Spoils.'],
     mirroring: ['Seeing double.', 'Twice the me.', 'Reflect on that.'],
+    lasting: ['Still going.', 'Here to stay.', 'Built to last.'],
+    fleeting: ['Gone already.', 'Blink.', 'Quick and done.'],
+    vast: ['All of you.', 'Wide open.', 'Room for everyone.'],
     // (WORDMELDING: the melded words)
     eruption: ['Lava lamp.', 'Hot rocks.', 'Blew my top.'],
     avalanche: ['Snowed under.', 'Buried.', 'Cold shoulder.'],

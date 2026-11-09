@@ -160,6 +160,17 @@ export interface Resolved {
   dodgeSurge: number;
   plunderBurst: number;
   mirrorLeave: number;
+  /**
+   * HIS THREE NEW WORDS (9 Nov 2026; game/defs.ts LASTING, FLEETING, VAST). `last`: how long everything the ability makes and gives
+   * lasts, as a share of its own time (Lasting more than 1, Fleeting less; 1 for neither). `pace`: how fast what it makes ticks (its
+   * poison, burning, bleeding and ground hurting a second; its orb's waves, its whirlwind's cuts, its beam's bites, its turrets' and
+   * familiars' shots), Fleeting's the same in all in its shorter time. `boost`: how strong the boosts it gives (Fleeting's). `vast`:
+   * VAST behind, the share of each hit splashed onto every other enemy near what it hits (0 for none).
+   */
+  last: number;
+  pace: number;
+  boost: number;
+  vast: number;
   /** WORDMELDING: the melded word behind, whose twist what it leaves carries, or null. */
   meldBehind: MeldId | null;
   /** Plain-language lines for the character panel. */

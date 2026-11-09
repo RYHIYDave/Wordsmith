@@ -206,6 +206,13 @@ function expectedImbue(word: BaseWordId, slot: Slot): ImbuePick[] {
       return offence ? [['prefix', 'goldFind'], ['suffix', 'dex']] : [['prefix', 'magicFind'], ['suffix', 'dex']];
     case 'mirroring':
       return offence ? [['prefix', 'dmgPct'], ['suffix', 'int']] : [['prefix', 'blockChance'], ['suffix', 'int']];
+    // (HIS THREE NEW WORDS, 9 Nov 2026)
+    case 'lasting':
+      return offence ? [['prefix', 'dmgPct'], ['suffix', 'int']] : [['prefix', 'lifeRegen'], ['suffix', 'int']];
+    case 'fleeting':
+      return [['prefix', 'cdr'], ['suffix', 'dex']];
+    case 'vast':
+      return offence ? [['prefix', 'areaPct'], ['suffix', 'str']] : [['prefix', 'armor'], ['suffix', 'str']];
   }
 }
 

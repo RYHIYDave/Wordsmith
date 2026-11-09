@@ -516,6 +516,22 @@ const IMBUE_TABLE: Record<BaseWordId, readonly ImbueRule[]> = {
     { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'int']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'blockChance'], ['suffix', 'int']] },
   ],
+  // HIS THREE NEW WORDS (9 Nov 2026; every word craftable, his 8 Nov “And those all craftable as well”)
+  // (LASTING: more damage or Intelligence; life coming back, or Intelligence)
+  lasting: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'int']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'lifeRegen'], ['suffix', 'int']] },
+  ],
+  // (FLEETING: faster cooldowns, or Dexterity, on either)
+  fleeting: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'cdr'], ['suffix', 'dex']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'cdr'], ['suffix', 'dex']] },
+  ],
+  // (VAST: a bigger area, or Strength; armour, or Strength)
+  vast: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'areaPct'], ['suffix', 'str']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'armor'], ['suffix', 'str']] },
+  ],
   // (there is no poison damage or poison resistance on gear yet: poison grows with all damage, and is outlasted with life)
   poison: [
     { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'dex']] },

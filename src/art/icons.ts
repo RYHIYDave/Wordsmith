@@ -70,6 +70,10 @@ export const WORD_COLOR: Record<WordId, string> = {
   surging: '#3a78c8',
   plundering: '#b8a040',
   mirroring: '#a0b8c8',
+  // (HIS THREE NEW WORDS, 9 Nov 2026: placeholders until the art chat's, pictures to him first)
+  lasting: '#6fc4a8',
+  fleeting: '#9fb0ff',
+  vast: '#c08a4a',
   // (WORDMELDING: the melded words' colours, the planning chat's placeholders until the art chat's,
   // pictures to him first; each picked as far, as the eye sees colour, from every other word, the
   // friend's cyan and the enemy's pink and gold as it could be)
@@ -1092,6 +1096,10 @@ export const GLYPH: Record<WordId, readonly string[]> = {
   plundering: ['.XXXXX.', 'X.....X', 'X..o..X', 'X.....X', '.XXXXX.', 'X.X.X.X', '.X.X.X.'],
   // two faces, one the other's reflection
   mirroring: ['XX.X.XX', 'X..X..X', 'X.oXo.X', 'X..X..X', 'XX.X.XX', '...X...', '...X...'],
+  // (HIS THREE NEW WORDS, placeholders) an hourglass; two chevrons running on; a ring opening outward
+  lasting: ['XXXXXX', '.X..X.', '..oo..', '..oo..', '.X..X.', 'XXXXXX'],
+  fleeting: ['X..X..', '.X..X.', '..oX.X', '..oX.X', '.X..X.', 'X..X..'],
+  vast: ['X.XX.X', '.X..X.', 'X.oo.X', 'X.oo.X', '.X..X.', 'X.XX.X'],
   // (WORDMELDING: the melded words' runes, the planning chat's placeholders until the art chat's)
   // a mountain blowing its top
   eruption: ['.o..o.', '..oo..', '..XX..', '.XXXX.', '.XXoX.', 'XXXXXX'],
@@ -1155,6 +1163,9 @@ export const WORD_GLOW: Record<WordId, string> = {
   surging: '#a8ccf2',
   plundering: '#ecdca0',
   mirroring: '#dce8f0',
+  lasting: '#c8f0e2',
+  fleeting: '#dde3ff',
+  vast: '#f0d0a8',
   // (WORDMELDING: halfway to white from each one's colour)
   eruption: '#ffccac',
   avalanche: '#dcedff',

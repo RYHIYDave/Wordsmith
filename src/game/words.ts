@@ -3,7 +3,7 @@
 // Every pairing is assembled from the same few parts (bigger, faster, doubled, element, ground
 // patch, echo, rune, buff), so no pairing needs its own code or its own art.
 
-import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, BIND, BLEED, CULL, MIRRORING, PIERCE, PLUNDER, REAP, SURGE, CLASSES, FRENZY, GUARD, HEAVY, HEX, HYBRID_LESS, MANA_MODE, OWN_MOVES, PRECISE, PULL, SKILLS, SPLIT, STILL, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
+import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, BIND, BLEED, CULL, FLEETING, LASTING, MIRRORING, VAST, PIERCE, PLUNDER, REAP, SURGE, CLASSES, FRENZY, GUARD, HEAVY, HEX, HYBRID_LESS, MANA_MODE, OWN_MOVES, PRECISE, PULL, SKILLS, SPLIT, STILL, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
 import type { Limit, SkillDef } from './defs';
 import type { Derived, Resolved } from './state';
 import type { Attr, ClassId, Element, MeldId, WeaponKind, WordId } from './types';
@@ -105,6 +105,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     ignite: 0, chill: 0, arcs: 0, arcDmg: 0, leech: 0, volatile: 0, poison: 0, stun: 0, precise: false, frenzy: false, shield: 0, meld,
     might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, pull: 0, split: 0, hex: 0, still: 0, vortex: 0, shards: 0, hexCircle: 0, bubble: 0, bind: 0, snare: 0,
     through: 0, lance: 0, bleed: 0, thorns: 0, reap: 0, spirit: 0, cull: 0, cullMark: 0, surge: 0, dodgeSurge: 0, plunder: 0, plunderBurst: 0, mirror: 0, mirrorLeave: 0,
+    last: 1, pace: 1, boost: 1, vast: 0,
     meldBehind, lines,
   };
 
@@ -227,6 +228,13 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     size *= PRECISE.area;
     r.precise = true;
     lines.push(`Precise: +${pct(more)} damage, ${pct((1 - PRECISE.area) * 100)} smaller area.`);
+  }
+  // HIS THREE NEW WORDS (9 Nov 2026; game/defs.ts LASTING): VAST in front, the opposite of Precise
+  if (has(front, 'vast')) {
+    const wider = Math.min(VAST.widerMost, VAST.wider + 0.001 * growsBy(front, 'vast'));
+    size *= 1 + wider;
+    dmgMult *= 1 - VAST.softer;
+    lines.push(`Vast: ${pct(wider * 100)} bigger area, ${pct(VAST.softer * 100)} less damage.`);
   }
   if (has(front, 'frenzied')) {
     r.frenzy = true;
@@ -411,6 +419,23 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     r.mirrorLeave = Math.min(MIRRORING.leaveMost, MIRRORING.leaveShare + 0.001 * growsBy(behind, 'mirroring'));
     lines.push(`of Mirrors: leaves a mirror where you stood; your next attack it makes again from there, for ${pct(r.mirrorLeave * 100)}.`);
   }
+  if (has(behind, 'vast')) {
+    r.vast = Math.min(VAST.splashMost, VAST.splash + 0.001 * growsBy(behind, 'vast'));
+    lines.push(`of the Expanse: each hit splashes ${pct(r.vast * 100)} of itself onto every enemy within ${VAST.splashR} tiles of what it hits.`);
+  }
+  // LASTING and FLEETING, the same wherever they sit (his “Well it makes everything connected to lasting last longer”)
+  const lastSide = has(front, 'lasting') ? front : has(behind, 'lasting') ? behind : null;
+  if (lastSide) {
+    const longer = Math.min(LASTING.longerMost, LASTING.longer + 0.001 * growsBy(lastSide, 'lasting'));
+    r.last *= 1 + longer;
+    lines.push(`${lastSide === front ? 'Lasting' : 'of Ages'}: everything it makes and gives lasts ${pct(longer * 100)} longer; its poison and burning as hard, for longer.`);
+  }
+  if (has(front, 'fleeting') || has(behind, 'fleeting')) {
+    r.last *= 1 - FLEETING.shorter;
+    r.pace /= 1 - FLEETING.shorter;
+    r.boost *= 1 + FLEETING.stronger;
+    lines.push(`${has(front, 'fleeting') ? 'Fleeting' : 'of Moments'}: everything it makes is ${pct(FLEETING.shorter * 100)} shorter and does as much in that time; its boosts ${pct(FLEETING.stronger * 100)} stronger.`);
+  }
   if (softer) dmgMult *= 0.7;
 
   // ----- WORDMELDING: each melded word's twist, in front and behind (game/melds.ts) -----
@@ -479,6 +504,13 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     else if (meldBehind === 'chainreaction') twist('your runes are linked: one going off sets off the rest.');
     else if (meldBehind === 'rupture') twist('the rune bursts into a poison cloud.');
   }
+
+  // (LASTING and FLEETING on what it leaves and the boosts it gives, every word's above: its ground, longer or shorter, Fleeting's
+  // as much in all; Fleeting's boosts stronger)
+  if (r.zone) r.zone = { ...r.zone, dur: r.zone.dur * r.last, dps: r.zone.dps * r.pace };
+  r.might *= r.boost;
+  r.haste *= r.boost;
+  r.shield *= r.boost;
 
   r.dmgMult = dmgMult;
   r.size = size;
