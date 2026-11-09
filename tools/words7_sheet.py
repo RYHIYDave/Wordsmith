@@ -32,8 +32,8 @@ WORDS = {
     'mirroring': ('MIRRORING', 'Int', '#b4d2c6', ['#0e1614', '#2a3a36', '#647c74', '#b4d2c6', '#e8f6f0', '#ffffff'], 'silver glass, the cool green of a mirror’s edge', 'two facing halves'),
 }
 CAPS = {
-    'piercing': ['IN FRONT: his blow goes on through the first, a streak of white light punching through each behind it',
-                 'BEHIND: half a second after, a lance of light slams down along the line, and leaves a crack',
+    'piercing': ['IN FRONT: his blow goes on through the first: a bolt of white light punching through each behind it, light blowing out of their far sides',
+                 'BEHIND: half a second after, a spear of light slams down out of the air and tears a crack of light along the line',
                  'ON A MONSTER: its shot comes through the wall at him, the stone lit pink where it passes'],
     'bleeding': ['IN FRONT: what he struck bleeds: the wound, the spurt, drops left where it walks (twice as many walking)',
                  'BEHIND: dark red briars burst up out of the floor and cut whatever walks in them',
@@ -42,7 +42,7 @@ CAPS = {
                 'BEHIND: the kill rises as a spirit and fights for him for 6 s: pale soul-light, its edge his cyan',
                 'ON A MONSTER: dead, it lurches up again once, the enemy’s fire licking round it'],
     'culling': ['IN FRONT: one left under 15% is cut down at once: a scything slash, split along the cut',
-                'BEHIND: the reaper’s mark, a hooded blade, takes the first weak one to cross it: a blade rises through it',
+                'BEHIND: the reaper’s mark, a hooded scythe in a ring of bone light written on the floor, takes the first weak one to cross it: a blade rises through it',
                 'ON A MONSTER: while he is low its blows flare: it burns pink, and its blow bursts on him'],
     'surging': ['IN FRONT: every third use, a ring of force bursts out round him, the dust shoved before it',
                 'BEHIND: his dodge lets out a surge where he left the floor, wind streaming along his roll',
@@ -126,7 +126,7 @@ for word, (name, stat, col, ramp, colour_is, rune_is) in WORDS.items():
     d.text((200 + 6 * 62 + 14, 80), col, font=small, fill=PALE)
     blocks.append(band)
     # the three captions
-    capb = Image.new('RGB', (W, 72), BG)
+    capb = Image.new('RGB', (W, 84), BG)
     d = ImageDraw.Draw(capb)
     for j, cap in enumerate(CAPS[word]):
         x = 6 + j * (CW + GAP)

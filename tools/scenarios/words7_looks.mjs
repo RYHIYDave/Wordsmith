@@ -24,9 +24,9 @@ const SCENES = [
     face: [1, -1],
     mobs: [['skeleton', 2.0, 0.35, 'a', 'walk'], ['cultist', 3.6, 0.35, 'b', 'walk']],
     play: { from: [0.9, 0.35], to: [4.7, 0.35], ids: ['a', 'b'] },
-    at: 0.6,
-    focus: [2.4, 0],
-    close: [3.0, 0],
+    at: 0.66,
+    focus: [2.4, -0.6],
+    close: [2.9, -1.4],
   },
   {
     key: 'bleeding:front',
@@ -100,7 +100,7 @@ const SCENES = [
   {
     key: 'culling:behind',
     face: [1, -1],
-    mobs: [['skeleton', 3.25, 0.75, 'a', 'walk', [-1, 1]]],
+    mobs: [['skeleton', 3.6, 0.6, 'a', 'walk', [-1, 1]]],
     weak: 'a',
     play: { at: [2.5, 0.4], r: 1.2, ids: ['a'], taken: 0.3 },
     at: 0.4,
@@ -345,6 +345,7 @@ export default async function (page, snap) {
       d.slowmo = 1e-6;
       // (no numbers of the game's own over them: the still is of the look)
       fx.floaters.length = 0;
+      if (!sc.swing) fx.particles.length = 0;
       for (const m of g.monsters) if (!sc.weak) m.life = m.maxLife;
       w7.at(still);
       const pt = (ax, dn) => { const [x, y] = at(ax, dn); return d.at(x, y); };

@@ -134,6 +134,8 @@ export const W7_TIME = {
   pierceSpeed: 26,
   lanceWait: 0.5,
   lanceFall: 0.06,
+  /** ...and its point driven along the line, tearing the floor. */
+  lanceRun: 0.16,
   /** A monster's shot through a wall (tiles a second). */
   ghostSpeed: 11,
   /** Bleeding: the thorns burst up over this. */
@@ -483,7 +485,7 @@ const RY = 11.3;
 // =============================================================================================
 // PIERCING
 
-/** In front: a white streak punching through every one in a line, a puncture flare at each, steel spall out the far side. */
+/** In front: a bolt of white light punching through every one in a line; at each it goes through, light blows out the far side with sparks. */
 function pierceFront(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game): void {
   const C = W7_RAMP.piercing;
   const z = 14;
@@ -492,194 +494,295 @@ function pierceFront(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game):
   const at = (s: number): [number, number] => S(cam, a.x + a.dx * s, a.y + a.dy * s, z);
   const h = Math.min(head, reach);
   const fade = head > reach ? clamp01(1 - (head - reach) / 4) : 1;
+  const [hx, hy] = at(h);
+  const [qx, qy] = at(h - 1);
+  const ul = Math.hypot(hx - qx, hy - qy) || 1;
+  const ux = (hx - qx) / ul;
+  const uy = (hy - qy) / ul;
+  const nx = -uy;
+  const ny = ux;
   if (fade > 0) {
-    // the long wake of it, then the bright needle, then its point of white light
-    const [tx, ty] = at(Math.max(0, h - 4.5));
-    const [mx, my] = at(Math.max(0, h - 1.6));
-    const [hx, hy] = at(h);
-    streak(g, tx, ty + 1, mx, my + 1, [C[1], C[2], C[2], C[3]], 2, 0, fade);
-    streak(g, tx, ty, mx, my, [C[2], C[3], C[4]], 1, 0, fade);
-    streak(g, mx, my, hx, hy, [C[3], C[4], C[5], C[5]], 3, 0, fade);
+    // its body: drawn out behind its head and thinning to nothing, its edges flickering, a waver in its trail
+    const L = Math.round(Math.min(h, 3.6) * ul);
+    for (let i = 0; i <= L; i++) {
+      const q = i / Math.max(1, L);
+      const back = L - i;
+      const wob = Math.sin(i * 0.33 + a.t * 45) * 1.3 * (1 - q) ** 1.5 + (vnoise(i * 0.4, a.t * 30, a.seed) - 0.5) * 1.6 * (1 - q);
+      const cx = hx - ux * back + nx * wob;
+      const cy = hy - uy * back + ny * wob;
+      if (q < 0.45 && !dith(cx, cy, (q / 0.45) * fade + 0.05)) continue;
+      const half = 0.3 + 2.3 * q ** 1.6 * (0.75 + 0.5 * vnoise(i * 0.6, a.t * 40, a.seed + 1));
+      const reachK = Math.ceil(half) + 1;
+      for (let k = -reachK; k <= reachK; k++) {
+        const d = Math.abs(k) / half;
+        if (d > 1) {
+          // flickering at its edges: a pixel of light licking off it now and then
+          if (d < 1.9 && hash2(i * 7 + k, Math.floor(a.t * 60), a.seed) < 0.14 * q) dot(g, cx + nx * k, cy + ny * k, C[3]);
+          continue;
+        }
+        const v = q * 0.75 + (1 - d) * 0.55;
+        dot(g, cx + nx * k, cy + ny * k, [C[1], C[2], C[3], C[4], C[5], C[5]][Math.min(5, Math.floor(v * 5))]);
+      }
+    }
     if (head <= reach) {
-      const [px, py] = at(h + 0.25);
-      streak(g, hx, hy, px, py, [C[4], C[5]], 1);
-      dot(g, hx - 1, hy - 1, C[4], 3, 3);
-      dot(g, hx, hy, C[5]);
-      glint(g, Math.round(px), Math.round(py), 2, C[4]);
+      // its head: a blazing teardrop of white, rimmed with light, flickering tongues of it ahead
+      const prof = [1.2, 1.9, 2.4, 2.6, 2.5, 2.1, 1.6, 1, 0.5];
+      prof.forEach((w, j) => {
+        const along = j - 5;
+        for (let k = -Math.ceil(w); k <= Math.ceil(w); k++) {
+          const d = Math.abs(k) / w;
+          if (d > 1.05) continue;
+          dot(g, hx + ux * along + nx * k, hy + uy * along + ny * k, d < 0.55 ? C[5] : d < 0.9 ? C[4] : C[3]);
+        }
+      });
+      for (let j = 0; j < 3; j++) {
+        const sp = (j - 1) * 0.45 + (hash2(j, Math.floor(a.t * 60), a.seed) - 0.5) * 0.3;
+        const len = 2 + hash2(j, Math.floor(a.t * 60) + 1, a.seed) * 3;
+        const ex = ux * Math.cos(sp) - uy * Math.sin(sp);
+        const ey = uy * Math.cos(sp) + ux * Math.sin(sp);
+        streak(g, hx + ex * (4 + len), hy + ey * (4 + len), hx + ex * 3, hy + ey * 3, [C[3], C[4], C[5]], 1);
+      }
     }
   }
   // each one it went through
   a.ids.forEach((id, i) => {
     const s = a.pts[i] ?? 0;
     const since = (head - s) / W7_TIME.pierceSpeed;
-    if (since < 0) return;
+    if (since < 0 || since > 0.5) return;
     const m = game.monsters.find((q) => q.id === id);
-    const [cx, cy] = at(s);
-    // a hole of light straight through it, for an instant
-    if (since < 0.1) {
-      const [ax, ay] = at(s - 0.4);
-      const [bx, by] = at(s + 0.4);
-      streak(g, ax, ay, bx, by, [C[4], C[5]], 1);
+    if (!m) return;
+    // where it went in: a flare for an instant
+    if (since < 0.08) {
+      const [ix, iy] = at(s - 0.28);
+      dot(g, ix - 1, iy - 1, C[4], 3, 3);
+      dot(g, ix, iy, C[5]);
     }
-    // the puncture: a sharp star where it went in and out
-    if (since < 0.3) {
-      const k = 1 - since / 0.3;
-      star(g, cx, cy, 4 + 8 * k, C, a.seed + i * 17, 8, i * 0.4);
-    }
-    // spall: steel-white splinters flung on out of the far side, falling as they go
-    if (since < 0.5 && m) {
-      const [ex, ey] = at(s + 0.3);
-      const vx = (a.dx - a.dy) * 16;
-      const vy = (a.dx + a.dy) * 8;
-      const vl = Math.hypot(vx, vy) || 1;
-      const ux = vx / vl;
-      const uy = vy / vl;
-      for (let j = 0; j < 7; j++) {
-        const sp = 80 + hash2(j, a.seed + i, 1) * 80;
-        const side = (hash2(j, a.seed + i, 2) - 0.5) * 1.6;
-        const d = sp * since;
-        const px = ex + ux * d - uy * side * d * 0.6;
-        const py = ey + uy * d + ux * side * d * 0.6 + 140 * since * since - 40 * since * hash2(j, i, 3);
-        streak(g, px - ux * 4 + uy * side * 2, py - uy * 4 - ux * side * 2, px, py, [C[2], C[3], C[5]], 1, 0, clamp01(1.2 - since / 0.5));
+    // out of the far side: light blown out in a fan of rays, ragged, fading as they lengthen
+    const [ex, ey] = at(s + 0.3);
+    if (since < 0.32) {
+      const k = since / 0.32;
+      const grow = Math.min(1, since / 0.05);
+      for (let j = 0; j < 9; j++) {
+        const sp = (j / 8 - 0.5) * 2.3 + (hash2(j, a.seed + i, 4) - 0.5) * 0.3;
+        const ddx = ux * Math.cos(sp) - uy * Math.sin(sp);
+        const ddy = uy * Math.cos(sp) + ux * Math.sin(sp);
+        const len = (8 + hash2(j, a.seed + i, 5) * 13) * (1 - Math.abs(sp) * 0.3) * grow * (1 - k * 0.4);
+        const from = 2 + k * 7;
+        if (len > from + 1) streak(g, ex + ddx * len, ey + ddy * len * 0.8, ex + ddx * from, ey + ddy * from * 0.8, [C[1], C[2], C[3], C[4], C[5]], j % 2 === 0 ? 2 : 1, 0, 1 - k * 0.7);
       }
-    }
-  });
-}
-
-/** Behind: a lance of light slams down the line half a second after, and leaves a thin crack. */
-function pierceBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, layer: 'floor' | 'air'): void {
-  const C = W7_RAMP.piercing;
-  const [x0, y0] = S(cam, a.x, a.y);
-  const [x1, y1] = S(cam, a.x1, a.y1);
-  const after = a.t - W7_TIME.lanceWait - W7_TIME.lanceFall;
-  const len = Math.hypot(x1 - x0, y1 - y0) || 1;
-  const ux = (x1 - x0) / len;
-  const uy = (y1 - y0) / len;
-  const n = Math.round(len);
-  if (layer === 'floor') {
-    // waiting: the line it will come down on, a scratch of light that quickens
-    if (a.t < W7_TIME.lanceWait) {
-      const k = a.t / W7_TIME.lanceWait;
-      for (let s = 0; s <= n; s++) if (dith(x0 + ux * s, y0 + uy * s, 0.3 + 0.5 * k * (0.5 + 0.5 * Math.sin(a.t * (12 + 30 * k) + s * 0.3)))) dot(g, x0 + ux * s, y0 + uy * s, C[3]);
-    }
-    // the crack it leaves: a thin jagged split along the line, white-hot at first, then dark with light down in it
-    if (after > 0) {
-      const glow = clamp01(1 - after / 0.4);
-      const gone = clamp01(1 - (after - 1.2) / 0.6);
-      let wob = 0;
-      for (let s = 0; s <= n; s++) {
-        wob += (hash2(s, a.seed, 5) - 0.5) * 0.9;
-        wob *= 0.8;
-        const px = x0 + ux * s - uy * wob;
-        const py = y0 + uy * s + ux * wob;
-        if (gone < 1 && !dith(px, py, gone)) continue;
-        dot(g, px, py, glow > 0.3 ? C[5] : '#0c0a10');
-        dot(g, px, py + 1, glow > 0.3 ? C[3] : C[1]);
-        if (hash2(s, a.seed, 6) < 0.1) {
-          const sd = hash2(s, a.seed, 7) < 0.5 ? 1 : -1;
-          for (let k = 1; k < 3 + hash2(s, a.seed, 8) * 4; k++) dot(g, px + k * (hash2(k, s, a.seed) < 0.5 ? 1 : 0), py + sd * k * 0.6 + 1, glow > 0.3 ? C[4] : '#0c0a10');
-        }
-      }
-      // the stone either side of it lit by the blow, a pixel or two, fading
-      if (glow > 0) {
-        for (let s2 = 0; s2 <= n; s2++) {
-          for (const off of [-2, 2]) {
-            const px = x0 + ux * s2 - uy * off;
-            const py = y0 + uy * s2 + ux * off * 0.5;
-            if (dith(px, py, glow * 0.7)) dot(g, px, py, C[3]);
+      if (since < 0.14) {
+        // the puncture itself: a blaze of white where it tears out, rimmed with steel
+        for (let yy = -4; yy <= 4; yy++) {
+          for (let xx = -4; xx <= 4; xx++) {
+            const d = Math.abs(xx) * 0.8 + Math.abs(yy) + (hash2(xx + 9, yy + 9, a.seed + i) - 0.5) * 1.2;
+            if (d > 4.2) continue;
+            dot(g, ex + xx, ey + yy, d < 1.8 ? C[5] : d < 3 ? C[4] : C[3]);
           }
         }
       }
     }
-    return;
-  }
-  // in the air: high above, the lance forming; then it comes down, its fall a sheet of light behind it; then it lies along the line, burning out
-  const fall = a.t - W7_TIME.lanceWait;
-  if (fall < 0) {
-    const k = a.t / W7_TIME.lanceWait;
-    if (k > 0.4) lance(g, x0, y0 - 80, x1, y1 - 80, C, ((k - 0.4) / 0.6) * 0.7);
-    return;
-  }
-  const k = clamp01(fall / W7_TIME.lanceFall);
-  const z = 80 * (1 - k * k);
-  const burn = after > 0 ? clamp01(1 - (after - 0.15) / 0.3) : 1;
-  // it comes down head first and slanting, its butt the higher: its head strikes the far end and its shaft slams down along the line
-  const zb = z + 12;
-  const zh = z + 1;
-  // the way it came down: a sheet of light smeared above it, thinning upward
-  const blur = after > 0 ? clamp01(1 - after / 0.15) : 1;
-  if (blur > 0) {
-    for (let s2 = 0; s2 <= len; s2++) {
-      const q = s2 / len;
-      const top = 22 * blur * (0.5 + 0.5 * q);
-      const zz = zb + (zh - zb) * q;
-      for (let up = 2; up < top; up++) {
-        const px = x0 + ux * s2;
-        const py = y0 + uy * s2 - zz - 2 - up;
-        if (dith(px, py, (1 - up / top) * 0.6 * blur, 31)) dot(g, px, py, up < top * 0.35 ? C[2] : C[1]);
-      }
+    // sparks flung on out of it, arcing down, each leaving its streak
+    for (let j = 0; j < 12; j++) {
+      const sp = (hash2(j, a.seed + i, 1) - 0.5) * 2.2;
+      const v = 70 + hash2(j, a.seed + i, 2) * 100;
+      const vx = (ux * Math.cos(sp) - uy * Math.sin(sp)) * v;
+      const vy = (uy * Math.cos(sp) + ux * Math.sin(sp)) * v * 0.7 - 30 * hash2(j, a.seed + i, 3);
+      const px = ex + vx * since;
+      const py = ey + vy * since + 160 * since * since;
+      const tx = px - vx * 0.03;
+      const ty = py - (vy + 320 * since) * 0.03;
+      if (py > ey + 16) continue;
+      streak(g, tx, ty, px, py, [C[2], C[3], C[4], C[5]], 1, 0, clamp01(1.2 - since / 0.5));
     }
-  }
-  if (burn > 0) lance(g, x0, y0 - zb - 2, x1, y1 - zh - 2, C, burn);
-  if (after > 0 && after < 0.5) {
-    const q = after / 0.5;
-    // the blow: sparks of steel-white light flung up and out along it, falling
-    for (let i = 0; i < 22; i++) {
-      const s = hash2(i, a.seed, 11) * len;
-      const sd = i % 2 === 0 ? 1 : -1;
-      const sp = 40 + hash2(i, a.seed, 12) * 60;
-      const bx = x0 + ux * s;
-      const by = y0 + uy * s - 2;
-      const vx = -uy * sd * sp * 1.2 + ux * (hash2(i, a.seed, 18) - 0.5) * 40;
-      const vy = ux * sd * sp * 0.5 - (70 + hash2(i, a.seed, 17) * 70);
-      const px = bx + vx * after;
-      const py = by + vy * after + 320 * after * after;
-      if (py > by + 3) continue;
-      streak(g, px - vx * 0.035, py - (vy + 640 * after) * 0.035, px, py, [C[2], C[3], C[4], C[5]], 1, 0, 1 - q * 0.6);
-    }
-  }
+  });
 }
 
 /**
- * A lance of light along a line: a long shaft, a guard, and a broad leaf-shaped head at the far end
- * ridged down its middle, a knob at its butt; `a` how much of it is there.
+ * Behind: half a second after, a spear of light comes slamming down out of the air at a slant onto the line,
+ * and its point is driven along it, tearing a narrow crack of light in the floor, chips and dust flung up
+ * where it goes; it is gone, and the crack is left glowing, fading.
  */
-function lance(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, C: readonly string[], a: number): void {
+function pierceBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, layer: 'floor' | 'air'): void {
+  const C = W7_RAMP.piercing;
+  const [x0, y0] = S(cam, a.x, a.y);
+  const [x1, y1] = S(cam, a.x1, a.y1);
+  const len = Math.hypot(x1 - x0, y1 - y0) || 1;
+  const ux = (x1 - x0) / len;
+  const uy = (y1 - y0) / len;
+  const n = Math.round(len);
+  const strike = a.t - W7_TIME.lanceWait;
+  const fall = W7_TIME.lanceFall;
+  const run = W7_TIME.lanceRun;
+  // how far along the line its point has torn (pixels), and how long since it passed a place on it
+  const tip = clamp01((strike - fall) / run) * len;
+  const since = (s: number): number => strike - fall - (s / len) * run;
+  // the crack's path: a narrow jagged tear wandering a pixel either side of the line
+  const path: [number, number][] = [];
+  let wob = 0;
+  for (let s = 0; s <= n; s++) {
+    wob += (hash2(s, a.seed, 5) - 0.5) * 0.9;
+    wob *= 0.78;
+    path.push([x0 + ux * s - uy * wob, y0 + uy * s + ux * wob]);
+  }
+  if (layer === 'floor') {
+    // waiting: the line it will come down on, a scratch of light that quickens
+    if (strike < 0) {
+      const k = a.t / W7_TIME.lanceWait;
+      for (let s = 0; s <= n; s++) if (dith(x0 + ux * s, y0 + uy * s, 0.3 + 0.5 * k * (0.5 + 0.5 * Math.sin(a.t * (12 + 30 * k) + s * 0.3)))) dot(g, x0 + ux * s, y0 + uy * s, C[3]);
+      return;
+    }
+    for (let s = 0; s <= Math.min(n, tip); s++) {
+      const age = since(s);
+      if (age < 0) continue;
+      const glow = clamp01(1 - age / 0.4);
+      const gone = clamp01(1 - (age - 1.3) / 0.6);
+      if (gone <= 0) continue;
+      const [px, py] = path[s];
+      if (gone < 1 && !dith(px, py, gone)) continue;
+      // white-hot where it has just torn, cooling to steel, then dark with light down in it
+      dot(g, px, py, glow > 0.6 ? C[5] : glow > 0.25 ? C[4] : glow > 0 ? C[3] : '#0c0a10');
+      dot(g, px, py + 1, glow > 0.4 ? C[3] : glow > 0 ? C[2] : C[2]);
+      // the stone lit either side while it is hot
+      if (glow > 0.2) {
+        for (const off of [-2, -1, 1, 2]) {
+          const gx2 = px - uy * off;
+          const gy2 = py + ux * off * 0.5;
+          if (dith(gx2, gy2, glow * (Math.abs(off) === 1 ? 0.7 : 0.35))) dot(g, gx2, gy2, Math.abs(off) === 1 ? C[3] : C[2]);
+        }
+      }
+      // little cracks forking off it
+      if (hash2(s, a.seed, 6) < 0.1) {
+        const sd = hash2(s, a.seed, 7) < 0.5 ? 1 : -1;
+        let fx2 = px;
+        let fy2 = py;
+        for (let k = 1; k < 3 + hash2(s, a.seed, 8) * 4; k++) {
+          fx2 += ux * 0.7 + (hash2(k, s, a.seed) - 0.5);
+          fy2 += sd * 0.7;
+          dot(g, fx2, fy2, glow > 0.4 ? C[4] : '#0c0a10');
+        }
+      }
+    }
+    return;
+  }
+  // in the air
+  if (strike < 0) {
+    // high over the line's start, the spear gathering out of the dark
+    const k = a.t / W7_TIME.lanceWait;
+    if (k > 0.5) {
+      const bx = x0 - ux * 30;
+      const by = y0 - 90;
+      spear(g, bx, by, bx + ux * 22, by + 40, C, (k - 0.5) * 1.4, a.seed, a.t);
+    }
+    return;
+  }
+  const out = strike - fall - run;
+  if (out > 0.18) return;
+  // where its point is: falling onto the line's start, then driven along the line, then pulled up and gone
+  const fk = clamp01(strike / fall);
+  let tx: number;
+  let ty: number;
+  if (strike < fall) {
+    tx = x0 - ux * 18 * (1 - fk);
+    ty = y0 - 64 * (1 - fk * fk);
+  } else {
+    tx = x0 + ux * tip;
+    ty = y0 + uy * tip - (out > 0 ? out * 120 : 0);
+  }
+  // its shaft slants up and back from its point, the way it came in
+  const bl = Math.hypot(ux * 0.55, 1);
+  const bx = -ux * 0.55 / bl;
+  const by = -1 / bl;
+  const L = 60;
+  const alpha = out > 0 ? clamp01(1 - out / 0.18) : 1;
+  // speed lines behind it, the way it is driven
+  for (let j = 1; j <= 4; j++) {
+    const off = j * 5;
+    const sx0 = tx - ux * off + bx * (8 + j * 3);
+    const sy0 = ty - uy * off + by * (8 + j * 3);
+    streak(g, sx0 + bx * (24 - j * 3), sy0 + by * (24 - j * 3), sx0, sy0, [C[1], C[2], C[3]], 1, 0, (0.75 - j * 0.12) * alpha);
+  }
+  spear(g, tx + bx * L, ty + by * L, tx, ty, C, alpha, a.seed, a.t);
+  // where its point bites: a flare, sparks, stone chips and dust thrown up off the tear
+  if (strike >= fall && out < 0.05) {
+    dot(g, tx - 2, ty - 1, C[4], 5, 2);
+    dot(g, tx - 1, ty - 2, C[5], 3, 2);
+    for (let j = 0; j < 5; j++) {
+      const sp = -Math.PI / 2 + (hash2(j, Math.floor(a.t * 60), a.seed) - 0.5) * 2.2;
+      const lenS = 4 + hash2(j, Math.floor(a.t * 60) + 3, a.seed) * 6;
+      streak(g, tx + Math.cos(sp) * lenS + ux * 2, ty + Math.sin(sp) * lenS, tx, ty - 1, [C[2], C[3], C[4], C[5]], 1);
+    }
+  }
+  // chips of the floor flung up out of the tear as it passes, tumbling, falling back; dust rising behind
+  const N = 26;
+  for (let i = 0; i < N; i++) {
+    const s = ((i + hash2(i, a.seed, 31)) / N) * len;
+    if (s > tip) continue;
+    const age = since(s);
+    if (age < 0 || age > 0.5) continue;
+    const sd = hash2(i, a.seed, 32) < 0.5 ? 1 : -1;
+    const vs = 25 + hash2(i, a.seed, 33) * 45;
+    const vx = ux * (20 + hash2(i, a.seed, 34) * 40) - uy * sd * vs;
+    const vy = uy * 20 + ux * sd * vs * 0.45 - (55 + hash2(i, a.seed, 35) * 75);
+    const px = x0 + ux * s + vx * age;
+    const py = y0 + uy * s + vy * age + 300 * age * age;
+    if (py > y0 + uy * s + 3) continue;
+    const sh = Math.floor(hash2(i, a.seed, 36) * 4);
+    // its trail, then the chip itself (each a broken bit of stone, lit along its top)
+    streak(g, px - vx * 0.025, py - (vy + 600 * age) * 0.025, px, py, [STONE[0], STONE[1]], 1, 0, 0.8);
+    dot(g, px, py, STONE[3]);
+    if (sh >= 1) dot(g, px + sd, py, STONE[2]);
+    if (sh >= 2) dot(g, px, py + 1, STONE[1]);
+    if (sh === 3) dot(g, px - sd, py + 1, STONE[0]);
+  }
+  for (let i = 0; i < 6; i++) {
+    const s = ((i + 0.5) / 6) * len;
+    if (s > tip) continue;
+    const age = since(s);
+    if (age < 0.02 || age > 0.6) continue;
+    mist(g, x0 + ux * s, y0 + uy * s - 2 - age * 14, 3 + age * 10, 2 + age * 5, DUSK_DUST, 1.1 * (1 - age / 0.6), a.seed + i, a.t, 0.5);
+  }
+}
+
+/** Broken stone of the floor: its shadowed side to its lit top. */
+const STONE: readonly string[] = ['#2a2436', '#463e58', '#6a6080', '#9a92b0'];
+
+/**
+ * A spear of light from its butt (bx, by) to its point (px, py): a shaft tapering from one pixel at its butt to
+ * three, its edges flickering, a white core; a long leaf-shaped head; `a` how much of it is there.
+ */
+function spear(g: CanvasRenderingContext2D, bx: number, by: number, px: number, py: number, C: readonly string[], a: number, seed: number, t: number): void {
   if (a <= 0) return;
-  const dx = x1 - x0;
-  const dy = y1 - y0;
+  const dx = px - bx;
+  const dy = py - by;
   const len = Math.hypot(dx, dy) || 1;
   const ux = dx / len;
   const uy = dy / len;
+  const nx = -uy;
+  const ny = ux;
   const n = Math.round(len);
-  const at = (s: number, k: number): [number, number] => [x0 + ux * s - uy * k, y0 + uy * s + ux * k];
   for (let s = 0; s <= n; s++) {
     const q = s / n;
-    const [px, py] = at(s, 0);
-    if (a < 1 && !dith(px, py, a)) continue;
-    if (q < 0.03) {
-      // the knob at its butt
-      for (let k = -2; k <= 2; k++) dot(g, ...at(s, k), k < 0 ? C[4] : k === 0 ? C[3] : C[2]);
-      continue;
+    const cx = bx + ux * s;
+    const cy = by + uy * s;
+    if (q < 0.3 && !dith(cx, cy, (q / 0.3) * a + 0.05)) continue;
+    if (a < 1 && !dith(cx, cy, a)) continue;
+    let half: number;
+    if (q < 0.74) half = 0.6 + q * 1.6;
+    else {
+      // the head: swelling out of the shaft, drawn to a point
+      const u = (q - 0.74) / 0.26;
+      half = u < 0.3 ? 1.8 + (u / 0.3) * 1.8 : 3.6 * (1 - (u - 0.3) / 0.7) ** 0.9;
     }
-    if (q < 0.68) {
-      // the shaft: a core of white light, lit above, dark below
-      dot(g, ...at(s, -1), C[4]);
-      dot(g, px, py, C[5]);
-      dot(g, ...at(s, 1), C[2]);
-      continue;
-    }
-    if (q < 0.71) {
-      // the guard across it
-      for (let k = -5; k <= 5; k++) dot(g, ...at(s, k), Math.abs(k) === 5 ? C[2] : k < 0 ? C[4] : k === 0 ? C[5] : C[3]);
-      continue;
-    }
-    // the head: swelling to eleven across and drawn to a point, a ridge of white down its middle
-    const u = (q - 0.71) / 0.29;
-    const half = Math.max(0, Math.round(u < 0.3 ? 1.5 + (u / 0.3) * 3.6 : 5.1 * Math.pow(1 - (u - 0.3) / 0.7, 0.85)));
-    for (let k = -half; k <= half; k++) {
-      const edge = Math.abs(k) === half && half > 0;
-      dot(g, ...at(s, k), k === 0 ? C[5] : edge ? (k < 0 ? C[3] : C[1]) : k < 0 ? C[4] : C[3]);
+    const r = Math.ceil(half) + 2;
+    for (let k = -r; k <= r; k++) {
+      const d = Math.abs(k) / Math.max(0.3, half);
+      if (d > 1) {
+        // its light round it: a pixel of glow at its edge, flickering further out
+        if (Math.abs(k) <= Math.ceil(half) + 1 && q > 0.2) dot(g, cx + nx * k, cy + ny * k, C[2]);
+        else if (d < 2.4 && hash2(s * 5 + k, Math.floor(t * 60), seed) < 0.14) dot(g, cx + nx * k, cy + ny * k, C[3]);
+        continue;
+      }
+      dot(g, cx + nx * k, cy + ny * k, d < 0.4 ? C[5] : d < 0.8 ? C[4] : k < 0 ? C[4] : C[3]);
     }
   }
 }
@@ -1107,63 +1210,102 @@ function cullBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game, l
   const flare = taken >= 0 && taken < 0.5 ? 1 - taken / 0.5 : 0;
   if (layer === 'floor') {
     if (burn <= 0) return;
-    // a groove burned round, cut by hand (never a ruled ring): dark, a light down in it
-    const n = Math.round(rx * 7);
-    for (let i = 0; i < n; i++) {
-      const an = (i / n) * TAU;
-      const wob = 1 + (vnoise(i * 0.08, 1, a.seed) - 0.5) * 0.07;
-      const px = cx + Math.cos(an) * rx * wob;
-      const py = cy + Math.sin(an) * ry * wob;
-      if (burn < 1 && !dith(px, py, burn)) continue;
-      dot(g, px, py - 1, C[0]);
-      dot(g, px, py, flare > 0.3 ? C[5] : C[4]);
-      dot(g, px, py + 1, C[2]);
+    // a ring of bone light written on the floor: two lines of it cut by hand (never ruled), and between them an
+    // inscription, letter after letter of bone, a gap between words, the light spilling a little outside it
+    const ring = (k: number, c: string, under: string): void => {
+      const n = Math.round(rx * k * 7);
+      for (let i = 0; i < n; i++) {
+        const an = (i / n) * TAU;
+        const wob = 1 + (vnoise(i * 0.09, k * 7, a.seed) - 0.5) * 0.05;
+        const px = cx + Math.cos(an) * rx * k * wob;
+        const py = cy + Math.sin(an) * ry * k * wob;
+        if (burn < 1 && !dith(px, py, burn)) continue;
+        dot(g, px, py + 1, under);
+        dot(g, px, py, c);
+      }
+    };
+    for (let i = 0; i < Math.round(rx * 9); i++) {
+      const an = hash2(i, a.seed, 40) * TAU;
+      const d = 1.02 + hash2(i, a.seed, 41) * 0.12;
+      const px = cx + Math.cos(an) * rx * d;
+      const py = cy + Math.sin(an) * ry * d;
+      if (dith(px, py, burn * (1.14 - d) * 4)) dot(g, px, py, C[2]);
     }
-    // marks cut round inside it, each a little stroke of bone
-    for (let i = 0; i < 16; i++) {
-      const an = (i / 16) * TAU + 0.2;
-      const px = cx + Math.cos(an) * rx * 0.83;
-      const py = cy + Math.sin(an) * ry * 0.83;
-      dot(g, px, py, C[3]);
-      dot(g, px + (i % 2 ? 1 : 0), py + (i % 2 ? 0 : 1), flare > 0 ? C[5] : C[4]);
+    ring(1, flare > 0.3 ? C[5] : C[4], C[1]);
+    ring(0.8, flare > 0.3 ? C[5] : C[3], C[1]);
+    {
+      const n = Math.round(rx * 0.9 * 6.3 / 3);
+      for (let i = 0; i < n; i++) {
+        if (hash2(i, a.seed, 42) < 0.15 || i % 6 === 5) continue;
+        const an = (i / n) * TAU;
+        const px = cx + Math.cos(an) * rx * 0.9;
+        const py = cy + Math.sin(an) * ry * 0.9;
+        const sh = Math.floor(hash2(i, a.seed, 43) * 4);
+        const c = flare > 0 ? C[5] : C[4];
+        if (burn < 1 && !dith(px, py, burn)) continue;
+        dot(g, px, py - 1, c);
+        if (sh !== 1) dot(g, px, py, c);
+        if (sh === 2 || sh === 3) dot(g, px + 1, py - 1, c);
+        if (sh === 0) dot(g, px - 1, py, c);
+      }
     }
-    // the hooded blade, laid on the floor: a hood, its face a hollow of dusk with two points of bone in it, a scythe's
-    // blade curving over it and its haft behind it. (Laid a little less flat than the floor is, so that it reads.)
+    // in it, the hooded blade, written on the floor (a little less flat than the floor is, so that it reads): a cowl,
+    // its crown leaning back into a drooping peak, its face a deep hollow under a lit brim, its cloth falling in folds
+    // to a ragged hem; and over it, out of it, the great curved blade of a scythe, its edge bone, its haft beside it
     const bone = flare > 0 ? C[5] : C[4];
-    const S0 = rx * 0.74;
-    const SQ = 0.62;
+    const S0 = rx * 0.72;
+    const SQ = 0.72;
     const segD = (u: number, v: number, u0: number, v0: number, u1: number, v1: number): number => {
       const du = u1 - u0;
       const dv = v1 - v0;
       const k2 = clamp01(((u - u0) * du + (v - v0) * dv) / (du * du + dv * dv));
       return Math.hypot(u - u0 - du * k2, v - v0 - dv * k2);
     };
-    for (let py = Math.floor(cy - S0 * SQ); py <= Math.ceil(cy + S0 * SQ); py++) {
-      for (let px = Math.floor(cx - S0); px <= Math.ceil(cx + S0); px++) {
+    const peakAt = (u: number, v: number): number => Math.min(...[0, 0.2, 0.4, 0.6, 0.8, 1].map((q) => {
+      const [qu, qv] = quad(0.0, -0.66, -0.26, -0.86, -0.46, -0.6, q);
+      return Math.hypot(u - qu, v - qv) - (0.09 - q * 0.07);
+    }));
+    for (let py = Math.floor(cy - S0 * SQ * 1.05); py <= Math.ceil(cy + S0 * SQ * 0.95); py++) {
+      for (let px = Math.floor(cx - S0 * 1.05); px <= Math.ceil(cx + S0 * 1.05); px++) {
         const u = (px - cx) / S0;
         const v = (py - cy) / (S0 * SQ);
         if (burn < 1 && !dith(px, py, burn)) continue;
-        // the hood: a peak at its top, flaring as it falls, open at its foot
-        const top = -0.62 + 2.6 * Math.abs(u) * (0.6 + Math.abs(u));
-        const side = 0.3 + 0.16 * (v + 0.3);
-        const inHood = v >= top && Math.abs(u) <= side && v <= 0.62;
-        if (inHood) {
-          const edge = v - top < 0.11 || side - Math.abs(u) < 0.07;
-          // its face: a hollow of dusk, a violet light deep in it
-          const face = Math.hypot(u * 1.4, v - 0.08) < 0.17;
-          dot(g, px, py, edge ? bone : face ? (Math.hypot(u * 1.4, v - 0.1) < 0.07 ? C[3] : C[0]) : v > 0.48 ? C[1] : C[2]);
+        // the cowl
+        const cu = u - 0.04;
+        let w: number;
+        if (v < -0.4) {
+          const e = (v + 0.4) / 0.3;
+          w = e < -1 ? -1 : 0.27 * Math.sqrt(1 - e * e);
+        } else w = 0.27 + 0.21 * ((v + 0.4) / 0.95) ** 1.3;
+        const hem = 0.55 + 0.05 * Math.sin(u * 21 + 1) + 0.03 * Math.sin(u * 47);
+        const inCowl = (w > 0 && Math.abs(cu) <= w && v <= hem) || peakAt(u, v) < 0;
+        if (inCowl) {
+          const face = Math.hypot((u - 0.07) / 0.13, (v + 0.12) / 0.22);
+          const edge = peakAt(u, v) > -0.035 && peakAt(u, v) < 0 ? true : w - Math.abs(cu) < 0.05 || hem - v < 0.06;
+          if (face < 1) {
+            dot(g, px, py, face < 0.55 ? C[0] : face < 0.8 ? C[1] : C[2]);
+            continue;
+          }
+          if (face < 1.28 && v < 0.12) {
+            // the brim round its face, lit
+            dot(g, px, py, bone);
+            continue;
+          }
+          const fold = [-0.2, -0.05, 0.12, 0.27].some((f) => Math.abs(cu - f * (0.55 + 0.7 * clamp01((v - 0.1) / 0.45))) < 0.022) && v > 0.12;
+          const lit = cu < -0.08 && v > -0.3 && Math.abs(cu) > w - 0.13;
+          dot(g, px, py, edge ? bone : fold ? C[2] : lit ? C[4] : C[3]);
           continue;
         }
-        // the blade: inside one disc and outside another, over the hood; its sharp edge (the inner curve) bone
-        const dA = Math.hypot(u + 0.2, v - 0.3);
-        const dB = Math.hypot(u + 0.02, v - 0.62);
-        if (dA <= 0.95 && dB >= 0.95 && v < 0.12 && u < 0.4) {
-          dot(g, px, py, dB - 0.95 < 0.1 ? bone : 0.95 - dA < 0.08 ? C[1] : C[3]);
+        // the blade, out over it: inside one disc and outside another, its point hooking down on the far side
+        const dO = Math.hypot(u + 0.12, v - 0.14);
+        const dI = Math.hypot(u - 0.06, v - 0.36);
+        if (dO <= 0.98 && dI >= 0.86 && v < 0.26 && u < 0.62) {
+          dot(g, px, py, dI - 0.86 < 0.07 ? (flare > 0 ? C[5] : '#fffaf0') : dI - 0.86 < 0.14 ? C[4] : 0.98 - dO < 0.06 ? C[2] : C[3]);
           continue;
         }
-        // the haft, behind the hood, up to the blade
-        const dh = segD(u, v, 0.6, 0.9, 0.38, -0.72);
-        if (dh < 0.06) dot(g, px, py, dh < 0.025 ? C[4] : C[2]);
+        // its haft, down from the blade's heel past the cowl
+        const dh = segD(u, v, 0.56, -0.48, 0.88, 0.82);
+        if (dh < 0.055) dot(g, px, py, dh < 0.022 ? C[4] : C[2]);
       }
     }
     // wisps of dusk curling up off its rim
@@ -1998,8 +2140,11 @@ export function lookW7(m: Monster, sp: Sprite): { sp: Sprite; alpha: number; tin
       if (since >= 0 && since < 0.05) return { sp, alpha: 1, tint: [W7_RAMP.piercing[5], 0.35] };
     }
     if (a.word === 'piercing' && a.side === 'behind' && a.ids.includes(m.id)) {
-      const after = a.t - W7_TIME.lanceWait - W7_TIME.lanceFall;
-      if (after >= 0 && after < 0.06) return { sp, alpha: 1, tint: [W7_RAMP.piercing[5], 0.22] };
+      // lit an instant as the spear's point tears past it
+      const L = Math.hypot(a.x1 - a.x, a.y1 - a.y) || 1;
+      const along = ((m.x - a.x) * (a.x1 - a.x) + (m.y - a.y) * (a.y1 - a.y)) / L;
+      const passed = a.t - W7_TIME.lanceWait - W7_TIME.lanceFall - (along / L) * W7_TIME.lanceRun;
+      if (passed >= 0 && passed < 0.06) return { sp, alpha: 1, tint: [W7_RAMP.piercing[5], 0.3] };
     }
     if (a.word === 'mirroring' && a.side === 'monster' && a.ids[0] === m.id && a.t < 0.15) return { sp, alpha: 1, tint: ['#ffd8e8', 0.4 * (1 - a.t / 0.15)] };
   }
