@@ -118,7 +118,7 @@ export const W10_TIME = {
   /** Lasting: the band of sand-light crawls over what it holds once in this; the grains drift down this fast (px a second). */
   crawl: 2.6,
   drift: 5,
-  /** ...his boost's ribbon trails this much of his path behind him (seconds). */
+  /** ...his boost's ribbon trails this much of his path behind him (seconds at a walk: as far as he walks in it; standing, it lies along the path he walked). */
   ribbon: 1.1,
   /** Fleeting: its speed-streaks whip round this fast (radians a second); its after-images this far apart (seconds). */
   whip: 9,
@@ -1045,7 +1045,12 @@ function splash(g: CanvasRenderingContext2D, cam: Cam, a: Act10, layer: 'floor' 
       const L = Math.hypot(tx - cx, ty - cy);
       for (let s2 = 4; s2 < L * fly; s2 += 1) {
         const q = s2 / L;
-        const wob = (vnoise(s2 * 0.3, j, a.seed) - 0.5) * 3;
+        // (a crack, not a ruled line: it zigzags, a kink every few pixels, up to three off its way, and breaks now and then)
+        const k0 = Math.floor(s2 / 5);
+        const f = (s2 - k0 * 5) / 5;
+        const off = (n: number): number => (n <= 0 ? 0 : (hash2(n, j, a.seed + 71) - 0.5) * 6);
+        const wob = off(k0) + (off(k0 + 1) - off(k0)) * f;
+        if (hash2(k0, j, a.seed + 72) < 0.12) continue;
         const x = cx + (tx - cx) * q - ((ty - cy) / L) * wob;
         const y = cy + (ty - cy) * q + ((tx - cx) / L) * wob * 0.5;
         if (!grain(s2, j + 20, fade, a.seed + j)) continue;
@@ -1437,9 +1442,18 @@ function ribbonPts(cam: Cam, game: Game): [number, number][] {
     for (const p of W10.laidTrail) out.push(S(cam, p.x, p.y, 13 - (out.length - 1) * 0.6));
     return out;
   }
+  // (as much of his path as he walks in W10_TIME.ribbon: when he stops, it lies on along the way he came, not drawn in)
+  const most = W10_TIME.ribbon * ((h as unknown as { d?: { speed?: number } }).d?.speed ?? 4.6);
   let len = 0;
-  for (let i = W10.trail.length - 1; i >= 0 && W10.clock - W10.trail[i].at < W10_TIME.ribbon; i--) {
+  let walked = 0;
+  let wx0 = h.x;
+  let wy0 = h.y;
+  for (let i = W10.trail.length - 1; i >= 0; i--) {
     const p = W10.trail[i];
+    walked += Math.hypot(p.x - wx0, p.y - wy0);
+    wx0 = p.x;
+    wy0 = p.y;
+    if (walked > most) break;
     const sp = S(cam, p.x, p.y, 13);
     const last = out[out.length - 1];
     len += Math.hypot(sp[0] - last[0], sp[1] - last[1]);
@@ -1573,7 +1587,8 @@ export function heroW10(sp: Sprite, h: { x: number; y: number; fx: number; fy: n
   const sx = wx(cam, h.x, h.y);
   const sy = wy(cam, h.x, h.y);
   W10.seen.push({ sp, x: h.x, y: h.y, at: W10.clock });
-  while (W10.seen.length > 12) W10.seen.shift();
+  // (his pictures as drawn over the last moments, however many a second are drawn: enough for his after-images)
+  while (W10.seen.length > 240 || (W10.seen.length > 1 && W10.clock - W10.seen[0].at > 0.4)) W10.seen.shift();
   const b = game ? boosts(game) : null;
   const ch = game?.hero.channel;
   const spin = !!game && !!ch && SKILLS[game.hero.skills[ch.skill]?.id]?.kind === 'whirl' && timeWord(game, ch.skill) === 'fleeting';
@@ -1647,7 +1662,15 @@ export function tickW10(dt: number, game: Game, fx: Fx): void {
   const h = game.hero;
   const last = W10.trail[W10.trail.length - 1];
   if (!last || Math.hypot(h.x - last.x, h.y - last.y) > 0.04) W10.trail.push({ x: h.x, y: h.y, at: W10.clock });
-  while (W10.trail.length && W10.clock - W10.trail[0].at > W10_TIME.ribbon + 0.5) W10.trail.shift();
+  // (his path kept as far back as the ribbon could want it)
+  let kept = 0;
+  for (let i = W10.trail.length - 1; i > 0; i--) {
+    kept += Math.hypot(W10.trail[i].x - W10.trail[i - 1].x, W10.trail[i].y - W10.trail[i - 1].y);
+    if (kept > 12) {
+      W10.trail.splice(0, i);
+      break;
+    }
+  }
   // the held looks: what each leaves as its thing goes (its fade), and when each state began (its build)
   const now = new Map<string, Held>();
   for (const it of heldThings(game)) {

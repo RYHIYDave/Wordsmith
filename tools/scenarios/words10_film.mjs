@@ -41,7 +41,7 @@ const SCENES = [
     cap: 'His whirlwind: each blade trails sand that sifts down; in its half again, sand settles round its edge',
     mobs: [['skeleton', 3.4, 0.9, 'a']],
     at: { 2: [['spin', 1, 3.8]] },
-    focus: [0, -0.4], best: [80, 112],
+    focus: [0, -0.4], best: [92, 126],
   },
   {
     word: 'lasting', key: 'ground', cls: 'warrior', frames: 96, from: 5, words: [[1, 'behind', 'fire'], [1, 'front', 'lasting']],
@@ -58,7 +58,7 @@ const SCENES = [
     focus: [0.4, -0.4],
   },
   {
-    word: 'lasting', key: 'poison', cls: 'warrior', frames: 84, from: 2, words: [[0, 'front', 'poison'], [0, 'front', 'lasting']],
+    word: 'lasting', key: 'poison', cls: 'warrior', frames: 84, from: 4, words: [[0, 'front', 'poison'], [0, 'front', 'lasting']],
     cap: 'His poison on a monster, as hard for longer: its sand pours into a heap at its feet (skipped to its end)',
     mobs: [['skeleton', 1.85, 0, 'a']],
     at: { 3: [['swing', 'a']], 52: [['skip', 'poison', 'a', 0.45]] },
@@ -101,7 +101,7 @@ const SCENES = [
     focus: [0.4, -0.4],
   },
   {
-    word: 'fleeting', key: 'poison', cls: 'warrior', frames: 56, from: 2, words: [[0, 'front', 'poison'], [0, 'front', 'fleeting']],
+    word: 'fleeting', key: 'poison', cls: 'warrior', frames: 58, from: 4, words: [[0, 'front', 'poison'], [0, 'front', 'fleeting']],
     cap: 'His poison on a monster, the same in less time: little stars pop on it one after another',
     mobs: [['skeleton', 1.85, 0, 'a']],
     at: { 3: [['swing', 'a']] },
@@ -139,7 +139,8 @@ const SCENES = [
   {
     word: 'vast', key: 'strike', cls: 'warrior', frames: 40, from: 2, words: [[0, 'behind', 'vast']],
     cap: 'Behind, on his Strike: a quarter of each hit splashes on: a ring of earth, a rock thrown to each one near',
-    mobs: [['skeleton', 1.85, 0, 'a'], ['skeleton', 3.0, -1.15, 'b'], ['skeleton', 3.0, 1.15, 'c']],
+    // (the two near ones within the splash's reach of the one struck, apart from it and from each other on the screen)
+    mobs: [['skeleton', 1.85, 0, 'a'], ['skeleton', 2.85, -1.35, 'b'], ['skeleton', 3.4, 1.0, 'c']],
     at: { 3: [['swing', 'a']] },
     focus: [2.2, -0.5], best: [5, 33],
   },
@@ -387,6 +388,8 @@ export default async function (page, snap) {
           for (let k = did + 1; k <= f; k++) for (const a of sc.at[k] || []) { const r = await act(a); if (r !== 'ok') bad(`${name} f${k} ${a[0]}: ${r}`); }
           did = f;
         }
+        // (what the rules sent from the scene's moments is taken in by the page before the picture: a number it raises, cleared)
+        await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
         await page.evaluate(() => window.__w10.step());
         if (process.env.DEBUG) console.log('   ', i, await page.evaluate(() => { const g = window.__dbg.game(); const h = g.hero; return JSON.stringify({ ch: h.channel && { s: h.channel.skill, t: +h.channel.t.toFixed(2) }, wu: h.windup && h.windup.skill, hold: window.__w10.ctl.hold, hn: g.holdNow, cd: h.skills.map((q) => q && +q.cd.toFixed(2)) }); }));
         const keep = pass === 'best' ? i >= b0 * 2 : i >= sc.from && (!stills || i === Math.floor((sc.from + sc.frames) / 2));
