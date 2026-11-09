@@ -1,4 +1,4 @@
-# His three new words' looks (Lasting, Fleeting, Vast) and the Lexicon's 28 stones: step 1, the stills
+# His three new words' looks (Lasting, Fleeting, Vast) and the Lexicon's 28 stones: step 1, the stills; step 2, the film
 
 A mock-up on `art/words10` (from the main chat's `origin/words10` at ea16aff2: the seven words' rules and his three, on
 25.3.1; with `art/words7` at b62b603e merged in: the seven's looks). The three's looks are in `src/render/words10.ts`, behind
@@ -27,6 +27,7 @@ Lasting, Fleeting and Vast, plus room for 28 rune stones in the Lexicon; then al
   the longest page at the game's own width. As it is now, then three ways, each at the game's size and at twice; the pick marked.
   The ten new words show the art chat's rune stones (laid in for the picture only).
 - `pictures/lexicon_pages.png` (step 1c, below): the Lexicon in five pages by what they do, his pick.
+- `pictures/words3_film.mp4` (step 2, below): the three at work, 52.2 s.
 
 ## The three
 
@@ -266,3 +267,119 @@ the same three pictures and its list of the five pages by their new names (1200 
 on the phone's own pixels: each name whole and in the middle of its tab, the same room to either side (where the room left over
 is odd, the odd pixel to the right: CONTROL 9 and 10, SPOILS 11 and 12, game pixels), 6 above and 7 below; the new-word stud on
 SPOILS clear of its name. `tests/words10.test.ts` 8 now also holds the five names, one word each, in his order.
+
+## Step 2: at work, and the film
+
+### His words
+
+9 Nov, by 16:45: shown words3_looks.png and asked “Are the three new words' looks right (words3_looks.png)?”: “Yes, animate them
+(Recommended)” (offered as: next, a short film of all three at work, then all ten words go to the main chat). And his rule for all
+art, that everything moves at 30 pictures a second: “Yes, everything (Recommended)”.
+
+### The film
+
+`pictures/words3_film.mp4` (52.2 s, 1266 by 540, 30 a second, H.264 yuv420p, 7.2 MB): in the practice room as the player sees it,
+the Warrior (and the Mage for her orb). Each word in turn: a card with its stone and its colours; then on two or three of his
+abilities and on a monster at full speed, the whole screen; then its best moment again at twice the size and half speed. Captioned;
+where a piece skips ahead in a thing's own time to show how a long one ends, its caption says so.
+
+| Word | At full speed | Again, twice the size, half speed |
+|---|---|---|
+| Lasting | her orb (and the same orb 4.6 s on, as it ends); his whirlwind; burning ground, near its end; Guarding's shield as he walks; his poison on a skeleton; a cultist's poison on him | his whirlwind in the half again it gives, and the sand left as it stops |
+| Fleeting | her orb; his whirlwind; burning ground; Guarding's shield as he walks; his poison on a skeleton; a cultist's poison on him | his whirlwind |
+| Vast | in front, on her orb, his whirlwind and burning ground; behind, on his Strike; a skeleton's warned blow | the splash off his Strike |
+
+The rules are the main chat's, as on this branch: each scene sets the words in his own abilities (`socket`), and the rules make
+what the looks are drawn from: the orb (`useSkill`), his spin (held), the burning ground (`addGround`), Guarding's shield (`boons`),
+his poison (his swing), a monster's poison on him (`hurtHero`, its words), a monster's warning (`addWarn`, its words). The looks
+are called up by what the rules send (`burst`, `zone`) and keep, nothing else.
+
+### Each look's beats (`W10_BEATS`, seconds)
+
+Every look moves at 30 a second and is drawn from its cause and the time since: what the rules keep (an orb's `t` and `next`, a
+patch's `t`, his spin's `channel.t`, a boost's time left, a poison's time left, a warning's `t`) or an event and its own clock. A
+hit of 0 is held: the look lies on for as long as the rules keep its cause; its fade then runs after the cause is gone, what it
+left settling. Vast's ring and splash have a strike (Movement 9): a held wind-up, a fast smeared strike, a big wind-down.
+
+| Look | Build | Hit | Fade | What happens |
+|---|---|---|---|---|
+| Lasting on a thing (her orb, a familiar, a turret) (`lasting:thing`) | 0.25 | (held) | 0.7 | the sand-light gathers on it as it comes (0.25); while it lasts, a band of it crawls across once in 2.6 s and a ring of its sand turns slowly round it; in the half again it gives, its sand pours out under it into a heap; as it goes, the heap is left, and blows away (0.7) |
+| Lasting on his whirlwind (`lasting:spin`) | 0.25 | (held) | 0.7 | each blade's trail of sand-light draws out as the spin begins (0.25); while it spins, the trails hang, sagging, sand sifting down out of them; in the half again it gives, the sand settles in a drift round its edge; as it stops, the sand in the air falls, and the drift blows away (0.7) |
+| Lasting on a patch (burning ground and the like) (`lasting:patch`) | 0.3 | (held) | 0.7 | the sand-light gathers over it as it is laid (0.3); a band of it crawls across; in the half again it gives, dunes drift in from its edge in rippled tongues, burying it as it ends; the dunes lie a moment after, and blow away (0.7) |
+| Lasting on a boost it gives (`lasting:boost`) | 0.3 | (held) | 0.4 | its ribbon of sand-light draws out from his back (0.3); trails along his path while it lasts, rippling and turning; frays to grains from its tail as it ends (0.4) |
+| Lasting on his poison or burning on a monster (`lasting:dot`) | 0.25 | (held) | 0.6 | his poison or burning on a monster: the sand-light gathers on it (0.25); a ring of grains turns round it, its sand pouring into a heap at its feet as the poison runs on; the heap is left as it ends, and blows away (0.6) |
+| Lasting on a monster (its poison on him) (`lasting:monster`) | 0.25 | (held) | 0.6 | a monster's poison, burning or chill on him, lingering: the same, in the enemy's pink and gold |
+| Fleeting on a thing (her orb) (`fleeting:thing`) | 0.1 | (held) | 0.25 | its after-images snap in (0.1); while it lasts they stutter to either side of it, a new place 15 times a second; streaks whip round it at 9 radians a second; at each of its waves (a third sooner) a pulse of lilac bursts out of it (0.15); as it goes, it bursts in lilac sparks (0.25) |
+| Fleeting on his whirlwind (`fleeting:spin`) | 0.08 | (held) | 0.2 | a stutter of him in lilac as the spin begins; each blade traced twice behind it, streaks whipping round, while it spins; gone with a flick of sparks as it stops (0.2) |
+| Fleeting on a patch (`fleeting:patch`) | 0.1 | (held) | 0.4 | thin quick tongues lick up all round its edge (0.1), flickering fast, sparks shooting up and burning out; over its last 0.4 s they burn down and out, a last spray of sparks |
+| Fleeting on a boost it gives (`fleeting:boost`) | 0.06 | (held) | 0.3 | lilac after-images of him a step behind him (0.06), streaks whipping round him while it lasts; they thin away as it ends (0.3) |
+| Fleeting on his poison on a monster (each star) (`fleeting:dot`) | 0.03 | 0.06 | 0.27 | his poison or burning on a monster, ticking fast: a little star pops on it every 0.09 s, each popping (0.03), bursting with a spark flung off (0.06), thinning away (0.27) |
+| Fleeting on a monster (each star) (`fleeting:monster`) | 0.03 | 0.06 | 0.27 | a monster's poison or burning on him, ticking fast: the same stars, in the enemy's pink and gold |
+| Vast in front (its ring) (`vast:front`) | 0.06 | 0.14 | 0.5 | held: the floor cracks along where its edge was, the cracks running round, dust puffing up (0.06); the strike: a bank of dust shoved out to its new edge, smeared, grit and clods flung past it (0.14); the wind-down: it rolls the last of the way, settles, the grit falling back, the cracks dimming (0.5) |
+| Vast behind (its splash) (`vast:behind`) | 0.06 | 0.16 | 0.55 | held: the floor heaves under the one struck, rocks torn up out of it (0.06); the strike: a ring of earth runs out to its reach and a rock arcs to each one near on a trail of lit dust, smeared (0.16); the wind-down: each lands in a fountain of dirt, clods falling back, the dust settling (0.55) |
+| Vast on a monster (its warning) (`vast:monster`) | 0.2 | (held) | 0.12 | its warning widens out from its old reach to its new (0.2): held, the old reach a broken ring of pink, pink dust shoved outward, gold barbs on its new edge beating, for the rules' warning; it snaps out as the blow lands (0.12) |
+
+Its other numbers (`W10_TIME`): Lasting's band crawls across once in 2.6 s, its grains drift 5 pixels a second, its ribbon is 1.1 s
+of his path; Fleeting's streaks whip at 9 radians a second, its after-images jump 15 times a second, an orb's wave bursts out in
+0.15 s; Vast's ring eases out over 0.34 s once the floor has cracked (most of the way in its 0.14 s strike), its splash's ring over
+0.32 s, each settling over 0.3 s.
+
+### For the main chat: what the looks read, and what to add
+
+All only while `WORDS10_LOOK.on` (off), as in step 1 (`eventsW10`, `tickW10`, `floorW10`, `airW10`, `lightsW10`, `heroW10`,
+`thingW10`); no new hook. Read from the rules' own names:
+
+| What | Read from |
+|---|---|
+| Lasting or Fleeting on an ability | its `Resolved.last` (more than 1, Lasting; less, Fleeting); Fleeting's `pace` for an orb's waves |
+| what it makes, and how far through it is | `game.orbs` (`t`, `life`, `next`), `game.familiars`, `game.contraptions` (`t`, `life`), the patches in `game.zones` (`t`, `dur`; not hostile), each by its `skill`; his spin, `hero.channel` (`t`; its length `SKILLS[...].channel * last`) |
+| the orb as drawn | its swell, its shrinking at its end and its bob, as render.ts draws it (from `t`, `life`, `next`, its `id`): if those change, these follow |
+| when it is gone | the thing no longer in its list: what Lasting leaves (a heap, dunes, a drift) and Fleeting's last sparks settle over its fade |
+| a boost and how long it has | `hero.mightT`, `hasteT`, `frenzyT`, `shieldT`, and an ability carrying Lasting or Fleeting that gives that boost; when it began, the look's own clock |
+| his poison or burning on a monster | `Monster.poisonT`, `burnT`, by `Monster.lastSkill` |
+| a monster's poison, burning or chill on him | `hero.poisonT`, `burnT`, `chillT`, and the nearest monster within 4.5 tiles carrying Lasting or Fleeting |
+| Vast in front | `burst` with `words` holding 'vast' (`r` its new reach); a `zone` event of a patch laid by an ability with Vast in front. A whirlwind's turns (three or four a second) roll out one ring at a time, a new one as the last winds down |
+| Vast behind | the 'shock' `burst`, `r` VAST.splashR, no `words` (the near ones found as the rules find them), or `vastSplash` |
+| Vast on a monster | a `warn` zone whose `words` hold 'vast' (a minion's, by its `half`, at half): `t`, `dur`, its old reach `r / (1 + VAST.monster)` |
+
+WHAT THE MAIN CHAT SHOULD ADD, or say otherwise (none changes a look; each would make one exact):
+1. **`vastSplash { x, y, r, ids }`** as each Vast behind splash lands (`ids` those it reaches). Until then the look reads the 'shock'
+   burst, as above.
+2. **Hero `dotBy`**: the monster whose poison, burning or chill is on him. Until then the look takes the nearest carrying the word.
+3. **A boost's maker**: which ability gave each boost. Until then the look takes any of his abilities carrying the word that gives it.
+4. **Vast in front's old edge**: the rules' widening grows with Strength (`VAST.wider` to `widerMost`); the burst sends only the new
+   reach, so the look takes the old edge as `r / (1 + VAST.wider)`. Send `r0` (or the ability, `skill`) on the `burst` to make it exact.
+5. (From step 1's notes, still so) the 'shock' burst's own look, and the stand-in colours of the three, are the game's: leave the
+   stand-ins out while the switch is on.
+
+### How it was made and checked
+
+- `tools/scenarios/words10_film.mjs` (on the page made by `node tools/build_to.mjs dist/words10_looks.html`, `--touch --size 844x360
+  --dpr 1.5`, one word at a time: `ONLY=lasting`, and so on), then `python3 tools/words10_film.py <the three prefixes> <out.mp4>`.
+- NOTHING THROUGH ANYTHING: every picture was checked by the scenario (`crowd`): no monster in him, in another or in a pillar, he
+  not in a pillar; for the film's pictures it reported none. The monsters stand where they were put (his blows do not knock them about), at least 1.85 across from
+  him where he strikes them.
+- Every picture looked at close, at the game's size: every piece laid out picture by picture (every one, or every second or third) at the
+  game's own pixels, and the close ones at twice; the film's own pictures (its cards, its captions, its close crops) too. What it
+  found, made right before he sees it: (1) a spin's wind (the game's own, `render/wild.ts`) left whirling round him into the scenes
+  after it, and his hold button kept down between scenes, so that a spin began in the next: both let go between scenes (the film's
+  own hands); (2) a number of the game's own over the looks (a blow's damage, raised as the page took in the rules' events after the
+  picture was cleared): the page takes the events in first; (3) the moving looks' grains were chosen by their place on the screen,
+  so they boiled from picture to picture as the look moved: each grain is now chosen by its own place in the look (a ring of sand
+  turning, a blade's trail, a streak whipping round, the ribbon, the dust's front, a rock's trail); (4) the boost's ribbon drew in
+  toward him when he stopped: it lies on along the way he came, as far as he walks in 1.1 s; and its loose grains, as it frayed,
+  fell in a dotted line under it: each now falls and drifts its own way; (5) Fleeting's after-images of him walking sat under him
+  (0.05 s at a walk is a few pixels, and his pictures were kept by count, too few at the film's pace): kept by time, and at least
+  a step apart; (6) the splash's cracks to each near one read as ruled lines: they zigzag and break now; (7) the two near ones
+  stood one over the other, the lower one's bar across the upper one's legs: spread; (8) Fleeting's stars began with stars from
+  before the poison: only its own now. Left as they are, THE GAME'S OWN, not these looks (seen with the looks off, `NOLOOK=1`):
+  the white dotted rings and the thin white lines on those his Strike hits, the whirlwind's white blades and wind, the orb's
+  lightning and its waves, Guarding's bubble, the hit flash, and the names of the words on his ability bar in the main chat's
+  stand-in colours.
+- `tests/words10_beats.test.ts` (4): each look drawn from its cause, built from little as it begins, through its beats, and gone,
+  every pixel and its light, when its time is up (and what Lasting leaves settling after its thing, then gone); a whirlwind's
+  turns a ring at a time; with the switch off nothing drawn, lit, kept or ticked, whatever the rules send or keep; nothing cyan
+  on a monster's side, its pink there; every look's beats written down, Vast's strike quick and its wind-down big, Fleeting's
+  beats quicker than Lasting's. `tests/words10.test.ts` 8 of 8 (its stills' clock set as the stills were: what the rules keep first
+  seen at 0, held at 3.7).
+- Not run: the regression; a real phone.

@@ -244,6 +244,8 @@ export default async function (page, snap) {
     return page.evaluate((sc) => {
       const d = window.__dbg; const g = d.game(); const h = g.hero; const fx = d.fx; const W10 = window.__w10; const w10 = d.words10;
       d.slowmo = 1; d.god = true;
+      // (NOLOOK=1: the game alone, its own looks, the switch off: to tell its pictures from ours)
+      d.words10.switch.on = !sc.nolook;
       W10.wrap();
       W10.ctl.hold = null; W10.ctl.move = null;
       if (h.channel) g.endChannel(true);
@@ -362,7 +364,8 @@ export default async function (page, snap) {
   };
   const where = async (focus) => page.evaluate((f) => { const [x, y] = window.__w10.at(f[0], f[1]); const p = window.__dbg.at(x, y); return { x: p.x, y: p.y, w: window.__dbg.screen.w, h: window.__dbg.screen.h }; }, focus);
 
-  for (const sc of SCENES) {
+  for (const sc0 of SCENES) {
+    const sc = process.env.NOLOOK ? { ...sc0, nolook: true } : sc0;
     if (only.length && !only.includes(sc.word) && !only.includes(`${sc.word}_${sc.key}`)) continue;
     const name = `${sc.word}_${sc.key}`;
     for (const pass of sc.best && !stills ? ['full', 'best'] : ['full']) {

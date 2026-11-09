@@ -36,6 +36,11 @@ def hexrgb(h):
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 
 
+def name_colour(ramp):
+    # (its own colour, or its glow where its colour is too dark to read on the dark band: Vast's deep earth, its dust)
+    return hexrgb(ramp[3]) if sum(hexrgb(ramp[3])) > 330 else hexrgb(ramp[4])
+
+
 def wrap(d, text, font, width):
     words, lines, cur = text.split(' '), [], ''
     for w in words:
@@ -55,13 +60,13 @@ def caption(im, word, text, colour, note=None):
     name = word.upper()
     x = 14 + d.textlength(name, font=mid) + 14
     lines = wrap(d, text, small, W - x - 14)
-    d.rectangle((0, 0, W, 18 + 28 * len(lines)), fill=(12, 10, 20, 215))
+    d.rectangle((0, 0, W, 18 + 28 * len(lines)), fill=(12, 10, 20, 240))
     d.text((14, 9), name, font=mid, fill=colour)
     for k, ln in enumerate(lines):
         d.text((x, 11 + 28 * k), ln, font=small, fill=PINK if text.startswith('On a monster') else PALE)
     if note:
         tw = d.textlength(note, font=small)
-        d.rectangle((W - tw - 26, H - 40, W, H), fill=(12, 10, 20, 215))
+        d.rectangle((W - tw - 26, H - 40, W, H), fill=(12, 10, 20, 240))
         d.text((W - tw - 14, H - 33), note, font=small, fill=GREY)
     return im
 
@@ -72,7 +77,7 @@ def card(word, ramp):
     st = Image.open(io.BytesIO(base64.b64decode(runes[word].split(',', 1)[1]))).convert('RGBA')
     stb = st.resize((st.width * 14, st.height * 14), Image.NEAREST)
     im.paste(stb, (120, (H - stb.height) // 2), stb)
-    col = hexrgb(ramp[3]) if sum(hexrgb(ramp[3])) > 200 else hexrgb(ramp[4])
+    col = name_colour(ramp)
     d.text((330, 130), word.upper(), font=big, fill=col)
     d.text((330, 190), f'({STAT[word]})  its rune: {RUNE_IS[word]}', font=small, fill=PALE)
     d.text((330, 222), f'its colour: {COLOUR_IS[word]}', font=small, fill=GREY)
@@ -104,7 +109,7 @@ for p in plan:
             put(c)
         last = word
     files = sorted(glob.glob(f"{p['pre']}_{p['name']}_*.png"))
-    col = hexrgb(p['ramp'][3]) if sum(hexrgb(p['ramp'][3])) > 200 else hexrgb(p['ramp'][4])
+    col = name_colour(p['ramp'])
     for f in files:
         im = Image.open(f).convert('RGB')
         if im.size != (W, H):

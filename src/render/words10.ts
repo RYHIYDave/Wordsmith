@@ -11,6 +11,10 @@
 // and of what the rules keep (an orb's age, a patch's, his spin's, a boost's, a poison's), so a still is one moment of the
 // same drawing the next step animates.
 //
+// Step 2 (his word, 9 Nov by 16:45: “Yes, animate them (Recommended)”): every look moves at 30 a second through its beats
+// (W10_BEATS), each drawn from its cause and the time since; what a held look leaves settles after its thing is gone. The film:
+// docs/mockups/words10/pictures/words3_film.mp4 (tools/scenarios/words10_film.mjs, tools/words10_film.py).
+//
 // WHAT IT READS (all only while WORDS10_LOOK.on), the rules' own state: each of his abilities' Resolved `last`, `pace` and
 // `vast`, and its words in front; what an ability made, by its `skill`: game.orbs, game.familiars, game.contraptions, the
 // patches in game.zones, his held spin (hero.channel); the boosts on him (mightT, hasteT, frenzyT, shieldT) and the abilities
@@ -655,10 +659,15 @@ function ribbon(g: CanvasRenderingContext2D, pts: [number, number][], t: number,
       const keep = (q > 0.6 ? 1 - (q - 0.6) / 0.4 : 1) * (fray > 0 ? clamp01((1 - fray - q) / 0.3) : 1);
       const A = Math.round(at);
       // grains frayed off it, falling (more of them where it is fraying)
-      const loose = fray > 0 && keep < 0.9 ? 0.3 : q > 0.35 ? 0.08 : 0;
+      const fraying = fray > 0 && keep < 0.9;
+      const loose = fraying ? 0.2 : q > 0.35 ? 0.08 : 0;
       if (loose > 0 && hash2(A, 3, seed + 4) < loose) {
-        const fallen = fray > 0 && keep < 0.9 ? clamp01(fray * 2 - q * 0.5 + hash2(A, 1, seed + 5) * 0.5) * 14 : ((t * 0.7 + hash2(A, 1, seed + 5)) % 1) * 10;
-        if (grain(A, 2, fray > 0 ? 1 - fray * 0.6 : keep, seed + 6)) dot(g, x + 1 + fallen * 0.3, yy + wide + 2 + fallen, C[4]);
+        // (each grain its own fall and drift, so the loose ones scatter, never a dotted line under it)
+        const h1 = hash2(A, 1, seed + 5);
+        const h2 = hash2(A, 7, seed + 5);
+        const fallen = fraying ? clamp01(fray * 2.2 - q * 0.6 + h1 * 0.4) * (5 + h2 * 16) : ((t * 0.7 + h1) % 1) * (6 + h2 * 8);
+        const drift = (h2 - 0.5) * 8 * (fraying ? fray : 0.4) + fallen * 0.3;
+        if (grain(A, 2, fraying ? 1 - fray * 0.85 : keep, seed + 6)) dot(g, x + 1 + drift, yy + wide + 2 + fallen, h1 < 0.5 ? C[4] : C[3]);
       }
       if (keep <= 0 || (keep < 1 && !grain(A, 0, keep, seed))) continue;
       const top = twist > 0;
@@ -1611,11 +1620,16 @@ export function heroW10(sp: Sprite, h: { x: number; y: number; fx: number; fy: n
     const was = [...W10.seen].reverse().find((q) => W10.clock - q.at >= e * W10_TIME.stutter - 1e-6);
     let x = was ? wx(cam, was.x, was.y) : sx;
     let y = was ? wy(cam, was.x, was.y) : sy;
-    if (Math.hypot(x - sx, y - sy) < e * 2) {
+    const d = Math.hypot(x - sx, y - sy);
+    if (d < e * 2) {
       // (standing: a step back from him, the way he faces, each further)
       const back = h.fx - h.fy >= 0 ? -1 : 1;
       x = sx + back * e * 5;
       y = sy + e * 0.5;
+    } else if (d < e * 9) {
+      // (walking: where he was, but at least a step back along his way, each further, so that each shows clear of him)
+      x = sx + ((x - sx) / d) * e * 9;
+      y = sy + ((y - sy) / d) * e * 9;
     }
     out.push({ sp: tinted(was ? was.sp : sp, e === 1 ? C[2] : C[1]), x: Math.round(x), y: Math.round(y), depth: h.x + h.y - 0.01 * e, alpha: amt * (0.9 - e * 0.2) });
   }
