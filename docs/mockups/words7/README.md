@@ -13,6 +13,10 @@ down, each with a rune stone, a colour and a look for each of its three sides (i
 Shown `words7_looks.png` and asked “Are the seven new words' looks right (words7_looks.png)?”, by 07:20 on 9 Nov: “Yes,
 animate them (Recommended)” (offered as: next, a film of all seven at work, then hand them to the main chat).
 
+Shown `words7_film.mp4` (at ba499585) and asked “Are the seven new words right at work (words7_film.mp4)?”, by 13:37 on
+9 Nov: “Yes, hand them to main (Recommended)” (offered as: the main chat puts them in the game behind their switch and
+wires them to the rules). THE SEVEN WORDS' LOOKS ARE DONE, WITH HIS YES.
+
 ## The picture
 
 `pictures/words7_looks.png` (1200 by 4706): a row for each word: its rune stone (big, and at the game's size), its name in
