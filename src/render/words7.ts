@@ -281,7 +281,7 @@ export const W7 = {
   /** His last swing, as the game sent it (its 'swing' event): where, which way, how far it reached, and when (this clock). */
   swing: null as { x: number; y: number; dx: number; dy: number; reach: number; at: number } | null,
   /** The bodies Culling cut in two (fx.fallen), and the way the cut went: they lie so. */
-  cut: new WeakMap<object, { way: number }>(),
+  cut: new WeakMap<object, { way: number; src?: Sprite }>(),
 };
 
 export function clearW7(): void {
@@ -293,7 +293,7 @@ export function clearW7(): void {
   W7.hot.clear();
   W7.panes = new WeakMap<object, number>();
   W7.swing = null;
-  W7.cut = new WeakMap<object, { way: number }>();
+  W7.cut = new WeakMap<object, { way: number; src?: Sprite }>();
 }
 
 export type W7Options = Partial<Omit<Act, 'id' | 'word' | 'side' | 'seed'>> & { seed?: number };
@@ -707,8 +707,8 @@ function pierceFront(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game):
       const tx = px - vx * 0.03;
       const ty = py - (vy + 320 * since) * 0.03;
       if (py > ey + 16) continue;
-      // (nor through the stone its line ended on)
-      if (a.stone && (px - endX) * ux + (py - endY) * uy > -2) continue;
+      // (nor past the face of the stone its line ended on, across the screen: what falls, falls down its face)
+      if (a.stone && (Math.abs(ux) > 0.3 ? (px - endX) * Math.sign(ux) : (py - endY) * Math.sign(uy)) > -2) continue;
       streak(g, tx, ty, px, py, [C[2], C[3], C[4], C[5]], 1, 0, clamp01(1.2 - since / 0.5));
     }
   });
@@ -748,6 +748,8 @@ function pierceEnd(g: CanvasRenderingContext2D, x: number, y: number, ux: number
     const go = (v * (1 - Math.exp(-since * 7))) / 7;
     const px = x + dx * go;
     const py = y + dy * go * 0.7 - 18 * since;
+    // (none past the face of stone, across the screen)
+    if (stone && (Math.abs(ux) > 0.3 ? (px - x) * Math.sign(ux) : (py - y) * Math.sign(uy)) > -2) continue;
     const c = since < 0.1 ? C[5] : since < life * 0.7 ? C[4] : C[3];
     dot(g, px, py, c);
     // the bigger motes: a glint of four points while they are fresh
@@ -768,6 +770,8 @@ function pierceEnd(g: CanvasRenderingContext2D, x: number, y: number, ux: number
     const v = 30 + hash2(i, seed, 46) * 40;
     const px = x + dx * v * since;
     const py = y + dy * v * since * 0.6 - 25 * since + 220 * since * since;
+    // (down on the floor, 14 below the bolt, they are gone among its stones)
+    if (py > y + 13) continue;
     dot(g, px, py, STONE[3]);
     if (i % 2 === 0) dot(g, px + 1, py, STONE[2]);
   }
@@ -1545,16 +1549,17 @@ function cullFront(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game): v
   // where the blade is: across it along the cut (from his side, a little down to the far side), and on a little after
   const lead = u <= 1 ? u : 1 + 0.25 * easeOut(after / 0.3);
   // (from the near edge of it, clear of him, to well past its far side)
-  const path = (v: number): [number, number] => [mx + way * (-12 + 42 * v), cy + (-12 + 42 * v) * 0.35];
+  const path = (v: number): [number, number] => [mx + way * (-8 + 38 * v), cy + (-8 + 38 * v) * 0.35];
   const dimOf = (f: number): number => (f > 0.7 ? 0 : f > 0.45 ? 1 : f > 0.2 ? 2 : 3);
   const H = Math.round(34 * (0.55 + 0.45 * fade));
-  const T = Math.max(2, Math.round(8 * (0.4 + 0.6 * fade)));
+  const T = Math.max(2, Math.round(6 * (0.4 + 0.6 * fade)));
   // its smear: the blade where it was a moment ago, close behind it, darker the further back, merging into one swept band
   // (drawn in from its tail as it fades)
   const ghosts = u <= 1 ? 5 : Math.max(0, Math.floor(5 * fade - 1));
   for (let j = ghosts; j >= 1; j--) {
     const v = lead - j * 0.075;
-    if (v < -0.08) continue;
+    // (none behind where it came in: it never reaches back toward him)
+    if (v < 0) continue;
     const [gx, gy] = path(v);
     scythe(g, gx, gy, H - j * 2, Math.max(2, T - Math.ceil(j / 2)), way, C, Math.min(3, dimOf(fade) + Math.ceil(j / 2)));
   }
@@ -1585,25 +1590,26 @@ function cullFront(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game): v
 }
 
 /**
- * The scythe's blade: a crescent `H` tall and `T` thick at its middle, pointed at both ends, its back bulging the way it
- * sweeps (`way`); bone along its leading edge, dusk violet in its body, darker at its inner curve; `dim` whole tones darker.
- * Solid: never broken up.
+ * The scythe's blade: a crescent `H` tall and `T` thick at its middle, drawn to a point at both ends, its back (a shallow arc)
+ * bulging the way it sweeps (`way`), its points only a little behind its middle (it never reaches far back); bone along its
+ * leading edge, dusk violet in its body, darker at its inner curve; `dim` whole tones darker. Solid: never broken up.
  */
 function scythe(g: CanvasRenderingContext2D, cx: number, cy: number, H: number, T: number, way: number, C: readonly string[], dim: number): void {
   if (H < 4) return;
-  const R = Math.sqrt((H * H) / 4 + (T * T) / 4);
-  const ax = cx - way * (R - T / 2);
-  const bx = ax - way * T;
+  const R = Math.max(H * 0.62, 8);
   const tone = (i: number): string => C[Math.max(0, i - dim)];
-  for (let y = -Math.ceil(H / 2); y <= Math.ceil(H / 2); y++) {
-    for (let x = -Math.ceil(T) - 2; x <= Math.ceil(T) + 2; x++) {
-      const px = cx + x;
-      const da = Math.hypot(px - ax, y);
-      const db = Math.hypot(px - bx, y);
-      if (da > R || db < R) continue;
-      const toEdge = R - da;
-      const toBack = db - R;
-      dot(g, px, cy + y, tone(toEdge < 1.2 ? 5 : toEdge < 2.3 ? 4 : toBack < 1 ? 2 : 3));
+  const half = Math.ceil(H / 2);
+  for (let y = -half; y <= half; y++) {
+    const q = (2 * y) / H;
+    if (Math.abs(q) > 1) continue;
+    // its leading edge on the arc; its thickness falling away to nothing at its points
+    const lead = cx - way * (R - Math.sqrt(R * R - y * y));
+    const thick = T * (1 - q * q) ** 0.8;
+    if (thick < 0.5) continue;
+    for (let k = 0; k <= Math.ceil(thick); k++) {
+      if (k > thick) break;
+      const px = lead - way * k;
+      dot(g, px, cy + y, tone(k < 1.2 ? 5 : k < 2.3 ? 4 : thick - k < 1 ? 2 : 3));
     }
   }
 }
@@ -2820,8 +2826,11 @@ const cullThrough = (): number => W7_TIME.cullHold + W7_TIME.cullSweep * 0.5;
 const cullSlide = (since: number): number => Math.min(7, 1 + Math.round(clamp01(since / 0.25) * 6));
 
 /**
- * A body falling (render.ts, the fallen standing among the figures): one Culling cut down is held an instant, whole; once the
- * blade is through it, its halves slide apart and it falls so, and lies so.
+ * A body falling (render.ts, the fallen standing among the figures): one Culling cut down is held an instant, whole (its
+ * picture as it stands is kept); once the blade is through it, it comes apart in two whole halves of that picture: its legs
+ * fold back to the floor, and its top slides off the cut, tips and falls, landing on the floor beside them a beat after; both
+ * lie there, as the body would, and fade with it (the game's own fading of the fallen). Nothing of it hangs in the air, and
+ * neither half is cut away.
  */
 export function fallenW7(f: { x: number; y: number; t: number }, sp: Sprite): Sprite | null {
   if (!WORDS7_LOOK.on) return null;
@@ -2829,8 +2838,216 @@ export function fallenW7(f: { x: number; y: number; t: number }, sp: Sprite): Sp
   if (!cut) return null;
   const a = W7.acts.find((q) => q.fall === f && q.word === 'culling');
   const since = a ? a.t - cullThrough() : 99;
-  if (since < 0) return null;
-  return splitOf(sp, cullSlide(since), cut.way);
+  if (since < 0 || !cut.src) {
+    cut.src = sp;
+    return null;
+  }
+  return cutFallen(cut.src, cut.way, since);
+}
+
+/**
+ * A body lying (render.ts, drawn with the floor once its fall is done, dimming into it and fading as the game has bodies do):
+ * one Culling cut down lies in its two halves, as they came to rest.
+ */
+export function lyingW7(f: object): Sprite | null {
+  if (!WORDS7_LOOK.on) return null;
+  const cut = W7.cut.get(f);
+  if (!cut || !cut.src) return null;
+  const a = W7.acts.find((q) => q.fall === f && q.word === 'culling');
+  return cutFallen(cut.src, cut.way, a ? Math.max(0, a.t - cullThrough()) : 99);
+}
+
+/** A box (game pixels, from a picture's anchor, its foot: y up is less), and where a piece of a body is: its middle, its turn. */
+export interface CutBox {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+export interface CutPose {
+  x: number;
+  y: number;
+  ang: number;
+}
+/** When the halves of one cut down have come to rest (seconds after the blade went through). */
+export const CUT_REST = 0.75;
+
+/** How low a piece's box reaches, turned `ang` about its middle at height `y` (the floor is 0, below is more). */
+const lowOf = (y: number, ang: number, hw: number, hh: number): number => y + Math.abs(Math.sin(ang)) * hw + Math.abs(Math.cos(ang)) * hh;
+
+/**
+ * Where the two halves of one cut down are, `since` seconds after the blade went through it (`way` the way the blow went across
+ * the screen), from the boxes of its two halves as it stood. Its LEGS fold back toward the one who struck it, turning on their
+ * foot (once its top has slid off them) and resting on the floor all the while (never into it), down at 0.22 s. Its TOP slides off down the cut, then falls, tipping
+ * the way the blow went, and lands on its side on the floor beside the legs a beat after them; neither hangs in the air.
+ * `botDown`, `topDown`: when each came to rest.
+ */
+export function cutFall(since: number, way: number, top: CutBox, bot: CutBox): { top: CutPose; bot: CutPose; botDown: number; topDown: number } {
+  const quarter = Math.PI / 2;
+  // the legs, turning on their foot
+  const bhw = (bot.x1 - bot.x0) / 2;
+  const bhh = (bot.y1 - bot.y0) / 2;
+  const px = (bot.x0 + bot.x1) / 2;
+  const bk = clamp01((since - 0.06) / 0.16);
+  const ba = -way * quarter * bk * bk;
+  // (its middle, turned about its foot: straight above the foot, at half its height)
+  const by0 = (bot.y0 + bot.y1) / 2;
+  const bx = px - by0 * Math.sin(ba);
+  let by = by0 * Math.cos(ba);
+  const bl = lowOf(by, ba, bhw, bhh);
+  if (bl > 0) by -= bl;
+  // the top: down the cut, then falling, tipping; on the floor, it settles flat on its side
+  const thw = (top.x1 - top.x0) / 2;
+  const thh = (top.y1 - top.y0) / 2;
+  let tx = (top.x0 + top.x1) / 2;
+  let ty = (top.y0 + top.y1) / 2;
+  let ta = 0;
+  const slide = 0.12;
+  let vx = 0;
+  let vy = 0;
+  let down = -1;
+  const dt = 1 / 120;
+  const x00 = tx;
+  const y00 = ty;
+  for (let u = 0; u < Math.min(since, CUT_REST) - 1e-9; u += dt) {
+    if (u < slide) {
+      // (the cut opens at once, a pixel and a half; then it slides off down it)
+      const s = 1.5 + 3.5 * ((u + dt) / slide) ** 2;
+      tx = x00 + way * s;
+      ty = y00 + 0.35 * s;
+      vx = way * 50;
+      vy = 20;
+      continue;
+    }
+    if (down < 0) {
+      tx += vx * dt;
+      ty += vy * dt;
+      vy += 330 * dt;
+      ta = way * Math.min(quarter, Math.abs(ta) + (quarter / 0.3) * dt);
+      const lo = lowOf(ty, ta, thw, thh);
+      if (lo >= 0) {
+        ty -= lo;
+        down = u;
+      }
+    } else {
+      ta = way * Math.min(quarter, Math.abs(ta) + (quarter / 0.12) * dt);
+      ty -= lowOf(ty, ta, thw, thh);
+    }
+  }
+  return { top: { x: tx, y: ty, ang: ta }, bot: { x: bx, y: by, ang: ba }, botDown: 0.22, topDown: down < 0 ? 99 : down };
+}
+
+/** One cut down's two halves, as it stood: each its own picture (the cut along it lit bone), and its box (game pixels from the anchor). */
+const halvesMade = new WeakMap<Sprite, Map<number, { top: { cv: HTMLCanvasElement; box: CutBox }; bot: { cv: HTMLCanvasElement; box: CutBox } }>>();
+function halvesOf(sp: Sprite, way: number): { top: { cv: HTMLCanvasElement; box: CutBox }; bot: { cv: HTMLCanvasElement; box: CutBox } } {
+  let mine = halvesMade.get(sp);
+  if (!mine) {
+    mine = new Map();
+    halvesMade.set(sp, mine);
+  }
+  const had = mine.get(way);
+  if (had) return had;
+  const dn = Math.max(1, Math.round(sp.density ?? 1));
+  const W = sp.img.width;
+  const H = sp.img.height;
+  const src = document.createElement('canvas');
+  src.width = W;
+  src.height = H;
+  const sg = src.getContext('2d') as CanvasRenderingContext2D;
+  sg.drawImage(sp.img, 0, 0);
+  const d = sg.getImageData(0, 0, W, H).data;
+  const cutY = (x: number): number => (sp.ay - sp.h * 0.42) * dn + (x - sp.ax * dn) * 0.35 * way;
+  const C = W7_RAMP.culling;
+  const make = (above: boolean): { cv: HTMLCanvasElement; box: CutBox } => {
+    let x0 = W;
+    let y0 = H;
+    let x1 = -1;
+    let y1 = -1;
+    const mine2 = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < W && y < H && d[(y * W + x) * 4 + 3] > 60 && (y < cutY(x)) === above;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        if (!mine2(x, y)) continue;
+        x0 = Math.min(x0, x);
+        y0 = Math.min(y0, y);
+        x1 = Math.max(x1, x);
+        y1 = Math.max(y1, y);
+      }
+    }
+    if (x1 < 0) {
+      const cv0 = document.createElement('canvas');
+      cv0.width = 1;
+      cv0.height = 1;
+      return { cv: cv0, box: { x0: 0, y0: -1, x1: 0, y1: 0 } };
+    }
+    const cv = document.createElement('canvas');
+    cv.width = x1 - x0 + 1;
+    cv.height = y1 - y0 + 1;
+    const g = cv.getContext('2d') as CanvasRenderingContext2D;
+    const im = g.createImageData(cv.width, cv.height);
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        if (!mine2(x, y)) continue;
+        const i = (y * W + x) * 4;
+        const o = ((y - y0) * cv.width + (x - x0)) * 4;
+        im.data[o] = d[i];
+        im.data[o + 1] = d[i + 1];
+        im.data[o + 2] = d[i + 2];
+        im.data[o + 3] = d[i + 3];
+      }
+    }
+    g.putImageData(im, 0, 0);
+    // the cut lit bone along its lip, wherever there is body
+    g.fillStyle = C[4];
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        if (!mine2(x, y)) continue;
+        const lip = above ? !mine2(x, y + dn) && y + dn >= cutY(x) : !mine2(x, y - dn) && y - dn < cutY(x);
+        if (lip) g.fillRect(x - x0, y - y0, 1, 1);
+      }
+    }
+    const ax = sp.ax * dn;
+    const ay = sp.ay * dn;
+    return { cv, box: { x0: (x0 - ax) / dn, y0: (y0 - ay) / dn, x1: (x1 + 1 - ax) / dn, y1: (y1 + 1 - ay) / dn } };
+  };
+  const made = { top: make(true), bot: make(false) };
+  mine.set(way, made);
+  return made;
+}
+
+/** The two halves drawn where they are `since` seconds after the blade went through: one picture, its anchor the body's foot. */
+const fallMade = new WeakMap<Sprite, Map<string, Sprite>>();
+function cutFallen(sp: Sprite, way: number, since: number): Sprite {
+  const step = since >= CUT_REST ? 'rest' : String(Math.round(since * 60));
+  let mine = fallMade.get(sp);
+  if (!mine) {
+    mine = new Map();
+    fallMade.set(sp, mine);
+  }
+  const key = `${way}:${step}`;
+  const had = mine.get(key);
+  if (had) return had;
+  const dn = Math.max(1, Math.round(sp.density ?? 1));
+  const halves = halvesOf(sp, way);
+  const at = cutFall(step === 'rest' ? CUT_REST : Number(step) / 60, way, halves.top.box, halves.bot.box);
+  const pad = Math.ceil(Math.max(sp.w, sp.h) * dn);
+  const cv = document.createElement('canvas');
+  cv.width = Math.ceil(sp.w * dn) + pad * 2;
+  cv.height = Math.ceil(sp.h * dn) + pad;
+  const g = cv.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const ox = pad + sp.ax * dn;
+  const oy = pad + sp.ay * dn;
+  for (const [piece, pose] of [[halves.bot, at.bot], [halves.top, at.top]] as const) {
+    g.save();
+    g.translate(Math.round(ox + pose.x * dn), Math.round(oy + pose.y * dn));
+    g.rotate(pose.ang);
+    g.drawImage(piece.cv, -Math.round(piece.cv.width / 2), -Math.round(piece.cv.height / 2));
+    g.restore();
+  }
+  const made: Sprite = { img: cv, w: cv.width / dn, h: cv.height / dn, ax: ox / dn, ay: oy / dn };
+  if (sp.density !== undefined) made.density = sp.density;
+  mine.set(key, made);
+  return made;
 }
 
 /**

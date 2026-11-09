@@ -4,7 +4,8 @@
 //      its line's end its trail runs in after it and is gone, its motes winking out;
 //   2. Piercing behind: the crack before the lance and after it is jagged and forks, never a ruled line; the spear goes up whole;
 //   3. Culling in front: an instant held (the one it takes stopped), then its own blade through it, a blade and not a line, whole
-//      in every picture as it sweeps and fades; it lies cut in two;
+//      in every picture as it sweeps and fades; it lies cut in two; (step 2c) its two halves come down whole to the floor, the
+//      top a beat after the legs, beside them: nothing hangs in the air, nothing goes into the floor;
 //   4. Surging, the dodge: nothing left standing where he stood (its wind runs along his roll, or there is none);
 //   5. Mirroring in front: his reflection beside him, ahead of him on the screen, its cut in front of it, landing there;
 //   6. Mirroring behind: the mirror rises where he stood only once he has stepped off it; its repeat is a cut of glass, whole;
@@ -18,7 +19,7 @@ import type { Game } from '../src/game/game';
 import type { Monster } from '../src/game/state';
 import { Fx, wx, wy } from '../src/render/fx';
 import type { Cam, Fallen } from '../src/render/fx';
-import { W7, W7_RAMP, W7_TIME, WORDS7_LOOK, airW7, clearW7, demoW7, eventsW7, fallenW7, floorW7, playW7, tickW7 } from '../src/render/words7';
+import { CUT_REST, W7, W7_RAMP, W7_TIME, WORDS7_LOOK, airW7, clearW7, cutFall, demoW7, eventsW7, fallenW7, floorW7, playW7, tickW7 } from '../src/render/words7';
 
 function monster(id: number, x: number, y: number): Monster {
   return { id, x, y, r: 0.4, kind: 'skeleton', champion: false, boss: false, elite: false, dead: false, seen: true, anim: 'idle', flash: 0, frozenT: 0, fx: -1, fy: 0, words: [] } as unknown as Monster;
@@ -115,15 +116,13 @@ test('1. Piercing in front: never through stone; at its end the trail runs in af
     eventsW7([{ t: 'pierceLine', from: { x: 10.3, y: 10.5 }, to: { x: 19, y: 10.5 } }], gm, new Fx());
     const b = W7.acts[0];
     assert.ok(b.stone && b.r < 4.75 && b.r > 4.4, `it stops at the wall: ${b.r.toFixed(2)}`);
-    // nothing of it beyond the stone's face, in any picture
+    // nothing of it beyond the stone's face, in any picture (across the screen: what falls, falls down the face)
     const [ex, ey] = S(b.x + b.dx * b.r, b.y + b.dy * b.r, 14);
-    const [ux, uy] = [(16 / Math.hypot(16, 8)) * b.dx, (8 / Math.hypot(16, 8)) * b.dx];
     for (let i = 0; i < Math.round(b.dur * 30); i++) {
       tickW7(1 / 30, gm, new Fx());
       for (const [x, y] of pts(draw(gm))) {
-        const along = (x - ex) * ux + (y - ey) * uy;
-        const off = Math.abs(-(x - ex) * uy + (y - ey) * ux);
-        assert.ok(!(along > 2.5 && off < 12), `a pixel of it through the wall (${along.toFixed(1)} beyond), ${i} pictures in`);
+        const beyond = x - ex;
+        assert.ok(!(beyond > 2.5 && Math.abs(y - ey) < 16), `a pixel of it through the wall (${beyond.toFixed(1)} beyond), ${i} pictures in`);
       }
     }
     // an open end: its body runs in after its head and is gone in a tenth of a second; its motes are gone after
@@ -142,7 +141,8 @@ test('1. Piercing in front: never through stone; at its end the trail runs in af
       pts(px).filter(([x, y]) => {
         const along = ((x - sx) * (fx2 - sx) + (y - sy) * (fy2 - sy)) / L;
         const off = Math.abs(-(x - sx) * (fy2 - sy) + (y - sy) * (fx2 - sx)) / L;
-        return along > L * 0.35 && along < L - 9 && off < 3;
+        // (short of its end by more than its motes fly)
+        return along > L * 0.35 && along < L - 12 && off < 3;
       }).length;
     const reachAt = c.r / W7_TIME.pierceSpeed;
     c.t = reachAt - 0.02;
@@ -220,6 +220,44 @@ test('3. Culling in front: an instant held, then its own blade through it, whole
     }
     assert.ok(W7.cut.has(body), 'it lies cut in two');
   });
+});
+
+test('3b. Culling, the split: both halves come down whole to the floor, the top a beat after the legs, beside them; nothing hangs in the air', () => {
+  const low = (p: { y: number; ang: number }, b: { x0: number; y0: number; x1: number; y1: number }): number => p.y + Math.abs(Math.sin(p.ang)) * (b.x1 - b.x0) / 2 + Math.abs(Math.cos(p.ang)) * (b.y1 - b.y0) / 2;
+  const across = (p: { x: number; ang: number }, b: { x0: number; y0: number; x1: number; y1: number }): [number, number] => {
+    const hw = Math.abs(Math.cos(p.ang)) * (b.x1 - b.x0) / 2 + Math.abs(Math.sin(p.ang)) * (b.y1 - b.y0) / 2;
+    return [p.x - hw, p.x + hw];
+  };
+  // (a skeleton's halves as it stands, and a broader one's; struck from either side)
+  const bodies = [
+    { top: { x0: -7, y0: -30, x1: 7, y1: -12 }, bot: { x0: -5, y0: -12, x1: 5, y1: 0 } },
+    { top: { x0: -10, y0: -36, x1: 9, y1: -14 }, bot: { x0: -8, y0: -15, x1: 8, y1: 0.5 } },
+  ];
+  for (const { top, bot } of bodies) {
+    for (const way of [1, -1]) {
+      let was: { x: number; y: number } | null = null;
+      let still = 0;
+      const end = cutFall(CUT_REST, way, top, bot);
+      for (let t = 0; t <= 1.2; t += 1 / 60) {
+        const r = cutFall(t, way, top, bot);
+        assert.ok(Math.abs(low(r.bot, bot)) < 0.02, `${t.toFixed(2)} s: the legs off the floor or into it (${low(r.bot, bot).toFixed(2)})`);
+        assert.ok(low(r.top, top) < 0.02, `${t.toFixed(2)} s: the top into the floor`);
+        if (t >= r.topDown) assert.ok(Math.abs(low(r.top, top)) < 0.02, `${t.toFixed(2)} s: the top down, but off the floor`);
+        else if (was) {
+          // in the air it is always on the move: never hanging there
+          if (Math.hypot(r.top.x - was.x, r.top.y - was.y) < 0.05) still++;
+          assert.ok(still <= 1, `${t.toFixed(2)} s: the top hangs in the air`);
+        }
+        was = { x: r.top.x, y: r.top.y };
+      }
+      assert.ok(end.topDown > end.botDown + 0.05 && end.topDown < CUT_REST, `the top lands a beat after the legs (${end.botDown}, ${end.topDown.toFixed(3)})`);
+      assert.ok(Math.abs(Math.abs(end.top.ang) - Math.PI / 2) < 1e-6 && Math.abs(Math.abs(end.bot.ang) - Math.PI / 2) < 1e-6, 'both lie on their sides');
+      const [a0, a1] = across(end.top, top);
+      const [b0, b1] = across(end.bot, bot);
+      assert.ok(a1 <= b0 || b1 <= a0, `they lie beside each other, not one on the other (${a0.toFixed(1)}..${a1.toFixed(1)}, ${b0.toFixed(1)}..${b1.toFixed(1)})`);
+      assert.ok(Math.sign(end.top.x - end.bot.x) === way, 'the top goes the way the blow went, the legs back');
+    }
+  }
 });
 
 test('4. Surging, the dodge: nothing left standing where he stood', () => {

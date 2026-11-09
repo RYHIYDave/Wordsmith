@@ -26,7 +26,7 @@ import { NEW_GLYPH, NEW_RAMP } from '../src/render/words3';
 import { BIND_GLYPH, BIND_RAMP } from '../src/render/binding3';
 import { VMELD_GLYPH } from '../src/render/volatile3';
 import {
-  ownsZoneW7, W7, W7_ENEMY, W7_FRIEND, W7_GLYPH, W7_RAMP, W7_SIDES, W7_TIME, W7_WORDS, WORDS7_LOOK, airW7, clearW7, floorW7, heroW7, lightsW7, lookW7, playW7, tickW7,
+  ownsZoneW7, W7, W7_ENEMY, W7_FRIEND, W7_GLYPH, W7_RAMP, W7_SIDES, W7_TIME, W7_WORDS, WORDS7_LOOK, airW7, clearW7, floorW7, heroW7, lightsW7, lookW7, lyingW7, playW7, tickW7,
 } from '../src/render/words7';
 import type { W7Side, W7Word } from '../src/render/words7';
 
@@ -164,7 +164,7 @@ function stage(word: W7Word, side: W7Side): { gm: Game; at: number } {
 
 test('1. the switch is off, everything the renderer asks of it is behind it, and nothing else of the game reaches it', () => {
   assert.equal(WORDS7_LOOK.on, false);
-  const calls = ['tickW7(', 'floorW7(', 'airW7(', 'lightsW7(', 'lookW7(', 'heroW7(', 'fallenW7('];
+  const calls = ['tickW7(', 'floorW7(', 'airW7(', 'lightsW7(', 'lookW7(', 'heroW7(', 'fallenW7(', 'lyingW7('];
   const lines = (readFileSync(new URL('../src/render/render.ts', import.meta.url), 'utf8') as string).split('\n');
   let found = 0;
   lines.forEach((line, i) => {
@@ -213,6 +213,7 @@ test('2. with the switch off, nothing here draws, lights, changes a picture or k
       assert.equal(lit, 0);
       for (const m of gm.monsters) assert.equal(lookW7(m, {} as never), null);
       assert.deepEqual(heroW7({} as never, gm.hero, cam), []);
+      assert.equal(lyingW7({}), null);
       assert.equal(fx.particles.length + fx.rings.length + fx.flashes.length, 0);
     }
   }

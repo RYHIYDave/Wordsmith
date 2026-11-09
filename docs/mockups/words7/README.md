@@ -80,7 +80,7 @@ its beats (`W7_BEATS`, seconds):
 | Reaping in front | 0.15 | 0.55 | 0.25 | the soul torn out of the body; it streaks to him; a flare as he takes it in |
 | Reaping behind | 0.45 | (its 6 s) | 0.6 | the spirit rises out of the body in a stream of soul-light, hovering; fights, its edge his cyan; rises away; each blow 0.05 / 0.06 / 0.24 |
 | Reaping on a monster | 0.2 | 0.8 | 0.4 | the enemy's fire kindles round the body; it lurches up out of its fall; the fire dies |
-| Culling in front | 0.16 (held) | 0.07 | 0.3 | his blow lands; an instant held, the one it takes stopped, a violet glint on it; the scythe's crescent sweeps through it in two pictures, smeared, dusk violet and bone; it is cut in two, its halves sliding apart as it falls (and it lies so); the crescent sweeps on, dimming and thinning away |
+| Culling in front | 0.16 (held) | 0.07 | 0.3 | his blow lands; an instant held, the one it takes stopped, a violet glint on it; the scythe's crescent sweeps through it in two pictures, smeared, dusk violet and bone; it comes apart in two whole halves of it as it stood: its legs fold back to the floor (down at 0.22 s), its top slides off the cut, tips and falls, landing on its side beside them a beat after (0.3 s); both lie there and fade with the body; the crescent sweeps on, dimming and thinning away |
 | Culling behind | 0.3 | (while it lies) | 0.3 | the mark written in, breathing, gone over its last 0.3 s; taking one: it flares 0.05, a blade rises through it 0.2, it burns out 0.4 |
 | Culling on a monster | 0.3 | 0.05 | 0.3 | while he is low (under 35% of his life) it kindles with the enemy's fire; its blow bursts on him; the fire dies when he is not low |
 | Surging in front, behind | 0.05 | 0.42 | 0.13 | a flash at his feet; the ring runs out, the dust shoved before it (behind: where his dodge began, wind along his roll to its end, 0.55) |
@@ -96,7 +96,7 @@ its beats (`W7_BEATS`, seconds):
 
 All of it only while `WORDS7_LOOK.on` (off). main.ts calls `eventsW7(g.events, g, fx)` (beside Binding's); render.ts calls
 `tickW7`, `floorW7`, `airW7`, `lightsW7`, `lookW7` (a monster's picture: a spirit, one cut down, a flash), `fallenW7` (one
-culled falls split), `heroW7` (his reflection), and leaves the three zones to it (`ownsZoneW7`). Drawn to the names of the
+culled comes down in two halves), `lyingW7` (and lies so, drawn with the floor once its fall is done), `heroW7` (his reflection), and leaves the three zones to it (`ownsZoneW7`). Drawn to the names of the
 main chat's board post of 8 Nov 07:55 (its branch `words7` was not to be seen): every field is read gently, with a fallback.
 
 | Event | Fields read (fallback) | Look |
@@ -111,7 +111,7 @@ main chat's board post of 8 Nov 07:55 (its branch `words7` was not to be seen): 
 | `spirit` | `id` (the spirit, a monster drawn by the game), `x, y` (the body it rose from), `secs` (6) | Reaping behind; any monster carrying `spirit: true` is drawn as a spirit too |
 | `spiritHit` | `target` (the struck monster's id) or `x, y` | its blow |
 | `rise` | `x, y` (or `id`): the body there (fx.fallen) lurches up | Reaping on a monster |
-| `culled` | `id`, `x, y` (where it was: by then it is gone from the list); `mark` (`{x, y}`, or true: the nearest zone 'reaper'); its body in **fx.fallen** near `x, y` is held still an instant, then falls split, and lies split | Culling in front, or the mark taking it |
+| `culled` | `id`, `x, y` (where it was: by then it is gone from the list); `mark` (`{x, y}`, or true: the nearest zone 'reaper'); its body in **fx.fallen** near `x, y` is held still an instant, then comes down in two halves, and lies so, fading as the game fades it | Culling in front, or the mark taking it |
 | zone `reaper` | `x, y, r, t, dur` | the mark as it lies |
 | (none) | **Monster.words** including 'culling', while his life is under 35% | its fire |
 | `surge` | `x, y` (him), `r` (2.2); `dodge` with `x0, y0` (else his roll's start), its wind to his roll's end (**Hero.move** `x1, y1`; none when he has not moved); `id` (a monster's: its wave, `r` 2.3) | Surging, each side |
@@ -160,10 +160,18 @@ WHAT THE MAIN CHAT MUST ADD, or say otherwise:
   through a wall or a pillar; the lance's crack a real one; the spear going up whole; the cull's own blade after a held
   instant; no tick left by the dodge's surge; the reflection beside him, its cut landing in front of it; the mirror rising
   only once he is off it, its repeat a cut of glass; the shards a beat after his blow; and the film's monsters spaced so
-  nothing stands in anything (they stand at least 1.6 across from him: his swing steps him a third of a tile on).
-  `tests/words7_fixes.test.ts` (7) holds each of these a test can; the film's scenario checks every picture for a monster
+  nothing stands in anything (they stand 1.85 across from him: his swing steps him a third of a tile on).
+  `tests/words7_fixes.test.ts` (8) holds each of these a test can; the film's scenario checks every picture for a monster
   standing in him, in his reflection, in the mirror or in a pillar, and for him in the mirror or a pillar (`crowd`), and for
   the pictures in the film reported none. The Warrior blinking out on alternate
   pictures as he dodges is the game's own roll (render.ts: a hero with no tumble of his own is drawn every other picture),
   left as it is.
+- Step 2c: the culled one's split. It no longer cuts the game's own fall in two (that left its top hanging in the air and then
+  clipped to a sliver of skull as the fall went on): its picture as it stood is kept, and comes apart in two whole halves
+  (`cutFall`, `cutFallen`; render.ts asks for it lying too, `lyingW7`, in its floor's loop of the fallen, behind the switch): the
+  legs fold back on their foot to the floor, the top slides off the cut, tips, falls and lands
+  on its side beside them a beat after; neither ever hangs in the air or goes into the floor (a test holds it); they lie so,
+  drawn as the body, and fade with it. The white zigzags as he rolls off the mirror's spot are the game's own: his roll's
+  swoosh of air (render/wild.ts, `ongoing`: wind sparks along his tumble, swaying side to side as he goes), seen long here
+  because the roll is long; filmed with them cleared, they are gone. Left as they are.
 - Not run: the regression; a real phone; the looks with real rules.

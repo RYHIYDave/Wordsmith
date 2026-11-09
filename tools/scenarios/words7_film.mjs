@@ -236,7 +236,7 @@ export default async function (page, snap) {
   const setup = async (sc) => page.evaluate((sc) => {
     const d = window.__dbg; const g = d.game(); const h = g.hero; const fx = d.fx; const W7 = window.__w7;
     d.slowmo = 1;
-    g.monsters.length = 0; g.projectiles.length = 0; g.zones.length = 0; g.drops.length = 0;
+    g.monsters.length = 0; g.projectiles.length = 0; g.zones.length = 0; g.drops.length = 0; g.orbs.length = 0;
     for (const k of Object.keys(fx)) if (Array.isArray(fx[k])) fx[k].length = 0;
     d.words7.clear();
     W7.ids = {};
@@ -292,7 +292,8 @@ export default async function (page, snap) {
     if (what === 'kill') {
       const m = mon(args[0]); if (!m) return `kill: no ${args[0]}`;
       W7.dead = W7.dead || {}; W7.dead[args[0]] = { x: m.x, y: m.y, kind: m.kind };
-      g.kill(m); return 'ok';
+      // (what the game drops from a kill, gold or an orb, is not shown: the looks are)
+      g.kill(m); g.drops.length = 0; g.orbs.length = 0; return 'ok';
     }
     if (what === 'respawn') {
       const was = W7.dead && W7.dead[args[0]]; if (!was) return 'respawn: none';
@@ -321,7 +322,7 @@ export default async function (page, snap) {
       const z = g.zones.find((q) => q.look === 'reaper');
       const mark = z ? { x: z.x, y: z.y } : true;
       if (z) g.zones.splice(g.zones.indexOf(z), 1);
-      g.kill(m);
+      g.kill(m); g.drops.length = 0; g.orbs.length = 0;
       w7.send({ t: 'culled', id: m.id, x: m.x, y: m.y, mark });
       return 'ok';
     }
