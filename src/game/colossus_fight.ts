@@ -272,18 +272,27 @@ export function bodyStrikeFront(): number {
 export const HURTS = { slam: 1.2, wave: 1.0, crash: 1.8, scrape: 0.9, snap: 3.0, rain: 1.0, gaze: 1.1, eye: 1.4, bile: 1.3, pool: 0.3 } as const;
 export type HurtBy = keyof typeof HURTS;
 /**
- * EACH PHASE (index 1 to 3): a tentacle rests `rest` stand loops (a range) between its moves; the water slams come every
+ * EACH PHASE (index 1 to 3): a slam on the stone begins at most every `gap` of their stand loops (1.5 s each), and a tentacle rests
+ * `rest` stand loops (a range) between its moves (his 8 Nov 22:32, “The tentacles hit too often.”; asked how much less, his pick
+ * “Half as often (Recommended)”: a slam every 3 s, where it was each loop); the water slams come every
  * `water` seconds (a range; the first `waterFirst` in), in his order: left, right, both; the shovel every `shovel` seconds after
  * the last (the first `shovelFirst` in). Phase 1 neither. Harder each phase (his 23 Oct: “Each phase should be harder than the
  * last so by phase three there should be stuff everywhere”).
  */
-export const PACE: Readonly<Record<1 | 2 | 3, { rest: readonly [number, number]; water: readonly [number, number] | null; waterFirst: number; shovel: readonly [number, number] | null; shovelFirst: number }>> = {
-  1: { rest: [0, 1], water: null, waterFirst: 0, shovel: null, shovelFirst: 0 },
-  2: { rest: [1, 2], water: [7, 9], waterFirst: 4, shovel: [14, 18], shovelFirst: 10 },
-  3: { rest: [0, 1], water: null, waterFirst: 0, shovel: null, shovelFirst: 0 },
+export const PACE: Readonly<Record<1 | 2 | 3, { gap: number; rest: readonly [number, number]; water: readonly [number, number] | null; waterFirst: number; shovel: readonly [number, number] | null; shovelFirst: number }>> = {
+  1: { gap: 2, rest: [0, 1], water: null, waterFirst: 0, shovel: null, shovelFirst: 0 },
+  2: { gap: 2, rest: [1, 2], water: [7, 9], waterFirst: 4, shovel: [14, 18], shovelFirst: 10 },
+  3: { gap: 2, rest: [0, 1], water: null, waterFirst: 0, shovel: null, shovelFirst: 0 },
 };
 /** Each tentacle's life and his body's, as shares of a full bar (each phase a bar of its own: his 17 Oct “his HP bar refilled”). */
 export const LIFE = { 1: 1 / 2, 2: 1 / 3, 3: 1 / 3, body: 1 } as const;
+/**
+ * HIS WAKING, as the hero first steps onto the stone (his 8 Nov 22:34: “I want you to walk on the platform and see nothing, then
+ * bubbles, then two tentacles and the eye lurking.    Once you get to the phase two reveal, then things get crazy”): the water still
+ * for `still` seconds, nothing of him seen; then bubbling where his two tentacles' roots are and over his eye, a few and then a boil;
+ * his two tentacles bursting up at `rise`, his eye's fire coming up under the water from `lurk[0]` to `lurk[1]`. Nothing hurts before.
+ */
+export const WAKE = { still: 1.2, rise: 4.2, lurk: [3.4, 4.8] as readonly [number, number] } as const;
 /** After the last of a phase's tentacles is killed: the flasks refilled at once; his change begins no sooner than this (seconds), as his stand (or lurk) comes round. */
 export const BETWEEN = { least: 1.0 } as const;
 
@@ -533,6 +542,10 @@ export class ColossusFight {
   /** (Phase 3) His eye's attack now, and seconds to the next. */
   eye: EyeMove | null = null;
   eyeIn = 0;
+  /** His tentacles' stand loops come round since a slam on the stone last began (PACE gap). */
+  slamRounds = 99;
+  /** Seconds since the hero stepped onto the stone while he wakes (WAKE); null once his tentacles have risen. */
+  wakeT: number | null = null;
   /** (Phase 3) His eye struck at rest: seconds into its flinch, from which of his stand's frames it is pictured (EYE3.struckFrom). */
   struck: { t: number; from: number } | null = null;
   /** (Phase 3) The siege's bolts fall (the game's: while a pillar burns, or where none stand). */
@@ -566,6 +579,7 @@ export class ColossusFight {
     const ev: FightEvent[] = [];
     if (this.mode !== 'idle') return ev;
     this.mode = 'fight';
+    this.wakeT = 0;
     this.startPhase(1, ev);
     return ev;
   }
@@ -582,7 +596,7 @@ export class ColossusFight {
     this.eyeIn = ph === 3 ? EYE_PACE.first : Infinity;
     this.body2In = ph === 2 ? BODY2.first : Infinity;
     this.body2 = null;
-    if (ph < 3 && this.arms.every((a) => a.state === 'dead')) this.raiseArms(ph, ev);
+    if (ph < 3 && this.wakeT === null && this.arms.every((a) => a.state === 'dead')) this.raiseArms(ph, ev);
     // (his entrance ends on his tentacles' stand's first frame: their clock begins again with the phase)
     else if (ph === 2) this.armClock = 0;
     ev.push({ t: 'phase', ph });
@@ -667,6 +681,14 @@ export class ColossusFight {
     const clockWas = this.armClock;
     this.armClock += dt;
     const armRound = Math.floor(this.armClock / ARM.stand) > Math.floor(clockWas / ARM.stand);
+    // (his waking: his two tentacles burst up when it is time)
+    if (this.wakeT !== null) {
+      this.wakeT += dt;
+      if (this.wakeT >= WAKE.rise) {
+        this.wakeT = null;
+        this.raiseArms(1, ev);
+      }
+    }
 
     this.stepArms(dt, hero, armRound, ev);
     this.stepWaves(dt, hero, ev);
@@ -758,6 +780,7 @@ export class ColossusFight {
       return;
     }
     if (!armRound) return;
+    this.slamRounds += 1;
     const stand = this.arms.filter((a) => a.state === 'stand');
     for (const a of stand) if (a.rest > 0) a.rest -= 1;
     const ready = stand.filter((a) => a.rest <= 0).sort((x, y) => y.ready - x.ready);
@@ -780,8 +803,10 @@ export class ColossusFight {
       }
       if (!L && !R) this.waterIn = Infinity;
     }
-    // A SLAM ON THE STONE: one warning laid at a time
+    // A SLAM ON THE STONE: one warning laid at a time, and no sooner than its gap after the last
     if (this.arms.some((a) => (a.state === 'slam' || a.state === 'smash') && a.t < SLAM.hit)) return;
+    if (this.slamRounds < PACE[this.ph].gap) return;
+    this.slamRounds = 0;
     this.beginSlam(ready[0], hero, ev);
   }
 

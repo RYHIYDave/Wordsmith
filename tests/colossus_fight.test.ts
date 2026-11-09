@@ -11,7 +11,7 @@ import { RNG } from '../src/engine/rng';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import {
-  ColossusFight, COLOSSUS, CHANGE3, ENTRANCE, HOOK, PACE, ROOTS, SHOVEL, SLAM, SNAP, STONE, TURNS, WAVE, CRASH, BODY2, GAZE, poolR, EYE3, EYE_SLAM, eyeHome,
+  ColossusFight, COLOSSUS, CHANGE3, ENTRANCE, HOOK, PACE, WAKE, ROOTS, SHOVEL, SLAM, SNAP, STONE, TURNS, WAVE, CRASH, BODY2, GAZE, poolR, EYE3, EYE_SLAM, eyeHome,
   slamLine, turnToward, offLine, waveFront, bodyStrikeFront, stoneToWorld, worldToStone,
 } from '../src/game/colossus_fight';
 import type { FightEvent, HeroOnStone } from '../src/game/colossus_fight';
@@ -113,10 +113,24 @@ test('NOWHERE SAFE: in each phase every spot of the stone lies in some line, and
   }
 });
 
+test('his waking: the water still, nothing of him up and nothing hurting until his two tentacles burst up', () => {
+  const f = new ColossusFight(new RNG(4));
+  f.begin();
+  const early = run(f, WAKE.rise - 0.05, () => ({ u: 8.5, v: 6, dodging: false }));
+  assert.equal(f.arms.length, 0, 'no tentacles yet');
+  assert.equal(early.filter((e) => e.t === 'armUp' || e.t === 'warn').length, 0);
+  assert.equal(hurts(early).length, 0);
+  const up = run(f, 0.1, () => ({ u: 8.5, v: 6, dodging: false }));
+  assert.equal(up.filter((e) => e.t === 'armUp').length, 2, 'his two tentacles burst up');
+  assert.ok(f.arms.every((a) => a.state === 'rise'));
+});
+
 test('a slam stood in hurts; stepped out of during its wind-up, it misses', () => {
   for (const step of [0, 1.3]) {
     const f = new ColossusFight(new RNG(3));
     f.begin();
+  run(f, WAKE.rise + DT, () => ({ u: 8.5, v: 6, dodging: true }));
+    run(f, WAKE.rise + DT, () => ({ u: 8.5, v: 6, dodging: true }));
     let at = { u: 5.67, v: 6 };
     let side = 0;
     const got: FightEvent[] = [];
@@ -139,9 +153,10 @@ test('a slam stood in hurts; stepped out of during its wind-up, it misses', () =
   }
 });
 
-test('phase 1: its two tentacles take turns, one warning at a time, each slamming every 3 to 4.5 s', () => {
+test('phase 1: its two tentacles take turns, one warning at a time, a slam at most every 3 s (his “Half as often”)', () => {
   const f = new ColossusFight(new RNG(5));
   f.begin();
+  run(f, WAKE.rise + DT, () => ({ u: 8.5, v: 6, dodging: true }));
   assert.equal(f.arms.length, 2);
   const starts = new Map<number, number[]>();
   let t = 0;
@@ -150,16 +165,15 @@ test('phase 1: its two tentacles take turns, one warning at a time, each slammin
     for (const e of f.step(DT, { u: 8.5, v: 6, dodging: true })) if (e.t === 'warn') starts.set(e.id, [...(starts.get(e.id) ?? []), t]);
   }
   const all = [...starts.values()].flat().sort((a, b) => a - b);
-  for (let i = 1; i < all.length; i++) assert.ok(all[i] - all[i - 1] > SLAM.hit, 'two warnings laid at once');
-  for (const ts of starts.values()) {
-    assert.ok(ts.length >= 7, `only ${ts.length} slams in 40 s`);
-    for (let i = 1; i < ts.length; i++) assert.ok(ts[i] - ts[i - 1] >= 2.95 && ts[i] - ts[i - 1] <= 4.51 + 1.5, `a gap of ${(ts[i] - ts[i - 1]).toFixed(2)} s`);
-  }
+  for (let i = 1; i < all.length; i++) assert.ok(all[i] - all[i - 1] >= PACE[1].gap * 1.5 - 0.05, `slams ${(all[i] - all[i - 1]).toFixed(2)} s apart`);
+  assert.ok(all.length >= 11 && all.length <= 14, `${all.length} slams in 40 s`);
+  for (const ts of starts.values()) assert.ok(ts.length >= 4, `one tentacle only ${ts.length} slams in 40 s`);
 });
 
 test('both killed: the flasks refilled, his entrance, three tentacles up, phase 2', () => {
   const f = new ColossusFight(new RNG(7));
   f.begin();
+  run(f, WAKE.rise + DT, () => ({ u: 8.5, v: 6, dodging: true }));
   run(f, 3, () => ({ u: 8.5, v: 6, dodging: true }));
   const ev = [...f.armKilled(f.arms[0].id), ...f.armKilled(f.arms[1].id)];
   assert.ok(ev.some((e) => e.t === 'flasks'));
@@ -175,6 +189,7 @@ test('both killed: the flasks refilled, his entrance, three tentacles up, phase 
 function inPhase2(seed: number): ColossusFight {
   const f = new ColossusFight(new RNG(seed));
   f.begin();
+  run(f, WAKE.rise + DT, () => ({ u: 8.5, v: 6, dodging: true }));
   for (const a of [...f.arms]) f.armKilled(a.id);
   run(f, 1 + 3 + ENTRANCE.long + 0.1, () => ({ u: 8.5, v: 6, dodging: true }));
   assert.equal(f.ph, 2);

@@ -13,7 +13,7 @@
 // Each slam, smash and splash is kept here from the frame it is first seen (by the fight's clock), so that what it leaves lasts after
 // the rules have done with it.
 
-import { BODY2, CHANGE3, CRASH, EYE3, EYE_SLAM, GAZE, RAIN, SLAM, SMASH, STONE, WAVE, poolR, rootAt, waveFront } from '../../game/colossus_fight';
+import { BODY2, CHANGE3, CRASH, EYE3, EYE_SLAM, GAZE, HIS_PLACE, RAIN, ROOTS, SLAM, SMASH, STONE, WAKE, WAVE, poolR, rootAt, waveFront } from '../../game/colossus_fight';
 import type { ColossusFight, Seg } from '../../game/colossus_fight';
 import type { ColossusOn } from '../../game/act1_rules/colossus';
 import type { Game } from '../../game/game';
@@ -162,8 +162,73 @@ export function keepColossusFx(f: ColossusFight): void {
 // ON THE STONE
 
 /** What lies on the stone and the water under the hero. */
+const sm2 = (a: number, b: number, x: number): number => {
+  const u = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return u * u * (3 - 2 * u);
+};
+
 export function drawColossusGround(g: CanvasRenderingContext2D, P: StoneAt, f: ColossusFight, t: number): void {
   const now = f.time;
+  // HIS WAKING (WAKE): bubbles coming up where his two tentacles will burst and over his eye, a few and then a boil, after the water has
+  // lain still a moment; going on a little as they burst
+  if (f.ph === 1 && (f.wakeT !== null || f.phT < WAKE.rise + 0.8) && f.mode === 'fight') {
+    const w = f.wakeT ?? WAKE.rise + (f.phT - WAKE.rise);
+    const k = sm2(WAKE.still, WAKE.rise, w) * (1 - sm2(WAKE.rise, WAKE.rise + 0.8, w));
+    if (k > 0) {
+      const spots: [number, number, number][] = [...ROOTS[1].map((u, i): [number, number, number] => [rootAt(u).u, rootAt(u).v, i]), [HIS_PLACE.u, HIS_PLACE.v + 3.2, 2], [HIS_PLACE.u - 2, HIS_PLACE.v + 2.4, 3], [HIS_PLACE.u + 2, HIS_PLACE.v + 2.4, 4]];
+      for (const [su, sv, si] of spots) {
+        const R = 0.25 + 1.0 * k;
+        const n = Math.round(2 + 16 * k);
+        // (the boil: the water heaving pale over the spot)
+        if (k > 0.55) {
+          const b = (k - 0.55) / 0.45;
+          g.globalAlpha = 0.22 * b;
+          g.fillStyle = C.foam[1];
+          g.beginPath();
+          for (let i = 0; i <= 16; i++) {
+            const a = (i / 16) * Math.PI * 2;
+            const r = R * 0.8 * (0.7 + 0.5 * n1(i * 0.8 + t * 2.5, si * 13 + 5));
+            const [x, y] = P(su + Math.cos(a) * r, sv + Math.sin(a) * r * 0.9);
+            if (i === 0) g.moveTo(x, y);
+            else g.lineTo(x, y);
+          }
+          g.closePath();
+          g.fill();
+        }
+        for (let i = 0; i < n; i++) {
+          const per = 0.55 + 0.6 * h(si, i, 31);
+          const ph = (t / per + h(si, i, 32)) % 1;
+          const cyc = Math.floor(t / per + h(si, i, 32));
+          const a = h(si, i, cyc) * Math.PI * 2;
+          const d = R * Math.sqrt(h(si, i, cyc + 7));
+          const [x, y] = P(su + Math.cos(a) * d, sv + Math.sin(a) * d);
+          if (ph < 0.82) {
+            // (swelling as it comes up)
+            const r = 0.6 + 2.2 * (ph / 0.82) * (0.6 + 0.6 * h(si, i, 33));
+            g.globalAlpha = 0.85;
+            g.strokeStyle = i % 3 ? C.foam[2] : C.foam[3];
+            g.lineWidth = 1;
+            g.beginPath();
+            g.ellipse(Math.round(x) + 0.5, Math.round(y) + 0.5, r, r * 0.7, 0, 0, Math.PI * 2);
+            g.stroke();
+            g.globalAlpha = 0.6;
+            g.fillStyle = C.foam[3];
+            g.fillRect(Math.round(x - r * 0.4), Math.round(y - r * 0.4), 1, 1);
+          } else {
+            // (popped: a few drops flung up)
+            const q = (ph - 0.82) / 0.18;
+            g.globalAlpha = 0.8 * (1 - q);
+            g.fillStyle = C.foam[2];
+            for (let j = 0; j < 3; j++) {
+              const aj = (j / 3) * Math.PI * 2 + a;
+              g.fillRect(Math.round(x + Math.cos(aj) * 3 * q), Math.round(y - 4 * q + 6 * q * q + Math.sin(aj) * 1.5 * q), 1, 1);
+            }
+          }
+        }
+      }
+      g.globalAlpha = 1;
+    }
+  }
   // THE STONE WET where a wave has passed, darker and sheened, drying from its far side
   for (const w of KEPT.wet) {
     const s = now - w.at;

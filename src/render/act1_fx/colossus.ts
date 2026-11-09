@@ -8,7 +8,7 @@
 
 import { colossusOf, colossusOn } from '../../game/act1_rules/colossus';
 import {
-  ARM, BODY2, CHANGE3, CRASH, EYE_SLAM, FORWARD, GAZE, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAVE,
+  ARM, BODY2, CHANGE3, CRASH, EYE_SLAM, FORWARD, GAZE, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAKE, WAVE,
   eyeSpotNear, gazeAimNear, hookFront, poolR, rootAt, stoneToWorld, waveFront, worldToStone,
 } from '../../game/colossus_fight';
 import type { Arm, ColossusFight } from '../../game/colossus_fight';
@@ -116,10 +116,12 @@ function draw(c: Act1FxCtx): void {
     const [x, y] = P(u, v);
     if (!drawColossusBody(g, move, k, x, y)) otherwise();
   };
-  // (his own light in the swamp's dark: the art's pictures of him are lit as he is, his eye's fire on him)
+  // (his own light in the swamp's dark: the art's pictures of him are lit as he is, his eye's fire on him; none before he wakes, coming
+  // up with his eye's fire as he does)
   {
     const [lx, ly] = P(HIS_PLACE.u, HIS_PLACE.v);
-    c.spot(lx, ly - 60, 190, 0.75);
+    const up = f.mode === 'idle' ? 0 : f.wakeT === null ? 1 : Math.max(0, Math.min(1, (f.wakeT - WAKE.lurk[0]) / (WAKE.lurk[1] - WAKE.lurk[0])));
+    if (up > 0) c.spot(lx, ly - 60, 190, 0.75 * up);
   }
   const sh = f.shovel;
   const risen = !(f.ph === 1 && (f.mode === 'fight' || f.mode === 'between' || f.mode === 'idle'));
@@ -219,14 +221,19 @@ function draw(c: Act1FxCtx): void {
   else if (risen && f.body2) bodyAt(HIS_PLACE.u, HIS_PLACE.v, f.body2.kind, Math.floor(f.body2.t * 30), () => bodyAt(HIS_PLACE.u, HIS_PLACE.v, 'stand', standK, () => himAt(HIS_PLACE.u, HIS_PLACE.v, 1)));
   else if (risen) bodyAt(HIS_PLACE.u, HIS_PLACE.v, 'stand', standK, () => himAt(HIS_PLACE.u, HIS_PLACE.v, 1));
   else {
-    // (under the water, his lurk; or his eye's fire seen through it)
-    bodyAt(HIS_PLACE.u, HIS_PLACE.v, 'lurk', (f.body * 30) % Math.max(1, colossusFrames('lurk') || 90), () => {
-      const [x, y] = P(HIS_PLACE.u, HIS_PLACE.v + 3);
-      g.fillStyle = `rgba(255, 61, 139, ${0.25 + 0.15 * Math.sin(c.t * 2)})`;
-      g.beginPath();
-      g.ellipse(x, y, 26, 9, 0, 0, Math.PI * 2);
-      g.fill();
-    });
+    // (under the water, his lurk; or his eye's fire seen through it. Before the hero steps onto the stone nothing of him is seen; as he
+    // wakes, his eye's fire comes up under the water: WAKE)
+    const lurkA = f.mode === 'idle' ? 0 : f.wakeT === null ? 1 : Math.max(0, Math.min(1, (f.wakeT - WAKE.lurk[0]) / (WAKE.lurk[1] - WAKE.lurk[0])));
+    if (lurkA > 0) {
+      const [lx, ly] = P(HIS_PLACE.u, HIS_PLACE.v);
+      if (!drawColossusBody(g, 'lurk', (f.body * 30) % Math.max(1, colossusFrames('lurk') || 90), lx, ly, false, lurkA * lurkA * (3 - 2 * lurkA))) {
+        const [x, y] = P(HIS_PLACE.u, HIS_PLACE.v + 3);
+        g.fillStyle = `rgba(255, 61, 139, ${(0.25 + 0.15 * Math.sin(c.t * 2)) * lurkA})`;
+        g.beginPath();
+        g.ellipse(x, y, 26, 9, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
   }
 
   // PHASE 2, HIS BODY'S OWN ATTACKS (the game's parts of them, in the enemy's colours, the art's bile): the bile arc's warning where it
