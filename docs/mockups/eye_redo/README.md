@@ -16,6 +16,9 @@ His words, 8 Nov 2026 (by 18:44). Shown his phase 3 (6f498433): “Yes, on to hi
 colossus die?”, his pick: “Eye bursts, he melts (Recommended)” (offered as: his eye ruptures in a spray of dark ichor; he thrashes and
 roars, then melts down into black sludge and sinks, the water boiling and going still).
 
+Shown his death (cad8db7b, `eye_moves7`), 8 Nov by 22:29, asked “Is his death right (eye_moves7.mp4 and eye_moves7.png)?”: “Yes,
+he's done (Recommended)”. THE SWAMP COLOSSUS IS WHOLE: every move of his has his yes.
+
 `src/art/eye_death.ts`, behind EYE2 (off); nothing of the game imports it (`tests/eye_death.test.ts`). From his phase-3 place (hauled up
 against the stone's back edge, his eye low over it), on the killing blow. His moves are his paintings; the ichor's spray and gore, the
 sludge on the stone, his teeth falling, the bones in the shallows, the splashes, the boiling and the shakes are the game's effects drawn
