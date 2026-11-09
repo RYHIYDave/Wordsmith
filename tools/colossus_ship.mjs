@@ -1,4 +1,4 @@
-// THE SWAMP COLOSSUS'S PICTURES BAKED (tools/bake_colossus.ts, painted once, slowly, then packed into .bake/colossus/: a few sheets
+// THE SWAMP COLOSSUS'S PICTURES BAKED (tools/bake_colossus.ts, painted once, slowly, then packed into assets/colossus/: sheets
 // and colossus.json) carried beside the page as colossus/<mark>/, the mark the hash of the files (render/colossus_baked.ts fetches
 // them from there). No pack there: '' (the game then draws his stand-ins).
 import fs from 'node:fs';
@@ -6,8 +6,9 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { ROOT } from './lib.mjs';
 
-/** Where the pack step leaves his pictures: `npx tsx tools/bake_colossus.ts pack <cache> .bake/colossus 1 <move ...>`. */
-export const COLOSSUS_PACK = path.join(ROOT, '.bake', 'colossus');
+/** Where his pictures are kept, packed (in the repository: painting them again takes the machine hours):
+ *  `npx tsx tools/bake_colossus.ts pack <cache> assets/colossus 1`. */
+export const COLOSSUS_PACK = path.join(ROOT, 'assets', 'colossus');
 
 /** Copy the pack into dist/colossus/<mark>/ (the old ones gone) and give the mark; '' when there is none. */
 export function shipColossus() {
