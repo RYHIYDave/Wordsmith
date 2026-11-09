@@ -1,0 +1,79 @@
+# The seven new words' looks, step 1: a sheet of stills
+
+A mock-up on `art/words7` (from `origin/work-f4` at 68cb71c2, the live game, 25.2.13), behind `WORDS7_LOOK` in
+`src/render/words7.ts`, **off**. With it off nothing of it is drawn, lit or ticked, and the game is as it was (a test).
+Their rules are the main chat's (its branch `words7`); this is only how each one looks.
+
+## His words
+
+From the main chat's board post of 8 Nov 2026, 07:55: “I want 6 more words for the last levels”, “At least 6”, “Add
+mirroring as well”; and of the new words, “And those all craftable as well”. Read as: seven new words, found from floor 16
+down, each with a rune stone, a colour and a look for each of its three sides (in front, behind, on a monster).
+
+## The picture
+
+`pictures/words7_looks.png` (1200 by 4706): a row for each word: its rune stone (big, and at the game's size), its name in
+its colour, its six tones; then a still of each of its three sides in the practice room, at the game's size (a game pixel two
+of the sheet's, as on his other sheets) and again at twice. Stills only: the films are the next step, of the same drawings.
+
+## The seven
+
+Each colour is its word's own (`W7_RAMP`, six tones darkest to white-hot; index 3 its colour, 4 its glow). As the eye sees
+colour (CIEDE2000, Binding's check), each is at least 12 from every other word, every meld (their art and their stand-ins),
+Binding, the friend's cyan, the enemy's pink and gold, and one another. The space is crowded (the reds, blues, golds and
+silvers are taken), so Bleeding is a deep red, Surging a deep storm blue, Plundering an old dark brass, Culling a grey dusk
+violet with a bone glow. Nearest to each: Piercing 13.2 (Mirroring), Bleeding 13.0 (Powderkeg), Reaping 15.3 (Rupture's
+stand-in), Culling 12.6 (Demolition), Surging 12.9 (Shatter), Plundering 12.6 (Heavy), Mirroring 13.2 (Piercing).
+Plundering is kept clear of the enemy's gold: its colour 28.1 from it, its glow 12.8, its white-hot 16.2.
+
+| Word | Colour | Rune (7 by 7) | In front | Behind | On a monster (the enemy's pink and gold) |
+|---|---|---|---|---|---|
+| **Piercing** (Dex) | polished steel `#b4b4ae`, white light | a needle through a ring | a streak of white light through every one in a line, a sharp star where it goes in and out of each, steel splinters flung out the far side | half a second after, a lance of light (a long shaft, a guard, a broad leaf-shaped head) slams down along the line, head first, a sheet of light smeared above it, sparks flung out; a thin crack left in the floor | its shot, a bolt of pink fire, comes through the wall: the stone lit pink where it passes, rings of light running out over it, cracks of light in it; inside the stone only a ghost of the bolt |
+| **Bleeding** (Str) | deep arterial red `#800818` | a drop split by a cut | the wound, its lips lit; a spurt of drops flung the way the blow went; drips; splashes left on the floor where it walks, older ones darker | dark red briars burst up out of the torn floor, arching over, thorned, their points pale; half stand in front of what walks in them; it is cut, drops flicked off | its blow cuts him: a crescent of pink fire burning to gold across him, dark blood glinting pink flung off him and dripping at his feet |
+| **Reaping** (Int) | grave moss `#6c8a78`, pale soul-light | a sickle | the kill's soul torn out of it (grave-mist rising off the body) flies to him: a flame of soul-light with two hollow eyes, its tail streaming back, motes shed | the kill rises as a pale see-through copy of itself (its own picture remade in soul-light, its legs trailing into mist), **its edge his cyan**, striking for him; a thread of mist back to the body | dead, it lurches up out of its fall (its own death played backwards), the enemy's fire licking up round it, pink mist, sparks of pink and gold |
+| **Culling** (Str) | dusk violet `#787890`, bone | an executioner's axe over a line | a great crescent slash of bone light swept through its middle; it is split along the cut, its top sliding off, the cut lit bone; splinters of bone-light flung | the reaper's mark: a ring burned in the floor, bone marks round it, a hooded figure laid in it with a scythe's blade over it; the weak one crossing it is taken by a blade rising out of it | while he is low its blows flare: the enemy's fire licking up round it, its eyes flaring, its blow a heavy smear of fire bursting on him |
+| **Surging** (Int) | storm blue `#2a4a9a`, white | three arcs rising | a ring of force bursting out round him: its front a broken edge of white-blue light, dust rolling behind it, grit flung ahead, crackles of the storm along it, rays at his feet | the same burst where his dodge left the floor, streaks of wind along his roll, dust kicked to either side | a pink ring burned on the floor where its wave will reach, barbed inward, beating faster, the floor in it smouldering; then its shockwave in pink and gold |
+| **Plundering** (Dex) | old coin `#907806`, rubbed brass | a coin in a grasping hand | coins spray from the kill, spinning up and falling, some lying on the floor; an extra piece thrown with them (a ring with a red stone); glints | gold bursts from the kill and streams to his purse, each coin on its own arc with a streak of brass, glinting as it goes in | its blow snatches his coins: each torn off him on a hook of pink light and pulled to it; they glint pink and gold at its belt (dropped when it dies) |
+| **Mirroring** (Int) | silver glass `#b4d2c6`, a mirror's green edge | two facing halves | his reflection in glass, a long step off beside him, makes the same swing (his own picture remade in glass, a sheen across it), **its edge his cyan**; its arc of glass | a standing pane of mirror where he stood (arched top, bevelled edge glinting cyan, a heap of its own glass at its foot); in it his reflection makes his next attack again; (then it cracks and shatters, in the code, for the film) | struck, it cracks like a mirror where he hit it, and shards of pink-edged glass fly back into him |
+
+What fights for him shows it by his cyan (the spirit's edge, the reflection's edge, the pane's edge). Every monster's side
+is in the enemy's pink and gold; the coins Plundering snatches are his own brass, on pink hooks.
+
+## The moments in the stills, and their numbers
+
+Each is held at a moment of its own clock (`Act.t`, seconds); everything is a drawing of that clock, so the films will
+be the same drawings run on.
+
+- Piercing in front: the streak 26 tiles a second, at 0.15 s (through three, 1.15, 2.5, 3.9 tiles out). Behind: the lance
+  waits 0.5 s (the rules'), falls in 0.06 s; still at 0.6 s (just struck), on a line 3.8 tiles long. On a monster: its bolt
+  11 tiles a second, 1.1 tiles out of the wall.
+- Bleeding in front: 0.32 s after the blow. Behind: the briars burst up over 0.22 s; still at 0.9 s, a patch 1.35 tiles
+  round. On a monster: 0.12 s after its blow.
+- Reaping in front: the soul's flight 0.55 s, still at 0.3 s. Behind: the spirit's 6 s (the rules'), still 0.04 s into its
+  blow. On a monster: rising over 0.8 s, still at 0.62 s.
+- Culling in front: the slash sweeps through in 0.06 s (two pictures at 30 a second), still at 0.09 s. Behind: a mark 1.2
+  tiles round, still 0.1 s after it takes. On a monster: 0.1 s into its blow, the hero at 12% of his life.
+- Surging in front: a ring 2.2 tiles round, run out in 0.42 s, still at 0.17 s. Behind: 1.5 tiles round, still at 0.15 s.
+  On a monster: its warning 1.0 s, then a wave 2.3 tiles round, still 0.15 s into the wave.
+- Plundering: in front, still at 0.3 s (16 coins); behind, at 0.3 s (12 coins, the stream 0.45 s); on a monster, at
+  0.24 s (8 coins).
+- Mirroring: in front and behind 0.06 to 0.07 s into the swing; on a monster, the shards' flight 0.28 s, still at 0.17 s.
+
+## For the next step and the main chat
+
+`playW7(word, side, options)` starts a look (where, whom, which way); render.ts calls `tickW7`, `floorW7`, `airW7`,
+`lightsW7`, `lookW7` (a monster's picture changed: a spirit, one cut down; a flash) and `heroW7` (his reflection), each only
+while `WORDS7_LOOK.on`. `__dbg.words7` (main.ts) is the playtest's hands. No rules call it yet; which events the rules send
+is for the main chat to say once the looks have his yes.
+
+## How it was made and checked
+
+- `tools/scenarios/words7_looks.mjs`: the practice room, each side staged with its monsters, the world stopped and the
+  look's clock set to its moment, a picture of the game's own screen (844 by 360 at three to a pixel: four screen pixels a
+  game pixel). `tools/words7_sheet.py` makes the sheet from them.
+- `tests/words7.test.ts` (7): the switch off and every hook behind it, nothing else of the game importing it; with it off
+  nothing drawn, lit, changed or ticked; the colours (six tones each, each word at least 12 from all the rest, Plundering
+  clear of the gold, nothing glowing cyan or pink); the runes (7 by 7, each its own); every side of every word drawing at
+  its moment, every pixel on a whole pixel; every monster's side in the enemy's colours, the spirit and the reflection
+  showing his cyan; its times; forgotten on a new level.
+- Not run: the regression; a real phone; the looks with real rules.
