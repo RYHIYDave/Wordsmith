@@ -19,7 +19,9 @@
 //      Warrior, within reach; the gaze's arc from his new place; the blows where they land; the shakes;
 //   7. NOTHING CYAN but the ward-stone's: him as he slams, is struck and stands; the colours of the game's effects;
 //   8. NOTHING RULED: the warnings, the slime, the siege's lines, his ward's edge;
-//   9. the numbers, in the game's tiles.
+//   9. the numbers, in the game's tiles;
+//  10. MOVE BY MOVE FOR THE BAKE (the main chat's asks, 8 Nov): the frame functions give the film's own layers; the gaze aimed every 15
+//      degrees, clear of him.
 // @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
@@ -36,8 +38,8 @@ import { STONE_BOX } from '../src/art/eye_arms';
 import { EYE_FPS } from '../src/art/eye_moves';
 import type { EyeFrame } from '../src/art/eye_moves';
 import { GAZE, GAZE_FIRE, GAZE_OUT, TILE, beamOn, warnEdge } from '../src/art/eye_body';
-import { BLOW_AT, BOLT_SLANT, P3, P3_SHAKE, P3_SHOTS, P3_TAKES, PILLARS, PILLAR_BLOWS, PILLAR_TOP, Q2_PIECE, Q3_BREAK, Q3_CUT, Q4_PIECE, RAIN, SHIELD, SLAM, SLAM_AT, SLAM_EYE_Z, SLIDE, STRUCK, blowsOf, boltsOf, gazeArc3, heroP3, p3Frame, p3Numbers, p3StandTongue, siegeWobble, slideAt, slimeEdge, toWorld, wardEdge } from '../src/art/eye_phase3';
-import type { P3Shot } from '../src/art/eye_phase3';
+import { BLOW_AT, BOLT_SLANT, P3, P3_SHAKE, P3_SHOTS, P3_TAKES, PILLARS, PILLAR_BLOWS, PILLAR_TOP, Q2_PIECE, Q3_BREAK, Q3_CUT, Q4_PIECE, RAIN, SHIELD, SLAM, SLAM_AT, SLAM_EYE_Z, SLIDE, STRUCK, blowsOf, boltsOf, gazeArc3, heroP3, p3Frame, p3Numbers, p3StandTongue, siegeWobble, slideAt, slimeEdge, toWorld, wardEdge, phase3Frame, P3_MOVES } from '../src/art/eye_phase3';
+import type { P3Move, P3Shot } from '../src/art/eye_phase3';
 
 interface Assert {
   equal(a: unknown, b: unknown, msg?: string): void;
@@ -70,7 +72,7 @@ test('1. the switch is off; nothing of the game imports his phase 3', () => {
   assert.equal(EYE2.on, false, 'EYE2 is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f === 'art/eye_phase3.ts') continue;
+    if (!f.endsWith('.ts') || f === 'art/eye_phase3.ts' || f === 'art/eye_death.ts') continue;
     if (/from ['"][^'"]*eye_phase3['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(', '), '', 'nothing of the game imports art/eye_phase3.ts');
@@ -417,4 +419,36 @@ test('9. the numbers, in the game\'s tiles', () => {
   assert.ok(N.eyeOver[0] > 0, 'his eye over the stone');
   process.stdout.write(`  his place: his middle ${N.middleOff.toFixed(2)} tiles off the stone's back edge, ${N.up.toFixed(2)} up out of the water; his eye weaving ${N.eyeOver[0].toFixed(2)} to ${N.eyeOver[1].toFixed(2)} tiles over the stone, ${N.eyeUp[0].toFixed(2)} to ${N.eyeUp[1].toFixed(2)} up; his tongue ${N.tongue.toFixed(1)} tiles long\n`);
   process.stdout.write(`  the slam: ${N.slam.r} tiles round, reaching ${N.slam.reach} from where his eye weaves (here ${N.slam.at.toFixed(2)}); the pillars at ${N.pillars.map((p) => `(${p[0].toFixed(2)}, ${p[1].toFixed(2)})`).join(', ')}\n`);
+});
+
+// (the main chat's asks, 8 Nov: his phase 3 as frame functions for its bake, as `eyeFrame` and `shovelFrame`; the gaze taking its aim)
+test('10. move by move for the bake: the film\'s own layers; the gaze aimed anywhere, clear of him', () => {
+  const J = (x: unknown): string => JSON.stringify(x);
+  const same = (m: P3Move, f: number, shot: P3Shot, k: number): void => {
+    const a = phase3Frame(m, f);
+    const b = p3Frame(shot, k);
+    assert.equal(J([a.jaws, a.spit, a.tongue, a.smear]), J([b.jaws, b.spit, b.tongue, b.smear.filter((x) => x)]), `${m} ${f}: the film's ${shot} ${k}`);
+  };
+  for (let f = 0; f < P3_MOVES.slide; f += 3) same('slide', f, 'q1', P3_TAKES.q1.at + f);
+  for (let f = 0; f < P3_MOVES.slam; f++) same('slam', f, 'q5', P3_TAKES.q5.at + f);
+  for (let f = 0; f < P3_MOVES.struck; f++) same('struck', f, 'q8', P3_TAKES.q8.at + f);
+  for (let f = 0; f < P3_MOVES.gaze; f++) same('gaze', f, 'q7', P3_TAKES.q7.at + f);
+  for (let k = 0; k < 90; k += 7) same('edge', (P3_TAKES.q2.clock + k) % 90, 'q2', k);
+  // (the slam elsewhere: its layers named for where it comes down)
+  assert.ok(phase3Frame('slam', 40, { at: [-60, 420] }).tongue.key.includes('-60_420.'), 'the slam elsewhere named for where');
+  // (the gaze aimed every 15 degrees where it is clear of him)
+  let least = Infinity;
+  for (let deg = -75; deg <= 75; deg += 15) {
+    const aim = (deg * Math.PI) / 180;
+    for (let f = 0; f < P3_MOVES.gaze; f += 4) {
+      const P = phase3Frame('gaze', f, { aim });
+      assert.ok(P.tongue.key.includes(`a${deg}.`), `${deg}: named for its aim`);
+      const an = P.jaws.pose.anim as ColossusAnim;
+      const T = P.tongue.pose.anim as ColossusAnim;
+      const c = bodyClearances({ ...P.jaws.pose, drop: 0, back: 0, anim: { ...an, tore: P.spit?.pose.anim?.tore, knit: P.spit?.pose.anim?.knit, tongue: T.tongue, eye: T.eye, gaze: T.gaze, lids: T.lids, swell: T.swell, parts: undefined }, arms: [] }, 0);
+      least = Math.min(least, c.tongue, c.eye, c.spit);
+      assert.ok(c.tongue > 0 && c.eye > 0 && c.spit > 0, `${deg} ${f}: aimed, clear of his jaws and drool (${c.where})`);
+    }
+  }
+  process.stdout.write(`  the film's own layers from the frame functions; the gaze aimed every 15 degrees from -75 to 75: clear of him by ${least.toFixed(1)} at the least\n`);
 });

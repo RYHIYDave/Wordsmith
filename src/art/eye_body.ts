@@ -290,6 +290,18 @@ export function gazeArc(): { ox: number; oy: number; toward: number; a0: number;
 }
 /** A gaze's arc (`gazeArc`'s, or one laid at another place: his phase 3, art/eye_phase3.ts). */
 export type GazeArc = ReturnType<typeof gazeArc>;
+/** THE GAZE AIMED ANYWHERE (the main chat's ask, 8 Nov: the game lays the arc toward wherever the hero stands): the arc laid about the same
+ *  water under his eye, its middle at angle `aim` (radians, as `GazeArc.toward`: round from straight out over the stone toward his
+ *  right), the beam coming down `far` out (his lengths; the film's, unless given). `aimAt` gives the aim toward a spot (the world's). */
+export function gazeArcAt(aim: number, far: number = gazeArc().far): GazeArc {
+  const A = gazeArc();
+  const h = (GAZE.half * Math.PI) / 180;
+  // (never swept back over the water behind the stone's back edge: its sides held within `GAZE_LIM` of straight out)
+  return { ox: A.ox, oy: A.oy, toward: aim, a0: Math.max(-GAZE_LIM, aim - h), a1: Math.min(GAZE_LIM, aim + h), far };
+}
+/** How far round from straight out the gaze's arc may reach, either way (radians): along the stone's back edge, no further. */
+export const GAZE_LIM = (85 * Math.PI) / 180;
+export const aimAt = (x: number, y: number, A: GazeArc = gazeArc()): number => Math.atan2(x - A.ox, y - A.oy);
 /** The beam's angle at frame `f` of the gaze (null while it is off): laid at the arc's first side as it fires, swept evenly across it
  *  in `sweep` frames, held at its other side as it gutters out. */
 export function beamAngle(f: number, A: GazeArc = gazeArc()): number | null {
@@ -355,7 +367,7 @@ export function aimedTongue(a: number, t: number, f: number): number[][] {
     const u = (i / (base.length - 1)) ** 2;
     const jx = shud * 2.5 * u * (h1(f, 801 + i) * 2 - 1);
     const jz = shud * 2.5 * u * (h1(f, 851 + i) * 2 - 1);
-    return [q[0] + dx * AIM.forward * u + jx, q[1] + AIM.forward * u * Math.cos(a) ** 0.5 - rec * u, q[2] - AIM.down * u + rec * 0.5 * u + jz, q[3]];
+    return [q[0] + dx * AIM.forward * u + jx, q[1] + AIM.forward * u * Math.max(0, Math.cos(a)) ** 0.5 - rec * u, q[2] - AIM.down * u + rec * 0.5 * u + jz, q[3]];
   });
 }
 export const tipEye = (path: ReadonlyArray<readonly number[]>): [number, number, number] => {
@@ -367,7 +379,7 @@ export const mixPath = (a: ReadonlyArray<readonly number[]>, b: ReadonlyArray<re
 const body = (an: ColossusAnim, lean = 0): ColossusPose => ({ view: 'front', drop: 0, back: 0, body: true, gaze: an.gaze, arms: [], anim: an, ...(lean ? { lean: { k: lean, from: 0, ease: 60 } } : {}) });
 
 /** HIM AT FRAME `f` OF AN ATTACK (his clock `t` running on): his anim, how far he leans, back and up (his lengths). */
-export function attackAnim(kind: 'bile' | 'gaze', f: number, t: number): { an: ColossusAnim; lean: number; back: number; drop: number } {
+export function attackAnim(kind: 'bile' | 'gaze', f: number, t: number, A: GazeArc = gazeArc()): { an: ColossusAnim; lean: number; back: number; drop: number } {
   const S = standAnim(t);
   if (kind === 'bile') {
     const w = bileW(f);
@@ -379,15 +391,16 @@ export function attackAnim(kind: 'bile' | 'gaze', f: number, t: number): { an: C
     return { an, lean: P.lean * w, back: P.back * w, drop: P.drop * w };
   }
   const q = gazeQ(f);
-  const a = eyeAngle(f);
+  const a = eyeAngle(f, A);
   const path = mixPath(standTongue(t).path, aimedTongue(a, t, f), q);
   const eye = tipEye(path);
-  const L0 = beamLine(a);
+  const L0 = beamLine(a, A);
   // (his eye glares out along the beam's way, no steeper than `AIM.pitch` below level: aimed straight down at the stone it would turn its
   // iris away from the Warrior and from you, its lid's dome all that is seen; the beam leaves its iris's face and comes down)
   const hl = Math.hypot(L0.ax - eye[0], L0.ay - eye[1]) || 1;
   const at = norm([((L0.ax - eye[0]) / hl) * Math.cos(AIM.pitch), ((L0.ay - eye[1]) / hl) * Math.cos(AIM.pitch), -Math.sin(AIM.pitch)]);
-  const st = gazeAt(eye);
+  // (as it begins, fixed on the Warrior: the film's at the Warrior's spot; aimed anywhere, at the arc's middle, as far out as it lands)
+  const st = A === gazeArc() ? gazeAt(eye) : norm([A.ox + Math.sin(A.toward) * A.far - eye[0], A.oy + Math.cos(A.toward) * A.far - eye[1], 30 - eye[2]]);
   const gaze = norm([lerp(st[0], at[0], q), lerp(st[1], at[1], q), lerp(st[2], at[2], q)]);
   const an: ColossusAnim = { ...S, tongue: path, eye, gaze, lids: gazeLids(f), swell: gazeSwell(f) };
   return { an, lean: 0, back: 0, drop: 0 };
@@ -424,8 +437,12 @@ export const DUCK = { down: 200, back: 40 } as const;
 export const duckAt = (f: number): number => sm(0, 22, f) * (1 - sm(GAZE_OUT + 2, GAZE.frames - 2, f));
 /** A FRAME OF A TAKE (`k` from 0 to `BODY_TAKE.frames`): him (his stand, the attack, his stand), his three tentacles standing, the
  *  Warrior, the camera, the shakes, and what the game draws (`bfx`). */
-export function bodyFrame(shot: BodyShot, k: number): EyeFrame {
+export function bodyFrame(shot: BodyShot, k: number, aim?: number): EyeFrame {
   const kind: 'bile' | 'gaze' = shot[0] === 'b' ? 'bile' : 'gaze';
+  // (the gaze aimed (`aim`, radians, `gazeArcAt`): its tongue-eye painted aimed so, its layers named for the aim to the degree; the film's
+  // take, none)
+  const GA = aim === undefined ? gazeArc() : gazeArcAt(aim);
+  const aimKey = aim === undefined ? '' : `a${Math.round((aim * 180) / Math.PI)}`;
   const A = kind === 'bile' ? BILE : GAZE;
   const f = k - L;
   const base = eyeFrame('stand', standK(k));
@@ -436,8 +453,8 @@ export function bodyFrame(shot: BodyShot, k: number): EyeFrame {
   const t = standK(k) / EYE_FPS;
   const layersAt = (g: number): { jaws: EyeLayer; spit: EyeLayer | null; tongue: EyeLayer | null } => {
     const tg = standK(L + g) / EYE_FPS;
-    const P = attackAnim(kind, g, tg);
-    const c = kind === 'bile' ? 'b' : 'g';
+    const P = attackAnim(kind, g, tg, GA);
+    const c = kind === 'bile' ? 'b' : `g${aimKey}`;
     if (kind === 'bile') {
       return {
         jaws: { key: `J.${c}.${pad(g)}`, pose: body({ ...P.an, parts: 'jaws' }, P.lean), drop: P.drop, back: P.back },
@@ -487,16 +504,17 @@ export function bodyFrame(shot: BodyShot, k: number): EyeFrame {
     add(jolt(f - BILE.wind, BODY_SHAKE.retch, BODY_SHAKE.retchLong, 71));
     add(jolt(f - BILE_LAND, BODY_SHAKE.splash, BODY_SHAKE.splashLong, 72));
   } else {
-    const A = gazeArc();
-    const a = beamAngle(f);
+    const A = GA;
+    const a = beamAngle(f, A);
     // (the warning: the arc it will sweep, its first side flaring as it fires; while it sweeps, the part of it still to come)
     if (f >= 0 && f < GAZE_SWEPT) bfx.arc = { ox: A.ox, oy: A.oy, a0: A.a0, a1: A.a1, from: a ?? A.a0, k: f < GAZE_FIRE ? f / (GAZE.wind - 1) : 1, flare: f < GAZE_FIRE ? sm(GAZE.wind - 9, GAZE.wind - 1, f) : 0 };
     if (f >= 0 && f < GAZE_OUT) bfx.dark = f < GAZE_FIRE ? 0.5 * sm(0, 10, f) : 0.5 * (1 - sm(GAZE_SWEPT, GAZE_OUT, f));
-    if (a !== null) bfx.beam = { ...beamLine(a), a, s: (f - GAZE_FIRE) / EYE_FPS, reach: f === GAZE_FIRE ? 0.5 : 1, k: 1 - sm(GAZE_SWEPT - 1, GAZE_OUT, f) };
+    if (a !== null) bfx.beam = { ...beamLine(a, A), a, s: (f - GAZE_FIRE) / EYE_FPS, reach: f === GAZE_FIRE ? 0.5 : 1, k: 1 - sm(GAZE_SWEPT - 1, GAZE_OUT, f) };
     // (the scorch: the stone burnt where the beam has passed, smouldering, cooling, fading)
     if (f > GAZE_FIRE && (f - GAZE_SWEPT) / EYE_FPS < GAZE.scorch) bfx.scorch = { ox: A.ox, oy: A.oy, a0: A.a0, a1: A.a1, to: lerp(A.a0, A.a1, clamp01((f - GAZE_FIRE) / GAZE.sweep)), f };
+    if (aim !== undefined) bfx.geo = A;
     if (f >= 0 && f < GAZE.frames) {
-      const P = attackAnim('gaze', f, t);
+      const P = attackAnim('gaze', f, t, A);
       bfx.eye = P.an.eye as [number, number, number];
       bfx.gaze = P.an.gaze as [number, number, number];
       bfx.flare = gazeFlare(f);

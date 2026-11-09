@@ -555,6 +555,25 @@ export interface P3Fx {
 }
 /** The Warrior in a frame of the tentacles' films: where (the arena's units: across, and onto the stone from the back of the water),
  *  facing him ('back') or the camera ('front'), standing, running or striking, and the frame of it. */
+/** What the game draws as he dies (art/eye_death.ts): the frame of his death; how hard his eye is seized, he thrashes, he has melted; where
+ *  he is (forward, raised, sunk); his eye; its burst (seconds since); his grip torn loose and his last roar (seconds since); the sludge on
+ *  the stone; the bones lying in the shallows; his teeth dropping out (each from where it let go, seconds since). */
+export interface DeathFx {
+  f: number;
+  seize: number;
+  thrash: number;
+  melt: number;
+  fwd: number;
+  rise: number;
+  sink: number;
+  eye?: [number, number, number];
+  burst?: { x: number; y: number; z: number; s: number };
+  tear?: number;
+  roar?: number;
+  sludge?: { k: number; s: number; gone: number };
+  bones?: number;
+  teeth: Array<{ f: number; x: number; y: number; z: number; dx: number; dy: number; dz: number; r: number; broken: boolean; seed: number; s: number }>;
+}
 export interface HeroAt {
   du: number;
   dv: number;
@@ -565,7 +584,7 @@ export interface HeroAt {
   lift?: number;
 }
 export interface EyeFrame {
-  move: 'stand' | 'lurk' | 'entrance' | 'p1' | 'p2' | 'fan' | 's1' | 's2' | 'b1' | 'b2' | 'g1' | 'g2' | 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'q6' | 'q7' | 'q8';
+  move: 'stand' | 'lurk' | 'entrance' | 'p1' | 'p2' | 'fan' | 's1' | 's2' | 'b1' | 'b2' | 'g1' | 'g2' | 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'q6' | 'q7' | 'q8' | 'd1';
   /** The tentacles' films: the Warrior, how far the camera has come down from the stills' (picture pixels), and what the game draws
    *  for the tentacles. */
   hero?: HeroAt;
@@ -579,6 +598,8 @@ export interface EyeFrame {
   bfx?: BodyFx;
   /** What the game draws in his phase 3 (art/eye_phase3.ts). */
   p3?: P3Fx;
+  /** What the game draws as he dies (art/eye_death.ts). */
+  dfx?: DeathFx;
   k: number;
   /** His clock (the stand's: 0 at its first frame). */
   t: number;

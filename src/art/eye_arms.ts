@@ -940,3 +940,6 @@ export function armsGap(a: ArmPose, b: ArmPose): number {
 void TAU;
 void ARM_LOOP;
 void ARM_STAND_FRAMES;
+
+// (for the main chat's bake of the tentacles, tools/bake_colossus.ts: the paths as this file draws them)
+export { dense, evenly, liftOver, even };
