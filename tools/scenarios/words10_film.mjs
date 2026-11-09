@@ -23,7 +23,7 @@ const W = { lasting: 'LASTING', fleeting: 'FLEETING', vast: 'VAST' };
 const SCENES = [
   // LASTING
   {
-    word: 'lasting', key: 'orb', cls: 'mage', frames: 30, from: 4, words: [[1, 'front', 'lasting']],
+    word: 'lasting', key: 'orb', cls: 'mage', frames: 58, from: 22, words: [[1, 'front', 'lasting']],
     cap: 'On her orb: sand-light crawls over it, a ring of its sand turning round it',
     mobs: [['skeleton', 4.0, 0.4, 'a']],
     at: { 2: [['use', 1, 2.2, 0.1]] },
@@ -193,8 +193,10 @@ export default async function (page, snap) {
         const run = g.update.bind(g);
         g.update = (dt, c) => {
           const C = window.__w10.ctl;
-          if (C.hold && C.hold.left > 0) { C.hold.left -= dt; c.hold = true; c.castX = C.hold.x; c.castY = C.hold.y; }
-          if (C.move && C.move.left > 0) { C.move.left -= dt; c.mx = C.move.mx; c.my = C.move.my; }
+          // (his hands are the film's alone: the button let go and his feet still when the film says so, for the controls are
+          // kept from one step to the next)
+          if (C.hold && C.hold.left > 0) { C.hold.left -= dt; c.hold = true; c.castX = C.hold.x; c.castY = C.hold.y; } else c.hold = false;
+          if (C.move && C.move.left > 0) { C.move.left -= dt; c.mx = C.move.mx; c.my = C.move.my; } else { c.mx = 0; c.my = 0; }
           return run(dt, c);
         };
         g.__w10wrap = true;
