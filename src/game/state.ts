@@ -1568,7 +1568,7 @@ export type GameEvent =
   | { t: 'msg'; text: string; color: string }
   | { t: 'sfx'; name: Sfx; vol?: number }
   /** A sound of the sound chat's second batch by its name (engine/audio.ts sfxNamed), `or` made in code until it has come. */
-  | { t: 'rec'; name: string; vol?: number; or?: Sfx; world?: boolean }
+  | { t: 'rec'; name: string; vol?: number; or?: Sfx; world?: boolean; exact?: boolean }
   /** A hero's own voice (engine/audio.ts heroVoice: how often each is heard is the sound's to say). */
   | { t: 'voice'; who: ClassId; cry: 'attack' | 'hurt' | 'death' }
   /** A door has begun to swing open ('open'); the boss's gate has fallen ('fall') or begun to rise ('rise'). At the middle of its doorway. */

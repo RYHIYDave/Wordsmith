@@ -11,6 +11,7 @@
 // voices come later.
 
 import type { MonsterKind } from './types';
+import { COLOSSUS } from './colossus_fight';
 
 /** The switch: off, the enemies sound as before (monsterDie, bossRoar). */
 export const ENEMY_SOUNDS = { on: true };
@@ -93,6 +94,8 @@ export const ENEMY_GAPS = { aggro: 1.2, hurt: 0.7, atk: 0.25, bossHurt: 2.5 } as
 export const HURT_BIG = { share: 0.25, one: 6 } as const;
 
 /** The sounds a floor's enemies will want (to fetch as it is come into): their attacks, voices and the bosses' sounds. */
+/** The Swamp Colossus's own sounds, played at his fight's beats (game/act1_rules/colossus.ts `sounds`). */
+export const COLOSSUS_SOUND_NAMES = ['colossus_rise', 'colossus_tentacle', 'colossus_entrance', 'colossus_pour', 'colossus_roar', 'colossus_slime'] as const;
 export function soundsOf(kinds: Iterable<MonsterKind>): string[] {
   const out = new Set<string>();
   for (const k of kinds) {
@@ -103,6 +106,8 @@ export function soundsOf(kinds: Iterable<MonsterKind>): string[] {
     const b = BOSS_VOICE[k];
     if (b) for (const s of ['roar', 'hurt', 'death']) out.add(`${b}_${s}`);
     for (const [act, name] of Object.entries(ACT_SOUND)) if (act.startsWith(`${k}:`)) out.add(name);
+    // (THE SWAMP COLOSSUS, floor 10's boss since 25.3.0: his own sounds, fetched as his floor is come into, his entrance's 9.8 s among them)
+    if (k === 'eye' && COLOSSUS.on) for (const n of COLOSSUS_SOUND_NAMES) out.add(n);
   }
   return [...out];
 }

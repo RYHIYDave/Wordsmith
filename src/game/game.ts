@@ -3727,8 +3727,8 @@ export class Game {
   }
 
   /** A sound of the second batch by its name (game/sound_families.ts), `or` made in code until it has come. */
-  rec(name: string, vol?: number, or?: Sfx): void {
-    this.emit({ t: 'rec', name, vol, or });
+  rec(name: string, vol?: number, or?: Sfx, exact?: boolean): void {
+    this.emit({ t: 'rec', name, vol, or, ...(exact ? { exact } : {}) });
   }
 
   /**
