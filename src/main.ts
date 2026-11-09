@@ -2966,6 +2966,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         g.hero.x = at.x;
         g.hero.y = at.y;
       }
+      // (all three pieces of the ward-stone in hand, to set into the pillars of his phase 3, or the pillars broken by blows)
+      g.hero.pieces = 7;
     }
   }
 
