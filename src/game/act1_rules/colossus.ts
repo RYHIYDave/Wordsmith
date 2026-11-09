@@ -109,6 +109,10 @@ function handle(R: BossRules, m: Monster, S: StoneAt, ev: readonly FightEvent[])
     if (e.t === 'burst') g.emit({ t: 'shake', amount: 9 });
     if (e.t === 'snap') g.emit({ t: 'shake', amount: 10 });
     if (e.t === 'crash') g.emit({ t: 'shake', amount: 7 });
+    // (his body's own attacks, the art's shakes: the retch, the bile's splash, the gaze's beam firing)
+    if (e.t === 'retch') g.emit({ t: 'shake', amount: 4 });
+    if (e.t === 'bile') g.emit({ t: 'shake', amount: 8 });
+    if (e.t === 'gaze') g.emit({ t: 'shake', amount: 9 });
   }
 }
 

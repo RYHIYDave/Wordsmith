@@ -12,6 +12,7 @@ import {
   hookFront, poolR, rootAt, stoneToWorld, waveFront,
 } from '../../game/colossus_fight';
 import type { Arm } from '../../game/colossus_fight';
+import { drawColossusAir, drawColossusGround, drawColossusRings, keepColossusFx } from './colossus_fx';
 import type { Act1Fx, Act1FxCtx } from './types';
 import { ARM_BAKE, colossusAtEnd, colossusBakeAsk, colossusBaked, colossusFrames, colossusSlamTurns, colossusWant, drawColossusArm, drawColossusBody, drawColossusHooks } from '../colossus_baked';
 
@@ -72,6 +73,9 @@ function draw(c: Act1FxCtx): void {
   // HIM: under the water in phase 1 (his eye's fire seen through it), risen from his entrance on; at an end in his shovel. His own
   // pictures where they are baked (render/colossus_baked.ts), else the stand-ins.
   colossusBakeAsk();
+  keepColossusFx(f);
+  // (what the fight leaves on the stone and the water: render/act1_fx/colossus_fx.ts)
+  drawColossusGround(g, P, f, c.t);
   // (what this part of the fight wants held: his phase's pictures and his tentacles'; the rest let go)
   // (his entrance in parts: the one playing and the next; his stand and phase 2's tentacles from its last part; phase 1's tentacles
   // while they die)
@@ -199,28 +203,6 @@ function draw(c: Act1FxCtx): void {
       disc(B.at.u, B.at.v, L.splash, null, warnColor(k), [4, 3]);
       disc(B.at.u, B.at.v, L.splash * k, 'rgba(255, 61, 139, 0.16)');
     }
-    if (B.t >= L.release && B.t < L.land) {
-      // (from his throat, over in a high arc: 6.1 tiles up at the top)
-      const throat = { u: 7.79, v: -7.14 };
-      const s = (B.t - L.release) / (L.land - L.release);
-      const [x0, y0] = P(throat.u + (B.at.u - throat.u) * s, throat.v + (B.at.v - throat.v) * s);
-      const up = (1 + 6.1 * 4 * s * (1 - s)) * 16;
-      g.fillStyle = '#4a4e14';
-      g.beginPath();
-      g.ellipse(x0, y0 - up, 7, 6, 0, 0, Math.PI * 2);
-      g.fill();
-      g.fillStyle = '#b4ac34';
-      g.beginPath();
-      g.ellipse(x0 - 2, y0 - up - 2, 3, 2, 0, 0, Math.PI * 2);
-      g.fill();
-    }
-  }
-  for (const pool of f.pools) {
-    const r = poolR(pool.t);
-    if (r <= 0) continue;
-    disc(pool.u, pool.v, r, 'rgba(58, 62, 16, 0.78)', `rgba(255, 176, 112, ${0.5 + 0.3 * Math.sin(c.t * 9)})`);
-    disc(pool.u, pool.v, r * 0.6, 'rgba(180, 172, 52, 0.25)');
-    if (pool.t < 0.3) disc(pool.u, pool.v, BODY2.bile.splash * (0.4 + pool.t * 2), null, 'rgba(180, 172, 52, 0.7)');
   }
   // PHASE 3, HIS EYE: the gaze's arc laid and its beam swept; the eye slam's circle, and the eye lying where it came down (phase 2's
   // gaze the same, from the water under his eye at his place)
@@ -231,10 +213,6 @@ function draw(c: Act1FxCtx): void {
       const pts: [number, number][] = [[E.at.u, E.at.v]];
       for (let i = 0; i <= 12; i++) pts.push(ray(E.a0 + ((E.a1 - E.a0) * i) / 12, 16));
       poly(pts, 'rgba(30, 6, 24, 0.22)', warnColor(E.t / GAZE.warn), [5, 3]);
-    } else if (E.t < GAZE.warn + GAZE.sweep) {
-      const deg = E.a0 + ((E.a1 - E.a0) * (E.t - GAZE.warn)) / GAZE.sweep;
-      const end = ray(deg, 16);
-      poly(strip(E.at, { u: end[0], v: end[1] }, GAZE.width / 2), 'rgba(255, 120, 170, 0.55)', GOLD);
     }
   }
   if (E && E.kind === 'slam') {
@@ -254,6 +232,10 @@ function draw(c: Act1FxCtx): void {
       g.fill();
     }
   }
+
+  // (the rings on the water round him where he breaks it, at his place risen; round each tentacle standing)
+  if (risen && !sh && f.ph < 3) drawColossusRings(g, P, { u: HIS_PLACE.u, v: HIS_PLACE.v + 1.2 }, 6.5, 1.6, c.t, 3);
+  for (const a of f.arms) if (a.state === 'stand' || a.state === 'slam' || a.state === 'smash') drawColossusRings(g, P, rootAt(a.u), 0.5, 0.3, c.t + a.k * 0.4, 11 + a.k, 0.7);
 
   // HIS TENTACLES: each its own pictures, laid from his middle as he is (his entrance's in his entrance's pictures)
   const [mx, my] = P(HIS_PLACE.u, HIS_PLACE.v);
@@ -331,25 +313,7 @@ function draw(c: Act1FxCtx): void {
     g.globalAlpha = 1;
   }
 
-  // THE WAVES: a wall of black water across the whole depth, its face foaming
-  for (const w of f.waves) {
-    const back: [number, number][] = [];
-    const face: [number, number][] = [];
-    for (let v = -0.3; v <= STONE.d + 0.5; v += 0.5) {
-      let fr0 = waveFront(w.from, w.t, v);
-      if (w.meets) fr0 = w.from === 'l' ? Math.min(fr0, STONE.w / 2) : Math.max(fr0, STONE.w / 2);
-      const d = w.from === 'l' ? -1 : 1;
-      face.push([fr0, v]);
-      back.push([fr0 + d * WAVE.face, v]);
-    }
-    poly([...face, ...back.reverse()], WATER, FOAM);
-  }
-  // THE CRASH: the plume where they meet, and its surge over the stone
-  if (f.crash) {
-    const k = f.crash.t;
-    if (k < 0.6) disc(STONE.w / 2, CRASH.v, CRASH.r * Math.min(1, k / 0.15), 'rgba(214, 226, 214, 0.55)', FOAM);
-    if (k >= CRASH.surge[0]) poly([[STONE.w / 2 - CRASH.half, 0], [STONE.w / 2 + CRASH.half, 0], [STONE.w / 2 + CRASH.half, STONE.d], [STONE.w / 2 - CRASH.half, STONE.d]], `rgba(40, 70, 60, ${0.35 * (1 - (k - CRASH.surge[0]) / (CRASH.surge[1] - CRASH.surge[0]))})`);
-  }
+  // (the waves, the crash and what flies: over the hero, render/act1_fx/colossus_fx.ts, from COLOSSUS_FX.air)
   // THE SIEGE'S BOLTS: their circles, filling as they come
   for (const rn of f.rains) {
     const k = Math.min(1, rn.t / RAIN.warn);
@@ -367,5 +331,16 @@ export const COLOSSUS_FX: Act1Fx = {
   hidden: () => true,
   ground(c, _m, p) {
     if (p && p.a1 === 'eye:fight') draw(c);
+  },
+  air(c, _m, p) {
+    if (!p || p.a1 !== 'eye:fight' || !c.g) return;
+    const S = c.game.level.land?.stone;
+    const boss = colossusOf(c.game);
+    const f = boss ? colossusOn(boss).fight : undefined;
+    if (!S || !f) return;
+    drawColossusAir(c.g, (u, v) => {
+      const w = stoneToWorld(S, u, v);
+      return c.at(w.x, w.y);
+    }, f, c.t);
   },
 };
