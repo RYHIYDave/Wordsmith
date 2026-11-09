@@ -8,6 +8,7 @@
 //   node tools/build_to.mjs dist/words10_looks.html
 //   node tools/playtest.mjs --file dist/words10_looks.html --touch --size 844x360 --dpr 1.5 --scenario tools/scenarios/words10_film.mjs --out /dev/shm/w10f/f
 //   python3 tools/words10_film.py /dev/shm/w10f/f docs/mockups/words10/pictures/words3_film.mp4
+//   (or a word at a time, ONLY=lasting --out /dev/shm/w10f/lasting/f, and so on; then the three prefixes, comma between, in order)
 //   env: ONLY=lasting,vast (only those words); STILLS=1 (one picture a piece, at its middle: a quick look)
 // Beside the pictures, <out>_plan.json lists each piece of the film: its pictures, its caption, whether it is a close one.
 // NOTHING THROUGH ANYTHING: every picture is checked (`crowd`): no monster standing in him, in another or in a pillar; he not in a

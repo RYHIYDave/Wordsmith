@@ -734,10 +734,12 @@ function tick(g: CanvasRenderingContext2D, x: number, y: number, k: number, seed
  * Quick ticks: little stars of light popping on a thing, one after another, a few at once (its poison or burning ticking fast),
  * each with a spark thrown off it; in `C` (his lilac, or the enemy's pink and gold).
  */
-function ticks(g: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number, t: number, seed: number, n: number, C: readonly string[]): void {
+function ticks(g: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number, t: number, seed: number, n: number, C: readonly string[], from = -1e9): void {
   const beat = Math.floor(t / W10_TIME.flare);
   for (let i = 0; i < n; i++) {
     const b = beat - i;
+    // (only the stars of this poison: none from before it began)
+    if (b * W10_TIME.flare < from - W10_TIME.flare) continue;
     const k = (t - b * W10_TIME.flare) / (W10_TIME.flare * n);
     if (k < 0 || k >= 1) continue;
     const x = Math.round(cx + (hash2(b, 3, seed) - 0.5) * w);
@@ -1402,7 +1404,7 @@ function drawStates(g: CanvasRenderingContext2D, cam: Cam, game: Game, layer: 'f
       if (d.word === 'lasting') {
         const amt = clamp01(sinceOf(`dot:${m.id}`) / BEAT['lasting:dot'].build) * clamp01(d.left / 0.3);
         lastingOnIt(g, mx, my, topOf(m), t, m.id * 7 + 1, clamp01(1 - d.left / (TUNE.poisonTime * (1 + LASTING.longer))), W10_RAMP.lasting, amt);
-      } else ticks(g, mx, my - 3, 12, topOf(m) - 6, t, m.id * 7 + 2, 4, W10_RAMP.fleeting);
+      } else ticks(g, mx, my - 3, 12, topOf(m) - 6, t, m.id * 7 + 2, 4, W10_RAMP.fleeting, W10.since.get(`dot:${m.id}`));
     }
   }
   // a monster's poison, burning or chill on him: lingering (Lasting) or ticking fast (Fleeting), in the enemy's colours
@@ -1411,7 +1413,7 @@ function drawStates(g: CanvasRenderingContext2D, cam: Cam, game: Game, layer: 'f
     if (sick.word === 'lasting') {
       const amt = clamp01(sinceOf('him') / BEAT['lasting:monster'].build) * clamp01(sick.left / 0.3);
       lastingOnIt(g, hx, hy, HERO_TOP, t, 51, clamp01(1 - sick.left / (TUNE.poisonTime * (1 + LASTING.monster))), W10_ENEMY, amt);
-    } else ticks(g, hx, hy - 3, 13, HERO_TOP - 6, t, 53, 5, W10_ENEMY);
+    } else ticks(g, hx, hy - 3, 13, HERO_TOP - 6, t, 53, 5, W10_ENEMY, W10.since.get('him'));
   }
   // a monster's warning drawn wider (Vast on it): widening out from its old reach over its build, held, snapping out as it lands
   for (const raw of game.zones) {

@@ -32,15 +32,16 @@ const on = <T>(fn: () => T): T => {
 function draw(gm: Game): { n: number; colours: Set<string> } {
   let n = 0;
   const colours = new Set<string>();
-  const g = {
+  const pen = {
     fillStyle: '',
     globalAlpha: 1,
     fillRect() {
       n++;
-      colours.add(String(this.fillStyle).toLowerCase());
+      colours.add(String(pen.fillStyle).toLowerCase());
     },
     drawImage: () => {},
-  } as unknown as CanvasRenderingContext2D;
+  };
+  const g = pen as unknown as CanvasRenderingContext2D;
   floorW10(g, cam, W10.clock, gm, everywhere);
   airW10(g, cam, W10.clock, gm);
   return { n, colours };

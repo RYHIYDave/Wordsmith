@@ -4,7 +4,7 @@ tools/scenarios/words10_film.mjs (the game's own screen in the practice room, tw
 thirtieth of a second of the game's clock; a sixtieth for the close ones). Each word in turn: a card with its rune stone and its
 colours; on his abilities and on a monster at full speed, the whole screen as the player sees it; then its best moment again, at
 twice the size and half speed. Captioned. 30 a second, H.264, yuv420p.
-   python3 tools/words10_film.py <pictures' prefix, e.g. /dev/shm/w10f/f> <out.mp4>"""
+   python3 tools/words10_film.py <pictures' prefix, e.g. /dev/shm/w10f/f; or several, comma between, one a word> <out.mp4>"""
 import base64
 import glob
 import io
@@ -13,7 +13,7 @@ import subprocess
 import sys
 from PIL import Image, ImageDraw, ImageFont
 
-pre, out = sys.argv[1:3]
+pres, out = sys.argv[1].split(','), sys.argv[2]
 B = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
 R = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
 big, mid, small = ImageFont.truetype(B, 40), ImageFont.truetype(B, 22), ImageFont.truetype(R, 21)
@@ -26,8 +26,9 @@ COLOUR_IS = {'lasting': 'old sand at dusk, pale amber where the light is in it',
              'fleeting': 'a lilac so pale at its edge it is nearly white',
              'vast': 'deep earth, and the dust off it'}
 
-plan = json.load(open(pre + '_plan.json'))
-runes = json.load(open(pre + '_runes.json'))
+# (each prefix's plan in turn: a word filmed on its own, so that a restart loses only that word)
+plan = [dict(p, pre=pre) for pre in pres for p in json.load(open(pre + '_plan.json'))]
+runes = json.load(open(pres[0] + '_runes.json'))
 
 
 def hexrgb(h):
@@ -102,7 +103,7 @@ for p in plan:
         for _ in range(24):
             put(c)
         last = word
-    files = sorted(glob.glob(f"{pre}_{p['name']}_*.png"))
+    files = sorted(glob.glob(f"{p['pre']}_{p['name']}_*.png"))
     col = hexrgb(p['ramp'][3]) if sum(hexrgb(p['ramp'][3])) > 200 else hexrgb(p['ramp'][4])
     for f in files:
         im = Image.open(f).convert('RGB')
