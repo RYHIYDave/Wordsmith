@@ -12,19 +12,23 @@ const W = { piercing: 'PIERCING', bleeding: 'BLEEDING', reaping: 'REAPING', cull
 
 // Each scene: who stands where (tiles across and down the screen from the hero), what happens on which picture (30 a second),
 // how many pictures, its caption; `best` the word's best moment (pictures of the scene, replayed at half speed, twice the size,
-// about `focus`).
+// about `focus`). NOTHING THROUGH ANYTHING: whatever he strikes stands 1.85 across from him (his swing steps him a third of a
+// tile on), and every picture is checked: no monster standing in him, in his reflection, in the mirror or in a pillar, nor he
+// in the mirror or a pillar (`crowd`, below).
 const SCENES = [
   // PIERCING
   {
     word: 'piercing', side: 'front', frames: 44, cap: 'In front: his blow goes on through the first, a bolt of light through all behind it',
-    mobs: [['skeleton', 1.15, 0, 'a'], ['skeleton', 2.5, 0, 'b'], ['skeleton', 3.9, 0, 'c']],
-    at: { 4: [['swing', 'a']], 14: [['send', { t: 'pierceLine' }, 'line', 0.35, 0, 6.5, 0]] },
+    // (as the rules make it: through the first, and on 3 tiles behind it; clear of the room's pillar)
+    mobs: [['skeleton', 1.85, 0, 'a'], ['skeleton', 3.05, 0, 'b'], ['skeleton', 4.25, 0, 'c']],
+    at: { 4: [['swing', 'a']], 14: [['send', { t: 'pierceLine' }, 'line', 0.35, 0, 4.85, 0]] },
     focus: [2.2, -0.4],
   },
   {
     word: 'piercing', side: 'behind', frames: 74, cap: 'Behind: half a second after, a spear of light slams down the line',
     mobs: [['skeleton', 2.0, 0.35, 'a'], ['cultist', 3.6, 0.35, 'b']],
-    at: { 3: [['swing', 'a']], 13: [['send', { t: 'lance', width: 1, delay: 0.5 }, 'fromto', 0.9, 0.35, 4.7, 0.35]] },
+    // (the line from a step in front of him: the spear comes down at a slant from over its start, clear of him)
+    at: { 3: [['swing', 'a']], 13: [['send', { t: 'lance', width: 1, delay: 0.5 }, 'fromto', 1.5, 0.35, 4.7, 0.35]] },
     focus: [2.6, -0.6], best: [24, 54],
   },
   {
@@ -36,7 +40,7 @@ const SCENES = [
   // BLEEDING
   {
     word: 'bleeding', side: 'front', frames: 72, cap: 'In front: what he strikes bleeds, more as it walks',
-    mobs: [['cultist', 1.2, 0.1, 'a']],
+    mobs: [['cultist', 1.85, 0.1, 'a']],
     at: { 3: [['swing', 'a']], 13: [['send', { t: 'bleedOn' }, 'id', 'a'], ['set', 'a', 'bleedT', 3]], 22: [['walk', 'a', 3.6, 0.6]] },
     focus: [1.8, -0.2],
   },
@@ -48,39 +52,39 @@ const SCENES = [
   },
   {
     word: 'bleeding', side: 'monster', frames: 50, cap: 'On a monster: its blows make him bleed',
-    mobs: [['cultist', 1.25, -0.15, 'a']],
+    mobs: [['cultist', 1.85, -0.15, 'a']],
     at: { 2: [['strike', 'a']], 8: [['send', { t: 'heroBleed' }, 'id', 'a'], ['hero', 'heroBleedT', 2]] },
     focus: [0.6, -0.4],
   },
   // REAPING
   {
     word: 'reaping', side: 'front', frames: 54, cap: 'In front: a kill\'s soul flies to him (a second off his cooldowns)',
-    mobs: [['skeleton', 1.2, 0.2, 'a']],
+    mobs: [['skeleton', 1.85, 0.2, 'a']],
     at: { 3: [['swing', 'a']], 13: [['kill', 'a'], ['send', { t: 'reapSoul' }, 'pos', 'a']] },
     focus: [0.6, -0.6],
   },
   {
     word: 'reaping', side: 'behind', frames: 102, cap: 'Behind: a kill rises as a spirit and fights for him (6 s in the game)',
-    mobs: [['skeleton', 1.2, 0.2, 'a'], ['cultist', 3.4, 0.3, 'foe']],
+    mobs: [['skeleton', 1.85, 0.2, 'a'], ['cultist', 4.6, 0.3, 'foe']],
     at: {
       3: [['swing', 'a']], 13: [['kill', 'a'], ['spirit', 'a', 'sp', 2.6]],
       36: [['strike', 'sp'], ['send', { t: 'spiritHit' }, 'hit', 'sp', 'foe']], 62: [['strike', 'sp'], ['send', { t: 'spiritHit' }, 'hit', 'sp', 'foe']],
       96: [['gone', 'sp']],
     },
-    focus: [1.8, -0.4], best: [12, 46],
+    focus: [2.2, -0.4], best: [12, 46],
   },
   {
     word: 'reaping', side: 'monster', frames: 70, cap: 'On a monster: it rises once after it dies',
-    mobs: [['skeleton', 1.25, 0.1, 'a']],
+    mobs: [['skeleton', 1.85, 0.1, 'a']],
     at: { 3: [['swing', 'a']], 13: [['kill', 'a']], 32: [['send', { t: 'rise' }, 'pos', 'a']], 62: [['respawn', 'a']] },
     focus: [0.9, -0.4],
   },
   // CULLING
   {
     word: 'culling', side: 'front', frames: 48, cap: 'In front: one his hit leaves under 15% of its life dies at once',
-    mobs: [['skeleton', 1.2, 0, 'a']], weak: 'a',
-    at: { 3: [['swing', 'a']], 13: [['kill', 'a'], ['send', { t: 'culled' }, 'id', 'a']] },
-    focus: [0.8, -0.4], best: [10, 36],
+    mobs: [['skeleton', 1.85, 0, 'a']], weak: 'a',
+    at: { 3: [['swing', 'a']], 13: [['kill', 'a'], ['send', { t: 'culled' }, 'pos', 'a']] },
+    focus: [1.0, -0.4], best: [10, 36],
   },
   {
     word: 'culling', side: 'behind', frames: 72, cap: 'Behind: the reaper\'s mark takes the first weak one to cross it',
@@ -90,7 +94,7 @@ const SCENES = [
   },
   {
     word: 'culling', side: 'monster', frames: 54, cap: 'On a monster: while he is low, its blows hit much harder', low: true,
-    mobs: [['skeleton', 1.35, -0.2, 'a', ['culling']]],
+    mobs: [['skeleton', 1.85, -0.2, 'a', ['culling']]],
     at: { 18: [['strike', 'a']], 24: [['send', { t: 'cullBlow' }, 'id', 'a']] },
     focus: [0.7, -0.5],
   },
@@ -103,8 +107,8 @@ const SCENES = [
   },
   {
     word: 'surging', side: 'behind', frames: 36, cap: 'Behind: his dodge lets out a surge',
-    mobs: [['skeleton', 2.6, 0.2, 'a']],
-    at: { 3: [['roll', -1.0, 0.1, 1.4, -0.05], ['send', { t: 'surge', dodge: true }, 'none']] },
+    mobs: [['skeleton', 2.7, 0.2, 'a']],
+    at: { 3: [['roll', -1.0, 0.1, 0.9, -0.05], ['send', { t: 'surge', dodge: true }, 'none']] },
     focus: [0, -0.3],
   },
   {
@@ -116,7 +120,7 @@ const SCENES = [
   // PLUNDERING
   {
     word: 'plundering', side: 'front', frames: 60, cap: 'In front: kills drop more gold, and sometimes an extra piece',
-    mobs: [['skeleton', 1.2, 0.2, 'a']],
+    mobs: [['skeleton', 1.85, 0.2, 'a']],
     at: { 3: [['swing', 'a']], 13: [['kill', 'a'], ['send', { t: 'goldSpray', item: true }, 'pos', 'a']] },
     focus: [0.9, -0.5], best: [11, 39],
   },
@@ -128,26 +132,31 @@ const SCENES = [
   },
   {
     word: 'plundering', side: 'monster', frames: 90, cap: 'On a monster: its blows steal his gold, dropped when it dies',
-    mobs: [['skeleton', 1.3, -0.2, 'a']],
+    mobs: [['skeleton', 1.85, -0.2, 'a']],
     at: { 2: [['strike', 'a']], 7: [['send', { t: 'goldStolen' }, 'id', 'a'], ['set', 'a', 'stolen', 12]], 44: [['swing', 'a']], 54: [['kill', 'a']] },
     focus: [0.7, -0.6],
   },
   // MIRRORING
   {
+    // (he faces down the screen to the right; his reflection stands beside him, ahead of him on the screen, a long step off;
+    // one in front of each)
     word: 'mirroring', side: 'front', frames: 40, cap: 'In front: his reflection beside him makes the same attack', face: [1, 0],
-    mobs: [['skeleton', 0.95, 0.95, 'a'], ['skeleton', 0.25, 2.35, 'b']],
+    mobs: [['skeleton', 1.5, 2.214, 'a'], ['skeleton', 3.393, 0.679, 'b']],
     at: { 3: [['swing', 'a']], 11: [['send', { t: 'reflection' }, 'none']] },
-    focus: [-0.2, 0.5],
+    focus: [1.4, 0.2],
   },
   {
-    word: 'mirroring', side: 'behind', frames: 92, cap: 'Behind: a mirror where he stood makes his next attack again',
-    mobs: [['skeleton', -0.35, 0.7, 'near'], ['skeleton', 1.45, 1.15, 'far']],
-    at: { 2: [['lay', 'mirror', 0.3, 0.3, 0.6, 99]], 14: [['roll', 0.3, 0.3, -1.35, -0.25]], 36: [['swing', 'near']], 46: [['cast', 0.3, 0.3]] },
-    focus: [0, -0.4], best: [44, 80],
+    // (the mirror laid where he stands; he rolls off it, down the screen, and it rises there; he strikes the one before him,
+    // and it makes his blow again at the one before it)
+    // (all of it up and to the right of the room's middle, between two of its pillars, clear of them)
+    word: 'mirroring', side: 'behind', frames: 80, cap: 'Behind: a mirror where he stood makes his next attack again', shift: [3.036, -3.3],
+    mobs: [['skeleton', 1.071, 3.75, 'near'], ['skeleton', 1.518, 0, 'far']],
+    at: { 2: [['lay', 'mirror', 0, 0, 0.6, 99]], 8: [['roll', 0, 0, -1.071, 3.75]], 28: [['swing', 'near']], 38: [['cast', 0, 0]] },
+    focus: [0.2, 0.3], best: [34, 72],
   },
   {
-    word: 'mirroring', side: 'monster', frames: 40, cap: 'On a monster: harm he does it flies back at him in shards',
-    mobs: [['skeleton', 1.2, 0, 'a']],
+    word: 'mirroring', side: 'monster', frames: 44, cap: 'On a monster: harm he does it flies back at him in shards',
+    mobs: [['skeleton', 1.85, 0, 'a']],
     at: { 3: [['swing', 'a']], 13: [['send', { t: 'mirrorBack' }, 'id', 'a']] },
     focus: [0.6, -0.5],
   },
@@ -192,6 +201,30 @@ export default async function (page, snap) {
         // (no numbers of the game's own over the looks)
         window.__dbg.fx.floaters.length = 0;
       },
+      /** NOTHING THROUGH ANYTHING: who stands in him, in his reflection or in the mirror this picture (screen boxes, game pixels). */
+      crowd() {
+        const d = window.__dbg; const g = d.game(); const h = g.hero; const w7 = d.words7;
+        const box = (x, y, hw, ht) => { const p = d.at(x, y); return [p.x - hw, p.x + hw, p.y - ht, p.y]; };
+        const meet = (A, B) => A[0] < B[1] && B[0] < A[1] && A[2] < B[3] && B[2] < A[3];
+        const him = box(h.x, h.y, 13, 36);
+        const glass = [];
+        for (const z of g.zones) if (z.look === 'mirror' && (w7.state.panes.get(z) ?? -1) >= 0) glass.push(['the mirror', box(z.x, z.y, 10, 40)]);
+        if (w7.state.acts.some((a) => a.word === 'mirroring' && a.side === 'front')) { const [ox, oy] = w7.beside(); glass.push(['his reflection', box(h.x + ox, h.y + oy, 13, 36)]); }
+        const stone = (g.level.props || []).filter((p) => p.solid).map((p) => box(p.x, p.y, 10, p.kind === 'pillar' ? 66 : 34));
+        const out = [];
+        for (const m of g.monsters) {
+          if (m.dead) continue;
+          // (a monster and what it holds)
+          const mb = box(m.x, m.y, 11, m.kind === 'cultist' ? 33 : 30);
+          if (meet(him, mb)) out.push(`${m.kind} ${m.id} in him`);
+          for (const [what, b] of glass) if (meet(b, mb)) out.push(`${m.kind} ${m.id} in ${what}`);
+          if (stone.some((b) => meet(b, mb))) out.push(`${m.kind} ${m.id} in a pillar`);
+        }
+        for (const [what, b] of glass) if (what === 'the mirror' && meet(b, him)) out.push('he is in the mirror');
+        if (stone.some((b) => meet(b, him))) out.push('he is in a pillar');
+        for (const [what, b] of glass) if (stone.some((q) => meet(q, b))) out.push(`${what} in a pillar`);
+        return out;
+      },
     };
   });
   await page.waitForTimeout(1500);
@@ -208,7 +241,9 @@ export default async function (page, snap) {
     d.words7.clear();
     W7.ids = {};
     h.move = null; h.swingT = 0; h.life = h.d.maxLife; h.heroBleedT = 0;
-    const base = sc.wall ? [15.4, 9.2] : W7.home;
+    W7.base = W7.home;
+    let base = sc.wall ? [15.4, 9.2] : W7.home;
+    if (sc.shift) base = W7.at(sc.shift[0], sc.shift[1]);
     W7.base = base;
     h.x = base[0]; h.y = base[1];
     const face = sc.face || [1, -1];
@@ -334,6 +369,7 @@ export default async function (page, snap) {
       const count = pass === 'best' ? (b1 - b0) * 2 : sc.frames;
       const piece = { word: sc.word, side: sc.side, name: `${name}_${pass}`, frames: 0, cap: sc.cap, title: W[sc.word], best: pass === 'best', ramp: ramps[sc.word], focus: null };
       let did = -1;
+      const crowded = new Map();
       for (let i = 0; i < (pass === 'best' ? b1 * 2 : sc.frames); i++) {
         await frameAt(c0, i, step);
         // the scene's moments, on its own pictures (at half speed, every other picture)
@@ -343,6 +379,7 @@ export default async function (page, snap) {
           did = f;
         }
         await page.evaluate((k) => window.__w7.step(k), pass === 'best' ? 0.5 : 1);
+        for (const c of await page.evaluate(() => window.__w7.crowd())) if (!crowded.has(c)) crowded.set(c, i);
         const keep = pass === 'best' ? i >= b0 * 2 : !stills || i === Math.floor(sc.frames / 2);
         if (!keep) continue;
         if (!piece.focus) piece.focus = await where(sc.focus);
@@ -350,6 +387,7 @@ export default async function (page, snap) {
         piece.frames++;
       }
       if (piece.frames !== (stills && pass === 'full' ? 1 : count)) bad(`${piece.name}: ${piece.frames} pictures of ${count}`);
+      for (const [c, i] of crowded) bad(`${piece.name}: ${c} (from picture ${i} of the pass)`);
       plan.push(piece);
       console.log(`  ${piece.name}: ${piece.frames} pictures`);
     }

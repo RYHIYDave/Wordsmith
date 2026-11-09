@@ -1,4 +1,4 @@
-# The seven new words' looks: the stills (step 1) and the film of them at work (step 2)
+# The seven new words' looks: the stills (step 1) and the film of them at work (step 2, made right in 2b)
 
 A mock-up on `art/words7` (from `origin/work-f4` at 68cb71c2, the live game, 25.2.13), behind `WORDS7_LOOK` in
 `src/render/words7.ts`, **off**. With it off nothing of it is drawn, lit or ticked, and the game is as it was (a test).
@@ -64,15 +64,15 @@ be the same drawings run on.
 
 ## Step 2: at work, and the film
 
-`pictures/words7_film.mp4` (66.4 s, 1266 by 540, 30 a second, H.264 yuv420p, 7.7 MB): in the practice room with the Warrior, as the player sees it,
+`pictures/words7_film.mp4` (66.3 s, 1266 by 540, 30 a second, H.264 yuv420p, 7.7 MB; made again in step 2b): in the practice room with the Warrior, as the player sees it,
 each word in turn: a card with its stone and colours; in front, behind and on a monster at full speed (the whole screen);
 then its best moment again at twice the size and half speed. Captioned. Every look moves at 30 pictures a second, each with
 its beats (`W7_BEATS`, seconds):
 
 | Look | Build | Hit | Fade | What happens |
 |---|---|---|---|---|
-| Piercing in front | 0.03 | 0.2 | 0.35 | the bolt kindles at his hand; flies the line at 26 tiles a second, light blowing out of each it goes through; its trail and sparks die |
-| Piercing behind | 0.5 | 0.22 | 1.9 | the line scratched in light, quickening, the spear gathering high over it (the rules' `delay`); it slams down (0.06) and tears along the line (0.16); the crack glows, cools, gone |
+| Piercing in front | 0.03 | 0.2 | 0.35 | the bolt kindles at his hand; flies the line at 26 tiles a second, light blowing out of each it goes through; at the line's end (or on a wall or a pillar in its way, never through it) its head bursts into motes and its trail runs in after it to a point; the motes wink out |
+| Piercing behind | 0.5 | 0.22 | 1.9 | light seeping along a crack that breaks jagged along the floor's stones, forking, quickening, the spear gathering high over it (the rules' `delay`); it slams down (0.06) and tears along the crack (0.16); pulled up, it goes as one spear of light, rising and dimming; the crack glows, cools to dark stone, gone |
 | Piercing on a monster | 0.1 | 0.15 | 0.45 | the stone lit pink where its shot comes through, rings of light running out over it |
 | Bleeding in front | 0.05 | 0.5 | 0.15 | the wound opens; the spurt; then drips while it bleeds, a splash where it walks (one every fifth of a tile walking, one every 0.8 s standing), each drying in 3 s |
 | Bleeding behind | 0.22 | (while it lies) | 0.5 | the briars burst up; stand swaying, cutting what walks in them; sink back |
@@ -80,17 +80,17 @@ its beats (`W7_BEATS`, seconds):
 | Reaping in front | 0.15 | 0.55 | 0.25 | the soul torn out of the body; it streaks to him; a flare as he takes it in |
 | Reaping behind | 0.45 | (its 6 s) | 0.6 | the spirit rises out of the body in a stream of soul-light, hovering; fights, its edge his cyan; rises away; each blow 0.05 / 0.06 / 0.24 |
 | Reaping on a monster | 0.2 | 0.8 | 0.4 | the enemy's fire kindles round the body; it lurches up out of its fall; the fire dies |
-| Culling in front | 0.03 | 0.06 | 0.32 | the slash sweeps through in two pictures and it is split; it falls split, the slash fading |
+| Culling in front | 0.16 (held) | 0.07 | 0.3 | his blow lands; an instant held, the one it takes stopped, a violet glint on it; the scythe's crescent sweeps through it in two pictures, smeared, dusk violet and bone; it is cut in two, its halves sliding apart as it falls (and it lies so); the crescent sweeps on, dimming and thinning away |
 | Culling behind | 0.3 | (while it lies) | 0.3 | the mark written in, breathing, gone over its last 0.3 s; taking one: it flares 0.05, a blade rises through it 0.2, it burns out 0.4 |
 | Culling on a monster | 0.3 | 0.05 | 0.3 | while he is low (under 35% of his life) it kindles with the enemy's fire; its blow bursts on him; the fire dies when he is not low |
-| Surging in front, behind | 0.05 | 0.42 | 0.13 | a flash at his feet; the ring runs out, the dust shoved before it (behind: where his dodge began, wind along his roll, 0.55) |
+| Surging in front, behind | 0.05 | 0.42 | 0.13 | a flash at his feet; the ring runs out, the dust shoved before it (behind: where his dodge began, wind along his roll to its end, 0.55) |
 | Surging on a monster | 1.0 (held) | 0.42 | 0.13 | its warning ring, beating faster (the game's own, or ours: `surgeWarn`); then its wave |
 | Plundering in front | 0.05 | 0.5 | 2.0 | a burst of glints; coins spray, the extra piece thrown higher; they lie and fade |
 | Plundering behind | 0.1 | 0.89 | 0.12 | gold bursts from the kill; coin after coin arcs into his purse, a glint as each goes in |
 | Plundering on a monster | 0.04 | 0.58 | 0.15 | his coins torn off on pink hooks; at its belt till it dies; then they burst out of it (0.05 / 0.5 / 1.5) |
-| Mirroring in front | 0.08 | 0.3 | 0.25 | his reflection forms beside him, swings with him, dissolves |
-| Mirroring behind | 0.25 | (while it stands) | 0.2 | the pane grows up out of its glass, and sinks over its last 0.2 s; when he attacks next: 0.05 / 0.33 / 0.9, it repeats his attack (0.33), cracks (0.3), shatters (0.6) |
-| Mirroring on a monster | 0.04 | 0.28 | 0.15 | it cracks like a mirror where he hit it; shards of pink glass fly back into him |
+| Mirroring in front | 0.08 | 0.3 | 0.25 | his reflection forms beside him (2.4 tiles off, on the side of him ahead on the screen), facing as he faces; as he swings it swings, its cut in glass the same shape as his (0.24), landing on those in front of it in little bursts of glass; it dissolves |
+| Mirroring behind | 0.25 | (while it stands) | 0.2 | once he has stepped off where he stood (and is clear of it on the screen), the pane grows up out of its glass there, and sinks over its last 0.2 s; when he attacks next: 0.05 / 0.33 / 0.9, it makes his attack again, his cut in glass the same shape as his (0.24), landing; it cracks (0.3), shatters (0.6) |
+| Mirroring on a monster | 0.12 (held) | 0.38 | 0.1 | it cracks like a mirror where he hit it, held a beat after his blow; then it bursts, and shards of pink glass fly back into him on a high arc, each a little after the last |
 
 ## For the main chat: the events and fields it reads
 
@@ -101,7 +101,7 @@ main chat's board post of 8 Nov 07:55 (its branch `words7` was not to be seen): 
 
 | Event | Fields read (fallback) | Look |
 |---|---|---|
-| `pierceLine` | `from`, `to` (`{x, y}` or `[x, y]`; or `x, y, x1, y1`; to: 6 tiles the way he faces); `ids` (optional: those it went through; else every monster within 0.7 tiles of the line) | Piercing in front |
+| `pierceLine` | `from`, `to` (`{x, y}` or `[x, y]`; or `x, y, x1, y1`; to: 6 tiles the way he faces); `ids` (optional: those it went through; else every monster within 0.7 tiles of the line); the line stops at stone: **level.open** (a wall) and **level.props** that are `solid` (a pillar, within 0.42 of its middle) | Piercing in front |
 | `lance` | `from`, `to`, `width` (tiles, 1), `delay` (s, 0.5) | Piercing behind, from the event on (it waits the delay itself) |
 | (none) | the game's own hostile shots: each one going into or out of a wall (`level.open`) | Piercing on a monster |
 | `bleedOn` | `id` | the wound and spurt; **Monster.bleedT** (> 0 while it bleeds): drips and splashes |
@@ -111,14 +111,15 @@ main chat's board post of 8 Nov 07:55 (its branch `words7` was not to be seen): 
 | `spirit` | `id` (the spirit, a monster drawn by the game), `x, y` (the body it rose from), `secs` (6) | Reaping behind; any monster carrying `spirit: true` is drawn as a spirit too |
 | `spiritHit` | `target` (the struck monster's id) or `x, y` | its blow |
 | `rise` | `x, y` (or `id`): the body there (fx.fallen) lurches up | Reaping on a monster |
-| `culled` | `id`, `x, y`; `mark` (`{x, y}`, or true: the nearest zone 'reaper') | Culling in front (split as it falls), or the mark taking it |
+| `culled` | `id`, `x, y` (where it was: by then it is gone from the list); `mark` (`{x, y}`, or true: the nearest zone 'reaper'); its body in **fx.fallen** near `x, y` is held still an instant, then falls split, and lies split | Culling in front, or the mark taking it |
 | zone `reaper` | `x, y, r, t, dur` | the mark as it lies |
 | (none) | **Monster.words** including 'culling', while his life is under 35% | its fire |
-| `surge` | `x, y` (him), `r` (2.2); `dodge` with `x0, y0` (else his roll's start); `id` (a monster's: its wave, `r` 2.3) | Surging, each side |
+| `surge` | `x, y` (him), `r` (2.2); `dodge` with `x0, y0` (else his roll's start), its wind to his roll's end (**Hero.move** `x1, y1`; none when he has not moved); `id` (a monster's: its wave, `r` 2.3) | Surging, each side |
 | `goldBurst` | `x, y` | Plundering behind |
 | `goldStolen` | `id` | the snatch; **Monster.stolen** (> 0): his coins at its belt; when it dies (or is gone from the list) still carrying them, they burst out of it where it was |
 | `reflection` | `secs` (0.63) | Mirroring in front (the reflection copies his own picture as he attacks) |
-| zone `mirror` | `x, y, t, dur` | the pane as it stands |
+| `swing` (the game's own) | `x, y, dx, dy, reach` of his blow (not one marked `hostile`) | his reflection's cut and the mirror's repeat: as he swings, the same way, as far |
+| zone `mirror` | `x, y, t, dur`; **Hero.x, y**: it rises once he is off it and clear of it | the pane as it stands |
 | `mirrorCast` | `x, y` (or the nearest zone 'mirror') | the repeat, the cracking and the shattering |
 | `mirrorBack` | `id` | Mirroring on a monster |
 
@@ -132,7 +133,13 @@ WHAT THE MAIN CHAT MUST ADD, or say otherwise:
    from its `words` and his life, under 35% (`W7_TIME.low`: the rules' number to say).
 5. **`surgeWarn { id, secs, r }`** (optional): our pink ring; or keep the game's usual warning ring and send only `surge`.
 6. A **Hushed** one culled: the split may be too much for his rule (never gory); the main chat may leave `culled` out of the
-   split for them (the slash still shows).
+   split for them (the scythe's blade still shows).
+7. **`culled` with the `x, y` of the one taken** (it is gone from the monster list when the event is read), sent as it dies.
+8. The mirror's pane is drawn over the figures (with the other looks, after the dark, so it glows): it waits to rise till he
+   is clear of it, but if he (or a monster) walks in front of a standing pane later, the pane is drawn over him. The main
+   chat may want it stood among the figures by its depth instead.
+9. **`lance` from a step in front of him** (the film's starts 1.5 tiles out): its spear comes down at a slant from over the
+   line's start, so a line starting at his feet would bring it down across him.
 
 ## How it was made and checked
 
@@ -149,4 +156,14 @@ WHAT THE MAIN CHAT MUST ADD, or say otherwise:
   game pixel; `tools/words7_film.py` makes the film. `tests/words7_beats.test.ts` (5): each event's look drawn through its
   beats and gone, every pixel, when its time is up; what the rules keep drawn while kept and gone after; nothing with the
   switch off; nothing cyan on a monster's side, its pink there; each look's beats written down.
+- Step 2b (a close look at the film found what follows; made right before he sees it): the bolt never a flat end, never
+  through a wall or a pillar; the lance's crack a real one; the spear going up whole; the cull's own blade after a held
+  instant; no tick left by the dodge's surge; the reflection beside him, its cut landing in front of it; the mirror rising
+  only once he is off it, its repeat a cut of glass; the shards a beat after his blow; and the film's monsters spaced so
+  nothing stands in anything (they stand at least 1.6 across from him: his swing steps him a third of a tile on).
+  `tests/words7_fixes.test.ts` (7) holds each of these a test can; the film's scenario checks every picture for a monster
+  standing in him, in his reflection, in the mirror or in a pillar, and for him in the mirror or a pillar (`crowd`), and for
+  the pictures in the film reported none. The Warrior blinking out on alternate
+  pictures as he dodges is the game's own roll (render.ts: a hero with no tumble of his own is drawn every other picture),
+  left as it is.
 - Not run: the regression; a real phone; the looks with real rules.

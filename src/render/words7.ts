@@ -149,8 +149,12 @@ export const W7_TIME = {
   spiritBuild: 0.45,
   spiritFade: 0.6,
   rise: 0.8,
-  /** Culling: the slash sweeps through in this (two pictures at 30 a second); the hero is low under this much of his life. */
-  cullSweep: 0.06,
+  /**
+   * Culling: after his blow lands, an instant held (the one it takes stopped, a violet glint on it); then the scythe's crescent
+   * sweeps through in this (two pictures at 30 a second); the hero is low under this much of his life.
+   */
+  cullHold: 0.16,
+  cullSweep: 0.07,
   low: 0.35,
   /** Surging: a shockwave's run out; a monster's warning ring before its wave. */
   surge: 0.42,
@@ -161,7 +165,12 @@ export const W7_TIME = {
   /** Mirroring: shards flung back; his reflection's time; a pane growing; its repeat, its cracking and its shattering. */
   shards: 0.28,
   reflection: 0.63,
+  /** ...standing this far off beside him (tiles); its shards flung back a beat after his blow lands. */
+  mirrorStep: 2.4,
+  mirrorBeat: 0.12,
   pane: 0.25,
+  /** ...rising where he stood once he is this far off it (tiles). */
+  paneClear: 0.75,
   cast: 0.38,
   breaking: 0.3,
   shatter: 0.6,
@@ -184,7 +193,7 @@ export const W7_BEATS: Record<string, { build: number; hit: number; fade: number
   'reaping:behind': { build: 0.45, hit: 0, fade: 0.6, is: "the spirit rises out of the body; fights for him (the rules' 6 s), its edge his cyan; rises away and is gone" },
   'reaping:behind:hit': { build: 0.05, hit: 0.06, fade: 0.24, is: "the spirit's blow: a slash of soul-light" },
   'reaping:monster': { build: 0.2, hit: 0.8, fade: 0.4, is: "the enemy's fire kindles round the body; it lurches up out of its fall; the fire dies" },
-  'culling:front': { build: 0.03, hit: 0.06, fade: 0.32, is: 'the blade comes round; the slash sweeps through in two pictures and it is split; the slash fades as it falls' },
+  'culling:front': { build: 0.16, hit: 0.07, fade: 0.3, is: "his blow lands: an instant held, the one it takes stopped, a violet glint on it; the scythe's crescent sweeps through it in two pictures, smeared, and it is cut in two, its halves sliding apart as it falls; the crescent sweeps on, dimming and thinning away" },
   'culling:behind': { build: 0.3, hit: 0, fade: 0.3, is: 'the mark written on the floor, breathing, for as long as it lies; gone over its last 0.3 s' },
   'culling:behind:mark': { build: 0.05, hit: 0.2, fade: 0.4, is: 'the mark flares; a blade rises out of it through the one it takes; the mark burns out' },
   'culling:monster': { build: 0.3, hit: 0.05, fade: 0.3, is: "while he is low it kindles with the enemy's fire; its blow on him bursts; the fire dies when he is not low" },
@@ -198,10 +207,10 @@ export const W7_BEATS: Record<string, { build: number; hit: number; fade: number
   'plundering:behind': { build: 0.1, hit: 0.89, fade: 0.12, is: 'gold bursts from the kill; coin after coin arcs into his purse; a glint as each goes in' },
   'plundering:monster': { build: 0.04, hit: 0.58, fade: 0.15, is: 'its blow lands; his coins torn off on hooks of pink light and pulled to it; they glint at its belt till it dies' },
   'plundering:monster:drop': { build: 0.05, hit: 0.5, fade: 1.5, is: 'it dies: his coins burst out of it and scatter' },
-  'mirroring:front': { build: 0.08, hit: 0.3, fade: 0.25, is: 'his reflection forms beside him; swings with him; dissolves' },
-  'mirroring:behind': { build: 0.25, hit: 0, fade: 0.2, is: 'the pane grows up out of its glass where he stood and stands, shimmering; it sinks over its last 0.2 s' },
-  'mirroring:behind:cast': { build: 0.05, hit: 0.33, fade: 0.9, is: 'in it he makes his attack again; it cracks (0.3) and shatters (0.6)' },
-  'mirroring:monster': { build: 0.04, hit: 0.28, fade: 0.15, is: 'it cracks like a mirror where he hit it; shards of pink glass fly back into him' },
+  'mirroring:front': { build: 0.08, hit: 0.3, fade: 0.25, is: 'his reflection forms beside him, facing as he faces; swings with him, its cut in glass the same shape as his, landing on those in front of it; dissolves' },
+  'mirroring:behind': { build: 0.25, hit: 0, fade: 0.2, is: 'once he has stepped off where he stood, the pane grows up out of its glass there and stands, shimmering; it sinks over its last 0.2 s' },
+  'mirroring:behind:cast': { build: 0.05, hit: 0.33, fade: 0.9, is: 'in it he makes his attack again, his cut in glass the same shape as his (0.24), landing; it cracks (0.3) and shatters (0.6)' },
+  'mirroring:monster': { build: 0.12, hit: 0.38, fade: 0.1, is: 'it cracks like a mirror where he hit it, held a beat after his blow; then it bursts, and shards of pink glass fly back into him, each a little after the last' },
 };
 
 // =============================================================================================
@@ -233,6 +242,8 @@ export interface Act {
   /** The lance's wait (seconds) and its width (tiles). */
   delay: number;
   width: number;
+  /** Piercing in front: its line ends on stone (a wall, a pillar), where it bursts. */
+  stone: boolean;
   /** Reaping on a monster: how far into its fall the corpse lay (seconds), and the corpse itself while it rises. */
   dieT: number;
   fall: Fallen | null;
@@ -265,6 +276,12 @@ export const W7 = {
   inWall: new WeakMap<object, boolean>(),
   /** The kindling of the enemy's fire on monsters with Culling while he is low (0..1 each). */
   hot: new Map<number, number>(),
+  /** Each mirror laid where he stood: when it rose (its zone's time; -1 while he still stands on it). */
+  panes: new WeakMap<object, number>(),
+  /** His last swing, as the game sent it (its 'swing' event): where, which way, how far it reached, and when (this clock). */
+  swing: null as { x: number; y: number; dx: number; dy: number; reach: number; at: number } | null,
+  /** The bodies Culling cut in two (fx.fallen), and the way the cut went: they lie so. */
+  cut: new WeakMap<object, { way: number }>(),
 };
 
 export function clearW7(): void {
@@ -274,6 +291,9 @@ export function clearW7(): void {
   W7.bleeders.clear();
   W7.carriers.clear();
   W7.hot.clear();
+  W7.panes = new WeakMap<object, number>();
+  W7.swing = null;
+  W7.cut = new WeakMap<object, { way: number }>();
 }
 
 export type W7Options = Partial<Omit<Act, 'id' | 'word' | 'side' | 'seed'>> & { seed?: number };
@@ -299,6 +319,7 @@ export function playW7(word: W7Word, side: W7Side, o: W7Options): Act {
     r: o.r ?? 1,
     delay: o.delay ?? W7_TIME.lanceWait,
     width: o.width ?? 1,
+    stone: o.stone ?? false,
     dieT: o.dieT ?? 0,
     fall: o.fall ?? null,
   };
@@ -567,66 +588,78 @@ const RY = 11.3;
 // =============================================================================================
 // PIERCING
 
-/** In front: a bolt of white light punching through every one in a line; at each it goes through, light blows out the far side with sparks. */
+/**
+ * In front: a bolt of white light punching through every one in a line; at each it goes through, light blows out the far side
+ * with sparks. At the line's end (or on the stone of a wall or a pillar in its way) its head bursts into motes of light and its
+ * trail runs in after it, drawn to a point: never a flat end, never through stone.
+ */
 function pierceFront(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game): void {
   const C = W7_RAMP.piercing;
   const z = 14;
   const head = a.t * W7_TIME.pierceSpeed;
   const reach = a.r;
   const at = (s: number): [number, number] => S(cam, a.x + a.dx * s, a.y + a.dy * s, z);
-  const h = Math.min(head, reach);
-  const fade = head > reach ? clamp01(1 - (head - reach) / 4) : 1;
-  const [hx, hy] = at(h);
-  const [qx, qy] = at(h - 1);
+  // its front (at most the line's end) and its tail, 2.6 tiles behind its head: when the head is at the end, the tail runs on in
+  const front = Math.min(head, reach);
+  const tail = Math.max(0, head - 2.6);
+  const over = head - reach;
+  const [hx, hy] = at(front);
+  const [qx, qy] = at(front - 1);
   const ul = Math.hypot(hx - qx, hy - qy) || 1;
   const ux = (hx - qx) / ul;
   const uy = (hy - qy) / ul;
   const nx = -uy;
   const ny = ux;
-  if (fade > 0) {
+  if (front > tail) {
     // its body: drawn out behind its head and thinning to nothing, its edges flickering, a waver in its trail
-    const L = Math.round(Math.min(h, 2.6) * ul);
+    const L = Math.round((front - tail) * ul);
     for (let i = 0; i <= L; i++) {
       const q = i / Math.max(1, L);
       const back = L - i;
       const wob = Math.sin(i * 0.33 + a.t * 45) * 1.8 * (1 - q) ** 1.3 + (vnoise(i * 0.4, a.t * 30, a.seed) - 0.5) * 2.2 * (1 - q);
       const cx = hx - ux * back + nx * wob;
       const cy = hy - uy * back + ny * wob;
-      if (q < 0.45 && !dith(cx, cy, (q / 0.45) * fade + 0.05)) continue;
-      const half = 0.3 + 2.3 * q ** 1.6 * (0.75 + 0.5 * vnoise(i * 0.6, a.t * 40, a.seed + 1));
+      if (q < 0.45 && !dith(cx, cy, q / 0.45 + 0.05)) continue;
+      let half = 0.3 + 2.3 * q ** 1.6 * (0.75 + 0.5 * vnoise(i * 0.6, a.t * 40, a.seed + 1));
+      // at the end of its line it is drawn in to a point, never a flat end
+      if (over > 0) half *= Math.min(1, (back + 0.5) / 6);
       const reachK = Math.ceil(half) + 1;
       for (let k = -reachK; k <= reachK; k++) {
         const d = Math.abs(k) / half;
         if (d > 1) {
           // flickering at its edges: a pixel of light licking off it now and then
-          if (d < 1.9 && hash2(i * 7 + k, Math.floor(a.t * 60), a.seed) < 0.14 * q) dot(g, cx + nx * k, cy + ny * k, C[3]);
+          if (d < 1.9 && over <= 0 && hash2(i * 7 + k, Math.floor(a.t * 60), a.seed) < 0.14 * q) dot(g, cx + nx * k, cy + ny * k, C[3]);
           continue;
         }
         const v = q * 0.75 + (1 - d) * 0.55;
         dot(g, cx + nx * k, cy + ny * k, [C[1], C[2], C[3], C[4], C[5], C[5]][Math.min(5, Math.floor(v * 5))]);
       }
     }
-    if (head <= reach) {
-      // its head: a blazing teardrop of white, rimmed with light, flickering tongues of it ahead
-      const prof = [1.2, 1.9, 2.4, 2.6, 2.5, 2.1, 1.6, 1, 0.5];
-      prof.forEach((w, j) => {
-        const along = j - 5;
-        for (let k = -Math.ceil(w); k <= Math.ceil(w); k++) {
-          const d = Math.abs(k) / w;
-          if (d > 1.05) continue;
-          dot(g, hx + ux * along + nx * k, hy + uy * along + ny * k, d < 0.55 ? C[5] : d < 0.9 ? C[4] : C[3]);
-        }
-      });
-      for (let j = 0; j < 3; j++) {
-        const sp = (j - 1) * 0.45 + (hash2(j, Math.floor(a.t * 60), a.seed) - 0.5) * 0.3;
-        const len = 2 + hash2(j, Math.floor(a.t * 60) + 1, a.seed) * 3;
-        const ex = ux * Math.cos(sp) - uy * Math.sin(sp);
-        const ey = uy * Math.cos(sp) + ux * Math.sin(sp);
-        streak(g, hx + ex * (4 + len), hy + ey * (4 + len), hx + ex * 3, hy + ey * 3, [C[3], C[4], C[5]], 1);
-      }
-    }
   }
+  if (over <= 0) {
+    // its head: a blazing teardrop of white, rimmed with light, flickering tongues of it ahead (none of it past its end)
+    const room = -over * ul;
+    const prof = [1.2, 1.9, 2.4, 2.6, 2.5, 2.1, 1.6, 1, 0.5];
+    prof.forEach((w, j) => {
+      const along = j - 5;
+      if (along > room) return;
+      for (let k = -Math.ceil(w); k <= Math.ceil(w); k++) {
+        const d = Math.abs(k) / w;
+        if (d > 1.05) continue;
+        dot(g, hx + ux * along + nx * k, hy + uy * along + ny * k, d < 0.55 ? C[5] : d < 0.9 ? C[4] : C[3]);
+      }
+    });
+    for (let j = 0; j < 3; j++) {
+      const sp = (j - 1) * 0.45 + (hash2(j, Math.floor(a.t * 60), a.seed) - 0.5) * 0.3;
+      const len = Math.min(2 + hash2(j, Math.floor(a.t * 60) + 1, a.seed) * 3, room - 4);
+      if (len < 1) continue;
+      const ex = ux * Math.cos(sp) - uy * Math.sin(sp);
+      const ey = uy * Math.cos(sp) + ux * Math.sin(sp);
+      streak(g, hx + ex * (4 + len), hy + ey * (4 + len), hx + ex * 3, hy + ey * 3, [C[3], C[4], C[5]], 1);
+    }
+  } else pierceEnd(g, hx, hy, ux, uy, over / W7_TIME.pierceSpeed, a.stone, a.seed);
   // each one it went through
+  const [endX, endY] = at(reach);
   a.ids.forEach((id, i) => {
     const s = a.pts[i] ?? 0;
     const since = (head - s) / W7_TIME.pierceSpeed;
@@ -674,9 +707,70 @@ function pierceFront(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game):
       const tx = px - vx * 0.03;
       const ty = py - (vy + 320 * since) * 0.03;
       if (py > ey + 16) continue;
+      // (nor through the stone its line ended on)
+      if (a.stone && (px - endX) * ux + (py - endY) * uy > -2) continue;
       streak(g, tx, ty, px, py, [C[2], C[3], C[4], C[5]], 1, 0, clamp01(1.2 - since / 0.5));
     }
   });
+}
+
+/**
+ * Its head bursting at the end of its line (`since` seconds after it got there): a white flare for an instant, and motes of
+ * light flung on from it (back off the stone, when it struck a wall or a pillar, with chips of it), slowing, drifting up,
+ * each winking out on its own.
+ */
+function pierceEnd(g: CanvasRenderingContext2D, x: number, y: number, ux: number, uy: number, since: number, stone: boolean, seed: number): void {
+  const C = W7_RAMP.piercing;
+  if (since > 0.42) return;
+  if (since < 0.07) {
+    const r = 3 + 5 * (1 - since / 0.07);
+    if (!stone) star(g, x, y, r, [C[3], C[4], C[5], C[5]], seed + 41, 8, 0.3);
+    else {
+      // on stone: splashed back off its face, a fan of rays, none into it
+      for (let j = 0; j < 7; j++) {
+        const sp = (j / 6 - 0.5) * 2.8;
+        const dx = -(ux * Math.cos(sp) - uy * Math.sin(sp));
+        const dy = -(uy * Math.cos(sp) + ux * Math.sin(sp));
+        const L = r * (j % 2 === 0 ? 1 : 0.6);
+        streak(g, x + dx * L, y + dy * L * 0.8, x - ux, y - uy, [C[3], C[4], C[5], C[5]], j % 2 === 0 ? 2 : 1);
+      }
+    }
+  }
+  const way = stone ? -1 : 1;
+  for (let i = 0; i < 18; i++) {
+    const life = 0.22 + hash2(i, seed, 42) * 0.2;
+    if (since > life) continue;
+    // fanned about the way it flew (thrown back off stone), a few all round (not into stone)
+    const spread = i < 13 || stone ? (hash2(i, seed, 43) - 0.5) * 2.6 : hash2(i, seed, 43) * TAU;
+    const dx = way * (ux * Math.cos(spread) - uy * Math.sin(spread));
+    const dy = way * (uy * Math.cos(spread) + ux * Math.sin(spread));
+    const v = 40 + hash2(i, seed, 44) * 80;
+    const go = (v * (1 - Math.exp(-since * 7))) / 7;
+    const px = x + dx * go;
+    const py = y + dy * go * 0.7 - 18 * since;
+    const c = since < 0.1 ? C[5] : since < life * 0.7 ? C[4] : C[3];
+    dot(g, px, py, c);
+    // the bigger motes: a glint of four points while they are fresh
+    if (i % 4 === 0 && since < life * 0.5) {
+      dot(g, px - 1, py, C[3]);
+      dot(g, px + 1, py, C[3]);
+      dot(g, px, py - 1, C[3]);
+      dot(g, px, py + 1, C[3]);
+    }
+  }
+  if (!stone) return;
+  // chips of the stone it struck, knocked off and falling
+  for (let i = 0; i < 6; i++) {
+    if (since > 0.35) break;
+    const sp = (hash2(i, seed, 45) - 0.5) * 2.2;
+    const dx = -(ux * Math.cos(sp) - uy * Math.sin(sp));
+    const dy = -(uy * Math.cos(sp) + ux * Math.sin(sp));
+    const v = 30 + hash2(i, seed, 46) * 40;
+    const px = x + dx * v * since;
+    const py = y + dy * v * since * 0.6 - 25 * since + 220 * since * since;
+    dot(g, px, py, STONE[3]);
+    if (i % 2 === 0) dot(g, px + 1, py, STONE[2]);
+  }
 }
 
 /**
@@ -691,58 +785,53 @@ function pierceBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, layer: 'flo
   const len = Math.hypot(x1 - x0, y1 - y0) || 1;
   const ux = (x1 - x0) / len;
   const uy = (y1 - y0) / len;
-  const n = Math.round(len);
   const strike = a.t - a.delay;
   const fall = W7_TIME.lanceFall;
   const run = W7_TIME.lanceRun;
   // how far along the line its point has torn (pixels), and how long since it passed a place on it
   const tip = clamp01((strike - fall) / run) * len;
   const since = (s: number): number => strike - fall - (s / len) * run;
-  // the crack's path: a narrow jagged tear wandering a pixel either side of the line
-  const path: [number, number][] = [];
-  let wob = 0;
-  for (let s = 0; s <= n; s++) {
-    wob += (hash2(s, a.seed, 5) - 0.5) * 0.9;
-    wob *= 0.78;
-    path.push([x0 + ux * s - uy * wob, y0 + uy * s + ux * wob]);
-  }
+  // the crack: jagged, running along the joints of the floor's stones as stone breaks, forking
+  const ck = crackOf(x0, y0, ux, uy, len, a.seed);
   if (layer === 'floor') {
-    // waiting: the line it will come down on, a scratch of light that quickens
     if (strike < 0) {
-      const k = a.t / Math.max(0.01, a.delay);
-      for (let s = 0; s <= n; s++) if (dith(x0 + ux * s, y0 + uy * s, 0.3 + 0.5 * k * (0.5 + 0.5 * Math.sin(a.t * (12 + 30 * k) + s * 0.3)))) dot(g, x0 + ux * s, y0 + uy * s, C[3]);
+      // waiting: its light seeping along the crack it will come down on, quickening
+      const k = clamp01(a.t / Math.max(0.01, a.delay));
+      const lit = len * 1.05 * smooth(k);
+      for (let i = 0; i < ck.x.length; i++) {
+        const s = ck.s[i];
+        if (s > lit - (ck.fork[i] ? 5 : 0)) continue;
+        const pulse = 0.5 + 0.5 * Math.sin(a.t * (12 + 30 * k) - s * 0.3);
+        const fresh = lit - s < 6;
+        dot(g, ck.x[i], ck.y[i], fresh ? C[4] : ck.fork[i] ? C[2] : pulse > 0.55 ? C[3] : C[2]);
+      }
       return;
     }
-    for (let s = 0; s <= Math.min(n, tip); s++) {
-      const age = since(s);
+    for (let i = 0; i < ck.x.length; i++) {
+      const s = ck.s[i];
+      if (s > tip) continue;
+      const age = since(s) - (ck.fork[i] ? 0.04 : 0);
       if (age < 0) continue;
+      const px = ck.x[i];
+      const py = ck.y[i];
       const glow = clamp01(1 - age / 0.4);
-      const gone = clamp01(1 - (age - 1.3) / 0.6);
-      if (gone <= 0) continue;
-      const [px, py] = path[s];
-      if (gone < 1 && !dith(px, py, gone)) continue;
-      // white-hot where it has just torn, cooling to steel, then dark with light down in it
-      dot(g, px, py, glow > 0.6 ? C[5] : glow > 0.25 ? C[4] : glow > 0 ? C[3] : '#0c0a10');
-      dot(g, px, py + 1, glow > 0.4 ? C[3] : glow > 0 ? C[2] : C[2]);
+      // white-hot where it has just torn, cooling to steel; then dark, the stone's own; then gone (its time is the look's)
+      if (age > 1.65) continue;
+      const c = glow > 0.6 ? C[5] : glow > 0.3 ? C[4] : glow > 0 ? C[3] : age < 1.35 ? '#0c0a10' : STONE[0];
+      dot(g, px, py, c);
+      // its lips: in shadow below, the broken stone's edge catching the light above here and there
+      if (!ck.fork[i] && age < 1.35) {
+        dot(g, px, py + 1, glow > 0.5 ? C[2] : '#0c0a10');
+        if (hash2(i, a.seed, 9) < 0.3) dot(g, px, py - 1, glow > 0.3 ? C[3] : STONE[2]);
+      }
       // the stone lit either side while it is hot
-      if (glow > 0.2) {
+      if (glow > 0.2 && !ck.fork[i]) {
         const wd = Math.max(2, Math.round(a.width * 2));
         for (let off = -wd; off <= wd; off++) {
-          if (off === 0) continue;
+          if (Math.abs(off) < 2) continue;
           const gx2 = px - uy * off;
           const gy2 = py + ux * off * 0.5;
-          if (dith(gx2, gy2, glow * (Math.abs(off) === 1 ? 0.7 : 0.7 / Math.abs(off)))) dot(g, gx2, gy2, Math.abs(off) === 1 ? C[3] : C[2]);
-        }
-      }
-      // little cracks forking off it
-      if (hash2(s, a.seed, 6) < 0.1) {
-        const sd = hash2(s, a.seed, 7) < 0.5 ? 1 : -1;
-        let fx2 = px;
-        let fy2 = py;
-        for (let k = 1; k < 3 + hash2(s, a.seed, 8) * 4; k++) {
-          fx2 += ux * 0.7 + (hash2(k, s, a.seed) - 0.5);
-          fy2 += sd * 0.7;
-          dot(g, fx2, fy2, glow > 0.4 ? C[4] : '#0c0a10');
+          if (dith(gx2, gy2, glow * (0.7 / Math.abs(off)))) dot(g, gx2, gy2, C[2]);
         }
       }
     }
@@ -777,15 +866,27 @@ function pierceBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, layer: 'flo
   const bx = -ux * 0.55 / bl;
   const by = -1 / bl;
   const L = 60;
+  // (pulled up and gone: it goes as one spear of light, rising and dimming, its light left in motes where it was)
   const alpha = out > 0 ? clamp01(1 - out / 0.18) : 1;
-  // speed lines behind it, the way it is driven
-  for (let j = 1; j <= 4; j++) {
-    const off = j * 5;
-    const sx0 = tx - ux * off + bx * (8 + j * 3);
-    const sy0 = ty - uy * off + by * (8 + j * 3);
-    streak(g, sx0 + bx * (24 - j * 3), sy0 + by * (24 - j * 3), sx0, sy0, [C[1], C[2], C[3]], 1, 0, (0.75 - j * 0.12) * alpha);
+  // speed lines behind it, the way it is driven (not as it goes)
+  if (out <= 0) {
+    for (let j = 1; j <= 4; j++) {
+      const off = j * 5;
+      const sx0 = tx - ux * off + bx * (8 + j * 3);
+      const sy0 = ty - uy * off + by * (8 + j * 3);
+      streak(g, sx0 + bx * (24 - j * 3), sy0 + by * (24 - j * 3), sx0, sy0, [C[1], C[2], C[3]], 1, 0, 0.75 - j * 0.12);
+    }
   }
   spear(g, tx + bx * L, ty + by * L, tx, ty, C, alpha, a.seed, a.t);
+  if (out > 0) {
+    // motes of its light, shed where it was, drifting up after it
+    for (let i = 0; i < 10; i++) {
+      const q = 0.15 + 0.85 * hash2(i, a.seed, 51);
+      const mx = tx + bx * L * q + (hash2(i, a.seed, 52) - 0.5) * 6;
+      const my = ty + by * L * q + out * 120 - out * (30 + hash2(i, a.seed, 53) * 40);
+      if (out < 0.06 + 0.12 * hash2(i, a.seed, 54)) dot(g, mx, my, out < 0.08 ? C[5] : C[4]);
+    }
+  }
   // where its point bites: a flare, sparks, stone chips and dust thrown up off the tear
   if (strike >= fall && out < 0.05) {
     dot(g, tx - 2, ty - 1, C[4], 5, 2);
@@ -831,8 +932,89 @@ function pierceBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, layer: 'flo
 const STONE: readonly string[] = ['#2a2436', '#463e58', '#6a6080', '#9a92b0'];
 
 /**
+ * A crack in the floor from (x0, y0) along (ux, uy) for `len` pixels, as stone breaks: in short runs along the joints of the
+ * floor's stones (its two slants) and along the way it is driven, never more than a few pixels off its line; forks breaking
+ * off it along the joints. Every pixel of it in order, how far along the line each is, and whether it is a fork's.
+ */
+function crackOf(x0: number, y0: number, ux: number, uy: number, len: number, seed: number): { x: number[]; y: number[]; s: number[]; fork: boolean[] } {
+  const out = { x: [] as number[], y: [] as number[], s: [] as number[], fork: [] as boolean[] };
+  const seen = new Set<number>();
+  const put = (px: number, py: number, s: number, fork: boolean): void => {
+    const rx = Math.round(px);
+    const ry = Math.round(py);
+    const key = rx * 4096 + ry;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.x.push(rx);
+    out.y.push(ry);
+    out.s.push(s);
+    out.fork.push(fork);
+  };
+  const nx = -uy;
+  const ny = ux;
+  // the ways it may run: the stones' two joints, both ways; straight on, and a little either side of straight on
+  const r5 = Math.sqrt(5);
+  const turn = (an: number): [number, number] => [ux * Math.cos(an) - uy * Math.sin(an), uy * Math.cos(an) + ux * Math.sin(an)];
+  const ways: [number, number][] = [[2 / r5, 1 / r5], [2 / r5, -1 / r5], [-2 / r5, 1 / r5], [-2 / r5, -1 / r5], [ux, uy], turn(0.75), turn(-0.75)];
+  const along = (px: number, py: number): number => (px - x0) * ux + (py - y0) * uy;
+  const off = (px: number, py: number): number => (px - x0) * nx + (py - y0) * ny;
+  /** One run of it: `n` pixels the way (wx, wy), a pixel at a time along its longer axis. */
+  const run = (px: number, py: number, wx: number, wy: number, n: number, s0: number | null, fork: boolean): [number, number] => {
+    const st = 1 / Math.max(Math.abs(wx), Math.abs(wy));
+    for (let i = 0; i < n; i++) {
+      px += wx * st;
+      py += wy * st;
+      put(px, py, s0 ?? along(px, py), fork);
+    }
+    return [px, py];
+  };
+  let px = x0;
+  let py = y0;
+  put(px, py, 0, false);
+  let j = 0;
+  let nextFork = 5 + hash2(1, seed, 60) * 6;
+  let side = hash2(0, seed, 70) < 0.5 ? 1 : -1;
+  const fwd = ways.filter(([wx, wy]) => wx * ux + wy * uy > 0.3);
+  while (along(px, py) < len && j < 400) {
+    j++;
+    // it zigzags as stone breaks: toward a little way off its line on one side, then the other, by the stones' joints
+    // where it can (straight on now and then)
+    const o = off(px, py);
+    const tgt = side * (1 + hash2(j, seed, 61) * 2.5);
+    const wantOut = Math.sign(tgt - o) || side;
+    let pick = fwd[0];
+    let best = -9;
+    fwd.forEach((w, i) => {
+      const score = (w[0] * nx + w[1] * ny) * wantOut + (i < 4 ? 0.3 : 0) + hash2(j * 7 + i, seed, 62) * 0.35;
+      if (score > best) {
+        best = score;
+        pick = w;
+      }
+    });
+    if (hash2(j, seed, 69) < 0.12) pick = ways[4];
+    const n = 2 + Math.floor(hash2(j, seed, 63) * 4);
+    [px, py] = run(px, py, pick[0], pick[1], n, null, false);
+    if (Math.abs(off(px, py) - tgt) < 1 || hash2(j, seed, 64) < 0.5) side = -side;
+    const here = along(px, py);
+    if (here > nextFork && here < len - 5) {
+      // a fork breaking off along a joint, kinked once
+      nextFork = here + 6 + hash2(j, seed, 65) * 9;
+      const fs = hash2(j, seed, 66) < 0.5 ? 1 : -1;
+      const fw = ways.filter(([wx, wy]) => (wx * nx + wy * ny) * fs > 0.3 && wx * ux + wy * uy > -0.2);
+      if (fw.length) {
+        const w1 = fw[Math.floor(hash2(j, seed, 67) * fw.length)];
+        const [fx, fy] = run(px, py, w1[0], w1[1], 2 + Math.floor(hash2(j, seed, 68) * 4), here, true);
+        if (hash2(j, seed, 71) < 0.6) run(fx, fy, ux, uy, 1 + Math.floor(hash2(j, seed, 72) * 3), here, true);
+      }
+    }
+  }
+  return out;
+}
+
+/**
  * A spear of light from its butt (bx, by) to its point (px, py): a shaft tapering from one pixel at its butt to
- * three, its edges flickering, a white core; a long leaf-shaped head; `a` how much of it is there.
+ * three, its edges flickering, a white core; a long leaf-shaped head; `a` how bright it is: as it gathers or goes
+ * it is drawn whole, dimmer (never broken into pieces).
  */
 function spear(g: CanvasRenderingContext2D, bx: number, by: number, px: number, py: number, C: readonly string[], a: number, seed: number, t: number): void {
   if (a <= 0) return;
@@ -844,12 +1026,18 @@ function spear(g: CanvasRenderingContext2D, bx: number, by: number, px: number, 
   const nx = -uy;
   const ny = ux;
   const n = Math.round(len);
+  // dimmer by whole tones as less of it is there
+  const dim = a > 0.75 ? 0 : a > 0.45 ? 1 : a > 0.2 ? 2 : 3;
+  const tone = (i: number): string => C[Math.max(0, i - dim)];
   for (let s = 0; s <= n; s++) {
     const q = s / n;
     const cx = bx + ux * s;
     const cy = by + uy * s;
-    if (q < 0.3 && !dith(cx, cy, (q / 0.3) * a + 0.05)) continue;
-    if (a < 1 && !dith(cx, cy, a)) continue;
+    // its butt: a thread of light only, dimmer toward its end
+    if (q < 0.3) {
+      dot(g, cx, cy, tone(q < 0.12 ? 2 : 3));
+      continue;
+    }
     let half: number;
     if (q < 0.74) half = 0.6 + q * 1.6;
     else {
@@ -862,11 +1050,12 @@ function spear(g: CanvasRenderingContext2D, bx: number, by: number, px: number, 
       const d = Math.abs(k) / Math.max(0.3, half);
       if (d > 1) {
         // its light round it: a pixel of glow at its edge, flickering further out
-        if (Math.abs(k) <= Math.ceil(half) + 1 && q > 0.2) dot(g, cx + nx * k, cy + ny * k, C[2]);
-        else if (d < 2.4 && hash2(s * 5 + k, Math.floor(t * 60), seed) < 0.14) dot(g, cx + nx * k, cy + ny * k, C[3]);
+        if (dim > 1) continue;
+        if (Math.abs(k) <= Math.ceil(half) + 1 && q > 0.2) dot(g, cx + nx * k, cy + ny * k, tone(2));
+        else if (dim === 0 && d < 2.4 && hash2(s * 5 + k, Math.floor(t * 60), seed) < 0.14) dot(g, cx + nx * k, cy + ny * k, C[3]);
         continue;
       }
-      dot(g, cx + nx * k, cy + ny * k, d < 0.4 ? C[5] : d < 0.8 ? C[4] : k < 0 ? C[4] : C[3]);
+      dot(g, cx + nx * k, cy + ny * k, tone(d < 0.4 ? 5 : d < 0.8 ? 4 : k < 0 ? 4 : 3));
     }
   }
 }
@@ -1320,43 +1509,101 @@ function reapMonster(g: CanvasRenderingContext2D, cam: Cam, a: Act, layer: 'floo
 // =============================================================================================
 // CULLING
 
-/** In front: a clean scything slash, and the weak one cut down at once (lookW7 splits it). */
+/**
+ * In front: one his hit leaves weak dies at once. His blow lands; an instant held, the one it takes stopped, a violet glint on
+ * it; then the scythe's own crescent sweeps through it, smeared, dusk violet and bone, a blade and not a line; it is cut in two
+ * (fallenW7: the halves slide apart and fall); the crescent sweeps on, dimming and thinning away.
+ */
 function cullFront(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game): void {
   const C = W7_RAMP.culling;
-  const m = game.monsters.find((q) => q.id === a.ids[0]);
+  const m = game.monsters.find((q) => q.id === a.ids[0] && !q.dead);
   const [mx, my] = m ? S(cam, m.x, m.y) : S(cam, a.x, a.y);
-  const top = m ? topOf(m) : 26;
+  const top = m ? topOf(m) : a.fall ? FIGURE_SIZE[a.fall.figure].top : 26;
   const cy = my - Math.round(top * 0.45);
-  const k = clamp01(a.t / W7_TIME.cullSweep);
-  const fade = clamp01(1 - (a.t - W7_TIME.cullSweep) / 0.32);
-  if (fade <= 0) return;
+  // (the way of his blow across the screen: the blade goes on that way through it)
   const way = a.dx - a.dy >= 0 ? 1 : -1;
-  // a great crescent, swept right through it: its edge white bone, its body violet, its tail thinning to nothing
-  const a0 = way > 0 ? Math.PI * 1.05 : -Math.PI * 0.05;
-  const a1 = a0 + way * -Math.PI * 1.15 * (0.25 + 0.75 * k);
-  smear(g, mx - way * 2, cy, 34, 7, a0, a1, 8, C, -0.18 * way, fade);
-  // the cut itself, flashing bone across it as the blade goes through
-  if (a.t > W7_TIME.cullSweep * 0.5 && a.t < W7_TIME.cullSweep + 0.12) {
-    const k2 = clamp01((a.t - W7_TIME.cullSweep * 0.5) / 0.04);
-    const fl = 1 - clamp01((a.t - W7_TIME.cullSweep) / 0.12);
-    for (let i = -12; i <= 12; i++) {
-      if (Math.abs(i) > 12 * k2) continue;
-      const px = mx + i;
-      const py = cy + Math.round(i * 0.18 * way * -1);
-      if (fl < 1 && !dith(px, py, fl)) continue;
-      dot(g, px, py, Math.abs(i) < 6 ? C[5] : C[4]);
-      dot(g, px, py + 1, C[3]);
+  const hold = W7_TIME.cullHold;
+  const sweep = W7_TIME.cullSweep;
+  if (a.t < hold) {
+    // held: a glint of violet light on it, swelling, pinched out as the blade comes
+    const q = a.t / hold;
+    const r = 4 + 7 * Math.sin(Math.PI * Math.min(1, 0.25 + q * 0.85));
+    const gx = mx - way * 2;
+    const gy = cy - 9;
+    star(g, gx, gy, r * 1.6, [C[1], C[2], C[3]], a.seed + 2, 4, 0, 1);
+    star(g, gx, gy, r, [C[2], C[3], C[4], C[5]], a.seed, 4, 0, 1);
+    star(g, gx, gy, r * 0.45, [C[2], C[3], C[4]], a.seed + 1, 4, Math.PI / 4, 1);
+    dot(g, gx - 1, gy, C[4], 3, 1);
+    dot(g, gx, gy - 1, C[4], 1, 3);
+    dot(g, gx, gy, C[5]);
+    return;
+  }
+  const after = a.t - hold - sweep;
+  const fade = clamp01(1 - after / 0.3);
+  if (fade <= 0) return;
+  const u = (a.t - hold) / sweep;
+  // where the blade is: across it along the cut (from his side, a little down to the far side), and on a little after
+  const lead = u <= 1 ? u : 1 + 0.25 * easeOut(after / 0.3);
+  // (from the near edge of it, clear of him, to well past its far side)
+  const path = (v: number): [number, number] => [mx + way * (-12 + 42 * v), cy + (-12 + 42 * v) * 0.35];
+  const dimOf = (f: number): number => (f > 0.7 ? 0 : f > 0.45 ? 1 : f > 0.2 ? 2 : 3);
+  const H = Math.round(34 * (0.55 + 0.45 * fade));
+  const T = Math.max(2, Math.round(8 * (0.4 + 0.6 * fade)));
+  // its smear: the blade where it was a moment ago, close behind it, darker the further back, merging into one swept band
+  // (drawn in from its tail as it fades)
+  const ghosts = u <= 1 ? 5 : Math.max(0, Math.floor(5 * fade - 1));
+  for (let j = ghosts; j >= 1; j--) {
+    const v = lead - j * 0.075;
+    if (v < -0.08) continue;
+    const [gx, gy] = path(v);
+    scythe(g, gx, gy, H - j * 2, Math.max(2, T - Math.ceil(j / 2)), way, C, Math.min(3, dimOf(fade) + Math.ceil(j / 2)));
+  }
+  // speed lines off its points, the way it went
+  if (u <= 1.4) {
+    for (const tipSide of [-1, 1]) {
+      const [lx, ly] = path(lead);
+      const ty2 = ly + tipSide * (H / 2 - 2);
+      const [sx, sy] = path(Math.max(-0.05, lead - 0.55));
+      streak(g, sx - way * 2, sy + tipSide * (H / 2 - 4), lx - way * 3, ty2, [C[1], C[2], C[3]], 1);
     }
   }
-  // splinters of bone-light along the cut, flung off as it goes through
-  if (a.t > W7_TIME.cullSweep * 0.6) {
-    const since = a.t - W7_TIME.cullSweep * 0.6;
-    for (let i = 0; i < 9; i++) {
-      const sp = 60 + hash2(i, a.seed, 1) * 70;
-      const an = -0.35 + (hash2(i, a.seed, 2) - 0.5) * 1.2;
-      const px = mx + way * (4 + Math.cos(an) * sp * since);
-      const py = cy + Math.sin(an) * sp * since * 0.6 + 90 * since * since;
-      streak(g, px - way * 4, py + 1, px, py, [C[2], C[3], C[4], C[5]], 1, 0, fade);
+  const [bx, by] = path(lead);
+  scythe(g, bx, by, H, T, way, C, dimOf(fade));
+  // chips of bone knocked off along the cut as it goes through, falling
+  if (u > 0.5) {
+    const since = a.t - hold - sweep * 0.5;
+    for (let i = 0; i < 7; i++) {
+      if (since > 0.18 + hash2(i, a.seed, 1) * 0.2) continue;
+      const v = 40 + hash2(i, a.seed, 2) * 60;
+      const an = -0.6 + (hash2(i, a.seed, 3) - 0.5) * 1.4;
+      const px = mx + way * (Math.cos(an) * v * since);
+      const py = cy + Math.sin(an) * v * since * 0.6 + 160 * since * since;
+      dot(g, px, py, since < 0.1 ? C[5] : C[4]);
+      if (i % 3 === 0) dot(g, px - way, py, C[3]);
+    }
+  }
+}
+
+/**
+ * The scythe's blade: a crescent `H` tall and `T` thick at its middle, pointed at both ends, its back bulging the way it
+ * sweeps (`way`); bone along its leading edge, dusk violet in its body, darker at its inner curve; `dim` whole tones darker.
+ * Solid: never broken up.
+ */
+function scythe(g: CanvasRenderingContext2D, cx: number, cy: number, H: number, T: number, way: number, C: readonly string[], dim: number): void {
+  if (H < 4) return;
+  const R = Math.sqrt((H * H) / 4 + (T * T) / 4);
+  const ax = cx - way * (R - T / 2);
+  const bx = ax - way * T;
+  const tone = (i: number): string => C[Math.max(0, i - dim)];
+  for (let y = -Math.ceil(H / 2); y <= Math.ceil(H / 2); y++) {
+    for (let x = -Math.ceil(T) - 2; x <= Math.ceil(T) + 2; x++) {
+      const px = cx + x;
+      const da = Math.hypot(px - ax, y);
+      const db = Math.hypot(px - bx, y);
+      if (da > R || db < R) continue;
+      const toEdge = R - da;
+      const toBack = db - R;
+      dot(g, px, cy + y, tone(toEdge < 1.2 ? 5 : toEdge < 2.3 ? 4 : toBack < 1 ? 2 : 3));
     }
   }
 }
@@ -1671,7 +1918,9 @@ function surgeBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game, 
   const [x0, y0] = S(cam, a.x, a.y);
   const [x1, y1] = S(cam, a.x1, a.y1);
   const fade = clamp01(1 - a.t / 0.55);
-  const len = Math.hypot(x1 - x0, y1 - y0) || 1;
+  const len = Math.hypot(x1 - x0, y1 - y0);
+  // (no roll to follow, no wind: never a tick left standing where he stood)
+  if (len < 8) return;
   const ux = (x1 - x0) / len;
   const uy = (y1 - y0) / len;
   // streaks of wind along the way he rolled, curling up at their ends
@@ -2026,10 +2275,15 @@ export function remade(sp: Sprite, kind: 'glass' | 'soul'): Sprite {
 }
 
 /** One cut down by Culling: its picture split along the cut, the top of it slid off along the blow, the cut lit bone. */
-const splitMade = new Map<string, Sprite>();
-function splitOf(sp: Sprite, slide: number, way: number, key: string): Sprite {
-  const k = `${key}:${slide}:${way}`;
-  const had = splitMade.get(k);
+const splitMade = new WeakMap<Sprite, Map<string, Sprite>>();
+function splitOf(sp: Sprite, slide: number, way: number): Sprite {
+  const k = `${slide}:${way}`;
+  let mine = splitMade.get(sp);
+  if (!mine) {
+    mine = new Map<string, Sprite>();
+    splitMade.set(sp, mine);
+  }
+  const had = mine.get(k);
   if (had) return had;
   const dn = Math.max(1, Math.round(sp.density ?? 1));
   const W = sp.img.width;
@@ -2078,41 +2332,122 @@ function splitOf(sp: Sprite, slide: number, way: number, key: string): Sprite {
   }
   const made: Sprite = { img: cv, w: (W + pad * 2) / dn, h: (H + pad) / dn, ax: sp.ax + pad / dn, ay: sp.ay + pad / dn };
   if (sp.density !== undefined) made.density = sp.density;
-  splitMade.set(k, made);
-  if (splitMade.size > 64) splitMade.delete(splitMade.keys().next().value as string);
+  mine.set(k, made);
   return made;
 }
 
-/** In front: his reflection beside him, in glass, making the same swing (heroW7 stands it; its swing's arc here). */
+/**
+ * In front: his reflection beside him, in glass, facing as he faces (heroW7 stands it), making the same swing as he does, its
+ * cut the same shape as his and landing on those in front of it (weaker, as the rules say).
+ */
 function mirrorFront(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game): void {
   const C = W7_RAMP.mirroring;
   const h = game.hero;
   const [ox, oy] = mirrorOffset(h);
-  const [sx, sy] = S(cam, h.x + ox, h.y + oy, 14);
-  // the arc of its swing, in glass: a sheet of it, its edge white, a sheen running along it, cyan glints at its tip
-  const k = clamp01(a.t / 0.08);
-  const fade = clamp01(1 - (a.t - 0.08) / 0.25);
-  const way = h.fx - h.fy >= 0 ? 1 : -1;
-  glassSwing(g, sx, sy, way, k, fade);
+  const rx = h.x + ox;
+  const ry = h.y + oy;
+  // its swing is his: when he swings (the game's own 'swing'), the way he swings, as far; or, none seen, as it forms
+  const born = W7.clock - a.t;
+  const sw = W7.swing && W7.swing.at >= born - 0.3 ? W7.swing : null;
+  const since = sw ? W7.clock - sw.at : a.t;
+  const ang = sw ? Math.atan2(sw.dy, sw.dx) : Math.atan2(h.fy, h.fx);
+  const reach = sw ? sw.reach : 1.5;
+  glassCut(g, cam, rx, ry, ang, reach, since);
+  glassHits(g, cam, game, rx, ry, ang, reach, since);
   // glints running over the glass of it
+  const [sx, sy] = S(cam, rx, ry, 14);
   glint(g, sx - 3, sy - 8, 1, C[4]);
   glint(g, sx + 2, sy + 4, 1, W7_FRIEND[3]);
 }
 
-/** The arc of a swing in glass: a sheet of it, its edge white, a sheen running along it, a cyan glint at its tip (it is his). */
-function glassSwing(g: CanvasRenderingContext2D, sx: number, sy: number, way: number, k: number, fade: number): void {
+/** A cut of his made in glass lasts this long (as his own plain cut does in the game). */
+const GLASS_CUT = 0.24;
+
+/**
+ * A swing in glass, the same shape as his (the game's own cut: a crescent on the floor round whoever makes it, 2.5 across,
+ * fattest at its middle, bright along its leading edge, thinning away from its tail): made at (x, y) (world) about `ang`,
+ * `reach` tiles; `since` seconds into it. Silver glass, a sheen running along it, his cyan glinting at its tip. The part of it
+ * beyond the one making it is left out where it stands, as the game leaves his out.
+ */
+function glassCut(g: CanvasRenderingContext2D, cam: Cam, x: number, y: number, ang: number, reach: number, since: number): void {
   const C = W7_RAMP.mirroring;
-  // from over his shoulder, over the top, down across in front of him
-  const a0 = way > 0 ? Math.PI * 1.2 : -Math.PI * 0.2;
-  const lead = a0 + way * Math.PI * 1.1 * (0.2 + 0.8 * k);
-  smear(g, sx + way * 4, sy, 19, 11, a0, lead, 5, [C[1], C[2], C[3], C[3], C[4], C[5]], 0.15 * way, fade, true);
-  if (fade > 0.3) glint(g, Math.round(sx + way * 4 + Math.cos(lead) * 19), Math.round(sy + Math.sin(lead) * 11 + Math.cos(lead) * 19 * 0.15 * way), 2, W7_FRIEND[3]);
+  const k = since / GLASS_CUT;
+  if (k < 0 || k >= 1) return;
+  const sweep = 2.5;
+  const from = ang - sweep / 2;
+  const lead = Math.min(1, k * 2.2 + 0.2);
+  const tail = Math.max(0, k * 1.6 - 0.6);
+  const sx0 = wx(cam, x, y);
+  const sy0 = wy(cam, x, y);
+  const hid = (px: number, py: number): boolean => {
+    if (px + py >= x + y) return false;
+    const dx = wx(cam, px, py) - sx0;
+    const dy = wy(cam, px, py) - 10 - sy0;
+    return Math.abs(dx) < 9 && dy > -38 && dy < 2;
+  };
+  const r = reach * 1.15;
+  let tip: [number, number] | null = null;
+  for (let u = tail; u < lead; u += 0.012) {
+    const an = from + sweep * u;
+    const edge = (u - tail) / Math.max(0.01, lead - tail);
+    const mid = 1 - Math.abs(u - 0.5) * 2;
+    for (let band = 0; band < 5; band++) {
+      if (band > 1 + mid * 3.5) continue;
+      const rr = r * (1.02 - band * 0.075);
+      const px = x + Math.cos(an) * rr;
+      const py = y + Math.sin(an) * rr;
+      if (hid(px, py)) continue;
+      const X = Math.round(wx(cam, px, py));
+      const Y = Math.round(wy(cam, px, py)) - 10;
+      // white along its leading edge, silver in it, cooling as it goes; a sheen running along the glass
+      let c = band === 0 ? (edge > 0.55 && k < 0.6 ? C[5] : C[4]) : band === 1 ? C[4] : band === 2 ? C[3] : C[2];
+      if (k > 0.6 && band > 0) c = band === 1 ? C[3] : C[2];
+      if (band > 0 && band < 4 && Math.floor(u * 60 + band * 2) % 9 === 0) c = C[5];
+      dot(g, X, Y, c, 2, band === 0 ? 2 : 1);
+      if (band === 0) tip = [X, Y];
+    }
+  }
+  if (tip && k < 0.75) glint(g, tip[0] + 1, tip[1], 2, W7_FRIEND[3]);
 }
 
-/** Where his reflection stands from him (world): beside him, a long step off (square to the way he faces). */
+/** Where a cut in glass lands on those in front of it (weaker than his): a little burst of glass on each as its edge passes. */
+function glassHits(g: CanvasRenderingContext2D, cam: Cam, game: Game, x: number, y: number, ang: number, reach: number, since: number): void {
+  const C = W7_RAMP.mirroring;
+  for (const m of game.monsters) {
+    if (m.dead || (m as { spirit?: unknown }).spirit) continue;
+    const d = Math.hypot(m.x - x, m.y - y);
+    if (d > reach * 1.3 || d < 0.2) continue;
+    let off = Math.atan2(m.y - y, m.x - x) - ang;
+    off = Math.atan2(Math.sin(off), Math.cos(off));
+    if (Math.abs(off) > 1.25) continue;
+    // its edge passes it (the lead runs from a fifth of the way at once, to all of it at five elevenths of its time)
+    const at = Math.max(0, ((off + 1.25) / 2.5 - 0.2) / 2.2) * GLASS_CUT;
+    const hit = since - at;
+    if (hit < 0 || hit > 0.14) continue;
+    const [mx, my] = S(cam, m.x, m.y, topOf(m) * 0.5);
+    const q = hit / 0.14;
+    star(g, mx, my, 3 + 4 * (1 - q), [C[2], C[3], C[4], C[5]], m.id * 13 + 5, 6, 0.4);
+    for (let i = 0; i < 3; i++) {
+      const an = ang + (hash2(i, m.id, 7) - 0.5) * 1.6;
+      sliver(g, mx + Math.cos(an) * (3 + 22 * q), my + Math.sin(an) * (2 + 10 * q) - 4 * q + 30 * q * q, an + q * 9, 3, C);
+    }
+  }
+}
+
+/**
+ * Where his reflection stands from him (world): beside him, a long step off, on the side of him square to the way he faces
+ * that is the more ahead of him on the screen (so it is seen standing with him, not behind him).
+ */
 function mirrorOffset(h: { fx: number; fy: number }): [number, number] {
   const l = Math.hypot(h.fx, h.fy) || 1;
-  return [(-h.fy / l) * 1.7, (h.fx / l) * 1.7];
+  const fx = h.fx / l;
+  const fy = h.fy / l;
+  // his facing on the screen, and the first of the two sides square to it, on the screen
+  const sfx = (fx - fy) * 16;
+  const sfy = (fx + fy) * 8;
+  const ahead = (-fy - fx) * 16 * sfx + (-fy + fx) * 8 * sfy;
+  const side = ahead >= 0 ? 1 : -1;
+  return [-fy * side * W7_TIME.mirrorStep, fx * side * W7_TIME.mirrorStep];
 }
 
 /** Behind: a standing pane of mirror where he stood; in it his reflection makes his next attack again; then it cracks and shatters. */
@@ -2195,12 +2530,12 @@ function mirrorBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game)
     for (let k = 0; k < tall; k++) dot(g, px + (k > tall / 2 ? (i % 2 ? 1 : -1) : 0), by + 1 - k, k === Math.floor(tall) - 1 ? C[5] : C[3]);
     dot(g, px + 1, by + 1, C[1]);
   }
-  // its attack again: the arc of the swing coming out of it, in glass (not while it only stands)
-  if (a.part !== 'zone' && a.t < 0.4) {
-    const k = clamp01(a.t / 0.08);
-    const fade = clamp01(1 - (a.t - 0.08) / 0.3);
-    const way = a.dx - a.dy >= 0 ? 1 : -1;
-    glassSwing(g, bx + way * 12, by - 16, way, k, fade);
+  // its attack again: his cut, in glass, the same shape as his, coming out of it and landing (not while it only stands)
+  if (a.part !== 'zone' && a.t < GLASS_CUT) {
+    const ang = Math.atan2(a.dy, a.dx);
+    const reach = W7.swing ? W7.swing.reach : 1.5;
+    glassCut(g, cam, a.x, a.y, ang, reach, a.t);
+    glassHits(g, cam, game, a.x, a.y, ang, reach, a.t);
   }
   // cracks running through it before it goes
   if (crack >= 0) {
@@ -2226,26 +2561,30 @@ function mirrorMonster(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game
   const [mx, my] = S(cam, m.x, m.y, top * 0.5);
   const [hx, hy] = S(cam, h.x, h.y, 16);
   const GL = ['#0e050a', '#2a0c1c', '#5a1438', '#ffc8dc', '#ff4f8a', '#ffffff'];
-  // where it was struck, its body cracks like a mirror: a star of white cracks, pink along their lips
-  if (a.t < 0.3) {
-    const fade = clamp01(1 - (a.t - 0.12) / 0.18);
+  const beat = W7_TIME.mirrorBeat;
+  // where it was struck, its body cracks like a mirror: a star of white cracks, pink along their lips, held a beat; then it
+  // bursts, and the cracks close up from their ends
+  if (a.t < beat + 0.2) {
+    const fade = clamp01(1 - (a.t - beat) / 0.2);
+    const grow = clamp01(a.t / 0.05);
     for (let i = 0; i < 7; i++) {
       let px = mx;
       let py = my;
       const an = (i / 7) * TAU + hash2(i, a.seed, 9) * 0.5;
-      const L = 4 + hash2(i, a.seed, 10) * 5;
+      const L = (4 + hash2(i, a.seed, 10) * 5) * grow * fade;
       for (let s2 = 0; s2 < L; s2++) {
         px += Math.cos(an) + (hash2(s2, i, a.seed + 4) - 0.5) * 0.7;
         py += Math.sin(an) * 0.9 + (hash2(s2, i, a.seed + 5) - 0.5) * 0.7;
-        if (fade < 1 && !dith(px, py, fade)) continue;
         dot(g, px, py, s2 < L * 0.6 ? GL[5] : GL[3]);
         dot(g, px + 1, py + 1, GL[4]);
       }
     }
   }
+  // the burst as they leave it
+  if (a.t >= beat && a.t < beat + 0.06) star(g, mx, my, 4 + 4 * (1 - (a.t - beat) / 0.06), [W7_ENEMY[2], W7_ENEMY[3], W7_ENEMY[4], W7_ENEMY[5]], a.seed + 77, 8);
   const n = 11;
   for (let i = 0; i < n; i++) {
-    const u = (a.t - i * 0.01) / W7_TIME.shards;
+    const u = (a.t - beat - i * 0.01) / W7_TIME.shards;
     if (u < 0) continue;
     const spread = (hash2(i, a.seed, 1) - 0.5) * 26;
     const up = (hash2(i, a.seed, 2) - 0.4) * 20;
@@ -2256,7 +2595,7 @@ function mirrorMonster(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game
       continue;
     }
     const q = easeOut(u);
-    const ctl: [number, number] = [(mx + hx) / 2 + spread, (my + hy) / 2 - 8 + up];
+    const ctl: [number, number] = [(mx + hx) / 2 + spread, (my + hy) / 2 - 18 + up];
     const [px, py] = quad(mx, my, ctl[0], ctl[1], hx + spread * 0.2, hy + up * 0.2, q);
     const [bx, by] = quad(mx, my, ctl[0], ctl[1], hx + spread * 0.2, hy + up * 0.2, Math.max(0, q - 0.16));
     streak(g, bx, by, px, py, [W7_ENEMY[1], W7_ENEMY[2], W7_ENEMY[3], W7_ENEMY[4]], 1, 0, 0.8);
@@ -2337,7 +2676,29 @@ type ZoneLike = { x: number; y: number; r: number; t: number; dur: number; kind?
 const zoneSeed = (z: ZoneLike): number => Math.floor(Math.abs(z.x * 97 + z.y * 131)) % 100000;
 /** An act standing for a zone as it lies (its own clock the zone's). */
 function zoneAct(z: ZoneLike, word: W7Word, side: W7Side): Act {
-  return { id: -1, word, side, part: 'zone', t: z.t, dur: z.dur, seed: zoneSeed(z), x: z.x, y: z.y, x1: z.x, y1: z.y, dx: 1, dy: 0, ids: [], pts: [], r: z.r, delay: 0, width: 1, dieT: 0, fall: null };
+  return { id: -1, word, side, part: 'zone', t: z.t, dur: z.dur, seed: zoneSeed(z), x: z.x, y: z.y, x1: z.x, y1: z.y, dx: 1, dy: 0, ids: [], pts: [], r: z.r, delay: 0, width: 1, stone: false, dieT: 0, fall: null };
+}
+/**
+ * A mirror rises where he stood only once he has stepped off it, and clear of it (it stands over what is in front of it, so it
+ * waits till nothing of him is where it will be, on the screen): the zone's time when he was first clear of it (0 when he never
+ * stood on it), or null while he is still there.
+ */
+function paneUp(raw: object, z: ZoneLike, game: Game): number | null {
+  const dx = game.hero.x - z.x;
+  const dy = game.hero.y - z.y;
+  const sdx = (dx - dy) * 16;
+  const sdy = (dx + dy) * 8;
+  const clear = Math.hypot(dx, dy) > W7_TIME.paneClear && (Math.abs(sdx) >= 24 || sdy >= 40 || sdy < 0);
+  let up = W7.panes.get(raw);
+  if (up === undefined) {
+    up = clear ? 0 : -1;
+    W7.panes.set(raw, up);
+  }
+  if (up < 0 && clear) {
+    up = z.t;
+    W7.panes.set(raw, up);
+  }
+  return up < 0 ? null : up;
 }
 /** Whether an act of this word's is already at work where a zone lies (its mark taking one, its pane casting). */
 const takenOver = (z: ZoneLike, word: W7Word, part: string): boolean => W7.acts.some((a) => a.word === word && a.part === part && Math.hypot(a.x - z.x, a.y - z.y) < 0.6);
@@ -2349,7 +2710,14 @@ function drawZones(g: CanvasRenderingContext2D, cam: Cam, game: Game, layer: 'fl
     if (!k || !here(z.x, z.y)) continue;
     if (k === 'thorns') thorns(g, cam, z, zoneSeed(z), game, layer);
     else if (k === 'reaper' && !takenOver(z, 'culling', 'mark')) cullBehind(g, cam, zoneAct(z, 'culling', 'behind'), game, layer);
-    else if (k === 'mirror' && layer === 'air' && !takenOver(z, 'mirroring', 'cast')) mirrorBehind(g, cam, zoneAct(z, 'mirroring', 'behind'), game);
+    else if (k === 'mirror' && layer === 'air' && !takenOver(z, 'mirroring', 'cast')) {
+      const up = paneUp(raw as object, z, game);
+      if (up === null) continue;
+      const a = zoneAct(z, 'mirroring', 'behind');
+      a.t = z.t - up;
+      a.dur = z.dur - up;
+      mirrorBehind(g, cam, a, game);
+    }
   }
 }
 
@@ -2399,7 +2767,10 @@ export function lightsW7(spot: (x: number, y: number, r: number, a: number) => v
     const z = raw as unknown as ZoneLike;
     const k = zoneW7(z);
     if (!k) continue;
-    const fade = clamp01(z.t / 0.25) * clamp01((z.dur - z.t) / 0.4);
+    // (a mirror lights only once it has risen)
+    const up = k === 'mirror' ? paneUp(raw as object, z, game) : 0;
+    if (up === null) continue;
+    const fade = clamp01((z.t - up) / 0.25) * clamp01((z.dur - z.t) / 0.4);
     spot(wx(cam, z.x, z.y), wy(cam, z.x, z.y) - (k === 'mirror' ? 18 : 4), k === 'mirror' ? 34 : 30 + z.r * 20, (k === 'thorns' ? 0.5 : 0.7) * fade);
   }
   void t;
@@ -2418,9 +2789,11 @@ export function lookW7(m: Monster, sp: Sprite): { sp: Sprite; alpha: number; tin
       const bob = Math.round(Math.sin(W7.clock * 3 + m.id) * 0.8);
       return { sp: remade(sp, 'soul'), alpha: 0.88 * build * going, tint: null, lift: Math.round(3 * build + 8 * (1 - going)) + bob };
     }
-    if (a.word === 'culling' && a.side === 'front' && a.ids[0] === m.id && a.t >= W7_TIME.cullSweep * 0.5) {
-      const slide = Math.min(7, Math.round(((a.t - W7_TIME.cullSweep * 0.5) / 0.2) * 5) + 3);
-      return { sp: splitOf(sp, slide, a.dx >= 0 ? 1 : -1, `${m.id}:${sp.img.width}x${sp.img.height}:${sp.ax}`), alpha: 1, tint: a.t < W7_TIME.cullSweep * 0.8 ? [W7_RAMP.culling[4], 0.45] : null, lift: 0 };
+    if (a.word === 'culling' && a.side === 'front' && a.ids[0] === m.id) {
+      // (one still standing when the rules cull it: held, glinting; split as the blade goes through)
+      const since = a.t - cullThrough();
+      if (since < 0) return { sp, alpha: 1, tint: a.t < W7_TIME.cullHold ? [W7_RAMP.culling[3], 0.25] : null, lift: 0 };
+      return { sp: splitOf(sp, cullSlide(since), a.dx - a.dy >= 0 ? 1 : -1), alpha: 1, tint: since < 0.05 ? [W7_RAMP.culling[4], 0.45] : null, lift: 0 };
     }
     if (a.word === 'culling' && a.side === 'behind' && a.ids[0] === m.id && a.pts.length && a.t - a.pts[0] >= 0 && a.t - a.pts[0] < 0.3) return { sp, alpha: 1, tint: [W7_RAMP.culling[4], 0.35], lift: 0 };
     if (a.word === 'piercing' && a.side === 'front' && a.ids.includes(m.id)) {
@@ -2441,16 +2814,23 @@ export function lookW7(m: Monster, sp: Sprite): { sp: Sprite; alpha: number; tin
   return null;
 }
 
-/** A body falling (render.ts, the fallen standing among the figures): one Culling cut down falls split along the cut. */
+/** When the cull's blade is through the middle of the one it takes (seconds into its look). */
+const cullThrough = (): number => W7_TIME.cullHold + W7_TIME.cullSweep * 0.5;
+/** How far its two halves have slid apart (pixels), `since` seconds after the blade went through. */
+const cullSlide = (since: number): number => Math.min(7, 1 + Math.round(clamp01(since / 0.25) * 6));
+
+/**
+ * A body falling (render.ts, the fallen standing among the figures): one Culling cut down is held an instant, whole; once the
+ * blade is through it, its halves slide apart and it falls so, and lies so.
+ */
 export function fallenW7(f: { x: number; y: number; t: number }, sp: Sprite): Sprite | null {
   if (!WORDS7_LOOK.on) return null;
-  for (const a of W7.acts) {
-    if (a.word !== 'culling' || a.side !== 'front' || a.t > 0.9) continue;
-    if (Math.hypot(f.x - a.x, f.y - a.y) > 0.35) continue;
-    const slide = Math.min(7, Math.round(clamp01((a.t - W7_TIME.cullSweep * 0.5) / 0.2) * 5) + 3);
-    return splitOf(sp, slide, a.dx >= 0 ? 1 : -1, `f${a.id}:${sp.img.width}x${sp.img.height}:${sp.ax}`);
-  }
-  return null;
+  const cut = W7.cut.get(f);
+  if (!cut) return null;
+  const a = W7.acts.find((q) => q.fall === f && q.word === 'culling');
+  const since = a ? a.t - cullThrough() : 99;
+  if (since < 0) return null;
+  return splitOf(sp, cullSlide(since), cut.way);
 }
 
 /**
@@ -2495,6 +2875,22 @@ export function tickW7(dt: number, game: Game, fx: Fx): void {
         if (at >= 0) fx.fallen.splice(at, 1);
         a.fall = null;
       }
+    }
+    // (Culling in front: the body it took (fx.fallen, once the game has it falling) held whole and still an instant, till the
+    // blade is through it; it lies cut in two)
+    if (a.word === 'culling' && a.side === 'front') {
+      if (!a.fall) {
+        let bd = 0.5;
+        for (const f of fx.fallen) {
+          const d = Math.hypot(f.x - a.x, f.y - a.y);
+          if (d < bd && f.t < 0.5 && !W7.cut.has(f)) {
+            bd = d;
+            a.fall = f;
+          }
+        }
+        if (a.fall) W7.cut.set(a.fall, { way: a.dx - a.dy >= 0 ? 1 : -1 });
+      }
+      if (a.fall && a.t < W7_TIME.cullHold + W7_TIME.cullSweep) a.fall.t = 0;
     }
     if (a.t >= a.dur) W7.acts.splice(i, 1);
   }
@@ -2571,6 +2967,17 @@ export function tickW7(dt: number, game: Game, fx: Fx): void {
 // shape is passed over.
 
 type Pt = { x: number; y: number } | [number, number] | undefined;
+
+/** Stone at a place (world): a wall (off the floor's open tiles), or a pillar or anything solid standing there. */
+export function stoneAt(game: Game, x: number, y: number): boolean {
+  const L = game.level as unknown as { open?: ArrayLike<number>; floor?: { w: number; h?: number }; props?: { x: number; y: number; solid?: boolean }[] };
+  if (!L || !L.open || !L.floor) return false;
+  const tx = Math.floor(x);
+  const ty = Math.floor(y);
+  if (tx < 0 || ty < 0 || tx >= L.floor.w || (L.floor.h !== undefined && ty >= L.floor.h)) return true;
+  if (L.open[ty * L.floor.w + tx] !== 1) return true;
+  return (L.props ?? []).some((p) => p.solid && Math.hypot(p.x - x, p.y - y) < 0.42);
+}
 const ptOf = (p: Pt, fx: number, fy: number): [number, number] => (Array.isArray(p) ? [p[0], p[1]] : p ? [p.x, p.y] : [fx, fy]);
 type Seen = {
   t: string;
@@ -2593,6 +3000,9 @@ type Seen = {
   dodge?: boolean;
   item?: boolean;
   n?: number;
+  dx?: number;
+  dy?: number;
+  reach?: number;
 };
 
 export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
@@ -2602,20 +3012,32 @@ export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
   for (const raw of events) {
     const e = raw as Seen;
     switch (e.t) {
+      case 'swing':
+        // (his own blow, the game's event: the reflection and the mirror make it again, the same way, as far)
+        if (!(e as { hostile?: boolean }).hostile) W7.swing = { x: e.x ?? h.x, y: e.y ?? h.y, dx: e.dx ?? h.fx, dy: e.dy ?? h.fy, reach: e.reach ?? 1.5, at: W7.clock };
+        break;
       case 'pierceLine': {
         // a shot or blow through a line: from where it began (or him) to where it ends
         const [x, y] = ptOf(e.from, e.x ?? h.x, e.y ?? h.y);
         const [x1, y1] = ptOf(e.to, e.x1 ?? x + h.fx * 6, e.y1 ?? y + h.fy * 6);
-        const L = Math.hypot(x1 - x, y1 - y) || 1;
+        let L = Math.hypot(x1 - x, y1 - y) || 1;
         const dx = (x1 - x) / L;
         const dy = (y1 - y) / L;
+        // (it never goes through stone: a wall or a pillar in its line, and it bursts there)
+        let stone = false;
+        for (let s = 0.3; s <= L; s += 0.05) {
+          if (!stoneAt(game, x + dx * s, y + dy * s)) continue;
+          L = Math.max(0.3, s - 0.05);
+          stone = true;
+          break;
+        }
         // those along it, in order, and how far along each stands
         const on = game.monsters
           .filter((m) => !m.dead && (e.ids ? e.ids.includes(m.id) : true))
           .map((m) => ({ m, s: (m.x - x) * dx + (m.y - y) * dy, off: Math.abs(-(m.x - x) * dy + (m.y - y) * dx) }))
-          .filter((q) => q.s > 0 && q.s <= L + 0.5 && q.off < 0.7)
+          .filter((q) => q.s > 0 && q.s <= L + (stone ? 0 : 0.5) && q.off < 0.7)
           .sort((p, q) => p.s - q.s);
-        playW7('piercing', 'front', { x, y, x1, y1, dx, dy, r: L, ids: on.map((q) => q.m.id), pts: on.map((q) => q.s), dur: L / W7_TIME.pierceSpeed + 0.55 });
+        playW7('piercing', 'front', { x, y, x1: x + dx * L, y1: y + dy * L, dx, dy, r: L, stone, ids: on.map((q) => q.m.id), pts: on.map((q) => q.s), dur: L / W7_TIME.pierceSpeed + 0.55 });
         break;
       }
       case 'lance': {
@@ -2706,11 +3128,11 @@ export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
           // a monster's shockwave, in the enemy's colours
           playW7('surging', 'monster', { part: 'wave', x: m.x, y: m.y, ids: [m.id], r: e.r ?? 2.3, dur: W7_TIME.surge * 1.3 });
         } else if (e.dodge) {
-          // let out by his dodge, where it began
-          const mv = (h as { move?: { x0: number; y0: number } | null }).move;
+          // let out by his dodge, where it began; its wind along his roll, to where it ends
+          const mv = (h as { move?: { x0: number; y0: number; x1?: number; y1?: number } | null }).move;
           const x0 = e.x0 ?? mv?.x0 ?? e.x ?? h.x;
           const y0 = e.y0 ?? mv?.y0 ?? e.y ?? h.y;
-          playW7('surging', 'behind', { x: x0, y: y0, x1: h.x, y1: h.y, r: e.r ?? 1.5, dur: 0.6 });
+          playW7('surging', 'behind', { x: x0, y: y0, x1: mv?.x1 ?? h.x, y1: mv?.y1 ?? h.y, r: e.r ?? 1.5, dur: 0.6 });
         } else playW7('surging', 'front', { x: e.x ?? h.x, y: e.y ?? h.y, r: e.r ?? 2.2, dur: W7_TIME.surge * 1.3 });
         break;
       }
@@ -2754,7 +3176,7 @@ export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
       }
       case 'mirrorBack': {
         const m = mon(e.id);
-        if (m) playW7('mirroring', 'monster', { x: m.x, y: m.y, ids: [m.id], dur: 0.47 });
+        if (m) playW7('mirroring', 'monster', { x: m.x, y: m.y, ids: [m.id], dur: W7_TIME.mirrorBeat + W7_TIME.shards + 0.2 });
         break;
       }
     }
@@ -2778,6 +3200,8 @@ export function demoW7(fx: Fx, getGame: () => Game | null) {
       clearW7();
       joinedLevel = getGame()?.level ?? null;
     },
+    /** Where his reflection stands from him now (world), for the film's check that nothing stands in it. */
+    beside: (): [number, number] => mirrorOffset(G().hero),
     /** A word's rune stone as a picture (for the sheet): its PNG, as a data URL. */
     runePng: (word: W7Word): string => w7Rune(word).img.toDataURL('image/png'),
     /** A look begins (a fallen body given by its place in fx.fallen). */

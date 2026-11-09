@@ -136,14 +136,17 @@ const pinkish = (c: string): boolean => {
   return s > 0.3 && v > 0.45 && h > 315 && h < 350;
 };
 
-/** Each side of each word set up as the sheet has it (tools/scenarios/words7_looks.mjs), at its moment. */
+/**
+ * Each side of each word set up as the sheet has it (tools/scenarios/words7_looks.mjs), at its moment. (Culling in front: its
+ * blade now comes after an instant held, step 2b: its moment is the blade halfway through.)
+ */
 function stage(word: W7Word, side: W7Side): { gm: Game; at: number } {
   clearW7();
   const ms = [monster(1, 11.2, 9.2), monster(2, 12.2, 8.2), monster(3, 13.2, 7.2)];
   const gm = game(ms);
   const at: Record<string, number> = {
     'piercing:front': 0.152, 'piercing:behind': 0.66, 'piercing:monster': 0.6, 'bleeding:front': 0.32, 'bleeding:behind': 0.9, 'bleeding:monster': 0.12,
-    'reaping:front': 0.3, 'reaping:behind': 0.14, 'reaping:monster': 0.62, 'culling:front': 0.04, 'culling:behind': 0.4, 'culling:monster': 0.1,
+    'reaping:front': 0.3, 'reaping:behind': 0.14, 'reaping:monster': 0.62, 'culling:front': W7_TIME.cullHold + W7_TIME.cullSweep / 2, 'culling:behind': 0.4, 'culling:monster': 0.1,
     'surging:front': 0.17, 'surging:behind': 0.15, 'surging:monster': 1.15, 'plundering:front': 0.3, 'plundering:behind': 0.3, 'plundering:monster': 0.24,
     'mirroring:front': 0.07, 'mirroring:behind': 0.06, 'mirroring:monster': 0.17,
   };
