@@ -30,6 +30,7 @@ import { UNREACHABLE, flowField } from '../src/game/nav';
 import { emptyControls } from '../src/game/state';
 import type { Controls, Level } from '../src/game/state';
 import { EXITS, ONWARD, START, onDirOf, takesTiles, tilesAB, turnAB } from '../src/game/ways';
+import { JETTY, STONE, stoneToWorld } from '../src/game/colossus_fight';
 
 const DT = 1 / 60;
 function exitsSet<T>(on: boolean, run: () => T): T {
@@ -113,7 +114,15 @@ test('every floor 6 to 10: the way on and the start laid; their pieces solid, no
       assert.equal(L.walk[tile(L, f.start.x, f.start.y)], 1, `${what}: the start's tile open`);
       if (W.way) for (let ty = Math.floor(W.way.y - 0.75); ty <= Math.floor(W.way.y + 0.75); ty++) for (let tx = Math.floor(W.way.x - 0.75); tx <= Math.floor(W.way.x + 0.75); tx++) assert.equal(L.walk[ty * f.w + tx], 1, `${what}: the waypoint on open ground`);
       const flow = flowField(L.walk, f.w, f.h, sx, sy);
-      assert.notEqual(flow[tile(L, on.x, on.y)], UNREACHABLE, `${what}: the way on reached on foot from the start`);
+      // (floor 10 since 25.3.0, THE SWAMP COLOSSUS: his ground is his stone, an island; the way on wakes on it. On foot from the start
+      // to the landing he is carried across from, and on the stone from where he is set down to the way on)
+      const S = L.land?.stone;
+      if (S && L.land?.landing) {
+        assert.notEqual(flow[tile(L, L.land.landing.x, L.land.landing.y)], UNREACHABLE, `${what}: the landing reached on foot from the start`);
+        const down = stoneToWorld(S, STONE.w / 2, STONE.d + JETTY.in);
+        const across = flowField(L.walk, f.w, f.h, Math.floor(down.x), Math.floor(down.y));
+        assert.notEqual(across[tile(L, on.x, on.y)], UNREACHABLE, `${what}: the way on reached on foot on his stone`);
+      } else assert.notEqual(flow[tile(L, on.x, on.y)], UNREACHABLE, `${what}: the way on reached on foot from the start`);
       n++;
     }
   }

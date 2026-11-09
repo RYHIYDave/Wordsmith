@@ -58,6 +58,7 @@ import type { Monster } from '../src/game/state';
 import type { MonsterKind } from '../src/game/types';
 import { moveClip, moveFrame } from '../src/render/figure';
 import { paintWithoutCanvas } from './helpers';
+import { COLOSSUS } from '../src/game/colossus_fight';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -182,6 +183,16 @@ test('the switch is on in the game, the pictures with it; switched off, no monst
 /** (ACT 2, THE HUSH) Its medium kinds the art drew with one attack, a second waiting on its picture (docs/act2_build.md, "Not done yet"). */
 const ACT2_ONE_MOVE: ReadonlySet<MonsterKind> = new Set<MonsterKind>(['watch', 'dredger', 'carter', 'orderly', 'bookwarden']);
 
+function oldEye<T>(fn: () => T): T {
+  const was = COLOSSUS.on;
+  COLOSSUS.on = false;
+  try {
+    return fn();
+  } finally {
+    COLOSSUS.on = was;
+  }
+}
+
 test('his rules: tiny and small one attack, medium two, large two or three, the boss four; a basic blow first; the bigger the hit, the longer the cooldown', () => withoutAction(() => {
   useMonsterAttacks(true);
   assert.equal(MONSTER_ATTACKS.on && TROLL_MOVES.on && WARDEN_MOVES.on && CRAWL_OUT.on, true, 'the rules and the pictures go on together');
@@ -202,7 +213,9 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       if (ACT1_KINDS.includes(kind) && !act1Rules(kind)) continue;
       // (THE HIGH CITY: likewise one of its kinds not built yet: stood in for, behind HIGH_CITY)
       if (HIGH_KINDS.includes(kind) && !act1Rules(kind)) continue;
-      const acts = actsOf({ kind });
+      // (floor 10's boss: the old Drowned Eye's moves, his switch off; the Swamp Colossus, floor 10's since 25.3.0, fights by a script
+      // of his own, his moves as the owner chose them, game/colossus_fight.ts, held by tests/colossus_fight.test.ts)
+      const acts = kind === 'eye' ? oldEye(() => actsOf({ kind })) : actsOf({ kind });
       // (the descent's own monsters, not its bosses: a basic blow first, each big move cooling down longer and hitting harder)
       const own = ACT1_KINDS.includes(kind) && size !== 'boss' ? act1Rules(kind) : null;
       if (own) {
