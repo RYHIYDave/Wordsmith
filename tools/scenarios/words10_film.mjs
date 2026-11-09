@@ -265,6 +265,8 @@ export default async function (page, snap) {
       // (the rings the game throws up as a word is set in an ability, and what it says, gone before the scene: the film is of the looks)
       g.events.length = 0;
       for (const k of Object.keys(fx)) if (Array.isArray(fx[k])) fx[k].length = 0;
+      // (a spin ended here has had its end's event let go with the rest: its whirling wind, render/wild.ts, is let go too)
+      if (fx.wild) fx.wild.whirling = null;
       for (const k of Object.keys(fx.wild || {})) if (Array.isArray(fx.wild[k])) fx.wild[k].length = 0;
       w10.clear(); w10.trail(null);
       for (const s of h.skills) if (s) { s.cd = 0; s.charges = s.maxCharges; }
@@ -360,7 +362,7 @@ export default async function (page, snap) {
   const where = async (focus) => page.evaluate((f) => { const [x, y] = window.__w10.at(f[0], f[1]); const p = window.__dbg.at(x, y); return { x: p.x, y: p.y, w: window.__dbg.screen.w, h: window.__dbg.screen.h }; }, focus);
 
   for (const sc of SCENES) {
-    if (only.length && !only.includes(sc.word)) continue;
+    if (only.length && !only.includes(sc.word) && !only.includes(`${sc.word}_${sc.key}`)) continue;
     const name = `${sc.word}_${sc.key}`;
     for (const pass of sc.best && !stills ? ['full', 'best'] : ['full']) {
       const res = await setup(sc);
@@ -386,6 +388,7 @@ export default async function (page, snap) {
           did = f;
         }
         await page.evaluate(() => window.__w10.step());
+        if (process.env.DEBUG) console.log('   ', i, await page.evaluate(() => { const g = window.__dbg.game(); const h = g.hero; return JSON.stringify({ ch: h.channel && { s: h.channel.skill, t: +h.channel.t.toFixed(2) }, wu: h.windup && h.windup.skill, hold: window.__w10.ctl.hold, hn: g.holdNow, cd: h.skills.map((q) => q && +q.cd.toFixed(2)) }); }));
         const keep = pass === 'best' ? i >= b0 * 2 : i >= sc.from && (!stills || i === Math.floor((sc.from + sc.frames) / 2));
         if (!keep) continue;
         for (const c of await page.evaluate(() => window.__w10.crowd())) if (!crowded.has(c)) crowded.set(c, i);
