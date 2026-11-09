@@ -303,6 +303,8 @@ test("5. each look draws at its moment on what the rules say carries it, crisp, 
   on(() => {
     for (const s of stages()) {
       clearW10();
+      // (what the rules keep first seen at 0, held at 3.7: its build long done, as in the stills)
+      W10.clock = 0;
       tickW10(0, s.gm, new Fx());
       W10.clock = 3.7;
       s.act?.();

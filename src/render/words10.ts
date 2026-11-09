@@ -125,23 +125,53 @@ export const W10_TIME = {
   stutter: 0.05,
   /** ...its quick flares, each this long (seconds), so many at once. */
   flare: 0.09,
-  /** Vast: its ring of dust runs out from the old edge to the new in this, and settles over this. */
+  /** Vast: its ring of dust, once the floor has cracked, eases out from the old edge to the new over this (most of the way in its strike), and settles over this. */
   ring: 0.34,
   ringFade: 0.3,
-  /** ...its splash runs out in this, and its clods land on those near after this. */
+  /** ...its splash's ring of earth eases out over this; its dirt settles over this. */
   splash: 0.32,
   splashFade: 0.3,
+  /** Fleeting: its after-images take a new place this many times a second (a stutter, not a buzz); an orb's wave bursts out in this. */
+  jump: 15,
+  pulse: 0.15,
 };
+
+/**
+ * EACH LOOK'S BEATS (seconds), as the seven's (W7_BEATS): its build, its hit (Movement 9 where there is a strike: a held wind-up,
+ * the strike itself fast and smeared, a big wind-down), and its fade. A `hit` of 0 is held: the look lies on for as long as the
+ * rules keep what it is drawn from (an orb, a patch, his spin, a boost, a poison), between its build and its fade; its fade then
+ * runs after the thing is gone (what it left, settling). Every look is drawn from its cause and the time since.
+ */
+export const W10_BEATS: Record<string, { build: number; hit: number; fade: number; is: string }> = {
+  'lasting:thing': { build: 0.25, hit: 0, fade: 0.7, is: "the sand-light gathers on it as it comes (0.25); while it lasts, a band of it crawls across once in 2.6 s and a ring of its sand turns slowly round it; in the half again it gives, its sand pours out under it into a heap; as it goes, the heap is left, and blows away (0.7)" },
+  'lasting:spin': { build: 0.25, hit: 0, fade: 0.7, is: "each blade's trail of sand-light draws out as the spin begins (0.25); while it spins, the trails hang, sagging, sand sifting down out of them; in the half again it gives, the sand settles in a drift round its edge; as it stops, the sand in the air falls, and the drift blows away (0.7)" },
+  'lasting:patch': { build: 0.3, hit: 0, fade: 0.7, is: "the sand-light gathers over it as it is laid (0.3); a band of it crawls across; in the half again it gives, dunes drift in from its edge in rippled tongues, burying it as it ends; the dunes lie a moment after, and blow away (0.7)" },
+  'lasting:boost': { build: 0.3, hit: 0, fade: 0.4, is: 'its ribbon of sand-light draws out from his back (0.3); trails along his path while it lasts, rippling and turning; frays to grains from its tail as it ends (0.4)' },
+  'lasting:dot': { build: 0.25, hit: 0, fade: 0.6, is: 'his poison or burning on a monster: the sand-light gathers on it (0.25); a ring of grains turns round it, its sand pouring into a heap at its feet as the poison runs on; the heap is left as it ends, and blows away (0.6)' },
+  'lasting:monster': { build: 0.25, hit: 0, fade: 0.6, is: "a monster's poison, burning or chill on him, lingering: the same, in the enemy's pink and gold" },
+  'fleeting:thing': { build: 0.1, hit: 0, fade: 0.25, is: 'its after-images snap in (0.1); while it lasts they stutter to either side of it, a new place 15 times a second; streaks whip round it at 9 radians a second; at each of its waves (a third sooner) a pulse of lilac bursts out of it (0.15); as it goes, it bursts in lilac sparks (0.25)' },
+  'fleeting:spin': { build: 0.08, hit: 0, fade: 0.2, is: 'a stutter of him in lilac as the spin begins; each blade traced twice behind it, streaks whipping round, while it spins; gone with a flick of sparks as it stops (0.2)' },
+  'fleeting:patch': { build: 0.1, hit: 0, fade: 0.4, is: 'thin quick tongues lick up all round its edge (0.1), flickering fast, sparks shooting up and burning out; over its last 0.4 s they burn down and out, a last spray of sparks' },
+  'fleeting:boost': { build: 0.06, hit: 0, fade: 0.3, is: 'lilac after-images of him a step behind him (0.06), streaks whipping round him while it lasts; they thin away as it ends (0.3)' },
+  'fleeting:dot': { build: 0.03, hit: 0.06, fade: 0.27, is: 'his poison or burning on a monster, ticking fast: a little star pops on it every 0.09 s, each popping (0.03), bursting with a spark flung off (0.06), thinning away (0.27)' },
+  'fleeting:monster': { build: 0.03, hit: 0.06, fade: 0.27, is: "a monster's poison or burning on him, ticking fast: the same stars, in the enemy's pink and gold" },
+  'vast:front': { build: 0.06, hit: 0.14, fade: 0.5, is: 'held: the floor cracks along where its edge was, the cracks running round, dust puffing up (0.06); the strike: a bank of dust shoved out to its new edge, smeared, grit and clods flung past it (0.14); the wind-down: it rolls the last of the way, settles, the grit falling back, the cracks dimming (0.5)' },
+  'vast:behind': { build: 0.06, hit: 0.16, fade: 0.55, is: 'held: the floor heaves under the one struck, rocks torn up out of it (0.06); the strike: a ring of earth runs out to its reach and a rock arcs to each one near on a trail of lit dust, smeared (0.16); the wind-down: each lands in a fountain of dirt, clods falling back, the dust settling (0.55)' },
+  'vast:monster': { build: 0.2, hit: 0, fade: 0.12, is: "its warning widens out from its old reach to its new (0.2): held, the old reach a broken ring of pink, pink dust shoved outward, gold barbs on its new edge beating, for the rules' warning; it snaps out as the blow lands (0.12)" },
+};
+const BEAT = W10_BEATS;
+/** The whole of a look made by an event: its build, its hit and its fade. */
+export const w10Life = (key: string): number => BEAT[key].build + BEAT[key].hit + BEAT[key].fade;
 
 // =============================================================================================
 // What is going on.
 
-/** One moment at work (a ring of dust, a splash): its own clock, where it is (world), whom it is about. */
+/** One moment at work (a ring of dust, a splash, what a held look leaves as its thing goes): its own clock, where it is (world), whom it is about. */
 export interface Act10 {
   id: number;
   word: W10Word;
-  /** 'ring' (Vast in front: an area's edge pushed out), 'splash' (Vast behind). */
-  kind: 'ring' | 'splash';
+  /** 'ring' (Vast in front: an area's edge pushed out), 'splash' (Vast behind), 'after' (what a held look leaves, settling: `what`). */
+  kind: 'ring' | 'splash' | 'after';
   t: number;
   dur: number;
   seed: number;
@@ -154,6 +184,29 @@ export interface Act10 {
   z: number;
   /** Those it reaches (a splash: the near ones, world places). */
   to: { x: number; y: number; top: number }[];
+  /** 'after': what is left: 'heap' (Lasting's sand under a thing or a monster), 'dunes' (on a patch), 'drift' (round a spin), 'sparks' (Fleeting's, bursting off what goes). */
+  what: '' | 'heap' | 'dunes' | 'drift' | 'sparks';
+  /** 'after': how far its sand had come (0..1); how high off the floor it was (pixels); 'ring': laid by a whirlwind's turn. */
+  p: number;
+  whirl: boolean;
+  /** 'after': in the enemy's colours (a monster's on him). */
+  enemy: boolean;
+  /** 'after' of a spin: where its blades were (the angle of the lead, radians) as it stopped. */
+  lead: number;
+}
+
+/** A held look as it was last drawn: what is left of it as its thing goes. */
+interface Held {
+  word: 'lasting' | 'fleeting';
+  kind: 'thing' | 'patch' | 'spin';
+  x: number;
+  y: number;
+  up: number;
+  rad: number;
+  r: number;
+  t: number;
+  p: number;
+  seed: number;
 }
 
 export const W10 = {
@@ -167,6 +220,10 @@ export const W10 = {
   fx: null as Fx | null,
   /** For the stills: his path laid by hand, and the after-images' offsets laid by hand (screen px). */
   laidTrail: null as { x: number; y: number }[] | null,
+  /** The held looks as last seen (by what made them), so that what each leaves settles after it; and when each state began (a boost, a poison). */
+  held: new Map<string, Held>(),
+  since: new Map<string, number>(),
+  lastStates: new Map<string, { word: 'lasting' | 'fleeting'; x: number; y: number; p: number; enemy: boolean }>(),
 };
 
 export function clearW10(): void {
@@ -174,6 +231,9 @@ export function clearW10(): void {
   W10.trail.length = 0;
   W10.seen.length = 0;
   W10.laidTrail = null;
+  W10.held.clear();
+  W10.since.clear();
+  W10.lastStates.clear();
 }
 
 export type W10Options = Partial<Omit<Act10, 'id' | 'word' | 'kind' | 'seed'>> & { seed?: number };
@@ -185,7 +245,7 @@ export function playW10(word: W10Word, kind: Act10['kind'], o: W10Options): Act1
     word,
     kind,
     t: o.t ?? 0,
-    dur: o.dur ?? 1,
+    dur: o.dur ?? (kind === 'ring' ? w10Life('vast:front') : kind === 'splash' ? w10Life('vast:behind') : 1),
     seed: o.seed ?? Math.floor(Math.random() * 1e6),
     x: o.x ?? 0,
     y: o.y ?? 0,
@@ -193,6 +253,11 @@ export function playW10(word: W10Word, kind: Act10['kind'], o: W10Options): Act1
     r0: o.r0 ?? (o.r ?? 1) / (1 + VAST.wider),
     z: o.z ?? 0,
     to: o.to ?? [],
+    what: o.what ?? '',
+    p: o.p ?? 0,
+    whirl: o.whirl ?? false,
+    enemy: o.enemy ?? false,
+    lead: o.lead ?? 0,
   };
   W10.acts.push(a);
   return a;
@@ -205,6 +270,8 @@ const smooth = (q: number): number => {
   return k * k * (3 - 2 * k);
 };
 const easeOut = (q: number): number => 1 - (1 - clamp01(q)) ** 3;
+/** Fast, then slow: a strike's run and its long wind-down. */
+const strikeOut = (q: number): number => 1 - (1 - clamp01(q)) ** 4;
 
 // =============================================================================================
 // What the rules say each of his abilities carries.
@@ -232,6 +299,11 @@ const HERO_TOP = 24;
 
 /** Whether a pixel is in, for a see-through `a` (0..1): scattered as grain is, never in a pattern. */
 const dith = (x: number, y: number, a: number, seed = 91): boolean => a > hash2(Math.round(x), Math.round(y), seed);
+/**
+ * The same for a grain that moves: whether grain (i, j) is in, by its own place in the look, not the screen's. So it keeps
+ * its place as the look turns, runs or falls, and does not boil from one picture to the next.
+ */
+const grain = (i: number, j: number, a: number, seed = 91): boolean => a > hash2(Math.round(i), Math.round(j), seed);
 
 function dot(g: CanvasRenderingContext2D, x: number, y: number, c: string, w = 1, h = 1): void {
   g.fillStyle = c;
@@ -263,8 +335,9 @@ function streak(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number,
     const q = s / n;
     const px = x0 + dx * q;
     const py = y0 + dy * q;
-    if (q < 0.3 && !dith(px, py, q / 0.3 + 0.2)) continue;
-    if (alpha < 1 && !dith(px, py, alpha)) continue;
+    // (its tail thinned by its own steps, counted from its head, so a streak in flight keeps its shape)
+    if (q < 0.3 && !grain(n - s, 1, q / 0.3 + 0.2, 7)) continue;
+    if (alpha < 1 && !grain(n - s, 2, alpha, 8)) continue;
     const ci = Math.min(C.length - 1, Math.floor(q * C.length));
     const half = Math.round(((w - 1) / 2) * q);
     for (let k = -half; k <= half; k++) dot(g, px + nx * k, py + ny * k, C[Math.max(0, ci - (half > 0 && Math.abs(k) === half ? 1 : 0))]);
@@ -343,6 +416,8 @@ const RY = 11.3;
 function sandOver(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, t: number, seed: number, amount: number, C: readonly string[] = W10_RAMP.lasting, base = 0.07): void {
   const band = ((t / W10_TIME.crawl + hash2(seed, 1, 5)) % 1) * 3.4 - 1.7;
   const fall = Math.floor(t * W10_TIME.drift);
+  cx = Math.round(cx);
+  cy = Math.round(cy);
   for (let dy = -Math.ceil(ry); dy <= Math.ceil(ry); dy++) {
     for (let dx = -Math.ceil(rx); dx <= Math.ceil(rx); dx++) {
       const e = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
@@ -350,8 +425,8 @@ function sandOver(g: CanvasRenderingContext2D, cx: number, cy: number, rx: numbe
       const u = (dx / rx) * 0.72 + (dy / ry) * 0.7;
       const d = Math.abs(u - band);
       const inBand = d < 0.36 ? 1 - d / 0.36 : 0;
-      // the grains: the same grains, drifting down a pixel at a time (their hash taken where they were)
-      const h = hash2(Math.round(cx + dx), Math.round(cy + dy) - fall, seed + 7);
+      // the grains: the same grains, drifting down a pixel at a time (their hash taken where they were, on the thing: they go with it)
+      const h = hash2(dx, dy - fall, seed + 7);
       const p = (base + 0.85 * inBand) * amount * (1 - e * 0.35);
       if (h >= p) continue;
       dot(g, cx + dx, cy + dy, inBand > 0.7 ? C[5] : inBand > 0.25 ? C[4] : C[3]);
@@ -360,7 +435,7 @@ function sandOver(g: CanvasRenderingContext2D, cx: number, cy: number, rx: numbe
 }
 
 /** A heap of sand on the floor at (x, y), `p` of the way to its whole size: a mound, lit on its left, its foot dark, a grain glinting on its top. */
-function heap(g: CanvasRenderingContext2D, x: number, y: number, p: number, C: readonly string[] = W10_RAMP.lasting): void {
+function heap(g: CanvasRenderingContext2D, x: number, y: number, p: number, C: readonly string[] = W10_RAMP.lasting, keep = 1, seed = 5): void {
   if (p <= 0.02) return;
   const w = 3 + p * 8;
   const h = 1.4 + p * 3;
@@ -368,12 +443,28 @@ function heap(g: CanvasRenderingContext2D, x: number, y: number, p: number, C: r
     const q = row / h;
     const half = (w / 2) * (1 - Math.pow(q, 1.5));
     for (let dx = -Math.round(half); dx <= Math.round(half); dx++) {
+      // (as it blows away: its grains go from its top and its windward side first)
+      if (keep < 1 && !grain(dx, row, keep * (1.25 - q * 0.5 - (dx / Math.max(1, half)) * 0.25), seed)) continue;
       const side = dx / Math.max(1, half);
       const c = row === 0 ? (side > 0.3 ? C[1] : C[2]) : side < -0.3 ? C[4] : side > 0.45 ? C[2] : C[3];
       dot(g, x + dx, y - row, c);
     }
   }
-  dot(g, x - 1, y - Math.ceil(h) + 1, C[5]);
+  if (keep > 0.6) dot(g, x - 1, y - Math.ceil(h) + 1, C[5]);
+}
+
+/** A heap blowing away (`out` 0..1 of its going): its grains lifted off it and carried away on the air, falling as they go. */
+function blownSand(g: CanvasRenderingContext2D, x: number, y: number, p: number, out: number, seed: number, C: readonly string[] = W10_RAMP.lasting, n = 10): void {
+  for (let i = 0; i < n; i++) {
+    const off = hash2(i, 1, seed) * 0.5;
+    const k = clamp01((out - off) / 0.5);
+    if (k <= 0 || k >= 1) continue;
+    const sx = x + (hash2(i, 2, seed) - 0.5) * (3 + p * 8);
+    const sy = y - 1 - hash2(i, 3, seed) * (1 + p * 3);
+    const gx = sx + k * (8 + hash2(i, 4, seed) * 10);
+    const gy = sy - Math.sin(k * Math.PI) * (3 + hash2(i, 5, seed) * 4) + k * 2;
+    dot(g, gx, gy, k < 0.5 ? C[4] : C[3]);
+  }
 }
 
 /** A thread of sand pouring from (x, y0) to the floor at (x, y1), its grains quickening as they fall, splashing at its foot. */
@@ -413,7 +504,8 @@ function sandRing(g: CanvasRenderingContext2D, cx: number, cy: number, rad: numb
       // (the far half passes behind it)
       if (!near && Math.hypot(x - cx, (y - cy) * 1.05) < rad + 0.5) continue;
       const v = vnoise(i * 0.4 + band * 7, 1, seed);
-      if (!dith(x, y, amount * (0.25 + v) * (near ? 1 : 0.6), seed + band)) continue;
+      // (each grain its own, going round with the ring)
+      if (!grain(i, band, amount * (0.25 + v) * (near ? 1 : 0.6), seed + band)) continue;
       dot(g, x, y, near ? (v > 0.6 ? C[5] : C[4]) : v > 0.6 ? C[4] : C[3]);
     }
   }
@@ -431,7 +523,8 @@ function lastingThing(g: CanvasRenderingContext2D, fx0: number, fy0: number, up:
   sandRing(g, cx, cy, rad, t, seed, fade);
   if (p > 0) {
     pour(g, cx, cy + rad + 1, fy0 - 1 - Math.round(1.4 + p * 3), t, seed, fade);
-    heap(g, cx, fy0, p * fade);
+    // (the heap stays as it goes: it is left, and blows away, after it: its 'after')
+    heap(g, cx, fy0, p);
   }
 }
 
@@ -442,10 +535,21 @@ function lastingThing(g: CanvasRenderingContext2D, fx0: number, fy0: number, up:
  */
 function lastingPatch(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, t: number, seed: number, p: number, fade: number): void {
   const C = W10_RAMP.lasting;
+  sandOver(g, cx, cy - 1, r * RX * 0.92, r * RY * 0.92, t, seed, 0.85 * fade, C, 0.04);
+  if (p <= 0) return;
+  dunes(g, cx, cy, r, t, seed, p, 1);
+}
+
+/**
+ * The dunes of Lasting's sand drifting in over a patch from its edge (`p` how far they have come), rippled, the ripples creeping
+ * in as the sand drifts; `keep` (0..1) as they blow away after it, from their inner edge out.
+ */
+function dunes(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, t: number, seed: number, p: number, keep: number): void {
+  const C = W10_RAMP.lasting;
   const rx = r * RX;
   const ry = r * RY;
-  sandOver(g, cx, cy - 1, rx * 0.92, ry * 0.92, t, seed, 0.85 * fade, C, 0.04);
-  if (p <= 0) return;
+  cx = Math.round(cx);
+  cy = Math.round(cy);
   const reach = 0.1 + 0.62 * p;
   for (let dy = -Math.ceil(ry * 1.06); dy <= Math.ceil(ry * 1.06); dy++) {
     for (let dx = -Math.ceil(rx * 1.06); dx <= Math.ceil(rx * 1.06); dx++) {
@@ -457,9 +561,9 @@ function lastingPatch(g: CanvasRenderingContext2D, cx: number, cy: number, r: nu
       const inner = outer - reach * (0.35 + 1.1 * vnoise(a * 3.1 + 7, 0.5, seed));
       if (e < inner) continue;
       const k = (e - inner) / Math.max(0.01, outer - inner);
-      if (!dith(cx + dx, cy + dy, Math.min(1, 0.15 + k * 1.5) * fade, seed + 3)) continue;
-      // its ripples, along its edge: the crest lit, its lee dark
-      const ph = ((outer - e) * Math.max(rx, 8) * 0.36 + vnoise(a * 6, 1, seed + 1) * 1.8) % 2.6;
+      if (!grain(dx, dy, Math.min(1, 0.15 + k * 1.5) * (keep < 1 ? clamp01(keep * 1.6 - (1 - k) * 0.6) : 1), seed + 3)) continue;
+      // its ripples, along its edge: the crest lit, its lee dark; creeping inward as the sand drifts in
+      const ph = ((((outer - e) * Math.max(rx, 8) * 0.36 + vnoise(a * 6, 1, seed + 1) * 1.8 - t * 0.9) % 2.6) + 2.6) % 2.6;
       dot(g, cx + dx, cy + dy, ph < 0.55 ? C[4] : ph < 1.15 ? C[2] : C[3]);
     }
   }
@@ -467,46 +571,57 @@ function lastingPatch(g: CanvasRenderingContext2D, cx: number, cy: number, r: nu
 
 /**
  * Lasting on his whirlwind: a long trail of sand-light lingering behind each of its two blades (the game's: render/fx.ts, two
- * crescents chasing each other round him with fx.clock), sagging as it hangs, sand sifting down out of it; in the time Lasting
- * gave the spin, the sand settled in a drift on the floor round its edge.
+ * crescents chasing each other round him with fx.clock), sagging as it hangs, sand sifting down out of it, each grain falling
+ * straight from where the trail let it go; in the time Lasting gave the spin, the sand settled in a drift on the floor round its
+ * edge. `age`: how long it has spun (its trails draw out over its build).
  */
-function lastingSpin(g: CanvasRenderingContext2D, cam: Cam, hx: number, hy: number, r: number, t: number, clock: number, seed: number, p: number, layer: 'floor' | 'air'): void {
+function lastingSpin(g: CanvasRenderingContext2D, cam: Cam, hx: number, hy: number, r: number, t: number, clock: number, seed: number, p: number, layer: 'floor' | 'air', age = 9): void {
   const C = W10_RAMP.lasting;
   if (layer === 'floor') {
-    if (p > 0) {
-      const n = Math.round(r * RX * 7);
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * TAU;
-        const thick = 1 + Math.round((1.5 + 2 * vnoise(a * 4, 0, seed)) * p);
-        for (let j = 0; j < thick; j++) {
-          const rr = r * (1.02 - j * 0.035);
-          const [px, py] = S(cam, hx + Math.cos(a) * rr, hy + Math.sin(a) * rr);
-          if (!dith(px, py, 0.35 + 0.6 * p, seed + j)) continue;
-          dot(g, px, py, j === thick - 1 ? C[4] : j === 0 ? C[2] : C[3]);
-        }
-      }
-    }
+    if (p > 0) drift(g, cam, hx, hy, r, p, seed, 1);
     return;
   }
   const lead0 = clock * TAU * 2.6;
+  const grown = clamp01(age / BEAT['lasting:spin'].build);
   for (const half of [0, Math.PI]) {
-    for (let u = 0; u < 1; u += 0.005) {
+    for (let u = 0; u < grown; u += 0.005) {
       const behind = 1.75 + u * 2.4;
       const a = lead0 + half - behind;
       const rr = r * (0.97 + 0.05 * vnoise(u * 30, 2, seed));
       const [px, py0] = S(cam, hx + Math.cos(a) * rr, hy + Math.sin(a) * rr, 10);
       const py = py0 + u * u * 7;
-      if (!dith(px, py, Math.pow(1 - u, 0.8) * 1.1, seed + 2)) continue;
+      // (each grain of the trail its own, by how far behind the blade it hangs: it goes round with it)
+      if (!grain(u * 200, half, Math.pow(1 - u, 0.8) * 1.1, seed + 2)) continue;
       dot(g, px, py, u < 0.22 ? C[5] : C[4]);
       if (u < 0.65) dot(g, px, py + 1, u < 0.3 ? C[4] : C[3]);
     }
-    // sand sifting down out of it
+    // sand sifting down out of it: each grain let go where the trail was as it fell, falling straight, then another
     for (let i = 0; i < 22; i++) {
-      const u = hash2(i, seed, 3) * 0.85;
-      const a = lead0 + half - (1.75 + u * 2.4);
-      const fall = ((t * 1.1 + hash2(i, seed, 4)) % 1) * 12;
-      const [px, py] = S(cam, hx + Math.cos(a) * r, hy + Math.sin(a) * r, 10 - fall);
-      dot(g, px, py + u * u * 7, fall < 6 ? C[4] : C[3]);
+      const P = 0.9;
+      const ph = t / P + hash2(i, seed, 4);
+      const k = ph - Math.floor(ph);
+      const gen = Math.floor(ph);
+      const u = hash2(i, gen, 3) * 0.85;
+      if (u > grown || k * P > age) continue;
+      const a = lead0 - k * P * TAU * 2.6 + half - (1.75 + u * 2.4);
+      const [px, py] = S(cam, hx + Math.cos(a) * r, hy + Math.sin(a) * r, 10 - k * 12);
+      dot(g, px, py + u * u * 7, k < 0.5 ? C[4] : C[3]);
+    }
+  }
+}
+
+/** Lasting's sand settled in a drift round a spin's edge (`p` how much has settled; `keep` as it blows away after). */
+function drift(g: CanvasRenderingContext2D, cam: Cam, hx: number, hy: number, r: number, p: number, seed: number, keep: number): void {
+  const C = W10_RAMP.lasting;
+  const n = Math.round(r * RX * 7);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU;
+    const thick = 1 + Math.round((1.5 + 2 * vnoise(a * 4, 0, seed)) * p);
+    for (let j = 0; j < thick; j++) {
+      const rr = r * (1.02 - j * 0.035);
+      const [px, py] = S(cam, hx + Math.cos(a) * rr, hy + Math.sin(a) * rr);
+      if (!grain(i, j, (0.35 + 0.6 * p) * (keep < 1 ? clamp01(keep * 1.5 - (j / thick) * 0.5) : 1), seed + j)) continue;
+      dot(g, px, py, j === thick - 1 ? C[4] : j === 0 ? C[2] : C[3]);
     }
   }
 }
@@ -516,7 +631,7 @@ function lastingSpin(g: CanvasRenderingContext2D, cam: Cam, hx: number, hy: numb
  * long ribbon of sand-light along his path, rippling, turning as it trails (its underside darker where it turns over), fraying
  * into grains at its tail. `pts`: screen points from his back (first) to its tail.
  */
-function ribbon(g: CanvasRenderingContext2D, pts: [number, number][], t: number, seed: number, fade: number, C: readonly string[] = W10_RAMP.lasting): void {
+function ribbon(g: CanvasRenderingContext2D, pts: [number, number][], t: number, seed: number, grown: number, fray: number, C: readonly string[] = W10_RAMP.lasting): void {
   if (pts.length < 2) return;
   const L = pts.slice(1).reduce((acc, p, i) => acc + Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]), 0);
   let s = 0;
@@ -528,26 +643,31 @@ function ribbon(g: CanvasRenderingContext2D, pts: [number, number][], t: number,
     for (let k = 0; k < n; k++) {
       const at = s + (k / n) * seg;
       const q = at / Math.max(1, L);
+      // (it draws out from his back as the boost begins)
+      if (q > grown) return;
       const x = x0 + ((x1 - x0) * k) / n;
       const y = y0 + ((y1 - y0) * k) / n;
       const wave = Math.sin(at * 0.19 - t * 3.1) * 4.5 * Math.min(1, q * 2.5) + Math.sin(at * 0.07 - t * 1.3) * 2 * q;
       const twist = Math.cos(at * 0.15 - t * 2.2);
       const wide = Math.max(0, Math.round(Math.abs(twist) * 2.8 * (1 - q * 0.5)));
       const yy = y + wave;
-      const keep = q > 0.6 ? (1 - (q - 0.6) / 0.4) * fade : fade;
-      if (keep < 1 && !dith(x, yy, keep, seed)) continue;
+      // (its tail thinning; as the boost ends, fraying away from its tail toward him)
+      const keep = (q > 0.6 ? 1 - (q - 0.6) / 0.4 : 1) * (fray > 0 ? clamp01((1 - fray - q) / 0.3) : 1);
+      const A = Math.round(at);
+      // grains frayed off it, falling (more of them where it is fraying)
+      const loose = fray > 0 && keep < 0.9 ? 0.3 : q > 0.35 ? 0.08 : 0;
+      if (loose > 0 && hash2(A, 3, seed + 4) < loose) {
+        const fallen = fray > 0 && keep < 0.9 ? clamp01(fray * 2 - q * 0.5 + hash2(A, 1, seed + 5) * 0.5) * 14 : ((t * 0.7 + hash2(A, 1, seed + 5)) % 1) * 10;
+        if (grain(A, 2, fray > 0 ? 1 - fray * 0.6 : keep, seed + 6)) dot(g, x + 1 + fallen * 0.3, yy + wide + 2 + fallen, C[4]);
+      }
+      if (keep <= 0 || (keep < 1 && !grain(A, 0, keep, seed))) continue;
       const top = twist > 0;
       // a face of it: the upper edge catching the light, the body, the lower edge in shade
       dot(g, x, yy - wide, top ? C[5] : C[4]);
       for (let w = -wide + 1; w <= wide; w++) {
         // (light through it: its body a little see-through, more so toward its tail)
-        if (w > -wide + 1 && w < wide && !dith(x, yy + w, 0.85 - q * 0.35, seed + 9)) continue;
+        if (w > -wide + 1 && w < wide && !grain(A, w + 10, 0.85 - q * 0.35, seed + 9)) continue;
         dot(g, x, yy + w, w === wide ? (top ? C[3] : C[2]) : top ? (w <= -wide + 2 ? C[5] : C[4]) : C[3]);
-      }
-      // grains frayed off it, falling
-      if (q > 0.35 && hash2(Math.round(x), Math.round(at), seed + 4) < 0.08) {
-        const fallen = ((t * 0.7 + hash2(Math.round(x), 1, seed + 5)) % 1) * 10;
-        if (dith(x, yy + fallen, keep, seed + 6)) dot(g, x + 1, yy + wide + 2 + fallen, C[4]);
       }
     }
     s += seg;
@@ -559,10 +679,10 @@ function ribbon(g: CanvasRenderingContext2D, pts: [number, number][], t: number,
  * the sand-light crawling over it, a ring of grains turning round its middle, its sand pouring out under it into a heap at its
  * feet as its time runs on.
  */
-function lastingOnIt(g: CanvasRenderingContext2D, cx: number, cy: number, top: number, t: number, seed: number, p: number, C: readonly string[] = W10_RAMP.lasting): void {
-  sandOver(g, cx, cy - top * 0.5, 6, top * 0.45, t, seed, 0.9, C, 0.03);
-  sandRing(g, cx, cy - top * 0.42, 4, t, seed, 0.9, C);
-  pour(g, cx + 5, cy - top * 0.35, cy - Math.round(1.4 + (0.3 + 0.7 * p) * 3), t, seed, 1, C);
+function lastingOnIt(g: CanvasRenderingContext2D, cx: number, cy: number, top: number, t: number, seed: number, p: number, C: readonly string[] = W10_RAMP.lasting, amt = 1): void {
+  sandOver(g, cx, cy - top * 0.5, 6, top * 0.45, t, seed, 0.9 * amt, C, 0.03);
+  sandRing(g, cx, cy - top * 0.42, 4, t, seed, 0.9 * amt, C);
+  pour(g, cx + 5, cy - top * 0.35, cy - Math.round(1.4 + (0.3 + 0.7 * p) * 3), t, seed, amt, C);
   heap(g, cx + 5, cy + 1, 0.3 + 0.7 * p, C);
 }
 
@@ -582,7 +702,8 @@ function whips(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, 
       const a = head - dir * len * (1 - q);
       const x = cx + Math.cos(a) * rx * sc;
       const y = cy + Math.sin(a) * ry * sc;
-      if (!dith(x, y, (0.15 + 0.85 * q) * fade, seed + i)) continue;
+      // (each streak's grains its own, counted from its head: it whips round whole)
+      if (!grain(steps - k, i, (0.15 + 0.85 * q) * fade, seed + i)) continue;
       dot(g, x, y, q > 0.9 ? C[5] : q > 0.72 ? C[3] : q > 0.35 ? C[2] : C[1]);
       if (q > 0.6) dot(g, x, y + 1, q > 0.85 ? C[2] : C[1]);
     }
@@ -594,7 +715,8 @@ function whips(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, 
  * `k` how far through its little life (it bursts, then thins and is gone).
  */
 function tick(g: CanvasRenderingContext2D, x: number, y: number, k: number, seed: number, C: readonly string[]): void {
-  const r = k < 0.3 ? 2 + k * 8 : 4.4 * (1 - (k - 0.3) / 0.7) + 0.6;
+  // (it pops and bursts in its first quarter, W10_BEATS 'fleeting:dot' 0.03 and 0.06 of its 0.36, and thins away after)
+  const r = k < 0.25 ? 2 + k * 9.6 : 4.4 * (1 - (k - 0.25) / 0.75) + 0.6;
   const n = 5;
   for (let i = 0; i < n; i++) {
     const a = (i / n) * TAU + hash2(i, seed, 1) * 0.7;
@@ -633,7 +755,7 @@ function ticks(g: CanvasRenderingContext2D, cx: number, cy: number, w: number, h
  * Fleeting on a patch of ground: little tongues of its flame licking up all round its edge, thin and bright, flickering fast;
  * sparks shooting up off it, short and quick, burning out as they go.
  */
-function fleetingPatch(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, t: number, seed: number, fade: number, layer: 'floor' | 'air'): void {
+function fleetingPatch(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, t: number, seed: number, fade: number, layer: 'floor' | 'air', tall = 1): void {
   const C = W10_RAMP.fleeting;
   const rx = r * RX;
   const ry = r * RY;
@@ -644,7 +766,7 @@ function fleetingPatch(g: CanvasRenderingContext2D, cx: number, cy: number, r: n
       const a = (i / n) * TAU + (hash2(i, seed, 1) - 0.5) * 0.25;
       if (Math.sin(a) > 0) continue;
       const d = 0.86 + 0.14 * hash2(i, seed, 2);
-      licks(g, cx + Math.cos(a) * rx * d, cy + Math.sin(a) * ry * d, t, seed + i, fade);
+      licks(g, cx + Math.cos(a) * rx * d, cy + Math.sin(a) * ry * d, t, seed + i, fade, tall);
     }
     return;
   }
@@ -653,9 +775,10 @@ function fleetingPatch(g: CanvasRenderingContext2D, cx: number, cy: number, r: n
     const a = (i / n) * TAU + (hash2(i, seed, 1) - 0.5) * 0.25;
     if (Math.sin(a) <= 0) continue;
     const d = 0.86 + 0.14 * hash2(i, seed, 2);
-    licks(g, cx + Math.cos(a) * rx * d, cy + Math.sin(a) * ry * d, t, seed + i, fade);
+    licks(g, cx + Math.cos(a) * rx * d, cy + Math.sin(a) * ry * d, t, seed + i, fade, tall);
   }
-  for (let i = 0; i < 16; i++) {
+  // (sparks shooting up: fewer as it burns out)
+  for (let i = 0; i < Math.round(16 * tall); i++) {
     const cyc = t * 3.6 + hash2(i, seed, 1);
     const ph = cyc % 1;
     const gen = Math.floor(cyc);
@@ -673,15 +796,16 @@ function fleetingPatch(g: CanvasRenderingContext2D, cx: number, cy: number, r: n
  * One quick tongue of flame on an edge: up to 8 pixels, two across at its root and curling to a point, flickering with the quick
  * clock (its height and its lean leap from picture to picture); lilac, its heart and its tip white.
  */
-function licks(g: CanvasRenderingContext2D, x: number, y: number, t: number, seed: number, fade: number): void {
+function licks(g: CanvasRenderingContext2D, x: number, y: number, t: number, seed: number, fade: number, tall = 1): void {
   const C = W10_RAMP.fleeting;
-  const h = Math.round(-1 + 9 * vnoise(seed * 0.7, t * 18, seed));
+  // (`tall`: as it burns out, its tongues burn down)
+  const h = Math.round((-1 + 9 * vnoise(seed * 0.7, t * 18, seed)) * tall);
   if (h < 3) return;
   const lean = (vnoise(seed * 1.3, t * 14, seed + 1) - 0.5) * 5;
   for (let s = 0; s < h; s++) {
     const q = s / h;
     const px = x + lean * q * q;
-    if (!dith(px, y - s, fade, seed)) continue;
+    if (!grain(s, 3, fade, seed)) continue;
     const wide = q < 0.45 ? 1 : 0;
     // (lilac, its heart lighter, white only at the tip of a tall one)
     dot(g, px, y - s, s === h - 1 && h > 5 ? C[5] : q > 0.7 ? C[3] : C[2]);
@@ -693,7 +817,7 @@ function licks(g: CanvasRenderingContext2D, x: number, y: number, t: number, see
  * Fleeting on his whirlwind: speed-streaks whipping round ahead of its blades, and the trace of each blade's leading edge left
  * behind it twice over, a stutter, thinner each (his own after-images, spinning: heroW10).
  */
-function fleetingSpin(g: CanvasRenderingContext2D, cam: Cam, hx: number, hy: number, r: number, t: number, clock: number, seed: number): void {
+function fleetingSpin(g: CanvasRenderingContext2D, cam: Cam, hx: number, hy: number, r: number, t: number, clock: number, seed: number, amt = 1): void {
   const C = W10_RAMP.fleeting;
   const lead0 = clock * TAU * 2.6;
   for (const half of [0, Math.PI]) {
@@ -702,15 +826,16 @@ function fleetingSpin(g: CanvasRenderingContext2D, cam: Cam, hx: number, hy: num
       for (let u = 0; u < 1; u += 0.012) {
         const a = at - u * 0.9;
         const [px, py] = S(cam, hx + Math.cos(a) * r, hy + Math.sin(a) * r, 10);
-        if (!dith(px, py, (1 - u) * (e === 1 ? 1 : 0.65), seed + e)) continue;
+        // (each trace's grains its own, by how far behind its blade: it goes round whole)
+        if (!grain(u * 83, e + (half ? 2 : 0), (1 - u) * (e === 1 ? 1 : 0.65) * amt, seed + e)) continue;
         dot(g, px, py, u < 0.12 ? C[5] : u < 0.3 ? C[3] : C[2]);
         if (u < 0.55) dot(g, px, py + 1, u < 0.25 ? C[2] : C[1]);
       }
     }
   }
   const [cx, cy] = S(cam, hx, hy, 10);
-  whips(g, cx, cy, r * RX * 1.08, r * RY * 1.08, clock * 1.6, seed, 8, 1);
-  whips(g, cx, cy + 4, r * RX * 0.72, r * RY * 0.72, clock * 1.3 + 0.4, seed + 5, 5, 0.9);
+  whips(g, cx, cy, r * RX * 1.08, r * RY * 1.08, clock * 1.6, seed, 8, amt);
+  whips(g, cx, cy + 4, r * RX * 0.72, r * RY * 0.72, clock * 1.3 + 0.4, seed + 5, 5, 0.9 * amt);
   void t;
 }
 
@@ -746,19 +871,24 @@ export function tinted(sp: Sprite, c: string): Sprite {
 
 /**
  * Where an area's edge was before Vast widened it: broken cracks in the floor along it, each a short jagged run with spurs off
- * it, its lip lit; gaps between.
+ * it, its lip lit; gaps between. `spread` (0..1): the cracks running round from three places as the floor gives (its build).
  */
-function oldEdge(g: CanvasRenderingContext2D, cx: number, cy: number, r0: number, fade: number, seed: number, back: boolean): void {
+function oldEdge(g: CanvasRenderingContext2D, cx: number, cy: number, r0: number, fade: number, seed: number, back: boolean, spread = 1): void {
   const n = Math.round(r0 * RX * 6.5);
+  const from = [hash2(1, seed, 21), hash2(2, seed, 21), hash2(3, seed, 21)].map((q) => q * TAU);
   for (let i = 0; i < n; i++) {
     const a = (i / n) * TAU;
     if (Math.sin(a) < 0 !== back) continue;
     // runs of crack, and gaps between them
     if (vnoise(i * 0.09, 1, seed) < 0.48) continue;
+    if (spread < 1) {
+      const off = Math.min(...from.map((f) => Math.abs(((a - f + TAU * 1.5) % TAU) - Math.PI)));
+      if (off > spread * (Math.PI / 3 + 0.2)) continue;
+    }
     const j = (vnoise(i * 0.6, 3, seed + 1) - 0.5) * 3;
     const x = cx + Math.cos(a) * (r0 * RX + j);
     const y = cy + Math.sin(a) * (r0 * RY + j * 0.5);
-    if (!dith(x, y, fade, seed)) continue;
+    if (!grain(i, 4, fade, seed)) continue;
     dot(g, x, y, EARTH[0]);
     if (hash2(i, seed, 5) < 0.5) dot(g, x, y - 1, EARTH[3]);
     // a spur off it, now and then
@@ -770,22 +900,55 @@ function oldEdge(g: CanvasRenderingContext2D, cx: number, cy: number, r0: number
 }
 
 /**
- * A ring of dust rolled out to an area's new edge: from where its edge was (`r0`, tiles) out to `r` as `k` goes 0 to 1, the
- * floor cracked along the old edge, a bank of churned dust rolling at its front, grit and clods of earth flung on past it.
- * Only the half of it behind the figures (`back`) or before them.
+ * Vast in front: a ring of dust rolled out to an area's new edge, `age` seconds in, by its beats (W10_BEATS 'vast:front'): held,
+ * the floor cracking along where its edge was (`r0`, tiles), the cracks running round, dust puffing up off them; the strike, a
+ * bank of churned dust shoved out to the new edge `r` (most of the way in its 0.14 s), smeared, grit and clods flung on past it;
+ * the wind-down, rolling the last of the way, settling, the grit falling back, the cracks dimming. Only the half of it behind
+ * the figures (`back`) or before them.
  */
-function dustRing(g: CanvasRenderingContext2D, cx: number, cy: number, r0: number, r: number, k: number, fade: number, seed: number, t: number, back: boolean, z = 0, dust = 1): void {
+function dustRing(g: CanvasRenderingContext2D, cx: number, cy: number, r0: number, r: number, age: number, fade: number, seed: number, t: number, back: boolean, z = 0, dust = 1): void {
+  const B = BEAT['vast:front'];
   const C = W10_RAMP.vast;
-  const rr = r0 + (r - r0) * easeOut(k);
-  if (z === 0 && r0 > 0.3) oldEdge(g, cx, cy, r0, fade, seed, back);
-  // the bank of dust rolling at its front
+  const crack = clamp01(age / B.build);
+  const k = age < B.build ? 0 : strikeOut((age - B.build) / W10_TIME.ring);
+  const rr = r0 + (r - r0) * k;
+  if (z === 0 && r0 > 0.3) oldEdge(g, cx, cy, r0, Math.min(1, fade * 1.4), seed, back, crack);
+  if (age < B.build) {
+    // (held: dust puffing up off the cracks as they run)
+    bank(g, cx, cy, r0, 0, crack * 0.75 * fade, seed, t, back, z, dust * (0.5 + 0.3 * crack), crack);
+    return;
+  }
+  // the strike: smeared, the bank's path from the old edge out to where it is now streaked with its dust
+  const smear = clamp01(1 - (age - B.build) / B.hit);
+  if (smear > 0 && rr - r0 > 0.05) {
+    const n = Math.max(16, Math.round(rr * 16));
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + hash2(i, seed, 31) * 0.3;
+      if (Math.sin(a) < 0 !== back) continue;
+      if (!grain(i, 5, smear * 0.9, seed + 31)) continue;
+      const d0 = r0 + (rr - r0) * (0.25 + 0.3 * hash2(i, seed, 32));
+      streak(g, cx + Math.cos(a) * d0 * RX, cy + Math.sin(a) * d0 * RY - 1 - z, cx + Math.cos(a) * rr * RX * 0.97, cy + Math.sin(a) * rr * RY * 0.97 - 1 - z, [DUST[2], DUST[3], C[3], C[4]], 2, smear);
+    }
+  }
+  bank(g, cx, cy, rr, k, fade, seed, t, back, z, dust, 1);
+}
+
+/**
+ * The bank of dust at an area's edge (`rr`, tiles, `k` 0..1 how far its run has come): churned dust rolling at its front, a broken
+ * edge of lit dust, streaks of it shoved outward, grit and clods flung on past it, falling back. `front` (0..1): how much of its lit
+ * edge and its grit shows (none while the floor is still cracking).
+ */
+function bank(g: CanvasRenderingContext2D, cx: number, cy: number, rr: number, k: number, fade: number, seed: number, t: number, back: boolean, z: number, dust: number, front: number): void {
+  const C = W10_RAMP.vast;
   const puffs = Math.max(10, Math.round(rr * 10));
   for (let i = 0; i < puffs; i++) {
     const a = (i / puffs) * TAU + hash2(i, seed, 1) * 0.25;
     if (Math.sin(a) < 0 !== back) continue;
     const big = 0.7 + hash2(i, seed, 2) * 0.6;
-    mist(g, cx + Math.cos(a) * rr * RX * 0.94, cy + Math.sin(a) * rr * RY * 0.94 - 2 - z, (4 + rr * 1.5) * big * dust, (2 + rr * 0.7) * big * dust, [DUST[1], DUST[2], DUST[3], C[3], C[4]], (1.05 - 0.35 * k) * fade, seed + i, t, 0.35);
+    // (settling: lower and flatter as its run ends)
+    mist(g, cx + Math.cos(a) * rr * RX * 0.94, cy + Math.sin(a) * rr * RY * 0.94 - 2 - z + k * 1, (4 + rr * 1.5) * big * dust * (1 + 0.15 * k), (2 + rr * 0.7) * big * dust * (1 - 0.2 * k), [DUST[1], DUST[2], DUST[3], C[3], C[4]], (1.05 - 0.35 * k) * fade, seed + i, t, 0.35);
   }
+  if (front <= 0) return;
   // its front: a broken edge of lit dust, streaks of it shoved outward
   const n = Math.max(30, Math.round(rr * RX * 7));
   for (let i = 0; i < n; i++) {
@@ -795,7 +958,7 @@ function dustRing(g: CanvasRenderingContext2D, cx: number, cy: number, r0: numbe
     if (v < 0.3) continue;
     const x = cx + Math.cos(a) * rr * RX;
     const y = cy + Math.sin(a) * rr * RY - z;
-    if (!dith(x, y, fade, seed + 5)) continue;
+    if (!grain(i, 6, fade * front, seed + 5)) continue;
     dot(g, x, y, v > 0.6 ? C[5] : C[4]);
     dot(g, x - Math.cos(a), y - Math.sin(a) * 0.5, C[3]);
     if (v > 0.72 && k < 0.85) streak(g, x, y, x + Math.cos(a) * 5, y + Math.sin(a) * 2.5, [C[2], C[3], C[4]], 1, fade);
@@ -808,26 +971,47 @@ function dustRing(g: CanvasRenderingContext2D, cx: number, cy: number, r0: numbe
     const up = Math.sin(clamp01(k * 1.2 + hash2(i, seed, 8) * 0.2) * Math.PI) * (3 + hash2(i, seed, 9) * 6);
     const x = cx + Math.cos(a) * d * RX;
     const y = cy + Math.sin(a) * d * RY - up - z;
-    if (!dith(x, y, fade, seed + 6)) continue;
+    if (!grain(i, 7, fade * front, seed + 6)) continue;
     if (i % 4 === 0) clod(g, x, y, EARTH, i % 8 === 0);
     else streak(g, x - Math.cos(a) * 4, y - Math.sin(a) * 2 + 1, x, y, [EARTH[1], EARTH[2], EARTH[4]], 1);
   }
 }
 
 /**
- * Vast behind: a quarter of a hit splashed onto those near it. From what was struck, a ring of earth heaving out to the splash's
- * reach (its dust low, so as not to hide them); to each one near, the floor bursting up along the way in a running heave of
- * earth and a clod thrown ahead of it; on each, a burst of dirt and clods as it lands.
+ * Vast behind: a quarter of a hit splashed onto those near it, by its beats (W10_BEATS 'vast:behind'). Held: the floor heaves
+ * under the one struck, cracks running out short, a rock torn up out of it for each one near. The strike: from what was struck a
+ * ring of earth runs out to the splash's reach (its dust low, so as not to hide them), the floor bursting up along the way to each
+ * one near, and a rock arcs to each on a trail of lit dust, smeared. The wind-down: on each, a fountain of dirt as it lands,
+ * clods falling back, the dust settling.
  */
 function splash(g: CanvasRenderingContext2D, cam: Cam, a: Act10, layer: 'floor' | 'air'): void {
+  const B = BEAT['vast:behind'];
   const C = W10_RAMP.vast;
   const [cx, cy] = S(cam, a.x, a.y);
-  const k = clamp01(a.t / W10_TIME.splash);
+  const heave = clamp01(a.t / B.build);
+  const k = a.t < B.build ? 0 : strikeOut((a.t - B.build) / W10_TIME.splash);
+  const fly = clamp01((a.t - B.build) / B.hit);
   const fade = clamp01((a.dur - a.t) / W10_TIME.splashFade);
-  const R = a.r * easeOut(k);
-  // the ring of earth-coloured force heaving out from it, Vast's own ring (its dust lower, so the near ones stand clear in it)
+  const R = a.r * k;
   const back = layer === 'floor';
-  dustRing(g, cx, cy, 0.15, Math.max(0.2, R), 1, fade * (1 - 0.35 * k), a.seed, a.t, back, 0, 0.75);
+  if (a.t < B.build) {
+    // held: the floor heaves under it, a mound of earth bulging up, cracks running out short from it
+    if (back) {
+      for (let i = 0; i < 6; i++) {
+        const an = (i / 6) * TAU + hash2(i, a.seed, 41) * 0.6;
+        const L = (3 + hash2(i, a.seed, 42) * 5) * heave;
+        for (let s2 = 2; s2 < 2 + L; s2++) dot(g, cx + Math.cos(an) * s2 * 1.6 + (hash2(i, s2, a.seed) - 0.5), cy + Math.sin(an) * s2 * 0.8, EARTH[0]);
+      }
+    } else {
+      const h = Math.round(1 + heave * 2);
+      for (let row = 0; row < h; row++) {
+        const half = Math.round((6 - row * 2) * (0.6 + 0.4 * heave));
+        for (let dx = -half; dx <= half; dx++) dot(g, cx + dx, cy + 2 - row, row === h - 1 ? (dx < 0 ? C[5] : C[4]) : dx < -half / 2 ? EARTH[4] : EARTH[2]);
+      }
+    }
+  }
+  // the ring of earth-coloured force heaving out from it, Vast's own ring (its dust lower, so the near ones stand clear in it)
+  if (a.t >= B.build) bank(g, cx, cy, Math.max(0.2, R), Math.min(1, k * 1.1), fade * (1 - 0.35 * k), a.seed, a.t, back, 0, 0.75, 1);
   // its front: a ridge of earth heaved up off the floor as it runs out, lit along its crest, clods popping up off it
   if (R > 0.2) {
     const n = Math.max(30, Math.round(R * RX * 7));
@@ -838,7 +1022,7 @@ function splash(g: CanvasRenderingContext2D, cam: Cam, a: Act10, layer: 'floor' 
       if (v < 0.22) continue;
       const x = cx + Math.cos(an) * R * RX;
       const y = cy + Math.sin(an) * R * RY;
-      if (!dith(x, y, fade * (1 - 0.3 * k) + 0.1, a.seed + 2)) continue;
+      if (!grain(i, 8, fade * (1 - 0.3 * k) + 0.1, a.seed + 2)) continue;
       const up = v > 0.55 ? 3 : 2;
       dot(g, x, y, EARTH[1]);
       dot(g, x, y - 1, EARTH[3]);
@@ -853,40 +1037,44 @@ function splash(g: CanvasRenderingContext2D, cam: Cam, a: Act10, layer: 'floor' 
     }
   }
   if (layer === 'floor') {
-    // the floor cracked out from where it was struck, and burst up along the way to each one near
+    // the floor cracked out from where it was struck, and burst up along the way to each one near (as its rock flies)
     a.to.forEach((o, j) => {
       const [tx, ty] = S(cam, o.x, o.y);
       const L = Math.hypot(tx - cx, ty - cy);
-      const run = clamp01((a.t - 0.02) / (W10_TIME.splash * 0.85));
-      for (let s = 4; s < L * run; s += 1) {
-        const q = s / L;
-        const wob = (vnoise(s * 0.3, j, a.seed) - 0.5) * 3;
+      for (let s2 = 4; s2 < L * fly; s2 += 1) {
+        const q = s2 / L;
+        const wob = (vnoise(s2 * 0.3, j, a.seed) - 0.5) * 3;
         const x = cx + (tx - cx) * q - ((ty - cy) / L) * wob;
         const y = cy + (ty - cy) * q + ((tx - cx) / L) * wob * 0.5;
-        if (!dith(x, y, fade, a.seed + j)) continue;
+        if (!grain(s2, j + 20, fade, a.seed + j)) continue;
         dot(g, x, y, EARTH[0]);
         // the heave running along it: earth up at its head
-        const head = L * run - s;
-        if (head < 5 && run < 1) {
+        const head = L * fly - s2;
+        if (head < 5 && fly < 1) {
           dot(g, x, y - 1, EARTH[3]);
           dot(g, x, y - 2, C[4]);
-        } else if (hash2(Math.round(s), j, a.seed) < 0.3) dot(g, x, y - 1, EARTH[2]);
+        } else if (hash2(Math.round(s2), j, a.seed) < 0.3) dot(g, x, y - 1, EARTH[2]);
       }
     });
     return;
   }
-  // a clod thrown ahead of the heave to each one near; then a burst of dirt on it as it lands
+  // a rock thrown to each one near (held: torn up out of the floor; the strike: arcing on a trail of lit dust); a burst of dirt as it lands
   a.to.forEach((o, j) => {
     const [tx, ty] = S(cam, o.x, o.y, Math.min(10, o.top * 0.35));
-    const fly = clamp01((a.t - 0.02) / (W10_TIME.splash * 0.85));
     const arc = (q: number): [number, number] => [cx + (tx - cx) * q, cy - 3 + (ty - cy + 3) * q - Math.sin(q * Math.PI) * 13];
+    if (a.t < B.build) {
+      // (torn up out of the floor at its foot, rising)
+      const [px, py] = arc(0.04);
+      rock(g, px, py + 3 - heave * 3, true);
+      return;
+    }
     if (fly < 1) {
-      // its arc: a trail of lit dust behind it, crumbs shed off it, the clod at its head
-      const tail = 0.45;
+      // its arc: a trail of lit dust behind it, smeared, crumbs shed off it, the rock at its head
+      const tail = 0.55;
       for (let q = Math.max(0, fly - tail); q < fly; q += 0.012) {
         const [px, py] = arc(q);
         const k2 = (q - (fly - tail)) / tail;
-        if (!dith(px, py, (0.45 + 0.55 * k2) * fade, a.seed + j)) continue;
+        if (!grain(Math.round((fly - q) * 200), j + 30, (0.45 + 0.55 * k2) * fade, a.seed + j)) continue;
         dot(g, px, py - 1, k2 > 0.6 ? C[5] : C[4]);
         dot(g, px, py, k2 > 0.75 ? C[5] : k2 > 0.4 ? C[4] : EARTH[4]);
         if (k2 > 0.25) dot(g, px, py + 1, k2 > 0.7 ? C[4] : EARTH[3]);
@@ -901,7 +1089,7 @@ function splash(g: CanvasRenderingContext2D, cam: Cam, a: Act10, layer: 'floor' 
       }
       return;
     }
-    const since = a.t - 0.02 - W10_TIME.splash * 0.85;
+    const since = a.t - B.build - B.hit;
     const kk = clamp01(since / 0.35);
     // it bursts on it: a fountain of dirt thrown up and out round it, lit, a puff of dust, clods falling back
     if (kk < 0.55) for (let i = 0; i < 9; i++) {
@@ -915,6 +1103,7 @@ function splash(g: CanvasRenderingContext2D, cam: Cam, a: Act10, layer: 'floor' 
       const an = hash2(i, a.seed + j, 3) * TAU;
       const d = 2 + kk * 14 * (0.6 + 0.4 * hash2(i, a.seed + j, 4));
       const up = Math.sin(kk * Math.PI) * (4 + hash2(i, a.seed + j, 5) * 5);
+      if (kk >= 1 && !grain(i, j + 40, fade, a.seed)) continue;
       clod(g, tx + Math.cos(an) * d, ty + 2 + Math.sin(an) * d * 0.5 - up, EARTH, i === 0);
     }
   });
@@ -995,37 +1184,109 @@ function wideWarn(g: CanvasRenderingContext2D, cx: number, cy: number, r0: numbe
 
 type ZoneLike = { x: number; y: number; r: number; t: number; dur: number; kind: string; hostile?: boolean; skill?: number; words?: readonly string[] };
 const zoneSeed = (z: { x: number; y: number }): number => Math.floor(Math.abs(z.x * 97 + z.y * 131)) % 100000;
+/** Each of the rules' patches its own number for as long as it lies (known by itself, not by where it lies). */
+const zoneIds = new WeakMap<object, number>();
+let zoneNext = 1;
+const zoneId = (z: object): number => {
+  let n = zoneIds.get(z);
+  if (n === undefined) {
+    n = zoneNext++;
+    zoneIds.set(z, n);
+  }
+  return n;
+};
 
-/** What Lasting or Fleeting holds of his: each thing an ability made, by its `skill`, and what of it to draw. */
-function heldThings(game: Game): { word: 'lasting' | 'fleeting'; kind: 'thing' | 'patch' | 'spin'; x: number; y: number; up: number; rad: number; r: number; t: number; life: number; last: number; seed: number }[] {
-  const out: ReturnType<typeof heldThings> = [];
-  const G = game as unknown as { orbs?: { id: number; x: number; y: number; t: number; life: number; skill: number }[]; familiars?: { id: number; x: number; y: number; t: number; life: number; skill: number }[]; contraptions?: { id: number; x: number; y: number; t: number; skill: number }[] };
+/** A held look now: what Lasting or Fleeting holds of his (each thing an ability made, by its `skill`), and what of it to draw. */
+interface HeldNow {
+  key: string;
+  word: 'lasting' | 'fleeting';
+  kind: 'thing' | 'patch' | 'spin';
+  x: number;
+  y: number;
+  up: number;
+  rad: number;
+  r: number;
+  t: number;
+  life: number;
+  last: number;
+  seed: number;
+  /** An orb: its own number, and its waves' clock as the rules keep it (`next`, counted down from `every`). */
+  orb: { id: number; next: number; every: number } | null;
+}
+
+function heldThings(game: Game): HeldNow[] {
+  const out: HeldNow[] = [];
+  const G = game as unknown as { orbs?: { id: number; x: number; y: number; t: number; life: number; next: number; skill: number }[]; familiars?: { id: number; x: number; y: number; t: number; life: number; skill: number }[]; contraptions?: { id: number; x: number; y: number; t: number; skill: number }[] };
+  const pace = (i: number): number => (game.hero.skills[i]?.r as { pace?: number } | undefined)?.pace ?? 1;
   for (const o of G.orbs ?? []) {
     const w = timeWord(game, o.skill);
-    if (w) out.push({ word: w, kind: 'thing', x: o.x, y: o.y, up: 13, rad: 6, r: 0, t: o.t, life: o.life, last: lastOf(game, o.skill), seed: o.id * 13 + 1 });
+    if (w) out.push({ key: `orb:${o.id}`, word: w, kind: 'thing', x: o.x, y: o.y, up: 13, rad: 6, r: 0, t: o.t, life: o.life, last: lastOf(game, o.skill), seed: o.id * 13 + 1, orb: { id: o.id, next: o.next, every: TUNE.orbEvery / pace(o.skill) } });
   }
   for (const q of G.familiars ?? []) {
     const w = timeWord(game, q.skill);
-    if (w) out.push({ word: w, kind: 'thing', x: q.x, y: q.y, up: 14, rad: 3, r: 0, t: q.t, life: q.life, last: lastOf(game, q.skill), seed: q.id * 13 + 2 });
+    if (w) out.push({ key: `fam:${q.id}`, word: w, kind: 'thing', x: q.x, y: q.y, up: 14, rad: 3, r: 0, t: q.t, life: q.life, last: lastOf(game, q.skill), seed: q.id * 13 + 2, orb: null });
   }
   for (const c of G.contraptions ?? []) {
     const w = timeWord(game, c.skill);
-    if (w) out.push({ word: w, kind: 'thing', x: c.x, y: c.y, up: 6, rad: 5, r: 0, t: c.t, life: 99, last: lastOf(game, c.skill), seed: c.id * 13 + 3 });
+    if (w) out.push({ key: `con:${c.id}`, word: w, kind: 'thing', x: c.x, y: c.y, up: 6, rad: 5, r: 0, t: c.t, life: 99, last: lastOf(game, c.skill), seed: c.id * 13 + 3, orb: null });
   }
   for (const raw of game.zones) {
     const z = raw as unknown as ZoneLike;
     if (z.hostile || z.skill === undefined || z.skill < 0 || z.kind === 'warn' || z.kind === 'mirror' || z.kind === 'reaper') continue;
     const w = timeWord(game, z.skill);
-    if (w) out.push({ word: w, kind: 'patch', x: z.x, y: z.y, up: 0, rad: 0, r: z.r, t: z.t, life: z.dur, last: lastOf(game, z.skill), seed: zoneSeed(z) });
+    if (w) out.push({ key: `zone:${zoneId(raw)}`, word: w, kind: 'patch', x: z.x, y: z.y, up: 0, rad: 0, r: z.r, t: z.t, life: z.dur, last: lastOf(game, z.skill), seed: zoneSeed(z), orb: null });
   }
   const ch = game.hero.channel;
   const s = ch ? game.hero.skills[ch.skill] : null;
   if (ch && s && SKILLS[s.id].kind === 'whirl') {
     const w = timeWord(game, ch.skill);
     const def = SKILLS[s.id];
-    if (w) out.push({ word: w, kind: 'spin', x: game.hero.x, y: game.hero.y, up: 10, rad: 0, r: def.radius * ((s.r as { size?: number }).size ?? 1), t: ch.t, life: (def.channel ?? 2.4) * lastOf(game, ch.skill), last: lastOf(game, ch.skill), seed: 77 });
+    if (w) out.push({ key: 'spin', word: w, kind: 'spin', x: game.hero.x, y: game.hero.y, up: 10, rad: 0, r: def.radius * ((s.r as { size?: number }).size ?? 1), t: ch.t, life: (def.channel ?? 2.4) * lastOf(game, ch.skill), last: lastOf(game, ch.skill), seed: 77, orb: null });
   }
   return out;
+}
+
+/**
+ * An orb as the game draws it (render.ts, its loop of orbs): it swells as its next wave gathers, shrinks in its last half second,
+ * and bobs; so what is drawn on it goes with it. `rt`: the renderer's clock.
+ */
+function orbLook(o: { id: number; next: number }, t: number, life: number, rt: number): { scale: number; bob: number } {
+  const born = Math.min(1, t / 0.12);
+  const gather = 1 - clamp01(o.next / TUNE.orbEvery);
+  const left = life - t;
+  const dying = left < 0.5 ? Math.max(0, left / 0.5) : 1;
+  return { scale: (0.5 + 0.5 * born) * (0.9 + 0.18 * gather * gather) * (0.65 + 0.35 * dying), bob: Math.sin(rt * 2.6 + o.id) * 1.5 };
+}
+
+/**
+ * Fleeting on an orb: its waves come a third sooner, and each shows: as the next gathers, a rim of light tightening round it,
+ * flickering, brighter as it comes; at each wave a pulse of lilac bursting out of it (W10_TIME.pulse).
+ */
+function pulse(g: CanvasRenderingContext2D, cx: number, cy: number, rad: number, next: number, every: number, amt: number, seed: number): void {
+  const C = W10_RAMP.fleeting;
+  const since = every - next;
+  const q = clamp01(1 - next / every);
+  if (since < W10_TIME.pulse) {
+    const k = since / W10_TIME.pulse;
+    const R = rad + 2 + strikeOut(k) * 16;
+    const n = Math.round(R * 5);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU;
+      if (!grain(i, Math.floor(R), (1 - k) * amt * 1.1, seed + 51)) continue;
+      dot(g, cx + Math.cos(a) * R, cy + Math.sin(a) * R * 0.62, k < 0.35 ? C[5] : k < 0.7 ? C[3] : C[2]);
+    }
+  }
+  if (q > 0.55) {
+    const k = (q - 0.55) / 0.45;
+    const R = rad + 3 - k * 1.5;
+    const n = Math.round(R * 6);
+    const flick = Math.floor(W10.clock * 30);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU;
+      if (!grain(i, flick, k * 0.8 * amt, seed + 52)) continue;
+      dot(g, cx + Math.cos(a) * R, cy + Math.sin(a) * R * 0.9, k > 0.7 ? C[5] : C[3]);
+    }
+  }
 }
 
 /** The boosts on him that an ability with Lasting or Fleeting gave him (the rules' might, haste, frenzy's hold, shield). */
@@ -1058,27 +1319,64 @@ function nearCarrier(game: Game, w: WordId): Monster | undefined {
   return best;
 }
 
-function drawHeld(g: CanvasRenderingContext2D, cam: Cam, game: Game, layer: 'floor' | 'air', here: (x: number, y: number) => boolean): void {
+/** What he left on a monster, its word by the ability that last struck it, and how long since it began (W10.since). */
+function dotsOn(game: Game): { m: Monster; word: 'lasting' | 'fleeting'; left: number }[] {
+  const out: { m: Monster; word: 'lasting' | 'fleeting'; left: number }[] = [];
+  for (const m of game.monsters) {
+    if (m.dead) continue;
+    const left = Math.max(m.poisonT ?? 0, m.burnT ?? 0);
+    if (left <= 0) continue;
+    const w = timeWord(game, (m as { lastSkill?: number }).lastSkill ?? -1);
+    if (w) out.push({ m, word: w, left });
+  }
+  return out;
+}
+
+/** A monster's poison, burning or chill on him, lingering (Lasting) or ticking fast (Fleeting): which, and how long it has left. */
+function onHim(game: Game): { word: 'lasting' | 'fleeting'; left: number } | null {
+  const h = game.hero;
+  const left = Math.max(h.poisonT ?? 0, h.burnT ?? 0, h.chillT ?? 0);
+  if (left <= 0) return null;
+  if (nearCarrier(game, 'lasting')) return { word: 'lasting', left };
+  if (nearCarrier(game, 'fleeting') && Math.max(h.poisonT ?? 0, h.burnT ?? 0) > 0) return { word: 'fleeting', left: Math.max(h.poisonT ?? 0, h.burnT ?? 0) };
+  return null;
+}
+const sinceOf = (key: string): number => W10.clock - (W10.since.get(key) ?? W10.clock);
+
+function drawHeld(g: CanvasRenderingContext2D, cam: Cam, game: Game, layer: 'floor' | 'air', here: (x: number, y: number) => boolean, rt: number): void {
   const t = W10.clock;
   const clock = W10.fx ? (W10.fx as unknown as { clock: number }).clock : t;
   for (const it of heldThings(game)) {
     if (!here(it.x, it.y)) continue;
+    const B = BEAT[`${it.word}:${it.kind}`];
     const [sx, sy] = S(cam, it.x, it.y);
     const p = it.word === 'lasting' ? lastStretch(it.t, it.life, it.last) : 0;
-    const fade = clamp01((it.life - it.t) / 0.35) * clamp01(it.t / 0.2);
+    // (its build, as it comes; and its own last moments, as it goes: what it leaves after is its 'after', drawn from W10.acts)
+    const inA = clamp01(it.t / B.build);
+    const endA = clamp01((it.life - it.t) / 0.35);
     if (it.kind === 'thing') {
       if (layer !== 'air') continue;
-      if (it.word === 'lasting') lastingThing(g, sx, sy, it.up, it.rad, t, it.seed, p, fade);
-      // (Fleeting: its after-images are its own picture, thingW10; the streaks whipping round it here)
-      else whips(g, sx, sy - it.up, it.rad + 6, it.rad + 3, t, it.seed, 5, fade);
+      let up = it.up;
+      let rad = it.rad;
+      if (it.orb) {
+        const o = orbLook(it.orb, it.t, it.life, rt);
+        up = 13 - o.bob;
+        rad = 6 * o.scale;
+      }
+      if (it.word === 'lasting') lastingThing(g, sx, sy, up, rad, t, it.seed, p, inA * endA);
+      else {
+        // (Fleeting: its after-images are its own picture, thingW10; the streaks whipping round it, and its quickened pulse, here)
+        whips(g, sx, sy - up, rad + 6, rad + 3, t, it.seed, 5, inA * endA);
+        if (it.orb) pulse(g, sx, sy - up, rad, it.orb.next, it.orb.every, inA * endA, it.seed);
+      }
     } else if (it.kind === 'patch') {
       // (Lasting's lies on the floor under the figures; Fleeting's tongues stand round its edge, behind them and before)
       if (it.word === 'lasting') {
-        if (layer === 'floor') lastingPatch(g, sx, sy, it.r, t, it.seed, p, fade);
-      } else fleetingPatch(g, sx, sy, it.r, t, it.seed, fade, layer);
+        if (layer === 'floor') lastingPatch(g, sx, sy, it.r, t, it.seed, p, inA * endA);
+      } else fleetingPatch(g, sx, sy, it.r, t, it.seed, inA, layer, clamp01((it.life - it.t) / B.fade));
     } else if (it.kind === 'spin') {
-      if (it.word === 'lasting') lastingSpin(g, cam, it.x, it.y, it.r, t, clock, it.seed, p, layer);
-      else if (layer === 'air') fleetingSpin(g, cam, it.x, it.y, it.r, t, clock, it.seed);
+      if (it.word === 'lasting') lastingSpin(g, cam, it.x, it.y, it.r, t, clock, it.seed, p, layer, it.t);
+      else if (layer === 'air') fleetingSpin(g, cam, it.x, it.y, it.r, t, clock, it.seed, inA);
     }
   }
 }
@@ -1091,34 +1389,41 @@ function drawStates(g: CanvasRenderingContext2D, cam: Cam, game: Game, layer: 'f
   // his boost, drawn out behind him (Lasting), or quickened on him (Fleeting: its after-images are heroW10's)
   const b = boosts(game);
   if (b && layer === 'air') {
-    if (b.word === 'lasting') ribbon(g, ribbonPts(cam, game), t, 31, clamp01(b.left / 0.4));
-    else whips(g, hx, hy - 12, 11, 14, t, 43, 4, clamp01(b.left / 0.3));
+    const B = BEAT[`${b.word}:boost`];
+    const age = sinceOf('boost');
+    if (b.word === 'lasting') ribbon(g, ribbonPts(cam, game), t, 31, clamp01(age / B.build), 1 - clamp01(b.left / B.fade));
+    else whips(g, hx, hy - 12, 11, 14, t, 43, 4, clamp01(age / B.build) * clamp01(b.left / B.fade));
   }
   // what he left on monsters, Lasting or Fleeting by the ability that last struck each
-  for (const m of game.monsters) {
-    if (m.dead || layer !== 'air') continue;
-    const left = Math.max(m.poisonT ?? 0, m.burnT ?? 0);
-    if (left <= 0) continue;
-    const w = timeWord(game, (m as { lastSkill?: number }).lastSkill ?? -1);
-    if (!w) continue;
-    const [mx, my] = S(cam, m.x, m.y);
-    if (w === 'lasting') lastingOnIt(g, mx, my, topOf(m), t, m.id * 7 + 1, clamp01(1 - left / (TUNE.poisonTime * (1 + LASTING.longer))));
-    else ticks(g, mx, my - 3, 12, topOf(m) - 6, t, m.id * 7 + 2, 4, W10_RAMP.fleeting);
+  if (layer === 'air') {
+    for (const d of dotsOn(game)) {
+      const m = d.m;
+      const [mx, my] = S(cam, m.x, m.y);
+      if (d.word === 'lasting') {
+        const amt = clamp01(sinceOf(`dot:${m.id}`) / BEAT['lasting:dot'].build) * clamp01(d.left / 0.3);
+        lastingOnIt(g, mx, my, topOf(m), t, m.id * 7 + 1, clamp01(1 - d.left / (TUNE.poisonTime * (1 + LASTING.longer))), W10_RAMP.lasting, amt);
+      } else ticks(g, mx, my - 3, 12, topOf(m) - 6, t, m.id * 7 + 2, 4, W10_RAMP.fleeting);
+    }
   }
   // a monster's poison, burning or chill on him: lingering (Lasting) or ticking fast (Fleeting), in the enemy's colours
-  if (layer === 'air' && ((h.poisonT ?? 0) > 0 || (h.burnT ?? 0) > 0 || (h.chillT ?? 0) > 0)) {
-    const left = Math.max(h.poisonT ?? 0, h.burnT ?? 0, h.chillT ?? 0);
-    if (nearCarrier(game, 'lasting')) lastingOnIt(g, hx, hy, HERO_TOP, t, 51, clamp01(1 - left / (TUNE.poisonTime * (1 + LASTING.monster))), W10_ENEMY);
-    else if (nearCarrier(game, 'fleeting')) ticks(g, hx, hy - 3, 13, HERO_TOP - 6, t, 53, 5, W10_ENEMY);
+  const sick = layer === 'air' ? onHim(game) : null;
+  if (sick) {
+    if (sick.word === 'lasting') {
+      const amt = clamp01(sinceOf('him') / BEAT['lasting:monster'].build) * clamp01(sick.left / 0.3);
+      lastingOnIt(g, hx, hy, HERO_TOP, t, 51, clamp01(1 - sick.left / (TUNE.poisonTime * (1 + LASTING.monster))), W10_ENEMY, amt);
+    } else ticks(g, hx, hy - 3, 13, HERO_TOP - 6, t, 53, 5, W10_ENEMY);
   }
-  // a monster's warning drawn wider (Vast on it)
+  // a monster's warning drawn wider (Vast on it): widening out from its old reach over its build, held, snapping out as it lands
   for (const raw of game.zones) {
     const z = raw as unknown as ZoneLike & { half?: { words?: readonly string[] } };
     if (z.kind !== 'warn' || !(z.words ?? []).includes('vast')) continue;
+    const B = BEAT['vast:monster'];
     const share = (z.half?.words ?? []).includes('vast') ? 0.5 : 1;
     const [cx, cy] = S(cam, z.x, z.y);
-    const fade = clamp01(z.t / 0.15) * clamp01((z.dur - z.t) / 0.1);
-    wideWarn(g, cx, cy, z.r / (1 + VAST.monster * share), z.r, t + z.t, zoneSeed(z), fade, layer === 'floor');
+    const r0 = z.r / (1 + VAST.monster * share);
+    const rNow = r0 + (z.r - r0) * easeOut(z.t / B.build);
+    const fade = clamp01(z.t / 0.08) * clamp01((z.dur - z.t) / B.fade);
+    wideWarn(g, cx, cy, r0, rNow, t + z.t, zoneSeed(z), fade, layer === 'floor');
   }
 }
 
@@ -1142,7 +1447,8 @@ function ribbonPts(cam: Cam, game: Game): [number, number][] {
   if (len < 30) {
     const [bx, by] = out[out.length - 1];
     const back = h.fx - h.fy >= 0 ? -1 : 1;
-    for (let i = 1; i <= 8; i++) out.push([bx + back * i * 4, by + i * 1.4 + i * i * 0.08]);
+    const more = Math.round((30 - len) / 4);
+    for (let i = 1; i <= more; i++) out.push([bx + back * i * 4, by + i * 1.4 + i * i * 0.08]);
   }
   return out;
 }
@@ -1150,27 +1456,88 @@ function ribbonPts(cam: Cam, game: Game): [number, number][] {
 /** Under the figures (render.ts, with the floor's patches). */
 export function floorW10(g: CanvasRenderingContext2D, cam: Cam, t: number, game: Game, here: (x: number, y: number) => boolean): void {
   if (!WORDS10_LOOK.on) return;
-  drawHeld(g, cam, game, 'floor', here);
+  drawHeld(g, cam, game, 'floor', here, t);
   drawStates(g, cam, game, 'floor');
   for (const a of W10.acts) if (here(a.x, a.y)) drawAct(g, cam, a, 'floor');
-  void t;
 }
 
 /** Over the figures (drawn after the dark, so it glows). */
 export function airW10(g: CanvasRenderingContext2D, cam: Cam, t: number, game: Game): void {
   if (!WORDS10_LOOK.on) return;
-  drawHeld(g, cam, game, 'air', () => true);
+  drawHeld(g, cam, game, 'air', () => true, t);
   drawStates(g, cam, game, 'air');
   for (const a of W10.acts) drawAct(g, cam, a, 'air');
-  void t;
 }
 
 function drawAct(g: CanvasRenderingContext2D, cam: Cam, a: Act10, layer: 'floor' | 'air'): void {
   if (a.kind === 'splash') return splash(g, cam, a, layer);
+  if (a.kind === 'after') return drawAfter(g, cam, a, layer);
   const [cx, cy] = S(cam, a.x, a.y);
-  const k = clamp01(a.t / W10_TIME.ring);
   const fade = clamp01((a.dur - a.t) / W10_TIME.ringFade);
-  dustRing(g, cx, cy, a.r0, a.r, k, fade, a.seed, a.t, layer === 'floor', a.z);
+  dustRing(g, cx, cy, a.r0, a.r, a.t, fade, a.seed, a.t, layer === 'floor', a.z);
+}
+
+/** What a held look leaves as its thing goes, settling over its fade (W10_BEATS): Lasting's sand blowing away, Fleeting's last sparks. */
+function drawAfter(g: CanvasRenderingContext2D, cam: Cam, a: Act10, layer: 'floor' | 'air'): void {
+  const out = clamp01(a.t / a.dur);
+  const keep = 1 - out;
+  const [sx, sy] = S(cam, a.x, a.y);
+  const L = a.enemy ? W10_ENEMY : W10_RAMP.lasting;
+  if (a.what === 'heap') {
+    // (r0: its place off the thing's foot, in pixels: under a thing 0, at a monster's or his feet 5)
+    if (layer !== 'air') return;
+    heap(g, sx + a.r0, sy + (a.r0 ? 1 : 0), a.p, L, keep, a.seed);
+    blownSand(g, sx + a.r0, sy + (a.r0 ? 1 : 0), a.p, out, a.seed, L);
+  } else if (a.what === 'dunes') {
+    if (layer === 'floor') dunes(g, sx, sy, a.r, W10.clock, a.seed, a.p, keep);
+    else for (let i = 0; i < 6; i++) {
+      const an = hash2(i, a.seed, 61) * TAU;
+      blownSand(g, sx + Math.cos(an) * a.r * RX * 0.9, sy + Math.sin(an) * a.r * RY * 0.9, 0.6, out, a.seed + i, L, 4);
+    }
+  } else if (a.what === 'drift') {
+    if (layer === 'floor') drift(g, cam, a.x, a.y, a.r, Math.max(0.3, a.p), a.seed, keep);
+    else {
+      // the sand that hung in the blades' trails falls to the floor as the spin stops
+      const C = W10_RAMP.lasting;
+      for (const half of [0, Math.PI]) {
+        for (let i = 0; i < 26; i++) {
+          const u = hash2(i, a.seed, 62) * 0.9;
+          const k = clamp01((a.t - hash2(i, a.seed, 63) * 0.1) / (0.3 + u * 0.15));
+          if (k >= 1) continue;
+          const an = a.lead + half - (1.75 + u * 2.4);
+          const [px, py] = S(cam, a.x + Math.cos(an) * a.r, a.y + Math.sin(an) * a.r, 10 * (1 - k * k));
+          dot(g, px, py + u * u * 7 * (1 - k), k < 0.5 ? C[4] : C[3]);
+        }
+      }
+    }
+  } else if (a.what === 'sparks') {
+    // Fleeting's last: a flick of lilac sparks flung off it as it goes, quick, burning out
+    if (layer !== 'air') return;
+    const C = W10_RAMP.fleeting;
+    const n = a.r > 0 ? Math.max(8, Math.round(a.r * 8)) : 8;
+    for (let i = 0; i < n; i++) {
+      const an = (i / n) * TAU + hash2(i, a.seed, 64) * 0.6;
+      const k = strikeOut(out);
+      let x0: number;
+      let y0: number;
+      let dx: number;
+      let dy: number;
+      if (a.r > 0) {
+        x0 = sx + Math.cos(an) * a.r * RX;
+        y0 = sy + Math.sin(an) * a.r * RY - a.z;
+        dx = Math.cos(an) * 4;
+        dy = -10 - hash2(i, a.seed, 65) * 8;
+      } else {
+        x0 = sx + Math.cos(an) * a.p;
+        y0 = sy - a.z + Math.sin(an) * a.p * 0.6;
+        dx = Math.cos(an) * 14;
+        dy = Math.sin(an) * 9 - 3;
+      }
+      const hx = x0 + dx * k;
+      const hy = y0 + dy * k;
+      streak(g, x0 + dx * k * 0.55, y0 + dy * k * 0.55, hx, hy, [C[1], C[2], C[3], C[5]], 1, keep * 1.2);
+    }
+  }
 }
 
 /** Light: the renderer's `spot` (screen x, y, radius, strength). */
@@ -1185,11 +1552,11 @@ export function lightsW10(spot: (x: number, y: number, r: number, a: number) => 
     const [hx, hy] = S(cam, game.hero.x, game.hero.y, 12);
     spot(hx, hy, 26, 0.45);
   }
-  // (its moments: the dust of a ring or a splash lit as it goes)
+  // (its moments: the dust of a ring or a splash lit as it goes; what a held look leaves, dimly)
   for (const a of W10.acts) {
     const [ax, ay] = S(cam, a.x, a.y);
     const fade = clamp01((a.dur - a.t) / 0.4);
-    spot(ax, ay - 4, 24 + a.r * 22, 0.55 * fade);
+    spot(ax, ay - 4, a.kind === 'after' ? 16 + a.r * 14 : 24 + a.r * 22, (a.kind === 'after' ? 0.3 : 0.55) * fade);
   }
   void t;
 }
@@ -1210,16 +1577,19 @@ export function heroW10(sp: Sprite, h: { x: number; y: number; fx: number; fy: n
   const spin = !!game && !!ch && SKILLS[game.hero.skills[ch.skill]?.id]?.kind === 'whirl' && timeWord(game, ch.skill) === 'fleeting';
   const out: { sp: Sprite; x: number; y: number; depth: number; alpha: number }[] = [];
   const C = W10_RAMP.fleeting;
-  if (spin) {
+  if (spin && ch) {
     // (his spin quickened: a stutter of him round where he turns, each a turn of the blade behind)
     const clock = W10.fx ? (W10.fx as unknown as { clock: number }).clock : W10.clock;
+    const inA = clamp01(ch.t / BEAT['fleeting:spin'].build);
     for (let e = 1; e <= 2; e++) {
       const a = clock * TAU * 2.6 - e * 1.1;
-      out.push({ sp: tinted(sp, e === 1 ? C[2] : C[1]), x: Math.round(sx + Math.cos(a) * 5), y: Math.round(sy + Math.sin(a) * 2.5), depth: h.x + h.y - 0.01 * e, alpha: 0.62 - e * 0.16 });
+      out.push({ sp: tinted(sp, e === 1 ? C[2] : C[1]), x: Math.round(sx + Math.cos(a) * 5), y: Math.round(sy + Math.sin(a) * 2.5), depth: h.x + h.y - 0.01 * e, alpha: (0.62 - e * 0.16) * inA });
     }
     return out;
   }
   if (!b || b.word !== 'fleeting') return out;
+  const B = BEAT['fleeting:boost'];
+  const amt = clamp01(sinceOf('boost') / B.build) * clamp01(b.left / B.fade);
   for (let e = 1; e <= 3; e++) {
     const was = [...W10.seen].reverse().find((q) => W10.clock - q.at >= e * W10_TIME.stutter - 1e-6);
     let x = was ? wx(cam, was.x, was.y) : sx;
@@ -1230,23 +1600,26 @@ export function heroW10(sp: Sprite, h: { x: number; y: number; fx: number; fy: n
       x = sx + back * e * 5;
       y = sy + e * 0.5;
     }
-    out.push({ sp: tinted(was ? was.sp : sp, e === 1 ? C[2] : C[1]), x: Math.round(x), y: Math.round(y), depth: h.x + h.y - 0.01 * e, alpha: clamp01(b.left / 0.3) * (0.9 - e * 0.2) });
+    out.push({ sp: tinted(was ? was.sp : sp, e === 1 ? C[2] : C[1]), x: Math.round(x), y: Math.round(y), depth: h.x + h.y - 0.01 * e, alpha: amt * (0.9 - e * 0.2) });
   }
   return out;
 }
 
 /**
  * A thing an ability made, as the renderer draws it (render.ts, the orb: its picture and where): while Fleeting is on its
- * ability, a stutter of after-images of it in its lilac, jumping to either side of it from one picture to the next, thinner each.
+ * ability, a stutter of after-images of it in its lilac, jumping to either side of it (a new place W10_TIME.jump times a
+ * second), thinner each.
  */
 export function thingW10(game: Game, skill: number, id: number, sp: Sprite, x: number, y: number): { sp: Sprite; x: number; y: number; alpha: number }[] {
   if (!WORDS10_LOOK.on || timeWord(game, skill) !== 'fleeting') return [];
   const C = W10_RAMP.fleeting;
-  const beat = Math.floor((W10.fx ? (W10.fx as unknown as { clock: number }).clock : W10.clock) * 30);
+  const o = ((game as unknown as { orbs?: { id: number; t: number; life: number }[] }).orbs ?? []).find((q) => q.id === id);
+  const amt = o ? clamp01(o.t / BEAT['fleeting:thing'].build) * clamp01((o.life - o.t) / 0.35) : 1;
+  const beat = Math.floor((W10.fx ? (W10.fx as unknown as { clock: number }).clock : W10.clock) * W10_TIME.jump);
   const out: { sp: Sprite; x: number; y: number; alpha: number }[] = [];
   for (let e = 1; e <= 2; e++) {
     const side = (beat + e + id) % 2 === 0 ? 1 : -1;
-    out.push({ sp: tinted(sp, e === 1 ? C[2] : C[1]), x: Math.round(x + side * (2 + e * 2)), y: Math.round(y + (e === 1 ? 1 : -1)), alpha: e === 1 ? 0.6 : 0.4 });
+    out.push({ sp: tinted(sp, e === 1 ? C[2] : C[1]), x: Math.round(x + side * (2 + e * 2)), y: Math.round(y + (e === 1 ? 1 : -1)), alpha: (e === 1 ? 0.6 : 0.4) * amt });
   }
   return out;
 }
@@ -1273,6 +1646,41 @@ export function tickW10(dt: number, game: Game, fx: Fx): void {
   const last = W10.trail[W10.trail.length - 1];
   if (!last || Math.hypot(h.x - last.x, h.y - last.y) > 0.04) W10.trail.push({ x: h.x, y: h.y, at: W10.clock });
   while (W10.trail.length && W10.clock - W10.trail[0].at > W10_TIME.ribbon + 0.5) W10.trail.shift();
+  // the held looks: what each leaves as its thing goes (its fade), and when each state began (its build)
+  const now = new Map<string, Held>();
+  for (const it of heldThings(game)) {
+    const p = it.word === 'lasting' ? lastStretch(it.t, it.life, it.last) : 0;
+    const rad = it.orb ? 6 * orbLook(it.orb, it.t, it.life, 0).scale : it.rad;
+    now.set(it.key, { word: it.word, kind: it.kind, x: it.x, y: it.y, up: it.up, rad, r: it.r, t: it.t, p, seed: it.seed });
+  }
+  const lead = (fx as unknown as { clock: number }).clock * TAU * 2.6;
+  for (const [key, was] of W10.held) {
+    if (now.has(key) || was.t < 0.15) continue;
+    const dur = BEAT[`${was.word}:${was.kind}`].fade;
+    if (was.word === 'lasting') {
+      if (was.kind === 'thing' && was.p > 0.05) playW10('lasting', 'after', { what: 'heap', x: was.x, y: was.y, p: was.p, r0: 0, dur, seed: was.seed });
+      else if (was.kind === 'patch' && was.p > 0.05) playW10('lasting', 'after', { what: 'dunes', x: was.x, y: was.y, r: was.r, p: was.p, dur, seed: was.seed });
+      else if (was.kind === 'spin') playW10('lasting', 'after', { what: 'drift', x: was.x, y: was.y, r: was.r, p: was.p, lead, dur, seed: was.seed });
+    } else {
+      playW10('fleeting', 'after', { what: 'sparks', x: was.x, y: was.y, r: was.kind === 'thing' ? 0 : was.r, p: was.rad + 2, z: was.up, dur, seed: was.seed });
+    }
+  }
+  W10.held = now;
+  // (a boost on him; his poison on each monster; a monster's on him: when each began, and what Lasting's leaves as it ends)
+  const states = new Map<string, { word: 'lasting' | 'fleeting'; x: number; y: number; p: number; enemy: boolean }>();
+  const b = boosts(game);
+  if (b) states.set('boost', { word: b.word, x: h.x, y: h.y, p: 0, enemy: false });
+  for (const d of dotsOn(game)) states.set(`dot:${d.m.id}`, { word: d.word, x: d.m.x, y: d.m.y, p: 0.3 + 0.7 * clamp01(1 - d.left / (TUNE.poisonTime * (1 + LASTING.longer))), enemy: false });
+  const sick = onHim(game);
+  if (sick) states.set('him', { word: sick.word, x: h.x, y: h.y, p: 0.3 + 0.7 * clamp01(1 - sick.left / (TUNE.poisonTime * (1 + LASTING.monster))), enemy: true });
+  for (const [key, st] of states) if (!W10.since.has(key)) W10.since.set(key, W10.clock);
+  for (const key of [...W10.since.keys()]) {
+    if (states.has(key)) continue;
+    const was = W10.lastStates.get(key);
+    if (was && was.word === 'lasting' && key !== 'boost') playW10('lasting', 'after', { what: 'heap', x: was.x, y: was.y, p: was.p, r0: 5, enemy: was.enemy, dur: BEAT[was.enemy ? 'lasting:monster' : 'lasting:dot'].fade, seed: key.length * 31 + Math.round(was.x * 7) });
+    W10.since.delete(key);
+  }
+  W10.lastStates = states;
 }
 
 // =============================================================================================
@@ -1283,7 +1691,6 @@ type Seen = { t: string; x?: number; y?: number; r?: number; style?: string; wor
 
 export function eventsW10(events: readonly unknown[], game: Game, fx: Fx): void {
   if (!WORDS10_LOOK.on) return;
-  const h = game.hero;
   for (const raw of events) {
     const e = raw as Seen;
     if (e.t === 'burst' && e.x !== undefined && e.y !== undefined) {
@@ -1292,20 +1699,21 @@ export function eventsW10(events: readonly unknown[], game: Game, fx: Fx): void 
         playSplash(game, e.x, e.y, e.r ?? VAST.splashR);
         continue;
       }
-      // VAST in front: an area of his landing wider, its dust rolled out to its new edge
+      // VAST in front: an area of his landing wider, its dust rolled out to its new edge (a whirlwind's turns come three or four
+      // a second: a ring at a time, a new one as the last is winding down)
       if ((e.words ?? []).includes('vast') && (e.r ?? 0) > 0.3) {
         const whirl = e.style === 'whirl';
-        playW10('vast', 'ring', { x: e.x, y: e.y, r: e.r, r0: (e.r ?? 1) / (1 + VAST.wider), z: whirl ? 0 : 0, dur: W10_TIME.ring + W10_TIME.ringFade });
+        if (whirl && W10.acts.some((a) => a.kind === 'ring' && a.whirl && a.t < 0.45)) continue;
+        playW10('vast', 'ring', { x: e.x, y: e.y, r: e.r, r0: (e.r ?? 1) / (1 + VAST.wider), whirl });
       }
     } else if (e.t === 'vastSplash' && e.x !== undefined && e.y !== undefined) {
       playSplash(game, e.x, e.y, e.r ?? VAST.splashR, e.ids);
     } else if (e.t === 'zone' && e.x !== undefined && e.y !== undefined) {
       // a patch of his laid wider by Vast in front: its dust rolled out to its edge as it is laid
       const z = game.zones.find((q) => !q.hostile && Math.abs(q.x - (e.x ?? 0)) < 1e-6 && Math.abs(q.y - (e.y ?? 0)) < 1e-6);
-      if (z && z.skill >= 0 && fronts(game, z.skill).includes('vast')) playW10('vast', 'ring', { x: z.x, y: z.y, r: z.r, r0: z.r / (1 + VAST.wider), dur: W10_TIME.ring + W10_TIME.ringFade });
+      if (z && z.skill >= 0 && fronts(game, z.skill).includes('vast')) playW10('vast', 'ring', { x: z.x, y: z.y, r: z.r, r0: z.r / (1 + VAST.wider) });
     }
   }
-  void h;
   void fx;
 }
 
@@ -1313,7 +1721,7 @@ function playSplash(game: Game, x: number, y: number, r: number, ids?: number[])
   const to = game.monsters
     .filter((m) => !m.dead && (ids ? ids.includes(m.id) : Math.hypot(m.x - x, m.y - y) > 0.3 && Math.hypot(m.x - x, m.y - y) <= r + m.r))
     .map((m) => ({ x: m.x, y: m.y, top: topOf(m) }));
-  return playW10('vast', 'splash', { x, y, r, to, dur: W10_TIME.splash + 0.45 + W10_TIME.splashFade });
+  return playW10('vast', 'splash', { x, y, r, to });
 }
 
 /** The playtest's hands: `window.__dbg.words10` (main.ts). Nothing here runs unless a playtest calls it. */
@@ -1325,6 +1733,8 @@ export function demoW10(fx: Fx, getGame: () => Game | null) {
   };
   return {
     switch: WORDS10_LOOK,
+    /** Each look's beats (seconds), for the film's notes. */
+    beats: W10_BEATS,
     state: W10,
     words: W10_WORDS,
     ramp: W10_RAMP,
