@@ -78,7 +78,7 @@ import { WARLOCK, WARLOCK_TUNE, playableClasses } from './game/warlock';
 import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
-import { createScreen } from './engine/screen';
+import { RES, createScreen } from './engine/screen';
 import { ACT2_WALLS } from './render/act2_walls';
 import { ARRIVAL_LINES, BODIES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, LEVEL_SELECT, MONSTER_ATTACKS, NEW_MONSTERS, NEW_WEAPONS, OWN_MOVES, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
@@ -141,7 +141,7 @@ import { MELD3, MELD_GLYPH, MELD_RAMP, demoM3, eventsM3 } from './render/melds3'
 import { BINDING3, demoB3, eventsB3 } from './render/binding3';
 import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
 import { act1Fx } from './render/act1_fx';
-import { COLOSSUS } from './game/colossus_fight';
+import { COLOSSUS, onStoneOrJetty, worldToStone } from './game/colossus_fight';
 import { ITEM_WORDS } from './game/items';
 
 declare const __BUILD__: string;
@@ -818,8 +818,28 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     arrived = { t: 0, line: game.level.town || lines.length === 0 ? null : lines[Math.floor(Math.random() * lines.length)] };
   };
 
+  /**
+   * THE PICTURE DRAWN BACK (his 9 Nov 07:48: “The camera needs to zoom out during the fight, you can’t really see anything from where it
+   * is currently.”): on the Swamp Colossus's stone and its jetty, the world drawn larger than the screen and shrunk to it, so that the
+   * whole of his fight is seen (at least COLOSSUS_VIEW game pixels high and wide); the HUD as ever. Eased in and out. `zoom`: the
+   * screen's game pixels to one of the world's (1: as ever). The world's points and the screen's are put through it both ways (`toView`,
+   * `toScreen`): the renderer's camera is the world's, larger, picture.
+   */
+  const COLOSSUS_VIEW = { h: 330, w: 500, ease: 2.5 } as const;
+  let zoom = 1;
+  let zoomCan: HTMLCanvasElement | null = null;
+  const zoomWanted = (g: Game): number => {
+    const S = g.level.land?.stone;
+    if (!COLOSSUS.on || !S || !onStoneOrJetty(worldToStone(S, g.hero.x, g.hero.y))) return 1;
+    return Math.min(1, scr.h / COLOSSUS_VIEW.h, scr.w / COLOSSUS_VIEW.w);
+  };
+  const toView = (v: number): number => v / zoom;
+  const toScreen = (v: number): number => v * zoom;
+
   /** The monster whose picture is under a screen point, if any. */
-  const monsterAt = (g: Game, px: number, py: number): Monster | null => {
+  const monsterAt = (g: Game, sx0: number, sy0: number): Monster | null => {
+    const px = toView(sx0);
+    const py = toView(sy0);
     const cam = renderer.cam;
     let best: Monster | null = null;
     let bd = 1e9;
@@ -849,7 +869,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
    * The town service (or the way home from a dungeon) whose picture or name is under a screen point.
    * The furniture of a townsperson's place counts as that person (SPOT_OF).
    */
-  const spotAt = (g: Game, px: number, py: number): { kind: Spot; x: number; y: number } | null => {
+  const spotAt = (g: Game, sx0: number, sy0: number): { kind: Spot; x: number; y: number } | null => {
+    const px = toView(sx0);
+    const py = toView(sy0);
     const cam = renderer.cam;
     const L = g.level;
     let best: { kind: Spot; x: number; y: number } | null = null;
@@ -1041,7 +1063,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     input.mark = null;
     // (LEDGES AND STAIRS: where the ground is lifted, the place under the pointer is the highest
     // ground that is drawn there: raised floor hides the floor behind it. Tried from the top down.)
-    const world = (px: number, py: number): { x: number; y: number } => {
+    const world = (sx0: number, sy0: number): { x: number; y: number } => {
+      const px = toView(sx0);
+      const py = toView(sy0);
       const lift = cam.lift;
       if (lift) {
         // (down to SUNKEN floor: where a place on the room's own floor and a place on sunken floor
@@ -1095,8 +1119,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // the warlock and he transforms”); on a keyboard, R as well. (A touch on him with it short of full is no attack.)
     let onHim = false;
     if (h.cls === 'warlock' && poke && !spot) {
-      const hx = isoSX(h.x, h.y) + cam.ox;
-      const hy = isoSY(h.x, h.y) + cam.oy;
+      const hx = toScreen(isoSX(h.x, h.y) + cam.ox);
+      const hy = toScreen(isoSY(h.x, h.y) + cam.oy);
       onHim = Math.abs(poke.x - hx) <= 12 && poke.y >= hy - 44 && poke.y <= hy + 6 && !monsterAt(g, poke.x, poke.y);
       if (onHim && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full && h.form !== 'demon') c.change = true;
     }
@@ -1105,9 +1129,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // no attack (his word, 3 Nov 2026: “There needs to be a way to cancel the combo.  How about if you tap the globes?”); on a
     // keyboard, R as well; on a pad, the right bumper (padControls). Generous: a thumb is wide and the globes small.
     if (VETERAN.on && h.cls === 'brawler' && poke && !spot && h.vet && (h.vet.globes.length > 0 || h.vet.move)) {
-      const hx = isoSX(h.x, h.y) + cam.ox;
-      const hy = isoSY(h.x, h.y) + cam.oy;
-      const r = renderer.vetFx.globesAt;
+      const hx = toScreen(isoSX(h.x, h.y) + cam.ox);
+      const hy = toScreen(isoSY(h.x, h.y) + cam.oy);
+      const r0 = renderer.vetFx.globesAt;
+      const r = r0 ? { x: toScreen(r0.x), y: toScreen(r0.y), w: toScreen(r0.w), h: toScreen(r0.h) } : null;
       const onGlobes = !!r && poke.x >= r.x - 10 && poke.x <= r.x + r.w + 10 && poke.y >= r.y - 10 && poke.y <= r.y + r.h + 6;
       const onHimself = Math.abs(poke.x - hx) <= 12 && poke.y >= hy - 44 && poke.y <= hy + 6 && !monsterAt(g, poke.x, poke.y);
       if (onGlobes || onHimself) {
@@ -1415,7 +1440,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           c.fire = !(melee && target && moving && !g.quickReaches(target));
           c.approach = !!target && !moving;
           // (the mark sits on its body: two fifths of the way up it)
-          if (target) input.mark = { x: wx(cam, target.x, target.y), y: wy(cam, target.x, target.y) - Math.round(FIGURE_SIZE[figureOf(target)].top * 0.4) };
+          if (target) input.mark = { x: toScreen(wx(cam, target.x, target.y)), y: toScreen(wy(cam, target.x, target.y) - Math.round(FIGURE_SIZE[figureOf(target)].top * 0.4)) };
         }
       }
 
@@ -1498,7 +1523,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         c.my = v.y;
         c.fire = false;
         c.approach = false;
-        input.mark = { x: wx(cam, e.x, e.y), y: wy(cam, e.x, e.y) - 14 };
+        input.mark = { x: toScreen(wx(cam, e.x, e.y)), y: toScreen(wy(cam, e.x, e.y) - 14) };
       }
     }
     // (A GAME CONTROLLER, while one is being played with: its sticks and buttons over the rest)
@@ -2140,7 +2165,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const invOpen = withInventory(panels.open) && !g.over;
       if (invOpen && panels.open === 'inv') {
         const half = gameRect(scr.w, scr.h);
-        renderer.view = { x: half.x + half.w / 2, y: half.y + half.h / 2 };
+        renderer.view = { x: toView(half.x + half.w / 2), y: toView(half.y + half.h / 2) };
       } else renderer.view = null;
       // (Nothing shakes under a panel. The effects are not stepped while one is open, so a shake
       // caught half way would stand at its last offset, and hold the whole picture a pixel or two
@@ -2158,7 +2183,37 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (!loading) placeFrame(g);
       renderer.pactHint = GAMEPAD.on && PAD_USE.live ? 'RB: CHANGE' : input.touchMode ? 'TAP HIM' : 'R: CHANGE';
       if (loading) drawLoading(cg, 0);
-      else renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
+      else {
+        // (THE PICTURE DRAWN BACK on the Colossus's stone: eased toward what is wanted; the world's picture sized in steps of 4 game pixels)
+        const want = zoomWanted(g);
+        zoom += (want - zoom) * (1 - Math.exp(-dt * COLOSSUS_VIEW.ease));
+        if (Math.abs(want - zoom) < 0.004) zoom = want;
+        if (zoom >= 0.999) {
+          zoom = 1;
+          zoomCan = null;
+          renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
+        } else {
+          const vw = Math.ceil(scr.w / zoom / 4) * 4;
+          const vh = Math.ceil(scr.h / zoom / 4) * 4;
+          zoomCan ??= document.createElement('canvas');
+          if (zoomCan.width !== vw * RES || zoomCan.height !== vh * RES) {
+            zoomCan.width = vw * RES;
+            zoomCan.height = vh * RES;
+          }
+          const zg = zoomCan.getContext('2d', { alpha: false });
+          if (zg) {
+            zg.setTransform(RES, 0, 0, RES, 0, 0);
+            zg.imageSmoothingEnabled = false;
+            renderer.draw(zg, vw, vh, g, fx, clock, paused ? 0 : gdt * 60);
+            cg.save();
+            cg.setTransform(1, 0, 0, 1, 0, 0);
+            cg.imageSmoothingEnabled = true;
+            cg.imageSmoothingQuality = 'high';
+            cg.drawImage(zoomCan, 0, 0, vw * RES, vh * RES, 0, 0, vw * RES * zoom, vh * RES * zoom);
+            cg.restore();
+          }
+        }
+      }
       if (WORLD_SOUNDS.on) worldFrame(g, dt, paused);
       // (THE FIRST FIVE FLOORS: a film's jolts kick the screen, and are heard: render/dress.ts)
       for (const k of renderer.kicks()) {
@@ -2212,8 +2267,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // the bottom are not buttons then, so that a press meant for a monster is never a press on one)
       const fightOn = !paused && g.monsters.some((m) => {
         if (m.dead || !m.seen || m.state === 'sleep') return false;
-        const mx = wx(renderer.cam, m.x, m.y);
-        const my = wy(renderer.cam, m.x, m.y);
+        const mx = toScreen(wx(renderer.cam, m.x, m.y));
+        const my = toScreen(wy(renderer.cam, m.x, m.y));
         return mx > -16 && mx < scr.w + 16 && my > -8 && my < scr.h + 24;
       });
       const hudIn: HudIn = { banner, toast: paused ? null : toast, moveToast: paused ? null : moveToast, gesture: null, fight: fightOn };
@@ -2226,8 +2281,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         const onMonster = (kind: 'tap' | 'hold'): HudIn['gesture'] => {
           if (!near) return null;
           // on the monster if the right thumb can reach it there; otherwise out on the right, where a tap aims itself
-          const mx = wx(cam, near.x, near.y);
-          const my = wy(cam, near.x, near.y) - 10;
+          const mx = toScreen(wx(cam, near.x, near.y));
+          const my = toScreen(wy(cam, near.x, near.y) - 10);
           const reach = mx >= scr.w * 0.45 && mx <= scr.w - 12 && my >= 60 && my <= scr.h - 50;
           return { kind, x: reach ? mx : Math.round(scr.w * 0.72), y: reach ? my : Math.round(scr.h * 0.56), dx: 0, dy: 0 };
         };
@@ -2237,7 +2292,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           for (const m of g.monsters) if (!m.dead && (!to || Math.hypot(m.x - hero.x, m.y - hero.y) < Math.hypot(to.x - hero.x, to.y - hero.y))) to = m;
           const tx = to ? to.x : hero.x + 1;
           const ty = to ? to.y : hero.y - 1;
-          hudIn.gesture = { kind: 'stick', x: 0, y: 0, dx: wx(cam, tx, ty) - wx(cam, hero.x, hero.y), dy: wy(cam, tx, ty) - wy(cam, hero.x, hero.y) };
+          hudIn.gesture = { kind: 'stick', x: 0, y: 0, dx: toScreen(wx(cam, tx, ty) - wx(cam, hero.x, hero.y)), dy: toScreen(wy(cam, tx, ty) - wy(cam, hero.x, hero.y)) };
         } else if (banner.step === 'fight') {
           const next = banner.lines.find((l) => !l.done);
           if (next && next.id === 'quick') hudIn.gesture = onMonster('tap');
@@ -2250,7 +2305,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         }
         else if (banner.step === 'body' && g.level.body) {
           const b = g.level.body;
-          hudIn.gesture = { kind: 'tap', x: wx(cam, b.x, b.y), y: wy(cam, b.x, b.y) - 4, dx: 0, dy: 0 };
+          hudIn.gesture = { kind: 'tap', x: toScreen(wx(cam, b.x, b.y)), y: toScreen(wy(cam, b.x, b.y) - 4), dx: 0, dy: 0 };
         }
       }
       // (under the inventory the game's own buttons are not drawn: half of them would be cut off by
@@ -2936,7 +2991,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     wallLook: (): WallLook => ({ ...WALL_LOOK }),
     wallLooks: { blocks: WALLS_BLOCKS, fading: WALLS_FADING },
     /** Where a world point is on screen, in game pixels (playtests press things in the world). */
-    at: (x: number, y: number) => ({ x: wx(renderer.cam, x, y), y: wy(renderer.cam, x, y) }),
+    at: (x: number, y: number) => ({ x: toScreen(wx(renderer.cam, x, y)), y: toScreen(wy(renderer.cam, x, y)) }),
+    /** THE PICTURE DRAWN BACK (the Colossus's stone): the screen's game pixels to one of the world's now (1: as ever). */
+    zoom: () => zoom,
     errand: () => (errand ? errand.kind : null),
     /** What a touch or a click at a screen point (game pixels) would send the hero to use, if anything. */
     spot: (x: number, y: number) => (game ? (spotAt(game, x, y)?.kind ?? null) : null),

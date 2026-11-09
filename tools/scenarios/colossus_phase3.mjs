@@ -27,8 +27,8 @@ export default async function (page, snap) {
   }
   console.log('begun', JSON.stringify(await info()));
   const killArms = () => page.evaluate(() => { const g = window.__dbg.game(); for (const m of g.monsters.filter((q) => q.kind === 'eye' && !q.boss && !q.dead)) g.damageMonster(m, m.life + 10, 'phys', true); });
-  // PHASES 1 AND 2, hurried: their tentacles killed as they stand
-  await page.waitForTimeout(2500);
+  // PHASES 1 AND 2, hurried: their tentacles killed as they stand (phase 1's after his waking)
+  await until(`(() => { const f = ${fight()}; return f.arms.length === 2 && f.arms.every((a) => a.state !== 'rise'); })()`, 12);
   await killArms();
   console.log('phase 2 come', await until(`(() => { const f = ${fight()}; return f.ph === 2 && f.mode === 'fight'; })()`, 30));
   await page.evaluate(() => { const f = window.__dbg.game().monsters.find((m) => m.boss).a1.fight; f.shovelIn = 1e9; f.waterIn = 1e9; f.body2In = 1e9; });
