@@ -86,7 +86,7 @@ import { MELD3, airM3, floorM3, heroAlphaM3, lightsM3, overM3, ownsZone, rotting
 import { BINDING3, airB3, floorB3, lightsB3, ownsZoneB3, tickB3, tintB3 } from './binding3';
 import { VOLATILE3, airV3, floorV3, lightsV3, overV3, ownsZoneV3, shiftV3, tickV3, tintV3 } from './volatile3';
 // (THE SEVEN NEW WORDS' LOOKS, a mock-up of the art chat's behind a switch that is off: render/words7.ts)
-import { WORDS7_LOOK, airW7, floorW7, heroW7, lightsW7, lookW7, tickW7 } from './words7';
+import { WORDS7_LOOK, airW7, fallenW7, floorW7, heroW7, lightsW7, lookW7, ownsZoneW7, tickW7 } from './words7';
 import { BossFx } from './bossfx';
 import { FloorDress } from './dress';
 import type { Kick } from './dress';
@@ -2299,6 +2299,8 @@ export class Renderer {
       if (ownsZone(z)) continue;
       // (Binding's snare has a look of its own, behind BINDING3, off: render/binding3.ts, floorB3)
       if (ownsZoneB3(z)) continue;
+      // (and the seven new words' zones, thorns, the reaper's mark and the mirror, behind WORDS7_LOOK, off: render/words7.ts)
+      if (ownsZoneW7(z)) continue;
       // (and the five Volatile melds' runes and patches, behind VOLATILE3, off: render/volatile3.ts, floorV3)
       if (ownsZoneV3(z)) continue;
       if (z.kind === 'warn') {
@@ -3423,7 +3425,9 @@ export class Renderer {
       if (fall && fall.alpha <= 0) continue;
       const fy = fall ? sy - fall.up : sy;
       if (shown.sp.lights && (!fall || fall.alpha >= 1)) this.monsterLit.push({ s: shown.sp, x: Math.round(sx), y: Math.round(fy) });
-      this.stand(f.x + f.y, shown.sp, sx, fy, null, 0, 1, fall ? fall.alpha : 1);
+      // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: one Culling cut down falls split along the cut: render/words7.ts)
+      const sp7 = WORDS7_LOOK.on ? fallenW7(f, shown.sp) : null;
+      this.stand(f.x + f.y, sp7 ?? shown.sp, sx, fy, null, 0, 1, fall ? fall.alpha : 1);
       hid?.(f.x, f.y);
     }
     // (THE MONSTERS' ATTACKS: the dead the Warden has called, crawling out of the ground: the skeleton's own picture of it, art/mkit.ts crawlOut)
@@ -3500,7 +3504,10 @@ export class Renderer {
       let sp = this.monsterSprite(m);
       // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: a spirit Reaping raised, one Culling cut down: render/words7.ts)
       const w7 = WORDS7_LOOK.on ? lookW7(m, sp) : null;
-      if (w7) sp = w7.sp;
+      if (w7) {
+        sp = w7.sp;
+        sy -= w7.lift;
+      }
       // (FLOOR 4, MORE ACTION: the dagger cultist's frenzy carries him in its own pictures, the rules the way he truly faces: his
       // picture drawn back by what it carries him, so that it is where the rules have him: game/action_f4.ts frenzyShift)
       if (m.frenzy && (m.state === 'windup' || m.state === 'recover')) {
@@ -4994,7 +5001,7 @@ export class Renderer {
     for (const z of game.zones) {
       if (this.skip.has('zlight')) break;
       if (z.kind !== 'burn' && z.kind !== 'storm' && z.kind !== 'rune' && z.kind !== 'ice' && z.kind !== 'venom') continue;
-      if (ownsZone(z) || ownsZoneB3(z) || ownsZoneV3(z)) continue;
+      if (ownsZone(z) || ownsZoneB3(z) || ownsZoneV3(z) || ownsZoneW7(z)) continue;
       const small = z.r < 1.2;
       if (small) {
         let near = false;

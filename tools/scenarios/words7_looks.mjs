@@ -323,7 +323,7 @@ export default async function (page, snap) {
       } else if (word === 'reaping' && side === 'behind') {
         const [x, y] = at(p.at[0], p.at[1]); Object.assign(o, { x, y, pts: [p.strike] });
       } else if (word === 'reaping' && side === 'monster') {
-        const [x, y] = at(p.at[0], p.at[1]); Object.assign(o, { x, y, fall, dieT: sc.dieT });
+        const [x, y] = at(p.at[0], p.at[1]); Object.assign(o, { x, y, fallAt: fall, dieT: sc.dieT });
       } else if (word === 'culling' && side === 'front') {
         const [dx, dy] = dirOf(p.dir); const m = g.monsters.find((q) => q.id === ids.a); Object.assign(o, { x: m.x, y: m.y, dx, dy });
       } else if (word === 'culling' && side === 'behind') {

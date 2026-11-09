@@ -1,4 +1,4 @@
-# The seven new words' looks, step 1: a sheet of stills
+# The seven new words' looks: the stills (step 1) and the film of them at work (step 2)
 
 A mock-up on `art/words7` (from `origin/work-f4` at 68cb71c2, the live game, 25.2.13), behind `WORDS7_LOOK` in
 `src/render/words7.ts`, **off**. With it off nothing of it is drawn, lit or ticked, and the game is as it was (a test).
@@ -9,6 +9,9 @@ Their rules are the main chat's (its branch `words7`); this is only how each one
 From the main chat's board post of 8 Nov 2026, 07:55: “I want 6 more words for the last levels”, “At least 6”, “Add
 mirroring as well”; and of the new words, “And those all craftable as well”. Read as: seven new words, found from floor 16
 down, each with a rune stone, a colour and a look for each of its three sides (in front, behind, on a monster).
+
+Shown `words7_looks.png` and asked “Are the seven new words' looks right (words7_looks.png)?”, by 07:20 on 9 Nov: “Yes,
+animate them (Recommended)” (offered as: next, a film of all seven at work, then hand them to the main chat).
 
 ## The picture
 
@@ -59,12 +62,77 @@ be the same drawings run on.
   0.24 s (8 coins).
 - Mirroring: in front and behind 0.06 to 0.07 s into the swing; on a monster, the shards' flight 0.28 s, still at 0.17 s.
 
-## For the next step and the main chat
+## Step 2: at work, and the film
 
-`playW7(word, side, options)` starts a look (where, whom, which way); render.ts calls `tickW7`, `floorW7`, `airW7`,
-`lightsW7`, `lookW7` (a monster's picture changed: a spirit, one cut down; a flash) and `heroW7` (his reflection), each only
-while `WORDS7_LOOK.on`. `__dbg.words7` (main.ts) is the playtest's hands. No rules call it yet; which events the rules send
-is for the main chat to say once the looks have his yes.
+`pictures/words7_film.mp4` (1266 by 540, 30 a second, H.264): in the practice room with the Warrior, as the player sees it,
+each word in turn: a card with its stone and colours; in front, behind and on a monster at full speed (the whole screen);
+then its best moment again at twice the size and half speed. Captioned. Every look moves at 30 pictures a second, each with
+its beats (`W7_BEATS`, seconds):
+
+| Look | Build | Hit | Fade | What happens |
+|---|---|---|---|---|
+| Piercing in front | 0.03 | 0.2 | 0.35 | the bolt kindles at his hand; flies the line at 26 tiles a second, light blowing out of each it goes through; its trail and sparks die |
+| Piercing behind | 0.5 | 0.22 | 1.9 | the line scratched in light, quickening, the spear gathering high over it (the rules' `delay`); it slams down (0.06) and tears along the line (0.16); the crack glows, cools, gone |
+| Piercing on a monster | 0.1 | 0.15 | 0.45 | the stone lit pink where its shot comes through, rings of light running out over it |
+| Bleeding in front | 0.05 | 0.5 | 0.15 | the wound opens; the spurt; then drips while it bleeds, a splash where it walks (one every fifth of a tile walking, one every 0.8 s standing), each drying in 3 s |
+| Bleeding behind | 0.22 | (while it lies) | 0.5 | the briars burst up; stand swaying, cutting what walks in them; sink back |
+| Bleeding on a monster | 0.05 | 0.3 | 0.3 | the slash across him, his blood flung off; then drips and splashes while he bleeds |
+| Reaping in front | 0.15 | 0.55 | 0.25 | the soul torn out of the body; it streaks to him; a flare as he takes it in |
+| Reaping behind | 0.45 | (its 6 s) | 0.6 | the spirit rises out of the body in a stream of soul-light, hovering; fights, its edge his cyan; rises away; each blow 0.05 / 0.06 / 0.24 |
+| Reaping on a monster | 0.2 | 0.8 | 0.4 | the enemy's fire kindles round the body; it lurches up out of its fall; the fire dies |
+| Culling in front | 0.03 | 0.06 | 0.32 | the slash sweeps through in two pictures and it is split; it falls split, the slash fading |
+| Culling behind | 0.3 | (while it lies) | 0.3 | the mark written in, breathing; taking one: it flares 0.05, a blade rises through it 0.2, it burns out 0.4 |
+| Culling on a monster | 0.3 | 0.05 | 0.3 | while he is low (under 35% of his life) it kindles with the enemy's fire; its blow bursts on him; the fire dies when he is not low |
+| Surging in front, behind | 0.05 | 0.42 | 0.13 | a flash at his feet; the ring runs out, the dust shoved before it (behind: where his dodge began, wind along his roll, 0.55) |
+| Surging on a monster | 1.0 (held) | 0.42 | 0.13 | its warning ring, beating faster (the game's own, or ours: `surgeWarn`); then its wave |
+| Plundering in front | 0.05 | 0.5 | 2.0 | a burst of glints; coins spray, the extra piece thrown higher; they lie and fade |
+| Plundering behind | 0.1 | 0.89 | 0.12 | gold bursts from the kill; coin after coin arcs into his purse, a glint as each goes in |
+| Plundering on a monster | 0.04 | 0.58 | 0.15 | his coins torn off on pink hooks; at its belt till it dies; then they burst out of it (0.05 / 0.5 / 1.5) |
+| Mirroring in front | 0.08 | 0.3 | 0.25 | his reflection forms beside him, swings with him, dissolves |
+| Mirroring behind | 0.25 | (while it stands) | 0.9 | the pane grows up out of its glass; when he attacks next it repeats it (0.33), cracks (0.3), shatters (0.6) |
+| Mirroring on a monster | 0.04 | 0.28 | 0.15 | it cracks like a mirror where he hit it; shards of pink glass fly back into him |
+
+## For the main chat: the events and fields it reads
+
+All of it only while `WORDS7_LOOK.on` (off). main.ts calls `eventsW7(g.events, g, fx)` (beside Binding's); render.ts calls
+`tickW7`, `floorW7`, `airW7`, `lightsW7`, `lookW7` (a monster's picture: a spirit, one cut down, a flash), `fallenW7` (one
+culled falls split), `heroW7` (his reflection), and leaves the three zones to it (`ownsZoneW7`). Drawn to the names of the
+main chat's board post of 8 Nov 07:55 (its branch `words7` was not to be seen): every field is read gently, with a fallback.
+
+| Event | Fields read (fallback) | Look |
+|---|---|---|
+| `pierceLine` | `from`, `to` (`{x, y}` or `[x, y]`; or `x, y, x1, y1`; to: 6 tiles the way he faces); `ids` (optional: those it went through; else every monster within 0.7 tiles of the line) | Piercing in front |
+| `lance` | `from`, `to`, `width` (tiles, 1), `delay` (s, 0.5) | Piercing behind, from the event on (it waits the delay itself) |
+| (none) | the game's own hostile shots: each one going into or out of a wall (`level.open`) | Piercing on a monster |
+| `bleedOn` | `id` | the wound and spurt; **Monster.bleedT** (> 0 while it bleeds): drips and splashes |
+| zone `thorns` | `x, y, r, t, dur` (kind or `look` 'thorns') | Bleeding behind; what walks in it is cut |
+| `heroBleed` | `id` (the monster) or `x, y` (where it stood) | the slash on him; **Hero.heroBleedT** (> 0): drips and splashes |
+| `reapSoul` | `x, y` (the kill) | Reaping in front |
+| `spirit` | `id` (the spirit, a monster drawn by the game), `x, y` (the body it rose from), `secs` (6) | Reaping behind; any monster carrying `spirit: true` is drawn as a spirit too |
+| `spiritHit` | `target` (the struck monster's id) or `x, y` | its blow |
+| `rise` | `x, y` (or `id`): the body there (fx.fallen) lurches up | Reaping on a monster |
+| `culled` | `id`, `x, y`; `mark` (`{x, y}`, or true: the nearest zone 'reaper') | Culling in front (split as it falls), or the mark taking it |
+| zone `reaper` | `x, y, r, t, dur` | the mark as it lies |
+| (none) | **Monster.words** including 'culling', while his life is under 35% | its fire |
+| `surge` | `x, y` (him), `r` (2.2); `dodge` with `x0, y0` (else his roll's start); `id` (a monster's: its wave, `r` 2.3) | Surging, each side |
+| `goldBurst` | `x, y` | Plundering behind |
+| `goldStolen` | `id` | the snatch; **Monster.stolen** (> 0): his coins at its belt; dead with them: they burst out of it |
+| `reflection` | `secs` (0.63) | Mirroring in front (the reflection copies his own picture as he attacks) |
+| zone `mirror` | `x, y, t, dur` | the pane as it stands |
+| `mirrorCast` | `x, y` (or the nearest zone 'mirror') | the repeat, the cracking and the shattering |
+| `mirrorBack` | `id` | Mirroring on a monster |
+
+WHAT THE MAIN CHAT MUST ADD, or say otherwise:
+1. **`goldSpray { x, y, item }`** for Plundering in front (its post names no event for it): the spray, the extra piece when `item`.
+2. **Spirits drawn as monsters**: put each in the game's monster list (or draw it with the monster loop) carrying `spirit: true`,
+   or send `spirit` with its `id`; the look paints its own picture in soul-light with his cyan edge, hovering.
+3. **`rise` as the body begins to rise** (0.2 s of fire, then 0.8 s lurching up out of its fall), the risen monster standing
+   1.0 s after it.
+4. **`cullBlow { id }`** (optional) when a monster with Culling strikes him while he is low: its blow's burst. Its fire burns
+   from its `words` and his life, under 35% (`W7_TIME.low`: the rules' number to say).
+5. **`surgeWarn { id, secs, r }`** (optional): our pink ring; or keep the game's usual warning ring and send only `surge`.
+6. A **Hushed** one culled: the split may be too much for his rule (never gory); the main chat may leave `culled` out of the
+   split for them (the slash still shows).
 
 ## How it was made and checked
 
@@ -76,4 +144,9 @@ is for the main chat to say once the looks have his yes.
   clear of the gold, nothing glowing cyan or pink); the runes (7 by 7, each its own); every side of every word drawing at
   its moment, every pixel on a whole pixel; every monster's side in the enemy's colours, the spirit and the reflection
   showing his cyan; its times; forgotten on a new level.
+- Step 2: `tools/scenarios/words7_film.mjs` plays each side by the events above in the practice room (the Warrior), a picture
+  every thirtieth of a second of the game's clock (a sixtieth for the close ones), the whole screen at two screen pixels a
+  game pixel; `tools/words7_film.py` makes the film. `tests/words7_beats.test.ts` (5): each event's look drawn through its
+  beats and gone, every pixel, when its time is up; what the rules keep drawn while kept and gone after; nothing with the
+  switch off; nothing cyan on a monster's side, its pink there; each look's beats written down.
 - Not run: the regression; a real phone; the looks with real rules.

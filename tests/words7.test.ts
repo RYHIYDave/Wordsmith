@@ -26,7 +26,7 @@ import { NEW_GLYPH, NEW_RAMP } from '../src/render/words3';
 import { BIND_GLYPH, BIND_RAMP } from '../src/render/binding3';
 import { VMELD_GLYPH } from '../src/render/volatile3';
 import {
-  W7, W7_ENEMY, W7_FRIEND, W7_GLYPH, W7_RAMP, W7_SIDES, W7_TIME, W7_WORDS, WORDS7_LOOK, airW7, clearW7, floorW7, heroW7, lightsW7, lookW7, playW7, tickW7,
+  ownsZoneW7, W7, W7_ENEMY, W7_FRIEND, W7_GLYPH, W7_RAMP, W7_SIDES, W7_TIME, W7_WORDS, WORDS7_LOOK, airW7, clearW7, floorW7, heroW7, lightsW7, lookW7, playW7, tickW7,
 } from '../src/render/words7';
 import type { W7Side, W7Word } from '../src/render/words7';
 
@@ -161,7 +161,7 @@ function stage(word: W7Word, side: W7Side): { gm: Game; at: number } {
 
 test('1. the switch is off, everything the renderer asks of it is behind it, and nothing else of the game reaches it', () => {
   assert.equal(WORDS7_LOOK.on, false);
-  const calls = ['tickW7(', 'floorW7(', 'airW7(', 'lightsW7(', 'lookW7(', 'heroW7('];
+  const calls = ['tickW7(', 'floorW7(', 'airW7(', 'lightsW7(', 'lookW7(', 'heroW7(', 'fallenW7('];
   const lines = (readFileSync(new URL('../src/render/render.ts', import.meta.url), 'utf8') as string).split('\n');
   let found = 0;
   lines.forEach((line, i) => {
@@ -185,8 +185,11 @@ test('1. the switch is off, everything the renderer asks of it is behind it, and
   };
   walk(new URL('../src', import.meta.url).pathname);
   assert.deepEqual(importers.sort(), ['main.ts', 'render/render.ts']);
-  const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8') as string;
-  assert.ok(!/eventsW7|tickW7|playW7\(/.test(main), 'main.ts only hands the playtest its hands');
+  const main = (readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8') as string).split('\n');
+  const calls7 = main.filter((l) => /eventsW7\(|tickW7\(|playW7\(/.test(l) && !l.trimStart().startsWith('import'));
+  assert.equal(calls7.length, 1, 'main.ts calls up the looks once, by the events');
+  assert.ok(calls7[0].includes('WORDS7_LOOK.on'), `main.ts calls the looks without the switch: ${calls7[0].trim()}`);
+  assert.equal(ownsZoneW7({ kind: 'thorns' }), false, 'with the switch off the renderer keeps every patch');
 });
 
 test('2. with the switch off, nothing here draws, lights, changes a picture or keeps time, whatever it is told', () => {
