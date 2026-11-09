@@ -72,10 +72,12 @@ const ENEMY_DUST: readonly string[] = ['#2a1420', '#401a30', '#5a2440', '#7a3050
 export const W10_GLYPH: Record<W10Word, readonly string[]> = {
   // an hourglass, its sand held: a grain left above, the thread of it, the heap below lit
   lasting: ['XXXXXXX', '.X...X.', '..XoX..', '...o...', '..X.X..', '.XoooX.', 'XXXXXXX'],
-  // a feather, its vane lit, its quill trailing
-  fleeting: ['.....XX', '....XoX', '...XoX.', '..XoX..', '.XoX...', '.XX....', 'X......'],
-  // rings opening outward from a point: the point, a ring of light round it, the outer ring broken open
-  vast: ['.XX.XX.', 'X.....X', 'X..o..X', '..oXo..', 'X..o..X', 'X.....X', '.XX.XX.'],
+  // a feather: its quill bare at the foot, its shaft running up to a tip that curls over; barbs off both sides of it, the vane
+  // above lit, the vane below in shade, gaps in both
+  fleeting: ['.....o.', '....o.o', '..oo.X.', '.o.oX.X', '.ooX.X.', '.oX.X..', 'X......'],
+  // rings opening outward from a point: the bright point, a ring round it, the outer ring broken open in two arcs of lit dust,
+  // a fleck thrown off it
+  vast: ['.o.....', 'o.XXX..', '.X...X.', '.X.o.X.', '.X...X.', 'o.XXX.o', '.....o.'],
 };
 export const W10_GLYPH_IS: Record<W10Word, string> = {
   lasting: 'an hourglass, its sand held',
@@ -826,6 +828,30 @@ function splash(g: CanvasRenderingContext2D, cam: Cam, a: Act10, layer: 'floor' 
   // the ring of earth-coloured force heaving out from it, Vast's own ring (its dust lower, so the near ones stand clear in it)
   const back = layer === 'floor';
   dustRing(g, cx, cy, 0.15, Math.max(0.2, R), 1, fade * (1 - 0.35 * k), a.seed, a.t, back, 0, 0.75);
+  // its front: a ridge of earth heaved up off the floor as it runs out, lit along its crest, clods popping up off it
+  if (R > 0.2) {
+    const n = Math.max(30, Math.round(R * RX * 7));
+    for (let i = 0; i < n; i++) {
+      const an = (i / n) * TAU;
+      if (Math.sin(an) < 0 !== back) continue;
+      const v = vnoise(i * 0.22, 2, a.seed + 9);
+      if (v < 0.22) continue;
+      const x = cx + Math.cos(an) * R * RX;
+      const y = cy + Math.sin(an) * R * RY;
+      if (!dith(x, y, fade * (1 - 0.3 * k) + 0.1, a.seed + 2)) continue;
+      const up = v > 0.55 ? 3 : 2;
+      dot(g, x, y, EARTH[1]);
+      dot(g, x, y - 1, EARTH[3]);
+      if (up > 2) dot(g, x, y - 2, EARTH[4]);
+      dot(g, x, y - up, v > 0.7 ? C[5] : C[4]);
+    }
+    for (let i = 0; i < 12; i++) {
+      const an = hash2(i, a.seed, 11) * TAU;
+      if (Math.sin(an) < 0 !== back) continue;
+      const pop = Math.sin(clamp01(k * 1.3 - hash2(i, a.seed, 12) * 0.3) * Math.PI) * (3 + hash2(i, a.seed, 13) * 5);
+      clod(g, cx + Math.cos(an) * R * RX * 1.04, cy + Math.sin(an) * R * RY * 1.04 - 2 - pop, EARTH, i % 3 === 0);
+    }
+  }
   if (layer === 'floor') {
     // the floor cracked out from where it was struck, and burst up along the way to each one near
     a.to.forEach((o, j) => {
@@ -860,10 +886,11 @@ function splash(g: CanvasRenderingContext2D, cam: Cam, a: Act10, layer: 'floor' 
       for (let q = Math.max(0, fly - tail); q < fly; q += 0.012) {
         const [px, py] = arc(q);
         const k2 = (q - (fly - tail)) / tail;
-        if (!dith(px, py, (0.35 + 0.65 * k2) * fade, a.seed + j)) continue;
+        if (!dith(px, py, (0.45 + 0.55 * k2) * fade, a.seed + j)) continue;
         dot(g, px, py - 1, k2 > 0.6 ? C[5] : C[4]);
         dot(g, px, py, k2 > 0.75 ? C[5] : k2 > 0.4 ? C[4] : EARTH[4]);
-        if (k2 > 0.3) dot(g, px, py + 1, k2 > 0.7 ? C[4] : EARTH[3]);
+        if (k2 > 0.25) dot(g, px, py + 1, k2 > 0.7 ? C[4] : EARTH[3]);
+        if (k2 > 0.55) dot(g, px, py + 2, EARTH[2]);
         if (hash2(Math.round(q * 200), j, a.seed) < 0.15) dot(g, px, py + 3 + (1 - k2) * 6, EARTH[4]);
       }
       const [hx, hy] = arc(fly);
@@ -876,15 +903,15 @@ function splash(g: CanvasRenderingContext2D, cam: Cam, a: Act10, layer: 'floor' 
     }
     const since = a.t - 0.02 - W10_TIME.splash * 0.85;
     const kk = clamp01(since / 0.35);
-    // it bursts on it: a flash of dust-light, dirt thrown up round it, clods falling back
-    if (kk < 0.4) for (let i = 0; i < 7; i++) {
-      const an = (i / 7) * TAU + hash2(i, a.seed + j, 6) * 0.5;
-      const L0 = 2 + kk * 10;
-      const L1 = L0 + 4 * (1 - kk / 0.4);
-      streak(g, tx + Math.cos(an) * L0, ty + Math.sin(an) * L0 * 0.6, tx + Math.cos(an) * L1, ty + Math.sin(an) * L1 * 0.6, [EARTH[3], C[4], C[5]], 1, fade);
+    // it bursts on it: a fountain of dirt thrown up and out round it, lit, a puff of dust, clods falling back
+    if (kk < 0.55) for (let i = 0; i < 9; i++) {
+      const an = -Math.PI / 2 + ((i / 8) - 0.5) * 2.6 + (hash2(i, a.seed + j, 6) - 0.5) * 0.3;
+      const L0 = 2 + kk * 9;
+      const L1 = L0 + (6 + hash2(i, a.seed + j, 7) * 5) * (1 - kk / 0.55);
+      streak(g, tx + Math.cos(an) * L0, ty + 2 + Math.sin(an) * L0 * 0.8, tx + Math.cos(an) * L1, ty + 2 + Math.sin(an) * L1 * 0.8, [EARTH[2], EARTH[4], C[4], C[5]], i % 2 ? 2 : 1, fade);
     }
-    mist(g, tx, ty + 3, 4 + kk * 4, 2 + kk * 2, [DUST[1], DUST[2], DUST[3], C[4]], 0.9 * fade * (1 - kk), a.seed + j, a.t, 0.8);
-    for (let i = 0; i < 7; i++) {
+    mist(g, tx, ty + 3, 5 + kk * 5, 2.5 + kk * 2, [DUST[1], DUST[2], DUST[3], C[4]], 0.9 * fade * (1 - kk), a.seed + j, a.t, 0.8);
+    for (let i = 0; i < 9; i++) {
       const an = hash2(i, a.seed + j, 3) * TAU;
       const d = 2 + kk * 14 * (0.6 + 0.4 * hash2(i, a.seed + j, 4));
       const up = Math.sin(kk * Math.PI) * (4 + hash2(i, a.seed + j, 5) * 5);

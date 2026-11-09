@@ -22,8 +22,8 @@ SCENES.push(
   { key: 'vast:whirl', cls: 'warrior', words: [[1, 'front', 'vast']], mobs: [['skeleton', 3.0, 0.6, 'a', 'idle', [-1, 1]]], whirl: true, ring: { at: [0, 0], z: 0 }, ringAt: 0.24, focus: [0.4, -0.5], close: [1.4, -0.3] },
   { key: 'vast:orb', cls: 'mage', words: [[1, 'front', 'vast']], mobs: [['skeleton', 4.6, 0.4, 'a', 'idle', [-1, 1]]], orb: [2.4, 0.1], ring: { at: [2.4, 0.1] }, ringAt: 0.22, focus: [2.0, -0.55], close: [3.3, -0.3] },
   { key: 'vast:ground', cls: 'warrior', words: [[1, 'behind', 'fire'], [1, 'front', 'vast']], mobs: [['cultist', 3.6, 0.2, 'a', 'walk', [-1, 1]]], ground: [2.4, 0.2, 1.3 * 1.4], ring: { at: [2.4, 0.2] }, ringAt: 0.2, focus: [1.9, -0.45], close: [3.0, -0.1] },
-  { key: 'vast:strike', cls: 'warrior', words: [[0, 'behind', 'vast']], mobs: [['skeleton', 1.25, 0, 'a', 'idle', [-1, 1]], ['skeleton', 2.3, -0.75, 'b', 'idle', [-1, 1]], ['cultist', 2.45, 0.8, 'c', 'idle', [-1, 1]]], swing: 'a', splash: 'a', splashAt: 0.2, focus: [1.3, -0.6], close: [1.8, -0.5] },
-  { key: 'vast:land', cls: 'mage', words: [[1, 'behind', 'vast']], mobs: [['skeleton', 2.6, 0.1, 'a', 'idle', [-1, 1]], ['skeleton', 3.6, -0.7, 'b', 'idle', [-1, 1]], ['skeleton', 3.7, 0.9, 'c', 'idle', [-1, 1]]], orb: [1.9, 0.5], splash: 'a', splashAt: 0.4, focus: [2.4, -0.55], close: [3.1, -0.4] },
+  { key: 'vast:strike', cls: 'warrior', words: [[0, 'behind', 'vast']], mobs: [['skeleton', 1.6, 0, 'a', 'idle', [-1, 1]], ['skeleton', 2.85, -1.25, 'b', 'idle', [-1, 1]], ['skeleton', 2.85, 1.25, 'c', 'idle', [-1, 1]]], swing: 'a', splash: 'a', splashAt: 0.22, focus: [1.5, -0.6], close: [2.3, -0.9] },
+  { key: 'vast:land', cls: 'mage', words: [[1, 'behind', 'vast']], mobs: [['skeleton', 3.0, 0.2, 'a', 'idle', [-1, 1]], ['skeleton', 4.25, -1.05, 'b', 'idle', [-1, 1]], ['skeleton', 4.25, 1.45, 'c', 'idle', [-1, 1]]], orb: [1.6, 0.6], splash: 'a', splashAt: 0.36, focus: [2.6, -0.6], close: [3.6, -0.8] },
   { key: 'vast:monster', cls: 'warrior', words: [], mobs: [['skeleton', 1.9, 0.1, 'a', 'attack', [-1, 1], ['vast']]], warn: { r: 1.25, at: 0.55 }, focus: [1.1, -0.55], close: [1.2, -0.4] },
 );
 
@@ -159,6 +159,8 @@ export default async function (page, snap) {
         info.orb = [o.t, o.life];
       }
       const ch = h.channel;
+      // (his spin's next bite held off while the world stands still, so that no number comes up over the still)
+      if (ch) ch.next = 99;
       if (ch && sc.stretch !== undefined) {
         const def = 2.4; const last = h.skills[ch.skill].r.last;
         ch.t = last > 1 ? def + def * (last - 1) * sc.stretch : def * last * 0.5;
@@ -188,7 +190,9 @@ export default async function (page, snap) {
         info.splash = w10.state.acts.map((a) => a.to.length);
       }
       w10.at(sc.ringAt ?? sc.splashAt ?? 0, 3.7);
+      // (no numbers of the game's own over them: the still is of the look)
       fx.floaters.length = 0;
+      fx.messages.length = 0;
       for (const m of g.monsters) m.life = m.maxLife;
       const pt = (ax, dn) => { const [x, y] = at(ax, dn); return d.at(x, y); };
       return { hero: d.at(h.x, h.y), focus: pt(sc.focus[0], sc.focus[1]), close: pt(sc.close[0], sc.close[1]), scale: d.screen.scale, w: d.screen.w, h: d.screen.h, info, done };
