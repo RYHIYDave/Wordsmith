@@ -6,6 +6,8 @@
 // picture, its corner given from his middle at the water; at the shovel's right end, flipped about his middle (his “Mirror it”); a
 // tentacle's slam turned about its root by what is left of its turn.
 
+import { EYE3 } from '../game/colossus_fight';
+
 declare const __COLOSSUS_BAKE__: string | undefined;
 
 /**
@@ -16,6 +18,15 @@ declare const __COLOSSUS_BAKE__: string | undefined;
  * the gaze) baked as the art's takes begin them, on frame `bodyAt` of his stand (game/colossus_fight.ts begins them there).
  */
 export const ARM_BAKE = { burstAt: 0, flinchFrom: [0, 15, 30] as readonly number[], turnEvery: 15, entrancePart: 90, bodyAt: 24 } as const;
+
+/**
+ * HIS PHASE 3 AS BAKED (tools/bake_colossus.ts): his slide (`slide`) begun as his stand is on frame `slideAt` (the art's take's); at his
+ * new place his body (`p3body`) and his tongue apart, each frame of his stand: his tongue as it droops (`p3tongue`), his eye slam at
+ * each of the rules' spots (`slam3.<i>`), his gaze at each of their aims (`gaze3.<j>`), each begun on his stand's first frame; his eye
+ * struck from each of their stand frames (`struck3.<c>`). His tongue's pictures are cut where his jaws or drool are before it, so that
+ * each is laid over his body's.
+ */
+export const P3_BAKE = { slideAt: 24, slams: EYE3.spots, aims: EYE3.aims, struckFrom: EYE3.struckFrom } as const;
 
 /** Where the bakes lie beside the page, each in a folder named by its mark (tools/colossus_ship.mjs). */
 export const COLOSSUS_BAKE = { dir: 'colossus', slamsKept: 6 };
@@ -42,7 +53,7 @@ interface Manifest {
   /** Each move's group and its frames (30 a second) as its group's pictures; his shovel's, which are at the stone's end (flipped at
    *  its right end), and its scraping tentacles in each (each a picture of the group `hooks` and how far across it lies, the bake's
    *  pixels). */
-  moves: Record<string, { group: string; frames: number[]; ends?: boolean[]; hooks?: [number, number][][] }>;
+  moves: Record<string, { group: string; frames: number[]; ends?: boolean[]; hooks?: [number, number][][]; eyes?: ([number, number] | null)[] }>;
   /** Each tentacle's root from his middle at the water (the bake's pixels). */
   roots: [number, number][];
 }
@@ -70,6 +81,12 @@ export function colossusBakeAsk(): void {
   })();
 }
 
+/** Groups kept a while after they were last wanted, each family its last few: his tentacles' slams; his phase 3's eye slams and gazes. */
+const KEPT_GROUPS: Record<'arms' | 'p3', { is: (g: string) => boolean; n: number }> = {
+  arms: { is: (g) => g.includes('.slam'), n: COLOSSUS_BAKE.slamsKept },
+  p3: { is: (g) => /^(slam3|gaze3)\./.test(g), n: 6 },
+};
+
 /** Fetch a group's sheets, if not held already. */
 function want(group: string): void {
   if (!man || held.has(group)) return;
@@ -78,9 +95,10 @@ function want(group: string): void {
   const h = { sheets: G.sheets.map((): ImageBitmap | null => null), used: clock, gone: false };
   held.set(group, h);
   // (his slams: only the last few wanted kept)
-  if (group.includes('.slam')) {
-    const slams = [...held.entries()].filter(([g]) => g.includes('.slam')).sort((a, b) => b[1].used - a[1].used);
-    for (const [g] of slams.slice(COLOSSUS_BAKE.slamsKept)) letGo(g);
+  for (const K of Object.values(KEPT_GROUPS)) {
+    if (!K.is(group)) continue;
+    const fam = [...held.entries()].filter(([g]) => K.is(g)).sort((a, b) => b[1].used - a[1].used);
+    for (const [g] of fam.slice(K.n)) letGo(g);
   }
   G.sheets.forEach((n, i) => {
     void (async () => {
@@ -104,15 +122,15 @@ function letGo(group: string): void {
   held.delete(group);
 }
 
-/** The moves now wanted: fetch their groups; let every other group go (but the slams, the last few kept, unless `slams` is false: his
- *  shovel, his tentacles under the water). */
-export function colossusWant(moves: readonly string[], slams = true): void {
+/** The moves now wanted: fetch their groups; let every other group go (but those of the families in `keep`, the last few of each kept:
+ *  his tentacles' slams in phases 1 and 2, not in his shovel; his eye's slams and gazes in phase 3). */
+export function colossusWant(moves: readonly string[], keep: readonly ('arms' | 'p3')[] = ['arms']): void {
   if (!man) return;
   clock += 1;
   const groups = new Set(moves.map((mv) => man?.moves[mv]?.group).filter((g): g is string => !!g));
   if (moves.includes('hooks')) groups.add('hooks');
   for (const g of groups) want(g);
-  for (const g of [...held.keys()]) if (!groups.has(g) && (!g.includes('.slam') || !slams)) letGo(g);
+  for (const g of [...held.keys()]) if (!groups.has(g) && !keep.some((k) => KEPT_GROUPS[k].is(g))) letGo(g);
 }
 /** Let every group go (his fight over, or left). */
 export function colossusLetGoAll(): void {
@@ -151,6 +169,14 @@ function picOf(move: string, k: number): { img: ImageBitmap; m: Placed; per: num
   const m = G.pics[mv.frames[Math.max(0, Math.min(mv.frames.length - 1, Math.floor(k)))]];
   const img = m ? h.sheets[m.s] : null;
   return m && img ? { img, m, per: man.perGamePx } : null;
+}
+
+/** Where his eye glows in frame `k` of `move` (his phase 3's tongue: game pixels from his middle at the water), if it shows. */
+export function colossusEye(move: string, k: number): [number, number] | null {
+  const e = man?.moves[move]?.eyes;
+  if (!man || !e || !e.length) return null;
+  const p = e[Math.max(0, Math.min(e.length - 1, Math.floor(k)))];
+  return p ? [p[0] / man.perGamePx, p[1] / man.perGamePx] : null;
 }
 
 /** Whether frame `k` of his shovel's `move` is at the stone's end (flipped at its right end). */

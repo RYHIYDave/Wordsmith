@@ -13,8 +13,10 @@
 // Each slam, smash and splash is kept here from the frame it is first seen (by the fight's clock), so that what it leaves lasts after
 // the rules have done with it.
 
-import { BODY2, CRASH, GAZE, SLAM, SMASH, STONE, WAVE, poolR, rootAt, waveFront } from '../../game/colossus_fight';
+import { BODY2, CHANGE3, CRASH, EYE3, EYE_SLAM, GAZE, RAIN, SLAM, SMASH, STONE, WAVE, poolR, rootAt, waveFront } from '../../game/colossus_fight';
 import type { ColossusFight, Seg } from '../../game/colossus_fight';
+import type { ColossusOn } from '../../game/act1_rules/colossus';
+import type { Game } from '../../game/game';
 
 /** Game pixels up for each tile of height (the art's lengths: 39.19 to a tile, two picture pixels to a game pixel). */
 const UP = 19.6;
@@ -85,7 +87,18 @@ interface Scorch {
 /** What is kept of the fight here: its slams, water slams, splashes and scorches, and the stone wet where each wave has been. */
 /** The one begun at `start` (the fight's clock) of `who` among `list`, if kept (a frame's clock wavering a little). */
 const kept = <T extends { key: number; at: number }>(list: T[], who: number, start: number, by: number): T | undefined => list.find((q) => q.key === who && Math.abs(q.at - by - start) < 0.05);
-const KEPT = { fight: null as ColossusFight | null, slams: [] as Slam[], smashes: [] as Smash[], splashes: [] as Splash[], scorches: [] as Scorch[], wet: [] as { from: 'l' | 'r'; at: number; meets: boolean }[] };
+const KEPT = {
+  fight: null as ColossusFight | null,
+  slams: [] as Slam[],
+  smashes: [] as Smash[],
+  splashes: [] as Splash[],
+  scorches: [] as Scorch[],
+  wet: [] as { from: 'l' | 'r'; at: number; meets: boolean }[],
+  /** (Phase 3) Where his eye came down, where the bolts struck, and when he gripped the stone's edge (the fight's clock). */
+  eyeSlams: [] as Splash[],
+  bolts: [] as Splash[],
+  grip: Infinity,
+};
 
 /** Where a point of the stone (tiles) is on the screen, at the water's height. */
 export type StoneAt = (u: number, v: number) => readonly [number, number];
@@ -99,6 +112,9 @@ export function keepColossusFx(f: ColossusFight): void {
     KEPT.splashes = [];
     KEPT.scorches = [];
     KEPT.wet = [];
+    KEPT.eyeSlams = [];
+    KEPT.bolts = [];
+    KEPT.grip = Infinity;
   }
   const now = f.time;
   for (const a of f.arms) {
@@ -128,6 +144,13 @@ export function keepColossusFx(f: ColossusFight): void {
     s.to = E.a0 + (E.a1 - E.a0) * k;
     if (k >= 1 && s.done === Infinity) s.done = now;
   }
+  // (phase 3: his eye slammed down; the bolts struck; his grip on the stone's edge)
+  const E3 = f.eye;
+  if (E3 && E3.kind === 'slam' && E3.landed && !kept(KEPT.eyeSlams, 0, now - E3.t, EYE_SLAM.hit)) KEPT.eyeSlams.push({ key: 0, at: now - (E3.t - EYE_SLAM.hit), u: E3.at.u, v: E3.at.v, seed: Math.round(now * 7) * 41 + 3 });
+  for (const r of f.rains) if (r.t >= RAIN.warn && !KEPT.bolts.some((q) => q.u === r.u && q.v === r.v && Math.abs(q.at - (now - (r.t - RAIN.warn))) < 0.05)) KEPT.bolts.push({ key: 0, at: now - (r.t - RAIN.warn), u: r.u, v: r.v, seed: Math.round(now * 13) * 17 + KEPT.bolts.length });
+  if (f.ph === 2 && f.mode === 'change' && f.phT >= CHANGE3.grip && KEPT.grip === Infinity) KEPT.grip = now - (f.phT - CHANGE3.grip);
+  KEPT.eyeSlams = KEPT.eyeSlams.filter((s) => now - s.at < 6);
+  KEPT.bolts = KEPT.bolts.filter((s) => now - s.at < 2.4);
   KEPT.slams = KEPT.slams.filter((s) => now - s.at < 7.2);
   KEPT.smashes = KEPT.smashes.filter((s) => now - s.at < 3);
   KEPT.splashes = KEPT.splashes.filter((s) => now - s.at < 1.6);
@@ -366,7 +389,7 @@ export function drawColossusRings(g: CanvasRenderingContext2D, P: StoneAt, at: {
 // OVER IT
 
 /** What flies and rolls over the hero. */
-export function drawColossusAir(g: CanvasRenderingContext2D, P: StoneAt, f: ColossusFight, t: number): void {
+export function drawColossusAir(g: CanvasRenderingContext2D, P: StoneAt, f: ColossusFight, t: number, eye3: readonly [number, number] | null = null): void {
   const now = f.time;
   // THE WAVES: each a wall of black water, tallest at the back, its crest breaking white
   for (const w of f.waves) waveWall(g, P, w.from, w.t, w.meets, t);
@@ -498,8 +521,10 @@ export function drawColossusAir(g: CanvasRenderingContext2D, P: StoneAt, f: Colo
     const gut = Math.max(0, 1 - Math.max(0, E.t - GAZE.warn - GAZE.sweep) / 0.3);
     const deg = E.a0 + (E.a1 - E.a0) * k;
     const r = (deg * Math.PI) / 180;
-    const [ex, ey0] = P(E.at.u, E.at.v);
-    const ey = ey0 - (f.ph === 3 ? 2.2 : 5.2) * UP;
+    // (from his eye: phase 3's where its picture has it glowing; phase 2's high over the water under it)
+    const [ex0, ey0] = P(E.at.u, E.at.v);
+    const ex = f.ph === 3 && eye3 ? eye3[0] : ex0;
+    const ey = f.ph === 3 && eye3 ? eye3[1] : ey0 - (f.ph === 3 ? 2.2 : 5.2) * UP;
     // (where it comes onto the stone, and on along it to where it leaves)
     let land = 0;
     for (let d = 0; d < 20; d += 0.25) {
@@ -747,4 +772,490 @@ function crashPlume(g: CanvasRenderingContext2D, P: StoneAt, s: number, t: numbe
 /** For the checks: what is kept now. */
 export function colossusFxKept(): { slams: number; smashes: number; splashes: number; scorches: number; wet: number } {
   return { slams: KEPT.slams.length, smashes: KEPT.smashes.length, splashes: KEPT.splashes.length, scorches: KEPT.scorches.length, wet: KEPT.wet.length };
+}
+
+// ---------------------------------------------------------------------------------------------------
+// PHASE 3 (the art chat's README stage 6: “the pillars, the lines, the ward, the bolts, the warnings, the slime, the cracks, the splashes
+// and the shakes are yours”): drawn as its film draws them.
+
+/** Game pixels across and down for one of his lengths across, deep (toward the stone) and up (the art's: 39.19 to a tile, two picture
+ *  pixels to a game pixel). */
+const SEEN2 = 1 / Math.sqrt(3);
+const DEEP2 = 1 / (2 * Math.sqrt(3));
+/** His place in phase 3 from his place before (his lengths forward and up: the art's P3). */
+const P3_FWD = 166;
+const P3_RISE = 60;
+/** A point of his own space, at his new place, on the screen (his middle at the water at his place before at `mid`). */
+const his3 = (mid: readonly [number, number], p: readonly [number, number, number]): [number, number] => [mid[0] + p[0] * SEEN2, mid[1] + (p[1] + P3_FWD) * DEEP2 - (p[2] + P3_RISE) / 2];
+/** Each pillar's line ends in him (his own space: deep in his left heap, his right, the foot of his left jaw: the art's PILLARS `to`). */
+const PILLAR_TO: readonly (readonly [number, number, number])[] = [[-210, -20, 30], [210, -20, 30], [-150, 40, 20]];
+/** Each pillar's fire this high over its foot (tiles: 151 of his lengths). */
+const PILLAR_UP = 151 / 39.19;
+const FIRE = ['#7a1058', '#c0206a', '#ff3d8b', '#ffb070', '#fff0a0'] as const;
+const CYAN = ['#0e6f80', '#28dcf0', '#bff8ff'] as const;
+const ICHOR = ['#0a0408', '#1e0a14', '#3a1020', '#5a1a2c'] as const;
+const sm = (a: number, b: number, x: number): number => {
+  const u = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return u * u * (3 - 2 * u);
+};
+
+/** A flame at (x, y): ragged tongues licking up `hi` pixels, pink round a gold heart, `k` of it. */
+function flame(g: CanvasRenderingContext2D, x: number, y: number, hi: number, k: number, t: number, seed: number): void {
+  if (k <= 0.02) return;
+  const H = hi * k;
+  for (let i = 0; i < 9; i++) {
+    const sx = (h(seed, i, 1) - 0.5) * 7 * k;
+    const ph = t * (6 + 4 * h(seed, i, 2)) + h(seed, i, 3) * 6;
+    const lick = H * (0.45 + 0.55 * n1(ph, seed + i));
+    const w = Math.max(1, Math.round((2.5 - Math.abs(sx) * 0.25) * k));
+    for (let j = 0; j < lick; j++) {
+      const q = j / Math.max(1, lick);
+      const sway = Math.sin(ph * 1.7 + q * 4) * q * 2.2;
+      const col = q < 0.25 ? FIRE[4] : q < 0.5 ? FIRE[3] : q < 0.8 ? FIRE[2] : FIRE[1];
+      g.globalAlpha = Math.min(1, (1 - q * 0.6) * k);
+      g.fillStyle = col;
+      g.fillRect(Math.round(x + sx + sway - w / 2), Math.round(y - j), Math.max(1, Math.round(w * (1 - q * 0.6))), 1);
+    }
+  }
+  // (its glow)
+  g.globalAlpha = 0.18 * k * (0.8 + 0.2 * Math.sin(t * 11 + seed));
+  g.fillStyle = FIRE[2];
+  g.beginPath();
+  g.ellipse(x, y - H * 0.35, 9 * k + 2, 11 * k + 2, 0, 0, Math.PI * 2);
+  g.fill();
+  g.globalAlpha = 1;
+}
+
+/** THE SIEGE'S MAGIC from a pillar's point into him: a wavering crackling cord of its fire, pink at its edges and gold at its heart, sagging
+ *  a little, motes running along it into him; `u0` to `u1` of its way drawn. */
+function siegeLine(g: CanvasRenderingContext2D, a: readonly [number, number], b: readonly [number, number], u0: number, u1: number, k: number, t: number, seed: number): void {
+  if (u1 <= u0 || k <= 0.02) return;
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+  const nx = -(b[1] - a[1]) / len;
+  const ny = (b[0] - a[0]) / len;
+  const n = Math.ceil(len / 2);
+  for (let s = Math.floor(n * u0); s <= n * u1; s++) {
+    const u = s / n;
+    const sag = 9 * Math.sin(Math.PI * u);
+    const wob = (n1(u * 9 + t * 5, seed) - 0.5) * 3 + (n1(u * 31 - t * 13, seed + 1) - 0.5) * 1.6;
+    const x = a[0] + (b[0] - a[0]) * u + nx * wob;
+    const y = a[1] + (b[1] - a[1]) * u + ny * wob + sag;
+    const mote = Math.max(0, Math.sin((u * 9 - t * 3.2 + seed) * Math.PI)) ** 8;
+    const flick = 0.75 + 0.25 * n1(u * 13 + t * 14, seed + 2);
+    const w = (1.1 + 0.9 * mote) * flick;
+    g.globalAlpha = 0.55 * k * flick;
+    g.fillStyle = FIRE[1];
+    g.fillRect(Math.round(x - w - 1), Math.round(y - w - 1), Math.round(2 * w + 2), Math.round(2 * w + 2));
+    g.globalAlpha = k * flick;
+    g.fillStyle = mote > 0.5 ? FIRE[4] : FIRE[3];
+    g.fillRect(Math.round(x - w / 2), Math.round(y - w / 2), Math.max(1, Math.round(w)), Math.max(1, Math.round(w)));
+  }
+  g.globalAlpha = 1;
+}
+
+/** HIS WARD (while any pillar burns): a film of the siege's pink round him, its edge crawling, flashing where a blow meets it, breaking
+ *  apart in shards with the last pillar. `him` draws him (body and tongue) into a canvas at a point; drawn behind him, and what it gives
+ *  laid over him after. */
+let WARD: HTMLCanvasElement | null = null;
+export function drawColossusWard(g: CanvasRenderingContext2D, f: ColossusFight, me: ColossusOn, now: number, him: (o: CanvasRenderingContext2D, x: number, y: number) => boolean, hx: number, hy: number, eye: readonly [number, number] | null, t: number): () => void {
+  const none = (): void => {};
+  if (f.ph !== 3 || typeof document === 'undefined') return none;
+  const breakS = me.wardOff === undefined ? -1 : f.time - me.wardOff;
+  const on = f.shielded ? sm(EYE3.ward, EYE3.ward + 20 / 30, f.phT) : breakS >= 0 && breakS < 1 ? 1 - sm(4 / 30, 28 / 30, breakS) : 0;
+  const flashS = me.wardHit !== undefined ? now - me.wardHit : 99;
+  const flash = flashS >= 0 && flashS < 0.55 ? 1 - sm(0.1, 0.55, flashS) : 0;
+  if (on <= 0.01 && !(breakS >= 0 && breakS < 1)) return none;
+  const W = 460;
+  const Hh = 320;
+  const MX = 230;
+  const MY = 110;
+  if (!WARD) {
+    WARD = document.createElement('canvas');
+    WARD.width = W;
+    WARD.height = Hh;
+  }
+  const o = WARD.getContext('2d', { willReadFrequently: true });
+  if (!o) return none;
+  o.globalCompositeOperation = 'source-over';
+  o.globalAlpha = 1;
+  o.clearRect(0, 0, W, Hh);
+  if (!him(o, MX, MY)) return none;
+  // (him over the water only, as the art's ward hugs: what is seen under it, his pink edge and a strike's after-image left out)
+  const px = o.getImageData(0, 0, W, Hh);
+  const a = px.data;
+  for (let q = 3; q < a.length; q += 4) a[q] = a[q] >= 250 ? 255 : 0;
+  o.putImageData(px, 0, 0);
+  o.globalCompositeOperation = 'source-in';
+  o.fillStyle = flash > 0.3 ? '#ffb0d0' : FIRE[2];
+  o.fillRect(0, 0, W, Hh);
+  o.globalCompositeOperation = 'source-over';
+  // (round him: his outline grown, crawling, breathing; brighter as a blow flashes on it, and failing as it breaks)
+  const fail = breakS >= 0 ? (h(Math.floor(t * 24), 5) < 0.5 ? 0.4 : 1) : 1;
+  for (const [r, al] of [[7, 0.1], [4.5, 0.16], [2.5, 0.26]] as const) {
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2 + t * 0.9 + r;
+      const rr = r * (0.8 + 0.4 * n1(t * 3 + i, r * 11));
+      g.globalAlpha = Math.min(1, al * on * fail * (0.85 + 0.15 * Math.sin(t * 5 + i)) + al * flash * 1.5);
+      g.drawImage(WARD, Math.round(hx - MX + Math.cos(ang) * rr), Math.round(hy - MY + Math.sin(ang) * rr * 0.8));
+    }
+  }
+  g.globalAlpha = 1;
+  // (breaking: shards falling away off him)
+  if (breakS >= 4 / 30 && breakS < 1.2) {
+    const s = breakS - 4 / 30;
+    for (let i = 0; i < 30; i++) {
+      const ang = h(i, 71) * Math.PI * 2;
+      const x0 = hx + Math.cos(ang) * (110 + 40 * h(i, 72));
+      const y0 = hy - 40 + Math.sin(ang) * (55 + 20 * h(i, 73));
+      const sp = 30 + 50 * h(i, 74);
+      const x = x0 + Math.cos(ang) * sp * s;
+      const y = y0 + Math.sin(ang) * sp * s * 0.6 + 60 * s * s;
+      const a = Math.max(0, 1 - s / 1.05);
+      if (a <= 0) continue;
+      const sz = 2 + Math.round(3 * h(i, 75));
+      g.globalAlpha = a;
+      g.fillStyle = i % 3 ? FIRE[2] : FIRE[3];
+      g.beginPath();
+      g.moveTo(x, y - sz);
+      g.lineTo(x + sz * (0.4 + h(i, 76)), y + sz * 0.5);
+      g.lineTo(x - sz * (0.4 + h(i, 77)), y + sz * 0.7);
+      g.closePath();
+      g.fill();
+    }
+    g.globalAlpha = 1;
+  }
+  return () => {
+    if (!WARD) return;
+    // (the film over him, and the flash where the blow met it, running out round him)
+    g.globalAlpha = Math.min(1, 0.05 * on * fail + 0.2 * flash);
+    g.drawImage(WARD, Math.round(hx - MX), Math.round(hy - MY));
+    if (flash > 0 && eye) {
+      g.globalAlpha = flash;
+      g.fillStyle = '#fff0f6';
+      const r = 3 + 26 * (1 - flash);
+      g.beginPath();
+      for (let i = 0; i <= 18; i++) {
+        const ang = (i / 18) * Math.PI * 2;
+        const rr = r * (0.7 + 0.5 * h(i, Math.floor(now * 30), 81));
+        if (i === 0) g.moveTo(eye[0] + Math.cos(ang) * rr, eye[1] + Math.sin(ang) * rr);
+        else g.lineTo(eye[0] + Math.cos(ang) * rr, eye[1] + Math.sin(ang) * rr);
+      }
+      g.closePath();
+      g.globalAlpha = flash * 0.5;
+      g.fill();
+      // (glancing off in pink sparks)
+      g.globalAlpha = flash;
+      for (let i = 0; i < 14; i++) {
+        const ang = h(i, 82, Math.floor((me.wardHit ?? 0) * 10)) * Math.PI * 2;
+        const d = 4 + 30 * (1 - flash) * (0.5 + h(i, 83));
+        g.fillStyle = i % 2 ? FIRE[3] : FIRE[4];
+        g.fillRect(Math.round(eye[0] + Math.cos(ang) * d), Math.round(eye[1] + Math.sin(ang) * d * 0.7), 2, 1);
+      }
+    }
+    g.globalAlpha = 1;
+  };
+}
+
+/** PHASE 3, THE GAME'S PARTS: on the stone, his grip's cracks along its back edge and the water surging over it, where his eye came down
+ *  (cracks, slime), where the bolts struck (scorched, smouldering), the pieces set (the friend's cyan at a pillar's foot); over it, the
+ *  pillars' fire and their lines into him, a broken pillar toppling, the bolts falling and bursting, his eye's ichor as it is struck,
+ *  what his eye's slam and his grip fling up. */
+export function drawColossusP3(g: CanvasRenderingContext2D, P: StoneAt, f: ColossusFight, me: ColossusOn, game: Game, mid: readonly [number, number], eye: readonly [number, number] | null, t: number, pass: 'ground' | 'air'): void {
+  const now = f.time;
+  const gnow = game.time;
+  if (pass === 'ground') {
+    // HIS GRIP: the stone cracked along its back edge where his heaps clamp onto it; the water surging over it, draining off
+    if (KEPT.grip !== Infinity) {
+      const s = now - KEPT.grip;
+      g.fillStyle = C.crack;
+      g.globalAlpha = 0.9;
+      for (let c = 0; c < 7; c++) {
+        let u = 3.6 + c * 1.55 + (h(c, 91) - 0.5) * 0.6;
+        let v = 0.02;
+        const reach = 0.6 + 1.4 * h(c, 92);
+        const grow = Math.min(1, s * 6);
+        for (let i = 0; i < 14 * grow; i++) {
+          const ang = Math.PI / 2 + (n1(i * 0.7, c * 7 + 93) - 0.5) * 1.6;
+          u += Math.cos(ang) * reach / 14;
+          v += Math.sin(ang) * reach / 14;
+          const [x, y] = P(u, v);
+          g.fillRect(Math.round(x), Math.round(y), 1 + (i < 5 ? 1 : 0), 1);
+        }
+      }
+      const wet = Math.max(0, 1 - Math.max(0, s - 0.4) / 2.2);
+      if (wet > 0) {
+        const reach = 1.3 * sm(0, 0.35, s) * (1 - sm(0.8, 2.6, s) * 0.6);
+        for (let u = 2.5; u < 14.5; u += 0.5) quad(g, P, u, 0, u + 0.5, reach * (0.6 + 0.6 * n1(u * 1.7, 94)), `rgba(10, 18, 16, ${0.35 * wet})`);
+        g.fillStyle = C.foam[2];
+        for (let i = 0; i < 70; i++) {
+          const u = 2.5 + 12 * h(i, 95);
+          const v = reach * (0.6 + 0.6 * n1(u * 1.7, 94)) * (0.7 + 0.3 * h(i, 96));
+          if (h(i, 97, Math.floor(t * 8)) < 0.4) continue;
+          g.globalAlpha = 0.7 * wet;
+          const [x, y] = P(u, v);
+          g.fillRect(Math.round(x), Math.round(y), 2, 1);
+        }
+      }
+      g.globalAlpha = 1;
+    }
+    // HIS EYE COME DOWN: the stone cracked out from it, slime pooled round it, drying after it is dragged back up
+    for (const e of KEPT.eyeSlams) {
+      const s = now - e.at;
+      const a = Math.max(0, 1 - Math.max(0, s - 3.5) / 2.5);
+      g.fillStyle = C.crack;
+      g.globalAlpha = a;
+      for (let c = 0; c < 9; c++) {
+        const a0 = (c / 9) * Math.PI * 2 + h(e.seed, c, 1) * 0.6;
+        let u = e.u;
+        let v = e.v;
+        const reach = EYE_SLAM.r * (0.7 + 0.5 * h(e.seed, c, 2)) * Math.min(1, s * 8);
+        for (let i = 0; i < 16; i++) {
+          const ang = a0 + (n1(i * 0.6, e.seed + c) - 0.5) * 1.2;
+          u += (Math.cos(ang) * reach) / 16;
+          v += (Math.sin(ang) * reach) / 16;
+          const [x, y] = P(u, v);
+          g.fillRect(Math.round(x), Math.round(y), i < 6 ? 2 : 1, 1);
+        }
+      }
+      const slime = s < EYE_SLAM.long - EYE_SLAM.hit ? Math.min(1, s * 4) : Math.max(0, 1 - (s - (EYE_SLAM.long - EYE_SLAM.hit)) / 1.5);
+      if (slime > 0) {
+        g.globalAlpha = 0.55 * slime;
+        g.fillStyle = C.slime + '1)';
+        g.beginPath();
+        for (let i = 0; i <= 24; i++) {
+          const ang = (i / 24) * Math.PI * 2;
+          const r = 0.9 * (0.75 + 0.45 * n1(i * 0.9 + s * 0.6, e.seed + 40));
+          const [x, y] = P(e.u + Math.cos(ang) * r, e.v + Math.sin(ang) * r);
+          if (i === 0) g.moveTo(x, y);
+          else g.lineTo(x, y);
+        }
+        g.closePath();
+        g.fill();
+      }
+      g.globalAlpha = 1;
+    }
+    // THE BOLTS' STRIKES: the stone scorched, smouldering, embers winking out (2.2 s)
+    for (const b of KEPT.bolts) {
+      const s = now - b.at;
+      const a = Math.max(0, 1 - s / 2.2);
+      g.globalAlpha = 0.7 * a;
+      g.fillStyle = C.scorch + '1)';
+      g.beginPath();
+      for (let i = 0; i <= 20; i++) {
+        const ang = (i / 20) * Math.PI * 2;
+        const r = RAIN.r * 0.8 * (0.7 + 0.5 * h(b.seed, i, 3));
+        const [x, y] = P(b.u + Math.cos(ang) * r, b.v + Math.sin(ang) * r);
+        if (i === 0) g.moveTo(x, y);
+        else g.lineTo(x, y);
+      }
+      g.closePath();
+      g.fill();
+      for (let i = 0; i < 14; i++) {
+        if (h(b.seed, i, Math.floor(s * 6)) < 0.45 + s * 0.2) continue;
+        const ang = h(b.seed, i, 4) * Math.PI * 2;
+        const r = RAIN.r * 0.7 * h(b.seed, i, 5);
+        const [x, y] = P(b.u + Math.cos(ang) * r, b.v + Math.sin(ang) * r);
+        g.globalAlpha = a;
+        g.fillStyle = i % 3 ? FIRE[2] : FIRE[3];
+        g.fillRect(Math.round(x), Math.round(y), 1, 1);
+      }
+      g.globalAlpha = 1;
+    }
+    // THE PIECES SET: the friend's cyan glowing at a pillar's foot
+    (game.level.pillars ?? []).forEach((pl, i) => {
+      if (pl.by !== 'piece' || pl.outAt === undefined || !EYE3.pillars[i]) return;
+      const s = gnow - pl.outAt;
+      if (s < 0.33) return;
+      const [x, y] = P(EYE3.pillars[i][0], EYE3.pillars[i][1]);
+      const pulse = 0.75 + 0.25 * Math.sin(t * 3 + i);
+      g.globalAlpha = 0.3 * pulse;
+      g.fillStyle = CYAN[1];
+      g.beginPath();
+      g.ellipse(x, y - 4, 10, 5, 0, 0, Math.PI * 2);
+      g.fill();
+      g.globalAlpha = 1;
+      g.fillStyle = CYAN[0];
+      g.fillRect(Math.round(x) - 2, Math.round(y) - 7, 4, 4);
+      g.fillStyle = CYAN[s < 0.6 ? 2 : 1];
+      g.fillRect(Math.round(x) - 1, Math.round(y) - 6, 2, 2);
+    });
+    return;
+  }
+  // OVER IT: THE PILLARS' FIRE AND THEIR LINES INTO HIM
+  const ps = game.level.pillars ?? [];
+  const lit0 = f.ph === 3 ? f.phT : -1;
+  EYE3.pillars.forEach(([u, v], i) => {
+    const pl = ps[i];
+    if (!pl) return;
+    const [fx, fy0] = P(u, v);
+    const fy = fy0 - PILLAR_UP * UP;
+    const to = his3(mid, PILLAR_TO[i]);
+    const kindle = lit0 < 0 ? 0 : sm(EYE3.kindle[i], EYE3.kindle[i] + 26 / 30, lit0);
+    const out = pl.outAt === undefined ? -1 : gnow - pl.outAt;
+    if (pl.lit || out < 0) {
+      // (burning: kindled at its point, its line crawling out to him)
+      flame(g, fx, fy, 15, kindle, t, 600 + i);
+      siegeLine(g, [fx, fy - 3], to, 0, kindle, kindle, t, 610 + i * 7);
+    } else if (pl.by === 'piece') {
+      // (put out: its fire guttering, its line going dark from its end toward him)
+      const k = 1 - sm(0, 1, out);
+      flame(g, fx, fy, 15 * (0.4 + 0.6 * k), k * (h(Math.floor(t * 20), i, 9) < 0.3 ? 0.5 : 1), t, 600 + i);
+      siegeLine(g, [fx, fy - 3], to, sm(0, 1, out), 1, k, t, 610 + i * 7);
+    } else {
+      // (broken: its line snapped, the half toward him whipping back into him; its shaft toppling outward into the water, splashing)
+      const snap = sm(0, 0.35, out);
+      if (snap < 1) siegeLine(g, to, [to[0] + (fx - to[0]) * 0.5 * (1 - snap), to[1] + (fy - to[1]) * 0.5 * (1 - snap)], 0, 1, 1 - snap, t, 640 + i);
+      const fall = Math.min(1, out / (14 / 30));
+      if (out < 1.6) {
+        const away = i === 0 ? -1 : i === 1 ? 1 : 0;
+        const ang = fall ** 2 * (Math.PI / 2) * (away === 0 ? 0.9 : 1);
+        const len = PILLAR_UP * UP;
+        const dx = away === 0 ? 0 : away * Math.sin(ang) * len;
+        const dy = away === 0 ? Math.sin(ang) * len * 0.5 : 0;
+        const top: [number, number] = [fx + dx, fy0 - Math.cos(ang) * len + dy];
+        if (fall < 1) {
+          g.fillStyle = '#24222a';
+          g.beginPath();
+          g.moveTo(fx - 4, fy0 - 6);
+          g.lineTo(top[0] - 2, top[1]);
+          g.lineTo(top[0] + 2, top[1]);
+          g.lineTo(fx + 4, fy0 - 6);
+          g.closePath();
+          g.fill();
+          g.fillStyle = '#3c3944';
+          g.fillRect(Math.round(fx - 4), Math.round(fy0 - 6), 3, 2);
+        } else {
+          // (its splash where it went in)
+          const s2 = out - 14 / 30;
+          for (let k = 0; k < 26; k++) {
+            const a2 = h(k, 650 + i) * Math.PI;
+            const sp = 30 + 50 * h(k, 651 + i);
+            const x = top[0] + Math.cos(a2) * sp * s2 * (away || (h(k, 652) - 0.5) * 2) * 0.6;
+            const y = top[1] + 10 - Math.sin(a2) * sp * s2 + 140 * s2 * s2;
+            if (y > top[1] + 14) continue;
+            g.globalAlpha = Math.max(0, 1 - s2 / 1.1);
+            g.fillStyle = k % 3 ? C.foam[2] : C.foam[3];
+            g.fillRect(Math.round(x), Math.round(y), 2, 2);
+          }
+          g.globalAlpha = 1;
+        }
+      }
+      // (its foot left standing, broken off)
+      g.fillStyle = '#2a2830';
+      g.fillRect(Math.round(fx) - 4, Math.round(fy0) - 8, 8, 8);
+      g.fillStyle = '#57525e';
+      g.fillRect(Math.round(fx) - 4, Math.round(fy0) - 8, 8, 1);
+    }
+  });
+  // THE PIECE OF THE WARD-STONE, flung from where he stood into the pillar's foot (the friend's cyan)
+  ps.forEach((pl, i) => {
+    if (pl.by !== 'piece' || pl.outAt === undefined || !pl.from || !EYE3.pillars[i]) return;
+    const out = gnow - pl.outAt;
+    if (out < 0 || out >= 0.33) return;
+    const S = game.level.land?.stone;
+    if (!S) return;
+    const du = pl.from.x - S.cx;
+    const dv = pl.from.y - S.cy;
+    const fu = STONE.w / 2 + (du - dv) / Math.SQRT2;
+    const fv = STONE.d / 2 + (du + dv) / Math.SQRT2;
+    const q = out / 0.33;
+    const [ax, ay] = P(fu, fv);
+    const [bx, by] = P(EYE3.pillars[i][0], EYE3.pillars[i][1]);
+    const x = ax + (bx - ax) * q;
+    const y = ay + (by - ay) * q - 26 - 24 * Math.sin(Math.PI * q) + 18 * q;
+    g.fillStyle = CYAN[0];
+    g.fillRect(Math.round(x) - 2, Math.round(y) - 2, 4, 4);
+    g.fillStyle = CYAN[2];
+    g.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
+    g.globalAlpha = 0.3;
+    g.fillStyle = CYAN[1];
+    g.fillRect(Math.round(x) - 4, Math.round(y) - 4, 8, 8);
+    g.globalAlpha = 1;
+  });
+  // THE BOLTS: each falling out of the sky over its warning's last frames (from in front of him, a little to the left), bursting
+  for (const r of f.rains) {
+    const fall = (r.t - 24 / 30) / (9 / 30);
+    if (fall < 0 || fall >= 1) continue;
+    const [tx, ty] = P(r.u, r.v);
+    const H0 = 300 * (1 - fall);
+    const H1 = Math.max(0, 300 * (1 - fall) - 120);
+    const a: [number, number] = [tx + 0.0866 * H0, ty - 0.846 * H0];
+    const b: [number, number] = [tx + 0.0866 * H1, ty - 0.846 * H1];
+    for (const [w, col, al] of [[4, FIRE[1], 0.45], [2, FIRE[3], 0.9], [1, FIRE[4], 1]] as const) {
+      g.globalAlpha = al;
+      g.strokeStyle = col;
+      g.lineWidth = w;
+      g.beginPath();
+      g.moveTo(a[0], a[1]);
+      for (let k = 1; k <= 6; k++) {
+        const q = k / 6;
+        const j = k < 6 ? (h(Math.floor(t * 30), k, 99) - 0.5) * 6 : 0;
+        g.lineTo(a[0] + (b[0] - a[0]) * q + j, a[1] + (b[1] - a[1]) * q);
+      }
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+  }
+  for (const bo of KEPT.bolts) {
+    const s = now - bo.at;
+    if (s > 0.45) continue;
+    const [x, y] = P(bo.u, bo.v);
+    const k = 1 - s / 0.45;
+    flame(g, x, y, 26 * (0.6 + 0.4 * k), k, t, bo.seed);
+    for (let i = 0; i < 20; i++) {
+      const ang = h(bo.seed, i, 7) * Math.PI;
+      const sp = 40 + 70 * h(bo.seed, i, 8);
+      const px = x + Math.cos(ang) * sp * s * (h(bo.seed, i, 9) < 0.5 ? -1 : 1);
+      const py = y - Math.sin(ang) * sp * s + 160 * s * s;
+      g.globalAlpha = k;
+      g.fillStyle = i % 2 ? FIRE[3] : FIRE[4];
+      g.fillRect(Math.round(px), Math.round(py), 1, 1);
+    }
+    g.globalAlpha = 1;
+  }
+  // HIS EYE COME DOWN: slime and water flung up and out, chips of the stone
+  for (const e of KEPT.eyeSlams) {
+    const s = now - e.at;
+    if (s > 1.4) continue;
+    for (let i = 0; i < 40; i++) {
+      const ang = h(e.seed, i, 11) * Math.PI * 2;
+      const sp = 0.8 + 2.2 * h(e.seed, i, 12);
+      const vz = 1.5 + 3.5 * h(e.seed, i, 13);
+      const z = Math.max(0, vz * s - 9 * s * s);
+      if (z <= 0 && s > 0.1) continue;
+      const [x, y] = P(e.u + Math.cos(ang) * sp * s, e.v + Math.sin(ang) * sp * s);
+      g.fillStyle = i < 12 ? C.stone[2] : i % 2 ? C.goo[2] : C.foam[1];
+      g.fillRect(Math.round(x), Math.round(y - z * UP), i < 12 ? 2 : 2, i < 12 ? 2 : 1);
+    }
+  }
+  // HIS GRIP: grit flung up off the stone's edge
+  if (KEPT.grip !== Infinity) {
+    const s = now - KEPT.grip;
+    if (s < 1.2) {
+      for (let i = 0; i < 46; i++) {
+        const u0 = 3 + 11 * h(i, 101);
+        const vz = 2 + 3 * h(i, 102);
+        const z = vz * s - 9 * s * s;
+        if (z < 0) continue;
+        const [x, y] = P(u0 + (h(i, 103) - 0.5) * s * 2, 0.1 + s * 1.2 * h(i, 104));
+        g.fillStyle = i % 3 ? C.stone[2] : C.foam[2];
+        g.fillRect(Math.round(x), Math.round(y - z * UP), 1 + (i % 2), 1);
+      }
+    }
+  }
+  // HIS EYE STRUCK: its dark ichor spurting (never cyan)
+  const hitS = me.hitAt === undefined ? 99 : now - me.hitAt;
+  if (eye && hitS >= 0 && hitS < 0.6) {
+    const seed = Math.round((me.hitAt ?? 0) * 30);
+    for (let i = 0; i < 22; i++) {
+      const ang = -Math.PI / 2 + (h(seed, i, 21) - 0.5) * 2.6;
+      const sp = 40 + 70 * h(seed, i, 22);
+      const x = eye[0] + Math.cos(ang) * sp * hitS;
+      const y = eye[1] + Math.sin(ang) * sp * hitS + 150 * hitS * hitS;
+      g.globalAlpha = Math.max(0, 1 - hitS / 0.6);
+      g.fillStyle = ICHOR[i % 4];
+      g.fillRect(Math.round(x), Math.round(y), i % 3 ? 2 : 3, 2);
+    }
+    g.globalAlpha = 1;
+  }
 }

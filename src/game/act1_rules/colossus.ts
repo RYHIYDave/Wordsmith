@@ -12,7 +12,8 @@ import type { BossRules } from '../bosses';
 import type { Level, Monster } from '../state';
 import type { Act1Rules } from './types';
 import { RULES as EYE_RULES } from './eye';
-import { ARM, CHANGE3, COLOSSUS, ColossusFight, FORWARD, HIS_PLACE, LIFE, SHOVEL, STONE, eyeHome, onStone, rootAt, stoneToWorld, worldToStone } from '../colossus_fight';
+import { ARM, CHANGE3, COLOSSUS, ColossusFight, EYE3, FORWARD, HIS_PLACE, LIFE, SHOVEL, STONE, eyeHome, onStone, rootAt, stoneToWorld, worldToStone } from '../colossus_fight';
+import { QUESTS610, pillarsBurning } from '../quests610';
 import type { FightEvent, StoneAt } from '../colossus_fight';
 import type { Game } from '../game';
 
@@ -24,6 +25,12 @@ export interface ColossusOn {
   armOf?: ColossusFight;
   /** His tentacles' monsters, by the fight's id. */
   arms?: Record<number, number>;
+  /** (Phase 3) His life as last seen (a drop: his eye struck, and when, the fight's time); when his ward last turned a blow (game.ts),
+   *  and when it broke (the fight's time: the last pillar out). */
+  life0?: number;
+  hitAt?: number;
+  wardHit?: number;
+  wardOff?: number;
 }
 export function colossusOn(m: Monster): ColossusOn {
   if (!m.a1) m.a1 = {};
@@ -47,7 +54,7 @@ function bodyWhere(S: StoneAt, f: ColossusFight): { x: number; y: number } {
     return stoneToWorld(S, at.u, at.v);
   }
   if (f.ph === 2 && f.mode === 'change') {
-    const k = Math.min(1, f.phT / CHANGE3.long);
+    const k = Math.max(0, Math.min(1, (f.phT - CHANGE3.slide) / (CHANGE3.long - CHANGE3.slide)));
     return stoneToWorld(S, HIS_PLACE.u, HIS_PLACE.v + (eyeHome().v - HIS_PLACE.v) * k);
   }
   const sh = f.shovel;
@@ -108,6 +115,10 @@ function handle(R: BossRules, m: Monster, S: StoneAt, ev: readonly FightEvent[])
     if (e.t === 'slam' || e.t === 'smash') g.emit({ t: 'shake', amount: e.t === 'slam' ? 8 : 6 });
     if (e.t === 'burst') g.emit({ t: 'shake', amount: 9 });
     if (e.t === 'snap') g.emit({ t: 'shake', amount: 10 });
+    // (phase 3, the art's shakes: his grip on the stone's edge as he hauls himself up; his eye slammed down)
+    if (e.t === 'grip') g.emit({ t: 'shake', amount: 7 });
+    if (e.t === 'eyeSlam') g.emit({ t: 'shake', amount: 9 });
+    if (e.t === 'rain') g.emit({ t: 'shake', amount: 3 });
     if (e.t === 'crash') g.emit({ t: 'shake', amount: 7 });
     // (his body's own attacks, the art's shakes: the retch, the bile's splash, the gaze's beam firing)
     if (e.t === 'retch') g.emit({ t: 'shake', amount: 4 });
@@ -125,6 +136,18 @@ export const COLOSSUS_RULES: Act1Rules = {
   bossAt(L: Level) {
     const S = stoneOf(L);
     if (!S) return null;
+    // THE CULT'S THREE OBELISKS, the pillars of his phase 3, where the art stands them (off the stone's two ends, in the water, and off
+    // its near edge at the jetty's head: floor 10's own piece, render/act1_pieces.ts draws it by its name); solid in the water, the near
+    // one leaving the jetty to walk
+    const W = L.floor.w;
+    EYE3.pillars.forEach(([u, v], i) => {
+      const { x, y } = stoneToWorld(S, u, v);
+      const tx = Math.floor(x);
+      const ty = Math.floor(y);
+      if (tx < 0 || ty < 0 || tx >= W || ty >= L.floor.h) return;
+      if (L.props.some((q) => q.kind === 'piece' && q.name === "the cult's obelisk" && q.tx === tx && q.ty === ty)) return;
+      L.props.push({ kind: 'piece', name: "the cult's obelisk", tx, ty, x, y, solid: i < 2, state: 0, variant: 0 });
+    });
     const p = stoneToWorld(S, HIS_PLACE.u, HIS_PLACE.v);
     return { x: p.x, y: p.y, fx: Math.SQRT1_2, fy: Math.SQRT1_2 };
   },
@@ -158,7 +181,25 @@ export const COLOSSUS_RULES: Act1Rules = {
       if (!onStone(p)) return true;
       handle(R, m, S, f.begin());
     }
-    f.shielded = false;
+    // (phase 3: the cult's pillars blaze as it begins, at the art's feet (off the stone's two ends and its near edge); while one burns
+    // his ward holds (blows at him turned away: game.ts) and the siege's bolts fall; with the last out, his ward breaks)
+    if (f.ph === 3 && f.mode === 'fight' && QUESTS610.on && !g.level.pillars && !g.practice) g.pillarsLightAt(EYE3.pillars.map(([u, v]) => stoneToWorld(S, u, v)));
+    const burning = pillarsBurning(g.level.pillars);
+    f.shielded = f.ph === 3 && burning > 0;
+    f.siege = !g.level.pillars || burning > 0;
+    if (f.ph === 3 && g.level.pillars && burning === 0 && me.wardOff === undefined) me.wardOff = f.time;
+    // (his eye struck: his life dropped)
+    if (f.ph === 3 && f.mode === 'fight' && me.life0 !== undefined && m.life < me.life0) {
+      f.eyeHit();
+      me.hitAt = f.time;
+    }
+    me.life0 = m.life;
+    // (a pillar broken by blows topples into the water: its obelisk gone once it has fallen; render/act1_fx/colossus_fx.ts draws it falling)
+    for (const pl of g.level.pillars ?? []) {
+      if (pl.by !== 'blows' || pl.outAt === undefined || g.time - pl.outAt < 14 / 30) continue;
+      const i = g.level.props.findIndex((q) => q.kind === 'piece' && q.name === "the cult's obelisk" && Math.hypot(q.x - pl.x, q.y - pl.y) < 0.01);
+      if (i >= 0) g.level.props.splice(i, 1);
+    }
     // (what is drawn of his fight hangs on one peril kept by the hero, so that it is drawn wherever he is: render/act1_fx/colossus.ts)
     let fp = g.perils.find((q) => q.kind === 'act1' && q.a1 === 'eye:fight');
     if (!fp) fp = R.peril(m, 'act1', h.x, h.y, { a1: 'eye:fight', dur: 1e9 });

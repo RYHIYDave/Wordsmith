@@ -35,12 +35,16 @@ import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM } from '../src/art/mkit';
 import { paintColossus } from '../src/art/eye_colossus';
 import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
-import { ARM_STAND_FRAMES, EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_STAND, armBurst, armLayer, armStand, armStandLayer, eyeFrame } from '../src/art/eye_moves';
+import { ARM_STAND_FRAMES, EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_STAND, armBurst, armLayer, armStand, armStandLayer, eyeFrame, standAnim } from '../src/art/eye_moves';
 import type { EyeFrame, EyeLayer } from '../src/art/eye_moves';
 import { FLINCH, DEATH, SLAM, SMASH, armDeath, armFlinch, armSlam, armSmash, dense, even, evenly, liftOver, rootOf, turnsOf } from '../src/art/eye_arms';
 import type { ArmPose } from '../src/art/eye_colossus';
 import { SHOVEL as ART_SHOVEL, SNAP as ART_SNAP, atEnd, shovelFrame } from '../src/art/eye_shovel';
-import { BILE as ART_BILE, BODY_TAKE, GAZE as ART_GAZE, bodyFrame } from '../src/art/eye_body';
+import { BILE as ART_BILE, BODY_TAKE, GAZE as ART_GAZE, TILE, beamLine, bodyFrame, eyeAngle, gazeLids, gazeSwell, tipEye } from '../src/art/eye_body';
+import { P3, SLIDE, gazeArc3, gazePath3, gazeQ3, p3Frame, p3Spit, p3StandTongue, slamAnim, struckAnim, toWorld } from '../src/art/eye_phase3';
+import type { ColossusAnim } from '../src/art/eye_colossus';
+import { STONE as ART_STONE } from '../src/art/eye_colossus';
+import { P3_BAKE } from '../src/render/colossus_baked';
 import { ARM_BAKE } from '../src/render/colossus_baked';
 // @ts-ignore
 import { encodePng } from './png.mjs';
@@ -50,7 +54,7 @@ import { encodePng } from './png.mjs';
 };
 const fs = nodeFs as { mkdirSync(p: string, o: { recursive: boolean }): void; writeFileSync(p: string, d: unknown): void; existsSync(p: string): boolean; readFileSync(p: string): Uint8Array; renameSync(a: string, b: string): void };
 const path = nodePath as { join(...p: string[]): string };
-declare const process: { argv: string[]; pid: number; stdout: { write(s: string): void } };
+declare const process: { argv: string[]; pid: number; env: Record<string, string | undefined>; stdout: { write(s: string): void } };
 const zlib = nodeZlib as { deflateSync(b: Uint8Array, o?: { level: number }): Uint8Array; inflateSync(b: Uint8Array): Uint8Array };
 
 const SEEN = 2 / Math.sqrt(3);
@@ -156,6 +160,8 @@ interface Lay {
   dx: number;
   /** Laid faintly where nothing else is: a strike's last frame behind it. */
   ghost?: boolean;
+  /** Laid only to hide what it is before (his jaws before his tongue, his tongue pictured alone): its own pixels left out. */
+  hide?: boolean;
 }
 interface FrameSpec {
   layers: Lay[];
@@ -189,7 +195,7 @@ function plan(want: readonly string[]): { moves: MoveSpec[]; layers: { key: stri
     if (!seen.has(key)) seen.set(key, pose);
     return { key, drop: 0, back: 0, dx: 0, ...o };
   };
-  const ofLayer = (L: EyeLayer, ghost = false): Lay => lay(L.key, L.pose, { drop: L.drop, back: L.back, dx: L.dx ?? 0, ghost });
+  const ofLayer = (L: EyeLayer, ghost = false, hide = false): Lay => lay(L.key, L.pose, { drop: L.drop, back: L.back, dx: L.dx ?? 0, ghost, ...(hide ? { hide } : {}) });
   const wants = (name: string, group: string): boolean => want.length === 0 || want.includes(name) || want.includes(group) || (group.startsWith('a') ? want.includes('arms') || want.includes(group.split('.')[0]) : want.includes('body'));
   const wantsBody = (mv: string): boolean => wants(mv, mv) || want.some((w) => w.startsWith(`${mv}.`));
   // HIM
@@ -284,6 +290,89 @@ function plan(want: readonly string[]): { moves: MoveSpec[]; layers: { key: stri
     }
     moves.push({ name: mv, group: mv, frames });
     if (mv === 'gaze') moves.push({ name: 'a1.duck', group: 'a1', frames: duck });
+  }
+  // HIS PHASE 3 (the art's eye_phase3.ts, his yes of 8 Nov): his slide forward (the art's q1 from its slide's first frame: the game begins
+  // it as his stand is on frame `P3_BAKE.slideAt`); at his new place his body (his jaws and drool) and his tongue apart, so that his eye's
+  // moves take his tongue's place: the eye slam at each spot it may come down on (`P3_BAKE.slams`), the gaze at each aim
+  // (`P3_BAKE.aims`, degrees), his eye struck; each begun on his stand's first frame (the game begins them so)
+  const wants3 = want.length === 0 || want.includes('body') || want.includes('phase3') || want.some((w) => /^(slide|p3|slam3|gaze3|struck3)/.test(w));
+  if (wants3) {
+    const laid = (L: EyeLayer, fwd: number = P3.fwd, rise: number = P3.rise): EyeLayer => ({ ...L, back: L.back - fwd, drop: L.drop - rise });
+    const tongueOf = (key: string, an: ColossusAnim): EyeLayer => laid({ key, pose: { view: 'front', drop: 0, back: 0, body: true, gaze: an.gaze, arms: [], anim: { ...an, parts: 'tongue' } } as ColossusPose, drop: 0, back: 0 });
+    const nrm = (v: readonly number[]): [number, number, number] => {
+      const l = Math.hypot(v[0], v[1], v[2]) || 1;
+      return [v[0] / l, v[1] / l, v[2] / l];
+    };
+    const lookAt = (eye: readonly number[], at: readonly number[]): [number, number, number] => {
+      const w = toWorld(eye);
+      return nrm([at[0] - w[0], at[1] - w[1], 30 - w[2]]);
+    };
+    /** A spot of the stone (tiles from its left end and back edge) in his world (his lengths). */
+    const his = (u: number, v: number): [number, number] => [(u - 8.5) * TILE, ART_STONE.edge + v * TILE];
+    const some = (ls: (EyeLayer | null)[]): EyeLayer[] => ls.filter((L): L is EyeLayer => !!L);
+    const fr = (ls: (EyeLayer | null)[], ghosts: (EyeLayer | null)[] = []): FrameSpec => ({ layers: [...some(ls).map((L) => ofLayer(L)), ...some(ghosts).map((L) => ofLayer(L, true))], ...AIR });
+    /** His tongue alone at frame `c` of his stand at his new place: cut where his jaws and drool are before it. */
+    const tongueAt = (c: number, ls: (EyeLayer | null)[], ghosts: (EyeLayer | null)[] = []): FrameSpec => {
+      const k = ((c % 90) + 90) % 90;
+      const F = fr(ls, ghosts);
+      return { ...F, layers: [...F.layers, ofLayer(laid(eyeFrame('stand', k).jaws), false, true), ofLayer(laid(p3Spit(k)), false, true)] };
+    };
+    // (only what is wanted is planned: its layers with it)
+    const on = (name: string, group: string): boolean => want.length === 0 || want.includes('body') || want.includes('phase3') || want.includes(name) || want.includes(group);
+    const add = (name: string, group: string, make: () => FrameSpec[]): void => {
+      if (on(name, group)) moves.push({ name, group, frames: make() });
+    };
+    // (the slide)
+    add('slide', 'slide', () => {
+      const out: FrameSpec[] = [];
+      for (let f = 0; f < SLIDE.frames; f++) {
+        const F = p3Frame('q1', P3_BAKE.slideAt + f);
+        out.push({ ...fr([F.jaws, F.spit, F.tongue]), sunk: F.water.sunk, pulse: F.water.pulse });
+      }
+      return out;
+    });
+    // (at his new place: his body, his tongue)
+    const ninety = (one: (c: number) => FrameSpec): (() => FrameSpec[]) => () => Array.from({ length: 90 }, (_, c) => one(c));
+    add('p3body', 'p3', ninety((c) => fr([laid(eyeFrame('stand', c).jaws), laid(p3Spit(c))])));
+    add('p3tongue', 'p3', ninety((c) => tongueAt(c, [laid(p3StandTongue(c))])));
+    // (his eye struck: flinching from where it weaves, looking out at the stone)
+    for (const c0 of P3_BAKE.struckFrom) {
+      add(`struck3.${c0}`, 'p3', () => Array.from({ length: 20 }, (_, g) => tongueAt(c0 + g, [tongueOf(`P3K${c0}.${pad(g)}`, struckAnim(g, ((c0 + g) % 90) / EYE_FPS, [...his(8.5, 4), 30]))])));
+    }
+    // (the eye slam at each spot)
+    P3_BAKE.slams.forEach(([u, v], i) => {
+      const at = his(u, v);
+      const anOf = (f: number): ColossusAnim => slamAnim(f, (f % 90) / EYE_FPS, at);
+      add(`slam3.${i}`, `slam3.${i}`, () =>
+        Array.from({ length: 84 }, (_, f) => tongueAt(f, [tongueOf(`P3S${i}.${pad(f)}`, anOf(f))], [f === 27 || f === 28 ? tongueOf(`P3S${i}.${pad(f - 1)}`, anOf(f - 1)) : null])),
+      );
+    });
+    // (the gaze at each aim)
+    const A0 = gazeArc3();
+    const half = (ART_GAZE.half * Math.PI) / 180;
+    P3_BAKE.aims.forEach((deg, j) => {
+      const toward = (deg * Math.PI) / 180;
+      const A = { ...A0, toward, a0: toward - half, a1: toward + half };
+      const heroW = [A.ox + Math.sin(toward) * A.far, A.oy + Math.cos(toward) * A.far, 30];
+      const anOf = (f: number): ColossusAnim => {
+        const t = (f % 90) / EYE_FPS;
+        const q = gazeQ3(f);
+        const a = eyeAngle(f, A);
+        const path = gazePath3(f, t, a);
+        const eye = tipEye(path);
+        const L0 = beamLine(a, A);
+        const ew = toWorld(eye);
+        const hl = Math.hypot(L0.ax - ew[0], L0.ay - ew[1]) || 1;
+        const pitch = (20 * Math.PI) / 180;
+        const aim = nrm([((L0.ax - ew[0]) / hl) * Math.cos(pitch), ((L0.ay - ew[1]) / hl) * Math.cos(pitch), -Math.sin(pitch)]);
+        const st = lookAt(eye, heroW);
+        const gaze = nrm([st[0] + (aim[0] - st[0]) * q, st[1] + (aim[1] - st[1]) * q, st[2] + (aim[2] - st[2]) * q]);
+        return { ...standAnim(t), tongue: path, eye, gaze, lids: gazeLids(f), swell: gazeSwell(f) };
+      };
+      add(`gaze3.${j}`, `gaze3.${j}`, () =>
+        Array.from({ length: ART_GAZE.frames }, (_, f) => tongueAt(f, [tongueOf(`P3G${j}.${pad(f)}`, anOf(f))], [f >= ART_GAZE.wind && f < ART_GAZE.wind + ART_GAZE.strike ? tongueOf(`P3G${j}.${pad(f - 1)}`, anOf(f - 1)) : null])),
+      );
+    });
   }
   // HIS TENTACLES, each its own figure
   for (let w = 0; w < 5; w++) {
@@ -382,6 +471,8 @@ interface Pic {
   ox: number;
   oy: number;
   rgba: Uint8Array;
+  /** (laid) The middle of his fire shown over the water (his eye's glow), picture pixels from his middle; none where none shows. */
+  fire?: [number, number];
 }
 
 /** A FRAME LAID as the art's tool lays it (tools/eye_moves_pics.ts merge, then him over and under the water, then the pink edge). */
@@ -408,6 +499,9 @@ function layFrame(F: FrameSpec, get: (key: string) => Raw): Pic {
   const flags = new Uint8Array(n);
   const kind = new Uint8Array(n);
   const ghost = new Uint8Array(n * 4);
+  // (where a hidden layer is nearest: left out, and no pink edge for it)
+  const hid = new Uint8Array(n);
+  const hiding = placed.some((p) => p.L.hide);
   // (his layers first, then the strikes' last frames: each pixel of those kept where it is nearer than what is there, or nothing is)
   for (const p of [...placed.filter((p) => !p.L.ghost), ...placed.filter((p) => p.L.ghost)]) {
     const r = p.r;
@@ -429,6 +523,7 @@ function layFrame(F: FrameSpec, get: (key: string) => Raw): Pic {
       z[q] = r.zh[s] / 8 + p.dz;
       flags[q] = r.flags[s];
       kind[q] = kd;
+      hid[q] = p.L.hide ? 1 : 0;
     }
   }
   const rgba = new Uint8Array(n * 4);
@@ -464,15 +559,27 @@ function layFrame(F: FrameSpec, get: (key: string) => Raw): Pic {
     if (ghost[q * 4 + 3] && !(him(q) && z[q] >= -0.5) && bayer(i, j) > -0.1) over(q, ghost[q * 4], ghost[q * 4 + 1], ghost[q * 4 + 2], 120);
     if (him(q) && z[q] >= -0.5) rgba.set([col[q * 3], col[q * 3 + 1], col[q * 3 + 2], 255], q * 4);
   }
+  if (hiding) for (let q = 0; q < n; q++) if (him(q) && hid[q]) rgba.fill(0, q * 4, q * 4 + 4);
+  // (his fire shown over the water: where his eye glows)
+  let fn = 0;
+  let fx = 0;
+  let fy = 0;
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const q = j * W + i;
+    if (!him(q) || hid[q] || z[q] < -0.5 || !(flags[q] & 1)) continue;
+    fn++;
+    fx += x0 + i;
+    fy += y0 + j;
+  }
   // THE PINK EDGE round him where he is over the water (outside his outline, never round what is under it)
   for (let j = 1; j < H - 1; j++) for (let i = 1; i < W - 1; i++) {
     const q = j * W + i;
     if (him(q) && z[q] >= -0.5) continue;
     let by = false;
-    for (const nq of [q + 1, q - 1, q + W, q - W]) if (kind[nq] === 1 && z[nq] >= 0 && flags[nq] & 2) by = true;
+    for (const nq of [q + 1, q - 1, q + W, q - W]) if (kind[nq] === 1 && z[nq] >= 0 && flags[nq] & 2 && !hid[nq]) by = true;
     if (by) over(q, RIM[0], RIM[1], RIM[2], RIM_ALPHA);
   }
-  return crop({ w: W, h: H, ox: x0, oy: y0, rgba });
+  return { ...crop({ w: W, h: H, ox: x0, oy: y0, rgba }), ...(fn >= 40 ? { fire: [fx / fn, fy / fn] as [number, number] } : {}) };
 }
 function crop(p: Pic): Pic {
   let x0 = p.w;
@@ -537,9 +644,26 @@ if (mode === 'count') {
   const by = new Map<string, number>();
   for (const m of moves) by.set(m.group, (by.get(m.group) ?? 0) + m.frames.length);
   process.stdout.write(`${moves.length} moves, ${moves.reduce((n, m) => n + m.frames.length, 0)} frames in ${by.size} groups, ${layers.length} layers\n`);
+  // (with BAKE_CACHE, how many of them are not yet painted there)
+  const C = process.env.BAKE_CACHE;
+  if (C) process.stdout.write(`${layers.filter((L) => !fs.existsSync(fileOf(C, L.key))).length} not yet painted in ${C}\n`);
   throw new Error('(counted)');
 }
 const cache = process.argv[3];
+if (mode === 'fire') {
+  // (where a painted layer's fire is, its middle, picture pixels from his middle at the water: `fire <cache> <key>`)
+  const r = kept(fileOf(cache, process.argv[4]), process.argv[4]);
+  let n = 0;
+  let sx = 0;
+  let sy = 0;
+  for (let j = 0; j < r.h; j++) for (let i = 0; i < r.w; i++) if (r.flags[j * r.w + i] & 1 && (r.kind[j * r.w + i] === 1 || r.kind[j * r.w + i] === 4)) {
+    n++;
+    sx += r.ox + i;
+    sy += r.oy + j;
+  }
+  process.stdout.write(`${process.argv[4]}: ${n} fire pixels about ${(sx / n).toFixed(1)}, ${(sy / n).toFixed(1)}\n`);
+  throw new Error('(fire)');
+}
 if (mode === 'look') {
   // (one frame of a move, painted where it is not yet and laid, its hooks with it, for looking at: `look <cache> <move> <k> <out.png>`)
   const [mv, kk, outPng] = process.argv.slice(4);
@@ -608,7 +732,7 @@ if (mode === 'paint') {
   const named = process.argv.slice(6);
   const ready = named.includes('ready');
   const painted = (key: string): boolean => fs.existsSync(fileOf(cache, key));
-  const moves = plan(named.filter((m) => m !== 'ready')).moves.filter((m) => !ready || (m.frames.every((F) => F.layers.every((L) => painted(L.key))) && (m.hooks ?? []).every((hk) => hk.every((h) => painted(h.key)))));
+  const moves = plan(named.filter((m) => m !== 'ready' && m !== 'merge')).moves.filter((m) => !ready || (m.frames.every((F) => F.layers.every((L) => painted(L.key))) && (m.hooks ?? []).every((hk) => hk.every((h) => painted(h.key)))));
   const memo = new Map<string, Raw>();
   const get = (key: string): Raw => {
     let r = memo.get(key);
@@ -620,9 +744,19 @@ if (mode === 'paint') {
     return r;
   };
   type Placed = { s: number; x: number; y: number; w: number; h: number; ox: number; oy: number };
-  type MoveOut = { group: string; frames: number[]; ends?: boolean[]; hooks?: [number, number][][] };
+  type MoveOut = { group: string; frames: number[]; ends?: boolean[]; hooks?: [number, number][][]; eyes?: ([number, number] | null)[] };
   const manifest: { perGamePx: number; groups: Record<string, { sheets: string[]; pics: Placed[] }>; moves: Record<string, MoveOut>; roots: [number, number][] } = { perGamePx: half ? 1 : 2, groups: {}, moves: {}, roots: rootsPx().map(([x, y]) => [x / (half ? 2 : 1), y / (half ? 2 : 1)]) };
   const scale = half ? 2 : 1;
+  // (`merge`: into the pack already there, its other moves and groups kept)
+  if (named.includes('merge') && fs.existsSync(path.join(out, 'colossus.json'))) {
+    const old = JSON.parse(new TextDecoder().decode(fs.readFileSync(path.join(out, 'colossus.json')))) as typeof manifest;
+    if (old.perGamePx !== manifest.perGamePx) throw new Error('merge: the pack there is at another size');
+    manifest.groups = old.groups;
+    manifest.moves = old.moves;
+  }
+  // (his eye's place in each frame, game pixels from his middle, for what the game draws from it: his phase 3's tongue alone)
+  const eyed = (name: string): boolean => /^(p3tongue|slam3\.|gaze3\.|struck3\.)/.test(name);
+  const fires = new Map<number, [number, number] | null>();
   let rawPx = 0;
   let files = 0;
   // (his scraping tentacles' pictures: each head or body at each depth it is laid at, a group of their own; under the water, seen as
@@ -645,20 +779,24 @@ if (mode === 'paint') {
     // EACH FRAME'S PICTURE (frames laid the same way from the same layers share one)
     const pics: (Pic & { id: number })[] = [];
     const bySig = new Map<string, number>();
+    fires.clear();
     for (const mv of moves.filter((m) => m.group === group)) {
+      const frames = mv.frames.map((F) => {
+        const sig = JSON.stringify(F);
+        let id = bySig.get(sig);
+        if (id === undefined) {
+          const p = layFrame(F, get);
+          id = pics.length;
+          pics.push({ ...(half ? halved(p) : p), id });
+          bySig.set(sig, id);
+          fires.set(id, p.fire ? [Math.round((p.fire[0] / scale) * 10) / 10, Math.round((p.fire[1] / scale) * 10) / 10] : null);
+        }
+        return id;
+      });
       manifest.moves[mv.name] = {
         group,
-        frames: mv.frames.map((F) => {
-          const sig = JSON.stringify(F);
-          let id = bySig.get(sig);
-          if (id === undefined) {
-            const p = layFrame(F, get);
-            id = pics.length;
-            pics.push({ ...(half ? halved(p) : p), id });
-            bySig.set(sig, id);
-          }
-          return id;
-        }),
+        frames,
+        ...(eyed(mv.name) ? { eyes: frames.map((id) => fires.get(id) ?? null) } : {}),
         ...(mv.ends ? { ends: mv.ends } : {}),
         ...(mv.hooks ? { hooks: mv.hooks.map((hk) => hk.map((h): [number, number] => [hookOf(h), Math.round(h.dx * SEEN) / scale])) } : {}),
       };

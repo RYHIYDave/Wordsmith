@@ -11,7 +11,7 @@ import { RNG } from '../src/engine/rng';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import {
-  ColossusFight, COLOSSUS, CHANGE3, ENTRANCE, HOOK, PACE, ROOTS, SHOVEL, SLAM, SNAP, STONE, TURNS, WAVE, CRASH, BODY2, GAZE, poolR,
+  ColossusFight, COLOSSUS, CHANGE3, ENTRANCE, HOOK, PACE, ROOTS, SHOVEL, SLAM, SNAP, STONE, TURNS, WAVE, CRASH, BODY2, GAZE, poolR, EYE3, EYE_SLAM, eyeHome,
   slamLine, turnToward, offLine, waveFront, bodyStrikeFront, stoneToWorld, worldToStone,
 } from '../src/game/colossus_fight';
 import type { FightEvent, HeroOnStone } from '../src/game/colossus_fight';
@@ -335,24 +335,59 @@ test('his maw reaches nothing onto the stone at an end; the hero is never knocke
   void t0;
 });
 
-test('phase 3 (his 8 Nov idea): no tentacles; he slides forward, his eye in every hero\'s reach but while the pillars burn; his gaze and his eye slam by turns, the siege raining', () => {
+test('phase 3 (his 8 Nov idea, as the art drew it): no tentacles; he slides forward; his gaze and his eye slam by turns, each begun as his stand comes round, at the baked aims and spots; the siege raining while a pillar burns', () => {
   const f = inPhase2(29);
   for (const a of [...f.arms]) f.armKilled(a.id);
-  f.shielded = true;
-  const got = run(f, 1 + 3 + CHANGE3.long + 0.2, () => ({ u: 8.5, v: 6, dodging: true }));
+  // (the change: his stand to its frame 24, then his slide from there; the grip on its frame 103)
+  let grip = -1;
+  let begun = -1;
+  const got: FightEvent[] = [];
+  for (let i = 0; i < Math.round((1 + 3 + CHANGE3.long + 0.2) / DT); i++) {
+    for (const e of f.step(DT, { u: 8.5, v: 6, dodging: true })) {
+      got.push(e);
+      if (e.t === 'change') begun = f.time;
+      if (e.t === 'grip') grip = f.time;
+    }
+  }
   assert.equal(f.ph, 3);
+  assert.ok(begun > 0 && near(grip - begun, (24 + 103) / 30, 0.05), `the grip ${grip - begun}`);
   assert.equal(got.filter((e) => e.t === 'armUp').length, 0, 'no tentacles in phase 3');
-  const later = run(f, 14, () => ({ u: 8.5, v: 6, dodging: false }));
+  // his place and his eye's (the art's numbers)
+  assert.ok(near(eyeHome().v, 1.52, 0.01) && near(eyeHome().u, 8.5, 1e-9));
+  for (const [u, v] of EYE3.spots) {
+    assert.ok(u >= 0 && u <= STONE.w && v >= 0 && v <= STONE.d, `a spot on the stone ${u}, ${v}`);
+    assert.ok(Math.hypot(u - eyeHome().u, v - eyeHome().v) <= EYE_SLAM.reach + 1e-9, 'within his reach');
+  }
+  // his attacks: each as his stand comes round (frame 0 of it), at a baked spot or aim
+  const later: FightEvent[] = [];
+  for (let i = 0; i < Math.round(14 / DT); i++) {
+    for (const e of f.step(DT, { u: 8.5, v: 6, dodging: false })) {
+      later.push(e);
+      if (e.t === 'gazeWarn' || e.t === 'eyeWarn') {
+        const c = (f.body * 30) % 90;
+        assert.ok(c < 1.5 || c > 88.5, `begun on his stand's frame ${c}`);
+        const E = f.eye!;
+        if (E.kind === 'slam') assert.deepEqual([E.at.u, E.at.v], EYE3.spots[E.pic]);
+        else assert.ok(near(E.a0 + GAZE.half, EYE3.aims[E.pic], 1e-9) && near(E.a1 - GAZE.half, EYE3.aims[E.pic], 1e-9) && E.at.u === EYE3.gazeAt.u, 'the gaze along a baked aim, his left to his right');
+      }
+    }
+  }
   assert.ok(later.some((e) => e.t === 'gazeWarn') && later.some((e) => e.t === 'eyeWarn'), 'his gaze and his eye slam');
   assert.ok(later.filter((e) => e.t === 'rainWarn').length >= 9, 'the siege raining');
   const by = new Set(hurts(later).map((e) => e.by));
   for (const k of ['gaze', 'eye', 'rain']) assert.ok(by.has(k as never), `standing still, hurt by ${k}`);
   assert.ok(!later.some((e) => e.t === 'warn' || e.t === 'smashWarn' || e.t === 'sink'), 'no slams, waves or shovel');
-  assert.equal(f.bodyStruck(), null, 'shielded while a pillar burns');
-  f.shielded = false;
+  // his eye reached (his ward turning blows while a pillar burns is the game's); from the stone's back edge
   const at = f.bodyStruck()!;
-  assert.ok(at, 'his eye struck with the pillars out');
-  // a close-range hero at the stone's back edge reaches his eye where it is before him
+  assert.ok(at, 'his eye in reach');
   assert.ok(Math.hypot(at.at.u - 8.5, at.at.v - 0.3) - at.r < 0.6, 'reached from the back edge');
+  // struck at rest, it flinches from the nearest of his stand's frames baked
+  while (f.eye) f.step(DT, { u: 8.5, v: 6, dodging: true });
+  f.eyeHit();
+  assert.ok(f.struck && EYE3.struckFrom.includes(f.struck.from), 'his eye flinches');
+  // the siege broken: no more bolts
+  f.siege = false;
+  const quiet = run(f, 6, () => ({ u: 8.5, v: 6, dodging: true }));
+  assert.equal(quiet.filter((e) => e.t === 'rainWarn').length, 0, 'no bolts once the pillars are out');
   assert.deepEqual(f.bodyKilled(), [{ t: 'won' }]);
 });

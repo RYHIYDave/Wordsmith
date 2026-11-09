@@ -93,8 +93,12 @@ export const CRASH = { v: 0.87, r: 2.4, hit: 0.1, surge: [0.35, 3.2] as const, h
 export const BODY = { stand: fr(90) } as const;
 /** His entrance (phase 2's start): 9.0 s from his lurk; his three tentacles burst up from `armsUp`. */
 export const ENTRANCE = { long: fr(270), armsUp: fr(222) } as const;
-/** Phase 3's change (not drawn yet: the art chat's to come): HE SLIDES FORWARD to the stone's back edge, this long; no tentacles come up again. */
-export const CHANGE3 = { long: 4.0, armsUp: Infinity } as const;
+/**
+ * Phase 3's change (the art's eye_phase3.ts SLIDE, his yes of 8 Nov): his stand at his place to its frame `slide` (begun as it comes
+ * round), then HE SLIDES FORWARD (4.0 s: three heaving lunges, hauled up against the stone's back edge, gripping it at `grip`); no
+ * tentacles come up again. His stand's clock runs on through it into phase 3 (his pictures there are its frames).
+ */
+export const CHANGE3 = { slide: fr(24), grip: fr(24 + 103), long: fr(24 + 120), armsUp: Infinity } as const;
 /**
  * THE SHOVEL, frames from his stand: he sinks (0 to 21); THE TELL, the water boiling off the end he will come up at (22 to 55);
  * he bursts up there (56 to 59); roars (60 to 83); gapes (84 to 299) as four tentacles scrape along the stone toward his maw,
@@ -148,8 +152,54 @@ export const SNAP = { deep: 2.35, across: [1.84, 9.8] as const, shut: fr(7), lon
 // pillars burn (quests610.ts PILLARS: shielded); the siege's bolts rain on the stone; his eye's two attacks, by turns, the gaze
 // swept across the stone and the eye slammed down on it (lying there a moment: his eye's lowest, the best time to strike it).
 
-/** His place in phase 3, slid forward (his middle at the water); his eye `eye` tiles before his middle, struck within `r` of it. */
-export const FORWARD = { u: 8.5, v: -2.8, eye: 1.2, r: 1.6 } as const;
+/** His place in phase 3, slid forward (his middle at the water, 3.67 tiles off the stone's back edge: the art's, nearer would cut his
+ *  heaps into the stone); his eye `eye` tiles before his middle (1.52 in over the stone at rest), struck within `r` of it. */
+export const FORWARD = { u: 8.5, v: -3.67, eye: 5.19, r: 1.6 } as const;
+/**
+ * PHASE 3 AS DRAWN AND BAKED (the art's eye_phase3.ts; tools/bake_colossus.ts): his eye's slam lands only at one of `spots` (tiles; the
+ * nearest the hero), round his eye's place at 1.8 and 3.4 tiles every 30 degrees; his gaze turns about `gazeAt` (the water under his
+ * eye there) and is aimed only along one of `aims` (degrees from straight out over the stone, + toward its right end; the nearest the
+ * hero), swept from 32 degrees one side of it to 32 the other as the art paints it. Each begins as his stand comes round (frame 0).
+ * His eye struck flinches from the nearest of `struckFrom` (frames of his stand). His pillars kindle `kindle` seconds into the phase
+ * (each the next a little after), his ward on `ward` seconds in.
+ */
+export const EYE3 = {
+  spots: ((): [number, number][] => {
+    const out: [number, number][] = [];
+    for (const d of [1.8, 3.4]) for (const a of [-90, -60, -30, 0, 30, 60, 90]) out.push([8.5 + d * Math.sin(a * D), 1.52 + d * Math.cos(a * D)]);
+    return out;
+  })(),
+  gazeAt: { u: 8.15, v: -0.05 },
+  aims: [-80, -60, -40, -20, 0, 20, 40, 60, 80] as readonly number[],
+  struckFrom: [0, 15, 30, 45, 60, 75] as readonly number[],
+  struck: fr(20),
+  kindle: [fr(2), fr(7), fr(12)] as readonly number[],
+  ward: fr(12),
+  /** The pillars' feet (tiles; the art's: off the stone's left end, its right end, its near edge). */
+  pillars: [[-0.9, 6.05], [17.9, 6.05], [8.5, 11.9]] as readonly (readonly [number, number])[],
+} as const;
+/** The baked spot nearest a place (its index). */
+export function eyeSpotNear(p: P2): number {
+  let best = 0;
+  let bd = Infinity;
+  EYE3.spots.forEach(([u, v], i) => {
+    const d = Math.hypot(p.u - u, p.v - v);
+    if (d < bd) {
+      bd = d;
+      best = i;
+    }
+  });
+  return best;
+}
+/** The baked aim nearest the line to a place from the gaze's middle (its index). */
+export function gazeAimNear(p: P2): number {
+  const toward = Math.atan2(p.u - EYE3.gazeAt.u, p.v - EYE3.gazeAt.v) / D;
+  let best = 0;
+  EYE3.aims.forEach((a, i) => {
+    if (Math.abs(a - toward) < Math.abs(EYE3.aims[best] - toward)) best = i;
+  });
+  return best;
+}
 /**
  * THE GAZE: a beam from his eye, laid toward the hero `half` degrees to one side of him (the warning, `warn` seconds: the arc it
  * will sweep, the enemy's pink), swept to the other side over `sweep` seconds; `width` tiles wide; it hurts the hero once as it
@@ -179,7 +229,7 @@ export const BODY2 = {
  * than `reach` tiles from his eye), slammed down on the stone at `hit`, hurting within `r`; lying there to `up` (struck there as
  * anywhere), back up by `long`.
  */
-export const EYE_SLAM = { warn: fr(28), hit: fr(28), r: 1.5, reach: 9, up: 2.2, long: 2.8 } as const;
+export const EYE_SLAM = { warn: fr(28), hit: fr(28), r: 1.5, reach: 4, up: 2.2, long: 2.8 } as const;
 /** His eye's attacks: the next begun `rest` seconds (a range) after the last ends; the first `first` in. */
 export const EYE_PACE = { rest: [0.6, 1.2] as const, first: 1.5 } as const;
 
@@ -401,6 +451,8 @@ export interface EyeMove {
   a1: number;
   at: P2;
   landed: boolean;
+  /** Which of its pictures (the slam's spot, the gaze's aim: EYE3). */
+  pic: number;
 }
 
 /** (Phase 2) His body's attack under way: the bile arc (where it lands; its splash dealt) or the gaze (its first and last turn, from
@@ -453,6 +505,7 @@ export type FightEvent =
   | { t: 'gaze' }
   | { t: 'eyeWarn'; u: number; v: number }
   | { t: 'eyeSlam'; u: number; v: number }
+  | { t: 'grip' }
   | { t: 'rainWarn'; u: number; v: number }
   | { t: 'rain'; u: number; v: number }
   | { t: 'hurt'; by: HurtBy; mult: number; du: number; dv: number; secs: number }
@@ -480,12 +533,16 @@ export class ColossusFight {
   /** (Phase 3) His eye's attack now, and seconds to the next. */
   eye: EyeMove | null = null;
   eyeIn = 0;
+  /** (Phase 3) His eye struck at rest: seconds into its flinch, from which of his stand's frames it is pictured (EYE3.struckFrom). */
+  struck: { t: number; from: number } | null = null;
+  /** (Phase 3) The siege's bolts fall (the game's: while a pillar burns, or where none stand). */
+  siege = true;
   /** (Phase 2) His body's attack under way, the next due in, which comes next; his bile's burning pools. */
   body2: BodyMove | null = null;
   body2In = Infinity;
   body2Next: 'bile' | 'gaze' = 'bile';
   pools: Pool[] = [];
-  private eyeNext: 'gaze' | 'slam' = 'gaze';
+  eyeNext: 'gaze' | 'slam' = 'gaze';
   /** Seconds to the next water slam, and which it is (his order: left, right, both). */
   waterIn = 0;
   waterNext: 'l' | 'r' | 'both' = 'l';
@@ -496,7 +553,7 @@ export class ColossusFight {
   crash: { t: number; hit: boolean; surge: boolean } | null = null;
   /** Seconds since the last of the phase's tentacles was killed (in `between`). */
   betweenT = 0;
-  /** The pillars burn (phase 3): his body cannot be hurt (the game's, quests610.ts PILLARS). */
+  /** The pillars burn (phase 3): his ward holds (the game's, quests610.ts PILLARS: his body cannot be hurt). */
   shielded = false;
   private nextId = 1;
   /** The tentacles' clock (seconds): their stands are frames of it (render/colossus_baked.ts); set to 0 as they rise. */
@@ -553,9 +610,10 @@ export class ColossusFight {
     return { root: rootAt(a.u), r: ARM.r, lying };
   }
 
-  /** Whether the hero's blows reach his body now, and where it is (phase 3 only, the pillars out). */
+  /** Whether the hero's blows reach his body now, and where it is (phase 3 only; while a pillar burns, his ward, which the game turns
+   *  them away from). */
   bodyStruck(): { at: P2; r: number } | null {
-    if (this.ph !== 3 || this.mode !== 'fight' || this.shielded) return null;
+    if (this.ph !== 3 || this.mode !== 'fight') return null;
     // (his eye lying where it slammed down; else at its place before him)
     const E = this.eye;
     if (E && E.kind === 'slam' && E.landed && E.t < EYE_SLAM.up) return { at: E.at, r: FORWARD.r };
@@ -629,12 +687,14 @@ export class ColossusFight {
     } else if (this.mode === 'change') {
       const C = this.ph === 1 ? ENTRANCE : CHANGE3;
       if (C.armsUp < C.long && this.phT >= C.armsUp && this.phT - dt < C.armsUp) this.raiseArms((this.ph + 1) as 2 | 3, ev);
+      if (this.ph === 2 && this.phT >= CHANGE3.grip && this.phT - dt < CHANGE3.grip) ev.push({ t: 'grip' });
       if (this.phT >= C.long) {
-        this.body = 0;
+        // (into phase 2 his stand begins again; into phase 3 it runs on from his slide, as the art's take has it)
+        if (this.ph === 1) this.body = 0;
         this.startPhase((this.ph + 1) as 2 | 3, ev);
       }
     } else if (this.mode === 'fight') {
-      if (this.ph === 3) this.stepEye(dt, hero, ev);
+      if (this.ph === 3) this.stepEye(dt, hero, bodyRound, ev);
       else this.direct(dt, hero, armRound, bodyRound, ev);
     }
     return ev;
@@ -858,22 +918,28 @@ export class ColossusFight {
   }
 
   // ---- phase 3: his eye's attacks, by turns
-  private stepEye(dt: number, hero: HeroOnStone, ev: FightEvent[]): void {
+  private stepEye(dt: number, hero: HeroOnStone, bodyRound: boolean, ev: FightEvent[]): void {
+    if (this.struck) {
+      this.struck.t += dt;
+      if (this.struck.t >= EYE3.struck) this.struck = null;
+    }
     const E = this.eye;
     if (!E) {
+      // (each begun as his stand comes round, as baked)
       this.eyeIn -= dt;
-      if (this.eyeIn > 0) return;
-      const home = eyeHome();
+      if (this.eyeIn > 0 || !bodyRound) return;
+      this.struck = null;
       if (this.eyeNext === 'gaze') {
-        const toward = Math.atan2(hero.u - home.u, hero.v - home.v) / D;
-        const way = this.rng.chance(0.5) ? 1 : -1;
-        this.eye = { kind: 'gaze', t: 0, a0: toward - way * GAZE.half, a1: toward + way * GAZE.half, at: home, landed: false };
+        // (laid along the baked aim nearest the hero, swept from its one side to its other as the art paints it)
+        const j = gazeAimNear(hero);
+        const aim = EYE3.aims[j];
+        this.eye = { kind: 'gaze', t: 0, a0: aim - GAZE.half, a1: aim + GAZE.half, at: { ...EYE3.gazeAt }, landed: false, pic: j };
         ev.push({ t: 'gazeWarn', a0: this.eye.a0, a1: this.eye.a1 });
       } else {
-        const d = Math.hypot(hero.u - home.u, hero.v - home.v);
-        const k = d > EYE_SLAM.reach ? EYE_SLAM.reach / d : 1;
-        const at = { u: home.u + (hero.u - home.u) * k, v: home.v + (hero.v - home.v) * k };
-        this.eye = { kind: 'slam', t: 0, a0: 0, a1: 0, at, landed: false };
+        // (on the baked spot nearest the hero: all within EYE_SLAM.reach of his eye)
+        const i = eyeSpotNear(hero);
+        const at = { u: EYE3.spots[i][0], v: EYE3.spots[i][1] };
+        this.eye = { kind: 'slam', t: 0, a0: 0, a1: 0, at, landed: false, pic: i };
         ev.push({ t: 'eyeWarn', u: at.u, v: at.v });
       }
       this.eyeNext = this.eyeNext === 'gaze' ? 'slam' : 'gaze';
@@ -972,6 +1038,20 @@ export class ColossusFight {
     this.eyeIn = this.rng.range(EYE_PACE.rest[0], EYE_PACE.rest[1]);
   }
 
+  /** The game: his eye took a blow (phase 3). At rest it flinches (pictured from the nearest of his stand's frames baked), not again
+   *  until most of a flinch is over. */
+  eyeHit(): void {
+    if (this.ph !== 3 || this.mode !== 'fight' || this.eye) return;
+    if (this.struck && this.struck.t < EYE3.struck * 0.6) return;
+    const c = (this.body * 30) % 90;
+    let from = EYE3.struckFrom[0];
+    for (const s of EYE3.struckFrom) {
+      const d = (x: number): number => Math.min(Math.abs(c - x), 90 - Math.abs(c - x));
+      if (d(s) < d(from)) from = s;
+    }
+    this.struck = { t: 0, from };
+  }
+
   // ---- phase 3: the siege's bolts
   private stepRain(dt: number, hero: HeroOnStone, ev: FightEvent[]): void {
     for (const r of this.rains) {
@@ -983,7 +1063,7 @@ export class ColossusFight {
       }
     }
     this.rains = this.rains.filter((r) => r.t < RAIN.warn + 0.4);
-    if (this.ph !== 3 || this.mode !== 'fight') return;
+    if (this.ph !== 3 || this.mode !== 'fight' || !this.siege) return;
     this.rainIn -= dt;
     if (this.rainIn > 0) return;
     this.rainIn = RAIN.every;

@@ -111,6 +111,9 @@ export interface Pillar {
   hits: number;
   /** When it last took a blow that counted (Game.time). */
   last: number;
+  /** When it went out (Game.time), and (set with a piece) where the hero stood to set it. */
+  outAt?: number;
+  from?: { x: number; y: number };
 }
 
 /** Pillars standing at these feet, all burning. */

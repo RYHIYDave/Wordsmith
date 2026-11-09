@@ -9,12 +9,23 @@
 import { colossusOf, colossusOn } from '../../game/act1_rules/colossus';
 import {
   ARM, BODY2, CHANGE3, CRASH, EYE_SLAM, FORWARD, GAZE, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAVE,
-  hookFront, poolR, rootAt, stoneToWorld, waveFront,
+  eyeSpotNear, gazeAimNear, hookFront, poolR, rootAt, stoneToWorld, waveFront, worldToStone,
 } from '../../game/colossus_fight';
-import type { Arm } from '../../game/colossus_fight';
-import { drawColossusAir, drawColossusGround, drawColossusRings, keepColossusFx } from './colossus_fx';
+import type { Arm, ColossusFight } from '../../game/colossus_fight';
+import { drawColossusAir, drawColossusGround, drawColossusP3, drawColossusRings, drawColossusWard, keepColossusFx } from './colossus_fx';
 import type { Act1Fx, Act1FxCtx } from './types';
-import { ARM_BAKE, colossusAtEnd, colossusBakeAsk, colossusBaked, colossusFrames, colossusSlamTurns, colossusWant, drawColossusArm, drawColossusBody, drawColossusHooks } from '../colossus_baked';
+import { ARM_BAKE, colossusAtEnd, colossusBakeAsk, colossusBaked, colossusEye, colossusFrames, colossusSlamTurns, colossusWant, drawColossusArm, drawColossusBody, drawColossusHooks } from '../colossus_baked';
+
+/** His phase 3's tongue now (game/colossus_fight.ts; render/colossus_baked.ts P3_BAKE): his eye's attack, his eye struck, or his droop;
+ *  and its frame. */
+export function colossusTongue3(f: ColossusFight): [string, number] {
+  const F30 = (t: number): number => Math.floor(t * 30 + 1e-6);
+  const E = f.eye;
+  if (E && E.kind === 'slam') return [`slam3.${E.pic}`, F30(E.t)];
+  if (E && E.kind === 'gaze') return [`gaze3.${E.pic}`, F30(E.t)];
+  if (f.struck) return [`struck3.${f.struck.from}`, F30(f.struck.t)];
+  return ['p3tongue', F30(f.body) % 90];
+}
 
 /** Each tentacle struck: its hit's flash last seen, and when (the fight's clock) and from what frame of its stand it was struck. */
 const STRUCK = new Map<number, { flash: number; at: number; stand: number }>();
@@ -87,14 +98,18 @@ function draw(c: Act1FxCtx): void {
   const shPart = Math.floor(shk / ARM_BAKE.entrancePart);
   // (in his shovel only what it wants: him at the end, his snap and hooks, his tentacles going down and up; his stand from its last part)
   const shovelWants = f.shovel ? [`shovel.${shPart}`, `shovel.${shPart + 1}`, 'shovel.snap', 'hooks', ...base([0, 1, 2]).filter((m) => !m.includes('smash')), ...(shPart >= 3 ? ['stand'] : [])] : f.ph === 2 && f.mode === 'fight' && f.shovelIn < 4 ? ['shovel.0', 'shovel.snap', 'hooks'] : [];
+  // (phase 3: his body and droop; his eye's attack under way, and the one coming where the hero is now)
+  const hs = worldToStone(S, c.game.hero.x, c.game.hero.y);
+  const p3Wants = (): string[] => ['p3body', colossusTongue3(f)[0], ...(f.eye ? [] : [f.eyeNext === 'slam' ? `slam3.${eyeSpotNear(hs)}` : `gaze3.${gazeAimNear(hs)}`])];
   colossusWant(
     f.shovel ? shovelWants
       : f.ph === 1 && f.mode === 'between' ? ['lurk', 'entrance.0', ...dying]
         : f.ph === 1 && f.mode === 'change' ? [`entrance.${part}`, `entrance.${part + 1}`, ...(part >= 2 ? ['stand', ...base([0, 1, 2])] : [])]
           : f.ph === 1 ? ['lurk', ...base([3, 4])]
-            : f.ph === 2 ? ['stand', ...base([0, 1, 2]), ...shovelWants, ...(f.body2 || (f.body2In < 3 && f.shovelIn > 4) ? ['bile', 'gaze'] : [])]
-              : ['stand'],
-    !f.shovel,
+            : f.ph === 2 && f.mode === 'change' ? ['stand', 'slide', 'p3body']
+              : f.ph === 2 ? ['stand', ...base([0, 1, 2]), ...shovelWants, ...(f.body2 || (f.body2In < 3 && f.shovelIn > 4) ? ['bile', 'gaze'] : []), ...(f.mode === 'between' ? ['slide'] : [])]
+                : p3Wants(),
+    f.shovel ? [] : f.ph === 3 ? ['p3'] : ['arms'],
   );
   const standK = (f.body * 30) % Math.max(1, colossusFrames('stand') || 90);
   const bodyAt = (u: number, v: number, move: string, k: number, otherwise: () => void): void => {
@@ -171,11 +186,32 @@ function draw(c: Act1FxCtx): void {
       const v1 = hk.edge === 'back' ? HOOK.reach.back : STONE.d + 0.6;
       poly([[front, v0], [back, v0], [back, v1], [front, v1]], FLESH, PINK, [], 1);
     });
-  } else if (f.ph === 3 || (f.ph === 2 && f.mode === 'change')) {
-    // (phase 3: slid forward to the stone's edge)
-    const k = f.ph === 3 ? 1 : Math.min(1, f.phT / CHANGE3.long);
-    const v = HIS_PLACE.v + (FORWARD.v - HIS_PLACE.v) * k;
-    bodyAt(FORWARD.u, v, 'stand', standK, () => himAt(FORWARD.u, v, 1));
+  } else if (f.ph === 2 && f.mode === 'change') {
+    // (his slide forward: his stand at his place to its frame 24, then the art's slide from there, its pictures laid from his middle at
+    // his place as all of his are)
+    const k = Math.floor((f.phT - CHANGE3.slide) * 30 + 1e-6);
+    const slid = Math.max(0, Math.min(1, (f.phT - CHANGE3.slide) / (CHANGE3.long - CHANGE3.slide)));
+    const v = HIS_PLACE.v + (FORWARD.v - HIS_PLACE.v) * slid;
+    // (the water heaped and foaming before him as he heaves forward, settling between: the art's lunges)
+    const heave = [[4, 30], [42, 68], [78, 104]].reduce((m, [a, b]) => Math.max(m, k >= a && k < b ? Math.sin((Math.PI * (k - a)) / (b - a)) : 0), 0);
+    if (k >= 0 && k < 120) drawColossusRings(g, P, { u: HIS_PLACE.u, v: v + 2.2 }, 6.4, 1.3, c.t * 1.6, 8, 0.6 + 1.4 * heave);
+    if (k < 0) bodyAt(HIS_PLACE.u, HIS_PLACE.v, 'stand', standK, () => himAt(HIS_PLACE.u, HIS_PLACE.v, 1));
+    else bodyAt(HIS_PLACE.u, HIS_PLACE.v, 'slide', k, () => himAt(FORWARD.u, v, 1));
+  } else if (f.ph === 3) {
+    // (at his new place: his ward round him while a pillar burns; his body; his tongue over it (cut where his jaws are before it): his
+    // droop, his eye's attack, his eye struck)
+    const [mv, k] = colossusTongue3(f);
+    const tongueMv = colossusBaked(mv) ? mv : 'p3tongue';
+    const tongueK = tongueMv === mv ? k : standK;
+    const him3 = (gg: CanvasRenderingContext2D, x: number, y: number): boolean => {
+      if (!drawColossusBody(gg, 'p3body', standK, x, y)) return false;
+      if (!drawColossusBody(gg, tongueMv, tongueK, x, y)) drawColossusBody(gg, 'p3tongue', standK, x, y);
+      return true;
+    };
+    const eye = colossusEye(tongueMv, tongueK);
+    const over = drawColossusWard(g, f, colossusOn(boss!), c.game.time, him3, hx, hy, eye ? [hx + eye[0], hy + eye[1]] : null, c.t);
+    if (!him3(g, hx, hy)) himAt(FORWARD.u, FORWARD.v, 1);
+    over();
   } else if (risen && f.ph === 1 && f.mode === 'change') {
     const k = Math.floor(f.phT * 30);
     bodyAt(HIS_PLACE.u, HIS_PLACE.v, `entrance.${Math.floor(k / ARM_BAKE.entrancePart)}`, k % ARM_BAKE.entrancePart, () => himAt(HIS_PLACE.u, HIS_PLACE.v, Math.min(1, f.phT / 3)));
@@ -220,7 +256,7 @@ function draw(c: Act1FxCtx): void {
       const k = E.t / EYE_SLAM.hit;
       disc(E.at.u, E.at.v, EYE_SLAM.r, null, warnColor(k), [4, 3]);
       disc(E.at.u, E.at.v, EYE_SLAM.r * Math.min(1, k), 'rgba(255, 61, 139, 0.18)');
-    } else if (E.t < EYE_SLAM.up) {
+    } else if (E.t < EYE_SLAM.up && !colossusBaked(`slam3.${E.pic}`)) {
       const [x, y] = P(E.at.u, E.at.v);
       g.fillStyle = PINK;
       g.beginPath();
@@ -233,8 +269,11 @@ function draw(c: Act1FxCtx): void {
     }
   }
 
-  // (the rings on the water round him where he breaks it, at his place risen; round each tentacle standing)
-  if (risen && !sh && f.ph < 3) drawColossusRings(g, P, { u: HIS_PLACE.u, v: HIS_PLACE.v + 1.2 }, 6.5, 1.6, c.t, 3);
+  // (the rings on the water round him where he breaks it, at his place risen, or at his new place; round each tentacle standing)
+  if (risen && !sh && f.ph < 3 && !(f.ph === 2 && f.mode === 'change')) drawColossusRings(g, P, { u: HIS_PLACE.u, v: HIS_PLACE.v + 1.2 }, 6.5, 1.6, c.t, 3);
+  if (f.ph === 3) drawColossusRings(g, P, { u: FORWARD.u, v: FORWARD.v + 1.6 }, 6.2, 1.2, c.t, 5);
+  // (phase 3, the game's parts on the stone: his grip's cracks, his eye's, the bolts' scorches, the pieces set)
+  if ((f.ph === 2 && f.mode === 'change') || f.ph === 3) drawColossusP3(g, P, f, colossusOn(boss!), c.game, [hx, hy], eyeAt3(f, hx, hy), c.t, 'ground');
   for (const a of f.arms) if (a.state === 'stand' || a.state === 'slam' || a.state === 'smash') drawColossusRings(g, P, rootAt(a.u), 0.5, 0.3, c.t + a.k * 0.4, 11 + a.k, 0.7);
 
   // HIS TENTACLES: each its own pictures, laid from his middle as he is (his entrance's in his entrance's pictures)
@@ -326,6 +365,13 @@ function draw(c: Act1FxCtx): void {
 
 const fr = (n: number): number => n / 30;
 
+/** Where his eye glows now in phase 3 (the screen), from his middle at his place at (hx, hy). */
+function eyeAt3(f: ColossusFight, hx: number, hy: number): [number, number] | null {
+  const [mv, k] = colossusTongue3(f);
+  const e = colossusBaked(mv) ? colossusEye(mv, k) : colossusEye('p3tongue', Math.floor(f.body * 30 + 1e-6) % 90);
+  return e ? [hx + e[0], hy + e[1]] : null;
+}
+
 export const COLOSSUS_FX: Act1Fx = {
   // (his figure and his tentacles' are the stand-ins above, not his old pictures: nothing of the Drowned Eye's is drawn)
   hidden: () => true,
@@ -338,9 +384,14 @@ export const COLOSSUS_FX: Act1Fx = {
     const boss = colossusOf(c.game);
     const f = boss ? colossusOn(boss).fight : undefined;
     if (!S || !f) return;
-    drawColossusAir(c.g, (u, v) => {
+    const P = (u: number, v: number): readonly [number, number] => {
       const w = stoneToWorld(S, u, v);
       return c.at(w.x, w.y);
-    }, f, c.t);
+    };
+    const [hx, hy] = P(HIS_PLACE.u, HIS_PLACE.v);
+    const eye = f.ph === 3 ? eyeAt3(f, hx, hy) : null;
+    drawColossusAir(c.g, P, f, c.t, eye);
+    // (phase 3 over the hero: the pillars' fire and lines, the bolts, what flies, his eye's ichor)
+    if ((f.ph === 2 && f.mode === 'change') || f.ph === 3) drawColossusP3(c.g, P, f, colossusOn(boss!), c.game, [hx, hy], eye, c.t, 'air');
   },
 };

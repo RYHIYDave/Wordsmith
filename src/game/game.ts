@@ -57,7 +57,7 @@ import { rallyOf } from './act1_rules/kknight';
 import { blobDist, inHold } from './act1_layout';
 import { ARRIVALS, riftSize } from './arrivals';
 import { EYRIE_LINES, EYRIE_SCENE, PILLARS, QUEST610_TEXT, QUESTS610, lightPillars, pillarsBurning, piecesInHand, piecesTaken } from './quests610';
-import { JETTY, STONE, stoneToWorld, worldToStone } from './colossus_fight';
+import { COLOSSUS, JETTY, STONE, stoneToWorld, worldToStone } from './colossus_fight';
 import type { ColossusFight } from './colossus_fight';
 /** (COLOSSUS) How near the landing on the boss's ground carries the hero across to the stone (tiles). */
 const STONE_LANDING = 0.8;
@@ -2953,6 +2953,11 @@ export class Game {
     const m = this.monsters.find((q) => q.kind === 'eye' && !q.dead);
     if (!m || eyePhase(m) < 2) return;
     const at = this.level.props.filter((p) => p.kind === 'piece' && p.name === "the cult's obelisk").map((p) => ({ x: p.x, y: p.y }));
+    this.pillarsLightAt(at);
+  }
+
+  /** (PILLARS) The cult's obelisks standing at these feet blaze (the Swamp Colossus's phase 3: game/act1_rules/colossus.ts). */
+  pillarsLightAt(at: readonly { x: number; y: number }[]): void {
     if (!at.length) return;
     this.level.pillars = lightPillars(at);
     for (const p of this.level.pillars) this.emit({ t: 'spark', x: p.x, y: p.y, el: 'lightning', n: 14 });
@@ -2963,7 +2968,7 @@ export class Game {
   /** (PILLARS) The burning obelisk the hero stands beside with a piece of the ward-stone in hand, if any. */
   private pillarNear(): Pillar | null {
     const ps = this.level.pillars;
-    if (!ps || !PILLARS.on || piecesInHand(this.hero.pieces, ps) <= 0) return null;
+    if (!ps || !(PILLARS.on || COLOSSUS.on) || piecesInHand(this.hero.pieces, ps) <= 0) return null;
     const h = this.hero;
     let best: Pillar | null = null;
     let bd = PILLARS.near;
@@ -2982,6 +2987,8 @@ export class Game {
   private setPillarPiece(p: Pillar): void {
     p.lit = false;
     p.by = 'piece';
+    p.outAt = this.time;
+    p.from = { x: this.hero.x, y: this.hero.y };
     this.emit({ t: 'spark', x: p.x, y: p.y, el: 'frost', n: 18 });
     this.sfx('power', 0.8);
     this.pillarOut(QUEST610_TEXT.pillarSet(pillarsBurning(this.level.pillars)));
@@ -2998,6 +3005,7 @@ export class Game {
       if (p.hits < PILLARS.blows) continue;
       p.lit = false;
       p.by = 'blows';
+      p.outAt = this.time;
       this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 16 });
       this.sfx('hit', 0.8);
       this.pillarOut(QUEST610_TEXT.pillarBroken(pillarsBurning(this.level.pillars)));
@@ -9530,6 +9538,8 @@ export class Game {
     }
     // (QUESTS610, PILLARS: nor the Drowned Eye while one of the cult's obelisks burns)
     if (m.kind === 'eye' && pillarsBurning(this.level.pillars) > 0) {
+      // (the Swamp Colossus: his ward flashes where it turns the blow: render/act1_fx/colossus_fx.ts)
+      if (m.a1) m.a1.wardHit = this.time;
       if (this.time - this.waitTold > 0.7) {
         this.waitTold = this.time;
         this.emit({ t: 'text', x: m.x, y: m.y, text: QUEST610_TEXT.shielded, color: '#ff5fa8' });
