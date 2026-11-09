@@ -52,15 +52,28 @@ const SLOT_NAME: Record<Slot, string> = { mainhand: 'weapon', offhand: 'off hand
 
 /** What a word may become on gear, slot by slot, in plain words (a melded word: two together, "A and B"). */
 export function gearLines(word: WordId, limit: Limit): string[] {
-  // (FLAT DAMAGE: a pair named by its least, read as what it adds)
-  const label = (s: StatKey): string => { const f = flatPair(s); return f ? `Adds ${f.label}` : statView(s, limit).label; };
+  // (FLAT DAMAGE: a pair named by its least, read as what it adds: “Added Fire Damage”; and beside its word's own damage on one piece,
+  // the two as one, “Fire Damage (% or added)”, short, so that every word's page still fits a phone held sideways. The gear's own
+  // lines say each whole: “+12% Fire Damage”, “Adds X-Y Fire Damage to Fire Hits”)
+  const flatOf = (s: StatKey): string | null => { const f = flatPair(s); return f ? f.label.split(' to ')[0] : null; };
+  const label = (s: StatKey): string => { const f = flatOf(s); return f ? `Added ${f}` : statView(s, limit).label; };
+  const labels = (stats: readonly StatKey[]): string[] => {
+    const out: string[] = [];
+    for (const s of stats) {
+      const f = flatOf(s);
+      if (f && stats.some((o) => !flatOf(o) && statView(o, limit).label === f)) continue;
+      const both = !f && stats.some((o) => flatOf(o) === statView(s, limit).label);
+      out.push(both ? `${statView(s, limit).label} (% or added)` : label(s));
+    }
+    return out;
+  };
   // (SPLITTING AND BINDING change the piece at the bench: ITEM_WORDS)
   const iw = itemWordOf(word);
   if (iw === 'split') return ['At the bench: one piece made two, its properties shared between them.'];
   if (iw === 'bind') return ['At the bench: a second piece of the same kind bound into the first, four properties in all.'];
   return imbueRules(word).map((r) => {
     const where = r.slots.map((s) => SLOT_NAME[s]).join(', ');
-    const what = r.pairs ? r.pairs.map(([a, b]) => (a === b ? label(a) : `${label(a)} and ${label(b)}`)).join(', or ') : r.stats.map(label).join(' or ');
+    const what = r.pairs ? r.pairs.map(([a, b]) => (a === b ? label(a) : `${label(a)} and ${label(b)}`)).join(', or ') : labels(r.stats).join(' or ');
     return `${where.charAt(0).toUpperCase()}${where.slice(1)}: ${what}.`;
   });
 }

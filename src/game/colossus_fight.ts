@@ -8,7 +8,7 @@
 // across the platform, then on the right sending a wave to the left, then both sides simultaneously to send a big crash into the
 // middle”); 20:29, the shovel (“submerge, and then pop up on a random end of the platform and try to shovel the player into its
 // mouth ... If you get hit it knocks you closer to the mouth.  Get too close and it snaps shut for massive damage”); and his pick for
-// all of it, “Yes, nowhere safe (Recommended)”. His look and every move are the art chat's (art/eye_colossus.ts, eye_moves.ts,
+// all of it, “Yes, nowhere safe (Recommended)”. His look and every move are the art chat's (its painter, eye_moves.ts,
 // eye_arms.ts, eye_shovel.ts; docs/mockups/eye_redo/README.md), each with his yes; every time and length here is theirs, read off
 // their frames (30 a second). What hurts, how hard, how often, and when his phases change are these rules.
 //
