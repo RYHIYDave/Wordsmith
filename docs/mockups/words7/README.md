@@ -64,7 +64,7 @@ be the same drawings run on.
 
 ## Step 2: at work, and the film
 
-`pictures/words7_film.mp4` (1266 by 540, 30 a second, H.264): in the practice room with the Warrior, as the player sees it,
+`pictures/words7_film.mp4` (66.4 s, 1266 by 540, 30 a second, H.264 yuv420p, 7.7 MB): in the practice room with the Warrior, as the player sees it,
 each word in turn: a card with its stone and colours; in front, behind and on a monster at full speed (the whole screen);
 then its best moment again at twice the size and half speed. Captioned. Every look moves at 30 pictures a second, each with
 its beats (`W7_BEATS`, seconds):
@@ -81,7 +81,7 @@ its beats (`W7_BEATS`, seconds):
 | Reaping behind | 0.45 | (its 6 s) | 0.6 | the spirit rises out of the body in a stream of soul-light, hovering; fights, its edge his cyan; rises away; each blow 0.05 / 0.06 / 0.24 |
 | Reaping on a monster | 0.2 | 0.8 | 0.4 | the enemy's fire kindles round the body; it lurches up out of its fall; the fire dies |
 | Culling in front | 0.03 | 0.06 | 0.32 | the slash sweeps through in two pictures and it is split; it falls split, the slash fading |
-| Culling behind | 0.3 | (while it lies) | 0.3 | the mark written in, breathing; taking one: it flares 0.05, a blade rises through it 0.2, it burns out 0.4 |
+| Culling behind | 0.3 | (while it lies) | 0.3 | the mark written in, breathing, gone over its last 0.3 s; taking one: it flares 0.05, a blade rises through it 0.2, it burns out 0.4 |
 | Culling on a monster | 0.3 | 0.05 | 0.3 | while he is low (under 35% of his life) it kindles with the enemy's fire; its blow bursts on him; the fire dies when he is not low |
 | Surging in front, behind | 0.05 | 0.42 | 0.13 | a flash at his feet; the ring runs out, the dust shoved before it (behind: where his dodge began, wind along his roll, 0.55) |
 | Surging on a monster | 1.0 (held) | 0.42 | 0.13 | its warning ring, beating faster (the game's own, or ours: `surgeWarn`); then its wave |
@@ -89,7 +89,7 @@ its beats (`W7_BEATS`, seconds):
 | Plundering behind | 0.1 | 0.89 | 0.12 | gold bursts from the kill; coin after coin arcs into his purse, a glint as each goes in |
 | Plundering on a monster | 0.04 | 0.58 | 0.15 | his coins torn off on pink hooks; at its belt till it dies; then they burst out of it (0.05 / 0.5 / 1.5) |
 | Mirroring in front | 0.08 | 0.3 | 0.25 | his reflection forms beside him, swings with him, dissolves |
-| Mirroring behind | 0.25 | (while it stands) | 0.9 | the pane grows up out of its glass; when he attacks next it repeats it (0.33), cracks (0.3), shatters (0.6) |
+| Mirroring behind | 0.25 | (while it stands) | 0.2 | the pane grows up out of its glass, and sinks over its last 0.2 s; when he attacks next: 0.05 / 0.33 / 0.9, it repeats his attack (0.33), cracks (0.3), shatters (0.6) |
 | Mirroring on a monster | 0.04 | 0.28 | 0.15 | it cracks like a mirror where he hit it; shards of pink glass fly back into him |
 
 ## For the main chat: the events and fields it reads
@@ -116,7 +116,7 @@ main chat's board post of 8 Nov 07:55 (its branch `words7` was not to be seen): 
 | (none) | **Monster.words** including 'culling', while his life is under 35% | its fire |
 | `surge` | `x, y` (him), `r` (2.2); `dodge` with `x0, y0` (else his roll's start); `id` (a monster's: its wave, `r` 2.3) | Surging, each side |
 | `goldBurst` | `x, y` | Plundering behind |
-| `goldStolen` | `id` | the snatch; **Monster.stolen** (> 0): his coins at its belt; dead with them: they burst out of it |
+| `goldStolen` | `id` | the snatch; **Monster.stolen** (> 0): his coins at its belt; when it dies (or is gone from the list) still carrying them, they burst out of it where it was |
 | `reflection` | `secs` (0.63) | Mirroring in front (the reflection copies his own picture as he attacks) |
 | zone `mirror` | `x, y, t, dur` | the pane as it stands |
 | `mirrorCast` | `x, y` (or the nearest zone 'mirror') | the repeat, the cracking and the shattering |

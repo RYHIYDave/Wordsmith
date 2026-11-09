@@ -185,7 +185,7 @@ export const W7_BEATS: Record<string, { build: number; hit: number; fade: number
   'reaping:behind:hit': { build: 0.05, hit: 0.06, fade: 0.24, is: "the spirit's blow: a slash of soul-light" },
   'reaping:monster': { build: 0.2, hit: 0.8, fade: 0.4, is: "the enemy's fire kindles round the body; it lurches up out of its fall; the fire dies" },
   'culling:front': { build: 0.03, hit: 0.06, fade: 0.32, is: 'the blade comes round; the slash sweeps through in two pictures and it is split; the slash fades as it falls' },
-  'culling:behind': { build: 0.3, hit: 0, fade: 0, is: 'the mark written on the floor, breathing, for as long as it lies' },
+  'culling:behind': { build: 0.3, hit: 0, fade: 0.3, is: 'the mark written on the floor, breathing, for as long as it lies; gone over its last 0.3 s' },
   'culling:behind:mark': { build: 0.05, hit: 0.2, fade: 0.4, is: 'the mark flares; a blade rises out of it through the one it takes; the mark burns out' },
   'culling:monster': { build: 0.3, hit: 0.05, fade: 0.3, is: "while he is low it kindles with the enemy's fire; its blow on him bursts; the fire dies when he is not low" },
   'culling:monster:blow': { build: 0.05, hit: 0.05, fade: 0.25, is: 'its blow while he is low: a heavy smear of fire, bursting on him' },
@@ -199,7 +199,7 @@ export const W7_BEATS: Record<string, { build: number; hit: number; fade: number
   'plundering:monster': { build: 0.04, hit: 0.58, fade: 0.15, is: 'its blow lands; his coins torn off on hooks of pink light and pulled to it; they glint at its belt till it dies' },
   'plundering:monster:drop': { build: 0.05, hit: 0.5, fade: 1.5, is: 'it dies: his coins burst out of it and scatter' },
   'mirroring:front': { build: 0.08, hit: 0.3, fade: 0.25, is: 'his reflection forms beside him; swings with him; dissolves' },
-  'mirroring:behind': { build: 0.25, hit: 0, fade: 0, is: 'the pane grows up out of its glass where he stood and stands, shimmering' },
+  'mirroring:behind': { build: 0.25, hit: 0, fade: 0.2, is: 'the pane grows up out of its glass where he stood and stands, shimmering; it sinks over its last 0.2 s' },
   'mirroring:behind:cast': { build: 0.05, hit: 0.33, fade: 0.9, is: 'in it he makes his attack again; it cracks (0.3) and shatters (0.6)' },
   'mirroring:monster': { build: 0.04, hit: 0.28, fade: 0.15, is: 'it cracks like a mirror where he hit it; shards of pink glass fly back into him' },
 };
@@ -259,8 +259,8 @@ export const W7 = {
   /** Blood where the bleeding have walked; who bleeds (where it last dripped, and when). */
   splashes: [] as Splash[],
   bleeders: new Map<number, { x: number; y: number; since: number }>(),
-  /** Those whose stolen gold has burst out of them already. */
-  dropped: new Set<number>(),
+  /** Those carrying his stolen gold, and where each was last (it bursts out of them where they fall, gone from the list or not). */
+  carriers: new Map<number, { x: number; y: number }>(),
   /** Each shot in flight, and whether it was last in a wall. */
   inWall: new WeakMap<object, boolean>(),
   /** The kindling of the enemy's fire on monsters with Culling while he is low (0..1 each). */
@@ -272,7 +272,7 @@ export function clearW7(): void {
   W7.heroSp = null;
   W7.splashes.length = 0;
   W7.bleeders.clear();
-  W7.dropped.clear();
+  W7.carriers.clear();
   W7.hot.clear();
 }
 
@@ -913,6 +913,15 @@ function pierceMonster(g: CanvasRenderingContext2D, cam: Cam, a: Act): void {
   }
   // (a passage only: the shot itself is the game's)
   if (a.part === 'pass') return;
+  // it strikes him: a burst of the enemy's fire on him, and it is gone
+  if (head >= L) {
+    const since2 = (head - L) / W7_TIME.ghostSpeed;
+    if (since2 < 0.18) {
+      const [px, py] = at(L);
+      star(g, px, py, 4 + 7 * (1 - since2 / 0.18), C, a.seed + 3, 8);
+    }
+    return;
+  }
   // the shot: a bolt of pink fire, gold-white at its heart, its tail licking out behind it; inside the stone only a ghost of it
   const h = Math.min(head, L);
   const n = 34;
@@ -1157,8 +1166,10 @@ function reapFront(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game): v
   const h = game.hero;
   const [cx, cy] = S(cam, a.x, a.y, 6);
   const [hx, hy] = S(cam, h.x, h.y, 20);
-  const mx = (cx + hx) / 2;
-  const my = Math.min(cy, hy) - 30;
+  // (it goes up out of the body and comes down into him: the nearer the kill, the higher it loops, so its flight is seen)
+  const near = Math.hypot(hx - cx, hy - cy);
+  const mx = (cx + hx) / 2 + (cx >= hx ? 10 : -10) * clamp01(1 - near / 60);
+  const my = Math.min(cy, hy) - Math.max(30, 64 - near * 0.5);
   const fl = W7_TIME.soulFlight;
   const torn = 0.15;
   // torn out of the body: a column of grave-mist rising off it, thinning
@@ -1235,7 +1246,7 @@ function reapBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game, l
   const [bx, by] = S(cam, a.x, a.y);
   if (layer === 'floor') {
     // a pool of pale light under it, and a thread of mist back to the body it rose from while it rises
-    mist(g, sx, sy, 14, 6, [C[2], C[3]], 0.6 * k, a.seed, a.t, 0.2);
+    mist(g, sx, sy, 14, 6, [C[1], C[2], C[3]], 0.45 * k, a.seed, a.t, 0.2);
     const thread = clamp01(1 - (a.t - W7_TIME.spiritBuild) / 0.8);
     if (thread > 0) {
       for (let i = 0; i <= 12; i++) {
@@ -1256,7 +1267,7 @@ function reapBehind(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game, l
     mist(g, bx, by - 3, 8, 5, [C[2], C[3], C[4]], 1.1 * (1 - build), a.seed + 2, a.t, 1.4);
   }
   // grave-mist curling up round its feet, motes of soul-light rising off it (faster as it goes)
-  mist(g, sx, sy - 4, 11, 6, [C[2], C[3], C[4]], 0.7 * k + 0.4 * (1 - going), a.seed + 1, a.t, 1.2);
+  mist(g, sx, sy - 4, 11, 6, [C[2], C[3], C[4]], 0.55 * k + 0.4 * (1 - going), a.seed + 1, a.t, 1.2);
   for (let i = 0; i < 7 + Math.round(8 * (1 - going)); i++) {
     const ph = (a.t * (0.8 + 1.5 * (1 - going)) + hash2(i, a.seed, 1)) % 1;
     dot(g, sx - 9 + hash2(i, a.seed, 2) * 18 + Math.sin(ph * 6 + i) * 2, sy - 4 - ph * 34, ph < 0.5 ? C[5] : C[4]);
@@ -1323,7 +1334,20 @@ function cullFront(g: CanvasRenderingContext2D, cam: Cam, a: Act, game: Game): v
   // a great crescent, swept right through it: its edge white bone, its body violet, its tail thinning to nothing
   const a0 = way > 0 ? Math.PI * 1.05 : -Math.PI * 0.05;
   const a1 = a0 + way * -Math.PI * 1.15 * (0.25 + 0.75 * k);
-  smear(g, mx - way * 2, cy, 30, 6, a0, a1, 6, C, -0.18 * way, fade);
+  smear(g, mx - way * 2, cy, 34, 7, a0, a1, 8, C, -0.18 * way, fade);
+  // the cut itself, flashing bone across it as the blade goes through
+  if (a.t > W7_TIME.cullSweep * 0.5 && a.t < W7_TIME.cullSweep + 0.12) {
+    const k2 = clamp01((a.t - W7_TIME.cullSweep * 0.5) / 0.04);
+    const fl = 1 - clamp01((a.t - W7_TIME.cullSweep) / 0.12);
+    for (let i = -12; i <= 12; i++) {
+      if (Math.abs(i) > 12 * k2) continue;
+      const px = mx + i;
+      const py = cy + Math.round(i * 0.18 * way * -1);
+      if (fl < 1 && !dith(px, py, fl)) continue;
+      dot(g, px, py, Math.abs(i) < 6 ? C[5] : C[4]);
+      dot(g, px, py + 1, C[3]);
+    }
+  }
   // splinters of bone-light along the cut, flung off as it goes through
   if (a.t > W7_TIME.cullSweep * 0.6) {
     const since = a.t - W7_TIME.cullSweep * 0.6;
@@ -2010,7 +2034,7 @@ function splitOf(sp: Sprite, slide: number, way: number, key: string): Sprite {
   const dn = Math.max(1, Math.round(sp.density ?? 1));
   const W = sp.img.width;
   const H = sp.img.height;
-  const pad = 6 * dn;
+  const pad = 12 * dn;
   const cv = document.createElement('canvas');
   cv.width = W + pad * 2;
   cv.height = H + pad;
@@ -2507,13 +2531,14 @@ export function tickW7(dt: number, game: Game, fx: Fx): void {
   }
   for (const id of [...W7.bleeders.keys()]) if (!now.has(id)) W7.bleeders.delete(id);
   if (W7.splashes.length > 80) W7.splashes.splice(0, W7.splashes.length - 80);
-  // his gold carried off: when one carrying it dies, it bursts out of it
-  for (const m of game.monsters) {
-    const stolen = (m as { stolen?: number }).stolen ?? 0;
-    if (m.dead && stolen > 0 && !W7.dropped.has(m.id)) {
-      W7.dropped.add(m.id);
-      playW7('plundering', 'monster', { part: 'drop', x: m.x, y: m.y, dur: 2.05 });
-    }
+  // his gold carried off: when one carrying it dies (or is gone), it bursts out of it where it was
+  for (const m of game.monsters) if (!m.dead && ((m as { stolen?: number }).stolen ?? 0) > 0) W7.carriers.set(m.id, { x: m.x, y: m.y });
+  for (const [id, at] of [...W7.carriers]) {
+    const m = game.monsters.find((q) => q.id === id);
+    if (m && !m.dead && ((m as { stolen?: number }).stolen ?? 0) > 0) continue;
+    W7.carriers.delete(id);
+    if (m && !m.dead) continue;
+    playW7('plundering', 'monster', { part: 'drop', x: m ? m.x : at.x, y: m ? m.y : at.y, dur: 2.05 });
   }
   // a monster with Culling, while he is low: its fire kindles over 0.3 s, and dies down over 0.3 when he is not
   const hero = game.hero as { life?: number; d?: { maxLife?: number } };

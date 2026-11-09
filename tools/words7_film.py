@@ -59,7 +59,8 @@ def card(word, ramp):
     for j, c in enumerate(ramp):
         d.rectangle((330 + j * 70, 260, 330 + j * 70 + 62, 296), fill=(8, 6, 12))
         d.rectangle((332 + j * 70, 262, 330 + j * 70 + 60, 294), fill=hexrgb(c))
-    d.text((330, 320), 'In front, behind, and on a monster; then its best moment again, twice the size, half speed.', font=small, fill=GREY)
+    d.text((330, 320), 'In front, behind, and on a monster;', font=small, fill=GREY)
+    d.text((330, 348), 'then its best moment again, twice the size, half speed.', font=small, fill=GREY)
     return im
 
 

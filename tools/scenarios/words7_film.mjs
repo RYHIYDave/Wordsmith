@@ -141,8 +141,8 @@ const SCENES = [
   },
   {
     word: 'mirroring', side: 'behind', frames: 92, cap: 'Behind: a mirror where he stood makes his next attack again',
-    mobs: [['skeleton', -1.5, -0.6, 'near'], ['skeleton', 1.6, 0.6, 'far']],
-    at: { 2: [['lay', 'mirror', 0.3, 0.3, 0.6, 99]], 14: [['roll', 0.3, 0.3, -1.1, -0.5]], 36: [['swing', 'near']], 46: [['cast', 0.3, 0.3]] },
+    mobs: [['skeleton', -0.35, 0.7, 'near'], ['skeleton', 1.45, 1.15, 'far']],
+    at: { 2: [['lay', 'mirror', 0.3, 0.3, 0.6, 99]], 14: [['roll', 0.3, 0.3, -1.35, -0.25]], 36: [['swing', 'near']], 46: [['cast', 0.3, 0.3]] },
     focus: [0, -0.4], best: [44, 80],
   },
   {
@@ -216,6 +216,8 @@ export default async function (page, snap) {
     if (sc.wall) { h.fx = 0; h.fy = -1; }
     for (const [kind, ax, dn, role, words] of sc.mobs) W7.spawn(kind, ax, dn, role, words);
     if (sc.weak) { const m = W7.mon(sc.weak); if (m) m.life = m.maxLife * 0.1; }
+    // (low: kept low, so not kept alive by the playtest's god mode; nothing here strikes him for real)
+    d.god = !sc.low;
     if (sc.low) h.life = Math.max(1, Math.round(h.d.maxLife * 0.2));
     return Object.keys(W7.ids).length;
   }, sc);
@@ -268,7 +270,8 @@ export default async function (page, snap) {
     if (what === 'spirit') {
       // the kill rises as a spirit: a copy of it, fighting for him (the rules' spirits; drawn here by its own picture through the look)
       const was = W7.dead && W7.dead[args[0]]; if (!was) return 'spirit: none';
-      const m = g.spawn(was.kind, was.x + 0.5, was.y - 0.3, 1, 0, false, g.rng); g.wakeUp(m);
+      // (risen a step on from the body toward its foe, out of his own reach: he does not strike his own)
+      const m = g.spawn(was.kind, was.x + 0.75, was.y - 0.75, 1, 0, false, g.rng); g.wakeUp(m);
       m.life = m.maxLife = 1e7; m.words = []; m.state = 'recover'; m.t = 1e9; m.anim = 'idle'; m.cd = 1e9; m.moveCd = 1e9; m.heldSpeed = m.speed; m.speed = 0;
       const foe = mon('foe');
       if (foe) { const far = Math.hypot(foe.x - m.x, foe.y - m.y) || 1; m.fx = (foe.x - m.x) / far; m.fy = (foe.y - m.y) / far; }

@@ -158,6 +158,7 @@ test('2. what the rules keep is drawn while it is kept, and gone after', () => {
     assert.equal(draw(gm).n, 0, 'the blood gone');
     // his gold carried off: at its belt; it dies, and the coins burst out of it, and are gone
     b.stolen = 5;
+    tickW7(1 / 30, gm, fx);
     assert.ok(draw(gm).n > 0, 'his coins at its belt');
     b.dead = true;
     tickW7(1 / 30, gm, fx);
