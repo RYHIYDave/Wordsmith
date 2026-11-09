@@ -24,6 +24,7 @@
 //   Poison     venom      a sour green spatter; what it touches bubbles and sickens, and its
 //                         numbers keep coming.   Behind: a cloud of it hangs over the floor.
 
+import { COLOSSUS } from '../game/colossus_fight';
 import { WarlockFx } from './warlock_fx';
 import { TinkererFx } from './tinkerer_fx';
 import { BrawlerFx } from './brawler_fx';
@@ -1665,7 +1666,9 @@ export class Fx {
           // (ACT 2, THE HUSH: one of a kind's other looks, '<kind>:<form>', in its kind's colours)
           const colors = DEATH_COLORS[baseFigure(figureOf(e))];
           // (it falls as its figure falls, facing the way it was; the renderer leaves it out if its figure has no death)
-          this.fallen.push({ figure: figureOf(e), x: e.x, y: e.y, back: e.fx + e.fy < -0.2, flip: e.fx - e.fy < 0, t: 0, ...(e.lift ? { lift: e.lift } : {}), ...(e.away ? { away: true } : {}) });
+          // (THE SWAMP COLOSSUS, COLOSSUS on: his tentacles and he are of the Drowned Eye's kind, and their deaths are their own,
+          // drawn with his fight: render/act1_fx/colossus.ts; none of the Drowned Eye's falls)
+          if (!(COLOSSUS.on && e.kind === 'eye')) this.fallen.push({ figure: figureOf(e), x: e.x, y: e.y, back: e.fx + e.fy < -0.2, flip: e.fx - e.fy < 0, t: 0, ...(e.lift ? { lift: e.lift } : {}), ...(e.away ? { away: true } : {}) });
           if (this.fallen.length > MAX_FALLEN) this.fallen.shift();
           this.spray(e.x, e.y, e.boss ? 70 : e.champion ? 44 : e.elite ? 26 : 12, colors, e.boss ? 5 : e.champion ? 4 : 3, e.boss ? 120 : e.champion ? 100 : 80, 10);
           if (e.boss || e.elite) this.rings.push({ x: e.x, y: e.y, r: e.boss ? 3 : e.champion ? 2.3 : 1.6, t: 0, dur: 0.4, colors: [P.fr6, P.fr5, P.fr4, P.fr3], fill: true });

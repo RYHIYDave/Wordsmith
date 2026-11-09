@@ -338,6 +338,8 @@ export type MonsterState = 'sleep' | 'chase' | 'windup' | 'recover' | 'charge' |
 
 export interface Monster {
   id: number;
+  /** (A boss) His bar has come up at the top of the screen (game.ts bossShown): it stays from then on. */
+  barUp?: boolean;
   kind: MonsterKind;
   name: string;
   x: number;

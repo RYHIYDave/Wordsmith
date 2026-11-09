@@ -34,6 +34,8 @@
 
 import { F8F9_FIX, squareBridge } from './f8f9';
 import { RNG } from '../engine/rng';
+import { COLOSSUS, onStoneOrJetty, stoneToWorld, worldToStone } from './colossus_fight';
+import type { StoneAt } from './colossus_fight';
 import { act1Def } from './act1';
 import { act1Pack } from './act1_mobs';
 import { isAct2Land } from './act1';
@@ -203,6 +205,9 @@ export interface Land extends Act2Land {
   boards?: number[];
   ring?: { x: number; y: number; rx: number; ry: number };
   pool?: { x: number; y: number; rx: number; ry: number };
+  /** THE SWAMP COLOSSUS'S STONE (COLOSSUS on): where it is (its middle); and the landing on the boss's ground the hero is carried to it from. */
+  stone?: StoneAt;
+  landing?: { x: number; y: number };
   /** The open areas (for the dressing and the packs): each its blob and its room. */
   areas: { blob: Blob; room: number; role: AreaRole }[];
   /** The ways between them. */
@@ -835,8 +840,13 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
   const openH = Math.ceil(y1 - y0) + 2 * MARGIN;
   // the halls inside, in a row beyond the open ground's far-right edge (along x), far enough that the screen there shows only the hall
   const hallX = openW + 4;
-  const W = hallX + yards.length * (HALL.w + 30) + 6;
-  const H = Math.max(openH, HALL.h + 30);
+  // (THE SWAMP COLOSSUS, game/colossus_fight.ts, behind COLOSSUS: floor 10's stone, an island of its own beyond the halls, the
+  // water all round it)
+  const stoneOn = kind === 'fen' && COLOSSUS.on;
+  const stoneX = hallX + yards.length * (HALL.w + 30) + 6;
+  const W = stoneX + (stoneOn ? STONE_ROOM : 0);
+  const H = Math.max(openH, HALL.h + 30, stoneOn ? STONE_ROOM : 0);
+  const stoneAt: StoneAt | null = stoneOn ? { cx: stoneX + STONE_ROOM / 2, cy: Math.round(H / 2) } : null;
 
   // THE YARDS' GATES: on each yard's far side (toward lesser y), its court laid square to the gate's wall
   const holdsAt: { yard: number; gx: number; gy: number }[] = [];
@@ -851,7 +861,7 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
   const behindGate = (x: number, y: number): boolean => holdsAt.some((h) => Math.abs(x - h.gx) < COURT.half + 1.6 && y < h.gy + 0.3 && y > h.gy - 7);
 
   // THE SHAPE OF THE OPEN GROUND
-  const fenPool = kind === 'fen' ? poolOf(plan) : null;
+  const fenPool = kind === 'fen' && !stoneOn ? poolOf(plan) : null;
   // (each area's circle and each lane's box, beyond which nothing of it can be: asked first, so that the shape of a long
   // floor is quick to lay; the shape is the same to the tile)
   const reachOf = plan.areas.map((a) => radiusOf(a.blob));
@@ -870,6 +880,7 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
     return [x0 - r, y0 - r, x1 + r, y1 + r] as const;
   });
   const inside = (x: number, y: number): boolean => {
+    if (stoneAt && x >= stoneX) return onStoneOrJetty(worldToStone(stoneAt, x, y));
     if (x >= openW - 2) return false;
     if (behindGate(x, y)) return false;
     if (fenPool && fenPool.pool(x, y)) return false;
@@ -902,7 +913,7 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
   const wet = (x: number, y: number): boolean => !!river && laneDist({ pts: river, w: 0 }, x, y) < 0.95;
   const shape = (x: number, y: number): boolean => inside(x, y) && !wet(x, y);
   const whole = (tx: number, ty: number): boolean => inCourt(tx, ty) || bridgeTiles.has(ty * W + tx);
-  const never = (tx: number, ty: number): boolean => tx >= openW - 1 || (behindGate(tx + 0.5, ty + 0.5) && !inCourt(tx, ty));
+  const never = (tx: number, ty: number): boolean => (tx >= openW - 1 && !(stoneAt && tx >= stoneX)) || (behindGate(tx + 0.5, ty + 0.5) && !inCourt(tx, ty));
   // (only the tiles near a shape are asked about: the rest is rock)
   const maybe = new Uint8Array(W * H);
   const stamp = (x: number, y: number, r: number): void => {
@@ -918,6 +929,7 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
     }
   }
   if (fenPool) stamp(fenPool.ringE.x, fenPool.ringE.y, Math.max(RING.rx, RING.ry) * 1.5 + 2);
+  if (stoneAt) stamp(stoneAt.cx, stoneAt.cy, 14);
   const { tiles, cut } = layTiles(W, H, shape, whole, never, maybe);
   // (a bridge's tiles are whole floor; the river on either side of it is not)
   // THE HALLS INSIDE
@@ -952,6 +964,8 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
     const x = i % W;
     const y = (i - x) / W;
     if (hallRects.some((r) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h)) continue;
+    // (the Colossus's stone: an island, reached across the water from the landing)
+    if (stoneAt && x >= stoneX) continue;
     if (HOLD_HALLWAY.on && hallRects.some((r) => { const w = wayOf(r); return x >= w.x && y >= w.y && x < w.x + w.w && y < w.y + w.h; })) continue;
     // (a half tile is kept if a whole one reached is beside it)
     if (cut[i] !== 0 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => { const j = (y + b) * W + x + a; return j >= 0 && j < W * H && got[j] === 1; })) continue;
@@ -1003,6 +1017,8 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
   const pathRooms = rooms.filter((r) => r.kind === 'normal' && r.path > 0);
   rng.shuffle(pathRooms);
   for (let k = 0; k < Math.min(2, Math.floor(pathRooms.length / 3)); k++) pathRooms[k].kind = 'elite';
+  // (THE STONE: a room of its own, as a hall is)
+  if (stoneAt) rooms.push({ id: rooms.length, x: Math.floor(stoneAt.cx - 12), y: Math.floor(stoneAt.cy - 12), w: 24, h: 24, kind: 'normal', path: -1 });
   const hallRoom: number[] = hallRects.map((r) => {
     const room: Room = { id: rooms.length, x: r.x, y: r.y, w: r.w, h: r.h, kind: 'normal', path: -1 };
     rooms.push(room);
@@ -1049,7 +1065,7 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
   };
   const vr = new RNG(seed ^ 0x1b873593);
   for (let i = 0; i < W * H; i++) floor.variant[i] = vr.int(0, 255);
-  const exitAt = farEnd(plan, tiles, cut, W, H, bossA);
+  const exitAt = stoneAt ? stoneToWorld(stoneAt, 8.5, 9.0) : farEnd(plan, tiles, cut, W, H, bossA);
   const arrive = { ...floor.start };
   floor.packs = placePacks(rng, floor, plan, areaRoom, depth, holdList, kind);
   floor.props = baseProps(rng, floor, plan, areaRoom, kind);
@@ -1068,6 +1084,8 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
     boards: kind === 'fen' ? boardsOf(plan, tiles, W, H, fenPool) : undefined,
     ring: fenPool?.ringE,
     pool: fenPool?.poolE,
+    stone: stoneAt ?? undefined,
+    landing: stoneAt ? { x: plan.areas.find((a) => a.role === 'boss')!.blob.x, y: plan.areas.find((a) => a.role === 'boss')!.blob.y } : undefined,
     areas: plan.areas.map((a, i) => ({ blob: a.blob, room: areaRoom[i], role: a.role })),
     lanes: plan.lanes,
     holds: holdList,
@@ -1133,6 +1151,8 @@ export function ledgeDrops(trail: readonly [number, number][], peak: Blob, x: nu
 }
 
 // THE FEN'S RUIN: the ring of paving round the Eye's pool, laid to the art chat's sizes (EYE_RING 8 by 7, EYE_POOL 2.9 by 2.5: tiles, across the screen and up and down it)
+/** (COLOSSUS) The stone's island: tiles each way, the water round it. */
+const STONE_ROOM = 52;
 const RING = { rx: 8.0, ry: 7.0 };
 const POOL = { rx: 2.9, ry: 2.5 };
 /** Across the screen (world (1, -1)/√2) and up it ((1, 1)/√2): how far out a point is, for an ellipse with those axes. */

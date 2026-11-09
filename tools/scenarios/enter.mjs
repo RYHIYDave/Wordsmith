@@ -82,7 +82,8 @@ export default async function (page, snap) {
       await page.waitForTimeout(40);
     }
     g = await inGame();
-    hold(began > 1200 && began < 2600 && begins(g) && g.cls === 'warrior', `left alone, the knight makes ready and goes: the run began after ${began} ms, ${where} (${JSON.stringify(g)})`);
+    // (since 25.2.4 the loading screen as a game begins: on the live 25.2.13, alone on this machine, 3.0 to 3.2 s, 9 Nov 2026)
+    hold(began > 1200 && began < 4000 && begins(g) && g.cls === 'warrior', `left alone, the knight makes ready and goes: the run began after ${began} ms, ${where} (${JSON.stringify(g)})`);
     await page.waitForTimeout(1200);
     if (inTown) hold((await said()) === null, `and in town he says nothing ("${await said()}")`);
     else hold(typeof (await said()) === 'string', `and he says his line ("${await said()}")`);

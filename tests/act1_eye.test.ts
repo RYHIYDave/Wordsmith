@@ -35,6 +35,10 @@ import type { ActId, GameEvent, Monster } from '../src/game/state';
 import { act1Fx } from '../src/render/act1_fx/index';
 import type { Act1FxCtx } from '../src/render/act1_fx/types';
 import { paintWithoutCanvas, paintingOf, seasoned, unlike } from './helpers';
+import { COLOSSUS } from '../src/game/colossus_fight';
+
+// (the old Drowned Eye's, held as he was: the Swamp Colossus, floor 10's since 25.3.0, switched off for this file)
+COLOSSUS.on = false;
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -125,7 +129,8 @@ function watch(g: Game, m: Monster, secs: number, move?: (t: number) => { mx: nu
 const since = (s: Seen, i = 0): number => (s.hurts.length > i ? s.hurts[i].t - s.began : -1);
 
 test('1. he is built, and is floor 10\'s boss: his rules, his pictures (heavy, his switch), what he draws; a boss alone', () => {
-  assert.ok(act1Rules('eye') === RULES, 'his rules');
+  // (through EYE_OR_COLOSSUS, game/act1_rules/colossus.ts: his while the Swamp Colossus's switch is off, as it is in this file)
+  assert.ok(act1Rules('eye')!.acts === RULES.acts && act1Rules('eye')!.tick === RULES.tick && act1Rules('eye')!.bossAt === RULES.bossAt, 'his rules');
   const fig = act1Fig('eye');
   assert.ok(fig && fig.heavy, 'his pictures, heavy (made for his floor, let go of after)');
   assert.ok(fig!.switches!.includes(EYE_ON), "the art chat's switch for him goes on with the descent");

@@ -61,6 +61,9 @@ export interface Act1Rules {
   invulnerable?(m: Monster): boolean;
   /** Whether a blow at it is taken by something shielding it, and none of it reaches it (the King's Hush wrapped round him, struck off by enough of them): game.ts damageMonster, once a blow. */
   absorbs?(R: BossRules, m: Monster): boolean;
+  /** (A boss) Whether he can be hit yet, past his line and his name: his bar comes up at the top of the screen only then (game.ts
+   *  bossShown). The Swamp Colossus: once his first tentacles stand. */
+  hittable?(R: BossRules, m: Monster): boolean;
   /** The least its life can be brought to now (0: none, it dies as its life runs out): a boss with another life bar to come is kept at 1; the Carrion Queen at a hundredth of hers until she is back over the drop her death was drawn at. game.ts damageMonster. */
   lifeFloor?(R: BossRules, m: Monster): number;
   /** How much less harm (0 to 1) monster `m` takes for this one of its kind, `by`, standing by it (a chanter's ward over the cult near it): game.ts damageMonster, by `act1Ward`. */

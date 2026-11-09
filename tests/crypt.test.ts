@@ -42,6 +42,7 @@ import { CRYPT_LAYOUT, CRYPT_LITTER, LEVER_CLEAR, generateFloor } from '../src/g
 import { WAYS } from '../src/game/ways';
 import { CULT } from '../src/game/defs';
 import { paintWithoutCanvas, paintingOf } from './helpers';
+import { WORD_TIERS } from '../src/game/types';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -153,7 +154,11 @@ test('nothing of the game changes with the switches off (and the Crypt\'s layout
   const cult = CULT.on;
   const yard = YARD.on;
   const open = A1_OPEN.on;
+  const tiers = WORD_TIERS.on;
   LEVER_CLEAR.on = false;
+  // (and WORDS BY FLOOR, 25.2.11, game/types.ts WORD_TIERS: the words its packs carry on floors 1 to 5, the prison's six; with it off,
+  // every one of the 150 as it was)
+  WORD_TIERS.on = false;
   // (and THE FIRST FIVE FLOORS' cult, whose packs come on floors 4 and 5: game/defs.ts CULT; and the switches of 1 Nov 2026:
   // the Headsman's yard, floor 2's boss hall, YARD; the Quarry laid as one massive area, floor 6, A1_OPEN)
   CULT.on = false;
@@ -171,6 +176,7 @@ test('nothing of the game changes with the switches off (and the Crypt\'s layout
     CULT.on = cult;
     YARD.on = yard;
     A1_OPEN.on = open;
+    WORD_TIERS.on = tiers;
   }
   assert.equal(c.digest('hex').slice(0, 16), 'a89c4a6c51c4eba8', '150 dungeons as they were');
 });

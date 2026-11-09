@@ -12,6 +12,11 @@ import { PILLARS, QUEST610_TEXT, QUESTS610, piecesInHand, siegeBroken } from '..
 import { emptyControls } from '../src/game/state';
 import type { GameEvent, Monster } from '../src/game/state';
 import { paintWithoutCanvas, seasoned } from './helpers';
+import { COLOSSUS } from '../src/game/colossus_fight';
+
+// (the old Drowned Eye's pillars, held as they were: the Swamp Colossus, floor 10's since 25.3.0, switched off for this file; his own
+// pillars in his last phase, tests/colossus_fight.test.ts)
+COLOSSUS.on = false;
 
 paintWithoutCanvas();
 

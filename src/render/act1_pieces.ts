@@ -26,6 +26,7 @@ import { ledgePieces } from '../art/floor7';
 import { canyonPieces } from '../art/floor8';
 import { pinewoodPieces } from '../art/floor9';
 import { fenPieces } from '../art/floor10';
+import { COLOSSUS, STONE, worldToStone } from '../game/colossus_fight';
 import { redoubtPieces } from '../art/redoubt';
 import { hushSetPieces } from '../art/act2_set';
 import { gateWardPieces } from '../art/floor11';
@@ -612,6 +613,7 @@ export class Act1Pieces {
             // in the water, lily pads, stumps, stones, roots; nothing on the ruin's ring or in the Eye's pool
             if (!fenSpot(gx, gy)) continue;
             if (this.onRing(wx, wy)) continue;
+            if (this.hisWater(wx, wy)) continue;
             const shore = this.shoreOf(T, wx, wy);
             if (shore < 0.8) {
               if (roll < 0.3) pick = { name: 'cattails', frame: roll < 0.15 ? 0 : 1 };
@@ -634,6 +636,18 @@ export class Act1Pieces {
       }
     }
     return out;
+  }
+
+  /**
+   * (THE SWAMP COLOSSUS, COLOSSUS on) Is world (x, y) in his water: behind his stone where he lurks and stands, or off its ends where
+   * he comes up for his shovel? Open water there, as the art chat's arena has it: nothing stands in front of him.
+   */
+  private hisWater(x: number, y: number): boolean {
+    const S = this.land?.stone;
+    if (!S || !COLOSSUS.on) return false;
+    const p = worldToStone(S, x, y);
+    if (p.u < -10 || p.u > STONE.w + 10) return false;
+    return (p.v < 0.3 && p.v > -18) || (p.v < STONE.d + 1.5 && (p.u < 0 || p.u > STONE.w));
   }
 
   /** Is world (x, y) on the fen's ruin's ring (or in the Eye's pool in it), or just by it? */

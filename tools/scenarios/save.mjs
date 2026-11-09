@@ -67,7 +67,8 @@ export default async function (page, snap) {
     if (!(await hands.until(() => window.__dbg.game().hero.ring === true, 5000))) await fail('the MASTER RUNE-STONE brought to the wordsmith did not light his ring');
     // (since Version 20.0 the word comes once the ring has powered up, and the slot with it: his "The
     // wordsmith should give you the word after the altar powers up", 9 Oct 2026, 22:12)
-    if (!(await hands.until(() => window.__dbg.game().hero.words.fire > 0, 9000))) await fail('the wordsmith gave no word once his ring had powered up');
+    // (since 25.2.11 each hero's first word his own, game/defs.ts FIRST_WORD: the Mage's Frost, his “I want frost for the mage”)
+    if (!(await hands.until(() => Object.values(window.__dbg.game().hero.words).some((n) => n > 0), 9000))) await fail('the wordsmith gave no word once his ring had powered up');
   }
   await page.evaluate(() => { const g = window.__dbg.game(); if (!(g.hero.words.fire > 0)) g.hero.words.fire = 1; g.socket(0, 'front', 'fire'); });
   await page.waitForTimeout(500);

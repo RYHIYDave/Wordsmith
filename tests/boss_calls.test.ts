@@ -17,6 +17,7 @@ import { BOSS_VOICES, speakBoss } from '../src/engine/audio';
 import { MONSTER_MOVES } from '../src/game/defs';
 import { ACTS, AM2_ACTS, FM2_ACTS, H2_ACTS } from '../src/game/bosses';
 import { act1Rules } from '../src/game/act1_rules/index';
+import { RULES as EYE_RULES } from '../src/game/act1_rules/eye';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { GameEvent, Monster } from '../src/game/state';
@@ -31,6 +32,9 @@ function movesOf(kind: string): { ids: string[]; basic: string } {
   if (kind === 'amalgam') return { ids: [...ACTS.amalgam, ...AM2_ACTS].map((a) => a.id), basic: ACTS.amalgam[0].id };
   // (the Fleshmancer's: with his action on, FM_ACTION, his moves as the action way has them: FM2_ACTS)
   if (kind === 'fleshmancer') return { ids: [...ACTS.fleshmancer, ...FM2_ACTS].map((a) => a.id), basic: ACTS.fleshmancer[0].id };
+  // (the Drowned Eye's: his lines are his old moves', said with the Swamp Colossus switched off; the Colossus, floor 10's since 25.3.0,
+  // has his own fight and says none of them)
+  if (kind === 'eye') return { ids: EYE_RULES.acts.map((a) => a.id), basic: EYE_RULES.acts[0].id };
   const r = act1Rules(kind as MonsterKind);
   const acts = r ? r.acts : (ACTS as Record<string, readonly { id: string }[]>)[kind];
   assert.ok(acts, `${kind}: his moves`);

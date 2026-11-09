@@ -23,7 +23,7 @@ import { RULES as unfinished } from './unfinished';
 import { RULES as queen } from './queen';
 import { RULES as cantor } from './cantor';
 import { RULES as stag } from './stag';
-import { RULES as eye } from './eye';
+import { EYE_OR_COLOSSUS as eye } from './colossus';
 // ACT 2, THE HUSH (game/act1.ts ACT2): the city's own, each floor's own, the five bosses
 import { RULES as hushed } from './hushed';
 import { RULES as watch } from './watch';

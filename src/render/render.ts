@@ -2,6 +2,12 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
+import { COLOSSUS, HIS_PLACE, onStoneOrJetty, stoneToWorld, worldToStone } from '../game/colossus_fight';
+import { colossusOf, colossusOn } from '../game/act1_rules/colossus';
+/** (COLOSSUS) How far the picture leans up toward him on his stone (game pixels). */
+const COLOSSUS_LEAN = 55;
+/** (COLOSSUS) As he changes, how far down the screen his middle at the water is put (the art chat's stills: 131 of 234). */
+const COLOSSUS_SHOW = 0.6;
 import { CRANK_TURN, FIRE_WALL, FURNACE_OUT, FURNACE_ROAR, STOKER_ROOM } from '../art/stoker_room';
 import { STOKER_ON } from '../art/stoker';
 import { CRANK_TIMES } from '../game/quests15';
@@ -2755,6 +2761,21 @@ export class Renderer {
       const up = m.a1?.perched ? MOTH_LEAN.perched : MOTH_LEAN.up;
       tx = Math.max(-W * MOTH_LEAN.most, Math.min(W * MOTH_LEAN.most, ((m.x - m.y - (h.x - h.y)) * 16) * MOTH_LEAN.share));
       ty = Math.max(-H * MOTH_LEAN.most, Math.min(H * MOTH_LEAN.most, ((m.x + m.y - (h.x + h.y)) * 8 - up) * MOTH_LEAN.share));
+    }
+    // (THE SWAMP COLOSSUS, COLOSSUS on: on his stone the picture leans up toward him in the water, the hero low on the screen but
+    // clear of the buttons at its foot: the art chat's camera leans 97 game pixels, on a screen with nothing over its foot)
+    const stone = L.land?.stone;
+    if (stone && COLOSSUS.on && onStoneOrJetty(worldToStone(stone, h.x, h.y))) {
+      ty = -Math.min(COLOSSUS_LEAN, H * 0.24);
+      // (as his phase ends and he changes, nothing hurting the hero: the picture turned on him, all of him on the screen, his middle at
+      // the water `COLOSSUS_SHOW` of the way down it, as the art chat's stills have him)
+      const b = colossusOf(game);
+      const f = b ? colossusOn(b).fight : undefined;
+      if (f && (f.mode === 'between' || f.mode === 'change')) {
+        const at = stoneToWorld(stone, HIS_PLACE.u, HIS_PLACE.v);
+        tx = (at.x - at.y - (h.x - h.y)) * 16;
+        ty = (at.x + at.y - (h.x + h.y)) * 8 + (0.5 - COLOSSUS_SHOW) * H;
+      }
     }
     // (QUESTS610, THE EYRIE'S SCENE: the picture panned out over the drop toward the town far below, and back: game/quests610.ts)
     if (game.scene) {
