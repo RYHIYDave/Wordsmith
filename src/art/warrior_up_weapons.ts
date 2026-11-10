@@ -55,7 +55,7 @@ export const WW_GLOW: Ramp = BLADE;
 
 export type TakeId = 'axeA' | 'axeB' | 'axeC' | 'hammerA' | 'hammerB' | 'hammerC';
 export const TAKE_IDS: readonly TakeId[] = ['axeA', 'axeB', 'axeC', 'hammerA', 'hammerB', 'hammerC'];
-type P2 = readonly [number, number];
+export type P2 = readonly [number, number];
 
 export interface WeaponTake {
   id: TakeId;
@@ -161,9 +161,10 @@ function lineDist(p: P2, line: readonly P2[]): number {
   return best;
 }
 
-/** A ring round the haft (a collar, a band): `x` along it, `w` long, `r` round. */
+/** A ring round the haft (a collar, a band): `x` along it, `w` long, `r` round, its two sides cut flat. */
 function collar(sm: Smith, x: number, w: number, r: number, piece = 'collar'): void {
-  sm.sc.cone(sm.iron, piece, [x - w / 2, 0, 0], [x + w / 2, 0, 0], r, r, 0.25, { tag: 'collar' });
+  const cuts = [{ n: [1, 0, 0] as V3, o: x + w / 2 }, { n: [-1, 0, 0] as V3, o: -(x - w / 2) }];
+  sm.sc.cone(sm.iron, piece, [x - w / 2 - r, 0, 0], [x + w / 2 + r, 0, 0], r, r, 0.25, { tag: 'collar', cuts });
 }
 
 // --- THE BATTLE AXES -------------------------------------------------------------------------------------------------
@@ -279,10 +280,12 @@ const HAMMER_B: WeaponTake = {
   butt: -12.5, top: 31.4, hr: 1.1, grip: [-11.6, 2.2], heart: 22, edges: [],
   head: (sm) => {
     const flat = [{ n: [0, 1, 0] as V3, o: HB_FACE }, { n: [0, -1, 0] as V3, o: HB_FACE }];
-    sm.sc.cone(sm.iron, 'head', [26.8, -HB_FACE - 2, 0], [26.8, HB_FACE + 2, 0], 4.0, 4.0, 0.4, { tag: 'drum', cuts: flat });
+    sm.sc.cone(sm.iron, 'head', [26.8, -HB_FACE - 2, 0], [26.8, HB_FACE + 2, 0], 4.2, 4.2, 0.4, { tag: 'drum', cuts: flat });
     // the bands: round each face's rim and round the middle
-    for (const [y0, y1] of [[HB_FACE - 1.3, HB_FACE + 1], [-HB_FACE - 1, -HB_FACE + 1.3], [-0.6, 0.6]]) {
-      sm.sc.cone(sm.dark, 'band', [26.8, y0, 0], [26.8, y1, 0], 4.55, 4.55, 0, { tag: 'band', cuts: flat });
+    for (const [y0, y1] of [[HB_FACE - 0.8, HB_FACE + 1], [-HB_FACE - 1, -HB_FACE + 0.8], [-0.5, 0.5]]) {
+      // (a ring, its two sides cut flat: a rod's ends are round, and a round end as wide as the drum would swallow it)
+      const sides = [{ n: [0, 1, 0] as V3, o: Math.min(y1, HB_FACE) }, { n: [0, -1, 0] as V3, o: -Math.max(y0, -HB_FACE) }];
+      sm.sc.cone(sm.dark, 'band', [26.8, y0 - 5, 0], [26.8, y1 + 5, 0], 4.55, 4.55, 0, { tag: 'band', cuts: sides });
     }
     collar(sm, 21.4, 1.2, 1.7);
     collar(sm, 31.0, 1.0, 1.4);
@@ -301,7 +304,7 @@ const RUNES_FACE: readonly (readonly P2[])[] = [
   [[27.0, -3.0], [29.6, 0], [27.0, 3.0], [24.4, 0], [27.0, -3.0]],
   [[27.0, -1.2], [27.0, 1.2]],
 ];
-const RUNES_SIDE: readonly (readonly P2[])[] = [
+export const RUNES_SIDE: readonly (readonly P2[])[] = [
   [[24.0, 4.4], [25.6, 2.2], [24.0, 0]],
   [[30.0, 4.4], [28.4, 2.2], [30.0, 0]],
   [[27.0, 5.6], [27.0, -2.6]],
@@ -341,6 +344,13 @@ const HAMMER_C: WeaponTake = {
 };
 
 export const TAKES: Readonly<Record<TakeId, WeaponTake>> = { axeA: AXE_A, axeB: AXE_B, axeC: AXE_C, hammerA: HAMMER_A, hammerB: HAMMER_B, hammerC: HAMMER_C };
+
+/** Each axe's blade in profile, in its own (X, Y): what its picture as an item is drawn from (dev/warrior_weapons_items.ts). */
+export const AXE_PROFILES: Readonly<Record<'axeA' | 'axeB' | 'axeC', { blades: readonly (readonly P2[])[]; edges: readonly (readonly P2[])[] }>> = {
+  axeA: { blades: [AXE_A_BLADE], edges: [AXE_A_EDGE] },
+  axeB: { blades: [AXE_B_BIT, mirrorY(AXE_B_BIT)], edges: [AXE_B_EDGE, mirrorY(AXE_B_EDGE)] },
+  axeC: { blades: [AXE_C_BLADE], edges: [AXE_C_EDGE] },
+};
 
 // ---------------------------------------------------------------------------------------------
 // LAYING A TAKE: its own sculpture, in its own space, and then laid where it is (in his hands, on his back, in the air)
@@ -391,6 +401,8 @@ export function buildTake(take: WeaponTake, toW: (p: V3) => V3 = (p) => p): Scul
     }
     // (a band's or a collar's rolled edge, and a cap's crest: a lit line)
     if ((h.prim.tag === 'band' || h.prim.tag === 'collar') && h.tone >= 3) return WW_IRON[4];
+    // (a round drum between dark bands lifted a tone, so it reads as bright iron bound in black)
+    if (h.prim.tag === 'drum') return WW_IRON[Math.min(4, h.tone + 1)];
     return null;
   } });
   const wood = sc.mat({ ramp: WW_WOOD, crease: 0.3, paint: (h) => {
@@ -405,7 +417,7 @@ export function buildTake(take: WeaponTake, toW: (p: V3) => V3 = (p) => p): Scul
     const k = ((w[0] + a * 1.6) / 1.6) % 1;
     return (k < 0 ? k + 1 : k) < 0.24 ? WW_LEATHER[Math.max(0, h.tone - 2)] : null;
   } });
-  const dark = sc.mat({ ramp: WW_DARK, crease: 0.3, paint: (h) => (h.tone >= 3 && hash(h.x, h.y, 5) < 0.5 ? WW_DARK[4] : null) });
+  const dark = sc.mat({ ramp: WW_DARK, crease: 0.3 });
   const sm: Smith = { sc, iron, wood, leather, dark };
   sc.cone(wood, 'haft', [take.butt + 0.6, 0, 0], [take.top, 0, 0], take.hr, take.hr * 0.92, 0.2, { tag: 'haft' });
   sc.cone(leather, 'grip', [take.grip[0], 0, 0], [take.grip[1], 0, 0], take.hr + 0.3, take.hr + 0.3, 0.2, { tag: 'grip' });
@@ -482,7 +494,7 @@ export const CLEAVE_TOP: Partial<Bones> = {
   ...plantedFeet(),
   px: -4.2, pz: -7.2, yaw: -46, pitch: -2, roll: 0, twist: -30, bend: -9, side: 4,
   faceTurn: 8, faceUp: -4, faceTilt: 4,
-  rhIn: 0, rhx: -1.5, rhy: -1, rhz: 11.5,
+  rhIn: 0, rhx: -1.0, rhy: -2.5, rhz: 13,
   lhIn: 3, lhx: -10.4, lhy: 0, lhz: 0,
   wAz: -158, wEl: 4, wRoll: 30, le: 40, re: 30,
 };
