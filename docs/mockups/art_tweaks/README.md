@@ -58,4 +58,5 @@ be better instead of just improved paintings”.
 
 `tsc` clean (it needs NODE_OPTIONS=--max-old-space-size=4096 or more). Pictures at 844x390 x3 of everything above, as it is
 and as tried. `node tools/unit.mjs --only prison,prison_way,stoker,new_mobs3,chapel,floor6,millrace,act2_millrace,floor13,terrain,lifebar`
-(and the core) on b6f3d06e: see the commit that adds this file for how it ended. The whole suite was not run.
+(and the core) on b6f3d06e: UNIT DONE b6f3d06ebf: 34 files, 34 passed, 0 failed (0 passed alone); 396 tests. The other 378
+test files were not run.
