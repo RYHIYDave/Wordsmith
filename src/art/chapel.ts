@@ -87,7 +87,7 @@ const WAX = ['#8c7c62', '#c8b694'] as const;
 const SEAM = '#0a090d';
 const BEYOND = '#060508';
 /** Floor 3's own, on the way in's upper steps: the prison's charcoal stone and black iron (art/prison.ts, look B). */
-const PRISON_STONE: R5 = ['#09090d', '#131319', '#1c1c24', '#282731', '#433f4c'];
+const PRISON_STONE: R5 = ['#101018', '#1b1b25', '#272733', '#343341', '#4b4656'];
 const PRISON_IRON: R5 = ['#09090c', '#16161b', '#222128', '#323039', '#55505e'];
 /** Fire: the props' own embers (so the renderer and the checks know it for fire). A candle's flame: white-gold at its heart, gold, orange at its foot. */
 const FIRE = EMBER;
