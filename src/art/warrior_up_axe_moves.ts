@@ -11,10 +11,13 @@
 //   THE THROWN AXE (hold)  thrown flat, spinning, out along his aim and back to his hand: the throw, him braced and empty-handed
 //                          while it flies, the catch. TWIN AXES (a talent): a second axe drawn from his back, both thrown,
 //                          one each side of his aim, both caught, the second put away again
-//   LEAPING CHOP (swipe)   a crouch, a leap up and over with the axe overhead, the chop as he lands, the ground struck
+//   LEAPING CHOP (swipe)   a crouch, a leap up and over with the axe laid back over his shoulder, the chop as he lands, the
+//                          ground struck
 //
 // HOW HE HOLDS IT, in every move: his LEFT hand at the butt, his RIGHT hand up the haft (a right-hander's grip, as his guard has
-// it: art/warrior_up_weapons.ts GUARD_HEAVY), the two never changing places; in a throw his right hand alone, low on the grip.
+// it: art/warrior_up_weapons.ts GUARD_HEAVY), the two never changing places; for a swing his right hand slides down the haft to
+// his left, and back up after; in a throw his right hand alone, low on the grip. EACH FOREARM COMES TO THE HAFT ACROSS IT, never
+// along it (`elbowed`): a forearm that lay along the haft would have it up its sleeve.
 // THE RULES THAT HOLD IN EVERY FRAME, FROM EVERY SIDE (the checks below, held by the test): his helm is seen; the working edge
 // points down or toward the mark, never at his own head; both hands on the grip wherever the move has two on it; nothing of the
 // axe through him.
@@ -767,10 +770,12 @@ export const AXE_CHOP_HIGH = 40;
 /**
  * LEAPING CHOP, all of it. THE CROUCH: he sinks deep over his feet, the axe gathered low at his hip (3), HELD (3 to 5). THE
  * LEAP (5 to 20, half a second: the game carries him along and lifts him): he drives up off both feet, the axe swept up
- * before him (7); his knees come up under him and THE AXE GOES UP OVER HIS HEAD, his hands over and behind it, his elbows out
- * (10); at the top he hangs, back arched, the axe laid right back, his chin down and his eyes on the spot (13); he comes down
- * reaching for the floor with his front foot, the axe still back (17); and THE CHOP, two frames, smeared: over the top (19)
- * and DOWN INTO THE FLOOR as his feet land, his right hand slid down the haft, all his weight on it (20, the blow). A freeze,
+ * before his right shoulder (7); his knees come up under him and THE AXE IS LAID BACK OVER HIS RIGHT SHOULDER, his hands by
+ * his right ear, his elbows out (10: never over or before his helm, which hands held over his head hide from behind); at the
+ * top he hangs, arched and wound to his right, the axe laid right back, his chin down and his eyes on the spot (13); he comes
+ * down reaching for the floor with his front foot, the axe still back (17), coming upright past his ear (18); and THE CHOP,
+ * two frames, smeared: over (19) and DOWN INTO THE FLOOR as his feet land, his right hand slid down the haft, all his weight
+ * on it (20, the blow). A freeze,
  * sunk over it (23). THE WIND-DOWN, heavy: he wrenches it out of the floor and comes up (28), swings it low round his right
  * side as his front foot comes home (33, 38), and is in his guard (42).
  */
@@ -1064,3 +1069,6 @@ export function axeFlying(): Sprite[] {
 }
 
 export { FR as AXE_FRAME, UNITS_PER_TILE, plantedFeet };
+// (for the film's page, src/dev/axe_film_main.ts: which of his sides a facing is, as his great sword's lists are chosen)
+export { wuFacing, wuTailsFacing } from './warrior_up_art';
+export type { WuSide };

@@ -125,8 +125,9 @@ game pixels, anchor the middle, as `itemArt` gives.
   it). Three weapons is three times the Warrior's pictures (a dungeon alone, from eight sides, was 2,264 pictures, 34.2 MB decoded,
   2.39 MB packed for the great sword: README of `docs/mockups/warrior_up`), unless only the weapon he has picked is held. His run
   and town lists may share their legs but not their pictures, since the weapon is in them.
-- PAINTING COST: a frame of him armed is 88 thousandths of a second here (him alone 34): `paintArmed` paints him once with the
-  great sword and again with the take. A hook in `paintWarriorUp` for what he holds (the next step's) halves it.
+- PAINTING COST: a frame of him armed was 88 thousandths of a second here (him alone 34): `paintArmed` painted him once with the
+  great sword and again with the take. Since step 2 his painter has a hook for what he holds (`WuAround.held`, below) and he is
+  painted once.
 - HIS GUARD WITH THESE IS RAISED (above): his look in a dungeon with an axe or a hammer differs from the great sword's there, so
   the heavy weapons read from every side. His to see in the picture.
 - HAMMER C's MARKS: his own marks (a diamond, a stroke, chevrons), no alphabet's and no word; his rulebook's “Words in the world”
@@ -180,3 +181,168 @@ NOTE (the art chat, 9 Nov, after step 1b): the wind-up row is left out of the tw
 (`WIND_UP = False` in `tools/warrior_weapons_phone.py`): in the new wind-ups, seen from his side, his raised arms hide his
 helm, so he reads as headless. TO MEND WITH THE MOVES (step 2): his helm seen in every frame of every move from every side
 (elbows bent, his hands over and behind his head, his head tipped to the mark), the edge or the face still coming down.
+
+# Step 2: his moves with the battle axe (the art chat's helper, 9 Nov 2026)
+
+Still a mock-up behind the switch that is off (`WARRIOR_WEAPONS`). The moves: `src/art/warrior_up_axe_moves.ts`. Nothing of the game
+imports it (`tests/warrior_weapons.test.ts`, 1). The warhammer's moves are the step after this one.
+
+## His picks (9 Nov 2026)
+
+After the heads were turned (his “Have the blades and the hammers point down”, “All the hammers are pointing the wrong way”, and
+his pick “The edge and the hammer face (Recommended)”), shown `axes_phone.png` and `hammers_phone.png` (at `00b506bd`) and asked
+“Which battle axe for the Warrior (axes_phone.png)?”, by 20:44: “B, the war axe”; asked “Which warhammer for the Warrior
+(hammers_phone.png)?”: “A, the maul (Recommended)”.
+
+So THE BATTLE AXE IS TAKE B, THE WAR AXE (two flared bits, a spike), and THE WARHAMMER IS TAKE A, THE MAUL. Takes A and C of
+the axe and B and C of the hammer are not used: their code is left, nothing more is drawn with them.
+
+## The film: `pictures/axe_moves.mp4`
+
+40.1 s (1,204 pictures), 30 pictures a second, H.264 (yuv420p), 1266 by 652, 6.6 MB.
+
+Shot in the game's own practice room on a phone's wide screen (844 by 390), the game drawing it: the film's page is the game
+with his moves shown in place of his picture (`src/dev/axe_film_main.ts`), so his depth among the enemies, his light, his scarf,
+the hits on the enemies and the cracked floor and dust where the Leaping Chop lands are the game's own. In order: standing;
+running once round a ring (all eight sides); then each move at the game's own size from two or three sides, and again at half
+speed and twice the size: Cleave (the cut across, then a second tap's cut back: toward you, side-on, away), the thrown axe
+(side-on, away), Twin Axes (away, side-on), Leaping Chop (side-on, toward you, away). The enemies stand clear of him and of
+each other; the blows strike them as the game strikes (its flash, its numbers, its knock). A line under the picture says what is
+shown. The practice room's own buttons are in the picture, as he sees them.
+
+## How he holds it
+
+His LEFT hand at the butt and his RIGHT hand up the haft, in every move (a right-hander's grip, as his guard of step 1 has it);
+the two never change places. For a swing his right hand SLIDES DOWN the haft to his left (a fist's width above it) and back up
+after, as an axe is swung. In a throw his right hand alone, low on the grip. EACH FOREARM COMES TO THE HAFT ACROSS IT, never
+along it (a forearm along the haft has the haft up its sleeve): every key's elbows are set for that (`elbowed`), and it is what
+shapes the moves: an upright axe is held with the elbows out; a level one with the hands low and the forearms hanging to it.
+
+## The moves (30 pictures a second; from all eight of his sides)
+
+| List | Pictures | Beats (frames; seconds) |
+|---|---|---|
+| Standing, his guard alive | 60 (2 s, a loop) | his own stand as the game has it (`WU_REAR3`), his body and legs frame for frame; the head of the axe stirs behind him as his sword's point does |
+| Running | 15 (0.5 s, a loop) | the game's own run (`KNIGHT_RUN3`), frame for frame; the axe before his right hip in both hands, its head trailing up behind him, edge down, riding with his steps |
+| CLEAVE, the cut across (tap) | 37 (1.23 s) | skip-step in on the game's step 0 to 2; wind-up reached 6, HELD 6 to 8; strike 9 and 10; THE BLOW at 10 (0.333 s); freeze 11; wind-down to 20; waits at 21 (0.7 s) for a second tap; in his guard at 36 (1.2 s) |
+| CLEAVE, the cut back (second tap) | 28 (0.93 s) | from where the first waits: skip-step 0 to 2; wind-up 6, HELD 6 to 8; strike 9 and 10; THE BLOW at 10 (0.333 s); freeze 11; wind-down 18; in his guard at 27 (0.9 s) |
+| THE THROWN AXE, the throw (hold) | 21 (0.7 s) | wind-up reached 6, HELD 6 to 9; the throw 10 and 11; IT LEAVES HIS HAND at 11 (0.367 s); his arm carries on 14; braced at 20 |
+| ... braced while it flies | 30 (1 s, a loop) | empty-handed, low and square, his right hand out for it; alive |
+| ... the catch | 19 (0.63 s) | in his hand at 0; his arm carried back by it 1 to 3; held 4 to 6; in his guard at 18 |
+| TWIN AXES, the throw | 21 (0.7 s) | as the one's; the second axe first seen in his left hand at 4; both leave at 11 |
+| ... braced for two | 30 (1 s, a loop) | both hands out |
+| ... the catch | 23 (0.77 s) | his own in his right hand at 0, the second in his left at 3; both back behind his shoulders 6 to 8; the second last seen at 11; in his guard at 22 |
+| LEAPING CHOP (swipe) | 43 (1.43 s) | crouch reached 3, HELD 3 to 5 (0.167 s, on the spot); THE LEAP 5 to 20 (0.5 s in the air: the game carries and lifts him); the chop 19 and 20; THE BLOW at 20 (0.667 s), as his feet land; freeze to 23; wind-down; in his guard at 42 |
+
+**CLEAVE** (beside his Strike: its wind-up and its reach). The wind-up: sunk on his back leg, wound round away, THE AXE LIFTED
+HIGH, its haft upright before his right shoulder and its head over him, ITS EDGE TOWARD THE MARK. The strike: his hips whip
+round, his hands drop to his hip and the axe comes down and across at the height of a hip. On his frames the far end of its head
+is 71 degrees to his right at frame 9 (1.42 tiles from the floor point under him), 21 to his left at 10 (1.57 tiles), 42 to
+his left at 11, and is carried on round: THE CUT IS 150 DEGREES WIDE BEFORE HIM (75 each side of his aim) and reaches 1.7 tiles
+(his Strike's), the game's step on a swing (0.33 tiles in 0.12 s) as his Strike has it. The wind-down: carried on round and LOW
+to his left, its head down by the floor, all of him turned and sunk after it. HOW A SECOND TAP CHAINS, as his Strike's does:
+the first cut waits there at 21 (its `poise`) while a second tap may come; the second tap is the cut BACK, left to right, from
+that very pose (the same beats; it ends in his guard of itself). With no second tap the first plays on from 21 into his guard.
+
+**THE THROWN AXE.** The wind-up: his left hand leaves the haft and goes out toward the mark; his right draws the axe back
+behind his right shoulder, its head up behind him and its edge down, all of him wound round after it. The throw: his arm comes
+through level, the axe laid flat and trailing, and is whipped on round his hand and let go. THE GAME DRAWS IT IN THE AIR
+(`axeFlying()`: 12 pictures, a whole turn, lying flat, its two edges each trailing a short streak of light; the same list
+whichever way it flies): out along his aim and back, `AXE_FLIGHT`: 6 tiles from him at its furthest, 1 second out and back,
+slowing as it turns (`axeFlightAt(t)`); from 0.8 tiles before him (where his hand lets it go) back to 0.4 (where his hand takes
+it), 19 game pixels above the floor; turning once in 0.4 s (a picture a frame); striking what comes within 0.6 tiles of it once
+on the way out and once on the way back. While it flies he stands braced (a loop, so the flight may be any length); the catch
+begins on the frame it reaches his hand: it smacks into his hand and his arm is carried back by it, round his right side and up
+behind his shoulder, he rocked onto his back leg; then his left hand comes to the butt and it is brought down into his guard.
+
+**TWIN AXES** (the talent: “two thrown, one each side of his aim”). WHAT IS DRAWN: a second axe, the same, DRAWN FROM HIS BACK
+over his left shoulder by his left hand as he winds up (first seen in his hand at frame 4), one drawn back behind each shoulder,
+his chest out between them; both thrown at once, each `AXE_TWIN_SPREAD` 14 degrees to its own side of his aim; both caught (his
+own, then the second 3 frames later: its flight is that much longer); and THE SECOND PUT AWAY again over his left shoulder (last
+seen in his hand at frame 11 of the catch). Between whiles it is not seen on him.
+
+**LEAPING CHOP** (beside his Lunge: its range, 6 tiles; its landing, 1.6 tiles round; its half second in the air). The crouch,
+held, on the spot; he drives up off both feet; THE AXE IS LAID BACK OVER HIS RIGHT SHOULDER, his hands by his right ear (not
+over his helm: from behind, hands over his head hide it), his knees up under him, arched at the top; THE CHOP comes over past
+his right ear and DOWN INTO THE FLOOR as his feet land, his right hand slid down the haft, all his weight on it. The game lifts
+him `AXE_CHOP_HIGH` 40 game pixels at the top (its own leap's lift, `LEAP_LIFT`; his Lunge's is 9). THE AXE STRIKES THE FLOOR
+1.5 TILES BEFORE WHERE HIS FEET COME DOWN (`AXE_CHOP_STRIKE`: the far end of its head is 1.62 tiles before him on the blow's
+frame, its middle 1.39). THE CRACK AND THE DUST ARE THE GAME'S, there (in the film: the game's own leap landing,
+`render/wild.ts` `landing`, cracks, a flash and dust; with his Lunge on, a Warrior's landing draws the Lunge's instead, so the
+film has it off). Then a freeze, sunk over it; he wrenches it out, swings it low round his right side as his front foot comes
+home, and is in his guard.
+
+## The rules every frame keeps (the checks: `tests/warrior_weapons.test.ts` 7 to 11)
+
+Every one of the 327 frames, from every one of his eight sides (2,616 pictures):
+
+- HIS HELM IS SEEN: six tenths at least of what of it faces the eye (`helmSeen`), the smear of a strike counted as hiding it.
+  The least in each move: standing 79%, running 81%, Cleave 62% and 66%, the throw 83%, braced 78%, the catch 83%, Twin Axes 80%,
+  83% and 82%, Leaping Chop 63%. How: an upright axe is held before his right shoulder, never before his face; overhead it is
+  laid back over his right shoulder with his hands by his ear; and NO SMEAR IS PAINTED OVER HIS HELM (a sweep that passes his
+  head passes behind it: his rulebook's Animations 4).
+- THE EDGE'S WAY: the working edge (of the war axe's two bits, the one turned more down or toward the mark) points down or
+  toward the mark by a quarter at least, and is never turned toward his own head. Standing, running and waiting, a bit hangs
+  under the haft; lifted for a blow, a bit faces the mark; in a strike, a bit leads the cut.
+- BOTH HANDS ON THE GRIP wherever the move has two on it; his right wherever it has one; in Twin Axes his left on the second's.
+- NOTHING OF THE AXE THROUGH HIM (step 1's check, every frame; the second axe too).
+- HIS STAND AND HIS RUN ARE THE GAME'S OWN: every number of his body and his legs the game's, frame for frame.
+- HIS FEET GRIP THE FLOOR: a foot that is down moves no more than 1.41 picture pixels between two frames (a heel turning on its
+  toes); the game carries him only on a cut's first step and through the leap.
+- Crisp, the friend's cyan, nothing of the enemy's; the thrown axe in the air the same.
+
+Looked at close, at the game's size, from all eight sides (contact sheets, `tools/warrior_axe_peek.ts`), and in the film.
+Mended on the way: his forearms laid across the haft (the haft was up his right sleeve in every swing); Cleave made a low cut
+(hands at his hip) so that they can be; the head of the axe no longer spun half round as it is lifted; the overhead holds moved
+off his helm to his right shoulder; the Leaping Chop's haft kept clear of his right pauldron on the way up; Twin Axes' two held
+wider and lower (the second hid his helm from behind); the smear made again (below).
+
+**Beside the Brawler and the Gate Ward** (the measure for new art): the Warrior with the war axe, his wind-up, his blow and the
+axe in the air were put beside the Veteran (his stance, his cross and his round kick with their effects) on the Gate Ward's
+ground at the game's own size. The axe itself sits at their level: sculpted and inked as his armour is, five tones of iron, its
+edges the friend's cyan. ITS SMEAR DID NOT: it was rougher than his great sword's and the Veteran's streaks (a thin faceted
+band, with two big flat copies of the axe's head standing off it). It is now made exactly as his great sword's is (one tapering
+crescent, bright behind the head, breaking up at its old end, a lit rim, two slender after-images lying on it), and reads at
+his sword's level.
+
+## What the main chat needs
+
+**The lists** (`makeWarriorAxeArt()`: one `AnimSet` for each of his eight sides, in the shape `makeWarriorUpArt` gives; each
+frame painted when first read): `idle` 60, `walk` 15, `clips.attack` 37 (`hit` 0.333, `poise` 0.7, `tail`), `clips.attack2` 28,
+`clips.heavy` 21 (the throw; `hit` 0.367 is the moment it leaves), `clips.hold` 30 (braced, a loop), `clips.release` 19 (the
+catch), `clips.leap` 16 (the leap by how far through he is, the last the blow), `clips.land` 23 (from the blow), and under
+`clips.moves`: `chopCrouch` 6, `twinThrow` 21, `twinBraced` 30, `twinCatch` 23. That is 329 pictures a side, 2,632 for his eight;
+and `axeFlying()`, 12 of the axe in the air (one list for every way). A frame is about 70 thousandths of a second to paint here.
+NOT DRAWN YET with the axe: struck from in front and behind, his fall, town and his card (step 1's hold on his back is a pose,
+not lists), and a run empty-handed.
+
+**The rules** (they follow these frames):
+- CLEAVE: the blow at 0.333 s (his Strike's `windup`), all who stand within 1.7 tiles and 75 degrees either side of his aim; the
+  game's step on a swing as Strike's; a second tap while the first waits (to 0.7 s, and the game's own window after) is the cut
+  back, the same numbers.
+- THE THROWN AXE: it leaves at 0.367 s; the flight above (`AXE_FLIGHT`); the game draws the axe, moves it, and strikes with it
+  both ways; the catch begins when it reaches him. AS DRAWN HE STANDS while it flies (about 2 s from the hold to his guard).
+- TWIN AXES: two, 14 degrees each side of his aim; the second comes back 0.1 s after the first.
+- LEAPING CHOP: 0.167 s crouched before he leaves the floor (his Lunge leaves at once), then the Lunge's half second in the air
+  (the game's carry and its lift, 40 game pixels); the blow as he lands, 1.6 tiles round a point 1.5 tiles before his feet (so:
+  either he lands 1.5 tiles short of the spot aimed at, or the area is put there); the game's cracked floor and dust at that point.
+- HIS SIDE: by `wuFacing` as his great sword's lists are; an attack's side is his aim's.
+
+**The game's files this step touched** (nothing changes while they are not used): `art/warrior_up.ts`: his painter takes what he
+holds in place of his great sword (`WuAround.held`: laid into his sculpture and drawn with him as one picture; his great sword is
+then not drawn). `art/warrior_up_moves.ts`: four of its helpers for his feet are exported (`onToes`, `backFoot`, `lightFeet`,
+`skipFeet`). `tests/warrior_up.test.ts` holds every frame of his as it was.
+
+## For him to decide
+
+1. TWIN AXES' SECOND AXE: as drawn it comes from his back and goes back there, and is not seen on him between. If he would
+   rather it were always on his back once he has the talent, his standing and running lists want a second set with it there.
+2. WHILE THE AXE FLIES: as drawn he stands braced for it. If he is to move meanwhile, a run and a catch on the run want drawing.
+3. LEAPING CHOP'S CROUCH: it is held a sixth of a second before he leaves the floor, where his Lunge leaves at once.
+
+## How the pictures are made
+
+    npx tsx tools/warrior_axe_peek.ts <move> <out.png> [scale] [sides] [frames]   # a move's frames from his eight sides, and what the checks find
+    node tools/axe_film_page.mjs                                                   # the film's page: dist/axe_film.html
+    OUT=<frames dir> node tools/playtest.mjs --file dist/axe_film.html --touch --size 844x390 --dpr 3 --init tools/axe_film_init.js --scenario tools/scenarios/axe_film.mjs --out <frames dir>/x
+    python3 tools/warrior_axe_film.py <frames dir> docs/mockups/warrior_weapons/pictures/axe_moves.mp4

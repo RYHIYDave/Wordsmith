@@ -17,7 +17,7 @@ const WAYS = { toward: [S, S], side: [S, -S], away: [-S, -S], front: [1, 0] };
 const SAY = { toward: 'toward you', side: 'side-on', away: 'away from you' };
 const TILE_SPEED = 4.6; // tiles a second: the game's run
 const SWING_STEP = [0.33, 0.12]; // tiles, seconds: the game's step on each swing (TUNE.swingStep, swingStepTime)
-const FLIGHT = { far: 6, time: 1.0, from: 0.8, to: 0.4, wide: 0.7, spread: 14 }; // art/warrior_axe_moves.ts AXE_FLIGHT, AXE_TWIN_SPREAD
+const FLIGHT = { far: 6, time: 1.0, from: 0.8, to: 0.4, wide: 0.7, spread: 14 }; // art/warrior_up_axe_moves.ts AXE_FLIGHT, AXE_TWIN_SPREAD
 const CHOP = { leap: 5, land: 20, end: 42, far: 4.4, high: 40, reach: 1.5, round: 1.6 }; // AXE_CHOP_*; far: how far this film's leap goes (the rules': up to 6)
 
 export default async function (page, snap) {
@@ -90,7 +90,7 @@ export default async function (page, snap) {
    * A SHOT: a list of beats (which move, from which frame to which), played at full speed or at half, the hero carried as the
    * game would carry him; `more(state, beat, f, t)` adds what the beat does (the axes in the air, the blows).
    */
-  const play = async (name, caption, { face, zoom = false, slow = false, beats, who, from = home, hold = 6 }) => {
+  const play = async (name, caption, { face, zoom = false, slow = false, beats, who, from = home, hold = 6, lead = 0 }) => {
     if (process.env.ONLY && process.env.ONLY !== name) return;
     const ids = await stand(from, face, who || []);
     const pos = [from[0], from[1]];
@@ -98,6 +98,8 @@ export default async function (page, snap) {
     const per = slow ? 2 : 1;
     const ms = 1000 / 30 / per;
     const ctx = { ids, pos, face, hit: new Map(), flown: 0 };
+    // (a close pass may look ahead of him: the picture is cut round a point `lead` tiles on along his aim, in game pixels here)
+    const ahead0 = [(face[0] - face[1]) * 16 * lead, (face[0] + face[1]) * 8 * lead];
     let shot = 0;
     for (const b of beats) {
       const last = b.to ?? b.from;
@@ -108,13 +110,13 @@ export default async function (page, snap) {
           if (process.env.FRAMES && shot >= Number(process.env.FRAMES)) break;
           const st = { move: b.move, frame: f, hero: ctx.pos, face, ms, events: [], axes: [] };
           if (b.each) b.each(st, ctx, f, i, s === 0, ms / 1000);
-          const w = await take(st, { shot: name, caption, zoom, slow, say: b.say || '' });
+          const w = await take(st, { shot: name, caption, zoom, slow, say: b.say || '', lead: ahead0 });
           ctx.monsters = w.monsters;
           shot++;
         }
       }
     }
-    for (let i = 0; i < hold * per; i++) await take({ move: 'stand', frame: i % 60, hero: ctx.pos, face, ms }, { shot: name, caption, zoom, slow, say: '' });
+    for (let i = 0; i < hold * per; i++) await take({ move: 'stand', frame: i % 60, hero: ctx.pos, face, ms }, { shot: name, caption, zoom, slow, say: '', lead: ahead0 });
   };
   const ahead = (ctx, a, r = 0) => [ctx.pos[0] + ctx.face[0] * a - ctx.face[1] * r, ctx.pos[1] + ctx.face[1] * a + ctx.face[0] * r];
   const turned = (v, deg) => { const a = deg * Math.PI / 180; return [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a)]; };
@@ -176,7 +178,7 @@ export default async function (page, snap) {
     const c = [home[0] + 1.2, home[1] - 1.2];
     await play('run', 'RUNNING with it: his own run, the axe riding with his steps', {
       face: WAYS.side, from: [c[0] - R * S, c[1] - R * S], hold: 0,
-      who: [['skeleton', 0, 5.2], ['brute', 5.6, 2.2]],
+      who: [['skeleton', 1.5, 7.5], ['brute', 6.5, 1.5]],
       beats: [{ move: 'run', from: 0, to: 14, loop: N, each: (st, ctx, f, i) => { const a = -3 * Math.PI / 4 + (2 * Math.PI * (i + 1)) / N; ctx.pos = [c[0] + R * Math.cos(a), c[1] + R * Math.sin(a)]; st.hero = ctx.pos; ctx.face = [-Math.sin(a), Math.cos(a)]; st.face = ctx.face; } }],
     });
   }
@@ -185,11 +187,11 @@ export default async function (page, snap) {
   for (const w of ['toward', 'side', 'away']) await play(`cleave_${w}`, `CLEAVE (tap), ${SAY[w]}: a wide cut across, then back`, { face: WAYS[w], beats: cleave, who: arc });
   await play('cleave_slow', 'CLEAVE at half speed, twice the size', { face: WAYS.side, zoom: true, slow: true, beats: cleave, who: arc });
   const line = [['skeleton', 2.6, 0], ['cultist', 4.6, 0.1], ['skeleton', 3.4, -2.2]];
-  for (const w of ['side', 'toward']) await play(`throw_${w}`, `THE THROWN AXE (hold), ${SAY[w]}: out, and back to his hand`, { face: WAYS[w], beats: throwBeats(false), who: line });
-  await play('throw_slow', 'THE THROWN AXE at half speed, twice the size', { face: WAYS.side, zoom: true, slow: true, beats: throwBeats(false), who: line });
+  for (const w of ['side', 'away']) await play(`throw_${w}`, `THE THROWN AXE (hold), ${SAY[w]}: out, and back to his hand`, { face: WAYS[w], beats: throwBeats(false), who: line });
+  await play('throw_slow', 'THE THROWN AXE at half speed, twice the size', { face: WAYS.side, zoom: true, slow: true, beats: throwBeats(false), who: line, lead: 2.6 });
   const vee = [['skeleton', 3.0, -0.75], ['cultist', 4.4, 1.1], ['skeleton', 5.4, -1.35]];
-  for (const w of ['toward', 'side']) await play(`twin_${w}`, `TWIN AXES (a talent), ${SAY[w]}: two thrown, one each side of his aim`, { face: WAYS[w], beats: throwBeats(true), who: vee });
-  await play('twin_slow', 'TWIN AXES at half speed, twice the size', { face: WAYS.toward, zoom: true, slow: true, beats: throwBeats(true), who: vee });
+  for (const w of ['away', 'side']) await play(`twin_${w}`, `TWIN AXES (a talent), ${SAY[w]}: two thrown, one each side of his aim`, { face: WAYS[w], beats: throwBeats(true), who: vee });
+  await play('twin_slow', 'TWIN AXES at half speed, twice the size', { face: WAYS.side, zoom: true, slow: true, beats: throwBeats(true), who: vee, lead: 2.6 });
   const spot = [['skeleton', CHOP.far + 2.6, -0.8], ['cultist', CHOP.far + 2.45, 1.0], ['skeleton', CHOP.far + 1.2, 1.8]];
   const leap = [{ move: 'chop', from: 0, to: CHOP.end, each: chop, say: 'the crouch, held; the leap; the chop as he lands' }];
   const back = (w) => [home[0] - WAYS[w][0] * 2.2, home[1] - WAYS[w][1] * 2.2];

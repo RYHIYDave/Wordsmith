@@ -1,11 +1,11 @@
-// A QUICK LOOK at the Warrior's moves with the battle axe (src/art/warrior_axe_moves.ts), for whoever makes them: a move's
+// A QUICK LOOK at the Warrior's moves with the battle axe (src/art/warrior_up_axe_moves.ts), for whoever makes them: a move's
 // frames side by side (across) from his eight sides (down), `scale` times as big, with what the checks find printed (his helm
 // seen, the edge's way, nothing through him, his hands on the haft). Nothing of the game imports it.
 //   npx tsx tools/warrior_axe_peek.ts <move> <out.png> [scale] [sides|all] [frames: all | every2 | 0,3,6,...] [quiet]
 import { Px } from '../src/engine/px';
 import { paintWithoutCanvas } from '../tests/helpers';
 import { writePng } from './px_png';
-import { AXE_FRAME, AXE_MOVES, axeFaults, axePosed, helmSeen, paintAxe, workingEdge } from '../src/art/warrior_axe_moves';
+import { AXE_FRAME, AXE_MOVES, axeFaults, axePosed, helmSeen, paintAxe, workingEdge } from '../src/art/warrior_up_axe_moves';
 import { WU_SIDES } from '../src/art/warrior_up';
 import type { WuSide } from '../src/art/warrior_up';
 

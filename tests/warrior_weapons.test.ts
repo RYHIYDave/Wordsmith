@@ -16,7 +16,7 @@
 //      the wrong way”; his pick, “The edge and the hammer face (Recommended)”): in his guard and at each wind-up's top the way
 //      an axe's edge or a hammer's striking face points has a downward part, in the world and on the screen from every one of
 //      his eight sides; at the wind-ups it points on toward the mark; on his back it is turned down and out; never at his head.
-//   STEP 2, HIS MOVES WITH THE WAR AXE (src/art/warrior_axe_moves.ts; his pick of 9 Nov 2026, “B, the war axe”):
+//   STEP 2, HIS MOVES WITH THE WAR AXE (src/art/warrior_up_axe_moves.ts; his pick of 9 Nov 2026, “B, the war axe”):
 //   7. each move's frames are whole: as many as its beats say, him and the axe in each, and the lists the bake takes in the
 //      shape the game holds a hero's;
 //   8. IN EVERY FRAME OF EVERY MOVE, FROM EVERY ONE OF HIS EIGHT SIDES: his helm is seen (six tenths at least of what of it faces
@@ -45,8 +45,8 @@ import { WU_RIM, WU_SIDES, WU_SPIN, turnedStage } from '../src/art/warrior_up';
 import { stage } from '../src/art/skin';
 import { dot, norm, sub } from '../src/art/skeleton';
 import type { WuSide } from '../src/art/warrior_up';
-import { AXE, AXE_CHOP_END, AXE_CHOP_LAND, AXE_CHOP_LEAP, AXE_CLEAVE_HIT, AXE_FLIGHT, AXE_FLY_FRAMES, AXE_FRAME, AXE_LEAP_FRAMES, AXE_MOVES, AXE_REST, AXE_RUN, AXE_STAND, AXE_THROW_OUT, HELM_LEAST, axeFaults, axePosed, helmSeen, makeWarriorAxeArt, paintAxe, paintFlying } from '../src/art/warrior_axe_moves';
-import type { AxeMove } from '../src/art/warrior_axe_moves';
+import { AXE, AXE_CHOP_END, AXE_CHOP_LAND, AXE_CHOP_LEAP, AXE_CLEAVE_HIT, AXE_FLIGHT, AXE_FLY_FRAMES, AXE_FRAME, AXE_LEAP_FRAMES, AXE_MOVES, AXE_REST, AXE_RUN, AXE_STAND, AXE_THROW_OUT, HELM_LEAST, axeFaults, axePosed, helmSeen, makeWarriorAxeArt, paintAxe, paintFlying } from '../src/art/warrior_up_axe_moves';
+import type { AxeMove } from '../src/art/warrior_up_axe_moves';
 import { KNIGHT_RUN3 } from '../src/art/moves3';
 import { wuPosed } from '../src/art/warrior_up_art';
 import { WU_REAR3, WU_REST as WU_REST_OF } from '../src/art/warrior_up_moves';
@@ -88,9 +88,9 @@ test('1. the switch is off, and nothing of the game imports the new weapons or t
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (his moves with the axe are of the mock-up too, and the page its film is shot on, which nothing ships: both below)
-    if (!f.endsWith('.ts') || f === 'art/warrior_up_weapons.ts' || f === 'dev/warrior_weapons_items.ts' || f === 'art/warrior_axe_moves.ts' || f === 'dev/axe_film_main.ts') continue;
+    if (!f.endsWith('.ts') || f === 'art/warrior_up_weapons.ts' || f === 'dev/warrior_weapons_items.ts' || f === 'art/warrior_up_axe_moves.ts' || f === 'dev/axe_film_main.ts') continue;
     const text = fs.readFileSync(`src/${f}`, 'utf8');
-    if (/from ['"][^'"]*(warrior_up_weapons|warrior_weapons_items|warrior_axe_moves|axe_film_main)['"]/.test(text)) users.push(f);
+    if (/from ['"][^'"]*(warrior_up_weapons|warrior_weapons_items|warrior_up_axe_moves|axe_film_main)['"]/.test(text)) users.push(f);
   }
   assert.deepEqual(users, [], 'what imports them');
   // (the film's page holds the game, not the game the page: the game's own entry does not know it)

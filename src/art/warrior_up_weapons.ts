@@ -573,7 +573,7 @@ export interface ArmedFrame extends WuFrame {
   secondPrim: number;
 }
 
-/** What more a frame of him armed may be told (the moves': art/warrior_axe_moves.ts). */
+/** What more a frame of him armed may be told (the moves': art/warrior_up_axe_moves.ts). */
 export interface ArmedMore {
   /** Where on the haft his right hand is, along it (the take's X): as `rightHandOn` has it, if not given. */
   rightOn?: number;

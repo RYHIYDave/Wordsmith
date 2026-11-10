@@ -1,5 +1,5 @@
 // THE WARRIOR'S BATTLE AXE, FILMED IN THE GAME (the art chat's helper, 9 Nov 2026; docs/mockups/warrior_weapons/README.md, step 2).
-// A PAGE FOR THE FILM ONLY: the game itself (main.ts), and beside it the Warrior's moves with the axe (art/warrior_axe_moves.ts, a
+// A PAGE FOR THE FILM ONLY: the game itself (main.ts), and beside it the Warrior's moves with the axe (art/warrior_up_axe_moves.ts, a
 // mock-up behind a switch that is off), shown IN PLACE OF HIS PICTURE as the game's own renderer draws its hero: its own depth,
 // its light, its scarf, its effects. Nothing of the game imports this file, and the game's own pages do not hold it
 // (tests/warrior_weapons.test.ts). The film's scenario (tools/scenarios/axe_film.mjs) says, frame by frame, which picture he is
@@ -11,9 +11,8 @@ import { Figure } from '../render/figure';
 import { Renderer } from '../render/render';
 import { wx, wy } from '../render/fx';
 import type { Cam } from '../render/fx';
-import { wuFacing, wuTailsFacing } from '../art/warrior_up_art';
-import type { WuSide } from '../art/warrior_up';
-import { AXE_FRAME, AXE_MOVES, axeFlying, axeSprite } from '../art/warrior_axe_moves';
+import { AXE_FRAME, AXE_MOVES, axeFlying, axeSprite, wuFacing, wuTailsFacing } from '../art/warrior_up_axe_moves';
+import type { WuSide } from '../art/warrior_up_axe_moves';
 
 /** What the film shows now: a move of his and its frame, how high the game has lifted him (game pixels), and the axes in the air. */
 interface FilmState {

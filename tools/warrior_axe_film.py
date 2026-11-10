@@ -21,7 +21,6 @@ W, H, BAND = 1266, 586, 66
 BG, PALE, GREY, CYAN = (16, 13, 30), (240, 232, 255), (168, 162, 190), (40, 220, 240)
 big, small = ImageFont.truetype(B, 25), ImageFont.truetype(R, 19)
 K = m['scale']  # screen pixels to a game pixel in the pictures
-DPR = m['dpr']
 
 if stills:
     os.makedirs(stills, exist_ok=True)
@@ -32,8 +31,10 @@ for f in m['frames']:
     im = Image.open(os.path.join(src, f['file'])).convert('RGB')
     if f['zoom']:
         # (cut round him at full size: twice the size he is in the halved picture; a little above his feet, so that a leap fits)
-        cx = round(f['hero']['x'] * DPR)
-        cy = round(f['hero']['y'] * DPR) - 26 * K
+        # (where he stands is told in game pixels: `K` screen pixels to each)
+        lead = f.get('lead') or [0, 0]
+        cx = round((f['hero']['x'] + lead[0]) * K)
+        cy = round((f['hero']['y'] + lead[1]) * K) - 22 * K
         x0 = max(0, min(im.width - W, cx - W // 2))
         y0 = max(0, min(im.height - H, cy - H // 2))
         pic = im.crop((x0, y0, x0 + W, y0 + H))
