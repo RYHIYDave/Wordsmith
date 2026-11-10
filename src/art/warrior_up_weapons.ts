@@ -469,8 +469,8 @@ function onHisBack(take: WeaponTake, b: Build, s: Skeleton): Placed {
  * haft, `lhx` more than 0), his right hand is at the butt and his left above it: either way no arm has haft running on from its
  * fist the way its forearm comes, which would go up its sleeve.
  */
-function inHisHands(take: WeaponTake, s: Skeleton, q: Posed): Placed {
-  return placedAlong(sub(s.handR, mul(s.point, rightHandOn(take, q))), s.point, s.across);
+function inHisHands(take: WeaponTake, s: Skeleton, q: Posed, rightOn = rightHandOn(take, q)): Placed {
+  return placedAlong(sub(s.handR, mul(s.point, rightOn)), s.point, s.across);
 }
 /** The way a take's cutting edge, or its striking face, points where it is (a unit, in the figure's space). */
 export function edgeWay(pl: Placed): V3 {
@@ -480,8 +480,8 @@ export function edgeWay(pl: Placed): V3 {
 export function rightHandOn(take: WeaponTake, q: Posed): number {
   return q.lhIn === 3 && q.lhx > 0 ? take.butt + FROM_BUTT : 0;
 }
-export function takePlace(take: WeaponTake, b: Build, s: Skeleton, q: Posed): Placed {
-  return q.stow > 0.5 ? onHisBack(take, b, s) : inHisHands(take, s, q);
+export function takePlace(take: WeaponTake, b: Build, s: Skeleton, q: Posed, rightOn?: number): Placed {
+  return q.stow > 0.5 ? onHisBack(take, b, s) : inHisHands(take, s, q, rightOn);
 }
 
 /** How far above his right hand his left is on a haft raised over him: the two fists one above the other. */
@@ -566,49 +566,158 @@ export interface ArmedFrame extends WuFrame {
   firstPrim: number;
   /** On his back (not in his hands). */
   stowed: boolean;
+  /** Nothing of it in his hands or on him (thrown: it is in the air, the game's to draw). */
+  empty: boolean;
+  /** A second one, in his left hand (Twin Axes), where it is; its solids begin at `secondPrim`. */
+  second: Placed | null;
+  secondPrim: number;
+}
+
+/** What more a frame of him armed may be told (the moves': art/warrior_axe_moves.ts). */
+export interface ArmedMore {
+  /** Where on the haft his right hand is, along it (the take's X): as `rightHandOn` has it, if not given. */
+  rightOn?: number;
+  /** Nothing in his hands: it is thrown and in the air. */
+  empty?: boolean;
+  /** A second one, held in his left hand (Twin Axes): where it is. */
+  second?: Placed | null;
+  /** THE SMEAR OF A STRIKE (Movement 9): where it has just been, newest first (and the second one's, if it too is swung). */
+  trail?: readonly Placed[];
+  trail2?: readonly Placed[];
 }
 
 /**
  * HIM AT A POSE WITH A TAKE, from one of his eight sides: his own sculpted painter (art/warrior_up.ts paintWarriorUp), the take
- * laid into his sculpture where the pose holds it, drawn again as one picture (his great sword left out), with his scarf's
- * roots, the strap of a weapon on his back, and the take's cyan lights.
+ * laid into his sculpture where the pose holds it and drawn with him as one picture (his painter's `held`: his great sword left
+ * out), with his scarf's roots, the strap of a weapon on his back, the take's cyan lights and, in a strike, its smear.
  */
-export function paintArmed(take: WeaponTake, s: Skeleton, q: Posed, side: WuSide, B: Build = KNIGHT_BODY, around: WuAround = {}, rim: string | null = WU_RIM): ArmedFrame {
-  const f = paintWarriorUp(s, q, side, B, around, rim);
-  const { spin, camera: view, ax } = WU_SPIN[side];
-  const pl = takePlace(take, B, s, q);
-  const before = layTake(f.sc, take, pl);
+export function paintArmed(take: WeaponTake, s: Skeleton, q: Posed, side: WuSide, B: Build = KNIGHT_BODY, around: WuAround = {}, rim: string | null = WU_RIM, more: ArmedMore = {}): ArmedFrame {
+  const pl = takePlace(take, B, s, q, more.rightOn);
   const away = q.stow > 0.5;
-  const lights: Light[] = [];
+  const empty = !!more.empty && !away;
+  const second = more.second ?? null;
+  let before = { mats: 0, prims: 0 };
+  let secondPrim = -1;
   const [cf, cl] = s.chest;
-  const extras = (raw: Stage): void => {
-    const st = turnedStage(raw, spin);
-    // (the strap a weapon on his back hangs from, across his chest from his right shoulder to his left hip)
-    if (away && st.near(cf) > 0) {
-      const a = add(s.shoulderR, add(mul(cf, B.ribDeep * 0.8 + 1.4), mul(cl, 3.4)));
-      const b = add(s.waist, add(mul(s.hips[0], B.pelvisDeep * 0.9 + 1.4), mul(s.hips[1], B.pelvisHalf * 0.9)));
-      const strap = st.part(lerp3(a, b, 0.5));
-      const [x0, y0] = st.at(a);
-      const [x1, y1] = st.at(b);
-      const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
-      for (let i = 0; i <= n; i++) {
-        const x = Math.round(x0 + ((x1 - x0) * i) / n - 0.5);
-        const y = Math.round(y0 + ((y1 - y0) * i) / n - 0.5);
-        strap.set(x, y, WU_PLUM[1]);
-        strap.set(x + 1, y, WU_PLUM[3]);
-        strap.set(x + 1, y + 1, WU_PLUM[2]);
+  const held: NonNullable<WuAround['held']> = {
+    lay: (sc) => {
+      before = { mats: sc.mats.length, prims: sc.prims.length };
+      if (!empty) layTake(sc, take, pl);
+      secondPrim = sc.prims.length;
+      if (second) layTake(sc, take, second);
+    },
+    extras: (st, lights) => {
+      // (the strap a weapon on his back hangs from, across his chest from his right shoulder to his left hip)
+      if (away && st.near(cf) > 0) {
+        const a = add(s.shoulderR, add(mul(cf, B.ribDeep * 0.8 + 1.4), mul(cl, 3.4)));
+        const b = add(s.waist, add(mul(s.hips[0], B.pelvisDeep * 0.9 + 1.4), mul(s.hips[1], B.pelvisHalf * 0.9)));
+        const strap = st.part(lerp3(a, b, 0.5));
+        const [x0, y0] = st.at(a);
+        const [x1, y1] = st.at(b);
+        const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+        for (let i = 0; i <= n; i++) {
+          const x = Math.round(x0 + ((x1 - x0) * i) / n - 0.5);
+          const y = Math.round(y0 + ((y1 - y0) * i) / n - 0.5);
+          strap.set(x, y, WU_PLUM[1]);
+          strap.set(x + 1, y, WU_PLUM[3]);
+          strap.set(x + 1, y + 1, WU_PLUM[2]);
+        }
       }
-    }
-    // (the take's cyan light, where its edges and marks glow, as the great sword's blade lights what is near it)
-    if (!(away && st.near(cf) > 0)) {
-      for (const p of glowPoints(take)) {
-        const [x, y] = st.at(onTake(pl, p));
-        lights.push({ x, y, r: take.kind === 'axe' ? 11 : 9, color: WW_GLOW[3], a: take.kind === 'axe' ? 0.26 : 0.22 });
+      // THE SMEAR of a strike, under the take's own light
+      if (more.trail && !empty) smearOf(st, take, more.trail, lights);
+      if (more.trail2 && second) smearOf(st, take, more.trail2, lights);
+      // (the take's cyan light, where its edges and marks glow, as the great sword's blade lights what is near it)
+      if (!(away && st.near(cf) > 0)) {
+        for (const at of [empty ? null : pl, second]) {
+          if (!at) continue;
+          for (const p of glowPoints(take)) {
+            const [x, y] = st.at(onTake(at, p));
+            lights.push({ x, y, r: take.kind === 'axe' ? 11 : 9, color: WW_GLOW[3], a: take.kind === 'axe' ? 0.26 : 0.22 });
+          }
+        }
       }
-    }
+    },
   };
-  const drawn = draw(f.sc, view, ax, CANVAS3.ay, CANVAS3, extras, rim);
-  return { ...f, px: drawn.px, drawn, lights, take, placed: pl, firstMat: before.mats, firstPrim: before.prims, stowed: away, blade: { x0: 0, y0: 0, x1: 0, y1: 0 } };
+  const f = paintWarriorUp(s, q, side, B, { ...around, held }, rim);
+  return { ...f, take, placed: pl, firstMat: before.mats, firstPrim: before.prims, stowed: away, empty, second, secondPrim };
+}
+
+/** Where a take's head runs along its haft, from its eye's foot to the tip of what is furthest out (for its smear). */
+function headSpan(take: WeaponTake): readonly [number, number] {
+  let lo = take.heart;
+  let hi = take.top;
+  for (const e of take.edges) for (const [x] of e) {
+    lo = Math.min(lo, x);
+    hi = Math.max(hi, x);
+  }
+  return [lo, hi + (take.id === 'axeB' ? 1.6 : 0)];
+}
+/** A take's head in outline, in its own (X, Y): what its after-images are drawn from. */
+function headOutline(take: WeaponTake): readonly (readonly P2[])[] {
+  if (take.id === 'axeA' || take.id === 'axeB' || take.id === 'axeC') return AXE_PROFILES[take.id].blades;
+  return [[[22.5, -5], [31.5, -5], [31.5, 8], [22.5, 8]]];
+}
+
+/**
+ * THE SMEAR OF A STRIKE WITH A TAKE (his rulebook's Movement 9, as his great sword's: art/warrior_up.ts): a crescent of its
+ * edge's light along the path its head has swept over the last two frames, widest and brightest just behind the head, thinning
+ * and breaking up toward its oldest end; and AFTER-IMAGES of the head itself along it, a third and two thirds of the way back,
+ * each the head's own outline in a fading copy of its light. `trail`: where the take has been, newest first.
+ */
+function smearOf(st: Stage, take: WeaponTake, trail: readonly Placed[], lights: Light[]): void {
+  const n = trail.length;
+  if (n < 2) return;
+  const [lo, hi] = headSpan(take);
+  const ends = trail.map((pl) => [onTake(pl, [lo, 0, 0]), onTake(pl, [hi, 0, 0])] as const);
+  const moved = len(sub(ends[0][1], ends[n - 1][1]));
+  if (moved <= 8) return;
+  const midOf = (a: V3, b: V3, k: number): V3 => lerp3(a, b, k);
+  // (each stretch of the crescent on a sheet of its own, as near the eye as the head was then: a sweep that goes round him is
+  // before him where it was before him and behind him where it was behind)
+  const inner = (e: readonly [V3, V3], age: number): V3 => midOf(e[0], e[1], 0.1 + 0.8 * Math.pow(age, 0.7));
+  const old = st.at(ends[n - 1][1]);
+  const now = st.at(ends[0][1]);
+  const far = Math.hypot(old[0] - now[0], old[1] - now[1]) || 1;
+  const CHUNK = Math.max(1, Math.ceil((n - 1) / 4));
+  for (let c0 = n - 1; c0 >= 1; c0 -= CHUNK) {
+    const c1 = Math.max(1, c0 - CHUNK + 1);
+    const where = midOf(ends[c0][0], ends[c1 - 1][1], 0.5);
+    const fan = st.part(st.near(where) - 0.4);
+    for (let i = c0; i >= c1; i--) {
+      const a = ends[i];
+      const b = ends[i - 1];
+      const age = (i - 0.5) / (n - 1);
+      fan.poly([inner(a, i / (n - 1)), a[1], b[1], inner(b, (i - 1) / (n - 1))].map((p) => st.at(p)), age < 0.3 ? WW_GLOW[3] : age < 0.62 ? WW_GLOW[2] : WW_GLOW[1]);
+    }
+    for (let i = c1; i <= c0; i++) {
+      const age = i / (n - 1);
+      if (age > 0.7) break;
+      const [x0, y0] = st.at(ends[i - 1][1]);
+      const [x1, y1] = st.at(ends[i][1]);
+      fan.line(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1), age < 0.35 ? WW_GLOW[4] : WW_GLOW[3]);
+    }
+    // (breaking up toward its oldest end)
+    for (let y = 0; y < fan.h; y++) for (let x = 0; x < fan.w; x++) {
+      if (!fan.has(x, y)) continue;
+      const k = 1 - Math.hypot(x - old[0], y - old[1]) / far;
+      if (k > 0.45 && hash(x, y, 7) < (k - 0.45) * 1.6) fan.erase(x, y);
+    }
+    // THE AFTER-IMAGES that lie in this stretch: the head's own outline, where it was
+    for (const k of [0.34, 0.67]) {
+      const i = Math.min(n - 1, Math.max(1, Math.round(k * (n - 1))));
+      if (i < c1 || i > c0) continue;
+      const body = k < 0.5 ? WW_GLOW[3] : WW_GLOW[2];
+      const core = k < 0.5 ? WW_GLOW[4] : WW_GLOW[3];
+      for (const shape of headOutline(take)) fan.poly(shape.map(([x, y]) => st.at(onTake(trail[i], [x, y, 0]))), body);
+      for (const e of take.edges) for (let j = 0; j + 1 < e.length; j++) {
+        const [x0, y0] = st.at(onTake(trail[i], [e[j][0], e[j][1], 0]));
+        const [x1, y1] = st.at(onTake(trail[i], [e[j + 1][0], e[j + 1][1], 0]));
+        fan.line(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1), core);
+      }
+    }
+  }
+  const [lx, ly] = st.at(midOf(ends[1][0], ends[1][1], 0.8));
+  lights.push({ x: lx, y: ly, r: 15, color: WW_GLOW[3], a: 0.34 });
 }
 
 /** Where a take's light is (its own space): along its edges, or at the middle of its head. */
