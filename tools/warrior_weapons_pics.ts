@@ -154,7 +154,8 @@ for (const id of TAKE_IDS) {
   };
   for (const side of WU_SIDES) look('guard', side);
   for (const side of WU_SIDES) look('town', side);
-  for (const side of ['front', 'side', 'toward'] as WuSide[]) look(key, side);
+  // (the wind-up from his two sides side-on, where the edge or the face is seen coming down)
+  for (const side of ['side', 'sideL'] as WuSide[]) look(key, side);
   // alone: upright, its flat to the eye, and turned; in flight (an axe thrown, spinning flat)
   for (const turn of [0, 50]) save(`${id}_alone_${turn}`, paintAlone(take, 'stand', turn, { w: 120, h: 120 }, 60, 104).px);
   const flight = take.kind === 'axe' ? [0, 45, 90, 135, 180, 225, 270, 315] : [0, 45, 90, 135];

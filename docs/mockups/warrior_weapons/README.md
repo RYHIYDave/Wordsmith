@@ -18,14 +18,14 @@ WARHAMMER tap Smash, hold Earthquake (a talent makes it Tremors, three quakes, e
 9 Nov 2026, in the art chat, his order: the seven words, then “The three new words (Recommended)”, then the Warrior's axe and
 hammer.
 
-## The picture: `pictures/weapons_looks.png` (1200 by 6820)
+## The picture: `pictures/weapons_looks.png` (1200 by 6942)
 
 The three axe takes, then the three hammer takes, each a row: the weapon alone, three times the game's size (upright, its flat
 to the eye, and turned); held by him in his guard (the dungeon) from toward you, side-on and away, twice the game's size; the
-moment its tap is wound up and held (the Cleave, the Smash); on his back in town from the same three sides; as it drops, in the
+moment its tap is wound up and held (the Cleave, the Smash), from his side; on his back in town from the same three sides; as it drops, in the
 bag at Normal, Magic, Rare and Unique (each in a slot as the game draws one, twice the size a phone shows it) and lying on a
 dungeon's floor as the game lays loot, its name over it in its rarity's colour (twice the game's size; the name is the sheet's
-lettering, not the game's); and at the game's own size: his guard from all eight sides, in town from three, the wind-up from two,
+lettering, not the game's); and at the game's own size: his guard from all eight sides, in town from three, the wind-up from his two sides,
 and (the axes) thrown, spinning flat as it flies. His scarf's two ends are hung and settled as the game hangs them
 (`engine/tails.ts`).
 
@@ -56,18 +56,23 @@ light; each is throwable: lying flat in the air it reads at the game's size at e
 - HIS GUARD (`GUARD_HEAVY`), in a dungeon: his rear stance, his legs made true as the great sword's (`WU_REST`), both hands at
   his right hip, the haft trailing back behind him; his LEFT HAND AT THE BUTT (the knob just out of his fist: his forearm runs on
   from his fist the way the butt points, so a haft that went on past it would go up his sleeve), his right hand up the haft.
-  ONE CHANGE FROM THE GREAT SWORD'S GUARD, SO IT READS FROM ALL EIGHT SIDES: the haft rises a little (18 degrees) as it trails
-  back, its head at the height of his chest behind him (on the screen, about his shoulders), its flat turned up, his hands at
-  the top of his hip (30 up, the sword's 25). Held low as the great sword is, a head trailing behind him is wholly hidden from down and to the left (as his
-  great sword is today); raised so, it is seen from every side, over his shoulder from there.
+  RAISED BY HIS SHOULDER, SO IT READS FROM ALL EIGHT SIDES: the haft rises a little (18 degrees) as it trails back, its head at
+  the height of his chest behind him (on the screen, about his shoulders), his hands at the top of his hip (33 up, the sword's
+  25). Held low as the great sword is, a head trailing behind him is wholly hidden from down and to the left (as his great sword
+  is today); raised so, it is seen from every side, over his shoulder from there. THE HEAD TURNED EDGE DOWN, at his word (below):
+  an axe's cutting edge, a hammer's striking face, hangs under the haft and points at the floor; a hammer's spike or peen is up.
 - IN TOWN (`TOWN_HEAVY`, the game's town stance, his arms folded): on his back as the great sword is, but the head up behind his
-  right shoulder and the haft down across his back to his left hip, flat against it, its edge out to his right; the strap across
-  his chest as the great sword's.
-- THE CLEAVE, TOP OF ITS WIND-UP (`CLEAVE_TOP`, held): the axe cocked back over his right shoulder, its head out behind his helm,
-  its edge up; both hands by his right ear; wound round away from the mark, weight back and sunk on his back leg, back arched,
-  his eyes on the mark.
-- THE SMASH, TOP OF ITS WIND-UP (`SMASH_TOP`, held): the hammer raised up over his head and back, its head high behind him; both
-  hands over his brow; up on his toes, back arched, his eyes on the spot it will land.
+  right shoulder and the haft down across his back to his left hip, flat against it, its edge or face turned out to his right
+  and down, away from his head; the strap across his chest as the great sword's.
+- THE CLEAVE, TOP OF ITS WIND-UP (`CLEAVE_TOP`, held): the axe lifted right up over him, both hands above his helm, the haft
+  tipped toward the mark so that its edge is turned to where the blow will land, forward and down: a blow about to fall. His
+  body wound round away from the mark, side-on to it, weight back and sunk on his back leg, back arched, his eyes on the mark.
+- THE SMASH, TOP OF ITS WIND-UP (`SMASH_TOP`, held): the hammer lifted right up over him, both hands above his helm, the haft
+  tipped toward the spot so that its striking face is turned to where it will land, forward and down, its spike or peen up and
+  back; up on his toes, back arched, his eyes on the spot.
+- WHICH HAND IS WHERE: held low (his guard) his right hand is up the haft and his left at the butt; raised over him (a wind-up:
+  the pose puts his left hand above his right, `lhx` more than 0) his right hand is at the butt and his left a fist above it
+  (`rightHandOn`). Either way no arm has haft running on from its fist the way its forearm comes.
 - `paintArmed(take, s, q, side)` paints him at any pose of his bones with any take in his hands, or on his back when the pose
   stows it: his own painter (`paintWarriorUp`), the take grafted into his sculpture where the pose holds it, drawn again as one
   picture without the great sword. So a move is only its keys.
@@ -80,12 +85,18 @@ light; each is throwable: lying flat in the air it reads at the game's size at e
    grip (3 picture pixels round the middle of each fist: the fist and its flared cuff); and both his hands are on the haft, at its
    grip. The check sees a take put through him.
 3. IT READS FROM ALL EIGHT SIDES: at the game's own size, in his guard and on his back, from each of his eight sides, at least 100
-   picture pixels of its head are seen; at each wind-up, from the two sides the sheet shows, 150. The least of each, from the
-   test: axe A guard 143, town 125; axe B 179, 154; axe C 160, 146; hammer A 200, 165; hammer B 139, 128; hammer C 259, 217.
+   picture pixels of its head are seen; at each wind-up, from the two sides the sheet shows (his two sides, side-on), 140. The
+   least of each, from the test: axe A guard 145, town 125; axe B 187, 154; axe C 178, 146; hammer A 186, 165; hammer B 140,
+   128; hammer C 260, 217.
 4. Every frame crisp (every pixel whole but his edge of light), his cyan edge round him, nothing of the enemy's pink or gold; what
-   of the take is seen is its own iron, wood and leather, and its glow the friend's cyan.
+   of the take is seen is its own iron, wood and leather, and its glow the friend's cyan (seen in his guard from five of his
+   eight sides at least: hammer B's bosses are on its faces, and the one turned to the floor is hidden, 6 of 8).
 5. As items: each take at its four rarities in style A, 32 by 32, crisp, inside its frame with a clear pixel round it, the rim of
    its rarity's colour; each rarer one finer (Magic blue, Rare gold, Unique orange stones); no enemy's colour, no cyan.
+6. THE HEADS TURNED AS HE ASKED: in his guard and at each wind-up's top the way an axe's edge or a hammer's striking face points
+   has a downward part, in the world and on the screen from every one of his eight sides; at the wind-ups it points on toward the
+   mark; on his back it is turned down and out from him; never toward his head. From the test (forward, left, up): his guard
+   -0.29, -0.10, -0.95; the wind-ups 0.78, -0.14, -0.62.
 
 Looked at close at the game's size before it went to him: the six takes from every side, on his back, at their wind-ups. Mended
 on the way: every haft's left hand moved to the butt (the haft had gone up his left sleeve); his guard raised (the head was hidden
@@ -134,5 +145,33 @@ game pixels, anchor the middle, as `itemArt` gives.
 hammer). Read as: the sheet is far too tall and its pictures too small on his phone. So the same pictures cut for a phone
 held upright, by `tools/warrior_weapons_phone.py`: `pictures/axes_phone.png` and `pictures/hammers_phone.png` (each 1260
 wide, about 2100 to 2200 tall): A, B and C side by side; the weapon alone at nine times the game's size, held facing you at
-six times, wound up at four times, and its loot pictures. FROM NOW ON every picture for him is made this way: no wider than
+six times, wound up at four times, and its loot pictures. (Since his word on the heads, below: held and wound up are shown
+from his side, each at four times; 1260 by 2017 and 1260 by 1916.) FROM NOW ON every picture for him is made this way: no wider than
 about 1260, no taller than about 2200, a few big things in each, several pictures before one tall sheet.
+
+## His word on the looks: the heads turned (step 1b, 9 Nov 2026)
+
+Sent `axes_phone.png` and `hammers_phone.png`. Asked “Which battle axe for the Warrior (axes_phone.png)?”, by 20:17 he wrote:
+“Have the blades and the hammers point down”. Asked “Which warhammer for the Warrior (hammers_phone.png)?”, he wrote: “All the
+hammers are pointing the wrong way”. Asked “Got it, the heads are turned wrong. So I fix it the right way: what should point
+down?”, he picked “The edge and the hammer face (Recommended)” (offered as: he still holds them up by his shoulder, but the
+axe's cutting edge and the hammer's striking face turn to point down at the enemy, not up or back at him). He has not picked a
+take yet.
+
+What was turned, all six takes, every picture:
+
+- IN HIS GUARD: the head turned half round about the haft (`wRoll` 180, it was 90: its flat had been up and its edge out to the
+  side). The edge or the face now hangs under the haft and points at the floor: as far down as a head on that haft can turn
+  (it points 0.95 down; the haft rises as it trails back, so what is left leans a little back, not forward). Axe B: one bit
+  down, the other up, its spike along the haft. Hammer A: its bright-rimmed face down, its spike up. Hammers B and C: a face
+  down. His hands a little higher and further back (33 up and 6 back, they were 30 and 4) and the haft a little straighter
+  behind him (162 degrees round, it was 157), so the head, now hanging lower, is still seen from every side.
+- THE WIND-UPS: made again. Laid back behind him as they were, an edge turned to the mark could only face the sky. Now the
+  weapon is lifted right up over him and tipped 38 degrees toward the mark, so the edge or the face is turned to where the blow
+  will land (0.78 forward, 0.62 down). To hold it so, his right hand is at the butt and his left a fist above it (as it was, the
+  haft below his upper hand ran up his forearm).
+- ON HIS BACK: as it was, which already had the edge or the face out to his right and down (0.88 out, 0.42 down), away from
+  his head; the test now holds it.
+- THE PICTURES: the sheet in the same layout, its wind-up shown from his side (and at the game's size from his two sides);
+  the phone pictures show him held and wound up FROM HIS SIDE, where the edge or the face is seen pointing down (facing you, the
+  head is seen end on and its turn cannot be seen).

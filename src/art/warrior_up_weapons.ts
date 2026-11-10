@@ -463,71 +463,91 @@ function onHisBack(take: WeaponTake, b: Build, s: Skeleton): Placed {
   const at: V3 = sub(head, mul(upL, off));
   return placedAlong(add(s.neck, along(at)), along(upL), along(out));
 }
-/** Where a take is in his hands (`s.point`, `s.across` as his bones have them for the pose). */
-function inHisHands(s: Skeleton): Placed {
-  return placedAlong(s.handR, s.point, s.across);
+/**
+ * Where a take is in his hands (`s.point`, `s.across` as his bones have them for the pose). HELD LOW (his guard), his right hand is
+ * up the haft (its X 0) and his left at the butt. RAISED OVER HIM (a wind-up: the pose puts his left hand above his right on the
+ * haft, `lhx` more than 0), his right hand is at the butt and his left above it: either way no arm has haft running on from its
+ * fist the way its forearm comes, which would go up its sleeve.
+ */
+function inHisHands(take: WeaponTake, s: Skeleton, q: Posed): Placed {
+  return placedAlong(sub(s.handR, mul(s.point, rightHandOn(take, q))), s.point, s.across);
+}
+/** The way a take's cutting edge, or its striking face, points where it is (a unit, in the figure's space). */
+export function edgeWay(pl: Placed): V3 {
+  return pl.y;
+}
+/** Where his right hand holds a take, along it: up the haft when it is held low, at the butt when it is raised over him. */
+export function rightHandOn(take: WeaponTake, q: Posed): number {
+  return q.lhIn === 3 && q.lhx > 0 ? take.butt + FROM_BUTT : 0;
 }
 export function takePlace(take: WeaponTake, b: Build, s: Skeleton, q: Posed): Placed {
-  return q.stow > 0.5 ? onHisBack(take, b, s) : inHisHands(s);
+  return q.stow > 0.5 ? onHisBack(take, b, s) : inHisHands(take, s, q);
 }
+
+/** How far above his right hand his left is on a haft raised over him: the two fists one above the other. */
+export const RAISED_SPREAD = 6;
 
 /**
  * HIS GUARD WITH A HEAVY WEAPON, his rear stance (his legs made true: art/warrior_up_moves.ts WU_REST), as he holds the great
- * sword: both hands low at his right hip, the haft trailing down and back behind him. The head lies lower and a little out
- * to his right, its flat turned up, so that it is seen from every one of his sides (the great sword, held so, is hidden from
- * down and to the left); his left hand further down the haft, a heavy weapon's grip.
+ * sword: both hands at his right hip, the haft trailing back behind him. Raised by his shoulder, so that it is seen from every
+ * one of his sides (held low, as the great sword is, it is hidden from down and to the left): the haft rises a little as it
+ * trails back, its head at the height of his chest behind him. THE HEAD TURNED EDGE DOWN (his word, 9 Nov 2026: “Have the
+ * blades and the hammers point down”; “All the hammers are pointing the wrong way”; his pick, “The edge and the hammer face
+ * (Recommended)”): an axe's cutting edge, a hammer's striking face, hangs under the haft and points at the floor (`wRoll` 180:
+ * as far down as a head on that haft can turn), never up at the sky or back at his own head; a hammer's spike or peen is up.
  */
 export const GUARD_HEAVY: Partial<Bones> = {
-  rhIn: 2, rhx: -4, rhy: -12.4, rhz: 30,
+  rhIn: 2, rhx: -6, rhy: -12.4, rhz: 33,
   lhIn: 3, lhx: -10.4, lhy: 0, lhz: 0,
-  wAz: -157, wEl: 18, wRoll: 90, le: 12, re: 8,
+  wAz: -162, wEl: 18, wRoll: 180, le: 12, re: 8,
 };
 /** In town, as the game has him: his arms folded, the weapon on his back (`stow`). */
 export const TOWN_HEAVY: Partial<Bones> = { stow: 1 };
 
 /**
- * THE CLEAVE AT THE TOP OF ITS WIND-UP (the axe's tap; held, by his Movement 9): the axe cocked back over his right shoulder,
- * its head out level behind his helm and its edge turned up to the sky, both hands up by his right ear, his body wound round
- * away from the mark, his weight back and sunk on his back leg, his back arched, his eyes on the mark.
+ * THE CLEAVE AT THE TOP OF ITS WIND-UP (the axe's tap; held, by his Movement 9): the axe lifted right up over him, both hands
+ * above his helm (his right at the butt, his left a fist above it), the haft tipped toward the mark so that ITS EDGE IS TURNED
+ * TO WHERE THE BLOW WILL LAND, forward and down (his word, above): a blow about to fall. His body wound round away from the
+ * mark, side-on to it, his weight back and sunk on his back leg, his back arched, his eyes on the mark.
  */
 export const CLEAVE_TOP: Partial<Bones> = {
   ...plantedFeet(),
   px: -4.2, pz: -7.2, yaw: -46, pitch: -2, roll: 0, twist: -30, bend: -9, side: 4,
   faceTurn: 8, faceUp: -4, faceTilt: 4,
-  rhIn: 0, rhx: -1.0, rhy: -2.5, rhz: 13,
-  lhIn: 3, lhx: -10.4, lhy: 0, lhz: 0,
-  wAz: -158, wEl: 4, wRoll: 30, le: 40, re: 30,
+  rhIn: 1, rhx: 10, rhy: 0, rhz: 18,
+  lhIn: 3, lhx: RAISED_SPREAD, lhy: 0, lhz: 0,
+  wAz: -10, wEl: 52, wRoll: 180, le: 40, re: 30,
 };
 /**
- * THE SMASH AT THE TOP OF ITS WIND-UP (the hammer's tap; held): the hammer raised right up over his head and back, its head
- * high behind him, both hands up over his brow, up on his toes with his back arched, his chin down and his eyes on the spot
- * it will land.
+ * THE SMASH AT THE TOP OF ITS WIND-UP (the hammer's tap; held): the hammer lifted right up over him, both hands above his helm
+ * (his right at the butt, his left a fist above it), the haft tipped toward the spot so that ITS STRIKING FACE IS TURNED TO WHERE
+ * IT WILL LAND, forward and down, its spike or peen up and back; up on his toes with his back arched, his eyes on the spot.
  */
 export const SMASH_TOP: Partial<Bones> = {
   pz: 2.6, yaw: -10, twist: -4, pitch: -4, bend: -13, faceUp: -8,
   lfp: 28, lfz: 2.0, rfp: 28, rfz: 2.0,
-  rhIn: 0, rhx: 9, rhy: 2.0, rhz: 21,
-  lhIn: 3, lhx: -10.4, lhy: 0, lhz: 0,
-  wAz: 178, wEl: 30, wRoll: 0, le: 46, re: 40,
+  rhIn: 0, rhx: 2, rhy: 8.5, rhz: 21.5,
+  lhIn: 3, lhx: RAISED_SPREAD, lhy: 0, lhz: 0,
+  wAz: -5, wEl: 52, wRoll: 180, le: 46, re: 40,
 };
 
 /**
- * His bones in one of the holds with a take (each from his own stance: his guard's or his town stance's). HIS LEFT HAND AT THE
- * BUTT, the knob just out of his fist: his forearm runs on from his fist the way the butt points, so a haft that went on past
- * his left hand would go up his sleeve.
+ * His bones in one of the holds with a take (each from his own stance: his guard's or his town stance's). In his guard HIS LEFT
+ * HAND IS AT THE BUTT, the knob just out of his fist; raised for a wind-up his right is, his left a fist's width above it.
  */
 export function holdPose(hold: Hold, take?: WeaponTake): Posed {
   const base = hold === 'town' ? WU_TOWN_REST : WU_REST;
   const more = hold === 'guard' ? GUARD_HEAVY : hold === 'town' ? TOWN_HEAVY : hold === 'cleave' ? CLEAVE_TOP : SMASH_TOP;
   const q = { ...base, ...more } as Posed;
-  if (take && hold !== 'town') q.lhx = leftHandOn(take);
+  if (take && hold === 'guard') q.lhx = leftHandOn(take);
   return q;
 }
-/** Where his left hand holds a take, along it from his right hand: at the butt, its knob just out of his fist. */
+/** Where his left hand holds a take in his guard, along it from his right hand: at the butt, its knob just out of his fist. */
 export function leftHandOn(take: WeaponTake): number {
-  return take.butt + LEFT_FROM_BUTT;
+  return take.butt + FROM_BUTT;
 }
-const LEFT_FROM_BUTT = 2.1;
+/** How far up from the butt's end the fist that holds the butt is. */
+const FROM_BUTT = 2.1;
 /** The bones of a hold, solved on his build. */
 export function holdBones(hold: Hold, take?: WeaponTake): { q: Posed; s: Skeleton } {
   const q = holdPose(hold, take);

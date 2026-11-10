@@ -176,7 +176,7 @@ class Sheet:
                 y += f.size + gap
         self.blocks.append((h, draw))
 
-    def row(self, panels, after=14, gap=16):
+    def row(self, panels, after=9, gap=16):
         """Panels (image, caption) left to right, wrapping as need be, each caption under its picture."""
         lines, line, x = [], [], 0
         panels = [(pad(im), c) for im, c in panels]
@@ -225,7 +225,7 @@ s.text(wrap('Pictures only: how each looks, so you can pick one axe and one hamm
             'is one look: the weapon alone; held by him in his guard, the way he holds his great sword in a dungeon, and on his back in '
             'town; the moment its tap is wound up and held, to show its weight; and how it drops, at its four rarities. Big pictures '
             'are twice the game’s size; the last line of each row is at the game’s own size, from all eight sides he can face. '
-            'What glows on him is cyan, as on his great sword.', small, W - 2 * M), small, DIM, after=10)
+            'Every cutting edge and every hammer face now points down. What glows on him is cyan, as on his great sword.', small, W - 2 * M), small, DIM, after=10)
 for tid, t in said['takes'].items():
     s.rule()
     kind, letter, key = t['kind'], t['letter'], t['key']
@@ -237,7 +237,7 @@ for tid, t in said['takes'].items():
     for side in ['toward', 'side', 'away']:
         row1.append((figure('%s_guard_%s' % (tid, side), 2), 'His guard, %s' % SIDE_WORDS[side]))
     s.row(row1)
-    row2 = [(figure('%s_%s_front' % (tid, key), 2), 'The tap: ' + KEY[key])]
+    row2 = [(figure('%s_%s_side' % (tid, key), 2), 'The tap: ' + KEY[key])]
     for side in ['toward', 'side', 'away']:
         row2.append((figure('%s_town_%s' % (tid, side), 2), 'In town, on his back, %s' % SIDE_WORDS[side]))
     s.row(row2)
@@ -247,7 +247,7 @@ for tid, t in said['takes'].items():
     # line 4: the game's own size
     row4 = [(figure('%s_guard_%s' % (tid, side), 1, 2), SHORT[side]) for side in EIGHT]
     row4 += [(figure('%s_town_%s' % (tid, side), 1, 2), 'town, ' + SHORT[side]) for side in ['toward', 'side', 'away']]
-    row4 += [(figure('%s_%s_%s' % (tid, key, side), 1, 2), ('Cleave' if key == 'cleave' else 'Smash') + ', ' + SHORT[side]) for side in ['front', 'side']]
+    row4 += [(figure('%s_%s_%s' % (tid, key, side), 1, 2), ('Cleave' if key == 'cleave' else 'Smash') + ', ' + SHORT[side]) for side in ['side', 'sideL']]
     fly = ['%s_%s_%d' % (tid, 'fly' if kind == 'axe' else 'turn', a) for a in t['flight']]
     row4.append((strip(fly, 1), 'Thrown, spinning flat as it flies' if kind == 'axe' else 'Turned in the hand'))
     s.text(['At the game’s own size: his guard from all eight sides, in town, the tap’s wind-up%s' % (', and thrown' if kind == 'axe' else '')], tiny, INK, after=4)

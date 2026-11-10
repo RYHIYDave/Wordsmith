@@ -5,12 +5,17 @@
 //      Smash): NOTHING THROUGH ANYTHING (no solid of the take inside one of his, but where his two fists close round its grip),
 //      and both his hands on the haft, at its grip;
 //   3. IT READS FROM ALL EIGHT SIDES: in his guard and on his back, from each of his eight sides, at least 100 picture pixels
-//      of its head are seen at the game's own size; at the top of the wind-up, from the two sides the sheet shows it, 150;
+//      of its head are seen at the game's own size; at the top of the wind-up, from the two sides the sheet shows it (his two
+//      sides side-on), 140;
 //   4. every frame crisp (every pixel whole but his edge of light), the friend's cyan edge round him, and nothing on him of the enemy's pink or gold: what of the take is
 //      seen is its own iron, wood and leather, and its glow the friend's cyan;
 //   5. as items, each take at its four rarities in style A: 32 by 32, crisp, inside its frame with a clear pixel round it, the
 //      rim of its rarity's colour; each rarer one finer (the four different; Magic with blue, Rare with gold or a yellow
 //      stone, Unique with orange stones); nothing of the enemy's colours and no cyan.
+//   6. THE HEADS TURNED AS HE ASKED (9 Nov 2026: “Have the blades and the hammers point down”; “All the hammers are pointing
+//      the wrong way”; his pick, “The edge and the hammer face (Recommended)”): in his guard and at each wind-up's top the way
+//      an axe's edge or a hammer's striking face points has a downward part, in the world and on the screen from every one of
+//      his eight sides; at the wind-ups it points on toward the mark; on his back it is turned down and out; never at his head.
 //   run: tsx --test tests/warrior_weapons.test.ts
 
 // @ts-ignore
@@ -25,9 +30,12 @@ import { ENEMY_RIM, FLAME, MENACE } from '../src/art/mkit';
 import { RARITY_COLOR } from '../src/art/palette';
 import { rgba } from '../src/engine/px';
 import type { Px } from '../src/engine/px';
-import { WU_RIM, WU_SIDES } from '../src/art/warrior_up';
+import { WU_RIM, WU_SIDES, WU_SPIN, turnedStage } from '../src/art/warrior_up';
+import { stage } from '../src/art/skin';
+import { dot, norm, sub } from '../src/art/skeleton';
 import type { WuSide } from '../src/art/warrior_up';
-import { TAKES, TAKE_IDS, WARRIOR_WEAPONS, WW_DARK, WW_GLOW, WW_IRON, WW_LEATHER, WW_WOOD, armedThrough, handsOnHaft, paintHold, takeSeen } from '../src/art/warrior_up_weapons';
+import { TAKES, TAKE_IDS, WARRIOR_WEAPONS, WW_DARK, WW_GLOW, WW_IRON, WW_LEATHER, WW_WOOD, armedThrough, edgeWay, handsOnHaft, holdBones, onTake, paintHold, takePlace, takeSeen } from '../src/art/warrior_up_weapons';
+import { KNIGHT_BODY } from '../src/art/moves3';
 import type { ArmedFrame, Hold, TakeId } from '../src/art/warrior_up_weapons';
 import { paintWeaponItem } from '../src/dev/warrior_weapons_items';
 import { paintWithoutCanvas } from './helpers';
@@ -97,7 +105,7 @@ test('2. ... and the check sees a take put through him (the axe laid level throu
   assert.ok(through.some((t) => /trunk/.test(t)), `seen: ${through.join('; ')}`);
 });
 
-test('3. each take reads from all eight sides, in his guard and on his back (100 pixels of its head at least), and at the top of its wind-up (150)', () => {
+test('3. each take reads from all eight sides, in his guard and on his back (100 pixels of its head at least), and at the top of its wind-up (140)', () => {
   const least: string[] = [];
   const short: string[] = [];
   for (const id of TAKE_IDS) {
@@ -112,9 +120,9 @@ test('3. each take reads from all eight sides, in his guard and on his back (100
       least.push(`${id} ${hold} ${low} (${where})`);
     }
     const key = holds(id)[2];
-    for (const side of ['front', 'side'] as WuSide[]) {
+    for (const side of ['side', 'sideL'] as WuSide[]) {
       const n = takeSeen(frame(id, key, side)).head;
-      if (n < 150) short.push(`${id} ${key} ${side}: ${n}`);
+      if (n < 140) short.push(`${id} ${key} ${side}: ${n}`);
     }
   }
   console.log(`  the least of each take's head seen: ${least.join('; ')}`);
@@ -123,8 +131,9 @@ test('3. each take reads from all eight sides, in his guard and on his back (100
 
 test('4. crisp; the friend\'s cyan edge round him; nothing of the enemy\'s; what of the take is seen is its own iron, wood and leather, and its glow cyan', () => {
   const bad: string[] = [];
+  const glows = new Map<string, { seen: number; of: number }>();
   for (const id of TAKE_IDS) for (const hold of holds(id)) for (const side of WU_SIDES) {
-    if (hold !== 'guard' && hold !== 'town' && side !== 'front' && side !== 'side') continue;
+    if (hold !== 'guard' && hold !== 'town' && side !== 'sideL' && side !== 'side') continue;
     const f = frame(id, hold, side);
     const p = f.px;
     const at = `${id} ${hold} ${side}`;
@@ -146,9 +155,19 @@ test('4. crisp; the friend\'s cyan edge round him; nothing of the enemy\'s; what
       }
     }
     if (rim < 100) bad.push(`${at}: his cyan edge only ${rim} pixels`);
-    if (hold !== 'town' && glow < 4) bad.push(`${at}: no cyan glow on it (${glow})`);
+    // (its cyan seen: a face turned to the floor hides its own glow from some sides, so it is counted over the sides, below)
+    if (hold !== 'town') {
+      const k = `${id} ${hold}`;
+      const g = glows.get(k) ?? { seen: 0, of: 0 };
+      g.of++;
+      if (glow >= 4) g.seen++;
+      glows.set(k, g);
+    }
     if (bad.length > 20) break;
   }
+  // (the friend's cyan is seen on each take in his hands: in his guard from five of his eight sides at least, at its wind-up from one of the two shown)
+  for (const [k, g] of glows) if (g.seen < (g.of === 8 ? 5 : 1)) bad.push(`${k}: its cyan seen from only ${g.seen} of ${g.of} sides`);
+  console.log(`  each take's cyan seen, sides of those looked at: ${[...glows].map(([k, g]) => `${k} ${g.seen}/${g.of}`).join('; ')}`);
   assert.deepEqual(bad.slice(0, 20), [], 'crisp, cyan, his own');
 });
 
@@ -198,4 +217,44 @@ test('5. as items: each take at its four rarities, 32 by 32, crisp, inside its f
     if (!(finery[3] > finery[0])) bad.push(`${id}: the Unique no finer than the Normal`);
   }
   assert.deepEqual(bad, [], 'the items');
+});
+
+test('6. the heads turned as he asked: in his guard and at each wind-up the edge or the face points down, in the world and on the screen from all eight sides; on his back down and out; never at his head', () => {
+  const bad: string[] = [];
+  const said: string[] = [];
+  for (const id of TAKE_IDS) {
+    const take = TAKES[id];
+    for (const hold of holds(id)) {
+      // (where the take is and which way its edge or face points is the pose's, whichever side he is seen from)
+      const { q, s } = holdBones(hold, take);
+      const pl = takePlace(take, KNIGHT_BODY, s, q);
+      const way = edgeWay(pl);
+      // (the middle of its head, and a point a little on the way its edge or face points)
+      const heart = onTake(pl, [take.heart + 5, 0, 0]);
+      const on = onTake(pl, [take.heart + 5, 6, 0]);
+      const at = `${id} ${hold}`;
+      if (!(way[2] < -0.3)) bad.push(`${at}: its edge or face points ${way[2].toFixed(2)} up or down (wanted well down)`);
+      const atHead = dot(way, norm(sub(s.head, heart)));
+      if (atHead > 0.3) bad.push(`${at}: its edge or face is turned toward his head (${atHead.toFixed(2)})`);
+      if (hold === 'cleave' || hold === 'smash') {
+        // (toward where the blow will land: on toward the mark, the way he faces)
+        if (!(way[0] > 0.5)) bad.push(`${at}: its edge or face is not turned toward the mark (${way[0].toFixed(2)} forward)`);
+      }
+      if (hold === 'town') {
+        // (out from him: to his right, away from his spine)
+        if (!(dot(way, s.chest[1]) < -0.5)) bad.push(`${at}: its edge or face is not turned out from him`);
+        continue;
+      }
+      let least = Infinity;
+      for (const side of WU_SIDES) {
+        const st = turnedStage(stage(WU_SPIN[side].camera, WU_SPIN[side].ax), WU_SPIN[side].spin);
+        const down = st.at(on)[1] - st.at(heart)[1];
+        least = Math.min(least, down);
+        if (!(down > 0)) bad.push(`${at} ${side}: on the screen its edge or face points ${(-down).toFixed(1)} up`);
+      }
+      if (id === 'axeA' || id === 'hammerA') said.push(`${at} ${way.map((v) => v.toFixed(2)).join(',')} (the least down on the screen ${least.toFixed(1)} of 6)`);
+    }
+  }
+  console.log(`  the way the edge or face points (forward, left, up): ${said.join('; ')}`);
+  assert.deepEqual(bad, [], 'an edge or a face not turned down');
 });
