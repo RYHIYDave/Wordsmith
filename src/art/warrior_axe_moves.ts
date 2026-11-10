@@ -517,7 +517,7 @@ export function axeFlightAt(t: number): number {
 
 /** A key that holds the axe in his right hand alone: his hand from his right shoulder (forward, to his left, up, as he faces),
  * the haft along (`az`, `el`), his left arm as `left` has it; his right elbow where his forearm lies across the haft. */
-function one(body: Partial<Bones>, hand: V3, az: number, el: number, edge: V3, near: number, left: Partial<Bones>, grip = THROW_GRIP): Held {
+export function one(body: Partial<Bones>, hand: V3, az: number, el: number, edge: V3, near: number, left: Partial<Bones>, grip = THROW_GRIP): Held {
   const a = aim(az, el, edge, near);
   return { pose: elbowed({ ...body, rhIn: 1, rhx: hand[0], rhy: hand[1], rhz: hand[2], ...left, ...a }), grip, roll: a.wRoll };
 }
@@ -611,6 +611,138 @@ function catchIt(): AxeKey[] {
   ];
 }
 export const AXE_CATCH: AxeMove = { name: 'The thrown axe: the catch', rest: AXE_REST, keys: catchIt(), hit: AXE_CATCH_AT, smear: [1 * FR, 3 * FR] };
+
+// ---------------------------------------------------------------------------------------------
+// TWIN AXES (a talent makes his thrown axe two: “two thrown, one each side of his aim”). WHAT IS DRAWN: A SECOND AXE, THE SAME,
+// DRAWN FROM HIS BACK over his left shoulder by his left hand as he winds up (it is first seen in his hand there), both thrown
+// at once, one from each hand; both caught, his own in his right hand and then the second in his left; and THE SECOND PUT AWAY
+// again over his left shoulder (last seen in his hand there), his left hand coming back to the butt of his own. Between whiles
+// it is not seen on him. The same three lists as the one axe's: the throw, braced, the catch.
+
+/** How far to each side of his aim the two fly (degrees): for the game, which draws them (`axeFlying`). */
+export const AXE_TWIN_SPREAD = 14;
+/** The catch of the second, in the catch's list (frames after his own is caught). */
+export const AXE_TWIN_CATCH = 3;
+
+/** The second axe as a key has it, in his left hand: the mirror of what his right does with his own (`az`, `el`, its edge), and
+ * his left arm (its elbow where his forearm lies across that haft). */
+function mirrored(pose: Partial<Bones>, hand: V3, az: number, el: number, edge: V3, near: number): { pose: Partial<Bones>; twin: NonNullable<AxeKey['twin']> } {
+  const a = aim(-az, el, [edge[0], -edge[1], edge[2]], near);
+  const point = heading(-az, el);
+  let best = Infinity;
+  let le = 0;
+  for (let e = -170; e <= 180; e += 10) {
+    const q = { ...AXE_REST, ...pose, lhIn: 1, lhx: hand[0], lhy: -hand[1], lhz: hand[2], le: e } as Posed;
+    const sk = solve(B, q);
+    const c = Math.max(0, Math.abs(dot(norm(sub(sk.elbowL, sk.handL)), point)) - ALONG) * 10 + Math.abs(sk.swungL) * 0.004 + Math.abs(e) * 0.0012;
+    if (c < best - 1e-9) {
+      best = c;
+      le = e;
+    }
+  }
+  return { pose: { ...pose, lhIn: 1, lhx: hand[0], lhy: -hand[1], lhz: hand[2], le }, twin: { az: -az, el, roll: a.wRoll, on: THROW_GRIP } };
+}
+/** A key of Twin Axes: his body, his right hand and his own axe (as `one`), his left hand and the second its mirror. */
+function both(frame: number, body: Partial<Bones>, hand: V3, az: number, el: number, edge: V3, near: readonly [number, number], ease?: Key3['ease']): AxeKey & { rolls: readonly [number, number] } {
+  const r = one(body, hand, az, el, edge, near[0], {});
+  const l = mirrored(r.pose, hand, az, el, edge, near[1]);
+  return { at: frame * FR, pose: l.pose, grip: r.grip, twin: l.twin, ease, rolls: [r.roll, l.twin.roll] };
+}
+/** How he stands braced for two: square, both hands out before him. */
+function bracedTwo(): Partial<Bones> {
+  return { ...braced(), yaw: -14, twist: 6, rhx: 13, rhy: -1.5, rhz: -3, re: -20, ...free(13, 1.5, -3, 20) };
+}
+
+/**
+ * TWIN AXES, THE THROW. His left hand leaves the haft and goes up over his left shoulder to his back (3), and comes away with
+ * the second axe; BOTH ARE DRAWN BACK, one behind each shoulder, their heads up behind him and their edges down, his chest
+ * thrown out and his back arched between them (6); HELD (6 to 9). THE THROW, two frames, smeared: both arms come through level
+ * at once (10), and both are LET GO, flat and spinning, one each side of his aim (11: the moment they leave). His arms carry
+ * on down before him, empty (14); and he comes up square and braced, both hands out for them (20).
+ */
+function twinOut(): AxeKey[] {
+  const P = plantedFeet();
+  const wind: Partial<Bones> = { ...P, ...backFoot(0, -8), lk: (P.lk as number) - 6, rk: 6, px: -1.6, pz: -7.4, yaw: -14, pitch: -6, twist: 6, bend: -8, faceUp: 2, faceTurn: 0, faceTilt: 0 };
+  // (his left hand gone up over his shoulder to his back for the second, his right drawing his own back)
+  const k3 = both(3, { ...P, px: -0.8, pz: -5.6, yaw: -24, twist: -8, pitch: 0, bend: 0 }, [-3, -12, -1], -166, 24, DOWN, [180, 180], 'io');
+  k3.grip = -3;
+  const k6 = both(6, wind, [-2, -14, 5], -174, 18, DOWN, k3.rolls, 'out');
+  const k9 = both(9, { ...wind, pz: -7.9, pitch: -7, bend: -10 }, [-3, -14, 6], -174, 24, DOWN, k6.rolls, 'io');
+  const k10 = both(10, { ...P, px: 2.2, pz: -6.4, yaw: -10, pitch: 6, twist: 4, bend: 6, faceUp: -2 }, [4, -13, 2], -140, 4, norm([0.6, -0.8, 0]), k9.rolls, 'in');
+  const k11 = both(11, { ...P, px: 5, pz: -7.2, yaw: -8, pitch: 12, twist: 4, bend: 16, faceUp: -4 }, [16, -4, -2], -72, 0, norm([1, -0.3, 0]), k10.rolls, 'lin');
+  return [
+    { at: 0, pose: {} },
+    k3,
+    // THE WIND-UP, reached and HELD: one behind each shoulder
+    k6,
+    k9,
+    // THE THROW: both arms through level ... and both let go
+    k10,
+    k11,
+    // (his arms carry on down before him, empty)
+    { at: 14 * FR, pose: { ...P, px: 5.4, pz: -8.0, yaw: -8, pitch: 14, twist: 4, bend: 20, faceUp: -2, rhIn: 1, rhx: 12, rhy: 2, rhz: -13, re: 0, ...free(12, -2, -13, 0), wAz: -60, wEl: -10, wRoll: k11.rolls[0] }, ease: 'out' },
+    // (and he comes up square and braced, both hands out for them)
+    { at: 20 * FR, pose: bracedTwo(), ease: 'io' },
+  ];
+}
+export const AXE_TWIN_THROW: AxeMove = {
+  name: 'Twin Axes: the throw', rest: AXE_REST, keys: twinOut(), hit: AXE_THROW_OUT, smear: [10 * FR, 11 * FR],
+  holding: (t) => ({ axe: t <= AXE_THROW_OUT + 1e-6, twin: t >= 4 * FR - 1e-6 && t <= AXE_THROW_OUT + 1e-6 }),
+};
+
+/** BRACED FOR TWO, WHILE THEY FLY (1 s, 30 pictures, a loop): as for the one, both hands out before him. */
+function bracedTwoAlive(): AxeKey[] {
+  const R = bracedTwo() as Bones;
+  return [
+    { at: 0, pose: R },
+    { at: 8 * FR, pose: { ...R, px: R.px + 0.9, pz: R.pz - 0.5, bend: R.bend + 1.6, rhx: R.rhx + 1.2, rhz: R.rhz + 0.6, lhx: R.lhx + 0.8, lhz: R.lhz + 0.4, faceUp: R.faceUp + 2 }, ease: 'io' },
+    { at: 16 * FR, pose: { ...R, px: R.px + 0.4, pz: R.pz + 0.1, bend: R.bend + 0.4, rhx: R.rhx + 0.3, rhy: R.rhy - 0.8, lhy: R.lhy + 0.8, faceUp: R.faceUp + 3 }, ease: 'io' },
+    { at: 23 * FR, pose: { ...R, px: R.px - 0.5, pz: R.pz - 0.6, bend: R.bend + 1.8, rhx: R.rhx + 1.5, rhz: R.rhz + 0.9, lhx: R.lhx + 1.3, lhz: R.lhz + 0.7, faceUp: R.faceUp + 1 }, ease: 'io' },
+    { at: 30 * FR, pose: R, ease: 'io' },
+  ];
+}
+export const AXE_TWIN_BRACED: AxeMove = { name: 'Twin Axes: braced while they fly', rest: AXE_REST, keys: bracedTwoAlive(), loop: 0, holding: () => ({ axe: false, twin: false }) };
+
+/**
+ * TWIN AXES, THE CATCH. His own smacks into his right hand (0) and carries that arm back round his right side (1 to 3); the
+ * second into his left (3) and carries that arm back round his left (4 to 6): both behind his shoulders, he rocked back
+ * between them (6), held a moment (8). His left hand goes on up over his left shoulder and PUTS THE SECOND AWAY on his back
+ * (11: last seen there), and comes down to the butt of his own as it is brought into his guard (22).
+ */
+function twinCatch(): AxeKey[] {
+  const P = plantedFeet();
+  const B0 = bracedTwo();
+  const back: Partial<Bones> = { ...P, ...backFoot(0, -8), lk: (P.lk as number) - 6, rk: 6, px: -3.0, pz: -7.6, yaw: -16, pitch: -6, twist: 6, bend: -8, faceUp: 2, faceTurn: 0 };
+  // (his own, caught; his left hand still out for the second)
+  const c0 = one({ ...B0, px: 0.6, pz: -7.4, bend: 9 }, [15, -2, -2], -80, 5, norm([1, 0.1, 0]), 90, free(13, 1.5, -3, 20));
+  const c1 = one({ ...B0, px: 0.0, pz: -7.2, yaw: -18, bend: 6 }, [6, -13, 1], -128, 10, norm([0.7, -0.6, -0.3]), c0.roll, free(14, 2, -2.5, 20));
+  // (the second, caught as his own goes back behind his right shoulder)
+  const c3r = one({ ...B0, px: -1.0, pz: -7.2, yaw: -18, pitch: 2, bend: 2 }, [-2, -14, 5], -174, 16, DOWN, c1.roll, {});
+  const c3l = mirrored(c3r.pose, [15, -2, -2], -80, 5, norm([1, 0.1, 0]), 90);
+  const c3: AxeKey = { at: AXE_TWIN_CATCH * FR, pose: c3l.pose, grip: c3r.grip, twin: c3l.twin, ease: 'out' };
+  const c4l = mirrored(one({ ...B0, px: -1.6, pz: -7.3, yaw: -17, pitch: 0, bend: -1 }, [-2, -14, 5], -174, 18, DOWN, c3r.roll, {}).pose, [6, -13, 1], -128, 10, norm([0.7, -0.6, -0.3]), c3l.twin.roll);
+  const c4: AxeKey = { at: 4 * FR, pose: c4l.pose, grip: THROW_GRIP, twin: c4l.twin, ease: 'lin' };
+  const c6 = both(6, back, [-2, -14, 5], -174, 18, DOWN, [c3r.roll, c4l.twin.roll], 'out');
+  const c8 = both(8, { ...back, px: -2.8, pz: -7.3, bend: -7 }, [-3, -14, 6], -174, 22, DOWN, c6.rolls, 'io');
+  // (the second put away: his left hand back over his shoulder to his back with it, where it is last seen)
+  const c11 = both(11, { ...P, ...backFoot(0, -8), rk: 6, px: -2.2, pz: -6.4, yaw: -30, pitch: -2, twist: -12, bend: -2 }, [-4, -13, 4], -170, 26, DOWN, c8.rolls, 'io');
+  const c17 = hold({ ...P, ...backFoot(0, -8), rk: 4, px: -1.2, pz: -5.0, yaw: -46, pitch: 2, twist: -34, bend: 4 }, [10, -4, 9], -164, 28, DOWN, c11.rolls[0], -3);
+  return [
+    key(0, c0),
+    key(1, c1, 'lin'),
+    c3,
+    c4,
+    c6,
+    c8,
+    c11,
+    key(17, c17, 'io'),
+    { at: 22 * FR, pose: { wRoll: Math.round((c17.roll - 180) / 360) * 360 + 180 }, ease: 'io' },
+  ];
+}
+export const AXE_TWIN_CATCH_MOVE: AxeMove = {
+  name: 'Twin Axes: the catch', rest: AXE_REST, keys: twinCatch(), hit: AXE_CATCH_AT, smear: [1 * FR, 6 * FR],
+  holding: (t) => ({ axe: true, twin: t >= AXE_TWIN_CATCH * FR - 1e-6 && t <= 11 * FR + 1e-6 }),
+};
 
 // ---------------------------------------------------------------------------------------------
 // LEAPING CHOP (his swipe with the axe). Beside his Lunge: its range (6 tiles) and its landing (1.6 tiles round), the half
@@ -757,6 +889,15 @@ export function axeFaults(m: AxeMove, t: number, f: ArmedFrame, p: AxePosed = ax
     const atHead = dot(way, norm(sub(p.s.head, head)));
     if (atHead > AT_HEAD_MOST) out.push(`its edge toward his head (${atHead.toFixed(2)})`);
   }
+  if (p.twin) {
+    // (the second axe: his left hand on its grip, its edge as his own's)
+    const w = inTake(p.twin, p.s.handL);
+    if (Math.hypot(w[1], w[2]) > 1.6 || w[0] < AXE.butt + 1 || w[0] > AXE.grip[1] + 1.5) out.push('his left hand off the second axe');
+    const way = workingEdge(p.twin);
+    if (Math.max(-way[2], way[0]) < EDGE_LEAST) out.push(`the second's edge neither down nor toward the mark (${way.map((v) => v.toFixed(2)).join(',')})`);
+    const atHead = dot(way, norm(sub(p.s.head, onTake(p.twin, [AXE.heart + 5, 0, 0]))));
+    if (atHead > AT_HEAD_MOST) out.push(`the second's edge toward his head (${atHead.toFixed(2)})`);
+  }
   return out;
 }
 /** The least of his helm that must be seen in every frame from every side (a share of what of it faces the eye). */
@@ -767,7 +908,7 @@ export const EDGE_LEAST = 0.25;
 export const AT_HEAD_MOST = 0.5;
 
 /** Every move with the axe, by a short name. */
-export const AXE_MOVES: Record<string, AxeMove> = { stand: AXE_STAND, run: AXE_RUN, cleave: AXE_CLEAVE, cleave2: AXE_CLEAVE2, throw: AXE_THROW, braced: AXE_BRACED, catch: AXE_CATCH, chop: AXE_CHOP };
+export const AXE_MOVES: Record<string, AxeMove> = { stand: AXE_STAND, run: AXE_RUN, cleave: AXE_CLEAVE, cleave2: AXE_CLEAVE2, throw: AXE_THROW, braced: AXE_BRACED, catch: AXE_CATCH, twin: AXE_TWIN_THROW, twinBraced: AXE_TWIN_BRACED, twinCatch: AXE_TWIN_CATCH_MOVE, chop: AXE_CHOP };
 
 export { FR as AXE_FRAME, UNITS_PER_TILE, WU_SIDES, WU_SPIN, CANVAS3, inTake, lerp3, len, paintAlone, plantedFeet, toSprite, lazyFrames, onToes };
 export type { Light, Px, Sprite, AnimSet, Clip };
