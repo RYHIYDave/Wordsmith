@@ -624,8 +624,8 @@ export function paintArmed(take: WeaponTake, s: Skeleton, q: Posed, side: WuSide
         }
       }
       // THE SMEAR of a strike, under the take's own light
-      if (more.trail && !empty) smearOf(st, take, more.trail, lights);
-      if (more.trail2 && second) smearOf(st, take, more.trail2, lights);
+      if (more.trail && !empty) smearOf(st, take, more.trail, lights, s.head);
+      if (more.trail2 && second) smearOf(st, take, more.trail2, lights, s.head);
       // (the take's cyan light, where its edges and marks glow, as the great sword's blade lights what is near it)
       if (!(away && st.near(cf) > 0)) {
         for (const at of [empty ? null : pl, second]) {
@@ -642,6 +642,8 @@ export function paintArmed(take: WeaponTake, s: Skeleton, q: Posed, side: WuSide
   return { ...f, take, placed: pl, firstMat: before.mats, firstPrim: before.prims, stowed: away, empty, second, secondPrim };
 }
 
+/** How far round the middle of his head no smear is painted (picture pixels: his helm and its snout). */
+const HELM_CLEAR = 10.5;
 /** Where a take's head runs along its haft, from its eye's foot to the tip of what is furthest out (for its smear). */
 function headSpan(take: WeaponTake): readonly [number, number] {
   let lo = take.heart;
@@ -664,7 +666,7 @@ function headOutline(take: WeaponTake): readonly (readonly P2[])[] {
  * and breaking up toward its oldest end; and AFTER-IMAGES of the head itself along it, a third and two thirds of the way back,
  * each the head's own outline in a fading copy of its light. `trail`: where the take has been, newest first.
  */
-function smearOf(st: Stage, take: WeaponTake, trail: readonly Placed[], lights: Light[]): void {
+function smearOf(st: Stage, take: WeaponTake, trail: readonly Placed[], lights: Light[], helm: V3): void {
   const n = trail.length;
   if (n < 2) return;
   const [lo, hi] = headSpan(take);
@@ -672,6 +674,16 @@ function smearOf(st: Stage, take: WeaponTake, trail: readonly Placed[], lights: 
   const moved = len(sub(ends[0][1], ends[n - 1][1]));
   if (moved <= 8) return;
   const midOf = (a: V3, b: V3, k: number): V3 => lerp3(a, b, k);
+  // HIS HELM IS NEVER UNDER THE SMEAR (his rulebook's Animations 4, “The hero and every warning stay in sight”): what of it
+  // would lie over his helm is not painted, so that a sweep that passes his head passes behind it
+  const [hx, hy] = st.at(helm);
+  const clearHelm = (fan: { w: number; h: number; has(x: number, y: number): boolean; erase(x: number, y: number): void }): void => {
+    for (let y = Math.max(0, Math.floor(hy - HELM_CLEAR)); y <= Math.min(fan.h - 1, Math.ceil(hy + HELM_CLEAR)); y++) {
+      for (let x = Math.max(0, Math.floor(hx - HELM_CLEAR)); x <= Math.min(fan.w - 1, Math.ceil(hx + HELM_CLEAR)); x++) {
+        if (Math.hypot(x + 0.5 - hx, y + 0.5 - hy) <= HELM_CLEAR && fan.has(x, y)) fan.erase(x, y);
+      }
+    }
+  };
   // (each stretch of the crescent on a sheet of its own, as near the eye as the head was then: a sweep that goes round him is
   // before him where it was before him and behind him where it was behind)
   const inner = (e: readonly [V3, V3], age: number): V3 => midOf(e[0], e[1], 0.1 + 0.8 * Math.pow(age, 0.7));
@@ -702,6 +714,7 @@ function smearOf(st: Stage, take: WeaponTake, trail: readonly Placed[], lights: 
       const k = 1 - Math.hypot(x - old[0], y - old[1]) / far;
       if (k > 0.45 && hash(x, y, 7) < (k - 0.45) * 1.6) fan.erase(x, y);
     }
+    clearHelm(fan);
     // THE AFTER-IMAGES that lie in this stretch: the head's own outline, where it was
     for (const k of [0.34, 0.67]) {
       const i = Math.min(n - 1, Math.max(1, Math.round(k * (n - 1))));
@@ -714,6 +727,7 @@ function smearOf(st: Stage, take: WeaponTake, trail: readonly Placed[], lights: 
         const [x1, y1] = st.at(onTake(trail[i], [e[j + 1][0], e[j + 1][1], 0]));
         fan.line(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1), core);
       }
+      clearHelm(fan);
     }
   }
   const [lx, ly] = st.at(midOf(ends[1][0], ends[1][1], 0.8));

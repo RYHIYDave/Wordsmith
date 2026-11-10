@@ -79,8 +79,8 @@ export interface AxeMove {
   smear?: readonly [number, number];
   /** What is in his hands at a moment (his axe, all through, if not given). */
   holding?: (t: number) => Holding;
-  /** The game lifts him through the air for the first `until` seconds of it, `high` GAME pixels at the top (a leap). */
-  arc?: { until: number; high: number };
+  /** The game carries and lifts him through the air from `from` to `until` (seconds), `high` GAME pixels at the top (a leap). */
+  arc?: { from: number; until: number; high: number };
 }
 
 function spanOf(m: AxeMove): { end: number; from: number | undefined } {
@@ -297,7 +297,7 @@ const FISTS = 6;
 /** Where on the haft his right hand is when it has slid down to his left for a swing. */
 const SLID = BUTT + FISTS;
 /** What a key holds the axe as: his bones, and where on the haft his right hand is. */
-interface Held {
+export interface Held {
   pose: Partial<Bones>;
   grip: number;
   roll: number;
@@ -309,7 +309,7 @@ interface Held {
  * it, up the grip; `SLID` when it has slid down to his left for a swing). And HIS ELBOWS ARE SET SO THAT EACH FOREARM COMES TO
  * THE HAFT ACROSS IT, NOT ALONG IT (`elbowed`): a forearm that lay along the haft would have it up its sleeve.
  */
-function hold(body: Partial<Bones>, butt: V3, az: number, el: number, edge: V3, near = 180, grip = 0): Held {
+export function hold(body: Partial<Bones>, butt: V3, az: number, el: number, edge: V3, near = 180, grip = 0): Held {
   const q = { ...AXE_REST, ...body } as Posed;
   const s = solve(B, q);
   const turn = (q.yaw + q.twist) * D;
@@ -367,6 +367,8 @@ function elbowed(pose: Partial<Bones>): Partial<Bones> {
   };
   const out: Partial<Bones> = { ...pose };
   for (const left of [false, true]) {
+    // (a left hand that is not on the haft: its elbow as the key has it)
+    if (left && pose.lhIn !== 3) continue;
     let best = Infinity;
     let at = 0;
     for (let a = -170; a <= 180; a += 10) {
@@ -419,7 +421,7 @@ function cleaveAcross(): AxeKey[] {
   const mid: Partial<Bones> = { ...P, px: 2.0, pz: -6.2, yaw: -10, pitch: 7, twist: -46, bend: 11, faceUp: -2 };
   const blow: Partial<Bones> = { ...P, px: 4.4, pz: -6.9, yaw: 30, pitch: 10, twist: 16, bend: 13, faceUp: -4 };
   const k1 = hold({ ...lightFeet(), px: -0.3, pz: -4.2, yaw: -44, twist: -32, bend: 6 }, [11, -3, 8], -162, 36, DOWN, 180);
-  const k2 = hold({ ...skipFeet(), px: -0.8, pz: -4.8, yaw: -47, twist: -35, bend: 5 }, [11, -4, 10], -162, 56, DOWN, k1.roll);
+  const k2 = hold({ ...skipFeet(), px: -0.8, pz: -4.8, yaw: -47, twist: -35, bend: 5 }, [10, -7, 9], -162, 56, DOWN, k1.roll);
   const k6 = hold(coil, [11, -4, 14], -160, 80, [1, 0, 0], k2.roll);
   const k8 = hold({ ...coil, pz: -7.6, yaw: -54, twist: -42, bend: 1 }, [11, -4, 14], -160, 73, [1, 0, 0.2], k6.roll);
   const k9 = hold(mid, [10, -1, 4], -75, 15, norm([0.6, 0.6, -0.5]), k8.roll, -2.5);
@@ -494,6 +496,206 @@ function cleaveBack(): AxeKey[] {
 export const AXE_CLEAVE2: AxeMove = { name: 'Cleave, the cut back (Movement 9)', rest: AXE_REST, keys: cleaveBack(), hit: AXE_CLEAVE_HIT, tail: true, smear: [9 * FR, 11 * FR] };
 
 // ---------------------------------------------------------------------------------------------
+// THE THROWN AXE (his hold with the axe): thrown flat and spinning out along his aim, and back to his hand. Three lists: THE
+// THROW (to where he stands braced and empty-handed), BRACED (a loop, for as long as it flies), THE CATCH (and back to his guard).
+
+/** The moment the axe leaves his hand (the rules' moment: as long a wind-up as his tap's, and a frame for the throw's sweep). */
+export const AXE_THROW_OUT = 11 * FR;
+/** The held wind-up of the throw: from, to (frames). */
+export const AXE_THROW_HELD: readonly [number, number] = [6, 9];
+/** Where on the haft his right hand throws and catches it: low on the grip, a fist's width above the butt. */
+const THROW_GRIP = -6.4;
+/** HOW IT FLIES, for the game (which draws it: `axeFlying`): out along his aim to `far` tiles from him and back in `time`
+ * seconds, slowing as it turns; from where his hand lets it go (`from` tiles before him, `high` game pixels above the floor);
+ * turning flat once in `turn` seconds; striking what comes within `wide` tiles of it, once on the way out and once on the way back. */
+export const AXE_FLIGHT = { far: 6, time: 1.0, from: 0.55, high: 19, turn: 0.4, wide: 0.6 } as const;
+/** Where the thrown axe is at `t` seconds of its flight: how far from him along his aim, in tiles. */
+export function axeFlightAt(t: number): number {
+  const k = Math.max(0, Math.min(1, t / AXE_FLIGHT.time));
+  return AXE_FLIGHT.from + (AXE_FLIGHT.far - AXE_FLIGHT.from) * Math.sin(Math.PI * k);
+}
+
+/** A key that holds the axe in his right hand alone: his hand from his right shoulder (forward, to his left, up, as he faces),
+ * the haft along (`az`, `el`), his left arm as `left` has it; his right elbow where his forearm lies across the haft. */
+function one(body: Partial<Bones>, hand: V3, az: number, el: number, edge: V3, near: number, left: Partial<Bones>, grip = THROW_GRIP): Held {
+  const a = aim(az, el, edge, near);
+  return { pose: elbowed({ ...body, rhIn: 1, rhx: hand[0], rhy: hand[1], rhz: hand[2], ...left, ...a }), grip, roll: a.wRoll };
+}
+/** His left arm free: his hand from his left shoulder (forward, to his left, up, as he faces), and how far its elbow is swung. */
+const free = (x: number, y: number, z: number, le = 0): Partial<Bones> => ({ lhIn: 1, lhx: x, lhy: y, lhz: z, le });
+
+/** His feet and body wound round to throw, sunk on his back leg. */
+function throwCoil(): Partial<Bones> {
+  const P = plantedFeet();
+  return { ...P, ...backFoot(0, -8), lk: (P.lk as number) - 10, rk: 14, px: -2.6, pz: -7.0, yaw: -56, pitch: -2, twist: -42, bend: 0, faceUp: 0, faceTurn: 6, faceTilt: 0 };
+}
+/** HOW HE STANDS BRACED, EMPTY-HANDED, WHILE IT FLIES: low and square on both feet, his right hand out before him for it,
+ * open, his left arm out and low for his balance, his eyes on the axe. */
+function braced(): Partial<Bones> {
+  const P = plantedFeet();
+  return { ...P, ...backFoot(0, -8), lk: (P.lk as number) - 6, rk: 4, px: 1.0, pz: -7.2, yaw: -16, pitch: 6, twist: -4, bend: 8, faceUp: 1, faceTurn: 0, faceTilt: 0, rhIn: 1, rhx: 13.5, rhy: 3, rhz: -3, re: -20, ...free(8, 8, -12, -10), wAz: -80, wEl: 4, wRoll: 90 };
+}
+
+/**
+ * THE THROW. His left hand leaves the haft and goes out toward the mark; his right draws the axe BACK BEHIND HIS RIGHT SHOULDER,
+ * its head up behind him and its edge down, all of him wound round after it and sunk on his back leg (6); HELD (6 to 9). THE
+ * THROW, two frames, smeared: his hips whip round and his arm comes through level, the axe laid flat and trailing (10), and is
+ * whipped on round his hand and LET GO, flat and spinning (11: the moment it leaves). His arm carries on across him, empty
+ * (14); and he comes up square and braced, his hand out before him for it (20).
+ */
+function throwOut(): AxeKey[] {
+  const P = plantedFeet();
+  const coil = throwCoil();
+  const k3 = one({ ...lightFeet(), ...P, px: -1.4, pz: -5.4, yaw: -48, twist: -36, bend: 4 }, [-3, -12, -1], -166, 24, DOWN, 180, free(11, 2, -6, 0), -3);
+  const k6 = one(coil, [-7, -6, 6], -170, 30, DOWN, k3.roll, free(16, 3, 1, 0));
+  const k9 = one({ ...coil, pz: -7.5, yaw: -58, twist: -44, bend: -2 }, [-8, -6, 7], -170, 35, DOWN, k6.roll, free(16.5, 3, 2, 0));
+  const k10 = one({ ...P, px: 2.0, pz: -6.2, yaw: -10, pitch: 6, twist: -44, bend: 8, faceUp: -2 }, [5, -14, 2], -150, 4, norm([0.5, -0.87, 0]), k9.roll, free(13, 7, -2, 0));
+  const k11 = one({ ...P, px: 4.4, pz: -6.9, yaw: 30, pitch: 10, twist: 16, bend: 10, faceUp: -2 }, [17, 6, -2], 100, 0, norm([1, 0.1, 0]), k10.roll, free(3, 10, -8, 0));
+  const B0 = braced();
+  return [
+    { at: 0, pose: {} },
+    key(3, k3, 'io'),
+    // THE WIND-UP, reached and HELD
+    key(6, k6, 'out'),
+    key(9, k9, 'io'),
+    // THE THROW: his arm through level, the axe flat and trailing ... and whipped on round, and let go
+    key(10, k10, 'in'),
+    key(11, k11, 'lin'),
+    // (his arm carries on across him, empty; his left arm back for his balance)
+    { at: 14 * FR, pose: { ...P, px: 5.0, pz: -7.6, yaw: 38, pitch: 12, twist: 26, bend: 14, faceUp: -2, rhIn: 1, rhx: 9, rhy: 15, rhz: -9, re: 0, ...free(-7, 7, -11, 0), wAz: 150, wEl: -10, wRoll: k11.roll }, ease: 'out' },
+    // (and he comes up square and braced, his hand out for it)
+    { at: 20 * FR, pose: B0, ease: 'io' },
+  ];
+}
+export const AXE_THROW: AxeMove = { name: 'The thrown axe: the throw', rest: AXE_REST, keys: throwOut(), hit: AXE_THROW_OUT, smear: [10 * FR, 11 * FR], holding: (t) => ({ axe: t <= AXE_THROW_OUT + 1e-6, twin: false }) };
+
+/**
+ * BRACED, WHILE IT FLIES (1 s, 30 pictures, a loop): empty-handed, low and square, alive: he breathes, his weight goes over
+ * onto his front foot and back, and his hand out before him reaches and gives as he follows the axe with his eyes.
+ */
+function bracedAlive(): AxeKey[] {
+  const R = braced() as Bones;
+  return [
+    { at: 0, pose: R },
+    { at: 8 * FR, pose: { ...R, px: R.px + 0.9, pz: R.pz - 0.5, bend: R.bend + 1.6, rhx: R.rhx + 1.2, rhz: R.rhz + 0.6, lhz: R.lhz - 0.6, faceUp: R.faceUp + 2 }, ease: 'io' },
+    { at: 16 * FR, pose: { ...R, px: R.px + 0.4, pz: R.pz + 0.1, bend: R.bend + 0.4, yaw: R.yaw + 2, twist: R.twist - 2, rhx: R.rhx + 0.3, rhy: R.rhy - 0.8, faceUp: R.faceUp + 3 }, ease: 'io' },
+    { at: 23 * FR, pose: { ...R, px: R.px - 0.5, pz: R.pz - 0.6, bend: R.bend + 1.8, rhx: R.rhx + 1.5, rhz: R.rhz + 0.9, lhy: R.lhy + 0.8, faceUp: R.faceUp + 1 }, ease: 'io' },
+    { at: 30 * FR, pose: R, ease: 'io' },
+  ];
+}
+export const AXE_BRACED: AxeMove = { name: 'The thrown axe: braced while it flies', rest: AXE_REST, keys: bracedAlive(), loop: 0, holding: () => ({ axe: false, twin: false }) };
+
+/** The moment of the catch in its list (its first picture: the axe is in his hand). */
+export const AXE_CATCH_AT = 0;
+/**
+ * THE CATCH. IT SMACKS INTO HIS HAND, held out before him (0), and HIS ARM IS CARRIED BACK BY IT: round his right side and up
+ * behind his shoulder, all of him rocked back onto his back leg after it (1 to 3, smeared), where its weight is held a moment
+ * (4 to 6); his left hand comes to the butt, his right slides up the haft, and it is brought down into his guard (18).
+ */
+function catchIt(): AxeKey[] {
+  const P = plantedFeet();
+  const B0 = braced();
+  const coil = throwCoil();
+  const c0 = one({ ...B0, px: 0.6, pz: -7.4, bend: 9 }, [15, 2, -2], -80, 5, norm([1, 0.1, 0]), 90, free(8, 8, -12, -10));
+  const c1 = one({ ...P, ...backFoot(0, -8), rk: 8, px: -1.0, pz: -7.0, yaw: -32, pitch: 2, twist: -24, bend: 4 }, [6, -13, 1], -128, 10, norm([0.7, -0.6, -0.3]), c0.roll, free(10, 8, -9, -10));
+  const c3 = one({ ...coil, px: -3.4, pz: -7.8, pitch: -4, bend: -3 }, [-7, -6, 6], -168, 26, DOWN, c1.roll, free(13, 5, -4, 0));
+  const c6 = one({ ...coil, px: -3.0, pz: -7.4, pitch: -3, bend: -1 }, [-7, -6, 6], -170, 30, DOWN, c3.roll, free(12, 4, -6, 0));
+  const c12 = hold({ ...P, ...backFoot(0, -8), rk: 4, px: -1.2, pz: -5.0, yaw: -46, pitch: 2, twist: -34, bend: 4 }, [10, -4, 9], -164, 28, DOWN, c6.roll, -3);
+  return [
+    key(0, c0),
+    key(1, c1, 'lin'),
+    key(3, c3, 'out'),
+    key(6, c6, 'io'),
+    key(12, c12, 'io'),
+    { at: 18 * FR, pose: { wRoll: Math.round((c12.roll - 180) / 360) * 360 + 180 }, ease: 'io' },
+  ];
+}
+export const AXE_CATCH: AxeMove = { name: 'The thrown axe: the catch', rest: AXE_REST, keys: catchIt(), hit: AXE_CATCH_AT, smear: [1 * FR, 3 * FR] };
+
+// ---------------------------------------------------------------------------------------------
+// LEAPING CHOP (his swipe with the axe). Beside his Lunge: its range (6 tiles) and its landing (1.6 tiles round), the half
+// second in the air; but A CROUCH FIRST, HELD, and a leap UP AND OVER, the axe overhead, the chop coming down as he lands.
+
+/** Leaping Chop's beats, in frames: the crouch (held from `CHOP_HELD` to the leap), the leap's first and last (the game carries
+ * and lifts him between them: the last is the blow, as his feet come down), the end. */
+export const AXE_CHOP_HELD = 3;
+export const AXE_CHOP_LEAP = 5;
+export const AXE_CHOP_LAND = 20;
+export const AXE_CHOP_END = 42;
+/** How high the game lifts him at the top of the leap (GAME pixels: the game's own leap's, render/wild.ts LEAP_LIFT). */
+export const AXE_CHOP_HIGH = 40;
+
+/**
+ * LEAPING CHOP, all of it. THE CROUCH: he sinks deep over his feet, the axe gathered low at his hip (3), HELD (3 to 5). THE
+ * LEAP (5 to 20, half a second: the game carries him along and lifts him): he drives up off both feet, the axe swept up
+ * before him (7); his knees come up under him and THE AXE GOES UP OVER HIS HEAD, his hands over and behind it, his elbows out
+ * (10); at the top he hangs, back arched, the axe laid right back, his chin down and his eyes on the spot (13); he comes down
+ * reaching for the floor with his front foot, the axe still back (17); and THE CHOP, two frames, smeared: over the top (19)
+ * and DOWN INTO THE FLOOR as his feet land, his right hand slid down the haft, all his weight on it (20, the blow). A freeze,
+ * sunk over it (23). THE WIND-DOWN, heavy: he wrenches it out of the floor and comes up (28), swings it low round his right
+ * side as his front foot comes home (33, 38), and is in his guard (42).
+ */
+function leapingChop(): AxeKey[] {
+  const R = AXE_REST;
+  const stood: Partial<Bones> = { lfx: R.lfx, lfy: R.lfy, lfz: 0, lfp: 0, lft: R.lft, lk: R.lk, rfx: R.rfx, rfy: R.rfy, rfz: 0, rfp: 0, rft: R.rft, rk: R.rk };
+  const crouch: Partial<Bones> = { ...stood, px: -1.5, pz: -11.5, yaw: -36, pitch: 14, twist: -28, bend: 16, faceUp: 8 };
+  const landed: Partial<Bones> = { lfx: 22, lfy: 0.5, lfz: 0, lfp: 0, lft: 2, lk: 2, rfx: -12, rfy: -1, rfp: 44, rfz: onToes(44), rft: -10, rk: -4 };
+  const k3 = hold(crouch, [9, -3, 6], -150, 6, DOWN, 180);
+  const k5 = hold({ ...crouch, pz: -12.4, bend: 18, pitch: 15 }, [9, -3, 6], -152, 3, DOWN, k3.roll);
+  // (driving up: his heels off the floor, the axe on its way up)
+  const k6 = hold({ ...stood, lfp: 24, lfz: onToes(24), rfp: 30, rfz: onToes(30), px: 0.2, pz: -6, yaw: -28, pitch: 13, twist: -20, bend: 10, faceUp: 6 }, [10, -3, 10], -156, 36, DOWN, k5.roll);
+  // (up off both feet, his legs thrown straight, the axe swept up before his right shoulder)
+  const k7 = hold({ px: 2, pz: 0.5, yaw: -20, pitch: 12, twist: -12, bend: 4, faceUp: 4, lfx: 6, lfy: 0.5, lfz: 2, lfp: 30, lft: 4, lk: 4, rfx: -10, rfy: -1.5, rfz: 1.5, rfp: 40, rft: -20, rk: -8 }, [7, -11, 12], -170, 50, DOWN, k6.roll);
+  // (two moments of the way up, so that the haft goes round his right shoulder and not through it)
+  const k8 = hold({ px: 1, pz: 1.5, yaw: -16, pitch: 7, twist: -13, bend: 0, faceUp: 1, lfx: 7, lfy: 0.5, lfz: 4, lfp: 25, lft: 4, lk: 4, rfx: -9, rfy: -1.2, rfz: 5, rfp: 45, rft: -15, rk: -7 }, [8, -11, 17], -172, 40, DOWN, k7.roll);
+  const k9 = hold({ px: 0.4, pz: 1.8, yaw: -13, pitch: 4, twist: -14, bend: -2, faceUp: -1, lfx: 7.6, lfy: 0.5, lfz: 5.2, lfp: 22, lft: 4, lk: 4, rfx: -8.4, rfy: -1.1, rfz: 7, rfp: 48, rft: -12, rk: -6 }, [6, -10, 18], -168, 46, DOWN, k8.roll);
+  // (his knees coming up, the axe laid back over his right shoulder: his hands by his right ear, never before his helm)
+  const k10 = hold({ px: 0, pz: 2, yaw: -12, pitch: 2, twist: -14, bend: -4, faceUp: -2, lfx: 8, lfy: 0.5, lfz: 6, lfp: 20, lft: 4, lk: 4, rfx: -8, rfy: -1, rfz: 8, rfp: 50, rft: -10, rk: -6 }, [5, -9, 19], -168, 45, DOWN, k9.roll);
+  // (the top: tucked, arched and wound to his right, the axe laid right back behind his shoulder, his chin down, his eyes on the spot)
+  const k13 = hold({ px: 0, pz: 3, yaw: -16, pitch: -4, twist: -22, bend: -10, faceUp: -8, lfx: 10, lfy: 0.5, lfz: 12, lfp: 10, lft: 4, lk: 6, rfx: -6, rfy: -1, rfz: 13, rfp: 60, rft: -8, rk: -8 }, [4, -9, 20], -172, 18, DOWN, k10.roll);
+  // (coming down, reaching for the floor, the axe still back)
+  const k17 = hold({ px: 2, pz: 1, yaw: -12, pitch: 2, twist: -16, bend: -6, faceUp: -12, lfx: 16, lfy: 0.5, lfz: 5, lfp: -10, lft: 3, lk: 4, rfx: -8, rfy: -1, rfz: 8, rfp: 40, rft: -8, rk: -6 }, [5, -9, 19], -170, 30, DOWN, k13.roll);
+  // (the axe coming upright past his right ear as his front foot reaches the floor)
+  const k18 = hold({ px: 3.5, pz: -1, yaw: -8, pitch: 8, twist: -12, bend: 0, faceUp: -16, lfx: 18, lfy: 0.5, lfz: 3, lfp: -9, lft: 2, lk: 3, rfx: -9, rfy: -1, rfz: 6, rfp: 35, rft: -9, rk: -5 }, [8, -9, 17], -160, 75, DOWN, k17.roll, -2);
+  // THE CHOP: up and over past his right ear ... and down into the floor as his feet land
+  const k19 = hold({ px: 5, pz: -3, yaw: -4, pitch: 14, twist: -8, bend: 6, faceUp: -20, lfx: 20, lfy: 0.5, lfz: 1.5, lfp: -8, lft: 2, lk: 3, rfx: -10, rfy: -1, rfz: 4, rfp: 30, rft: -10, rk: -5 }, [11, -7, 12], -6, 45, [1, 0, -0.6], k18.roll, SLID);
+  const low: Partial<Bones> = { ...landed, px: 9, pz: -13.5, yaw: 4, pitch: 26, twist: 2, bend: 30, faceUp: -34 };
+  const k20 = hold(low, [11, 0, -2], 0, -22, [0.3, 0, -1], k19.roll, SLID);
+  const k23 = hold({ ...low, pz: -14.6, bend: 33, pitch: 27 }, [11, 0, -3], 0, -24, [0.3, 0, -1], k20.roll, SLID);
+  // THE WIND-DOWN
+  const k28 = hold({ ...landed, px: 6, pz: -9, yaw: -6, pitch: 16, twist: -6, bend: 18, faceUp: -16 }, [11, -1, 4], -8, -4, DOWN, k23.roll, SLID);
+  const k33 = hold({ ...landed, lfx: 20, lfz: 2.6, lfp: -6, lft: 4, px: 3, pz: -6, yaw: -24, pitch: 8, twist: -16, bend: 10, faceUp: -6 }, [10, -3, 5], -70, 2, DOWN, k28.roll, -3);
+  const k38 = hold({ lfx: R.lfx, lfy: R.lfy, lfz: 0, lfp: 0, lft: R.lft, lk: R.lk, rfx: -14, rfy: -1.2, rfz: 2.2, rfp: 6, rft: -40, rk: -30, px: 1, pz: -4.6, yaw: -34, pitch: 5, twist: -26, bend: 8, faceUp: -2 }, [9, -4, 7], -130, 10, DOWN, k33.roll, -1);
+  return [
+    { at: 0, pose: {} },
+    // THE CROUCH, reached and HELD
+    key(AXE_CHOP_HELD, k3, 'out'),
+    key(AXE_CHOP_LEAP, k5, 'io'),
+    // THE LEAP
+    key(6, k6, 'in'),
+    key(7, k7, 'out'),
+    key(8, k8, 'lin'),
+    key(9, k9, 'lin'),
+    key(10, k10, 'lin'),
+    key(13, k13, 'io'),
+    key(17, k17, 'io'),
+    key(18, k18, 'in'),
+    key(19, k19, 'lin'),
+    key(AXE_CHOP_LAND, k20, 'lin'),
+    // (the blow lands with a freeze, sunk over it)
+    key(23, k23, 'out'),
+    key(28, k28, 'io'),
+    key(33, k33, 'io'),
+    key(38, k38, 'lin'),
+    { at: AXE_CHOP_END * FR, pose: { wRoll: Math.round((k38.roll - 180) / 360) * 360 + 180 }, ease: 'out' },
+  ];
+}
+export const AXE_CHOP: AxeMove = {
+  name: 'Leaping Chop (Movement 9)', rest: AXE_REST, keys: leapingChop(), hit: AXE_CHOP_LAND * FR,
+  smear: [19 * FR, 21 * FR], arc: { from: AXE_CHOP_LEAP * FR, until: AXE_CHOP_LAND * FR, high: AXE_CHOP_HIGH },
+};
+
+// ---------------------------------------------------------------------------------------------
 // THE CHECKS (for the test and the pictures)
 
 /** The way the working edge of the axe faces where it is: of its two bits, the one turned more down or toward the mark. */
@@ -565,7 +767,7 @@ export const EDGE_LEAST = 0.25;
 export const AT_HEAD_MOST = 0.5;
 
 /** Every move with the axe, by a short name. */
-export const AXE_MOVES: Record<string, AxeMove> = { stand: AXE_STAND, run: AXE_RUN, cleave: AXE_CLEAVE, cleave2: AXE_CLEAVE2 };
+export const AXE_MOVES: Record<string, AxeMove> = { stand: AXE_STAND, run: AXE_RUN, cleave: AXE_CLEAVE, cleave2: AXE_CLEAVE2, throw: AXE_THROW, braced: AXE_BRACED, catch: AXE_CATCH, chop: AXE_CHOP };
 
 export { FR as AXE_FRAME, UNITS_PER_TILE, WU_SIDES, WU_SPIN, CANVAS3, inTake, lerp3, len, paintAlone, plantedFeet, toSprite, lazyFrames, onToes };
 export type { Light, Px, Sprite, AnimSet, Clip };
