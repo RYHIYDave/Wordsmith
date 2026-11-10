@@ -16,6 +16,13 @@ From its post of 13:20, asked whether to try the ten on a test page with plain l
 In this chat, 9 Nov by 13:40, asked what to draw after the Reaping Shade: “The three new words (Recommended)” (offered as:
 Lasting, Fleeting and Vast, plus room for 28 rune stones in the Lexicon; then all ten can go live).
 
+THE END OF IT, 9 Nov by 19:00. Shown `pictures/words3_film.mp4` (at 6d1d09ec) and asked “Are the three new words right at
+work (words3_film.mp4)?”: “Yes, hand all ten to main (Recommended)” (offered as: all ten new words and the Lexicon go to the
+main chat to put live). Asked “Are the Lexicon's short tab names right now (lexicon_pages.png, sent earlier)?” (the picture
+at 7d57f7b2): “Yes, use them (Recommended)” (offered as: Damage, Strike, Time, Control, Spoils). THE TEN WORDS' LOOKS AND
+THE LEXICON'S PAGES ARE DONE, WITH HIS YES: the Lexicon's way is `'groups'` (LEX28), its tabs DAMAGE, STRIKE, TIME, CONTROL,
+SPOILS.
+
 ## The pictures
 
 - `pictures/words3_looks.png` (1200 by 3772): a row for each word: its rune stone (big, and at the game's size), its name in
