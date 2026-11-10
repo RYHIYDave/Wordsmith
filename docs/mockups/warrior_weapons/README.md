@@ -346,3 +346,16 @@ then not drawn). `art/warrior_up_moves.ts`: four of its helpers for his feet are
     node tools/axe_film_page.mjs                                                   # the film's page: dist/axe_film.html
     OUT=<frames dir> node tools/playtest.mjs --file dist/axe_film.html --touch --size 844x390 --dpr 3 --init tools/axe_film_init.js --scenario tools/scenarios/axe_film.mjs --out <frames dir>/x
     python3 tools/warrior_axe_film.py <frames dir> docs/mockups/warrior_weapons/pictures/axe_moves.mp4
+
+## His word on the axe's moves (step 2)
+
+9 Nov 2026, by 22:34. Shown `pictures/axe_moves.mp4` (at 58ec9c84) and asked “Are the battle axe's moves right
+(axe_moves.mp4)?”: “Yes, on to the hammer (Recommended)” (offered as: next, the maul's moves: Smash, Earthquake and Shoulder
+Charge). Asked “With the Twin Axes talent, when should the second axe show?”: “Only when he throws it (Recommended)” (offered
+as: he pulls it from his back to throw and puts it away after; no extra pictures for the phone to hold). So the second axe
+is as drawn: seen only in the Twin Axes throw and catch; no second set of stand and run pictures.
+
+STILL FOR THE MAIN CHAT TO SETTLE WITH HIM (rules, not looks): whether he may move while the axe flies (as drawn he stands
+braced, about 2 s from hold to guard); whether Leaping Chop's crouch may hold the swipe a sixth of a second where the Lunge
+leaves at once. AND SEEN IN THE FILM: his life bar stays at his ground height while he is lifted in a leap, so it crosses his
+body in the air (the game's own; it should ride with his lift).
