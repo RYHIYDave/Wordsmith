@@ -644,36 +644,29 @@ export function paintArmed(take: WeaponTake, s: Skeleton, q: Posed, side: WuSide
 
 /** How far round the middle of his head no smear is painted (picture pixels: his helm and its snout). */
 const HELM_CLEAR = 10.5;
-/** Where a take's head runs along its haft, from its eye's foot to the tip of what is furthest out (for its smear). */
-function headSpan(take: WeaponTake): readonly [number, number] {
-  let lo = take.heart;
+/** Where a take's smear runs along its haft: from a little above his hands to the tip of what is furthest out. */
+function smearSpan(take: WeaponTake): readonly [number, number] {
   let hi = take.top;
-  for (const e of take.edges) for (const [x] of e) {
-    lo = Math.min(lo, x);
-    hi = Math.max(hi, x);
-  }
-  return [lo, hi + (take.id === 'axeB' ? 1.6 : 0)];
-}
-/** A take's head in outline, in its own (X, Y): what its after-images are drawn from. */
-function headOutline(take: WeaponTake): readonly (readonly P2[])[] {
-  if (take.id === 'axeA' || take.id === 'axeB' || take.id === 'axeC') return AXE_PROFILES[take.id].blades;
-  return [[[22.5, -5], [31.5, -5], [31.5, 8], [22.5, 8]]];
+  for (const e of take.edges) for (const [x] of e) hi = Math.max(hi, x);
+  return [2, hi + (take.id === 'axeB' ? 1.6 : 0)];
 }
 
 /**
- * THE SMEAR OF A STRIKE WITH A TAKE (his rulebook's Movement 9, as his great sword's: art/warrior_up.ts): a crescent of its
- * edge's light along the path its head has swept over the last two frames, widest and brightest just behind the head, thinning
- * and breaking up toward its oldest end; and AFTER-IMAGES of the head itself along it, a third and two thirds of the way back,
- * each the head's own outline in a fading copy of its light. `trail`: where the take has been, newest first.
+ * THE SMEAR OF A STRIKE WITH A TAKE (his rulebook's Movement 9), MADE AS HIS GREAT SWORD'S IS (art/warrior_up.ts: the measure
+ * for it): a crescent of its edge's light along the path its head has swept over the last two frames, widest and brightest
+ * just behind the head, thinning and breaking up toward its oldest end, a lit line along its outer rim; and AFTER-IMAGES a third
+ * and two thirds of the way back, each a slender copy of the take's own line in a fading copy of its light, laid ON the arc
+ * (nothing of them off it). `trail`: where the take has been, newest first. Each stretch of the crescent is painted as near the
+ * eye as the head was then, so that a sweep that goes round him is before him where it was before him and behind him where it
+ * was behind; and none of it over his helm.
  */
 function smearOf(st: Stage, take: WeaponTake, trail: readonly Placed[], lights: Light[], helm: V3): void {
   const n = trail.length;
   if (n < 2) return;
-  const [lo, hi] = headSpan(take);
+  const [lo, hi] = smearSpan(take);
   const ends = trail.map((pl) => [onTake(pl, [lo, 0, 0]), onTake(pl, [hi, 0, 0])] as const);
   const moved = len(sub(ends[0][1], ends[n - 1][1]));
   if (moved <= 8) return;
-  const midOf = (a: V3, b: V3, k: number): V3 => lerp3(a, b, k);
   // HIS HELM IS NEVER UNDER THE SMEAR (his rulebook's Animations 4, “The hero and every warning stay in sight”): what of it
   // would lie over his helm is not painted, so that a sweep that passes his head passes behind it
   const [hx, hy] = st.at(helm);
@@ -684,17 +677,14 @@ function smearOf(st: Stage, take: WeaponTake, trail: readonly Placed[], lights: 
       }
     }
   };
-  // (each stretch of the crescent on a sheet of its own, as near the eye as the head was then: a sweep that goes round him is
-  // before him where it was before him and behind him where it was behind)
-  const inner = (e: readonly [V3, V3], age: number): V3 => midOf(e[0], e[1], 0.1 + 0.8 * Math.pow(age, 0.7));
+  const inner = (e: readonly [V3, V3], age: number): V3 => lerp3(e[0], e[1], 0.35 + 0.6 * Math.pow(age, 0.7));
   const old = st.at(ends[n - 1][1]);
   const now = st.at(ends[0][1]);
   const far = Math.hypot(old[0] - now[0], old[1] - now[1]) || 1;
   const CHUNK = Math.max(1, Math.ceil((n - 1) / 4));
   for (let c0 = n - 1; c0 >= 1; c0 -= CHUNK) {
     const c1 = Math.max(1, c0 - CHUNK + 1);
-    const where = midOf(ends[c0][0], ends[c1 - 1][1], 0.5);
-    const fan = st.part(st.near(where) - 0.4);
+    const fan = st.part(st.near(lerp3(ends[c0][0], ends[c1 - 1][1], 0.6)) - 0.4);
     for (let i = c0; i >= c1; i--) {
       const a = ends[i];
       const b = ends[i - 1];
@@ -714,23 +704,32 @@ function smearOf(st: Stage, take: WeaponTake, trail: readonly Placed[], lights: 
       const k = 1 - Math.hypot(x - old[0], y - old[1]) / far;
       if (k > 0.45 && hash(x, y, 7) < (k - 0.45) * 1.6) fan.erase(x, y);
     }
-    clearHelm(fan);
-    // THE AFTER-IMAGES that lie in this stretch: the head's own outline, where it was
+    // THE AFTER-IMAGES that lie in this stretch: the take's own line, slender, from the arc's inner edge out to its tip
     for (const k of [0.34, 0.67]) {
       const i = Math.min(n - 1, Math.max(1, Math.round(k * (n - 1))));
       if (i < c1 || i > c0) continue;
-      const body = k < 0.5 ? WW_GLOW[3] : WW_GLOW[2];
-      const core = k < 0.5 ? WW_GLOW[4] : WW_GLOW[3];
-      for (const shape of headOutline(take)) fan.poly(shape.map(([x, y]) => st.at(onTake(trail[i], [x, y, 0]))), body);
-      for (const e of take.edges) for (let j = 0; j + 1 < e.length; j++) {
-        const [x0, y0] = st.at(onTake(trail[i], [e[j][0], e[j][1], 0]));
-        const [x1, y1] = st.at(onTake(trail[i], [e[j + 1][0], e[j + 1][1], 0]));
-        fan.line(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1), core);
-      }
-      clearHelm(fan);
+      const age = i / (n - 1);
+      const e = ends[i];
+      const [x0, y0] = st.at(inner(e, age));
+      const [x1, y1] = st.at(e[1]);
+      const L = Math.hypot(x1 - x0, y1 - y0);
+      if (L < 6) continue;
+      const dx = (x1 - x0) / L;
+      const dy = (y1 - y0) / L;
+      const w = k < 0.5 ? 2.2 : 1.7;
+      const tipBack = Math.min(L * 0.3, 4);
+      fan.poly([
+        [x0 - dy * w, y0 + dx * w],
+        [x1 - dx * tipBack - dy * w, y1 - dy * tipBack + dx * w],
+        [x1, y1],
+        [x1 - dx * tipBack + dy * w, y1 - dy * tipBack - dx * w],
+        [x0 + dy * w, y0 - dx * w],
+      ], k < 0.5 ? WW_GLOW[3] : WW_GLOW[2]);
+      fan.line(Math.round(x0 + dx), Math.round(y0 + dy), Math.round(x1 - dx * (tipBack + 1)), Math.round(y1 - dy * (tipBack + 1)), k < 0.5 ? WW_GLOW[4] : WW_GLOW[3]);
     }
+    clearHelm(fan);
   }
-  const [lx, ly] = st.at(midOf(ends[1][0], ends[1][1], 0.8));
+  const [lx, ly] = st.at(lerp3(ends[1][0], ends[1][1], 0.8));
   lights.push({ x: lx, y: ly, r: 15, color: WW_GLOW[3], a: 0.34 });
 }
 

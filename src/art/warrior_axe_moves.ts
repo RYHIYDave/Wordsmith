@@ -24,14 +24,14 @@ import type { AnimSet, Clip } from './actor_types';
 import { lazyFrames, toSprite } from './kit';
 import { CANVAS3 } from './skin';
 import { KNIGHT_BODY, KNIGHT_RUN3, UNITS_PER_TILE } from './moves3';
-import { add, bonesAt, cross, dot, heading, len, lerp3, mul, norm, solve, sub } from './skeleton';
+import { add, bonesAt, cross, dot, heading, len, mul, norm, solve, sub } from './skeleton';
 import type { Bones, Key3, Posed, Skeleton, V3 } from './skeleton';
 import { easeOf } from './clip';
-import { primDist } from '../dev/sculpt';
-import { WU_SIDES, WU_SPIN, spun } from './warrior_up';
+import { Sculpt, draw, primDist } from '../dev/sculpt';
+import { WU_RIM, WU_SIDES, spun } from './warrior_up';
 import type { WuAround, WuFrame, WuSide } from './warrior_up';
 import { WU_REAR3, WU_REST, backFoot, lightFeet, onToes, plantedFeet, skipFeet } from './warrior_up_moves';
-import { GUARD_HEAVY, TAKES, armedThrough, handsOnHaft, inTake, leftHandOn, onTake, paintAlone, paintArmed, placedAlong, takePlace } from './warrior_up_weapons';
+import { GUARD_HEAVY, TAKES, WW_GLOW, armedThrough, handsOnHaft, inTake, layTake, leftHandOn, onTake, paintArmed, placedAlong, takePlace } from './warrior_up_weapons';
 import type { ArmedFrame, Placed, WeaponTake } from './warrior_up_weapons';
 
 const FR = 1 / 30;
@@ -506,14 +506,21 @@ export const AXE_THROW_HELD: readonly [number, number] = [6, 9];
 /** Where on the haft his right hand throws and catches it: low on the grip, a fist's width above the butt. */
 const THROW_GRIP = -6.4;
 /** HOW IT FLIES, for the game (which draws it: `axeFlying`): out along his aim to `far` tiles from him and back in `time`
- * seconds, slowing as it turns; from where his hand lets it go (`from` tiles before him, `high` game pixels above the floor);
- * turning flat once in `turn` seconds; striking what comes within `wide` tiles of it, once on the way out and once on the way back. */
-export const AXE_FLIGHT = { far: 6, time: 1.0, from: 0.55, high: 19, turn: 0.4, wide: 0.6 } as const;
+ * seconds, slowing as it turns; from where his hand lets it go (`from` tiles before him) to where his hand takes it (`to`),
+ * `high` game pixels above the floor all the way; turning flat once in `turn` seconds; striking what comes within `wide`
+ * tiles of it, once on the way out and once on the way back. (Measured on his frames: his hand at the throw's last frame, and
+ * at the catch's first.) */
+export const AXE_FLIGHT = { far: 6, time: 1.0, from: 0.8, to: 0.4, high: 19, turn: 0.4, wide: 0.6 } as const;
 /** Where the thrown axe is at `t` seconds of its flight: how far from him along his aim, in tiles. */
 export function axeFlightAt(t: number): number {
   const k = Math.max(0, Math.min(1, t / AXE_FLIGHT.time));
-  return AXE_FLIGHT.from + (AXE_FLIGHT.far - AXE_FLIGHT.from) * Math.sin(Math.PI * k);
+  const base = AXE_FLIGHT.from + (AXE_FLIGHT.to - AXE_FLIGHT.from) * k;
+  const mid = (AXE_FLIGHT.from + AXE_FLIGHT.to) / 2;
+  return base + (AXE_FLIGHT.far - mid) * Math.sin(Math.PI * k);
 }
+/** Leaping Chop: where the axe strikes the floor, in tiles before where his feet come down (the far end of its head, on his
+ * frames); the crack and the dust are the game's, there. */
+export const AXE_CHOP_STRIKE = 1.5;
 
 /** A key that holds the axe in his right hand alone: his hand from his right shoulder (forward, to his left, up, as he faces),
  * the haft along (`az`, `el`), his left arm as `left` has it; his right elbow where his forearm lies across the haft. */
@@ -666,8 +673,8 @@ function twinOut(): AxeKey[] {
   // (his left hand gone up over his shoulder to his back for the second, his right drawing his own back)
   const k3 = both(3, { ...P, px: -0.8, pz: -5.6, yaw: -24, twist: -8, pitch: 0, bend: 0 }, [-3, -12, -1], -166, 24, DOWN, [180, 180], 'io');
   k3.grip = -3;
-  const k6 = both(6, wind, [-2, -14, 5], -174, 18, DOWN, k3.rolls, 'out');
-  const k9 = both(9, { ...wind, pz: -7.9, pitch: -7, bend: -10 }, [-3, -14, 6], -174, 24, DOWN, k6.rolls, 'io');
+  const k6 = both(6, wind, [-2, -14, 3], -160, 12, DOWN, k3.rolls, 'out');
+  const k9 = both(9, { ...wind, pz: -7.9, pitch: -7, bend: -10 }, [-3, -14, 4], -160, 16, DOWN, k6.rolls, 'io');
   const k10 = both(10, { ...P, px: 2.2, pz: -6.4, yaw: -10, pitch: 6, twist: 4, bend: 6, faceUp: -2 }, [4, -13, 2], -140, 4, norm([0.6, -0.8, 0]), k9.rolls, 'in');
   const k11 = both(11, { ...P, px: 5, pz: -7.2, yaw: -8, pitch: 12, twist: 4, bend: 16, faceUp: -4 }, [16, -4, -2], -72, 0, norm([1, -0.3, 0]), k10.rolls, 'lin');
   return [
@@ -717,15 +724,15 @@ function twinCatch(): AxeKey[] {
   const c0 = one({ ...B0, px: 0.6, pz: -7.4, bend: 9 }, [15, -2, -2], -80, 5, norm([1, 0.1, 0]), 90, free(13, 1.5, -3, 20));
   const c1 = one({ ...B0, px: 0.0, pz: -7.2, yaw: -18, bend: 6 }, [6, -13, 1], -128, 10, norm([0.7, -0.6, -0.3]), c0.roll, free(14, 2, -2.5, 20));
   // (the second, caught as his own goes back behind his right shoulder)
-  const c3r = one({ ...B0, px: -1.0, pz: -7.2, yaw: -18, pitch: 2, bend: 2 }, [-2, -14, 5], -174, 16, DOWN, c1.roll, {});
+  const c3r = one({ ...B0, px: -1.0, pz: -7.2, yaw: -18, pitch: 2, bend: 2 }, [-2, -14, 3], -160, 10, DOWN, c1.roll, {});
   const c3l = mirrored(c3r.pose, [15, -2, -2], -80, 5, norm([1, 0.1, 0]), 90);
   const c3: AxeKey = { at: AXE_TWIN_CATCH * FR, pose: c3l.pose, grip: c3r.grip, twin: c3l.twin, ease: 'out' };
-  const c4l = mirrored(one({ ...B0, px: -1.6, pz: -7.3, yaw: -17, pitch: 0, bend: -1 }, [-2, -14, 5], -174, 18, DOWN, c3r.roll, {}).pose, [6, -13, 1], -128, 10, norm([0.7, -0.6, -0.3]), c3l.twin.roll);
+  const c4l = mirrored(one({ ...B0, px: -1.6, pz: -7.3, yaw: -17, pitch: 0, bend: -1 }, [-2, -14, 3], -160, 12, DOWN, c3r.roll, {}).pose, [6, -13, 1], -128, 10, norm([0.7, -0.6, -0.3]), c3l.twin.roll);
   const c4: AxeKey = { at: 4 * FR, pose: c4l.pose, grip: THROW_GRIP, twin: c4l.twin, ease: 'lin' };
-  const c6 = both(6, back, [-2, -14, 5], -174, 18, DOWN, [c3r.roll, c4l.twin.roll], 'out');
-  const c8 = both(8, { ...back, px: -2.8, pz: -7.3, bend: -7 }, [-3, -14, 6], -174, 22, DOWN, c6.rolls, 'io');
+  const c6 = both(6, back, [-2, -14, 3], -160, 12, DOWN, [c3r.roll, c4l.twin.roll], 'out');
+  const c8 = both(8, { ...back, px: -2.8, pz: -7.3, bend: -7 }, [-3, -14, 4], -160, 16, DOWN, c6.rolls, 'io');
   // (the second put away: his left hand back over his shoulder to his back with it, where it is last seen)
-  const c11 = both(11, { ...P, ...backFoot(0, -8), rk: 6, px: -2.2, pz: -6.4, yaw: -30, pitch: -2, twist: -12, bend: -2 }, [-4, -13, 4], -170, 26, DOWN, c8.rolls, 'io');
+  const c11 = both(11, { ...P, ...backFoot(0, -8), rk: 6, px: -2.2, pz: -6.4, yaw: -30, pitch: -2, twist: -12, bend: -2 }, [-3, -14, 3], -160, 14, DOWN, c8.rolls, 'io');
   const c17 = hold({ ...P, ...backFoot(0, -8), rk: 4, px: -1.2, pz: -5.0, yaw: -46, pitch: 2, twist: -34, bend: 4 }, [10, -4, 9], -164, 28, DOWN, c11.rolls[0], -3);
   return [
     key(0, c0),
@@ -908,7 +915,152 @@ export const EDGE_LEAST = 0.25;
 export const AT_HEAD_MOST = 0.5;
 
 /** Every move with the axe, by a short name. */
-export const AXE_MOVES: Record<string, AxeMove> = { stand: AXE_STAND, run: AXE_RUN, cleave: AXE_CLEAVE, cleave2: AXE_CLEAVE2, throw: AXE_THROW, braced: AXE_BRACED, catch: AXE_CATCH, twin: AXE_TWIN_THROW, twinBraced: AXE_TWIN_BRACED, twinCatch: AXE_TWIN_CATCH_MOVE, chop: AXE_CHOP };
+export const AXE_MOVES: Record<string, AxeMove> = {
+  stand: AXE_STAND, run: AXE_RUN, cleave: AXE_CLEAVE, cleave2: AXE_CLEAVE2, throw: AXE_THROW, braced: AXE_BRACED, catch: AXE_CATCH,
+  twin: AXE_TWIN_THROW, twinBraced: AXE_TWIN_BRACED, twinCatch: AXE_TWIN_CATCH_MOVE, chop: AXE_CHOP,
+};
 
-export { FR as AXE_FRAME, UNITS_PER_TILE, WU_SIDES, WU_SPIN, CANVAS3, inTake, lerp3, len, paintAlone, plantedFeet, toSprite, lazyFrames, onToes };
-export type { Light, Px, Sprite, AnimSet, Clip };
+// ---------------------------------------------------------------------------------------------
+// AS THE GAME WOULD HOLD THEM (for the bake, tools/bake_heroes.mjs, and the film): each move's frames as the lists the game
+// holds a hero's in (art/actor_types.ts AnimSet), in the shape his great sword's are (art/warrior_up_art.ts), from each of his
+// eight sides; and the thrown axe in the air, which the game draws itself.
+
+const FPS = 30;
+/** The pool of light behind him, as behind every hero (art/warrior_up_art.ts AURA: the friend's cyan). */
+const AURA: Light = { x: CANVAS3.ax - 4, y: CANVAS3.ay - 30, r: 46, color: '#28dcf0', a: 0.2 };
+
+/** A frame of a move as the game holds it: cut down to him, with his lights, his pool of light and where his scarf's ends are fixed. */
+export function axeSprite(m: AxeMove, t: number, side: WuSide): Sprite {
+  const f = paintAxe(m, t, side);
+  // (his pool of light where it is under every hero: on a side that faces left, as far the other way)
+  const aura = { ...AURA, x: f.ax + (f.ax === CANVAS3.ax ? AURA.x - CANVAS3.ax : CANVAS3.ax - AURA.x) };
+  return toSprite(f, aura, f.ax, f.ay);
+}
+
+/** How many pictures of the leap the game spreads over it, by how far through he is (as his Lunge's: art/warrior_up_art.ts). */
+export const AXE_LEAP_FRAMES = 16;
+
+function setOf(side: WuSide): AnimSet {
+  const at = (m: AxeMove, t: number): Sprite => axeSprite(m, t, side);
+  const round = (m: AxeMove): Sprite[] => {
+    const { end, from } = spanOf(m);
+    const t0 = from ?? 0;
+    const n = Math.max(1, Math.round((end - t0) * FPS));
+    return lazyFrames(n, (i) => at(m, t0 + i / FPS));
+  };
+  const clip = (m: AxeMove, t0 = 0, t1 = spanOf(m).end): Clip => {
+    const n = Math.max(1, Math.round((t1 - t0) * FPS) + 1);
+    const c: Clip = { frames: lazyFrames(n, (i) => at(m, Math.min(t1, t0 + i / FPS))), fps: FPS };
+    if (m.hit !== undefined && m.hit >= t0 - 1e-6 && m.hit <= t1 + 1e-6) c.hit = m.hit - t0;
+    if (m.tail) c.tail = true;
+    if (m.poise !== undefined && m.poise >= t0 && m.poise <= t1) c.poise = m.poise - t0;
+    return c;
+  };
+  const loop = (m: AxeMove): Clip => ({ frames: round(m), fps: FPS, loop: 0 });
+  const spread = (m: AxeMove, n: number, t0: number, t1: number): Clip => ({ frames: lazyFrames(n, (i) => at(m, t0 + ((t1 - t0) * i) / (n - 1))), fps: (n - 1) / Math.max(1e-6, t1 - t0) });
+  const three = (c: Clip): Sprite[] => {
+    const n = c.frames.length;
+    const pick = (seconds: number): number => Math.max(0, Math.min(n - 1, Math.round(seconds * c.fps)));
+    const hit = c.hit ?? (n - 1) / c.fps / 2;
+    const picks = [pick(hit * 0.7), pick(hit + 0.035), pick(((n - 1) / c.fps + hit) / 2)];
+    return lazyFrames(3, (i) => c.frames[picks[i]]);
+  };
+  const attack = clip(AXE_CLEAVE);
+  const attack2 = clip(AXE_CLEAVE2);
+  const heavy = clip(AXE_THROW);
+  const arc = AXE_CHOP.arc as NonNullable<AxeMove['arc']>;
+  const leap = spread(AXE_CHOP, AXE_LEAP_FRAMES, arc.from, arc.until);
+  return {
+    idle: round(AXE_STAND),
+    walk: round(AXE_RUN),
+    attack: three(attack),
+    heavy: three(heavy),
+    leap: lazyFrames(3, (i) => leap.frames[Math.round([0.05, 0.45, 0.9][i] * (AXE_LEAP_FRAMES - 1))]),
+    idleFps: FPS,
+    walkFps: FPS,
+    clips: {
+      // CLEAVE: the cut across (it waits at its `poise` while a second tap may come) and the cut back
+      attack,
+      attack2,
+      // THE THROWN AXE: the throw (`hit`: the moment it leaves his hand), braced while it flies (a loop), the catch
+      heavy,
+      hold: loop(AXE_BRACED),
+      release: clip(AXE_CATCH),
+      // LEAPING CHOP: the leap by how far through he is (16 pictures: the last is the blow), and the landing; its crouch below
+      leap,
+      land: clip(AXE_CHOP, arc.until),
+      moves: {
+        chopCrouch: clip(AXE_CHOP, 0, arc.from),
+        // TWIN AXES: the same three
+        twinThrow: clip(AXE_TWIN_THROW),
+        twinBraced: loop(AXE_TWIN_BRACED),
+        twinCatch: clip(AXE_TWIN_CATCH_MOVE),
+      },
+    },
+  };
+}
+
+/**
+ * HIS PICTURES WITH THE BATTLE AXE, in a dungeon, from all eight of his sides (art/warrior_up.ts WuSide), each an AnimSet of the
+ * very same lists, each side's made when first asked for and each frame painted when first read. What the main chat's bake and
+ * rules take (docs/mockups/warrior_weapons/README.md, step 2). NOT DRAWN YET with the axe: struck, his fall, town and his card.
+ */
+export function makeWarriorAxeArt(): Record<WuSide, AnimSet> {
+  const out = {} as Record<WuSide, AnimSet>;
+  for (const side of WU_SIDES) Object.defineProperty(out, side, { enumerable: true, configurable: true, get: () => {
+    const set = setOf(side);
+    Object.defineProperty(out, side, { value: set, enumerable: true });
+    return set;
+  } });
+  return out;
+}
+
+/** The canvas the thrown axe is painted on, and the floor point under it (picture pixels: two to a game pixel). */
+const FLY = { w: 96, h: 96, ax: 48, ay: 84 } as const;
+/** How many pictures a whole turn of the thrown axe is (30 degrees a picture: once round in 0.4 s at 30 a second). */
+export const AXE_FLY_FRAMES = 12;
+
+/**
+ * THE THROWN AXE IN THE AIR, at a moment of its turn (`turn` degrees, to its left as seen from above): lying flat, as high above
+ * the floor as his hand let it go, its two edges each trailing a short streak of their light the way they have come (its
+ * smear: it turns too fast to be seen still). The game's camera, whichever way it flies: one list serves every way.
+ */
+export function paintFlying(turn: number): { px: Px; lights: Light[] } {
+  const a = turn * D;
+  const high = AXE_FLIGHT.high * 2;
+  const x: V3 = [Math.cos(a), Math.sin(a), 0];
+  const y: V3 = [-Math.sin(a), Math.cos(a), 0];
+  const heart: V3 = [0, 0, high];
+  const pl = placedAlong(sub(heart, mul(x, AXE.heart + 4.5)), x, y);
+  const sc = new Sculpt();
+  layTake(sc, AXE, pl);
+  const lights: Light[] = [];
+  const drawn = draw(sc, 'front', FLY.ax, FLY.ay, FLY, (st) => {
+    // (each edge's streak: an arc of the ring its tip goes round, from where it was a twelfth of a turn ago to where it is)
+    for (const sgn of [1, -1]) {
+      const tip: V3 = [4.5, sgn * 13.2, 0];
+      const r = Math.hypot(tip[0], tip[1]);
+      const at = Math.atan2(tip[1], tip[0]) + a;
+      const sheet = st.part(st.near(heart) - 1);
+      const N = 14;
+      let last: [number, number] | null = null;
+      for (let i = 0; i <= N; i++) {
+        const age = i / N;
+        const ang = at - age * 100 * D;
+        const [px, py] = st.at(add(heart, [Math.cos(ang) * r, Math.sin(ang) * r, 0]));
+        const here: [number, number] = [Math.round(px), Math.round(py)];
+        if (last && age > 0.08) sheet.line(last[0], last[1], here[0], here[1], age < 0.4 ? WW_GLOW[3] : age < 0.75 ? WW_GLOW[2] : WW_GLOW[1]);
+        last = here;
+      }
+      const [lx, ly] = st.at(onTake(pl, [AXE.heart + 4.5, sgn * 12, 0]));
+      lights.push({ x: lx, y: ly, r: 10, color: WW_GLOW[3], a: 0.24 });
+    }
+  }, WU_RIM);
+  return { px: drawn.px, lights };
+}
+/** The thrown axe in the air as the game holds it: `AXE_FLY_FRAMES` pictures, a whole turn, its floor point under its middle. */
+export function axeFlying(): Sprite[] {
+  return lazyFrames(AXE_FLY_FRAMES, (i) => toSprite(paintFlying((360 * i) / AXE_FLY_FRAMES), null, FLY.ax, FLY.ay));
+}
+
+export { FR as AXE_FRAME, UNITS_PER_TILE, plantedFeet };
