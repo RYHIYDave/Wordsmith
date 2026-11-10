@@ -37,6 +37,7 @@ import { TOWARD } from './floor2';
 import type { Piece } from './floorkit';
 import { GRAIN, compose, hash, mix } from './kit';
 import type { Ramp } from './kit';
+import { ART_TWEAKS } from './tweaks';
 
 // =================================================================================================
 // The colours: the quarry's own, in daylight
@@ -165,8 +166,118 @@ function dressed(r: Ramp, n: V3, face: number, u: number, v: number, seed: numbe
   return base;
 }
 
+// -------------------------------------------------------------------------------------------------
+// (ART_TWEAKS.blocks, a mock-up from the art review of 9 Nov 2026, off) THE CUT BLOCKS AS HEWN STONE. A cut block was a
+// plain cube with the ink's seam round it: on the quarry's pale floor, a white box with a dark outline (his rulebook, How
+// art is made 9, "Real shapes, not circles and squares", and Pixels 5, "No black outlines"). Here each is a little longer
+// one way and turned a little where it lies, has a corner knocked off (the break rough, its edge catching the light), and
+// the seam round its outside is the stone's own deep shade, darker only where it meets the ground.
+
+/** A corner gone from a block: which (the signs of its three sides) and how much (in half-sizes along each edge from it). */
+type Chip = readonly [sx: number, sy: number, sz: number, t: number];
+
+/** The axes of something turned `a` radians on the ground. */
+const turned = (a: number): [V3, V3, V3] => [[Math.cos(a), Math.sin(a), 0], [-Math.sin(a), Math.cos(a), 0], [0, 0, 1]];
+
+/** A three-cornered face of the world, filled. */
+function tri(S: Scene, w: readonly [V3, V3, V3], col: (x: number, y: number) => string, id: number): void {
+  const p = w.map((q) => S.at(q));
+  const d = w.map((q) => q[0] * TOWARD[0] + q[1] * TOWARD[1] + q[2] * TOWARD[2]);
+  const area = (p[1][0] - p[0][0]) * (p[2][1] - p[0][1]) - (p[2][0] - p[0][0]) * (p[1][1] - p[0][1]);
+  if (Math.abs(area) < 1e-6) return;
+  const x0 = Math.floor(Math.min(p[0][0], p[1][0], p[2][0])) - 1;
+  const x1 = Math.ceil(Math.max(p[0][0], p[1][0], p[2][0])) + 1;
+  const y0 = Math.floor(Math.min(p[0][1], p[1][1], p[2][1])) - 1;
+  const y1 = Math.ceil(Math.max(p[0][1], p[1][1], p[2][1])) + 1;
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const px = x + 0.5;
+      const py = y + 0.5;
+      const a = ((p[1][0] - px) * (p[2][1] - py) - (p[2][0] - px) * (p[1][1] - py)) / area;
+      const b = ((p[2][0] - px) * (p[0][1] - py) - (p[0][0] - px) * (p[2][1] - py)) / area;
+      const c = 1 - a - b;
+      // (a little over its edges, so that no gap is left between it and the faces it is cut from)
+      if (a < -0.1 || b < -0.1 || c < -0.1) continue;
+      S.put(x, y, a * d[0] + b * d[1] + c * d[2] + 0.05, col(x, y), id, a * w[0][2] + b * w[1][2] + c * w[2][2]);
+    }
+  }
+}
+
+/** A BLOCK OF HEWN STONE: a box dressed as the cut blocks are, its `chips` knocked off. */
+function hewn(S: Scene, c: V3, A: readonly [V3, V3, V3], r: V3, ramp: Ramp, seed: number, split: boolean, id: number, chips: readonly Chip[], more?: (f: number, u: number, v: number) => string | null): void {
+  const at = (l: readonly number[], ch: Chip): number => l[0] * ch[0] + l[1] * ch[1] + l[2] * ch[2];
+  S.box(c, A, r, (f, u, v, n) => {
+    const ax = f >> 1;
+    const l = [0, 0, 0];
+    l[ax] = f % 2 ? -1 : 1;
+    l[(ax + 1) % 3] = 2 * u - 1;
+    l[(ax + 2) % 3] = 2 * v - 1;
+    for (const ch of chips) if (at(l, ch) > 3 - ch[3]) return null;
+    const m = more ? more(f, u, v) : null;
+    if (m) return m;
+    // (the edge of the break catches the light)
+    for (const ch of chips) if (at(l, ch) > 3 - ch[3] - 0.13) return ramp[4];
+    return dressed(ramp, n, f, u, v, seed, split);
+  }, id);
+  const W = (a: number, b: number, k: number): V3 => [
+    c[0] + A[0][0] * a * r[0] + A[1][0] * b * r[1] + A[2][0] * k * r[2],
+    c[1] + A[0][1] * a * r[0] + A[1][1] * b * r[1] + A[2][1] * k * r[2],
+    c[2] + A[0][2] * a * r[0] + A[1][2] * b * r[1] + A[2][2] * k * r[2],
+  ];
+  for (const [sx, sy, sz, t] of chips) {
+    // the break's own face, where it is turned to the eye: rough, pocked
+    const n: V3 = [(A[0][0] * sx) / r[0] + (A[1][0] * sy) / r[1] + (A[2][0] * sz) / r[2], (A[0][1] * sx) / r[0] + (A[1][1] * sy) / r[1] + (A[2][1] * sz) / r[2], (A[0][2] * sx) / r[0] + (A[1][2] * sy) / r[1] + (A[2][2] * sz) / r[2]];
+    const len = Math.hypot(n[0], n[1], n[2]) || 1;
+    const un: V3 = [n[0] / len, n[1] / len, n[2] / len];
+    if (un[0] * TOWARD[0] + un[1] * TOWARD[1] + un[2] * TOWARD[2] <= 0.01) continue;
+    const base = toneAt(un, ramp, -0.05);
+    const i = ramp.indexOf(base);
+    tri(S, [W(sx * (1 - t), sy, sz), W(sx, sy * (1 - t), sz), W(sx, sy, sz * (1 - t))], (x, y) => (hash(x, y, seed + 7) < 0.22 ? ramp[Math.max(0, i - 1)] : hash(x >> 1, y >> 1, seed + 8) < 0.2 ? ramp[Math.min(4, i + 1)] : base), id);
+  }
+}
+
+/**
+ * Finish a thing that stands on pale ground: its seams, and the seam round its outside not in the ink but in the deep
+ * shade of whatever it borders (pale stone's a soft grey, dark timber's nearly the ink), deeper where it meets the ground.
+ */
+function finishOwn(S: Scene, ox: number, oy: number): Sprite {
+  S.seams();
+  const out = compose(null, [S.p], null);
+  for (let y = 0; y < out.h; y++) {
+    for (let x = 0; x < out.w; x++) {
+      if (!out.has(x, y) || S.p.has(x, y)) continue;
+      // (under the thing: what is above this pixel of the seam is the thing itself)
+      const above = y > 0 ? S.p.get(x, y - 1) : null;
+      const beside = above ?? S.p.get(x - 1, y) ?? S.p.get(x + 1, y) ?? S.p.get(x, y + 1);
+      if (beside) out.set(x, y, mix(beside, '#0e0c24', above ? 0.62 : 0.45));
+    }
+  }
+  return out.sprite(ox, oy, GRAIN);
+}
+
+/** (ART_TWEAKS.blocks) A cut block, hewn: `k` as cutBlock has it. 64 x 66 at (32, 46). */
+function hewnBlock(k: number): Sprite {
+  const S = new Scene(new Px(64, 66), 32, 46);
+  const ramp = k === 0 ? STONE : FRESH;
+  const r: V3 = k === 0 ? [17, 13, 13] : k === 1 ? [14.5, 15, 15.5] : [16, 13.5, 16.5];
+  const A = turned(k === 0 ? 0.12 : k === 1 ? -0.1 : 0.05);
+  const chips: Chip[] = k === 0 ? [[1, -1, 1, 0.46], [-1, 1, 1, 0.22]] : k === 1 ? [[-1, 1, 1, 0.5], [1, -1, 1, 0.18]] : [[-1, -1, 1, 0.4], [1, -1, 1, 0.28]];
+  hewn(S, [0, 0, r[2]], A, r, ramp, 30 + k, k === 1, 1, chips, k === 2 ? (f, u) => (f === 4 && Math.abs(u - 0.52) < 0.035 ? CHALK : null) : undefined);
+  return finishOwn(S, 32, 46);
+}
+
+/** (ART_TWEAKS.blocks) Two cut blocks stacked, hewn. 72 x 92 at (36, 70). */
+function hewnStack(): Sprite {
+  const S = new Scene(new Px(72, 92), 36, 70);
+  hewn(S, [0, 0, 14], turned(0.06), [17, 14.5, 14], STONE, 41, true, 1, [[1, -1, 1, 0.26], [-1, 1, 1, 0.4]]);
+  hewn(S, [-2, 1, 28 + 13], turned(-0.2), [13.5, 12, 13], FRESH, 42, false, 2, [[1, -1, 1, 0.46], [-1, -1, 1, 0.26]]);
+  S.box([11, 11, 29], XYZ, [2.6, 2, 1.2], (_f, _u, _v, n) => toneAt(n, TIMBER, 0.1), 3);
+  return finishOwn(S, 36, 70);
+}
+
 /** A CUT BLOCK of the limestone, about waist high, `k` its look (0: plain; 1: split from the bed, its drill holes on two sides; 2: with a chalk line where it is to be split again). 64 x 64 at (32, 46). */
 function cutBlock(k: number): Sprite {
+  if (ART_TWEAKS.blocks) return hewnBlock(k);
   const S = new Scene(new Px(64, 66), 32, 46);
   const h = 15 + (k === 2 ? 2 : 0);
   S.box([0, 0, h], XYZ, [16, 15, h], (f, u, v, n) => {
@@ -179,6 +290,7 @@ function cutBlock(k: number): Sprite {
 
 /** TWO CUT BLOCKS STACKED, the upper set back and turned on it, wooden wedges under its corner. 72 x 92 at (36, 70). */
 function stackedBlocks(): Sprite {
+  if (ART_TWEAKS.blocks) return hewnStack();
   const S = new Scene(new Px(72, 92), 36, 70);
   S.box([0, 0, 15], XYZ, [17, 15, 15], (f, u, v, n) => dressed(STONE, n, f, u, v, 41, true), 1);
   S.box([-2, 2, 30 + 14], XYZ, [14, 12, 14], (f, u, v, n) => dressed(FRESH, n, f, u, v, 42, false), 2);
@@ -327,7 +439,8 @@ function crane(): Sprite {
   S.rod([0, -74, hang + 4], [0, -74, hang + 1], 0.9, 0.6, IRON, 10);
   const B: V3 = [0, -74, hang - 14];
   for (const [dx, dy] of [[-11, -10], [11, -10], [-11, 10], [11, 10]] as const) rope(S, [0, -74, hang + 1], [dx, -74 + dy, hang - 2], 0, 11, 0.5);
-  S.box(B, XYZ, [12, 11, 12], (f, u, v, n) => dressed(FRESH, n, f, u, v, 50, true), 12);
+  if (ART_TWEAKS.blocks) hewn(S, B, XYZ, [12, 11, 12], FRESH, 50, true, 12, [[1, -1, 1, 0.42]]);
+  else S.box(B, XYZ, [12, 11, 12], (f, u, v, n) => dressed(FRESH, n, f, u, v, 50, true), 12);
   // the windlass at its foot: a drum of rope between two posts, a handle each end
   timber(S, [10, 14, 0], [10, 14, 20], 1.6, 13);
   timber(S, [24, 14, 0], [24, 14, 20], 1.6, 14);
@@ -335,7 +448,7 @@ function crane(): Sprite {
   S.rod([8, 14, 14], [26, 14, 14], 1, 1, IRON, 16);
   S.rod([26, 14, 14], [26, 20, 9], 0.8, 0.8, IRON, 17);
   S.rod([8, 14, 14], [8, 8, 19], 0.8, 0.8, IRON, 18);
-  return finish(S, 52, 168);
+  return ART_TWEAKS.blocks ? finishOwn(S, 52, 168) : finish(S, 52, 168);
 }
 
 /**
@@ -447,10 +560,11 @@ function sledge(): Sprite {
   for (let i = 0; i < 3; i++) S.rod([-16 + i * 16, -16, 3.2], [-16 + i * 16, 16, 3.2], 3.2, 3.2, TIMBER, 1 + i);
   for (const y of [-9, 9]) timber(S, [-26, y, 8.6], [26, y, 8.6], 2.4, 5 + (y > 0 ? 1 : 0));
   timber(S, [24, -12, 9], [24, 12, 9], 2, 7);
-  S.box([0, 0, 11 + 13], XYZ, [20, 14, 13], (f, u, v, n) => dressed(FRESH, n, f, u, v, 60, true), 8);
+  if (ART_TWEAKS.blocks) hewn(S, [0, 0, 11 + 13], XYZ, [20, 14, 13], FRESH, 60, true, 8, [[1, -1, 1, 0.36], [-1, -1, 1, 0.3]]);
+  else S.box([0, 0, 11 + 13], XYZ, [20, 14, 13], (f, u, v, n) => dressed(FRESH, n, f, u, v, 60, true), 8);
   rope(S, [26, 0, 9], [44, 6, 0.8], 0, 9, 0.7);
   rope(S, [44, 6, 0.8], [54, -2, 0.8], 0, 9, 0.7);
-  return finish(S, 48, 52);
+  return ART_TWEAKS.blocks ? finishOwn(S, 48, 52) : finish(S, 48, 52);
 }
 
 /**

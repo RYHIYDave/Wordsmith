@@ -25,6 +25,7 @@ import type { Level, PropInst } from '../game/state';
 import type { Stage, Kick } from './dress';
 import { wx, wy } from './fx';
 import type { Painter } from './painter';
+import { ART_TWEAKS } from '../art/tweaks';
 
 /** The films' own speed. */
 const FPS = 30;
@@ -184,6 +185,8 @@ export class FloorPieces {
       const pm = this.hosts.get(p);
       if (pm && pm.state !== 'wait') continue;
       stage.shadow(g, wx(stage.cam, p.x, p.y), wy(stage.cam, p.x, p.y), pc.shadow);
+      // (ART_TWEAKS.cast, a mock-up: and one falling away from the light, seen past a bulky piece's foot)
+      if (ART_TWEAKS.cast) stage.shadow(g, wx(stage.cam, p.x, p.y) + pc.shadow * 22, wy(stage.cam, p.x, p.y) + pc.shadow * 6, pc.shadow * 1.3);
     }
   }
 
