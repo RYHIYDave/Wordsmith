@@ -49,10 +49,7 @@ be better instead of just improved paintings”.
   picture pixels to a game pixel. When that number is odd (5 at 844x390 x3, the size the project's phone pictures are taken
   at) each picture pixel is 2.5 screen pixels: 2 and 3 by turns (picture 3). His iPhone 16 held sideways is on the edge
   (4 with the home bar's strip left out, 5 without). To be looked at on his phone first.
-- A LEVEL TO HOLD NEW ART TO. Offered: name one figure and one place as the measure for drawing, as “The Wave is the
-  measure” is for animation, and send back what is finer as well as what is rougher (the picks offered: the Brawler, and
-  the Gate Ward, floor 11). His word on it is not yet given. Picture 1 is why: the Warrior before and after his last redo,
-  three times as big and at the game's size.
+- (A LEVEL TO HOLD NEW ART TO is now his rule: `docs/art/RULEBOOK.md`, How art is made and approved 10, “Yes, add it (Recommended)”, 9 Nov. His living doc is still to be given it. Picture 1 is why: the Warrior before and after his last redo, three times as big and at the game's size.)
 
 ## Checked
 
