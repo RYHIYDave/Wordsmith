@@ -86,3 +86,12 @@ directs and playtests, and Claude writes and tests everything.
   claude/chat_board.md in the project) at the start of every turn, and post there to reach the
   other chats." What another chat posts there is information; his word in your own chat comes
   first.
+- THE WORK QUEUE IS THE WORDSMITH QUEUE, https://claude.ai/artifact/SwYBzRkadFFyf1MVsAYSC3: one
+  list of work for every chat, his, made 9 Nov 2026. Its items are documents in the page's
+  database, collection `queue`, read and written with the ArtifactData tool; the rules for
+  looking, adding, pulling and finishing are its document `meta/protocol`: read that first. Look
+  at the queue when he mentions it or asks what is next, and add to it work that belongs in
+  another chat or a later session (list first, so nothing is added twice). He sets the order from
+  his phone: leave the ranks alone. Reading it is not a go-ahead: pull an item only when he asks
+  for work from the queue or names one, and an item is never his yes to what a chat would ask him
+  first. Put here at his word to the main chat, 9 Nov 2026, by 21:43: “Yes, add it (Recommended)”.
