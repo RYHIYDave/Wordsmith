@@ -57,8 +57,8 @@ light; each is throwable: lying flat in the air it reads at the game's size at e
   his right hip, the haft trailing back behind him; his LEFT HAND AT THE BUTT (the knob just out of his fist: his forearm runs on
   from his fist the way the butt points, so a haft that went on past it would go up his sleeve), his right hand up the haft.
   ONE CHANGE FROM THE GREAT SWORD'S GUARD, SO IT READS FROM ALL EIGHT SIDES: the haft rises a little (18 degrees) as it trails
-  back, its head at the height of his shoulders behind him, its flat turned up, his hands at the top of his hip (30 up, the
-  sword's 25). Held low as the great sword is, a head trailing behind him is wholly hidden from down and to the left (as his
+  back, its head at the height of his chest behind him (on the screen, about his shoulders), its flat turned up, his hands at
+  the top of his hip (30 up, the sword's 25). Held low as the great sword is, a head trailing behind him is wholly hidden from down and to the left (as his
   great sword is today); raised so, it is seen from every side, over his shoulder from there.
 - IN TOWN (`TOWN_HEAVY`, the game's town stance, his arms folded): on his back as the great sword is, but the head up behind his
   right shoulder and the haft down across his back to his left hip, flat against it, its edge out to his right; the strap across
