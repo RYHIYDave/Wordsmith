@@ -175,3 +175,8 @@ What was turned, all six takes, every picture:
 - THE PICTURES: the sheet in the same layout, its wind-up shown from his side (and at the game's size from his two sides);
   the phone pictures show him held and wound up FROM HIS SIDE, where the edge or the face is seen pointing down (facing you, the
   head is seen end on and its turn cannot be seen).
+
+NOTE (the art chat, 9 Nov, after step 1b): the wind-up row is left out of the two phone pictures for his pick
+(`WIND_UP = False` in `tools/warrior_weapons_phone.py`): in the new wind-ups, seen from his side, his raised arms hide his
+helm, so he reads as headless. TO MEND WITH THE MOVES (step 2): his helm seen in every frame of every move from every side
+(elbows bent, his hands over and behind his head, his head tipped to the mark), the edge or the face still coming down.

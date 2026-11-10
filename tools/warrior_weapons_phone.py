@@ -51,6 +51,8 @@ W, COL = 1260, 420
 def up(p, k):
     return p.resize((p.width * k, p.height * k), Image.NEAREST)
 
+WIND_UP = False
+
 def sheet(kind, title, move):
     cols = []
     for letter, name, r1, r2, bag in TAKES[kind]:
@@ -64,7 +66,9 @@ def sheet(kind, title, move):
         k = min(most, min((COL - 8) // c[i].width for c in cols))
         for c in cols:
             c[i] = up(c[i], k)
-    rows = [('The weapon', 2), ('Held, seen from his side: the edge or the face down', 3), (move, 4), ('As loot: Normal, Magic, Rare, Unique', 5)]
+    held = 'Held, seen from his side: the edge points down' if kind == 'axe' else 'Held, seen from his side: the face points down'
+    # (the wind-up is left out for his pick: seen from his side his raised arms hide his helm; it is drawn again with the moves)
+    rows = [('The weapon', 2), (held, 3)] + ([(move, 4)] if WIND_UP else []) + [('As loot: Normal, Magic, Rare, Unique', 5)]
     heights = [max(c[i].height for c in cols) for _, i in rows]
     assert all(c[i].width <= COL - 8 for c in cols for _, i in rows), [(c[0], [c[i].width for _, i in rows]) for c in cols]
     H = 110 + 130 + sum(h + 70 for h in heights) + 20
