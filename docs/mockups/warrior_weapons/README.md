@@ -126,3 +126,13 @@ game pixels, anchor the middle, as `itemArt` gives.
     npx tsx tools/warrior_weapons_pics.ts <dir>                 # every picture as a PNG, and what the checks find (said.json)
     python3 tools/warrior_weapons_pics.py <dir> docs/mockups/warrior_weapons/pictures/weapons_looks.png
     npx tsx tools/warrior_weapons_peek.ts <take> <hold> <out.png> [scale] [sides]   # a quick look: one take, one hold, eight sides
+
+## The sheet cut for a phone (his word)
+
+9 Nov 2026, by 20:05. Sent `pictures/weapons_looks.png` (1200 by 6820) and asked “Which battle axe for the Warrior
+(weapons_looks.png)?”, he wrote: “These picture resolutions are so bad on phone I can see anything” (and gave no pick of a
+hammer). Read as: the sheet is far too tall and its pictures too small on his phone. So the same pictures cut for a phone
+held upright, by `tools/warrior_weapons_phone.py`: `pictures/axes_phone.png` and `pictures/hammers_phone.png` (each 1260
+wide, about 2100 to 2200 tall): A, B and C side by side; the weapon alone at nine times the game's size, held facing you at
+six times, wound up at four times, and its loot pictures. FROM NOW ON every picture for him is made this way: no wider than
+about 1260, no taller than about 2200, a few big things in each, several pictures before one tall sheet.
