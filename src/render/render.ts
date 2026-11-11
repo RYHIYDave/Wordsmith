@@ -68,6 +68,7 @@ import type { Townsfolk } from '../art/townsfolk';
 import { drawText, textWidth } from '../engine/font';
 import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawGlow, drawLights, flipSprite, reapRetired, silhouette, spriteCovers } from '../engine/px';
+import { StillGlows } from './still_glows';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
 import { WARLOCK_TUNE } from '../game/warlock';
@@ -563,6 +564,8 @@ export class Renderer {
    */
   private forgetLooks(L: Game['level'], keep: LookView | null): void {
     this.lookedFor = L;
+    // (the last place's steady glows as one picture: render/still_glows.ts)
+    this.stillGlows.forget();
     for (const v of [this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) {
       if (v === keep) continue;
       v.forget?.();
@@ -4186,8 +4189,12 @@ export class Renderer {
     // (FLOOR 3, THE BLACK IRON PRISON: the warm glow of its fires over the dark: render/prison.ts)
     if (this.lookNow) {
       const L3 = game.level;
-      for (const q of this.lookNow.lights(L3)) {
+      const lights3 = this.lookNow.lights(L3);
+      // (THE STEADY GLOWS, the day's, AS ONE PICTURE: render/still_glows.ts; those that flicker one by one, as ever)
+      const asOne = this.stillGlows.draw(g, this.cam, W, H, L3, lights3);
+      for (const q of lights3) {
         if (!q.glow || !L3.explored[Math.floor(q.y) * L3.floor.w + Math.floor(q.x)]) continue;
+        if (asOne && q.still === true) continue;
         const gx = wx(this.cam, q.x, q.y) + (q.dx ?? 0);
         const gy = wy(this.cam, q.x, q.y) - q.up;
         if (gx < -q.glow.r || gx > W + q.glow.r || gy < -q.glow.r || gy > H + q.glow.r) continue;
@@ -4542,6 +4549,8 @@ export class Renderer {
 
   /** (ACT 1) THE FOREST AS A FEW PICTURES (render/tops_cache.ts): its chunks; those drawn as pictures this frame; where the hero stood. */
   readonly topsCache = new TopsCache();
+  /** A PLACE'S STEADY GLOWS AS ONE PICTURE (render/still_glows.ts): the town's day, 67 glows a frame. */
+  readonly stillGlows = new StillGlows();
   private frameChunks: Chunk[] = [];
   /** Every chunk on the screen this frame, with a picture or without. */
   private seenChunks: Chunk[] = [];
