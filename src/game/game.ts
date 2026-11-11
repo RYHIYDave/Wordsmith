@@ -13926,7 +13926,7 @@ export class Game {
       }
     }
     // THE MISER'S PURSE: every hit spills some of his gold on the floor round him (it can be picked up again)
-    if (this.wears('miserspurse') && h.gold > 0 && !this.practice) {
+    if (this.wears('miserspurse') && h.gold > 0) {
       const spill = Math.min(h.gold, Math.max(1, Math.round(h.gold * T.purse.spill)));
       h.gold -= spill;
       const n = Math.min(3, spill);

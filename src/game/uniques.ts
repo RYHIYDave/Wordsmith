@@ -200,7 +200,7 @@ export const UNIQUE_DEFS: readonly UniqueDef[] = [
   { id: 'fleshmancersbrand', name: "The Fleshmancer's Brand", stem: 'silkgloves', from: 'boss', boss: ['fleshmancer'], floor: 5, bends: 'hero', stats: ['int', 'lifeOnHit'], does: () => [`An elite you kill rises and fights for you for ${T.brand.secs} seconds. One at a time.`] },
   { id: 'cantorsecho', name: "The Cantor's Echo", stem: 'manaring', from: 'boss', boss: ['cantor'], floor: 8, bends: 'words', stats: ['critChance', 'maxMana'], does: () => ['Adds TWIN behind your hold attack. No slot used.'] },
   { id: 'drownedarm', name: 'The Drowned Arm', stem: 'stramulet', from: 'boss', boss: ['eye'], floor: 10, bends: 'hero', stats: ['maxLife', 'physPct'], does: () => [`Every ${T.arm.every} seconds a tentacle bursts up under the enemy you are fighting and slams it for ${pc(T.arm.share)} of your hit.`] },
-  { id: 'criershush', name: "The Crier's Hush", stem: 'hood', from: 'boss', boss: ['crier'], floor: 11, bends: 'hero', stats: ['maxLife', 'cdr'], does: () => ['A monster standing close to you has its words darkened: they do nothing.'] },
+  { id: 'criershush', name: "The Crier's Hush", stem: 'hood', from: 'boss', boss: ['crier'], floor: 11, bends: 'words', stats: ['maxLife', 'cdr'], does: () => ['A monster standing close to you has its words darkened: they do nothing.'] },
   { id: 'kingsknot', name: "The King's Knot", stem: 'leatherbelt', from: 'boss', boss: ['ratking'], floor: 12, bends: 'words', stats: ['maxLife', 'magicFind'], does: () => [`Kill a monster that carries a word: your tap attack carries it too for ${T.knot.secs} seconds.`] },
   { id: 'physicianscoat', name: "The Physician's Coat", stem: 'robe', from: 'boss', boss: ['physician'], floor: 14, bends: 'hero', stats: ['maxLife', 'lifeRegen'], does: () => [`Flasks refill from the hits you land on elites and bosses: one for every ${T.coat.hits}.`], price: () => 'No refills from kills.' },
   { id: 'queensglass', name: "The Queen's Glass", stem: 'manaring', from: 'boss', boss: ['gqueen'], floor: 18, bends: 'words', stats: ['critChance', 'dex'], word: 'mirroring', does: () => ['Adds MIRRORING in front of your tap attack. No slot used.'] },
@@ -440,8 +440,8 @@ export function bendWords(i: number, skills: readonly { front: readonly (WordId 
   if (i === 1 && has('undertow')) add(front, 'pulling');
   if (i === 2 && has('hollowcrown')) add(behind, 'binding');
   if (has('longecho')) add(front, 'lasting');
-  // THE KING'S KNOT: the word of the monster he killed, in front of the tap attack
-  if (i === 0 && has('kingsknot') && ctx.borrowed) add(front, ctx.borrowed);
+  // THE KING'S KNOT: the word of the monster he killed, in front of the tap attack (a damage word too, beside his own: it is lent, not set)
+  if (i === 0 && has('kingsknot') && ctx.borrowed && !front.includes(ctx.borrowed)) front.push(ctx.borrowed);
   // TWO-FACED MASK: the first word in front of the tap attack works behind it too
   if (i === 0 && has('twofacedmask')) {
     const first = s.front.find((w) => w !== null && !(ctx.dark && ctx.dark.skill === 0 && ctx.dark.side === 'front' && s.front.indexOf(w) === ctx.dark.idx));
