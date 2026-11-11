@@ -1,4 +1,4 @@
-# THE MAGE BROUGHT UP TO THE BRAWLER'S LEVEL: THE WHOLE OF HER (NOT IN THE GAME UNTIL THE MAIN CHAT PUTS IT THERE, ON HIS YES)
+# THE MAGE BROUGHT UP TO THE BRAWLER'S LEVEL: THE WHOLE OF HER (WITH HIS YES; NOT IN THE GAME UNTIL THE MAIN CHAT PUTS IT THERE)
 
 Branch `art/mage-up2`, from `main` at 9d3501b (25.3.3). The Mage chat, 11 Nov 2026, a new chat of his. It finishes what the art
 chat's helper began on 7 Nov (branch `art/mage-up`, 56ee5c4: her look sculpted and one still of her; that branch was cut from
@@ -40,7 +40,8 @@ touched here.
   “no need to do the other mage”. And of the Wave made big and wild, 8 Oct: “Just right (Recommended)”: his measure of big and
   wild, so her casts are not touched.
 
-**HIS YES IS NOT GIVEN YET.** He has been sent the film and the three pictures below; his answer goes at the foot of this file.
+**HIS YES IS GIVEN, 11 Nov 2026, by 14:57: “Yes, hand her to main (Recommended)”; and of her staff, “Leave it (Recommended)”.**
+The questions and his picks in full are at the foot of this file.
 
 ## What was taken out of the 7 Nov still, and why
 
@@ -132,8 +133,8 @@ How much of it is seen in her guard from each side, the least of four moments, i
 REPORTED, NOT MENDED: facing straight down the screen (`toward`) her staff points at the eye, so only its crystal and 6 pixels
 of its pole show, in front of her hands (`mage_eight_sides.png`, "toward you"). The game never drew her from there before (it
 flipped the down-right picture), so this is new to see, but it is the game's own hold seen truly. The 7 Nov still moved the
-staff out to her side to show it; that is a weapon moved, which the rule forbids. HIS TO ASK FOR if he wants it carried
-otherwise (told to him with the pictures).
+staff out to her side to show it; that is a weapon moved, which the rule forbids. ASKED OF HIM WITH THE PICTURES, AND SETTLED:
+“Leave it (Recommended)” (the foot of this file). It stays as the game holds it.
 
 ## Her lists (`src/art/mage_up_art.ts` `makeMageUpArt`, in the game's shape)
 
@@ -237,7 +238,7 @@ moved as the game moves them): `npx tsx tools/mage_up_sheet.ts sheet <move> <out
 - In the game (the pages above, floor 11 and town, her switch on and off): no errors; her eight sides chosen by the figure;
   her crystal's light and crackle where her crystal is from every side; the Wave and the Orb cast by the game's own rules.
 
-## For the main chat: how she comes in (ON HIS YES)
+## For the main chat: how she comes in (HIS YES IS GIVEN)
 
 1. Bring in `art/mage-up2`. Of the game's files only `src/art/heroes3.ts` is touched (16 lines: the imports, `mageShare`, and
    `if (cls === 'mage' && MAGE_UP.on)` beside the Warrior's and the Ranger's).
@@ -255,13 +256,26 @@ moved as the game moves them): `npx tsx tools/mage_up_sheet.ts sheet <move> <out
 
 ## Not settled: his to say
 
-- HER STAFF FROM STRAIGHT TOWARD THE CAMERA (above): as the game holds it, mostly hidden. Told to him.
+- (SETTLED: her staff from straight toward the camera stays as the game holds it: “Leave it (Recommended)”.)
 - MOVEMENT 9 ON HER CASTS (above): not done, not asked.
 - HER FALL goes down her staff to her knees, the game's own. The 7 Nov helper noted it "to be held against his rule on falls";
   it is not changed here.
 - Her cape open in front, her robe to her knee, her staff's head with horns and a cut crystal, her skin warm: each a small
   change to the look he knows, all in the pictures.
 
-## His answer
+## His answer (11 Nov 2026, by 14:57)
 
-(to come)
+Sent the film and the three pictures (`mage_now_and_redrawn.mp4`, `mage_now_redrawn_and_the_brawler.png`,
+`mage_eight_sides.png`, `mage_in_town.png`), then asked two questions as a pop-up:
+
+1. “Is the redrawn Mage right, in how she looks and how she moves (the film mage_now_and_redrawn.mp4 and the three pictures I
+   just sent)? Her stance, run and casts are exactly the game's; only how she is drawn changed.” Offered: “Yes, hand her to main
+   (Recommended)” (the main chat puts her in the game with its next version), “Her look needs work”, “Her movement looks off”.
+   **His pick: “Yes, hand her to main (Recommended)”.**
+2. “When the redrawn Mage faces straight toward you, her staff points at the camera, so you mostly see its crystal
+   (mage_eight_sides.png, the panel 'toward you'). That is how the game holds it. Leave it?” Offered: “Leave it (Recommended)”
+   (held as the game holds it from every side; nothing re-posed), “Carry it at her side”.
+   **His pick: “Leave it (Recommended)”.**
+
+So SHE IS FINAL, look and moves, as on this branch: the main chat brings her in. Art he approved here needs no pictures again
+(his word of 7 Nov, 15:03).
