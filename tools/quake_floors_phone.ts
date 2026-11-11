@@ -25,8 +25,8 @@ const hex = (c: readonly number[]): string => '#' + c.slice(0, 3).map((v) => Mat
  * flagstone floor in the Gate Ward's own flag stone and its deep, for the quake to take. */
 const GATEWARD: Theme = { ...VAULT, id: 'gateward', mortar: hex(GW_DEEP as unknown as number[]), slab: [1, 2, 3, 4].map((i) => hex(GW_FLAG[i] as unknown as number[])) as unknown as Theme['slab'] };
 const FLOORS: [string, Theme][] = [['practice', VAULT], ['crypt3', CRYPT_FLOORS[2]], ['gateward', GATEWARD]];
-const W = 520;
-const H = 260;
+const W = 640;
+const H = 300;
 const FRAME = 10;
 const lay = (out: Px, s: Sprite, x: number, y: number): void => {
   const p = paintingOf(s);

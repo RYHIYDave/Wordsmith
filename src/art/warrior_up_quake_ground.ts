@@ -194,7 +194,8 @@ export function paintUnder(qi: number, frame: number, theme: Theme = VAULT): { p
       fillQuad(px, floor, top > RIDGE_HIGH * 0.6 ? T.under : T.mortar);
       for (let k = 0; k < m; k++) fillQuad(px, [floor[k], floor[(k + 1) % m], raised[(k + 1) % m], raised[k]], (raised[k][1] + raised[(k + 1) % m][1]) / 2 > (raised[0][1] + raised[3][1]) / 2 ? T.side : T.mortar);
       // (its top, lighter the higher it is)
-      fillQuad(px, raised, top > RIDGE_HIGH * 0.5 ? T.high : T.low);
+      // (its top in the floor's own tones, the highest catching the light as its lit lip does)
+      fillQuad(px, raised, top > RIDGE_HIGH * 0.75 ? T.lip : top > RIDGE_HIGH * 0.4 ? T.high : T.low);
       // (its lifted edge lit: the edge between its two highest corners next to each other)
       let best = 0;
       for (let k = 0; k < m; k++) if (hs[k] + hs[(k + 1) % m] > hs[best] + hs[(best + 1) % m]) best = k;

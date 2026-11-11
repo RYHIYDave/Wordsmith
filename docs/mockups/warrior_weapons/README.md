@@ -667,3 +667,46 @@ stones are plain grey at the moment.” (offered: yes, in the floor's own colour
 by 10:14: “If the floor’s own stone is too much work or too big file-wise, just add some generic fissurey spikes and cracks”.
 Read as: THE FLOOR'S OWN STONE IF IT IS CHEAP IN WORK AND IN FILES; if not, generic fissures, spikes and cracks. He did not
 fault the cracks, the heaving ring or the dust.
+
+## Step 3d: the quaking ground in the floor's own stone, and more jagged (the art chat's helper, 11 Nov 2026)
+
+His word (above): the floor's own stone if it is cheap in work and in files. It is both: no files at all.
+
+**What changed** (`src/art/warrior_up_quake_ground.ts`; the swing, the heave's frames and the numbers as in step 3c):
+- THE FLOOR'S OWN STONE: `quakeGround(i, theme)` takes the floor's `Theme` (art/ground.ts), and `quakeTones(theme)` gives every
+  colour: a lifted flagstone's top in the floor's usual slab tones (the highest in its lit lip, as a stone tipped to the light),
+  its lifted edge in its lit lip, its sides in its shaded lip; the gaps under the stones and the cracks in its `mortar` and the
+  game's ink (the dark under a stone thrown highest in its earth's dark where the floor has earth); the dust and grit in its
+  lighter slab tones, or its earth's where it has earth; the hopping stones in its lit lip. The only other colour the thin cyan
+  on the crest's first frames. THE PRACTICE ROOM'S BLUE is its Theme's own: the practice room is laid with the vault's stone,
+  `VAULT` (main.ts: “the practice room is no floor of the Crypt: it keeps the vault's stone”), whose slabs are that blue; the
+  Crypt's floors are themes of their own (art/crypt.ts `CRYPT_FLOORS`), the lair `LAIR`, the town's and the hall's theirs.
+- MORE JAGGED: about one lifted stone in four thrusts a corner up as the wave passes, like a broken tooth, with the dark of the
+  floor's mortar (or earth) under it between the stones; the cracks at the mark deeper (its mortar either side of an inked core
+  for the first stretch) and running out further, the longest, along the way he struck, three quarters of the way to the edge,
+  past where the ridge has been. Still flagstones heaving, not a crown of spikes. Tremors as before, each weaker.
+
+**For the game**: `quakeGround(i, theme)` FOR THE FLOOR HE IS ON, in place of its slam ring (quake 0 the Earthquake's and
+Tremors' first; 1 and 2 Tremors' second and third); `cracks[side]` and `under` under everyone, `over` at the mark's depth; the
+cracks kept and faded as its own (`QUAKE_CRACKS_LAST`: 2.4 s from the blow, faded over the last four tenths). PAINTED, NOT BAKED:
+per floor's theme, 84 pictures a quake, 252 for the three, painted in code as the floor itself is: with the floor's ground art
+(as `makeGroundArt(theme)` is made when a floor is entered), or the first time an Earthquake is used on that floor. MEASURED
+here: one quake's 84 pictures for a floor painted in 65 to 97 thousandths of a second (`tools/quake_floors_phone.ts` prints
+it), so the three in about a quarter of a second.
+
+**The film and the pictures**:
+- `pictures/hammer_moves.mp4` made again with it (38.0 s, 1,139 pictures, 6.3 MB; the practice room's own blue stone); the slow, close Earthquake and Tremors
+  keep the whole ring in the frame.
+- `pictures/quake_phone.png` (1260 by 1518): the six moments of the one Earthquake, two across, each cut centred on the mark so the ring is
+  whole (no Tremors on it); `pictures/tremors_phone.png` (1260 by 1818): Tremors' three quakes, one above another, big (both
+  `tools/quake_phone.py`, from the film's stills).
+- `pictures/quake_floors_phone.png` (1260 by 1878): the same heave at the ring's edge on three floors, painted straight from each floor's
+  `makeGroundArt(theme)` and the quake's lists for it, the Warrior over it (`tools/quake_floors_phone.ts` and `.py`): the
+  practice room (`VAULT`), the Crypt's third floor (`CRYPT_FLOORS[2]`, with its earth), and FLOOR 11, THE GATE WARD: it has no
+  Theme of its own (its ground is its own setts, art/gateward.ts), so this is the game's flagstone floor laid in the Gate Ward's
+  own flag stone (`GW_FLAG`) and its deep (`GW_DEEP`), not its own setts; and the Gate Ward's own pieces are not stood beside it.
+
+**Checked** (`tests/warrior_weapons.test.ts` 20, on the vault's stone and on the Crypt's third floor): the lists whole; crisp;
+only the floor's theme's colours (its mortar, slab tones and earth), the game's ink and the friend's cyan, nothing of the
+enemy's; the heave reaches the ring's edge and not past it by more than a third of a tile; each of Tremors' quakes lower, with
+fewer cracks and less dust, than the one before.
