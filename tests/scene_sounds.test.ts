@@ -13,6 +13,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 // @ts-ignore
 import fs from 'node:fs';
+import { STOKER_ON } from '../src/art/stoker';
 import { PORTCULLIS } from '../src/game/act2/keep_rules';
 import type { PortState } from '../src/game/act2/keep_rules';
 import { FLOOR_SETS } from '../src/game/first5';
@@ -191,6 +192,24 @@ test('the Stoker\'s crank: the gear, the turn, then the furnace dying as the tur
   assert.equal(rec(g, 'furnace_out'), undefined, 'the furnace burns until the turn is done');
   a.runLater(CRANK_TIMES.turn);
   assert.ok(rec(g, 'furnace_out'), 'and dies');
+  // (the fire in the Chained One's gateway, where it is shown going out: a long way off, so heard quieter, a moment after)
+  const g2 = onFloor(3);
+  const F2 = g2.level.furnace;
+  const was = STOKER_ON.on;
+  STOKER_ON.on = true;
+  try {
+    if (F2 && F2.gate >= 0) {
+      g2.hero.furnace = 'gear';
+      (g2 as unknown as Inside).turnCrank(F2.crank);
+      (g2 as unknown as Inside).runLater(CRANK_TIMES.turn + CRANK_SOUND.gateAfter - 0.05);
+      assert.equal(rec(g2, 'gate_fire_out'), undefined);
+      (g2 as unknown as Inside).runLater(0.1);
+      const fire = rec(g2, 'gate_fire_out');
+      assert.ok(fire && (fire.vol ?? 0) >= CRANK_SOUND.gateFar && (fire.vol ?? 0) <= 1, 'the gateway\'s fire, heard from far off');
+    }
+  } finally {
+    STOKER_ON.on = was;
+  }
 });
 
 test('the singing stones hum as he comes up to one: once, and again only when he has gone off and come back', () => {

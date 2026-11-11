@@ -112,9 +112,10 @@ export const PILLAR_LOOP = { vol: 0.55, near: 2, far: 10 } as const;
 /**
  * THE STOKER'S CRANK, IN ORDER (seconds from when it is turned; game/quests15.ts CRANK_TIMES has the pictures' times): the gear
  * set in at once; the crank's one turn a moment after (the art turns it once and a quarter in 1.2 s, eased in and out); the
- * furnace dying, and the fire in the gateway, as the turn ends (CRANK_TIMES.turn).
+ * furnace dying as the turn ends (CRANK_TIMES.turn); the fire in the Chained One's gateway `gateAfter` seconds after that, at
+ * least `gateFar` loud however far its gateway is (it is far: heard as from a long way off).
  */
-export const CRANK_SOUND = { turnAt: 0.3 } as const;
+export const CRANK_SOUND = { turnAt: 0.3, gateAfter: 0.8, gateFar: 0.4 } as const;
 
 /** THE KEEP'S PORTCULLIS: its sound has the chain falling first, the slam landing this long into it (seconds), so it is begun that long before the slam. */
 export const PORT_SOUND_LEAD = 0.5;

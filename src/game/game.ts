@@ -12730,18 +12730,19 @@ export class Game {
     }
     this.emit({ t: 'spark', x: p.x, y: p.y, el: 'fire', n: 10 });
     this.emit({ t: 'shake', amount: 2 });
-    // (THE FLOORS' SCENE SOUNDS: the gear set into the crank; its one turn; then, as the turn ends, the furnace dying and, where
-    // the fire in the Chained One's gateway is shown going out, that fire, heard by how near its gateway he is)
+    // (THE FLOORS' SCENE SOUNDS: the gear set into the crank; its one turn; then, as the turn ends, the furnace dying; and, where
+    // the fire in the Chained One's gateway is shown going out, that fire. Its gateway is a long way from the crank, 37 to 105
+    // tiles on eight floors measured, so by nearness alone it would never be heard: it is heard far off, quieter, a moment after
+    // the furnace begins to die, as the line says, "The furnace dies, and the fire with it"; near its gateway, as loud as it is near)
     this.sceneSound('crank_gear', 1, 'door', 0.9);
     if (SCENE_SOUNDS.on) {
       this.worldAfter(CRANK_SOUND.turnAt, 'crank_turn', 0.9);
       this.worldAfter(CRANK_TIMES.turn, 'furnace_out', 1);
       if (STOKER_ON.on && F.gate >= 0) {
         const at = doorMiddle(L.doors[F.gate].spot);
-        this.after(CRANK_TIMES.turn, () => {
+        this.after(CRANK_TIMES.turn + CRANK_SOUND.gateAfter, () => {
           if (this.level !== L) return;
-          const v = byNearness(Math.hypot(at.x - this.hero.x, at.y - this.hero.y), 3, 16);
-          if (v > 0.02) this.world('gate_fire_out', v);
+          this.world('gate_fire_out', Math.max(CRANK_SOUND.gateFar, byNearness(Math.hypot(at.x - this.hero.x, at.y - this.hero.y), 3, 16)));
         });
       }
     }
