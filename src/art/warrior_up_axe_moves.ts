@@ -25,6 +25,7 @@
 import type { Light, Px, Sprite } from '../engine/px';
 import type { AnimSet, Clip } from './actor_types';
 import { lazyFrames, toSprite } from './kit';
+import { Px as PxClass } from '../engine/px';
 import { CANVAS3 } from './skin';
 import { KNIGHT_BODY, KNIGHT_RUN3, UNITS_PER_TILE } from './moves3';
 import { add, bonesAt, cross, dot, heading, len, mul, norm, solve, sub } from './skeleton';
@@ -99,6 +100,9 @@ export interface AxeMove {
    * and the second axe): his run's body and legs with a catch in his arms; the game's own struck, fall and town with a heavy
    * weapon in place of his sword (art/warrior_up_heavy_art.ts). */
   pose?: (t: number) => Posed;
+  /** THE AXE APPEARING in his empty hands (a tap while the thrown axe is out): over its first `appear` frames the axe gathers
+   * in his hands in the friend's cyan (`gatherIn`). */
+  appear?: number;
 }
 
 function spanOf(m: AxeMove): { end: number; from: number | undefined } {
@@ -241,7 +245,12 @@ export function paintAxe(m: AxeMove, t: number, side: WuSide, rim: string | null
       if (was.twin) trail2.push(was.twin);
     }
   }
-  return paintArmed(m.take ?? AXE, p.s, p.q, side, B, around, rim === undefined ? undefined : rim, { rightOn: p.rightOn, empty: !p.holding.axe, second: p.twin, trail: p.holding.axe ? trail : undefined, trail2: p.twin ? trail2 : undefined });
+  const more = { rightOn: p.rightOn, empty: !p.holding.axe, second: p.twin, trail: p.holding.axe ? trail : undefined, trail2: p.twin ? trail2 : undefined };
+  const f = paintArmed(m.take ?? AXE, p.s, p.q, side, B, around, rim === undefined ? undefined : rim, more);
+  if (!m.appear || t > (m.appear - 1) * FR + 1e-6) return f;
+  // (the axe appearing: what is behind it, painted without it, where it has not yet gathered)
+  const bare = paintArmed(m.take ?? AXE, p.s, p.q, side, B, around, rim === undefined ? undefined : rim, { ...more, empty: true });
+  return gatherIn(f, bare, Math.round(t / FR), m.appear);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1141,6 +1150,8 @@ function setOf(side: WuSide): AnimSet {
         twinThrow: clip(AXE_TWIN_THROW),
         twinBraced: loop(AXE_TWIN_BRACED),
         twinCatch: clip(AXE_TWIN_CATCH_MOVE),
+        // A TAP WHILE THE THROWN AXE IS OUT: the Cleave's first four frames with the axe appearing in his hands; then `attack` from its fifth
+        cleaveAppear: clip(AXE_CLEAVE_APPEAR, 0, (AXE_APPEAR_FRAMES - 1) * FR),
       },
     },
   };
@@ -1208,6 +1219,150 @@ export function paintFlying(turn: number): { px: Px; lights: Light[] } {
 export function axeFlying(): Sprite[] {
   return lazyFrames(AXE_FLY_FRAMES, (i) => toSprite(paintFlying((360 * i) / AXE_FLY_FRAMES), null, FLY.ax, FLY.ay));
 }
+
+// ---------------------------------------------------------------------------------------------
+// A TAP WHILE THE THROWN AXE IS OUT (his words, 11 Nov 2026: “I want to make sure you can still do the tap attack while the axe
+// hold is still flying”; “I understand that the axe is going to kind of materialize to keep fighting but I do need that to work
+// that way”): AN AXE APPEARS IN HIS HANDS AND HE CLEAVES AS DRAWN. And when the thrown one comes back to hands that hold one, no
+// catch: it is gone into the one he holds, in the same cyan glint (`axeGlint`).
+
+/** Over how many of the Cleave's first frames the axe gathers in his hands. */
+export const AXE_APPEAR_FRAMES = 4;
+/** The light's colours, from its brightest (the friend's: art/kit.ts SPARK). */
+const LIGHT = ['#b8fff8', '#22d0e0', '#0c6a80'] as const;
+/** A little sequence of numbers that is the same every time (for the sparks: no picture differs between two paintings). */
+function seeded(n: number): () => number {
+  let x = (n * 2654435761) >>> 0;
+  return () => {
+    x = (x * 1664525 + 1013904223) >>> 0;
+    return x / 4294967296;
+  };
+}
+/**
+ * THE AXE GATHERING IN HIS HANDS, frame `g` of `of`: LIGHT RUNS UP THE HAFT FROM HIS HANDS INTO THE HEAD. Where the light has not
+ * yet come, nothing of the axe (what is behind it, from `bare`); at the light's front the axe is the friend's cyan, brightest at
+ * the front; behind it, the axe as it is. A few sparks are thrown off the front of the light, only where nothing of him is (so
+ * never over his helm). The last frame has the head still lit, the rest of it the axe.
+ */
+export function gatherIn(full: ArmedFrame, bare: ArmedFrame, g: number, of: number): ArmedFrame {
+  const px = full.px.clone();
+  const st = full.drawn.st;
+  const take = full.take;
+  const stuff = full.drawn.stuff;
+  const w = px.w;
+  const its = (k: number): boolean => stuff[k] >= full.firstMat && stuff[k] < 1000;
+  // (the line the axe lies along AS PAINTED, from his hands to its head: the long way of its own pixels, its butt the end nearer
+  // the middle of him)
+  let n0 = 0, mx = 0, my = 0, hx = 0, hy = 0, hn = 0;
+  for (let k = 0; k < stuff.length; k++) {
+    const x = k % w;
+    const y = (k - x) / w;
+    if (its(k)) { mx += x; my += y; n0++; } else if (full.px.d[k * 4 + 3] && stuff[k] >= 0 && stuff[k] < 1000) { hx += x; hy += y; hn++; }
+  }
+  mx /= Math.max(1, n0); my /= Math.max(1, n0); hx /= Math.max(1, hn); hy /= Math.max(1, hn);
+  let sxx = 0, syy = 0, sxy = 0;
+  for (let k = 0; k < stuff.length; k++) if (its(k)) { const x = (k % w) - mx; const y = Math.floor(k / w) - my; sxx += x * x; syy += y * y; sxy += x * y; }
+  const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+  let ux = Math.cos(ang), uy = Math.sin(ang);
+  let lo = Infinity, hi = -Infinity;
+  for (let k = 0; k < stuff.length; k++) if (its(k)) { const v = ((k % w) - mx) * ux + (Math.floor(k / w) - my) * uy; lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  // (its butt is the end nearer the middle of him)
+  if (Math.hypot(mx + ux * lo - hx, my + uy * lo - hy) > Math.hypot(mx + ux * hi - hx, my + uy * hi - hy)) { ux = -ux; uy = -uy; [lo, hi] = [-hi, -lo]; }
+  const bx = mx + ux * lo, by = my + uy * lo;
+  const dx = ux * (hi - lo), dy = uy * (hi - lo);
+  const L2 = Math.max(1, dx * dx + dy * dy);
+  void st; void take;
+  // (how far up it the light has come: past the head on the last frame)
+  const front = ((g + 1) / of) * 1.25;
+  for (let k = 0; k < stuff.length; k++) {
+    const o = k * 4;
+    const mine = its(k);
+    // (what of the picture is the axe's: its own pixels, and its edge of light and ink, where the bare picture differs)
+    if (!mine && full.px.d[o] === bare.px.d[o] && full.px.d[o + 1] === bare.px.d[o + 1] && full.px.d[o + 2] === bare.px.d[o + 2] && full.px.d[o + 3] === bare.px.d[o + 3]) continue;
+    const x = k % w;
+    const y = (k - x) / w;
+    const u = ((x + 0.5 - bx) * dx + (y + 0.5 - by) * dy) / L2;
+    if (u > front) {
+      for (let c = 0; c < 4; c++) px.d[o + c] = bare.px.d[o + c];
+      continue;
+    }
+    if (!mine) continue;
+    const back = front - u;
+    if (back > 0.32) continue;
+    px.set(x, y, back < 0.1 ? LIGHT[0] : back < 0.22 ? LIGHT[1] : LIGHT[2]);
+  }
+  // (the sparks off the light's front)
+  const r = seeded(g * 7 + 3);
+  const at = Math.min(front, 1.05);
+  const fx = bx + dx * at;
+  const fy = by + dy * at;
+  const n = g === of - 1 ? 4 : 6;
+  for (let i = 0; i < n; i++) {
+    const a = r() * Math.PI * 2;
+    const d0 = 3 + r() * 5;
+    const d1 = d0 + 2 + r() * 3;
+    for (let j = 0; j <= 3; j++) {
+      const d = d0 + ((d1 - d0) * j) / 3;
+      const x = Math.round(fx + Math.cos(a) * d);
+      const y = Math.round(fy + Math.sin(a) * d);
+      if (x < 0 || y < 0 || x >= w || y >= px.h || px.d[(y * w + x) * 4 + 3]) continue;
+      px.set(x, y, j < 2 ? LIGHT[0] : LIGHT[1]);
+    }
+  }
+  const lights: Light[] = [...full.lights, { x: fx, y: fy, r: 12, color: LIGHT[1], a: 0.3 }];
+  return { ...full, px, lights };
+}
+
+/** How many pictures the glint is, and the canvas it is painted on (picture pixels; its anchor the middle). */
+export const AXE_GLINT_FRAMES = 6;
+/** How high over his feet the glint is (GAME pixels: his hands in his guard); its pictures are anchored at his feet, so the game
+ * draws it on his own spot, a little nearer the eye than he is. */
+export const AXE_GLINT_HIGH = 16;
+const GLINT_BOX = { w: 48, h: 48 + 2 * AXE_GLINT_HIGH, ax: 24, ay: 24 + 2 * AXE_GLINT_HIGH } as const;
+/**
+ * THE GLINT AT HIS HANDS: the thrown axe come back to hands that already hold one, and gone into it. A flash of the friend's cyan
+ * at his hands, and sparks thrown out from it, which fly a little and go out (6 pictures, a fifth of a second; the game draws it
+ * over him wherever he is, anchored at his feet, its flash `AXE_GLINT_HIGH` above them, whatever he is doing).
+ */
+export function paintGlint(i: number): { px: Px; lights: Light[] } {
+  const px = new PxClass(GLINT_BOX.w, GLINT_BOX.h);
+  const cx = GLINT_BOX.ax;
+  const cy = GLINT_BOX.ay - 2 * AXE_GLINT_HIGH;
+  const k = i / (AXE_GLINT_FRAMES - 1);
+  // (the flash: a round of light at his hands, its heart bright, shrinking as it goes)
+  const R = Math.max(0, 5.5 - k * 6);
+  for (let y = -6; y <= 6; y++) for (let x = -6; x <= 6; x++) {
+    const d = Math.hypot(x, y);
+    if (d <= R) px.set(cx + x, cy + y, d < R * 0.5 ? LIGHT[0] : LIGHT[1]);
+  }
+  // (the sparks: thrown out from it, each its own way and speed, each a short streak, going out as they slow)
+  const r = seeded(11);
+  for (let s = 0; s < 9; s++) {
+    const a = r() * Math.PI * 2;
+    const v = 7 + r() * 9;
+    const life = 0.6 + r() * 0.4;
+    if (k > life) continue;
+    const far = v * Math.sqrt(k + 0.08);
+    const long = 3 - 2 * (k / life);
+    for (let j = 0; j <= 3; j++) {
+      const d = far - (long * j) / 3;
+      if (d < 2) continue;
+      px.set(Math.round(cx + Math.cos(a) * d), Math.round(cy + Math.sin(a) * d * 0.8), j === 0 ? LIGHT[0] : k / life > 0.6 ? LIGHT[2] : LIGHT[1]);
+    }
+  }
+  return { px, lights: [{ x: cx, y: cy, r: 16, color: LIGHT[1], a: 0.3 * (1 - k) }] };
+}
+/** The glint's pictures (one list for every side: it is round). */
+export function axeGlint(): Sprite[] {
+  return lazyFrames(AXE_GLINT_FRAMES, (i) => toSprite(paintGlint(i), null, GLINT_BOX.ax, GLINT_BOX.ay));
+}
+
+/** THE CLEAVE BEGUN WITH EMPTY HANDS: the Cleave frame for frame, the axe appearing over its first four. Only those four are
+ * painted again (`clips.moves.cleaveAppear`); from its fifth the Cleave's own pictures. Its cut back (a second tap) is the
+ * Cleave's own: by then the axe is in his hands. */
+export const AXE_CLEAVE_APPEAR: AxeMove = { ...AXE_CLEAVE, name: 'Cleave, begun with his hands empty: the axe appears', appear: AXE_APPEAR_FRAMES };
+/** (for the film's page and the peek: the moves of a tap while it is out) */
+export const AXE_TAP_MOVES: Record<string, AxeMove> = { cleaveAppear: AXE_CLEAVE_APPEAR };
 
 export { FR as AXE_FRAME, UNITS_PER_TILE, plantedFeet };
 // (for the film's page, src/dev/axe_film_main.ts: which of his sides a facing is, as his great sword's lists are chosen)

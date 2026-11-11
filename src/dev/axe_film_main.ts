@@ -11,12 +11,12 @@ import { Figure } from '../render/figure';
 import { Renderer } from '../render/render';
 import { wx, wy } from '../render/fx';
 import type { Cam } from '../render/fx';
-import { AXE_FRAME, AXE_MOVES, AXE_RUN_MOVES, axeFlying, axeSprite, wuFacing, wuTailsFacing } from '../art/warrior_up_axe_moves';
+import { AXE_FRAME, AXE_MOVES, AXE_RUN_MOVES, AXE_TAP_MOVES, axeGlint, axeFlying, axeSprite, wuFacing, wuTailsFacing } from '../art/warrior_up_axe_moves';
 import type { WuSide } from '../art/warrior_up_axe_moves';
 import { HAMMER_MOVES } from '../art/warrior_up_hammer_moves';
 
 /** (his moves with the war axe and, since step 3, with the maul: one page films both) */
-const MOVES = { ...AXE_MOVES, ...AXE_RUN_MOVES, ...HAMMER_MOVES };
+const MOVES = { ...AXE_MOVES, ...AXE_RUN_MOVES, ...AXE_TAP_MOVES, ...HAMMER_MOVES };
 
 /** What the film shows now: a move of his and its frame, how high the game has lifted him (game pixels), and the axes in the air. */
 interface FilmState {
@@ -26,13 +26,15 @@ interface FilmState {
   lift: number;
   /** The thrown axes: where each is on the floor (the game's tiles) and how far round it has turned (pictures of its turn). */
   axes: { x: number; y: number; turn: number }[];
+  /** The glint at his hands (a thrown axe gone into the one he holds): its picture, or -1. */
+  glint: number;
   /** The side he was last drawn from (for the film's notes). */
   side: string;
   painted: number;
 }
 
 if (typeof window !== 'undefined' && !(globalThis as { __PAINT_WORKER__?: boolean }).__PAINT_WORKER__) {
-  const film: FilmState = { on: false, move: 'stand', frame: 0, lift: 0, axes: [], side: '', painted: 0 };
+  const film: FilmState = { on: false, move: 'stand', frame: 0, lift: 0, axes: [], glint: -1, side: '', painted: 0 };
   const kept = new Map<string, Sprite>();
   const pictureOf = (move: string, frame: number, side: WuSide): Sprite => {
     const k = `${move}:${frame}:${side}`;
@@ -44,6 +46,7 @@ if (typeof window !== 'undefined' && !(globalThis as { __PAINT_WORKER__?: boolea
     return s;
   };
   let flying: Sprite[] | null = null;
+  let glints: Sprite[] | null = null;
   let renderer: { cam: Cam; stand(d: number, s: Sprite, x: number, y: number): void } | null = null;
   // (the renderer, caught as it draws its hero: its own `stand` lays the thrown axes among everything else that stands)
   const proto = Renderer.prototype as unknown as { heroArt(game: unknown): unknown };
@@ -67,6 +70,15 @@ if (typeof window !== 'undefined' && !(globalThis as { __PAINT_WORKER__?: boolea
     this.squash = 1;
     this.tails.step(dt, s.tails, s.ax, s.ay, wuTailsFacing(side), a[3] as number, a[4] as number);
     this.last = s;
+    if (renderer && film.glint >= 0) {
+      glints = glints ?? axeGlint();
+      const hx = a[3] as number;
+      const hy = a[4] as number;
+      void hx; void hy;
+      const h = (window as unknown as { __dbg: { game(): { hero: { x: number; y: number } } } }).__dbg.game().hero;
+      const g = glints[Math.min(glints.length - 1, film.glint)];
+      renderer.stand(h.x + h.y + 0.05, { ...g, ay: g.ay + film.lift }, wx(renderer.cam, h.x, h.y), wy(renderer.cam, h.x, h.y));
+    }
     if (renderer && film.axes.length) {
       flying = flying ?? axeFlying();
       for (const ax of film.axes) {
