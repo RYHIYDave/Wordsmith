@@ -29,7 +29,10 @@ test('every hero has his voice, all of it: attack cries, grunts, lines, his deat
   }
   assert.deepEqual(HERO_VOICE, { warrior: 'male', ranger: 'male', mage: 'female', warlock: 'male', tinkerer: 'female', brawler: 'male' });
   assert.equal(VOICE_TOGGLE.on, false, 'the male/female toggle gone');
-  assert.ok(VOICE_TUNE.attackOne >= 3 && VOICE_TUNE.attackOne <= 4, 'about one attack in three or four');
+  // (THE ATTACK SHOUTS A QUARTER AS OFTEN, his pick, 9 Nov 2026: at first one attack in 3.5, never within 1.2 s; both four times that)
+  assert.equal(VOICE_TUNE.attackOne, 3.5 * 4, 'one attack in fourteen');
+  assert.ok(Math.abs(VOICE_TUNE.attackGap - 1.2 * 4) < 1e-9, 'and never within 4.8 s of the last');
+  assert.deepEqual([VOICE_TUNE.gruntGap, VOICE_TUNE.lineOne, VOICE_TUNE.lineGap], [0.7, 8, 25], 'the grunts and the hurt lines as they were');
 });
 
 test('the title theme: its file, and the stretch it goes round (68.25 s, 32 bars at 112.5 a minute)', () => {

@@ -762,8 +762,9 @@ export function sfx(name: Sfx, opts?: { vol?: number; pitch?: number }): void {
 // once the sound has started; until it has come, or where it cannot (a page opened from a file), the sound made in code plays.
 //   COMBAT: swing, hit, crit, slam, monsterDie and hurt, two takes each, one at random each time, tuned up or down by PITCH_SPREAD.
 //   THE HEROES' VOICES (heroVoice): each hero one voice of his own (his words, 6 Nov, 21:46: “we do want voices, im scrapping the
-//   male/female toggle and i want each character to have a unique sound to their voice”): a cry on about one attack in three or
-//   four; a grunt over the hurt sound, not again for a moment; now and then a line ("That stung"); a cry as he dies.
+//   male/female toggle and i want each character to have a unique sound to their voice”): a cry on about one attack in fourteen
+//   (a quarter as often as at first: VOICE_TUNE); a grunt over the hurt sound, not again for a moment; now and then a line
+//   ("That stung"); a cry as he dies.
 //   THE TITLE THEME (titleMusic): from its start once, then round between TITLE_LOOP's two points for ever; let go of (about
 //   60 MB decoded) once the title screen closes.
 
@@ -821,11 +822,15 @@ const CRIES = {
   death: ['death_1', 'death_2'],
 } as const;
 /**
- * How often a hero's voice is heard: on an attack, one in `attackOne` (about one in three or four), never within `attackGap`
- * seconds of the last; a grunt as he is hurt, never within `gruntGap` of the last; instead of the grunt, rarely, a line (one hurt
- * in `lineOne`, never within `lineGap`); how loud.
+ * How often a hero's voice is heard: on an attack, one in `attackOne`, never within `attackGap` seconds of the last; a grunt as
+ * he is hurt, never within `gruntGap` of the last; instead of the grunt, rarely, a line (one hurt in `lineOne`, never within
+ * `lineGap`); how loud.
+ * THE ATTACK SHOUTS A QUARTER AS OFTEN (his words, 9 Nov 2026, 22:34: “The random voice lines for characters are happening too
+ * often”; asked which and how much, his picks by 22:40: “Attack shouts (Recommended)”, “About a quarter as often”): at first one
+ * attack in 3.5 and never within 1.2 s; now both four times that, so the shouts come a quarter as often however fast he attacks.
+ * The grunts, the hurt lines and his death cry are as they were.
  */
-export const VOICE_TUNE = { attackOne: 3.5, attackGap: 1.2, gruntGap: 0.7, lineOne: 8, lineGap: 25, vol: 0.9 } as const;
+export const VOICE_TUNE = { attackOne: 14, attackGap: 4.8, gruntGap: 0.7, lineOne: 8, lineGap: 25, vol: 0.9 } as const;
 
 /** THE TITLE THEME: its file, and the stretch it goes round for ever once it has played from its start (seconds). */
 export const TITLE = { file: 'title.mp4', loop: [94.024, 162.275] as const, vol: 0.8 } as const;
