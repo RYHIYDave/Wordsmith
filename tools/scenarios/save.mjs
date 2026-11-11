@@ -19,7 +19,14 @@ export default async function (page, snap) {
   const fail = async (msg) => { console.log('  !! ' + msg); await page.evaluate((m) => console.error(m), 'saving: ' + msg); };
   let hands = null;
   /** The starting screen, back at its menu whichever page it is on. */
-  const toMenu = async () => { if (!(await hands.mark('button:NEW GAME')) && (await hands.mark('button:BACK'))) await hands.press('button:BACK'); };
+  // (25.3.4: BACK pressed, the menu is on screen a frame later, and the cards' screen runs at about 20 frames a second on the
+  // test machine: the press that follows waited for nothing and missed the menu by some 20 ms. So: wait for the menu.)
+  const toMenu = async () => {
+    if (!(await hands.mark('button:NEW GAME')) && (await hands.mark('button:BACK'))) {
+      await hands.press('button:BACK');
+      for (let k = 0; k < 100 && !(await hands.mark('button:NEW GAME')); k++) await page.waitForTimeout(20);
+    }
+  };
   /** The PROMPTS switch in the options, put to on or off (most of this script is about characters who begin in town). Says how it was found. */
   const prompts = async (on) => {
     await toMenu();
