@@ -487,7 +487,8 @@ every side: the maul, town 81%, his town run 76%, his look about him 79%, the dr
 Nothing through him. The head still reads from all eight sides (the least, from his front-left: the maul 136 picture pixels,
 the war axe 137; the rule is 100). Test 18 holds the helm rule on his back as everywhere else; test 3 keeps the reads-on-his-back
 rule for the two takes he picked (the bearded axe he did not pick shows 29 from his front-left there, and is drawn no more).
-`pictures/weapons_looks.png` is step 1's sheet and still shows the old carry.)
+`pictures/weapons_looks.png` is step 1's sheet and still shows the old carry; the new one is `pictures/carry_phone.png`
+(1260 by 1428, phone-shaped: each weapon on his back in town from his eight sides, three times the game's size).)
 
 ## What the main chat needs
 
