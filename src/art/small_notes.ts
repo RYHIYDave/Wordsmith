@@ -1,7 +1,8 @@
 // THE SMALL OLDER ART NOTES (the queue's "Fix the small older art notes", 11 Nov 2026; from the art chat's handoff of 4 Nov). Four
 // small mends, each behind a switch of its own here, ALL OFF: with them off the game is as it was exactly. Each goes on only at
 // his yes to its picture (docs/mockups/small_notes/README.md has what each is, the pictures, and his words). HIS YES, 11 Nov 2026, to the
-// pictures of the first three: “Yes, keep it (Recommended)”, each.
+// pictures of the first three, “Yes, keep it (Recommended)”, each, and to the rune and its film, “Yes, keep it (Recommended)”:
+// ALL FOUR HAVE HIS YES, and the main chat sets them on as it brings the branch in.
 //
 //   shadows   FLOOR 20'S SHADOWS OF THE FOUR ROYALS read grey on the Quiet Tower's grey stone. On: the same fog, set apart: its
 //             dark and middle tones deeper (a shadow is dark), its bone white lights kept, its seam the darkest fog

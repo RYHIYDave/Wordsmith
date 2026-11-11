@@ -1,4 +1,4 @@
-# The small older art notes (NOT IN THE GAME until the main chat puts them there)
+# The small older art notes (NOT IN THE GAME until the main chat puts them there; HIS YES TO ALL OF IT, 11 Nov 2026)
 
 **What it is.** The queue's item "Fix the small older art notes" (`fix-small-older-art-notes`, added by the art chat on
 9 Nov from its handoff of 4 Nov), taken by a chat he started from the queue page on 11 Nov 2026, 09:27 (Eastern). Its
@@ -9,7 +9,7 @@ render/quest_mark.ts) may be redrawn."
 **Where:** the branch `art/small-notes`, from `main` at `797f2e4` (25.3.1). Four switches in `src/art/small_notes.ts`
 (`SMALL_NOTES`) and one in `src/game/quest_marks.ts` (`SPEAK_NEW`), ALL OFF: with them off the game is as it was exactly
 (`tests/small_notes.test.ts` holds the art to it, pixel for pixel; `tests/speak_new.test.ts` the line). Each goes on only
-at his yes to its picture.
+at his yes to its picture: given to all five, 11 Nov 2026 (His word on the pictures, at the foot).
 
 ## Each note, checked against the game as it is (25.3.1, a phone held sideways, 844 by 390)
 
@@ -110,4 +110,13 @@ switches); cut and laid out by hand.
 - The quest marker (the gem cut finer), asked “Keep the new gem?”, in his own words: “Make it a rune, have it flash, and
   add triggers for “Speak to the (quest giver)” when a quest becomes available”. Read as: the marker the wordsmith's
   great rune, flashing; and the line whenever someone has something new for him, as set out above.
-- The rune, its film and the triggers as read; and the Order's guests: (not yet given.)
+Then the rune (`4_quest_marker.png`, `quest_rune.mp4`, `6_rune_waypoint.png`), sent him after 10:36, his answers in by
+10:47, each asked as a pop-up:
+
+- The rune and its flash, asked “Is this the rune and the flash you want?”: “Yes, keep it (Recommended)”.
+- The triggers, read back as above and asked “Is that the trigger you meant?”: “Yes, that's it (Recommended)”.
+- The Order's guests (`5_order_guests.png`), told that what the old note wanted is not known and that they look right,
+  asked “Leave them as they are?”: “Leave them (Recommended)”. The note is closed; nothing of theirs is changed.
+
+SO, FOR THE MAIN CHAT: ALL FIVE SWITCHES HAVE HIS YES: `SMALL_NOTES.shadows`, `.masks`, `.mothView`, `.questRune`
+(`src/art/small_notes.ts`) and `SPEAK_NEW.on` (`src/game/quest_marks.ts`). Art he approved here needs no pictures again.

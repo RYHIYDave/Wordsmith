@@ -28,6 +28,8 @@ export const QUEST_MARKS = { on: true, secs: 6 };
  *     first, else the first of them (the wordsmith, the armourer, the mystic);
  *   - on coming into a floor carrying something to bring back, as before.
  * It goes, as before, when it has been seen its time or they are seen to.
+ * Read back to him so, his answer, 11 Nov 2026, by 10:47 (Eastern): “Yes, that's it (Recommended)”. The main chat sets it on as it
+ * brings the branch in.
  */
 export const SPEAK_NEW = { on: false };
 
