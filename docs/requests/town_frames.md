@@ -54,6 +54,11 @@ turned or scaled by a part of a pixel, a camera not on a whole pixel, a picture 
 
 Room they take while he is in town: 3.3 MB, 3.2 MB and 0.6 MB (7.1 MB in all), given back as the town is left.
 
+What making them costs: the frame that makes the three took 28 to 77 ms on the test machine at its own speed (eight tries),
+against 6 to 18 ms for the frame after: some 35 ms more, once each time the town is come into (as a game begins that is under
+the loading screen, which draws the world once before he plays; coming back from a floor it falls on the arrival's own frame,
+with the hall's pictures being made again).
+
 ## What it gains (measured)
 
 On 25.3.2 with this branch, one page, the switches off against on (`OFF=all`), the test machine (2 cores), 844 by 390 at 3:
@@ -105,8 +110,9 @@ floor alone is 300 fewer pictures a frame; the glows are most of the gain.
 - `tsc --noEmit`: clean.
 - `tests/still_pictures.test.ts` (6): what each picture is laid with and where; that it is drawn where its pieces were; made
   once, made again only when what it hangs on is another; left to the game where it could not be right.
-- `node tools/unit.mjs --only still_pictures,castle_hall,town_look,townart,floor_looks_game` (and the core): see the foot of
-  this note for the run on the branch's last commit.
+- `node tools/unit.mjs --only still_pictures,castle_hall,town_look,townart,floor_looks_game` (and the core) on `c1cab5c43f`,
+  the last commit that changes the game or its tests: 28 files, 334 tests, all pass.
+- The game's own town playtests on the branch's page, served: `town.mjs`, `quest_town.mjs`, `towntap.mjs`: finished clean.
 - `tools/scenarios/town_same.mjs`: ALL AS THEY SHOULD BE, 41 places; each picture made once and not again in a walk.
 - With the three switches OFF the game draws what it drew: `tools/scenarios/draws_hash.mjs` on 25.3.1 against 25.3.1 with this
   work: the town and floors 1 to 7, six places each, the same call for call and pixel for pixel (floors 8 and on cannot be
