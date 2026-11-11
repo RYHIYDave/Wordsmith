@@ -39,6 +39,8 @@ export class CastleView implements LookView {
   readonly dark = CASTLE_LIGHTS.dark.a;
   readonly tint = CASTLE_LIGHTS.dark.rgb;
   readonly vignette = CASTLE_LIGHTS.vignette;
+  /** (its roof, its flags and the tiles laid on them never change: the renderer lays them once into one picture, render/still_floor.ts) */
+  readonly stillFloor = true;
   private art: CastleHallArt | null = null;
   private laidAt: Map<number, string> | null = null;
   private laidMemo = new Map<string, Sprite>();

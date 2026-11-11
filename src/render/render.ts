@@ -69,6 +69,7 @@ import { drawText, textWidth } from '../engine/font';
 import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawGlow, drawLights, flipSprite, reapRetired, silhouette, spriteCovers } from '../engine/px';
 import { StillGlows } from './still_glows';
+import { StillFloor } from './still_floor';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
 import { WARLOCK_TUNE } from '../game/warlock';
@@ -564,8 +565,9 @@ export class Renderer {
    */
   private forgetLooks(L: Game['level'], keep: LookView | null): void {
     this.lookedFor = L;
-    // (the last place's steady glows as one picture: render/still_glows.ts)
+    // (the last place's steady glows as one picture, and its floor: render/still_glows.ts, render/still_floor.ts)
     this.stillGlows.forget();
+    this.stillFloor.forget();
     for (const v of [this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) {
       if (v === keep) continue;
       v.forget?.();
@@ -1831,6 +1833,70 @@ export class Renderer {
    * shadow of higher ground that stands over it, and its edges against a pit. (px, py): where its
    * diamond is drawn, lifted as it is.
    */
+  /**
+   * A TILE OF FLOOR, as the floor's loop draws it (drawWorld) and as a place's floor as one picture is laid (layFloor): its
+   * picture with its top corner at (px, py), and over it the shade of the walls that stand at its far sides and the lit edge
+   * where a wall toward the eye is left out. `ground`: the game's ground art (the redoubt's in a stronghold's hall).
+   */
+  private floorTile(g: CanvasRenderingContext2D, L: Game['level'], idx: number, tx: number, ty: number, px: number, py: number, t: number, look: LookView | null, ground: GroundArt, lowGrid: Uint8Array, yardOn: boolean): void {
+    const f = L.floor;
+    // (the flagstones are laid on the world, not on the tiles: a tile's picture goes by where it is)
+    // (THE FIRST FIVE FLOORS: or one of the floor's own tiles laid there: render/pieces.ts)
+    // (THE HEADSMAN'S YARD: its cobbles and its own tiles: render/yard.ts)
+    // (FLOOR 3, THE BLACK IRON PRISON: his hall's floor and its own tiles, then the floor's own, on its dark flags: render/prison.ts)
+    const sp = (yardOn && this.yard.floor(f, tx, ty)) || (look && look.laid(L, tx, ty, t)) || (this.dressed && this.pieces.tile(idx)) || (look ? look.flags(tx, ty) : ground.floor(tx, ty));
+    g.drawImage(sp.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+    // the shadow of a wall that stands over it (the light is from the upper left)
+    // (THE WALLS' LOOK: a wall that is cut away throws no shadow)
+    const gone = WALL_LOOK.away && WALL_LOOK.front === 'none';
+    const wl = tx > 0 && f.tiles[idx - 1] === T_WALL && !(gone && lowGrid[idx - 1]);
+    const wr = ty > 0 && f.tiles[idx - f.w] === T_WALL && !(gone && lowGrid[idx - f.w]);
+    if (wl) g.drawImage(ground.shadeLeft.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+    if (wr) g.drawImage(ground.shadeRight.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+    if (!wl && !wr && tx > 0 && ty > 0 && f.tiles[idx - f.w - 1] === T_WALL) g.drawImage(ground.shadeCorner.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+    if (WALL_LOOK.front === 'none') {
+      // (THE WALLS' LOOK: no wall is drawn toward the eye, and the floor's edge there is a line of light against the dark)
+      if (tx + 1 < f.w && f.tiles[idx + 1] === T_WALL && lowGrid[idx + 1]) g.drawImage(ground.edgeRight.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+      if (ty + 1 < f.h && f.tiles[idx + f.w] === T_WALL && lowGrid[idx + f.w]) g.drawImage(ground.edgeLeft.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+    }
+  }
+
+  /** A PLACE'S FLOOR AS ONE PICTURE (render/still_floor.ts): the picture, and how many of the place's tiles have been seen (it is made again when more are). */
+  readonly stillFloor = new StillFloor();
+  private seenTiles(L: Game['level']): number {
+    let n = 0;
+    const e = L.explored;
+    for (let i = 0; i < e.length; i++) if (e[i]) n++;
+    return n;
+  }
+  /**
+   * THE WHOLE OF A PLACE'S FLOOR LAID ON `g`, with the camera `cam` (render/still_floor.ts): what its look draws behind
+   * everything, then every tile of floor that has been seen, in the order drawWorld's loop comes to them (row by row down the
+   * screen, each row left to right), each as that loop draws it. Only called where drawWorld would draw no more than this for
+   * the floor (flat ground, the look's own floor: its `asOneFloor`).
+   */
+  private layFloor(g: CanvasRenderingContext2D, cam: Cam, L: Game['level'], t: number, look: LookView, ground: GroundArt, lowGrid: Uint8Array): void {
+    const f = L.floor;
+    if (look.back) {
+      for (const q of look.back(L, t)) {
+        const sx = Math.round(wx(cam, q.x, q.y));
+        const sy = Math.round(wy(cam, q.x, q.y));
+        g.drawImage(q.s.img, sx - q.s.ax, sy - q.s.ay, q.s.w, q.s.h);
+      }
+    }
+    for (let s = 0; s <= f.w + f.h - 2; s++) {
+      for (let df = -(f.h - 1); df <= f.w - 1; df++) {
+        if ((s + df) & 1) continue;
+        const tx = (s + df) >> 1;
+        const ty = (s - df) >> 1;
+        if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
+        const idx = ty * f.w + tx;
+        if (!L.explored[idx] || f.tiles[idx] !== T_FLOOR) continue;
+        this.floorTile(g, L, idx, tx, ty, cam.ox + df * 16, cam.oy + s * 8, t, look, ground, lowGrid, false);
+      }
+    }
+  }
+
   private lowEdges(g: CanvasRenderingContext2D, R: Relief, idx: number, tx: number, ty: number, px: number, py: number): void {
     const G = this.lookGround();
     const f = R.floor;
@@ -3023,8 +3089,15 @@ export class Renderer {
     const groundsSky = look === this.grounds ? this.grounds.skyOver(L, h.x, h.y, yardOut) : null;
     this.groundsOnly = groundsSky ? L : null;
     if (groundsSky) this.grounds.drawSky(g, cam, W, H);
+    // (A PLACE'S FLOOR AS ONE PICTURE, render/still_floor.ts: where the look says its floor is steady, the ground is flat and none
+    // of the game's other floors is laid here, what is behind everything and every tile of the floor with the walls' shade on it
+    // are one picture, laid as below and as the floor's own loop lays them; it is made again if any of what it hangs on is another)
+    const lowAll = lowGrid;
+    const asOneFloor =
+      !!look && look.stillFloor === true && !relief && !f.cut && !this.openGround && !land && !inHall && !yardOn && !groundsSky && !this.dressed &&
+      this.stillFloor.draw(g, cam, W, H, P.black, [L, look, this.art.ground, lowAll, WALL_LOOK.away, WALL_LOOK.front, this.seenTiles(L)], (c, at) => this.layFloor(c, at, L, t, look, this.art.ground, lowAll));
     // (THE FIRST TOWN AS THE CASTLE'S HALL: the castle's stone above its walls and its roof, behind everything: render/castle.ts)
-    if (look?.back) {
+    if (look?.back && !asOneFloor) {
       for (const q of look.back(L, t)) {
         const sx = Math.round(wx(cam, q.x, q.y));
         const sy = Math.round(wy(cam, q.x, q.y));
@@ -3083,21 +3156,8 @@ export class Renderer {
           // (THE FIRST FIVE FLOORS: or one of the floor's own tiles laid there: render/pieces.ts)
           // (THE HEADSMAN'S YARD: its cobbles and its own tiles: render/yard.ts)
           // (FLOOR 3, THE BLACK IRON PRISON: his hall's floor and its own tiles, then the floor's own, on its dark flags: render/prison.ts)
-          const sp = (yardOn && this.yard.floor(f, tx, ty)) || (look && look.laid(L, tx, ty, t)) || (this.dressed && this.pieces.tile(idx)) || (look ? look.flags(tx, ty) : art.ground.floor(tx, ty));
-          g.drawImage(sp.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-          // the shadow of a wall that stands over it (the light is from the upper left)
-          // (THE WALLS' LOOK: a wall that is cut away throws no shadow)
-          const gone = WALL_LOOK.away && WALL_LOOK.front === 'none';
-          const wl = tx > 0 && f.tiles[idx - 1] === T_WALL && !(gone && lowGrid[idx - 1]);
-          const wr = ty > 0 && f.tiles[idx - f.w] === T_WALL && !(gone && lowGrid[idx - f.w]);
-          if (wl) g.drawImage(art.ground.shadeLeft.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-          if (wr) g.drawImage(art.ground.shadeRight.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-          if (!wl && !wr && tx > 0 && ty > 0 && f.tiles[idx - f.w - 1] === T_WALL) g.drawImage(art.ground.shadeCorner.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-          if (WALL_LOOK.front === 'none') {
-            // (THE WALLS' LOOK: no wall is drawn toward the eye, and the floor's edge there is a line of light against the dark)
-            if (tx + 1 < f.w && f.tiles[idx + 1] === T_WALL && lowGrid[idx + 1]) g.drawImage(art.ground.edgeRight.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-            if (ty + 1 < f.h && f.tiles[idx + f.w] === T_WALL && lowGrid[idx + f.w]) g.drawImage(art.ground.edgeLeft.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-          }
+          // (A PLACE'S FLOOR AS ONE PICTURE, render/still_floor.ts: its tiles are in that picture, drawn before this)
+          if (!asOneFloor) this.floorTile(g, L, idx, tx, ty, px, py, t, look, art.ground, lowGrid, yardOn);
           if (relief) this.lowEdges(g, relief, idx, tx, ty, px, py);
           if (relief && sunk) this.rimFaces(g, relief, idx, tx, ty, px, py);
         } else if (relief && kind === T_PIT) {

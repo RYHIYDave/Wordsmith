@@ -34,6 +34,11 @@ export interface LookView {
   readonly tint?: readonly [number, number, number];
   /** Its vignette, if not the game's (the first town's castle hall: a day's, 0.26). */
   readonly vignette?: number;
+  /**
+   * ITS FLOOR IS STEADY: what it draws behind everything (`back`) and its floor's tiles (`laid`, `flags`) are the same pictures
+   * at every moment while the place is stood in, so the renderer may lay them once into one picture (render/still_floor.ts).
+   */
+  readonly stillFloor?: boolean;
   /** Is this look to be drawn on this level? */
   on(L: Level): boolean;
   /** Let its pictures go (another floor is come into). */
