@@ -18,9 +18,11 @@ import { LEAP3, MOVES3, THRUST3 } from '../src/art/moves3';
 import { CLASS_IDS } from '../src/game/types';
 import { LEAP_LIFT, THRUST_LIFT } from '../src/render/wild';
 import { paintWithoutCanvas, unlike, heroesAsBefore } from './helpers';
+import { mageAsBefore } from './mage_as_before';
 
 // (THE WARRIOR AND THE RANGER BROUGHT UP, on since 7 Nov 2026: this file asks of their pictures as they were, art/moves3.ts, kept)
 heroesAsBefore();
+mageAsBefore();
 
 interface Assert {
   ok(value: unknown, message?: string): void;

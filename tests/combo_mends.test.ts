@@ -25,8 +25,10 @@ import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 
 import { heroesAsBefore } from './helpers';
+import { mageAsBefore } from './mage_as_before';
 // (THE WARRIOR AND THE RANGER BROUGHT UP, on since 7 Nov 2026: this file asks of their pictures as they were, art/moves3.ts, kept)
 heroesAsBefore();
+mageAsBefore();
 
 // (VERSION 19.7: the mage's stances and every hero's moves big and wild are the game's own, art/moves3.ts
 // MAGE_STANCES and WILD, put in place as moves3.ts loads. This file's tests were written with them off,

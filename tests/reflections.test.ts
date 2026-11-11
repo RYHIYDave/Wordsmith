@@ -39,9 +39,11 @@ import { ENEMY_RIM } from '../src/art/mkit';
 import { EYE, GLASS_COLOURS, GLASS_TAILS, REFLECTIONS_ON, REFLECTION_POOL, hueOf, makeReflectionArt, reflectionLists } from '../src/art/reflections';
 import { GALLERY_MIRROR, SHATTER, STEP_CANVAS, STEP_MIRROR, STEP_OUT, inGlass, mirrorPainted, ofMirror, reflectionEffects, shatterFrom, shatterPainted, stepOutPainted } from '../src/art/reflections_fx';
 import { paintWithoutCanvas, paintingOf, heroesAsBefore } from './helpers';
+import { mageAsBefore } from './mage_as_before';
 
 // (THE WARRIOR AND THE RANGER BROUGHT UP, on since 7 Nov 2026: this file asks of their pictures as they were, art/moves3.ts, kept)
 heroesAsBefore();
+mageAsBefore();
 
 interface Assert {
   ok(value: unknown, message?: string): void;
