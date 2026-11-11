@@ -13,7 +13,7 @@ Every number here is a first proposal, for your yes. They are what the build use
 | The stranger's gamble | 0.5% a throw | 1 in 200 throws |
 | The endless final boss | 25% a kill, one of his two | when he is built |
 
-Counted on real floors: about 27 pieces of gear drop on a floor. So a run of twenty floors gives between two and three pool uniques and two boss uniques, with no magic find. About sixty rares drop in the same run.
+Counted on the fifteen floors there are today (tools/unique_odds.ts): about 27 pieces of gear drop on a floor, 400 in a run. So a run gives about two pool uniques, and one or two of the bosses' own: three or four uniques in all, with no magic find. 44 rares drop in the same run.
 
 - Magic find raises the pool's chance the way it raises a rare's.
 - The pool starts on floor 2.
