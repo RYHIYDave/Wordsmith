@@ -622,7 +622,11 @@ const M_CRYSTAL: Ramp = ['#0c6a80', '#18a0b4', '#22d0e0', '#b8fff8', '#ffffff'];
  *   3  as the game has him today: his face a shadow under the turban, two points of light for eyes, the veil
  *   4  take 1's face under a grander turban: a band of gold round its foot, a tall feather at its stone
  */
-export const MYSTIC_HEAD = { take: 0 };
+/**
+ * HIS PICK, 11 Nov 2026, shown the four (mystic_head_takes_close.png, lettered A to D: takes 1 to 4) and asked “Which head
+ * for the mystic (mystic_head_takes_close.png, A to D)?”: “C, shadowed with glowing eyes”. Take 3.
+ */
+export const MYSTIC_HEAD = { take: 3 };
 /** His beard and moustache, where he has them: near black. */
 const M_BEARD: Ramp = ['#0c0812', '#1a1420', '#2e2636', '#463c50', '#60546a'];
 

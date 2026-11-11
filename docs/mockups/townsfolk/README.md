@@ -16,7 +16,15 @@ game is exactly as it was.
   pale paddles across his beard; the stranger's boot-on-the-wall leg stuck out sideways; the mystic's turban was a white
   blob over a dark mask of a face with two glowing dots. All three mended (below) and the pictures made again. Nothing
   said against the armourer, or against how any of them moves.
-- HIS YES IS STILL TO COME: the second pictures went to him the same morning; his answer goes here.
+- Shown the second pictures and asked “With the wordsmith's hands, the stranger's legs and the mystic's head and face
+  redone, are the four townsfolk right now (the new townsfolk_now_and_redrawn.mp4 and pictures)?”, his pick: “Mystic still
+  off” (offered as: the other three are fine; the mystic's head or face needs more work). So THE ARMOURER, THE WORDSMITH
+  AND THE STRANGER ARE FINE AS THEY ARE.
+- Shown four takes of the mystic's head, the rest of him the same in each (`mystic_head_takes_close.png` and
+  `mystic_head_takes.png`: A his face bare with a short dark beard, B the veil with his eyes drawn bigger, C his face a
+  shadow with two points of light as the game has him today, D the beard under a feathered turban) and asked “Which head
+  for the mystic (mystic_head_takes_close.png, A to D)?”: “C, shadowed with glowing eyes”. So HIS HEAD IS TAKE C
+  (`MYSTIC_HEAD.take` 3), under the wound turban. The other takes stay in the code, unused.
 
 ## What is drawn
 
@@ -31,8 +39,9 @@ WHO EACH IS DOES NOT CHANGE: these are the looks he already knows, made the new 
   of the opening's armourer, 25 Oct: “The armorer’s eyes glow for some reason”).
 - **The mystic**: the mage's purple robe to the floor, a gold sash knotted in front, gold chains, a red stone on the lower;
   a great pale turban, WOUND (two rolls of cloth crossing, their folds seen, nothing of it over his brow), a red stone at
-  its front, its end down his back; A MAN'S FACE under it (brown skin, dark eyes under dark brows: no shadow, no points
-  of light), a teal veil from under his nose with a row of gold coins; the crystal turning over his open palm.
+  its front, its end down his back; HIS FACE A SHADOW under it with two points of light for eyes, as the game has him
+  today (his pick of four takes: “C, shadowed with glowing eyes”), a teal veil from under his nose with a row of gold
+  coins; the crystal turning over his open palm.
 - **The wordsmith**: THE LOOK HE SAID YES TO ON 8 OCT (“Yes, this is him (Recommended)”), the same body, stance and work
   (`art/smith3.ts` SMITH_BODY, SMITH_STANCE, SMITH_MOVES): the night-blue robe, the teal mantle and its cowl up, the long
   white beard, his eyes and the runes on him burning cyan (down his skirts, round the hem, along the mantle's edge and the
@@ -69,6 +78,8 @@ were. `anvil`, `crystal` and `coin` want playing at those moments, or cutting to
   by for size, eight screen pixels to a game pixel (1608 x 672: made to be read on a phone held sideways).
 - `townsfolk_now_and_redrawn.mp4`: the same two side by side, each doing what he does now and then: 25 s, 30 frames a
   second. The frames are the game's own, made a frame at a time with the town's clock held.
+- `mystic_head_takes_close.png` and `mystic_head_takes.png`: the four takes of the mystic's head he picked from, close up
+  and at the game's own size (`tools/townsfolk3_takes.py`; the stills with `WHO=mystic MODE=still TAKE=<1 to 4>`).
 
 Made with (the page built first: `node tools/build_to.mjs dist/tf_look.html`):
 
