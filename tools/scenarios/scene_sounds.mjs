@@ -14,8 +14,12 @@ export default async function (page, snap) {
   await hands.press('button:NEW GAME');
   await page.waitForTimeout(500);
   await hands.press('class:warrior', 0, true);
-  const c = await hands.mark('button:CONFIRM');
+  // (25.3.5: on the published page at a phone's shape CONFIRM is on screen a frame or two after the card is pressed, and the
+  // game began for nobody: wait for the button, press it, and wait for the game itself, then the 8 s as before)
+  let c = null;
+  for (let k = 0; k < 150 && !c; k++) { c = await hands.mark('button:CONFIRM'); if (!c) await page.waitForTimeout(20); }
   if (c) await hands.pressAt(c.x, c.y);
+  await page.waitForFunction(() => !!window.__dbg.game(), null, { timeout: 30000 });
   await page.waitForTimeout(8000);
   const detail = () => page.evaluate(() => window.__dbg.soundsDetail());
   const toFloor = async (d, ms = 7000) => {
