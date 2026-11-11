@@ -2489,6 +2489,16 @@ const SPOTS: Record<string, ReadonlyArray<readonly [number, number]>> = {
 };
 
 let made: Piece[] | null = null;
+/**
+ * Its pieces and its gates let go (its floor left: render.ts forgetLooks), made again if wanted. The floor's look lets its own
+ * go so since 25.0.5 (his “it’s crashing every couple of levels”); these, which the look is made from, were kept for good: with
+ * the other four floors' some 15 MB of canvases by floor 6 (measured 11 Nov 2026; his “lag and freezing issues after playing a
+ * few levels”).
+ */
+export function forgetMade(): void {
+  made = null;
+  gates = null;
+}
 /** THE AMALGAMATION'S FLOOR, every piece, painted the first time they are asked for and kept. */
 export function ossuaryPieces(): Piece[] {
   if (made) return made;

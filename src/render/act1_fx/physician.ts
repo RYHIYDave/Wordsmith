@@ -16,6 +16,7 @@
 import { drawCaneRap, drawDrawAim, drawHeldWord, drawHushCloud, drawPhialFlight, drawRoundsRing, drawWordFreed } from '../../art/physician_shots';
 import { PHYSICIAN, heldWord, quillSpot } from '../../game/act1_rules/physician';
 import { HELD_WORD_IDS } from '../../game/types';
+import { keptPictures } from './kept';
 import type { Act1Fx, Act1FxCtx } from './types';
 import { DIAG, DRAW9_HIT, LIGHT, OP_HIT, OP_LONG, OP_STRIKE, PHYSICIAN_ACTION, RAP9_HIT, ROUNDS9_HITS, lensAt } from '../../art/physician_action';
 import { BEAM, FIELD, LUNGE, OPERATION, RAP, RINGS, opDark, paintDial, paintDraw, paintField, paintMark, paintRap, paintRounds, toolsAt } from '../../art/physician_action_fx';
@@ -155,7 +156,7 @@ function dial(c: Act1FxCtx, fill: number, lit: boolean): void {
   drawSprite(c.g, s, sx, sy - 46);
 }
 /** One of his instruments on the screen: its middle (game pixels), the way its point faces, its glint (along it, or none). */
-const own = new Map<string, { tool: Sprite; glint: Sprite }>();
+const own = keptPictures<string, { tool: Sprite; glint: Sprite }>();
 function laid(c: Act1FxCtx, kind: number, X: number, Y: number, dx: number, dy: number, glint: number): void {
   const g = c.g!;
   const k = toolTurn(dx, dy);

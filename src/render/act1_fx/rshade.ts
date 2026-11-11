@@ -16,6 +16,7 @@ import type { Sprite } from '../../engine/px';
 import { ICE_PERIL, LINE_PERIL, onLine } from '../../game/act1_rules/rshade';
 import { backView } from '../../game/facing';
 import type { Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import { liveDone, liveFrom } from './live';
 import type { Act1Fx, Act1FxCtx } from './types';
 
@@ -50,7 +51,7 @@ function letGo(p: Peril): void {
 }
 
 /** The frost over the hero, each frame of its life, made once (its two halves, from in front and from behind). */
-const ICE = new Map<string, Sprite>();
+const ICE = keptPictures<string, Sprite>(true);
 function ice(k: number, view: View, half: 'far' | 'near'): Sprite {
   const key = `${k}:${view}:${half}`;
   let s = ICE.get(key);

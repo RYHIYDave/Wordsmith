@@ -7,13 +7,14 @@ import type { ThingsFilm } from '../../art/films';
 import { drawSprite, flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { backView, beside, flipped } from '../../game/facing';
+import { keptPictures } from './kept';
 import type { Act1Fx, Act1FxCtx } from './types';
 
 // THE SICKLE BOOMERANG (FIELD_HARVEST: art/action_f11_field.ts, his pick of 2 Nov 2026): its curve marked on the floor from where they
 // stand, laid out as they draw back and gone behind it as it flies; the sickle spinning along it at its height, among the figures at
 // the floor point under it; each as they face in their picture, turned over as they are (painted ahead: art/films.ts things:fieldhand).
 const THINGS = 'things:fieldhand';
-const own = new Map<string, Sprite>();
+const own = keptPictures<string, Sprite>();
 function frame(c: Act1FxCtx, what: 'sickle' | 'curve', view: 'front' | 'back', flip: boolean, i: number): Sprite {
   const key = `${what}:${view}`;
   const made = c.film ? c.film<ThingsFilm>(THINGS) : null;

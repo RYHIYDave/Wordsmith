@@ -21,6 +21,7 @@ import { figureOf } from '../../art/bestiary';
 import type { Clip } from '../../art/actor_types';
 import type { Peril } from '../../game/state';
 import type { HallFrame } from '../../game/act1_rules/gqueen';
+import { keptPictures } from './kept';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx, Act1FxCtx } from './types';
 
@@ -35,7 +36,7 @@ const SHATTER_KEYS = [0.45, 0.8, 1.1, 1.3, 1.4, 1.9, 2.7, 3.0, 3.3] as const;
 /** Her mirror's speaking, from the start of a line (seconds), painted to here and then held going round its last second. */
 const SPEAK_LONG = 3.8;
 
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>();
 /** A picture of hers, made (and turned over for a hall along y) the first time it is asked for. */
 function made(key: string, flip: boolean, paint: () => Sprite): Sprite {
   const k = `${key}:${flip ? 1 : 0}`;
@@ -138,7 +139,7 @@ function shatterGlass(c: Act1FxCtx, F: HallFrame, since: number): void {
 // THE RING OF MIRRORS (his fifth for her, 30 Oct 2026): six of her hall's pier glasses risen round him, her in every one
 
 /** Where a pier glass's glass is on its picture (picture pixels): every pixel of the cold blue of its glass, its foot's middle. */
-const GLASS = new Map<Sprite, { mask: HTMLCanvasElement; x: number; y: number } | null>();
+const GLASS = keptPictures<Sprite, { mask: HTMLCanvasElement; x: number; y: number } | null>();
 function glassOf(s: Sprite): { mask: HTMLCanvasElement; x: number; y: number } | null {
   if (GLASS.has(s)) return GLASS.get(s)!;
   let out: { mask: HTMLCanvasElement; x: number; y: number } | null = null;
@@ -172,7 +173,7 @@ function glassOf(s: Sprite): { mask: HTMLCanvasElement; x: number; y: number } |
   return out;
 }
 /** A pier glass with her in it: her picture laid in its glass, cold and faint, nowhere else. */
-const IN_GLASS = new Map<string, Sprite>();
+const IN_GLASS = keptPictures<string, Sprite>();
 function herInGlass(key: string, mirror: Sprite, her: Sprite): Sprite {
   const k = key;
   const have = IN_GLASS.get(k);

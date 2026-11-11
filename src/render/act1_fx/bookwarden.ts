@@ -11,6 +11,7 @@ import { toSprite } from '../../art/kit';
 import type { Sprite } from '../../engine/px';
 import { BARRAGE_PERIL, aimFor } from '../../game/act1_rules/bookwarden';
 import { beside, fromFigure } from '../../game/facing';
+import { keptPictures } from './kept';
 import { livePicture } from './live';
 import type { Act1Fx } from './types';
 
@@ -35,7 +36,7 @@ const OLD: Act1Fx = {
 // skidding and lying a moment; each among the figures at the floor point under it. Each book's picture by how far it has turned
 // (BOOK_TURNS a turn), its cover, lying or not: painted once and kept.
 const BOOK_TURNS = 24;
-const books = new Map<string, Sprite>();
+const books = keptPictures<string, Sprite>(true);
 function book(spin: number, cover: number, lying: boolean, glint: number): Sprite {
   const q = ((Math.round((spin / (Math.PI * 2)) * BOOK_TURNS) % BOOK_TURNS) + BOOK_TURNS) % BOOK_TURNS;
   const g = glint > 0.4 ? 1 : 0;

@@ -11,6 +11,7 @@ import { BLAZE, FIRE_CANVAS, FIREPOT_BLAZE, blazePainted, makeFlyingPotArt, potS
 import { markRing } from '../../art/action_f6_fx';
 import { toSprite } from '../../art/kit';
 import { drawSprite } from '../../engine/px';
+import { keptPictures } from './kept';
 import { livePicture, liveFrom } from './live';
 import { lazyFrames } from '../../art/kit';
 import type { GameView } from '../../art/skin';
@@ -34,7 +35,7 @@ let fires: Sprite[] | null = null;
 // THE LOB MADE BIG (FIREPOT_BLAZE: art/action_f6_cult.ts, his yes, 2 Nov 2026): its shadow growing under it and the reach of its
 // burst marked where it will come down, filling as it comes; the pot tumbling; the whoosh as it lands ('air', by halves, before and
 // behind a figure there) and the floor burning ('floor'), painted afresh a frame at a time (render/act1_fx/live.ts).
-const SHADOWS = new Map<number, Sprite>();
+const SHADOWS = keptPictures<number, Sprite>(true);
 let BIG: Partial<Record<GameView, Sprite[]>> = {};
 const BLAZE_FX: Act1Fx = {
   ground(c, m, p) {

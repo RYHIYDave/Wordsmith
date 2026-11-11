@@ -15,6 +15,7 @@ import { drawLights, drawSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { BITE_PERIL, LANTERN_PERIL, lanternAt } from '../../game/act1_rules/watch';
 import type { Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import { livePicture, liveFrom } from './live';
 import type { Act1FxCtx } from './types';
 import type { Act1Fx } from './types';
@@ -55,7 +56,7 @@ export function mirrorFor(
 // will smash marked, filling as it comes; its smash ('air', by halves) and the oil burning on the floor (its frames painted ahead:
 // art/films.ts things:watch; until they are, here as each is first wanted).
 const OIL_THINGS = 'things:watch';
-const oilOwn = new Map<number, Sprite>();
+const oilOwn = keptPictures<number, Sprite>();
 function oil(c: Act1FxCtx, i: number): Sprite {
   const made = c.film ? c.film<ThingsFilm>(OIL_THINGS) : null;
   const s = made?.oil?.[i];
@@ -64,7 +65,7 @@ function oil(c: Act1FxCtx, i: number): Sprite {
   if (!o) oilOwn.set(i, (o = oilSprite(i)));
   return o;
 }
-const SHADOWS = new Map<number, Sprite>();
+const SHADOWS = keptPictures<number, Sprite>(true);
 const keyOf = (p: Peril): string => `${p.a1}:${p.x.toFixed(3)}:${p.y.toFixed(3)}`;
 function halves(c: Act1FxCtx, p: Peril, key: string, f: string, ax: number, ay: number, paint: (side: 'behind' | 'before') => { px: import('../../engine/px').Px; lights: import('../../engine/px').Light[] }): void {
   const [sx, sy] = c.at(p.x, p.y);

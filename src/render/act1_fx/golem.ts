@@ -12,10 +12,11 @@ import { drawSprite, flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { HURL_PERIL, hurlFlight } from '../../game/action_f4';
 import type { Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>(true);
 type Layer = 'floor' | 'behind' | 'before';
 /** Seen from behind: the golem faced up the screen as it let go (or took its aim). */
 const backOf = (p: Peril): boolean => p.fx + p.fy < -0.2;

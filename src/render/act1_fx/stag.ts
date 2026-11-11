@@ -16,6 +16,7 @@ import { CLUMP9, clump9Frame, clump9Sprite } from '../../art/act1_figs/stag';
 import type { ThingsFilm } from '../../art/films';
 import { drawSprite } from '../../engine/px';
 import { LANE9_PERIL, WALL_PERIL, WALL_SINK_AFTER } from '../../game/act1_rules/stag';
+import { keptPictures } from './kept';
 import { livePicture, picAt } from './live';
 import type { Act1FxCtx } from './types';
 import { ROOT_CANVAS, ROOT_SNAKE, ROOT_STRETCH, STAG_ROOTS, rootSnakePainted } from '../../art/hollow_stag';
@@ -98,7 +99,7 @@ const OLD: Act1Fx = {
 // splintered where his charge struck it and growing back; their moments painted ahead (art/films.ts things:stag), or here as each is
 // first wanted and kept, until they are.
 const THINGS = 'things:stag';
-const mine = new Map<string, Sprite>();
+const mine = keptPictures<string, Sprite>();
 function clump9(c: Act1FxCtx, kind: number, i: number, layer: 'air' | 'floor'): Sprite {
   const key = `${layer}:${kind}`;
   const made = c.film ? c.film<ThingsFilm>(THINGS) : null;

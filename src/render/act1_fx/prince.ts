@@ -11,10 +11,11 @@ import { CHIME, DANCE_CANVAS, DANCE_FX, MASKS_FX, MASK_CANVAS, MASK_FLIGHT, danc
 import { PC_DANCE, PC_MASKS, PC_THRUST } from '../../art/prince_moves';
 import type { Sprite } from '../../engine/px';
 import { PRINCE_TUNE, chimeGap, maskWhere } from '../../game/act1_rules/prince';
+import { keptPictures } from './kept';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx } from './types';
 
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>(true);
 const DANCE_FPS = 15;
 const MASK_SPINS = 12;
 function dance(k: number): Sprite {

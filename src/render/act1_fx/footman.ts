@@ -11,11 +11,12 @@ import { FM_SWING, FM_THROW, TRAY_FLIGHT, trayFlight } from '../../art/masque_fo
 import { flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { FOOTMAN_TUNE } from '../../game/act1_rules/footman';
+import { keptPictures } from './kept';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>(true);
 /** One frame of the tray's flight or of the fire, seen from in front or behind, made the first time it is asked for. */
 function frame(what: 'tray' | 'fire', k: number, back: boolean, flip: boolean): Sprite {
   const key = `${what}:${k}:${back ? 1 : 0}:${flip ? 1 : 0}`;

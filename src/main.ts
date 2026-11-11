@@ -141,6 +141,7 @@ import { MELD3, MELD_GLYPH, MELD_RAMP, demoM3, eventsM3 } from './render/melds3'
 import { BINDING3, demoB3, eventsB3 } from './render/binding3';
 import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
 import { act1Fx } from './render/act1_fx';
+import { forgetUnusedPictures } from './render/act1_fx/kept';
 import { COLOSSUS, onStoneOrJetty, worldToStone } from './game/colossus_fight';
 import { ITEM_WORDS } from './game/items';
 
@@ -1768,6 +1769,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       painter.restart();
       // (and every other figure but this place's own monsters': ACT 1's floors each bring their own kinds)
       art.bestiary.forgetOthers(new Set(g.monsters.map((m) => figureOf(m))));
+      // (and what the kinds' effects kept that the place just left did not touch: render/act1_fx/kept.ts)
+      forgetUnusedPictures();
       // (the films this place will want: the fifth floor's cage coming down and going up; on the four
       // above it, its stairwell breaking open where it most likely will, and where next, room allowing)
       const W = g.level.ways;

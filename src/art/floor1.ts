@@ -2934,6 +2934,16 @@ function wallSet(paint: (p: Px) => void, frames = 1, light?: (f: number) => (alo
 }
 
 let made: Piece[] | null = null;
+/**
+ * Its pieces and its gates let go (its floor left: render.ts forgetLooks), made again if wanted. The floor's look lets its own
+ * go so since 25.0.5 (his “it’s crashing every couple of levels”); these, which the look is made from, were kept for good: with
+ * the other four floors' some 15 MB of canvases by floor 6 (measured 11 Nov 2026; his “lag and freezing issues after playing a
+ * few levels”).
+ */
+export function forgetMade(): void {
+  made = null;
+  gates = null;
+}
 
 /**
  * WHERE EACH WALL PIECE MAY BE SET: its first spot, then others, (across, up) in picture pixels. Each

@@ -9,10 +9,11 @@ import { drawSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { RING_PERIL } from '../../game/action_f3';
 import type { Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>(true);
 /** One frame of the ring, k frames from the slam, made the first time it is asked for. */
 function frame(what: 'floor' | 'behind' | 'before', k: number): Sprite {
   const key = `${what}:${k}`;

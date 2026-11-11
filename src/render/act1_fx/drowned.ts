@@ -19,12 +19,13 @@ import type { Sprite } from '../../engine/px';
 import { RIME_PERIL, SLICK_PERIL } from '../../game/act1_rules/drowned';
 import { backView, flipped } from '../../game/facing';
 import type { Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import { liveFrom, liveTurned } from './live';
 import type { Act1Fx, Act1FxCtx } from './types';
 
 const THINGS = 'things:drowned';
 /** Slick frames painted here before the painter's are in, and turned over. */
-const own = new Map<string, Sprite>();
+const own = keptPictures<string, Sprite>();
 function slick(c: Act1FxCtx, view: GameView, flip: boolean, i: number): Sprite {
   const made = c.film ? c.film<ThingsFilm>(THINGS) : null;
   const list = made?.[`slick:${view}`];

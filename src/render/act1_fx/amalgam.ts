@@ -19,10 +19,11 @@ import type { Sprite } from '../../engine/px';
 import { AM2, AM_DROP, AM_RAKE, AM_RING, actDef } from '../../game/bosses';
 import { backView, beside, flipped } from '../../game/facing';
 import type { Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import type { Act1Fx, Act1FxCtx } from './types';
 
 const FPS = 30;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>();
 type Layer = 'floor' | 'behind' | 'before';
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 function made(key: string, make: () => Sprite): Sprite {

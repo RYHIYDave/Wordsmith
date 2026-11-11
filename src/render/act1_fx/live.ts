@@ -5,8 +5,9 @@
 // Painted once a frame of its own clock however many times it is drawn in that frame.
 
 import { GRAIN } from '../../art/kit';
-import { Px } from '../../engine/px';
+import { Px, retireSprite } from '../../engine/px';
 import type { Light, Sprite } from '../../engine/px';
+import { onNewPlace } from './kept';
 
 interface Live {
   px: Px;
@@ -17,6 +18,11 @@ interface Live {
   used: number;
 }
 const LIVE = new Map<string, Live>();
+// (a new place come into: the last one's are its perils' own, never shown again: given back, render/act1_fx/kept.ts)
+onNewPlace(() => {
+  for (const L of LIVE.values()) retireSprite(L.s);
+  LIVE.clear();
+});
 /** No more than this many kept: the longest unused let go first (each perils' own key, and a floor sends out many in a fight). */
 const MOST = 40;
 let clock = 0;
@@ -49,11 +55,20 @@ export function livePicture(key: string, w: number, h: number, ax: number, ay: n
   if (typeof document === 'undefined') return null;
   let L = LIVE.get(key);
   if (!L || L.px.w !== w || L.px.h !== h) {
+    // (one of another size under the same name: the old one given back)
+    if (L) {
+      retireSprite(L.s);
+      LIVE.delete(key);
+    }
     if (LIVE.size >= MOST) {
       let old: string | null = null;
       let at = Infinity;
       for (const [k, v] of LIVE) if (v.used < at) [old, at] = [k, v.used];
-      if (old !== null) LIVE.delete(old);
+      if (old !== null) {
+        // (given back, not only forgotten: a moment on, should it be on the screen this frame yet: engine/px.ts retireSprite)
+        retireSprite(LIVE.get(old)!.s);
+        LIVE.delete(old);
+      }
     }
     const cv = document.createElement('canvas');
     cv.width = w;
@@ -78,6 +93,8 @@ export function livePicture(key: string, w: number, h: number, ax: number, ay: n
 
 /** Let a picture go (its move over): its room given back. */
 export function liveDone(key: string): void {
+  const L = LIVE.get(key);
+  if (L) retireSprite(L.s);
   LIVE.delete(key);
 }
 

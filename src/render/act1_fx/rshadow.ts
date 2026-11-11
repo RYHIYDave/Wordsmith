@@ -19,11 +19,12 @@ import { WEIGHT_FX } from '../../art/king_fx';
 import { flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { SHADOW_TUNE, chargeLine, crownPoint } from '../../game/act1_rules/rshadow';
+import { keptPictures } from './kept';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>(true);
 function made(key: string, flip: boolean, make: () => Frame): Sprite {
   const k = `${key}:${flip ? 1 : 0}`;
   let s = MADE.get(k);

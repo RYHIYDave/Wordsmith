@@ -9,6 +9,7 @@
 // films.ts things:groom); the mist it bursts out of at the line's start, and goes into at its end.
 
 import { JAB_STRIP } from '../../game/act1_rules/gardener';
+import { keptPictures } from './kept';
 import { palaceWarn } from './gardener';
 import type { Act1Fx, Act1FxCtx } from './types';
 import { GROOM_HORSE, LOOSE } from '../../art/action_f16_groom';
@@ -24,7 +25,7 @@ import type { Peril } from '../../game/state';
 import { liveFrom } from './live';
 
 const THINGS = 'things:groom';
-const own = new Map<string, Sprite>();
+const own = keptPictures<string, Sprite>();
 function frameOf(c: Act1FxCtx, key: string, i: number, make: () => Sprite, flip: boolean): Sprite {
   const made = c.film ? c.film<ThingsFilm>(THINGS) : null;
   let s = made?.[key]?.[i];
