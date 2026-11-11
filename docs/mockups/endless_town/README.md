@@ -156,3 +156,12 @@ New, painted here as a mock-up, still to be drawn at the game's standard:
 ### For him to decide
 
 - Whether this is the Shaft's Rim to draw for real (the layout and the mood).
+
+## His yes on the Shaft's Rim's layout (11 Nov 2026, by 11:28): LOCKED IN
+
+Shown `pictures/rim_whole.png` and `rim_view_1.png` to `rim_view_3.png` (at df0da3ff), told where each station stands and that
+the paving, the wall, the gate, the record, the trophies and above all the pit were still rough, and asked “Is the Shaft's Rim
+laid out right for the Endless town (rim_whole.png and the three views)?”, he answered: “Yes, lock it in and draw it
+(Recommended)” (offered as: this layout and mood get drawn to the game's standard, the pit first).
+SO THE LAYOUT AND THE MOOD ARE LOCKED. Next: drawn to the game's standard, the pit and the ground first, then the new things
+that stand on it.
