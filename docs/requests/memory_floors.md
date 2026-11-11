@@ -1,6 +1,6 @@
 # Lag and freezing after a few levels: what was found, what this branch mends, what is left
 
-Branch `perf/memory-floors`, from `main` at `797f2e4d` (25.3.1). Made 11 Nov 2026 by a chat on his phone (not the main chat).
+Branch `memory-floors`, from `main` at `797f2e4d` (25.3.1). Made 11 Nov 2026 by a chat on his phone (not the main chat).
 Nothing in it changes how the game looks or plays: no switch, no pictures to show him.
 
 ## His words
@@ -100,7 +100,7 @@ kinds met on the floor just left (kept one floor).
 - `tsc --noEmit`: clean but for `tests/relief.test.ts(378)`, which fails the same on `main` with this machine's tsc (7.0.2).
 - `tests/memory_floors.test.ts` (new, 4): silhouettes and mirror images given back a moment after they are let go; a mirror
   image given back by itself made again when asked for; a kind's list kept one floor past its last use, its own given back.
-- The unit run of what the change is about, and what it said: see the foot of this note.
+- The unit run of what the change is about (28 files, 28 passed): the foot of this note.
 - The two long sittings above; and a count of pictures of nothing drawn (a sprite given back while still shown): see the foot.
 - NOT DONE HERE, THE MAIN CHAT'S: the wide `--changed` run (engine/px.ts is under nearly every test), the playtests of the
   release page, and a look on his phone.
@@ -125,4 +125,10 @@ kinds met on the floor just left (kept one floor).
 
 ## Foot: the last checks
 
-(filled in below)
+- THE UNIT RUN, 11 Nov 2026, 08:42 (Eastern), on the commit `fc2aa966c2`: `node tools/unit.mjs --only
+  memory_floors,monsters,recorded_sounds,sounds2,colossus_sounds` (the five the change is about, and the core 23). Its last
+  line: `UNIT DONE fc2aa966c2: 28 files, 28 passed, 0 failed (0 passed alone)` (310 tests; the other 385 files not run).
+- PICTURES OF NOTHING DRAWN (a sprite given back while something still drew it would show as the 1 by 1 picture of nothing):
+  floors 1 to 4 in one sitting, 40 s of the bot's play each, every `drawImage` counted. This branch: 0 of 8,583,973. `main`: 0
+  of 9,069,413. No errors on either.
+- SOUNDS in that same sitting. This branch: 128 loaded, none failed, 2,211 takes played. `main`: 126 loaded, none failed, 2,130.
