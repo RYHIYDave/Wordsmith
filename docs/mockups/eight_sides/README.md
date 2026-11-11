@@ -160,7 +160,9 @@ the elbow: the art chat's.)
   old Brawler, by any file they import (his “I don’t want anything reused from the original brawler”), and the sides' type
   was first taken from the Warrior's file, which reaches the old sculpts. The sides are named in `art/sides_more.ts` itself
   now, which imports nothing.
-- The unit run on the commit: the foot of this file.
+- THE UNIT RUN (his rules: only what the change is about, and the core): `node tools/unit.mjs --only
+  sides_more,veteran_art,veteran_rules,veteran,class_cards_paint,cheap_heroes,baked,tinkerer,tinkerer_moves` on 8af479ffcd:
+  31 files, 456 tests, all passed. (On ceb4300052, before the mend above: 30 files, 434 tests, 29 passed.)
 - In the game (the pictures and films above): each hero shown from the side he faces, standing, running and in every move
   filmed; the Brawler's blows and their lines going out the eight ways; both pages finished clean.
 - NOT CHECKED: a fight against enemies in the browser with the switch on; the bake itself with eight sides of these two; a
