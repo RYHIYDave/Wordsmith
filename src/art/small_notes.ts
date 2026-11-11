@@ -1,6 +1,7 @@
 // THE SMALL OLDER ART NOTES (the queue's "Fix the small older art notes", 11 Nov 2026; from the art chat's handoff of 4 Nov). Four
 // small mends, each behind a switch of its own here, ALL OFF: with them off the game is as it was exactly. Each goes on only at
-// his yes to its picture (docs/mockups/small_notes/README.md has what each is, the pictures, and his words).
+// his yes to its picture (docs/mockups/small_notes/README.md has what each is, the pictures, and his words). HIS YES, 11 Nov 2026, to the
+// pictures of the first three: “Yes, keep it (Recommended)”, each.
 //
 //   shadows   FLOOR 20'S SHADOWS OF THE FOUR ROYALS read grey on the Quiet Tower's grey stone. On: the same fog, set apart: its
 //             dark and middle tones deeper (a shadow is dark), its bone white lights kept, its seam the darkest fog
@@ -12,8 +13,10 @@
 //             across and 9 down). On: on the Tower Top the picture is drawn back, as on the Swamp Colossus's stone (his 9 Nov
 //             “The camera needs to zoom out during the fight”), so that the whole top and the Moth over it are seen (main.ts
 //             `zoomWanted`).
-//   questGem  THE QUEST MARKER (render/quest_mark.ts) was the main chat's stand-in, a gem at the coarse grain. On: the same gem,
-//             the friend's cyan, pointing down, cut at the game's fine grain (two picture pixels to a game pixel): its table,
-//             its crown and the facets of its point lit from the upper left, a glint on its table; it bobs and glows as before.
+//   questRune THE QUEST MARKER (render/quest_mark.ts) was the main chat's stand-in, a gem at the coarse grain. Shown the gem cut
+//             finer, his words, 11 Nov 2026: “Make it a rune, have it flash, and add triggers for “Speak to the (quest giver)”
+//             when a quest becomes available”. On: the marker is THE GREAT RUNE, the wordsmith's own (art/smith3.ts), in the
+//             friend's cyan at the game's fine grain; it bobs and glows as the gem did and FLASHES every 1.6 seconds, white-hot,
+//             rays shot out of it. (His triggers are the game's: game/quest_marks.ts SPEAK_NEW.)
 
-export const SMALL_NOTES = { shadows: false, masks: false, mothView: false, questGem: false };
+export const SMALL_NOTES = { shadows: false, masks: false, mothView: false, questRune: false };

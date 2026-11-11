@@ -1,8 +1,8 @@
 // THE SMALL OLDER ART NOTES (art/small_notes.ts; the queue's "Fix the small older art notes", 11 Nov 2026): four small mends, each
 // behind a switch of its own, all off. With a switch off its art is as it was, pixel for pixel; with it on: floor 20's royal shadows
 // the same shapes in deeper fog, their lights kept, no colour; the Order's last masks' cloak there to see, grey, thinning to nothing
-// at the floor, scattered and gone as they die; the quest marker's gem cut at the fine grain. (The Tower Top drawn back is main.ts's
-// own and is looked at in play: tools/scenarios/small_notes_moth.mjs.)
+// at the floor, scattered and gone as they die; the quest marker the great rune, flashing. (The Tower Top drawn back is main.ts's
+// own and is looked at in play: tools/scenarios/small_notes_moth.mjs. His triggers for "Speak to the ...": tests/speak_new.test.ts.)
 // @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
@@ -14,7 +14,8 @@ import { canvasOf, deathOfMob, paintMob } from '../src/art/new_mobs3';
 import type { Mob } from '../src/art/new_mobs3';
 import { FOG_FOLD } from '../src/art/silent_order';
 import { ORDER_MASK } from '../src/art/silent_order_moves';
-import { GEM_FINE, GEM_FINE_COLORS } from '../src/render/quest_mark';
+import { GREAT_RUNE } from '../src/art/smith3';
+import { RUNE_COLORS, RUNE_FINE, RUNE_FLASH, RUNE_HOT, RUNE_MARK, runeFlash } from '../src/render/quest_mark';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
 const assert = nodeAssert as { equal(a: unknown, b: unknown, m?: string): void; ok(v: unknown, m?: string): void; deepEqual(a: unknown, b: unknown, m?: string): void };
@@ -36,7 +37,7 @@ function withOn<T>(key: keyof typeof SMALL_NOTES, fn: () => T): T {
 }
 
 test('1. ALL FOUR SWITCHES ARE OFF', () => {
-  assert.deepEqual(SMALL_NOTES, { shadows: false, masks: false, mothView: false, questGem: false });
+  assert.deepEqual(SMALL_NOTES, { shadows: false, masks: false, mothView: false, questRune: false });
 });
 
 test('2. THE ROYAL SHADOWS SET APART: the same shape, deeper, its bone white lights kept, no colour; off, as it was', () => {
@@ -131,47 +132,48 @@ test("3. THE LAST MASKS' CLOAK THERE TO SEE: more of it, grey, thinning to nothi
   }
 });
 
-test("4. THE QUEST MARKER'S GEM AT THE FINE GRAIN: whole, seamed all round, the friend's cyan, lit from the upper left, its point down", () => {
-  const w = GEM_FINE[0].length;
-  const h = GEM_FINE.length;
-  assert.equal(w, 22);
-  assert.equal(h, 25);
-  const at = (x: number, y: number): string => (x < 0 || y < 0 || x >= w || y >= h ? '.' : GEM_FINE[y][x]);
+test('4. THE QUEST MARKER A RUNE THAT FLASHES: the great rune itself, whole, seamed all round, the friend\'s cyan; its flash a blink, then gone', () => {
+  const w = RUNE_FINE[0].length;
+  const h = RUNE_FINE.length;
+  // (about the old gem's size and a little over: 14 game pixels across, 17 tall)
+  assert.equal(w, 28);
+  assert.equal(h, 34);
+  const at = (x: number, y: number): string => (x < 0 || y < 0 || x >= w || y >= h ? '.' : RUNE_FINE[y][x]);
+  let core = 0;
   for (let y = 0; y < h; y++) {
-    assert.equal(GEM_FINE[y].length, w, `row ${y}`);
+    assert.equal(RUNE_FINE[y].length, w, `row ${y}`);
+    // (its two sides alike, as the rune's are)
+    assert.equal(RUNE_FINE[y], [...RUNE_FINE[y]].reverse().join(''), `row ${y}: its sides unlike`);
     for (let x = 0; x < w; x++) {
       const c = at(x, y);
       if (c === '.') continue;
-      assert.ok(GEM_FINE_COLORS[c], `row ${y}: no colour for ${c}`);
-      // (the seam: every pixel of it with nothing beside it is the deep indigo, and no other is)
-      const open = at(x - 1, y) === '.' || at(x + 1, y) === '.' || at(x, y - 1) === '.' || at(x, y + 1) === '.';
-      assert.equal(c === 'X', open, `(${x},${y}): ${c}`);
+      assert.ok(RUNE_COLORS[c] && RUNE_HOT[c], `(${x},${y}): no colour for ${c}`);
+      if (c === 'w') core++;
+      // (the seam all round: nothing of its light lies against the open air)
+      if (c !== 'X') for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) assert.ok(at(x + dx, y + dy) !== '.', `(${x},${y}): ${c} with no seam beside it`);
     }
-    // (whole: one run of it in every row)
-    assert.ok(!/[^.]\.+[^.]/.test(GEM_FINE[y]), `row ${y}: a hole in it`);
   }
-  // (its point down, in the middle; widest at its girdle, a third of the way down)
-  assert.equal(GEM_FINE[h - 1].trim().replace(/\./g, '').length, 2);
-  assert.equal(GEM_FINE[h - 1].indexOf('X'), w / 2 - 1);
-  const wide = GEM_FINE.map((r) => r.replace(/\./g, '').length);
-  assert.equal(Math.max(...wide), w);
-  assert.equal(wide.indexOf(w), 7);
-  for (let y = 8; y < h; y++) assert.ok(wide[y] <= wide[y - 1], `row ${y}: wider than the row over it`);
-  // (the friend's cyan: every facet more blue and green than red; lighter on the left than the right)
-  const luma = (c: string): number => { const [r, g, b] = rgba(GEM_FINE_COLORS[c]); return 0.299 * r + 0.587 * g + 0.114 * b; };
-  for (const c of 'wbomad') {
-    const [r, g, b] = rgba(GEM_FINE_COLORS[c]);
+  assert.ok(core > 100, `${core} pixels of its strokes`);
+  // (the great rune: the ends and the middle of every one of its strokes are in its strokes' core)
+  for (const [x0, y0, x1, y1] of GREAT_RUNE) {
+    for (const u of [0, 0.5, 1]) {
+      const x = w / 2 + (x0 + (x1 - x0) * u) * RUNE_MARK.half;
+      const y = h / 2 - (y0 + (y1 - y0) * u) * RUNE_MARK.half;
+      const near = [at(Math.floor(x - 0.01), Math.floor(y - 0.01)), at(Math.floor(x + 0.01), Math.floor(y + 0.01)), at(Math.floor(x - 0.01), Math.floor(y + 0.01)), at(Math.floor(x + 0.01), Math.floor(y - 0.01))];
+      assert.ok(near.includes('w'), `stroke ${x0},${y0} to ${x1},${y1} at ${u}: ${near.join('')}`);
+    }
+  }
+  // (the friend's cyan at rest; white-hot in its flash)
+  for (const c of 'wo') {
+    const [r, g, b] = rgba(RUNE_COLORS[c]);
     assert.ok(g > r && b > r, `${c}: not cyan`);
   }
-  let left = 0;
-  let right = 0;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const c = at(x, y);
-      if (c === '.' || c === 'X') continue;
-      if (x < w / 2) left += luma(c);
-      else right += luma(c);
-    }
-  }
-  assert.ok(left > right * 1.2, `lit from the left: ${left.toFixed(0)} against ${right.toFixed(0)}`);
+  assert.equal(RUNE_HOT.w, '#ffffff');
+  // (its flash: nothing as a beat begins, whole in a blink, gone in under half a second, and round again)
+  assert.equal(runeFlash(0), 0);
+  assert.ok(Math.abs(runeFlash(RUNE_FLASH.rise) - 1) < 1e-9);
+  assert.ok(RUNE_FLASH.rise <= 0.07 && RUNE_FLASH.rise + RUNE_FLASH.fall < 0.5);
+  for (let t = RUNE_FLASH.rise + RUNE_FLASH.fall; t < RUNE_FLASH.every; t += 0.05) assert.equal(runeFlash(t), 0, `at ${t.toFixed(2)} s`);
+  for (const t of [0.02, 0.05, 0.2, 0.9]) assert.ok(Math.abs(runeFlash(t) - runeFlash(t + RUNE_FLASH.every * 3)) < 1e-6, `not round again at ${t}`);
+  for (let t = 0; t < 4; t += 0.01) assert.ok(runeFlash(t) >= 0 && runeFlash(t) <= 1);
 });

@@ -27,7 +27,7 @@ import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
 import { TALENTS, TALENTS2 } from './game/talents';
-import { QUEST_MARKS } from './game/quest_marks';
+import { QUEST_MARKS, SPEAK_NEW } from './game/quest_marks';
 import { SMALL_NOTES } from './art/small_notes';
 import { onTop } from './game/act2/quiettower';
 import { VETERAN } from './game/veteran';
@@ -2666,7 +2666,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     veteran: VETERAN,
     /** QUEST MARKERS (game/quest_marks.ts), on at his yes: `questMarks.on`. */
     questMarks: QUEST_MARKS,
-    /** THE SMALL OLDER ART NOTES (art/small_notes.ts), each on at his yes: `smallNotes.shadows`, `.masks`, `.mothView`, `.questGem`. */
+    /** “Speak to the ...” whenever a quest becomes available (game/quest_marks.ts), on at his yes: `speakNew.on`. */
+    speakNew: SPEAK_NEW,
+    /** THE SMALL OLDER ART NOTES (art/small_notes.ts), each on at his yes: `smallNotes.shadows`, `.masks`, `.mothView`, `.questRune`. */
     smallNotes: SMALL_NOTES,
     /** THE LOADING SCREEN as a game begins (LOADING in main.ts), on at his yes: `loading.on` (dbg.run and dbg.first begin without it). */
     loading: LOADING,
