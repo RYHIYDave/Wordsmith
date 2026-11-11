@@ -986,12 +986,15 @@ export const AXE_MOVES: Record<string, AxeMove> = {
 // AND THE CATCH ON THE RUN (and Twin Axes' the same). Standing, he waits braced (AXE_BRACED, AXE_TWIN_BRACED).
 
 /** What of his bones are his arms and what he holds (the rest are his body and his legs). */
-const ARM_FIELDS = ['rhIn', 'rhx', 'rhy', 'rhz', 'lhIn', 'lhx', 'lhy', 'lhz', 'le', 're', 'wAz', 'wEl', 'wRoll', 'lh2', 'rh2', 'mixK'] as const;
+const ARM_FIELDS = ['rhIn', 'rhx', 'rhy', 'rhz', 'lhIn', 'lhx', 'lhy', 'lhz', 'le', 're', 'wAz', 'wEl', 'wRoll', 'lh2', 'rh2', 'mixK', 'from', 'to'] as const;
 /** His arms from one pose, his body and legs from another. */
 export function armsOn(body: Posed, arms: Posed): Posed {
   const out: Record<string, unknown> = { ...body };
+  const a = arms as unknown as Record<string, unknown>;
+  // (the two keys a hand is carried between, where it goes from one thing to another: the arms' own, only while it does)
+  const mixing = a.lh2 !== undefined || a.rh2 !== undefined;
   for (const f of ARM_FIELDS) {
-    const v = (arms as unknown as Record<string, unknown>)[f];
+    const v = (f === 'from' || f === 'to') && !mixing ? undefined : a[f];
     if (v === undefined) delete out[f];
     else out[f] = v;
   }
@@ -1015,24 +1018,47 @@ export const AXE_RUN_EMPTY: AxeMove = {
 };
 
 /** A catch on the run: the standing catch's keys up to `upTo` (frames), then his run's arms with the axe from `from`, and to `end`. */
-function onTheRun(catchKeys: readonly AxeKey[], upTo: number, from: number, end: number): { keys: AxeKey[]; pose: (t: number) => Posed } {
-  const arms: AxeKey[] = catchKeys.filter((k) => k.at <= upTo * FR + 1e-6).map((k) => ({ ...k }));
+function onTheRun(catchKeys: readonly AxeKey[], upTo: number, from: number, end: number, mid: AxeKey[] = [], turned = false): { keys: AxeKey[]; pose: (t: number) => Posed } {
+  const arms: AxeKey[] = catchKeys.filter((k) => k.at <= upTo * FR + 1e-6).map((k) => {
+    // (the second axe's way is the world's: turned as far as his chest is turned on the run from where the standing catch has it)
+    if (!k.twin || turned) return { ...k };
+    const was = bonesAt(catchKeys, AXE_REST, k.at);
+    const now = runAt(k.at);
+    return { ...k, twin: { ...k.twin, az: k.twin.az + (now.yaw + now.twist) - (was.yaw + was.twist) } };
+  });
+  arms.push(...mid);
   for (let f = from; f <= end; f++) {
     const q = bonesAt(AXE_RUN.keys, AXE_REST, (f * FR) % RUN_TURN);
     const pose: Partial<Bones> = {};
-    for (const a of ARM_FIELDS) if (a in q && !['lh2', 'rh2', 'mixK'].includes(a)) (pose as Record<string, unknown>)[a] = (q as unknown as Record<string, unknown>)[a];
+    for (const a of ARM_FIELDS) if (a in q && !['lh2', 'rh2', 'mixK', 'from', 'to'].includes(a)) (pose as Record<string, unknown>)[a] = (q as unknown as Record<string, unknown>)[a];
     arms.push({ at: f * FR, pose, ease: f === from ? 'io' : 'lin' });
   }
-  return { keys: arms, pose: (t) => armsOn(runAt(t), bonesAt(arms, AXE_REST, t)) };
+  // (`turned`: his chest turned as the standing catch turns it, on his run's hips and legs, the run's turn of them handed back as
+  // he comes into it: two axes held behind his two shoulders want his chest where the standing catch has it)
+  const chest = (t: number): Posed => {
+    const run = runAt(t);
+    if (!turned) return run;
+    const was = bonesAt(catchKeys, AXE_REST, Math.min(t, upTo * FR));
+    const k = t <= upTo * FR ? 1 : Math.max(0, 1 - (t - upTo * FR) / ((from - upTo) * FR));
+    return { ...run, yaw: run.yaw + k * (was.yaw - run.yaw), twist: run.twist + k * (was.twist - run.twist), px: run.px + k * (was.px - run.px), bend: run.bend + k * (was.bend - run.bend), pitch: run.pitch + k * (was.pitch - run.pitch) };
+  };
+  return { keys: arms, pose: (t) => armsOn(chest(t), bonesAt(arms, AXE_REST, t)) };
+}
+/** Brought down from behind his shoulder in his right hand alone, round his right side to his hip, the haft trailing as his run
+ * carries it (from frame `at`, a key each `step` frames), before his left hand comes to the butt. */
+function downOnTheRun(at: number, near: number, step = 2): AxeKey[] {
+  const a = one({}, [0, -12, -6], -150, 22, DOWN, near, free(12, 4, -8, 0), -3);
+  const b = one({}, [5, -6.5, -13], -131, 16, DOWN, a.roll, { lhIn: 3, lhx: BUTT, lhy: 0, lhz: 0, le: 12 }, 0);
+  return [key(at, a, 'io'), key(at + step, b, 'io')];
 }
 /** THE CATCH ON THE RUN: his run's body and legs frame for frame from its first picture (0.5 s: a turn of it, so that it goes
  * on into his run), the catch in his arms: it smacks into his hand (0), his arm carried back by it (1 to 3), held (to 6); his left
  * hand to the butt and the axe brought down before his hip as his run carries it (14). */
-const RUN_CATCH = onTheRun(AXE_CATCH.keys, 6, 12, 14);
+const RUN_CATCH = onTheRun(AXE_CATCH.keys, 6, 12, 14, downOnTheRun(8, AXE_CATCH.keys[4].pose.wRoll ?? 180, 2), true);
 export const AXE_RUN_CATCH: AxeMove = { name: 'The thrown axe: the catch on the run', rest: AXE_REST, keys: RUN_CATCH.keys, pose: RUN_CATCH.pose, hit: AXE_CATCH_AT, smear: [1 * FR, 3 * FR] };
 /** TWIN AXES' CATCH ON THE RUN: the same, both caught, the second put away over his left shoulder (11), his own brought down
  * into his run (24); a second turn of his run (1 s). */
-const TWIN_RUN_CATCH = onTheRun(AXE_TWIN_CATCH_MOVE.keys, 11, 22, 29);
+const TWIN_RUN_CATCH = onTheRun(AXE_TWIN_CATCH_MOVE.keys, 11, 22, 29, downOnTheRun(15, AXE_TWIN_CATCH_MOVE.keys[6].pose.wRoll ?? 180, 3), true);
 export const AXE_TWIN_RUN_CATCH: AxeMove = { ...AXE_TWIN_CATCH_MOVE, name: 'Twin Axes: the catch on the run', keys: TWIN_RUN_CATCH.keys, pose: TWIN_RUN_CATCH.pose };
 /** His moves while it flies, by a short name (not among AXE_MOVES: those are step 2's, as he saw them). */
 export const AXE_RUN_MOVES: Record<string, AxeMove> = { runEmpty: AXE_RUN_EMPTY, runCatch: AXE_RUN_CATCH, twinRunCatch: AXE_TWIN_RUN_CATCH };
