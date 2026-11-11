@@ -64,7 +64,7 @@ export const WOLF_B: Build = {
   upperArm: 33, foreArm: 36,
 };
 /** How much bigger than the first three's its head is made (its skull, its face, its horns: all of it). */
-const HEAD_K = 1.2;
+export const HEAD_K = 1.2;
 
 /**
  * UP ON TWO LEGS (his word, 11 Nov: “he’s up on two legs to do really wide slashes with his claws”): a werewolf's stance. Up on
@@ -85,15 +85,15 @@ export const DEMON_UP: Bones = (() => {
   return q;
 })();
 
-const U: V3 = [0, 0, 1];
-const dot = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+export const U: V3 = [0, 0, 1];
+export const dot = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 /** A point from `o`, so far along each line of a bone's own (forward, left, up). */
-const from = (o: V3, r: Rot, f: number, l: number, u: number): V3 => add(o, add(mul(r[0], f), add(mul(r[1], l), mul(r[2], u))));
+export const from = (o: V3, r: Rot, f: number, l: number, u: number): V3 => add(o, add(mul(r[0], f), add(mul(r[1], l), mul(r[2], u))));
 /** A solid's three half-lengths along a bone's own lines. */
-const axes = (r: Rot, f: number, l: number, u: number): readonly [V3, V3, V3] => [mul(r[0], f), mul(r[1], l), mul(r[2], u)];
-const WORLD: Rot = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+export const axes = (r: Rot, f: number, l: number, u: number): readonly [V3, V3, V3] => [mul(r[0], f), mul(r[1], l), mul(r[2], u)];
+export const WORLD: Rot = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
 /** A bone's lines, its forward lifted `deg` toward its up (a face lifted to glare up from under its brow, so it is seen from above). */
-const lifted = (r: Rot, deg: number): Rot => {
+export const lifted = (r: Rot, deg: number): Rot => {
   const a = (deg * Math.PI) / 180;
   return [add(mul(r[0], Math.cos(a)), mul(r[2], Math.sin(a))), r[1], add(mul(r[2], Math.cos(a)), mul(r[0], -Math.sin(a)))];
 };
@@ -102,7 +102,7 @@ const lifted = (r: Rot, deg: number): Rot => {
 /** A: the hide of his demon arm (dev/sculpt_warlock.ts DEMON_RED), a little duller and darker, as old blood. */
 const BLOOD: Ramp = ['#14060c', '#30101a', '#541c26', '#7c3034', '#a4524a'];
 /** A: horn grown as armour, black with a cold light on it. */
-const HORN_BLACK: Ramp = ['#0a0812', '#1a1624', '#322c44', '#5c5478', '#9088ac'];
+export const HORN_BLACK: Ramp = ['#0a0812', '#1a1624', '#322c44', '#5c5478', '#9088ac'];
 /** B: skin like old bone, cold. */
 const BONE_SKIN: Ramp = ['#2c2440', '#5c5270', '#9890a8', '#ccc6d8', '#f0ecf6'];
 /** B: its arms and shanks as if dipped in soot; its thorns. */
@@ -111,10 +111,10 @@ const SOOT: Ramp = ['#08070e', '#15131e', '#2a2636', '#4a4460', '#746c8c'];
 const DUSK: Ramp = ['#140e26', '#2c2048', '#4c3a74', '#7660a2', '#a690cc'];
 /** C: its stripes and its muzzle. */
 const DUSK_DARK: Ramp = ['#0a0816', '#18122a', '#2a2046', '#443664', '#62528a'];
-const MOUTH: Ramp = ['#120206', '#2a0610', '#3e0a16', '#5a1220', '#7a1c2a'];
+export const MOUTH: Ramp = ['#120206', '#2a0610', '#3e0a16', '#5a1220', '#7a1c2a'];
 
 /** What a new demon's sculpture needs drawn with it: where its fires burn. */
-interface Built {
+export interface Built {
   /** Fires on the floor under its claws (each claw's five, the left's first). */
   floor: V3[];
   /** Other fires on it (a mane's), each `size` big. */
@@ -124,7 +124,7 @@ interface Built {
   jaw: V3;
 }
 
-interface Kit {
+export interface Kit {
   sc: Sculpt;
   s: Skeleton;
   /** Is this piece on its far side from the eye. */
@@ -136,7 +136,7 @@ interface Kit {
 }
 
 /** A material whose far limbs are a tone darker (as the heroes' far limbs are), with a painter of its own after that. */
-function fleshOf(k: Kit, ramp: Ramp, paint?: (h: Hit) => string | null, crease = 0.7): number {
+export function fleshOf(k: Kit, ramp: Ramp, paint?: (h: Hit) => string | null, crease = 0.7): number {
   return k.sc.mat({
     ramp,
     crease,
@@ -149,7 +149,7 @@ function fleshOf(k: Kit, ramp: Ramp, paint?: (h: Hit) => string | null, crease =
 }
 
 /** An eye of the friend's cyan burning in its socket: a slanted lens, a white-hot core. */
-function eye(k: Kit, glow: number, c: V3, r: Rot, side: number, long: number, tall: number, slant: number): void {
+export function eye(k: Kit, glow: number, c: V3, r: Rot, side: number, long: number, tall: number, slant: number): void {
   const out = norm(add(mul(r[1], side), mul(r[2], slant)));
   const up = norm(add(mul(r[2], 1), mul(r[1], -side * slant)));
   k.sc.ell(glow, 'head', c, [mul(r[0], 1.0), mul(out, long), mul(up, tall)], 0.05, { tag: 'eye' });
@@ -157,7 +157,7 @@ function eye(k: Kit, glow: number, c: V3, r: Rot, side: number, long: number, ta
 }
 
 /** A horn or a spike along `pts`, `r0` thick at its root, drawn to a point. */
-function spike(k: Kit, mat0: number, piece: string, pts: V3[], r0: number, tag = 'horn', r1 = 0.15, mat = mat0): void {
+export function spike(k: Kit, mat0: number, piece: string, pts: V3[], r0: number, tag = 'horn', r1 = 0.15, mat = mat0): void {
   const n = pts.length - 1;
   for (let i = 0; i < n; i++) {
     const a = r0 + (r1 - r0) * Math.pow(i / n, 0.8);
@@ -203,7 +203,7 @@ function openClaw(k: Kit, hide: number, talon: number, piece: string, ha: V3, el
  * (dev/sculpt_demon.ts demonHand: a hand built as a hand, his word of 24 Oct; the fire his of 27 Oct). Off the floor, up on
  * two legs: a hand of claws held open (`openClaw`), its palm turned up and forward, his fire in it.
  */
-function claws(k: Kit, hide: number, talon: number, scale: number, out: Built): void {
+export function claws(k: Kit, hide: number, talon: number, scale: number, out: Built): void {
   const { s, sc } = k;
   const fh = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
   for (const side of [1, -1] as const) {
@@ -229,7 +229,7 @@ function claws(k: Kit, hide: number, talon: number, scale: number, out: Built): 
 }
 
 /** A tail from its rump: `long` in all, `r0` thick at its root, hung in a curve and swung by `k.tail`; returns its points. */
-function tailOf(k: Kit, long: number, n: number, droop: number, curl: number): V3[] {
+export function tailOf(k: Kit, long: number, n: number, droop: number, curl: number): V3[] {
   const { s } = k;
   const root = from(s.pelvis, s.hips, -8, 0, 2);
   const pts: V3[] = [root];
@@ -249,15 +249,15 @@ function tailOf(k: Kit, long: number, n: number, droop: number, curl: number): V
 }
 
 /** A limb's parts, each side: the names of its piece and its joints. */
-function arm(s: Skeleton, side: 1 | -1): { piece: string; sh: V3; el: V3; ha: V3 } {
+export function arm(s: Skeleton, side: 1 | -1): { piece: string; sh: V3; el: V3; ha: V3 } {
   return side > 0 ? { piece: 'armL', sh: s.shoulderL, el: s.elbowL, ha: s.handL } : { piece: 'armR', sh: s.shoulderR, el: s.elbowR, ha: s.handR };
 }
-function leg(s: Skeleton, side: 1 | -1): { piece: string; hip: V3; knee: V3; hock: V3; toe: V3; heel: V3 } {
+export function leg(s: Skeleton, side: 1 | -1): { piece: string; hip: V3; knee: V3; hock: V3; toe: V3; heel: V3 } {
   return side > 0 ? { piece: 'legL', hip: s.hipL, knee: s.kneeL, hock: s.ankleL, toe: s.toeL, heel: s.heelL } : { piece: 'legR', hip: s.hipR, knee: s.kneeR, hock: s.ankleR, toe: s.toeR, heel: s.heelR };
 }
 
 /** The sculptor, every solid laid with it `K` times as big (a head made bigger: its places are made bigger where it is built). */
-function bigger(sc: Sculpt, K: number): Sculpt {
+export function bigger(sc: Sculpt, K: number): Sculpt {
   const m3 = (ax: readonly [V3, V3, V3]): readonly [V3, V3, V3] => [mul(ax[0], K), mul(ax[1], K), mul(ax[2], K)];
   return {
     mat: (m: Parameters<Sculpt['mat']>[0]) => sc.mat(m),
@@ -268,7 +268,7 @@ function bigger(sc: Sculpt, K: number): Sculpt {
   } as unknown as Sculpt;
 }
 
-interface FrameOf {
+export interface FrameOf {
   hide: number;
   /** Its forearms of another stuff (from `foreFrom` of the way down them), and its shanks. */
   fore?: number;
@@ -281,7 +281,7 @@ interface FrameOf {
   /** How thick its limbs and belly are against a heavy one's (1). */
   lean?: number;
 }
-interface Frame {
+export interface Frame {
   /** The middle of the hump over its shoulders. */
   top: V3;
   /** Along the top of its back: 0 over its shoulders, 1 behind them, 2 at its waist, 3 at its rump. */
@@ -292,7 +292,7 @@ interface Frame {
  * barrel of ribs and slabs of breast, a hump of shoulder over them; its flanks drawn in steeply to a narrow waist and small
  * hips; long arms, the shoulder a boulder, the forearm swelling; lean bent legs. A few big forms, each run into the next.
  */
-function wolfFrame(k: Kit, o: FrameOf): Frame {
+export function wolfFrame(k: Kit, o: FrameOf): Frame {
   const { sc, s } = k;
   const hide = o.hide;
   const L = o.lean ?? 1;
@@ -493,8 +493,8 @@ function noPixelAlone(d: Drawn): void {
   }
 }
 
-/** A new demon at a moment: on the game's demon's bones in a pose, from in front or behind (as the camera truly sees it), turned `turn`. */
-export function newDemonFrame(kind: NewDemon, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false): Drawn {
+/** A demon built by `build` at a moment: on the werewolf's frame's bones in a pose, from in front or behind (as the camera truly sees it), turned `turn`. */
+export function paintDemon(build: (k: Kit) => Built, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false): Drawn {
   const pv: PaintView = view === 'back' ? 'rear' : view;
   const s = solve(WOLF_B, pose as Posed);
   const sc = new Sculpt();
@@ -507,13 +507,17 @@ export function newDemonFrame(kind: NewDemon, view: GameView, pose: Bones, turn 
   };
   const farL = nearOf(add(s.pelvis, [0, 20, 6])) < nearOf(s.pelvis);
   const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail, paws };
-  const built = kind === 'pact' ? pactInto(k) : kind === 'pale' ? paleInto(k) : maneInto(k);
+  const built = build(k);
   const d = draw(sc, pv, RIG_CANVAS.ax, RIG_CANVAS.ay, RIG_CANVAS, undefined, FRIEND_RIM);
   built.flames.forEach((f, i) => fireBehind(d, sc.at(f.p), f.size, t + i * 0.37, f.deep ?? 10));
   built.floor.forEach((p, i) => fireBehind(d, sc.at(p), 3.7 - (i % 2) * 0.7, t + i * 0.41, 12));
   if (built.smoke.length) demonAura(d, { seat: s.head, fires: [], talons: [], aura: { from: built.smoke.map((p) => sc.at(p)), horns: [], jaw: sc.at(built.smoke[0]), claws: [], feet: [], behind: pv !== 'front', time: t } }, 'smoke');
   noPixelAlone(d);
   return d;
+}
+/** One of the first three (the looks he passed over on 11 Nov: kept for the record) at a moment. */
+export function newDemonFrame(kind: NewDemon, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false): Drawn {
+  return paintDemon(kind === 'pact' ? pactInto : kind === 'pale' ? paleInto : maneInto, view, pose, turn, t, tail, paws);
 }
 
 // ============================================================================================================

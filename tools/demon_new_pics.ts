@@ -3,6 +3,7 @@
 // demon as it is, the Warlock and the Brawler, each as an RGBA PNG in its own canvas; tools/demon_new_pics.py lays them out.
 // Nothing of the game imports it.
 //   npx tsx tools/demon_new_pics.ts <dir> [pact,pale,mane] [front,back]
+//   npx tsx tools/demon_new_pics.ts <dir> ideas [1,2,...]     (the ten quick ideas, up on two legs, from in front)
 
 // @ts-ignore - node typings are not part of this project
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -13,11 +14,12 @@ import { demonMoves, demonPose, drawDemonAt } from '../src/dev/demon_moves';
 import { drawWarlockAt, warlockMoves } from '../src/dev/warlock_moves';
 import { makeVeteranArt } from '../src/art/veteran_art';
 import { DEMON_UP, newDemonFrame } from '../src/dev/demon_new';
+import { IDEAS, ideaFrame } from '../src/dev/demon_ideas';
 import type { NewDemon } from '../src/dev/demon_new';
 import type { Bones } from '../src/art/skeleton';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 
-declare const process: { argv: string[] };
+declare const process: { argv: string[]; exit: (n: number) => never };
 paintWithoutCanvas();
 
 const TABLE = (() => {
@@ -65,6 +67,12 @@ function save(path: string, px: Px): void {
 const dir = process.argv[2];
 if (!dir) throw new Error('npx tsx tools/demon_new_pics.ts <dir> [pact,pale,mane] [front,back]');
 mkdirSync(dir, { recursive: true });
+if (process.argv[3] === 'ideas') {
+  const which = process.argv[4] ? process.argv[4].split(',').map(Number) : IDEAS.map((_, i) => i + 1);
+  for (const n of which) save(`${dir}/idea_${n}_up_front.png`, ideaFrame(n, 'front', DEMON_UP, 0, 0.3, 0.25).px);
+  // @ts-ignore
+  process.exit(0);
+}
 const kinds = (process.argv[3] ?? 'pact,pale,mane').split(',') as NewDemon[];
 const views = (process.argv[4] ?? 'front').split(',') as ('front' | 'back')[];
 /** The moment of its stand the pictures show (a breath, both claws down). */

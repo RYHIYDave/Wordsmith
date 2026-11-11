@@ -1,5 +1,6 @@
 # THE NEW DEMONS: THE PICTURES LAID OUT FOR A PHONE HELD SIDEWAYS (the Warlock chat, 11 Nov 2026).
 #   python3 tools/demon_new_pics.py <dir of tools/demon_new_pics.ts> <out dir>
+#   python3 tools/demon_new_pics.py <dir> <out dir> ideas     (the ten quick ideas: ten_ideas_1_to_5.png, ten_ideas_6_to_10.png)
 # Writes new_demons_on_two_legs.png and new_demons_running.png (each four times as big) and new_demons_at_game_size.png
 # (three screen pixels a picture pixel, as his phone shows the game), each wider than tall (his word of a tall sheet, 9 Nov).
 import sys
@@ -22,6 +23,40 @@ NEW = [
 ]
 load = lambda n: Image.open(f'{src}/{n}.png').convert('RGBA')
 
+IDEAS = [
+    ('1. YOURS, REBUILT', ['The demon you have, on the', 'new frame, with wings.']),
+    ('2. THE HORNED OWL', ['Feathers, a hooked beak,', 'great round eyes.']),
+    ('3. THE SCALED', ['A long snout of teeth,', 'scales, a heavy tail.']),
+    ('4. THE MANY-EYED', ["A spider's face: eight", 'eyes, two great fangs.']),
+    ('5. THE ONE EYE', ['One burning eye, tusks,', 'horns hooked down.']),
+    ('6. THE LIVING SHADOW', ['Pure black. Only its eyes,', 'grin and claws burn.']),
+    ('7. THE SPLIT FACE', ['Its mouth runs up its', 'face. Six eyes.']),
+    ('8. THE GARGOYLE', ['Cracked stone, a square', 'jaw, wings like a cloak.']),
+    ('9. THE ANGLER', ['Needle teeth, a fin, his', 'fire as its lure.']),
+    ('10. THE OBSIDIAN', ['Black glass in facets,', 'a crown of shards.']),
+]
+
+
+def ideas():
+    """The ten quick ideas, five a picture, three times as big, each in a panel of one size."""
+    S = 3
+    ims = [load(f'idea_{n}_up_front') for n in range(1, 11)]
+    bs = [i.getbbox() for i in ims]
+    box = (min(b[0] for b in bs) - 3, min(b[1] for b in bs) - 3, max(b[2] for b in bs) + 3, max(b[3] for b in bs) + 3)
+    cw, ch = (box[2] - box[0]) * S, (box[3] - box[1]) * S
+    for part, name in ((0, 'ten_ideas_1_to_5'), (5, 'ten_ideas_6_to_10')):
+        sheet = Image.new('RGBA', (cw * 5 + 24 * 6, ch + 80 + 110), BG)
+        d = ImageDraw.Draw(sheet)
+        for i in range(5):
+            title, says = IDEAS[part + i]
+            x = 24 + i * (cw + 24)
+            d.rectangle([x, 70, x + cw, 70 + ch], fill=PANEL)
+            sheet.alpha_composite(ims[part + i].crop(box).resize((cw, ch), Image.NEAREST), (x, 70))
+            d.text((x, 14), title, font=f3, fill=CYAN)
+            for j, l in enumerate(says):
+                d.text((x, 70 + ch + 10 + j * 36), l, font=f2, fill=TEXT)
+        sheet.convert('RGB').save(f'{out}/{name}.png')
+
 
 def three(pose, head, name, S=4, lines=True):
     """The three in one pose, each in a panel of one size, `S` times as big."""
@@ -43,6 +78,10 @@ def three(pose, head, name, S=4, lines=True):
                 d.text((x, 130 + ch + 12 + j * 36), l, font=f2, fill=TEXT)
     sheet.convert('RGB').save(f'{out}/{name}.png')
 
+
+if len(sys.argv) > 3 and sys.argv[3] == 'ideas':
+    ideas()
+    sys.exit(0)
 
 three('up', "A WEREWOLF'S FRAME, UP ON TWO LEGS: STANDING AND FIGHTING", 'new_demons_on_two_legs')
 three('run', 'DOWN ON ALL FOURS: RUNNING', 'new_demons_running', lines=False)

@@ -92,6 +92,49 @@ out, its long arms hanging forward, its claws open at its knees, burning. The sa
 (the pictures). SHOWN HIM WEARING THE THREE LOOKS, to judge the build first and the look second. (B on this frame is no
 longer starved: bone-white, its limbs thin and its belly sunk in under great ribs.)
 
+SHOWN HIM ON THE FRAME (the three pictures below), asked whether the frame was the one he pictured and which look it should
+wear. HIS WORDS, 11 Nov:
+
+- Of the frame: **“Sure but I don’t like these options so why do you keep giving them to me”**
+- Of the look: **“None of these looks”**
+
+Told him: my mistake; his “Nah man” had been to the looks too, and I had shown them twice more; they are gone. SETTLED: THE
+FRAME (a werewolf's; up on two legs to fight, down on all fours to run). THE THREE LOOKS ARE PASSED OVER, not to be shown
+again: the red one in black horn armour with crescent horns, the bone-white one with no eyes and a crown of thorns, the
+violet one with four eyes and a mane of fire (`src/dev/demon_new.ts` keeps them for the record, and the frame they stand on).
+
+Asked what the demon should look like on the frame (offered: today's demon on this frame, our pick; “I'll describe him”; ten
+quick ideas). **His pick: “Ten quick ideas”** (offered as: ten small, different heads and hides on the frame to react to,
+before any is drawn properly).
+
+## Ten quick ideas (`src/dev/demon_ideas.ts`; SMALL AND QUICK, FOR HIM TO SAY WHICH WAY TO GO)
+
+All on the one frame in the one stance (`DEMON_UP`), their claws open and burning; each a different creature in its head,
+its hide and the one thing it is known by; none a look he has passed over.
+
+1. YOURS, REBUILT: the demon he has (“I like okay”), on the frame, to measure the rest by: an ash-dark hide lifted so the body
+   reads, two great horns swept back, the beast's face he picked on 27 Oct, spines, and wings folded round it like a cloak.
+2. THE HORNED OWL: feathered slate-blue, a pale face in two discs, great round eyes, a hooked black beak, horns of feather.
+3. THE SCALED: marsh-green scales, a long flat snout with teeth meeting down both sides, plates down its back, a heavy tail.
+4. THE MANY-EYED: a spider's face: eight eyes, two heavy fangs and no jaw, a bristled umber hide.
+5. THE ONE EYE: one great eye standing out of its socket, a jaw thrust out with two tusks, horns hooked down beside it.
+6. THE LIVING SHADOW: black all through; only its eyes, a grin of teeth of light and its claws burn; smoke off it.
+7. THE SPLIT FACE: its mouth a gash straight up its face, teeth meeting across it; three eyes a side; locks of flesh.
+8. THE GARGOYLE: pitted, cracked grey stone; a block of a head, a square jaw, short horns; stone wings folded like a cloak.
+9. THE ANGLER: a deep-water blue-black hide, long needles up out of a great underjaw, a fin of spines, his fire as its lure.
+10. THE OBSIDIAN: black glass cut in facets, a crown of long shards, slits and a crack of his light for a face.
+
+WINGS (his “Maybe, we’ll see what you come up with”): tried on 1 and 8 (`cloakWings`: an arm to a wrist high over the
+shoulder, three fingers hanging down and back, the skin between bellied and scalloped; never one flat sheet).
+
+QUICK MEANS: their hides' patterns are laid by where a point is in the figure's own space, not carried by each bone (they
+would crawl if it moved); from in front only. The one he picks is drawn properly.
+
+Pictures: `ten_ideas_1_to_5.png`, `ten_ideas_6_to_10.png` (each 2409 x 742, three times as big). Made with:
+`npx tsx tools/demon_new_pics.ts <dir> ideas` then `python3 tools/demon_new_pics.py <dir> docs/mockups/warlock_up2/pictures ideas`.
+
+THE FIRST THREE'S PICTURES (kept for the record):
+
 Pictures (`pictures/`, each wider than tall for his phone held sideways):
 - `new_demons_on_two_legs.png`: the three on the werewolf's frame, up on two legs, four times as big (2044 x 950).
 - `new_demons_running.png`: the three running on all fours, four times as big (2044 x 854).
