@@ -31,6 +31,7 @@ import type { LegStyle, Painted, Pose, Ramp, V } from './kit';
 import { IRON } from './mkit';
 import { EMBER, GOLD } from './props';
 import { SMITH3, makeSmith3 } from './smith3';
+import { TOWNSFOLK3, makeTownsfolk3 } from './townsfolk3';
 
 const SKIN: Ramp = [SKIN4[0], SKIN4[0], SKIN4[1], SKIN4[2], SKIN4[3]];
 
@@ -1060,6 +1061,12 @@ export interface Townsman {
    * The stranger's are all his own: he never leaves his wall, and only his eyes turn.
    */
   turned: Record<Facing, Sprite[]>;
+  /**
+   * How many of the loop's frames, and of the act's, go by in a second, where they are not the town's old ten and twenty
+   * (the people sculpted, art/townsfolk3.ts: thirty of each).
+   */
+  fps?: number;
+  actFps?: number;
 }
 
 export const ACT_FPS = 20;
@@ -1073,17 +1080,19 @@ export const ACT_FPS = 20;
 export function townFrame(m: Townsman, t: number, phase = 0, to: Facing | null = null): Sprite {
   // (`to`: someone has come right up to them on that side. Unless that is the way of their work,
   // they turn to that someone and only stand: what they do now and then waits.)
+  const fps = m.fps ?? IDLE_FPS;
+  const actFps = m.actFps ?? ACT_FPS;
   if (to !== null && m.turned[to] !== m.idle) {
     const loop = m.turned[to];
-    const at = Math.floor((t + phase) * IDLE_FPS);
+    const at = Math.floor((t + phase) * fps);
     return loop[((at % loop.length) + loop.length) % loop.length];
   }
-  const loopT = m.idle.length / IDLE_FPS;
+  const loopT = m.idle.length / fps;
   const rest = m.loops * loopT;
-  const every = rest + m.act.length / ACT_FPS;
+  const every = rest + m.act.length / actFps;
   const u = (((t + phase) % every) + every) % every;
-  if (u < rest) return m.idle[Math.floor(u * IDLE_FPS) % m.idle.length];
-  return m.act[Math.min(m.act.length - 1, Math.floor((u - rest) * ACT_FPS))];
+  if (u < rest) return m.idle[Math.floor(u * fps) % m.idle.length];
+  return m.act[Math.min(m.act.length - 1, Math.floor((u - rest) * actFps))];
 }
 
 /**
@@ -1091,9 +1100,9 @@ export function townFrame(m: Townsman, t: number, phase = 0, to: Facing | null =
  * `phase` apart, as townFrame has it): seconds into it, or -1 while they stand in their loop.
  */
 export function actAt(m: Townsman, t: number, phase = 0): number {
-  const loopT = m.idle.length / IDLE_FPS;
+  const loopT = m.idle.length / (m.fps ?? IDLE_FPS);
   const rest = m.loops * loopT;
-  const every = rest + m.act.length / ACT_FPS;
+  const every = rest + m.act.length / (m.actFps ?? ACT_FPS);
   const u = (((t + phase) % every) + every) % every;
   return u < rest ? -1 : u - rest;
 }
@@ -1142,6 +1151,8 @@ export const TOWN_POSES: Record<keyof Townsfolk, { idle: Partial<Pose>[]; act: P
 };
 
 export function makeTownsfolk(): Townsfolk {
+  // (THE FOUR SCULPTED, AT THIRTY A SECOND, art/townsfolk3.ts: a mock-up behind a switch that is off)
+  if (TOWNSFOLK3.on) return makeTownsfolk3();
   const one = (who: keyof Townsfolk): Townsman => {
     const p = TOWN_POSES[who];
     const opts = who === 'stranger' ? { aura: null } : {};

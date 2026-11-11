@@ -7,6 +7,7 @@ import { POWER, QUEST3, catchesAt, fuseOf, slabRunesOf } from './quest3';
 import { COLUMN_FRAMES, FLOOR_FRAMES, FUSE_STEPS, LANDS, RISE_STEPS, SET_STEPS, SLAB_AT, STONE_AT, flareOf, stoneBlaze, swirlAt } from './ring3';
 import type { Blaze, Letter } from './ring3';
 import { SMITH3, darkOf } from './smith3';
+import { TOWNSFOLK3, makeSmithDark3 } from './townsfolk3';
 import type { TownProps } from './town';
 import { ACT_FPS, actAt, townFrame } from './townsfolk';
 import type { Facing, Townsfolk } from './townsfolk';
@@ -139,12 +140,17 @@ export function townSprite(art: TownArt, kind: string, variant: number, t: numbe
       // (the runes on him are cold while his ring is dark, and catch when it flares)
       const pw = ringPower(t);
       const cold = SMITH3.on && pw !== null && (pw.dark || (pw.g >= 0 && pw.g < POWER.flare));
+      // (sculpted, art/townsfolk3.ts: his own dark frames, made the first time they are asked for)
+      if (cold && TOWNSFOLK3.on) return townFrame((smithDark3 ??= makeSmithDark3()), t, SMITH_PHASE, to);
       return townFrame(cold ? darkOf(art.folk.wordsmith) : art.folk.wordsmith, t, SMITH_PHASE, to);
     }
     case 'stranger': return townFrame(art.folk.stranger, t, 4.7, to);
     default: return null;
   }
 }
+
+/** The sculpted wordsmith's frames while his ring is dark (art/townsfolk3.ts). */
+let smithDark3: ReturnType<typeof makeSmithDark3> | null = null;
 
 /** The wordsmith's clock is set this far apart from the others'. */
 const SMITH_PHASE = 6.4;
@@ -159,8 +165,8 @@ export function folkActAt(art: TownArt, kind: string, t: number): number {
 }
 /** (the same) how long what they do now and then lasts, in seconds. */
 export function folkActLong(art: TownArt, kind: string): number {
-  const m = (art.folk as unknown as Record<string, { act: readonly unknown[] } | undefined>)[kind];
-  return m ? m.act.length / ACT_FPS : 0;
+  const m = (art.folk as unknown as Record<string, { act: readonly unknown[]; actFps?: number } | undefined>)[kind];
+  return m ? m.act.length / (m.actFps ?? ACT_FPS) : 0;
 }
 /** Which way the wordsmith was last turned to someone (townSprite is told each frame he is drawn). */
 let smithTo: Facing | null = null;
