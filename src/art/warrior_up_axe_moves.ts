@@ -93,6 +93,10 @@ export interface AxeMove {
   /** How far along his aim the game has carried him by a moment of the move (his own lengths): his cloth then streams as he
    * goes (the figure a frame and three frames before is drawn that much further back). His maul's Shoulder Charge. */
   carried?: (t: number) => number;
+  /** His bones at a moment, where a move makes them otherwise than from its keys (the keys then give only its timing, the grip
+   * and the second axe): his run's body and legs with a catch in his arms; the game's own struck, fall and town with a heavy
+   * weapon in place of his sword (art/warrior_up_heavy_art.ts). */
+  pose?: (t: number) => Posed;
 }
 
 function spanOf(m: AxeMove): { end: number; from: number | undefined } {
@@ -138,7 +142,7 @@ export interface AxePosed {
 export function axePosed(m: AxeMove, t: number): AxePosed {
   const when = folded(m, t);
   const keys = m.keys;
-  const q = bonesAt(keys, m.rest, when);
+  const q = m.pose ? m.pose(when) : bonesAt(keys, m.rest, when);
   if (Math.cos(q.wEl * D) < 0) q.wRoll += 180;
   // (which two keys, and how far between them, as bonesAt has it)
   let i = 0;
@@ -976,6 +980,62 @@ export const AXE_MOVES: Record<string, AxeMove> = {
   stand: AXE_STAND, run: AXE_RUN, cleave: AXE_CLEAVE, cleave2: AXE_CLEAVE2, throw: AXE_THROW, braced: AXE_BRACED, catch: AXE_CATCH,
   twin: AXE_TWIN_THROW, twinBraced: AXE_TWIN_BRACED, twinCatch: AXE_TWIN_CATCH_MOVE, chop: AXE_CHOP,
 };
+
+// ---------------------------------------------------------------------------------------------
+// WHILE THE AXE FLIES HE MAY MOVE (his word, 9 Nov 2026, 22:37: “Yes he can move.  Yes leaping chop can”): HIS RUN EMPTY-HANDED,
+// AND THE CATCH ON THE RUN (and Twin Axes' the same). Standing, he waits braced (AXE_BRACED, AXE_TWIN_BRACED).
+
+/** What of his bones are his arms and what he holds (the rest are his body and his legs). */
+const ARM_FIELDS = ['rhIn', 'rhx', 'rhy', 'rhz', 'lhIn', 'lhx', 'lhy', 'lhz', 'le', 're', 'wAz', 'wEl', 'wRoll', 'lh2', 'rh2', 'mixK'] as const;
+/** His arms from one pose, his body and legs from another. */
+export function armsOn(body: Posed, arms: Posed): Posed {
+  const out: Record<string, unknown> = { ...body };
+  for (const f of ARM_FIELDS) {
+    const v = (arms as unknown as Record<string, unknown>)[f];
+    if (v === undefined) delete out[f];
+    else out[f] = v;
+  }
+  return out as unknown as Posed;
+}
+/** His run as the game has it, at a moment (a loop: its body and legs). */
+const runAt = (t: number): Posed => bonesAt(AXE_RUN.keys, AXE_REST, ((t % RUN_TURN) + RUN_TURN) % RUN_TURN);
+/** A turn of his run (0.5 s). */
+const RUN_TURN = AXE_RUN.keys[AXE_RUN.keys.length - 1].at;
+/** His guard's left hand and the game's own arms, as his run has them with nothing in his hands. */
+const EMPTY_REST: Bones = { ...AXE_REST, ...Object.fromEntries(ARM_FIELDS.filter((f) => f in KNIGHT_RUN3.rest).map((f) => [f, (KNIGHT_RUN3.rest as unknown as Record<string, unknown>)[f]])) } as Bones;
+
+/**
+ * HIS RUN, EMPTY-HANDED, WHILE THE AXE FLIES (or both, with Twin Axes): THE GAME'S OWN RUN, frame for frame, his arms as the
+ * game's run swings them, nothing in his hands (0.5 s, 15 pictures, a loop).
+ */
+export const AXE_RUN_EMPTY: AxeMove = {
+  name: 'Battle axe: he runs empty-handed while it flies (the game\'s run)', rest: EMPTY_REST, loop: 0,
+  keys: KNIGHT_RUN3.motion.keys.map((k) => ({ at: k.at, ease: k.ease, pose: { ...k.pose } })),
+  holding: () => ({ axe: false, twin: false }),
+};
+
+/** A catch on the run: the standing catch's keys up to `upTo` (frames), then his run's arms with the axe from `from`, and to `end`. */
+function onTheRun(catchKeys: readonly AxeKey[], upTo: number, from: number, end: number): { keys: AxeKey[]; pose: (t: number) => Posed } {
+  const arms: AxeKey[] = catchKeys.filter((k) => k.at <= upTo * FR + 1e-6).map((k) => ({ ...k }));
+  for (let f = from; f <= end; f++) {
+    const q = bonesAt(AXE_RUN.keys, AXE_REST, (f * FR) % RUN_TURN);
+    const pose: Partial<Bones> = {};
+    for (const a of ARM_FIELDS) if (a in q && !['lh2', 'rh2', 'mixK'].includes(a)) (pose as Record<string, unknown>)[a] = (q as unknown as Record<string, unknown>)[a];
+    arms.push({ at: f * FR, pose, ease: f === from ? 'io' : 'lin' });
+  }
+  return { keys: arms, pose: (t) => armsOn(runAt(t), bonesAt(arms, AXE_REST, t)) };
+}
+/** THE CATCH ON THE RUN: his run's body and legs frame for frame from its first picture (0.5 s: a turn of it, so that it goes
+ * on into his run), the catch in his arms: it smacks into his hand (0), his arm carried back by it (1 to 3), held (to 6); his left
+ * hand to the butt and the axe brought down before his hip as his run carries it (14). */
+const RUN_CATCH = onTheRun(AXE_CATCH.keys, 6, 12, 14);
+export const AXE_RUN_CATCH: AxeMove = { name: 'The thrown axe: the catch on the run', rest: AXE_REST, keys: RUN_CATCH.keys, pose: RUN_CATCH.pose, hit: AXE_CATCH_AT, smear: [1 * FR, 3 * FR] };
+/** TWIN AXES' CATCH ON THE RUN: the same, both caught, the second put away over his left shoulder (11), his own brought down
+ * into his run (24); a second turn of his run (1 s). */
+const TWIN_RUN_CATCH = onTheRun(AXE_TWIN_CATCH_MOVE.keys, 11, 22, 29);
+export const AXE_TWIN_RUN_CATCH: AxeMove = { ...AXE_TWIN_CATCH_MOVE, name: 'Twin Axes: the catch on the run', keys: TWIN_RUN_CATCH.keys, pose: TWIN_RUN_CATCH.pose };
+/** His moves while it flies, by a short name (not among AXE_MOVES: those are step 2's, as he saw them). */
+export const AXE_RUN_MOVES: Record<string, AxeMove> = { runEmpty: AXE_RUN_EMPTY, runCatch: AXE_RUN_CATCH, twinRunCatch: AXE_TWIN_RUN_CATCH };
 
 // ---------------------------------------------------------------------------------------------
 // AS THE GAME WOULD HOLD THEM (for the bake, tools/bake_heroes.mjs, and the film): each move's frames as the lists the game

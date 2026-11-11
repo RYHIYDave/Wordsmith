@@ -185,13 +185,13 @@ export default async function (page, snap) {
   const ring = [['skeleton', 2.2, -1.1], ['cultist', 3.0, 0.6], ['skeleton', 1.4, 1.5], ['brute', 4.6, -0.4]];
   const qb = (three) => [{ move: 'quake', from: 0, to: QUAKE.end, each: quake(three), say: three ? 'one blow; the ground heaves three times, each wider and weaker' : 'reared right back, held; the blow; the ground heaves in a ring' }];
   for (const w of ['side', 'away']) await play(`quake_${w}`, `EARTHQUAKE (hold), ${SAY[w]}: the ground heaves out in a ring`, { face: WAYS[w], beats: qb(false), who: ring });
-  await play('tremors', 'TREMORS (a talent), side-on: three quakes from the one blow', { face: WAYS.toward, beats: qb(true), who: ring, hold: 10 });
+  await play('tremors', 'TREMORS (a talent), toward you: three quakes from the one blow', { face: WAYS.toward, beats: qb(true), who: ring, hold: 10 });
   await play('quake_slow', 'EARTHQUAKE at half speed, twice the size', { face: WAYS.side, zoom: true, slow: true, beats: qb(false), who: ring, lead: 1.0 });
-  const path = [['skeleton', 2.2, 0.25], ['cultist', 3.4, -0.3], ['skeleton', 5.4, 2.2]];
+  const lane = [['skeleton', 2.2, 0.25], ['cultist', 3.4, -0.3], ['skeleton', 5.4, 2.2]];
   const cb = [{ move: 'charge', from: 0, to: CHARGE.end, each: charge, say: 'a crouch, held; he drives through, shoulder first; the skid' }];
   const back = (w) => [home[0] - WAYS[w][0] * 2.2, home[1] - WAYS[w][1] * 2.2];
-  for (const w of ['side', 'toward', 'away']) await play(`charge_${w}`, `SHOULDER CHARGE (swipe), ${SAY[w]}: what he meets is thrown aside`, { face: WAYS[w], beats: cb, who: path, from: back(w), hold: 8 });
-  await play('charge_slow', 'SHOULDER CHARGE at half speed, twice the size', { face: WAYS.side, zoom: true, slow: true, beats: cb, who: path, from: back('side'), hold: 5, lead: 2.4 });
+  for (const w of ['side', 'toward', 'away']) await play(`charge_${w}`, `SHOULDER CHARGE (swipe), ${SAY[w]}: what he meets is thrown aside`, { face: WAYS[w], beats: cb, who: lane, from: back(w), hold: 8 });
+  await play('charge_slow', 'SHOULDER CHARGE at half speed, twice the size', { face: WAYS.side, zoom: true, slow: true, beats: cb, who: lane, from: back('side'), hold: 5, lead: 2.4 });
 
   const scale = await page.evaluate(() => window.__dbg.screen.scale ?? null);
   fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify({ frames: manifest, scale, dpr: 3, painted: await page.evaluate(() => window.__axe.painted) }));

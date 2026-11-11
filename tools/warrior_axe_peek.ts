@@ -8,13 +8,14 @@ import { paintWithoutCanvas } from '../tests/helpers';
 import { writePng } from './px_png';
 import { AXE_FRAME, AXE_MOVES as AXE_ONLY, axeFaults, axePosed, helmSeen, paintAxe, workingEdge } from '../src/art/warrior_up_axe_moves';
 import { HAMMER_MOVES, faceAt } from '../src/art/warrior_up_hammer_moves';
+import { AXE_RUN_MOVES } from '../src/art/warrior_up_axe_moves';
 import { WU_SIDES } from '../src/art/warrior_up';
 import type { WuSide } from '../src/art/warrior_up';
 
 declare const process: { argv: string[] };
 paintWithoutCanvas();
 // (his moves with the war axe and, since step 3, with the maul: one look for both)
-const AXE_MOVES = { ...AXE_ONLY, ...HAMMER_MOVES };
+const AXE_MOVES = { ...AXE_ONLY, ...AXE_RUN_MOVES, ...HAMMER_MOVES };
 
 const [name, out, k0, sides0, frames0, quiet] = process.argv.slice(2);
 const m = AXE_MOVES[name];
