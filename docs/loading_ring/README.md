@@ -13,7 +13,13 @@ chat on 11 Nov 2026 at his word: “Work on this task from the Wordsmith Queue: 
 - On the art, 9 Nov 2026 (the art chat's notes): he wants “a good level of quality” held and “the little things be better
   instead of just improved paintings”; the Gate Ward (floor 11) and the Brawler are the measure for new art, and what is
   finer is sent back the same as what is rougher.
-- HIS ANSWER TO THIS PICTURE: not yet (asked 11 Nov 2026; see the end of this file).
+- HIS ANSWER TO THIS PICTURE, 11 Nov 2026, by 08:47 (Eastern). Sent loading_ring_new.png and loading_ring_new.mp4 and told it
+  is his wordsmith's ring from the town burning in the dark, nothing in it new art, and asked as a pop-up, “Is this the
+  loading screen you want (your wordsmith's ring from the town burning in the dark, the word LOADING under it, as in
+  loading_screen_new.png and the video)?”: “Yes, send it to main (Recommended)”, offered as: the main chat brings it in,
+  tests it and switches it on. (The other answers offered: “Yes, but calmer”, the same ring without the letters swirling
+  inside it; “No, try something else”.) The files were sent him under the names loading_screen_new.png and .mp4.
+- Asked whether the branch may be saved to his GitHub (a first try was refused in this chat): “Yes, save it (Recommended)”.
 
 ## What it is
 
