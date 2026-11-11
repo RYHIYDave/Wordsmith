@@ -599,9 +599,9 @@ const M_STONE = ['#5a0c14', '#b8202a', '#ff6a4a'];
 const M_EYE = '#7af8f0';
 const M_CRYSTAL: Ramp = ['#0c6a80', '#18a0b4', '#22d0e0', '#b8fff8', '#ffffff'];
 
-export const MYSTIC_TALL = 56;
+export const MYSTIC_TALL = 57;
 /** HIS BODY: slight and straight-backed under the robe; long hands. */
-export const MYSTIC_BUILD: Build = buildOf(MYSTIC_TALL, 1.5, { shoulders: 1.0, chest: 0.98, depth: 1.0, waist: 1.0, hips: 1.02, arms: 1.04, limbs: 0.96, pad: 1.4 });
+export const MYSTIC_BUILD: Build = buildOf(MYSTIC_TALL, 1.7, { shoulders: 1.0, chest: 0.98, depth: 1.0, waist: 1.0, hips: 1.02, arms: 1.04, limbs: 0.96, pad: 1.4 });
 
 /** How far before him his table's top is, and how high (art/town.ts: the table of wares, a tile on), in his own lengths. */
 export const TABLE = { fwd: 26, up: 24 };
@@ -875,7 +875,7 @@ export function sculptMystic(p: MysticPose, turn = 0): TownFigure {
  */
 export function mysticStance(): Partial<Bones> {
   return {
-    pz: -0.3, bend: 2, faceUp: -6, faceTurn: 8, twist: 4,
+    pz: -0.3, bend: 2, faceUp: -4, faceTurn: 30, twist: 12,
     lfx: 0.6, lfy: 1.0, lft: 12, rfx: -0.6, rfy: -1.0, rft: -14,
     // (the crystal's hand: out to his right and a little forward, the forearm up, the palm level at the height of his chest)
     rhIn: 0, rhx: 4.6, rhy: -6.4, rhz: -7.4, re: 12,
@@ -939,10 +939,10 @@ export function sculptWordsmith(p: WordsmithPose, turn = 0): TownFigure {
         const [fw, lf, up] = onHead(h.p);
         const tg = h.prim.tag ?? '';
         // (in the cowl's shadow: only his nose, his cheekbones and his brow's ridge catch the light of his own runes)
-        if (tg === 'nose') return sh(W_SKIN, 3);
-        if (tg === 'cheek' && fw > 0.5) return sh(W_SKIN, 2);
-        if (fw > 0.3 && up > -0.05 && up < 0.2 && Math.abs(lf) < 0.75) return sh(W_SKIN, 0);
-        return sh(W_SKIN, Math.min(2, h.tone));
+        if (tg === 'nose') return sh(W_SKIN, 4);
+        if (tg === 'cheek' && fw > 0.4) return sh(W_SKIN, 3);
+        if (fw > 0.3 && up > -0.05 && up < 0.2 && Math.abs(lf) < 0.75) return sh(W_SKIN, 1);
+        return sh(W_SKIN, Math.max(2, Math.min(3, h.tone + 1)));
       }
       return d ? sh(W_SKIN, h.tone - 1) : null;
     },
@@ -1032,16 +1032,16 @@ export function sculptWordsmith(p: WordsmithPose, turn = 0): TownFigure {
     const hemCut = keepBelow(mul(u, -1), add(mantleEdge, add(mul(f, swx * 0.3), mul(l, swy * 0.3))));
     const [aS] = B.armR;
     // (a dome that flares from his neck to its hem, widest there: the upper half of a great round, flat front to back)
-    sc.ell(mantle, 'mantle', add(mantleEdge, mul(f, -0.3)), [mul(f, ribs.h[0] + 3.8), mul(l, B.shoulderHalf + aS + 4.2), mul(u, 13.5)], 1.6, { tag: 'cape', cuts: [hemCut] });
+    sc.ell(mantle, 'mantle', add(mantleEdge, mul(f, -0.3)), [mul(f, ribs.h[0] + 3.6), mul(l, B.shoulderHalf + aS + 4.0), mul(u, 13.2)], 1.6, { tag: 'cape', cuts: [hemCut] });
     for (const side of [1, -1]) {
       const shd = side > 0 ? s.shoulderL : s.shoulderR;
-      sc.ell(mantle, 'mantle', add(shd, mul(u, 0.2)), [mul(f, 4.5), mul(l, 4.3), mul(u, 4.0)], 2.4, { tag: 'cape', cuts: [hemCut] });
+      sc.ell(mantle, 'mantle', add(shd, mul(u, 0.2)), [mul(f, 4.6), mul(l, 4.5), mul(u, 4.0)], 2.4, { tag: 'cape', cuts: [hemCut] });
     }
     // the cowl: a deep hood over his head, its opening a hollow round his face, its peak drawn back; a fold of it on his back
     sc.ell(mantle, 'head', at(-0.16, 0, 0.14), [mul(hf, R[0] * 1.3), mul(hl, R[1] * 1.34), mul(hu, R[2] * 1.24)], 1.0, { tag: 'cowl' });
     sc.cone(mantle, 'head', at(-0.5, 0, 0.9), at(-1.5, 0, 1.3), R[1] * 0.7, 0.5, 1.4, { tag: 'cowl' });
     sc.cone(mantle, 'head', at(-0.4, 0, -0.5), add(s.neck, add(mul(f, -2.4), mul(u, -1.6))), 4.2, 4.8, 1.8, { tag: 'cowl' });
-    sc.ell(mantle, 'head', at(1.12, 0, -0.2), [mul(hf, R[0] * 0.72), mul(hl, R[1] * 0.84), mul(hu, R[2] * 0.9)], 0.5, { carve: true });
+    sc.ell(mantle, 'head', at(1.1, 0, -0.16), [mul(hf, R[0] * 0.8), mul(hl, R[1] * 0.96), mul(hu, R[2] * 0.96)], 0.5, { carve: true });
   }
 
   // ---- HIS BEARD: long and white, from his jaw down over his chest to his belt; a moustache over it; heavy white brows ----
