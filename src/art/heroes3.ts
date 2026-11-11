@@ -39,6 +39,9 @@ import { makeWarriorUpArt } from './warrior_up_art';
 import { RANGER_UP } from './ranger_up';
 import { heroSides } from './sides';
 import { makeRangerUpArt } from './ranger_up_art';
+// (THE MAGE BROUGHT UP TO THE BRAWLER'S LEVEL, behind its switch, off: art/mage_up.ts)
+import { MAGE_UP } from './mage_up';
+import { makeMageUpArt } from './mage_up_art';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
@@ -393,6 +396,8 @@ export function makeHeroArt3(): HeroArt {
   const warriorShare = new Map<string, Sprite[]>();
   // (and the Ranger brought up)
   const rangerShare = new Map<string, Sprite[]>();
+  // (and the Mage brought up)
+  const mageShare = new Map<string, Sprite[]>();
   const of = (cls: ClassId, look: HeroLook): ActorArt => {
     // (one figure of each hero in each place: the knight with the great sword, whatever he carries, until he is painted with a sword and a shield)
     const place = look.card ? 'card' : look.town ? 'town' : 'dungeon';
@@ -461,6 +466,17 @@ export function makeHeroArt3(): HeroArt {
         made.set(rkey, rart);
       }
       return rart;
+    }
+    // (THE MAGE BROUGHT UP, while art/mage_up.ts MAGE_UP is on: sculpted, from all eight sides, every list at 30 a second, her
+    // moves the game's own on her new bones: art/mage_up_art.ts. Off, she is as she was, every frame the same: tests/mage_up.test.ts)
+    if (cls === 'mage' && MAGE_UP.on) {
+      const mkey = `mageup:${place}`;
+      let mart = made.get(mkey);
+      if (!mart) {
+        mart = makeMageUpArt(place, mageShare);
+        made.set(mkey, mart);
+      }
+      return mart;
     }
     const key = `${cls}:${place}`;
     let art = made.get(key);
