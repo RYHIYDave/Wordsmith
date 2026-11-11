@@ -16,6 +16,9 @@ export default async function (page, snap) {
   for (let i = 0; i < 400; i++) { if (await page.evaluate(() => !!window.__dbg.game())) break; await page.waitForTimeout(100); }
   // (till the loading screen, if any, is gone and his pictures are in)
   await page.waitForTimeout(8000);
+  // OFF=all (or names): the renderer's speed switches turned off first (render/still_floor.ts, still_glows.ts, still_dark.ts), to
+  // measure the town as it was drawn before them on the same page
+  if (process.env.OFF) log('speed switches off', await page.evaluate((want) => { const R = window.__dbg.renderer; const all = Object.keys(R).filter((k) => R[k] && typeof R[k] === 'object' && R[k].sw && typeof R[k].sw.on === 'boolean' && R[k].stats); const names = want === 'all' ? all : all.filter((k) => want.split(',').includes(k)); for (const k of names) R[k].sw.on = false; return names.join(', ') || 'none'; }, process.env.OFF));
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
   await page.evaluate(() => { window.__ft = []; let last = performance.now(); const step = (t) => { window.__ft.push(t - last); last = t; requestAnimationFrame(step); }; requestAnimationFrame(step); });
   await cdp.send('Profiler.enable');
