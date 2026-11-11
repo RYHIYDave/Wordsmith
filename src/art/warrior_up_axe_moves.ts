@@ -1052,7 +1052,7 @@ function downOnTheRun(at: number, near: number, step = 2): AxeKey[] {
   const b = one({}, [5, -6.5, -13], -131, 16, DOWN, a.roll, { lhIn: 3, lhx: BUTT, lhy: 0, lhz: 0, le: 12 }, 0);
   return [key(at, a, 'io'), key(at + step, b, 'io')];
 }
-/** THE CATCH ON THE RUN: his run's body and legs frame for frame from its first picture (0.5 s: a turn of it, so that it goes
+/** THE CATCH ON THE RUN: his run's steps frame for frame from its first picture (his hips and chest turned to the catch) (0.5 s: a turn of it, so that it goes
  * on into his run), the catch in his arms: it smacks into his hand (0), his arm carried back by it (1 to 3), held (to 6); his left
  * hand to the butt and the axe brought down before his hip as his run carries it (14). */
 const RUN_CATCH = onTheRun(AXE_CATCH.keys, 6, 12, 14, downOnTheRun(8, AXE_CATCH.keys[4].pose.wRoll ?? 180, 2), true);

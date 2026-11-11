@@ -47,6 +47,10 @@ import { dot, norm, sub } from '../src/art/skeleton';
 import type { WuSide } from '../src/art/warrior_up';
 import { AXE, AXE_CHOP_END, AXE_CHOP_LAND, AXE_CHOP_LEAP, AXE_CLEAVE_HIT, AXE_FLIGHT, AXE_FLY_FRAMES, AXE_FRAME, AXE_LEAP_FRAMES, AXE_MOVES, AXE_REST, AXE_RUN, AXE_STAND, AXE_THROW_OUT, HELM_LEAST, axeFaults, axePosed, helmSeen, makeWarriorAxeArt, paintAxe, paintFlying } from '../src/art/warrior_up_axe_moves';
 import type { AxeMove } from '../src/art/warrior_up_axe_moves';
+import { AXE_RUN_CATCH, AXE_RUN_EMPTY, AXE_RUN_MOVES, AXE_TWIN_RUN_CATCH } from '../src/art/warrior_up_axe_moves';
+import { heavyMoves, makeWarriorHeavyArt } from '../src/art/warrior_up_heavy_art';
+import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REEL3, WU_TOWN3, WU_TOWN_RUN3 } from '../src/art/warrior_up_moves';
+import type { Move3 } from '../src/art/moves3';
 import { HAMMER_CHARGE_END, HAMMER_CHARGE_GO, HAMMER_CHARGE_STOP, HAMMER_DRIVE_FRAMES, HAMMER_MOVES, HAMMER_QUAKE, HAMMER_QUAKE_AT, HAMMER_QUAKE_BLOW, HAMMER_QUAKE_END, HAMMER_RUN, HAMMER_SMASH, HAMMER_SMASH2, HAMMER_SMASH_AT, HAMMER_SMASH_HIT, HAMMER_STAND, MAUL, chargeCarriedFrame, faceAt, makeWarriorHammerArt } from '../src/art/warrior_up_hammer_moves';
 import { KNIGHT_RUN3 } from '../src/art/moves3';
 import { wuPosed } from '../src/art/warrior_up_art';
@@ -557,4 +561,75 @@ test('16. the maul\'s strikes: their smears are the friend\'s cyan and nothing o
     if (smear < 40) bad.push(`${name} f${i} ${side}: its smear only ${smear} pixels`);
   }
   assert.deepEqual(bad.slice(0, 20), [], 'the smears');
+});
+
+// ---------------------------------------------------------------------------------------------
+// STEP 3, THE LAST PIECES FOR BOTH WEAPONS (src/art/warrior_up_heavy_art.ts; the axe's run while it flies:
+// src/art/warrior_up_axe_moves.ts AXE_RUN_MOVES)
+
+/** Every frame of a move, or every `step`th, from all eight sides: what breaks a rule. On his back (town) only nothing through him
+ * is his to keep (the weapon's head is where step 1 put it: from behind it may stand before his helm). */
+function looked(name: string, m: AxeMove, step = 1): { bad: string[]; frames: number } {
+  const bad: string[] = [];
+  const n = framesOf(m);
+  let frames = 0;
+  for (let i = 0; i < n; i += step) {
+    const t = i * AXE_FRAME;
+    const p = axePosed(m, t);
+    const stowed = p.q.stow > 0.5;
+    for (const side of WU_SIDES) {
+      const f = paintAxe(m, t, side);
+      frames++;
+      for (const x of axeFaults(m, t, f, p)) if (!(stowed && /helm/.test(x)) && (/helm/.test(x) || side === 'front')) bad.push(`${name} f${i} ${side}: ${x}`);
+    }
+  }
+  return { bad, frames };
+}
+
+test('17. while the axe flies he may move: his run empty-handed is the game\'s own run; the catch on the run (and Twin Axes\') keep every rule from every side', () => {
+  assert.equal(AXE_RUN_EMPTY.keys.length, KNIGHT_RUN3.motion.keys.length, 'his run, key for key');
+  KNIGHT_RUN3.motion.keys.forEach((k, i) => { for (const [f, v] of Object.entries(k.pose)) assert.equal((AXE_RUN_EMPTY.keys[i].pose as Record<string, unknown>)[f], v, `run empty: key ${i}, ${f}`); });
+  assert.deepEqual([framesOf(AXE_RUN_EMPTY), framesOf(AXE_RUN_CATCH), framesOf(AXE_TWIN_RUN_CATCH)], [15, 15, 30], 'a turn of his run; the catch a turn; Twin Axes two');
+  // (the catch on the run: his run's steps, frame for frame: his feet where his run puts them; his hips and chest turned to the catch)
+  for (const m of [AXE_RUN_CATCH, AXE_TWIN_RUN_CATCH]) for (let i = 0; i < framesOf(m); i++) {
+    const a = axePosed(m, i * AXE_FRAME).s;
+    const b = axePosed(AXE_RUN, i * AXE_FRAME).s;
+    for (const j of ['toeL', 'toeR', 'heelL', 'heelR'] as const) assert.ok(Math.hypot(a[j][0] - b[j][0], a[j][1] - b[j][1], a[j][2] - b[j][2]) < 1e-6, `${m.name} f${i}: his ${j} not where his run has it`);
+  }
+  const bad: string[] = [];
+  for (const [name, m] of Object.entries(AXE_RUN_MOVES)) bad.push(...looked(name, m).bad);
+  for (let i = 0; i < 15; i++) if (takeSeen(paintAxe(AXE_RUN_EMPTY, i * AXE_FRAME, 'front')).all !== 0) bad.push(`run empty f${i}: an axe in his hands`);
+  const set = makeWarriorHeavyArt('axe', 'dungeon').side;
+  const mv = set.clips?.moves ?? {};
+  assert.deepEqual([mv.runEmpty?.frames.length, mv.runCatch?.frames.length, mv.twinRunCatch?.frames.length], [15, 15, 30], 'the lists');
+  assert.deepEqual(bad.slice(0, 30), [], 'a frame that breaks a rule');
+});
+
+test('18. struck, his fall, town and his card with each weapon: the game\'s own moves of his, frame for frame, the weapon in place of his sword; every rule kept from every side; the lists in the game\'s shape', () => {
+  const bad: string[] = [];
+  let frames = 0;
+  for (const w of ['axe', 'hammer'] as const) {
+    const moves = heavyMoves(w);
+    const game: Record<string, Move3> = { reel: WU_REEL3, lurch: WU_LURCH3, fall: WU_FALL3, town: WU_TOWN3, townRun: WU_TOWN_RUN3, look: WU_LOOK3, draw: WU_DRAW3 };
+    for (const [name, m] of Object.entries(moves)) {
+      // (his body and legs the game's: every bone but his arms where the game's move has it)
+      for (const i of [0, Math.floor(framesOf(m) / 2), framesOf(m) - 1]) {
+        const a = axePosed(m, i * AXE_FRAME).s;
+        const b = wuPosed(game[name], i * AXE_FRAME).s;
+        for (const j of ['toeL', 'toeR', 'kneeL', 'kneeR', 'pelvis', 'neck', 'head'] as const) if (Math.hypot(a[j][0] - b[j][0], a[j][1] - b[j][1], a[j][2] - b[j][2]) > 1e-6) bad.push(`${w} ${name} f${i}: his ${j} not the game's`);
+      }
+      const r = looked(`${w} ${name}`, m, ['look', 'town'].includes(name) ? 3 : 1);
+      bad.push(...r.bad);
+      frames += r.frames;
+    }
+    const d = makeWarriorHeavyArt(w, 'dungeon').toward.clips ?? {};
+    for (const c of ['attack', 'heavy', 'reel', 'lurch', 'fall'] as const) if (!d[c]?.frames.length) bad.push(`${w} dungeon: no ${c}`);
+    for (const place of ['town', 'card'] as const) {
+      const s = makeWarriorHeavyArt(w, place);
+      if (!s.side.idle.length || !s.side.walk.length) bad.push(`${w} ${place}: no stand or run`);
+      if (!s.front.clips?.idleA?.frames.length || !s.front.clips?.ready?.frames.length) bad.push(`${w} ${place}: no look or draw on his front`);
+    }
+  }
+  console.log(`  ${frames} frames looked at`);
+  assert.deepEqual(bad.slice(0, 30), [], 'a frame that breaks a rule');
 });

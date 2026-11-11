@@ -357,5 +357,171 @@ is as drawn: seen only in the Twin Axes throw and catch; no second set of stand 
 
 STILL FOR THE MAIN CHAT TO SETTLE WITH HIM (rules, not looks): whether he may move while the axe flies (as drawn he stands
 braced, about 2 s from hold to guard); whether Leaping Chop's crouch may hold the swipe a sixth of a second where the Lunge
-leaves at once. AND SEEN IN THE FILM: his life bar stays at his ground height while he is lifted in a leap, so it crosses his
+leaves at once.
+
+HIS TWO ANSWERS, 9 Nov 2026, 22:37 (told those two questions): “Yes he can move.  Yes leaping chop can”. Read as: (1) HE MAY
+MOVE WHILE THE AXE FLIES: so the axe has his run empty-handed and the catch on the run (step 3, below), and the braced loop is his
+standing wait; (2) the Leaping Chop keeps its crouch as drawn. AND SEEN IN THE FILM: his life bar stays at his ground height while he is lifted in a leap, so it crosses his
 body in the air (the game's own; it should ride with his lift).
+
+# Step 3: his moves with the maul, and the last pieces for both weapons (the art chat's helper, 9 to 11 Nov 2026)
+
+Still a mock-up behind the switch that is off (`WARRIOR_WEAPONS`). The maul's moves: `src/art/warrior_up_hammer_moves.ts`
+(made on the axe's machinery: `heavyKit` in `src/art/warrior_up_axe_moves.ts` now makes the keys for either weapon; the axe's
+pictures are unchanged, every one of a sample of 708 the same to the byte). The last pieces: `src/art/warrior_up_heavy_art.ts`.
+Nothing of the game imports either (`tests/warrior_weapons.test.ts`, 1).
+
+## The films
+
+- `pictures/hammer_moves.mp4`: 32.5 s (974 pictures), 30 a second, H.264 (yuv420p), 1266 by 652, 5.4 MB. Shot as `axe_moves.mp4`
+  was, in the practice room on the phone's wide screen, the game drawing it: standing; running once round a ring; SMASH and its
+  second tap (toward you, side-on, away); EARTHQUAKE (side-on, away); TREMORS (toward you); SHOULDER CHARGE (side-on, toward
+  you, away); each a second time at half speed and twice the size. The game's own pound and slam on the floor, its hits and its
+  knock. Made by `tools/scenarios/hammer_film.mjs` on the axe's film page (it now holds both weapons' moves).
+- `pictures/axe_run_catch.mp4`: 9.2 s (275 pictures), the same format, 2.0 MB: the axe thrown, him running on empty-handed while
+  it flies, and catching it on the run; Twin Axes the same; and at half speed, twice the size (`tools/scenarios/axe_run_catch.mjs`).
+
+## How he holds the maul
+
+His LEFT hand at the butt and his RIGHT up the haft, as with the axe; for a blow his right slides down to his left. THE MAUL HAS
+ONE FACE, so its head is never rolled about its haft: from his guard (the haft trailing back, the face down) it is SWUNG LOW
+ROUND HIS RIGHT SIDE AND UP BEFORE HIS RIGHT SHOULDER, which brings the face round to the mark of itself; past upright it is laid
+back over his right shoulder, his hands by his right ear, so his helm is seen from every side; and it comes down from there face
+first. (Lifted straight up behind him its face would point back at the top, and turned in his hands it would point sideways on
+the way.)
+
+## The moves (30 pictures a second; from all eight of his sides)
+
+| List | Pictures | Beats (frames; seconds) |
+|---|---|---|
+| Standing, his guard alive | 60 (2 s, a loop) | his own stand (`WU_REAR3`), frame for frame; the maul's head stirs less than the axe's: it hangs |
+| Running | 15 (0.5 s, a loop) | the game's own run (`KNIGHT_RUN3`), frame for frame; the maul before his right hip in both hands, its head up behind him, face down, carried a little lower than the axe; its head DIPS AND RISES a sixteenth of a second BEHIND each step and swings wider: its weight lags |
+| SMASH, the first blow (tap) | 39 (1.3 s) | skip-step in 0 to 2 (the game's step on a swing); swung low round his right side and up 2 to 7; wind-up reached 8, HELD 8 to 11 (up on his toes, arched, the maul laid back over his right shoulder, its face to the mark); strike 12 and 13, smeared; THE BLOW at 13 (0.433 s), the face flat on the floor; freeze to 16, sunk over it; waits at 21 (0.7 s) for a second tap, the maul still on the floor; hauled up and swung low round his right side; in his guard at 38 |
+| SMASH, the second blow (second tap) | 39 (1.3 s) | from where the first waits: skip-step 0 to 2 as he heaves it up off the floor round his right side; the same top at 8, HELD 8 to 11; THE BLOW at 13 (0.433 s); the same wind-down; in his guard at 38 |
+| EARTHQUAKE (hold; and TREMORS) | 45 (1.5 s) | he sinks and swings it low round his right side 0 to 5, up past upright 6 to 8; REARED RIGHT BACK at 9 (higher on his toes, back arched, the maul laid further back behind and above him), HELD 9 to 13; strike 14 and 15, smeared; THE BLOW at 15 (0.5 s, his Slam's), deeper than a Smash; a long freeze, sunk over it, to 20 while the ground heaves; the heavy haul back; in his guard at 44 |
+| SHOULDER CHARGE (swipe) | 43 (1.43 s) | crouch reached 3, HELD 3 to 6 (0.1 s, on the spot: low, his left shoulder to the mark, the maul let down into his right hand and drawn back low behind him); THE DRIVE 6 to 21 (0.5 s, the game carries him): his own run's legs, a turn of it, driven low and long, pitched forward, HIS LEFT SHOULDER LEADING, the maul trailed low behind him, face down, his cloth streaming; THE SKID 21 to 27 (the game carries him on, slowing), front foot planted, weight thrown back, the maul's weight carried on round his right side to before him; his left hand to the butt and up behind him; in his guard at 42 |
+
+**SMASH** (beside his Strike, heavier and slower: its blow at 13 frames, his Strike's at 10). ONE CRUSHING BLOW STRAIGHT DOWN BEFORE
+HIM: the middle of the face lands 1.43 tiles before his feet (measured on his frames; the test holds 1.4 within 0.15), its face
+flat on the floor. The rules: `HAMMER_SMASH_AT` 1.4 tiles before him, a round of `HAMMER_SMASH_ROUND` 0.4 tiles (a little less than
+a tile across; its far edge 1.8, his Strike's reach 1.7); the game's step on a swing as Strike's. HOW A SECOND TAP CHAINS, as his
+Strike's: the first waits at 21 (0.7 s, its `poise`), the maul on the floor and he gathered over it; a second tap is the second
+blow, heaved straight up from there, the same numbers; with no second tap the first plays on into his guard (38). THE GAME DRAWS:
+its pound at the spot (in the film `blast(..., 'pound')`: cracks and dust).
+
+**EARTHQUAKE** (beside his Slam: its wind-up 0.5 s, struck 1.4 tiles before him, 2.0 round). The face lands 1.4 tiles before him
+(`HAMMER_QUAKE_AT`; measured 1.43). THE GROUND HEAVES OUT IN A RING (the game's to draw: in the film its slam, `blast(..., 'slam')`):
+`HAMMER_QUAKE_ROUND` 2.0 tiles round that point, rolling out to its edge in `HAMMER_QUAKE_ROLL` 0.35 s. TREMORS (the talent:
+“three quakes, each weaker”): DRAWN AS ONE BLOW, the same 45 frames (no more pictures): the ground heaves THREE TIMES from the one
+blow, one after another, `HAMMER_TREMORS`: 0.35 s apart (at 0.5, 0.85 and 1.2 s), each 0.6 tiles WIDER (2.0, 2.6, 3.2 tiles) and
+WEAKER (1, 0.6 and 0.35 of the first's damage); he stays sunk over the maul as the first rolls out and is hauling it up as the last
+does.
+
+**SHOULDER CHARGE** (beside his Lunge: its range, 6 tiles; its half second on the way). He leaves the spot at 0.2 s
+(`HAMMER_CHARGE_GO` 6; his Lunge leaves at once, the Leaping Chop at 0.167 s); THE GAME CARRIES HIM up to `HAMMER_CHARGE_FAR` 6
+tiles over the half second of the drive (in the film 4.4) and `HAMMER_CHARGE_SLIDE` 0.6 more through the skid, slowing; the drive
+is spread over by how far through he is (16 pictures), as his Lunge's is. WHAT HE MEETS is struck and THROWN ASIDE: all within
+`HAMMER_CHARGE_WIDE` 0.7 tiles either side of his path, struck as he reaches them and thrown `HAMMER_CHARGE_THROW` 1.6 tiles off
+his path to their own side (in the film over a quarter of a second: the game's knock would do it). His cloth streams as he goes
+(the figure a frame and three frames before is drawn where the game carried him from: `carried`).
+
+## The rules every frame keeps (the checks: `tests/warrior_weapons.test.ts` 12 to 16, as the axe's 7 to 11)
+
+Every one of the 241 frames of his six lists with the maul, from every one of his eight sides (1,928 pictures): HIS HELM IS SEEN
+(the least in each: standing 79%, running 81%, Smash 60% and 63%, Earthquake 60%, Shoulder Charge 71%); THE FACE points down or
+toward the mark by a quarter at least and never at his own head; BOTH HANDS ON THE GRIP wherever the move has two on it, his right
+wherever one; NOTHING OF THE MAUL THROUGH HIM; his stand and his run the game's own, every number of his body and legs; HIS FEET
+GRIP (the most a foot that is down moves between two frames: 1.37 picture pixels; the game carries him only on a Smash's first
+step and through the charge); the smears the friend's cyan, every pixel whole, nothing of the enemy's; the blows land where the
+rules put them.
+
+Looked at close at the game's size from all eight sides (`tools/warrior_axe_peek.ts`, which now shows the maul's moves and the
+last pieces too, with where the face is) and in the film. Mended on the way: the wind-up's maul had stood straight up before his
+face (his helm hidden from his right, 23%): it now comes up round his right side and is laid back over his shoulder; its
+forearms set across the haft through the haul back; the second tap's heave kept out of his face from the front; the charge's
+skid takes both hands on the haft as the Smash's haul back does (one-handed, the haft lay up his forearm).
+
+**Beside the Brawler and the Gate Ward** (his measure): the Warrior with the maul (standing, the Smash's top and blow, Earthquake's
+top and blow, the charge) laid beside the Veteran (his stance, his jab, his cross) at the game's own size: the maul is sculpted and
+inked as his armour is, its iron in the same five tones, its bright rim the friend's cyan, its smear made as the axe's and the
+great sword's; at their level, neither finer nor rougher. (The Gate Ward's ground is the film's room's own in `axe_moves.mp4`; it
+was not set up again for this look.)
+
+## While the axe flies he may move (his word, above)
+
+`AXE_RUN_MOVES` in `src/art/warrior_up_axe_moves.ts`, from all eight sides:
+
+| List | Pictures | What |
+|---|---|---|
+| `runEmpty` | 15 (0.5 s, a loop) | his own run (`KNIGHT_RUN3`) key for key, his arms as the game's run swings them, NOTHING IN HIS HANDS: the axe's run while it flies, and Twin Axes' (both are out) |
+| `runCatch` | 15 (0.5 s) | THE CATCH ON THE RUN: his run's steps frame for frame from its first picture (his feet where his run puts them), the catch in his arms: it smacks into his hand (0), his arm carried back by it (1 to 3), held (to 6), brought down round his right side (8, 10), his left hand to the butt, carried as his run carries it (12); it ends where his run begins, so it goes on into his run |
+| `twinRunCatch` | 30 (1 s) | the same with Twin Axes: both caught, the second put away over his left shoulder (11), his own brought down into his run (15 to 22); two turns of his run |
+
+On the run his hips and chest are turned as the standing catch turns them (his feet stepping as his run's), handed back to his
+run's as the axe comes down. Standing, he waits braced (`hold`, `twinBraced`) as before. Shown in `axe_run_catch.mp4`. Checked as the moves are
+(`tests/warrior_weapons.test.ts` 17).
+
+## The last pieces, for both weapons (`src/art/warrior_up_heavy_art.ts`)
+
+`makeWarriorHeavyArt(weapon, place)`: 'axe' or 'hammer'; a dungeon, town or his card; the shape `makeWarriorUpArt` gives. Each is
+THE GAME'S OWN MOVE OF HIS, his body and legs frame for frame (`heavyOf`), the weapon in place of the sword:
+
+- STRUCK from in front (`clips.reel`, 8) and from behind (`clips.lurch`, 8): both hands keep it in his guard as his body is
+  thrown about (his right elbow swung a little, so his forearm stays across the haft).
+- HIS FALL (`clips.fall`, 47): his left hand leaves the haft for his knee; his right holds it at the butt and he goes down LEANING
+  ON IT, its head on the floor (where his great sword's point goes), its edge or face down; his lights go out as the game's do.
+- TOWN AND HIS CARD: `idle` (12, at 10 a second) and `walk` (15) the game's town stand and run with it ON HIS BACK as step 1 drew
+  it; on his front side `clips.idleA` (he looks about him, 73 at 20 a second) and `clips.ready` (41: he reaches over his
+  shoulder as the game's draw does and has it in his guard from the moment his hand is at it, two frames before the sword would
+  leave his back).
+- In a dungeon, all his moves with it (`makeWarriorAxeArt`, `makeWarriorHammerArt`) and with the axe `clips.moves.runEmpty`,
+  `runCatch`, `twinRunCatch`.
+
+Checked (`tests/warrior_weapons.test.ts` 18): his bones the game's; every rule kept from every side; but ON HIS BACK FROM BEHIND
+THE HEAD OF THE WEAPON STANDS BEFORE HIS HELM (step 1's carry: the least seen 0% to 9% from behind and behind-left, in town and on
+his card, and the draw's first frames). That is step 1's look, which he saw; see below.
+
+## What the main chat needs
+
+**The lists** (each side's made when first asked for, each frame painted when first read):
+- `makeWarriorHammerArt()` (the maul in a dungeon): `idle` 60, `walk` 15, `clips.attack` 39 (Smash: `hit` 0.433, `poise` 0.7,
+  `tail`), `clips.attack2` 39 (the second blow), `clips.heavy` 45 (Earthquake and Tremors: `hit` 0.5), `clips.leap` 16 (the
+  charge's drive by how far through he is), `clips.land` 22 (the skid, from its first frame, to his guard), `clips.moves.
+  chargeCrouch` 7. The three-picture `attack`, `heavy`, `leap` are picked from those (no pictures of their own).
+
+**ONE LIST, FOR BOTH WEAPONS, OF EVERYTHING THE BAKE TAKES** (`tools/bake_heroes.mjs`; pictures a side, from all eight sides):
+
+| Weapon, place | Lists | A side | Eight sides |
+|---|---|---|---|
+| War axe, a dungeon | `makeWarriorHeavyArt('axe', 'dungeon')`: idle 60, walk 15, attack 37, attack2 28, heavy 21, hold 30, release 19, leap 16, land 23, reel 8, lurch 8, fall 47; moves: chopCrouch 6, twinThrow 21, twinBraced 30, twinCatch 23, runEmpty 15, runCatch 15, twinRunCatch 30 | 452 | 3,616 |
+| The thrown axe in the air | `axeFlying()`: 12 (one list for every way) | | 12 |
+| Maul, a dungeon | `makeWarriorHeavyArt('hammer', 'dungeon')`: idle 60, walk 15, attack 39, attack2 39, heavy 45, leap 16, land 22, reel 8, lurch 8, fall 47; moves: chargeCrouch 7 | 306 | 2,448 |
+| Either, town (and his card: the same lists) | idle 12, walk 15; on his front side also idleA 73, ready 41 | 27 (front 141) | 330 each |
+
+So the war axe is 3,958 pictures and the maul 2,778, beside the great sword's 2,264 in a dungeon: if every weapon is baked, the
+Warrior is about four times the pictures he was; if only the weapon he has picked, never more than the axe's. A frame is about 70
+thousandths of a second to paint here.
+
+**The rules** (they follow these frames; with the axe's, above):
+- SMASH: the blow at 0.433 s, all within 0.4 tiles of a point 1.4 tiles before him; the game's step on a swing; a second tap while
+  the first waits (to 0.7 s, and the game's own window after) is the second blow, the same numbers; the game's pound there.
+- EARTHQUAKE: the blow at 0.5 s; the ground heaves in a ring 2.0 tiles round a point 1.4 before him, out to its edge in 0.35 s
+  (the game's slam). TREMORS: the same blow; three rings, 0.35 s apart, 2.0, 2.6 and 3.2 round, 1, 0.6 and 0.35 of the damage.
+- SHOULDER CHARGE: 0.2 s crouched on the spot; then up to 6 tiles in 0.5 s and 0.6 more in the skid (0.2 s), the game carrying
+  him; all within 0.7 tiles of his path struck and thrown 1.6 tiles aside; in his guard at 1.4 s.
+- THE AXE WHILE IT FLIES: he may move; moving, his run is `runEmpty`, and if he is running when it reaches him the catch is
+  `runCatch` (`twinRunCatch`), else the standing catch. THE CATCH ON THE RUN BEGINS WITH HIS RUN'S FIRST PICTURE: the game starts
+  his run's clock again from it as the catch begins (he is mid-stride either way; else it would want the catch drawn from each of
+  the run's 15 pictures).
+- HIS SIDE: by `wuFacing`, as the great sword's.
+
+**The game's files this step touched** (nothing changes while they are not used): `art/warrior_up_axe_moves.ts` (its keys'
+makers shared with the maul, `heavyKit`; a move may give his bones itself, `pose`, and say how far the game carries him,
+`carried`; `axeFaults` leaves the hands and the edge alone while the weapon is on his back), `dev/axe_film_main.ts` (the film's
+page holds both weapons' moves), `tools/warrior_axe_peek.ts`.
+
+## For him to decide
+
+1. IN TOWN, FROM BEHIND, the head of the axe or the maul on his back stands before his helm (step 1's carry, head up behind his
+   right shoulder). If his helm is to be seen there too, the head goes a little lower and further out on his back.
+2. TREMORS are drawn as THREE QUAKES FROM THE ONE BLOW (no more pictures); three blows would be about 30 more pictures a side.
