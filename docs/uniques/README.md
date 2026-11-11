@@ -43,7 +43,9 @@ and `__dbg.game().giveUnique('windcutter', 12)` (any id from UNIQUE_DEFS) puts o
 
 ## What is not done, and why
 
-1. **His yes on the numbers.** All of them: NUMBERS.md. Nothing goes live before it.
+1. **His yes on the numbers.** All of them: NUMBERS.md. His pick on how to settle them, 11 Nov, by pop-up: “Start with
+   these, tune in play (Recommended)”. So he needs a test build with the switch on, and the numbers change as he says.
+   Nothing goes live with the switch on before his yes.
 2. **Three wait on the ten new words** (queue item put-ten-new-words-live; branch words10): The Headsman's Hood (Culling),
    The Queen's Glass (Mirroring), The Long Echo (Lasting). They are built and add the word by id ('culling', 'mirroring',
    'lasting'); until those ids are words in the game they add nothing. Check the ids when the two branches meet.
