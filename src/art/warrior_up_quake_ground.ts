@@ -209,7 +209,7 @@ export function paintCracks(qi: number, aim: number, grown: number): { px: Px; l
     const a = aim + (k / main) * Math.PI * 2 + (r() - 0.5) * 0.7;
     // (longest along the way he struck)
     const along = Math.cos(a - aim);
-    const long = q.round * (0.3 + 0.28 * Math.max(0, along) + 0.12 * r()) * (0.7 + 0.3 * q.strength);
+    const long = q.round * (0.3 + 0.28 * Math.max(0, along) + 0.12 * r()) * (0.35 + 0.65 * q.strength);
     grow(Math.cos(a) * 0.06, Math.sin(a) * 0.06, a, long, 0);
   }
   for (const pts of paths) {

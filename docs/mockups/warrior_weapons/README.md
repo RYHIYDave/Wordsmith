@@ -373,8 +373,8 @@ Nothing of the game imports either (`tests/warrior_weapons.test.ts`, 1).
 
 ## The films
 
-- `pictures/hammer_moves.mp4`: 33.3 s (999 pictures; made again in step 3b with the new Earthquake and Tremors), 30 a second,
-  H.264 (yuv420p), 1266 by 652, 5.5 MB. Shot as `axe_moves.mp4`
+- `pictures/hammer_moves.mp4`: 38.0 s (1,139 pictures; made again in step 3b with the new Earthquake and Tremors, and in step 3c
+  with the ground quaking and a slow, close Tremors), 30 a second, H.264 (yuv420p), 1266 by 652, 6.5 MB. Shot as `axe_moves.mp4`
   was, in the practice room on the phone's wide screen, the game drawing it: standing; running once round a ring; SMASH and its
   second tap (toward you, side-on, away); EARTHQUAKE (side-on, away); TREMORS (toward you); SHOULDER CHARGE (side-on, toward
   you, away); each a second time at half speed and twice the size. The game's own pound and slam on the floor, its hits and its
@@ -609,3 +609,52 @@ He did not fault the tap while the axe is out.
 At 09:41 he wrote: “Tap should have a small knockback and high stun buildup/chance”. Read as the hammer's tap, the SMASH (he had
 asked “What does the hammer tap actually do?”): what it hits is pushed back a little, and it builds stun fast or has a high
 chance to stun. A RULE FOR THE MAIN CHAT, passed on with the hand-over; no new pictures asked of art for it.
+
+## Step 3c: the Earthquake's ground, drawn (the art chat's helper, 11 Nov 2026)
+
+His pick: “The ground should really quake (Recommended)”. THE SWING STAYS AS IT IS (the full spin, then down: not one frame or
+number changed). What is new is the earthquake itself, drawn IN PLACE OF THE GAME'S THIN SLAM RING: `src/art/warrior_up_quake_ground.ts`
+(behind the switch that is off; nothing of the game imports it: `tests/warrior_weapons.test.ts` 1).
+
+**What is drawn** (at the game's own size, on the floor's own plane: a ring on the floor is an ellipse twice as wide as tall; in
+the floor's stone and the game's ink, `P.st1` to `P.st7`, `P.ink`, `P.black`, as the game's own cracked floor and dust are, so it
+sits on any floor; the only light a thin line of the friend's cyan on the crest's first frames; nothing pink or gold; every
+pixel whole):
+- THE BLOW: the stone broken under the maul's face (a small dark hollow at the mark), grit thrown up out of it, and CRACKS
+  tearing out from the mark: forked and jagged, longest along the way he struck (3 pictures as they tear open, for each of his
+  eight sides).
+- THE HEAVE: a wave runs out through the floor to the ring's edge in 0.35 s; where it is, THE FLAGSTONES LIFT AND TILT, each its own
+  height and a little crooked: a ridge of broken stones, their lifted edges lit, the dark where each stood showing under it, each
+  dropping back as the wave passes on; it dies at the edge over a sixth of a second.
+- THE SETTLING: dust thrown up off the ridge where the wave passed hangs, spreads, thins and goes (pixel by pixel, never half
+  see-through); a few small stones hop twice and come to rest. The cracks stay.
+
+**Frames** (30 a second; frame 0 is the blow, 0.633 s into the Earthquake): the heave 0 to 10 (0.35 s), dying by 15; the dust and
+the stones to 29 (1 s in all for the heave and the settling); the cracks torn open 0 to 2, then kept by the game 2.4 s from the
+blow and faded over the last four tenths of that, as its own cracked floor (`QUAKE_CRACKS_LAST`).
+
+**For the game, each quake anchored at the mark** (the ring's middle, where the face struck, 1.46 tiles before him), as
+`quakeGround(i)`: `cracks[side]` (3; UNDER everyone; the game keeps the last and fades it), `under` (30; UNDER everyone: the
+heaved stones) and `over` (30; drawn at the mark's own depth among those standing: the dust, the grit, the stones). Quake 0 is
+the Earthquake's (and Tremors' first): 2.0 tiles round; Tremors' second and third (`quakeGround(1)`, `(2)`): 2.6 and 3.2 tiles
+round, 0.35 s and 0.7 s after the first, EACH WEAKER (a lower ridge, less dust, fewer and thinner cracks), DRAWN AT EACH SIZE,
+the first's cracks still lying there.
+**Counts for the bake**: each quake 30 + 30 + 3 × 8 = 84 pictures; the three, 252 (one list for every side but the cracks).
+
+**What the game must do**: for the Earthquake (and Tremors), DRAW THESE IN PLACE OF ITS SLAM RING (its blast's 'slam' rings and
+specks); the cracks under everyone, kept and faded as its own; the hurt as now (the ring's: what the wave reaches as it reaches
+it, in the film).
+
+**The film and the picture**: `pictures/hammer_moves.mp4` made again (38.0 s): its Earthquake and Tremors with the ground and
+without the game's dotted ring; the slow, close Earthquake framed on the mark so the whole ring is seen, and now a slow, close
+Tremors too. `pictures/quake_phone.png` (1260 by 1816): six moments of the one Earthquake (the blow; the wave a third out; two
+thirds; at the edge; the dust settling; what is left), two across, and under them Tremors' three quakes side by side
+(`tools/quake_phone.py`, from the film's stills).
+
+**Checked** (`tests/warrior_weapons.test.ts` 20): the lists whole; crisp; only the floor's stone, its ink and the friend's cyan,
+nothing of the enemy's; the heave reaches the ring's edge and not past it by more than a third of a tile; each of Tremors'
+quakes lower, with fewer cracks and less dust, than the one before.
+
+**His measure**: looked at in the film at the game's size among the practice room's skeletons, cultist and brute, where the
+stones, cracks and dust sit at their level. NOT laid beside the Gate Ward and the Brawler this time: a quick attempt to paint
+them side by side came out wrong (colours and places) and was not mended.
