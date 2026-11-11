@@ -8,7 +8,7 @@ Asked for by the main chat on the chat board, 8 Nov 2026, 08:40: “PLEASE DRAW 
 
 Shown him on 11 Nov 2026, about 08:05 (Eastern): `pictures/endless_splash.png` and `pictures/endless_splash.mp4`, and asked whether it was right. **His answer, by 08:17: “Gimme 10 options”.** Read as with the start screen's ten (21 Oct, `src/dev/title_options.ts`): ten stills, each a different direction, painted small and not yet moving, each with a line of what would move in it; the one he picks is painted full size and given its moment. The hall of gates is the first of the ten, as it is painted.
 
-**THE TEN** (`src/dev/endless_options.ts`; `options/option_01.png` to `option_10.png`, sent him about 08:20). **HIS PICK, by 08:30: “2 The stair with no bottom”.** It is painted full size with its moment (below, "The stair with no bottom"): `pictures/endless_stair.png` and `pictures/endless_stair.mp4`, shown him about 09:00. **His yes to it: not yet given.**
+**THE TEN** (`src/dev/endless_options.ts`; `options/option_01.png` to `option_10.png`, sent him about 08:20). **HIS PICK, by 08:30: “2 The stair with no bottom”.** It is painted full size with its moment (below, "The stair with no bottom"): `pictures/endless_stair.png` and `pictures/endless_stair.mp4`, shown him about 08:40. **His yes to it: not yet given.**
 
 1. THE HALL OF GATES (the one painted here).
 2. THE STAIR WITH NO BOTTOM: straight down a round shaft, ring under ring of every floor's stone, a stair winding down its wall, the enemy's fire at the bottom.
