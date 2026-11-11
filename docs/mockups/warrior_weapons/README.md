@@ -477,9 +477,17 @@ THE GAME'S OWN MOVE OF HIS, his body and legs frame for frame (`heavyOf`), the w
 - In a dungeon, all his moves with it (`makeWarriorAxeArt`, `makeWarriorHammerArt`) and with the axe `clips.moves.runEmpty`,
   `runCatch`, `twinRunCatch`.
 
-Checked (`tests/warrior_weapons.test.ts` 18): his bones the game's; every rule kept from every side; but ON HIS BACK FROM BEHIND
-THE HEAD OF THE WEAPON STANDS BEFORE HIS HELM (step 1's carry: the least seen 0% to 9% from behind and behind-left, in town and on
-his card, and the draw's first frames). That is step 1's look, which he saw; see below.
+Checked (`tests/warrior_weapons.test.ts` 18): his bones the game's; every rule kept from every side, HIS HELM SEEN ON HIS BACK TOO.
+(As step 3 was handed back, the head of the weapon on his back stood before his helm from behind and behind-left, 0% to 9% of it
+seen, in town, on his card and in the draw's first frames: step 1's carry, the head up behind his right shoulder. MENDED BY THE
+ART CHAT, 11 Nov 2026, before he was asked anything: the weapon is slung ACROSS his back, its head out past his right shoulder
+and clear of his helm, the haft down to his left hip (`onHisBack`: `BACK_LEAN` 54, the head's heart 1.75 shoulder-halves out;
+a hammer's 2 above the root of his neck, an axe's wider head 4 below it). The least of his helm seen now, in every frame from
+every side: the maul, town 81%, his town run 76%, his look about him 79%, the draw 81%; the war axe, 81%, 69%, 79%, 82%.
+Nothing through him. The head still reads from all eight sides (the least, from his front-left: the maul 136 picture pixels,
+the war axe 137; the rule is 100). Test 18 holds the helm rule on his back as everywhere else; test 3 keeps the reads-on-his-back
+rule for the two takes he picked (the bearded axe he did not pick shows 29 from his front-left there, and is drawn no more).
+`pictures/weapons_looks.png` is step 1's sheet and still shows the old carry.)
 
 ## What the main chat needs
 
@@ -522,6 +530,6 @@ page holds both weapons' moves), `tools/warrior_axe_peek.ts`.
 
 ## For him to decide
 
-1. IN TOWN, FROM BEHIND, the head of the axe or the maul on his back stands before his helm (step 1's carry, head up behind his
-   right shoulder). If his helm is to be seen there too, the head goes a little lower and further out on his back.
+1. (SETTLED, not his to decide: mended 11 Nov 2026, above.) In town, from behind, the head of the axe or the maul on his back
+   stood before his helm; it is slung lower and further out now, and his helm is seen from every side.
 2. TREMORS are drawn as THREE QUAKES FROM THE ONE BLOW (no more pictures); three blows would be about 30 more pictures a side.

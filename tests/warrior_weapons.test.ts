@@ -140,7 +140,9 @@ test('3. each take reads from all eight sides, in his guard and on his back (100
       for (const side of WU_SIDES) {
         const n = takeSeen(frame(id, hold, side)).head;
         if (n < low) [low, where] = [n, side];
-        if (n < 100) short.push(`${id} ${hold} ${side}: ${n}`);
+        // (on his back the rule is kept for the two takes he picked, the war axe and the maul: the carry was slung lower on
+        // 11 Nov 2026 so that his helm is seen from behind, and the four takes he did not pick are drawn with no more)
+        if (n < 100 && (hold !== 'town' || id === 'axeB' || id === 'hammerA')) short.push(`${id} ${hold} ${side}: ${n}`);
       }
       least.push(`${id} ${hold} ${low} (${where})`);
     }
@@ -567,8 +569,8 @@ test('16. the maul\'s strikes: their smears are the friend\'s cyan and nothing o
 // STEP 3, THE LAST PIECES FOR BOTH WEAPONS (src/art/warrior_up_heavy_art.ts; the axe's run while it flies:
 // src/art/warrior_up_axe_moves.ts AXE_RUN_MOVES)
 
-/** Every frame of a move, or every `step`th, from all eight sides: what breaks a rule. On his back (town) only nothing through him
- * is his to keep (the weapon's head is where step 1 put it: from behind it may stand before his helm). */
+/** Every frame of a move, or every `step`th, from all eight sides: what breaks a rule. On his back (town) too his helm is seen
+ * from every side (11 Nov 2026: step 1's carry stood the weapon's head before his helm from behind; it is slung lower now). */
 function looked(name: string, m: AxeMove, step = 1): { bad: string[]; frames: number } {
   const bad: string[] = [];
   const n = framesOf(m);
@@ -576,11 +578,10 @@ function looked(name: string, m: AxeMove, step = 1): { bad: string[]; frames: nu
   for (let i = 0; i < n; i += step) {
     const t = i * AXE_FRAME;
     const p = axePosed(m, t);
-    const stowed = p.q.stow > 0.5;
     for (const side of WU_SIDES) {
       const f = paintAxe(m, t, side);
       frames++;
-      for (const x of axeFaults(m, t, f, p)) if (!(stowed && /helm/.test(x)) && (/helm/.test(x) || side === 'front')) bad.push(`${name} f${i} ${side}: ${x}`);
+      for (const x of axeFaults(m, t, f, p)) if (/helm/.test(x) || side === 'front') bad.push(`${name} f${i} ${side}: ${x}`);
     }
   }
   return { bad, frames };

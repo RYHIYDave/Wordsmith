@@ -441,22 +441,26 @@ export function layTake(into: Sculpt, take: WeaponTake, pl: Placed): { mats: num
 // ---------------------------------------------------------------------------------------------
 // HOW HE HOLDS THEM. In his hands: the take runs through his right hand (X 0) along the way his bones point what is held
 // (`s.point`), his left hand on it toward the butt (`lhIn` 3: `lhx` along it), its edge toward `s.across` turned by the pose's
-// `wRoll`. On his back: as his great sword is (art/carried.ts), but the head up behind his right shoulder and the haft down
-// across his back to his left hip, flat against it, its edge out to his right.
+// `wRoll`. On his back: as his great sword is (art/carried.ts), but slung ACROSS his back: the head out over his right shoulder
+// blade and beyond, CLEAR OF HIS HELM, the haft down across his back to his left hip, flat against it, its edge out to his right. (Step 1 had
+// the head up behind his right shoulder: from behind it stood before his helm, 0% to 9% of it seen, and he read as headless.
+// Mended 11 Nov 2026: his helm is seen from every side in town too, as in every move.)
 
 export type Hold = 'guard' | 'town' | 'cleave' | 'smash';
 
-/** Where a take lies on his back, from his chest (forward, left, up) at the root of his neck: the head up behind his right shoulder. */
-const BACK_LEAN = 24;
+/** Where a take lies on his back, from his chest (forward, left, up) at the root of his neck: the head out past his right shoulder, clear of his helm. */
+const BACK_LEAN = 54;
 function onHisBack(take: WeaponTake, b: Build, s: Skeleton): Placed {
   const [cf, cl, cu] = s.chest;
   const along = (v: V3): V3 => add(mul(cf, v[0]), add(mul(cl, v[1]), mul(cu, v[2])));
   const a = (BACK_LEAN * Math.PI) / 180;
   const up: V3 = [0, -Math.sin(a), Math.cos(a)];
   const out: V3 = [0, -Math.cos(a), -Math.sin(a)];
-  // (the head's heart over his right shoulder blade, clear of his back, his scarf's knot and the skirt of his tabard; the haft
-  // leaning out from him a little toward its butt, as a weapon slung on a strap hangs from it)
-  const head: V3 = [-(b.ribDeep + b.pad + 2.3), -b.shoulderHalf * 0.52, 8.5];
+  // (the head's heart out past his right shoulder, about the height of the root of his neck: from behind his helm stands clear
+  // beside and above it, and from his front-left the head still shows past his shoulder; an axe's wide head a little lower than a
+  // hammer's, or its upper bit comes before his helm as he leans into his run; clear of his back, his scarf's knot and the skirt
+  // of his tabard; the haft leaning out from him a little toward its butt, as a weapon slung on a strap hangs from it)
+  const head: V3 = [-(b.ribDeep + b.pad + 2.3), -b.shoulderHalf * 1.75, take.kind === 'axe' ? -4 : 2];
   const off = 25;
   const lean = 3 * (Math.PI / 180);
   const upL: V3 = norm([Math.sin(lean), up[1], up[2] * Math.cos(lean)]);
