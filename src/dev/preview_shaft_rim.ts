@@ -1044,8 +1044,8 @@ function main3(mode: string, out: HTMLCanvasElement): void {
     draw(slab, 30, 940, 6.4);
     cap(g, 'A torch', 720, 890);
     pave(700, 932, 480, 500);
-    draw(paintTorchPost(), 820, 940, 4.6);
-    draw(paintTorchFlame(3), 820, 940, 4.6);
+    draw(paintTorchPost(), 880, 944, 3.8);
+    draw(paintTorchFlame(3), 880, 944, 3.8);
   }
   done();
 }

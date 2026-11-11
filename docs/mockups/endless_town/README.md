@@ -385,3 +385,138 @@ the hand-over between passes is hidden under the brink and that the canyon's doo
 Shaft's Rim's stair right now, with its slope (pit_phone.png)?”, he answered: “Yes, draw the rest (Recommended)” (offered as:
 next, the gate, the record stone, the trophies wall, the socket in the bench and the torches, then a film of the town alive).
 SO THE GROUND, THE PIT AND ITS STAIR HAVE HIS YES. Next, step 4: the new things that stand on it, a film, and the hand-over.
+
+## Step 4: the things that stand on the rim, drawn to the game's standard; the town alive (11 Nov 2026)
+
+On his yes of 13:06 (“Yes, draw the rest (Recommended)”). The ground, the pit, the stair, the kerb and the landing are as he
+said yes to them, unchanged. Every station is on its locked tile.
+
+### What was drawn (`src/art/shaft_props.ts`, behind `ENDLESS_TOWN`, off; nothing of the game imports it)
+
+Each is built the way the town's own things are (`art/town.ts`): boxes on the grid (`art/isokit.ts`), two picture pixels to a
+game pixel, the game's dark seam round each, lit from the upper left. The stone is the shaft's top stone (the town storey of the
+splash), weathered darker.
+1. **THE GATE** (`paintGate`): an arch standing free at the back with no wall round it, on a worn plinth. Big dressed blocks in
+   courses, a ring of eleven wedge stones and a keystone round the doorway, one long lintel stone, a cap of five stones with the
+   last one broken off, and an old crack down the left pillar. The doorway opens on the dark: a plane of night halfway through
+   it. You can see the left jamb's inner side, and the threshold under it. On the lintel are **three round sockets**: dressed
+   rims, black hollows with a dim teal edge, empty, and no light.
+2. **THE RECORD STONE** (`paintRecord(n, newest)`): one tall slab with a rounded, leaning shoulder (built slice by slice, so it
+   is a real shape), on a foot of rough stones, with weather streaks. **The notches** are tally cuts in rows of ten: four upright
+   cuts and a fifth across them, each a dark cut with its far wall catching the light. There is room for 70 (seven rows). The
+   newest can glow the friend's cyan, with a small cyan light.
+3. **THE TROPHIES WALL** (`paintTrophyWall`, `paintTrophies(held)`, `paintTrophy(k)`): a low coursed wall with a cap. It has
+   **four mounts**, each an iron plate set in the wall with rivets and an iron bracket arm with a hook. The bosses are the ones
+   the game gives floors 5, 10, 15 and 20 (`game/bosses.ts` bossKind, `game/act1.ts`). Each trophy is made from that boss's own
+   look and colours, is original, and gives no light:
+   - floor 5, **the Fleshmancer**: the skull from his staff, burnt out, the sockets black, on the stub of his fused-bone staff,
+     with a rag of his plum robe;
+   - floor 10, **the Swamp Colossus** (its redo, `art/eye_colossus.ts`): the eye from the end of its tongue, put out. The white
+     has gone yellow and veined, the gold iris is dead to a dull brown, the slit is shut, and the tongue's stump hangs in its
+     sections;
+   - floor 15, **the Censor**: his blank white mask, cracked across, on his fan of black pages, with his brush across behind;
+   - floor 20, **the Moth**: its ash wings pinned open on a furred body, with feathered feelers, and the eye on each wing shut
+     for good.
+4. **THE TABLET'S SOCKET** (`paintSocketSlab(stone, frame)`): the game's own wordsmith's slab, with its feet, its runes along
+   the front, the word that lifts off it and its eight frames. The great rune in its top has given way to a round hollow cut in
+   four: the far wall of the hollow shows, and its floor is split by two ribs. It is empty.
+5. **THE FOUR TORCHES ON POSTS** (`paintTorchPost`, `paintTorchFlame(f)`): a squared post of the game's plum wood, aged dark,
+   with iron bands, on a stone foot, and an iron cup with three prongs at the head. The flame is the game's fire (`tongue`,
+   `EMBER`): a tall tongue and two small ones, 12 frames at 30 a second, with a warm pool of light on the paving.
+
+### ONE LIST FOR THE MAIN CHAT: everything the town gives and how to lay it
+
+Tiles are on the rim's 24 x 24 grid, and a tile is 32 x 16 game pixels. "Anchor" is the middle of a thing's foot, as the
+game's things have it.
+- **The ground**, as step 3 left it: `rimPlace()` gives `walk` (0 rock, 1 floor, 2 the pit), `town` (the game's own things on
+  their tiles) and `more`; `paintRimGround()` gives one picture (1360 x 776, top left at `GROUND.gx, gy`). There are 27 kerb
+  and landing posts (`rimPosts()`, `paintPost()`), the shaft's torches (`shaftTorches()`, `paintFlame(f)`, 12 frames at 30 a
+  second), and the far fire (`paintPitGlow()`, added at `pitGlowAt(t)`, a 2.6 s breath).
+- **The new things**, from `rimPieces()`: each has its station's tile, the floor point its anchor is laid on (`at`), the
+  tiles it blocks, and a point to sort it in depth by (`depth`, bigger x + y is nearer):
+  - gate: tile 7, 6; anchor at 8.5, 6.5; blocks 7, 6; 8, 6; 9, 6. Picture 124 x 210 (62 x 105 game pixels).
+  - record: tile 5, 9; anchor at 5.5, 9.5; blocks 5, 9. Picture 52 x 156.
+  - trophies: tile 10, 5; anchor at 11.5, 5.5; blocks 10, 5; 11, 5; 12, 5. Picture 124 x 120.
+  - four torches: at 6.6, 14.2 (by the stash); 6.6, 16.6 (by the Lexicon); 16.35, 11.6 (by the tent); 6.8, 9.3 (by the
+    record). Each blocks its own tile. Picture 26 x 124 for the post and for each flame frame (the same anchor).
+  - the wordsmith's slab with the socket: on the game's runeSlab tile (10, 18). It takes the place of the game's slab
+    picture, eight frames, picture 68 x 76.
+- **The three word sockets** (`GATE_SOCKETS`): their middles in game pixels from the gate's anchor are (-15.1, -63.4),
+  (-4.1, -57.9) and (6.9, -52.4), radius 3. The game draws its three words there (the towns now show them only in the gate's
+  panel, `ui/town.ts` gateSide).
+- **The notches** (`RECORD_NOTCHES`, 70 places): an upright's top, or the ends of the fifth across, in game pixels from the
+  record's anchor (the first is at (-7.4, -51.6)). An upright is one picture pixel wide and 3 game pixels tall. The record is
+  one picture, painted again when a notch is cut (about 2 to 3 ms): `paintRecord(n, newest)`.
+- **The four mounts** (`TROPHY_MOUNTS`, `TROPHY_BOSSES`): the hooks are at (-22.5, -26.5), (-11, -21), (0.5, -15) and
+  (12, -9.5) game pixels from the wall's anchor, in order for floors 5, 10, 15 and 20. Each mount is empty (bracket and plate)
+  or filled (that boss's trophy, 24 x 30, hung by its top middle from the hook). `paintTrophies(held)` makes the one picture.
+- **The bench's socket** (`BENCH_SOCKET`): its middle is (0, -11) game pixels from the slab's anchor, its radius 0.24 of a tile
+  (on the screen 5.4 by 2.7 game pixels), and it is 1.5 game pixels deep. The tablet and its quarters are set there.
+- **What moves, and at what rate**: each torch's flame, 12 frames at 30 a second, each torch at its own phase. The slab's word,
+  eight frames, as the game's. The shaft's torches and the far fire, as in step 3. Nothing else of the new things moves.
+- **The lights**: each torch frame has two orange lights (`EMBER`): the flame (r 11 to 12 game pixels, 0.5) and the pool on the
+  paving (r 23 to 24, 0.24). The newest notch has a cyan light (r 4.5 to 5, 0.45) when asked for. The slab keeps the game's own
+  cyan. The gate's sockets and the trophies give none. Nothing pink or gold glows on the rim.
+- **What it costs, measured** in this session's headless Chromium (three paintings, not on his phone): all the new things
+  together took 22 to 30 ms. The gate 10 to 14, the record 2 to 3, the trophies wall 4 to 5, a post under 1, the twelve flames
+  1.4 to 2.2, the eight slab frames 3 to 4. That is 23 small pictures in all (gate 1, record 1, wall 1, slab 8, post 1, flames
+  12; the four torches share the post and the flames), about half a megabyte as canvases. A frame costs a few more pictures
+  laid down.
+- **Layout mended**: three of the four torches in `RIM_LAYOUT.torches` had been copied wrong from the mock-up, one of them onto
+  the Lexicon's own tile. They are back where the mock-up he locked in had them, with two moves. The record's torch is a tile
+  back, beside the stone, because on its old tile it stood in front of the notches. The tent's torch is moved within its tile,
+  off the one way between the pit and the smithy.
+
+### Still the main chat's to decide
+
+- When this is the town (in endless, while a run is on), where he wakes, and what the waypoint leads back to.
+- The record's rules: what it counts, a notch a level or a mark every five, and what happens past 70. The trophies' rules:
+  whether a mount is filled while the quarter is held or once it has been won.
+- The tablet, set in the socket; the portal opening on the tongue's landing; the boss.
+- The eight other towns as looks to unlock or buy.
+- **Walking in this town**: the way between the pit and the smithy is one diagonal step between the anvil's tile and the tent's
+  torch. The wordsmith's ring is reached only diagonally between its standing stones. The way round the front right passes
+  under the bazaar's awning. The film keeps to the clear ways; the game's own walking rules decide the rest.
+
+### For the sound chat
+
+What in this town makes a sound, and when:
+- the shaft: a far, low rumble from the depth, always there, swelling with the far fire's breath (a 2.6 s round), and a cold
+  draught up out of the mouth, louder at the brink;
+- the four torches: a soft crackle and flutter near each, and the braziers as the game's;
+- a notch cut in the record stone as a new endless level is reached: a chisel's two or three strikes on stone, with a faint
+  bright ring as the new notch glows;
+- a trophy hung on its mount: iron on iron as it goes onto the hook, a dull knock against the wall;
+- the gate's three sockets as a word is set in one: the game's own sound for a word set on the gate.
+
+### Pictures and film (`pictures/`)
+
+- `props_phone_1.png` (1200 x 1200): the gate and the record, each at the game's size and twice, and the notches close.
+- `props_phone_2.png` (1200 x 1460): the trophies wall empty and full, the four trophies, the bench's socket and a torch.
+- `rim3_whole.png` (1200 x 624): the whole town, everything now drawn for real, with no labels.
+- `rim3_view_1.png`, `rim3_view_2.png` (1014 x 528): two phone screens at the game's zoom, the knight at the gate (with the
+  record and the trophies), and at the wordsmith's bench.
+- `rim3_measure.png` (948 x 1116): a piece of the Gate Ward (floor 11, from the game) above a piece of the rim's new things,
+  each taken at the same size on the screen and enlarged three times alike.
+- `rim_town.mp4`: 11.5 s, 30 fps, H.264 yuv420p, 1014 x 528, with a line of words under it. The knight walks round the pit with
+  the game's own walk (its frame set by how far he has gone) and stands as the game's knight stands. He starts by the smithy's
+  rack, passes the way down, stops at the trophies, the gate and the record, and goes on past the stranger and the stash to the
+  Lexicon, with the wordsmith's ring before him. The flames move, the far fire breathes and the townsfolk keep their own loops.
+  Every step is checked (`checkRoute()`: on floor, through no station or new thing, never at the kerb or a post). Made by
+  `node tools/rim_town_film.mjs <dir>`, then ffmpeg (its head says how).
+- Made by `node tools/preview.mjs src/dev/preview_shaft_rim.ts <out> W H <mode>`, modes `whole3`, `view3:1`, `view3:2`,
+  `props1`, `props2`, `check` (the route and the painting times, in the log).
+
+### Held to the measure
+
+`rim3_measure.png` puts the Gate Ward and the new things side by side. They have the same grain: flat tones, a seam of one
+pixel, the game's dark seam round each thing, and light in bands. The gate's blocks are bigger than the Gate Ward's house
+stones, because they are a monument's dressed blocks. That is the same grain at a bigger build, not rougher. The finest thing
+is the record's tally cut (one picture pixel), the same grain as the Gate Ward's window bars. Nothing is finer. Its tones sit
+with the Gate Ward's lit walls, a step warmer by the torches.
+
+### Not done
+
+- The way down's waypoint in the rim's stone, and the pit's lower storeys for a taller screen (step 3's "perhaps").
+- The tablet and its quarters, the portal and the final boss (other items).
+- The film does not go into the wordsmith's ring or round the bazaar: see "Walking in this town".
