@@ -70,10 +70,14 @@ export const GREAT = 4;
 // LOOK B'S COLOURS (his pick): five tones a material, its seam to its lit edge
 
 type R5 = readonly [string, string, string, string, string];
+// (LIFTED A NOTCH, 9 Nov 2026: shown floor 3 as it was beside a test with its stone and flags lifted and its dark thinned
+// from 0.8 to 0.65 (2_floor3_before_after.png: 57% of the view near-black, down to 35%), his pick: “Yes, as shown (Recommended)”.
+// The stone was '#09090d', '#131319', '#1c1c24', '#282731', '#433f4c'; the flags '#0b0b10', '#16151c', '#201f27', '#2c2a34', '#46414e'.
+// The same stone is said again in art/stoker_room.ts ROOM_STONE and art/chapel.ts PRISON_STONE, lifted with it.)
 /** The prison's dark stone: a cool charcoal (its walls). */
-export const STONE: R5 = ['#09090d', '#131319', '#1c1c24', '#282731', '#433f4c'];
+export const STONE: R5 = ['#101018', '#1b1b25', '#272733', '#343341', '#4b4656'];
 /** Its floor's flags. */
-export const FLAGS: R5 = ['#0b0b10', '#16151c', '#201f27', '#2c2a34', '#46414e'];
+export const FLAGS: R5 = ['#13131b', '#1f1e29', '#2b2a36', '#383644', '#4f4a58'];
 /** Black iron. */
 export const IRON: R5 = ['#09090c', '#16161b', '#222128', '#323039', '#55505e'];
 /** Rust: its dark, its body, its bright. */
@@ -843,8 +847,8 @@ function gradePiece(p: Piece): Piece {
 // over it, `drawGlow` / a sprite's `lights`). In game pixels, from where each thing is anchored.
 
 export const PRISON_LIGHTS = {
-  /** The floor's dark in the prison: the Crypt's FAR_DARK is 0.88; look B's deep shadow between the fires. */
-  dark: 0.8,
+  /** The floor's dark in the prison: the Crypt's FAR_DARK is 0.88; look B's deep shadow between the fires (0.8 until 9 Nov 2026: thinned with the stone lifted, above). */
+  dark: 0.65,
   /** A fire basket on the wall (the floor's own, 'fire basket'): its hole round its fire (up the wall from the face's foot), and its glow. */
   basket: { up: 22, r: 56, strength: 0.85, glow: { r: 28, color: EMBER[2], a: 0.34 } },
   /** A glowing grate (a tile): its hole round the tile's middle (8 down from the tile's top corner), and its glow. */

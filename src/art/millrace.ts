@@ -41,6 +41,7 @@
 import type { RGB, TerrainLook } from './terrain';
 import { fbm, vnoise } from './terrain';
 import { hash } from './kit';
+import { ART_TWEAKS } from './tweaks';
 import { quietRGB, quietTerrain } from './act2_quiet';
 import { FLOW, acrossOf, waterAt } from './flowing';
 import type { FlowLayer, WaterStyle } from './flowing';
@@ -278,22 +279,24 @@ function stalkAt(x: number, y: number, px: number, py: number, tone: number, muc
   const cy = Math.floor(py / 6);
   const sx = px + (cy % 2) * 4;
   const cx = Math.floor(sx / 8);
-  if (hash(cx, cy, 1381) >= much) return null;
+  // (ART_TWEAKS.field, a mock-up: the corn quieter, a step below the fight: fewer clumps, each over two tones and not four)
+  const q = ART_TWEAKS.field;
+  if (hash(cx, cy, 1381) >= (q ? much * 0.8 : much)) return null;
   const ax = cx * 8 - (cy % 2) * 4 + Math.floor(hash(cx, cy, 1382) * 3);
   const foot = cy * 6 + 4 + Math.floor(hash(cx, cy, 1383) * 2);
   const n = 3 + Math.floor(hash(cx, cy, 1384) * 3);
   const lean = vnoise(x * 0.45, y * 0.45, 1385) > 0.5 ? 1 : -1;
   const dy = foot - py;
   if (dy < 0) return null;
-  if (dy === 0) return px >= ax - 1 && px <= ax + 2 * n - 1 ? MR_GOLD[Math.max(0, tone - 2)] : null;
+  if (dy === 0) return px >= ax - 1 && px <= ax + 2 * n - 1 ? (q ? null : MR_GOLD[Math.max(0, tone - 2)]) : null;
   for (let k = 0; k < n; k++) {
     const tall = 3 + Math.floor(hash(cx * 5 + k, cy, 1386) * 3);
     if (dy > tall) continue;
     // (the top two pixels lean over)
     const bx = ax + 2 * k + (dy >= tall - 1 ? lean : 0);
     if (px !== bx) continue;
-    if (dy === tall) return MR_GOLD[Math.min(6, tone + 2)];
-    if (dy === tall - 1) return MR_GOLD[Math.min(6, tone + 1)];
+    if (dy === tall) return MR_GOLD[Math.min(6, tone + (q ? 1 : 2))];
+    if (dy === tall - 1) return MR_GOLD[Math.min(6, tone + (q ? 0 : 1))];
     return MR_GOLD[tone];
   }
   return null;
@@ -320,7 +323,7 @@ function stubble(x: number, y: number, px: number, py: number): RGB {
   const t = fbm(x * 1.8, y * 1.8, 1401);
   let c = MR_EARTH[over(t, 0.55, px, py) ? 2 : 1];
   const r = mod(px + py * 2, 5);
-  if (r === 0 && hash(px >> 1, py, 1402) < 0.6) c = MR_GOLD[hash(px, py >> 1, 1403) < 0.5 ? 5 : 4];
+  if (r === 0 && hash(px >> 1, py, 1402) < 0.6) c = MR_GOLD[(hash(px, py >> 1, 1403) < 0.5 ? 5 : 4) - (ART_TWEAKS.field ? 1 : 0)];
   else if (r === 1 && hash(px >> 1, py, 1402) < 0.4) c = MR_GOLD[2];
   return c;
 }

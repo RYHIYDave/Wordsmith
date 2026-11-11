@@ -30,6 +30,7 @@ import type { Art } from '../render/render';
 import { QUEST3 } from '../art/quest3';
 import { MELD_DROPS } from '../art/meld_drops';
 import { pressName } from './guide';
+import { ART_TWEAKS } from '../art/tweaks';
 import type { Banner } from './guide';
 import { THEME } from './ui';
 import type { Ui } from './ui';
@@ -85,12 +86,87 @@ function disc(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, co
   }
 }
 
+// (ART_TWEAKS.globe, a mock-up from the art review of 9 Nov 2026, off) THE GLOBE AS GLASS IN AN IRON BAND: "a touch of the
+// world" (his rulebook, Menus 2: "A carved corner, a rune, an iron rivet"). The liquid, its line of light and the thin
+// ring that tells what ails the hero are as they were; added, the side of the liquid away from the light a shade deeper,
+// a glint on the glass toward the light, and round it a band of iron (lit from the upper left) with four rivets. One game
+// pixel wider each way than the plain globe. Painted once for each level of the liquid and kept.
+const GLOBE_IRON = ['#1c1836', '#3a3560', '#6f6a96', '#bcb8d8'] as const;
+const globeKept = new Map<string, HTMLCanvasElement>();
+const mixHex = (a: string, b: string, t: number): string => {
+  const p = (h: string, i: number): number => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+  return `#${[0, 1, 2].map((i) => Math.round(p(a, i) + (p(b, i) - p(a, i)) * t).toString(16).padStart(2, '0')).join('')}`;
+};
+function globeGlass(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, frac: number, fill: string, light: string, rim: string): void {
+  const f = Math.max(0, Math.min(1, frac));
+  /** The glass's reach, and the picture's (game pixels from its middle). */
+  const R = r - 0.5;
+  const half = r + 3;
+  /** In picture pixels (two to a game pixel): the picture's side, its middle, the glass's reach, the row of the liquid's surface. */
+  const N = half * 4;
+  const mid = N / 2;
+  const Rp = R * 2;
+  const level = f <= 0 ? N : Math.round(mid + Rp - f * 2 * Rp);
+  const key = `${r}|${level}|${fill}|${light}|${rim}`;
+  let c = globeKept.get(key);
+  if (!c) {
+    if (globeKept.size > 96) globeKept.clear();
+    c = document.createElement('canvas');
+    c.width = N;
+    c.height = N;
+    const q = c.getContext('2d') as CanvasRenderingContext2D;
+    const deep = mixHex(fill, THEME.ink, 0.4);
+    const glint = mixHex(fill, '#ffffff', 0.72);
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        const dx = x + 0.5 - mid;
+        const dy = y + 0.5 - mid;
+        const d = Math.hypot(dx, dy);
+        /** 1 on the side away from the light (lower right), -1 toward it. */
+        const away = (dx + dy) / (Math.SQRT2 * Math.max(1, d));
+        let col: string | null = null;
+        if (d <= Rp) {
+          const wet = y >= level;
+          // (the side away from the light: a crescent, what lies outside a ring set toward the light)
+          const far = Math.hypot(dx + Rp * 0.26, dy + Rp * 0.26) > Rp * 0.99;
+          col = !wet ? THEME.ink : f < 1 && y < level + 2 ? light : far ? deep : fill;
+          // (the glint: a short arc just inside the glass, toward the light)
+          if (d > Rp - 8 && d <= Rp - 5 && away < -0.8 && col !== light) col = wet ? glint : GLOBE_IRON[1];
+        } else if (d <= Rp + 2) col = rim;
+        else if (d <= Rp + 6) col = away < -0.3 ? GLOBE_IRON[2] : away > 0.4 ? GLOBE_IRON[0] : GLOBE_IRON[1];
+        if (col) {
+          q.fillStyle = col;
+          q.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+    // (four rivets on the band: a lit head, its shade under it)
+    const br = (Rp + 4) * Math.SQRT1_2;
+    for (const [ax, ay] of [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const) {
+      const rx = Math.round(mid + ax * br - 1.5);
+      const ry = Math.round(mid + ay * br - 1.5);
+      q.fillStyle = GLOBE_IRON[0];
+      q.fillRect(rx, ry, 4, 4);
+      q.fillStyle = GLOBE_IRON[3];
+      q.fillRect(rx, ry, 3, 3);
+      q.fillStyle = GLOBE_IRON[2];
+      q.fillRect(rx + 1, ry + 1, 2, 2);
+    }
+    globeKept.set(key, c);
+  }
+  g.drawImage(c, cx + 0.5 - half, cy + 0.5 - half, half * 2, half * 2);
+}
+
 /**
  * A globe of life or mana, in the heroes' look (Version 13): a flat disc of deep indigo, the
  * liquid in one flat colour with a line of light along its surface, and a thin rim (which takes
  * the colour of whatever ails the hero). It covers the pixels cx - r - 1 to cx + r + 1.
  */
 function globe(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, frac: number, fill: string, light: string, rim: string): void {
+  if (ART_TWEAKS.globe) {
+    globeGlass(g, cx, cy, r, frac, fill, light, rim);
+    return;
+  }
   // (its middle is the middle of the pixel (cx, cy))
   const mx = cx + 0.5;
   const my = cy + 0.5;

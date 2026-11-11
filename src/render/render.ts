@@ -170,6 +170,7 @@ import { TINKER_TUNE } from '../game/tinkerer';
 // (THE HIGH CITY, THE ROYAL CARDS: the crests over touched enemies, and the cards they drop)
 import { drawRoyalCrest, royalCardSprite, royalLabelColor } from './royal_cards';
 import { ROYAL_NAMES } from '../game/royal_cards';
+import { ART_TWEAKS } from '../art/tweaks';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
 export const SEEN_THROUGH = 0.38;
@@ -2193,6 +2194,8 @@ export class Renderer {
         const a = this.act1;
         const r = a.shadowOf(p);
         if (r > 0) this.shadow(g, Math.round(sx), Math.round(sy), r, SHADOW);
+        // (ART_TWEAKS.cast, a mock-up: and one falling away from the light, seen past a bulky piece's foot)
+        if (r > 0 && ART_TWEAKS.cast) this.shadow(g, Math.round(sx + r * 22), Math.round(sy + r * 6), r * 1.3, SHADOW * 0.85);
         if (a.lies(p) || ((p.kind === 'barrel' || p.kind === 'urn') && p.state === 1)) {
           const sp = a.sprite(p, t);
           if (sp) g.drawImage(sp.img, Math.round(sx) - sp.ax, Math.round(sy) - sp.ay, sp.w, sp.h);
@@ -4867,7 +4870,7 @@ export class Renderer {
     const day = isCamp(L) ? CAMP_DUSK : def ? (up ? def.top! : def.light) : null;
     // (THE HEADSMAN'S YARD: under the open sky, the moon's dark: render/yard.ts)
     const yardSky = this.yard.on(f) && this.yard.heroIn(f, game.hero.x, game.hero.y);
-    // (FLOOR 3, THE BLACK IRON PRISON: look B's deep shadow between its fires, 0.8: art/prison.ts PRISON_LIGHTS)
+    // (FLOOR 3, THE BLACK IRON PRISON: look B's deep shadow between its fires, 0.65 (0.8 until 9 Nov 2026): art/prison.ts PRISON_LIGHTS)
     const look = this.lookNow;
     const prisonOn = look === this.prison;
     dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town && !look ? 'rgba(8,5,14,0.45)' : `rgba(${look?.tint && !yardSky ? look.tint.join(',') : '6,4,14'},${yardSky ? YARD_DARK : look ? look.dark : FAR_DARK})`;
@@ -5070,12 +5073,16 @@ export class Renderer {
       const sx = Math.round(wx(cam, m.x, m.y));
       const sy = Math.round(wy(cam, m.x, m.y)) - FIGURE_SIZE[figureOf(m)].top - 5;
       const w = m.champion ? 34 : named(m) ? 24 : 16;
-      g.fillStyle = P.ink;
-      g.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 4);
-      g.fillStyle = P.bl1;
-      g.fillRect(sx - w / 2, sy, w, 2);
-      g.fillStyle = named(m) ? P.fr4 : P.bl4;
-      g.fillRect(sx - w / 2, sy, Math.max(0, Math.round((w * m.life) / m.maxLife)), 2);
+      // (ART_TWEAKS.bars, a mock-up: one of a pack shows its bar only once it is hurt, hit or locked onto; its name as before)
+      const quiet = ART_TWEAKS.bars && named(m) && !m.elite && m.life >= m.maxLife && m.barT <= 0 && m.id !== this.lockId;
+      if (!quiet) {
+        g.fillStyle = P.ink;
+        g.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 4);
+        g.fillStyle = P.bl1;
+        g.fillRect(sx - w / 2, sy, w, 2);
+        g.fillStyle = named(m) ? P.fr4 : P.bl4;
+        g.fillRect(sx - w / 2, sy, Math.max(0, Math.round((w * m.life) / m.maxLife)), 2);
+      }
       if (named(m) && (m.rarity !== 'blue' || speaks.get(m.packId) === m.id)) names.push({ m, x: sx, y: sy - 8 });
     }
     for (const n of names) drawText(g, n.m.name, n.x, n.y, nameColor(n.m), { align: 'center', font: 'small', shadow: P.ink });

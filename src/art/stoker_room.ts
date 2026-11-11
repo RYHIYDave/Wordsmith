@@ -34,7 +34,7 @@ import type { V3 } from './skeleton';
 // (floor 3's own colours and its gateway's way, art/prison.ts and art/prison_gate.ts, said again here: nothing but the game's own
 // floor files imports those; tests/stoker.test.ts holds these to theirs)
 /** The prison's dark stone, its black iron, its rust (art/prison.ts STONE, IRON, RUST). */
-export const ROOM_STONE = ['#09090d', '#131319', '#1c1c24', '#282731', '#433f4c'] as const;
+export const ROOM_STONE = ['#101018', '#1b1b25', '#272733', '#343341', '#4b4656'] as const;
 export const ROOM_IRON = ['#09090c', '#16161b', '#222128', '#323039', '#55505e'] as const;
 export const ROOM_RUST = ['#2e160e', '#4a2412', '#683417'] as const;
 const STONE = ROOM_STONE;

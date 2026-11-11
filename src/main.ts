@@ -146,6 +146,7 @@ import { act1Fx } from './render/act1_fx';
 import { forgetUnusedPictures } from './render/act1_fx/kept';
 import { COLOSSUS, onStoneOrJetty, worldToStone } from './game/colossus_fight';
 import { ITEM_WORDS } from './game/items';
+import { ART_TWEAKS } from './art/tweaks';
 
 declare const __BUILD__: string;
 /** (a page built to begin at something to try: tools/build.mjs --try) */
@@ -2793,6 +2794,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     paintDefer: PAINT_DEFER,
     /** The world's painter (its `skip` set leaves parts of the picture out, for measuring). */
     renderer,
+    /** (ART_TWEAKS, art/tweaks.ts: mock-ups, all off) the art review's small tweaks, each turned on for a picture */
+    tweaks: ART_TWEAKS,
     /** How many frames of art have been painted so far, and how long that took in all (art/kit.ts). */
     painting: PAINTING,
     /** THE PAINTER (render/painter.ts): whether there is one, and what it has done. */
