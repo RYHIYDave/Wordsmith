@@ -20,6 +20,7 @@ import type { TownArt } from '../art/townscene';
 import { makeTownsfolk } from '../art/townsfolk';
 import { makeWaypointArt } from '../art/crypt_ways';
 import { fbm } from './title_options_kit';
+import { FLAME_FRAMES, paintFlame, paintPitGlow, paintPost, paintRimGround, pitGlowAt, rimPosts, shaftTorches } from '../art/shaft_rim';
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // THE PLACE, in tiles: the rim's middle, the shaft's mouth, the town's edge, the cliff round it.
@@ -149,6 +150,23 @@ class Buf {
     this.poly([a, b, c, e], r[2]);
     this.line(e[0], e[1], c[0], c[1], mixRGB(r[2], [255, 255, 255], 0.18));
     this.line(c[0], c[1], b[0], b[1], mixRGB(r[2], [255, 255, 255], 0.1));
+  }
+  /** A picture at picture pixel (X, Y), laid over (its see-through left), or added at `add` of its strength. */
+  canvasAt(cv: HTMLCanvasElement, X: number, Y: number, add = 0): void {
+    const im = (cv.getContext('2d') as CanvasRenderingContext2D).getImageData(0, 0, cv.width, cv.height);
+    const W2 = GW * 2;
+    for (let j = 0; j < cv.height; j++)
+      for (let i = 0; i < cv.width; i++) {
+        const x = Math.round(X) + i;
+        const y = Math.round(Y) + j;
+        if (x < 0 || y < 0 || x >= W2 || y >= GH * 2) continue;
+        const o = (j * cv.width + i) * 4;
+        const a = im.data[o + 3];
+        if (a === 0) continue;
+        const q = (y * W2 + x) * 4;
+        for (let c = 0; c < 3; c++) this.d[q + c] = add > 0 ? this.d[q + c] + im.data[o + c] * (a / 255) * add : a >= 128 ? im.data[o + c] : this.d[q + c];
+        this.d[q + 3] = 255;
+      }
   }
   /** One of the game's own pictures, its anchor at game pixel (gx, gy). */
   sprite(s: Sprite, gx: number, gy: number): void {
@@ -442,7 +460,7 @@ const RUNE_STONES: readonly (readonly [number, number])[] = [[-2, -1], [-1, -2],
 interface Put { d: number; f: () => void }
 interface Lit { s?: Sprite; x: number; y: number; r?: number; c?: string; a?: number }
 
-export function scene(heroAt: [number, number] | null): { cv: HTMLCanvasElement; labels: { x: number; y: number; text: string }[] } {
+export function scene(heroAt: [number, number] | null, v2 = false, t = 0): { cv: HTMLCanvasElement; labels: { x: number; y: number; text: string }[] } {
   const B = new Buf();
   const lights: Lit[] = [];
   const labels: { x: number; y: number; text: string }[] = [];
@@ -450,8 +468,23 @@ export function scene(heroAt: [number, number] | null): { cv: HTMLCanvasElement;
     const [px, py] = at(x, y, z);
     labels.push({ x: px, y: py, text });
   };
-  paintGround(B);
-  pitFire(B);
+  if (v2) {
+    // THE GROUND DRAWN TO THE GAME'S STANDARD (art/shaft_rim.ts): painted once; the far fire laid over it, breathing; the torches' flames down the shaft
+    const G = (GROUND_MEMO ??= paintRimGround());
+    COST.ground = G.ms;
+    B.canvasAt(G.canvas, (OX + G.gx) * 2, (OY + G.gy) * 2);
+    const PG = (GLOW_MEMO ??= paintPitGlow());
+    B.canvasAt(PG.canvas, (OX + PG.gx) * 2, (OY + PG.gy) * 2, pitGlowAt(t));
+    FLAMES_MEMO ??= Array.from({ length: FLAME_FRAMES }, (_, f) => paintFlame(f));
+    for (const tq of shaftTorches()) {
+      const f = Math.floor(t * 30 + tq.k * 5) % FLAME_FRAMES;
+      B.canvasAt(FLAMES_MEMO[f], (OX + tq.gx) * 2 - 4, (OY + tq.gy) * 2 - 15);
+      lights.push({ x: OX + tq.gx, y: OY + tq.gy - 3, r: 16, c: '#ff8a2a', a: 0.3 });
+    }
+  } else {
+    paintGround(B);
+    pitFire(B);
+  }
   // ---- what lies flat: the bazaar's rug, the ring of runes, the portal's tongue (out over the drop)
   const c = (t: readonly [number, number]): [number, number] => [t[0] + 0.5, t[1] + 0.5];
   const flat = (kind: string, p: [number, number]): void => {
@@ -462,8 +495,10 @@ export function scene(heroAt: [number, number] | null): { cv: HTMLCanvasElement;
   const [bx, by] = LAYOUT.tentBack;
   flat('rug', c([bx, by + 1]));
   flat('runeRing', c([wx, wy]));
-  paintPortal(B);
-  portalPosts(B, false);
+  if (!v2) {
+    paintPortal(B);
+    portalPosts(B, false);
+  }
 
   // ---- what stands, nearest last
   const puts: Put[] = [];
@@ -545,14 +580,22 @@ export function scene(heroAt: [number, number] | null): { cv: HTMLCanvasElement;
     });
   }
   // the kerb's posts round the brink, but where the stair leaves it and where the tongue goes out
-  for (let k = 0; k < 24; k++) {
-    const a = k * 15 + 7.5;
-    const off = (b: number): number => Math.abs(((a - b + 540) % 360) - 180);
-    if (off(STAIR_AT) < 12 || off(170) < 14) continue;
-    const [x, y] = polar(a, RIM.pit + 0.15);
-    put(x, y, () => B.box(x - 0.09, y - 0.09, 0.18, 0.18, 8, S3(1, 3, 5)));
+  if (v2) {
+    const post = (POST_MEMO ??= paintPost());
+    for (const p of rimPosts()) put(p.x, p.y, () => {
+      const [gx, gy] = at(p.x, p.y);
+      B.canvasAt(post, gx * 2 - 4, gy * 2 - 17);
+    });
+  } else {
+    for (let k = 0; k < 24; k++) {
+      const a = k * 15 + 7.5;
+      const off = (b: number): number => Math.abs(((a - b + 540) % 360) - 180);
+      if (off(STAIR_AT) < 12 || off(170) < 14) continue;
+      const [x, y] = polar(a, RIM.pit + 0.15);
+      put(x, y, () => B.box(x - 0.09, y - 0.09, 0.18, 0.18, 8, S3(1, 3, 5)));
+    }
+    put(LAYOUT.portal[0] + 0.9, LAYOUT.portal[1] + 0.9, () => portalPosts(B, true));
   }
-  put(LAYOUT.portal[0] + 0.9, LAYOUT.portal[1] + 0.9, () => portalPosts(B, true));
   // the knight
   if (heroAt) {
     const s = hero.front.idle[0];
@@ -584,6 +627,18 @@ export function scene(heroAt: [number, number] | null): { cv: HTMLCanvasElement;
 // ---------------------------------------------------------------------------------------------------------------------------
 // THE PICTURES
 
+let GROUND_MEMO: ReturnType<typeof paintRimGround> | undefined;
+let GLOW_MEMO: ReturnType<typeof paintPitGlow> | undefined;
+let FLAMES_MEMO: HTMLCanvasElement[] | undefined;
+let POST_MEMO: HTMLCanvasElement | undefined;
+/** What the ground cost to paint, in ms (logged). */
+const COST = { ground: 0 };
+/** Step 3's two phone screens: at the brink by the way down; at the portal's landing. */
+export const VIEWS2: readonly { hero: [number, number]; caption: string }[] = [
+  { hero: [LAYOUT.way[0] + 1.6, LAYOUT.way[1] + 0.9], caption: 'At the brink, by the way down' },
+  { hero: [polar(172, 1.75)[0], polar(172, 1.75)[1]], caption: "On the portal's landing" },
+];
+
 /** Where the knight stands in each view, and its caption. */
 export const VIEWS: readonly { hero: [number, number]; caption: string }[] = [
   { hero: [LAYOUT.wordsmith[0] + 2.7, LAYOUT.wordsmith[1] + 1.1], caption: "At the wordsmith's bench" },
@@ -600,7 +655,51 @@ function main(): void {
   document.body.style.background = '#05040f';
   document.body.appendChild(out);
   out.style.display = 'block';
-  if (mode === 'whole') {
+  if (mode === 'whole2' || mode === 'pit' || mode.startsWith('view2')) {
+    const pit = mode === 'pit';
+    const n = Math.max(1, Math.min(2, Number(mode.split(':')[1]) || 1));
+    const t0 = performance.now();
+    const v = mode.startsWith('view2') ? VIEWS2[n - 1] : null;
+    const { cv } = scene(v ? v.hero : pit ? [RIM.cx + 3.9, RIM.cy + 3.3] : null, true, 0.4);
+    console.log(`ground painted in ${COST.ground.toFixed(0)} ms; the scene in ${(performance.now() - t0).toFixed(0)} ms`);
+    const g = out.getContext('2d') as CanvasRenderingContext2D;
+    const PW = 507;
+    const PH = 234;
+    if (mode === 'whole2') {
+      out.width = WHOLE.w * 2;
+      out.height = WHOLE.h * 2 + CAP;
+      g.imageSmoothingEnabled = false;
+      g.fillStyle = '#05040f';
+      g.fillRect(0, 0, out.width, out.height);
+      g.drawImage(cv, WHOLE.x * 2, WHOLE.y * 2, WHOLE.w * 2, WHOLE.h * 2, 0, 0, WHOLE.w * 2, WHOLE.h * 2);
+      g.fillStyle = '#0d1030';
+      g.fillRect(0, WHOLE.h * 2, out.width, CAP);
+      drawText(g, "THE SHAFT'S RIM, WHOLE", 20, WHOLE.h * 2 + 22, '#e9ecff', { scale: 6 });
+    } else if (pit) {
+      // the pit at the game's zoom (one phone screen, the camera on the pit), and under it the pit's middle twice the size
+      const [cx, cy] = at(RIM.cx, RIM.cy);
+      out.width = PW * 2;
+      out.height = PH * 2 + 50 + PH * 2 + 50;
+      g.imageSmoothingEnabled = false;
+      g.fillStyle = '#0d1030';
+      g.fillRect(0, 0, out.width, out.height);
+      g.drawImage(cv, Math.round((cx - PW / 2) * 2), Math.round((cy + 10 - PH / 2) * 2), PW * 2, PH * 2, 0, 0, PW * 2, PH * 2);
+      drawText(g, 'THE PIT, GAME SIZE', 16, PH * 2 + 12, '#e9ecff', { scale: 4 });
+      g.drawImage(cv, Math.round((cx - PW / 4) * 2), Math.round((cy + 6 - PH / 4) * 2), PW, PH, 0, PH * 2 + 50, PW * 2, PH * 2);
+      drawText(g, 'TWICE THE SIZE', 16, PH * 4 + 62, '#e9ecff', { scale: 4 });
+    } else if (v) {
+      const [hx, hy] = at(v.hero[0], v.hero[1]);
+      out.width = PW * 2;
+      out.height = PH * 2 + 60;
+      g.imageSmoothingEnabled = false;
+      g.fillStyle = '#07060f';
+      g.fillRect(0, 0, out.width, out.height);
+      g.drawImage(cv, Math.round((PW / 2 - hx) * 2), Math.round((PH / 2 - (hy - 14)) * 2));
+      g.fillStyle = '#0d1030';
+      g.fillRect(0, PH * 2, out.width, 60);
+      drawText(g, `${n}  ${v.caption.toUpperCase()}`, 16, PH * 2 + 14, '#e9ecff', { scale: 4 });
+    }
+  } else if (mode === 'whole') {
     const { cv, labels } = scene(null);
     out.width = WHOLE.w * 2;
     out.height = WHOLE.h * 2 + CAP;
