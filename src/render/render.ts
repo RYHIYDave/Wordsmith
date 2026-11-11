@@ -1864,12 +1864,13 @@ export class Renderer {
     }
   }
 
-  /** A PLACE'S FLOOR AS ONE PICTURE (render/still_floor.ts): the picture, and how many of the place's tiles have been seen (it is made again when more are). */
+  /** A PLACE'S FLOOR AS ONE PICTURE (render/still_floor.ts): the picture, and a number that is another when a tile of the place is seen that was not, or becomes floor or wall that was not (the picture is made again then). */
   readonly stillFloor = new StillFloor();
-  private seenTiles(L: Game['level']): number {
+  private floorSig(L: Game['level']): number {
     let n = 0;
     const e = L.explored;
-    for (let i = 0; i < e.length; i++) if (e[i]) n++;
+    const tiles = L.floor.tiles;
+    for (let i = 0; i < e.length; i++) n = (Math.imul(n, 31) + (e[i] ? tiles[i] + 1 : 0)) | 0;
     return n;
   }
   /**
@@ -3092,13 +3093,13 @@ export class Renderer {
     const groundsSky = look === this.grounds ? this.grounds.skyOver(L, h.x, h.y, yardOut) : null;
     this.groundsOnly = groundsSky ? L : null;
     if (groundsSky) this.grounds.drawSky(g, cam, W, H);
-    // (A PLACE'S FLOOR AS ONE PICTURE, render/still_floor.ts: where the look says its floor is steady, the ground is flat and none
+    // (A PLACE'S FLOOR AS ONE PICTURE, render/still_floor.ts: where the look says the place is steady, the ground is flat and none
     // of the game's other floors is laid here, what is behind everything and every tile of the floor with the walls' shade on it
     // are one picture, laid as below and as the floor's own loop lays them; it is made again if any of what it hangs on is another)
     const lowAll = lowGrid;
     const asOneFloor =
-      !!look && look.stillFloor === true && !relief && !f.cut && !this.openGround && !land && !inHall && !yardOn && !groundsSky && !this.dressed &&
-      this.stillFloor.draw(g, cam, W, H, P.black, [L, look, this.art.ground, lowAll, WALL_LOOK.away, WALL_LOOK.front, this.seenTiles(L)], (c, at) => this.layFloor(c, at, L, t, look, this.art.ground, lowAll));
+      !!look && look.steady === true && !relief && !f.cut && !this.openGround && !land && !inHall && !yardOn && !groundsSky && !this.dressed &&
+      this.stillFloor.draw(g, cam, W, H, P.black, [L, look, this.art.ground, lowAll, WALL_LOOK.away, WALL_LOOK.front, this.floorSig(L)], (c, at) => this.layFloor(c, at, L, t, look, this.art.ground, lowAll));
     // (THE FIRST TOWN AS THE CASTLE'S HALL: the castle's stone above its walls and its roof, behind everything: render/castle.ts)
     if (look?.back && !asOneFloor) {
       for (const q of look.back(L, t)) {
@@ -4253,8 +4254,8 @@ export class Renderer {
     if (this.lookNow) {
       const L3 = game.level;
       const lights3 = this.lookNow.lights(L3);
-      // (THE STEADY GLOWS, the day's, AS ONE PICTURE: render/still_glows.ts; those that flicker one by one, as ever)
-      const asOne = this.stillGlows.draw(g, this.cam, W, H, L3, lights3);
+      // (THE STEADY GLOWS, the day's, AS ONE PICTURE where the look says the place is steady: render/still_glows.ts; those that flicker one by one, as ever)
+      const asOne = this.lookNow.steady === true && this.stillGlows.draw(g, this.cam, W, H, L3, lights3);
       for (const q of lights3) {
         if (!q.glow || !L3.explored[Math.floor(q.y) * L3.floor.w + Math.floor(q.x)]) continue;
         if (asOne && q.still === true) continue;
@@ -4966,9 +4967,10 @@ export class Renderer {
       c.fillStyle = grd;
       c.fillRect(-64, -64, 128, 128);
     });
-    // (A PLACE'S DARK WITH ITS STEADY LIGHTS' HOLES AS ONE PICTURE, render/still_dark.ts: the veil and the day's holes laid down
-    // together, where no boss's darkness is over the place; the holes that move or flicker are cut after, as ever)
-    const lights = look ? look.lights(L) : null;
+    // (A PLACE'S DARK WITH ITS STEADY LIGHTS' HOLES AS ONE PICTURE, render/still_dark.ts: where the look says the place is steady,
+    // the veil and the day's holes laid down together, no boss's darkness being over the place; the holes that move or flicker
+    // are cut after, as ever)
+    const lights = look && look.steady === true ? look.lights(L) : null;
     let steadyLit = 0;
     let steadySig = 0;
     if (lights && eDark <= 0 && oDark <= 0) {

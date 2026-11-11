@@ -13,7 +13,15 @@
 // a colour stops at full. Adding them to a clear picture first and that picture to the screen adds the same amounts. The picture
 // is laid at the screen's own grain (the canvas's scale) and moved only by whole game pixels, as the camera is, so each glow
 // falls on the same pixels as it did. Where that cannot be said (a canvas turned or scaled by a part of a pixel, a camera not on
-// a whole pixel) the glows are drawn one by one as before. The glows that flicker (a fire's) are always drawn one by one.
+// a whole pixel) the glows are drawn one by one as before. The glows that flicker (a fire's) are always drawn one by one. Only
+// for a place whose look says it is steady and seen whole (LookView.steady: the castle's hall): render.ts drawWorld.
+//
+// HOW NEAR IT IS TO WHAT IT WAS: the same but on hairlines. A glow's small picture is stretched without smoothing, and where
+// the middle of a screen pixel falls exactly between two of its pixels the browser takes one or the other by the last bit of
+// its arithmetic, which goes by where on the screen the glow is. The game's own picture of these glows already differs from
+// itself there whenever the camera moves a pixel (measured: some 10,000 to 33,000 of the screen's 1.4 million colour values,
+// by 5 of 255 at most); this picture, laid once, differs from the game's by the same hairlines and no more (by 5 of 255 at
+// most), and no longer changes as he walks. tools/scenarios/town_same.mjs measures it.
 
 import { drawGlow } from '../engine/px';
 import type { Level } from '../game/state';

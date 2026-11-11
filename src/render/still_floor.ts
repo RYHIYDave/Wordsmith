@@ -9,7 +9,7 @@
 // WHY IT IS THE SAME: the floor is the first thing drawn, onto the game's black. The picture is that black, and the same pictures are laid on it
 // in the same order at the same places, at the screen's own grain (the canvas's scale); it is moved only by whole game pixels,
 // as the camera is. So every pixel of it is what the game would have made there, and everything else is drawn over it as before.
-// Only for a place whose look says its floor is steady (LookView.stillFloor: the castle's hall), on flat ground, all of it seen.
+// Only for a place whose look says it is steady (LookView.steady: the castle's hall), on flat ground.
 // Where any of that cannot be said the floor is drawn tile by tile as before (render.ts drawWorld).
 
 import type { Cam } from './fx';
