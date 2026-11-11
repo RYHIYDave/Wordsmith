@@ -21,6 +21,8 @@ import { COLOSSUS_SOUND_NAMES, bossSound, soundsOf } from '../src/game/sound_fam
 import { PILLARS } from '../src/game/quests610';
 
 const DT = 1 / 60;
+/** (25.3.5, as tsc asked: the game's own blow is private and takes who struck: -1, nobody's skill, as the game's traps strike) */
+const hurt = (g: Game, m: Monster, dmg: number, crit: boolean): void => (g as unknown as { damageMonster(m: Monster, dmg: number, el: 'phys', crit: boolean, skill: number): void }).damageMonster(m, dmg, 'phys', crit, -1);
 const near = (a: number, b: number, slack = 0.05): boolean => Math.abs(a - b) <= slack;
 
 test('his sounds fetched ahead with floor 10, and only while he is its boss; each has its two takes in the game\'s files', () => {
@@ -200,7 +202,7 @@ function fight(): Played {
   play(0.6);
   mark('pings');
   for (let i = 0; i < 3; i++) {
-    g.damageMonster(boss, 50, 'phys', true);
+    hurt(g, boss, 50, true);
     step();
   }
   until(() => at['eye:gaze'] !== undefined && at['eye:slam'] !== undefined, 16);
@@ -221,7 +223,7 @@ function fight(): Played {
   play(2);
   // (his eye struck, a big blow; then killed)
   mark('struck');
-  g.damageMonster(boss, boss.maxLife * 0.06, 'phys', false);
+  hurt(g, boss, boss.maxLife * 0.06, false);
   play(1);
   mark('killed');
   g.kill(boss);
