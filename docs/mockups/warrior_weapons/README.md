@@ -534,3 +534,26 @@ page holds both weapons' moves), `tools/warrior_axe_peek.ts`.
 1. (SETTLED, not his to decide: mended 11 Nov 2026, above.) In town, from behind, the head of the axe or the maul on his back
    stood before his helm; it is slung lower and further out now, and his helm is seen from every side.
 2. TREMORS are drawn as THREE QUAKES FROM THE ONE BLOW (no more pictures); three blows would be about 30 more pictures a side.
+
+# His words on step 3's films (11 Nov 2026), and what they ask for (step 3b)
+
+Shown `pictures/hammer_moves.mp4` and `pictures/axe_run_catch.mp4` (at 94a5004b) and `pictures/carry_phone.png` (the carry
+mended, 99a230d7), and told that the Earthquake's swing was much like the Smash's, he was asked two things, and answered by
+09:03:
+- “Are the warhammer's moves right (hammer_moves.mp4), with the axe's catch on the run (axe_run_catch.mp4)?”: “Bigger Earthquake
+  swing” (offered as: give the Earthquake a swing of its own, so it doesn't look like the Smash; then hand both to main).
+- “Is the weapon on his back right in town (carry_phone.png)? It is slung across his back now, so his helm shows from behind.”:
+  “Yes, like that (Recommended)”. SO THE CARRY IS SETTLED WITH HIS YES.
+
+At 09:03 he wrote: “I want to make sure you can still do the tap attack while the axe hold is still flying”. Read as: while the
+thrown axe is out, a tap still Cleaves (a rule for the main chat, and pictures for it from art). And: “What does the hammer tap
+actually do?” (answered: Smash, one heavy blow straight down on a small spot before him, slower and heavier than the Strike;
+tap again for a second blow; how hard it hits, and whether it does more, is the main chat's to write and his to say).
+
+Asked two more, he answered by 09:07:
+- “While the Warrior's thrown axe is still flying his hands are empty. What should a tap swing?” (offered: another axe from his
+  back; his fists; call the axe back): he wrote “I understand that the axe is going to kind of materialize to keep fighting but I
+  do need that to work that way”. Read as: AN AXE APPEARS IN HIS HANDS and he Cleaves as drawn; it must work.
+- “How should the Warrior's Earthquake swing go, so it looks bigger than the Smash?” (offered: he jumps and slams down; a full
+  spin, then down): “A full spin, then down” (offered as: he whirls the maul once round himself and brings it over onto the
+  floor).
