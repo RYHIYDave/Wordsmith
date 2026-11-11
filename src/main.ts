@@ -63,6 +63,8 @@ import type { SmithTake } from './art/title_smith';
 import { SMITH2_CHOSEN, makeSmith2Title } from './art/title_smith2';
 import { TITLE_SMITH3, makeSmith3Title } from './art/title_smith3';
 import { TITLE_RING, makeRingTitle } from './art/title_ring';
+import { LOADING_RING, makeLoadingRing } from './art/loading_ring';
+import type { LoadingRing } from './art/loading_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
 import { footstep, heroVoice, initAudio, isMuted, recordedDetail, recordedState, setLoops, setMuffled, setMuted, sfx, sfxNamed, speak, speakBoss, titleMusic, warmNamed, warmRecorded, warmSteps, worldSound } from './engine/audio';
@@ -379,6 +381,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const LOADING = { on: true, least: 0.5, most: 15, between: true, betweenLeast: 0.2 };
   /** The level the loading screen was last up for (THE LOADING SCREEN BETWEEN FLOORS: a level other than it, in play, puts it up again). */
   let loadedFor: unknown = null;
+  /** THE LOADING SCREEN'S PICTURE (art/loading_ring.ts, behind LOADING_RING, off until his yes to its picture): made the first time it is drawn. */
+  let loadingRing: LoadingRing | null = null;
   let bot: BotState | null = null;
   let last = performance.now();
   let clock = 0;
@@ -1909,7 +1913,15 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   };
 
   /** The loading screen: the word, and three marks under it lit one after another. */
+  // (THE LOADING SCREEN'S PICTURE, behind LOADING_RING, off: the wordsmith's ring burning in the dark, the word under it:
+  // art/loading_ring.ts)
   const drawLoading = (cg: CanvasRenderingContext2D, t: number): void => {
+    if (LOADING_RING.on) {
+      const s = scr.h >= 180 ? 2 : 1;
+      const y = (loadingRing ??= makeLoadingRing()).draw(cg, t, scr.w, scr.h, 8 * s + 8);
+      drawText(cg, 'LOADING', Math.round(scr.w / 2), y + 6, THEME.text, { align: 'center', scale: s });
+      return;
+    }
     cg.fillStyle = THEME.ink;
     cg.fillRect(0, 0, scr.w, scr.h);
     const s = scr.h >= 180 ? 2 : 1;
@@ -2662,6 +2674,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     loadedHere: (): void => {
       loadedFor = game ? game.level : null;
     },
+    /** (for its pictures and films) The loading screen's own time set, while it is up: what it shows at that moment is drawn on the next frame. */
+    loadingAt: (t: number): void => {
+      if (loading) loading.t = t;
+    },
+    /** THE LOADING SCREEN'S PICTURE (art/loading_ring.ts LOADING_RING, the queue's “Paint a nicer loading screen”), off until his yes to its picture: `loadingRing.on`; and what it has cost so far (pictures painted, thousandths of a second drawing). */
+    loadingRing: LOADING_RING,
+    loadingRingCost: () => (loadingRing ? loadingRing.cost() : null),
     /** FLOOR 20'S RIME SHADE (art/rime_shade.ts RIME_SHADE_ON, the art chat's; game/act1_rules/rshade.ts), off until he has seen it in the game and said yes: `rimeShade.on`. */
     rimeShade: RIME_SHADE_ON,
     /** THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS), off until his yes: `newWeapons.on` (the Veteran's wraps, the Warlock's demonic tome, the Tinkerer's wrench; stand-in pictures while `itemsA` is off). */
