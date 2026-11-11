@@ -2,7 +2,7 @@
 //
 // His words, 7 Nov 2026, 23:11: “Still a ton of lag in the town”. The dark over a place is made every frame (render.ts light): a
 // thin veil the size of the screen, and a soft hole cut in it for every light, each a small picture stretched and smoothed.
-// In the castle's hall some 55 of those holes are the day's: under each window, at the foot of every wall, under each slat of
+// In the castle's hall 54 of those holes are the day's: under each window, at the foot of every wall, under each slat of
 // sun (render/castle.ts lights). They never move nor flicker (LookLight.still). Measured there (11 Nov 2026, a phone's screen,
 // the processor slowed six times, once the glows and the floor were one picture each): the holes were 23 ms of a 74 ms frame.
 //

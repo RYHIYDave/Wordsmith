@@ -1,8 +1,8 @@
 // A PLACE'S STEADY GLOWS AS ONE PICTURE (speed only: what is on the screen is the same).
 //
 // His words, 7 Nov 2026, 23:11: “Still a ton of lag in the town”. Measured there (11 Nov 2026, a phone's screen, the processor
-// slowed six times): 714 pictures a frame covering 17.5 screens, and 11 of those screens were 67 glows: the day that fills the
-// castle's hall (art/castle_hall.ts dayLights, CASTLE_LIGHTS: glows 90 and 120 game pixels round at a twentieth of their light),
+// slowed six times): 714 pictures a frame covering 17.5 screens, and 11 of those screens were 67 glows, 65 of them the day that
+// fills the castle's hall (art/castle_hall.ts dayLights, CASTLE_LIGHTS: glows up to 120 game pixels round, most at a twentieth of their light),
 // each a small soft picture stretched to its size and ADDED to what is under it, every frame. Left out, the town's frame took
 // 77 ms where it took 136.
 //

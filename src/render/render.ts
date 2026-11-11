@@ -4613,9 +4613,9 @@ export class Renderer {
 
   /** (ACT 1) THE FOREST AS A FEW PICTURES (render/tops_cache.ts): its chunks; those drawn as pictures this frame; where the hero stood. */
   readonly topsCache = new TopsCache();
-  /** A PLACE'S STEADY GLOWS AS ONE PICTURE (render/still_glows.ts): the town's day, 67 glows a frame. */
+  /** A PLACE'S STEADY GLOWS AS ONE PICTURE (render/still_glows.ts): the town's day, 65 glows a frame. */
   readonly stillGlows = new StillGlows();
-  /** A PLACE'S DARK WITH ITS STEADY LIGHTS' HOLES AS ONE PICTURE (render/still_dark.ts): the town's day, 55 holes a frame. */
+  /** A PLACE'S DARK WITH ITS STEADY LIGHTS' HOLES AS ONE PICTURE (render/still_dark.ts): the town's day, 54 holes a frame. */
   readonly stillDark = new StillDark();
   private frameChunks: Chunk[] = [];
   /** Every chunk on the screen this frame, with a picture or without. */
