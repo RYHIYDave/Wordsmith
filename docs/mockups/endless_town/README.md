@@ -221,7 +221,7 @@ numbers. Two picture pixels to a game pixel; flat tones, a one-pixel seam, light
   trophies, four torches). `hero` is where he stands as he comes in.
 - `paintRimGround()`: THE GROUND, ONE PICTURE painted once. It is 680 x 388 game pixels, 1360 x 776 picture pixels (about
   4.2 MB as a canvas). Its top left is at `gx, gy` in game pixels, with tile 0, 0 at 0, 0 as the game counts them.
-- THE KERB'S AND THE LANDING'S POSTS (`rimPosts()`, 29 of them): one small picture (`paintPost()`, 8 x 18 picture pixels),
+- THE KERB'S AND THE LANDING'S POSTS (`rimPosts()`, 27 of them: 21 round the brink, 6 round the landing, none across the tongue): one small picture (`paintPost()`, 8 x 18 picture pixels),
   laid in depth like any piece.
 - WHAT MOVES: THE TORCHES' FLAMES down the shaft (`shaftTorches()`, the two the eye can see), 12 small frames
   (`paintFlame(f)`, 8 x 16 picture pixels each) at 30 a second, each torch at its own phase. THE FAR FIRE (`paintPitGlow()`)

@@ -559,7 +559,7 @@ export function rimPosts(): { x: number; y: number }[] {
   const [lx, ly] = LANDING;
   for (let k = 0; k < 8; k++) {
     const a = (k / 8) * TAU + 0.2;
-    if (Math.abs(angd(a, (TONGUE.at * D2R) + Math.PI)) < 0.5) continue;
+    if (Math.abs(angd(a, TONGUE.at * D2R)) < 0.5) continue;
     out.push({ x: lx + Math.cos(a) * (TONGUE.r - 0.1), y: ly + Math.sin(a) * (TONGUE.r - 0.1) });
   }
   return out;
