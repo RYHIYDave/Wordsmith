@@ -133,6 +133,33 @@ would crawl if it moved); from in front only. The one he picks is drawn properly
 Pictures: `ten_ideas_1_to_5.png`, `ten_ideas_6_to_10.png` (each 2409 x 742, three times as big). Made with:
 `npx tsx tools/demon_new_pics.ts <dir> ideas` then `python3 tools/demon_new_pics.py <dir> docs/mockups/warlock_up2/pictures ideas`.
 
+HIS PICK OF THE TEN, 11 Nov (asked group by group; his answers: “6”, “6. The Living Shadow (Recommended)”, “None of these
+three”, “No, not 10”): **6, THE LIVING SHADOW.**
+
+## The Living Shadow, drawn properly (`src/dev/demon_ideas.ts` shadowInto; SHOWN HIM, HIS WORD ON IT AT THE FOOT)
+
+On the werewolf's frame. Black all through, hardly a form on it (five tones from near black to a dark blue, so its shoulders
+and back still turn): only what burns is seen. Two slanted eyes, both seen from in front; a grin of teeth of light from ear
+to ear, an upper row and a lower on a jaw hung a little open; every talon of its claws and feet his cyan, his fire in each
+open claw (and under each when it runs). Two horns curled like smoke; a tail that thins away; smoke rising off its horn tips
+and the end of its tail. FROM BEHIND it has no face, so his fire shows down its backbone: an ember across each knuckle of it,
+laid on its skin (found by going out from the backbone until nothing of the body is left). No wings.
+
+Pictures: `living_shadow.png` (up on two legs and running on all fours, each from in front and from behind, four times as
+big, 2856 x 1170), `living_shadow_at_game_size.png` (beside the Brawler, the Warlock and his demon today, 2300 x 900). Made
+with: `npx tsx tools/demon_new_pics.ts <dir> shadow` then
+`python3 tools/demon_new_pics.py <dir> docs/mockups/warlock_up2/pictures shadow`.
+
+TO THINK ON (his own tick of 11 Nov, “His body is a dark lump”): this one is dark on purpose, and is known by its outline (the
+friend's cyan edge), its horns and what burns. To be looked at on the game's own floors beside the Brawler before it is
+called done: if its body is lost on a dark floor, the answer is more of his light on it (its embers, an edge of light on its
+shoulders), not a lighter hide.
+
+STILL TO DO, in this order: his yes to the look; its stand up on two legs and its wide claw slashes (new moves), dropping to
+all fours to run (the game's run) and rearing up to stop; what else stands up (Damning, the smoke step's ends, how the change
+and the burning out end), asked as each is made; all eight sides; the change into it; behind a switch that is off, with a
+film and pictures in the game on floor 11 beside the Brawler. Then THE MAN (above).
+
 THE FIRST THREE'S PICTURES (kept for the record):
 
 Pictures (`pictures/`, each wider than tall for his phone held sideways):

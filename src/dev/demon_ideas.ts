@@ -24,6 +24,7 @@ import { CYAN } from '../art/kit';
 import type { GameView } from '../art/skin';
 import { add, cross, lerp3, mul, norm, sub } from '../art/skeleton';
 import type { Bones, Rot, V3 } from '../art/skeleton';
+import { primDist } from './sculpt';
 import type { Sculpt, Drawn, Hit } from './sculpt';
 import { IVORY } from './sculpt_warlock';
 import { tone5 } from './sculpt_demon';
@@ -313,31 +314,67 @@ function idea5(k: Kit): Built {
   return o;
 }
 
-// ---- 6. THE LIVING SHADOW: black all through, hardly a form on it; only what burns is seen: two slanted eyes, a grin of
-// teeth of light from ear to ear, its claws; two horns curled like smoke; its smoke rising off it.
-function idea6(k: Kit): Built {
+// ---- 6. THE LIVING SHADOW (HIS PICK OF THE TEN, 11 Nov: asked of each, his answers “6”, “6. The Living Shadow (Recommended)”,
+// “None of these three”, “No, not 10”): black all through, hardly a form on it; only what burns is seen: two slanted eyes, a
+// grin of teeth of light from ear to ear, its claws. Two horns curled like smoke; a tail that thins away into smoke; its
+// smoke rising off its horns, its shoulders and its back. FROM BEHIND it has no face to be known by, so his fire shows down
+// its backbone: an ember in each knuckle of it.
+export function shadowInto(k: Kit): Built {
   const { sc } = k;
   const o = out0(k);
   const { glow } = stuffs(k);
-  const hide = sc.mat({ ramp: ['#05050a', '#08080f', '#0c0c16', '#11111e', '#181828'], crease: 0.2 });
+  const hide = sc.mat({ ramp: ['#04040a', '#07070f', '#0c0c1a', '#15152c', '#222244'], crease: 0.25 });
   const fr = wolfFrame(k, { hide, foot: 'claw', footMat: hide, talon: glow });
   claws(k, hide, glow, 1.15, o);
+  const ember = sc.mat({ ramp: CYAN, paint: (h) => (h.nl > 0.8 ? '#e8ffff' : CYAN[2]) });
+  // (each ember a short bar of his light across a knuckle of its backbone, lying on its skin: found by going out from its
+  // backbone until nothing of it is left)
+  const body = sc.prims.filter((p) => !p.carve);
+  const skinFrom = (c: V3, way: V3): V3 => {
+    let d = 0;
+    for (let j = 0; j < 60; j++) {
+      const q = add(c, mul(way, d));
+      const m = Math.min(...body.map((p) => primDist(p, q)));
+      if (m > 0.15) break;
+      d += Math.max(0.35, -m);
+    }
+    return add(c, mul(way, d));
+  };
+  for (let i = 0; i < 8; i++) {
+    const t = 0.15 + i * 0.37;
+    const back = norm(sub(fr.spine(t + 0.2), fr.spine(Math.max(0, t - 0.2))));
+    const outw = norm(cross([0, 1, 0], back));
+    sc.ell(ember, 'embers', add(skinFrom(fr.spine(t), outw), mul(outw, 1.4)), [mul(back, 1.6), [0, 3.8 - i * 0.22, 0], mul(outw, 1.9)], 0.05, { tag: 'ember' });
+  }
+  const pts = tailOf(k, 46, 8, 0.65, 0.9);
+  for (let i = 0; i + 1 < pts.length; i++) sc.cone(hide, 'torso', pts[i], pts[i + 1], 3.6 - i * 0.4, 3.2 - i * 0.4, 1.0, { tag: 'tail' });
   const h = headOf(k);
   const { hsc, hk, hp, F } = h;
   hsc.cone(hide, 'torso', add(fr.top, [9, 0, 0]), hp(-6, 0, -1), 10, 9.5, 2.6, { tag: 'neck' });
   hsc.ell(hide, 'torso', hp(-1, 0, 2), axes(F, 12, 12, 11), 2.4, { tag: 'skull' });
+  // (a jaw under its grin, hung a little open: the lower teeth stand on it)
+  hsc.ell(hide, 'torso', hp(2.5, 0, -8.6), axes(F, 10.6, 10.4, 4), 1.6, { tag: 'jaw' });
+  const tips: V3[] = [];
   for (const side of [1, -1]) {
-    eye(hk, glow, hp(11, side * 5.6, 3), F, side, 3.6, 1.6, 0.55);
-    spike(hk, hide, 'torso', [hp(-2, side * 9, 8), hp(-8, side * 15, 16), hp(-6, side * 19.5, 27), hp(2, side * 17, 34), hp(8, side * 12, 35)], 3.4, 'horn');
+    eye(hk, glow, hp(11.2, side * 4.8, 4.2), F, side, 4.0, 1.8, 0.55);
+    const horn: V3[] = [hp(-2, side * 9, 8), hp(-8, side * 15, 16), hp(-7, side * 20, 27), hp(1, side * 19, 36), hp(9, side * 13, 39), hp(13, side * 8, 36)];
+    spike(hk, hide, 'torso', horn, 3.4, 'horn', 0.3);
+    tips.push(horn[horn.length - 1]);
   }
   for (let i = -6; i <= 6; i++) {
     const a = (i / 6) * 1.5;
-    const base = hp(1.5 + Math.cos(a) * 10.8, Math.sin(a) * 10.4, -4.6 + Math.abs(i) * 0.55);
-    hsc.cone(glow, 'grin', base, add(base, mul(F[2], (i % 2 ? 2.4 : -3.4) * HEAD_K)), 1.25, 0.12, 0.1, { tag: 'fang' });
+    const up = hp(1.5 + Math.cos(a) * 10.9, Math.sin(a) * 10.5, -4.2 + Math.abs(i) * 0.5);
+    hsc.cone(glow, 'grin', up, add(up, mul(F[2], -(i % 2 ? 2.4 : 3.6) * HEAD_K)), 1.25, 0.12, 0.1, { tag: 'fang' });
   }
-  o.smoke = [add(fr.top, [-6, 9, 8]), add(fr.top, [-6, -9, 8]), fr.spine(2)];
+  for (let i = -5; i <= 5; i++) {
+    const a = ((i + 0.5) / 6) * 1.5;
+    const lo = hp(2.5 + Math.cos(a) * 10.4, Math.sin(a) * 10.2, -9.6 + Math.abs(i) * 0.45);
+    hsc.cone(glow, 'grin', lo, add(lo, mul(F[2], (i % 2 ? 2.2 : 3.2) * HEAD_K)), 1.15, 0.12, 0.1, { tag: 'fang' });
+  }
+  o.smoke = [tips[0], tips[1], pts[pts.length - 1]];
   return o;
 }
+const idea6 = shadowInto;
 
 // ---- 7. THE SPLIT FACE: a bruise-mauve hide; no jaw: its mouth a gash straight up its face from its chin to its brow, teeth
 // meeting across it from both lips, his fire deep in it; three eyes down each side of it; locks of flesh hung from the back of
@@ -499,6 +536,10 @@ function idea10(k: Kit): Built {
 
 const BUILDERS = [idea1, idea2, idea3, idea4, idea5, idea6, idea7, idea8, idea9, idea10];
 
+/** The Living Shadow, his pick, at a moment: on the werewolf's frame in a pose, from in front or behind, turned `turn`. */
+export function shadowFrame(view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false): Drawn {
+  return paintDemon(shadowInto, view, pose, turn, t, tail, paws);
+}
 /** One of the ten ideas (1 to 10) at a moment: on the werewolf's frame in a pose, from in front or behind, turned `turn`. */
 export function ideaFrame(n: number, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false): Drawn {
   return paintDemon(BUILDERS[n - 1], view, pose, turn, t, tail, paws);

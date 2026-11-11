@@ -4,6 +4,7 @@
 // Nothing of the game imports it.
 //   npx tsx tools/demon_new_pics.ts <dir> [pact,pale,mane] [front,back]
 //   npx tsx tools/demon_new_pics.ts <dir> ideas [1,2,...]     (the ten quick ideas, up on two legs, from in front)
+//   npx tsx tools/demon_new_pics.ts <dir> shadow              (the Living Shadow, his pick: up on two legs and running, front and back)
 
 // @ts-ignore - node typings are not part of this project
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -14,7 +15,7 @@ import { demonMoves, demonPose, drawDemonAt } from '../src/dev/demon_moves';
 import { drawWarlockAt, warlockMoves } from '../src/dev/warlock_moves';
 import { makeVeteranArt } from '../src/art/veteran_art';
 import { DEMON_UP, newDemonFrame } from '../src/dev/demon_new';
-import { IDEAS, ideaFrame } from '../src/dev/demon_ideas';
+import { IDEAS, ideaFrame, shadowFrame } from '../src/dev/demon_ideas';
 import type { NewDemon } from '../src/dev/demon_new';
 import type { Bones } from '../src/art/skeleton';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
@@ -67,6 +68,18 @@ function save(path: string, px: Px): void {
 const dir = process.argv[2];
 if (!dir) throw new Error('npx tsx tools/demon_new_pics.ts <dir> [pact,pale,mane] [front,back]');
 mkdirSync(dir, { recursive: true });
+if (process.argv[3] === 'shadow') {
+  const run = demonMoves()[1];
+  for (const v of ['front', 'back'] as const) {
+    save(`${dir}/shadow_up_${v}.png`, shadowFrame(v, DEMON_UP, 0, 0.3, 0.25).px);
+    save(`${dir}/shadow_run_${v}.png`, shadowFrame(v, demonPose(run.motion, 0.6) as Bones, 0, 0.6, run.tail ? run.tail(0.6) : 0, true).px);
+  }
+  save(`${dir}/demon_today_front.png`, drawDemonAt('front', demonMoves()[0], 0.3).px);
+  save(`${dir}/warlock_front.png`, drawWarlockAt('front', warlockMoves()[0], 0.6).px);
+  save(`${dir}/brawler_front.png`, paintingOf(makeVeteranArt().front.idle[0]));
+  // @ts-ignore
+  process.exit(0);
+}
 if (process.argv[3] === 'ideas') {
   const which = process.argv[4] ? process.argv[4].split(',').map(Number) : IDEAS.map((_, i) => i + 1);
   for (const n of which) save(`${dir}/idea_${n}_up_front.png`, ideaFrame(n, 'front', DEMON_UP, 0, 0.3, 0.25).px);

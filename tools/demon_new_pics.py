@@ -1,6 +1,7 @@
 # THE NEW DEMONS: THE PICTURES LAID OUT FOR A PHONE HELD SIDEWAYS (the Warlock chat, 11 Nov 2026).
 #   python3 tools/demon_new_pics.py <dir of tools/demon_new_pics.ts> <out dir>
 #   python3 tools/demon_new_pics.py <dir> <out dir> ideas     (the ten quick ideas: ten_ideas_1_to_5.png, ten_ideas_6_to_10.png)
+#   python3 tools/demon_new_pics.py <dir> <out dir> shadow    (the Living Shadow, his pick: living_shadow.png, living_shadow_at_game_size.png)
 # Writes new_demons_on_two_legs.png and new_demons_running.png (each four times as big) and new_demons_at_game_size.png
 # (three screen pixels a picture pixel, as his phone shows the game), each wider than tall (his word of a tall sheet, 9 Nov).
 import sys
@@ -58,6 +59,40 @@ def ideas():
         sheet.convert('RGB').save(f'{out}/{name}.png')
 
 
+def shadow():
+    """The Living Shadow: up on two legs and running, from in front and from behind, four times as big; and at the game's size."""
+    S = 4
+    views = [('shadow_up_front', 'up on two legs'), ('shadow_up_back', 'from behind'), ('shadow_run_front', 'running on all fours'), ('shadow_run_back', 'from behind')]
+    ims = [load(n) for n, _ in views]
+    bs = [i.getbbox() for i in ims]
+    box = (min(b[0] for b in bs) - 3, min(b[1] for b in bs) - 3, max(b[2] for b in bs) + 3, max(b[3] for b in bs) + 3)
+    cw, ch = (box[2] - box[0]) * S, (box[3] - box[1]) * S
+    sheet = Image.new('RGBA', (cw * 4 + 24 * 5, ch + 90 + 60), BG)
+    d = ImageDraw.Draw(sheet)
+    d.text((24, 16), 'THE LIVING SHADOW', font=f1, fill=CYAN)
+    for i, (_, label) in enumerate(views):
+        x = 24 + i * (cw + 24)
+        d.rectangle([x, 84, x + cw, 84 + ch], fill=PANEL)
+        sheet.alpha_composite(ims[i].crop(box).resize((cw, ch), Image.NEAREST), (x, 84))
+        d.text((x, 84 + ch + 10), label, font=f3, fill=TEXT)
+    sheet.convert('RGB').save(f'{out}/living_shadow.png')
+    S = 3
+    W, H, floor = 2300, 900, 720
+    sh = Image.new('RGBA', (W, H), BG)
+    d = ImageDraw.Draw(sh)
+    def put(im, ax, ay, x):
+        sh.alpha_composite(im.resize((im.width * S, im.height * S), Image.NEAREST), (x - ax * S, floor - ay * S))
+    put(load('brawler_front'), 18, 60, 110)
+    put(load('warlock_front'), 84, 132, 300)
+    put(load('demon_today_front'), 180, 276, 820)
+    put(load('shadow_up_front'), 180, 276, 1330)
+    put(load('shadow_run_front'), 180, 276, 1860)
+    d.text((40, 20), "AT THE GAME'S OWN SIZE", font=f1, fill=CYAN)
+    for x, t in [(40, 'Brawler'), (230, 'Warlock'), (560, 'his demon today'), (1200, 'the Living Shadow'), (1760, 'running')]:
+        d.text((x, floor + 124), t, font=f3, fill=TEXT)
+    sh.convert('RGB').save(f'{out}/living_shadow_at_game_size.png')
+
+
 def three(pose, head, name, S=4, lines=True):
     """The three in one pose, each in a panel of one size, `S` times as big."""
     ims = [load(f'new_{k}_{pose}_front') for k, _, _ in NEW]
@@ -79,6 +114,9 @@ def three(pose, head, name, S=4, lines=True):
     sheet.convert('RGB').save(f'{out}/{name}.png')
 
 
+if len(sys.argv) > 3 and sys.argv[3] == 'shadow':
+    shadow()
+    sys.exit(0)
 if len(sys.argv) > 3 and sys.argv[3] == 'ideas':
     ideas()
     sys.exit(0)
