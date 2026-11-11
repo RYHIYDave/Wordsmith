@@ -51,9 +51,9 @@ THE DEMON: A NEW DESIGN ON THE SAME MOVES.
 
 ## The three new demons shown him (`src/dev/demon_new.ts`; FIRST SCULPTS, FROM IN FRONT ONLY, TO CHOOSE A DIRECTION)
 
-Each on the game's demon's bones in its own stand (0.3 s in), none winged. Drawn against what he ticked: a few big forms a
-body where the game's demon is some 150 small solids; each stuff its own colour, light enough to read on a dark floor; the
-far limbs a tone darker; a bigger head, its face a few bold marks, lifted toward the eye so it is seen from above.
+Each on the game's demon's bones, none winged. Drawn against what he ticked: a few big forms a body where the game's demon
+is some 150 small solids; each stuff its own colour, light enough to read on a dark floor; the far limbs a tone darker; a
+bigger head, its face a few bold marks, lifted toward the eye so it is seen from above.
 
 - **A. THE PACT MADE FLESH**: his demon arm grown over all of him. Old-blood hide (his arm's red, duller); black horn grown
   as armour down its back and over its shoulders, blades of bone off it; two great crescent horns (his hood's two, grown); a
@@ -64,16 +64,35 @@ far limbs a tone darker; a bigger head, its face a few bold marks, lifted toward
   two sabre fangs; short horns swept back; a mane of his cyan hellfire round its neck, down its back and at the tip of its
   tail.
 
+SHOWN FIRST STANDING ON ALL FOURS (the game's stand), asked which to take forward (our pick B) and whether to keep it without
+wings. HIS WORDS INSTEAD, 11 Nov:
+
+- **“I like that he’s on all fours, but really only when he’s running around.  Like he’s up on two legs to do really wide
+  slashes with his claws, then when running he drops down to all fours like a feral beast”**
+- Of wings: **“Maybe, we’ll see what you come up with”**
+
+Read as, and told him so: standing and fighting it is UP ON TWO LEGS, so its claws can swing in really wide slashes; running
+it drops to all fours, its run as it is. So its stand and its claw rakes are to be made again upright (this is HIS change to
+“same moves”: the run stays; what else stands up, Damning, the smoke step's ends, how the change and the burning out end, is
+to be settled with him as each is made, the run's start and stop dropping it down and rearing it up). Wings: tried on the one
+he picks, shown only if they earn their place.
+
+SO EACH IS NOW DRAWN BOTH WAYS: up on two legs (`DEMON_UP`, a new stance on the same bones: crouched on its goat legs, hunched
+high, its arms out wide and low, its claws open and turned up with his fire in each), and running on all fours (the game's
+run, 0.6 s into its 0.7 s round, stretched longest in its leap).
+
 Pictures (`pictures/`, each wider than tall for his phone held sideways):
-- `three_new_demons.png`: the three, five times as big (2350 x 940).
-- `new_demons_at_game_size.png`: the Brawler, the Warlock, his demon today and the three, on one floor line, three screen
-  pixels a picture pixel (2480 x 900).
+- `new_demons_on_two_legs.png`: the three up on two legs, four times as big (2308 x 890).
+- `new_demons_running.png`: the three running on all fours, four times as big (2008 x 806).
+- `new_demons_at_game_size.png`: the Brawler, the Warlock, his demon today and the three up on two legs, on one floor line,
+  three screen pixels a picture pixel (2480 x 880).
 - `demon_today_beside_the_brawler.png`: the demon as it is, from in front and from behind, beside the Brawler and the Warlock.
 
 Made with: `npx tsx tools/demon_new_pics.ts <dir>` then `python3 tools/demon_new_pics.py <dir> docs/mockups/warlock_up2/pictures`.
 
-NOT YET, FOR THE ONE HE PICKS: finished detail; from behind and its eight sides; its moves looked at one by one (its jaws,
-tail and whatever is on its back moving); the change into it; beside the Gate Ward's ground in the game.
+NOT YET, FOR THE ONE HE PICKS: finished detail; from behind and its eight sides; its new stand and wide slashes up on two
+legs, and dropping to all fours to run; its other moves looked at one by one; the change into it; beside the Gate Ward's
+ground in the game.
 
 ## The checks so far
 

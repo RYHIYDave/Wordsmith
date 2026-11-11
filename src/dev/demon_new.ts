@@ -12,6 +12,13 @@
 // one he picks: only what is sculpted on the bones is new. What he asked of the demon before is kept on every one: on all
 // fours, a gorilla's long arms, its claws flat on the floor burning with the friend's cyan fire.
 //
+// SHOWN THE FIRST THREE ON ALL FOURS and asked which, his words instead (11 Nov): “I like that he’s on all fours, but really
+// only when he’s running around.  Like he’s up on two legs to do really wide slashes with his claws, then when running he
+// drops down to all fours like a feral beast”. Read as (told him so): standing and fighting it is UP ON TWO LEGS, so its
+// claws can swing in really wide slashes; running it drops to all fours, its run as it is. So each is drawn both ways: up on
+// two legs, its claws out and burning (DEMON_UP, a new stance on the same bones), and running on all fours (the game's run).
+// Of wings, asked whether to keep it without: “Maybe, we’ll see what you come up with”.
+//
 // HOW THEY ARE DRAWN, against what was wrong: a few big forms a body, not dozens of small lumps (the game's demon is some 150
 // solids, its body a tangle of them); each stuff its own colour and three clear tones, light enough to read on a dark floor;
 // the far limbs a tone darker than the near; a head a size bigger, its face made of a few bold marks that read at the game's
@@ -21,13 +28,13 @@ import type { Ramp } from '../art/kit';
 import { CYAN } from '../art/kit';
 import { FRIEND_RIM } from '../art/hero3_knight';
 import type { GameView, PaintView } from '../art/skin';
-import { add, cross, lerp3, mul, norm, solve, sub } from '../art/skeleton';
+import { add, cross, elbowFor, lerp3, mul, norm, solve, standing, sub } from '../art/skeleton';
 import type { Bones, Posed, Rot, Skeleton, V3 } from '../art/skeleton';
 import { Sculpt, draw, onCone } from './sculpt';
 import type { Cone, Drawn, Hit } from './sculpt';
 import { IVORY } from './sculpt_warlock';
 import { demonHand, tone5 } from './sculpt_demon';
-import { DEMON_B, RIG_CANVAS, demonAura, fireBehind } from './sculpt_demon_rig';
+import { DEMON_B, RIG_CANVAS, clawHand, demonAura, fireBehind } from './sculpt_demon_rig';
 
 export type NewDemon = 'pact' | 'pale' | 'mane';
 export const NEW_DEMONS: { id: NewDemon; name: string; says: string }[] = [
@@ -35,6 +42,24 @@ export const NEW_DEMONS: { id: NewDemon; name: string; says: string }[] = [
   { id: 'pale', name: 'B. The Pale Crawler', says: 'gaunt and bone-white, no eyes, a mouth from ear to ear, a crown of black thorns, its arms dipped in soot' },
   { id: 'mane', name: 'C. The Burning Mane', says: 'a dusk-violet beast with four eyes and sabre fangs, a mane of his cyan hellfire down its neck and back' },
 ];
+
+/**
+ * UP ON TWO LEGS (his word, 11 Nov: “he’s up on two legs to do really wide slashes with his claws”): on the game's demon's own
+ * bones. Crouched on its goat legs, one foot before the other; hunched high, its head thrust out; its long arms held out wide
+ * and low, elbows back, its claws open and turned up, burning: ready to swing.
+ */
+export const DEMON_UP: Bones = (() => {
+  const q: Bones = {
+    ...standing(DEMON_B),
+    px: 0, pz: -6, pitch: 1, bend: 7, hunch: 28, shrug: 0.5, faceUp: 2,
+    lhIn: 1, lhx: 14, lhy: 35, lhz: -29,
+    rhIn: 1, rhx: 20, rhy: -34, rhz: -24,
+    lfx: 7, lfy: 4, rfx: -8, rfy: -4, lk: 18, rk: -18,
+  } as Bones;
+  q.le = elbowFor(DEMON_B, q as Posed, true, [-10, 6, 3]);
+  q.re = elbowFor(DEMON_B, q as Posed, false, [-10, -6, 3]);
+  return q;
+})();
 
 const U: V3 = [0, 0, 1];
 const dot = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -82,6 +107,8 @@ interface Kit {
   far: (piece: string) => boolean;
   /** Its tail swung to its left (radians). */
   tail: number;
+  /** Its claws its feet (running on all fours): each drawn as a claw on the floor however high it swings. */
+  paws: boolean;
 }
 
 /** A material whose far limbs are a tone darker (as the heroes' far limbs are), with a painter of its own after that. */
@@ -115,7 +142,11 @@ function spike(k: Kit, mat0: number, piece: string, pts: V3[], r0: number, tag =
   }
 }
 
-/** Its two claws flat on the floor (dev/sculpt_demon.ts demonHand: a hand built as a hand, his word of 24 Oct), and their fires. */
+/**
+ * Its two claws. On the floor (or running on them), flat and spread, his fire under each palm licking out between its fingers
+ * (dev/sculpt_demon.ts demonHand: a hand built as a hand, his word of 24 Oct; the fire his of 27 Oct). Off the floor, up on
+ * two legs: a hand of claws held open (dev/sculpt_demon_rig.ts clawHand), its palm turned up and forward, his fire in it.
+ */
 function claws(k: Kit, hide: number, talon: number, scale: number, out: Built): void {
   const { s, sc } = k;
   const fh = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
@@ -123,10 +154,16 @@ function claws(k: Kit, hide: number, talon: number, scale: number, out: Built): 
     const piece = side > 0 ? 'armL' : 'armR';
     const ha = side > 0 ? s.handL : s.handR;
     const el = side > 0 ? s.elbowL : s.elbowR;
-    const planted = ha[2] < 14;
-    const up = planted ? Math.max(0, ha[2] - 7) : 0;
-    demonHand(sc, hide, talon, piece, ha, el, false, scale, planted ? fh : undefined, planted && side < 0, up);
-    if (!planted) continue;
+    const planted = k.paws || ha[2] < 14;
+    if (!planted) {
+      const palmWay = norm(add(mul(fh, 0.75), add([0, 0, 0.55], mul(cross(U, fh), -side * 0.35))));
+      const tips = clawHand(sc, hide, talon, piece, ha, el, palmWay, 3.1 * scale, side < 0);
+      const mid = mul(tips.reduce((a, b) => add(a, b), [0, 0, 0] as V3), 1 / tips.length);
+      out.flames.push({ p: add(lerp3(ha, mid, 0.55), mul(palmWay, 3.5 * scale)), size: 4.4 * scale, deep: 14 });
+      continue;
+    }
+    const up = Math.max(0, ha[2] - 7);
+    demonHand(sc, hide, talon, piece, ha, el, false, scale, fh, side < 0, up);
     const S = 1.45 * scale;
     const acr = norm(cross(U, fh));
     const thumbW = side < 0 ? acr : mul(acr, -1);
@@ -350,7 +387,7 @@ function noPixelAlone(d: Drawn): void {
 }
 
 /** A new demon at a moment: on the game's demon's bones in a pose, from in front or behind (as the camera truly sees it), turned `turn`. */
-export function newDemonFrame(kind: NewDemon, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0): Drawn {
+export function newDemonFrame(kind: NewDemon, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false): Drawn {
   const pv: PaintView = view === 'back' ? 'rear' : view;
   const s = solve(DEMON_B, pose as Posed);
   const sc = new Sculpt();
@@ -362,7 +399,7 @@ export function newDemonFrame(kind: NewDemon, view: GameView, pose: Bones, turn 
     return pv === 'front' ? 0.612 * (q[0] - q[1]) + 0.5 * q[2] : 0.612 * (-q[0] - q[1]) + 0.5 * q[2];
   };
   const farL = nearOf(add(s.pelvis, [0, 20, 6])) < nearOf(s.pelvis);
-  const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail };
+  const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail, paws };
   const built = kind === 'pact' ? pactInto(k) : kind === 'pale' ? paleInto(k) : maneInto(k);
   const d = draw(sc, pv, RIG_CANVAS.ax, RIG_CANVAS.ay, RIG_CANVAS, undefined, FRIEND_RIM);
   built.flames.forEach((f, i) => fireBehind(d, sc.at(f.p), f.size, t + i * 0.37, f.deep ?? 10));

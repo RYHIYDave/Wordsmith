@@ -12,7 +12,7 @@ import type { Px } from '../src/engine/px';
 import { demonMoves, demonPose, drawDemonAt } from '../src/dev/demon_moves';
 import { drawWarlockAt, warlockMoves } from '../src/dev/warlock_moves';
 import { makeVeteranArt } from '../src/art/veteran_art';
-import { newDemonFrame } from '../src/dev/demon_new';
+import { DEMON_UP, newDemonFrame } from '../src/dev/demon_new';
 import type { NewDemon } from '../src/dev/demon_new';
 import type { Bones } from '../src/art/skeleton';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
@@ -70,7 +70,15 @@ const views = (process.argv[4] ?? 'front').split(',') as ('front' | 'back')[];
 /** The moment of its stand the pictures show (a breath, both claws down). */
 const T = 0.3;
 const stand = demonMoves()[0];
-for (const kind of kinds) for (const v of views) save(`${dir}/new_${kind}_${v}.png`, newDemonFrame(kind, v, demonPose(stand.motion, T) as Bones, 0, T, stand.tail ? stand.tail(T) : 0).px);
+const run = demonMoves()[1];
+/** The moment of its run the pictures show (stretched out longest in its leap: 0.6 s of its 0.7 s round). */
+const RUN_T = Number(process.argv[5] ?? 0.6);
+for (const kind of kinds) for (const v of views) {
+  // (up on two legs, his word of 11 Nov; running on all fours, the game's run; and standing on all fours, as first shown)
+  save(`${dir}/new_${kind}_up_${v}.png`, newDemonFrame(kind, v, DEMON_UP, 0, T, 0.25).px);
+  save(`${dir}/new_${kind}_run_${v}.png`, newDemonFrame(kind, v, demonPose(run.motion, RUN_T) as Bones, 0, RUN_T, run.tail ? run.tail(RUN_T) : 0, true).px);
+  save(`${dir}/new_${kind}_${v}.png`, newDemonFrame(kind, v, demonPose(stand.motion, T) as Bones, 0, T, stand.tail ? stand.tail(T) : 0).px);
+}
 // (the game's demon as it is, anchored 180, 276; the Warlock, 84, 132; the Brawler, 18, 60: all two picture pixels a game pixel)
 for (const v of views) save(`${dir}/demon_today_${v}.png`, drawDemonAt(v, stand, T).px);
 save(`${dir}/warlock_front.png`, drawWarlockAt('front', warlockMoves()[0], 0.6).px);
