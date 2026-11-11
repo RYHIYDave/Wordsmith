@@ -254,7 +254,7 @@ function paintGround(B: Buf): void {
       } else {
         // (beyond the town: rough rock, and at the back the cliff of the great hollow the shaft is sunk in)
         c = mixRGB(ROCK[0], ROCK[1], band(fbm(tx * 0.8, ty * 0.8, 7), 3));
-        if (r > RIM.cliff) c = NIGHT;
+        if (r > RIM.cliff) c = mul(ROCK[0], 0.8);
       }
       B.set(x, y, c);
     }
@@ -586,8 +586,8 @@ export function scene(heroAt: [number, number] | null): { cv: HTMLCanvasElement;
 
 /** Where the knight stands in each view, and its caption. */
 export const VIEWS: readonly { hero: [number, number]; caption: string }[] = [
-  { hero: [LAYOUT.wordsmith[0] - 1.3, LAYOUT.wordsmith[1] - 1.6], caption: "At the wordsmith's bench" },
-  { hero: [polar(-18, RIM.pit + 0.9)[0], polar(-18, RIM.pit + 0.9)[1]], caption: 'At the brink, looking down' },
+  { hero: [LAYOUT.wordsmith[0] + 2.7, LAYOUT.wordsmith[1] + 1.1], caption: "At the wordsmith's bench" },
+  { hero: [polar(52, RIM.pit + 0.8)[0], polar(52, RIM.pit + 0.8)[1]], caption: 'At the brink, looking down' },
   { hero: [LAYOUT.gate[0] + 1.8, LAYOUT.gate[1] + 2.4], caption: 'At the gate and the record' },
 ];
 const WHOLE = { x: 410 - 300, y: 62, w: 600, h: 312 };

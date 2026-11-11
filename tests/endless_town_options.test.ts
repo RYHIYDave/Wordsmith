@@ -20,7 +20,7 @@ function files(dir: string): string[] {
   return out;
 }
 
-test('nothing of the game imports the endless-town sketches', () => {
-  const bad = files('src').filter((f) => !f.startsWith(join('src', 'dev')) && /endless_town_options/.test(readFileSync(f, 'utf8') as string));
+test('nothing of the game imports the endless-town sketches or the Shaft\'s Rim mock-up', () => {
+  const bad = files('src').filter((f) => !f.startsWith(join('src', 'dev')) && /endless_town_options|preview_shaft_rim/.test(readFileSync(f, 'utf8') as string));
   assert.deepEqual(bad, []);
 });
