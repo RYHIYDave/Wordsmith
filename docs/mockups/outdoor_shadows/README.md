@@ -1,8 +1,8 @@
 # Every floor's near shadow with no teeth; the Quarry and the Ledge Road repainted as Echo Canyon was
 
 The chat working from his queue, on the branch `art/outdoor-shadows` (from `art/canyon-repaint` at b082b85c, which the main chat
-has been asked to bring in: this branch carries it). MOCK-UPS BEHIND THREE SWITCHES, ALL OFF. Pictures to him first; the main chat
-puts them in.
+has been asked to bring in: this branch carries it). BEHIND THREE SWITCHES (AND ECHO CANYON'S), ALL OFF. HE HAS SEEN THE PICTURES AND SAID YES TO ALL OF IT (11 Nov 2026, below): the
+main chat brings it in and sets the four switches on.
 
 ## What began it
 
@@ -56,6 +56,10 @@ cast shadows thrown along the world's x, down the screen to the right):
 - The Ledge Road, whose back wall, painted lit, threw a shadow across the road before it: "As long as the light source is
   consistent". Read as: a shadow must fall the way the walls are lit. It did not (45 degrees round from the walls' light), on
   all three floors. Mended (ONE LIGHT, above); the pictures here are of the mend, and were shown to him again.
+- Shown across_repaint.png (Echo Canyon), quarry_wall.png and ledge.png with the one light, told what had been wrong, and asked
+  "Hand all three to main?", by 08:59: "Yes, hand them to main (Recommended)".
+
+SO, WITH HIS YES: all four switches (`CANYON_RIM`, `QUARRY_RIM`, `LEDGE_RIM`, `SHADOW_EVEN`).
 
 ## How to see it
 

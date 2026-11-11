@@ -71,7 +71,8 @@ the mend). Shown the Ledge Road given the same shadows (docs/mockups/outdoor_sha
 source is consistent". It was not: the shadows were thrown along the world's x (down the screen to the right), which is 45
 degrees round from the light the walls are painted by, so a wall painted lit threw a shadow before it. Now they are thrown across
 the screen from the left, as the walls are lit (2 above). The canyon's pictures he said yes to at 07:55 had the first way: the
-new ones were shown to him again.
+new ones were shown to him again, and by 08:59: "Yes, hand them to main (Recommended)" (Echo Canyon, the Quarry and the Ledge
+Road together). BRING IN `art/outdoor-shadows`, NOT `art/canyon-repaint` AT b082b85c.
 
 ## How to see it
 
