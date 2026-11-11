@@ -654,9 +654,9 @@ const P = { foot: 6, post: 74, cup: 80 } as const;
 const WOOD = ['#1e1022', '#2e1a32', '#432842', '#5a3652'] as const;
 export function paintTorchPost(): Piece {
   const W = 26;
-  const H = 104;
+  const H = 124;
   const ox = 13;
-  const oy = 96;
+  const oy = 116;
   const p = new Px(W, H);
   const iso = new Iso(p, ox, oy);
   iso.box(-0.15, -0.15, 0.15, 0.15, 0, P.foot, { top: () => S[6], left: plain(S[5], S[7], S[3]), right: plain(S[3], S[4], S[1]) });
@@ -680,9 +680,9 @@ export const TORCH_FRAMES = 12;
 /** The flame, frame f of 12 (30 a second): its anchor the post's (the middle of its foot), so laid at the same point. */
 export function paintTorchFlame(f: number): Piece {
   const W = 26;
-  const H = 104;
+  const H = 124;
   const ox = 13;
-  const oy = 96;
+  const oy = 116;
   const p = new Px(W, H);
   const ph = (f / TORCH_FRAMES) * Math.PI * 2;
   const base = oy - P.post - 6;
@@ -708,7 +708,7 @@ export function paintTorchFlame(f: number): Piece {
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // WHERE EACH STANDS (tiles on the rim's grid, art/shaft_rim.ts rimPlace): its station's tile (as he locked it in), the point of the
-// floor its anchor is laid on, and the tiles it blocks. The torches: the mock-up's places he saw (preview_shaft_rim.ts, step 2).
+// floor its anchor is laid on, and the tiles it blocks. The torches: the mock-up's places he saw (the step-2 mock-up's dev page).
 
 export interface RimPiece {
   kind: 'gate' | 'record' | 'trophies' | 'torch';

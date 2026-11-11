@@ -690,15 +690,16 @@ function makeProps3(): Props3 {
   };
 }
 
-// THE KNIGHT'S WALK FOR THE FILM: round the pit past each station, stopping at the trophies, the gate, the record and the bench.
+// THE KNIGHT'S WALK FOR THE FILM: round the pit from the smithy's rack past the way down, stopping at the trophies, the gate and the
+// record, on past the stranger and the stash to the Lexicon, the wordsmith's ring before him. (Not on into the ring: its stones
+// stand close; not round the bazaar: its awning would hide him.)
 // [x, y, pause (s), the way he faces while he stands (tiles)]. Every step is checked (checkRoute): on the floor, through no
 // station, off the pit's kerb.
 type Stop = readonly [number, number, number, number?, number?];
 export const ROUTE: readonly Stop[] = [
-  [12.7, 18.1, 1.2, -1, 0], [14.5, 17.0, 0], [16.3, 15.2, 0], [16.6, 13.4, 0], [17.5, 11.5, 0], [16.5, 10.5, 0], [16.2, 9.6, 0], [15.5, 9.5, 0],
-  [14.5, 8.5, 0], [14.2, 7.4, 0], [13.4, 6.4, 0], [11.6, 6.45, 1.4, 0, -1], [9.6, 7.5, 0], [8.5, 7.6, 1.6, 0, -1], [7.0, 8.3, 0],
-  [6.3, 8.5, 1.4, -0.6, 1], [7.4, 9.0, 0], [7.5, 10.5, 0], [7.3, 12.5, 0], [7.6, 13.6, 0], [8.3, 14.6, 0.8, -1, 1], [8.5, 15.5, 0], [9.5, 16.5, 0],
-  [11.3, 16.5, 0], [12.4, 17.4, 0], [12.7, 18.1, 1.6, -1, 0],
+  [14.6, 8.4, 1.4, 1, 0.4], [14.2, 7.4, 0], [13.4, 6.4, 0],
+  [12.0, 6.4, 0], [10.4, 6.6, 1.4, 0.6, -1], [9.6, 7.5, 0], [8.5, 7.6, 1.6, 0, -1], [6.6, 7.6, 1.6, -0.5, 1], [7.4, 9.0, 0], [7.5, 10.5, 0],
+  [7.3, 12.0, 0], [7.8, 12.8, 2.2, -0.3, 1],
 ];
 const WALK = 4.6;
 /** Where the knight is at time t, which way he faces, whether he walks, and how far he has walked. */

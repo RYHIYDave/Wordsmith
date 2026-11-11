@@ -60,7 +60,7 @@ export const RIM_LAYOUT = {
   stash: tileOf(160, 6.6),
   stranger: tileOf(-178, 7.4),
   braziers: [tileOf(-122, 7.7), tileOf(-145, 7.7), tileOf(-62, 7.5), tileOf(40, 7.4), tileOf(72, 7.4), tileOf(128, 7.6)],
-  // (the four torches on posts where the mock-up he locked in had them, preview_shaft_rim.ts: by the stash, by the Lexicon, by the
+  // (the four torches on posts where the mock-up he locked in had them (its dev page): by the stash, by the Lexicon, by the
   // tent, by the record. Mended in step 4: three had been copied here wrong, one of them onto the Lexicon's own tile. The tent's is moved
   // within its tile, toward the tent, off the one way between the pit and the smithy; the record's
   // moved a tile back, beside the stone and no longer in front of its notches.)
