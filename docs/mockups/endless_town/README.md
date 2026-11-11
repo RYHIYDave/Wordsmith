@@ -61,7 +61,20 @@ The art chat's pick for the endless town: **1, The Shaft's Rim** (it is the spla
 
 `pictures/options_1.png` to `options_5.png`, 1200 x 1420 each, two sketches in each one above the other, numbered 1 to 10, each with its name, where it is from and its line. Made by `node tools/endless_town_options.mjs` (page: `src/dev/endless_town_options_page.ts`).
 
-## Not yet asked of him
+## His picks on the ten sketches (11 Nov 2026, by 11:12)
 
-- Which one is the endless town, and which four are the others.
-- Whether the two proposals (record, trophies) go in.
+Shown the five pictures and the ten named, and told that the record stone and the trophies wall were the art chat's own
+suggestions, he was asked three things:
+- “Which of the ten sketches should be the Endless town itself (options_1.png to options_5.png)? Tap one, or type another
+  number.”: “1 The Shaft's Rim (Recommended)”.
+- “Which other town sketches should I keep as the towns to unlock or buy later? Tick any, or type the numbers you want (2, 5, 6,
+  8 and 10 are the rest).”: he ticked “4 The Reading Hall (Recommended)”, “7 The Isle of Stones (Recommended)”, “9 The Bell
+  Foundry (Recommended)” and “3 The Stilt Town (Recommended)”, and wrote: “I want 2, 5, 8, and 10 as well.”
+- “The sketches have two additions of mine: a record stone (how deep you've gone in endless) and a trophies wall (the bosses
+  whose tablet quarters you hold). Keep them in the town?”: “Keep both (Recommended)”.
+
+SO: THE ENDLESS TOWN IS 1, THE SHAFT'S RIM. KEPT AS TOWNS TO UNLOCK OR BUY LATER, EIGHT: 2 Quarry Terraces, 3 The Stilt Town,
+4 The Reading Hall, 5 The Tower Top, 7 The Isle of Stones, 8 The Swan Garden, 9 The Bell Foundry, 10 The Frozen Mere. NOT
+KEPT: 6 The Stone Bridge (he did not name it). The record stone and the trophies wall go in (what they show and when is the
+main chat's to write). His note asked for “mockups until they’re locked in, then drawn to the standard of the game”: next is
+a closer mock-up of the Shaft's Rim; the eight others stay as sketches until he asks for each.
