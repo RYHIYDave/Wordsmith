@@ -264,3 +264,30 @@ storeys, seen from across a shaft.
 ### For him to decide
 
 - Whether the ground and the pit are right (the pictures above).
+
+## Step 3b: the pit mended (11 Nov 2026; he had not been shown step 3)
+
+Looked at close, step 3's pit did not read. Its stair was a few big blocks along the top of the far wall, and its far wall was
+one brick colour. The paving, the cliff, the kerb, the posts and the portal's landing stay exactly as they were. Only the
+shaft is new. The five pictures are made again under the same names; this section replaces step 3's account of the pit.
+
+- **THE STOREYS, A PICTORIAL CHEAT AS THE SPLASH'S OWN.** Seen from the rim, the storeys are rings, each lower one smaller (by
+  0.72 a storey) and lower down the screen, closing toward a point by the front lip. Each storey is shallower and dimmer than
+  the one above. THREE ARE SEEN BEFORE THE DARK, each in its own floor's stone in the splash's order: THE TOWN'S (warm grey),
+  THE PRISON'S (blue-grey), THE CANYON'S (red-brown). The fen's below them is only just seen before the dark takes it. Each
+  storey has a ledge at its head, lit, with a seam of shadow under it, and five courses of its own blocks.
+- **THE STAIR, EACH STEP ITS OWN.** It leaves the brink by the way down and goes leftward round the far wall, down a storey a
+  flight. Each flight is FOUR STEPS, then a landing, and so on down and round until the dark has it: twelve steps and three
+  landings are seen. Every step is a block of its own: a lit tread with its nosing lightest, a dark riser down to the step
+  below, a seam at its end, and its shadow on the wall under it. The flight reads as one stair going down, not as posts.
+- **A DOORWAY ON EACH LANDING**, in the wall of its storey: a dark arch ringed with its stones, its sill lit; the prison's
+  barred. **ITS TORCH** stands on its iron bracket on the wall beside the doorway, a little up the stair, its flame one of the
+  12 frames. Three torches in all, one to a landing. None floats: the torch that seemed to float at the bottom (a fourth
+  storey's, on the near side) is gone.
+- **THE FAR FIRE**: as it was, dim, inside the shaft only, below the fourth storey, where the dark has all.
+- **COST**: the pit is still part of the one ground picture, and it is cheaper to paint now (no line of sight to follow): the
+  ground took 167 to 267 ms in this session's headless Chromium (eight paintings). The flames are the same 12 frames.
+- **THE PICTURES AGAIN**: pit_phone.png (its twice-size half framed on the pit, the stair, the three storeys and their doors
+  all in it), rim2_whole.png, rim2_view_1.png, rim2_view_2.png, and rim2_measure.png. The measure check is as in step 3: the
+  rim and the Gate Ward have the same grain.
+- **THE TEST** (tests/shaft_rim.test.ts) now also holds that the pit shows at least three storeys lit before the dark.

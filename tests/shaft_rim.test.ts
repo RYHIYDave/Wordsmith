@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 // @ts-ignore
 import { join } from 'node:path';
-import { ENDLESS_TOWN, GROUND, RIM, groundAt, onTongue, rimPlace } from '../src/art/shaft_rim';
+import { ENDLESS_TOWN, GROUND, RIM, groundAt, onTongue, pitAt, rimPlace, shaftLight } from '../src/art/shaft_rim';
 
 function files(dir: string): string[] {
   const out: string[] = [];
@@ -78,4 +78,14 @@ test('the pit is not walkable; the tongue and the rim are; every station stands 
     }
   for (const t of P.town) assert.equal(P.walk[t.y * P.w + t.x], 1, `${t.kind} at ${t.x}, ${t.y}`);
   for (const t of P.more) assert.equal(P.walk[Math.floor(t.y) * P.w + Math.floor(t.x)], 1, `${t.kind}`);
+});
+
+test('the pit shows more than two storeys, each its own floor\'s stone, lit, before the dark', () => {
+  const seen = new Set<number>();
+  for (let dy = -RIM.pit * 12; dy < RIM.pit * 12; dy += 0.5)
+    for (let dx = -RIM.pit * 23; dx < RIM.pit * 23; dx += 0.5) {
+      const P = pitAt(dx, dy);
+      if (P && shaftLight(P.z, P.phi) > 0.2) seen.add(Math.floor(P.z));
+    }
+  assert.ok(seen.size >= 3, `storeys seen: ${[...seen].join(', ')}`);
 });

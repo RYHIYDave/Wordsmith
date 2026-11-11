@@ -660,7 +660,7 @@ function main(): void {
     const n = Math.max(1, Math.min(2, Number(mode.split(':')[1]) || 1));
     const t0 = performance.now();
     const v = mode.startsWith('view2') ? VIEWS2[n - 1] : null;
-    const { cv } = scene(v ? v.hero : pit ? [RIM.cx + 3.9, RIM.cy + 3.3] : null, true, 0.4);
+    const { cv } = scene(v ? v.hero : pit ? [RIM.cx + 5.2, RIM.cy + 1.4] : null, true, 0.4);
     console.log(`ground painted in ${COST.ground.toFixed(0)} ms; the scene in ${(performance.now() - t0).toFixed(0)} ms`);
     const g = out.getContext('2d') as CanvasRenderingContext2D;
     const PW = 507;

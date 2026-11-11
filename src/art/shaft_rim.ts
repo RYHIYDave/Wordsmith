@@ -129,26 +129,93 @@ export function rimPlace(): RimPlace {
 export const GROUND = { gx: -340, gy: (RIM.cx + RIM.cy) * 8 - 112 - 150, w: 680, h: 112 * 2 + 150 + 14 };
 const MID_Y = (RIM.cx + RIM.cy) * 8;
 
-/** Each floor's own stone, storey under storey down the shaft, as the splash has them. */
-const ORDER: readonly Theme[] = [TOWN, PRISON, CANYON, FEN, HIGH, QUARRY, PRISON, FEN];
-/** A storey's height and the stair (game pixels and tiles): how far it stands out of the wall, how thick, how many steps a turn, how far a turn goes down. */
-export const STOREY = 28;
-const WS = 0.78;
-const TS = 5;
-const STEPS = 28;
-const PITCH = STOREY * 2;
-const RISE = PITCH / STEPS;
-/** How deep the dark has it all (game pixels below the brink). */
-const DEEP = 92;
+/** Each floor's own stone, storey under storey down the shaft, in the splash's order: the town's, the prison's, the canyon's, the fen's, the High City's, the quarry's. */
+const ORDER: readonly Theme[] = [TOWN, PRISON, CANYON, FEN, HIGH, QUARRY];
 const TAU = Math.PI * 2;
-const SA = STAIR_AT * D2R;
-const runOf = (th: number): number => (((SA - th) % TAU) + TAU) % TAU;
 const angd = (a: number, b: number): number => Math.atan2(Math.sin(a - b), Math.cos(a - b));
-/** Each storey's doorway (k >= 1): where round the shaft it opens. */
-// (set where the eye can see them down the shaft: about the far wall's middle, one to the left of it and one to the right in turn)
-const doorAt = (k: number): number => (-135 + (k % 2 ? -24 : 22)) * D2R;
-/** Each storey's torch: a little round from its doorway, 9 pixels over its sill (the top storey's by the stair's head). */
-const torchAt = (k: number): readonly [number, number] => (k === 0 ? [SA - 0.55, -11] : [doorAt(k) + (k % 2 ? 0.42 : -0.42), -((k + 1) * STOREY - 14)]);
+
+// THE SHAFT, A PICTORIAL CHEAT AS THE SPLASH'S OWN: seen from the rim, storey under storey are rings, each lower one smaller
+// and lower down the screen (by Q to a storey), closing toward a point near the front lip. So three storeys are seen before the
+// dark, each shallower and dimmer than the one above: that is how deep reads. A point of the wall is (z, phi): z storeys down
+// (z = 0 the brink), phi round the ring on the screen (0 to the right, -90 the far side's middle). The ring of depth z is an
+// ellipse RX * p by RY * p, p = Q^z, its middle K * RY * (1 - p) under the mouth's.
+const RX = RIM.pit * 16 * Math.SQRT2;
+const RY = RIM.pit * 8 * Math.SQRT2;
+const Q = 0.72;
+const K = 0.97;
+/** Which ring a game pixel (dx, dy from the mouth's middle) lies on: its depth z (storeys) and its angle phi; null outside the mouth. */
+export function pitAt(dx: number, dy: number): { z: number; phi: number; p: number } | null {
+  const a = dx / RX;
+  const b = (dy - K * RY) / RY;
+  // a^2 + (b + K p)^2 = p^2, for p in (0, 1]
+  const A = 1 - K * K;
+  const p = (2 * K * b + Math.sqrt(4 * K * K * b * b + 4 * A * (a * a + b * b))) / (2 * A);
+  if (!(p > 0) || p > 1) return null;
+  const z = Math.log(p) / Math.log(Q);
+  const phi = Math.atan2((dy - K * RY * (1 - p)) / (RY * p), dx / (RX * p));
+  return { z, phi, p };
+}
+/** Where the wall point (z, phi) lies on the screen, in game pixels from the mouth's middle. */
+export function pitXY(z: number, phi: number): [number, number] {
+  const p = Q ** z;
+  return [RX * p * Math.cos(phi), K * RY * (1 - p) + RY * p * Math.sin(phi)];
+}
+
+// THE STAIR: from the brink by the way down (the far wall's right, phi = STAIR_AT + 45 degrees), a flight of six steps down
+// to each storey's foot, then a landing along the wall to the next flight; a doorway and its torch on each landing. Leftward
+// round the far side, on and down and round until the dark has it.
+const FLIGHT = 4;
+/** A step's length round the ring (radians: the same on the screen at every depth, since every ring is the same in angle). */
+const STEP_A = 0.07;
+const LAND_A = 0.1;
+const PHI0 = (STAIR_AT + 45) * D2R;
+/** The stair's top at angle phi (storeys down), and which step or landing it is; null where it has not come or has gone. */
+export function stairAt(phi: number): { zs: number; idx: number; landing: boolean; k: number; f: number } | null {
+  let u = PHI0 - phi;
+  if (u < 0) return null;
+  for (let k = 0; k < 5; k++) {
+    const fl = FLIGHT * STEP_A;
+    if (u < fl) {
+      const i = Math.floor(u / STEP_A);
+      return { zs: k + (i + 1) / FLIGHT, idx: k * (FLIGHT + 1) + i, landing: false, k, f: u / STEP_A - i };
+    }
+    u -= fl;
+    if (u < LAND_A) return { zs: k + 1, idx: k * (FLIGHT + 1) + FLIGHT, landing: true, k, f: u / LAND_A };
+    u -= LAND_A;
+  }
+  return null;
+}
+/** Each landing's doorway (in the wall of the storey whose foot the landing is): its angle; and its torch, a little up the stair from it. */
+export const doorAt = (k: number): number => PHI0 - (k + 1) * FLIGHT * STEP_A - k * LAND_A - LAND_A * 0.5;
+const torchAt = (k: number): readonly [number, number] => [doorAt(k) + 0.085, k + 1 - 0.5];
+/** THE STAIR'S STEPS laid on the screen, each a flat block (game pixels from the mouth's middle): its left and right, its top, how tall its tread and its riser are seen, the shadow under it. */
+export const STAIR_STEPS: { x0: number; x1: number; y: number; top: number; front: number; shade: number; z: number; phi: number; k: number; landing: boolean }[] = (() => {
+  const out: { x0: number; x1: number; y: number; top: number; front: number; shade: number; z: number; phi: number; k: number; landing: boolean }[] = [];
+  let a = PHI0;
+  for (let k = 0; k < 4; k++) {
+    for (let i = 0; i <= FLIGHT; i++) {
+      const landing = i === FLIGHT;
+      const da = landing ? LAND_A : STEP_A;
+      const z = landing ? k + 1 : k + (i + 1) / FLIGHT;
+      const [xa, ya] = pitXY(z, a);
+      const [xb, yb] = pitXY(z, a - da);
+      const p = Q ** z;
+      out.push({ x0: Math.floor(Math.min(xa, xb)), x1: Math.ceil(Math.max(xa, xb)), y: Math.round((ya + yb) / 2 - 1.5 * p), top: Math.max(1.5, Math.round(3 * p * 2) / 2), front: Math.max(1.5, Math.round(4 * p * 2) / 2), shade: Math.max(1, Math.round(3 * p)), z, phi: a - da / 2, k, landing });
+      a -= da;
+    }
+  }
+  // (the stair is solid: each step's riser goes down to the step below it, so the flight reads as one stair, not as posts)
+  // (and each step meets the one before it: no gap where a smaller ring would leave one)
+  for (let i = 1; i < out.length; i++) if (out[i].x1 < out[i - 1].x0) out[i].x1 = out[i - 1].x0;
+  for (let i = 0; i + 1 < out.length; i++) out[i].front = Math.max(out[i].front, out[i + 1].y - out[i].y + out[i + 1].top);
+  return out;
+})();
+/** How wide a doorway is (radians round) and how tall (storeys). */
+const DOOR_A = 0.05;
+const DOOR_H = 0.72;
+/** The stair's tread seen from above and its edge, in storeys. */
+const TOP_H = 0.2;
+const FRONT_H = 0.26;
 
 const NIGHT = hx('#07060f');
 const ROCK = ['#141118', '#1d1820', '#272029', '#332a33'].map(hx);
@@ -246,138 +313,99 @@ function cliffAt(u: number, z: number, px: number, py: number): C {
   return lit(c, 0.6 * Math.max(0, 1 - z / 150) ** 1.3, px, py);
 }
 
-/** THE SHAFT'S WALL at angle th, `d` game pixels down from the brink. */
-function wallAt(th: number, d: number, px: number, py: number): C {
-  const k = Math.max(0, Math.floor(d / STOREY));
+/** How much light a point of the shaft has: less with every storey (the rim's light from above), its torch's pool; the dark has all below the third. */
+export function shaftLight(z: number, phi: number): number {
+  const sky = 0.95 * 0.7 ** z;
+  let tl = 0;
+  for (let k = 0; k < 4; k++) {
+    const [ta, tz] = torchAt(k);
+    const du = angd(phi, ta) / 0.16;
+    const dz = (z - tz) / 0.55;
+    tl += 0.75 * 0.8 ** k / (1 + du * du + dz * dz);
+  }
+  const fade = Math.max(0, Math.min(1, 1 - (z - 2.7) / 1.3));
+  // (the near side of every ring faces away from the eye: dimmer)
+  const near = Math.sin(phi) > 0.2 ? 0.55 : 1;
+  return Math.min(1, (sky + tl) * fade * near);
+}
+
+/** THE SHAFT at a picture pixel inside the mouth: the stair (its tread, its nosing, its edge), a doorway, a torch's bracket, the wall. */
+function shaftAt(dx: number, dy: number, px: number, py: number): C {
+  const P = pitAt(dx, dy);
+  if (!P) return NIGHT;
+  const { z, phi } = P;
+  // (the same for the picture pixel above and to the left: where a seam falls)
+  const up = pitAt(dx, dy - 0.5);
+  const left = pitAt(dx - 0.5, dy);
+  const k = Math.floor(z);
   const t = ORDER[k % ORDER.length];
-  const v = d - k * STOREY;
-  const u = (th + Math.PI) * RIM.pit;
+  const light = shaftLight(z, phi);
+  if (light <= 0.001) return NIGHT;
+  // THE STAIR: each step a block of its own
+  for (const st of STAIR_STEPS) {
+    if (dx < st.x0 || dx >= st.x1 || dy < st.y || dy >= st.y + st.top + st.front + st.shade) continue;
+    const t2 = ORDER[st.k % ORDER.length];
+    const lt = Math.min(1, shaftLight(st.z, st.phi) * 1.3 + 0.05);
+    const v = dy - st.y;
+    const edge = dx < st.x0 + 0.5;
+    if (v < st.top) {
+      // (its tread from above: lit, its nosing lightest, worn; its left end a seam)
+      if (edge && !st.landing) return deepLit(mixc(t2.stone[0], 0, 0.5), lt, px, py);
+      return deepLit(v >= st.top - 0.5 ? mixc(t2.stone[3], hx('#fff4e0'), 0.45) : mixc(t2.stone[3], hx('#fff4e0'), 0.12), lt, px, py);
+    }
+    if (v < st.top + st.front) {
+      // (its riser, toward the shaft's middle: in shadow)
+      if (edge) return deepLit(mixc(t2.stone[0], 0, 0.7), lt * 0.6, px, py);
+      return deepLit(mixc(t2.stone[0], 0, st.landing ? 0.15 : 0.3), lt * 0.7, px, py);
+    }
+    // (its shadow on the wall under it)
+    return deepLit(mixc(t.stone[0], 0, 0.55), light * 0.4, px, py);
+  }
   // THE TORCH's iron cup and bracket (its flame is a piece that moves)
   const [ta, tz] = torchAt(k);
-  const tu = angd(th, ta) * RIM.pit * 16;
-  const tv = -d - tz;
-  if (Math.abs(tu) < 2.6 && tv > -4 && tv < 1.5) {
-    if (tv > -1.5) return Math.abs(tu) < 2.2 ? (tu < 0 ? IRON[2] : IRON[1]) : rubble(t, px, py);
-    if (Math.abs(tu) < 0.8) return IRON[1];
+  if (Math.abs(angd(phi, ta)) < 0.02 && z > tz - 0.02 && z < tz + 0.12) return deepLit(z < tz + 0.05 ? IRON[2] : IRON[1], light + 0.3, px, py);
+  // THE DOORWAY of this storey, above its landing: a dark arch, its stones round it, its sill lit; the prison's barred
+  const dd = angd(phi, doorAt(k)) / DOOR_A;
+  const v = (k + 1 - z) / DOOR_H;
+  if (Math.abs(dd) < 1.35 && v > 0 && v < 1.25) {
+    const inArch = (r: number): boolean => (v < 0.7 ? Math.abs(dd) < r : Math.hypot(dd / r, (v - 0.7) / (0.3 * r + 0.25)) < 1);
+    if (inArch(1)) {
+      if (v < 0.07) return deepLit(t.flag[2], light + 0.2, px, py);
+      if (t.teeth && Math.abs((dd * 3) % 1) < 0.28 && v > 0.12) return deepLit(IRON[2], light * 0.8, px, py);
+      return mixc(t.stone[0], NIGHT, 0.82);
+    }
+    if (inArch(1.32)) return deepLit(t.stone[3], light, px, py);
   }
-  const light = wallLight(th, d, k);
-  // THE DOORWAY of this storey's floor: a dark way in, its stones round it, the prison's barred
-  const dd = angd(th, doorAt(k)) * RIM.pit * 16;
-  const sill = STOREY - 3;
-  if (k > 0 && Math.abs(dd) < 7 && v < sill && v > sill - 17) {
-    if (Math.abs(dd) > 5.5 || v < sill - 15.5) return deepLit(t.stone[3], light, px, py);
-    const deep = mixc(t.stone[0], 0, 0.75);
-    if (t.teeth && Math.abs((((dd + 20) % 2) + 2) % 2 - 1) < 0.5 && v < sill - 3) return deepLit(IRON[2], light * 0.8, px, py);
-    return v > sill - 1.5 ? deepLit(t.flag[1], light, px, py) : deep;
-  }
-  // (the ledge at the head of each storey: its floor's edge, lit; under it a seam of shadow)
-  if (v < 2) return deepLit(t.stone[3], light, px, py);
-  if (v < 3) return deepLit(mixc(t.stone[0], 0, 0.4), light, px, py);
-  const hc = Math.max(3.5, t.hc * 12);
-  const bl = t.bl * 0.45;
-  const row = Math.floor(v / hc);
-  const shift = (row & 1 ? bl / 2 : 0) + (rnd(row, k, 5) - 0.5) * bl * 0.3;
-  const col = Math.floor((u + shift) / bl);
+  // (the ledge at the head of each storey: its floor's edge, lit; a seam of shadow under it)
+  const zf = z - k;
+  if (k > 0 && up && Math.floor(up.z) !== k) return deepLit(mixc(t.stone[0], 0, 0.5), light, px, py);
+  if (k > 0 && zf < 0.07) return deepLit(t.stone[3], light, px, py);
+  // THE WALL: courses of the floor's own stone, five to a storey
+  const ROWS = 5;
+  const row = Math.floor(zf * ROWS);
+  const shift = (row & 1 ? 0.5 : 0) + rnd(row, k, 5) * 0.3;
+  const colOf = (ph: number): number => Math.floor(ph * (RX / (t.bl * 7)) + shift);
+  const col = colOf(phi);
+  if ((up && Math.floor((up.z - k) * ROWS) !== row && Math.floor(up.z) === k) || (left && colOf(left.phi) !== col)) return deepLit(mixc(t.stone[0], 0, 0.5), light, px, py);
   const hsh = rnd(col, row, k * 13 + 3);
   let tone = hsh < 0.26 ? 0 : hsh > 0.8 ? 2 : 1;
-  const fv = v / hc - row;
-  const fu = (u + shift) / bl - col;
-  if (fv < 1 / hc || fu < 0.5 / (bl * 16)) return deepLit(mixc(t.stone[0], 0, 0.5), light, px, py);
-  if (fv > 1 - 1 / hc) tone++;
-  // (lit from the upper left: the wall across from it catches more)
-  const facing = Math.cos(th + 0.8);
-  tone += facing > 0.45 ? 1 : facing < -0.4 ? -1 : 0;
+  // (lit from the upper left: the far wall's right catches it)
+  const facing = Math.cos(phi + 0.6);
+  tone += facing > 0.5 ? 1 : facing < -0.5 ? -1 : 0;
   let base: C = t.stone[Math.max(0, Math.min(3, tone))];
-  if (t.moss && rnd(col, row, 41) > 0.7 && fv < 0.35) base = MOSS[1];
-  if (t.inlay !== undefined && row === 1) base = t.inlay;
-  // (the stair's shadow on the wall under it)
-  const zs = stairTop(th, -d);
-  if (zs !== null && -d < zs - TS && -d > zs - TS - 9) return deepLit(base, light * 0.4, px, py);
+  if (t.moss && rnd(col, row, 41) > 0.7) base = MOSS[1];
+  if (t.inlay !== undefined && row === 2) base = t.inlay;
   return deepLit(base, light, px, py);
 }
-const rubble = (t: Theme, px: number, py: number): C => deepLit(t.stone[1], 0.5, px, py);
 
-/** How much light a point of the shaft has: the rim's (less with every storey) and its storey's torch. */
-function wallLight(th: number, d: number, k: number): number {
-  const sky = 0.95 / (1 + d / 26);
-  let tl = 0;
-  for (let j = Math.max(0, k - 1); j <= k + 1; j++) {
-    const [ta, tz] = torchAt(j);
-    const du = angd(th, ta) * RIM.pit * 16;
-    const dz = -d - tz;
-    tl += 0.6 / (1 + (du * du + dz * dz * 2) / 90);
+/** A pixel inside the mouth: the portal's tongue's edge (a slab's thickness under its top), or the shaft. */
+function pitPixel(gx: number, gy: number, px: number, py: number): C {
+  for (let k = 1; k <= 9; k++) {
+    const U = gx / 16;
+    const S0 = (gy - k - MID_Y) / 8;
+    if (onTongue(RIM.cx + (S0 + U) / 2, RIM.cy + (S0 - U) / 2)) return lit(mixc(STONE[0], NIGHT, 0.2), 0.5 - k / 30, px, py);
   }
-  const fade = Math.max(0, 1 - d / DEEP);
-  return Math.min(1, (sky + tl) * fade * fade + 0.0);
-}
-
-/** The top of the stair over angle th nearest above height z (z negative, down the shaft): null if none there. */
-function stairTop(th: number, z: number): number | null {
-  const run = runOf(th);
-  const i0 = Math.floor((run * STEPS) / TAU);
-  for (let n = 0; n < 6; n++) {
-    const zs = -(i0 + n * STEPS) * RISE;
-    if (zs >= z - 0.001) {
-      if (zs - TS - 9 <= z) return zs;
-      continue;
-    }
-    return null;
-  }
-  return null;
-}
-
-/** A tread of the stair, step `idx`, `f` of the way along it, `rho` tiles out from the middle. */
-function treadAt(idx: number, f: number, rho: number, zs: number, th: number, px: number, py: number): C {
-  const d = -zs;
-  const k = Math.max(0, Math.floor(d / STOREY));
-  const t = ORDER[k % ORDER.length];
-  let tone: number;
-  // (the step above throws its shadow on the back of each tread; its nosing catches the light)
-  if (f < 0.24) tone = 0;
-  else if (f > 0.8) tone = 3;
-  else tone = 2 - (rnd(idx, 3, 51) > 0.7 ? 1 : 0);
-  if (rho < RIM.pit - WS + 0.1) tone = 3;
-  // (what faces up has the night's light on it all the way down, less with depth: the stair stands off the wall by it)
-  return deepLit(t.stone[tone], Math.min(1, Math.max(wallLight(th, d, k) * 1.3 + 0.08, 0.75 * (1 - d / (DEEP * 1.05)))), px, py);
-}
-
-/** What the shaft shows at game pixel (gx, gy) (inside its mouth): the stair, its edge or a riser, or the wall. */
-function shaftAt(U: number, S0: number, px: number, py: number): C {
-  const R = RIM.pit;
-  const Sfar = -Math.sqrt(Math.max(0, 2 * R * R - U * U));
-  let prevIn = false;
-  let prevIdx = -1;
-  for (let S = S0; S > Sfar; S -= 0.015) {
-    const z = 8 * (S - S0);
-    const dx = (S + U) / 2;
-    const dy = (S - U) / 2;
-    const rho = Math.sqrt(dx * dx + dy * dy);
-    const th = Math.atan2(dy, dx);
-    // (the portal's tongue and landing: their edge, a slab's thickness under their top)
-    if (z > -9 && onTongue(RIM.cx + dx, RIM.cy + dy)) return deepLit(mixc(STONE[0], NIGHT, 0.2), 0.5 + z / 30, px, py);
-    const ins = rho >= R - WS;
-    const run = runOf(th);
-    const i0 = Math.floor((run * STEPS) / TAU);
-    if (ins) {
-      for (let n = 0; n < 6; n++) {
-        const idx = i0 + n * STEPS;
-        const zs = -idx * RISE;
-        if (zs < z - TS) continue;
-        if (zs < -DEEP * 1.4) break;
-        if (z <= zs && z >= zs - TS) {
-          if (!prevIn) return deepLit(mixc(ORDER[Math.floor(-zs / STOREY) % ORDER.length].stone[idx & 1 ? 1 : 0], 0, 0.3), wallLight(th, -zs, Math.floor(-zs / STOREY)) * 0.7, px, py);
-          if (prevIdx !== -1 && prevIdx !== idx) return deepLit(ORDER[Math.floor(-zs / STOREY) % ORDER.length].stone[1], wallLight(th, -zs, Math.floor(-zs / STOREY)) * 0.8, px, py);
-          return treadAt(idx, (run * STEPS) / TAU - i0, rho, zs, th, px, py);
-        }
-        break;
-      }
-    }
-    prevIn = ins;
-    prevIdx = ins ? i0 : -1;
-  }
-  const d = 8 * (S0 - Sfar);
-  const thw = Math.atan2((Sfar - U) / 2, (Sfar + U) / 2);
-  return wallAt(thw, d, px, py);
+  return shaftAt(gx, gy - MID_Y, px, py);
 }
 
 export interface RimGround {
@@ -407,7 +435,7 @@ export function groundAt(px: number, py: number): C {
   }
   if (r > RIM.cliff) return lit(ROCK[1], 0.4, px, py);
   if (onTongue(x, y)) return tongueAt(x, y, px, py);
-  if (r < RIM.pit) return shaftAt(U, S0, px, py);
+  if (r < RIM.pit) return pitPixel(gx, gy, px, py);
   if (r < RIM.pit + RIM.kerb) return kerbAt(x, y, px, py);
   // (the edge of the paving: broken, not ruled)
   const edge = RIM.town + (rnd(Math.floor(Math.atan2(y - RIM.cy, x - RIM.cx) * 14 + 50), 1, 61) - 0.5) * 0.7;
@@ -467,21 +495,11 @@ export function paintRimGround(): RimGround {
 /** The torches down the shaft, in game pixels (tile (0, 0) at (0, 0)), those the eye can see: each with its phase. */
 export function shaftTorches(): { gx: number; gy: number; k: number }[] {
   const out: { gx: number; gy: number; k: number }[] = [];
-  const R = RIM.pit;
-  for (let k = 0; k < 5; k++) {
+  // (the three storeys' torches the eye sees; below them the dark has all)
+  for (let k = 0; k < 3; k++) {
     const [ta, tz] = torchAt(k);
-    // (on the far wall only)
-    const U = Math.SQRT2 * R * (Math.cos(ta) - Math.sin(ta)) / Math.SQRT2;
-    const S = R * (Math.cos(ta) + Math.sin(ta));
-    if (S > -0.4) continue;
-    const gx = U * 16;
-    const gy = MID_Y + S * 8 - tz;
-    const sDepth = -tz;
-    if (sDepth > DEEP * 0.95) continue;
-    // (seen only if the brink does not hide it: its point inside the mouth)
-    const S0 = (gy - MID_Y) / 8;
-    if (Math.hypot(U, S0) / Math.SQRT2 > R) continue;
-    out.push({ gx, gy: gy - 1.5, k });
+    const [x, y] = pitXY(tz, ta);
+    out.push({ gx: x, gy: MID_Y + y, k });
   }
   return out;
 }
@@ -526,20 +544,18 @@ export function paintPitGlow(): PitGlow {
     for (let px = 0; px < w * 2; px++) {
       const X = gx + (px + 0.5) / 2;
       const Y = gy + (py + 0.5) / 2;
-      const U = X / 16;
-      const S0 = (Y - MID_Y) / 8;
-      if (Math.hypot(U, S0) / Math.SQRT2 > R - 0.12) continue;
-      const Sfar = -Math.sqrt(Math.max(0, 2 * R * R - U * U));
-      const d = 8 * (S0 - Sfar);
-      const a0 = Math.max(0, (d - DEEP * 0.8) / (DEEP * 0.25)) * Math.max(0, 1 - Math.abs(U) / (R * 0.6));
-      const a = Math.ceil(Math.min(1, a0) * 4) / 4;
+      const P = pitAt(X, Y - MID_Y);
+      if (!P) continue;
+      // (only where the dark has all: below the fourth storey)
+      const a0 = Math.max(0, (P.z - 5.6) / 3.5);
+      const a = Math.ceil(Math.min(1, a0) * 6) / 6;
       if (a <= 0) continue;
-      const c = a > 0.7 ? FIRE[1] : a > 0.45 ? FIRE[2] : FIRE[3];
+      const c = a > 0.9 ? FIRE[1] : a > 0.6 ? FIRE[2] : FIRE[3];
       const o = (py * w * 2 + px) * 4;
       im.data[o] = (c >> 16) & 255;
       im.data[o + 1] = (c >> 8) & 255;
       im.data[o + 2] = c & 255;
-      im.data[o + 3] = Math.round(255 * (0.12 + 0.34 * a) * (bay(px, py) < 0.75 ? 1 : 0.6));
+      im.data[o + 3] = Math.round(255 * 0.2 * a * (bay(px, py) < a ? 1 : 0.3));
     }
   g.putImageData(im, 0, 0);
   return { canvas: cv, gx, gy };
