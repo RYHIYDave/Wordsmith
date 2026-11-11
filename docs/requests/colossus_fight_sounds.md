@@ -68,7 +68,9 @@ item `wire-colossus-fight-sounds`. NOT LIVE: for the main chat to bring in, buil
   machine's TypeScript 6.0.3; nothing new.
 - tests/colossus_sounds.test.ts, written again: one whole fight played through once and read by 12 tests (each sound on its
   beat, the stand-ins gone, the old Eye's sounds as before with COLOSSUS off).
-- `node tools/unit.mjs --only ...` on the commit: see the queue item's note for the line it ended with.
+- `node tools/unit.mjs --only colossus_sounds,colossus_fight,eye_phase3,pillars,act1_eye,sounds2,recorded_sounds,onward,memory_floors`
+  (what tests the changed files, and the core) on a frozen copy of 548eb7ca4d, once: `UNIT DONE 548eb7ca4d: 32 files, 32
+  passed, 0 failed (0 passed alone)`, 353 tests. Only this note changed after.
 - tools/scenarios/colossus_sounds.mjs, written again, on a readable build of this branch served with its sounds (844x390,
   dpr 2, touch): all 56 files fetched ahead and decoded, none failed; his waking, a slam (coiled, slammed, dragged back), a
   tentacle's death, his entrance, his slide with the pour, his ward on, a blow turned, a piece set, his ward breaking, his
