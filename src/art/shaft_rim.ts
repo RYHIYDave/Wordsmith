@@ -162,44 +162,43 @@ export function pitXY(z: number, phi: number): [number, number] {
 }
 
 const PHI0 = (STAIR_AT + 45) * D2R;
-/** Each storey's doorway (in the wall of the storey whose foot it stands at): its angle round the ring (step 3b's, kept); its torch a little up the stair from it. */
-export const doorAt = (k: number): number => PHI0 - (k + 1) * 0.28 - k * 0.1 - 0.05;
-const torchAt = (k: number): readonly [number, number] => [doorAt(k) + 0.085, k + 1 - 0.36];
 
-// THE STAIR, A WINDING STAIR OF BROAD WEDGE TREADS SEEN FROM ABOVE (his word of 11 Nov 2026, by 12:26, on step 3b's: “The stairs
-// are really bad”). From the brink by the way down, where the kerb is open, a helix of stone treads round the shaft's inner wall,
-// leftward round the far side and on, each tread a wedge reaching 0.9 of a tile out from the wall, narrow, 46 to a turn (step
-// 3d: a step the size of a foot, not a slab). It goes down a storey in a little over a turn, so that it comes to every doorway's sill: there a LANDING, a slab three
-// treads wide, the door and its torch beside it. It comes round again on every storey, smaller and dimmer as the rings are, until
-// the dark takes it. Each tread is seen as what it is from above: its top, lit, its worn nose along its leading edge, its free end
-// a little broken; its riser, dark, under its lower edge. The near side of each turn is under the eye, hidden by the brink.
+// THE STAIR, A WINDING STAIR OF NARROW WEDGE TREADS SEEN FROM ABOVE (his word of 11 Nov 2026, by 12:26, on step 3b's: “The stairs
+// are really bad”; step 3d: a step the size of a foot, 46 to a turn). From the brink by the way down, where the kerb is open, a
+// helix of stone treads round the shaft's inner wall, leftward round the far side, each tread a wedge reaching 0.9 of a tile out
+// from the wall. HIS WORD on step 3d, by 12:54: “Make it slope more”. So ON THE FAR WALL EACH PASS COMES DOWN A WHOLE STOREY, the
+// thread of a screw: it starts at the right at the head of its storey and reaches the left at its foot, fifteen steps, each a
+// clear step below the last; about the middle a LANDING three treads wide and level (a little to the right on every other pass), its doorway in the wall behind it and its
+// torch beside it. Round the near side, under the eye and not drawn, it runs level back to the right, so that every storey's pass
+// starts again there. Each pass smaller and dimmer than the one above, until the dark takes it. Each tread: its top lit, one dark
+// line for its riser, one light line for its nose, its free end's dark face under it.
 /** A tread's width round the ring (radians), how far it reaches from the wall (a fraction of the ring's radius), how thick it is seen (storeys). */
 const TREAD_A = TAU / 46;
 const REACH = 1 - 0.9 / RIM.pit;
 const THICK = 0.11;
-/** How far round the stair goes for a storey down (radians): from its head to the first doorway's sill, one turn and a little. */
-const PER_STOREY = PHI0 - doorAt(0) + TAU;
+/** A pass: how many steps down it has (a storey's worth), and after how many of them its landing comes (three treads wide). */
+const PASS_STEPS = 15;
+/** (in turn, so that each doorway stands clear of the pass above it: that pass is a few steps further down where the door is) */
+const landAfter = (k: number): number => (k % 2 ? 3 : 6);
+/** Each pass's landing (and the doorway behind it, the torch beside it): its angle round the ring, and its depth. */
+export const doorAt = (k: number): number => PHI0 - (landAfter(k) + 1.5) * TREAD_A;
+export const landingZ = (k: number): number => k + landAfter(k) / PASS_STEPS;
+const torchAt = (k: number): readonly [number, number] => [doorAt(k) + 0.085, landingZ(k) - (k === 0 ? 0.2 : 0.3)];
 export interface Tread { a0: number; a1: number; z: number; landing: boolean; i: number; reach: number }
-/** THE TREADS, from the head of the stair down: each from angle a0 (its upper end) to a1 (its leading edge, where it drops to the next), its top at depth z. */
+/** THE TREADS, from the head of the stair down, pass by pass: each from angle a0 (its upper end) to a1 (its leading edge, where it drops to the next), its top at depth z. */
 export const TREADS: Tread[] = (() => {
   const out: Tread[] = [];
-  const lands = [0, 1, 2, 3].map((k) => ({ u: PHI0 - doorAt(k) + TAU * (k + 1), z: k + 1 }));
-  let u = 0;
   let i = 0;
-  let li = 0;
-  while (u / PER_STOREY < 4.6) {
-    const L = lands[li];
-    if (L && u + TREAD_A > L.u - TREAD_A * 1.5) {
-      // (the treads up to the landing, then the landing itself, three treads wide)
-      if (L.u - TREAD_A * 1.5 - u > TREAD_A * 0.3) out.push({ a0: PHI0 - u, a1: PHI0 - (L.u - TREAD_A * 1.5), z: Math.min(L.z - 0.02, (L.u - TREAD_A * 1.5) / PER_STOREY), landing: false, i: i++, reach: REACH });
-      out.push({ a0: PHI0 - (L.u - TREAD_A * 1.5), a1: PHI0 - (L.u + TREAD_A * 1.5), z: L.z, landing: true, i: i++, reach: REACH - 0.03 });
-      u = L.u + TREAD_A * 1.5;
-      li++;
-      continue;
+  for (let k = 0; k < 5; k++) {
+    let a = PHI0;
+    for (let j = 0; j < PASS_STEPS; j++) {
+      if (j === landAfter(k)) {
+        out.push({ a0: a, a1: a - 3 * TREAD_A, z: landingZ(k), landing: true, i: i++, reach: REACH - 0.03 });
+        a -= 3 * TREAD_A;
+      }
+      out.push({ a0: a, a1: a - TREAD_A, z: k + (j + 1) / PASS_STEPS, landing: false, i: i++, reach: REACH + (rnd(i, 7, 91) - 0.5) * 0.012 });
+      a -= TREAD_A;
     }
-    const z = Math.max(li > 0 ? lands[li - 1].z + 0.02 : 0, (u + TREAD_A) / PER_STOREY);
-    out.push({ a0: PHI0 - u, a1: PHI0 - u - TREAD_A, z, landing: false, i: i++, reach: REACH + (rnd(i, 7, 91) - 0.5) * 0.012 });
-    u += TREAD_A;
   }
   return out;
 })();
@@ -247,7 +246,9 @@ export function stairPixel(dx: number, dy: number): { t: Tread; part: 'top' | 'n
 }
 /** How wide a doorway is (radians round) and how tall (storeys). */
 const DOOR_A = 0.05;
-const DOOR_H = 0.58;
+const DOOR_H = 0.5;
+/** The top storey's doorway is lower: its pass's landing is only a third of a storey under the brink. */
+const doorH = (k: number): number => (k === 0 ? 0.31 : DOOR_H);
 
 const NIGHT = hx('#07060f');
 const ROCK = ['#141118', '#1d1820', '#272029', '#332a33'].map(hx);
@@ -386,11 +387,14 @@ function shaftAt(dx: number, dy: number, px: number, py: number): C {
   }
   if (light <= 0.001) return NIGHT;
   // THE TORCH's iron cup and bracket (its flame is a piece that moves)
-  const [ta, tz] = torchAt(k);
+  for (let kk = Math.max(0, k - 1); kk <= k + 1; kk++) {
+  const [ta, tz] = torchAt(kk);
   if (Math.abs(angd(phi, ta)) < 0.02 && z > tz - 0.02 && z < tz + 0.12) return deepLit(z < tz + 0.05 ? IRON[2] : IRON[1], light + 0.3, px, py);
+  }
   // THE DOORWAY of this storey, above its landing: a dark arch, its stones round it, its sill lit; the prison's barred
-  const dd = angd(phi, doorAt(k)) / DOOR_A;
-  const v = (k + 1 - z) / DOOR_H;
+  for (let kk = Math.max(0, k - 1); kk <= k + 1; kk++) {
+  const dd = angd(phi, doorAt(kk)) / DOOR_A;
+  const v = (landingZ(kk) - z) / doorH(kk);
   if (Math.abs(dd) < 1.35 && v > 0 && v < 1.25) {
     const inArch = (r: number): boolean => (v < 0.7 ? Math.abs(dd) < r : Math.hypot(dd / r, (v - 0.7) / (0.3 * r + 0.25)) < 1);
     if (inArch(1)) {
@@ -399,6 +403,7 @@ function shaftAt(dx: number, dy: number, px: number, py: number): C {
       return mixc(t.stone[0], NIGHT, 0.82);
     }
     if (inArch(1.32)) return deepLit(t.stone[3], light, px, py);
+  }
   }
   // (the ledge at the head of each storey: its floor's edge, lit; a seam of shadow under it)
   const zf = z - k;

@@ -351,3 +351,29 @@ are changed; everything else stays.
 - **What still reads weakest:** at the game's size the top turn reads as a fan of narrow steps round the far wall from the
   way down. Because it drops only half a pixel a tread, its going down is seen in the lower turns rather than step by step.
   Where one turn passes to the next on the near side it is under the brink.
+
+## Step 3e: the stair slopes (11 Nov 2026)
+
+HIS WORD ON STEP 3d (pit_phone.png and rim2_view_1.png). Told the stair was now a fan of narrow treads kin to his splash's,
+and that each turn dropped so gently it was seen going down turn by turn more than step by step, he was asked “Is the Shaft's
+Rim's stair right now (pit_phone.png)?” (offered: yes, draw the rest; make it slope more; still not right). He answered, by
+12:54: “Make it slope more” (offered as: the stair drops visibly across the far wall on each turn, so you see it going down).
+The treads as they were stay: 46 to a turn, a lit top, one riser line, one nose line, touching.
+
+- **Each pass comes down a whole storey on the far wall,** like the thread of a screw. It starts at the right at the head of
+  its storey (the top pass at the rim's own level, by the way down, where the kerb is open) and reaches the left at its foot,
+  FIFTEEN STEPS. At the top pass a step drops 1.5 to 2.2 game pixels (about 2 on average), and the pass comes down a whole
+  storey, about 30 game pixels at the far wall's middle. One pass is on the town's stone, the next below it on the prison's,
+  the next on the canyon's, each smaller and dimmer. The left end of the top pass goes under the portal's tongue and landing,
+  hidden.
+- **Round the near side** it runs level back to the right, so every storey's pass starts again there. That part is under the
+  eye and not drawn.
+- **One landing on each pass,** three treads wide and level, with its doorway in the wall behind it and its torch beside it.
+  On the town's and canyon's passes the landing comes after six steps (about the far wall's middle). On the prison's pass it
+  comes after three steps, a little to the right, so that each doorway stands clear of the pass above it. The top storey's
+  doorway is lower (0.31 of a storey, the others 0.5): its landing is only a little under the brink.
+- **The test** now also holds: each of the top three passes has at least 15 steps and comes down more than 0.9 of a storey,
+  and on the top pass every step is at least 1.5 game pixels below the last at the far wall's middle.
+- **Cost:** the ground took 266 to 281 ms in this session's headless Chromium.
+- **What still reads weakest:** the canyon's doorway is small and dim, partly under the pass above. Where each pass hands on to
+  the next it is on the near side, under the brink, so a finger has to pick up the next pass on the right below.

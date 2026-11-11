@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 // @ts-ignore
 import { join } from 'node:path';
-import { ENDLESS_TOWN, GROUND, RIM, TREADS, groundAt, onTongue, pitAt, pitPixel, rimPlace, shaftLight, stairPixel } from '../src/art/shaft_rim';
+import { ENDLESS_TOWN, GROUND, RIM, TREADS, groundAt, onTongue, pitAt, pitPixel, pitXY, rimPlace, shaftLight, stairPixel } from '../src/art/shaft_rim';
 
 function files(dir: string): string[] {
   const out: string[] = [];
@@ -92,7 +92,7 @@ test('the pit shows more than two storeys, each its own floor\'s stone, lit, bef
 
 test('the stair: many treads, each top lit and lower than the last, round and down', () => {
   const steps = TREADS.filter((t) => !t.landing);
-  assert.ok(steps.length >= 150, `${steps.length} treads`);
+  assert.ok(steps.length >= 70, `${steps.length} treads`);
   // (narrow and many: 44 to 48 to a turn)
   const perTurn = (2 * Math.PI) / (steps[1].a0 - steps[1].a1);
   assert.ok(perTurn >= 44 && perTurn <= 48, `${perTurn} to a turn`);
@@ -120,4 +120,19 @@ test("the stair does not cross the portal's tongue or landing: there it is under
       assert.notEqual(groundAt(px, py), pitPixel(gx, gy, px, py));
     }
   assert.ok(under > 0);
+});
+
+test('it slopes: on the top pass each tread a step that can be seen below the last, and a pass comes down a storey', () => {
+  for (let k = 0; k < 3; k++) {
+    const pass = TREADS.filter((t) => !t.landing && t.z > k && t.z <= k + 1 + 1e-9);
+    assert.ok(pass.length >= 15, `pass ${k}: ${pass.length} steps`);
+    assert.ok(pass[pass.length - 1].z - pass[0].z > 0.9, `pass ${k} comes down ${pass[pass.length - 1].z - pass[0].z}`);
+  }
+  // (at the top pass, at the far wall's middle, a step is at least a game pixel and a half)
+  const top = TREADS.filter((t) => !t.landing && t.z <= 1 + 1e-9);
+  for (let i = 1; i < top.length; i++) {
+    const y0 = pitXY(top[i - 1].z, -Math.PI / 2)[1];
+    const y1 = pitXY(top[i].z, -Math.PI / 2)[1];
+    assert.ok(y1 - y0 >= 1.5, `step ${i}: ${(y1 - y0).toFixed(2)} px`);
+  }
 });
