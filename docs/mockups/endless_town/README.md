@@ -520,3 +520,17 @@ with the Gate Ward's lit walls, a step warmer by the torches.
 - The way down's waypoint in the rim's stone, and the pit's lower storeys for a taller screen (step 3's "perhaps").
 - The tablet and its quarters, the portal and the final boss (other items).
 - The film does not go into the wordsmith's ring or round the bazaar: see "Walking in this town".
+
+# HIS YES ON THE SHAFT'S RIM AS A WHOLE (11 Nov 2026, by 13:43): HANDED TO THE MAIN CHAT
+
+Shown `pictures/rim3_whole.png`, `props_phone_1.png`, `props_phone_2.png`, `rim3_view_1.png`, `rim3_view_2.png` and the film
+`rim_town.mp4` (at dc4112c3), and told what each new thing is and that the film keeps off the tight ways (into the wordsmith's
+ring, round the bazaar), he was asked two things:
+- “Is the Shaft's Rim right as a whole, to be the Endless town (rim3_whole.png, rim_town.mp4)?”: “Yes, hand it to main
+  (Recommended)” (offered as: the Shaft's Rim goes to the main chat to be put in the game as the Endless town).
+- “The eight other towns you kept are still rough sketches. What should happen with them next?”: “Put them on the queue for
+  later (Recommended)” (offered as: I close this item and add one for the eight other towns, for you to order when you want
+  them).
+SO THE SHAFT'S RIM HAS HIS YES, ALL OF IT: its layout, its ground, the pit and its stair, the gate, the record stone, the
+trophies wall, the bench's socket and the torches. It is handed to the main chat on the board. The eight other towns (2, 3, 4,
+5, 7, 8, 9, 10 of the ten sketches) stay as sketches, on his queue as an item of their own.
