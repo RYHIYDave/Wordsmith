@@ -20,4 +20,4 @@
 //             friend's cyan at the game's fine grain; it bobs and glows as the gem did and FLASHES every 1.6 seconds, white-hot,
 //             rays shot out of it. (His triggers are the game's: game/quest_marks.ts SPEAK_NEW.)
 
-export const SMALL_NOTES = { shadows: false, masks: false, mothView: false, questRune: false };
+export const SMALL_NOTES = { shadows: true, masks: true, mothView: true, questRune: true };

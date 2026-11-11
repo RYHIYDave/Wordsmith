@@ -36,7 +36,16 @@ function withOn<T>(key: keyof typeof SMALL_NOTES, fn: () => T): T {
   }
 }
 
-test('1. ALL FOUR SWITCHES ARE OFF', () => {
+// (LIVE SINCE 25.3.3, at his yes of 11 Nov 2026, “Yes, keep it (Recommended)”, each: the game has the four ON. This file holds each
+// against the game as it was, so it notes what the game has, puts all four off, and sets each on itself as before.)
+const GAME_HAS = { ...SMALL_NOTES };
+SMALL_NOTES.shadows = false;
+SMALL_NOTES.masks = false;
+SMALL_NOTES.mothView = false;
+SMALL_NOTES.questRune = false;
+
+test('1. ALL FOUR SWITCHES ARE ON IN THE GAME (25.3.3); off here, each is as the game had it', () => {
+  assert.deepEqual(GAME_HAS, { shadows: true, masks: true, mothView: true, questRune: true });
   assert.deepEqual(SMALL_NOTES, { shadows: false, masks: false, mothView: false, questRune: false });
 });
 

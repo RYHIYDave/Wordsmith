@@ -31,7 +31,7 @@ export const QUEST_MARKS = { on: true, secs: 6 };
  * Read back to him so, his answer, 11 Nov 2026, by 10:47 (Eastern): “Yes, that's it (Recommended)”. The main chat sets it on as it
  * brings the branch in.
  */
-export const SPEAK_NEW = { on: false };
+export const SPEAK_NEW = { on: true };
 
 /** What the line at the top says under "Speak to the ...": where they are, or how to get to them. */
 export const SPEAK_WHERE: Partial<Record<Station, string>> = {

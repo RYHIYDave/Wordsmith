@@ -47,8 +47,8 @@ function down(g: Game, depth: number): void {
   steps(g, 3);
 }
 
-test('1. THE SWITCH IS OFF', () => {
-  assert.equal(SPEAK_NEW.on, false);
+test('1. THE SWITCH IS ON (live since 25.3.3, at his “Yes, that\'s it (Recommended)”, 11 Nov 2026)', () => {
+  assert.equal(SPEAK_NEW.on, true);
 });
 
 test('2. A NEW GAME IN TOWN: the wordsmith has his first quest. Off, the marker alone, no line; on, "Speak to the wordsmith"', () => {
