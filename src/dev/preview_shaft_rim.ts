@@ -498,13 +498,13 @@ export function scene(heroAt: [number, number] | null): { cv: HTMLCanvasElement;
   stand('wordsmith', c([wx, wy]));
   stand('runeSlab', c([wx, wy + 1]));
   RUNE_STONES.forEach(([dx, dy], i) => stand('runeStone', c([wx + dx, wy + dy]), i, 0.3));
-  label(wx + 0.5, wy + 0.5, 62, 'wordsmith');
+  label(wx + 2.4, wy - 0.4, 40, 'wordsmith');
   label(wx + 1.6, wy + 2.4, 0, 'socket');
   // the Lexicon, the stash, the stranger
   stand('lexicon', c(LAYOUT.lexicon));
-  label(LAYOUT.lexicon[0] + 0.5, LAYOUT.lexicon[1] + 0.5, 50, 'lexicon');
+  label(LAYOUT.lexicon[0] + 0.5, LAYOUT.lexicon[1] + 0.5, 30, 'lexicon');
   stand('stash', c(LAYOUT.stash));
-  label(LAYOUT.stash[0] + 0.5, LAYOUT.stash[1] + 0.5, 22, 'stash');
+  label(LAYOUT.stash[0] + 0.5, LAYOUT.stash[1] + 0.5, 8, 'stash');
   stand('stranger', c(LAYOUT.stranger));
   label(LAYOUT.stranger[0] + 0.5, LAYOUT.stranger[1] + 0.5, 50, 'stranger');
   // the waypoint at the stair's head: the way down
