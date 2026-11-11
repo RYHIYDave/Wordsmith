@@ -68,6 +68,10 @@ import type { Townsfolk } from '../art/townsfolk';
 import { drawText, textWidth } from '../engine/font';
 import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawGlow, drawLights, flipSprite, reapRetired, silhouette, spriteCovers } from '../engine/px';
+import { StillGlows } from './still_glows';
+import { StillFloor } from './still_floor';
+import { StillDark } from './still_dark';
+import type { DarkSpot } from './still_dark';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
 import { WARLOCK_TUNE } from '../game/warlock';
@@ -563,6 +567,10 @@ export class Renderer {
    */
   private forgetLooks(L: Game['level'], keep: LookView | null): void {
     this.lookedFor = L;
+    // (the last place's steady glows as one picture, and its floor: render/still_glows.ts, render/still_floor.ts)
+    this.stillGlows.forget();
+    this.stillFloor.forget();
+    this.stillDark.forget();
     for (const v of [this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) {
       if (v === keep) continue;
       v.forget?.();
@@ -1832,6 +1840,71 @@ export class Renderer {
    * shadow of higher ground that stands over it, and its edges against a pit. (px, py): where its
    * diamond is drawn, lifted as it is.
    */
+  /**
+   * A TILE OF FLOOR, as the floor's loop draws it (drawWorld) and as a place's floor as one picture is laid (layFloor): its
+   * picture with its top corner at (px, py), and over it the shade of the walls that stand at its far sides and the lit edge
+   * where a wall toward the eye is left out. `ground`: the game's ground art (the redoubt's in a stronghold's hall).
+   */
+  private floorTile(g: CanvasRenderingContext2D, L: Game['level'], idx: number, tx: number, ty: number, px: number, py: number, t: number, look: LookView | null, ground: GroundArt, lowGrid: Uint8Array, yardOn: boolean): void {
+    const f = L.floor;
+    // (the flagstones are laid on the world, not on the tiles: a tile's picture goes by where it is)
+    // (THE FIRST FIVE FLOORS: or one of the floor's own tiles laid there: render/pieces.ts)
+    // (THE HEADSMAN'S YARD: its cobbles and its own tiles: render/yard.ts)
+    // (FLOOR 3, THE BLACK IRON PRISON: his hall's floor and its own tiles, then the floor's own, on its dark flags: render/prison.ts)
+    const sp = (yardOn && this.yard.floor(f, tx, ty)) || (look && look.laid(L, tx, ty, t)) || (this.dressed && this.pieces.tile(idx)) || (look ? look.flags(tx, ty) : ground.floor(tx, ty));
+    g.drawImage(sp.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+    // the shadow of a wall that stands over it (the light is from the upper left)
+    // (THE WALLS' LOOK: a wall that is cut away throws no shadow)
+    const gone = WALL_LOOK.away && WALL_LOOK.front === 'none';
+    const wl = tx > 0 && f.tiles[idx - 1] === T_WALL && !(gone && lowGrid[idx - 1]);
+    const wr = ty > 0 && f.tiles[idx - f.w] === T_WALL && !(gone && lowGrid[idx - f.w]);
+    if (wl) g.drawImage(ground.shadeLeft.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+    if (wr) g.drawImage(ground.shadeRight.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+    if (!wl && !wr && tx > 0 && ty > 0 && f.tiles[idx - f.w - 1] === T_WALL) g.drawImage(ground.shadeCorner.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+    if (WALL_LOOK.front === 'none') {
+      // (THE WALLS' LOOK: no wall is drawn toward the eye, and the floor's edge there is a line of light against the dark)
+      if (tx + 1 < f.w && f.tiles[idx + 1] === T_WALL && lowGrid[idx + 1]) g.drawImage(ground.edgeRight.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+      if (ty + 1 < f.h && f.tiles[idx + f.w] === T_WALL && lowGrid[idx + f.w]) g.drawImage(ground.edgeLeft.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
+    }
+  }
+
+  /** A PLACE'S FLOOR AS ONE PICTURE (render/still_floor.ts): the picture, and a number that is another when a tile of the place is seen that was not, or becomes floor or wall that was not (the picture is made again then). */
+  readonly stillFloor = new StillFloor();
+  private floorSig(L: Game['level']): number {
+    let n = 0;
+    const e = L.explored;
+    const tiles = L.floor.tiles;
+    for (let i = 0; i < e.length; i++) n = (Math.imul(n, 31) + (e[i] ? tiles[i] + 1 : 0)) | 0;
+    return n;
+  }
+  /**
+   * THE WHOLE OF A PLACE'S FLOOR LAID ON `g`, with the camera `cam` (render/still_floor.ts): what its look draws behind
+   * everything, then every tile of floor that has been seen, in the order drawWorld's loop comes to them (row by row down the
+   * screen, each row left to right), each as that loop draws it. Only called where drawWorld would draw no more than this for
+   * the floor (flat ground, the look's own floor: its `asOneFloor`).
+   */
+  private layFloor(g: CanvasRenderingContext2D, cam: Cam, L: Game['level'], t: number, look: LookView, ground: GroundArt, lowGrid: Uint8Array): void {
+    const f = L.floor;
+    if (look.back) {
+      for (const q of look.back(L, t)) {
+        const sx = Math.round(wx(cam, q.x, q.y));
+        const sy = Math.round(wy(cam, q.x, q.y));
+        g.drawImage(q.s.img, sx - q.s.ax, sy - q.s.ay, q.s.w, q.s.h);
+      }
+    }
+    for (let s = 0; s <= f.w + f.h - 2; s++) {
+      for (let df = -(f.h - 1); df <= f.w - 1; df++) {
+        if ((s + df) & 1) continue;
+        const tx = (s + df) >> 1;
+        const ty = (s - df) >> 1;
+        if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
+        const idx = ty * f.w + tx;
+        if (!L.explored[idx] || f.tiles[idx] !== T_FLOOR) continue;
+        this.floorTile(g, L, idx, tx, ty, cam.ox + df * 16, cam.oy + s * 8, t, look, ground, lowGrid, false);
+      }
+    }
+  }
+
   private lowEdges(g: CanvasRenderingContext2D, R: Relief, idx: number, tx: number, ty: number, px: number, py: number): void {
     const G = this.lookGround();
     const f = R.floor;
@@ -3024,8 +3097,15 @@ export class Renderer {
     const groundsSky = look === this.grounds ? this.grounds.skyOver(L, h.x, h.y, yardOut) : null;
     this.groundsOnly = groundsSky ? L : null;
     if (groundsSky) this.grounds.drawSky(g, cam, W, H);
+    // (A PLACE'S FLOOR AS ONE PICTURE, render/still_floor.ts: where the look says the place is steady, the ground is flat and none
+    // of the game's other floors is laid here, what is behind everything and every tile of the floor with the walls' shade on it
+    // are one picture, laid as below and as the floor's own loop lays them; it is made again if any of what it hangs on is another)
+    const lowAll = lowGrid;
+    const asOneFloor =
+      !!look && look.steady === true && !relief && !f.cut && !this.openGround && !land && !inHall && !yardOn && !groundsSky && !this.dressed &&
+      this.stillFloor.draw(g, cam, W, H, P.black, [L, look, this.art.ground, lowAll, WALL_LOOK.away, WALL_LOOK.front, this.floorSig(L)], (c, at) => this.layFloor(c, at, L, t, look, this.art.ground, lowAll));
     // (THE FIRST TOWN AS THE CASTLE'S HALL: the castle's stone above its walls and its roof, behind everything: render/castle.ts)
-    if (look?.back) {
+    if (look?.back && !asOneFloor) {
       for (const q of look.back(L, t)) {
         const sx = Math.round(wx(cam, q.x, q.y));
         const sy = Math.round(wy(cam, q.x, q.y));
@@ -3084,21 +3164,8 @@ export class Renderer {
           // (THE FIRST FIVE FLOORS: or one of the floor's own tiles laid there: render/pieces.ts)
           // (THE HEADSMAN'S YARD: its cobbles and its own tiles: render/yard.ts)
           // (FLOOR 3, THE BLACK IRON PRISON: his hall's floor and its own tiles, then the floor's own, on its dark flags: render/prison.ts)
-          const sp = (yardOn && this.yard.floor(f, tx, ty)) || (look && look.laid(L, tx, ty, t)) || (this.dressed && this.pieces.tile(idx)) || (look ? look.flags(tx, ty) : art.ground.floor(tx, ty));
-          g.drawImage(sp.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-          // the shadow of a wall that stands over it (the light is from the upper left)
-          // (THE WALLS' LOOK: a wall that is cut away throws no shadow)
-          const gone = WALL_LOOK.away && WALL_LOOK.front === 'none';
-          const wl = tx > 0 && f.tiles[idx - 1] === T_WALL && !(gone && lowGrid[idx - 1]);
-          const wr = ty > 0 && f.tiles[idx - f.w] === T_WALL && !(gone && lowGrid[idx - f.w]);
-          if (wl) g.drawImage(art.ground.shadeLeft.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-          if (wr) g.drawImage(art.ground.shadeRight.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-          if (!wl && !wr && tx > 0 && ty > 0 && f.tiles[idx - f.w - 1] === T_WALL) g.drawImage(art.ground.shadeCorner.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-          if (WALL_LOOK.front === 'none') {
-            // (THE WALLS' LOOK: no wall is drawn toward the eye, and the floor's edge there is a line of light against the dark)
-            if (tx + 1 < f.w && f.tiles[idx + 1] === T_WALL && lowGrid[idx + 1]) g.drawImage(art.ground.edgeRight.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-            if (ty + 1 < f.h && f.tiles[idx + f.w] === T_WALL && lowGrid[idx + f.w]) g.drawImage(art.ground.edgeLeft.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
-          }
+          // (A PLACE'S FLOOR AS ONE PICTURE, render/still_floor.ts: its tiles are in that picture, drawn before this)
+          if (!asOneFloor) this.floorTile(g, L, idx, tx, ty, px, py, t, look, art.ground, lowGrid, yardOn);
           if (relief) this.lowEdges(g, relief, idx, tx, ty, px, py);
           if (relief && sunk) this.rimFaces(g, relief, idx, tx, ty, px, py);
         } else if (relief && kind === T_PIT) {
@@ -4190,8 +4257,12 @@ export class Renderer {
     // (FLOOR 3, THE BLACK IRON PRISON: the warm glow of its fires over the dark: render/prison.ts)
     if (this.lookNow) {
       const L3 = game.level;
-      for (const q of this.lookNow.lights(L3)) {
+      const lights3 = this.lookNow.lights(L3);
+      // (THE STEADY GLOWS, the day's, AS ONE PICTURE where the look says the place is steady: render/still_glows.ts; those that flicker one by one, as ever)
+      const asOne = this.lookNow.steady === true && this.stillGlows.draw(g, this.cam, W, H, L3, lights3);
+      for (const q of lights3) {
         if (!q.glow || !L3.explored[Math.floor(q.y) * L3.floor.w + Math.floor(q.x)]) continue;
+        if (asOne && q.still === true) continue;
         const gx = wx(this.cam, q.x, q.y) + (q.dx ?? 0);
         const gy = wy(this.cam, q.x, q.y) - q.up;
         if (gx < -q.glow.r || gx > W + q.glow.r || gy < -q.glow.r || gy > H + q.glow.r) continue;
@@ -4546,6 +4617,10 @@ export class Renderer {
 
   /** (ACT 1) THE FOREST AS A FEW PICTURES (render/tops_cache.ts): its chunks; those drawn as pictures this frame; where the hero stood. */
   readonly topsCache = new TopsCache();
+  /** A PLACE'S STEADY GLOWS AS ONE PICTURE (render/still_glows.ts): the town's day, 65 glows a frame. */
+  readonly stillGlows = new StillGlows();
+  /** A PLACE'S DARK WITH ITS STEADY LIGHTS' HOLES AS ONE PICTURE (render/still_dark.ts): the town's day, 54 holes a frame. */
+  readonly stillDark = new StillDark();
   private frameChunks: Chunk[] = [];
   /** Every chunk on the screen this frame, with a picture or without. */
   private seenChunks: Chunk[] = [];
@@ -4877,26 +4952,14 @@ export class Renderer {
     // (FLOOR 3, THE BLACK IRON PRISON: look B's deep shadow between its fires, 0.65 (0.8 until 9 Nov 2026): art/prison.ts PRISON_LIGHTS)
     const look = this.lookNow;
     const prisonOn = look === this.prison;
-    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town && !look ? 'rgba(8,5,14,0.45)' : `rgba(${look?.tint && !yardSky ? look.tint.join(',') : '6,4,14'},${yardSky ? YARD_DARK : look ? look.dark : FAR_DARK})`;
-    dg.fillRect(0, 0, W, H);
+    const veil = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town && !look ? 'rgba(8,5,14,0.45)' : `rgba(${look?.tint && !yardSky ? look.tint.join(',') : '6,4,14'},${yardSky ? YARD_DARK : look ? look.dark : FAR_DARK})`;
     // (FLOOR 7, THE CARRION QUEEN'S ECLIPSE, QUEEN_ACTION: her flock over the ledge, dark but for its pools of light: the rock at a
     // third of its light, art/carrion_queen_action_fx.ts DARK_FLOOR; the hero's own light taken in with it)
     const eclipse = QUEEN_ACTION.on ? eclipseNow(game.perils) : null;
     const eDark = eclipse ? eclipseDark(eclipse.t) : 0;
-    if (eDark > 0) {
-      dg.fillStyle = `rgba(10,6,22,${(0.72 * eDark).toFixed(3)})`;
-      dg.fillRect(0, 0, W, H);
-    }
-    // (FLOOR 14, THE PHYSICIAN'S OPERATION, PHYSICIAN_ACTION: the theatre plunged dark, to a fifth of its light, art/physician_action_fx.ts
-    // OPERATION.low; one hard spotlight on the field, cut below)
+    // (FLOOR 14, THE PHYSICIAN'S OPERATION: its darkness, laid below)
     const op = operationNow(game.perils);
     const oDark = op ? opDark(op.t) : 0;
-    if (oDark > 0) {
-      dg.fillStyle = `rgba(10,8,18,${(0.8 * oDark).toFixed(3)})`;
-      dg.fillRect(0, 0, W, H);
-    }
-    const heroLit = 1 - 0.8 * Math.max(eDark, oDark);
-    dg.globalCompositeOperation = 'destination-out';
     // One soft pool of light, painted once; every light in the scene is that picture, stretched
     // to its size and faded to its strength. (A fresh gradient for each light each frame was the
     // costliest thing in a busy fight.)
@@ -4908,6 +4971,47 @@ export class Renderer {
       c.fillStyle = grd;
       c.fillRect(-64, -64, 128, 128);
     });
+    // (A PLACE'S DARK WITH ITS STEADY LIGHTS' HOLES AS ONE PICTURE, render/still_dark.ts: where the look says the place is steady,
+    // the veil and the day's holes laid down together, no boss's darkness being over the place; the holes that move or flicker
+    // are cut after, as ever)
+    const lights = look && look.steady === true ? look.lights(L) : null;
+    let steadyLit = 0;
+    let steadySig = 0;
+    if (lights && eDark <= 0 && oDark <= 0) {
+      for (let i = 0; i < lights.length; i++) {
+        const q = lights[i];
+        if (q.still !== true || q.strength <= 0 || !L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+        steadySig = (Math.imul(steadySig, 31) + i + 1) | 0;
+        steadyLit++;
+      }
+    }
+    const asOneDark =
+      !!lights && steadyLit >= 2 &&
+      this.stillDark.draw(dg, cam, W, H, veil, pool, [L, lights, steadySig, cam.lift ?? null], () => {
+        const home: Cam = { ox: 0, oy: 0, lift: cam.lift };
+        const out: DarkSpot[] = [];
+        for (const q of lights) {
+          if (q.still !== true || q.strength <= 0 || !L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+          out.push({ x: wx(home, q.x, q.y) + (q.dx ?? 0), y: wy(home, q.x, q.y) - q.up, r: q.r, strength: q.strength });
+        }
+        return out;
+      });
+    if (!asOneDark) {
+      dg.fillStyle = veil;
+      dg.fillRect(0, 0, W, H);
+    }
+    if (eDark > 0) {
+      dg.fillStyle = `rgba(10,6,22,${(0.72 * eDark).toFixed(3)})`;
+      dg.fillRect(0, 0, W, H);
+    }
+    // (FLOOR 14, THE PHYSICIAN'S OPERATION, PHYSICIAN_ACTION: the theatre plunged dark, to a fifth of its light, art/physician_action_fx.ts
+    // OPERATION.low; one hard spotlight on the field, cut below)
+    if (oDark > 0) {
+      dg.fillStyle = `rgba(10,8,18,${(0.8 * oDark).toFixed(3)})`;
+      dg.fillRect(0, 0, W, H);
+    }
+    const heroLit = 1 - 0.8 * Math.max(eDark, oDark);
+    dg.globalCompositeOperation = 'destination-out';
     dg.imageSmoothingEnabled = true;
     const spot = (x: number, y: number, r: number, strength: number): void => {
       if (strength <= 0 || x < -r || x > W + r || y < -r || y > H + r) return;
@@ -4946,6 +5050,8 @@ export class Renderer {
     if (look) {
       for (const q of look.lights(L)) {
         if (!L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+        // (the steady ones are in the veil already: render/still_dark.ts)
+        if (asOneDark && q.still === true) continue;
         const lx = wx(cam, q.x, q.y) + (q.dx ?? 0);
         const ly = wy(cam, q.x, q.y) - q.up;
         if (lx < -q.r || lx > W + q.r || ly < -q.r || ly > H + q.r) continue;

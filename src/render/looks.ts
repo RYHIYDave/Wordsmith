@@ -34,6 +34,14 @@ export interface LookView {
   readonly tint?: readonly [number, number, number];
   /** Its vignette, if not the game's (the first town's castle hall: a day's, 0.26). */
   readonly vignette?: number;
+  /**
+   * THE PLACE IS STEADY, AND SEEN WHOLE (the castle's hall): what it draws behind everything (`back`) and its floor's tiles
+   * (`laid`, `flags`) are the same pictures at every moment while the place is stood in, and its steady lights (`still`) are
+   * all lit from the first. The renderer may then lay each of them once into one picture and draw that in their place: the
+   * floor (render/still_floor.ts), the steady glows (render/still_glows.ts), the dark with the steady lights' holes
+   * (render/still_dark.ts). A look that does not say so is drawn piece by piece, as ever.
+   */
+  readonly steady?: boolean;
   /** Is this look to be drawn on this level? */
   on(L: Level): boolean;
   /** Let its pictures go (another floor is come into). */

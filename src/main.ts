@@ -27,7 +27,9 @@ import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
 import { TALENTS, TALENTS2 } from './game/talents';
-import { QUEST_MARKS } from './game/quest_marks';
+import { QUEST_MARKS, SPEAK_NEW } from './game/quest_marks';
+import { SMALL_NOTES } from './art/small_notes';
+import { onTop } from './game/act2/quiettower';
 import { VETERAN } from './game/veteran';
 import { RIME_SHADE_ON } from './art/rime_shade';
 import type { WallLook } from './art/ground';
@@ -836,7 +838,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const COLOSSUS_VIEW = { h: 330, w: 500, ease: 2.5 } as const;
   let zoom = 1;
   let zoomCan: HTMLCanvasElement | null = null;
+  /**
+   * (SMALL_NOTES.mothView, off: art/small_notes.ts) THE TOWER TOP DRAWN BACK TOO: the Moth's wings spread are wider than a phone's
+   * screen is high and nearly as wide as it is long, so over the hero's head its wings ran off the picture. On the top the world is
+   * drawn larger and shrunk to the screen, as on the Colossus's stone, so that the whole top and the Moth over it are seen (at least
+   * MOTH_VIEW game pixels high and wide).
+   */
+  const MOTH_VIEW = { h: 312, w: 640 } as const;
   const zoomWanted = (g: Game): number => {
+    const T = g.level.land?.tower;
+    if (SMALL_NOTES.mothView && T && onTop(T, g.hero.x, g.hero.y)) return Math.min(1, scr.h / MOTH_VIEW.h, scr.w / MOTH_VIEW.w);
     const S = g.level.land?.stone;
     if (!COLOSSUS.on || !S || !onStoneOrJetty(worldToStone(S, g.hero.x, g.hero.y))) return 1;
     return Math.min(1, scr.h / COLOSSUS_VIEW.h, scr.w / COLOSSUS_VIEW.w);
@@ -2694,6 +2705,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     veteran: VETERAN,
     /** QUEST MARKERS (game/quest_marks.ts), on at his yes: `questMarks.on`. */
     questMarks: QUEST_MARKS,
+    /** “Speak to the ...” whenever a quest becomes available (game/quest_marks.ts), on at his yes: `speakNew.on`. */
+    speakNew: SPEAK_NEW,
+    /** THE SMALL OLDER ART NOTES (art/small_notes.ts), each on at his yes: `smallNotes.shadows`, `.masks`, `.mothView`, `.questRune`. */
+    smallNotes: SMALL_NOTES,
     /** THE LOADING SCREEN as a game begins (LOADING in main.ts), on at his yes: `loading.on` (dbg.run and dbg.first begin without it). */
     loading: LOADING,
     /** THE LOADING SCREEN BETWEEN FLOORS: whether it is up now (and since how long), and, for a playtest begun without it, the level counted as loaded (so that the next is put up between). */

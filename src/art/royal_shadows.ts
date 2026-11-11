@@ -30,6 +30,7 @@ import { Px, rgba } from '../engine/px';
 import type { Light } from '../engine/px';
 import { edge, hash } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
+import { SMALL_NOTES } from './small_notes';
 import { canvasOf, momentOf, paintMob, paintViewOf } from './new_mobs3';
 import type { Bit, Mob, MobCanvas, MobMove } from './new_mobs3';
 import { stage } from './skin';
@@ -162,6 +163,11 @@ export interface Frame {
   lights: Light[];
 }
 const TONE = new Map<number, number>(FOG_RGB.map((c, i) => [(c[0] << 16) | (c[1] << 8) | c[2], i]));
+/**
+ * (SMALL_NOTES.shadows, off: art/small_notes.ts) THE FOG SET APART, so that a shadow reads on the Quiet Tower's grey stone: where
+ * each of the eleven tones goes. Its dark and middle tones deeper (a shadow is dark), its bone white lights where they were.
+ */
+export const DEEP: readonly number[] = [0, 0, 1, 1, 2, 3, 4, 6, 8, 9, 10];
 const same = (d: Uint8ClampedArray, i: number, c: readonly number[]): boolean => d[i] === c[0] && d[i + 1] === c[1] && d[i + 2] === c[2];
 
 /** The boss's frame, as fog (what its painter made on its own turned too), at the boss's size, with no edge yet. */
@@ -251,7 +257,7 @@ export function fogOn(f: { px: Px; ax: number; ay: number; tone: Int8Array }, t:
       const n = noise(x - ax, y - ay);
       const tt = Math.min(FOG.length - 1, tone[k] + (n > 0.74 && tone[k] > 1 ? 1 : 0));
       tone[k] = tt;
-      d.set(FOG_RGB[tt], k * 4);
+      d.set(FOG_RGB[SMALL_NOTES.shadows ? DEEP[tt] : tt], k * 4);
     }
   }
   // the dark seam round it
@@ -263,7 +269,7 @@ export function fogOn(f: { px: Px; ax: number; ay: number; tone: Int8Array }, t:
       if (x === 0 || y === 0 || x === w - 1 || y === h - 1 || !d[(k - 1) * 4 + 3] || !d[(k + 1) * 4 + 3] || !d[(k - w) * 4 + 3] || !d[(k + w) * 4 + 3]) at.push(k);
     }
   }
-  for (const k of at) d.set(FOG_RGB[1], k * 4);
+  for (const k of at) d.set(FOG_RGB[SMALL_NOTES.shadows ? 0 : 1], k * 4);
   edge(px, ENEMY_RIM);
   if (wisps) {
     // wisps off its tops: from a pixel of it with nothing over it, a thread of fog rising and leaning, thinning

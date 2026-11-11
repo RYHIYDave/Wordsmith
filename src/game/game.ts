@@ -75,9 +75,9 @@ import { CAMP, makeCamp } from './camp';
 import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, HellWave, Hero, Level, Meta, Monster, OrbInst, Peril, Pet, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Soul, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
 import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import { CRANK_TIMES, FIRE, FIRE_GONE, FURNACE_WORD, KEEPER, MELDSTONE_WORDS, QUESTS15, QUEST_TEXT } from './quests15';
-import { CRANK_SOUND, PORT_SOUND_LEAD, SCENE_SOUNDS, SINGING, trapSound } from './scene_sounds';
+import { CRANK_SOUND, SCENE_SOUNDS, SINGING, trapSound } from './scene_sounds';
 import { byNearness } from './world_sounds';
-import { QUEST_MARKS } from './quest_marks';
+import { QUEST_MARKS, SPEAK_NEW } from './quest_marks';
 import { STOKER_ON } from '../art/stoker';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
@@ -12489,6 +12489,24 @@ export class Game {
    */
   private updateSpeak(dt: number): void {
     const L = this.level;
+    if (SPEAK_NEW.on) {
+      // (SPEAK_NEW, game/quest_marks.ts: whoever has something for him now, wherever he is: the moment one of them is new, the line; on
+      // coming into town, whoever waits there, what he brings back first; on coming into a floor, what he brings back, as before)
+      const due = this.questGivers();
+      const back = this.turnInFor();
+      if (this.speakLevel !== L) {
+        const who = back ?? (L.town ? due[0] : undefined);
+        if (who) this.speakTo = { who, t: QUEST_MARKS.secs };
+      } else {
+        const fresh = due.find((w) => !this.giversWas.includes(w));
+        if (fresh) this.speakTo = { who: fresh, t: QUEST_MARKS.secs };
+      }
+      this.giversWas = due;
+      this.speakLevel = L;
+      const at = this.speakTo;
+      if (at && (at.t <= 0 || !due.includes(at.who))) this.speakTo = null;
+      return;
+    }
     const now = L.town ? this.questGivers() : [];
     if (this.speakLevel !== L) {
       const back = this.turnInFor();

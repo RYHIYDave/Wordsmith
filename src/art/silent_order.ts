@@ -32,6 +32,7 @@
 import { INK, hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
+import { SMALL_NOTES } from './small_notes';
 import { sphere } from './new_mobs3';
 import type { Bit, MobCanvas, Moment, Put } from './new_mobs3';
 import { skirtOf, wornOn } from './skin';
@@ -84,6 +85,8 @@ const HOLLOW = '#06050a';
 const EYE_DARK = '#110e15';
 /** The fog of the Quiet Tower (the masks'): greys, no colour. */
 export const FOG = ['#3a3842', '#4c4a55', '#64616d', '#827f8b', '#a3a0ab', '#c6c3cc', '#e0dde4'] as const;
+/** (SMALL_NOTES.masks, off: art/small_notes.ts) The dark fog in the folds of the masks' cloak, so that its shape is there to see on the Quiet Tower's grey floor: greys, no colour. */
+export const FOG_FOLD = ['#15141b', '#22212a', '#2e2c37'] as const;
 
 // =============================================================================================
 // THE BODY: the knight's size (58)
@@ -832,10 +835,14 @@ function fog(out: [V3, string, number][], st: Stage, s: Skeleton, B: Build, m: M
         // (how edge-on to the eye the cloak is there: its outline)
         const out3 = norm(sub(p0, lerp3(rings[r].c, rings[r + 1].c, (h + 0.5) / 3)), [1, 0, 0]);
         const edgeOn = 1 - Math.abs(st.near(out3) - st.near([0, 0, 0]));
-        const dens = (inArc ? 0.3 : 0.08) * (1 - 0.85 * low) + (edgeOn > 0.8 ? 0.3 * (1 - low) : 0);
+        // (SMALL_NOTES.masks: the cloak's ghost there to see: more of its grains, dark fog in its folds, pale fog along its edges,
+        // thinning to nothing at the floor as before)
+        const seen = SMALL_NOTES.masks;
+        const dens = seen ? (inArc ? 0.66 : 0.32) * (1 - 0.85 * low * low) + (edgeOn > 0.8 ? 0.5 * (1 - 0.7 * low) : 0) : (inArc ? 0.3 : 0.08) * (1 - 0.85 * low) + (edgeOn > 0.8 ? 0.3 * (1 - low) : 0);
         if (!flick(idx, dens)) continue;
         const p = add(p0, [0.7 * Math.sin(t * 1.9 + j + h), 0.7 * Math.cos(t * 1.6 + j), 1.0 * Math.sin(t * 1.2 + j + r)]);
-        lay(p, idx, edgeOn > 0.8 && low < 0.6 ? FOG[3] : low < 0.4 ? FOG[2] : FOG[1], 1);
+        if (seen) lay(p, idx, edgeOn > 0.8 ? (low < 0.6 ? FOG[4] : FOG[2]) : FOG_FOLD[hash(idx, 8, 9014) < 0.3 ? 2 : low < 0.5 ? 0 : 1], edgeOn > 0.8 || low > 0.55 ? 1 : 2);
+        else lay(p, idx, edgeOn > 0.8 && low < 0.6 ? FOG[3] : low < 0.4 ? FOG[2] : FOG[1], 1);
       }
     }
   }
