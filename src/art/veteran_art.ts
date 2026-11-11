@@ -31,8 +31,8 @@ import type { VetBlowId } from '../game/veteran';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { lazyFrames, toSprite } from './kit';
 import type { GameView } from './skin';
-import type { WuSide } from './warrior_up';
 import { EIGHT_MORE, MORE_SIDES, MORE_TURN } from './sides_more';
+import type { MoreSide } from './sides_more';
 import { VET_CANVAS, paintVeteran } from '../dev/sculpt_veteran';
 import type { VetPose } from '../dev/sculpt_veteran';
 import { VET_RUN, VET_STAND, VET_TILE, VFPS, carryAt, motionById, spinAt, vetAt } from '../dev/veteran_moves';
@@ -49,7 +49,7 @@ export const VET_TURN: Record<GameView, number> = { front: 0, back: 90 };
  * EIGHT_MORE.brawler; the Tinkerer chat, 11 Nov 2026): the same figure at the same frame, truly turned (MORE_TURN: `front` and
  * `back` are VET_TURN's own 0 and 90, so those two are the same pictures to the pixel).
  */
-export type VetSide = WuSide;
+export type VetSide = MoreSide;
 /** His moves made by a press, in the order the painter paints them (the most thrown first). */
 export const VET_LISTS: readonly VetBlowId[] = ['jab', 'cross', 'hook', 'roundkick', 'dodge', 'push', 'elbow', 'uppercut', 'knee', 'spinkick', 'spinkickClose'];
 /** How far his run's round carries him, tiles (its 12 frames at the game's hero pace). */

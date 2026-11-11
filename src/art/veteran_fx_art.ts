@@ -17,8 +17,8 @@ import type { Sprite } from '../engine/px';
 import { GRID } from './skeleton';
 import type { Skeleton, V3 } from './skeleton';
 import { HEAVY, LEFT_TO_PAINTER, toSprite } from './kit';
-import type { WuSide } from './warrior_up';
 import { MORE_TURN } from './sides_more';
+import type { MoreSide } from './sides_more';
 import { forceFront, forceGeo, placeOf, poseAt, roundSpan, skel, worldOf } from '../dev/veteran_moves';
 import type { Joint, Strike, VetMotion } from '../dev/veteran_moves';
 import { FX_KICK, FX_PUNCH, coneBlast, crescent, dust, floorRing, floorTrace, impact, shockCone, smear, speedLines } from '../dev/veteran_fx';
@@ -90,7 +90,7 @@ const CONE_LEAN = 30;
  * already shows CONE_OPEN of a circle (his uppercut's, which goes up, shows its ring from every side). NEVER from in front or
  * from behind (`front`, `back`): those two are the pictures the game has always had, to the pixel.
  */
-function coneLean(view: WuSide, to: (q: readonly number[]) => [number, number], o: readonly number[], dir: number, up: number): number {
+function coneLean(view: MoreSide, to: (q: readonly number[]) => [number, number], o: readonly number[], dir: number, up: number): number {
   if (view === 'front' || view === 'back') return 0;
   const at = to(o);
   // (the cone's line, the rings' level axis (his left of the line) and their other axis, as shockCone has them, on the picture)
@@ -117,7 +117,7 @@ function coneLean(view: WuSide, to: (q: readonly number[]) => [number, number], 
  * behind: turned 90°, as his frames), as the art's film paints them: a sprite at the game's grain whose anchor is the floor
  * point where he stood as the move began. (Mirrored, as his frames are, for a hero facing screen-left.)
  */
-export function paintVetFx(m: VetMotion, F: number, view: WuSide, layer: VetFxLayer): Sprite {
+export function paintVetFx(m: VetMotion, F: number, view: MoreSide, layer: VetFxLayer): Sprite {
   const px = new Px(FX_CANVAS.w, FX_CANVAS.h);
   // (turned as his frames are for the side: art/sides_more.ts MORE_TURN, from in front 0 and from behind 90 as ever)
   const V = MORE_TURN[view];

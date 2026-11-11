@@ -29,7 +29,12 @@ import { VET_CANVAS, paintVeteran } from '../src/dev/sculpt_veteran';
 import { FX_PUNCH, shockCone } from '../src/dev/veteran_fx';
 import { VET_RUN, VET_STAND, VET_TILE, motionById, spinAt, vetAt } from '../src/dev/veteran_moves';
 import { TRUN_ROUND, drawTinkerAt, tinkerMoves } from '../src/dev/tinkerer_moves';
-import { vetBlowLeft, vetFacing, vetLeft } from '../src/game/veteran';
+import type { RNG } from '../src/engine/rng';
+import { BRAWLER } from '../src/game/brawler';
+import { Game } from '../src/game/game';
+import { emptyControls } from '../src/game/state';
+import type { Monster } from '../src/game/state';
+import { VETERAN, vetBlowLeft, vetFacing, vetLeft } from '../src/game/veteran';
 import { vetView } from '../src/render/veteran_fx';
 import { frameHash } from '../tools/sides_more_same';
 import { paintWithoutCanvas, paintingOf, unlike } from './helpers';
@@ -329,5 +334,63 @@ test('a cone of force seen exactly side-on shows its ring (leaned on the new sid
       const n = farEnd(paintingOf(paintVetFx(m, at + 3, side, 'front')), side === 'side');
       assert.ok(n < 90, `${id} ${side}: its ring shows (${n} painted at its far end; a bar is some 150)`);
     }
+  }
+});
+
+test('ON, IN A FIGHT: a jab aimed straight down the screen faces straight down, carries him that way and lands; off, it faces one of his four', () => {
+  type Inner = { rng: RNG; waveT: number; spawn: (k: string, x: number, y: number, pack: number, rank: number, boss: boolean, rng: RNG) => Monster; wakeUp: (m: Monster) => void };
+  const was = [VETERAN.on, BRAWLER.on];
+  VETERAN.on = true;
+  BRAWLER.on = true;
+  try {
+    const fight = (): { fx: number; fy: number; moved: [number, number]; hurt: number } => {
+      const g = Game.forPractice('brawler', 3);
+      const a = g as unknown as Inner;
+      a.waveT = 1e9;
+      g.monsters.length = 0;
+      g.hero.x = 14.5;
+      g.hero.y = 15.5;
+      g.hero.fx = 1;
+      g.hero.fy = 0;
+      // (one standing straight down the screen from him: as far along the floor's x as its y)
+      const m = a.spawn('skeleton', g.hero.x + 1.2, g.hero.y + 1.2, 1, 0, false, a.rng);
+      a.wakeUp(m);
+      m.speed = 0;
+      m.cd = 1e9;
+      m.life = m.maxLife = 1e7;
+      const x0 = g.hero.x;
+      const y0 = g.hero.y;
+      const press = emptyControls();
+      press.fire = true;
+      press.aimX = m.x;
+      press.aimY = m.y;
+      g.update(1 / 60, press);
+      let fx = 0;
+      let fy = 0;
+      for (let i = 0; i < 90; i++) {
+        const c = emptyControls();
+        c.aimX = m.x;
+        c.aimY = m.y;
+        g.update(1 / 60, c);
+        const mv = g.hero.vet?.move;
+        if (mv) [fx, fy] = [mv.fx, mv.fy];
+      }
+      return { fx, fy, moved: [g.hero.x - x0, g.hero.y - y0], hurt: m.maxLife - m.life };
+    };
+    const four = fight();
+    assert.ok(Math.abs(four.fx) + Math.abs(four.fy) === 1 && four.fx * four.fy === 0, `off: his picture faces one of his four ways (${four.fx}, ${four.fy})`);
+    assert.ok(four.hurt > 0, 'off: his jab lands, as ever');
+    const eight = on(fight);
+    const r = Math.SQRT1_2;
+    assert.ok(Math.abs(eight.fx - r) < 1e-12 && Math.abs(eight.fy - r) < 1e-12, `on: his picture faces straight down the screen (${eight.fx}, ${eight.fy})`);
+    assert.ok(eight.hurt > 0, 'on: his jab lands');
+    assert.equal(eight.hurt, four.hurt, 'as hard as ever');
+    // (carried as the art carries him, along the way his picture faces: straight down the screen, as far as his four ways carry him)
+    const along = eight.moved[0] * r + eight.moved[1] * r;
+    const across = eight.moved[0] * r - eight.moved[1] * r;
+    assert.ok(Math.abs(across) < 1e-9, `on: carried straight along it (${across} across)`);
+    assert.ok(Math.abs(along - Math.hypot(four.moved[0], four.moved[1])) < 1e-9, `on: carried as far (${along} against ${Math.hypot(four.moved[0], four.moved[1])})`);
+  } finally {
+    [VETERAN.on, BRAWLER.on] = was;
   }
 });

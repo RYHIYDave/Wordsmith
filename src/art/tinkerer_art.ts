@@ -31,8 +31,8 @@ import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { HEAVY, LEFT_TO_PAINTER, lazyFrames, toSprite } from './kit';
 import { CANVAS3 } from './skin';
 import type { GameView } from './skin';
-import type { WuSide } from './warrior_up';
 import { EIGHT_MORE, MORE_SIDES, MORE_TURN } from './sides_more';
+import type { MoreSide } from './sides_more';
 import type { Drawn } from '../dev/sculpt';
 import { BJ, FR, TAP_GRAB, TAP_LET_GO, TRUN_ROUND, TSTAND_LONG, drawTinkerAt, tinkerMoves } from '../dev/tinkerer_moves';
 import type { TinkMove } from '../dev/tinkerer_moves';
@@ -65,7 +65,7 @@ const AURA_SMALL: Light = { x: CANVAS3.ax, y: CANVAS3.ay - 10, r: 22, color: '#2
  * moment, truly turned, 45 degrees apart (MORE_TURN: `front` 0 and `back` 90 as ever, so those two are the same pictures to
  * the pixel). Her Golem and her Contraption keep their two views.
  */
-const TURN: Readonly<Record<WuSide, number>> = MORE_TURN;
+const TURN: Readonly<Record<MoreSide, number>> = MORE_TURN;
 /**
  * THE GOLEM is built facing the eye, a little to the left (dev/sculpt_golem.ts: turned 0, it is the Golem he picked); the
  * game's pictures from in front face down the screen and to the right (turned 45), and truly from behind, up it and to the
@@ -124,8 +124,8 @@ const fallMove = once(tinkerFall);
  * Her standing and running, in a view (her moves for these made at once). One list of each for each view, her class card's and
  * the game's alike: what is painted for the card is not painted again in the game.
  */
-const standRuns = new Map<WuSide, { idle: Sprite[]; walk: Sprite[] }>();
-function standRun(view: WuSide): { idle: Sprite[]; walk: Sprite[] } {
+const standRuns = new Map<MoreSide, { idle: Sprite[]; walk: Sprite[] }>();
+function standRun(view: MoreSide): { idle: Sprite[]; walk: Sprite[] } {
   const had = standRuns.get(view);
   if (had) return had;
   const moves = tinkerMoves();
@@ -181,7 +181,7 @@ function sameAs(first: Clip, c: Clip, same: (i: number) => boolean): Clip {
   };
 }
 
-function herSet(view: WuSide): AnimSet {
+function herSet(view: MoreSide): AnimSet {
   const turn = TURN[view];
   const moves = tinkerMoves();
   const stand = byName(moves, 'Standing');
@@ -230,7 +230,7 @@ function herSet(view: WuSide): AnimSet {
  */
 export function makeTinkererArt(): ActorArt {
   if (!EIGHT_MORE.tinkerer) return { front: herSet('front'), back: herSet('back') };
-  const all = {} as Record<WuSide, AnimSet>;
+  const all = {} as Record<MoreSide, AnimSet>;
   for (const side of MORE_SIDES) all[side] = herSet(side);
   return all;
 }

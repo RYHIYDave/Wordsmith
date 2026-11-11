@@ -22,9 +22,8 @@ import type { Game } from '../game/game';
 import type { VetGlobe, VetPlaying } from '../game/veteran';
 import { VETERAN } from '../game/veteran';
 import type { ActorArt, AnimSet } from '../art/actor_types';
-import { isEight } from '../art/sides';
 import { EIGHT_MORE, MORE_WAY, moreSideOf } from '../art/sides_more';
-import type { WuSide } from '../art/warrior_up';
+import type { MoreSide } from '../art/sides_more';
 import { FIGURE_SIZE, figureOf } from '../art/bestiary';
 import { toSprite } from '../art/kit';
 import { vetFxNone, vetJointAt, vetLastHit, vetLiftAt } from '../art/veteran_fx_art';
@@ -51,7 +50,7 @@ const FILL: Record<'punch' | 'kick' | 'jump', number> = { punch: 4, kick: 9, jum
  * behind facing away; and the game's floor axes of it, his forward and his left (on the mirrored picture his left is the
  * world's right).
  */
-export function vetView(fx: number, fy: number): { left: boolean; away: boolean; side: WuSide | null; f: [number, number]; l: [number, number] } {
+export function vetView(fx: number, fy: number): { left: boolean; away: boolean; side: MoreSide | null; f: [number, number]; l: [number, number] } {
   // (FROM ALL EIGHT SIDES, art/sides_more.ts EIGHT_MORE.brawler: the side for the way he faces, truly painted and never
   // mirrored, so his left on the picture is his left on the floor, (fy, -fx), whichever way he faces)
   if (EIGHT_MORE.brawler) {
@@ -66,8 +65,9 @@ export function vetView(fx: number, fy: number): { left: boolean; away: boolean;
   return { left, away, side: null, f, l: [f[1] * s, -f[0] * s] };
 }
 /** His pictures for a view: of the side he faces, where he is painted from all eight; else from in front or from behind. */
-function setOf(art: ActorArt, v: { away: boolean; side: WuSide | null }): AnimSet {
-  return v.side && isEight(art) ? art[v.side] : v.away ? art.back : art.front;
+function setOf(art: ActorArt, v: { away: boolean; side: MoreSide | null }): AnimSet {
+  const mine = v.side ? (art as unknown as Partial<Record<MoreSide, AnimSet>>)[v.side] : undefined;
+  return mine ?? (v.away ? art.back : art.front);
 }
 /** Where on the screen a point of a move's scene (his measure, along his forward and left, from a floor point) is, from that point (game pixels). */
 function screenOf(v: { f: [number, number]; l: [number, number] }, a: number, b: number): [number, number] {

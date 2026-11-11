@@ -17,33 +17,36 @@
 // his moves, his action lines and his blows go the nearest of EIGHT ways where they went the nearest of four
 // (render/veteran_fx.ts, game/veteran.ts: `brawler` is read there too).
 //
-// (No imports but a type: the rules read this switch, and must not pull the art in with it.)
+// (NO IMPORTS AT ALL: the rules read this switch and must not pull the art in with it; and the Brawler's pictures must bring in
+// nothing of the old Brawler, not even by a type's file: tests/veteran.test.ts, his “I don’t want anything reused from the
+// original brawler”. So the sides are named here again, and a test holds them to the Warrior's.)
 
-import type { WuSide } from './warrior_up';
+/** A side a hero is painted from: art/warrior_up.ts WuSide's own eight, by the same names. */
+export type MoreSide = 'front' | 'toward' | 'frontL' | 'sideL' | 'backL' | 'away' | 'back' | 'side';
 
 /** The switches: each hero's own. OFF until he has seen the pictures and said yes, and the main chat has baked them. */
 export const EIGHT_MORE = { tinkerer: false, brawler: false };
 
 /** The eight sides, the two the game has always had first (art/sides.ts EIGHT_ORDER's order). */
-export const MORE_SIDES: readonly WuSide[] = ['front', 'back', 'toward', 'frontL', 'sideL', 'backL', 'away', 'side'];
+export const MORE_SIDES: readonly MoreSide[] = ['front', 'back', 'toward', 'frontL', 'sideL', 'backL', 'away', 'side'];
 
 /**
  * How far each side turns a sculpted hero to their left (degrees) before the game's camera: art/warrior_up.ts WU_SPIN's own
  * numbers (a test holds them to it). `front` 0 and `back` 90 are what the game's two sides have always been turned.
  */
-export const MORE_TURN: Readonly<Record<WuSide, number>> = { front: 0, toward: -45, frontL: -90, sideL: -135, backL: 180, away: 135, back: 90, side: 45 };
+export const MORE_TURN: Readonly<Record<MoreSide, number>> = { front: 0, toward: -45, frontL: -90, sideL: -135, backL: 180, away: 135, back: 90, side: 45 };
 
 /**
  * The way a side faces on the game's floor (a unit vector, tiles: +x is down the screen to the right, +y down to the left):
  * the eight ways a hero's picture can face, 45 degrees apart, as art/warrior_up_art.ts wuFacing chooses a side for a facing.
  */
-export const MORE_WAY: Readonly<Record<WuSide, readonly [number, number]>> = (() => {
+export const MORE_WAY: Readonly<Record<MoreSide, readonly [number, number]>> = (() => {
   const r = Math.SQRT1_2;
   return { front: [1, 0], toward: [r, r], frontL: [0, 1], sideL: [-r, r], backL: [-1, 0], away: [-r, -r], back: [0, -1], side: [r, -r] };
 })();
 
 /** The side whose way is nearest a facing (fx, fy): wuFacing's own choice, without the art. */
-export function moreSideOf(fx: number, fy: number): WuSide {
+export function moreSideOf(fx: number, fy: number): MoreSide {
   const a = (Math.atan2(fy, fx) * 180) / Math.PI;
   const k = ((Math.round(a / 45) % 8) + 8) % 8;
   return (['front', 'toward', 'frontL', 'sideL', 'backL', 'away', 'back', 'side'] as const)[k];
