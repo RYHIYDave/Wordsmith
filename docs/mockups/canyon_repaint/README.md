@@ -1,7 +1,8 @@
 # Floor 8, Echo Canyon, repainted against the 3D model
 
 A chat working from his queue, on the branch `art/canyon-repaint` (from `main` at 797f2e4d, the game as released, 25.3.1).
-A MOCK-UP BEHIND A SWITCH THAT IS OFF (`CANYON_RIM`, src/art/canyon.ts). Pictures to him first; the main chat puts it in.
+BEHIND A SWITCH THAT IS OFF (`CANYON_RIM`, src/art/canyon.ts). HE HAS SEEN THE PICTURES AND SAID YES (11 Nov 2026, below): the
+main chat brings it in and sets the switch on.
 
 ## What began it
 
@@ -60,7 +61,8 @@ HIS WORDS, 11 Nov 2026. Shown edge.png, wide.png, across_now.png and across_repa
 shadow, the near shadow's reach still wandering), asked "Is this right?": "Closer, not there yet". Asked what still looks off:
 "The shadow is spikey when the wall is not", and by 07:40 across_repaint.png sent back with the near cliff's shadow circled in
 red, its toothed edge above the smooth rim. Read as: a shadow's edge should run as the wall that throws it runs. Done (3 above);
-the pictures here are of that. His answer to it: not yet given.
+the pictures here are of that. Shown shadow_edge.png and across_repaint.png and asked "Is the repainted canyon right now?", by
+07:55: "Yes, hand it to main (Recommended)".
 
 ## How to see it
 
@@ -74,8 +76,8 @@ the ground is painted in the painter's worker too.)
 
 ## What it costs
 
-Five pieces of 256 by 256 picture pixels, the best of three, on this machine: 329 and 355 ms with the switch off, 394 and 378 ms
-with it on (two runs each way). The field, worked out once a floor: 24 and 60 ms off, 57 and 23 ms on (no difference to tell).
+Five pieces of 256 by 256 picture pixels, the best of three, on this machine: 331 and 339 ms with the switch off, 381 and 368 ms
+with it on (two runs each way): about an eighth more. The field, worked out once a floor: 24 and 48 ms off, 49 and 38 ms on.
 
 ## Checked
 
