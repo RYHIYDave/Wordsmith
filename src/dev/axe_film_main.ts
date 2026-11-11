@@ -13,6 +13,10 @@ import { wx, wy } from '../render/fx';
 import type { Cam } from '../render/fx';
 import { AXE_FRAME, AXE_MOVES, axeFlying, axeSprite, wuFacing, wuTailsFacing } from '../art/warrior_up_axe_moves';
 import type { WuSide } from '../art/warrior_up_axe_moves';
+import { HAMMER_MOVES } from '../art/warrior_up_hammer_moves';
+
+/** (his moves with the war axe and, since step 3, with the maul: one page films both) */
+const MOVES = { ...AXE_MOVES, ...HAMMER_MOVES };
 
 /** What the film shows now: a move of his and its frame, how high the game has lifted him (game pixels), and the axes in the air. */
 interface FilmState {
@@ -34,7 +38,7 @@ if (typeof window !== 'undefined' && !(globalThis as { __PAINT_WORKER__?: boolea
     const k = `${move}:${frame}:${side}`;
     let s = kept.get(k);
     if (!s) {
-      kept.set(k, (s = axeSprite(AXE_MOVES[move], frame * AXE_FRAME, side)));
+      kept.set(k, (s = axeSprite(MOVES[move], frame * AXE_FRAME, side)));
       film.painted++;
     }
     return s;

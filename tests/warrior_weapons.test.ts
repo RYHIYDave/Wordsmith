@@ -47,6 +47,7 @@ import { dot, norm, sub } from '../src/art/skeleton';
 import type { WuSide } from '../src/art/warrior_up';
 import { AXE, AXE_CHOP_END, AXE_CHOP_LAND, AXE_CHOP_LEAP, AXE_CLEAVE_HIT, AXE_FLIGHT, AXE_FLY_FRAMES, AXE_FRAME, AXE_LEAP_FRAMES, AXE_MOVES, AXE_REST, AXE_RUN, AXE_STAND, AXE_THROW_OUT, HELM_LEAST, axeFaults, axePosed, helmSeen, makeWarriorAxeArt, paintAxe, paintFlying } from '../src/art/warrior_up_axe_moves';
 import type { AxeMove } from '../src/art/warrior_up_axe_moves';
+import { HAMMER_CHARGE_END, HAMMER_CHARGE_GO, HAMMER_CHARGE_STOP, HAMMER_DRIVE_FRAMES, HAMMER_MOVES, HAMMER_QUAKE, HAMMER_QUAKE_AT, HAMMER_QUAKE_BLOW, HAMMER_QUAKE_END, HAMMER_RUN, HAMMER_SMASH, HAMMER_SMASH2, HAMMER_SMASH_AT, HAMMER_SMASH_HIT, HAMMER_STAND, MAUL, chargeCarriedFrame, faceAt, makeWarriorHammerArt } from '../src/art/warrior_up_hammer_moves';
 import { KNIGHT_RUN3 } from '../src/art/moves3';
 import { wuPosed } from '../src/art/warrior_up_art';
 import { WU_REAR3, WU_REST as WU_REST_OF } from '../src/art/warrior_up_moves';
@@ -88,9 +89,10 @@ test('1. the switch is off, and nothing of the game imports the new weapons or t
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (his moves with the axe are of the mock-up too, and the page its film is shot on, which nothing ships: both below)
-    if (!f.endsWith('.ts') || f === 'art/warrior_up_weapons.ts' || f === 'dev/warrior_weapons_items.ts' || f === 'art/warrior_up_axe_moves.ts' || f === 'dev/axe_film_main.ts') continue;
+    // (and since step 3 his moves with the maul, and the last pieces for both weapons)
+    if (!f.endsWith('.ts') || ['art/warrior_up_weapons.ts', 'dev/warrior_weapons_items.ts', 'art/warrior_up_axe_moves.ts', 'dev/axe_film_main.ts', 'art/warrior_up_hammer_moves.ts', 'art/warrior_up_heavy_art.ts'].includes(f)) continue;
     const text = fs.readFileSync(`src/${f}`, 'utf8');
-    if (/from ['"][^'"]*(warrior_up_weapons|warrior_weapons_items|warrior_up_axe_moves|axe_film_main)['"]/.test(text)) users.push(f);
+    if (/from ['"][^'"]*(warrior_up_weapons|warrior_weapons_items|warrior_up_axe_moves|axe_film_main|warrior_up_hammer_moves|warrior_up_heavy_art)['"]/.test(text)) users.push(f);
   }
   assert.deepEqual(users, [], 'what imports them');
   // (the film's page holds the game, not the game the page: the game's own entry does not know it)
@@ -439,4 +441,120 @@ test('11. the thrown axe in the air: twelve pictures, a whole turn, crisp, its e
     if (bad.length > 20) break;
   }
   assert.deepEqual(bad.slice(0, 20), [], 'the thrown axe and the smears');
+});
+
+// ---------------------------------------------------------------------------------------------
+// STEP 3: HIS MOVES WITH THE MAUL (src/art/warrior_up_hammer_moves.ts), held as his moves with the war axe are (7 to 11)
+
+const H_LONG: Record<string, number> = { hstand: 60, hrun: 15, smash: 39, smash2: 39, quake: HAMMER_QUAKE_END + 1, charge: HAMMER_CHARGE_END + 1 };
+const H_NAMES = Object.keys(HAMMER_MOVES);
+
+test('12. each move with the maul is whole: its frames as many as its beats say, him and the maul in each, the blows where the rules say, and the bake\'s lists in the game\'s shape', () => {
+  assert.equal(MAUL.id, 'hammerA', 'his pick: the maul');
+  assert.deepEqual(H_NAMES.sort(), Object.keys(H_LONG).sort(), 'the moves');
+  const bad: string[] = [];
+  for (const name of H_NAMES) {
+    const m = HAMMER_MOVES[name];
+    if (framesOf(m) !== H_LONG[name]) bad.push(`${name}: ${framesOf(m)} frames, not ${H_LONG[name]}`);
+    for (const i of [0, Math.floor(H_LONG[name] / 2), H_LONG[name] - 1]) {
+      const f = paintAxe(m, i * AXE_FRAME, 'front');
+      let painted = 0;
+      for (let k = 0; k < f.px.w * f.px.h; k++) if (f.px.d[k * 4 + 3]) painted++;
+      if (painted < 1500) bad.push(`${name} f${i}: only ${painted} pixels of him`);
+      if (takeSeen(f).head < 60) bad.push(`${name} f${i}: ${takeSeen(f).head} pixels of the maul's head seen`);
+    }
+  }
+  // the blows: the face flat on the floor, where the rules put them (tiles before him)
+  for (const [m, t, at] of [[HAMMER_SMASH, HAMMER_SMASH_HIT, HAMMER_SMASH_AT], [HAMMER_SMASH2, HAMMER_SMASH_HIT, HAMMER_SMASH_AT], [HAMMER_QUAKE, HAMMER_QUAKE_BLOW * AXE_FRAME, HAMMER_QUAKE_AT]] as const) {
+    const a = faceAt(m, t);
+    if (Math.abs(a.tiles - at) > 0.15 || Math.abs(a.at[2]) > 3) bad.push(`${m.name}: its face at the blow ${a.tiles.toFixed(2)} tiles before him, ${a.at[2].toFixed(1)} up (the rules: ${at})`);
+  }
+  assert.equal(Math.round(HAMMER_SMASH_HIT / AXE_FRAME), 13, 'Smash lands at 13 frames');
+  assert.equal(HAMMER_QUAKE_BLOW, 15, 'Earthquake lands at 15 frames, 0.5 s, as his Slam');
+  const set = makeWarriorHammerArt().front;
+  const c = set.clips ?? {};
+  const got = { idle: set.idle.length, walk: set.walk.length, attack: c.attack?.frames.length, attack2: c.attack2?.frames.length, heavy: c.heavy?.frames.length, leap: c.leap?.frames.length, land: c.land?.frames.length, crouch: c.moves?.chargeCrouch.frames.length };
+  assert.deepEqual(got, { idle: 60, walk: 15, attack: 39, attack2: 39, heavy: 45, leap: HAMMER_DRIVE_FRAMES, land: HAMMER_CHARGE_END - HAMMER_CHARGE_STOP + 1, crouch: HAMMER_CHARGE_GO + 1 }, 'the lists');
+  assert.ok(Math.abs((c.attack?.hit ?? 0) - 13 / 30) < 1e-6 && Math.abs((c.attack?.poise ?? 0) - 21 / 30) < 1e-6 && c.attack?.tail === true, 'Smash: its blow, where it waits, its tail');
+  assert.ok(Math.abs((c.heavy?.hit ?? 0) - 0.5) < 1e-6, 'Earthquake: its blow at 0.5 s');
+  assert.deepEqual(bad, [], 'a move not whole');
+});
+
+test('13. in every frame of every move with the maul, from every one of his eight sides: his helm seen; its face down or toward the mark, never at his head; his hands on the haft; nothing through him', () => {
+  const bad: string[] = [];
+  const least = new Map<string, { share: number; where: string }>();
+  let frames = 0;
+  for (const name of H_NAMES) {
+    const m = HAMMER_MOVES[name];
+    for (let i = 0; i < H_LONG[name]; i++) {
+      const t = i * AXE_FRAME;
+      const p = axePosed(m, t);
+      for (const side of WU_SIDES) {
+        const f = paintAxe(m, t, side);
+        frames++;
+        const share = helmSeen(f).share;
+        const was = least.get(name);
+        if (!was || share < was.share) least.set(name, { share, where: `f${i} ${side}` });
+        for (const x of axeFaults(m, t, f, p)) if (/helm/.test(x) || side === 'front') bad.push(`${name} f${i} ${side}: ${x}`);
+      }
+    }
+  }
+  console.log(`  ${frames} frames looked at; the least of his helm seen in each move: ${[...least].map(([k, v]) => `${k} ${Math.round(v.share * 100)}% (${v.where})`).join('; ')}`);
+  assert.deepEqual(bad.slice(0, 30), [], 'a frame that breaks a rule');
+});
+
+test('14. his stand and his run with the maul are the game\'s own, frame for frame: every number of his body and his legs', () => {
+  const ARMS = new Set(['rhIn', 'rhx', 'rhy', 'rhz', 'lhIn', 'lhx', 'lhy', 'lhz', 'le', 're', 'wAz', 'wEl', 'wRoll']);
+  for (const [mine, his] of [[HAMMER_STAND, WU_REAR3.motion.keys], [HAMMER_RUN, KNIGHT_RUN3.motion.keys]] as const) {
+    assert.equal(mine.keys.length, his.length, `${mine.name}: as many keys`);
+    his.forEach((k, i) => {
+      assert.equal(mine.keys[i].at, k.at, `${mine.name}: key ${i} at the same moment`);
+      for (const [f, v] of Object.entries(k.pose)) if (!ARMS.has(f)) assert.equal((mine.keys[i].pose as Record<string, unknown>)[f], v, `${mine.name}: key ${i}, ${f}`);
+    });
+  }
+});
+
+test('15. his feet grip the floor with the maul: a foot that is down does not slide (the game carries him only on a Smash\'s first step and through the charge)', () => {
+  const bad: string[] = [];
+  let worst = 0;
+  for (const name of H_NAMES) {
+    if (name === 'hrun') continue;
+    const m = HAMMER_MOVES[name];
+    const carried = (i: number): boolean => ((name === 'smash' || name === 'smash2') && i <= 4) || (name === 'charge' && chargeCarriedFrame(i));
+    for (let i = 1; i < H_LONG[name]; i++) {
+      if (carried(i)) continue;
+      const a = axePosed(m, (i - 1) * AXE_FRAME);
+      const b = axePosed(m, i * AXE_FRAME);
+      for (const [foot, toe, lift] of [['left', 'toeL', 'lfz'], ['right', 'toeR', 'rfz']] as const) {
+        if (a.s[toe][2] > 1.6 || b.s[toe][2] > 1.6) continue;
+        const up = (q: typeof a): number => q.q[lift] - (q.q[foot === 'left' ? 'lfp' : 'rfp'] > 0 ? 0.11 * q.q[foot === 'left' ? 'lfp' : 'rfp'] : 0);
+        if (up(a) > 1.2 || up(b) > 1.2) continue;
+        const slid = Math.hypot(b.s[toe][0] - a.s[toe][0], b.s[toe][1] - a.s[toe][1]);
+        worst = Math.max(worst, slid);
+        if (slid > 1.5) bad.push(`${name} f${i}: his ${foot} foot slid ${slid.toFixed(1)}`);
+      }
+    }
+  }
+  console.log(`  the most a foot that is down moves between two frames: ${worst.toFixed(2)} picture pixels`);
+  assert.deepEqual(bad, [], 'a foot that slid');
+});
+
+test('16. the maul\'s strikes: their smears are the friend\'s cyan and nothing of the enemy\'s; every frame crisp', () => {
+  const bad: string[] = [];
+  const strikes: [string, number[]][] = [['smash', [12, 13, 14]], ['smash2', [12, 13, 14]], ['quake', [14, 15, 16]]];
+  for (const [name, list] of strikes) for (const i of list) for (const side of ['front', 'sideL'] as WuSide[]) {
+    const f = paintAxe(HAMMER_MOVES[name], i * AXE_FRAME, side);
+    const p = f.px;
+    let smear = 0;
+    for (let k = 0; k < p.w * p.h; k++) {
+      const a = p.d[k * 4 + 3];
+      if (!a) continue;
+      const c = pixel(p, k);
+      if (a !== 255 && c !== key(WU_RIM)) bad.push(`${name} f${i} ${side}: a pixel half see-through`);
+      if (ENEMY.has(c) || GOLD_GLOW.has(c)) bad.push(`${name} f${i} ${side}: the enemy's colour ${c}`);
+      if (f.drawn.stuff[k] >= 1000 && CYANS.has(c)) smear++;
+    }
+    if (smear < 40) bad.push(`${name} f${i} ${side}: its smear only ${smear} pixels`);
+  }
+  assert.deepEqual(bad.slice(0, 20), [], 'the smears');
 });
