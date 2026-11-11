@@ -1,16 +1,20 @@
-// A QUICK LOOK at the Warrior's moves with the battle axe (src/art/warrior_up_axe_moves.ts), for whoever makes them: a move's
+// A QUICK LOOK at the Warrior's moves with the battle axe (src/art/warrior_up_axe_moves.ts) and the maul
+// (src/art/warrior_up_hammer_moves.ts), for whoever makes them: a move's
 // frames side by side (across) from his eight sides (down), `scale` times as big, with what the checks find printed (his helm
 // seen, the edge's way, nothing through him, his hands on the haft). Nothing of the game imports it.
 //   npx tsx tools/warrior_axe_peek.ts <move> <out.png> [scale] [sides|all] [frames: all | every2 | 0,3,6,...] [quiet]
 import { Px } from '../src/engine/px';
 import { paintWithoutCanvas } from '../tests/helpers';
 import { writePng } from './px_png';
-import { AXE_FRAME, AXE_MOVES, axeFaults, axePosed, helmSeen, paintAxe, workingEdge } from '../src/art/warrior_up_axe_moves';
+import { AXE_FRAME, AXE_MOVES as AXE_ONLY, axeFaults, axePosed, helmSeen, paintAxe, workingEdge } from '../src/art/warrior_up_axe_moves';
+import { HAMMER_MOVES, faceAt } from '../src/art/warrior_up_hammer_moves';
 import { WU_SIDES } from '../src/art/warrior_up';
 import type { WuSide } from '../src/art/warrior_up';
 
 declare const process: { argv: string[] };
 paintWithoutCanvas();
+// (his moves with the war axe and, since step 3, with the maul: one look for both)
+const AXE_MOVES = { ...AXE_ONLY, ...HAMMER_MOVES };
 
 const [name, out, k0, sides0, frames0, quiet] = process.argv.slice(2);
 const m = AXE_MOVES[name];
@@ -45,7 +49,9 @@ for (const side of sides) {
   pics.push(row);
 }
 // (the edge's way through the move, once: the same from every side)
-if (!quiet) console.log('edge (fwd,left,up) by frame: ' + frames.map((i) => { const p = axePosed(m, i * AXE_FRAME); return `${i}:${p.holding.axe ? workingEdge(p.placed).map((v) => v.toFixed(1)).join('/') : '-'}`; }).join(' '));
+if (!quiet) console.log('edge (fwd,left,up) by frame: ' + frames.map((i) => { const p = axePosed(m, i * AXE_FRAME); return `${i}:${p.holding.axe ? workingEdge(p.placed, m.take).map((v) => v.toFixed(1)).join('/') : '-'}`; }).join(' '));
+// (the maul: where the middle of its face is, forward of him in tiles and above the floor)
+if (!quiet && m.take && m.take.kind === 'hammer') console.log('face (tiles fwd, up) by frame: ' + frames.map((i) => { const a = faceAt(m, i * AXE_FRAME); return `${i}:${a.tiles.toFixed(2)}/${a.at[2].toFixed(0)}`; }).join(' '));
 let x0 = 999, y0 = 999, x1 = -1, y1 = -1;
 for (const row of pics) for (const p of row) for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) if (p.d[(y * p.w + x) * 4 + 3]) {
   x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);

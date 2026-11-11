@@ -48,6 +48,10 @@ const BUTT = leftHandOn(AXE);
 
 /** HIS GUARD WITH THE AXE (step 1's, as he saw it: art/warrior_up_weapons.ts GUARD_HEAVY), on his own stance. */
 export const AXE_REST: Bones = { ...WU_REST, ...GUARD_HEAVY, lhx: BUTT } as Bones;
+/** His guard with any of the heavy takes: the same, his left hand at that take's butt. */
+export function heavyRest(take: WeaponTake): Bones {
+  return { ...WU_REST, ...GUARD_HEAVY, lhx: leftHandOn(take) } as Bones;
+}
 
 // ---------------------------------------------------------------------------------------------
 // A MOVE WITH THE AXE
@@ -69,6 +73,8 @@ export interface Holding {
 }
 export interface AxeMove {
   name: string;
+  /** What he holds in it: his war axe, if not given (his maul's moves say so: art/warrior_up_hammer_moves.ts). */
+  take?: WeaponTake;
   rest: Bones;
   keys: readonly AxeKey[];
   /** The moment the blow lands, or the axe leaves his hand, or comes into it (seconds). */
@@ -84,6 +90,9 @@ export interface AxeMove {
   holding?: (t: number) => Holding;
   /** The game carries and lifts him through the air from `from` to `until` (seconds), `high` GAME pixels at the top (a leap). */
   arc?: { from: number; until: number; high: number };
+  /** How far along his aim the game has carried him by a moment of the move (his own lengths): his cloth then streams as he
+   * goes (the figure a frame and three frames before is drawn that much further back). His maul's Shoulder Charge. */
+  carried?: (t: number) => number;
 }
 
 function spanOf(m: AxeMove): { end: number; from: number | undefined } {
@@ -149,7 +158,7 @@ export function axePosed(m: AxeMove, t: number): AxePosed {
   const z = keys[Math.min(n - 1, i + 1)];
   const rightOn = (a.grip ?? 0) + ((z.grip ?? 0) - (a.grip ?? 0)) * k;
   const s = solve(B, q);
-  const placed = takePlace(AXE, B, s, q, rightOn);
+  const placed = takePlace(m.take ?? AXE, B, s, q, rightOn);
   let twin: Placed | null = null;
   const ta = a.twin ?? z.twin;
   const tz = z.twin ?? a.twin;
@@ -180,6 +189,16 @@ export function axeSmeared(m: AxeMove, t: number): boolean {
   return !!w && t >= w[0] - 1e-6 && t <= w[1] + 1e-6;
 }
 
+/** A figure moved `by` along the way it faces (every place of it; the ways its bones point are as they were). */
+function shifted(s: Skeleton, by: number): Skeleton {
+  const out = { ...s } as Record<string, unknown>;
+  for (const [k, v] of Object.entries(s)) {
+    if (k === 'point' || k === 'across' || k === 'poleL' || k === 'poleR') continue;
+    if (Array.isArray(v) && v.length === 3 && typeof v[0] === 'number') out[k] = [v[0] + by, v[1], v[2]];
+  }
+  return out as unknown as Skeleton;
+}
+
 /** Where the wind is (0..1) at a moment of a move (art/warrior_up_art.ts windOf's way). */
 function windOf(m: AxeMove, t: number): number {
   const { end, from } = spanOf(m);
@@ -196,7 +215,14 @@ function windOf(m: AxeMove, t: number): number {
  */
 export function paintAxe(m: AxeMove, t: number, side: WuSide, rim: string | null | undefined = undefined): ArmedFrame {
   const p = axePosed(m, t);
-  const around: WuAround = { prev: axePosed(m, before(m, t, FR)).s, past: axePosed(m, before(m, t, 3 * FR)).s, wind: windOf(m, t) };
+  // (the figure a frame and three frames before: where the game carries him, that much further back along his aim)
+  const earlier = (back: number): Skeleton => {
+    const w = before(m, t, back);
+    const s = axePosed(m, w).s;
+    const gone = m.carried ? m.carried(t) - m.carried(w) : 0;
+    return Math.abs(gone) > 1e-6 ? shifted(s, -gone) : s;
+  };
+  const around: WuAround = { prev: earlier(FR), past: earlier(3 * FR), wind: windOf(m, t) };
   let trail: Placed[] | undefined;
   let trail2: Placed[] | undefined;
   if (axeSmeared(m, t)) {
@@ -209,19 +235,20 @@ export function paintAxe(m: AxeMove, t: number, side: WuSide, rim: string | null
       if (was.twin) trail2.push(was.twin);
     }
   }
-  return paintArmed(AXE, p.s, p.q, side, B, around, rim === undefined ? undefined : rim, { rightOn: p.rightOn, empty: !p.holding.axe, second: p.twin, trail: p.holding.axe ? trail : undefined, trail2: p.twin ? trail2 : undefined });
+  return paintArmed(m.take ?? AXE, p.s, p.q, side, B, around, rim === undefined ? undefined : rim, { rightOn: p.rightOn, empty: !p.holding.axe, second: p.twin, trail: p.holding.axe ? trail : undefined, trail2: p.twin ? trail2 : undefined });
 }
 
 // ---------------------------------------------------------------------------------------------
 // STANDING AND RUNNING WITH IT: HIS OWN STAND AND RUN AS THE GAME HAS THEM (his word for the heroes, 7 Nov 2026: “Just make him
 // move like he used to.”), every number of his body and his legs the game's; only his arms are the axe's, in place of the sword's.
 
-/** A key of one of his own moves with his arms and what he holds made the axe's: `arms` gives them from the key's own. */
-function withAxe(keys: readonly Key3[], arms: (pose: Partial<Bones>) => Partial<Bones>): AxeKey[] {
-  return keys.map((k) => {
+/** A key of one of his own moves with his arms and what he holds made the axe's: `arms` gives them from the key's own (and
+ * which key it is). */
+export function withAxe(keys: readonly Key3[], arms: (pose: Partial<Bones>, i: number) => Partial<Bones>): AxeKey[] {
+  return keys.map((k, i) => {
     const pose: Partial<Bones> = { ...k.pose };
     for (const f of ['rhIn', 'rhx', 'rhy', 'rhz', 'lhIn', 'lhx', 'lhy', 'lhz', 'le', 're', 'wAz', 'wEl', 'wRoll'] as const) delete pose[f];
-    return { at: k.at, ease: k.ease, pose: { ...pose, ...arms(k.pose) } };
+    return { at: k.at, ease: k.ease, pose: { ...pose, ...arms(k.pose, i) } };
   });
 }
 
@@ -275,118 +302,140 @@ export const AXE_RUN: AxeMove = {
 // ---------------------------------------------------------------------------------------------
 // WHAT A KEY SAYS OF THE AXE
 
-/**
- * The three numbers of a key that lay the axe along (`az`, `el`) with its working edge turned as nearly toward `edge` as an
- * edge square to its haft can be (`wAz`, `wEl`, `wRoll`): `near`, the roll of the key before, so that it goes the short way round.
- */
-function aim(az: number, el: number, edge: V3, near = 180): { wAz: number; wEl: number; wRoll: number } {
-  const p = heading(az, el);
-  const up: V3 = [-Math.sin(el * D) * Math.cos(az * D), -Math.sin(el * D) * Math.sin(az * D), Math.cos(el * D)];
-  const side = cross(p, up);
-  const e = norm(sub(edge, mul(p, dot(edge, p))), up);
-  let roll = Math.atan2(dot(e, side), dot(e, up)) / D;
-  // (THE WAR AXE HAS TWO BITS: either may be the working edge, so the head is never spun half round to bring the other to it)
-  const turn = TWO_BITS ? 180 : 360;
-  while (roll - near > turn / 2) roll -= turn;
-  while (roll - near < -turn / 2) roll += turn;
-  return { wAz: az, wEl: el, wRoll: roll };
-}
 /** The war axe has two bits, one each side of its haft: turned half round about its haft it is the same axe. */
 const TWO_BITS = true;
 const DOWN: V3 = [0, 0, -1];
-
 /** How far apart his two fists are on the grip when his right hand has slid down to his left (one above the other). */
 const FISTS = 6;
-/** Where on the haft his right hand is when it has slid down to his left for a swing. */
-const SLID = BUTT + FISTS;
 /** What a key holds the axe as: his bones, and where on the haft his right hand is. */
 export interface Held {
   pose: Partial<Bones>;
   grip: number;
   roll: number;
 }
-/**
- * HOW A KEY HOLDS THE AXE IN BOTH HANDS: his body as the key has it (`body`), his LEFT hand, at the butt, put at `butt` (from the
- * middle of his hips, as his chest is turned: forward, to his left, up), the haft laid from it along (`az`, `el`) as he faces,
- * its working edge turned toward `edge`; his right hand is then where the haft has it, `grip` along it (0 where his guard has
- * it, up the grip; `SLID` when it has slid down to his left for a swing). And HIS ELBOWS ARE SET SO THAT EACH FOREARM COMES TO
- * THE HAFT ACROSS IT, NOT ALONG IT (`elbowed`): a forearm that lay along the haft would have it up its sleeve.
- */
-export function hold(body: Partial<Bones>, butt: V3, az: number, el: number, edge: V3, near = 180, grip = 0): Held {
-  const q = { ...AXE_REST, ...body } as Posed;
-  const s = solve(B, q);
-  const turn = (q.yaw + q.twist) * D;
-  const fwd: V3 = [Math.cos(turn), Math.sin(turn), 0];
-  const left: V3 = [-Math.sin(turn), Math.cos(turn), 0];
-  const L = add(s.pelvis, add(mul(fwd, butt[0]), add(mul(left, butt[1]), [0, 0, butt[2]])));
-  const R = add(L, mul(heading(az, el), grip - BUTT));
-  const a = aim(az, el, edge, near);
-  return { pose: elbowed({ ...body, rhIn: 2, rhx: R[0], rhy: R[1], rhz: R[2], lhIn: 3, lhx: BUTT - grip, lhy: 0, lhz: 0, ...a }), grip, roll: a.wRoll };
-}
-/**
- * FOR WHOEVER MAKES A MOVE (tools only): how well a hold sits: how far each arm is stretched (1 = straight), the angle of each
- * forearm to the haft, how far the solver had to move a hand or an elbow out of his body; and, searched `span` about `butt`,
- * the place for his left hand that sits best. Nothing of the moves calls it.
- */
-export function holdFit(body: Partial<Bones>, butt: V3, az: number, el: number, grip = 0, span = 4): { butt: V3; cost: number; said: string } {
-  const reach = B.upperArm + B.foreArm;
-  const measure = (bt: V3): { cost: number; said: string } => {
-    const h = hold(body, bt, az, el, DOWN, 180, grip);
-    const q = { ...AXE_REST, ...h.pose } as Posed;
-    const s = solve(B, q);
-    const rR = len(sub(s.handR, s.shoulderR)) / reach;
-    const rL = len(sub(s.handL, s.shoulderL)) / reach;
-    const aR = Math.acos(Math.max(-1, Math.min(1, dot(norm(sub(s.elbowR, s.handR)), s.point)))) / D;
-    const aL = Math.acos(Math.max(-1, Math.min(1, dot(norm(sub(s.elbowL, s.handL)), s.point)))) / D;
-    const want: V3 = [q.rhx, q.rhy, q.rhz];
-    const moved = len(sub(s.handR, want));
-    const cost = 10 * Math.max(0, rR - 0.86) + 10 * Math.max(0, rL - 0.86) + Math.max(0, Math.abs(aR - 90) - 18) * 0.1 + Math.max(0, 72 - aL) * 0.1 + moved * 2 + (Math.abs(s.swungR) + Math.abs(s.swungL)) * 0.02 + 0.03 * len(sub(bt, butt));
-    return { cost, said: `reach R ${rR.toFixed(2)} L ${rL.toFixed(2)}, forearms to the haft R ${aR.toFixed(0)} L ${aL.toFixed(0)}, moved ${moved.toFixed(1)}, swung ${s.swungR.toFixed(0)},${s.swungL.toFixed(0)}, re ${q.re} le ${q.le}` };
-  };
-  let best = { butt, ...measure(butt) };
-  for (let dx = -span; dx <= span; dx += 2) for (let dy = -span; dy <= span; dy += 2) for (let dz = -span; dz <= span; dz += 2) {
-    const bt: V3 = [butt[0] + dx, butt[1] + dy, butt[2] + dz];
-    const m = measure(bt);
-    if (m.cost < best.cost - 1e-9) best = { butt: bt, ...m };
-  }
-  return best;
-}
-const key = (frame: number, h: Held, ease?: Key3['ease'], more: Partial<Bones> = {}): AxeKey => ({ at: frame * FR, pose: { ...h.pose, ...more }, grip: h.grip, ease });
 /** How nearly along the haft a forearm may lie (the cosine of the angle between them) before the haft is in its sleeve. */
 const ALONG = 0.22;
+
 /**
- * A key with its two elbows swung to where each forearm lies most nearly square to the haft (the right: square to it, the haft
- * running on past that fist both ways; the left, at the butt: anywhere but toward the head), and no further from where an
- * elbow hangs by nature than that needs.
+ * WHAT MAKES A MOVE'S KEYS WITH A HEAVY WEAPON (his war axe here; his maul: art/warrior_up_hammer_moves.ts): for a take and his
+ * guard with it (`rest`), how a key lays it (`aim`), holds it in both hands (`hold`) or in his right alone (`one`), with each
+ * elbow where its forearm comes to the haft across it (`elbowed`). `twoBits`: a head that is the same turned half round about
+ * its haft (the war axe's two bits), so that either side of it may be the working one.
  */
-function elbowed(pose: Partial<Bones>): Partial<Bones> {
-  const cost = (q: Posed, left: boolean): number => {
-    const s = solve(B, q);
-    const fore = norm(sub(left ? s.elbowL : s.elbowR, left ? s.handL : s.handR));
-    const c = dot(fore, s.point);
-    const along = left ? Math.max(0, c - ALONG) : Math.max(0, Math.abs(c) - ALONG);
-    const swing = left ? q.le : q.re;
-    return along * 10 + Math.abs(left ? s.swungL : s.swungR) * 0.004 + Math.abs(swing) * 0.0012;
-  };
-  const out: Partial<Bones> = { ...pose };
-  for (const left of [false, true]) {
-    // (a left hand that is not on the haft: its elbow as the key has it)
-    if (left && pose.lhIn !== 3) continue;
-    let best = Infinity;
-    let at = 0;
-    for (let a = -170; a <= 180; a += 10) {
-      const q = { ...AXE_REST, ...out, ...(left ? { le: a } : { re: a }) } as Posed;
-      const c = cost(q, left);
-      if (c < best - 1e-9) {
-        best = c;
-        at = a;
-      }
-    }
-    if (left) out.le = at;
-    else out.re = at;
+export function heavyKit(take: WeaponTake, rest: Bones, twoBits: boolean) {
+  /** Where his left hand holds it, along it: at the butt, its knob just out of his fist. */
+  const BUTT = leftHandOn(take);
+  /** Where on the haft his right hand is when it has slid down to his left for a swing. */
+  const SLID = BUTT + FISTS;
+  /**
+   * The three numbers of a key that lay the axe along (`az`, `el`) with its working edge turned as nearly toward `edge` as an
+   * edge square to its haft can be (`wAz`, `wEl`, `wRoll`): `near`, the roll of the key before, so that it goes the short way round.
+   */
+  function aim(az: number, el: number, edge: V3, near = 180): { wAz: number; wEl: number; wRoll: number } {
+    const p = heading(az, el);
+    const up: V3 = [-Math.sin(el * D) * Math.cos(az * D), -Math.sin(el * D) * Math.sin(az * D), Math.cos(el * D)];
+    const side = cross(p, up);
+    const e = norm(sub(edge, mul(p, dot(edge, p))), up);
+    let roll = Math.atan2(dot(e, side), dot(e, up)) / D;
+    // (THE WAR AXE HAS TWO BITS: either may be the working edge, so the head is never spun half round to bring the other to it)
+    const turn = twoBits ? 180 : 360;
+    while (roll - near > turn / 2) roll -= turn;
+    while (roll - near < -turn / 2) roll += turn;
+    return { wAz: az, wEl: el, wRoll: roll };
   }
-  return out;
+  /**
+   * A key with its two elbows swung to where each forearm lies most nearly square to the haft (the right: square to it, the haft
+   * running on past that fist both ways; the left, at the butt: anywhere but toward the head), and no further from where an
+   * elbow hangs by nature than that needs.
+   */
+  function elbowed(pose: Partial<Bones>): Partial<Bones> {
+    const cost = (q: Posed, left: boolean): number => {
+      const s = solve(B, q);
+      const fore = norm(sub(left ? s.elbowL : s.elbowR, left ? s.handL : s.handR));
+      const c = dot(fore, s.point);
+      const along = left ? Math.max(0, c - ALONG) : Math.max(0, Math.abs(c) - ALONG);
+      const swing = left ? q.le : q.re;
+      return along * 10 + Math.abs(left ? s.swungL : s.swungR) * 0.004 + Math.abs(swing) * 0.0012;
+    };
+    const out: Partial<Bones> = { ...pose };
+    for (const left of [false, true]) {
+      // (a left hand that is not on the haft: its elbow as the key has it)
+      if (left && pose.lhIn !== 3) continue;
+      let best = Infinity;
+      let at = 0;
+      for (let a = -170; a <= 180; a += 10) {
+        const q = { ...rest, ...out, ...(left ? { le: a } : { re: a }) } as Posed;
+        const c = cost(q, left);
+        if (c < best - 1e-9) {
+          best = c;
+          at = a;
+        }
+      }
+      if (left) out.le = at;
+      else out.re = at;
+    }
+    return out;
+  }
+  /**
+   * HOW A KEY HOLDS THE AXE IN BOTH HANDS: his body as the key has it (`body`), his LEFT hand, at the butt, put at `butt` (from the
+   * middle of his hips, as his chest is turned: forward, to his left, up), the haft laid from it along (`az`, `el`) as he faces,
+   * its working edge turned toward `edge`; his right hand is then where the haft has it, `grip` along it (0 where his guard has
+   * it, up the grip; `SLID` when it has slid down to his left for a swing). And HIS ELBOWS ARE SET SO THAT EACH FOREARM COMES TO
+   * THE HAFT ACROSS IT, NOT ALONG IT (`elbowed`): a forearm that lay along the haft would have it up its sleeve.
+   */
+  function hold(body: Partial<Bones>, butt: V3, az: number, el: number, edge: V3, near = 180, grip = 0): Held {
+    const q = { ...rest, ...body } as Posed;
+    const s = solve(B, q);
+    const turn = (q.yaw + q.twist) * D;
+    const fwd: V3 = [Math.cos(turn), Math.sin(turn), 0];
+    const left: V3 = [-Math.sin(turn), Math.cos(turn), 0];
+    const L = add(s.pelvis, add(mul(fwd, butt[0]), add(mul(left, butt[1]), [0, 0, butt[2]])));
+    const R = add(L, mul(heading(az, el), grip - BUTT));
+    const a = aim(az, el, edge, near);
+    return { pose: elbowed({ ...body, rhIn: 2, rhx: R[0], rhy: R[1], rhz: R[2], lhIn: 3, lhx: BUTT - grip, lhy: 0, lhz: 0, ...a }), grip, roll: a.wRoll };
+  }
+  /**
+   * FOR WHOEVER MAKES A MOVE (tools only): how well a hold sits: how far each arm is stretched (1 = straight), the angle of each
+   * forearm to the haft, how far the solver had to move a hand or an elbow out of his body; and, searched `span` about `butt`,
+   * the place for his left hand that sits best. Nothing of the moves calls it.
+   */
+  function holdFit(body: Partial<Bones>, butt: V3, az: number, el: number, grip = 0, span = 4): { butt: V3; cost: number; said: string } {
+    const reach = B.upperArm + B.foreArm;
+    const measure = (bt: V3): { cost: number; said: string } => {
+      const h = hold(body, bt, az, el, DOWN, 180, grip);
+      const q = { ...rest, ...h.pose } as Posed;
+      const s = solve(B, q);
+      const rR = len(sub(s.handR, s.shoulderR)) / reach;
+      const rL = len(sub(s.handL, s.shoulderL)) / reach;
+      const aR = Math.acos(Math.max(-1, Math.min(1, dot(norm(sub(s.elbowR, s.handR)), s.point)))) / D;
+      const aL = Math.acos(Math.max(-1, Math.min(1, dot(norm(sub(s.elbowL, s.handL)), s.point)))) / D;
+      const want: V3 = [q.rhx, q.rhy, q.rhz];
+      const moved = len(sub(s.handR, want));
+      const cost = 10 * Math.max(0, rR - 0.86) + 10 * Math.max(0, rL - 0.86) + Math.max(0, Math.abs(aR - 90) - 18) * 0.1 + Math.max(0, 72 - aL) * 0.1 + moved * 2 + (Math.abs(s.swungR) + Math.abs(s.swungL)) * 0.02 + 0.03 * len(sub(bt, butt));
+      return { cost, said: `reach R ${rR.toFixed(2)} L ${rL.toFixed(2)}, forearms to the haft R ${aR.toFixed(0)} L ${aL.toFixed(0)}, moved ${moved.toFixed(1)}, swung ${s.swungR.toFixed(0)},${s.swungL.toFixed(0)}, re ${q.re} le ${q.le}` };
+    };
+    let best = { butt, ...measure(butt) };
+    for (let dx = -span; dx <= span; dx += 2) for (let dy = -span; dy <= span; dy += 2) for (let dz = -span; dz <= span; dz += 2) {
+      const bt: V3 = [butt[0] + dx, butt[1] + dy, butt[2] + dz];
+      const m = measure(bt);
+      if (m.cost < best.cost - 1e-9) best = { butt: bt, ...m };
+    }
+    return best;
+  }
+  /** A key that holds it in his right hand alone: his hand from his right shoulder (forward, to his left, up, as he faces),
+   * the haft along (`az`, `el`), his left arm as `left` has it; his right elbow where his forearm lies across the haft. */
+  function one(body: Partial<Bones>, hand: V3, az: number, el: number, edge: V3, near: number, left: Partial<Bones>, grip: number): Held {
+    const a = aim(az, el, edge, near);
+    return { pose: elbowed({ ...body, rhIn: 1, rhx: hand[0], rhy: hand[1], rhz: hand[2], ...left, ...a }), grip, roll: a.wRoll };
+  }
+  const key = (frame: number, h: Held, ease?: Key3['ease'], more: Partial<Bones> = {}): AxeKey => ({ at: frame * FR, pose: { ...h.pose, ...more }, grip: h.grip, ease });
+  return { BUTT, SLID, aim, elbowed, hold, holdFit, one, key };
 }
+/** The war axe's own. */
+const KIT = heavyKit(AXE, AXE_REST, TWO_BITS);
+const { SLID, aim, elbowed, key } = KIT;
+export const hold = KIT.hold;
+export const holdFit = KIT.holdFit;
 
 // ---------------------------------------------------------------------------------------------
 // CLEAVE (his tap with the axe), BY MOVEMENT 9. Beside his Strike: its wind-up and its reach (the blow at 10 frames, 0.333 s;
@@ -525,11 +574,9 @@ export function axeFlightAt(t: number): number {
  * frames); the crack and the dust are the game's, there. */
 export const AXE_CHOP_STRIKE = 1.5;
 
-/** A key that holds the axe in his right hand alone: his hand from his right shoulder (forward, to his left, up, as he faces),
- * the haft along (`az`, `el`), his left arm as `left` has it; his right elbow where his forearm lies across the haft. */
+/** A key that holds the axe in his right hand alone (the kit's `one`), low on the grip if not said. */
 export function one(body: Partial<Bones>, hand: V3, az: number, el: number, edge: V3, near: number, left: Partial<Bones>, grip = THROW_GRIP): Held {
-  const a = aim(az, el, edge, near);
-  return { pose: elbowed({ ...body, rhIn: 1, rhx: hand[0], rhy: hand[1], rhz: hand[2], ...left, ...a }), grip, roll: a.wRoll };
+  return KIT.one(body, hand, az, el, edge, near, left, grip);
 }
 /** His left arm free: his hand from his left shoulder (forward, to his left, up, as he faces), and how far its elbow is swung. */
 const free = (x: number, y: number, z: number, le = 0): Partial<Bones> => ({ lhIn: 1, lhx: x, lhy: y, lhz: z, le });
@@ -842,9 +889,11 @@ export const AXE_CHOP: AxeMove = {
 // ---------------------------------------------------------------------------------------------
 // THE CHECKS (for the test and the pictures)
 
-/** The way the working edge of the axe faces where it is: of its two bits, the one turned more down or toward the mark. */
-export function workingEdge(pl: Placed): V3 {
+/** The way the working edge of the axe faces where it is: of its two bits, the one turned more down or toward the mark. (His
+ * maul has one striking face: its way.) */
+export function workingEdge(pl: Placed, take: WeaponTake = AXE): V3 {
   const y = pl.y;
+  if (take.kind === 'hammer') return y;
   const score = (v: V3): number => Math.max(-v[2], v[0]);
   return score(y) >= score(mul(y, -1)) ? y : mul(y, -1);
 }
@@ -889,25 +938,28 @@ export function helmSeen(f: WuFrame): { share: number; shown: number; of: number
 /** What the checks find wrong with a frame of a move (nothing, if it is right): for the test and the peek. */
 export function axeFaults(m: AxeMove, t: number, f: ArmedFrame, p: AxePosed = axePosed(m, t)): string[] {
   const out: string[] = [];
+  const take = m.take ?? AXE;
+  // (an axe's edge, a hammer's striking face)
+  const edge = take.kind === 'hammer' ? 'face' : 'edge';
   const helm = helmSeen(f);
   if (helm.share < HELM_LEAST) out.push(`his helm ${Math.round(helm.share * 100)}% seen`);
   for (const th of armedThrough(f)) out.push(th);
   if (p.holding.axe) {
     const two = p.q.lhIn === 3 && !p.q.lh2;
     for (const h of handsOnHaft(f)) if (two || /right/.test(h)) out.push(h);
-    const way = workingEdge(p.placed);
-    const head = onTake(p.placed, [AXE.heart + 5, 0, 0]);
-    if (Math.max(-way[2], way[0]) < EDGE_LEAST) out.push(`its edge neither down nor toward the mark (${way.map((v) => v.toFixed(2)).join(',')})`);
+    const way = workingEdge(p.placed, take);
+    const head = onTake(p.placed, [take.heart + 5, 0, 0]);
+    if (Math.max(-way[2], way[0]) < EDGE_LEAST) out.push(`its ${edge} neither down nor toward the mark (${way.map((v) => v.toFixed(2)).join(',')})`);
     const atHead = dot(way, norm(sub(p.s.head, head)));
-    if (atHead > AT_HEAD_MOST) out.push(`its edge toward his head (${atHead.toFixed(2)})`);
+    if (atHead > AT_HEAD_MOST) out.push(`its ${edge} toward his head (${atHead.toFixed(2)})`);
   }
   if (p.twin) {
     // (the second axe: his left hand on its grip, its edge as his own's)
     const w = inTake(p.twin, p.s.handL);
-    if (Math.hypot(w[1], w[2]) > 1.6 || w[0] < AXE.butt + 1 || w[0] > AXE.grip[1] + 1.5) out.push('his left hand off the second axe');
-    const way = workingEdge(p.twin);
+    if (Math.hypot(w[1], w[2]) > 1.6 || w[0] < take.butt + 1 || w[0] > take.grip[1] + 1.5) out.push('his left hand off the second axe');
+    const way = workingEdge(p.twin, take);
     if (Math.max(-way[2], way[0]) < EDGE_LEAST) out.push(`the second's edge neither down nor toward the mark (${way.map((v) => v.toFixed(2)).join(',')})`);
-    const atHead = dot(way, norm(sub(p.s.head, onTake(p.twin, [AXE.heart + 5, 0, 0]))));
+    const atHead = dot(way, norm(sub(p.s.head, onTake(p.twin, [take.heart + 5, 0, 0]))));
     if (atHead > AT_HEAD_MOST) out.push(`the second's edge toward his head (${atHead.toFixed(2)})`);
   }
   return out;
