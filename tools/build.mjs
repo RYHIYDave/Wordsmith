@@ -16,7 +16,7 @@ const dev = process.argv.includes('--dev');
 // (--try colossus: a page that begins at the thing to try, for the owner before it goes live: main.ts __TRY__)
 const tryOf = process.argv.includes('--try') ? process.argv[process.argv.indexOf('--try') + 1] : '';
 // (shown small in a corner of the starting screen, so the owner can tell which version a page is showing)
-const VERSION = 'V25.3.4';
+const VERSION = 'V25.3.5';
 const stamp = `${VERSION} ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
 const bake = process.argv.includes('--no-bake') ? null : await bakeHeroes();
 fs.rmSync(path.join(ROOT, 'dist', 'heroes'), { recursive: true, force: true });
