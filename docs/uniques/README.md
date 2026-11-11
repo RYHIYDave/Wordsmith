@@ -30,7 +30,8 @@ of his own to read on his phone, “Wordsmith: Unique Items, the Numbers”.
 
 - The five test files: 67 pass.
 - `node tools/unit.mjs --only` the five, their neighbours and the core set, on commit d5a96cd: 46 files, 650 tests, 0 failed.
-  (Not run again on the later commits, which changed ordinary stats, two UI files and one test.)
+  Again on 8c6b718 (after the ordinary stats, two UI files and one test changed), the five, the inventory and the core set:
+  29 files, 363 tests, 0 failed.
 - `tsc --noEmit`: only the error main already has (tests/relief.test.ts 378).
 - The page builds, and tools/scenarios/uniques_look.mjs runs clean at 960x540 and at phone size.
 - The drop odds, counted on the fifteen floors there are: about two pool uniques and one or two bosses' own a run.
