@@ -1,6 +1,6 @@
 # The town's lag: what a frame of the town cost, what this branch does about it, what is left
 
-Branch `perf/town-frames`, from `main` at `012cc66` (25.3.2). Made 11 Nov 2026 by a chat he started from the queue page on his
+Branch `town-frames`, from `main` at `012cc66` (25.3.2). Made 11 Nov 2026 by a chat he started from the queue page on his
 phone ("Town lag chat", not the main chat), for the queue's item `fix-town-lag-on-phone`. Nothing in it changes how the game
 plays. How it looks: the same to the eye; measured, not the same to the last pixel (below: "How near the picture is").
 
@@ -134,7 +134,7 @@ floor alone is 300 fewer pictures a frame; the glows are most of the gain.
 
 ## For the main chat
 
-- Bring in `perf/town-frames`. If `render.ts` has changed where a floor tile is drawn (drawWorld's loop, `kind === T_FLOOR`),
+- Bring in `town-frames`. If `render.ts` has changed where a floor tile is drawn (drawWorld's loop, `kind === T_FLOOR`),
   the change belongs in `Renderer.floorTile` now.
 - Nothing to switch on. Test what changed: `tests/still_pictures.test.ts`, `tools/scenarios/town_same.mjs`, a town playtest.
 - New tools: `tools/scenarios/town_same.mjs`, `town_cost.mjs`, `town_draws.mjs`, `town_glow_ties.mjs`, `draws_hash.mjs`;
