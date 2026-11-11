@@ -328,3 +328,26 @@ gone.
 - **What still reads weakest:** at the game's size the top turn reads plainly as broad steps going down and round from the
   way down. The turns below read more as stepped rings than as the same stair going on, because where each turn passes from
   one to the next it is on the near side, under the brink.
+
+## Step 3d: the treads made narrow and many (11 Nov 2026; he had not been shown 3c)
+
+Step 3c's stair was built the right way, a helix of wedge treads seen from above, but each tread was a sixteenth of a turn,
+a slab more than a tile long. It read as stepped rings, an amphitheatre. The fault was in step 3c's brief. Only the treads
+are changed; everything else stays.
+
+- **Narrow and many:** 46 TREADS TO A TURN (7.8 degrees each). At the top turn a tread is about 11 game pixels along the wall,
+  a step the knight could take. The reach from the wall stays at 0.9 of a tile. 216 treads in all; 19 are seen on the top
+  turn's far side, and 85 on the far side above the dark.
+- **Each drawn simply:** the top lit, neighbouring tops a hair apart; ONE dark line (one picture pixel) for its riser where it
+  drops from the tread before; ONE light line for its nose. The steps touch. The free ends make a clean stepped inner edge,
+  with the dark face under them.
+- **The drop:** one storey a turn, as before (the doors fix it). That is about half a game pixel a tread at the top turn,
+  steady with no jumps; the far pass of a turn comes down about half a storey.
+- **The landings:** three treads wide (about a tile), at the doors.
+- **The lower turns:** the same fine rhythm, smaller and dimmer with their storeys.
+- **Cost:** the ground took 261 to 337 ms in this session's headless Chromium (five paintings). Each pixel now looks only at
+  the treads near it.
+- **The test:** at least 150 treads, 44 to 48 to a turn; the rest as in step 3c.
+- **What still reads weakest:** at the game's size the top turn reads as a fan of narrow steps round the far wall from the
+  way down. Because it drops only half a pixel a tread, its going down is seen in the lower turns rather than step by step.
+  Where one turn passes to the next on the near side it is under the brink.

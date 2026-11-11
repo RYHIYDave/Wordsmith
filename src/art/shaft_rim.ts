@@ -168,13 +168,13 @@ const torchAt = (k: number): readonly [number, number] => [doorAt(k) + 0.085, k 
 
 // THE STAIR, A WINDING STAIR OF BROAD WEDGE TREADS SEEN FROM ABOVE (his word of 11 Nov 2026, by 12:26, on step 3b's: “The stairs
 // are really bad”). From the brink by the way down, where the kerb is open, a helix of stone treads round the shaft's inner wall,
-// leftward round the far side and on, each tread a wedge reaching 0.9 of a tile out from the wall, a fourteenth of the way round
-// wide. It goes down a storey in a little over a turn, so that it comes to every doorway's sill: there a LANDING, a slab three
+// leftward round the far side and on, each tread a wedge reaching 0.9 of a tile out from the wall, narrow, 46 to a turn (step
+// 3d: a step the size of a foot, not a slab). It goes down a storey in a little over a turn, so that it comes to every doorway's sill: there a LANDING, a slab three
 // treads wide, the door and its torch beside it. It comes round again on every storey, smaller and dimmer as the rings are, until
 // the dark takes it. Each tread is seen as what it is from above: its top, lit, its worn nose along its leading edge, its free end
 // a little broken; its riser, dark, under its lower edge. The near side of each turn is under the eye, hidden by the brink.
 /** A tread's width round the ring (radians), how far it reaches from the wall (a fraction of the ring's radius), how thick it is seen (storeys). */
-const TREAD_A = TAU / 16;
+const TREAD_A = TAU / 46;
 const REACH = 1 - 0.9 / RIM.pit;
 const THICK = 0.11;
 /** How far round the stair goes for a storey down (radians): from its head to the first doorway's sill, one turn and a little. */
@@ -198,7 +198,7 @@ export const TREADS: Tread[] = (() => {
       continue;
     }
     const z = Math.max(li > 0 ? lands[li - 1].z + 0.02 : 0, (u + TREAD_A) / PER_STOREY);
-    out.push({ a0: PHI0 - u, a1: PHI0 - u - TREAD_A, z, landing: false, i: i++, reach: REACH + (rnd(i, 7, 91) - 0.5) * 0.04 });
+    out.push({ a0: PHI0 - u, a1: PHI0 - u - TREAD_A, z, landing: false, i: i++, reach: REACH + (rnd(i, 7, 91) - 0.5) * 0.012 });
     u += TREAD_A;
   }
   return out;
@@ -218,20 +218,29 @@ function along(t: Tread, a: number): number {
 }
 /** What of the stair the pixel shows: its tread's top, its nose, its free end's face, its riser; null for none. The nearest (shallowest) wins. */
 export function stairPixel(dx: number, dy: number): { t: Tread; part: 'top' | 'nose' | 'end' | 'riser' } | null {
+  // (only the treads that could be over this pixel: above the wall it shows, and near it round the ring)
+  const W = pitAt(dx, dy);
+  if (!W) return null;
   for (const t of TREADS) {
-    // (the near side of a turn is under the eye: not drawn)
+    if (t.z > W.z + 0.02 || t.z < W.z - 0.7) continue;
     const mid = (t.a0 + t.a1) / 2;
+    if (Math.abs(angd(mid, W.phi)) > 0.6) continue;
+    // (the near side of a turn is under the eye: not drawn)
     if (Math.sin(mid) > 0.12) continue;
     const [r, a] = onRing(dx, dy, t.z);
     const f = along(t, a);
-    // ITS TOP
-    if (f >= 0 && r <= 1 && r >= t.reach) return { t, part: t.landing ? 'top' : f < 0.13 ? 'riser' : f > 0.82 ? 'nose' : 'top' };
-    // ITS FREE END'S FACE and ITS RISER, a little under its top
+    // ITS TOP: lit; ONE dark line where it drops from the tread before (its riser), ONE light line along its nose
+    if (f >= 0 && r <= 1 && r >= t.reach) {
+      if (t.landing) return { t, part: 'top' };
+      const len = (t.a0 - t.a1) * RX * 2 * Q ** t.z;
+      if (f * len < 1.1) return { t, part: 'riser' };
+      if ((1 - f) * len < 1.1) return { t, part: 'nose' };
+      return { t, part: 'top' };
+    }
+    // ITS FREE END'S FACE, a little under its top: the stair's stepped inner edge
     for (const dz of [THICK * 0.35, THICK * 0.7, THICK]) {
       const [r2, a2] = onRing(dx, dy, t.z + dz);
-      const f2 = along(t, a2);
-      if (f2 >= 0 && r2 <= 1 && r2 >= t.reach - 0.002 && r < t.reach) return { t, part: 'end' };
-      if (f2 >= 0.0 && r2 <= 1 && r2 >= t.reach && f < 0 && along(t, a + 0.08) >= 0) return { t, part: 'riser' };
+      if (along(t, a2) >= 0 && r2 <= 1 && r2 >= t.reach - 0.002 && r < t.reach) return { t, part: 'end' };
     }
   }
   return null;
@@ -369,7 +378,8 @@ function shaftAt(dx: number, dy: number, px: number, py: number): C {
     const T = sp.t;
     const st = ORDER[Math.floor(T.z - 0.001 < 0 ? 0 : T.z - 0.001) % ORDER.length];
     const lt = Math.min(1, shaftLight(T.z, (T.a0 + T.a1) / 2) * 1.4 + 0.12);
-    if (sp.part === 'top') return deepLit(mixc(st.stone[3], st.stone[2], 0.3), lt, px, py);
+    // (neighbouring tops a hair apart, so they do not run together)
+    if (sp.part === 'top') return deepLit(mixc(st.stone[3], st.stone[2], T.landing ? 0.3 : T.i & 1 ? 0.42 : 0.2), lt, px, py);
     if (sp.part === 'nose') return deepLit(mixc(st.stone[3], hx('#fff4e0'), 0.4), lt, px, py);
     if (sp.part === 'end') return deepLit(mixc(st.stone[1], 0, 0.25), lt * 0.75, px, py);
     return deepLit(mixc(st.stone[0], 0, 0.6), lt * 0.5, px, py);

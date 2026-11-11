@@ -92,7 +92,10 @@ test('the pit shows more than two storeys, each its own floor\'s stone, lit, bef
 
 test('the stair: many treads, each top lit and lower than the last, round and down', () => {
   const steps = TREADS.filter((t) => !t.landing);
-  assert.ok(steps.length >= 40, `${steps.length} treads`);
+  assert.ok(steps.length >= 150, `${steps.length} treads`);
+  // (narrow and many: 44 to 48 to a turn)
+  const perTurn = (2 * Math.PI) / (steps[1].a0 - steps[1].a1);
+  assert.ok(perTurn >= 44 && perTurn <= 48, `${perTurn} to a turn`);
   assert.ok(TREADS.filter((t) => t.landing).length >= 3);
   for (let i = 1; i < TREADS.length; i++) assert.ok(TREADS[i].z > TREADS[i - 1].z - 1e-9, `tread ${i} not lower`);
   for (let i = 1; i < steps.length; i++) assert.ok(steps[i].z > steps[i - 1].z, `step ${i} not lower`);
