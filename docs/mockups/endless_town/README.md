@@ -165,3 +165,102 @@ laid out right for the Endless town (rim_whole.png and the three views)?”, he 
 (Recommended)” (offered as: this layout and mood get drawn to the game's standard, the pit first).
 SO THE LAYOUT AND THE MOOD ARE LOCKED. Next: drawn to the game's standard, the pit and the ground first, then the new things
 that stand on it.
+
+## Step 3: the Shaft's Rim's ground, drawn to the game's standard, the pit first (11 Nov 2026)
+
+GAME ART NOW, BEHIND A SWITCH THAT IS OFF: `src/art/shaft_rim.ts`, `ENDLESS_TOWN = { on: false }`. Nothing of the game imports
+it yet (`tests/shaft_rim.test.ts` holds that). The layout he locked in is unchanged, every station on its tile. One change
+from the mock-up: THE PIT'S MOUTH IS 3.5 TILES ACROSS ITS RADIUS, NOT 3.8. At 3.8 one of the wordsmith's six standing stones
+(tile 11, 15: the game's ring round his tile 10, 17) stood over the drop. At 3.5 it stands on the kerb.
+
+**The pictures** (`pictures/`):
+- `pit_phone.png`, 1014 x 1036: the pit at the game's zoom, then the same twice the size.
+- `rim2_whole.png`, 1200 x 714: the whole town on the new ground, no labels.
+- `rim2_view_1.png` and `rim2_view_2.png`, 1014 x 528 each: two phone screens at the game's zoom with the knight, at the brink by the way down and on the portal's landing.
+- `rim2_measure.png`, 948 x 1124: the measure check (below).
+
+The dev page is `src/dev/preview_shaft_rim.ts`, with modes `pit`, `whole2` and `view2:1` / `view2:2`.
+
+### What was drawn
+
+Painted the way the splash is painted: every picture pixel is a line of sight, and what it meets first is worked out from its
+numbers. Two picture pixels to a game pixel; flat tones, a one-pixel seam, light in bands, and a dither only where two bands meet.
+
+- **THE PIT.** We look at its far wall from the rim, in the game's slant. The wall goes down storey under storey, 28 game
+  pixels a storey, in each floor's own stone in the splash's order: the town's, the prison's, the canyon's, the fen's, the
+  High City's, the quarry's.
+  - Each storey has a ledge at its head and courses of blocks.
+  - Below the top storey each storey has a doorway (the prison's barred) with a torch beside it in an iron cup. The doorways
+    are set about the middle of the far wall, where the eye can see that deep.
+  - THE STAIR winds down round the inside from where it leaves the brink, beside the way down. It takes two storeys a turn
+    in 28 steps. Each tread is shaded where the step above throws its shadow, its nosing is lit, and its inner edge shows.
+    The wall under it is in its shadow.
+  - The light falls off with every storey until the depth is lost in the dark. The torches down the shaft light their own
+    patch of wall.
+  - Far below, where only the middle of the far wall can be seen, the enemy's pink burning to gold, dim. It is inside the
+    shaft only and lights nothing on the rim.
+  - The near wall is under the eye and not seen; the brink's edge is.
+- **THE BRINK.** The kerb: dressed stones with a seam between each and a lit inner lip. Its posts go all the way round,
+  except where the stair leaves and where the tongue goes out.
+- **THE PORTAL'S TONGUE AND LANDING.** Dressed slabs out over the drop, a slab's thickness seen under their edge. The round
+  landing has a ring of kerb and a ring of low posts. It is kept clear: the portal is another job.
+- **THE RIM.** Worn flags laid in rings round the mouth, each flag its own length and its joints wandering. Some flags are
+  cracked or sunk, there is grit and soot as on the Gate Ward's streets, and the paving darkens toward its edge, which is
+  broken, not ruled.
+- **PAST THE RIM** is rough rock. At the back a round cliff in courses of rough stone fades up into the dark.
+- **THE LIGHT.** Night. The warm pools on the paving are the game's own lights: its braziers, and the torches on posts (the
+  game adds a light over the ground as it does now). The only other glow is the friend's cyan where the game's own things
+  have it.
+
+### How it is given to the game (as the camp gives its place, art/hub2_camp.ts)
+
+- `rimPlace()`: the tiles, 24 x 24. `walk` per tile: 0 rock or cliff; 1 floor (the paving, the tongue and landing, and the
+  rough rock just past the paving); 2 THE PIT, not walkable. `town` is where each of the game's own things stands, by the
+  game's kinds (forge, rack, trough, anvil, armourer, tentBack, mystic, tentTable, rug, wordsmith, runeSlab, runeRing, the
+  six runeStones, lexicon, stash, stranger, waypoint, six braziers). `more` is where the new things stand (gate, record,
+  trophies, four torches). `hero` is where he stands as he comes in.
+- `paintRimGround()`: THE GROUND, ONE PICTURE painted once. It is 680 x 388 game pixels, 1360 x 776 picture pixels (about
+  4.2 MB as a canvas). Its top left is at `gx, gy` in game pixels, with tile 0, 0 at 0, 0 as the game counts them.
+- THE KERB'S AND THE LANDING'S POSTS (`rimPosts()`, 29 of them): one small picture (`paintPost()`, 8 x 18 picture pixels),
+  laid in depth like any piece.
+- WHAT MOVES: THE TORCHES' FLAMES down the shaft (`shaftTorches()`, the two the eye can see), 12 small frames
+  (`paintFlame(f)`, 8 x 16 picture pixels each) at 30 a second, each torch at its own phase. THE FAR FIRE (`paintPitGlow()`)
+  is one picture of its light, 318 x 80 picture pixels, added over the ground at `pitGlowAt(t)` of its strength: a slow
+  breath, a 2.6 s round, changing every frame at 30 a second with no new picture.
+- **What it costs, measured** in this session's headless Chromium (not on his phone): painting the ground took 572 to 830 ms
+  (seven paintings); the posts, the 12 flames and the far fire's picture took a few ms more. Painted once, under the loading
+  screen as the town loads, the ground then costs one picture laid down a frame. Or bake it to a file: it is plain numbers,
+  `groundAt(px, py)`.
+
+### Held to the measure (his word of 9 Nov: the Gate Ward and the Brawler)
+
+`rim2_measure.png` puts a piece of the Gate Ward (floor 11, from the game, a phone held sideways, 844 x 390) beside a piece of
+the rim and the pit at the same size (the view brought to the same 844 x 390), each the same 316 x 166 enlarged three times
+alike. They have the same grain: flags the same size on the screen, a seam of one pixel, flat tones, light in bands. Neither
+is finer. The rim is a step lighter than the Gate Ward's streets: a town is lighter (his rulebook), and the braziers' pools
+are the game's own lights. The pit's wall courses are a little bigger than the Gate Ward's house stone; they are the splash's
+storeys, seen from across a shaft.
+
+### Still to draw (the next step works from this)
+
+1. THE GATE, standing free, its three word sockets (the mock-up's rough one stands in the pictures).
+2. THE RECORD STONE, its notches.
+3. THE TROPHIES WALL, four mounts and the bosses' heads.
+4. THE TABLET'S SOCKET cut in the wordsmith's slab (the mock-up's rough one is drawn over the game's slab).
+5. THE TORCHES ON POSTS (four).
+6. Perhaps: the way down's waypoint in the rim's stone, and the pit's lower storeys for a taller screen.
+
+### For the main chat
+
+- Lay it as a third town from `rimPlace()` and `paintRimGround()`, behind `ENDLESS_TOWN`: when it is the town (in endless,
+  while a run is on), where he wakes, and what the waypoint leads back to.
+- The pit is not walkable (`walk` 2): what happens at its brink is yours. The kerb has no posts where the stair leaves, but
+  the stair is a look; the way down is the waypoint.
+- The cost: one ground picture of about 4.2 MB, painted in under a second here. Paint it under the town's loading screen, or
+  bake it to a file.
+- Still yours, as before: the record's and the trophies' rules, the socket, the portal and the boss, the eight other towns
+  as looks to unlock or buy.
+
+### For him to decide
+
+- Whether the ground and the pit are right (the pictures above).

@@ -16,7 +16,7 @@
 // shaft only. The kerb's posts and the landing's posts are pieces that stand (`posts`), laid in depth with everything else.
 //
 // HOW THE GAME TAKES IT (as the camp gives its place, art/hub2_camp.ts Place): `rimPlace()` gives the tiles (RIM_W x RIM_H):
-// `walk` (0 rock or cliff, 1 floor, 2 the pit: not walkable), where each of the town's own things stands (`town`, the game's
+// `walk` (0 rock or cliff, 1 floor (the paving and the rough rock just past it), 2 the pit: not walkable), where each of the town's own things stands (`town`, the game's
 // kinds), where the new things stand (`more`: drawn in the next step), the hero's start; `paintRimGround()` the picture and
 // where tile (0, 0) lies in it. The rest, the stations' pictures, are the game's own.
 //
@@ -24,7 +24,7 @@
 // of one pixel, light in bands, a dither only where two bands meet.
 
 import {
-  CANYON, FEN, FIRE, HIGH, IRON, MOSS, PRISON, QUARRY, TOWN, band, bay, hx, mixc, rnd,
+  CANYON, FEN, FIRE, HIGH, IRON, MOSS, PRISON, QUARRY, TOWN, bay, hx, mixc, rnd,
 } from './endless_splash';
 import type { C, Theme } from './endless_splash';
 
@@ -37,7 +37,7 @@ export const ENDLESS_TOWN = { on: false };
 export const RIM_W = 24;
 export const RIM_H = 24;
 /** The shaft's middle; its mouth's radius; the kerb's breadth; the paved rim's edge; the cliff. */
-export const RIM = { cx: 12, cy: 12, pit: 3.8, kerb: 0.32, town: 8, cliff: 9.6 } as const;
+export const RIM = { cx: 12, cy: 12, pit: 3.5, kerb: 0.32, town: 8, cliff: 9.6 } as const;
 /** Where the stair leaves the brink (degrees round the shaft: 0 along +x, -90 along -y). */
 export const STAIR_AT = -86;
 /** The portal's tongue: the angle it goes out at, its landing's middle out from the shaft's middle, the landing's radius, the tongue's half-breadth. */
@@ -99,7 +99,7 @@ export function rimPlace(): RimPlace {
   for (let y = 0; y < RIM_H; y++)
     for (let x = 0; x < RIM_W; x++) {
       const r = Math.hypot(x + 0.5 - RIM.cx, y + 0.5 - RIM.cy);
-      walk[y * RIM_W + x] = onTongue(x + 0.5, y + 0.5) ? 1 : r < RIM.pit + 0.2 ? 2 : r <= RIM.town - 0.3 ? 1 : 0;
+      walk[y * RIM_W + x] = onTongue(x + 0.5, y + 0.5) ? 1 : r < RIM.pit ? 2 : r <= RIM.town + 0.8 ? 1 : 0;
     }
   const L = RIM_LAYOUT;
   const at = (k: RimKind, p: readonly [number, number], v?: number): RimLaid => ({ kind: k, x: p[0], y: p[1], ...(v === undefined ? {} : { v }) });
@@ -126,7 +126,7 @@ export function rimPlace(): RimPlace {
 // round the middle, two picture pixels to a game pixel.
 
 /** The picture's top left in game pixels (tile (0, 0) at game pixel (0, 0)), and its size in game pixels. */
-export const GROUND = { gx: -280, gy: (RIM.cx + RIM.cy) * 8 - 112 - 150, w: 560, h: 112 * 2 + 150 + 14 };
+export const GROUND = { gx: -340, gy: (RIM.cx + RIM.cy) * 8 - 112 - 150, w: 680, h: 112 * 2 + 150 + 14 };
 const MID_Y = (RIM.cx + RIM.cy) * 8;
 
 /** Each floor's own stone, storey under storey down the shaft, as the splash has them. */
@@ -532,14 +532,14 @@ export function paintPitGlow(): PitGlow {
       const Sfar = -Math.sqrt(Math.max(0, 2 * R * R - U * U));
       const d = 8 * (S0 - Sfar);
       const a0 = Math.max(0, (d - DEEP * 0.8) / (DEEP * 0.25)) * Math.max(0, 1 - Math.abs(U) / (R * 0.6));
-      const a = band(Math.min(1, a0), 4);
+      const a = Math.ceil(Math.min(1, a0) * 4) / 4;
       if (a <= 0) continue;
       const c = a > 0.7 ? FIRE[1] : a > 0.45 ? FIRE[2] : FIRE[3];
       const o = (py * w * 2 + px) * 4;
       im.data[o] = (c >> 16) & 255;
       im.data[o + 1] = (c >> 8) & 255;
       im.data[o + 2] = c & 255;
-      im.data[o + 3] = Math.round(255 * (0.18 + 0.4 * a) * (bay(px, py) < 0.75 ? 1 : 0.6));
+      im.data[o + 3] = Math.round(255 * (0.12 + 0.34 * a) * (bay(px, py) < 0.75 ? 1 : 0.6));
     }
   g.putImageData(im, 0, 0);
   return { canvas: cv, gx, gy };

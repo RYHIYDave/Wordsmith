@@ -26,7 +26,7 @@ import { FLAME_FRAMES, paintFlame, paintPitGlow, paintPost, paintRimGround, pitG
 // THE PLACE, in tiles: the rim's middle, the shaft's mouth, the town's edge, the cliff round it.
 
 /** The middle of the shaft (tile units); its mouth's radius; the paved rim's outer edge; the cliff behind. */
-export const RIM = { cx: 12, cy: 12, pit: 3.8, kerb: 0.3, town: 8, cliff: 9.6 };
+export const RIM = { cx: 12, cy: 12, pit: 3.5, kerb: 0.3, town: 8, cliff: 9.6 };
 const deg = (d: number): number => (d * Math.PI) / 180;
 const polar = (a: number, r: number): [number, number] => [RIM.cx + Math.cos(deg(a)) * r, RIM.cy + Math.sin(deg(a)) * r];
 const tileOf = (a: number, r: number): [number, number] => polar(a, r).map((v) => Math.floor(v)) as [number, number];
@@ -52,7 +52,7 @@ const STAIR_AT = -86;
 // ---------------------------------------------------------------------------------------------------------------------------
 // THE PICTURE: GW x GH game pixels, each two by two picture pixels.
 
-const GW = 820;
+const GW = 1100;
 const GH = 470;
 const OX = 410;
 const OY = 248 - (RIM.cx + RIM.cy) * 8;
