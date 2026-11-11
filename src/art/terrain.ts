@@ -52,6 +52,14 @@ export const GRAIN = 2;
 export const HWP = 16 * GRAIN;
 export const HHP = 8 * GRAIN;
 
+/**
+ * EVERY FLOOR'S NEAR SHADOW WITH NO TEETH (a mock-up behind this switch, OFF; docs/mockups/outdoor_shadows/README.md). His words,
+ * 11 Nov 2026, to a picture of Echo Canyon, “The shadow is spikey when the wall is not”; and, told the same edge is on the Quarry,
+ * the Ledge Road and the city's floors, and asked whether to queue it: “Just fix them now”. On, the near shadow of every look
+ * painted here reaches the same distance in every column (as `nearShadow.even`), so its edge is the wall's own line.
+ */
+export const SHADOW_EVEN = { on: false };
+
 /** What a picture pixel of the ground shows. */
 export const TK = {
   /** The walkable floor. */
@@ -317,13 +325,15 @@ export function terrainOf(floor: Floor, look: TerrainLook): Terrain {
   // 0.5 at the foot of a straight wall, 1 in the open) and how far up the light's way the nearest rock stands (the light goes along
   // the world's x, down the screen to the right)
   let floorShade: ((x: number, y: number) => number) | undefined;
+  // (a look with a drop: set below, once the drop is known; the drop is air and throws no shadow)
+  let dropOf: ((x: number, y: number) => boolean) | undefined;
   const sh = look.shade;
   if (sh) {
     const rw = Math.max(1, Math.round((sh.wide * G) / 2));
-    const open = boxBlur(boxBlur(raw, NW, NH, rw), NW, NH, rw);
+    const open = sh.dark > 0 ? boxBlur(boxBlur(raw, NW, NH, rw), NW, NH, rw) : undefined;
     // (thrown by the floor's edge as it is painted, its slow wander with it, and to a part of a cell: the shadow's edge is the
-    // wall's own line, moved along the light)
-    const sunD = new Float32Array(NW * NH);
+    // wall's own line, moved along the light; worked out when first asked for)
+    let sunD: Float32Array | undefined;
     const lo = 0.5 - look.rag / 2 - 0.01;
     const hi = 0.5 + look.rag / 2 + 0.01;
     const over = (c: number, i: number, j: number): number => {
@@ -333,19 +343,32 @@ export function terrainOf(floor: Floor, look: TerrainLook): Terrain {
       const y = (j + 0.5) / G - MARGIN;
       return v - (0.5 + look.rag * (vnoise(x * 1.05, y * 1.05, look.seed) - 0.5));
     };
-    for (let j = 0; j < NH; j++) {
-      let d = 0;
-      let before = -1;
-      for (let i = 0; i < NW; i++) {
-        const c = j * NW + i;
-        const s = over(c, i, j);
-        if (s > 0) d = before <= 0 ? s / (s - before) / G : d + 1 / G;
-        else d = 0;
-        before = s;
-        sunD[c] = d;
+    const FAR = 99;
+    const sunOf = (): Float32Array => {
+      const f = new Float32Array(NW * NH);
+      for (let j = 0; j < NH; j++) {
+        let d = 0;
+        let before = -1;
+        let wall = true;
+        for (let i = 0; i < NW; i++) {
+          const c = j * NW + i;
+          const s = over(c, i, j);
+          if (s > 0) d = before <= 0 && wall ? s / (s - before) / G : Math.min(FAR, d + 1 / G);
+          else if (dropOf && dropOf((i + 0.5) / G - MARGIN, (j + 0.5) / G - MARGIN)) {
+            d = FAR;
+            wall = false;
+          } else {
+            d = 0;
+            wall = true;
+          }
+          before = s;
+          f[c] = s > 0 ? d : d === FAR ? FAR : 0;
+        }
       }
-    }
+      return f;
+    };
     const openAt = (x: number, y: number): number => {
+      if (!open) return 1;
       const gx = Math.max(0, Math.min(NW - 1.001, (x + MARGIN) * G - 0.5));
       const gy = Math.max(0, Math.min(NH - 1.001, (y + MARGIN) * G - 0.5));
       const i = Math.floor(gx);
@@ -358,8 +381,9 @@ export function terrainOf(floor: Floor, look: TerrainLook): Terrain {
       const d = open[(j + 1) * NW + i + 1];
       return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
     };
-    // (of the floor's own cells only, so that the rock beside it is not mixed in: no line of shade along a near edge)
+    // (of the cells that are not rock only, so that the rock beside the floor is not mixed in: no line of shade along a near edge)
     const sunAt = (x: number, y: number): number => {
+      const sun = (sunD ??= sunOf());
       const gx = Math.max(0, Math.min(NW - 1.001, (x + MARGIN) * G - 0.5));
       const gy = Math.max(0, Math.min(NH - 1.001, (y + MARGIN) * G - 0.5));
       const i = Math.floor(gx);
@@ -370,17 +394,17 @@ export function terrainOf(floor: Floor, look: TerrainLook): Terrain {
       let sum = 0;
       for (let q = 0; q < 4; q++) {
         const c = (j + (q >> 1)) * NW + i + (q & 1);
-        if (sunD[c] <= 0) continue;
+        if (sun[c] <= 0) continue;
         const w = (q & 1 ? u : 1 - u) * (q >> 1 ? v : 1 - v);
-        acc += w * sunD[c];
+        acc += w * sun[c];
         sum += w;
       }
-      return sum > 1e-6 ? acc / sum : 99;
+      return sum > 1e-6 ? acc / sum : FAR;
     };
     const k2 = look.seed;
     floorShade = (x: number, y: number): number => {
       // (in two crisp steps, as the near cliff's shadow is: no soft fade)
-      const o = openAt(x, y) + 0.05 * (vnoise(x * 1.1, y * 1.1, k2 + 42) - 0.5);
+      const o = open ? openAt(x, y) + 0.05 * (vnoise(x * 1.1, y * 1.1, k2 + 42) - 0.5) : 1;
       const foot = o < sh.at[0];
       const reach = sh.sun;
       const d = sunAt(x, y);
@@ -504,6 +528,7 @@ export function terrainOf(floor: Floor, look: TerrainLook): Terrain {
     const n = vnoise(x * 1.3, y * 1.3, k + 5) - 0.5;
     return inFloorTile(x, y) ? dropField(x, y) + 0.2 * n > 0 : nearField(x, y) + 0.6 * n > 0;
   };
+  dropOf = drop;
   return { floor, look, field, edge, ground, drop, dropField, climbAt, floorShade };
 }
 
@@ -701,7 +726,7 @@ export function paintTerrain(T: Terrain, x0: number, y0: number, w: number, h: n
         if (T.floorShade) t = Math.max(t, T.floorShade(x, y));
         if (ns) {
           // the near cliff, straight down the picture (along the world's x + y): within its shadow's reach?
-          const reach = ns.reach * (ns.even ? 1 : 0.75 + 0.5 * vnoise(x * 0.9 - y * 0.9, 0, L.seed + 40)) * 2 * HHP;
+          const reach = ns.reach * (ns.even || SHADOW_EVEN.on ? 1 : 0.75 + 0.5 * vnoise(x * 0.9 - y * 0.9, 0, L.seed + 40)) * 2 * HHP;
           const d = nextRock[py - wA] - (py - wA);
           if (d <= reach) t = Math.max(t, d > reach - 0.25 * 2 * HHP ? ns.dark[1] : ns.dark[0]);
         }
