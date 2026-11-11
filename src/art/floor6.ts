@@ -242,6 +242,25 @@ function hewn(S: Scene, c: V3, A: readonly [V3, V3, V3], r: V3, ramp: Ramp, seed
  */
 function finishOwn(S: Scene, ox: number, oy: number): Sprite {
   S.seams();
+  // (25.3.2, as the blocks went live: A SEAM KEPT INSIDE THE FLOORS' COLOUR RULE, nothing that reads as the friend's cyan or the
+  // enemy's pink: tests/floor6.test.ts, Colour 3 and 4. The deep shade of the sledge's timber came out at 71,55,53: a hair into
+  // the pinks, hue 7 and saturation 0.254 where the rule's line is 0.25. Such a seam is greyed by a step or two of 255, to 0.24:
+  // not to be seen.)
+  const inRule = (hex: string): string => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const mx = Math.max(r, g, b);
+    const mn = Math.min(r, g, b);
+    if (mx < 0.2 * 255 || mx === mn) return hex;
+    const sat = (mx - mn) / mx;
+    if (sat <= 0.25) return hex;
+    const h6 = mx === r ? (g - b) / (mx - mn) : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4;
+    const h = (h6 * 60 + 360) % 360;
+    if (!((h > 165 && h < 205) || h > 300 || h < 10)) return hex;
+    const to = (v: number): string => Math.round(mx - (mx - v) * (0.24 / sat)).toString(16).padStart(2, '0');
+    return `#${to(r)}${to(g)}${to(b)}`;
+  };
   const out = compose(null, [S.p], null);
   for (let y = 0; y < out.h; y++) {
     for (let x = 0; x < out.w; x++) {
@@ -249,7 +268,7 @@ function finishOwn(S: Scene, ox: number, oy: number): Sprite {
       // (under the thing: what is above this pixel of the seam is the thing itself)
       const above = y > 0 ? S.p.get(x, y - 1) : null;
       const beside = above ?? S.p.get(x - 1, y) ?? S.p.get(x + 1, y) ?? S.p.get(x, y + 1);
-      if (beside) out.set(x, y, mix(beside, '#0e0c24', above ? 0.62 : 0.45));
+      if (beside) out.set(x, y, inRule(mix(beside, '#0e0c24', above ? 0.62 : 0.45)));
     }
   }
   return out.sprite(ox, oy, GRAIN);
