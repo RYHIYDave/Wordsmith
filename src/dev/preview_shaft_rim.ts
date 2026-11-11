@@ -20,7 +20,13 @@ import type { TownArt } from '../art/townscene';
 import { makeTownsfolk } from '../art/townsfolk';
 import { makeWaypointArt } from '../art/crypt_ways';
 import { fbm } from './title_options_kit';
-import { FLAME_FRAMES, paintFlame, paintPitGlow, paintPost, paintRimGround, pitGlowAt, rimPosts, shaftTorches } from '../art/shaft_rim';
+import { GRAIN } from '../art/kit';
+import { FLAME_FRAMES, GROUND, paintFlame, paintPitGlow, paintPost, paintRimGround, pitGlowAt, rimPlace, rimPosts, shaftTorches } from '../art/shaft_rim';
+import { BENCH_SOCKET, GATE_SOCKETS, RECORD_NOTCHES, TORCH_FRAMES, TROPHY_MOUNTS, paintGate as gatePiece, paintRecord as recordPiece, paintSocketSlab, paintTorchFlame, paintTorchPost, paintTrophies as trophiesPiece, paintTrophy, paintTrophyWall, rimPieces } from '../art/shaft_props';
+import type { Piece } from '../art/shaft_props';
+import { stoneOf } from '../art/props';
+import { isEight } from '../art/sides';
+import { wuFacing } from '../art/warrior_up_art';
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // THE PLACE, in tiles: the rim's middle, the shaft's mouth, the town's edge, the cliff round it.
@@ -453,6 +459,8 @@ const props = makePropArt();
 const ART: TownArt = { town: makeTownProps(THEME), folk: makeTownsfolk() };
 const WAY = makeWaypointArt(THEME);
 const TIME = 1.35;
+/** The townsfolk's clock at t = 0 (each at its own loop from there). */
+const T0 = TIME;
 
 /** The ring's six stones round the wordsmith, as the game's TOWN has them; the slab one tile toward the eye of him. */
 const RUNE_STONES: readonly (readonly [number, number])[] = [[-2, -1], [-1, -2], [1, -2], [-2, 1], [2, -1], [-1, 2]];
@@ -460,7 +468,7 @@ const RUNE_STONES: readonly (readonly [number, number])[] = [[-2, -1], [-1, -2],
 interface Put { d: number; f: () => void }
 interface Lit { s?: Sprite; x: number; y: number; r?: number; c?: string; a?: number }
 
-export function scene(heroAt: [number, number] | null, v2 = false, t = 0): { cv: HTMLCanvasElement; labels: { x: number; y: number; text: string }[] } {
+export function scene(heroAt: [number, number] | null, v2 = false, t = 0, o: { v3?: boolean; heroSprite?: Sprite } = {}): { cv: HTMLCanvasElement; labels: { x: number; y: number; text: string }[] } {
   const B = new Buf();
   const lights: Lit[] = [];
   const labels: { x: number; y: number; text: string }[] = [];
@@ -506,14 +514,14 @@ export function scene(heroAt: [number, number] | null, v2 = false, t = 0): { cv:
     puts.push({ d: x + y, f });
   };
   const stand = (kind: string, p: [number, number], variant = 0, shadow = 0.36): void => {
-    const s = townSprite(ART, kind, variant, TIME + variant * 0.37);
+    const s = kind === 'runeSlab' && o.v3 ? (PROPS3 ??= makeProps3()).slab[Math.floor((T0 + t) * 8) % 8] : townSprite(ART, kind, variant, T0 + t + variant * 0.37);
     if (!s) return;
     put(p[0], p[1], () => {
       const [gx, gy] = at(p[0], p[1]);
       if (shadow) B.shadow(gx, gy, shadow);
       B.sprite(s, gx, gy);
       if (s.lights?.length) lights.push({ s, x: gx, y: gy });
-      if (kind === 'runeSlab') paintSocket(B, gx, gy - 9);
+      if (kind === 'runeSlab' && !o.v3) paintSocket(B, gx, gy - 9);
     });
   };
   // the smithy (as the game's TOWN lays it: the rack three tiles along from the forge, the trough beside, the anvil and the armourer before it)
@@ -545,7 +553,7 @@ export function scene(heroAt: [number, number] | null, v2 = false, t = 0): { cv:
   // the waypoint at the stair's head: the way down
   {
     const [x, y] = c(LAYOUT.way);
-    const s = WAY.awake[0];
+    const s = WAY.awake[Math.floor((T0 + t) * 8) % WAY.awake.length];
     put(x - 0.6, y - 0.6, () => {
       B.sprite(s, ...at(x, y));
       if (s.lights?.length) lights.push({ s, x: at(x, y)[0], y: at(x, y)[1] });
@@ -554,12 +562,34 @@ export function scene(heroAt: [number, number] | null, v2 = false, t = 0): { cv:
     label(x, y, 30, 'way down');
   }
   // the gate, the record, the trophies (new)
+  if (o.v3) {
+    // STEP 4: THE NEW THINGS DRAWN AT THE GAME'S STANDARD (art/shaft_props.ts), each on its tile, its anchor where rimPieces() lays it
+    const P3 = (PROPS3 ??= makeProps3());
+    for (const pc of rimPieces()) {
+      put(pc.depth[0], pc.depth[1], () => {
+        const [gx, gy] = at(pc.at[0], pc.at[1]);
+        if (pc.kind === 'torch') {
+          B.shadow(gx, gy, 0.22);
+          B.sprite(P3.post, gx, gy);
+          const fl = P3.flame[(Math.floor(t * 30) + Math.round(pc.at[0] * 7 + pc.at[1] * 3)) % TORCH_FRAMES];
+          B.sprite(fl, gx, gy);
+          lights.push({ s: fl, x: gx, y: gy });
+          return;
+        }
+        const s = pc.kind === 'gate' ? P3.gate : pc.kind === 'record' ? P3.record : P3.trophies;
+        B.shadow(gx, gy, pc.kind === 'record' ? 0.4 : 0.9);
+        B.sprite(s, gx, gy);
+        if (s.lights?.length) lights.push({ s, x: gx, y: gy });
+      });
+    }
+  } else {
   put(LAYOUT.gate[0] + 1.6, LAYOUT.gate[1] + 0.6, () => paintGate(B));
   label(LAYOUT.gate[0] + 1.6, LAYOUT.gate[1] + 0.3, 80, 'gate');
   put(LAYOUT.record[0] + 0.5, LAYOUT.record[1] + 0.5, () => paintRecord(B));
   label(LAYOUT.record[0] + 0.5, LAYOUT.record[1] + 0.5, 82, 'record');
   put(LAYOUT.trophies[0] + 1.3, LAYOUT.trophies[1] + 0.5, () => paintTrophies(B));
   label(LAYOUT.trophies[0] + 1.3, LAYOUT.trophies[1] + 0.25, 46, 'trophies');
+  }
   label(LAYOUT.portal[0], LAYOUT.portal[1], 22, 'portal');
   // the braziers (the game's own), torches on posts by the stations that have no fire of their own (new)
   for (const t of LAYOUT.braziers) {
@@ -573,6 +603,7 @@ export function scene(heroAt: [number, number] | null, v2 = false, t = 0): { cv:
       lights.push({ x: gx, y: gy - 20, r: 70, c: '#ff8a2a', a: 0.22 });
     });
   }
+  if (!o.v3)
   for (const [x, y] of [[LAYOUT.stash[0] + 1.6, LAYOUT.stash[1] + 0.2], [LAYOUT.lexicon[0] - 0.4, LAYOUT.lexicon[1] + 1.6], [LAYOUT.tentBack[0] - 1.3, LAYOUT.tentBack[1] - 1.0], [LAYOUT.record[0] + 1.6, LAYOUT.record[1] + 1.4]] as const) {
     put(x, y, () => {
       const [lx, ly] = paintTorch(B, x, y);
@@ -598,7 +629,7 @@ export function scene(heroAt: [number, number] | null, v2 = false, t = 0): { cv:
   }
   // the knight
   if (heroAt) {
-    const s = hero.front.idle[0];
+    const s = o.heroSprite ?? hero.front.idle[0];
     put(heroAt[0], heroAt[1], () => {
       const [gx, gy] = at(heroAt[0], heroAt[1]);
       B.shadow(gx, gy, 0.36);
@@ -628,6 +659,118 @@ export function scene(heroAt: [number, number] | null, v2 = false, t = 0): { cv:
 // THE PICTURES
 
 let GROUND_MEMO: ReturnType<typeof paintRimGround> | undefined;
+
+// STEP 4: the new things, made once (art/shaft_props.ts)
+const RECORD_N = 23;
+const HELD = [true, true, true, false];
+const spr = (p: Piece): Sprite => {
+  const s = p.px.sprite(p.ox, p.oy, GRAIN);
+  if (p.lights?.length) s.lights = p.lights;
+  return s;
+};
+const SLAB_STONE = { stone: stoneOf(THEME), lit: THEME.lit, shade: THEME.shade };
+interface Props3 { gate: Sprite; record: Sprite; trophies: Sprite; post: Sprite; flame: Sprite[]; slab: Sprite[] }
+let PROPS3: Props3 | undefined;
+/** What the new things cost to paint, ms (each, measured as the game would make them). */
+const COST3: Record<string, number> = {};
+function timed<T>(k: string, f: () => T): T {
+  const t0 = performance.now();
+  const r = f();
+  COST3[k] = (COST3[k] ?? 0) + performance.now() - t0;
+  return r;
+}
+function makeProps3(): Props3 {
+  return {
+    gate: timed('gate', () => spr(gatePiece())),
+    record: timed('record', () => spr(recordPiece(RECORD_N, true))),
+    trophies: timed('trophies', () => spr(trophiesPiece(HELD))),
+    post: timed('torch post', () => spr(paintTorchPost())),
+    flame: timed('torch flames (12)', () => Array.from({ length: TORCH_FRAMES }, (_, f) => spr(paintTorchFlame(f)))),
+    slab: timed('socket slab (8)', () => Array.from({ length: 8 }, (_, f) => spr(paintSocketSlab(SLAB_STONE, f)))),
+  };
+}
+
+// THE KNIGHT'S WALK FOR THE FILM: round the pit past each station, stopping at the trophies, the gate, the record and the bench.
+// [x, y, pause (s), the way he faces while he stands (tiles)]. Every step is checked (checkRoute): on the floor, through no
+// station, off the pit's kerb.
+type Stop = readonly [number, number, number, number?, number?];
+export const ROUTE: readonly Stop[] = [
+  [12.7, 18.1, 1.2, -1, 0], [14.5, 17.0, 0], [16.3, 15.2, 0], [16.6, 13.4, 0], [17.5, 11.5, 0], [16.5, 10.5, 0], [16.2, 9.6, 0], [15.5, 9.5, 0],
+  [14.5, 8.5, 0], [14.2, 7.4, 0], [13.4, 6.4, 0], [11.6, 6.45, 1.4, 0, -1], [9.6, 7.5, 0], [8.5, 7.6, 1.6, 0, -1], [7.0, 8.3, 0],
+  [6.3, 8.5, 1.4, -0.6, 1], [7.4, 9.0, 0], [7.5, 10.5, 0], [7.3, 12.5, 0], [7.6, 13.6, 0], [8.3, 14.6, 0.8, -1, 1], [8.5, 15.5, 0], [9.5, 16.5, 0],
+  [11.3, 16.5, 0], [12.4, 17.4, 0], [12.7, 18.1, 1.6, -1, 0],
+];
+const WALK = 4.6;
+/** Where the knight is at time t, which way he faces, whether he walks, and how far he has walked. */
+export function knightAt(t: number): { x: number; y: number; fx: number; fy: number; walking: boolean; walked: number } {
+  let clock = 0;
+  let walked = 0;
+  let fx = -1;
+  let fy = 0;
+  for (let i = 0; i < ROUTE.length; i++) {
+    const [x, y, pause, px, py] = ROUTE[i];
+    if (pause > 0) {
+      if (px !== undefined) {
+        fx = px;
+        fy = py ?? 0;
+      }
+      if (t < clock + pause) return { x, y, fx, fy, walking: false, walked };
+      clock += pause;
+    }
+    const nx = ROUTE[i + 1];
+    if (!nx) return { x, y, fx, fy, walking: false, walked };
+    const len = Math.hypot(nx[0] - x, nx[1] - y);
+    const dur = len / WALK;
+    fx = (nx[0] - x) / len;
+    fy = (nx[1] - y) / len;
+    if (t < clock + dur) {
+      const k = (t - clock) / dur;
+      return { x: x + (nx[0] - x) * k, y: y + (nx[1] - y) * k, fx, fy, walking: true, walked: walked + len * k };
+    }
+    clock += dur;
+    walked += len;
+  }
+  const L = ROUTE[ROUTE.length - 1];
+  return { x: L[0], y: L[1], fx, fy, walking: false, walked };
+}
+export const FILM_SECONDS = (() => {
+  let s = 0;
+  for (let i = 0; i < ROUTE.length; i++) {
+    s += ROUTE[i][2];
+    const nx = ROUTE[i + 1];
+    if (nx) s += Math.hypot(nx[0] - ROUTE[i][0], nx[1] - ROUTE[i][1]) / WALK;
+  }
+  return s;
+})();
+/** The knight's picture for that moment: the game's own walk (its frame by how far he has gone) and stand. */
+function knightSprite(k: ReturnType<typeof knightAt>, t: number): Sprite {
+  const art = hero as unknown as Parameters<typeof isEight>[0];
+  let set = k.fy + k.fx < -0.2 ? art.back : art.front;
+  if (isEight(art)) set = art[wuFacing(k.fx, k.fy)];
+  if (k.walking) {
+    const n = set.walk.length;
+    const f = set.walkStride !== undefined ? Math.round((k.walked / set.walkStride) * n) : Math.floor(t * (set.walkFps ?? 8));
+    return set.walk[((f % n) + n) % n];
+  }
+  return set.idle[Math.floor(t * (set.idleFps ?? 2)) % set.idle.length];
+}
+/** The tiles the knight may not stand on: every station's and every new piece's, and all that is not floor. */
+export function checkRoute(): string[] {
+  const P = rimPlace();
+  const bad: string[] = [];
+  const taken = new Set<string>();
+  for (const l of P.town) if (l.kind !== 'rug' && l.kind !== 'runeRing') taken.add(`${l.x},${l.y}`);
+  for (const pc of rimPieces()) for (const [x, y] of pc.blocks) taken.add(`${x},${y}`);
+  const posts = rimPosts();
+  for (let t = 0; t < FILM_SECONDS; t += 1 / 30) {
+    const k = knightAt(t);
+    const tx = Math.floor(k.x);
+    const ty = Math.floor(k.y);
+    const why = P.walk[ty * P.w + tx] !== 1 ? 'not floor' : taken.has(`${tx},${ty}`) ? 'a station' : Math.hypot(k.x - 12, k.y - 12) < 4.2 ? 'at the kerb' : posts.some((q) => Math.hypot(q.x - k.x, q.y - k.y) < 0.45) ? 'a post' : '';
+    if (why) bad.push(`${t.toFixed(2)}s (${k.x.toFixed(2)}, ${k.y.toFixed(2)}): ${why}`);
+  }
+  return bad;
+}
 let GLOW_MEMO: ReturnType<typeof paintPitGlow> | undefined;
 let FLAMES_MEMO: HTMLCanvasElement[] | undefined;
 let POST_MEMO: HTMLCanvasElement | undefined;
@@ -655,6 +798,10 @@ function main(): void {
   document.body.style.background = '#05040f';
   document.body.appendChild(out);
   out.style.display = 'block';
+  if (mode === 'whole3' || mode.startsWith('view3') || mode === 'props1' || mode === 'props2' || mode === 'film' || mode === 'check') {
+    main3(mode, out);
+    return;
+  }
   if (mode === 'whole2' || mode === 'pit' || mode.startsWith('view2')) {
     const pit = mode === 'pit';
     const n = Math.max(1, Math.min(2, Number(mode.split(':')[1]) || 1));
@@ -748,5 +895,157 @@ function main(): void {
     drawText(g, `${n}  ${v.caption.toUpperCase()}`, 16, PH * 2 + 14, '#e9ecff', { scale: 4 });
   }
   (window as unknown as { __ready: boolean }).__ready = true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------------
+// STEP 4'S PICTURES AND FILM
+//   node tools/preview.mjs src/dev/preview_shaft_rim.ts docs/mockups/endless_town/pictures/rim3_whole.png 1200 624 whole3
+//   ... rim3_view_1.png 1014 528 view3:1 (at the gate, the record and the trophies); view3:2 (at the wordsmith's bench)
+//   ... props_phone_1.png 1200 1200 props1; props_phone_2.png 1200 1460 props2; check (the knight's route checked, in the log)
+//   the film: node tools/rim_town_film.mjs (this page, mode film, one frame a thirtieth of a second)
+
+export const VIEWS3: readonly { hero: [number, number]; caption: string; f: [number, number] }[] = [
+  { hero: [8.5, 7.6], caption: 'At the gate', f: [0, -1] },
+  { hero: [12.7, 18.1], caption: "At the wordsmith's bench", f: [-1, 0] },
+];
+const PW3 = 507;
+const PH3 = 234;
+const CAP3 = 60;
+
+function cap(g: CanvasRenderingContext2D, text: string, x: number, y: number, sc = 4): void {
+  drawText(g, text.toUpperCase(), x, y, '#e9ecff', { scale: sc });
+}
+/** The scene's canvas, a piece of it (game pixels round a point) drawn at k picture pixels to a game pixel. */
+function crop(g: CanvasRenderingContext2D, cv: HTMLCanvasElement, gx: number, gy: number, w: number, h: number, X: number, Y: number, k: number): void {
+  g.imageSmoothingEnabled = false;
+  g.drawImage(cv, Math.round((gx - w / 2) * 2), Math.round((gy - h / 2) * 2), w * 2, h * 2, X, Y, w * k, h * k);
+}
+
+/** The camera on the knight, as the game's (his feet a little under the middle), held up so that it never looks past the painted ground's foot. */
+const camY = (hy: number): number => Math.min(hy - 14, OY + GROUND.gy + GROUND.h - PH3 / 2 - 2);
+
+function main3(mode: string, out: HTMLCanvasElement): void {
+  const g0 = (): CanvasRenderingContext2D => out.getContext('2d') as CanvasRenderingContext2D;
+  const done = (): void => {
+    (window as unknown as { __ready: boolean }).__ready = true;
+  };
+  if (mode === 'check') {
+    const bad = checkRoute();
+    console.log(`route: ${FILM_SECONDS.toFixed(2)} s; ${bad.length} bad steps${bad.length ? ': ' + bad.slice(0, 12).join('; ') : ''}`);
+    const t0 = performance.now();
+    makeProps3();
+    console.log(`props painted in ${(performance.now() - t0).toFixed(1)} ms: ${Object.entries(COST3).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(', ')}`);
+    console.log('gate sockets ' + JSON.stringify(GATE_SOCKETS) + '; bench socket ' + JSON.stringify(BENCH_SOCKET) + '; mounts ' + JSON.stringify(TROPHY_MOUNTS));
+    console.log('notches 0-9 ' + JSON.stringify(RECORD_NOTCHES.slice(0, 10)));
+    console.log('pieces ' + JSON.stringify(rimPieces()));
+    out.width = 4;
+    out.height = 4;
+    done();
+    return;
+  }
+  if (mode === 'film') {
+    out.width = PW3 * 2;
+    out.height = PH3 * 2 + CAP3;
+    const g = g0();
+    (window as unknown as { __film: (t: number) => void }).__film = (t: number): void => {
+      const k = knightAt(t);
+      const { cv } = scene([k.x, k.y], true, t, { v3: true, heroSprite: knightSprite(k, t) });
+      const [hx, hy] = at(k.x, k.y);
+      g.imageSmoothingEnabled = false;
+      g.fillStyle = '#07060f';
+      g.fillRect(0, 0, out.width, out.height);
+      g.drawImage(cv, Math.round((PW3 / 2 - hx) * 2), Math.round((PH3 / 2 - camY(hy)) * 2));
+      g.fillStyle = '#0d1030';
+      g.fillRect(0, PH3 * 2, out.width, CAP3);
+      cap(g, "The Shaft's Rim, alive", 16, PH3 * 2 + 14);
+    };
+    (window as unknown as { __filmSeconds: number }).__filmSeconds = FILM_SECONDS;
+    done();
+    return;
+  }
+  if (mode === 'whole3') {
+    const { cv } = scene(null, true, 0.4, { v3: true });
+    out.width = WHOLE.w * 2;
+    out.height = WHOLE.h * 2;
+    const g = g0();
+    g.drawImage(cv, WHOLE.x * 2, WHOLE.y * 2, WHOLE.w * 2, WHOLE.h * 2, 0, 0, WHOLE.w * 2, WHOLE.h * 2);
+  } else if (mode.startsWith('view3')) {
+    const n = Math.max(1, Math.min(2, Number(mode.split(':')[1]) || 1));
+    const v = VIEWS3[n - 1];
+    const kn = { x: v.hero[0], y: v.hero[1], fx: v.f[0], fy: v.f[1], walking: false, walked: 0 };
+    const { cv } = scene(v.hero, true, 0.4, { v3: true, heroSprite: knightSprite(kn, 0.4) });
+    const [hx, hy] = at(v.hero[0], v.hero[1]);
+    out.width = PW3 * 2;
+    out.height = PH3 * 2 + CAP3;
+    const g = g0();
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = '#07060f';
+    g.fillRect(0, 0, out.width, out.height);
+    g.drawImage(cv, Math.round((PW3 / 2 - hx) * 2), Math.round((PH3 / 2 - camY(hy)) * 2));
+    g.fillStyle = '#0d1030';
+    g.fillRect(0, PH3 * 2, out.width, CAP3);
+    cap(g, `${n}  ${v.caption}`, 16, PH3 * 2 + 14);
+  } else if (mode === 'props1') {
+    // THE GATE AND THE RECORD STONE, each at the game's size and twice, in the town as it stands
+    const { cv } = scene(null, true, 0.4, { v3: true });
+    const gp = rimPieces();
+    const gate = gp.find((q) => q.kind === 'gate') as (typeof gp)[number];
+    const rec = gp.find((q) => q.kind === 'record') as (typeof gp)[number];
+    const [gx, gy] = at(gate.at[0], gate.at[1]);
+    const [rx, ry] = at(rec.at[0], rec.at[1]);
+    out.width = 1200;
+    out.height = 1200;
+    const g = g0();
+    g.fillStyle = '#0d1030';
+    g.fillRect(0, 0, out.width, out.height);
+    cap(g, 'The gate, game size', 20, 14);
+    crop(g, cv, gx, gy - 40, 150, 110, 20, 60, 2);
+    cap(g, 'Record, game size', 640, 14);
+    crop(g, cv, rx, ry - 34, 80, 100, 640, 60, 2);
+    cap(g, 'Gate, twice the size', 20, 300);
+    crop(g, cv, gx, gy - 46, 150, 110, 20, 346, 4);
+    cap(g, 'Record, twice the size', 640, 300);
+    crop(g, cv, rx + 8, ry - 40, 130, 110, 640, 346, 4);
+    cap(g, 'Its notches, close', 20, 830);
+    crop(g, cv, rx, ry - 44, 30, 26, 20, 876, 12);
+    void ry;
+  } else {
+    // THE TROPHIES WALL EMPTY AND FULL, THE FOUR TROPHIES, THE BENCH'S SOCKET, A TORCH: each big, on the rim's paving
+    out.width = 1200;
+    out.height = 1460;
+    const g = g0();
+    g.fillStyle = '#0d1030';
+    g.fillRect(0, 0, out.width, out.height);
+    const pave = (X: number, Y: number, w: number, h: number): void => {
+      g.fillStyle = '#2a2230';
+      g.fillRect(X, Y, w, h);
+    };
+    const draw = (p: Piece, X: number, Y: number, k: number): void => {
+      const c = p.px.toCanvas();
+      g.imageSmoothingEnabled = false;
+      g.drawImage(c, X, Y, c.width * k, c.height * k);
+    };
+    cap(g, 'Trophies wall, empty', 20, 14);
+    pave(20, 56, 520, 440);
+    draw(paintTrophyWall(), 30, 66, 3.4);
+    cap(g, 'All four trophies hung', 620, 14);
+    pave(620, 56, 560, 440);
+    draw(trophiesPiece([true, true, true, true]), 640, 66, 3.4);
+    const names = ['Floor 5', 'Floor 10', 'Floor 15', 'Floor 20'];
+    for (let k = 0; k < 4; k++) {
+      cap(g, names[k], 30 + k * 290, 520);
+      pave(20 + k * 290, 562, 270, 300);
+      draw(paintTrophy(k), 50 + k * 290, 572, 8);
+    }
+    cap(g, "The bench's socket", 20, 890);
+    pave(20, 932, 640, 500);
+    const slab = paintSocketSlab(SLAB_STONE, 0);
+    draw(slab, 30, 940, 6.4);
+    cap(g, 'A torch', 720, 890);
+    pave(700, 932, 480, 500);
+    draw(paintTorchPost(), 820, 940, 4.6);
+    draw(paintTorchFlame(3), 820, 940, 4.6);
+  }
+  done();
 }
 main();

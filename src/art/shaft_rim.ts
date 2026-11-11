@@ -60,7 +60,11 @@ export const RIM_LAYOUT = {
   stash: tileOf(160, 6.6),
   stranger: tileOf(-178, 7.4),
   braziers: [tileOf(-122, 7.7), tileOf(-145, 7.7), tileOf(-62, 7.5), tileOf(40, 7.4), tileOf(72, 7.4), tileOf(128, 7.6)],
-  torches: [[6.6, 15.2], [7.3, 15.6], [16.7, 9.0], [6.6, 10.4]] as [number, number][],
+  // (the four torches on posts where the mock-up he locked in had them, preview_shaft_rim.ts: by the stash, by the Lexicon, by the
+  // tent, by the record. Mended in step 4: three had been copied here wrong, one of them onto the Lexicon's own tile. The tent's is moved
+  // within its tile, toward the tent, off the one way between the pit and the smithy; the record's
+  // moved a tile back, beside the stone and no longer in front of its notches.)
+  torches: [[6.6, 14.2], [6.6, 16.6], [16.35, 11.6], [6.8, 9.3]] as [number, number][],
 };
 
 export type RimKind = 'forge' | 'anvil' | 'rack' | 'trough' | 'tentBack' | 'tentTable' | 'rug' | 'runeRing' | 'runeSlab' | 'runeStone' | 'lexicon' | 'stash' | 'brazier' | 'waypoint' | 'armourer' | 'mystic' | 'wordsmith' | 'stranger';
