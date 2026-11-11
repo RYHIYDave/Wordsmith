@@ -15,6 +15,24 @@ import type { Station } from './state';
 
 export const QUEST_MARKS = { on: true, secs: 6 };
 
+/**
+ * “SPEAK TO THE ...” WHENEVER A QUEST BECOMES AVAILABLE (off: on at his yes, with the marker's rune, art/small_notes.ts questRune).
+ * His words, 11 Nov 2026, of the marker: “Make it a rune, have it flash, and add triggers for “Speak to the (quest giver)” when a
+ * quest becomes available”. As it was, the line came only on coming into a floor or the town carrying something to bring back, and
+ * in town when someone came due while he stood there. So a quest that opened while he was away (the mystic's, as the gate down the
+ * mountain opens), the wordsmith's first as a new game begins, and a thing picked up in the middle of a floor (the master rune-stone)
+ * said nothing until later, or never. With this on (game.ts updateSpeak):
+ *   - THE MOMENT someone has something for him that they had not a moment before, a quest to give or a thing to take, the line says
+ *     "Speak to the ..." wherever he is: in town where they stand, in a dungeon with the way back to town under it;
+ *   - ON COMING INTO TOWN, a new game too, with anyone waiting for him there, it says so again: whoever he brings something back for
+ *     first, else the first of them (the wordsmith, the armourer, the mystic);
+ *   - on coming into a floor carrying something to bring back, as before.
+ * It goes, as before, when it has been seen its time or they are seen to.
+ * Read back to him so, his answer, 11 Nov 2026, by 10:47 (Eastern): “Yes, that's it (Recommended)”. The main chat sets it on as it
+ * brings the branch in.
+ */
+export const SPEAK_NEW = { on: false };
+
 /** What the line at the top says under "Speak to the ...": where they are, or how to get to them. */
 export const SPEAK_WHERE: Partial<Record<Station, string>> = {
   wordsmith: 'He stands in the ring of stones.',
