@@ -146,3 +146,90 @@ on try-out 10, “All good, hand over (Recommended)”. For floor 10's new fight
   up out of the water: for every phase's tentacles as they burst up).
 - The old `eye_roar`, `eye_hurt`, `eye_death` (second batch) were made for his old look. His fight's other sounds (the
   slams, the waves, his hurt and his death) come once the art chat has drawn them.
+
+## Eighth batch: the floors' scene sounds, floors 1 to 20 (the sound chat, 9 Nov 2026)
+
+His word, 9 Nov 2026: “Scene sounds”. Shown them on try-out 13 (The Floors' Sounds), by 21:10 Eastern his pick:
+“All good, hand over (Recommended)”; the loops: “They're fine (Recommended)”.
+
+Two takes of each one-shot (`_1`, `_2`), mp3, the same chain as the combat sounds, so RECORDED_GAIN holds. One
+background loop per floor (`bed_f<n>_loop.wav`) and two more loops (`furnace_loop.wav`, `pillar_fire_loop.wav`): WAV at
+32 kHz, as the fourth batch's loops, because mp3 adds silence at the ends and that clicks in a loop. 82 mp3 and 22 WAV,
+about 17 MB. Nothing is wired in. No name clashes with the earlier batches.
+
+### The backgrounds: one loop per floor, played under it, quiet
+Each is 10 s round (the furnace and the pillars 8 s) and comes round with no seam. They are mixed quiet (about 4 to 8 dB
+under the combat), so play them at full volume. One floor's loop at a time; cross-fade between floors.
+- Floors 1 to 5, the prison: `bed_f1` (still crypt air, slow drips, a far door), `bed_f2` (wind through the scaffold, a
+  rope creaking), `bed_f3` (chains clinking, the furnace rumbling through the walls), `bed_f4` (mine timbers creaking,
+  bones settling), `bed_f5` (a low wet pulse, six beats a loop, his fire hissing).
+- Floors 6 to 10, the wilds: `bed_f6` (the Quarry: wind, a chisel far off striking in threes, the crane creaking),
+  `bed_f7` (the Ledge Road: high wind, vultures far off), `bed_f8` (Echo Canyon: wind down the gorge, a rockfall echoing
+  once), `bed_f9` (the Pinewood: birds, wind in the pines), `bed_f10` (the Sunken Fen: frogs, insects, the bog).
+- Floors 11 to 15, the Hush: `bed_f11` (the Gate Ward: an empty square, wind, the heavy quiet), `bed_f12` (the Undercity:
+  running water), `bed_f13` (the Millrace: the wheel churning, the stamping mill thumping), `bed_f14` (the House of
+  Quiet: the ward's creaks, a coal stove ticking), `bed_f15` (the Great Library: a vast still room, pages stirring).
+- Floors 16 to 20, the court: `bed_f16` (the Swan Gardens: birdsong, a breeze in the roses, the lake), `bed_f17` (the
+  Masque: an empty ballroom, the big clock ticking once a second), `bed_f18` (the Glass Gallery: glass faintly ringing),
+  `bed_f19` (the Keep: wind on the battlements, banners snapping), `bed_f20` (the Quiet Tower: high wind, guttering
+  candles).
+- `furnace_loop`: the Stoker's furnace on floor 3, heard near it while it burns. `pillar_fire_loop`: the Colossus's
+  pillars burning on floor 10 (the siege magic, phase 3), heard near each while it burns.
+
+The Hush floors (11 to 15): your plan stands, everything there through the game's muffling filter, a little quieter
+(“Thin and muffled”, his pick, 7 Nov). These sounds are made full; the filter does the rest.
+
+### The moments: each made whole, to play once from the moment's frame 0
+Every part sits on the art chat's frame (30 a second, from its floor READMEs), so play the sound as the moment starts
+and it lands on the jolts. Named as the moments are in the code.
+- Floor 1: `f1_stone` (“dust and a falling stone”, 2.8 s: grit pouring, strikes at 27 and 51), `f1_rats` (“rats bolt”,
+  1.9 s: freezing at 3, bolting at 10), `f1_candles` (“a candle gutters out”, 2 s: the draught, out at 12, 17 and 22).
+- Floor 2: `f2_ravens` (“the ravens take flight”, 2.7 s: heads up at 5, the burst 9 to 13), `f2_bell` (“the bell
+  tolls”, 4.9 s: strikes at 49, 76, 100, then dying away), `f2_gibbet` (“the gibbet swings”, 3.1 s: jolts at 2 and 10,
+  the skull at 20, swinging on).
+- Floor 3: `f3_chains` (“the chains pull”, 2.2 s: hauls at 8 and 17, the rip at 26, slaps at 34 and 41), `f3_bars` (“the
+  bars shake”, 2.17 s: heaves at 11, 20, 30, a pin pinging away), `f3_ball` (“the ball falls”, 2.73 s: the lurch at 14,
+  the smash at 23, the bounce at 33, rolling away).
+- Floor 4: `f4_wall` (“the skull wall spills”, 5.6 s: bulging, jolts at 32, 43, 50, 61, at rest by 96), `f4_cart` (“the
+  cart runs”, 6.3 s: rolling from 22, the crash at 66, landing at 82, a wheel rolling away, flat by 147), `f4_bones` (“the
+  bones stir”, 5.7 s: the burst at 42, slams at 55 and 79, the upper arm landing at 106).
+- Floor 5: `f5_roof` (“the roof comes in”, 5.67 s: the props groaning, the snap at 44, the slab at 69, the last rock at
+  122), `f5_winch` (“the winch runs wild”, 4.3 s: the brake slipping at 26, the drum spinning, the far crash at 58, the
+  lever at 66), `f5_rift` (“the rift breathes”, 5 s: heaves at 36 and 70, roaring to 104, sunk by 134).
+- Floor 11: `f11_pigeons` (“the pigeons burst off a roof”, 2.5 s: up within 6 frames).
+- Floor 12: `f12_surge` (“the surge”, 3.8 s: the rattle, the flap flung up at 8, the torrent and the wave, the flap
+  clanking shut at 91).
+- Floor 13: `f13_whirl` (“the whirl of pages”, 5.6 s: the gust, the whirl up from 10, full by 26, falling apart at 74,
+  the sheets fluttering down).
+- Floor 14: `f14_screen` (“the screen falls”, 3.2 s: rocking, the crash at 56, settled by 70). Its README says it makes
+  no sound in the House of Quiet; his Hush rule is thin and muffled, so it has one, through the filter.
+- Floor 15: `f15_chandelier` (“the chandelier falls”, 4.3 s: the chain creaking, the link giving at 26, the snap at 52,
+  the crash at 63, still by 92).
+
+### The quest pieces, the traps and the rest: one-shots for the game to time
+- Floor 3, the Stoker's quest: `crank_gear` (the gear set into the crank), `crank_turn` (one turn of the crank: play it
+  for each turn), `furnace_out` (the furnace dying out as the crank is turned, 2.5 to 4 s), `gate_fire_out` (the fire
+  across the Chained One's gateway going out).
+- Floor 5, the mine shaft's cage: `cage_down` (4.3 s: it plunges at frame 32, slams onto its catches at 50, bounces at
+  60, the gate opening over the last 17 frames), `cage_up` (3.37 s: the gate slams at 10, it lurches at 30, gone by 64).
+  Frames as the art chat's floor 5 README; play from the ride's frame 0.
+- Floor 7: `ledge_crumble` (rock giving way under the hero), `eyrie_wind` (the eyrie's edge: the wind swelling as the
+  picture pans out over the drop, 3.6 s, at its height at 2.2 s).
+- Floor 8: `singing_stones` (a low hum as you pass one, about 2 to 2.6 s).
+- Floor 10: `bog_step` (stepping into the sucking bog).
+- Every stronghold, 6 to 10: `altar_word` (a word set into the altar of the words: the clunk, then the chime),
+  `seal_burn` (the door's seal burning away as the stronghold opens).
+- Every Hush floor: `bell_ring` (a hit at one of the bells, ringing out, 4 s; in place of the portal sound there),
+  `bell_muffled` (the Muffled Bell struck as the Hush starts: a dead clunk).
+- Floor 16: `nettle` (walking through a nettle bed). Floor 17: `clock_chime` (the ebony clock's chime as every dancer
+  stops dead, 4.2 s; in place of the placeholder echo). Floor 18: `mirror_crack` (a blow lands near a mirror),
+  `skylight` (the skylight trap falling). Floor 19: `portcullis` (slamming down across a hall, its chain falling first,
+  so the slam lands at about 0.5 s), `pitch_pour` (the murder hole's trap), `songbird` (the clockwork songbird singing
+  as the King dies and running down, 3.1 to 3.5 s).
+
+### Made to fit
+The takes came back 0.5 to 3 seconds long. Each loop is stitched from short stretches of its takes, its end running
+into its start; the Quarry's chisel, the Masque's clock and floor 5's pulse are laid in on a beat. Where a take didn't
+have what a moment needed, another take from this batch stands in: the ravens' wings are the pigeons' slowed down, the
+cart rolls on the iron ball's roll, the floor 1 stone strikes are the ledge's rock, the bells and the clock ring on a
+little longer than their takes did.
