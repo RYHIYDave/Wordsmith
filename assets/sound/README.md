@@ -146,3 +146,79 @@ on try-out 10, “All good, hand over (Recommended)”. For floor 10's new fight
   up out of the water: for every phase's tentacles as they burst up).
 - The old `eye_roar`, `eye_hurt`, `eye_death` (second batch) were made for his old look. His fight's other sounds (the
   slams, the waves, his hurt and his death) come once the art chat has drawn them.
+
+## Seventh batch: the rest of the Swamp Colossus's fight (the sound chat, 9 Nov 2026)
+
+His words, 9 Nov 2026: “Words, then the Colossus (Recommended)”. Shown them on try-out 12 (The Swamp Colossus's
+Fight), by 20:20 Eastern his pick: “All good, hand over (Recommended)”; the ward's hum, the art chat's suggestion:
+“Both (Recommended)”.
+
+Two takes of each (`_1`, `_2`). Same chain as the combat sounds, so RECORDED_GAIN holds. 80 mp3, about 2.8 MB. Nothing
+is wired in. Frames are the art chat's, 30 a second, from the start of each move (its posts of 8 Nov 14:57, 18:44 and
+22:29; your 22:50 for his waking). This covers your 13:20 list: the tentacle and eye slams, the waves, his hurt, his
+death's burst and melt, and the rest. Every name starts `colossus_`; none clashes with the fifth batch's.
+
+### His set moves, whole: each sound laid on its frame, to play as one sound from frame 0, like his entrance
+- `colossus_wake`: from the hero's first step on the stone. Still water to 1.2 s, bubbling to a boil by 4.2 s, his
+  eye's glow from 3.4 s, his two tentacles bursting up at 4.2 s. 5.8 s. (In place of `colossus_rise` at his waking.)
+- `colossus_bile`: from frame 0 of the bile arc. His gullet heaving, the retch at 27, THE SPLASH AT 49 on the hero's
+  spot, the pool hissing to 3 s after. 4.7 s.
+- `colossus_gaze`: from frame 0 of the gaze. His eye rearing and fixing, THE BEAM ON AT 27, burning across, guttering
+  out by 72, the stone sizzling. 3.4 s. (The phase 3 gaze has the same beats: the same sound.)
+- `colossus_eyeslam`: from frame 0 of the eye slam. Rearing, THE SLAM AT 28, the eye lying there, dragged back from 66.
+  3.4 s.
+- `colossus_slide`: from frame 0 of his slide. Three lunges (4, 42, 78), THE GRIP AT 103, the three pillars kindling
+  (122, 127, 132). 5.8 s. Then `colossus_ward_on` at 132, on its own.
+- `colossus_death`: from the killing blow landing. His eye seizing (0 to 35), THE BURST AT 36, the thrash, his grip
+  tearing loose (from 58), HIS LAST ROAR AT 64 (the entrance's roar, in it: play no separate `colossus_roar` there),
+  the melt from 96 with his teeth dropping in, the sink from 176, the water boiling and still by 316. 10.5 s.
+
+### Each sound on its own, for whatever the set moves don't cover
+- His waking: `colossus_boil` (3 s, building to a boil), `colossus_glow` (his eye's glow rising, a low swell).
+- The tentacles: `colossus_tentacle_coil` (drawn back before a slam), `colossus_tentacle_slam` (on the stone, in place
+  of the game's own slam), `colossus_tentacle_drag` (dragged back after), `colossus_water_slam` (a water slam),
+  `colossus_tentacle_death` (one killed: thrashing, sinking). Each tentacle bursting up stays `colossus_tentacle`.
+- The water: `colossus_wave` (a wave rolling over the stone, 2 to 2.5 s), `colossus_wave_crash` (two meeting).
+- His body: `colossus_burst` (him bursting up: his shovel's burst, in place of `colossus_pour` there),
+  `colossus_growl` (his jaws flexing), `colossus_snap` (his snap, in place of `colossus_slime` there),
+  `colossus_tentacle_scrape` (the shovel's hooks scraping the stone), `colossus_smash` (each piece his first shovel
+  smashes: the far back column at 99, the drums 105, the back mossy stones 110, the near ones 133, the column by his
+  end 137).
+- The bile and gaze, in parts: `colossus_retch` (the heaving, the retch at 0.9 s, frame 27; in place of
+  `colossus_slime` there), `colossus_bile_splash` (at 49), `colossus_bile_pool` (2.6 s), `colossus_gaze_charge`
+  (0 to 26), `colossus_gaze_beam` (from 27).
+- Phase 3: `colossus_lunge`, `colossus_grip`, `colossus_pillar_kindle`, `colossus_ward_on` (his ward humming on, a
+  swell into a low hum, 1.5 s), `colossus_ward_ping` (a blow glancing off it), `colossus_pillar_set` (a ward-stone
+  piece set: the chime, the fire guttering over 30 frames), `colossus_pillar_topple` (on the 12th blow, toppling into
+  the water), `colossus_ward_break` (24 frames after the last pillar goes out), `colossus_bolt` (a siege bolt: play it
+  at frame 33, as it strikes), `colossus_eye_slam` (the slam alone, at 28; in place of `colossus_slime` there),
+  `colossus_eye_hurt` (his eye struck: his hurt).
+- His death, in parts: `colossus_death_seize` (1.2 s), `colossus_death_burst`, `colossus_death_melt` (3.3 s),
+  `colossus_death_sink` (2.5 s).
+
+### Made to fit
+The boil, the bile pool and the melt came back short, so each is stitched from both takes to fill its time, as his
+rise was. The sink is played a quarter slower: longer and deeper. His snap's second take is one take's click over the
+other's crunch.
+
+### As wired (the Colossus sounds chat, 11 Nov 2026; branch `colossus-sounds`; docs/requests/colossus_fight_sounds.md)
+Played by game/act1_rules/colossus.ts (`sounds`, `wardSounds`, `died`) and, for his pillars and his hurt, game/game.ts; fetched
+ahead with floor 10 (game/sound_families.ts COLOSSUS_SOUND_NAMES: only those the game plays, 28 sounds, 56 files).
+- The six set moves, each from its frame 0 at its own pitch and length: `colossus_wake` as the hero first steps onto the stone,
+  `colossus_bile` and `colossus_gaze` as their warnings are laid (the gaze in phases 2 and 3), `colossus_eyeslam` as its warning
+  is laid, `colossus_slide` as his slide begins (frame 24 of the change), `colossus_death` as the killing blow lands.
+- On their own: `colossus_tentacle_coil` as a slam's warning is laid (on the stone or on the water), `colossus_tentacle_slam` at
+  28, `colossus_tentacle_drag` at 42, `colossus_water_slam` and `colossus_wave` at a water slam's 28, `colossus_wave_crash` as two
+  waves meet, `colossus_tentacle_death` as one is killed; `colossus_burst` (with `colossus_roar`) at his shovel's burst,
+  `colossus_tentacle_scrape` 8 frames into each hook, `colossus_growl` as he twitches and `colossus_snap` 7 frames after;
+  `colossus_bolt` as a bolt strikes; `colossus_ward_on` 12 frames into phase 3 (frame 132 of his slide), `colossus_ward_ping` as
+  a blow is turned (no more than one each 0.45 s), `colossus_ward_break` 4 frames after the last pillar goes out (the art's 4 to
+  28: the sound is that long); `colossus_pillar_set`, `colossus_pillar_topple`; `colossus_eye_hurt` as his eye takes a big blow.
+- Still played from the fifth batch: `colossus_entrance`, `colossus_tentacle` (as his tentacles come back up after a shovel),
+  `colossus_roar` (at his shovel's burst), `colossus_pour` (as his slide begins: `colossus_slide` has no water in it).
+- No longer played: `colossus_rise`, `colossus_slime`, the game's own slam in his fight, the thunder as his pillars blaze, the old
+  `eye_hurt` and `eye_death`. The old `eye_roar` still plays as he is first come upon.
+- NOT PLAYED YET: `colossus_smash` (the pieces his first shovel smashes are not on the stone in the game). The parts that are
+  inside a set move (`colossus_boil`, `_glow`, `_retch`, `_bile_splash`, `_bile_pool`, `_gaze_charge`, `_gaze_beam`,
+  `_eye_slam`, `_lunge`, `_grip`, `_pillar_kindle`, `_death_seize`, `_death_burst`, `_death_melt`, `_death_sink`) are in the
+  files and not fetched.

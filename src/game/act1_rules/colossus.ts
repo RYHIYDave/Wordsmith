@@ -31,6 +31,9 @@ export interface ColossusOn {
   hitAt?: number;
   wardHit?: number;
   wardOff?: number;
+  /** (His ward's sounds) The blow whose glancing off it was last heard (its `wardHit`); its breaking heard. */
+  wardHeard?: number;
+  wardBroke?: boolean;
 }
 export function colossusOn(m: Monster): ColossusOn {
   if (!m.a1) m.a1 = {};
@@ -112,8 +115,8 @@ function handle(R: BossRules, m: Monster, S: StoneAt, ev: readonly FightEvent[])
       default:
         break;
     }
-    // (HIS SOUNDS, 25.3.1: the sound chat's fifth batch, made for his entrance and fight, assets/sound/README.md; the slams the first
-    // batch's own until his are made)
+    // (HIS SOUNDS: the sound chat's fifth batch, made for his entrance, 25.3.1, and its seventh, the rest of his fight:
+    // assets/sound/README.md)
     sounds(g, f, e);
     if (e.t === 'slam' || e.t === 'smash') g.emit({ t: 'shake', amount: e.t === 'slam' ? 8 : 6 });
     if (e.t === 'burst') g.emit({ t: 'shake', amount: 9 });
@@ -131,20 +134,36 @@ function handle(R: BossRules, m: Monster, S: StoneAt, ev: readonly FightEvent[])
 }
 
 /**
- * HIS SOUNDS (the sound chat's fifth batch, 7 Nov 2026, “All good, hand over (Recommended)”; played from 25.3.1): the rumble building
- * as the water first stirs at his waking; a tentacle bursting up as each comes up (but in his entrance, whose one sound has its
- * three); his whole entrance as one sound from its first frame, as the sound chat made it; the water pouring off him as he slides
- * forward into phase 3; at his shovel his burst and roar; slime and spittle at his snap, his retch and his eye slammed down. The
- * slams of his tentacles and his eye, and his grip, the first batch's slam until his own are made. His last roar: `peril` below.
+ * HIS SOUNDS. The sound chat's fifth batch (7 Nov 2026, “All good, hand over (Recommended)”; played from 25.3.1): his whole entrance
+ * as one sound from its first frame; a tentacle bursting up; the water pouring off him; his roar. And its SEVENTH, THE REST OF HIS
+ * FIGHT (9 Nov 2026, shown them on its try-out 12, his pick: “All good, hand over (Recommended)”; assets/sound/README.md, "Seventh
+ * batch"), in place of the stand-ins of 25.3.1 (the game's own slam; `colossus_slime` at his snap, his retch and his eye slam;
+ * `colossus_rise` at his waking; `colossus_pour` at his shovel's burst; `colossus_roar` at his death's last roar).
+ *
+ * HIS SET MOVES, EACH ONE SOUND FROM ITS FRAME 0, at its own pitch and length (`exact`), so that everything in it lands on the art's
+ * frames, as his entrance does: his waking, from the hero's first step onto the stone (the still water, the boil, his eye's glow,
+ * his two tentacles bursting up at 4.2 s: they are not heard again on their own); the bile arc (the retch at 27, the splash at
+ * 49, the pool hissing); the gaze, phase 2's and phase 3's (the beam on at 27); the eye slam (the slam at 28, dragged back from
+ * 66); his slide (three lunges, his grip at 103, the three pillars kindling at 122, 127 and 132; the water pouring off him, the
+ * fifth batch's, still under it: his slide's own sound has none); his death, from the killing blow (`died` below: his last roar
+ * is in it, at 64).
+ *
+ * EACH SOUND ON ITS OWN, where no set move covers it. A tentacle: coiled back as its warning is laid (a slam on the stone or on
+ * the water), its slam on the stone, dragged back off it (the fight's `drag`), its slam on the water and the wave rolling from
+ * it, the two waves crashing, one killed. His shovel: his burst and his roar; each hook scraping along the stone (the fight's
+ * `scrape`); his jaws flexing as he twitches, and his snap. Phase 3: a siege bolt as it strikes; his ward's hum, a blow glancing
+ * off it and its breaking (`tick` below); a piece set into a pillar and a pillar toppled (game.ts); his eye struck, his hurt
+ * (game.ts, by a boss's rule: a big blow, now and then). Where one has not come yet, the game's own slam stands in as before.
  * (Fetched ahead as his floor is come into: game/sound_families.ts COLOSSUS_SOUND_NAMES.)
  */
 function sounds(g: Game, f: ColossusFight, e: FightEvent): void {
   switch (e.t) {
-    case 'stir':
-      g.rec('colossus_rise', 1);
+    case 'phase':
+      if (e.ph === 1) g.rec('colossus_wake', 1, undefined, true);
       break;
     case 'armUp':
-      if (!(f.mode === 'change' && f.ph === 1)) g.rec('colossus_tentacle', 0.9);
+      // (phase 1's are in his waking's sound, the three of his entrance in its: only those that come back up with him after a shovel)
+      if (f.ph !== 1) g.rec('colossus_tentacle', 0.9);
       break;
     case 'change':
       // (at its own pitch and length: timed by the sound chat to the art's frames, the roar on 117)
@@ -152,28 +171,79 @@ function sounds(g: Game, f: ColossusFight, e: FightEvent): void {
       break;
     case 'slide':
       g.rec('colossus_pour', 1);
+      g.rec('colossus_slide', 1, undefined, true);
       break;
-    case 'burst':
-      g.rec('colossus_pour', 0.9);
-      g.rec('colossus_roar', 1);
-      break;
-    case 'snap':
-    case 'retch':
-      g.rec('colossus_slime', 1);
-      break;
-    case 'eyeSlam':
-      g.sfx('slam', 1);
-      g.rec('colossus_slime', 0.9);
+    // ---- his tentacles and the water
+    case 'warn':
+    case 'smashWarn':
+      g.rec('colossus_tentacle_coil', 0.8);
       break;
     case 'slam':
-    case 'smash':
-      g.sfx('slam', 0.8);
+      g.rec('colossus_tentacle_slam', 1, 'slam');
       break;
-    case 'grip':
-      g.sfx('slam', 0.9);
+    case 'drag':
+      g.rec('colossus_tentacle_drag', 0.7);
+      break;
+    case 'smash':
+      g.rec('colossus_water_slam', 1, 'slam');
+      g.rec('colossus_wave', 0.9);
+      break;
+    case 'crash':
+      g.rec('colossus_wave_crash', 1);
+      break;
+    case 'armDies':
+      g.rec('colossus_tentacle_death', 0.9);
+      break;
+    // ---- his shovel
+    case 'burst':
+      g.rec('colossus_burst', 1);
+      g.rec('colossus_roar', 1);
+      break;
+    case 'scrape':
+      g.rec('colossus_tentacle_scrape', 0.8);
+      break;
+    case 'twitch':
+      g.rec('colossus_growl', 0.9);
+      break;
+    case 'snap':
+      g.rec('colossus_snap', 1);
+      break;
+    // ---- his body's and his eye's attacks, each whole from its warning
+    case 'bileWarn':
+      g.rec('colossus_bile', 1, undefined, true);
+      break;
+    case 'gazeWarn':
+      g.rec('colossus_gaze', 1, undefined, true);
+      break;
+    case 'eyeWarn':
+      g.rec('colossus_eyeslam', 1, undefined, true);
+      break;
+    // ---- the siege's bolts (three fall at once: heard as one)
+    case 'rain':
+      g.rec('colossus_bolt', 0.8);
       break;
     default:
       break;
+  }
+}
+
+/**
+ * HIS WARD'S SOUNDS (phase 3, the seventh batch), as it is drawn (render/act1_fx/colossus_fx.ts drawColossusWard): its hum coming on
+ * `EYE3.ward` into the phase, as his last pillar kindles (frame 132 of his slide); a blow glancing off it, no more than one each
+ * `ping` seconds; its breaking, from `breaks` seconds after the last pillar goes out (the art's 4 to 28 frames: the sound is that
+ * long).
+ */
+const WARD_SOUND = { ping: 0.45, breaks: 4 / 30 } as const;
+function wardSounds(g: Game, f: ColossusFight, me: ColossusOn, dt: number): void {
+  if (f.ph !== 3) return;
+  if (f.mode === 'fight' && f.shielded && f.phT >= EYE3.ward && f.phT - dt < EYE3.ward) g.rec('colossus_ward_on', 1);
+  if (me.wardHit !== undefined && me.wardHit !== me.wardHeard && (me.wardHeard === undefined || me.wardHit - me.wardHeard >= WARD_SOUND.ping)) {
+    me.wardHeard = me.wardHit;
+    g.rec('colossus_ward_ping', 0.8);
+  }
+  if (me.wardOff !== undefined && !me.wardBroke && f.time - me.wardOff >= WARD_SOUND.breaks) {
+    me.wardBroke = true;
+    g.rec('colossus_ward_break', 1);
   }
 }
 
@@ -256,6 +326,7 @@ export const COLOSSUS_RULES: Act1Rules = {
     fp.x = h.x;
     fp.y = h.y;
     handle(R, m, S, f.step(dt, { u: p.u, v: p.v, dodging: h.invuln > 0 }));
+    wardSounds(g, f, me, dt);
     // (his tentacles' life together, his bar in phases 1 and 2)
     if (f.ph < 3 || f.mode !== 'fight') {
       let left = 0;
@@ -294,6 +365,9 @@ export const COLOSSUS_RULES: Act1Rules = {
       return;
     }
     if (me.fight) me.fight.bodyKilled();
+    // (HIS DEATH'S SOUND, the seventh batch: whole from the killing blow, at its own pitch and length: his eye seizing, the burst at 36,
+    // his last roar at 64, the melt from 96, the sink from 176; in place of the old Eye's death, game/sound_families.ts bossSound)
+    if (me.fight) R.g.rec('colossus_death', 1, undefined, true);
     // (his death plays out on the peril his fight is drawn by, its own clock from the killing blow: render/act1_fx/colossus.ts)
     const fp = R.g.perils.find((q) => q.kind === 'act1' && q.a1 === 'eye:fight');
     if (fp) {
@@ -316,8 +390,7 @@ export const COLOSSUS_RULES: Act1Rules = {
     p.y = g.hero.y;
     const s = p.t - p.c;
     for (const [f, amount] of DEATH.shakes) if (s >= f / 30 && s - dt < f / 30 + 1e-9) g.emit({ t: 'shake', amount });
-    // (his last roar, the sound chat's: the art's “The entrance's colossus_roar may serve the last roar if it fits”)
-    if (s >= DEATH.roar / 30 && s - dt < DEATH.roar / 30 + 1e-9) g.rec('colossus_roar', 1);
+    // (his last roar is in his death's own sound, begun as he is killed: `died` above)
     if (s >= DEATH.long) p.dur = p.t;
   },
 };

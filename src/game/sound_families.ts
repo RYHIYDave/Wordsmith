@@ -93,9 +93,41 @@ export const ENEMY_GAPS = { aggro: 1.2, hurt: 0.7, atk: 0.25, bossHurt: 2.5 } as
 /** A hurt is heard on a big hit only: a critical, a blow of this share of its life or more, or one in `one` of the others. */
 export const HURT_BIG = { share: 0.25, one: 6 } as const;
 
+/**
+ * The Swamp Colossus's own sounds, played at his fight's beats (game/act1_rules/colossus.ts `sounds`; his ward's, his pillars' and his
+ * hurt: there and game.ts). THE FIFTH BATCH'S that are still played (his entrance whole, a tentacle bursting up, the water pouring
+ * off him, his roar), and THE SEVENTH BATCH'S (assets/sound/README.md, "Seventh batch"; his word in the sound chat, 9 Nov 2026: “All
+ * good, hand over (Recommended)”): his set moves whole (his waking, the bile arc, the gaze, the eye slam, his slide, his death), and
+ * each sound on its own where no set move covers it. Only those the game plays are fetched: the parts that are inside a set move's
+ * own sound (the boil, the glow, the retch, the bile's splash and pool, the gaze's charge and beam, the eye's slam alone, the lunge,
+ * the grip, a pillar kindling, his death's four parts) are not, nor `colossus_smash` (the pieces his first shovel smashes are not on
+ * the stone in the game yet), nor the fifth batch's `colossus_rise` and `colossus_slime`, which these take the place of.
+ */
+export const COLOSSUS_SOUND_NAMES = [
+  'colossus_tentacle', 'colossus_entrance', 'colossus_pour', 'colossus_roar',
+  // (his set moves, each one sound from its frame 0)
+  'colossus_wake', 'colossus_bile', 'colossus_gaze', 'colossus_eyeslam', 'colossus_slide', 'colossus_death',
+  // (his tentacles and the water)
+  'colossus_tentacle_coil', 'colossus_tentacle_slam', 'colossus_tentacle_drag', 'colossus_tentacle_death', 'colossus_water_slam', 'colossus_wave', 'colossus_wave_crash',
+  // (his shovel)
+  'colossus_burst', 'colossus_tentacle_scrape', 'colossus_growl', 'colossus_snap',
+  // (phase 3: his ward, his pillars, the siege's bolts, his eye struck)
+  'colossus_ward_on', 'colossus_ward_ping', 'colossus_ward_break', 'colossus_pillar_set', 'colossus_pillar_topple', 'colossus_bolt', 'colossus_eye_hurt',
+] as const;
+
+/**
+ * A boss's own roar, hurt or death (its sound's name), if his kind has one. THE SWAMP COLOSSUS (floor 10's boss while COLOSSUS is
+ * on): the old Eye's hurt and death were made for his old look (assets/sound/README.md, "Fifth batch"); his eye struck is
+ * `colossus_eye_hurt`, and his death is his fight's own sound, played whole from the killing blow (game/act1_rules/colossus.ts):
+ * 'none' says so, nothing to be played in its place. His roar as he is first come upon is as it was.
+ */
+export function bossSound(kind: MonsterKind, what: 'roar' | 'hurt' | 'death'): string | undefined {
+  if (kind === 'eye' && COLOSSUS.on && what !== 'roar') return what === 'hurt' ? 'colossus_eye_hurt' : 'none';
+  const b = BOSS_VOICE[kind];
+  return b ? `${b}_${what}` : undefined;
+}
+
 /** The sounds a floor's enemies will want (to fetch as it is come into): their attacks, voices and the bosses' sounds. */
-/** The Swamp Colossus's own sounds, played at his fight's beats (game/act1_rules/colossus.ts `sounds`). */
-export const COLOSSUS_SOUND_NAMES = ['colossus_rise', 'colossus_tentacle', 'colossus_entrance', 'colossus_pour', 'colossus_roar', 'colossus_slime'] as const;
 export function soundsOf(kinds: Iterable<MonsterKind>): string[] {
   const out = new Set<string>();
   for (const k of kinds) {
