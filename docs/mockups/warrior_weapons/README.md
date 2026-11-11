@@ -594,3 +594,18 @@ strikes are (a longer arc), never over his helm. In the film the enemies stand o
   second hold while the axe is out.
 - Checked (`tests/warrior_weapons.test.ts` 19): the appearing axe's frames from all eight sides, his helm seen, its light and the
   glint the friend's cyan, nothing of the enemy's; from the fifth frame the Cleave's own pictures.
+
+# His words on step 3b's films (11 Nov 2026), and what they ask for (step 3c)
+
+Shown `pictures/hammer_moves.mp4` (the Earthquake a full spin, then down) and `pictures/axe_tap_flying.mp4` (at fbfe2c60) and
+asked “Are the new Earthquake (hammer_moves.mp4, about 15 seconds in) and the tap while the thrown axe is out
+(axe_tap_flying.mp4) right?”, he answered by 09:41: “Earthquake still not right”. Asked “What's off about the Warrior's
+Earthquake? Pick any that fit, or tell me in your own words.” (offered: the ground should really quake; the spin is too small
+and quick; the finish still looks like the Smash), he picked only: “The ground should really quake (Recommended)” (offered as:
+right now the floor only gets the game's thin dotted ring; I'd draw cracks running out, the floor slabs heaving up in a ring,
+and dust). Read as: THE SWING STAYS (the full spin, then down); THE GROUND IS TO BE DRAWN, in place of the game's thin ring.
+He did not fault the tap while the axe is out.
+
+At 09:41 he wrote: “Tap should have a small knockback and high stun buildup/chance”. Read as the hammer's tap, the SMASH (he had
+asked “What does the hammer tap actually do?”): what it hits is pushed back a little, and it builds stun fast or has a high
+chance to stun. A RULE FOR THE MAIN CHAT, passed on with the hand-over; no new pictures asked of art for it.
