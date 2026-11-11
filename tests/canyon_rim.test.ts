@@ -4,7 +4,9 @@
 //   - on, nothing painted stands over the walkable floor (his rule): every pixel shows the kind of ground it did;
 //   - the top of a near cliff, cut away, has its pale caprock rim along the floor's edge;
 //   - light from the upper left (his rulebook): the walls whose faces are in shade throw their shadow down the screen to the right
-//     across the bed, and the bed out in the open is as it was; the near cliff's shadow (his yes of 8 Nov 2026) is kept.
+//     across the bed, and the bed out in the open is as it was; the near cliff's shadow (his yes of 8 Nov 2026) is kept;
+//   - a shadow's edge is the wall's own line (his words, 11 Nov 2026, to the first pictures: “The shadow is spikey when the wall
+//     is not”): the near cliff's shadow reaches as far up from the cliff's edge in every column, no teeth.
 //   run: tsx --test tests/canyon_rim.test.ts
 
 // @ts-ignore
@@ -112,12 +114,44 @@ test('on, a wall whose face is in shade throws its shadow down the screen to the
   }
 });
 
-test('on, the near cliff\'s shadow across the bed is kept as he said yes to it', () => {
+test('on, the near cliff\'s shadow across the bed is kept as deep and as dark as he said yes to it', () => {
   CANYON_RIM.on = true;
-  assert.deepEqual(CANYON_LOOK.nearShadow, { reach: 2.1, dark: [0.5, 0.3] });
+  assert.deepEqual(CANYON_LOOK.nearShadow, { reach: 2.1, dark: [0.5, 0.3], even: true });
   CANYON_RIM.on = false;
   // half a tile in from the near cliff along x = 30: as dark on as off
   const [px, py] = pixelOf(29.3, 18);
   assert.equal(kindAt(ON, px, py), TK.Floor);
   assert.deepEqual(at(ON, px, py), at(OFF, px, py));
+});
+
+test('on, the near cliff\'s shadow has no teeth: it reaches as far up from the cliff\'s edge in every column (off, it wanders)', () => {
+  // the same ground with no near shadow at all, to tell where the shadow lies
+  CANYON_RIM.near = false;
+  const BARE = paint(true);
+  CANYON_RIM.near = true;
+  const reachOf = (p: TerrainPiece, px: number): number => {
+    // the near edge down this column (floor over the cut top), and how far up from it the bed is darker than bare
+    let edge = -1;
+    for (let py = Y0 + HH - 2; py > Y0; py--) {
+      const below = kindAt(p, px, py + 1);
+      if (kindAt(p, px, py) === TK.Floor && (below === TK.Top || below === TK.Cut)) {
+        edge = py;
+        break;
+      }
+    }
+    assert.ok(edge > 0, `a near edge down column ${px}`);
+    let n = 0;
+    while (kindAt(p, px, edge - n) === TK.Floor && at(p, px, edge - n).join() !== at(BARE, px, edge - n).join()) n++;
+    return n;
+  };
+  // along the near cliff at x = 30, clear of its corners and of the shaded wall's shadow
+  const on: number[] = [];
+  const off: number[] = [];
+  for (let px = 200; px <= 440; px += 2) {
+    on.push(reachOf(ON, px));
+    off.push(reachOf(OFF, px));
+  }
+  assert.equal(Math.min(...on), 67, `2.1 tiles up the picture: ${Math.min(...on)}`);
+  assert.equal(Math.max(...on), 67, `and no further anywhere: ${Math.max(...on)}`);
+  assert.ok(Math.max(...off) - Math.min(...off) >= 12, `as the game has it, it wanders: ${Math.min(...off)} to ${Math.max(...off)}`);
 });

@@ -31,11 +31,15 @@ The model was rendered here for six places on floor 8 (seed 9), each beside the 
    own edge on the picture. It is the canyon's own caprock (`C_CAP`, its cracks), nothing new painted; 1.7 times as wide as a far
    rim, since a near edge has no face under it to set it off (`CANYON_RIM.rim`).
 2. THE WALLS' CAST SHADOW (`shade`, src/art/terrain.ts): the walls in shade throw their shadow along the world's x (down the
-   screen to the right), 2.3 tiles long (it wanders by an eighth), three tenths dark, half that along its last quarter tile:
-   crisp steps, as the near cliff's shadow is (`CANYON_RIM.shade`). A wall whose face is lit throws none.
-3. KEPT AS IT IS: the near cliff's shadow across the bed (his yes of 8 Nov, 25.2.10), the tops' olive and the lighter bed
-   (`CANYON_APART`), every wall, the bed, the tops, and everything that stands on them. No texture is repainted, so the level of
-   the art is the game's own (his measure, 9 Nov: no finer, no rougher).
+   screen to the right), 2.3 tiles long, three tenths dark, half that along its last quarter tile: crisp steps, as the near
+   cliff's shadow is (`CANYON_RIM.shade`). A wall whose face is lit throws none.
+3. A SHADOW'S EDGE IS THE WALL'S OWN LINE (his words to the first pictures, below). The near cliff's shadow reached a different
+   way up each column (its reach wandered from three quarters to five quarters, a column at a time), which gave its edge teeth
+   where the cliff's own edge is smooth. Now it reaches the same 2.1 tiles everywhere (`nearShadow.even`), so its edge is the
+   cliff's edge moved up the picture. The cast shadow is the same length all along too, thrown by the bed's edge as it is painted.
+4. KEPT AS IT IS: how deep and how dark the near cliff's shadow is (his yes of 8 Nov, 25.2.10), the tops' olive and the lighter
+   bed (`CANYON_APART`), every wall, the bed, the tops, and everything that stands on them. No texture is repainted, so the level
+   of the art is the game's own (his measure, 9 Nov: no finer, no rougher).
 
 `shade` can also darken the bed where the rock shuts out the sky (`dark`, `at`, `wide`). That was tried in place of the near
 cliff's shadow and looked flatter at the near edges, so it is set to nothing (`dark: 0`) and the near shadow is kept
@@ -50,8 +54,13 @@ Nothing painted stands over the walkable floor: every pixel shows the kind of gr
 - across_now.png, across_repaint.png: the game at his phone's size (852 by 393, three to a point) where the canyon runs across
   the screen; along_now.png, along_repaint.png: where it runs up the screen.
 - model_across.png: the 3D model of the first place, under the game's picture of it.
+- shadow_edge.png: the shadow he circled, the first repaint beside this one.
 
-His answer: not yet given (shown 11 Nov 2026).
+HIS WORDS, 11 Nov 2026. Shown edge.png, wide.png, across_now.png and across_repaint.png (the first repaint: the rim and the cast
+shadow, the near shadow's reach still wandering), asked "Is this right?": "Closer, not there yet". Asked what still looks off:
+"The shadow is spikey when the wall is not", and by 07:40 across_repaint.png sent back with the near cliff's shadow circled in
+red, its toothed edge above the smooth rim. Read as: a shadow's edge should run as the wall that throws it runs. Done (3 above);
+the pictures here are of that. His answer to it: not yet given.
 
 ## How to see it
 
@@ -70,14 +79,16 @@ with it on (two runs each way). The field, worked out once a floor: 24 and 60 ms
 
 ## Checked
 
-`tsc --noEmit` clean. tests/canyon_rim.test.ts 5 of 5 (off, the look is the game's; on, every pixel the kind it was; the rim
+`tsc --noEmit` clean. tests/canyon_rim.test.ts 6 of 6 (off, the look is the game's; on, every pixel the kind it was; the rim
 along the near edges; the shaded wall's shadow three tenths dark, the lit wall's none, the open bed as it was; the near shadow
-kept). tests/canyon.test.ts 9 of 9, tests/terrain.test.ts 10 of 10, tests/f8f9.test.ts 7 of 7. The game played to the six places
+as deep and as dark; its edge with no teeth: 67 picture pixels up from the cliff's edge in every column). tests/canyon.test.ts 9 of 9, tests/terrain.test.ts 10 of 10, tests/f8f9.test.ts 7 of 7. The game played to the six places
 and to a stronghold's door on floor 8 with the switch on: no errors.
 
 ## For the main chat
 
 - Merge `art/canyon-repaint`; with his yes, set `CANYON_RIM.on` to true. Nothing else is needed: the look reads it
   (`cutRim`, `shade`, `nearShadow`), and the painter's worker paints by the same look.
-- `cutRim` and `shade` are new, optional fields of `TerrainLook`; no other floor's look has them, so no other floor changes.
-- Floor 6 (the Quarry) is painted by the same painter and could take the same two things. Not asked.
+- `cutRim`, `shade` and `nearShadow.even` are new and optional; no other floor's look has them, so no other floor changes.
+- THE SAME TEETH ARE ON EVERY OTHER FLOOR WITH A NEAR SHADOW (the Quarry, the Ledge Road, the city's floors: each look's
+  `nearShadow` wanders the same way). `even: true` on a look takes them out. Not asked of him yet.
+- Floor 6 (the Quarry) is painted by the same painter and could take the rim and the cast shadow too. Not asked.

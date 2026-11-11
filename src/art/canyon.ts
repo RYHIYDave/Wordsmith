@@ -455,6 +455,8 @@ export const CANYON_LOOK: TerrainLook = {
   get nearShadow() {
     // (CANYON_RIM: the walls' shade as a 3D model lights it, in its place)
     if (CANYON_RIM.on && !CANYON_RIM.near) return undefined;
+    // (CANYON_RIM: its edge the cliff's own line, no teeth: his “The shadow is spikey when the wall is not”, 11 Nov 2026)
+    if (CANYON_RIM.on) return { reach: 2.1, dark: [0.5, 0.3] as const, even: true };
     return CANYON_APART.on ? { reach: 2.1, dark: [0.5, 0.3] as const } : { reach: 1.6, dark: [0.38, 0.24] as const };
   },
   // (F8F9_FIX, off: his “I should be able to see the walls of the canyons when points of the plateau jut out”: every far wall's face
