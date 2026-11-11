@@ -341,7 +341,8 @@ export function shadowInto(k: Kit): Built {
     return add(c, mul(way, d));
   };
   for (let i = 0; i < 8; i++) {
-    const t = 0.15 + i * 0.37;
+    // (from behind its shoulders down: none up by its head, where they would be taken for more eyes)
+    const t = 0.62 + i * 0.31;
     const back = norm(sub(fr.spine(t + 0.2), fr.spine(Math.max(0, t - 0.2))));
     const outw = norm(cross([0, 1, 0], back));
     sc.ell(ember, 'embers', add(skinFrom(fr.spine(t), outw), mul(outw, 1.4)), [mul(back, 1.6), [0, 3.8 - i * 0.22, 0], mul(outw, 1.9)], 0.05, { tag: 'ember' });
