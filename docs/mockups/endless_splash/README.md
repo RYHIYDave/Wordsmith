@@ -6,7 +6,22 @@ Asked for by the main chat on the chat board, 8 Nov 2026, 08:40: “PLEASE DRAW 
 
 ## His word on it
 
-Shown him on 11 Nov 2026, about 08:05 (Eastern): `pictures/endless_splash.png` and `pictures/endless_splash.mp4`. **His answer: not yet given.** Nothing here goes live before his yes.
+Shown him on 11 Nov 2026, about 08:05 (Eastern): `pictures/endless_splash.png` and `pictures/endless_splash.mp4`, and asked whether it was right. **His answer, by 08:17: “Gimme 10 options”.** Read as with the start screen's ten (21 Oct, `src/dev/title_options.ts`): ten stills, each a different direction, painted small and not yet moving, each with a line of what would move in it; the one he picks is painted full size and given its moment. The hall of gates is the first of the ten, as it is painted.
+
+**THE TEN** (`src/dev/endless_options.ts`; `options/option_01.png` to `option_10.png`, sent him about 08:20; **his pick: not yet given**):
+
+1. THE HALL OF GATES (the one painted here).
+2. THE STAIR WITH NO BOTTOM: straight down a round shaft, ring under ring of every floor's stone, a stair winding down its wall, the enemy's fire at the bottom.
+3. THE ROAD GOES ON: night, the start screen's hills, a road of flags from the waypoint through gate after gate to a pass in the mountains, the enemy's light behind it like a wrong dawn.
+4. THE TOWER OF EVERY FLOOR: a tower with no top, each storey another floor's stone, up through the clouds.
+5. EVERY FLOOR AT ONCE: the game's own view from above, room after room of every floor to every edge, the waypoint in the middle, eyes in the far rooms.
+6. THE SERPENT THAT EATS ITS TAIL: a ring of old stone, a serpent swallowing itself, the word inside it.
+7. THE BOOK WITH NO LAST PAGE: the book he fell asleep over, its pages lifting off and winding away into the dark, each a floor.
+8. THE HORDE WITHOUT END: the dark full of the enemy's eyes, row behind row to the horizon; one blade alight before them.
+9. THE WHEEL OF FLOORS: a great stone wheel, a floor to every spoke, a pointer over it.
+10. THE SHAFT THROUGH THE WORLD: the ground cut open from the side, floor under floor, the mine's cage going down through them all.
+
+If he picks another than the first, the hall of gates stays on this branch behind its switch, off, and the picked one is painted in its place (the same switch, the same call, the game's own letters). Nothing here goes live before his yes.
 
 ## The pictures
 
@@ -58,6 +73,7 @@ Checked against Animations 1 (as big, wild, kinetic and weighty as it will go) a
 - `tools/scenarios/endless_splash_look.mjs`: the splash in the game itself, the switch on for that page only, then off again.
 - `tools/endless_splash_film.mjs` and `src/dev/endless_splash_page.ts`: the film and stills (a page of its own with the same drawing, any moment asked for by its time).
 - `tools/endless_splash_pics.ts`: the picture as PNGs without a browser.
+- `src/dev/endless_options.ts`, `src/dev/endless_options_page.ts`, `tools/endless_options.mjs`: the ten sketches (concept art, not in the game) and their pictures.
 
 ## Checks, 11 Nov 2026
 
