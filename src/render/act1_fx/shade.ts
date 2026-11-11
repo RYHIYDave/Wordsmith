@@ -6,10 +6,11 @@ import { toSprite } from '../../art/kit';
 import { drawSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { RIME_PERIL } from '../../game/action_f2';
+import { keptPictures } from './kept';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = new Map<number, Sprite>();
+const MADE = keptPictures<number, Sprite>(true);
 function frame(k: number): Sprite {
   let s = MADE.get(k);
   if (!s) MADE.set(k, (s = toSprite(rimePainted(k / FPS), null, RIME_CANVAS.ax, RIME_CANVAS.ay)));

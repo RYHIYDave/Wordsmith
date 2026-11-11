@@ -15,6 +15,7 @@ import { drawLights } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { CHANTER, wardOf } from '../../game/act1_rules/chanter';
 import type { Monster, Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import { thrownShadow } from './thrown';
 import type { Act1Fx, Act1FxCtx } from './types';
 
@@ -29,8 +30,8 @@ let bolts: Sprite[] | null = null;
 // ITS CHAIN LIGHTNING (CHANTER_LIGHTNING: art/action_f6_cult.ts, his yes, 2 Nov 2026; 'chanter:chain'): the ring crackling where it
 // will strike, from its aim (ringPainted, under the figures); the lightning from its pages to the ring as it strikes, crackling a
 // new way each frame (chainBoltPainted, over them); the static round the hero it struck (staticPainted, over him), as long as it lasts.
-const RINGS = new Map<number, Sprite>();
-const STATICS = new Map<number, Sprite>();
+const RINGS = keptPictures<number, Sprite>(true);
+const STATICS = keptPictures<number, Sprite>(true);
 function chainRing(p: Peril): Sprite {
   const k = Math.floor(p.t * 30);
   let s = RINGS.get(k);

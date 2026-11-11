@@ -940,11 +940,46 @@ export function sfxNamed(name: string, vol = 1, or?: Sfx, exact = false): void {
   }
 }
 
+/**
+ * THE SOUNDS OF PLACES LEFT BEHIND ARE LET GO (11 Nov 2026; his words: “lag and freezing issues after playing a few levels”).
+ * Every sound fetched was kept, decoded, for as long as the game was open: each floor's enemies' and boss's on top of the last's
+ * (measured on 25.3.1, floors 1 to 10 in one sitting: 7 MB of decoded sound in town, 56 MB by floor 10, where a game begun on
+ * floor 10 holds 22). Now, as a place's own sounds are fetched (`warmNamed`: its kinds', as it is come into), those fetched so
+ * for places further back than the one just left are let go, unless this place has them too: so going back and forth between
+ * two places keeps both. One let go is fetched again when its place is come into again, or the first time it is asked for
+ * (its pack's bytes are kept: only the decoding is done again). The game's own sounds, the hero's voice, the steps, the loops
+ * and the world's sounds are never let go.
+ */
+const warmedEver = new Set<string>();
+let warmedLast = new Set<string>();
+/** How many sounds have been let go so (for the tests and the playtests). */
+let soundsLetGo = 0;
+export function soundsForgotten(): number {
+  return soundsLetGo;
+}
+
 /** Fetch these sounds of the second batch by name (a floor's enemies', as it is come into); false before the sound has started. */
 export function warmNamed(names: readonly string[]): boolean {
   const c = ctx;
   if (!c || !RECORDED.on) return false;
-  for (const n of names) for (const k of [1, 2]) fetchRecorded(c, `${n}_${k}.mp3`, false);
+  const files = new Set<string>();
+  for (const n of names) for (const k of [1, 2]) files.add(`${n}_${k}.mp3`);
+  for (const f of warmedEver) {
+    if (files.has(f) || warmedLast.has(f)) continue;
+    const v = recorded.get(f);
+    // (still on its way: let go the next time)
+    if (v === null) continue;
+    if (v) {
+      recorded.delete(f);
+      soundsLetGo++;
+    }
+    warmedEver.delete(f);
+  }
+  warmedLast = files;
+  for (const f of files) {
+    warmedEver.add(f);
+    fetchRecorded(c, f, false);
+  }
   return true;
 }
 

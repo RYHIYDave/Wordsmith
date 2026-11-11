@@ -10,10 +10,11 @@ import { drawSprite, flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { RAIN_PERIL } from '../../game/action_f1';
 import type { Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>(true);
 type Layer = 'floor' | 'behind' | 'before' | 'rise';
 /** One frame of the rain (k frames from the loose), seen from in front or behind, made the first time it is asked for. */
 function frame(what: Layer, k: number, back: boolean, flip: boolean): Sprite {

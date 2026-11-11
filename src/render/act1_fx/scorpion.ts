@@ -10,13 +10,14 @@ import { GLOB_CANVAS, POOL_CANVAS, globShadowPainted, makeGlobArt, poolPainted }
 import { toSprite } from '../../art/kit';
 import { drawLights, drawSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
+import { keptPictures } from './kept';
 import { liveFrom } from './live';
 
 // ITS ACID SPIT (SCORPION_SPIT: art/action_f6_canyon.ts, his yes, 2 Nov 2026; 'scorpion:glob'): the glob in flight, quivering, over its
 // shadow; where it will come down, the splash's reach marked, filling; the splash and the pool of acid lying ('floor'), the splash and
 // its fumes ('air', by halves), a frame at a time.
 let GLOB: Sprite[] | null = null;
-const SHADOW = new Map<number, Sprite>();
+const SHADOW = keptPictures<number, Sprite>(true);
 import type { Act1Fx } from './types';
 
 export const FX: Act1Fx | null = {

@@ -13,10 +13,11 @@ import { BARS_PERIL, barRows } from '../../game/action_f1';
 import type { Game } from '../../game/game';
 import type { Peril } from '../../game/state';
 import { T_FLOOR } from '../../game/types';
+import { keptPictures } from './kept';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>(true);
 /** One tile of a row, k frames from the shadows' first (`-LOCKDOWN.warn`), its shadow or its bars (`wear`: which of four), made the first time asked for. */
 function frame(what: 'shadow' | 'bars', way: Way, k: number, wear: number): Sprite {
   const key = `${what}:${way}:${k}:${wear}`;

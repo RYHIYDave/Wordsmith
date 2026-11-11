@@ -8,11 +8,12 @@ import { HS_GRIP, HS_SWOOP } from '../../art/hush_shapes_moves';
 import { toSprite } from '../../art/kit';
 import type { Sprite } from '../../engine/px';
 import { HUSH_TUNE, gripPoint } from '../../game/act1_rules/hshape';
+import { keptPictures } from './kept';
 import { drawFanWarn, warnK } from './garden_warn';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>(true);
 function coils(k: number, half: 'far' | 'near'): Sprite {
   const key = `${k}:${half}`;
   let s = MADE.get(key);

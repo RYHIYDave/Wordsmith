@@ -13,11 +13,12 @@ import { drawSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { CO_CRACK, CO_RING_PERIL } from '../../game/bosses';
 import type { Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
 const WAYS = 16;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>(true);
 type Layer = 'floor' | 'behind' | 'before';
 /** The way of the sixteen round nearest (fx, fy). */
 const wayOf = (fx: number, fy: number): number => ((Math.round((Math.atan2(fy, fx) / (2 * Math.PI)) * WAYS) % WAYS) + WAYS) % WAYS;

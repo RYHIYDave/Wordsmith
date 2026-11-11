@@ -25,6 +25,7 @@ import type { Px, Sprite } from '../../engine/px';
 import { HUSH_MOVE, KING_TUNE, armsOut, decreeNow, facesNow } from '../../game/act1_rules/gking';
 import { backView, beside, flipped } from '../../game/facing';
 import type { Monster, Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx, Act1FxCtx } from './types';
 
@@ -49,7 +50,7 @@ function dot(g: CanvasRenderingContext2D, x: number, y: number, c: string, w = 1
 // ---------------------------------------------------------------------------------------------
 // PICTURES, made the first time each is wanted
 
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>();
 function made(key: string, flip: boolean, make: () => Sprite): Sprite {
   const k = `${key}:${flip ? 1 : 0}`;
   let s = MADE.get(k);

@@ -17,6 +17,7 @@ import { drawSprite, flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { GURNEY_PERIL, gurneyDown } from '../../game/act1_rules/orderly';
 import { backView, flipped } from '../../game/facing';
+import { keptPictures } from './kept';
 import { liveFrom } from './live';
 import type { Act1FxCtx } from './types';
 import type { Act1Fx } from './types';
@@ -43,7 +44,7 @@ const OLD: Act1Fx = {
 // gurney standing before him, careering down the lane, crashed (painted ahead: art/films.ts things:orderly), seen as he faces, turned
 // over as he is; where it crashes, its ring of dust ('floor') and what is flung ('air', by halves). The mallet's mark as before.
 const THINGS = 'things:orderly';
-const own = new Map<string, Sprite>();
+const own = keptPictures<string, Sprite>();
 function gurney(c: Act1FxCtx, view: 'front' | 'back', flip: boolean, i: number): Sprite {
   const key = `gurney:${view}`;
   const made = c.film ? c.film<ThingsFilm>(THINGS) : null;

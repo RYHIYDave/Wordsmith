@@ -11,6 +11,12 @@ const COLOSSUS_SHOW = 0.6;
 import { CRANK_TURN, FIRE_WALL, FURNACE_OUT, FURNACE_ROAR, STOKER_ROOM } from '../art/stoker_room';
 import { STOKER_ON } from '../art/stoker';
 import { CRANK_TIMES } from '../game/quests15';
+import { forgetMade as forget_floor1 } from '../art/floor1';
+import { forgetMade as forget_floor2 } from '../art/floor2';
+import { forgetMade as forget_floor3 } from '../art/floor3';
+import { forgetMade as forget_floor4 } from '../art/floor4';
+import { forgetMade as forget_floor5 } from '../art/floor5';
+import { forgetMade as forget_lair } from '../art/lair';
 import { forgetMade as forget_tomb } from '../art/tomb';
 import { forgetMade as forget_tomb_gate } from '../art/tomb_gate';
 import { forgetMade as forget_grounds } from '../art/grounds';
@@ -61,7 +67,7 @@ import type { Facing } from '../art/townsfolk';
 import type { Townsfolk } from '../art/townsfolk';
 import { drawText, textWidth } from '../engine/font';
 import { LEDGE_H, WALL_H } from '../engine/iso';
-import { drawAura, drawGlow, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
+import { drawAura, drawGlow, drawLights, flipSprite, reapRetired, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
 import { WARLOCK_TUNE } from '../game/warlock';
@@ -564,11 +570,12 @@ export class Renderer {
     if (!L.floor.yard) this.yard.forget();
     // (and the art's own made copies: each floor's look and its gate; the town's hall and the yard's, by their own views' forget)
     const groups: [LookView, (() => void)[]][] = [
-      [this.tomb, [forget_tomb, forget_tomb_gate]],
-      [this.grounds, [forget_grounds]],
-      [this.prison, [forget_prison, forget_prison_gate, forget_stoker_room]],
-      [this.chapel, [forget_chapel, forget_chapel_gate]],
-      [this.lair, [forget_lair_temple, forget_lair_gate]],
+      // (and, since 11 Nov 2026, the pieces and gates each look is made from: art/floor1.ts to floor5.ts)
+      [this.tomb, [forget_tomb, forget_tomb_gate, forget_floor1]],
+      [this.grounds, [forget_grounds, forget_floor2]],
+      [this.prison, [forget_prison, forget_prison_gate, forget_stoker_room, forget_floor3]],
+      [this.chapel, [forget_chapel, forget_chapel_gate, forget_floor4]],
+      [this.lair, [forget_lair_temple, forget_lair_gate, forget_floor5, forget_lair]],
     ];
     for (const [v, fns] of groups) if (v !== keep) for (const fn of fns) fn();
   }
@@ -2602,7 +2609,7 @@ export class Renderer {
     else if (anim === 'attack') s = (heavy && set.heavy ? set.heavy : set.attack)[Math.max(0, Math.min(2, attackFrame))];
     else if (anim === 'walk') s = set.walk[Math.floor(animT * (set.walkFps ?? 8)) % set.walk.length];
     else s = set.idle[Math.floor(animT * (set.idleFps ?? 2)) % set.idle.length];
-    return left ? flipSprite(s) : s;
+    return left ? flipSprite(s, true) : s;
   }
 
   /** Which of the figure's two attack animations goes with the attack the hero is making (see attackClip). */
@@ -2801,7 +2808,7 @@ export class Renderer {
   private monsterSprite(m: Monster): Sprite {
     const art = this.monsterArt(m);
     const more = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves;
-    const flip = (s: Sprite): Sprite => (m.fx - m.fy < 0 ? flipSprite(s) : s);
+    const flip = (s: Sprite): Sprite => (m.fx - m.fy < 0 ? flipSprite(s, true) : s);
     // (ACT 1: one of the descent's own whose picture is its kind's to say now: up in the air, latched on, rising out of the water)
     const a1 = act1Fx(m.kind);
     if (a1 && a1.sprite) {
@@ -2822,7 +2829,7 @@ export class Renderer {
     const moves = movesOf(m);
     if (moves && m.move !== undefined && m.move >= 0 && m.move < moves.length && (m.anim === 'attack' || m.state === 'charge')) {
       const s = moveFrame(m.fx + m.fy < -0.2 ? art.back : art.front, m, moves[m.move]);
-      if (s) return m.fx - m.fy < 0 ? flipSprite(s) : s;
+      if (s) return m.fx - m.fy < 0 ? flipSprite(s, true) : s;
     }
     if (m.anim === 'attack') {
       const set = m.fx + m.fy < -0.2 ? art.back : art.front;
@@ -2831,7 +2838,7 @@ export class Renderer {
       if (clip && clip.hit !== undefined) {
         const whole = volley ? TUNE.wardenVolleyWindup : MONSTERS[m.kind].windup;
         const s = attackFrame(clip, monsterAttackAge(m.state === 'windup', m.t, whole), whole);
-        return m.fx - m.fy < 0 ? flipSprite(s) : s;
+        return m.fx - m.fy < 0 ? flipSprite(s, true) : s;
       }
     }
     if (bare && m.anim !== 'attack') return flip(clipFrame(m.anim === 'walk' ? bare.walkBare : bare.standBare, m.animT));
@@ -2860,7 +2867,7 @@ export class Renderer {
       LEFT_TO_PAINTER.on = left;
     }
     // (`since`: how long it has lain, in seconds)
-    return { sp: f.flip ? flipSprite(sp) : sp, lying: i >= last, since: f.t - last / clip.fps };
+    return { sp: f.flip ? flipSprite(sp, true) : sp, lying: i >= last, since: f.t - last / clip.fps };
   }
 
   /**
@@ -2883,6 +2890,8 @@ export class Renderer {
   draw(g: CanvasRenderingContext2D, W: number, H: number, game: Game, fx: Fx, t: number, pace = 1): Cam {
     // (heavy frames not yet painted are shown as their nearest painted ones, for the side painter to paint: art/kit.ts HEAVY)
     HEAVY.defer = PAINT_DEFER.on;
+    // (the silhouettes and big mirror images pushed out of their budgets a moment ago, given back: engine/px.ts RETIRE_MS)
+    reapRetired();
     try {
       return this.drawWorld(g, W, H, game, fx, t, pace);
     } finally {
@@ -3460,14 +3469,14 @@ export class Renderer {
       // (THE FIRST FIVE FLOORS: one the Fleshmancer raises: its bones snatched up off a heap and slammed together: render/bossfx.ts)
       if (r.way === 'gather') {
         const gs = this.bossFx.gathering(art, m.fx + m.fy < -0.2, r.age);
-        if (gs) this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(gs) : gs, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
+        if (gs) this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(gs, true) : gs, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
         continue;
       }
       // (AM_ACTION: a bone mite pulling itself together where its skull burst: its own pictures of it, art/amalgam_mites.ts)
       const c = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves?.[r.way === 'form' ? 'form' : 'crawl'];
       if (!c) continue;
       const sp = clipFrame(c, r.age);
-      this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(sp) : sp, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
+      this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(sp, true) : sp, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
     }
     // (THE FIRST FIVE FLOORS: what the bosses send out that stands among the figures: an axe, a hook, a ball in flight, arms and hands out of the floor, skulls on the wing)
     this.bossFx.standing(this.floorAt, game, (d, sp, x, y, alpha = 1) => {

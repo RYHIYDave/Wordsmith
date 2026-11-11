@@ -9,10 +9,11 @@ import { drawSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { SIGIL_PERIL } from '../../game/action_f2';
 import type { Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>(true);
 /** One frame of the sigil, k frames from its first (SIGIL.delay before the eruption), made the first time it is asked for. */
 function frame(what: 'floor' | 'behind' | 'before', k: number): Sprite {
   const key = `${what}:${k}`;

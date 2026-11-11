@@ -17,11 +17,12 @@ import { flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { CLOUD_LONG, MOTH_TUNE, artToWorld, beatOf, bookOf, mothPhase, perched, swarmFrom } from '../../game/act1_rules/moth';
 import { clipFrame } from '../figure';
+import { keptPictures } from './kept';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>();
 function made(key: string, back: boolean, flip: boolean, make: () => Painted, ax: number = FX_CANVAS.ax, ay: number = FX_CANVAS.ay): Sprite {
   const k = `${key}:${back ? 1 : 0}:${flip ? 1 : 0}`;
   let s = MADE.get(k);

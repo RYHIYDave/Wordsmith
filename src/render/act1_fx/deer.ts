@@ -24,13 +24,14 @@ import { CHARGE_PERIL, DEER, hedgeTo } from '../../game/act1_rules/deer';
 import { TUNE } from '../../game/defs';
 import { backView, flipped } from '../../game/facing';
 import type { Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import type { Act1Fx, Act1FxCtx } from './types';
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 const THINGS = 'things:deer';
 
 /** Clump frames painted here before the painter's are in (by view, clump, layer and frame), and turned over. */
-const own = new Map<string, Sprite>();
+const own = keptPictures<string, Sprite>();
 function clump(c: Act1FxCtx, view: GameView, flip: boolean, j: number, i: number, layer: 'air' | 'floor'): Sprite {
   const key = `${layer}:${view}:${j}`;
   const made = c.film ? c.film<ThingsFilm>(THINGS) : null;

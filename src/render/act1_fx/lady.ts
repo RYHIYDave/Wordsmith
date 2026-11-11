@@ -9,11 +9,12 @@ import { toSprite } from '../../art/kit';
 import { flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { LADY_TUNE, flashHalf } from '../../game/act1_rules/lady';
+import { keptPictures } from './kept';
 import { drawFanWarn, warnK } from './garden_warn';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = new Map<string, Sprite>();
+const MADE = keptPictures<string, Sprite>(true);
 function light(k: number, back: boolean, flip: boolean): Sprite {
   const key = `${k}:${back ? 1 : 0}:${flip ? 1 : 0}`;
   let s = MADE.get(key);

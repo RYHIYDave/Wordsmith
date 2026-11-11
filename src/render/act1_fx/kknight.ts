@@ -14,6 +14,7 @@ import { hash } from '../../art/kit';
 import { KNIGHT_TUNE } from '../../game/act1_rules/kknight';
 import { beside } from '../../game/facing';
 import type { Monster, Peril } from '../../game/state';
+import { keptPictures } from './kept';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx, Act1FxCtx } from './types';
 import { BANNER, BANNER_AT, BANNER_HIT, KNIGHT_BANNER, RALLY_CANVAS, RALLY_GOLD, STANDING_CANVAS, bannerPainted, rallyPainted } from '../../art/action_f16_knight';
@@ -138,7 +139,7 @@ function warnings(c: Act1FxCtx, m: Monster): void {
 // THE BANNER STANDING, its cloth stirring (painted ahead: art/films.ts things:kknight), shuddering as a blow lands on it, cut down
 // (bannerPainted, as it comes), seen as the knight who planted it faced, turned over as he was; its splinters (rallyPainted, 'air').
 const THINGS = 'things:kknight';
-const own = new Map<string, Sprite>();
+const own = keptPictures<string, Sprite>();
 function bannerFrame(c: Act1FxCtx, view: 'front' | 'back', flip: boolean, i: number): Sprite {
   const key = `banner:${view}`;
   const made = c.film ? c.film<ThingsFilm>(THINGS) : null;

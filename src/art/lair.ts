@@ -74,6 +74,12 @@ export const LAIR: Theme = {
 let ground: GroundArt | null = null;
 let props: DungeonProps | null = null;
 let way: WaypointArt | null = null;
+/** Its floor, its things and its waypoint let go (floor 5 left: render.ts forgetLooks), made again if wanted (11 Nov 2026: kept for good, they were held on every floor after the fifth). */
+export function forgetMade(): void {
+  ground = null;
+  props = null;
+  way = null;
+}
 
 /** The lair's floor and walls (as art/crypt.ts's cryptGround(k) for the four). */
 export function lairGround(): GroundArt {
