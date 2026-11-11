@@ -17,7 +17,7 @@ CYAN = (40, 220, 240)
 TEXT = (205, 210, 238)
 NEW = [
     ('pact', 'A. THE PACT MADE FLESH', ['His demon arm grown over all of him:', 'old-blood hide, black horn armour,', 'great crescent horns.']),
-    ('pale', 'B. THE PALE CRAWLER', ['Starved and bone-white, no eyes,', 'a mouth from ear to ear, a crown of', 'black thorns, arms dipped in soot.']),
+    ('pale', 'B. THE PALE CRAWLER', ['Bone-white, no eyes, a mouth from', 'ear to ear, a crown of black thorns,', 'arms and legs dipped in soot.']),
     ('mane', 'C. THE BURNING MANE', ['Dusk-violet, four eyes, sabre fangs,', 'a mane of his cyan hellfire down', 'its neck, back and tail.']),
 ]
 load = lambda n: Image.open(f'{src}/{n}.png').convert('RGBA')
@@ -44,7 +44,7 @@ def three(pose, head, name, S=4, lines=True):
     sheet.convert('RGB').save(f'{out}/{name}.png')
 
 
-three('up', 'UP ON TWO LEGS: STANDING AND FIGHTING', 'new_demons_on_two_legs')
+three('up', "A WEREWOLF'S FRAME, UP ON TWO LEGS: STANDING AND FIGHTING", 'new_demons_on_two_legs')
 three('run', 'DOWN ON ALL FOURS: RUNNING', 'new_demons_running', lines=False)
 
 # ---- at the game's own size, beside the game's demon, the Warlock and the Brawler (each on one floor line)
@@ -58,8 +58,8 @@ put(load('brawler_front'), 18, 60, 110)
 put(load('warlock_front'), 84, 132, 300)
 put(load('demon_today_front'), 180, 276, 820)
 for i, (k, _, _) in enumerate(NEW):
-    put(load(f'new_{k}_up_front'), 180, 276, 1340 + i * 470)
+    put(load(f'new_{k}_up_front'), 180, 276, 1270 + i * 430)
 d.text((40, 20), "AT THE GAME'S OWN SIZE", font=f1, fill=CYAN)
-for x, t in [(40, 'Brawler'), (230, 'Warlock'), (560, 'his demon today'), (1300, 'A'), (1770, 'B'), (2240, 'C')]:
+for x, t in [(40, 'Brawler'), (230, 'Warlock'), (560, 'his demon today'), (1230, 'A'), (1660, 'B'), (2090, 'C')]:
     d.text((x, floor + 124), t, font=f3, fill=TEXT)
 sh.convert('RGB').save(f'{out}/new_demons_at_game_size.png')

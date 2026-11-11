@@ -58,7 +58,7 @@ bigger head, its face a few bold marks, lifted toward the eye so it is seen from
 - **A. THE PACT MADE FLESH**: his demon arm grown over all of him. Old-blood hide (his arm's red, duller); black horn grown
   as armour down its back and over its shoulders, blades of bone off it; two great crescent horns (his hood's two, grown); a
   brow of black horn in a V over burning eyes; its jaws wide, long teeth; the pact's cracks of cyan light.
-- **B. THE PALE CRAWLER**: starved and bone-white, all elbows and backbone; its arms from the elbow down and its shanks black
+- **B. THE PALE CRAWLER**: bone-white, all elbows and backbone; its arms from the elbow down and its shanks black
   as if dipped in soot; no eyes; a mouth cut back from ear to ear full of needles; a crown of black thorns; a long bony tail.
 - **C. THE BURNING MANE**: between a lion and an ape, the dusk violet of his coat, barred darker; four eyes in a dark mask;
   two sabre fangs; short horns swept back; a mane of his cyan hellfire round its neck, down its back and at the tip of its
@@ -77,13 +77,24 @@ it drops to all fours, its run as it is. So its stand and its claw rakes are to 
 to be settled with him as each is made, the run's start and stop dropping it down and rearing it up). Wings: tried on the one
 he picks, shown only if they earn their place.
 
-SO EACH IS NOW DRAWN BOTH WAYS: up on two legs (`DEMON_UP`, a new stance on the same bones: crouched on its goat legs, hunched
-high, its arms out wide and low, its claws open and turned up with his fire in each), and running on all fours (the game's
-run, 0.6 s into its 0.7 s round, stretched longest in its leap).
+SO EACH WAS DRAWN BOTH WAYS: up on two legs (`DEMON_UP`, a new stance on the same bones, its claws open with his fire in
+each), and running on all fours (the game's run, 0.6 s into its 0.7 s round, stretched longest in its leap). Shown him so,
+asked which. HIS WORDS INSTEAD, 11 Nov:
+
+- **“Nah man picture a werewolf frame, not a werewolf, but frame.  Big upper body, long arms big head, smaller torso”**
+
+Read as, and told him so: the three were built too evenly, thick all the way down. THE BODY BUILT AGAIN AS A WEREWOLF'S
+(`WOLF_B`: the game's demon's bones with the shoulders wider and the ribs bigger, the waist and hips smaller, the arms a
+little longer, the head a size bigger and further forward; `wolfFrame`: a barrel of ribs and slabs of breast, a hump of
+shoulder, its flanks drawn in steeply to a narrow waist and small hips, long arms, lean bent legs; `openClaw`: a hand of long
+hooked talons held open; every head 1.2 times as big). Its stance up on two legs a werewolf's: hunched high, its head thrust
+out, its long arms hanging forward, its claws open at its knees, burning. The same joints, so the game's run still fits it
+(the pictures). SHOWN HIM WEARING THE THREE LOOKS, to judge the build first and the look second. (B on this frame is no
+longer starved: bone-white, its limbs thin and its belly sunk in under great ribs.)
 
 Pictures (`pictures/`, each wider than tall for his phone held sideways):
-- `new_demons_on_two_legs.png`: the three up on two legs, four times as big (2308 x 890).
-- `new_demons_running.png`: the three running on all fours, four times as big (2008 x 806).
+- `new_demons_on_two_legs.png`: the three on the werewolf's frame, up on two legs, four times as big (2044 x 950).
+- `new_demons_running.png`: the three running on all fours, four times as big (2044 x 854).
 - `new_demons_at_game_size.png`: the Brawler, the Warlock, his demon today and the three up on two legs, on one floor line,
   three screen pixels a picture pixel (2480 x 880).
 - `demon_today_beside_the_brawler.png`: the demon as it is, from in front and from behind, beside the Brawler and the Warlock.
