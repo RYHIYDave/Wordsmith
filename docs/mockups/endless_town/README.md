@@ -277,8 +277,8 @@ shaft is new. The five pictures are made again under the same names; this sectio
   THE PRISON'S (blue-grey), THE CANYON'S (red-brown). The fen's below them is only just seen before the dark takes it. Each
   storey has a ledge at its head, lit, with a seam of shadow under it, and five courses of its own blocks.
 - **THE STAIR, EACH STEP ITS OWN.** It leaves the brink by the way down and goes leftward round the far wall, down a storey a
-  flight. Each flight is FOUR STEPS, then a landing, and so on down and round until the dark has it: twelve steps and three
-  landings are seen. Every step is a block of its own: a lit tread with its nosing lightest, a dark riser down to the step
+  flight. Each flight is FOUR STEPS, then a landing, and so on down and round until the dark has it: three flights (twelve steps)
+  and three landings are seen, the lowest flight dim and partly behind the portal's landing. Every step is a block of its own: a lit tread with its nosing lightest, a dark riser down to the step
   below, a seam at its end, and its shadow on the wall under it. The flight reads as one stair going down, not as posts.
 - **A DOORWAY ON EACH LANDING**, in the wall of its storey: a dark arch ringed with its stones, its sill lit; the prison's
   barred. **ITS TORCH** stands on its iron bracket on the wall beside the doorway, a little up the stair, its flame one of the
