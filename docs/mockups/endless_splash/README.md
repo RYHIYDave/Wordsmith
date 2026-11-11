@@ -8,7 +8,7 @@ Asked for by the main chat on the chat board, 8 Nov 2026, 08:40: “PLEASE DRAW 
 
 Shown him on 11 Nov 2026, about 08:05 (Eastern): `pictures/endless_splash.png` and `pictures/endless_splash.mp4`, and asked whether it was right. **His answer, by 08:17: “Gimme 10 options”.** Read as with the start screen's ten (21 Oct, `src/dev/title_options.ts`): ten stills, each a different direction, painted small and not yet moving, each with a line of what would move in it; the one he picks is painted full size and given its moment. The hall of gates is the first of the ten, as it is painted.
 
-**THE TEN** (`src/dev/endless_options.ts`; `options/option_01.png` to `option_10.png`, sent him about 08:20). **HIS PICK, by 08:30: “2 The stair with no bottom”.** It is painted full size with its moment (below, "The stair with no bottom"): `pictures/endless_stair.png` and `pictures/endless_stair.mp4`, shown him about 08:40. His answer: “Close, change something”; asked what, his words, by 08:46: **“The steps don’t really read completely as steps”**. So every step is now a flat tread at its own depth (26 to a turn, each seen a little smaller than the one above it, so the stair's edges step in toward the middle), dark where the step above throws its shadow on it, light along its nosing. The pictures here are the stair painted so, shown him about 08:50. **His yes to it: not yet given.**
+**THE TEN** (`src/dev/endless_options.ts`; `options/option_01.png` to `option_10.png`, sent him about 08:20). **HIS PICK, by 08:30: “2 The stair with no bottom”.** It is painted full size with its moment (below, "The stair with no bottom"): `pictures/endless_stair.png` and `pictures/endless_stair.mp4`, shown him about 08:40. His answer: “Close, change something”; asked what, his words, by 08:46: **“The steps don’t really read completely as steps”**. So every step is now a flat tread at its own depth (26 to a turn, each seen a little smaller than the one above it, so the stair's edges step in toward the middle), dark where the step above throws its shadow on it, light along its nosing. The pictures here are the stair painted so, shown him about 08:48 and asked whether the steps read as steps now and the splash is right. **HIS YES, by 08:50: “Yes, hand it to main (Recommended)”.** Handed to the main chat on the chat board and in the queue (item `bring-in-endless-splash`).
 
 1. THE HALL OF GATES (the one painted here).
 2. THE STAIR WITH NO BOTTOM: straight down a round shaft, ring under ring of every floor's stone, a stair winding down its wall, the enemy's fire at the bottom.
@@ -21,7 +21,7 @@ Shown him on 11 Nov 2026, about 08:05 (Eastern): `pictures/endless_splash.png` a
 9. THE WHEEL OF FLOORS: a great stone wheel, a floor to every spoke, a pointer over it.
 10. THE SHAFT THROUGH THE WORLD: the ground cut open from the side, floor under floor, the mine's cage going down through them all.
 
-The hall of gates stays on this branch, painted, behind the same switch (`picture: 'hall'`), not shown. Nothing here goes live before his yes.
+The hall of gates stays on this branch, painted, behind the same switch (`picture: 'hall'`), not shown: he has not said yes to it. What has his yes is the stair.
 
 ## The stair with no bottom (his pick)
 
@@ -70,7 +70,7 @@ Checked against Animations 1 (as big, wild, kinetic and weighty as it will go) a
 ## For the main chat
 
 - **Nothing in main.ts changes.** `ui/endless_fanfare.ts` `drawEndlessSplash(g, t, w, h)` sends the same call to `ui/endless_splash_draw.ts` `drawEndlessSplashArt` while the switch is on. The switch is reached as `ENDLESS_FANFARE.painted` (so `dbg.fanfare.painted.on = true`). The card after the splash is as it was.
-- **To put it live** (on his yes): `ENDLESS_SPLASH.on = true` in src/art/endless_splash.ts.
+- **To put it live** (his yes is given, for the stair): `ENDLESS_SPLASH.on = true` in src/art/endless_splash.ts; `picture` is already `'stair'`. Art he has approved here needs no pictures again from you (his word of 7 Nov, 15:03).
 - **The picture is painted the first time it is wanted: about 0.9 s for the stair** (931 ms in the film page's browser on this machine, 685 ms for the hall; not measured on his phone). Left alone, that wait falls in the dark as the splash comes up. Better: call `readyEndlessSplash()` ahead, under a loading screen (as the last floor loads, say). `releaseEndlessSplash()` lets go of it after (some 5 MB: one canvas 1440 x 720 and small pieces). Or bake the picture to a file, since files may go into the game: `paintEndlessStair()` and `paintEndlessSplash()` are plain numbers (tools/endless_splash_pics.ts writes the hall as a PNG).
 - **`ENDLESS_FANFARE.skip` is 0.8 s, and the word lands at 1.08 s**: a tap between the two goes on to the card before the word has landed. Yours and his to settle (1.2 s would let it land). Not changed here.
 - Every moment is drawn from `t` alone: nothing is kept between frames.

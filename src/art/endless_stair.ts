@@ -4,6 +4,8 @@
 // HIS PICK. Shown the hall of gates and asked whether it was right, his words, 11 Nov 2026, by 08:17 (Eastern): “Gimme 10
 // options”. Shown ten sketches (dev/endless_options.ts) and asked which to paint full size and bring to life, by 08:30: “2 The
 // stair with no bottom”. This is that sketch painted at the game's fine grain, for every screen, with its moment.
+// HIS YES to it painted so, its steps made to read as steps (treadAt), by 08:50: “Yes, hand it to main (Recommended)”. The switch
+// is still off here: the main chat turns it on.
 //
 // THE PICTURE: we stand on the brink of a round shaft and look straight down it. Storey under storey, each of another floor's
 // own stone (the town's at the top, then the prison's, the canyon's, the fen's, the High City's, the quarry's, and round again),
