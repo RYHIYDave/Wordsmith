@@ -1,4 +1,4 @@
-# THE TOWNSFOLK REDRAWN, AT THIRTY A SECOND (PICTURES FIRST; NOT IN THE GAME)
+# THE TOWNSFOLK REDRAWN, AT THIRTY A SECOND (WITH HIS YES; NOT IN THE GAME UNTIL THE MAIN CHAT PUTS IT THERE)
 
 Branch `art/townsfolk`, from `main` at 797f2e4 (25.3.1). The Wordsmith Queue's item `redraw-townsfolk-30fps`, pulled by the
 townsfolk chat on 11 Nov 2026. Everything is behind one switch, `TOWNSFOLK3` (`src/art/townsfolk3.ts`), OFF: with it off the
@@ -25,6 +25,9 @@ game is exactly as it was.
   shadow with two points of light as the game has him today, D the beard under a feathered turban) and asked “Which head
   for the mystic (mystic_head_takes_close.png, A to D)?”: “C, shadowed with glowing eyes”. So HIS HEAD IS TAKE C
   (`MYSTIC_HEAD.take` 3), under the wound turban. The other takes stay in the code, unused.
+- **HIS YES, 11 Nov 2026.** Shown the mystic with head C and the film made again, asked “With head C on the mystic, are
+  all four townsfolk good to hand to the main chat (mystic_now_and_redrawn.png and the new film)?”: “Yes, hand them to
+  main (Recommended)”. So ALL FOUR ARE FINAL, looks and moves: the main chat brings the branch in.
 
 ## What is drawn
 
@@ -94,7 +97,7 @@ python3 tools/townsfolk3_film.py <frames> docs/mockups/townsfolk/pictures/townsf
 pixels. The scenario lights the wordsmith's ring, `__dbg.quest3({ dark: false })`: a new hero's town has it dark, his runes
 cold and his work waiting.)
 
-## For the main chat: how it comes in (ONLY ON HIS YES)
+## For the main chat: how it comes in (HIS YES IS GIVEN: above)
 
 - `src/art/townsfolk3.ts`: `TOWNSFOLK3 = { on: false }`; `makeTownsfolk3()` gives the town its four (a `Townsman` each, as
   before); `makeSmithDark3()` the wordsmith while his ring is dark. `TOWNSFOLK3_HEAVY` leaves their frames to the side
@@ -116,6 +119,5 @@ cold and his work waiting.)
 
 ## Not settled
 
-- His yes to the looks and to how they move.
 - Whether the old kit rigs go once these are live (`art/townsfolk.ts` armourer, mystic, stranger; `art/smith3.ts`'s painter):
   the title screen and the opening have their own pictures of these people, untouched here.
