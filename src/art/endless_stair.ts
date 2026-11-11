@@ -40,9 +40,12 @@ const DZ = 3.6;
 const N = 12;
 const ZB = Z0 + DZ * N;
 /** The stair: how far it stands out from the wall, how thick, how far down it goes in a turn; where it begins. */
-const WS = 0.6;
+const WS = 0.72;
 const TH = 0.3;
 const PITCH = DZ * 1.5;
+/** How many steps to a turn: each a flat tread at its own depth, so each is seen a little smaller than the one above it. */
+const STEPS = 26;
+const RISE = PITCH / STEPS;
 const TH_A = Math.PI - 0.2;
 const Z_A = 4.6;
 /** The landing at the stair's head, and the waypoint on it. */
@@ -180,24 +183,37 @@ function wallAt(th: number, z: number, r: number, px: number, py: number): C {
   return rim(air(mixc(lit(base, band(lc, px, py), band(lt0 * (under ? 0.45 : 1), px, py), 0), mixc(base, 0, 0.35), sky), z, px, py), band(pinkAt(z), px, py));
 }
 
-/** A tread of the stair at angle th, depth zs, rho out from the shaft's middle; `turns`: how far round from its head. */
-function treadAt(th: number, zs: number, rho: number, turns: number, r: number, px: number, py: number): C {
+/**
+ * A tread of the stair: step `idx` from its head, `f` of the way along it (0 where it comes out from under the step above, 1 at
+ * its own nosing), at depth zs, rho out from the shaft's middle. HIS WORD on the first painting of it, 11 Nov 2026, by 08:46:
+ * “The steps don’t really read completely as steps”. So every step is a flat tread at its own depth (its edges step in toward
+ * the middle from one to the next), dark where the step above throws its shadow on it, light along its nosing.
+ */
+function treadAt(th: number, zs: number, rho: number, idx: number, f: number, r: number, px: number, py: number): C {
   const k = storeyOf(zs);
   const t = ORDER[k];
   const q = zs / F;
-  const step = (turns * 44) / TAU;
-  const idx = Math.floor(step);
-  let tone = (idx & 1 ? 3 : 2) - (rnd(idx, 9, 91) < 0.18 ? 1 : 0);
-  if (q < 0.035) {
-    if (Math.floor(((turns - 1 / r) * 44) / TAU) !== idx) tone = -1;
-    else if (rho < RW - WS + q * 1.7) tone = 3;
+  // (how many picture pixels a step is along the stair)
+  const arc = (TAU / STEPS) * r;
+  let tone: number;
+  let nose = false;
+  if (arc < 5) tone = idx & 1 ? 3 : 1;
+  else if (f * arc < 1.05) tone = -1;
+  else if (f < 0.2) tone = 0;
+  else if (f < 0.42) tone = 1;
+  else if ((1 - f) * arc < 2.2) {
+    tone = 3;
+    nose = true;
+  } else tone = 2 + (f > 0.72 ? 1 : 0) + wear(px, py);
+  if (tone >= 0 && arc >= 5) {
+    if (rho < RW - WS + q * 1.7) tone = 3;
     else if (rho > RW - q * 1.6) tone = 0;
-    else tone += wear(px, py);
   }
-  const base = tone < 0 ? mixc(t.flag[0], 0, 0.5) : t.stone[Math.max(0, Math.min(3, tone))];
+  const base = tone < 0 ? mixc(t.flag[0], 0, 0.6) : t.stone[Math.max(0, Math.min(3, tone))];
   const lc = wayLight(rho * Math.cos(th), rho * Math.sin(th), zs, 0, 0, -1) + 0.12;
-  // (what faces up has the sky's light on it, all the way down: the stair stands off the wall by it)
-  return rim(air(mixc(lit(base, band(lc, px, py), band(torchLight(th, zs, k) * 0.9, px, py), 0), hx('#8a94c8'), tone < 0 ? 0 : 0.2), zs * 0.72, px, py), band(pinkAt(zs) * 0.35, px, py));
+  // (what faces up has the sky's light on it, all the way down: the stair stands off the wall by it; most on each nosing)
+  const sky = tone < 0 ? 0 : nose ? 0.42 : tone >= 2 ? 0.22 : 0.06;
+  return rim(air(mixc(lit(base, band(lc, px, py), band(torchLight(th, zs, k) * 0.9, px, py), 0), hx('#9aa4d8'), sky), zs * 0.72, px, py), band(pinkAt(zs) * 0.35, px, py));
 }
 
 /** The landing at the stair's head and the waypoint on it, seen from straight above; null where it is not. */
@@ -289,12 +305,13 @@ function hitAt(px: number, py: number): Hit {
   // THE STAIR, turn under turn
   const tn = turnOf(th);
   for (let n = 0; n < 8; n++) {
-    const turns = tn + TAU * n;
-    const zs = Z_A + (turns * PITCH) / TAU;
+    const stepF = ((tn + TAU * n) * STEPS) / TAU;
+    const idx = Math.floor(stepF);
+    const zs = Z_A + idx * RISE;
     if (zs > ZB - 0.5) break;
     const rho = (r * zs) / F;
     if (rho > RW) break;
-    if (rho >= RW - WS) return { c: treadAt(th, zs, rho, turns, r, px, py), stage: storeyOf(zs) };
+    if (rho >= RW - WS) return { c: treadAt(th, zs, rho, idx, stepF - idx, r, px, py), stage: storeyOf(zs) };
     if ((r * (zs + TH)) / F >= RW - WS) {
       // (its inner edge, in shadow; the fire's light on it far down)
       const k = storeyOf(zs);

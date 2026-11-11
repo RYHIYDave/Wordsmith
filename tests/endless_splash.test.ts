@@ -113,7 +113,7 @@ test('5. the letters fit on the lintel on every screen, and the picture covers t
 });
 
 /** The stair as he was shown it, 11 Nov 2026. */
-const STAIR_SUM = 2437057785;
+const STAIR_SUM = 1388281078;
 
 test('6. the stair with no bottom: the picture, its colours, its waking, its letters', () => {
   const q = paintEndlessStair();
