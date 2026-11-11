@@ -722,3 +722,20 @@ was the first four), its light to frame 9. The dust on a floor with no earth is 
 passes, with test 1; tsc clean. Nothing else changed: the lists, their counts and the painting are as step 3d has them.
 `pictures/hammer_moves.mp4` (38.0 s, 1,139 pictures), `quake_phone.png` (1260 by 1518), `tremors_phone.png` (1260 by 1818) and
 `quake_floors_phone.png` (1260 by 1878) were made again with it.
+
+# HIS YES ON BOTH WEAPONS (11 Nov 2026): HANDED TO THE MAIN CHAT
+
+Shown `pictures/quake_floors_phone.png`, `quake_phone.png`, `tremors_phone.png` and `hammer_moves.mp4` (at 4fca696f), told that
+the lifted stones had been made to catch the light and that floor 11 in the picture is a stand-in (the Gate Ward's stone
+colours, not its real setts, the Gate Ward not beside it), and asked “Is the Warrior's Earthquake right now, with the ground in
+each floor's own stone (quake_floors_phone.png, quake_phone.png)?”, he answered by 10:51: “Yes, hand both to main (Recommended)”
+(offered as: the battle axe and the warhammer both go to the main chat to be put in the game).
+
+SO WITH HIS YES: the war axe and its moves (Cleave, the thrown axe and Twin Axes, Leaping Chop; his run and catch while it
+flies; the tap while it is out, the axe appearing); the maul and its moves (Smash, the Earthquake a full spin then down with
+the ground quaking in the floor's own stone, Tremors, Shoulder Charge); both on his back in town; struck, fall, town and card.
+HIS RULES FOR THE MAIN CHAT, in his words, are above: “Yes he can move.  Yes leaping chop can”; “I want to make sure you can
+still do the tap attack while the axe hold is still flying”; “I understand that the axe is going to kind of materialize to keep
+fighting but I do need that to work that way”; “Tap should have a small knockback and high stun buildup/chance”.
+NOT DONE, and said to him: the measure check beside the Gate Ward and the Brawler on floor 11's own ground.
+The branch was cut from main at 1eeecea8 (25.3.1); main has moved on since.
