@@ -110,6 +110,7 @@ switches); cut and laid out by hand.
 - The quest marker (the gem cut finer), asked “Keep the new gem?”, in his own words: “Make it a rune, have it flash, and
   add triggers for “Speak to the (quest giver)” when a quest becomes available”. Read as: the marker the wordsmith's
   great rune, flashing; and the line whenever someone has something new for him, as set out above.
+
 Then the rune (`4_quest_marker.png`, `quest_rune.mp4`, `6_rune_waypoint.png`), sent him after 10:36, his answers in by
 10:47, each asked as a pop-up:
 
