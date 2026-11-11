@@ -1,5 +1,10 @@
 # THE WARLOCK BROUGHT UP, AND HIS DEMON REDONE (IN HAND; NOTHING HERE IS IN THE GAME)
 
+**WHERE IT STANDS (11 Nov 2026, evening): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
+two legs to fight and down on all fours to run, wings of smoke (`src/dev/demon_ideas.ts` shadowInto; `pictures/living_shadow.png`).
+NEXT: its moves; then its eight sides and the change into it; then the man. Read from “The Living Shadow, drawn properly” down
+for what is left; the sections before it are how he got there, in his words.**
+
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
 queue's `finish-mage-and-warlock-eight-sides` (the Mage's half is done: `art/mage-up2`). It takes up the art chat's helper's
 stage 1 of 7 Nov (branch `art/warlock-up`, 87bc4dd: one still, `docs/mockups/warlock_up/` there), which is left where it is.
@@ -163,12 +168,16 @@ WINGS OF SMOKE TRIED (`SHADOW_WINGS`, `cloakWings`): of its own black, half open
 bowed, the skin between bellied and deeply scalloped, a talon of his light at each wrist, their outer tips trailing away
 into smoke. The pictures above are made again with both.
 
+SHOWN HIM WITH BOTH, asked of each. **HIS YES TO THE LOOK, 11 Nov:** of its hands, **“Yes, the hands are right
+(Recommended)”**; of its wings, **“I like the Smokey wings”**. SO THE DEMON'S LOOK IS SETTLED: THE LIVING SHADOW on the
+werewolf's frame, its claws hung with only their talons burning, wings of smoke (`SHADOW_WINGS` on). Its moves are next.
+
 TO THINK ON (his own tick of 11 Nov, “His body is a dark lump”): this one is dark on purpose, and is known by its outline (the
 friend's cyan edge), its horns and what burns. To be looked at on the game's own floors beside the Brawler before it is
 called done: if its body is lost on a dark floor, the answer is more of his light on it (its embers, an edge of light on its
 shoulders), not a lighter hide.
 
-STILL TO DO, in this order: his yes to the look; its stand up on two legs and its wide claw slashes (new moves), dropping to
+STILL TO DO, in this order (his yes to the look is given): its stand up on two legs and its wide claw slashes (new moves), dropping to
 all fours to run (the game's run) and rearing up to stop; what else stands up (Damning, the smoke step's ends, how the change
 and the burning out end), asked as each is made; all eight sides; the change into it; behind a switch that is off, with a
 film and pictures in the game on floor 11 beside the Brawler. Then THE MAN (above).
