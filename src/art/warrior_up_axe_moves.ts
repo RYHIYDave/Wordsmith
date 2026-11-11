@@ -948,7 +948,8 @@ export function axeFaults(m: AxeMove, t: number, f: ArmedFrame, p: AxePosed = ax
   const helm = helmSeen(f);
   if (helm.share < HELM_LEAST) out.push(`his helm ${Math.round(helm.share * 100)}% seen`);
   for (const th of armedThrough(f)) out.push(th);
-  if (p.holding.axe) {
+  // (on his back, in town: nothing of his hands or its way to hold to)
+  if (p.holding.axe && !(p.q.stow > 0.5)) {
     const two = p.q.lhIn === 3 && !p.q.lh2;
     for (const h of handsOnHaft(f)) if (two || /right/.test(h)) out.push(h);
     const way = workingEdge(p.placed, take);
