@@ -155,7 +155,10 @@ His word, 9 Nov 2026: “Scene sounds”. Shown them on try-out 13 (The Floors' 
 Two takes of each one-shot (`_1`, `_2`), mp3, the same chain as the combat sounds, so RECORDED_GAIN holds. One
 background loop per floor (`bed_f<n>_loop.wav`) and two more loops (`furnace_loop.wav`, `pillar_fire_loop.wav`): WAV at
 32 kHz, as the fourth batch's loops, because mp3 adds silence at the ends and that clicks in a loop. 82 mp3 and 22 WAV,
-about 17 MB. Nothing is wired in. No name clashes with the earlier batches.
+about 17 MB. No name clashes with the earlier batches.
+
+WIRED IN (11 Nov 2026, the branch `sound/scene-wiring`, off work-f5; not yet in the released game): `src/game/scene_sounds.ts`
+says which floor plays which and where each is asked for; `docs/sound/scene_sounds_wiring.md` is the account of it.
 
 ### The backgrounds: one loop per floor, played under it, quiet
 Each is 10 s round (the furnace and the pillars 8 s) and comes round with no seam. They are mixed quiet (about 4 to 8 dB

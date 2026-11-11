@@ -67,8 +67,9 @@ import { LOADING_RING, makeLoadingRing } from './art/loading_ring';
 import type { LoadingRing } from './art/loading_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
-import { footstep, heroVoice, initAudio, isMuted, recordedDetail, recordedState, setLoops, setMuffled, setMuted, sfx, sfxNamed, speak, speakBoss, titleMusic, warmNamed, warmRecorded, warmSteps, worldSound } from './engine/audio';
+import { footstep, heroVoice, initAudio, isMuted, recordedDetail, recordedState, setLoops, setMuffled, setMuted, sfx, sfxNamed, soundHeard, speak, speakBoss, titleMusic, warmNamed, warmRecorded, warmSteps, worldSound } from './engine/audio';
 import { OWL_HOOT, STEP_EVERY, WORLD_SOUNDS, byNearness, groundOf, hushFloor, loopWants } from './game/world_sounds';
+import { MOMENT_VOL, sceneSoundsOf } from './game/scene_sounds';
 import { owlFrameAt } from './art/hall_owl';
 import { CASTLE_HALL, CASTLE_OWL_AT } from './art/castle_hall';
 import { soundsOf } from './game/sound_families';
@@ -1632,15 +1633,21 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (VOLATILE3.on) eventsV3(g.events, g, fx);
     // (RUNEDUST AND THE MELDSTONE's moments, behind a switch that is off: render/meld_drops.ts)
     if (MELD_DROPS.on) renderer.meldDrops.see(g.events, clock, g.hero);
-    fx.handle(more.length ? [...g.events, ...more] : g.events, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
-    // (the hero's own voice, the sound chat's: engine/audio.ts heroVoice; and his voice and the combat sounds fetched once he plays)
-    for (const e of g.events) if (e.t === 'voice') heroVoice(e.who, e.cry);
-    // (THE SOUND CHAT'S SECOND BATCH: the enemies' and the bosses' sounds by name; a floor's fetched as it is come into)
+    // (THE SOUND CHAT'S SECOND BATCH: the enemies' and the bosses' sounds by name; a floor's fetched as it is come into. Before the
+    // effects, so that a recording begun this frame is known to be heard as its stand-ins are sifted below)
     for (const e of g.events) if (e.t === 'rec') {
-      if (e.world) worldSound(e.name, e.vol ?? 1, e.or);
+      if (e.world) worldSound(e.name, e.vol ?? 1, e.or, !!e.exact);
       else sfxNamed(e.name, e.vol ?? 1, e.or, !!e.exact);
     }
-    if (warmedLevel !== g.level && warmNamed(soundsOf(new Set(g.monsters.map((m) => m.kind))))) warmedLevel = g.level;
+    // (THE FLOORS' SCENE SOUNDS: a blow made in code that stands in for one in a recording, the cage's or the portcullis's, is not
+    // sounded while that recording is heard: engine/audio.ts soundHeard)
+    const standIn = (e: GameEvent): boolean => e.t === 'sfx' && e.standsFor !== undefined && soundHeard(e.standsFor);
+    const seen = more.length ? [...g.events, ...more] : g.events;
+    fx.handle(seen.some(standIn) ? seen.filter((e) => !standIn(e)) : seen, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
+    // (the hero's own voice, the sound chat's: engine/audio.ts heroVoice; and his voice and the combat sounds fetched once he plays)
+    for (const e of g.events) if (e.t === 'voice') heroVoice(e.who, e.cry);
+    // (and with the floor's enemies' sounds, THE FLOOR'S OWN SCENE SOUNDS, the eighth batch: game/scene_sounds.ts; let go with them)
+    if (warmedLevel !== g.level && warmNamed([...soundsOf(new Set(g.monsters.map((m) => m.kind))), ...(g.level.town ? [] : sceneSoundsOf(g.level.floor.depth))])) warmedLevel = g.level;
     if (warmedFor !== g.hero.cls) {
       warmedFor = g.hero.cls;
       warmRecorded(g.hero.cls);
@@ -2244,9 +2251,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
       if (WORLD_SOUNDS.on) worldFrame(g, dt, paused);
       // (THE FIRST FIVE FLOORS: a film's jolts kick the screen, and are heard: render/dress.ts)
+      // (THE FLOORS' SCENE SOUNDS, the eighth batch: a moment's own sound, made whole to its film, as its frame 0 is shown; its
+      // jolts are in it, so where it is heard the screen is kicked and no blow is made in code on top of it)
+      for (const name of renderer.momentSounds()) worldSound(name, MOMENT_VOL, undefined, true);
       for (const k of renderer.kicks()) {
         fx.shake = Math.max(fx.shake, k.amount);
-        sfx('slam', { vol: k.vol });
+        if (!(k.of && soundHeard(k.of))) sfx('slam', { vol: k.vol });
       }
       // (a moment that has cleared a tile: the cart gone off down its rails)
       for (const i of renderer.pieces.freedTiles()) g.freeTile(i);

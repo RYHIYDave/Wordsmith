@@ -40,11 +40,12 @@ import { ACT1, HIGH_CITY, act2Floor, cityFloor, highFloor, lastFloor } from './a
 import { ENDLESS, ENDLESS_OPENS, ENDLESS_WARN, endlessFloorFor, endlessName, endlessPower, endlessTough } from './endless';
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
 // (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds)
-import { nettleSlow, stepGardens } from './act2/garden_rules';
+import { inNettles, nettleSlow, stepGardens } from './act2/garden_rules';
 // (THE HIGH CITY, FLOOR 17: the Masque's clock and its chime, the dancers called to it)
 import { stepClock } from './act2/masque_rules';
 import { MIRROR, shardsHit, stepMirrors, strikeMirrors } from './act2/gallery_rules';
 import { PORTCULLIS, clearOf, stepPortcullises, underPort } from './act2/keep_rules';
+import type { PortState } from './act2/keep_rules';
 import { stepTower } from './act2/tower_rules';
 import { callToChime } from './act1_rules/dancer';
 import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, BELL_STILL, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
@@ -73,7 +74,9 @@ import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
 import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, HellWave, Hero, Level, Meta, Monster, OrbInst, Peril, Pet, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Soul, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
 import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
-import { FIRE, FIRE_GONE, FURNACE_WORD, KEEPER, MELDSTONE_WORDS, QUESTS15, QUEST_TEXT } from './quests15';
+import { CRANK_TIMES, FIRE, FIRE_GONE, FURNACE_WORD, KEEPER, MELDSTONE_WORDS, QUESTS15, QUEST_TEXT } from './quests15';
+import { CRANK_SOUND, PORT_SOUND_LEAD, SCENE_SOUNDS, SINGING, trapSound } from './scene_sounds';
+import { byNearness } from './world_sounds';
 import { QUEST_MARKS } from './quest_marks';
 import { STOKER_ON } from '../art/stoker';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
@@ -1973,6 +1976,8 @@ export class Game {
     // (THE WAYS: and where a way out of it has been taken, the rest is the next level's, from its next step)
     if (this.level.ways && this.updateWays(dt)) return;
     this.updateHazards(dt);
+    // (THE FLOORS' SCENE SOUNDS, floor 8: the singing stones hum as he passes them: game/scene_sounds.ts SINGING)
+    if (SCENE_SOUNDS.on && this.depth === 8 && !this.level.town) this.singStones();
     // (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds sting and slow whoever walks through them: game/act2/garden_rules.ts)
     if (this.level.land?.garden) this.updateGardens(dt);
     // (THE HIGH CITY, FLOOR 18: the Glass Gallery's tall mirrors, cracked by blows near them, burst: game/act2/gallery_rules.ts)
@@ -1985,7 +1990,8 @@ export class Game {
     if (this.level.land?.masque && !this.over) {
       const called = stepClock(this.level, this.hero, this.monsters, dt);
       if (called) {
-        this.sfx('echo', 0.9);
+        // (THE FLOORS' SCENE SOUNDS: the ebony clock's chime, in place of the echo that stood in for it)
+        this.sceneSound('clock_chime', 1, 'echo', 0.9, true);
         this.msg('The ebony clock chimes.', MSG.omen);
         for (const m of called) callToChime(m);
       }
@@ -2143,6 +2149,8 @@ export class Game {
       this.leave('up');
       sh.state = 'going';
       sh.t = 0;
+      // (THE FLOORS' SCENE SOUNDS: the ride up, from its frame 0: the gate slamming, the lurch, gone)
+      if (SCENE_SOUNDS.on) this.world('cage_up', 1, undefined, 0, true);
       h.x = sh.x + 0.5;
       h.y = sh.y + 0.5;
       h.fx = Math.SQRT1_2;
@@ -2210,7 +2218,8 @@ export class Game {
     jolts.forEach((j, k) => {
       if (was < j && sh.t >= j) {
         this.emit({ t: 'shake', amount: sh.state === 'coming' ? (k === 0 ? 7 : 4) : k === 0 ? 2 : 4 });
-        this.sfx(sh.state === 'going' && k === 0 ? 'gateFall' : 'slam', sh.state === 'coming' && k === 0 ? 1 : 0.6);
+        // (THE FLOORS' SCENE SOUNDS: `cage_down` and `cage_up` are made whole to these frames, the blows in them: these are their stand-ins)
+        this.sfxFor(sh.state === 'coming' ? 'cage_down' : 'cage_up', sh.state === 'going' && k === 0 ? 'gateFall' : 'slam', sh.state === 'coming' && k === 0 ? 1 : 0.6);
       }
     });
     if (sh.state === 'coming' && sh.t >= SHAFT.down) {
@@ -2548,11 +2557,20 @@ export class Game {
 
   /** (THE HIGH CITY, FLOOR 19) A portcullis slams down: whatever is under it is struck (a share of its life; a boss only thrown) and thrown clear to the nearer side. */
   private updatePortcullises(dt: number): void {
-    for (const s of stepPortcullises(this.level, this.hero, dt)) {
+    // (THE FLOORS' SCENE SOUNDS: `portcullis` has its chain falling first and its slam about half a second in, so it is begun that
+    // long before the slam, the louder the nearer; the slam made in code is then its stand-in)
+    const chains: PortState[] = [];
+    const slammed = stepPortcullises(this.level, this.hero, dt, SCENE_SOUNDS.on ? chains : undefined);
+    for (const s of chains) {
+      const cx = s.at.alongX ? s.at.x + s.at.n / 2 : s.at.x + 0.5;
+      const cy = s.at.alongX ? s.at.y + 0.5 : s.at.y + s.at.n / 2;
+      this.world('portcullis', 0.3 + 0.6 * byNearness(Math.hypot(this.hero.x - cx, this.hero.y - cy), 3, PORTCULLIS.near), undefined, 0.2, true);
+    }
+    for (const s of slammed) {
       const at = s.at;
       const mx = at.alongX ? at.x + at.n / 2 : at.x + 0.5;
       const my = at.alongX ? at.y + 0.5 : at.y + at.n / 2;
-      this.sfx('slam', 0.8);
+      this.sfxFor('portcullis', 'slam', 0.8);
       this.emit({ t: 'spark', x: mx, y: my, el: 'phys', n: 10 });
       if (Math.hypot(this.hero.x - mx, this.hero.y - my) < 12) this.emit({ t: 'shake', amount: 3 });
       if (this.over) continue;
@@ -2573,11 +2591,35 @@ export class Game {
     }
   }
 
+  /** (THE FLOORS' SCENE SOUNDS, floor 8) The singing stones of each level, and those he is beside now (each hums once as he comes up to it). */
+  private stones = new WeakMap<Level, { all: PropInst[]; by: Set<PropInst> }>();
+  private singStones(): void {
+    const L = this.level;
+    let S = this.stones.get(L);
+    if (!S) {
+      S = { all: L.props.filter((p) => p.kind === 'piece' && p.name === SINGING.name), by: new Set() };
+      this.stones.set(L, S);
+    }
+    const h = this.hero;
+    for (const p of S.all) {
+      const d = Math.hypot(p.x - h.x, p.y - h.y);
+      if (S.by.has(p)) {
+        if (d > SINGING.far) S.by.delete(p);
+        continue;
+      }
+      if (d > SINGING.near) continue;
+      S.by.add(p);
+      this.world('singing_stones', SINGING.vol, undefined, SINGING.gap);
+    }
+  }
+
   /** (THE HIGH CITY, FLOOR 18) A blow lands near (x, y): the Glass Gallery's mirrors near it crack, or, cracked, are set to burst. */
   private mirrorsStruck(x: number, y: number, rad: number): void {
     const cracked = strikeMirrors(this.level, x, y, rad);
     if (!cracked.length) return;
-    this.world('break_glass', 0.35, 'shatter');
+    // (THE FLOORS' SCENE SOUNDS: a mirror cracking, in place of the quiet breaking glass that stood in for it)
+    if (SCENE_SOUNDS.on) this.world('mirror_crack', 0.7, 'shatter');
+    else this.world('break_glass', 0.35, 'shatter');
     for (const m of cracked) this.emit({ t: 'spark', x: m.x + m.fx * 0.4, y: m.y + m.fy * 0.4, el: 'phys', n: 5 });
   }
 
@@ -2585,9 +2627,19 @@ export class Game {
     if (this.over) return;
     for (const s of stepGardens(this.level, this.hero, this.monsters, this.time, dt)) {
       if (s.m) this.damageMonster(s.m, s.dmg, 'phys', false, -1);
-      else this.hurtHero(s.dmg, 'phys', [], null, 'nettles');
+      else {
+        this.hurtHero(s.dmg, 'phys', [], null, 'nettles');
+        if (SCENE_SOUNDS.on) this.world('nettle', 0.8, undefined, 0.5);
+      }
     }
+    // (THE FLOORS' SCENE SOUNDS: walking into a nettle bed, and at each sting in it)
+    const h = this.hero;
+    const inBed = SCENE_SOUNDS.on && !h.move && inNettles(this.level, h.x, h.y);
+    if (inBed && !this.inNettleBed) this.world('nettle', 0.6, undefined, 0.5);
+    this.inNettleBed = inBed;
   }
+  /** (THE FLOORS' SCENE SOUNDS) Whether he was in a nettle bed at the last step. */
+  private inNettleBed = false;
 
   /**
    * A SPIKE FLOOR: up, its spikes hurt whatever walks on the patch, once each time they rise: the
@@ -2601,7 +2653,12 @@ export class Game {
       z.hit.length = 0;
       const tx = z.spot.x + z.spot.w / 2;
       const ty = z.spot.y + z.spot.h / 2;
-      if (Math.hypot(tx - h.x, ty - h.y) < 9) this.world('trap_spikes', 0.55, 'trapSet');
+      // (THE FLOORS' SCENE SOUNDS: a floor whose trap is its own, the ledge giving way, the bog, the skylight, the pitch, has its own sound)
+      const far = Math.hypot(tx - h.x, ty - h.y);
+      if (far < 9) {
+        const snd = trapSound(this.depth, far);
+        this.world(snd.name, snd.vol, 'trapSet');
+      }
     }
     z.wasUp = up;
     if (!up || this.over) return;
@@ -3090,6 +3147,8 @@ export class Game {
       h.fy = -ux * Math.SQRT1_2;
       S.phase = 'out';
       S.t = 0;
+      // (THE FLOORS' SCENE SOUNDS: the wind swelling as the picture pans out over the drop, at its height as it holds on the town)
+      if (SCENE_SOUNDS.on) this.world('eyrie_wind', 1, undefined, 0.06, true);
       return c;
     }
     if (S.phase === 'out') {
@@ -3162,6 +3221,8 @@ export class Game {
     const n = B.plan.bells.length;
     this.emit({ t: 'bells', what: 'start', x: B.plan.muffled.x, y: B.plan.muffled.y, n });
     this.sfx('bossRoar', 0.5);
+    // (THE FLOORS' SCENE SOUNDS: the Muffled Bell struck: a dead clunk, under the Hush pouring out)
+    if (SCENE_SOUNDS.on) this.world('bell_muffled', 1);
     this.msg(`The Hush pours out of the Muffled Bell. Ring the ${n} bells before it is too late!`, MSG.omen);
   }
 
@@ -3190,7 +3251,8 @@ export class Game {
     }
     chipAt(B, L, b.x, b.y);
     this.emit({ t: 'bells', what: 'ring', x: b.x, y: b.y, k, n });
-    this.sfx('portal', 0.7);
+    // (THE FLOORS' SCENE SOUNDS: the bell rings out, in place of the portal's sound)
+    this.sceneSound('bell_ring', 0.9, 'portal', 0.7, true);
     if (k >= n) {
       this.bellsWon();
       return;
@@ -3369,7 +3431,8 @@ export class Game {
     if (why) return why;
     this.hero.words[word]--;
     this.level.holds![n].words.push(word);
-    this.sfx('word');
+    // (THE FLOORS' SCENE SOUNDS: a word set into the altar: the clunk, then the chime)
+    this.sceneSound('altar_word', 1, 'word');
     return null;
   }
 
@@ -3406,7 +3469,8 @@ export class Game {
     }
     this.emit({ t: 'burst', x: q.gx, y: q.gy + 0.2, r: 1.6, el: 'fire', style: 'shock' });
     this.emit({ t: 'shake', amount: 4 });
-    this.sfx('power', 0.9);
+    // (THE FLOORS' SCENE SOUNDS: the door's seal burning away)
+    this.sceneSound('seal_burn', 1, 'power', 0.9);
     this.msg(`The altar takes ${st.words.length === 1 ? 'the word' : `${st.words.length} words`}. The door's seal breaks.`, MSG.word);
     return true;
   }
@@ -3735,11 +3799,34 @@ export class Game {
    * (THE SOUND CHAT'S FOURTH BATCH, 7 Nov 2026) a sound of the world (a prop breaking, a chest, a rift, a trap): heard through the
    * world's bus (on the Hush floors thin and muffled: engine/audio.ts worldSound); not within `gap` seconds of the last of its name.
    */
-  world(name: string, vol = 1, or?: Sfx, gap = 0.06): void {
+  world(name: string, vol = 1, or?: Sfx, gap = 0.06, exact = false): void {
     const last = this.heard.get(`w:${name}`);
     if (last !== undefined && this.time - last < gap) return;
     this.heard.set(`w:${name}`, this.time);
-    this.emit({ t: 'rec', name, vol, or, world: true });
+    this.emit({ t: 'rec', name, vol, or, world: true, ...(exact ? { exact } : {}) });
+  }
+
+  /** (THE FLOORS' SCENE SOUNDS, game/scene_sounds.ts) A sound of the world `secs` from now, if he is still in this place then. */
+  worldAfter(secs: number, name: string, vol = 1, or?: Sfx, exact = false): void {
+    const L = this.level;
+    this.after(secs, () => {
+      if (this.level === L) this.world(name, vol, or, 0.06, exact);
+    });
+  }
+
+  /**
+   * (THE FLOORS' SCENE SOUNDS) A blow made in code that a recording has in it already (the cage striking its catches in
+   * `cage_down`, the slam in `portcullis`): the stand-in, sounded only where that recording is not being heard (it had not come, or
+   * the game was opened from a file).
+   */
+  sfxFor(rec: string, name: Sfx, vol?: number): void {
+    this.emit({ t: 'sfx', name, vol, standsFor: rec });
+  }
+
+  /** (THE FLOORS' SCENE SOUNDS) A scene sound in place of the sound `or` that was there before it (and is, at `orVol`, with the batch switched off). */
+  private sceneSound(name: string, vol: number, or: Sfx, orVol?: number, exact = false): void {
+    if (SCENE_SOUNDS.on) this.world(name, vol, or, 0.06, exact);
+    else this.sfx(or, orVol);
   }
 
   /** (THE SECOND BATCH) The blows counted, for an enemy's hurt now and then. */
@@ -9724,6 +9811,8 @@ export class Game {
         // (THE FIRST FIVE FLOORS: on the fifth floor the cage comes crashing down the mine shaft at the back of his hall)
         W.shaft.state = 'coming';
         W.shaft.t = 0;
+        // (THE FLOORS' SCENE SOUNDS: the cage's fall, from its frame 0: the plunge, the slam onto its catches, the bounce, the gate opening)
+        if (SCENE_SOUNDS.on) this.world('cage_down', 1, undefined, 0, true);
         this.sfx('thunder', 0.35);
       } else if (W && W.exit && W.exit.state === 'shut') {
         // (FLOOR 3, PRISON_EXIT: the door out the back of his hall unbars and swings open: the way down; its jolts kick the screen as it plays: render/prison.ts)
@@ -12641,7 +12730,21 @@ export class Game {
     }
     this.emit({ t: 'spark', x: p.x, y: p.y, el: 'fire', n: 10 });
     this.emit({ t: 'shake', amount: 2 });
-    this.sfx('door', 0.9);
+    // (THE FLOORS' SCENE SOUNDS: the gear set into the crank; its one turn; then, as the turn ends, the furnace dying and, where
+    // the fire in the Chained One's gateway is shown going out, that fire, heard by how near its gateway he is)
+    this.sceneSound('crank_gear', 1, 'door', 0.9);
+    if (SCENE_SOUNDS.on) {
+      this.worldAfter(CRANK_SOUND.turnAt, 'crank_turn', 0.9);
+      this.worldAfter(CRANK_TIMES.turn, 'furnace_out', 1);
+      if (STOKER_ON.on && F.gate >= 0) {
+        const at = doorMiddle(L.doors[F.gate].spot);
+        this.after(CRANK_TIMES.turn, () => {
+          if (this.level !== L) return;
+          const v = byNearness(Math.hypot(at.x - this.hero.x, at.y - this.hero.y), 3, 16);
+          if (v > 0.02) this.world('gate_fire_out', v);
+        });
+      }
+    }
     this.msg(QUEST_TEXT.furnaceOut, MSG.good);
     this.visionT = 0;
   }

@@ -6,7 +6,10 @@
 
 import type { Ground } from '../engine/audio';
 import { isCamp } from './camp';
+import { doorMiddle } from './doors';
 import type { Game } from './game';
+import { CRANK_TIMES } from './quests15';
+import { FURNACE_LOOP, PILLAR_LOOP, bedOf } from './scene_sounds';
 
 /** The switch: off, none of the world's sounds is played (the scene's sounds made in code play as before). */
 export const WORLD_SOUNDS = { on: true };
@@ -41,7 +44,7 @@ export function byNearness(d: number, near: number, far: number): number {
   return 1 - (d - near) / (far - near);
 }
 
-/** The loops wanted now and how loud: the fires near him, the water on the wet floors, the ring's hum, the hall's and the camp's air. */
+/** The loops wanted now and how loud: the fires near him, the water on the wet floors, the ring's hum, the hall's and the camp's air; the floor's own background, its furnace, its burning pillars. */
 export function loopWants(g: Game, castleHall: boolean): Record<string, number> {
   const L = g.level;
   const h = g.hero;
@@ -61,6 +64,23 @@ export function loopWants(g: Game, castleHall: boolean): Record<string, number> 
   if (isCamp(L)) out.bed_camp = 0.45;
   const d = L.floor.depth;
   if (!L.town && (d === 10 || d === 12 || d === 13)) out.water = 0.35;
+  if (!L.town) {
+    // (THE FLOORS' BACKGROUNDS, the sound chat's eighth batch, 9 Nov 2026: one loop a floor, under all of it; mixed quiet, so
+    // played at full volume; one floor's at a time, the last floor's fading as this one's comes: engine/audio.ts setLoops)
+    const bed = bedOf(d);
+    if (bed) out[bed] = 1;
+    // (floor 3: the Stoker's furnace, near it while it burns: until the crank's turn is done, and then it dies: `furnace_out`)
+    const F = L.furnace;
+    if (bed && F && (!F.out || (F.turnedAt !== undefined && F.turnedAt >= 0 && g.time - F.turnedAt < CRANK_TIMES.turn))) {
+      const at = F.spot ? doorMiddle(F.spot) : F.crank;
+      const v = FURNACE_LOOP.vol * byNearness(near(at.x, at.y), FURNACE_LOOP.near, FURNACE_LOOP.far);
+      if (v > 0) out.furnace = v;
+    }
+    // (floor 10: the Colossus's pillars, the siege magic of his phase 3: near each while it burns, the nearest heard)
+    let pillar = 0;
+    if (bed) for (const p of L.pillars ?? []) if (p.lit) pillar = Math.max(pillar, byNearness(near(p.x, p.y), PILLAR_LOOP.near, PILLAR_LOOP.far));
+    if (pillar > 0) out.pillar_fire = PILLAR_LOOP.vol * pillar;
+  }
   return out;
 }
 

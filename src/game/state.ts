@@ -1566,7 +1566,8 @@ export type GameEvent =
   | { t: 'text'; x: number; y: number; text: string; color: string }
   | { t: 'spark'; x: number; y: number; el: Element; n: number }
   | { t: 'msg'; text: string; color: string }
-  | { t: 'sfx'; name: Sfx; vol?: number }
+  /** `standsFor`: this sound, made in code, is the stand-in for a blow in the recording of that name (a sound made whole to a picture's frames: the cage, the portcullis): not sounded while that recording is heard (main.ts; engine/audio.ts soundHeard). */
+  | { t: 'sfx'; name: Sfx; vol?: number; standsFor?: string }
   /** A sound of the sound chat's second batch by its name (engine/audio.ts sfxNamed), `or` made in code until it has come. */
   | { t: 'rec'; name: string; vol?: number; or?: Sfx; world?: boolean; exact?: boolean }
   /** A hero's own voice (engine/audio.ts heroVoice: how often each is heard is the sound's to say). */

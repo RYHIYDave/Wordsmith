@@ -21,6 +21,7 @@ import type { Sprite } from '../engine/px';
 import { FLOOR_SETS } from '../game/first5';
 import type { Dress, FloorSet, MomentHost, TilePiece, WallPiece } from '../game/first5';
 import type { Game } from '../game/game';
+import { momentSound } from '../game/scene_sounds';
 import type { Level, PropInst } from '../game/state';
 import type { Stage, Kick } from './dress';
 import { wx, wy } from './fx';
@@ -57,6 +58,8 @@ export class FloorPieces {
   private moments: Played[] = [];
   private hosts = new Map<PropInst, Played>();
   private kicked: Kick[] = [];
+  /** (THE FLOORS' SCENE SOUNDS) The sounds of the moments begun since they were last asked for (game/scene_sounds.ts MOMENT_SOUND). */
+  private begun: string[] = [];
   private freed: number[] = [];
 
   constructor(private readonly painter: () => Painter | null) {}
@@ -307,6 +310,9 @@ export class FloorPieces {
         pm.state = 'play';
         pm.t0 = now;
         pm.last = -1;
+        // (THE FLOORS' SCENE SOUNDS: its own sound, made whole to its film, from this, its frame 0)
+        const snd = momentSound(this.dress.floor, host.n);
+        if (snd) this.begun.push(snd);
       }
       if (pm.state !== 'play') continue;
       const film = this.film(host.n);
@@ -317,7 +323,7 @@ export class FloorPieces {
       const k = Math.floor((now - pm.t0) * FPS);
       for (let f = pm.last + 1; f <= Math.min(k, film.frames.length - 1); f++) {
         const j = film.jolts.indexOf(f);
-        if (j >= 0) this.kicked.push({ amount: j === 0 ? MOMENT_KICK : MOMENT_KICK - 1, vol: 0.45 });
+        if (j >= 0) this.kicked.push({ amount: j === 0 ? MOMENT_KICK : MOMENT_KICK - 1, vol: 0.45, of: momentSound(this.dress.floor, host.n) ?? undefined });
       }
       pm.last = k;
       if (k >= film.frames.length) {
@@ -325,6 +331,13 @@ export class FloorPieces {
         if (host.clears !== undefined) this.freed.push(host.clears);
       }
     }
+  }
+
+  /** (THE FLOORS' SCENE SOUNDS) The sounds of the moments begun since this was last asked (main.ts plays each, at its own pitch). */
+  sounds(): string[] {
+    const out = this.begun;
+    this.begun = [];
+    return out;
   }
 
   /** The kicks of the moments' jolts since this was last asked. */

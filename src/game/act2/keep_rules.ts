@@ -9,6 +9,7 @@
 // monster's) and thrown clear to the nearer side; it stays down a while (PORTCULLIS.down), the hall cut in two (its tiles not
 // walked, by him or by anything), and is wound up again (falling's frame, run back).
 
+import { PORT_SOUND_LEAD } from '../scene_sounds';
 import type { Level, PropInst } from '../state';
 import type { PortcullisAt } from './keep';
 
@@ -81,9 +82,9 @@ const LONG: Readonly<Record<PortPhase, number>> = { up: PORTCULLIS.up, warn: POR
 /**
  * A step of the floor's portcullises (`hero` where he stands): each on through its phases, its tiles' frames set; its tiles not
  * walked from its slam till it is wound up again. Those that slam this step (the game strikes what is under them and throws it
- * clear).
+ * clear); and, into `chains` where it is given, those whose chain is let go this step (their sound begun).
  */
-export function stepPortcullises(L: Level, hero: { x: number; y: number }, dt: number): PortState[] {
+export function stepPortcullises(L: Level, hero: { x: number; y: number }, dt: number, chains?: PortState[]): PortState[] {
   const slammed: PortState[] = [];
   const W = L.floor.w;
   for (const s of portcullisesOf(L)) {
@@ -91,6 +92,10 @@ export function stepPortcullises(L: Level, hero: { x: number; y: number }, dt: n
     const mx = s.at.alongX ? s.at.x + s.at.n / 2 : s.at.x + 0.5;
     const my = s.at.alongX ? s.at.y + 0.5 : s.at.y + s.at.n / 2;
     if (s.phase === 'up' && Math.hypot(hero.x - mx, hero.y - my) > PORTCULLIS.near) continue;
+    // (THE FLOORS' SCENE SOUNDS: its sound has the chain falling first, the slam PORT_SOUND_LEAD seconds in: `chains` is given those
+    // whose slam is that far off as of this step, each once a fall, for the game to begin the sound)
+    const toSlam = s.t + PORTCULLIS.fall;
+    if (chains && s.phase === 'warn' && toSlam > PORT_SOUND_LEAD && toSlam - dt <= PORT_SOUND_LEAD) chains.push(s);
     s.t -= dt;
     if (s.t > 0) continue;
     s.phase = NEXT[s.phase];
