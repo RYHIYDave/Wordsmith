@@ -17,6 +17,7 @@ import { ENDLESS, endlessName } from '../game/endless';
 import type { HeroMode } from '../game/modes';
 import type { AimMode, Station, VendorId } from '../game/state';
 import { ITEM_ROOM, itemRoom, modLines } from '../game/items';
+import { uniqueLines, uniqueOf } from '../game/uniques';
 import type { TitleArt } from '../art/title';
 import { TITLE_MARKS, titleRound } from '../art/title';
 import type { Smith2Title } from '../art/title_smith2';
@@ -108,9 +109,15 @@ export function itemCard(game: Game, it: Item, touch = false): Line[] {
   for (const l of modLines(rest, limit)) lines.push({ text: l, color: THEME.text });
   for (const a of it.affixes) for (const l of modLines(a.mods, limit)) lines.push({ text: l, color: THEME.magic });
   for (const im of it.imbues) for (const l of modLines(im.mods, limit)) lines.push({ text: `${WORDS[im.word].name}: ${l}`, color: WORD_COLOR[im.word] });
-  // how many more words it will take (the owner: "All items have room for 4 mods. White starts with 0, blue 1-2, yellow 3-4")
-  const room = itemRoom(it);
-  lines.push({ text: room > 0 ? `Room for ${room} ${room === 1 ? 'word' : 'words'}` : 'No room for words', color: room > 0 ? THEME.dim : THEME.faint, small: true });
+  // (UNIQUE ITEMS, game/uniques.ts: under its ordinary stats, what it does in its own orange, its price, whose it is; it takes no word)
+  const unique = uniqueOf(it);
+  if (unique) {
+    for (const l of uniqueLines(unique, h.cls)) lines.push({ text: l.text, color: l.kind === 'does' ? RARITY_COLOR[3] : l.kind === 'note' ? THEME.dim : THEME.bad, small: l.kind === 'note' || l.kind === 'bad' });
+  } else {
+    // how many more words it will take (the owner: "All items have room for 4 mods. White starts with 0, blue 1-2, yellow 3-4")
+    const room = itemRoom(it);
+    lines.push({ text: room > 0 ? `Room for ${room} ${room === 1 ? 'word' : 'words'}` : 'No room for words', color: room > 0 ? THEME.dim : THEME.faint, small: true });
+  }
   // what the weapon gives whoever holds it: its two attacks, and the attribute they grow with
   // (gold when they are not the attacks in hand: this weapon would change them)
   // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES: a weapon changes no attack, so nothing is said of them)
@@ -137,6 +144,8 @@ export function drawItemPips(g: CanvasRenderingContext2D, it: Item, x: number, y
   const lit: string[] = [];
   for (let i = 0; i < it.affixes.length; i++) lit.push(THEME.magic);
   for (const im of it.imbues) lit.push(WORD_COLOR[im.word] ?? THEME.text);
+  // (UNIQUE ITEMS: a unique takes no word: its four places all in its own orange)
+  if (it.rarity === 3) for (let i = 0; i < ITEM_ROOM; i++) lit[i] = RARITY_COLOR[3];
   const w = 3;
   const total = ITEM_ROOM * (w + 1) - 1;
   let px = x + Math.floor((CELL - total) / 2);

@@ -157,6 +157,11 @@ export interface SkillState {
   /** How many times it has been used this run. The interface watches this to see an order carried out. */
   uses: number;
   r: Resolved;
+  /**
+   * UNIQUE ITEMS (game/uniques.ts bendWords): the words it works with, where a unique worn makes them other than its sockets'
+   * (a word added with no slot used, a word dark, none at all). Absent: its sockets' own. Not kept in a save.
+   */
+  eff?: { front: (WordId | null)[]; behind: (WordId | null)[] };
 }
 
 export type Anim = 'idle' | 'walk' | 'attack';
@@ -517,6 +522,12 @@ export interface Monster {
   fleeT?: number;
   cracks?: number;
   thrown?: { vx: number; vy: number; t: number; ice?: boolean };
+  /**
+   * UNIQUE ITEMS (game/uniques.ts). THE CRIER'S HUSH: its words darkened while it stands close to him: kept here, out of `words`
+   * and `half`, and given back as it steps away. THE BURNING VERSE: a burn of his on it while cursed never goes out.
+   */
+  dark?: { words: WordId[]; half?: WordId[] };
+  verse?: boolean;
 }
 
 /**
@@ -590,6 +601,10 @@ export interface Projectile {
   flown?: number;
   bounced?: boolean;
   split?: boolean;
+  /** UNIQUE ITEMS: THE WINDCUTTER's blade of wind (it leaves nothing behind it); THE TIDE: a Wave that has turned for home (it turns no more); THE TUNING STAFF: the Orbs this Wave has passed through. */
+  blade?: boolean;
+  home?: boolean;
+  tuned?: number[];
 }
 
 /**
@@ -748,6 +763,8 @@ export interface Trap {
   skill: number;
   frac: number;
   element: Element;
+  /** UNIQUE ITEMS, THE HAIR TRIGGER: an arrow of his has crossed it: it goes off now, however lately laid, this many times as hard. */
+  shot?: number;
 }
 
 /**
@@ -783,6 +800,9 @@ export interface Volley {
   /** THE SKILL TREES REMADE (Hail): the enemy it follows, by id; and where each arrow told of comes down (`n * count + c`), as it was told while the rain moved. */
   follow?: number;
   at?: { x: number; y: number }[];
+  /** UNIQUE ITEMS: THE RAINWALKER, it rains round him and goes with him; THE POACHER'S BOW, its trap has been laid. */
+  walker?: boolean;
+  trapped?: boolean;
 }
 
 /**
@@ -853,6 +873,10 @@ export interface Vial {
   /** (her tree's CONTRAPTION, its pick BOMBS) a little bomb in place of a vial: it lands, hops, and goes off `fuse` seconds after it lands. */
   bomb?: boolean;
   fuse?: number;
+  /** UNIQUE ITEMS: THE STICKY WRENCH, it sticks where it lands (to the monster `stuck`, if it landed on one, going where it goes) and bursts a moment later, wider; THE FOREMAN'S WRENCH, `foreman`: a Golem's own lob (it sets no other Golem lobbing). */
+  sticky?: boolean;
+  stuck?: number;
+  foreman?: boolean;
 }
 /** (HER SKILL TREE: Mad Mixture) a brew a vial of hers carries, on top of its own words. */
 export type Brew = 'burn' | 'freeze' | 'poison';
@@ -904,6 +928,30 @@ export interface Pet {
  * where it took off (`x0`, `y0`) and comes down (`x1`, `y1`); which way it faces (its picture's); its gun arm; its flight in
  * frames of the screen (30 a second: ROCKET.flight, half that in her tree's Overdrive).
  */
+/**
+ * UNIQUE ITEMS, THE FLESHMANCER'S BRAND (game/uniques.ts): the elite he killed, risen to fight for him: what it was (its kind,
+ * for its picture, the art chat's to draw: cyan, as what is a friend's glows), where it is, what it is doing, the enemy it goes
+ * for. One at a time (Game.risen).
+ */
+export interface Risen {
+  kind: MonsterKind;
+  name: string;
+  x: number;
+  y: number;
+  fx: number;
+  fy: number;
+  r: number;
+  /** Seconds it has left. */
+  t: number;
+  act: 'rise' | 'stand' | 'walk' | 'strike';
+  actT: number;
+  did: boolean;
+  target: number;
+  cd: number;
+  walked: number;
+  champion: boolean;
+}
+
 export interface GolemRocketAt {
   x0: number;
   y0: number;
@@ -1584,6 +1632,14 @@ export type GameEvent =
   | { t: 'stoneGiven'; x: number; y: number }
   /** ENDLESS MODE'S FANFARE (ui/endless_fanfare.ts): endless mode has just opened to him, the last floor beaten. */
   | { t: 'endlessOpens' }
+  /**
+   * UNIQUE ITEMS (game/uniques.ts): something a unique does that is seen, for the pictures the art chat will draw of it: `id` the
+   * unique, `what` the moment (THE DROWNED ARM 'warn' and 'slam'; THE QUEEN'S TALONS 'dive'; THE FLESHMANCER'S BRAND 'rise',
+   * 'strike' and 'fall'; THE MOTH'S WING 'dark' and 'light'; THE KING'S KNOT 'borrow'; THE WINDCUTTER 'blade'; THE RECEIPT
+   * 'answer'; THE SHORT WAY 'back'; THE TOW LINE 'ride'; THE WARDEN'S KEYS 'open'; a unique dropped, 'drop'), where, and what
+   * else it needs. Until they are drawn, each also sends a plain effect of the game's own (a burst, a spark) so that it is seen.
+   */
+  | { t: 'unique'; id: string; what: string; x: number; y: number; x1?: number; y1?: number; r?: number; secs?: number; mid?: number; word?: WordId }
   | { t: 'levelup' };
 
 /** What the player is asking for this frame, already converted to world space. */
