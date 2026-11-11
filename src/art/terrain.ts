@@ -160,6 +160,25 @@ export interface TerrainLook {
    */
   downFaces?: boolean;
   /**
+   * THE RIM WHERE A NEAR CLIFF IS CUT AWAY (art/canyon.ts CANYON_RIM, a mock-up behind a switch that is off). A near cliff's top is
+   * cut away over the floor (his rule), so what shows beside the floor's near edge is the top from `rise` further back, where it has
+   * no rim: the top began with no edge at all and read as ground level with the floor. With this the top is given its rim where it
+   * is cut: `back` given to `top` is also 0 along the floor's edge on the picture (measured on the ground under the pixel), so the
+   * look's own rim (the canyon's pale caprock) runs along every near edge as it does along the far ones. The number is how wide
+   * that rim is beside a far one's (1 the same; a near edge has no face under it to set it off, so a little wider).
+   */
+  cutRim?: number;
+  /**
+   * THE WALLS' SHADE ON THE FLOOR, AS A 3D MODEL LIGHTS IT (art/canyon.ts CANYON_RIM, a mock-up behind a switch that is off): with
+   * it, in place of `nearShadow`. Worked out once from the ground itself (terrainOf), two things a model of the rock standing over
+   * the floor shows: (1) THE SKY SHUT OUT: the floor is darker the more of the rock stands round it, on every side alike (at the
+   * foot of a wall, in a corner, in a narrow gap), `dark` at most, fading out over `wide` tiles from a wall; (2) THE WALLS' CAST
+   * SHADOW: light from the upper left (his rulebook), so the walls whose faces are in shade throw their shadow down the screen to
+   * the right across the floor, `sun` tiles long (it wanders a little), `sunDark` deep, lighter along its last quarter tile.
+   * Never darker than `most` together.
+   */
+  shade?: { wide: number; dark: number; at: readonly [number, number]; sun: number; sunDark: number; most: number };
+  /**
    * (F8F9_FIX, floor 8's strongholds: his “it’s like it’s floating.  Overlapping the top plateau section.”) WALLS CUT STRAIGHT for
    * a door carved into them: the floor's edge exactly along x at `y` from `x0` to `x1` (the floor on its greater-y side), so the
    * cliff's face over it is one flat plane for the door; and its apron, the rectangle `apron` [x0, y0, x1, y1], floor whole.
@@ -190,6 +209,33 @@ export interface Terrain {
   dropField?(x: number, y: number): number;
   /** How far up the top has climbed at world (x, y) (a look with `climb`): 0 at the floor's edge, 1 `climb` tiles back. */
   climbAt?(x: number, y: number): number;
+  /** How dark the walls' shade lies on the floor at world (x, y) (a look with `shade`): 0 in the open, to its `most`. */
+  floorShade?(x: number, y: number): number;
+}
+
+/** A box blur of a field of `nw` by `nh` cells, `r` cells either way, across then down (outside it, 0). */
+function boxBlur(src: Float32Array, nw: number, nh: number, r: number): Float32Array {
+  const n = 2 * r + 1;
+  const tmp = new Float32Array(nw * nh);
+  const out = new Float32Array(nw * nh);
+  for (let j = 0; j < nh; j++) {
+    let acc = 0;
+    const row = j * nw;
+    for (let i = -r; i < nw + r; i++) {
+      if (i + r < nw) acc += src[row + i + r];
+      if (i - r - 1 >= 0) acc -= src[row + i - r - 1];
+      if (i >= 0 && i < nw) tmp[row + i] = acc / n;
+    }
+  }
+  for (let i = 0; i < nw; i++) {
+    let acc = 0;
+    for (let j = -r; j < nh + r; j++) {
+      if (j + r < nh) acc += tmp[(j + r) * nw + i];
+      if (j - r - 1 >= 0) acc -= tmp[(j - r - 1) * nw + i];
+      if (j >= 0 && j < nh) out[j * nw + i] = acc / n;
+    }
+  }
+  return out;
 }
 
 /** Is this place in the world walkable floor by the tiles (a cut tile's floor half)? */
@@ -264,6 +310,69 @@ export function terrainOf(floor: Floor, look: TerrainLook): Terrain {
         }
         return field(x, y) > edge(x, y);
       };
+  // THE WALLS' SHADE ON THE FLOOR (a look with `shade`): how open the floor is to the sky (the walkable tiles blurred wide, twice:
+  // 0.5 at the foot of a straight wall, 1 in the open) and how far up the light's way the nearest rock stands (the light goes along
+  // the world's x, down the screen to the right)
+  let floorShade: ((x: number, y: number) => number) | undefined;
+  const sh = look.shade;
+  if (sh) {
+    const rw = Math.max(1, Math.round((sh.wide * G) / 2));
+    const open = boxBlur(boxBlur(raw, NW, NH, rw), NW, NH, rw);
+    const sunD = new Float32Array(NW * NH);
+    for (let j = 0; j < NH; j++) {
+      let d = 0;
+      for (let i = 0; i < NW; i++) {
+        const c = j * NW + i;
+        d = out[c] > 0.5 ? d + 1 / G : 0;
+        sunD[c] = d;
+      }
+    }
+    const openAt = (x: number, y: number): number => {
+      const gx = Math.max(0, Math.min(NW - 1.001, (x + MARGIN) * G - 0.5));
+      const gy = Math.max(0, Math.min(NH - 1.001, (y + MARGIN) * G - 0.5));
+      const i = Math.floor(gx);
+      const j = Math.floor(gy);
+      const u = gx - i;
+      const v = gy - j;
+      const a = open[j * NW + i];
+      const b = open[j * NW + i + 1];
+      const c = open[(j + 1) * NW + i];
+      const d = open[(j + 1) * NW + i + 1];
+      return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+    };
+    // (of the floor's own cells only, so that the rock beside it is not mixed in: no line of shade along a near edge)
+    const sunAt = (x: number, y: number): number => {
+      const gx = Math.max(0, Math.min(NW - 1.001, (x + MARGIN) * G - 0.5));
+      const gy = Math.max(0, Math.min(NH - 1.001, (y + MARGIN) * G - 0.5));
+      const i = Math.floor(gx);
+      const j = Math.floor(gy);
+      const u = gx - i;
+      const v = gy - j;
+      let acc = 0;
+      let sum = 0;
+      for (let q = 0; q < 4; q++) {
+        const c = (j + (q >> 1)) * NW + i + (q & 1);
+        if (out[c] <= 0.5) continue;
+        const w = (q & 1 ? u : 1 - u) * (q >> 1 ? v : 1 - v);
+        acc += w * sunD[c];
+        sum += w;
+      }
+      return sum > 1e-6 ? acc / sum : 99;
+    };
+    const k2 = look.seed;
+    floorShade = (x: number, y: number): number => {
+      // (in two crisp steps, as the near cliff's shadow is: no soft fade)
+      const o = openAt(x, y) + 0.05 * (vnoise(x * 1.1, y * 1.1, k2 + 42) - 0.5);
+      const foot = o < sh.at[0];
+      const reach = sh.sun * (0.88 + 0.24 * vnoise(x * 0.7 + y * 0.7, x * 0.7 - y * 0.7, k2 + 41));
+      const d = sunAt(x, y);
+      // in the open: the foot's shade, and half of it a little further out
+      if (d >= reach) return foot ? sh.dark : o < sh.at[1] ? 0.5 * sh.dark : 0;
+      // in a wall's cast shadow: one tone, deeper at the wall's foot, lighter along its last quarter tile (three steps, no more)
+      if (foot) return Math.min(sh.most, 1 - (1 - sh.dark) * (1 - sh.sunDark));
+      return d > reach - 0.25 ? 0.5 * sh.sunDark : sh.sunDark;
+    };
+  }
   // HOW FAR UP THE TOP HAS CLIMBED: how far from the walkable floor (a chamfer distance over the field's cells), over `climb` tiles
   let climbAt: ((x: number, y: number) => number) | undefined;
   if (look.climb) {
@@ -313,7 +422,7 @@ export function terrainOf(floor: Floor, look: TerrainLook): Terrain {
     };
   }
   const isDrop = look.drop;
-  if (!isDrop) return { floor, look, field, edge, ground, drop: () => false, climbAt };
+  if (!isDrop) return { floor, look, field, edge, ground, drop: () => false, climbAt, floorShade };
   // THE DROP: drop tiles +1, rock tiles -1, floor 0, blurred as the floor was: where the ground is not floor,
   // it is the drop where that stands over nothing (a slow wander in it, so the rock's edge over it is ragged)
   const tileAt = (i: number, j: number): number => {
@@ -377,7 +486,7 @@ export function terrainOf(floor: Floor, look: TerrainLook): Terrain {
     const n = vnoise(x * 1.3, y * 1.3, k + 5) - 0.5;
     return inFloorTile(x, y) ? dropField(x, y) + 0.2 * n > 0 : nearField(x, y) + 0.6 * n > 0;
   };
-  return { floor, look, field, edge, ground, drop, dropField, climbAt };
+  return { floor, look, field, edge, ground, drop, dropField, climbAt, floorShade };
 }
 
 /** Which way the floor's edge at world (x, y) looks, out of the floor, in degrees on the picture from the right, round through down (so 180 is straight left, -90 straight up). */
@@ -571,6 +680,7 @@ export function paintTerrain(T: Terrain, x0: number, y0: number, w: number, h: n
         const lf2 = lastFace[j - 1] ?? -1;
         if (lf2 >= 0 && j - lf2 <= 7) t = j - lf2 < 4 ? L.foot[0] : L.foot[1];
         const ns = L.nearShadow;
+        if (T.floorShade) t = Math.max(t, T.floorShade(x, y));
         if (ns) {
           // the near cliff, straight down the picture (along the world's x + y): within its shadow's reach?
           const reach = ns.reach * (0.75 + 0.5 * vnoise(x * 0.9 - y * 0.9, 0, L.seed + 40)) * 2 * HHP;
@@ -601,7 +711,13 @@ export function paintTerrain(T: Terrain, x0: number, y0: number, w: number, h: n
         col = L.face(shadeAt(T, x, y), hit[j], px, py, x, y);
       } else {
         const [x, y] = worldOf(px, py + H);
-        const back = Math.max(0, Math.min(1, (T.edge(x, y) - T.field(x, y)) / 0.5));
+        let back = Math.max(0, Math.min(1, (T.edge(x, y) - T.field(x, y)) / 0.5));
+        // (TerrainLook.cutRim: a near cliff's top, cut away, has its rim where it is cut: along the floor's own edge on the picture)
+        if (L.cutRim) {
+          const [gx, gy] = worldOf(px, py);
+          const b0 = (T.edge(gx, gy) - T.field(gx, gy)) / 0.5 / L.cutRim;
+          if (b0 < back) back = Math.max(0, b0);
+        }
         col = L.top(x, y, px, py, back, T.climbAt ? T.climbAt(x, y) : 0);
         if (j + 1 < kn && kind[j + 1] === TK.Face) col = L.brow(col, px, py);
         else {
