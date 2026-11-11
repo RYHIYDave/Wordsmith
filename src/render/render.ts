@@ -645,6 +645,10 @@ export class Renderer {
     // (ACT 2, THE HUSH: and its floor's moment's: render/act1_pieces.ts)
     return [...this.dress.kicks(), ...this.pieces.kicks(), ...this.act1.kicks()];
   }
+  /** (THE FLOORS' SCENE SOUNDS) The sounds of the floor's moments begun this frame (game/scene_sounds.ts; main.ts plays them). */
+  momentSounds(): string[] {
+    return [...this.pieces.sounds(), ...this.act1.sounds()];
+  }
   /** The place whose first drawing has been used to paint frames ahead (see heroArt). */
   private warmedFor: unknown = null;
   /** Frames drawn, for the hero's and the monsters' turns at painting ahead (see heroArt). */

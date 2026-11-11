@@ -12,6 +12,18 @@ const HEROES = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];
 const CORE = new Set(['swing', 'hit', 'crit', 'slam', 'monster_die', 'hurt', 'pickup', 'gold', 'word', 'rare', 'potion', 'level_up', 'portal', 'door', 'gate_rise', 'gate_fall', 'click', 'equip', 'buy', 'deny', 'imbue', 'death', 'echo', 'might', 'orb', 'boss_roar']);
 const TOWN = new Set(['anvil', 'owl_hoot', 'owl_ruffle', 'crystal', 'rune_write', 'rune_drive', 'ring_power', 'coin']);
 const WORLD = /^(break_|chest$|rift_|trap_|sealed_door$)/;
+/**
+ * THE FLOORS' SCENE SOUNDS (the sound chat's eighth batch, 9 Nov 2026: assets/sound/README.md; game/scene_sounds.ts says which floor
+ * plays which): packs of their own by act, floors 1 to 5, 6 to 10, 11 to 15 and 16 to 20, so that a floor fetches its own act's
+ * (2.2 MB the first act's, under 1 MB each of the others) and not all 82 with the heroes' skills. The moments by their floor (f1_stone to f15_chandelier); the quest
+ * pieces and the traps by name.
+ */
+const SCENE = [
+  ['scene-1', /^(f[1-5]_|crank_(gear|turn)$|furnace_out$|gate_fire_out$|cage_(down|up)$)/],
+  ['scene-2', /^(ledge_crumble|eyrie_wind|singing_stones|bog_step|altar_word|seal_burn)$/],
+  ['scene-3', /^(f1[1-5]_|bell_(ring|muffled)$)/],
+  ['scene-4', /^(nettle|clock_chime|mirror_crack|skylight|portcullis|pitch_pour|songbird)$/],
+];
 
 /**
  * Which pack a sound (its name, without its take) goes in. `bosses`: the names before a `_roar` (a boss's roar, hurt, death and
@@ -24,6 +36,7 @@ export function packOf(base, bosses = new Set()) {
   if (base.startsWith('step_')) return 'steps';
   if (TOWN.has(base)) return 'town';
   if (WORLD.test(base)) return 'world';
+  for (const [pack, names] of SCENE) if (names.test(base)) return pack;
   if (base.startsWith('colossus_')) return 'colossus';
   const who = base.split('_')[0];
   if (bosses.has(who)) return 'bosses';

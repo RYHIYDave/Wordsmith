@@ -49,11 +49,12 @@
 //   rights itself and sings (BIRD; a peril, 'gking:bird', in place of the floor's broken one); the way on opens (the game's ways).
 // What his blows leave and send, and the Hush and the bird, drawn: render/act1_fx/gking.ts.
 
-import { CHARGE_FX, CURTAINS_FX, DECREE_FX, KG_REACH, WEIGHT_FX, curtainFaces, decreeKnights, weightAt } from '../../art/king_fx';
+import { BIRD, CHARGE_FX, CURTAINS_FX, DECREE_FX, KG_REACH, WEIGHT_FX, curtainFaces, decreeKnights, weightAt } from '../../art/king_fx';
 import { HUSH_BESIDE, KG_CHARGE, KG_CLIMB, KG_CURTAINS, KG_DECREE, KG_PACE, KG_WALK, KG_WEIGHT } from '../../art/king_moves';
 import { TILE3 } from '../../art/new_mobs3';
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { backView, beside, flipped, fromFigure, handOf } from '../facing';
+import { SCENE_SOUNDS } from '../scene_sounds';
 import type { Level, Monster, Peril } from '../state';
 import type { Act1Rules } from './types';
 
@@ -448,6 +449,8 @@ export const RULES: Act1Rules | null = {
     if (piece) {
       L.props.splice(L.props.indexOf(piece), 1);
       R.peril(m, 'act1', piece.x, piece.y, { a1: 'gking:bird', dur: 1e9, hit: 0, fx: 1, fy: 0 });
+      // (THE FLOORS' SCENE SOUNDS: its song, as it has wound itself up and begins to sing, running down)
+      if (SCENE_SOUNDS.on) g.worldAfter(BIRD.wind, 'songbird', 1, undefined, true);
     }
   },
   acting(R, m, a, t0, t1) {

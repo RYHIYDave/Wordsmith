@@ -52,6 +52,7 @@ import type { Act1Dress, Act1Tile } from '../game/act1_dress';
 import type { Land } from '../game/act1_layout';
 import type { HushMoment } from '../game/act2_moments';
 import type { Game } from '../game/game';
+import { momentSound } from '../game/scene_sounds';
 import type { Level, PropInst } from '../game/state';
 import { SPIKE, SPIKE_BEAT, spikeAt } from '../game/traps';
 import type { HazardSpot } from '../game/types';
@@ -199,6 +200,8 @@ export class Act1Pieces {
   /** (ACT 2, THE HUSH) The floor's moment, and the screen's kicks its jolts have asked for since they were last taken. */
   private played: HushPlayed[] = [];
   private kicked: Kick[] = [];
+  /** (THE FLOORS' SCENE SOUNDS) The sounds of the moments begun since they were last asked for (game/scene_sounds.ts MOMENT_SOUND). */
+  private begun: string[] = [];
 
   /** This frame's level: its pieces looked up anew when it is another than last time's. */
   begin(L: Level): boolean {
@@ -449,6 +452,10 @@ export class Act1Pieces {
         pm.state = 'play';
         pm.t0 = now;
         pm.last = -1;
+        // (THE FLOORS' SCENE SOUNDS: its own sound, made whole to its film, from this, its frame 0; the House of Quiet's screen
+        // too, through the Hush's muffling: his rule there is thin and muffled, not silent)
+        const snd = this.dress ? momentSound(this.dress.floor, 0) : null;
+        if (snd) this.begun.push(snd);
       }
       if (!film) {
         pm.state = 'done';
@@ -457,7 +464,7 @@ export class Act1Pieces {
       const k = Math.floor((now - pm.t0) * MOMENT_FPS);
       for (let f = pm.last + 1; f <= Math.min(k, film.frames.length - 1); f++) {
         const j = film.jolts.indexOf(f);
-        if (j >= 0) this.kicked.push({ amount: j === 0 ? MOMENT_KICK : MOMENT_KICK - 1, vol: this.dress && SILENT_MOMENTS.has(this.dress.floor) ? 0 : MOMENT_VOL });
+        if (j >= 0) this.kicked.push({ amount: j === 0 ? MOMENT_KICK : MOMENT_KICK - 1, vol: this.dress && SILENT_MOMENTS.has(this.dress.floor) ? 0 : MOMENT_VOL, of: (this.dress ? momentSound(this.dress.floor, 0) : null) ?? undefined });
       }
       pm.last = k;
       if (k >= film.frames.length) pm.state = 'done';
@@ -468,6 +475,13 @@ export class Act1Pieces {
   kicks(): Kick[] {
     const out = this.kicked;
     this.kicked = [];
+    return out;
+  }
+
+  /** (THE FLOORS' SCENE SOUNDS) The sounds of the moments begun since this was last asked (main.ts plays each, at its own pitch). */
+  sounds(): string[] {
+    const out = this.begun;
+    this.begun = [];
     return out;
   }
 

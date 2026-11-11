@@ -952,8 +952,10 @@ export function sfxNamed(name: string, vol = 1, or?: Sfx, exact = false): void {
  * floor 10 holds 22). Now, as a place's own sounds are fetched (`warmNamed`: its kinds', as it is come into), those fetched so
  * for places further back than the one just left are let go, unless this place has them too: so going back and forth between
  * two places keeps both. One let go is fetched again when its place is come into again, or the first time it is asked for
- * (its pack's bytes are kept: only the decoding is done again). The game's own sounds, the hero's voice, the steps, the loops
- * and the world's sounds are never let go.
+ * (its pack's bytes are kept: only the decoding is done again). The game's own sounds, the hero's voice, the steps, the town's
+ * loops and the world's sounds of every floor (props, chests, rifts, traps) are never let go. A FLOOR'S OWN SCENE SOUNDS (the eighth
+ * batch: game/scene_sounds.ts sceneSoundsOf) are fetched with its enemies' and let go with them; its background loop with the
+ * loop (setLoops).
  */
 const warmedEver = new Set<string>();
 let warmedLast = new Set<string>();
@@ -1035,20 +1037,49 @@ export function setMuffled(on: boolean): void {
   applyMuffle();
 }
 
-/** A world sound by name (two takes, <name>_1 and _2): a prop breaking, a chest, a rift, a trap, the town's. `or`: made in code till it has come. */
-export function worldSound(name: string, vol = 1, or?: Sfx): void {
+/**
+ * A world sound by name (two takes, <name>_1 and _2): a prop breaking, a chest, a rift, a trap, the town's. `or`: made in code till
+ * it has come. `exact`: at its own pitch and length, a sound timed to a picture's frames or one that rings (a floor's moment, the
+ * cage's ride, a bell). True where one of its takes was played.
+ */
+export function worldSound(name: string, vol = 1, or?: Sfx, exact = false): boolean {
   try {
     const c = ctx;
-    if (!c || !bus || muted || c.state !== 'running' || !(vol > 0)) return;
+    if (!c || !bus || muted || c.state !== 'running' || !(vol > 0)) return false;
     const into = worldBus(c);
-    if (!into) return;
+    if (!into) return false;
     const takes = [`${name}_1`, `${name}_2`];
     for (const t of takes) fetchRecorded(c, `${t}.mp3`);
-    if (RECORDED.on && playTake(c, into, `world:${name}`, takes, nowMs(), vol, undefined)) return;
+    if (RECORDED.on && playTake(c, into, `world:${name}`, takes, nowMs(), vol, undefined, !exact)) {
+      heardTill.set(name, c.currentTime + takesLong(takes));
+      return true;
+    }
     if (or) sfx(or, { vol });
   } catch (err) {
     report(`worldSound '${name}'`, err);
   }
+  return false;
+}
+
+/**
+ * WHETHER A WORLD SOUND IS BEING HEARD NOW (the floors' scene sounds, 11 Nov 2026): one of its takes was played and has not run
+ * out. A sound made whole to a picture's frames (a moment, the cage coming down, the portcullis) has that picture's blows in it;
+ * the blows the game makes in code at those frames are then its stand-ins, and are not sounded on top of it.
+ */
+const heardTill = new Map<string, number>();
+export function soundHeard(name: string): boolean {
+  const c = ctx;
+  const till = heardTill.get(name);
+  return !!c && till !== undefined && c.currentTime < till;
+}
+/** The longest of these takes that have come (seconds). */
+function takesLong(takes: readonly string[]): number {
+  let long = 0;
+  for (const t of takes) {
+    const b = recorded.get(`${t}.mp3`);
+    if (b) long = Math.max(long, b.duration);
+  }
+  return long;
 }
 
 /** FOOTSTEPS: the ground underfoot, by the floor (game/footsteps.ts). */
@@ -1084,12 +1115,21 @@ export function footstep(ground: Ground, vol = STEP_VOL): void {
 }
 
 /**
- * THE LOOPS (<name>_loop.wav: fire_small, fire_big, water, ring_hum, bed_hall, bed_camp): each, while wanted, going round for ever,
- * faded over about a second to the loudness asked (the nearer its fire or water, the louder); let go of once unwanted a while.
+ * THE LOOPS (<name>_loop.wav: fire_small, fire_big, water, ring_hum, bed_hall, bed_camp; and, the eighth batch, a background for
+ * every floor, bed_f1 to bed_f20, the furnace and the pillars' fire): each, while wanted, going round for ever, faded over about
+ * a second to the loudness asked (the nearer its fire or water, the louder; a floor's background fading out as the next floor's
+ * fades in); let go of once unwanted a while.
+ * A FLOOR'S OWN LOOPS ARE LET GO WHOLE (11 Nov 2026): the first six are few and come back to all the time, and their decoded
+ * sound is kept; a floor's background is wanted on that floor alone, and each is 10 seconds of sound (640 KB as it ships, about
+ * 2 MB decoded at a phone's 48 kHz), so twenty kept over a sitting would be the memory 25.3.2 gave back. So once its loop has been let go of (or it came
+ * after he had left), its decoded sound is let go too, and fetched again if he comes back.
  */
 const loops = new Map<string, { src: AudioBufferSourceNode; g: GainNode; quiet: number }>();
 /** How long a loop unwanted is kept going, silent, before it is let go of (seconds). */
 const LOOP_KEEP = 6;
+const FLOOR_LOOP = /^(bed_f\d+|furnace|pillar_fire)$/;
+/** The floor's own loops asked for and not yet let go (their names). */
+const floorLoops = new Set<string>();
 export function setLoops(want: Readonly<Record<string, number>>): void {
   try {
     const c = ctx;
@@ -1101,6 +1141,7 @@ export function setLoops(want: Readonly<Record<string, number>>): void {
       if (!(vol > 0.001)) continue;
       const file = `${name}_loop.wav`;
       fetchRecorded(c, file, false);
+      if (FLOOR_LOOP.test(name)) floorLoops.add(name);
       if (loops.has(name)) continue;
       const buf = recorded.get(file);
       if (!buf) continue;
@@ -1128,6 +1169,18 @@ export function setLoops(want: Readonly<Record<string, number>>): void {
         }
         loops.delete(name);
       }
+    }
+    // (a floor's own loop, no longer wanted and no longer going round: its decoded sound let go; one still on its way, the next time)
+    for (const name of floorLoops) {
+      if ((want[name] ?? 0) > 0.001 || loops.has(name)) continue;
+      const file = `${name}_loop.wav`;
+      const v = recorded.get(file);
+      if (v === null) continue;
+      if (v) {
+        recorded.delete(file);
+        soundsLetGo++;
+      }
+      floorLoops.delete(name);
     }
   } catch (err) {
     report('setLoops', err);
@@ -1226,15 +1279,15 @@ export function recordedState(): { come: number; coming: number; failed: number;
   return { come, coming, failed, title: !!titleSrc };
 }
 
-/** (for the playtests) the recorded sounds come so far, by file, the loops going round, and how many takes have been played. */
-export function recordedDetail(): { come: string[]; failed: string[]; loops: string[]; played: number; heard: string[] } {
+/** (for the playtests) the recorded sounds come so far, by file, the loops going round, how many takes have been played, the last heard, and how many sounds have been let go. */
+export function recordedDetail(): { come: string[]; failed: string[]; loops: string[]; played: number; heard: string[]; letGo: number } {
   const come: string[] = [];
   const failed: string[] = [];
   for (const [k, v] of recorded) {
     if (v) come.push(k);
     else if (v === false) failed.push(k);
   }
-  return { come, failed, loops: [...loops.keys()], played: takesPlayed, heard: [...heardLast] };
+  return { come, failed, loops: [...loops.keys()], played: takesPlayed, heard: [...heardLast], letGo: soundsLetGo };
 }
 
 let titleSrc: AudioBufferSourceNode | null = null;

@@ -54,6 +54,8 @@ const SHAFT_SHADOW = 0.7;
 export interface Kick {
   amount: number;
   vol: number;
+  /** (THE FLOORS' SCENE SOUNDS) The moment's own sound whose jolt this is (game/scene_sounds.ts): where that is being heard, the blow is in it, and none is made in code. */
+  of?: string;
 }
 
 export class FloorDress {
