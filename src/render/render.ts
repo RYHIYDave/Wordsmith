@@ -70,6 +70,8 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawGlow, drawLights, flipSprite, reapRetired, silhouette, spriteCovers } from '../engine/px';
 import { StillGlows } from './still_glows';
 import { StillFloor } from './still_floor';
+import { StillDark } from './still_dark';
+import type { DarkSpot } from './still_dark';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
 import { WARLOCK_TUNE } from '../game/warlock';
@@ -568,6 +570,7 @@ export class Renderer {
     // (the last place's steady glows as one picture, and its floor: render/still_glows.ts, render/still_floor.ts)
     this.stillGlows.forget();
     this.stillFloor.forget();
+    this.stillDark.forget();
     for (const v of [this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) {
       if (v === keep) continue;
       v.forget?.();
@@ -4611,6 +4614,8 @@ export class Renderer {
   readonly topsCache = new TopsCache();
   /** A PLACE'S STEADY GLOWS AS ONE PICTURE (render/still_glows.ts): the town's day, 67 glows a frame. */
   readonly stillGlows = new StillGlows();
+  /** A PLACE'S DARK WITH ITS STEADY LIGHTS' HOLES AS ONE PICTURE (render/still_dark.ts): the town's day, 55 holes a frame. */
+  readonly stillDark = new StillDark();
   private frameChunks: Chunk[] = [];
   /** Every chunk on the screen this frame, with a picture or without. */
   private seenChunks: Chunk[] = [];
@@ -4942,26 +4947,14 @@ export class Renderer {
     // (FLOOR 3, THE BLACK IRON PRISON: look B's deep shadow between its fires, 0.65 (0.8 until 9 Nov 2026): art/prison.ts PRISON_LIGHTS)
     const look = this.lookNow;
     const prisonOn = look === this.prison;
-    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town && !look ? 'rgba(8,5,14,0.45)' : `rgba(${look?.tint && !yardSky ? look.tint.join(',') : '6,4,14'},${yardSky ? YARD_DARK : look ? look.dark : FAR_DARK})`;
-    dg.fillRect(0, 0, W, H);
+    const veil = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town && !look ? 'rgba(8,5,14,0.45)' : `rgba(${look?.tint && !yardSky ? look.tint.join(',') : '6,4,14'},${yardSky ? YARD_DARK : look ? look.dark : FAR_DARK})`;
     // (FLOOR 7, THE CARRION QUEEN'S ECLIPSE, QUEEN_ACTION: her flock over the ledge, dark but for its pools of light: the rock at a
     // third of its light, art/carrion_queen_action_fx.ts DARK_FLOOR; the hero's own light taken in with it)
     const eclipse = QUEEN_ACTION.on ? eclipseNow(game.perils) : null;
     const eDark = eclipse ? eclipseDark(eclipse.t) : 0;
-    if (eDark > 0) {
-      dg.fillStyle = `rgba(10,6,22,${(0.72 * eDark).toFixed(3)})`;
-      dg.fillRect(0, 0, W, H);
-    }
-    // (FLOOR 14, THE PHYSICIAN'S OPERATION, PHYSICIAN_ACTION: the theatre plunged dark, to a fifth of its light, art/physician_action_fx.ts
-    // OPERATION.low; one hard spotlight on the field, cut below)
+    // (FLOOR 14, THE PHYSICIAN'S OPERATION: its darkness, laid below)
     const op = operationNow(game.perils);
     const oDark = op ? opDark(op.t) : 0;
-    if (oDark > 0) {
-      dg.fillStyle = `rgba(10,8,18,${(0.8 * oDark).toFixed(3)})`;
-      dg.fillRect(0, 0, W, H);
-    }
-    const heroLit = 1 - 0.8 * Math.max(eDark, oDark);
-    dg.globalCompositeOperation = 'destination-out';
     // One soft pool of light, painted once; every light in the scene is that picture, stretched
     // to its size and faded to its strength. (A fresh gradient for each light each frame was the
     // costliest thing in a busy fight.)
@@ -4973,6 +4966,46 @@ export class Renderer {
       c.fillStyle = grd;
       c.fillRect(-64, -64, 128, 128);
     });
+    // (A PLACE'S DARK WITH ITS STEADY LIGHTS' HOLES AS ONE PICTURE, render/still_dark.ts: the veil and the day's holes laid down
+    // together, where no boss's darkness is over the place; the holes that move or flicker are cut after, as ever)
+    const lights = look ? look.lights(L) : null;
+    let steadyLit = 0;
+    let steadySig = 0;
+    if (lights && eDark <= 0 && oDark <= 0) {
+      for (let i = 0; i < lights.length; i++) {
+        const q = lights[i];
+        if (q.still !== true || q.strength <= 0 || !L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+        steadySig = (Math.imul(steadySig, 31) + i + 1) | 0;
+        steadyLit++;
+      }
+    }
+    const asOneDark =
+      !!lights && steadyLit >= 2 &&
+      this.stillDark.draw(dg, cam, W, H, veil, pool, [L, lights, steadySig, cam.lift ?? null], () => {
+        const home: Cam = { ox: 0, oy: 0, lift: cam.lift };
+        const out: DarkSpot[] = [];
+        for (const q of lights) {
+          if (q.still !== true || q.strength <= 0 || !L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+          out.push({ x: wx(home, q.x, q.y) + (q.dx ?? 0), y: wy(home, q.x, q.y) - q.up, r: q.r, strength: q.strength });
+        }
+        return out;
+      });
+    if (!asOneDark) {
+      dg.fillStyle = veil;
+      dg.fillRect(0, 0, W, H);
+    }
+    if (eDark > 0) {
+      dg.fillStyle = `rgba(10,6,22,${(0.72 * eDark).toFixed(3)})`;
+      dg.fillRect(0, 0, W, H);
+    }
+    // (FLOOR 14, THE PHYSICIAN'S OPERATION, PHYSICIAN_ACTION: the theatre plunged dark, to a fifth of its light, art/physician_action_fx.ts
+    // OPERATION.low; one hard spotlight on the field, cut below)
+    if (oDark > 0) {
+      dg.fillStyle = `rgba(10,8,18,${(0.8 * oDark).toFixed(3)})`;
+      dg.fillRect(0, 0, W, H);
+    }
+    const heroLit = 1 - 0.8 * Math.max(eDark, oDark);
+    dg.globalCompositeOperation = 'destination-out';
     dg.imageSmoothingEnabled = true;
     const spot = (x: number, y: number, r: number, strength: number): void => {
       if (strength <= 0 || x < -r || x > W + r || y < -r || y > H + r) return;
@@ -5011,6 +5044,8 @@ export class Renderer {
     if (look) {
       for (const q of look.lights(L)) {
         if (!L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+        // (the steady ones are in the veil already: render/still_dark.ts)
+        if (asOneDark && q.still === true) continue;
         const lx = wx(cam, q.x, q.y) + (q.dx ?? 0);
         const ly = wy(cam, q.x, q.y) - q.up;
         if (lx < -q.r || lx > W + q.r || ly < -q.r || ly > H + q.r) continue;
