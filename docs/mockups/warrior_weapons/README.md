@@ -457,8 +457,8 @@ was not set up again for this look.)
 | `runCatch` | 15 (0.5 s) | THE CATCH ON THE RUN: his run's steps frame for frame from its first picture (his feet where his run puts them), the catch in his arms: it smacks into his hand (0), his arm carried back by it (1 to 3), held (to 6), brought down round his right side (8, 10), his left hand to the butt, carried as his run carries it (12); it ends where his run begins, so it goes on into his run |
 | `twinRunCatch` | 30 (1 s) | the same with Twin Axes: both caught, the second put away over his left shoulder (11), his own brought down into his run (15 to 22); two turns of his run |
 
-On the run his hips and chest are turned as the standing catch turns them (his feet stepping as his run's), handed back to his
-run's as the axe comes down. Standing, he waits braced (`hold`, `twinBraced`) as before. Shown in `axe_run_catch.mp4`. Checked as the moves are
+On the run his body above his feet is turned and bent as the standing catch has it (his feet stepping as his run's), handed
+back to his run's as the axe comes down. Standing, he waits braced (`hold`, `twinBraced`) as before. Shown in `axe_run_catch.mp4`. Checked as the moves are
 (`tests/warrior_weapons.test.ts` 17).
 
 ## The last pieces, for both weapons (`src/art/warrior_up_heavy_art.ts`)

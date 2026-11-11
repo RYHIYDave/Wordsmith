@@ -590,7 +590,7 @@ test('17. while the axe flies he may move: his run empty-handed is the game\'s o
   assert.equal(AXE_RUN_EMPTY.keys.length, KNIGHT_RUN3.motion.keys.length, 'his run, key for key');
   KNIGHT_RUN3.motion.keys.forEach((k, i) => { for (const [f, v] of Object.entries(k.pose)) assert.equal((AXE_RUN_EMPTY.keys[i].pose as Record<string, unknown>)[f], v, `run empty: key ${i}, ${f}`); });
   assert.deepEqual([framesOf(AXE_RUN_EMPTY), framesOf(AXE_RUN_CATCH), framesOf(AXE_TWIN_RUN_CATCH)], [15, 15, 30], 'a turn of his run; the catch a turn; Twin Axes two');
-  // (the catch on the run: his run's steps, frame for frame: his feet where his run puts them; his hips and chest turned to the catch)
+  // (the catch on the run: his run's steps frame for frame, his feet where his run puts them; his body above them turned to the catch)
   for (const m of [AXE_RUN_CATCH, AXE_TWIN_RUN_CATCH]) for (let i = 0; i < framesOf(m); i++) {
     const a = axePosed(m, i * AXE_FRAME).s;
     const b = axePosed(AXE_RUN, i * AXE_FRAME).s;

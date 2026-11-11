@@ -1034,14 +1034,14 @@ function onTheRun(catchKeys: readonly AxeKey[], upTo: number, from: number, end:
     for (const a of ARM_FIELDS) if (a in q && !['lh2', 'rh2', 'mixK', 'from', 'to'].includes(a)) (pose as Record<string, unknown>)[a] = (q as unknown as Record<string, unknown>)[a];
     arms.push({ at: f * FR, pose, ease: f === from ? 'io' : 'lin' });
   }
-  // (`turned`: his chest turned as the standing catch turns it, on his run's hips and legs, the run's turn of them handed back as
-  // he comes into it: two axes held behind his two shoulders want his chest where the standing catch has it)
+  // (`turned`: his chest turned and bent as the standing catch has it, on his run's hips and legs, handed back to his run's as he
+  // comes into it: an axe held behind his shoulder wants his chest where the standing catch has it)
   const chest = (t: number): Posed => {
     const run = runAt(t);
     if (!turned) return run;
     const was = bonesAt(catchKeys, AXE_REST, Math.min(t, upTo * FR));
     const k = t <= upTo * FR ? 1 : Math.max(0, 1 - (t - upTo * FR) / ((from - upTo) * FR));
-    return { ...run, yaw: run.yaw + k * (was.yaw - run.yaw), twist: run.twist + k * (was.twist - run.twist), px: run.px + k * (was.px - run.px), bend: run.bend + k * (was.bend - run.bend), pitch: run.pitch + k * (was.pitch - run.pitch) };
+    return { ...run, twist: run.twist + k * (was.twist + was.yaw - run.twist - run.yaw), bend: run.bend + k * (was.bend - run.bend), pitch: run.pitch + k * (was.pitch - run.pitch) };
   };
   return { keys: arms, pose: (t) => armsOn(chest(t), bonesAt(arms, AXE_REST, t)) };
 }
@@ -1052,7 +1052,7 @@ function downOnTheRun(at: number, near: number, step = 2): AxeKey[] {
   const b = one({}, [5, -6.5, -13], -131, 16, DOWN, a.roll, { lhIn: 3, lhx: BUTT, lhy: 0, lhz: 0, le: 12 }, 0);
   return [key(at, a, 'io'), key(at + step, b, 'io')];
 }
-/** THE CATCH ON THE RUN: his run's steps frame for frame from its first picture (his hips and chest turned to the catch) (0.5 s: a turn of it, so that it goes
+/** THE CATCH ON THE RUN: his run's steps frame for frame from its first picture (his body above his feet turned to the catch) (0.5 s: a turn of it, so that it goes
  * on into his run), the catch in his arms: it smacks into his hand (0), his arm carried back by it (1 to 3), held (to 6); his left
  * hand to the butt and the axe brought down before his hip as his run carries it (14). */
 const RUN_CATCH = onTheRun(AXE_CATCH.keys, 6, 12, 14, downOnTheRun(8, AXE_CATCH.keys[4].pose.wRoll ?? 180, 2), true);
