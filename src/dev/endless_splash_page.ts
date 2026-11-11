@@ -3,10 +3,13 @@
 // (ui/endless_splash_draw.ts), on a canvas of the size asked for in game pixels (#w=507&h=234), any moment of it asked for by
 // its time: window.__splash(t).
 import { drawEndlessSplashArt, readyEndlessSplash } from '../ui/endless_splash_draw';
+import { ENDLESS_SPLASH } from '../art/endless_splash';
 
 const q = new URLSearchParams(location.hash.slice(1));
 const w = Number(q.get('w') || 507);
 const h = Number(q.get('h') || 234);
+// (#pic=hall: the hall of gates; else the stair with no bottom, his pick)
+ENDLESS_SPLASH.picture = q.get('pic') === 'hall' ? 'hall' : 'stair';
 const cv = document.createElement('canvas');
 cv.width = w * 2;
 cv.height = h * 2;

@@ -14,12 +14,9 @@
 
 import { drawText, textWidth } from '../engine/font';
 import { hash2 } from '../engine/rng';
-import {
-  ES_FIRES, ES_FIRE_AT, ES_FLAMES, ES_GATES, ES_H, ES_MOMENT, ES_TORCH_AT, ES_W, ES_WAYS, ES_WAY_AT,
-  endlessAsleep, endlessAwake, endlessCrown, endlessLettering, endlessNear, endlessWake,
-  paintEndlessFire, paintEndlessFlame, paintEndlessSplash, paintEndlessWay,
-} from '../art/endless_splash';
-import type { EndlessPatch } from '../art/endless_splash';
+import { ENDLESS_SPLASH, ES_FIRES, ES_FLAMES, ES_H, ES_W, ES_WAYS, HALL_SCENE, endlessAsleep } from '../art/endless_splash';
+import type { EndlessPatch, EndlessScene } from '../art/endless_splash';
+import { STAIR_SCENE } from '../art/endless_stair';
 
 interface Piece {
   cv: HTMLCanvasElement;
@@ -30,6 +27,7 @@ interface Piece {
   h: number;
 }
 interface SplashArt {
+  scene: EndlessScene;
   still: HTMLCanvasElement;
   asleep: Int16Array[];
   flames: Piece[][];
@@ -38,7 +36,8 @@ interface SplashArt {
   glowPink: HTMLCanvasElement;
   glowGold: HTMLCanvasElement;
   glowCyan: HTMLCanvasElement;
-  glowTorch: HTMLCanvasElement;
+  /** A torch's light at three sizes: far, middling, near. */
+  glowTorch: HTMLCanvasElement[];
 }
 
 const NIGHT = '#05040f';
@@ -125,18 +124,20 @@ let art: SplashArt | null = null;
 
 /** THE PICTURE MADE READY (painted, once): call it ahead of the splash, where a wait does not show. */
 export function readyEndlessSplash(): void {
-  if (art) return;
-  const p = paintEndlessSplash();
+  const S = ENDLESS_SPLASH.picture === 'hall' ? HALL_SCENE : STAIR_SCENE;
+  if (art && art.scene === S) return;
+  const p = S.paint();
   art = {
+    scene: S,
     still: canvasOf(p.w, p.h, p.c),
     asleep: endlessAsleep(p),
-    flames: [0, 1].map((side) => Array.from({ length: ES_FLAMES }, (_, i) => pieceOf(paintEndlessFlame(side, i)))),
-    ways: Array.from({ length: ES_WAYS }, (_, i) => pieceOf(paintEndlessWay(i))),
-    fires: Array.from({ length: ES_FIRES }, (_, i) => pieceOf(paintEndlessFire(i))),
+    flames: Array.from({ length: S.flames }, (_, site) => Array.from({ length: ES_FLAMES }, (_u, i) => pieceOf(S.paintFlame(site, i)))),
+    ways: Array.from({ length: ES_WAYS }, (_, i) => pieceOf(S.paintWay(i))),
+    fires: Array.from({ length: ES_FIRES }, (_, i) => pieceOf(S.paintFire(i))),
     glowPink: glowOf(FIRE_R, Math.round(FIRE_R * 0.7), 255, 79, 138, 6),
     glowGold: glowOf(18, 13, 255, 208, 122, 4),
-    glowCyan: glowOf(84, 24, 34, 208, 224, 5),
-    glowTorch: glowOf(46, 46, 255, 138, 42, 5),
+    glowCyan: glowOf(S.wayGlow[0], S.wayGlow[1], 34, 208, 224, 5),
+    glowTorch: [12, 24, 46].map((r) => glowOf(r, r, 255, 138, 42, r > 30 ? 5 : 4)),
   };
 }
 
@@ -146,13 +147,14 @@ export function releaseEndlessSplash(): void {
 }
 
 /** The kick of the screen at time t, in game pixels (halves: the picture's own pixels). */
-function kickAt(t: number): [number, number] {
+function kickAt(S: EndlessScene, t: number): [number, number] {
+  const ES_MOMENT = S.moment;
   let sx = 0;
   let sy = 0;
-  for (let j = 0; j <= ES_GATES; j++) {
-    const dt = t - endlessWake(j);
+  for (let j = 0; j <= S.gates; j++) {
+    const dt = t - S.wake(j);
     if (dt < 0 || dt >= 0.14) continue;
-    const amp = (j === ES_GATES ? 3.5 : j === 0 ? 2 : 3 * Math.sqrt(endlessNear(j))) * (1 - dt / 0.14);
+    const amp = (j === S.gates ? 3.5 : j === 0 ? 2 : 3 * Math.sqrt(S.near(j))) * (1 - dt / 0.14);
     sy += amp * Math.cos(dt * 80);
     sx += amp * 0.6 * Math.sin(dt * 97 + j);
   }
@@ -183,21 +185,17 @@ function add(g: CanvasRenderingContext2D, cv: HTMLCanvasElement, cx: number, cy:
   g.globalCompositeOperation = 'source-over';
 }
 
-/** Dust shaken off a crown: `n` grains from along it, born at `born`, falling. `big`: how near (1 the first gate). */
-function dust(g: CanvasRenderingContext2D, t: number, born: number, k: number, n: number, big: number, color: string, x0: number, y0: number, span = 1, heavy = 1): void {
-  const age0 = t - born;
-  if (age0 < 0 || age0 > 1.1) return;
+/** Dust shaken off stage k (art/endless_splash.ts EndlessScene.dust), born at `born`. `land`: the dust of the word's landing. */
+function dust(g: CanvasRenderingContext2D, S: EndlessScene, t: number, born: number, k: number, land: boolean, color: string, x0: number, y0: number): void {
+  const a = t - born;
+  if (a < 0 || a > 1.4) return;
   g.fillStyle = color;
+  const n = S.dustN(k, land);
   for (let i = 0; i < n; i++) {
-    const a = age0 - hash2(i, k, 301) * 0.07;
-    const life = 0.55 + hash2(i, k, 307) * 0.45;
-    if (a < 0 || a > life) continue;
-    const [cx, cy] = endlessCrown(k, (hash2(i, k, 311) * 2 - 1) * span);
-    const px = cx + (hash2(i, k, 313) - 0.5) * 34 * big * a;
-    const py = cy + (26 * a + 300 * heavy * a * a) * big + 1;
-    const s = big > 0.45 && hash2(i, k, 317) > 0.5 ? 1 : 0.5;
-    g.globalAlpha = Math.ceil((1 - a / life) * 4) / 4;
-    g.fillRect(x0 + Math.round(px) / 2, y0 + Math.round(py) / 2, s, s);
+    const d = S.dust(k, i, a, land);
+    if (!d) continue;
+    g.globalAlpha = d[3];
+    g.fillRect(x0 + Math.round(d[0]) / 2, y0 + Math.round(d[1]) / 2, d[2] / 2, d[2] / 2);
   }
   g.globalAlpha = 1;
 }
@@ -215,8 +213,10 @@ function edged(g: CanvasRenderingContext2D, text: string, cx: number, y: number,
 export function drawEndlessSplashArt(g: CanvasRenderingContext2D, t: number, w: number, h: number): void {
   readyEndlessSplash();
   const a = art as SplashArt;
-  const M = ES_MOMENT;
-  const L = endlessLettering(w, h, textWidth(WORD), textWidth(WAY) + SUB_GAP + textWidth(HARD));
+  const S = a.scene;
+  const hall = S === HALL_SCENE;
+  const M = S.moment;
+  const L = S.lettering(w, h, textWidth(WORD), textWidth(WAY) + SUB_GAP + textWidth(HARD));
   const smooth = g.imageSmoothingEnabled;
   g.save();
   g.imageSmoothingEnabled = false;
@@ -225,61 +225,63 @@ export function drawEndlessSplashArt(g: CanvasRenderingContext2D, t: number, w: 
   g.fillStyle = NIGHT;
   g.fillRect(0, 0, w, h);
   g.globalAlpha = 1;
-  const awake = endlessAwake(t);
-  const [kx, ky] = kickAt(t);
+  let awake = 0;
+  while (awake <= S.gates && t >= S.wake(awake)) awake++;
+  const [kx, ky] = kickAt(S, t);
   const x0 = L.ox + kx;
   const y0 = L.oy + ky;
   const cx = Math.floor(w / 2) + kx;
   if (awake > 0) {
     g.drawImage(a.still, x0, y0, ES_W, ES_H);
     // WHAT LIVES: the torches' fire, the waypoint's light going round, the far fire
-    for (let side = 0; side < 2; side++) {
-      const f = a.flames[side][(Math.floor(t * 11) + side * 2) % ES_FLAMES];
+    for (let site = 0; site < S.flames; site++) {
+      if (S.torches[site][2] >= awake) continue;
+      const f = a.flames[site][(Math.floor(t * 11) + site * 2) % ES_FLAMES];
       g.drawImage(f.cv, x0 + f.x, y0 + f.y, f.w, f.h);
     }
-    if (awake > 1) {
+    if (awake > S.wayStage) {
       const wp = a.ways[Math.floor(t * 9) % ES_WAYS];
       g.drawImage(wp.cv, x0 + wp.x, y0 + wp.y, wp.w, wp.h);
     }
-    if (awake > ES_GATES) {
+    if (awake > S.gates) {
       const fp = a.fires[Math.floor(t * 8) % ES_FIRES];
       g.drawImage(fp.cv, x0 + fp.x, y0 + fp.y, fp.w, fp.h);
     }
     // LIGHT ADDED where light is
-    const flick = hash2(Math.floor(t * 12), 3, 401);
-    for (const [tx, ty] of ES_TORCH_AT) add(g, a.glowTorch, x0 + tx / 2, y0 + ty / 2, 0.2 + flick * 0.08);
-    if (awake > 1) add(g, a.glowCyan, x0 + ES_WAY_AT[0] / 2, y0 + ES_WAY_AT[1] / 2, 0.3 + 0.07 * Math.sin(t * 4.2));
-    // A FLASH on each gate as it wakes (the last three still dying down), over itself and all that is seen through it
-    for (let j = Math.max(0, awake - 3); j < Math.min(awake, ES_GATES); j++) {
-      const dt = t - endlessWake(j);
+    S.torches.forEach(([tx, ty, stage, size], i) => {
+      if (stage >= awake) return;
+      const flick = hash2(Math.floor(t * 12), 3 + i, 401);
+      add(g, a.glowTorch[size], x0 + tx / 2, y0 + ty / 2, 0.2 + flick * 0.08);
+    });
+    if (awake > S.wayStage) add(g, a.glowCyan, x0 + S.wayAt[0] / 2, y0 + S.wayAt[1] / 2, 0.3 + 0.07 * Math.sin(t * 4.2));
+    // A FLASH on each stage as it wakes (the last three still dying down), over itself and all that is seen beyond it
+    for (let j = Math.max(0, awake - 3); j < Math.min(awake, S.gates); j++) {
+      const dt = t - S.wake(j);
       if (dt >= 0.16) continue;
       g.globalCompositeOperation = 'lighter';
-      g.globalAlpha = (j === 0 ? 0.4 : 0.6) * (1 - dt / 0.16);
-      g.fillStyle = j === 0 ? '#ffb060' : '#7af8f0';
+      g.globalAlpha = (j === 0 ? 0.4 : hall ? 0.6 : 0.45) * (1 - dt / 0.16);
+      g.fillStyle = hall && j > 0 ? '#7af8f0' : '#ffb060';
       fillRuns(g, a.asleep[j], x0, y0, h);
       g.globalAlpha = 1;
       g.globalCompositeOperation = 'source-over';
     }
     // WHAT IS STILL ASLEEP, in the dark
-    if (awake <= ES_GATES) {
+    if (awake <= S.gates) {
       g.fillStyle = NIGHT;
       fillRuns(g, a.asleep[awake], x0, y0, h);
     }
-    // DUST off each crown as its gate wakes
-    for (let j = 0; j < Math.min(awake, ES_GATES); j++) {
-      const near = endlessNear(j);
-      dust(g, t, endlessWake(j), j, Math.round(4 + 12 * near), near, j === 0 ? '#c8a890' : '#a8c4d0', x0, y0);
-    }
+    // DUST off each stage as it wakes
+    for (let j = 0; j < Math.min(awake, S.gates); j++) dust(g, S, t, S.wake(j), j, false, !hall ? '#d0c0b0' : j === 0 ? '#c8a890' : '#a8c4d0', x0, y0);
     // THE FAR FIRE TAKES: a burst of its light, then it breathes
     const df = t - M.far;
     if (df >= 0) {
       const big = df < 0.1 ? df / 0.1 : Math.max(0, 1 - (df - 0.1) / 0.4) ** 2;
-      const fx = x0 + ES_FIRE_AT[0] / 2;
-      const fy = y0 + ES_FIRE_AT[1] / 2;
+      const fx = x0 + S.fireAt[0] / 2;
+      const fy = y0 + S.fireAt[1] / 2;
       if (big > 0.02) {
         const r = FIRE_R + 130 * big;
-        burst(g, fx, fy, r, r * 0.7, ENEMY.edge, 0.42 + 0.45 * big, 6, h);
-        burst(g, fx, fy, r * 0.36, r * 0.26, ENEMY.gold, 0.5 + 0.4 * big, 4, h);
+        burst(g, fx, fy, r, r * (hall ? 0.7 : 0.9), ENEMY.edge, 0.42 + 0.45 * big, 6, h);
+        burst(g, fx, fy, r * 0.36, r * (hall ? 0.26 : 0.33), ENEMY.gold, 0.5 + 0.4 * big, 4, h);
       } else {
         add(g, a.glowPink, fx, fy, 0.42 + 0.06 * Math.sin(t * 3.1));
         add(g, a.glowGold, fx, fy, 0.5 + 0.08 * Math.sin(t * 3.1 + 1));
@@ -294,16 +296,29 @@ export function drawEndlessSplashArt(g: CanvasRenderingContext2D, t: number, w: 
       }
     }
     // MOTES of the waypoint's light, rising off it
-    if (awake > 1) {
+    if (awake > S.wayStage) {
+      const since = (t - S.wake(S.wayStage)) / 1.9;
       for (let i = 0; i < 11; i++) {
-        const age = (((t - endlessWake(1)) / 1.9 + i * 0.137) % 1 + 1) % 1;
-        if ((t - endlessWake(1)) / 1.9 + i * 0.137 < 1 && age > (t - endlessWake(1)) / 1.9) continue;
-        const mx = ES_WAY_AT[0] / 2 + (hash2(i, 5, 409) - 0.5) * 96 + Math.sin(age * 6 + i) * 3;
-        const my = ES_WAY_AT[1] / 2 - 3 - age * (38 + hash2(i, 7, 409) * 26);
+        const age = (((since + i * 0.137) % 1) + 1) % 1;
+        if (since + i * 0.137 < 1 && age > since) continue;
+        const spread = hall ? 96 : 60;
+        const mx = S.wayAt[0] / 2 + (hash2(i, 5, 409) - 0.5) * spread + Math.sin(age * 6 + i) * 3;
+        const my = S.wayAt[1] / 2 - 3 - age * (hall ? 38 + hash2(i, 7, 409) * 26 : 14) + (hall ? 0 : (hash2(i, 9, 409) - 0.5) * spread);
         g.globalAlpha = Math.ceil((1 - age) * 4) / 4;
         g.fillStyle = i % 3 === 0 ? '#b8fff8' : '#22d0e0';
         const s = i % 4 === 0 ? 1 : 0.5;
         g.fillRect(x0 + Math.round(mx * 2) / 2, y0 + Math.round(my * 2) / 2, s, s);
+      }
+      g.globalAlpha = 1;
+    }
+    // (the stair's picture is made quieter under the letters: the dark laid over its top in flat bands)
+    if (!hall) {
+      g.fillStyle = NIGHT;
+      g.globalAlpha = 0.5;
+      g.fillRect(0, 0, w, L.lintel);
+      for (let i = 0; i < 8; i++) {
+        g.globalAlpha = 0.5 * (1 - (i + 1) / 9);
+        g.fillRect(0, L.lintel + i * 3, w, 3);
       }
       g.globalAlpha = 1;
     }
@@ -328,7 +343,7 @@ export function drawEndlessSplashArt(g: CanvasRenderingContext2D, t: number, w: 
     edged(g, WORD, cx, y, L.scale, dl >= 0 && dl < 0.08 ? '#ffffff' : STONE.face, STONE.edge);
     if (dl >= 0) {
       // (the lintel shakes its dust down, and the stone's light flashes)
-      dust(g, t, M.land, 0, 34, 1, '#b0a4e0', x0, y0, Math.min(1, (textWidth(WORD) * L.scale) / 2 / 176), 1.5);
+      dust(g, S, t, M.land, 0, true, hall ? '#b0a4e0' : '#d0c0b0', x0, y0);
       if (dl < 0.1) {
         g.globalCompositeOperation = 'lighter';
         g.globalAlpha = 0.22 * (1 - dl / 0.1);

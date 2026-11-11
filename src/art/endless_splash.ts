@@ -30,8 +30,12 @@
 
 import { hash2 } from '../engine/rng';
 
-/** THE SWITCH: the splash shows this picture only while it is on. Off until his yes to pictures of it. */
-export const ENDLESS_SPLASH = { on: false };
+/**
+ * THE SWITCH: the splash shows the painted picture only while it is on. Off until his yes to pictures of it. `picture`: which of
+ * the two painted: 'stair', THE STAIR WITH NO BOTTOM (art/endless_stair.ts), his pick of the ten sketches (dev/endless_options.ts),
+ * 11 Nov 2026, by 08:30: “2 The stair with no bottom”; or 'hall', the hall of gates painted here first, kept.
+ */
+export const ENDLESS_SPLASH: { on: boolean; picture: 'stair' | 'hall' } = { on: false, picture: 'stair' };
 
 /** The picture's size in game pixels, and its vanishing point. */
 export const ES_W = 720;
@@ -46,18 +50,18 @@ export const ES_LINTEL = 92;
 // ---------------------------------------------------------------------------------------------
 // The kit: colours as 0xRRGGBB numbers, flat bands, a 4 x 4 ordered dither where two bands meet.
 
-type C = number;
-const hx = (s: string): C => parseInt(s.slice(1), 16);
-const cR = (c: C): number => (c >> 16) & 255;
-const cG = (c: C): number => (c >> 8) & 255;
-const cB = (c: C): number => c & 255;
-const pack = (r: number, g: number, b: number): C =>
+export type C = number;
+export const hx = (s: string): C => parseInt(s.slice(1), 16);
+export const cR = (c: C): number => (c >> 16) & 255;
+export const cG = (c: C): number => (c >> 8) & 255;
+export const cB = (c: C): number => c & 255;
+export const pack = (r: number, g: number, b: number): C =>
   (Math.max(0, Math.min(255, Math.round(r))) << 16) | (Math.max(0, Math.min(255, Math.round(g))) << 8) | Math.max(0, Math.min(255, Math.round(b)));
-const mixc = (a: C, b: C, t: number): C => pack(cR(a) + (cR(b) - cR(a)) * t, cG(a) + (cG(b) - cG(a)) * t, cB(a) + (cB(b) - cB(a)) * t);
+export const mixc = (a: C, b: C, t: number): C => pack(cR(a) + (cR(b) - cR(a)) * t, cG(a) + (cG(b) - cG(a)) * t, cB(a) + (cB(b) - cB(a)) * t);
 const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16);
-const bay = (x: number, y: number): number => BAYER4[((y & 3) << 2) | (x & 3)];
-const rnd = (x: number, y: number, seed = 0): number => hash2(x, y, seed);
-const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
+export const bay = (x: number, y: number): number => BAYER4[((y & 3) << 2) | (x & 3)];
+export const rnd = (x: number, y: number, seed = 0): number => hash2(x, y, seed);
+export const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /** Picture pixels to a game pixel. */
 const D = 2;
@@ -89,7 +93,7 @@ const TORCH_Y = -0.42;
 const TORCH_Z = Z0 - 0.3;
 
 type Kind = 'flat' | 'round' | 'point';
-interface Theme {
+export interface Theme {
   name: string;
   /** Its stone, dark to light (four tones). */
   stone: readonly C[];
@@ -114,14 +118,14 @@ interface Theme {
 }
 const T = (name: string, stone: string[], flag: string[], hc: number, bl: number, vw: number, kind: Kind, more: Partial<Theme> = {}): Theme => ({ name, stone: stone.map(hx), flag: flag.map(hx), hc, bl, vw, kind, ...more });
 // (each floor's own stone, from its own file: art/gateward.ts, prison.ts, canyon.ts, fen.ts, high_city_set.ts, quarry.ts)
-const TOWN = T('town', ['#52444c', '#857567', '#958474', '#ae9a88'], ['#554c55', '#62585e', '#7a6d6b'], 0.38, 0.86, 0.55, 'flat');
-const PRISON = T('prison', ['#3a3844', '#4e4a5a', '#625c70', '#7c7690'], ['#3c3a48', '#4c4858', '#5e586c'], 0.3, 0.64, 0.4, 'round', { teeth: true });
-const CANYON = T('canyon', ['#6c463a', '#9c6656', '#be8262', '#d69870'], ['#82504a', '#a46c54', '#b67c5e'], 0.46, 1.0, 0.46, 'round', { rough: true });
-const FEN = T('fen', ['#38353e', '#5a5661', '#6e6974', '#837e88'], ['#3a3630', '#48444f', '#5a5661'], 0.32, 0.6, 0.38, 'point', { moss: true, roots: true });
-const HIGH = T('high', ['#64606c', '#9a949a', '#c4bebc', '#e2dcd4'], ['#555060', '#9a928e', '#c2b8ae'], 0.56, 1.2, 0.34, 'point', { inlay: hx('#283464') });
-const QUARRY = T('quarry', ['#4d465c', '#70677b', '#8a8094', '#aaa1a6'], ['#4d465c', '#6a6078', '#7e7489'], 0.5, 1.3, 0.5, 'flat');
-const MOSS = ['#2e3a22', '#3c4b2b', '#4c5e35'].map(hx);
-const IRON = ['#16161b', '#323039', '#55505e'].map(hx);
+export const TOWN = T('town', ['#52444c', '#857567', '#958474', '#ae9a88'], ['#554c55', '#62585e', '#7a6d6b'], 0.38, 0.86, 0.55, 'flat');
+export const PRISON = T('prison', ['#3a3844', '#4e4a5a', '#625c70', '#7c7690'], ['#3c3a48', '#4c4858', '#5e586c'], 0.3, 0.64, 0.4, 'round', { teeth: true });
+export const CANYON = T('canyon', ['#6c463a', '#9c6656', '#be8262', '#d69870'], ['#82504a', '#a46c54', '#b67c5e'], 0.46, 1.0, 0.46, 'round', { rough: true });
+export const FEN = T('fen', ['#38353e', '#5a5661', '#6e6974', '#837e88'], ['#3a3630', '#48444f', '#5a5661'], 0.32, 0.6, 0.38, 'point', { moss: true, roots: true });
+export const HIGH = T('high', ['#64606c', '#9a949a', '#c4bebc', '#e2dcd4'], ['#555060', '#9a928e', '#c2b8ae'], 0.56, 1.2, 0.34, 'point', { inlay: hx('#283464') });
+export const QUARRY = T('quarry', ['#4d465c', '#70677b', '#8a8094', '#aaa1a6'], ['#4d465c', '#6a6078', '#7e7489'], 0.5, 1.3, 0.5, 'flat');
+export const MOSS = ['#2e3a22', '#3c4b2b', '#4c5e35'].map(hx);
+export const IRON = ['#16161b', '#323039', '#55505e'].map(hx);
 
 interface Gate {
   k: number;
@@ -195,7 +199,7 @@ const isOpen = (g: Gate, X: number, Y: number): boolean => outside(g, X, Y) < 0;
 
 /** The bands a light is cut into. */
 const LEVELS = [0, 0.06, 0.14, 0.27, 0.46, 0.72, 1.05];
-function band(v: number, px: number, py: number): number {
+export function band(v: number, px: number, py: number): number {
   if (v <= 0) return 0;
   let i = 0;
   while (i < LEVELS.length - 2 && v >= LEVELS[i + 1]) i++;
@@ -211,23 +215,23 @@ const L_CYAN = [0.2, 0.98, 1.08];
 const L_TORCH = [1.25, 0.66, 0.24];
 const L_PINK = [1.3, 0.36, 0.66];
 /** A stone of colour `alb` under so much of each light. */
-function lit(alb: C, lc: number, lt: number, lp: number): C {
+export function lit(alb: C, lc: number, lt: number, lp: number): C {
   const r = L_DARK[0] + L_CYAN[0] * lc + L_TORCH[0] * lt + L_PINK[0] * lp;
   const g = L_DARK[1] + L_CYAN[1] * lc + L_TORCH[1] * lt + L_PINK[1] * lp;
   const b = L_DARK[2] + L_CYAN[2] * lc + L_TORCH[2] * lt + L_PINK[2] * lp;
   return pack(cR(alb) * r, cG(alb) * g, cB(alb) * b);
 }
-const DEEP = hx('#07061a');
-const NIGHT = hx('#05040f');
+export const DEEP = hx('#07061a');
+export const NIGHT = hx('#05040f');
 const HAZE = hx('#6a1052');
 /** The far fire, from its heart out (art/mkit.ts FLAME, the enemy's). */
-const FIRE = ['#fff0a0', '#ffb070', '#ff4f8a', '#c0206a', '#7a1058'].map(hx);
+export const FIRE = ['#fff0a0', '#ffb070', '#ff4f8a', '#c0206a', '#7a1058'].map(hx);
 /** The waypoint's light (art/kit.ts CYAN). */
-const CY_HI = hx('#b8fff8');
-const CY = hx('#22d0e0');
-const CY_LO = hx('#0c6a80');
+export const CY_HI = hx('#b8fff8');
+export const CY = hx('#22d0e0');
+export const CY_LO = hx('#0c6a80');
 /** The waypoint's stone: the standing stones' violet (art/title_ring.ts STONE). */
-const WAYSTONE = ['#262a62', '#3a4088', '#5660ac', '#7e8ad0'].map(hx);
+export const WAYSTONE = ['#262a62', '#3a4088', '#5660ac', '#7e8ad0'].map(hx);
 
 /** The waypoint's light on a point with normal n. */
 function cyanOn(X: number, Y: number, z: number, nx: number, ny: number, nz: number): number {
@@ -259,7 +263,7 @@ const Z_FAR = Z0 + DZ * ES_GATES;
 const pinkAt = (z: number): number => 0.9 * Math.exp(-(Z_FAR - z) / 20);
 
 /** The air between: what is far sinks into the dark, and past the middle gates takes the far fire's haze. */
-function air(c: C, z: number, px: number, py: number): C {
+export function air(c: C, z: number, px: number, py: number): C {
   const k = clamp01((z - 9) / 30);
   const kb = Math.min(1, (Math.floor(k * 7 + bay(px, py) * 0.9) / 7) * 0.9);
   let out = mixc(c, DEEP, kb);
@@ -324,7 +328,7 @@ interface Hit {
 }
 
 /** A speck of wear on a stone: now and then a pit, seldom a chip of light. -1, 0 or 1. */
-function wear(px: number, py: number): number {
+export function wear(px: number, py: number): number {
   const p = rnd(px >> 1, py >> 1, 17);
   if (p < 0.02 && rnd(px, py, 19) < 0.7) return -1;
   return p > 0.993 ? 1 : 0;
@@ -429,7 +433,7 @@ function faceAt(g: Gate, X: number, Y: number, px: number, py: number): C {
 }
 
 /** The far fire's light laid on a stone that is already in the air's dark: so much of it. */
-function rim(c: C, lp: number): C {
+export function rim(c: C, lp: number): C {
   if (lp <= 0) return c;
   return mixc(c, lp > 0.5 ? FIRE[2] : FIRE[3], Math.min(1, lp * 1.25));
 }
@@ -528,7 +532,7 @@ function hangingAt(g: Gate, X: number, Y: number, z: number, px: number, py: num
 }
 
 /** The waypoint's cuts at a point of its top, `x` and `y` in its radius: 0 none, 1 the ring, 2 a mark, 3 the small ring, 4 the disc (art/crypt_ways.ts cutAt). */
-function wayCut(x: number, y: number, q: number): 0 | 1 | 2 | 3 | 4 {
+export function wayCut(x: number, y: number, q: number): 0 | 1 | 2 | 3 | 4 {
   const r = Math.hypot(x, y);
   if (Math.abs(r - 0.73) < Math.max(0.04, q * 0.9)) return 1;
   if (r < 0.14) return 4;
@@ -886,3 +890,63 @@ export function endlessLettering(w: number, h: number, wordW: number, subW: numb
   const wordY = Math.max(scale + 2, Math.round(slabTop + (lintel - slabTop - block) / 2) + (scale >> 1));
   return { ox, oy, lintel, scale, wordY, subY: wordY + 7 * scale + scale + 3, oneLine };
 }
+
+// ---------------------------------------------------------------------------------------------
+// A PICTURE AS THE SPLASH PLAYS ONE (ui/endless_splash_draw.ts): the hall of gates, and the stair with no bottom
+// (art/endless_stair.ts), are each handed over as one of these.
+
+export interface EndlessScene {
+  /** How many stages wake before the far fire. */
+  gates: number;
+  moment: typeof ES_MOMENT;
+  /** When stage j wakes (j = gates: the far fire). */
+  wake(j: number): number;
+  /** How big stage k is on the screen beside the first (1). */
+  near(k: number): number;
+  paint(): EndlessPainting;
+  /** The torches: where (picture pixels), the stage that lights each, how far its light reaches (0 far, 1, 2 near). */
+  torches: readonly (readonly [number, number, number, number])[];
+  /** How many of them (the first) are painted flickering, and each at moment i of ES_FLAMES. */
+  flames: number;
+  paintFlame(site: number, i: number): EndlessPatch;
+  /** The waypoint: its middle, the stage that wakes it, how far its light reaches across and down (game pixels). */
+  wayAt: readonly [number, number];
+  wayStage: number;
+  wayGlow: readonly [number, number];
+  paintWay(i: number): EndlessPatch;
+  fireAt: readonly [number, number];
+  paintFire(i: number): EndlessPatch;
+  /** Grain i of the dust off stage k, `a` seconds after it wakes (`land`: after the word lands): where, how big (picture pixels), how much of it is left (0 to 1); null when it is gone. */
+  dust(k: number, i: number, a: number, land: boolean): readonly [number, number, number, number] | null;
+  dustN(k: number, land: boolean): number;
+  lettering(w: number, h: number, wordW: number, subW: number): EndlessLettering;
+}
+
+/** THE HALL OF GATES as the splash plays it. */
+export const HALL_SCENE: EndlessScene = {
+  gates: ES_GATES,
+  moment: ES_MOMENT,
+  wake: endlessWake,
+  near: endlessNear,
+  paint: paintEndlessSplash,
+  torches: ES_TORCH_AT.map(([x, y]) => [x, y, 0, 2] as const),
+  flames: 2,
+  paintFlame: paintEndlessFlame,
+  wayAt: ES_WAY_AT,
+  wayStage: 1,
+  wayGlow: [84, 24],
+  paintWay: paintEndlessWay,
+  fireAt: ES_FIRE_AT,
+  paintFire: paintEndlessFire,
+  dustN: (k, land) => (land ? 34 : Math.round(4 + 12 * endlessNear(k))),
+  dust: (k, i, a, land) => {
+    const s = land ? 977 : 0;
+    const life = 0.55 + rnd(i, k, 307 + s) * 0.45;
+    const age = a - rnd(i, k, 301 + s) * 0.07;
+    if (age < 0 || age > life) return null;
+    const big = endlessNear(k);
+    const [cx, cy] = endlessCrown(k, (rnd(i, k, 311 + s) * 2 - 1) * (land ? 0.68 : 1));
+    return [cx + (rnd(i, k, 313 + s) - 0.5) * 34 * big * age, cy + (26 * age + 300 * (land ? 1.5 : 1) * age * age) * big + 1, big > 0.45 && rnd(i, k, 317 + s) > 0.5 ? 2 : 1, Math.ceil((1 - age / life) * 4) / 4];
+  },
+  lettering: endlessLettering,
+};

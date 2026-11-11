@@ -1,6 +1,6 @@
-# Endless mode's splash, painted: the hall of gates
+# Endless mode's splash, painted: the stair with no bottom (his pick), and the hall of gates
 
-Branch `art/endless-splash`, cut from `main` at 797f2e4 (25.3.1). The art chat (the queue chat that pulled the item "Paint the endless mode splash screen"), 11 Nov 2026. **A MOCK-UP BEHIND A SWITCH THAT IS OFF**: `ENDLESS_SPLASH.on` (src/art/endless_splash.ts). With it off the game is as it was: the splash painted in code by the main chat (25.2.8).
+Branch `art/endless-splash`, cut from `main` at 797f2e4 (25.3.1). The art chat (the queue chat that pulled the item "Paint the endless mode splash screen"), 11 Nov 2026. **A MOCK-UP BEHIND A SWITCH THAT IS OFF**: `ENDLESS_SPLASH.on` (src/art/endless_splash.ts); `ENDLESS_SPLASH.picture` says which of the two painted pictures it shows: `'stair'`, his pick, or `'hall'`. With it off the game is as it was: the splash painted in code by the main chat (25.2.8).
 
 Asked for by the main chat on the chat board, 8 Nov 2026, 08:40: “PLEASE DRAW IT: the whole screen of a phone held sideways (it must also fill a wider screen), its moment as the splash comes up (1 to 2 s of it moving is welcome: the game plays what you hand back), the word ENDLESS in it or left to the game to letter over it (say which).” The owner's words for the fanfare, 7 Nov 2026, 14:54: “I’d like a little more fanfare for endless mode.  Like a big splash screen and a pop up description of what endless mode is.” His answer to the main chat's pictures of the splash painted in code, 8 Nov by 08:36: “Yes, art chat splash later (Recommended)”.
 
@@ -8,7 +8,7 @@ Asked for by the main chat on the chat board, 8 Nov 2026, 08:40: “PLEASE DRAW 
 
 Shown him on 11 Nov 2026, about 08:05 (Eastern): `pictures/endless_splash.png` and `pictures/endless_splash.mp4`, and asked whether it was right. **His answer, by 08:17: “Gimme 10 options”.** Read as with the start screen's ten (21 Oct, `src/dev/title_options.ts`): ten stills, each a different direction, painted small and not yet moving, each with a line of what would move in it; the one he picks is painted full size and given its moment. The hall of gates is the first of the ten, as it is painted.
 
-**THE TEN** (`src/dev/endless_options.ts`; `options/option_01.png` to `option_10.png`, sent him about 08:20; **his pick: not yet given**):
+**THE TEN** (`src/dev/endless_options.ts`; `options/option_01.png` to `option_10.png`, sent him about 08:20). **HIS PICK, by 08:30: “2 The stair with no bottom”.** It is painted full size with its moment (below, "The stair with no bottom"): `pictures/endless_stair.png` and `pictures/endless_stair.mp4`, shown him about 09:00. **His yes to it: not yet given.**
 
 1. THE HALL OF GATES (the one painted here).
 2. THE STAIR WITH NO BOTTOM: straight down a round shaft, ring under ring of every floor's stone, a stair winding down its wall, the enemy's fire at the bottom.
@@ -21,7 +21,19 @@ Shown him on 11 Nov 2026, about 08:05 (Eastern): `pictures/endless_splash.png` a
 9. THE WHEEL OF FLOORS: a great stone wheel, a floor to every spoke, a pointer over it.
 10. THE SHAFT THROUGH THE WORLD: the ground cut open from the side, floor under floor, the mine's cage going down through them all.
 
-If he picks another than the first, the hall of gates stays on this branch behind its switch, off, and the picked one is painted in its place (the same switch, the same call, the game's own letters). Nothing here goes live before his yes.
+The hall of gates stays on this branch, painted, behind the same switch (`picture: 'hall'`), not shown. Nothing here goes live before his yes.
+
+## The stair with no bottom (his pick)
+
+`src/art/endless_stair.ts`. **The picture:** we stand on the brink of a round shaft and look straight down it. Storey under storey, each of another floor's own stone (the town's at the top, then the prison's, the canyon's, the fen's, the High City's, the quarry's, and round again), each with its doorway (the prison's barred) and a torch by it; a stair winds down the wall, a storey and a half to a turn, past every door. At its head, on a round landing, lies the town's waypoint, awake, seen from straight above (its eight wedges, ring, eight marks, small ring and disc, its light going round). At the bottom, where the storeys close to a point, the enemy's pink burns to gold. No one is in it.
+
+**The word is lettered by the game**, across the top of the shaft; the picture is made quieter under it (the dark laid over its top in flat bands as the game draws it). **Its moment** is the hall's, second for second (`ES_MOMENT`): the torches take storey under storey, down and down, faster and faster, each with a warm flash, a kick and dust falling away down the shaft; the fire at the bottom flares; ENDLESS lands; THE WAY GOES ON; HARDCORE.
+
+**Every screen:** the same 720 x 360 game pixels at the fine grain, the shaft's middle at the middle of the screen across and 0.62 of the way down. On a screen much narrower than a phone held sideways (a tablet, 394 x 274) the waypoint's landing is cut by the left edge.
+
+Pictures: `pictures/endless_stair.png` (his phone), `endless_stair.mp4` (its 3.2 s), `endless_stair_waking.png` (0.43 s in), `endless_stair_wide.png` (688 x 288).
+
+## The hall of gates (painted first; kept, not shown)
 
 ## The pictures
 
@@ -59,17 +71,18 @@ Checked against Animations 1 (as big, wild, kinetic and weighty as it will go) a
 
 - **Nothing in main.ts changes.** `ui/endless_fanfare.ts` `drawEndlessSplash(g, t, w, h)` sends the same call to `ui/endless_splash_draw.ts` `drawEndlessSplashArt` while the switch is on. The switch is reached as `ENDLESS_FANFARE.painted` (so `dbg.fanfare.painted.on = true`). The card after the splash is as it was.
 - **To put it live** (on his yes): `ENDLESS_SPLASH.on = true` in src/art/endless_splash.ts.
-- **The picture is painted the first time it is wanted: about 0.7 s** (685 ms in the playtest's browser on this machine; not measured on his phone). Left alone, that wait falls in the dark as the splash comes up. Better: call `readyEndlessSplash()` ahead, under a loading screen (as the last floor loads, say). `releaseEndlessSplash()` lets go of it after (some 5 MB: one canvas 1440 x 720 and small pieces). Or bake the picture to a file, since files may go into the game: `paintEndlessSplash()` is plain numbers (tools/endless_splash_pics.ts writes it as a PNG).
+- **The picture is painted the first time it is wanted: about 0.9 s for the stair** (931 ms in the film page's browser on this machine, 685 ms for the hall; not measured on his phone). Left alone, that wait falls in the dark as the splash comes up. Better: call `readyEndlessSplash()` ahead, under a loading screen (as the last floor loads, say). `releaseEndlessSplash()` lets go of it after (some 5 MB: one canvas 1440 x 720 and small pieces). Or bake the picture to a file, since files may go into the game: `paintEndlessStair()` and `paintEndlessSplash()` are plain numbers (tools/endless_splash_pics.ts writes the hall as a PNG).
 - **`ENDLESS_FANFARE.skip` is 0.8 s, and the word lands at 1.08 s**: a tap between the two goes on to the card before the word has landed. Yours and his to settle (1.2 s would let it land). Not changed here.
 - Every moment is drawn from `t` alone: nothing is kept between frames.
 - A frame costs one picture laid down, four small pieces over it, five lights added, and a few hundred half-pixel rows filled while the gates wake and the far fire bursts.
 
 ## Files
 
-- `src/art/endless_splash.ts`: the switch; the picture (`paintEndlessSplash`), its small moving pieces, which gate's waking shows each pixel, the moment's numbers, where the letters go.
+- `src/art/endless_splash.ts`: the switch; the hall of gates (`paintEndlessSplash`), its small moving pieces, which gate's waking shows each pixel, the moment's numbers, where the letters go; the painting kit both pictures share; `EndlessScene`, a picture as the splash plays one.
+- `src/art/endless_stair.ts`: the stair with no bottom (`paintEndlessStair`, `STAIR_SCENE`).
 - `src/ui/endless_splash_draw.ts`: the splash as the game plays it.
 - `src/ui/endless_fanfare.ts`: `painted` on `ENDLESS_FANFARE`, and the hand-over at the top of `drawEndlessSplash` (5 lines).
-- `tests/endless_splash.test.ts` (5): the switch off; the picture's size, the same each time, its checksum; cyan and pink in their places; the waking in order; the letters whole and on the lintel on eight screens.
+- `tests/endless_splash.test.ts` (6; the sixth is the stair's: its size, checksum, colours, waking, letters): the switch off; the picture's size, the same each time, its checksum; cyan and pink in their places; the waking in order; the letters whole and on the lintel on eight screens.
 - `tools/scenarios/endless_splash_look.mjs`: the splash in the game itself, the switch on for that page only, then off again.
 - `tools/endless_splash_film.mjs` and `src/dev/endless_splash_page.ts`: the film and stills (a page of its own with the same drawing, any moment asked for by its time).
 - `tools/endless_splash_pics.ts`: the picture as PNGs without a browser.
@@ -78,6 +91,6 @@ Checked against Animations 1 (as big, wild, kinetic and weighty as it will go) a
 ## Checks, 11 Nov 2026
 
 - `tsc --noEmit -p tsconfig.json`: clean but for `tests/relief.test.ts(378,16)`, which is on `main` too.
-- `tsx --test tests/endless_splash.test.ts`: 5 of 5. `tsx --test tests/endless.test.ts`: 8 of 8. The whole suite was not run (only what the change is about).
-- `node tools/build_to.mjs dist/endless_splash.html`, then `tools/scenarios/endless_splash_look.mjs` at 844x390, dpr 3: the painted splash comes up, the card after it, GO ON closes it, the switch off gives the old splash; 0 errors.
-- The film page: 96 frames, 0 errors.
+- `tsx --test tests/endless_splash.test.ts`: 6 of 6. `tsx --test tests/endless.test.ts`: 8 of 8. The whole suite was not run (only what the change is about).
+- `node tools/build_to.mjs dist/endless_splash.html`, then `tools/scenarios/endless_splash_look.mjs` at 844x390, dpr 3, run for the hall and again for the stair: the painted splash comes up, the card after it, GO ON closes it, the switch off gives the old splash; 0 errors.
+- The film page: 96 frames of each, 0 errors (`PIC=hall` for the hall).

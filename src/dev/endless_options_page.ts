@@ -3,6 +3,7 @@
 //   tools/endless_options.mjs builds this page and photographs each (#n=<k>).
 import { drawText, textWidth } from '../engine/font';
 import { drawEndlessSplashArt } from '../ui/endless_splash_draw';
+import { ENDLESS_SPLASH } from '../art/endless_splash';
 import { ENDLESS_OPTIONS } from './endless_options';
 import { Pic, TH, TW } from './title_options_kit';
 
@@ -44,6 +45,7 @@ if (opt.paint) {
   const fg = full.getContext('2d', { alpha: false }) as CanvasRenderingContext2D;
   fg.setTransform(2, 0, 0, 2, 0, 0);
   fg.imageSmoothingEnabled = false;
+  ENDLESS_SPLASH.picture = 'hall';
   drawEndlessSplashArt(fg, 3, 507, 234);
   g.drawImage(full, 5, 2);
 }

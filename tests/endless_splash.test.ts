@@ -9,6 +9,9 @@
 //      the whole picture; the gates wake in order, each sooner after the last, and all of it is over inside 2 s;
 //   5. the letters: on every screen the game is laid out on, ENDLESS and the line under it are whole on the screen and on the
 //      lintel, and the picture covers the screen.
+//   6. THE STAIR WITH NO BOTTOM (art/endless_stair.ts), his pick of the ten: the picture the switch shows; its size, the same each
+//      time, its checksum; cyan and pink in their places; every storey its part, each inside the last; the letters whole on
+//      every screen and the picture covering it.
 //   run: tsx --test tests/endless_splash.test.ts
 
 // @ts-ignore - node typings are not part of this project
@@ -16,6 +19,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { ENDLESS_SPLASH, ES_GATES, ES_H, ES_MOMENT, ES_W, endlessAsleep, endlessAwake, endlessLettering, endlessWake, paintEndlessSplash } from '../src/art/endless_splash';
+import { STAIR_SCENE, paintEndlessStair } from '../src/art/endless_stair';
 import { ENDLESS_FANFARE } from '../src/ui/endless_fanfare';
 import { textWidth } from '../src/engine/font';
 
@@ -32,6 +36,7 @@ function sumOf(c: Int32Array): number {
 test('1. the switch is off, and it is the fanfare\'s own', () => {
   assert.equal(ENDLESS_SPLASH.on, false);
   assert.equal(ENDLESS_FANFARE.painted, ENDLESS_SPLASH);
+  assert.equal(ENDLESS_SPLASH.picture, 'stair');
 });
 
 test('2. the picture: its size, the same each time, as he was shown it', () => {
@@ -102,6 +107,53 @@ test('5. the letters fit on the lintel on every screen, and the picture covers t
     assert.ok(L.wordY - edge >= 0, `${w}x${h}: the word's top is on the screen (${L.wordY})`);
     assert.ok(L.subY >= L.wordY + 7 * L.scale + edge, `${w}x${h}: the line is under the word`);
     assert.ok(L.subY + (L.oneLine ? 7 : 16) <= L.lintel, `${w}x${h}: the line is on the lintel (${L.subY} over ${L.lintel})`);
+    assert.ok(L.oy <= 0 && L.oy + ES_H >= h, `${w}x${h}: the picture covers the screen from top to bottom`);
+    if (w <= ES_W) assert.ok(L.ox <= 0 && L.ox + ES_W >= w, `${w}x${h}: and from side to side`);
+  }
+});
+
+/** The stair as he was shown it, 11 Nov 2026. */
+const STAIR_SUM = 2437057785;
+
+test('6. the stair with no bottom: the picture, its colours, its waking, its letters', () => {
+  const q = paintEndlessStair();
+  assert.equal(q.w, ES_W * 2);
+  assert.equal(q.h, ES_H * 2);
+  assert.equal(sumOf(paintEndlessStair().c), sumOf(q.c));
+  assert.equal(sumOf(q.c), STAIR_SUM, `the painting has changed: if on purpose, STAIR_SUM = ${sumOf(q.c)}`);
+  let cyan = 0;
+  let pink = 0;
+  const seen = new Set<number>();
+  for (let i = 0; i < q.c.length; i++) {
+    seen.add(q.stage[i]);
+    if (q.c[i] === 0xb8fff8) {
+      cyan++;
+      assert.equal(q.stage[i], 0, 'the waypoint is at the head of the stair');
+    }
+    if (q.c[i] === 0xff4f8a) {
+      pink++;
+      assert.ok(q.stage[i] >= STAIR_SCENE.gates - 4, 'the fire is at the bottom');
+    }
+  }
+  assert.ok(cyan > 200 && pink > 100, `the waypoint is alight (${cyan}) and the fire burns (${pink})`);
+  assert.equal(STAIR_SCENE.gates, ES_GATES);
+  for (let j = 0; j <= ES_GATES; j++) assert.ok(seen.has(j), `storey ${j} has pixels`);
+  const asleep = endlessAsleep(q);
+  const area = (r: Int16Array): number => {
+    let a = 0;
+    for (let i = 0; i < r.length; i += 3) a += r[i + 2] - r[i + 1];
+    return a;
+  };
+  for (let j = 1; j <= ES_GATES; j++) assert.ok(area(asleep[j]) < area(asleep[j - 1]) && area(asleep[j]) > 0, `storey ${j}'s sleep inside storey ${j - 1}'s`);
+  assert.equal(STAIR_SCENE.torches.length, ES_GATES);
+  for (const [x, y, stage] of STAIR_SCENE.torches) assert.ok(x >= 0 && x < q.w && y >= 0 && y < q.h && q.stage[Math.floor(y) * q.w + Math.floor(x)] <= stage + 1, 'a torch is in the picture, on its storey');
+  const wordW = textWidth('ENDLESS');
+  const subW = textWidth('THE WAY GOES ON') + 10 + textWidth('HARDCORE');
+  for (const [w, h] of [[507, 234], [480, 270], [688, 288], [574, 264], [394, 274], [320, 200], [270, 200], [640, 360]]) {
+    const L = STAIR_SCENE.lettering(w, h, wordW, subW);
+    const edge = Math.ceil(L.scale / 2);
+    assert.ok(L.scale >= 2 && L.scale <= 6 && wordW * L.scale + edge * 2 <= w, `${w}x${h}: the word fits across`);
+    assert.ok(L.wordY - edge >= 0 && L.subY >= L.wordY + 7 * L.scale + edge && L.subY + (L.oneLine ? 7 : 16) < h * 0.5, `${w}x${h}: the letters are in the top half`);
     assert.ok(L.oy <= 0 && L.oy + ES_H >= h, `${w}x${h}: the picture covers the screen from top to bottom`);
     if (w <= ES_W) assert.ok(L.ox <= 0 && L.ox + ES_W >= w, `${w}x${h}: and from side to side`);
   }
