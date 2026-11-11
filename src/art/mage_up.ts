@@ -53,7 +53,7 @@ import { WU_RIM, WU_SIDES, WU_SPIN, five, frame, turnedStage } from './warrior_u
 import type { WuSide } from './warrior_up';
 
 /** THE SWITCH: off. The main chat's to turn on, on his yes to the pictures and the film. */
-export const MAGE_UP = { on: false };
+export const MAGE_UP = { on: true };
 
 /** Her sides: the Warrior's eight (art/warrior_up.ts). */
 export type MuSide = WuSide;

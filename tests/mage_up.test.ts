@@ -59,8 +59,8 @@ const LOOKED = [0, 0.6, 1.2, 2.1];
 
 // --- 1. the switch, and the game's Mage unchanged while it is off --------------------------------------------------------------
 
-test('1. the switch is off; of the game only art/heroes3.ts imports the new files, through the switch', () => {
-  assert.equal(MAGE_UP.on, false, 'MAGE_UP is off');
+test('1. the switch is ON (live since 25.3.4, at his “Yes, hand her to main (Recommended)”, 11 Nov 2026); of the game only art/heroes3.ts imports the new files, through the switch', () => {
+  assert.equal(MAGE_UP.on, true, 'MAGE_UP is on');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('art/mage_up')) continue;
@@ -74,20 +74,27 @@ test('1. the switch is off; of the game only art/heroes3.ts imports the new file
 
 test('1. with the switch off, every frame the game paints of the Mage is the very same picture (the hashes made from her as she is)', () => {
   const pinned = JSON.parse(fs.readFileSync('tests/mage_up.hashes.json', 'utf8')) as { lists: Record<string, string[]> };
-  const lists = mageLists();
-  assert.deepEqual(lists.map((l) => l.name).sort(), Object.keys(pinned.lists).sort(), 'the same lists');
-  const all = !!process.env.MAGE_UP_ALL;
-  let n = 0;
-  for (const l of lists) {
-    const want = pinned.lists[l.name];
-    assert.equal(l.frames.length, want.length, `${l.name}: as many frames`);
-    const picks = all ? want.map((_, i) => i) : [...new Set([0, Math.floor(want.length / 2), want.length - 1])];
-    for (const i of picks) {
-      assert.equal(hashSprite(l.frames[i]), want[i], `${l.name}[${i}]: the very same picture`);
-      n++;
+  // (the switch is on in the game since 25.3.4: off around this, as tests/warrior_up.test.ts does for him)
+  const was = MAGE_UP.on;
+  MAGE_UP.on = false;
+  try {
+    const lists = mageLists();
+    assert.deepEqual(lists.map((l) => l.name).sort(), Object.keys(pinned.lists).sort(), 'the same lists');
+    const all = !!process.env.MAGE_UP_ALL;
+    let n = 0;
+    for (const l of lists) {
+      const want = pinned.lists[l.name];
+      assert.equal(l.frames.length, want.length, `${l.name}: as many frames`);
+      const picks = all ? want.map((_, i) => i) : [...new Set([0, Math.floor(want.length / 2), want.length - 1])];
+      for (const i of picks) {
+        assert.equal(hashSprite(l.frames[i]), want[i], `${l.name}[${i}]: the very same picture`);
+        n++;
+      }
     }
+    assert.ok(n > 250, `${n} frames held to their hashes`);
+  } finally {
+    MAGE_UP.on = was;
   }
-  assert.ok(n > 250, `${n} frames held to their hashes`);
 });
 
 // --- 2. her moves the game's own; her bones ---------------------------------------------------------------------------------------
@@ -142,7 +149,15 @@ test('2. her moves are the game\'s own, nothing re-posed: only her knee joint is
 test('3. her lists with the switch on: eight sides, the game\'s own lists, standing and her habits at 30 a second, her casts as long and going at the same moments', () => {
   const old = makeHeroArt3();
   for (const place of ['dungeon', 'town', 'card'] as const) {
-    const was = old.of('mage', lookOfPlace(place));
+    // (the game's Mage as she was: her switch, on in the game since 25.3.4, off for the asking)
+    const on = MAGE_UP.on;
+    MAGE_UP.on = false;
+    let was: ReturnType<typeof old.of>;
+    try {
+      was = old.of('mage', lookOfPlace(place));
+    } finally {
+      MAGE_UP.on = on;
+    }
     assert.ok(!isEight(was), 'the game\'s Mage has two sides');
     const now = makeMageUpArt(place);
     assert.ok(isEight(now), `${place}: eight sides`);
