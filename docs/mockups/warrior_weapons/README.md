@@ -658,3 +658,12 @@ quakes lower, with fewer cracks and less dust, than the one before.
 **His measure**: looked at in the film at the game's size among the practice room's skeletons, cultist and brute, where the
 stones, cracks and dust sit at their level. NOT laid beside the Gate Ward and the Brawler this time: a quick attempt to paint
 them side by side came out wrong (colours and places) and was not mended.
+
+# His word on step 3c's quaking ground (11 Nov 2026), and what it asks for (step 3d)
+
+Shown `pictures/quake_phone.png` and `pictures/hammer_moves.mp4` (at 8ff854a2), told that the lifted stones were plain grey and
+would be better as the floor's own stone, and asked “Is the Earthquake's quaking ground right (quake_phone.png)? The lifted
+stones are plain grey at the moment.” (offered: yes, in the floor's own colour; yes, as it is; something else is off), he wrote,
+by 10:14: “If the floor’s own stone is too much work or too big file-wise, just add some generic fissurey spikes and cracks”.
+Read as: THE FLOOR'S OWN STONE IF IT IS CHEAP IN WORK AND IN FILES; if not, generic fissures, spikes and cracks. He did not
+fault the cracks, the heaving ring or the dust.
