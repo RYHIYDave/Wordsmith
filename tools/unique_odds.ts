@@ -9,10 +9,13 @@ import type { Monster } from '../src/game/state';
 import type { Item } from '../src/game/types';
 import { UNIQUE_DROPS, poolChance, UNIQUES } from '../src/game/uniques';
 import { lastFloor } from '../src/game/act1';
+import { useAllOfIt } from '../src/game/all_of_it';
 
 const seeds = Number(process.argv[2] ?? 3);
 type In = { rollGear: (q?: number) => Item; enterDungeon: () => void; updateProps: (c: unknown) => void; power: number };
 UNIQUES.on = true;
+// (the floors the game itself has: main.ts puts the High City, floors 16 to 20, on as it starts; a tool does not start the game)
+useAllOfIt(true);
 const rows: string[] = [];
 /** Pieces dropped, by what dropped them (0 an ordinary monster, 1 an elite or a chest along the way, 2 and up a hoard), and how many came out rare. */
 const by = [0, 0, 0];

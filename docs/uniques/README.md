@@ -34,7 +34,8 @@ of his own to read on his phone, “Wordsmith: Unique Items, the Numbers”.
   29 files, 363 tests, 0 failed.
 - `tsc --noEmit`: only the error main already has (tests/relief.test.ts 378).
 - The page builds, and tools/scenarios/uniques_look.mjs runs clean at 960x540 and at phone size.
-- The drop odds, counted on the fifteen floors there are: about two pool uniques and one or two bosses' own a run.
+- The drop odds, counted on the game's twenty floors (the tool puts the High City on, as main.ts does): about three pool
+  uniques and two bosses' own a run.
 
 ## To see one
 
