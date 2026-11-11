@@ -613,6 +613,19 @@ const M_STONE = ['#5a0c14', '#b8202a', '#ff6a4a'];
 /** The crystal: friendly magic, the friend's cyan (his rulebook, Colour 3). */
 const M_CRYSTAL: Ramp = ['#0c6a80', '#18a0b4', '#22d0e0', '#b8fff8', '#ffffff'];
 
+/**
+ * HIS HEAD, WHICH TAKE OF IT (his word of the second pictures, 11 Nov 2026, the other three fine: “Mystic still off”; so
+ * takes of his head for him to pick from, the rest of him the same in each):
+ *   0  the veil from under his nose, dark eyes under dark brows (the second pictures')
+ *   1  NO VEIL: his face bare, a short dark beard and a moustache, the teal a scarf at his throat
+ *   2  the veil, his eyes drawn bigger: the white of each beside its dark
+ *   3  as the game has him today: his face a shadow under the turban, two points of light for eyes, the veil
+ *   4  take 1's face under a grander turban: a band of gold round its foot, a tall feather at its stone
+ */
+export const MYSTIC_HEAD = { take: 0 };
+/** His beard and moustache, where he has them: near black. */
+const M_BEARD: Ramp = ['#0c0812', '#1a1420', '#2e2636', '#463c50', '#60546a'];
+
 export const MYSTIC_TALL = 57;
 /** HIS BODY: slight and straight-backed under the robe; long hands. */
 export const MYSTIC_BUILD: Build = buildOf(MYSTIC_TALL, 1.56, { shoulders: 1.0, chest: 0.98, depth: 1.0, waist: 1.0, hips: 1.02, arms: 1.04, limbs: 0.96, pad: 1.4 });
@@ -646,6 +659,8 @@ export function sculptMystic(p: MysticPose, turn = 0): TownFigure {
   const [rf, rl, ru] = ribs.r;
   const [swx, swy] = p.sway ?? [0, 0];
   const hand = p.hand ?? 'R';
+  const take = MYSTIC_HEAD.take;
+  const veiled = take === 0 || take === 2 || take === 3;
 
   // ---- SKIN: his brow and eyes between the turban and the veil, his throat, his hands ----
   const skin = sc.mat({
@@ -654,6 +669,8 @@ export function sculptMystic(p: MysticPose, turn = 0): TownFigure {
       const d = dk(h.prim.piece);
       if (h.prim.piece === 'head') {
         const [fw, lf, up] = onHead(h.p);
+        // (take 3: his face a shadow under the turban, as the game has him today)
+        if (take === 3 && h.prim.tag !== 'neck' && fw > 0.3) return sh(M_SKIN, 1);
         // (his face must read: lifted a tone, as the heroes' faces are)
         if (h.prim.tag === 'nose' && h.tone >= 2) return sh(M_SKIN, h.tone + 1);
         if (h.prim.tag !== 'neck' && fw > 0.36 && up < 0.5 && up > -0.8) return sh(M_SKIN, Math.max(2, h.tone + 1) - (Math.abs(lf) > 0.68 ? 1 : 0));
@@ -763,17 +780,25 @@ export function sculptMystic(p: MysticPose, turn = 0): TownFigure {
     ramp: M_VEIL,
     paint: (h) => {
       const [, , up] = onHead(h.p);
+      if (h.prim.tag === 'scarf') return (h.x + h.y) % 3 === 0 ? sh(M_VEIL, h.tone - 1) : null;
       // a row of small gold coins along its top edge
       if (up > -0.46 && h.x % 2 === 0) return sh(M_GOLD, 3);
       return (h.x + h.y) % 5 === 0 ? sh(M_VEIL, h.tone - 1) : null;
     },
   });
-  {
+  if (veiled) {
     const below = keepBelow(hu, at(0, 0, -0.34));
     const front = keepBelow(mul(hf, -1), at(0.1, 0, 0));
     sc.ell(veil, 'veil', at(0.22, 0, -0.36), [mul(hf, R[0] * 0.92), mul(hl, R[1] * 0.98), mul(hu, R[2] * 0.72)], 0.6, { tag: 'veil', cuts: [below, front] });
     // (it hangs to a point on his chest)
     sc.cone(veil, 'veil', at(0.66, 0, -0.9), at(0.72, 0, -1.6), R[1] * 0.62, 0.9, 0.8, { tag: 'veil', cuts: [front] });
+  } else {
+    // (no veil: the teal is a scarf wound at his throat, and he has a short dark beard, pointed, and a moustache)
+    sc.cone(veil, 'veil', add(s.neck, add(mul(u, 0.6), mul(f, 0.4))), add(s.neck, add(mul(u, 2.2), mul(f, 0.2))), 3.4, 3.0, 0.6, { tag: 'scarf' });
+    const beard = sc.mat({ ramp: M_BEARD, meld: true, paint: (h) => sh(M_BEARD, Math.max(1, h.tone)) });
+    sc.ell(beard, 'head', at(0.5, 0, -0.74), [mul(hf, R[0] * 0.5), mul(hl, R[1] * 0.74), mul(hu, R[2] * 0.36)], 0.8, { tag: 'beard' });
+    sc.cone(beard, 'head', at(0.66, 0, -0.9), at(0.82, 0, -1.42), R[1] * 0.46, 0.5, 0.7, { tag: 'beard' });
+    for (const side of [1, -1]) sc.cone(beard, 'head', at(1.0, side * 0.08, -0.4), at(0.9, side * 0.46, -0.5), 0.6, 0.45, 0.3, { tag: 'tash' });
   }
 
   // ---- THE TURBAN: great and pale, wound across and across, the stone at its front, an end hanging behind his shoulder ----
@@ -791,6 +816,8 @@ export function sculptMystic(p: MysticPose, turn = 0): TownFigure {
         const v = upper ? dy * 2 - dx : dy * 2 + dx;
         const fold = ((((v >> 1) % 4) + 4) % 4) === 0;
         if (h.n[2] < -0.1) return M_LINEN[1];
+        // (take 4: a band of gold round its foot)
+        if (take === 4 && tg === 'roll' && onHead(h.p)[2] < 0.78) return sh(M_GOLD, h.tone + (h.x % 3 === 0 ? 1 : 0));
         const base = Math.max(2, Math.min(4, h.tone + (upper ? 0 : 1)));
         return fold ? sh(M_LINEN, base - 1) : sh(M_LINEN, base);
       }
@@ -818,6 +845,15 @@ export function sculptMystic(p: MysticPose, turn = 0): TownFigure {
     roll('turban', 'roll', 0.84, 0.16, -0.08, 1.7, 0.72, 1.14);
     roll('turban2', 'roll2', 1.3, -0.08, 0.12, 1.55, 0.5, 0.8);
     sc.ell(linen, 'turbanTop', at(-0.22, 0, 1.52), [mul(hf, R[0] * 0.45), mul(hl, R[1] * 0.62), mul(hu, R[2] * 0.3)], 0.8, { tag: 'crown' });
+    if (take === 4) {
+      // (grander: a third round on top, and a tall feather standing from the stone, its tip nodding back)
+      sc.ell(linen, 'turbanTop', at(-0.24, 0, 1.78), [mul(hf, R[0] * 0.36), mul(hl, R[1] * 0.48), mul(hu, R[2] * 0.3)], 0.8, { tag: 'crown' });
+      const q0 = at(0.72, 0, 1.2);
+      const q1 = add(at(0.5, 0, 2.2), mul(hl, swy * 0.2));
+      const q2 = add(at(0.0, 0, 2.9), mul(hl, swy * 0.5));
+      sc.cone(veil, 'plume', q0, q1, 0.7, 1.25, 0.4, { tag: 'scarf' });
+      sc.cone(veil, 'plume', q1, q2, 1.25, 0.4, 0.4, { tag: 'scarf' });
+    }
     const a = at(-0.9, 0.7, 0.5);
     const b = add(at(-1.15, 0.9, -0.9), mul(hl, swy * 0.3));
     const c = add(at(-1.1, 0.95, -2.2), add(mul(hl, swy * 0.7), mul(hf, -swx * 0.5)));
@@ -838,7 +874,14 @@ export function sculptMystic(p: MysticPose, turn = 0): TownFigure {
   // his eyes: dark, under dark brows (a man's face; his word of the first redrawing, 11 Nov 2026, its face a shadow with
   // two points of light in it: “the mystics head and face is weird”)
   for (const side of [1, -1]) {
+    if (take === 3) {
+      // (two points of light in the turban's shadow)
+      sc.mark(at(0.9, side * 0.4, 0.06), '#7af8f0', 1, 1, 0, 0, 2.4);
+      continue;
+    }
     sc.mark(at(0.86, side * 0.38, 0.02), '#140a18', 1, 1, 0, 0, 2.4);
+    // (take 2: the white of each eye beside its dark, toward his temple)
+    if (take === 2) sc.mark(at(0.86, side * 0.38, 0.02), '#f4eee6', 1, 1, side > 0 ? 1 : -1, 0, 2.4);
     sc.mark(at(0.9, side * 0.4, 0.24), sh(M_SKIN, 0), 2, 1, side > 0 ? 0 : -1, 0, 2.4);
   }
 

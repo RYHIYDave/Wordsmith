@@ -34,7 +34,8 @@ export default async function (page, snap) {
   const dir = process.env.FRAMES || '';
   await page.evaluate((c) => { const d = window.__dbg; d.saving(false); d.run(c, 31); }, cls);
   await page.waitForTimeout(500);
-  if (!old) await page.evaluate(() => window.__dbg.townsfolk3(true, false));
+  // (TAKE: which take of the mystic's head, while he picks: dev/sculpt_townsfolk.ts MYSTIC_HEAD)
+  if (!old) await page.evaluate((take) => (take === null ? window.__dbg.townsfolk3(true, false) : window.__dbg.townsfolk3(true, false, take)), process.env.TAKE ? Number(process.env.TAKE) : null);
   // (a new hero's town has the wordsmith's ring dark, his runes cold and his work waiting, until the master rune-stone is
   // given him: art/quest3.ts. The pictures show him at his work, the ring burning, unless DARK=1.)
   if (process.env.DARK !== '1') await page.evaluate(() => window.__dbg.quest3({ dark: false }));
@@ -70,7 +71,7 @@ export default async function (page, snap) {
     await page.evaluate((dt) => window.__dbg.clockBy(dt), t0 - (await page.evaluate(() => window.__dbg.clock())));
     await raf();
     if (mode === 'still') {
-      const file = `${process.env.OUT || 'shots/townsfolk3/still'}_${who}${old ? '_old' : ''}${near ? '_near' : ''}.png`;
+      const file = `${process.env.OUT || 'shots/townsfolk3/still'}_${who}${old ? '_old' : ''}${near ? '_near' : ''}${process.env.TAKE ? '_take' + process.env.TAKE : ''}.png`;
       fs.mkdirSync(path.dirname(file), { recursive: true });
       await raf();
       await page.screenshot({ path: file, clip });
