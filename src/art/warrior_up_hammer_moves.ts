@@ -131,6 +131,10 @@ export const HAMMER_SMASH_HELD: readonly [number, number] = [8, 11];
 export const HAMMER_SMASH_AT = 1.2;
 export const HAMMER_SMASH_ROUND = 0.5;
 
+/** Where his left fist is at the top of a Smash's wind-up, and at the end of its hold (from the middle of his hips: forward, to
+ * his left, up): back by his right ear, so that his helm is seen from every side. */
+const TOP_HANDS: V3 = [3, -10, 17.5];
+const TOP_HANDS2: V3 = [2, -10, 18];
 /** His body at the top of a Smash: up on his toes, arched back, wound a little to his right, his chin down and his eyes on the spot. */
 function smashTop(): Partial<Bones> {
   const P = plantedFeet();
@@ -154,9 +158,9 @@ function haulBack(from: number, low: Partial<Bones>, sunk: Held, long = 22): Axe
   // (he gathers: his hips back and up, his hands risen, the head of the maul still on the floor: where a second tap begins)
   const gathered = hold({ ...low, px: 5.4, pz: -8.6, pitch: 15, bend: 22, faceUp: -22 }, [12, -1, -2.5], 0, -16, DOWN, sunk.roll, SLID);
   // (hauled off the floor: its head swung out low to his right)
-  const off = hold({ ...P, ...backFoot(40, -8), rk: -4, px: 3.4, pz: -7.4, yaw: -16, pitch: 11, twist: -8, bend: 16, faceUp: -12 }, [12, -2, 1], -34, -12, DOWN, gathered.roll, -3.4);
-  const round = hold({ ...P, px: 1.6, pz: -6.0, yaw: -28, pitch: 8, twist: -18, bend: 12, faceUp: -5 }, [11, -3, 4], -92, -4, DOWN, off.roll, -2);
-  const behind = hold({ ...P, px: 0.4, pz: -4.6, yaw: -36, pitch: 5, twist: -26, bend: 8, faceUp: -1 }, [10, -4, 6.5], -140, 8, DOWN, round.roll, -1);
+  const off = hold({ ...P, ...backFoot(40, -8), rk: -4, px: 3.4, pz: -7.4, yaw: -16, pitch: 11, twist: -8, bend: 16, faceUp: -12 }, [12, -2, 1], -34, -12, DOWN, gathered.roll, SLID);
+  const round = hold({ ...P, px: 1.6, pz: -6.0, yaw: -28, pitch: 8, twist: -18, bend: 12, faceUp: -5 }, [11, -3, 4], -92, -4, DOWN, off.roll, SLID - 3);
+  const behind = hold({ ...P, px: 0.4, pz: -4.6, yaw: -36, pitch: 5, twist: -26, bend: 8, faceUp: -1 }, [10, -4, 6.5], -140, 8, DOWN, round.roll, -3);
   return [
     key(f(0.23), gathered, 'io'),
     key(f(0.5), off, 'io'),
@@ -180,13 +184,17 @@ function smashDown(): AxeKey[] {
   const P = plantedFeet();
   const top = smashTop();
   const low = smashLow();
-  const k1 = hold({ ...lightFeet(), px: -0.2, pz: -4.0, yaw: -42, twist: -30, bend: 6 }, [11, -3, 8], -150, 26, DOWN, 180);
-  const k2 = hold({ ...skipFeet(), px: -0.4, pz: -4.4, yaw: -42, twist: -28, bend: 5 }, [11, -4, 9], -128, 38, DOWN, k1.roll);
-  // (landed: the head out to his right and rising)
-  const k4 = hold({ ...P, px: -0.6, pz: -4.6, yaw: -36, twist: -24, pitch: 2, bend: 2, faceUp: -2 }, [10, -6, 13], -80, 62, DOWN, k2.roll);
-  const k6 = hold({ ...top, lfp: 10, lfz: onToes(10), pz: -1.2, bend: -8, pitch: -2 }, [8, -8, 18], -30, 86, [1, 0, 0], k4.roll);
-  const k8 = hold(top, [6, -9, 21], 0, 104, [1, 0, 0.1], k6.roll);
-  const k11 = hold({ ...top, pz: 2.0, pitch: -6, bend: -16, faceUp: -12 }, [5.5, -9, 21.5], 0, 112, [1, 0, 0.2], k8.roll);
+  // (THE MAUL IS SWUNG LOW ROUND HIS RIGHT SIDE AND UP BEFORE HIS RIGHT SHOULDER, its face kept down: so it comes up past
+  // upright with its face turned toward the mark of itself, the head never rolled about its haft, and never passes before his helm)
+  const k1 = hold({ ...lightFeet(), px: -0.2, pz: -4.0, yaw: -42, twist: -30, bend: 6 }, [11, -4, 8], -146, 8, DOWN, 180);
+  const k2 = hold({ ...skipFeet(), px: -0.4, pz: -4.4, yaw: -40, twist: -28, bend: 7 }, [12.5, -7, 7], -112, -8, DOWN, k1.roll, SLID);
+  // (landed: the head swung on, low before his right hip, and rising)
+  const k4 = hold({ ...P, px: -0.4, pz: -4.6, yaw: -34, twist: -22, pitch: 3, bend: 4, faceUp: -4 }, [12, -9, 9.5], -36, 22, DOWN, k2.roll, SLID);
+  const k5 = hold({ ...P, px: -0.5, pz: -3.6, yaw: -30, twist: -18, pitch: 1, bend: 0, faceUp: -6 }, [10, -11, 12.5], -46, 56, DOWN, k4.roll);
+  const k6 = hold({ ...top, lfp: 10, lfz: onToes(10), pz: -1.2, bend: -8, pitch: -2 }, [7, -10.5, 15.5], -14, 88, [1, 0, 0], k5.roll);
+  const k7 = hold({ ...top, lfp: 14, lfz: onToes(14), pz: -0.4, bend: -11, pitch: -3 }, [4.5, -11, 15.8], 0, 112, [1, 0, 0], k6.roll);
+  const k8 = hold(top, TOP_HANDS, 0, 132, [1, 0, 0.1], k7.roll);
+  const k11 = hold({ ...top, pz: 2.0, pitch: -6, bend: -16, faceUp: -12 }, TOP_HANDS2, 0, 140, [1, 0, 0.2], k8.roll);
   // THE STRIKE: over the top ...
   const k12 = hold({ ...P, ...backFoot(40, -8), rk: -4, px: 4.5, pz: -3.5, yaw: -10, pitch: 8, twist: -4, bend: 6, faceUp: -22 }, [11, -5, 14], 0, 52, [1, 0, -0.6], k11.roll, SLID);
   // ... and down onto the floor
@@ -197,7 +205,9 @@ function smashDown(): AxeKey[] {
     key(1, k1, 'out'),
     key(2, k2, 'lin'),
     key(4, k4, 'lin'),
+    key(5, k5, 'lin'),
     key(6, k6, 'lin'),
+    key(7, k7, 'lin'),
     // THE WIND-UP, reached and HELD
     key(8, k8, 'out'),
     key(11, k11, 'io'),
@@ -227,16 +237,18 @@ function smashAgain(): AxeKey[] {
   const at = axePosed(maul({ name: '', keys: first }), HAMMER_SMASH_POISE);
   const from: AxeKey = { at: 0, pose: stripped(at.q), grip: at.rightOn };
   const k1 = hold({ ...lightFeet(), px: 5.0, pz: -8.0, yaw: -6, pitch: 14, twist: -2, bend: 20, faceUp: -20 }, [12, -2, -1], 0, -6, DOWN, 180, SLID);
-  const k2 = hold({ ...skipFeet(), px: 4.4, pz: -6.6, yaw: -8, pitch: 11, twist: -3, bend: 14, faceUp: -18 }, [12, -3, 2], 0, 12, DOWN, 180, SLID);
-  const k4 = hold({ ...plantedFeet(), px: 3.0, pz: -3.6, yaw: -12, pitch: 5, twist: -6, bend: 4, faceUp: -14 }, [11, -6, 9], 0, 50, [1, 0, -0.5], 180, SLID);
-  const k6 = hold({ ...top, lfp: 10, lfz: onToes(10), pz: -0.6, bend: -8, pitch: -2 }, [8, -8, 16], 0, 84, [1, 0, 0], 180, SLID);
-  const k8 = hold(top, [6, -9, 21], 0, 104, [1, 0, 0.1], 180);
-  const k11 = hold({ ...top, pz: 2.0, pitch: -6, bend: -16, faceUp: -12 }, [5.5, -9, 21.5], 0, 112, [1, 0, 0.2], 180);
+  const k2 = hold({ ...skipFeet(), px: 4.4, pz: -6.6, yaw: -8, pitch: 11, twist: -3, bend: 14, faceUp: -18 }, [12, -5, 1.5], -32, 6, DOWN, 180, SLID);
+  const k4 = hold({ ...plantedFeet(), px: 3.0, pz: -3.6, yaw: -16, pitch: 5, twist: -10, bend: 4, faceUp: -10 }, [11, -10.5, 10], -56, 44, DOWN, 180, SLID);
+  const k5 = hold({ ...plantedFeet(), px: 1.5, pz: -2.8, yaw: -24, pitch: 2, twist: -14, bend: 0, faceUp: -8 }, [10, -11.5, 12.5], -50, 60, DOWN, 180, SLID - 3);
+  const k6 = hold({ ...top, lfp: 10, lfz: onToes(10), pz: -0.6, bend: -8, pitch: -2 }, [7, -10.5, 15.5], -14, 88, [1, 0, 0], 180, SLID);
+  const k8 = hold(top, TOP_HANDS, 0, 132, [1, 0, 0.1], 180);
+  const k11 = hold({ ...top, pz: 2.0, pitch: -6, bend: -16, faceUp: -12 }, TOP_HANDS2, 0, 140, [1, 0, 0.2], 180);
   return [
     from,
     key(1, k1, 'out'),
     key(2, k2, 'lin'),
     key(4, k4, 'lin'),
+    key(5, k5, 'lin'),
     key(6, k6, 'lin'),
     key(8, k8, 'out'),
     key(11, k11, 'io'),
