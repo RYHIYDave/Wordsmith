@@ -10,7 +10,13 @@ game is exactly as it was.
 - His rule to the art chat the same morning, “Yes, everything (Recommended)”: everything that moves, at 30 a second.
 - His measure for new art (9 Nov): the Gate Ward (floor 11) and the Brawler; new art is checked beside them at the game's
   own size, and what is finer is sent back the same as what is rougher.
-- HE HAS NOT SEEN THESE YET. The pictures below went to him on 11 Nov; his answer goes here.
+- 11 Nov 2026, shown the first pictures and film and asked “Are the four redrawn townsfolk right, in how they look and
+  how they move (townsfolk_now_and_redrawn.mp4 and the four pictures)?”: “The wordsmiths hands are weird, the strangers
+  knee up is weird, the mystics head and face is weird”. Read as, and told him so: the wordsmith's hands came out as long
+  pale paddles across his beard; the stranger's boot-on-the-wall leg stuck out sideways; the mystic's turban was a white
+  blob over a dark mask of a face with two glowing dots. All three mended (below) and the pictures made again. Nothing
+  said against the armourer, or against how any of them moves.
+- HIS YES IS STILL TO COME: the second pictures went to him the same morning; his answer goes here.
 
 ## What is drawn
 
@@ -24,14 +30,17 @@ WHO EACH IS DOES NOT CHANGE: these are the looks he already knows, made the new 
   height. His left fist on his hip; the hammer in his right hand, its head up over his shoulder. His eyes are dark (his word
   of the opening's armourer, 25 Oct: “The armorer’s eyes glow for some reason”).
 - **The mystic**: the mage's purple robe to the floor, a gold sash knotted in front, gold chains, a red stone on the lower;
-  a great pale turban, wound, a red stone at its front, its end down his back; a teal veil with a row of gold coins; his
-  eyes two points of light in the turban's shadow, as they have always been; the crystal turning over his open palm.
+  a great pale turban, WOUND (two rolls of cloth crossing, their folds seen, nothing of it over his brow), a red stone at
+  its front, its end down his back; A MAN'S FACE under it (brown skin, dark eyes under dark brows: no shadow, no points
+  of light), a teal veil from under his nose with a row of gold coins; the crystal turning over his open palm.
 - **The wordsmith**: THE LOOK HE SAID YES TO ON 8 OCT (“Yes, this is him (Recommended)”), the same body, stance and work
   (`art/smith3.ts` SMITH_BODY, SMITH_STANCE, SMITH_MOVES): the night-blue robe, the teal mantle and its cowl up, the long
   white beard, his eyes and the runes on him burning cyan (down his skirts, round the hem, along the mantle's edge and the
-  cowl, in his forearms); cold while his ring is dark.
-- **The stranger**: a real lean now: his back on the wall, one leg planted well out, the other bent with its boot flat on
-  the wall, arms folded (leather bracers), a long dark cloak, the hood down, two points of gold, a scarf, a gold clasp.
+  cowl, in his forearms); cold while his ring is dark. HIS HANDS are a hand's own shape, held before him, the right cupped
+  under the small rune; his sleeves come to the middle of his forearms.
+- **The stranger**: a real lean now: his back on the wall, one leg planted well out, the other crossed over it at the
+  ankle (NOT a boot up on the wall: his “knee up is weird”), arms folded (leather bracers), a long dark cloak, the hood
+  down, two points of gold, a scarf, a gold clasp.
 
 None has an edge of light (Pixels 5: "Townsfolk have none"). EACH IS TRULY TURNED the four ways along the grid, never its
 picture flipped: the hammer stays in the hand that holds it. The stranger never leaves his wall; only his eyes go to you.

@@ -165,6 +165,22 @@ function openHand(g: Rig, mat: number, side: 'L' | 'R', palm: V3, k: number): vo
 }
 
 /**
+ * A HAND, plain: the block of it rounded as a hand is, and the thumb beside it (as the Brawler's fists are a block and a
+ * thumb: at this size a hand is a few pixels, and one that is a flat paddle reads as a flipper). `palm`: the way its palm
+ * faces; `cup`: the fingers curled toward the palm's side (a hand that holds something up), 0 to 1.
+ */
+function handOf(g: Rig, mat: number, side: 'L' | 'R', palm: V3, k: number, cup = 0): void {
+  const { sc, s } = g;
+  const { el, ha } = armOf(s, side);
+  const d = norm(sub(ha, el));
+  const n = norm(sub(palm, mul(d, dot(palm, d))), [0, 0, 1]);
+  const w = norm(cross(d, n));
+  sc.box(mat, `arm${side}`, add(ha, mul(d, 1.0 * k)), [mul(d, 1.75 * k), mul(w, 1.45 * k), mul(n, 0.95 * k)], 0.9 * k, 0.9, { tag: 'hand' });
+  if (cup > 0) sc.box(mat, `arm${side}`, add(ha, add(mul(d, 2.5 * k), mul(n, 0.7 * k * cup))), [mul(d, 0.7 * k), mul(w, 1.3 * k), mul(n, 0.95 * k)], 0.6 * k, 0.8, { tag: 'hand' });
+  sc.ell(mat, `arm${side}`, add(ha, add(mul(d, 0.9 * k), add(mul(w, (side === 'L' ? -1 : 1) * 1.5 * k), mul(n, 0.3 * k)))), [mul(d, 0.95 * k), mul(w, 0.6 * k), mul(n, 0.6 * k)], 0.5, { tag: 'thumb' });
+}
+
+/**
  * BOOTS, set ON the floor (never in it): the foot a block from heel to toe, its sole under it, and the leg of the boot up
  * the shin to `high` of the way from ankle to knee.
  */
@@ -595,13 +611,11 @@ const M_VEIL: Ramp = ['#06262e', '#0c4250', '#166a78', '#2a929a', '#56b8b6'];
 /** The stone in his turban and on his chain: an honest red (nothing pink in the town). */
 const M_STONE = ['#5a0c14', '#b8202a', '#ff6a4a'];
 /** The crystal: friendly magic, the friend's cyan (his rulebook, Colour 3). */
-/** His eyes: two points of the crystal's light. */
-const M_EYE = '#7af8f0';
 const M_CRYSTAL: Ramp = ['#0c6a80', '#18a0b4', '#22d0e0', '#b8fff8', '#ffffff'];
 
 export const MYSTIC_TALL = 57;
 /** HIS BODY: slight and straight-backed under the robe; long hands. */
-export const MYSTIC_BUILD: Build = buildOf(MYSTIC_TALL, 1.7, { shoulders: 1.0, chest: 0.98, depth: 1.0, waist: 1.0, hips: 1.02, arms: 1.04, limbs: 0.96, pad: 1.4 });
+export const MYSTIC_BUILD: Build = buildOf(MYSTIC_TALL, 1.56, { shoulders: 1.0, chest: 0.98, depth: 1.0, waist: 1.0, hips: 1.02, arms: 1.04, limbs: 0.96, pad: 1.4 });
 
 /** How far before him his table's top is, and how high (art/town.ts: the table of wares, a tile on), in his own lengths. */
 export const TABLE = { fwd: 26, up: 24 };
@@ -640,10 +654,9 @@ export function sculptMystic(p: MysticPose, turn = 0): TownFigure {
       const d = dk(h.prim.piece);
       if (h.prim.piece === 'head') {
         const [fw, lf, up] = onHead(h.p);
-        // (the band of his face that is seen: his eyes in the turban's shadow, the bridge of his nose and his cheeks under
-        // them lifted a tone so that they read)
-        if (h.prim.tag !== 'neck' && fw > 0.3 && up > -0.02) return sh(M_SKIN, 1);
-        if (h.prim.tag !== 'neck' && fw > 0.36 && up < 0.4) return sh(M_SKIN, Math.max(2, h.tone + 1) - (Math.abs(lf) > 0.7 ? 1 : 0));
+        // (his face must read: lifted a tone, as the heroes' faces are)
+        if (h.prim.tag === 'nose' && h.tone >= 2) return sh(M_SKIN, h.tone + 1);
+        if (h.prim.tag !== 'neck' && fw > 0.36 && up < 0.5 && up > -0.8) return sh(M_SKIN, Math.max(2, h.tone + 1) - (Math.abs(lf) > 0.68 ? 1 : 0));
         return null;
       }
       return d ? sh(M_SKIN, h.tone - 1) : null;
@@ -751,12 +764,12 @@ export function sculptMystic(p: MysticPose, turn = 0): TownFigure {
     paint: (h) => {
       const [, , up] = onHead(h.p);
       // a row of small gold coins along its top edge
-      if (up > -0.42 && h.x % 2 === 0) return sh(M_GOLD, 3);
+      if (up > -0.46 && h.x % 2 === 0) return sh(M_GOLD, 3);
       return (h.x + h.y) % 5 === 0 ? sh(M_VEIL, h.tone - 1) : null;
     },
   });
   {
-    const below = keepBelow(hu, at(0, 0, -0.3));
+    const below = keepBelow(hu, at(0, 0, -0.34));
     const front = keepBelow(mul(hf, -1), at(0.1, 0, 0));
     sc.ell(veil, 'veil', at(0.22, 0, -0.36), [mul(hf, R[0] * 0.92), mul(hl, R[1] * 0.98), mul(hu, R[2] * 0.72)], 0.6, { tag: 'veil', cuts: [below, front] });
     // (it hangs to a point on his chest)
@@ -764,39 +777,56 @@ export function sculptMystic(p: MysticPose, turn = 0): TownFigure {
   }
 
   // ---- THE TURBAN: great and pale, wound across and across, the stone at its front, an end hanging behind his shoulder ----
-  const [tx, ty] = pix(at(-0.2, 0, 0.9));
+  const [tx, ty] = pix(at(-0.2, 0, 1.0));
   const linen = sc.mat({
     ramp: M_LINEN,
     paint: (h) => {
       const tg = h.prim.tag ?? '';
-      if (tg === 'wrap' || tg === 'crown') {
-        // the windings: slanting lines a pixel wide laid by the picture's own grid (so each is whole), one way on the great
-        // roll and the other on the round above it
+      if (tg === 'roll' || tg === 'roll2' || tg === 'crown' || tg === 'core') {
+        // THE WINDINGS: each roll its own way, its folds slanting lines a pixel wide laid by the picture's own grid (so each
+        // is whole); the lower roll the lighter, the upper a tone under it, dark where a roll turns under
         const dx = h.x - tx;
         const dy = h.y - ty;
-        const v = tg === 'crown' ? dy * 2 - dx : dy * 2 + dx;
-        if ((((v >> 1) % 4) + 4) % 4 === 0) return h.tone >= 3 ? M_LINEN[2] : M_LINEN[1];
-        return sh(M_LINEN, Math.max(2, h.tone));
+        const upper = tg !== 'roll';
+        const v = upper ? dy * 2 - dx : dy * 2 + dx;
+        const fold = ((((v >> 1) % 4) + 4) % 4) === 0;
+        if (h.n[2] < -0.1) return M_LINEN[1];
+        const base = Math.max(2, Math.min(4, h.tone + (upper ? 0 : 1)));
+        return fold ? sh(M_LINEN, base - 1) : sh(M_LINEN, base);
       }
       if (tg === 'tail' && (h.x + h.y) % 4 === 0) return sh(M_LINEN, h.tone - 1);
-      return null;
+      return sh(M_LINEN, Math.max(2, h.tone));
     },
   });
   {
-    // (a great roll of it round his brow, wider than his head; a smaller round on top; the cloth's end tucked up into it)
-    const above = keepBelow(norm(sub(mul(hu, -1), mul(hf, 0.4))), at(0.9, 0, 0.8));
-    sc.ell(linen, 'turban', at(-0.28, 0, 0.9), [mul(hf, R[0] * 1.12), mul(hl, R[1] * 1.6), mul(hu, R[2] * 0.72)], 0.6, { tag: 'wrap', cuts: [above] });
-    sc.ell(linen, 'turban', at(-0.3, 0, 1.46), [mul(hf, R[0] * 0.84), mul(hl, R[1] * 1.0), mul(hu, R[2] * 0.52)], 1.2, { tag: 'crown' });
-    // the end of it, hanging down behind his left shoulder, stirring
+    // WOUND: two great rolls of cloth round his head, one over the other and crossing it (the lower one high over his brow
+    // and low behind, the upper one the other way), a round of cloth closing the top; its end hanging behind his shoulder
+    /**
+     * A roll round the head: `h` up it, tipped `tf` up at the front and `tl` up at his left, `r` thick, reaching `wf`
+     * forward and back and `wl` to either side. NOTHING OF IT OVERHANGS HIS BROW: the eye looks down on him, and what
+     * stands out over his face hides it.
+     */
+    const roll = (piece: string, tag: string, h: number, tf: number, tl: number, r: number, wf: number, wl: number): void => {
+      const n = 12;
+      const pt = (i: number): V3 => {
+        const a = (i / n) * Math.PI * 2;
+        return at(-0.2 + wf * Math.cos(a), wl * Math.sin(a), h + tf * Math.cos(a) + tl * Math.sin(a));
+      };
+      for (let i = 0; i < n; i++) sc.cone(linen, piece, pt(i), pt(i + 1), r, r, 1.0, { tag });
+    };
+    sc.ell(linen, 'turbanCore', at(-0.2, 0, 0.98), [mul(hf, R[0] * 0.74), mul(hl, R[1] * 1.12), mul(hu, R[2] * 0.42)], 0.6, { tag: 'core' });
+    roll('turban', 'roll', 0.84, 0.16, -0.08, 1.7, 0.72, 1.14);
+    roll('turban2', 'roll2', 1.3, -0.08, 0.12, 1.55, 0.5, 0.8);
+    sc.ell(linen, 'turbanTop', at(-0.22, 0, 1.52), [mul(hf, R[0] * 0.45), mul(hl, R[1] * 0.62), mul(hu, R[2] * 0.3)], 0.8, { tag: 'crown' });
     const a = at(-0.9, 0.7, 0.5);
     const b = add(at(-1.15, 0.9, -0.9), mul(hl, swy * 0.3));
     const c = add(at(-1.1, 0.95, -2.2), add(mul(hl, swy * 0.7), mul(hf, -swx * 0.5)));
-    sc.cone(linen, 'turban', a, b, 1.5, 1.35, 0.8, { tag: 'tail' });
-    sc.cone(linen, 'turban', b, c, 1.35, 1.0, 0.6, { tag: 'tail' });
+    sc.cone(linen, 'turbanTail', a, b, 1.5, 1.35, 0.8, { tag: 'tail' });
+    sc.cone(linen, 'turbanTail', b, c, 1.35, 1.0, 0.6, { tag: 'tail' });
   }
   // the stone at the turban's front, in a setting of gold; and the one on his lower chain
   {
-    const stone = at(0.86, 0, 1.06);
+    const stone = at(0.82, 0, 0.98);
     sc.ell(gold, 'jewel', stone, [mul(hf, 0.6), mul(hl, 1.3), mul(hu, 1.4)], 0.2, { tag: 'setting' });
     sc.mark(add(stone, mul(hf, 0.7)), M_STONE[1], 2, 2, -1, -1, 2.4);
     sc.mark(add(stone, mul(hf, 0.7)), M_STONE[2], 1, 1, -1, -1, 2.4);
@@ -805,8 +835,12 @@ export function sculptMystic(p: MysticPose, turn = 0): TownFigure {
     sc.mark(drop, M_STONE[2], 1, 1, -1, 0, 2.4);
   }
   // his eyes: dark, long, lined; a brow over each
-  // (two points of light in that shadow: his eyes, as the town has always known them)
-  for (const side of [1, -1]) sc.mark(at(0.9, side * 0.4, 0.1), M_EYE, 1, 1, 0, 0, 2.4);
+  // his eyes: dark, under dark brows (a man's face; his word of the first redrawing, 11 Nov 2026, its face a shadow with
+  // two points of light in it: “the mystics head and face is weird”)
+  for (const side of [1, -1]) {
+    sc.mark(at(0.86, side * 0.38, 0.02), '#140a18', 1, 1, 0, 0, 2.4);
+    sc.mark(at(0.9, side * 0.4, 0.24), sh(M_SKIN, 0), 2, 1, side > 0 ? 0 : -1, 0, 2.4);
+  }
 
   // ---- slippers under the hem ----
   const shoe = sc.mat({ ramp: M_WINE });
@@ -984,15 +1018,16 @@ export function sculptWordsmith(p: WordsmithPose, turn = 0): TownFigure {
     const [, uo] = frameOf(shd, el, out, f);
     sc.ell(robe, piece, add(shd, add(mul(u, -0.3), mul(uo, 0.6))), [mul(f, 3.9), mul(uo, 3.5), mul(u, 3.5)], 1.6, { tag: 'sleeve' });
     sc.cone(robe, piece, shd, el, 3.5, 3.4, 1.4, { tag: 'sleeve' });
-    const cuff = lerp3(el, ha, 0.36);
-    sc.cone(robe, piece, el, cuff, 3.5, 4.5, 1.0, { tag: 'bell' });
-    // his bare forearm, corded, and his hand
-    const wrist = lerp3(el, ha, 0.86);
-    sc.cone(skin, piece, lerp3(el, ha, 0.2), wrist, 2.6, 2.0, 1.0, { tag: 'fore' });
+    // (the wide sleeve to the middle of his forearm; below it his bare forearm, short, and his hand)
+    const cuff = lerp3(el, ha, 0.56);
+    sc.cone(robe, piece, el, cuff, 3.5, 4.3, 1.0, { tag: 'bell' });
+    const wrist = lerp3(el, ha, 0.9);
+    sc.cone(skin, piece, lerp3(el, ha, 0.4), wrist, 2.3, 1.9, 1.0, { tag: 'fore' });
   }
-  // (his right hand open before him, the palm up, where the small rune turns; his left open at his side, the palm down)
-  openHand(g, skin, 'R', [0, 0, 1], 1.36);
-  openHand(g, skin, 'L', [0, 0, -1], 1.36);
+  // (his right hand cupped before him, the palm up, where the small rune turns; his left beside it, the palm toward him:
+  // big hands, each a hand's own shape)
+  handOf(g, skin, 'R', [0, 0, 1], 1.22, 0.9);
+  handOf(g, skin, 'L', mul(f, -1), 1.22, 0.3);
 
   // ---- boots under the hem ----
   const boot = sc.mat({ ramp: W_BOOT });
@@ -1110,11 +1145,11 @@ export function sculptWordsmith(p: WordsmithPose, turn = 0): TownFigure {
     // IN THE SKIN OF HIS FOREARMS AND ON THE BACKS OF HIS HANDS
     for (const side of ['L', 'R'] as const) {
       const { el, ha } = armOf(s, side);
-      const [x0, y0] = pix(lerp3(el, ha, 0.46));
-      const [x1, y1] = pix(lerp3(el, ha, 0.86));
+      const [x0, y0] = pix(lerp3(el, ha, 0.64));
+      const [x1, y1] = pix(lerp3(el, ha, 0.88));
       const nn = Math.max(1, Math.floor(Math.hypot(x1 - x0, y1 - y0) / 3));
       for (let i = 0; i <= nn; i++) {
-        const q2 = lerp3(lerp3(el, ha, 0.46), lerp3(el, ha, 0.86), i / nn);
+        const q2 = lerp3(lerp3(el, ha, 0.64), lerp3(el, ha, 0.88), i / nn);
         const c = burning(hotAt(0.3 + i * 0.07) + 0.08);
         sc.mark(q2, c, 1, 1, 0, 0, 3.4, skin);
         sc.mark(q2, c, 1, 1, i % 2 === 0 ? 0 : 1, i % 2 === 0 ? -1 : 0, 3.4, skin);
@@ -1460,17 +1495,18 @@ function bootsOnWall(g: Rig, mat: number, high: number): void {
 }
 
 /**
- * AGAINST HIS WALL: his back and the seat of him on it, his left leg planted well out before him, his right bent, its boot
- * flat on the wall behind; his arms folded on his chest; his head down in the hood.
+ * AGAINST HIS WALL: his back and the seat of him on it, his left leg planted well out before him, his right crossed over
+ * it at the ankle, resting on its toe; his arms folded on his chest; his head down in the hood. (His word of the first
+ * redrawing, 11 Nov 2026, its right boot flat on the wall and the knee out: “the strangers knee up is weird”.)
  */
 export function strangerStance(): Partial<Bones> {
   const B = STRANGER_BUILD;
   const base: Partial<Bones> = {
     px: -WALL + B.pelvisDeep + 3.6, pz: -2.0, pitch: -12, bend: 10, hunch: 8, faceUp: -14, faceTurn: -10,
     // (the planted leg: its foot well out before him, turned out a little)
-    lfx: -WALL + B.pelvisDeep + 15.5, lfy: 0.6, lft: 10, lk: 8,
-    // (the bent one: its ankle up by the wall, the sole flat on it, the knee out before him)
-    rfx: -WALL + B.ankle + 1.6, rfy: -2.6, rfz: 10.5, rfp: 90, rft: 0, rk: -62, rkUp: 4,
+    lfx: -WALL + B.pelvisDeep + 15.5, lfy: -1.0, lft: 6, lk: 6,
+    // (the other crossed over it: its foot before the planted one and a little across it, up on its toe, the knee easy)
+    rfx: -WALL + B.pelvisDeep + 20.5, rfy: B.stance + 6.2, rfz: 1.1, rfp: 26, rft: 24, rk: -4,
     le: 34, re: 30,
   };
   // (the arms folded: each hand tucked in by the other arm's elbow, the left over the right: it is the left that tosses)
