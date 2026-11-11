@@ -5,8 +5,11 @@
 //   - on, nothing painted stands over the walkable floor: every pixel shows the kind of ground it did;
 //   - a shadow's edge is the wall's own line (his words, 11 Nov 2026, “The shadow is spikey when the wall is not”): the near
 //     shadow reaches as far up from the cliff's edge in every column;
-//   - the Quarry's near cliffs have their caprock rim where they are cut, and its shaded walls throw their shadow (light from the
-//     upper left, his rulebook); the Ledge Road's shaded walls throw theirs, and its drop, which is air, throws none.
+//   - the Quarry's near cliffs have their caprock rim where they are cut, and its shaded walls throw their shadow; the Ledge
+//     Road's shaded walls throw theirs, and its drop, which is air, throws none;
+//   - the light is one light (his words, 11 Nov 2026, to the Ledge Road's first picture: “As long as the light source is
+//     consistent”): the shadows are thrown the way the walls are lit, across the screen from the left, so a wall painted in shade
+//     throws one from its foot and a wall painted lit throws none before it.
 //   run: tsx --test tests/outdoor_shadows.test.ts
 
 // @ts-ignore
@@ -149,8 +152,8 @@ test('QUARRY_RIM: every pixel the kind of ground it was; the caprock rim along t
   assert.equal(Math.max(...on), 41);
 });
 
-test('QUARRY_RIM: a wall in shade throws its shadow down the screen to the right; a lit wall none; the open floor as it was', () => {
-  for (const y of [17.5, 19.5, 21.5]) darker(Q_OFF, Q_ON, 11, y, QUARRY_RIM.shade.sunDark);
+test('QUARRY_RIM: a wall in shade throws its shadow across the screen to the right; a lit wall none; the open floor as it was', () => {
+  for (const y of [17.5, 19.5, 21.5]) darker(Q_OFF, Q_ON, 10.7, y, QUARRY_RIM.shade.sunDark);
   for (const [x, y] of [[18, 17], [20, 18], [22, 17], [24, 16]] as const) same(Q_OFF, Q_ON, x, y);
   for (const x of [20.5, 24.5]) same(Q_OFF, Q_ON, x, 15.2);
 });
@@ -171,7 +174,7 @@ test('LEDGE_RIM: every pixel the kind it was; a wall in shade throws its shadow;
   }
   assert.ok(floors > 20000, `there is floor to see: ${floors}`);
   // beside the rock wall: in its shadow
-  for (const y of [15.5, 17]) darker(off, on, 11, y, LEDGE_RIM.shade.sunDark);
+  for (const y of [15.5, 17]) darker(off, on, 10.7, y, LEDGE_RIM.shade.sunDark);
   // beside the drop: as it was
   for (const y of [22.5, 24]) same(off, on, 11, y);
   // and the open road

@@ -3,8 +3,10 @@
 //   - off, the canyon is as the game has it (nothing of the look changes);
 //   - on, nothing painted stands over the walkable floor (his rule): every pixel shows the kind of ground it did;
 //   - the top of a near cliff, cut away, has its pale caprock rim along the floor's edge;
-//   - light from the upper left (his rulebook): the walls whose faces are in shade throw their shadow down the screen to the right
-//     across the bed, and the bed out in the open is as it was; the near cliff's shadow (his yes of 8 Nov 2026) is kept;
+//   - the light the walls are painted by comes across the screen from the left: the walls whose faces are in shade throw their
+//     shadow across the screen to the right over the bed, a wall painted lit throws none before it (his words, 11 Nov 2026: “As
+//     long as the light source is consistent”), and the bed out in the open is as it was; the near cliff's shadow (his yes of
+//     8 Nov 2026) is kept;
 //   - a shadow's edge is the wall's own line (his words, 11 Nov 2026, to the first pictures: “The shadow is spikey when the wall
 //     is not”): the near cliff's shadow reaches as far up from the cliff's edge in every column, no teeth.
 //   run: tsx --test tests/canyon_rim.test.ts
@@ -93,7 +95,7 @@ test('on, the top of a near cliff has its pale caprock rim along the floor\'s ed
   assert.ok(rimOff <= 0.1 * edges, `no rim there as the game has it: ${rimOff} of ${edges}`);
 });
 
-test('on, a wall whose face is in shade throws its shadow down the screen to the right, three tenths darker; the open bed is as it was', () => {
+test('on, a wall whose face is in shade throws its shadow across the screen to the right, three tenths darker; the open bed is as it was', () => {
   // a tile out from the wall along x = 10 (its face looks to the lower right: in shade), in the bed's middle from far to near
   for (const y of [17.5, 19.5, 21.5]) {
     const [px, py] = pixelOf(11, y);

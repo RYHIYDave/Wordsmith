@@ -24,13 +24,19 @@ His words, Wed 11 Nov 2026, by 08:15 (Eastern), with Echo Canyon's repaint hande
    is, is kept. The looks with a near shadow: the Quarry, the Ledge Road, Echo Canyon, and the city's (gateward, undercity,
    library, housequiet, swangardens, masque, glassgallery, keep, quiettower).
 2. `QUARRY_RIM` (src/art/quarry.ts): THE QUARRY AS ECHO CANYON. The pale caprock rim along the near edges too, where a near
-   cliff is cut away (`cutRim` 1.7); the walls whose faces are in shade throw their shadow across the quarry's floor (`shade`:
+   cliff is cut away (`cutRim` 1.7); the walls whose faces are in shade, and a near cliff on the floor's left, throw their shadow
+   straight across the screen to the right over the quarry's floor (`shade`:
    1.7 tiles, as long for a wall of 110 picture pixels as the canyon's 2.3 for its 150; 0.26 dark on the pale stone); its near
    shadow even. Its depth and dark kept (1.3 tiles; 0.36, 0.22).
 3. `LEDGE_RIM` (src/art/ledge.ts): THE LEDGE ROAD AS ECHO CANYON. The same three things (`cutRim` 1.7; `shade` 1.7 tiles, 0.26
-   dark; its near shadow even). The road has the drop on its near side, not a cliff, so what shows is the back wall's shadow
-   across the road. THE DROP IS AIR AND THROWS NO SHADOW (art/terrain.ts: the cast shadow is worked out when first asked for, once
-   the look's drop is known).
+   dark; its near shadow even). The road has the drop on its near side, not a cliff, so what shows is the shadow of the back
+   wall where its face is in shade (where it is painted lit it throws none before it). THE DROP IS AIR AND THROWS NO SHADOW
+   (art/terrain.ts: the cast shadow is worked out when first asked for, once the look's drop is known).
+
+ONE LIGHT (his words to the Ledge Road's first picture, below). The light the walls are painted by comes across the screen from
+the left (art/terrain.ts shadeAt: a face looking to the lower left lit, one looking down the screen in between, one looking to
+the lower right in shade). The cast shadows are thrown by that same light, straight across the screen to the right, on all three
+floors (Echo Canyon's too: its README says what changed).
 
 Nothing painted stands over the walkable floor: every pixel shows the kind of ground it did (tests/outdoor_shadows.test.ts). No
 texture is repainted.
@@ -43,7 +49,13 @@ texture is repainted.
 - gateward_shadow.png: a near roof's shadow on a street of the Gate Ward, now beside repainted (`SHADOW_EVEN` alone).
 - quarry_phone.png, ledge_phone.png: the game at his phone's size (852 by 393, three to a point), repainted.
 
-His answer: not yet given (shown 11 Nov 2026).
+HIS WORDS, 11 Nov 2026, by 08:56, to quarry_near.png, quarry_wall.png, ledge.png and gateward_shadow.png as they first were (the
+cast shadows thrown along the world's x, down the screen to the right):
+- The Quarry: "Yes, hand it to main (Recommended)".
+- Every other floor's smooth shadow edge (`SHADOW_EVEN`): "Yes, hand it to main (Recommended)".
+- The Ledge Road, whose back wall, painted lit, threw a shadow across the road before it: "As long as the light source is
+  consistent". Read as: a shadow must fall the way the walls are lit. It did not (45 degrees round from the walls' light), on
+  all three floors. Mended (ONE LIGHT, above); the pictures here are of the mend, and were shown to him again.
 
 ## How to see it
 

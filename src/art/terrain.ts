@@ -183,9 +183,10 @@ export interface TerrainLook {
    * it, in place of `nearShadow`. Worked out once from the ground itself (terrainOf), two things a model of the rock standing over
    * the floor shows: (1) THE SKY SHUT OUT: the floor is darker the more of the rock stands round it, on every side alike (at the
    * foot of a wall, in a corner, in a narrow gap), `dark` at most, fading out over `wide` tiles from a wall; (2) THE WALLS' CAST
-   * SHADOW: light from the upper left (his rulebook), so the walls whose faces are in shade throw their shadow down the screen to
-   * the right across the floor, `sun` tiles long (the same all along: its edge is the wall's own line), `sunDark` deep, lighter
-   * along its last quarter tile.
+   * SHADOW: the light the walls are painted by comes across the screen from the left (a face looking to the lower left lit, one
+   * looking to the lower right in shade), so the walls whose faces are in shade, and a near cliff on the floor's left, throw their
+   * shadow straight across the screen to the right, `sun` tiles long (the same all along: its edge is the wall's own line),
+   * `sunDark` deep, lighter along its last quarter tile. A wall painted lit throws none before it.
    * Never darker than `most` together.
    */
   shade?: { wide: number; dark: number; at: readonly [number, number]; sun: number; sunDark: number; most: number };
@@ -344,25 +345,32 @@ export function terrainOf(floor: Floor, look: TerrainLook): Terrain {
       return v - (0.5 + look.rag * (vnoise(x * 1.05, y * 1.05, look.seed) - 0.5));
     };
     const FAR = 99;
+    // THE LIGHT'S WAY ON THE GROUND: ACROSS THE SCREEN FROM THE LEFT (along the world's x and against its y). It is the light the
+    // walls are painted by (shadeAt: a face looking to the lower left lit, one looking down the screen in between, one looking to the
+    // lower right in shade), so a face that is painted lit throws no shadow before it and a face painted in shade throws one from
+    // its foot (his words, 11 Nov 2026, to the first of these shadows, thrown along the world's x alone: “As long as the light
+    // source is consistent”). Each cell's distance from the rock is the one before it on the light's way (one cell less in x, one
+    // more in y) and a cell's diagonal more.
     const sunOf = (): Float32Array => {
       const f = new Float32Array(NW * NH);
-      for (let j = 0; j < NH; j++) {
-        let d = 0;
-        let before = -1;
-        let wall = true;
-        for (let i = 0; i < NW; i++) {
+      const sv = new Float32Array(NW * NH);
+      const STEP = Math.SQRT2 / G;
+      for (let i = 0; i < NW; i++) {
+        for (let j = 0; j < NH; j++) {
           const c = j * NW + i;
           const s = over(c, i, j);
-          if (s > 0) d = before <= 0 && wall ? s / (s - before) / G : Math.min(FAR, d + 1 / G);
-          else if (dropOf && dropOf((i + 0.5) / G - MARGIN, (j + 0.5) / G - MARGIN)) {
-            d = FAR;
-            wall = false;
-          } else {
-            d = 0;
-            wall = true;
+          sv[c] = s;
+          if (s <= 0) {
+            // rock (0), or the drop, which is air (FAR)
+            f[c] = dropOf && dropOf((i + 0.5) / G - MARGIN, (j + 0.5) / G - MARGIN) ? FAR : 0;
+            continue;
           }
-          before = s;
-          f[c] = s > 0 ? d : d === FAR ? FAR : 0;
+          // the cell before this one on the light's way (past the field's edge: rock)
+          const p = i > 0 && j + 1 < NH ? (j + 1) * NW + i - 1 : -1;
+          const ps = p < 0 ? -1 : sv[p];
+          if (ps > 0) f[c] = Math.min(FAR, f[p] + STEP);
+          else if (p >= 0 && f[p] === FAR) f[c] = FAR;
+          else f[c] = Math.max(1e-4, (s / (s - ps)) * STEP);
         }
       }
       return f;

@@ -22,8 +22,8 @@ The model was rendered here for six places on floor 8 (seed 9), each beside the 
   (his rule: nothing stands over the walkable floor). What is left beside the bed's near edge is the top from 75 game pixels
   further back, where it has no rim. So the top began with no edge at all: shaded bed ran into olive top, and the two read as one
   level. Every far cliff has its pale caprock rim; no near one had.
-- THE WALLS THROW NO SHADOW. In the model the walls stand 75 game pixels, nearly three heroes high. Lit from the upper left (his rulebook), the walls
-  whose faces are in shade would throw a long shadow down the screen to the right across the bed. The game had only 7 picture
+- THE WALLS THROW NO SHADOW. In the model the walls stand 75 game pixels, nearly three heroes high. The walls whose faces are
+  in shade would throw a long shadow across the bed. The game had only 7 picture
   pixels of shade at a wall's foot, so nothing on the bed said how tall the walls are.
 
 ## What is repainted (with the switch on)
@@ -31,9 +31,11 @@ The model was rendered here for six places on floor 8 (seed 9), each beside the 
 1. THE RIM WHERE A NEAR CLIFF IS CUT (`cutRim`, src/art/terrain.ts): the top is given its rim where it is cut, along the bed's
    own edge on the picture. It is the canyon's own caprock (`C_CAP`, its cracks), nothing new painted; 1.7 times as wide as a far
    rim, since a near edge has no face under it to set it off (`CANYON_RIM.rim`).
-2. THE WALLS' CAST SHADOW (`shade`, src/art/terrain.ts): the walls in shade throw their shadow along the world's x (down the
-   screen to the right), 2.3 tiles long, three tenths dark, half that along its last quarter tile: crisp steps, as the near
-   cliff's shadow is (`CANYON_RIM.shade`). A wall whose face is lit throws none.
+2. THE WALLS' CAST SHADOW (`shade`, src/art/terrain.ts), BY ONE LIGHT: the light the walls are painted by comes across the
+   screen from the left (a face looking to the lower left lit, one looking down the screen in between, one looking to the lower
+   right in shade). So the shadows go straight across the screen to the right: a wall painted in shade throws one from its foot,
+   a near cliff on the bed's left throws one across the bed, and a wall painted lit throws none before it. 2.3 tiles long, three
+   tenths dark, half that along its last quarter tile: crisp steps, as the near cliff's shadow is (`CANYON_RIM.shade`).
 3. A SHADOW'S EDGE IS THE WALL'S OWN LINE (his words to the first pictures, below). The near cliff's shadow reached a different
    way up each column (its reach wandered from three quarters to five quarters, a column at a time), which gave its edge teeth
    where the cliff's own edge is smooth. Now it reaches the same 2.1 tiles everywhere (`nearShadow.even`), so its edge is the
@@ -63,6 +65,13 @@ shadow, the near shadow's reach still wandering), asked "Is this right?": "Close
 red, its toothed edge above the smooth rim. Read as: a shadow's edge should run as the wall that throws it runs. Done (3 above);
 the pictures here are of that. Shown shadow_edge.png and across_repaint.png and asked "Is the repainted canyon right now?", by
 07:55: "Yes, hand it to main (Recommended)".
+
+THE LIGHT MENDED AFTER THAT YES (on the branch `art/outdoor-shadows`, which carries this one; this file and its pictures are of
+the mend). Shown the Ledge Road given the same shadows (docs/mockups/outdoor_shadows), his answer, by 08:56: "As long as the light
+source is consistent". It was not: the shadows were thrown along the world's x (down the screen to the right), which is 45
+degrees round from the light the walls are painted by, so a wall painted lit threw a shadow before it. Now they are thrown across
+the screen from the left, as the walls are lit (2 above). The canyon's pictures he said yes to at 07:55 had the first way: the
+new ones were shown to him again.
 
 ## How to see it
 
