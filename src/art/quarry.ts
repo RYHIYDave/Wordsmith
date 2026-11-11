@@ -230,6 +230,15 @@ function nearFace(v: number, px: number, py: number, x: number, y: number): RGB 
   return c;
 }
 
+/**
+ * THE QUARRY REPAINTED AS ECHO CANYON WAS (a mock-up behind this switch, OFF; docs/mockups/outdoor_shadows/README.md). His words, 11
+ * Nov 2026, with Echo Canyon's repaint handed to the main chat: “Work on the other canyon levels”. On: the pale caprock rim along
+ * the near edges too, where a near cliff is cut away (art/terrain.ts cutRim); the walls whose faces are in shade throw their shadow
+ * across the quarry's floor (art/terrain.ts shade: as long for the wall's height as the canyon's, 110 picture pixels to its 150);
+ * and the near cliff's shadow reaches evenly, its edge the cliff's own line. How deep and how dark that shadow is, is kept.
+ */
+export const QUARRY_RIM = { on: false, rim: 1.7, shade: { wide: 2.0, dark: 0, at: [0.7, 0.85] as const, sun: 1.7, sunDark: 0.26, most: 0.5 } };
+
 /** THE QUARRY'S GROUND. */
 export const QUARRY_LOOK: TerrainLook = {
   // the planning chat's 110 (55 game pixels: about two heroes high), as he said yes to
@@ -245,8 +254,17 @@ export const QUARRY_LOOK: TerrainLook = {
   nearFace,
   brow: (c) => mixc(c, [255, 250, 240], 0.35),
   foot: [0.36, 0.2],
-  nearShadow: { reach: 1.3, dark: [0.36, 0.22] },
+  get nearShadow() {
+    return QUARRY_RIM.on ? { reach: 1.3, dark: [0.36, 0.22] as const, even: true } : { reach: 1.3, dark: [0.36, 0.22] as const };
+  },
   // (F8F9_FIX: every far wall's face drawn down to the floor below it, as floor 8's canyon (art/terrain.ts); his words, 4 Nov 2026,
   // 12:47, of the art chat's note that floor 6 could take it too: “I do want it”)
   downFaces: true,
+  // (QUARRY_RIM, off)
+  get cutRim() {
+    return QUARRY_RIM.on ? QUARRY_RIM.rim : undefined;
+  },
+  get shade() {
+    return QUARRY_RIM.on ? QUARRY_RIM.shade : undefined;
+  },
 };

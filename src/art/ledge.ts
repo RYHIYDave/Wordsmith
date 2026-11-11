@@ -171,6 +171,14 @@ function mountainside(x: number, y: number, px: number, py: number, back: number
   return c;
 }
 
+/**
+ * THE LEDGE ROAD REPAINTED AS ECHO CANYON WAS (a mock-up behind this switch, OFF; docs/mockups/outdoor_shadows/README.md). His
+ * words, 11 Nov 2026, with Echo Canyon's repaint handed to the main chat: “Work on the other canyon levels”. On: the pale rim
+ * along the near edges too, where a near cliff is cut away; the walls whose faces are in shade throw their shadow across the road
+ * (the drop is air and throws none); the near cliff's shadow reaches evenly. How deep and how dark that shadow is, is kept.
+ */
+export const LEDGE_RIM = { on: false, rim: 1.7, shade: { wide: 2.0, dark: 0, at: [0.7, 0.85] as const, sun: 1.7, sunDark: 0.26, most: 0.5 } };
+
 /** THE LEDGE ROAD'S GROUND, for a level whose drop is where `drop` says. */
 export function ledgeLook(drop: (x: number, y: number) => boolean): TerrainLook {
   return {
@@ -188,7 +196,10 @@ export function ledgeLook(drop: (x: number, y: number) => boolean): TerrainLook 
     nearFace: (v, px) => nearRock(v, px),
     brow: (c) => mixc(c, [255, 250, 240], 0.3),
     foot: [0.34, 0.18],
-    nearShadow: { reach: 1.2, dark: [0.32, 0.2] },
+    nearShadow: LEDGE_RIM.on ? { reach: 1.2, dark: [0.32, 0.2], even: true } : { reach: 1.2, dark: [0.32, 0.2] },
+    // (LEDGE_RIM, off)
+    cutRim: LEDGE_RIM.on ? LEDGE_RIM.rim : undefined,
+    shade: LEDGE_RIM.on ? LEDGE_RIM.shade : undefined,
     drop,
     lip: (c) => mixc(c, LIP, 0.75),
     hang: { tall: HANG_TALL, at: (v, px, _py, shade) => hangRock(v, px, shade) },

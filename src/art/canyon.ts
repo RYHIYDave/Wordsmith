@@ -429,6 +429,12 @@ function apartTop(c: RGB): RGB {
 }
 const lighter = (c: RGB, t: number): RGB => mixc(c, [255, 244, 228], t);
 
+/**
+ * THE CANYON REPAINTED AGAINST THE 3D MODEL (the queue's item of 9 Nov 2026, “Repaint the canyon against the main chat's 3D model”;
+ * tools/canyon_model.py; a mock-up behind this switch, OFF: pictures to him first; docs/mockups/canyon_repaint/README.md).
+ */
+export const CANYON_RIM = { on: false, rim: 1.7, near: true, shade: { wide: 2.0, dark: 0, at: [0.7, 0.85] as const, sun: 2.3, sunDark: 0.3, most: 0.56 } };
+
 /** ECHO CANYON'S GROUND. */
 export const CANYON_LOOK: TerrainLook = {
   // the planning chat's 150 (75 game pixels: nearly three heroes high), as he said yes to: the walls close in
@@ -447,9 +453,21 @@ export const CANYON_LOOK: TerrainLook = {
   // the near wall felt where the canyon turns across the screen (the mock-up's 1.6 tiles)
   // (CANYON_APART: deeper and further, the near cliff felt the more)
   get nearShadow() {
+    // (CANYON_RIM: the walls' shade as a 3D model lights it, in its place)
+    if (CANYON_RIM.on && !CANYON_RIM.near) return undefined;
+    // (CANYON_RIM: its edge the cliff's own line, no teeth: his “The shadow is spikey when the wall is not”, 11 Nov 2026)
+    if (CANYON_RIM.on) return { reach: 2.1, dark: [0.5, 0.3] as const, even: true };
     return CANYON_APART.on ? { reach: 2.1, dark: [0.5, 0.3] as const } : { reach: 1.6, dark: [0.38, 0.24] as const };
   },
   // (F8F9_FIX, off: his “I should be able to see the walls of the canyons when points of the plateau jut out”: every far wall's face
   // drawn down to the riverbed below it, the jutting near cliff cut away over it as over the bed: art/terrain.ts)
   downFaces: true,
+  // (CANYON_RIM, off: the pale caprock rim along the near edges too, where the near cliff is cut away: art/terrain.ts cutRim)
+  get cutRim() {
+    return CANYON_RIM.on ? CANYON_RIM.rim : undefined;
+  },
+  // (CANYON_RIM, off: the walls' shade on the bed as a 3D model lights it, in place of the near cliff's shadow: art/terrain.ts shade)
+  get shade() {
+    return CANYON_RIM.on ? CANYON_RIM.shade : undefined;
+  },
 };
