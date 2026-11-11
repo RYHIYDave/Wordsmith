@@ -35,7 +35,7 @@ import { hash2 } from '../engine/rng';
  * the two painted: 'stair', THE STAIR WITH NO BOTTOM (art/endless_stair.ts), his pick of the ten sketches (dev/endless_options.ts),
  * 11 Nov 2026, by 08:30: “2 The stair with no bottom”; or 'hall', the hall of gates painted here first, kept.
  */
-export const ENDLESS_SPLASH: { on: boolean; picture: 'stair' | 'hall' } = { on: false, picture: 'stair' };
+export const ENDLESS_SPLASH: { on: boolean; picture: 'stair' | 'hall' } = { on: true, picture: 'stair' };
 
 /** The picture's size in game pixels, and its vanishing point. */
 export const ES_W = 720;

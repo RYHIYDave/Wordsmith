@@ -58,7 +58,7 @@ export const HHP = 8 * GRAIN;
  * the Ledge Road and the city's floors, and asked whether to queue it: “Just fix them now”. On, the near shadow of every look
  * painted here reaches the same distance in every column (as `nearShadow.even`), so its edge is the wall's own line.
  */
-export const SHADOW_EVEN = { on: false };
+export const SHADOW_EVEN = { on: true };
 
 /** What a picture pixel of the ground shows. */
 export const TK = {

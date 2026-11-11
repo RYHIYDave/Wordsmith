@@ -33,8 +33,8 @@ function sumOf(c: Int32Array): number {
   return s >>> 0;
 }
 
-test('1. the switch is off, and it is the fanfare\'s own', () => {
-  assert.equal(ENDLESS_SPLASH.on, false);
+test('1. the switch is on (live since 25.3.2, at his “Yes, hand it to main (Recommended)”, 11 Nov 2026), and it is the fanfare\'s own', () => {
+  assert.equal(ENDLESS_SPLASH.on, true);
   assert.equal(ENDLESS_FANFARE.painted, ENDLESS_SPLASH);
   assert.equal(ENDLESS_SPLASH.picture, 'stair');
 });

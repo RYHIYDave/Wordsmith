@@ -28,8 +28,8 @@ const SRC = fs.readFileSync('src/art/loading_ring.ts', 'utf8');
 /** A turn of the circle, in seconds. */
 const TURN = FLOOR_FRAMES / LOAD_TURN_FPS;
 
-test('1. the switch is off, and of the game only the loading screen (main.ts) uses the picture', () => {
-  assert.equal(LOADING_RING.on, false);
+test('1. the switch is on (live since 25.3.2, at his “Yes, send it to main (Recommended)”, 11 Nov 2026), and of the game only the loading screen (main.ts) uses the picture', () => {
+  assert.equal(LOADING_RING.on, true);
   const files = fs.readdirSync('src', { recursive: true }).map(String).filter((f: string) => f.endsWith('.ts') && !f.split('\\').join('/').startsWith('dev/'));
   const users = files.filter((f: string) => !f.endsWith('loading_ring.ts') && /from '[./a-z_]*\/loading_ring'/.test(fs.readFileSync(`src/${f}`, 'utf8')));
   assert.deepEqual(users, ['main.ts']);

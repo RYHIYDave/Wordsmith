@@ -92,6 +92,7 @@ import { PILLARS, QUESTS610 } from './game/quests610';
 import { CANDLES_BY_WALL } from './game/first5';
 import { drawBossCard, drawFloorCard } from './ui/cards';
 import { ENDLESS_FANFARE, drawEndlessCard, drawEndlessSplash } from './ui/endless_fanfare';
+import { readyEndlessSplash, releaseEndlessSplash } from './ui/endless_splash_draw';
 import type { BossCard, FloorCard } from './ui/cards';
 import { DOORS, doorMiddle, doorTiles } from './game/doors';
 import { EXITS, WAYS, errandWalk, onwardKey, stairMiddle, startKey, topStep } from './game/ways';
@@ -1830,6 +1831,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (!l) return;
     l.t += dt;
     l.frames++;
+    // (ENDLESS MODE'S SPLASH WAITS FOR THE LOADING SCREEN, 25.3.2: endless opens as the last floor is beaten and the hero comes
+    // to town, so the town's loading screen is up over the splash's first seconds, and its moment was running unseen under it. Its
+    // clock is held here until the screen lifts; and the painted picture (the stair with no bottom, about a second to paint:
+    // ui/endless_splash_draw.ts) is painted under the screen, not in the dark as the splash comes up.)
+    if (fanfare && fanfare.card === null) {
+      fanfare.at = clock;
+      if (l.frames === 3 && ENDLESS_FANFARE.painted.on) readyEndlessSplash();
+    }
     if (l.drawn) {
       // (the world was drawn under the screen last frame: from the next he plays)
       loading = null;
@@ -2452,6 +2461,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         } else if (drawEndlessCard(ui, clock - fanfare.card >= ENDLESS_FANFARE.armed, (code) => input.pressed(code))) {
           panels.open = 'none';
           fanfare = null;
+          // (the painted splash's picture let go of, some 5 MB: painted again if it is ever wanted again)
+          releaseEndlessSplash();
           sfx('click');
         }
       } else if (panels.open === 'pause') {
@@ -2661,6 +2672,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       panels.open = 'endless';
     },
     fanfareShown: (): 'splash' | 'card' | null => (fanfare ? (fanfare.card === null ? 'splash' : 'card') : null),
+    /** (for the playtest of endless opening behind a loading screen) How far into the splash it is, in seconds; null when no splash is up. */
+    fanfareT: (): number | null => (fanfare && fanfare.card === null ? clock - fanfare.at : null),
     /** NORMAL MODE's switch (game/modes.ts), for its pictures and playtests: `modes.on`. */
     modes: MODES,
     /** THE SKILL TREES' switch (game/talents.ts), on since Version 20.1: for their pictures and playtests (`talents.on`). */

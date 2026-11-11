@@ -177,7 +177,7 @@ function mountainside(x: number, y: number, px: number, py: number, back: number
  * along the near edges too, where a near cliff is cut away; the walls whose faces are in shade throw their shadow across the road
  * (the drop is air and throws none); the near cliff's shadow reaches evenly. How deep and how dark that shadow is, is kept.
  */
-export const LEDGE_RIM = { on: false, rim: 1.7, shade: { wide: 2.0, dark: 0, at: [0.7, 0.85] as const, sun: 1.7, sunDark: 0.26, most: 0.5 } };
+export const LEDGE_RIM = { on: true, rim: 1.7, shade: { wide: 2.0, dark: 0, at: [0.7, 0.85] as const, sun: 1.7, sunDark: 0.26, most: 0.5 } };
 
 /** THE LEDGE ROAD'S GROUND, for a level whose drop is where `drop` says. */
 export function ledgeLook(drop: (x: number, y: number) => boolean): TerrainLook {

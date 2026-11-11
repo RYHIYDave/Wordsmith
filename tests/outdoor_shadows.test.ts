@@ -39,6 +39,12 @@ function bed(): Floor {
 
 // (as the game has floors 6 to 8: their mends on)
 F8F9_FIX.on = true;
+// (LIVE SINCE 25.3.2, at his yes of 11 Nov 2026, “Yes, hand them to main (Recommended)”: the game has the three switches ON. This file
+// holds each against the look as it was, so it notes what the game has, puts all three off, and sets each on itself as before.)
+const GAME_HAS = { even: SHADOW_EVEN.on, quarry: QUARRY_RIM.on, ledge: LEDGE_RIM.on };
+SHADOW_EVEN.on = false;
+QUARRY_RIM.on = false;
+LEDGE_RIM.on = false;
 const FLOOR = bed();
 const X0 = Math.floor(pictureOf(0, FLOOR.h)[0]);
 const Y0 = -200;
@@ -105,7 +111,8 @@ const Q_ON_BARE = paint({ ...QUARRY_LOOK, nearShadow: undefined });
 QUARRY_RIM.on = false;
 const Q_BARE = paint({ ...QUARRY_LOOK, nearShadow: undefined });
 
-test('the switches are off, and off each look is the game\'s', () => {
+test('the switches are on in the game (25.3.2), and off each look is as the game had it', () => {
+  assert.deepEqual(GAME_HAS, { even: true, quarry: true, ledge: true });
   assert.equal(SHADOW_EVEN.on, false);
   assert.equal(QUARRY_RIM.on, false);
   assert.equal(LEDGE_RIM.on, false);

@@ -12,4 +12,4 @@
 //           (art/millrace.ts)
 //   globe   the life and mana globes as glass in an iron band: the side away from the light shaded, a glint toward it,
 //           four rivets; the thin ring that tells what ails the hero kept (ui/hud.ts)
-export const ART_TWEAKS = { bars: false, cast: false, blocks: false, field: false, globe: false };
+export const ART_TWEAKS = { bars: true, cast: true, blocks: true, field: true, globe: true };

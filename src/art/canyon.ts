@@ -433,7 +433,7 @@ const lighter = (c: RGB, t: number): RGB => mixc(c, [255, 244, 228], t);
  * THE CANYON REPAINTED AGAINST THE 3D MODEL (the queue's item of 9 Nov 2026, “Repaint the canyon against the main chat's 3D model”;
  * tools/canyon_model.py; a mock-up behind this switch, OFF: pictures to him first; docs/mockups/canyon_repaint/README.md).
  */
-export const CANYON_RIM = { on: false, rim: 1.7, near: true, shade: { wide: 2.0, dark: 0, at: [0.7, 0.85] as const, sun: 2.3, sunDark: 0.3, most: 0.56 } };
+export const CANYON_RIM = { on: true, rim: 1.7, near: true, shade: { wide: 2.0, dark: 0, at: [0.7, 0.85] as const, sun: 2.3, sunDark: 0.3, most: 0.56 } };
 
 /** ECHO CANYON'S GROUND. */
 export const CANYON_LOOK: TerrainLook = {

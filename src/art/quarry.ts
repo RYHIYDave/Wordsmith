@@ -237,7 +237,7 @@ function nearFace(v: number, px: number, py: number, x: number, y: number): RGB 
  * across the quarry's floor (art/terrain.ts shade: as long for the wall's height as the canyon's, 110 picture pixels to its 150);
  * and the near cliff's shadow reaches evenly, its edge the cliff's own line. How deep and how dark that shadow is, is kept.
  */
-export const QUARRY_RIM = { on: false, rim: 1.7, shade: { wide: 2.0, dark: 0, at: [0.7, 0.85] as const, sun: 1.7, sunDark: 0.26, most: 0.5 } };
+export const QUARRY_RIM = { on: true, rim: 1.7, shade: { wide: 2.0, dark: 0, at: [0.7, 0.85] as const, sun: 1.7, sunDark: 0.26, most: 0.5 } };
 
 /** THE QUARRY'S GROUND. */
 export const QUARRY_LOOK: TerrainLook = {

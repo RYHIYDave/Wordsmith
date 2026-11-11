@@ -17,7 +17,7 @@ import nodeTest from 'node:test';
 import nodeAssert from 'node:assert/strict';
 
 import { CANYON_LOOK, CANYON_RIM, C_CAP } from '../src/art/canyon';
-import { TK, paintTerrain, pictureOf, terrainOf } from '../src/art/terrain';
+import { SHADOW_EVEN, TK, paintTerrain, pictureOf, terrainOf } from '../src/art/terrain';
 import type { TerrainPiece } from '../src/art/terrain';
 import { F8F9_FIX } from '../src/game/f8f9';
 import { T_FLOOR, T_WALL } from '../src/game/types';
@@ -37,6 +37,14 @@ function bed(): Floor {
 
 // (as the game has floor 8: floors 8 and 9's mends on)
 F8F9_FIX.on = true;
+// (LIVE SINCE 25.3.2, at his yes of 11 Nov 2026, “Yes, hand it to main (Recommended)”: the game has the switch ON. This file holds it
+// against the canyon as it was, so it notes what the game has, puts it off, and sets it on itself as before.)
+const GAME_HAS_RIM = CANYON_RIM.on;
+CANYON_RIM.on = false;
+// (and every floor's near shadow even, art/terrain.ts SHADOW_EVEN, on in the game since 25.3.2 too: off here, so that "off" is the
+// canyon as it was, its near shadow wandering)
+const GAME_HAS_EVEN = SHADOW_EVEN.on;
+SHADOW_EVEN.on = false;
 const FLOOR = bed();
 const X0 = Math.floor(pictureOf(0, FLOOR.h)[0]);
 const Y0 = -200;
@@ -61,7 +69,9 @@ const pixelOf = (x: number, y: number): [number, number] => {
 };
 const isCap = (c: [number, number, number]): boolean => C_CAP.some((k) => k[0] === c[0] && k[1] === c[1] && k[2] === c[2]);
 
-test('the switch is off, and off the canyon\'s look is the game\'s: no rim where a near cliff is cut, no model\'s shade, his near shadow', () => {
+test('the switch is on in the game (25.3.2), and off the canyon\'s look is as the game had it: no rim where a near cliff is cut, no model\'s shade, his near shadow', () => {
+  assert.equal(GAME_HAS_RIM, true, 'on in the game since 25.3.2');
+  assert.equal(GAME_HAS_EVEN, true, 'and every floor\'s near shadow even');
   assert.equal(CANYON_RIM.on, false);
   assert.equal(CANYON_LOOK.cutRim, undefined);
   assert.equal(CANYON_LOOK.shade, undefined);

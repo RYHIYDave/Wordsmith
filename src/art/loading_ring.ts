@@ -33,7 +33,7 @@ import { COLUMN_FRAMES, FLOOR_FRAMES, STONE_AT, STONE_FRAMES, makeRing3, swirlAt
 import type { Blaze, Ring3Art } from './ring3';
 
 /** THE SWITCH: the loading screen shows this picture only while it is on. Off until he has seen its picture and said yes. */
-export const LOADING_RING = { on: false };
+export const LOADING_RING = { on: true };
 
 /** The screen's own dark, round the picture (the start screen's: ui/panels.ts SMITH_NIGHT). */
 export const LOAD_NIGHT = '#05040f';
