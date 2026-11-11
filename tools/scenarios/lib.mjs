@@ -174,6 +174,10 @@ export const log = (label, v) => console.log(label.padEnd(44), typeof v === 'str
  * not by walking past him. With the hero beside the wordsmith carrying the stone: his prompt pressed (a finger), or E.
  */
 export async function giveStone(page, hands) {
+  // (25.3.2: not while a loading screen is up (THE LOADING SCREEN BETWEEN FLOORS, main.ts): a press under it is not the game's.
+  // The fixed 400 ms below had outlasted the screen by a hair (gone after about 325 ms of a town come to by script); with the
+  // screen's ring to paint the first time (art/loading_ring.ts, some 45 ms) it no longer did, and the stone was "given" under it.)
+  await page.waitForFunction(() => { const d = window.__dbg; return !d.loadingNow || !d.loadingNow(); }, null, { timeout: 20000 }).catch(() => {});
   await page.waitForTimeout(400);
   for (const n of ['button:Give the rune-stone', 'button:Give the rune-stone (E)']) {
     if (await hands.mark(n)) { await hands.press(n); return n; }
