@@ -377,3 +377,11 @@ The treads as they were stay: 46 to a turn, a lit top, one riser line, one nose 
 - **Cost:** the ground took 266 to 281 ms in this session's headless Chromium.
 - **What still reads weakest:** the canyon's doorway is small and dim, partly under the pass above. Where each pass hands on to
   the next it is on the near side, under the brink, so a finger has to pick up the next pass on the right below.
+
+## His yes on the pit, the stair and the ground (11 Nov 2026, by 13:06)
+
+Shown `pictures/pit_phone.png` and `rim2_view_1.png` (at e71c6be5: the stair sloping, a storey down on every pass), told that
+the hand-over between passes is hidden under the brink and that the canyon's doorway is small and dim, and asked “Is the
+Shaft's Rim's stair right now, with its slope (pit_phone.png)?”, he answered: “Yes, draw the rest (Recommended)” (offered as:
+next, the gate, the record stone, the trophies wall, the socket in the bench and the torches, then a film of the town alive).
+SO THE GROUND, THE PIT AND ITS STAIR HAVE HIS YES. Next, step 4: the new things that stand on it, a film, and the hand-over.
