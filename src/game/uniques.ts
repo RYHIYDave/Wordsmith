@@ -123,10 +123,13 @@ export const UNIQUE_TUNE = {
  *     chance; none before floor `from`.
  *   `gamble`: the stranger's, TUNE.gambleOdds.unique (defs.ts: 0.005, there since Version 14.5 for this): one throw in 200.
  *   `final`: the endless final boss, one of his two this often (he is not built yet: nothing asks for it).
+ * WHAT THEY COME TO, counted on real floors (tools/unique_odds.ts: about 27 pieces of gear drop on a floor, nearly half of them
+ * from hoards): in a run of twenty floors with no magic find, between two and three of the pool's and two of the bosses' own.
+ * Rares, for scale: about sixty in the same run.
  */
 export const UNIQUE_DROPS = {
   boss: 0.1,
-  pool: { plain: 0.004, elite: 0.008, hoard: 0.016, from: 2 },
+  pool: { plain: 0.002, elite: 0.004, hoard: 0.008, from: 2 },
   final: 0.25,
 };
 
