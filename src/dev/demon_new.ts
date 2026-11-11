@@ -201,7 +201,7 @@ function openClaw(k: Kit, hide: number, talon: number, piece: string, ha: V3, el
 /**
  * Its two claws. On the floor (or running on them), flat and spread, his fire under each palm licking out between its fingers
  * (dev/sculpt_demon.ts demonHand: a hand built as a hand, his word of 24 Oct; the fire his of 27 Oct). Off the floor, up on
- * two legs: a hand of claws held open (`openClaw`), its palm turned up and forward, his fire in it.
+ * two legs: a hand of long claws hung open (`openClaw`), its palm turned back and in; no fire in it.
  */
 export function claws(k: Kit, hide: number, talon: number, scale: number, out: Built): void {
   const { s, sc } = k;
@@ -212,9 +212,10 @@ export function claws(k: Kit, hide: number, talon: number, scale: number, out: B
     const el = side > 0 ? s.elbowL : s.elbowR;
     const planted = k.paws || ha[2] < 14;
     if (!planted) {
-      const palmWay = norm(add(mul(fh, 0.75), add([0, 0, 0.55], mul(cross(U, fh), -side * 0.35))));
-      const palm = openClaw(k, hide, talon, piece, ha, el, palmWay, 2.7 * scale, side < 0);
-      out.flames.push({ p: add(palm, mul(palmWay, 4 * scale)), size: 4.4 * scale, deep: 14 });
+      // (HIS WORD, 11 Nov, of the claws first drawn turned up with a fire in each: “I dont like the palms up double fire hands”.
+      // So: hung as a claw hangs, its palm turned back and in, its fingers hooked; no fire in it: its talons are what burn)
+      const palmWay = norm(add(mul(fh, -0.8), add([0, 0, -0.15], mul(cross(U, fh), -side * 0.55))));
+      openClaw(k, hide, talon, piece, ha, el, palmWay, 2.7 * scale, side < 0);
       continue;
     }
     const up = Math.max(0, ha[2] - 7);

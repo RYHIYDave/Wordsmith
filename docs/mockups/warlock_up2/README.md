@@ -150,6 +150,19 @@ big, 2856 x 1170), `living_shadow_at_game_size.png` (beside the Brawler, the War
 with: `npx tsx tools/demon_new_pics.ts <dir> shadow` then
 `python3 tools/demon_new_pics.py <dir> docs/mockups/warlock_up2/pictures shadow`.
 
+SHOWN HIM SO (without wings, its claws turned up with a fire in each), asked whether it was the Living Shadow he wanted
+(offered: yes, build its moves; close, change something; add wings). HIS WORDS, 11 Nov:
+
+- His pick: **“Add wings”** (offered as: wings of smoke tried on it, shown him before its moves).
+- 18:39: **“I dont like the palms up double fire hands”**
+
+Read as, and told him so: no upturned palms and no flame in each hand; its claws hang ready to slash, only their talons
+burning. DONE (`dev/demon_new.ts` claws, openClaw: up on two legs each hand hangs as a claw hangs, its palm turned back and
+in, its fingers hooked; no fire in it. Running, his fire is still under each claw on the floor, his own word of 27 Oct).
+WINGS OF SMOKE TRIED (`SHADOW_WINGS`, `cloakWings`): of its own black, half open and raised over its shoulders, each finger
+bowed, the skin between bellied and deeply scalloped, a talon of his light at each wrist, their outer tips trailing away
+into smoke. The pictures above are made again with both.
+
 TO THINK ON (his own tick of 11 Nov, “His body is a dark lump”): this one is dark on purpose, and is known by its outline (the
 friend's cyan edge), its horns and what burns. To be looked at on the game's own floors beside the Brawler before it is
 called done: if its body is lost on a dark floor, the answer is more of his light on it (its embers, an edge of light on its

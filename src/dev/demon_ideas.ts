@@ -90,19 +90,26 @@ function teeth(h: Head, mat: number, n: number, span: number, cf: number, rf: nu
  * over and outside its shoulder, three fingers hanging from it down and back, the skin between them bellied out and its edge
  * drawn up in a scallop between each two tips; never one flat sheet.
  */
-function cloakWings(k: Kit, skin: number, bone: number, talon: number, fr: Frame, size: number): void {
+function cloakWings(k: Kit, skin: number, bone: number, talon: number, fr: Frame, size: number, open = 1): V3[] {
   const { sc } = k;
+  const ends: V3[] = [];
   for (const side of [1, -1] as const) {
     const piece = side > 0 ? 'wingL' : 'wingR';
     const R = add(fr.spine(0.5), [0, side * 8, 0]);
-    const E = add(R, mul([-10, side * 12, 18], size));
-    const W = add(E, mul([-4, side * 13, 13], size));
-    const tips: V3[] = [add(W, mul([5, side * 14, -22], size)), add(W, mul([-10, side * 10, -38], size)), add(W, mul([-21, side * 1, -48], size))];
+    const E = add(R, mul([-10, side * 12 * open, 18], size));
+    const W = add(E, mul([-4, side * 13 * open, 13], size));
+    const tips: V3[] = [add(W, mul([5, side * 14 * open, -22], size)), add(W, mul([-10, side * 10 * open, -38], size)), add(W, mul([-21, side * 1, -48], size))];
+    ends.push(...tips);
     const B = add(fr.spine(1.7), [-2, side * 5, 0]);
     sc.cone(bone, piece, R, E, 3.2, 2.5, 0.8, { tag: 'wingarm' });
     sc.cone(bone, piece, E, W, 2.5, 1.9, 0.6, { tag: 'wingarm' });
     spike(k, talon, piece, [W, add(W, [1, side * 2, 5]), add(W, [4, side * 2, 9])], 1.6, 'claw');
-    for (const tp of tips) sc.cone(bone, piece, W, tp, 1.6, 0.5, 0.3, { tag: 'finger' });
+    // (each finger bowed, not a straight rod)
+    for (const tp of tips) {
+      const mid = add(lerp3(W, tp, 0.55), [-3 * size, side * 2.5 * size, 2 * size]);
+      sc.cone(bone, piece, W, mid, 1.6, 1.1, 0.3, { tag: 'finger' });
+      sc.cone(bone, piece, mid, tp, 1.1, 0.4, 0.3, { tag: 'finger' });
+    }
     const edge: V3[] = [...tips, B];
     for (let i = 0; i + 1 < edge.length; i++) {
       const P = edge[i];
@@ -110,13 +117,14 @@ function cloakWings(k: Kit, skin: number, bone: number, talon: number, fr: Frame
       let n = norm(cross(sub(P, W), sub(Q, W)));
       if (n[0] > 0) n = mul(n, -1);
       // (the middle of its edge drawn up toward the wrist, a scallop; the skin bellied out behind)
-      const M = add(lerp3(lerp3(P, Q, 0.5), W, 0.24), mul(n, 3.2 * size));
+      const M = add(lerp3(lerp3(P, Q, 0.5), W, 0.36), mul(n, 5 * size));
       sc.tri(skin, piece, W, P, M, 0.7, 0.5, { tag: 'membrane' });
       sc.tri(skin, piece, W, M, Q, 0.7, 0.5, { tag: 'membrane' });
     }
     sc.tri(skin, piece, E, W, B, 0.7, 0.5, { tag: 'membrane' });
     sc.tri(skin, piece, R, E, B, 0.7, 0.5, { tag: 'membrane' });
   }
+  return ends;
 }
 
 const out0 = (k: Kit): Built => ({ floor: [], flames: [], smoke: [], jaw: k.s.head });
@@ -319,6 +327,8 @@ function idea5(k: Kit): Built {
 // grin of teeth of light from ear to ear, its claws. Two horns curled like smoke; a tail that thins away into smoke; its
 // smoke rising off its horns, its shoulders and its back. FROM BEHIND it has no face to be known by, so his fire shows down
 // its backbone: an ember in each knuckle of it.
+/** Whether the Living Shadow has its wings (his pick, 11 Nov, shown it without: “Add wings”, offered as wings of smoke, to be shown him before its moves). */
+export const SHADOW_WINGS = { on: true };
 export function shadowInto(k: Kit): Built {
   const { sc } = k;
   const o = out0(k);
@@ -373,6 +383,14 @@ export function shadowInto(k: Kit): Built {
     hsc.cone(glow, 'grin', lo, add(lo, mul(F[2], (i % 2 ? 2.2 : 3.2) * HEAD_K)), 1.15, 0.12, 0.1, { tag: 'fang' });
   }
   o.smoke = [tips[0], tips[1], pts[pts.length - 1]];
+  // WINGS OF SMOKE: of its own black, half open and raised over its shoulders, each finger bowed and the skin between
+  // bellied and scalloped (never a flat sheet: his words of the game's, 26 and 27 Oct); a talon of his light at each wrist;
+  // their tips trailing away into smoke
+  if (SHADOW_WINGS.on) {
+    const wing = sc.mat({ ramp: ['#03030a', '#06060e', '#0a0a16', '#101020', '#181830'], crease: 0.2 });
+    const ends = cloakWings(k, wing, hide, glow, fr, 1.2, 1.35);
+    o.smoke = [tips[0], tips[1], ends[2], ends[5]];
+  }
   return o;
 }
 const idea6 = shadowInto;
