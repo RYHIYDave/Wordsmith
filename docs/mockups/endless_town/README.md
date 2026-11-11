@@ -291,3 +291,40 @@ shaft is new. The five pictures are made again under the same names; this sectio
   all in it), rim2_whole.png, rim2_view_1.png, rim2_view_2.png, and rim2_measure.png. The measure check is as in step 3: the
   rim and the Gate Ward have the same grain.
 - **THE TEST** (tests/shaft_rim.test.ts) now also holds that the pit shows at least three storeys lit before the dark.
+
+## Step 3c: the stair thrown away and built again (11 Nov 2026)
+
+HIS WORDS ON STEP 3b, by 12:26. Asked “Is the pit and the ground of the Shaft's Rim right (pit_phone.png)?”: “The pit needs
+more”. Asked “What more should the Shaft's Rim's pit have? Tick any that fit, or tell me in your own words.”: “The stairs are
+really bad”. He faulted nothing else, so the storeys, their stone, the doors, the torches, the kerb, the landing, the paving
+and the wall stay. Step 3b's stair was a side view of a stair pasted on a curved wall: thin, steep, a jagged zigzag. It is
+gone.
+
+**THE STAIR NOW: A WINDING STAIR OF BROAD WEDGE TREADS SEEN FROM ABOVE** (`TREADS`, `stairPixel`, src/art/shaft_rim.ts):
+- **The treads:** a helix of stone treads round the shaft's inner wall. Each is a wedge reaching 0.9 of a tile out from the
+  wall toward the middle and a sixteenth of the way round wide, laid on the rings at its own depth, so lower treads are smaller
+  and dimmer like the storeys.
+- **What is seen of each tread:** its top, lit. A dark riser along its back, where it drops from the tread before it, so the
+  rhythm reads lit top, dark riser, lit top. A worn, lighter nose along its leading edge. The dark face of its free end under
+  it. Its free end is a little uneven. The nearest tread wins where they overlap. There is no rail.
+- **Where it starts and how gently it drops:** at the brink by the way down, where the kerb is open, the first tread at the
+  rim's own level in the town's light. It goes leftward round the far wall and on, about 0.06 of a storey a tread (one or two
+  game pixels at the top).
+- **ONE STOREY A TURN, NOT HALF A TURN.** The doors stay where they were, and a stair that comes to every doorway's sill must
+  take one turn and a little (6.6 radians) for each storey.
+- **Landings:** at each doorway's sill there is a LANDING, a slab three treads wide, with the door above it and its torch
+  beside it. There are three, at the foot of the town's, the prison's and the canyon's storeys.
+- **It comes round again:** on every storey, crossing the far wall once a turn, lower, smaller and dimmer. Above the dark
+  three turns are seen (the town's, the prison's, the canyon's), with a fourth in the fen's just before the dark. Of 71 treads
+  in all, 22 treads and the 3 landings fall on the far side above the dark.
+- **Hidden parts:** the near side of each turn is under the eye and not drawn. Under the portal's tongue and landing the stair
+  is hidden.
+- **Other changes:** to leave the doors room between the turns, the rings close a little faster (0.62 a storey, was 0.72)
+  and the doorways are a little lower (0.58 of a storey). A torch a tread would hide is not lit.
+- **Cost:** the ground took 423 to 519 ms to paint in this session's headless Chromium (four paintings; the treads are
+  looked through for every pixel of the pit). That is more than step 3b's 167 to 267 ms and still under step 3's.
+- **The test** now also holds: at least 40 treads and 3 landings; every tread lower than the last; every tread on the far
+  side above the dark lit; under the portal's tongue and landing the stair is hidden.
+- **What still reads weakest:** at the game's size the top turn reads plainly as broad steps going down and round from the
+  way down. The turns below read more as stepped rings than as the same stair going on, because where each turn passes from
+  one to the next it is on the near side, under the brink.

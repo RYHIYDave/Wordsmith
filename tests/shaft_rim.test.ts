@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 // @ts-ignore
 import { join } from 'node:path';
-import { ENDLESS_TOWN, GROUND, RIM, groundAt, onTongue, pitAt, rimPlace, shaftLight } from '../src/art/shaft_rim';
+import { ENDLESS_TOWN, GROUND, RIM, TREADS, groundAt, onTongue, pitAt, pitPixel, rimPlace, shaftLight, stairPixel } from '../src/art/shaft_rim';
 
 function files(dir: string): string[] {
   const out: string[] = [];
@@ -88,4 +88,33 @@ test('the pit shows more than two storeys, each its own floor\'s stone, lit, bef
       if (P && shaftLight(P.z, P.phi) > 0.2) seen.add(Math.floor(P.z));
     }
   assert.ok(seen.size >= 3, `storeys seen: ${[...seen].join(', ')}`);
+});
+
+test('the stair: many treads, each top lit and lower than the last, round and down', () => {
+  const steps = TREADS.filter((t) => !t.landing);
+  assert.ok(steps.length >= 40, `${steps.length} treads`);
+  assert.ok(TREADS.filter((t) => t.landing).length >= 3);
+  for (let i = 1; i < TREADS.length; i++) assert.ok(TREADS[i].z > TREADS[i - 1].z - 1e-9, `tread ${i} not lower`);
+  for (let i = 1; i < steps.length; i++) assert.ok(steps[i].z > steps[i - 1].z, `step ${i} not lower`);
+  // (every tread on the far side above the dark is lit)
+  for (const t of TREADS) {
+    const mid = (t.a0 + t.a1) / 2;
+    if (Math.sin(mid) > 0.12 || t.z > 2.8) continue;
+    assert.ok(shaftLight(t.z, mid) * 1.4 + 0.12 > 0.25, `tread ${t.i} dark`);
+  }
+});
+
+test("the stair does not cross the portal's tongue or landing: there it is under them, hidden", () => {
+  let under = 0;
+  for (let py = 0; py < GROUND.h * 2; py += 2)
+    for (let px = 0; px < GROUND.w * 2; px += 2) {
+      const [x, y] = tileAt(px, py);
+      if (!onTongue(x, y)) continue;
+      const gx = GROUND.gx + (px + 0.5) / 2;
+      const gy = GROUND.gy + (py + 0.5) / 2;
+      if (!stairPixel(gx, gy - (RIM.cx + RIM.cy) * 8)) continue;
+      under++;
+      assert.notEqual(groundAt(px, py), pitPixel(gx, gy, px, py));
+    }
+  assert.ok(under > 0);
 });

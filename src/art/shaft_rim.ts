@@ -141,7 +141,7 @@ const angd = (a: number, b: number): number => Math.atan2(Math.sin(a - b), Math.
 // ellipse RX * p by RY * p, p = Q^z, its middle K * RY * (1 - p) under the mouth's.
 const RX = RIM.pit * 16 * Math.SQRT2;
 const RY = RIM.pit * 8 * Math.SQRT2;
-const Q = 0.72;
+const Q = 0.62;
 const K = 0.97;
 /** Which ring a game pixel (dx, dy from the mouth's middle) lies on: its depth z (storeys) and its angle phi; null outside the mouth. */
 export function pitAt(dx: number, dy: number): { z: number; phi: number; p: number } | null {
@@ -161,61 +161,84 @@ export function pitXY(z: number, phi: number): [number, number] {
   return [RX * p * Math.cos(phi), K * RY * (1 - p) + RY * p * Math.sin(phi)];
 }
 
-// THE STAIR: from the brink by the way down (the far wall's right, phi = STAIR_AT + 45 degrees), a flight of six steps down
-// to each storey's foot, then a landing along the wall to the next flight; a doorway and its torch on each landing. Leftward
-// round the far side, on and down and round until the dark has it.
-const FLIGHT = 4;
-/** A step's length round the ring (radians: the same on the screen at every depth, since every ring is the same in angle). */
-const STEP_A = 0.07;
-const LAND_A = 0.1;
 const PHI0 = (STAIR_AT + 45) * D2R;
-/** The stair's top at angle phi (storeys down), and which step or landing it is; null where it has not come or has gone. */
-export function stairAt(phi: number): { zs: number; idx: number; landing: boolean; k: number; f: number } | null {
-  let u = PHI0 - phi;
-  if (u < 0) return null;
-  for (let k = 0; k < 5; k++) {
-    const fl = FLIGHT * STEP_A;
-    if (u < fl) {
-      const i = Math.floor(u / STEP_A);
-      return { zs: k + (i + 1) / FLIGHT, idx: k * (FLIGHT + 1) + i, landing: false, k, f: u / STEP_A - i };
+/** Each storey's doorway (in the wall of the storey whose foot it stands at): its angle round the ring (step 3b's, kept); its torch a little up the stair from it. */
+export const doorAt = (k: number): number => PHI0 - (k + 1) * 0.28 - k * 0.1 - 0.05;
+const torchAt = (k: number): readonly [number, number] => [doorAt(k) + 0.085, k + 1 - 0.36];
+
+// THE STAIR, A WINDING STAIR OF BROAD WEDGE TREADS SEEN FROM ABOVE (his word of 11 Nov 2026, by 12:26, on step 3b's: “The stairs
+// are really bad”). From the brink by the way down, where the kerb is open, a helix of stone treads round the shaft's inner wall,
+// leftward round the far side and on, each tread a wedge reaching 0.9 of a tile out from the wall, a fourteenth of the way round
+// wide. It goes down a storey in a little over a turn, so that it comes to every doorway's sill: there a LANDING, a slab three
+// treads wide, the door and its torch beside it. It comes round again on every storey, smaller and dimmer as the rings are, until
+// the dark takes it. Each tread is seen as what it is from above: its top, lit, its worn nose along its leading edge, its free end
+// a little broken; its riser, dark, under its lower edge. The near side of each turn is under the eye, hidden by the brink.
+/** A tread's width round the ring (radians), how far it reaches from the wall (a fraction of the ring's radius), how thick it is seen (storeys). */
+const TREAD_A = TAU / 16;
+const REACH = 1 - 0.9 / RIM.pit;
+const THICK = 0.11;
+/** How far round the stair goes for a storey down (radians): from its head to the first doorway's sill, one turn and a little. */
+const PER_STOREY = PHI0 - doorAt(0) + TAU;
+export interface Tread { a0: number; a1: number; z: number; landing: boolean; i: number; reach: number }
+/** THE TREADS, from the head of the stair down: each from angle a0 (its upper end) to a1 (its leading edge, where it drops to the next), its top at depth z. */
+export const TREADS: Tread[] = (() => {
+  const out: Tread[] = [];
+  const lands = [0, 1, 2, 3].map((k) => ({ u: PHI0 - doorAt(k) + TAU * (k + 1), z: k + 1 }));
+  let u = 0;
+  let i = 0;
+  let li = 0;
+  while (u / PER_STOREY < 4.6) {
+    const L = lands[li];
+    if (L && u + TREAD_A > L.u - TREAD_A * 1.5) {
+      // (the treads up to the landing, then the landing itself, three treads wide)
+      if (L.u - TREAD_A * 1.5 - u > TREAD_A * 0.3) out.push({ a0: PHI0 - u, a1: PHI0 - (L.u - TREAD_A * 1.5), z: Math.min(L.z - 0.02, (L.u - TREAD_A * 1.5) / PER_STOREY), landing: false, i: i++, reach: REACH });
+      out.push({ a0: PHI0 - (L.u - TREAD_A * 1.5), a1: PHI0 - (L.u + TREAD_A * 1.5), z: L.z, landing: true, i: i++, reach: REACH - 0.03 });
+      u = L.u + TREAD_A * 1.5;
+      li++;
+      continue;
     }
-    u -= fl;
-    if (u < LAND_A) return { zs: k + 1, idx: k * (FLIGHT + 1) + FLIGHT, landing: true, k, f: u / LAND_A };
-    u -= LAND_A;
+    const z = Math.max(li > 0 ? lands[li - 1].z + 0.02 : 0, (u + TREAD_A) / PER_STOREY);
+    out.push({ a0: PHI0 - u, a1: PHI0 - u - TREAD_A, z, landing: false, i: i++, reach: REACH + (rnd(i, 7, 91) - 0.5) * 0.04 });
+    u += TREAD_A;
+  }
+  return out;
+})();
+/** Where pixel (dx, dy) from the mouth's middle lies on the ring of depth z: its radius as a fraction of that ring's, and its angle. */
+function onRing(dx: number, dy: number, z: number): [number, number] {
+  const p = Q ** z;
+  const X = dx / (RX * p);
+  const Y = (dy - K * RY * (1 - p)) / (RY * p);
+  return [Math.hypot(X, Y), Math.atan2(Y, X)];
+}
+/** Is angle a within the tread's sweep (a1 below a0, both unwrapped)? Its place along it (0 at its upper end, 1 at its leading edge), or -1. */
+function along(t: Tread, a: number): number {
+  const w = t.a0 - t.a1;
+  const d = (((t.a0 - a) % TAU) + TAU) % TAU;
+  return d <= w ? d / w : -1;
+}
+/** What of the stair the pixel shows: its tread's top, its nose, its free end's face, its riser; null for none. The nearest (shallowest) wins. */
+export function stairPixel(dx: number, dy: number): { t: Tread; part: 'top' | 'nose' | 'end' | 'riser' } | null {
+  for (const t of TREADS) {
+    // (the near side of a turn is under the eye: not drawn)
+    const mid = (t.a0 + t.a1) / 2;
+    if (Math.sin(mid) > 0.12) continue;
+    const [r, a] = onRing(dx, dy, t.z);
+    const f = along(t, a);
+    // ITS TOP
+    if (f >= 0 && r <= 1 && r >= t.reach) return { t, part: t.landing ? 'top' : f < 0.13 ? 'riser' : f > 0.82 ? 'nose' : 'top' };
+    // ITS FREE END'S FACE and ITS RISER, a little under its top
+    for (const dz of [THICK * 0.35, THICK * 0.7, THICK]) {
+      const [r2, a2] = onRing(dx, dy, t.z + dz);
+      const f2 = along(t, a2);
+      if (f2 >= 0 && r2 <= 1 && r2 >= t.reach - 0.002 && r < t.reach) return { t, part: 'end' };
+      if (f2 >= 0.0 && r2 <= 1 && r2 >= t.reach && f < 0 && along(t, a + 0.08) >= 0) return { t, part: 'riser' };
+    }
   }
   return null;
 }
-/** Each landing's doorway (in the wall of the storey whose foot the landing is): its angle; and its torch, a little up the stair from it. */
-export const doorAt = (k: number): number => PHI0 - (k + 1) * FLIGHT * STEP_A - k * LAND_A - LAND_A * 0.5;
-const torchAt = (k: number): readonly [number, number] => [doorAt(k) + 0.085, k + 1 - 0.5];
-/** THE STAIR'S STEPS laid on the screen, each a flat block (game pixels from the mouth's middle): its left and right, its top, how tall its tread and its riser are seen, the shadow under it. */
-export const STAIR_STEPS: { x0: number; x1: number; y: number; top: number; front: number; shade: number; z: number; phi: number; k: number; landing: boolean }[] = (() => {
-  const out: { x0: number; x1: number; y: number; top: number; front: number; shade: number; z: number; phi: number; k: number; landing: boolean }[] = [];
-  let a = PHI0;
-  for (let k = 0; k < 4; k++) {
-    for (let i = 0; i <= FLIGHT; i++) {
-      const landing = i === FLIGHT;
-      const da = landing ? LAND_A : STEP_A;
-      const z = landing ? k + 1 : k + (i + 1) / FLIGHT;
-      const [xa, ya] = pitXY(z, a);
-      const [xb, yb] = pitXY(z, a - da);
-      const p = Q ** z;
-      out.push({ x0: Math.floor(Math.min(xa, xb)), x1: Math.ceil(Math.max(xa, xb)), y: Math.round((ya + yb) / 2 - 1.5 * p), top: Math.max(1.5, Math.round(3 * p * 2) / 2), front: Math.max(1.5, Math.round(4 * p * 2) / 2), shade: Math.max(1, Math.round(3 * p)), z, phi: a - da / 2, k, landing });
-      a -= da;
-    }
-  }
-  // (the stair is solid: each step's riser goes down to the step below it, so the flight reads as one stair, not as posts)
-  // (and each step meets the one before it: no gap where a smaller ring would leave one)
-  for (let i = 1; i < out.length; i++) if (out[i].x1 < out[i - 1].x0) out[i].x1 = out[i - 1].x0;
-  for (let i = 0; i + 1 < out.length; i++) out[i].front = Math.max(out[i].front, out[i + 1].y - out[i].y + out[i + 1].top);
-  return out;
-})();
 /** How wide a doorway is (radians round) and how tall (storeys). */
 const DOOR_A = 0.05;
-const DOOR_H = 0.72;
-/** The stair's tread seen from above and its edge, in storeys. */
-const TOP_H = 0.2;
-const FRONT_H = 0.26;
+const DOOR_H = 0.58;
 
 const NIGHT = hx('#07060f');
 const ROCK = ['#141118', '#1d1820', '#272029', '#332a33'].map(hx);
@@ -323,7 +346,7 @@ export function shaftLight(z: number, phi: number): number {
     const dz = (z - tz) / 0.55;
     tl += 0.75 * 0.8 ** k / (1 + du * du + dz * dz);
   }
-  const fade = Math.max(0, Math.min(1, 1 - (z - 2.7) / 1.3));
+  const fade = Math.max(0, Math.min(1, 1 - (z - 3.0) / 1.6));
   // (the near side of every ring faces away from the eye: dimmer)
   const near = Math.sin(phi) > 0.2 ? 0.55 : 1;
   return Math.min(1, (sky + tl) * fade * near);
@@ -340,27 +363,18 @@ function shaftAt(dx: number, dy: number, px: number, py: number): C {
   const k = Math.floor(z);
   const t = ORDER[k % ORDER.length];
   const light = shaftLight(z, phi);
-  if (light <= 0.001) return NIGHT;
-  // THE STAIR: each step a block of its own
-  for (const st of STAIR_STEPS) {
-    if (dx < st.x0 || dx >= st.x1 || dy < st.y || dy >= st.y + st.top + st.front + st.shade) continue;
-    const t2 = ORDER[st.k % ORDER.length];
-    const lt = Math.min(1, shaftLight(st.z, st.phi) * 1.3 + 0.05);
-    const v = dy - st.y;
-    const edge = dx < st.x0 + 0.5;
-    if (v < st.top) {
-      // (its tread from above: lit, its nosing lightest, worn; its left end a seam)
-      if (edge && !st.landing) return deepLit(mixc(t2.stone[0], 0, 0.5), lt, px, py);
-      return deepLit(v >= st.top - 0.5 ? mixc(t2.stone[3], hx('#fff4e0'), 0.45) : mixc(t2.stone[3], hx('#fff4e0'), 0.12), lt, px, py);
-    }
-    if (v < st.top + st.front) {
-      // (its riser, toward the shaft's middle: in shadow)
-      if (edge) return deepLit(mixc(t2.stone[0], 0, 0.7), lt * 0.6, px, py);
-      return deepLit(mixc(t2.stone[0], 0, st.landing ? 0.15 : 0.3), lt * 0.7, px, py);
-    }
-    // (its shadow on the wall under it)
-    return deepLit(mixc(t.stone[0], 0, 0.55), light * 0.4, px, py);
+  // THE STAIR, nearest first
+  const sp = stairPixel(dx, dy);
+  if (sp) {
+    const T = sp.t;
+    const st = ORDER[Math.floor(T.z - 0.001 < 0 ? 0 : T.z - 0.001) % ORDER.length];
+    const lt = Math.min(1, shaftLight(T.z, (T.a0 + T.a1) / 2) * 1.4 + 0.12);
+    if (sp.part === 'top') return deepLit(mixc(st.stone[3], st.stone[2], 0.3), lt, px, py);
+    if (sp.part === 'nose') return deepLit(mixc(st.stone[3], hx('#fff4e0'), 0.4), lt, px, py);
+    if (sp.part === 'end') return deepLit(mixc(st.stone[1], 0, 0.25), lt * 0.75, px, py);
+    return deepLit(mixc(st.stone[0], 0, 0.6), lt * 0.5, px, py);
   }
+  if (light <= 0.001) return NIGHT;
   // THE TORCH's iron cup and bracket (its flame is a piece that moves)
   const [ta, tz] = torchAt(k);
   if (Math.abs(angd(phi, ta)) < 0.02 && z > tz - 0.02 && z < tz + 0.12) return deepLit(z < tz + 0.05 ? IRON[2] : IRON[1], light + 0.3, px, py);
@@ -399,7 +413,7 @@ function shaftAt(dx: number, dy: number, px: number, py: number): C {
 }
 
 /** A pixel inside the mouth: the portal's tongue's edge (a slab's thickness under its top), or the shaft. */
-function pitPixel(gx: number, gy: number, px: number, py: number): C {
+export function pitPixel(gx: number, gy: number, px: number, py: number): C {
   for (let k = 1; k <= 9; k++) {
     const U = gx / 16;
     const S0 = (gy - k - MID_Y) / 8;
@@ -499,6 +513,8 @@ export function shaftTorches(): { gx: number; gy: number; k: number }[] {
   for (let k = 0; k < 3; k++) {
     const [ta, tz] = torchAt(k);
     const [x, y] = pitXY(tz, ta);
+    // (a torch a tread would hide is not lit)
+    if (stairPixel(x, y - 1)) continue;
     out.push({ gx: x, gy: MID_Y + y, k });
   }
   return out;
