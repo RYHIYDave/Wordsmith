@@ -51,6 +51,8 @@ import { AXE_APPEAR_FRAMES, AXE_CLEAVE, AXE_CLEAVE_APPEAR, AXE_GLINT_FRAMES, AXE
 import { heavyMoves, makeWarriorHeavyArt } from '../src/art/warrior_up_heavy_art';
 import { QUAKES, QUAKE_CRACK_FRAMES, QUAKE_FRAMES, paintCracks, paintOver, paintUnder, quakeGround, waveAt } from '../src/art/warrior_up_quake_ground';
 import { P } from '../src/art/palette';
+import { VAULT } from '../src/art/ground';
+import { CRYPT_FLOORS } from '../src/art/crypt';
 import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REEL3, WU_TOWN3, WU_TOWN_RUN3 } from '../src/art/warrior_up_moves';
 import type { Move3 } from '../src/art/moves3';
 import { HAMMER_CHARGE_END, HAMMER_CHARGE_GO, HAMMER_CHARGE_STOP, HAMMER_DRIVE_FRAMES, HAMMER_MOVES, HAMMER_QUAKE, HAMMER_QUAKE_AT, HAMMER_QUAKE_BLOW, HAMMER_QUAKE_END, HAMMER_RUN, HAMMER_SMASH, HAMMER_SMASH2, HAMMER_SMASH_AT, HAMMER_SMASH_HIT, HAMMER_STAND, MAUL, chargeCarriedFrame, faceAt, makeWarriorHammerArt } from '../src/art/warrior_up_hammer_moves';
@@ -685,43 +687,45 @@ test('19. a tap while the thrown axe is out: the axe appears in his hands in the
 // ---------------------------------------------------------------------------------------------
 // STEP 3c: THE EARTHQUAKE'S GROUND, QUAKING (src/art/warrior_up_quake_ground.ts), in place of the game's slam ring
 
-test('20. the Earthquake\'s ground: the lists whole; crisp; the floor\'s stone and ink, the only glow the friend\'s cyan, nothing of the enemy\'s; the heave reaches the ring\'s edge and not past it; each of Tremors\' quakes weaker than the last', () => {
+test('20. the Earthquake\'s ground, in the floor\'s own stone: the lists whole; crisp; only that floor\'s theme\'s colours, the game\'s ink and the friend\'s cyan, nothing of the enemy\'s; the heave reaches the ring\'s edge and not past it; each of Tremors\' quakes weaker than the last', () => {
   const bad: string[] = [];
-  const OK = new Set([P.st1, P.st2, P.st3, P.st4, P.st5, P.st6, P.st7, P.ink, P.black, '#22d0e0'].map(key));
-  const looked = (p: Px, what: string): number => {
-    let n = 0;
-    for (let k = 0; k < p.w * p.h; k++) {
-      if (!p.d[k * 4 + 3]) continue;
-      n++;
-      const c = pixel(p, k);
-      if (p.d[k * 4 + 3] !== 255) { bad.push(`${what}: a pixel half see-through`); break; }
-      if (ENEMY.has(c) || GOLD_GLOW.has(c)) { bad.push(`${what}: the enemy's colour ${c}`); break; }
-      if (!OK.has(c)) { bad.push(`${what}: not the floor's stone, its ink or the friend's cyan: ${c}`); break; }
+  for (const theme of [VAULT, CRYPT_FLOORS[2]]) {
+    const OK = new Set([theme.mortar, ...theme.slab, ...(theme.earth?.dirt ?? []), P.ink, '#22d0e0'].map(key));
+    const looked = (p: Px, what: string): number => {
+      let n = 0;
+      for (let k = 0; k < p.w * p.h; k++) {
+        if (!p.d[k * 4 + 3]) continue;
+        n++;
+        const c = pixel(p, k);
+        if (p.d[k * 4 + 3] !== 255) { bad.push(`${theme.id} ${what}: a pixel half see-through`); break; }
+        if (ENEMY.has(c) || GOLD_GLOW.has(c)) { bad.push(`${theme.id} ${what}: the enemy's colour ${c}`); break; }
+        if (!OK.has(c)) { bad.push(`${theme.id} ${what}: not the floor's own stone, the ink or the friend's cyan: ${c}`); break; }
+      }
+      return n;
+    };
+    const cracks: number[] = [];
+    const dust: number[] = [];
+    QUAKES.forEach((q, qi) => {
+      const g = quakeGround(qi, theme);
+      assert.deepEqual([g.under.length, g.over.length, ...WU_SIDES.map((s) => g.cracks[s].length)], [QUAKE_FRAMES, QUAKE_FRAMES, ...WU_SIDES.map(() => QUAKE_CRACK_FRAMES)], `quake ${qi}: the lists`);
+      let far = 0;
+      let dusted = 0;
+      for (let f = 0; f < QUAKE_FRAMES; f++) {
+        const u = paintUnder(qi, f, theme).px;
+        looked(u, `quake ${qi} under f${f}`);
+        // (how far out the heave is, in tiles: a ring on the floor is 32 * 1.414 picture pixels across the screen to a tile)
+        for (let k = 0; k < u.w * u.h; k++) if (u.d[k * 4 + 3]) far = Math.max(far, Math.abs((k % u.w) - u.w / 2) / (32 * Math.SQRT2));
+        dusted += looked(paintOver(qi, f, theme).px, `quake ${qi} over f${f}`);
+      }
+      if (far < q.round - 0.3 || far > q.round + 0.3) bad.push(`${theme.id} quake ${qi}: the heave reaches ${far.toFixed(2)} tiles, its ring ${q.round}`);
+      cracks.push(looked(paintCracks(qi, 0, 1, theme).px, `quake ${qi} cracks`));
+      dust.push(dusted / q.round);
+    });
+    for (let i = 1; i < QUAKES.length; i++) {
+      if (!(QUAKES[i].strength < QUAKES[i - 1].strength && waveAt(QUAKES[i], 8).k < waveAt(QUAKES[i - 1], 8).k)) bad.push(`quake ${i}: its ridge not lower than the one before`);
+      if (!(cracks[i] < cracks[i - 1])) bad.push(`${theme.id} quake ${i}: its cracks not thinner (${cracks[i]} pixels, before ${cracks[i - 1]})`);
+      if (!(dust[i] < dust[i - 1])) bad.push(`${theme.id} quake ${i}: its dust not less (${dust[i].toFixed(0)}, before ${dust[i - 1].toFixed(0)})`);
     }
-    return n;
-  };
-  const cracks: number[] = [];
-  const dust: number[] = [];
-  QUAKES.forEach((q, qi) => {
-    const g = quakeGround(qi);
-    assert.deepEqual([g.under.length, g.over.length, ...WU_SIDES.map((s) => g.cracks[s].length)], [QUAKE_FRAMES, QUAKE_FRAMES, ...WU_SIDES.map(() => QUAKE_CRACK_FRAMES)], `quake ${qi}: the lists`);
-    let far = 0;
-    let dusted = 0;
-    for (let f = 0; f < QUAKE_FRAMES; f++) {
-      const u = paintUnder(qi, f).px;
-      looked(u, `quake ${qi} under f${f}`);
-      // (how far out the heave is, in tiles: a ring on the floor is 32 * 1.414 picture pixels across the screen to a tile)
-      for (let k = 0; k < u.w * u.h; k++) if (u.d[k * 4 + 3]) far = Math.max(far, Math.abs((k % u.w) - u.w / 2) / (32 * Math.SQRT2));
-      dusted += looked(paintOver(qi, f).px, `quake ${qi} over f${f}`);
-    }
-    if (far < q.round - 0.3 || far > q.round + 0.3) bad.push(`quake ${qi}: the heave reaches ${far.toFixed(2)} tiles, its ring ${q.round}`);
-    cracks.push(looked(paintCracks(qi, 0, 1).px, `quake ${qi} cracks`));
-    dust.push(dusted / q.round);
-  });
-  for (let i = 1; i < QUAKES.length; i++) {
-    if (!(QUAKES[i].strength < QUAKES[i - 1].strength && waveAt(QUAKES[i], 8).k < waveAt(QUAKES[i - 1], 8).k)) bad.push(`quake ${i}: its ridge not lower than the one before`);
-    if (!(cracks[i] < cracks[i - 1])) bad.push(`quake ${i}: its cracks not thinner (${cracks[i]} pixels, before ${cracks[i - 1]})`);
-    if (!(dust[i] < dust[i - 1])) bad.push(`quake ${i}: its dust not less (${dust[i].toFixed(0)}, before ${dust[i - 1].toFixed(0)})`);
   }
   assert.deepEqual(bad.slice(0, 20), [], 'the ground quaking');
 });
