@@ -157,7 +157,7 @@ New, painted here as a mock-up, still to be drawn at the game's standard:
 
 - Whether this is the Shaft's Rim to draw for real (the layout and the mood).
 
-## His yes on the Shaft's Rim's layout (11 Nov 2026, by 11:28): LOCKED IN
+## His yes on the Shaft's Rim's layout (11 Nov 2026, by 11:50): LOCKED IN
 
 Shown `pictures/rim_whole.png` and `rim_view_1.png` to `rim_view_3.png` (at df0da3ff), told where each station stands and that
 the paving, the wall, the gate, the record, the trophies and above all the pit were still rough, and asked “Is the Shaft's Rim
