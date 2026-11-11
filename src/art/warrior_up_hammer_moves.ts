@@ -267,11 +267,14 @@ export const HAMMER_SMASH2: AxeMove = maul({ name: 'Smash, the second blow (Move
 // GROUND HEAVES OUT IN A RING (the game's to draw: its slam). TREMORS (a talent): THE SAME ONE BLOW, and the ground heaves three
 // times from it, one after another, each ring wider and weaker (the game's; his frames are Earthquake's).
 
-/** Earthquake's beats (frames): the wind-up reached, held to, the blow, the end. */
-export const HAMMER_QUAKE_TOP = 9;
-export const HAMMER_QUAKE_HELD = 13;
-export const HAMMER_QUAKE_BLOW = 15;
-export const HAMMER_QUAKE_END = 44;
+/** Earthquake's beats (frames): the coil reached, held to; the whirl's last frame; the top reached, held to; the blow; the end. */
+export const HAMMER_QUAKE_COIL = 2;
+export const HAMMER_QUAKE_COILED = 4;
+export const HAMMER_QUAKE_WHIRLED = 13;
+export const HAMMER_QUAKE_TOP = 16;
+export const HAMMER_QUAKE_HELD = 17;
+export const HAMMER_QUAKE_BLOW = 19;
+export const HAMMER_QUAKE_END = 49;
 /** WHERE THE GROUND HEAVES, for the rules (tiles, seconds): the ring's middle before him (Slam's range: where the face lands),
  * how far it reaches (Slam's), how long it takes to roll out to its edge. TREMORS: three, `TREMORS.after` seconds apart, each
  * `wider` tiles further out and `weaker` (each a share of the first's damage). */
@@ -279,48 +282,123 @@ export const HAMMER_QUAKE_AT = 1.4;
 export const HAMMER_QUAKE_ROUND = 2.0;
 export const HAMMER_QUAKE_ROLL = 0.35;
 export const HAMMER_TREMORS = { count: 3, after: 0.35, wider: 0.6, weaker: [1, 0.6, 0.35] } as const;
+/** How far round the whirl takes him (degrees: a full turn and the eighth more that brings him back square to the mark). */
+export const HAMMER_QUAKE_TURN = 390;
+
+const D = Math.PI / 180;
+/**
+ * HIS FEET THROUGH THE WHIRL, stepping round under him as he turns (the game does not carry him). His feet are laid on the floor
+ * as the floor has them, so a foot that is down stays where it is while his hips turn over it; each in turn lifts and steps
+ * round to where his stance puts it for the turn to come: five steps, right, left, right, left, right, the last two home to his
+ * guard's own stance (a full turn round). `yaw`: how far round his hips are.
+ */
+function whirlFeet(yaw: number): Partial<Bones> {
+  const P = plantedFeet() as Record<string, number>;
+  const y0 = HAMMER_REST.yaw;
+  const polar = (x: number, y: number): [number, number] => [Math.hypot(x, y), Math.atan2(y, x) / D];
+  const [rL, aL] = polar(P.lfx, P.lfy);
+  const [rR, aR] = polar(P.rfx, P.rfy);
+  // (a foot's place and its way for a stance turned `st` from his guard's, drawn in `k` of the way)
+  const at = (left: boolean, st: number, k: number): number[] => {
+    const r = (left ? rL : rR) * k;
+    const a = ((left ? aL : aR) + st) * D;
+    return [r * Math.cos(a), r * Math.sin(a), (left ? P.lft : P.rft) + st];
+  };
+  // (each foot's plants: the stance it is set down in (turned from his guard's, and how near), and the hip turn at which it steps)
+  const steps = (left: boolean): { at: number; st: number; k: number }[] => (left
+    ? [{ at: -1e9, st: 0, k: 1 }, { at: 55, st: 170, k: 0.62 }, { at: 205, st: 360, k: 1 }]
+    : [{ at: -1e9, st: 0, k: 1 }, { at: -20, st: 95, k: 0.62 }, { at: 130, st: 245, k: 0.62 }, { at: 280, st: 360, k: 1 }]);
+  const out: Record<string, number> = {};
+  const SPAN = 70;
+  for (const left of [true, false]) {
+    const list = steps(left);
+    let i = 0;
+    while (i < list.length - 1 && yaw >= list[i + 1].at + SPAN / 2) i++;
+    const plant = list[i];
+    const next = list[i + 1];
+    let [x, y, t] = at(left, plant.st, plant.k);
+    let lift = 0;
+    // (stepping: lifted and carried round to its next place, over `SPAN` degrees of his turn)
+    if (next && yaw > next.at - SPAN / 2 - 1e-9 && yaw < next.at + SPAN / 2) {
+      const u = (yaw - (next.at - SPAN / 2)) / SPAN;
+      const [x1, y1, t1] = at(left, next.st, next.k);
+      x += (x1 - x) * u; y += (y1 - y) * u; t += (t1 - t) * u;
+      lift = 3.5 * Math.min(1, 3 * Math.sin(u * Math.PI));
+    }
+    const k = left ? 'l' : 'r';
+    out[`${k}fx`] = x; out[`${k}fy`] = y; out[`${k}ft`] = t; out[`${k}fz`] = lift; out[`${k}fp`] = 0;
+  }
+  return { ...out, lk: (P.lk as number) + 4, rk: -10 } as Partial<Bones>;
+}
 
 /**
- * EARTHQUAKE. He sinks and the maul is swung low round his right side (0 to 4) and up at his right (6), past upright (8), and
- * HE REARS RIGHT BACK: up on his toes, his back arched and his chest thrown up, the maul laid right back behind and above him,
- * his hands by his right ear, its face turned up toward the mark (9); HELD, rearing further (9 to 13). THE STRIKE, two frames:
- * over the top (14) and DOWN ONTO THE FLOOR before him, its face flat on it, all of him thrown down after it, deeper than a
- * Smash (15, the blow, 0.5 s). A long freeze, sunk over it as the ground heaves (to 20); the heavy haul back into his guard (44).
+ * EARTHQUAKE: A FULL SPIN, THEN DOWN (his pick, 11 Nov 2026: “A full spin, then down”). From its first frame it is not the Smash.
+ * THE COIL: he sinks and draws the maul back round to his right side, wound up, his body turned away from the mark (2), HELD
+ * (2 to 4). THE WHIRL (4 to 12, a quarter of a second): one full turn and an eighth, the maul's head swept wide and level round
+ * him at his waist, both hands together at the butt, his arms out, his body turning with it; HIS FEET STEP ROUND under him,
+ * right, left, right, left, each down where it is set (the game does not carry him); the head smeared as it goes. THE WHIRL IS
+ * HIS WIND-UP, NOT A BLOW: what hurts is the ring. Out of the turn it goes UP AND OVER THE TOP (13, 14), laid back over his right
+ * shoulder (15), HUNG THERE A BEAT (15 to 16), and DOWN, smeared (17), onto the floor 1.4 tiles before him: THE BLOW at 18 (0.6
+ * s), deeper than a Smash. A long freeze, sunk over it as the ground heaves (to 23); the heavy haul back into his guard (48).
  */
 function earthquake(): AxeKey[] {
   const P = plantedFeet();
   const top = smashTop();
   const reared: Partial<Bones> = { ...top, lfp: 30, lfz: onToes(30), pz: 2.2, pitch: -9, bend: -22, twist: -16, yaw: -26, faceUp: -14 };
   const low: Partial<Bones> = { ...smashLow(), px: 8.5, pz: -12.5, pitch: 23, bend: 34, faceUp: -32 };
-  const k2 = hold({ ...P, px: -0.6, pz: -6.0, yaw: -40, twist: -28, pitch: 4, bend: 8 }, [12.5, -7, 6.5], -112, -8, DOWN, 180, SLID);
-  const k4 = hold({ ...P, px: -0.6, pz: -5.0, yaw: -36, twist: -24, pitch: 3, bend: 4, faceUp: -4 }, [12, -9, 9.5], -36, 22, DOWN, k2.roll, SLID);
-  const k5 = hold({ ...P, px: -0.5, pz: -3.8, yaw: -32, twist: -18, pitch: 1, bend: 0, faceUp: -6 }, [10, -11, 12.5], -46, 56, DOWN, k4.roll);
-  const k6 = hold({ ...top, lfp: 10, lfz: onToes(10), pz: -1.2, bend: -8, pitch: -2 }, [7, -10.5, 15.5], -14, 88, [1, 0, 0], k5.roll);
-  const k8 = hold({ ...top, lfp: 18, lfz: onToes(18), pz: 0, bend: -14, pitch: -5 }, [3.5, -11, 15.4], 0, 116, [1, 0, 0], k6.roll);
-  const k9 = hold(reared, [2.5, -10.5, 17], 0, 140, [1, 0, 0.2], k8.roll);
-  const k13 = hold({ ...reared, pz: 2.8, pitch: -11, bend: -26, faceUp: -16 }, [1.5, -10.5, 17.2], 0, 150, [1, 0, 0.3], k9.roll);
-  const k14 = hold({ ...P, ...backFoot(40, -8), rk: -4, px: 4.5, pz: -3.5, yaw: -10, pitch: 8, twist: -4, bend: 6, faceUp: -22 }, [11, -5, 14], 0, 52, [1, 0, -0.6], k13.roll, SLID);
-  const k15 = onFloor(low, k14.roll, -9, [13, -1, -6]);
-  const k20 = onFloor({ ...low, pz: -13.4, bend: 36, pitch: 24 }, k15.roll, -10, [13, -1, -6.4]);
-  return [
-    { at: 0, pose: {} },
-    key(2, k2, 'out'),
-    key(4, k4, 'lin'),
-    key(5, k5, 'lin'),
-    key(6, k6, 'lin'),
-    key(8, k8, 'lin'),
-    // THE WIND-UP, reared right back, and HELD
-    key(HAMMER_QUAKE_TOP, k9, 'out'),
-    key(HAMMER_QUAKE_HELD, k13, 'io'),
-    // THE STRIKE
-    key(14, k14, 'in'),
-    key(HAMMER_QUAKE_BLOW, k15, 'lin'),
+  const keys: AxeKey[] = [{ at: 0, pose: {} }];
+  // THE COIL, reached and HELD: wound round to his right, the maul back round at his right side, low
+  const coil = (yaw: number, twist: number, sunk: number, rel: number, near: number): Held =>
+    hold({ ...whirlFeet(yaw), px: -0.5, pz: sunk, yaw, twist, pitch: 6, bend: 10, faceUp: 4, faceTurn: 10, faceTilt: 0 }, [7, -8, 4], yaw + twist + rel, 4, DOWN, near, SLID);
+  const k2 = coil(-78, -30, -8.5, -100, 180);
+  const k4 = coil(-86, -32, -9.2, -108, k2.roll);
+  keys.push(key(HAMMER_QUAKE_COIL, k2, 'out'), key(HAMMER_QUAKE_COILED, k4, 'io'));
+  // THE WHIRL: a frame a key, his hips turned on round, the maul's head swept out and level before him, his feet stepping
+  let near = k4.roll;
+  const n = HAMMER_QUAKE_WHIRLED - HAMMER_QUAKE_COILED;
+  for (let i = 1; i <= n; i++) {
+    const u = i / n;
+    // (a little eased out of the coil and into the rise)
+    const e = 0.7 * u + 0.3 * (u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u));
+    const twist = -32 + 20 * u;
+    const yaw = -86 + (HAMMER_QUAKE_TURN - 6) * e - (twist + 32);
+    const rel = -108 + 88 * Math.min(1, u * 2.2);
+    const h = hold({ ...whirlFeet(yaw), px: 0, pz: -8.5 + 1.5 * u, yaw, twist, pitch: 4, bend: 6, faceUp: 2, faceTurn: 6, faceTilt: 0 }, [11, -3, 6.5], yaw + twist + rel, 8 + 6 * u, DOWN, near, SLID);
+    near = h.roll;
+    keys.push(key(HAMMER_QUAKE_COILED + i, h, 'lin'));
+  }
+  // UP AND OVER THE TOP out of the turn (his feet home in his guard's stance), laid back over his right shoulder, HUNG a beat
+  const k13 = hold({ ...P, px: -0.5, pz: -3.8, yaw: -32, twist: -18, pitch: 1, bend: 0, faceUp: -6 }, [10, -11, 12.5], -46, 56, DOWN, near);
+  const k14 = hold({ ...top, lfp: 10, lfz: onToes(10), pz: -1.2, bend: -8, pitch: -2 }, [7, -10.5, 15.5], -14, 88, [1, 0, 0], k13.roll);
+  const k15 = hold(reared, [2.5, -10.5, 17], 0, 140, [1, 0, 0.2], k14.roll);
+  const k16 = hold({ ...reared, pz: 2.8, pitch: -11, bend: -26, faceUp: -16 }, [1.5, -10.5, 17.2], 0, 150, [1, 0, 0.3], k15.roll);
+  // THE STRIKE: over the top, and down onto the floor
+  const k17 = hold({ ...P, ...backFoot(40, -8), rk: -4, px: 4.5, pz: -3.5, yaw: -10, pitch: 8, twist: -4, bend: 6, faceUp: -22 }, [11, -5, 14], 0, 52, [1, 0, -0.6], k16.roll, SLID);
+  const k18 = onFloor(low, k17.roll, -9, [13, -1, -6]);
+  const k23 = onFloor({ ...low, pz: -13.6, bend: 37, pitch: 25 }, k18.roll, -10, [13, -1, -6.6]);
+  const after: AxeKey[] = [
+    key(14, k13, 'out'),
+    key(15, k14, 'lin'),
+    key(HAMMER_QUAKE_TOP, k15, 'out'),
+    key(HAMMER_QUAKE_HELD, k16, 'io'),
+    key(18, k17, 'in'),
+    key(HAMMER_QUAKE_BLOW, k18, 'lin'),
     // (a long freeze, sunk over it, as the ground heaves)
-    key(20, k20, 'out'),
-    ...haulBack(20, low, k20, HAMMER_QUAKE_END - 20),
+    key(24, k23, 'out'),
+    ...haulBack(24, low, k23, HAMMER_QUAKE_END - 24),
   ];
+  // (the turn is a whole one: from the whirl on, his hips and the maul's way are said a turn further round, the same pose)
+  for (const k of after) {
+    const pose = k.pose as Record<string, number>;
+    pose.yaw = (pose.yaw ?? HAMMER_REST.yaw) + 360;
+    pose.wAz = (pose.wAz ?? HAMMER_REST.wAz) + 360;
+  }
+  return [...keys, ...after];
 }
-export const HAMMER_QUAKE: AxeMove = maul({ name: 'Earthquake (Movement 9)', keys: earthquake(), hit: HAMMER_QUAKE_BLOW * FR, smear: [14 * FR, 16 * FR] });
+export const HAMMER_QUAKE: AxeMove = maul({
+  name: 'Earthquake: a full spin, then down (Movement 9)', keys: earthquake(), hit: HAMMER_QUAKE_BLOW * FR,
+  smear: [18 * FR, 20 * FR], smears: [[(HAMMER_QUAKE_COILED + 2) * FR, (HAMMER_QUAKE_WHIRLED + 1) * FR]],
+});
 
 // ---------------------------------------------------------------------------------------------
 // SHOULDER CHARGE (his swipe with the maul). Beside his Lunge (its range, 6 tiles; its half second on the way): A CROUCH, HELD;

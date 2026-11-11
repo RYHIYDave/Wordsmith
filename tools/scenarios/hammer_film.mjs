@@ -25,7 +25,7 @@ const TILE_SPEED = 4.6; // tiles a second: the game's run
 const SWING_STEP = [0.33, 0.12]; // tiles, seconds: the game's step on each swing (TUNE.swingStep, swingStepTime)
 // (art/warrior_up_hammer_moves.ts: HAMMER_SMASH_*, HAMMER_QUAKE_*, HAMMER_TREMORS, HAMMER_CHARGE_*)
 const SMASH = { blow: 13, at: 1.4, round: 0.4 };
-const QUAKE = { blow: 15, end: 44, at: 1.4, round: 2.0 };
+const QUAKE = { blow: 19, end: 49, at: 1.4, round: 2.0 };
 const TREMORS = { after: 0.35, wider: 0.6, weaker: [1, 0.6, 0.35] };
 const CHARGE = { go: 6, stop: 21, skid: 27, end: 42, far: 4.4, slide: 0.6, wide: 0.7, thrown: 1.6 }; // far: how far this film's charge goes (the rules': up to 6)
 
@@ -183,10 +183,10 @@ export default async function (page, snap) {
   for (const w of ['toward', 'side', 'away']) await play(`smash_${w}`, `SMASH (tap), ${SAY[w]}: down on the floor before him, then again`, { face: WAYS[w], beats: smashes, who: before });
   await play('smash_slow', 'SMASH at half speed, twice the size', { face: WAYS.side, zoom: true, slow: true, beats: smashes, who: before });
   const ring = [['skeleton', 2.2, -1.1], ['cultist', 3.0, 0.6], ['skeleton', 1.4, 1.5], ['brute', 4.6, -0.4]];
-  const qb = (three) => [{ move: 'quake', from: 0, to: QUAKE.end, each: quake(three), say: three ? 'one blow; the ground heaves three times, each wider and weaker' : 'reared right back, held; the blow; the ground heaves in a ring' }];
-  for (const w of ['side', 'away']) await play(`quake_${w}`, `EARTHQUAKE (hold), ${SAY[w]}: the ground heaves out in a ring`, { face: WAYS[w], beats: qb(false), who: ring });
-  await play('tremors', 'TREMORS (a talent), toward you: three quakes from the one blow', { face: WAYS.toward, beats: qb(true), who: ring, hold: 10 });
-  await play('quake_slow', 'EARTHQUAKE at half speed, twice the size', { face: WAYS.side, zoom: true, slow: true, beats: qb(false), who: ring, lead: 1.0 });
+  const qb = (three) => [{ move: 'quake', from: 0, to: QUAKE.end, each: quake(three), say: three ? 'a full spin, then down: the ground heaves three times, each wider and weaker' : 'a coil, held; a full spin; up and over, and down; the ground heaves in a ring' }];
+  for (const w of ['side', 'away']) await play(`quake_${w}`, `EARTHQUAKE (hold), ${SAY[w]}: a full spin, then down`, { face: WAYS[w], beats: qb(false), who: ring });
+  await play('tremors', 'TREMORS (a talent), toward you: a full spin, then three quakes', { face: WAYS.toward, beats: qb(true), who: ring, hold: 10 });
+  await play('quake_slow', 'EARTHQUAKE at half speed, twice the size: a full spin, then down', { face: WAYS.side, zoom: true, slow: true, beats: qb(false), who: ring, lead: 1.0 });
   const lane = [['skeleton', 2.2, 0.25], ['cultist', 3.4, -0.3], ['skeleton', 5.4, 2.2]];
   const cb = [{ move: 'charge', from: 0, to: CHARGE.end, each: charge, say: 'a crouch, held; he drives through, shoulder first; the skid' }];
   const back = (w) => [home[0] - WAYS[w][0] * 2.2, home[1] - WAYS[w][1] * 2.2];

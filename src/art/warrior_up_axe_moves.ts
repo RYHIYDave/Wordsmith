@@ -86,6 +86,8 @@ export interface AxeMove {
   tail?: boolean;
   /** The frames in which the axe is drawn smeared (seconds, from and to, both counted). */
   smear?: readonly [number, number];
+  /** More frames drawn smeared, beside `smear` (the maul's Earthquake: its whirl, then its strike). */
+  smears?: readonly (readonly [number, number])[];
   /** What is in his hands at a moment (his axe, all through, if not given). */
   holding?: (t: number) => Holding;
   /** The game carries and lifts him through the air from `from` to `until` (seconds), `high` GAME pixels at the top (a leap). */
@@ -189,8 +191,8 @@ function edgeOf(az: number, el: number, roll: number): V3 {
 
 /** Whether a moment of a move is drawn smeared (its strike). */
 export function axeSmeared(m: AxeMove, t: number): boolean {
-  const w = m.smear;
-  return !!w && t >= w[0] - 1e-6 && t <= w[1] + 1e-6;
+  for (const w of [m.smear, ...(m.smears ?? [])]) if (w && t >= w[0] - 1e-6 && t <= w[1] + 1e-6) return true;
+  return false;
 }
 
 /** A figure moved `by` along the way it faces (every place of it; the ways its bones point are as they were). */

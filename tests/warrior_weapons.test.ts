@@ -476,13 +476,13 @@ test('12. each move with the maul is whole: its frames as many as its beats say,
     if (Math.abs(a.tiles - at) > 0.15 || Math.abs(a.at[2]) > 3) bad.push(`${m.name}: its face at the blow ${a.tiles.toFixed(2)} tiles before him, ${a.at[2].toFixed(1)} up (the rules: ${at})`);
   }
   assert.equal(Math.round(HAMMER_SMASH_HIT / AXE_FRAME), 13, 'Smash lands at 13 frames');
-  assert.equal(HAMMER_QUAKE_BLOW, 15, 'Earthquake lands at 15 frames, 0.5 s, as his Slam');
+  assert.equal(HAMMER_QUAKE_BLOW, 19, 'Earthquake (a full spin, then down) lands at 19 frames, 0.633 s');
   const set = makeWarriorHammerArt().front;
   const c = set.clips ?? {};
   const got = { idle: set.idle.length, walk: set.walk.length, attack: c.attack?.frames.length, attack2: c.attack2?.frames.length, heavy: c.heavy?.frames.length, leap: c.leap?.frames.length, land: c.land?.frames.length, crouch: c.moves?.chargeCrouch.frames.length };
-  assert.deepEqual(got, { idle: 60, walk: 15, attack: 39, attack2: 39, heavy: 45, leap: HAMMER_DRIVE_FRAMES, land: HAMMER_CHARGE_END - HAMMER_CHARGE_STOP + 1, crouch: HAMMER_CHARGE_GO + 1 }, 'the lists');
+  assert.deepEqual(got, { idle: 60, walk: 15, attack: 39, attack2: 39, heavy: HAMMER_QUAKE_END + 1, leap: HAMMER_DRIVE_FRAMES, land: HAMMER_CHARGE_END - HAMMER_CHARGE_STOP + 1, crouch: HAMMER_CHARGE_GO + 1 }, 'the lists');
   assert.ok(Math.abs((c.attack?.hit ?? 0) - 13 / 30) < 1e-6 && Math.abs((c.attack?.poise ?? 0) - 21 / 30) < 1e-6 && c.attack?.tail === true, 'Smash: its blow, where it waits, its tail');
-  assert.ok(Math.abs((c.heavy?.hit ?? 0) - 0.5) < 1e-6, 'Earthquake: its blow at 0.5 s');
+  assert.ok(Math.abs((c.heavy?.hit ?? 0) - 19 / 30) < 1e-6, 'Earthquake: its blow at 0.633 s');
   assert.deepEqual(bad, [], 'a move not whole');
 });
 
@@ -547,7 +547,7 @@ test('15. his feet grip the floor with the maul: a foot that is down does not sl
 
 test('16. the maul\'s strikes: their smears are the friend\'s cyan and nothing of the enemy\'s; every frame crisp', () => {
   const bad: string[] = [];
-  const strikes: [string, number[]][] = [['smash', [12, 13, 14]], ['smash2', [12, 13, 14]], ['quake', [14, 15, 16]]];
+  const strikes: [string, number[]][] = [['smash', [12, 13, 14]], ['smash2', [12, 13, 14]], ['quake', [8, 10, 12, 18, 19, 20]]];
   for (const [name, list] of strikes) for (const i of list) for (const side of ['front', 'sideL'] as WuSide[]) {
     const f = paintAxe(HAMMER_MOVES[name], i * AXE_FRAME, side);
     const p = f.px;
