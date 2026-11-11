@@ -55,10 +55,9 @@ export default async function (page, snap) {
   const k = scr.cw / scr.w;
   log('the screen', `${scr.w}x${scr.h} game pixels, ${k} css pixels each`);
   const where = async () => page.evaluate(() => { const d = window.__dbg; const h = d.game().hero; const s = d.at(h.x, h.y); return { sx: s.x, sy: s.y, x: h.x, y: h.y }; });
-  // (the film's picture stays where they began: they move within it, as on the screen)
-  let held = null;
+  // (the picture follows them, as the game's own camera does)
   const clipNow = async () => {
-    const w = held ?? (await where());
+    const w = await where();
     return { x: Math.round(w.sx - cw / 2) * k, y: Math.round(w.sy - up - ch / 2) * k, width: cw * k, height: ch * k };
   };
   const raf = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
@@ -97,15 +96,18 @@ export default async function (page, snap) {
     g.update = (dt, c) => {
       f.t += dt;
       h.mana = h.d.maxMana;
-      for (const sk of h.skills) if (sk) sk.cd = 0;
+      for (const sk of h.skills) if (sk) { sk.cd = 0; if (typeof sk.charges === 'number' && sk.charges < 1) sk.charges = 1; }
       Object.assign(c, { mx: 0, my: 0, fire: false, cast: false, hold: false, evade: false, face: false, approach: false });
       for (const p of f.plan) {
         if (f.t < p.from || f.t >= p.to) continue;
         if (p.face) { h.fx = p.face[0]; h.fy = p.face[1]; }
         if (p.run) { c.mx = p.run[0]; c.my = p.run[1]; }
+        // (a press: put in for one step of the game, as one tap, one hold or one swipe)
+        if ((p.fire || p.cast || p.evade) && p.did) continue;
+        if (p.fire || p.cast || p.evade) p.did = true;
         if (p.fire) { c.fire = true; c.aimX = h.x + p.fire[0] * 4; c.aimY = h.y + p.fire[1] * 4; }
         if (p.cast) { c.cast = true; c.castX = h.x + p.cast[0] * 3; c.castY = h.y + p.cast[1] * 3; c.aimX = c.castX; c.aimY = c.castY; }
-        if (p.evade && !p.did) { p.did = true; c.evade = true; c.evadeX = p.evade[0]; c.evadeY = p.evade[1]; }
+        if (p.evade) { c.evade = true; c.evadeX = h.x + p.evade[0] * 6; c.evadeY = h.y + p.evade[1] * 6; }
       }
       return run(dt, c);
     };
@@ -119,32 +121,33 @@ export default async function (page, snap) {
     add(1.6, { face: WAYS[0] });
     for (let i = 1; i < 8; i++) add(0.6, { face: WAYS[i] });
     add(0.6, { face: WAYS[0] });
-    // (run the four ways the game never drew: straight down, left, up and right of the screen; back to where they began)
+    // (run the four ways the game never drew: straight right, down, left and up of the screen; back to where they began)
+    add(0.8, { run: [0.71, -0.71] });
+    add(0.4, {});
     add(0.8, { run: [0.71, 0.71] });
     add(0.4, {});
     add(0.8, { run: [-0.71, 0.71] });
     add(0.4, {});
     add(0.8, { run: [-0.71, -0.71] });
-    add(0.4, {});
-    add(0.8, { run: [0.71, -0.71] });
     add(0.6, {});
     if (cls === 'brawler') {
-      // (jab, cross, hook straight down the screen; a round kick to the left; a jab and a cross down and to the left, which
-      // the game mirrored; his dodging jump away to the right)
+      // (jab, cross, hook straight down the screen; a round kick straight to the right; a punch down and to the left, which
+      // the game mirrored, and one straight up the screen; his dodging jump to the left)
       add(0.1, { fire: WAYS[1] }); add(0.5, {});
       add(0.1, { fire: WAYS[1] }); add(0.6, {});
-      add(0.1, { fire: WAYS[1] }); add(1.7, {});
-      add(0.1, { cast: WAYS[3] }); add(1.9, {});
-      add(0.1, { fire: WAYS[2] }); add(0.5, {});
-      add(0.1, { fire: WAYS[2] }); add(1.6, {});
-      add(0.1, { evade: WAYS[7] }); add(1.6, {});
+      add(0.1, { fire: WAYS[1] }); add(1.9, {});
+      add(0.1, { cast: WAYS[7] }); add(1.5, {});
+      add(0.1, { fire: WAYS[2] }); add(1.2, {});
+      add(0.1, { fire: WAYS[5] }); add(1.7, {});
+      add(0.1, { evade: WAYS[3] }); add(1.6, {});
     } else {
-      // (a vial tossed straight down the screen, and one down and to the left, which the game mirrored; her blast jump to the
-      // left; a vial tossed up the screen)
+      // (a vial tossed straight down the screen, one straight to the right, and one down and to the left, which the game
+      // mirrored; her blast jump straight up the screen; her Golem whistled on to the left)
       add(0.1, { fire: WAYS[1] }); add(1.3, {});
+      add(0.1, { fire: WAYS[7] }); add(1.3, {});
       add(0.1, { fire: WAYS[2] }); add(1.3, {});
-      add(0.1, { evade: WAYS[3] }); add(1.8, {});
-      add(0.1, { fire: WAYS[5] }); add(1.4, {});
+      add(0.1, { evade: WAYS[5] }); add(2.0, {});
+      add(0.1, { cast: WAYS[3] }); add(2.6, {});
     }
   } else if (mode === 'moves') {
     const blow = Number(process.env.BLOW || (cls === 'brawler' ? 0.5 : 0.47));
@@ -162,7 +165,6 @@ export default async function (page, snap) {
     fs.rmSync(dir, { recursive: true, force: true });
     fs.mkdirSync(dir, { recursive: true });
   }
-  held = await where();
   const c0 = await page.evaluate((plan) => { const d = window.__dbg; d.slowmo = 1e-6; const f = window.__mf; f.plan = plan.map((p) => ({ ...p, from: p.from + f.t, to: p.to + f.t })); return d.clock(); }, PLAN);
   const slow = Number(process.env.SLOW || 0.05);
   const want = mode === 'film' ? null : new Map(STILLS.map(([s, n]) => [Math.round(s * FPS), n]));

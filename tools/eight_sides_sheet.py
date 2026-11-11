@@ -97,3 +97,73 @@ def grid(d, names, out, scale=2, sides=SIDES, crop=None):
 
 if __name__ == '__main__' and sys.argv[1] == 'grid':
     grid(sys.argv[2], sys.argv[3].split(','), sys.argv[4], int(sys.argv[5]) if len(sys.argv) > 5 else 2)
+
+
+# ---- THE PICTURES AND FILMS FOR HIM, from the game itself (tools/scenarios/sides_more_look.mjs) ----
+# Each wider than tall, its pixels whole and big: made to be read on a phone held sideways (his word of a tall sheet, 9 Nov
+# 2026). No GIFs: films are MP4.
+#   python3 tools/eight_sides_sheet.py game_sides <dir/prefix of the eight-sided page's stills> <out.png> <title>
+#   python3 tools/eight_sides_sheet.py film <frames today> <frames eight> <out.mp4> <tinkerer|brawler> [frames to keep]
+WAYS = ['down-right', 'toward you', 'down-left', 'left', 'up-left', 'away', 'up-right', 'right']
+HAD = {0, 6}
+FILM_BG = (13, 16, 48)
+MUTED = (163, 171, 216)
+
+
+def game_sides(prefix, out, title):
+    ims = [Image.open(f'{prefix}_side_{i}.png').convert('RGB') for i in range(8)]
+    w, h = ims[0].size
+    gap, top, lab = 8, 60, 44
+    cols = 4
+    W = cols * w + (cols - 1) * gap
+    H = top + 2 * (h + lab) + gap
+    im = Image.new('RGB', (W, H), FILM_BG)
+    d = ImageDraw.Draw(im)
+    d.text((W // 2, top // 2), title, font=font(30), fill=TEXT, anchor='mm')
+    for i, p in enumerate(ims):
+        x = (i % cols) * (w + gap)
+        y = top + (i // cols) * (h + lab + gap)
+        new = i not in HAD
+        d.text((x + 10, y + lab // 2), WAYS[i], font=font(26), fill=TEXT, anchor='lm')
+        d.text((x + w - 10, y + lab // 2), 'NEW' if new else 'in the game today', font=font(22), fill=CYAN if new else MUTED, anchor='rm')
+        im.paste(p, (x, y + lab))
+    im.save(out)
+    print(out, im.size)
+
+
+PARTS = {
+    'brawler': [(0, 'STANDING'), (48, 'TURNING THROUGH THE EIGHT WAYS'), (192, 'RUNNING RIGHT, DOWN, LEFT, UP'), (342, 'JAB, CROSS, HOOK: STRAIGHT DOWN THE SCREEN'), (441, 'A KICK STRAIGHT TO THE RIGHT'), (489, 'A PUNCH DOWN AND TO THE LEFT'), (528, 'A PUNCH STRAIGHT UP THE SCREEN'), (582, 'HIS JUMP, TO THE LEFT')],
+    'tinkerer': [(0, 'STANDING'), (48, 'TURNING THROUGH THE EIGHT WAYS'), (192, 'RUNNING RIGHT, DOWN, LEFT, UP'), (342, 'A VIAL TOSSED STRAIGHT DOWN THE SCREEN'), (384, 'A VIAL TOSSED STRAIGHT TO THE RIGHT'), (426, 'A VIAL TOSSED DOWN AND TO THE LEFT'), (468, 'HER BLAST JUMP, STRAIGHT UP THE SCREEN'), (531, 'HER GOLEM WHISTLED ON, TO THE LEFT')],
+}
+
+
+def film(old, new, out, who, keep=None):
+    import os, subprocess, tempfile
+    a = sorted(f for f in os.listdir(old) if f.endswith('.png'))
+    b = sorted(f for f in os.listdir(new) if f.endswith('.png'))
+    n = min(len(a), len(b), keep or 10 ** 9)
+    w, h = Image.open(os.path.join(new, b[0])).size
+    gap, top, foot = 12, 64, 52
+    W, H = w * 2 + gap, h + top + foot
+    W += W % 2
+    H += H % 2
+    tmp = tempfile.mkdtemp()
+    she = who == 'tinkerer'
+    for i in range(n):
+        im = Image.new('RGB', (W, H), FILM_BG)
+        im.paste(Image.open(os.path.join(old, a[i])).convert('RGB'), (0, top))
+        im.paste(Image.open(os.path.join(new, b[i])).convert('RGB'), (w + gap, top))
+        d = ImageDraw.Draw(im)
+        d.text((w // 2, top // 2), 'AS SHE IS NOW: TWO SIDES, FLIPPED' if she else 'AS HE IS NOW: TWO SIDES, FLIPPED', font=font(30), fill=MUTED, anchor='mm')
+        d.text((w + gap + w // 2, top // 2), 'FROM ALL EIGHT SIDES', font=font(30), fill=CYAN, anchor='mm')
+        part = [p for p in PARTS[who] if p[0] <= i][-1][1]
+        d.text((W // 2, top + h + foot // 2), part, font=font(28), fill=TEXT, anchor='mm')
+        im.save(os.path.join(tmp, f'{i:04d}.png'))
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', '30', '-i', os.path.join(tmp, '%04d.png'), '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], check=True)
+    print(f'{out}: {n} frames, {W}x{H}, {n / 30:.1f} s')
+
+
+if __name__ == '__main__' and sys.argv[1] == 'game_sides':
+    game_sides(sys.argv[2], sys.argv[3], sys.argv[4])
+if __name__ == '__main__' and sys.argv[1] == 'film':
+    film(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], int(sys.argv[6]) if len(sys.argv) > 6 else None)
