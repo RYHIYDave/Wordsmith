@@ -12,10 +12,14 @@ import { drawText, textWidth } from '../engine/font';
 import { P } from '../art/palette';
 import { THEME } from './ui';
 import type { Ui } from './ui';
+import { ENDLESS_SPLASH } from '../art/endless_splash';
+import { drawEndlessSplashArt } from './endless_splash_draw';
 
 // (ON SINCE VERSION 25.2.8: shown the splash and the card, his answer, 8 Nov 2026 by 08:36, “Yes, art chat splash later
 // (Recommended)”: the art chat's splash picture to come in this one's place, once he has seen it)
-export const ENDLESS_FANFARE = { on: true, splash: 3.2, skip: 0.8, armed: 0.5 };
+// (`painted`: THE SPLASH PAINTED BY THE ART CHAT, the hall of gates (art/endless_splash.ts, ui/endless_splash_draw.ts), behind its
+// own switch, OFF until his yes to pictures of it: with it on, drawEndlessSplash draws that picture and its moment in this one's place)
+export const ENDLESS_FANFARE = { on: true, splash: 3.2, skip: 0.8, armed: 0.5, painted: ENDLESS_SPLASH };
 
 /** What endless mode is, a line each, as the card says it. */
 export const ENDLESS_CARD: readonly string[] = [
@@ -35,6 +39,10 @@ const clamp = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /** The splash, `t` seconds in: the dark coming up, a ring of the floor's stone opening round ENDLESS, its letters dropping in. */
 export function drawEndlessSplash(g: CanvasRenderingContext2D, t: number, w: number, h: number): void {
+  if (ENDLESS_SPLASH.on) {
+    drawEndlessSplashArt(g, t, w, h);
+    return;
+  }
   g.save();
   g.fillStyle = STONE.dark;
   g.globalAlpha = clamp(t / 0.4);
