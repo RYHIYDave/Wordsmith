@@ -11,12 +11,12 @@ import { Figure } from '../render/figure';
 import { Renderer } from '../render/render';
 import { wx, wy } from '../render/fx';
 import type { Cam } from '../render/fx';
-import { AXE_FRAME, AXE_MOVES, axeFlying, axeSprite, wuFacing, wuTailsFacing } from '../art/warrior_up_axe_moves';
+import { AXE_FRAME, AXE_MOVES, AXE_RUN_MOVES, axeFlying, axeSprite, wuFacing, wuTailsFacing } from '../art/warrior_up_axe_moves';
 import type { WuSide } from '../art/warrior_up_axe_moves';
 import { HAMMER_MOVES } from '../art/warrior_up_hammer_moves';
 
 /** (his moves with the war axe and, since step 3, with the maul: one page films both) */
-const MOVES = { ...AXE_MOVES, ...HAMMER_MOVES };
+const MOVES = { ...AXE_MOVES, ...AXE_RUN_MOVES, ...HAMMER_MOVES };
 
 /** What the film shows now: a move of his and its frame, how high the game has lifted him (game pixels), and the axes in the air. */
 interface FilmState {
