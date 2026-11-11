@@ -1340,7 +1340,7 @@ export function paintGlint(i: number): { px: Px; lights: Light[] } {
   for (let s = 0; s < 9; s++) {
     const a = r() * Math.PI * 2;
     const v = 7 + r() * 9;
-    const life = 0.6 + r() * 0.4;
+    const life = 0.92 + r() * 0.3;
     if (k > life) continue;
     const far = v * Math.sqrt(k + 0.08);
     const long = 3 - 2 * (k / life);

@@ -47,7 +47,7 @@ import { dot, norm, sub } from '../src/art/skeleton';
 import type { WuSide } from '../src/art/warrior_up';
 import { AXE, AXE_CHOP_END, AXE_CHOP_LAND, AXE_CHOP_LEAP, AXE_CLEAVE_HIT, AXE_FLIGHT, AXE_FLY_FRAMES, AXE_FRAME, AXE_LEAP_FRAMES, AXE_MOVES, AXE_REST, AXE_RUN, AXE_STAND, AXE_THROW_OUT, HELM_LEAST, axeFaults, axePosed, helmSeen, makeWarriorAxeArt, paintAxe, paintFlying } from '../src/art/warrior_up_axe_moves';
 import type { AxeMove } from '../src/art/warrior_up_axe_moves';
-import { AXE_RUN_CATCH, AXE_RUN_EMPTY, AXE_RUN_MOVES, AXE_TWIN_RUN_CATCH } from '../src/art/warrior_up_axe_moves';
+import { AXE_APPEAR_FRAMES, AXE_CLEAVE, AXE_CLEAVE_APPEAR, AXE_GLINT_FRAMES, AXE_RUN_CATCH, AXE_RUN_EMPTY, AXE_RUN_MOVES, AXE_TWIN_RUN_CATCH, axeGlint, paintGlint } from '../src/art/warrior_up_axe_moves';
 import { heavyMoves, makeWarriorHeavyArt } from '../src/art/warrior_up_heavy_art';
 import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REEL3, WU_TOWN3, WU_TOWN_RUN3 } from '../src/art/warrior_up_moves';
 import type { Move3 } from '../src/art/moves3';
@@ -633,4 +633,49 @@ test('18. struck, his fall, town and his card with each weapon: the game\'s own 
   }
   console.log(`  ${frames} frames looked at`);
   assert.deepEqual(bad.slice(0, 30), [], 'a frame that breaks a rule');
+});
+
+// ---------------------------------------------------------------------------------------------
+// STEP 3b: A TAP WHILE THE THROWN AXE IS OUT (src/art/warrior_up_axe_moves.ts AXE_CLEAVE_APPEAR, axeGlint)
+
+test('19. a tap while the thrown axe is out: the axe appears in his hands in the friend\'s cyan over the Cleave\'s first four frames (his helm seen from every side, nothing of the enemy\'s); the Cleave\'s other frames the same pictures; the glint the friend\'s cyan', () => {
+  const bad: string[] = [];
+  const LIT = new Set([...CYANS, ...[...WW_GLOW, '#b8fff8', '#22d0e0', '#0c6a80'].map(key)]);
+  for (let i = 0; i < AXE_APPEAR_FRAMES; i++) for (const side of WU_SIDES) {
+    const t = i * AXE_FRAME;
+    const f = paintAxe(AXE_CLEAVE_APPEAR, t, side);
+    const plain = paintAxe(AXE_CLEAVE, t, side);
+    for (const x of axeFaults(AXE_CLEAVE_APPEAR, t, f)) if (/helm/.test(x)) bad.push(`appearing f${i} ${side}: ${x}`);
+    let lit = 0;
+    for (let k = 0; k < f.px.w * f.px.h; k++) {
+      const a = f.px.d[k * 4 + 3];
+      if (!a) continue;
+      const c = pixel(f.px, k);
+      if (ENEMY.has(c) || GOLD_GLOW.has(c)) bad.push(`appearing f${i} ${side}: the enemy's colour ${c}`);
+      if (c !== pixel(plain.px, k) && LIT.has(c)) lit++;
+    }
+    if (lit < 6) bad.push(`appearing f${i} ${side}: only ${lit} pixels of its light`);
+  }
+  // (from its fifth frame on, the Cleave's own pictures)
+  for (const i of [AXE_APPEAR_FRAMES, 10, 20, 36]) {
+    const a = paintAxe(AXE_CLEAVE_APPEAR, i * AXE_FRAME, 'toward').px;
+    const b = paintAxe(AXE_CLEAVE, i * AXE_FRAME, 'toward').px;
+    if (a.d.some((v, k) => v !== b.d[k])) bad.push(`f${i}: not the Cleave's own picture`);
+  }
+  const mv = makeWarriorHeavyArt('axe', 'dungeon').frontL.clips?.moves ?? {};
+  assert.equal(mv.cleaveAppear?.frames.length, AXE_APPEAR_FRAMES, 'four pictures a side for the axe appearing');
+  // the glint at his hands
+  assert.equal(axeGlint().length, AXE_GLINT_FRAMES, 'the glint');
+  for (let i = 0; i < AXE_GLINT_FRAMES; i++) {
+    const p = paintGlint(i).px;
+    let n = 0;
+    for (let k = 0; k < p.w * p.h; k++) {
+      if (!p.d[k * 4 + 3]) continue;
+      n++;
+      if (!LIT.has(pixel(p, k))) bad.push(`glint ${i}: not the friend's cyan ${pixel(p, k)}`);
+      if (p.d[k * 4 + 3] !== 255) bad.push(`glint ${i}: a pixel half see-through`);
+    }
+    if (n < 8) bad.push(`glint ${i}: only ${n} pixels`);
+  }
+  assert.deepEqual(bad.slice(0, 20), [], 'the axe appearing and the glint');
 });

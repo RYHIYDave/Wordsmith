@@ -182,7 +182,7 @@ export default async function (page, snap) {
   const smashes = [{ move: 'smash', from: 0, to: 21, each: smash, say: 'one crushing blow straight down' }, { move: 'smash2', from: 0, to: 38, each: smash, say: 'a second tap: hauled up off the floor, and down again' }];
   for (const w of ['toward', 'side', 'away']) await play(`smash_${w}`, `SMASH (tap), ${SAY[w]}: down on the floor before him, then again`, { face: WAYS[w], beats: smashes, who: before });
   await play('smash_slow', 'SMASH at half speed, twice the size', { face: WAYS.side, zoom: true, slow: true, beats: smashes, who: before });
-  const ring = [['skeleton', 2.2, -1.1], ['cultist', 3.0, 0.6], ['skeleton', 1.4, 1.5], ['brute', 4.6, -0.4]];
+  const ring = [['skeleton', 2.2, -1.1], ['cultist', 3.0, 0.6], ['skeleton', 1.4, 1.5], ['brute', 3.2, -0.4]]; // (outside the maul's circle as he whirls, inside the ring)
   const qb = (three) => [{ move: 'quake', from: 0, to: QUAKE.end, each: quake(three), say: three ? 'a full spin, then down: the ground heaves three times, each wider and weaker' : 'a coil, held; a full spin; up and over, and down; the ground heaves in a ring' }];
   for (const w of ['side', 'away']) await play(`quake_${w}`, `EARTHQUAKE (hold), ${SAY[w]}: a full spin, then down`, { face: WAYS[w], beats: qb(false), who: ring });
   await play('tremors', 'TREMORS (a talent), toward you: a full spin, then three quakes', { face: WAYS.toward, beats: qb(true), who: ring, hold: 10 });
