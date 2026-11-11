@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { RNG } from '../src/engine/rng';
 import { TUNE } from '../src/game/defs';
-import { bindProblem, imbueItem, imbueProblem, itemRoom, rollItem, splitProblem, statFits, statRangeAt, stemSlot } from '../src/game/items';
+import { bindProblem, imbueItem, imbueProblem, itemRoom, rollItem, splitProblem, statFits, statGroup, statRangeAt, stemSlot } from '../src/game/items';
 import { ALL_CLASS_IDS } from '../src/game/types';
 import type { ClassId, MonsterKind, WeaponKind } from '../src/game/types';
 import { UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_RULES, UNIQUE_TUNE, bossUnique, finalUniques, makeUnique, poolChance, poolFor, uniqueDef, uniqueLines, uniqueOf, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from '../src/game/uniques';
@@ -79,6 +79,16 @@ test('each is on a kind of base there is, and its ordinary stats are ones a foun
     assert.equal(new Set(d.stats).size, d.stats.length);
     for (const s of d.stats) assert.ok(statFits(s, slot!), `${d.name}: ${s} on ${slot}`);
   }
+  // (never the same stat twice on a card, his “I really hate seeing the same mod twice”: none of its ordinary stats is one its
+  // base has built in, or reads as one)
+  on(() => {
+    for (const d of UNIQUE_DEFS) {
+      const built = makeUnique(d.id, 12, new RNG(1))!.implicit.map((m) => statGroup(m.stat));
+      const mine = d.stats.map((s) => statGroup(s));
+      assert.equal(new Set(mine).size, mine.length, `${d.name}: two that read as one`);
+      for (const g of mine) assert.ok(!built.includes(g), `${d.name}: ${g} is on its base already`);
+    }
+  });
   // “Nothing else on it”, as his doc has it
   for (const id of ['twofacedmask', 'polyglotsmantle', 'thirdword', 'headsmanshood', 'dogearedpage']) assert.deepEqual([...uniqueDef(id)!.stats], [], id);
   // “Also on them: movement speed”

@@ -149,6 +149,7 @@ import { act1Fx } from './render/act1_fx';
 import { forgetUnusedPictures } from './render/act1_fx/kept';
 import { COLOSSUS, onStoneOrJetty, worldToStone } from './game/colossus_fight';
 import { ITEM_WORDS } from './game/items';
+import { UNIQUES } from './game/uniques';
 import { ART_TWEAKS } from './art/tweaks';
 
 declare const __BUILD__: string;
@@ -2814,6 +2815,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     colossus: COLOSSUS,
     /** (SPLITTING AND BINDING, game/items.ts) their switch, for their test pages. */
     itemWords: ITEM_WORDS,
+    /** (UNIQUE ITEMS, game/uniques.ts) their switch, for their test pages (a unique is made and put in his bag by Game.giveUnique). */
+    uniques: UNIQUES,
     /** Game steps per frame while the test bot plays. */
     speed: 1,
     /** Time runs this much slower than real (1 = normal). */

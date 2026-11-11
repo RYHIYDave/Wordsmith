@@ -84,13 +84,14 @@ test('The Undertow, The Pivot, The Press: Pulling on his Whirlwind; a turn of it
     assert.deepEqual(u.hero.skills[1].front, [null, null], 'no slot used');
     assert.equal(u.hero.skills[0].r.pull, 0);
     // The Pivot
-    const lunge = (g: Game): { ev: GameEvent[]; hurt: number } => {
+    const lunge = (g: Game, off = false): { ev: GameEvent[]; hurt: number } => {
       steady(g);
+      if (off) g.worn = []; // its ordinary stats still on him, but not what it does
       const m = dummy(g, 5.2, 1.2);
       const ev = swipe(g, 5, 0, 1.2);
       return { ev, hurt: hurt(m) };
     };
-    const plain = lunge(room('warrior'));
+    const plain = lunge(wear(room('warrior'), 'pivot'), true);
     const g = wear(room('warrior'), 'pivot');
     const turned = lunge(g);
     assert.equal(seen(turned.ev, 'pivot', 'turn').length, 1);
