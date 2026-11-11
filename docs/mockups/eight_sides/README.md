@@ -1,11 +1,12 @@
-# THE TINKERER AND THE BRAWLER FROM ALL EIGHT SIDES (NOT IN THE GAME UNTIL THE MAIN CHAT PUTS THEM THERE)
+# THE TINKERER AND THE BRAWLER FROM ALL EIGHT SIDES (WITH HIS YES; NOT IN THE GAME UNTIL THE MAIN CHAT PUTS THEM THERE)
 
 Branch `art/tinkerer-brawler-eight`, from `main` at 9d3501b (25.3.3). The Tinkerer chat, 11 Nov 2026, a new chat of his. The
 queue's `draw-tinkerer-and-brawler-eight-sides` (the art chat's item of 9 Nov). Everything is behind one switch,
 `EIGHT_MORE` (`src/art/sides_more.ts`: `tinkerer` and `brawler`, each its own), OFF: with it off the game is exactly as it is.
 
-**HIS YES IS NOT YET GIVEN.** He has the two pictures and the two films (below), sent 11 Nov by 16:35 Eastern. What he says
-goes at the foot of this file.
+**HIS YES IS GIVEN, 11 Nov 2026, by 17:00 (Eastern): “Yes, hand both to main (Recommended)”; and of how the Tinkerer holds her
+head, “Leave it (Recommended)”.** He had the two pictures and the two films (below), sent by 16:35. The questions and his picks
+in full are at the foot of this file.
 
 ## His words
 
@@ -79,8 +80,9 @@ Standing, she holds her head turned to her right and her body a little with it (
 eye from in front, his “Polish faces up close” of 24 Oct: 24 degrees of her head, 16 of her body). Truly turned, that goes
 with her: facing down and to the left she looks to the left; facing left you see the back of her head and her pack; facing
 right you see her face. The mirrored pictures the game shows today turn her face to the eye on both hands. It is the game's
-own stance seen truly; squaring it is a re-pose, and would change the two sides he has. ASKED OF HIM WITH THE PICTURES. Her
-run, her throw, her jump and her whistle face where they go.
+own stance seen truly; squaring it is a re-pose, and would change the two sides he has. ASKED OF HIM WITH THE PICTURES, AND
+SETTLED: “Leave it (Recommended)” (the foot of this file). She stands as the game has her. Her run, her throw, her jump and her
+whistle face where they go.
 
 ## THE COUNT, and what it costs (`npx tsx tools/sides_more_measure.ts <hero>`; every frame painted here)
 
@@ -168,7 +170,7 @@ the elbow: the art chat's.)
 - NOT CHECKED: a fight against enemies in the browser with the switch on; the bake itself with eight sides of these two; a
   phone.
 
-## For the main chat, once he has said yes
+## For the main chat (he has said yes)
 
 1. Bring the branch in. Set `EIGHT_MORE.tinkerer` and `EIGHT_MORE.brawler` true (each its own: the Tinkerer can go first).
    `tests/sides_more.test.ts` test 2 asserts them off: change it then.
@@ -182,4 +184,18 @@ the elbow: the art chat's.)
 
 ## His answers
 
-(none yet)
+11 Nov 2026, by 17:00 (Eastern), asked as one pop-up of three questions, the pictures and films in the chat:
+
+- “The Tinkerer and the Brawler are drawn from all eight sides and are not live yet (two pictures and two films are in the
+  chat). Hand them to the main chat to put in the game?” HIS PICK: “Yes, hand both to main (Recommended)”. (Offered beside it:
+  “The Tinkerer only, for now”, said of it: “The Brawler waits: his eight sides hold about four times the pictures in
+  memory”; and “Not yet, changes first”.)
+- “Standing, the Tinkerer holds her head turned to her right. Truly turned, you see the back of her head when she faces left
+  (the 'left' panel of her picture). Leave her as she stands?” HIS PICK: “Leave it (Recommended)”. (Offered beside it: “Have
+  her look where she faces”, a new standing pose for her, pictures first.)
+- This chat's session had not been allowed write access to the repository, so the branch was in its workspace only. Asked
+  whether to let it save the branch there: “Yes, save it to GitHub (Recommended)”.
+
+TOLD HIM with the pictures: nothing of either is repainted; the Brawler's punches, kicks and jump go the nearest of eight
+ways where they went four; a cone of force seen side-on was mended on the new sides; the Brawler's eight sides hold about
+144 MB of pictures against 36 MB, for the main chat to weigh on his phone before he is switched on.
