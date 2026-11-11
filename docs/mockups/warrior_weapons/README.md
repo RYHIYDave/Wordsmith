@@ -710,3 +710,15 @@ it), so the three in about a quarter of a second.
 only the floor's theme's colours (its mortar, slab tones and earth), the game's ink and the friend's cyan, nothing of the
 enemy's; the heave reaches the ring's edge and not past it by more than a third of a tile; each of Tremors' quakes lower, with
 fewer cracks and less dust, than the one before.
+
+## The art chat's mend on step 3d (11 Nov 2026, before he was shown it): the lifted stones catch the light
+
+In the floor's flat tones alone the ring was that floor's own stone but could hardly be seen on it (dark blue on dark blue in the
+practice room; the helper said so). So, in `src/art/warrior_up_quake_ground.ts`: `quakeTones` has two more tones, the floor's
+lit lip brought up toward white (`bright`, 22%, for the tops of the stones standing highest; `glint`, 45%, for their lifted
+edges): the same stone, lighter, no other colour. The dark under the highest stones is the game's ink. The ridge stands 15
+picture pixels at its full (it was 12). The friend's cyan on the crest goes all the way out with the wave (frames 0 to 10; it
+was the first four), its light to frame 9. The dust on a floor with no earth is a tone lighter. Test 20 allows those tones and
+passes, with test 1; tsc clean. Nothing else changed: the lists, their counts and the painting are as step 3d has them.
+`pictures/hammer_moves.mp4` (38.0 s, 1,139 pictures), `quake_phone.png` (1260 by 1518), `tremors_phone.png` (1260 by 1818) and
+`quake_floors_phone.png` (1260 by 1878) were made again with it.

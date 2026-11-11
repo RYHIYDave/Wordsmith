@@ -49,7 +49,7 @@ import { AXE, AXE_CHOP_END, AXE_CHOP_LAND, AXE_CHOP_LEAP, AXE_CLEAVE_HIT, AXE_FL
 import type { AxeMove } from '../src/art/warrior_up_axe_moves';
 import { AXE_APPEAR_FRAMES, AXE_CLEAVE, AXE_CLEAVE_APPEAR, AXE_GLINT_FRAMES, AXE_RUN_CATCH, AXE_RUN_EMPTY, AXE_RUN_MOVES, AXE_TWIN_RUN_CATCH, axeGlint, paintGlint } from '../src/art/warrior_up_axe_moves';
 import { heavyMoves, makeWarriorHeavyArt } from '../src/art/warrior_up_heavy_art';
-import { QUAKES, QUAKE_CRACK_FRAMES, QUAKE_FRAMES, paintCracks, paintOver, paintUnder, quakeGround, waveAt } from '../src/art/warrior_up_quake_ground';
+import { QUAKES, QUAKE_CRACK_FRAMES, QUAKE_FRAMES, paintCracks, paintOver, paintUnder, quakeGround, quakeTones, waveAt } from '../src/art/warrior_up_quake_ground';
 import { P } from '../src/art/palette';
 import { VAULT } from '../src/art/ground';
 import { CRYPT_FLOORS } from '../src/art/crypt';
@@ -690,7 +690,9 @@ test('19. a tap while the thrown axe is out: the axe appears in his hands in the
 test('20. the Earthquake\'s ground, in the floor\'s own stone: the lists whole; crisp; only that floor\'s theme\'s colours, the game\'s ink and the friend\'s cyan, nothing of the enemy\'s; the heave reaches the ring\'s edge and not past it; each of Tremors\' quakes weaker than the last', () => {
   const bad: string[] = [];
   for (const theme of [VAULT, CRYPT_FLOORS[2]]) {
-    const OK = new Set([theme.mortar, ...theme.slab, ...(theme.earth?.dirt ?? []), P.ink, '#22d0e0'].map(key));
+    // (and that stone catching the light as it is lifted: its lit lip brought up toward white, `quakeTones`' bright and glint)
+    const QT = quakeTones(theme);
+    const OK = new Set([theme.mortar, ...theme.slab, ...(theme.earth?.dirt ?? []), QT.bright, QT.glint, ...QT.dust, P.ink, '#22d0e0'].map(key));
     const looked = (p: Px, what: string): number => {
       let n = 0;
       for (let k = 0; k < p.w * p.h; k++) {

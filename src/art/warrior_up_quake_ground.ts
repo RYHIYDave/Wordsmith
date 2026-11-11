@@ -22,7 +22,7 @@
 //           stones hopping and coming to rest (30 pictures, 1 s)
 
 import type { Light, Sprite } from '../engine/px';
-import { Px } from '../engine/px';
+import { Px, mix } from '../engine/px';
 import { GRAIN, lazyFrames, toSprite } from './kit';
 import { P } from './palette';
 import { VAULT } from './ground';
@@ -41,7 +41,7 @@ export const QUAKE_CRACKS_LAST = { seconds: 2.4, fade: 0.4 } as const;
 /** The quakes: the Earthquake's (the first), and Tremors' second and third: how far round (tiles) and how strong (0..1). */
 export const QUAKES: readonly { round: number; strength: number }[] = HAMMER_TREMORS.weaker.map((w, i) => ({ round: HAMMER_QUAKE_ROUND + i * HAMMER_TREMORS.wider, strength: w }));
 /** How high the ridge stands at its full (picture pixels), and how wide it is (tiles, either side of its crest). */
-const RIDGE_HIGH = 12;
+const RIDGE_HIGH = 15;
 const RIDGE_WIDE = 0.3;
 /** The size of a flagstone (tiles) and the gap between two. */
 const SLAB = 0.42;
@@ -64,6 +64,13 @@ export interface QuakeTones {
   low: string;
   high: string;
   lip: string;
+  /**
+   * The same stone CATCHING THE LIGHT as it is lifted and tilted (the art chat, 11 Nov 2026: in the floor's flat tones alone the
+   * ring was that floor's stone but could hardly be seen on it): its lit lip brought up toward white, for the tops of the
+   * stones standing highest, and brighter still for their lifted edges. The floor's own colour, lighter; no other.
+   */
+  bright: string;
+  glint: string;
   /** Under where a stone is lifted right out: the floor's earth's dark, or its mortar. */
   under: string;
   /** The dust and the grit, from dark to light. */
@@ -79,8 +86,10 @@ export function quakeTones(theme: Theme): QuakeTones {
     low: t1,
     high: t2,
     lip: lit,
+    bright: mix(lit, '#ffffff', 0.22),
+    glint: mix(lit, '#ffffff', 0.45),
     under: dirt ? dirt[0] : theme.mortar,
-    dust: dirt ? [dirt[1], dirt[2], dirt[3]] : [t1, t2, lit],
+    dust: dirt ? [dirt[1], dirt[2], dirt[3]] : [t2, lit, mix(lit, '#ffffff', 0.22)],
   };
 }
 
@@ -191,29 +200,30 @@ export function paintUnder(qi: number, frame: number, theme: Theme = VAULT): { p
       const raised = floor.map(([x, y], k) => [x, y - hs[k]] as [number, number]);
       const m = floor.length;
       // (the dark where it stood, and its broken sides)
-      fillQuad(px, floor, top > RIDGE_HIGH * 0.6 ? T.under : T.mortar);
+      fillQuad(px, floor, top > RIDGE_HIGH * 0.7 ? T.ink : top > RIDGE_HIGH * 0.4 ? T.under : T.mortar);
       for (let k = 0; k < m; k++) fillQuad(px, [floor[k], floor[(k + 1) % m], raised[(k + 1) % m], raised[k]], (raised[k][1] + raised[(k + 1) % m][1]) / 2 > (raised[0][1] + raised[3][1]) / 2 ? T.side : T.mortar);
       // (its top, lighter the higher it is)
       // (its top in the floor's own tones, the highest catching the light as its lit lip does)
-      fillQuad(px, raised, top > RIDGE_HIGH * 0.75 ? T.lip : top > RIDGE_HIGH * 0.4 ? T.high : T.low);
+      fillQuad(px, raised, top > RIDGE_HIGH * 0.7 ? T.bright : top > RIDGE_HIGH * 0.35 ? T.lip : T.high);
       // (its lifted edge lit: the edge between its two highest corners next to each other)
       let best = 0;
       for (let k = 0; k < m; k++) if (hs[k] + hs[(k + 1) % m] > hs[best] + hs[(best + 1) % m]) best = k;
       const A = raised[best];
       const Bq = raised[(best + 1) % m];
-      line(px, A[0], A[1], Bq[0], Bq[1], top > RIDGE_HIGH * 0.3 ? T.lip : T.high);
+      line(px, A[0], A[1], Bq[0], Bq[1], top > RIDGE_HIGH * 0.3 ? T.glint : T.lip);
       // (its near edges inked, where it stands over the dark)
       for (let k = 0; k < m; k++) {
         const [x0, y0] = raised[k];
         const [x1, y1] = raised[(k + 1) % m];
         if (Math.max(y0, y1) >= Math.max(...raised.map((p0) => p0[1])) - 1.5) line(px, x0, y0 + 1, x1, y1 + 1, T.ink);
       }
-      // (the crest's light, the friend's cyan, thin, on its first frames, on the stones standing highest)
-      if (frame <= 3 && top > RIDGE_HIGH * wave.k * 0.9) line(px, A[0], A[1] - 1, Bq[0], Bq[1] - 1, CREST);
+      // (the crest's light, the friend's cyan, thin, on the stones standing highest, all the way out with the wave: it is what
+      // tells the eye at the game's size that the floor is heaving, and whose blow it was)
+      if (frame <= 10 && top > RIDGE_HIGH * wave.k * (frame <= 5 ? 0.7 : 0.82)) line(px, A[0], A[1] - 1, Bq[0], Bq[1] - 1, CREST);
     }
-    if (frame <= 4) {
+    if (frame <= 9) {
       const [lx, ly] = on(c, wave.r * 0.7, wave.r * 0.7);
-      lights.push({ x: lx, y: ly, r: 30, color: CREST, a: 0.12 * q.strength });
+      lights.push({ x: lx, y: ly, r: 30, color: CREST, a: 0.18 * q.strength });
     }
   }
   return { px, lights };
