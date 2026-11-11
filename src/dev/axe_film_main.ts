@@ -14,6 +14,8 @@ import type { Cam } from '../render/fx';
 import { AXE_FRAME, AXE_MOVES, AXE_RUN_MOVES, AXE_TAP_MOVES, axeGlint, axeFlying, axeSprite, wuFacing, wuTailsFacing } from '../art/warrior_up_axe_moves';
 import type { WuSide } from '../art/warrior_up_axe_moves';
 import { HAMMER_MOVES } from '../art/warrior_up_hammer_moves';
+import { QUAKE_CRACK_FRAMES, QUAKE_FRAMES, quakeGround } from '../art/warrior_up_quake_ground';
+import type { QuakeGround } from '../art/warrior_up_quake_ground';
 
 /** (his moves with the war axe and, since step 3, with the maul: one page films both) */
 const MOVES = { ...AXE_MOVES, ...AXE_RUN_MOVES, ...AXE_TAP_MOVES, ...HAMMER_MOVES };
@@ -26,6 +28,8 @@ interface FilmState {
   lift: number;
   /** The thrown axes: where each is on the floor (the game's tiles) and how far round it has turned (pictures of its turn). */
   axes: { x: number; y: number; turn: number }[];
+  /** The Earthquake's ground quaking (step 3c): each quake's mark (the game's tiles), which quake, and its frame since the blow. */
+  quakes: { x: number; y: number; qi: number; frame: number }[];
   /** The glint at his hands (a thrown axe gone into the one he holds): its picture, or -1. */
   glint: number;
   /** The side he was last drawn from (for the film's notes). */
@@ -34,7 +38,7 @@ interface FilmState {
 }
 
 if (typeof window !== 'undefined' && !(globalThis as { __PAINT_WORKER__?: boolean }).__PAINT_WORKER__) {
-  const film: FilmState = { on: false, move: 'stand', frame: 0, lift: 0, axes: [], glint: -1, side: '', painted: 0 };
+  const film: FilmState = { on: false, move: 'stand', frame: 0, lift: 0, axes: [], quakes: [], glint: -1, side: '', painted: 0 };
   const kept = new Map<string, Sprite>();
   const pictureOf = (move: string, frame: number, side: WuSide): Sprite => {
     const k = `${move}:${frame}:${side}`;
@@ -47,6 +51,7 @@ if (typeof window !== 'undefined' && !(globalThis as { __PAINT_WORKER__?: boolea
   };
   let flying: Sprite[] | null = null;
   let glints: Sprite[] | null = null;
+  const grounds = new Map<number, QuakeGround>();
   let renderer: { cam: Cam; stand(d: number, s: Sprite, x: number, y: number): void } | null = null;
   // (the renderer, caught as it draws its hero: its own `stand` lays the thrown axes among everything else that stands)
   const proto = Renderer.prototype as unknown as { heroArt(game: unknown): unknown };
@@ -70,6 +75,20 @@ if (typeof window !== 'undefined' && !(globalThis as { __PAINT_WORKER__?: boolea
     this.squash = 1;
     this.tails.step(dt, s.tails, s.ax, s.ay, wuTailsFacing(side), a[3] as number, a[4] as number);
     this.last = s;
+    if (renderer && film.quakes.length) {
+      // (the cracks and the heaved stones under everyone; the dust and the stones over, at the mark's own depth)
+      for (const q of film.quakes) {
+        let gr = grounds.get(q.qi);
+        if (!gr) grounds.set(q.qi, (gr = quakeGround(q.qi)));
+        const X = wx(renderer.cam, q.x, q.y);
+        const Y = wy(renderer.cam, q.x, q.y);
+        renderer.stand(-1e6 + q.qi, gr.cracks[side][Math.min(QUAKE_CRACK_FRAMES - 1, q.frame)], X, Y);
+        if (q.frame < QUAKE_FRAMES) {
+          renderer.stand(-1e6 + 10 + q.qi, gr.under[q.frame], X, Y);
+          renderer.stand(q.x + q.y, gr.over[q.frame], X, Y);
+        }
+      }
+    }
     if (renderer && film.glint >= 0) {
       glints = glints ?? axeGlint();
       const hx = a[3] as number;

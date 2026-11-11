@@ -116,7 +116,7 @@ export function paintUnder(qi: number, frame: number): { px: Px; lights: Light[]
   if (wave.k > 0.02) {
     const r = seeded(qi * 131 + 7);
     // (the flagstones round the mark: broken into rings of stones, each ring's stones its own lengths, a little crooked)
-    const stones: { pts: [number, number][]; d: number }[] = [];
+    const stones: { pts: [number, number][]; d: number; f: number; tip: number[] }[] = [];
     for (let rho = 0.28; rho < q.round + 0.05; rho += SLAB * 0.72) {
       const outer = rho + SLAB * 0.72 - GAP;
       const n = Math.max(6, Math.round((2 * Math.PI * (rho + outer)) / 2 / SLAB));
@@ -129,7 +129,7 @@ export function paintUnder(qi: number, frame: number): { px: Px; lights: Light[]
         const pts: [number, number][] = [
           [rho + j(), t0], [outer + j(), t0 + 0.02], [outer + 0.02 + j(), tm], [outer + j(), t1 - 0.02], [rho + j(), t1], [rho - 0.02 + j(), tm],
         ].map(([d, th]) => [d * Math.cos(th), d * Math.sin(th)]);
-        stones.push({ pts, d: (rho + outer) / 2 });
+        stones.push({ pts, d: (rho + outer) / 2, f: 0.6 + 0.65 * r(), tip: [0, 1, 2, 3, 4, 5].map(() => (r() - 0.5) * 5) });
       }
     }
     // (back to front on the screen: by u + v of each stone's middle)
@@ -144,7 +144,8 @@ export function paintUnder(qi: number, frame: number): { px: Px; lights: Light[]
       return RIDGE_HIGH * wave.k * h;
     };
     for (const st of stones) {
-      const hs = st.pts.map(([u, v]) => lift(u, v));
+      // (each stone heaved its own way: some higher, each tipped a little crooked)
+      const hs = st.pts.map(([u, v], k) => { const h = lift(u, v) * st.f; return h > 0.8 ? Math.max(0.5, h + st.tip[k] * wave.k) : h; });
       const top = Math.max(...hs);
       if (top < 1.2) continue;
       const floor = st.pts.map(([u, v]) => on(c, u, v));
@@ -154,13 +155,13 @@ export function paintUnder(qi: number, frame: number): { px: Px; lights: Light[]
       fillQuad(px, floor, P.black);
       for (let k = 0; k < m; k++) fillQuad(px, [floor[k], floor[(k + 1) % m], raised[(k + 1) % m], raised[k]], (raised[k][1] + raised[(k + 1) % m][1]) / 2 > (raised[0][1] + raised[3][1]) / 2 ? P.st2 : P.st1);
       // (its top, lighter the higher it is)
-      fillQuad(px, raised, top > RIDGE_HIGH * 0.66 ? P.st6 : top > RIDGE_HIGH * 0.33 ? P.st5 : P.st4);
+      fillQuad(px, raised, top > RIDGE_HIGH * 0.7 ? P.st5 : top > RIDGE_HIGH * 0.35 ? P.st4 : P.st3);
       // (its lifted edge lit: the edge between its two highest corners next to each other)
       let best = 0;
       for (let k = 0; k < m; k++) if (hs[k] + hs[(k + 1) % m] > hs[best] + hs[(best + 1) % m]) best = k;
       const A = raised[best];
       const Bq = raised[(best + 1) % m];
-      line(px, A[0], A[1], Bq[0], Bq[1], top > RIDGE_HIGH * 0.5 ? P.st7 : P.st6);
+      line(px, A[0], A[1], Bq[0], Bq[1], top > RIDGE_HIGH * 0.8 ? P.st7 : top > RIDGE_HIGH * 0.4 ? P.st6 : P.st5);
       // (its near edges inked, where it stands over the dark)
       for (let k = 0; k < m; k++) {
         const [x0, y0] = raised[k];

@@ -25,7 +25,7 @@ const TILE_SPEED = 4.6; // tiles a second: the game's run
 const SWING_STEP = [0.33, 0.12]; // tiles, seconds: the game's step on each swing (TUNE.swingStep, swingStepTime)
 // (art/warrior_up_hammer_moves.ts: HAMMER_SMASH_*, HAMMER_QUAKE_*, HAMMER_TREMORS, HAMMER_CHARGE_*)
 const SMASH = { blow: 13, at: 1.4, round: 0.4 };
-const QUAKE = { blow: 19, end: 49, at: 1.4, round: 2.0 };
+const QUAKE = { blow: 19, end: 49, at: 1.46, round: 2.0 };
 const TREMORS = { after: 0.35, wider: 0.6, weaker: [1, 0.6, 0.35] };
 const CHARGE = { go: 6, stop: 21, skid: 27, end: 42, far: 4.4, slide: 0.6, wide: 0.7, thrown: 1.6 }; // far: how far this film's charge goes (the rules': up to 6)
 
@@ -57,7 +57,7 @@ export default async function (page, snap) {
       const d = window.__dbg; const g = d.game(); const h = g.hero; const A = window.__axe;
       if (st.hero) { h.x = st.hero[0]; h.y = st.hero[1]; h.fx = st.face[0]; h.fy = st.face[1]; }
       h.anim = 'idle'; h.move = null; h.mana = h.d.maxMana; h.life = h.d.maxLife;
-      A.move = st.move; A.frame = st.frame; A.lift = st.lift || 0; A.axes = st.axes || [];
+      A.move = st.move; A.frame = st.frame; A.lift = st.lift || 0; A.axes = st.axes || []; A.quakes = st.quakes || [];
       for (const e of st.events || []) {
         if (e.hit) for (const id of e.hit) { const m = g.monsters.find((q) => q.id === id); if (m && !m.dead) g.hitMonster(m, e.slot, e.frac, false); }
         if (e.blast) g.blast(2, e.blast[0], e.blast[1], e.blast[2], e.blast[4] ?? 1, e.blast[3] || 'land', e.blast[5] || 0);
@@ -126,7 +126,12 @@ export default async function (page, snap) {
         }
       }
     }
-    for (let i = 0; i < hold * per; i++) await take({ move: 'stand', frame: i % 60, hero: ctx.pos, face, ms }, { shot: name, caption, zoom, slow, say: '', lead: ahead0 });
+    for (let i = 0; i < hold * per; i++) {
+      const st = { move: b0Last(beats).move === 'quake' ? 'quake' : 'stand', frame: b0Last(beats).move === 'quake' ? QUAKE.end : i % 60, hero: ctx.pos, face, ms, events: [] };
+      // (the ground's quake goes on while he stands: step 3c)
+      if (ctx.tick) ctx.tick(st, i % per === 0);
+      await take(st, { shot: name, caption, zoom, slow, say: '', lead: ahead0 });
+    }
   };
   const ahead = (ctx, a, r = 0) => [ctx.pos[0] + ctx.face[0] * a - ctx.face[1] * r, ctx.pos[1] + ctx.face[1] * a + ctx.face[0] * r];
   const turned = (v, deg) => { const a = deg * Math.PI / 180; return [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a)]; };
@@ -138,13 +143,33 @@ export default async function (page, snap) {
     if (f === SMASH.blow && first) st.events.push({ blast: [...ahead(ctx, SMASH.at), SMASH.round, 'pound', 1, 0] });
   };
   /** Earthquake: the blow, and the ground heaving in a ring (the game's slam); Tremors: two more, later, wider and weaker. */
+  /** Earthquake: the blow, and THE GROUND QUAKING (art/warrior_up_quake_ground.ts, step 3c: drawn in place of the game's slam
+   * ring): each quake from the mark, its wave out to its edge in 0.35 s, striking what it reaches as it reaches it; Tremors:
+   * three, 0.35 s apart, each wider and weaker. */
   const quake = (three) => (st, ctx, f, i, first) => {
-    if (!first) return;
-    const at = ahead(ctx, QUAKE.at);
-    for (let k = 0; k < (three ? 3 : 1); k++) {
-      if (f === QUAKE.blow + Math.round(k * TREMORS.after * 30)) st.events.push({ blast: [...at, QUAKE.round + k * TREMORS.wider, 'slam', TREMORS.weaker[k], k] });
+    if (f === 0 && first) { ctx.since = -1; ctx.tick = null; ctx.struck = new Set(); }
+    if (f === QUAKE.blow && first && ctx.since < 0) {
+      ctx.since = 0;
+      ctx.mark = ahead(ctx, QUAKE.at);
+      ctx.tick = (st2, first2) => {
+        if (first2) ctx.since++;
+        st2.quakes = [];
+        for (let k = 0; k < (three ? 3 : 1); k++) {
+          const age = ctx.since - 1 - Math.round(k * TREMORS.after * 30);
+          if (age < 0) continue;
+          st2.quakes.push({ x: ctx.mark[0], y: ctx.mark[1], qi: k, frame: age });
+          const r = (QUAKE.round + k * TREMORS.wider) * Math.min(1, age / (0.35 * 30));
+          if (first2) {
+            const hit = (ctx.monsters || []).filter((m) => Math.hypot(m.x - ctx.mark[0], m.y - ctx.mark[1]) <= r && !ctx.struck.has(`${k}:${m.id}`)).map((m) => m.id);
+            for (const id of hit) ctx.struck.add(`${k}:${id}`);
+            if (hit.length) (st2.events = st2.events || []).push({ hit, slot: 0, frac: TREMORS.weaker[k] });
+          }
+        }
+      };
     }
+    if (ctx.tick) ctx.tick(st, first);
   };
+  const b0Last = (beats) => beats[beats.length - 1];
   /** Shoulder Charge: carried through the drive and the skid; what he meets is struck and thrown aside, off his path. */
   const charge = (st, ctx, f, i, first, dt) => {
     const per = dt * 30;
@@ -186,7 +211,8 @@ export default async function (page, snap) {
   const qb = (three) => [{ move: 'quake', from: 0, to: QUAKE.end, each: quake(three), say: three ? 'a full spin, then down: the ground heaves three times, each wider and weaker' : 'a coil, held; a full spin; up and over, and down; the ground heaves in a ring' }];
   for (const w of ['side', 'away']) await play(`quake_${w}`, `EARTHQUAKE (hold), ${SAY[w]}: a full spin, then down`, { face: WAYS[w], beats: qb(false), who: ring });
   await play('tremors', 'TREMORS (a talent), toward you: a full spin, then three quakes', { face: WAYS.toward, beats: qb(true), who: ring, hold: 10 });
-  await play('quake_slow', 'EARTHQUAKE at half speed, twice the size: a full spin, then down', { face: WAYS.side, zoom: true, slow: true, beats: qb(false), who: ring, lead: 1.0 });
+  await play('quake_slow', 'EARTHQUAKE at half speed, twice the size: a full spin, then down', { face: WAYS.side, zoom: true, slow: true, beats: qb(false), who: ring, lead: 1.46, hold: 12 });
+  await play('tremors_slow', 'TREMORS at half speed, twice the size: three quakes, each wider and weaker', { face: WAYS.side, zoom: true, slow: true, beats: qb(true), who: ring, lead: 1.46, hold: 14 });
   const lane = [['skeleton', 2.2, 0.25], ['cultist', 3.4, -0.3], ['skeleton', 5.4, 2.2]];
   const cb = [{ move: 'charge', from: 0, to: CHARGE.end, each: charge, say: 'a crouch, held; he drives through, shoulder first; the skid' }];
   const back = (w) => [home[0] - WAYS[w][0] * 2.2, home[1] - WAYS[w][1] * 2.2];
