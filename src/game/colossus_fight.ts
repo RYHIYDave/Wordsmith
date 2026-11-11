@@ -65,11 +65,11 @@ export const TURNS = {
 export const ARM = { stand: fr(45), r: 1.05, burst: fr(32), death: fr(90) } as const;
 /**
  * THE SLAM ON THE STONE (`armSlam`, 74 frames): its line laid at once (the warning, held through the wind-up); the hit on
- * frame 28, stretched out along the whole line to where it leaves the stone; lying there to frame 42, dragged back to 52,
- * peeled up off the stone by 60, standing again by 72. Its line is `width` tiles wide. From the hit until it is peeled up it
- * lies along its line, and the hero's blows reach it anywhere along it.
+ * frame 28, stretched out along the whole line to where it leaves the stone; lying there to frame 42, dragged back to 52
+ * (from `drag`), peeled up off the stone by 60, standing again by 72. Its line is `width` tiles wide. From the hit until it is
+ * peeled up it lies along its line, and the hero's blows reach it anywhere along it.
  */
-export const SLAM = { long: fr(74), hit: fr(28), lying: [fr(28), fr(60)] as const, width: 1.1 } as const;
+export const SLAM = { long: fr(74), hit: fr(28), drag: fr(42), lying: [fr(28), fr(60)] as const, width: 1.1 } as const;
 /** THE WATER SLAM (`armSmash`, 74 frames, the left and right ones of phases 2 and 3): its warning over the whole stone; it smashes into the water off the stone's end on frame 28. */
 export const SMASH = { long: fr(74), hit: fr(28) } as const;
 /**
@@ -525,6 +525,9 @@ export type FightEvent =
   /** (for his sounds, 25.3.1) his waking's water first stirring; phase 3's slide forward beginning */
   | { t: 'stir' }
   | { t: 'slide' }
+  /** (for his sounds, the seventh batch) a tentacle lying slammed begins to be dragged back; a shovel's hook begins to scrape along the stone */
+  | { t: 'drag'; id: number }
+  | { t: 'scrape'; edge: 'back' | 'near'; end: 'l' | 'r' }
   | { t: 'rainWarn'; u: number; v: number }
   | { t: 'rain'; u: number; v: number }
   | { t: 'hurt'; by: HurtBy; mult: number; du: number; dv: number; secs: number }
@@ -752,6 +755,7 @@ export class ColossusFight {
           ev.push({ t: 'slam', id: a.id, line: a.line });
           if (!hero.dodging && offLine(hero, a.line) < SLAM.width / 2 + HERO_R) ev.push({ t: 'hurt', by: 'slam', mult: HURTS.slam, du: 0, dv: 0, secs: 0 });
         }
+        if (was < SLAM.drag && a.t >= SLAM.drag) ev.push({ t: 'drag', id: a.id });
         if (a.t >= SLAM.long) this.backToStand(a);
       } else if (a.state === 'smash') {
         if (!a.landed && a.t >= SMASH.hit) {
@@ -900,6 +904,7 @@ export class ColossusFight {
     if (passes(SHOVEL.burst)) ev.push({ t: 'burst', end: S.end });
     SHOVEL.hooks.forEach((h, i) => {
       if (passes(h.at)) ev.push({ t: 'hook', edge: h.edge, end: S.end });
+      if (passes(h.at + HOOK.scrape[0])) ev.push({ t: 'scrape', edge: h.edge, end: S.end });
       const H = S.hooks[i];
       if (H.passed) return;
       const front = hookFront(S.end, S.t - h.at);

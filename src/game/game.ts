@@ -88,7 +88,7 @@ import { GOLEM_ROCKET, ROCKET, rocketAlong } from '../art/golem_rocket_fx';
 import type { Brew, Decoy, GolemRocketAt, Tar } from './state';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 import { leadPoint } from './lock';
-import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_SOUNDS, HURT_BIG, VOICE } from './sound_families';
+import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_SOUNDS, HURT_BIG, VOICE, bossSound } from './sound_families';
 import { BOSS_CALLS, bossCall } from './boss_calls';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
@@ -2976,7 +2976,8 @@ export class Game {
     if (!at.length) return;
     this.level.pillars = lightPillars(at);
     for (const p of this.level.pillars) this.emit({ t: 'spark', x: p.x, y: p.y, el: 'lightning', n: 14 });
-    this.sfx('thunder', 0.6);
+    // (the Swamp Colossus's kindle in his slide's own sound, on the art's frames: game/act1_rules/colossus.ts `sounds`)
+    if (!COLOSSUS.on) this.sfx('thunder', 0.6);
     this.msg(piecesInHand(this.hero.pieces, this.level.pillars) > 0 ? QUEST610_TEXT.pillarsLit : QUEST610_TEXT.pillarsLitNoPiece, MSG.foe);
   }
 
@@ -3005,7 +3006,9 @@ export class Game {
     p.outAt = this.time;
     p.from = { x: this.hero.x, y: this.hero.y };
     this.emit({ t: 'spark', x: p.x, y: p.y, el: 'frost', n: 18 });
-    this.sfx('power', 0.8);
+    // (the Swamp Colossus's pillars, the sound chat's seventh batch: the chime as the piece is set, the fire guttering out)
+    if (COLOSSUS.on) this.rec('colossus_pillar_set', 1, 'power');
+    else this.sfx('power', 0.8);
     this.pillarOut(QUEST610_TEXT.pillarSet(pillarsBurning(this.level.pillars)));
   }
 
@@ -3022,7 +3025,9 @@ export class Game {
       p.by = 'blows';
       p.outAt = this.time;
       this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 16 });
-      this.sfx('hit', 0.8);
+      // (the Swamp Colossus's pillars, the seventh batch: broken on its last blow, toppling into the water)
+      if (COLOSSUS.on) this.rec('colossus_pillar_topple', 1, 'hit');
+      else this.sfx('hit', 0.8);
       this.pillarOut(QUEST610_TEXT.pillarBroken(pillarsBurning(this.level.pillars)));
     }
   }
@@ -9607,12 +9612,12 @@ export class Game {
     this.emit({ t: 'hit', x: m.x, y: m.y, amount: dmg, crit, el, onHero: false, heavy, words: words && words.length ? words : undefined, poison: poison || undefined });
     // (THE SECOND BATCH: its voice as it is hurt, on a big blow only: a critical, a great share of its life, or now and then)
     if (ENEMY_SOUNDS.on && !poison && !dot && m.life > 0) {
-      const b = m.boss ? BOSS_VOICE[m.kind] : undefined;
+      const b = m.boss ? bossSound(m.kind, 'hurt') : undefined;
       const v = m.boss ? undefined : VOICE[m.kind];
       // (now and then by a count of the blows, not the dice: the sounds take nothing from the game's chances)
       this.hurtTick = (this.hurtTick + 1) % HURT_BIG.one;
       const big = crit || dmg >= m.maxLife * HURT_BIG.share || this.hurtTick === 0;
-      if (b && (crit || dmg >= m.maxLife * 0.04)) this.enemyRec(`${b}_hurt`, ENEMY_GAPS.bossHurt, 0.9);
+      if (b && (crit || dmg >= m.maxLife * 0.04)) this.enemyRec(b, ENEMY_GAPS.bossHurt, 0.9);
       else if (v && big) this.enemyRec(`${v}_hurt`, ENEMY_GAPS.hurt, 0.6);
     }
     // (ACT 1: one whose rules hold its life up is kept there: a boss with another life bar to come, or one who must first be where his death was drawn)
@@ -9653,9 +9658,11 @@ export class Game {
     if (cursed) this.spreadBurns(m);
     if (h.cls === 'warlock' && TALENTS.on) this.warlockKill(m, cursed);
     // (THE SECOND BATCH: its own death, in place of monsterDie; a boss who roars, his)
-    const dieB = ENEMY_SOUNDS.on && m.boss ? BOSS_VOICE[m.kind] : undefined;
+    const dieB = ENEMY_SOUNDS.on && m.boss ? bossSound(m.kind, 'death') : undefined;
     const dieV = ENEMY_SOUNDS.on && !m.boss ? VOICE[m.kind] : undefined;
-    if (dieB) this.rec(`${dieB}_death`, 1, 'explode');
+    if (dieB === 'none') {
+      // (his death is his fight's own sound, begun as he is killed: the Swamp Colossus's, game/act1_rules/colossus.ts `died`)
+    } else if (dieB) this.rec(dieB, 1, 'explode');
     else if (dieV) this.rec(`${dieV}_death`, m.champion ? 0.9 : 0.7, m.champion ? 'explode' : 'monsterDie');
     else this.sfx(m.boss || m.champion ? 'explode' : 'monsterDie', m.boss ? 1 : 0.7);
     if (m.champion) this.emit({ t: 'shake', amount: 4 });
