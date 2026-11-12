@@ -158,9 +158,17 @@ reflections_play,monsters_baked` and the core on 0dc6e26b5b: 28 files, 318 tests
 `pictures/reflections_in_play.mp4`, made by tools/reflections_play_film.py). NOT CHECKED: his phone; a release build with the
 bakes; the published page's playtests.
 
+### His word on it in play
+12 Nov 2026, by pop-up. Sent the film of every form (pictures/reflections_in_play.mp4, as it was then), asked whether that is how
+they should fight: “I think just have the tinkerer throw her vials if there’s no golem”; and “Yes, send it to GitHub
+(Recommended)”. Done: her hold three vials, her toss's picture; the film made again. Sent her ten seconds again
+(tinkerer_vials.mp4, not kept here: the film's own part), asked whether they are ready for the main chat to switch on, by 15:28
+Eastern: “Yes, hand it to main (Recommended)”.
+
 ### For the main chat, to bring it in
 - THE MONSTERS' MARK CHANGES (the bestiary and the bake's page go by every side): 72241754ab67 (25.3.11) to a new one. WITH THE
   SWITCH OFF the pictures are the same (the first reflections' are, to the pixel, as this branch's README says; nothing else is
   touched): `node tools/bake_monsters.mjs --from 72241754ab67`. With the switch on, the reflections' eight figures are new
   pictures: bake them (`--only reflection,reflection:1,...,reflection:7`) and take the rest `--from`.
-- His yes on the film first (PICTURES FIRST); then `REFLECTIONS_UP` `{ on: true }`, the bake, a release.
+- HIS YES IS GIVEN (above): `REFLECTIONS_UP` `{ on: true }` (game/act1_rules/reflection.ts), the bake, a release, the
+  published page's playtests (tools/scenarios/reflections_in_play.mjs on the release page, each CLS, and high18_reflections.mjs).
