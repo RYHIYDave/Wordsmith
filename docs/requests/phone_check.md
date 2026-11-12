@@ -157,7 +157,53 @@ sums were not to hand).
 **THE SECOND PHONE CHECK**: the same page (his link and his save there are the same), the same test build with the mend
 (`bring-in/eight-sides` 0925c57 with the branch's `engine/px.ts` and `render/baked.ts`; the bake's mark still e0ac1c19738f),
 the stamp PHONE CHECK 2; the recorder `v` 2 also asks, of the hero's own frames on his phone: every pixel against the old
-way, what the old way costs on the real sheets, and what frames not yet cut cost to be asked for. HIS RUN IS AWAITED.
+way, what the old way costs on the real sheets, and what frames not yet cut cost to be asked for. HIS RUN CAME 12 Nov, 06:40
+(the next section).
+
+## HIS PHONE WITH THE MEND (12 Nov 2026, 06:40 Eastern): THE LOAD INTO TOWN 6.7 s WHERE 74.4 s
+
+His word, 06:40: “Ran it”. The run: `runs/rmwdh7eupd67` on the phone check's page (`v` 2, `fix` true; begun 11:40:04 UTC,
+34.5 s long; a visit of 4 seconds before it, `rmwdh6t5b3f`). The same iPhone (iOS 18.7, in the Claude app, the page framed,
+four cores, 393 by 852 at 3), the same hero (the Brawler from eight sides), the same test build, with the mend. Low Power
+Mode was on at the first run by his word; he was not asked again (the title and the town ran at 30 frames a second, as
+iOS holds a page in Low Power Mode).
+
+| | the first run (`rmwdf1s8danp`) | with the mend (`rmwdh7eupd67`) |
+|---|---|---|
+| the loading screen into town | 74.4 s | 6.7 s (106 frames) |
+| pictures the browser made in it | 9,679 | 13 (the sheets), none cut from a sheet |
+| time inside the calls that make them | 68.5 s | 4 ms |
+| waits over a second in it | thirteen, the longest 9.1 s | two: 1,718 ms and 1,413 ms |
+| the page | restarted itself twice before | no restart; no error |
+
+- THE HERO'S OWN FRAMES ON HIS PHONE (`trial.real`): 9,665 frames in his lists; 121 of them, as given now, against the
+  picture made the old way from the same sheet: NONE UNLIKE, every pixel. The old way cost 1,317 ms for those 121 (10.9 ms a
+  frame on the real sheets). 400 frames not yet cut, asked for and drawn: 275 ms (0.7 ms a frame).
+- THE TOWN AFTER IT, 8 s: 242 frames (30 a second), no wait over 52 ms, the game's own frame 6.8 ms a frame
+  (1,634 ms over 242), 33 ms at worst. 705 frames cut and in hand (2,312,380 pixels, 9 MB), none let go of.
+- WHAT IS HELD: 14 sheets (the Brawler's 13 and the cards'), 52,241,916 pixels, four bytes each: 209 million bytes.
+- The group's own clock (`baked.ms`): the Brawler 5,284 ms (of it `brawler.json` 1,977 ms in coming), the cards 2,361 ms.
+  The loading screen's own clock read 3.2 s.
+- The trial as before, for the record: a picture for each of 480 frames, 48 at once, 836 ms; 60 one at a time, 100 ms;
+  drawn from cut pictures 6 ms a round (78 at worst), straight from the sheet 5 (6), from small canvases 7 (14); a small
+  canvas cut for each, 131 ms; 240 made in a worker and handed over, 254 ms.
+
+STILL SLOW IN THAT RUN, NOT OF THE MEND:
+
+- THE HERO CARDS, 9.2 s in all, 38 frames, from his first touch on the title to the fourth, which began the load: after
+  the first, 4.8 s and 15 frames (the game's own frame 302 ms a frame, 1,012 ms at worst; one wait of 1,160 ms); after the
+  second, 1.2 s and 6 frames (195 ms a frame); after the third, 3.2 s and 17 frames (183 ms a frame). 3 to 5 frames a
+  second, as measured here in Chrome and for the same cause (the next section; the queue's
+  `stop-hero-cards-sculpting-heroes`). The title before the first touch: 40 frames in 1.3 s, no wait over 98 ms.
+- TWO LONG FRAMES UNDER THE LOADING SCREEN (the queue's `smooth-the-loading-screens-long-frames`): 1,718 ms, the game's own
+  frame 1,692 ms of it: the level's own pictures made in one frame (in that screen 1,359 canvases made, 1,311 putImageData
+  taking 1,036 ms, 233 getImageData taking 157 ms); and 1,413 ms as the screen lifts, NOT in the game's own frame and NOT
+  PINNED DOWN (to look at first: the hero's frames given into his lists a sheet at a go).
+- Before the title's first frame: 2.9 s (519 canvases made, 501 putImageData taking 282 ms).
+
+TOLD HIM (by 06:44): fixed on his phone, 74 seconds to under 7; the hero cards and the two hitches still slow; the fix handed
+to the main chat to bring in and publish. HANDED TO MAIN: the queue's `keep-baked-frames-in-their-sheets`, put back waiting,
+and the chat board.
 
 ## WHAT WOULD MEND THE HERO CARDS (not built: a build of its own, with a new bake)
 
@@ -168,4 +214,6 @@ way, what the old way costs on the real sheets, and what frames not yet cut cost
   show: no gestures on the cards.
 - Whether more baked pictures at the title are cheap on his phone is what the phone check's trial answers: if making a
   picture a frame is slow there, the sheets are to be kept whole and drawn from first (a change to how a Sprite is drawn),
-  and then baking more costs nothing.
+  and then baking more costs nothing. ANSWERED, 12 Nov: it was slow, the sheets are kept whole (the mend above), and on his
+  phone the cards' group with the mend made one picture, its sheet: more frames in that group cost him a bigger sheet and
+  nothing a frame.
