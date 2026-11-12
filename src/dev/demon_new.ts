@@ -143,6 +143,8 @@ export interface Kit {
   grip?: { L?: number; R?: number };
   /** (moving) How bright what burns on it is (dev/shadow_moves.ts ShadowMove.glow: its burning out): 1 as ever, 0 all but out; not given, as ever. */
   glow?: number;
+  /** (moving) How far its jaws are thrown open (dev/shadow_moves.ts ShadowMove.jaw: its roar): 0 shut in its grin, as the still's, to 1 as wide as they go; not given, shut. */
+  jaw?: number;
 }
 /**
  * What burns on it, as bright as it is at a moment (`glow`, 1 as ever to 0 all but out): its hot core's colour and the rest
@@ -548,7 +550,7 @@ export function paintDemon(build: (k: Kit) => Built, view: GameView, pose: Bones
     return pv === 'front' ? 0.612 * (q[0] - q[1]) + 0.5 * q[2] : 0.612 * (-q[0] - q[1]) + 0.5 * q[2];
   };
   const farL = nearOf(add(s.pelvis, [0, 20, 6])) < nearOf(s.pelvis);
-  const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail, paws, palm: more.palm, wings: more.wings, grip: more.grip, glow: more.glow };
+  const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail, paws, palm: more.palm, wings: more.wings, grip: more.grip, glow: more.glow, jaw: more.jaw };
   const built = build(k);
   const d = draw(sc, pv, RIG_CANVAS.ax, RIG_CANVAS.ay, RIG_CANVAS, undefined, FRIEND_RIM);
   built.flames.forEach((f, i) => fireBehind(d, sc.at(f.p), f.size, t + i * 0.37, f.deep ?? 10));
@@ -585,6 +587,8 @@ export interface Moving {
   fire?: (i: number) => number;
   /** How bright what burns on it is (Kit.glow): 1 as ever, 0 all but out. */
   glow?: number;
+  /** How far its jaws are thrown open (Kit.jaw): 0 shut, 1 as wide as they go. */
+  jaw?: number;
   /** How fast it is carried across the floor (its own measure a second): its smoke streams off behind it; and the way it is carried, if not ahead (degrees to its left of the way it faces). */
   carry?: number;
   carryWay?: number;

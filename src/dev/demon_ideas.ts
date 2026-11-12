@@ -381,11 +381,43 @@ export function shadowInto(k: Kit): Built {
   const { hsc, hk, hp, F } = h;
   hsc.cone(hide, 'torso', add(fr.top, [9, 0, 0]), hp(-6, 0, -1), 10, 9.5, 2.6, { tag: 'neck' });
   hsc.ell(hide, 'torso', hp(-1, 0, 2), axes(F, 12, 12, 11), 2.4, { tag: 'skull' });
+  // ITS JAWS THROWN OPEN (moving: dev/shadow_moves.ts ShadowMove.jaw, its roar; his word of the first roar shown him, 11 Nov
+  // 2026: “The roar is so bad.  His face doesn’t even move?”). `J`, 0 shut in its grin (a still's: every number below as it
+  // always was) to 1 as wide as they go: its lower jaw and the teeth that stand on it swung down and back about a hinge
+  // behind its grin, his fire seen burning in its throat between the two rows, its eyes narrowed to slits.
+  const J = Math.max(0, Math.min(1, k.jaw ?? 0));
+  const GAPE = 40;
+  const HINGE = [-5, -5];
+  const Fj = J > 0 ? lifted(F, -GAPE * J) : F;
+  /** A place on its lower jaw (the head's own measure, as `hp`): swung down with the jaw. */
+  const jp = (f: number, l: number, u: number): V3 => {
+    if (!(J > 0)) return hp(f, l, u);
+    const a = (GAPE * J * Math.PI) / 180;
+    const df = f - HINGE[0];
+    const du = u - HINGE[1];
+    return hp(HINGE[0] + df * Math.cos(a) + du * Math.sin(a), l, HINGE[1] - df * Math.sin(a) + du * Math.cos(a));
+  };
   // (a jaw under its grin, hung a little open: the lower teeth stand on it)
-  hsc.ell(hide, 'torso', hp(2.5, 0, -8.6), axes(F, 10.6, 10.4, 4), 1.6, { tag: 'jaw' });
+  hsc.ell(hide, 'torso', jp(2.5, 0, -8.6), axes(Fj, 10.6, 10.4, 4), 1.6, { tag: 'jaw' });
+  // (his fire in its throat, seen only as its jaws part: set back between the two rows of its teeth, bigger the wider they gape)
+  if (J > 0.12) {
+    // (a furnace seen down its throat: one swell of his fire set back between its teeth, white-hot where it faces out
+    // of its mouth, cyan round that, his darkest cyan at its rim)
+    const Ft = lifted(F, -GAPE * J * 0.5);
+    const C = hp(4.4 - 1.5 * J, 0, -8.4 - 4.4 * J);
+    const R = [4.8 * J + 0.8, 5.8 * J + 0.8, 3.9 * J];
+    const fire = sc.mat({
+      ramp: CYAN,
+      paint: (h) => {
+        const out = dot(sub(h.p, C), Ft[0]) / (R[0] * HEAD_K);
+        return out > 0.62 ? burning(k.glow).hot : out > 0.05 ? burning(k.glow).rest : CYAN[0];
+      },
+    });
+    hsc.ell(fire, 'grin', C, axes(Ft, R[0], R[1], R[2]), 0.3, { tag: 'throat' });
+  }
   const tips: V3[] = [];
   for (const side of [1, -1]) {
-    eye(hk, glow, hp(11.2, side * 4.8, 4.2), F, side, 4.0, 1.8, 0.55);
+    eye(hk, glow, hp(11.2, side * 4.8, 4.2), F, side, 4.0 + 0.5 * J, 1.8 - 0.55 * J, 0.55 + 0.3 * J);
     const horn: V3[] = [hp(-2, side * 9, 8), hp(-8, side * 15, 16), hp(-7, side * 20, 27), hp(1, side * 19, 36), hp(9, side * 13, 39), hp(13, side * 8, 36)];
     spike(hk, hide, 'torso', horn, 3.4, 'horn', 0.3);
     tips.push(horn[horn.length - 1]);
@@ -397,8 +429,8 @@ export function shadowInto(k: Kit): Built {
   }
   for (let i = -5; i <= 5; i++) {
     const a = ((i + 0.5) / 6) * 1.5;
-    const lo = hp(2.5 + Math.cos(a) * 10.4, Math.sin(a) * 10.2, -9.6 + Math.abs(i) * 0.45);
-    hsc.cone(glow, 'grin', lo, add(lo, mul(F[2], (i % 2 ? 2.2 : 3.2) * HEAD_K)), 1.15, 0.12, 0.1, { tag: 'fang' });
+    const lo = jp(2.5 + Math.cos(a) * 10.4, Math.sin(a) * 10.2, -9.6 + Math.abs(i) * 0.45);
+    hsc.cone(glow, 'grin', lo, add(lo, mul(Fj[2], (i % 2 ? 2.2 : 3.2) * HEAD_K)), 1.15, 0.12, 0.1, { tag: 'fang' });
   }
   o.smoke = [tips[0], tips[1], pts[pts.length - 1]];
   // WINGS OF SMOKE: of its own black, half open and raised over its shoulders, each finger bowed and the skin between

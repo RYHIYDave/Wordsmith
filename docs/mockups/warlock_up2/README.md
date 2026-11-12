@@ -1,6 +1,6 @@
 # THE WARLOCK BROUGHT UP, AND HIS DEMON REDONE (IN HAND; NOTHING HERE IS IN THE GAME)
 
-**WHERE IT STANDS (11 Nov 2026, 22:10 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
+**WHERE IT STANDS (11 Nov 2026, 22:45 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
 two legs to fight and down on all fours to run, wings of smoke, no smoke off it (`src/dev/demon_ideas.ts` shadowInto;
 `pictures/living_shadow.png`). ITS STAND, ITS WIDE SLASHES, DROPPING DOWN TO RUN, REARING UP TO STOP, AND ITS SLASHES MADE
 WALKING ON TWO LEGS HAVE HIS WORD (two films; the sections “The Living Shadow's moves” and “Its slashes made walking on two
@@ -9,9 +9,11 @@ THIRD FILM (`src/dev/shadow_moves.ts` shadowOthers; `pictures/living_shadow_othe
 all up on two legs” below): Damning, the smoke step's two ends, its roar as the change into it ends, its burning out, and
 struck hard and from behind. HIS WORD ON THEM, by 22:08: “The roar is so bad.  His face doesn’t even move?  No animations
 out of the mouth?  No spittle or action lines or screen shake on the roar?”; the smoke step's own smoke, “Keep it as is
-(Recommended)”. SO: THE ROAR IS BEING MADE AGAIN (its jaws thrown open, the roar seen out of its mouth, spittle, action
-lines, the screen shaking); the rest are taken to stand. NEXT after that: its eight sides, its hide carried by its bones,
-and the change into it; then into the game's shape behind a switch that is off; then the man. Read from “The Living
+(Recommended)”. SO THE ROAR IS MADE AGAIN (its jaws thrown open with his fire in its throat, its head shaking, rings of
+force and action lines out of its mouth, spittle, the screen shaking) AND SHOWN HIM AS A FOURTH FILM, HIS WORD ON IT AWAITED
+(`pictures/living_shadow_roar.mp4`; the section “Its roar, made again” below); the rest are taken to stand. NEXT after
+that: its eight sides, its hide carried by its bones, and the change into it; then into the game's shape behind a switch
+that is off; then the man. Read from “The Living
 Shadow, drawn properly” down for what is left; the sections before it are how he got there, in his words.**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
@@ -396,9 +398,10 @@ differently to make the same move.
   out (`StepOwn.noBoil`). The storm it turns into, the smoke blasted out where it sets off and where it comes out, and the
   river left on the floor ARE the move, and are the game's as they are now. TOLD HIM SO PLAINLY, in the film's own words
   (“This smoke is the move itself, as it is in the game now. No smoke comes off its body.”) and asked.
-- **THE END OF THE CHANGE INTO IT: ITS ROAR** (`shadowRoarMove`; the game's `dev/warlock_change.ts`: the 1.4 s, 42 frames,
-  after he has become it, in which the game's demon heaves up off its claws and roars). It has come up onto two legs in its
-  stance; it gathers three frames; by frame 7 it is REARED UP TALL, its chest thrown open, its arms flung out wide and
+- **THE END OF THE CHANGE INTO IT: ITS ROAR** (AS IT WAS FIRST MADE AND SHOWN HIM; HE TURNED IT DOWN, AND IT IS MADE AGAIN: the
+  section “Its roar, made again” below. `shadowRoarMove`; the game's `dev/warlock_change.ts`: the 1.4 s, 42 frames, after he
+  has become it, in which the game's demon heaves up off its claws and roars). As first made: it has come up onto two legs
+  in its stance; it gathers three frames; by frame 7 it is REARED UP TALL, its chest thrown open, its arms flung out wide and
   back (its claws 128 apart, 3.3 tiles), its claws spread, its head thrust up; held to frame 17, shaking with it, its
   wings thrown back and up and beaten forward and down hard, back, and forward again (the game's own strokes at its roar,
   `wingsAt`); and it sinks into its stance by frame 37. THE CHANGE ITSELF (him becoming it: his bones grown into this
@@ -432,7 +435,8 @@ back; NOT GIVEN, IT IS AS IT ALWAYS WAS, TO THE PIXEL (checked below). A STILL I
 moves made before (checked below). Its other moves come after the rest in `shadowMoves()`, so each of those is where it
 was in the list.
 
-THE FILM: `pictures/living_shadow_other_moves.mp4` (1440 x 702, sixty frames a second, 50.2 s, 6.9 MB; MP4), from in front
+THE FILM: `pictures/living_shadow_other_moves.mp4` (1440 x 702, sixty frames a second, 50.2 s; 6.9 MB as it was shown him, 7.6 MB
+as made again with its roar made again and its jaws opening, which is the file here; MP4), from in front
 and from behind side by side, two film pixels a picture pixel, on the plain floor of the game's tiles; in the smoke step
 the eye goes with it and the floor goes by under it. Its parts: Damning, it standing on over what it tore up; the same at
 half speed; the smoke step; the same at half speed; its roar, twice; its burning out, its crumbling, him getting up;
@@ -511,9 +515,95 @@ smoke step, its burning out and being struck are taken to stand unless he says o
 it tears its claws up in Damning, as it rises out of the smoke step) its jaws are to open too. THE SMOKE STEP'S OWN SMOKE
 STAYS AS IT IS. SAVED: this section's work as it was shown him (the next section, when it is written, is the roar made again).
 
-STILL TO DO, IN THIS ORDER (11 Nov, 22:10): ITS ROAR MADE AGAIN (his words above) and shown him; then its eight sides, its
-hide carried by its bones, the change into it (ending on its roar); behind a switch that is off, a film and pictures in
-the game on floor 11 beside the Brawler; then THE MAN.
+## Its roar, made again (`src/dev/shadow_moves.ts` shadowRoarMove; `src/dev/shadow_fx.ts` roarLight; `src/dev/demon_ideas.ts`, its jaws; SHOWN HIM AS A FOURTH FILM, HIS WORD ON IT AWAITED)
+
+His words of the first roar, 11 Nov by 22:08: **“The roar is so bad.  His face doesn’t even move?  No animations out of the
+mouth?  No spittle or action lines or screen shake on the roar?”** Each thing he named, and where it is now:
+
+- **“His face doesn’t even move?”** ITS JAWS OPEN (`dev/demon_ideas.ts` shadowInto, `Kit.jaw`, 0 shut in its grin to 1 as wide as
+  they go): its lower jaw and the teeth that stand on it swung down and back 40 degrees about a hinge behind its grin; HIS
+  FIRE SEEN BURNING IN ITS THROAT between the two rows of its teeth (white-hot where it faces out of its mouth, cyan round
+  that, his darkest cyan at its rim: his cyan's own tones, a friend's glow); its eyes narrowed to slits. A STILL IS AS IT
+  WAS, TO THE PIXEL (its jaws shut: every number as it was; checked). AND ITS HEAD MOVES: ducked as it draws its breath,
+  thrown up and out as it roars, SHAKING FROM SIDE TO SIDE with the roar (11 degrees each way, six times across), its jaws
+  quivering while they are held open.
+- **THE ROAR ITSELF, AS A MOVE** (to the game's 42 frames, 1.4 s; big wind-up, lightning strike, his rulebook's Movement 9):
+  frames 0 to 5 IT DRAWS ITS BREATH, coiling down and in (its hips from 50 to 44, its head from 87 down to 69), its claws
+  clenched in before its chest, its wings folded tight; frames 5 to 8 IT THROWS ITSELF OPEN: reared up tall (its head to
+  104), its chest flung out, its arms flung wide and back level with its shoulders (its claws 132 apart, 3.4 tiles), its
+  claws spread, its jaws wide by frame 8, its wings snapped wide; frames 8 to 24, HELD, half a second: its head shaking, its
+  whole body trembling and leaning into it as its breath runs out, its wings beating; frames 24 to 35 its jaws close, with
+  a last snap; in its stance by frame 38.
+- **“No animations out of the mouth?”** RINGS OF FORCE roll out of its jaws (`roarLight`): five, one every three and a half
+  frames from the frame the roar bursts out (6.5), each the way its face points as it leaves (its head shakes: no two go
+  quite the same way; ahead of it and 29 degrees up), swelling as it goes, whole as it leaves and breaking up as it thins,
+  11 frames each, out to 2.6 tiles (as far as the game's rules have its roar throw back what is near, `game/warlock.ts`
+  change.roar). A flash at its jaws as it bursts out. ON THE FLOOR, the game's own ring thrown out as the demon roars
+  (`dev/warlock_fx.ts` morphLight), as it is.
+- **“No spittle”** SPITTLE: thirty flecks flung from its jaws in the roar's first eight frames, falling as a thing thrown
+  falls, a speck where each lands, gone before the roar is over.
+- **“or action lines”** ACTION LINES: fifty-four streaks flung out from its mouth round the rings (wider than the rings
+  swell: never across one), fourteen of them at once as it bursts out and the rest one after another while it roars,
+  four frames each.
+- **“or screen shake on the roar?”** THE SCREEN SHAKES AS THE GAME SHAKES IT (`ShadowMove.shake`: what the move asks of the
+  game's own shake, `render/fx.ts`: 5.5 as the roar bursts out, frames 6 to 7.5 (the shakes the game names in that file
+  run from 0.8 to 6); kept at 3 while it is held, to frame 23; the game lets it die away at 22 a second). In the film the picture is shaken
+  so, a film pixel and a half for a screen pixel. IN THE GAME THIS IS THE MAIN CHAT'S TO WIRE: a note for it below.
+- **WHEREVER ELSE IT ROARS ITS JAWS OPEN TOO**: as it tears its claws up in Damning (wide from the blow through the freeze;
+  bared as it strains); as it rises out of the smoke step (bared as it slams down); and a snarl as it is struck. Shut as
+  each begins and ends.
+
+All of what leaves its mouth is in his cyan. From in front it is nearer the eye than it is and is laid over it; from behind
+it is beyond it and is laid under it.
+
+THE FILM: `pictures/living_shadow_roar.mp4` (1440 x 702, sixty frames a second, 24.0 s, 4.2 MB; MP4). Its parts: the roar,
+twice; the same at half speed; ITS FACE CLOSE UP at a quarter speed, five times as big, shown without the rings and lines
+so that its face is seen (a window that does not move, so its head is seen to move); and where else it roars (Damning, the
+smoke step, a snarl as it is struck). `pictures/living_shadow_roar_sheet.png`: a picture every third of a second (2160 x
+2275). THE THIRD FILM IS MADE AGAIN with the roar made again and its jaws opening (`pictures/living_shadow_other_moves.mp4`,
+50.2 s, 7.6 MB).
+
+Made with: `npx tsx tools/shadow_moves_pics.ts <dir> stand,slashL,slashR,damning,step,roar,roarface,burnout,reel,lurch front,back`
+(about five minutes; `roarface` is the roar with nothing leaving its mouth, for the close-up) then
+`python3 tools/shadow_moves_film.py <dir> docs/mockups/warlock_up2/pictures/living_shadow_roar.mp4 roar` and
+`... living_shadow_other_moves.mp4 others`.
+
+CHECKED:
+- `npx tsx --test tests/shadow_moves.test.ts`, about two seconds: 17 of 17 (the 15 there were, and 2 new): its roar: its jaws
+  shut as it begins, as it draws its breath and as it ends, wider than nine tenths from frame 8 to frame 24, never still
+  two frames running while held, shut from frame 35; its head ducked more than 8 degrees and then thrown up more than 18,
+  shaken more than 6 degrees each way and across at least three times; the screen not shaken before the roar bursts out
+  nor after its breath runs out, 5 or more as it bursts out, 3 or more at every frame it is held; nothing in the air as
+  it draws its breath, the roar seen (more than 150 lit pixels) at five moments of it from in front and from behind,
+  nothing left as it ends; it roars ahead and up, out of its mouth; laid over it from in front and under it from behind.
+  And wherever else it roars: its jaws shut as Damning, the smoke step and both struck moves begin and end, wide as it
+  tears its claws up and through the freeze, wide as it rises out of the smoke, more than half open as a blow snaps it,
+  and never less than shut nor more than wide.
+- A STILL IS AS IT WAS: `living_shadow.png` and `living_shadow_at_game_size.png` made again with the jaw in its sculpture:
+  the same pixels. THE MOVES MADE BEFORE ARE AS THEY WERE: the 64 pictures of its left claw's slash, painted before this
+  session's work and after all of it: the same files, byte for byte.
+- NOTHING OF IT CUT OFF: counted: no painted pixel of it on the edge of its own canvas in any frame of its roar painted
+  alone (`roarface`), Damning, its burning out, either struck move or its stand, from in front or behind. (The game's
+  ring on the floor runs out past the foot of its canvas, as it does in the game: it is laid on the floor, not on its
+  picture.)
+- LOOKED AT: every frame of the roar from in front and from behind; its face at four openings, close; Damning's and the
+  smoke step's frames where its jaws open; and frames of the film itself at full size, the close-up among them. (Found so
+  and put right: a first ring with a single streak beside it was taken for a thing with a handle, and a streak across a
+  ring for a sign for “no”: the streaks now burst out together and go round the rings; its arms flung wide at its hips
+  were taken for an arm it leaned on: they are level with its shoulders.)
+- `tsc --noEmit -p tsconfig.json`: nothing from this branch. No file the game is made of is changed.
+
+FOR THE MAIN CHAT, when it comes into the game: (1) THE SCREEN SHAKE on its roar is the game's to do (`render/fx.ts` `shake`):
+5.5 as the roar bursts out (0.22 s after the change's own roar moment, `ROAR_AT`), kept at 3 for the half second it is held.
+(2) WHAT LEAVES ITS MOUTH is not on its picture: it wants laying in the game as the game lays the roar's ring
+(`render/warlock_fx.ts`, 'roar'), from its mouth (`dev/shadow_fx.ts` mouthAt) the way it faces, over it or under it by
+which way it faces the eye. (3) Its jaws opening is in its pictures: nothing to wire.
+
+SHOWN HIM SO, 11 Nov, by 22:45 Eastern (the fourth film sent; asked by pop-up). **HIS WORDS: AWAITED.**
+
+STILL TO DO, IN THIS ORDER (11 Nov, 22:45): his word on the roar made again; then its eight sides, its hide carried by its
+bones, the change into it (ending on its roar); behind a switch that is off, a film and pictures in the game on floor 11
+beside the Brawler; then THE MAN.
 
 THE FIRST THREE'S PICTURES (kept for the record):
 
@@ -536,4 +626,4 @@ ground in the game.
   workspace's own TypeScript 7.0.2, the same before this branch's work as after it: not this branch's.)
 - Nothing of the game imports `src/dev/demon_new.ts`, `demon_ideas.ts`, `shadow_moves.ts`, `shadow_fx.ts` or
   `demon_swipe_fx.ts`; no file of the game is changed.
-- `npx tsx --test tests/shadow_moves.test.ts`: 15 of 15 (above). No other test was run: none imports these files.
+- `npx tsx --test tests/shadow_moves.test.ts`: 17 of 17 (above). No other test was run: none imports these files.

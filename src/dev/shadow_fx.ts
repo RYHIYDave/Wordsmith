@@ -9,7 +9,7 @@
 // from their tails once it has landed. What it does to the one it hits (the burst, the gashes, the curse) is the game's
 // rake's own and is not drawn again here.
 
-import { project, solve } from '../art/skeleton';
+import { add, cross, mul, norm, project, solve } from '../art/skeleton';
 import type { Posed, V3 } from '../art/skeleton';
 import { CYAN } from '../art/kit';
 import { CANVAS3 } from '../art/skin';
@@ -19,17 +19,17 @@ import { Sculpt } from './sculpt';
 import { RIG_CANVAS } from './sculpt_demon_rig';
 import { DAMN_HIT, DM, FR, RK, SS, SWIPE_REACH } from './demon_moves';
 import type { DemonMove } from './demon_moves';
-import { DAMN_SCENE, chunk, crackStar, drawCrack, drawHole, embers, flung, inScene, jet, laid, nearEye } from './demon_fx';
+import { DAMN_SCENE, chunk, crackStar, drawCrack, drawHole, embers, flung, inScene, jet, laid, landedAt, nearEye } from './demon_fx';
 import { smokeStepLight, swipeNear, swipeTo } from './demon_swipe_fx';
 import { crumble } from './demon_return';
-import { WOLF_B, claws } from './demon_new';
+import { HEAD_K, WOLF_B, claws, lifted } from './demon_new';
 import type { Built, Kit } from './demon_new';
-import { HELL } from './sculpt_warlock';
-import { Light, burst, dissolve, smolder } from './warlock_fx';
+import { HELL, noise2 } from './sculpt_warlock';
+import { CHANGE_SCENE, Light, burst, dissolve, morphLight, smolder } from './warlock_fx';
 import { drawWarlockAt } from './warlock_moves';
 import type { WarlockMove } from './warlock_moves';
 import { BACK_LONG, warlockSpells } from './warlock_spells';
-import { DAMN_DIG, STEP_SLAM, drawShadowAt, shadowMoving, shadowPose } from './shadow_moves';
+import { DAMN_DIG, ROAR_F, STEP_SLAM, drawShadowAt, shadowMoving, shadowPose } from './shadow_moves';
 import type { ShadowMove } from './shadow_moves';
 
 /** How long a streak burns after the strike. */
@@ -341,5 +341,161 @@ export function burnOutScene(m: ShadowMove, t: number, view: GameView, turn = 0)
     over(out, kept(`man:${view}:${turn}`, () => man(0)), manAt.dx, manAt.dy);
     over(out, crumble(kept(`sagged:${view}:${turn}`, () => drawShadowAt(view, m, SAG, turn).px), (t - SAG) / BURN_CRUMBLE), MINE.dx, MINE.dy);
   } else over(out, man(t - SAG - BURN_CRUMBLE), manAt.dx, manAt.dy);
+  return out;
+}
+
+// =====================================================================================================================
+// ITS ROAR, SEEN (dev/shadow_moves.ts shadowRoarMove). His words of the first roar shown him, 11 Nov 2026 by 22:08: “The roar
+// is so bad.  His face doesn’t even move?  No animations out of the mouth?  No spittle or action lines or screen shake on the
+// roar?”. Its face moving is its sculpture's (dev/demon_ideas.ts: its jaws thrown open, his fire in its throat) and its
+// move's (its head shaking with it); the screen shaking is the game's own shake, asked for by the move
+// (ShadowMove.shake); and OUT OF ITS MOUTH, here, all in his cyan (a friend's glow):
+//   RINGS OF FORCE rolling out of its jaws one after another the way it roars, each swelling as it goes and breaking up
+//   as it thins;
+//   ACTION LINES: streaks flung out from its mouth all round the way it roars, a few frames each;
+//   SPITTLE: flecks flung from its jaws, falling as a thing thrown falls (dev/demon_fx.ts flung), a speck where each lands;
+//   a flash at its jaws as the roar bursts out;
+// and ON THE FLOOR the game's own ring thrown out over it as the demon roars (dev/warlock_fx.ts morphLight: the ring that
+// throws back what is near, game/warlock.ts), as it is.
+
+/** How often a ring leaves its mouth while it roars (frames), and how long one lasts. */
+export const ROAR_RING = { every: 3.5, life: 11 };
+/** The frame its roar bursts out of it. */
+export const ROAR_OUT = ROAR_F.coiled + 1.5;
+const D2R = Math.PI / 180;
+const hash2 = (i: number): number => {
+  const x = Math.sin(i * 57.3 + 3.9) * 43758.5453;
+  return x - Math.floor(x);
+};
+/**
+ * Where its mouth is at a moment of a move, and the way its roar leaves it (its own space, unturned): between its two rows
+ * of teeth (as dev/demon_ideas.ts builds its face: lifted 22 degrees toward the eye, its grin before and below the middle
+ * of its head); the way its face points; and two lines across that way.
+ */
+export function mouthAt(m: ShadowMove, t: number): { at: V3; way: V3; across: V3; up: V3 } {
+  const s = solve(WOLF_B, shadowPose(m, t));
+  const F = lifted(s.face, 22);
+  const way = norm(s.face[0]);
+  const across = norm(cross(way, [0, 0, 1]), [0, 1, 0]);
+  return { at: add(s.head, add(mul(F[0], 10 * HEAD_K), mul(F[2], -9 * HEAD_K))), way, across, up: cross(across, way) };
+}
+/**
+ * THE ROAR'S LIGHT at a moment `t` of its roar: what is on the floor (the game's ring), what is in the air before its mouth
+ * (rings, action lines, spittle, the flash), and whether that is nearer the eye than it is (from in front: laid over it)
+ * or beyond it (from behind: under it). On the slash's scene.
+ */
+export function roarLight(m: ShadowMove, t: number, view: GameView, turn = 0, scene: Scene = SLASH_SCENE): { floor: Px; air: Px; over: boolean } {
+  const f = t / FR;
+  const air = new Px(scene.w, scene.h);
+  const floor = new Px(scene.w, scene.h);
+  const l = new Light();
+  const on = (p: V3): [number, number] => onScene(p, view, turn, scene);
+  /** A line of his light: one pixel, a cooler one beside it; `fat`, two pixels each way of its heat and a cooler fringe round them. */
+  const line = (a: [number, number], b: [number, number], heat: number, fat: boolean): void => {
+    const len = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1])));
+    for (let j = 0; j <= len; j++) {
+      const x = a[0] + ((b[0] - a[0]) * j) / len;
+      const y = a[1] + ((b[1] - a[1]) * j) / len;
+      l.put(x, y, heat);
+      if (!fat) {
+        l.put(x + 1, y, Math.max(0, heat - 1));
+        continue;
+      }
+      l.put(x + 1, y, heat);
+      l.put(x, y + 1, heat);
+      l.put(x + 1, y + 1, heat);
+      for (const [dx, dy] of [[-1, 0], [2, 0], [0, -1], [1, -1], [0, 2], [1, 2], [-1, 1], [2, 1]]) l.put(x + dx, y + dy, Math.max(0, heat - 2));
+    }
+  };
+  /** A way within so many degrees of the way it roars, round it by a share of a turn. */
+  const within = (o: { way: V3; across: V3; up: V3 }, deg: number, round: number): V3 => {
+    const a = deg * D2R;
+    return norm(add(mul(o.way, Math.cos(a)), add(mul(o.across, Math.sin(a) * Math.cos(round * Math.PI * 2)), mul(o.up, Math.sin(a) * Math.sin(round * Math.PI * 2)))));
+  };
+  // RINGS OF FORCE: one every third frame from the frame it bursts out until its breath runs out; each leaves its mouth
+  // the way it faces then (its head shakes: no two go quite the same way), fast, and slows; swells as it goes; hottest as
+  // it leaves, broken up more and more as it thins
+  for (let j = 0; ROAR_OUT + j * ROAR_RING.every <= ROAR_F.held - 1; j++) {
+    const born = ROAR_OUT + j * ROAR_RING.every;
+    const a = f - born;
+    if (a < 0 || a > ROAR_RING.life) continue;
+    const o = mouthAt(m, born * FR);
+    // (clear of its face from the first: it leaves a little before its jaws, and is well away within two frames)
+    const d = 15 + 12 * a - 0.36 * a * a;
+    const r = 4 + 0.6 * d;
+    const c = add(o.at, mul(o.way, d));
+    const heat = a < 2.5 ? 3 : a < 6 ? 2 : a < 9 ? 1 : 0;
+    const N = 40;
+    let was: [number, number] | null = null;
+    for (let q = 0; q <= N; q++) {
+      const th = (q / N) * Math.PI * 2;
+      const at = on(add(c, add(mul(o.across, r * Math.cos(th)), mul(o.up, r * Math.sin(th)))));
+      // (whole as it leaves; broken up more and more from its fourth frame)
+      const gap = a > 3 && noise2(q * 0.7 + j * 7.3, j * 3.1 + 1.7) < 0.1 + ((a - 3) / (ROAR_RING.life - 3)) * 0.62;
+      if (was && !gap) line(was, at, heat, a < 4.5);
+      was = at;
+    }
+  }
+  // ACTION LINES: streaks flung out from its mouth, each a few frames: out fast, shortening, cooling
+  for (let i = 0; i < 54; i++) {
+    // (a burst of them all at once as the roar bursts out, never one alone, which is taken for a thing with a handle; then
+    // one after another while it roars)
+    const born = i < 14 ? ROAR_OUT + 0.4 * hash2(i * 3 + 1) : ROAR_OUT + 1 + hash2(i * 3 + 1) * (ROAR_F.held - 3 - ROAR_OUT);
+    const a = f - born;
+    if (a < 0 || a >= 4) continue;
+    const o = mouthAt(m, born * FR);
+    // (flung out ROUND the rings, wider than they swell, never across one: a streak across a ring is a sign for "no")
+    const dir = within(o, 36 + 30 * hash2(i * 7 + 2), hash2(i * 11 + 5));
+    const from = 16 + 8 * hash2(i * 13) + 16 * a;
+    const long = (20 + 24 * hash2(i * 17)) * (1 - a / 6);
+    line(on(add(o.at, mul(dir, from))), on(add(o.at, mul(dir, from + long))), a < 1.5 ? 3 : a < 3 ? 2 : 1, false);
+  }
+  // SPITTLE: flecks flung from its jaws through the first of the roar, falling; a speck where each lands, soon gone
+  // (all of it flung in the roar's first eight frames, so that the last of it has landed and gone before the roar is over)
+  for (let i = 0; i < 30; i++) {
+    const born = ROAR_OUT + hash2(i * 5 + 9) * 8;
+    const a = f - born;
+    if (a < 0) continue;
+    const o = mouthAt(m, born * FR);
+    const dir = within(o, 6 + 24 * hash2(i * 19 + 4), hash2(i * 23 + 8));
+    const sp = 4 + 3.5 * hash2(i * 29 + 6);
+    const v: V3 = [dir[0] * sp, dir[1] * sp, dir[2] * sp + 1.2];
+    const fly = flung(o.at, v, a);
+    const [x, y] = on(fly.at);
+    if (fly.landed) {
+      if (a - landedAt(o.at, v[2]) < 3) {
+        l.put(x, y, 0);
+        l.put(x + 1, y, 0);
+      }
+      continue;
+    }
+    // (a fleck two pixels square, a cooler one behind it the way it came)
+    const k = a < 6 ? 2 : 1;
+    const [bx, by] = on(flung(o.at, v, Math.max(0, a - 0.6)).at);
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) l.put(x + dx, y + dy, k);
+    l.put(bx, by, k - 1);
+    l.put(bx + 1, by, k - 1);
+  }
+  // (a flash at its jaws as it bursts out)
+  const since = f - ROAR_OUT;
+  if (since >= 0 && since < 3) {
+    const [mx, my] = on(mouthAt(m, ROAR_OUT * FR).at);
+    burst(l, mx, my, 6 + since * 8, since / 3, 77);
+  }
+  l.lay(air, HELL);
+  // ON THE FLOOR: the game's own ring, thrown out as the roar bursts out of it
+  const ring = morphLight([], t, 0, [0, 0, 0], ROAR_OUT * FR, view);
+  over(floor, ring, scene.ax - CHANGE_SCENE.ax, scene.ay - CHANGE_SCENE.ay);
+  const o = mouthAt(m, Math.max(ROAR_OUT * FR, Math.min(t, ROAR_F.held * FR)));
+  return { floor, air, over: nearEye(add(o.at, mul(o.way, 40)), view, turn) > nearEye(o.at, view, turn) };
+}
+/** ITS ROAR, WHOLE at a moment: the game's ring on the floor; it; what leaves its mouth, over it from in front, beyond it from behind. */
+export function roarScene(m: ShadowMove, t: number, view: GameView, turn = 0): Px {
+  const out = new Px(SLASH_SCENE.w, SLASH_SCENE.h);
+  const light = roarLight(m, t, view, turn);
+  over(out, light.floor);
+  if (!light.over) over(out, light.air);
+  over(out, drawShadowAt(view, m, t, turn).px, MINE.dx, MINE.dy);
+  if (light.over) over(out, light.air);
   return out;
 }

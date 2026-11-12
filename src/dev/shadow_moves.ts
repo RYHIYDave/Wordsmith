@@ -24,8 +24,10 @@
 //                   and burning out, offered as “up on two legs for everything but running”: “Yes, all on two legs
 //                   (Recommended)”): each of the game's own (dev/demon_moves.ts, dev/warlock_change.ts, dev/warlock_hits.ts),
 //                   to its own frames, beginning and ending in its stance up on two legs: DAMNING, torn up; THE SMOKE
-//                   STEP's two ends; the end of THE CHANGE into it, its roar; the start of ITS BURNING OUT; STRUCK hard and
-//                   from behind (the foot of this file)
+//                   STEP's two ends; the end of THE CHANGE into it, its roar (made again at his word of the first, 11 Nov
+//                   by 22:08: “The roar is so bad.  His face doesn’t even move?  No animations out of the mouth?  No
+//                   spittle or action lines or screen shake on the roar?”); the start of ITS BURNING OUT; STRUCK hard
+//                   and from behind (the foot of this file)
 //
 // His art rulebook's Movement: weight first; each character its own way (its: a feral beast's, huge in the shoulder,
 // its claws what it fights with); loose things follow (its wings of smoke, its tail); slick; alive when still; heavy blows
@@ -96,6 +98,10 @@ export interface ShadowMove {
   air?: [number, number];
   /** How bright what burns on it is at a moment (its eyes, its grin, its talons, the embers down its backbone): 1 as ever, 0 all but out (its burning out). */
   glow?: (t: number) => number;
+  /** How far its jaws are thrown open at a moment (its roar, and wherever else it roars): 0 shut in its grin to 1 as wide as they go. */
+  jaw?: (t: number) => number;
+  /** How hard the screen is shaken at a moment, as the game shakes it (render/fx.ts `shake`: screen pixels, dying away at 22 a second): its roar. */
+  shake?: (t: number) => number;
 }
 
 /** Eased both ways, 0 to 1. */
@@ -777,6 +783,9 @@ function shadowDamningMove(): ShadowMove {
     // (and shut and turned back to hang as soon as they come down past its chest: held open there, from in front, its near claw is taken for one laid on its chest)
     grip: (t) => track([[0, 1], [DM.raise, 0.5], [DM.dig, 0.6], [DM.held, 0.6], [DM.rip, 0.42], [DM.freeze, 0.42], [DM.freeze + 4, 0.95], [DM.down, 1], [DM.settled, 1]], t / FR),
     palms: palmsOf([[0, HUNG], [DM.raise, PALM_DOWN], [DM.held, PALM_DOWN], [DM.rip, PALM_OUT], [DM.freeze, PALM_OUT], [DM.freeze + 2, [0.1, -0.5, -0.85]], [DM.freeze + 5, HUNG], [DM.settled, HUNG], [48, HUNG]]),
+    // (roaring as it tears them up: its jaws thrown open with the blow, held through the freeze, shut as its arms come down;
+    // bared a little as it strains)
+    jaw: (t) => clampN(track([[0, 0], [DM.dig, 0], [DM.strain, 0.3], [DM.held, 0.35], [DM.rip - 0.5, 1], [DM.freeze + 2, 1], [DM.down - 2, 0], [48, 0]], t / FR, new Set([0, 1, 4, 5, 6, 7])), 0, 1),
     strike: [(DM.held - 1) * FR, (DM.freeze + 1) * FR],
     hit: DAMN_HIT,
   };
@@ -871,6 +880,8 @@ function shadowStepMove(): ShadowMove {
     // (clenched as it coils; flung open as it goes, as it comes down and as it roars)
     grip: (t) => track([[0, 1], [SS.coiled, 1.3], [SS.gone, 0.6], [SS.out, 0.5], [SS.slam, 0.6], [SS.low, 0.6], [SS.roar, 0.42], [SS.up, 0.8], [SS.settled, 1]], t / FR),
     palms: palmsOf([[0, HUNG], [SS.coiled, HUNG], [SS.gone, PALM_DOWN], [SS.low, PALM_DOWN], [SS.roar, PALM_OUT], [SS.up, [-0.3, -0.6, -0.45]], [SS.settled, HUNG], [46, HUNG]]),
+    // (roaring as it rises off its claws: its jaws thrown open, shut as it settles; bared as it slams down)
+    jaw: (t) => clampN(track([[0, 0], [SS.out, 0], [SS.slam, 0.4], [SS.low, 0.35], [SS.roar - 1, 1], [SS.roar + 3, 1], [SS.up + 2, 0], [46, 0]], t / FR, new Set([0, 1, 4, 5, 6, 7])), 0, 1),
     // (its bursting into smoke, the storm across and its bursting out of it are the flash: Movement 9)
     strike: [(SS.coiled - 1) * FR, (SS.hold + 1) * FR],
     hit: SS.slam * FR,
@@ -881,56 +892,91 @@ function shadowStepMove(): ShadowMove {
 }
 
 // ---- THE END OF THE CHANGE INTO IT: ITS ROAR, UP ON TWO LEGS (the game's: dev/warlock_change.ts, the 1.4 s after he has
-// become it, the demon heaving up off its claws and roaring; the change itself, him becoming it, is to be made on this
-// frame with its eight sides). It has come up onto two legs in its stance; it gathers a moment, and ROARS: reared up
-// tall, its chest thrown open, its arms flung out wide and back, its claws spread, its head thrust up and out, its wings
-// thrown back and up and beaten forward and down hard, back, and forward again (as the game's, dev/warlock_change.ts
-// wingsAt), shaking with it; and it sinks into its stance, its wings settling.
+// become it, the demon heaving up off its claws and roaring, a ring thrown out over the floor that throws back what is
+// near, game/warlock.ts; the change itself, him becoming it, is to be made on this frame with its eight sides).
+// MADE AGAIN at his word of the first shown him, 11 Nov 2026 by 22:08: “The roar is so bad.  His face doesn’t even move?  No
+// animations out of the mouth?  No spittle or action lines or screen shake on the roar?”. So, big wind-up, lightning strike
+// (Movement 9): it has come up onto two legs in its stance; it DRAWS ITS BREATH, coiling down and in, its head ducked, its
+// claws clenched in before its chest, its wings folded tight (five frames); then in three frames it THROWS ITSELF OPEN AND
+// ROARS: reared up tall, its chest flung out, its arms flung wide and back, its claws spread, its head thrust up and out
+// and ITS JAWS THROWN WIDE OPEN, his fire burning in its throat (dev/demon_ideas.ts, `jaw`), its wings snapped wide; and it
+// HOLDS THE ROAR half a second, its head shaking from side to side with it, its jaws quivering, its whole body trembling
+// and leaning into it as its breath runs out, its wings beating; the roar itself seen leaving its mouth (dev/shadow_fx.ts
+// roarLight: rings of force rolling out one after another, action lines, spittle flying) and the screen shaking with it
+// (`shake`, as the game shakes it); then its jaws close, with a last snap, and it sinks into its stance.
 export const ROAR_LONG = 42 * FR;
-const ROAR_F = { gather: 3, up: 7, held: 17, easing: 27, down: 37 };
-const ROAR_KEYS = [0, ROAR_F.gather, ROAR_F.up, ROAR_F.held, ROAR_F.easing, ROAR_F.down, 42];
-const ROAR_HOLDS = new Set([2, 3, 5, 6]);
+/** Its frames: its breath drawn; the roar burst out; held to here; its jaws closing; shut; in its stance. */
+export const ROAR_F = { coiled: 5, burst: 8, held: 24, closing: 31, shut: 35, down: 38 };
+const ROAR_KEYS = [0, ROAR_F.coiled, ROAR_F.burst, ROAR_F.held, ROAR_F.closing, ROAR_F.down, 42];
+const ROAR_HOLDS = new Set([1, 5, 6]);
+/** How its head shakes as it roars (degrees to its left), and how hard it is shaking (0 to 1). */
+const roaring = (f: number): number => clampN((f - ROAR_F.coiled - 1) / 2, 0, 1) * (1 - clampN((f - ROAR_F.held) / 6, 0, 1));
+const roarShake = (f: number): number => Math.sin((f - ROAR_F.burst) * 1.18) * roaring(f);
 function shadowRoarMotion(): Motion {
   const S0 = SHADOW_STANCE;
   const k = keyed(ROAR_KEYS, ROAR_HOLDS);
   const claw = (side: 1 | -1, f: number): V3 => {
     const own = side > 0 ? HANG.L : HANG.R;
-    const wide = mirror([-3, 64, 52], side);
-    return placed(ROAR_KEYS, ROAR_HOLDS, [own, [own[0] - 6, own[1] * 0.86, own[2] + 5], wide, wide, mirror([16, 55, 45], side), own, own], f);
+    // (clenched in before its chest as it draws its breath; flung wide and back; let down)
+    const drawn: V3 = [own[0] - 5, own[1] * 0.62, own[2] + 15];
+    // (flung out level with its shoulders and back: lower, from in front and from behind alike, its near arm is taken for
+    // one it leans on)
+    const wide = mirror([-9, 64, 82], side);
+    const still = mirror([-4, 62, 74], side);
+    return placed(ROAR_KEYS, new Set([1, 5, 6]), [own, drawn, wide, still, mirror([12, 56, 56], side), own, own], f);
   };
-  // (shaking with its roar while it is held)
-  const shake = (f: number): number => (f > ROAR_F.up - 1 && f < ROAR_F.easing ? Math.sin(f * 3.1) * Math.sin((Math.PI * (f - ROAR_F.up + 1)) / (ROAR_F.easing - ROAR_F.up + 1)) : 0);
   const keys: Key3[] = [];
-  for (let f = 0; f <= 42; f++) {
-    if (f === 0 || f === 42) {
+  for (let i = 0; i <= 84; i++) {
+    const f = i / 2;
+    if (i === 0 || i === 84) {
       keys.push({ at: f * FR, ease: 'lin', pose: { ...S0 } });
       continue;
     }
+    const sh = roarShake(f);
+    // (trembling with it, faster than its head shakes)
+    const tr = Math.sin(f * 4.3) * roaring(f);
     const L = claw(1, f);
     const R = claw(-1, f);
     const body: Partial<Bones> = {
-      px: S0.px + k([0, 1, -2.5, -2.5, -1, 0, 0], f),
-      pz: S0.pz + k([0, -3, 3.2, 3.2, 1.2, 0, 0], f),
-      pitch: S0.pitch + k([0, 5, -12, -12, -4, 0, 0], f),
-      roll: 1.0 * shake(f),
-      bend: S0.bend + k([0, 4, -15, -15, -5, 0, 0], f),
-      hunch: (S0.hunch ?? 0) + k([0, 6, -30, -30, -10, 0, 0], f),
-      shrug: (S0.shrug ?? 0) + k([0, 0.1, -0.35, -0.35, -0.1, 0, 0], f),
-      faceUp: S0.faceUp + k([0, -5, 22, 22, 8, 0, 0], f) + 1.5 * shake(f),
-      faceTilt: 3 * shake(f),
+      // (coiled down and in; thrown up and open; leaning into it as its breath runs out; down)
+      px: S0.px + k([0, 1.5, -2.5, 1.5, 0.5, 0, 0], f) + 0.5 * tr,
+      py: 0.8 * sh,
+      pz: S0.pz + k([0, -6, 3.2, 1.6, 0.6, 0, 0], f) + 0.4 * tr,
+      yaw: 3 * sh,
+      pitch: S0.pitch + k([0, 9, -11, -3, -1, 0, 0], f),
+      roll: 1.6 * sh + 0.6 * tr,
+      twist: 5 * sh,
+      bend: S0.bend + k([0, 10, -14, -6, -2, 0, 0], f),
+      hunch: (S0.hunch ?? 0) + k([0, 9, -28, -18, -6, 0, 0], f),
+      shrug: (S0.shrug ?? 0) + k([0, 0.18, -0.35, -0.25, -0.08, 0, 0], f) + 0.05 * tr,
+      // (its head ducked; thrust up and out, shaking from side to side with the roar; lowered as it ends)
+      faceUp: S0.faceUp + k([0, -12, 25, 15, 5, 0, 0], f) + 1.5 * tr,
+      faceTurn: 11 * sh,
+      faceTilt: 6 * Math.sin((f - ROAR_F.burst) * 1.18 + 1.2) * roaring(f),
     };
-    keys.push({ at: f * FR, ease: 'lin', pose: upPose(body, L, R, 0, k([0, 0, 0.7, 0.7, 0.3, 0, 0], f)) });
+    // (its arms trembling as it holds it)
+    const jit = (p: V3, side: number): V3 => [p[0] + 0.8 * tr, p[1] + side * 0.6 * tr, p[2] + 1.2 * tr];
+    keys.push({ at: f * FR, ease: 'lin', pose: upPose(body, jit(L, 1), jit(R, -1), 0, k([0, 0, 0.9, 0.8, 0.4, 0, 0], f)) });
   }
-  return { keys };
+  return { keys, hit: ROAR_F.burst * FR };
 }
 const roarWings = wingsFrom((t) => {
-  // (thrown back and up; beaten forward and down hard, back, forward again; settling: the game's own strokes at its roar)
-  const tr = (keys: readonly (readonly [number, number])[]): number => track(keys, t - ROAR_F.gather * FR);
-  const sweep = tr([[-0.05, 0], [0.2, 0.55], [0.38, -0.6], [0.58, 0.4], [0.76, -0.35], [0.98, 0.12], [1.15, 0]]);
-  const beat = tr([[-0.05, 0], [0.2, 0.5], [0.38, -0.35], [0.58, 0.25], [0.76, -0.15], [1.15, 0]]);
-  const open = tr([[-0.05, 1], [0.2, 1.4], [0.38, 1.22], [0.76, 1.12], [1.15, 1]]);
-  return { open, lift: 1 + 0.55 * beat + 0.12 * (open - 1), sweep: 15 * sweep };
+  const f = t / FR;
+  const k = keyed(ROAR_KEYS, new Set([1, 5, 6]));
+  // (folded tight as it draws its breath; snapped wide; beating with the roar, twice; settling)
+  const beat = Math.sin((f - ROAR_F.burst) * 0.62) * roaring(f);
+  return {
+    open: k([1, 0.72, 1.48, 1.3, 1.1, 1, 1], f) + 0.1 * beat,
+    lift: k([1, 0.86, 1.36, 1.22, 1.06, 1, 1], f) + 0.12 * beat,
+    sweep: k([0, -4, 10, 4, 1, 0, 0], f) - 7 * beat,
+  };
 });
+/** How far its jaws are open through its roar: thrown wide in two frames as it bursts out, quivering as it is held, closed with a last snap. */
+const roarJaw = (t: number): number => {
+  const f = t / FR;
+  const open = track([[0, 0], [ROAR_F.coiled + 0.5, 0], [ROAR_F.burst - 0.5, 1], [ROAR_F.held, 1], [ROAR_F.closing, 0.42], [ROAR_F.shut - 2, 0.5], [ROAR_F.shut, 0], [42, 0]], f, new Set([1, 2, 3, 6, 7]));
+  return clampN(open - 0.07 * (0.5 + 0.5 * Math.sin(f * 4.1)) * roaring(f), 0, 1);
+};
 function shadowRoarMove(): ShadowMove {
   return {
     name: 'The change into it ends: it roars, up on two legs',
@@ -939,9 +985,17 @@ function shadowRoarMove(): ShadowMove {
     loops: false,
     rest: SHADOW_STANCE,
     wings: roarWings,
-    tail: (t) => 0.25 + 0.35 * hump(t, ROAR_F.gather * FR, 0.5) - 0.2 * hump(t, 0.5, 0.6),
-    grip: (t) => track([[0, 1], [ROAR_F.gather, 1.2], [ROAR_F.up, 0.42], [ROAR_F.held, 0.42], [ROAR_F.down, 1]], t / FR),
-    palms: palmsOf([[0, HUNG], [ROAR_F.gather, HUNG], [ROAR_F.up, [0.75, 0.45, -0.2]], [ROAR_F.held, [0.75, 0.45, -0.2]], [ROAR_F.down, HUNG], [42, HUNG]]),
+    tail: (t) => 0.25 + track([[0, 0], [ROAR_F.coiled * FR, 0.4], [ROAR_F.burst * FR, -0.5], [ROAR_F.held * FR, -0.2], [ROAR_F.down * FR, 0]], t) + 0.25 * roarShake(t / FR - 1.5),
+    grip: (t) => track([[0, 1], [ROAR_F.coiled, 1.35], [ROAR_F.burst, 0.4], [ROAR_F.held, 0.45], [ROAR_F.down, 1]], t / FR),
+    palms: palmsOf([[0, HUNG], [ROAR_F.coiled, HUNG], [ROAR_F.burst, [0.75, 0.45, -0.2]], [ROAR_F.held, [0.75, 0.45, -0.2]], [ROAR_F.down, HUNG], [42, HUNG]]),
+    jaw: roarJaw,
+    // (the screen shaken as the game shakes it: hardest as the roar bursts out, kept shaking while it is held)
+    shake: (t) => {
+      const f = t / FR;
+      return f >= ROAR_F.coiled + 1 && f < ROAR_F.coiled + 2.5 ? 5.5 : f >= ROAR_F.coiled + 2.5 && f <= ROAR_F.held - 1 ? 3 : 0;
+    },
+    strike: [(ROAR_F.coiled - 1) * FR, (ROAR_F.burst + 1) * FR],
+    hit: ROAR_F.burst * FR,
   };
 }
 
@@ -1083,6 +1137,8 @@ function shadowStruckMove(behind: boolean): ShadowMove {
     tail: (t) => 0.25 + (b ? hitKey([0, 0, -0.5, 0.35, -0.1, 0], t / FR) : hitKey([0, 0, 0.45, -0.3, 0.1, 0], t / FR)),
     // (its claws flung open with the blow)
     grip: (t) => hitKey([1, 1, 0.55, 0.75, 0.95, 1], t / FR),
+    // (snarling: its jaws snapped open with the blow, shut again as it comes back)
+    jaw: (t) => clampN(hitKey([0, 0, 0.7, 0.5, 0.2, 0], t / FR), 0, 1),
     strike: [(WSTRUCK.hit - 1) * FR, (WSTRUCK.snapped + 1) * FR],
   };
 }
@@ -1151,6 +1207,7 @@ export function shadowMoving(m: ShadowMove, t: number, pose: Posed): { paws: boo
     more.palm = m.slash.side > 0 ? { L: way } : { R: way };
   } else if (m.palms) more.palm = m.palms(t);
   if (m.glow) more.glow = m.glow(t);
+  if (m.jaw) more.jaw = m.jaw(t);
   const own = m.slash ? m.slash.grip(t) : undefined;
   const g = (side: 1 | -1): number | undefined => (m.slash && m.slash.side === side ? own : m.grip?.(t, side));
   more.grip = { L: g(1), R: g(-1) };

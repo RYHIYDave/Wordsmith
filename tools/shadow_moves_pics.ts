@@ -16,12 +16,12 @@ import { deflateSync } from 'node:zlib';
 import { Px as PxOf } from '../src/engine/px';
 import type { Px } from '../src/engine/px';
 import { RIG_CANVAS } from '../src/dev/sculpt_demon_rig';
-import { solve } from '../src/art/skeleton';
+import { project, solve } from '../src/art/skeleton';
 import type { Posed } from '../src/art/skeleton';
 import { WOLF_B } from '../src/dev/demon_new';
 import { DROP_INTO, DROP_PICTURES, OTHER_MOVES, REARS, SHADOW_CARRY, SLASH_WAYS, drawShadowAt, shadowMoves, shadowPose } from '../src/dev/shadow_moves';
 import type { ShadowMove } from '../src/dev/shadow_moves';
-import { SLASH_SCENE, burnOutAll, burnOutScene, damningScene, slashLight, stepScene } from '../src/dev/shadow_fx';
+import { SLASH_SCENE, burnOutAll, burnOutScene, damningScene, roarScene, slashLight, stepScene } from '../src/dev/shadow_fx';
 import { makeVeteranArt } from '../src/art/veteran_art';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 
@@ -90,6 +90,8 @@ const stand = all[0];
 const AFTER: Record<string, number> = { damning: 60, step: 48 };
 // (its slashes made walking: slashLw0 its left claw going ahead, w1 to its left, w2 backing away, w3 to its right; slashRw0..3 its right's)
 const KEYS = ['stand', 'run', 'slashL', 'slashR', 'drop', ...Array.from({ length: REARS }, (_, i) => `rear${i}`), ...SLASH_WAYS.map((_, i) => `slashLw${i}`), ...SLASH_WAYS.map((_, i) => `slashRw${i}`), ...OTHER_MOVES];
+/** Its roar with nothing leaving its mouth (`roarface`): it alone, so that its face is seen moving (the film's close-up). */
+const PLAIN: Record<string, string> = { roarface: 'roar' };
 const which = (process.argv[3] ?? 'stand,run,slashL,slashR,drop,rear5').split(',');
 const views = (process.argv[4] ?? 'front,back').split(',') as ('front' | 'back')[];
 const turn = Number(process.argv[5] ?? 0);
@@ -99,7 +101,7 @@ const only = process.argv[6] ? new Set(process.argv[6].split(',').map(Number)) :
 const was = existsSync(`${dir}/moves.json`) && !only ? (JSON.parse(readFileSync(`${dir}/moves.json`, 'utf8')) as { moves?: Record<string, unknown> }).moves ?? {} : {};
 const note: Record<string, unknown> = { canvas: SLASH_SCENE, carry: SHADOW_CARRY, moves: { ...was } };
 for (const key of which) {
-  const m = all[KEYS.indexOf(key)] as ShadowMove;
+  const m = all[KEYS.indexOf(PLAIN[key] ?? key)] as ShadowMove;
   if (!m) throw new Error(`no move ${key}`);
   // (its run and its dropping down into it: sixty pictures to a second, as the game shows them; the rest thirty a second)
   const fps = key === 'drop' || key === 'run' ? 60 : 30;
@@ -111,9 +113,13 @@ for (const key of which) {
   const n = own + (AFTER[key] ?? 0);
   // (where its claws and hooves are in each frame, in its own measure: for the checks)
   const limbs: number[][][] = [];
+  // (and where its head is on the scene from in front: for the film's close-up of its face)
+  const head: number[][] = [];
   for (let f = 0; f < n; f++) {
     const t = f / fps;
     const s = solve(WOLF_B, shadowPose(m, Math.min(t, m.long)) as Posed);
+    const hs = project(s.head, 'front');
+    head.push([Math.round(SLASH_SCENE.ax + hs[0]), Math.round(SLASH_SCENE.ay + hs[1])]);
     limbs.push([s.handL, s.handR, s.toeL, s.toeR].map((p) => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10, Math.round(p[2] * 10) / 10]));
     if (only && !only.has(f)) continue;
     for (const v of views) {
@@ -123,6 +129,7 @@ for (const key of which) {
       if (key === 'damning') scene = damningScene(m, t, v, turn, stand);
       else if (key === 'step') scene = stepScene(m, t, v, turn, stand);
       else if (key === 'burnout') scene = burnOutScene(m, t, v, turn);
+      else if (key === 'roar') scene = roarScene(m, t, v, turn);
       else {
         over(scene, drawShadowAt(v, m, t, turn).px, SLASH_SCENE.ax - RIG_CANVAS.ax, SLASH_SCENE.ay - RIG_CANVAS.ay);
         if (m.slash) over(scene, slashLight(m, t, v, turn));
@@ -134,7 +141,9 @@ for (const key of which) {
   const along = m.along ? Array.from({ length: n }, (_, f) => (m.along as (t: number) => number)(f / fps)) : null;
   // (a move in which it goes into smoke: how far it is gone by each frame)
   const gone = m.gone ? Array.from({ length: n }, (_, f) => (m.gone as (t: number) => number)(f / fps)) : null;
-  (note.moves as Record<string, unknown>)[key] = { name: m.name, frames: n, own, fps, long, loops: m.loops, hit: m.hit ?? null, carry: m.carry ?? 0, way: m.way ?? 0, along, gone, limbs };
+  // (a move that shakes the screen, its roar: how hard it asks the game to shake it at each frame, render/fx.ts `shake`)
+  const shake = m.shake ? Array.from({ length: n }, (_, f) => (m.shake as (t: number) => number)(f / fps)) : null;
+  (note.moves as Record<string, unknown>)[key] = { name: m.name, frames: n, own, fps, long, loops: m.loops, shake, head, hit: m.hit ?? null, carry: m.carry ?? 0, way: m.way ?? 0, along, gone, limbs };
 }
 // (the Brawler, the measure for new art: from in front and from behind, his floor point at 18, 60)
 const brawler = makeVeteranArt();

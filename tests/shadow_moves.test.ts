@@ -27,9 +27,9 @@ import { BURN_OUT_LONG, DAMN_HIT, DAMN_LONG, DM, RAKE_HIT, RAKE_LONG, RK, SS, ST
 import { WOLF_B, burning } from '../src/dev/demon_new';
 import { CHANGE_ALL, ROAR_AT } from '../src/dev/warlock_change';
 import { WSTRUCK } from '../src/dev/warlock_hits';
-import { DAMN_DIG, DROP_INTO, DROP_PICTURES, FR, OTHER_MOVES, REARS, ROAR_LONG, SHADOW_CARRY, SHADOW_RUN_ROUND, SHADOW_STANCE, SLASH_WAYS, STEP_SLAM, shadowMoves, shadowOthers, shadowPose } from '../src/dev/shadow_moves';
+import { DAMN_DIG, DROP_INTO, DROP_PICTURES, FR, OTHER_MOVES, REARS, ROAR_F, ROAR_LONG, SHADOW_CARRY, SHADOW_RUN_ROUND, SHADOW_STANCE, SLASH_WAYS, STEP_SLAM, shadowMoves, shadowOthers, shadowPose } from '../src/dev/shadow_moves';
 import type { ShadowMove } from '../src/dev/shadow_moves';
-import { clawsLight, slashTips } from '../src/dev/shadow_fx';
+import { ROAR_OUT, clawsLight, mouthAt, roarLight, slashTips } from '../src/dev/shadow_fx';
 import { damningLight, digSpots } from '../src/dev/demon_fx';
 import { paintWithoutCanvas } from './helpers';
 
@@ -261,6 +261,65 @@ test('its roar as the change into it ends: as long as the game gives it; from it
   assert.deepEqual(hoovesStill(roar, 0, 42), []);
   const up = at(roar, 10 * FR);
   assert.ok(up.pelvis[2] > STANCE.pelvis[2] + 2.5 && up.handL[1] - up.handR[1] > 110, 'reared up, its claws flung wide');
+});
+
+// HIS WORDS OF THE FIRST ROAR SHOWN HIM, 11 Nov 2026 by 22:08: “The roar is so bad.  His face doesn’t even move?  No animations
+// out of the mouth?  No spittle or action lines or screen shake on the roar?”
+test('its roar, made again: its face moves (its jaws thrown wide open and held, its head shaking from side to side); the roar leaves its mouth; the screen is shaken; a big wind-up first', () => {
+  const jaw = roar.jaw as (t: number) => number;
+  const shake = roar.shake as (t: number) => number;
+  assert.ok(roar.jaw !== undefined && roar.shake !== undefined, 'it has jaws to open and a shake to ask for');
+  // (its jaws: shut in its grin as it begins, as it draws its breath and as it ends; thrown open in under three frames;
+  // wide all the while it roars; shut again before it is in its stance)
+  assert.deepEqual([jaw(0), jaw(ROAR_F.coiled * FR), jaw(roar.long)], [0, 0, 0]);
+  for (let f = ROAR_F.burst; f <= ROAR_F.held; f++) assert.ok(jaw(f * FR) > 0.9, `its jaws wide at frame ${f} (${jaw(f * FR).toFixed(2)})`);
+  for (let f = ROAR_F.shut; f <= 42; f++) assert.deepEqual(jaw(f * FR), 0, `its jaws shut at frame ${f}`);
+  // (quivering as it is held: never still two frames running)
+  for (let f = ROAR_F.burst; f < ROAR_F.held - 1; f++) assert.ok(Math.abs(jaw((f + 1) * FR) - jaw(f * FR)) > 0.003, `its jaws quiver at frame ${f}`);
+  // (its head: ducked as it draws its breath, thrown up as it roars, and shaking: turned to its left and to its right by
+  // six degrees and more, and back and forth at least three times)
+  const turn = (f: number): number => shadowPose(roar, f * FR).faceTurn;
+  const up = (f: number): number => shadowPose(roar, f * FR).faceUp;
+  assert.ok(up(ROAR_F.coiled) < SHADOW_STANCE.faceUp - 8 && up(ROAR_F.burst + 1) > SHADOW_STANCE.faceUp + 18, 'ducked, then thrown up');
+  const turns = Array.from({ length: (ROAR_F.held - ROAR_F.burst) * 2 + 1 }, (_, i) => turn(ROAR_F.burst + i / 2));
+  assert.ok(Math.max(...turns) > 6 && Math.min(...turns) < -6, `its head shaken ${Math.min(...turns).toFixed(1)} to ${Math.max(...turns).toFixed(1)}`);
+  let swings = 0;
+  for (let i = 1; i < turns.length; i++) if (turns[i] * turns[i - 1] < 0) swings++;
+  assert.ok(swings >= 3, `from side to side ${swings} times`);
+  // (the screen: not shaken before the roar bursts out; hardest as it does; kept shaking while it is held; let go after)
+  assert.deepEqual([shake(0), shake(ROAR_F.coiled * FR), shake((ROAR_F.held + 2) * FR), shake(roar.long)], [0, 0, 0, 0]);
+  assert.ok(shake(ROAR_OUT * FR) >= 5, 'hardest as it bursts out');
+  for (let f = ROAR_F.burst; f <= ROAR_F.held - 1; f++) assert.ok(shake(f * FR) >= 3, `shaken at frame ${f}`);
+  // (OUT OF ITS MOUTH: nothing in the air before it bursts out; rings, lines and spittle from then until after its breath
+  // has run out; and they leave it the way it faces, from before its head)
+  paintWithoutCanvas();
+  const lit = (f: number, view: 'front' | 'back'): number => {
+    const a = roarLight(roar, f * FR, view).air.d;
+    let n = 0;
+    for (let i = 3; i < a.length; i += 4) if (a[i]) n++;
+    return n;
+  };
+  for (const view of ['front', 'back'] as const) {
+    assert.deepEqual(lit(ROAR_F.coiled, view), 0, `nothing leaves it as it draws its breath, from ${view}`);
+    for (const f of [ROAR_F.burst, 12, 16, 20, ROAR_F.held]) assert.ok(lit(f, view) > 150, `the roar is seen at frame ${f} from ${view} (${lit(f, view)} pixels)`);
+    assert.deepEqual(lit(42, view), 0, `gone by its end, from ${view}`);
+  }
+  const mouth = mouthAt(roar, 12 * FR);
+  const head = at(roar, 12 * FR).head;
+  assert.ok(mouth.way[0] > 0.7 && mouth.way[2] > 0.2, 'it roars ahead of it and up');
+  // (out of its mouth: before the middle of its head, no further from it than its head is big)
+  assert.ok(mouth.at[0] > head[0] + 4 && far(mouth.at, head) > 10 && far(mouth.at, head) < 22, `out of its mouth (${far(mouth.at, head).toFixed(1)} from the middle of its head)`);
+  // (from in front what leaves its mouth is nearer the eye than it is, and laid over it; from behind beyond it, under it)
+  assert.deepEqual([roarLight(roar, 12 * FR, 'front').over, roarLight(roar, 12 * FR, 'back').over], [true, false]);
+});
+
+test('wherever else it roars its jaws open too: as it tears its claws up in Damning, as it rises out of the smoke step; a snarl as it is struck; shut as each begins and ends', () => {
+  const j = (m: ShadowMove, f: number): number => (m.jaw as (t: number) => number)(f * FR);
+  for (const m of [damning, step, reel, lurch]) assert.deepEqual([j(m, 0), j(m, Math.round(m.long / FR))], [0, 0], m.name);
+  assert.ok(j(damning, DM.rip) > 0.9 && j(damning, DM.freeze) > 0.9, 'roaring as it tears them up, through the freeze');
+  assert.ok(j(step, SS.roar) > 0.9, 'roaring as it rises out of the smoke');
+  assert.ok(j(reel, WSTRUCK.snapped) > 0.5 && j(lurch, WSTRUCK.snapped) > 0.5, 'a snarl as the blow snaps it');
+  for (const m of [damning, step, reel, lurch]) for (let f = 0; f <= Math.round(m.long / FR); f++) assert.ok(j(m, f) >= 0 && j(m, f) <= 1, `${m.name}: a jaw from shut to wide at frame ${f}`);
 });
 
 test("its burning out, from up on two legs: as long as the game's; from its stance; it only sinks; its front hoof and its rear hoof's toes where they stand; what burns on it gutters and dies, in his cyan's own tones", () => {

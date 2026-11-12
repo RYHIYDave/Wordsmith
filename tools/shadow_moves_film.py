@@ -17,7 +17,15 @@ play on his phone).
                                                                        smoke step (the eye going with it, the floor going by
                                                                        under it), its roar as the change into it ends, its
                                                                        burning out, struck hard and from behind; and all of
-                                                                       them in a fight"""
+                                                                       them in a fight
+   python3 tools/shadow_moves_film.py <frames dir> <out.mp4> roar       its roar, made again (his word, 11 Nov by 22:08: “The
+                                                                       roar is so bad.  His face doesn’t even move?  No
+                                                                       animations out of the mouth?  No spittle or action
+                                                                       lines or screen shake on the roar?”): at its own
+                                                                       speed, at half speed, ITS FACE CLOSE UP at a quarter
+                                                                       speed, and where else it roars. THE PICTURE SHAKES as
+                                                                       the game shakes its screen (render/fx.ts: as hard as
+                                                                       the move asks, dying away at 22 a second)"""
 import json, math, os, subprocess, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -25,6 +33,7 @@ from PIL import Image, ImageDraw, ImageFont
 src, out = sys.argv[1], sys.argv[2]
 WALKING = len(sys.argv) > 3 and sys.argv[3] == 'walking'
 OTHERS = len(sys.argv) > 3 and sys.argv[3] == 'others'
+ROAR = len(sys.argv) > 3 and sys.argv[3] == 'roar'
 note = json.load(open(os.path.join(src, 'moves.json')))
 MOVES = note['moves']
 SC = note['canvas']
@@ -78,7 +87,15 @@ def floor(view, gone):
     return Image.fromarray(img, 'RGB')
 
 BRAWLER = {v: Image.open(os.path.join(src, f'brawler_{v}.png')).convert('RGBA') for v in ('front', 'back')}
-def panel(view, key, f, gone, brawler, shade=1.0):
+# (its face close up: what is cut out round its head from in front, five times as big, in place of the whole picture: a
+# window that does not move, set on the middle of where its head goes through the move, so that its head is seen to move)
+FACE_W, FACE_H, FACE_K = 136, 111, 5
+def face_box(key):
+    hs = MOVES[key]['head']
+    cx = (min(h[0] for h in hs) + max(h[0] for h in hs)) / 2 - BOX[0]
+    cy = (min(h[1] for h in hs) + max(h[1] for h in hs)) / 2 - BOX[1]
+    return (round(cx - FACE_W / 2 + 2), round(cy - FACE_H / 2 - 6), FACE_W, FACE_H)
+def panel(view, key, f, gone, brawler, shade=1.0, close=False):
     p = floor(view, gone).convert('RGBA')
     # (a soft shadow under it, so it stands on the floor; none while it is smoke, a man's under him once it has crumbled away)
     if shade > 0.05:
@@ -94,6 +111,12 @@ def panel(view, key, f, gone, brawler, shade=1.0):
         by = FY + GRID * 0.5 * off
         p.alpha_composite(BRAWLER[view], (round(bx - ax), round(by - ay)))
     p.alpha_composite(frame(key, view, f))
+    if close:
+        x, y, w, h = face_box(key)
+        big = p.convert('RGB').crop((x, y, x + w, y + h)).resize((w * FACE_K, h * FACE_K), Image.NEAREST)
+        out = Image.new('RGB', (PW * S, PH * S), BG)
+        out.paste(big, ((PW * S - w * FACE_K) // 2, (PH * S - h * FACE_K) // 2))
+        return out
     return p.convert('RGB').resize((PW * S, PH * S), Image.NEAREST)
 
 # ---- what is shown, film frame by film frame: (move, its picture, how far it has gone, the part's number, the Brawler)
@@ -148,6 +171,7 @@ def shade_of(key, f):
         sag = round(52)
         return 1.0 if f <= sag else max(0.5, 1.0 - 0.5 * (f - sag) / 27.0)
     return 1.0
+CLOSE = set()
 def other(key, part, hold=2, last=False, after=0):
     """One of its other moves; a move that takes it across the floor (its smoke step), the eye going with it, the floor
     gone by as far as it has gone. (Its last frame is its stance again, as the next move's first is: left out, unless asked.)
@@ -161,7 +185,35 @@ def other(key, part, hold=2, last=False, after=0):
         film.extend([(key, f, (g, side), part, False, shade_of(key, f))] * hold)
     if m.get('along'):
         gone += m['along'][-1]
-if OTHERS:
+if ROAR:
+    PARTS = [
+        ('ITS ROAR, MADE AGAIN', 'It draws breath, then roars: jaws thrown open, his fire in its throat. The screen shakes with it.'),
+        ('THE SAME, AT HALF SPEED', 'Rings of force roll out of its mouth, action lines fly, spittle sprays. Its head shakes with it.'),
+        ('ITS FACE, CLOSE UP, AT QUARTER SPEED', 'Shown without the rings and lines, so its face is seen: eyes narrowed, jaws wide, head shaking.'),
+        ('IT ROARS IN DAMNING AND THE SMOKE STEP TOO', 'Its jaws open as it tears its claws up, and as it rises out of the smoke. It snarls when hit.'),
+    ]
+    # 1. the roar, twice
+    stand(N_STAND - 30, N_STAND, 0)
+    other('roar', 0)
+    stand(0, 36, 0)
+    other('roar', 0)
+    stand(0, 36, 0)
+    # 2. the same at half speed
+    stand(N_STAND - 6, N_STAND, 1, 4)
+    other('roar', 1, 4)
+    stand(0, 8, 1, 4)
+    # 3. its face close up, a quarter as fast: it alone, nothing leaving its mouth, so that its face is seen
+    n0 = len(film)
+    other('roarface', 2, 8, last=True)
+    film.extend([film[-1]] * 20)
+    CLOSE.update(range(n0, len(film)))
+    # 4. where else it roars: Damning, the smoke step; and its snarl as it is struck
+    stand(N_STAND - 20, N_STAND, 3)
+    other('damning', 3, after=24)
+    other('step', 3, after=48)
+    other('reel', 3)
+    stand(0, 40, 3)
+elif OTHERS:
     PARTS = [
         ('TAP AND HOLD: DAMNING, UP ON TWO LEGS', 'It drops onto its claws, they bite the floor, it heaves, tears them up, and is back on two legs.'),
         ('THE SAME, AT HALF SPEED', 'No rear-up and slam. What it does to the ones it damns is the game\'s own, as now.'),
@@ -287,8 +339,24 @@ ff = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fm
 last = None
 card = None
 shots = []
+# (THE PICTURE SHAKEN AS THE GAME SHAKES ITS SCREEN, render/fx.ts: as hard as the move asks at each of its frames, kept up
+# while it asks, dying away at 22 a second; so far across, and six tenths as far up and down, anew every film frame. A
+# film pixel for a screen pixel, half as much again so that it is seen on a phone.)
+import random
+rng = random.Random(7)
+shaking = 0.0
 for n, shot in enumerate(film):
-    if shot != last:
+    key, f = shot[0], shot[1]
+    asked = (MOVES[key].get('shake') or [0])
+    asked = asked[f] if f < len(asked) else 0
+    shaking = max(shaking - 22.0 / 60.0, asked)
+    jolt = (round(rng.uniform(-shaking, shaking) * 1.5), round(rng.uniform(-shaking, shaking) * 0.6 * 1.5)) if shaking > 0.3 else (0, 0)
+    close = n in CLOSE
+    # (its face close up is held still: it is its face that is to be seen moving)
+    if close:
+        jolt = (0, 0)
+    look = (shot, jolt, close)
+    if look != last:
         key, f, g, part, brawler = shot[:5]
         shade = shot[5] if len(shot) > 5 else 1.0
         card = Image.new('RGB', (W, H), BG)
@@ -297,10 +365,15 @@ for n, shot in enumerate(film):
         d.text((W - GAP, TOP // 2), 'THE LIVING SHADOW', font=small, fill=GREY, anchor='rm')
         for i, v in enumerate(('front', 'back')):
             x = GAP + i * (PW * S + GAP)
-            card.paste(panel(v, key, f, g, brawler, shade), (x, TOP))
-            d.text((x + 10, TOP + 8), 'FROM IN FRONT' if v == 'front' else 'FROM BEHIND', font=small, fill=PALE)
+            pic = panel(v, key, f, g, brawler, shade, close and v == 'front')
+            if jolt != (0, 0):
+                moved = Image.new('RGB', pic.size, (14, 12, 30))
+                moved.paste(pic, jolt)
+                pic = moved
+            card.paste(pic, (x, TOP))
+            d.text((x + 10, TOP + 8), ('ITS FACE, FROM IN FRONT' if close else 'FROM IN FRONT') if v == 'front' else 'FROM BEHIND', font=small, fill=PALE)
         d.text((W // 2, TOP + PH * S + FOOT // 2), PARTS[part][1], font=line, fill=PALE, anchor='mm')
-        last = shot
+        last = look
     ff.stdin.write(card.tobytes())
     if n % 20 == 0:
         shots.append(card.copy())
