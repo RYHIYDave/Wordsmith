@@ -9,7 +9,9 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { READY_LIST, cardLists, heroLists, makeHeroArt3 } from '../src/art/heroes3';
+import { bakeLists, cardLists, makeHeroArt3, readyList } from '../src/art/heroes3';
+
+const READY_LIST = readyList();
 import { lookOfPlace } from '../src/art/heroes';
 import { heroSides, isEight } from '../src/art/sides';
 import type { EightArt } from '../src/art/sides';
@@ -33,7 +35,7 @@ test('the cards are all six heroes, and each hero\'s card has his standing and r
   for (const k of keys) {
     const art = A.of(k.cls, { ...lookOfPlace('card'), vet: k.vet });
     const sides = heroSides(art);
-    const lists = sides.map((s) => heroLists(s));
+    const lists = sides.map((s) => bakeLists(s));
     const c = cardLists(sides);
     // (the side a card's hero is seen from: the front of a hero with two; of one painted from eight, `toward`, the third)
     const v = sides.length === 8 ? 2 : 0;
@@ -68,7 +70,7 @@ test('a card played with its baked places given: nothing is painted where the ga
   for (const k of keys) {
     const art = A.of(k.cls, { ...lookOfPlace('card'), vet: k.vet });
     const sides = heroSides(art);
-    const lists = sides.map((s) => heroLists(s));
+    const lists = sides.map((s) => bakeLists(s));
     // (the bake's pictures, as render/baked.ts hands them: a stand-in for each place)
     let given = 0;
     for (const [v, l, i] of bakedPlaces(sides, true)) {

@@ -6,7 +6,8 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { BAKED, BakedHeroes, bakeGroups, bakeMark, bakedFirst, bakedPlaces, keyName, listLengths } from '../src/render/baked';
-import { READY_LIST } from '../src/art/heroes3';
+import { readyList } from '../src/art/heroes3';
+const READY_LIST = readyList();
 import type { AnimSet } from '../src/art/actor_types';
 import type { HeroArt } from '../src/art/heroes';
 

@@ -3,7 +3,7 @@
 // as one already painted, in the group, is kept once), lays them on sheets in the order they are wanted, and hands the tool
 // each sheet's pixels and where each frame is.
 
-import { heroLists, makeHeroArt3 } from '../art/heroes3';
+import { bakeLists, makeHeroArt3 } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { Sprite } from '../engine/px';
 import { VETERAN } from '../game/veteran';
@@ -47,7 +47,7 @@ function group(name: string): { frames: number; places: number; sheets: { w: num
   const per = keys.map((k) => {
     const a = art.of(k.cls, { ...lookOfPlace(k.place), vet: k.vet });
     const sides = heroSides(a);
-    return { k, sides, lists: sides.map((s) => heroLists(s)), all: bakedPlaces(sides, k.place === 'card'), first: bakedFirst(sides, k.place === 'card'), at: [] as number[] };
+    return { k, sides, lists: sides.map((s) => bakeLists(s)), all: bakedPlaces(sides, k.place === 'card'), first: bakedFirst(sides, k.place === 'card'), at: [] as number[] };
   });
   const runs: [(typeof per)[number], number, number][] = [...per.map((p) => [p, 0, p.first] as [(typeof per)[number], number, number]), ...per.map((p) => [p, p.first, p.all.length] as [(typeof per)[number], number, number])];
   for (const [p, from, to] of runs) {

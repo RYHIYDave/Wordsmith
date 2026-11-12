@@ -6,11 +6,11 @@
 // whatever”; asked how, 6 Nov 2026, his pick: “Inside the game file”.
 //
 // The pictures are the very ones the painter's worker paints (render/painter.ts, hero), the same lists in the same places
-// (art/heroes3.ts heroLists), handed in the same way (HeroArt.give). Wherever the baked pictures are not to be had (a page
+// (art/heroes3.ts heroLists; bakeLists, with a hero's making ready on his card), handed in the same way (HeroArt.give). Wherever the baked pictures are not to be had (a page
 // built without them or opened from a file, a sheet that will not load, a hero whose lists are not as they were baked), the
 // game paints them as it did before: nothing is lost but time.
 
-import { READY_LIST, cardLists, heroLists } from '../art/heroes3';
+import { bakeLists, cardLists, readyList } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
 import type { AnimSet } from '../art/actor_types';
@@ -58,8 +58,9 @@ export function keyName(k: BakeKey): string {
 
 /**
  * Where a hero's baked frames go, as [side, list, frame] (sides as art/sides.ts numbers them: 0 the front, 1 the back, and for a
- * hero painted from eight, the six others after; lists as heroLists has them), in the order they are wanted: standing and
- * running first, then the first frame of every other list, then the rest (his making ready is a card's only: READY_LIST).
+ * hero painted from eight, the six others after; lists as art/heroes3.ts bakeLists has them), in the order they are wanted:
+ * standing and running first, then the first frame of every other list, then the rest (his making ready is a card's only:
+ * readyList()).
  *
  * ON A CLASS CARD, EVERYTHING A CARD SHOWS (art/heroes3.ts cardLists): standing and running first, then coming to a stand out
  * of the run, of the side a card's hero is seen from (of a hero painted from eight sides, not the front); what he does left
@@ -67,7 +68,7 @@ export function keyName(k: BakeKey): string {
  * was painted where the game is drawn as it was shown, the lag of the hero cards on his phone.)
  */
 export function bakedPlaces(sides: readonly AnimSet[], card: boolean): [number, number, number][] {
-  const lists = sides.map((s) => heroLists(s));
+  const lists = sides.map((s) => bakeLists(s));
   const front = sides[0];
   const out: [number, number, number][] = [];
   if (card) {
@@ -78,7 +79,8 @@ export function bakedPlaces(sides: readonly AnimSet[], card: boolean): [number, 
   }
   const most = [lists[0].indexOf(front.idle), lists[0].indexOf(front.walk)].filter((l) => l >= 0);
   const V = lists.length;
-  const rest = (l: number): boolean => !most.includes(l) && l !== READY_LIST;
+  const ready = readyList();
+  const rest = (l: number): boolean => !most.includes(l) && l !== ready;
   for (const l of most) for (let v = 0; v < V; v++) for (let i = 0; i < lists[v][l].length; i++) out.push([v, l, i]);
   for (let l = 0; l < lists[0].length; l++) if (rest(l)) for (let v = 0; v < V; v++) if (lists[v][l].length) out.push([v, l, 0]);
   for (let l = 0; l < lists[0].length; l++) if (rest(l)) for (let v = 0; v < V; v++) for (let i = 1; i < lists[v][l].length; i++) out.push([v, l, i]);
@@ -94,13 +96,13 @@ export function bakedFirst(sides: readonly AnimSet[], card: boolean): number {
   if (!card) return bakedPlaces(sides, false).length;
   const c = cardLists(sides);
   let n = 0;
-  for (const [v, l] of c.at.slice(0, c.first)) n += heroLists(sides[v])[l].length;
+  for (const [v, l] of c.at.slice(0, c.first)) n += bakeLists(sides[v])[l].length;
   return n;
 }
 
 /** The lengths of a hero's lists, every side (to know the baked pictures are of the hero as the game has him now). */
 export function listLengths(sides: readonly AnimSet[]): number[][] {
-  return sides.map((s) => heroLists(s).map((l) => l.length));
+  return sides.map((s) => bakeLists(s).map((l) => l.length));
 }
 
 export { heroSides };

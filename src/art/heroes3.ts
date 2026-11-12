@@ -376,23 +376,35 @@ const HERO_PICKS: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?
           // (25.2.4: what a hero does standing about, his two gestures (render/figure.ts standingFrame), last, so that every other list
           // keeps its place: till then never baked nor painted ahead, so painted here as he stood, a second and more for the Warrior
           // from eight sides on this machine, many on a phone; his “I couldn’t move for maybe 15 seconds”, 7 Nov 2026)
-          (a) => a.clips?.idleA?.frames ?? [], (a) => a.clips?.idleB?.frames ?? [],
-          // (THE HERO CARDS FROM THE BAKE, 12 Nov 2026: a hero making ready on his class card (clips.ready: ui/panels.ts), the last, so
-          // that every other list keeps its place: till then in no list, so never baked nor painted ahead, each frame painted
-          // where the game is drawn as it was shown. READY_LIST)
-          (a) => a.clips?.ready?.frames ?? []];
+          (a) => a.clips?.idleA?.frames ?? [], (a) => a.clips?.idleB?.frames ?? []];
 
 /** A hero's lists of frames, in the order they are painted ahead (the painter's worker and the page agree on them by this). */
 export function heroLists(set: AnimSet): Sprite[][] {
   return HERO_PICKS.map((pick) => pick(set));
 }
 
-/** Which of heroLists is a hero's making ready on his class card (clips.ready): a card's only, baked and painted ahead for no other place. */
-export const READY_LIST = HERO_PICKS.length - 1;
+/**
+ * A HERO'S LISTS AS THE BAKE HOLDS THEM (render/baked.ts, dev/bake_heroes_page.ts, HeroArt.give, the cards): heroLists, then one
+ * more, his making ready on his class card (clips.ready: ui/panels.ts), a card's only: readyList(). (The hero cards from the
+ * bake, 12 Nov 2026: till then it was in no list, never baked nor painted ahead, each frame painted where the game is drawn as
+ * it was shown. NOT ADDED TO heroLists ITSELF: the monsters' bake page carries heroLists, for floor 18's reflections, and a
+ * line changed there would give the monsters' bake a new mark for the same pictures; nor to what the painter's worker paints
+ * ahead for a place.)
+ */
+export function bakeLists(set: AnimSet): Sprite[][] {
+  const out = heroLists(set);
+  out.push(set.clips?.ready?.frames ?? []);
+  return out;
+}
+
+/** Which of bakeLists is a hero's making ready: the last, so that every other list keeps its place. (A function: a page that never asks for it does not carry it.) */
+export function readyList(): number {
+  return HERO_PICKS.length;
+}
 
 /**
  * THE LISTS A CLASS CARD SHOWS (ui/panels.ts drawTitle; render/figure.ts), as [side, list] (the sides as art/sides.ts numbers
- * them, the lists as heroLists has them), in the order they are wanted:
+ * them, the lists as bakeLists has them), in the order they are wanted:
  *   STANDING AND RUNNING (the first `first` of them: what is seen as the cards come up, and a card touched or chosen), of the
  *   side a card's hero is seen from: the front of a hero with two sides; of a hero painted from eight, the side for the way he
  *   faces there, `toward` (render/figure.ts eightSide);
@@ -413,7 +425,7 @@ export function cardLists(sides: readonly AnimSet[]): { at: [number, number][]; 
   const front = sides[0];
   const out: [number, number][] = [];
   const add = (side: number, l: readonly Sprite[] | undefined): void => {
-    const at = l && l.length ? heroLists(sides[side]).indexOf(l as Sprite[]) : -1;
+    const at = l && l.length ? bakeLists(sides[side]).indexOf(l as Sprite[]) : -1;
     if (at >= 0 && !out.some(([a, b]) => a === side && b === at)) out.push([side, at]);
   };
   add(v, seen.idle);
@@ -424,7 +436,7 @@ export function cardLists(sides: readonly AnimSet[]): { at: [number, number][]; 
   add(0, front.clips?.idleB?.frames);
   add(0, front.clips?.ready?.frames);
   const one: [number, number, number][] = [];
-  if (v !== 0 && (front.clips?.idleA || front.clips?.idleB) && front.idle.length) one.push([0, heroLists(front).indexOf(front.idle), 0]);
+  if (v !== 0 && (front.clips?.idleA || front.clips?.idleB) && front.idle.length) one.push([0, bakeLists(front).indexOf(front.idle), 0]);
   return { at: out, first, one };
 }
 
@@ -536,13 +548,13 @@ export function makeHeroArt3(): HeroArt {
     of,
     /**
      * THE PAINTER (render/painter.ts): a frame of a hero painted beside the game, taken in where the game has not painted
-     * it yet (`v` the side, `l` its list as heroLists has them, `i` the frame). False: not wanted (the game had painted it).
+     * it yet (`v` the side, `l` its list as bakeLists has them, `i` the frame). False: not wanted (the game had painted it).
      */
     give(cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean): boolean {
       // (`vet`: painted as the Veteran, whatever the switch is now: art/veteran_art.ts)
       const art = of(cls, { ...lookOfPlace(place), vet: !!vet });
       const side = heroSides(art)[v];
-      const frames = side ? heroLists(side)[l] : undefined;
+      const frames = side ? bakeLists(side)[l] : undefined;
       if (!frames || i < 0 || i >= frames.length) return false;
       const d = Object.getOwnPropertyDescriptor(frames, i);
       if (!d || typeof d.get !== 'function') return false;
@@ -556,8 +568,7 @@ export function makeHeroArt3(): HeroArt {
         list = [];
         // (standing and running first, then the attacks from start to finish, then the rest; what
         // a hero does when left standing is painted as it is shown, which is slowly enough)
-        // (his making ready is his card's only: READY_LIST, the last, is not painted ahead for a place)
-        const picks = HERO_PICKS.slice(0, READY_LIST);
+        const picks = HERO_PICKS;
         for (const pick of picks) {
           for (const set of heroSides(art)) {
             const frames = pick(set);

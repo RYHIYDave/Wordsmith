@@ -32,7 +32,7 @@ import { FIRST5_FIGURES, HEAVY_FIGURES, framesOf, giveFrame, makeBestiary, paint
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { ActorArt, AnimSet } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
-import { READY_LIST, heroLists, makeHeroArt3 } from '../art/heroes3';
+import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { heroSides } from '../art/sides';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroPlace } from '../art/heroes';
@@ -1001,7 +1001,6 @@ export function paintWorkerMain(): void {
       // frame first, then every fourth, and so on, so that each figure moves within a second or two and grows smooth as the
       // rest come in (a frame not here yet is shown as the nearest that is: art/kit.ts LEFT_TO_PAINTER). Before, every list of
       // a hero was painted, both ways, one hero after another: the Tinkerer's card waited on the Warlock's 610 frames.
-      // (THE BAKE has more for a card, everything a card shows: render/baked.ts bakedPlaces. Here, where there is no bake, as it was.)
       const shown = [lists[0].indexOf(art.front.idle), lists[0].indexOf(art.front.walk)].filter((l) => l >= 0);
       const seen = new Set<string>();
       for (const step of [8, 4, 2, 1]) {
@@ -1019,11 +1018,9 @@ export function paintWorkerMain(): void {
       // word, 1 Nov 2026, 10:19: “I had some stutter issues with the brawler loading his hold ability”)
       // (standing and running whole before anything: what is seen most)
       const seenMost = [lists[0].indexOf(art.front.idle), lists[0].indexOf(art.front.walk)].filter((l) => l >= 0);
-      // (his making ready is his card's only, never shown in a place: art/heroes3.ts READY_LIST; render/baked.ts bakedPlaces the same)
-      const rest = (l: number): boolean => !seenMost.includes(l) && l !== READY_LIST;
       for (const l of seenMost) for (let v = 0; v < V; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
-      for (let l = 0; l < lists[0].length; l++) if (rest(l)) for (let v = 0; v < V; v++) if (lists[v][l].length) order.push([v, l, 0]);
-      for (let l = 0; l < lists[0].length; l++) if (rest(l)) for (let v = 0; v < V; v++) for (let i = 1; i < lists[v][l].length; i++) order.push([v, l, i]);
+      for (let l = 0; l < lists[0].length; l++) if (!seenMost.includes(l)) for (let v = 0; v < V; v++) if (lists[v][l].length) order.push([v, l, 0]);
+      for (let l = 0; l < lists[0].length; l++) if (!seenMost.includes(l)) for (let v = 0; v < V; v++) for (let i = 1; i < lists[v][l].length; i++) order.push([v, l, i]);
     }
     const sent = new Set<Sprite>();
     let list: Given[] = [];
