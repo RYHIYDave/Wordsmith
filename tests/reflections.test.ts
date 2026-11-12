@@ -155,7 +155,8 @@ test('1. the switch is off, and of the game only floor 18\'s own figure imports 
   assert.equal(REFLECTIONS_ON.on, false, 'REFLECTIONS_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/reflections(_fx)?\.ts$/.test(f)) continue;
+    // (art/reflections_up.ts, the heroes as they look now: the art's own mock-up, made from these, behind its own switch, off)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/reflections(_fx|_up)?\.ts$/.test(f)) continue;
     const dir = f.split('/').slice(0, -1);
     for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
       const parts = [...dir];

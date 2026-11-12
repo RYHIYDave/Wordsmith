@@ -38,7 +38,7 @@
 // `clips.moves.stepOut` its stepping out of a mirror (art/reflections_fx.ts); the game's AI drives it, as it drives
 // any enemy, with the hero's moves and speed.
 
-import type { Light, Sprite } from '../engine/px';
+import type { Light, Px, Sprite } from '../engine/px';
 import { rgba } from '../engine/px';
 import type { TailDef } from '../engine/tails';
 import type { ClassId, FirstClass } from '../game/types';
@@ -201,13 +201,13 @@ function eyesAt(st: Stage, s: Skeleton, B: Build): [number, number][] {
  * skeleton.ts trunkOf) or the head (3), a line of points on its skin, each a way out from its middle in its own
  * space (forward, to its left, up), and a branch off it from its `fork`th point.
  */
-interface Crack {
+export interface Crack {
   on: 0 | 1 | 2 | 3;
   line: readonly V3[];
   fork?: { at: number; to: readonly V3[] };
 }
 /** Five, laid so that two or three are seen from any side: across the chest, down the belly, across the back, low on the back, and over the brow. */
-const CRACKS: readonly Crack[] = [
+export const CRACKS: readonly Crack[] = [
   // the chest, from in front, a little to its left: a jagged line down and across, a branch off it
   { on: 0, line: [[0.86, 0.45, 0.55], [0.95, 0.24, 0.32], [0.93, 0.32, 0.06], [0.97, 0.06, -0.18], [0.9, 0.18, -0.48]], fork: { at: 2, to: [[0.85, 0.55, -0.08], [0.72, 0.7, -0.22]] } },
   // the belly, from in front, to its right
@@ -289,14 +289,17 @@ export function reflectionPainted(move: Move3, t: number, view: GameView): Silve
   return silver(f, move, s, B, view, windAt(move, now));
 }
 
-/** A painting of the hero's turned to glass: the hero's move and bones it was painted from, and where the sheen has got to (0..1). */
-export function silver(f: Painted, move: Move3, s: Skeleton, B: Build, view: GameView, sheen: number): Silvered {
-  const px = f.px;
+/**
+ * THE GLASS A PAINTING IS TO BE (the first step of turning a hero to glass): each pixel's glass (-1: not glass: empty, a
+ * seam, or a glow already turned the enemy's pink) and its tone. The friend's edge of light is taken off; his glows become
+ * the enemy's pink, tone for tone (FRIEND_TO_ENEMY; and, given `glow`, whatever else it says is a glow of his). Changes
+ * `px` in place.
+ */
+export function glassOfPainting(px: Px, glow?: (k: number, r: number, g: number, b: number) => string | null): { glass: Int8Array; tone: Int8Array } {
   const W = px.w;
   const H = px.h;
   const d = px.d;
   const ink = rgba(INK);
-  /** Each pixel's glass (-1: not glass: empty, a seam, or a glow already turned pink) and its tone. */
   const glass = new Int8Array(W * H).fill(-1);
   const tone = new Int8Array(W * H);
   for (let k = 0, i = 0; k < W * H; k++, i += 4) {
@@ -310,7 +313,7 @@ export function silver(f: Painted, move: Move3, s: Skeleton, B: Build, view: Gam
     const g = d[i + 1];
     const b = d[i + 2];
     if (r === ink[0] && g === ink[1] && b === ink[2]) continue;
-    const pink = ENEMY_OF.get((r << 16) | (g << 8) | b);
+    const pink = ENEMY_OF.get((r << 16) | (g << 8) | b) ?? (glow ? glow(k, r, g, b) : null);
     if (pink) {
       const [pr, pg, pb] = rgba(pink);
       d[i] = pr;
@@ -321,21 +324,73 @@ export function silver(f: Painted, move: Move3, s: Skeleton, B: Build, view: Gam
     glass[k] = glassOf(r, g, b);
     tone[k] = glass[k] === 1 ? WARM_TONE[toneOfLight(luma(r, g, b))] : toneOfLight(luma(r, g, b));
   }
-  // GLASS IS BRIGHT AT ITS EDGES: where a part of it ends (at the figure's edge or at a seam), a tone or two lighter, the
-  // more on the side the light comes from (the upper left)
-  {
-    const was = tone.slice();
-    const not = (x: number, y: number): boolean => x < 0 || y < 0 || x >= W || y >= H || glass[y * W + x] < 0;
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        const k = y * W + x;
-        if (glass[k] < 0) continue;
-        if (not(x - 1, y) || not(x, y - 1)) tone[k] = Math.min(TOP - 1, was[k] + 2);
-        else if (not(x + 1, y) || not(x, y + 1)) tone[k] = Math.min(TOP - 1, was[k] + 1);
-        else if (not(x - 2, y) || not(x, y - 2) || not(x - 1, y - 1)) tone[k] = Math.min(TOP - 1, was[k] + 1);
-      }
+  return { glass, tone };
+}
+
+/** GLASS IS BRIGHT AT ITS EDGES: where a part of it ends (at the figure's edge or at a seam), a tone or two lighter, the more on the side the light comes from (the upper left). */
+export function brightEdges(glass: Int8Array, tone: Int8Array, W: number, H: number): void {
+  const was = tone.slice();
+  const not = (x: number, y: number): boolean => x < 0 || y < 0 || x >= W || y >= H || glass[y * W + x] < 0;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const k = y * W + x;
+      if (glass[k] < 0) continue;
+      if (not(x - 1, y) || not(x, y - 1)) tone[k] = Math.min(TOP - 1, was[k] + 2);
+      else if (not(x + 1, y) || not(x, y + 1)) tone[k] = Math.min(TOP - 1, was[k] + 1);
+      else if (not(x - 2, y) || not(x, y - 2) || not(x - 1, y - 1)) tone[k] = Math.min(TOP - 1, was[k] + 1);
     }
   }
+}
+
+/** THE CRACKS LIT: each crack's pixel the glass's own white, its shadow a pixel of dark glass below and to the right of it. */
+export function lightCracks(cracked: ReadonlySet<number>, glass: Int8Array, tone: Int8Array, W: number, H: number): void {
+  for (const k of cracked) {
+    const x = k % W;
+    const y = (k - x) / W;
+    for (const j of [k + 1, k + W]) {
+      if ((j === k + 1 && x + 1 >= W) || (j === k + W && y + 1 >= H)) continue;
+      if (glass[j] >= 0 && !cracked.has(j)) tone[j] = Math.min(tone[j], 1);
+    }
+  }
+  for (const k of cracked) tone[k] = TOP;
+}
+
+/** THE SHEEN: a broad band three tones up, a thin one four up behind it, on the slant (x + y, from its feet at `ax`, `ay`). */
+export function sheenOver(glass: Int8Array, tone: Int8Array, W: number, H: number, sheen: number, ax = CANVAS3.ax, ay = CANVAS3.ay): void {
+  const at = sheenAt(sheen);
+  if (at === null) return;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const k = y * W + x;
+      if (glass[k] < 0) continue;
+      const u = x - ax + (y - ay);
+      if (Math.abs(u - at) <= 4) tone[k] = Math.min(TOP, tone[k] + 3);
+      else if (Math.abs(u - (at - 11)) <= 1) tone[k] = Math.min(TOP, tone[k] + 4);
+    }
+  }
+}
+
+/** The glass, as colours: every pixel of glass its glass's tone. */
+export function glassColours(px: Px, glass: Int8Array, tone: Int8Array): void {
+  const d = px.d;
+  for (let k = 0, i = 0; k < px.w * px.h; k++, i += 4) {
+    if (glass[k] < 0) continue;
+    const [r, g, b] = rgba(GLASSES[glass[k]][tone[k]]);
+    d[i] = r;
+    d[i + 1] = g;
+    d[i + 2] = b;
+  }
+}
+
+/** A painting of the hero's turned to glass: the hero's move and bones it was painted from, and where the sheen has got to (0..1). */
+export function silver(f: Painted, move: Move3, s: Skeleton, B: Build, view: GameView, sheen: number): Silvered {
+  const px = f.px;
+  const W = px.w;
+  const H = px.h;
+  const d = px.d;
+  const ink = rgba(INK);
+  const { glass, tone } = glassOfPainting(px);
+  brightEdges(glass, tone, W, H);
   const st = stage(view);
   // THE CRACKS: a light line, a tone darker where the glass is already light (each pixel once: a crack crossed twice is still one)
   const occ = occluders(move, s, B);
@@ -374,37 +429,9 @@ export function silver(f: Painted, move: Move3, s: Skeleton, B: Build, view: Gam
     run(c.line);
     if (c.fork) run([c.line[c.fork.at], ...c.fork.to]);
   }
-  // (each crack a line of the glass's own white, its shadow a pixel of dark glass below and to the right of it)
-  for (const k of cracked) {
-    const x = k % W;
-    const y = (k - x) / W;
-    for (const j of [k + 1, k + W]) {
-      if ((j === k + 1 && x + 1 >= W) || (j === k + W && y + 1 >= H)) continue;
-      if (glass[j] >= 0 && !cracked.has(j)) tone[j] = Math.min(tone[j], 1);
-    }
-  }
-  for (const k of cracked) tone[k] = TOP;
-  // THE SHEEN: a broad band three tones up, a thin one four up behind it, on the slant (x + y, from its feet)
-  const at = sheenAt(sheen);
-  if (at !== null) {
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        const k = y * W + x;
-        if (glass[k] < 0) continue;
-        const u = x - CANVAS3.ax + (y - CANVAS3.ay);
-        if (Math.abs(u - at) <= 4) tone[k] = Math.min(TOP, tone[k] + 3);
-        else if (Math.abs(u - (at - 11)) <= 1) tone[k] = Math.min(TOP, tone[k] + 4);
-      }
-    }
-  }
-  // the glass, as colours
-  for (let k = 0, i = 0; k < W * H; k++, i += 4) {
-    if (glass[k] < 0) continue;
-    const [r, g, b] = rgba(GLASSES[glass[k]][tone[k]]);
-    d[i] = r;
-    d[i + 1] = g;
-    d[i + 2] = b;
-  }
+  lightCracks(cracked, glass, tone, W, H);
+  sheenOver(glass, tone, W, H, sheen);
+  glassColours(px, glass, tone);
   // THE EYES: the Hush's dull pink where the hero's dark eyes are (the knight's points of light have taken it already)
   const eyes: [number, number][] = [];
   if (heroOf(move) !== 'knight') {
