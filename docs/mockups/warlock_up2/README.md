@@ -1,11 +1,12 @@
 # THE WARLOCK BROUGHT UP, AND HIS DEMON REDONE (IN HAND; NOTHING HERE IS IN THE GAME)
 
-**WHERE IT STANDS (11 Nov 2026, 19:50 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
+**WHERE IT STANDS (11 Nov 2026, 19:59 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
 two legs to fight and down on all fours to run, wings of smoke (`src/dev/demon_ideas.ts` shadowInto; `pictures/living_shadow.png`).
 ITS FIRST MOVES ARE MADE AND SHOWN HIM AS A FILM (`src/dev/shadow_moves.ts`; `pictures/living_shadow_moves.mp4`): its stand up on
-two legs, its really wide slashes, dropping onto all fours into the game's run, rearing up out of it. HIS WORD ON THEM IS AWAITED
-(the foot of “The Living Shadow's moves” below). NEXT, on his yes: what else stands up; then its eight sides and the change into
-it; then the man. Read from “The Living Shadow, drawn properly” down for what is left; the sections before it are how he got
+two legs, its really wide slashes, dropping onto all fours into the game's run, rearing up out of it. THEY HAVE HIS WORD, 11 Nov by 19:59: “This but I
+want him to be able to move around on two legs as he’s swiping”, and of its other moves, “Yes, all on two legs (Recommended)”
+(the foot of “The Living Shadow's moves” below). NEXT: its slashes made walking on two legs; its other moves up on two legs;
+then its eight sides and the change into it; then the man. Read from “The Living Shadow, drawn properly” down for what is left; the sections before it are how he got
 there, in his words.**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
@@ -258,8 +259,29 @@ are its feet, `PAW_BELOW`); the stand is 96 pictures a view where the game's dem
 that moves at thirty a second), which the main chat should weigh against his phone's memory when it is baked for eight
 sides.
 
-SHOWN HIM SO, 11 Nov, 19:5x, asked whether it moves as he pictured, and whether the rest of its moves (Damning, the smoke
-step, the change into it, burning out) should all begin and end up on two legs. **HIS WORDS: AWAITED.**
+SHOWN HIM SO, 11 Nov, after 19:45 Eastern (the film sent; asked by pop-up whether it moves as he pictured, whether the rest of its
+moves should all begin and end up on two legs, and whether to save the work to GitHub, which that session was not let do
+without his word). **HIS WORDS, 11 Nov, by 19:59:**
+
+- Of how it moves (offered: “Yes, keep going (Recommended)”; close, change something; no, not this), his own words instead:
+  **“This but I want him to be able to move around on two legs as he’s swiping”**
+- Of Damning, the smoke step, the change into it and burning out (offered as: up on two legs for everything but running):
+  **“Yes, all on two legs (Recommended)”**
+- Of saving the work to the Warlock's branch on GitHub: **“Yes, save it (Recommended)”**
+
+Read as, and told him so: THESE MOVES ARE THE ONES (“This”): its stand, its wide slashes, dropping down to run and rearing
+up to stop stay as the film has them. AND ONE MORE, HIS: IT CAN MOVE AROUND ON TWO LEGS WHILE IT SLASHES: it stays up and
+walks as it swipes, it does not have to stand still to slash nor drop to all fours to follow what it is fighting. In the
+game's terms: its slashes made walking (`AnimSet.clips.attackWalk`, as the heroes' attacks are made over the run's legs,
+`art/moves3.ts` walkingOf), on a walk of its own up on two legs, which is to be made (its legs striding under the slash, its
+hooves gripping the floor as the game carries it). All fours stays for running with no slash. AND EVERY OTHER MOVE OF ITS
+BEGINS AND ENDS UP ON TWO LEGS: Damning, the smoke step's two ends, the end of the change into it, the start of its burning
+out; none needs asking of him again one by one.
+
+STILL TO DO, IN THIS ORDER (11 Nov, 19:59): (a) ITS SLASHES MADE WALKING ON TWO LEGS, shown him as a film; (b) Damning, the
+smoke step, the change's end and the burning out's start, up on two legs, shown him; then, as before: its eight sides, its
+hide carried by its bones, the change into it; behind a switch that is off, a film and pictures in the game on floor 11
+beside the Brawler; then THE MAN.
 
 THE FIRST THREE'S PICTURES (kept for the record):
 
