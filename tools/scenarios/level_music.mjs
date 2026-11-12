@@ -17,11 +17,18 @@ export default async function (page, snap) {
   const music = () => page.evaluate(() => window.__dbg.music());
   const r2 = (v) => (v === null ? null : Math.round(v * 100) / 100);
   const show = (m) => ({ place: m.place, walk: r2(m.walk), fight: r2(m.fight), started: m.started, held: m.held });
-  log('town', show(await music()));
+  const check = (label, ok) => console.log(ok ? `  ok ${label}` : `  !! ${label}`);
+  const VOL = 0.6;
+  const near = (v, to) => v !== null && Math.abs(v - to) < 0.05;
+  const t = await music();
+  log('town', show(t));
+  check('the town: its walk, at its loudness', t.place === 'town' && near(t.walk, VOL) && t.fight === null && t.held.includes('music_town_walk.mp4'));
   // floor 1
   await page.evaluate(() => { const g = window.__dbg.game(); g.depth = 1; g.cleared = 0; g.enterDungeon('gate'); for (const m of g.monsters) { m.state = 'sleep'; } });
   await page.waitForTimeout(5000);
-  log('floor 1, walking', show(await music()));
+  const f1 = await music();
+  log('floor 1, walking', show(f1));
+  check("floor 1: its walk; its fight's come; the town's let go of", f1.place === 'f1' && near(f1.walk, VOL) && f1.fight === null && f1.held.includes('music_f1_walk.mp4') && f1.held.includes('music_f1_fight.mp4') && !f1.held.includes('music_town_walk.mp4'));
   // a fight: an enemy woken beside him (he is kept alive)
   const woke = await page.evaluate(() => {
     const g = window.__dbg.game();
@@ -36,23 +43,33 @@ export default async function (page, snap) {
   });
   log('woken beside him', woke);
   await page.waitForTimeout(1500);
-  log('floor 1, the fight on', show(await music()));
+  const on = await music();
+  log('floor 1, the fight on', show(on));
+  check('the fight on: its music at full, the walk down to nothing (and going on)', near(on.fight, VOL) && on.walk !== null && on.walk < 0.05);
   await page.evaluate(() => {
     const g = window.__dbg.game();
     for (const m of g.monsters) if (!m.dead && Math.hypot(m.x - g.hero.x, m.y - g.hero.y) < 14) { m.x = g.hero.x + 40; m.state = 'sleep'; }
     window.__away = setInterval(() => { for (const m of g.monsters) if (!m.dead && Math.hypot(m.x - g.hero.x, m.y - g.hero.y) < 12) m.state = 'sleep'; }, 50);
   });
   await page.waitForTimeout(2000);
-  log('floor 1, 2 s after the last one went', show(await music()));
+  const after = await music();
+  log('floor 1, 2 s after the last one went', show(after));
+  check('2 s after the last went: the fight still on', near(after.fight, VOL));
   await page.waitForTimeout(5000);
-  log('floor 1, the fight over', show(await music()));
+  const over = await music();
+  log('floor 1, the fight over', show(over));
+  check('the fight over: its music gone, the walk back', over.fight === null && near(over.walk, VOL));
   // floor 3
   await page.evaluate(() => { clearInterval(window.__away); const g = window.__dbg.game(); g.depth = 3; g.cleared = 2; g.wayDepth = 3; g.enterDungeon('way'); for (const m of g.monsters) m.state = 'sleep'; });
   await page.waitForTimeout(5000);
-  log('floor 3, walking', show(await music()));
+  const f3 = await music();
+  log('floor 3, walking', show(f3));
+  check("floor 3: its walk; floor 1's let go of", f3.place === 'f3' && near(f3.walk, VOL) && f3.held.includes('music_f3_walk.mp4') && !f3.held.some((f) => f.startsWith('music_f1_')));
   await page.evaluate(() => clearInterval(window.__keep));
   const d = await page.evaluate(() => window.__dbg.soundsDetail());
   log('music failed', d.failed.filter((f) => f.startsWith('music_')));
+  check('no music failed to come', !d.failed.some((f) => f.startsWith('music_')));
   log('errors', errs.length);
+  check('no errors', errs.length === 0);
   for (const e of errs.slice(0, 5)) console.log('ERR', e.slice(0, 600));
 }
