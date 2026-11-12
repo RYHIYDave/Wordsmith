@@ -30,6 +30,10 @@
 //                          of the Hush's dead grey (art/crier.ts HUSH, the Crier's own) closing in on it and its dead air puffed
 //                          up off it; while it is hushed, wisps of the Hush drifting up off it (its ring and its name the Hush's
 //                          grey: render/render.ts); on its 'light', a flash of its word's own colour as its words come back
+//   A UNIQUE DROPPED       any unique lying on the floor (the pool's or a boss's own: his word, “Whatever we do any unique drop it
+//                          should apply to all drops”): a beam of the uniques' orange (art/palette.ts RARITY_COLOR[3], the colour
+//                          their names are written in) standing on it, its core white, pulsing, motes rising up it; as it lands the
+//                          beam shoots up out of the floor, white at first, and a ring runs out on the floor round it (DROP_BEAM)
 //   THE WINDCUTTER         its blade (game.ts windBlade: a shot of the Wave's kind, `blade`, which render.ts hands here) a
 //                          crescent of rushing air at the height of his swing, bowed the way it flies, white, its edge his cyan
 //                          (the bag picture's blade), wind streaming back off it, its shadow on the floor, grit kicked up under
@@ -57,6 +61,7 @@ import { P } from '../art/palette';
 import type { Projectile } from '../game/state';
 import { HUSH } from '../art/crier';
 import { WORD_COLOR } from '../art/icons';
+import { RARITY_COLOR } from '../art/palette';
 import { ARM, ARM_WATER, BIRD_CANVAS, BIRD_RAVEN, STICKY, STICKY_BREW, TALONS, paintArm, paintArmPool, paintStuckVial, paintTalonsBird, talonsAt } from '../art/unique_play_art2';
 
 /** Picture pixels to a game pixel (the heroes' grain). */
@@ -72,6 +77,11 @@ export const RISEN_SHOWN = { rise: 0.6, strike: 0.6, blow: 0.3, fall: 1.0, fades
  * streams off it (tiles), its edge's cyan (the bag picture's blade's), how often grit is kicked up under it.
  */
 export const BLADE = { high: 13, tall: 10, low: 1, wide: 1.2, span: 0.95, spreads: 0.07, frays: 1.6, streams: 1.7, edge: '#8af6f0', grit: 0.035 } as const;
+/**
+ * A UNIQUE DROPPED: how tall its beam stands (game pixels), how wide, how long it takes to shoot up as it lands and how long it is
+ * white, how long its ring runs out on the floor and how far (tiles), how many motes rise up it.
+ */
+export const DROP_BEAM = { tall: 96, wide: 9, rises: 0.3, white: 0.14, ring: 0.45, reach: 1.3, motes: 4 } as const;
 /** How many pixels of drained pictures are kept (about 8 megabytes); past it the lot is let go and made again as asked for. */
 const LOOK_BUDGET = 2_000_000;
 
@@ -522,6 +532,25 @@ export class UniqueFx {
       const y = b.y0 + (b.y1 - b.y0) * at.along;
       oval(x, y, 0.42 - Math.min(0.2, at.high / 160), 0.22 * at.alpha * (1 - Math.min(0.6, at.high / 60)));
     }
+    // A UNIQUE DROPPED: as it lands, a ring of its orange running out on the floor round it
+    if (UNIQUE_PLAY.drop) {
+      for (const dr of game.drops) {
+        if (dr.kind !== 'item' || !dr.item || dr.item.rarity !== 3) continue;
+        const k = Math.max(0, dr.age) / DROP_BEAM.ring;
+        if (k >= 1) continue;
+        const rr = DROP_BEAM.reach * (0.2 + 0.8 * Math.sqrt(k));
+        g.globalAlpha = 0.85 * (1 - k);
+        g.fillStyle = k < 0.3 ? '#ffffff' : RARITY_COLOR[3];
+        const cx = wx(cam, dr.x, dr.y);
+        const cy = wy(cam, dr.x, dr.y);
+        const n = Math.round(rr * 44);
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2;
+          g.fillRect(Math.round(cx + (Math.cos(a) - Math.sin(a)) * 16 * rr), Math.round(cy + (Math.cos(a) + Math.sin(a)) * 8 * rr), 1, 1);
+        }
+        g.globalAlpha = 1;
+      }
+    }
     // THE DROWNED ARM'S BLACK WATER, between where it comes up and the enemy
     for (const a of this.arms) {
       const f = Math.min(ARM.frames - 1, Math.floor(a.t * 30));
@@ -650,10 +679,54 @@ export class UniqueFx {
     g.globalAlpha = 1;
   }
 
+  /** A UNIQUE DROPPED (with the air, over the dark): the beam of the uniques' orange standing on each lying on the floor. */
+  private drawBeams(g: CanvasRenderingContext2D, cam: Cam): void {
+    const game = this.game;
+    if (!game || !UNIQUE_PLAY.drop) return;
+    const L = game.level;
+    const W = L.floor.w;
+    const orange = RARITY_COLOR[3];
+    for (const dr of game.drops) {
+      if (dr.kind !== 'item' || !dr.item || dr.item.rarity !== 3) continue;
+      if (!L.explored[Math.floor(dr.y) * W + Math.floor(dr.x)]) continue;
+      const sx = Math.round(wx(cam, dr.x, dr.y));
+      const sy = Math.round(wy(cam, dr.x, dr.y));
+      const age = Math.max(0, dr.age);
+      const grow = Math.min(1, age / DROP_BEAM.rises);
+      const hot = age < DROP_BEAM.white;
+      const tall = DROP_BEAM.tall * grow;
+      const half = (DROP_BEAM.wide - 1) / 2 + (hot ? 2 : 0);
+      for (let i = 0; i < tall; i += 2) {
+        // (brightest at its foot, thinning to nothing at its top; it breathes)
+        const k = 1 - i / DROP_BEAM.tall;
+        const beat = 0.82 + 0.18 * Math.sin(this.t * 5 + dr.x * 3 - i * 0.12);
+        g.globalAlpha = 0.4 * k * beat;
+        g.fillStyle = hot ? '#ffffff' : orange;
+        g.fillRect(sx - half, sy - 6 - i, half * 2 + 1, 2);
+        g.globalAlpha = 0.65 * k * beat;
+        g.fillRect(sx - 1, sy - 6 - i, 3, 2);
+        g.globalAlpha = 0.8 * k;
+        g.fillStyle = '#ffffff';
+        g.fillRect(sx, sy - 6 - i, 1, 2);
+      }
+      // (motes of it rising up the beam)
+      if (grow >= 1) {
+        for (let m = 0; m < DROP_BEAM.motes; m++) {
+          const u = (this.t * 0.55 + m / DROP_BEAM.motes + dr.x * 0.37) % 1;
+          g.globalAlpha = 0.9 * (1 - u);
+          g.fillStyle = m % 2 ? '#ffffff' : orange;
+          g.fillRect(sx - 3 + ((m * 5 + Math.floor(dr.y * 7)) % 7), Math.round(sy - 8 - u * DROP_BEAM.tall * 0.8), 1, 1);
+        }
+      }
+      g.globalAlpha = 1;
+    }
+  }
+
   /** WHAT IS OVER EVERYTHING (with the air's effects, over the dark): the book's warm light, the risen one's cold light; the burst of its blow. */
   drawAir(g: CanvasRenderingContext2D, cam: Cam): void {
     const game = this.game;
     if (!game) return;
+    this.drawBeams(g, cam);
     const at = this.tomeAt;
     if (at) drawGlow(g, wx(cam, at.x, at.y), wy(cam, at.x, at.y) - 2, this.flare > 0 ? 44 : 32, TOME_GLOW, (this.flare > 0 ? 0.3 : 0.15) + 0.02 * Math.sin(this.t * 31));
     // (her stuck vials' light, flaring with each blink)

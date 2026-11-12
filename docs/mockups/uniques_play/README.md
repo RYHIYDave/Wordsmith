@@ -336,14 +336,33 @@ clean; the look filmed, finished clean.
 
 HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills: “Yes, hand it to main (Recommended)”.
 
+## Every unique dropped: a beam of orange
+
+His words above (“Whatever we do any unique drop it should apply to all drops”). Behind `UNIQUE_PLAY.drop`, off. Drawn from the
+floor's drops themselves (any item of rarity 3, the pool's or a boss's own; no event needed: a pool unique tells of none), in
+`UniqueFx.drawBeams` (over everything, as a word's shaft is) and its ring in `drawGround`: a beam of the uniques' orange
+(art/palette.ts `RARITY_COLOR[3]`, the colour their names are written in), its middle brighter and its core white, `DROP_BEAM.tall`
+(96) game pixels, thinning to nothing at its top and breathing, motes of it rising up it; as it lands it shoots up out of the floor in
+`DROP_BEAM.rises` (0.3 s), white for its first moment, and a ring of white then orange runs out on the floor round it. Taken up, it
+is gone with the drop. Its light is drawn over the dark; the floor's own light round it is the game's (a rare's or a unique's spot).
+
+To see it: `LOOK=drop FILM=3.4 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario
+tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/dropfilm` (a pool unique, the Fan, and a boss's own, the Moth's Wing,
+set down by him as a drop is, a moment apart). Pictures sent him: `pictures/uniquedrop.mp4` and `pictures/uniquedrop.png`.
+
+Checked: tests/unique_play3_drop.test.ts (new, 2: its switch off and nothing drawn; on, any unique's beam in the orange and white,
+white and its ring as it lands, nothing for a rare nor for one not yet seen) and tests/unique_play.test.ts (6, counting `drop`),
+each alone with tsx; tsc clean; the look filmed, finished clean.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills: “Yes, hand it to main (Recommended)”.
+
 ## For the main chat
 
-Bring in `art/uniques-play2` first (the queue's bring-in-drowned-arm-picture), then this branch: `wind`, `moth` and `hush` go on with the
-uniques (`UNIQUES`), with the others; test 1 of tests/unique_play.test.ts asserts every switch off: change it then.
+Bring in `art/uniques-play2` first (the queue's bring-in-drowned-arm-picture), then this branch: `wind`, `moth`, `hush` and `drop` go on
+with the uniques (`UNIQUES`), with the others; test 1 of tests/unique_play.test.ts asserts every switch off: change it then.
 
-## Not drawn yet
+## Nothing left to draw
 
-Which of the moments the build only tells of want a picture of their own (to ask him): Bloodprice ('fury'), The Winning Streak
-('streak'), The Tow Line ('ride'), The Unsigned Pact ('feeds'), The Pivot ('turn'), The Receipt ('answer'), The King's Knot
-('borrow'), The Crier's Hush ('dark', 'light'), The Warden's Keys ('open'), The Hair Trigger ('shot'), The Tuning Staff ('pulse'),
-The Short Way ('back'), and 'drop' when a boss's own falls.
+Every unique's moment in play is drawn with his yes or left as the game shows it at his word (above). Left for others, not drawn
+here: the Warlock's own red book still at his hip while the Restless Tome flies (his baked pictures; told him 11 Nov); a pool
+unique landing with no sound (the queue's wire-shafts-rim-sounds has his pick, the rare chime as any unique lands).

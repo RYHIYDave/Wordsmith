@@ -6,7 +6,7 @@
 // LOOK: tome (The Restless Tome, the Warlock), risen (The Fleshmancer's Brand, the Warrior), globe (The Fourth Globe, the
 // Brawler), arm (The Drowned Arm, the Warrior), talons (The Queen's Talons, the Ranger), wrench (The Sticky Wrench, the Tinkerer), wind (The
 // Windcutter, the Warrior: three Strikes in a row, twice), moth (The Moth's Wing, the Warrior: struck, a word of his goes dark), hush (The Crier's Hush, the Warrior walking up to
-// elites and away), tow (The Tow Line,
+// elites and away), drop (a unique of the pool and a boss's own dropped by him, a moment apart), tow (The Tow Line,
 // the Tinkerer: her Golem whistled out, then her Blast Jump, twice; it rides each on its own rocket jump). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
 // STAGE=1 (risen, with FILM): the elite set two tiles off and struck dead with no swing of his, so its rising is seen clear.
 // FILM=<seconds>: a film of it in place of the stills, frame by frame (30 a second, the game's clock stepped so that no
@@ -47,7 +47,7 @@ export default async function (page, snap) {
   const elite = process.env.ELITE || 'skeleton';
   const cls = look === 'tome' ? 'warlock' : look === 'globe' ? 'brawler' : look === 'talons' ? 'ranger' : look === 'wrench' || look === 'tow' ? 'tinkerer' : 'warrior';
   // (LOOK=kinds: every kind of monster risen in turn, to see each one's risen look: below)
-  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : look === 'wrench' ? 'stickywrench' : look === 'wind' ? 'windcutter' : look === 'moth' ? 'mothswing' : look === 'tow' ? 'towline' : look === 'hush' ? 'criershush' : 'fleshmancersbrand';
+  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : look === 'wrench' ? 'stickywrench' : look === 'wind' ? 'windcutter' : look === 'moth' ? 'mothswing' : look === 'tow' ? 'towline' : look === 'hush' ? 'criershush' : look === 'drop' ? 'rainwalker' : 'fleshmancersbrand';
   const set = await page.evaluate(({ cls, id, playOn }) => {
     const d = window.__dbg;
     d.uniques.on = true;
@@ -123,6 +123,22 @@ export default async function (page, snap) {
     if (film) { await shoot(film, round(300, 160, 300, 110), due); return; }
     for (const [, f] of due.slice(0, 3)) { await f(); await wait(420); }
     for (let k = 0; k < 6; k++) { await wait(k === 0 ? 30 : 90); await snap(`${k + 1}_blade`); }
+    return;
+  }
+  if (look === 'drop') {
+    // A UNIQUE DROPPED: one of the pool's and a boss's own, set down on the floor by him a moment apart, as a drop is (Game.addDrop)
+    const drop = (id, dx, dy) => () => page.evaluate(([id, dx, dy]) => {
+      const g = window.__dbg.game(); const h = g.hero;
+      g.giveUnique(id, 12);
+      const i = h.bag.findIndex((it) => it && it.unique === id);
+      const it = h.bag[i]; h.bag[i] = null;
+      g.addDrop('item', h.x + dx, h.y + dy, 0, it, null);
+    }, [id, dx, dy]);
+    await wait(400);
+    const due = [[0.3, drop('fan', 1.8, -0.6)], [1.6, drop('mothswing', 0.4, 1.9)]];
+    if (film) { await shoot(film, round(250, 230, 250, 110), due); return; }
+    await due[0][1](); await wait(120); await snap('1_lands'); await wait(600); await snap('2_lying');
+    await due[1][1](); await wait(150); await snap('3_another'); await wait(900); await snap('4_both');
     return;
   }
   if (look === 'hush') {
