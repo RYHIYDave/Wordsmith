@@ -62,7 +62,7 @@ export default async function (page, snap) {
   await page.waitForTimeout(300);
   await report(`into town (${cls})`);
   const b = await page.evaluate(() => window.__dbg.baked());
-  log('his frames handed over', b ? `${b.given} given; the longest a sheet's took in one go ${b.handMax} ms, ${Math.round(b.handMs)} ms in all; the groups ${JSON.stringify(b.ms)}` : 'no bake');
+  log('his frames handed over', b ? `${b.given} given; the longest a sheet's took in one go ${b.handMax} ms, ${Math.round(b.handMs)} ms in all; his art set up for a place, the longest ${b.artMax} ms; the groups ${JSON.stringify(b.ms)}` : 'no bake');
   if (typeof snap === 'function') await snap('town');
   for (const f of floors) {
     await page.evaluate(() => { const d = window.__dbg; d.autoLevel = false; d.autoWords = false; });

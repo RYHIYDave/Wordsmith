@@ -123,7 +123,7 @@ export class BakedHeroes {
    * For measuring: frames taken in, frames not wanted (painted already), how long each group took (ms), what failed, and the
    * sheets held and their pixels.
    */
-  readonly stats = { given: 0, unwanted: 0, ms: {} as Record<string, number>, failed: [] as string[], sheets: 0, sheetPx: 0, handMs: 0, handMax: 0 };
+  readonly stats = { given: 0, unwanted: 0, ms: {} as Record<string, number>, failed: [] as string[], sheets: 0, sheetPx: 0, handMs: 0, handMax: 0, artMax: 0 };
 
   constructor(
     private readonly mark: string,
@@ -187,7 +187,12 @@ export class BakedHeroes {
       const art = this.art();
       const wants = new Map<number, [BakeFile['keys'][number], number, number, number][]>();
       for (const k of f.keys) {
+        // (the hero's art for each place set up in a go of its own, a frame let in between (main.ts LOAD_SLICE): the Tinkerer's,
+        // her held move's poses solved, took some 2.5 s here in one go; `artMax` the longest)
+        if (HAND_MS > 0) await new Promise<void>((ok) => setTimeout(ok, 0));
+        const a0 = performance.now();
         const a = art.of(k.cls, { ...lookOfPlace(k.place), vet: k.vet });
+        this.stats.artMax = Math.max(this.stats.artMax, Math.round(performance.now() - a0));
         if (JSON.stringify(listLengths(heroSides(a))) !== JSON.stringify(k.lens)) throw new Error(`${keyName(k)}: its lists are not as baked`);
         for (let n = 0; n + 3 < k.at.length; n += 4) {
           const fi = k.at[n + 3];
