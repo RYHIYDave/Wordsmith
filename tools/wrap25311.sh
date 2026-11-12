@@ -46,6 +46,10 @@ two; run floor_loading $P --scenario $S/floor_loading.mjs &
 # THE MOTH'S PICTURES KEPT PACKED (build/moth-packed): what it holds as it is fought through its phases; the same pictures
 two; SECONDS=200 PHASES=70,140 run moth_memory $P --init tools/mem_probe.js --scenario $S/moth_memory.mjs &
 two; run moth_packed_check --size 1280x720 --scenario $S/moth_packed_check.mjs &
+# THE SWAMP COLOSSUS'S PHASE 2 GAZE AIMED (build/colossus-gaze2, GAZE2_AIMED on at his word): his gaze along an aim pictured, from
+# the new mark's files; his fight in his own pictures (NOT colossus_gaze.mjs: on a busy two-core machine it never reaches his gaze)
+two; U=12 V=3 run colossus_gaze2_film $C2 --scenario $S/colossus_gaze2_film.mjs &
+two; run colossus_baked $C2 --scenario $S/colossus_baked.mjs &
 # the game's main ways
 two; run save --scenario $S/save.mjs &
 two; run touch_wide $P --scenario $S/touch.mjs &

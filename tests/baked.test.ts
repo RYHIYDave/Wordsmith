@@ -6,7 +6,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { BAKED, BakedHeroes, bakeGroups, bakeMark, bakedFirst, bakedPlaces, keyName, listLengths } from '../src/render/baked';
-import { readyList } from '../src/art/heroes3';
+import { heroLists, readyList } from '../src/art/heroes3';
 const READY_LIST = readyList();
 import type { AnimSet } from '../src/art/actor_types';
 import type { HeroArt } from '../src/art/heroes';
@@ -60,7 +60,9 @@ test('every frame of a hero has its place once, standing and running first; a ca
   assert.equal(inPlace.length, richLens.flat().reduce((a, b) => a + b, 0) - 6);
   assert.ok(inPlace.every(([, l]) => l !== READY_LIST), 'never in a place');
   assert.equal(richLens[0][READY_LIST], 6);
-  assert.equal(richLens[0].length - 1, READY_LIST, 'the last list: every other keeps its place');
+  assert.equal(heroLists(rich).length, READY_LIST, 'right after heroLists: every other keeps its place');
+  // (the Warrior's weapons' own moves after it, 25.3.11: none for a hero without them, so nothing more in his places)
+  assert.ok(richLens[0].slice(READY_LIST + 1).every((n) => n === 0));
 });
 
 test('no bake in this build (the tests bundle none): none is looked for, and the heroes are painted as before', () => {
