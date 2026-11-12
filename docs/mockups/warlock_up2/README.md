@@ -1,10 +1,14 @@
-**WHERE IT STANDS (12 Nov 2026, by 15:xx Eastern): THE LIVING SHADOW IS DONE AND HANDED TO THE MAIN CHAT, WITH HIS YES: its look,
-every move, its eight sides, its hide carried by its bones, the change into it, in the game's shape behind LIVING_SHADOW (off),
-and seen in play on floor 11 beside the Brawler (his “Yes, hand it to main (Recommended)”; the change's time in play kept at
-the game's 2.4 s, his “Keep the game's 2.4 s (Recommended)”). On the queue's ship list as `warlock-living-shadow`. WHAT THE MAIN
-CHAT MUST DO: the sections “In the game's shape, behind a switch that is off” and “In play on floor 11”. THE MAN, his eight sides,
-his longer heavy coat and boots to the knee, every list at 30 a second, IS MADE on the branch `art/warlock-man8` (cut from this
-one), behind WARLOCK_UP (off), and shown him in play: the section “The man” at the foot (his word on the pictures awaited; then, at his words “Why don’t you pack him away?”, packed and the bolt mended on `build/warlock-packed`: the section “The Warlock kept in packs” at the foot).**
+**WHERE IT STANDS (12 Nov 2026, evening Eastern): ALL OF THE QUEUE'S ITEM IS DONE AND HANDED TO THE MAIN CHAT, WITH HIS YES. THE
+LIVING SHADOW: its look, every move, its eight sides, its hide carried by its bones, the change into it, behind LIVING_SHADOW (off),
+seen in play on floor 11 (his “Yes, hand it to main (Recommended)”; the change's time in play kept at the game's 2.4 s, his “Keep
+the game's 2.4 s (Recommended)”). THE MAN: his eight sides, his longer heavy coat and boots to the knee, every list at 30 a second,
+behind WARLOCK_UP (off), seen in play (the section “The man”); then, at his words “Why don’t you pack him away?  And fix the
+hellfire projectile so it’s tail doesn’t only face one way as well”, he and the Living Shadow kept in packs and the bolt mended
+(the section “The Warlock kept in packs”), and his yes: “Yes, hand him to main (Recommended)”. ALL OF IT IS ON THE BRANCH
+`build/warlock-packed`, from today's `main` (25.3.13): the queue's ship list, `finish-mage-and-warlock-eight-sides`. (The ship
+list's `warlock-living-shadow`, this branch at 14cc698a, is inside it.) WHAT THE MAIN CHAT MUST DO: the sections “In the game's
+shape, behind a switch that is off”, “In play on floor 11”, “For the main chat: how he comes in” and the packs' section's last
+paragraph, all at the foot.**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
 queue's `finish-mage-and-warlock-eight-sides` (the Mage's half is done: `art/mage-up2`). It takes up the art chat's helper's
