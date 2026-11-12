@@ -4,7 +4,7 @@
 //   LOOK=tome node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch \
 //     --scenario tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/tome
 // LOOK: tome (The Restless Tome, the Warlock), risen (The Fleshmancer's Brand, the Warrior), globe (The Fourth Globe, the
-// Brawler), arm (The Drowned Arm, the Warrior), talons (The Queen's Talons, the Ranger). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
+// Brawler), arm (The Drowned Arm, the Warrior), talons (The Queen's Talons, the Ranger), wrench (The Sticky Wrench, the Tinkerer). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
 // STAGE=1 (risen, with FILM): the elite set two tiles off and struck dead with no swing of his, so its rising is seen clear.
 // FILM=<seconds>: a film of it in place of the stills, frame by frame (30 a second, the game's clock stepped so that no
 // frame is missed): <out>_f0000.png on, each cut to the part of the screen round him (tools/uniques_play_film.py makes the MP4
@@ -42,9 +42,9 @@ export default async function (page, snap) {
   const mid = await page.evaluate(() => [innerWidth / 2, innerHeight / 2]);
   const round = (l, t, r, b) => ({ x: Math.round(mid[0] - l), y: Math.round(mid[1] - t), width: l + r, height: t + b });
   const elite = process.env.ELITE || 'skeleton';
-  const cls = look === 'tome' ? 'warlock' : look === 'globe' ? 'brawler' : look === 'talons' ? 'ranger' : 'warrior';
+  const cls = look === 'tome' ? 'warlock' : look === 'globe' ? 'brawler' : look === 'talons' ? 'ranger' : look === 'wrench' ? 'tinkerer' : 'warrior';
   // (LOOK=kinds: every kind of monster risen in turn, to see each one's risen look: below)
-  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : 'fleshmancersbrand';
+  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : look === 'wrench' ? 'stickywrench' : 'fleshmancersbrand';
   const set = await page.evaluate(({ cls, id, playOn }) => {
     const d = window.__dbg;
     d.uniques.on = true;
@@ -106,6 +106,16 @@ export default async function (page, snap) {
       const errs = await page.evaluate(() => (window.__errors || []).length);
       if (errs > errs0) { bad(`${kind}: ${errs - errs0} errors on the page`); errs0 = errs; }
     }
+    return;
+  }
+  if (look === 'wrench') {
+    // THE STICKY WRENCH (the Tinkerer): her vial tossed at one before her sticks to it, and to the one it walks with
+    await mk('skeleton', 2.4, 0.2); await mk('cultist', 3.4, -1.2);
+    const toss = () => page.evaluate(() => { const d = window.__dbg; const g = d.game(); const h = g.hero; h.swingT = 0; g.useBasic(h.x + 2.4, h.y + 0.2); });
+    await wait(500);
+    if (film) { await shoot(film, round(150, 150, 240, 100), [[0.2, toss], [1.4, toss]]); return; }
+    await toss();
+    for (let k = 0; k < 6; k++) { await wait(k === 0 ? 400 : 120); await snap(`${k + 1}_vial`); }
     return;
   }
   if (look === 'talons') {

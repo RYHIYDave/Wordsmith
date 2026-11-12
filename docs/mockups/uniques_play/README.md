@@ -187,6 +187,24 @@ tsc clean; the look filmed, finished clean.
 HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills, asked whether it is good to hand to main: “Yes, hand it to main
 (Recommended)”. Handed to main with the Drowned Arm (the queue item bring-in-drowned-arm-picture).
 
+HIS WORD ON BOTH, 12 Nov 2026, 13:47 (Eastern), as the next was being made: “I’d like this and the tentacle to count as ally
+damage.  So when we have co-op and support items or whatever it will scale these extra attackers”. Read as: the bird's blow and
+the arm's slam are ALLY DAMAGE, a kind of their own, so that whatever later makes allies hit harder (co-op, support items)
+makes these hit harder too. The game has no such kind yet (damageMonster takes no source): the main chat's to add, and to put
+these two under it (game.ts callBird, stepArm). Nothing in the pictures changes for it.
+
+## The Sticky Wrench (same branch, 12 Nov 2026)
+
+Behind `UNIQUE_PLAY.wrench`, off. On the rules' `stuck` (game.ts: her vial landed, stuck to the enemy it came down on, going
+where that goes, bursting `secs`, 0.7, on), HER VIAL STUCK (`paintStuckVial`, 21 frames over the fuse): her own vial (its glass
+of her cyan brew, its brass cap: dev/contraption_fx.ts's colours) stuck head down at a slant in a lump of dark amber pitch at the
+enemy's middle (on the floor if it came down on nothing), one drip stretching from the pitch; its brew blinking brighter and
+brighter, the blinks closer and closer together (`STICKY.blinks`), a ring of light off it at each and its light on what is
+round it (cyan, the friend's: it is hers); fizzing at its cap, more as its fuse runs out; then the game's own burst, twice as
+wide. Looked at in a built page at a phone's size (`LOOK=wrench`: the Tinkerer, two tosses): `pictures/sticky_wrench.mp4` and
+`pictures/sticky_wrench.png`. Checked: tests/unique_play2_wrench.test.ts (new, 2), and the three other in-play test files, each
+alone with tsx; tsc clean; the look filmed, finished clean. His word: below.
+
 NOT DRAWN YET (the rest of the queue item's list): The Rainwalker, The Shepherd's Crook, The Tide, The Windcutter (the game already draws its blade as
-the Wave's crescent), The Fan, The Sticky Wrench, The Moth's Wing; and which of the moments the build only tells of want a
+the Wave's crescent), The Fan, The Moth's Wing; and which of the moments the build only tells of want a
 picture of their own (to ask him).

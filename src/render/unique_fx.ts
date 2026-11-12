@@ -23,6 +23,9 @@
 //                          enemy in its own stoop, over the rules' seconds, its shadow under it; on the blow, its strike and a
 //                          burst of her feathers; then it beats away up the way it came and fades (art talonsAt). Its pictures
 //                          are painted a few at a time while the boots are worn, so its first dive does not wait on them
+//   THE STICKY WRENCH      on its 'stuck', her vial in a lump of pitch where it landed, stuck to the enemy there (and going
+//                          where it goes) at its middle, blinking quicker and quicker, fizzing, a cyan light off it, until the
+//                          rules' fuse is out and it bursts (the game's own burst, twice as wide) (art paintStuckVial)
 
 import type { Sprite } from '../engine/px';
 import type { Px } from '../engine/px';
@@ -40,7 +43,7 @@ import { wx, wy } from './fx';
 import { attackFrame } from './figure';
 import { risingSprite } from './arrivals';
 import { UNIQUE_PLAY } from './unique_play';
-import { ARM, ARM_WATER, BIRD_CANVAS, BIRD_RAVEN, TALONS, paintArm, paintArmPool, paintTalonsBird, talonsAt } from '../art/unique_play_art2';
+import { ARM, ARM_WATER, BIRD_CANVAS, BIRD_RAVEN, STICKY, STICKY_BREW, TALONS, paintArm, paintArmPool, paintStuckVial, paintTalonsBird, talonsAt } from '../art/unique_play_art2';
 
 /** Picture pixels to a game pixel (the heroes' grain). */
 const G = 2;
@@ -110,6 +113,8 @@ export class UniqueFx {
   private arms: { x: number; y: number; t: number; flip: boolean }[] = [];
   // ---- the queen's talons: each bird from where it was called (over him) to the enemy, how long it takes, how long since; which way round
   private birds: { x0: number; y0: number; x1: number; y1: number; secs: number; t: number; back: boolean; flip: boolean; struck: boolean }[] = [];
+  // ---- the sticky wrench: each vial stuck, where (and on whom), how long its fuse, how long since
+  private stuck: { x: number; y: number; mid?: number; z: number; secs: number; t: number }[] = [];
   /** Its pictures painted ahead while the boots are worn: the next one to paint. */
   private birdAhead = 0;
   /** What the effects lend it, from the last event (for the burst of her feathers on the blow, which no event tells of). */
@@ -130,6 +135,7 @@ export class UniqueFx {
     this.blows = [];
     this.arms = [];
     this.birds = [];
+    this.stuck = [];
   }
 
   /**
@@ -171,6 +177,13 @@ export class UniqueFx {
       const l = Math.hypot(dx, dy) || 1;
       this.birds.push({ x0: e.x, y0: e.y, x1: e.x1, y1: e.y1, secs: e.secs ?? 0.35, t: 0, back: (dx + dy) / l < -0.2, flip: dx - dy < 0, struck: false });
       if (this.birds.length > 6) this.birds.shift();
+    }
+    if (e.id === 'stickywrench' && UNIQUE_PLAY.wrench && e.what === 'stuck') {
+      // (on the enemy it landed on, at its middle; else on the floor)
+      const m = e.mid !== undefined ? g?.monsters.find((q) => q.id === e.mid) : undefined;
+      const top = m ? (FIGURE_SIZE[figureOf(m)]?.top ?? 28) : 0;
+      this.stuck.push({ x: e.x, y: e.y, mid: m ? e.mid : undefined, z: m ? Math.min(16, top * 0.45) : 2, secs: e.secs ?? 0.7, t: 0 });
+      if (this.stuck.length > 8) this.stuck.shift();
     }
     if (e.id === 'drownedarm' && UNIQUE_PLAY.arm) {
       if (e.what === 'warn') {
@@ -242,6 +255,16 @@ export class UniqueFx {
         birdSprite(move, i, this.birdAhead < BIRD_FRAMES.length ? 'front' : 'back');
       }
     }
+    for (const v of this.stuck) {
+      v.t += dt;
+      // (it goes where what it is stuck to goes)
+      const m = v.mid !== undefined ? this.game?.monsters.find((q) => q.id === v.mid && !q.dead) : undefined;
+      if (m) {
+        v.x = m.x;
+        v.y = m.y;
+      }
+    }
+    this.stuck = this.stuck.filter((v) => v.t < v.secs);
     for (const a of this.arms) a.t += dt;
     this.arms = this.arms.filter((a) => a.t * 30 < ARM.frames);
     for (const b of this.blows) b.t += dt;
@@ -358,6 +381,12 @@ export class UniqueFx {
       const s = keep(`touch|${age}|${q.seed % 3}`, () => paintTomeTouch(age, q.seed % 3));
       out.push({ d: q.x + q.y + 0.05, s, x: wx(cam, q.x, q.y), y: wy(cam, q.x, q.y) - q.z, alpha: 1 });
     }
+    // THE STICKY WRENCH: her vial where it is stuck, a little before what it is stuck to
+    for (const v of this.stuck) {
+      const f = Math.min(STICKY.frames - 1, Math.floor((v.t / v.secs) * STICKY.frames));
+      const s = keep(`stuck|${f}`, () => ({ px: paintStuckVial(f), ax: STICKY.ax, ay: STICKY.ay }));
+      out.push({ d: v.x + v.y + 0.06, s, x: wx(cam, v.x, v.y), y: wy(cam, v.x, v.y) - v.z, alpha: 1 });
+    }
     // THE QUEEN'S TALONS: her bird where it is on its way, its floor point lifted as high as it flies
     for (const b of this.birds) {
       const at = talonsAt(b.t, b.secs);
@@ -462,6 +491,12 @@ export class UniqueFx {
     if (!game) return;
     const at = this.tomeAt;
     if (at) drawGlow(g, wx(cam, at.x, at.y), wy(cam, at.x, at.y) - 2, this.flare > 0 ? 44 : 32, TOME_GLOW, (this.flare > 0 ? 0.3 : 0.15) + 0.02 * Math.sin(this.t * 31));
+    // (her stuck vials' light, flaring with each blink)
+    for (const v of this.stuck) {
+      const f = Math.floor((v.t / v.secs) * STICKY.frames);
+      const hot = STICKY.blinks.some((b) => f === b || f === b + 1);
+      drawGlow(g, wx(cam, v.x, v.y), wy(cam, v.x, v.y) - v.z - 4, hot ? 22 : 12, STICKY_BREW[1], hot ? 0.32 : 0.12);
+    }
     if (!UNIQUE_PLAY.risen) return;
     const p = game.risen;
     if (p) drawGlow(g, wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 12, 30, '#28dcf0', p.act === 'rise' ? 0.2 + 0.25 * (1 - Math.min(1, p.actT / RISEN_SHOWN.rise)) : 0.17);

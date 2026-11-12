@@ -350,3 +350,80 @@ export function talonsAt(t: number, secs: number): { along: number; high: number
   if (u >= 1) return null;
   return { along: 1 + u * 0.8, high: u * 30, move: 'fly', at: u * T.away, alpha: 1 - u * u };
 }
+
+// =============================================================================================
+// THE STICKY WRENCH: HER VIAL, STUCK
+
+/** The glue that holds it (an amber pitch), its brew (her vials' own cyan: art dev/contraption_fx.ts BREW), its brass cap. */
+export const STICKY_GLUE = ['#1e0e06', '#3c200c', '#6a3c14', '#a0661e', '#d49a3c'] as const;
+export const STICKY_BREW = ['#0c6a80', '#22d0e0', '#b8fff8', '#e8ffff'] as const;
+export const STICKY_CAP = ['#4a3410', '#8a6a24', '#c8a04a', '#f0d88a'] as const;
+/**
+ * HER VIAL STUCK (the Sticky Wrench: “landed, it sticks, to the enemy it landed on if there is one, and goes where that goes”,
+ * game.ts 'stuck', bursting `fuse` seconds on): `frames` at 30 a second over the rules' 0.7 seconds; its canvas `w` by `h`, the
+ * point it is stuck at (`ax`, `ay`). Its brew blinks brighter and brighter, quicker and quicker (`blinks`: the frames it flares
+ * on), a ring of light off it at each; it fizzes at its cap; the glue holding it drips.
+ */
+export const STICKY = { frames: 21, w: 40, h: 40, ax: 20, ay: 28, blinks: [0, 7, 12, 15, 17, 18, 19, 20] } as const;
+
+/** HER VIAL STUCK at frame `f` (0 to STICKY.frames - 1). */
+export function paintStuckVial(f: number): Px {
+  const p = new Px(STICKY.w, STICKY.h);
+  const { ax, ay } = STICKY;
+  // how hot its brew is: flaring on each blink and dying back over two frames, the last ones running together
+  const since = Math.min(...STICKY.blinks.map((b) => (f >= b ? f - b : 99)));
+  const heat = since === 0 ? 2 : since === 1 ? 1 : 0;
+  const late = f / (STICKY.frames - 1);
+  // THE GLUE, a lump of amber pitch round its foot, a drip or two hanging
+  for (let y = -2; y <= 2; y++) {
+    for (let x = -5; x <= 5; x++) {
+      const d = (x * x) / 25 + (y * y) / 5;
+      if (d > 1 + 0.2 * Math.sin(x * 1.9 + y * 2.3)) continue;
+      // (glossy and dark: a glint on its upper left)
+      const lit = 0.75 - 0.05 * x - 0.2 * y - d * 0.45;
+      p.set(ax + x, ay + y, x === -2 && y === -1 ? STICKY_GLUE[4] : STICKY_GLUE[clamp(Math.round(lit * 3), 0, 3)]);
+    }
+  }
+  // (one drip, stretching as it goes)
+  const drip = 1 + Math.floor(late * 3);
+  for (let k = 1; k <= drip; k++) p.set(ax - 2, ay + 2 + k, STICKY_GLUE[k === drip ? 2 : 1]);
+  // THE VIAL, stuck head down at a slant in the glue, its glass of her brew, its brass cap
+  const a = 0.55;
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  const cx = ax + 1;
+  const cy = ay - 6;
+  for (let v = -3.5; v <= 3.5; v += 0.5) {
+    for (let u = -1.6; u <= 1.6; u += 0.5) {
+      const isCap = v < -2.4;
+      if (isCap && Math.abs(u) > 1.1) continue;
+      const X = Math.round(cx + u * c - v * s);
+      const Y = Math.round(cy + u * s + v * c);
+      if (isCap) p.set(X, Y, STICKY_CAP[u < 0 ? 3 : 2]);
+      else p.set(X, Y, STICKY_BREW[clamp((u < -0.6 ? 2 : u < 0.6 ? 1 : 0) + heat, 0, 3)]);
+    }
+  }
+  // (it fizzes at its cap: a few sparks of her brew spat up, more as it nears its end)
+  const capX = cx - -3.2 * s;
+  const capY = cy + -3.2 * c;
+  const n = 2 + Math.floor(late * 4);
+  for (let i = 0; i < n; i++) {
+    const h = Math.sin((f * 7.1 + i * 13.7) * 1.3) * 43758.5;
+    const r = h - Math.floor(h);
+    const X = Math.round(capX + (r - 0.5) * 6);
+    const Y = Math.round(capY - 1 - ((f * 3 + i * 5) % 7));
+    p.set(X, Y, STICKY_BREW[r > 0.5 ? 3 : 2]);
+  }
+  p.outline(INK);
+  // A RING OF LIGHT OFF IT as it flares (laid after its edge: light, not a thing)
+  if (heat === 2) {
+    const R = 7 + late * 4;
+    for (let i = 0; i < 32; i++) {
+      const t = (i / 32) * Math.PI * 2;
+      const X = Math.round(cx + Math.cos(t) * R);
+      const Y = Math.round(cy + Math.sin(t) * R * 0.8);
+      if (X > 0 && Y > 0 && X < STICKY.w - 1 && Y < STICKY.h - 1 && !p.has(X, Y)) p.set(X, Y, STICKY_BREW[1]);
+    }
+  }
+  return p;
+}
