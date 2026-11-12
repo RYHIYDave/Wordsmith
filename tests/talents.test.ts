@@ -207,7 +207,7 @@ test('the shapes: the mage three paths of five from her rune; the arrow two feat
 test('a talent is taken with a point, once, after one that leads to it', () => {
   assert.equal(takeProblem('mage', 4, [], 'kindling'), 'Next point at level 5');
   assert.equal(takeProblem('mage', 5, [], 'kindling'), null);
-  assert.equal(takeProblem('mage', 5, [], 'searing'), 'Take the one before it first');
+  assert.equal(takeProblem('mage', 5, [], 'searing'), 'Take one joined to it first');
   assert.equal(takeProblem('mage', 10, ['kindling'], 'searing'), null);
   assert.equal(takeProblem('mage', 10, ['kindling'], 'kindling'), 'Taken');
   assert.equal(takeProblem('mage', 50, ['kindling', 'searing', 'flamewarp', 'fuel', 'inferno', 'charged', 'forking', 'stormwarp', 'overload', 'stormcaller'], 'bittercold'), 'No points left');
@@ -226,7 +226,7 @@ test('with the switch on: the game takes a talent, and a step that is a number a
     assert.equal(g.talentsLeft(), 2);
     const before = g.hero.d.stats.firePct;
     const evs: string[] = [];
-    assert.equal(g.takeTalent('searing'), 'Take the one before it first');
+    assert.equal(g.takeTalent('searing'), 'Take one joined to it first');
     assert.equal(g.takeTalent('kindling'), null);
     for (const e of g.events) if (e.t === 'talent') evs.push(e.id);
     assert.deepEqual(evs, ['kindling']);
