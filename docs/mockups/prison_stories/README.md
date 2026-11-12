@@ -126,3 +126,12 @@ to 5 are laid exactly as on build/prison-stories (55996660), the bakes' marks th
 HIS YES: shown the picture, asked by pop-up “Floor 5's story (picture floor5_story: breakthrough, mine as left, cult's takeover,
 the temple with the Sunken Eye, drag marks into his hall): is it right?”, his pick, 12 Nov 2026: “Yes, hand it to main
 (Recommended)”. SO `LAIR_STORY.on = true` (art/lair_story.ts) on the branch.
+
+WITH IT ON (17093f65): `node tools/unit.mjs --changed`, 24 of 25 files (lair_story's test 7, Colour 4, fails the same on main
+b09cfabf: not this branch's); the floor's own playtest `first5_floor` on floor 5 and `first5_shaft` (his hall's way out), both clean
+at phone size.
+
+## For the main chat: bringing in floor 5's (build/floor5-story)
+
+It holds build/prison-stories whole (floors 1 to 4): merge this branch alone, or that one first. `LAIR_STORY.on` is true here (his
+yes). Its first5.ts hook lays floor 5 only with STORIES and LAIR_STORY on, in the mine and temple look (LAIR_TEMPLE). No bake.
