@@ -38,14 +38,17 @@ const all: [string, Piece][] = parts.flatMap(([part, list]) => list.map((p) => [
 const pictures: [string, Sprite][] = all.flatMap(([n, p]) => sprites(p).map((s, i) => [`${n} ${i}`, s] as [string, Sprite]));
 const FIRE = new Set<string>(EYE_FIRE.map((c) => c.toLowerCase()));
 
-test('the story pieces: off, and imported by nothing of the game', () => {
-  assert.ok(LAIR_STORY.on === false, 'LAIR_STORY is off');
+test('the story pieces: on at his word (12 Nov 2026), and laid by the floor\'s story alone', () => {
+  assert.ok(LAIR_STORY.on === true, 'LAIR_STORY is on');
   const found: string[] = [];
   const walk = (d: string): void => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);
       if (statSync(p).isDirectory()) walk(p);
-      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && /from '\.\.?\/(art\/)?lair_story'/.test(readFileSync(p, 'utf8'))) found.push(p);
+      // (art/prison_story.ts borrows its painters for floors 3 and 4's threads, and makes floor 5's pieces only with LAIR_STORY on;
+      // game/first5.ts lays them only with it on, its names alone otherwise: game/stories.ts, floor 5's story; main.ts hands its
+      // switch to the playtests and pictures, __dbg.lairStory)
+      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'prison_story.ts')) && !p.endsWith(join('game', 'first5.ts')) && !p.endsWith(join('src', 'main.ts')) && /from '\.\.?\/(art\/)?lair_story'/.test(readFileSync(p, 'utf8'))) found.push(p);
     }
   };
   walk('src');

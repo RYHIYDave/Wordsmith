@@ -32,6 +32,11 @@ import { PRISON } from '../art/prison';
 import { CHAPEL } from '../art/chapel';
 import { beforeStretch } from './chapel_way';
 import { YARD_FOOT, inYard } from './yard';
+import { BLACK_POOL, BLACK_WATER, EYE, STORIES, STORY_SETS, dragName, inTemple, layStory } from './stories';
+import { partsOf } from './lair_way';
+import { doorTiles } from './doors';
+import { LAIR_STORY, LAIR_STORY_PIECES } from '../art/lair_story';
+import { LAIR_TEMPLE } from '../art/lair_temple';
 
 /** Where one of a floor's three moments is set: in a wall's face, at a piece laid for it, on the floor. */
 export interface MomentSite {
@@ -206,7 +211,7 @@ export const PRISON_SET: FloorSet = {
 };
 
 /** What a scene is given to lay itself in room `r` (its middle cx, cy): each of these lays one piece where it may, true if it did. */
-interface SceneCtx {
+export interface SceneCtx {
   r: Room;
   rng: RNG;
   cx: number;
@@ -538,6 +543,8 @@ export interface Dress {
   moments: MomentHost[];
   /** SCENES: the rooms laid as a scene, and which (for the pictures and the tests). */
   scenes?: { room: number; name: string }[];
+  /** STORIES: the rooms of the way laid as the floor's story, the beat and the scene of each (for the pictures and the tests). */
+  story?: { room: number; beat: string; name: string }[];
 }
 
 /**
@@ -886,67 +893,210 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
   /** A floor laid as scenes: its scenes' own pieces are laid with them alone, never at random (FloorSet.sceneOnly). */
   const sceneFloor = SCENES.on && SCENES.floors.includes(depth);
   const loose = (names: readonly string[]): readonly string[] => (sceneFloor && set.sceneOnly ? names.filter((n) => !set.sceneOnly!.includes(n)) : names);
+  /** The face of the back wall behind floor tile (x, y): the wall at y - 1 (side 0) or at x - 1 (side 1), if it is drawn and free. */
+  const face = (x: number, y: number, side: 0 | 1): number => {
+    const i = side === 0 ? (y - 1) * W + x : y * W + x - 1;
+    if (i < 0 || i >= W * f.h || !(drawnFaces(f, i) & (side === 0 ? 1 : 2)) || wallTaken.has(keyOf(i, side)) || keep[y * W + x]) return -1;
+    return i;
+  };
+  const onWall = (x: number, y: number, side: 0 | 1, name: string): boolean => {
+    const i = face(x, y, side);
+    if (i < 0) return false;
+    out.wall.push({ i, side, name, spot: 0 });
+    wallTaken.set(keyOf(i, side), name);
+    return true;
+  };
+  const onFloor = (x: number, y: number, name: string, frame = 0): boolean => {
+    if (!plainAt(f, x, y) || keep[y * W + x] || taken[y * W + x]) return false;
+    out.tiles.push({ i: y * W + x, name, frame });
+    taken[y * W + x] = 1;
+    return true;
+  };
+  const stand = (x: number, y: number, name: string, big = false): boolean => {
+    if (!freeAt(x, y, big)) return false;
+    put(name, x, y, true);
+    if (big) clear(x + 0.5, y + 0.5, 1.5);
+    return true;
+  };
+  const unstand = (x: number, y: number): void => {
+    const k = props.findIndex((p) => p.tx === x && p.ty === y && p.solid);
+    if (k < 0) return;
+    props.splice(k, 1);
+    taken[y * W + x] = 0;
+    solid[y * W + x] = 0;
+    L.walk[y * W + x] = 1;
+  };
+  const lie = (x: number, y: number, name: string): boolean => {
+    if (!freeAt(x, y, false)) return false;
+    put(name, x, y, false, rng.int(0, 3));
+    return true;
+  };
+  const fire = (x: number, y: number): boolean => {
+    if (!freeAt(x, y, false)) return false;
+    props.push({ kind: 'brazier', tx: x, ty: y, x: x + 0.5, y: y + 0.5, solid: true, state: 0, variant: rng.int(0, 3) });
+    taken[y * W + x] = 1;
+    solid[y * W + x] = 1;
+    L.walk[y * W + x] = 0;
+    return true;
+  };
+  // (a piece in the wall with a heap of its own, standing on the floor before it: nobody walks through it)
+  const heap = (x: number, y: number, side: 0 | 1, name: string): boolean => {
+    if (face(x, y, side) < 0 || !heapFree(x, y, side)) return false;
+    onWall(x, y, side, name);
+    taken[y * W + x] = 1;
+    solid[y * W + x] = 1;
+    L.walk[y * W + x] = 0;
+    return true;
+  };
+  // ---- STORIES: the rooms of the way laid in order as the floor's story (game/stories.ts), its threads' pieces with it; floor 5's
+  // behind its own pieces' switch (art/lair_story.ts LAIR_STORY) in the mine that becomes his temple (LAIR_TEMPLE)
+  const lairStory = depth === 5 && LAIR_STORY.on && LAIR_TEMPLE.on;
+  if (STORIES.on && STORY_SETS[depth] && (depth === 5 ? lairStory : STORIES.floors.includes(depth))) {
+    /** The threads' pieces are floors 3 and 4's, in either look (art/prison_story.ts); floor 5 has its own (art/lair_story.ts). */
+    const fresh = depth >= 3;
+    const own = new Set<string>([...set.wall, ...set.burning, ...set.heaps, ...set.tiles, ...set.lying, ...set.small, ...set.things, ...set.big, ...(set.sceneOnly ?? [])]);
+    /** (floor 5) Which part each tile is (1 the mine, 2 the temple: game/lair_way.ts), and a story piece's name as its tile's part has it. */
+    const parts = depth === 5 ? partsOf(f) : null;
+    const inTempleAt = (x: number, y: number): boolean => !!parts && parts[y * W + x] === 2;
+    const LAIRS = new Set<string>(LAIR_STORY_PIECES);
+    const nm = (name: string, x: number, y: number): string => (inTempleAt(x, y) && LAIRS.has(name) ? inTemple(name) : name);
+    const onFloorNamed = (x: number, y: number, name: string, frame = 0): boolean => onFloor(x, y, nm(name, x, y), frame);
+    /** The black water down the face behind floor tile (x, y), and pooled on that tile at its foot. */
+    const water = (x: number, y: number, side: 0 | 1): boolean => {
+      if (!fresh || face(x, y, side) < 0 || !plainAt(f, x, y) || keep[y * W + x] || taken[y * W + x]) return false;
+      onWall(x, y, side, nm(BLACK_WATER, x, y));
+      onFloorNamed(x, y, side === 0 ? BLACK_POOL.x : BLACK_POOL.y);
+      return true;
+    };
+    /** (never the same piece on two neighbouring tiles of a wall: his note on floor 1's first pictures) */
+    const onWallApart = (x: number, y: number, side: 0 | 1, given: string): boolean => {
+      const name = nm(given, x, y);
+      const i = face(x, y, side);
+      const along = side === 0 ? 1 : W;
+      if (i < 0 || wallTaken.get(keyOf(i - along, side)) === name || wallTaken.get(keyOf(i + along, side)) === name) return false;
+      return onWall(x, y, side, name);
+    };
+    /** (floor 5) A run of drag marks: each tile by its edges to the tiles before and after it, an end where it begins and where it stops; a tile not free passed over. */
+    const drag = (path: readonly (readonly [number, number])[]): number => {
+      if (!lairStory) return 0;
+      const edge = (from: readonly [number, number], to: readonly [number, number]): '-x' | '+x' | '-y' | '+y' => (to[0] > from[0] ? '+x' : to[0] < from[0] ? '-x' : to[1] > from[1] ? '+y' : '-y');
+      let n = 0;
+      path.forEach((p, k) => {
+        const [x, y] = p;
+        if (!plainAt(f, x, y) || taken[y * W + x] || solid[y * W + x]) return;
+        const a = k > 0 ? edge(p, path[k - 1]) : null;
+        const b = k < path.length - 1 ? edge(p, path[k + 1]) : null;
+        const name = a && b ? dragName(a, b) : dragName((a ?? b)!, null);
+        out.tiles.push({ i: y * W + x, name: nm(name, x, y), frame: 0 });
+        taken[y * W + x] = 1;
+        n++;
+      });
+      return n;
+    };
+    out.story = layStory(
+      depth,
+      rooms,
+      (r) => ({ r, rng, stand, unstand, fire, lie, heap, onWall: onWallApart, onFloor: onFloorNamed, cx: r.x + Math.floor(r.w / 2), cy: r.y + Math.floor(r.h / 2), fresh, has: (n) => own.has(n), water, drag, exact: { lie, stand, onFloor: onFloorNamed, onWall: onWallApart } }),
+      (r) => (parts ? (inTempleAt(r.x + Math.floor(r.w / 2), r.y + Math.floor(r.h / 2)) ? 'temple' : 'mine') : null),
+    );
+    for (const s of out.story) sceneRooms.add(s.room);
+    // FLOOR 5, HIS HALL: the Sunken Eye carved in its back wall by the rift (on a bay's second tile: the hall's every fourth tile is
+    // a pilaster with the rift's crack up it, every second a pilaster); the drag marks from the way into the temple, through his
+    // gate, to one of the bone heaps he raises his dead from
+    if (lairStory && boss && parts) {
+      const rift = out.moments.find((m) => m.n === 2) ?? { x: f.boss.x, y: f.boss.y };
+      let best: { i: number; side: 0 | 1; d: number } | null = null;
+      for (let x = boss.x; x < boss.x + boss.w; x++) {
+        const i = (boss.y - 1) * W + x;
+        if (x % 2 === 1 && drawnFaces(f, i) & 1 && !wallTaken.has(keyOf(i, 0))) {
+          const d = Math.hypot(x + 0.5 - rift.x, boss.y - rift.y);
+          if (!best || d < best.d) best = { i, side: 0, d };
+        }
+      }
+      for (let y = boss.y; y < boss.y + boss.h; y++) {
+        const i = y * W + boss.x - 1;
+        if (y % 2 === 1 && drawnFaces(f, i) & 2 && !wallTaken.has(keyOf(i, 1))) {
+          const d = Math.hypot(boss.x - rift.x, y + 0.5 - rift.y);
+          if (!best || d < best.d) best = { i, side: 1, d };
+        }
+      }
+      if (best) {
+        out.wall.push({ i: best.i, side: best.side, name: EYE, spot: 0 });
+        wallTaken.set(keyOf(best.i, best.side), EYE);
+        // (the black water down the stone beside it, on the next pilaster that has no crack up it (along the wall, every fourth from
+        // the second), pooled at its foot)
+        const along = best.side === 0 ? 1 : W;
+        for (const j of [best.i - along, best.i + along]) {
+          const x = j % W;
+          const y = Math.floor(j / W);
+          if ((best.side === 0 ? x : y) % 4 !== 2 || !(drawnFaces(f, j) & (best.side === 0 ? 1 : 2)) || wallTaken.has(keyOf(j, best.side))) continue;
+          const fx = best.side === 0 ? x : x + 1;
+          const fy = best.side === 0 ? y + 1 : y;
+          if (!plainAt(f, fx, fy) || taken[fy * W + fx]) continue;
+          out.wall.push({ i: j, side: best.side, name: inTemple(BLACK_WATER), spot: 0 });
+          wallTaken.set(keyOf(j, best.side), inTemple(BLACK_WATER));
+          out.tiles.push({ i: fy * W + fx, name: inTemple(best.side === 0 ? BLACK_POOL.x : BLACK_POOL.y), frame: 0 });
+          taken[fy * W + fx] = 1;
+          break;
+        }
+      }
+      // (the way: through the temple's floor and his gate, keeping straight where it can, each turn as three tiles more)
+      const gate = new Set<number>();
+      for (const d of L.doors) for (const i of doorTiles(f, d.spot)) gate.add(i);
+      const goes = (i: number): boolean => parts[i] === 2 && !solid[i] && (gate.has(i) || (plainAt(f, i % W, Math.floor(i / W)) && L.walk[i] === 1));
+      const heapsAt = (f.heaps ?? []).map((h) => Math.floor(h.y) * W + Math.floor(h.x));
+      const n4 = W * f.h * 4;
+      const cost = new Int32Array(n4).fill(-1);
+      const from = new Int32Array(n4).fill(-1);
+      const buckets: number[][] = [];
+      const STEPS: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+      for (const h of heapsAt) {
+        for (let k = 0; k < 4; k++) {
+          const j = h + STEPS[k][0] + STEPS[k][1] * W;
+          if (j < 0 || j >= W * f.h || !goes(j)) continue;
+          cost[j * 4 + k] = 0;
+          (buckets[0] ??= []).push(j * 4 + k);
+        }
+      }
+      let end = -1;
+      for (let c = 0; c < buckets.length && end < 0; c++) {
+        for (const st of buckets[c] ?? []) {
+          if (cost[st] !== c) continue;
+          const i = st >> 2;
+          const x = i % W;
+          const y = Math.floor(i / W);
+          // (it comes in from the mine: the first tile of the temple with the mine beside it)
+          if (STEPS.some(([dx, dy]) => parts[(y + dy) * W + x + dx] === 1)) {
+            end = st;
+            break;
+          }
+          for (let k = 0; k < 4; k++) {
+            const tx = x + STEPS[k][0];
+            const ty = y + STEPS[k][1];
+            const j = ty * W + tx;
+            if (tx < 0 || ty < 0 || tx >= W || ty >= f.h || !goes(j)) continue;
+            const nc = c + 1 + (k !== (st & 3) ? 3 : 0);
+            if (cost[j * 4 + k] >= 0 && cost[j * 4 + k] <= nc) continue;
+            cost[j * 4 + k] = nc;
+            from[j * 4 + k] = st;
+            (buckets[nc] ??= []).push(j * 4 + k);
+          }
+        }
+      }
+      if (end >= 0) {
+        const path: [number, number][] = [];
+        for (let st = end; st >= 0; st = from[st]) path.push([(st >> 2) % W, Math.floor((st >> 2) / W)]);
+        drag(path);
+      }
+    }
+  }
   if (sceneFloor) {
     out.scenes = [];
-    /** The face of the back wall behind floor tile (x, y): the wall at y - 1 (side 0) or at x - 1 (side 1), if it is drawn and free. */
-    const face = (x: number, y: number, side: 0 | 1): number => {
-      const i = side === 0 ? (y - 1) * W + x : y * W + x - 1;
-      if (i < 0 || i >= W * f.h || !(drawnFaces(f, i) & (side === 0 ? 1 : 2)) || wallTaken.has(keyOf(i, side)) || keep[y * W + x]) return -1;
-      return i;
-    };
-    const onWall = (x: number, y: number, side: 0 | 1, name: string): boolean => {
-      const i = face(x, y, side);
-      if (i < 0) return false;
-      out.wall.push({ i, side, name, spot: 0 });
-      wallTaken.set(keyOf(i, side), name);
-      return true;
-    };
-    const onFloor = (x: number, y: number, name: string, frame = 0): boolean => {
-      if (!plainAt(f, x, y) || keep[y * W + x] || taken[y * W + x]) return false;
-      out.tiles.push({ i: y * W + x, name, frame });
-      taken[y * W + x] = 1;
-      return true;
-    };
-    const stand = (x: number, y: number, name: string, big = false): boolean => {
-      if (!freeAt(x, y, big)) return false;
-      put(name, x, y, true);
-      if (big) clear(x + 0.5, y + 0.5, 1.5);
-      return true;
-    };
-    const unstand = (x: number, y: number): void => {
-      const k = props.findIndex((p) => p.tx === x && p.ty === y && p.solid);
-      if (k < 0) return;
-      props.splice(k, 1);
-      taken[y * W + x] = 0;
-      solid[y * W + x] = 0;
-      L.walk[y * W + x] = 1;
-    };
-    const lie = (x: number, y: number, name: string): boolean => {
-      if (!freeAt(x, y, false)) return false;
-      put(name, x, y, false, rng.int(0, 3));
-      return true;
-    };
-    const fire = (x: number, y: number): boolean => {
-      if (!freeAt(x, y, false)) return false;
-      props.push({ kind: 'brazier', tx: x, ty: y, x: x + 0.5, y: y + 0.5, solid: true, state: 0, variant: rng.int(0, 3) });
-      taken[y * W + x] = 1;
-      solid[y * W + x] = 1;
-      L.walk[y * W + x] = 0;
-      return true;
-    };
-    // (a piece in the wall with a heap of its own, standing on the floor before it: nobody walks through it)
-    const heap = (x: number, y: number, side: 0 | 1, name: string): boolean => {
-      if (face(x, y, side) < 0 || !heapFree(x, y, side)) return false;
-      onWall(x, y, side, name);
-      taken[y * W + x] = 1;
-      solid[y * W + x] = 1;
-      L.walk[y * W + x] = 0;
-      return true;
-    };
     const scenes = SCENE_SETS[depth] ?? [];
     const used = new Map<string, number>();
     // (the biggest rooms first, so that the grandest scenes find room; a cell and the start have none)
-    const hosts = [...rooms].filter((r) => r.kind !== 'start' && !r.cell).sort((a, b) => b.w * b.h - a.w * a.h);
+    // (STORIES: the way's rooms are the story's)
+    const hosts = [...rooms].filter((r) => r.kind !== 'start' && !r.cell && !sceneRooms.has(r.id)).sort((a, b) => b.w * b.h - a.w * a.h);
     for (const r of hosts) {
       // (the floor's grandest, its first two, tried first in its biggest rooms; then the others in an order of the dice's, so that
       // the floor's rooms are not all the same; about one room in five left with its walls' and its floor's own alone)
@@ -978,6 +1128,8 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
   for (const r of rng.shuffle([...rooms])) {
     // (SCENES: a floor laid so has no things standing about at random)
     if (SCENES.on && SCENES.floors.includes(depth)) continue;
+    // (STORIES: nor a room of the way on a floor that tells its story)
+    if (sceneRooms.has(r.id)) continue;
     const area = r.w * r.h;
     let n = Math.min(THINGS_MOST, Math.floor(area / THING_EVERY));
     if (r.kind === 'start') n = Math.min(n, 1);
@@ -1065,7 +1217,7 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
     const fx = Math.floor(w.x);
     const fy = Math.floor(w.y);
     // (on a floor laid as scenes, its heaps are its scenes')
-    if (!sceneFloor && heaps < 2 && set.heaps.length && rng.chance(0.25) && rooms.some((r) => inRoom(r, fx, fy)) && freeAt(fx, fy, true)) {
+    if (!sceneFloor && !inScene && heaps < 2 && set.heaps.length && rng.chance(0.25) && rooms.some((r) => inRoom(r, fx, fy)) && freeAt(fx, fy, true)) {
       const name = set.heaps[heaps % set.heaps.length];
       out.wall.push({ i: w.i, side: w.side, name, spot: 0 });
       wallTaken.set(key, name);
