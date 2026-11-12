@@ -318,6 +318,9 @@ export interface Hero {
   dotBy?: { id: number | null; word: 'lasting' | 'fleeting' | null };
   /** (The same) WHICH ABILITY gave each boost he has now: might, haste, frenzy's hold and Guarding's shield (its place among his abilities). */
   boostBy?: { might?: number; haste?: number; frenzy?: number; shield?: number };
+  /** RED MIST (the Warrior's battle axe talent, game/talents.ts WARRIOR_TUNE): kills held, and the seconds left of them. */
+  redMist?: number;
+  redMistT?: number;
   /** Harm from monsters that carry element words. */
   burnT: number;
   burnDps: number;
@@ -611,7 +614,10 @@ export interface Projectile {
   dmg: number;
   element: Element;
   /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) 'spear': the Boneward's, and 'great', the bone marksman's great arrow (Version 19.9). */
-  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great' | 'hellbolt';
+  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great' | 'hellbolt' | 'axe';
+  /** THE WARRIOR'S BATTLE AXE (WARRIOR_TREE2): a thrown axe, that comes back (`returns`), and is on its way back (`back`). */
+  returns?: boolean;
+  back?: boolean;
   pierce: boolean;
   /** THE SKILL TREES (Piercing): how many more enemies a shot that does not pierce may still pass through. */
   pierceN?: number;
@@ -1746,6 +1752,8 @@ export type GameEvent =
   | { t: 'unique'; id: string; what: string; x: number; y: number; x1?: number; y1?: number; r?: number; secs?: number; mid?: number; word?: WordId }
   /** THE SHAFT'S RIM (game/rim.ts): a notch cut in the record stone as he comes home with a new endless level reached: where the stone stands, how many it has now, how many were cut. */
   | { t: 'notch'; x: number; y: number; n: number; cut: number }
+  /** THE WARRIOR'S BATTLE AXE: his thrown axe turns for home, here. */
+  | { t: 'axeTurn'; x: number; y: number }
   | { t: 'levelup' };
 
 /** What the player is asking for this frame, already converted to world space. */

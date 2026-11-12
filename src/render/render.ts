@@ -362,6 +362,27 @@ function some(rate: number): number {
   return Math.floor(rate) + (Math.random() < rate % 1 ? 1 : 0);
 }
 
+/** (THE WARRIOR'S BATTLE AXE) A thrown axe at (x, y) on the screen, `age` seconds in the air: its haft and its blade, turning. */
+function drawThrownAxe(g: CanvasRenderingContext2D, x: number, y: number, age: number): void {
+  const a = age * 18;
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  const at = (u: number, v: number): [number, number] => [Math.round(x + u * c - v * s), Math.round(y + (u * s + v * c) * 0.6)];
+  g.fillStyle = '#5a3a22';
+  for (let k = -5; k <= 5; k++) {
+    const [px, py] = at(k, 0);
+    g.fillRect(px, py, 1, 1);
+  }
+  g.fillStyle = '#c8ccd8';
+  for (let u = 2; u <= 5; u++) for (let v = 1; v <= 4 - (5 - u); v++) {
+    const [px, py] = at(u, -v);
+    g.fillRect(px, py, 1, 1);
+  }
+  const [ex, ey] = at(5, -1);
+  g.fillStyle = '#f2f4fa';
+  g.fillRect(ex, ey, 1, 1);
+}
+
 function ellipse(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string, alpha: number): void {
   g.globalAlpha = alpha;
   g.fillStyle = color;
@@ -4213,6 +4234,11 @@ export class Renderer {
       if (p.look === 'great') {
         const v = Math.hypot(p.vx, p.vy) || 1;
         if (onScreen(p.x, p.y)) drawGreatArrow(g, this.floorAt, p.x, p.y, AIM.z, p.vx / v, p.vy / v, t);
+        continue;
+      }
+      // (THE WARRIOR'S BATTLE AXE: his thrown axe turning end over end, a stand-in until the art chat's picture of it)
+      if (p.look === 'axe') {
+        if (onScreen(p.x, p.y)) drawThrownAxe(g, wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 12, p.age);
         continue;
       }
       // (a hero's arrow, with the ranger's new pictures: from where the arrow on his string was, at its height: game/defs.ts, RANGER_ARROW)

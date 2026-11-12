@@ -35,7 +35,10 @@ export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volle
   | 'jab' | 'cross' | 'slip'
   // (THE VETERAN, game/veteran.ts, behind VETERAN: his tap a punch, his hold a kick, his swipe the jump; which punch, kick
   // or fire move each press makes is his combo's: game/veteran.ts vetMoveFor)
-  | 'vpunch' | 'vkick' | 'vjump';
+  | 'vpunch' | 'vkick' | 'vjump'
+  // (THE WARRIOR'S THREE WEAPONS, behind game/talents.ts WARRIOR_TREE2: the greatsword's Whirl; the battle axe's Cleave, Axe Throw
+  // and Leaping Chop; the warhammer's Smash, Earthquake and Shoulder Charge)
+  | 'whirl' | 'cleave' | 'axethrow' | 'chop' | 'smash' | 'quake' | 'charge';
 
 /**
  * How an ability is delivered. Power words act on the kind, never on one specific ability.
@@ -116,6 +119,17 @@ export interface SkillDef {
    */
   channel?: number;
   tick?: number;
+  /**
+   * THE WARRIOR'S THREE WEAPONS (WARRIOR_TREE2): a melee blow that strikes every enemy in its arc (`arc`, the axe's Cleave); a
+   * thrown weapon that comes back to the thrower, striking again (`returns`, the axe); a leap that strikes every enemy passed on
+   * the way (`through`, the hammer's Shoulder Charge); what it hits stunned for `stun` seconds (Earthquake), or staggered
+   * (`stagger`, Smash).
+   */
+  arc?: boolean;
+  returns?: boolean;
+  through?: boolean;
+  stun?: number;
+  stagger?: boolean;
 }
 
 export const SKILLS: Record<SkillId, SkillDef> = {
@@ -130,6 +144,19 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   // the swipe abilities the option for words"). In front: the hit. Behind: what the move leaves.
   // (LUNGE, his word of 17 Oct, 15:45 his time: "Yes rename to lunge": the warrior's diving thrust, art/heroes3.ts THRUST; its
   // id is still 'leap', as saved heroes and the rules know it)
+  // THE WARRIOR'S THREE WEAPONS (behind WARRIOR_TREE2, game/talents.ts: the tree's first point picks one, the greatsword's till then).
+  // His words, 7 Nov 2026, 21:11: “I want his skill tree to start with a three branch option to go to Battle Ax, Warhammer, or (insert
+  // two handed sword name).  Then he’ll need tap and holds, probably swipes for the three weapons.”; of the moves offered, “All those
+  // are good, I’d like whirlwind to start as WHIRL.  One spin, higher base damage than strike.  Then an option to change to whirlwind
+  // (more hits, less damage) in the passive tree”. The numbers the main chat's starting points; their pictures the greatsword's
+  // standing in, until the art chat's axe and hammer.
+  whirl: { id: 'whirl', name: 'Whirl', kind: 'burst', icon: 'whirl', dmg: 1.4, cooldown: 3.0, mana: 12, range: 0, radius: 2.0, speed: 0, sockets: true, desc: 'One great spin: everything around you is cut, harder than a Strike.', verb: 'WHIRL', windup: 0.25, follow: 0.35 },
+  cleave: { id: 'cleave', name: 'Cleave', kind: 'melee', icon: 'strike', dmg: 0.9, cooldown: 0, mana: 0, range: 1.8, radius: 0, speed: 0, sockets: true, desc: 'A wide chop: every enemy in its arc is struck.', verb: 'CLEAVE', windup: 0.36, follow: 0.32, arc: true },
+  axethrow: { id: 'axethrow', name: 'Axe Throw', kind: 'projectile', icon: 'slam', dmg: 1.2, cooldown: 2.5, mana: 10, range: 7, radius: 0.45, speed: 11, sockets: true, desc: 'Throw your axe: it flies through what it meets, and comes back to you, striking again.', verb: 'THROW', windup: 0.3, follow: 0.3, returns: true },
+  chop: { id: 'chop', name: 'Leaping Chop', kind: 'leap', icon: 'leap', dmg: 0.9, cooldown: 4.5, mana: 0, range: 6, radius: 1.8, speed: 0, sockets: true, desc: 'Leap at a spot and bring your axe down where you land. Nothing can hit you as you go.', verb: 'CHOP', windup: 0, follow: 0 },
+  smash: { id: 'smash', name: 'Smash', kind: 'melee', icon: 'slam', dmg: 1.25, cooldown: 0, mana: 0, range: 1.7, radius: 0, speed: 0, sockets: true, desc: 'A heavy blow on one enemy: it staggers.', verb: 'SMASH', windup: 0.45, follow: 0.38, stagger: true },
+  quake: { id: 'quake', name: 'Earthquake', kind: 'burst', icon: 'slam', dmg: 1.3, cooldown: 4.0, mana: 14, range: 0, radius: 2.6, speed: 0, sockets: true, desc: 'Bring the hammer down: the ground round you shakes, and what stands on it is stunned.', verb: 'QUAKE', windup: 0.5, follow: 0.4, stun: 0.6 },
+  charge: { id: 'charge', name: 'Shoulder Charge', kind: 'leap', icon: 'leap', dmg: 0.6, cooldown: 4.0, mana: 0, range: 5, radius: 1.4, speed: 0, sockets: true, desc: 'Charge at a spot, shoulder first, striking every enemy in your way. Nothing can hit you as you go.', verb: 'CHARGE', windup: 0, follow: 0, through: true },
   leap: { id: 'leap', name: 'Lunge', kind: 'leap', icon: 'leap', dmg: 0.5, cooldown: 4.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Dive at a spot, your sword out before you. Nothing can hit you as you go, and the point strikes where you land.', verb: 'LUNGE', windup: 0, follow: 0 },
   shot: { id: 'shot', name: 'Shot', kind: 'projectile', icon: 'shot', dmg: 1.0, cooldown: 0, mana: 0, range: 11, radius: 0.25, speed: 16, sockets: true, desc: 'Loose an arrow at one enemy.', verb: 'SHOOT', windup: 0.333, follow: 0.32 },
   // VOLLEY, the bow's slow attack (the owner, 20:02): "Target an area and the ranger fires a bunch
@@ -321,6 +348,9 @@ export const WEAPON_SKILLS: Record<WeaponKind, readonly [SkillId, SkillId]> = {
   wraps: ['strike', 'whirlwind'],
   tome: ['familiar', 'beam'],
   wrench: ['strike', 'slam'],
+  // (THE WARRIOR'S THREE WEAPONS: as the greatsword, whatever WARRIOR_TREE2 makes of his moves)
+  battleaxe: ['strike', 'whirlwind'],
+  warhammer: ['strike', 'whirlwind'],
 };
 /** With empty hands: a blow of the fist, and a slam of it. */
 const BARE_SKILLS: readonly [SkillId, SkillId] = ['strike', 'slam'];
@@ -328,7 +358,7 @@ const BARE_SKILLS: readonly [SkillId, SkillId] = ['strike', 'slam'];
  * The attribute a weapon's attacks grow with, whoever holds it: a sword with Strength, a bow with Dexterity, a staff or a wand
  * with Intelligence (the new classes' own, NEW_WEAPONS: the wraps with Strength, the tome Intelligence, the wrench Dexterity).
  */
-export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int', wraps: 'str', tome: 'int', wrench: 'dex' };
+export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int', wraps: 'str', tome: 'int', wrench: 'dex', battleaxe: 'str', warhammer: 'str' };
 
 /**
  * ATTACKS AND SPELLS (the doc "Wordsmith: The New Words", his yes at 16:53 on 8 Oct 2026): the
@@ -2411,6 +2441,14 @@ export const QUIPS: {
     slam: ['Stay down.', 'Floored.'],
     whirlwind: ['What goes around.', 'A turn for the worse.', 'Spin doctor.'],
     leap: ['Point first.', 'Straight through.'],
+    // (THE WARRIOR'S THREE WEAPONS)
+    whirl: ['Round we go.', 'One turn.'],
+    cleave: ['Split them.', 'Chop chop.'],
+    axethrow: ['Catch.', 'It comes back.'],
+    chop: ['Timber.', 'Heads up.'],
+    smash: ['Flattened.', 'Hammer time.'],
+    quake: ['Feel that?', 'Ground shaker.'],
+    charge: ['Coming through.', 'Make way.'],
     shot: ['Bullseye.', 'Right on the mark.'],
     volley: ['Heads up.', 'Rain check?', 'Forecast: arrows.'],
     trap: ['Watch your step.', 'Walked right into it.'],
@@ -2444,6 +2482,8 @@ export const QUIPS: {
   weapon: {
     sword: ['Sharp answer.', 'Mightier than the pen.', 'Cut and dried.'],
     greatsword: ['Cut down to size.', 'Big sword. Short story.'],
+    battleaxe: ['Axe me anything.', 'Split decision.'],
+    warhammer: ['Hammered.', 'Nailed it.'],
     bow: ['Nock, nock.', 'Straight to the point.', 'Loosed and lost.'],
     wand: ['Wave goodbye.', 'A flick of the wrist.', 'Spelled it out.'],
     staff: ['Staff meeting adjourned.', 'Walk softly.'],

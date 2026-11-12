@@ -93,6 +93,8 @@ test('each class has fifteen talents in a shape of its own, every one reachable,
 function figureIds(f: TalentFigure): string[] {
   if (f.kind === 'sword') return [f.pommel, f.guard, f.tip, ...f.quillons];
   if (f.kind === 'gear') return [f.hub, ...f.ring];
+  // (an outline is drawn by its corners, through no talent)
+  if (f.kind === 'outline') return [];
   return [...f.ids];
 }
 
