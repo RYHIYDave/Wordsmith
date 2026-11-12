@@ -34,7 +34,7 @@ Behind UNIQUES (off): nothing he sees in the game changes.
 - THE COMPANION TALENTS' CARDS THE SAME (ui/talents.ts): asked, 12:43, whether they should work the same way, “Yes, same on
   those (Recommended)”. Their PICK ANOTHER IN TOWN line is gone; their row of three is shown out of town too, and a tap there
   picks nothing and says “Choose companion in town”. Picture 6. NOT BEHIND UNIQUES: COMPANIONS is on in the release, so this
-  part shows in the live game once merged.
+  part shows in the live game once merged. Shown picture 6 and told so, by 12:47: “Yes, hand it to main (Recommended)”.
 
 ## Checked
 
@@ -48,10 +48,16 @@ Not checked: a phone; the published page's playtests.
 
 ## For the main chat
 
-Merge it (it touches `ui/inventory.ts` near the card's buttons and `game/game.ts` by the companions); nothing to switch on,
-nothing to bake. It goes live with the uniques, at his yes to them (queue item `build-unique-items`).
+Merge it (it touches `ui/inventory.ts` near the card's buttons, `ui/talents.ts` the companion card, and `game/game.ts` by
+the companions); nothing to switch on, nothing to bake. The collar's part goes live with the uniques, at his yes to them
+(queue item `build-unique-items`). THE COMPANION TALENTS' CARDS (no PICK ANOTHER IN TOWN; a tap out of town says “Choose
+companion in town”) go live with the next version that has this branch: his yes, 12:47.
 
 ## Unit run
 
 `node tools/unit.mjs --only pack_collar_pick,companions,uniques_heroes,uniques_game` on 6de0bab492 (the code commit):
 UNIT DONE 6de0bab492: 27 files, 27 passed, 0 failed (336 tests; the core among them).
+
+After his two changes, `node tools/unit.mjs --only pack_collar_pick,companions,inventory,items_unique` on f9489e8b1f:
+UNIT DONE f9489e8b1f: 27 files, 27 passed, 0 failed (312 tests; the core among them). `pack_collar_pick.mjs` on a fresh
+build_to page, a phone's screen: finished clean (its steps 5 and 6 are the out-of-town taps).
