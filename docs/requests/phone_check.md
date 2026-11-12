@@ -150,8 +150,9 @@ frame asked for in turn, never more than 24 MB cut in hand. `townsfolk_baked.mjs
 as he goes down, come again), `baked.mjs` (the Warlock), `veteran_play.mjs`, `guide.mjs` (the Warrior's first dungeon):
 finished clean. WHAT THE SHEETS HOLD (their pixels, four bytes each): the Warrior 48 MB, the Ranger 109, the Mage 74, the
 Warlock 105, the Tinkerer 30, the Brawler 53 (from eight sides, 13 sheets: about 200), the cards 7; and up to 24 MB of
-frames cut. A hero's frames cut one by one were the sum of the frames (the Brawler 38 MB, the Ranger 97): the sheets are 3%
-to 40% more, for the room between frames on a sheet.
+frames cut. A hero's frames cut one by one were the sum of the frames: the sheets are more, for the room between frames on
+a sheet (the Ranger 109 MB against 97, the Tinkerer 30 against 26, the Brawler 53 against 38: 13% to 41% more; the others'
+sums were not to hand).
 
 **THE SECOND PHONE CHECK**: the same page (his link and his save there are the same), the same test build with the mend
 (`bring-in/eight-sides` 0925c57 with the branch's `engine/px.ts` and `render/baked.ts`; the bake's mark still e0ac1c19738f),
