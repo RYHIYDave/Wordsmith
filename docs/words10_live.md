@@ -62,21 +62,42 @@ The ten: Piercing, Bleeding, Reaping, Culling, Surging, Plundering, Mirroring (f
 Both are needed because there are now 28 words; both are one switch.
 
 1. **The book on the starting screen in the same five pages** (`LEX_BOOK.pages` in `src/ui/lexicon28.ts`, on in this branch).
-   With 28 words its old list runs off the foot of its panel (14 lines where there is room for 10). Picture:
-   `shots/words10_live/w_book_2_strike.png`. Off, the list is as it was (and runs off).
+   With 28 words its old list runs off the foot of its panel (14 lines where there is room for 10). Pictures:
+   `node tools/playtest.mjs ... --scenario tools/scenarios/words10_book.mjs` (pictures are not kept in the project). Off, the
+   list is as it was (and runs off).
 2. **Stones a pixel closer where more than 44 different words are carried** (`TIGHT_STONE` in `src/ui/inventory.ts`): with the
    ten there are 48 words and melded words, and four lines held 44. Only seen by someone carrying more than 44 kinds at once.
+   Picture: `tools/scenarios/words10_pouch.mjs`.
 
 He was asked about both from this chat on 11 Nov; his answers are on the queue item and the chat board.
 
-## What was checked
+## What was checked (11 Nov 2026)
 
 - `tsc --noEmit`: clean but for `tests/relief.test.ts(378,16)`, which is `main`'s own.
-- `tests/words.test.ts`, whole: 29 of 29 (20 minutes here beside other work; the suite's limit a file is 20 minutes, so give
-  it `--each 2400000` or run it alone).
-- `node tools/unit.mjs --only ...` on the commit: see the foot of this note.
-- The playtest `words10_live` on a page served with its sounds: every moment as it should be (180 checks).
-- The playtests that touch the Lexicon, the inventory, the words and the town: see the foot of this note.
+- **The unit tests of what changed, and the core, once, on the merged branch** (`node tools/unit.mjs --only ...`, at 8ac1b643):
+  52 files, 560 tests; 50 files passed, 2 failed, each for a small thing mended in the next commit (a saying of Surging's the
+  wand already had; the sixth batch's notes standing after the eighth's in the sound README). At c57c4c8a those two and the
+  core again: 25 files, 326 tests, all passed. The whole account: `.unit/<commit>/summary.txt` on the machine that ran it.
+  - Named: `words10_live, words, words7, words7_beats, words7_fixes, words7_names, words7_shade, words10, words10_beats,
+    three_words, last_words, sides, word_room, inventory, guide, scene_sounds, recorded_sounds, sounds2, city_words,
+    word_tiers, attr_split, uniques, uniques_words, uniques_game, uniques_drops, uniques_heroes, runes_on_gear, volatile3,
+    binding3`.
+  - `tests/words.test.ts` (every loadout) took 19 minutes of the 20 a file is given: give it `--each 2400000`.
+- **The playtest of the ten words** (`tools/scenarios/words10_live.mjs`, on a page served with its sounds, at c57c4c8a): every
+  moment as it should be, 180 checks: each word in front, behind and on a monster, by the real rules; what is sent, what is
+  drawn, what is heard; the Lexicon's pages; the book on the starting screen.
+- **Other playtests on the merged page**, all finished clean: `look2` (phone), `lexicon` (phone), `words10_lexpages`,
+  `words` (warrior), `words7_looks`, `words10_looks`, `sounds`; `words10_book` (the starting screen's book: PC, phone
+  sideways, phone upright; every tab and line on the screen), `words10_pouch` (48 words at a service on a phone: every one
+  has its stone).
+- Before `main` was merged in, on the 25.3.5 base: `look2` at four sizes, `look` at three, `lexicon`, `pouch_look`, `words`
+  (warrior, mage), `town` (PC, phone upright), `words10_lexpages`, `words10_lexicon`, `words7_looks`, `words10_looks`,
+  `look13`, `sounds`. Clean but for these, **which flag the very same lines on today's `main` (a8d9111d) built by itself, so
+  they are `main`'s own and not the ten words'**:
+  - `town.mjs` (18 lines): at the armourer the prompt reads “Armourer: a task” and opens nothing, and all that follows at
+    his counter fails with it.
+  - `look.mjs` on a PC and on a phone upright (2 lines): “the inventory never opened for the word”.
+  - `look13.mjs` (1 line): nothing on screen called `button:CANCEL`.
 
 NOT checked, and why: the whole unit suite and the whole regression (his rule of 7 Nov: test only what the change is about).
 The main chat's own checks before a release apply as always.
