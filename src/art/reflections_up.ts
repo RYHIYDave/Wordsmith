@@ -54,7 +54,11 @@ import { LAST } from '../dev/sculpt';
 import { CRACKS, EYE, GLASS_TAIL, REFLECTION_POOL, asEnemy, brightEdges, glassColours, glassOfPainting, hueOf, isCyan, lightCracks, sheenOver } from './reflections';
 import type { Silvered } from './reflections';
 import { GALLERY_MIRROR, SHATTER, SHATTER_CANVAS, STEP_CANVAS, STEP_OUT, shatterPainted, stepOutPainted } from './reflections_fx';
-import { WU_SIDES } from './warrior_up';
+import { WU_SIDES, WU_SPIN } from './warrior_up';
+import type { WuSide } from './warrior_up';
+// (THE WARLOCK BROUGHT UP, art/warlock_up.ts WARLOCK_UP, on since 25.3.15: his copy painted as he is, from his eight sides)
+import { WARLOCK_UP } from './warlock_up';
+import { WL_FPS, paintWarlockUp } from './warlock_up_art';
 import { GLINT, INK } from './kit';
 import { paintWu } from './warrior_up_art';
 import { WU_LURCH3, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_STRIKE3 } from './warrior_up_moves';
@@ -517,25 +521,31 @@ function warlock(): HeroGlass {
   const curse = named('Tap and hold: the Curse');
   const reel = warlockReel();
   const lurch = warlockLurch();
+  // (BROUGHT UP, WARLOCK_UP on, at his yes of 12 Nov 2026: his copy as the game now has him, from his eight sides, every list at
+  // thirty a second, his own painter (art/warlock_up_art.ts paintWarlockUp); off, from in front and behind, as he was)
+  const up = WARLOCK_UP.on;
   const track = (m: WarlockMove, hit?: number, round?: number): Track => ({
     name: m.name,
     long: round ?? m.long,
     loops: m.loops,
     from: 0,
     hit,
-    paint: (t, side) => lastDrawn(() => drawWarlockAt(side as GameView, m, t), CANVAS3.ax, CANVAS3.ay),
+    paint: (t, side) =>
+      up
+        ? lastDrawn(() => paintWarlockUp(m, t, side as WuSide), WU_SPIN[side as WuSide].ax, CANVAS3.ay)
+        : lastDrawn(() => drawWarlockAt(side as GameView, m, t), CANVAS3.ax, CANVAS3.ay),
   });
   return {
     cls: 'warlock',
-    sides: ['front', 'back'],
+    sides: up ? WU_SIDES : ['front', 'back'],
     stand: track(stand, undefined, WARLOCK_STAND),
     run: track(run, undefined, WARLOCK_RUN),
     tap: track(bolt, BOLT_HIT),
     hold: track(curse, CURSE_HIT),
     lurch: track(lurch),
     reel: track(reel),
-    idleFps: 10,
-    walkFps: 60,
+    idleFps: up ? WL_FPS.lists : 10,
+    walkFps: up ? WL_FPS.run : 60,
     clipFps: 30,
     walkStride: GRIP_SPEED * WARLOCK_RUN,
     // (his eyes lit under his hood: the kit's cyan, now the Hush's pink)

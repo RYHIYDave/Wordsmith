@@ -43,14 +43,9 @@ for (const who of ['warlock', 'tinkerer', 'tinkerer-kit', 'brawler'] as Who[]) {
       LIVING_SHADOW.on = false;
       WARLOCK_UP.on = false;
     }
-    let lists: ReturnType<typeof listsOf>;
+    // (kept so until every frame is hashed: a frame is painted as it is first asked for, and his sculptor reads WARLOCK_UP then)
     try {
-      lists = listsOf(who);
-    } finally {
-      VETERAN.on = was;
-      LIVING_SHADOW.on = shadow;
-      WARLOCK_UP.on = up;
-    }
+    const lists = listsOf(who);
     const prefix = who === 'tinkerer-kit' ? /^(golem|contraption):/ : new RegExp(`^${who}:`);
     const pinned = Object.keys(PINNED.lists).filter((k) => prefix.test(k));
     assert.deepEqual(lists.map((l) => l.name).sort(), pinned.sort(), `${who}: the same lists`);
@@ -65,6 +60,11 @@ for (const who of ['warlock', 'tinkerer', 'tinkerer-kit', 'brawler'] as Who[]) {
       }
     }
     assert.ok(n > 0);
+    } finally {
+      VETERAN.on = was;
+      LIVING_SHADOW.on = shadow;
+      WARLOCK_UP.on = up;
+    }
   });
 }
 

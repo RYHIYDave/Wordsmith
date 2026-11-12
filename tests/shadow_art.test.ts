@@ -11,6 +11,7 @@ import nodeTest from 'node:test';
 import nodeAssert from 'node:assert/strict';
 import { makeWarlockArt } from '../src/art/warlock_art';
 import { LIVING_SHADOW, SHADOW_FPS } from '../src/art/shadow_art';
+import { WARLOCK_UP } from '../src/art/warlock_up';
 import { CHANGE_ALL } from '../src/dev/warlock_change';
 import { DROP_INTO, DROP_PICTURES, REARS, SHADOW_RUN_ROUND, SHADOW_STAND_LONG, SLASH_HIT, SLASH_WAYS } from '../src/dev/shadow_moves';
 import { SHADOW_CHANGE_ALL } from '../src/dev/shadow_change';
@@ -27,7 +28,10 @@ const painted = (s: Sprite): boolean => !!s && s.w > 10 && s.h > 10;
 test('the switch off: the game\'s demon and the change as the game has them', () => {
   // (ON SINCE 25.3.14, at his “Yes, start it now (Recommended)” of 12 Nov 2026: off here, for this test only)
   assert.equal(LIVING_SHADOW.on, true, 'on in the game');
+  // (and the man as the game had him: brought up since 25.3.15, art/warlock_up.ts WARLOCK_UP, his lists at thirty a second)
+  const up = WARLOCK_UP.on;
   LIVING_SHADOW.on = false;
+  WARLOCK_UP.on = false;
   try {
   const demon = makeWarlockArt({ form: 'demon', place: 'dungeon' });
   for (const set of [demon.front, demon.back]) {
@@ -39,6 +43,7 @@ test('the switch off: the game\'s demon and the change as the game has them', ()
   assert.equal(man.front.clips?.change?.frames.length, 48, 'the game\'s change, 48 pictures');
   } finally {
     LIVING_SHADOW.on = true;
+    WARLOCK_UP.on = up;
   }
 });
 

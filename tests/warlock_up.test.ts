@@ -66,7 +66,12 @@ test('1. the switch is on (his yes, 12 Nov 2026); only art/warlock_art.ts takes 
     if (!f.endsWith('.ts') || f.startsWith('art/warlock_up')) continue;
     if (/from ['"][^'"]*warlock_up(_art)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
-  assert.equal(users.join(' '), 'art/warlock_art.ts', 'only the Warlock\'s art takes them in');
+  // (and, since 25.3.15, floor 18's copy of him, painted as he is: art/reflections_up.ts)
+  assert.equal(users.sort().join(' '), 'art/reflections_up.ts art/warlock_art.ts', 'only the Warlock\'s art, and his copy\'s, take them in');
+  // (and his change the game's demon's, as it was: the Living Shadow, on since 25.3.14, held off here)
+  const shadow = LIVING_SHADOW.on;
+  LIVING_SHADOW.on = false;
+  try {
   with_(false, () => {
   const man = makeWarlockArt({ form: 'man', place: 'dungeon' });
   assert.ok(!isEight(man), 'two sides');
@@ -77,6 +82,9 @@ test('1. the switch is on (his yes, 12 Nov 2026); only art/warlock_art.ts takes 
   assert.ok(ws.sc.prims.some((p) => p.piece === 'skirt' && p.tag === 'skirt'), 'the game\'s coat');
   assert.ok(!ws.sc.prims.some((p) => p.tag === 'cuff'), 'the game\'s boots');
   });
+  } finally {
+    LIVING_SHADOW.on = shadow;
+  }
 });
 
 // --- 2 ------------------------------------------------------------------------------------------------------------------------
