@@ -149,6 +149,17 @@ test('a swipe and a press on it: the move it sets in fire is asked for ahead; hi
   });
 });
 
+test('in a town nothing is asked for ahead', () => {
+  withHim(() => {
+    const g = room();
+    dummy(g, 1.1, 0);
+    (g.level as { town?: boolean }).town = true;
+    const a = fight(g, new VeteranFx(), '', g.hero.x + 1, g.hero.y, 0.1);
+    assert.equal(a.ahead.size, 0);
+    assert.equal(a.now.size, 0);
+  });
+});
+
 test('fallen: his fall is asked for as shown; and with nobody to tell, his drawing asks for nothing', () => {
   withHim(() => {
     const g = room();

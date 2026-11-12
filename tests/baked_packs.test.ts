@@ -355,6 +355,27 @@ test('a place painted already keeps its picture: it is not the pack\'s to give o
   }
 });
 
+test('another hero played: the Brawler\'s packs in hand are let go; his class card asked for lets none go', async () => {
+  const was = { ...PACKS };
+  try {
+    const { b, done, idle } = setUp();
+    b.take('brawler', 'dungeon', true);
+    await done();
+    b.want('brawler', 'jab', 0);
+    b.want('brawler', 'cross', 3);
+    await idle();
+    assert.equal(b.packsHeld().length, 2);
+    b.take('brawler', 'town', true);
+    b.take('warrior', 'card', false);
+    assert.equal(b.packsHeld().length, 2, 'he is still the one played');
+    b.take('ranger', 'dungeon', false);
+    assert.deepEqual(b.packsHeld(), []);
+    assert.equal(b.stats.packs.bytes, 0);
+  } finally {
+    Object.assign(PACKS, was);
+  }
+});
+
 test('PACKS off: every pack is unpacked as he is taken in, and none is let go', async () => {
   const was = { ...PACKS };
   try {

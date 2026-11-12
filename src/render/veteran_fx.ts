@@ -175,7 +175,8 @@ export class VeteranFx {
     // (his life run out: his fall is shown, and then as its last frame, for as long as the run's end is looked at)
     if (game.over) ask('fall', mine, true);
     const v = h.vet;
-    if (!v) return;
+    // (in a town nothing is fought: nothing is asked for ahead there)
+    if (!v || game.level.town) return;
     let swiped = !!v.fireReady || v.move?.id === 'dodge';
     for (const q of v.queue) {
       // (a blow goes at the enemy its press aimed at, where it is now; a dodge springs away from where it was swiped to)

@@ -49,8 +49,14 @@ export const BAKE_DIR = 'heroes';
  */
 export const PACKS = {
   on: true,
-  /** How many bytes of unpacked packs are kept (four a pixel): with what the Brawler always holds, about what he held from two sides. */
-  budget: 26 * 1048576,
+  /**
+   * How many bytes of unpacked packs are kept (four a pixel). 40 MB: with the 10 he always holds the Brawler holds about 50 MB at
+   * most, where he held 36 from two sides, would hold 143 from eight with none let go, and the Ranger holds 92. Tried on floor 2,
+   * a bot fighting four minutes of the game's time (tools/scenarios/mem_floors.mjs BUDGET): at 26 MB a pack was unpacked 161
+   * times and let go 131; at 40, 72 and 29; at 56 the 54 packs that fight used all stayed in hand (48 MB). A frame's work was
+   * the same at all three.
+   */
+  budget: 40 * 1048576,
   /** A pack asked for within this long (ms) is not let go of, whatever the budget: what is being shown is never let go. */
   fresh: 1500,
   /** How many packs are unpacked at once. */
@@ -280,6 +286,7 @@ export class BakedHeroes {
 
   /** Unpack one: its sheet read from its file's bytes, its frames cut from it and given into their places where those are still unpainted. */
   private async unpack(p: Pack): Promise<void> {
+    if (p.state !== 'packed') return;
     p.state = 'unpacking';
     this.busy++;
     const t0 = this.clock();
@@ -423,6 +430,8 @@ export class BakedHeroes {
     ASKED.told = (list) => this.asked(list);
     if (PACKS.on) return;
     for (const def of defs) await this.unpack(this.packs.get(`${g}/${def.name}`)!);
+    // (and any the game's drawing asked for meanwhile: the group has come whole when every one is in hand)
+    while (defs.some((def) => this.packs.get(`${g}/${def.name}`)!.state === 'unpacking')) await new Promise((r) => setTimeout(r, 5));
   }
 
   /** The baked pictures for this page, or null where there are none to be had (no bake in this build, a page opened from a file). */
@@ -448,6 +457,8 @@ export class BakedHeroes {
     const g = this.group(cls, place, vet);
     if (!g) return false;
     const st = this.state.get(g);
+    // (ANOTHER HERO IS PLAYED: a packed hero's packs in hand are let go; they are his own only while he is the one played)
+    if (g !== 'cards' && this.stats.packs.held) for (const [name, p] of this.packs) if (p.state === 'held' && !name.startsWith(`${g}/`)) this.letGo(p);
     if (st === 'failed') return false;
     if (!st) void this.load(g);
     return true;
