@@ -795,3 +795,26 @@ eight sides be some painted and some mirrors (`art/sides.ts`, `render/figure.ts`
 - Nothing of the game imports `src/dev/demon_new.ts`, `demon_ideas.ts`, `shadow_moves.ts`, `shadow_fx.ts` or
   `demon_swipe_fx.ts`; no file of the game is changed.
 - `npx tsx --test tests/shadow_moves.test.ts`: 17 of 17 (above). No other test was run: none imports these files.
+
+## Brought into the game, ON (the main chat of 12 Nov, session ...STLst; Version 25.3.14)
+
+Asked by pop-up, 12 Nov 2026, whether to start on it now: **“Yes, start it now (Recommended)”**. Brought onto main (art/warlock-up2
+14cc698a merged clean onto 25.3.13) and LIVING_SHADOW switched on. What the game lays round it, done as its pictures are: painted
+in with it on the slash's scene, once, and baked (not drawn by the game frame by frame):
+- (1) its slashes' streaks of his cyan: dev/shadow_fx.ts `slashScene` (it, then `slashLight` over it), for `attack`, `attack2`,
+  `attackWalk` and the new `attack2Walk`;
+- (2) its roar's ring, lines and what leaves its mouth: `roarScene` for the roar at the end of the change (art/shadow_art.ts
+  shadowChangeClip); the game's own ring at the change's end is not laid over it (render/warlock_fx.ts, the 'roar' event's
+  `formed`); the Bound Demon's roar keeps the game's ring; the screen's shake is the game's, at the change's end, as before;
+- (3) Damning's floor torn and lit under its claws: `damningScene` for `heavy`;
+- (4) the combo's second swing made walking: AnimSet `clips.attack2Walk` (render/figure.ts walkers), baked after the bake's other
+  lists (art/heroes3.ts bakeLists);
+- (5) dropping onto all fours after a slash made walking, the run going on: AnimSet `dropAfterSwing` (render/figure.ts);
+- (7) its bars over its own height, as it rises out of the change too (render/render.ts).
+NOT DONE: (3) the smoke step's light on the floor (`stepScene` keeps the eye with it and moves the floor under it, which the game's
+own move would have to match: left as the step was); (6) the change's puffs from its own pieces. Its five painted and three
+mirrored sides wait for the man's eight (the queue's finish-mage-and-warlock-eight-sides).
+
+Filmed in play from a page of the branch (tools/scenarios/shadow_look.mjs, MODE=film; tools/shadow_play_film.py), sent him as
+living_shadow_25314.mp4 with a sheet of its moments; asked whether to put it live, **his word by 16:29: “Yes, put it live
+(Recommended)”**.
