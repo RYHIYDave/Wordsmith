@@ -999,7 +999,12 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
     const fy = CARDS3.on ? cy + ch - 4 : cy + 2 + figH;
     g.save();
     g.beginPath();
-    if (CARDS3.on) g.rect(x + 1, cy + 1, wide ? cw - 2 : portW - 1, ch - 2);
+    // (EVERY HERO HAS THE WHOLE CARD TO MOVE IN, as the Warlock had since 1 Nov: the portrait was cut off at its right edge, a
+    // straight line through a scarf, a feather, a staff or a swing as each stood and walked on the spot. His words, 12 Nov 2026, put
+    // in the queue: “the warlock has the entire box for his idle animations and i can see the line in all the other portraits where
+    // the cutoff is.  go ahead and make all of them like the warlock”. Only the card's own edge cuts them now; the words and icons
+    // beside them are drawn over them, as over the Warlock's fire)
+    if (CARDS3.on) g.rect(x + 1, cy + 1, cw - 2, ch - 2);
     else g.rect(x + 1, cy + 1, cw - 2, figH + 4);
     g.clip();
     if (gone > 0) fig.drawPhased(g, sp, fx, fy, 2, 0.15 + gone * 0.85, 1 - gone * gone);
