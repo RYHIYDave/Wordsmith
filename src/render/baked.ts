@@ -15,7 +15,8 @@ import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
 import type { AnimSet } from '../art/actor_types';
 import { heroSides } from '../art/sides';
-import type { Sprite } from '../engine/px';
+import { sheetSprite } from '../engine/px';
+import type { FrameSheet, Sprite } from '../engine/px';
 import type { ClassId } from '../game/types';
 
 declare const __HERO_BAKE__: string | undefined;
@@ -100,20 +101,26 @@ export interface BakeFile {
 
 type Give = (cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean) => boolean;
 
-/** How many of a sheet's frames are cut from it at a time. */
-const AT_ONCE = 48;
-
 /**
  * THE BAKED PICTURES, TAKEN IN (render/painter.ts, Painter.baked): a group is fetched the first time one of its heroes is asked
- * for, a sheet at a time (a sheet is let go of once its frames are cut from it), and every frame handed to the hero's art where
- * it is still unpainted.
+ * for, a sheet at a time, and every frame handed to the hero's art where it is still unpainted.
+ *
+ * THE SHEETS ARE HELD WHOLE, AND NO PICTURE IS MADE FOR A FRAME (engine/px.ts sheetSprite: a frame's picture is cut from its
+ * sheet when it is first asked for). Before, each frame was cut from its sheet as it came, a picture made by the browser for
+ * each (createImageBitmap(sheet, x, y, w, h), 48 at once): on his phone, measured 12 Nov 2026, 7.1 ms a frame on the game's
+ * own thread, 68.5 s of the Brawler's 74-second load into town from eight sides (docs/requests/phone_check.md).
  */
 export class BakedHeroes {
   private state = new Map<string, 'loading' | 'done' | 'failed'>();
   private readonly groups: Record<string, BakeKey[]>;
   private readonly groupOf = new Map<string, string>();
-  /** For measuring: frames taken in, frames not wanted (painted already), how long each group took (ms), and what failed. */
-  readonly stats = { given: 0, unwanted: 0, ms: {} as Record<string, number>, failed: [] as string[] };
+  /** The sheets in hand: a hero's pictures are kept once they have come. */
+  private readonly sheets: FrameSheet[] = [];
+  /**
+   * For measuring: frames taken in, frames not wanted (painted already), how long each group took (ms), what failed, and the
+   * sheets held and their pixels.
+   */
+  readonly stats = { given: 0, unwanted: 0, ms: {} as Record<string, number>, failed: [] as string[], sheets: 0, sheetPx: 0 };
 
   constructor(
     private readonly mark: string,
@@ -190,32 +197,30 @@ export class BakedHeroes {
       for (let s = 0; s < f.sheets.length; s++) {
         const rs = await this.get(f.sheets[s]);
         if (!rs.ok) throw new Error(`${f.sheets[s]}: ${rs.status}`);
-        const sheet = await createImageBitmap(await rs.blob(), { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
-        try {
-          const mine: number[] = [];
-          for (let fi = 0; fi < f.frames.length; fi++) if (f.frames[fi][0] === s) mine.push(fi);
-          for (let n = 0; n < mine.length; n += AT_ONCE) {
-            const part = mine.slice(n, n + AT_ONCE);
-            const bmps = await Promise.all(part.map((fi) => {
-              const [, x, y, w, h] = f.frames[fi];
-              return createImageBitmap(sheet, x, y, w, h, { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
-            }));
-            for (let q = 0; q < part.length; q++) {
-              const fi = part[q];
-              const sprite = { ...f.parts[f.frames[fi][5]], img: bmps[q] as unknown as HTMLCanvasElement } as Sprite;
-              let took = false;
-              for (const [k, v, l, i] of wants.get(fi) ?? []) {
-                if (this.give(k.cls, k.place, v, l, i, sprite, k.vet)) took = true;
-              }
-              if (took) this.stats.given++;
-              else {
-                this.stats.unwanted++;
-                bmps[q].close();
-              }
-            }
+        const bmp = await createImageBitmap(await rs.blob(), { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
+        const sheet: FrameSheet = { img: bmp };
+        let kept = 0;
+        for (let fi = 0; fi < f.frames.length; fi++) {
+          if (f.frames[fi][0] !== s) continue;
+          const [, x, y, w, h, part] = f.frames[fi];
+          const sprite = sheetSprite(f.parts[part], sheet, x, y, w, h);
+          let took = false;
+          for (const [k, v, l, i] of wants.get(fi) ?? []) {
+            if (this.give(k.cls, k.place, v, l, i, sprite, k.vet)) took = true;
           }
-        } finally {
-          sheet.close();
+          if (took) {
+            this.stats.given++;
+            kept++;
+          } else this.stats.unwanted++;
+        }
+        if (kept) {
+          this.sheets.push(sheet);
+          this.stats.sheets++;
+          this.stats.sheetPx += bmp.width * bmp.height;
+        } else {
+          // (none of its frames was wanted: nothing holds it)
+          sheet.img = null;
+          bmp.close();
         }
       }
       this.state.set(g, 'done');

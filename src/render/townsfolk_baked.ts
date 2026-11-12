@@ -16,8 +16,8 @@
 // as they were baked) the town's people are as they were (art/townsfolk3.ts townsfolk3Shown; main.ts).
 
 import type { FolkList } from '../art/townsfolk3';
-import { releaseSprite } from '../engine/px';
-import type { Sprite } from '../engine/px';
+import { releaseSprite, sheetSprite } from '../engine/px';
+import type { FrameSheet, Sprite } from '../engine/px';
 
 declare const __TOWNSFOLK_BAKE__: string | undefined;
 
@@ -50,9 +50,6 @@ export interface FolkBakeFile {
   lists: { name: string; at: number[] }[];
 }
 
-/** How many of a sheet's frames are cut from it at a time: the first, under the loading screen; and the rest, as the town is played. */
-const AT_ONCE = { first: 96, rest: 32 };
-
 type Get = (name: string) => Promise<Response>;
 
 /**
@@ -66,6 +63,12 @@ export class BakedTownsfolk {
   private held: { list: Sprite[]; i: number; was: PropertyDescriptor }[] = [];
   /** The pictures in hand. */
   private sprites: Sprite[] = [];
+  /**
+   * The sheets they are kept in, held whole: no picture is made for a frame as it is taken in; a frame's is cut from its sheet
+   * when it is first asked for (engine/px.ts sheetSprite: on his phone a picture made by the browser for every baked frame
+   * was 7 ms a frame on the game's own thread, measured 12 Nov 2026: docs/requests/phone_check.md).
+   */
+  private sheets: FrameSheet[] = [];
   /** Have the first of them come: the loops the town shows as it is come into? */
   private firstIn = false;
   /** Told, once, when they will not come (main.ts puts the town's people back as they were). */
@@ -147,6 +150,13 @@ export class BakedTownsfolk {
     this.held.length = 0;
     for (const s of this.sprites) releaseSprite(s);
     this.sprites.length = 0;
+    // (the sheets they were kept in: their room given back now)
+    for (const sh of this.sheets) {
+      const img = sh.img;
+      sh.img = null;
+      if (img && typeof img.close === 'function') img.close();
+    }
+    this.sheets.length = 0;
     this.stats.held = 0;
     this.firstIn = false;
   }
@@ -187,53 +197,43 @@ export class BakedTownsfolk {
         const rs = await this.get(f.sheets[s]);
         if (!live()) return;
         if (!rs.ok) throw new Error(`${f.sheets[s]}: ${rs.status}`);
-        const sheet = await createImageBitmap(await rs.blob(), { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
-        try {
-          if (!live()) return;
-          const on: number[] = [];
-          for (let fi = 0; fi < f.frames.length; fi++) if (f.frames[fi][0] === s) on.push(fi);
-          for (let n = 0; n < on.length; ) {
-            // (the first of them in bigger handfuls, to be quick under the loading screen; never past the last of the first)
-            const fi0 = on[n];
-            const many = fi0 < f.first ? Math.min(AT_ONCE.first, f.first - fi0) : AT_ONCE.rest;
-            const part = on.slice(n, n + many);
-            n += part.length;
-            const bmps = await Promise.all(part.map((fi) => {
-              const [, x, y, w, h] = f.frames[fi];
-              return createImageBitmap(sheet, x, y, w, h, { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
-            }));
-            if (!live()) {
-              for (const b of bmps) b.close();
-              return;
-            }
-            for (let q = 0; q < part.length; q++) {
-              const fi = part[q];
-              const sprite = { ...f.parts[f.frames[fi][5]], img: bmps[q] as unknown as HTMLCanvasElement } as Sprite;
-              let took = false;
-              for (const [list, i] of wants.get(fi) ?? []) {
-                const was = Object.getOwnPropertyDescriptor(list, i);
-                // (only where the place is still unpainted: its own painter is there, a getter)
-                if (!was || typeof was.get !== 'function') continue;
-                Object.defineProperty(list, i, { value: sprite, writable: true, configurable: true, enumerable: true });
-                this.held.push({ list, i, was });
-                took = true;
-              }
-              if (took) {
-                this.sprites.push(sprite);
-                this.stats.given++;
-              } else {
-                this.stats.unwanted++;
-                bmps[q].close();
-              }
-            }
-            this.stats.held = this.sprites.length;
-            if (!this.firstIn && part[part.length - 1] + 1 >= f.first) {
-              this.firstIn = true;
-              this.stats.firstMs = Math.round(performance.now() - t0);
-            }
+        const bmp = await createImageBitmap(await rs.blob(), { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
+        if (!live()) {
+          bmp.close();
+          return;
+        }
+        const sheet: FrameSheet = { img: bmp };
+        let kept = 0;
+        for (let fi = 0; fi < f.frames.length; fi++) {
+          if (f.frames[fi][0] !== s) continue;
+          const [, x, y, w, h, part] = f.frames[fi];
+          const sprite = sheetSprite(f.parts[part], sheet, x, y, w, h);
+          let took = false;
+          for (const [list, i] of wants.get(fi) ?? []) {
+            const was = Object.getOwnPropertyDescriptor(list, i);
+            // (only where the place is still unpainted: its own painter is there, a getter)
+            if (!was || typeof was.get !== 'function') continue;
+            Object.defineProperty(list, i, { value: sprite, writable: true, configurable: true, enumerable: true });
+            this.held.push({ list, i, was });
+            took = true;
           }
-        } finally {
-          sheet.close();
+          if (took) {
+            this.sprites.push(sprite);
+            this.stats.given++;
+            kept++;
+          } else this.stats.unwanted++;
+          // (the loops the town shows as it is come into are the first frames: all the loading screen waits for)
+          if (!this.firstIn && fi + 1 >= f.first) {
+            this.firstIn = true;
+            this.stats.firstMs = Math.round(performance.now() - t0);
+          }
+        }
+        this.stats.held = this.sprites.length;
+        if (kept) this.sheets.push(sheet);
+        else {
+          // (none of its frames was wanted: nothing holds it)
+          sheet.img = null;
+          bmp.close();
         }
       }
       this.state = 'done';
