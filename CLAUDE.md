@@ -95,3 +95,9 @@ directs and playtests, and Claude writes and tests everything.
   his phone: leave the ranks alone. Reading it is not a go-ahead: pull an item only when he asks
   for work from the queue or names one, and an item is never his yes to what a chat would ask him
   first. Put here at his word to the main chat, 9 Nov 2026, by 21:43: “Yes, add it (Recommended)”.
+- FINISHED WORK GOES ON THE QUEUE PAGE'S SHIP LIST, NOT BACK IN THE QUEUE. Work built and tested on a branch is done: its
+  queue item is deleted and a document of the same name set in the page's collection `ship` (READY TO SHIP on the page:
+  branch, commit, what the main chat must do to bring it in); never put back in the queue as “Bring in …”. The main chat
+  takes all of `ship` into its next update and deletes each once live. His pick, 12 Nov 2026, by 12:23, asked after he said
+  “I just feel like tasks are getting half done then getting thrown back into the queue.”: “Off the queue, onto a ship list
+  (Recommended)”. Work that waits on his own word (a phone test, a yes to pictures) stays in the queue.

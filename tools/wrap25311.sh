@@ -50,6 +50,10 @@ two; run moth_packed_check --size 1280x720 --scenario $S/moth_packed_check.mjs &
 # the new mark's files; his fight in his own pictures (NOT colossus_gaze.mjs: on a busy two-core machine it never reaches his gaze)
 two; U=12 V=3 run colossus_gaze2_film $C2 --scenario $S/colossus_gaze2_film.mjs &
 two; run colossus_baked $C2 --scenario $S/colossus_baked.mjs &
+# A BOSS'S DEATH PAINTED AHEAD AND THE RIME SHADE'S LINES (fix/boss-death-stall-rime-shade): the Carrion Queen's fall on floor 7;
+# floor 20's three Rime Shades in play
+two; FLOORS=7 FIGHT=20 PROFILE=0 run boss_death_stall_7 $P --scenario $S/boss_death_stall.mjs &
+two; run rime_shade_play $P --scenario $S/rime_shade_play.mjs &
 # the game's main ways
 two; run save --scenario $S/save.mjs &
 two; run touch_wide $P --scenario $S/touch.mjs &
