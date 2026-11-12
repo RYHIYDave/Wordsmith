@@ -53,8 +53,9 @@ const tileAt = (px: number, py: number): [number, number] => {
 // town's own files alone, game/rim.ts, render/rim.ts, art/shaft_town.ts and, for the switch and the town's things in its stone,
 // main.ts: tests/rim_town.test.ts. Nothing else of the game names it.)
 const TOWN_FILES = [join('game', 'rim.ts'), join('render', 'rim.ts'), join('art', 'shaft_town.ts'), join('src', 'main.ts')];
-test('the switch is off, and nothing of the game imports the Shaft\'s Rim but the town\'s own files', () => {
-  assert.equal(ENDLESS_TOWN.on, false);
+// (THE GAME HAS IT ON since 25.3.7, the main chat, 11 Nov 2026, on his yes to it in the game.)
+test('the switch is on in the game, and nothing of the game imports the Shaft\'s Rim but the town\'s own files', () => {
+  assert.equal(ENDLESS_TOWN.on, true);
   const bad = files('src').filter((f) => !f.startsWith(join('src', 'dev')) && !f.endsWith(join('art', 'shaft_rim.ts')) && !f.endsWith(join('art', 'shaft_props.ts')) && !TOWN_FILES.some((t) => f.endsWith(t)) && /shaft_rim|shaft_props/.test(readFileSync(f, 'utf8') as string));
   assert.deepEqual(bad, []);
 });

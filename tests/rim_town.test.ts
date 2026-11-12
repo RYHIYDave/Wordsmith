@@ -77,8 +77,10 @@ function home(seed: number, n = 1): Game {
 const R = TUNE.heroRadius;
 const stands = (g: Game, x: number, y: number): boolean => g.free(g.level.walk, x, y, R);
 
-test('the switch is off; off, endless open, home is the game\'s own town, as it was, and nothing of the rim is saved', () => {
-  assert.equal(ENDLESS_TOWN.on, false, 'off until his yes to pictures of it from the game');
+// (THE GAME HAS IT ON since 25.3.7, the main chat, 11 Nov 2026, on his yes to it in the game: “Yes, hand it to main (Recommended)”.
+// Every test here sets the switch as it needs it, in town(): this one off, the rest on.)
+test('the switch is on in the game; off, endless open, home is the game\'s own town, as it was, and nothing of the rim is saved', () => {
+  assert.equal(ENDLESS_TOWN.on, true, 'on since 25.3.7, on his yes to it in the game');
   town(() => {
     const g = atTheLast(3);
     take(g, 'on');
