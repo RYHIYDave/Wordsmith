@@ -160,7 +160,8 @@ test('the gamble\'s odds: most often plain, magic about a third of the time, rar
   assert.ok(Math.abs(share[1] - TUNE.gambleOdds.magic) < 0.04, `magic ${(share[1] * 100).toFixed(1)}% of the time (${TUNE.gambleOdds.magic * 100}% is meant)`);
   assert.ok(Math.abs(share[2] - TUNE.gambleOdds.rare) < 0.03, `rare ${(share[2] * 100).toFixed(1)}% (${TUNE.gambleOdds.rare * 100}% is meant)`);
   assert.ok(share[0] > 0.5, `plain more often than not (${(share[0] * 100).toFixed(1)}%)`);
-  assert.equal(seen[3], 0, 'no unique pieces yet: there are none in the game');
+  // (the unique items on since his yes of 12 Nov 2026: his “very low chance to give a unique”, TUNE.gambleOdds.unique)
+  assert.ok(seen[3] > 0 && Math.abs(seen[3] / throws - TUNE.gambleOdds.unique) < 0.004, `a unique now and then: ${seen[3]} in ${throws} (${TUNE.gambleOdds.unique * 100}% is meant)`);
 });
 
 test('the town\'s people say a line as the hero comes up to them: now and then, never the same twice running, never in a crowd', () => {
