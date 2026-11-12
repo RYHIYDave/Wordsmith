@@ -1,0 +1,56 @@
+{
+ "mark": "5482604e8eb0",
+ "groups": {
+  "cards": {
+   "frames": 1261,
+   "places": 1278,
+   "sheets": 2,
+   "mb": 0.39,
+   "s": 146.9
+  },
+  "warrior": {
+   "frames": 2504,
+   "places": 4217,
+   "sheets": 3,
+   "mb": 1.2,
+   "s": 92.7
+  },
+  "ranger": {
+   "frames": 7253,
+   "places": 8668,
+   "sheets": 7,
+   "mb": 3.24,
+   "s": 486.5
+  },
+  "mage": {
+   "frames": 4110,
+   "places": 5222,
+   "sheets": 5,
+   "mb": 1.77,
+   "s": 820.8
+  },
+  "warlock": {
+   "frames": 1441,
+   "places": 2646,
+   "sheets": 7,
+   "mb": 3.09,
+   "s": 327.1
+  },
+  "tinkerer": {
+   "frames": 2459,
+   "places": 5088,
+   "sheets": 2,
+   "mb": 0.85,
+   "s": 126.6
+  },
+  "brawler": {
+   "frames": 2369,
+   "places": 10748,
+   "sheets": 4,
+   "mb": 1.06,
+   "s": 117.6
+  }
+ },
+ "s": 2159,
+ "from": "The files of the bake 79ea28e6e46e (baked whole on bring-in/hero-cards 5d868209, 12 Nov 2026, 13:19 to 13:56 UTC, every sheet read back and checked against every frame as painted), the mark in each file changed: the code was changed after it (art/heroes3.ts bakeLists, so that the monsters' bake keeps main's mark) and paints nothing differently. Checked: every key of every group asks for the same lists' lengths and the same places in the same order as the files hold; the cards' group baked again with this code, the same byte for byte."
+}
