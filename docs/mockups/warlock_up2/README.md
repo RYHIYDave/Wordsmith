@@ -1014,6 +1014,15 @@ group: only his is baked).
 NOT CHECKED: his phone; a release build with every hero's bake (only his group is baked here: the other heroes are painted in
 play on this page); the published page's playtests.
 
+CHECKED ON THIS BRANCH: tsc clean; `node tools/unit.mjs --only warlock_packs,warlock_up,baked_packs,veteran_packs,baked,shadow_art,cheap_heroes,warlock,sides_more,veteran_art,veteran_rules`
+and the core on cd88fde7f9: 33 files, all passed (the Brawler's packs' own tests among them, his switch off); the two playtests above
+on the packed page, served (the bot's two floors, and the film's scenario), finished clean but for the one file not baked.
+
+**HIS ANSWER, 12 Nov 2026**, sent the bolt's picture (`warlock_bolt_now_and_fixed.png`) and told of the packs, asked by pop-up
+whether to hand the Warlock to the main chat now (his eight sides, longer coat, knee boots and longer shins from the film, the
+packing, the fixed bolt; with the Living Shadow): **“Yes, hand him to main (Recommended)”**. SO HE IS HANDED TO THE MAIN CHAT: the
+queue's ship list, `finish-mage-and-warlock-eight-sides`, this branch at the commit there.
+
 FOR THE MAIN CHAT: bring in `build/warlock-packed` in place of `art/warlock-man8` and `art/warlock-up2` (it holds both, and
 `build/brawler-packed` with the Brawler's switch off); then, at his yes, switch WARLOCK_UP and LIVING_SHADOW on and bake. The
 budget, `PACKS.budget`, is the Brawler's and his alike: one number.
