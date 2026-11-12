@@ -8,7 +8,8 @@
 //   node tools/bake_monsters.mjs --from <mark>   FOR THE ONE WHO KNOWS THE ART HAS NOT CHANGED since the kept bake of that mark
 //                                             (only code beside it has): its figures are taken as this mark's, not painted
 //                                             again. Never for a release: a release's bake is painted from its own code.
-// The bake goes beside the game's page, in monsters/<mark>/ (tools/build.mjs, dist/monsters/): <figure>.json and its sheets.
+// The bake is kept as <figure>.json and its sheets; it goes beside the game's page, in monsters/<mark>/ (tools/build.mjs,
+// dist/monsters/), IN PACKS, ONE FILE A FIGURE, <figure>-pack.png (tools/monster_packs.mjs: the page holds at most 511 files).
 // The bake's mark is taken from the code that paints them (src/dev/bake_monsters_page.ts, bundled as the game is): the same
 // art, the same mark, and the bake is kept (in .bake/monsters/<mark>/) and not made again; the art changed, a new mark and a
 // new bake. IT IS MADE A FIGURE AT A TIME, EACH IN A FRESH PAGE, AND KEPT AS IT GOES: stopped, it is run again and goes on
@@ -18,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { RELEASE_DEFINES, ROOT, bundle, load } from './lib.mjs';
 import { encodePng } from './png.mjs';
+import { packFromBake, packName } from './monster_packs.mjs';
 
 /** Where the bakes are kept, each in a folder named by its mark. */
 const KEPT = path.join(ROOT, '.bake', 'monsters');
@@ -153,28 +155,33 @@ export async function bakeMonsters({ log = console.log, jobs = 2, only = null, f
   return { mark, dir, fresh: true };
 }
 
-/**
- * The files of a bake, and where each is (published beside the game's page as monsters/<mark>/<name>): each figure's file and
- * its sheets, of the figures the bake is of (done.json; a bake not yet done, or a try with --only: those baked so far).
- */
-export function monsterBakeFiles(mark) {
+/** The figures a kept bake holds, by their names as their files have them (done.json; a bake not yet done, or a try with --only: those baked so far). */
+function bakedNames(mark) {
   const dir = path.join(KEPT, mark);
   const read = (f) => (fs.existsSync(path.join(dir, f)) ? JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) : null);
   const figures = read('done.json')?.figures ?? Object.keys(read('said.json') ?? {});
+  return figures.map(bakeName).filter((name) => fs.existsSync(path.join(dir, `${name}.json`)));
+}
+
+/**
+ * The files of a kept bake, and where each is: each figure's file and its sheets, of the figures the bake is of (bakedNames).
+ * Kept so; carried beside the page in packs (shipMonsters).
+ */
+export function monsterBakeFiles(mark) {
+  const dir = path.join(KEPT, mark);
   const out = [];
-  for (const figure of figures) {
-    const name = `${bakeName(figure)}.json`;
-    const file = read(name);
-    if (!file) continue;
-    for (const f of [name, ...file.sheets]) out.push({ name: f, from: path.join(dir, f) });
+  for (const name of bakedNames(mark)) {
+    const file = JSON.parse(fs.readFileSync(path.join(dir, `${name}.json`), 'utf8'));
+    for (const f of [`${name}.json`, ...file.sheets]) out.push({ name: f, from: path.join(dir, f) });
   }
   return out.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 }
 
 /**
- * THE BAKE CARRIED BESIDE A PAGE (tools/build.mjs, tools/build_to.mjs): dist/monsters/<mark>/, the old ones gone. `make`: bake
- * it now if this art is not baked yet (many minutes); without it, only a bake already kept is carried. The mark ('' : none
- * carried; the page's monsters are then painted as it is played, as before) and the files.
+ * THE BAKE CARRIED BESIDE A PAGE (tools/build.mjs, tools/build_to.mjs): dist/monsters/<mark>/, the old ones gone, IN PACKS, one file a
+ * figure, <name>-pack.png (tools/monster_packs.mjs), each checked as it is made. `make`: bake it now if this art is not baked yet
+ * (many minutes); without it, only a bake already kept is carried. The mark ('' : none carried; the page's monsters are then
+ * painted as it is played, as before) and the files.
  */
 export async function shipMonsters({ make = true, log = console.log } = {}) {
   fs.rmSync(path.join(ROOT, 'dist', 'monsters'), { recursive: true, force: true });
@@ -182,9 +189,12 @@ export async function shipMonsters({ make = true, log = console.log } = {}) {
   if (!bake) return { mark: '', files: [] };
   const to = path.join(ROOT, 'dist', 'monsters', bake.mark);
   fs.mkdirSync(to, { recursive: true });
-  const files = monsterBakeFiles(bake.mark);
-  for (const f of files) fs.copyFileSync(f.from, path.join(to, f.name));
-  return { mark: bake.mark, files: files.map((f) => f.name), fresh: bake.fresh };
+  const files = [];
+  for (const name of bakedNames(bake.mark)) {
+    fs.writeFileSync(path.join(to, packName(name)), packFromBake(bake.dir, name));
+    files.push(packName(name));
+  }
+  return { mark: bake.mark, files: files.sort(), fresh: bake.fresh };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
@@ -203,6 +213,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
     const r = await bakeMonsters({ jobs: Number(arg('--jobs') ?? 2), only: only ? only.split(',') : null, from: arg('--from') });
     const all = monsterBakeFiles(r.mark);
     const mb = all.reduce((n, f) => n + fs.statSync(f.from).size, 0) / 1e6;
-    console.log(`${r.fresh ? 'baked' : 'already baked'}: ${r.mark}, ${all.length} files, ${mb.toFixed(2)} MB, in ${r.dir}`);
+    console.log(`${r.fresh ? 'baked' : 'already baked'}: ${r.mark}, ${all.length} files, ${mb.toFixed(2)} MB, in ${r.dir} (carried beside the page as ${bakedNames(r.mark).length} packs)`);
   }
 }

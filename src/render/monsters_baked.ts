@@ -7,8 +7,8 @@
 //
 // So the monsters are made before play, as the heroes (render/baked.ts), the Swamp Colossus (render/colossus_baked.ts) and the
 // town's people (render/townsfolk_baked.ts) are: every figure painted once when the game is built (tools/bake_monsters.mjs),
-// shipped beside the game's page as sheets of pictures (monsters/<mark>/: <figure>.json and its sheets, a group a figure, so
-// that a floor fetches its own kinds and no others), TAKEN IN UNDER THE LOADING SCREEN as a floor is come into (main.ts
+// shipped beside the game's page as sheets of pictures (monsters/<mark>/: IN PACKS, ONE FILE A FIGURE, <figure>-pack.png, so
+// that a floor fetches its own kinds and no others: `readPack`), TAKEN IN UNDER THE LOADING SCREEN as a floor is come into (main.ts
 // loadingFrame waits for them), and let go of as the floor is left, as its monsters' pictures always were (art/bestiary.ts
 // forgetOthers, HEAVY_FIGURES). By his standing rule of 6 Nov 2026 that the game may carry files.
 //
@@ -19,10 +19,11 @@
 // ones known to be called (`bringsOf`) are asked for with the floor's own, under the loading screen. While a figure's pictures
 // are still coming, a frame of its not here yet is shown as the nearest that is (art/kit.ts LEFT_TO_PAINTER), never painted
 // where the game is played.
-// HOW THEY ARE TAKEN IN: a figure's sheets are read by the browser as pictures, beside the game, and each frame is cut from
-// its sheet into a canvas of its own, as the game's own painted frames are, a few at a time (`CUT_MS`), the page given back
-// to draw between: the loading screen goes on turning, and the game is never held up. NO PICTURE IS MADE BY THE BROWSER FOR
-// EACH FRAME (createImageBitmap, as the heroes' bake does): an iPhone's browser is known to be slow at that (`Sheet`).
+// HOW THEY ARE TAKEN IN: a figure's pack is fetched, and each of its sheets opened as a picture by the browser, beside the game
+// (one picture a sheet, as the heroes' sheets are opened: render/baked.ts), and each frame is cut from its sheet into a canvas
+// of its own, as the game's own painted frames are, a few at a time (`CUT_MS`), the page given back to draw between: the
+// loading screen goes on turning, and the game is never held up. NO PICTURE IS MADE BY THE BROWSER FOR EACH FRAME
+// (createImageBitmap of a part of a sheet): an iPhone's browser is known to be slow at that (`Sheet`).
 // THE LOADING SCREEN WAITS FOR THEM NO LONGER THAN `waitMost` by the clock on the wall; what has not come by then goes on
 // coming as he plays.
 // ON A DEVICE WITH LITTLE ROOM (a phone) a boss's pictures are NOT taken in: they are a hundred to five hundred megabytes, an
@@ -96,7 +97,7 @@ export function bringsOf(figure: MonsterFigure, stages?: (f: MonsterFigure) => r
   return out;
 }
 
-/** How many of a figure's sheets are fetched and opened at a time (a boss has thirty). */
+/** How many of a figure's sheets are opened at a time (a boss has thirty). */
 const SHEETS_AT_ONCE = 3;
 /**
  * How long a figure whose pictures are still coming is shown, for a frame not here yet, as the nearest that is (`coming`), in
@@ -134,7 +135,8 @@ export interface Sheet {
 }
 
 type Get = (name: string) => Promise<Response>;
-type Open = (name: string) => Promise<Sheet>;
+/** A sheet opened from its own bytes (a PNG: its part of the figure's pack); `name`, the sheet's as the bake named it. */
+type Open = (sheet: Blob, name: string) => Promise<Sheet>;
 
 /** One figure's pictures, as asked for: for which pictures of the bestiary's (they are made again when a figure is forgotten), and how far it has come. */
 interface Asked {
@@ -159,9 +161,9 @@ interface Cutting {
 }
 
 export interface BakedMonstersOptions {
-  /** A file of the bake's fetched (the figures' .json files). */
+  /** A file of the bake's fetched (the figures' packs). */
   get?: Get;
-  /** A sheet of the bake's opened. */
+  /** A sheet of the bake's opened, from its bytes. */
   open?: Open;
   /** The figures the bake has (bakedFigures). */
   names?: readonly MonsterFigure[];
@@ -207,7 +209,7 @@ export class BakedMonsters {
   ) {
     this.names = new Set(opts.names ?? bakedFigures());
     this.get = opts.get ?? ((name) => fetch(`${MONSTER_BAKE_DIR}/${mark}/${name}`));
-    this.open = opts.open ?? ((name) => openSheet(`${MONSTER_BAKE_DIR}/${mark}/${name}`));
+    this.open = opts.open ?? ((sheet, name) => openSheet(sheet, name));
     this.small = !!opts.small;
     this.slice = opts.slice ?? (() => CUT_MS.loading);
     this.later = opts.later ?? ((f) => (typeof requestAnimationFrame === 'function' ? void requestAnimationFrame(() => f()) : void setTimeout(f, 0)));
@@ -350,10 +352,10 @@ export class BakedMonsters {
     const live = (): boolean => this.asked.get(figure) === a && this.bestiary().made(figure) === a.art;
     const name = bakeName(figure);
     try {
-      const r = await this.get(`${name}.json`);
+      const r = await this.get(packName(name));
       if (!live()) return void this.stats.stopped++;
-      if (!r.ok) throw new Error(`${name}.json: ${r.status}`);
-      const f = (await r.json()) as MonsterBakeFile;
+      if (!r.ok) throw new Error(`${packName(name)}: ${r.status}`);
+      const { file: f, sheet: bytesOf } = await readPack(await r.blob(), name);
       if (!live()) return void this.stats.stopped++;
       if (f.mark !== this.mark || f.figure !== figure) throw new Error(`${name}: of another bake`);
       // (the figure as the game has it now, against the bake's: the same lists, as long)
@@ -384,7 +386,7 @@ export class BakedMonsters {
         while (!stop && next < f.sheets.length) {
           const s = next++;
           try {
-            const sheet = await this.open(f.sheets[s]);
+            const sheet = await this.open(bytesOf(s), f.sheets[s]);
             try {
               if (stop) return;
               if (!live()) return void (stop = 'gone');
@@ -436,18 +438,51 @@ export class BakedMonsters {
   }
 }
 
+/** The last 12 bytes of a figure's pack begin so, and then say how long its file is (tools/monster_packs.mjs). */
+export const PACK_TAIL = 'WSMB';
+
+/** A figure's pack, by its name as its files have it (bakeName): <name>-pack.png. */
+export function packName(name: string): string {
+  return `${name}-pack.png`;
+}
+
 /**
- * A SHEET OF THE BAKE'S OPENED ON THE PAGE: its file read as a picture (the browser reads it beside the game), and each frame
- * cut from it into a canvas of its own.
+ * A FIGURE'S PACK READ (tools/monster_packs.mjs makes them): its sheets one after another, each a PNG whole; then its file (JSON),
+ * with where each sheet lies; then `WSMB` and the file's length in bytes, 8 hex digits. Its file, and each sheet's own bytes (a
+ * part of the pack, not a copy).
  */
-export async function openSheet(url: string): Promise<Sheet> {
-  const img = new Image();
-  img.decoding = 'async';
-  img.src = url;
+export async function readPack(pack: Blob, name = 'a pack'): Promise<{ file: MonsterBakeFile; sheet: (s: number) => Blob }> {
+  const n = pack.size;
+  const tail = n >= 12 ? await pack.slice(n - 12).text() : '';
+  const len = tail.startsWith(PACK_TAIL) ? parseInt(tail.slice(4), 16) : NaN;
+  if (!(len > 0 && len <= n - 12)) throw new Error(`${name}: not a pack`);
+  const file = JSON.parse(await pack.slice(n - 12 - len, n - 12).text()) as MonsterBakeFile;
+  const packed = file.packed;
+  if (!packed || packed.length !== file.sheets.length || packed.some(([a, l]) => !(a >= 0 && l > 0 && a + l <= n - 12 - len))) throw new Error(`${name}: its sheets are not where it says`);
+  return { file, sheet: (s) => pack.slice(packed[s][0], packed[s][0] + packed[s][1], 'image/png') };
+}
+
+/**
+ * A SHEET OF THE BAKE'S OPENED ON THE PAGE, from its bytes: made one picture by the browser (createImageBitmap, as the heroes'
+ * sheets are opened, render/baked.ts: the same on his phone and on the claude.ai page), and each frame cut from it into a canvas
+ * of its own. Where the browser has no createImageBitmap, the bytes are read as an image instead.
+ */
+export async function openSheet(bytes: Blob, name = 'a sheet'): Promise<Sheet> {
+  let pic: ImageBitmap | HTMLImageElement;
+  let url = '';
   try {
-    await img.decode();
+    if (typeof createImageBitmap === 'function') pic = await createImageBitmap(bytes, { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
+    else {
+      url = URL.createObjectURL(bytes);
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = url;
+      await img.decode();
+      pic = img;
+    }
   } catch {
-    throw new Error(`${url.slice(url.lastIndexOf('/') + 1)}: will not open`);
+    if (url) URL.revokeObjectURL(url);
+    throw new Error(`${name}: will not open`);
   }
   return {
     cut(x, y, w, h) {
@@ -456,12 +491,14 @@ export async function openSheet(url: string): Promise<Sheet> {
       cv.height = h;
       const g = cv.getContext('2d');
       if (!g) return null;
-      g.drawImage(img, x, y, w, h, 0, 0, w, h);
+      g.drawImage(pic, x, y, w, h, 0, 0, w, h);
       return cv;
     },
     close() {
       // (the sheet's own picture let go of: its frames are in hand)
-      img.src = '';
+      if ('close' in pic) pic.close();
+      else pic.src = '';
+      if (url) URL.revokeObjectURL(url);
     },
   };
 }

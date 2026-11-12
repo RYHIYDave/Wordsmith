@@ -38,7 +38,7 @@ export const HOLD_MOST_MB = 600;
  */
 export const TOO_BIG: readonly MonsterFigure[] = ['moth'];
 
-/** A figure's name as its files have it ('fieldhand:1', a kind's other look, is fieldhand_1): <name>.json, <name>-<n>.png. */
+/** A figure's name as its files have it ('fieldhand:1', a kind's other look, is fieldhand_1): <name>.json, <name>-<n>.png; its pack <name>-pack.png. */
 export function bakeName(figure: MonsterFigure): string {
   return figure.replace(':', '_');
 }
@@ -52,8 +52,10 @@ export function figureLens(art: ActorArt): number[][] {
 export interface MonsterBakeFile {
   mark: string;
   figure: string;
-  /** Each sheet's file (a PNG), beside this one. */
+  /** Each sheet's file (a PNG) as the bake names it (<name>-<n>.png): kept so; carried beside the page in the figure's pack. */
   sheets: string[];
+  /** In a figure's pack (render/monsters_baked.ts readPack): where each sheet lies in it, [start, length], in bytes. */
+  packed?: [number, number][];
   /** Each frame: [sheet, x, y, width, height, the index of its other parts in `parts`]. */
   frames: [number, number, number, number, number, number][];
   /** A frame's other parts (Sprite without its picture: its size, anchor, lights...), shared by the frames that have the same. */
