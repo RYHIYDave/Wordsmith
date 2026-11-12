@@ -57,7 +57,7 @@ import { makeTownProps } from './art/town';
 import { CITY } from './art/hub2';
 import { RIM_THEME } from './art/shaft_town';
 import { ENDLESS_TOWN } from './art/shaft_rim';
-import { onWayOut, roundStep } from './game/rim';
+import { RIM_RULES, onWayOut, roundStep } from './game/rim';
 import { isCamp } from './game/camp';
 import { isTownsperson, townSprite } from './art/townscene';
 import { makeTownsfolk } from './art/townsfolk';
@@ -1066,9 +1066,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const named = (st: { kind: Station; x: number; y: number }, go: { kind: Spot; x: number; y: number } = st): void => {
       const half = (textWidth(STATION_NAME[st.kind], 'small') + 4) / 2 + 2;
       const sx = wx(cam, st.x, st.y);
-      // (THE SHAFT'S RIM: a name is touched where it is written, at the level's own height for it. The camp's names are written
-      // at heights of their own too (StationSpot.lift) and are still touched at the first town's: left as it is, for the main chat)
-      const top = wy(cam, st.x, st.y) - ((g.level.rim ? (st as { lift?: number }).lift : undefined) ?? NAME_LIFT[st.kind]);
+      // (a name is touched where it is written, at the level's own height for it where it has one (StationSpot.lift: the Shaft's
+      // Rim's, the camp's), as render.ts writes it; the camp's were touched at the first town's heights until 25.3.10)
+      const top = wy(cam, st.x, st.y) - ((st as { lift?: number }).lift ?? NAME_LIFT[st.kind]);
       if (Math.abs(px - sx) > half || py < top - 3 || py > top + 8) return;
       const d = Math.hypot(px - sx, py - (top + 3));
       if (d < bd) {
@@ -1095,6 +1095,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           named(st, { kind: 'through', x: at.x, y: at.y });
           continue;
         }
+        // (THE CAMP, game/camp.ts: its gate, the city gate he came in by, is not used, as it is not by a key beside it
+        // (Game.stationNear); touched, it opened the old gate panel, whose ENTER DUNGEON went down as before the ways (25.3.10).
+        // The Shaft's Rim's gate is used: its three words are laid at it)
+        if (st.kind === 'gate' && W && !(L.rim && RIM_RULES.gateWords)) continue;
         test(st.kind, st.kind, st.x, st.y, st.x, st.y);
         named(st);
       }

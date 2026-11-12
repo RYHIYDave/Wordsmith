@@ -43,6 +43,24 @@ export default async function (page, snap) {
   await snap('01_town_endless_open');
   check('1. the last floor beaten: home, the endless levels open', opened.town && opened.endless === 1 && opened.floor >= 1 && opened.floor <= opened.last - 1, JSON.stringify(opened));
 
+  // (THE ENDLESS MODE CARD: the first time, after the ENDLESS splash, it comes up over the town, the game held under both, until
+  // GO ON is pressed; the press of the waypoint (its button, or E) went to nothing under it: the step 3 that failed, 11 Nov 2026,
+  // the playtest's, not the game's. Waited for, and pressed as a player would, again until it is gone (GO ON is taken only once
+  // the card has stood a moment, ENDLESS_FANFARE.armed); once the game runs on, there is none)
+  const gameTime = () => page.evaluate(() => window.__dbg.game().time);
+  for (let i = 0, t0 = await gameTime(); i < 100; i++) {
+    if (await hands.mark('button:GO ON')) {
+      for (let k = 0; k < 20 && (await hands.mark('button:GO ON')); k++) {
+        await hands.press('button:GO ON');
+        await page.waitForTimeout(300);
+      }
+      check('the endless card closed with GO ON', !(await hands.mark('button:GO ON')));
+      break;
+    }
+    await page.waitForTimeout(200);
+    if ((await gameTime()) - t0 > 0.5) break;
+  }
+
   // ---- 2. the town's waypoint ----------------------------------------------------------------------
   const hint = await page.evaluate(() => {
     const g = window.__dbg.game();

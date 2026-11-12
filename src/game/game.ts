@@ -6248,7 +6248,7 @@ export class Game {
     if (v.fireReady && !this.vetFull(v)) {
       v.fireReady = false;
       v.globes.push(kind === 'tap' ? 'punchFire' : 'kickFire');
-      v.queue.push({ id: vetFireFor(kind, before), globe: v.globes.length - 1, ...this.vetAimOf(c) });
+      v.queue.push({ id: vetFireFor(kind, before), globe: v.globes.length - 1, ...this.vetAimOf(c, kind) });
       h.skills[i].uses++;
       v.idle = 0;
       return true;
@@ -6261,11 +6261,11 @@ export class Game {
       const prior = before.slice(0, before.lastIndexOf('dodge'));
       const id = vetFireFor(kind, prior);
       v.globes[g] = kind === 'tap' ? 'punchFire' : 'kickFire';
-      if (lastQ) Object.assign(lastQ, { id }, this.vetAimOf(c));
+      if (lastQ) Object.assign(lastQ, { id }, this.vetAimOf(c, kind));
       else {
         // (begun as the dodge's crouch: it is the fire move from its own start, at what he aims at)
         v.move = null;
-        v.queue.unshift({ id, globe: g, ...this.vetAimOf(c) });
+        v.queue.unshift({ id, globe: g, ...this.vetAimOf(c, kind) });
         this.vetStart(c);
       }
       h.skills[i].uses++;
@@ -6276,13 +6276,13 @@ export class Game {
     // (UNIQUE ITEMS: The Last Round, the third globe of every combo sets itself in fire, the jump not spent)
     if (v.globes.length === 2 && this.wears('lastround')) {
       v.globes.push(kind === 'tap' ? 'punchFire' : 'kickFire');
-      v.queue.push({ id: vetFireFor(kind, before), globe: v.globes.length - 1, ...this.vetAimOf(c) });
+      v.queue.push({ id: vetFireFor(kind, before), globe: v.globes.length - 1, ...this.vetAimOf(c, kind) });
       h.skills[i].uses++;
       v.idle = 0;
       return true;
     }
     v.globes.push(kind === 'tap' ? 'punch' : 'kick');
-    v.queue.push({ id: vetMoveFor(kind, before), globe: v.globes.length - 1, ...this.vetAimOf(c) });
+    v.queue.push({ id: vetMoveFor(kind, before), globe: v.globes.length - 1, ...this.vetAimOf(c, kind) });
     h.skills[i].uses++;
     v.idle = 0;
     return true;
@@ -6337,16 +6337,22 @@ export class Game {
     if (q.id !== 'dodge') this.boons(isVetPunch(q.id) ? 0 : 1);
   }
 
-  /** What a press of his aims at (25.0.1): the point aimed at, and the enemy there if there is one (kept until its move begins). */
-  private vetAimOf(c: Controls): { tx: number; ty: number; aimed: true; tid?: number } {
+  /**
+   * What a press of his aims at (25.0.1): the point aimed at, and the enemy there if there is one (kept until its move begins). A
+   * HOLD aims where the hold is given (c.castX, c.castY), as every hero's slow attack does: under auto aim that is the enemy auto
+   * aim picked for it, where his aim (c.aimX, c.aimY) is a tile ahead of him, so a held kick went the way he faced (25.3.10; found
+   * by the chat that brought his eight sides in, 11 Nov 2026).
+   */
+  private vetAimOf(c: Controls, kind: 'tap' | 'hold' = 'tap'): { tx: number; ty: number; aimed: true; tid?: number } {
+    const [x, y] = kind === 'hold' && c.cast ? [c.castX, c.castY] : [c.aimX, c.aimY];
     let tid: number | undefined;
     let best = Infinity;
     for (const o of this.monsters) {
       if (o.dead) continue;
-      const d = Math.hypot(o.x - c.aimX, o.y - c.aimY) - o.r;
+      const d = Math.hypot(o.x - x, o.y - y) - o.r;
       if (d <= 0.9 && d < best) [best, tid] = [d, o.id];
     }
-    return tid === undefined ? { tx: c.aimX, ty: c.aimY, aimed: true } : { tx: c.aimX, ty: c.aimY, aimed: true, tid };
+    return tid === undefined ? { tx: x, ty: y, aimed: true } : { tx: x, ty: y, aimed: true, tid };
   }
 
   /** Where a move of his goes as it begins: the enemy its press aimed at, where it is now; that one fallen, the nearest in reach and in sight; else the point aimed at. */
