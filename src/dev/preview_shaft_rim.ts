@@ -24,6 +24,7 @@ import { GRAIN } from '../art/kit';
 import { FLAME_FRAMES, GROUND, paintFlame, paintPitGlow, paintPost, paintRimGround, pitGlowAt, rimPlace, rimPosts, shaftTorches } from '../art/shaft_rim';
 import { BENCH_SOCKET, GATE_SOCKETS, RECORD_NOTCHES, TORCH_FRAMES, TROPHY_MOUNTS, paintGate as gatePiece, paintRecord as recordPiece, paintSocketSlab, paintTorchFlame, paintTorchPost, paintTrophies as trophiesPiece, paintTrophy, paintTrophyWall, rimPieces } from '../art/shaft_props';
 import type { Piece } from '../art/shaft_props';
+import { SOCKET_LIT_FRAMES, paintSocketTablet } from '../art/endless_tablet';
 import { stoneOf } from '../art/props';
 import { isEight } from '../art/sides';
 import { wuFacing } from '../art/warrior_up_art';
@@ -468,7 +469,7 @@ const RUNE_STONES: readonly (readonly [number, number])[] = [[-2, -1], [-1, -2],
 interface Put { d: number; f: () => void }
 interface Lit { s?: Sprite; x: number; y: number; r?: number; c?: string; a?: number }
 
-export function scene(heroAt: [number, number] | null, v2 = false, t = 0, o: { v3?: boolean; heroSprite?: Sprite } = {}): { cv: HTMLCanvasElement; labels: { x: number; y: number; text: string }[] } {
+export function scene(heroAt: [number, number] | null, v2 = false, t = 0, o: { v3?: boolean; heroSprite?: Sprite; tablet?: { held: readonly boolean[]; lit: number } } = {}): { cv: HTMLCanvasElement; labels: { x: number; y: number; text: string }[] } {
   const B = new Buf();
   const lights: Lit[] = [];
   const labels: { x: number; y: number; text: string }[] = [];
@@ -522,6 +523,12 @@ export function scene(heroAt: [number, number] | null, v2 = false, t = 0, o: { v
       B.sprite(s, gx, gy);
       if (s.lights?.length) lights.push({ s, x: gx, y: gy });
       if (kind === 'runeSlab' && !o.v3) paintSocket(B, gx, gy - 9);
+      // (endless mode's key, the art chat's of 12 Nov: the tablet's quarters set in the socket, dark or burning: art/endless_tablet.ts)
+      if (kind === 'runeSlab' && o.v3 && o.tablet) {
+        const ts = spr(paintSocketTablet(o.tablet.held, o.tablet.lit));
+        B.sprite(ts, gx, gy);
+        if (ts.lights?.length) lights.push({ s: ts, x: gx, y: gy });
+      }
     });
   };
   // the smithy (as the game's TOWN lays it: the rack three tiles along from the forge, the trough beside, the anvil and the armourer before it)
@@ -799,7 +806,7 @@ function main(): void {
   document.body.style.background = '#05040f';
   document.body.appendChild(out);
   out.style.display = 'block';
-  if (mode === 'whole3' || mode.startsWith('view3') || mode === 'props1' || mode === 'props2' || mode === 'film' || mode === 'check') {
+  if (mode === 'whole3' || mode.startsWith('view3') || mode.startsWith('tablet') || mode === 'props1' || mode === 'props2' || mode === 'film' || mode === 'check') {
     main3(mode, out);
     return;
   }
@@ -961,6 +968,42 @@ function main3(mode: string, out: HTMLCanvasElement): void {
       cap(g, "The Shaft's Rim, alive", 16, PH3 * 2 + 14);
     };
     (window as unknown as { __filmSeconds: number }).__filmSeconds = FILM_SECONDS;
+    done();
+    return;
+  }
+  if (mode.startsWith('tablet')) {
+    // ENDLESS MODE'S KEY AT THE BENCH (art/endless_tablet.ts), the camera on the knight at the wordsmith's bench as view3:2:
+    //   tablet:<four 0/1, the quarters set, floor 5 first>:<the burning's frame, or -1>   one picture
+    //   tabletfilm   the four set and burning, one frame a thirtieth of a second (window.__film(t))
+    const v = VIEWS3[1];
+    const kn = { x: v.hero[0], y: v.hero[1], fx: v.f[0], fy: v.f[1], walking: false, walked: 0 };
+    const [hx, hy] = at(v.hero[0], v.hero[1]);
+    out.width = PW3 * 2;
+    out.height = PH3 * 2 + CAP3;
+    const g = g0();
+    const shot = (held: boolean[], lit: number, t: number, caption: string): void => {
+      const { cv } = scene(v.hero, true, t, { v3: true, heroSprite: knightSprite(kn, t), tablet: { held, lit } });
+      g.imageSmoothingEnabled = false;
+      g.fillStyle = '#07060f';
+      g.fillRect(0, 0, out.width, out.height);
+      g.drawImage(cv, Math.round((PW3 / 2 - hx) * 2), Math.round((PH3 / 2 - camY(hy)) * 2));
+      g.fillStyle = '#0d1030';
+      g.fillRect(0, PH3 * 2, out.width, CAP3);
+      cap(g, caption, 16, PH3 * 2 + 14);
+    };
+    if (mode === 'tabletfilm') {
+      (window as unknown as { __film: (t: number) => void }).__film = (t: number): void => {
+        // a second dark, then the four burn (their frames from 0), on round the burning's own frames
+        const f = Math.floor((t - 1) * 30);
+        shot([true, true, true, true], f < 0 ? -1 : f, t, f < 0 ? 'The four quarters set' : f < 28 ? 'They kindle, floor 5 first' : f < 54 ? 'The tablet wakes' : 'It burns on');
+      };
+      (window as unknown as { __filmSeconds: number }).__filmSeconds = 1 + SOCKET_LIT_FRAMES / 30 + 1.6;
+    } else {
+      const [, bits = '1111', lit = '-1'] = mode.split(':');
+      const held = [...bits].map((b) => b === '1');
+      const n = held.filter(Boolean).length;
+      shot(held, Number(lit), 0.4, Number(lit) >= 0 ? 'The four set, burning' : n === 0 ? 'The socket, empty' : n === 4 ? 'All four quarters set' : `${n} of the four quarters set`);
+    }
     done();
     return;
   }
