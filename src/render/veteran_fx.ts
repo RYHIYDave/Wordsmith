@@ -17,7 +17,7 @@
 // after-images, just behind him (behind); the rest over everything (drawAir).
 
 import type { Sprite } from '../engine/px';
-import { Px, drawSprite, flipSprite } from '../engine/px';
+import { Px, drawSprite, flipSprite, retireSprite } from '../engine/px';
 import type { Game } from '../game/game';
 import type { VetGlobe, VetPlaying } from '../game/veteran';
 import { VETERAN, vetFireFor, vetMoveFor } from '../game/veteran';
@@ -163,7 +163,7 @@ export class VeteranFx {
    * of his whose lines are still on the floor or in the air; his fall. Ahead of need: the presses already made and waiting
    * their turn (each thrown at what it was aimed at), and the move a tap, a hold or a swipe would make now, from the side he
    * faces (a tap or a hold made on a swipe: the move it sets in fire). What cannot be known ahead (a blow at an enemy off to
-   * one side of him) is asked for as it begins, by the drawing itself (art/kit.ts HEAVY.asked).
+   * one side of him) is asked for as it begins, by the drawing itself (art/asked.ts).
    */
   private askAhead(game: Game): void {
     const ask = this.packs;
@@ -322,6 +322,18 @@ export class VeteranFx {
   liftOf(game: Game): number {
     const mv = this.moveOf(game);
     return mv ? vetLiftAt(motionById(mv.id), Math.floor(mv.f)) : 0;
+  }
+
+  /**
+   * A FRAME OF HIS IS LET GO (his moves kept packed, render/baked.ts PACKS: a pack's pictures given back): the after-images made
+   * from it are given back with it, a moment on (engine/px.ts retireSprite), not left for the browser to notice. A frame unpacked
+   * again is a new picture, and its after-images are made again when they are next shown.
+   */
+  forget(s: Sprite): void {
+    const m = this.ghosts.get(s);
+    if (!m) return;
+    for (const g of m.values()) retireSprite(g);
+    this.ghosts.delete(s);
   }
 
   /** An after-image of him: every solid pixel of a frame, its rim one colour and the rest another (the art's ghost). */

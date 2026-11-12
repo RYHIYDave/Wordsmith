@@ -7,6 +7,8 @@
 //   OUT=shots/mem_floors.json           every row, with who made the canvases still held (name them: a readable build)
 //   CENSUS=1                            the game's own lists counted too (it touches lazy lists, which paints them: off by default)
 //   PROFILE=8,10                        a CPU profile of five seconds as those floors are come into (<OUT>_prof<k>.json)
+//   PACKS=0                             a hero whose moves are kept packed (render/baked.ts PACKS) holds them all, none let go
+//   BUDGET=40                           the packs' budget, MB (the game's own if not given)
 // The page must be served with the heroes', sounds' and Colossus's files beside it (dist/, after tools/build.mjs).
 import { execSync } from 'node:child_process';
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -33,8 +35,11 @@ export default async function (page) {
     const census = process.env.CENSUS === '1' ? await page.evaluate(() => { const d = window.__dbg; return window.__probe.census({ game: d.game(), dbg: d }); }) : null;
     const g = await page.evaluate(() => { const g = window.__dbg.game(); return g ? { depth: g.depth, cleared: g.cleared, town: !!g.level.town, monsters: g.monsters.length, alive: g.monsters.filter((m) => !m.dead).length, time: +(g.time ?? 0).toFixed?.(0) } : null; });
     const sounds = await page.evaluate(() => { try { return window.__dbg.sounds(); } catch (e) { return String(e); } });
+    // (A HERO'S MOVES KEPT PACKED, render/baked.ts PACKS: how many packs are in hand and their bytes, how many came and went)
+    const packs = await page.evaluate(() => { const b = window.__dbg.baked && window.__dbg.baked(); return b && b.packs && b.packs.all ? b.packs : null; });
+    if (packs) console.log(`   packs: ${packs.held} of ${packs.all} in hand, ${(packs.bytes / 1048576).toFixed(1)} MB (the most ${(packs.most / 1048576).toFixed(1)}) | unpacked ${packs.unpacked}, let go ${packs.letGo} | asked for with nothing to show ${packs.missed}, ahead ${packs.ahead} | unpacking ${Math.round(packs.ms)} ms in all, ${Math.round(packs.worst)} at worst | their files ${(packs.packed / 1048576).toFixed(2)} MB kept`);
     if (g && !g.town && /^floor \d+/.test(label) && g.depth !== Number(label.split(' ')[1])) console.log(`   (the bot has gone down by itself: now on floor ${g.depth})`);
-    const row = { label, ...extra, g, heapMB: +(heap.usedSize / 1048576).toFixed(1), heapTotalMB: +(heap.totalSize / 1048576).toFixed(1), dom, rss: rss(), ...c, sounds, census };
+    const row = { label, ...extra, g, packs, heapMB: +(heap.usedSize / 1048576).toFixed(1), heapTotalMB: +(heap.totalSize / 1048576).toFixed(1), dom, rss: rss(), ...c, sounds, census };
     rows.push(row);
     const k = c.counts;
     if (c.churn) console.log(`   churn: canvases given ${c.churn.allocMB}MB in all | given back by hand ${c.churn.byHandMB}MB | left to the collector ${c.churn.leftToCollectorMB}MB (${c.churn.leftN})`);
@@ -45,6 +50,8 @@ export default async function (page) {
   const frames = async (ms) => { await page.evaluate(() => window.__probe.framesReset()); await page.waitForTimeout(ms); return page.evaluate(() => window.__probe.frames()); };
   const settle = async () => { for (let i = 0; i < 400; i++) { const l = await page.evaluate(() => window.__dbg.loadingNow()); if (!l) break; await page.waitForTimeout(50); } };
 
+  // (the packs' switch and budget, set before the hero is first taken in)
+  await page.evaluate(([off, mb]) => { const P = window.__dbg.packs && window.__dbg.packs.PACKS; if (!P) return; if (off) P.on = false; if (mb) P.budget = mb * 1048576; }, [process.env.PACKS === '0', Number(process.env.BUDGET || 0)]);
   await page.evaluate((cls) => { const d = window.__dbg; d.saving(false); d.run(cls, 5); d.autoLevel = false; d.autoWords = false; }, CLS);
   await page.waitForTimeout(1500);
   // (a tap, so that the sound starts as it does under a thumb)

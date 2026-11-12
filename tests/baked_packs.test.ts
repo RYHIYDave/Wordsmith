@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import type { ActorArt, AnimSet, Clip } from '../src/art/actor_types';
 import type { HeroArt } from '../src/art/heroes';
 import { heroLists } from '../src/art/heroes3';
+import { asking } from '../src/art/asked';
 import { HEAVY, lazyFrames } from '../src/art/kit';
 import { EIGHT_ORDER, heroSides } from '../src/art/sides';
 import { EIGHT_MORE } from '../src/art/sides_more';
@@ -87,13 +88,13 @@ function smallHero(): ActorArt {
     const vetHalves: Record<string, { from: number; frames: Sprite[] }> = {};
     const vetFx: Record<string, Record<'ground' | 'behind' | 'front', Sprite[]>> = {};
     for (const id of MOVES) {
-      const c: Clip = { frames: lazyFrames(5, paint, true, stand), fps: 30 };
+      const c: Clip = { frames: asking(lazyFrames(5, paint, true, stand)), fps: 30 };
       vet[id] = c;
-      vetHalves[id] = { from: 1.5, frames: lazyFrames(2, paint, true, () => c.frames) };
+      vetHalves[id] = { from: 1.5, frames: asking(lazyFrames(2, paint, true, () => c.frames)) };
       vetFx[id] = { ground: vetFxFrames(6, paint), behind: vetFxFrames(6, paint), front: vetFxFrames(6, paint) };
     }
     const reel: Clip = { frames: lazyFrames(3, paint, true, stand), fps: 30 };
-    const fall: Clip = { frames: lazyFrames(6, paint, true, stand), fps: 30 };
+    const fall: Clip = { frames: asking(lazyFrames(6, paint, true, stand)), fps: 30 };
     return { idle, walk, attack: idle, heavy: idle, idleFps: 30, walkFps: 30, clips: { attack: vet.jab, heavy: vet.cross, reel, fall, vet, vetHalves, vetFx } } as unknown as AnimSet;
   };
   const a = {} as Record<string, AnimSet>;

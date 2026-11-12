@@ -870,15 +870,7 @@ export const PAINTING: { frames: number; ms: number; trace: Map<string, { n: num
  * a list with none painted yet paints the one asked for. Off (the tests, the painter itself), every frame is painted when
  * first asked for, as any.
  */
-export const HEAVY: { defer: boolean; deferred: number; asked: ((list: readonly Sprite[]) => void) | null } = {
-  defer: false,
-  deferred: 0,
-  /**
-   * TOLD, where the game is played, OF A LIST A FRAME WAS ASKED OF AND NOT THERE (so shown as another, or not at all): the
-   * heroes' bake, for a hero whose moves are kept packed (render/baked.ts PACKS), unpacks the list's pack.
-   */
-  asked: null,
-};
+export const HEAVY = { defer: false, deferred: 0 };
 /**
  * EVERY FRAME LEFT TO THE PAINTER, while `on` (ui/panels.ts, as the new classes are drawn on their class cards, the side
  * painter painting them: render/painter.ts, place 'card'): a frame of any list not painted yet is shown as the nearest of
@@ -916,7 +908,6 @@ export function lazyFrames(n: number, make: (i: number) => Sprite, heavy = false
       enumerable: true,
       get(): Sprite {
         if ((heavy && HEAVY.defer) || LEFT_TO_PAINTER.on) {
-          HEAVY.asked?.(out);
           const near = paintedOf(out, i);
           if (near) {
             HEAVY.deferred++;

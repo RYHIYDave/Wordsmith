@@ -14,7 +14,7 @@ import { heroLists } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
 import type { AnimSet } from '../art/actor_types';
-import { HEAVY } from '../art/kit';
+import { ASKED } from '../art/asked';
 import { heroSides } from '../art/sides';
 import { retireSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
@@ -39,7 +39,7 @@ export const BAKE_DIR = 'heroes';
  * of his moves, for each side, is a PACK: one small sheet of its own (the move's frames, its strike's half-frames and its action
  * lines from that side: half a megabyte to four unpacked, a few tens of kilobytes as a file), fetched with him under the loading
  * screen and KEPT PACKED, as the file's own bytes. A pack is UNPACKED AS ITS MOVE BEGINS (the game's drawing tells of the list
- * it asked a frame of and did not find: art/kit.ts HEAVY.asked; and a moment ahead where it can be known: render/veteran_fx.ts
+ * it asked a frame of and did not find: art/asked.ts; and a moment ahead where it can be known: render/veteran_fx.ts
  * asks for the moves a press would make next), and until its pictures come, a few hundredths of a second, the move shows its
  * first frame, which is his stance. Unpacked pictures are kept up to `budget`; past it THE LEAST LATELY THROWN ARE LET GO (their
  * places put back as they were, their room given back: engine/px.ts retireSprite) and unpacked again when next thrown.
@@ -222,6 +222,8 @@ export class BakedHeroes {
   private readonly packOf = new Map<unknown, Pack>();
   private queue: Pack[] = [];
   private busy = 0;
+  /** Told of each picture of a pack as it is let go (main.ts: what is kept that was made from it is given back with it). */
+  onLetGo: ((s: Sprite) => void) | null = null;
   private readonly clock: () => number = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
   constructor(
@@ -249,7 +251,7 @@ export class BakedHeroes {
     return true;
   }
 
-  /** The game's drawing asked a list for a frame it has not got (art/kit.ts HEAVY.asked): its pack, if it is in one, is unpacked. */
+  /** The game's drawing asked a list for a frame it has not got (art/asked.ts): its pack, if it is in one, is unpacked. */
   private asked(list: readonly Sprite[]): void {
     const p = this.packOf.get(list);
     if (p) this.ask(p, true, true);
@@ -348,7 +350,11 @@ export class BakedHeroes {
       if (d && 'value' in d && d.value === h.s) Object.defineProperty(h.list, h.i, h.was);
       gone.add(h.s);
     }
-    for (const s of gone) retireSprite(s);
+    for (const s of gone) {
+      // (whoever keeps pictures made from this one, his after-images: render/veteran_fx.ts forget, gives them back with it)
+      this.onLetGo?.(s);
+      retireSprite(s);
+    }
     p.held = [];
     p.state = 'packed';
     const S = this.stats.packs;
@@ -384,7 +390,7 @@ export class BakedHeroes {
   private async takePacks(g: string, f: BakeFile, lists: Sprite[][][][]): Promise<void> {
     const defs = f.packs ?? [];
     const S = this.stats.packs;
-    const AT = 8;
+    const AT = 24;
     for (let n = 0; n < defs.length; n += AT) {
       const part = defs.slice(n, n + AT);
       const blobs = await Promise.all(part.map(async (d) => {
@@ -414,7 +420,7 @@ export class BakedHeroes {
       });
     }
     if (!defs.length) return;
-    HEAVY.asked = (list) => this.asked(list);
+    ASKED.told = (list) => this.asked(list);
     if (PACKS.on) return;
     for (const def of defs) await this.unpack(this.packs.get(`${g}/${def.name}`)!);
   }

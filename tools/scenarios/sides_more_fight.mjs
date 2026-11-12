@@ -10,7 +10,10 @@
 //   3. PROPS BROKEN BY A BLOW THROWN STRAIGHT LEFT AND STRAIGHT RIGHT of the screen (attacks the way he faces, on a floor with
 //      barrels and urns): he is stood to the right of one and to the left of another, faced at it; a tap: it breaks.
 //   4. Where the page has his pictures baked (BAKED=1: asked for): the bake's group come whole, and every frame of every side of
-//      his in hand before he fights, so none is painted in play nor stood in for.
+//      his in hand before he fights, so none is painted in play nor stood in for. WHERE HIS MOVES ARE KEPT PACKED (render/baked.ts
+//      PACKS; the Brawler memory chat, 11 Nov 2026): what he always holds is in hand before he fights (his stance, his run,
+//      struck, the first frame of every move), his 96 packs' files are in hand, none failed; and after the fight, what is unpacked
+//      is within the budget, and how often a move was asked for with nothing of it to show yet is said.
 //   node tools/playtest.mjs --file <page> --serve --touch --size 844x390 --dpr 3 --scenario tools/scenarios/sides_more_fight.mjs --out shots/sides_fight/x
 //   OFF=1: a page with his eight sides off: his blows then face the nearest of his FOUR ways (the same script, the other answer).
 import { log } from './lib.mjs';
@@ -85,7 +88,11 @@ export default async function (page, snap) {
   const home = { x: s.x, y: s.y };
   const rx = s.w * 0.78;
   const ry = s.h * 0.5;
-  const baked = await page.evaluate(() => { const p = window.__dbg.painter; const b = p && p.baked; return b ? { given: b.stats.given, failed: [...b.stats.failed], ms: { ...b.stats.ms }, done: b.done('brawler') } : null; });
+  const baked = await page.evaluate(() => { const p = window.__dbg.painter; const b = p && p.baked; return b ? { given: b.stats.given, failed: [...b.stats.failed], ms: { ...b.stats.ms }, done: b.done('brawler'), packs: { ...b.stats.packs } } : null; });
+  const packed = !!baked && baked.packs.all > 0;
+  const packsNow = () => page.evaluate(() => { const d = window.__dbg; const b = d.baked(); return { ...b.packs, failed: [...b.failed], budget: d.packs.PACKS.budget, on: d.packs.PACKS.on }; });
+  const mb = (n) => (n / 1048576).toFixed(1);
+  const saidPacks = (k) => `${k.held} of ${k.all} in hand, ${mb(k.bytes)} MB unpacked (the most at once ${mb(k.most)}; the budget ${mb(k.budget)}) | unpacked ${k.unpacked} times, let go ${k.letGo} | asked for with nothing of it to show yet ${k.missed} times, ahead of need ${k.ahead} | unpacking took ${Math.round(k.ms)} ms in all, ${Math.round(k.worst)} ms at worst`;
   log('his pictures', baked ? `baked: ${baked.given} frames taken in, the Brawler's group ${baked.done ? 'come whole' : 'not come yet'}${baked.ms.brawler ? ` in ${baked.ms.brawler} ms` : ''}${baked.failed.length ? `, FAILED ${baked.failed.join('; ')}` : ''}` : 'not baked on this page: painted as the game is played');
   /** His lists' frames, every side: how many are in hand, and how many still to paint (not read: reading one would paint it). */
   const inHand = () => page.evaluate(() => {
@@ -106,7 +113,25 @@ export default async function (page, snap) {
   if (process.env.BAKED === '1') {
     check('his pictures are the bake\'s, come whole, none failed', !!baked && baked.done && !baked.failed.length, JSON.stringify(baked));
     const got = await inHand();
-    check(`every frame of his ${off ? 'two' : 'eight'} sides is in hand before he fights: none left to paint, none to stand in for`, got.sides === (off ? 2 : 8) && got.have > 0 && got.none === 0, `${got.sides} sides, ${got.have} places with their picture, ${got.none} without`);
+    if (packed) {
+      // (HIS MOVES KEPT PACKED: what he always holds, counted place by place; the rest is in his packs)
+      const always = await page.evaluate(() => {
+        const d = window.__dbg; const art = d.renderer.heroArt(d.game());
+        let have = 0; let none = 0;
+        const is = (list, i) => { const ds = Object.getOwnPropertyDescriptor(list, i); if (ds && 'value' in ds && ds.value) have++; else none++; };
+        for (const side of Object.keys(art)) {
+          const set = art[side]; const c = set.clips || {};
+          for (const list of [set.idle, set.walk, c.reel.frames]) for (let i = 0; i < list.length; i++) is(list, i);
+          for (const id of Object.keys(c.vet || {})) is(c.vet[id].frames, 0);
+          is(c.fall.frames, 0);
+        }
+        return { have, none };
+      });
+      const k = await packsNow();
+      check('his moves are kept packed: 96 packs, his eleven moves and his fall from each of eight sides, their files in hand, none failed', got.sides === 8 && k.all === 96 && k.packed > 0 && !k.failed.length, `${k.all} packs, ${(k.packed / 1048576).toFixed(2)} MB of files kept${k.failed.length ? `, FAILED ${k.failed.join('; ')}` : ''}`);
+      check('what he always holds is in hand before he fights (his stance, his run, struck, the first frame of every move): none left to paint', always.have > 0 && always.none === 0, `${always.have} places with their picture, ${always.none} without; of all his ${got.have + got.none} places ${got.have} are in hand now`);
+      log('his packs before he fights', saidPacks(k));
+    } else check(`every frame of his ${off ? 'two' : 'eight'} sides is in hand before he fights: none left to paint, none to stand in for`, got.sides === (off ? 2 : 8) && got.have > 0 && got.none === 0, `${got.sides} sides, ${got.have} places with their picture, ${got.none} without`);
   }
   const painted0 = s.painted;
 
@@ -261,6 +286,16 @@ export default async function (page, snap) {
     }));
   })();
   log('a frame while he fights', `${frames.median} ms in the middle, ${frames.worst} ms at worst`);
+  if (process.env.BAKED === '1' && packed) {
+    // (HIS MOVES KEPT PACKED: after his blows and his jumps the eight ways, what is unpacked, and how it went)
+    await page.waitForTimeout(400);
+    const k = await packsNow();
+    log('his packs after the fight', saidPacks(k));
+    check('none of his packs failed to unpack', !k.failed.length, k.failed.join('; '));
+    check('his moves came from his packs: unpacked as he threw them', k.unpacked > 0);
+    // (over the budget only by what was asked for a moment ago, which is never let go: a move from one side is 4.3 MB at most)
+    check('what he holds unpacked is within the budget, but for what he threw a moment ago', !k.on || k.bytes <= k.budget + 12 * 1048576, `${mb(k.bytes)} MB of ${mb(k.budget)}`);
+  }
   await waitFor((q) => q.globes.length === 0 && !q.move, 9000);
 
   // 3. PROPS BROKEN BY A BLOW THROWN STRAIGHT LEFT AND STRAIGHT RIGHT

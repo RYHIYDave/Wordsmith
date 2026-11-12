@@ -371,6 +371,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   if (painter.baked) {
     const b = painter.baked;
     renderer.vetFx.packs = (move, side, now) => void b.want('brawler', move, side, now);
+    b.onLetGo = (s) => renderer.vetFx.forget(s);
   }
   // (THE TOWN'S PEOPLE BAKED, render/townsfolk_baked.ts: the sculpted four's pictures, painted when the game was built, beside
   // this page; taken in as a place with them in it is come into and let go of as it is left (placeFrame, loadingFrame). Where they
