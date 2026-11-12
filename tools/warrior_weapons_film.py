@@ -13,8 +13,8 @@ W = 960
 BG, GREY = (23, 20, 46), (168, 162, 184)
 PARTS = [
     ('GREATSWORD', (111, 168, 255), ['TAP: STRIKE', 'HOLD: WHIRL (one spin, harder than Strike)', 'SWIPE: LUNGE']),
-    ('BATTLE AXE', (255, 106, 80), ['TAP: CLEAVE (every enemy in its arc; Rend: they bleed)', 'HOLD: AXE THROW (it comes back)', 'SWIPE: LEAPING CHOP']),
-    ('WARHAMMER', (172, 135, 83), ['TAP: SMASH (staggers; Heavy Head: stuns)', 'HOLD: EARTHQUAKE (stuns all round)', 'SWIPE: SHOULDER CHARGE (strikes all in his way)']),
+    ('BATTLE AXE', (255, 106, 80), ['TAP: CLEAVE (every enemy in its arc; Rend: they bleed)', 'HOLD: AXE THROW (it comes back to his hand)', 'SWIPE: LEAPING CHOP']),
+    ('WARHAMMER', (172, 135, 83), ['TAP: SMASH (knocks back; two quick blows stun)', 'HOLD: EARTHQUAKE (a full spin; the ground quakes)', 'SWIPE: SHOULDER CHARGE (strikes all in his way)']),
 ]
 # the moves begin at frames 5, 41 and 96 of each part (the scenario's plan)
 MOVE_AT = [0, 40, 95]
@@ -37,7 +37,6 @@ for (name, col, moves), d in zip(PARTS, dirs):
         card.paste(pic, (0, top))
         dr = ImageDraw.Draw(card)
         dr.text((16, top // 2), name, font=big, fill=col, anchor='lm')
-        dr.text((W - 16, top // 2), 'pictures: the greatsword standing in', font=small, fill=GREY, anchor='rm')
         k = max(j for j, a in enumerate(MOVE_AT) if i >= a)
         dr.text((16, top + pic.height + foot // 2), moves[k], font=cap, fill=(236, 232, 255), anchor='lm')
         card.save(os.path.join(tmp, f'{n:05d}.png'))

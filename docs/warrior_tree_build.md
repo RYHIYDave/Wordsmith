@@ -50,6 +50,13 @@ has seen it in play and said yes; nothing he sees changes while it is off.
    pictures (`axeFlying`, a turn in AXE_FLIGHT.turn). NOT YET: the glint drawn (fx.ts, `axeGlint()` over him a fifth of a
    second), the quaking ground (art/warrior_up_quake_ground.ts `quakeGround`, the floor's stone) in place of the slam ring, the
    leaps' crouches (`chopCrouch`, `chargeCrouch`), the hammer's `land` skid after the Charge.
+3c. DONE: THE EFFECTS (render/warrior_fx.ts, wired into render/fx.ts): the glint over him as a thrown axe goes into the one he
+   holds; THE EARTHQUAKE'S GROUND heaving in the floor's own stone (art/ground.ts GroundArt.theme; main.ts tells the effects the
+   ground shown) in place of the slam ring, Tremors' second and third their own (the game's 'quake' event); Smash cracks the
+   floor where it lands ('land'). Played on a page built from the branch (tools/scenarios/warrior_weapons_film.mjs, the tree on
+   for that page), all three weapons, a phone's screen: clean; the axe and the maul in his hands, the thrown axe from the art's
+   pictures, the ground heaving. THE FILM FOR HIM: tools/warrior_weapons_film.py, 15 s, 960 by 556 (the scratchpad's
+   warrior_weapons.mp4, sent 12 Nov).
 3. The rules to the art's timings and his rules (the README's “What the main chat needs”, for both weapons): Cleave, the thrown
    axe (out at 0.367 s, AXE_FLIGHT, back, the catch; Twin Axes 14 degrees, the second 0.1 s after), Leaping Chop (0.167 s
    crouched; the blow 1.5 tiles before his feet, 1.6 round), Smash (0.433 s; 0.4 round a point 1.4 before him), Earthquake
