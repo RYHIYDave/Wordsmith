@@ -15,6 +15,10 @@ import { Game } from '../src/game/game';
 import { CLASS_IDS, WEAPONS } from '../src/game/types';
 import type { ClassId, WeaponKind } from '../src/game/types';
 import { attacksGrownBy } from '../src/game/words';
+import { warriorAsBefore } from './warrior_as_before';
+
+// (the Warrior's old moves, as this file was written for them: tests/warrior_as_before.ts)
+warriorAsBefore();
 
 const OWN: Record<ClassId, [SkillId, SkillId, SkillId]> = {
   warrior: ['strike', 'whirlwind', 'leap'],

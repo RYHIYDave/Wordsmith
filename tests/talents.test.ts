@@ -16,6 +16,10 @@ import type { ClassId } from '../src/game/types';
 import { wrapText } from '../src/engine/font';
 import { VETERAN } from '../src/game/veteran';
 import { seasoned } from './helpers';
+import { warriorAsBefore } from './warrior_as_before';
+
+// (the Warrior's old moves, as this file was written for them: tests/warrior_as_before.ts)
+warriorAsBefore();
 
 /** With the switch held on (or off) for a while, and as it was again after. */
 function held(to: boolean, fn: () => void): void {

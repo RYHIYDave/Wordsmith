@@ -15,6 +15,10 @@ import { UNIQUE_TUNE } from '../src/game/uniques';
 import { VET_MOVES } from '../src/game/veteran';
 import { WARLOCK_TUNE } from '../src/game/warlock';
 import { DT, cast, dummy, hurt, on, ready, room, seen, steady, strike, swipe, tap, wait, wear, words } from './uniques_helpers';
+import { warriorAsBefore } from './warrior_as_before';
+
+// (the Warrior's old moves, as this file was written for them: tests/warrior_as_before.ts)
+warriorAsBefore();
 
 const T = UNIQUE_TUNE;
 const near = (a: number, b: number, eps = 1e-6): boolean => Math.abs(a - b) <= eps * Math.max(1, Math.abs(a), Math.abs(b));

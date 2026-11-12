@@ -277,6 +277,8 @@ test('4. the new talents at work', () => treeOn(() => {
     const m = put(g, a, 'skeleton', 1.5, 0);
     const x0 = m.x;
     use(g, seen, 2, g.hero.x + 4.5, g.hero.y);
+    // (the Charge's crouch and its half second, the art's: docs/warrior_tree_build.md 3d)
+    run(g, seen, 0.5);
     assert.ok(m.x > x0 + 1, `carried (${x0.toFixed(2)} to ${m.x.toFixed(2)})`);
     assert.ok(seen.some((e) => e.t === 'stun' && e.id === m.id), 'stunned where he stops');
   }
