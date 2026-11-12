@@ -11,7 +11,7 @@
 // time with its ground pound: its blow lands as she springs (HOLD.blow), eight frames after she begins (HOLD.lead).
 
 import { solve } from '../art/skeleton';
-import type { Bones, Key3, Motion, Posed, V3 } from '../art/skeleton';
+import type { Bones, Key3, Posed, V3 } from '../art/skeleton';
 import type { GameView } from '../art/skin';
 import { CYAN } from '../art/kit';
 import type { Drawn } from './sculpt';
@@ -19,7 +19,9 @@ import { FR, TINK_B, TSTANCE, drawTinkerAt } from './tinkerer_moves';
 import type { TinkMove } from './tinkerer_moves';
 import { through } from './brawler_fall';
 import { dot } from './brawler_fx';
-import { steadied } from './brawler_punches';
+import { steadiedInSlices } from './brawler_punches';
+import { laterMotion } from './keys_later';
+import type { KeysWork } from './keys_later';
 import { handAt, hands } from './tinkerer_fall';
 
 const B = TINK_B;
@@ -121,18 +123,18 @@ function holdAt(t: number): { wrench: number; twirl: boolean; spin: number; vial
   return { wrench: 0, twirl: false, spin: 0, vial: 0, lay, layWay: way };
 }
 
-/** Her tap and hold as a move: a key for every sixtieth of a second. */
+/**
+ * Her tap and hold as a move: a key for every sixtieth of a second, her elbows steadied. ITS KEYS ARE WORKED OUT WHEN FIRST READ,
+ * OR AHEAD A SLICE AT A TIME (the queue's make-tinkerers-art-set-up-in-parts, 12 Nov 2026: dev/keys_later.ts). Steadying them is
+ * some 2.7 s of work (dev/brawler_punches.ts steadied: six ways tried, each elbow nudged key by key), and it was done in one go as
+ * her art was set up, under the loading screen into town, which stood still for it (2.2 s in Chrome on a cloud machine; on his
+ * phone more). Her art needs only how long the move is; her pictures taken from the bake never need its poses at all. The same
+ * numbers either way: steadiedInSlices gives back the very keys steadied gives (tests/tinkerer_hold_ahead.test.ts).
+ */
 export function tinkerHold(): TinkMove {
   const long = HOLD.end * FR;
-  const n = Math.round(long * 60);
-  const keys: Key3[] = [];
-  for (let i = 0; i <= n; i++) {
-    const t = Math.min(long, i / 60);
-    keys.push({ at: t, pose: poseAt(t * 30), ease: 'lin' });
-  }
-  // (her elbows steadied: where a hand comes up past its shoulder, each goes on from where it was)
-  const motion: Motion = { keys: steadied(keys, 60, [], { b: TINK_B, rest: TSTANCE }) };
-  return {
+  const { motion, own } = laterMotion(() => holdKeys(long));
+  const m: TinkMove = {
     name: 'Tap and hold: she sets her Golem on',
     motion,
     long,
@@ -140,6 +142,20 @@ export function tinkerHold(): TinkMove {
     hold: holdAt,
     air: [[HOP[0] * FR, HOP[1] * FR]],
   };
+  own(m);
+  return m;
+}
+
+/** Her keys worked out: each pose, then her elbows steadied (where a hand comes up past its shoulder, each goes on from where it was). A slice a key. */
+function* holdKeys(long: number): KeysWork {
+  const n = Math.round(long * 60);
+  const keys: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = Math.min(long, i / 60);
+    keys.push({ at: t, pose: poseAt(t * 30), ease: 'lin' });
+    yield;
+  }
+  return yield* steadiedInSlices(keys, 60, [], { b: TINK_B, rest: TSTANCE });
 }
 
 // ---------------------------------------------------------------------------------------------

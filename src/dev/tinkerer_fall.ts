@@ -13,7 +13,7 @@
 // where she sits, her head hanging. She does not lie down.
 
 import { solve } from '../art/skeleton';
-import type { Bones, Key3, Motion, Posed, V3 } from '../art/skeleton';
+import type { Bones, Key3, Posed, V3 } from '../art/skeleton';
 import type { GameView } from '../art/skin';
 import { CYAN } from '../art/kit';
 import type { Drawn } from './sculpt';
@@ -21,6 +21,8 @@ import { FR, TINK_B, TSTANCE, drawTinkerAt } from './tinkerer_moves';
 import type { TinkMove } from './tinkerer_moves';
 import { billow, through } from './brawler_fall';
 import { DUST, dot, line } from './brawler_fx';
+import { laterMotion } from './keys_later';
+import type { KeysWork } from './keys_later';
 
 const B = TINK_B;
 const S0 = TSTANCE;
@@ -192,14 +194,9 @@ function holdAt(t: number): { wrench: number; twirl: boolean; spin: number; vial
 /** Her fall as a move: a key for every sixtieth of a second. */
 export function tinkerFall(): TinkMove {
   const long = TFALL.end * FR;
-  const n = Math.round(long * 60);
-  const keys: Key3[] = [];
-  for (let i = 0; i <= n; i++) {
-    const t = Math.min(long, i / 60);
-    keys.push({ at: t, pose: poseAt(t * 30), ease: 'lin' });
-  }
-  const motion: Motion = { keys };
-  return {
+  // (its keys worked out when first read, or ahead a slice a step: dev/keys_later.ts; the queue's make-tinkerers-art-set-up-in-parts)
+  const { motion, own } = laterMotion(() => fallKeys(long));
+  const m: TinkMove = {
     name: 'Her fall: down on her backside, a last salute',
     motion,
     long,
@@ -210,6 +207,20 @@ export function tinkerFall(): TinkMove {
     // (the blow that lands on her, and the jolt of her landing: each a flash)
     strike: [[(TFALL.hit - 1) * FR, (TFALL.snapped + 1) * FR], [(TFALL.sits - 1) * FR, (TFALL.sits + 1) * FR]],
   };
+  own(m);
+  return m;
+}
+
+/** Her fall's keys, a slice a key. */
+function* fallKeys(long: number): KeysWork {
+  const n = Math.round(long * 60);
+  const keys: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = Math.min(long, i / 60);
+    keys.push({ at: t, pose: poseAt(t * 30), ease: 'lin' });
+    yield;
+  }
+  return keys;
 }
 
 // ---------------------------------------------------------------------------------------------
