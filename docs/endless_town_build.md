@@ -144,7 +144,7 @@ In a built page: `__dbg.endlessTown(true, 7)` (the switch on, the hero set at en
   `src/render/looks.ts` (the look and five small hooks: `behind`, `own`, `names`, a stand's `alpha`, the waypoint's art),
   `src/render/castle.ts` and `src/game/castle_way.ts` (the hall is not the rim), `src/ui/town.ts` (the gate panel's words),
   `src/ui/hud.ts`, `src/ui/guide.ts`, `src/game/quest_marks.ts`, `src/game/world_sounds.ts`.
-- To set it live, at his yes: `ENDLESS_TOWN.on = true`; test 1 of `tests/rim_town.test.ts` and test 2 of
+- To set it live, at his yes: `ENDLESS_TOWN.on = true`; test 1 of `tests/rim_town.test.ts` and test 1 of
   `tests/shaft_rim.test.ts` assert it off.
 - FOUND, NOT CHANGED (the live game's, yours): (a) in the camp a service's name is written at a height of its own
   (`StationSpot.lift`) but touched at the first town's (`main.ts` `named`); (b) in the camp a touch on GATE opens the old gate
