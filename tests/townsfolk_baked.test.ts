@@ -10,6 +10,7 @@ import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
 
+import { inSheet, sheetCuts } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
 import { lazyFrames } from '../src/art/kit';
 import { makeTownProps } from '../src/art/town';
@@ -108,7 +109,9 @@ test('each one\'s sound at its moment: the anvil as the hammer lands, the crysta
 
 // ---------------------------------------------------------------------------------------------
 // THE TAKING IN AND THE LETTING GO, with stand-ins: three small lists whose frames paint themselves when asked (as the
-// townsfolk's do), a bake of five frames on two sheets, and pictures that only say when they are closed.
+// townsfolk's do), a bake of five frames on two sheets, and pictures that only say when they are closed. (THE SHEETS ARE HELD
+// WHOLE, and no picture is made by the browser for a frame: engine/px.ts sheetSprite, tests/sheet_sprite.test.ts. His phone,
+// measured 12 Nov 2026: 7 ms for every such picture on the game's own thread. So the only pictures opened are the sheets.)
 
 interface World {
   /** Let the second sheet come (it waits, where a test holds it back). */
@@ -169,6 +172,7 @@ test('taken in: every unpainted place is given its picture from the sheets, noth
   const own = w.lists[1].list[0];
   assert.equal(w.painted, 1);
   const b = new BakedTownsfolk('m1', () => w.lists, w.get);
+  const cutBefore = sheetCuts().made;
   assert.equal(b.take(), true, 'coming');
   assert.equal(b.settled(), false);
   assert.equal(b.take(), true, 'asked for twice, fetched once');
@@ -185,9 +189,15 @@ test('taken in: every unpainted place is given its picture from the sheets, noth
   assert.ok(w.lists[1].list[1] === w.lists[2].list[1]);
   assert.equal(w.lists[0].list[2].ay, 2);
   assert.equal(w.lists[0].list[1].ay, 3);
-  // (the two sheets and the frame nobody wanted are closed; the four in hand are not)
-  assert.equal(w.opened, 2 + 5);
-  assert.equal(w.closed, 2 + 1);
+  // (THE ONLY PICTURES THE BROWSER IS ASKED FOR ARE THE TWO SHEETS, and both are held: each has a frame that was wanted. No
+  // picture is made for a frame as it comes; a frame's is cut from its sheet when it is first asked for, at its own size.)
+  assert.equal(w.opened, 2);
+  assert.equal(w.closed, 0);
+  assert.equal(sheetCuts().made, cutBefore, 'no frame cut as they came');
+  assert.ok(inSheet(w.lists[0].list[0]) && inSheet(w.lists[1].list[1]), 'the frames are kept in their sheets');
+  assert.ok(!inSheet(own), 'the game\'s own painted frame is as it was');
+  assert.deepEqual([w.lists[0].list[0].img.width, w.lists[0].list[0].img.height], [4, 6], 'cut when asked for, the frame\'s own size');
+  assert.equal(sheetCuts().made, cutBefore + 1);
 });
 
 test('the loading screen waits for the first of them only: the loop at his work; the act and the loops turned come after, the loop standing in for them meanwhile', async () => {
@@ -225,8 +235,9 @@ test('let go as the town is left: every place is unpainted again, the pictures\'
   assert.equal(b.stats.held, 0);
   assert.equal(b.stats.letGo, 1);
   for (const l of w.lists) for (let i = 0; i < l.list.length; i++) assert.ok(isPainter(l.list, i), `${l.name} ${i} unpainted again`);
-  assert.equal(w.closed, 2 + 5, 'all five given back');
+  assert.equal(w.closed, 2, 'both sheets given back');
   assert.equal(had.img.width, 1, 'whoever still holds one draws nothing');
+  assert.ok(!inSheet(had), 'and it is of no sheet any more');
   b.letGo();
   assert.equal(b.stats.letGo, 1, 'nothing in hand, nothing to let go');
   assert.equal(b.take(), true);
