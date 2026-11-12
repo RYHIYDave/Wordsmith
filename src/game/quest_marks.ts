@@ -39,5 +39,9 @@ export const SPEAK_WHERE: Partial<Record<Station, string>> = {
   armourer: 'He works at his forge.',
   mystic: 'She keeps the tent by the stash.',
 };
+/** (THE SHAFT'S RIM, game/rim.ts: its tent stands by the smithy, across the pit from its stash) Where they are there, where it is not as in the first town. */
+export const SPEAK_WHERE_RIM: Partial<Record<Station, string>> = {
+  mystic: 'She keeps the tent by the forge.',
+};
 /** In a dungeon: the way back to them. */
 export const SPEAK_BACK = 'Take the waypoint back to town.';

@@ -59,7 +59,8 @@ export function loopWants(g: Game, castleHall: boolean): Record<string, number> 
       if (st.kind === 'armourer') out.fire_big = 0.5 * byNearness(near(st.x, st.y), 2, 9);
       if (st.kind === 'wordsmith') out.ring_hum = 0.55 * byNearness(near(st.x, st.y), 2.5, 10);
     }
-    if (castleHall) out.bed_hall = 0.45;
+    // (the Shaft's Rim, the Endless town, is no hall: its own sounds are the sound chat's to make, docs/endless_town_build.md)
+    if (castleHall && !L.rim) out.bed_hall = 0.45;
   }
   if (isCamp(L)) out.bed_camp = 0.45;
   const d = L.floor.depth;

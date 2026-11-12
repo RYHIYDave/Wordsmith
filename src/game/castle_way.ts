@@ -22,7 +22,8 @@ export const POT_NAMES = new Set(CASTLE_POTS.map((p) => p[0]));
 
 /** Is this town the castle's hall (the first town, CASTLE_HALL on)? */
 export function castleHere(L: Level): boolean {
-  return CASTLE_HALL.on && L.town && !L.act1;
+  // (the Shaft's Rim, the Endless town, is no hall: game/rim.ts)
+  return CASTLE_HALL.on && L.town && !L.act1 && !L.rim;
 }
 
 /** THE POTS, set last (after the town's own things): each where it is free to stand, blocking its tile. */

@@ -1,4 +1,4 @@
-// THE ENDLESS TOWN'S GROUND, THE SHAFT'S RIM (src/art/shaft_rim.ts): behind its switch, off; nothing of the game imports it;
+// THE ENDLESS TOWN'S GROUND, THE SHAFT'S RIM (src/art/shaft_rim.ts): behind its switch, off; nothing of the game imports it but the town's own files (the build);
 // crisp (flat tones, few of them); nothing of the enemy's colours on the rim, only down the shaft; the pit not walkable, every
 // station on the rim.
 // STEP 4, ITS THINGS (src/art/shaft_props.ts): the gate, the record, the trophies wall, the bench's socket, the torches: behind
@@ -49,9 +49,14 @@ const tileAt = (px: number, py: number): [number, number] => {
   return [RIM.cx + (S + U) / 2, RIM.cy + (S - U) / 2];
 };
 
-test('the switch is off, and nothing of the game imports the Shaft\'s Rim', () => {
-  assert.equal(ENDLESS_TOWN.on, false);
-  const bad = files('src').filter((f) => !f.startsWith(join('src', 'dev')) && !f.endsWith(join('art', 'shaft_rim.ts')) && !f.endsWith(join('art', 'shaft_props.ts')) && /shaft_rim|shaft_props/.test(readFileSync(f, 'utf8') as string));
+// (THE BUILD, 11 Nov 2026: the Shaft's Rim is laid as a town, still behind its switch, off: the game takes its art in through the
+// town's own files alone, game/rim.ts, render/rim.ts, art/shaft_town.ts and, for the switch and the town's things in its stone,
+// main.ts: tests/rim_town.test.ts. Nothing else of the game names it.)
+const TOWN_FILES = [join('game', 'rim.ts'), join('render', 'rim.ts'), join('art', 'shaft_town.ts'), join('src', 'main.ts')];
+// (THE GAME HAS IT ON since 25.3.7, the main chat, 11 Nov 2026, on his yes to it in the game.)
+test('the switch is on in the game, and nothing of the game imports the Shaft\'s Rim but the town\'s own files', () => {
+  assert.equal(ENDLESS_TOWN.on, true);
+  const bad = files('src').filter((f) => !f.startsWith(join('src', 'dev')) && !f.endsWith(join('art', 'shaft_rim.ts')) && !f.endsWith(join('art', 'shaft_props.ts')) && !TOWN_FILES.some((t) => f.endsWith(t)) && /shaft_rim|shaft_props/.test(readFileSync(f, 'utf8') as string));
   assert.deepEqual(bad, []);
 });
 

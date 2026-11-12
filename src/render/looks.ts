@@ -5,7 +5,7 @@
 // walls, its dark and its lights, and what it stands on the floor of its own.
 
 import type { Sprite } from '../engine/px';
-import type { Level } from '../game/state';
+import type { Level, PropInst } from '../game/state';
 
 /** Where a light burns: its floor point (tiles), how far up from it and across (game pixels), the hole's radius and strength, its glow. */
 export interface LookLight {
@@ -27,6 +27,15 @@ export interface LookStand {
   d?: number;
   /** Drawn added to what is under it ('lighter'), as light is: floor 1's daylight. */
   add?: boolean;
+  /** How strongly it is drawn, 0 to 1 (none: wholly): the Shaft's Rim's far fire, breathing. */
+  alpha?: number;
+}
+/** A name a look writes over something it stands that is no service (the Shaft's Rim's record stone and trophies wall): its floor point, how high over it (game pixels), the words. */
+export interface LookName {
+  x: number;
+  y: number;
+  lift: number;
+  text: string;
 }
 export interface LookView {
   /** The dark between its lights (the Crypt's is FAR_DARK, 0.88), and its colour if not the Crypt's (6, 4, 14). */
@@ -68,6 +77,12 @@ export interface LookView {
   flats?(L: Level, t: number): readonly LookStand[];
   /** What it draws behind everything, before the floor (the first town's roof over the dark above its back walls). */
   back?(L: Level, t: number): readonly LookStand[];
+  /** What it fills the screen with behind everything, over the game's black, before `back` (the Shaft's Rim's dark rock, going on past its ground's picture). `ox`, `oy`: where tile (0, 0) is on the screen. */
+  behind?(g: CanvasRenderingContext2D, ox: number, oy: number, W: number, H: number): void;
+  /** One of the game's own things on this level as this look has it, in place of the game's picture (the Shaft's Rim's slab with the tablet's socket): undefined where the game's own stands. */
+  own?(L: Level, p: PropInst, t: number): Sprite | null | undefined;
+  /** The names it writes over what it stands, as the town's services are named. */
+  names?(L: Level): readonly LookName[];
 }
 
 /** One of the game's own pictures with each of its colours put through `grade` (a canvas the page paints on; where there is none, the picture as it is). */

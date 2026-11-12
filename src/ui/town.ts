@@ -19,6 +19,7 @@ import { WORD_COLOR, itemPic } from '../art/icons';
 import { P, RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
 import { TUNE, VENDORS, WORDS } from '../game/defs';
+import { ENDLESS_WARN, endlessName } from '../game/endless';
 import type { Game } from '../game/game';
 import { itemValue } from '../game/items';
 import type { Item, WordId } from '../game/types';
@@ -352,12 +353,15 @@ export function gateSide(ui: Ui, game: Game, art: Art, inv: InvUi, r: Rect, ente
   for (const s of socks) ui.mark(`plan:${s.i}`, s.r.x, s.r.y, s.r.w, s.r.h);
   const rowsEnd = y0 + TUNE.planMax * rowH - 6;
   const bh = T ? 20 : 15;
-  const label = `ENTER DUNGEON ${game.depth}`;
+  // (THE SHAFT'S RIM, game/rim.ts: its gate's words go into the endless level he has reached, and in at it is down to that level)
+  const rim = !!game.level.rim;
+  const where = rim ? endlessName(game.endless).toUpperCase() : `DUNGEON ${game.depth}`;
+  const label = `ENTER ${where}`;
   const enterW = Math.min(bw, textWidth(label) + 24);
   /** (the foot of the half is left to what is read, where the inventory lies under it) */
   const body = sideBody(r, ui.w, ui.h);
   const enterR: Rect = { x: r.x + r.w - SIDE_M - enterW, y: body.y + body.h - bh - 6, w: enterW, h: bh };
-  const greater = game.depth % 5 === 0;
+  const greater = !rim && game.depth % 5 === 0;
   /** The socket the next word goes into, if one is free. */
   const next = socks.find((s) => !s.word);
   const lower = (s: string): string => `${s.charAt(0).toLowerCase()}${s.slice(1)}`;
@@ -393,7 +397,7 @@ export function gateSide(ui: Ui, game: Game, art: Art, inv: InvUi, r: Rect, ente
     wordButtons: (w) => [{ label: 'TO THE GATE', act: () => game.planWord(w), lit: game.planProblem(w) === null, disabled: game.planProblem(w) !== null }],
 
     draw(over: SideOver): void {
-      sideFrame(ui, r, `GATE: DUNGEON ${game.depth}`);
+      sideFrame(ui, r, `GATE: ${where}`);
       intro.forEach((l, k) => drawText(g, l, x0, bodyY + 1 + k * 6, THEME.text, { font: 'small' }));
       drawText(g, 'BURNED INTO THE DUNGEON', x0, capY, THEME.dim, { font: 'small' });
       const tx = x0 + CELL + 5;
@@ -436,15 +440,16 @@ export function gateSide(ui: Ui, game: Game, art: Art, inv: InvUi, r: Rect, ente
       const reward = game.plan.length ? wrapText(rewardLine(game.plan.length), bw, 'small') : [];
       if (reward.length && y + reward.length * 6 <= room) y = small(ui, rewardLine(game.plan.length), x0, y, bw, THEME.accent) + 2;
       if (y + 6 <= room) {
-        drawText(g, greater ? 'A Greater Warden waits at the end.' : 'A Warden waits at the end.', x0, y, greater ? THEME.bad : THEME.dim, { font: 'small' });
+        drawText(g, rim ? `Its boss waits at the end. ${ENDLESS_WARN}.` : greater ? 'A Greater Warden waits at the end.' : 'A Warden waits at the end.', x0, y, rim || greater ? THEME.bad : THEME.dim, { font: 'small' });
         y += 8;
       }
       // and the Warden himself, where there is room for him: at the foot of the half, turned to the way in
-      const frames = art.bestiary.of('warden').front.idle;
-      const boss = frames[Math.floor(t * IDLE_FPS) % frames.length];
+      // (not at the Shaft's Rim: an endless level's boss is its floor's own, and which floor it is is not told)
+      const frames = rim ? [] : art.bestiary.of('warden').front.idle;
+      const boss = frames[Math.floor(t * IDLE_FPS) % Math.max(1, frames.length)];
       const feet = enterR.y + enterR.h - 1;
       const bx = x0 + 30;
-      if (feet - (FIGURE_SIZE.warden.top + 8) >= y && bx + FIGURE_SIZE.warden.half + 6 <= enterR.x) {
+      if (boss && feet - (FIGURE_SIZE.warden.top + 8) >= y && bx + FIGURE_SIZE.warden.half + 6 <= enterR.x) {
         g.globalAlpha = 0.5;
         g.fillStyle = P.black;
         for (const [hw, dy] of [[20, 0], [24, 1], [24, 2], [20, 3]] as const) g.fillRect(bx - hw, feet - 2 + dy, hw * 2, 1);

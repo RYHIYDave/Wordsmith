@@ -58,7 +58,8 @@ export class CastleView implements LookView {
   }
 
   on(L: Level): boolean {
-    return CASTLE_HALL.on && L.town && !L.act1;
+    // (the Shaft's Rim, the Endless town, is no hall: render/rim.ts)
+    return CASTLE_HALL.on && L.town && !L.act1 && !L.rim;
   }
   warm(): void {
     void this.A().roof;

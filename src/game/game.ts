@@ -72,6 +72,7 @@ import { DOOR_OPENING, prisonDoorTiles } from './prison_way';
 import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, ONWARD, onTakes, onTopStep, stairFor, takesTiles, stairMiddle, stairTiles, thrownTiles, topStep } from './ways';
 import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
+import { ENDLESS_TOWN, RIM_ARRIVE, RIM_AT, RIM_RULES, makeRim, notchesFor, roundStep } from './rim';
 import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, HellWave, Hero, Level, Meta, Monster, OrbInst, Peril, Pet, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Soul, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
 import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import { CRANK_TIMES, FIRE, FIRE_GONE, FURNACE_WORD, KEEPER, MELDSTONE_WORDS, QUESTS15, QUEST_TEXT } from './quests15';
@@ -181,6 +182,8 @@ export interface RunSave {
   /** ENDLESS MODE (game/endless.ts): the endless level the hero has reached, and the floor it is (absent until it is open to him, and while ENDLESS is off). */
   endless?: number;
   endlessFloor?: number;
+  /** THE SHAFT'S RIM (game/rim.ts): the endless level his record stone was last cut to (absent while ENDLESS_TOWN is off, and until he has come into it). */
+  rimSeen?: number;
 }
 
 /** THE FIRST LEVELS: what the wordsmith says while his ring is dark. */
@@ -430,6 +433,8 @@ export class Game {
   endless = 0;
   endlessFloor = 0;
   inEndless = false;
+  /** THE SHAFT'S RIM (game/rim.ts, behind ENDLESS_TOWN): the endless level his record stone was last cut to (a notch is cut for each one reached since, as he comes home). */
+  rimSeen = 0;
   /**
    * ACT 2, THE HUSH: THE HUSH ON THE HERO (his doc, "New for the act": "a status that darkens your words for a few seconds. Your
    * attacks still land, without what the words add"; brought by the Crier's Silent Shout, the Physician's Tonic and the Censor):
@@ -1008,6 +1013,8 @@ export class Game {
       ...(WAYS.on ? { way: this.wayDepth } : {}),
       // (ENDLESS MODE: nor the endless level reached, until it is open to him)
       ...(ENDLESS.on && this.endless > 0 ? { endless: this.endless, endlessFloor: this.endlessFloor } : {}),
+      // (THE SHAFT'S RIM: nor how far his record stone is cut, until he has come into it)
+      ...(ENDLESS_TOWN.on && this.rimSeen > 0 ? { rimSeen: this.rimSeen } : {}),
       // (WORDMELDING: nor its runedust and its Meldstone while MELD is off)
       ...(MELD.on ? { dust: h.dust, meld: h.meld } : {}),
       ...(QUESTS15.on ? { furnace: h.furnace, meldAsk: h.meldAsk } : {}),
@@ -1050,6 +1057,8 @@ export class Game {
       const ef = Math.floor(num(s.endlessFloor, 0));
       g.endlessFloor = g.endless > 0 ? (ef >= 1 && ef <= lastFloor() ? ef : endlessFloorFor(g.seed, g.endless, 0)) : 0;
     }
+    // (THE SHAFT'S RIM: how far his record stone was cut; never further than he has gone)
+    g.rimSeen = Math.max(0, Math.min(g.endless, Math.floor(num(s.rimSeen, 0))));
     // (EXITS: the town made again by the way he has come: the gate barred or not; the camp from floor 10 on)
     if (EXITS.on) g.enterTown();
     // (THE WAYS: the town's waypoint, awake once there is a floor to warp back to)
@@ -1455,8 +1464,10 @@ export class Game {
   enterTown(by: 'gate' | 'way' | 'stairs' | 'cage' | null = null): void {
     this.clearLevel();
     // (EXITS, game/camp.ts: from floor 10 on, his town is the camp inside Vellum's gate: his pick, “Yes, the camp from then on (Recommended)”)
-    const camp = this.campTown();
-    this.level = camp ? makeCamp(this.seed, TUNE.tradesOpen) : makeTown(this.seed);
+    // (THE ENDLESS TOWN, game/rim.ts, behind ENDLESS_TOWN: once endless is open to him, his town is the Shaft's Rim: his pick, “Once endless opens (Recommended)”)
+    const rim = this.rimTown();
+    const camp = !rim && this.campTown();
+    this.level = rim ? makeRim(this.seed, TUNE.tradesOpen) : camp ? makeCamp(this.seed, TUNE.tradesOpen) : makeTown(this.seed);
     this.inDungeon = false;
     // (ENDLESS MODE: in town he is on no endless level; the waypoint takes him back to the one he reached)
     this.inEndless = false;
@@ -1472,7 +1483,16 @@ export class Game {
     // (EXITS: the gate in the back wall barred until the Fleshmancer is beaten: the Prison cleared, his way is on to floor 6)
     this.toldBarred = false;
     if (W && EXITS.on) W.barred = this.wayDepth < 6;
-    if (camp && by === 'gate') {
+    if (rim) {
+      // (THE SHAFT'S RIM: back by the waypoint he comes out of its light at the stair's head; otherwise he stands before the gate, the pit before him)
+      const way = W && W.way && by === 'way' ? W.way : null;
+      h.x = way ? way.x : RIM_ARRIVE.x;
+      h.y = way ? way.y : RIM_ARRIVE.y;
+      h.fx = RIM_ARRIVE.fx;
+      h.fy = RIM_ARRIVE.fy;
+      if (way) way.warpAt = -WARP_SECS;
+      this.comeToRim();
+    } else if (camp && by === 'gate') {
       // (in from floor 10, through the city gate: at its mouth, looking into the camp)
       h.x = CAMP.arrive.x;
       h.y = CAMP.arrive.y;
@@ -2504,6 +2524,52 @@ export class Game {
   /** EXITS (game/camp.ts): his town is the camp inside Vellum's gate: he has come down into the city from floor 10. */
   campTown(): boolean {
     return EXITS.on && WAYS.on && ACT1.on && !this.practice && this.wayDepth >= 11;
+  }
+
+  /** THE ENDLESS TOWN (game/rim.ts, behind ENDLESS_TOWN): his town is the Shaft's Rim: the endless levels are open to him. */
+  rimTown(): boolean {
+    return ENDLESS_TOWN.on && ENDLESS.on && WAYS.on && !this.practice && this.endless > 0;
+  }
+
+  /**
+   * THE SHAFT'S RIM, as he comes into it: its record stone cut to the endless level he has reached, a notch for each (his pick,
+   * “Every endless level (Recommended)”), the newest glowing if any was cut this time; its trophies wall hung by the quarters
+   * of the tablet he holds.
+   */
+  private comeToRim(): void {
+    const R = this.level.rim;
+    if (!R) return;
+    const was = notchesFor(this.rimSeen);
+    R.notches = notchesFor(this.endless);
+    R.fresh = this.endless > this.rimSeen;
+    R.reached = this.endless;
+    // (the best any hero of his has reached: one past the deepest endless level cleared)
+    R.best = (this.meta.bestEndless ?? 0) > 0 ? (this.meta.bestEndless ?? 0) + 1 : 0;
+    R.held = this.quartersHeld();
+    // (the words laid on its gate are shown in its sockets: the list itself, so that one laid or taken back is seen at once)
+    R.words = RIM_RULES.gateWords ? this.plan : [];
+    if (R.fresh) {
+      this.emit({ t: 'notch', x: RIM_AT.record.x, y: RIM_AT.record.y, n: R.notches, cut: R.notches - was });
+      if (R.notches > was) this.msg(`A notch is cut in the record stone: ${endlessName(this.endless)}.`, MSG.word);
+    }
+    this.rimSeen = this.endless;
+  }
+
+  /**
+   * THE SHAFT'S RIM'S TROPHIES WALL: which of the four bosses' quarters of the tablet he holds (the bosses of floors 5, 10, 15 and
+   * 20, in order: game/rim.ts trophyOf). His yes was to a wall of “the bosses whose tablet quarters you hold”. THE QUARTERS ARE
+   * NOT BUILT YET (the queue's build-endless-tablet-and-final-boss): until they are, he holds none, and its mounts are empty.
+   */
+  quartersHeld(): boolean[] {
+    return [false, false, false, false];
+  }
+
+  /** THE SHAFT'S RIM: in at the gate's panel, down to the endless level he has reached, as its waypoint takes him (the words on the gate burned into it). */
+  enterEndless(): void {
+    if (!(ENDLESS.on && this.endless > 0)) return;
+    this.depth = this.endlessFloor;
+    this.inEndless = true;
+    this.enterDungeon('way');
   }
 
   /** EXITS: he is coming up into town in the cage (he does nothing until it has opened). */
@@ -4767,6 +4833,15 @@ export class Game {
       this.intoLine(h, TUNE.heroRadius, (mx / len) * sp * k * dt, (my / len) * sp * k * dt, wasX, wasY);
       this.intoDoor(h, TUNE.heroRadius, (mx / len) * sp * k * dt, (my / len) * sp * k * dt, wasX, wasY);
       this.roundCorner(h, TUNE.heroRadius, (mx / len) * sp * k * dt, (my / len) * sp * k * dt, wasX, wasY);
+      // (THE SHAFT'S RIM: a step one of its round things refused, the pit's brink, a standing stone, a fire, is taken round it: game/rim.ts)
+      const R = this.level.rim;
+      if (R && h.x === wasX && h.y === wasY) {
+        const to = roundStep(R.rounds, h.x, h.y, TUNE.heroRadius, (mx / len) * sp * k * dt, (my / len) * sp * k * dt);
+        if (to && this.free(this.level.walk, to.x, to.y, TUNE.heroRadius)) {
+          h.x = to.x;
+          h.y = to.y;
+        }
+      }
       // (FLOOR 1, MORE ACTION: the Warden's bars, while they stand, a cage his walking does not cross: game/action_f1.ts)
       if (this.perils.length) cageHero(this, h, TUNE.heroRadius, wasX, wasY);
       if (h.attackT <= 0 && !c.face) {
@@ -13209,7 +13284,8 @@ export class Game {
     let bd = TUNE.useRange;
     for (const s of this.level.stations) {
       // (THE WAYS: the gate is walked through, not used)
-      if (s.kind === 'gate' && this.level.ways) continue;
+      // (THE SHAFT'S RIM: its gate stands free and leads nowhere: it is used, its three words laid at it: game/rim.ts)
+      if (s.kind === 'gate' && this.level.ways && !(this.level.rim && RIM_RULES.gateWords)) continue;
       const d = Math.hypot(s.x - h.x, s.y - h.y);
       if (d < bd) {
         bd = d;
@@ -13235,7 +13311,7 @@ export class Game {
       // (HAND_IN: beside the one a quest item is for, his prompt says it is given)
       const giving = this.handInNear();
       if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : giving === 'furnace' ? QUEST_TEXT.furnaceAskPrompt : giving === 'reward' ? QUEST_TEXT.rewardPrompt : giving === 'meldAsk' ? QUEST_TEXT.meldAskPrompt : giving === 'featherAsk' ? QUEST610_TEXT.featherAskPrompt : giving === 'featherGive' ? QUEST610_TEXT.featherGivePrompt : HAND_IN.prompt;
-      return st === 'gate' ? `Gate: dungeon ${this.depth}` : st === 'wordsmith' ? 'Wordsmith' : st === 'armourer' ? 'Armourer' : st === 'mystic' ? 'Mystic' : st === 'lexicon' ? 'Lexicon' : st === 'stranger' ? 'Stranger' : 'Stash';
+      return st === 'gate' ? (this.level.rim ? `Gate: words for ${endlessName(this.endless)}` : `Gate: dungeon ${this.depth}`) : st === 'wordsmith' ? 'Wordsmith' : st === 'armourer' ? 'Armourer' : st === 'mystic' ? 'Mystic' : st === 'lexicon' ? 'Lexicon' : st === 'stranger' ? 'Stranger' : 'Stash';
     }
     // (QUESTS610, PILLARS: beside a burning obelisk, with a piece in hand)
     if (this.pillarNear()) return QUEST610_TEXT.pillarPrompt;
@@ -13274,7 +13350,8 @@ export class Game {
     if (WORDS[word].kind === 'rank') return 'A ranked word goes on attacks and gear only';
     // (THE FIRST LEVELS: no words on the first dungeon's monsters, his note of 21:05: a word laid
     // on its gate would be burned for nothing. A later hero may carry one from the Lexicon.)
-    if (FIRST_LEVELS.on && !this.practice && this.depth <= 1) return FIRST_GATE;
+    // (THE SHAFT'S RIM: its gate's words go into the next endless level, and floor 1 as one is without the lesson: game/endless.ts)
+    if (FIRST_LEVELS.on && !this.practice && this.depth <= 1 && !this.level.rim) return FIRST_GATE;
     if (this.plan.length >= TUNE.planMax) return `At most ${TUNE.planMax} words`;
     if (this.plan.includes(word)) return 'Already burning';
     if (WORDS[word].element && this.plan.some((w) => WORDS[w].element)) return 'One element per dungeon';

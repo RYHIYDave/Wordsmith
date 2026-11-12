@@ -28,8 +28,12 @@ import {
 } from './endless_splash';
 import type { C, Theme } from './endless_splash';
 
-/** THE SWITCH: off until the main chat lays the Shaft's Rim as a town, on his yes to its pictures. */
-export const ENDLESS_TOWN = { on: false };
+/**
+ * THE SWITCH. ON SINCE 25.3.7 (the main chat, 11 Nov 2026): the Shaft's Rim is laid as a town (game/rim.ts, render/rim.ts: the
+ * Endless town build chat's, branch build/endless-town) and has his yes to it in the game, 11 Nov 2026, by 20:31, shown five
+ * pictures and a film of it there: “Yes, hand it to main (Recommended)”. Off, the game's towns are as they were.
+ */
+export const ENDLESS_TOWN = { on: true };
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // THE PLACE, in tiles (a tile 32 x 16 game pixels, as the game's).

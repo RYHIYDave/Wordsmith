@@ -31,6 +31,10 @@ import { emptyControls } from '../src/game/state';
 import type { Controls, Level } from '../src/game/state';
 import { EXITS, ONWARD, START, onDirOf, takesTiles, tilesAB, turnAB } from '../src/game/ways';
 import { JETTY, STONE, stoneToWorld } from '../src/game/colossus_fight';
+import { townsAsBefore } from './towns_as_before';
+
+// (the Endless town is on in the game since 25.3.7; here floor 15 is the last floor built, and its home is asked to be the camp)
+townsAsBefore();
 
 const DT = 1 / 60;
 function exitsSet<T>(on: boolean, run: () => T): T {
