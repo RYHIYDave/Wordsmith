@@ -191,4 +191,31 @@ at the enemy and says why.
 
 ## His answer on the Brawler's switch
 
-ASKED OF HIM as a pop-up, 11 Nov 2026, as this file was first pushed; his pick is written here when he has made it.
+ASKED OF HIM as a pop-up, 11 Nov 2026, after 21:16 (Eastern): “The Tinkerer and the Brawler from eight sides are baked, played
+and ready on a branch for the main chat (nothing is live yet). The Brawler's eight sides hold about 150 MB of pictures, where
+he holds about 38 today and the Ranger, the heaviest hero now, about 97. In my test browser the whole game held about 100 MB
+more with him. I can't try your phone from here. Switch the Brawler on with the Tinkerer?” Offered: “Yes, switch him on
+(Recommended)” (both go to the main chat switched on; if his phone stutters or freezes with him, he says so and he goes back
+to two sides); “A test page first” (a private page of the game with both from eight sides; he plays the Brawler a few floors
+on his phone and says how it runs before he goes live); “Tinkerer only, for now” (the Brawler stays as he is until his
+pictures can be loaded a lighter way, a longer build).
+
+**HIS PICK, by 21:25: “A test page first”.**
+
+THE TEST PAGE, published 21:25 to 21:28: https://claude.ai/artifact/EPxkp4u3wkrbWwRnD593iW (“Wordsmith test page: eight
+sides”, version `1794450514-3eb7`; his alone; a page of its own, NOT the game's page, and it keeps a save of its own: his
+game and his save are untouched). Made by `node tools/eight_sides_try_page.mjs` after the release build: `dist/try_eight/`,
+208 files, 182.8 MB: `index.html` (the release's page fragment built again with the stamp TEST EIGHT SIDES 2026-11-11 in the
+corner of the starting screen and a title of its own, wrapped as the site serves it) and beside it `heroes/e0ac1c19738f/`
+(45 files), `sounds/3c87436f2f66/` (49) and `colossus/7cf0996e564d/` (113), sent in four publishes. The sounds' and the
+Colossus's files and 23 of the heroes' sheets are the live site's own, byte for byte; the fifteen new sheets (brawler-0 to
+12, tinkerer-0 and 1) were looked at. Played once as it is published, served from its folder: `sides_more_fight` clean, 120
+checks; its starting screen photographed, the stamp on it. The published files' sizes and hashes read back: 208, the five
+compared the same as built.
+
+TOLD HIM: the page is in the chat; on its starting screen Options, the level select, a floor and the Brawler give a test hero
+there; play a few floors, turning and fighting every way, and say how it runs: smooth, stutters, or freezes; the first
+loading screen with him is a little longer; nothing is live.
+
+**HIS WORD FROM THE PHONE: NOT YET.** MAIN: until it is written here, the Brawler's switch does not go live. This chat holds
+the queue's item meanwhile and puts it back when he has answered.
