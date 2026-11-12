@@ -47,8 +47,12 @@ export interface GlobeRow {
 export const GLOBE = { r: 5, gap: 3, fire: 8, pad: 2 };
 /** How wide a row of `n` is painted. */
 export const globesW = (n: number): number => GLOBE.pad * 2 + n * (GLOBE.r * 2 + 1) + (n - 1) * GLOBE.gap;
-/** How wide and tall a row of three is painted. */
-export const GLOBES_W = globesW(3);
+/**
+ * How wide and tall a row of three is painted. (WRITTEN OUT, NOT AS globesW(3): this line is bundled into the heroes' bake page,
+ * src/dev/bake_heroes_page.ts, and the bake's mark is taken from that code, tools/bake_heroes.mjs; written as globesW(3) the
+ * same pictures get a new mark and a new bake for nothing. tests/unique_play.test.ts holds the two equal.)
+ */
+export const GLOBES_W = GLOBE.pad * 2 + 3 * (GLOBE.r * 2 + 1) + 2 * GLOBE.gap;
 export const GLOBES_H = GLOBE.pad * 2 + GLOBE.fire + GLOBE.r * 2 + 1 + 2;
 
 const rampOf = (k: GlobeKind | 'punchFire' | 'kickFire'): Ramp => (k === 'punch' || k === 'punchFire' ? GLOBE_GREEN : k === 'kick' || k === 'kickFire' ? GLOBE_ORANGE : GLOBE_WHITE);
