@@ -637,11 +637,13 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     if (!weak) assert.ok(any((e) => e.t === 'stun'), `${name}: Heavy stuns what it hits`);
     // (a whirlwind's turns, a beam's bites and a volley's arrows are too many for the weight of each: their stuns show it)
     if (def.kind !== 'whirl' && def.kind !== 'beam' && def.kind !== 'volley') assert.ok(any((e) => e.t === 'heavy'), `${name}: Heavy lands with its weight`);
-  } else assert.ok(!any((e) => e.t === 'stun' || e.t === 'heavy'), `${name}: no stun without Heavy`);
+    // (THE WARRIOR'S EARTHQUAKE stuns of its own, game/defs.ts `stun`, and his SMASH dazes to a stun, `stagger`: theirs, not Heavy's)
+  } else assert.ok(!any((e) => (e.t === 'stun' && !def.stun && !def.stagger) || e.t === 'heavy'), `${name}: no stun without Heavy`);
   if (behind.includes('heavy')) {
     // (for its four seconds; longer or shorter as Lasting or Fleeting make of it)
     assert.ok(any((e) => e.t === 'zone' && e.kind === 'cracks' && Math.abs((e.dur ?? 0) - 4 * r.last) < 1e-9), `${name}: of Quakes cracks the ground`);
-  } else assert.ok(!any((e) => (e.t === 'zone' && e.kind === 'cracks') || e.t === 'stagger'), `${name}: no cracked ground without of Quakes`);
+    // (THE WARRIOR'S SMASH staggers of its own, game/defs.ts `stagger`: its staggers are its, not of Quakes')
+  } else assert.ok(!any((e) => (e.t === 'zone' && e.kind === 'cracks') || (e.t === 'stagger' && !def.stagger)), `${name}: no cracked ground without of Quakes`);
   if (behind.includes('precise') && !weak) {
     assert.equal(count((e) => e.t === 'markOn'), 1, `${name}: of the Mark marks the first it hits, once a use`);
     assert.ok(count((e) => e.t === 'markSpent') <= 1, `${name}: ...and a mark is spent once`);
@@ -659,7 +661,9 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
 
   // ---- the city's words (Version 23.8), in front and behind
   // (what dies at a touch is not there to be cursed or slowed)
-  if (front.includes('pulling')) assert.ok(any((e) => e.t === 'pull'), `${name}: Pulling drags in`);
+  // (THE WARRIOR'S SHOULDER CHARGE, game/defs.ts `through`: against what dies at a touch, all in his way is struck down on the way,
+  // and none is left where he stops for Pulling to drag in)
+  if (front.includes('pulling') && !(def.through && weak)) assert.ok(any((e) => e.t === 'pull'), `${name}: Pulling drags in`);
   else assert.ok(!any((e) => e.t === 'pull'), `${name}: no pull without Pulling`);
   if (front.includes('splitting')) assert.ok(any((e) => e.t === 'split'), `${name}: Splitting breaks into copies`);
   else assert.ok(!any((e) => e.t === 'split'), `${name}: no copies without Splitting`);
@@ -775,9 +779,18 @@ test('the rule of the sockets: any word or any two different words to a side, bu
  * warrior with the one-handed sword for Slam, and the mage with a wand for Familiar and Beam.
  */
 const CASES: readonly { cls: ClassId; weapon: WeaponKind; skill: 0 | 1 | 2; demon?: boolean; talents?: readonly string[] }[] = [
+  // (THE WARRIOR'S TREE, game/talents.ts WARRIOR_TREE2, on since 12 Nov 2026 at his “Yes, put it live (Recommended)”: his moves are
+  // his weapon's, picked with his tree's first point, whatever is in his hand: the greatsword's Strike, Whirl and Lunge, Whirlwind
+  // by its talent; the battle axe's Cleave, Axe Throw and Leaping Chop; the warhammer's Smash, Earthquake and Shoulder Charge)
   { cls: 'warrior', weapon: 'greatsword', skill: 0 },
   { cls: 'warrior', weapon: 'greatsword', skill: 1 },
-  { cls: 'warrior', weapon: 'sword', skill: 1 },
+  { cls: 'warrior', weapon: 'greatsword', skill: 1, talents: ['greatsword', 'gswhirlwind'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 0, talents: ['battleaxe'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 1, talents: ['battleaxe'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 2, talents: ['battleaxe'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 0, talents: ['warhammer'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 1, talents: ['warhammer'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 2, talents: ['warhammer'] },
   { cls: 'ranger', weapon: 'bow', skill: 0 },
   { cls: 'ranger', weapon: 'bow', skill: 1 },
   { cls: 'mage', weapon: 'staff', skill: 0 },
@@ -808,7 +821,9 @@ const CASES: readonly { cls: ClassId; weapon: WeaponKind; skill: 0 | 1 | 2; demo
 test('between them the cases use every ability that takes words, once each', () => {
   const used = CASES.map((k) => practice(k.cls, k.weapon, 5, k.demon, k.talents).hero.skills[k.skill].id).sort();
   // (THE VETERAN's three, behind VETERAN: his words' cases are tests/veteran_words.test.ts, his moves being played as his combos play them)
-  const all = Object.values(SKILLS).filter((d) => d.sockets && d.kind !== 'vblow' && d.kind !== 'vjump').map((d) => d.id).sort();
+  // (and the one-handed sword's Slam: no hero has it while the Warrior's tree is on, his moves being his weapon's whatever is in his
+  // hand: game/talents.ts warriorKit)
+  const all = Object.values(SKILLS).filter((d) => d.sockets && d.kind !== 'vblow' && d.kind !== 'vjump' && d.id !== 'slam').map((d) => d.id).sort();
   assert.deepEqual(used, all);
 });
 

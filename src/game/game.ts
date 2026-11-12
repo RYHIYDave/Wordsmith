@@ -9060,33 +9060,29 @@ export class Game {
     let best: Monster | null = null;
     let bd = Infinity;
     // (THE WARRIOR'S WARHAMMER: Smash comes down on a spot before him, striking all on it: knocked back, and dazed toward a stun)
-    // (Wide Swing, his tree's: the Smash swept round the half circle before him instead, as a Cleave is, every one struck smashed)
+    // (THE WARRIOR'S WARHAMMER: Smash comes down on a spot before him, `spot`, striking all on it, as the ordinary blow strikes, so
+    // that every word on it acts as on any swing; each struck knocked back and dazed toward a stun. Wide Swing, his tree's: swept
+    // round the half circle before him instead, as a Cleave is, every one struck smashed)
     const wide = r.id === 'smash' && this.has('wideswing');
-    if (def.spot && !wide) {
-      const sx = ox + dx * def.spot.at;
-      const sy = oy + dy * def.spot.at;
-      const rad = def.spot.r * r.size;
-      this.breakProps(sx, sy, rad + 0.3, i);
-      let struck = 0;
-      for (const m of this.monsters) {
-        if (m.dead || this.shutIn(m) || Math.hypot(m.x - sx, m.y - sy) > rad + m.r) continue;
-        this.hitMonster(m, i, frac, struck > 0);
-        struck++;
-        if (!m.dead && r.id === 'smash') this.smashed(m, dx, dy);
-      }
-      this.emit({ t: 'burst', x: sx, y: sy, r: rad + 0.3, el: r.element, style: 'land', words, n, echo });
-      if (struck) {
-        this.landed(i);
-        this.sfx(power ? 'power' : 'hit', 0.8);
-      } else if (this.isOpen(sx, sy)) this.wake(i, sx, sy, 1.0, frac);
-      return;
-    }
+    // (the spot no smaller for a word that narrows a blow, Precise: the maul's head is the size it is; wider for one that widens it)
+    const spot = def.spot && !wide ? { x: ox + dx * def.spot.at, y: oy + dy * def.spot.at, r: def.spot.r * Math.max(1, r.size) } : null;
+    if (spot) this.emit({ t: 'burst', x: spot.x, y: spot.y, r: spot.r + 0.3, el: r.element, style: 'land', words, n, echo });
     // (THE WARRIOR'S BATTLE AXE: Cleave strikes every enemy in its arc, as Sweeping Cut makes any swing do; its arc its own)
-    const cleave = this.now('sweepingcut') || def.arc === true || (r.id === 'smash' && this.has('wideswing'));
+    const cleave = this.now('sweepingcut') || def.arc === true || wide || !!spot;
     const minDot = def.arcCos ?? 0.35;
     const arc: Monster[] = [];
     for (const m of this.monsters) {
       if (m.dead) continue;
+      if (spot) {
+        const d = Math.hypot(m.x - spot.x, m.y - spot.y);
+        if (d > spot.r + m.r || this.shutIn(m)) continue;
+        arc.push(m);
+        if (d < bd) {
+          bd = d;
+          best = m;
+        }
+        continue;
+      }
       const mx = m.x - ox;
       const my = m.y - oy;
       const dist = Math.hypot(mx, my);
@@ -9101,11 +9097,12 @@ export class Game {
         best = m;
       }
     }
-    this.breakProps(ox + dx * reach * 0.6, oy + dy * reach * 0.6, 0.9, i);
+    if (spot) this.breakProps(spot.x, spot.y, spot.r + 0.3, i);
+    else this.breakProps(ox + dx * reach * 0.6, oy + dy * reach * 0.6, 0.9, i);
     if (!best) {
       // a swing that meets nothing still leaves its wake where the blade passed, as a shot does where it ends
-      const wx = ox + dx * reach * 0.75;
-      const wy = oy + dy * reach * 0.75;
+      const wx = spot ? spot.x : ox + dx * reach * 0.75;
+      const wy = spot ? spot.y : oy + dy * reach * 0.75;
       if (this.isOpen(wx, wy)) this.wake(i, wx, wy, 1.0, frac);
       return;
     }
@@ -9116,7 +9113,7 @@ export class Game {
     if (r.through > 0) this.pierceOn(i, best, tx, ty, dx, dy, frac * r.through);
     // (THE SKILL TREES REMADE: Sweeping Cut, the swing cleaves: every enemy in its arc is struck as hard)
     for (const o of arc) if (o !== best && !o.dead) this.hitMonster(o, i, frac, true);
-    if (wide) for (const o of new Set([best, ...arc])) if (!o.dead) this.smashed(o, dx, dy);
+    if (r.id === 'smash') for (const o of new Set([best, ...arc])) if (!o.dead) this.smashed(o, dx, dy);
     this.landed(i);
     this.sfx(power ? 'power' : 'hit', 0.7);
     if (words.includes('heavy')) this.emit({ t: 'heavy', x: tx, y: ty, r: 1.1, big: false });
@@ -15397,6 +15394,7 @@ export class Game {
     const D = TALENT_TUNE.drilledLunge;
     const hit = mv.hit ?? (mv.hit = []);
     const r = h.skills[2].r;
+    const before = hit.length;
     for (const m of this.monsters) {
       if (m.dead || hit.includes(m.id) || this.shutIn(m)) continue;
       if (Math.hypot(m.x - h.x, m.y - h.y) > m.r + TUNE.heroRadius + D.reach) continue;
@@ -15405,6 +15403,8 @@ export class Game {
       // (THE WARRIOR'S WARHAMMER: Bulldozer, Shoulder Charge carries what it strikes along before him)
       if (r.id === 'charge' && this.has('bulldozer') && !m.dead && !m.boss) this.carried.push(m.id);
     }
+    // (what the blow gives as it lands, of Power's might: the first struck on the way, as a swing's first)
+    if (before === 0 && hit.length > 0) this.landed(2);
     // (Bulldozer: those carried go before him, where there is floor)
     for (const id of this.carried) {
       const m = this.monsters.find((o) => o.id === id);
