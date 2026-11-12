@@ -60,6 +60,8 @@ and `__dbg.game().giveUnique('windcutter', 12)` (any id from UNIQUE_DEFS) puts o
 5. **The Fourth Globe**: works; the globes over his head (src/dev/veteran_globes.ts) are painted as three, so the fourth is
    not shown.
 6. **The Pack Collar**: the second companion is the next in the same list after his pick. It wants a way to pick, in town.
+   (BUILT, 12 Nov, his picks “Pick it on the collar” and “No, one of the other two (Recommended)”: on the collar's card in
+   town; branch build/pack-collar-picker, docs/mockups/pack_collar/README.md.)
 7. **Names** are his placeholders.
 
 ## What was taken as read

@@ -33,7 +33,7 @@ Each of these is yours to change.
 - **The King's Knot:** the borrowed word sits beside your own, even where it is a second damage word.
 - **The Rainwalker with the Hail talent:** the rain goes with her. Hail's longer, wider rain still counts; its chasing an enemy does not.
 - **The Unsigned Pact:** the demon never takes your last 10% of life, and a tap on him sends it away.
-- **The Pack Collar:** the second companion is the next in the same list after your pick. It needs a way to pick, in town.
+- **The Pack Collar:** you pick its companion on the collar's card, in town, and never the animal she already has (your picks, 12 Nov). Until picked, the next in the list after hers. With both companion talents, from either list; with none, the hunting list.
 - **Ordinary stats:** two on most. None on the five your doc marks “Nothing else on it”. One on Broken Shackles, as you said: movement speed. Each rolls as a found affix of the item's level, not as a crafted one, so a unique is always short of a well-crafted yellow in raw stats.
 
 ## The numbers
