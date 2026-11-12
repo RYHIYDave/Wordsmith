@@ -12,7 +12,7 @@
 // the sides the Warrior, the Ranger and the Mage are painted from), so her wrench is on her right shoulder and his blind eye
 // his left whichever way they face.
 //
-// OFF: the game is exactly as it is. On, art/tinkerer_art.ts and art/veteran_art.ts give eight sets where they gave two, and
+// OFF: the game is exactly as it was. On (as it is now: below), art/tinkerer_art.ts and art/veteran_art.ts give eight sets where they gave two, and
 // the game shows the side for the way the hero faces as it does the Warrior's (render/figure.ts, art/sides.ts); for the Brawler
 // his moves, his action lines and his blows go the nearest of EIGHT ways where they went the nearest of four
 // (render/veteran_fx.ts, game/veteran.ts: `brawler` is read there too).
@@ -24,7 +24,12 @@
 /** A side a hero is painted from: art/warrior_up.ts WuSide's own eight, by the same names. */
 export type MoreSide = 'front' | 'toward' | 'frontL' | 'sideL' | 'backL' | 'away' | 'back' | 'side';
 
-/** The switches: each hero's own. OFF until he has seen the pictures and said yes, and the main chat has baked them. */
+/**
+ * The switches: each hero's own. THE TINKERER'S IS ON, live since 25.3.6 (11 Nov 2026), at his “Yes, hand both to main
+ * (Recommended)” of that day and with her bake. THE BRAWLER'S IS OFF, at his word from the phone, 11 Nov 2026, by 22:23, on the test
+ * page that had both on (docs/mockups/eight_sides/BRING_IN.md, its foot): it does not go on until that is mended and he says so.
+ * Off, each is as the game had them: two sides, the other two ways mirrored, the Brawler's moves his four ways.
+ */
 export const EIGHT_MORE = { tinkerer: true, brawler: false };
 
 /** The eight sides, the two the game has always had first (art/sides.ts EIGHT_ORDER's order). */

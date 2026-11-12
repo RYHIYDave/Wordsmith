@@ -1,4 +1,5 @@
-// THE TINKERER AND THE BRAWLER FROM ALL EIGHT SIDES (art/sides_more.ts EIGHT_MORE, off; the Tinkerer chat, 11 Nov 2026;
+// THE TINKERER AND THE BRAWLER FROM ALL EIGHT SIDES (art/sides_more.ts EIGHT_MORE: the Tinkerer's on, live since 25.3.6; the
+// Brawler's off, at his word from the phone, 11 Nov 2026; the Tinkerer chat, 11 Nov 2026;
 // docs/mockups/eight_sides/README.md). Off, the game has each from two sides and the Brawler's moves go four ways, as ever. On,
 // each has eight sets, the two the game had THE VERY SAME PICTURES (nothing of either is repainted: the Brawler is his measure
 // for art), the six more each truly turned and none a mirror; and the Brawler's moves, action lines and blows go eight ways.
@@ -57,6 +58,17 @@ function on<T>(run: () => T): T {
     Object.assign(EIGHT_MORE, was);
   }
 }
+/** With both switches off, as the game was before them, and put back after. */
+function asOff<T>(run: () => T): T {
+  const was = { ...EIGHT_MORE };
+  EIGHT_MORE.tinkerer = false;
+  EIGHT_MORE.brawler = false;
+  try {
+    return run();
+  } finally {
+    Object.assign(EIGHT_MORE, was);
+  }
+}
 /** The middle of what is painted of a frame, from its floor point (game pixels). */
 function middle(s: Sprite): [number, number] {
   const p = paintingOf(s);
@@ -103,33 +115,30 @@ test('the sides, their turns and their ways are the Warrior\'s own', () => {
   });
 });
 
-// (LIVE SINCE 25.3.6, 11 Nov 2026: THE TINKERER'S switch is ON in the game, at his “Yes, hand both to main (Recommended)” and with
-// her bake; THE BRAWLER'S is still off, until the pictures he would hold in play, about 144 MB against 36, are weighed. This file
-// holds each against the game as it was: it notes what the game has, puts both off, and sets each on itself as before.)
-const GAME_HAS = { ...EIGHT_MORE };
-EIGHT_MORE.tinkerer = false;
-EIGHT_MORE.brawler = false;
-
-test('the game has the Tinkerer on and the Brawler off (25.3.6); OFF, each has the game\'s two sides, and the Brawler\'s moves go his four ways', () => {
-  assert.deepEqual(GAME_HAS, { tinkerer: true, brawler: false }, 'the Tinkerer live, the Brawler waiting for his memory to be weighed');
-  assert.deepEqual(EIGHT_MORE, { tinkerer: false, brawler: false });
-  const t = makeTinkererArt();
-  const v = makeVeteranArt();
-  assert.equal(isEight(t), false, 'the Tinkerer: two sides');
-  assert.equal(isEight(v), false, 'the Brawler: two sides');
-  assert.deepEqual(Object.keys(t), ['front', 'back']);
-  assert.deepEqual(Object.keys(v), ['front', 'back']);
-  assert.deepEqual(vetFacing(0.8, 0.6), [1, 0]);
-  assert.deepEqual(vetFacing(-0.6, -0.8), [0, -1]);
-  assert.deepEqual(vetLeft(0, 1), [-1, 0], 'facing down and to the left his picture is a mirror: its left the world\'s other side');
-  assert.deepEqual(vetBlowLeft(0, 1, 0.6, 0.8), [-0.8, 0.6]);
-  const w = vetView(0, 1);
-  assert.equal(w.left, true);
-  assert.equal(w.side, null);
+test('the game has the Tinkerer on and the Brawler off; OFF, each has the game\'s two sides, and the Brawler\'s moves go his four ways', () => {
+  // (THE TINKERER'S ON, live since 25.3.6, 11 Nov 2026, at his “Yes, hand both to main (Recommended)”; THE BRAWLER'S OFF, at his word
+  // from the phone on the test page that had both on, 11 Nov 2026: docs/mockups/eight_sides/BRING_IN.md, its foot. WHEN HE GOES
+  // ON: this line, tests/veteran_art.test.ts's `was` and tests/veteran_rules.test.ts's `eightWas`.)
+  assert.deepEqual(EIGHT_MORE, { tinkerer: true, brawler: false }, 'the Tinkerer live, the Brawler off at his word from the phone');
+  asOff(() => {
+    const t = makeTinkererArt();
+    const v = makeVeteranArt();
+    assert.equal(isEight(t), false, 'the Tinkerer: two sides');
+    assert.equal(isEight(v), false, 'the Brawler: two sides');
+    assert.deepEqual(Object.keys(t), ['front', 'back']);
+    assert.deepEqual(Object.keys(v), ['front', 'back']);
+    assert.deepEqual(vetFacing(0.8, 0.6), [1, 0]);
+    assert.deepEqual(vetFacing(-0.6, -0.8), [0, -1]);
+    assert.deepEqual(vetLeft(0, 1), [-1, 0], 'facing down and to the left his picture is a mirror: its left the world\'s other side');
+    assert.deepEqual(vetBlowLeft(0, 1, 0.6, 0.8), [-0.8, 0.6]);
+    const w = vetView(0, 1);
+    assert.equal(w.left, true);
+    assert.equal(w.side, null);
+  });
 });
 
 test('ON: the Tinkerer from all eight sides; her two the same pictures, her six more truly turned', () => {
-  const off = makeTinkererArt();
+  const off = asOff(() => makeTinkererArt());
   const art = on(() => makeTinkererArt());
   assert.ok(isEight(art), 'eight sides');
   assert.equal(heroSides(art).length, 8);
@@ -181,7 +190,7 @@ test('ON: the Tinkerer from all eight sides; her two the same pictures, her six 
 });
 
 test('ON: the Brawler from all eight sides; his two the same pictures, his six more truly turned', () => {
-  const off = makeVeteranArt();
+  const off = asOff(() => makeVeteranArt());
   const art = on(() => makeVeteranArt());
   assert.ok(isEight(art), 'eight sides');
   const sets = art as unknown as Record<WuSide, AnimSet>;
@@ -257,8 +266,8 @@ test('ON: the Brawler\'s moves face the nearest of eight ways, his left is his l
       }
     }
   });
-  // (and off again, his four ways)
-  assert.deepEqual(vetFacing(0.8, 0.6), [1, 0]);
+  // (and off, his four ways)
+  asOff(() => assert.deepEqual(vetFacing(0.8, 0.6), [1, 0]));
 });
 
 test('ON: the game holds eight sides of each in a dungeon and in town, and two on a class card', () => {
@@ -286,7 +295,7 @@ test('NOTHING OF THE BRAWLER REPAINTED: his two sides and their action lines the
   // (the first, the middle and the last frame of every list; SIDES_MORE=all: every frame, some four minutes.
   // The Tinkerer's two are held by tests/cheap_heroes.test.ts, which pins every frame of hers.)
   for (const state of ['off', 'on'] as const) {
-    const art = state === 'on' ? on(() => makeVeteranArt()) : makeVeteranArt();
+    const art = state === 'on' ? on(() => makeVeteranArt()) : asOff(() => makeVeteranArt());
     let lists = 0;
     for (const [name, pinned] of Object.entries(PINNED.lists)) {
       const [, rest] = name.split('/');
@@ -385,7 +394,7 @@ test('ON, IN A FIGHT: a jab aimed straight down the screen faces straight down, 
       }
       return { fx, fy, moved: [g.hero.x - x0, g.hero.y - y0], hurt: m.maxLife - m.life };
     };
-    const four = fight();
+    const four = asOff(fight);
     assert.ok(Math.abs(four.fx) + Math.abs(four.fy) === 1 && four.fx * four.fy === 0, `off: his picture faces one of his four ways (${four.fx}, ${four.fy})`);
     assert.ok(four.hurt > 0, 'off: his jab lands, as ever');
     const eight = on(fight);

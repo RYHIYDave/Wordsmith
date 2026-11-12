@@ -1,5 +1,9 @@
 # THE TINKERER AND THE BRAWLER FROM ALL EIGHT SIDES (WITH HIS YES; NOT IN THE GAME UNTIL THE MAIN CHAT PUTS THEM THERE)
 
+**BROUGHT IN ON A BRANCH FOR THE MAIN CHAT, 11 Nov 2026: `bring-in/eight-sides` (the switch on for both, the bake made, his
+memory weighed, both played on the baked page). What was done and what is left: `BRING_IN.md` beside this file. What follows
+is the Tinkerer chat's account of the art, as it was written with the switch off.**
+
 Branch `art/tinkerer-brawler-eight`, from `main` at 9d3501b (25.3.3). The Tinkerer chat, 11 Nov 2026, a new chat of his. The
 queue's `draw-tinkerer-and-brawler-eight-sides` (the art chat's item of 9 Nov). Everything is behind one switch,
 `EIGHT_MORE` (`src/art/sides_more.ts`: `tinkerer` and `brawler`, each its own), OFF: with it off the game is exactly as it is.

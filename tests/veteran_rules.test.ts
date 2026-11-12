@@ -16,6 +16,7 @@ import type { Controls, Monster } from '../src/game/state';
 import { BRAWLER } from '../src/game/brawler';
 import { VETERAN, VET_MOVES, vetMoveFor, vetWalkable } from '../src/game/veteran';
 import type { VetBlowId, VetInput } from '../src/game/veteran';
+import { EIGHT_MORE } from '../src/art/sides_more';
 
 const DT = 1 / 60;
 type Inner = { rng: RNG; waveT: number; spawn: (k: string, x: number, y: number, pack: number, rank: number, boss: boolean, rng: RNG) => Monster; wakeUp: (m: Monster) => void };
@@ -352,16 +353,25 @@ test('25.0.1: a swipe with his jump ready breaks a locked combo and he jumps out
   }
 }));
 
-test('25.0.1: each blow goes straight at what it was aimed at, though his picture faces the nearest of his four ways', () => withVet(() => {
-  // (an enemy forty degrees off the nearest of his ways, a tile and a half off: struck)
-  for (const deg of [-40, -25, 25, 40]) {
-    const g = room();
-    const a = (deg * Math.PI) / 180;
-    const m = dummy(g, 1.5 * Math.cos(a), 1.5 * Math.sin(a));
-    presses(g, 't', m.x, m.y, 1.0);
-    assert.ok(hurt(m) > 0, `${deg} degrees off: the jab lands`);
-    const mv = g.hero.vet!;
-    void mv;
+test('25.0.1: each blow goes straight at what it was aimed at, though his picture faces the nearest of his eight ways (of his four, his eight sides off)', () => withVet(() => {
+  // (an enemy off the nearest of his ways, a tile and a half off: struck. From eight sides, art/sides_more.ts EIGHT_MORE.brawler,
+  // his picture is at most 22.5 degrees off it; with that off, as the game has him at his word from the phone, 11 Nov 2026, of
+  // his four ways, at most 45. WHEN HE GOES ON: this line, tests/sides_more.test.ts test 2 and tests/veteran_art.test.ts's `was`.)
+  const eightWas = EIGHT_MORE.brawler;
+  assert.equal(eightWas, false, 'his eight sides are off in the game');
+  try {
+    for (const eight of [true, false]) {
+      EIGHT_MORE.brawler = eight;
+      for (const deg of [-40, -25, -20, 20, 25, 40]) {
+        const g = room();
+        const a = (deg * Math.PI) / 180;
+        const m = dummy(g, 1.5 * Math.cos(a), 1.5 * Math.sin(a));
+        presses(g, 't', m.x, m.y, 1.0);
+        assert.ok(hurt(m) > 0, `${eight ? 'eight ways' : 'four ways'}, ${deg} degrees off: the jab lands`);
+      }
+    }
+  } finally {
+    EIGHT_MORE.brawler = eightWas;
   }
   // (the second and third of a combo at where their enemy is now, not the way he happened to face)
   const g = room();
