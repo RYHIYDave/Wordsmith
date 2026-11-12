@@ -55,10 +55,10 @@ import { CRYPT_LAYOUT, CRYPT_LITTER } from './game/dungeon';
 import { makeTownProps } from './art/town';
 import { CITY } from './art/hub2';
 import { isCamp } from './game/camp';
-import { townSprite } from './art/townscene';
+import { isTownsperson, townSprite } from './art/townscene';
 import { makeTownsfolk } from './art/townsfolk';
 import { SMITH3 } from './art/smith3';
-import { TOWNSFOLK3, TOWNSFOLK3_HEAVY } from './art/townsfolk3';
+import { TOWNSFOLK3, TOWNSFOLK3_FILES, TOWNSFOLK3_HEAVY, folkLists, smithDark3, townsfolk3Shown } from './art/townsfolk3';
 import { MYSTIC_HEAD } from './dev/sculpt_townsfolk';
 import { POWER, QUEST3, makeStoneArt } from './art/quest3';
 import { makeTitleArt } from './art/title';
@@ -123,6 +123,7 @@ import { Fx, WORD_HUE, wx, wy } from './render/fx';
 import { NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
 import { BakedHeroes } from './render/baked';
+import { BakedTownsfolk, TOWNSFOLK_BAKED } from './render/townsfolk_baked';
 import { QUESTS15 } from './game/quests15';
 import { TOPS_CACHE } from './render/tops_cache';
 import type { Art } from './render/render';
@@ -270,6 +271,9 @@ const withInventory = (open: string): boolean => open === 'inv' || open === 'alt
 function start(carried: unknown, hot: HotHook | undefined): void {
   const scr = createScreen();
   scr.canvas.style.cursor = 'crosshair';
+  // (THE TOWN'S PEOPLE SCULPTED, art/townsfolk3.ts: they are the town's people where their frames baked to files are to be had,
+  // which is known before they are made: render/townsfolk_baked.ts)
+  TOWNSFOLK3_FILES.had = BakedTownsfolk.toBeHad();
   const art: Art = {
     ground: makeGroundArt(),
     props: makeDungeonProps(),
@@ -355,6 +359,33 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // (THE HEROES BAKED, render/baked.ts: their pictures painted when the game was built, beside this page, taken in when a hero is
   // first asked for, in place of the worker painting them; where there are none, as before. His pick, 6 Nov 2026: “Inside the game file”)
   painter.baked = art.heroes.give ? BakedHeroes.make(() => art.heroes, (cls, place, v, l, i, s, vet) => !!art.heroes.give?.(cls, place, v, l, i, s, vet), VETERAN.on) : null;
+  // (THE TOWN'S PEOPLE BAKED, render/townsfolk_baked.ts: the sculpted four's pictures, painted when the game was built, beside
+  // this page; taken in as a place with them in it is come into and let go of as it is left (placeFrame, loadingFrame). Where they
+  // will not come, the town's people are as they were.)
+  const bakedFolk = BakedTownsfolk.make(() => folkLists(art.folk, smithDark3()));
+  if (bakedFolk) {
+    bakedFolk.onFail = () => {
+      TOWNSFOLK3_FILES.had = false;
+      art.folk = makeTownsfolk();
+    };
+  }
+  /** Does this place have the town's people in it (the town, the castle's hall; the camp has people of its own)? Asked once of each place. */
+  let folkAsked: { level: Level; has: boolean } | null = null;
+  const hasFolk = (L: Level): boolean => {
+    if (!folkAsked || folkAsked.level !== L) folkAsked = { level: L, has: L.town && L.props.some((p) => isTownsperson(p.kind)) };
+    return folkAsked.has;
+  };
+  /**
+   * THE TOWN'S PEOPLE'S PICTURES FOR THIS PLACE: asked for where they stand, let go of where they do not (they are some 30 MB in
+   * hand). True while they are still coming (the loading screen waits for them).
+   */
+  const folkPictures = (g: Game): boolean => {
+    const b = bakedFolk;
+    if (!b) return false;
+    if (hasFolk(g.level) && townsfolk3Shown() && TOWNSFOLK3_HEAVY.on) return b.take() && !b.settled();
+    if (TOWNSFOLK_BAKED.letGo) b.letGo();
+    return false;
+  };
   // (the worker is started at once: the hero's pictures are wanted from the first moment)
   painter.warmGround();
   /** The place whose pictures the painter has been asked for (a level, or null: none, the starting screen). */
@@ -1737,6 +1768,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
    * it is reached; the High City's camp, the castle's hall; and the painter set to the new place, its films asked for.
    */
   const placeFrame = (g: Game): void => {
+    // (THE TOWN'S PEOPLE BAKED: their pictures asked for where they stand, let go of where they do not)
+    folkPictures(g);
     // (THE CRYPT, behind CRYPT: this floor's pictures, made the first time it is reached)
     // (the practice room is no floor of the Crypt: it keeps the vault's stone, as it always had)
     // (THE FIRST FIVE FLOORS: the fifth floor the Fleshmancer's lair, art/floors.ts)
@@ -1875,6 +1908,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const grp = b.group(g.hero.cls, place, g.hero.cls === 'brawler' && VETERAN.on);
       waiting = !!grp && !b.settled(grp);
     }
+    // (and the town's people's, where they stand: render/townsfolk_baked.ts; a place without them lets them go)
+    if (folkPictures(g)) waiting = true;
     // (the screen up first, then, while his pictures come, the level's own made: the castle hall's, the stairs')
     if (l.frames === 2) {
       // (the new place's own pictures first: its floor's ground, pieces and gates; the painter set to it)
@@ -2520,6 +2555,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const dbg = {
     /** THE HEROES BAKED (render/baked.ts): what has been taken in from the bake, and what failed (null: no bake on this page). */
     baked: () => (painter.baked ? { ...painter.baked.stats } : null),
+    /**
+     * THE TOWN'S PEOPLE BAKED (render/townsfolk_baked.ts): what has been taken in from their files and what failed (null: none
+     * to be had on this page); whether the sculpted four are the town's people here; and the switches (`on`, `letGo`).
+     */
+    bakedFolk: () => (bakedFolk ? { ...bakedFolk.stats, done: bakedFolk.done(), settled: bakedFolk.settled(), shown: townsfolk3Shown() } : null),
+    townsfolkBaked: TOWNSFOLK_BAKED,
     /** THE QUEST LINE OF FLOORS 1 TO 5 (game/quests15.ts QUESTS15): off until his yes in play; its pictures and playtests switch it on (`quests15.on`). */
     quests15: QUESTS15,
     /** THE RECORDED SOUNDS (engine/audio.ts): how many have come, are coming, failed; the title theme playing. */
@@ -2883,17 +2924,26 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       useComboMends(on);
       art.heroes = makeHeroArt3();
     },
-    /** THE WORDSMITH ON BONES AND HIS RING MADE NEW (art/smith3.ts, SMITH3): a mock-up behind a switch that is off; its pictures switch it on and paint the town's people again. */
-    /** THE TOWN'S FOUR PEOPLE SCULPTED, AT THIRTY A SECOND (art/townsfolk3.ts, TOWNSFOLK3): a mock-up behind a switch that is off; its pictures switch it on and paint the town's people again. */
+    /**
+     * THE TOWN'S FOUR PEOPLE SCULPTED, AT THIRTY A SECOND (art/townsfolk3.ts, TOWNSFOLK3: on since his yes of 11 Nov 2026, wherever
+     * their frames baked to files are to be had). For the pictures and films of them: `on`, the sculpted four or the town's people as
+     * they were; `heavy` off, every frame painted as it is asked for, on any page (no files wanted; slow); on, from the files.
+     */
     townsfolk3: (on: boolean, heavy = true, mysticHead = MYSTIC_HEAD.take) => {
+      // (the files' pictures in hand were given into the lists about to be left: let go first; asked for again by the place if wanted)
+      bakedFolk?.letGo();
+      bakedFolk?.again();
       TOWNSFOLK3.on = on;
       TOWNSFOLK3_HEAVY.on = heavy;
+      TOWNSFOLK3_FILES.had = BakedTownsfolk.toBeHad();
       // (which take of the mystic's head, while he picks: dev/sculpt_townsfolk.ts MYSTIC_HEAD)
       MYSTIC_HEAD.take = mysticHead;
       art.folk = makeTownsfolk();
     },
+    /** THE WORDSMITH ON BONES AND HIS RING MADE NEW (art/smith3.ts, SMITH3): a mock-up behind a switch that is off; its pictures switch it on and paint the town's people again. */
     smith3: (on: boolean) => {
       SMITH3.on = on;
+      bakedFolk?.letGo();
       art.folk = makeTownsfolk();
       art.town = makeTownProps();
       hallTown = art.town;

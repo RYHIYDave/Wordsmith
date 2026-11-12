@@ -4,6 +4,8 @@
 // Also writes dist/artifact.html, the same game as a page fragment for publishing on claude.ai.
 // And the heroes' pictures baked (tools/bake_heroes.mjs, render/baked.ts), in dist/heroes/<mark>/, to be published beside the
 // page as heroes/<mark>/ (--no-bake: none; the game then paints them as it is played, as before).
+// And the town's people baked (tools/bake_townsfolk.mjs, render/townsfolk_baked.ts), in dist/townsfolk/<mark>/, to be published
+// beside the page as townsfolk/<mark>/ (--no-bake or --no-townsfolk: none; the town's people are then as they were).
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -11,6 +13,7 @@ import { RELEASE_DEFINES, ROOT, bundle, fragment, page, write } from './lib.mjs'
 import { bakeFiles, bakeHeroes } from './bake_heroes.mjs';
 import { packSounds } from './sound_packs.mjs';
 import { shipColossus } from './colossus_ship.mjs';
+import { shipTownsfolk } from './bake_townsfolk.mjs';
 
 const dev = process.argv.includes('--dev');
 // (--try colossus: a page that begins at the thing to try, for the owner before it goes live: main.ts __TRY__)
@@ -42,7 +45,9 @@ if (soundFiles.length) {
 // (THE SWAMP COLOSSUS'S PICTURES, tools/colossus_ship.mjs: beside the page in colossus/<mark>/; his fight is on since 25.3.0, so always,
 // but with --no-colossus)
 const colossus = !process.argv.includes('--no-colossus') ? shipColossus() : (fs.rmSync(path.join(ROOT, 'dist', 'colossus'), { recursive: true, force: true }), { mark: '', files: [] });
-const js = await bundle('src/main.ts', { minify: !dev, define: { ...RELEASE_DEFINES, __BUILD__: JSON.stringify(stamp), __DEV__: String(dev), __HERO_BAKE__: JSON.stringify(bake ? bake.mark : ''), __SOUNDS__: JSON.stringify(sounds), __COLOSSUS_BAKE__: JSON.stringify(colossus.mark), ...(tryOf ? { __TRY__: JSON.stringify(tryOf) } : {}) } });
+// (THE TOWN'S PEOPLE BAKED, tools/bake_townsfolk.mjs: beside the page in townsfolk/<mark>/; baked now if their art is not baked yet)
+const townsfolk = process.argv.includes('--no-bake') || process.argv.includes('--no-townsfolk') ? (fs.rmSync(path.join(ROOT, 'dist', 'townsfolk'), { recursive: true, force: true }), { mark: '', files: [] }) : await shipTownsfolk();
+const js = await bundle('src/main.ts', { minify: !dev, define: { ...RELEASE_DEFINES, __BUILD__: JSON.stringify(stamp), __DEV__: String(dev), __HERO_BAKE__: JSON.stringify(bake ? bake.mark : ''), __SOUNDS__: JSON.stringify(sounds), __COLOSSUS_BAKE__: JSON.stringify(colossus.mark), __TOWNSFOLK_BAKE__: JSON.stringify(townsfolk.mark), ...(tryOf ? { __TRY__: JSON.stringify(tryOf) } : {}) } });
 const out = write('Play.html', page(js));
 write('dist/artifact.html', fragment(js));
-console.log(`built ${out} (${(js.length / 1024).toFixed(0)} KB script, ${dev ? 'dev' : 'minified'})${bake ? `, the heroes baked: dist/heroes/${bake.mark}/ (${bakeFiles(bake.mark).length} files)` : ', no bake'}${sounds ? `, the sounds: dist/sounds/${sounds}/ (${soundFiles.length} sounds in ${soundShipped} files)` : ''}${colossus.mark ? `, the Colossus: dist/colossus/${colossus.mark}/ (${colossus.files.length} files)` : ''}`);
+console.log(`built ${out} (${(js.length / 1024).toFixed(0)} KB script, ${dev ? 'dev' : 'minified'})${bake ? `, the heroes baked: dist/heroes/${bake.mark}/ (${bakeFiles(bake.mark).length} files)` : ', no bake'}${sounds ? `, the sounds: dist/sounds/${sounds}/ (${soundFiles.length} sounds in ${soundShipped} files)` : ''}${colossus.mark ? `, the Colossus: dist/colossus/${colossus.mark}/ (${colossus.files.length} files)` : ''}${townsfolk.mark ? `, the townsfolk: dist/townsfolk/${townsfolk.mark}/ (${townsfolk.files.length} files)` : ', no townsfolk baked'}`);

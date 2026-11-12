@@ -1,5 +1,5 @@
 // Tests for THE TOWN'S PEOPLE SCULPTED, AT THIRTY A SECOND (art/townsfolk3.ts, dev/sculpt_townsfolk.ts,
-// dev/townsfolk_moves.ts: a mock-up behind a switch that is off; the townsfolk chat, 11 Nov 2026). The owner, 8 Nov 2026,
+// dev/townsfolk_moves.ts: on since his yes of 11 Nov 2026, their frames from files; the townsfolk chat, 11 Nov 2026). The owner, 8 Nov 2026,
 // 06:25: “And I think the townsfolk need look update and a 30fps makeover”.
 //   run: tsx --test tests/townsfolk3.test.ts
 
@@ -14,7 +14,7 @@ import { solve, standing } from '../src/art/skeleton';
 import type { Bones, Build, Posed, Skeleton, V3 } from '../src/art/skeleton';
 import { SMITH_BODY } from '../src/art/smith3';
 import { FACINGS, makeTownsfolk, townFrame, actAt } from '../src/art/townsfolk';
-import { FACING_TURN3, TOWNSFOLK3, makeTownsfolk3 } from '../src/art/townsfolk3';
+import { FACING_TURN3, TOWNSFOLK3, makeTownsfolk3, townsfolk3Shown } from '../src/art/townsfolk3';
 import {
   ANVIL, ARMOURER_BUILD, MYSTIC_BUILD, STRANGER_BUILD, TOWN_CANVAS, WALL, paintFigure, sculptArmourer, sculptMystic, sculptStranger, sculptWordsmith,
 } from '../src/dev/sculpt_townsfolk';
@@ -63,8 +63,10 @@ const boxOf = (px: Px): { x0: number; y0: number; x1: number; y1: number } => {
   return { x0, y0, x1, y1 };
 };
 
-test('the switch is off: the town\'s people are the ones it has always had', () => {
-  assert.equal(TOWNSFOLK3.on, false);
+test('the switch is on (his yes, 11 Nov 2026); where their files are not to be had, as here, the town\'s people are the ones it has always had', () => {
+  assert.equal(TOWNSFOLK3.on, true);
+  // (their frames come from files beside the game's page, render/townsfolk_baked.ts: none here; tests/townsfolk_baked.test.ts)
+  assert.equal(townsfolk3Shown(), false);
   const folk = makeTownsfolk();
   assert.equal(folk.armourer.fps, undefined, 'the old armourer stands at the town\'s ten a second');
   assert.equal(folk.armourer.act.length, 26);

@@ -60,7 +60,7 @@ import { WARP_FRAMES, WAY_FRAMES, makeWaypointArt } from '../art/crypt_ways';
 import { CITY } from '../art/hub2';
 import { TALK_FPS, TALK_FRAMES, campFolkFrame } from '../art/hub2_folk';
 import { CAMP_DUSK, campFolk, isCamp } from '../game/camp';
-import { columnSprite, folkActAt, folkActLong, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
+import { columnSprite, folkActAt, folkActLong, folkSoundAt, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
 import { FOLK_SOUND, WORLD_SOUNDS } from '../game/world_sounds';
 import type { TownArt } from '../art/townscene';
 import type { Facing } from '../art/townsfolk';
@@ -1376,7 +1376,10 @@ export class Renderer {
     const a = folkActAt(art, kind, t);
     const was = this.folkActWas.get(kind) ?? -1;
     this.folkActWas.set(kind, a);
-    if (a >= 0 && was < 0) this.townSounds.push({ name, x, y });
+    // (heard as what they do now and then begins; or, where they say so, at its moment: the sculpted armourer's as his hammer
+    // lands, the mystic's as the crystal blazes, the stranger's as he flicks the coin: art/townsfolk3.ts)
+    const at = folkSoundAt(art, kind);
+    if (a >= at && was < at) this.townSounds.push({ name, x, y });
     // (the wordsmith drives the rune he wrote into his ring, half way through)
     if (kind === 'wordsmith' && a >= 0) {
       const half = folkActLong(art, kind) / 2;
