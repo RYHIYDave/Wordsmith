@@ -71,8 +71,11 @@ if (what === 'count') {
       frames += l.length;
       if (process.argv[3] === 'paint') {
         for (let i = 0; i < l.length; i += 8) {
-          const s = l[i] as { w: number; h: number };
-          bytes += s.w * s.h * 4 * Math.min(8, l.length - i);
+          // (its picture's own pixels: a hero's are two to a game pixel, Sprite.density)
+          const s = l[i] as { w: number; h: number; density?: number };
+          const pw = s.w * (s.density ?? 1);
+          const ph = s.h * (s.density ?? 1);
+          bytes += pw * ph * 4 * Math.min(8, l.length - i);
           looked++;
         }
       }

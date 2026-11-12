@@ -789,6 +789,151 @@ Asked whether to give it five painted and three mirrored for all its own moves, 
 out, **his pick, by 14:32: “Yes, mirror the three (Recommended)”**. FOR THE MAIN CHAT, when the man has eight: let a figure's
 eight sides be some painted and some mirrors (`art/sides.ts`, `render/figure.ts`), and `art/shadow_art.ts` paint five.
 
+## The man: his eight sides, his longer heavy coat, boots to the knee (`src/art/warlock_up.ts`, `src/art/warlock_up_art.ts`; WARLOCK_UP, off)
+
+The queue chat of 12 Nov (14:39 Eastern), at his word **“Work on the queued items”**: step 4, the last of the queue's item.
+BRANCH `art/warlock-man8`, cut from this branch at 14cc698 (so it holds the Living Shadow exactly as handed to main, and this on
+top). Behind one switch, `WARLOCK_UP` (`src/art/warlock_up.ts`), OFF: off, the game's Warlock is exactly as he is.
+
+WHAT HE ASKED (above, 11 Nov): **“I want the longer cloak as well”**; and of every hero, 6 Nov, **“Paint all 8 (Recommended)”**.
+THE RULE OF 7 NOV (only the look, the legs by the length of the bones and the eight true sides change; how he stands, runs and
+casts stays the game's) is kept: every move of his is the game's own keys.
+
+FROM THE 7 NOV STILL (`art/warlock-up` 87bc4dd), KEPT: his eight sides truly painted (his own sculpture turned under the
+game's camera, `art/warrior_up.ts` WU_SPIN: his demon arm, its pauldron and fire on his left and his book at his right hip from
+every side; the three sides that face left laid with his floor point 98 across his canvas); his coat, standing, hung as a heavy
+coat (one sheet of his black wool in folds, ragged at the hem, its red lining, piped in red down the front opening, split up the
+back; `heavyCoat`); his boots real boots to the knee in the game's own brown hide worn dark, a turned cuff, a heel
+(`realBoots`). Running, his coat flies open in panels, the game's own. OUT: its wider stance (WL_FEET, WL_STAND) and its re-posed
+run (WL_RUN).
+
+MADE NEW HERE:
+- HIS LEGS IN HIS BONES (`WL_UP_BODY`), as the Ranger's and the Mage's: his knee joint raised 0.85 of a unit (four tenths of a game
+  pixel), the thigh shorter and the shin longer by as much, the whole leg as long; standing straight his shin 1.3 times his
+  thigh (the game's 1.16). His hips,
+  feet, hands and head are where the game has them at every thirtieth of a second of every move (a test holds them to a
+  millionth of a unit); only where his knees bend moves (1.6 units at most).
+- THE OPENING DOWN HIS FRONT AND THE VENT UP HIS BACK before and behind him, each drawn round toward the leg that comes through it
+  by a third of the way, 25 degrees at most. The 7 Nov way put them where his ankles were, over its long stance; on the game's own
+  stance his feet are side by side, and that put the opening at his left side and the vent at his right.
+- THE VENT UP HIS BACK HANGS CLOSED, a seam piped in red from a third of the way down to the hem: on the game's own stance his
+  legs are close together, and the 7 Nov vent hung open (21 degrees either side of his back leg) showed as a dark gap down the
+  middle of his back between two halves of his coat: from behind it read as a pair of trousers. A leg that comes back through it
+  pushes the cloth out (below). (His boots show at the opening down his front, and wherever his coat flies open as he runs.)
+- NO LEG THROUGH HIS COAT BETWEEN ITS ROWS: the cloth is laid straight from one row to the next, and a knee or a heel between two
+  rows now pushes both out (the 7 Nov way looked only 2.6 either side of a row: getting up off one knee, his raised heel came
+  through the vent's edge by nearly a game pixel).
+- THE ONE MAN EVERYWHERE HE IS PAINTED: his sculptor (`dev/sculpt_warlock.ts` warlockSculpt) dresses him through
+  `WARLOCK_DRESS` while the switch is on, on whatever bones he is drawn on, so THE CHANGE INTO HIS DEMON (`dev/shadow_change.ts`,
+  `dev/warlock_change.ts`: the man's build is `warlockBody()`) and ITS BURNING OUT (him on one knee getting up,
+  `dev/shadow_fx.ts`) show him brought up too. His boots are made in the game's boots' own place among his materials, so the
+  change tears them away when and as it tore his boots (`dev/warlock_change.ts` tearsAt goes by a material's place); his coat's
+  cloth is his coat's material, torn away as his coat was.
+- EVERY LIST AT 30 A SECOND (`art/warlock_up_art.ts` makeWarlockUpArt, the game's shape, from all eight sides):
+
+| list | brought up | the game's man today |
+|---|---|---|
+| idle | his stand, 198 pictures at 30 (6.6 s); blazing with his pact full, the same | 66 at 10 |
+| walk | his run, gripping, 26 at 60; blazing, the same | the same, two sides |
+| attack, heavy | the Hellfire Bolt and the Curse, the game's own at 30, their blows where the game's land | the same, two sides |
+| leap, land | the smoke step, the game's own | the same, two sides |
+| reel, lurch, fall | struck, struck from behind, his fall, at 30 | the same, two sides |
+| ready (his card, from in front) | his arm blazing up, at 30 | the same |
+| change (a dungeon) | into the Living Shadow while LIVING_SHADOW is on, from his side, 106 at 30 (`art/shadow_art.ts` shadowChangeClipOf); into the game's demon while it is off, from his side, 106 at 30 | 48 pictures over its 3.5 s, two sides |
+
+  THE COUNT (`npx tsx tools/warlock_up_numbers.ts count`, every place and blazing or not, a list the same in two places once):
+  as he is now, 2 sides, 24 lists, 1,006 frames; brought up, 8 sides, 96 lists, 6,136 frames, about 142.5 MB decoded at the game's grain
+  (as he is now about 27.9 MB; `count paint` paints a frame in every eight). OF IT, THE CHANGE FROM EIGHT SIDES IS 66.3 MB (848 frames,
+  the Living Shadow roaring at the end of it, wings out), his stand and his stand blazing 22.9 MB each, the rest 30 MB. Each frame takes about
+  a tenth of a second to paint here: TOO HEAVY TO PAINT IN PLAY, so he comes in with the bake, as the Mage did.
+
+### His legs (knee to floor over hip to knee on the screen, the least of either leg whose shin is seen, every frame at 30 a second)
+
+`npx tsx tools/warlock_up_numbers.ts legs`:
+
+| | front | toward | frontL | sideL | backL | away | back | side |
+| his breathing (0 to 1.6 s), the game's bones | 0.92 | 0.82 | 0.94 | 1.09 | 1.29 | 1.43 | 1.26 | 1.10 |
+| his whole stand (the spasm and the fold among it), the game's bones | 0.80 | 0.58 | 0.86 | 1.05 | 1.29 | 1.28 | 1.21 | 1.10 |
+| his breathing (0 to 1.6 s), his bones now | 1.04 | 0.92 | 1.05 | 1.22 | 1.45 | 1.61 | 1.42 | 1.23 |
+| his whole stand (the spasm and the fold among it), his bones now | 0.91 | 0.67 | 0.95 | 1.18 | 1.45 | 1.43 | 1.36 | 1.23 |
+
+REPORTED, NOT MENDED (the rule of 7 Nov): from toward the camera and from in front his shins still read shorter than his thighs
+in his stand (0.92 and 1.04 breathing; 0.67 and 0.91 as the pain folds him over): the game's own crouch, his knees bent toward
+the camera, each shin seen end on, as the Mage's (0.69) and the Ranger's (0.51). Standing, his coat hides his legs from there
+but for the opening down its front. Changing it is a re-pose, his to ask for.
+
+REPORTED, NOT MENDED: in his run, the thigh of his quick foot comes to 56.5 degrees from hanging at the most
+(`npx tsx tools/warlock_up_numbers.ts run`): the game's own run on the game's bones comes to 53.8, and his shorter thigh, its
+knee raised, comes up a little more. The prance check fails past 50 on both. The run is the game's (the rule of 7 Nov).
+
+### In play on floor 11, beside the Brawler (a test page with WARLOCK_UP and LIVING_SHADOW on; SHOWN HIM AS A FILM AND PICTURES)
+
+A page of the game with both switches on, in the page and its side painter alike (`tools/warlock_up_page.mjs`, as
+`tools/shadow_page.mjs`; the source not touched; no bake beside it), and the same page with WARLOCK_UP off for the before. On
+it the Warlock on floor 11's ground (the Gate Ward, the Crier's Square, 40, 57), by the game's own rules, his controls put in as a
+player's would be (`tools/scenarios/warlock_up_look.mjs`): standing; turned through his eight sides; running down, left and up
+and stopping; his bolt down-left and up; his curse; the smoke step; changing into the Living Shadow facing straight down.
+
+- `pictures/warlock_man_now_and_brought_up.mp4`: THE FILM. As he is now beside brought up, the same moments, on floor 11's Crier's Square:
+  he stands; turns through his eight sides; runs straight down, left and up and stops; his bolt down-left and up; his curse; the
+  smoke step; and, facing straight down, changes into the Living Shadow. 23.9 s at 30 a second, 1440 x 684; the frames are the
+  game's own, a picture every thirtieth of a second of the game's time, closer on him while he is a man (a share 0.65 of the
+  picture round him), the whole picture for the change.
+- `pictures/warlock_man_measure.png`: THE MEASURE. The Brawler, the Warlock now and brought up, each on the same spot of the
+  Gate Ward's ground at the game's size, eight screen pixels to a game pixel (1720 x 748).
+- `pictures/warlock_man_eight_sides.png`: brought up, standing in the game facing each of the eight ways (2190 x 1050).
+
+Made with:
+```
+node tools/warlock_up_page.mjs dist/warlock_up_on.html on
+node tools/warlock_up_page.mjs dist/warlock_up_off.html off
+MODE=film CLIP=170x130 UP=40 OUT=shots/wup/film_up node tools/playtest.mjs --file dist/warlock_up_on.html --touch --size 1126x520 --dpr 3 --scenario tools/scenarios/warlock_up_look.mjs
+   (the same with OUT=shots/wup/film_now on dist/warlock_up_off.html)
+python3 tools/warlock_man_film.py film shots/wup/film_now_frames shots/wup/film_up_frames <out.mp4>
+CLS=brawler|warlock MODE=still NAME=... OUT=shots/wup/m CLIP=70x86 UP=26 node tools/playtest.mjs --file ... --dpr 4 ...   (then: film.py measure)
+MODE=sides NAME=on OUT=shots/wup/s CLIP=90x80 UP=26 node tools/playtest.mjs --file dist/warlock_up_on.html ... --dpr 3 ...  (then: film.py sides)
+```
+Every move was also looked at from every side outside the game, as sheets: `npx tsx tools/warlock_man_pics.ts <dir> <moves> <moments>`
+and `python3 tools/warlock_man_film.py sheet <dir> <out.png>`.
+
+SEEN IN IT, AND TOLD HIM:
+- THE DEMON STILL HAS ITS TWO SIDES (the Living Shadow as handed to main: from in front and from behind, mirrored for the other two
+  ways). So when he changes facing one of his four new ways (straight down, up, left or right), the change into it is from his own
+  side, and at its end the demon is shown from the nearest of its four ways: it snaps an eighth of a turn. The same the other way,
+  as it burns out and he gets up. It goes when the demon has its sides: his pick of 12 Nov, five painted and three mirrored (the
+  section above), the main chat's.
+
+### For the main chat: how he comes in (once he says yes)
+
+1. Bring in this branch (it holds `art/warlock-up2` at 14cc698, the Living Shadow, whole: bring that in first or this in its
+   place). Of the game's files: `src/art/warlock_art.ts` (two imports, one line in makeWarlockArt), `src/dev/sculpt_warlock.ts`
+   (WARLOCK_DRESS, warlockBody: off, nothing changes), `src/dev/shadow_change.ts` and `src/dev/warlock_change.ts` (the man's build
+   is warlockBody()), `src/art/shadow_art.ts` (the change's clip from a turn).
+2. `src/art/warlock_up.ts`: `WARLOCK_UP = { on: true }`. `tests/warlock_up.test.ts` test 1 asserts it off: change it then.
+3. THE BAKE: the heroes' mark changes (he adds some 5,100 frames, about 115 MB decoded more than today, half of it the change); his frames take about a tenth of a second each to
+   paint. Nothing new is asked of the game, the side painter or the bake: a hero from eight sides is one they know. With his
+   moves he may want the Brawler's packing (`build/brawler-packed`): 142.5 MB decoded is as much as the Brawler from eight sides
+   held before his moves were packed (`docs/mockups/eight_sides/PACKED.md`), and the change, played once each time he changes,
+   is the first thing to keep packed. Weigh it there before the switch goes on; he was told so.
+4. THE DEMON'S SIDES (his pick, 12 Nov: five painted, three mirrored): until then the snap above.
+5. FLOOR 18'S REFLECTION of him (`wire-floor-18-new-reflections`) is made from his painter: with WARLOCK_DRESS on it shows his new
+   coat and boots too; from eight sides it follows his painter, as that item says.
+6. Play him on the built, baked page: all eight ways, the bolt, the curse, the step, struck, his fall, the change and burning out,
+   town and his card. Nothing in the rules changed, so no timing, sound or spell start needs touching.
+
+### The checks of the man
+
+- `tsc --noEmit -p tsconfig.json`: clean.
+- `tests/warlock_up.test.ts` (new), 5 of 5: (1) the switch off; only `art/warlock_art.ts` takes the new files in; off, the man as
+  the game has him (two sides, his stand at ten, the change's 48), his sculptor dressing nothing; (2) his moves the game's own, at
+  every frame of every move (his hips, feet, hands, head where the game's are; only his knees move, 1.6 units at most); (3) his
+  lists from eight sides at thirty a second, his spells' blows where the game's land, the change from his side into the Living
+  Shadow or the game's demon as LIVING_SHADOW says, his card's making ready, one list where blazing changes nothing; (4) a moment
+  of every move from every side crisp, his cyan edge, nothing cut off; his boots in the game's boots' place; (5) no leg through
+  his coat where it hangs, every move he stands in, every sixth of a second.
+- UNIT_LINE
+- The film's playtest and the stills' finished clean (no errors).
+
 ## The checks so far
 
 - `tsc --noEmit -p tsconfig.json`: nothing from this branch. (One line from `tests/relief.test.ts`, line 378, under the
