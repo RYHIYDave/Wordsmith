@@ -79,7 +79,7 @@ put by; an effect's list made a frame a step is the list made whole. Unit `--onl
 stairwell_open, act2_walls, act2_moments and the core, on 7a7efa9258: 35 files, 31 passed, 4 failed: castle_hall, chapel, crypt
 and tomb, each on its colour check (its floor and walls “brighter than the darkest word”) and crypt on its dungeons' mark “as at
 aaa8310”; THE SAME FOUR FAIL THE SAME WAY ON `main` e1b3274 (run here alone): not of this build. Then, the art set up a place at a
-time: baked and load_slice again (below, the last commit). Playtests on a build of the
+time: `--only` load_slice, baked and the core on 18898db141: 24 files, 24 passed. Playtests on a build of the
 branch with the live site's heroes' and townsfolk's bakes, served, a phone's screen: `loading_frames.mjs` into town (the
 Brawler, the Tinkerer, the Warlock) and floors 1, 4, 6 and 11, finished clean; the screens after it looked at against the same
 before; `floor_loading.mjs` (into floor 1, down to floor 2), `guide.mjs` (a new player's first dungeon, 8 steps), `baked.mjs`
