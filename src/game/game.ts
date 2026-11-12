@@ -94,7 +94,7 @@ import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 import { leadPoint } from './lock';
 import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_SOUNDS, HURT_BIG, VOICE, bossSound } from './sound_families';
 import { BOSS_CALLS, bossCall } from './boss_calls';
-import { UNIQUES, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
+import { UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
 import type { BendCtx, UniqueDef } from './uniques';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
@@ -14545,6 +14545,38 @@ export class Game {
     if (!it || free < 0) return false;
     this.hero.bag[free] = it;
     return true;
+  }
+
+  /**
+   * (THE UNIQUE ITEMS' TEST PAGE ONLY: main.ts, `try=uniques`. His pick on their numbers, 11 Nov 2026: “Start with these, tune
+   * in play (Recommended)”.) Every unique this hero could find, made for the floor he stands on (no higher than his level, so
+   * he can wear them, as the level select's gear is) and put where he can take it: the pool's (the ten for everyone, his
+   * weapon's three, his own two) in his bag, the bosses' own and the final boss's two in his stash in town. Rolled by dice of
+   * their own, so the floor is laid as it would be without them. How many went where. Nothing with the switch off.
+   */
+  giftUniques(): { bag: number; stash: number } {
+    const h = this.hero;
+    const out = { bag: 0, stash: 0 };
+    if (!UNIQUES.on) return out;
+    const ilvl = Math.max(1, Math.min(this.depth, h.level));
+    const rng = new RNG((this.seed ^ 0x51ed270b) >>> 0);
+    for (const d of poolFor(h.cls)) {
+      const free = h.bag.indexOf(null);
+      const it = free >= 0 ? makeUnique(d.id, ilvl, rng) : null;
+      if (!it) continue;
+      h.bag[free] = it;
+      out.bag++;
+    }
+    for (const d of UNIQUE_DEFS) {
+      if (d.from !== 'boss' && d.from !== 'final') continue;
+      const free = this.meta.stash.indexOf(null);
+      const it = free >= 0 ? makeUnique(d.id, ilvl, rng) : null;
+      if (!it) continue;
+      this.meta.stash[free] = it;
+      out.stash++;
+    }
+    this.msg(this.practice ? 'Test page. Your unique items are in your bag.' : "Test page. Your unique items are in your bag; the bosses' own are in the stash in town.", MSG.word);
+    return out;
   }
 
   /** THE SKILL TREES: whether this hero has taken talent `id` (never while their switch is off). */

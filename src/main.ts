@@ -167,6 +167,11 @@ declare const __TRY__: string | undefined;
 /** THE TRY-OUT PAGE (tools/build_tryout.mjs): its options offer a seasoned hero, straight to a floor. Absent in every other build. */
 declare const __TRYOUT__: boolean | undefined;
 const TRYOUT = typeof __TRYOUT__ !== 'undefined' && __TRYOUT__ === true;
+/**
+ * THE UNIQUE ITEMS' TEST PAGE (tools/uniques_try_page.mjs, or `#try=uniques`): on only there. With it on the level select's
+ * test hero and the practice room's are handed every unique they could find (Game.giftUniques). Off in the game.
+ */
+const TRY_UNIQUES = { on: false };
 
 /**
  * THE PAINTER (render/painter.ts): this script's own text, as the page holds it, for making the painter's
@@ -716,6 +721,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const g = Game.forPractice(cls, seed ?? ((Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0), hall);
     // (it has a Lexicon of its own, so nothing done there is learned; but the device's choice of limit holds there too)
     g.setLimit(meta.limit);
+    // (THE UNIQUE ITEMS' TEST PAGE ONLY: his uniques in his bag)
+    if (TRY_UNIQUES.on) g.giftUniques();
     begin(g);
   };
 
@@ -827,7 +834,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const floor = titleUi.trial;
       titleUi.trial = undefined;
       titleUi.practice = false;
-      begin(Game.forTrial(cls, (Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0, floor, meta));
+      const tried = Game.forTrial(cls, (Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0, floor, meta);
+      // (THE UNIQUE ITEMS' TEST PAGE ONLY: his uniques in his bag and his stash)
+      if (TRY_UNIQUES.on) tried.giftUniques();
+      begin(tried);
       return;
     }
     if (titleUi.practice && titleUi.trying) {
@@ -3185,6 +3195,17 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   };
   (window as unknown as Record<string, unknown>).__dbg = dbg;
   (window as unknown as Record<string, unknown>).__ready = true;
+
+  // THE UNIQUE ITEMS TRIED (for the owner to play before they go live, and to tune their numbers: his pick of 11 Nov 2026, “Start
+  // with these, tune in play (Recommended)”): `#try=uniques` (or a page built so: tools/uniques_try_page.mjs). For this page only:
+  // UNIQUES on (they drop at the odds as built, the stranger may sell one, each does what it does) and UNIQUE_ART on (each its own
+  // bag picture); and a test hero of the level select, or the practice room's, is handed every unique he could find
+  // (Game.giftUniques). A hero begun the ordinary way finds them only as the game gives them. The game itself is untouched.
+  if ((hash.get('try') ?? (typeof __TRY__ === 'string' ? __TRY__ : '')) === 'uniques') {
+    UNIQUES.on = true;
+    UNIQUE_ART.on = true;
+    TRY_UNIQUES.on = true;
+  }
 
   // THE SWAMP COLOSSUS TRIED (his fight in his own pictures, for the owner to play before it goes live): `#try=colossus` (or a page
   // built so: tools/build.mjs --try colossus) [&hero=mage]
