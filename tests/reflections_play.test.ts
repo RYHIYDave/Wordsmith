@@ -41,16 +41,20 @@ const figOf = (form: number): ActorArt => {
 };
 const one = (form: number): Monster => ({ kind: 'reflection', form, x: 10, y: 10, fx: 1, fy: 0 }) as unknown as Monster;
 const near = (a: number, b: number): boolean => Math.abs(a - b) < 1e-3;
-const on = (fn: () => void): void => {
-  REFLECTIONS_UP.on = true;
+/** The switch set for one test, and put back as it was (it is on in the game since his yes of 12 Nov 2026). */
+const at = (v: boolean, fn: () => void): void => {
+  const was = REFLECTIONS_UP.on;
+  REFLECTIONS_UP.on = v;
   try {
     fn();
   } finally {
-    REFLECTIONS_UP.on = false;
+    REFLECTIONS_UP.on = was;
   }
 };
+const on = (fn: () => void): void => at(true, fn);
+const off = (fn: () => void): void => at(false, fn);
 
-test('1. OFF, AS IT WAS: the first reflections, the forms by class, the two acts, each blow its style\'s at its moment', () => {
+test('1. OFF, AS IT WAS: the first reflections, the forms by class, the two acts, each blow its style\'s at its moment', () => off(() => {
   assert.equal(REFLECTIONS_UP.on, false, 'REFLECTIONS_UP is off');
   for (let form = 0; form < FORMS; form++) {
     const art = figOf(form);
@@ -81,7 +85,7 @@ test('1. OFF, AS IT WAS: the first reflections, the forms by class, the two acts
       if (hold.k === 'lob') assert.deepEqual([hold.burst, hold.speed, hold.after, hold.dmg, hold.near, hold.far], [REFLECT.magic.orb.burst, REFLECT.magic.orb.speed, REFLECT.magic.orb.after, 1.5, 2, REFLECT.magic.far]);
     }
   }
-});
+}));
 
 test('2. ON, EACH FORM ITS HERO AS HE LOOKS NOW: his sides, each blow at his picture\'s moment and as long, as tall as SIZE_UP', () => {
   on(() => {

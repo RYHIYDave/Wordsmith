@@ -36,11 +36,12 @@ import type { Act1Rules } from './types';
 declare const __TRY__: string | undefined;
 /**
  * THE SWITCH for the heroes as they look now (their pictures, art/act1_figs/reflection.ts from art/reflections_up.ts; their
- * blows, `UP`), off until his yes to them in play. (Here, where the rules read it; art/reflections_up.ts hands it on.) ON ONLY IN
- * A PAGE BUILT TO TRY THEM (tools/reflections_try_page.mjs: `__TRY__` 'reflections'), so that the game and its painter's worker,
- * the same script, have it on from the first: it says which pictures a figure is made of, and the two must agree.
+ * blows, `UP`). (Here, where the rules read it; art/reflections_up.ts hands it on.) ON, at his word of 12 Nov 2026 by 15:28
+ * Eastern, shown them in play: “Yes, hand it to main (Recommended)” (docs/mockups/reflections_up/README.md). A constant, so the
+ * game and its painter's worker, the same script, have it on from the first: it says which pictures a figure is made of, and
+ * the two must agree.
  */
-export const REFLECTIONS_UP = { on: typeof __TRY__ === 'string' && __TRY__ === 'reflections' };
+export const REFLECTIONS_UP = { on: true };
 
 /** The hero's class as a reflection's form (its pictures, art/act1_figs/reflection.ts `looks`, and its blows). */
 export const FORM_OF: Readonly<Record<ClassId, number>> = { warrior: 0, ranger: 1, mage: 2, warlock: 3, tinkerer: 4, brawler: 5 } as Readonly<Record<ClassId, number>>;

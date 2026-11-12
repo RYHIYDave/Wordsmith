@@ -79,8 +79,9 @@ import { LOADING_RING, makeLoadingRing } from './art/loading_ring';
 import type { LoadingRing } from './art/loading_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
-import { footstep, heroVoice, initAudio, isMuted, recordedDetail, recordedState, setLoops, setMuffled, setMuted, sfx, sfxNamed, soundHeard, speak, speakBoss, titleMusic, warmAlso, warmNamed, warmRecorded, warmSteps, worldSound } from './engine/audio';
+import { footstep, heroVoice, initAudio, isMuted, levelMusic, musicDetail, recordedDetail, recordedState, setLoops, setMuffled, setMuted, sfx, sfxNamed, soundHeard, speak, speakBoss, titleMusic, warmAlso, warmNamed, warmRecorded, warmSteps, worldSound } from './engine/audio';
 import { OWL_HOOT, RIM_SOUNDS, STEP_EVERY, WORLD_SOUNDS, byNearness, groundOf, hushFloor, loopWants } from './game/world_sounds';
+import { fightMusic, fightWas, musicPlace } from './game/level_music';
 import { MOMENT_VOL, sceneSoundsOf } from './game/scene_sounds';
 import { owlFrameAt } from './art/hall_owl';
 import { CASTLE_HALL, CASTLE_OWL_AT } from './art/castle_hall';
@@ -2243,6 +2244,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
    * ring flaring as the master rune-stone is given; on the Hush floors all of it thin and muffled.
    */
   const worldWas = { level: null as unknown, x: 0, y: 0, step: 0, owl: -1, hoot: 25, given: -1 };
+  /** (ACT 1'S LEVEL MUSIC: how long since a fight was last on, game/level_music.ts) */
+  const musicWas = fightWas();
   const worldFrame = (g: Game, dt: number, paused: boolean): void => {
     const W = worldWas;
     const h = g.hero;
@@ -2336,6 +2339,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     titleMusic(mode === 'title' || !game);
     // (THE WORLD'S SOUNDS: the loops fade away off the title screen)
     if (mode === 'title' || !game) setLoops({});
+    // (ACT 1'S LEVEL MUSIC: none on the title screen, and every place's let go of)
+    if (mode === 'title' || !game) levelMusic(null, false);
     if (mode === 'title' || !game) {
       // (THE PAINTER: no place is being shown: what the last one's pictures took is given back)
       if (paintedFor) {
@@ -2636,6 +2641,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         }
       }
       if (WORLD_SOUNDS.on) worldFrame(g, dt, paused);
+      // (ACT 1'S LEVEL MUSIC, the tenth batch: the place's walk, its fight's music while a fight is on: game/level_music.ts)
+      levelMusic(g.over ? null : musicPlace(g), fightMusic(musicWas, g, paused ? 0 : dt));
       // (THE FIRST FIVE FLOORS: a film's jolts kick the screen, and are heard: render/dress.ts)
       // (THE FLOORS' SCENE SOUNDS, the eighth batch: a moment's own sound, made whole to its film, as its frame 0 is shown; its
       // jolts are in it, so where it is heard the screen is kicked and no blow is made in code on top of it)
@@ -2989,6 +2996,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     sounds: () => recordedState(),
     /** THE SOUNDS IN DETAIL (engine/audio.ts recordedDetail): which have come and failed, the loops going round, the takes played. */
     soundsDetail: () => recordedDetail(),
+    /** ACT 1'S LEVEL MUSIC (engine/audio.ts musicDetail): its place, the walk's and a fight's loudness, the loops started, its files held. */
+    music: () => musicDetail(),
     game: () => game,
     /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
     levelSelect: LEVEL_SELECT,

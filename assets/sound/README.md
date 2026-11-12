@@ -435,3 +435,55 @@ chime” (offered as: no new sound; every unique plays what a boss's unique play
 chime (Recommended)”. So no files for it here. For the main chat: as built (behind UNIQUES), only a boss's own unique plays `rare`
 as it lands (Game.dropBossUnique); a unique of the pool (poolUnique, through rollGear) lands with no sound. To follow his pick,
 play `this.sfx('rare', 0.9)` as any unique lands. The stranger's gamble already plays `rare` as one is bought.
+
+## Tenth batch: Act 1's level music, the town and floors 1 to 5, looped (the sound chat, 12 Nov 2026)
+
+His six songs, made by him in Suno from the sound chat's briefs (the doc "Wordsmith Level Music Briefs"), sent 12 Nov 2026,
+14:51 Eastern: “That’s all the tracks for the first five levels and the town”. Cut into loops and shown on try-out 15
+(Wordsmith Act 1 Music, https://claude.ai/artifact/DBwbacoNiM2Zfw4LmtT7gX), his pick: “All good, hand over (Recommended)”.
+Eleven files, nothing wired in, no name clashes. The game has no level music yet: playing them, and the switch between walk and
+fight, is the main chat's to build (the briefs doc: “The main chat builds the switch between walk and fight”).
+
+### The files: AAC in mp4, 48 kHz stereo, as the title theme (`title.mp4`)
+Each is one loop and then its first 2 s again (a guard, so the decoder's padding at the file's end is never reached). Play each
+as `titleMusic` plays the title: the decoded buffer, `loop = true`, `loopStart = 0`, `loopEnd` = its loop length below (to the
+sample, at 48 kHz). Every join was checked in the browser's own decode of these files, looped: no seam.
+
+| Place | File | Loop length (s) | Fight in at (s) | From his song |
+|---|---|---|---|---|
+| The town | `music_town_walk.mp4` | 36.9299 | | “Prison Town” 0:56 to 1:33 |
+| Floor 1, the Warden's Tomb | `music_f1_walk.mp4` | 21.1096 | | “Warden's Quarters” 0:30 to 0:52 |
+| | `music_f1_fight.mp4` | 34.2715 | 0.822 | 2:38 to 3:12 |
+| Floor 2, the Headsman's Yard | `music_f2_walk.mp4` | 23.9810 | | “Headman's Yard” 0:58 to 1:22 |
+| | `music_f2_fight.mp4` | 27.6495 | 0.011 | 1:48 to 2:16 |
+| Floor 3, the Chained One's Pit | `music_f3_walk.mp4` | 29.4062 | | “Chained One's Furnace” 0:14 to 0:44 |
+| | `music_f3_fight.mp4` | 30.0115 | 0.945 | 0:43 to 1:13 |
+| Floor 4, the Ossuary | `music_f4_walk.mp4` | 29.9445 | | “Ossuary” 0:41 to 1:11 |
+| | `music_f4_fight.mp4` | 35.1143 | 0.006 | 2:36 to 3:12 |
+| Floor 5, the Fleshmancer's Lair | `music_f5_walk.mp4` | 27.9472 | | “Fleshmancer's Temple” 1:03 to 1:31 |
+| | `music_f5_fight.mp4` | 31.4438 | 0.497 | 2:50 to 3:22 |
+
+Loudness (EBU R128): the town -20 LUFS, the walks -19, the fights -17 (2 LU over their walk, so a fight comes in bigger); the
+title theme is -16, played at `TITLE.vol` 0.8. One music volume for all of them, set against the combat sounds on a phone.
+
+### How try-out 15 plays them, which he heard and said yes to
+- THE WALK: on coming onto the floor (or into the town), from 0, faded in over 0.6 s, round for as long as he is there.
+- A FIGHT STARTS: the fight's buffer started at its “Fight in at” point (its first big hit) at full volume at once, and the walk
+  faded to 0 over 0.6 s but kept running, silent.
+- THE FIGHT IS OVER: the fight faded out over 1.5 s and stopped; the walk faded back up over 1.5 s, where it had got to.
+- The town has only a walk. For now each floor's fight is its boss's music too (the briefs doc).
+
+What counts as a fight starting and ending is the main chat's call. My suggestion: it starts when an enemy first sees him, and is
+over a few seconds after the last enemy near him has died or lost him, so the music doesn't flip back and forth in a running
+fight.
+
+### Memory
+Decoded, a loop is about 8 to 14 MB (stereo, 32-bit, 48 kHz); a floor's walk and fight together about 20 to 25 MB. Fetch a
+floor's two as it is entered and let them go as it is left, as the title theme is let go when the title screen closes.
+
+### Made to fit
+Suno's songs drift in tempo a little (up to 3% over a song), so each loop's end was found by matching the music just before it
+with the music just before its start, then aligned to the sample on the waveform; its last 80 ms are crossfaded into the audio just
+before the start. Floor 3's walk is two whole phrases of its machine groove, each ending on the song's own one-second stop; its
+synth break at 1:30 (a held drone and two big hits) is not a groove, so it was not used. On a phone speaker floor 3 loses the
+most (about 9 dB, most of it low synth bass); the rest lose 4 to 6.

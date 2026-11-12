@@ -1365,6 +1365,141 @@ export function titleMusic(on: boolean): void {
 }
 
 // ---------------------------------------------------------------------------------------------
+// ACT 1'S LEVEL MUSIC (the sound chat's tenth batch, 12 Nov 2026: assets/sound/README.md, "Tenth batch"). His own six songs,
+// sent 14:51 Eastern: “That’s all the tracks for the first five levels and the town”; cut into loops and heard on try-out 15, his
+// pick: “All good, hand over (Recommended)”. Played as try-out 15 played them:
+//   THE WALK: on coming onto the floor (or into the town), from its start, faded in over 0.6 s, round for as long as he is there.
+//   A FIGHT STARTS: the fight's loop from its first big hit ("fight in at"), at full at once; the walk faded to nothing over 0.6 s
+//   but kept going, silent.
+//   THE FIGHT IS OVER: the fight faded out over 1.5 s and stopped; the walk faded back up over 1.5 s, where it had got to.
+// The town has only a walk; each floor's fight is its boss's music too, for now. A place's two are fetched as it is entered and
+// let go as it is left (decoded, 20 to 25 MB a floor), as the title theme is. Which place, and whether a fight is on, are the
+// game's (game/level_music.ts); one loudness for them all.
+
+/** A loop of the level music: its file, the loop's length to the sample (it goes round from 0 to there), where a fight comes in. */
+export type MusicLoop = { readonly file: string; readonly loop: number; readonly fightIn?: number };
+/** THE LEVEL MUSIC'S LOUDNESS (one for all of it, against the fights' sounds) and its fades (seconds), as on try-out 15. */
+export const MUSIC = { vol: 0.6, walkIn: 0.6, walkDown: 0.6, fightOut: 1.5, walkBack: 1.5, leave: 0.6 } as const;
+/** Each place's walk and fight (the tenth batch's table: loop lengths and fight-in points from the sound chat, to the sample at 48 kHz). */
+export const MUSIC_PLACES: Readonly<Record<string, { readonly walk: MusicLoop; readonly fight?: MusicLoop }>> = {
+  town: { walk: { file: 'music_town_walk.mp4', loop: 36.9299 } },
+  f1: { walk: { file: 'music_f1_walk.mp4', loop: 21.1096 }, fight: { file: 'music_f1_fight.mp4', loop: 34.2715, fightIn: 0.822 } },
+  f2: { walk: { file: 'music_f2_walk.mp4', loop: 23.981 }, fight: { file: 'music_f2_fight.mp4', loop: 27.6495, fightIn: 0.011 } },
+  f3: { walk: { file: 'music_f3_walk.mp4', loop: 29.4062 }, fight: { file: 'music_f3_fight.mp4', loop: 30.0115, fightIn: 0.945 } },
+  f4: { walk: { file: 'music_f4_walk.mp4', loop: 29.9445 }, fight: { file: 'music_f4_fight.mp4', loop: 35.1143, fightIn: 0.006 } },
+  f5: { walk: { file: 'music_f5_walk.mp4', loop: 27.9472 }, fight: { file: 'music_f5_fight.mp4', loop: 31.4438, fightIn: 0.497 } },
+};
+
+type MusicPlaying = { src: AudioBufferSourceNode; g: GainNode };
+const music = { place: null as string | null, walk: null as MusicPlaying | null, fight: null as MusicPlaying | null, fightOn: false, started: 0 };
+
+function musicStart(c: AudioContext, m: GainNode, t: MusicLoop, at: number, vol: number): MusicPlaying | null {
+  const buf = recorded.get(t.file);
+  if (!buf) return null;
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.loopStart = 0;
+  src.loopEnd = Math.min(t.loop, buf.duration);
+  const g = c.createGain();
+  g.gain.value = vol;
+  src.connect(g);
+  g.connect(m);
+  src.start(c.currentTime + 0.02, Math.max(0, Math.min(at, src.loopEnd - 0.01)));
+  music.started++;
+  return { src, g };
+}
+function musicFade(c: AudioContext, p: MusicPlaying, to: number, over: number): void {
+  const t = c.currentTime;
+  const a = p.g.gain;
+  a.cancelScheduledValues(t);
+  a.setValueAtTime(a.value, t);
+  a.linearRampToValueAtTime(to, t + over);
+}
+function musicStop(c: AudioContext, p: MusicPlaying, over: number): void {
+  try {
+    musicFade(c, p, 0, over);
+    p.src.stop(c.currentTime + over + 0.05);
+  } catch {
+    // already stopped
+  }
+  p.src.onended = () => {
+    try {
+      p.src.disconnect();
+      p.g.disconnect();
+    } catch {
+      // already gone
+    }
+  };
+}
+
+/**
+ * THE LEVEL MUSIC, each frame: `place` a key of MUSIC_PLACES (null: none, as on the title screen or where there is none yet),
+ * `fight` whether a fight is on there (game/level_music.ts says both).
+ */
+export function levelMusic(place: string | null, fight: boolean): void {
+  try {
+    const c = ctx;
+    const m = master;
+    if (!c || !m) return;
+    const P = place ? MUSIC_PLACES[place] : undefined;
+    const here = P ? place : null;
+    if (here !== music.place) {
+      if (music.walk) musicStop(c, music.walk, MUSIC.leave);
+      if (music.fight) musicStop(c, music.fight, MUSIC.leave);
+      music.walk = null;
+      music.fight = null;
+      music.fightOn = false;
+      music.place = here;
+    }
+    // (every other place's music let go of, and what comes of a fetch once its place has been left: pumpFetches keeps
+    // only what is still waited for)
+    for (const k in MUSIC_PLACES) {
+      if (k === here) continue;
+      const q = MUSIC_PLACES[k];
+      if (recorded.has(q.walk.file)) recorded.delete(q.walk.file);
+      if (q.fight && recorded.has(q.fight.file)) recorded.delete(q.fight.file);
+    }
+    if (!P || c.state !== 'running' || !RECORDED.on) return;
+    fetchRecorded(c, P.walk.file);
+    if (P.fight) fetchRecorded(c, P.fight.file, false);
+    if (!music.walk) {
+      const w = musicStart(c, m, P.walk, 0, 0);
+      if (w) {
+        music.walk = w;
+        musicFade(c, w, music.fightOn ? 0 : MUSIC.vol, MUSIC.walkIn);
+      }
+    }
+    const F = fight ? P.fight : undefined;
+    if (F && !music.fightOn) {
+      const f = musicStart(c, m, F, F.fightIn ?? 0, MUSIC.vol);
+      if (f) {
+        music.fight = f;
+        music.fightOn = true;
+        if (music.walk) musicFade(c, music.walk, 0, MUSIC.walkDown);
+      }
+    } else if (!F && music.fightOn) {
+      if (music.fight) musicStop(c, music.fight, MUSIC.fightOut);
+      music.fight = null;
+      music.fightOn = false;
+      if (music.walk) musicFade(c, music.walk, MUSIC.vol, MUSIC.walkBack);
+    }
+  } catch (err) {
+    report('level music', err);
+  }
+}
+
+/** (for the playtests) the level music: its place, whether the walk and a fight are going and how loud, how many loops started, which of its files are held. */
+export function musicDetail(): { place: string | null; walk: number | null; fight: number | null; started: number; held: string[] } {
+  const held: string[] = [];
+  for (const k in MUSIC_PLACES) {
+    const q = MUSIC_PLACES[k];
+    for (const t of [q.walk, q.fight]) if (t && recorded.get(t.file)) held.push(t.file);
+  }
+  return { place: music.place, walk: music.walk ? music.walk.g.gain.value : null, fight: music.fight ? music.fight.g.gain.value : null, started: music.started, held };
+}
+
+// ---------------------------------------------------------------------------------------------
 // Voices
 //
 // There is no recorded speech. When a hero says a line, it is heard as a mumble in that hero's

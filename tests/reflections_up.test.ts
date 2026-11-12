@@ -97,10 +97,10 @@ function moments(h: HeroGlass): [Track, number][] {
 /** From in front, and from one other side (behind, or a side of the eight between). */
 const twoSides = (h: HeroGlass): string[] => ['front', h.sides.includes('away') ? 'away' : 'back'];
 
-test("1. the switch is off, and of the game only floor 18's own figure imports it", () => {
-  assert.equal(REFLECTIONS_UP.on, false);
-  // (brought into the game behind its switch, off, by the queue's wire-floor-18-new-reflections, 12 Nov 2026: floor 18's figure,
-  // art/act1_figs/reflection.ts, takes it with the switch on)
+test("1. the switch is on (his yes of 12 Nov 2026), and of the game only floor 18's own figure imports it", () => {
+  assert.equal(REFLECTIONS_UP.on, true);
+  // (brought into the game behind its switch by the queue's wire-floor-18-new-reflections, 12 Nov 2026, and switched on at his
+  // “Yes, hand it to main (Recommended)”: floor 18's figure, art/act1_figs/reflection.ts, takes it with the switch on)
   const root = path.join('src');
   const users: string[] = [];
   for (const f of fs.readdirSync(root, { recursive: true })) {
