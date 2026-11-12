@@ -423,21 +423,36 @@ export interface Who {
   rest: Bones;
 }
 /**
- * A move's keys (one for every `fps`th of a second) with its elbows steadied (steadyElbows), each of six ways, keeping
+ * A move's keys (one for every `fps`th of a second) with its elbows steadied (STEADY ELBOWS, below), each of six ways, keeping
  * whichever leaves the elbows smoothest: the most any one changes its pace or way from one frame to the next, at thirty a
  * second, the least. Every other number of each pose is kept as it is.
  */
 export function steadied(keys: Key3[], fps: number, quiet: [number, number][] = [], who: Who = { b: BRAWLER_B, rest: GUARD }): Key3[] {
+  const go = steadiedInSlices(keys, fps, quiet, who);
+  for (;;) {
+    const r = go.next();
+    if (r.done) return r.value;
+  }
+}
+
+/**
+ * The same, worked out A SLICE AT A TIME (the queue's make-tinkerers-art-set-up-in-parts): it stops after each key's elbow is
+ * steadied, and after each way's smoothness is judged, so that what asks for it can let a frame in between (the Tinkerer's held
+ * move: some 2.7 s of it in one go, art/tinkerer_art.ts). The same numbers in the same order as steadied: what it gives back at
+ * its end is the very keys steadied gives.
+ */
+export function* steadiedInSlices(keys: Key3[], fps: number, quiet: [number, number][] = [], who: Who = { b: BRAWLER_B, rest: GUARD }): Generator<void, Key3[], void> {
   let best: Key3[] = keys;
   let bestRough = Infinity;
   for (const goOn of [0, 0.2, 0.35, 0.5, 0.7, 0.85]) {
     const tried = keys.map((k) => ({ ...k, pose: { ...k.pose } }));
-    steadyElbows(tried, goOn, who);
+    yield* steadyElbowsInSlices(tried, goOn, who);
     const rough = 1000 * jerks(tried, fps, quiet, who) + roughness(tried, fps, who);
     if (rough < bestRough) {
       bestRough = rough;
       best = tried;
     }
+    yield;
   }
   return best;
 }
@@ -503,7 +518,8 @@ function roughness(keys: Key3[], fps: number, who: Who = { b: BRAWLER_B, rest: G
  */
 const STEADY_REACH = 150;
 const STEADY_COST = 0.003;
-function steadyElbows(keys: Key3[], goOn: number, who: Who = { b: BRAWLER_B, rest: GUARD }): void {
+/** (It stops after each key: steadiedInSlices.) */
+function* steadyElbowsInSlices(keys: Key3[], goOn: number, who: Who = { b: BRAWLER_B, rest: GUARD }): Generator<void, void, void> {
   for (const side of ['le', 're'] as const) {
     const joint = side === 'le' ? 'elbowL' : 'elbowR';
     let was: V3 | null = null;
@@ -529,6 +545,7 @@ function steadyElbows(keys: Key3[], goOn: number, who: Who = { b: BRAWLER_B, res
       (k.pose as Record<string, number>)[side] = best;
       before = was;
       was = bestAt;
+      yield;
     }
   }
 }

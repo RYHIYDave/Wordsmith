@@ -14,6 +14,7 @@ import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useActionF1, u
 import { makeHeroArt } from './art/heroes';
 import type { HeroPlace } from './art/heroes';
 import { makeHeroArt3, THRUST } from './art/heroes3';
+import { tinkererAhead } from './art/tinkerer_art';
 import { GOLEM_ROCKET } from './art/golem_rocket_fx';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
 import { makeIconArt, useMeldArt, useWordArt } from './art/icons';
@@ -2119,6 +2120,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         // are made, so that their files are on their way meanwhile)
         mobPictures(g);
         renderer.prepare(g);
+        // (the Tinkerer's held move worked out, where her pictures are painted: heroAhead, all at once as it was)
+        const ahead = heroAhead(g);
+        if (ahead.length) runSteps(ahead, Infinity);
         l.placed = true;
         did = 'place';
       }
@@ -2164,7 +2168,22 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // made, so that their files are on their way meanwhile)
     () => void mobPictures(g),
     () => renderer.prepareSteps(g),
+    // (the hero's own work that his pictures here need, where they are painted: heroAhead)
+    ...heroAhead(g),
   ];
+  /**
+   * THE HERO'S OWN WORK AHEAD (the queue's make-tinkerers-art-set-up-in-parts, 12 Nov 2026): THE TINKERER'S HELD MOVE, its keys
+   * steadied (some 2.7 s of work: art/tinkerer_art.ts tinkererAhead), a slice a step, where her pictures in this place are painted
+   * and not taken from the bake (from the bake they never need it: her art needs only how long the move is). Before, it was done
+   * in one go as her art was set up, and the loading screen into town stood still for it (2.2 s here). None for anyone else.
+   */
+  const heroAhead = (g: Game): LoadStep[] => {
+    if (g.hero.cls !== 'tinkerer') return [];
+    const place: HeroPlace = g.level.town ? 'town' : 'dungeon';
+    const b = painter.baked;
+    if (b && art.heroes.give && b.take(g.hero.cls, place, false)) return [];
+    return tinkererAhead();
+  };
   /**
    * THE NEW PLACE'S OWN PICTURES AHEAD (LOAD_SLICE): each builder placeFrame will call for this place, called a step at a time
    * before it, so that it finds them made (each is kept once made: art/floors.ts, art/crypt.ts, render/castle.ts). The same

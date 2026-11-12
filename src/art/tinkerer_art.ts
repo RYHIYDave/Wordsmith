@@ -37,6 +37,8 @@ import type { Drawn } from '../dev/sculpt';
 import { BJ, FR, TAP_GRAB, TAP_LET_GO, TRUN_ROUND, TSTAND_LONG, drawTinkerAt, tinkerMoves } from '../dev/tinkerer_moves';
 import type { TinkMove } from '../dev/tinkerer_moves';
 import { HOLD, drawTinkerHoldAt, tinkerHold } from '../dev/tinkerer_hold';
+import { keysAhead } from '../dev/keys_later';
+import type { LoadStep } from '../engine/steps';
 import { tinkerLurch, tinkerReel } from '../dev/tinkerer_hits';
 import { drawTinkerFallAt, tinkerFall } from '../dev/tinkerer_fall';
 import { GCANNON, GCHARGE_BEAM, GCHARGE_SHELL, GDOWN, GP, GPUNCH, GUPPER, GWALK, golemCannon, golemChargeBeam, golemChargeShell, golemDown, golemPunch, golemUppercut, golemWalk, groundPound } from '../dev/golem_moves';
@@ -114,11 +116,23 @@ function once<T>(make: () => T): () => T {
 /**
  * HER MOVES THAT TAKE A WHILE TO MAKE (every key of her tap and hold steadied: seconds; her fall), made once for both views
  * (they were made for each: twice the wait), as her whole set is first wanted (in the game; not for her class card,
- * makeTinkererCardArt). Made with the set, not when first painted: in the game the page paints many of her frames itself, and
- * seconds' wait the first time she whistles would be felt in a fight.
+ * makeTinkererCardArt). THEIR KEYS ARE WORKED OUT APART (the queue's make-tinkerers-art-set-up-in-parts, 12 Nov 2026:
+ * dev/keys_later.ts): her set needs only how long each move is, so it no longer waits the 2.7 s of steadying her tap and hold
+ * (it stood the loading screen into town still 2.2 s, her pictures taken from the bake, which never need them). Where her
+ * pictures are painted, not taken from the bake, they are worked out ahead, a slice a step, under the loading screen
+ * (tinkererAhead, main.ts loadSteps): not when first painted, for seconds' wait the first time she whistles would be felt in a
+ * fight.
  */
 const holdMove = once(tinkerHold);
 const fallMove = once(tinkerFall);
+
+/**
+ * Her tap and hold's keys and her fall's worked out ahead, a slice a step (dev/keys_later.ts keysAhead), for a loading screen to do
+ * before her pictures are painted; none once they are.
+ */
+export function tinkererAhead(): LoadStep[] {
+  return [...keysAhead(holdMove()), ...keysAhead(fallMove())];
+}
 
 /**
  * Her standing and running, in a view (her moves for these made at once). One list of each for each view, her class card's and
