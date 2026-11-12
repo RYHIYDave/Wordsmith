@@ -4,6 +4,13 @@ Branch `bring-in/eight-sides`, cut from `main` at 95eefb7 (25.3.5) with `art/tin
 merged clean. The chat that pulled the queue's `bring-in-tinkerer-brawler-eight-sides`, 11 Nov 2026 (a new chat of his,
 working from the queue). What the art is, and his yes to it: `README.md` beside this file (the Tinkerer chat's).
 
+**SINCE (the main chat's note in the queue, 11 Nov, 21:26; `main` looked at, a8d9111): the main chat merged
+`art/tinkerer-brawler-eight` itself the same evening and put 25.3.6 live with `EIGHT_MORE = { tinkerer: true, brawler: false }`
+and a bake of its own. THE TINKERER'S EIGHT SIDES ARE LIVE; the Brawler's are in `main`, off, for their memory (the queue's
+`make-brawlers-eight-sides-fit-in-memory`). What this branch still brings is the Brawler's switch with the tests put right
+for it, the playtests, and the weighing below. It is behind `main` by 25.3.6 and will meet `main`'s edits of
+`src/art/sides_more.ts` and `tests/sides_more.test.ts`. What follows is as it was written before that was known.**
+
 ## His words to this chat
 
 - 11 Nov 2026, 19:21 (Eastern): “Work on this task from the Wordsmith Queue: “Bring in the Tinkerer and the Brawler from eight
