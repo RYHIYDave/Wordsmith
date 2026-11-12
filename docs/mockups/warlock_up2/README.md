@@ -1,20 +1,9 @@
-# THE WARLOCK BROUGHT UP, AND HIS DEMON REDONE (IN HAND; NOTHING HERE IS IN THE GAME)
-
-**WHERE IT STANDS (12 Nov 2026, 05:35 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
-two legs to fight and down on all fours to run, wings of smoke, no smoke off it (`src/dev/demon_ideas.ts` shadowInto;
-`pictures/living_shadow.png`). ITS STAND, ITS WIDE SLASHES, DROPPING DOWN TO RUN, REARING UP TO STOP, AND ITS SLASHES MADE
-WALKING ON TWO LEGS HAVE HIS WORD (two films; the sections “The Living Shadow's moves” and “Its slashes made walking on two
-legs” below). ITS OTHER MOVES ARE NOW MADE, ALL UP ON TWO LEGS (his “Yes, all on two legs (Recommended)”), AND SHOWN HIM AS A
-THIRD FILM (`src/dev/shadow_moves.ts` shadowOthers; `pictures/living_shadow_other_moves.mp4`; the section “Its other moves,
-all up on two legs” below): Damning, the smoke step's two ends, its roar as the change into it ends, its burning out, and
-struck hard and from behind. HIS WORD ON THEM, by 22:08: “The roar is so bad.  His face doesn’t even move?  No animations
-out of the mouth?  No spittle or action lines or screen shake on the roar?”; the smoke step's own smoke, “Keep it as is
-(Recommended)”. SO THE ROAR WAS MADE AGAIN (its jaws thrown open with his fire in its throat, its head shaking, rings of
-force and action lines out of its mouth, spittle, the screen shaking) AND SHOWN HIM AS A FOURTH FILM
-(`pictures/living_shadow_roar.mp4`; the section “Its roar, made again” below), AND HAS HIS YES, by 12 Nov 05:33: “Yes,
-that's it (Recommended)”; the rest are taken to stand. ALL ITS MOVES ARE SETTLED. NEXT: its eight sides, its hide carried by
-its bones, and the change into it; then into the game's shape behind a switch that is off; then the man. Read from “The Living
-Shadow, drawn properly” down for what is left; the sections before it are how he got there, in his words.**
+**WHERE IT STANDS (12 Nov 2026, 13:5x Eastern): THE LIVING SHADOW'S LOOK AND ALL ITS MOVES HAVE HIS YES (below). NOW MADE AND
+SHOWN HIM AS TWO FILMS, HIS WORD ON THEM AWAITED: ITS EIGHT SIDES (each truly turned, none a mirror), ITS HIDE CARRIED BY ITS
+BONES, AND THE CHANGE INTO IT (the game's own change with the Living Shadow grown out of him, ending up on two legs and into its
+roar): the section “Its eight sides, its hide carried by its bones, and the change into it” at the foot. NEXT, AT HIS WORD:
+into the game's shape behind a switch that is off, a film and pictures in the game on floor 11 beside the Brawler; then THE
+MAN. Read from “The Living Shadow, drawn properly” down for how it got here, in his words.**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
 queue's `finish-mage-and-warlock-eight-sides` (the Mage's half is done: `art/mage-up2`). It takes up the art chat's helper's
@@ -625,6 +614,71 @@ Made with: `npx tsx tools/demon_new_pics.ts <dir>` then `python3 tools/demon_new
 NOT YET, FOR THE ONE HE PICKS: finished detail; from behind and its eight sides; its new stand and wide slashes up on two
 legs, and dropping to all fours to run; its other moves looked at one by one; the change into it; beside the Gate Ward's
 ground in the game.
+
+## Its eight sides, its hide carried by its bones, and the change into it (SHOWN HIM AS TWO FILMS; HIS WORD AWAITED)
+
+The queue chat of 12 Nov (midday), a new chat of his working the queue at his word (“Work on the next queue item”, 12:55
+Eastern), from `art/warlock-up2` at fa8dd52.
+
+**ITS EIGHT SIDES.** Each truly turned before the game's own camera, 45 degrees apart, none a mirror, as the Warrior's are
+(`art/warrior_up.ts` WU_SPIN: `front` 0, `toward` -45, `frontL` -90, `sideL` -135, `backL` 180, `away` 135, `back` 90, `side`
+45, every one from in front). Its painter took a turn already (`dev/demon_new.ts` paintDemon, `Sculpt.spin`), and so does all
+that its moves leave (`dev/shadow_fx.ts`: a slash's streaks, its roar's rings, lines and spittle, Damning's and the smoke step's
+scenes): every move of its is painted from every side with nothing new to it. LOOKED AT: its stand, both slashes, its roar,
+dropping down, running and rearing up from all eight; from in front its grin, from behind the embers down its backbone, from
+each side side-on; the roar's rings out of its mouth whichever way it faces, beyond it from behind.
+
+**ITS HIDE CARRIED BY ITS BONES** (`dev/demon_new.ts` carry, carriedRot, limbRot, footTurn, hipsTurn; HIDE_CARRIED on). What the
+still laid along the world, not along a bone: the hump over its shoulders and where it sits, the swell of its flanks, its
+shoulders and the swell of its upper arms, its forearms and thighs, its feet and their talons and spurs, where the top of its
+back and its neck run from, the way its embers face, and the sweep of its tail. Each is now laid in any pose as it lies to ITS
+BONE in the still (DEMON_UP): its chest, its hips, the limb it is on, its foot on the floor; as the game's demon's parts are
+carried (`dev/sculpt_demon_rig.ts`). IN THE STILL'S OWN POSE NOTHING IS TURNED: `living_shadow.png`'s two up on two legs painted
+before and after are the same files, byte for byte. In its moves: with its chest wound right round in a slash, its embers now
+run straight down its turned backbone where they sat off to one side of it; on all fours its hump sits at its withers. Of the
+frames painted before and after (its stand, slashes, roar, dropping down, run, rearing up, from in front and behind): 41 the
+same, 518 changed by it. TOLD HIM: running toward the eye, the embers on the top of its back now face up out of it, so a few
+show behind its head from in front (they did a little before); left so, as its body truly turns.
+
+**THE CHANGE INTO IT** (`dev/shadow_change.ts`; `tests/shadow_change.test.ts`). THE GAME'S OWN CHANGE KEPT, its every time
+(`dev/warlock_change.ts`: tapped, he jolts and the pain doubles him over, 18 frames; he becomes it over 1.5 s; his coat, hood
+and boots torn away a piece at a time in puffs of smoke; the embers whirling up round him): until he begins to become it, the
+picture is the game's own change to the pixel (checked). What he becomes is the Living Shadow: his bones grown into its
+werewolf's frame and his pose into ITS STANCE UP ON TWO LEGS (his “Yes, all on two legs (Recommended)”), heaving as he
+changes; ITS BLACK spreading over him from his demon arm, a ragged edge of his cyan before it; its parts grown out of him in one
+sculpture with him, each at its moment already a little grown (`SHADOW_GROWTH`): its claws out of his hands first, its body
+swelling out of his, its horns through his hood, its head as his hood tears, the embers down its back, its tail, and last its
+wings unfolding out of his back. A horn, a talon, a finger or its tail grows out as one from its root (grown a piece at a
+time from each piece's own root, they hung in a broken arc over his head: seen and put right). Whole, it is in its stance
+exactly, and ITS ROAR, the one he said yes to, begins from that very stance: 3.5 s from his being tapped to the end of its roar
+(`SHADOW_CHANGE_ALL`). The game's change file is not changed but four of its helpers exported as they were
+(handsFromShoulders, poseBetween, tearsAt, untilK); the game's own Warlock art imports that file, and its change is as it was.
+
+THE FILMS (MP4, both at his phone's own size held sideways, 2556 x 1178; sixty film frames a second):
+- `pictures/living_shadow_eight_sides.mp4` (16.6 s, 14.3 MB): eight panels at once, each side labelled and with an arrow the way
+  it faces, two film pixels a picture pixel: its stand, its slashes, its roar, dropping down to run (the floor going by under
+  each the way that one runs) and rearing up, its slashes at half speed. `..._sheet.png`, a picture every half second. Made with
+  `npx tsx tools/shadow_moves_pics.ts <dir>/t<turn> stand,slashL,slashR,roar,drop,run,rear5 front <turn>` for each of the eight
+  turns (under a minute each), then `python3 tools/shadow_sides_film.py <dir> <out.mp4> [sheet.png]`. The far tips of its
+  widest slash's streaks and the tops of its roar's rings are cut at a panel's edge (eight panels at that size); it itself
+  never.
+- `pictures/living_shadow_change.mp4` (16.8 s, 6.2 MB): the change from in front and from behind side by side, four film pixels
+  a picture pixel, at its own speed and at half speed; then from all eight sides at once. `..._sheet.png`. Made with
+  `npx tsx tools/shadow_moves_pics.ts <dir>/t0 change front,back 0` and `... <dir>/t<turn> change front <turn>` for the other
+  seven, then `python3 tools/shadow_change_film.py <dir> <out.mp4> [sheet.png]`.
+
+CHECKED: `tests/shadow_change.test.ts` (new), 4 of 4: its hide carried (nothing turned in the still's pose, the very numbers;
+turned with its chest otherwise; nothing turned without a still to carry from); the change the game's own before it begins (the
+same pixels, from in front and behind), its stance exactly at its end, a picture before within 4 of it, its roar's first
+picture its stance; its parts' times in order; nothing on the scene's edge from in front, behind and turned at four moments.
+`tests/shadow_moves.test.ts` 17 of 17 after the hide's carrying. `tsc --noEmit -p tsconfig.json` clean. LOOKED AT: the stand
+from all eight; the slash wound up, the blow and the run from four sides; before and after its hide carried, close; the change's
+frames from in front and behind every few; frames of both films themselves at full size. NOT YET: the picture's own checks
+frame by frame as the game's demon's have; its eight sides of Damning, the smoke step, its burning out and struck (painted the
+same way, not looked at one by one); the main chat's to weigh, its pictures from eight sides held on his phone (its stand alone
+is 96 pictures a side).
+
+SHOWN HIM SO, 12 Nov, by 13:5x Eastern (both films sent). HIS WORD AWAITED.
 
 ## The checks so far
 
