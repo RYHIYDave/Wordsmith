@@ -233,7 +233,34 @@ cards, 0 painted on every screen; her group whole; 122 of her frames every pixel
 **THE THIRD PHONE CHECK** (12 Nov, 12:58 UTC): the same page and link, `PHONE CHECK 3`, the recorder `v` 3 (each screen also
 counts what the game painted on its own thread: `painted`, `paintMs`, `stoodIn`). THE GAME AS IT WOULD GO LIVE: the release
 build of `fix/hero-cards-from-bake`, its bake beside it, the townsfolk's (d4c898fe370d) and the sounds (90 files). Told him to
-pick the Mage. HIS RUN IS AWAITED.
+pick the Mage. HIS RUN CAME 12 Nov, 08:10 (the next section).
+
+## HIS PHONE, THE THIRD RUN (12 Nov 2026, 08:10 Eastern): THE HERO CARDS AT 30 FRAMES A SECOND, NOTHING PAINTED
+
+His word, 08:11: “Ran it”. The run: `runs/rmwdkfnt74o2` (`v` 3, `fix` true; begun 13:10:28 UTC, 26.4 s). The same iPhone (iOS
+18.7, in the Claude app, framed; held upright this time, 393 by 723). He picked THE BRAWLER (the live game's, from four sides),
+not the Mage: the Brawler has no making ready on his card, so that part was not seen on his phone (it was here, clean).
+
+| on his phone | the second run (`rmwdh7eupd67`, the eight-sides test build) | the third (`rmwdkfnt74o2`, the game as it would go live) |
+|---|---|---|
+| the hero cards, from his first touch to the load | 9.2 s, 38 frames: 3 to 5 a second; the game's own frame 302 ms at first | 3.6 s, 106 frames: 29 to 30 a second; the game's own frame 3.4 ms (after the first touch) and 3.7 ms (after the second) |
+| frames painted where the game is drawn, on the title and the cards | (not counted; the cause measured in Chrome) | 0 on every screen; none stood in for |
+| the cards' pictures | asked for as the cards were shown; 2,361 ms | asked for as the game starts: 721 ms, come during the title, before NEW GAME |
+| the loading screen into town | 6.7 s | 3.5 s (29 frames; two waits over a second, 1,562 and 1,056 ms; 202 frames of the level painted in it, 209 ms) |
+| the town, 8 s | 30 a second, no wait over 52 ms | 230 frames (28 a second); two waits of 262 and 248 ms, about 3 s in; the game's own frame 3.9 ms |
+
+- The title before his first touch: 63 frames in 2.1 s (30 a second), no wait over 120 ms.
+- The Brawler's group 2,456 ms; with the cards', 3,554 frames given, 6 sheets held, 18,085,352 pixels; 1,587 frames cut and in
+  hand, 5,066,248 pixels (20 MB).
+- EVERY PIXEL THE SAME: 125 of his frames against the old way, none unlike (the old way 991 ms for them, 7.9 ms a frame).
+- 8 pictures made by the browser in all: the sheets (the cards' 2, his 4, the townsfolk's 2), none for a frame.
+- The two waits in the town (at 15.3 and 15.6 s, about 3 s after it was shown) are new to this run's build: the townsfolk's
+  bake (live since 25.3.7) was not in the second run's test build. In that screen 72 sounds were decoded (334 ms). Not pinned
+  down; noted on the queue's `smooth-the-loading-screens-long-frames`.
+
+TOLD HIM (by 08:20): the hero cards fixed on his phone, 30 a second where 3 to 5, nothing drawn on the spot; the load 3.5 s;
+the making ready seen here only; still left, the hitches under the loading screen and two short ones in town (queued); both
+fixes being handed to the main chat.
 
 ## WHAT WOULD MEND THE HERO CARDS (as first written, before it was built)
 
