@@ -222,6 +222,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   something always coming, by the last phase something everywhere; attacks three times in a row); the art rulebook's ANIMATIONS (as
   far as it will go, the Wave the measure, the hero and every warning in sight), MOVEMENT 9 (big wind-up, lightning strike) and
   COLOUR (every word its own colour; enemy glows pink to gold, a friend's cyan).
+- HIS PICKS for the word attacks, 12 Nov 2026, by pop-up. THEIR COLOURS: “Own colour, pink through it (Recommended)” (offered as: each
+  word in its own colour so the hero reads what is coming, Power red, Flame orange, Frost blue, Lightning yellow, Poison green, with
+  his pink at its heart and edges, the enemy's). POWER: “Hammer from the sky (Recommended)” (a giant Power rune high over the hero,
+  its shadow chasing him across the floor, slamming down three times in a row: craters, shockwaves, stone flying). FROST: “Ice spikes
+  (Recommended)” (jagged ice bursting up out of the floor in lines racing at him, the floor frozen and slippery behind them).
+  LIGHTNING: “Ball lightning” (slow crackling orbs drifting after him, zapping anything near, then bursting). POISON: “Spore mines”
+  (runes sunk in the floor round him, bursting into poison clouds when he comes near). FLAME: not answered; taken as our pick,
+  Firestorm (the rune hurled skyward, bursting, fireballs raining across the room onto warning marks, leaving burning ground), and
+  told him so.
 
 ## The tools
 
