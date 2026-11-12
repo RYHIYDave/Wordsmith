@@ -6,6 +6,8 @@
 // page as heroes/<mark>/ (--no-bake: none; the game then paints them as it is played, as before).
 // And the town's people baked (tools/bake_townsfolk.mjs, render/townsfolk_baked.ts), in dist/townsfolk/<mark>/, to be published
 // beside the page as townsfolk/<mark>/ (--no-bake or --no-townsfolk: none; the town's people are then as they were).
+// And the floors' monsters baked (tools/bake_monsters.mjs, render/monsters_baked.ts), in dist/monsters/<mark>/, to be published
+// beside the page as monsters/<mark>/ (--no-bake or --no-monsters: none; the monsters are then painted as the game is played, as before).
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -14,6 +16,7 @@ import { bakeFiles, bakeHeroes } from './bake_heroes.mjs';
 import { packSounds } from './sound_packs.mjs';
 import { shipColossus } from './colossus_ship.mjs';
 import { shipTownsfolk } from './bake_townsfolk.mjs';
+import { shipMonsters } from './bake_monsters.mjs';
 
 const dev = process.argv.includes('--dev');
 // (--try colossus: a page that begins at the thing to try, for the owner before it goes live: main.ts __TRY__)
@@ -47,7 +50,9 @@ if (soundFiles.length) {
 const colossus = !process.argv.includes('--no-colossus') ? shipColossus() : (fs.rmSync(path.join(ROOT, 'dist', 'colossus'), { recursive: true, force: true }), { mark: '', files: [] });
 // (THE TOWN'S PEOPLE BAKED, tools/bake_townsfolk.mjs: beside the page in townsfolk/<mark>/; baked now if their art is not baked yet)
 const townsfolk = process.argv.includes('--no-bake') || process.argv.includes('--no-townsfolk') ? (fs.rmSync(path.join(ROOT, 'dist', 'townsfolk'), { recursive: true, force: true }), { mark: '', files: [] }) : await shipTownsfolk();
-const js = await bundle('src/main.ts', { minify: !dev, define: { ...RELEASE_DEFINES, __BUILD__: JSON.stringify(stamp), __DEV__: String(dev), __HERO_BAKE__: JSON.stringify(bake ? bake.mark : ''), __SOUNDS__: JSON.stringify(sounds), __COLOSSUS_BAKE__: JSON.stringify(colossus.mark), __TOWNSFOLK_BAKE__: JSON.stringify(townsfolk.mark), ...(tryOf ? { __TRY__: JSON.stringify(tryOf) } : {}) } });
+// (THE FLOORS' MONSTERS BAKED, tools/bake_monsters.mjs: beside the page in monsters/<mark>/; baked now if their art is not baked yet)
+const monsters = process.argv.includes('--no-bake') || process.argv.includes('--no-monsters') ? (fs.rmSync(path.join(ROOT, 'dist', 'monsters'), { recursive: true, force: true }), { mark: '', files: [] }) : await shipMonsters();
+const js = await bundle('src/main.ts', { minify: !dev, define: { ...RELEASE_DEFINES, __BUILD__: JSON.stringify(stamp), __DEV__: String(dev), __HERO_BAKE__: JSON.stringify(bake ? bake.mark : ''), __SOUNDS__: JSON.stringify(sounds), __COLOSSUS_BAKE__: JSON.stringify(colossus.mark), __TOWNSFOLK_BAKE__: JSON.stringify(townsfolk.mark), __MONSTER_BAKE__: JSON.stringify(monsters.mark), ...(tryOf ? { __TRY__: JSON.stringify(tryOf) } : {}) } });
 const out = write('Play.html', page(js));
 write('dist/artifact.html', fragment(js));
-console.log(`built ${out} (${(js.length / 1024).toFixed(0)} KB script, ${dev ? 'dev' : 'minified'})${bake ? `, the heroes baked: dist/heroes/${bake.mark}/ (${bakeFiles(bake.mark).length} files)` : ', no bake'}${sounds ? `, the sounds: dist/sounds/${sounds}/ (${soundFiles.length} sounds in ${soundShipped} files)` : ''}${colossus.mark ? `, the Colossus: dist/colossus/${colossus.mark}/ (${colossus.files.length} files)` : ''}${townsfolk.mark ? `, the townsfolk: dist/townsfolk/${townsfolk.mark}/ (${townsfolk.files.length} files)` : ', no townsfolk baked'}`);
+console.log(`built ${out} (${(js.length / 1024).toFixed(0)} KB script, ${dev ? 'dev' : 'minified'})${bake ? `, the heroes baked: dist/heroes/${bake.mark}/ (${bakeFiles(bake.mark).length} files)` : ', no bake'}${sounds ? `, the sounds: dist/sounds/${sounds}/ (${soundFiles.length} sounds in ${soundShipped} files)` : ''}${colossus.mark ? `, the Colossus: dist/colossus/${colossus.mark}/ (${colossus.files.length} files)` : ''}${townsfolk.mark ? `, the townsfolk: dist/townsfolk/${townsfolk.mark}/ (${townsfolk.files.length} files)` : ', no townsfolk baked'}${monsters.mark ? `, the monsters: dist/monsters/${monsters.mark}/ (${monsters.files.length} files)` : ', no monsters baked'}`);

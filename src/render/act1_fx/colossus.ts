@@ -410,6 +410,8 @@ function drawDeath(c: Act1FxCtx, p: Peril, pass: 'ground' | 'air'): void {
 export const COLOSSUS_FX: Act1Fx = {
   // (his figure and his tentacles' are the stand-ins above, not his old pictures: nothing of the Drowned Eye's is drawn)
   hidden: () => true,
+  // (and so nothing of them is painted ahead: render/act1_fx/types.ts)
+  noFigure: true,
   ground(c, _m, p) {
     if (p && p.a1 === 'eye:fight') {
       if (p.a === 1) drawDeath(c, p, 'ground');
