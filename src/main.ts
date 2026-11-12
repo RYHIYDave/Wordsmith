@@ -20,7 +20,7 @@ import { makeIconArt, useMeldArt, useWordArt } from './art/icons';
 import { ITEMS_A } from './art/items_a';
 import { UNIQUE_ART } from './art/items_unique';
 import { MELD_DROPS, makeMeldDropsArt } from './art/meld_drops';
-import { PAINTING } from './art/kit';
+import { HEAVY, PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
 import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, edgesOf, makeGroundArt, setWallLook } from './art/ground';
 import { makeGateArt } from './art/gates';
@@ -398,6 +398,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // (THE HEROES BAKED, render/baked.ts: their pictures painted when the game was built, beside this page, taken in when a hero is
   // first asked for, in place of the worker painting them; where there are none, as before. His pick, 6 Nov 2026: “Inside the game file”)
   painter.baked = art.heroes.give ? BakedHeroes.make(() => art.heroes, (cls, place, v, l, i, s, vet) => !!art.heroes.give?.(cls, place, v, l, i, s, vet), VETERAN.on) : null;
+  // (THE HERO CARDS' PICTURES, the bake's group `cards`, asked for now, as the game starts: the title is up for a moment before the
+  // cards are, and they are fetched while it is; before, they were asked for only as the cards were first shown)
+  painter.baked?.take('warrior', 'card', false);
   // (THE TOWN'S PEOPLE BAKED, render/townsfolk_baked.ts: the sculpted four's pictures, painted when the game was built, beside
   // this page; taken in as a place with them in it is come into and let go of as it is left (placeFrame, loadingFrame). Where they
   // will not come, the town's people are as they were.)
@@ -2203,12 +2206,28 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // (while the Lexicon lies open over the menu, the menu does not listen)
       const press = ui.press;
       if (titleLex) ui.press = null;
-      // (THE NEW CLASSES on their cards, sculpted, too heavy to paint here as they are shown: the side painter paints them,
-      // and until it has, the nearest frame of theirs painted is shown: art/kit.ts LEFT_TO_PAINTER)
-      // (its worker started on the start screen, ahead: it takes seconds; while it starts, its frames are waited for too)
+      // THE HEROES ON THEIR CARDS, sculpted, too heavy to paint here as they are shown.
+      // FROM THE BAKE (render/baked.ts, its group `cards`), ALL SIX, and everything a card shows (standing, running, coming to a
+      // stand, what a hero does left standing, making ready): asked for as the game starts (below, where the bake is made), so
+      // that they are here before the cards are; until they are, the nearest frame painted is shown (art/kit.ts
+      // LEFT_TO_PAINTER) and no hero begins anything of their own. His words, 11 Nov 2026: “Then, character screen lags.
+      // Selecting a character lags.” Till then the Warrior, the Ranger and the Mage were painted here on their cards until the
+      // bake's standing and running had come, and every hero's gestures and making ready always: on his phone, 12 Nov, 3 to 5
+      // frames a second on the cards (docs/requests/phone_check.md).
+      // WHERE THERE IS NO BAKE (or it will not come), as before: the three new classes by the side painter (its worker started
+      // on the start screen, ahead: it takes seconds; while it starts, its frames are waited for too), the others painted here.
       const byPainter: ClassId[] = [];
-      if (painter.baked || painter.warmGround()) {
+      const cardsBake = painter.baked;
+      let cardsComing = false;
+      if (cardsBake || painter.warmGround()) {
         for (const k of playableClasses()) {
+          const vet = k === 'brawler' && VETERAN.on;
+          if (cardsBake && cardsBake.take(k, 'card', vet)) {
+            const grp = cardsBake.group(k, 'card', vet);
+            if (grp && !cardsBake.settled(grp)) cardsComing = true;
+            byPainter.push(k);
+            continue;
+          }
           if (k !== 'warlock' && k !== 'tinkerer' && k !== 'brawler') continue;
           if (titleUi.page === 'class') painter.hero(k, 'card');
           byPainter.push(k);
@@ -2228,6 +2247,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         entering: entering ? { cls: entering.cls, t: entering.t } : null,
         tryout: TRYOUT,
         byPainter,
+        cardsComing,
       }, titleLook === 'library' ? null : (smithTitle ??= titleLook === 'ring' ? makeRingTitle() : titleLook === 'smith3' ? makeSmith3Title() : titleLook === 'floor' ? makeSmith2Title(SMITH2_CHOSEN) : makeSmithTitle()));
       // the voices being tried out: warrior, ranger, mage, a breath apart
       if (voiceTry && (titleUi.page !== 'class' || titleLex)) voiceTry = null;
@@ -3147,6 +3167,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     tweaks: ART_TWEAKS,
     /** How many frames of art have been painted so far, and how long that took in all (art/kit.ts). */
     painting: PAINTING,
+    /** How many times a frame not painted yet was shown as the nearest of its list that is (art/kit.ts HEAVY.deferred; LEFT_TO_PAINTER). */
+    stoodIn: () => HEAVY.deferred,
     /** THE PAINTER (render/painter.ts): whether there is one, and what it has done. */
     painter,
     /** THE FOREST AS A FEW PICTURES (render/tops_cache.ts): its switch (renderer.topsCache has what it did). */

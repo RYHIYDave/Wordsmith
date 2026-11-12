@@ -8,6 +8,7 @@ import { drawText, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import type { Sprite } from '../engine/px';
 import { LEFT_TO_PAINTER } from '../art/kit';
+import { CARD_FACING } from '../art/sides';
 import { ATTR_GIVES, ATTR_NAME, CLASSES, LEVEL_SELECT, OWN_MOVES, SKILLS, TUNE, WORDS, attackAttr, floorTitle, growsWith, holdSkill, skillsFor, tapSkill, wordAttr } from '../game/defs';
 import { lastFloor } from '../game/act1';
 import type { Limit } from '../game/defs';
@@ -368,8 +369,17 @@ export interface TitleIn {
   entering?: { cls: ClassId; t: number } | null;
   /** THE TRY-OUT PAGE ONLY: its options offer a seasoned hero, straight to a floor of the first five. */
   tryout?: boolean;
-  /** The classes whose card pictures the side painter is painting (render/painter.ts, place 'card'): their frames not painted yet are shown as the nearest that are (art/kit.ts LEFT_TO_PAINTER). */
+  /**
+   * The classes whose card pictures are not painted here: the side painter is painting them (render/painter.ts, place 'card'), or
+   * they come from the bake (render/baked.ts, its group `cards`: all six heroes). Their frames not here yet are shown as the
+   * nearest that are (art/kit.ts LEFT_TO_PAINTER).
+   */
   byPainter?: readonly ClassId[];
+  /**
+   * The cards' pictures are still on their way from the bake: until they have come no hero begins anything of their own (what
+   * a hero does left standing is a list with no frame here yet, and its first would be painted where the game is drawn).
+   */
+  cardsComing?: boolean;
 }
 
 /** How long a hero who has made ready on their card takes to warp away from it, in seconds. */
@@ -921,10 +931,11 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
       gone = entering.t > long ? Math.min(1, (entering.t - long) / ENTER_OUT) : 0;
     } else {
       // (while one of them makes ready the other two only stand: nothing of their own is begun, to draw the eye from the one who was picked)
-      // (a new class's frames, sculpted, are too heavy to paint here as they are shown: where the painter is painting them, the nearest painted is shown)
+      // (a hero's frames, sculpted, are too heavy to paint here as they are shown: where the painter is painting them, or the bake
+      // is bringing them, the nearest painted is shown)
       LEFT_TO_PAINTER.on = !!opt.byPainter && opt.byPainter.includes(id);
       try {
-        sp = fig.frame(heroArt, { anim: (hot || talks) && !mine ? 'walk' : 'idle', animT: t, fx: 0.7071, fy: 0.7071, attackSkill: 0, attackAge: 0, attackWind: 0, leapK: -1 }, dt, 0, 0, !entering);
+        sp = fig.frame(heroArt, { anim: (hot || talks) && !mine ? 'walk' : 'idle', animT: t, fx: CARD_FACING.fx, fy: CARD_FACING.fy, attackSkill: 0, attackAge: 0, attackWind: 0, leapK: -1 }, dt, 0, 0, !entering && !opt.cardsComing);
       } finally {
         LEFT_TO_PAINTER.on = false;
       }

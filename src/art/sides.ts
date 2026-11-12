@@ -18,6 +18,12 @@ export function isEight(a: ActorArt): a is EightArt {
   return Object.prototype.hasOwnProperty.call(a, 'toward');
 }
 
+/**
+ * The way a class card's hero faces (ui/panels.ts): down the screen, at the camera. A hero painted from eight sides is seen there
+ * from the side for that way, not from his front (art/heroes3.ts cardLists).
+ */
+export const CARD_FACING = { fx: 0.7071, fy: 0.7071 } as const;
+
 /** A hero's sides as the game numbers them: two, or eight. */
 export function heroSides(a: ActorArt): AnimSet[] {
   return isEight(a) ? EIGHT_ORDER.map((k) => a[k]) : [a.front, a.back];
