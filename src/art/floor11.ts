@@ -28,6 +28,8 @@ import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import { bright } from './act2_quiet';
 import { BLACK, BOTTLE, BRASS, BRONZE, CHAR, CREAM, DEAL, GREENS, IRON, MASK, MUSTARD, OAK, OXBLOOD, PAPER, ROPE, SLATEBLUE, STONE, STRAW, APPLE, CRUST, HOLE, SOFT_ID, WATER, checker, cylinder, done, facing, frontPiece, local, planks, scene, slab, turned } from './act2_kit';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 
@@ -1412,40 +1414,62 @@ function hayBales(broken: boolean): Sprite {
 
 let made: Piece[] | null = null;
 /** FLOOR 11'S PIECES, the Crier's (the first of them). */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE GATE WARD'S (floor 11), each
+ * piece's maker in the list's order: the list made a piece a step (gateWardPieceSteps), or all at once (gateWardPieces). Each painted as it was.
+ */
+function gateWardMakers(): (() => Piece)[] {
+  return [
+    // (frames: facing +y, +x, -y and -x, four stalls to each: frame = facing * 4 + stall)
+    () => ({ name: 'market stall', kind: 'obstacle', frames: [0, 1, 2, 3].flatMap((k) => [0, 1, 2, 3].map((v) => stall(v, false, k))), shadow: 0.7 }),
+    () => ({ name: 'market stall, smashed', kind: 'obstacle', frames: [0, 1, 2, 3].flatMap((k) => [stall(0, true, k), stall(2, true, k)]), shadow: 0.6 }),
+    () => ({ name: 'the cart barricade', kind: 'obstacle', frames: [cartBarricade()], shadow: 0.9 }),
+    () => ({ name: 'baskets of produce', kind: 'breakable', frames: [produce(false), produce(true)], shadow: 0.35 }),
+    () => ({ name: 'sacks of grain', kind: 'breakable', frames: [sacks(false), sacks(true)], shadow: 0.3 }),
+    () => ({ name: 'handcart', kind: 'obstacle', frames: [handcart()], shadow: 0.45 }),
+    () => ({ name: "the crier's rostrum", kind: 'obstacle', frames: [rostrum()], shadow: 0.9 }),
+    () => ({ name: 'the notice board', kind: 'obstacle', frames: [noticeBoard()], shadow: 0.4 }),
+    () => ({ name: 'the town well', kind: 'obstacle', frames: [well()], shadow: 0.6 }),
+    () => ({ name: 'the herald, gagged', kind: 'obstacle', frames: [heraldStatue()], shadow: 0.5 }),
+    () => ({ name: "a firepot's crater, burning", kind: 'trap', frames: [0, 1, 2, 3].map(firepotCrater) }),
+    () => ({ name: 'the market bell (the Muffled Bell)', kind: 'obstacle', frames: [marketBell(true), marketBell(false, 0), marketBell(false, 0.35), marketBell(false, -0.35)], shadow: 0.5 }),
+    () => ({ name: 'festival bunting', kind: 'on the wall', ...withFrames(bunting(0)) }),
+    () => ({ name: 'guild sign, blotted', kind: 'on the wall', ...withFramesN((['boot', 'key', 'loaf', 'tankard'] as const).map(guildSign)) }),
+    // (frames: its front along +y, along +x)
+    () => ({ name: 'the city gate, broken', kind: 'gate', frames: [cityGate(0), cityGate(1)], shadow: 1.6 }),
+    // (frames: shut and open along +y, shut and open along +x)
+    () => ({ name: "the crier's gate", kind: 'gate', frames: [criersGate(false, 0), criersGate(true, 0), criersGate(false, 1), criersGate(true, 1)], shadow: 0.9 }),
+    // (frames: quiet, the warning, the blast three, looking along +y; the same looking along +x)
+    () => ({ name: "the watch's alarm horn, the Hush's", kind: 'trap', frames: [0, 1].flatMap((k) => [0, 1, 2, 3, 4].map((f) => alarmHorn(f, k))), shadow: 0.3 }),
+    () => ({ name: "the crier's last proclamation", kind: 'quest', frames: [proclamation()], shadow: 0.25 }),
+    // (the Bells: quiet, awake, rung one way, rung back)
+    () => ({ name: "a wayside shrine's bell", kind: 'obstacle', frames: [0, 1, 2, 3].map(shrineBell), shadow: 0.3 }),
+    () => ({ name: "a shop's doorbell", kind: 'on the wall', ...withFramesN([0, 1, 2, 3].map(doorbell)) }),
+    () => ({ name: "the watch's alarm bell", kind: 'obstacle', frames: [0, 1, 2, 3].map(watchBell), shadow: 0.7 }),
+    () => ({ name: 'paper lanterns', kind: 'on the wall', ...withFramesN([paperLanterns(true), paperLanterns(false)]) }),
+    () => ({ name: 'the festival maypole', kind: 'obstacle', frames: [maypole()], shadow: 0.35 }),
+    () => ({ name: 'the horse trough', kind: 'obstacle', frames: [horseTrough()], shadow: 0.7 }),
+    () => ({ name: 'hay bales', kind: 'breakable', frames: [hayBales(false), hayBales(true)], shadow: 0.45 }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const GATEWARD_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function gateWardPiecesHeld(): number {
+  return GATEWARD_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function gateWardPieceCount(): number {
+  return gateWardMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function gateWardPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...gateWardMakers().map((make, i) => GATEWARD_AHEAD.step(String(i), make)), () => void gateWardPieces()];
+}
 export function gateWardPieces(): Piece[] {
   if (made) return made;
-  made = [
-    // (frames: facing +y, +x, -y and -x, four stalls to each: frame = facing * 4 + stall)
-    { name: 'market stall', kind: 'obstacle', frames: [0, 1, 2, 3].flatMap((k) => [0, 1, 2, 3].map((v) => stall(v, false, k))), shadow: 0.7 },
-    { name: 'market stall, smashed', kind: 'obstacle', frames: [0, 1, 2, 3].flatMap((k) => [stall(0, true, k), stall(2, true, k)]), shadow: 0.6 },
-    { name: 'the cart barricade', kind: 'obstacle', frames: [cartBarricade()], shadow: 0.9 },
-    { name: 'baskets of produce', kind: 'breakable', frames: [produce(false), produce(true)], shadow: 0.35 },
-    { name: 'sacks of grain', kind: 'breakable', frames: [sacks(false), sacks(true)], shadow: 0.3 },
-    { name: 'handcart', kind: 'obstacle', frames: [handcart()], shadow: 0.45 },
-    { name: "the crier's rostrum", kind: 'obstacle', frames: [rostrum()], shadow: 0.9 },
-    { name: 'the notice board', kind: 'obstacle', frames: [noticeBoard()], shadow: 0.4 },
-    { name: 'the town well', kind: 'obstacle', frames: [well()], shadow: 0.6 },
-    { name: 'the herald, gagged', kind: 'obstacle', frames: [heraldStatue()], shadow: 0.5 },
-    { name: "a firepot's crater, burning", kind: 'trap', frames: [0, 1, 2, 3].map(firepotCrater) },
-    { name: 'the market bell (the Muffled Bell)', kind: 'obstacle', frames: [marketBell(true), marketBell(false, 0), marketBell(false, 0.35), marketBell(false, -0.35)], shadow: 0.5 },
-    { name: 'festival bunting', kind: 'on the wall', ...withFrames(bunting(0)) },
-    { name: 'guild sign, blotted', kind: 'on the wall', ...withFramesN((['boot', 'key', 'loaf', 'tankard'] as const).map(guildSign)) },
-    // (frames: its front along +y, along +x)
-    { name: 'the city gate, broken', kind: 'gate', frames: [cityGate(0), cityGate(1)], shadow: 1.6 },
-    // (frames: shut and open along +y, shut and open along +x)
-    { name: "the crier's gate", kind: 'gate', frames: [criersGate(false, 0), criersGate(true, 0), criersGate(false, 1), criersGate(true, 1)], shadow: 0.9 },
-    // (frames: quiet, the warning, the blast three, looking along +y; the same looking along +x)
-    { name: "the watch's alarm horn, the Hush's", kind: 'trap', frames: [0, 1].flatMap((k) => [0, 1, 2, 3, 4].map((f) => alarmHorn(f, k))), shadow: 0.3 },
-    { name: "the crier's last proclamation", kind: 'quest', frames: [proclamation()], shadow: 0.25 },
-    // (the Bells: quiet, awake, rung one way, rung back)
-    { name: "a wayside shrine's bell", kind: 'obstacle', frames: [0, 1, 2, 3].map(shrineBell), shadow: 0.3 },
-    { name: "a shop's doorbell", kind: 'on the wall', ...withFramesN([0, 1, 2, 3].map(doorbell)) },
-    { name: "the watch's alarm bell", kind: 'obstacle', frames: [0, 1, 2, 3].map(watchBell), shadow: 0.7 },
-    { name: 'paper lanterns', kind: 'on the wall', ...withFramesN([paperLanterns(true), paperLanterns(false)]) },
-    { name: 'the festival maypole', kind: 'obstacle', frames: [maypole()], shadow: 0.35 },
-    { name: 'the horse trough', kind: 'obstacle', frames: [horseTrough()], shadow: 0.7 },
-    { name: 'hay bales', kind: 'breakable', frames: [hayBales(false), hayBales(true)], shadow: 0.45 },
-  ];
+  made = gateWardMakers().map((make, i) => GATEWARD_AHEAD.take(String(i), make));
   return made;
 }
 

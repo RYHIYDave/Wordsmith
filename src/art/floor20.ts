@@ -33,6 +33,8 @@ import { hash } from './kit';
 import type { Ramp } from './kit';
 import { HOLE, MASK, SOFT_ID, checker, cylinder, done, facing, frontPiece, local, lying, scene, turned } from './act2_kit';
 import { QT_BOARD, boards } from './quiettower';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 const AX: [V3, V3, V3] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -1209,39 +1211,61 @@ function wallFrames(makes: ((S: Scene, w: (a: number, b: number, z: number) => V
 
 let made: Piece[] | null = null;
 /** THE QUIET TOWER'S OWN PIECES, the Moth's twenty-five, made the first time they are asked for and kept. */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE QUIET TOWER'S (floor 20), each
+ * piece's maker in the list's order: the list made a piece a step (quietTowerPieceSteps), or all at once (quietTowerPieces). Each painted as it was.
+ */
+function quietTowerMakers(): (() => Piece)[] {
+  return [
+    () => ({ name: 'the last chapter on its lectern', kind: 'quest', frames: [lectern()], shadow: 0.5 }),
+    // (frames: along x, along y)
+    () => ({ name: "a copyist's desk", kind: 'obstacle', frames: [desk(0), desk(1)], shadow: 0.7 }),
+    () => ({ name: "a copyist's stool", kind: 'breakable', frames: [stool(false), stool(true)], shadow: 0.25 }),
+    () => ({ name: 'a press of blank books', kind: 'obstacle', frames: [press(0), press(1)], shadow: 0.7 }),
+    () => ({ name: 'a chest of blank quires', kind: 'breakable', frames: [chest(false), chest(true)], shadow: 0.4 }),
+    () => ({ name: 'a heap of torn pages', kind: 'breakable', frames: [pages(false), pages(true)], shadow: 0.3 }),
+    () => ({ name: 'the empty bell frame', kind: 'obstacle', frames: [bellFrame()], shadow: 1.3 }),
+    () => ({ name: 'a bell rope, hanging', kind: 'obstacle', frames: [bellRope()], shadow: 0.2 }),
+    () => ({ name: "the bell's clapper, fallen", kind: 'on the floor', frames: [clapper()] }),
+    () => ({ name: 'the boards broken through', kind: 'floor tile', frames: [brokenBoards()] }),
+    () => ({ name: "the tower's stair", kind: 'obstacle', frames: [stair()], shadow: 0.8 }),
+    // (frames: shut, open)
+    () => ({ name: 'a door of the tower', kind: 'door', ...wallFrames([doorMake(false), doorMake(true)]) }),
+    () => ({ name: 'the trapdoor to the top', kind: 'gate', frames: [trapdoor(false), trapdoor(true)] }),
+    // (frames: the flame up, the flame down)
+    () => ({ name: 'guttering candles', kind: 'obstacle', frames: [candles(0), candles(1)], shadow: 0.3 }),
+    () => ({ name: 'a cocoon on the wall', kind: 'on the wall', ...wallOf(cocoonMake) }),
+    () => ({ name: 'a moth-eaten tapestry', kind: 'on the wall', ...wallOf(tapestryMake) }),
+    () => ({ name: "the Order's banner, gone grey", kind: 'on the wall', ...wallOf(bannerMake) }),
+    () => ({ name: 'a broken window', kind: 'on the wall', ...wallOf(windowMake) }),
+    () => ({ name: 'a shed wing', kind: 'on the floor', frames: [shedWing()] }),
+    // (frames: whole, torn through)
+    () => ({ name: 'moth silk, strung from a fallen beam', kind: 'breakable', frames: [silk(false), silk(true)], shadow: 0.6 }),
+    () => ({ name: 'grey dust, drifted', kind: 'on the floor', frames: [dustDrift()] }),
+    // (frames: lying, the warning, sprung)
+    () => ({ name: "the Hush's dust", kind: 'trap', frames: [0, 1, 2].map(hushDust) }),
+    () => ({ name: 'a fallen mask of the Order', kind: 'on the floor', frames: [fallenMask()] }),
+    () => ({ name: 'a fallen merlon', kind: 'obstacle', frames: [merlon()], shadow: 0.6 }),
+    () => ({ name: 'the cold beacon', kind: 'obstacle', frames: [beacon()], shadow: 0.5 }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const QUIETTOWER_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function quietTowerPiecesHeld(): number {
+  return QUIETTOWER_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function quietTowerPieceCount(): number {
+  return quietTowerMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function quietTowerPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...quietTowerMakers().map((make, i) => QUIETTOWER_AHEAD.step(String(i), make)), () => void quietTowerPieces()];
+}
 export function quietTowerPieces(): Piece[] {
   if (made) return made;
-  made = [
-    { name: 'the last chapter on its lectern', kind: 'quest', frames: [lectern()], shadow: 0.5 },
-    // (frames: along x, along y)
-    { name: "a copyist's desk", kind: 'obstacle', frames: [desk(0), desk(1)], shadow: 0.7 },
-    { name: "a copyist's stool", kind: 'breakable', frames: [stool(false), stool(true)], shadow: 0.25 },
-    { name: 'a press of blank books', kind: 'obstacle', frames: [press(0), press(1)], shadow: 0.7 },
-    { name: 'a chest of blank quires', kind: 'breakable', frames: [chest(false), chest(true)], shadow: 0.4 },
-    { name: 'a heap of torn pages', kind: 'breakable', frames: [pages(false), pages(true)], shadow: 0.3 },
-    { name: 'the empty bell frame', kind: 'obstacle', frames: [bellFrame()], shadow: 1.3 },
-    { name: 'a bell rope, hanging', kind: 'obstacle', frames: [bellRope()], shadow: 0.2 },
-    { name: "the bell's clapper, fallen", kind: 'on the floor', frames: [clapper()] },
-    { name: 'the boards broken through', kind: 'floor tile', frames: [brokenBoards()] },
-    { name: "the tower's stair", kind: 'obstacle', frames: [stair()], shadow: 0.8 },
-    // (frames: shut, open)
-    { name: 'a door of the tower', kind: 'door', ...wallFrames([doorMake(false), doorMake(true)]) },
-    { name: 'the trapdoor to the top', kind: 'gate', frames: [trapdoor(false), trapdoor(true)] },
-    // (frames: the flame up, the flame down)
-    { name: 'guttering candles', kind: 'obstacle', frames: [candles(0), candles(1)], shadow: 0.3 },
-    { name: 'a cocoon on the wall', kind: 'on the wall', ...wallOf(cocoonMake) },
-    { name: 'a moth-eaten tapestry', kind: 'on the wall', ...wallOf(tapestryMake) },
-    { name: "the Order's banner, gone grey", kind: 'on the wall', ...wallOf(bannerMake) },
-    { name: 'a broken window', kind: 'on the wall', ...wallOf(windowMake) },
-    { name: 'a shed wing', kind: 'on the floor', frames: [shedWing()] },
-    // (frames: whole, torn through)
-    { name: 'moth silk, strung from a fallen beam', kind: 'breakable', frames: [silk(false), silk(true)], shadow: 0.6 },
-    { name: 'grey dust, drifted', kind: 'on the floor', frames: [dustDrift()] },
-    // (frames: lying, the warning, sprung)
-    { name: "the Hush's dust", kind: 'trap', frames: [0, 1, 2].map(hushDust) },
-    { name: 'a fallen mask of the Order', kind: 'on the floor', frames: [fallenMask()] },
-    { name: 'a fallen merlon', kind: 'obstacle', frames: [merlon()], shadow: 0.6 },
-    { name: 'the cold beacon', kind: 'obstacle', frames: [beacon()], shadow: 0.5 },
-  ];
+  made = quietTowerMakers().map((make, i) => QUIETTOWER_AHEAD.take(String(i), make));
   return made;
 }

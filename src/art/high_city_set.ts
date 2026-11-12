@@ -40,6 +40,8 @@ import { hash, mix } from './kit';
 import type { Ramp } from './kit';
 import { EMBER } from './props';
 import { BLACK, HOLE, IRON, MASK, PAPER, cylinder, done, facing, frontPiece, local, lying, scene, slab, turned } from './act2_kit';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 const AX3: readonly [V3, V3, V3] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -1667,50 +1669,72 @@ function birdCage(): Sprite {
 
 let made: Piece[] | null = null;
 /** THE HIGH CITY'S OWN PIECES, the set's twenty-five for floors 16 to 20, made the first time they are asked for and kept. */
-export function highCitySetPieces(): Piece[] {
-  if (made) return made;
-  made = [
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE HIGH CITY'S SET, each
+ * piece's maker in the list's order: the list made a piece a step (highCitySetPieceSteps), or all at once (highCitySetPieces). Each painted as it was.
+ */
+function highCitySetMakers(): (() => Piece)[] {
+  return [
     // HUNG ON THE WALL (each at its spots: on a room's wall, along it, higher for a tall hall or a palace front)
     // (frames: the Princess's, the Prince's, the Queen's, the King's)
-    { name: "a royal's banner", kind: 'on the wall', ...onWall(ROYALS.map((r) => ({ make: royalBanner(r) })), HUNG) },
-    { name: 'a court portrait, faces painted out', kind: 'on the wall', ...onWall([{ make: portrait() }], HUNG) },
+    () => ({ name: "a royal's banner", kind: 'on the wall', ...onWall(ROYALS.map((r) => ({ make: royalBanner(r) })), HUNG) }),
+    () => ({ name: 'a court portrait, faces painted out', kind: 'on the wall', ...onWall([{ make: portrait() }], HUNG) }),
     // (lit, two frames; out)
-    { name: 'a gilt sconce', kind: 'on the wall', ...onWall([0, 1, 2].map((f) => ({ make: sconce(f), lights: f < 2 ? (w: WallAt): WallLight[] => [{ at: w(0, 7, 55), r: 30 + f * 3, color: EMBER[2], a: 0.4 }] : undefined })), HUNG) },
-    { name: 'a court notice, gone blank', kind: 'on the wall', ...onWall([{ make: courtNotice() }], HUNG) },
-    { name: "the Order's mask over the crest", kind: 'on the wall', ...onWall([{ make: maskOverCrest() }], HUNG) },
+    () => ({ name: 'a gilt sconce', kind: 'on the wall', ...onWall([0, 1, 2].map((f) => ({ make: sconce(f), lights: f < 2 ? (w: WallAt): WallLight[] => [{ at: w(0, 7, 55), r: 30 + f * 3, color: EMBER[2], a: 0.4 }] : undefined })), HUNG) }),
+    () => ({ name: 'a court notice, gone blank', kind: 'on the wall', ...onWall([{ make: courtNotice() }], HUNG) }),
+    () => ({ name: "the Order's mask over the crest", kind: 'on the wall', ...onWall([{ make: maskOverCrest() }], HUNG) }),
     // (shut, open, sealed by the Order)
-    { name: 'a palace door', kind: 'door', ...onWall((['shut', 'open', 'sealed'] as const).map((s) => ({ make: palaceDoor(s) })), [[0, 0]]) },
+    () => ({ name: 'a palace door', kind: 'door', ...onWall((['shut', 'open', 'sealed'] as const).map((s) => ({ make: palaceDoor(s) })), [[0, 0]]) }),
     // OUT ON THE HILL
-    { name: 'a gilt lamp post', kind: 'obstacle', frames: [lampPost(0), lampPost(1)], shadow: 0.25 },
+    () => ({ name: 'a gilt lamp post', kind: 'obstacle', frames: [lampPost(0), lampPost(1)], shadow: 0.25 }),
     // (frames: along x, along y; the Order's mask on them along x, along y)
-    { name: 'palace railings', kind: 'obstacle', frames: [railings(0, false), railings(1, false), railings(0, true), railings(1, true)], shadow: 0.2 },
+    () => ({ name: 'palace railings', kind: 'obstacle', frames: [railings(0, false), railings(1, false), railings(0, true), railings(1, true)], shadow: 0.2 }),
     // (its opening to +y, to +x)
-    { name: 'a sentry box', kind: 'obstacle', frames: [sentryBox(0), sentryBox(1)], shadow: 0.5 },
-    { name: 'a marble statue of a royal', kind: 'obstacle', frames: [statue()], shadow: 0.5 },
+    () => ({ name: 'a sentry box', kind: 'obstacle', frames: [sentryBox(0), sentryBox(1)], shadow: 0.5 }),
+    () => ({ name: 'a marble statue of a royal', kind: 'obstacle', frames: [statue()], shadow: 0.5 }),
     // (seen from before, from behind)
-    { name: 'the fountain of the four royals', kind: 'obstacle', frames: [fountain(0), fountain(2)], shadow: 1.2 },
+    () => ({ name: 'the fountain of the four royals', kind: 'obstacle', frames: [fountain(0), fountain(2)], shadow: 1.2 }),
     // (its pole to +y, to +x)
-    { name: 'a royal coach, abandoned', kind: 'obstacle', frames: [coach(0), coach(1)], shadow: 1.1 },
+    () => ({ name: 'a royal coach, abandoned', kind: 'obstacle', frames: [coach(0), coach(1)], shadow: 1.1 }),
     // IN THE PALACE'S ROOMS
     // (along x, along y)
-    { name: 'a velvet rope barrier', kind: 'obstacle', frames: [ropeBarrier(0), ropeBarrier(1)], shadow: 0.2 },
-    { name: 'a gilt chair', kind: 'breakable', frames: [giltChair(false), giltChair(true)], shadow: 0.3 },
-    { name: 'a royal card table', kind: 'obstacle', frames: [cardTable()], shadow: 0.55 },
-    { name: 'a silver tea service, left out', kind: 'breakable', frames: [teaService(false), teaService(true)], shadow: 0.4 },
-    { name: 'a grand vase', kind: 'breakable', frames: [grandVase(false), grandVase(true)], shadow: 0.3 },
-    { name: 'a hat stand, cloaks left on it', kind: 'obstacle', frames: [hatStand()], shadow: 0.3 },
-    { name: "the heralds' trumpets, stopped", kind: 'obstacle', frames: [heraldsTrumpets()], shadow: 0.35 },
+    () => ({ name: 'a velvet rope barrier', kind: 'obstacle', frames: [ropeBarrier(0), ropeBarrier(1)], shadow: 0.2 }),
+    () => ({ name: 'a gilt chair', kind: 'breakable', frames: [giltChair(false), giltChair(true)], shadow: 0.3 }),
+    () => ({ name: 'a royal card table', kind: 'obstacle', frames: [cardTable()], shadow: 0.55 }),
+    () => ({ name: 'a silver tea service, left out', kind: 'breakable', frames: [teaService(false), teaService(true)], shadow: 0.4 }),
+    () => ({ name: 'a grand vase', kind: 'breakable', frames: [grandVase(false), grandVase(true)], shadow: 0.3 }),
+    () => ({ name: 'a hat stand, cloaks left on it', kind: 'obstacle', frames: [hatStand()], shadow: 0.3 }),
+    () => ({ name: "the heralds' trumpets, stopped", kind: 'obstacle', frames: [heraldsTrumpets()], shadow: 0.35 }),
     // (lit, two frames; out)
-    { name: 'a standing candelabrum', kind: 'obstacle', frames: [candelabrum(0), candelabrum(1), candelabrum(2)], shadow: 0.25 },
-    { name: "a songbird's cage, silent", kind: 'obstacle', frames: [birdCage()], shadow: 0.3 },
+    () => ({ name: 'a standing candelabrum', kind: 'obstacle', frames: [candelabrum(0), candelabrum(1), candelabrum(2)], shadow: 0.25 }),
+    () => ({ name: "a songbird's cage, silent", kind: 'obstacle', frames: [birdCage()], shadow: 0.3 }),
     // ON THE FLOOR
     // (a tile of a runner: along x, along y; it runs on seamlessly)
-    { name: 'a royal carpet', kind: 'floor tile', frames: [royalCarpet(0), royalCarpet(1)] },
-    { name: 'a heap of invitations', kind: 'on the floor', frames: [invitations()] },
-    { name: 'a dropped fan and a rose', kind: 'on the floor', frames: [droppedFan()] },
+    () => ({ name: 'a royal carpet', kind: 'floor tile', frames: [royalCarpet(0), royalCarpet(1)] }),
+    () => ({ name: 'a heap of invitations', kind: 'on the floor', frames: [invitations()] }),
+    () => ({ name: 'a dropped fan and a rose', kind: 'on the floor', frames: [droppedFan()] }),
     // HIS ROYAL CARDS: the card each touched enemy drops (the Princess's, the Prince's, the Queen's, the King's)
-    { name: 'a royal card', kind: 'quest', frames: ROYALS.map(royalCard) },
+    () => ({ name: 'a royal card', kind: 'quest', frames: ROYALS.map(royalCard) }),
   ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const HIGHCITYSET_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function highCitySetPiecesHeld(): number {
+  return HIGHCITYSET_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function highCitySetPieceCount(): number {
+  return highCitySetMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function highCitySetPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...highCitySetMakers().map((make, i) => HIGHCITYSET_AHEAD.step(String(i), make)), () => void highCitySetPieces()];
+}
+export function highCitySetPieces(): Piece[] {
+  if (made) return made;
+  made = highCitySetMakers().map((make, i) => HIGHCITYSET_AHEAD.take(String(i), make));
   return made;
 }
 

@@ -44,6 +44,8 @@ import { COAL, EMBER } from './props';
 import { BRASS, IRON, SOFT_ID, cylinder, done, frontPiece, lying, scene, turned } from './act2_kit';
 import { bright } from './act2_quiet';
 import { MQ_SCARLET, WIN } from './masque';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 const AXES: readonly [V3, V3, V3] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -1607,45 +1609,67 @@ export const CLOCK_FRAMES = { swing: [0, 1, 2, 3], chime: [4, 5], perFacing: 6 }
 
 let made: Piece[] | null = null;
 /** THE MASQUE'S OWN PIECES, the Prince's twenty-five, made the first time they are asked for and kept. */
-export function masquePieces(): Piece[] {
-  if (made) return made;
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE MASQUE'S (floor 17), each
+ * piece's maker in the list's order: the list made a piece a step (masquePieceSteps), or all at once (masquePieces). Each painted as it was.
+ */
+function masqueMakers(): (() => Piece)[] {
   const clock = (k: number): Sprite[] => [...CLOCK_SWING.map((s) => clockFrame(k, s, 0)), clockFrame(k, CLOCK_SWING[0], 1), clockFrame(k, CLOCK_SWING[0], 2)];
   const both = (ss: { left: Sprite; right: Sprite }[]): { left: Sprite[]; right: Sprite[] } => ({ left: ss.map((s) => s.left), right: ss.map((s) => s.right) });
-  made = [
+  return [
     // (frames: its pendulum, four; its chime, two; then the same looking along +x)
-    { name: 'the great ebony clock', kind: 'obstacle', frames: [...clock(0), ...clock(1)], shadow: 0.7 },
+    () => ({ name: 'the great ebony clock', kind: 'obstacle', frames: [...clock(0), ...clock(1)], shadow: 0.7 }),
     // (frames: its fire, four)
-    { name: 'a brazier on its tripod', kind: 'obstacle', frames: [0, 1, 2, 3].map(brazier), shadow: 0.45 },
+    () => ({ name: 'a brazier on its tripod', kind: 'obstacle', frames: [0, 1, 2, 3].map(brazier), shadow: 0.45 }),
     // (frames: lit, half guttered out)
-    { name: 'a gilt candelabrum', kind: 'obstacle', frames: [candelabrum(false), candelabrum(true)], shadow: 0.35 },
+    () => ({ name: 'a gilt candelabrum', kind: 'obstacle', frames: [candelabrum(false), candelabrum(true)], shadow: 0.35 }),
     // (it hangs over the floor: frames lit, out)
-    { name: 'a crystal chandelier', kind: 'obstacle', frames: [chandelier(true), chandelier(false)], shadow: 0 },
-    { name: 'a gilt sconce', kind: 'on the wall', ...both([sconce(true), sconce(false)]) },
-    { name: 'black velvet at a window lit red', kind: 'on the wall', ...both([velvetWindow()]) },
-    { name: 'a tapestry of the masque', kind: 'on the wall', ...both([tapestry(false), tapestry(true)]) },
-    { name: 'a pier glass, its glass gone', kind: 'on the wall', ...both([pierGlass()]) },
+    () => ({ name: 'a crystal chandelier', kind: 'obstacle', frames: [chandelier(true), chandelier(false)], shadow: 0 }),
+    () => ({ name: 'a gilt sconce', kind: 'on the wall', ...both([sconce(true), sconce(false)]) }),
+    () => ({ name: 'black velvet at a window lit red', kind: 'on the wall', ...both([velvetWindow()]) }),
+    () => ({ name: 'a tapestry of the masque', kind: 'on the wall', ...both([tapestry(false), tapestry(true)]) }),
+    () => ({ name: 'a pier glass, its glass gone', kind: 'on the wall', ...both([pierGlass()]) }),
     // (they hang: frames turned one way, the other)
-    { name: 'gilt ornaments hanging from the roof', kind: 'obstacle', frames: [hangingOrnaments(0), hangingOrnaments(1)], shadow: 0 },
-    { name: 'a gilt chair', kind: 'breakable', frames: [giltChair(false), giltChair(true)], shadow: 0.3 },
+    () => ({ name: 'gilt ornaments hanging from the roof', kind: 'obstacle', frames: [hangingOrnaments(0), hangingOrnaments(1)], shadow: 0 }),
+    () => ({ name: 'a gilt chair', kind: 'breakable', frames: [giltChair(false), giltChair(true)], shadow: 0.3 }),
     // (frames: its length along x, along y)
-    { name: 'a fainting couch', kind: 'obstacle', frames: [couch(0), couch(1)], shadow: 0.7 },
-    { name: 'a card table with royal cards', kind: 'breakable', frames: [cardTable(false), cardTable(true)], shadow: 0.5 },
-    { name: 'royal cards, scattered', kind: 'on the floor', frames: [scatteredCards()] },
+    () => ({ name: 'a fainting couch', kind: 'obstacle', frames: [couch(0), couch(1)], shadow: 0.7 }),
+    () => ({ name: 'a card table with royal cards', kind: 'breakable', frames: [cardTable(false), cardTable(true)], shadow: 0.5 }),
+    () => ({ name: 'royal cards, scattered', kind: 'on the floor', frames: [scatteredCards()] }),
     // (frames: its length along x, along y)
-    { name: 'a buffet of a feast gone cold', kind: 'obstacle', frames: [buffet(0), buffet(1)], shadow: 1.1 },
-    { name: 'a harpsichord', kind: 'obstacle', frames: [harpsichord(0), harpsichord(1)], shadow: 0.9 },
-    { name: 'a viol and its stand', kind: 'breakable', frames: [violStand(false), violStand(true)], shadow: 0.35 },
-    { name: 'a folding screen of arabesques', kind: 'breakable', frames: [screen(false), screen(true)], shadow: 0.6 },
-    { name: "a footman's tray", kind: 'breakable', frames: [footmansTray(false), footmansTray(true)], shadow: 0.35 },
-    { name: 'masks dropped on the floor', kind: 'on the floor', frames: [droppedMasks()] },
-    { name: 'wine spilled', kind: 'on the floor', frames: [wineSpilled()] },
-    { name: 'gilt ornaments, scattered', kind: 'on the floor', frames: [scatteredOrnaments()] },
-    { name: 'the royal crest in the floor', kind: 'floor tile', frames: [crestInFloor()] },
+    () => ({ name: 'a buffet of a feast gone cold', kind: 'obstacle', frames: [buffet(0), buffet(1)], shadow: 1.1 }),
+    () => ({ name: 'a harpsichord', kind: 'obstacle', frames: [harpsichord(0), harpsichord(1)], shadow: 0.9 }),
+    () => ({ name: 'a viol and its stand', kind: 'breakable', frames: [violStand(false), violStand(true)], shadow: 0.35 }),
+    () => ({ name: 'a folding screen of arabesques', kind: 'breakable', frames: [screen(false), screen(true)], shadow: 0.6 }),
+    () => ({ name: "a footman's tray", kind: 'breakable', frames: [footmansTray(false), footmansTray(true)], shadow: 0.35 }),
+    () => ({ name: 'masks dropped on the floor', kind: 'on the floor', frames: [droppedMasks()] }),
+    () => ({ name: 'wine spilled', kind: 'on the floor', frames: [wineSpilled()] }),
+    () => ({ name: 'gilt ornaments, scattered', kind: 'on the floor', frames: [scatteredOrnaments()] }),
+    () => ({ name: 'the royal crest in the floor', kind: 'floor tile', frames: [crestInFloor()] }),
     // (frames: shut, open)
-    { name: 'the great doors', kind: 'door', ...both([greatDoors(false), greatDoors(true)]) },
+    () => ({ name: 'the great doors', kind: 'door', ...both([greatDoors(false), greatDoors(true)]) }),
     // (frames: shut and open looking along +y, shut and open along +x)
-    { name: 'the iron gates, their bolts welded', kind: 'gate', frames: [0, 1].flatMap((k) => [ironGates(false, k), ironGates(true, k)]), shadow: 0.9 },
-    { name: "the prince's bargain with the Order", kind: 'quest', frames: [bargain()], shadow: 0.3 },
+    () => ({ name: 'the iron gates, their bolts welded', kind: 'gate', frames: [0, 1].flatMap((k) => [ironGates(false, k), ironGates(true, k)]), shadow: 0.9 }),
+    () => ({ name: "the prince's bargain with the Order", kind: 'quest', frames: [bargain()], shadow: 0.3 }),
   ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const MASQUE_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function masquePiecesHeld(): number {
+  return MASQUE_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function masquePieceCount(): number {
+  return masqueMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function masquePieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...masqueMakers().map((make, i) => MASQUE_AHEAD.step(String(i), make)), () => void masquePieces()];
+}
+export function masquePieces(): Piece[] {
+  if (made) return made;
+  made = masqueMakers().map((make, i) => MASQUE_AHEAD.take(String(i), make));
   return made;
 }

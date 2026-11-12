@@ -4,8 +4,8 @@
 // Until the fifth was put in, a floor deeper than the fourth looked as the fourth (cryptFloor); it still
 // does past the fifth, and with FIRST5 off (game/ways.ts) the fifth does too.
 
-import { CHAPEL, makeChapelArt } from './chapel';
-import { TOMB, makeTombArt, tombStairwell } from './tomb';
+import { CHAPEL, chapelSteps, makeChapelArt } from './chapel';
+import { TOMB, makeTombArt, tombSteps, tombStairwell } from './tomb';
 import { LAIR_TEMPLE, makeLairTempleArt } from './lair_temple';
 import { PRISON, makePrisonArt } from './prison';
 import { GROUNDS, makeGroundsArt } from './grounds';
@@ -109,7 +109,11 @@ export function lookPieces(k: number): Map<string, Piece> {
  */
 export function lookPieceSteps(k: number): LoadStep[] {
   if (PIECES.has(k)) return [];
-  return [() => void lookPieces(k)];
+  // (FLOOR 1'S TOMB and FLOOR 4'S CHAPEL, the two slowest, their builders a part a step (each 1.1 to 1.5 s made at once under the
+  // loading screen, measured in Chrome by the Loading-frames chat); the queue's make-floors-look-builders-in-parts: art/tomb.ts
+  // tombSteps, art/chapel.ts chapelSteps. The others as one step, as before)
+  const parts = k === 1 && TOMB.on ? tombSteps() : k === 4 && CHAPEL.on ? chapelSteps() : [];
+  return [...parts, () => void lookPieces(k)];
 }
 /** Let go of every floor's pieces but this one's (they are made again if they are wanted). */
 export function forgetPieces(keep: number): void {
@@ -131,15 +135,30 @@ export function lookHazards(k: number, traps: { holes: string; plate: string; sl
   let h = HAZARDS.get(k);
   if (h) return h;
   const base = makeHazardArt(k === 5 ? LAIR : CRYPT_FLOORS[Math.max(1, Math.min(4, k)) - 1]);
-  const P = lookPieces(k);
-  const holes = P.get(traps.holes)?.frames;
-  const plate = P.get(traps.plate)?.frames;
-  const slot = P.get(traps.slot);
+  // (the floor's own pieces looked up the first time a hole, a plate or a slot is drawn, and held from then on, not as the art is
+  // made: FLOORS 6 TO 20 take floor 4's traps for their spikes rising (main.ts placeFrame: floorLook of a deeper floor is 4), and
+  // draw their holes with Act 1's own pictures, never these: made here, floor 4's pieces cost them about 1.4 s for nothing. The
+  // same pictures wherever one is drawn: render/pieces.ts has made the floor's pieces already on floors 1 to 5)
+  let own: { holes?: Sprite[]; plate?: Sprite[]; slot?: Piece } | null = null;
+  const P = (): NonNullable<typeof own> => {
+    if (!own) {
+      const m = lookPieces(k);
+      own = { holes: m.get(traps.holes)?.frames, plate: m.get(traps.plate)?.frames, slot: m.get(traps.slot) };
+    }
+    return own;
+  };
   h = {
-    holes: (glint) => (holes ? holes[glint && holes[1] ? 1 : 0] : base.holes(glint)),
+    holes: (glint) => {
+      const holes = P().holes;
+      return holes ? holes[glint && holes[1] ? 1 : 0] : base.holes(glint);
+    },
     spike: (n) => base.spike(n),
-    plate: (pressed) => (plate ? plate[pressed && plate[1] ? 1 : 0] : base.plate(pressed)),
+    plate: (pressed) => {
+      const plate = P().plate;
+      return plate ? plate[pressed && plate[1] ? 1 : 0] : base.plate(pressed);
+    },
     slot: (alongX) => {
+      const slot = P().slot;
       const s = slot ? (alongX ? slot.left : slot.right) : null;
       return s && s[0] ? s[0] : base.slot(alongX);
     },

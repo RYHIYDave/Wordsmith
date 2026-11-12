@@ -2167,8 +2167,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       out.push(() => void lookGround(crypt));
       out.push(() => void lookProps(crypt));
       if (FIRST5.on && crypt >= 1 && crypt <= 5) {
-        // (the look's own pieces, its builder in parts where it has them: art/floors.ts lookPieceSteps)
-        out.push(() => lookPieceSteps(crypt));
+        // (the look's own pieces, its builder in parts where it has them: art/floors.ts lookPieceSteps; NOT ON A FLOOR DRESSED BY
+        // ACT 1 (6 to 20, which take look 4): it lays only spikes, its holes in its own pictures, no doors, no levers, no floor 4
+        // dressing, so floor 4's pieces are never drawn there: making them cost about 1.4 s. lookHazards takes them only if drawn)
+        if (!g.level.act1) out.push(() => lookPieceSteps(crypt));
         out.push(() => void lookGates(crypt));
         out.push(() => void lookHazards(crypt, FLOOR_SETS[crypt - 1].traps));
       }

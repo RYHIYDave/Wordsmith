@@ -45,7 +45,7 @@ import { GRAIN, hash } from './kit';
 import { EMBER } from './props';
 import { SHINES } from './floorkit';
 import type { Piece, PieceKind, Spot } from './floorkit';
-import { ossuaryPieces } from './floor4';
+import { ossuaryPieceCount, ossuaryPieceSteps, ossuaryPieces } from './floor4';
 import { CAVE_FRAMES, caveFilm } from './cave4';
 import { Ahead } from '../engine/steps';
 import type { LoadStep } from '../engine/steps';
@@ -1391,6 +1391,7 @@ let made: ChapelArt | null = null;
 export function forgetMade(): void {
   made = null;
   STRETCH_AHEAD.clear();
+  CHAPEL_AHEAD.clear();
 }
 /** The chapel's pictures, made the first time they are asked for and kept (the stretches and the cave when first asked for). */
 /** (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) The frames of the mine's break-in and of the way in, made ahead. */
@@ -1401,13 +1402,82 @@ export function chapelStretchSteps(alongX: boolean, way: boolean): LoadStep[] {
   const paint = (f: number): Sprite => (way ? wayInPicture(alongX, f) : breakInPicture(alongX, f));
   return [...four.map((f) => STRETCH_AHEAD.step(`${key}:${f}`, () => paint(f))), () => void (way ? makeChapelArt().wayIn(alongX) : makeChapelArt().breakIn(alongX))];
 }
+/**
+ * THE CHAPEL'S PICTURES IN PARTS (main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts): what it makes all at once as
+ * it is made (its walls' and its hall's faces, its tiles, its own pieces and floor 4's in its colours), each a part. As they are made
+ * each part is taken from here where a step of the loading screen has made it ahead (chapelSteps), or made then, as before: the same
+ * makers, the same pictures. A part is taken once, and all of it is let go of with the chapel's pictures (forgetMade).
+ */
+const CHAPEL_AHEAD = new Ahead();
+/** How the builder gets a part: `key` its name, `make` how it is made. Building, it is taken or made; planning, it is listed as a step. */
+type Part = <T>(key: string, make: () => T) => T;
+const taken: Part = (key, make) => CHAPEL_AHEAD.take(key, make);
+/** (planning: each part listed as a step, nothing made; what the builder builds with it is thrown away) */
+const planned = (steps: LoadStep[]): Part => (key, make) => {
+  steps.push(CHAPEL_AHEAD.step(key, make));
+  return null as never;
+};
+/** (for the tests) How many parts are put by, not yet taken. */
+export function chapelPartsHeld(): number {
+  return CHAPEL_AHEAD.size;
+}
+/** What the chapel makes at once as it is made, a part at a time: `part` gives each (planning, it lists them). */
+function chapelPartsOf(part: Part): { faceLeft: Sprite[][]; faceRight: Sprite[][]; hallLeft: Sprite[][]; hallRight: Sprite[][]; tiles: Piece[]; pieces: Piece[] } {
+  const faces = (alongX: boolean, kind: WallKind, seed0: number): Sprite[][] => [0, 1, 2, 3].map((k) => four.map((f) => part(`face:${kind}:${alongX}:${k}:${f}`, () => wallTile(alongX, k % 2, seed0 + k * 17, f, kind))));
+  const tile = (name: string, frames: Sprite[]): Piece => ({ name, kind: 'floor tile' as PieceKind, frames });
+  const one = (key: string, make: () => Sprite): Sprite[] => [part(key, make)];
+  return {
+    faceLeft: faces(true, 'chapel', 300),
+    faceRight: faces(false, 'chapel', 307),
+    hallLeft: faces(true, 'hall', 371),
+    hallRight: faces(false, 'hall', 372),
+    tiles: [
+      tile('a grave slab', one('slab', () => slabTile('y', 1, 0, 1))),
+      tile('a grave slab along x, its head', one('slab x head', () => slabTile('x', 2, 0, 2))),
+      tile('a grave slab along x, its foot', one('slab x foot', () => slabTile('x', 2, 1, 2))),
+      tile('a grave slab along y, its head', one('slab y head', () => slabTile('y', 2, 0, 3))),
+      tile('a grave slab along y, its foot', one('slab y foot', () => slabTile('y', 2, 1, 3))),
+      tile('bone dust', one('dust', () => dustTile('none', 701))),
+      tile('bone dust at a wall along x', one('dust x', () => dustTile('x', 703))),
+      tile('bone dust at a wall along y', one('dust y', () => dustTile('y', 705))),
+      tile('bone chips', one('chips', () => chipsTile())),
+      tile('rubble from the break, along x', one('rubble x', () => rubbleTile('x'))),
+      tile('rubble from the break, along y', one('rubble y', () => rubbleTile('y'))),
+      tile('earth spilled from the break, along x', one('earth x', () => earthTile('x'))),
+      tile('earth spilled from the break, along y', one('earth y', () => earthTile('y'))),
+    ],
+    pieces: [
+      { name: 'candles on the floor, a few', kind: 'on the floor', frames: four.map((f) => part(`candles few:${f}`, () => candlesOnFloor(5, 0.3, 3, f))) },
+      { name: 'candles on the floor, many', kind: 'on the floor', frames: four.map((f) => part(`candles many:${f}`, () => candlesOnFloor(9, 0.4, 5, f))) },
+      { name: 'rock spilled from the break, along x', kind: 'obstacle', frames: one('rock x', () => rockSpill(true)), shadow: 0.5 },
+      { name: 'rock spilled from the break, along y', kind: 'obstacle', frames: one('rock y', () => rockSpill(false)), shadow: 0.5 },
+      { name: 'a broken pew', kind: 'obstacle', frames: one('pew snapped', () => pew('snapped', 0.3)), shadow: 0.44 },
+      { name: 'a pew thrown down', kind: 'obstacle', frames: one('pew back', () => pew('back', -0.45)), shadow: 0.44 },
+      { name: 'a dropped pick', kind: 'on the floor', frames: one('pick', () => droppedPick()) },
+      { name: 'a pier of the hall, its ribs toward x', kind: 'obstacle', frames: one('pier toward', () => pierPicture(1)), shadow: 0.4 },
+      { name: 'a pier of the hall, its ribs away from x', kind: 'obstacle', frames: one('pier away', () => pierPicture(-1)), shadow: 0.4 },
+      // (floor 4's own pieces in look A's colours, each a part: floor 4's list made a piece a step first, art/floor4.ts ossuaryPieceSteps)
+      ...Array.from({ length: ossuaryPieceCount() }, (_, i) => part(`ossuary:${i}`, () => gradePiece(ossuaryPieces()[i]))),
+    ],
+  };
+}
+/**
+ * THE CHAPEL'S PICTURES AS STEPS OF THE LOADING SCREEN'S (main.ts LOAD_SLICE, art/floors.ts lookPieceSteps): floor 4's own pieces
+ * a piece a step, then each part the chapel makes at once, then the chapel itself (it takes them). None once it is made.
+ */
+export function chapelSteps(): LoadStep[] {
+  if (made) return [];
+  const steps: LoadStep[] = [...ossuaryPieceSteps()];
+  chapelPartsOf(planned(steps));
+  steps.push(() => void makeChapelArt());
+  return steps;
+}
 export function makeChapelArt(): ChapelArt {
   if (made) return made;
   const floors = new Map<string, Sprite>();
-  const faces = (alongX: boolean, kind: WallKind, seed0: number): Sprite[][] => [0, 1, 2, 3].map((k) => four.map((f) => wallTile(alongX, k % 2, seed0 + k * 17, f, kind)));
-  const faceLeft = faces(true, 'chapel', 300);
-  const faceRight = faces(false, 'chapel', 307);
-  const tile = (name: string, frames: Sprite[]): Piece => ({ name, kind: 'floor tile' as PieceKind, frames });
+  const own = chapelPartsOf(taken);
+  const faceLeft = own.faceLeft;
+  const faceRight = own.faceRight;
   const stretches = new Map<string, ChapelStretch>();
   const stretch = (key: string, make: (f: number) => Sprite): ChapelStretch => {
     let s = stretches.get(key);
@@ -1415,7 +1485,6 @@ export function makeChapelArt(): ChapelArt {
     if (!s) stretches.set(key, (s = { frames: four.map((f) => STRETCH_AHEAD.take(`${key}:${f}`, () => make(f))) }));
     return s;
   };
-  const own = ossuaryPieces().map(gradePiece);
   made = {
     floor(tx, ty) {
       const a = ((tx % 4) + 4) % 4;
@@ -1425,21 +1494,7 @@ export function makeChapelArt(): ChapelArt {
       if (!s) floors.set(key, (s = tileOf((x, y) => floorAt(x, y), a, b)));
       return s;
     },
-    tiles: [
-      tile('a grave slab', [slabTile('y', 1, 0, 1)]),
-      tile('a grave slab along x, its head', [slabTile('x', 2, 0, 2)]),
-      tile('a grave slab along x, its foot', [slabTile('x', 2, 1, 2)]),
-      tile('a grave slab along y, its head', [slabTile('y', 2, 0, 3)]),
-      tile('a grave slab along y, its foot', [slabTile('y', 2, 1, 3)]),
-      tile('bone dust', [dustTile('none', 701)]),
-      tile('bone dust at a wall along x', [dustTile('x', 703)]),
-      tile('bone dust at a wall along y', [dustTile('y', 705)]),
-      tile('bone chips', [chipsTile()]),
-      tile('rubble from the break, along x', [rubbleTile('x')]),
-      tile('rubble from the break, along y', [rubbleTile('y')]),
-      tile('earth spilled from the break, along x', [earthTile('x')]),
-      tile('earth spilled from the break, along y', [earthTile('y')]),
-    ],
+    tiles: own.tiles,
     faceLeft,
     faceRight,
     face(alongX, tx, ty, f = 0) {
@@ -1452,22 +1507,11 @@ export function makeChapelArt(): ChapelArt {
     breakIn: (alongX) => stretch(`break${alongX}`, (f) => breakInPicture(alongX, f)),
     wayIn: (alongX) => stretch(`way${alongX}`, (f) => wayInPicture(alongX, f)),
     hall: {
-      faceLeft: faces(true, 'hall', 371),
-      faceRight: faces(false, 'hall', 372),
+      faceLeft: own.hallLeft,
+      faceRight: own.hallRight,
       cave: chapelCave,
     },
-    pieces: [
-      { name: 'candles on the floor, a few', kind: 'on the floor', frames: four.map((f) => candlesOnFloor(5, 0.3, 3, f)) },
-      { name: 'candles on the floor, many', kind: 'on the floor', frames: four.map((f) => candlesOnFloor(9, 0.4, 5, f)) },
-      { name: 'rock spilled from the break, along x', kind: 'obstacle', frames: [rockSpill(true)], shadow: 0.5 },
-      { name: 'rock spilled from the break, along y', kind: 'obstacle', frames: [rockSpill(false)], shadow: 0.5 },
-      { name: 'a broken pew', kind: 'obstacle', frames: [pew('snapped', 0.3)], shadow: 0.44 },
-      { name: 'a pew thrown down', kind: 'obstacle', frames: [pew('back', -0.45)], shadow: 0.44 },
-      { name: 'a dropped pick', kind: 'on the floor', frames: [droppedPick()] },
-      { name: 'a pier of the hall, its ribs toward x', kind: 'obstacle', frames: [pierPicture(1)], shadow: 0.4 },
-      { name: 'a pier of the hall, its ribs away from x', kind: 'obstacle', frames: [pierPicture(-1)], shadow: 0.4 },
-      ...own,
-    ],
+    pieces: own.pieces,
   };
   return made;
 }

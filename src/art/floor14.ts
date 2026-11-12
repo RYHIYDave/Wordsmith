@@ -31,6 +31,8 @@ import { FLAME } from './mkit';
 import { HUSH } from './crier';
 import { bright } from './act2_quiet';
 import { BLACK, BRASS, IRON, MASK, OAK, ROPE, SOFT_ID, checker, cylinder, done, facing, frontPiece, lying, scene, slab, turned } from './act2_kit';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 
@@ -856,42 +858,64 @@ function ledger(): Sprite {
 
 let made: Piece[] | null = null;
 /** FLOOR 14'S PIECES, the Physician's: 25. */
-export function houseOfQuietPieces(): Piece[] {
-  if (made) return made;
-  made = [
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE HOUSE OF QUIET'S (floor 14), each
+ * piece's maker in the list's order: the list made a piece a step (houseOfQuietPieceSteps), or all at once (houseOfQuietPieces). Each painted as it was.
+ */
+function houseOfQuietMakers(): (() => Piece)[] {
+  return [
     // (frames: made and risen, its length along x, its head toward -x; the same along y, its head toward -y: its head
     // against a far wall either way)
-    { name: 'an iron ward bed', kind: 'obstacle', frames: [0, 3].flatMap((k) => [wardBed(false, k), wardBed(true, k)]), shadow: 0.9 },
+    () => ({ name: 'an iron ward bed', kind: 'obstacle', frames: [0, 3].flatMap((k) => [wardBed(false, k), wardBed(true, k)]), shadow: 0.9 }),
     // (frames: whole; half there, while someone is behind it)
-    { name: 'a ward screen', kind: 'obstacle', frames: [wardScreen(false), wardScreen(true)], shadow: 0.8 },
-    { name: 'a bedside locker', kind: 'breakable', frames: [locker(false), locker(true)], shadow: 0.3 },
+    () => ({ name: 'a ward screen', kind: 'obstacle', frames: [wardScreen(false), wardScreen(true)], shadow: 0.8 }),
+    () => ({ name: 'a bedside locker', kind: 'breakable', frames: [locker(false), locker(true)], shadow: 0.3 }),
     // (the Bells: quiet, awake, rung one way, rung back)
-    { name: "a patient's call bell", kind: 'on the wall', ...withFramesN([0, 1, 2, 3].map(callBell)) },
-    { name: 'a hamper of soiled linen', kind: 'breakable', frames: [hamper(false), hamper(true)], shadow: 0.4 },
-    { name: 'a washstand', kind: 'breakable', frames: [washstand(false), washstand(true)], shadow: 0.4 },
-    { name: 'a coal stove', kind: 'obstacle', frames: [stove()], shadow: 0.45 },
-    { name: 'a bath chair', kind: 'obstacle', frames: [bathChair()], shadow: 0.55 },
-    { name: 'a stretcher, left', kind: 'obstacle', frames: [stretcher()], shadow: 0.8 },
-    { name: "the ward's doors", kind: 'door', ...withFramesN([wardDoors(false), wardDoors(true)]) },
+    () => ({ name: "a patient's call bell", kind: 'on the wall', ...withFramesN([0, 1, 2, 3].map(callBell)) }),
+    () => ({ name: 'a hamper of soiled linen', kind: 'breakable', frames: [hamper(false), hamper(true)], shadow: 0.4 }),
+    () => ({ name: 'a washstand', kind: 'breakable', frames: [washstand(false), washstand(true)], shadow: 0.4 }),
+    () => ({ name: 'a coal stove', kind: 'obstacle', frames: [stove()], shadow: 0.45 }),
+    () => ({ name: 'a bath chair', kind: 'obstacle', frames: [bathChair()], shadow: 0.55 }),
+    () => ({ name: 'a stretcher, left', kind: 'obstacle', frames: [stretcher()], shadow: 0.8 }),
+    () => ({ name: "the ward's doors", kind: 'door', ...withFramesN([wardDoors(false), wardDoors(true)]) }),
     // (frames: shut and open along +y, shut and open along +x)
-    { name: "the Order's iron grille", kind: 'gate', frames: [0, 1].flatMap((k) => [grille(false, k), grille(true, k)]), shadow: 0.9 },
-    { name: 'a lamp of green glass', kind: 'on the wall', ...withFramesN([greenLamp(true), greenLamp(false)]) },
-    { name: 'a stand of candles', kind: 'obstacle', frames: [candles()], shadow: 0.35 },
+    () => ({ name: "the Order's iron grille", kind: 'gate', frames: [0, 1].flatMap((k) => [grille(false, k), grille(true, k)]), shadow: 0.9 }),
+    () => ({ name: 'a lamp of green glass', kind: 'on the wall', ...withFramesN([greenLamp(true), greenLamp(false)]) }),
+    () => ({ name: 'a stand of candles', kind: 'obstacle', frames: [candles()], shadow: 0.35 }),
     // (frames: its front along +y, along +x)
-    { name: "the apothecary's shelves", kind: 'obstacle', frames: [apothecaryShelves(0), apothecaryShelves(1)], shadow: 0.8 },
-    { name: "the apothecary's counter", kind: 'obstacle', frames: [counter(0), counter(1)], shadow: 1.0 },
-    { name: 'a rack of tonic vials', kind: 'breakable', frames: [vialRack(false), vialRack(true)], shadow: 0.35 },
+    () => ({ name: "the apothecary's shelves", kind: 'obstacle', frames: [apothecaryShelves(0), apothecaryShelves(1)], shadow: 0.8 }),
+    () => ({ name: "the apothecary's counter", kind: 'obstacle', frames: [counter(0), counter(1)], shadow: 1.0 }),
+    () => ({ name: 'a rack of tonic vials', kind: 'breakable', frames: [vialRack(false), vialRack(true)], shadow: 0.35 }),
     // (frames: lying, the warning, the cloud)
-    { name: 'spilled tonic', kind: 'trap', frames: [0, 1, 2].map(spilledTonic) },
-    { name: 'the operating table', kind: 'obstacle', frames: [operatingTable()], shadow: 1.0 },
-    { name: "the theatre's gallery", kind: 'obstacle', frames: [gallery()], shadow: 0 },
-    { name: "a tray of the Physician's instruments", kind: 'breakable', frames: [instruments(false), instruments(true)], shadow: 0.35 },
-    { name: 'a cabinet of last words', kind: 'obstacle', frames: [lastWords(0), lastWords(1)], shadow: 0.6 },
-    { name: "a drain in the theatre's floor", kind: 'floor tile', frames: [drain()] },
-    { name: 'the chapel bell (the Muffled Bell)', kind: 'obstacle', frames: [chapelBell(true), chapelBell(false, 0), chapelBell(false, 0.35), chapelBell(false, -0.35)], shadow: 0.9 },
-    { name: 'chapel pews', kind: 'obstacle', frames: [pews(0), pews(1)], shadow: 1.0 },
-    { name: "the Physician's ledger", kind: 'quest', frames: [ledger()], shadow: 0.4 },
+    () => ({ name: 'spilled tonic', kind: 'trap', frames: [0, 1, 2].map(spilledTonic) }),
+    () => ({ name: 'the operating table', kind: 'obstacle', frames: [operatingTable()], shadow: 1.0 }),
+    () => ({ name: "the theatre's gallery", kind: 'obstacle', frames: [gallery()], shadow: 0 }),
+    () => ({ name: "a tray of the Physician's instruments", kind: 'breakable', frames: [instruments(false), instruments(true)], shadow: 0.35 }),
+    () => ({ name: 'a cabinet of last words', kind: 'obstacle', frames: [lastWords(0), lastWords(1)], shadow: 0.6 }),
+    () => ({ name: "a drain in the theatre's floor", kind: 'floor tile', frames: [drain()] }),
+    () => ({ name: 'the chapel bell (the Muffled Bell)', kind: 'obstacle', frames: [chapelBell(true), chapelBell(false, 0), chapelBell(false, 0.35), chapelBell(false, -0.35)], shadow: 0.9 }),
+    () => ({ name: 'chapel pews', kind: 'obstacle', frames: [pews(0), pews(1)], shadow: 1.0 }),
+    () => ({ name: "the Physician's ledger", kind: 'quest', frames: [ledger()], shadow: 0.4 }),
   ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const HOUSEOFQUIET_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function houseOfQuietPiecesHeld(): number {
+  return HOUSEOFQUIET_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function houseOfQuietPieceCount(): number {
+  return houseOfQuietMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function houseOfQuietPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...houseOfQuietMakers().map((make, i) => HOUSEOFQUIET_AHEAD.step(String(i), make)), () => void houseOfQuietPieces()];
+}
+export function houseOfQuietPieces(): Piece[] {
+  if (made) return made;
+  made = houseOfQuietMakers().map((make, i) => HOUSEOFQUIET_AHEAD.take(String(i), make));
   return made;
 }
 

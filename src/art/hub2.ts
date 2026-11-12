@@ -26,6 +26,8 @@ import { bright } from './act2_quiet';
 import { cityGate } from './floor11';
 import { BRASS, CHAR, CREAM, BOTTLE, DEAL, IRON, MASK, OAK, OXBLOOD, PAPER, ROPE, SLATEBLUE, STONE, STRAW, MUSTARD, HOLE, cylinder, done, lying, planks, scene, slab, turned } from './act2_kit';
 import type { Theme } from './ground';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 export const HUB2 = { on: false };
 
@@ -804,32 +806,54 @@ export interface HubPiece {
 }
 
 let made: HubPiece[] | null = null;
-export function hubPieces(): HubPiece[] {
-  if (made) return made;
-  made = [
-    { name: 'the fountain', frames: [0, 1, 2, 3].map(fountain), shadow: 1.5 },
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE HUB'S, each
+ * piece's maker in the list's order: the list made a piece a step (hubPieceSteps), or all at once (hubPieces). Each painted as it was.
+ */
+function hubMakers(): (() => HubPiece)[] {
+  return [
+    () => ({ name: 'the fountain', frames: [0, 1, 2, 3].map(fountain), shadow: 1.5 }),
     // (frames: across x, its front along +y; across y, its front along +x)
-    { name: 'the ward arch', frames: [wardArch(0), wardArch(1)], shadow: 0 },
+    () => ({ name: 'the ward arch', frames: [wardArch(0), wardArch(1)], shadow: 0 }),
     // (frames: variant * 4 + facing)
-    { name: 'a tent', frames: [0, 1, 2, 3].flatMap((v) => [0, 1, 2, 3].map((k) => tent(v, k))), shadow: 1.1 },
-    { name: 'the cooking fire', frames: [0, 1, 2, 3].map(cookingFire), shadow: 0.5 },
-    { name: 'a log to sit on', frames: [logSeat(0), logSeat(1)], shadow: 0.5 },
+    () => ({ name: 'a tent', frames: [0, 1, 2, 3].flatMap((v) => [0, 1, 2, 3].map((k) => tent(v, k))), shadow: 1.1 }),
+    () => ({ name: 'the cooking fire', frames: [0, 1, 2, 3].map(cookingFire), shadow: 0.5 }),
+    () => ({ name: 'a log to sit on', frames: [logSeat(0), logSeat(1)], shadow: 0.5 }),
     // (frames: variant * 2 + which way)
-    { name: 'a bedroll', frames: [0, 1, 2, 3].flatMap((v) => [bedroll(v, 0), bedroll(v, 1)]), shadow: 0.3 },
+    () => ({ name: 'a bedroll', frames: [0, 1, 2, 3].flatMap((v) => [bedroll(v, 0), bedroll(v, 1)]), shadow: 0.3 }),
     // THE CITY'S GATE AS THE CAMP HOLDS IT (art/floor11.ts cityGate, held): the Order's banner down and the city's up, the
     // ink scrubbed off the arms, the dome's shard pulled out. (frames: its front along +y, along +x)
-    { name: 'the city gate, held', frames: [cityGate(0, true), cityGate(1, true)], shadow: 1.6 },
+    () => ({ name: 'the city gate, held', frames: [cityGate(0, true), cityGate(1, true)], shadow: 1.6 }),
     // THE CAMP'S SHOPS (his picks), and the rest camp-style to look at
-    { name: "the armourer's field forge", frames: [0, 1, 2, 3].map(forgeCart), shadow: 1.6 },
-    { name: "the armourer's anvil, on its stump", frames: [anvilStump()], shadow: 0.4 },
-    { name: "the mystic's caravan", frames: [caravan()], shadow: 2.0 },
-    { name: "the mystic's trestle", frames: [0, 1, 2, 3].map(trestle), shadow: 0.9 },
-    { name: 'the stash, on its cart', frames: [strongboxCart()], shadow: 0.6 },
-    { name: 'the Lexicon, on its crates', frames: [campLexicon(0), campLexicon(1)], shadow: 0.5 },
-    { name: "the wordsmith's stone, propped", frames: [0, 1, 2, 3, 4].map(proppedSlab), shadow: 0.45 },
-    { name: "the wordsmith's drum", frames: [columnDrum()], shadow: 0.5 },
-    { name: "the wordsmith's chalk ring", frames: [chalkRing()], shadow: 0 },
-    { name: "the stranger's barrel", frames: [0, 1].map(strangerBarrel), shadow: 0.5 },
+    () => ({ name: "the armourer's field forge", frames: [0, 1, 2, 3].map(forgeCart), shadow: 1.6 }),
+    () => ({ name: "the armourer's anvil, on its stump", frames: [anvilStump()], shadow: 0.4 }),
+    () => ({ name: "the mystic's caravan", frames: [caravan()], shadow: 2.0 }),
+    () => ({ name: "the mystic's trestle", frames: [0, 1, 2, 3].map(trestle), shadow: 0.9 }),
+    () => ({ name: 'the stash, on its cart', frames: [strongboxCart()], shadow: 0.6 }),
+    () => ({ name: 'the Lexicon, on its crates', frames: [campLexicon(0), campLexicon(1)], shadow: 0.5 }),
+    () => ({ name: "the wordsmith's stone, propped", frames: [0, 1, 2, 3, 4].map(proppedSlab), shadow: 0.45 }),
+    () => ({ name: "the wordsmith's drum", frames: [columnDrum()], shadow: 0.5 }),
+    () => ({ name: "the wordsmith's chalk ring", frames: [chalkRing()], shadow: 0 }),
+    () => ({ name: "the stranger's barrel", frames: [0, 1].map(strangerBarrel), shadow: 0.5 }),
   ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const HUB_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function hubPiecesHeld(): number {
+  return HUB_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function hubPieceCount(): number {
+  return hubMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function hubPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...hubMakers().map((make, i) => HUB_AHEAD.step(String(i), make)), () => void hubPieces()];
+}
+export function hubPieces(): HubPiece[] {
+  if (made) return made;
+  made = hubMakers().map((make, i) => HUB_AHEAD.take(String(i), make));
   return made;
 }

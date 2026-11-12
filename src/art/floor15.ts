@@ -31,6 +31,8 @@ import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import { bright } from './act2_quiet';
 import { BLACK, BOTTLE, BRASS, IRON, MASK, OXBLOOD, SLATEBLUE, SOFT_ID, cylinder, done, frontPiece, lying, scene, slab, turned } from './act2_kit';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 
@@ -978,42 +980,64 @@ function spiralStair(): Sprite {
 
 let made: Piece[] | null = null;
 /** FLOOR 15'S PIECES, the Censor's: 25. */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE GREAT LIBRARY'S (floor 15), each
+ * piece's maker in the list's order: the list made a piece a step (greatLibraryPieceSteps), or all at once (greatLibraryPieces). Each painted as it was.
+ */
+function greatLibraryMakers(): (() => Piece)[] {
+  return [
+    // (frames: its length along x, along y)
+    () => ({ name: 'a reading desk', kind: 'obstacle', frames: [readingDesk(0), readingDesk(1)], shadow: 1.0 }),
+    () => ({ name: 'a reading chair', kind: 'breakable', frames: [readingChair(false), readingChair(true)], shadow: 0.4 }),
+    () => ({ name: 'a lectern', kind: 'obstacle', frames: [lectern()], shadow: 0.4 }),
+    () => ({ name: 'the book of stolen words', kind: 'quest', frames: [stolenBook()], shadow: 0.6 }),
+    () => ({ name: 'library steps', kind: 'obstacle', frames: [libraryLadder()], shadow: 0.55 }),
+    // (it hangs over the floor: frames lit, out)
+    () => ({ name: 'a candle chandelier', kind: 'obstacle', frames: [chandelier(true), chandelier(false)], shadow: 0 }),
+    () => ({ name: 'a candelabrum', kind: 'obstacle', frames: [candelabrum()], shadow: 0.35 }),
+    () => ({ name: 'a stack of books', kind: 'breakable', frames: [bookHeap(false), bookHeap(true)], shadow: 0.4 }),
+    () => ({ name: 'a book cart', kind: 'breakable', frames: [bookCart(false), bookCart(true)], shadow: 0.6 }),
+    () => ({ name: 'a card catalogue', kind: 'breakable', frames: [catalogue(false), catalogue(true)], shadow: 0.5 }),
+    () => ({ name: 'a globe', kind: 'breakable', frames: [globe(false), globe(true)], shadow: 0.35 }),
+    // (frames: its length along x, along y)
+    () => ({ name: 'chained books', kind: 'obstacle', frames: [chainedDesk(0), chainedDesk(1)], shadow: 1.0 }),
+    () => ({ name: "the library's closing bell (the Muffled Bell)", kind: 'obstacle', frames: [closingBell(true), closingBell(false, 0), closingBell(false, 0.35), closingBell(false, -0.35)], shadow: 0.9 }),
+    // (the Bells: quiet, awake, rung one way, rung back)
+    () => ({ name: 'a hand bell', kind: 'obstacle', frames: [0, 1, 2, 3].map(handBell), shadow: 0.3 }),
+    () => ({ name: "the library's doors", kind: 'door', ...withFramesN([libraryDoors(false), libraryDoors(true)]) }),
+    // (frames: shut and open along +y, shut and open along +x)
+    () => ({ name: "a gate of the Order", kind: 'gate', frames: [0, 1].flatMap((k) => [galleryGate(false, k), galleryGate(true, k)]), shadow: 0.9 }),
+    () => ({ name: 'a portrait, blacked out', kind: 'on the wall', ...withFramesN([portrait()]) }),
+    () => ({ name: 'a wall sconce', kind: 'on the wall', ...withFramesN([sconce(true), sconce(false)]) }),
+    // (frames: lying, the warning, sprung)
+    () => ({ name: 'spilled ink', kind: 'trap', frames: [0, 1, 2].map(spilledInk) }),
+    () => ({ name: 'the floor blacked out', kind: 'floor tile', frames: [blackedFloor()] }),
+    () => ({ name: 'a book press', kind: 'obstacle', frames: [bookPress()], shadow: 0.6 }),
+    // (frames: its front along +y, along +x)
+    () => ({ name: 'a copying desk', kind: 'obstacle', frames: [copyingDesk(0), copyingDesk(1)], shadow: 0.6 }),
+    () => ({ name: "a vat of the Order's ink", kind: 'obstacle', frames: [inkVat()], shadow: 0.5 }),
+    () => ({ name: 'a basket of struck-out pages', kind: 'breakable', frames: [pageBasket(false), pageBasket(true)], shadow: 0.35 }),
+    () => ({ name: 'a spiral stair', kind: 'obstacle', frames: [spiralStair()], shadow: 0.7 }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const GREATLIBRARY_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function greatLibraryPiecesHeld(): number {
+  return GREATLIBRARY_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function greatLibraryPieceCount(): number {
+  return greatLibraryMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function greatLibraryPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...greatLibraryMakers().map((make, i) => GREATLIBRARY_AHEAD.step(String(i), make)), () => void greatLibraryPieces()];
+}
 export function greatLibraryPieces(): Piece[] {
   if (made) return made;
-  made = [
-    // (frames: its length along x, along y)
-    { name: 'a reading desk', kind: 'obstacle', frames: [readingDesk(0), readingDesk(1)], shadow: 1.0 },
-    { name: 'a reading chair', kind: 'breakable', frames: [readingChair(false), readingChair(true)], shadow: 0.4 },
-    { name: 'a lectern', kind: 'obstacle', frames: [lectern()], shadow: 0.4 },
-    { name: 'the book of stolen words', kind: 'quest', frames: [stolenBook()], shadow: 0.6 },
-    { name: 'library steps', kind: 'obstacle', frames: [libraryLadder()], shadow: 0.55 },
-    // (it hangs over the floor: frames lit, out)
-    { name: 'a candle chandelier', kind: 'obstacle', frames: [chandelier(true), chandelier(false)], shadow: 0 },
-    { name: 'a candelabrum', kind: 'obstacle', frames: [candelabrum()], shadow: 0.35 },
-    { name: 'a stack of books', kind: 'breakable', frames: [bookHeap(false), bookHeap(true)], shadow: 0.4 },
-    { name: 'a book cart', kind: 'breakable', frames: [bookCart(false), bookCart(true)], shadow: 0.6 },
-    { name: 'a card catalogue', kind: 'breakable', frames: [catalogue(false), catalogue(true)], shadow: 0.5 },
-    { name: 'a globe', kind: 'breakable', frames: [globe(false), globe(true)], shadow: 0.35 },
-    // (frames: its length along x, along y)
-    { name: 'chained books', kind: 'obstacle', frames: [chainedDesk(0), chainedDesk(1)], shadow: 1.0 },
-    { name: "the library's closing bell (the Muffled Bell)", kind: 'obstacle', frames: [closingBell(true), closingBell(false, 0), closingBell(false, 0.35), closingBell(false, -0.35)], shadow: 0.9 },
-    // (the Bells: quiet, awake, rung one way, rung back)
-    { name: 'a hand bell', kind: 'obstacle', frames: [0, 1, 2, 3].map(handBell), shadow: 0.3 },
-    { name: "the library's doors", kind: 'door', ...withFramesN([libraryDoors(false), libraryDoors(true)]) },
-    // (frames: shut and open along +y, shut and open along +x)
-    { name: "a gate of the Order", kind: 'gate', frames: [0, 1].flatMap((k) => [galleryGate(false, k), galleryGate(true, k)]), shadow: 0.9 },
-    { name: 'a portrait, blacked out', kind: 'on the wall', ...withFramesN([portrait()]) },
-    { name: 'a wall sconce', kind: 'on the wall', ...withFramesN([sconce(true), sconce(false)]) },
-    // (frames: lying, the warning, sprung)
-    { name: 'spilled ink', kind: 'trap', frames: [0, 1, 2].map(spilledInk) },
-    { name: 'the floor blacked out', kind: 'floor tile', frames: [blackedFloor()] },
-    { name: 'a book press', kind: 'obstacle', frames: [bookPress()], shadow: 0.6 },
-    // (frames: its front along +y, along +x)
-    { name: 'a copying desk', kind: 'obstacle', frames: [copyingDesk(0), copyingDesk(1)], shadow: 0.6 },
-    { name: "a vat of the Order's ink", kind: 'obstacle', frames: [inkVat()], shadow: 0.5 },
-    { name: 'a basket of struck-out pages', kind: 'breakable', frames: [pageBasket(false), pageBasket(true)], shadow: 0.35 },
-    { name: 'a spiral stair', kind: 'obstacle', frames: [spiralStair()], shadow: 0.7 },
-  ];
+  made = greatLibraryMakers().map((make, i) => GREATLIBRARY_AHEAD.take(String(i), make));
   return made;
 }
 

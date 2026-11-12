@@ -34,6 +34,8 @@ import { BONE, DRIFT, SACKING } from './floor7';
 import type { Piece } from './floorkit';
 import { GRAIN, hash } from './kit';
 import type { Ramp } from './kit';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 // =================================================================================================
 // The colours: the canyon's and its plants', in hard daylight
@@ -839,38 +841,60 @@ function driftwood(): Sprite {
 
 let made: Piece[] | null = null;
 /** ECHO CANYON'S 25 PIECES, by name, made once. */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) ECHO CANYON'S (floor 8), each
+ * piece's maker in the list's order: the list made a piece a step (canyonPieceSteps), or all at once (canyonPieces). Each painted as it was.
+ */
+function canyonMakers(): (() => Piece)[] {
+  return [
+    // the canyon's own
+    () => ({ name: 'hoodoo', kind: 'obstacle', frames: [hoodoo(0, 1), hoodoo(1, 2), hoodoo(2, 3)], shadow: 0.55 }),
+    () => ({ name: 'red boulder', kind: 'obstacle', frames: [redBoulder(0, 1), redBoulder(1, 2), redBoulder(2, 3)], shadow: 0.42 }),
+    () => ({ name: 'juniper', kind: 'obstacle', frames: [juniper(0, 1), juniper(1, 2), juniper(2, 3)], shadow: 0.45 }),
+    () => ({ name: 'dead juniper', kind: 'obstacle', frames: [deadJuniper()], shadow: 0.4 }),
+    () => ({ name: 'yucca', kind: 'obstacle', frames: [yucca(false, 1), yucca(true, 2)], shadow: 0.25 }),
+    () => ({ name: 'sagebrush', kind: 'on the floor', frames: [sagebrush(0, 1), sagebrush(1, 2)], shadow: 0.25 }),
+    () => ({ name: 'a steer\'s skull', kind: 'on the floor', frames: [steerSkull()] }),
+    // the cult's supply road
+    () => ({ name: "the cult's wagon", kind: 'obstacle', frames: [wagon(false)], shadow: 1.0 }),
+    () => ({ name: "the cult's wagon, broken down", kind: 'obstacle', frames: [wagon(true)], shadow: 1.0 }),
+    () => ({ name: 'crate of stores', kind: 'breakable', frames: [storesCrate(false), storesCrate(true)], shadow: 0.25 }),
+    () => ({ name: 'sacks of meal', kind: 'breakable', frames: [mealSack(false), mealSack(true)], shadow: 0.22 }),
+    () => ({ name: 'wheel ruts', kind: 'floor tile', frames: [rutsTile(false), rutsTile(true)] }),
+    () => ({ name: "the cult's hoist", kind: 'on the wall', frames: [hoist()], shadow: 0.15 }),
+    () => ({ name: "the cult's lookout tent", kind: 'obstacle', frames: [lookoutTent()], shadow: 0.9 }),
+    // the Cantor's
+    () => ({ name: "the Cantor's lectern", kind: 'obstacle', frames: [lectern()], shadow: 0.3 }),
+    () => ({ name: "a frame of the cult's bells", kind: 'obstacle', frames: [bellFrame()], shadow: 0.5 }),
+    () => ({ name: "the cult's great horn", kind: 'obstacle', frames: [greatHorn()], shadow: 0.6 }),
+    () => ({ name: 'singing stones', kind: 'obstacle', frames: [singingStones()], shadow: 0.7 }),
+    () => ({ name: 'the chant carved in the wall', kind: 'on the wall', frames: [chantInWall()] }),
+    () => ({ name: 'a torn page of the chant', kind: 'quest', frames: [chantPage()] }),
+    // the road's and the canyon's, the rest
+    () => ({ name: 'an obelisk on its dray', kind: 'obstacle', frames: [obeliskDray()], shadow: 1.1 }),
+    () => ({ name: 'rockfall from the rim', kind: 'trap', frames: [0, 1, 2, 3].map(rockfallTile) }),
+    () => ({ name: "the waystation's gate", kind: 'gate', frames: [waystationGate(false, false), waystationGate(false, true), waystationGate(true, false), waystationGate(true, true)], shadow: 0.9 }),
+    () => ({ name: 'a seep in the wall', kind: 'on the wall', frames: [seep()] }),
+    () => ({ name: 'driftwood', kind: 'on the floor', frames: [driftwood()], shadow: 0.4 }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const CANYON_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function canyonPiecesHeld(): number {
+  return CANYON_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function canyonPieceCount(): number {
+  return canyonMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function canyonPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...canyonMakers().map((make, i) => CANYON_AHEAD.step(String(i), make)), () => void canyonPieces()];
+}
 export function canyonPieces(): Piece[] {
   if (made) return made;
-  made = [
-    // the canyon's own
-    { name: 'hoodoo', kind: 'obstacle', frames: [hoodoo(0, 1), hoodoo(1, 2), hoodoo(2, 3)], shadow: 0.55 },
-    { name: 'red boulder', kind: 'obstacle', frames: [redBoulder(0, 1), redBoulder(1, 2), redBoulder(2, 3)], shadow: 0.42 },
-    { name: 'juniper', kind: 'obstacle', frames: [juniper(0, 1), juniper(1, 2), juniper(2, 3)], shadow: 0.45 },
-    { name: 'dead juniper', kind: 'obstacle', frames: [deadJuniper()], shadow: 0.4 },
-    { name: 'yucca', kind: 'obstacle', frames: [yucca(false, 1), yucca(true, 2)], shadow: 0.25 },
-    { name: 'sagebrush', kind: 'on the floor', frames: [sagebrush(0, 1), sagebrush(1, 2)], shadow: 0.25 },
-    { name: 'a steer\'s skull', kind: 'on the floor', frames: [steerSkull()] },
-    // the cult's supply road
-    { name: "the cult's wagon", kind: 'obstacle', frames: [wagon(false)], shadow: 1.0 },
-    { name: "the cult's wagon, broken down", kind: 'obstacle', frames: [wagon(true)], shadow: 1.0 },
-    { name: 'crate of stores', kind: 'breakable', frames: [storesCrate(false), storesCrate(true)], shadow: 0.25 },
-    { name: 'sacks of meal', kind: 'breakable', frames: [mealSack(false), mealSack(true)], shadow: 0.22 },
-    { name: 'wheel ruts', kind: 'floor tile', frames: [rutsTile(false), rutsTile(true)] },
-    { name: "the cult's hoist", kind: 'on the wall', frames: [hoist()], shadow: 0.15 },
-    { name: "the cult's lookout tent", kind: 'obstacle', frames: [lookoutTent()], shadow: 0.9 },
-    // the Cantor's
-    { name: "the Cantor's lectern", kind: 'obstacle', frames: [lectern()], shadow: 0.3 },
-    { name: "a frame of the cult's bells", kind: 'obstacle', frames: [bellFrame()], shadow: 0.5 },
-    { name: "the cult's great horn", kind: 'obstacle', frames: [greatHorn()], shadow: 0.6 },
-    { name: 'singing stones', kind: 'obstacle', frames: [singingStones()], shadow: 0.7 },
-    { name: 'the chant carved in the wall', kind: 'on the wall', frames: [chantInWall()] },
-    { name: 'a torn page of the chant', kind: 'quest', frames: [chantPage()] },
-    // the road's and the canyon's, the rest
-    { name: 'an obelisk on its dray', kind: 'obstacle', frames: [obeliskDray()], shadow: 1.1 },
-    { name: 'rockfall from the rim', kind: 'trap', frames: [0, 1, 2, 3].map(rockfallTile) },
-    { name: "the waystation's gate", kind: 'gate', frames: [waystationGate(false, false), waystationGate(false, true), waystationGate(true, false), waystationGate(true, true)], shadow: 0.9 },
-    { name: 'a seep in the wall', kind: 'on the wall', frames: [seep()] },
-    { name: 'driftwood', kind: 'on the floor', frames: [driftwood()], shadow: 0.4 },
-  ];
+  made = canyonMakers().map((make, i) => CANYON_AHEAD.take(String(i), make));
   return made;
 }
