@@ -250,4 +250,25 @@ AFTER IT the code changed (a pack's frames cut a few at a time, then as canvases
 
 ## His word from the phone on THIS build
 
-NOT YET. To be asked of him with a test page of this build.
+**NOT YET. THE TEST PAGE OF THIS BUILD IS WITH HIM.**
+
+ASKED OF HIM by pop-up, 12 Nov 2026: “The Brawler with his moves kept packed is built, checked and on GitHub. I can't try a
+phone from here. Put this mended build on your Brawler test page so you can try him on your phone? (The title screen and the
+hero cards will still lag there: that is a separate fault another chat has found. What should be better is coming into town and
+the fight.)” Offered: “Yes, on my test page (Recommended)”, “Make it a new page”, “Not yet”.
+
+**HIS PICK, by 06:52: “Yes, on my test page (Recommended)”.**
+
+PUBLISHED 06:54, OVER THE FIRST TEST PAGE, THE SAME LINK: https://claude.ai/artifact/EPxkp4u3wkrbWwRnD593iW (version
+`1794484465-0a8c`; his alone; that page's own save; the game's page and his save are untouched). It is `dist/try_packed/` as
+`node tools/brawler_packed_try_page.mjs` made it after the release build of this branch's code: 295 files. New there:
+`index.html` (stamped TEST BRAWLER PACKED 2026-11-12 in the corner of the starting screen), `heroes/d7fec6fa0251/` (129 files)
+and `townsfolk/d4c898fe370d/` (3). As they were there, the same files (seven compared by their hashes): `sounds/3c87436f2f66/`
+(49) and `colossus/7cf0996e564d/` (113). Taken away: the 45 files of `heroes/e0ac1c19738f/`. Played once from its folder before
+it was published: `sides_more_fight`, 124 checks, finished clean; his group come whole in 0.46 s.
+
+TOLD HIM: the same link as the night before; the corner of the starting screen says TEST BRAWLER PACKED when it is the new one;
+NEW GAME, the Brawler, into town, then a floor or two, turning and fighting every way; then say how long it took to come into
+town, and whether the fight is smooth, stutters or freezes. The title screen and the hero cards may still lag: not this.
+
+HIS WORD GOES HERE, and into the queue's item; the main chat switches him on only then.
