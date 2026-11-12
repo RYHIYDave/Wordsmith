@@ -74,7 +74,8 @@ queen's looking-glass (floor 18's own book). The Dancing Shoes are a court shoe 
 
 ## Checked
 
-- tests/items_unique.test.ts, items_a.test.ts, items_a_game.test.ts: all pass.
+- `node tools/unit.mjs --only items_unique,items_a,items_a_game,inventory` on cd68e2dee8 (the four and the core 23): 27 files,
+  313 tests, 27 passed, 0 failed.
 - `tsc --noEmit`: only the error main already has (tests/relief.test.ts 378).
 - The page builds; the bag opened with every one of the 62 in it, in four goes, at phone size: finished clean each time.
 - Every picture looked at big and at the game's size, beside the game's own.
