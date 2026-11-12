@@ -59,6 +59,21 @@ front, the rules' MELD8_TUNE.behind (0.5) behind, smaller and fewer. Every numbe
   ring closing, three arms turning in, dust dragged in along them, those in reach streaked toward its heart, a dark point swelling;
   then the burst: a white point, rays, a column of light, a violet shock ring out to `r`, shards, a star scorched on the floor.
 
+### HIS YES
+
+`pictures/2_melds8_at_work.mp4` (39 s: each meld in turn, in front and then behind, in the practice room beside the Warrior; its
+name and two words in a corner) and `pictures/2_melds8_stills.png` (one moment of each), made by
+`tools/scenarios/melds8_looks.mjs` (LOOK=<meld>) and `tools/melds8_film.py`. Asked by pop-up, 12 Nov, whether the eight looks
+are right (each told in a line: the page does by hand what the rules will), his pick: **“Yes, hand them to main
+(Recommended)”**, offered as: they go on the ship list, and the main chat puts them live with their rules.
+
+### Checked
+
+- `tests/melds8_look.test.ts` (new), 4 of 4: off, nothing is taken, ticked or drawn; their colours as above; their runes 7 by 7,
+  each its own; on, each draws at its moment, on whole pixels, and is gone after.
+- tsc clean; all eight filmed clean from a built page (`node tools/build_to.mjs dist/melds8_looks.html`).
+- NOT CHECKED: with their rules (they are on the branch melds8, older than main), on his phone.
+
 ### For the main chat, as the eight are brought in (put-eight-new-melds-live)
 
 - The rules send `{ t: 'meld8', id, ... }` at each moment (the fields above); `isM8Event`. Their stones: main.ts
