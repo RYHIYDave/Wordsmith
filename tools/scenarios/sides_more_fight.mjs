@@ -66,6 +66,17 @@ export default async function (page, snap) {
     return WAYS[k];
   };
   const same = (a, b) => Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6;
+  /**
+   * Is `f` the nearest of his ways to a direction? His eight sides off, a swipe straight along the screen falls exactly between
+   * two of his four ways: either is the nearest (the merge chat, 11 Nov 2026: OFF=1 flagged the swipe at 180 degrees, where
+   * the game took one of the two and `nearest`, on the last bit of a sum, the other).
+   */
+  const isNearest = (f, dx, dy) => {
+    if (!off) return same(f, nearest(dx, dy));
+    const n = Math.hypot(dx, dy) || 1;
+    const one = Math.abs(Math.abs(f[0]) + Math.abs(f[1]) - 1) < 1e-6 && Math.abs(f[0] * f[1]) < 1e-6;
+    return one && (f[0] * dx + f[1] * dy) / n > Math.max(Math.abs(dx), Math.abs(dy)) / n - 1e-6;
+  };
   const fmt = (v) => `${v[0].toFixed(2)}, ${v[1].toFixed(2)}`;
 
   await page.evaluate(() => {
@@ -240,7 +251,7 @@ export default async function (page, snap) {
     // (the way he was swiped, on the floor: a screen pixel right is half a tile-step down-right and up-right, the game's own
     // screenDirToWorld; he faces the nearest of his ways to straight back along it, and springs back from the way he faces)
     const sw = [ux / 2 + uy, uy - ux / 2];
-    check(`swipe ${k * 45} degrees: he faces back along the swipe, the nearest of his ways to it, and springs away`, same(f, nearest(-sw[0], -sw[1])) && back > 0.5, `faces ${fmt(f)}, swiped ${fmt([sw[0] / Math.hypot(sw[0], sw[1]), sw[1] / Math.hypot(sw[0], sw[1])])} on the floor; ${back.toFixed(2)} tiles back, ${side.toFixed(2)} to the side`);
+    check(`swipe ${k * 45} degrees: he faces back along the swipe, the nearest of his ways to it, and springs away`, isNearest(f, -sw[0], -sw[1]) && back > 0.5, `faces ${fmt(f)}, swiped ${fmt([sw[0] / Math.hypot(sw[0], sw[1]), sw[1] / Math.hypot(sw[0], sw[1])])} on the floor; ${back.toFixed(2)} tiles back, ${side.toFixed(2)} to the side`);
     jumped.add(fmt(f));
     carries.push([back, side]);
   }
