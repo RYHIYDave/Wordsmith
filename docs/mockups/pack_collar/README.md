@@ -22,10 +22,14 @@ Behind UNIQUES (off): nothing he sees in the game changes.
 - `game/game.ts`: `petsWanted` takes the collar's from `collarPick`; `collarChoices()`, `collarCompanion()`,
   `pickCollarCompanion(kind)` (town only). Her own pick changed to the collar's: the collar's goes back to the next after
   hers (never twins). The collar's keeps the third place, behind her, as built.
-- `ui/panels.ts`: the collar's card says what it brings, in the companions' own words (as a companion talent's card does);
-  out of town, PICK ANOTHER IN TOWN.
-- `ui/inventory.ts`: on the collar's card, in town, worn or in the bag, a row of the companions it may bring above its
-  buttons, the one it brings lit; a tap picks (marks `collar:<kind>`). One letter size for the whole row.
+- `ui/panels.ts`: the collar's card says what it brings, in the companions' own words (as a companion talent's card does),
+  and nothing of where it is picked.
+- `ui/inventory.ts`: on the collar's card, worn or in the bag, a row of the companions it may bring above its buttons, the
+  one it brings lit (marks `collar:<kind>`). In town a tap picks; out of town a tap picks nothing and the inventory's note
+  says “Choose companion in town”. One letter size for the whole row.
+- HIS WORDS, 12 Nov, 12:41, told the card said PICK ANOTHER IN TOWN out of town: “I’d rather it not say anything until you
+  tap on it or something then a message says “Choose companion in town” or something like that”. Read as: no line about
+  it on the card; the row shown out of town too; a tap there gives that message. Picture 5.
 
 ## Checked
 

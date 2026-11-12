@@ -153,7 +153,7 @@ export interface InvUi {
    * buttons by their labels. (A press arrives between frames, at what was on the screen: the
    * buttons are pressed where they were drawn.)
    */
-  /** (THE PACK COLLAR: `pets`, the row of its companions to pick from on its card, in town) */
+  /** (THE PACK COLLAR: `pets`, the row of its companions to pick from on its card) */
   card: { r: Rect; buttons: { id: string; r: Rect }[]; pets?: { r: Rect; kind: CompanionKind }[] } | null;
 }
 
@@ -846,8 +846,13 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   // ---- presses, top-most first ------------------------------------------------------------------
   let close = false;
   for (const b of selButtons) if (cardPress(b.label)) b.act();
-  // (THE PACK COLLAR: in town, its companion picked on its card)
-  for (const p of cardWas?.pets ?? []) if (ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) game.pickCollarCompanion(p.kind);
+  // (THE PACK COLLAR: its companion picked on its card, in town; out of town a tap says so. His words, 12 Nov 2026, 12:41: “I’d
+  // rather it not say anything until you tap on it or something then a message says “Choose companion in town””)
+  for (const p of cardWas?.pets ?? []) {
+    if (!ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) continue;
+    if (game.level.town) game.pickCollarCompanion(p.kind);
+    else say('Choose companion in town');
+  }
   // (a piece of the service's own, read on the same card: its buttons are the service's)
   const lookWas = side && side.look ? side.look() : null;
   if (lookWas) for (const b of lookWas.buttons) if (!b.disabled && cardPress(b.label)) say(b.act());
@@ -1708,9 +1713,10 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
       return iy;
     };
 
-    // (THE PACK COLLAR, the Ranger's own, in town: over its buttons a row of the companions it may bring, the one it brings lit.
-    // His pick, 12 Nov 2026, by pop-up: “Pick it on the collar”; and “No, one of the other two (Recommended)”: never one at her side)
-    const petKinds: CompanionKind[] = mine && game.level.town && uniqueOf(mine.item)?.id === 'packcollar' ? game.collarChoices() : [];
+    // (THE PACK COLLAR, the Ranger's own: over its buttons a row of the companions it may bring, the one it brings lit; picked
+    // in town, and out of town a tap says so. His pick, 12 Nov 2026, by pop-up: “Pick it on the collar”; and “No, one of the
+    // other two (Recommended)”: never one at her side)
+    const petKinds: CompanionKind[] = mine && uniqueOf(mine.item)?.id === 'packcollar' ? game.collarChoices() : [];
     const petRow = petKinds.length ? bh + 3 : 0;
     const foot = (buttons.length ? bh + 5 : 0) + (petRow && !buttons.length ? petRow + 2 : petRow);
     const tall = content(0, 0, inner, true, Infinity);

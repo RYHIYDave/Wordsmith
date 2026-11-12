@@ -1,7 +1,7 @@
 // THE PACK COLLAR'S COMPANION PICKED ON THE COLLAR (game/companions.ts collarChoices; ui/inventory.ts, the row on its card; UNIQUES
 // switched on for this page only): a Ranger at level 35 in town with the Hunting Companion taken, the collar worn; its card read
 // on the GEAR page: her hawk and the collar's snake at her side, the row of the two it may bring (never her hawk); the wolf
-// picked on the card; the collar in the bag, picked again; out of town, the card says to pick another in town. His picks, 12
+// picked on the card; the collar in the bag; both talents, four to pick; out of town, a tap says “Choose companion in town”. His picks, 12
 // Nov 2026: “Pick it on the collar”; “No, one of the other two (Recommended)”. For a look, and for his pictures.
 //   node tools/build_to.mjs dist/collar.html
 //   node tools/playtest.mjs --file dist/collar.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/pack_collar_pick.mjs --out shots/collar/a
@@ -90,7 +90,14 @@ export default async function (page, snap) {
   await page.evaluate(() => { const d = window.__dbg; d.inv(); d.invUi.page = 'gear'; d.invUi.sel = { kind: 'gear', slot: 'amulet' }; });
   await page.waitForTimeout(700);
   check('out of town: in a dungeon', !(await page.evaluate(() => window.__dbg.game().level.town)));
-  check('out of town: no row to pick from', !(await hands.mark('collar:snake')) && !(await hands.mark('collar:hawk')));
+  check('out of town: the same row', (await hands.mark('collar:snake')) && !(await hands.mark('collar:hawk')));
   await snap('4_out_of_town');
+  // (a tap there: nothing picked, and a message says to choose in town. His words, 12 Nov 2026, 12:41)
+  const before = await page.evaluate(() => window.__dbg.game().hero.pets.collar ?? null);
+  await hands.press('collar:snake');
+  await page.waitForTimeout(250);
+  const after = await page.evaluate(() => { const d = window.__dbg; return { note: d.invUi.note, pick: d.game().hero.pets.collar ?? null }; });
+  check(`out of town, a tap: "${after.note}", nothing picked (${after.pick})`, after.note === 'Choose companion in town' && after.pick === before);
+  await snap('5_out_of_town_tapped');
   if (fails) throw new Error(`${fails} thing(s) wrong with the Pack Collar's picker`);
 }
