@@ -84,6 +84,8 @@ export interface FigureState {
    * appearing, `clips.moves.cleaveAppear`, then the Cleave's own).
    */
   axe?: { empty: boolean; caughtT: number; appear: boolean };
+  /** (THE WARRIOR'S WEAPONS) How far into a leap's crouch, in seconds, before he leaves the floor (`clips.moves.chopCrouch`, `chargeCrouch`). */
+  crouchT?: number;
 }
 
 /**
@@ -639,6 +641,9 @@ export class Figure {
       this.doing = 0;
     } else if (tumble) {
       s = tumble.frames[Math.max(0, Math.min(tumble.frames.length - 1, Math.floor(st.rollK as number * tumble.frames.length)))];
+    } else if (st.crouchT !== undefined && st.crouchT >= 0 && (set.clips?.moves?.chopCrouch || set.clips?.moves?.chargeCrouch)) {
+      // (THE WARRIOR'S WEAPONS: the crouch before Leaping Chop or Shoulder Charge leaves the floor)
+      s = frameOf((set.clips?.moves?.chopCrouch ?? set.clips?.moves?.chargeCrouch) as Clip, st.crouchT);
     } else if (st.leapK >= 0 && (set.clips?.leap || set.leap)) {
       const c = set.clips?.leap;
       s = c ? c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(st.leapK * c.frames.length)))] : (set.leap as Sprite[])[st.leapK < 0.18 ? 0 : st.leapK < 0.7 ? 1 : 2];

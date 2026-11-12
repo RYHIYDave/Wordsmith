@@ -243,3 +243,27 @@ test('8. a throw broken off leaves the axe in his hands', () => treeOn(() => {
   assert.equal(g.projectiles.filter((p) => p.returns).length, 0, 'none thrown');
   assert.equal(h.handsEmpty, false, 'in his hands');
 }));
+
+test('9. Leaping Chop and Shoulder Charge crouch before he leaves the floor (0.167 s, 0.2 s); the Charge carries him in 0.5 s', () => treeOn(() => {
+  for (const [weapon, crouch] of [['battleaxe', 5 / 30], ['warhammer', 0.2]] as const) {
+    const { g } = warrior([weapon]);
+    const h = g.hero;
+    const x0 = h.x;
+    for (const s of h.skills) s.cd = 0;
+    const c = emptyControls();
+    c.evade = true;
+    c.evadeX = h.x + 5;
+    c.evadeY = h.y;
+    g.update(DT, c);
+    assert.ok(h.move && near(h.move.crouch ?? 0, crouch, 1e-6), `${weapon}: a crouch of ${crouch}`);
+    let t = DT;
+    while (t + DT < crouch - 1e-9) {
+      g.update(DT, emptyControls());
+      t += DT;
+    }
+    assert.ok(near(h.x, x0, 1e-9), `${weapon}: still where he was, crouched (${t.toFixed(3)} s)`);
+    for (let i = 0; i < 6; i++) g.update(DT, emptyControls());
+    assert.ok(h.x > x0 + 0.2, `${weapon}: then away`);
+    if (weapon === 'warhammer') assert.ok(near(h.move?.dur ?? 0.5, 0.5, 1e-9), 'the Charge: half a second');
+  }
+}));

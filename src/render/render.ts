@@ -3820,7 +3820,9 @@ export class Renderer {
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);
       // (THE WARLOCK's smoke step is laid out over the step as a leap is: art/warlock_art.ts)
-      const leapK = h.move && (h.move.kind === 'leap' || h.move.kind === 'smoke' || h.move.kind === 'blast' || h.move.kind === 'slip') ? Math.min(1, h.move.t / h.move.dur) : -1;
+      // (THE WARRIOR'S WEAPONS: a leap's crouch before he leaves the floor is its own: `crouchT`, and no leap yet)
+      const crouchT = h.move && h.move.kind === 'leap' && h.move.crouch && h.move.t < h.move.crouch ? h.move.t : -1;
+      const leapK = crouchT >= 0 ? -1 : h.move && (h.move.kind === 'leap' || h.move.kind === 'smoke' || h.move.kind === 'blast' || h.move.kind === 'slip') ? Math.min(1, (h.move.t - (h.move.crouch ?? 0)) / h.move.dur) : -1;
       const changeK = h.change ? Math.min(1, h.change.t / Math.max(1e-6, h.change.dur)) : -1;
       const rollK = h.move && h.move.kind === 'roll' ? Math.min(1, h.move.t / h.move.dur) : -1;
       // (a figure with a tumble of its own is seen making it; one without is drawn faint, to read as a blur)
@@ -3885,7 +3887,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0, ...(heavyDrawn(h.cls, h.talents) === 'axe' ? { axe: { empty: !!h.handsEmpty, caughtT: h.caughtAt !== undefined ? game.time - h.caughtAt : -1, appear: !!h.appear } } : {}) }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0, ...(crouchT >= 0 ? { crouchT } : {}), ...(heavyDrawn(h.cls, h.talents) === 'axe' ? { axe: { empty: !!h.handsEmpty, caughtT: h.caughtAt !== undefined ? game.time - h.caughtAt : -1, appear: !!h.appear } } : {}) }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       // (THE VETERAN in a move: its frame, turned as he faced as it began: render/veteran_fx.ts. Not narrowed in a turn.)
       const vetSp = this.vetFx.shown(game, heroArt);
       if (vetSp) sp = vetSp;

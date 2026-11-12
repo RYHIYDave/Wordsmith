@@ -4810,12 +4810,14 @@ export class Game {
     if (h.move) {
       const mv = h.move;
       mv.t += dt;
-      const k = Math.min(1, mv.t / mv.dur);
+      // (THE WARRIOR'S WEAPONS: a leap's crouch, where it has one, before he leaves the floor: he stays where he is meanwhile)
+      const off = mv.t - (mv.crouch ?? 0);
+      const k = Math.min(1, Math.max(0, off / mv.dur));
       h.x = mv.x0 + (mv.x1 - mv.x0) * k;
       h.y = mv.y0 + (mv.y1 - mv.y0) * k;
       // (THE SKILL TREES REMADE: Drilled Lunge, every enemy he passes on the way struck)
       // (THE WARRIOR'S WARHAMMER: Shoulder Charge strikes every enemy in his way, at its own strength)
-      if (mv.kind === 'leap' && (this.now('drilledleap') || SKILLS[h.skills[2].id].through === true)) this.lungeThrough(mv);
+      if (mv.kind === 'leap' && off > 0 && (this.now('drilledleap') || SKILLS[h.skills[2].id].through === true)) this.lungeThrough(mv);
       // (THE WARLOCK: a smoke step curses, the demon's rakes too, whoever it passes through)
       if (mv.kind === 'smoke') this.smokeThrough(mv);
       // (UNIQUE ITEMS: Broken Shackles' price, he can be hit during the move)
@@ -5589,7 +5591,7 @@ export class Game {
     }
     if (def.kind === 'leap' && land) {
       const dist = Math.hypot(land.x - h.x, land.y - h.y);
-      h.move = { kind: 'leap', t: 0, dur: 0.26 + dist * 0.03, x0: h.x, y0: h.y, x1: land.x, y1: land.y };
+      h.move = { kind: 'leap', t: 0, dur: def.secs ?? 0.26 + dist * 0.03, x0: h.x, y0: h.y, x1: land.x, y1: land.y, ...(def.crouch ? { crouch: def.crouch } : {}) };
       this.sfx('lunge', 0.7);
       return;
     }

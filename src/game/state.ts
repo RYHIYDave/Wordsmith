@@ -343,7 +343,7 @@ export interface Hero {
   /** `over`: a roll that goes over a ledge or a pit (a dive: it leaves the floor). */
   /** (`hit`: THE SKILL TREES REMADE, Drilled Lunge: the enemies struck on the way, each once.) */
   /** (THE WARLOCK, game/warlock.ts: 'smoke', a smoke step, his or the demon's (`demon`): `hit`, whom it has passed through, each once. THE TINKERER, game/tinkerer.ts: 'blast', her blast jump, flying.) */
-  move: null | { kind: 'leap' | 'roll' | 'smoke' | 'blast' | 'slip'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[]; demon?: boolean };
+  move: null | { kind: 'leap' | 'roll' | 'smoke' | 'blast' | 'slip'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[]; demon?: boolean; crouch?: number };
   /**
    * THE WARLOCK (game/warlock.ts): which he is, a man or the demon (absent: a man); his pact (0 to WARLOCK_TUNE.pact.full;
    * full, a tap on him changes him); and the change he is in the middle of, to the demon or back to a man (nothing harms
