@@ -12,8 +12,20 @@
 //      the game is drawn and none is stood in for by its nearest; how the frames went by;
 //   3. each card chosen in turn (its hero runs; the one before comes to a stand): none painted, none stood in for;
 //   4. PICK (default the Mage) confirmed: she makes ready: none painted, none stood in for, until she has gone.
+// SLOW=<seconds>: THE CARDS' PICTURES LATE (their file held back that long, as on a slow line), and NEW GAME pressed at once: the
+// cards are up before their pictures are. It asks instead: no hero's card paints more than one frame of him while they are
+// awaited (the nearest painted stands in), none begins anything of his own, and once they have come nothing more is painted.
 // Lines marked !! are problems.
 import { makeHands, log } from './lib.mjs';
+
+/** SLOW: the cards' file held back (set before the page is loaded again). */
+async function slowCards(page, secs) {
+  await page.route('**/heroes/*/cards.json', async (route) => {
+    await new Promise((r) => setTimeout(r, secs * 1000));
+    await route.continue();
+  });
+  await page.reload();
+}
 
 export default async function (page, snap) {
   const secs = Number(process.env.SECS || 14);
@@ -25,11 +37,44 @@ export default async function (page, snap) {
   };
   const errs = [];
   page.on('pageerror', (e) => errs.push(String((e && e.stack) || e)));
+  const slow = Number(process.env.SLOW || 0);
+  if (slow) await slowCards(page, slow);
   await page.waitForFunction(() => window.__ready === true, null, { timeout: 60000 });
   const hands = await makeHands(page);
   await page.evaluate(() => { window.__dbg.saving(false); });
   const has = await page.evaluate(() => !!window.__dbg.painter.baked);
   check('the page has the heroes\' bake', has);
+  if (slow) {
+    // THE CARDS UP BEFORE THEIR PICTURES
+    const peek = () => page.evaluate(() => ({ painted: window.__dbg.painting.frames, ms: Math.round(window.__dbg.painting.ms), stoodIn: window.__dbg.stoodIn(), came: window.__dbg.baked().ms.cards !== undefined, failed: window.__dbg.baked().failed.length }));
+    const b0 = await peek();
+    check('the cards\' pictures have not come yet', !b0.came && !b0.failed, JSON.stringify(b0));
+    await hands.press('button:NEW GAME');
+    let waited = b0;
+    let looks = 0;
+    const t0 = Date.now();
+    while (Date.now() - t0 < (slow + 20) * 1000) {
+      const p = await peek();
+      if (p.came || p.failed) break;
+      waited = p;
+      looks++;
+      await page.waitForTimeout(100);
+    }
+    await snap('awaited');
+    log('while they were awaited', JSON.stringify({ looks, before: b0, last: waited }));
+    check('the cards were up while their pictures were awaited', looks > 5, `${looks} looks`);
+    check('awaited: no more than a frame of each hero painted where the game is drawn', waited.painted - b0.painted <= 6, `${waited.painted - b0.painted} painted, ${waited.ms - b0.ms} ms`);
+    await page.waitForTimeout(400);
+    const c0 = await peek();
+    check('they came', c0.came && !c0.failed, JSON.stringify(c0));
+    await page.waitForTimeout(9000);
+    const c1 = await peek();
+    check('once they have come: nothing more painted in 9 s (the gestures begun in it), none stood in for', c1.painted === c0.painted && c1.stoodIn === c0.stoodIn, `${c1.painted - c0.painted} painted, ${c1.stoodIn - c0.stoodIn} stood in`);
+    await snap('came');
+    check('no error on the page', errs.length === 0, errs.slice(0, 3).join(' | '));
+    console.log(bad ? `!! ${bad} problems` : 'finished clean');
+    return;
+  }
   // 1. the cards' group, with nothing pressed
   const t0 = Date.now();
   let st = null;
