@@ -775,9 +775,18 @@ test('the rule of the sockets: any word or any two different words to a side, bu
  * warrior with the one-handed sword for Slam, and the mage with a wand for Familiar and Beam.
  */
 const CASES: readonly { cls: ClassId; weapon: WeaponKind; skill: 0 | 1 | 2; demon?: boolean; talents?: readonly string[] }[] = [
+  // (THE WARRIOR'S TREE, game/talents.ts WARRIOR_TREE2, on since 12 Nov 2026 at his “Yes, put it live (Recommended)”: his moves are
+  // his weapon's, picked with his tree's first point, whatever is in his hand: the greatsword's Strike, Whirl and Lunge, Whirlwind
+  // by its talent; the battle axe's Cleave, Axe Throw and Leaping Chop; the warhammer's Smash, Earthquake and Shoulder Charge)
   { cls: 'warrior', weapon: 'greatsword', skill: 0 },
   { cls: 'warrior', weapon: 'greatsword', skill: 1 },
-  { cls: 'warrior', weapon: 'sword', skill: 1 },
+  { cls: 'warrior', weapon: 'greatsword', skill: 1, talents: ['greatsword', 'gswhirlwind'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 0, talents: ['battleaxe'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 1, talents: ['battleaxe'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 2, talents: ['battleaxe'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 0, talents: ['warhammer'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 1, talents: ['warhammer'] },
+  { cls: 'warrior', weapon: 'greatsword', skill: 2, talents: ['warhammer'] },
   { cls: 'ranger', weapon: 'bow', skill: 0 },
   { cls: 'ranger', weapon: 'bow', skill: 1 },
   { cls: 'mage', weapon: 'staff', skill: 0 },
@@ -808,7 +817,9 @@ const CASES: readonly { cls: ClassId; weapon: WeaponKind; skill: 0 | 1 | 2; demo
 test('between them the cases use every ability that takes words, once each', () => {
   const used = CASES.map((k) => practice(k.cls, k.weapon, 5, k.demon, k.talents).hero.skills[k.skill].id).sort();
   // (THE VETERAN's three, behind VETERAN: his words' cases are tests/veteran_words.test.ts, his moves being played as his combos play them)
-  const all = Object.values(SKILLS).filter((d) => d.sockets && d.kind !== 'vblow' && d.kind !== 'vjump').map((d) => d.id).sort();
+  // (and the one-handed sword's Slam: no hero has it while the Warrior's tree is on, his moves being his weapon's whatever is in his
+  // hand: game/talents.ts warriorKit)
+  const all = Object.values(SKILLS).filter((d) => d.sockets && d.kind !== 'vblow' && d.kind !== 'vjump' && d.id !== 'slam').map((d) => d.id).sort();
   assert.deepEqual(used, all);
 });
 
