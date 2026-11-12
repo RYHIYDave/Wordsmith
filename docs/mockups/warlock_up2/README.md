@@ -1,6 +1,6 @@
 # THE WARLOCK BROUGHT UP, AND HIS DEMON REDONE (IN HAND; NOTHING HERE IS IN THE GAME)
 
-**WHERE IT STANDS (11 Nov 2026, 22:45 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
+**WHERE IT STANDS (12 Nov 2026, 05:35 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
 two legs to fight and down on all fours to run, wings of smoke, no smoke off it (`src/dev/demon_ideas.ts` shadowInto;
 `pictures/living_shadow.png`). ITS STAND, ITS WIDE SLASHES, DROPPING DOWN TO RUN, REARING UP TO STOP, AND ITS SLASHES MADE
 WALKING ON TWO LEGS HAVE HIS WORD (two films; the sections “The Living Shadow's moves” and “Its slashes made walking on two
@@ -9,11 +9,11 @@ THIRD FILM (`src/dev/shadow_moves.ts` shadowOthers; `pictures/living_shadow_othe
 all up on two legs” below): Damning, the smoke step's two ends, its roar as the change into it ends, its burning out, and
 struck hard and from behind. HIS WORD ON THEM, by 22:08: “The roar is so bad.  His face doesn’t even move?  No animations
 out of the mouth?  No spittle or action lines or screen shake on the roar?”; the smoke step's own smoke, “Keep it as is
-(Recommended)”. SO THE ROAR IS MADE AGAIN (its jaws thrown open with his fire in its throat, its head shaking, rings of
-force and action lines out of its mouth, spittle, the screen shaking) AND SHOWN HIM AS A FOURTH FILM, HIS WORD ON IT AWAITED
-(`pictures/living_shadow_roar.mp4`; the section “Its roar, made again” below); the rest are taken to stand. NEXT after
-that: its eight sides, its hide carried by its bones, and the change into it; then into the game's shape behind a switch
-that is off; then the man. Read from “The Living
+(Recommended)”. SO THE ROAR WAS MADE AGAIN (its jaws thrown open with his fire in its throat, its head shaking, rings of
+force and action lines out of its mouth, spittle, the screen shaking) AND SHOWN HIM AS A FOURTH FILM
+(`pictures/living_shadow_roar.mp4`; the section “Its roar, made again” below), AND HAS HIS YES, by 12 Nov 05:33: “Yes,
+that's it (Recommended)”; the rest are taken to stand. ALL ITS MOVES ARE SETTLED. NEXT: its eight sides, its hide carried by
+its bones, and the change into it; then into the game's shape behind a switch that is off; then the man. Read from “The Living
 Shadow, drawn properly” down for what is left; the sections before it are how he got there, in his words.**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
@@ -354,7 +354,7 @@ the Brawler; then THE MAN.
 
 (a) IS MADE AND SHOWN HIM: the next section.
 
-## Its other moves, all up on two legs (`src/dev/shadow_moves.ts` shadowOthers; `src/dev/shadow_fx.ts`; SHOWN HIM AS A THIRD FILM, HIS WORD ON IT AWAITED)
+## Its other moves, all up on two legs (`src/dev/shadow_moves.ts` shadowOthers; `src/dev/shadow_fx.ts`; SHOWN HIM AS A THIRD FILM, HIS WORD ON IT AT THE FOOT)
 
 The Warlock chat of the night of 11 Nov 2026 (a new session, the queue's item pulled at his word at 20:33 Eastern: “Work on
 this task from the Wordsmith Queue”). His word for all of these, 11 Nov by 19:59, asked of Damning, the smoke step, the
@@ -515,7 +515,7 @@ smoke step, its burning out and being struck are taken to stand unless he says o
 it tears its claws up in Damning, as it rises out of the smoke step) its jaws are to open too. THE SMOKE STEP'S OWN SMOKE
 STAYS AS IT IS. SAVED: this section's work as it was shown him (the next section, when it is written, is the roar made again).
 
-## Its roar, made again (`src/dev/shadow_moves.ts` shadowRoarMove; `src/dev/shadow_fx.ts` roarLight; `src/dev/demon_ideas.ts`, its jaws; SHOWN HIM AS A FOURTH FILM, HIS WORD ON IT AWAITED)
+## Its roar, made again (`src/dev/shadow_moves.ts` shadowRoarMove; `src/dev/shadow_fx.ts` roarLight; `src/dev/demon_ideas.ts`, its jaws; SHOWN HIM AS A FOURTH FILM; HIS YES AT THE FOOT)
 
 His words of the first roar, 11 Nov by 22:08: **“The roar is so bad.  His face doesn’t even move?  No animations out of the
 mouth?  No spittle or action lines or screen shake on the roar?”** Each thing he named, and where it is now:
@@ -599,11 +599,17 @@ FOR THE MAIN CHAT, when it comes into the game: (1) THE SCREEN SHAKE on its roar
 (`render/warlock_fx.ts`, 'roar'), from its mouth (`dev/shadow_fx.ts` mouthAt) the way it faces, over it or under it by
 which way it faces the eye. (3) Its jaws opening is in its pictures: nothing to wire.
 
-SHOWN HIM SO, 11 Nov, by 22:45 Eastern (the fourth film sent; asked by pop-up). **HIS WORDS: AWAITED.**
+SHOWN HIM SO, 11 Nov, by 22:45 Eastern (the fourth film sent; asked by pop-up whether that was the roar he wanted: “Yes,
+that's it (Recommended)”; close, change something; still not it). **HIS WORD, by 12 Nov, 05:33 Eastern: “Yes, that's it
+(Recommended)”.**
 
-STILL TO DO, IN THIS ORDER (11 Nov, 22:45): his word on the roar made again; then its eight sides, its hide carried by its
-bones, the change into it (ending on its roar); behind a switch that is off, a film and pictures in the game on floor 11
-beside the Brawler; then THE MAN.
+SO ALL OF THE LIVING SHADOW'S MOVES ARE SETTLED WITH HIM: its stand, its wide slashes, dropping down to run, rearing up to
+stop, its slashes made walking on two legs, Damning, the smoke step's two ends (its own smoke kept), its roar, its burning
+out, and struck hard and from behind (those last four and Damning taken to stand: he was shown them and named only the
+roar).
+
+STILL TO DO, IN THIS ORDER (12 Nov, 05:35): its eight sides, its hide carried by its bones, the change into it (ending on
+its roar); behind a switch that is off, a film and pictures in the game on floor 11 beside the Brawler; then THE MAN.
 
 THE FIRST THREE'S PICTURES (kept for the record):
 
