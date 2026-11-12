@@ -10,6 +10,8 @@ game's own page and his save are untouched.**
 - On the numbers, 11 Nov 2026, by pop-up, to the Uniques build chat: “Start with these, tune in play (Recommended)”.
 - To this chat, 11 Nov 2026, by 22:24, asked whether to make his test page now, with the items switched on and each showing
   its own picture: “Yes, make my test page (Recommended)”.
+- To the Uniques bring-in chat, 12 Nov 2026, by 05:44, asked whether to put the three pictures he approved (the Tome, the
+  risen elite, the fourth globe) onto this test page: “Yes, put them on (Recommended)”.
 
 ## The page
 
@@ -21,12 +23,20 @@ of the starting screen) and beside it `heroes/0ed837378e63/` (36 files), `townsf
 byte (the first three taken from the branch `gh-pages` at f30b040, 25.3.7; the Colossus's from the repository, all 113
 compared the same as the site's): nothing was baked again.
 
+**Since 12 Nov 2026, 06:02 (the Uniques bring-in chat, at his word above): version `1794481326-9db9`.** `index.html`
+alone was published again (sha256 begins e2c9d567b1aeb292, 7,652,894 bytes; the stamp TEST UNIQUES 2026-11-12), with what
+three unique items show in play switched on (below). The four folders are as they were: the marks are unchanged.
+
 ## What it is
 
 The game as it is on this branch, built as the release is, but begun as `try=uniques` (src/main.ts). For this page only:
 
 - `UNIQUES` on: they drop at the odds as built (docs/uniques/NUMBERS.md), the stranger may sell one, each does what it does.
 - `UNIQUE_ART` on: each of the 62 shows its own bag picture.
+- `UNIQUE_PLAY` tome, risen and fourth on (since 12 Nov; src/render/unique_play.ts): The Restless Tome's book flies round
+  the Warlock with its fire, The Fleshmancer's Brand's elite rises grey and cyan with the brand under it, and four globes
+  are over the Brawler's head with The Fourth Globe worn. Each has his yes to its picture (docs/mockups/uniques_play). The
+  branch carries `bring-in/uniques-play` e58fde6 for them (its note: docs/mockups/uniques_play/BRING_IN.md).
 - **A test hero of the level select** (the starting screen's Options, Level select, a floor, a hero) **is handed every unique
   he could find** (`Game.giftUniques`, src/game/game.ts): the pool's fifteen for his hero (the ten for everyone, his weapon's
   three, his own two) in his bag; the twenty bosses' own and the final boss's two in his stash in town. Made for the floor he
@@ -66,6 +76,21 @@ Colossus's in three parts.
   save, touch_wide, towntap_phone: finished clean.
 - The published files read back (list_files): 202; index.html, the four indexes and five others compared the same as built,
   by size and sha256.
+- **12 Nov, with the three in-play pictures on** (368875b: `try/uniques` 87894d7 with `bring-in/uniques-play` e58fde6
+  merged in, no conflicts, and the three switches set where `try=uniques` sets the others):
+  - `tsc --noEmit` with the project's TypeScript: clean. The bakes' marks worked out on it: the heroes' 0ed837378e63, the
+    townsfolk's d4c898fe370d, as before: nothing baked, the folders the same.
+  - `node tools/unit.mjs --only uniques_try,unique_play,uniques_game,uniques_drops,veteran` (the five and the core 23) on
+    368875b5e5: 28 files, 415 tests, all passed.
+  - Played as it is published, served from its folder, a finger on a phone's screen (852 by 393, three dots to a point):
+    `tools/scenarios/uniques_try.mjs` as the Brawler on floor 12 (it now also checks the three are on as the page is
+    built); the art's three looks in the practice room (`tools/scenarios/uniques_play_look.mjs`, `LOOK=tome`, `risen`,
+    `globe`); and **on floors of the game**, which nobody had looked at (`tools/scenarios/uniques_try_play.mjs`, new: the
+    level select with a finger, then the unique put on): the Tome round the Warlock on floor 8 (its fire in the air), an
+    elite of the floor's own (a scorpion) risen beside the Warrior on floor 8, four globes over the Brawler on floor 12
+    after four blows. All finished clean; pictures looked at.
+  - The published files read back (list_files): 202; index.html the same as built, by size and sha256; the other 201 as
+    they were.
 
 ## Not checked
 
@@ -77,8 +102,9 @@ Colossus's in three parts.
 
 - Three add a word that is not in the game yet (The Headsman's Hood, The Queen's Glass, The Long Echo: Culling, Mirroring,
   Lasting, which wait on put-ten-new-words-live): their cards say so, and they add nothing yet.
-- The Fourth Globe works, but the globes over the Brawler's head are painted as three.
-- What the uniques show in play is plain stand-ins: the art is being drawn (draw-unique-items).
+- The Fourth Globe works, and since 12 Nov four globes are painted over the Brawler's head (before, three).
+- What the other uniques show in play is plain stand-ins: the art is being drawn (draw-unique-items). The Tome, the risen
+  elite and the fourth globe show their own pictures since 12 Nov.
 - The card's look (orange for what it does, red for its price) has not had his yes; the names are his placeholders.
 - Floor 1 has no waypoint beside where he comes in: for the stash, a floor from 2 on.
 
