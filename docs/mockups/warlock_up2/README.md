@@ -778,6 +778,16 @@ take its own 3.5 s, **“Keep the game's 2.4 s (Recommended)”**. SO THE LIVING
 ship list (`warlock-living-shadow`), this branch at the commit there. The rules' change time stays 2.4 s. What is left of the
 queue's item is THE MAN: his eight sides (step 4, above).
 
+HIS IDEA FOR ITS SIDES, 12 Nov, 14:28: **“If he’s symmetrical then we don’t need all 8, we can get away with 6 or whatever
+right?  Not for the warlock but for the daemon?”** Told him: five painted and three mirrored (facing you and facing away are each
+their own mirror; down-left, left and up-left the mirrors of down-right, right and up-right), about three eighths fewer of its
+pictures; it is not quite symmetrical (its left foot forward, its first slash its left claw: they swap in the mirrored three; its
+slashes alternate anyway); the light flips on those three, barely seen on its black; the change into it and its burning out show
+the Warlock, who is not symmetrical (his demon arm), so they keep all eight; the game mixes no painted and mirrored sides today.
+Asked whether to give it five painted and three mirrored for all its own moves, keeping eight for the change and the burning
+out, **his pick, by 14:32: “Yes, mirror the three (Recommended)”**. FOR THE MAIN CHAT, when the man has eight: let a figure's
+eight sides be some painted and some mirrors (`art/sides.ts`, `render/figure.ts`), and `art/shadow_art.ts` paint five.
+
 ## The checks so far
 
 - `tsc --noEmit -p tsconfig.json`: nothing from this branch. (One line from `tests/relief.test.ts`, line 378, under the
