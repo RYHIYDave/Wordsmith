@@ -4,7 +4,7 @@
 //   LOOK=tome node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch \
 //     --scenario tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/tome
 // LOOK: tome (The Restless Tome, the Warlock), risen (The Fleshmancer's Brand, the Warrior), globe (The Fourth Globe, the
-// Brawler), arm (The Drowned Arm, the Warrior). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
+// Brawler), arm (The Drowned Arm, the Warrior), talons (The Queen's Talons, the Ranger). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
 // STAGE=1 (risen, with FILM): the elite set two tiles off and struck dead with no swing of his, so its rising is seen clear.
 // FILM=<seconds>: a film of it in place of the stills, frame by frame (30 a second, the game's clock stepped so that no
 // frame is missed): <out>_f0000.png on, each cut to the part of the screen round him (tools/uniques_play_film.py makes the MP4
@@ -42,9 +42,9 @@ export default async function (page, snap) {
   const mid = await page.evaluate(() => [innerWidth / 2, innerHeight / 2]);
   const round = (l, t, r, b) => ({ x: Math.round(mid[0] - l), y: Math.round(mid[1] - t), width: l + r, height: t + b });
   const elite = process.env.ELITE || 'skeleton';
-  const cls = look === 'tome' ? 'warlock' : look === 'globe' ? 'brawler' : 'warrior';
+  const cls = look === 'tome' ? 'warlock' : look === 'globe' ? 'brawler' : look === 'talons' ? 'ranger' : 'warrior';
   // (LOOK=kinds: every kind of monster risen in turn, to see each one's risen look: below)
-  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : 'fleshmancersbrand';
+  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : 'fleshmancersbrand';
   const set = await page.evaluate(({ cls, id, playOn }) => {
     const d = window.__dbg;
     d.uniques.on = true;
@@ -106,6 +106,18 @@ export default async function (page, snap) {
       const errs = await page.evaluate(() => (window.__errors || []).length);
       if (errs > errs0) { bad(`${kind}: ${errs - errs0} errors on the page`); errs0 = errs; }
     }
+    return;
+  }
+  if (look === 'talons') {
+    // THE QUEEN'S TALONS (the Ranger wearing them): a critical hit calls her bird onto the nearest enemy; here called as a critical
+    // hit calls it (Game.callBird), onto one to his right, then, that one sent off, onto one before him and to his left
+    const a = await mk('skeleton', 2.6, -0.6); await mk('cultist', 0.4, 2.7); await mk('skeleton', 4.6, 1.8);
+    const call = () => page.evaluate(() => window.__dbg.game().callBird());
+    const away = () => page.evaluate((id) => { const m = window.__dbg.game().monsters.find((q) => q.id === id); if (m) { m.x += 6; m.y -= 6; } }, a);
+    await wait(500);
+    if (film) { await shoot(film, round(190, 185, 240, 110), [[0.2, call], [1.5, away], [1.55, call]]); return; }
+    await call();
+    for (let k = 0; k < 6; k++) { await wait(k === 0 ? 100 : 120); await snap(`${k + 1}_bird`); }
     return;
   }
   if (look === 'arm') {

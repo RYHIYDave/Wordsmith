@@ -15,6 +15,7 @@
 //   fourth  THE FOURTH GLOBE (the Brawler's): four globes over his head, not three (render/veteran_fx.ts)
 //   arm     THE DROWNED ARM: black water welling up under the enemy, the tentacle bursting up out of it, whipping down across
 //           it as the blow lands, and pulled back under (art/unique_play_art2.ts)
+//   talons  THE QUEEN'S TALONS: one of her flock, black-violet, diving out of the air over him onto the enemy, striking, beating away
 //
 // (Nothing is imported here, so that anything may ask a switch without pulling in the pictures.)
-export const UNIQUE_PLAY = { tome: false, risen: false, fourth: false, arm: false };
+export const UNIQUE_PLAY = { tome: false, risen: false, fourth: false, arm: false, talons: false };

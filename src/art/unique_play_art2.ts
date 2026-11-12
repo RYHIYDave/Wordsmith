@@ -10,11 +10,15 @@
 //                     whips down across the enemy as the blow lands ('slam'), lies there a moment, and is pulled back under; the
 //                     water closes and is gone.
 //   THE QUEEN'S TALONS (boots, the Carrion Queen's: “Each critical hit calls one of her birds: it dives on the nearest enemy”): one
-//                     of her birds, her black-violet feathers and a pale ruff (its bag picture's), the yellow shank and black
-//                     talons of the boot: it drops out of the air over him, dives on that enemy, wings swept back, in the
-//                     rules' 0.35 seconds ('dive'), strikes talons first, flaps away up and is gone.
+//                     of her flock, the ledge road's vulture (art/ledge_vultures.ts, its moves with his yes), its brown
+//                     feathers her black-violet (the boot's bag picture's raven), its eyes and its edge the friend's cyan: it
+//                     comes down out of the air over him onto that enemy in its own head-first stoop, in the rules' 0.35
+//                     seconds ('dive'), strikes talons first, pulls out, beats away up and is gone.
 
 import { Px } from '../engine/px';
+import type { GameView } from './skin';
+import { VULTURE } from './ledge_vultures';
+import { canvasOf, paintMob } from './new_mobs3';
 import { INK } from './kit';
 import type { Ramp } from './kit';
 
@@ -263,155 +267,86 @@ export function paintArmPool(f: number): { px: Px; ax: number; ay: number } {
 // =============================================================================================
 // THE QUEEN'S TALONS: ONE OF HER BIRDS
 
-/** Her feathers (the bag picture's `raven`), its ruff (the bag picture's pale `feather`), its shank and its talons (`shank`, `horn`), its beak. */
-export const BIRD_RAVEN: Ramp = ['#0a0718', '#17102e', '#2a1c4c', '#44306e', '#7a62a8'];
-export const BIRD_RUFF: Ramp = ['#3a3446', '#6a6278', '#a49cb0', '#dcd6e4', '#ffffff'];
-export const BIRD_SHANK: Ramp = ['#3a2a0a', '#6c5416', '#a8882c', '#d8bc58', '#fff0b4'];
-export const BIRD_HORN: Ramp = ['#07060c', '#18141e', '#322a34', '#56484e', '#92848a'];
-export const BIRD_BEAK = ['#5a4a34', '#9c8a62', '#d6c896'] as const;
-
 /**
- * HER BIRD'S POSES, by what it is doing. `dive`: dropping on its prey, wings half swept back, talons drawn up; `strike`: talons
- * thrown forward, wings flung up and wide to brake; `flap0` to `flap3`: beating away, wings down through up.
+ * HER BIRD IS ONE OF HER FLOCK: the Carrion Queen's vulture of the ledge road (art/ledge_vultures.ts VULTURE, every move of it
+ * with his yes: its bald head and hooked beak, its ragged wings, its great taloned feet), its flight and its dive painted by its
+ * own painter (art/new_mobs3.ts paintMob), turned hers and his: its dusty brown feathers her black-violet (the boot's bag
+ * picture's raven), its pale ruff, head and talons as they are, its eyes the enemy's fire no more but the friend's cyan, and the
+ * friend's cyan edge round it, as round every friend (it is his, called by his boots).
  */
-export type BirdPose = 'dive' | 'strike' | 'flap0' | 'flap1' | 'flap2' | 'flap3';
-export const BIRD_POSES: readonly BirdPose[] = ['dive', 'strike', 'flap0', 'flap1', 'flap2', 'flap3'];
-/** Its canvas: `w` by `h`, its middle (where its body is) at (`ax`, `ay`). */
-export const BIRD = { w: 72, h: 60, ax: 36, ay: 30 };
-
-type V = readonly [number, number];
-/** Fill a shape (points, its outline) with a ramp, lit from the upper left by how far each pixel is toward that side of the shape, and a little darker at its bottom. */
-function shaded(p: Px, pts: readonly V[], ramp: Ramp, bias = 0, flat = false): void {
-  const tmp = new Px(p.w, p.h);
-  tmp.poly(pts as [number, number][], '#ffffff');
-  const b = tmp.bounds();
-  if (!b) return;
-  for (let y = b.y; y < b.y + b.h; y++) {
-    for (let x = b.x; x < b.x + b.w; x++) {
-      if (!tmp.has(x, y)) continue;
-      const u = (x - b.x) / Math.max(1, b.w - 1);
-      const v = (y - b.y) / Math.max(1, b.h - 1);
-      const lit = flat ? 0.5 + bias : 1.05 - 0.55 * u - 0.75 * v + bias;
-      p.set(x, y, ramp[clamp(Math.round(lit * 3.2), 0, 4)]);
-    }
-  }
-}
-
-/** A wing, from its shoulder: `span` how far out, `lift` how far up its tip (picture pixels; less than 0 down), `sweep` how far back; its ragged fingers at the tip. */
-function wing(p: Px, sx: number, sy: number, dir: 1 | -1, span: number, lift: number, sweep: number, near: boolean): void {
-  const tipX = sx + dir * span;
-  const tipY = sy - lift;
-  const back = sweep;
-  // (its leading edge from the shoulder to the tip; its trailing edge back along the fingers and the secondaries)
-  const lead: V[] = [
-    [sx, sy - 2],
-    [sx + dir * span * 0.35, sy - lift * 0.45 - 4],
-    [sx + dir * span * 0.7, sy - lift * 0.8 - 3],
-    [tipX, tipY],
-  ];
-  const fingers: V[] = [];
-  for (let i = 0; i < 5; i++) {
-    const k = i / 4;
-    const fx = tipX - dir * (k * span * 0.38 + back * 0.5 * k);
-    const fy = tipY + 3 + k * (lift * 0.3 + 4) + back * 0.25;
-    fingers.push([fx, fy]);
-    fingers.push([fx - dir * 1.5, fy - 2]);
-  }
-  const trail: V[] = [
-    [sx + dir * span * 0.45 - dir * back * 0.6, sy - lift * 0.45 + 7 + back * 0.3],
-    [sx - dir * 2, sy + 5],
-  ];
-  shaded(p, [...lead, ...fingers, ...trail], BIRD_RAVEN, near ? 0.15 : -0.25);
-  // (a row of its coverts, a shade lighter, along the leading edge)
-  p.line(Math.round(sx + dir * 2), Math.round(sy - 1), Math.round(sx + dir * span * 0.62), Math.round(sy - lift * 0.7 - 1), near ? BIRD_RAVEN[4] : BIRD_RAVEN[3]);
-}
-
+export const BIRD_RAVEN = ['#0a0718', '#17102e', '#2a1c4c', '#3a2862', '#4e3a7e', '#7a62a8'] as const;
+/** The friend's edge round it (the heroes' own: art/warrior_up.ts WU_RIM). */
+export const BIRD_RIM = '#22d0e0';
 /**
- * ONE OF HER BIRDS in a pose, facing the picture's right (the game flips it to face left). Its body a tilted egg of her
- * feathers, the pale ruff round its neck, a bare head and hooked beak, a fanned tail, the yellow shank and four black talons,
- * and its two wings, the far one behind it, a shade darker.
+ * ITS DIVE, as the rules have it (game.ts callBird: 'dive', `secs` from him to the enemy, then the blow): in its own dive's
+ * moments (art VULTURE_DIVE), its stoop from `from` to the blow at `hit` played over the rules' seconds while it comes from over
+ * him to the enemy, `high` game pixels up as it sets off; then its strike held and its pull-out to `end` where it struck; then
+ * `away` seconds of its flight, beating up and on along the way it came, fading.
  */
-export function paintBird(pose: BirdPose): Px {
-  const p = new Px(BIRD.w, BIRD.h);
-  const cx = BIRD.ax;
-  const cy = BIRD.ay;
-  // how the wings are, and the legs, by pose
-  const W: Record<BirdPose, { span: number; lift: number; sweep: number; tilt: number; legs: 'up' | 'fore' | 'hang' }> = {
-    dive: { span: 22, lift: 9, sweep: 12, tilt: 0.45, legs: 'up' },
-    strike: { span: 28, lift: 20, sweep: 2, tilt: -0.25, legs: 'fore' },
-    flap0: { span: 30, lift: 12, sweep: 0, tilt: -0.1, legs: 'hang' },
-    flap1: { span: 30, lift: -2, sweep: 2, tilt: -0.1, legs: 'hang' },
-    flap2: { span: 26, lift: -14, sweep: 4, tilt: -0.1, legs: 'hang' },
-    flap3: { span: 28, lift: 22, sweep: 0, tilt: -0.1, legs: 'hang' },
+export const TALONS = { from: 0.25, hit: 0.7, end: 1.2, away: 0.55, high: 20, fps: 30 } as const;
+
+const lumaOf = (r: number, g: number, b: number): number => 0.299 * r + 0.587 * g + 0.114 * b;
+const RAVEN_Y = BIRD_RAVEN.map((c) => {
+  const v = parseInt(c.slice(1), 16);
+  return lumaOf(v >> 16, (v >> 8) & 255, v & 255);
+});
+
+/** Her bird's colours from the vulture's: its brown feathers her black-violet by how light, the enemy's fire in its eyes the friend's cyan; the rest (its pale head, ruff and talons, the ink) as they are. Changes `p`. */
+export function talonsLook(p: Px): Px {
+  const d = p.d;
+  const set = (i: number, c: string): void => {
+    const v = parseInt(c.slice(1), 16);
+    d[i] = v >> 16;
+    d[i + 1] = (v >> 8) & 255;
+    d[i + 2] = v & 255;
   };
-  const w = W[pose];
-  const t = w.tilt;
-  const at = (fx: number, fy: number): [number, number] => [cx + fx * Math.cos(t) - fy * Math.sin(t), cy + fx * Math.sin(t) + fy * Math.cos(t)];
-  // THE FAR WING, behind it
-  wing(p, cx + 2, cy - 2, -1, w.span * 0.7, w.lift * 0.8, w.sweep, false);
-  // ITS TAIL, fanned behind (to the left)
-  shaded(p, [at(-6, -2), at(-16, -5), at(-19, 0), at(-16, 4), at(-6, 3)], BIRD_RAVEN, -0.1);
-  // ITS LEGS: the yellow shank, the talons black
-  const hip = at(2, 4);
-  const legTo = w.legs === 'fore' ? at(14, 10) : w.legs === 'up' ? at(-3, 8) : at(3, 12);
-  for (const o of [-1, 1]) {
-    p.line(Math.round(hip[0] + o), Math.round(hip[1]), Math.round(legTo[0] + o), Math.round(legTo[1]), BIRD_SHANK[o > 0 ? 3 : 2]);
-    p.line(Math.round(hip[0] + o), Math.round(hip[1] + 1), Math.round(legTo[0] + o), Math.round(legTo[1] + 1), BIRD_SHANK[1]);
-    // talons: three hooks forward, one back
-    const [fx, fy] = legTo;
-    const open = w.legs === 'fore' ? 1 : 0.5;
-    for (const [dx, dy] of [[3, 1], [3, -1 - open * 2], [2, 3], [-2, 1]] as V[]) {
-      const tx = Math.round(fx + o + dx * (0.8 + open * 0.5));
-      const ty = Math.round(fy + dy);
-      p.line(Math.round(fx + o), Math.round(fy), tx, ty, BIRD_HORN[1]);
-      p.set(tx, ty + 1, BIRD_HORN[3]);
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] !== 255) continue;
+    const r = d[i];
+    const g = d[i + 1];
+    const b = d[i + 2];
+    const mx = Math.max(r, g, b);
+    const mn = Math.min(r, g, b);
+    const sat = mx ? (mx - mn) / mx : 0;
+    const y = lumaOf(r, g, b);
+    // (the enemy's fire in its eyes: the friend's cyan, as bright)
+    if (r > 200 && sat > 0.4) {
+      set(i, y > 165 ? '#b8fff8' : '#22d0e0');
+      continue;
+    }
+    // (its brown feathers: warm, dull, not pale)
+    if (r >= g && g >= b && sat > 0.16 && y < 120) {
+      let best = 0;
+      for (let k = 1; k < RAVEN_Y.length; k++) if (Math.abs(RAVEN_Y[k] - y * 1.05) < Math.abs(RAVEN_Y[best] - y * 1.05)) best = k;
+      set(i, BIRD_RAVEN[best]);
     }
   }
-  // ITS BODY: an egg of her feathers
-  const body: V[] = [];
-  for (let i = 0; i < 18; i++) {
-    const a = (i / 18) * Math.PI * 2;
-    const rx = Math.cos(a) > 0 ? 9 : 10;
-    body.push(at(Math.cos(a) * rx, Math.sin(a) * 5.5));
-  }
-  shaded(p, body, BIRD_RAVEN, 0.12);
-  // (its breast feathers, in rows)
-  for (let i = 0; i < 3; i++) {
-    const [x0, y0] = at(-2 + i * 3, 1 + (i % 2));
-    p.set(Math.round(x0), Math.round(y0), BIRD_RAVEN[3]);
-  }
-  // THE PALE RUFF round its neck, THE BARE HEAD and THE HOOKED BEAK
-  const neck = at(9, -3);
-  const ruff: V[] = [];
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2;
-    const rr = i % 2 ? 4.5 : 3.4;
-    ruff.push([neck[0] + Math.cos(a) * rr, neck[1] + Math.sin(a) * rr * 0.8]);
-  }
-  shaded(p, ruff, BIRD_RUFF, 0.1);
-  const head = at(13, -5);
-  p.ellipse(Math.round(head[0]), Math.round(head[1]), 3, 2, BIRD_RAVEN[2]);
-  p.set(Math.round(head[0]) - 1, Math.round(head[1]) - 1, BIRD_RAVEN[4]);
-  // (its eye: a dark bead with a pale glint; never a glow)
-  p.set(Math.round(head[0]) + 1, Math.round(head[1]) - 1, '#0e0c24');
-  const beak: V[] = [at(15, -6), at(19, -5), at(20, -3), at(18, -3.5), at(15, -4)];
-  shaded(p, beak, [BIRD_BEAK[0], BIRD_BEAK[0], BIRD_BEAK[1], BIRD_BEAK[2], BIRD_BEAK[2]], 0.2);
-  // THE NEAR WING, over it
-  wing(p, cx - 1, cy - 1, 1, w.span, w.lift, w.sweep, true);
-  p.outline(INK);
   return p;
 }
 
-/** Where her bird is at a moment of its dive (`k` 0..1 of the rules' `secs`, then 1..2 flying off): along the floor (0 at him, 1 at the enemy) and how high over the floor (game pixels), and its pose. */
-export function birdAt(k: number): { along: number; high: number; pose: BirdPose; alpha: number } {
-  if (k < 0.82) {
-    // (dropping out of the air over him onto it, faster as it comes)
-    const u = k / 0.82;
-    return { along: u * u * 0.9, high: 46 - 34 * u, pose: 'dive', alpha: Math.min(1, k * 6) };
+/** Its canvas (the vulture's: its floor point at (ax, ay)). */
+export const BIRD_CANVAS = canvasOf(VULTURE);
+
+/** HER BIRD painted: in its dive at `t` seconds of the vulture's own dive (art VULTURE_DIVE), or in flight at `t` seconds of its wing beat; from in front or behind; her colours, the friend's edge. */
+export function paintTalonsBird(move: 'dive' | 'fly', t: number, view: GameView): Px {
+  return talonsLook(paintMob(VULTURE, move === 'dive' ? 'attack' : 'walk', t, view, BIRD_RIM).px);
+}
+
+/**
+ * WHERE HER BIRD IS, `t` seconds after it is called (the rules' `secs` to the blow): how far along the floor from him to the
+ * enemy (0 to 1, on past it as it leaves), how high its floor point is over the floor (game pixels), which of its moves and the
+ * moment of it, and how clear it is. Null once it is gone.
+ */
+export function talonsAt(t: number, secs: number): { along: number; high: number; move: 'dive' | 'fly'; at: number; alpha: number } | null {
+  const T = TALONS;
+  if (t < secs) {
+    // (coming down out of the air over him onto it, faster as it comes: its own stoop, played over the rules' time)
+    const u = t / secs;
+    return { along: u * u, high: T.high * (1 - u * u), move: 'dive', at: T.from + (T.hit - T.from) * u, alpha: Math.min(1, 0.35 + u * 3) };
   }
-  if (k < 1.12) return { along: 0.95 + (k - 0.82) * 0.15, high: 12 - (k - 0.82) * 10, pose: 'strike', alpha: 1 };
-  // (flapping away up and on, fading)
-  const u = (k - 1.12) / 0.88;
-  const flaps: BirdPose[] = ['flap0', 'flap1', 'flap2', 'flap3'];
-  return { along: 1 + u * 0.9, high: 10 + u * 40, pose: flaps[Math.floor(u * 9) % 4], alpha: Math.max(0, 1 - u * 1.2) };
+  const after = t - secs;
+  if (after < T.end - T.hit) return { along: 1, high: 0, move: 'dive', at: T.hit + after, alpha: 1 };
+  const u = (after - (T.end - T.hit)) / T.away;
+  if (u >= 1) return null;
+  return { along: 1 + u * 0.8, high: u * 30, move: 'fly', at: u * T.away, alpha: 1 - u * u };
 }

@@ -163,8 +163,27 @@ CHAT (the uniques' numbers are its: game/uniques.ts UNIQUE_TUNE.arm.every 5 to 3
 stepArm, as the game stuns elsewhere; its card's line says so). The picture needs nothing new for either: it plays from each
 `warn`, however often.
 
-NOT DRAWN YET (the rest of the queue item's list): The Queen's Talons' bird (a first try in
-src/art/unique_play_art2.ts `paintBird`, NOT shown to him: it reads as a dark blob and wants drawing again, by hand-placed
-pixels rather than shapes), The Rainwalker, The Shepherd's Crook, The Tide, The Windcutter (the game already draws its blade as
+## The Queen's Talons (same branch, 12 Nov 2026)
+
+At his word, 12 Nov, when the bird had been put back in the queue: “So work on the queen’s talons?  Why just throw it back in
+the queue?”. Behind `UNIQUE_PLAY.talons`, off. HER BIRD IS ONE OF HER FLOCK: the ledge road's vulture (art/ledge_vultures.ts,
+its moves with his yes), painted by its own painter (`paintMob`), turned hers and his (`talonsLook`): its dusty brown feathers
+her black-violet (the boot's bag picture's raven, six tones by how light), its pale head, ruff and talons as they are, its eyes
+the friend's cyan where they were the enemy's fire, and the friend's cyan edge round it (it is his, called by his boots). On the
+rules' `dive` (game.ts callBird: `secs`, 0.35, from him to the nearest enemy) it comes down out of the air over him (`TALONS.high`,
+20 game pixels) onto that enemy in its own head-first stoop (its dive's moments from 0.25 to its blow at 0.7, played over the
+rules' seconds), its shadow under it, so that its talons strike as the rules' blow lands; a burst of her feathers off the one it
+strikes; its strike held and its pull-out (to 1.2); then 0.55 seconds of its own flight, beating up and on the way it came,
+fading (`talonsAt`). From in front or behind, and which way round, by the way it flies, as a monster is shown. Its pictures (its
+dive's 29 moments and its flight's 18, both ways) are painted two a step while the boots are worn, so its first dive waits on
+none of them (`UniqueFx.update`). Looked at in a built page at a phone's size (`LOOK=talons`: the Ranger, two dives, one each
+way): `pictures/queens_talons.mp4` and `pictures/queens_talons.png` (four moments, a line under each), sent him.
+
+Checked: tests/unique_play2_talons.test.ts (new, 3: its switch off; her colours, no brown and nothing of the enemy's fire left,
+the friend's edge round it, every pixel whole or its edge; its way over him, onto the enemy as the blow lands, away, gone),
+tests/unique_play2.test.ts (3) and tests/unique_play.test.ts (6, its switches now counting `talons`) pass, each alone with tsx;
+tsc clean; the look filmed, finished clean.
+
+NOT DRAWN YET (the rest of the queue item's list): The Rainwalker, The Shepherd's Crook, The Tide, The Windcutter (the game already draws its blade as
 the Wave's crescent), The Fan, The Sticky Wrench, The Moth's Wing; and which of the moments the build only tells of want a
 picture of their own (to ask him).

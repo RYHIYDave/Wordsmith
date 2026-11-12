@@ -1,9 +1,9 @@
 // THE NEXT UNIQUES IN PLAY (src/art/unique_play_art2.ts), big, for whoever paints them: no browser.
 //   npx tsx tools/uniques_play_peek2.ts <arm|bird> <out.png> [scale]
-// arm: the Drowned Arm at every frame from its warning, its black water under it; bird: her bird in every pose.
+// arm: the Drowned Arm at every frame from its warning, its black water under it; bird: the Queen's Talons' bird, its dive and flight.
 import { writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
-import { ARM, BIRD, BIRD_POSES, paintArm, paintArmPool, paintBird } from '../src/art/unique_play_art2';
+import { ARM, BIRD_CANVAS, TALONS, paintArm, paintArmPool, paintTalonsBird } from '../src/art/unique_play_art2';
 import { png } from './king_png';
 
 const what = process.argv[2] ?? 'arm';
@@ -34,7 +34,10 @@ if (what === 'arm') {
   }
   writeFileSync(out, png(grid(cells, 9, ARM.w, ARM.h)));
 } else {
-  cells = BIRD_POSES.map((p) => paintBird(p));
-  writeFileSync(out, png(grid(cells, 6, BIRD.w, BIRD.h)));
+  // (its dive, from its stoop to its pull-out, a tenth of a second apart, from in front; then its flight; then from behind)
+  for (let t = TALONS.from; t <= TALONS.end + 1e-6; t += 0.1) cells.push(paintTalonsBird('dive', t, 'front'));
+  for (const t of [0, 0.2, 0.4]) cells.push(paintTalonsBird('fly', t, 'front'));
+  for (const t of [0.4, 0.7, 0.9]) cells.push(paintTalonsBird('dive', t, 'back'));
+  writeFileSync(out, png(grid(cells, 8, BIRD_CANVAS.w, BIRD_CANVAS.h)));
 }
 console.log(out);
