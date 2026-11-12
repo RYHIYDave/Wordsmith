@@ -35,6 +35,7 @@
 import { HEAVY_FIGURES, framesOf, giveFrame } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { ActorArt } from '../art/actor_types';
+import { heroSides } from '../art/sides';
 import type { Sprite } from '../engine/px';
 import { bakeName, bakedFigures, figureLens } from './monsters_bake_list';
 import type { MonsterBakeFile } from './monsters_bake_list';
@@ -366,7 +367,7 @@ export class BakedMonsters {
         throw new Error(`${name}: no room for it with this place's others on a phone`);
       }
       a.px = px;
-      const lists = [framesOf(a.art.front), framesOf(a.art.back)];
+      const lists = heroSides(a.art).map(framesOf);
       const wants = new Map<number, [number, number, number][]>();
       for (let n = 0; n + 3 < f.at.length; n += 4) {
         const fi = f.at[n + 3];

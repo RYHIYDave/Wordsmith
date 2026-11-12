@@ -130,6 +130,7 @@ import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
 import { BakedHeroes } from './render/baked';
 import { BakedTownsfolk, TOWNSFOLK_BAKED } from './render/townsfolk_baked';
 import { BakedMonsters, CUT_MS, MONSTERS_BAKED, bringsOf } from './render/monsters_baked';
+import { formOf as reflectionForm } from './game/act1_rules/reflection';
 import { HEAVY_FIGURES, framesOf, paintOrder } from './art/bestiary';
 import type { MonsterFigure } from './art/bestiary';
 import { act1Stages } from './art/act1_figs/index';
@@ -469,7 +470,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const f = figureOf(m);
       if (seen.has(f)) continue;
       want(f);
-      for (const o of bringsOf(f, (x) => act1Stages(x)?.next as MonsterFigure[] | undefined)) want(o);
+      // (the glass Queen's reflections: the hero's own form's only, his class's and the Warrior's weapon's: the others are never seen)
+      for (const o of bringsOf(f, (x) => act1Stages(x)?.next as MonsterFigure[] | undefined)) want(o === 'reflection' ? figureOf({ kind: 'reflection', champion: false, form: reflectionForm(g.hero.cls, g.hero.talents) }) : o);
       if (m.boss && movesOf(m)) want('skeleton');
     }
     // (waited for no longer than `waitMost` by the clock on the wall: after it he plays, and they go on coming)

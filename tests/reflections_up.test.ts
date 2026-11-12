@@ -1,7 +1,7 @@
 // FLOOR 18'S REFLECTIONS OF THE HEROES AS THEY LOOK NOW (src/art/reflections_up.ts). A MOCK-UP: behind REFLECTIONS_UP, off.
 // Each hero's own painter's frames turned to glass by the first reflections' steps (src/art/reflections.ts, his yes), from every
 // side the hero has; its stepping out of a mirror and its shattering the first reflections' (src/art/reflections_fx.ts).
-//   1. the switch is off, and nothing of the game imports it;
+//   1. the switch is off, and of the game only floor 18's own figure imports it;
 //   2. A REFLECTION HAS THE HERO'S SIDES, AND WHAT IT DOES IN THE GAME: his stance, his run, his tap and his hold, each list as
 //      long as the hero's own and its blow at the same moment; its shattering; from in front, its stepping out;
 //   3. ITS FRAMES (each hero, from in front and from another side: standing, running, his tap's blow and his hold's, its
@@ -97,13 +97,17 @@ function moments(h: HeroGlass): [Track, number][] {
 /** From in front, and from one other side (behind, or a side of the eight between). */
 const twoSides = (h: HeroGlass): string[] => ['front', h.sides.includes('away') ? 'away' : 'back'];
 
-test('1. the switch is off, and nothing of the game imports it', () => {
+test("1. the switch is off, and of the game only floor 18's own figure imports it", () => {
   assert.equal(REFLECTIONS_UP.on, false);
+  // (brought into the game behind its switch, off, by the queue's wire-floor-18-new-reflections, 12 Nov 2026: floor 18's figure,
+  // art/act1_figs/reflection.ts, takes it with the switch on)
   const root = path.join('src');
+  const users: string[] = [];
   for (const f of fs.readdirSync(root, { recursive: true })) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('reflections_up.ts')) continue;
-    assert.ok(!/from ['"][^'"]*reflections_up['"]/.test(fs.readFileSync(path.join(root, f), 'utf8')), `${f} imports the mock-up`);
+    if (/from ['"][^'"]*reflections_up['"]/.test(fs.readFileSync(path.join(root, f), 'utf8'))) users.push(f.replace(/\\/g, '/'));
   }
+  assert.equal(users.sort().join(' '), 'art/act1_figs/reflection.ts', 'game files that import it');
 });
 
 test("2. A REFLECTION HAS THE HERO'S SIDES, and his stance, run, tap and hold as long as his, its blow at the same moment; its shattering; its stepping out from in front", () => {

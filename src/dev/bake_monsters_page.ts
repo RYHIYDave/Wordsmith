@@ -8,6 +8,7 @@
 
 import { framesOf, makeBestiary, paintOrder } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
+import { heroSides } from '../art/sides';
 import type { Sprite } from '../engine/px';
 import { HOLD_MOST_MB, bakedFigures, figureLens } from '../render/monsters_bake_list';
 import type { MonsterBakeFile } from '../render/monsters_bake_list';
@@ -49,7 +50,7 @@ function hashOf(data: Uint8ClampedArray, w: number, h: number, other: string): s
 function figure(name: MonsterFigure): { frames: number; places: number; empty: number; sheets: { w: number; h: number }[]; dropped: string[]; ms: number; px: number; big: [number, number] } {
   const t0 = performance.now();
   const art = bestiary.of(name);
-  const lists = [framesOf(art.front), framesOf(art.back)];
+  const lists = heroSides(art).map(framesOf);
   const bySprite = new Map<Sprite, number>();
   const byHash = new Map<string, number>();
   const frames: { s: Sprite; parts: number }[] = [];

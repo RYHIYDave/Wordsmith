@@ -38,7 +38,7 @@ import type { HeroArt } from '../art/heroes';
 import { HEAVY_PLACES } from '../art/heroes';
 import { heavyDrawn } from '../game/talents';
 import { AXE_FLIGHT, axeFlying } from '../art/warrior_up_axe_moves';
-import { WARRIOR_UP } from '../art/warrior_up';
+import { WARRIOR_UP, WU_SIDES } from '../art/warrior_up';
 import { WORD_COLOR, itemPic } from '../art/icons';
 import type { IconArt } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
@@ -94,7 +94,10 @@ import { STAIR_N, STAIR_W, levelAt } from '../game/height';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_LEFT_LOW, CUT_NEAR, CUT_NEAR_LOW, T_FLOOR, T_PIT, T_WALL } from '../game/types';
 import type { Floor } from '../game/types';
 import type { ClassId, Element, WordId } from '../game/types';
-import { Figure, attackClip, attackFrame, clipFrame, gaitFrame, monsterAttackAge, moveFrame, paintedNear, PHASE_APART } from './figure';
+import { EIGHT_STICK, Figure, attackClip, attackFrame, clipFrame, gaitFrame, monsterAttackAge, moveFrame, paintedNear, PHASE_APART } from './figure';
+import { heroSides, isEight } from '../art/sides';
+import type { WuSide } from '../art/warrior_up';
+import { wuFacing } from '../art/warrior_up_art';
 import { drawChargeLane } from '../art/charge_lane';
 import { drawAimLine, drawBurningSmoke, drawGreatArrow, drawSkullBurst, drawSkullShadow, drawSpearLying, drawSpearShot } from '../art/mob_shots';
 import { skullAt, spearHeight } from './mob_world';
@@ -2962,7 +2965,7 @@ export class Renderer {
     const f = figureOf(m);
     if (!this.painter?.paints(f) && !this.bakedMobs?.coming(f)) {
       const art = this.art.bestiary.of(f);
-      for (const set of [art.front, art.back]) {
+      for (const set of heroSides(art)) {
         const death = deathOf(set);
         if (death && death !== set.clips?.die?.frames) lists.push(death);
       }
@@ -3050,18 +3053,40 @@ export class Renderer {
       LEFT_TO_PAINTER.on = left;
     }
   }
+  /**
+   * ONE SEEN FROM EIGHT SIDES (floor 18's reflections of the heroes as they look now: art/act1_figs/reflection.ts, art/sides.ts):
+   * the side for the way it faces, kept until it has clearly turned out of it (as the hero's figure keeps his: figure.ts
+   * eightSide), drawn as painted, never mirrored.
+   */
+  private sides8 = new WeakMap<Monster, WuSide>();
+  private side8Of(m: Monster): WuSide {
+    const want = wuFacing(m.fx, m.fy);
+    const was = this.sides8.get(m);
+    let side = want;
+    if (was && was !== want) {
+      const a = (Math.atan2(m.fy, m.fx) * 180) / Math.PI;
+      const c = WU_SIDES.indexOf(was) * 45;
+      const d = Math.abs(((((a - c) % 360) + 540) % 360) - 180);
+      if (d <= 22.5 + EIGHT_STICK) side = was;
+    }
+    this.sides8.set(m, side);
+    return side;
+  }
   private monsterSpriteNow(m: Monster): Sprite {
     const art = this.monsterArt(m);
-    const more = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves;
-    const flip = (s: Sprite): Sprite => (m.fx - m.fy < 0 ? flipSprite(s, true) : s);
+    // (one seen from eight sides: the side for the way it faces, never mirrored; every other as ever, its front or back, mirrored to the left)
+    const eight = isEight(art) ? art[this.side8Of(m)] : null;
+    const faced = eight ?? (m.fx + m.fy < -0.2 ? art.back : art.front);
+    const more = faced.clips?.moves;
+    const flip = (s: Sprite): Sprite => (!eight && m.fx - m.fy < 0 ? flipSprite(s, true) : s);
     // (ACT 1: one of the descent's own whose picture is its kind's to say now: up in the air, latched on, rising out of the water)
     const a1 = act1Fx(m.kind);
     if (a1 && a1.sprite) {
-      const own = a1.sprite(m, art, m.fx + m.fy < -0.2 ? art.back : art.front);
+      const own = a1.sprite(m, art, faced);
       if (own) return flip(own);
     }
     // (THE FIRST FIVE FLOORS: one with a gait and acts of its own is shown by them: figure.ts, gaitFrame)
-    if (gaitOf(m.kind)) return flip(gaitFrame(m.fx + m.fy < -0.2 ? art.back : art.front, m));
+    if (gaitOf(m.kind)) return flip(gaitFrame(faced, m));
     // (THE NEW MONSTERS: a Boneward whose spear is gone stands and plods with its hand empty, and
     // stoops for its spear when it comes to it)
     const bare = m.bare && more?.standBare && more.walkBare ? more : null;
@@ -3097,7 +3122,9 @@ export class Renderer {
    */
   private fallenSprite(f: Fallen): { sp: Sprite; lying: boolean; since: number } | null {
     const art = this.art.bestiary.of(f.figure);
-    const clip = (f.back ? art.back : art.front).clips?.die;
+    // (one seen from eight sides: its fall from the side for the way it faced, never mirrored)
+    const eight = isEight(art) && f.fx !== undefined && f.fy !== undefined ? art[wuFacing(f.fx, f.fy)] : null;
+    const clip = (eight ?? (f.back ? art.back : art.front)).clips?.die;
     if (!clip || clip.frames.length === 0) return null;
     const last = clip.frames.length - 1;
     const i = Math.floor(f.t * clip.fps);
@@ -3115,7 +3142,7 @@ export class Renderer {
     // (A FIGURE KEPT PACKED, THE MOTH: its fall unpacked as it is shown, as its moves are: render/painter.ts PACKED)
     if (this.painter?.packs(f.figure)) this.painter.shown(f.figure, sp, HEAVY.deferred !== stood);
     // (`since`: how long it has lain, in seconds)
-    return { sp: f.flip ? flipSprite(sp, true) : sp, lying: i >= last, since: f.t - last / clip.fps };
+    return { sp: f.flip && !eight ? flipSprite(sp, true) : sp, lying: i >= last, since: f.t - last / clip.fps };
   }
 
   /**

@@ -6,6 +6,7 @@ import { FIRST5_FIGURES, MONSTER_FIGURES, NEW_FIGURES, framesOf } from '../art/b
 import type { MonsterFigure } from '../art/bestiary';
 import type { ActorArt } from '../art/actor_types';
 import type { Sprite } from '../engine/px';
+import { heroSides } from '../art/sides';
 import { COLOSSUS } from '../game/colossus_fight';
 
 /**
@@ -43,9 +44,12 @@ export function bakeName(figure: MonsterFigure): string {
   return figure.replace(':', '_');
 }
 
-/** The lengths of a figure's lists, the front's then the back's (to know the baked pictures are of the figure as the game has it now). */
+/**
+ * The lengths of a figure's lists, the front's then the back's (one seen from eight sides, floor 18's reflections, its others after
+ * them: art/sides.ts), to know the baked pictures are of the figure as the game has it now.
+ */
 export function figureLens(art: ActorArt): number[][] {
-  return [framesOf(art.front), framesOf(art.back)].map((lists) => lists.map((l) => l.length));
+  return heroSides(art).map((set) => framesOf(set).map((l) => l.length));
 }
 
 /** A figure's file: its sheets, its frames on them, and where each frame goes. */
