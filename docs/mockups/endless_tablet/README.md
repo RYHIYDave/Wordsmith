@@ -60,6 +60,13 @@ optimized build.”
   with his runes, small eyes burning, short thick legs and cloven hooves; his runes branded on its flank, the wool burnt off round
   them; a saddle of iron and old leather on its hump. Both the enemy's: pink burning to gold, the pink edge.
 
+## HOW HARD HE IS: HIS WORDS, 12 Nov 2026, 14:32
+
+“Can you put in there that this is the biggest, baddest boss in the game and will need a well geared, well rounded character to
+deafeat.  The fight needs to be fun and engaging and tough as nails.  I want it to be something you have to prep for or he’ll wipe
+the floor with you.  Not unfair or gimmicky, just hard”. (Put in the queue's draw-endless-tablet-portal-final-boss and
+build-endless-tablet-and-final-boss too.)
+
 ## HIS BRIEF FOR THE FINAL BOSS (docs/art/RULEBOOK.md, A new character), 12 Nov 2026, by pop-up
 
 1. What is it, and where does it live: the warped wordsmith on the great woolly boar (above), past the portal at the bottom of the
