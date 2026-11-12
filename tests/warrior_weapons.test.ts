@@ -95,7 +95,7 @@ const pixel = (p: Px, i: number): string => `${p.d[i * 4]},${p.d[i * 4 + 1]},${p
 // (BROUGHT TO THE GAME, 12 Nov 2026, at his yes of 11 Nov by 10:51, “Yes, hand both to main (Recommended)”: his pictures with the
 // war axe and the maul are the game's where his weapon is one of them, game/talents.ts WARRIOR_TREE2 (docs/warrior_tree_build.md).
 // The art reaches the game only by these files, each asking for it only with his weapon picked: none other may)
-const GAME_USERS = ['art/heroes.ts', 'art/heroes3.ts', 'render/render.ts'];
+const GAME_USERS = ['art/heroes.ts', 'art/heroes3.ts', 'render/render.ts', 'render/warrior_fx.ts'];
 
 test('1. the art reaches the game only by the files that ask for his weapon; the mock-up switch is off; nothing imports the drops', () => {
   assert.equal(WARRIOR_WEAPONS.on, false, 'WARRIOR_WEAPONS is off');

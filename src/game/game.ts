@@ -8855,6 +8855,12 @@ export class Game {
       for (let q = 0; q < shakes; q++) {
         const share = each * (shakes > 1 ? T.shares[q] ?? T.shares[T.shares.length - 1] : 1);
         const round = rad + (shakes > 1 ? q * T.wider : 0);
+        // (the ground heaving, drawn in the floor's own stone: render/warrior_fx.ts)
+        if (s.id === 'quake') {
+          const qe: GameEvent = { t: 'quake', x: cx, y: cy, q: Math.min(2, q), fx: dx, fy: dy };
+          if (q === 0) this.emit(qe);
+          else this.after(q * T.gap, () => this.emit(qe));
+        }
         for (let k = 0; k < r.count; k++) {
           const at = q * T.gap + 0.28 * k;
           if (at === 0) this.blast(i, cx, cy, round, share, 'slam', 0, echo);
@@ -9060,7 +9066,7 @@ export class Game {
         struck++;
         if (!m.dead && r.id === 'smash') this.smashed(m, dx, dy);
       }
-      this.emit({ t: 'burst', x: sx, y: sy, r: rad + 0.3, el: r.element, style: 'pound', words, n, echo });
+      this.emit({ t: 'burst', x: sx, y: sy, r: rad + 0.3, el: r.element, style: 'land', words, n, echo });
       if (struck) {
         this.landed(i);
         this.sfx(power ? 'power' : 'hit', 0.8);

@@ -1768,6 +1768,8 @@ export type GameEvent =
   | { t: 'axeTurn'; x: number; y: number }
   | { t: 'axeCatch'; x: number; y: number }
   | { t: 'axeGlint'; x: number; y: number }
+  /** (THE WARRIOR'S WARHAMMER) The Earthquake's quake at (x, y): the first (0), or Tremors' second and third (1, 2); (fx, fy) the way he struck. */
+  | { t: 'quake'; x: number; y: number; q: number; fx: number; fy: number }
   | { t: 'levelup' };
 
 /** What the player is asking for this frame, already converted to world space. */

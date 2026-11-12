@@ -1072,6 +1072,8 @@ function makeWallPart(theme: Theme, spec: WallSpec, height: number, part: WallPa
 // ---------------------------------------------------------------------------------------------
 
 export interface GroundArt {
+  /** (the stone it is laid in: the Warrior's Earthquake heaves that stone, art/warrior_up_quake_ground.ts) */
+  theme?: Theme;
   /** The floor of a tile: by where the tile is (the flagstones are laid on the world, not on the tiles). */
   floor(tx: number, ty: number): Sprite;
   /** Whole walls, and walls cut down low so that they never hide the floor behind them. */
@@ -1143,6 +1145,7 @@ export function makeGroundArt(theme: Theme = VAULT): GroundArt {
   const floors: Sprite[] = [];
   for (let ty = 0; ty < PERIOD; ty++) for (let tx = 0; tx < PERIOD; tx++) floors.push(makeFloor(theme, tx, ty));
   return {
+    theme,
     floor: (tx, ty) => floors[(((ty % PERIOD) + PERIOD) % PERIOD) * PERIOD + (((tx % PERIOD) + PERIOD) % PERIOD)],
     wallsTall: WALLS.map((w) => makeWall(theme, w, TALL)),
     wallsLow: LOW_WALLS.map((w) => makeWall(theme, w, LOW)),

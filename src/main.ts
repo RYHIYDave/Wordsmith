@@ -387,6 +387,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let smithTitle: SmithPicture | null = null;
   const ui = new Ui();
   const fx = new Fx();
+  // (THE WARRIOR'S EARTHQUAKE heaves the stone of the floor shown: render/warrior_fx.ts)
+  fx.warrior.theme = () => art.ground.theme;
   const renderer = new Renderer(art);
   // THE FIRST FIVE FLOORS: the painter of what is too heavy to paint here (the bosses of floors 2 to 5,
   // the floors' films). A page opened with #painter=off has none (and #painter=1 or 2 that many workers): for the tests.
