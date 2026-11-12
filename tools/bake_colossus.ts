@@ -23,7 +23,8 @@
 //   npx tsx tools/bake_colossus.ts count [move ...]                    what they want
 //   npx tsx tools/bake_colossus.ts look <cache> <move> <k> <out.png>    one frame, painted where it is not yet, to look at
 //   (`ready` with pack: those of them wholly painted)
-//   (moves: lurk, stand, entrance; a0 to a4 for all of a tentacle's; `body`, `arms`, or all if none named)
+//   (moves: lurk, stand, entrance; a0 to a4 for all of a tentacle's; `phase2` for phase 2's aimed gaze, `p2body` and `gaze2.<j>`
+//   (`gaze2` all its aims); `body`, `arms`, or all if none named)
 // @ts-ignore
 import nodeFs from 'node:fs';
 // @ts-ignore
@@ -45,7 +46,7 @@ import { DEATH, DEATH_GONE, deathLayers } from '../src/art/eye_death';
 import { P3, SLIDE, gazeArc3, gazePath3, gazeQ3, p3Frame, p3Spit, p3StandTongue, slamAnim, struckAnim, toWorld } from '../src/art/eye_phase3';
 import type { ColossusAnim } from '../src/art/eye_colossus';
 import { STONE as ART_STONE } from '../src/art/eye_colossus';
-import { P3_BAKE } from '../src/render/colossus_baked';
+import { P2_BAKE, P3_BAKE } from '../src/render/colossus_baked';
 import { ARM_BAKE } from '../src/render/colossus_baked';
 // @ts-ignore
 import { encodePng } from './png.mjs';
@@ -291,6 +292,40 @@ function plan(want: readonly string[]): { moves: MoveSpec[]; layers: { key: stri
     }
     moves.push({ name: mv, group: mv, frames });
     if (mv === 'gaze') moves.push({ name: 'a1.duck', group: 'a1', frames: duck });
+  }
+  // HIS PHASE 2 GAZE AIMED (the queue's aim-colossus-phase-2-gaze; game/colossus_fight.ts GAZE2_AIMED): his body and his tongue apart,
+  // as phase 3's: his body (his stand's jaws and drool, each frame of his stand at his place: `p2body`), and at each of the rules' aims
+  // (`P2_BAKE.aims`, degrees) his tongue and eye alone, aimed so by the art's own bodyFrame (eye_body.ts gazeArcAt), its strike's last
+  // frame behind it as the art's take has it, cut where his jaws and drool are before it (`gaze2.<j>`); begun as his stand is on frame
+  // `P2_BAKE.at` (the art's takes and the game begin it there)
+  const wants2 = want.length === 0 || want.includes('body') || want.includes('phase2') || want.some((w) => /^(p2body|gaze2)/.test(w));
+  if (wants2) {
+    const on2 = (name: string, group: string): boolean => want.length === 0 || want.includes('body') || want.includes('phase2') || want.includes(name) || want.includes(group) || (name.startsWith('gaze2.') && want.includes('gaze2'));
+    if (on2('p2body', 'p2body')) {
+      const frames: FrameSpec[] = [];
+      for (let c = 0; c < EYE_STAND.frames; c++) {
+        const F = eyeFrame('stand', c);
+        frames.push({ layers: [F.jaws, F.spit].filter((L): L is EyeLayer => !!L).map((L) => ofLayer(L)), sunk: F.water.sunk, pulse: F.water.pulse });
+      }
+      moves.push({ name: 'p2body', group: 'p2body', frames });
+    }
+    P2_BAKE.aims.forEach((d, j) => {
+      const name = `gaze2.${j}`;
+      if (!on2(name, name)) return;
+      const aim = (d * Math.PI) / 180;
+      const frames: FrameSpec[] = [];
+      for (let f = 0; f < ART_GAZE.frames; f++) {
+        const F = bodyFrame('g1', BODY_TAKE.lead + f, aim);
+        const ls: Lay[] = [];
+        if (F.tongue) ls.push(ofLayer(F.tongue));
+        for (const L of F.smear) if (L) ls.push(ofLayer(L, true));
+        // (his jaws and drool there, his stand's at the frame it is on: only to hide what of his tongue they are before)
+        ls.push(ofLayer(F.jaws, false, true));
+        if (F.spit) ls.push(ofLayer(F.spit, false, true));
+        frames.push({ layers: ls, sunk: F.water.sunk, pulse: F.water.pulse });
+      }
+      moves.push({ name, group: name, frames });
+    });
   }
   // HIS PHASE 3 (the art's eye_phase3.ts, his yes of 8 Nov): his slide forward (the art's q1 from its slide's first frame: the game begins
   // it as his stand is on frame `P3_BAKE.slideAt`); at his new place his body (his jaws and drool) and his tongue apart, so that his eye's
@@ -768,8 +803,9 @@ if (mode === 'paint') {
     manifest.groups = old.groups;
     manifest.moves = old.moves;
   }
-  // (his eye's place in each frame, game pixels from his middle, for what the game draws from it: his phase 3's tongue alone)
-  const eyed = (name: string): boolean => /^(p3tongue|slam3\.|gaze3\.|struck3\.)/.test(name);
+  // (his eye's place in each frame, game pixels from his middle, for what the game draws from it: his phase 3's tongue alone; his phase
+  // 2 gaze's aimed)
+  const eyed = (name: string): boolean => /^(p3tongue|slam3\.|gaze3\.|struck3\.|gaze2\.)/.test(name);
   const fires = new Map<number, [number, number] | null>();
   let rawPx = 0;
   let files = 0;

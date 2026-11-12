@@ -6,7 +6,7 @@
 // picture, its corner given from his middle at the water; at the shovel's right end, flipped about his middle (his “Mirror it”); a
 // tentacle's slam turned about its root by what is left of its turn.
 
-import { EYE3 } from '../game/colossus_fight';
+import { BODY2, EYE3 } from '../game/colossus_fight';
 
 declare const __COLOSSUS_BAKE__: string | undefined;
 
@@ -27,6 +27,14 @@ export const ARM_BAKE = { burstAt: 0, flinchFrom: [0, 15, 30] as readonly number
  * each is laid over his body's.
  */
 export const P3_BAKE = { slideAt: 24, slams: EYE3.spots, aims: EYE3.aims, struckFrom: EYE3.struckFrom } as const;
+
+/**
+ * HIS PHASE 2 GAZE AIMED AS BAKED (tools/bake_colossus.ts; game/colossus_fight.ts GAZE2_AIMED, on at his yes of 12 Nov): his body and his
+ * tongue apart, as phase 3's: his body (`p2body`: his stand's jaws and drool, each frame of his stand at his place), and his tongue
+ * and eye alone at each of the rules' aims (`gaze2.<j>`: the art's bodyFrame aimed so, degrees), begun as his stand is on frame `at`
+ * (the game begins the gaze there), each cut where his jaws or drool are before it, so that it is laid over his body's.
+ */
+export const P2_BAKE = { at: BODY2.at, aims: BODY2.aims } as const;
 
 /** Where the bakes lie beside the page, each in a folder named by its mark (tools/colossus_ship.mjs). */
 export const COLOSSUS_BAKE = { dir: 'colossus', slamsKept: 6 };
@@ -81,10 +89,11 @@ export function colossusBakeAsk(): void {
   })();
 }
 
-/** Groups kept a while after they were last wanted, each family its last few: his tentacles' slams; his phase 3's eye slams and gazes. */
-const KEPT_GROUPS: Record<'arms' | 'p3', { is: (g: string) => boolean; n: number }> = {
+/** Groups kept a while after they were last wanted, each family its last few: his tentacles' slams; his phase 3's eye slams and gazes; his phase 2 gaze's aims. */
+const KEPT_GROUPS: Record<'arms' | 'p3' | 'p2', { is: (g: string) => boolean; n: number }> = {
   arms: { is: (g) => g.includes('.slam'), n: COLOSSUS_BAKE.slamsKept },
   p3: { is: (g) => /^(slam3|gaze3)\./.test(g), n: 6 },
+  p2: { is: (g) => /^gaze2\./.test(g), n: 2 },
 };
 
 /** Fetch a group's sheets, if not held already. */
@@ -123,8 +132,8 @@ function letGo(group: string): void {
 }
 
 /** The moves now wanted: fetch their groups; let every other group go (but those of the families in `keep`, the last few of each kept:
- *  his tentacles' slams in phases 1 and 2, not in his shovel; his eye's slams and gazes in phase 3). */
-export function colossusWant(moves: readonly string[], keep: readonly ('arms' | 'p3')[] = ['arms']): void {
+ *  his tentacles' slams in phases 1 and 2, not in his shovel; his eye's slams and gazes in phase 3; his gaze's aims in phase 2). */
+export function colossusWant(moves: readonly string[], keep: readonly ('arms' | 'p3' | 'p2')[] = ['arms']): void {
   if (!man) return;
   clock += 1;
   const groups = new Set(moves.map((mv) => man?.moves[mv]?.group).filter((g): g is string => !!g));
@@ -140,6 +149,10 @@ export function colossusLetGoAll(): void {
 /** Whether a move is baked (in the manifest). */
 export function colossusBaked(move: string): boolean {
   return !!man?.moves[move];
+}
+/** Whether frame `k` of a move's picture is here to be drawn now (its group asked for if not). */
+export function colossusHas(move: string, k: number): boolean {
+  return !!picOf(move, k);
 }
 /** How many frames a move has (30 a second); 0 if it is not baked. */
 export function colossusFrames(move: string): number {

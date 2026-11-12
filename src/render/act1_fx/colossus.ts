@@ -8,14 +8,14 @@
 
 import { colossusOf, colossusOn } from '../../game/act1_rules/colossus';
 import {
-  ARM, BODY2, CHANGE3, CRASH, DEATH, EYE_SLAM, FORWARD, GAZE, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAKE, WAVE,
-  eyeSpotNear, gazeAimNear, hookFront, poolR, rootAt, stoneToWorld, waveFront, worldToStone,
+  ARM, BODY2, CHANGE3, CRASH, DEATH, EYE_SLAM, FORWARD, GAZE, GAZE2_AIMED, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAKE, WAVE,
+  eyeSpotNear, gaze2AimNear, gazeAimNear, hookFront, poolR, rootAt, stoneToWorld, waveFront, worldToStone,
 } from '../../game/colossus_fight';
 import type { Arm, ColossusFight } from '../../game/colossus_fight';
 import type { Peril } from '../../game/state';
 import { drawColossusAir, drawColossusDeath, drawColossusGround, drawColossusP3, drawColossusRings, drawColossusWard, keepColossusFx } from './colossus_fx';
 import type { Act1Fx, Act1FxCtx } from './types';
-import { ARM_BAKE, colossusAtEnd, colossusBakeAsk, colossusBaked, colossusEye, colossusFrames, colossusSlamTurns, colossusWant, drawColossusArm, drawColossusBody, drawColossusHooks } from '../colossus_baked';
+import { ARM_BAKE, P2_BAKE, colossusAtEnd, colossusBakeAsk, colossusBaked, colossusEye, colossusFrames, colossusHas, colossusSlamTurns, colossusWant, drawColossusArm, drawColossusBody, drawColossusHooks } from '../colossus_baked';
 
 /** His phase 3's tongue now (game/colossus_fight.ts; render/colossus_baked.ts P3_BAKE): his eye's attack, his eye struck, or his droop;
  *  and its frame. */
@@ -26,6 +26,15 @@ export function colossusTongue3(f: ColossusFight): [string, number] {
   if (E && E.kind === 'gaze') return [`gaze3.${E.pic}`, F30(E.t)];
   if (f.struck) return [`struck3.${f.struck.from}`, F30(f.struck.t)];
   return ['p3tongue', F30(f.body) % 90];
+}
+
+/** (GAZE2_AIMED) His phase 2 gaze aimed now: its tongue's pictures and frame, and the frame of his body under it (his stand's at the
+ *  frame the gaze began on, run on with it, so that his tongue's pictures are cut where his jaws are in that frame); none otherwise. */
+export function colossusGaze2(f: ColossusFight): { mv: string; k: number; body: number } | null {
+  const B = f.body2;
+  if (!GAZE2_AIMED.on || f.ph !== 2 || !B || B.kind !== 'gaze' || B.pic === undefined) return null;
+  const k = Math.floor(B.t * 30 + 1e-6);
+  return { mv: `gaze2.${B.pic}`, k, body: (P2_BAKE.at + k) % 90 };
 }
 
 /** Each tentacle struck: its hit's flash last seen, and when (the fight's clock) and from what frame of its stand it was struck. */
@@ -102,15 +111,21 @@ function draw(c: Act1FxCtx): void {
   // (phase 3: his body and droop; his eye's attack under way, and the one coming where the hero is now)
   const hs = worldToStone(S, c.game.hero.x, c.game.hero.y);
   const p3Wants = (): string[] => ['p3body', colossusTongue3(f)[0], ...(f.eye ? [] : [f.eyeNext === 'slam' ? `slam3.${eyeSpotNear(hs)}` : `gaze3.${gazeAimNear(hs)}`]), ...(f.siege ? [] : ['death'])];
+  // (phase 2, his body's attacks near or under way: the bile's, the gaze's; GAZE2_AIMED, his body and the gaze's aim under way, or the one
+  // coming where the hero is now)
+  const g2 = colossusGaze2(f);
+  const body2Wants = (): string[] =>
+    !GAZE2_AIMED.on ? ['bile', 'gaze']
+      : ['bile', ...(g2 ? ['p2body', g2.mv] : f.body2Next === 'gaze' && !f.body2 ? ['p2body', `gaze2.${gaze2AimNear(hs)}`] : [])];
   colossusWant(
     f.shovel ? shovelWants
       : f.ph === 1 && f.mode === 'between' ? ['lurk', 'entrance.0', ...dying]
         : f.ph === 1 && f.mode === 'change' ? [`entrance.${part}`, `entrance.${part + 1}`, ...(part >= 2 ? ['stand', ...base([0, 1, 2])] : [])]
           : f.ph === 1 ? ['lurk', ...base([3, 4])]
             : f.ph === 2 && f.mode === 'change' ? ['stand', 'slide', 'p3body']
-              : f.ph === 2 ? ['stand', ...base([0, 1, 2]), ...shovelWants, ...(f.body2 || (f.body2In < 3 && f.shovelIn > 4) ? ['bile', 'gaze'] : []), ...(f.mode === 'between' ? ['slide'] : [])]
+              : f.ph === 2 ? ['stand', ...base([0, 1, 2]), ...shovelWants, ...(f.body2 || (f.body2In < 3 && f.shovelIn > 4) ? body2Wants() : []), ...(f.mode === 'between' ? ['slide'] : [])]
                 : p3Wants(),
-    f.shovel ? [] : f.ph === 3 ? ['p3'] : ['arms'],
+    f.shovel ? [] : f.ph === 3 ? ['p3'] : GAZE2_AIMED.on ? ['arms', 'p2'] : ['arms'],
   );
   const standK = (f.body * 30) % Math.max(1, colossusFrames('stand') || 90);
   const bodyAt = (u: number, v: number, move: string, k: number, otherwise: () => void): void => {
@@ -218,6 +233,11 @@ function draw(c: Act1FxCtx): void {
   } else if (risen && f.ph === 1 && f.mode === 'change') {
     const k = Math.floor(f.phT * 30);
     bodyAt(HIS_PLACE.u, HIS_PLACE.v, `entrance.${Math.floor(k / ARM_BAKE.entrancePart)}`, k % ARM_BAKE.entrancePart, () => himAt(HIS_PLACE.u, HIS_PLACE.v, Math.min(1, f.phT / 3)));
+  }
+  else if (risen && g2 && colossusHas('p2body', g2.body) && colossusHas(g2.mv, g2.k)) {
+    // (his phase 2 gaze aimed: his body, his tongue and eye over it, aimed where the beam goes)
+    drawColossusBody(g, 'p2body', g2.body, hx, hy);
+    drawColossusBody(g, g2.mv, g2.k, hx, hy);
   }
   else if (risen && f.body2) bodyAt(HIS_PLACE.u, HIS_PLACE.v, f.body2.kind, Math.floor(f.body2.t * 30), () => bodyAt(HIS_PLACE.u, HIS_PLACE.v, 'stand', standK, () => himAt(HIS_PLACE.u, HIS_PLACE.v, 1)));
   else if (risen) bodyAt(HIS_PLACE.u, HIS_PLACE.v, 'stand', standK, () => himAt(HIS_PLACE.u, HIS_PLACE.v, 1));
@@ -380,6 +400,14 @@ function eyeAt3(f: ColossusFight, hx: number, hy: number): [number, number] | nu
   return e ? [hx + e[0], hy + e[1]] : null;
 }
 
+/** (GAZE2_AIMED) Where his eye glows now in his phase 2 gaze aimed (the screen), from his middle at his place at (hx, hy); none where
+ *  it is not pictured aimed. */
+function eyeAt2(f: ColossusFight, hx: number, hy: number): [number, number] | null {
+  const g2 = colossusGaze2(f);
+  const e = g2 && colossusBaked(g2.mv) ? colossusEye(g2.mv, g2.k) : null;
+  return e ? [hx + e[0], hy + e[1]] : null;
+}
+
 /**
  * HIS DEATH (game/colossus_fight.ts DEATH; the art's eye_death.ts, baked as `death`): played on his fight's peril from the killing blow
  * (its clock then `p.c`, game/act1_rules/colossus.ts), his own pictures from his middle at his place, the game's parts of it round them.
@@ -433,7 +461,7 @@ export const COLOSSUS_FX: Act1Fx = {
       return c.at(w.x, w.y);
     };
     const [hx, hy] = P(HIS_PLACE.u, HIS_PLACE.v);
-    const eye = f.ph === 3 ? eyeAt3(f, hx, hy) : null;
+    const eye = f.ph === 3 ? eyeAt3(f, hx, hy) : eyeAt2(f, hx, hy);
     drawColossusAir(c.g, P, f, c.t, eye);
     // (phase 3 over the hero: the pillars' fire and lines, the bolts, what flies, his eye's ichor)
     if ((f.ph === 2 && f.mode === 'change') || f.ph === 3) drawColossusP3(c.g, P, f, colossusOn(boss!), c.game, [hx, hy], eye, c.t, 'air');

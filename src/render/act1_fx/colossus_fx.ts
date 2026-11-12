@@ -589,10 +589,10 @@ export function drawColossusAir(g: CanvasRenderingContext2D, P: StoneAt, f: Colo
     const gut = Math.max(0, 1 - Math.max(0, E.t - GAZE.warn - GAZE.sweep) / 0.3);
     const deg = E.a0 + (E.a1 - E.a0) * k;
     const r = (deg * Math.PI) / 180;
-    // (from his eye: phase 3's where its picture has it glowing; phase 2's high over the water under it)
+    // (from his eye: where its picture has it glowing (phase 3's; phase 2's aimed, GAZE2_AIMED); else high over the water under it)
     const [ex0, ey0] = P(E.at.u, E.at.v);
-    const ex = f.ph === 3 && eye3 ? eye3[0] : ex0;
-    const ey = f.ph === 3 && eye3 ? eye3[1] : ey0 - (f.ph === 3 ? 2.2 : 5.2) * UP;
+    const ex = eye3 ? eye3[0] : ex0;
+    const ey = eye3 ? eye3[1] : ey0 - (f.ph === 3 ? 2.2 : 5.2) * UP;
     // (where it comes onto the stone, and on along it to where it leaves)
     let land = 0;
     for (let d = 0; d < 20; d += 0.25) {

@@ -171,7 +171,7 @@ import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
 import { act1Fx } from './render/act1_fx';
 import { forgetUnusedPictures } from './render/act1_fx/kept';
 import { mothFxBytes } from './render/act1_fx/moth';
-import { COLOSSUS, onStoneOrJetty, worldToStone } from './game/colossus_fight';
+import { COLOSSUS, GAZE2_AIMED, onStoneOrJetty, worldToStone } from './game/colossus_fight';
 import { ITEM_WORDS } from './game/items';
 import { UNIQUES, uniqueOf } from './game/uniques';
 import { UNIQUE_PLAY } from './render/unique_play';
@@ -3279,6 +3279,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     god: false,
     /** (THE SWAMP COLOSSUS, game/colossus_fight.ts) its switch, for its test pages: on before floor 10 is laid. */
     colossus: COLOSSUS,
+    /** (THE SWAMP COLOSSUS'S PHASE 2 GAZE AIMED AT THE HERO, game/colossus_fight.ts) its switch (on: his yes of 12 Nov), for its pictures. */
+    gaze2: GAZE2_AIMED,
     /** (SPLITTING AND BINDING, game/items.ts) their switch, for their test pages. */
     itemWords: ITEM_WORDS,
     /** (UNIQUE ITEMS, game/uniques.ts) their switch, for their test pages (a unique is made and put in his bag by Game.giveUnique). */
