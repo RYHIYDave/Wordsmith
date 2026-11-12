@@ -59,8 +59,19 @@ export default async function (page, snap) {
     let left = 0;
     let shown = 0;
     const seen = new Set();
+    // (not walked: a side's short attack, heavy and leap, three pictures each, drawn only where a set has no clips of its own,
+    // render/figure.ts; and his making ready, clips.ready, his card's only: the greatsword's are never baked for a place either)
+    const skip = new Set();
+    for (const town of [true, false]) {
+      const set = heroes.of('warrior', { twoHanded: true, town, weapon: a });
+      for (const side of Object.values(set)) {
+        if (!side || typeof side !== 'object' || !('idle' in side)) continue;
+        if (side.clips) for (const k of ['attack', 'heavy', 'leap']) if (side[k]) skip.add(side[k]);
+        if (side.clips && side.clips.ready) skip.add(side.clips.ready.frames);
+      }
+    }
     const walk = (o) => {
-      if (!o || typeof o !== 'object' || seen.has(o)) return;
+      if (!o || typeof o !== 'object' || seen.has(o) || skip.has(o)) return;
       seen.add(o);
       if (Array.isArray(o)) {
         for (let i = 0; i < o.length; i++) {
