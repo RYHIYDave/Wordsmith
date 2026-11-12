@@ -153,7 +153,17 @@ where the water is, only its own colours, every pixel whole; the water from the 
 tests/unique_play.test.ts (6, its switches check now counting `arm`) pass, each run alone with tsx; tsc clean; the page built
 and the look filmed: finished clean.
 
-His word: below. NOT DRAWN YET (the rest of the queue item's list): The Queen's Talons' bird (a first try in
+HIS WORD, 12 Nov 2026, by pop-up. Sent the film and the stills, asked whether it is good to hand to main, he asked: “How often
+does the arm come up?” (told him: every 5 seconds, under the enemy he has hit in the last 3 seconds, up to 9 tiles off; if
+none, the moment he lands a hit; 200% of his hit within 1.3 tiles, the water half a second before). Asked again: “It doesn’t
+seem very good if that’s all it does every 5 seconds”. Asked how it should get stronger: “Every 3s, and it stuns
+(Recommended)” (offered as: comes up more often, and whatever it slams is stunned for a moment); and of the look itself: “The
+look is right (Recommended)”. SO: THE LOOK HAS HIS YES, handed to main behind `UNIQUE_PLAY.arm`; AND A RULES CHANGE FOR THE MAIN
+CHAT (the uniques' numbers are its: game/uniques.ts UNIQUE_TUNE.arm.every 5 to 3, and a stun on what it slams in game.ts
+stepArm, as the game stuns elsewhere; its card's line says so). The picture needs nothing new for either: it plays from each
+`warn`, however often.
+
+NOT DRAWN YET (the rest of the queue item's list): The Queen's Talons' bird (a first try in
 src/art/unique_play_art2.ts `paintBird`, NOT shown to him: it reads as a dark blob and wants drawing again, by hand-placed
 pixels rather than shapes), The Rainwalker, The Shepherd's Crook, The Tide, The Windcutter (the game already draws its blade as
 the Wave's crescent), The Fan, The Sticky Wrench, The Moth's Wing; and which of the moments the build only tells of want a
