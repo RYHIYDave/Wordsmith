@@ -28,7 +28,7 @@ import { primDist } from './sculpt';
 import type { Sculpt, Drawn, Hit } from './sculpt';
 import { IVORY } from './sculpt_warlock';
 import { tone5 } from './sculpt_demon';
-import { HEAD_K, HORN_BLACK, MOUTH, U, WORLD, arm, axes, bigger, burning, claws, dot, eye, fleshOf, from, lifted, paintDemon, spike, tailOf, wolfFrame } from './demon_new';
+import { HEAD_K, HORN_BLACK, MOUTH, U, WORLD, arm, axes, bigger, burning, carry, claws, dot, eye, fleshOf, from, lifted, paintDemon, spike, tailOf, wolfFrame } from './demon_new';
 import type { Built, Frame, Kit, Moving } from './demon_new';
 
 export const IDEAS: { name: string; says: string }[] = [
@@ -372,14 +372,15 @@ export function shadowInto(k: Kit): Built {
     // (from behind its shoulders down: none up by its head, where they would be taken for more eyes)
     const t = 0.62 + i * 0.31;
     const back = norm(sub(fr.spine(t + 0.2), fr.spine(Math.max(0, t - 0.2))));
-    const outw = norm(cross([0, 1, 0], back));
+    // (its left as the still has it, carried by its chest: an ember faces out of its back however its chest is turned)
+    const outw = norm(cross(carry(k, 'chest', [0, 1, 0]), back));
     sc.ell(ember, 'embers', add(skinFrom(fr.spine(t), outw), mul(outw, 1.4)), [mul(back, 1.6), [0, 3.8 - i * 0.22, 0], mul(outw, 1.9)], 0.05, { tag: 'ember' });
   }
   const pts = tailOf(k, 46, 8, 0.65, 0.9);
   for (let i = 0; i + 1 < pts.length; i++) sc.cone(hide, 'torso', pts[i], pts[i + 1], 3.6 - i * 0.4, 3.2 - i * 0.4, 1.0, { tag: 'tail' });
   const h = headOf(k);
   const { hsc, hk, hp, F } = h;
-  hsc.cone(hide, 'torso', add(fr.top, [9, 0, 0]), hp(-6, 0, -1), 10, 9.5, 2.6, { tag: 'neck' });
+  hsc.cone(hide, 'torso', add(fr.top, carry(k, 'chest', [9, 0, 0])), hp(-6, 0, -1), 10, 9.5, 2.6, { tag: 'neck' });
   hsc.ell(hide, 'torso', hp(-1, 0, 2), axes(F, 12, 12, 11), 2.4, { tag: 'skull' });
   // ITS JAWS THROWN OPEN (moving: dev/shadow_moves.ts ShadowMove.jaw, its roar; his word of the first roar shown him, 11 Nov
   // 2026: “The roar is so bad.  His face doesn’t even move?”). `J`, 0 shut in its grin (a still's: every number below as it

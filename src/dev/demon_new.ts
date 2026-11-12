@@ -145,6 +145,80 @@ export interface Kit {
   glow?: number;
   /** (moving) How far its jaws are thrown open (dev/shadow_moves.ts ShadowMove.jaw: its roar): 0 shut in its grin, as the still's, to 1 as wide as they go; not given, shut. */
   jaw?: number;
+  /** Its bones as the still stands (DEMON_UP): what each part laid by the still is carried from (`carry`). Not given, nothing is carried. */
+  rest?: Skeleton;
+}
+
+// ITS HIDE CARRIED BY ITS BONES (the queue's next step after its moves, 12 Nov 2026). What the still lays along the world (the
+// hump over its shoulders and where it sits, the swell of its flanks, its shoulders and upper arms, its forearms and thighs,
+// its feet and their talons and spurs, where its neck and the top of its back run from, the way its embers face, the sweep of
+// its tail) is laid in any other pose as it lies to ITS BONE in the still: turned as far as that bone has turned since, as the
+// game's demon's parts are carried (dev/sculpt_demon_rig.ts). In the still's own pose nothing is turned at all, so a still is as
+// it was, to the pixel; in a slash with its chest turned right round, or pitched down on all fours, its hump, its shoulders and
+// its embers go round and down with its chest, its tail with its hips, each foot with its own foot.
+
+const sameRot = (a: Rot, b: Rot): boolean => a.every((r, i) => r[0] === b[i][0] && r[1] === b[i][1] && r[2] === b[i][2]);
+/** A direction as the still has it beside a bone (`was`, the bone then; `now`, the bone now): turned with the bone. */
+function carryBy(was: Rot, now: Rot, v: V3): V3 {
+  if (sameRot(was, now)) return v;
+  const x = dot(v, was[0]);
+  const y = dot(v, was[1]);
+  const z = dot(v, was[2]);
+  return add(mul(now[0], x), add(mul(now[1], y), mul(now[2], z)));
+}
+/** A direction as the still lays it, carried by its chest or its hips into the pose it is in now (unturned without a rest pose). */
+export function carry(k: Kit, bone: 'chest' | 'hips', v: V3): V3 {
+  return k.rest ? carryBy(k.rest[bone], k.s[bone], v) : v;
+}
+/** The world's three lines as the still lays them, carried by its chest or hips (a solid laid square to the world in the still). */
+export function carriedRot(k: Kit, bone: 'chest' | 'hips'): Rot {
+  return k.rest ? [carry(k, bone, [1, 0, 0]), carry(k, bone, [0, 1, 0]), carry(k, bone, [0, 0, 1])] : WORLD;
+}
+/** The turn that takes one direction to another, the shortest way (none where they are the same). */
+function turnTo(a: V3, b: V3): (v: V3) => V3 {
+  const u = norm(a);
+  const w = norm(b);
+  const c = dot(u, w);
+  const ax = cross(u, w);
+  const sn = Math.hypot(ax[0], ax[1], ax[2]);
+  if ((u[0] === w[0] && u[1] === w[1] && u[2] === w[2]) || sn < 1e-9) return (v) => v;
+  const n = mul(ax, 1 / sn);
+  return (v) => add(add(mul(v, c), mul(cross(n, v), sn)), mul(n, dot(n, v) * (1 - c)));
+}
+/** The world's lines as the still lays them by a limb, carried by that limb (from `a` to `b`, the still's `a0` to `b0`) into its pose now. */
+function limbRot(k: Kit, a0: V3, b0: V3, a: V3, b: V3): Rot {
+  if (!k.rest) return WORLD;
+  const t = turnTo(sub(b0, a0), sub(b, a));
+  return [t([1, 0, 0]), t([0, 1, 0]), t([0, 0, 1])];
+}
+/** A foot's heading on the floor (from its heel to its toe, flat), or its hips' where the foot stands on end. */
+function footWay(heel: V3, toe: V3, hips: Rot): V3 {
+  const d: V3 = [toe[0] - heel[0], toe[1] - heel[1], 0];
+  return Math.hypot(d[0], d[1]) > 0.5 ? norm(d) : norm([hips[0][0], hips[0][1], 0], [1, 0, 0]);
+}
+/** A direction as the still lays it by a foot, turned on the floor as far as that foot is turned since. */
+function footTurn(k: Kit, side: 1 | -1): (v: V3) => V3 {
+  if (!k.rest) return (v) => v;
+  const r = leg(k.rest, side);
+  const n = leg(k.s, side);
+  const a = footWay(r.heel, r.toe, k.rest.hips);
+  const b = footWay(n.heel, n.toe, k.s.hips);
+  if (a[0] === b[0] && a[1] === b[1]) return (v) => v;
+  const ang = Math.atan2(b[1], b[0]) - Math.atan2(a[1], a[0]);
+  const c = Math.cos(ang);
+  const sn = Math.sin(ang);
+  return (v) => [v[0] * c - v[1] * sn, v[0] * sn + v[1] * c, v[2]];
+}
+/** A direction as the still lays it by its hips on the floor (its tail's sweep), turned on the floor as far as its hips are. */
+export function hipsTurn(k: Kit): (v: V3) => V3 {
+  if (!k.rest) return (v) => v;
+  const a = norm([k.rest.hips[0][0], k.rest.hips[0][1], 0], [1, 0, 0]);
+  const b = norm([k.s.hips[0][0], k.s.hips[0][1], 0], [1, 0, 0]);
+  if (a[0] === b[0] && a[1] === b[1]) return (v) => v;
+  const ang = Math.atan2(b[1], b[0]) - Math.atan2(a[1], a[0]);
+  const c = Math.cos(ang);
+  const sn = Math.sin(ang);
+  return (v) => [v[0] * c - v[1] * sn, v[0] * sn + v[1] * c, v[2]];
 }
 /**
  * What burns on it, as bright as it is at a moment (`glow`, 1 as ever to 0 all but out): its hot core's colour and the rest
@@ -275,6 +349,7 @@ export function claws(k: Kit, hide: number, talon: number, scale: number, out: B
 /** A tail from its rump: `long` in all, `r0` thick at its root, hung in a curve and swung by `k.tail`; returns its points. */
 export function tailOf(k: Kit, long: number, n: number, droop: number, curl: number): V3[] {
   const { s } = k;
+  const H = hipsTurn(k);
   const root = from(s.pelvis, s.hips, -8, 0, 2);
   const pts: V3[] = [root];
   let dir: V3 = norm([-1, 0, -0.15]);
@@ -283,7 +358,8 @@ export function tailOf(k: Kit, long: number, n: number, droop: number, curl: num
     const t = i / n;
     // (down to the floor, then along it and up at its end; swung to its left more the further along it)
     const a = k.tail * (0.5 + t * 1.6);
-    const flat: V3 = [-Math.cos(a), Math.sin(a), 0];
+    // (its sweep along the floor as the still has it, turned with its hips: `hipsTurn`)
+    const flat: V3 = H([-Math.cos(a), Math.sin(a), 0]);
     dir = norm([flat[0], flat[1], -droop * (1 - t * 2.2) + curl * Math.max(0, t - 0.55) * 3]);
     p = add(p, mul(dir, long / n));
     if (p[2] < 3) p = [p[0], p[1], 3];
@@ -341,14 +417,17 @@ export function wolfFrame(k: Kit, o: FrameOf): Frame {
   const hide = o.hide;
   const L = o.lean ?? 1;
   const T = 0.72 + 0.28 * L;
-  const top = add(lerp3(s.shoulderL, s.shoulderR, 0.5), [-4, 0, 7.5]);
+  // (what the still lays along the world, carried by its chest: `carry`)
+  const C = (v: V3): V3 => carry(k, 'chest', v);
+  const CR = carriedRot(k, 'chest');
+  const top = add(lerp3(s.shoulderL, s.shoulderR, 0.5), C([-4, 0, 7.5]));
   // ---- the upper body, big
   sc.ell(hide, 'torso', from(lerp3(s.ribs, s.back, 0.6), s.chest, 3, 0, 1), axes(s.chest, 16.5 * T, 20.5, 15.5), 3.5, { tag: 'ribs' });
-  sc.ell(hide, 'torso', top, axes(WORLD, 13.5 * T, 22, 10.5 * T), 3, { tag: 'hump' });
+  sc.ell(hide, 'torso', top, axes(CR, 13.5 * T, 22, 10.5 * T), 3, { tag: 'hump' });
   for (const side of [1, -1] as const) {
     const { sh } = arm(s, side);
     sc.ell(hide, 'torso', from(s.ribs, s.chest, 15.5 * T, side * 9.6, 12), axes(s.chest, 5.6 * T, 10.6, 9), 1.2, { tag: 'chest' });
-    sc.cone(hide, 'torso', add(sh, [-5, -side * 4, -8]), from(s.waist, s.belly, -1, side * 4.5, 3), 9 * T, 4.6 * T, 2.4, { tag: 'lat' });
+    sc.cone(hide, 'torso', add(sh, C([-5, -side * 4, -8])), from(s.waist, s.belly, -1, side * 4.5, 3), 9 * T, 4.6 * T, 2.4, { tag: 'lat' });
   }
   sc.ell(hide, 'torso', from(s.ribs, s.chest, 20.5 * T, 0, 12), axes(s.chest, 2.4, 1.1, 8.5), 0.3, { carve: true });
   // ---- the torso under it, small
@@ -357,38 +436,44 @@ export function wolfFrame(k: Kit, o: FrameOf): Frame {
   // ---- its arms, long
   for (const side of [1, -1] as const) {
     const { piece, sh, el, ha } = arm(s, side);
-    sc.ell(hide, piece, add(sh, [0, side * 2, 1]), axes(WORLD, 11.5 * T, 10.5 * T, 11.5 * T), 2.4, { tag: 'delt' });
+    sc.ell(hide, piece, add(sh, C([0, side * 2, 1])), axes(CR, 11.5 * T, 10.5 * T, 11.5 * T), 2.4, { tag: 'delt' });
     sc.cone(hide, piece, sh, el, 8.6 * L, 6.8 * L, 2.2, { tag: 'upper' });
     // (the swell of its upper arm before and behind the bone, a groove between)
     const ua = norm(sub(el, sh));
-    const fw = norm(sub([1, 0, 0], mul(ua, ua[0])));
+    const F0 = C([1, 0, 0]);
+    const fw = norm(sub(F0, mul(ua, dot(ua, F0))));
     sc.ell(hide, piece, add(lerp3(sh, el, 0.5), mul(fw, 4.2 * L)), [mul(ua, 9), mul(fw, 4.6 * L), mul(cross(ua, fw), 5.4 * L)], 0.9, { tag: 'upper' });
     sc.ell(hide, piece, add(lerp3(sh, el, 0.55), mul(fw, -4.4 * L)), [mul(ua, 10), mul(fw, 4.4 * L), mul(cross(ua, fw), 5.2 * L)], 0.9, { tag: 'upper' });
     const f0 = o.fore === undefined ? 1 : o.foreFrom ?? 0.16;
     const fm = (t: number): number => (t >= f0 ? (o.fore as number) : hide);
     if (f0 > 0.05) sc.cone(hide, piece, el, lerp3(el, ha, Math.min(1, f0 + 0.08)), 7.2 * L, (7.2 + 0.6 * Math.min(1, f0 + 0.08)) * L, 1.6, { tag: 'fore' });
     if (f0 < 1) sc.cone(o.fore as number, piece, lerp3(el, ha, f0), ha, (7.3 + 0.6 * f0) * L, 8.0 * L, 0.8, { tag: 'fore' });
-    sc.ell(fm(0.36), piece, lerp3(el, ha, 0.36), axes(WORLD, 9.2 * L, 8.8 * L, 10 * L), 1.6, { tag: 'fore' });
+    const ra = k.rest ? arm(k.rest, side) : null;
+    sc.ell(fm(0.36), piece, lerp3(el, ha, 0.36), axes(ra ? limbRot(k, ra.el, ra.ha, el, ha) : WORLD, 9.2 * L, 8.8 * L, 10 * L), 1.6, { tag: 'fore' });
   }
   // ---- its legs, lean and bent
   for (const side of [1, -1] as const) {
     const { piece, hip, knee, hock, toe } = leg(s, side);
+    const rl = k.rest ? leg(k.rest, side) : null;
+    // (its foot's own lines on the floor, as the still lays them, turned with the foot)
+    const Y = footTurn(k, side);
+    const YR: Rot = [Y([1, 0, 0]), Y([0, 1, 0]), Y([0, 0, 1])];
     sc.cone(hide, piece, hip, knee, 7.8 * L, 5 * L, 2, { tag: 'thigh' });
-    sc.ell(hide, piece, lerp3(hip, knee, 0.35), axes(WORLD, 8 * L, 7.2 * L, 8.6 * L), 1.8, { tag: 'thigh' });
+    sc.ell(hide, piece, lerp3(hip, knee, 0.35), axes(rl ? limbRot(k, rl.hip, rl.knee, hip, knee) : WORLD, 8 * L, 7.2 * L, 8.6 * L), 1.8, { tag: 'thigh' });
     sc.cone(o.shank ?? hide, piece, o.shank === undefined ? knee : lerp3(knee, hock, 0.2), hock, 4.4 * L, 3.0 * L, 1.0, { tag: 'shank' });
     if (o.foot === 'hoof') {
-      sc.cone(o.footMat, piece, hock, [toe[0] - 1.5, toe[1], toe[2] + 4.5], 3.2, 3.8, 0.6, { tag: 'cannon' });
-      sc.ell(o.footMat, piece, [toe[0], toe[1], toe[2] + 2.6], axes(WORLD, 5, 3.8, 2.8), 0.5, { tag: 'hoof' });
+      sc.cone(o.footMat, piece, hock, add(toe, Y([-1.5, 0, 4.5])), 3.2, 3.8, 0.6, { tag: 'cannon' });
+      sc.ell(o.footMat, piece, add(toe, Y([0, 0, 2.6])), axes(YR, 5, 3.8, 2.8), 0.5, { tag: 'hoof' });
     } else {
-      sc.cone(o.footMat, piece, hock, [toe[0] - 2, toe[1], toe[2] + 3.6], 2.8, 3.0, 0.6, { tag: 'cannon' });
-      sc.ell(o.footMat, piece, [toe[0] + 1, toe[1], toe[2] + 2.6], axes(WORLD, 4.6, 3.8, 2.6), 0.6, { tag: 'paw' });
-      for (const g of [-0.5, 0, 0.5]) spike(k, o.talon, piece, [[toe[0] + 3.5 * Math.cos(g), toe[1] + 3.5 * Math.sin(g), toe[2] + 3], [toe[0] + 8 * Math.cos(g), toe[1] + 8 * Math.sin(g), toe[2] + 0.6]], 1.4, 'claw');
+      sc.cone(o.footMat, piece, hock, add(toe, Y([-2, 0, 3.6])), 2.8, 3.0, 0.6, { tag: 'cannon' });
+      sc.ell(o.footMat, piece, add(toe, Y([1, 0, 2.6])), axes(YR, 4.6, 3.8, 2.6), 0.6, { tag: 'paw' });
+      for (const g of [-0.5, 0, 0.5]) spike(k, o.talon, piece, [add(toe, Y([3.5 * Math.cos(g), 3.5 * Math.sin(g), 3])), add(toe, Y([8 * Math.cos(g), 8 * Math.sin(g), 0.6]))], 1.4, 'claw');
     }
-    spike(k, o.talon, piece, [add(hock, [-1.5, 0, 0.5]), add(hock, [-6.5, 0, 3.8])], 1.6, 'spur');
+    spike(k, o.talon, piece, [add(hock, Y([-1.5, 0, 0.5])), add(hock, Y([-6.5, 0, 3.8]))], 1.6, 'spur');
   }
   const spine = (t: number): V3 => {
-    const a = add(top, [7, 0, 9.5 * T]);
-    const b = add(top, [-9 * T, 0, 8 * T]);
+    const a = add(top, C([7, 0, 9.5 * T]));
+    const b = add(top, C([-9 * T, 0, 8 * T]));
     const c = from(s.waist, s.belly, -8.4 * T, 0, 3);
     const d = from(s.pelvis, s.hips, -8.4 * T, 0, 3);
     return t < 1 ? lerp3(a, b, Math.max(0, t)) : t < 2 ? lerp3(b, c, t - 1) : lerp3(c, d, Math.min(1, t - 2));
@@ -538,11 +623,16 @@ function noPixelAlone(d: Drawn): void {
 }
 
 /** A demon built by `build` at a moment: on the werewolf's frame's bones in a pose, from in front or behind (as the camera truly sees it), turned `turn`. */
+/** Whether its hide is carried by its bones (`carry`): off, every part laid along the world as before, in every pose. */
+export const HIDE_CARRIED = { on: true };
+let REST: Skeleton | undefined;
 export function paintDemon(build: (k: Kit) => Built, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false, more: Moving = {}): Drawn {
   const pv: PaintView = view === 'back' ? 'rear' : view;
   const s = solve(WOLF_B, pose as Posed);
   const sc = new Sculpt();
   sc.spin = turn;
+  // (its bones as the still stands: what its parts laid by the still are carried from)
+  const rest = HIDE_CARRIED.on ? (REST ??= solve(WOLF_B, DEMON_UP as Posed)) : undefined;
   const a = (turn * Math.PI) / 180;
   const spun = (p: V3): V3 => [p[0] * Math.cos(a) - p[1] * Math.sin(a), p[0] * Math.sin(a) + p[1] * Math.cos(a), p[2]];
   const nearOf = (p: V3): number => {
@@ -550,7 +640,7 @@ export function paintDemon(build: (k: Kit) => Built, view: GameView, pose: Bones
     return pv === 'front' ? 0.612 * (q[0] - q[1]) + 0.5 * q[2] : 0.612 * (-q[0] - q[1]) + 0.5 * q[2];
   };
   const farL = nearOf(add(s.pelvis, [0, 20, 6])) < nearOf(s.pelvis);
-  const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail, paws, palm: more.palm, wings: more.wings, grip: more.grip, glow: more.glow, jaw: more.jaw };
+  const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail, paws, palm: more.palm, wings: more.wings, grip: more.grip, glow: more.glow, jaw: more.jaw, rest };
   const built = build(k);
   const d = draw(sc, pv, RIG_CANVAS.ax, RIG_CANVAS.ay, RIG_CANVAS, undefined, FRIEND_RIM);
   built.flames.forEach((f, i) => fireBehind(d, sc.at(f.p), f.size, t + i * 0.37, f.deep ?? 10));
