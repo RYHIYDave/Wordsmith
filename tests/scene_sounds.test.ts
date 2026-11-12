@@ -56,7 +56,10 @@ test('the batch: every one-shot the floors play has its two takes, every loop it
   assert.equal(bedOf(21), null);
   // (the README's own list, by its file names: each is one the game asks for)
   const readme = fs.readFileSync(`${DIR}/README.md`, 'utf8') as string;
-  const eighth = readme.slice(readme.indexOf('## Eighth batch'));
+  // (the eighth batch's own section: up to the next batch's, the ninth's, 12 Nov 2026, the Shaft's Rim's)
+  const from = readme.indexOf('## Eighth batch');
+  const to = readme.indexOf('\n## ', from + 1);
+  const eighth = readme.slice(from, to < 0 ? undefined : to);
   const said = new Set([...eighth.matchAll(/`([a-z0-9_]+)`/g)].map((m) => m[1]).filter((n) => has(`${n}_1.mp3`)));
   for (const n of said) assert.ok(names.has(n), `${n}: in the README, played by the game`);
   assert.equal(said.size, 41, `${said.size} one-shots named in the README`);
