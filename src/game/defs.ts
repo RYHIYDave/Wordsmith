@@ -2457,7 +2457,7 @@ export const QUIPS: {
     whirl: ['Round we go.', 'One turn.'],
     cleave: ['Split them.', 'Chop chop.'],
     axethrow: ['Catch.', 'It comes back.'],
-    chop: ['Timber.', 'From above.'],
+    chop: ['Timber.', 'Down it comes.'],
     smash: ['Flattened.', 'Hammer time.'],
     quake: ['The ground answers.', 'Ground shaker.'],
     charge: ['Coming through.', 'Make way.'],

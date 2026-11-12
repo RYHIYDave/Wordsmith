@@ -637,11 +637,13 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     if (!weak) assert.ok(any((e) => e.t === 'stun'), `${name}: Heavy stuns what it hits`);
     // (a whirlwind's turns, a beam's bites and a volley's arrows are too many for the weight of each: their stuns show it)
     if (def.kind !== 'whirl' && def.kind !== 'beam' && def.kind !== 'volley') assert.ok(any((e) => e.t === 'heavy'), `${name}: Heavy lands with its weight`);
-  } else assert.ok(!any((e) => e.t === 'stun' || e.t === 'heavy'), `${name}: no stun without Heavy`);
+    // (THE WARRIOR'S EARTHQUAKE stuns of its own, game/defs.ts `stun`, and his SMASH dazes to a stun, `stagger`: theirs, not Heavy's)
+  } else assert.ok(!any((e) => (e.t === 'stun' && !def.stun && !def.stagger) || e.t === 'heavy'), `${name}: no stun without Heavy`);
   if (behind.includes('heavy')) {
     // (for its four seconds; longer or shorter as Lasting or Fleeting make of it)
     assert.ok(any((e) => e.t === 'zone' && e.kind === 'cracks' && Math.abs((e.dur ?? 0) - 4 * r.last) < 1e-9), `${name}: of Quakes cracks the ground`);
-  } else assert.ok(!any((e) => (e.t === 'zone' && e.kind === 'cracks') || e.t === 'stagger'), `${name}: no cracked ground without of Quakes`);
+    // (THE WARRIOR'S SMASH staggers of its own, game/defs.ts `stagger`: its staggers are its, not of Quakes')
+  } else assert.ok(!any((e) => (e.t === 'zone' && e.kind === 'cracks') || (e.t === 'stagger' && !def.stagger)), `${name}: no cracked ground without of Quakes`);
   if (behind.includes('precise') && !weak) {
     assert.equal(count((e) => e.t === 'markOn'), 1, `${name}: of the Mark marks the first it hits, once a use`);
     assert.ok(count((e) => e.t === 'markSpent') <= 1, `${name}: ...and a mark is spent once`);
@@ -659,7 +661,9 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
 
   // ---- the city's words (Version 23.8), in front and behind
   // (what dies at a touch is not there to be cursed or slowed)
-  if (front.includes('pulling')) assert.ok(any((e) => e.t === 'pull'), `${name}: Pulling drags in`);
+  // (THE WARRIOR'S SHOULDER CHARGE, game/defs.ts `through`: against what dies at a touch, all in his way is struck down on the way,
+  // and none is left where he stops for Pulling to drag in)
+  if (front.includes('pulling') && !(def.through && weak)) assert.ok(any((e) => e.t === 'pull'), `${name}: Pulling drags in`);
   else assert.ok(!any((e) => e.t === 'pull'), `${name}: no pull without Pulling`);
   if (front.includes('splitting')) assert.ok(any((e) => e.t === 'split'), `${name}: Splitting breaks into copies`);
   else assert.ok(!any((e) => e.t === 'split'), `${name}: no copies without Splitting`);

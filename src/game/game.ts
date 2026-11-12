@@ -9058,7 +9058,8 @@ export class Game {
     // that every word on it acts as on any swing; each struck knocked back and dazed toward a stun. Wide Swing, his tree's: swept
     // round the half circle before him instead, as a Cleave is, every one struck smashed)
     const wide = r.id === 'smash' && this.has('wideswing');
-    const spot = def.spot && !wide ? { x: ox + dx * def.spot.at, y: oy + dy * def.spot.at, r: def.spot.r * r.size } : null;
+    // (the spot no smaller for a word that narrows a blow, Precise: the maul's head is the size it is; wider for one that widens it)
+    const spot = def.spot && !wide ? { x: ox + dx * def.spot.at, y: oy + dy * def.spot.at, r: def.spot.r * Math.max(1, r.size) } : null;
     if (spot) this.emit({ t: 'burst', x: spot.x, y: spot.y, r: spot.r + 0.3, el: r.element, style: 'land', words, n, echo });
     // (THE WARRIOR'S BATTLE AXE: Cleave strikes every enemy in its arc, as Sweeping Cut makes any swing do; its arc its own)
     const cleave = this.now('sweepingcut') || def.arc === true || wide || !!spot;
@@ -15387,6 +15388,7 @@ export class Game {
     const D = TALENT_TUNE.drilledLunge;
     const hit = mv.hit ?? (mv.hit = []);
     const r = h.skills[2].r;
+    const before = hit.length;
     for (const m of this.monsters) {
       if (m.dead || hit.includes(m.id) || this.shutIn(m)) continue;
       if (Math.hypot(m.x - h.x, m.y - h.y) > m.r + TUNE.heroRadius + D.reach) continue;
@@ -15395,6 +15397,8 @@ export class Game {
       // (THE WARRIOR'S WARHAMMER: Bulldozer, Shoulder Charge carries what it strikes along before him)
       if (r.id === 'charge' && this.has('bulldozer') && !m.dead && !m.boss) this.carried.push(m.id);
     }
+    // (what the blow gives as it lands, of Power's might: the first struck on the way, as a swing's first)
+    if (before === 0 && hit.length > 0) this.landed(2);
     // (Bulldozer: those carried go before him, where there is floor)
     for (const id of this.carried) {
       const m = this.monsters.find((o) => o.id === id);
