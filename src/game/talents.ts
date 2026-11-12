@@ -296,7 +296,9 @@ const WARRIOR: TalentTree = {
 // two paths a talent either can take; across the top three big ones, each reached from the top of the two paths under it. IRON
 // opens once a weapon is his. The talents kept from the old tree keep their ids and work as they do now; the new ones work since the build
 // of 8 Nov 2026, at his “Yes, build it (Recommended)” (game/game.ts; their numbers WARRIOR_TUNE below; his moves by his weapon, WARRIOR_KITS).
-export const WARRIOR_TREE2 = { on: false };
+// ON, 12 Nov 2026, at his word to the main chat by 09:07, shown the three weapons in play with the art chat's axe and maul
+// (warrior_weapons.mp4; docs/warrior_tree_build.md): “Yes, put it live (Recommended)”.
+export const WARRIOR_TREE2 = { on: true };
 const GSWORD = '#6fa8ff';
 const AXE = '#ff6a50';
 const HAMMER = '#ac8753';
