@@ -203,6 +203,26 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
 - HIS YES, 12 Nov 2026, by pop-up (asked whether it is menacing enough now): “Yes, it's menacing (Recommended)”. Next: his moves,
   talked through with him first.
 
+### HIS FIGHT (talked through with him, 12 Nov 2026)
+
+- Asked which moves he should have (offered: the boar's charge, its tusk gore, runes from the saddle, growing huge at half health),
+  HIS ANSWER: “Boar charge (Recommended),Tusk gore (Recommended),I want two phases, one saddled, then another after the boar dies.  I
+  want the wordsmith to have an attack themed after each of the damage words.  And I want a rear up and stomp with a big aoe from the
+  boar as well”. 16:40: “Remember, this is the final final boss.”
+- Offered (by pop-up, after a message laying it out): PHASE 1 IN THE SADDLE: the boar's CHARGE (stamping and snorting first; up to
+  three runs, wheeling round, faster each time), its GORE (tusks hooked up, the hero thrown), its REAR UP AND STOMP (reared on its
+  hind legs with him in the saddle, slammed down, the floor cracking and shock rings rolling out one after another, a warning ring
+  first); his five DAMAGE-WORD ATTACKS (Power, Flame, Frost, Lightning, Poison) from the saddle between them. THE BOAR DIES: it
+  crashes onto its side; he is thrown clear and lands on his feet, skidding, his staff planted, never kneeling. PHASE 2 ON FOOT:
+  his words faster, and MELDED two at a time (wordsmithing turned on the hero); at the last, his LAST STAND, word after word with no
+  break. Every attack warned first. HIS ANSWER: “So while on the boar he’s using single words?  Then off he’s melding?  I like that.
+  Sounds good.  I’m serious man, take your time, read the rules, go crazy, we can always tune it down.  I want you to ask me about
+  each of the damage word attacks.”; and, 16:40, “I want this fight to be crazy”.
+- The rules it is made to: the gameplay rulebook's BOSSES (a fight made long by what it throws, each phase harder than the last,
+  something always coming, by the last phase something everywhere; attacks three times in a row); the art rulebook's ANIMATIONS (as
+  far as it will go, the Wave the measure, the hero and every warning in sight), MOVEMENT 9 (big wind-up, lightning strike) and
+  COLOUR (every word its own colour; enemy glows pink to gold, a friend's cyan).
+
 ## The tools
 
 `tools/endless_tablet/` (Python with Pillow and numpy; run from that folder): `kit.py` (a small pixel-art kit: two picture pixels to
