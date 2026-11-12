@@ -5,8 +5,8 @@ The queue's `bring-in-endless-town`, pulled by a chat of its own ("Endless town 
 
 Branch `build/endless-town`, cut from `main` at 95eefb7 (25.3.5) with the art chat's `art/endless-town` (3be8b16c) merged in
 (clean). NOT ON `main`, NOT PUBLISHED. Everything is behind `ENDLESS_TOWN` (`src/art/shaft_rim.ts`), which is OFF: with it
-off the game is as it was (checked: below). The main chat brings the branch in and sets the switch on at his yes to the
-pictures of it from the game (below).
+off the game is as it was (checked: below). The main chat brings the branch in and sets the switch on: his yes to the
+pictures of it from the game is given (below).
 
 ## His words and picks
 
@@ -25,6 +25,25 @@ pictures of it from the game (below).
 - Of the gate's words, his rulebook (`docs/gameplay/RULEBOOK.md`): “Words laid on the gate go for now, to come back later as
   endgame”, from his words of 9 Oct 2026, 22:50: “Let’s have the door words go for now.  I think that’ll be endgame stuff”.
 
+## HIS YES TO IT IN THE GAME (11 Nov 2026, by 20:31, Eastern): HANDED TO THE MAIN CHAT
+
+Sent five of the pictures and the film (below), and asked four things as one pop-up:
+- “The Shaft's Rim is built and running in the game behind its switch (pictures 01_home_before_the_gate.png,
+  05_on_the_portals_landing.png, 06_in_the_wordsmiths_ring.png and the film rim_town_game.mp4). Is it right as the Endless
+  town?”: “Yes, hand it to main (Recommended)” (offered as: it goes to the main chat to bring in, switch on and publish).
+- “The gate has three word sockets (02_at_the_gate_three_words.png, 03_the_gates_panel.png). Should burning up to three spare
+  words into the next endless level come back, in this town only?”: “Yes, back in this town (Recommended)” (offered as: words
+  laid on the gate show in its sockets and are burned into the next endless level).
+- “The record stone cuts a notch for each endless level the hero you are playing has reached, and writes your best ever beside
+  it (ENDLESS 5, BEST 12). Is that the count you want?”: “Yes, this hero's (Recommended)” (offered as: each hero cuts his own
+  stone; your best ever is written over it).
+- “The work is on a branch in this chat only: this chat was refused permission to push to your GitHub (RYHIYDave/Wordsmith).
+  May I send the branch build/endless-town there, so the main chat can bring it in?”: “Yes, send it to GitHub (Recommended)”.
+
+SO: THE TOWN IN THE GAME HAS HIS YES, with the gate's words back in this town and the record stone as built. The switch stays
+off on this branch: the main chat sets it on as it brings the branch in. (Told to him, not asked: the torches on posts hold
+nobody; past its seventy notches the stone is full; the trophies wall is empty until the tablet's quarters are built.)
+
 ## What is built
 
 1. **THE PLACE** (`src/game/rim.ts` `makeRim`): a Level as a town's is, 24 tiles by 24, laid as the art laid it
@@ -39,7 +58,7 @@ pictures of it from the game (below).
    level he has reached. The stair is how it looks: nobody walks on it.
 5. **ITS SERVICES**: the armourer, the mystic (across his table), the wordsmith, the Lexicon, the stash, the stranger, as in
    the game's two towns; and THE GATE (6).
-6. **THE GATE'S WORDS, BACK, HERE ONLY** (`RIM_RULES.gateWords`; FOR HIS YES): the gate stands free and leads nowhere, so here
+6. **THE GATE'S WORDS, BACK, HERE ONLY** (`RIM_RULES.gateWords`; his yes, above): the gate stands free and leads nowhere, so here
    it is used (the game's other gates are walked through): its panel is the game's own gate panel (up to three spare words
    burned into the next dungeon), reading GATE: ENDLESS N and ENTER ENDLESS N. The words laid on it show in its three sockets at
    once (a small round of the word's own colour in each hollow, its light the friend's cyan). ENTER takes him down to the
@@ -144,7 +163,7 @@ In a built page: `__dbg.endlessTown(true, 7)` (the switch on, the hero set at en
   `src/render/looks.ts` (the look and five small hooks: `behind`, `own`, `names`, a stand's `alpha`, the waypoint's art),
   `src/render/castle.ts` and `src/game/castle_way.ts` (the hall is not the rim), `src/ui/town.ts` (the gate panel's words),
   `src/ui/hud.ts`, `src/ui/guide.ts`, `src/game/quest_marks.ts`, `src/game/world_sounds.ts`.
-- To set it live, at his yes: `ENDLESS_TOWN.on = true`; test 1 of `tests/rim_town.test.ts` and test 1 of
+- To set it live (his yes is given: above): `ENDLESS_TOWN.on = true`; test 1 of `tests/rim_town.test.ts` and test 1 of
   `tests/shaft_rim.test.ts` assert it off.
 - FOUND, NOT CHANGED (the live game's, yours): (a) in the camp a service's name is written at a height of its own
   (`StationSpot.lift`) but touched at the first town's (`main.ts` `named`); (b) in the camp a touch on GATE opens the old gate

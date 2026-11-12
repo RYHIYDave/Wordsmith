@@ -1,7 +1,8 @@
 // THE ENDLESS TOWN, THE SHAFT'S RIM, AS THE GAME HOLDS A LEVEL. The art chat's town (art/shaft_rim.ts rimPlace(), its ground;
 // art/shaft_props.ts rimPieces(), what stands on it), with his yes to all of it in the art chat, 11 Nov 2026, by 13:43: “Yes,
-// hand it to main (Recommended)”. Behind ENDLESS_TOWN (art/shaft_rim.ts), OFF: nothing of it is in the game until his yes to
-// pictures of it from the game.
+// hand it to main (Recommended)”. Behind ENDLESS_TOWN (art/shaft_rim.ts), OFF on this branch. HIS YES TO IT IN THE GAME, shown
+// pictures and a film of it from the game, 11 Nov 2026, by 20:31: “Yes, hand it to main (Recommended)”: the main chat sets the
+// switch on as it brings the branch in (docs/endless_town_build.md).
 //
 // HIS WORDS. His queue item, 11 Nov 2026, 10:31: “A town that is different from the two we currently have, with all the bells and
 // whistles needed for the endless run.” His picks, asked by the main chat as pop-ups, 11 Nov 2026, by 15:40: when it is his
@@ -19,11 +20,15 @@
 //                 game's two towns; and THE GATE, where up to three words are burned into the next endless level (RIM_RULES
 //                 .gateWords: his rulebook has the gate's words “to come back later as endgame”, his words of 9 Oct 2026,
 //                 22:50: “Let’s have the door words go for now.  I think that’ll be endgame stuff”; the art he said yes to
-//                 is a gate with three word sockets. FOR HIS YES WITH THE TOWN'S PICTURES).
+//                 is a gate with three word sockets. HIS YES, shown it in the game, 11 Nov 2026, by 20:31, to “Should burning
+//                 up to three spare words into the next endless level come back, in this town only?”: “Yes, back in this
+//                 town (Recommended)”).
 //   THE WAY DOWN  the waypoint at the stair's head: awake, it takes him to the endless level he has reached, as the towns'
 //                 waypoint does now (Game.takeWay). The stair is how it looks; nobody walks on it.
 //   WHERE HE WAKES before the gate, the pit before him (RIM_ARRIVE); back by the waypoint, on it.
-//   THE RECORD    a notch for each endless level this hero has reached (Game.endless), at most the stone's seventy; the
+//   THE RECORD    a notch for each endless level this hero has reached (Game.endless; his yes, 11 Nov 2026, by 20:31, to a
+//                 stone that “cuts a notch for each endless level the hero you are playing has reached, and writes your best
+//                 ever beside it”: “Yes, this hero's (Recommended)”), at most the stone's seventy; the
 //                 newest glowing on the visit it is cut (`fresh`). Past seventy the stone is full and stays full; its name
 //                 says the level (RIM_RULES.record, recordLine).
 //   THE TROPHIES  four mounts, for the bosses of floors 5, 10, 15 and 20: filled while he holds that boss's quarter of the
@@ -52,7 +57,7 @@ export { ENDLESS_TOWN };
 
 /** The town's rules that are a pick, each one line. */
 export const RIM_RULES = {
-  /** The gate's three words: burned into the next endless level at its panel, shown in its three sockets. (For his yes with the town's pictures.) */
+  /** The gate's three words: burned into the next endless level at its panel, shown in its three sockets (his yes, 11 Nov 2026: “Yes, back in this town (Recommended)”). */
   gateWords: true,
   /** How many notches the record stone has room for (the art's seven rows of ten); past it the stone is full. */
   recordRoom: RECORD_ROOM,
