@@ -87,7 +87,8 @@ queen's looking-glass (floor 18's own book). The Dancing Shoes are a court shoe 
 
 1. **Bringing it in** is the main chat's (queue item `bring-in-unique-item-pictures`): `UNIQUE_ART.on` goes true when
    `UNIQUES` does (test 1 of tests/items_unique.test.ts asserts it off: change it then).
-2. **What is seen in play**, not begun: the queue item lists it (The Restless Tome's book in flight, The Drowned Arm's
+2. **What is seen in play**: THE FIRST THREE DRAWN SINCE (the Tome's book, the risen elite, the fourth globe:
+   docs/mockups/uniques_play/README.md); the rest not begun: the queue item lists it (The Restless Tome's book in flight, The Drowned Arm's
    tentacle, The Queen's Talons' bird, The Fleshmancer's Brand's risen elite, The Rainwalker, The Shepherd's Crook, The
    Tide, The Windcutter's blade of wind, The Fan's three arrows, The Sticky Wrench's stuck vial, The Moth's Wing's darkened
    word, and the fourth globe over the Brawler's head, src/dev/veteran_globes.ts). The build sends

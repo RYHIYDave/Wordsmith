@@ -158,6 +158,7 @@ import { forgetUnusedPictures } from './render/act1_fx/kept';
 import { COLOSSUS, onStoneOrJetty, worldToStone } from './game/colossus_fight';
 import { ITEM_WORDS } from './game/items';
 import { UNIQUES } from './game/uniques';
+import { UNIQUE_PLAY } from './render/unique_play';
 import { ART_TWEAKS } from './art/tweaks';
 
 declare const __BUILD__: string;
@@ -2919,6 +2920,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     uniques: UNIQUES,
     /** (THE UNIQUE ITEMS' OWN PICTURES, art/items_unique.ts, the art chat's) their switch, off until his yes: `uniqueArt.on`. */
     uniqueArt: UNIQUE_ART,
+    /** (WHAT THE UNIQUE ITEMS SHOW IN PLAY, render/unique_play.ts, the art chat's) their switches, each off until his yes: `uniquePlay.tome`, `.risen`, `.fourth`. */
+    uniquePlay: UNIQUE_PLAY,
     /** Game steps per frame while the test bot plays. */
     speed: 1,
     /** Time runs this much slower than real (1 = normal). */
