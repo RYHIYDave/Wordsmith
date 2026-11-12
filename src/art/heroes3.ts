@@ -395,10 +395,18 @@ export function heroLists(set: AnimSet): Sprite[][] {
 export function bakeLists(set: AnimSet): Sprite[][] {
   const out = heroLists(set);
   out.push(set.clips?.ready?.frames ?? []);
+  // (THE WARRIOR'S WEAPONS, game/talents.ts WARRIOR_TREE2: the war axe's and the maul's moves of their own, clips.moves, after the
+  // rest so that every other list keeps its place: his run and his catch while the axe flies, the axe appearing for a tap, Twin
+  // Axes' own, the leaps' crouches. Not in heroLists, for the same reason as his making ready: 25.3.11's page check found them
+  // painted where the game is drawn)
+  for (const k of HEAVY_MOVES) out.push(set.clips?.moves?.[k]?.frames ?? []);
   return out;
 }
 
-/** Which of bakeLists is a hero's making ready: the last, so that every other list keeps its place. (A function: a page that never asks for it does not carry it.) */
+/** (the same) The Warrior's weapons' own moves, as the bake holds them after his making ready. */
+const HEAVY_MOVES = ['runEmpty', 'runCatch', 'twinRunCatch', 'cleaveAppear', 'twinThrow', 'twinBraced', 'twinCatch', 'chopCrouch', 'chargeCrouch'] as const;
+
+/** Which of bakeLists is a hero's making ready: the one after heroLists, so that every other list keeps its place (the Warrior's weapons' own moves after it). (A function: a page that never asks for it does not carry it.) */
 export function readyList(): number {
   return HERO_PICKS.length;
 }

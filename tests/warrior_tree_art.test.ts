@@ -7,15 +7,19 @@
 //   2. his places with each (art/heroes.ts HEAVY_PLACES, lookOfPlace) and the pictures given for them: the axe's own lists (its
 //      chop crouch, its run while the axe flies), the maul's (its charge crouch), on his back in town; the greatsword's otherwise;
 //   3. the bake's groups (render/baked.ts): one each for him with the axe and with the maul while the tree is on; none off.
+//   4. the bake's lists (art/heroes3.ts bakeLists) hold the axe's and the maul's own moves (clips.moves: the run and the catch
+//      while the axe flies, the axe appearing, Twin Axes', the crouches), after his making ready, each list once, and so in the
+//      bake's places (render/baked.ts bakedPlaces); heroLists, which the monsters' bake page carries, as it was. (25.3.11's page
+//      check found 1,252 of the axe's frames, 165 of the maul's, painted where the game is drawn.)
 // No frame is painted: only lists are asked for.
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { HEAVY_PLACES, lookOfPlace } from '../src/art/heroes';
-import { makeHeroArt3 } from '../src/art/heroes3';
+import { bakeLists, heroLists, makeHeroArt3, readyList } from '../src/art/heroes3';
 import { WARRIOR_TREE2, heavyDrawn } from '../src/game/talents';
-import { bakeGroups } from '../src/render/baked';
+import { bakeGroups, bakedPlaces } from '../src/render/baked';
 
 function withTree<T>(on: boolean, run: () => T): T {
   const was = WARRIOR_TREE2.on;
@@ -70,4 +74,29 @@ test('3. the bake: a group for him with the axe and one with the maul while the 
     const g = bakeGroups(false);
     assert.ok(!('warrior-axe' in g) && !('warrior-hammer' in g));
   });
+});
+
+test('4. the bake\'s lists hold the axe\'s and the maul\'s own moves, after his making ready; heroLists as it was', () => {
+  const art = makeHeroArt3();
+  const sword = art.of('warrior', { twoHanded: true, town: false });
+  const n = heroLists(sword.front).length;
+  assert.equal(readyList(), n, 'his making ready right after heroLists');
+  for (const weapon of ['axe', 'hammer'] as const) {
+    const set = art.of('warrior', { twoHanded: true, town: false, weapon });
+    const sides = [set.front, set.back];
+    const moves = Object.entries(set.front.clips?.moves ?? {}).filter(([, c]) => c && c.frames.length);
+    assert.ok(moves.length > 0, `${weapon}: moves of its own`);
+    const lists = bakeLists(set.front);
+    assert.equal(heroLists(set.front).length, n, `${weapon}: heroLists as it was`);
+    for (const [k, c] of moves) {
+      const at = lists.indexOf(c.frames);
+      assert.ok(at > readyList(), `${weapon}: ${k} in the bake's lists, after his making ready (${at})`);
+      assert.equal(lists.lastIndexOf(c.frames), at, `${weapon}: ${k} once`);
+      assert.ok(!heroLists(set.front).includes(c.frames), `${weapon}: ${k} not one of heroLists`);
+      const placed = bakedPlaces(sides, false).filter(([v, l]) => v === 0 && l === at).length;
+      assert.equal(placed, c.frames.length, `${weapon}: every frame of ${k} has its place in the bake`);
+    }
+  }
+  const swordLists = bakeLists(sword.front);
+  assert.ok(swordLists.slice(readyList() + 1).every((l) => l.length === 0), 'the greatsword: none of them');
 });
