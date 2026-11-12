@@ -60,9 +60,32 @@ optimized build.”
   with his runes, small eyes burning, short thick legs and cloven hooves; his runes branded on its flank, the wool burnt off round
   them; a saddle of iron and old leather on its hump. Both the enemy's: pink burning to gold, the pink edge.
 
+## HIS BRIEF FOR THE FINAL BOSS (docs/art/RULEBOOK.md, A new character), 12 Nov 2026, by pop-up
+
+1. What is it, and where does it live: the warped wordsmith on the great woolly boar (above), past the portal at the bottom of the
+   endless shaft.
+2. Friend or enemy: enemy (pink burning to gold, the pink edge).
+3. How big, and how it should feel: “I don’t want the wordsmith to be huge, at least at the start.  So scale the boar to whatever we
+   decided the wordsmith size would be.  I think he’s a little taller than the hero”. Asked whether he grows later: “Yes, after he's
+   thrown (Recommended)” (offered as: thrown from the boar, he swells huge with his runes for the last part of the fight). SO: AT THE
+   START HE IS A LITTLE TALLER THAN THE HERO, AND THE BOAR IS SIZED TO CARRY A MAN OF THAT SIZE (the sketches' sizes are not his:
+   they drew both far too big); ONCE THROWN, HE GROWS HUGE.
+4. How they move: “Heavy charges, skid and turn (Recommended)” (offered as: the boar charges in straight lines and skids round; he
+   sways in the saddle, casting).
+5. The one thing to know him by at a glance: “His burning rune-staff held high (Recommended)”.
+6. What they carry, and how they attack: “Together, then he's thrown (Recommended)” (offered as: the boar charges and gores while he
+   writes runes on the air that burst; partway he is thrown, and both fight on, alone). The fight's rules are the main chat's.
+7. How they die: offered “the boar falls, he gutters out” (he sinks to his knees as his runes go out), his words: “Remember we’re
+   trying to stay away from “falling to their knees”.  I think he is overwhelmed by the word power he is using and implodes in pink
+   energy that dissipates into tiny runes that blink out until nothing is left”. SO: NO FALLING TO HIS KNEES; he is overwhelmed by
+   the power of the words he is using and implodes in pink energy, which comes apart into tiny runes that blink out until nothing is
+   left. (The boar's own death was not asked: ask with its first pictures, away from falling to its knees.)
+8. Anything it must never look like: “Never kindly, never the Old Skald (Recommended)” (offered as: no one should mistake him for a
+   friendly wizard or for the town's wordsmith).
+
 ## Still to do
 
-1. His brief (docs/art/RULEBOOK.md, A new character: the eight questions, in his words).
+1. (Done: his brief, above.)
 2. The boss and his boar drawn to the game's standard (sculpted on bones, as the bosses are), through every boss check, then their
    moves; pictures, then films, his yes at each step.
 3. The tablet to the game's standard: a quarter as loot on the floor and in the bag, the four in the bench's socket
