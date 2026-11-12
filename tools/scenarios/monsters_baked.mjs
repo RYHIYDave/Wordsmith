@@ -1,5 +1,5 @@
 // THE FLOORS' MONSTERS BAKED (render/monsters_baked.ts), in a real browser, the page served over the web as the published game
-// is, its bake beside it (dist/monsters/<mark>/):
+// is, its bake beside it (dist/monsters/<mark>/: a pack a figure, <name>-pack.png, tools/monster_packs.mjs):
 //   node tools/build_to.mjs dist/mobs_bake.html --heroes --monsters     (or the release: node tools/build.mjs, then the wrapped page)
 //   node tools/playtest.mjs --serve --file dist/mobs_bake.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/monsters_baked.mjs
 //   CLS=warrior   FLOORS=1,2,6,11,16   PLAY=15 (seconds of the bot's play a floor)
@@ -53,7 +53,10 @@ export default async function (page) {
       return { st, figs, checks, painted: d.painting.frames, alive: d.game().monsters.filter((m) => !m.dead).length, depth: d.game().depth };
     });
     const files = fetched.slice(n0);
-    console.log(`== floor ${k}: the loading screen up ${(up / 1000).toFixed(2)} s; ${at.alive} monsters of ${at.figs.length} figures (${at.figs.join(', ')}); ${files.length} files fetched (${files.filter((f) => f.endsWith('.png')).length} sheets)`);
+    console.log(`== floor ${k}: the loading screen up ${(up / 1000).toFixed(2)} s; ${at.alive} monsters of ${at.figs.length} figures (${at.figs.join(', ')}); ${files.length} files fetched (${files.filter((f) => f.endsWith('-pack.png')).length} packs)`);
+    // (one file a figure, its pack: tools/monster_packs.mjs; never a figure's file or a sheet of its own, as before 12 Nov)
+    const loose = files.filter((f) => !f.endsWith('-pack.png'));
+    if (loose.length) bad(`floor ${k}: fetched files that are not packs: ${loose.join(', ')}`);
     if (at.depth !== k) bad(`floor ${k}: the game is on floor ${at.depth}`);
     if (at.st) {
       const given = at.st.given - before.st.given;

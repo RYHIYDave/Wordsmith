@@ -19,6 +19,8 @@ import { PAINTING } from '../src/art/kit';
 import type { Sprite } from '../src/engine/px';
 import { BakedMonsters, CUT_MS, HOLD_MOST_MB, MONSTERS_BAKED, SMALL_MOST_MB, STAND_IN_MS, TOO_BIG, bakeName, bakedFigures, bringsOf, figureLens, monsterBakeMark } from '../src/render/monsters_baked';
 import type { BakedMonstersOptions, Sheet } from '../src/render/monsters_baked';
+import { PACK_TAIL, packName, readPack } from '../src/render/monsters_baked';
+import { packFigure, readPack as readPackHere } from '../tools/monster_packs.mjs';
 import type { MonsterBakeFile } from '../src/render/monsters_baked';
 import { COLOSSUS } from '../src/game/colossus_fight';
 import { ACT1_KINDS, ACT2_KINDS, HIGH_KINDS } from '../src/game/types';
@@ -125,7 +127,7 @@ interface World {
 
 const FIG: MonsterFigure = 'bat';
 
-function world(change: (f: MonsterBakeFile) => void = () => {}, missing: string[] = [], hold = false, more: Partial<BakedMonstersOptions> & { noCanvasAfter?: number; slow?: boolean } = {}): World {
+function world(change: (f: MonsterBakeFile) => void = () => {}, missing: string[] = [], hold = false, more: Partial<BakedMonstersOptions> & { noCanvasAfter?: number; slow?: boolean; cutShort?: boolean } = {}): World {
   const w = { opened: 0, closed: 0, turns: 0, fetched: [] as string[] } as World;
   const held = new Promise<void>((ok) => { w.rest = ok; });
   w.bestiary = makeBestiary();
@@ -146,14 +148,19 @@ function world(change: (f: MonsterBakeFile) => void = () => {}, missing: string[
     lens: figureLens(art), at,
   };
   change(w.file);
+  // (its pack as the build makes it, tools/monster_packs.mjs: each sheet's bytes say which sheet they are; `more.cutShort`, a pack
+  // that did not come whole)
   const get = async (name: string): Promise<Response> => {
     w.fetched.push(name);
     const ok = !missing.includes(name);
-    return { ok, status: ok ? 200 : 404, json: async () => JSON.parse(JSON.stringify(w.file)) } as unknown as Response;
+    const pack = packFigure(JSON.parse(JSON.stringify(w.file)), w.file.sheets.map((sh) => new TextEncoder().encode(`the bytes of ${sh}`)));
+    return { ok, status: ok ? 200 : 404, blob: async () => new Blob([more.cutShort ? pack.subarray(0, pack.length - 5) : pack]) } as unknown as Response;
   };
   let cuts = 0;
-  const open = async (name: string): Promise<Sheet> => {
+  const open = async (bytes: Blob, name: string): Promise<Sheet> => {
     w.fetched.push(name);
+    // (each sheet opened from its own part of the pack, and nothing more)
+    assert.equal(await bytes.text(), `the bytes of ${name}`);
     if (hold && name === 'bat-1.png') await held;
     if (missing.includes(name)) throw new Error(`${name}: will not open`);
     w.opened++;
@@ -170,7 +177,7 @@ function world(change: (f: MonsterBakeFile) => void = () => {}, missing: string[
     };
   };
   const later = (f: () => void): void => { w.turns++; setTimeout(f, 0); };
-  const { noCanvasAfter: _n, slow: _s, ...given } = more;
+  const { noCanvasAfter: _n, slow: _s, cutShort: _c, ...given } = more;
   w.opts = { get, open, names: [FIG], later, ...given };
   return w;
 }
@@ -206,7 +213,7 @@ test('taken in: every place of the figure is given its picture from the sheets, 
   await settle(b);
   assert.equal(b.done(FIG), true);
   assert.equal(b.coming(FIG), false);
-  assert.deepEqual(w.fetched, ['bat.json', 'bat-0.png', 'bat-1.png']);
+  assert.deepEqual(w.fetched, ['bat-pack.png', 'bat-0.png', 'bat-1.png'], 'its pack fetched, one file; its two sheets opened from it');
   assert.equal(unpainted(w, art), 0, 'every place has its picture');
   assert.equal(PAINTING.frames, before + 1, 'none painted here');
   assert.ok(listsOf(art)[v0][l0][i0] === own, 'the place the game had painted keeps its own picture');
@@ -307,7 +314,8 @@ test('where they will not come (another bake\'s file, a figure not as it was bak
     ['a list longer than it was baked', () => world((f) => { f.lens[0][0]++; }), 0],
     ['a list more', () => world((f) => { f.lens[1].push(4); }), 0],
     ['the second sheet missing', () => world(() => {}, ['bat-1.png']), 1],
-    ['no file at all', () => world(() => {}, ['bat.json']), 0],
+    ['no file at all', () => world(() => {}, ['bat-pack.png']), 0],
+    ['a pack that did not come whole', () => world(() => {}, [], false, { cutShort: true }), 0],
   ];
   for (const [what, make, some] of cases) {
     const w = make();
@@ -415,4 +423,25 @@ test('a figure that is not baked, and the switch off: nothing is fetched, nothin
   await quiet();
   assert.deepEqual(w.fetched, []);
   assert.equal(w.bestiary.made(FIG) !== undefined, true, 'the world made the bat; the switch made nothing more');
+});
+
+test('a figure\'s pack, as the build makes it (tools/monster_packs.mjs) and the game reads it: its file whole, each sheet its own bytes; one file a figure', async () => {
+  // (sheets of different lengths, bytes of every value: a PNG's bytes are not text)
+  const sheets = [0, 1, 2].map((k) => Uint8Array.from({ length: 300 + 97 * k }, (_, i) => (i * 7 + k * 31) % 256));
+  const file = { mark: 'm1', figure: 'fieldhand:1', sheets: ['fieldhand_1-0.png', 'fieldhand_1-1.png', 'fieldhand_1-2.png'], frames: [[0, 0, 0, 4, 6, 0]], parts: [{ w: 2, h: 3, ax: 1, ay: 3 }], lens: [[1], []], at: [0, 0, 0, 0], note: 'é and ü' };
+  const pack = packFigure(file, sheets);
+  assert.equal(packName(bakeName('fieldhand:1')), 'fieldhand_1-pack.png');
+  // (a PNG by its first bytes: the page serves only the kinds of file it knows)
+  assert.deepEqual([...pack.subarray(0, 4)], [...sheets[0].subarray(0, 4)]);
+  assert.equal(new TextDecoder().decode(pack.subarray(pack.length - 12, pack.length - 8)), PACK_TAIL);
+  const got = await readPack(new Blob([pack]), 'fieldhand_1');
+  const { packed, ...rest } = got.file;
+  assert.deepEqual(rest, file, 'its file as it was made, a letter that is not plain ASCII among it');
+  assert.equal(packed!.length, 3);
+  for (let s = 0; s < 3; s++) assert.deepEqual(new Uint8Array(await got.sheet(s).arrayBuffer()), sheets[s], `sheet ${s}`);
+  assert.equal(got.sheet(1).type, 'image/png');
+  // (the tool's own reading of it, for the build's check, the same)
+  assert.deepEqual(readPackHere(pack).sheets.map((b) => b.length), sheets.map((b) => b.length));
+  // (what is not a pack is not read as one)
+  for (const bad of [pack.subarray(0, pack.length - 1), sheets[0], new Uint8Array(0)]) assert.equal(await readPack(new Blob([bad as Uint8Array<ArrayBuffer>])).then(() => 'read', (e: Error) => e.message), 'a pack: not a pack');
 });
