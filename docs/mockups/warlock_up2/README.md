@@ -1,13 +1,15 @@
 # THE WARLOCK BROUGHT UP, AND HIS DEMON REDONE (IN HAND; NOTHING HERE IS IN THE GAME)
 
-**WHERE IT STANDS (11 Nov 2026, 20:20 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
+**WHERE IT STANDS (11 Nov 2026, 20:26 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
 two legs to fight and down on all fours to run, wings of smoke (`src/dev/demon_ideas.ts` shadowInto; `pictures/living_shadow.png`).
 ITS FIRST MOVES ARE MADE AND SHOWN HIM AS A FILM (`src/dev/shadow_moves.ts`; `pictures/living_shadow_moves.mp4`): its stand up on
 two legs, its really wide slashes, dropping onto all fours into the game's run, rearing up out of it. THEY HAVE HIS WORD, 11 Nov by 19:59: “This but I
 want him to be able to move around on two legs as he’s swiping”, and of its other moves, “Yes, all on two legs (Recommended)”
 (the foot of “The Living Shadow's moves” below). ITS SLASHES MADE WALKING ON TWO LEGS ARE MADE AND SHOWN HIM AS A SECOND FILM
-(`pictures/living_shadow_slashing_on_the_move.mp4`), HIS WORD ON THEM AWAITED. NEXT: its other moves up on two legs; then its
-eight sides and the change into it; then the man. Read from “The Living Shadow, drawn properly” down for what is left; the sections before it are how he got
+(`pictures/living_shadow_slashing_on_the_move.mp4`), AND HAVE HIS WORD, by 20:26: “Yeah it’s good but get rid of the smoke and
+just leave the wings”: NO SMOKE OFF IT ANY MORE, its wings as they are (done; both films and the stills made again). NEXT: its
+other moves up on two legs (Damning, the smoke step's ends, the change's end, the burning out's start); then its eight sides
+and the change into it; then the man. Read from “The Living Shadow, drawn properly” down for what is left; the sections before it are how he got
 there, in his words.**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
@@ -152,7 +154,8 @@ On the werewolf's frame. Black all through, hardly a form on it (five tones from
 and back still turn): only what burns is seen. Two slanted eyes, both seen from in front; a grin of teeth of light from ear
 to ear, an upper row and a lower on a jaw hung a little open; every talon of its claws and feet his cyan, his fire in each
 open claw (and under each when it runs). Two horns curled like smoke; a tail that thins away; smoke rising off its horn tips
-and the end of its tail. FROM BEHIND it has no face, so his fire shows down its backbone: an ember across each knuckle of it,
+and the end of its tail (THE SMOKE IS GONE SINCE HIS WORD OF 11 Nov, by 20:26: “get rid of the smoke and just leave the
+wings”; the foot of “Its slashes made walking on two legs”). FROM BEHIND it has no face, so his fire shows down its backbone: an ember across each knuckle of it,
 laid on its skin (found by going out from the backbone until nothing of the body is left). No wings.
 
 Pictures: `living_shadow.png` (up on two legs and running on all fours, each from in front and from behind, four times as
@@ -220,7 +223,8 @@ this task from the Wordsmith Queue”). What his words change of “A new design
   under each. Its last seven pictures (12 to 18) are the run's own.
 - **RUNNING: THE GAME'S RUN, AS IT IS** (`shadowRun`: `dev/demon_moves.ts` demonRun, bone for bone; only its elbows found again
   for this frame's longer arms). Its wings of smoke swept back, beating once a stride; its smoke dragged in its wake (left
-  less far behind than the game's demon's: it rises from four places, and left far behind each was a row of dots).
+  less far behind than the game's demon's: it rises from four places, and left far behind each was a row of dots). (NO
+  SMOKE OFF IT AT ALL since his word of 11 Nov by 20:26, below.)
 - **REARING UP OUT OF THE RUN** (`shadowRear`; new). The game's own way of coming to a stand (`AnimSet.stops`): EIGHT, one
   for each eighth of the run's round, each 14 frames (0.47 s) from the run as it is then into the stand's first picture. Its
   claws come up off the floor, it throws its weight back and up past its stance (its wings thrown wide to brake) and sinks
@@ -232,7 +236,7 @@ sweep), its wings held as the moment has them and turned with its chest (`Kit.wi
 smoke's wake. A STILL IS AS IT WAS, TO THE PIXEL: the four pictures of `living_shadow.png` painted before and after are the
 same files.
 
-THE FILM: `pictures/living_shadow_moves.mp4` (1440 x 702, sixty frames a second, 39.5 s, 8.2 MB; MP4, his word on GIFs),
+THE FILM: `pictures/living_shadow_moves.mp4` (1440 x 702, sixty frames a second, 39.5 s, 7.3 MB as made again without its smoke; MP4, his word on GIFs),
 from in front and from behind side by side, two film pixels a picture pixel, on a plain floor of the game's tiles that goes
 by under it as it is carried; the Brawler beside it at the start for its size. Its parts: standing (two rounds); the
 slashes, left, right, left, right; the same at half speed; dropping down, running, rearing up; the same at half speed; all
@@ -305,7 +309,7 @@ right. So EIGHT MOVES: each slash (its left claw's, its right's) each of the fou
   made for the slash they are under, not a round taken up wherever it happens to be: a round at the game's pace did not come
   back to its stance as a slash ended, and one slash after another its legs jumped.
 
-THE FILM: `pictures/living_shadow_slashing_on_the_move.mp4` (1440 x 702, sixty frames a second, 18.1 s, 4.6 MB), from in
+THE FILM: `pictures/living_shadow_slashing_on_the_move.mp4` (1440 x 702, sixty frames a second, 18.1 s, 4.3 MB as made again without its smoke), from in
 front and from behind, the floor going by the way it goes and as fast as the game carries it (slowed for each slash's first
 moment): going ahead, left, right, left, right; the same at half speed; then going to its left, backing away, going to its
 right, and ahead again, a slash each; and it stands. `pictures/living_shadow_slashing_on_the_move_sheet.png`.
@@ -325,12 +329,24 @@ follows, it should drop onto all fours as it does setting off (`AnimSet.start`),
 begun while it is running on all fours begins from its stance up on two legs: the picture jumps up in one frame, as any
 hero's attack begun running does; a rear-up cannot be played first without the blow coming later than the rules have it.
 
-SHOWN HIM SO, 11 Nov, by 20:20 Eastern (the second film sent). **HIS WORDS: AWAITED.**
+SHOWN HIM SO, 11 Nov, by 20:20 Eastern (the second film sent; asked by pop-up whether this was the moving around while
+swiping he wanted: “Yes, that's it (Recommended)”; close, change something; no). **HIS WORDS, 11 Nov, by 20:26, his own:**
 
-STILL TO DO, IN THIS ORDER (11 Nov, 20:20): (a) his word on its slashes made walking; (b) Damning, the smoke step, the
-change's end and the burning out's start, up on two legs, shown him; then, as before: its eight sides, its hide carried by
-its bones, the change into it; behind a switch that is off, a film and pictures in the game on floor 11 beside the Brawler;
-then THE MAN.
+- **“Yeah it’s good but get rid of the smoke and just leave the wings”**
+
+Read as, and told him so: ITS SLASHES MADE WALKING ARE RIGHT (“Yeah it’s good”). AND NO SMOKE OFF IT: the black smoke that
+rose off its horns' tips and its wings' tips, and streamed behind it as it went, is gone, everywhere, standing as well as
+moving; ITS WINGS STAY AS THEY ARE. DONE (`dev/demon_ideas.ts` SHADOW_SMOKE, off). Both films and the two stills
+(`living_shadow.png`, `living_shadow_at_game_size.png`) are made again without it; nothing else in them is changed (the
+frames' bones are the same: `tests/shadow_moves.test.ts`, 7 of 7). The second film sent him again so, by 20:30. NOT TAKEN
+FROM IT: the smoke step (its swipe, the move in which it goes into smoke and comes out of it six tiles on) is a move, not
+smoke off it, and stays the game's until he says otherwise; to be said to him plainly when that move is shown him up on two
+legs.
+
+STILL TO DO, IN THIS ORDER (11 Nov, 20:26): (a) Damning, the smoke step's two ends, the change's end and the burning out's
+start, up on two legs, shown him (his “Yes, all on two legs (Recommended)”); then, as before: its eight sides, its hide
+carried by its bones, the change into it; behind a switch that is off, a film and pictures in the game on floor 11 beside
+the Brawler; then THE MAN.
 
 THE FIRST THREE'S PICTURES (kept for the record):
 

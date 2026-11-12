@@ -340,6 +340,12 @@ function idea5(k: Kit): Built {
 // its backbone: an ember in each knuckle of it.
 /** Whether the Living Shadow has its wings (his pick, 11 Nov, shown it without: “Add wings”, offered as wings of smoke, to be shown him before its moves). */
 export const SHADOW_WINGS = { on: true };
+/**
+ * Whether smoke rises off it (off its horns' tips and its wings' tips; streaming behind it as it goes). HIS WORD, 11 Nov by
+ * 20:26, of the film of it slashing on the move: “Yeah it’s good but get rid of the smoke and just leave the wings”. So: off.
+ * No smoke off it anywhere, standing or moving; its wings as they are.
+ */
+export const SHADOW_SMOKE = { on: false };
 export function shadowInto(k: Kit): Built {
   const { sc } = k;
   const o = out0(k);
@@ -402,6 +408,7 @@ export function shadowInto(k: Kit): Built {
     const ends = cloakWings(k, wing, hide, glow, fr, 1.2, 1.35);
     o.smoke = [tips[0], tips[1], ends[2], ends[5]];
   }
+  if (!SHADOW_SMOKE.on) o.smoke = [];
   return o;
 }
 const idea6 = shadowInto;
