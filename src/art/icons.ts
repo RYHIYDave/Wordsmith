@@ -14,6 +14,7 @@ import { ALL_WORD_IDS, MELD_IDS, MELD_OF, RANK_IDS, RANK_OF, VOLT_MELD_IDS } fro
 import type { AbilityId, Element, IconKey, MeldId, Rarity, WordId } from '../game/types';
 import { makeAbilityIcons } from './ability_icons';
 import { ITEMS_A, itemAKind, itemArt } from './items_a';
+import { uniqueArt } from './items_unique';
 
 export interface IconArt {
   /** 16x16, anchor (8, 8). Today's item pictures, one for every rarity: ask for an item's picture with itemPic (below), never here. */
@@ -606,10 +607,12 @@ function beltIcon(): Sprite {
 /**
  * An item's picture by its picture key (`it.icon`) at its rarity: with ITEMS_A on the art chat's (16 by 16 game pixels, painted
  * two picture pixels to a game pixel: draw it at its size, `w` by `h`, as ui.slot and the floor's `stand` do); off, today's
- * (`icons.item[key]`, the very same picture).
+ * (`icons.item[key]`, the very same picture). A unique item's own picture, where it has one: its fourth argument.
  */
-export function itemPic(icons: IconArt, key: IconKey, rarity: Rarity): Sprite {
-  return ITEMS_A.on && itemAKind(key) ? itemArt(key, rarity) : icons.item[key];
+export function itemPic(icons: IconArt, key: IconKey, rarity: Rarity, unique?: string): Sprite {
+  // (A UNIQUE ITEM'S OWN PICTURE, art/items_unique.ts, behind UNIQUE_ART, off: the piece's `unique`, where the place has a
+  // piece; with the switch off, or for a unique not drawn yet, uniqueArt gives nothing and the picture is its base's, as before)
+  return (unique !== undefined ? uniqueArt(unique) : null) ?? (ITEMS_A.on && itemAKind(key) ? itemArt(key, rarity) : icons.item[key]);
 }
 
 // ---------------------------------------------------------------------------------------------
