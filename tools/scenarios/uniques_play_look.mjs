@@ -5,7 +5,8 @@
 //     --scenario tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/tome
 // LOOK: tome (The Restless Tome, the Warlock), risen (The Fleshmancer's Brand, the Warrior), globe (The Fourth Globe, the
 // Brawler), arm (The Drowned Arm, the Warrior), talons (The Queen's Talons, the Ranger), wrench (The Sticky Wrench, the Tinkerer), wind (The
-// Windcutter, the Warrior: three Strikes in a row, twice), moth (The Moth's Wing, the Warrior: struck, a word of his goes dark). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
+// Windcutter, the Warrior: three Strikes in a row, twice), moth (The Moth's Wing, the Warrior: struck, a word of his goes dark), tow (The Tow Line,
+// the Tinkerer: her Golem whistled out, then her Blast Jump, twice; it rides each on its own rocket jump). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
 // STAGE=1 (risen, with FILM): the elite set two tiles off and struck dead with no swing of his, so its rising is seen clear.
 // FILM=<seconds>: a film of it in place of the stills, frame by frame (30 a second, the game's clock stepped so that no
 // frame is missed): <out>_f0000.png on, each cut to the part of the screen round him (tools/uniques_play_film.py makes the MP4
@@ -43,9 +44,9 @@ export default async function (page, snap) {
   const mid = await page.evaluate(() => [innerWidth / 2, innerHeight / 2]);
   const round = (l, t, r, b) => ({ x: Math.round(mid[0] - l), y: Math.round(mid[1] - t), width: l + r, height: t + b });
   const elite = process.env.ELITE || 'skeleton';
-  const cls = look === 'tome' ? 'warlock' : look === 'globe' ? 'brawler' : look === 'talons' ? 'ranger' : look === 'wrench' ? 'tinkerer' : 'warrior';
+  const cls = look === 'tome' ? 'warlock' : look === 'globe' ? 'brawler' : look === 'talons' ? 'ranger' : look === 'wrench' || look === 'tow' ? 'tinkerer' : 'warrior';
   // (LOOK=kinds: every kind of monster risen in turn, to see each one's risen look: below)
-  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : look === 'wrench' ? 'stickywrench' : look === 'wind' ? 'windcutter' : look === 'moth' ? 'mothswing' : 'fleshmancersbrand';
+  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : look === 'wrench' ? 'stickywrench' : look === 'wind' ? 'windcutter' : look === 'moth' ? 'mothswing' : look === 'tow' ? 'towline' : 'fleshmancersbrand';
   const set = await page.evaluate(({ cls, id, playOn }) => {
     const d = window.__dbg;
     d.uniques.on = true;
@@ -121,6 +122,37 @@ export default async function (page, snap) {
     if (film) { await shoot(film, round(300, 160, 300, 110), due); return; }
     for (const [, f] of due.slice(0, 3)) { await f(); await wait(420); }
     for (let k = 0; k < 6; k++) { await wait(k === 0 ? 30 : 90); await snap(`${k + 1}_blade`); }
+    return;
+  }
+  if (look === 'tow') {
+    // THE TOW LINE (the Tinkerer wearing it): her Golem whistled out by her; then her Blast Jump, there and back; it rides each on its
+    // own rocket jump, off with her, and comes down by her with its fist slam
+    // (the enemies by where she starts, so the Golem has none to jump at: any flight of its to where she lands is the ride)
+    await mk('skeleton', 1.6, 1.2, { life: 1e7 }); await mk('skeleton', 2.2, -0.4, { life: 1e7 });
+    await page.evaluate(() => {
+      const g = window.__dbg.game();
+      const run = g.update.bind(g);
+      window.__rides = 0;
+      g.update = (dt, c) => {
+        if (window.__once) { Object.assign(c, window.__once); window.__once = null; }
+        const r = run(dt, c);
+        for (const e of g.events) if (e.t === 'unique' && e.id === 'towline' && e.what === 'ride') window.__rides++;
+        return r;
+      };
+    });
+    const whistle = () => page.evaluate(() => { const g = window.__dbg.game(); const h = g.hero; h.skills[1].cd = 0; h.mana = 999; g.useSkill(1, h.x + 1.5, h.y + 1); });
+    const jump = (dx, dy) => () => page.evaluate(([dx, dy]) => { const g = window.__dbg.game(); const h = g.hero; const s = h.skills[2]; s.cd = 0; s.charges = Math.max(1, s.maxCharges); window.__once = { evade: true, evadeX: h.x + dx, evadeY: h.y + dy }; }, [dx, dy]);
+    await whistle(); await wait(1800);
+    const due = [[0.3, jump(5.5, -1)], [2.6, jump(-5.5, 1)]];
+    if (film) {
+      await shoot(film, round(330, 220, 330, 120), due);
+      say(`rides: ${await page.evaluate(() => window.__rides)}`);
+      return;
+    }
+    await due[0][1]();
+    for (let k = 0; k < 6; k++) { await wait(k === 0 ? 150 : 130); await snap(`${k + 1}_ride`); }
+    const golems = await page.evaluate(() => ({ rides: window.__rides, golems: window.__dbg.game().golems.map((q) => ({ x: q.x, y: q.y, act: q.act, cd: q.jumpCd })), hero: [window.__dbg.game().hero.x, window.__dbg.game().hero.y] }));
+    say(`after: ${JSON.stringify(golems)}`);
     return;
   }
   if (look === 'moth') {

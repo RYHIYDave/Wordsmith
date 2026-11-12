@@ -272,6 +272,50 @@ tsc clean; the look filmed, finished clean.
 
 HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills: “Yes, hand it to main (Recommended)”.
 
+## The moments the build only tells of: his picks
+
+Asked which want a picture of their own: the Pivot (Whirlwind's own cut), the Receipt (a punch), the Warden's Keys (the door
+opening), the Hair Trigger (the trap going off), the Tuning Staff (the Orb's pulse), the Short Way (the Warp's burst at both ends)
+and Bloodprice (Power's embers circling him) already show through the game's own effects: “Yes, leave them (Recommended)”. Of those
+showing nothing, or popping, he picked THE TOW LINE and THE CRIER'S HUSH (not the Unsigned Pact, not the Winning Streak), and wrote:
+“The golem has a rocket jump as well so it can be like a free cooldown reset and he uses him jump to the same spot as the hero.
+Also can you make him almost intangible?  He has a lot of collision issues and is never really where you want him to be”. Of the
+last two, the unique drop (not the King's Knot), and: “Base uniques are uniques just like boss drops, I don’t know why you want to
+distinguish between the two.  Whatever we do any unique drop it should apply to all drops”. Read as (told him): the Tow Line, the
+Golem's own rocket jump to where she lands, free; the Golem almost intangible, everywhere; the Crier's Hush, a look for the enemies
+near him losing their words; every unique that drops, pool or boss, a beam of orange light where it lands. The King's Knot, the
+Unsigned Pact and the Winning Streak stay as they are.
+
+## The Tow Line: the Golem rides her jump on its own rocket jump (RULES, game/game.ts)
+
+`towRide` (new): as she blasts off (the blast jump's start), each Golem of hers fires its own rocket jump with her (from the frame
+before its blast, `ROCKET.blast - 1`: no crouch, it goes up with her bomb) to its own side of where she comes down, as it keeps by
+her (golemSpot's sides), and lands as its own jump lands, its fist slam (stepRocket's `golemPounds` with `landing`: the crater and
+dust its landing's own, no `golemPound` event). FREE: its jump's wait is not looked at, and as it lands it is set back to none
+(`Golem.towed`, state.ts; cleared as it lands, or if it is whistled back). One within a tile of its spot, charging its shot or in the
+air already, does not ride: it pounds where it stands as she lands (blastLands, its pound as before). The old blink to her side as
+she landed is gone. It lands about a quarter of a second after her (its flight 21 frames, hers 18). The pound's strength is now its
+own jump's (golemFrac) where it was her blast's countDmg times UNIQUE_TUNE.tow.share: the main chat's numbers to keep or change.
+
+## The Golem almost intangible (RULES, game/game.ts GOLEM_R, NOT BEHIND A SWITCH)
+
+His words above. The Golem's walk meets only walls (no monster and not she stand in its way: the bodies kept apart in
+updateMonsters are monsters and her); what caught it was its own width, `GOLEM_R` 0.45, nine tenths of a tile, in doors one tile
+wide, round pillars and corners. Now 0.3, as hers (TUNE.heroRadius): it goes wherever she can. ITS LOOK IS UNCHANGED; it goes live
+with the next update once merged.
+
+To see the ride: `LOOK=tow FILM=4.6 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario
+tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/towfilm` (her Golem whistled out by two enemies, then her Blast Jump
+there and back; `rides: 2` printed). Pictures sent him: `pictures/towline.mp4` and `pictures/towline.png`.
+
+Checked: tests/uniques_heroes.test.ts (21; its Tow Line test now: one ride, it lands by her, by its rocket jump and not a pound
+where it stood, its jump ready again, the dummy hurt); tests/tinkerer, golem_rocket, golem_combo, golem_moves, golem_gun,
+golem_charge, tinkerer_talents, tinkerer_moves, action_f6 all pass, each alone with tsx; tsc clean; the look filmed, finished clean.
+NOT CHECKED: his phone (the slimmer Golem is a feel); tools/unit.mjs.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills, asked whether to hand it to main with the Golem's slimmer body: “Yes,
+hand it to main (Recommended)”.
+
 ## For the main chat
 
 Bring in `art/uniques-play2` first (the queue's bring-in-drowned-arm-picture), then this branch: `wind` and `moth` go on with the
