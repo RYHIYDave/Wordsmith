@@ -65,6 +65,12 @@ export default async function (page, snap) {
     await strike();
     await stepTo('hurt', HIT);
     await page.screenshot({ path: `${out}_${w}_hit.png`, clip });
+    // (AFTER=n: n more pictures, a tenth of a second of the game apart, after the blow: what its look leaves)
+    for (let k = 1; k <= Number(process.env.AFTER || 0); k++) {
+      await page.evaluate(() => { const d = window.__dbg; window.__at = d.clock(); d.slowmo = 0.25; });
+      await page.waitForFunction(() => { const d = window.__dbg; if (d.clock() < window.__at + 0.1) return false; d.slowmo = 1e-6; return true; }, null, { polling: 'raf', timeout: 60000 });
+      await page.screenshot({ path: `${out}_${w}_after${k}.png`, clip });
+    }
     // (the skeleton left a life, and struck again: as it dies)
     await page.evaluate(() => { window.__dbg.slowmo = 1; });
     await page.waitForTimeout(500);

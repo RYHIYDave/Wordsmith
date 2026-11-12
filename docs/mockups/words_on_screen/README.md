@@ -16,3 +16,14 @@ Bleeding, Reaping, Culling, Surging, Plundering, Lasting, Fleeting and Vast show
 Binding a small gold ring. The words that act on a kill (Volatile, Reaping, Culling, Plundering) showed nothing at the kill either
 in the practice room, 0.12 s on (not looked into: some of their rules may want more than a practice room's skeleton). One attack
 only (the Strike); a word may show more on another.
+
+## His word, and a correction (12 Nov 2026)
+
+Sent the four sheets and the at-a-glance read above, asked what next: “Give each a look (Recommended)”. BEFORE ANY DRAWING, A
+CORRECTION, told him: these words already have looks of their own, drawn by the art chat with his yes and switched on in the game
+(render/words3.ts, words7.ts, words10.ts), and many show AFTER the blow, not at it. Filmed a second on (`AFTER=8`: eight more
+pictures a tenth of a second apart): Hexing's curse mark over the enemy, Stilling's teal ring under it, Bleeding's drops, each
+small at the game's size; Precise and Vast change the size of the hit, not a mark of their own; the kill words (Reaping, Culling,
+Plundering, Volatile) showed nothing in the practice room, which may not let them work (not looked into). Asked then (“Make them
+bolder (Recommended)”, “New looks anyway”, “Leave them as they are”): “Leave them as they are”. SO NOTHING OF THE GAME CHANGES;
+this branch carries only the scenario and these pictures.
