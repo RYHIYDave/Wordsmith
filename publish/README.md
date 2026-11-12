@@ -2,7 +2,7 @@
 
 The chat that made 25.3.10 (the Hold-aim merge chat, 12 Nov 2026) cannot change the game's page,
 https://claude.ai/artifact/JVZ17qWBAekWWjqukFfjRq: network access is off for its session, and the Artifact tool refused the
-publish ("session_network_off", 12 Nov, about 09:5x). 25.3.10 IS LIVE ON THE GAME'S OWN WEB ADDRESS (gh-pages 868e890a). The
+publish ("session_network_off", 12 Nov, 09:35). 25.3.10 IS LIVE ON THE GAME'S OWN WEB ADDRESS (gh-pages 868e890a). The
 claude.ai page still shows 25.3.9 (Version 109, version id 1794489749-650f). This branch takes the place of publish/25.3.9.
 
 `publish/index.html` is the very file the published page's playtests were played on (tools/wrap25310.sh, 15 playtests, all
