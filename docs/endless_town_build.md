@@ -119,7 +119,10 @@ In a built page: `__dbg.endlessTown(true, 7)` (the switch on, the hero set at en
   round it, from the landing; the finer grid (every open cell a place his whole body may stand).
 - `tests/shaft_rim.test.ts` (13; its first now names the town's own files as the ones that may import the art) and
   `tests/endless_town_options.test.ts` (1).
-- The unit suite, only what this is about and the core: see "The unit run" below.
+- THE UNIT RUN, `node tools/unit.mjs --only rim_town,shaft_rim,endless_town_options,endless,camp,hub2,act1_camp,castle_hall,
+  floor_looks_game,town_look,townart,still_pictures,errand_stairs,ways,guide,speak_new,scene_sounds,gates,items_a_game,onward,
+  modes,trades,cut,height,mix,dungeon,hold_altar,sunken` (what this touches) and the core, on c07719af0a: 51 files, 596 tests,
+  all passed (374 files not run).
 - In the browser, on a phone's screen (touch) and at 960 x 540 (mouse and keys), `tools/scenarios/rim_town.mjs`: 22 checks,
   all as it should be, both: endless opening into the town (with the splash and the card too, by hand); each service touched
   and walked to, its panel opening; the gate's word, ENTER; the waypoint home and down; the switch off. The keys held at the
