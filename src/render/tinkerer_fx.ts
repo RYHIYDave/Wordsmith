@@ -76,6 +76,8 @@ import type { Layered, ShotGun } from '../art/golem_shots_fx';
 import { flipSprite } from '../engine/px';
 import type { Cam } from './fx';
 import { wx, wy } from './fx';
+import { FxLists } from './fx_lists';
+import type { LoadStep } from '../engine/steps';
 
 /** Picture pixels to a game pixel (the heroes' grain). */
 const G = 2;
@@ -90,15 +92,9 @@ function piece(w: number, h: number, ax: number, ay: number, lights: number, ram
   for (const [l, r] of order) l.lay(px, r);
   return px.sprite(ax, ay, G);
 }
-const kept = new Map<string, Sprite[]>();
-function loop(key: string, n: number, make: (i: number) => Sprite): Sprite[] {
-  let list = kept.get(key);
-  if (!list) {
-    list = Array.from({ length: n }, (_, i) => make(i));
-    kept.set(key, list);
-  }
-  return list;
-}
+/** (render/fx_lists.ts: made ahead under the loading screen, a frame a step, tinkererFxSteps) */
+const lists = new FxLists();
+const loop = lists.loop;
 
 /** (her tree's CONTRAPTION, its pick BOMBS) HER LITTLE BOMB, turned in eighths of a turn as it tumbles, its fuse spitting (the art: dev/contraption_shots.ts bombSprite). */
 const bombFrames = (): Sprite[] => loop('bomb', 8, (i) => {
@@ -212,6 +208,13 @@ function zapFrames(x: number, y: number, up: number, to: readonly { x: number; y
 }
 /** A PUFF of her bomb's smoke. */
 const puffFrames = (): Sprite[] => loop('puff', 6, (i) => piece(40, 34, 20, 28, 1, [SMOKE], ([sm]) => cloud(sm, 20, 28, 18, 15, i * 0.17, 0.2, 31 + i)));
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) The lists her draws ask for every frame, whoever the hero, made ahead
+ * a frame a step, in the order they ask for them (the ground's, then the air's).
+ */
+export function tinkererFxSteps(): LoadStep[] {
+  return lists.steps([scorchFrames, poundFloor, thudFrames, lampFrames, puffFrames, blastFrames, vialFrames, bombFrames, poundAir, arriveFrames]);
+}
 
 interface Spot { x: number; y: number; t: number }
 /** A vial's burst: `k` its size (her tree's little ones and big ones), its brew. */

@@ -17,7 +17,9 @@
 // urn and pillars are drawn where the game draws them (render.ts, main.ts).
 
 import { forgetMade as forgetCastleMade } from '../art/castle_hall';
-import { AIR_DEPTH, CASTLE_HALL, CASTLE_LIGHTS, CASTLE_OWL_AT, GATE_AT, HALL, SUN_WINDOWS, TRUSSES_X, TRUSSES_Y, TRUSS_DEPTH, dayLights, makeCastleHallArt } from '../art/castle_hall';
+import { AIR_DEPTH, CASTLE_HALL, CASTLE_LIGHTS, CASTLE_OWL_AT, GATE_AT, HALL, SUN_WINDOWS, TRUSSES_X, TRUSSES_Y, TRUSS_DEPTH, castleHallSteps, dayLights, makeCastleHallArt } from '../art/castle_hall';
+import type { LoadStep } from '../engine/steps';
+import { T_FLOOR } from '../game/types';
 import type { CastleHallArt } from '../art/castle_hall';
 import type { Sprite } from '../engine/px';
 import { POT_NAMES } from '../game/castle_way';
@@ -63,6 +65,43 @@ export class CastleView implements LookView {
   }
   warm(): void {
     void this.A().roof;
+  }
+  /** (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) The hall's pictures and the town's things in its stone, a part a step: art/castle_hall.ts castleHallSteps. */
+  steps(): LoadStep[] {
+    if (this.art?.townMade()) return [];
+    return [...castleHallSteps(), () => void this.A()];
+  }
+  /**
+   * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) Ahead of the hall's first drawing, what that drawing makes the first
+   * time, as the renderer asks for it (render.ts flatWays, standDoors, floorTile, the walls' faces, the sun's slats): its stairs
+   * down, the day beyond its gate and its arch; then, a row of the hall a step, its floor's tiles (a tile its own), the faces of
+   * its walls and the sun's slats. Each is kept once made (art/castle_hall.ts), so the drawing finds it made.
+   */
+  drawSteps(L: Level): LoadStep[] {
+    const out: LoadStep[] = [];
+    const W = L.ways;
+    const st = W?.stair;
+    if (st && st.open) out.push(() => void this.A().stairs(st.way));
+    const gate = W && W.gate >= 0 ? L.doors[W.gate] : null;
+    if (gate) {
+      const alongX = gate.spot.alongX;
+      out.push(() => void this.A().gate.beyond(alongX), () => void this.A().gate.arch(alongX));
+    }
+    const f = L.floor;
+    for (let ty = HALL.y0 - 1; ty <= HALL.y1; ty++) {
+      out.push(() => {
+        const A = this.A();
+        // (the faces: along x keyed by the tile along it, along y by its own: art/castle_hall.ts face)
+        if (ty >= HALL.y0 && ty < HALL.y1) A.face(false, HALL.x0 - 1, ty);
+        if (ty === HALL.y0 - 1) for (let tx = HALL.x0; tx < HALL.x1; tx++) A.face(true, tx, ty);
+        for (let tx = HALL.x0; tx < HALL.x1; tx++) {
+          if (ty < 0 || ty >= f.h || tx < 0 || tx >= f.w || f.tiles[ty * f.w + tx] !== T_FLOOR) continue;
+          if (!this.laid(L, tx, ty)) this.flags(tx, ty);
+          A.sun(tx, ty);
+        }
+      });
+    }
+    return out;
   }
   /** The hall's pictures (made the first time they are wanted). */
   A(): CastleHallArt {

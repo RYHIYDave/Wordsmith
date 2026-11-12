@@ -35,6 +35,8 @@ import { HELL } from '../dev/sculpt_warlock';
 import { STUFF, crackStar, drawCrack, drawHole, jet } from '../dev/demon_fx';
 import type { Cam } from './fx';
 import { wx, wy } from './fx';
+import { FxLists } from './fx_lists';
+import type { LoadStep } from '../engine/steps';
 
 /** Picture pixels to a game pixel (the heroes' grain). */
 const G = 2;
@@ -56,16 +58,9 @@ function piece(w: number, h: number, ax: number, ay: number, paint: (fl: Light, 
   return px.sprite(ax, ay, G);
 }
 
-/** Pieces painted when first wanted. */
-const kept = new Map<string, Sprite[]>();
-function loop(key: string, n: number, make: (i: number) => Sprite): Sprite[] {
-  let list = kept.get(key);
-  if (!list) {
-    list = Array.from({ length: n }, (_, i) => make(i));
-    kept.set(key, list);
-  }
-  return list;
-}
+/** Pieces painted when first wanted (render/fx_lists.ts: made ahead under the loading screen, a frame a step, warlockFxSteps). */
+const lists = new FxLists();
+const loop = lists.loop;
 
 /** THE BURN on a figure about a man's size (the art chat's TARGET_BOX, a cultist), round and round. */
 const BURN_LOOP = 1.6;
@@ -94,6 +89,14 @@ const eruptFrames = (): Sprite[] =>
       jet(fl, 70, 110, size, u * ERUPT, 0, 112);
     });
   });
+
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) The lists his draws ask for every frame, whoever the hero, made ahead
+ * a frame a step, in the order they ask for them (the ground's, then the air's).
+ */
+export function warlockFxSteps(): LoadStep[] {
+  return lists.steps([puffFrames, eruptFrames, burnFrames, smolderFrames, burstFrames, ballFrames]);
+}
 
 interface Chain { x: number; y: number; to: { id: number; x: number; y: number }[]; t: number }
 interface River { x0: number; y0: number; x1: number; y1: number; t: number; demon: boolean }

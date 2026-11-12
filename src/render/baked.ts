@@ -24,6 +24,9 @@ declare const __HERO_BAKE__: string | undefined;
 /** The switch: off, the heroes are painted while the game is played, as before. */
 export const BAKED = { on: true };
 
+/** (main.ts LOAD_SLICE) The most a group's frames are handed over in one go, in thousandths of a second, before a frame is let in (0: all at once, as before). */
+export const HAND_MS = 6;
+
 /** The folder beside the page the bakes are in, each in a folder of its own named by its mark (tools/build.mjs). */
 export const BAKE_DIR = 'heroes';
 
@@ -120,7 +123,7 @@ export class BakedHeroes {
    * For measuring: frames taken in, frames not wanted (painted already), how long each group took (ms), what failed, and the
    * sheets held and their pixels.
    */
-  readonly stats = { given: 0, unwanted: 0, ms: {} as Record<string, number>, failed: [] as string[], sheets: 0, sheetPx: 0 };
+  readonly stats = { given: 0, unwanted: 0, ms: {} as Record<string, number>, failed: [] as string[], sheets: 0, sheetPx: 0, handMs: 0, handMax: 0 };
 
   constructor(
     private readonly mark: string,
@@ -200,7 +203,20 @@ export class BakedHeroes {
         const bmp = await createImageBitmap(await rs.blob(), { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
         const sheet: FrameSheet = { img: bmp };
         let kept = 0;
+        // (for measuring: how long this sheet's frames took to be handed to his art, between two frames)
+        const h0 = performance.now();
+        // (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE: handed over HAND_MS at a time, a frame let in between, so that
+        // the loading screen's ring goes on turning; the Brawler from eight sides gives some 740 frames a sheet)
+        let h1 = h0;
+        let paused = 0;
         for (let fi = 0; fi < f.frames.length; fi++) {
+          if (HAND_MS > 0 && (fi & 31) === 0 && performance.now() - h1 > HAND_MS) {
+            const p0 = performance.now();
+            this.stats.handMax = Math.max(this.stats.handMax, Math.round((p0 - h1) * 10) / 10);
+            await new Promise<void>((ok) => setTimeout(ok, 0));
+            h1 = performance.now();
+            paused += h1 - p0;
+          }
           if (f.frames[fi][0] !== s) continue;
           const [, x, y, w, h, part] = f.frames[fi];
           const sprite = sheetSprite(f.parts[part], sheet, x, y, w, h);
@@ -213,6 +229,10 @@ export class BakedHeroes {
             kept++;
           } else this.stats.unwanted++;
         }
+        const end = performance.now();
+        this.stats.handMs += end - h0 - paused;
+        // (`handMax`: the longest the frames were handed over in one go, with no frame let in)
+        this.stats.handMax = Math.max(this.stats.handMax, Math.round((end - h1) * 10) / 10);
         if (kept) {
           this.sheets.push(sheet);
           this.stats.sheets++;

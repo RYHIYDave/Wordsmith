@@ -11,7 +11,7 @@
 // Where the way in and the break-ins are, and what stands on the floor of its own, is the rules' (game/chapel_way.ts).
 
 import { forgetGraded as forgetChapelGraded } from '../art/chapel';
-import { CHAPEL, CHAPEL_LIGHTS, gradedA, makeChapelArt } from '../art/chapel';
+import { CHAPEL, CHAPEL_LIGHTS, chapelStretchSteps, gradedA, makeChapelArt } from '../art/chapel';
 import type { ChapelArt } from '../art/chapel';
 import { floorLook } from '../art/floors';
 import { WALL_LOOK } from '../art/ground';
@@ -24,6 +24,7 @@ import type { Level } from '../game/state';
 import { gradeOnPage } from './looks';
 import type { LookLight, LookStand, LookView } from './looks';
 import { wallFaces, wallsAway } from './walls';
+import type { LoadStep } from '../engine/steps';
 
 interface Laid {
   tiles: Map<number, Sprite[]>;
@@ -55,6 +56,13 @@ export class ChapelView implements LookView {
   }
   warm(): void {
     this.A();
+  }
+  /** (main.ts LOAD_SLICE) Ahead of its first drawing: the mine's break-ins and the way in this level has, a frame a step (art/chapel.ts chapelStretchSteps). */
+  steps(L: Level): LoadStep[] {
+    const out: LoadStep[] = [];
+    if (L.chapel?.wayIn) out.push(...chapelStretchSteps(L.chapel.wayIn.alongX, true));
+    for (const b of L.chapel?.breaks ?? []) out.push(...chapelStretchSteps(b.alongX, false));
+    return out;
   }
   private A(): ChapelArt {
     return (this.art ??= makeChapelArt());

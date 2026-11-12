@@ -36,6 +36,8 @@ import { makeStairwell, makeWaypointArt } from './crypt_ways';
 import type { WaypointArt } from './crypt_ways';
 import { makeDungeonProps } from './props';
 import type { DungeonProps } from './props';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 /**
  * WHERE A PICTURE PUTS THE WAYS THROUGH (art/crypt_ways.ts): the stairwell down and the waypoint,
@@ -488,9 +490,28 @@ export function cryptWays(k: number): { stair: Record<'x' | 'y', Sprite>; way: W
   if (!w) {
     const theme = CRYPT_FLOORS[k - 1];
     WAYS.clear();
-    WAYS.set(k, (w = { stair: { x: makeStairwell(theme, 'x'), y: makeStairwell(theme, 'y') }, way: makeWaypointArt(theme) }));
+    // (each of the three a part a step of the loading screen's may have made ahead: cryptWaySteps)
+    const A = WAYS_AHEAD;
+    w = { stair: { x: A.take(`${k}:x`, () => makeStairwell(theme, 'x')), y: A.take(`${k}:y`, () => makeStairwell(theme, 'y')) }, way: makeWaypointArt(theme, (key, make) => A.take(`${k}:way:${key}`, make)) };
+    A.clear();
+    WAYS.set(k, w);
   }
   return w;
+}
+/** (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) The two stairwells and the waypoint of floor look `k`, made ahead. */
+const WAYS_AHEAD = new Ahead();
+/** The steps that make floor look `k`'s ways a part at a time (none where they are made), then the ways. */
+export function cryptWaySteps(k: number): LoadStep[] {
+  if (WAYS.has(k)) return [];
+  const theme = CRYPT_FLOORS[k - 1];
+  const steps: LoadStep[] = [WAYS_AHEAD.step(`${k}:x`, () => makeStairwell(theme, 'x')), WAYS_AHEAD.step(`${k}:y`, () => makeStairwell(theme, 'y'))];
+  // (the waypoint's pictures each a part: art/crypt_ways.ts makeWaypointArt `part`; planned, nothing is made)
+  makeWaypointArt(theme, (key, make) => {
+    steps.push(WAYS_AHEAD.step(`${k}:way:${key}`, make));
+    return null as unknown as Sprite;
+  });
+  steps.push(() => void cryptWays(k));
+  return steps;
 }
 
 /** Forget the pictures made (the walls' look has changed: art/ground.ts, setWallLook). */

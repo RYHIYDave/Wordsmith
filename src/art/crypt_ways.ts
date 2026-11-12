@@ -445,11 +445,15 @@ export interface WaypointArt {
   warp: Sprite[];
 }
 
-export function makeWaypointArt(theme: Theme): WaypointArt {
+/**
+ * The waypoint's pictures. `part` (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE): how each picture is got, by its name
+ * and how it is made: by default made then and there, as always; a builder that makes it a part at a time ahead gives its own.
+ */
+export function makeWaypointArt(theme: Theme, part: (key: string, make: () => Sprite) => Sprite = (_k, make) => make()): WaypointArt {
   return {
-    asleep: makeDais(theme, 'asleep'),
-    awake: Array.from({ length: WAY_FRAMES }, (_, f) => makeDais(theme, 'awake', f)),
-    motes: Array.from({ length: WAY_FRAMES }, (_, f) => makeOver('motes', f)),
-    warp: Array.from({ length: WARP_FRAMES }, (_, f) => makeOver('warp', f)),
+    asleep: part('asleep', () => makeDais(theme, 'asleep')),
+    awake: Array.from({ length: WAY_FRAMES }, (_, f) => part(`awake:${f}`, () => makeDais(theme, 'awake', f))),
+    motes: Array.from({ length: WAY_FRAMES }, (_, f) => part(`motes:${f}`, () => makeOver('motes', f))),
+    warp: Array.from({ length: WARP_FRAMES }, (_, f) => part(`warp:${f}`, () => makeOver('warp', f))),
   };
 }

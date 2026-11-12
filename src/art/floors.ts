@@ -10,7 +10,9 @@ import { LAIR_TEMPLE, makeLairTempleArt } from './lair_temple';
 import { PRISON, makePrisonArt } from './prison';
 import { GROUNDS, makeGroundsArt } from './grounds';
 import { FIRST5 } from '../game/ways';
-import { cryptFloor, cryptGround, cryptProps, cryptWays } from './crypt';
+import { cryptFloor, cryptGround, cryptProps, cryptWaySteps, cryptWays } from './crypt';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 import type { WaypointArt } from './crypt_ways';
 import type { GroundArt } from './ground';
 import { lairGround, lairProps, lairWaypoint } from './lair';
@@ -39,8 +41,16 @@ export function lookProps(k: number): DungeonProps {
 let tombStair: Record<'x' | 'y', Sprite> | null = null;
 /** The stairwell (each way down) of look `k` alone (the town's are floor 1's), without making the rest of that floor's pictures. */
 export function lookStairs(k: number): Record<'x' | 'y', Sprite> {
-  if (k === 1 && TOMB.on) return (tombStair ??= { x: tombStairwell('x'), y: tombStairwell('y') });
+  if (k === 1 && TOMB.on) return (tombStair ??= { x: STAIRS_AHEAD.take('x', () => tombStairwell('x')), y: STAIRS_AHEAD.take('y', () => tombStairwell('y')) });
   return lookWays(k).stair;
+}
+/** (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) Floor 1's two stairwells, made ahead a step each. */
+const STAIRS_AHEAD = new Ahead();
+/** The steps that make look `k`'s stairwells alone, a way a step (none where they are made), then them. */
+export function lookStairSteps(k: number): LoadStep[] {
+  if (!(k === 1 && TOMB.on)) return [() => void lookStairs(k)];
+  if (tombStair) return [];
+  return [STAIRS_AHEAD.step('x', () => tombStairwell('x')), STAIRS_AHEAD.step('y', () => tombStairwell('y')), () => void lookStairs(1)];
 }
 
 /** The stairwell (each way down) and the waypoint of look `k` (1 to 5; the lair has no stairwell of its own: its way out is the mine shaft). */
@@ -52,6 +62,15 @@ export function lookWays(k: number): { stair: Record<'x' | 'y', Sprite>; way: Wa
   }
   if (k !== 5) return cryptWays(Math.max(1, k));
   return { stair: cryptWays(4).stair, way: lairWaypoint() };
+}
+
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) Look `k`'s ways made as steps, a part a step where they are the
+ * Crypt's (art/crypt.ts cryptWaySteps), then as lookWays makes them. None where they are made.
+ */
+export function lookWaySteps(k: number): LoadStep[] {
+  const crypt = k === 1 && TOMB.on ? 1 : k !== 5 ? Math.max(1, k) : 4;
+  return [...cryptWaySteps(crypt), ...(k === 1 && TOMB.on ? lookStairSteps(1) : []), () => void lookWays(k)];
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -83,6 +102,14 @@ export function lookPieces(k: number): Map<string, Piece> {
     PIECES.set(k, (m = new Map(list.map((p) => [p.name, p]))));
   }
   return m;
+}
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) Look `k`'s pieces made as steps: its builder first (it makes them
+ * all at once), then the pieces by name. None where they are made.
+ */
+export function lookPieceSteps(k: number): LoadStep[] {
+  if (PIECES.has(k)) return [];
+  return [() => void lookPieces(k)];
 }
 /** Let go of every floor's pieces but this one's (they are made again if they are wanted). */
 export function forgetPieces(keep: number): void {

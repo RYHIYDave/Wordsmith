@@ -127,7 +127,7 @@ import { CHAPEL_GATE, chapelGateDropAt, chapelGateSlam } from '../art/chapel_gat
 import { LAIR_GATE, lairGateDropAt, lairGateSlam } from '../art/lair_gate';
 import { EXIT_LABELS, exitLabels } from '../game/exit_labels';
 import type { Stage } from './dress';
-import { floorLook, lookStairs, lookWays } from '../art/floors';
+import { floorLook, lookStairSteps, lookStairs, lookWaySteps, lookWays } from '../art/floors';
 import { QUEST_MARKS } from '../game/quest_marks';
 import { drawQuestMark } from './quest_mark';
 import { OutdoorGround, PIECE as GROUND_PIECE, gateWardLand } from './outdoor';
@@ -136,7 +136,7 @@ import { HERO_WINDOW, WINDOW_FAINT, WallWindows, drawHoled, wallsThick } from '.
 import type { Hole, Window as WallWindow } from './act2_walls';
 // (ACT 2, THE GATE WARD: its houses walked into, whole until he is in one, and its traps by their beat)
 import { HouseShells, trapSprite } from './act2_houses';
-import { Act1Pieces, SEE_TALL } from './act1_pieces';
+import { Act1Pieces, SEE_TALL, act1PieceSteps } from './act1_pieces';
 import { TOPS_CACHE, TopsCache } from './tops_cache';
 import type { CachedTree, Chunk } from './tops_cache';
 import { RES } from '../engine/screen';
@@ -181,6 +181,10 @@ import { TINKER_TUNE } from '../game/tinkerer';
 import { drawRoyalCrest, royalCardSprite, royalLabelColor } from './royal_cards';
 import { ROYAL_NAMES } from '../game/royal_cards';
 import { ART_TWEAKS } from '../art/tweaks';
+import type { LoadStep } from '../engine/steps';
+import { tinkererFxSteps } from './tinkerer_fx';
+import { warlockFxSteps } from './warlock_fx';
+import { shaftStill } from '../art/shaft';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
 export const SEEN_THROUGH = 0.38;
@@ -3030,6 +3034,50 @@ export class Renderer {
     if (this.yard.on(L.floor)) this.yard.warm();
     this.lookOf(L)?.warm();
     if (L.ways) this.waysOf(L);
+  }
+
+  /**
+   * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) What `prepare` makes, as steps; and, ahead, what the world's first
+   * drawing would make the first time it is drawn: the effects' lists its draws ask for every frame, whoever the hero
+   * (render/fx_lists.ts), a frame a step; Act 1's and the Hush's and the High City's pieces of the floor, a list a step
+   * (render/act1_pieces.ts); the shaft's head standing still; the castle hall's stairs, gate, tiles and faces (render/castle.ts).
+   * Each is made by the same code and kept, so the drawing finds it made. What is left is made as the world is first drawn under
+   * the loading screen, the open ground's pieces asked of the ground's worker meanwhile (`asking`, groundComing).
+   */
+  prepareSteps(game: Game): LoadStep[] {
+    const L = game.level;
+    const out: LoadStep[] = [];
+    if (this.yard.on(L.floor)) out.push(() => this.yard.warm());
+    const look = this.lookOf(L);
+    if (look) out.push(() => look.warm());
+    // (and what its first drawing makes the first time, where it has steps of its own: render/looks.ts `steps`)
+    if (look?.steps) out.push(() => look.steps!(L));
+    if (L.ways) {
+      // (the floors' own ways, a part a step: art/floors.ts lookWaySteps; the camp's, the rim's and the hall's are their own)
+      if (!isCamp(L) && !this.rim.on(L) && !this.castle.on(L)) {
+        const k = L.town ? 1 : Math.max(1, floorLook(L.floor.depth));
+        out.push(() => lookWaySteps(k));
+      }
+      // (the hall's and the camp's stairs are floor 1's, a way a step; the hall's waypoint is the hall's own: render/castle.ts steps)
+      if (isCamp(L) || this.castle.on(L)) out.push(() => lookStairSteps(1));
+      out.push(() => void this.waysOf(L));
+      if (L.ways.shaft) out.push(() => void shaftStill());
+    }
+    out.push(...tinkererFxSteps(), ...warlockFxSteps());
+    if (L.act1) {
+      const n = L.act1.floor;
+      out.push(() => act1PieceSteps(n));
+    }
+    if (this.castle.on(L)) out.push(() => this.castle.drawSteps(L));
+    return out;
+  }
+  /** (main.ts LOAD_SLICE) Whether the open ground's pieces the screen shows are still to come from the ground's worker, as the world was last drawn. */
+  groundComing(): boolean {
+    return this.openGround && this.outdoor.missing > 0;
+  }
+  /** (main.ts LOAD_SLICE) While on, the world is drawn under the loading screen: the open ground's pieces asked of its worker, not painted at once (render/outdoor.ts `asking`). */
+  set underLoading(on: boolean) {
+    this.outdoor.asking = on;
   }
 
   draw(g: CanvasRenderingContext2D, W: number, H: number, game: Game, fx: Fx, t: number, pace = 1): Cam {

@@ -47,6 +47,8 @@ import { SHINES } from './floorkit';
 import type { Piece, PieceKind, Spot } from './floorkit';
 import { ossuaryPieces } from './floor4';
 import { CAVE_FRAMES, caveFilm } from './cave4';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 /** THE SWITCH: off until the main chat puts it in, on his yes. */
 export const CHAPEL = { on: false };
@@ -1388,8 +1390,17 @@ let made: ChapelArt | null = null;
 /** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
 export function forgetMade(): void {
   made = null;
+  STRETCH_AHEAD.clear();
 }
 /** The chapel's pictures, made the first time they are asked for and kept (the stretches and the cave when first asked for). */
+/** (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) The frames of the mine's break-in and of the way in, made ahead. */
+const STRETCH_AHEAD = new Ahead();
+/** The steps that make the break-in's (`way` false) or the way in's frames along `alongX` ahead, a frame a step, then it. */
+export function chapelStretchSteps(alongX: boolean, way: boolean): LoadStep[] {
+  const key = `${way ? 'way' : 'break'}${alongX}`;
+  const paint = (f: number): Sprite => (way ? wayInPicture(alongX, f) : breakInPicture(alongX, f));
+  return [...four.map((f) => STRETCH_AHEAD.step(`${key}:${f}`, () => paint(f))), () => void (way ? makeChapelArt().wayIn(alongX) : makeChapelArt().breakIn(alongX))];
+}
 export function makeChapelArt(): ChapelArt {
   if (made) return made;
   const floors = new Map<string, Sprite>();
@@ -1400,7 +1411,8 @@ export function makeChapelArt(): ChapelArt {
   const stretches = new Map<string, ChapelStretch>();
   const stretch = (key: string, make: (f: number) => Sprite): ChapelStretch => {
     let s = stretches.get(key);
-    if (!s) stretches.set(key, (s = { frames: four.map(make) }));
+    // (each frame a part a step of the loading screen's may have made ahead: chapelStretchSteps)
+    if (!s) stretches.set(key, (s = { frames: four.map((f) => STRETCH_AHEAD.take(`${key}:${f}`, () => make(f))) }));
     return s;
   };
   const own = ossuaryPieces().map(gradePiece);
@@ -1462,4 +1474,5 @@ export function makeChapelArt(): ChapelArt {
 /** Let the chapel's pictures go (they are made again if they are wanted). */
 export function forgetChapel(): void {
   made = null;
+  STRETCH_AHEAD.clear();
 }

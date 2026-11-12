@@ -75,6 +75,8 @@ import type { TownProps } from './town';
 import { makeWaypointArt } from './crypt_ways';
 import type { WaypointArt } from './crypt_ways';
 import { makeDungeonProps } from './props';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 /** THE SWITCH: off until the main chat puts it in, on his yes. */
 export const CASTLE_HALL = { on: false };
@@ -1459,23 +1461,54 @@ export function inTheHall(s: Sprite, tone: (c: string) => string = castleTone): 
   if (s.charge) n.charge = s.charge;
   return n;
 }
+/**
+ * THE HALL'S PICTURES IN PARTS (main.ts LOAD_SLICE, the loading screen's work in slices): what the hall makes all at once as it
+ * is made (its own pieces, its owl, its gate's pillar, its tiles) and the town's own things in its stone, each a part. As they
+ * are made each part is taken from here where a step of the loading screen has made it ahead (castleHallSteps), or made then, as
+ * before. A part is taken once, and all of it is let go of with the hall's pictures (forgetMade).
+ */
+const HALL_AHEAD = new Ahead();
+/** How a builder gets a part: `key` its name, `make` how it is made. Building, it is taken or made; planning, it is listed as a step. */
+type Part = (key: string, make: () => Sprite) => Sprite;
+const taken: Part = (key, make) => HALL_AHEAD.take(key, make);
+/** (planning: each part listed as a step of the loading screen's, nothing made; what the builder builds with it is thrown away) */
+const planned = (steps: LoadStep[]): Part => (key, make) => {
+  steps.push(HALL_AHEAD.step(key, make));
+  return null as unknown as Sprite;
+};
+/** (for the tests) How many parts are put by, not yet taken. */
+export function hallPartsHeld(): number {
+  return HALL_AHEAD.size;
+}
+/** The town's own things as the game paints them (art/town.ts), the base the hall's are made from: made by a step ahead, or at once. */
+let townBase: TownProps | null = null;
+
 /** The town's own things (art/town.ts makeTownProps, as the game knows them), in the castle's stone and timber. */
 function castleTown(): TownProps {
-  const g = makeTownProps(TOWN_THEME);
+  const g = (townBase ??= makeTownProps(TOWN_THEME));
+  townBase = null;
+  return castleTownOf(g, taken);
+}
+/** The same, a part at a time: `part` gives each (art/town.ts's own picture, laid in the hall's stone). */
+function castleTownOf(g: TownProps, part: Part): TownProps {
   const r = (s: Sprite): Sprite => inTheHall(s);
+  const one = (key: string, s: () => Sprite): Sprite => part(`town:${key}`, () => r(s()));
+  // (a list's frames each a part; a frame of a list painted the first time it is asked for, art/kit.ts lazyFrames, is not asked
+  // for until its part is made)
+  const all = (key: string, list: readonly Sprite[]): Sprite[] => Array.from({ length: list.length }, (_, i) => one(`${key}:${i}`, () => list[i]));
   const out: TownProps = {
-    forge: g.forge.map(r),
-    anvil: r(g.anvil),
-    rack: r(g.rack),
-    trough: r(g.trough),
-    tentBack: r(g.tentBack),
-    tentTable: r(g.tentTable),
-    rug: r(g.rug),
-    runeSlab: g.runeSlab.map(r),
-    runeStone: g.runeStone.map((q) => ({ dim: r(q.dim), alight: r(q.alight) })),
-    runeRing: g.runeRing.map(r),
-    lexicon: g.lexicon.map(r),
-    stash: r(g.stash),
+    forge: all('forge', g.forge),
+    anvil: one('anvil', () => g.anvil),
+    rack: one('rack', () => g.rack),
+    trough: one('trough', () => g.trough),
+    tentBack: one('tentBack', () => g.tentBack),
+    tentTable: one('tentTable', () => g.tentTable),
+    rug: one('rug', () => g.rug),
+    runeSlab: all('runeSlab', g.runeSlab),
+    runeStone: g.runeStone.map((q, v) => ({ dim: one(`runeStone${v}:dim`, () => q.dim), alight: one(`runeStone${v}:alight`, () => q.alight) })),
+    runeRing: all('runeRing', g.runeRing),
+    lexicon: all('lexicon', g.lexicon),
+    stash: one('stash', () => g.stash),
   };
   // (the ring made new (art/ring3.ts): its stones, its circle in the floor and its slab in the hall's stone; its column of light
   // and its swirling letters are light, the game's own)
@@ -1483,22 +1516,25 @@ function castleTown(): TownProps {
     const q = g.ring3;
     out.ring3 = {
       ...q,
-      stones: q.stones.map((a) => a.map((b) => b.map(r))),
-      floor: q.floor.map(r),
-      floorDark: r(q.floorDark),
-      slabEmpty: r(q.slabEmpty),
-      slabSet: q.slabSet.map(r),
-      slabRunes: q.slabRunes.map(r),
-      slab: q.slab.map(r),
-      fuse: q.fuse.map(r),
+      stones: q.stones.map((a, v) => a.map((b, k) => all(`ring:stone${v}:${k}`, b))),
+      floor: all('ring:floor', q.floor),
+      floorDark: one('ring:floorDark', () => q.floorDark),
+      slabEmpty: one('ring:slabEmpty', () => q.slabEmpty),
+      slabSet: all('ring:slabSet', q.slabSet),
+      slabRunes: all('ring:slabRunes', q.slabRunes),
+      slab: all('ring:slab', q.slab),
+      fuse: all('ring:fuse', q.fuse),
     };
   }
   return out;
 }
 /** The waypoint (art/crypt_ways.ts makeWaypointArt): its dais asleep and awake in the hall's stone; its motes and its warp, light, the game's own. */
 function castleWay(): WaypointArt {
-  const w = makeWaypointArt(TOWN_THEME);
-  return { ...w, asleep: inTheHall(w.asleep), awake: w.awake.map((s) => inTheHall(s)) };
+  return castleWayOf(taken);
+}
+/** The same, a part at a time: `part` gives each (the dais, asleep and awake, laid in the hall's stone; its motes and its warp as they are). */
+function castleWayOf(part: Part): WaypointArt {
+  return makeWaypointArt(TOWN_THEME, (key, make) => (key === 'asleep' || key.startsWith('awake:') ? part(`way:hall:${key}`, () => inTheHall(make())) : part(`way:${key}`, make)));
 }
 /** The braziers, the barrels and the urn the town stands about (art/props.ts), their iron grey steel and their staves the hall's timber. */
 export interface CastleProps {
@@ -1582,6 +1618,10 @@ export interface CastleHallArt {
   slatLights(): SlatLight[];
   /** THE TOWN'S OWN THINGS in the castle's stone and timber: in place of the game's `art.town` (art/town.ts makeTownProps) while CASTLE_HALL is on (made when first asked for). */
   readonly town: TownProps;
+  /** Whether they are made yet (castleHallSteps). */
+  townMade(): boolean;
+  /** Whether the waypoint's are made yet (castleHallSteps). */
+  wayMade(): boolean;
   /** THE WAYPOINT's dais in the castle's stone: in place of the town's (made when first asked for). */
   readonly way: WaypointArt;
   /** THE BRAZIERS, BARRELS AND URN of the town, their iron grey steel and their staves the hall's timber: in place of the game's `art.props`' (made when first asked for). */
@@ -1603,11 +1643,66 @@ export const AIR_DEPTH = 2.5;
 /** How much further in than the wall's foot a truss stands (x + y of its anchor + this): after the faces it lies over. */
 export const TRUSS_DEPTH = 0.05;
 
-const four = [0, 1, 2, 3];
+
 let made: CastleHallArt | null = null;
 /** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
 export function forgetMade(): void {
   made = null;
+  HALL_AHEAD.clear();
+  townBase = null;
+}
+/**
+ * THE HALL'S PICTURES AS STEPS OF THE LOADING SCREEN'S (main.ts LOAD_SLICE): each part it makes at once, then the hall itself
+ * (it takes them), then the town's own things in its stone, a part a step (art/town.ts's base first). None where they are made.
+ */
+export function castleHallSteps(): LoadStep[] {
+  const steps: LoadStep[] = [];
+  if (!made) {
+    hallPartsOf(planned(steps));
+    steps.push(() => void owlFrames());
+    steps.push(() => void makeCastleHallArt());
+  }
+  steps.push(() => {
+    if (!made || made.townMade()) return;
+    const g = (townBase ??= makeTownProps(TOWN_THEME));
+    const more: LoadStep[] = [];
+    castleTownOf(g, planned(more));
+    more.push(() => void made?.town);
+    return more;
+  });
+  // (its waypoint: render.ts waysOf asks for it as the level's own pictures are made)
+  steps.push(() => {
+    if (!made || made.wayMade()) return;
+    const more: LoadStep[] = [];
+    castleWayOf(planned(more));
+    more.push(() => void made?.way);
+    return more;
+  });
+  return steps;
+}
+/** What the hall makes at once as it is made, a part at a time: `part` gives each (planning, it lists them). */
+function hallPartsOf(part: Part): { pillar: Sprite; owl: Sprite[]; tiles: Sprite[]; pieces: Piece[] } {
+  const all = (key: string, n: number, make: (i: number) => Sprite): Sprite[] => Array.from({ length: n }, (_, i) => part(`${key}:${i}`, () => make(i)));
+  return {
+    pillar: part('pillar', gatePillar),
+    // (the owl's frames, all made at once and kept: art/hall_owl.ts; a step of their own, ahead, castleHallSteps)
+    get owl() {
+      return owlFrames();
+    },
+    tiles: [part('moss', () => mossTile(521)), part('moss, a little', () => mossTile(523)), part('grass and flowers', () => grassTile(531)), part('grass', () => grassTile(537))],
+    pieces: [
+      { name: 'a hammer-beam truss', kind: 'on the wall', frames: [part('truss', () => trussPicture(true))] },
+      { name: 'a wall post and brace', kind: 'on the wall', frames: [part('post', () => trussPicture(false))] },
+      ...SUN_WINDOWS.map((W, i) => ({ name: `the sun in the air, window ${i + 1}`, kind: 'on the floor' as PieceKind, frames: all(`air${i}`, 4, (f) => airOf(W, f)) })),
+      { name: 'potted herbs', kind: 'on the floor', frames: [part('herbs', () => potPicture({ r: 0.2, h: 15, kind: 'herb', seed: 3 }))], shadow: 0.25 },
+      { name: 'potted flowers', kind: 'on the floor', frames: [part('flowers', () => potPicture({ r: 0.2, h: 16, kind: 'flower', seed: 1 }))], shadow: 0.25 },
+      { name: 'a bay tree in a pot', kind: 'on the floor', frames: [part('bay', () => potPicture({ r: 0.22, h: 19, kind: 'bay', seed: 2 }))], shadow: 0.28 },
+      { name: 'a fern in a pot', kind: 'on the floor', frames: [part('fern', () => potPicture({ r: 0.22, h: 17, kind: 'fern', seed: 8 }))], shadow: 0.28 },
+      { name: 'ivy at the foot of a wall, along x', kind: 'on the floor', frames: [part('ivy x', () => ivyMound(true, 541))] },
+      { name: 'ivy at the foot of a wall, along y', kind: 'on the floor', frames: [part('ivy y', () => ivyMound(false, 547))] },
+      { name: 'a pillar of the hall', kind: 'obstacle', frames: [part('hall pillar', pillarPicture)], shadow: 0.4 },
+    ],
+  };
 }
 /** The hall's pictures, made the first time they are asked for and kept (the heavy ones when first asked for). */
 export function makeCastleHallArt(): CastleHallArt {
@@ -1619,7 +1714,8 @@ export function makeCastleHallArt(): CastleHallArt {
   const arches = new Map<boolean, Strip[]>();
   const beyonds = new Map<boolean, Sprite>();
   const stairs = new Map<string, Sprite>();
-  const pillar = gatePillar();
+  const own = hallPartsOf(taken);
+  const pillar = own.pillar;
   let town: TownProps | null = null;
   let way: WaypointArt | null = null;
   let props: CastleProps | null = null;
@@ -1630,7 +1726,7 @@ export function makeCastleHallArt(): CastleHallArt {
       if (!s) floors.set(key, (s = tileOf((x, y) => hallFloorAt(x, y), tx, ty)));
       return s;
     },
-    tiles: [tile('moss', [mossTile(521)]), tile('moss, a little', [mossTile(523)]), tile('grass and flowers in the joints', [grassTile(531)]), tile('grass in the joints', [grassTile(537)])],
+    tiles: [tile('moss', [own.tiles[0]]), tile('moss, a little', [own.tiles[1]]), tile('grass and flowers in the joints', [own.tiles[2]]), tile('grass in the joints', [own.tiles[3]])],
     sun: sunTile,
     face(alongX, tx, ty) {
       const along = alongX ? tx : ty;
@@ -1660,19 +1756,8 @@ export function makeCastleHallArt(): CastleHallArt {
       if (!s) stairs.set(way, (s = stairsDown(way)));
       return s;
     },
-    owl: { frames: owlFrames(), at: CASTLE_OWL_AT, frameAt: owlFrameAt, loop: OWL_LOOP, loopSecs: OWL_LOOP_SECS },
-    pieces: [
-      { name: 'a hammer-beam truss', kind: 'on the wall', frames: [trussPicture(true)] },
-      { name: 'a wall post and brace', kind: 'on the wall', frames: [trussPicture(false)] },
-      ...SUN_WINDOWS.map((W, i) => ({ name: `the sun in the air, window ${i + 1}`, kind: 'on the floor' as PieceKind, frames: four.map((f) => airOf(W, f)) })),
-      { name: 'potted herbs', kind: 'on the floor', frames: [potPicture({ r: 0.2, h: 15, kind: 'herb', seed: 3 })], shadow: 0.25 },
-      { name: 'potted flowers', kind: 'on the floor', frames: [potPicture({ r: 0.2, h: 16, kind: 'flower', seed: 1 })], shadow: 0.25 },
-      { name: 'a bay tree in a pot', kind: 'on the floor', frames: [potPicture({ r: 0.22, h: 19, kind: 'bay', seed: 2 })], shadow: 0.28 },
-      { name: 'a fern in a pot', kind: 'on the floor', frames: [potPicture({ r: 0.22, h: 17, kind: 'fern', seed: 8 })], shadow: 0.28 },
-      { name: 'ivy at the foot of a wall, along x', kind: 'on the floor', frames: [ivyMound(true, 541)] },
-      { name: 'ivy at the foot of a wall, along y', kind: 'on the floor', frames: [ivyMound(false, 547)] },
-      { name: 'a pillar of the hall', kind: 'obstacle', frames: [pillarPicture()], shadow: 0.4 },
-    ],
+    owl: { frames: own.owl, at: CASTLE_OWL_AT, frameAt: owlFrameAt, loop: OWL_LOOP, loopSecs: OWL_LOOP_SECS },
+    pieces: own.pieces,
     slatLights() {
       const L = CASTLE_LIGHTS.slat;
       const out: SlatLight[] = [];
@@ -1687,6 +1772,8 @@ export function makeCastleHallArt(): CastleHallArt {
     get town() {
       return (town ??= castleTown());
     },
+    townMade: () => town !== null,
+    wayMade: () => way !== null,
     get way() {
       return (way ??= castleWay());
     },
