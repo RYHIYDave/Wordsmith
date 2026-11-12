@@ -29,6 +29,14 @@ import type { RNG } from '../engine/rng';
 
 /** On (his 9 Nov 2026, 08:22, “It’s good.”, and “Yes, release it (Recommended)”): floor 10 is the Swamp Colossus's. Off, the old Drowned Eye's. */
 export const COLOSSUS = { on: true };
+/**
+ * PHASE 2'S GAZE AIMED AT THE HERO (the queue's aim-colossus-phase-2-gaze, found by the main chat; he has not asked for it). Off, as
+ * before: the beam laid toward the hero but his eye painted looking at one fixed spot (his `gaze` pictures, the art's film take). On:
+ * the gaze laid along the nearest of `BODY2.aims` to the hero, as phase 3's is, and his tongue and eye pictured aimed along it
+ * (tools/bake_colossus.ts `p2body` and `gaze2.<j>`: the art's bodyFrame aimed), the beam leaving his eye where his picture has it.
+ * OFF UNTIL HE HAS SEEN IT AND SAID YES (his rule: pictures first).
+ */
+export const GAZE2_AIMED = { on: false };
 
 const FPS = 30;
 const fr = (n: number): number => n / FPS;
@@ -216,6 +224,9 @@ export const GAZE = { warn: 0.9, sweep: 1.2, half: 32, width: 0.9, long: fr(102)
  *     `pool.hold`, gone at `pool.life`), burning whoever stands in it every `pool.tick` s. He is back in his stand at `long`.
  *   THE GAZE: as phase 3's (GAZE), from the water under his eye at his place (`gazeAt`), swept from his left to his right as the art
  *     paints it (its beam on at `GAZE.warn`); his middle tentacle, in the arc, ducks under the water through it (`duck` state).
+ *     With GAZE2_AIMED on, laid along the nearest of `aims` to the hero (degrees from straight out over the stone, + toward its right
+ *     end: every hero's spot on the stone is within 64 of straight out from `gazeAt`), each pictured so; its sides held within `lim`
+ *     of straight out, as the art's gazeArcAt holds them (past about 64 the beam is off the stone).
  */
 export const BODY2 = {
   at: 24,
@@ -223,7 +234,18 @@ export const BODY2 = {
   first: 6,
   bile: { release: fr(28), land: fr(49), long: fr(65), splash: 2.2, pool: { r: 1.9, spread: 0.2, hold: 1.4, life: 3.0, tick: 0.5 } },
   gazeAt: { u: 8.15, v: -4.28 },
+  aims: [-60, -40, -20, 0, 20, 40, 60] as readonly number[],
+  lim: 85,
 } as const;
+/** (Phase 2, GAZE2_AIMED) The baked aim nearest the line to a place from the water under his eye at his place (its index). */
+export function gaze2AimNear(p: P2): number {
+  const toward = Math.atan2(p.u - BODY2.gazeAt.u, p.v - BODY2.gazeAt.v) / D;
+  let best = 0;
+  BODY2.aims.forEach((a, i) => {
+    if (Math.abs(a - toward) < Math.abs(BODY2.aims[best] - toward)) best = i;
+  });
+  return best;
+}
 /**
  * THE EYE SLAM: his eye reared back (the warning, `warn` seconds: a circle where it will land, where the hero stands, no further
  * than `reach` tiles from his eye), slammed down on the stone at `hit`, hurting within `r`; lying there to `up` (struck there as
@@ -480,6 +502,8 @@ export interface BodyMove {
   a0: number;
   a1: number;
   landed: boolean;
+  /** (The gaze, GAZE2_AIMED on) Which of its pictures: the index of its aim in `BODY2.aims`. */
+  pic?: number;
 }
 /** (Phase 2) A burning pool of his bile: where, seconds since it landed, the next burn. */
 export interface Pool {
@@ -1030,8 +1054,15 @@ export class ColossusFight {
         // (his middle tentacle stands in the arc: the gaze waits for it to stand, and it ducks under through it)
         if (mid && mid.state !== 'stand' && mid.state !== 'dying' && mid.state !== 'dead') return;
         const o = BODY2.gazeAt;
-        const toward = Math.atan2(hero.u - o.u, hero.v - o.v) / D;
-        this.body2 = { kind: 'gaze', t: 0, at: { u: o.u, v: o.v }, a0: toward - GAZE.half, a1: toward + GAZE.half, landed: false };
+        if (GAZE2_AIMED.on) {
+          // (along the nearest aim pictured, its sides held where the art holds them)
+          const j = gaze2AimNear(hero);
+          const aim = BODY2.aims[j];
+          this.body2 = { kind: 'gaze', t: 0, at: { u: o.u, v: o.v }, a0: Math.max(-BODY2.lim, aim - GAZE.half), a1: Math.min(BODY2.lim, aim + GAZE.half), landed: false, pic: j };
+        } else {
+          const toward = Math.atan2(hero.u - o.u, hero.v - o.v) / D;
+          this.body2 = { kind: 'gaze', t: 0, at: { u: o.u, v: o.v }, a0: toward - GAZE.half, a1: toward + GAZE.half, landed: false };
+        }
         if (mid && mid.state === 'stand') {
           mid.state = 'duck';
           mid.t = 0;
