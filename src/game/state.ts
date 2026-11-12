@@ -321,6 +321,15 @@ export interface Hero {
   /** RED MIST (the Warrior's battle axe talent, game/talents.ts WARRIOR_TUNE): kills held, and the seconds left of them. */
   redMist?: number;
   redMistT?: number;
+  /**
+   * THE WARRIOR'S THROWN AXE (WARRIOR_TREE2; the art chat's README, step 3b, at his words of 11 Nov 2026, 09:03 to 09:07): his
+   * hands empty while it flies (`handsEmpty`), till a tap makes an axe appear in them (`appear`: this attack began so, its first
+   * frames the axe gathering) or it comes back; and when the game's clock last saw it come back to empty hands (`caughtAt`: the
+   * catch). Coming back to hands that hold one, it is gone into it (an 'axeGlint').
+   */
+  handsEmpty?: boolean;
+  appear?: boolean;
+  caughtAt?: number;
   /** Harm from monsters that carry element words. */
   burnT: number;
   burnDps: number;
@@ -1757,6 +1766,8 @@ export type GameEvent =
   | { t: 'notch'; x: number; y: number; n: number; cut: number }
   /** THE WARRIOR'S BATTLE AXE: his thrown axe turns for home, here. */
   | { t: 'axeTurn'; x: number; y: number }
+  | { t: 'axeCatch'; x: number; y: number }
+  | { t: 'axeGlint'; x: number; y: number }
   | { t: 'levelup' };
 
 /** What the player is asking for this frame, already converted to world space. */

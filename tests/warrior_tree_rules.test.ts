@@ -193,3 +193,53 @@ test('5. Leaping Chop: the blow 1.5 tiles before where he lands, 1.6 round', () 
   assert.ok(near(blow.x - g.hero.x, 1.5, 0.05) && near(blow.r, 1.6, 0.05), `${(blow.x - g.hero.x).toFixed(2)} before him, ${blow.r} round`);
   void a;
 }));
+
+// THE THROWN AXE AND HIS HANDS (the art chat's README, step 3b; his words of 11 Nov 2026, 09:03: “I want to make sure you can still
+// do the tap attack while the axe hold is still flying”, and 09:07: “I understand that the axe is going to kind of materialize to
+// keep fighting but I do need that to work that way”)
+test('6. thrown, his hands are empty; it comes back to them, caught', () => treeOn(() => {
+  const { g, seen } = warrior(['battleaxe']);
+  use(g, seen, 1, g.hero.x + 4, g.hero.y);
+  assert.equal(g.hero.handsEmpty, true, 'empty while it flies');
+  run(g, seen, 3);
+  assert.ok(seen.some((e) => e.t === 'axeCatch'), 'caught');
+  assert.ok(!seen.some((e) => e.t === 'axeGlint'), 'no glint');
+  assert.equal(g.hero.handsEmpty, false, 'in his hands again');
+}));
+
+test('7. a tap while it flies: an axe appears and he Cleaves; the thrown one, back, is gone into it with a glint', () => treeOn(() => {
+  const { g, a, seen } = warrior(['battleaxe']);
+  const m = put(g, a, 'skeleton', 1.3, 0.2);
+  use(g, seen, 1, g.hero.x + 4, g.hero.y - 3);
+  assert.equal(g.hero.handsEmpty, true);
+  const life = m.life;
+  use(g, seen, 0, m.x, m.y);
+  assert.equal(g.hero.appear, true, 'the tap began with the axe appearing');
+  assert.ok(m.life < life, 'and it Cleaved');
+  run(g, seen, 3);
+  assert.ok(seen.some((e) => e.t === 'axeGlint'), 'the glint');
+  assert.ok(!seen.some((e) => e.t === 'axeCatch'), 'no catch');
+}));
+
+test('8. a throw broken off leaves the axe in his hands', () => treeOn(() => {
+  const { g, seen } = warrior(['battleaxe']);
+  const h = g.hero;
+  for (const s of h.skills) s.cd = 0;
+  const c = emptyControls();
+  c.cast = true;
+  c.castX = h.x + 4;
+  c.castY = h.y;
+  c.aimX = c.castX;
+  c.aimY = c.castY;
+  g.update(DT, c);
+  assert.equal(h.handsEmpty, true, 'winding up the throw');
+  // (a swipe breaks it off)
+  const d = emptyControls();
+  d.evade = true;
+  d.evadeX = h.x - 3;
+  d.evadeY = h.y;
+  g.update(DT, d);
+  run(g, seen, 0.5);
+  assert.equal(g.projectiles.filter((p) => p.returns).length, 0, 'none thrown');
+  assert.equal(h.handsEmpty, false, 'in his hands');
+}));

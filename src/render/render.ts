@@ -36,6 +36,8 @@ import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { HeroArt } from '../art/heroes';
 import { HEAVY_PLACES } from '../art/heroes';
 import { heavyDrawn } from '../game/talents';
+import { AXE_FLIGHT, axeFlying } from '../art/warrior_up_axe_moves';
+import { WARRIOR_UP } from '../art/warrior_up';
 import { WORD_COLOR, itemPic } from '../art/icons';
 import type { IconArt } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
@@ -2785,6 +2787,9 @@ export class Renderer {
     return s && SKILLS[s.id].kind === 'whirl' ? 'whirl' : 'beam';
   }
 
+  /** (THE WARRIOR'S BATTLE AXE) His thrown axe's pictures in the air, made the first time one is thrown. */
+  private axeFly: Sprite[] | null = null;
+
   /** The hero's pictures: the class decides the figure, and what is in the hands shows on it. */
   private heroArt(game: Game): ActorArt {
     const h = game.hero;
@@ -3880,7 +3885,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0, ...(heavyDrawn(h.cls, h.talents) === 'axe' ? { axe: { empty: !!h.handsEmpty, caughtT: h.caughtAt !== undefined ? game.time - h.caughtAt : -1, appear: !!h.appear } } : {}) }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       // (THE VETERAN in a move: its frame, turned as he faced as it began: render/veteran_fx.ts. Not narrowed in a turn.)
       const vetSp = this.vetFx.shown(game, heroArt);
       if (vetSp) sp = vetSp;
@@ -4243,9 +4248,16 @@ export class Renderer {
         if (onScreen(p.x, p.y)) drawGreatArrow(g, this.floorAt, p.x, p.y, AIM.z, p.vx / v, p.vy / v, t);
         continue;
       }
-      // (THE WARRIOR'S BATTLE AXE: his thrown axe turning end over end, a stand-in until the art chat's picture of it)
+      // (THE WARRIOR'S BATTLE AXE: his thrown axe spinning flat, the art chat's pictures of it, art/warrior_up_axe_moves.ts axeFlying,
+      // a turn in AXE_FLIGHT.turn seconds; its anchor the floor under it. Where his pictures are not his own, the stand-in)
       if (p.look === 'axe') {
-        if (onScreen(p.x, p.y)) drawThrownAxe(g, wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 12, p.age);
+        if (onScreen(p.x, p.y)) {
+          if (WARRIOR_UP.on) {
+            const fly = (this.axeFly ??= axeFlying());
+            const sp = fly[Math.floor((p.age / AXE_FLIGHT.turn) * fly.length) % fly.length];
+            g.drawImage(sp.img, Math.round(wx(cam, p.x, p.y) - sp.ax), Math.round(wy(cam, p.x, p.y) - sp.ay), sp.w, sp.h);
+          } else drawThrownAxe(g, wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 12, p.age);
+        }
         continue;
       }
       // (a hero's arrow, with the ranger's new pictures: from where the arrow on his string was, at its height: game/defs.ts, RANGER_ARROW)

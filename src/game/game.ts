@@ -4779,6 +4779,9 @@ export class Game {
     // (THE LAST WORDS, on monsters: his bleeding runs out)
     if (h.heroBleedT) h.heroBleedT = Math.max(0, h.heroBleedT - dt);
     if (h.redMistT) h.redMistT = Math.max(0, h.redMistT - dt);
+    // (THE WARRIOR'S THROWN AXE: his hands are empty only while one is out, or its throw is being wound up: a throw broken off
+    // leaves it in them)
+    if (h.handsEmpty && !(h.windup && SKILLS[h.skills[h.windup.skill].id].returns) && !this.projectiles.some((p) => p.returns && !p.hostile)) h.handsEmpty = false;
     // (Frenzied: the frenzy makes every cooldown come round faster; STILLING, on a monster, slower)
     const pace = this.frenzyPace() * ((h.stillT ?? 0) > 0 ? 1 - (h.stillK ?? 0) : 1);
     for (const s of h.skills) {
@@ -5105,6 +5108,15 @@ export class Game {
     h.attackT = wind + follow;
     h.animT = 0;
     h.windup = { skill: i, tx, ty, t: wind };
+    // (THE WARRIOR'S THROWN AXE: a tap while it flies and his hands are empty, an axe appears in them and he Cleaves; his words of
+    // 11 Nov 2026, 09:07: “I understand that the axe is going to kind of materialize to keep fighting but I do need that to work
+    // that way”. Throwing it leaves his hands empty)
+    h.appear = false;
+    if (h.handsEmpty && i === 0) {
+      h.appear = true;
+      h.handsEmpty = false;
+    }
+    if (SKILLS[h.skills[i].id].returns) h.handsEmpty = true;
     // (THE SECOND BATCH: the bow drawn for a shot or a volley; the Brawler's fist through the air)
     const begun = SKILLS[h.skills[i].id];
     if (wind > 0.05 && (h.skills[i].id === 'shot' || begun.kind === 'volley')) this.sfx('bowDraw', 0.5);
@@ -12564,6 +12576,15 @@ export class Game {
             const bd = Math.hypot(bx, by);
             if (bd < 0.6 || p.age > 6) {
               dead = true;
+              // (back to his hands: to empty hands, caught (Twin Axes' two in the one catch, as the last comes); to hands that hold
+              // one, gone into it, a glint)
+              const others = this.projectiles.some((o) => o !== p && o.returns && !o.hostile);
+              if (!h.handsEmpty) this.emit({ t: 'axeGlint', x: h.x, y: h.y });
+              else if (!others) {
+                h.handsEmpty = false;
+                h.caughtAt = this.time;
+                this.emit({ t: 'axeCatch', x: h.x, y: h.y });
+              }
               break;
             }
             const v = Math.hypot(p.vx, p.vy) || 1;

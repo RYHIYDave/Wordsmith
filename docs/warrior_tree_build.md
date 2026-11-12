@@ -41,6 +41,15 @@ has seen it in play and said yes; nothing he sees changes while it is off.
    daze fading 0.15 a second, a full daze a 1 s stun (two blows in quick turn stun; game.ts `smashed`; bosses are not stunned,
    as ever). Wide Swing sweeps the Smash round as a Cleave, each struck smashed. NOT YET: the leaps' crouches (0.167, 0.2 s),
    the Charge's 0.5 s and skid, its throw aside, Twin Axes' second 0.1 s after.
+3b. DONE (tests/warrior_tree_rules.test.ts 6 to 8, pass): THE THROWN AXE AND HIS HANDS. game/state.ts Hero.handsEmpty, appear,
+   caughtAt; the 'axeCatch' and 'axeGlint' events. Thrown, his hands are empty (a throw broken off leaves it in them); a tap while
+   they are empty: an axe appears and he Cleaves (`appear`); back to empty hands, caught (Twin Axes' two in the one catch);
+   back to hands that hold one, gone into it (the glint). render/figure.ts `axeFrame`: braced (`clips.hold`) or running
+   (`clips.moves.runEmpty`) while it flies, the catch (`clips.release`, on the run `clips.moves.runCatch`), the tap's first
+   pictures the axe appearing (`clips.moves.cleaveAppear`); render.ts passes it, and draws the thrown axe from the art's
+   pictures (`axeFlying`, a turn in AXE_FLIGHT.turn). NOT YET: the glint drawn (fx.ts, `axeGlint()` over him a fifth of a
+   second), the quaking ground (art/warrior_up_quake_ground.ts `quakeGround`, the floor's stone) in place of the slam ring, the
+   leaps' crouches (`chopCrouch`, `chargeCrouch`), the hammer's `land` skid after the Charge.
 3. The rules to the art's timings and his rules (the README's “What the main chat needs”, for both weapons): Cleave, the thrown
    axe (out at 0.367 s, AXE_FLIGHT, back, the catch; Twin Axes 14 degrees, the second 0.1 s after), Leaping Chop (0.167 s
    crouched; the blow 1.5 tiles before his feet, 1.6 round), Smash (0.433 s; 0.4 round a point 1.4 before him), Earthquake
