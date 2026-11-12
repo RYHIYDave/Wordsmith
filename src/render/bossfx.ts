@@ -88,8 +88,8 @@ export class BossFx {
   /** What lights the dark this frame (gathered as things are drawn; given out by `lights`). */
   private spots: [number, number, number, number][] = [];
 
-  /** `films`: a film the painter has made (render/painter.ts filmOf), or null. */
-  constructor(private readonly bestiary: Bestiary, private readonly films: <T>(key: string) => T | null = () => null) {}
+  /** `films`: a film the painter has made (render/painter.ts filmOf), or null. `paints`: whether a figure's frames are the painter's (Act1FxCtx.paints). */
+  constructor(private readonly bestiary: Bestiary, private readonly films: <T>(key: string) => T | null = () => null, private readonly paints: (figure: string) => boolean = () => false) {}
 
   /** Begin a frame. */
   begin(): void {
@@ -521,7 +521,7 @@ export class BossFx {
    */
   private act1Layer(layer: 'ground' | 'standing' | 'air' | 'glow', g: CanvasRenderingContext2D | null, at: FloorAt, game: Game, t: number, here: (x: number, y: number) => boolean, stand: StandFn | null): void {
     let c: Act1FxCtx | null = null;
-    const ctx = (): Act1FxCtx => (c ??= { g, at, game, t, bestiary: this.bestiary, stand: stand ?? (() => undefined), spot: (x, y, r, a) => void this.spots.push([x, y, r, a]), film: this.films });
+    const ctx = (): Act1FxCtx => (c ??= { g, at, game, t, bestiary: this.bestiary, stand: stand ?? (() => undefined), spot: (x, y, r, a) => void this.spots.push([x, y, r, a]), film: this.films, paints: this.paints });
     for (const m of game.monsters) {
       if (m.dead) continue;
       const fx = act1Fx(m.kind);
