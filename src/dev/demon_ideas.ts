@@ -29,7 +29,7 @@ import type { Sculpt, Drawn, Hit } from './sculpt';
 import { IVORY } from './sculpt_warlock';
 import { tone5 } from './sculpt_demon';
 import { HEAD_K, HORN_BLACK, MOUTH, U, WORLD, arm, axes, bigger, claws, dot, eye, fleshOf, from, lifted, paintDemon, spike, tailOf, wolfFrame } from './demon_new';
-import type { Built, Frame, Kit } from './demon_new';
+import type { Built, Frame, Kit, Moving } from './demon_new';
 
 export const IDEAS: { name: string; says: string }[] = [
   { name: '1. YOURS, REBUILT', says: 'the demon you have, on the new frame: dark hide, swept horns, the snarling beast face, wings' },
@@ -90,23 +90,34 @@ function teeth(h: Head, mat: number, n: number, span: number, cf: number, rf: nu
  * over and outside its shoulder, three fingers hanging from it down and back, the skin between them bellied out and its edge
  * drawn up in a scallop between each two tips; never one flat sheet.
  */
-function cloakWings(k: Kit, skin: number, bone: number, talon: number, fr: Frame, size: number, open = 1): V3[] {
+function cloakWings(k: Kit, skin: number, bone: number, talon: number, fr: Frame, size: number, open0 = 1): V3[] {
   const { sc } = k;
   const ends: V3[] = [];
+  // (MOVING, dev/shadow_moves.ts: held as the moment has them, `k.wings`; and turned with its chest as it twists, upright
+  // still. A still's, not given: as they always were, to the last digit)
+  const w = k.wings;
+  const open = open0 * (w?.open ?? 1);
+  const lift = w?.lift ?? 1;
+  const sweep = w?.sweep ?? 0;
+  const trail = w?.tip ?? 0;
+  const cf = w ? norm([k.s.chest[0][0], k.s.chest[0][1], 0], [1, 0, 0]) : ([1, 0, 0] as V3);
+  const cl: V3 = [-cf[1], cf[0], 0];
+  /** A place off a point of it: so far forward, to its left and up, by its chest's own heading. */
+  const off = (p: V3, f: number, l: number, u: number): V3 => add(p, add(mul(cf, f * size), add(mul(cl, l * size), [0, 0, u * size])));
   for (const side of [1, -1] as const) {
     const piece = side > 0 ? 'wingL' : 'wingR';
-    const R = add(fr.spine(0.5), [0, side * 8, 0]);
-    const E = add(R, mul([-10, side * 12 * open, 18], size));
-    const W = add(E, mul([-4, side * 13 * open, 13], size));
-    const tips: V3[] = [add(W, mul([5, side * 14 * open, -22], size)), add(W, mul([-10, side * 10 * open, -38], size)), add(W, mul([-21, side * 1, -48], size))];
+    const R = add(fr.spine(0.5), mul(cl, side * 8));
+    const E = off(R, -10 - sweep * 0.45, side * 12 * open, 18 * lift);
+    const W = off(E, -4 - sweep * 0.55, side * 13 * open, 13 * lift);
+    const tips: V3[] = [off(W, 5 - trail * 0.5, side * 14 * open, -22 + trail * 0.25), off(W, -10 - trail * 0.8, side * 10 * open, -38 + trail * 0.5), off(W, -21 - trail, side * 1, -48 + trail * 0.8)];
     ends.push(...tips);
-    const B = add(fr.spine(1.7), [-2, side * 5, 0]);
+    const B = add(fr.spine(1.7), add(mul(cf, -2), mul(cl, side * 5)));
     sc.cone(bone, piece, R, E, 3.2, 2.5, 0.8, { tag: 'wingarm' });
     sc.cone(bone, piece, E, W, 2.5, 1.9, 0.6, { tag: 'wingarm' });
-    spike(k, talon, piece, [W, add(W, [1, side * 2, 5]), add(W, [4, side * 2, 9])], 1.6, 'claw');
+    spike(k, talon, piece, [W, add(W, add(mul(cf, 1), add(mul(cl, side * 2), [0, 0, 5]))), add(W, add(mul(cf, 4), add(mul(cl, side * 2), [0, 0, 9])))], 1.6, 'claw');
     // (each finger bowed, not a straight rod)
     for (const tp of tips) {
-      const mid = add(lerp3(W, tp, 0.55), [-3 * size, side * 2.5 * size, 2 * size]);
+      const mid = off(lerp3(W, tp, 0.55), -3, side * 2.5, 2);
       sc.cone(bone, piece, W, mid, 1.6, 1.1, 0.3, { tag: 'finger' });
       sc.cone(bone, piece, mid, tp, 1.1, 0.4, 0.3, { tag: 'finger' });
     }
@@ -115,7 +126,7 @@ function cloakWings(k: Kit, skin: number, bone: number, talon: number, fr: Frame
       const P = edge[i];
       const Q = edge[i + 1];
       let n = norm(cross(sub(P, W), sub(Q, W)));
-      if (n[0] > 0) n = mul(n, -1);
+      if (dot(n, cf) > 0) n = mul(n, -1);
       // (the middle of its edge drawn up toward the wrist, a scallop; the skin bellied out behind)
       const M = add(lerp3(lerp3(P, Q, 0.5), W, 0.36), mul(n, 5 * size));
       sc.tri(skin, piece, W, P, M, 0.7, 0.5, { tag: 'membrane' });
@@ -556,8 +567,8 @@ function idea10(k: Kit): Built {
 const BUILDERS = [idea1, idea2, idea3, idea4, idea5, idea6, idea7, idea8, idea9, idea10];
 
 /** The Living Shadow, his pick, at a moment: on the werewolf's frame in a pose, from in front or behind, turned `turn`. */
-export function shadowFrame(view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false): Drawn {
-  return paintDemon(shadowInto, view, pose, turn, t, tail, paws);
+export function shadowFrame(view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false, more: Moving = {}): Drawn {
+  return paintDemon(shadowInto, view, pose, turn, t, tail, paws, more);
 }
 /** One of the ten ideas (1 to 10) at a moment: on the werewolf's frame in a pose, from in front or behind, turned `turn`. */
 export function ideaFrame(n: number, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false): Drawn {

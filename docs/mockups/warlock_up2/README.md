@@ -1,9 +1,12 @@
 # THE WARLOCK BROUGHT UP, AND HIS DEMON REDONE (IN HAND; NOTHING HERE IS IN THE GAME)
 
-**WHERE IT STANDS (11 Nov 2026, evening): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
+**WHERE IT STANDS (11 Nov 2026, 19:50 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
 two legs to fight and down on all fours to run, wings of smoke (`src/dev/demon_ideas.ts` shadowInto; `pictures/living_shadow.png`).
-NEXT: its moves; then its eight sides and the change into it; then the man. Read from “The Living Shadow, drawn properly” down
-for what is left; the sections before it are how he got there, in his words.**
+ITS FIRST MOVES ARE MADE AND SHOWN HIM AS A FILM (`src/dev/shadow_moves.ts`; `pictures/living_shadow_moves.mp4`): its stand up on
+two legs, its really wide slashes, dropping onto all fours into the game's run, rearing up out of it. HIS WORD ON THEM IS AWAITED
+(the foot of “The Living Shadow's moves” below). NEXT, on his yes: what else stands up; then its eight sides and the change into
+it; then the man. Read from “The Living Shadow, drawn properly” down for what is left; the sections before it are how he got
+there, in his words.**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
 queue's `finish-mage-and-warlock-eight-sides` (the Mage's half is done: `art/mage-up2`). It takes up the art chat's helper's
@@ -182,6 +185,82 @@ all fours to run (the game's run) and rearing up to stop; what else stands up (D
 and the burning out end), asked as each is made; all eight sides; the change into it; behind a switch that is off, with a
 film and pictures in the game on floor 11 beside the Brawler. Then THE MAN (above).
 
+## The Living Shadow's moves (`src/dev/shadow_moves.ts`, `src/dev/shadow_fx.ts`; SHOWN HIM AS A FILM, HIS WORD ON IT AT THE FOOT)
+
+The Warlock chat of the evening of 11 Nov 2026 (a new session, the queue's item pulled at his word at 19:11 Eastern: “Work on
+this task from the Wordsmith Queue”). What his words change of “A new design, same moves”, and nothing else:
+
+- **STANDING, UP ON TWO LEGS** (`shadowStand`; new, the game's demon stands on all fours). `DEMON_UP`, alive when still: a round
+  of 3.2 s (96 pictures at thirty a second): two heavy breaths, its shoulders and back heaving; its weight rolled from leg to
+  leg; its head swung slowly to its left and its right; its habit, its claws flexed open wide and hooked shut, its right's in
+  the first breath, its left's in the second. Its wings of smoke breathe a beat behind it; its tail swishes.
+- **TAP: A REALLY WIDE SLASH, its left claw, then its right** (`slashMove`; new, in place of the game's rakes on all fours;
+  alternating as his pick of 27 Oct). TO THE GAME'S RAKE'S OWN FRAMES (`dev/demon_moves.ts` RK: 31 frames, the blow on frame 14),
+  so the rules need no change. Wound up by frame 9 and held to 11: reared up tall onto its back leg, its chest turned right
+  round, the claw far out to its side and behind its shoulder, opened wide, its wings lifted and spread. The swing, three
+  frames (11 to 14): the claw ALL THE WAY ROUND at the length of its arm, across before it and past its other side, its hips
+  and shoulders thrown round, its weight forward and down onto its front leg. A freeze, frames 14 to 16. Follow-through, the
+  claw drawn back the way it went (never on round: his “Now they do a full 360, what is that?” of 27 Oct), and into its
+  stance by frame 28. MEASURED: its talons sweep 5.5 tiles from side to side (its right's 5.4) and reach 3.6 tiles ahead of
+  it (its right's 3.7), 16 to 122 of its own measure off the floor. (THE RULES' REACH IS NOT CHANGED BY THIS: the game's rake
+  stands its foe 2.0 tiles ahead, `dev/demon_fx.ts` RAKE_REACH. Whether a slash this wide should hit this wide is his and the
+  main chat's.)
+- **WHAT A SLASH LEAVES** (`shadow_fx.ts` slashLight; as the game's rake's light, `dev/demon_fx.ts`, his “The cyan streaks
+  should follow the claws”): four streaks of his cyan, one off each talon, along the way it truly went; the air between them
+  lit for the frames of the swing; burning out from their tails over 0.3 s. On a picture of its own, wider than the demon's
+  (`SLASH_SCENE`, 520 x 420): they go wider than its canvas. What it does to the one it hits is the game's rake's own, not
+  drawn again.
+- **DROPPING DOWN ONTO ALL FOURS INTO THE RUN** (`shadowDrop`; new). The game's own way of setting off (`AnimSet.start`): 18
+  pictures, sixty to a second of the run (0.3 s), chosen by how far it has gone, leading into the run's seventh picture of
+  forty-two (`DROP_INTO`: both claws just down). It pitches forward off its back leg, its claws flung out ahead and down, its
+  rear hoof leaving the floor at picture 4 and its front at 7 (each where it stood until then, the floor going back under it
+  as fast as the game carries it), and is in the run's own leap; its left claw lands, then its right, its fire bursting up
+  under each. Its last seven pictures (12 to 18) are the run's own.
+- **RUNNING: THE GAME'S RUN, AS IT IS** (`shadowRun`: `dev/demon_moves.ts` demonRun, bone for bone; only its elbows found again
+  for this frame's longer arms). Its wings of smoke swept back, beating once a stride; its smoke dragged in its wake (left
+  less far behind than the game's demon's: it rises from four places, and left far behind each was a row of dots).
+- **REARING UP OUT OF THE RUN** (`shadowRear`; new). The game's own way of coming to a stand (`AnimSet.stops`): EIGHT, one
+  for each eighth of the run's round, each 14 frames (0.47 s) from the run as it is then into the stand's first picture. Its
+  claws come up off the floor, it throws its weight back and up past its stance (its wings thrown wide to brake) and sinks
+  into it. A hoof on the floor stays where it is until it is lifted straight up and set straight down where it stands.
+
+HOW IT IS BUILT ON WHAT HE PASSED: `dev/demon_new.ts` and `dev/demon_ideas.ts` take, for a moving one only (`Moving`): a
+claw's palm turned its own way and its fingers spread or hooked (`Kit.palm`, `grip`: a slashing claw's talons lead the
+sweep), its wings held as the moment has them and turned with its chest (`Kit.wings`, `WingsHeld`), its fires' size, its
+smoke's wake. A STILL IS AS IT WAS, TO THE PIXEL: the four pictures of `living_shadow.png` painted before and after are the
+same files.
+
+THE FILM: `pictures/living_shadow_moves.mp4` (1440 x 702, sixty frames a second, 39.5 s, 8.2 MB; MP4, his word on GIFs),
+from in front and from behind side by side, two film pixels a picture pixel, on a plain floor of the game's tiles that goes
+by under it as it is carried; the Brawler beside it at the start for its size. Its parts: standing (two rounds); the
+slashes, left, right, left, right; the same at half speed; dropping down, running, rearing up; the same at half speed; all
+of it together. Its stand, slashes and rearing up thirty pictures a second, its run and dropping down sixty, as the game
+shows them. `pictures/living_shadow_moves_sheet.png`: a picture of it every third of a second, for whoever checks it.
+
+Made with: `npx tsx tools/shadow_moves_pics.ts <dir> stand,run,slashL,slashR,drop,rear5 front,back` (about a minute and a half) then
+`python3 tools/shadow_moves_film.py <dir> docs/mockups/warlock_up2/pictures/living_shadow_moves.mp4` (about a minute).
+All eight rear-ups: `npx tsx tools/shadow_moves_pics.ts <dir> rear0,rear1,rear2,rear3,rear4,rear5,rear6,rear7`.
+
+CHECKED (`tests/shadow_moves.test.ts`, its bones only, under a second: `npx tsx --test tests/shadow_moves.test.ts`, 6 of 6):
+its stand comes round with no jump; its run is the game's, key for key; each slash to the game's frames, from its stance
+and back to it, its hooves planted, held through the freeze, the swing more than four times as fast as anything else in
+it, really wide, its talons clear of the floor; its dropping down from its stance into the run with nothing on the floor
+sliding; each of the eight rear-ups from the run into its stance, a hoof on the floor staying until it is lifted. LOOKED
+AT ON SHEETS: every frame of both slashes, of its dropping down and of one rear-up, from in front and from behind; its run
+(every picture from behind, every other from in front); its stand every sixth picture from in front; all eight rear-ups
+every other frame from in front: nothing cut off, no limb through its body, no head turned round. NOT YET (it is a mock-up awaiting his word): the picture's own checks frame by frame as the game's demon's have
+(`tests/demon_moves.test.ts`).
+
+KNOWN, AND LEFT FOR HIS WORD FIRST: a slash's streaks are laid over it from behind too, where the claw passes on its far
+side (as the game's rake's light is laid over the game's demon); as its claws leave the floor rearing up, and reach it
+dropping down, they change in one picture from claws spread on the floor to claws hung open (under 24 off the floor they
+are its feet, `PAW_BELOW`); the stand is 96 pictures a view where the game's demon's is 48 (his rule of 8 Nov: everything
+that moves at thirty a second), which the main chat should weigh against his phone's memory when it is baked for eight
+sides.
+
+SHOWN HIM SO, 11 Nov, 19:5x, asked whether it moves as he pictured, and whether the rest of its moves (Damning, the smoke
+step, the change into it, burning out) should all begin and end up on two legs. **HIS WORDS: AWAITED.**
+
 THE FIRST THREE'S PICTURES (kept for the record):
 
 Pictures (`pictures/`, each wider than tall for his phone held sideways):
@@ -199,5 +278,8 @@ ground in the game.
 
 ## The checks so far
 
-- `tsc --noEmit -p tsconfig.json`: nothing from this branch.
-- Nothing of the game imports `src/dev/demon_new.ts`; no file of the game is changed.
+- `tsc --noEmit -p tsconfig.json`: nothing from this branch. (One line from `tests/relief.test.ts`, line 378, under the
+  workspace's own TypeScript 7.0.2, the same before this branch's work as after it: not this branch's.)
+- Nothing of the game imports `src/dev/demon_new.ts`, `demon_ideas.ts`, `shadow_moves.ts` or `shadow_fx.ts`; no file of the game
+  is changed.
+- `npx tsx --test tests/shadow_moves.test.ts`: 6 of 6 (above). No other test was run: none touches these files.

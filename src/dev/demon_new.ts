@@ -122,6 +122,8 @@ export interface Built {
   /** Where its smoke rises from. */
   smoke: V3[];
   jaw: V3;
+  /** (moving) The tips of the four talons of each claw held open off the floor, its left's first: what its slashes leave their streaks from. */
+  tips?: { side: 1 | -1; at: V3[] }[];
 }
 
 export interface Kit {
@@ -133,6 +135,23 @@ export interface Kit {
   tail: number;
   /** Its claws its feet (running on all fours): each drawn as a claw on the floor however high it swings. */
   paws: boolean;
+  /** (moving) A claw held open off the floor turned its own way: the way its palm faces (a slashing claw's: the way it sweeps, its talons leading), its left's and its right's; not given, hung as it hangs. */
+  palm?: { L?: V3; R?: V3 };
+  /** (moving) How its wings are held (dev/demon_ideas.ts cloakWings); not given, as the still has them. */
+  wings?: WingsHeld;
+  /** (moving) How far each open claw's fingers are hooked in toward its palm: 1 as the still's, less spread wide open, more clenched; its left's and its right's. */
+  grip?: { L?: number; R?: number };
+}
+/**
+ * HOW ITS WINGS ARE HELD AT A MOMENT (loose things follow, his rulebook's Movement 4): `open` how far out to its sides (1 as
+ * the still's), `lift` how high (1 as the still's), `sweep` how far swept back (0 not at all; its own measure), `tip` how far
+ * its fingers' tips trail behind the stroke (0 not at all; its own measure, back and up).
+ */
+export interface WingsHeld {
+  open: number;
+  lift: number;
+  sweep: number;
+  tip: number;
 }
 
 /** A material whose far limbs are a tone darker (as the heroes' far limbs are), with a painter of its own after that. */
@@ -172,8 +191,9 @@ export function spike(k: Kit, mat0: number, piece: string, pts: V3[], r0: number
  * (as dev/sculpt_demon_rig.ts clawHand, a hand that knows which hand it is: its palm faces `palmWay`); `S` how big. Returns
  * the middle of its palm.
  */
-function openClaw(k: Kit, hide: number, talon: number, piece: string, ha: V3, el: V3, palmWay: V3, S: number, right: boolean): V3 {
+function openClaw(k: Kit, hide: number, talon: number, piece: string, ha: V3, el: V3, palmWay: V3, S: number, right: boolean, tips?: V3[]): V3 {
   const { sc } = k;
+  const G = (right ? k.grip?.R : k.grip?.L) ?? 1;
   const fd = norm(sub(ha, el));
   let pw = sub(palmWay, mul(fd, dot(palmWay, fd)));
   if (Math.hypot(pw[0], pw[1], pw[2]) < 0.15) pw = sub(U, mul(fd, fd[2]));
@@ -184,12 +204,15 @@ function openClaw(k: Kit, hide: number, talon: number, piece: string, ha: V3, el
   const bend = (v: V3, a: number): V3 => norm(add(mul(v, Math.cos(a)), mul(n, Math.sin(a))));
   for (const [off, l0] of [[1.5, 0.92], [0.5, 1.08], [-0.5, 1.0], [-1.5, 0.8]] as const) {
     const base = add(palm, add(mul(fd, 2.4 * S), mul(side0, off * 1.3 * S)));
-    const d1 = norm(add(fd, mul(side0, off * 0.3)));
+    // (its fingers fanned wider the wider open it is held: `G` less than 1)
+    const d1 = norm(add(fd, mul(side0, off * (0.3 + 0.22 * Math.max(0, 1 - G)))));
     const k1 = add(base, mul(d1, 3.0 * S * l0));
-    const k2 = add(k1, mul(bend(d1, 0.5), 2.6 * S * l0));
+    const k2 = add(k1, mul(bend(d1, 0.5 * G), 2.6 * S * l0));
     sc.cone(hide, piece, base, k1, 1.05 * S, 0.9 * S, 0.5 * S, { tag: 'finger' });
     sc.cone(hide, piece, k1, k2, 0.9 * S, 0.78 * S, 0.4 * S, { tag: 'finger' });
-    spike(k, talon, piece, [k2, add(k2, mul(bend(d1, 0.95), 3.2 * S * l0)), add(k2, add(mul(bend(d1, 0.95), 3.2 * S * l0), mul(bend(d1, 1.5), 2.8 * S * l0)))], 0.82 * S, 'claw', 0.06);
+    const tip = add(k2, add(mul(bend(d1, 0.95 * G), 3.2 * S * l0), mul(bend(d1, 1.5 * G), 2.8 * S * l0)));
+    spike(k, talon, piece, [k2, add(k2, mul(bend(d1, 0.95 * G), 3.2 * S * l0)), tip], 0.82 * S, 'claw', 0.06);
+    tips?.push(tip);
   }
   const tb = add(palm, mul(side0, 2.6 * S));
   const t1 = add(tb, add(mul(side0, 1.8 * S), add(mul(fd, 1.4 * S), mul(n, 1.0 * S))));
@@ -214,8 +237,10 @@ export function claws(k: Kit, hide: number, talon: number, scale: number, out: B
     if (!planted) {
       // (HIS WORD, 11 Nov, of the claws first drawn turned up with a fire in each: “I dont like the palms up double fire hands”.
       // So: hung as a claw hangs, its palm turned back and in, its fingers hooked; no fire in it: its talons are what burn)
-      const palmWay = norm(add(mul(fh, -0.8), add([0, 0, -0.15], mul(cross(U, fh), -side * 0.55))));
-      openClaw(k, hide, talon, piece, ha, el, palmWay, 2.7 * scale, side < 0);
+      const palmWay = (side > 0 ? k.palm?.L : k.palm?.R) ?? norm(add(mul(fh, -0.8), add([0, 0, -0.15], mul(cross(U, fh), -side * 0.55))));
+      const at: V3[] = [];
+      openClaw(k, hide, talon, piece, ha, el, palmWay, 2.7 * scale, side < 0, at);
+      (out.tips ??= []).push({ side, at });
       continue;
     }
     const up = Math.max(0, ha[2] - 7);
@@ -495,7 +520,7 @@ function noPixelAlone(d: Drawn): void {
 }
 
 /** A demon built by `build` at a moment: on the werewolf's frame's bones in a pose, from in front or behind (as the camera truly sees it), turned `turn`. */
-export function paintDemon(build: (k: Kit) => Built, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false): Drawn {
+export function paintDemon(build: (k: Kit) => Built, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false, more: Moving = {}): Drawn {
   const pv: PaintView = view === 'back' ? 'rear' : view;
   const s = solve(WOLF_B, pose as Posed);
   const sc = new Sculpt();
@@ -507,14 +532,40 @@ export function paintDemon(build: (k: Kit) => Built, view: GameView, pose: Bones
     return pv === 'front' ? 0.612 * (q[0] - q[1]) + 0.5 * q[2] : 0.612 * (-q[0] - q[1]) + 0.5 * q[2];
   };
   const farL = nearOf(add(s.pelvis, [0, 20, 6])) < nearOf(s.pelvis);
-  const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail, paws };
+  const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail, paws, palm: more.palm, wings: more.wings, grip: more.grip };
   const built = build(k);
   const d = draw(sc, pv, RIG_CANVAS.ax, RIG_CANVAS.ay, RIG_CANVAS, undefined, FRIEND_RIM);
   built.flames.forEach((f, i) => fireBehind(d, sc.at(f.p), f.size, t + i * 0.37, f.deep ?? 10));
-  built.floor.forEach((p, i) => fireBehind(d, sc.at(p), 3.7 - (i % 2) * 0.7, t + i * 0.41, 12));
-  if (built.smoke.length) demonAura(d, { seat: s.head, fires: [], talons: [], aura: { from: built.smoke.map((p) => sc.at(p)), horns: [], jaw: sc.at(built.smoke[0]), claws: [], feet: [], behind: pv !== 'front', time: t } }, 'smoke');
+  built.floor.forEach((p, i) => fireBehind(d, sc.at(p), (3.7 - (i % 2) * 0.7) * (more.fire?.(i) ?? 1), t + i * 0.41, 12));
+  if (built.smoke.length) {
+    // (carried across the floor: its smoke streaming off behind it, as the game's demon's does, dev/sculpt_demon_rig.ts
+    // demonFrame; but dragged along in its wake more than left where it was, SMOKE_WAKE: its smoke rises from four places,
+    // not the game's demon's dozens, and left far behind each is a row of dots, not smoke)
+    let trail: readonly [number, number] | undefined;
+    if (more.carry) {
+      const a = d.st.at(sc.at([0, 0, 0]));
+      const b = d.st.at(sc.at([-more.carry * SMOKE_WAKE, 0, 0]));
+      trail = [b[0] - a[0], b[1] - a[1]] as const;
+    }
+    demonAura(d, { seat: s.head, fires: [], talons: [], aura: { from: built.smoke.map((p) => sc.at(p)), horns: [], jaw: sc.at(built.smoke[0]), claws: [], feet: [], behind: pv !== 'front', time: t, ...(trail ? { trail } : {}) } }, 'smoke');
+  }
   noPixelAlone(d);
+  more.built?.(built, sc);
   return d;
+}
+/** How much of the way it is carried in a second its smoke is left behind it. */
+const SMOKE_WAKE = 0.09;
+/** What a moving one is drawn with over a still's (dev/shadow_moves.ts). */
+export interface Moving {
+  palm?: Kit['palm'];
+  grip?: Kit['grip'];
+  wings?: WingsHeld;
+  /** How big each fire under its claws burns (1 as the still's). */
+  fire?: (i: number) => number;
+  /** How fast it is carried across the floor (its own measure a second): its smoke streams off behind it. */
+  carry?: number;
+  /** Given what was built (where its talons' tips are), once it is drawn. */
+  built?: (b: Built, sc: Sculpt) => void;
 }
 /** One of the first three (the looks he passed over on 11 Nov: kept for the record) at a moment. */
 export function newDemonFrame(kind: NewDemon, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false): Drawn {
