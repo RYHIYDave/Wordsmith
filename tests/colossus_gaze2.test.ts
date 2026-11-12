@@ -1,5 +1,5 @@
-// PHASE 2'S GAZE AIMED AT THE HERO (the queue's aim-colossus-phase-2-gaze; game/colossus_fight.ts GAZE2_AIMED, off till his yes). Held
-// here: off, the gaze as before; on, laid along the nearest aim pictured, as phase 3's; the aims cover every spot on the stone; the art's
+// PHASE 2'S GAZE AIMED AT THE HERO (the queue's aim-colossus-phase-2-gaze; game/colossus_fight.ts GAZE2_AIMED, on at his yes of 12 Nov).
+// Held here: off, the gaze as before; on, laid along the nearest aim pictured, as phase 3's; the aims cover every spot on the stone; the art's
 // own aimed gaze (art/eye_body.ts bodyFrame's aim) turns about the same water and sweeps the same way at the same time, so that his eye
 // looks where the beam goes; what the game draws (his body and his tongue apart). The pack's pictures: tests/colossus_gaze2_pack.test.ts.
 // @ts-ignore - node typings are not part of this project
@@ -44,16 +44,21 @@ function toGaze(f: ColossusFight, at: HeroOnStone): void {
   assert.fail('no gaze');
 }
 
-test('the switch is off in the game; off, the gaze is as before: laid exactly toward the hero, no picture of its own', () => {
-  assert.equal(GAZE2_AIMED.on, false, 'off till his yes');
-  const f = inPhase2(5);
-  const at = { u: 13.3, v: 7.1, dodging: false };
-  toGaze(f, at);
-  const B = f.body2!;
-  const toward = Math.atan2(at.u - BODY2.gazeAt.u, at.v - BODY2.gazeAt.v) / D;
-  assert.ok(near(B.a0, toward - GAZE.half, 1e-9) && near(B.a1, toward + GAZE.half, 1e-9));
-  assert.equal(B.pic, undefined);
-  assert.equal(colossusGaze2(f), null, 'nothing new drawn');
+test('the switch is on in the game (his yes); off, the gaze is as before: laid exactly toward the hero, no picture of its own', () => {
+  assert.equal(GAZE2_AIMED.on, true, 'on: his yes of 12 Nov');
+  GAZE2_AIMED.on = false;
+  try {
+    const f = inPhase2(5);
+    const at = { u: 13.3, v: 7.1, dodging: false };
+    toGaze(f, at);
+    const B = f.body2!;
+    const toward = Math.atan2(at.u - BODY2.gazeAt.u, at.v - BODY2.gazeAt.v) / D;
+    assert.ok(near(B.a0, toward - GAZE.half, 1e-9) && near(B.a1, toward + GAZE.half, 1e-9));
+    assert.equal(B.pic, undefined);
+    assert.equal(colossusGaze2(f), null, 'nothing new drawn');
+  } finally {
+    GAZE2_AIMED.on = true;
+  }
 });
 
 test('on: laid along the nearest aim pictured, his left to his right, its sides held where the art holds them; the beam hurts him once as it crosses; rolled through, nothing', () => {
@@ -76,7 +81,7 @@ test('on: laid along the nearest aim pictured, his left to his right, its sides 
     toGaze(r, { u: 4, v: 4, dodging: true });
     assert.equal(run(r, GAZE.long + 0.2, () => ({ u: 4, v: 4, dodging: true })).filter((e) => e.t === 'hurt').length, 0);
   } finally {
-    GAZE2_AIMED.on = false;
+    GAZE2_AIMED.on = true;
   }
 });
 
@@ -125,6 +130,6 @@ test('what the game draws: his body at his stand\'s frame run on from the frame 
     assert.equal(g.body, (BODY2.at + g.k) % 90);
     assert.ok(Math.abs((((f.body * 30) % 90) - g.body + 135) % 90 - 45) <= 1, 'his stand there');
   } finally {
-    GAZE2_AIMED.on = false;
+    GAZE2_AIMED.on = true;
   }
 });

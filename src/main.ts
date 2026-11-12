@@ -3131,7 +3131,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     god: false,
     /** (THE SWAMP COLOSSUS, game/colossus_fight.ts) its switch, for its test pages: on before floor 10 is laid. */
     colossus: COLOSSUS,
-    /** (THE SWAMP COLOSSUS'S PHASE 2 GAZE AIMED AT THE HERO, game/colossus_fight.ts) its switch, off until his yes, for its pictures. */
+    /** (THE SWAMP COLOSSUS'S PHASE 2 GAZE AIMED AT THE HERO, game/colossus_fight.ts) its switch (on: his yes of 12 Nov), for its pictures. */
     gaze2: GAZE2_AIMED,
     /** (SPLITTING AND BINDING, game/items.ts) their switch, for their test pages. */
     itemWords: ITEM_WORDS,

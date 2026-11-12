@@ -29,7 +29,7 @@ export const ARM_BAKE = { burstAt: 0, flinchFrom: [0, 15, 30] as readonly number
 export const P3_BAKE = { slideAt: 24, slams: EYE3.spots, aims: EYE3.aims, struckFrom: EYE3.struckFrom } as const;
 
 /**
- * HIS PHASE 2 GAZE AIMED AS BAKED (tools/bake_colossus.ts; game/colossus_fight.ts GAZE2_AIMED, off till his yes): his body and his
+ * HIS PHASE 2 GAZE AIMED AS BAKED (tools/bake_colossus.ts; game/colossus_fight.ts GAZE2_AIMED, on at his yes of 12 Nov): his body and his
  * tongue apart, as phase 3's: his body (`p2body`: his stand's jaws and drool, each frame of his stand at his place), and his tongue
  * and eye alone at each of the rules' aims (`gaze2.<j>`: the art's bodyFrame aimed so, degrees), begun as his stand is on frame `at`
  * (the game begins the gaze there), each cut where his jaws or drool are before it, so that it is laid over his body's.

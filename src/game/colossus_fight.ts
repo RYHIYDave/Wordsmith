@@ -34,9 +34,10 @@ export const COLOSSUS = { on: true };
  * before: the beam laid toward the hero but his eye painted looking at one fixed spot (his `gaze` pictures, the art's film take). On:
  * the gaze laid along the nearest of `BODY2.aims` to the hero, as phase 3's is, and his tongue and eye pictured aimed along it
  * (tools/bake_colossus.ts `p2body` and `gaze2.<j>`: the art's bodyFrame aimed), the beam leaving his eye where his picture has it.
- * OFF UNTIL HE HAS SEEN IT AND SAID YES (his rule: pictures first).
+ * ON: his yes, 12 Nov 2026 (by 10:42, Eastern), shown it as it is and aimed (a film, the same spot on the stone): “Yes, hand it to
+ * main (Recommended)”.
  */
-export const GAZE2_AIMED = { on: false };
+export const GAZE2_AIMED = { on: true };
 
 const FPS = 30;
 const fr = (n: number): number => n / FPS;
