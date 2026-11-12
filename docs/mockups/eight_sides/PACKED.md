@@ -188,10 +188,11 @@ before); `guide.mjs`, a new player's first dungeon with the Warrior.
 ### The unit tests (his rules: only what the change is about, and the core)
 
 `node tools/unit.mjs --only baked_packs,veteran_packs,sides_more,veteran_art,veteran_rules,veteran,vet_props,veteran_icons,veteran_talents,veteran_words`
-on 00ec33d6b4, run once, alone on the machine: **33 files, 447 tests, all passed** (the ten named and the core's 23; 404 files
-not run). After that commit two things changed: a pack's frames are cut a few at a time, with a measure of it (c0194e1), and
-the budget is written as a plain number (372c5e2: the same number). `tests/baked_packs.test.ts` and
-`tests/veteran_packs.test.ts` were run again alone on the last: 13 of 13. `tsc --noEmit`: clean.
+on 00ec33d6b4, run once, alone on the machine: 33 files, 447 tests, all passed (the ten named and the core's 23).
+AFTER IT the code changed (a pack's frames cut a few at a time, then as canvases; the budget as a plain number;
+`bring-in/eight-sides` as it is now, with its tests), so the files that test what changed were run once on the last of it:
+`--only baked_packs,veteran_packs,sides_more,veteran_art,veteran_rules,veteran,vet_props` on bc539fc691, alone:
+**30 files, 426 tests, all passed** (the seven named and the core's 23; 407 files not run). `tsc --noEmit`: clean.
 
 ## What is on the branch
 
@@ -206,11 +207,12 @@ the budget is written as a plain number (372c5e2: the same number). `tests/baked
 - `src/dev/bake_heroes_page.ts`, `tools/bake_heroes.mjs`: a packed hero laid out so (what he always holds on sheets as before,
   then each pack on one sheet of its own, `<group>-<move>-<side>.png`); every sheet, the packs' too, read back as the game reads
   it and checked against every frame on it as painted.
-- `tests/baked_packs.test.ts` (8), `tests/veteran_packs.test.ts` (5), NEW.
+- `tests/baked_packs.test.ts` (9), `tests/veteran_packs.test.ts` (5), NEW.
 - `tools/scenarios/sides_more_fight.mjs`: where his moves are kept packed it checks what he always holds, his 96 packs and the
   budget, and says how often a move was asked for with nothing of it to show yet. `tools/scenarios/mem_floors.mjs`: says the
-  packs at every row; `PACKS=0` (none let go), `BUDGET=<MB>`. `tools/brawler_packed_play.sh`: the playtests and the two sittings
-  of this change on the built, baked page.
+  packs at every row; `PACKS=0` (none let go), `BUDGET=<MB>`, `CUT=bitmap`. `tools/brawler_packed_play.sh`: the playtests and
+  the two sittings of this change on the built, baked page. `tools/brawler_packed_try_page.mjs`: a test page of this build
+  for his phone (as `tools/eight_sides_try_page.mjs` made the first).
 - No rule of the game is changed, and no picture.
 
 ## FOR THE MAIN CHAT
