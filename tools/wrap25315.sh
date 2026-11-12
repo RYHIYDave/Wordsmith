@@ -48,6 +48,13 @@ two; DEPTH=2 run story_look_2 $C --scenario $S/story_look.mjs &
 two; DEPTH=4 run story_look_4 $C --scenario $S/story_look.mjs &
 two; DEPTH=5 run first5_floor_5 --scenario $S/first5_floor.mjs &
 two; run first5_shaft --scenario $S/first5_shaft.mjs &
+# the Warlock brought up, in packs (build/warlock-packed, WARLOCK_UP on): his frames from the bake, none painted in play; played
+# through the guide; the class cards, every portrait the whole card (fix/hero-card-boxes)
+two; CLS=warlock run baked_warlock $P --scenario $S/baked.mjs &
+two; CLS=warlock run sheet_frames_warlock $P --scenario $S/sheet_frames.mjs &
+two; CLS=warlock run guide_phone_warlock $P --scenario $S/guide.mjs &
+two; run cards3 $P --scenario $S/cards3.mjs &
+two; run hero_cards_baked $P --scenario $S/hero_cards_baked.mjs &
 # the game's main ways
 two; run save --scenario $S/save.mjs &
 two; run touch_wide $P --scenario $S/touch.mjs &

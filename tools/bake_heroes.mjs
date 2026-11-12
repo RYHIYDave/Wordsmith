@@ -24,21 +24,35 @@ export async function bakeHeroes({ log = console.log } = {}) {
   const { code, mark } = await bakeCode();
   const dir = path.join(ROOT, '.bake', mark);
   if (fs.existsSync(path.join(dir, 'done.json'))) return { mark, dir, fresh: false };
-  fs.rmSync(dir, { recursive: true, force: true });
+  // (A BAKE CARRIED ON WHERE IT STOPPED, 12 Nov 2026: a group once baked is kept, its line of the record in .said-<group>.json
+  // beside it, until the whole bake is done; a stopped bake (the machine restarted, the page gave out) bakes only the groups left.
+  // And each group on a page of its own, closed once it is baked, so that what one held is all given back before the next.)
   fs.mkdirSync(dir, { recursive: true });
   const { chromium } = require('playwright');
   const browser = await chromium.launch();
   const t0 = Date.now();
   const said = { mark, groups: {} };
-  try {
+  const saidOf = (g) => path.join(dir, `.said-${g}.json`);
+  const open = async () => {
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.setContent('<!doctype html><html><body></body></html>');
     await page.addScriptTag({ content: code });
     if (errors.length) throw new Error(errors.join('\n'));
-    const groups = await page.evaluate(() => window.bake.groups());
+    return page;
+  };
+  try {
+    const first = await open();
+    const groups = await first.evaluate(() => window.bake.groups());
+    await first.close();
     for (const g of groups) {
+      if (fs.existsSync(saidOf(g))) {
+        said.groups[g] = JSON.parse(fs.readFileSync(saidOf(g), 'utf8'));
+        log(`baked ${g} already (kept from a bake that stopped)`);
+        continue;
+      }
+      const page = await open();
       const info = await page.evaluate((name) => window.bake.group(name), g);
       if (info.dropped.length) throw new Error(`${g}: a frame has parts that cannot be kept (${info.dropped.join(', ')})`);
       const file = JSON.parse(await page.evaluate((name) => window.bake.file(name), g));
@@ -68,12 +82,15 @@ export async function bakeHeroes({ log = console.log } = {}) {
       said.groups[g] = { frames: info.frames, places: info.places, sheets: names.length, mb: +(bytes / 1e6).toFixed(2), s: +(info.ms / 1000).toFixed(1) };
       if (info.packs) Object.assign(said.groups[g], { packs: info.packs, heldMb: +(info.heldBytes / 1048576).toFixed(1), packsMb: +(info.packBytes / 1048576).toFixed(1) });
       log(`baked ${g}: ${info.frames} frames for ${info.places} places, ${names.length} sheets, ${(bytes / 1e6).toFixed(2)} MB (${(info.ms / 1000).toFixed(1)} s to paint)${info.packs ? `; ${info.packs} packs: ${(info.heldBytes / 1048576).toFixed(1)} MB always held, ${(info.packBytes / 1048576).toFixed(1)} MB in packs, unpacked` : ''}`);
+      fs.writeFileSync(saidOf(g), JSON.stringify(said.groups[g]));
+      await page.close();
     }
   } finally {
     await browser.close();
   }
   said.s = Math.round((Date.now() - t0) / 1000);
   fs.writeFileSync(path.join(dir, 'done.json'), JSON.stringify(said, null, 1));
+  for (const f of fs.readdirSync(dir)) if (f.startsWith('.said-')) fs.rmSync(path.join(dir, f));
   return { mark, dir, fresh: true };
 }
 
