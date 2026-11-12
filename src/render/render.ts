@@ -2978,11 +2978,18 @@ export class Renderer {
     // (THE FLOORS' MONSTERS BAKED: one whose baked pictures are still coming (called up in a fight, its files asked for as it
     // was first seen) is shown, for a frame of its not here yet, as the nearest that is, never painted here as it is shown:
     // art/kit.ts LEFT_TO_PAINTER. A list with none here yet paints the one asked for, as ever.)
-    if (!this.bakedMobs || !this.bakedMobs.coming(figureOf(m))) return this.monsterSpriteNow(m);
+    // (A FIGURE KEPT PACKED, THE MOTH: likewise, its moves unpacked as they are shown; each picture of it shown told to the
+    // painter, render/painter.ts PACKED, which unpacks its move and keeps what is unpacked within its budget)
+    const f = figureOf(m);
+    const packed = !!this.painter && this.painter.packs(f);
+    if (!packed && (!this.bakedMobs || !this.bakedMobs.coming(f))) return this.monsterSpriteNow(m);
     const left = LEFT_TO_PAINTER.on;
     LEFT_TO_PAINTER.on = true;
+    const stood = HEAVY.deferred;
     try {
-      return this.monsterSpriteNow(m);
+      const s = this.monsterSpriteNow(m);
+      if (packed) this.painter!.shown(f, s, HEAVY.deferred !== stood);
+      return s;
     } finally {
       LEFT_TO_PAINTER.on = left;
     }
@@ -3043,11 +3050,14 @@ export class Renderer {
     const left = LEFT_TO_PAINTER.on;
     if (this.painter?.paints(f.figure) || this.bakedMobs?.coming(f.figure)) LEFT_TO_PAINTER.on = true;
     let sp: Sprite;
+    const stood = HEAVY.deferred;
     try {
       sp = clip.frames[Math.min(last, i)];
     } finally {
       LEFT_TO_PAINTER.on = left;
     }
+    // (A FIGURE KEPT PACKED, THE MOTH: its fall unpacked as it is shown, as its moves are: render/painter.ts PACKED)
+    if (this.painter?.packs(f.figure)) this.painter.shown(f.figure, sp, HEAVY.deferred !== stood);
     // (`since`: how long it has lain, in seconds)
     return { sp: f.flip ? flipSprite(sp, true) : sp, lying: i >= last, since: f.t - last / clip.fps };
   }

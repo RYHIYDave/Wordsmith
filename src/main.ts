@@ -170,6 +170,7 @@ import type { WordSound } from './game/word_sounds';
 import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
 import { act1Fx } from './render/act1_fx';
 import { forgetUnusedPictures } from './render/act1_fx/kept';
+import { mothFxBytes } from './render/act1_fx/moth';
 import { COLOSSUS, onStoneOrJetty, worldToStone } from './game/colossus_fight';
 import { ITEM_WORDS } from './game/items';
 import { UNIQUES, uniqueOf } from './game/uniques';
@@ -3302,6 +3303,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     stoodIn: () => HEAVY.deferred,
     /** THE PAINTER (render/painter.ts): whether there is one, and what it has done. */
     painter,
+    /** (FLOOR 20) How much the Moth's effects' pictures hold now, bytes (render/act1_fx/moth.ts MADE_MOST). */
+    mothFx: mothFxBytes,
     /** THE FOREST AS A FEW PICTURES (render/tops_cache.ts): its switch (renderer.topsCache has what it did). */
     topsCache: TOPS_CACHE,
     /** THE NEXT VERSION'S LOOKS, each off until he has seen it (his pictures: tools/scenarios/looks_next.mjs). */
