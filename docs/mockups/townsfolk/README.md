@@ -99,6 +99,11 @@ cold and his work waiting.)
 
 ## For the main chat: how it comes in (HIS YES IS GIVEN: above)
 
+**THE BAKE IS BUILT AND THEY ARE SWITCHED ON, ON THE BRANCH `townsfolk-bake`** (the townsfolk bake chat, 11 Nov 2026):
+`docs/requests/townsfolk_bake.md` has what it is, what was checked and what the main chat does. What follows is as the
+townsfolk chat wrote it, before the bake: where it says the switch is off or that the frames are for the side painter, that
+note is the newer.
+
 - `src/art/townsfolk3.ts`: `TOWNSFOLK3 = { on: false }`; `makeTownsfolk3()` gives the town its four (a `Townsman` each, as
   before); `makeSmithDark3()` the wordsmith while his ring is dark. `TOWNSFOLK3_HEAVY` leaves their frames to the side
   painter (on, as the game needs) or paints each when asked (off: the pictures).

@@ -1,5 +1,5 @@
-// THE TOWNSFOLK, SCULPTED (the townsfolk chat, 11 Nov 2026). MOCK-UPS: NOTHING OF THE GAME SHOWS THEM UNTIL HIS YES
-// (art/townsfolk3.ts, behind TOWNSFOLK3, off).
+// THE TOWNSFOLK, SCULPTED (the townsfolk chat, 11 Nov 2026). THE GAME'S since his yes of 11 Nov 2026 (“Yes, hand them to main
+// (Recommended)”): art/townsfolk3.ts, TOWNSFOLK3 on, their frames baked to files (tools/bake_townsfolk.mjs).
 //
 // His words, 8 Nov 2026, 06:25: “And I think the townsfolk need look update and a 30fps makeover”. And his measure for new
 // art (9 Nov): the Gate Ward (floor 11) and the Brawler; what is finer is sent back the same as what is rougher.

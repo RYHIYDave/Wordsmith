@@ -7,7 +7,7 @@ import { POWER, QUEST3, catchesAt, fuseOf, slabRunesOf } from './quest3';
 import { COLUMN_FRAMES, FLOOR_FRAMES, FUSE_STEPS, LANDS, RISE_STEPS, SET_STEPS, SLAB_AT, STONE_AT, flareOf, stoneBlaze, swirlAt } from './ring3';
 import type { Blaze, Letter } from './ring3';
 import { SMITH3, darkOf } from './smith3';
-import { TOWNSFOLK3, makeSmithDark3 } from './townsfolk3';
+import { smithDark3, townsfolk3Shown } from './townsfolk3';
 import type { TownProps } from './town';
 import { ACT_FPS, actAt, townFrame } from './townsfolk';
 import type { Facing, Townsfolk } from './townsfolk';
@@ -141,16 +141,13 @@ export function townSprite(art: TownArt, kind: string, variant: number, t: numbe
       const pw = ringPower(t);
       const cold = SMITH3.on && pw !== null && (pw.dark || (pw.g >= 0 && pw.g < POWER.flare));
       // (sculpted, art/townsfolk3.ts: his own dark frames, made the first time they are asked for)
-      if (cold && TOWNSFOLK3.on) return townFrame((smithDark3 ??= makeSmithDark3()), t, SMITH_PHASE, to);
+      if (cold && townsfolk3Shown()) return townFrame(smithDark3(), t, SMITH_PHASE, to);
       return townFrame(cold ? darkOf(art.folk.wordsmith) : art.folk.wordsmith, t, SMITH_PHASE, to);
     }
     case 'stranger': return townFrame(art.folk.stranger, t, 4.7, to);
     default: return null;
   }
 }
-
-/** The sculpted wordsmith's frames while his ring is dark (art/townsfolk3.ts). */
-let smithDark3: ReturnType<typeof makeSmithDark3> | null = null;
 
 /** The wordsmith's clock is set this far apart from the others'. */
 const SMITH_PHASE = 6.4;
@@ -162,6 +159,11 @@ export function folkActAt(art: TownArt, kind: string, t: number): number {
   if (kind === 'mystic') return actAt(art.folk.mystic, t, 3.1);
   if (kind === 'stranger') return actAt(art.folk.stranger, t, 4.7);
   return -1;
+}
+/** (the same) when its sound is heard, in seconds into what they do now and then (Townsman.soundAt: as it begins, where not given). */
+export function folkSoundAt(art: TownArt, kind: string): number {
+  const m = (art.folk as unknown as Record<string, { soundAt?: number } | undefined>)[kind];
+  return m?.soundAt ?? 0;
 }
 /** (the same) how long what they do now and then lasts, in seconds. */
 export function folkActLong(art: TownArt, kind: string): number {

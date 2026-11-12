@@ -31,7 +31,7 @@ import type { LegStyle, Painted, Pose, Ramp, V } from './kit';
 import { IRON } from './mkit';
 import { EMBER, GOLD } from './props';
 import { SMITH3, makeSmith3 } from './smith3';
-import { TOWNSFOLK3, makeTownsfolk3 } from './townsfolk3';
+import { makeTownsfolk3, townsfolk3Shown } from './townsfolk3';
 
 const SKIN: Ramp = [SKIN4[0], SKIN4[0], SKIN4[1], SKIN4[2], SKIN4[3]];
 
@@ -1067,6 +1067,11 @@ export interface Townsman {
    */
   fps?: number;
   actFps?: number;
+  /**
+   * When the sound of what they do now and then is heard, in seconds into it (render/render.ts folkSound): as it begins, where
+   * not given (the sculpted armourer's as his hammer lands, the mystic's as the crystal blazes, the stranger's as he flicks).
+   */
+  soundAt?: number;
 }
 
 export const ACT_FPS = 20;
@@ -1151,8 +1156,9 @@ export const TOWN_POSES: Record<keyof Townsfolk, { idle: Partial<Pose>[]; act: P
 };
 
 export function makeTownsfolk(): Townsfolk {
-  // (THE FOUR SCULPTED, AT THIRTY A SECOND, art/townsfolk3.ts: a mock-up behind a switch that is off)
-  if (TOWNSFOLK3.on) return makeTownsfolk3();
+  // (THE FOUR SCULPTED, AT THIRTY A SECOND, art/townsfolk3.ts: on since his yes of 11 Nov 2026, wherever their frames are to be
+  // had, which is from files beside the page; elsewhere the town's people are the ones below, as they were)
+  if (townsfolk3Shown()) return makeTownsfolk3();
   const one = (who: keyof Townsfolk): Townsman => {
     const p = TOWN_POSES[who];
     const opts = who === 'stranger' ? { aura: null } : {};

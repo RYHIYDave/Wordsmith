@@ -1,5 +1,5 @@
-// THE TOWNSFOLK'S MOVES, AT THIRTY A SECOND (the townsfolk chat, 11 Nov 2026). MOCK-UPS: NOTHING OF THE GAME SHOWS THEM
-// UNTIL HIS YES (art/townsfolk3.ts, behind TOWNSFOLK3, off).
+// THE TOWNSFOLK'S MOVES, AT THIRTY A SECOND (the townsfolk chat, 11 Nov 2026). THE GAME'S since his yes of 11 Nov 2026 (“Yes,
+// hand them to main (Recommended)”): art/townsfolk3.ts, TOWNSFOLK3 on, their frames baked to files (tools/bake_townsfolk.mjs).
 //
 // His words, 8 Nov 2026, 06:25: “And I think the townsfolk need look update and a 30fps makeover”; and his rule to the art chat
 // the same morning, “Yes, everything (Recommended)”: EVERYTHING THAT MOVES AT 30 A SECOND. They stood at ten frames a second
