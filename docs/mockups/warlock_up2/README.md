@@ -1,9 +1,10 @@
-**WHERE IT STANDS (12 Nov 2026, by 14:10 Eastern): THE LIVING SHADOW IS DONE AND HANDED TO THE MAIN CHAT, WITH HIS YES: its look,
+**WHERE IT STANDS (12 Nov 2026, by 15:xx Eastern): THE LIVING SHADOW IS DONE AND HANDED TO THE MAIN CHAT, WITH HIS YES: its look,
 every move, its eight sides, its hide carried by its bones, the change into it, in the game's shape behind LIVING_SHADOW (off),
 and seen in play on floor 11 beside the Brawler (his “Yes, hand it to main (Recommended)”; the change's time in play kept at
 the game's 2.4 s, his “Keep the game's 2.4 s (Recommended)”). On the queue's ship list as `warlock-living-shadow`. WHAT THE MAIN
-CHAT MUST DO: the sections “In the game's shape, behind a switch that is off” and “In play on floor 11” at the foot. WHAT IS
-LEFT OF THIS BRANCH'S WORK: THE MAN, his eight sides (“What that means for the work”, below).**
+CHAT MUST DO: the sections “In the game's shape, behind a switch that is off” and “In play on floor 11”. THE MAN, his eight sides,
+his longer heavy coat and boots to the knee, every list at 30 a second, IS MADE on the branch `art/warlock-man8` (cut from this
+one), behind WARLOCK_UP (off), and shown him in play: the section “The man” at the foot (HIS_WORD).**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
 queue's `finish-mage-and-warlock-eight-sides` (the Mage's half is done: `art/mage-up2`). It takes up the art chat's helper's
@@ -31,7 +32,7 @@ Shown the demon as it is beside the Brawler and the Warlock (`pictures/demon_tod
 
 ## What that means for the work
 
-THE MAN (not begun on this branch yet):
+THE MAN (made on `art/warlock-man8`: the section “The man” at the foot):
 - From the 7 Nov still, KEPT: his eight sides, each truly painted (`paintWarlockUp`); his coat hung as a heavy coat, longer,
   in folds, ragged at the hem, split up the back (`heavyCoat`); his boots real boots to the knee (`realBoots`).
 - From the 7 Nov still, OUT (his rule of 7 Nov, the Ranger's README and the queue's item: only the look, the legs by the

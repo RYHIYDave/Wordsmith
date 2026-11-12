@@ -43,7 +43,7 @@ export const WARLOCK_UP = { on: false };
 // HIS BONES: THE KNEE JOINT RAISED A LITTLE (as art/ranger_up_moves.ts RU_BODY, art/mage_up_moves.ts MU_BODY)
 //
 // The game's Warlock (dev/sculpt_warlock.ts WARLOCK_SCULPT_BODY) stands with his knee to the floor (the shin, and the ankle under
-// it) 1.14 times his hip to his knee (the thigh). His knee joint is raised as the Ranger's and the Mage's were, to 1.3: the thigh
+// it) 1.16 times his hip to his knee (the thigh). His knee joint is raised as the Ranger's and the Mage's were, to 1.3: the thigh
 // shorter and the shin longer by as much. The whole leg is as long as it was, so his hips and his feet are where they were in every
 // pose; only where the knee bends moves.
 export const WL_SHIN_RATIO = 1.3;
@@ -208,8 +208,14 @@ const FOLD = [0.2, 0.9, -0.5, 1.2, -0.7, 0.8, -0.4, 1.3, -0.6, 1.0, -0.3, 1.25, 
 const OPEN_HALF = 30;
 /** How far the opening and the vent are drawn round toward the leg that comes through each, at the most (degrees). */
 const OPEN_LEAN = 25;
-const VENT_HALF = 21;
+const VENT_HALF = 0;
 const VENT_TOP = 0.3;
+/** THE VENT UP HIS BACK, CLOSED AS HE STANDS (12 Nov): on the game's own stance his legs are close together under him, and a vent
+ * hung open (the 7 Nov still's, 21 degrees either side of his back leg) showed as a dark gap down the middle of his back between
+ * two halves of his coat: from behind it read as a pair of trousers. So it hangs closed, a seam piped in red from VENT_TOP down
+ * (degrees either side of the way it hangs: VENT_SEAM), and a leg that comes back through it pushes the cloth out (the cloth is
+ * kept clear of his legs everywhere, below). */
+const VENT_SEAM = 3.2;
 
 /**
  * THE COAT HUNG AS A HEAVY COAT (standing; the game's one smooth cone and the slit carved in it taken away): one sheet of the same
@@ -362,7 +368,9 @@ function heavyCoat(sc: Sculpt, s: Skeleton, coatMat: number, B: Build): WlCoat |
       const ri = Math.min(ROWS.length - 1, ROWS.findIndex((r) => r >= k));
       const edge = (inOpen[(i0 + COLS - 1) % COLS] && fi - Math.floor(fi) < 0.28) || (inOpen[(i1 + 1) % COLS] && fi - Math.floor(fi) > 0.72);
       const ventEdge = ROWS[Math.max(0, ri)] > VENT_TOP && ((inVent[(i0 + COLS - 1) % COLS] && fi - Math.floor(fi) < 0.22) || (inVent[(i1 + 1) % COLS] && fi - Math.floor(fi) > 0.78));
-      if (edge || ventEdge) return shadeOf(BOOKRED, h.tone);
+      // (the vent's seam down his back, piped in red, from its top to the hem)
+      const seam = k > VENT_TOP && gap(a, aBack) < VENT_SEAM;
+      if (edge || ventEdge || seam) return shadeOf(BOOKRED, h.tone);
       // (the red lining of its hem)
       if (tg === 'chem' && hash(h.x, h.y, 5) < 0.85) return shadeOf(BOOKRED, h.tone - 1);
       const fold = (FOLD[i0] + (FOLD[i1] - FOLD[i0]) * (fi - Math.floor(fi))) * Math.min(1, k * 1.5);
