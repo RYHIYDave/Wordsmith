@@ -17,6 +17,13 @@
  * over by a worker.
  * It writes all of it to this page's own database (runs/<id>), which the chat reads; where it cannot, it says so on the screen.
  * Read here: window.__rec.
+ *
+ * THE SECOND PHONE CHECK (12 Nov 2026, `v` 2): the same, on a page of the game with the baked frames kept in their sheets
+ * (engine/px.ts sheetSprite, the branch fix/frames-from-sheets: his phone's first run, 74 s into town, 68.5 s of it the
+ * browser making a picture for every frame). Where the page has that (`fix`), the trial also asks, of the hero's own frames:
+ * EVERY PIXEL of a frame as it is given now against the picture made the old way, some 120 of them (`real.tried`,
+ * `real.unlike`), what the old way costs a frame on the real sheets (`real.oldMs`), and what frames not yet cut cost to be
+ * asked for and drawn (`real.cutN`, `real.cutMs`); and it writes how many frames have been cut from their sheets (`cuts`).
  */
 (function () {
   'use strict';
@@ -33,7 +40,9 @@
   var r1 = function (x) { return Math.round(x * 10) / 10; };
 
   var R = {
-    v: 1,
+    v: 2,
+    fix: false,
+    cuts: null,
     page: 'phone-check',
     id: 'r' + Date.now().toString(36) + Math.floor(Math.random() * 46656).toString(36),
     startedAt: new Date().toISOString(),
@@ -449,6 +458,13 @@
     await frames(2);
     t.worker = await workerTrial(240, FW, FH);
 
+    // F. THE HERO'S OWN FRAMES, where the page keeps them in their sheets
+    if (W.__dbg && typeof W.__dbg.sheetWhere === 'function') {
+      forced = 'trial: the hero\'s own frames';
+      await frames(2);
+      try { t.real = await realFrames(); } catch (e) { t.real = { failed: String((e && e.message) || e).slice(0, 200) }; }
+    }
+
     forced = 'trial: tidying';
     for (var x = 0; x < bits.length; x++) { try { bits[x].close(); } catch (e) { /* none */ } }
     for (var y = 0; y < one.length; y++) { try { one[y].close(); } catch (e) { /* none */ } }
@@ -458,6 +474,86 @@
     out.width = 0;
     await frames(2);
     return t;
+  }
+  /** The hero's own frames, kept in their sheets: every pixel against the old way; what the old way costs; what a frame's first asking costs. */
+  async function realFrames() {
+    var d = W.__dbg;
+    var out = { frames: 0, tried: 0, unlike: 0, first: '', oldMs: 0, cutN: 0, cutMs: 0 };
+    var cls = R.hero;
+    if (!cls || !d.renderer || !d.renderer.art || !d.renderer.art.heroes) { out.skipped = 'no hero'; return out; }
+    var list = [];
+    var seen = new Set();
+    var isSprite = function (v) { return v && typeof v === 'object' && typeof v.w === 'number' && typeof v.ax === 'number'; };
+    var walk = function (o, depth) {
+      if (!o || typeof o !== 'object' || seen.has(o) || depth > 8) return;
+      seen.add(o);
+      if (Array.isArray(o)) {
+        for (var i = 0; i < o.length; i++) {
+          var dsc = Object.getOwnPropertyDescriptor(o, i);
+          if (!dsc || typeof dsc.get === 'function') continue;
+          var v = dsc.value;
+          if (isSprite(v)) { if (!seen.has(v) && d.sheetWhere(v)) { seen.add(v); list.push(v); } } else walk(v, depth + 1);
+        }
+        return;
+      }
+      if (isSprite(o)) return;
+      var keys = Object.keys(o);
+      for (var k = 0; k < keys.length; k++) {
+        var dk = Object.getOwnPropertyDescriptor(o, keys[k]);
+        if (dk && !dk.get) walk(dk.value, depth + 1);
+      }
+    };
+    var places = cls === 'warlock' ? [{ town: true }, {}, { demon: true }, { blaze: true }] : [{ town: true }, {}];
+    for (var p = 0; p < places.length; p++) walk(d.renderer.art.heroes.of(cls, Object.assign({ twoHanded: true, town: !!places[p].town }, places[p], { vet: cls === 'brawler' })), 0);
+    out.frames = list.length;
+    if (!list.length) return out;
+    var scratch = ceOrig.call(D, 'canvas');
+    scratch.width = 256;
+    scratch.height = 256;
+    var sg = scratch.getContext('2d', { willReadFrequently: true });
+    // (a) frames not cut yet, asked for and drawn one after another
+    var fresh = [];
+    for (var f = 0; f < list.length && fresh.length < 400; f++) {
+      var w0 = d.sheetWhere(list[f]);
+      if (w0 && !w0.cut && w0.sheet.img) fresh.push(list[f]);
+    }
+    var a = now();
+    for (var j = 0; j < fresh.length; j++) sg.drawImage(fresh[j].img, 0, 0);
+    sg.getImageData(0, 0, 1, 1);
+    out.cutN = fresh.length;
+    out.cutMs = r1(now() - a);
+    await frames(1);
+    // (b) every pixel, one frame in every `step`
+    var pixels = function (img, w, h) {
+      scratch.width = w;
+      scratch.height = h;
+      sg.clearRect(0, 0, w, h);
+      sg.drawImage(img, 0, 0);
+      return sg.getImageData(0, 0, w, h).data;
+    };
+    var step = Math.max(1, Math.floor(list.length / 120));
+    var old = 0;
+    for (var n = 0; n < list.length; n += step) {
+      var s = list[n];
+      var at = d.sheetWhere(s);
+      if (!at || !at.sheet.img) continue;
+      var img = s.img;
+      out.tried++;
+      if (img.width !== at.w || img.height !== at.h) { out.unlike++; if (!out.first) out.first = 'frame ' + n + ': its size'; continue; }
+      var A = new Uint8ClampedArray(pixels(img, at.w, at.h));
+      var t1 = now();
+      var bmp = await cibOrig(at.sheet.img, at.x, at.y, at.w, at.h, { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
+      old += now() - t1;
+      var B = pixels(bmp, at.w, at.h);
+      if (typeof bmp.close === 'function') bmp.close();
+      var diff = 0;
+      for (var q = 0; q < A.length; q++) if (A[q] !== B[q]) diff++;
+      if (diff) { out.unlike++; if (!out.first) out.first = 'frame ' + n + ': ' + diff + ' of ' + A.length; }
+    }
+    out.oldMs = r1(old);
+    scratch.width = 0;
+    scratch.height = 0;
+    return out;
   }
   function startTrial() {
     if (trialStarted) return;
@@ -505,6 +601,7 @@
     if (d) {
       try { R.baked = JSON.parse(JSON.stringify(d.baked())); } catch (e) { /* none */ }
       try { R.sounds = JSON.parse(JSON.stringify(d.sounds())); } catch (e) { /* none */ }
+      try { R.fix = typeof d.sheetWhere === 'function'; if (typeof d.sheetCuts === 'function') R.cuts = JSON.parse(JSON.stringify(d.sheetCuts())); } catch (e) { /* none */ }
     }
     R.files = files();
     var body = JSON.parse(JSON.stringify(R));
@@ -605,6 +702,7 @@
     }
     var t = R.trial;
     if (t) lines.push('trial: cut ' + t.cutMs + ' one ' + t.oneMs + ' drawCut ' + (t.drawCut || []).join('/') + ' drawSheet ' + (t.drawSheet || []).join('/') + ' canvas ' + t.canvasMs + ' wk ' + (t.worker ? t.worker.ms : '-'));
+    if (t && t.real) lines.push('own frames: ' + t.real.tried + ' tried, ' + t.real.unlike + ' unlike; old ' + t.real.oldMs + 'ms; cut ' + t.real.cutN + ' in ' + t.real.cutMs + 'ms');
     return lines.join('\n');
   }
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', paint);

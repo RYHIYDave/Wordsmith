@@ -79,6 +79,85 @@ GAME'S OWN PAGE (25.3.7, the files of `gh-pages` f30b0404 served from a folder, 
    to 5.2; `canvasMs` 50; the worker's 240 in 43 to 45 ms. In Chrome none of it costs anything. WebKit's own bug reports say
    an iPhone's browser is slow at making and handing over ImageBitmaps (bugs 280601, 234920): his phone's run will say.
 
+## HIS PHONE, MEASURED FOR THE FIRST TIME (12 Nov 2026, 05:38 to 05:41 Eastern)
+
+His word, 12 Nov, 05:42: “Ran it”. An iPhone, iOS 18.7, in the Claude app (`Claude/1.261030.19`), the page in a frame, 3
+screen pixels to one; LOW POWER MODE ON (asked by pop-up: “Yes, it was on”). Four documents in the page's `runs`:
+
+| run | what it holds |
+|---|---|
+| `rmwdezp7zehs` | the page opened: 2.9 s before the first frame, and no more |
+| `rmwdezy3w777` | held upright. The title, NEW GAME, the hero cards, the Brawler picked, 21 s of the loading screen; then nothing more: THE PAGE RESTARTED ITSELF (asked by pop-up: “It restarted itself”) |
+| `rmwdf0wjhvl8` | held sideways. The title, CONTINUE, 19 s of the loading screen; then the page restarted itself again |
+| `rmwdf1s8danp` | held sideways. The title, CONTINUE, the loading screen to its end, the town, the trial. THE WHOLE RUN |
+
+**THE LOAD INTO TOWN, the Brawler from eight sides (`rmwdf1s8danp`): 74.4 s.** His group, by the game's own count: 9,666
+frames in 73.8 s. **68.5 s OF IT INSIDE `createImageBitmap` ITSELF, ON THE GAME'S OWN THREAD**: 9,679 calls (9,666 of them a
+frame cut from its sheet), 7.1 ms a call. 100 frames were drawn in those 74 s; thirteen waits between two frames were over
+a second; the longest 9.1 s, then 7.9, 7.7, 7.6, 6.9, 6.9, 7.8, 5.5: a sheet's frames go through in one go (the batches of 48
+give no frame a turn between them). The loading screen's own clock had counted 3.1 s when it lifted: it did not give up at
+its 15 s; it waited for the group, and the group took that long. (So the reading above, 5 frames a second for 60 s, was
+wrong in its detail and right in its cause.) The same group on the cloud machine: 3.1 s.
+
+The two runs that ended in the loading screen: 2,256 frames cut (the first two sheets, 1,114 and 1,142), 8.2 and 7.7 ms a
+call, waits of 10.0 and 8.8 s, and of 9.4 and 8.2 s; then the page restarted itself.
+
+**THE HERO CARDS** (`rmwdezy3w777`): 6 frames in 3.3 s, the game's own frame 283 ms and 611 ms at worst; the cards group's 471
+frames 2.9 ms a call; the title's music decoded meanwhile (3.3 MB, 1.6 s). A HERO PICKED: 10 frames in 2.1 s, the game's
+own frame 203 ms. As found here: the heroes sculpted on the game's own thread as their cards are shown.
+
+**THE TITLE AND THE TOWN: EXACTLY 30 FRAMES A SECOND** (the waits between frames 33 and 34 ms, two of one to one of the
+other, as a clock of a thirtieth of a second read to the millisecond gives), the game's own frame 1 ms on the title and 3.5 ms
+in town. An iPhone's browser holds a page to 30 a second in Low Power Mode, and a page in another site's frame until it is
+touched (WebKit bugs 168837, 170534): not the game's. Before the first frame: 2.9 s, the clock 2.7 s late.
+
+**THE TRIAL ON HIS PHONE** (480 frames of 64 by 72 from one sheet; Chrome on the cloud machine beside it):
+
+| | his phone | Chrome here |
+|---|---|---|
+| a picture made for every frame, 48 at once (`cutMs`) | 650 ms | 14 to 19 ms |
+| 60 of them, one at a time (`oneMs`) | 109 ms | 2.1 to 2.7 ms |
+| the 480 drawn from the cut pictures (`drawCut`) | 10 ms | 3.8 to 4.4 ms |
+| the 480 drawn straight from the sheet (`drawSheet`) | 10 ms | 4.8 to 5.2 ms |
+| a small canvas cut for each of the 480, two frames waited for in it (`canvasMs`) | 66 ms | 50 ms |
+| the 480 drawn from those canvases (`drawCanvas`) | 11 ms | 3.7 to 4.7 ms |
+| 240 pictures made in a worker and handed over (`worker.ms`) | 257 ms, 220 of it the worker's own making | 43 to 45 ms |
+
+SO: making an ImageBitmap for every baked frame is what his phone cannot do (and the real sheets cost five times the
+trial's: 7.1 ms a frame against 1.4). Drawing from the sheet, or from a small canvas cut from it, costs it nothing more.
+
+FOR THE LIVE GAME, WORKED OUT at 7 to 8 ms a frame, NOT MEASURED: the Warrior's 2,504 frames about 18 s, the Ranger's 7,253
+about 50 s, and the townsfolk's 2,481 with any of them (`render/townsfolk_baked.ts` cut them the same way, live since
+25.3.7).
+
+## THE MEND: THE BAKED FRAMES KEPT IN THEIR SHEETS (the branch `fix/frames-from-sheets`, de6fea61, from `main` 9f3cf44)
+
+His word, 12 Nov, by 05:47, asked by pop-up whether to build it: “Yes, build it (Recommended)”. The queue's
+`keep-baked-frames-in-their-sheets`.
+
+`engine/px.ts` sheetSprite: a baked frame's Sprite knows its sheet and where it is on it; its `img` is cut from the sheet (a
+small canvas, as a painted frame's is) the first time something asks for it; the cut ones in hand are kept to 24 MB, the
+least lately asked for let go of and cut again when asked for. `render/baked.ts` and `render/townsfolk_baked.ts` hold the
+sheets whole: the only pictures the browser is asked for are the sheets. Nothing that draws a Sprite is changed. NO PICTURE
+CHANGES, NO NEW BAKE (the heroes' mark and the townsfolk's are `main`'s, each made from the branch's code).
+
+CHECKED HERE (Chrome): tsc clean; unit --only baked, figure, memory_floors, sheet_sprite, townsfolk3, townsfolk_baked and the
+core on de6fea61dc: 28 files, 331 tests, all passed. On the release build of the branch with the live site's own bakes
+(heroes 0ed837378e63, townsfolk d4c898fe370d), served, a phone's screen: `tools/scenarios/sheet_frames.mjs` for each of the six
+heroes, 10 checks each, none flagged: EVERY PIXEL of a frame as it is given now against the picture made the old way, 307 to
+361 frames of each hero and 310 of the townsfolk's, none unlike; the browser asked for a picture only for each sheet; every
+frame asked for in turn, never more than 24 MB cut in hand. `townsfolk_baked.mjs` (they come from the files, are let go of
+as he goes down, come again), `baked.mjs` (the Warlock), `veteran_play.mjs`, `guide.mjs` (the Warrior's first dungeon):
+finished clean. WHAT THE SHEETS HOLD (their pixels, four bytes each): the Warrior 48 MB, the Ranger 109, the Mage 74, the
+Warlock 105, the Tinkerer 30, the Brawler 53 (from eight sides, 13 sheets: about 200), the cards 7; and up to 24 MB of
+frames cut. A hero's frames cut one by one were the sum of the frames (the Brawler 38 MB, the Ranger 97): the sheets are 3%
+to 40% more, for the room between frames on a sheet.
+
+**THE SECOND PHONE CHECK**: the same page (his link and his save there are the same), the same test build with the mend
+(`bring-in/eight-sides` 0925c57 with the branch's `engine/px.ts` and `render/baked.ts`; the bake's mark still e0ac1c19738f),
+the stamp PHONE CHECK 2; the recorder `v` 2 also asks, of the hero's own frames on his phone: every pixel against the old
+way, what the old way costs on the real sheets, and what frames not yet cut cost to be asked for. HIS RUN IS AWAITED.
+
 ## WHAT WOULD MEND THE HERO CARDS (not built: a build of its own, with a new bake)
 
 - The cards asked for from the bake as the title comes up, not as the cards are shown; all six heroes left to the bake where

@@ -41,11 +41,19 @@ export default async function (page, snap) {
   log('the sounds', JSON.stringify(r.sounds));
   log('the files', `${r.files.n} files, ${r.files.kb} KB; the slowest: ${JSON.stringify(r.files.slowest.slice(0, 4))}`);
   log('the trial', JSON.stringify(r.trial));
+  log('frames cut from their sheets', JSON.stringify(r.cuts));
   log('long frames', `${r.long.length}; ticks ${r.ticks.length}`);
   log('the mark in the corner', mark.replace(/\n/g, ' | '));
   check('the hero picked is the one recorded', r.hero === cls, r.hero);
   check('the screens are told apart: the title, the loading screen and the town', ['title', 'loading: town', 'town'].every((w) => r.segs.some((s) => s.label.startsWith(w))), r.segs.map((s) => s.label).join(' > '));
-  check('the hero\'s baked pictures came whole through the recorder', !!r.baked && r.baked.failed.length === 0 && r.baked.given > 0 && r.madeDone >= r.baked.given, JSON.stringify(r.baked));
+  const cutByBrowser = r.segs.reduce((n, s) => n + s.cut, 0);
+  if (r.fix) {
+    // (THE BAKED FRAMES KEPT IN THEIR SHEETS, engine/px.ts sheetSprite: the browser makes a picture for a sheet, never for a frame)
+    check('the hero\'s baked pictures came whole, and the browser made no picture for a frame', !!r.baked && r.baked.failed.length === 0 && r.baked.given > 0 && cutByBrowser === 0, `${JSON.stringify(r.baked)}; ${r.made} pictures made by the browser, ${cutByBrowser} of them cut from a sheet`);
+    const real = r.trial && r.trial.real;
+    check('the hero\'s own frames: every pixel as the old way made them', !!real && !real.failed && real.tried >= 100 && real.unlike === 0, JSON.stringify(real));
+    check('frames cut from their sheets are counted', !!r.cuts && r.cuts.made > 0, JSON.stringify(r.cuts));
+  } else check('the hero\'s baked pictures came whole through the recorder', !!r.baked && r.baked.failed.length === 0 && r.baked.given > 0 && r.madeDone >= r.baked.given, JSON.stringify(r.baked));
   check('the side painter\'s pictures are counted, and the game still gets them', r.fromWorkers > 0, `${r.fromWorkers}`);
   check('the trial ran to its end', !!r.trial && !r.trial.failed && !r.trial.skipped && r.trial.cutMs > 0 && Array.isArray(r.trial.drawSheet) && !!r.trial.worker && r.trial.worker.got === 240, JSON.stringify(r.trial));
   check('it says it is done, and that it could not send (no database here)', r.state === 'done' && /could not be sent/.test(mark), mark.slice(0, 60));
