@@ -214,15 +214,32 @@ function movesOfClass(cls: ClassId): { stand: Move3; lurch: Move3 } {
 /** Where a reflection is in its stepping out, and what it is doing: its feet on the step's picture, the move and the moment of it, how far through the glass (0 all behind it, 1 all out). */
 export function steppingAt(cls: ClassId, t: number): { x: number; y: number; move: Move3; at: number; through: number } {
   const { stand, lurch } = movesOfClass(cls);
+  const lurchLong = lurch.motion.keys[lurch.motion.keys.length - 1].at;
+  const s = steppingOf(lurchLong, t);
+  return { x: s.x, y: s.y, move: s.which === 'lurch' ? lurch : stand, at: s.at, through: s.through };
+}
+/**
+ * The same for any hero (art/reflections_up.ts): where it is, and which of its two moves it is in, its stand or its stumble
+ * forward (`lurchLong` seconds long, played STEP_OUT.slow times slower), and the moment of it.
+ */
+export function steppingOf(lurchLong: number, t: number): { x: number; y: number; which: 'stand' | 'lurch'; at: number; through: number } {
   const S = STEP_OUT;
   const k = ease(clamp01((t - S.from) / (S.until - S.from)));
   const tiles = -S.back + (S.back + S.out) * k;
   const x = STEP_MIRROR[0] + TILE_X[0] * tiles;
   const y = STEP_MIRROR[1] + TILE_X[1] * tiles;
-  const lurchLong = lurch.motion.keys[lurch.motion.keys.length - 1].at;
-  if (t < S.from) return { x, y, move: stand, at: t, through: 0 };
-  if (t < S.from + lurchLong * S.slow) return { x, y, move: lurch, at: (t - S.from) / S.slow, through: k };
-  return { x, y, move: stand, at: t - S.from - lurchLong * S.slow, through: k };
+  if (t < S.from) return { x, y, which: 'stand', at: t, through: 0 };
+  if (t < S.from + lurchLong * S.slow) return { x, y, which: 'lurch', at: (t - S.from) / S.slow, through: k };
+  return { x, y, which: 'stand', at: t - S.from - lurchLong * S.slow, through: k };
+}
+/**
+ * WHAT A REFLECTION STEPS OUT IN, for one that is not of the first three's old pictures (art/reflections_up.ts): how long its
+ * stumble forward is, and its glass picture at a moment of its stand or of its stumble, from in front, on the heroes' canvas
+ * (CANVAS3) with its feet at that canvas's floor point.
+ */
+export interface StepSource {
+  lurchLong: number;
+  fig(which: 'stand' | 'lurch', at: number): Painted;
 }
 
 /** Rings running out across the glass from where it stirs: how many tones lighter (+) or darker (-) a point of it is. */
@@ -280,14 +297,23 @@ function drops(n: number, seed: number, cx: number, cy: number, since: number, f
  * the mirror's foot at STEP_MIRROR. From in front (the game shows it the other way round on the other wall). The
  * mirror's frame is not in it: that is the floor's piece (`mirrorPainted` is a stand-in for the pictures).
  */
-export function stepOutPainted(cls: ClassId, t: number, m: MirrorShape = GALLERY_MIRROR): Painted {
+export function stepOutPainted(cls: ClassId, t: number, m: MirrorShape = GALLERY_MIRROR, src?: StepSource): Painted {
   const S = STEP_OUT;
   const W = STEP_CANVAS.w;
   const H = STEP_CANVAS.h;
   const out = new Px(W, H);
   const [mx, my] = STEP_MIRROR;
-  const at = steppingAt(cls, t);
-  const fig = reflectionPainted(at.move, at.at, 'front');
+  let at: { x: number; y: number; through: number };
+  let fig: Painted;
+  if (src) {
+    const s = steppingOf(src.lurchLong, t);
+    at = s;
+    fig = src.fig(s.which, s.at);
+  } else {
+    const s = steppingAt(cls, t);
+    at = s;
+    fig = reflectionPainted(s.move, s.at, 'front');
+  }
   const fd = fig.px.d;
   // (the figure's picture laid on the step's: its feet at at.x, at.y)
   const ox = Math.round(at.x) - CANVAS3.ax;
