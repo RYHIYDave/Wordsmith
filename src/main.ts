@@ -169,6 +169,8 @@ import { W10_GLYPH, W10_RAMP, W10_WORDS, WORDS10_LOOK, demoW10, eventsW10 } from
 import { PAGE_TURN, WORD_SOUND, WORD_SOUNDS, wordSoundsOf } from './game/word_sounds';
 import type { WordSound } from './game/word_sounds';
 import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
+import { M8_LOOK, MELDS8_LOOK } from './render/melds8';
+import type { M8Event } from './render/melds8';
 import { act1Fx } from './render/act1_fx';
 import { forgetUnusedPictures } from './render/act1_fx/kept';
 import { mothFxBytes } from './render/act1_fx/moth';
@@ -3375,6 +3377,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     lex28: demoLex28(() => meta),
     /** THE FIVE VOLATILE MELDS' looks (render/volatile3.ts): Demolition, Powderkeg, Shatter, Chain Reaction and Rupture at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */
     volatile3: demoV3(fx, () => game),
+    /** THE EIGHT MELDS ACROSS THE GROUPS' LOOKS (render/melds8.ts): a mock-up behind a switch that is off; its playtest switches it on for its own page and sends their moments by hand (the rules are the main chat's, on its branch melds8). */
+    melds8: { switch: MELDS8_LOOK, look: M8_LOOK, moment: (e: Omit<M8Event, 't'>) => fx.melds8.moment({ t: 'meld8', ...e } as M8Event) },
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
     /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): ON since Version 19.2, on his yes; pictures of the swings as they were before switch it off and paint the heroes again (true: the mended, the game's own, back). */
