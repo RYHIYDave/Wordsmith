@@ -9,6 +9,7 @@
 //   PROFILE=8,10                        a CPU profile of five seconds as those floors are come into (<OUT>_prof<k>.json)
 //   PACKS=0                             a hero whose moves are kept packed (render/baked.ts PACKS) holds them all, none let go
 //   BUDGET=40                           the packs' budget, MB (the game's own if not given)
+//   CUT=bitmap                          a pack's frames each a picture made by the browser (the game's own way, canvases, if not given)
 // The page must be served with the heroes', sounds' and Colossus's files beside it (dist/, after tools/build.mjs).
 import { execSync } from 'node:child_process';
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -51,7 +52,7 @@ export default async function (page) {
   const settle = async () => { for (let i = 0; i < 400; i++) { const l = await page.evaluate(() => window.__dbg.loadingNow()); if (!l) break; await page.waitForTimeout(50); } };
 
   // (the packs' switch and budget, set before the hero is first taken in)
-  await page.evaluate(([off, mb]) => { const P = window.__dbg.packs && window.__dbg.packs.PACKS; if (!P) return; if (off) P.on = false; if (mb) P.budget = mb * 1048576; }, [process.env.PACKS === '0', Number(process.env.BUDGET || 0)]);
+  await page.evaluate(([off, mb, cut]) => { const P = window.__dbg.packs && window.__dbg.packs.PACKS; if (!P) return; if (off) P.on = false; if (mb) P.budget = mb * 1048576; if (cut) P.cut = cut; }, [process.env.PACKS === '0', Number(process.env.BUDGET || 0), process.env.CUT || '']);
   await page.evaluate((cls) => { const d = window.__dbg; d.saving(false); d.run(cls, 5); d.autoLevel = false; d.autoWords = false; }, CLS);
   await page.waitForTimeout(1500);
   // (a tap, so that the sound starts as it does under a thumb)
