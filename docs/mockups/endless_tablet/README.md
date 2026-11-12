@@ -228,9 +228,14 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   its shadow chasing him across the floor, slamming down three times in a row: craters, shockwaves, stone flying). FROST: “Ice spikes
   (Recommended)” (jagged ice bursting up out of the floor in lines racing at him, the floor frozen and slippery behind them).
   LIGHTNING: “Ball lightning” (slow crackling orbs drifting after him, zapping anything near, then bursting). POISON: “Spore mines”
-  (runes sunk in the floor round him, bursting into poison clouds when he comes near). FLAME: not answered; taken as our pick,
-  Firestorm (the rune hurled skyward, bursting, fireballs raining across the room onto warning marks, leaving burning ground), and
-  told him so.
+  (runes sunk in the floor round him, bursting into poison clouds when he comes near). FLAME: not answered at first; asked again (he
+  asked “what were the fire options?”): “Firestorm (Recommended)” (the rune hurled skyward, bursting, fireballs raining across the
+  room onto warning marks, leaving burning ground, less and less room to stand).
+- PHASE 2, HIS SHADE (asked when he grows huge, as his brief had it: once thrown): “how about a large pink energy shade that looms
+  above him and mimics his movements.  he forges a word, as he would in phase one, the shade also phases a word, and they meld into
+  the new attack.” READ AS (told him so): in phase 2 he stays his own size; a huge shade of him in his pink energy looms above and
+  behind him and does all he does; to attack, he forges one word and the shade another, and the two meld, seen, into the new
+  attack. The shade is his (pink, never cyan). It stands for “once thrown, he grows huge” in his brief.
 
 ## The tools
 
