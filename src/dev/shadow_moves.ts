@@ -20,8 +20,14 @@
 //                   on two legs, each of the four ways it may be going as it faces what it fights (new): the game's way
 //                   of an attack made walking (AnimSet.clips.attackWalk, art/moves3.ts walkingOf)
 //
-// What else stands up (Damning, the smoke step's ends, how the change and the burning out end) is asked of him as each is
-// made. His art rulebook's Movement: weight first; each character its own way (its: a feral beast's, huge in the shoulder,
+//   ITS OTHER MOVES, ALL UP ON TWO LEGS (his word of 11 Nov by 19:59, asked of Damning, the smoke step, the change into it
+//                   and burning out, offered as “up on two legs for everything but running”: “Yes, all on two legs
+//                   (Recommended)”): each of the game's own (dev/demon_moves.ts, dev/warlock_change.ts, dev/warlock_hits.ts),
+//                   to its own frames, beginning and ending in its stance up on two legs: DAMNING, torn up; THE SMOKE
+//                   STEP's two ends; the end of THE CHANGE into it, its roar; the start of ITS BURNING OUT; STRUCK hard and
+//                   from behind (the foot of this file)
+//
+// His art rulebook's Movement: weight first; each character its own way (its: a feral beast's, huge in the shoulder,
 // its claws what it fights with); loose things follow (its wings of smoke, its tail); slick; alive when still; heavy blows
 // freeze; feet grip the floor, and so do its claws; big wind-up, lightning strike. Everything at thirty a second.
 
@@ -32,7 +38,8 @@ import type { Bones, Key3, Motion, Posed, V3 } from '../art/skeleton';
 import type { GameView } from '../art/skin';
 import type { Drawn } from './sculpt';
 import { DEMON_FOURS } from './sculpt_demon_rig';
-import { FR, RK, RUN_ROUND, demonRun, track } from './demon_moves';
+import { BURN_OUT_LONG, DAMN_HIT, DAMN_LONG, DM, FR, RK, RUN_ROUND, SS, STEP_LONG, demonRun, stepAlongAt, stepGoneAt, track } from './demon_moves';
+import { WSTRUCK } from './warlock_hits';
 import { DEMON_UP, WOLF_B } from './demon_new';
 import type { Moving, WingsHeld } from './demon_new';
 import { shadowFrame } from './demon_ideas';
@@ -60,6 +67,12 @@ export interface ShadowMove {
   tail?: (t: number) => number;
   /** Whether its claws are its feet at a moment (down on all fours: each drawn as a claw on the floor however high it swings). */
   paws?: (t: number) => boolean;
+  /**
+   * A move up on two legs in which its claws go down onto the floor (Damning; the smoke step's far end; its burning out):
+   * each is drawn as a claw on the floor, spread flat, while its wrist is lower than PAW_BELOW, as when it runs (a claw
+   * hung open that low has its talons down through the floor).
+   */
+  digs?: boolean;
   /** How big the fires under its claws burn at a moment (on all fours; the left claw's are 0 to 4, the right's 5 to 9; 1 as at rest). */
   fire?: (t: number, i: number) => number;
   /** A slash: which claw (1 its left, -1 its right); the way that claw's palm faces at a moment (its talons leading the sweep) and how far hooked. */
@@ -76,6 +89,13 @@ export interface ShadowMove {
    */
   way?: number;
   along?: (t: number) => number;
+  /** Both claws' palms turned their own ways at a moment (a move that is no slash): its left's and its right's; not given, hung as they hang. */
+  palms?: (t: number) => { L: V3; R: V3 };
+  /** A move in which it goes into smoke (its swipe): how far it is gone at a moment (0 all there, 1 all smoke); and when it is off the floor altogether. */
+  gone?: (t: number) => number;
+  air?: [number, number];
+  /** How bright what burns on it is at a moment (its eyes, its grin, its talons, the embers down its backbone): 1 as ever, 0 all but out (its burning out). */
+  glow?: (t: number) => number;
 }
 
 /** Eased both ways, 0 to 1. */
@@ -623,6 +643,456 @@ function walkingSlashMove(side: 1 | -1, way: number): ShadowMove {
   };
 }
 
+// =====================================================================================================================
+// ITS OTHER MOVES, ALL UP ON TWO LEGS (his word, 11 Nov by 19:59, asked of Damning, the smoke step, the change into it and
+// burning out, offered as “up on two legs for everything but running”: “Yes, all on two legs (Recommended)”). Each is the
+// game's own move (his “A new design, same moves”), to the game's own frames, so the rules need no change; what is new is
+// only that each begins and ends in its stance up on two legs, and what a body up on two legs must do differently to make
+// the same move.
+
+/** A body's numbers over frames, smooth through each key and still at its holds (dev/demon_moves.ts track). */
+const keyed = (at: readonly number[], holds: ReadonlySet<number> = new Set()) => (vals: readonly number[], f: number): number => track(at.map((g, i) => [g, vals[i]] as const), f, holds);
+/** A place over frames, each of its three numbers so. */
+const placed = (at: readonly number[], holds: ReadonlySet<number>, pts: readonly V3[], f: number): V3 => [0, 1, 2].map((k) => track(at.map((g, i) => [g, pts[i][k]] as const), f, holds)) as unknown as V3;
+/** Where its claws hang in its stance (its own measure, from its place on the floor). */
+const HANG = (() => {
+  const s = solve(WOLF_B, SHADOW_STANCE as Posed);
+  return { L: s.handL as V3, R: s.handR as V3 };
+})();
+/** A place for its left claw, the same for its right (its sides swapped). */
+const mirror = (p: V3, side: 1 | -1): V3 => [p[0], side * p[1], p[2]];
+/**
+ * A pose of its up on two legs from its stance: its body's numbers changed by `body`, its claws at places of their own on the
+ * floor's measure (art/skeleton.ts HandIn 2: a claw driven into the floor stays there whatever its body does), its elbows
+ * found for where they are: back and a little out as it stands; out to its sides and up as it crouches over claws on the
+ * floor (`low`, 0 to 1); out and down under arms flung up (`high`, 0 to 1).
+ */
+function upPose(body: Partial<Bones>, L: V3, R: V3, low = 0, high = 0): Bones {
+  const q = { ...SHADOW_STANCE, ...body, lhIn: 2, lhx: L[0], lhy: L[1], lhz: L[2], rhIn: 2, rhx: R[0], rhy: R[1], rhz: R[2] } as Bones;
+  const lo = clampN(low, 0, 1);
+  const hi = clampN(high, 0, 1 - lo);
+  const st = 1 - lo - hi;
+  const want = (side: 1 | -1): V3 => [-10 * st - 7 * lo - 8 * hi, side * (8 * st + 12 * lo + 12 * hi), 2 * st + 8 * lo + 0 * hi];
+  q.le = elbowFor(WOLF_B, q as Posed, true, want(1));
+  q.re = elbowFor(WOLF_B, q as Posed, false, want(-1));
+  return q;
+}
+/** The way a claw's palm faces through a move (for its left; its right's the same, its sides swapped): keys of frames and ways. */
+const palmsOf = (keys: readonly (readonly [number, V3])[]) => (t: number): { L: V3; R: V3 } => {
+  const at = (k: 0 | 1 | 2): number => track(keys.map(([f, v]) => [f * FR, v[k]] as const), t);
+  const p: V3 = [at(0), at(1), at(2)];
+  return { L: norm(p), R: norm([p[0], -p[1], p[2]]) };
+};
+/** Palm down and a little forward, its talons out ahead: a claw about to be driven into the floor. */
+const PALM_DOWN: V3 = [0.3, -0.35, -0.9];
+/** Palm to its foe, its talons up: a claw flung up open. */
+const PALM_OUT: V3 = [0.9, -0.3, -0.15];
+/** How far it is sunk from its stance at which it is as low as it crouches (its own measure). */
+const CROUCH = 15;
+/** How wide its knees are turned out as it crouches (degrees more than in its stance). */
+const KNEES_OUT = 16;
+
+// ---- TAP AND HOLD: DAMNING, TORN UP (the game's: dev/demon_moves.ts damningMove; his pick of its move, 27 Oct, “Tear it up
+// (Recommended)”; and what was worst of the first Damning, “The rear-up and slam (Recommended),The effects”: so NO REAR-UP AND
+// SLAM here either). From its stance up on two legs it gathers itself a moment, its claws drawn up and opened; then DROPS
+// into a crouch, driving both claws down into the floor before it, and they bite; it heaves back against them, straining,
+// its back arched up and its head down between its shoulders, its wings mantled up and forward over it, quivering, as its
+// fire builds under its palms (the hold); then in a flash (Movement 9) it TEARS THEM UP OUT OF THE FLOOR AND IS UP ON TWO
+// LEGS AGAIN, risen tall, its claws flung up and wide and open, its chest thrown open, its head flung back roaring, its
+// wings snapped open, and freezes (Movement 7); and it lets its arms down and settles into its stance. To the game's own
+// frames (DM): its claws bite, it holds and its blow lands when the game's do.
+/** Where its claws bite into the floor (its own measure, forward and to its left; its right's the same, its sides swapped). */
+export const DAMN_DIG: V3 = [44, 20, 7];
+const DAMN_AT = [0, DM.raise, DM.dig, DM.strain, DM.heave, DM.held, DM.rip, DM.freeze, DM.down, DM.settled, 48];
+/** (still as it gathers, where it digs in, where it holds against them, through the freeze, and settled) */
+const DAMN_HOLDS = new Set([1, 2, 5, 6, 7, 9, 10]);
+function shadowDamningMotion(): Motion {
+  const S0 = SHADOW_STANCE;
+  const k = keyed(DAMN_AT, DAMN_HOLDS);
+  const claw = (side: 1 | -1, f: number): V3 => {
+    const own = side > 0 ? HANG.L : HANG.R;
+    const gathered: V3 = [own[0] - 5, own[1] * 0.92, own[2] + 12];
+    const dug = mirror(DAMN_DIG, side);
+    // (flung up and out to its sides, a V over its head: not out before it, where from in front they are lost against its chest)
+    const torn = mirror([-2, 58, 124], side);
+    const let_: V3 = [own[0] - 6, own[1] * 1.3, own[2] + 26];
+    return placed(DAMN_AT, DAMN_HOLDS, [own, gathered, dug, dug, dug, dug, torn, torn, let_, own, own], f);
+  };
+  // (straining: a tremble through it as it heaves against its own claws)
+  const shake = (f: number): number => (f > DM.strain && f < DM.held ? Math.sin(f * 2.9) * Math.sin((Math.PI * (f - DM.strain)) / (DM.held - DM.strain)) : 0);
+  const keys: Key3[] = [];
+  for (let f = 0; f <= 48; f++) {
+    if (f === 0 || f === 48) {
+      keys.push({ at: f * FR, ease: 'lin', pose: { ...S0 } });
+      continue;
+    }
+    const sunk = k([0, -1.5, 17, 15.5, 13, 13, -2, -2, -0.5, 0, 0], f);
+    const L = claw(1, f);
+    const R = claw(-1, f);
+    const body: Partial<Bones> = {
+      // (thrown forward and down onto its claws; heaving back against them; torn up and back onto its legs, tall)
+      px: S0.px + k([0, -1.5, 5, 2, -3, -3, -2, -2, 0, 0, 0], f) + 0.6 * shake(f),
+      pz: S0.pz - sunk,
+      pitch: S0.pitch + k([0, -3, 26, 23, 17, 17, -11, -11, -1, 0, 0], f),
+      roll: 1.2 * shake(f),
+      bend: S0.bend + k([0, -3, 20, 26, 31, 31, -14, -14, -2, 0, 0], f),
+      hunch: (S0.hunch ?? 0) + k([0, -8, 8, 14, 18, 18, -30, -30, -5, 0, 0], f),
+      shrug: (S0.shrug ?? 0) + k([0, 0.05, 0.1, 0.15, 0.2, 0.2, -0.35, -0.35, -0.05, 0, 0], f),
+      // (its eyes on its claws as they bite; its head down between its shoulders as it strains; flung up roaring)
+      faceUp: S0.faceUp + k([0, 5, -10, -16, -20, -20, 24, 24, 4, 0, 0], f),
+      lk: S0.lk + KNEES_OUT * clampN(sunk / CROUCH, 0, 1),
+      rk: S0.rk - KNEES_OUT * clampN(sunk / CROUCH, 0, 1),
+    };
+    keys.push({ at: f * FR, ease: 'lin', pose: upPose(body, L, R, sunk / CROUCH, (Math.min(L[2], R[2]) - 70) / 30) });
+  }
+  return { keys, hit: DAMN_HIT };
+}
+const damningWings = wingsFrom((t) => {
+  const f = t / FR;
+  const k = keyed([0, DM.raise, DM.dig, DM.strain, DM.heave, DM.held, DM.rip, DM.freeze, DM.down, DM.settled, 48], new Set([5, 6, 7, 9, 10]));
+  // (mantled up and forward over it as it strains, quivering; snapped wide open as it tears them up; settling)
+  const quiver = f > DM.strain && f < DM.held ? 0.035 * Math.sin(f * 3.3) : 0;
+  return {
+    open: k([1, 1.04, 0.96, 1.12, 1.2, 1.2, 1.42, 1.42, 1.12, 1, 1], f),
+    lift: k([1, 1.05, 0.92, 1.12, 1.2, 1.2, 1.32, 1.32, 1.06, 1, 1], f) + quiver,
+    sweep: k([0, 1, 2, -6, -9, -9, 8, 8, 3, 0, 0], f),
+  };
+});
+function shadowDamningMove(): ShadowMove {
+  return {
+    name: 'Tap and hold: Damning, up on two legs',
+    digs: true,
+    motion: shadowDamningMotion(),
+    long: DAMN_LONG,
+    loops: false,
+    rest: SHADOW_STANCE,
+    wings: damningWings,
+    tail: (t) => {
+      const f = t / FR;
+      return 0.25 + 0.2 * Math.sin(f * 0.25) * (f < DM.rip ? 0.5 : 1) * (1 - ease((f - DM.down) / 11)) + (f > DM.rip ? 0.25 * Math.exp(-(f - DM.rip) / 8) : 0);
+    },
+    // (his fire under its palms, held down as they bite into the floor, building as it strains against them)
+    fire: (t) => track([[0, 1], [DM.dig, 1.0], [DM.held, 1.6], [DM.rip, 2.2]], t / FR),
+    // (its claws opened wide as it gathers them and as it tears them up; hung again as it settles)
+    // (and shut and turned back to hang as soon as they come down past its chest: held open there, from in front, its near claw is taken for one laid on its chest)
+    grip: (t) => track([[0, 1], [DM.raise, 0.5], [DM.dig, 0.6], [DM.held, 0.6], [DM.rip, 0.42], [DM.freeze, 0.42], [DM.freeze + 4, 0.95], [DM.down, 1], [DM.settled, 1]], t / FR),
+    palms: palmsOf([[0, HUNG], [DM.raise, PALM_DOWN], [DM.held, PALM_DOWN], [DM.rip, PALM_OUT], [DM.freeze, PALM_OUT], [DM.freeze + 2, [0.1, -0.5, -0.85]], [DM.freeze + 5, HUNG], [DM.settled, HUNG], [48, HUNG]]),
+    strike: [(DM.held - 1) * FR, (DM.freeze + 1) * FR],
+    hit: DAMN_HIT,
+  };
+}
+
+// ---- SWIPE: THE SMOKE STEP'S TWO ENDS (the game's: dev/demon_moves.ts smokeStepMove; six tiles the way you swipe; between
+// its ends it is the game's own storm of smoke and hellfire, dev/demon_swipe_fx.ts, not made again here). WHERE IT SETS OFF:
+// from its stance it hunkers down on its haunches, its shoulders rolling, its claws drawn back beside them and clenched,
+// its wings wrapped in round it; still a beat; and springs forward into smoke, its claws flung out ahead (it BURSTS into
+// smoke, in two frames). WHERE IT COMES OUT: it bursts out of the smoke coming down, its claws raised, and SLAMS them into
+// the floor before it (its blow), crouched low over them, its wings snapped open; a freeze; and it rises off them onto two
+// legs, roaring, its claws flung out wide, and settles into its stance. To the game's own frames (SS).
+/** Where its claws come down as it bursts out (its own measure, from where it then stands; its right's the same, its sides swapped). */
+export const STEP_SLAM: V3 = [44, 20, 7];
+const STEP_AT = [0, SS.coil, SS.coiled, SS.burst, SS.gone, SS.out, SS.slam, SS.hold, SS.low, SS.roar, SS.up, SS.settled, 46];
+const STEP_HOLDS = new Set([2, 6, 7, 11, 12]);
+function shadowStepMotion(): Motion {
+  const S0 = SHADOW_STANCE;
+  const k = keyed(STEP_AT, STEP_HOLDS);
+  // (its shoulders rolling as it hunkers down: a menace)
+  const prowl = (f: number): number => (f < SS.burst ? Math.sin((f / SS.burst) * Math.PI * 2) * Math.sin((f / SS.burst) * Math.PI) : 0);
+  /** A claw: drawn back beside its haunches as it coils; flung out ahead as it goes; raised as it bursts out; slammed down (its right's half a frame after its left's); flung wide as it roars; hung. */
+  const claw = (side: 1 | -1, f: number): V3 => {
+    const own = side > 0 ? HANG.L : HANG.R;
+    const slam = side > 0 ? SS.slam : SS.slam + 0.5;
+    const at = [0, SS.coil, SS.coiled, SS.burst, SS.gone, SS.out, slam, SS.hold + 0.5, SS.low, SS.roar, SS.up, SS.settled, 46];
+    const m = (p: V3): V3 => mirror(p, side);
+    const down = m(STEP_SLAM);
+    // (still, too, until it lifts them off the floor)
+    return placed(at, new Set([...STEP_HOLDS, 8]), [own, m([12, 35, 32]), m([0, 38, 29]), m([4, 38, 31]), m([50, 26, 48]), m([40, 27, 64]), down, down, down, m([4, 63, 66]), m([24, 47, 50]), own, own], f);
+  };
+  /** A hoof: where it stands until it springs; drawn up under it while it is smoke; down again a frame and a half after its claws. */
+  const hoof = (f: number): { z: number; p: number } => {
+    const z = track([[SS.coiled + 0.5, 0], [SS.gone + 1, 8], [SS.out, 7], [SS.slam + 1.5, 0]], f, new Set([3]));
+    return { z, p: 22 * Math.sin(Math.PI * clampN((f - SS.coiled - 0.5) / (SS.slam + 1 - SS.coiled), 0, 1)) * clampN(z / 3, 0, 1) };
+  };
+  const keys: Key3[] = [];
+  for (let i = 0; i <= 46 * 2; i++) {
+    const f = i / 2;
+    if (i === 0 || i === 92) {
+      keys.push({ at: f * FR, ease: 'lin', pose: { ...S0 } });
+      continue;
+    }
+    const sunk = k([0, 8, 13, 13, 5, 8, 18, 18, 19.5, -2.5, -1, 0, 0], f);
+    const L = claw(1, f);
+    const R = claw(-1, f);
+    const lf = hoof(f);
+    const rf = hoof(f - 0.5);
+    const body: Partial<Bones> = {
+      px: S0.px + k([0, -2, -4, -4, 5, 6, 5, 5, 4, -1, 0, 0, 0], f),
+      pz: S0.pz - sunk,
+      pitch: S0.pitch + k([0, 6, 10, 10, 24, 22, 27, 27, 25, -10, -2, 0, 0], f),
+      roll: 4 * prowl(f),
+      twist: 6 * prowl(f),
+      bend: S0.bend + k([0, 8, 14, 14, 4, 12, 22, 22, 26, -13, -3, 0, 0], f),
+      hunch: (S0.hunch ?? 0) + k([0, 6, 12, 12, -4, 6, 10, 10, 15, -28, -6, 0, 0], f),
+      shrug: (S0.shrug ?? 0) + k([0, 0.1, 0.2, 0.2, 0, 0, 0.05, 0.05, 0.1, -0.32, -0.06, 0, 0], f) + 0.08 * Math.abs(prowl(f)),
+      faceUp: S0.faceUp + k([0, -4, -7, -7, 4, -6, -12, -12, -15, 24, 6, 0, 0], f),
+      faceTurn: 8 * prowl(f),
+      lfz: lf.z, lfp: lf.p, rfz: rf.z, rfp: rf.p,
+      lk: S0.lk + KNEES_OUT * clampN(sunk / CROUCH, 0, 1),
+      rk: S0.rk - KNEES_OUT * clampN(sunk / CROUCH, 0, 1),
+    };
+    // (crouched over its claws while they are on the floor; its elbows out under arms flung up as it roars)
+    const low = f >= SS.slam ? sunk / CROUCH : 0;
+    keys.push({ at: f * FR, ease: 'lin', pose: upPose(body, L, R, low, f > SS.low ? (Math.min(L[2], R[2]) - 52) / 14 : 0) });
+  }
+  return { keys, hit: SS.slam * FR };
+}
+const stepWings = wingsFrom((t) => {
+  const f = t / FR;
+  const k = keyed([0, SS.coil, SS.coiled, SS.gone, SS.out, SS.slam, SS.hold, SS.roar, SS.settled, 46], new Set([2, 5, 6]));
+  // (wrapped in round it as it coils; thrown back as it springs; snapped open as it bursts out and slams down; flung wide as it roars; settling)
+  return {
+    open: k([1, 0.84, 0.72, 0.9, 1.4, 1.5, 1.45, 1.4, 1, 1], f),
+    lift: k([1, 0.92, 0.84, 1.0, 1.3, 1.25, 1.2, 1.32, 1, 1], f),
+    sweep: k([0, -3, -5, 14, 6, 3, 2, -3, 0, 0], f),
+  };
+});
+function shadowStepMove(): ShadowMove {
+  return {
+    name: "Swipe: the smoke step's two ends, up on two legs",
+    digs: true,
+    motion: shadowStepMotion(),
+    long: STEP_LONG,
+    loops: false,
+    rest: SHADOW_STANCE,
+    wings: stepWings,
+    tail: (t) => 0.25 + track([[0, 0], [4 * FR, 0.3], [8 * FR, -0.3], [SS.burst * FR, 0], [SS.slam * FR, 0.3], [30 * FR, -0.12], [44 * FR, 0]], t),
+    // (his fire bursting up under its claws as they slam down, and dying back)
+    fire: (t) => track([[SS.slam, 2.2], [SS.slam + 6, 1.3], [SS.roar - 1, 1]], t / FR),
+    // (clenched as it coils; flung open as it goes, as it comes down and as it roars)
+    grip: (t) => track([[0, 1], [SS.coiled, 1.3], [SS.gone, 0.6], [SS.out, 0.5], [SS.slam, 0.6], [SS.low, 0.6], [SS.roar, 0.42], [SS.up, 0.8], [SS.settled, 1]], t / FR),
+    palms: palmsOf([[0, HUNG], [SS.coiled, HUNG], [SS.gone, PALM_DOWN], [SS.low, PALM_DOWN], [SS.roar, PALM_OUT], [SS.up, [-0.3, -0.6, -0.45]], [SS.settled, HUNG], [46, HUNG]]),
+    // (its bursting into smoke, the storm across and its bursting out of it are the flash: Movement 9)
+    strike: [(SS.coiled - 1) * FR, (SS.hold + 1) * FR],
+    hit: SS.slam * FR,
+    along: (t) => stepAlongAt(t / FR),
+    air: [(SS.coiled + 1) * FR, (SS.slam - 0.5) * FR],
+    gone: (t) => stepGoneAt(t / FR),
+  };
+}
+
+// ---- THE END OF THE CHANGE INTO IT: ITS ROAR, UP ON TWO LEGS (the game's: dev/warlock_change.ts, the 1.4 s after he has
+// become it, the demon heaving up off its claws and roaring; the change itself, him becoming it, is to be made on this
+// frame with its eight sides). It has come up onto two legs in its stance; it gathers a moment, and ROARS: reared up
+// tall, its chest thrown open, its arms flung out wide and back, its claws spread, its head thrust up and out, its wings
+// thrown back and up and beaten forward and down hard, back, and forward again (as the game's, dev/warlock_change.ts
+// wingsAt), shaking with it; and it sinks into its stance, its wings settling.
+export const ROAR_LONG = 42 * FR;
+const ROAR_F = { gather: 3, up: 7, held: 17, easing: 27, down: 37 };
+const ROAR_KEYS = [0, ROAR_F.gather, ROAR_F.up, ROAR_F.held, ROAR_F.easing, ROAR_F.down, 42];
+const ROAR_HOLDS = new Set([2, 3, 5, 6]);
+function shadowRoarMotion(): Motion {
+  const S0 = SHADOW_STANCE;
+  const k = keyed(ROAR_KEYS, ROAR_HOLDS);
+  const claw = (side: 1 | -1, f: number): V3 => {
+    const own = side > 0 ? HANG.L : HANG.R;
+    const wide = mirror([-3, 64, 52], side);
+    return placed(ROAR_KEYS, ROAR_HOLDS, [own, [own[0] - 6, own[1] * 0.86, own[2] + 5], wide, wide, mirror([16, 55, 45], side), own, own], f);
+  };
+  // (shaking with its roar while it is held)
+  const shake = (f: number): number => (f > ROAR_F.up - 1 && f < ROAR_F.easing ? Math.sin(f * 3.1) * Math.sin((Math.PI * (f - ROAR_F.up + 1)) / (ROAR_F.easing - ROAR_F.up + 1)) : 0);
+  const keys: Key3[] = [];
+  for (let f = 0; f <= 42; f++) {
+    if (f === 0 || f === 42) {
+      keys.push({ at: f * FR, ease: 'lin', pose: { ...S0 } });
+      continue;
+    }
+    const L = claw(1, f);
+    const R = claw(-1, f);
+    const body: Partial<Bones> = {
+      px: S0.px + k([0, 1, -2.5, -2.5, -1, 0, 0], f),
+      pz: S0.pz + k([0, -3, 3.2, 3.2, 1.2, 0, 0], f),
+      pitch: S0.pitch + k([0, 5, -12, -12, -4, 0, 0], f),
+      roll: 1.0 * shake(f),
+      bend: S0.bend + k([0, 4, -15, -15, -5, 0, 0], f),
+      hunch: (S0.hunch ?? 0) + k([0, 6, -30, -30, -10, 0, 0], f),
+      shrug: (S0.shrug ?? 0) + k([0, 0.1, -0.35, -0.35, -0.1, 0, 0], f),
+      faceUp: S0.faceUp + k([0, -5, 22, 22, 8, 0, 0], f) + 1.5 * shake(f),
+      faceTilt: 3 * shake(f),
+    };
+    keys.push({ at: f * FR, ease: 'lin', pose: upPose(body, L, R, 0, k([0, 0, 0.7, 0.7, 0.3, 0, 0], f)) });
+  }
+  return { keys };
+}
+const roarWings = wingsFrom((t) => {
+  // (thrown back and up; beaten forward and down hard, back, forward again; settling: the game's own strokes at its roar)
+  const tr = (keys: readonly (readonly [number, number])[]): number => track(keys, t - ROAR_F.gather * FR);
+  const sweep = tr([[-0.05, 0], [0.2, 0.55], [0.38, -0.6], [0.58, 0.4], [0.76, -0.35], [0.98, 0.12], [1.15, 0]]);
+  const beat = tr([[-0.05, 0], [0.2, 0.5], [0.38, -0.35], [0.58, 0.25], [0.76, -0.15], [1.15, 0]]);
+  const open = tr([[-0.05, 1], [0.2, 1.4], [0.38, 1.22], [0.76, 1.12], [1.15, 1]]);
+  return { open, lift: 1 + 0.55 * beat + 0.12 * (open - 1), sweep: 15 * sweep };
+});
+function shadowRoarMove(): ShadowMove {
+  return {
+    name: 'The change into it ends: it roars, up on two legs',
+    motion: shadowRoarMotion(),
+    long: ROAR_LONG,
+    loops: false,
+    rest: SHADOW_STANCE,
+    wings: roarWings,
+    tail: (t) => 0.25 + 0.35 * hump(t, ROAR_F.gather * FR, 0.5) - 0.2 * hump(t, 0.5, 0.6),
+    grip: (t) => track([[0, 1], [ROAR_F.gather, 1.2], [ROAR_F.up, 0.42], [ROAR_F.held, 0.42], [ROAR_F.down, 1]], t / FR),
+    palms: palmsOf([[0, HUNG], [ROAR_F.gather, HUNG], [ROAR_F.up, [0.75, 0.45, -0.2]], [ROAR_F.held, [0.75, 0.45, -0.2]], [ROAR_F.down, HUNG], [42, HUNG]]),
+  };
+}
+
+// ---- THE METER RUNS DRY: IT BURNS OUT, FROM UP ON TWO LEGS (the game's: dev/demon_moves.ts burnOutMove; his picks, 27 Oct,
+// “Burns out (Recommended)”, “Meter runs dry (Recommended)”). A last heavy breath; what burns on it gutters, flaring once
+// and dying (its eyes, its grin, its talons, the embers down its backbone: it has no other fire up on two legs); and it
+// SAGS DOWN OFF ITS LEGS ONTO ONE KNEE, its rear knee coming down onto the floor before the hoof that stays where it
+// stands, its front knee left up, its head dropping, its shoulders slumping, its arms let down until its claws lie on
+// the floor by its knees, its wings drooping and folding: where he is on one knee as it crumbles away from round him
+// (dev/demon_return.ts crumble; dev/warlock_spells.ts comeBack: the game's own, as they are). As long as the game's.
+const BURN_AT = [0, 10, 18, 30, 40, 52];
+const BURN_HOLDS = new Set([4, 5]);
+/** How far down it sinks onto its rear knee (its own measure), and how high that knee's joint is when it is on the floor. */
+const KNEEL = { sink: 31, knee: 3.4 };
+function shadowBurnOutMotion(): Motion {
+  const S0 = SHADOW_STANCE;
+  const k = keyed(BURN_AT, BURN_HOLDS);
+  // (where its rear knee is in its stance, and where it rests on the floor: before its hock, as far from it as its shank is long)
+  const st = solve(WOLF_B, S0 as Posed);
+  const KNEE = { from: st.kneeR as V3, to: [st.ankleR[0] + Math.sqrt(WOLF_B.shank ** 2 - (WOLF_B.ankle - KNEEL.knee) ** 2), st.ankleR[1], KNEEL.knee] as V3 };
+  const claw = (side: 1 | -1, f: number): V3 => {
+    const own = side > 0 ? HANG.L : HANG.R;
+    // (let down until they lie on the floor by its knees, and there they stay)
+    return placed(BURN_AT, new Set([3, 4, 5]), [own, [own[0], own[1], own[2] + 1], [own[0] - 2, own[1] * 0.98, own[2] - 7], mirror([14, 40, 7], side), mirror([14, 40, 7], side), mirror([14, 40, 7], side)], f);
+  };
+  const keys: Key3[] = [];
+  for (let f = 0; f <= 52; f++) {
+    if (f === 0) {
+      keys.push({ at: 0, ease: 'lin', pose: { ...S0 } });
+      continue;
+    }
+    // (a last heavy breath before it goes)
+    const br = f < 16 ? Math.sin((f / 16) * Math.PI) : 0;
+    const sink = k([0, -0.5, 5, 21, KNEEL.sink, KNEEL.sink], f) - 1.2 * br;
+    const down = clampN(sink / KNEEL.sink, 0, 1);
+    const body: Partial<Bones> = {
+      px: S0.px + k([0, 0, -0.5, -1, 0, 0], f),
+      pz: S0.pz - sink,
+      pitch: S0.pitch + k([0, 0, 3, 9, 12, 12], f),
+      roll: k([0, 0, 1, 3, 4, 4], f),
+      bend: S0.bend + k([0, 0, 6, 15, 20, 20], f) - 2 * br,
+      hunch: (S0.hunch ?? 0) + k([0, 0, 5, 12, 16, 16], f) - 3 * br,
+      shrug: (S0.shrug ?? 0) + k([0, 0, -0.15, -0.4, -0.5, -0.5], f) + 0.08 * br,
+      faceUp: S0.faceUp + k([0, 1, -6, -18, -24, -24], f) + 3 * br,
+      faceTilt: k([0, 0, 2, 6, 8, 8], f),
+      lk: S0.lk + 8 * down,
+    };
+    const pose = upPose(body, claw(1, f), claw(-1, f), 0.25 * down);
+    // (ITS REAR KNEE, its right: brought down onto the floor as it sinks, its hoof where it stands: the knee pointed, from
+    // between its hip and its hock, at a place that goes from where the knee is in its stance to where it rests on the floor)
+    const s = solve(WOLF_B, pose as Posed);
+    const at = lerp3(KNEE.from, KNEE.to, smooth((down - 0.1) / 0.85));
+    const mid = lerp3(s.hipR, s.ankleR, 0.5);
+    const way: V3 = [at[0] - mid[0], at[1] - mid[1], at[2] - mid[2]];
+    const D = 180 / Math.PI;
+    keys.push({ at: f * FR, ease: 'lin', pose: { ...pose, rk: Math.atan2(way[1], way[0]) * D, rkUp: Math.atan2(way[2], Math.hypot(way[0], way[1])) * D } });
+  }
+  return { keys };
+}
+const burnOutWings = wingsFrom((t) => {
+  const f = t / FR;
+  const k = keyed(BURN_AT, BURN_HOLDS);
+  // (drooping and folding in round it)
+  return { open: k([1, 1.02, 0.92, 0.76, 0.66, 0.66], f), lift: k([1, 1.03, 0.9, 0.7, 0.6, 0.6], f), sweep: k([0, 0, 2, 5, 6, 6], f) };
+});
+function shadowBurnOutMove(): ShadowMove {
+  return {
+    name: 'Meter dry: it burns out, from up on two legs',
+    digs: true,
+    motion: shadowBurnOutMotion(),
+    long: BURN_OUT_LONG,
+    loops: false,
+    rest: SHADOW_STANCE,
+    wings: burnOutWings,
+    tail: (t) => 0.25 * (1 - ease(t / BURN_OUT_LONG)) + 0.1 * Math.sin((t / BURN_OUT_LONG) * TAU) * (1 - t / BURN_OUT_LONG),
+    // (its claws curled in as they are let down; no fire under them where they lie: it is going out)
+    grip: (t) => track([[0, 1], [18, 1.1], [28, 1.35]], t / FR),
+    fire: () => 0,
+    // (what burns on it guttering: flaring once, and dying; as the game's demon's fire does)
+    glow: (t) => {
+      const f = t / FR;
+      return clampN(track([[0, 1], [10, 0.8], [14, 1.0], [20, 0.55], [30, 0.3], [40, 0.12], [52, 0.1]], f) * (1 + 0.15 * Math.sin(f * 2.3)), 0, 1);
+    },
+  };
+}
+
+// ---- STRUCK HARD, AND STRUCK FROM BEHIND, UP ON TWO LEGS (the game's: dev/warlock_hits.ts demonStruck; 13 frames, the game
+// showing a hit only a moment). STRUCK HARD: rocked back on its legs, its head snapped up and round, its arms thrown wide,
+// its wings snapping open, its tail lashing; it comes back down into its stance, its head low. STRUCK FROM BEHIND: driven
+// forward over its front leg, its wings flung wide, its head whipped up; it snaps its head round to glare back over its
+// shoulder. Its hooves stay where they stand (Movement 8).
+const HIT_HOLDS = new Set([1, 5]);
+const hitKey = (vals: readonly number[], f: number): number => track(WSTRUCK.at.map((a, i) => [a, vals[i]] as const), f, HIT_HOLDS);
+function shadowStruckMove(behind: boolean): ShadowMove {
+  const S0 = SHADOW_STANCE;
+  const long = WSTRUCK.end * FR;
+  const keys: Key3[] = [];
+  const n = Math.round(long * 60);
+  const b = behind;
+  for (let i = 0; i <= n; i++) {
+    const t = Math.min(long, i / 60);
+    const f = t / FR;
+    if (i === 0 || i === n) {
+      keys.push({ at: t, ease: 'lin', pose: { ...S0 } });
+      continue;
+    }
+    // (its arms thrown by the blow: from its shoulders, the way they are flung kept as its body rocks; art/skeleton.ts HandIn 1)
+    const ax = b ? hitKey([0, 0, 6, 4, 1.5, 0], f) : hitKey([0, 0, -9, -5, -1.5, 0], f);
+    const ay = b ? hitKey([0, 0, 7, 4, 1, 0], f) : hitKey([0, 0, 9, 4, 1, 0], f);
+    const az = b ? hitKey([0, 0, 15, 9, 2, 0], f) : hitKey([0, 0, 11, 4, 1, 0], f);
+    const pose: Bones = {
+      ...S0,
+      px: S0.px + (b ? hitKey([0, 0, 3.6, 4.2, 1.5, 0], f) : hitKey([0, 0, -3.6, -4.2, -1.5, 0], f)),
+      pz: S0.pz + (b ? hitKey([0, 0, -2.2, -3, -1, 0], f) : hitKey([0, 0, 1.8, -1.8, -0.5, 0], f)),
+      pitch: S0.pitch + (b ? hitKey([0, 0, 9, 5, 1, 0], f) : hitKey([0, 0, -10, -3, 1, 0], f)),
+      bend: S0.bend + (b ? hitKey([0, 0, 8, 4, 1, 0], f) : hitKey([0, 0, -9, 2, 1, 0], f)),
+      hunch: (S0.hunch ?? 0) + (b ? hitKey([0, 0, 8, 3, 0, 0], f) : hitKey([0, 0, -14, 4, 2, 0], f)),
+      roll: S0.roll + (b ? hitKey([0, 0, -2, 2, 1, 0], f) : hitKey([0, 0, 3, 1, 0, 0], f)),
+      faceUp: S0.faceUp + (b ? hitKey([0, 0, 12, 2, 4, 0], f) : hitKey([0, 0, 16, -6, 4, 0], f)),
+      faceTurn: S0.faceTurn + (b ? hitKey([0, 0, 6, -34, -52, 0], f) : hitKey([0, 0, -18, -6, 4, 0], f)),
+      faceTilt: S0.faceTilt + (b ? hitKey([0, 0, 4, -6, -8, 0], f) : hitKey([0, 0, -10, -4, 0, 0], f)),
+      lhx: S0.lhx + ax, lhy: S0.lhy + ay, lhz: S0.lhz + az,
+      rhx: S0.rhx + ax, rhy: S0.rhy - ay, rhz: S0.rhz + az,
+    };
+    keys.push({ at: t, ease: 'lin', pose: upElbows(pose) });
+  }
+  return {
+    name: behind ? 'The Living Shadow struck from behind' : 'The Living Shadow struck hard',
+    motion: { keys, loop: 0 },
+    long,
+    loops: false,
+    rest: SHADOW_STANCE,
+    wings: wingsFrom((t) => {
+      const f = t / FR;
+      return b
+        ? { open: hitKey([1, 1, 1.5, 1.38, 1.14, 1], f), lift: hitKey([1, 1, 1.22, 1.12, 1.03, 1], f), sweep: hitKey([0, 0, -8, -3, 0, 0], f) }
+        : { open: hitKey([1, 1, 1.42, 1.28, 1.1, 1], f), lift: hitKey([1, 1, 1.28, 1.14, 1.04, 1], f), sweep: hitKey([0, 0, 9, 3, 0, 0], f) };
+    }),
+    tail: (t) => 0.25 + (b ? hitKey([0, 0, -0.5, 0.35, -0.1, 0], t / FR) : hitKey([0, 0, 0.45, -0.3, 0.1, 0], t / FR)),
+    // (its claws flung open with the blow)
+    grip: (t) => hitKey([1, 1, 0.55, 0.75, 0.95, 1], t / FR),
+    strike: [(WSTRUCK.hit - 1) * FR, (WSTRUCK.snapped + 1) * FR],
+  };
+}
+
+/** Its other moves, all up on two legs, in this order: Damning; the smoke step; the end of the change into it (its roar); its burning out; struck hard; struck from behind. */
+export const OTHER_MOVES = ['damning', 'step', 'roar', 'burnout', 'reel', 'lurch'] as const;
+export function shadowOthers(): ShadowMove[] {
+  return [shadowDamningMove(), shadowStepMove(), shadowRoarMove(), shadowBurnOutMove(), shadowStruckMove(false), shadowStruckMove(true)];
+}
+
 /** How high its wrist is when the claw under it is a claw on the floor (the game's run lifts it to 17): lower than this it is its foot. */
 const PAW_BELOW = 24;
 
@@ -650,6 +1120,8 @@ export function shadowMoves(): ShadowMove[] {
     ...Array.from({ length: REARS }, (_, i) => rearMove(i / REARS)),
     ...SLASH_WAYS.map((way) => walkingSlashMove(1, way)),
     ...SLASH_WAYS.map((way) => walkingSlashMove(-1, way)),
+    // (its other moves, all up on two legs: after the rest, so that each of those is where it was in this list)
+    ...shadowOthers(),
   ];
 }
 function rearMove(phase: number): ShadowMove {
@@ -672,12 +1144,13 @@ export function shadowPose(m: ShadowMove, t: number): Posed {
 /** What a move asks its picture to be drawn with at a moment (dev/demon_new.ts Moving). */
 export function shadowMoving(m: ShadowMove, t: number, pose: Posed): { paws: boolean; more: Moving } {
   const lowest = Math.min(solve(WOLF_B, pose).handL[2], solve(WOLF_B, pose).handR[2]);
-  const paws = m.paws ? m.paws(t) : m.carry !== undefined || m.rest === FOURS ? lowest < PAW_BELOW : false;
+  const paws = m.paws ? m.paws(t) : m.carry !== undefined || m.rest === FOURS || m.digs ? lowest < PAW_BELOW : false;
   const more: Moving = { wings: m.wings(t) };
   if (m.slash) {
     const way = m.slash.palm(t);
     more.palm = m.slash.side > 0 ? { L: way } : { R: way };
-  }
+  } else if (m.palms) more.palm = m.palms(t);
+  if (m.glow) more.glow = m.glow(t);
   const own = m.slash ? m.slash.grip(t) : undefined;
   const g = (side: 1 | -1): number | undefined => (m.slash && m.slash.side === side ? own : m.grip?.(t, side));
   more.grip = { L: g(1), R: g(-1) };

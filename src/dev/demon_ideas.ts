@@ -28,7 +28,7 @@ import { primDist } from './sculpt';
 import type { Sculpt, Drawn, Hit } from './sculpt';
 import { IVORY } from './sculpt_warlock';
 import { tone5 } from './sculpt_demon';
-import { HEAD_K, HORN_BLACK, MOUTH, U, WORLD, arm, axes, bigger, claws, dot, eye, fleshOf, from, lifted, paintDemon, spike, tailOf, wolfFrame } from './demon_new';
+import { HEAD_K, HORN_BLACK, MOUTH, U, WORLD, arm, axes, bigger, burning, claws, dot, eye, fleshOf, from, lifted, paintDemon, spike, tailOf, wolfFrame } from './demon_new';
 import type { Built, Frame, Kit, Moving } from './demon_new';
 
 export const IDEAS: { name: string; says: string }[] = [
@@ -66,7 +66,8 @@ function headOf(k: Kit, lift = 22): Head {
 function stuffs(k: Kit): { ivory: number; glow: number; mouth: number } {
   return {
     ivory: k.sc.mat({ ramp: IVORY }),
-    glow: k.sc.mat({ ramp: CYAN, paint: (h) => (h.tone >= 2 ? '#e8ffff' : CYAN[2]) }),
+    // (as bright as it burns at the moment, dev/demon_new.ts burning: as ever unless a move says otherwise)
+    glow: k.sc.mat({ ramp: CYAN, paint: (h) => (h.tone >= 2 ? burning(k.glow).hot : burning(k.glow).rest) }),
     mouth: k.sc.mat({ ramp: MOUTH }),
   };
 }
@@ -353,7 +354,7 @@ export function shadowInto(k: Kit): Built {
   const hide = sc.mat({ ramp: ['#04040a', '#07070f', '#0c0c1a', '#15152c', '#222244'], crease: 0.25 });
   const fr = wolfFrame(k, { hide, foot: 'claw', footMat: hide, talon: glow });
   claws(k, hide, glow, 1.15, o);
-  const ember = sc.mat({ ramp: CYAN, paint: (h) => (h.nl > 0.8 ? '#e8ffff' : CYAN[2]) });
+  const ember = sc.mat({ ramp: CYAN, paint: (h) => (h.nl > 0.8 ? burning(k.glow).hot : burning(k.glow).rest) });
   // (each ember a short bar of his light across a knuckle of its backbone, lying on its skin: found by going out from its
   // backbone until nothing of it is left)
   const body = sc.prims.filter((p) => !p.carve);

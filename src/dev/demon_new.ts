@@ -141,6 +141,21 @@ export interface Kit {
   wings?: WingsHeld;
   /** (moving) How far each open claw's fingers are hooked in toward its palm: 1 as the still's, less spread wide open, more clenched; its left's and its right's. */
   grip?: { L?: number; R?: number };
+  /** (moving) How bright what burns on it is (dev/shadow_moves.ts ShadowMove.glow: its burning out): 1 as ever, 0 all but out; not given, as ever. */
+  glow?: number;
+}
+/**
+ * What burns on it, as bright as it is at a moment (`glow`, 1 as ever to 0 all but out): its hot core's colour and the rest
+ * of it. Of his cyan's own tones (art/kit.ts CYAN), nothing new: white-hot and cyan as ever; then the core no hotter than
+ * the palest cyan; then all of it cyan; then its core cyan and the rest the darkest; and at the last all of it the darkest.
+ */
+export function burning(glow: number | undefined): { hot: string; rest: string; core: boolean } {
+  const g = glow ?? 1;
+  if (g >= 0.85) return { hot: '#e8ffff', rest: CYAN[2], core: true };
+  if (g >= 0.6) return { hot: CYAN[3], rest: CYAN[2], core: false };
+  if (g >= 0.4) return { hot: CYAN[2], rest: CYAN[2], core: false };
+  if (g >= 0.2) return { hot: CYAN[2], rest: CYAN[0], core: false };
+  return { hot: CYAN[0], rest: CYAN[0], core: false };
 }
 /**
  * HOW ITS WINGS ARE HELD AT A MOMENT (loose things follow, his rulebook's Movement 4): `open` how far out to its sides (1 as
@@ -172,7 +187,8 @@ export function eye(k: Kit, glow: number, c: V3, r: Rot, side: number, long: num
   const out = norm(add(mul(r[1], side), mul(r[2], slant)));
   const up = norm(add(mul(r[2], 1), mul(r[1], -side * slant)));
   k.sc.ell(glow, 'head', c, [mul(r[0], 1.0), mul(out, long), mul(up, tall)], 0.05, { tag: 'eye' });
-  k.sc.mark(add(c, mul(r[0], 1.0)), '#ffffff', 1, 1, 0, 0, 2.5);
+  // (its white-hot core: gone as its fire gutters, dev/shadow_moves.ts glow)
+  if (burning(k.glow).core) k.sc.mark(add(c, mul(r[0], 1.0)), '#ffffff', 1, 1, 0, 0, 2.5);
 }
 
 /** A horn or a spike along `pts`, `r0` thick at its root, drawn to a point. */
@@ -532,11 +548,15 @@ export function paintDemon(build: (k: Kit) => Built, view: GameView, pose: Bones
     return pv === 'front' ? 0.612 * (q[0] - q[1]) + 0.5 * q[2] : 0.612 * (-q[0] - q[1]) + 0.5 * q[2];
   };
   const farL = nearOf(add(s.pelvis, [0, 20, 6])) < nearOf(s.pelvis);
-  const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail, paws, palm: more.palm, wings: more.wings, grip: more.grip };
+  const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail, paws, palm: more.palm, wings: more.wings, grip: more.grip, glow: more.glow };
   const built = build(k);
   const d = draw(sc, pv, RIG_CANVAS.ax, RIG_CANVAS.ay, RIG_CANVAS, undefined, FRIEND_RIM);
   built.flames.forEach((f, i) => fireBehind(d, sc.at(f.p), f.size, t + i * 0.37, f.deep ?? 10));
-  built.floor.forEach((p, i) => fireBehind(d, sc.at(p), (3.7 - (i % 2) * 0.7) * (more.fire?.(i) ?? 1), t + i * 0.41, 12));
+  // (none at all where a move says its fire is out, dev/shadow_moves.ts its burning out: a fire of no size is still a white speck)
+  built.floor.forEach((p, i) => {
+    const big = more.fire?.(i) ?? 1;
+    if (big > 0) fireBehind(d, sc.at(p), (3.7 - (i % 2) * 0.7) * big, t + i * 0.41, 12);
+  });
   if (built.smoke.length) {
     // (carried across the floor: its smoke streaming off behind it, as the game's demon's does, dev/sculpt_demon_rig.ts
     // demonFrame; but dragged along in its wake more than left where it was, SMOKE_WAKE: its smoke rises from four places,
@@ -563,6 +583,8 @@ export interface Moving {
   wings?: WingsHeld;
   /** How big each fire under its claws burns (1 as the still's). */
   fire?: (i: number) => number;
+  /** How bright what burns on it is (Kit.glow): 1 as ever, 0 all but out. */
+  glow?: number;
   /** How fast it is carried across the floor (its own measure a second): its smoke streams off behind it; and the way it is carried, if not ahead (degrees to its left of the way it faces). */
   carry?: number;
   carryWay?: number;

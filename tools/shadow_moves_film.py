@@ -11,13 +11,20 @@ play on his phone).
                                                                        (his word of the first film, 11 Nov: “This but I want
                                                                        him to be able to move around on two legs as he’s
                                                                        swiping”): the floor goes by the way it goes, slowed
-                                                                       for each slash's first moment as the game slows it"""
+                                                                       for each slash's first moment as the game slows it
+   python3 tools/shadow_moves_film.py <frames dir> <out.mp4> others     its other moves, all up on two legs (his word, 11 Nov,
+                                                                       “Yes, all on two legs (Recommended)”): Damning, the
+                                                                       smoke step (the eye going with it, the floor going by
+                                                                       under it), its roar as the change into it ends, its
+                                                                       burning out, struck hard and from behind; and all of
+                                                                       them in a fight"""
 import json, math, os, subprocess, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 src, out = sys.argv[1], sys.argv[2]
 WALKING = len(sys.argv) > 3 and sys.argv[3] == 'walking'
+OTHERS = len(sys.argv) > 3 and sys.argv[3] == 'others'
 note = json.load(open(os.path.join(src, 'moves.json')))
 MOVES = note['moves']
 SC = note['canvas']
@@ -71,12 +78,13 @@ def floor(view, gone):
     return Image.fromarray(img, 'RGB')
 
 BRAWLER = {v: Image.open(os.path.join(src, f'brawler_{v}.png')).convert('RGBA') for v in ('front', 'back')}
-def panel(view, key, f, gone, brawler):
+def panel(view, key, f, gone, brawler, shade=1.0):
     p = floor(view, gone).convert('RGBA')
-    # (a soft shadow under it, so it stands on the floor)
-    sh = Image.new('RGBA', (PW, PH), (0, 0, 0, 0))
-    ImageDraw.Draw(sh).ellipse([FX - 44, FY - 16, FX + 44, FY + 16], fill=(12, 10, 26, 110))
-    p.alpha_composite(sh)
+    # (a soft shadow under it, so it stands on the floor; none while it is smoke, a man's under him once it has crumbled away)
+    if shade > 0.05:
+        sh = Image.new('RGBA', (PW, PH), (0, 0, 0, 0))
+        ImageDraw.Draw(sh).ellipse([FX - 44 * shade, FY - 16 * shade, FX + 44 * shade, FY + 16 * shade], fill=(12, 10, 26, 110))
+        p.alpha_composite(sh)
     if brawler:
         # (the Brawler, the measure: not quite three tiles to its right)
         ax, ay, dens = note['brawler'][view]
@@ -131,7 +139,89 @@ def dash(part, rounds, rear, hold=1):
         gone += step
     clip(f'rear{rear}', part, hold * 2)
 N_STAND = MOVES['stand']['frames']
-if WALKING:
+def shade_of(key, f):
+    """How big its shadow on the floor is: none of it while it is smoke; a man's once it has crumbled away to him."""
+    m = MOVES[key]
+    if m.get('gone'):
+        return 1.0 - m['gone'][f]
+    if key == 'burnout':
+        sag = round(52)
+        return 1.0 if f <= sag else max(0.5, 1.0 - 0.5 * (f - sag) / 27.0)
+    return 1.0
+def other(key, part, hold=2, last=False, after=0):
+    """One of its other moves; a move that takes it across the floor (its smoke step), the eye going with it, the floor
+    gone by as far as it has gone. (Its last frame is its stance again, as the next move's first is: left out, unless asked.)
+    `after`: so many frames more, it standing where the move left it, what the move left on the floor cooling there (Damning,
+    the smoke step: painted so by tools/shadow_moves_pics.ts); the stand goes on from that frame of it."""
+    global gone
+    m = MOVES[key]
+    n = m.get('own', m['frames'])
+    for f in range(n + after if last or after else n - 1):
+        g = gone + (m['along'][f] if m.get('along') else 0.0)
+        film.extend([(key, f, (g, side), part, False, shade_of(key, f))] * hold)
+    if m.get('along'):
+        gone += m['along'][-1]
+if OTHERS:
+    PARTS = [
+        ('TAP AND HOLD: DAMNING, UP ON TWO LEGS', 'It drops onto its claws, they bite the floor, it heaves, tears them up, and is back on two legs.'),
+        ('THE SAME, AT HALF SPEED', 'No rear-up and slam. What it does to the ones it damns is the game\'s own, as now.'),
+        ('SWIPE: THE SMOKE STEP, UP ON TWO LEGS', 'It hunkers down, bursts into smoke, goes six tiles, bursts out slamming its claws down, and rises.'),
+        ('THE SAME, AT HALF SPEED', 'This smoke is the move itself, as it is in the game now. No smoke comes off its body.'),
+        ('THE CHANGE INTO IT ENDS UP ON TWO LEGS: ITS ROAR', 'How the change will end. The change itself (him turning into it) comes next, with its eight sides.'),
+        ('THE METER RUNS DRY: IT BURNS OUT', 'Its light gutters and dies, it sinks onto one knee, crumbles away, and he is left kneeling.'),
+        ('STRUCK HARD, THEN STRUCK FROM BEHIND', 'Rocked back on its legs; then driven forward, with a glare back over its shoulder. Twice each.'),
+        ('THE SAME, AT HALF SPEED', 'Struck hard; struck from behind.'),
+        ('ALL OF IT IN A FIGHT, UP ON TWO LEGS', 'Slash, slash, struck, the smoke step, slash, slash, Damning, and it stands.'),
+    ]
+    # 1. Damning; it stands on over what it tore up
+    stand(N_STAND - 30, N_STAND, 0)
+    other('damning', 0, after=50)
+    # 2. the same at half speed
+    stand(N_STAND - 6, N_STAND, 1, 4)
+    other('damning', 1, 4, after=12)
+    # 3. the smoke step; it stands on as its smoke clears
+    stand(N_STAND - 30, N_STAND, 2)
+    other('step', 2, after=48)
+    # 4. the same at half speed
+    stand(N_STAND - 6, N_STAND, 3, 4)
+    other('step', 3, 4, after=14)
+    # 5. its roar, twice
+    stand(N_STAND - 20, N_STAND, 4)
+    other('roar', 4)
+    stand(0, 24, 4)
+    other('roar', 4)
+    stand(0, 30, 4)
+    # 6. its burning out: its sagging, its crumbling, him getting up; and he stands a moment
+    stand(N_STAND - 30, N_STAND, 5)
+    other('burnout', 5, last=True)
+    film.extend([film[-1]] * 40)
+    # 7. struck hard, twice; from behind, twice
+    stand(N_STAND - 24, N_STAND, 6)
+    other('reel', 6)
+    stand(0, 16, 6)
+    other('reel', 6)
+    stand(0, 24, 6)
+    other('lurch', 6)
+    stand(0, 16, 6)
+    other('lurch', 6)
+    stand(0, 24, 6)
+    # 8. the same at half speed
+    stand(N_STAND - 4, N_STAND, 7, 4)
+    other('reel', 7, 4)
+    stand(0, 6, 7, 4)
+    other('lurch', 7, 4)
+    stand(0, 6, 7, 4)
+    # 9. all of it in a fight: the smoke step in, and Damning last, it standing on over what it tore up
+    stand(N_STAND - 20, N_STAND, 8)
+    clip('slashL', 8)
+    clip('slashR', 8)
+    other('reel', 8)
+    # (48 frames on, half way round its stand, it is in its stance exactly: the slash takes it up with no jump)
+    other('step', 8, after=48)
+    clip('slashR', 8)
+    clip('slashL', 8)
+    other('damning', 8, after=60)
+elif WALKING:
     PARTS = [
         ('SLASHING ON THE MOVE, ON TWO LEGS', 'Going ahead: left, right, left, right. Two great strides to each slash; a hoof comes down as the blow lands.'),
         ('THE SAME, AT HALF SPEED', 'A hoof on the floor stays where it is; the floor goes by as fast as the game carries it.'),
@@ -187,6 +277,11 @@ else:
     dash(5, 1, REAR)
     stand(0, N_STAND, 5)
 
+# (every line of words fits its picture)
+_m = ImageDraw.Draw(Image.new('RGB', (8, 8)))
+for _t, _l in PARTS:
+    assert _m.textlength(_t, font=big) < W - 2 * GAP - 240, _t
+    assert _m.textlength(_l, font=line) < W - 2 * GAP, _l
 ff = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-framerate', '60', '-i', '-',
                        '-c:v', 'libx264', '-preset', 'slow', '-crf', '21', '-tune', 'animation', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], stdin=subprocess.PIPE)
 last = None
@@ -194,14 +289,15 @@ card = None
 shots = []
 for n, shot in enumerate(film):
     if shot != last:
-        key, f, g, part, brawler = shot
+        key, f, g, part, brawler = shot[:5]
+        shade = shot[5] if len(shot) > 5 else 1.0
         card = Image.new('RGB', (W, H), BG)
         d = ImageDraw.Draw(card)
         d.text((GAP, TOP // 2), PARTS[part][0], font=big, fill=CYAN, anchor='lm')
         d.text((W - GAP, TOP // 2), 'THE LIVING SHADOW', font=small, fill=GREY, anchor='rm')
         for i, v in enumerate(('front', 'back')):
             x = GAP + i * (PW * S + GAP)
-            card.paste(panel(v, key, f, g, brawler), (x, TOP))
+            card.paste(panel(v, key, f, g, brawler, shade), (x, TOP))
             d.text((x + 10, TOP + 8), 'FROM IN FRONT' if v == 'front' else 'FROM BEHIND', font=small, fill=PALE)
         d.text((W // 2, TOP + PH * S + FOOT // 2), PARTS[part][1], font=line, fill=PALE, anchor='mm')
         last = shot

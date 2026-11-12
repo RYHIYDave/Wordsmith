@@ -1,16 +1,18 @@
 # THE WARLOCK BROUGHT UP, AND HIS DEMON REDONE (IN HAND; NOTHING HERE IS IN THE GAME)
 
-**WHERE IT STANDS (11 Nov 2026, 20:26 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
-two legs to fight and down on all fours to run, wings of smoke (`src/dev/demon_ideas.ts` shadowInto; `pictures/living_shadow.png`).
-ITS FIRST MOVES ARE MADE AND SHOWN HIM AS A FILM (`src/dev/shadow_moves.ts`; `pictures/living_shadow_moves.mp4`): its stand up on
-two legs, its really wide slashes, dropping onto all fours into the game's run, rearing up out of it. THEY HAVE HIS WORD, 11 Nov by 19:59: “This but I
-want him to be able to move around on two legs as he’s swiping”, and of its other moves, “Yes, all on two legs (Recommended)”
-(the foot of “The Living Shadow's moves” below). ITS SLASHES MADE WALKING ON TWO LEGS ARE MADE AND SHOWN HIM AS A SECOND FILM
-(`pictures/living_shadow_slashing_on_the_move.mp4`), AND HAVE HIS WORD, by 20:26: “Yeah it’s good but get rid of the smoke and
-just leave the wings”: NO SMOKE OFF IT ANY MORE, its wings as they are (done; both films and the stills made again). NEXT: its
-other moves up on two legs (Damning, the smoke step's ends, the change's end, the burning out's start); then its eight sides
-and the change into it; then the man. Read from “The Living Shadow, drawn properly” down for what is left; the sections before it are how he got
-there, in his words.**
+**WHERE IT STANDS (11 Nov 2026, 22:10 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
+two legs to fight and down on all fours to run, wings of smoke, no smoke off it (`src/dev/demon_ideas.ts` shadowInto;
+`pictures/living_shadow.png`). ITS STAND, ITS WIDE SLASHES, DROPPING DOWN TO RUN, REARING UP TO STOP, AND ITS SLASHES MADE
+WALKING ON TWO LEGS HAVE HIS WORD (two films; the sections “The Living Shadow's moves” and “Its slashes made walking on two
+legs” below). ITS OTHER MOVES ARE NOW MADE, ALL UP ON TWO LEGS (his “Yes, all on two legs (Recommended)”), AND SHOWN HIM AS A
+THIRD FILM (`src/dev/shadow_moves.ts` shadowOthers; `pictures/living_shadow_other_moves.mp4`; the section “Its other moves,
+all up on two legs” below): Damning, the smoke step's two ends, its roar as the change into it ends, its burning out, and
+struck hard and from behind. HIS WORD ON THEM, by 22:08: “The roar is so bad.  His face doesn’t even move?  No animations
+out of the mouth?  No spittle or action lines or screen shake on the roar?”; the smoke step's own smoke, “Keep it as is
+(Recommended)”. SO: THE ROAR IS BEING MADE AGAIN (its jaws thrown open, the roar seen out of its mouth, spittle, action
+lines, the screen shaking); the rest are taken to stand. NEXT after that: its eight sides, its hide carried by its bones,
+and the change into it; then into the game's shape behind a switch that is off; then the man. Read from “The Living
+Shadow, drawn properly” down for what is left; the sections before it are how he got there, in his words.**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
 queue's `finish-mage-and-warlock-eight-sides` (the Mage's half is done: `art/mage-up2`). It takes up the art chat's helper's
@@ -159,7 +161,7 @@ wings”; the foot of “Its slashes made walking on two legs”). FROM BEHIND i
 laid on its skin (found by going out from the backbone until nothing of the body is left). No wings.
 
 Pictures: `living_shadow.png` (up on two legs and running on all fours, each from in front and from behind, four times as
-big, 2856 x 1170), `living_shadow_at_game_size.png` (beside the Brawler, the Warlock and his demon today, 2300 x 900). Made
+big, 2920 x 998 as it is now with its wings), `living_shadow_at_game_size.png` (beside the Brawler, the Warlock and his demon today, 2300 x 900). Made
 with: `npx tsx tools/demon_new_pics.ts <dir> shadow` then
 `python3 tools/demon_new_pics.py <dir> docs/mockups/warlock_up2/pictures shadow`.
 
@@ -348,6 +350,171 @@ start, up on two legs, shown him (his “Yes, all on two legs (Recommended)”);
 carried by its bones, the change into it; behind a switch that is off, a film and pictures in the game on floor 11 beside
 the Brawler; then THE MAN.
 
+(a) IS MADE AND SHOWN HIM: the next section.
+
+## Its other moves, all up on two legs (`src/dev/shadow_moves.ts` shadowOthers; `src/dev/shadow_fx.ts`; SHOWN HIM AS A THIRD FILM, HIS WORD ON IT AWAITED)
+
+The Warlock chat of the night of 11 Nov 2026 (a new session, the queue's item pulled at his word at 20:33 Eastern: “Work on
+this task from the Wordsmith Queue”). His word for all of these, 11 Nov by 19:59, asked of Damning, the smoke step, the
+change into it and burning out, offered as up on two legs for everything but running: **“Yes, all on two legs
+(Recommended)”**. EACH IS THE GAME'S OWN MOVE (his “A new design, same moves”), TO THE GAME'S OWN FRAMES, so the rules need no
+change; what is new is only that each begins and ends in its stance up on two legs, and what a body up on two legs must do
+differently to make the same move.
+
+- **TAP AND HOLD: DAMNING, TORN UP** (`shadowDamningMove`; the game's `dev/demon_moves.ts` damningMove, its frames DM: 48
+  frames, 1.6 s, the blow on frame 24). His words of Damning, 27 Oct, kept: its move, “Tear it up (Recommended)”; what was
+  worst of the first, “The rear-up and slam (Recommended),The effects”: SO NO REAR-UP AND SLAM HERE EITHER. From its stance it
+  gathers a moment, its claws drawn up a little and opened (never as high as its shoulders: 53 off the floor at the most,
+  its shoulders at 87); by frame 8 it has DROPPED INTO A CROUCH, both claws driven into the floor before it (`DAMN_DIG`: 44
+  ahead of where it stands, 20 to each side), its hips sunk from 50 to 33; to frame 22 it heaves back against them,
+  straining, its back arched up, its head down between its shoulders, shaking, its wings mantled up and forward over it,
+  his fire building under its palms; in two frames (22 to 24) it TEARS THEM UP OUT OF THE FLOOR AND IS UP ON TWO LEGS AGAIN,
+  its claws flung up and out in a V over its head (124 off the floor, its head at 101), its chest thrown open, its head
+  flung back, its wings snapped open; a freeze, frames 24 to 26; it lets its arms down and is in its stance by frame 46.
+  Its hooves stay where they stand all through.
+- **WHAT DAMNING DOES TO THE FLOOR** is the game's own, laid where this body's claws are (`dev/shadow_fx.ts` clawsLight,
+  damningScene: the claws' part of the game's demon's `dev/demon_fx.ts` damningLight, number for number, of that file's own
+  pieces; for the demon's own claws it is the same picture, pixel for pixel, checked below; THAT FILE, WHICH THE GAME TAKES
+  PIECES FROM, IS NOT TOUCHED): the flagstones cracked round its claws as they bite, the cracks running further and glowing hotter as it heaves; the floor torn up with them, stone flung
+  up, his fire bursting out of the holes, which cool to pits with a little smoke out of them (the floor's smoke, the game's:
+  not smoke off it). WHAT IT DOES TO THE ONES IT DAMNS (the ground bursting under every one cursed or burning) is the
+  game's own as it is now and is not drawn again.
+- **SWIPE: THE SMOKE STEP'S TWO ENDS** (`shadowStepMove`; the game's smokeStepMove, its frames SS: 46 frames, six tiles the
+  way he swipes, its blow on frame 22; as far along and as far gone into smoke at every frame as the game's). WHERE IT SETS
+  OFF, frames 0 to 9: it hunkers down on its haunches (its hips from 50 to 37), its shoulders rolling, its claws drawn back
+  beside its haunches and clenched (NOT on the floor: no cracks under them here), its wings wrapped in round it; and
+  springs forward into smoke, its claws flung out ahead, gone in two frames (frames 10 to 12; it breaks up pixel by pixel
+  as the man does, `dev/warlock_fx.ts` dissolve). BETWEEN ITS ENDS, frames 12 to 20, it is the game's own storm of black
+  smoke and his fire tearing along the floor, with its gouges and its river of smoke left behind
+  (`dev/demon_swipe_fx.ts` smokeStepLight, given `own`): not made again. WHERE IT COMES OUT: it bursts out of the smoke
+  coming down, its claws raised, and SLAMS THEM INTO THE FLOOR before it on frame 22 (its right claw half a frame after its
+  left; `STEP_SLAM`), crouched low over them (its hips at 32), its wings snapped open, the floor breaking under them; held
+  to frame 27; it rises off them ONTO TWO LEGS, roaring, its claws flung out wide (frame 32), and is in its stance by
+  frame 44.
+- **THE SMOKE IN THE SMOKE STEP**: his word of 11 Nov by 20:26 was “get rid of the smoke and just leave the wings”, of the
+  smoke off its body. NO SMOKE COMES OFF IT HERE EITHER: the game's demon's smoke boiling up off its back as it coils is left
+  out (`StepOwn.noBoil`). The storm it turns into, the smoke blasted out where it sets off and where it comes out, and the
+  river left on the floor ARE the move, and are the game's as they are now. TOLD HIM SO PLAINLY, in the film's own words
+  (“This smoke is the move itself, as it is in the game now. No smoke comes off its body.”) and asked.
+- **THE END OF THE CHANGE INTO IT: ITS ROAR** (`shadowRoarMove`; the game's `dev/warlock_change.ts`: the 1.4 s, 42 frames,
+  after he has become it, in which the game's demon heaves up off its claws and roars). It has come up onto two legs in its
+  stance; it gathers three frames; by frame 7 it is REARED UP TALL, its chest thrown open, its arms flung out wide and
+  back (its claws 128 apart, 3.3 tiles), its claws spread, its head thrust up; held to frame 17, shaking with it, its
+  wings thrown back and up and beaten forward and down hard, back, and forward again (the game's own strokes at its roar,
+  `wingsAt`); and it sinks into its stance by frame 37. THE CHANGE ITSELF (him becoming it: his bones grown into this
+  frame's, its hide spreading over him, his coat torn away as its parts grow out of him) IS NOT MADE YET: it comes with its
+  eight sides, and will end on this.
+- **THE METER RUNS DRY: IT BURNS OUT** (`shadowBurnOutMove`; the game's burnOutMove, as long: 52 frames, 1.73 s; his picks of
+  27 Oct, “Burns out (Recommended)”, “Meter runs dry (Recommended)”). A last heavy breath; WHAT BURNS ON IT GUTTERS, FLARING
+  ONCE AND DYING (its eyes, its grin, its talons, the embers down its backbone: up on two legs it has no other fire;
+  `ShadowMove.glow`, `dev/demon_new.ts` burning: through his cyan's own tones, white-hot and cyan to the darkest cyan, no
+  new colour; a flare at frame 14); and it SAGS DOWN OFF ITS LEGS ONTO ONE KNEE: its rear knee, its right, brought down
+  onto the floor before the hoof that stays where it stands, its front knee left up, its hips from 50 down to 19, its head
+  dropped from 87 to 33, its shoulders slumped, its claws let down to lie on the floor by its knees, its wings drooped and
+  folded. Still from frame 40. THEN, THE GAME'S OWN AS THEY ARE: it crumbles from its edges in over 0.9 s
+  (`dev/demon_return.ts` crumble), and where it crumbles away there he is, on one knee where it sank down, and gets up
+  (`dev/warlock_spells.ts` comeBack, 3 s): `dev/shadow_fx.ts` burnOutScene, laid as `art/warlock_art.ts` lays the game's.
+  (The man in it is the game's man of today: his longer coat and his eight sides are still to come.)
+- **STRUCK HARD, AND STRUCK FROM BEHIND** (`shadowStruckMove`; the game's `dev/warlock_hits.ts` demonStruck: 13 frames each).
+  NOT ON THE LIST HE WAS ASKED OF, but the game shows them (`art/warlock_art.ts`, its `reel` and `lurch`) and on all fours they
+  would drop it down for a moment every time it is hit: so made too, under his “all on two legs”, and said to him. STRUCK
+  HARD: rocked back on its legs, its head snapped up and round, its arms thrown wide, its wings snapping open, its tail
+  lashing; back into its stance. STRUCK FROM BEHIND: driven forward over its front leg, its wings flung wide, its head
+  whipped up; it snaps its head round to glare back over its shoulder. Its hooves stay where they stand.
+
+HOW IT IS BUILT ON WHAT HE PASSED. A move may now say (`ShadowMove`): which way both palms face (`palms`); that its claws go
+down onto the floor (`digs`: a claw lower than 24 off the floor is drawn as a claw on the floor, spread flat, as when it
+runs; hung open that low its talons would be down through the floor and off the foot of its picture); how far it is gone
+into smoke and when it is off the floor (`gone`, `air`); how bright what burns on it is (`glow`). The game's demon's
+smoke step's effect (`dev/demon_swipe_fx.ts` smokeStepLight: a mock-up file, nothing of the game takes from it) takes one
+more thing, `own` (`StepOwn`), which tells it where another body's claws are and to leave out the smoke boiling off its
+back; NOT GIVEN, IT IS AS IT ALWAYS WAS, TO THE PIXEL (checked below). A STILL IS AS IT WAS, TO THE PIXEL, and so are the
+moves made before (checked below). Its other moves come after the rest in `shadowMoves()`, so each of those is where it
+was in the list.
+
+THE FILM: `pictures/living_shadow_other_moves.mp4` (1440 x 702, sixty frames a second, 50.2 s, 6.9 MB; MP4), from in front
+and from behind side by side, two film pixels a picture pixel, on the plain floor of the game's tiles; in the smoke step
+the eye goes with it and the floor goes by under it. Its parts: Damning, it standing on over what it tore up; the same at
+half speed; the smoke step; the same at half speed; its roar, twice; its burning out, its crumbling, him getting up;
+struck hard twice and from behind twice; the same at half speed; and all of it in a fight (slash, slash, struck, the
+smoke step, slash, slash, Damning). After Damning and after the smoke step the film goes on a moment, it standing, so that
+what they left on the floor is seen to cool where it lies (`dev/shadow_fx.ts` mineAt). `pictures/living_shadow_other_moves_sheet.png`:
+a picture of it every third of a second (2160 x 4550).
+
+Made with: `npx tsx tools/shadow_moves_pics.ts <dir> stand,slashL,slashR,damning,step,roar,burnout,reel,lurch front,back`
+(about four minutes) then `python3 tools/shadow_moves_film.py <dir> docs/mockups/warlock_up2/pictures/living_shadow_other_moves.mp4 others`
+(about a minute). A few frames only, to look at: a sixth word, their numbers (`... damning front,back 0 8,22,24`).
+
+CHECKED:
+- `npx tsx --test tests/shadow_moves.test.ts`, about two seconds: 15 of 15 (the 7 there were, and 8 new; its bones only, but
+  the last, which lays Damning's light): its other moves after the rest in its list; Damning to the game's frames, from its stance and back to it, its hooves where they
+  stand, NO REAR-UP AND SLAM (before its claws go down it never rises more than 2.5 and they are never within 15 of as high
+  as its shoulders), its claws in the floor from where they bite until it tears them up, the tearing up more than two and
+  a half times as fast as anything else in it, held through the freeze, risen with its claws over its head as the blow
+  lands; the smoke step to the game's frames, as far and as gone as the game's at every half frame, from its stance and back
+  to it, its hooves where they stand while it is on the floor, its claws slammed down staying until it lifts them; its
+  roar as long as the game's change gives it, from its stance and back to it, its hooves still; its burning out as long as
+  the game's, from its stance, never rising (but for its last breath), its front hoof and its rear hoof's toes where they
+  stand, no knee through the floor, on one knee at the end, still as it ends (the same picture crumbles), what burns on
+  it as ever at its start and all but out at its end, flaring once, and only in his cyan's own tones; struck hard and from
+  behind 13 frames each, from its stance and back to it, its hooves still; and Damning's light at its claws the game's
+  demon's own: laid for the demon's own claws, at seven moments from in front and from behind, the same picture as the
+  game's demon's, pixel for pixel (what is at its claws at every one of them; what is on the floor at every one before
+  the blow, after which the game's has the ground broken under the ones it damns as well).
+- A STILL IS AS IT WAS: `living_shadow.png` and `living_shadow_at_game_size.png` made again (the commands above them) and
+  compared with the files here: the same pixels. THE MOVES MADE BEFORE ARE AS THEY WERE: all 64 pictures of its left claw's
+  slash (32 from in front, 32 from behind), painted before this session's work and after it: the same files, byte for
+  byte; the first film made again by its tool: 2372 frames, 39.5 s, as it was.
+- THE GAME'S DEMON'S SMOKE STEP'S EFFECT IS AS IT WAS WHERE NOTHING NEW IS ASKED OF IT: `smokeStepLight` for the game's own
+  demon, every layer of it, at seven moments from in front and from behind, before this session's work and after it: the
+  same, to the pixel (and `damningLight`'s with it, whose file is not touched).
+- NOTHING CUT OFF: counted, not only looked at: in no frame of Damning, its roar, its burning out, struck hard, struck
+  from behind or its stand, from in front or behind, is there a painted pixel on the edge of its own canvas (the game's
+  demon's, 360 x 320). (Found so and put right: its near claw off the foot of its picture as it knelt, as it was driven
+  down in Damning, and as it was thrown forward struck from behind.)
+- LOOKED AT ON SHEETS: every frame of Damning and of the smoke step, from in front and from behind; every frame of both
+  struck moves from in front; its roar and its burning out every other frame from in front and from behind; its
+  crumbling every other frame; and frames of the film itself at full size.
+- `tsc --noEmit -p tsconfig.json`: nothing from this branch (the one line from `tests/relief.test.ts`, as before).
+- Nothing of the game imports `dev/shadow_moves.ts`, `shadow_fx.ts`, `demon_new.ts`, `demon_ideas.ts` or
+  `demon_swipe_fx.ts`: the five files of the art's this session changed. No file the game is made of is changed
+  (`dev/demon_fx.ts`, which `render/warlock_fx.ts`, `render/tinkerer_fx.ts`, `art/warlock_icons.ts` and
+  `art/tinkerer_icons.ts` take pieces from, is as it was).
+
+KNOWN, AND LEFT FOR HIS WORD OR THE MAIN CHAT:
+- From in front, the smoke blasted out where it comes out of the smoke step (the game's own, laid before it) hides its
+  legs and its claws for about ten frames as it lands; from behind it is laid beyond it, where it is, and its back is clear.
+- Up on two legs it has no fire under its claws to gutter as it burns out, as the game's demon has: what burns on it
+  dims instead. Its claws lying on the floor at the end have no fire under them.
+- From in front its near arm (its right) is between the eye and its chest: flung up in Damning it is beside its head, not
+  high over it as its far arm is.
+- FOR THE MAIN CHAT, when it comes into the game: where the game lays Damning's cracks and the smoke step's broken floor
+  under the demon's claws (`render/warlock_fx.ts`) wants looking at against where THIS body's claws go down (`DAMN_DIG`,
+  `STEP_SLAM`: 44 ahead and 20 to each side; the game's demon's are 28 and 26 ahead, 21 and 22 to the sides). And how
+  many pictures a side these are: Damning 49, the smoke step 47 (the game shows its frames 10 to 20 as ten laid over the
+  step), its roar 43, its burning out 53 before it crumbles, struck 14 each.
+
+SHOWN HIM SO, 11 Nov, by 21:30 Eastern (the third film sent; asked by pop-up three things: whether its other moves look
+right, all up on two legs; whether the smoke step's own smoke should stay; whether to save the night's work to GitHub).
+**HIS WORDS, 11 Nov, by 22:08:**
+
+- Of the moves (offered: “Yes, keep going (Recommended)”; close, change something; no, not this), his own words instead:
+  **“The roar is so bad.  His face doesn’t even move?  No animations out of the mouth?  No spittle or action lines or screen
+  shake on the roar?”**
+- Of the smoke step's smoke (offered as: the smoke is the move itself; less smoke; no smoke at all): **“Keep it as is
+  (Recommended)”**
+- Of saving the work to the Warlock's branch on GitHub: **“Yes, save it (Recommended)”**
+
+Read as, and told him so: THE ROAR IS TO BE MADE AGAIN, PROPERLY: its face moving (its jaws thrown wide open), the roar seen
+coming out of its mouth, spittle flying, action lines, and the screen shaking with it. He named nothing else: Damning, the
+smoke step, its burning out and being struck are taken to stand unless he says otherwise; and wherever else it roars (as
+it tears its claws up in Damning, as it rises out of the smoke step) its jaws are to open too. THE SMOKE STEP'S OWN SMOKE
+STAYS AS IT IS. SAVED: this section's work as it was shown him (the next section, when it is written, is the roar made again).
+
+STILL TO DO, IN THIS ORDER (11 Nov, 22:10): ITS ROAR MADE AGAIN (his words above) and shown him; then its eight sides, its
+hide carried by its bones, the change into it (ending on its roar); behind a switch that is off, a film and pictures in
+the game on floor 11 beside the Brawler; then THE MAN.
+
 THE FIRST THREE'S PICTURES (kept for the record):
 
 Pictures (`pictures/`, each wider than tall for his phone held sideways):
@@ -367,6 +534,6 @@ ground in the game.
 
 - `tsc --noEmit -p tsconfig.json`: nothing from this branch. (One line from `tests/relief.test.ts`, line 378, under the
   workspace's own TypeScript 7.0.2, the same before this branch's work as after it: not this branch's.)
-- Nothing of the game imports `src/dev/demon_new.ts`, `demon_ideas.ts`, `shadow_moves.ts` or `shadow_fx.ts`; no file of the game
-  is changed.
-- `npx tsx --test tests/shadow_moves.test.ts`: 7 of 7 (above). No other test was run: none touches these files.
+- Nothing of the game imports `src/dev/demon_new.ts`, `demon_ideas.ts`, `shadow_moves.ts`, `shadow_fx.ts` or
+  `demon_swipe_fx.ts`; no file of the game is changed.
+- `npx tsx --test tests/shadow_moves.test.ts`: 15 of 15 (above). No other test was run: none imports these files.

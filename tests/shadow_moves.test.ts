@@ -9,7 +9,12 @@
 //   and its slashes are REALLY WIDE (his word, 11 Nov);
 //   and it can move around on two legs as it slashes (his word of the film, 11 Nov): each slash made walking, each of the
 //   four ways, from its stance and back to it legs and all, a hoof on the floor staying where it is as the game carries it,
-//   a hoof coming down as the blow lands.
+//   a hoof coming down as the blow lands;
+//   and every other move of its begins and ends up on two legs (his word, 11 Nov: “Yes, all on two legs (Recommended)”):
+//   Damning, the smoke step's two ends, its roar as the change into it ends, its burning out, struck hard and from behind:
+//   each the game's own move to the game's own frames; from its stance and (but its burning out) back to it; its hooves
+//   where they stand; its claws, once in the floor, staying there; and Damning with no rear-up and slam (his word of the
+//   first Damning, 27 Oct, what was worst of it: “The rear-up and slam (Recommended),The effects”).
 
 // @ts-ignore
 import nodeTest from 'node:test';
@@ -18,11 +23,15 @@ import nodeAssert from 'node:assert/strict';
 import { solve } from '../src/art/skeleton';
 import type { Posed, Skeleton, V3 } from '../src/art/skeleton';
 import { UNITS_PER_TILE } from '../src/art/moves3';
-import { RAKE_HIT, RAKE_LONG, RK, demonRun } from '../src/dev/demon_moves';
-import { WOLF_B } from '../src/dev/demon_new';
-import { DROP_INTO, DROP_PICTURES, FR, REARS, SHADOW_CARRY, SHADOW_RUN_ROUND, SHADOW_STANCE, SLASH_WAYS, shadowMoves, shadowPose } from '../src/dev/shadow_moves';
+import { BURN_OUT_LONG, DAMN_HIT, DAMN_LONG, DM, RAKE_HIT, RAKE_LONG, RK, SS, STEP_LONG, demonMoves, demonRun } from '../src/dev/demon_moves';
+import { WOLF_B, burning } from '../src/dev/demon_new';
+import { CHANGE_ALL, ROAR_AT } from '../src/dev/warlock_change';
+import { WSTRUCK } from '../src/dev/warlock_hits';
+import { DAMN_DIG, DROP_INTO, DROP_PICTURES, FR, OTHER_MOVES, REARS, ROAR_LONG, SHADOW_CARRY, SHADOW_RUN_ROUND, SHADOW_STANCE, SLASH_WAYS, STEP_SLAM, shadowMoves, shadowOthers, shadowPose } from '../src/dev/shadow_moves';
 import type { ShadowMove } from '../src/dev/shadow_moves';
-import { slashTips } from '../src/dev/shadow_fx';
+import { clawsLight, slashTips } from '../src/dev/shadow_fx';
+import { damningLight, digSpots } from '../src/dev/demon_fx';
+import { paintWithoutCanvas } from './helpers';
 
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: { deepEqual(a: unknown, b: unknown, m?: string): void; ok(v: unknown, m?: string): void } = nodeAssert;
@@ -30,7 +39,8 @@ const assert: { deepEqual(a: unknown, b: unknown, m?: string): void; ok(v: unkno
 const moves = shadowMoves();
 const [stand, run, slashL, slashR, drop] = moves;
 const rears = moves.slice(5, 5 + REARS);
-const walking = moves.slice(5 + REARS);
+const walking = moves.slice(5 + REARS, 5 + REARS + 2 * SLASH_WAYS.length);
+const [damning, step, roar, burnOut, reel, lurch] = shadowOthers();
 const at = (m: ShadowMove, t: number): Skeleton => solve(WOLF_B, shadowPose(m, t));
 const STANCE = solve(WOLF_B, SHADOW_STANCE as Posed);
 const far = (a: V3, b: V3): number => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -165,4 +175,147 @@ test(`its slashes made walking on two legs: both claws, each of ${SLASH_WAYS.len
     // (weight first: a hoof on the floor as the blow lands and through the freeze)
     for (const f of [RK.hit, RK.freeze]) assert.ok(Math.min(at(m, f * FR).toeL[2], at(m, f * FR).toeR[2]) <= HOOF_DOWN, `${m.name}: a hoof down at frame ${f}`);
   });
+});
+
+// ---- ITS OTHER MOVES, ALL UP ON TWO LEGS
+
+/** Its hooves where they stand in its stance through frames `a` to `b` of a move. */
+function hoovesStill(m: ShadowMove, a: number, b: number): string[] {
+  const found: string[] = [];
+  for (let f = a; f <= b; f++) {
+    const s = at(m, f * FR);
+    for (const name of ['toeL', 'toeR'] as const) if (far(s[name], STANCE[name]) > 0.3) found.push(`${name} ${far(s[name], STANCE[name]).toFixed(2)} off at frame ${f}`);
+  }
+  return found;
+}
+/** A claw's wrist where it is driven into the floor (`spot`, for its left; its right's the same, its sides swapped) through frames `a` to `b`. */
+function clawsDug(m: ShadowMove, spot: V3, a: number, b: number): string[] {
+  const found: string[] = [];
+  for (let f = a; f <= b; f++) {
+    const s = at(m, f * FR);
+    for (const [name, side] of [['handL', 1], ['handR', -1]] as const) {
+      const d = far(s[name], [spot[0], side * spot[1], spot[2]]);
+      if (d > GIVE) found.push(`${name} ${d.toFixed(2)} off where it bit at frame ${f}`);
+    }
+  }
+  return found;
+}
+
+test('its other moves: after the rest in its list, so that each of those is where it was', () => {
+  assert.deepEqual(moves.length, 5 + REARS + 2 * SLASH_WAYS.length + OTHER_MOVES.length);
+  assert.deepEqual(moves.slice(-OTHER_MOVES.length).map((m) => m.name), [damning, step, roar, burnOut, reel, lurch].map((m) => m.name));
+  assert.deepEqual(moves[0].name, 'The Living Shadow standing');
+});
+
+test("Damning, up on two legs: to the game's frames; from its stance and back to it; its hooves where they stand; no rear-up and slam; its claws bite and stay; torn up in a flash; a freeze; risen up on two legs", () => {
+  assert.deepEqual([damning.hit, damning.long], [DAMN_HIT, DAMN_LONG]);
+  assert.ok(apart(at(damning, 0), STANCE) < 1e-6, 'begins in its stance');
+  assert.ok(apart(at(damning, damning.long), STANCE) < 1e-6, 'ends in its stance');
+  assert.ok(apart(at(damning, damning.long - FR), STANCE) < 1, 'settles into it');
+  assert.deepEqual(hoovesStill(damning, 0, 48), []);
+  // (his word of the first Damning, what was worst: “The rear-up and slam”: before its claws go down it never rises more
+  // than a little, and they are never lifted as high as its shoulders)
+  for (let f = 0; f <= DM.dig; f++) {
+    const s = at(damning, f * FR);
+    assert.ok(s.pelvis[2] < STANCE.pelvis[2] + 2.5, `not reared up at frame ${f}`);
+    assert.ok(Math.max(s.handL[2], s.handR[2]) < Math.min(s.shoulderL[2], s.shoulderR[2]) - 15, `its claws below its shoulders at frame ${f}`);
+  }
+  // (its claws in the floor from where they bite until it tears them up: feet grip the floor, and so do its claws)
+  assert.deepEqual(clawsDug(damning, DAMN_DIG, DM.dig, DM.held), []);
+  // (Movement 9: torn up in a flash, two frames, by far its fastest; Movement 7: a freeze as it lands)
+  const hand = (f: number): V3 => at(damning, f * FR).handL;
+  const pace = Array.from({ length: 48 }, (_, f) => far(hand(f + 1), hand(f)));
+  const rip = Math.min(...pace.slice(DM.held, DM.rip));
+  const rest = Math.max(...pace.slice(0, DM.held), ...pace.slice(DM.rip));
+  assert.ok(rip > 2.5 * rest, `the tearing up ${rip.toFixed(1)} a frame, the rest at most ${rest.toFixed(1)}`);
+  assert.ok(apart(at(damning, DM.rip * FR), at(damning, DM.freeze * FR)) < 1e-6, 'held through the freeze');
+  // (and it is up on two legs again as the blow lands: its hips as high as in its stance, its claws over its head)
+  const up = at(damning, DM.rip * FR);
+  assert.ok(up.pelvis[2] >= STANCE.pelvis[2] && Math.min(up.handL[2], up.handR[2]) > up.head[2], 'risen, its claws flung up');
+});
+
+test("the smoke step's two ends, up on two legs: to the game's frames, as far and as gone as the game's; from its stance and back to it; its hooves where they stand while it is on the floor; its claws slammed down stay", () => {
+  const game = demonMoves().find((m) => !!m.gone);
+  assert.ok(game, "the game's smoke step");
+  assert.deepEqual([step.hit, step.long, step.air], [game?.hit, STEP_LONG, game?.air]);
+  for (let f = 0; f <= 46; f += 0.5) {
+    assert.deepEqual(step.along?.(f * FR), game?.along?.(f * FR), `as far as the game's at frame ${f}`);
+    assert.deepEqual(step.gone?.(f * FR), game?.gone?.(f * FR), `as far gone as the game's at frame ${f}`);
+  }
+  assert.ok(apart(at(step, 0), STANCE) < 1e-6, 'begins in its stance');
+  assert.ok(apart(at(step, step.long), STANCE) < 1e-6, 'ends in its stance');
+  assert.ok(apart(at(step, step.long - FR), STANCE) < 1, 'settles into it');
+  assert.deepEqual(hoovesStill(step, 0, SS.coiled), []);
+  assert.deepEqual(hoovesStill(step, SS.slam + 2, 46), []);
+  // (its right claw comes down half a frame after its left)
+  assert.deepEqual(clawsDug(step, STEP_SLAM, SS.slam + 1, SS.low), []);
+  // (all smoke between its ends: nothing of it is seen from the frame it is gone to the frame it comes out)
+  for (let f = SS.gone; f <= SS.out; f++) assert.deepEqual(step.gone?.(f * FR), 1, `all smoke at frame ${f}`);
+});
+
+test('its roar as the change into it ends: as long as the game gives it; from its stance and back to it; its hooves where they stand; reared up tall, its arms flung wide', () => {
+  assert.ok(Math.abs(ROAR_LONG - (CHANGE_ALL - ROAR_AT)) < 1e-9, "as long as the game's change gives its roar");
+  assert.deepEqual(roar.long, ROAR_LONG);
+  assert.ok(apart(at(roar, 0), STANCE) < 1e-6, 'begins in its stance');
+  assert.ok(apart(at(roar, roar.long), STANCE) < 1e-6, 'ends in its stance');
+  assert.deepEqual(hoovesStill(roar, 0, 42), []);
+  const up = at(roar, 10 * FR);
+  assert.ok(up.pelvis[2] > STANCE.pelvis[2] + 2.5 && up.handL[1] - up.handR[1] > 110, 'reared up, its claws flung wide');
+});
+
+test("its burning out, from up on two legs: as long as the game's; from its stance; it only sinks; its front hoof and its rear hoof's toes where they stand; what burns on it gutters and dies, in his cyan's own tones", () => {
+  assert.deepEqual(burnOut.long, BURN_OUT_LONG);
+  assert.ok(apart(at(burnOut, 0), STANCE) < 1e-6, 'begins in its stance');
+  const n = Math.round(burnOut.long / FR);
+  for (let f = 1; f <= n; f++) {
+    const s = at(burnOut, f * FR);
+    assert.ok(far(s.toeL, STANCE.toeL) < 0.3, `its front hoof still at frame ${f}`);
+    assert.ok(far(s.toeR, STANCE.toeR) < GIVE, `its rear hoof's toes still at frame ${f} (${far(s.toeR, STANCE.toeR).toFixed(2)})`);
+    // (but for its last heavy breath, which lifts it a little)
+    assert.ok(s.pelvis[2] < STANCE.pelvis[2] + 2.5, `never rises at frame ${f}`);
+    assert.ok(Math.min(s.kneeL[2], s.kneeR[2]) > 1, `no knee through the floor at frame ${f}`);
+  }
+  const end = at(burnOut, burnOut.long);
+  assert.ok(end.pelvis[2] < STANCE.pelvis[2] - 25 && end.head[2] < STANCE.head[2] - 35, 'sunk down, its head dropped');
+  // (onto its rear knee, its right: on the floor, before the hoof that stays where it stands; its front knee up)
+  assert.ok(end.kneeR[2] < 5 && end.kneeR[0] > end.toeR[0] && end.kneeL[2] > 20, `on one knee (its rear knee ${end.kneeR[2].toFixed(1)} up, its front ${end.kneeL[2].toFixed(1)})`);
+  assert.ok(apart(end, at(burnOut, burnOut.long - 4 * FR)) < 0.6, 'still as it ends (the same picture crumbles)');
+  const glow = burnOut.glow as (t: number) => number;
+  assert.ok(glow(0) === 1 && glow(burnOut.long) < 0.2, 'burning as ever at its start, all but out at its end');
+  // (flaring once on the way: brighter at frame 14 than at frame 10)
+  assert.ok(glow(14 * FR) > glow(10 * FR), 'flares once');
+  // (as bright as ever, the still's own colours; dying, nothing but his cyan's own tones)
+  assert.deepEqual(burning(undefined), { hot: '#e8ffff', rest: '#22d0e0', core: true });
+  assert.deepEqual(burning(1), burning(undefined));
+  for (const g of [0.7, 0.5, 0.3, 0.1]) for (const c of [burning(g).hot, burning(g).rest]) assert.ok(['#0c6a80', '#22d0e0', '#b8fff8'].includes(c), `${c} at ${g}`);
+});
+
+for (const m of [reel, lurch]) {
+  test(`${m.name}: 13 frames, as the game's; from its stance and back to it; its hooves where they stand; rocked by the third frame`, () => {
+    assert.deepEqual(m.long, WSTRUCK.end * FR);
+    assert.ok(apart(at(m, 0), STANCE) < 1e-6, 'begins in its stance');
+    assert.ok(apart(at(m, m.long), STANCE) < 1e-6, 'ends in its stance');
+    assert.deepEqual(hoovesStill(m, 0, WSTRUCK.end), []);
+    // (struck hard it is rocked back; from behind, driven forward)
+    const d = at(m, WSTRUCK.snapped * FR).neck[0] - STANCE.neck[0];
+    assert.ok(m === reel ? d < -6 : d > 6, `rocked ${d.toFixed(1)}`);
+  });
+}
+
+test("Damning's light at its claws is the game's demon's own: for the demon's own claws, the same picture, pixel for pixel", () => {
+  paintWithoutCanvas();
+  const game = demonMoves().find((m) => m.name.includes('Damning'));
+  assert.ok(game, "the game's Damning");
+  if (!game) return;
+  const same = (a: Uint8ClampedArray | Uint8Array, b: Uint8ClampedArray | Uint8Array): boolean => a.length === b.length && a.every((v, i) => v === b[i]);
+  for (const view of ['front', 'back'] as const) {
+    for (const f of [6, 12, 20, DM.rip, DM.rip + 3, DM.down, 46]) {
+      const theirs = damningLight(game, f * FR, view);
+      const mine = clawsLight(digSpots(game), f * FR, view);
+      assert.ok(same(mine.claws.d, theirs.claws.d), `at its claws, frame ${f}, from ${view}`);
+      assert.deepEqual(mine.clawsNear, theirs.clawsNear);
+      // (on the floor: the same until the blow; from then the game's has the ground broken under the ones it damns too)
+      if (f < DM.rip) assert.ok(same(mine.floor.d, theirs.floor.d), `on the floor, frame ${f}, from ${view}`);
+    }
+  }
 });
