@@ -58,6 +58,8 @@ import { isCamp } from './game/camp';
 import { townSprite } from './art/townscene';
 import { makeTownsfolk } from './art/townsfolk';
 import { SMITH3 } from './art/smith3';
+import { TOWNSFOLK3, TOWNSFOLK3_HEAVY } from './art/townsfolk3';
+import { MYSTIC_HEAD } from './dev/sculpt_townsfolk';
 import { POWER, QUEST3, makeStoneArt } from './art/quest3';
 import { makeTitleArt } from './art/title';
 import { makeSmithTitle } from './art/title_smith';
@@ -2885,6 +2887,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       art.heroes = makeHeroArt3();
     },
     /** THE WORDSMITH ON BONES AND HIS RING MADE NEW (art/smith3.ts, SMITH3): a mock-up behind a switch that is off; its pictures switch it on and paint the town's people again. */
+    /** THE TOWN'S FOUR PEOPLE SCULPTED, AT THIRTY A SECOND (art/townsfolk3.ts, TOWNSFOLK3): a mock-up behind a switch that is off; its pictures switch it on and paint the town's people again. */
+    townsfolk3: (on: boolean, heavy = true, mysticHead = MYSTIC_HEAD.take) => {
+      TOWNSFOLK3.on = on;
+      TOWNSFOLK3_HEAVY.on = heavy;
+      // (which take of the mystic's head, while he picks: dev/sculpt_townsfolk.ts MYSTIC_HEAD)
+      MYSTIC_HEAD.take = mysticHead;
+      art.folk = makeTownsfolk();
+    },
     smith3: (on: boolean) => {
       SMITH3.on = on;
       art.folk = makeTownsfolk();
@@ -2896,6 +2906,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     },
     /** The clock the town's things go by (seconds, slowed with `slowmo`): a playtest can wait for the moment someone acts. */
     clock: () => clock,
+    /** ... and put on by so much (with `slowmo` 0 the clock stands still but for this: a film of the town made a frame at a time, tools/scenarios/townsfolk3_film.mjs). */
+    clockBy: (dt: number) => {
+      clock += dt;
+    },
     /**
      * THE MASTER RUNE-STONE (art/quest3.ts, QUEST3): a mock-up behind a switch that is off; its films
      * set what the rules will one day say. `on`; the ring `dark`; `give`: the stone is given now;
