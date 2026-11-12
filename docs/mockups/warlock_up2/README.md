@@ -733,6 +733,45 @@ and `tools/mage_up_film.py` on `art/mage-up2` made hers): the Warlock changing i
 standing and walking, Damning, the smoke step, struck, burning out; his yes; then the ship list. Its frames are heavy to paint
 (about a fifth of a second each here): in play they want the bake, as the Mage's did.
 
+## In play on floor 11, beside the Brawler (a test page with the switch on; SHOWN HIM AS A FILM AND A PICTURE)
+
+The same queue chat, at his word “Work on the next queue item” (13:47 Eastern). Step 3's second half.
+
+A page of the game with LIVING_SHADOW on, in the page and its side painter alike (`tools/shadow_page.mjs`, as the Mage's: the
+switch turned as the file is read for that one bundle; the source not touched; no bake beside it: every frame painted in play
+by the side painter). On it, the Warlock on floor 11's ground (the Gate Ward, the Crier's Square: the Mage's spot, 40, 57),
+by the game's own rules, his controls put in as a player's would be (`tools/scenarios/shadow_look.mjs`): as a man; tapped,
+changing into it; standing; running on all fours one way and another and rearing up to stop; tap, tap (its slashes, left claw
+then right); tap while moving (its slash made walking); tap and hold (Damning); swipe (the smoke step); its pact let run dry:
+burning out, and he gets up. The clock slowed while each frame is taken, so that every frame is painted before it is shot.
+
+- `pictures/living_shadow_in_play.mp4`: 24.9 s at 30 a second, the game's own speed, 1380 x 1074, what each part is written
+  over it; a picture every thirtieth of a second of the game's time, cut round him (six screen pixels a game pixel).
+- `pictures/living_shadow_in_play_measure.png`: THE MEASURE. The Brawler, the Warlock and the Living Shadow, each on the same
+  spot of the Gate Ward's ground, at the game's size (4180 x 1020).
+
+Made with:
+```
+node tools/shadow_page.mjs dist/shadow_on.html on
+MODE=film OUT=shots/shadow/film node tools/playtest.mjs --file dist/shadow_on.html --touch --size 1126x520 --dpr 3 --scenario tools/scenarios/shadow_look.mjs
+CLS=brawler MODE=still NAME=brawler OUT=shots/shadow/m node tools/playtest.mjs ... (the same page)
+CLS=warlock MODE=still NAME=warlock OUT=shots/shadow/m node tools/playtest.mjs ...
+python3 tools/shadow_play_film.py measure shots/shadow/m_brawler.png shots/shadow/m_warlock.png shots/shadow/film_frames/f0200.png <out.png>
+python3 tools/shadow_play_film.py shots/shadow/film_frames <out.mp4>
+```
+The playtest finished clean (no errors); the form as each fifteenth frame was taken: a man to frame 105, the demon from 120
+to 600, a man again from 615.
+
+SEEN IN IT, AND TOLD HIM:
+- THE GAME LAYS THE CHANGE OVER ITS RULES' TIME (game/warlock.ts WARLOCK_TUNE.change.secs, 2.4 s), as it does the old demon's:
+  the change he said yes to (3.5 s with its roar) is played about one and a half times as fast in play. Likewise burning out
+  over the rules' 2.0 s. The rules' times are his and the main chat's to change, not this branch's.
+- The white arcs on its slashes are the game's own swing marks for any blow; its own cyan streaks are among what the main chat
+  lays (the section above).
+- After its slash made walking it shows its run at once, as the section above's note (5) says the game does for now.
+- The cyan bar over it is the game's own pact bar, at a man's height: up on two legs it is taller, and the bar crosses its
+  horns, and in some frames of the change its face. For the main chat: raise it for the Living Shadow.
+
 ## The checks so far
 
 - `tsc --noEmit -p tsconfig.json`: nothing from this branch. (One line from `tests/relief.test.ts`, line 378, under the
