@@ -44,8 +44,12 @@ import type { V3, WallMake } from './floor4';
 import { EARTH, FLAGS, ROCK, STONE, gradeSprite, mineFloorAt, noise, templeFloorAt } from './lair_temple';
 import type { LairPart } from './lair_temple';
 
-/** THE SWITCH: off until the main chat lays floor 5's rooms as scenes, on his yes. */
-export const LAIR_STORY = { on: false };
+/**
+ * THE SWITCH: ON AT HIS WORD. Floor 5's rooms laid as its story (game/stories.ts STORY_SETS[5]), shown him in a picture from the
+ * game (docs/mockups/prison_stories/pictures/floor5_story.png), asked “Floor 5's story (...): is it right?”, his pick, 12 Nov 2026:
+ * “Yes, hand it to main (Recommended)”.
+ */
+export const LAIR_STORY = { on: true };
 
 // =================================================================================================
 // THE COLOURS

@@ -123,4 +123,6 @@ CHECKED: `tests/prison_stories.test.ts` test 6 (off: none; on: the beats in thei
 beside a bone heap, every piece its part's, nothing cut off; 80% or more of the way's rooms laid); with LAIR_STORY off floors 1
 to 5 are laid exactly as on build/prison-stories (55996660), the bakes' marks the same. PICTURE: `pictures/floor5_story.png`
 (seed 7919: rooms 1 and 6, the first empty shackles, the Eye in the temple's room, the way into his hall with the drag marks).
-TO PUT IT ON: `LAIR_STORY.on = true` (art/lair_story.ts), at his yes.
+HIS YES: shown the picture, asked by pop-up “Floor 5's story (picture floor5_story: breakthrough, mine as left, cult's takeover,
+the temple with the Sunken Eye, drag marks into his hall): is it right?”, his pick, 12 Nov 2026: “Yes, hand it to main
+(Recommended)”. SO `LAIR_STORY.on = true` (art/lair_story.ts) on the branch.

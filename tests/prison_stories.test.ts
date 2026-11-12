@@ -10,7 +10,7 @@
 //   5. the threads: the cult's candles on floor 3 and more of them than on floor 1; the black water on floors 3 and 4 and not above
 //      (each pool on the floor before its own face); the threads' pieces in each look, the swamp's water its own colours, nothing
 //      cyan
-//   6. FLOOR 5 (behind its pieces' switch, LAIR_STORY, off until his yes): the mine's beats in its rooms of the way, the temple's
+//   6. FLOOR 5 (its pieces' switch, LAIR_STORY, on at his word; off, none): the mine's beats in its rooms of the way, the temple's
 //      in the room before his hall; the Eye in the temple's stone and in his hall's; the drag marks a run from the way into the
 //      temple to beside one of his bone heaps; every piece one of the floor's own (its part's) or the story's; nothing cut off
 //   run: tsx --test tests/prison_stories.test.ts
@@ -194,7 +194,8 @@ test('5. the threads: the cult\'s candles grow to floor 3, the black water from 
 });
 
 test('6. floor 5: the mine\'s beats, the temple\'s, the Eye, the drag marks to his dead; its own pieces; nothing cut off', () => {
-  assert.equal(LAIR_STORY.on, false, 'off until his yes');
+  assert.equal(LAIR_STORY.on, true, 'on at his word');
+  LAIR_STORY.on = false;
   assert.equal(floor(5, 11).level.dress?.story, undefined, 'off: no story on floor 5');
   const before = new Map(SEEDS.map((seed) => [seed, reachOf(floor(5, seed))]));
   LAIR_STORY.on = true;
@@ -245,7 +246,7 @@ test('6. floor 5: the mine\'s beats, the temple\'s, the Eye, the drag marks to h
     }
     assert.ok(laid >= rooms * 0.8, `${laid} of ${rooms} rooms of the way laid`);
   } finally {
-    LAIR_STORY.on = false;
+    LAIR_STORY.on = true;
     forgetPieces(0);
   }
 });

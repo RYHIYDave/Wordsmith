@@ -38,8 +38,8 @@ const all: [string, Piece][] = parts.flatMap(([part, list]) => list.map((p) => [
 const pictures: [string, Sprite][] = all.flatMap(([n, p]) => sprites(p).map((s, i) => [`${n} ${i}`, s] as [string, Sprite]));
 const FIRE = new Set<string>(EYE_FIRE.map((c) => c.toLowerCase()));
 
-test('the story pieces: off, and imported by nothing of the game', () => {
-  assert.ok(LAIR_STORY.on === false, 'LAIR_STORY is off');
+test('the story pieces: on at his word (12 Nov 2026), and laid by the floor\'s story alone', () => {
+  assert.ok(LAIR_STORY.on === true, 'LAIR_STORY is on');
   const found: string[] = [];
   const walk = (d: string): void => {
     for (const f of readdirSync(d)) {
