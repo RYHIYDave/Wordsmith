@@ -1,10 +1,11 @@
 // The game's own web address, with an offline copy for the phone (his "Sure", 17 Oct 06:43, and
 // "K go", 06:50): https://ryhiydave.github.io/Wordsmith/, served by GitHub Pages from the branch
 // gh-pages. This makes that branch's files from a release's Play.html:
-//   node tools/make_site.mjs <release Play.html> <out dir> [dist/heroes] [dist/sounds] [dist/colossus] [dist/townsfolk]
+//   node tools/make_site.mjs <release Play.html> <out dir> [dist/heroes] [dist/sounds] [dist/colossus] [dist/townsfolk] [dist/monsters]
 // (the third: the heroes baked, render/baked.ts, the release build's dist/heroes, copied in as heroes/<mark>/; the fourth, the
 // recorded sounds, engine/audio.ts, as sounds/<mark>/; the fifth, the Swamp Colossus's pictures, tools/colossus_ship.mjs, as
-// colossus/<mark>/; the sixth, the town's people baked, render/townsfolk_baked.ts, as townsfolk/<mark>/)
+// colossus/<mark>/; the sixth, the town's people baked, render/townsfolk_baked.ts, as townsfolk/<mark>/; the seventh, the floors'
+// monsters baked, render/monsters_baked.ts, as monsters/<mark>/)
 // then copy the out dir's files over the gh-pages branch's, commit and push (DESIGN_NOTES section 8).
 // index.html is Play.html with the home-screen settings and the offline helper's start added;
 // sw.js keeps the page on the phone (opened with no connection, the kept copy plays; opened
@@ -12,7 +13,7 @@
 import { readFileSync, writeFileSync, mkdirSync, cpSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const [from, out, heroes, sounds, colossus, townsfolk] = process.argv.slice(2);
+const [from, out, heroes, sounds, colossus, townsfolk, monsters] = process.argv.slice(2);
 if (!from || !out) { console.error('usage: node tools/make_site.mjs <Play.html> <out dir>'); process.exit(1); }
 let src = readFileSync(from, 'utf8');
 const anchor = '<meta name="mobile-web-app-capable" content="yes">\n';
@@ -58,8 +59,8 @@ self.addEventListener('fetch', (e) => {
       if (r && r.ok) {
         c.put(page ? './index.html' : req, r.clone());
         // (the heroes baked: a bake's pictures kept, the older bakes' let go)
-        const m = /\\/(heroes|sounds|colossus|townsfolk)\\/([0-9a-f]+)\\//.exec(req.url);
-        if (m) c.keys().then((ks) => ks.forEach((k) => { const n = /\\/(heroes|sounds|colossus|townsfolk)\\/([0-9a-f]+)\\//.exec(k.url); if (n && n[1] === m[1] && n[2] !== m[2]) c.delete(k); }));
+        const m = /\\/(heroes|sounds|colossus|townsfolk|monsters)\\/([0-9a-f]+)\\//.exec(req.url);
+        if (m) c.keys().then((ks) => ks.forEach((k) => { const n = /\\/(heroes|sounds|colossus|townsfolk|monsters)\\/([0-9a-f]+)\\//.exec(k.url); if (n && n[1] === m[1] && n[2] !== m[2]) c.delete(k); }));
       }
       return r;
     }).catch(() => null);
@@ -92,5 +93,9 @@ if (colossus && existsSync(colossus) && readdirSync(colossus).length) {
 if (townsfolk && existsSync(townsfolk) && readdirSync(townsfolk).length) {
   cpSync(townsfolk, join(out, 'townsfolk'), { recursive: true });
   baked += `, townsfolk/${readdirSync(townsfolk).join(', townsfolk/')}`;
+}
+if (monsters && existsSync(monsters) && readdirSync(monsters).length) {
+  cpSync(monsters, join(out, 'monsters'), { recursive: true });
+  baked += `, monsters/${readdirSync(monsters).join(', monsters/')}`;
 }
 console.log(`made ${out}: index.html ${src.length} chars, sw.js, manifest.webmanifest, .nojekyll${baked}`);

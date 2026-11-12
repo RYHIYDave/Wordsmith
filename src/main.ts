@@ -127,6 +127,11 @@ import { NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render'
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
 import { BakedHeroes } from './render/baked';
 import { BakedTownsfolk, TOWNSFOLK_BAKED } from './render/townsfolk_baked';
+import { BakedMonsters, MONSTERS_BAKED, bringsOf } from './render/monsters_baked';
+import { HEAVY_FIGURES, framesOf, paintOrder } from './art/bestiary';
+import type { MonsterFigure } from './art/bestiary';
+import { act1Stages } from './art/act1_figs/index';
+import { movesOf } from './game/defs';
 import { QUESTS15 } from './game/quests15';
 import { TOPS_CACHE } from './render/tops_cache';
 import type { Art } from './render/render';
@@ -392,6 +397,39 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (hasFolk(g.level) && townsfolk3Shown() && TOWNSFOLK3_HEAVY.on) return b.take() && !b.ready();
     if (TOWNSFOLK_BAKED.letGo) b.letGo();
     return false;
+  };
+  // (THE FLOORS' MONSTERS BAKED, render/monsters_baked.ts: their pictures painted when the game was built, beside this page, a
+  // group a figure; taken in under the loading screen as a floor is come into (loadingFrame waits for them), and let go of with
+  // the floor's other pictures as it is left. His words, 11 Nov 2026, 21:30: “Explain to me why the game lags at literally every
+  // new screen regardless of introducing loading screens?”: the floor's monsters were painted as he fought, the first time each
+  // frame was shown. Where the files are not to be had, as before.)
+  const bakedMobs = BakedMonsters.make(() => art.bestiary);
+  renderer.bakedMobs = bakedMobs;
+  /**
+   * THE PLACE'S MONSTERS' PICTURES: asked for, the figures that stand in it and what they will call up or become
+   * (render/monsters_baked.ts bringsOf; a boss with moves of his own calls the dead, as render.ts has it). True while any of
+   * them is still coming: the loading screen waits for that.
+   */
+  const mobPictures = (g: Game): boolean => {
+    const b = bakedMobs;
+    if (!b) return false;
+    let coming = false;
+    const seen = new Set<MonsterFigure>();
+    const want = (f: MonsterFigure): void => {
+      if (seen.has(f)) return;
+      seen.add(f);
+      // (a boss's waited for too, or left to come in the seconds after the screen lifts: MONSTERS_BAKED.waitHeavy)
+      if (b.take(f) && !b.settled(f) && (MONSTERS_BAKED.waitHeavy || !HEAVY_FIGURES.includes(f))) coming = true;
+    };
+    for (const m of g.monsters) {
+      if (m.dead) continue;
+      const f = figureOf(m);
+      if (seen.has(f)) continue;
+      want(f);
+      for (const o of bringsOf(f, (x) => act1Stages(x)?.next as MonsterFigure[] | undefined)) want(o);
+      if (m.boss && movesOf(m)) want('skeleton');
+    }
+    return coming;
   };
   // (the worker is started at once: the hero's pictures are wanted from the first moment)
   painter.warmGround();
@@ -1941,8 +1979,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (l.frames === 2) {
       // (the new place's own pictures first: its floor's ground, pieces and gates; the painter set to it)
       placeFrame(g);
+      // (THE FLOORS' MONSTERS BAKED: asked for now, the last place's let go of (placeFrame), before the level's own pictures
+      // are made, so that their files are on their way meanwhile)
+      mobPictures(g);
       renderer.prepare(g);
     }
+    // (THE FLOORS' MONSTERS BAKED: this place's monsters' pictures waited for: none is painted as he fights. render/monsters_baked.ts)
+    if (l.frames >= 2 && mobPictures(g)) waiting = true;
     if (l.frames > 2 && l.t >= (l.least ?? LOADING.least) && (!waiting || l.t >= LOADING.most)) {
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, 0);
       l.drawn = true;
@@ -2590,6 +2633,71 @@ function start(carried: unknown, hot: HotHook | undefined): void {
      */
     bakedFolk: () => (bakedFolk ? { ...bakedFolk.stats, ready: bakedFolk.ready(), done: bakedFolk.done(), settled: bakedFolk.settled(), shown: townsfolk3Shown() } : null),
     townsfolkBaked: TOWNSFOLK_BAKED,
+    /**
+     * THE FLOORS' MONSTERS BAKED (render/monsters_baked.ts): what has been taken in from their files and what failed (null: none
+     * to be had on this page); which of the figures standing here have come whole; and the switch (`monstersBaked.on`: off, the
+     * monsters are painted as the game is played, as before; a playtest that throws the art's own switches puts it off first).
+     */
+    bakedMobs: () => (bakedMobs ? { ...bakedMobs.stats, ms: { ...bakedMobs.stats.ms }, failed: [...bakedMobs.stats.failed], here: game ? Object.fromEntries([...new Set(game.monsters.filter((m) => !m.dead).map((m) => figureOf(m)))].map((f) => [f, bakedMobs.done(f)])) : {} } : null),
+    monstersBaked: MONSTERS_BAKED,
+    /** (for the tests) the failures forgotten: each figure may be asked for once more. */
+    bakedMobsAgain: (): void => bakedMobs?.again(),
+    /**
+     * (for the tests) A FIGURE'S PICTURES IN HAND AGAINST THE GAME'S OWN PAINTING OF THEM: `n` of its places, spread through the
+     * order they are wanted, each painted afresh here (a bestiary of its own) and held against the picture the
+     * game has there, pixel by pixel and part by part. `fromFiles`: how many of its places hold a picture that was not painted
+     * on this page (the bake's); `unpainted`: how many hold none yet.
+     */
+    bakedMobsCheck: (figure: MonsterFigure, n = 12): { places: number; fromFiles: number; unpainted: number; checked: number; differ: number; worst: string } => {
+      const mine = art.bestiary.of(figure);
+      const fresh = makeBestiary();
+      const other = fresh.of(figure);
+      const lists = [framesOf(mine.front), framesOf(mine.back)];
+      const olists = [framesOf(other.front), framesOf(other.back)];
+      const order = paintOrder(mine);
+      const out = { places: order.length, fromFiles: 0, unpainted: 0, checked: 0, differ: 0, worst: '' };
+      const held: (Sprite | null)[] = order.map(([v, l, i]) => {
+        const d = Object.getOwnPropertyDescriptor(lists[v][l], i);
+        const sp = d && 'value' in d && d.value ? (d.value as Sprite) : null;
+        if (!sp) out.unpainted++;
+        else if (typeof (sp.img as unknown as { getContext?: unknown }).getContext !== 'function') out.fromFiles++;
+        return sp;
+      });
+      const cv = document.createElement('canvas');
+      const cg2 = cv.getContext('2d', { willReadFrequently: true })!;
+      const pixels = (img: CanvasImageSource, w: number, h: number): Uint8ClampedArray => {
+        cv.width = w;
+        cv.height = h;
+        cg2.clearRect(0, 0, w, h);
+        cg2.drawImage(img, 0, 0);
+        return cg2.getImageData(0, 0, w, h).data;
+      };
+      const step = Math.max(1, Math.floor(order.length / Math.max(1, n)));
+      for (let k = 0; k < order.length; k += step) {
+        const sp = held[k];
+        if (!sp) continue;
+        const [v, l, i] = order[k];
+        const want = olists[v][l][i];
+        out.checked++;
+        let bad = 0;
+        const { img: _a, ...pa } = sp;
+        const { img: _b, ...pb } = want;
+        if (JSON.stringify(pa) !== JSON.stringify(pb) || sp.img.width !== want.img.width || sp.img.height !== want.img.height) bad = -1;
+        else {
+          const a = pixels(sp.img, sp.img.width, sp.img.height).slice();
+          const b = pixels(want.img, want.img.width, want.img.height);
+          for (let q = 0; q < a.length; q++) if (a[q] !== b[q]) bad++;
+        }
+        if (bad) {
+          out.differ++;
+          if (!out.worst) out.worst = `${v},${l},${i}: ${bad < 0 ? 'its parts or its size' : `${bad} values`}`;
+        }
+      }
+      // (the few painted afresh are left to the collector: nothing here may let go of a picture the game might hold too)
+      cv.width = 0;
+      cv.height = 0;
+      return out;
+    },
     /** THE QUEST LINE OF FLOORS 1 TO 5 (game/quests15.ts QUESTS15): off until his yes in play; its pictures and playtests switch it on (`quests15.on`). */
     quests15: QUESTS15,
     /** THE RECORDED SOUNDS (engine/audio.ts): how many have come, are coming, failed; the title theme playing. */
@@ -3255,6 +3363,8 @@ useEnemyMoves(ENEMY_MOVES.on);
 useFloorLooks(FLOOR_LOOKS.on);
 // (THE ONE RELEASE, ALL OF IT: the High City, floors 16 to 20, his “All of it in this one”, 2 Nov 2026: game/all_of_it.ts)
 useAllOfIt(ALL_OF_IT.on);
+// (A SWITCH PUT ON HERE IS PUT ON IN THE FLOORS' MONSTERS' BAKE TOO, src/dev/bake_monsters_page.ts, in the same words: its pictures
+// are the game's only if they are painted with the game's switches. tests/monsters_baked.test.ts holds the two to each other.)
 
 // (THE PAINTER: the same script, started as the painter's worker, paints and does nothing else)
 if ((globalThis as { __PAINT_WORKER__?: boolean }).__PAINT_WORKER__) paintWorkerMain();

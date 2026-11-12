@@ -345,6 +345,11 @@ export interface Bestiary {
   forgetOthers(keep: ReadonlySet<MonsterFigure>): void;
   /** How many frames of these figures are still to be painted ahead (for the painting ahead, and its tests). */
   left(figures: ReadonlyArray<MonsterFigure>): number;
+  /**
+   * THE FLOORS' MONSTERS BAKED (render/monsters_baked.ts): a figure's pictures as they are held now, if they are made (never
+   * making them): the same ones `of` would hand out. A figure forgotten has none, and others the next time it is asked for.
+   */
+  made(figure: MonsterFigure): ActorArt | undefined;
 }
 
 /** The last frame painted ahead of need. Kept only so that the reading of it cannot be optimised away. */
@@ -501,6 +506,12 @@ export function makeBestiary(): Bestiary {
       let n = 0;
       for (const f of figures) n += listOf(f).left.length;
       return n;
+    },
+    made(figure: MonsterFigure): ActorArt | undefined {
+      // (as `of` hands them out: the skeleton and the bone archer on the bones, with their switches on)
+      if (figure === 'skeleton' && SKELETON3.on) return bones3 ?? undefined;
+      if (figure === 'archer' && ARCHER3.on) return archer3 ?? undefined;
+      return made.get(figure);
     },
   };
 }

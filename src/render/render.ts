@@ -151,6 +151,7 @@ const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as c
 import { BellsLook } from './bells';
 import { redoubtGround } from '../art/redoubt';
 import type { Painter } from './painter';
+import type { BakedMonsters } from './monsters_baked';
 import { QUEEN_ACTION } from '../art/carrion_queen_action';
 import { eclipseDark } from '../art/carrion_queen_action_fx';
 import { eclipseNow, eclipsePools } from '../game/act1_rules/queen';
@@ -525,6 +526,12 @@ export class Renderer {
   private heavy: MonsterFigure[] = [];
   /** THE FIRST FIVE FLOORS: the painter of what is too heavy to paint here (render/painter.ts), if the game has one. */
   painter: Painter | null = null;
+  /**
+   * THE FLOORS' MONSTERS BAKED (render/monsters_baked.ts; main.ts): their pictures painted when the game was built, taken in
+   * under the loading screen as a floor is come into, and here as a figure is first seen (null: none to be had). A figure
+   * whose pictures are the bake's is not painted ahead by the painter, nor by the game.
+   */
+  bakedMobs: BakedMonsters | null = null;
   /** The bosses whose death has been asked to be painted next (Painter.dieFirst, Bestiary.dieFirst); begun again with each floor. */
   private dieSoon = new Set<MonsterFigure>();
   private dieSoonFor: unknown = null;
@@ -2772,6 +2779,9 @@ export class Renderer {
     // is no painter the game paints it too, but only one frame every HEAVY_EVERY times the world is drawn.
     const heavy = this.heavy;
     heavy.length = 0;
+    // (THE FLOORS' MONSTERS BAKED, render/monsters_baked.ts: a figure whose pictures are the bake's, coming or come, is nobody's
+    // to paint; where they are not to be had, as before)
+    const baked = this.bakedMobs;
     for (let i = figs.length - 1; i >= 0; i--) {
       const f = figs[i];
       if (!HEAVY_FIGURES.includes(f)) continue;
@@ -2779,13 +2789,13 @@ export class Renderer {
       // (the Chained One as he will be with his next chain broken, too; and as he was, never again: let go of)
       const wanted: MonsterFigure[] = f === 'chained' ? ['chained', 'chained1'] : f === 'chained1' ? ['chained1', 'chained2'] : [f];
       if (f === 'chained' && this.painter && !this.painter.small) wanted.push('chained2');
-      for (const w of wanted) if (!this.painter || !this.painter.mob(w)) heavy.push(w);
+      for (const w of wanted) if (!baked?.take(w) && (!this.painter || !this.painter.mob(w))) heavy.push(w);
       const past: MonsterFigure[] = f === 'chained1' ? ['chained'] : f === 'chained2' ? ['chained', 'chained1'] : [];
       // (ACT 2, THE HUSH: one whose looks are stages it goes through, the Palimpsest more torn as its life runs down,
       // art/act1_figs/types.ts `staged`: its next painted ahead too; those it has gone past, never shown again, let go of)
       const stages = act1Stages(f);
       if (stages) {
-        for (const w of stages.next as MonsterFigure[]) if (!this.painter || !this.painter.mob(w)) heavy.push(w);
+        for (const w of stages.next as MonsterFigure[]) if (!baked?.take(w) && (!this.painter || !this.painter.mob(w))) heavy.push(w);
         past.push(...(stages.past as MonsterFigure[]));
       }
       for (const w of past) {
@@ -2795,6 +2805,7 @@ export class Renderer {
     }
     // (THE OTHER MONSTERS' PICTURES BY THE PAINTER too: where its side worker is up, it paints them ahead, beside the game,
     // as it does the hero's; until it is, or where there is none, the game paints them ahead as before)
+    if (baked) for (let i = figs.length - 1; i >= 0; i--) if (baked.take(figs[i])) figs.splice(i, 1);
     const side = this.painter;
     if (side) for (let i = figs.length - 1; i >= 0; i--) if (side.side(figs[i])) figs.splice(i, 1);
     const budget = this.warmedFor === game.level ? WARM_MS : WARM_ENTER_MS;
@@ -2899,6 +2910,19 @@ export class Renderer {
    * The Warden's second attack (the volley of bolts) is his `heavy`, with a wind-up of its own.
    */
   private monsterSprite(m: Monster): Sprite {
+    // (THE FLOORS' MONSTERS BAKED: one whose baked pictures are still coming (called up in a fight, its files asked for as it
+    // was first seen) is shown, for a frame of its not here yet, as the nearest that is, never painted here as it is shown:
+    // art/kit.ts LEFT_TO_PAINTER. A list with none here yet paints the one asked for, as ever.)
+    if (!this.bakedMobs || !this.bakedMobs.coming(figureOf(m))) return this.monsterSpriteNow(m);
+    const left = LEFT_TO_PAINTER.on;
+    LEFT_TO_PAINTER.on = true;
+    try {
+      return this.monsterSpriteNow(m);
+    } finally {
+      LEFT_TO_PAINTER.on = left;
+    }
+  }
+  private monsterSpriteNow(m: Monster): Sprite {
     const art = this.monsterArt(m);
     const more = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves;
     const flip = (s: Sprite): Sprite => (m.fx - m.fy < 0 ? flipSprite(s, true) : s);
@@ -2952,7 +2976,7 @@ export class Renderer {
     // (a frame of its fall not painted yet, the painter painting it: the nearest of the fall that is shown meanwhile, never
     // painted here as it is shown: art/kit.ts LEFT_TO_PAINTER. Where the painter is not painting it, as before.)
     const left = LEFT_TO_PAINTER.on;
-    if (this.painter?.paints(f.figure)) LEFT_TO_PAINTER.on = true;
+    if (this.painter?.paints(f.figure) || this.bakedMobs?.coming(f.figure)) LEFT_TO_PAINTER.on = true;
     let sp: Sprite;
     try {
       sp = clip.frames[Math.min(last, i)];
