@@ -10,13 +10,18 @@
 //   5. the threads: the cult's candles on floor 3 and more of them than on floor 1; the black water on floors 3 and 4 and not above
 //      (each pool on the floor before its own face); the threads' pieces in each look, the swamp's water its own colours, nothing
 //      cyan
+//   6. FLOOR 5 (behind its pieces' switch, LAIR_STORY, off until his yes): the mine's beats in its rooms of the way, the temple's
+//      in the room before his hall; the Eye in the temple's stone and in his hall's; the drag marks a run from the way into the
+//      temple to beside one of his bone heaps; every piece one of the floor's own (its part's) or the story's; nothing cut off
 //   run: tsx --test tests/prison_stories.test.ts
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/game';
-import { STORIES, STORY_SETS, BLACK_POOL, BLACK_WATER, CULT_CANDLES, wayRooms, beatsOf } from '../src/game/stories';
+import { STORIES, STORY_SETS, BLACK_POOL, BLACK_WATER, CULT_CANDLES, EYE, wayRooms, beatsOf } from '../src/game/stories';
+import { LAIR_STORY } from '../src/art/lair_story';
+import { LAIR_PART } from '../src/art/lair_temple';
 import { useFloorLooks } from '../src/game/floor_looks';
 import { forgetPieces, lookPieces } from '../src/art/floors';
 import { prisonStoryPieces } from '../src/art/prison_story';
@@ -186,4 +191,61 @@ test('5. the threads: the cult\'s candles grow to floor 3, the black water from 
     }
   }
   useFloorLooks(true);
+});
+
+test('6. floor 5: the mine\'s beats, the temple\'s, the Eye, the drag marks to his dead; its own pieces; nothing cut off', () => {
+  assert.equal(LAIR_STORY.on, false, 'off until his yes');
+  assert.equal(floor(5, 11).level.dress?.story, undefined, 'off: no story on floor 5');
+  const before = new Map(SEEDS.map((seed) => [seed, reachOf(floor(5, seed))]));
+  LAIR_STORY.on = true;
+  forgetPieces(0);
+  try {
+    const P = lookPieces(5);
+    const beats = STORY_SETS[5];
+    let laid = 0;
+    let rooms = 0;
+    for (const seed of SEEDS) {
+      const g = floor(5, seed);
+      const L = g.level;
+      const f = L.floor;
+      const W = f.w;
+      const part = L.lair!.part;
+      const story = L.dress!.story!;
+      const way = wayRooms(f.rooms);
+      laid += story.length;
+      rooms += way.length;
+      for (const s of story) {
+        const r = f.rooms.find((q) => q.id === s.room)!;
+        const temple = part[(r.y + (r.h >> 1)) * W + r.x + (r.w >> 1)] === 2;
+        assert.equal(beats.find((b) => b.name === s.beat)!.part, temple ? 'temple' : 'mine', `seed ${seed}: ${s.beat} in the ${temple ? 'temple' : 'mine'}`);
+      }
+      // (the Eye: in the temple's room and in his hall)
+      const hall = f.rooms.find((r) => r.kind === 'boss')!;
+      const eyes = L.dress!.wall.filter((w) => w.name === EYE).map((w) => (w.side === 0 ? w.i + W : w.i + 1));
+      assert.ok(eyes.some((i) => (i % W) >= hall.x && (i % W) < hall.x + hall.w && Math.floor(i / W) >= hall.y && Math.floor(i / W) < hall.y + hall.h), `seed ${seed}: the Eye in his hall`);
+      // (the drag marks: a run whose last tile is beside one of his bone heaps, each tile beside the one before it)
+      const drag = L.dress!.tiles.filter((t) => t.name.startsWith('drag marks')).map((t) => t.i);
+      const heaps = (f.heaps ?? []).map((h) => Math.floor(h.y) * W + Math.floor(h.x));
+      assert.ok(drag.some((i) => heaps.some((h) => Math.abs((h % W) - (i % W)) + Math.abs(Math.floor(h / W) - Math.floor(i / W)) === 1)), `seed ${seed}: the drag marks end by his dead`);
+      // (every piece one of the floor's own, in its own part, or the story's)
+      for (const w of L.dress!.wall) assert.ok(P.has(w.name), `seed ${seed}: ${w.name}`);
+      for (const t of L.dress!.tiles) assert.ok(P.has(t.name) || /^(rails|a crack of the rift)/.test(t.name), `seed ${seed}: ${t.name}`);
+      for (const p of L.props) {
+        if (p.kind !== 'piece' || !p.name) continue;
+        assert.ok(P.has(p.name), `seed ${seed}: ${p.name}`);
+        const own = LAIR_PART[p.name];
+        if (own) assert.equal(part[p.ty * W + p.tx] === 2 ? 'temple' : 'mine', own, `seed ${seed}: ${p.name} in its part`);
+      }
+      // (nothing cut off)
+      const was = before.get(seed)!;
+      const now = reachOf(g);
+      const lost: number[] = [];
+      for (let i = 0; i < now.seen.length; i++) if (was.seen[i] && now.walk[i] === 1 && !now.seen[i]) lost.push(i);
+      assert.deepEqual(lost, [], `seed ${seed}: cut off by the story`);
+    }
+    assert.ok(laid >= rooms * 0.8, `${laid} of ${rooms} rooms of the way laid`);
+  } finally {
+    LAIR_STORY.on = false;
+    forgetPieces(0);
+  }
 });

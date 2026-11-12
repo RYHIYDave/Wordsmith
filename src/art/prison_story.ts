@@ -23,12 +23,12 @@ import { CRYPT_FLOORS } from './crypt';
 import { candles } from './floor1';
 import { spotsFrom, tilesOf } from './floorkit';
 import type { Piece } from './floorkit';
-import { SWAMP, poolAt, seepOn, tileOf } from './lair_story';
+import { LAIR_STORY, SWAMP, makeLairStoryArt, poolAt, seepOn, tileOf } from './lair_story';
 import type { R5 } from './lair_story';
-import { pixelsOf } from './lair_temple';
+import { LAIR_TEMPLE, pixelsOf } from './lair_temple';
 import { PRISON, STONE as PRISON_STONE, floorAt as prisonFloor, gradedB } from './prison';
 import { CHAPEL, STONE as CHAPEL_STONE, floorAt as chapelFloor } from './chapel';
-import { BLACK_POOL, BLACK_WATER, CULT_CANDLES } from '../game/stories';
+import { BLACK_POOL, BLACK_WATER, CULT_CANDLES, EYE, inTemple } from '../game/stories';
 
 /** Where the water may come down a face (across, up): floor 5's mine's three (art/lair_story.ts SPOTS). */
 const spotsOf = spotsFrom({ [BLACK_WATER]: [[0, 0], [-7, 0], [6, 0]] });
@@ -52,8 +52,21 @@ function graded(s: Sprite, grade: (c: string) => string): Sprite {
   return g;
 }
 
-/** THE THREADS' PIECES OF FLOOR `k` (3 or 4; none on another), in its look as it is, painted each time they are asked for (art/floors.ts lookPieces keeps them with the floor's own, and lets them go with them). */
+/**
+ * FLOOR 5'S STORY PIECES, his yes of 11 Nov (art/lair_story.ts), for the rooms that tell its story (game/stories.ts STORY_SETS[5]),
+ * behind their own switch LAIR_STORY and in the mine that becomes his temple (LAIR_TEMPLE): the mine's under their own names, the
+ * temple's (the same pieces in its colours, over its flags) under theirs with ', in the temple' (game/stories.ts inTemple), the Eye
+ * the temple's alone.
+ */
+function lairStoryPieces(): Piece[] {
+  if (!LAIR_STORY.on || !LAIR_TEMPLE.on) return [];
+  const art = makeLairStoryArt();
+  return [...art.mine, ...art.temple.map((p) => (p.name === EYE ? p : { ...p, name: inTemple(p.name) }))];
+}
+
+/** THE THREADS' PIECES OF FLOOR `k` (3 or 4; floor 5's story pieces on 5; none on another), in its look as it is, painted each time they are asked for (art/floors.ts lookPieces keeps them with the floor's own, and lets them go with them). */
 export function prisonStoryPieces(k: number): Piece[] {
+  if (k === 5) return lairStoryPieces();
   if (k !== 3 && k !== 4) return [];
   const theme = CRYPT_FLOORS[k - 1];
   const look = k === 3 ? (PRISON.on ? 'prison' : null) : CHAPEL.on ? 'chapel' : null;

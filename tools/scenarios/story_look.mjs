@@ -4,7 +4,7 @@ export default async function (page, snap) {
   const seed = Number(process.env.SEED || 7919);
   const on = process.env.STORIES !== '0';
   const only = (process.env.ROOMS || '').split(',').filter(Boolean).map(Number);
-  await page.evaluate(({ seed, on }) => { const d = window.__dbg; d.saving(false); if (d.paintDefer) d.paintDefer.on = false; d.stories.on = on; d.run('warrior', seed); d.seasoned(5); d.autoLevel = false; d.autoWords = false; d.god = true; }, { seed, on });
+  await page.evaluate(({ seed, on }) => { const d = window.__dbg; d.saving(false); if (d.paintDefer) d.paintDefer.on = false; d.stories.on = on; if (d.lairStory) d.lairStory.on = on; d.run('warrior', seed); d.seasoned(5); d.autoLevel = false; d.autoWords = false; d.god = true; }, { seed, on });
   await page.evaluate((dep) => { window.__dbg.high(false, dep); }, Number(process.env.DEPTH || 1));
   await page.waitForTimeout(6000);
   const info = await page.evaluate(() => {
@@ -22,8 +22,11 @@ export default async function (page, snap) {
         const g = window.__dbg.game();
         const L = g.level;
         const f = L.floor;
-        const w = L.dress.wall.find((q) => q.name === name);
-        const p = L.props.find((q) => q.name === name);
+        // (name#n: the n-th laid, from 1)
+        const [nm, nth] = name.split('#');
+        const at = Number(nth || 1) - 1;
+        const w = L.dress.wall.filter((q) => q.name === nm)[at];
+        const p = w ? null : L.props.filter((q) => q.name === nm)[at];
         if (!w && !p) return null;
         const x = w ? (w.i % f.w) + (w.side === 1 ? 1 : 0) + 0.5 : p.x;
         const y = w ? Math.floor(w.i / f.w) + (w.side === 0 ? 1 : 0) + 0.5 : p.y;

@@ -45,9 +45,9 @@ test('the story pieces: off, and imported by nothing of the game', () => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);
       if (statSync(p).isDirectory()) walk(p);
-      // (art/prison_story.ts borrows its painters alone, the water's and the pool's, for floors 3 and 4's threads behind STORIES:
-      // none of floor 5's pieces is made there)
-      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'prison_story.ts')) && /from '\.\.?\/(art\/)?lair_story'/.test(readFileSync(p, 'utf8'))) found.push(p);
+      // (art/prison_story.ts borrows its painters for floors 3 and 4's threads, and makes floor 5's pieces only with LAIR_STORY on;
+      // game/first5.ts lays them only with it on, its names alone otherwise: game/stories.ts, floor 5's story)
+      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'prison_story.ts')) && !p.endsWith(join('game', 'first5.ts')) && /from '\.\.?\/(art\/)?lair_story'/.test(readFileSync(p, 'utf8'))) found.push(p);
     }
   };
   walk('src');

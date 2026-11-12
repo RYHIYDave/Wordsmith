@@ -93,3 +93,34 @@ own pictures are the same, pixel for pixel.
    are laid a little differently from today wherever the way's rooms are (their things now the story's): a playtest that
    counted on a piece in a room of the way may want looking at.
 3. Floor 5's own story (the queue's `lay-floor-5-as-story-scenes`) can be laid the same way: a `STORY_SETS[5]` of its beats.
+
+## Floor 5's rooms (branch `build/floor5-story`, from `build/prison-stories` at 55996660)
+
+The queue's `lay-floor-5-as-story-scenes`, pulled at his word in this chat, 12 Nov 2026: asked by pop-up whether to start it
+next, “Yes, start it (Recommended)”; asked at 16:10 “You’ve just done this right?” and told it was not done (its pieces drawn
+11 Nov, placed nowhere), his pick “Yes, keep going (Recommended)”. BEHIND ITS PIECES' OWN SWITCH, `LAIR_STORY` (art/lair_story.ts,
+off), in the mine that becomes his temple (`LAIR_TEMPLE`, on in the game).
+
+His words, 7 Nov 2026, 12:00: “showing the boring into the ossuary, the take over of the mines, and the creation of the cultist
+temple under the prison and the dark power the fleshmancer has gained from the sunken eye to raise all the dead in the prison”;
+12:32: “The breakthrough would be where you enter the mine from the ossuary after you beat the amalgamation”; “Rooms only, no text
+(Recommended)”. Laid as floors 1 to 4 are (game/stories.ts `STORY_SETS[5]`), each beat in its part's rooms of the way (the mine's
+ten or so, the temple's one, the room before his hall: game/lair_way.ts `partsOf`), every piece in its own part:
+
+| beat | where | what |
+|---|---|---|
+| the breakthrough | the mine, the first rooms | the rock come down where they broke through (the cave-in and its heap), the drilled face either side, spoil spread, their props piled, a miner dead under it, his lantern dropped |
+| the mine as it was left | the mine | the cart on its side, its ore spilled, the sump pump and the black water it was set against, the kibble on its rope, the pulley, a miner's candle, the lagged wall, the plank walk |
+| the cult's takeover | the mine, the last rooms before the temple | empty shackles along the rock (the prison's dead brought down), drag marks from under one, a miner dead, a lantern dropped, the adit boarded up, the black water |
+| the temple under the prison | the room before his hall | the shrine, candle ledges either side, the cult's banner, bones on cords, the effigy and the skull standard, the cult's ring in the floor, skulls given to him; THE SUNKEN EYE in the side wall (a bay's second tile), the black water beside it (a pilaster's bare stone), pooled |
+| his hall (first5.ts) | his hall | THE EYE on his back wall by the rift (a bay's second tile), the black water on the next pilaster with no crack up it; THE DRAG MARKS from the way into the temple, through his gate, to one of the bone heaps he raises his dead from |
+
+The pieces: floor 5's own, and art/lair_story.ts's (his yes of 11 Nov: art he approved needs no pictures again; the rooms do). The
+temple's versions are given their own names (`…, in the temple`: game/stories.ts `inTemple`) so that the game draws each part's
+from its name alone (art/prison_story.ts adds them to floor 5's pieces with LAIR_STORY on).
+
+CHECKED: `tests/prison_stories.test.ts` test 6 (off: none; on: the beats in their parts, the Eye in his hall, the drag marks to
+beside a bone heap, every piece its part's, nothing cut off; 80% or more of the way's rooms laid); with LAIR_STORY off floors 1
+to 5 are laid exactly as on build/prison-stories (55996660), the bakes' marks the same. PICTURE: `pictures/floor5_story.png`
+(seed 7919: rooms 1 and 6, the first empty shackles, the Eye in the temple's room, the way into his hall with the drag marks).
+TO PUT IT ON: `LAIR_STORY.on = true` (art/lair_story.ts), at his yes.

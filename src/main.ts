@@ -2,6 +2,7 @@
 // interface together.
 
 import { STORIES } from './game/stories';
+import { LAIR_STORY } from './art/lair_story';
 import { actsOf } from './game/bosses';
 import { ENEMY_MOVES, useEnemyMoves } from './game/enemy_moves';
 // (FLOORS 8 AND 9 FROM HIS PHONE: the switch, for the playtests' pictures: game/f8f9.ts)
@@ -3066,6 +3067,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     act2Walls: ACT2_WALLS,
     /** (THE PRISON'S STORIES, game/stories.ts: floors 1 to 4's rooms of the way laid as their stories; off until his yes) Its switch, for the pictures and playtests: set it before coming onto a floor. */
     stories: STORIES,
+    /** (FLOOR 5'S STORY: its pieces' switch, art/lair_story.ts LAIR_STORY, off until his yes) For the pictures and playtests: set it before coming onto floor 5. */
+    lairStory: LAIR_STORY,
     /** (RANK II, a mock-up behind RANK2, game/melds.ts) Its switch, for the playtests and pictures. */
     rank2: (on: boolean) => {
       RANK2.on = on;

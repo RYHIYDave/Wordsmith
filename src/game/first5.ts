@@ -32,7 +32,11 @@ import { PRISON } from '../art/prison';
 import { CHAPEL } from '../art/chapel';
 import { beforeStretch } from './chapel_way';
 import { YARD_FOOT, inYard } from './yard';
-import { BLACK_POOL, BLACK_WATER, STORIES, STORY_SETS, layStory } from './stories';
+import { BLACK_POOL, BLACK_WATER, EYE, STORIES, STORY_SETS, dragName, inTemple, layStory } from './stories';
+import { partsOf } from './lair_way';
+import { doorTiles } from './doors';
+import { LAIR_STORY, LAIR_STORY_PIECES } from '../art/lair_story';
+import { LAIR_TEMPLE } from '../art/lair_temple';
 
 /** Where one of a floor's three moments is set: in a wall's face, at a piece laid for it, on the floor. */
 export interface MomentSite {
@@ -944,27 +948,147 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
     L.walk[y * W + x] = 0;
     return true;
   };
-  // ---- STORIES: the rooms of the way laid in order as the floor's story (game/stories.ts), its threads' pieces with it
-  if (STORIES.on && STORIES.floors.includes(depth) && STORY_SETS[depth]) {
-    /** The threads' pieces are floors 3 and 4's, in either look (art/prison_story.ts). */
-    const fresh = depth === 3 || depth === 4;
+  // ---- STORIES: the rooms of the way laid in order as the floor's story (game/stories.ts), its threads' pieces with it; floor 5's
+  // behind its own pieces' switch (art/lair_story.ts LAIR_STORY) in the mine that becomes his temple (LAIR_TEMPLE)
+  const lairStory = depth === 5 && LAIR_STORY.on && LAIR_TEMPLE.on;
+  if (STORIES.on && STORY_SETS[depth] && (depth === 5 ? lairStory : STORIES.floors.includes(depth))) {
+    /** The threads' pieces are floors 3 and 4's, in either look (art/prison_story.ts); floor 5 has its own (art/lair_story.ts). */
+    const fresh = depth >= 3;
     const own = new Set<string>([...set.wall, ...set.burning, ...set.heaps, ...set.tiles, ...set.lying, ...set.small, ...set.things, ...set.big, ...(set.sceneOnly ?? [])]);
+    /** (floor 5) Which part each tile is (1 the mine, 2 the temple: game/lair_way.ts), and a story piece's name as its tile's part has it. */
+    const parts = depth === 5 ? partsOf(f) : null;
+    const inTempleAt = (x: number, y: number): boolean => !!parts && parts[y * W + x] === 2;
+    const LAIRS = new Set<string>(LAIR_STORY_PIECES);
+    const nm = (name: string, x: number, y: number): string => (inTempleAt(x, y) && LAIRS.has(name) ? inTemple(name) : name);
+    const onFloorNamed = (x: number, y: number, name: string, frame = 0): boolean => onFloor(x, y, nm(name, x, y), frame);
     /** The black water down the face behind floor tile (x, y), and pooled on that tile at its foot. */
     const water = (x: number, y: number, side: 0 | 1): boolean => {
       if (!fresh || face(x, y, side) < 0 || !plainAt(f, x, y) || keep[y * W + x] || taken[y * W + x]) return false;
-      onWall(x, y, side, BLACK_WATER);
-      onFloor(x, y, side === 0 ? BLACK_POOL.x : BLACK_POOL.y);
+      onWall(x, y, side, nm(BLACK_WATER, x, y));
+      onFloorNamed(x, y, side === 0 ? BLACK_POOL.x : BLACK_POOL.y);
       return true;
     };
     /** (never the same piece on two neighbouring tiles of a wall: his note on floor 1's first pictures) */
-    const onWallApart = (x: number, y: number, side: 0 | 1, name: string): boolean => {
+    const onWallApart = (x: number, y: number, side: 0 | 1, given: string): boolean => {
+      const name = nm(given, x, y);
       const i = face(x, y, side);
       const along = side === 0 ? 1 : W;
       if (i < 0 || wallTaken.get(keyOf(i - along, side)) === name || wallTaken.get(keyOf(i + along, side)) === name) return false;
       return onWall(x, y, side, name);
     };
-    out.story = layStory(depth, rooms, (r) => ({ r, rng, stand, unstand, fire, lie, heap, onWall: onWallApart, onFloor, cx: r.x + Math.floor(r.w / 2), cy: r.y + Math.floor(r.h / 2), fresh, has: (n) => own.has(n), water, exact: { lie, stand, onFloor, onWall: onWallApart } }));
+    /** (floor 5) A run of drag marks: each tile by its edges to the tiles before and after it, an end where it begins and where it stops; a tile not free passed over. */
+    const drag = (path: readonly (readonly [number, number])[]): number => {
+      if (!lairStory) return 0;
+      const edge = (from: readonly [number, number], to: readonly [number, number]): '-x' | '+x' | '-y' | '+y' => (to[0] > from[0] ? '+x' : to[0] < from[0] ? '-x' : to[1] > from[1] ? '+y' : '-y');
+      let n = 0;
+      path.forEach((p, k) => {
+        const [x, y] = p;
+        if (!plainAt(f, x, y) || taken[y * W + x] || solid[y * W + x]) return;
+        const a = k > 0 ? edge(p, path[k - 1]) : null;
+        const b = k < path.length - 1 ? edge(p, path[k + 1]) : null;
+        const name = a && b ? dragName(a, b) : dragName((a ?? b)!, null);
+        out.tiles.push({ i: y * W + x, name: nm(name, x, y), frame: 0 });
+        taken[y * W + x] = 1;
+        n++;
+      });
+      return n;
+    };
+    out.story = layStory(
+      depth,
+      rooms,
+      (r) => ({ r, rng, stand, unstand, fire, lie, heap, onWall: onWallApart, onFloor: onFloorNamed, cx: r.x + Math.floor(r.w / 2), cy: r.y + Math.floor(r.h / 2), fresh, has: (n) => own.has(n), water, drag, exact: { lie, stand, onFloor: onFloorNamed, onWall: onWallApart } }),
+      (r) => (parts ? (inTempleAt(r.x + Math.floor(r.w / 2), r.y + Math.floor(r.h / 2)) ? 'temple' : 'mine') : null),
+    );
     for (const s of out.story) sceneRooms.add(s.room);
+    // FLOOR 5, HIS HALL: the Sunken Eye carved in its back wall by the rift (on a bay's second tile: the hall's every fourth tile is
+    // a pilaster with the rift's crack up it, every second a pilaster); the drag marks from the way into the temple, through his
+    // gate, to one of the bone heaps he raises his dead from
+    if (lairStory && boss && parts) {
+      const rift = out.moments.find((m) => m.n === 2) ?? { x: f.boss.x, y: f.boss.y };
+      let best: { i: number; side: 0 | 1; d: number } | null = null;
+      for (let x = boss.x; x < boss.x + boss.w; x++) {
+        const i = (boss.y - 1) * W + x;
+        if (x % 2 === 1 && drawnFaces(f, i) & 1 && !wallTaken.has(keyOf(i, 0))) {
+          const d = Math.hypot(x + 0.5 - rift.x, boss.y - rift.y);
+          if (!best || d < best.d) best = { i, side: 0, d };
+        }
+      }
+      for (let y = boss.y; y < boss.y + boss.h; y++) {
+        const i = y * W + boss.x - 1;
+        if (y % 2 === 1 && drawnFaces(f, i) & 2 && !wallTaken.has(keyOf(i, 1))) {
+          const d = Math.hypot(boss.x - rift.x, y + 0.5 - rift.y);
+          if (!best || d < best.d) best = { i, side: 1, d };
+        }
+      }
+      if (best) {
+        out.wall.push({ i: best.i, side: best.side, name: EYE, spot: 0 });
+        wallTaken.set(keyOf(best.i, best.side), EYE);
+        // (the black water down the stone beside it, on the next pilaster that has no crack up it (along the wall, every fourth from
+        // the second), pooled at its foot)
+        const along = best.side === 0 ? 1 : W;
+        for (const j of [best.i - along, best.i + along]) {
+          const x = j % W;
+          const y = Math.floor(j / W);
+          if ((best.side === 0 ? x : y) % 4 !== 2 || !(drawnFaces(f, j) & (best.side === 0 ? 1 : 2)) || wallTaken.has(keyOf(j, best.side))) continue;
+          const fx = best.side === 0 ? x : x + 1;
+          const fy = best.side === 0 ? y + 1 : y;
+          if (!plainAt(f, fx, fy) || taken[fy * W + fx]) continue;
+          out.wall.push({ i: j, side: best.side, name: inTemple(BLACK_WATER), spot: 0 });
+          wallTaken.set(keyOf(j, best.side), inTemple(BLACK_WATER));
+          out.tiles.push({ i: fy * W + fx, name: inTemple(best.side === 0 ? BLACK_POOL.x : BLACK_POOL.y), frame: 0 });
+          taken[fy * W + fx] = 1;
+          break;
+        }
+      }
+      // (the way: through the temple's floor and his gate, keeping straight where it can, each turn as three tiles more)
+      const gate = new Set<number>();
+      for (const d of L.doors) for (const i of doorTiles(f, d.spot)) gate.add(i);
+      const goes = (i: number): boolean => parts[i] === 2 && !solid[i] && (gate.has(i) || (plainAt(f, i % W, Math.floor(i / W)) && L.walk[i] === 1));
+      const heapsAt = (f.heaps ?? []).map((h) => Math.floor(h.y) * W + Math.floor(h.x));
+      const n4 = W * f.h * 4;
+      const cost = new Int32Array(n4).fill(-1);
+      const from = new Int32Array(n4).fill(-1);
+      const buckets: number[][] = [];
+      const STEPS: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+      for (const h of heapsAt) {
+        for (let k = 0; k < 4; k++) {
+          const j = h + STEPS[k][0] + STEPS[k][1] * W;
+          if (j < 0 || j >= W * f.h || !goes(j)) continue;
+          cost[j * 4 + k] = 0;
+          (buckets[0] ??= []).push(j * 4 + k);
+        }
+      }
+      let end = -1;
+      for (let c = 0; c < buckets.length && end < 0; c++) {
+        for (const st of buckets[c] ?? []) {
+          if (cost[st] !== c) continue;
+          const i = st >> 2;
+          const x = i % W;
+          const y = Math.floor(i / W);
+          // (it comes in from the mine: the first tile of the temple with the mine beside it)
+          if (STEPS.some(([dx, dy]) => parts[(y + dy) * W + x + dx] === 1)) {
+            end = st;
+            break;
+          }
+          for (let k = 0; k < 4; k++) {
+            const tx = x + STEPS[k][0];
+            const ty = y + STEPS[k][1];
+            const j = ty * W + tx;
+            if (tx < 0 || ty < 0 || tx >= W || ty >= f.h || !goes(j)) continue;
+            const nc = c + 1 + (k !== (st & 3) ? 3 : 0);
+            if (cost[j * 4 + k] >= 0 && cost[j * 4 + k] <= nc) continue;
+            cost[j * 4 + k] = nc;
+            from[j * 4 + k] = st;
+            (buckets[nc] ??= []).push(j * 4 + k);
+          }
+        }
+      }
+      if (end >= 0) {
+        const path: [number, number][] = [];
+        for (let st = end; st >= 0; st = from[st]) path.push([(st >> 2) % W, Math.floor((st >> 2) / W)]);
+        drag(path);
+      }
+    }
   }
   if (sceneFloor) {
     out.scenes = [];

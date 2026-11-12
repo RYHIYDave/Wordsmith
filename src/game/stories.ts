@@ -37,6 +37,8 @@ export interface StoryCtx extends SceneCtx {
   has: (name: string) => boolean;
   /** The same, each piece only where it is asked for (a row along a wall keeps its spacing): what is not given here is laid as near as it can be. */
   exact: Pick<SceneCtx, 'lie' | 'stand' | 'onWall' | 'onFloor'>;
+  /** (floor 5) The run of drag marks along tiles (x, y), in order, each tile's picture by the way the run comes in and goes out (its two ends where it begins and ends), in its part's colours; how many were laid (a tile not free is passed over). */
+  drag: (path: readonly (readonly [number, number])[]) => number;
   /** THE BLACK WATER: down the face of the back wall behind floor tile (x, y), pooled on that tile at its foot; true if it was (never where the look has none). */
   water: (x: number, y: number, side: 0 | 1) => boolean;
 }
@@ -53,12 +55,28 @@ export interface Beat {
   name: string;
   share: number;
   scenes: readonly StoryScene[];
+  /** (floor 5) Which part of the floor its rooms are: the mine or the temple (game/lair_way.ts partsOf); the way's rooms of that part share it. */
+  part?: 'mine' | 'temple';
 }
 
 /** The threads' pieces (art/prison_story.ts). */
 export const CULT_CANDLES = "the cult's candles";
 export const BLACK_WATER = 'black water down the wall';
 export const BLACK_POOL = { x: 'black water pooled, at a wall along x', y: 'black water pooled, at a wall along y' } as const;
+/** Floor 5's story pieces (art/lair_story.ts): the Eye in the stone (the temple's alone), the empty shackles; the drag marks' tiles by their two edges (or one: where the run ends). */
+export const EYE = 'the Eye in the stone';
+export const SHACKLES5 = 'empty shackles';
+/** The name of a piece of floor 5's story as the temple has it (its own colours, over its flags): the mine's are their own names. */
+export const inTemple = (name: string): string => `${name}, in the temple`;
+type Edge = '-x' | '+x' | '-y' | '+y';
+/** The drag marks' tile with edges `a` and `b` (or `a` alone: an end, the run coming from that edge), as art/lair_story.ts DRAG_TILES names them. */
+export function dragName(a: Edge, b: Edge | null): string {
+  const side = (e: Edge): string => `${e[0] === '-' ? 'low' : 'high'} ${e[1]}`;
+  if (!b) return `drag marks' end, from ${side(a)}`;
+  if (a[1] === b[1]) return `drag marks along ${a[1]}`;
+  const [ex, ey] = a[1] === 'x' ? [a, b] : [b, a];
+  return `drag marks bending, ${side(ex)} to ${side(ey)}`;
+}
 
 /** Along a room's back wall (side 0), every `step` tiles from its third tile to its last but two: the x's. */
 const backXs = (r: Room, step: number): number[] => {
@@ -658,6 +676,155 @@ export const STORY_SETS: Readonly<Record<number, readonly Beat[]>> = {
       ],
     },
   ],
+  5: [
+    // FLOOR 5, THE MINE THAT BECOMES HIS TEMPLE (behind LAIR_STORY and LAIR_TEMPLE). His words, 7 Nov 2026, 12:00: “showing the
+    // boring into the ossuary, the take over of the mines, and the creation of the cultist temple under the prison and the dark
+    // power the fleshmancer has gained from the sunken eye to raise all the dead in the prison”; 12:32: “The breakthrough would be
+    // where you enter the mine from the ossuary after you beat the amalgamation”; his pick “Rooms only, no text (Recommended)”. In
+    // order: the breakthrough, where he comes out of the cave from floor 4; the mine as the miners left it; the cult's takeover,
+    // the prison's dead brought down in chains and dragged off, the black water coming in; the temple under the prison with the
+    // Sunken Eye carved in its stone; and in his hall (first5.ts) the Eye by the rift and the drag marks ending at the bones he
+    // raises. The mine's beats share its rooms of the way; the temple's (the room before his hall) its own.
+    {
+      name: 'the breakthrough', share: 2, part: 'mine', scenes: [
+        {
+          // the face they drilled, the rock come down where they broke through into the dead, their props piled, the spoil spread,
+          // a miner dead under it, his lantern dropped
+          name: 'the breakthrough', area: 30, w: 6, h: 5,
+          lay: (c) => {
+            const { r, cx, cy } = c;
+            let at = -1;
+            for (const x of [cx, cx - 1, cx + 1, cx - 2, cx + 2]) {
+              if (!c.heap(x, r.y, 0, 'the cave-in')) continue;
+              at = x;
+              break;
+            }
+            if (at < 0) return false;
+            c.onWall(at - 2, r.y, 0, 'the drilled face');
+            c.onWall(at + 2, r.y, 0, 'the drilled face');
+            for (const [dx, dy] of [[0, 2], [1, 2], [-1, 3], [1, 3]]) c.onFloor(at + dx, r.y + dy, 'spoil');
+            c.stand(cx + 2, cy + 1, 'the pile of props');
+            c.lie(at + 1, r.y + 4, "a miner's bones");
+            c.lie(cx - 2, cy + 1, 'a dropped lantern');
+            return true;
+          },
+        },
+        {
+          name: 'the drilled face', area: 12, w: 4, h: 3,
+          lay: (c) => {
+            if (!c.onWall(c.cx, c.r.y, 0, 'the drilled face')) return false;
+            c.onFloor(c.cx, c.cy, 'spoil');
+            c.lie(c.cx + 1, c.cy + 1, "a miner's bones");
+            return true;
+          },
+        },
+      ],
+    },
+    {
+      name: 'the mine as it was left', share: 3, part: 'mine', scenes: [
+        {
+          // the cart run off its rails and on its side, its ore spilled; the kibble still hung on its rope at the wall, the pulley;
+          // the sump pump, and the black water it was set against coming through the rock; a miner's candle stuck on the rock; their
+          // plank walk over the wet
+          name: 'the mine as it was left', area: 36, w: 7, h: 6,
+          lay: (c) => {
+            const { r, cx, cy } = c;
+            if (!c.stand(cx, cy, 'the cart on its side')) return false;
+            c.lie(cx + 1, cy + 1, 'the spilled kibble');
+            c.stand(cx - 2, cy - 1, 'the sump pump');
+            c.onWall(cx - 1, r.y, 0, 'the hung kibble');
+            c.onWall(cx + 1, r.y, 0, 'rope and pulley');
+            c.onWall(cx + 3, r.y, 0, "a miner's candle");
+            c.onWall(r.x, cy, 1, 'the lagged wall');
+            for (let k = 1; k <= 3; k++) c.onFloor(cx - 1 - k, cy + 2, 'the plank walk');
+            // (the water the pump was set against: the black water through the rock)
+            for (let y = r.y + r.h - 2; y >= r.y + 1; y--) if (c.water(r.x, y, 1)) break;
+            return true;
+          },
+        },
+        {
+          name: 'the kibble spilled', area: 12, w: 4, h: 3,
+          lay: (c) => {
+            if (!c.lie(c.cx, c.cy, 'the spilled kibble')) return false;
+            c.onWall(c.cx, c.r.y, 0, 'rope and pulley');
+            c.onWall(c.cx + 2, c.r.y, 0, "a miner's candle");
+            c.water(c.cx - 2, c.r.y, 0);
+            return true;
+          },
+        },
+      ],
+    },
+    {
+      name: "the cult's takeover", share: 3, part: 'mine', scenes: [
+        {
+          // THE PRISON'S DEAD BROUGHT DOWN: shackles hanging empty along the rock, the marks of one dragged off from under them; a
+          // miner dead where they came in, his lantern dropped; the old adit boarded up; the black water coming through the rock
+          name: "the cult's takeover", area: 30, w: 7, h: 5,
+          lay: (c) => {
+            const { r, cx, cy } = c;
+            const at = backXs(r, 3).filter((x) => c.exact.onWall(x, r.y, 0, SHACKLES5));
+            if (at.length < 2) return false;
+            c.drag([[at[0], r.y], [at[0], r.y + 1], [at[0], r.y + 2], [at[0] + 1, r.y + 2], [at[0] + 2, r.y + 2]]);
+            c.lie(cx + 2, cy + 1, "a miner's bones");
+            c.lie(cx - 2, cy + 2, 'a dropped lantern');
+            c.onWall(r.x, cy - 1, 1, 'the boarded adit');
+            for (let y = r.y + r.h - 2; y >= r.y + 1; y--) if (c.water(r.x, y, 1)) break;
+            return true;
+          },
+        },
+        {
+          name: 'shackles empty', area: 12, w: 4, h: 3,
+          lay: (c) => {
+            if (!c.onWall(c.cx, c.r.y, 0, SHACKLES5)) return false;
+            c.drag([[c.cx, c.r.y], [c.cx, c.r.y + 1], [c.cx, c.r.y + 2]]);
+            for (const x of [c.cx + 2, c.cx - 2]) if (c.water(x, c.r.y, 0)) break;
+            return true;
+          },
+        },
+      ],
+    },
+    {
+      name: 'the temple under the prison', share: 1, part: 'temple', scenes: [
+        {
+          // THE CULT'S TEMPLE, cut under the prison: its shrine on the back wall, its candles on their ledges either side, its
+          // banner, bones on cords; the effigy and the skull standard before it, its ring cut in the floor, skulls given to him;
+          // and on the side wall THE SUNKEN EYE carved in the stone (on a bay's second tile, over its hanging or panel), the black
+          // water coming down beside it (on a pilaster's bare stone) and pooled
+          name: 'the temple under the prison', area: 30, w: 6, h: 5,
+          lay: (c) => {
+            const { r, cx, cy } = c;
+            if (!c.onWall(cx, r.y, 0, 'the shrine')) return false;
+            c.onWall(cx - 2, r.y, 0, 'the candle ledge');
+            c.onWall(cx + 2, r.y, 0, 'the candle ledge');
+            c.onWall(cx + 4, r.y, 0, "the cult's banner");
+            c.onWall(cx - 4, r.y, 0, 'bones on cords');
+            c.onFloor(cx, r.y + 2, "the cult's ring");
+            c.stand(cx - 2, r.y + 3, 'the effigy');
+            c.stand(cx + 2, r.y + 3, 'the skull standard');
+            c.lie(cx + 1, r.y + 4, 'skulls given to him');
+            // (the Eye on a bay's second tile of the side wall, the water on a pilaster's: the wall's tiles along y by turns)
+            let eye = -1;
+            for (let y = r.y + 1; y <= r.y + r.h - 2 && eye < 0; y++) if (y % 2 === 1 && c.exact.onWall(r.x, y, 1, EYE)) eye = y;
+            for (const y of [eye - 1, eye + 1, eye + 3, r.y + 2, r.y + 4]) if (y > r.y && y < r.y + r.h - 1 && y % 2 === 0 && c.water(r.x, y, 1)) break;
+            return true;
+          },
+        },
+        {
+          name: 'the Eye in the stone', area: 12, w: 4, h: 3,
+          lay: (c) => {
+            const { r } = c;
+            for (let x = r.x + 1; x <= r.x + r.w - 2; x++) {
+              if (x % 2 !== 1 || !c.exact.onWall(x, r.y, 0, EYE)) continue;
+              c.water(x + 1, r.y, 0);
+              c.lie(c.cx, c.cy, 'skulls given to him');
+              return true;
+            }
+            return false;
+          },
+        },
+      ],
+    },
+  ],
 };
 
 /** The way's rooms (the main path from the first room after the way in to the last before the boss's hall; no cell), in order. */
@@ -681,14 +848,21 @@ export function beatsOf(beats: readonly Beat[], n: number): number[] {
   return out;
 }
 /** A floor's story laid: each room of the way with the first of its beat's scenes it takes. The rooms laid, and how. */
-export function layStory(depth: number, rooms: readonly Room[], ctxOf: (r: Room) => StoryCtx): { room: number; beat: string; name: string }[] {
+export function layStory(depth: number, rooms: readonly Room[], ctxOf: (r: Room) => StoryCtx, partOf: (r: Room) => 'mine' | 'temple' | null = () => null): { room: number; beat: string; name: string }[] {
   const beats = STORY_SETS[depth];
   const out: { room: number; beat: string; name: string }[] = [];
   if (!beats) return out;
+  // (floor 5: each part's beats shared among the way's rooms of that part; elsewhere all the beats among all the way's rooms)
   const way = wayRooms(rooms);
-  const of = beatsOf(beats, way.length);
-  way.forEach((r, k) => {
-    const beat = beats[of[k]];
+  const plan: [Room, Beat][] = [];
+  for (const part of beats.some((b) => b.part) ? (['mine', 'temple'] as const) : [null]) {
+    const mine = beats.filter((b) => (b.part ?? null) === part);
+    const here = way.filter((r) => part === null || partOf(r) === part);
+    const of = beatsOf(mine, here.length);
+    here.forEach((r, k) => plan.push([r, mine[of[k]]]));
+  }
+  plan.sort((a, b) => a[0].path - b[0].path);
+  plan.forEach(([r, beat]) => {
     const base = nearby(ctxOf(r));
     const at = anchors(r, base.cx, base.cy);
     for (const sc of beat.scenes) {
