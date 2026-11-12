@@ -39,6 +39,18 @@ export interface Screen {
 /** Picture pixels per game pixel, each way. */
 export const RES = 2;
 
+/**
+ * EVEN PIXELS (the queue's check-pixel-size-on-his-iphone; off until his yes to its pictures). The picture holds RES (2) picture
+ * pixels to a game pixel; when the screen pixels to a game pixel come out ODD, each picture pixel is 2.5 screen pixels (at 5),
+ * and they come out 2 and 3 wide by turns, which roughens fine art (the art review, 9 Nov 2026). His iPhone in the Claude app,
+ * the page upright and the game turned for him (393 by 723, 3 to a point: his phone check of 12 Nov), comes out at 5; the page
+ * sideways (734 by 315) at 4. So on a touch screen an odd number is made one fewer, even, where the view that gives stays within
+ * MAX_H game pixels tall: 4 there, the size things are when the page turns with him, a little more of the floor seen.
+ */
+export const EVEN_PIXELS = { on: false };
+/** (EVEN_PIXELS) The tallest view, in game pixels, an even number may give before the odd one is kept (things would be too small). */
+const MAX_H = 324;
+
 /** Roughly how tall the view should be, in game pixels. */
 const TARGET_H = 270;
 /** Never let the view get narrower or shorter than this if a smaller scale can avoid it. */
@@ -139,6 +151,8 @@ export function createScreen(): Screen {
     // Phones get slightly bigger pixels than desktops: the screen is small and fingers are not.
     let s = Math.max(1, scr.touch ? Math.ceil(dh / TARGET_H - 0.15) : Math.round(dh / TARGET_H));
     while (s > 1 && (dw / s < MIN_W || dh / s < MIN_H)) s--;
+    // (EVEN_PIXELS: an odd number, on a phone, one fewer where the view stays within MAX_H tall: every picture pixel whole)
+    if (EVEN_PIXELS.on && scr.touch && s > 2 && s % RES === 1 && dh / (s - 1) <= MAX_H) s--;
     scr.scale = s;
     scr.w = Math.ceil(dw / s);
     scr.h = Math.ceil(dh / s);
