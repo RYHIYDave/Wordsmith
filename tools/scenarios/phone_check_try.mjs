@@ -35,7 +35,7 @@ export default async function (page, snap) {
   log('the device', JSON.stringify(r.device));
   for (const s of r.segs) {
     const fps = s.secs > 0 ? (s.frames / s.secs).toFixed(0) : '-';
-    console.log(`  ${s.label.padEnd(30)} ${String(s.secs).padStart(6)} s  ${String(s.frames).padStart(5)} frames (${fps}/s)  worst ${String(Math.round(s.gapMax)).padStart(5)} ms  the game's frame ${(s.frames ? s.workSum / s.frames : 0).toFixed(1)} ms, worst ${Math.round(s.workMax)}  made ${s.madeDone}/${s.made} (cut ${s.cut}, waited ${Math.round(s.madeWait)} ms in all)  from workers ${s.fromWorkers} in ${s.msgs} messages, ${Math.round(s.msgMs)} ms  decoded ${s.dec}  canvases ${s.canv}  draws ${s.draws}  read ${s.reads} (${Math.round(s.readMs)} ms)  put ${s.puts}  clock late ${Math.round(s.late)} ms  taps ${s.taps}${s.gameT ? `  the loading screen's own clock ${s.gameT} s` : ''}`);
+    console.log(`  ${s.label.padEnd(30)} ${String(s.secs).padStart(6)} s  ${String(s.frames).padStart(5)} frames (${fps}/s)  worst ${String(Math.round(s.gapMax)).padStart(5)} ms  the game's frame ${(s.frames ? s.workSum / s.frames : 0).toFixed(1)} ms, worst ${Math.round(s.workMax)}  made ${s.madeDone}/${s.made} (cut ${s.cut}, waited ${Math.round(s.madeWait)} ms in all)  from workers ${s.fromWorkers} in ${s.msgs} messages, ${Math.round(s.msgMs)} ms  decoded ${s.dec}  canvases ${s.canv}  draws ${s.draws}  read ${s.reads} (${Math.round(s.readMs)} ms)  put ${s.puts}  clock late ${Math.round(s.late)} ms  taps ${s.taps}${s.gameT ? `  the loading screen's own clock ${s.gameT} s` : ''}${s.painted !== undefined ? `  painted here ${s.painted} (${s.paintMs} ms), stood in ${s.stoodIn}` : ''}`);
   }
   log('the heroes baked', JSON.stringify(r.baked));
   log('the sounds', JSON.stringify(r.sounds));
@@ -54,6 +54,11 @@ export default async function (page, snap) {
     check('the hero\'s own frames: every pixel as the old way made them', !!real && !real.failed && real.tried >= 100 && real.unlike === 0, JSON.stringify(real));
     check('frames cut from their sheets are counted', !!r.cuts && r.cuts.made > 0, JSON.stringify(r.cuts));
   } else check('the hero\'s baked pictures came whole through the recorder', !!r.baked && r.baked.failed.length === 0 && r.baked.given > 0 && r.madeDone >= r.baked.given, JSON.stringify(r.baked));
+  if (r.v >= 3 && r.baked && r.baked.ms && r.baked.ms.cards !== undefined) {
+    // (THE HERO CARDS FROM THE BAKE, the branch fix/hero-cards-from-bake: nothing of a card's hero is painted where the game is drawn)
+    const title = r.segs.filter((s) => s.label.startsWith('title'));
+    check('the title and the hero cards: no frame painted where the game is drawn, and none stood in for', title.length > 1 && title.every((s) => s.painted === 0 && s.stoodIn === 0), title.map((s) => `${s.label}: ${s.painted} painted (${s.paintMs} ms), ${s.stoodIn} stood in`).join('; '));
+  }
   check('the side painter\'s pictures are counted, and the game still gets them', r.fromWorkers > 0, `${r.fromWorkers}`);
   check('the trial ran to its end', !!r.trial && !r.trial.failed && !r.trial.skipped && r.trial.cutMs > 0 && Array.isArray(r.trial.drawSheet) && !!r.trial.worker && r.trial.worker.got === 240, JSON.stringify(r.trial));
   check('it says it is done, and that it could not send (no database here)', r.state === 'done' && /could not be sent/.test(mark), mark.slice(0, 60));

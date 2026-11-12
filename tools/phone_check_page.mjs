@@ -6,6 +6,9 @@
 //   node tools/phone_check_page.mjs <the test page's folder> <the folder to make> [which check: 1, 2...]
 // (THE SECOND, 12 Nov 2026: the same test page built with the baked frames kept in their sheets, the branch
 // fix/frames-from-sheets; published over the first on the same page, so his link and his save there are the same.)
+// (THE THIRD, 12 Nov 2026: THE GAME AS IT WOULD GO LIVE, a release build of the branch fix/hero-cards-from-bake: the folder is
+// the release's Play.html as index.html with dist/heroes, dist/sounds and dist/townsfolk beside it (the Colossus's files left
+// out: he is not met on the way to town). Its name and its stamp are a release's, and are changed the same way.)
 // Published as a page of its own, with a database of its own (capabilities db and user), never over the game's page.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -31,9 +34,12 @@ const once = (what, find, put) => {
   html = html.replace(find, () => put);
 };
 const day = new Date().toLocaleDateString('en-CA');
-once('the page\'s name', '<title>Wordsmith test page: eight sides</title>', `<title>Wordsmith phone check${which === '1' ? '' : ` ${which}`}</title>`);
-const stamp = html.match(/TEST EIGHT SIDES \d{4}-\d{2}-\d{2}/);
-if (!stamp) throw new Error('no stamp of the test page');
+// (a test page's name and stamp, or a release's)
+const title = ['<title>Wordsmith test page: eight sides</title>', '<title>ARPG Playable Build</title>'].find((t) => html.includes(t));
+if (!title) throw new Error('the page has neither a test page\'s name nor a release\'s');
+once('the page\'s name', title, `<title>Wordsmith phone check${which === '1' ? '' : ` ${which}`}</title>`);
+const stamp = html.match(/TEST EIGHT SIDES \d{4}-\d{2}-\d{2}/) ?? html.match(/V\d+\.\d+\.\d+ \d{4}-\d{2}-\d{2} \d{2}:\d{2}/);
+if (!stamp) throw new Error('no stamp of a test page or of a release');
 once('the stamp', stamp[0], `${name} ${day}`);
 const scripts = html.split('<script>').length - 1;
 if (scripts !== 1) throw new Error(`${scripts} scripts in the page, wanted the game's one`);

@@ -24,6 +24,12 @@
  * EVERY PIXEL of a frame as it is given now against the picture made the old way, some 120 of them (`real.tried`,
  * `real.unlike`), what the old way costs a frame on the real sheets (`real.oldMs`), and what frames not yet cut cost to be
  * asked for and drawn (`real.cutN`, `real.cutMs`); and it writes how many frames have been cut from their sheets (`cuts`).
+ *
+ * THE THIRD PHONE CHECK (12 Nov 2026, `v` 3): on a page of the game as it would go live (the branch fix/hero-cards-from-bake:
+ * 25.3.7 with the frames kept in their sheets and the hero cards from the bake; his phone's second run: the cards at 3 to 5
+ * frames a second, their heroes painted where the game is drawn). Each screen also has `painted`, `paintMs` and `stoodIn`:
+ * the frames of art the game painted on its own thread while that screen was up (the game's own count), how long that took,
+ * and the frames shown as the nearest painted of their list. On the cards all three should be 0.
  */
 (function () {
   'use strict';
@@ -40,7 +46,7 @@
   var r1 = function (x) { return Math.round(x * 10) / 10; };
 
   var R = {
-    v: 2,
+    v: 3,
     fix: false,
     cuts: null,
     page: 'phone-check',
@@ -91,7 +97,38 @@
       made: 0, cut: 0, madeDone: 0, madeWait: 0, madeWaitMax: 0, madeCall: 0, madeFail: 0,
       msgs: 0, fromWorkers: 0, msgMs: 0, msgMax: 0,
       dec: 0, decMs: 0, decKB: 0, canv: 0, draws: 0, reads: 0, readMs: 0, puts: 0, putMs: 0, late: 0, taps: 0, gameT: 0,
+      // (v 3: frames of art painted where the game is drawn while this screen was up (the game's own count, art/kit.ts
+      // PAINTING), the time that took, and frames shown as the nearest painted of their list (HEAVY.deferred))
+      painted: 0, paintMs: 0, stoodIn: 0,
     };
+  }
+  var paintedAll = -1;
+  var paintMsAll = 0;
+  var stoodAll = 0;
+  var paintMsCur = 0;
+  /** What the game has painted since it was last asked, put to the screen that is up. */
+  function painting() {
+    var d = W.__dbg;
+    if (!d || !d.painting) return;
+    var f = 0;
+    var m = 0;
+    var st = 0;
+    try { f = d.painting.frames | 0; m = +d.painting.ms || 0; st = typeof d.stoodIn === 'function' ? d.stoodIn() | 0 : 0; } catch (e) { return; }
+    if (paintedAll >= 0) {
+      cur.painted += f - paintedAll;
+      paintMsCur += m - paintMsAll;
+      cur.paintMs = Math.round(paintMsCur);
+      cur.stoodIn += st - stoodAll;
+    } else {
+      // (what was painted before the first frame is the boot's)
+      cur.painted += f;
+      paintMsCur += m;
+      cur.paintMs = Math.round(paintMsCur);
+      cur.stoodIn += st;
+    }
+    paintedAll = f;
+    paintMsAll = m;
+    stoodAll = st;
   }
   var cur = seg('boot');
   var curAt = T0;
@@ -104,6 +141,7 @@
     if (R.segs.length >= MAX_SEGS) { cur = R.segs[R.segs.length - 1]; cur.label = 'and after'; return; }
     cur = seg(label);
     curAt = a;
+    paintMsCur = 0;
     R.segs.push(cur);
     changed = true;
   }
@@ -294,6 +332,7 @@
   var trialStarted = false;
   var lastSend = 0;
   function after(a) {
+    painting();
     var label = forced || where();
     if (label !== cur.label) open(label);
     if (a - tickAt >= 2000) {
@@ -698,7 +737,7 @@
       var s = R.segs[i];
       var secs = s === cur ? (now() - curAt) / 1000 : s.secs;
       if (secs < 0.5 && !s.frames) continue;
-      lines.push(s.label + ': ' + r1(secs) + 's, ' + s.frames + ' fr, worst ' + Math.round(s.gapMax) + 'ms, made ' + s.madeDone + ', wk ' + s.fromWorkers);
+      lines.push(s.label + ': ' + r1(secs) + 's, ' + s.frames + ' fr, worst ' + Math.round(s.gapMax) + 'ms, made ' + s.madeDone + ', wk ' + s.fromWorkers + ', painted ' + s.painted);
     }
     var t = R.trial;
     if (t) lines.push('trial: cut ' + t.cutMs + ' one ' + t.oneMs + ' drawCut ' + (t.drawCut || []).join('/') + ' drawSheet ' + (t.drawSheet || []).join('/') + ' canvas ' + t.canvasMs + ' wk ' + (t.worker ? t.worker.ms : '-'));
