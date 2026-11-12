@@ -14,6 +14,73 @@ WORD: DO NOT MERGE THIS BRANCH INTO `main` BEFORE HE HAS SAID SO.**
 be merged besides. What the eight sides are and his yes to them: `README.md` beside this file; how they were brought in, baked
 and weighed, and what he said of them from his phone: `BRING_IN.md` beside it. This file is what came after.
 
+## JOINED WITH `fix/frames-from-sheets` (12 Nov 2026, 07:30): READ THIS FIRST; WHAT FOLLOWS IT IS AS IT WAS BEFORE THE JOIN
+
+**HIS WORDS.** Asked by this chat, 12 Nov, about 07:22 (Eastern): “Why aren’t any of these frames or pictures or whatever a file
+loaded when the game is added onto a device”. Told him (READ AS: the pictures should be finished files that come with the game,
+not work done while he waits): they are files; the game is a web page, not an app yet, so they are fetched as needed; and every
+frame was being cut out of its sheet into a picture of its own, which was the load he sat through; and that the Eight-sides
+merge chat had built the mend that morning (the queue's `keep-baked-frames-in-their-sheets`: on his phone the load into town 74
+s before, 6.7 after). Asked by pop-up whether to join the two, about 07:26: “Join the two Brawler fixes now: his packed moves
+(light on memory) on top of the other chat's frames-from-sheets fix (fast to load), then put the joined build on your test
+page?” Offered: “Yes, join them (Recommended)”, “Leave it to the main chat”. **HIS PICK: “Yes, join them (Recommended)”.** And,
+07:42: “Go”.
+
+**WHAT THE JOIN IS.** `fix/frames-from-sheets` (de6fea61, the Eight-sides merge chat's, from `main` 9f3cf44) merged in (19c0855).
+Every baked frame of every hero and of the townsfolk is now KEPT IN ITS SHEET (`engine/px.ts` sheetSprite) and cut from it only
+when it is first drawn, a small canvas, the cut ones kept to 24 MB for all of them together; the browser is asked to read a
+picture only for each sheet. THE BRAWLER'S PACKS ARE NOW SHEETS OF THAT KIND: a pack opened is its sheet read by the browser,
+beside the game, and its frames given into their places as frames kept in it (none cut as it opens); a pack let go is its places
+put back, its sheet closed at once, what was cut from it given back a moment on. The budget is OF OPEN SHEETS, 32 MB (a sheet is
+bigger than the frames on it: his 96 packs open are 207.4 MB where their frames are 133.6). Two conflicts, `src/render/baked.ts`
+and `src/main.ts`, both of this branch's against that one's, joined by hand; `PACKS.cut` (canvases or browser-made pictures) is
+gone: neither cuts now. The bake's mark is unchanged, d7fec6fa0251: NO NEW BAKE.
+
+**THE NUMBERS OF THE JOIN** (Chrome on a cloud machine; NOT A PHONE; the built, baked page, served):
+
+| as it is come into | HIS MOVES KEPT PACKED | every pack open, none let go | his packs open |
+|---|---|---|---|
+| town | 66 + 44 + 6 + 49 = **165** | 65 + 186 + 6 + 53 = 311 (71 of 96 open as it was weighed) | 2, 3.2 MB |
+| floor 1 | 52 + 26 + 14 + 53 = **145** | 53 + 225 + 15 + 57 = 350 | 5, 7.3 MB |
+| floor 1, played | 66 + 124 + 20 + 58 = **268** | 84 + 301 + 21 + 61 = 467 | 21, 31.1 MB |
+| floor 2 | 70 + 75 + 26 + 59 = **229** | 88 + 251 + 27 + 63 = 428 | 21, 31.0 MB |
+| floor 2, played | 106 + 121 + 28 + 62 = **317** | 119 + 299 + 29 + 66 = 512 | 22, 31.3 MB |
+| floor 3 | 96 + 84 + 33 + 63 = **275** | 110 + 255 + 34 + 67 = 466 | 22, 32.0 MB |
+| floor 3, played | 134 + 146 + 34 + 67 = **380** | 136 + 317 + 34 + 70 = 557 | 22, 31.9 MB |
+
+(MB: canvases + pictures the browser made, the sheets among them + decoded sound + the script's heap; each sum of the unrounded
+figures: 165.2, 145.0, 267.7, 229.0, 317.0, 275.4, 379.7; and 310.6, 349.5, 466.5, 428.4, 512.2, 465.5, 557.1.)
+
+- THE JOIN IS WORTH IT: the page holds 145 TO 205 MB LESS with his moves packed than with every pack open (145, 205, 199, 199,
+  195, 190, 177). Every pack open is about what the frames-from-sheets fix alone would give him from eight sides (that chat's
+  own reckoning: about 200 MB of sheets for him). Packed, the page holds about what it held before the join (153, 139, 269, 234,
+  312, 269 and 368: below), and the load is the fast one.
+- HIS OWN PICTURES, joined: one sheet always held, 10.7 MB (what he always holds: 744 frames); his packs' open sheets kept to 32
+  MB (the most at once in the sitting 47.5, for a moment: what was asked for in the last 1.5 s is never let go); and his share of
+  the frames cut from all sheets, which every hero and the townsfolk share, 24 MB at the most. Every pack open: 218 MB.
+- AS HE IS TAKEN IN: the browser read three pictures, the sheets (`sheet_frames.mjs`: none of them a frame); his group whole in
+  0.50 s; no frame of his cut until drawn.
+- OVER THE SITTING (twelve minutes of the game's time fought, at six times its speed): a pack was opened 640 times and let go 618;
+  578 of them asked for ahead of need, 62 as their first frame was shown (at six times the game's speed a moment ahead is six
+  times as long). Opening took 31.4 s in all, the browser reading the sheets beside the game; ON THE GAME'S OWN THREAD 0.57 s in
+  all over the sitting, 8.6 ms at worst in one go.
+- A FRAME'S WORK while the bot fought, in the middle: 8.7, 9.1 and 9.1 ms on floors 1 to 3 packed; 8.0, 8.5 and 9.9 with every
+  pack open. Frames over 50 ms: 8, 32 and 51 packed; 10, 35 and 65 every pack open.
+- THE BUDGET, floor 2 alone (four minutes of the game's time fought): AT 32 MB a pack was opened 228 times and let go 207, 21
+  asked for as shown, the page 298 MB as the floor was played; AT 48 MB, 132 and 100, 9 asked for as shown, the page 325 MB. A
+  frame's work the same (9.8 and 9.4 ms in the middle; 50 and 48 over 50 ms). LEFT AT 32 so that the page did not change under
+  him while he tried it; 48 is the first thing to tune if a move stands on his stance on his phone.
+- PLAYED WITH A THUMB (`sides_more_fight.mjs`, BAKED=1, alone): 124 checks, all as they should be; a pack opened 98 times, let go
+  82, EVERY ONE ASKED FOR AHEAD OF NEED, none with nothing of it to show; on the game's own thread 69 ms in all, 3.8 at worst; a
+  frame while he fights 16.7 ms in the middle, 18.6 at worst.
+- `tools/brawler_packed_play.sh`, two at a time, ALL SEVEN FINISHED CLEAN: sides_fight, veteran_play, the Ranger and the Warlock
+  taken in from the bake, a new player's first dungeon, AND `sheet_frames.mjs` FOR THE BRAWLER AND THE RANGER (the other chat's:
+  every pixel of a frame as given now against the picture made the old way: 372 of the Brawler's 743 always-held frames, 315 of
+  the Ranger's 7,245, 310 of the townsfolk's 2,478; none unlike; the browser never asked to cut a picture from a sheet).
+- UNIT: `--only baked_packs,veteran_packs,sheet_sprite,townsfolk_baked,townsfolk3,figure,memory_floors,sides_more,veteran_art,veteran_rules`
+  and the core on 19c0855667, once, alone: **33 files, 376 tests, all passed**. `tsc --noEmit`: clean.
+- THE TEST PAGE was published again with the joined build: the foot of this file.
+
 ## His words
 
 - To the main chat, 11 Nov 2026, 19:54: “How do we make the brawler so he’s playable without crashing the game?”
@@ -62,17 +129,14 @@ eight within seconds). So, the way the eight-sides chat's note set out:
   already made and waiting their turn (`render/veteran_fx.ts` askAhead). What cannot be known ahead is asked for as its first
   frame is shown (`art/asked.ts`): until its pictures come, a few hundredths of a second, the move shows its first frame, which is
   his stance, and its lines are not shown.
-- HOW A PACK IS UNPACKED (`PACKS.cut`): its sheet is read as a picture by the browser, beside the game, and each frame is
-  drawn out of it into a canvas of its own on the game's own thread, 2 ms of it a frame, as the game's own painted frames are
-  canvases and as the floors' monsters' bake cuts its own (build/monsters-before-play). NOT a picture made by the browser for
-  each frame (createImageBitmap), which is how his 9,666 were taken in on the test page that took a minute on his phone, and
-  which the eight-sides merge chat's lead says an iPhone is slow at (the queue's measure-lag-on-his-phone); that way is kept as
-  the other setting, `'bitmap'`. NEITHER HAS BEEN MEASURED ON A PHONE. What he always holds is taken in as every hero's
-  pictures are today.
-- UNPACKED PICTURES ARE KEPT UP TO A BUDGET, 40 MB (`render/baked.ts` PACKS.budget); past it THE LEAST LATELY THROWN ARE LET GO:
-  their places put back as they were, their room given back by hand three seconds on (`engine/px.ts` retireSprite, as 25.3.2
-  gives canvases back), the after-images made from them with them (`render/veteran_fx.ts` forget). Never one asked for in the
-  last second and a half. Thrown again, a pack is unpacked again.
+- HOW A PACK IS OPENED (SINCE THE JOIN, above): its sheet read by the browser, beside the game, and held whole; its frames
+  given into their places as frames kept in it, each cut from it only when it is first drawn (`engine/px.ts` sheetSprite).
+  (BEFORE THE JOIN each frame was cut as the pack was opened, into a canvas of its own or a picture made by the browser:
+  `PACKS.cut`, gone.)
+- OPEN SHEETS ARE KEPT UP TO A BUDGET, 32 MB (`render/baked.ts` PACKS.budget; before the join, 40 MB of frames); past it THE
+  LEAST LATELY THROWN ARE LET GO: their places put back as they were, their sheet closed at once, what was cut from it given
+  back three seconds on (`engine/px.ts` retireSprite, as 25.3.2 gives canvases back), the after-images made from them with them
+  (`render/veteran_fx.ts` forget). Never one asked for in the last second and a half. Thrown again, a pack is opened again.
 - In a town nothing is asked for ahead. Another hero played, his packs in hand are let go.
 - WHICH HERO IS PACKED IS DECIDED AS HE IS BAKED (`render/baked.ts` packsOf: the Brawler as the Veteran from eight sides, never
   his class card). Every other hero is baked and taken in exactly as before: their files have the same layout as they had.
@@ -80,7 +144,7 @@ eight within seconds). So, the way the eight-sides chat's note set out:
 - `PACKS.on` off: every pack is unpacked as he is taken in and none is let go (he holds everything, as on `bring-in/eight-sides`).
   ONE NUMBER TO TUNE if his phone says so: `PACKS.budget`.
 
-## THE NUMBERS (in a browser here; NOT ON A PHONE)
+## THE NUMBERS BEFORE THE JOIN (in a browser here; NOT ON A PHONE; the join's own are at the top)
 
 ### The bake (`node tools/bake_heroes.mjs`: every sheet as written read back as the game reads it and checked against every frame on it as painted; none differed)
 
@@ -192,7 +256,8 @@ on 00ec33d6b4, run once, alone on the machine: 33 files, 447 tests, all passed (
 AFTER IT the code changed (a pack's frames cut a few at a time, then as canvases; the budget as a plain number;
 `bring-in/eight-sides` as it is now, with its tests), so the files that test what changed were run once on the last of it:
 `--only baked_packs,veteran_packs,sides_more,veteran_art,veteran_rules,veteran,vet_props` on bc539fc691, alone:
-**30 files, 426 tests, all passed** (the seven named and the core's 23; 407 files not run). `tsc --noEmit`: clean.
+**30 files, 426 tests, all passed** (the seven named and the core's 23; 407 files not run). `tsc --noEmit`: clean. AND ON THE
+JOIN, 19c0855667: 33 files, 376 tests, all passed (the top of this file).
 
 ## What is on the branch
 
@@ -210,17 +275,24 @@ AFTER IT the code changed (a pack's frames cut a few at a time, then as canvases
 - `tests/baked_packs.test.ts` (9), `tests/veteran_packs.test.ts` (5), NEW.
 - `tools/scenarios/sides_more_fight.mjs`: where his moves are kept packed it checks what he always holds, his 96 packs and the
   budget, and says how often a move was asked for with nothing of it to show yet. `tools/scenarios/mem_floors.mjs`: says the
-  packs at every row; `PACKS=0` (none let go), `BUDGET=<MB>`, `CUT=bitmap`. `tools/brawler_packed_play.sh`: the playtests and
+  packs at every row; `PACKS=0` (none let go), `BUDGET=<MB>`. `tools/brawler_packed_play.sh`: the playtests and
   the two sittings of this change on the built, baked page. `tools/brawler_packed_try_page.mjs`: a test page of this build
   for his phone (as `tools/eight_sides_try_page.mjs` made the first).
+- SINCE THE JOIN: all of `fix/frames-from-sheets` (`engine/px.ts` sheetSprite and its budget, `render/townsfolk_baked.ts`,
+  `tests/sheet_sprite.test.ts`, `tools/scenarios/sheet_frames.mjs`: its note is the queue's `keep-baked-frames-in-their-sheets`
+  and `docs/requests/phone_check.md` on `test/phone-check`); a pack opened as a sheet of that kind (`render/baked.ts` unpack,
+  letGo); `tests/baked_packs.test.ts` brought to it; `mem_floors.mjs` says the sheets held and the frames cut.
 - No rule of the game is changed, and no picture.
 
 ## FOR THE MAIN CHAT
 
 0. NOT BEFORE HIS WORD. The Brawler's switch is on on this branch; in `main` he stays off until he has tried this build on his
    phone and said so (the top of this file).
-1. THEN MERGE `build/brawler-packed` INTO `main`. It is `main` at 9f3cf44 (25.3.7) with `bring-in/eight-sides` (dee43f3) and
-   this build on top: a fast-forward if `main` has not moved. THE SWITCH AND THE THREE LINES THAT SAY SO ARE ON HERE
+1. THEN MERGE `build/brawler-packed` INTO `main`. It is `main` at 9f3cf44 (25.3.7) with `bring-in/eight-sides` (dee43f3) AND
+   `fix/frames-from-sheets` (de6fea61) and this build on top: a fast-forward if `main` has not moved. IT SETTLES THE QUEUE'S
+   `keep-baked-frames-in-their-sheets` AND `bring-in-tinkerer-brawler-eight-sides` TOO: if `main` takes `fix/frames-from-sheets`
+   first, merging this after it is clean (it holds the same commit); if `main` takes this first, that one is in it already. BUT
+   `fix/frames-from-sheets` CAN GO LIVE ALONE BEFORE HIS WORD ON THE BRAWLER: it changes nothing of him (his switch off in main). THE SWITCH AND THE THREE LINES THAT SAY SO ARE ON HERE
    (`src/art/sides_more.ts`; `tests/sides_more.test.ts` test 2; `tests/veteran_art.test.ts`'s `was`;
    `tests/veteran_rules.test.ts`'s `eightWas`): if `main` has `bring-in/eight-sides` in it already, with them off, the merge
    meets those four places: keep this branch's. `bring-in/eight-sides` need not be merged besides.
@@ -236,16 +308,16 @@ AFTER IT the code changed (a pack's frames cut a few at a time, then as canvases
    `gh-pages`, the records; the handoff's THE LIST has him as NOT LIVE.
 5. HIS WORD: the foot of this file. His yes to the art stands (`README.md`); what is awaited is how this build runs on his
    phone.
-6. TO TUNE, once his phone has been tried: `PACKS.budget` in `src/render/baked.ts`, one number, and `PACKS.cut`, one word
-   (neither makes a new bake). To have him hold everything again:
+6. TO TUNE, once his phone has been tried: `PACKS.budget` in `src/render/baked.ts`, one number (it makes no new bake): 48 MB
+   if a move of his stands on his stance (the trial at the top). To have him hold everything again:
    `PACKS.on` false. To have him from two sides again: `EIGHT_MORE.brawler` false and the three places `BRING_IN.md` names,
    and a new bake.
 
 ## NOT CHECKED
 
-- A PHONE. Nobody has played him from eight sides on one with this, and an iPhone's browser is not this machine's: how fast it
-  reads a small sheet and draws a hundred frames out of it is not known. If a move thrown shows his stance for a moment too
-  long there, the budget is the first thing to raise; if canvases run short there, `PACKS.cut` is the word to change.
+- A PHONE. Nobody has played him from eight sides on one with this. The other chat's phone check read thirteen of his sheets on
+  his phone, all in hand in 6.7 s with the load into town; how fast it reads one small sheet as a move is thrown is not known.
+  If a move thrown shows his stance for a moment too long there, the budget is the first thing to raise.
 - A whole run; the whole suite; the regression.
 
 ## His word from the phone on THIS build
@@ -270,5 +342,11 @@ it was published: `sides_more_fight`, 124 checks, finished clean; his group come
 TOLD HIM: the same link as the night before; the corner of the starting screen says TEST BRAWLER PACKED when it is the new one;
 NEW GAME, the Brawler, into town, then a floor or two, turning and fighting every way; then say how long it took to come into
 town, and whether the fight is smooth, stutters or freezes. The title screen and the hero cards may still lag: not this.
+
+PUBLISHED AGAIN WITH THE JOINED BUILD, 12 Nov, 07:44 (his pick above, “Yes, join them (Recommended)”, and “Go”): the same
+link, version `1794487473-d68d`. Only `index.html` changed (7,584,131 bytes, sha256 beginning 1060ebed7c22c15a, read back the
+same as built): the bake's mark is the same, so every picture file beside it is already there and the same bytes. The same stamp.
+Played once from its folder before it was published: `sides_more_fight`, 124 checks, finished clean; his group whole in 0.72 s.
+TOLD HIM: the same link; close it and open it again if he had it open; what is in it; to try it the same way.
 
 HIS WORD GOES HERE, and into the queue's item; the main chat switches him on only then.
