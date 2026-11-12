@@ -13,7 +13,9 @@ import { makeHands, log } from './lib.mjs';
 export default async function (page, snap) {
   // (THE FIRST LEVELS, the game's own since Version 19.5: a hero home from the first dungeon, the
   // wordsmith's ring lit; the gate leads to the second dungeon, since the first takes no words)
-  await page.evaluate(() => { const d = window.__dbg; d.run('warrior', 31); d.seasoned(3); const g = d.game(); g.depth = 2; g.cleared = 1; });
+  // (QUESTS15, on in the game: with his ring lit the armourer's first use gives the furnace quest in place of his shelf: “Armourer:
+  // a task”. Taken here already, so that a use of him opens his shelf, as this playtest is about: found out of date 11 Nov 2026)
+  await page.evaluate(() => { const d = window.__dbg; d.run('warrior', 31); d.seasoned(3); const g = d.game(); g.depth = 2; g.cleared = 1; g.hero.furnace = 'asked'; });
   await page.waitForTimeout(300);
   const hands = await makeHands(page);
   const bad = (msg) => console.log('  !! ' + msg);
