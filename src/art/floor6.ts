@@ -38,6 +38,8 @@ import type { Piece } from './floorkit';
 import { GRAIN, compose, hash, mix } from './kit';
 import type { Ramp } from './kit';
 import { ART_TWEAKS } from './tweaks';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 // =================================================================================================
 // The colours: the quarry's own, in daylight
@@ -1197,47 +1199,69 @@ function masonsMallet(): Sprite {
 
 let made: Piece[] | null = null;
 /** THE QUARRY'S PIECES SO FAR (the first of its 25), by name, made once. */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE QUARRY'S (floor 6), each
+ * piece's maker in the list's order: the list made a piece a step (quarryPieceSteps), or all at once (quarryPieces). Each painted as it was.
+ */
+function quarryMakers(): (() => Piece)[] {
+  return [
+    // obstacles
+    () => ({ name: 'cut block', kind: 'obstacle', frames: [cutBlock(0)], shadow: 0.45 }),
+    () => ({ name: 'block split from the bed', kind: 'obstacle', frames: [cutBlock(1)], shadow: 0.45 }),
+    () => ({ name: 'block marked to split', kind: 'obstacle', frames: [cutBlock(2)], shadow: 0.45 }),
+    () => ({ name: 'stacked blocks', kind: 'obstacle', frames: [stackedBlocks()], shadow: 0.5 }),
+    () => ({ name: 'the great obelisk', kind: 'obstacle', frames: [obelisk()], shadow: 0.9 }),
+    () => ({ name: 'the crane', kind: 'obstacle', frames: [crane()], shadow: 0.6 }),
+    () => ({ name: 'cart of rubble', kind: 'obstacle', frames: [rubbleCart(true), rubbleCart(true, true)], shadow: 0.42 }),
+    () => ({ name: 'empty cart', kind: 'obstacle', frames: [rubbleCart(false), rubbleCart(false, true)], shadow: 0.42 }),
+    () => ({ name: 'sledge on rollers', kind: 'obstacle', frames: [sledge()], shadow: 0.6 }),
+    () => ({ name: 'scaffolding', kind: 'obstacle', frames: [scaffold()], shadow: 0.5 }),
+    // floor tiles
+    () => ({ name: 'rails', kind: 'floor tile', frames: [railsTile(false, false), railsTile(true, false), railsTile(false, true), railsTile(true, true)] }),
+    // on the floor
+    () => ({ name: 'splitting tools', kind: 'on the floor', frames: [splittingTools()] }),
+    () => ({ name: 'chippings', kind: 'on the floor', frames: [chippings(0), chippings(1)], shadow: 0.3 }),
+    // the far cliffs' own
+    () => ({ name: 'ladder against the face', kind: 'on the wall', frames: [ladder()], shadow: 0.25 }),
+    () => ({ name: 'rope and bucket', kind: 'on the wall', frames: [ropeAndBucket()], shadow: 0.2 }),
+    () => ({ name: 'the great face, half carved', kind: 'on the wall', frames: [carvedFace()] }),
+    () => ({ name: 'the great hand, half carved', kind: 'obstacle', frames: [carvedHand()], shadow: 0.6 }),
+    // breakables: whole, and broken
+    () => ({ name: 'water barrel', kind: 'breakable', frames: [waterBarrel(false), waterBarrel(true)], shadow: 0.22 }),
+    () => ({ name: 'basket of chippings', kind: 'breakable', frames: [chipBasket(false), chipBasket(true)], shadow: 0.2 }),
+    // the trap: the drill holes and the stone's spikes up out of them
+    () => ({ name: 'the drill holes', kind: 'trap', frames: [drillHoles(false), drillHoles(true), drillSpike(1), drillSpike(2), drillSpike(3), drillSpike(4)] }),
+    // the quest's (no quest yet)
+    () => ({ name: "the master mason's mallet", kind: 'quest', frames: [masonsMallet()], shadow: 0.2 }),
+    // the overseers' redoubt, the Quarry's stronghold
+    () => ({ name: "the redoubt's gatehouse", kind: 'gate', frames: [0, 1, 2, 3].map((f) => gatehouse(false, f)).concat([gatehouse(true, 0)]), shadow: 1.2 }),
+    () => ({ name: "the court's flagstones", kind: 'floor tile', frames: [flagstones(false, 1), flagstones(false, 2), flagstones(true, 3)] }),
+    // the cult's (the set's, art/act1_cult.ts: at every stronghold of the five floors)
+    () => ({ name: 'the altar of the words', kind: 'obstacle', frames: [wordAltar()], shadow: 0.7 }),
+    () => ({ name: "the cult's brazier", kind: 'obstacle', frames: [0, 1, 2, 3].map(pinkBrazier), shadow: 0.3 }),
+    () => ({ name: "the cult's banner", kind: 'obstacle', frames: [0, 1, 2, 3].map(cultBanner), shadow: 0.2 }),
+    // the mountain's (for the tops and the set)
+    () => ({ name: 'pine', kind: 'obstacle', frames: [pine(0.2, 3), pine(0.55, 11), pine(0.9, 17)], shadow: 0.4 }),
+    () => ({ name: 'boulder', kind: 'obstacle', frames: [boulder(0, 5), boulder(1, 9), boulder(2, 13)], shadow: 0.36 }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const QUARRY_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function quarryPiecesHeld(): number {
+  return QUARRY_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function quarryPieceCount(): number {
+  return quarryMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function quarryPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...quarryMakers().map((make, i) => QUARRY_AHEAD.step(String(i), make)), () => void quarryPieces()];
+}
 export function quarryPieces(): Piece[] {
   if (made) return made;
-  made = [
-    // obstacles
-    { name: 'cut block', kind: 'obstacle', frames: [cutBlock(0)], shadow: 0.45 },
-    { name: 'block split from the bed', kind: 'obstacle', frames: [cutBlock(1)], shadow: 0.45 },
-    { name: 'block marked to split', kind: 'obstacle', frames: [cutBlock(2)], shadow: 0.45 },
-    { name: 'stacked blocks', kind: 'obstacle', frames: [stackedBlocks()], shadow: 0.5 },
-    { name: 'the great obelisk', kind: 'obstacle', frames: [obelisk()], shadow: 0.9 },
-    { name: 'the crane', kind: 'obstacle', frames: [crane()], shadow: 0.6 },
-    { name: 'cart of rubble', kind: 'obstacle', frames: [rubbleCart(true), rubbleCart(true, true)], shadow: 0.42 },
-    { name: 'empty cart', kind: 'obstacle', frames: [rubbleCart(false), rubbleCart(false, true)], shadow: 0.42 },
-    { name: 'sledge on rollers', kind: 'obstacle', frames: [sledge()], shadow: 0.6 },
-    { name: 'scaffolding', kind: 'obstacle', frames: [scaffold()], shadow: 0.5 },
-    // floor tiles
-    { name: 'rails', kind: 'floor tile', frames: [railsTile(false, false), railsTile(true, false), railsTile(false, true), railsTile(true, true)] },
-    // on the floor
-    { name: 'splitting tools', kind: 'on the floor', frames: [splittingTools()] },
-    { name: 'chippings', kind: 'on the floor', frames: [chippings(0), chippings(1)], shadow: 0.3 },
-    // the far cliffs' own
-    { name: 'ladder against the face', kind: 'on the wall', frames: [ladder()], shadow: 0.25 },
-    { name: 'rope and bucket', kind: 'on the wall', frames: [ropeAndBucket()], shadow: 0.2 },
-    { name: 'the great face, half carved', kind: 'on the wall', frames: [carvedFace()] },
-    { name: 'the great hand, half carved', kind: 'obstacle', frames: [carvedHand()], shadow: 0.6 },
-    // breakables: whole, and broken
-    { name: 'water barrel', kind: 'breakable', frames: [waterBarrel(false), waterBarrel(true)], shadow: 0.22 },
-    { name: 'basket of chippings', kind: 'breakable', frames: [chipBasket(false), chipBasket(true)], shadow: 0.2 },
-    // the trap: the drill holes and the stone's spikes up out of them
-    { name: 'the drill holes', kind: 'trap', frames: [drillHoles(false), drillHoles(true), drillSpike(1), drillSpike(2), drillSpike(3), drillSpike(4)] },
-    // the quest's (no quest yet)
-    { name: "the master mason's mallet", kind: 'quest', frames: [masonsMallet()], shadow: 0.2 },
-    // the overseers' redoubt, the Quarry's stronghold
-    { name: "the redoubt's gatehouse", kind: 'gate', frames: [0, 1, 2, 3].map((f) => gatehouse(false, f)).concat([gatehouse(true, 0)]), shadow: 1.2 },
-    { name: "the court's flagstones", kind: 'floor tile', frames: [flagstones(false, 1), flagstones(false, 2), flagstones(true, 3)] },
-    // the cult's (the set's, art/act1_cult.ts: at every stronghold of the five floors)
-    { name: 'the altar of the words', kind: 'obstacle', frames: [wordAltar()], shadow: 0.7 },
-    { name: "the cult's brazier", kind: 'obstacle', frames: [0, 1, 2, 3].map(pinkBrazier), shadow: 0.3 },
-    { name: "the cult's banner", kind: 'obstacle', frames: [0, 1, 2, 3].map(cultBanner), shadow: 0.2 },
-    // the mountain's (for the tops and the set)
-    { name: 'pine', kind: 'obstacle', frames: [pine(0.2, 3), pine(0.55, 11), pine(0.9, 17)], shadow: 0.4 },
-    { name: 'boulder', kind: 'obstacle', frames: [boulder(0, 5), boulder(1, 9), boulder(2, 13)], shadow: 0.36 },
-  ];
+  made = quarryMakers().map((make, i) => QUARRY_AHEAD.take(String(i), make));
   return made;
 }

@@ -19,29 +19,29 @@
 // up; the forest's and the water's (the Pinewood, the Fen: no walls) anywhere off the floor and the river,
 // the tall ones seen through. Laid a piece of the ground at a time, as the ground is painted (render/outdoor.ts).
 
-import { campPieces } from '../art/act1_camp';
+import { campPieceSteps, campPieces } from '../art/act1_camp';
 import type { Piece } from '../art/floor1';
-import { quarryPieces } from '../art/floor6';
+import { quarryPieceSteps, quarryPieces } from '../art/floor6';
 import { ledgePieces } from '../art/floor7';
-import { canyonPieces } from '../art/floor8';
+import { canyonPieceSteps, canyonPieces } from '../art/floor8';
 import { pinewoodPieces } from '../art/floor9';
 import { fenPieces } from '../art/floor10';
 import { COLOSSUS, STONE, worldToStone } from '../game/colossus_fight';
-import { redoubtPieces } from '../art/redoubt';
-import { hushSetPieces } from '../art/act2_set';
-import { gateWardPieces } from '../art/floor11';
-import { undercityPieces } from '../art/floor12';
-import { WHEEL_STEPS, WHEEL_TURN, millracePieces } from '../art/floor13';
-import { houseOfQuietPieces } from '../art/floor14';
-import { greatLibraryPieces } from '../art/floor15';
-import { herVinesPieces, swanGardensPieces } from '../art/floor16';
-import { highCitySetPieces } from '../art/high_city_set';
-import { masquePieces } from '../art/floor17';
-import { glassGalleryPieces } from '../art/floor18';
-import { keepPieces } from '../art/floor19';
-import { lecternIn, quietTowerPieces } from '../art/floor20';
+import { redoubtPieceSteps, redoubtPieces } from '../art/redoubt';
+import { hushSetPieceSteps, hushSetPieces } from '../art/act2_set';
+import { gateWardPieceSteps, gateWardPieces } from '../art/floor11';
+import { undercityPieceSteps, undercityPieces } from '../art/floor12';
+import { WHEEL_STEPS, WHEEL_TURN, millracePieceSteps, millracePieces } from '../art/floor13';
+import { houseOfQuietPieceSteps, houseOfQuietPieces } from '../art/floor14';
+import { greatLibraryPieceSteps, greatLibraryPieces } from '../art/floor15';
+import { herVinesPieces, swanGardensPieceSteps, swanGardensPieces } from '../art/floor16';
+import { highCitySetPieceSteps, highCitySetPieces } from '../art/high_city_set';
+import { masquePieceSteps, masquePieces } from '../art/floor17';
+import { glassGalleryPieceSteps, glassGalleryPieces } from '../art/floor18';
+import { keepPieceSteps, keepPieces } from '../art/floor19';
+import { lecternIn, quietTowerPieceSteps, quietTowerPieces } from '../art/floor20';
 import { done, scene } from '../art/act2_kit';
-import { hubPieces } from '../art/hub2';
+import { hubPieceSteps, hubPieces } from '../art/hub2';
 import { CAMP_ANIM, CAMP_DRESS, CAMP_TOPS } from '../game/camp';
 import { GRAIN, clearOfFloor, fbm, pictureOf, worldOf } from '../art/terrain';
 import type { Terrain } from '../art/terrain';
@@ -107,16 +107,41 @@ function act1ListsOf(n: number, part: ListPart): Piece[] {
   const shared = (): Piece[] => (n === 6 ? [] : quarryPieces().filter((p) => p.name.startsWith("the redoubt's") || p.name.startsWith("the court's") || p.name === 'the altar of the words' || p.name === "the cult's brazier" || p.name === "the cult's banner" || p.name === 'pine' || p.name === 'boulder'));
   return [...part('camp', campPieces), ...part('redoubt', redoubtPieces), ...part('shared', shared), ...part('own', own)];
 }
-/** The steps that make floor `n`'s pieces a list at a time (none where they are made), then its pieces. */
+/**
+ * The steps that make floor `n`'s pieces a list at a time (none where they are made), then its pieces. EACH LIST A PIECE A STEP
+ * first, where its art has it so (the queue's make-floors-look-builders-in-parts: a list made in one go took 0.4 to 0.9 s, the
+ * Quarry's about 0.6 s and the Gate Ward's about 0.9 s under the loading screen in Chrome, the Loading-frames chat's measure);
+ * then the list, which takes them (the same pictures, made by the same makers).
+ */
 export function act1PieceSteps(n: number): LoadStep[] {
   if (MAPS.has(n)) return [];
   const steps: LoadStep[] = [];
   act1ListsOf(n, (key, make) => {
-    steps.push(LISTS_AHEAD.step(`${n}:${key}`, make));
+    steps.push(...listPieceSteps(n, key), LISTS_AHEAD.step(`${n}:${key}`, make));
     return [];
   });
   steps.push(() => void act1Pieces(n));
   return steps;
+}
+/** (act1PieceSteps) The piece-a-step steps of the lists `key` of floor `n` is made from (act1ListsOf): none for a list made at once (the Ledge's, the Pinewood's, the Fen's and her vines, light ones, laid out otherwise). */
+function listPieceSteps(n: number, key: string): LoadStep[] {
+  switch (key) {
+    case 'camp': return campPieceSteps();
+    case 'redoubt': return redoubtPieceSteps();
+    case 'shared': return n === 6 ? [] : quarryPieceSteps();
+    case 'hush': return hushSetPieceSteps();
+    case 'gateWard': return gateWardPieceSteps();
+    case 'hub': return hubPieceSteps();
+    case 'highCity': return highCitySetPieceSteps();
+    case 'own': {
+      const own: Record<number, () => LoadStep[]> = {
+        6: quarryPieceSteps, 8: canyonPieceSteps, 11: gateWardPieceSteps, 12: undercityPieceSteps, 13: millracePieceSteps, 14: houseOfQuietPieceSteps,
+        15: greatLibraryPieceSteps, 16: swanGardensPieceSteps, 17: masquePieceSteps, 18: glassGalleryPieceSteps, 19: keepPieceSteps, 20: quietTowerPieceSteps,
+      };
+      return own[n]?.() ?? [];
+    }
+    default: return [];
+  }
 }
 /** Let go of every floor's pieces but this one's. */
 export function forgetAct1(keep: number): void {

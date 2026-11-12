@@ -60,6 +60,8 @@ import type { Floor } from '../game/types';
 import { T_FLOOR, T_WALL } from '../game/types';
 import type { Cam } from './fx';
 import type { Painter } from './painter';
+import { stagesStep } from '../engine/steps';
+import type { LoadStep, Stages } from '../engine/steps';
 
 /** A piece's side, in picture pixels. */
 export const PIECE = 128;
@@ -78,13 +80,26 @@ const HORIZON = 232;
 // ---------------------------------------------------------------------------------------------------
 // THE LOOK OF A FLOOR OF THE DESCENT, from what only it knows
 
+/**
+ * (main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE GRIDS OF A TERRAIN WORKED OUT AHEAD, A FEW ROWS A STEP:
+ * while `on` (Outdoor.aheadSteps), a grid made is not filled at once; its rows are put here as jobs, done a few a stage under the
+ * loading screen, and whatever is left is done the first time the grid is asked of. The same values, cell by cell. (The millrace's
+ * seven grids took 1.3 s on the game's own thread as floor 13 was first drawn.)
+ */
+const GRID_AHEAD = { on: false, jobs: [] as (() => boolean)[] };
 /** A field of the world held as a grid (`k` cells to a tile), cheap to ask of at every pixel (the art chat's note: "GIVE THEM CHEAP"). */
 function gridField(w: number, h: number, k: number, fn: (x: number, y: number) => number): (x: number, y: number) => number {
   const W = w * k;
   const H = h * k;
   const v = new Float32Array(W * H);
-  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) v[j * W + i] = fn((i + 0.5) / k, (j + 0.5) / k);
+  let row = 0;
+  const upTo = (end: number): void => {
+    for (; row < end; row++) for (let i = 0; i < W; i++) v[row * W + i] = fn((i + 0.5) / k, (row + 0.5) / k);
+  };
+  if (GRID_AHEAD.on) GRID_AHEAD.jobs.push(() => (upTo(Math.min(H, row + 2)), row >= H));
+  else upTo(H);
   return (x, y) => {
+    if (row < H) upTo(H);
     const gx = x * k - 0.5;
     const gy = y * k - 0.5;
     const i = Math.max(0, Math.min(W - 2, Math.floor(gx)));
@@ -195,6 +210,29 @@ function flowOf(pts: readonly [number, number][]): (x: number, y: number) => [nu
  * houses as they are seen inside, their fronts cut down: art/gateward.ts gateWardPaintFloor, 'open'; the shells laid over
  * them, faded as he goes in, are render's.)
  */
+/**
+ * (LOAD_SLICE) A floor's terrain (landTerrain) with its grids left to fill, and the step that fills them, a few rows a stage (it
+ * gives itself back until they are filled). Asked of before that, a grid fills itself at once. The same terrain either way.
+ */
+export function terrainAhead(land: Land, floor: Floor, fresh: boolean): { T: Terrain; fill: LoadStep } {
+  GRID_AHEAD.on = true;
+  GRID_AHEAD.jobs = [];
+  let T: Terrain;
+  let jobs: (() => boolean)[];
+  try {
+    T = landTerrain(land, floor, fresh);
+  } finally {
+    GRID_AHEAD.on = false;
+    jobs = GRID_AHEAD.jobs;
+    GRID_AHEAD.jobs = [];
+  }
+  return { T, fill: stagesStep(() => (jobs.length ? gridStages(jobs) : null)) };
+}
+/** (LOAD_SLICE) The grids' jobs as stages: a few rows of one a stage, until all are filled. */
+function* gridStages(jobs: readonly (() => boolean)[]): Stages<void> {
+  for (const job of jobs) while (!job()) yield;
+}
+
 export function landTerrain(land: Land, floor: Floor, fresh = false): Terrain {
   // (THE HIGH CITY, FLOOR 16: the Swan Gardens' ground, the yew throwing its shadows across it: art/swangardens.ts)
   if (land.kind === 'swangardens') return swanGardensTerrain(floor, swanLandOf(land, floor));
@@ -536,7 +574,10 @@ export class OutdoorGround {
     this.land = land;
     this.rows = lowRowsOf(land, floor);
     this.thick = wallsThick(land);
-    this.T = landTerrain(land, floor, this.thick > 0);
+    // (worked out ahead under the loading screen where it was: aheadSteps)
+    const ahead = this.ahead && this.ahead.land === land && this.ahead.floor === floor ? this.ahead.T : null;
+    this.ahead = null;
+    this.T = ahead ?? landTerrain(land, floor, this.thick > 0);
     this.near = this.thick > 0 ? nearOf(this.T, this.thick) : null;
     const near = this.near;
     const T = this.T;
@@ -592,6 +633,25 @@ export class OutdoorGround {
   asking = false;
   /** How many of the screen's pieces the last drawing had not got (drawn in the floor's deep colour). */
   missing = 0;
+
+  /** (LOAD_SLICE) The terrain `begin` will want, worked out ahead (aheadSteps). */
+  private ahead: { land: Land; floor: Floor; T: Terrain } | null = null;
+  /**
+   * (main.ts LOAD_SLICE; render.ts prepareSteps) THE GROUND'S TERRAIN AHEAD of the floor's first drawing: its look made with its
+   * grids left to fill (GRID_AHEAD), then the grids a few rows a stage. `begin` takes it. None where it is the ground in hand.
+   */
+  aheadSteps(land: Land, floor: Floor): LoadStep[] {
+    if (land === this.land || (this.ahead && this.ahead.land === land)) return [];
+    let fill: LoadStep | null = null;
+    return [
+      () => {
+        const a = terrainAhead(land, floor, wallsThick(land) > 0);
+        this.ahead = { land, floor, T: a.T };
+        fill = a.fill;
+      },
+      () => (fill ? [fill] : undefined),
+    ];
+  }
 
   /** Let go of everything (the floor has been left). */
   clear(): void {

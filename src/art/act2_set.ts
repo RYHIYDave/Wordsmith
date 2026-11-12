@@ -23,6 +23,8 @@ import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import { EMBER } from './props';
 import { BLACK, BRICK, CLAY, CHAR, DEAL, HOLE, IRON, MASK, OAK, SOFT_ID, STONE, checker, cylinder, dim, done, facing, frontPiece, local, lying, planks, scene, slab, turned } from './act2_kit';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 
@@ -851,41 +853,65 @@ function hushJar(f: number): Sprite {
 
 let made: Piece[] | null = null;
 /** THE SET'S PIECES, for every floor from 11 to 15 (the first of them). */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE HUSH'S SET, each
+ * piece's maker in the list's order: the list made a piece a step (hushSetPieceSteps), or all at once (hushSetPieces). Each painted as it was.
+ */
+function hushSetMakers(): (() => Piece)[] {
+  return [
+    () => ({ name: 'street lamp', kind: 'obstacle', frames: [streetLamp(0), streetLamp(1)], shadow: 0.25 }),
+    () => ({ name: 'barrel', kind: 'breakable', frames: [barrel(false), barrel(true)], shadow: 0.22 }),
+    () => ({ name: 'crates', kind: 'breakable', frames: [crates(false), crates(true)], shadow: 0.3 }),
+    () => ({ name: 'a crate of stolen voices', kind: 'breakable', frames: [voiceJars(false, 0), voiceJars(false, 1), voiceJars(true, 0), voiceJars(true, 1)], shadow: 0.25 }),
+    () => {
+      const banner = orderBanner();
+      return { name: "the Silent Order's banner", kind: 'on the wall', left: [banner.left], right: [banner.right] };
+    },
+    () => ({ name: 'chimney', kind: 'obstacle', frames: [chimney(22), chimney(34)] }),
+    () => ({ name: "a shard of the dome", kind: 'on the floor', frames: [domeShard(false, 0), domeShard(false, 1), domeShard(true, 0), domeShard(true, 1)], shadow: 0.2 }),
+    () => ({ name: 'rubble of the siege', kind: 'obstacle', frames: [rubble()], shadow: 0.6 }),
+    // (lit, two frames; put out)
+    () => ({ name: 'wall lantern', kind: 'on the wall', ...framesOf([wallLantern(0), wallLantern(1), wallLantern(2)]) }),
+    () => ({ name: "the Order's hooded lantern", kind: 'obstacle', frames: [orderLantern(0), orderLantern(1)], shadow: 0.3 }),
+    () => ({ name: "the Order's rack of jars", kind: 'obstacle', frames: [jarRack(0), jarRack(1)], shadow: 0.6 }),
+    () => ({ name: "the carters' cart, the Order's", kind: 'obstacle', frames: [cartersCart(0, 0), cartersCart(1, 0), cartersCart(0, 1), cartersCart(1, 1)], shadow: 0.9 }),
+    () => ({ name: 'bundles of blank paper', kind: 'breakable', frames: [paperBundles(false), paperBundles(true)], shadow: 0.35 }),
+    // (laid over the floor's tiles, longer than one: on the floor, not a tile of it)
+    () => ({ name: "the Order's ink bars", kind: 'on the floor', frames: [inkBars(0), inkBars(1), inkBars(2)] }),
+    () => ({ name: 'an ink spill', kind: 'on the floor', frames: [inkSpill()] }),
+    () => ({ name: 'blank proclamations, pasted', kind: 'on the wall', ...framesOf([pastedSheets()]) }),
+    () => ({ name: 'washing on a line', kind: 'on the wall', ...framesOf([washing()]) }),
+    () => ({ name: 'a drain grate', kind: 'floor tile', frames: [drainGrate(false), drainGrate(true)] }),
+    () => ({ name: "a cellar's hatch", kind: 'door', frames: [cellarHatch(false), cellarHatch(true)] }),
+    () => ({ name: "a house's door", kind: 'door', ...framesOf([houseDoor('shut'), houseDoor('open'), houseDoor('marked')]) }),
+    // the rooms' (each its two ways about: along +y, along +x)
+    () => ({ name: 'a tavern table and benches', kind: 'obstacle', frames: [tavernTable(0), tavernTable(1)], shadow: 0.7 }),
+    () => ({ name: 'the hearth', kind: 'obstacle', frames: [hearth(0, 0), hearth(1, 0), hearth(0, 1), hearth(1, 1)], shadow: 0.5 }),
+    () => ({ name: 'a bed', kind: 'obstacle', frames: [bed(0), bed(1)], shadow: 0.6 }),
+    // (whole and broken, its front along +y; the same along +x)
+    () => ({ name: 'a dresser', kind: 'breakable', frames: [dresser(false, 0), dresser(true, 0), dresser(false, 1), dresser(true, 1)], shadow: 0.45 }),
+    // (sealed, cracking, the burst two)
+    () => ({ name: 'a jar of the Hush', kind: 'trap', frames: [0, 1, 2, 3].map(hushJar), shadow: 0.2 }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const HUSHSET_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function hushSetPiecesHeld(): number {
+  return HUSHSET_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function hushSetPieceCount(): number {
+  return hushSetMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function hushSetPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...hushSetMakers().map((make, i) => HUSHSET_AHEAD.step(String(i), make)), () => void hushSetPieces()];
+}
 export function hushSetPieces(): Piece[] {
   if (made) return made;
-  const banner = orderBanner();
-  made = [
-    { name: 'street lamp', kind: 'obstacle', frames: [streetLamp(0), streetLamp(1)], shadow: 0.25 },
-    { name: 'barrel', kind: 'breakable', frames: [barrel(false), barrel(true)], shadow: 0.22 },
-    { name: 'crates', kind: 'breakable', frames: [crates(false), crates(true)], shadow: 0.3 },
-    { name: 'a crate of stolen voices', kind: 'breakable', frames: [voiceJars(false, 0), voiceJars(false, 1), voiceJars(true, 0), voiceJars(true, 1)], shadow: 0.25 },
-    { name: "the Silent Order's banner", kind: 'on the wall', left: [banner.left], right: [banner.right] },
-    { name: 'chimney', kind: 'obstacle', frames: [chimney(22), chimney(34)] },
-    { name: "a shard of the dome", kind: 'on the floor', frames: [domeShard(false, 0), domeShard(false, 1), domeShard(true, 0), domeShard(true, 1)], shadow: 0.2 },
-    { name: 'rubble of the siege', kind: 'obstacle', frames: [rubble()], shadow: 0.6 },
-    // (lit, two frames; put out)
-    { name: 'wall lantern', kind: 'on the wall', ...framesOf([wallLantern(0), wallLantern(1), wallLantern(2)]) },
-    { name: "the Order's hooded lantern", kind: 'obstacle', frames: [orderLantern(0), orderLantern(1)], shadow: 0.3 },
-    { name: "the Order's rack of jars", kind: 'obstacle', frames: [jarRack(0), jarRack(1)], shadow: 0.6 },
-    { name: "the carters' cart, the Order's", kind: 'obstacle', frames: [cartersCart(0, 0), cartersCart(1, 0), cartersCart(0, 1), cartersCart(1, 1)], shadow: 0.9 },
-    { name: 'bundles of blank paper', kind: 'breakable', frames: [paperBundles(false), paperBundles(true)], shadow: 0.35 },
-    // (laid over the floor's tiles, longer than one: on the floor, not a tile of it)
-    { name: "the Order's ink bars", kind: 'on the floor', frames: [inkBars(0), inkBars(1), inkBars(2)] },
-    { name: 'an ink spill', kind: 'on the floor', frames: [inkSpill()] },
-    { name: 'blank proclamations, pasted', kind: 'on the wall', ...framesOf([pastedSheets()]) },
-    { name: 'washing on a line', kind: 'on the wall', ...framesOf([washing()]) },
-    { name: 'a drain grate', kind: 'floor tile', frames: [drainGrate(false), drainGrate(true)] },
-    { name: "a cellar's hatch", kind: 'door', frames: [cellarHatch(false), cellarHatch(true)] },
-    { name: "a house's door", kind: 'door', ...framesOf([houseDoor('shut'), houseDoor('open'), houseDoor('marked')]) },
-    // the rooms' (each its two ways about: along +y, along +x)
-    { name: 'a tavern table and benches', kind: 'obstacle', frames: [tavernTable(0), tavernTable(1)], shadow: 0.7 },
-    { name: 'the hearth', kind: 'obstacle', frames: [hearth(0, 0), hearth(1, 0), hearth(0, 1), hearth(1, 1)], shadow: 0.5 },
-    { name: 'a bed', kind: 'obstacle', frames: [bed(0), bed(1)], shadow: 0.6 },
-    // (whole and broken, its front along +y; the same along +x)
-    { name: 'a dresser', kind: 'breakable', frames: [dresser(false, 0), dresser(true, 0), dresser(false, 1), dresser(true, 1)], shadow: 0.45 },
-    // (sealed, cracking, the burst two)
-    { name: 'a jar of the Hush', kind: 'trap', frames: [0, 1, 2, 3].map(hushJar), shadow: 0.2 },
-  ];
+  made = hushSetMakers().map((make, i) => HUSHSET_AHEAD.take(String(i), make));
   return made;
 }
 

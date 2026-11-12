@@ -39,6 +39,8 @@ import { lakeWater } from './swangardens';
 import { VINE_LEAF, VINE_THORN, VINE_WOOD_PALE, herVine, leafFace, leafShape } from './princess_vine';
 import type { VineBrush } from './princess_vine';
 import { norm, sub } from './skeleton';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 const AXES: readonly [V3, V3, V3] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -1012,40 +1014,62 @@ function yewVined(f: number): Sprite {
 
 let made: Piece[] | null = null;
 /** THE SWAN GARDENS' OWN PIECES, the Princess's twenty-five, made the first time they are asked for and kept. */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE SWAN GARDENS' (floor 16), each
+ * piece's maker in the list's order: the list made a piece a step (swanGardensPieceSteps), or all at once (swanGardensPieces). Each painted as it was.
+ */
+function swanGardensMakers(): (() => Piece)[] {
+  return [
+    // (frames: along x, along y)
+    () => ({ name: 'a terrace wall', kind: 'obstacle', frames: [terraceWall(0), terraceWall(1)], shadow: 0 }),
+    () => ({ name: "a stair's pier", kind: 'obstacle', frames: [terraceWall(0, true), terraceWall(1, true)], shadow: 0 }),
+    // (walked on, and laid as what lies on the floor: drawn before all that stands; it rises, so it is not a flat floor tile)
+    () => ({ name: 'the terrace stair', kind: 'on the floor', frames: [terraceStair(0), terraceStair(1)] }),
+    () => ({ name: 'a yew cone', kind: 'obstacle', frames: [yewCone()], shadow: 0.45 }),
+    () => ({ name: 'box edging', kind: 'obstacle', frames: [boxEdging(0), boxEdging(1)], shadow: 0.3 }),
+    () => ({ name: 'a rose bush', kind: 'breakable', frames: [roseBush(false), roseBush(true)], shadow: 0.35 }),
+    () => ({ name: 'a bay tree in its tub', kind: 'obstacle', frames: [bayTub()], shadow: 0.35 }),
+    () => ({ name: 'a topiary swan', kind: 'obstacle', frames: [topiarySwan()], shadow: 0.5 }),
+    () => ({ name: 'the still fountain', kind: 'obstacle', frames: [fountain()], shadow: 1.4 }),
+    () => ({ name: 'a stone swan on its plinth', kind: 'obstacle', frames: [stoneSwan()], shadow: 0.35 }),
+    () => ({ name: 'a sundial', kind: 'obstacle', frames: [sundial()], shadow: 0.25 }),
+    () => ({ name: 'a stone bench', kind: 'obstacle', frames: [bench(0), bench(1)], shadow: 0.4 }),
+    () => ({ name: 'an urn of roses', kind: 'breakable', frames: [urnOfRoses(false), urnOfRoses(true)], shadow: 0.3 }),
+    // (frames: whole along x, half there along x (someone under it), whole along y, half there along y)
+    () => ({ name: 'a rose arbour', kind: 'obstacle', frames: [arbour(0, false), arbour(0, true), arbour(1, false), arbour(1, true)], shadow: 0.9 }),
+    () => ({ name: 'the Swan Pavilion on its island', kind: 'obstacle', frames: [pavilion()], shadow: 0 }),
+    // (frames: still, stirred)
+    () => ({ name: 'nettles', kind: 'trap', frames: [nettles(false), nettles(true)] }),
+    () => ({ name: 'trodden nettles, for their flax', kind: 'on the floor', frames: [troddenNettles()] }),
+    () => ({ name: 'a nettle shirt, half woven', kind: 'quest', frames: [nettleShirt()], shadow: 0.3 }),
+    // (frames: shut and open across x, shut and open across y)
+    () => ({ name: 'a garden gate', kind: 'gate', frames: [0, 1].flatMap((k) => [gardenGate(false, k), gardenGate(true, k)]), shadow: 0.6 }),
+    () => ({ name: 'a lantern on a post', kind: 'obstacle', frames: [lantern()], shadow: 0.25 }),
+    () => ({ name: 'a boat at the landing', kind: 'obstacle', frames: [boatLanding()], shadow: 0 }),
+    () => ({ name: "a swan's nest", kind: 'obstacle', frames: [swanNest()], shadow: 0.4 }),
+    () => ({ name: "a gardener's barrow", kind: 'breakable', frames: [barrow(false), barrow(true)], shadow: 0.4 }),
+    () => ({ name: 'clippings and shears', kind: 'on the floor', frames: [clippings()] }),
+    () => ({ name: 'swan feathers', kind: 'on the floor', frames: [swanFeathers()] }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const SWANGARDENS_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function swanGardensPiecesHeld(): number {
+  return SWANGARDENS_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function swanGardensPieceCount(): number {
+  return swanGardensMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function swanGardensPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...swanGardensMakers().map((make, i) => SWANGARDENS_AHEAD.step(String(i), make)), () => void swanGardensPieces()];
+}
 export function swanGardensPieces(): Piece[] {
   if (made) return made;
-  made = [
-    // (frames: along x, along y)
-    { name: 'a terrace wall', kind: 'obstacle', frames: [terraceWall(0), terraceWall(1)], shadow: 0 },
-    { name: "a stair's pier", kind: 'obstacle', frames: [terraceWall(0, true), terraceWall(1, true)], shadow: 0 },
-    // (walked on, and laid as what lies on the floor: drawn before all that stands; it rises, so it is not a flat floor tile)
-    { name: 'the terrace stair', kind: 'on the floor', frames: [terraceStair(0), terraceStair(1)] },
-    { name: 'a yew cone', kind: 'obstacle', frames: [yewCone()], shadow: 0.45 },
-    { name: 'box edging', kind: 'obstacle', frames: [boxEdging(0), boxEdging(1)], shadow: 0.3 },
-    { name: 'a rose bush', kind: 'breakable', frames: [roseBush(false), roseBush(true)], shadow: 0.35 },
-    { name: 'a bay tree in its tub', kind: 'obstacle', frames: [bayTub()], shadow: 0.35 },
-    { name: 'a topiary swan', kind: 'obstacle', frames: [topiarySwan()], shadow: 0.5 },
-    { name: 'the still fountain', kind: 'obstacle', frames: [fountain()], shadow: 1.4 },
-    { name: 'a stone swan on its plinth', kind: 'obstacle', frames: [stoneSwan()], shadow: 0.35 },
-    { name: 'a sundial', kind: 'obstacle', frames: [sundial()], shadow: 0.25 },
-    { name: 'a stone bench', kind: 'obstacle', frames: [bench(0), bench(1)], shadow: 0.4 },
-    { name: 'an urn of roses', kind: 'breakable', frames: [urnOfRoses(false), urnOfRoses(true)], shadow: 0.3 },
-    // (frames: whole along x, half there along x (someone under it), whole along y, half there along y)
-    { name: 'a rose arbour', kind: 'obstacle', frames: [arbour(0, false), arbour(0, true), arbour(1, false), arbour(1, true)], shadow: 0.9 },
-    { name: 'the Swan Pavilion on its island', kind: 'obstacle', frames: [pavilion()], shadow: 0 },
-    // (frames: still, stirred)
-    { name: 'nettles', kind: 'trap', frames: [nettles(false), nettles(true)] },
-    { name: 'trodden nettles, for their flax', kind: 'on the floor', frames: [troddenNettles()] },
-    { name: 'a nettle shirt, half woven', kind: 'quest', frames: [nettleShirt()], shadow: 0.3 },
-    // (frames: shut and open across x, shut and open across y)
-    { name: 'a garden gate', kind: 'gate', frames: [0, 1].flatMap((k) => [gardenGate(false, k), gardenGate(true, k)]), shadow: 0.6 },
-    { name: 'a lantern on a post', kind: 'obstacle', frames: [lantern()], shadow: 0.25 },
-    { name: 'a boat at the landing', kind: 'obstacle', frames: [boatLanding()], shadow: 0 },
-    { name: "a swan's nest", kind: 'obstacle', frames: [swanNest()], shadow: 0.4 },
-    { name: "a gardener's barrow", kind: 'breakable', frames: [barrow(false), barrow(true)], shadow: 0.4 },
-    { name: 'clippings and shears', kind: 'on the floor', frames: [clippings()] },
-    { name: 'swan feathers', kind: 'on the floor', frames: [swanFeathers()] },
-  ];
+  made = swanGardensMakers().map((make, i) => SWANGARDENS_AHEAD.take(String(i), make));
   return made;
 }
 

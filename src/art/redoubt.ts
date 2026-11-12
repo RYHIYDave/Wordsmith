@@ -32,6 +32,8 @@ import type { GroundArt, Theme } from './ground';
 import { GRAIN, compose, hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 /** THE REDOUBT'S STONE, INSIDE: the quarry's limestone dressed and coursed, in a hall's dim. */
 export const REDOUBT: Theme = {
@@ -231,13 +233,35 @@ function hanging(p: Px): void {
 
 let made: Piece[] | null = null;
 /** THE REDOUBT'S OWN PIECES, inside: its last room's. */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE REDOUBT'S, each
+ * piece's maker in the list's order: the list made a piece a step (redoubtPieceSteps), or all at once (redoubtPieces). Each painted as it was.
+ */
+function redoubtMakers(): (() => Piece)[] {
+  return [
+    () => ({ name: 'the half-cut obelisk', kind: 'obstacle', frames: [0, 1, 2, 3].map(halfCutObelisk), shadow: 1.1 }),
+    () => ({ name: "the cult's ring of magic", kind: 'on the floor', frames: [0, 1, 2, 3].map((f) => magicRing(f, 4.2, 2.6)) }),
+    () => ({ name: "the cult's hanging", kind: 'on the wall', ...wallSet(hanging) }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const REDOUBT_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function redoubtPiecesHeld(): number {
+  return REDOUBT_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function redoubtPieceCount(): number {
+  return redoubtMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function redoubtPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...redoubtMakers().map((make, i) => REDOUBT_AHEAD.step(String(i), make)), () => void redoubtPieces()];
+}
 export function redoubtPieces(): Piece[] {
   if (made) return made;
-  made = [
-    { name: 'the half-cut obelisk', kind: 'obstacle', frames: [0, 1, 2, 3].map(halfCutObelisk), shadow: 1.1 },
-    { name: "the cult's ring of magic", kind: 'on the floor', frames: [0, 1, 2, 3].map((f) => magicRing(f, 4.2, 2.6)) },
-    { name: "the cult's hanging", kind: 'on the wall', ...wallSet(hanging) },
-  ];
+  made = redoubtMakers().map((make, i) => REDOUBT_AHEAD.take(String(i), make));
   return made;
 }
 

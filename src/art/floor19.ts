@@ -37,6 +37,8 @@ import { hash } from './kit';
 import type { Ramp } from './kit';
 import { EMBER, COAL } from './props';
 import { IRON, OAK, STRAW, cylinder, done, frontPiece, lying, scene, turned } from './act2_kit';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 const AXES: readonly [V3, V3, V3] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -1205,40 +1207,62 @@ const SPOTS: Record<string, readonly At[]> = {
 
 let made: Piece[] | null = null;
 /** THE KEEP'S OWN PIECES, the King's twenty-five, made the first time they are asked for and kept. */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE KEEP'S (floor 19), each
+ * piece's maker in the list's order: the list made a piece a step (keepPieceSteps), or all at once (keepPieces). Each painted as it was.
+ */
+function keepMakers(): (() => Piece)[] {
+  return [
+    () => ({ name: 'the throne on its dais', kind: 'obstacle', frames: [throneOnDais()], shadow: 1.2 }),
+    () => ({ name: 'the cloth of estate', kind: 'on the wall', ...onWall((S, w) => clothOfEstate(S, w), 1, SPOTS.cloth, 184, 166, 30) }),
+    // (frames: along x, torn along x, along y, torn along y)
+    () => ({ name: 'the royal runner', kind: 'on the floor', frames: [runner(true, false), runner(true, true), runner(false, false), runner(false, true)] }),
+    () => ({ name: 'a royal banner', kind: 'on the wall', ...onWall((S, w) => banner(S, w), 1, SPOTS.banner, 90, 140, 30) }),
+    // (frames: its flame, three)
+    () => ({ name: 'a torch in its sconce', kind: 'on the wall', ...onWall((S, w, f) => torch(S, w, f), 3, SPOTS.torch, 80, 134, 30, (w) => [{ at: w(0, 10.4, 66), r: 60, color: EMBER[2], a: 0.5 }]) }),
+    () => ({ name: 'a brazier', kind: 'obstacle', frames: [0, 1, 2].map(brazier), shadow: 0.4 }),
+    () => ({ name: 'an arrow slit', kind: 'on the wall', ...onWall((S, w) => arrowSlit(S, w), 1, SPOTS.slit, 100, 130, 30) }),
+    // (frames: along x, along y)
+    () => ({ name: 'battlements', kind: 'obstacle', frames: [battlements(0), battlements(1)], shadow: 0 }),
+    // (frames: up, the warning, falling, slammed, down; along x, then along y)
+    () => ({ name: 'a portcullis', kind: 'trap', frames: [0, 1].flatMap((k) => [0, 1, 2, 3, 4].map((f) => portcullis(f, k))), shadow: 0 }),
+    () => ({ name: "the portcullis's winch", kind: 'obstacle', frames: [winch()], shadow: 0.7 }),
+    // (frames: still, the warning, pouring, its pool)
+    () => ({ name: 'a murder hole', kind: 'trap', frames: [0, 1, 2, 3].map(murderHole) }),
+    () => ({ name: 'a cauldron of pitch', kind: 'obstacle', frames: [0, 1, 2].map(cauldron), shadow: 0.45 }),
+    () => ({ name: 'a suit of armour on its stand', kind: 'breakable', frames: [armour(false), armour(true)], shadow: 0.35 }),
+    () => ({ name: 'a weapon rack', kind: 'obstacle', frames: [weaponRack(0), weaponRack(1)], shadow: 0.6 }),
+    () => ({ name: 'a crossbow rack', kind: 'obstacle', frames: [crossbowRack(0), crossbowRack(1)], shadow: 0.6 }),
+    () => ({ name: "an armourer's anvil", kind: 'obstacle', frames: [anvil()], shadow: 0.45 }),
+    () => ({ name: 'barracks bunks', kind: 'obstacle', frames: [bunks(0), bunks(1)], shadow: 1.0 }),
+    () => ({ name: 'barrels', kind: 'breakable', frames: [barrels(false), barrels(true)], shadow: 0.45 }),
+    () => ({ name: 'a long table', kind: 'obstacle', frames: [longTable(0), longTable(1)], shadow: 1.2 }),
+    () => ({ name: 'the war table, its map', kind: 'obstacle', frames: [warTable()], shadow: 0.8 }),
+    () => ({ name: 'the castle well', kind: 'obstacle', frames: [well()], shadow: 0.6 }),
+    () => ({ name: "the king's great bed", kind: 'obstacle', frames: [greatBed()], shadow: 1.4 }),
+    () => ({ name: "the songbird's silk cushion", kind: 'obstacle', frames: [songbirdCushion()], shadow: 0.25 }),
+    () => ({ name: 'the clockwork songbird, broken', kind: 'quest', frames: [songbird()], shadow: 0.2 }),
+    // (frames: shut, open)
+    () => ({ name: "the keep's great doors", kind: 'door', left: [greatDoors(false).left, greatDoors(true).left], right: [greatDoors(false).right, greatDoors(true).right] }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const KEEP_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function keepPiecesHeld(): number {
+  return KEEP_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function keepPieceCount(): number {
+  return keepMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function keepPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...keepMakers().map((make, i) => KEEP_AHEAD.step(String(i), make)), () => void keepPieces()];
+}
 export function keepPieces(): Piece[] {
   if (made) return made;
-  made = [
-    { name: 'the throne on its dais', kind: 'obstacle', frames: [throneOnDais()], shadow: 1.2 },
-    { name: 'the cloth of estate', kind: 'on the wall', ...onWall((S, w) => clothOfEstate(S, w), 1, SPOTS.cloth, 184, 166, 30) },
-    // (frames: along x, torn along x, along y, torn along y)
-    { name: 'the royal runner', kind: 'on the floor', frames: [runner(true, false), runner(true, true), runner(false, false), runner(false, true)] },
-    { name: 'a royal banner', kind: 'on the wall', ...onWall((S, w) => banner(S, w), 1, SPOTS.banner, 90, 140, 30) },
-    // (frames: its flame, three)
-    { name: 'a torch in its sconce', kind: 'on the wall', ...onWall((S, w, f) => torch(S, w, f), 3, SPOTS.torch, 80, 134, 30, (w) => [{ at: w(0, 10.4, 66), r: 60, color: EMBER[2], a: 0.5 }]) },
-    { name: 'a brazier', kind: 'obstacle', frames: [0, 1, 2].map(brazier), shadow: 0.4 },
-    { name: 'an arrow slit', kind: 'on the wall', ...onWall((S, w) => arrowSlit(S, w), 1, SPOTS.slit, 100, 130, 30) },
-    // (frames: along x, along y)
-    { name: 'battlements', kind: 'obstacle', frames: [battlements(0), battlements(1)], shadow: 0 },
-    // (frames: up, the warning, falling, slammed, down; along x, then along y)
-    { name: 'a portcullis', kind: 'trap', frames: [0, 1].flatMap((k) => [0, 1, 2, 3, 4].map((f) => portcullis(f, k))), shadow: 0 },
-    { name: "the portcullis's winch", kind: 'obstacle', frames: [winch()], shadow: 0.7 },
-    // (frames: still, the warning, pouring, its pool)
-    { name: 'a murder hole', kind: 'trap', frames: [0, 1, 2, 3].map(murderHole) },
-    { name: 'a cauldron of pitch', kind: 'obstacle', frames: [0, 1, 2].map(cauldron), shadow: 0.45 },
-    { name: 'a suit of armour on its stand', kind: 'breakable', frames: [armour(false), armour(true)], shadow: 0.35 },
-    { name: 'a weapon rack', kind: 'obstacle', frames: [weaponRack(0), weaponRack(1)], shadow: 0.6 },
-    { name: 'a crossbow rack', kind: 'obstacle', frames: [crossbowRack(0), crossbowRack(1)], shadow: 0.6 },
-    { name: "an armourer's anvil", kind: 'obstacle', frames: [anvil()], shadow: 0.45 },
-    { name: 'barracks bunks', kind: 'obstacle', frames: [bunks(0), bunks(1)], shadow: 1.0 },
-    { name: 'barrels', kind: 'breakable', frames: [barrels(false), barrels(true)], shadow: 0.45 },
-    { name: 'a long table', kind: 'obstacle', frames: [longTable(0), longTable(1)], shadow: 1.2 },
-    { name: 'the war table, its map', kind: 'obstacle', frames: [warTable()], shadow: 0.8 },
-    { name: 'the castle well', kind: 'obstacle', frames: [well()], shadow: 0.6 },
-    { name: "the king's great bed", kind: 'obstacle', frames: [greatBed()], shadow: 1.4 },
-    { name: "the songbird's silk cushion", kind: 'obstacle', frames: [songbirdCushion()], shadow: 0.25 },
-    { name: 'the clockwork songbird, broken', kind: 'quest', frames: [songbird()], shadow: 0.2 },
-    // (frames: shut, open)
-    { name: "the keep's great doors", kind: 'door', left: [greatDoors(false).left, greatDoors(true).left], right: [greatDoors(false).right, greatDoors(true).right] },
-  ];
+  made = keepMakers().map((make, i) => KEEP_AHEAD.take(String(i), make));
   return made;
 }

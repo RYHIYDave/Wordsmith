@@ -33,6 +33,11 @@ export class Ahead {
     };
   }
 
+  /** A step that makes the part `key` ahead IN STAGES (a painter written as a generator, `stagesStep`); none if it is put by already. */
+  staged<T>(key: string, make: () => Stages<T>): LoadStep {
+    return stagesStep(() => (this.made.has(key) ? null : make()), (v) => void this.made.set(key, v));
+  }
+
   /** Whether a part is put by (for the tests). */
   has(key: string): boolean {
     return this.made.has(key);
@@ -47,4 +52,44 @@ export class Ahead {
   clear(): void {
     this.made.clear();
   }
+}
+
+/**
+ * A PICTURE MADE IN STAGES (LOAD_SLICE; the queue's make-floors-look-builders-in-parts): a painter written as a generator, which
+ * yields between its stages (a few rows of a solid marched, a solid) and returns the picture. Run through, it is the painter as it
+ * was (`finish`); under the loading screen, a few stages a frame (`stagesStep`, `Ahead.staged`). The same work in the same order:
+ * the same picture.
+ */
+export type Stages<T> = Generator<unknown, T, void>;
+
+/** A painter in stages run through at once: what it returns. */
+export function finish<T>(g: Stages<T>): T {
+  let r = g.next();
+  while (!r.done) r = g.next();
+  return r.value;
+}
+
+/** How long a step of stages runs before it gives the frame back (thousandths of a second): under the loading screen's 50 a frame. */
+export const STAGE_MS = 25;
+
+/**
+ * A step that runs the painter `make` makes a stage at a time, STAGE_MS of them a step, giving itself back until the painter is
+ * done; `done` is given what it returns. (With nothing left to make, `make` returns null: no step.)
+ */
+export function stagesStep<T>(make: () => Stages<T> | null, done: (v: T) => void = () => {}): LoadStep {
+  return () => {
+    const g = make();
+    if (!g) return;
+    const next: LoadStep = () => {
+      const t0 = performance.now();
+      let r = g.next();
+      while (!r.done && performance.now() - t0 < STAGE_MS) r = g.next();
+      if (r.done) {
+        done(r.value);
+        return;
+      }
+      return [next];
+    };
+    return [next];
+  };
 }

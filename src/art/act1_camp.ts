@@ -33,6 +33,8 @@ import type { Piece } from './floorkit';
 import { GRAIN, compose, hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 // =================================================================================================
 // The colours
@@ -786,36 +788,58 @@ function fireBurst(k: number): Sprite {
 
 let made: Piece[] | null = null;
 /** THE CULT'S CAMP: twenty of the set's 25 pieces (the other five are its strongholds'), by name, made once. */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE CAMP'S, each
+ * piece's maker in the list's order: the list made a piece a step (campPieceSteps), or all at once (campPieces). Each painted as it was.
+ */
+function campMakers(): (() => Piece)[] {
+  return [
+    // where they sleep
+    () => ({ name: "the cult's tent", kind: 'obstacle', frames: [cultTent(false), cultTent(true)], shadow: 1 }),
+    () => ({ name: "the cult's pavilion", kind: 'obstacle', frames: [pavilion()], shadow: 1.3 }),
+    () => ({ name: 'bedroll', kind: 'on the floor', frames: [bedroll(false), bedroll(true)] }),
+    () => ({ name: 'lean-to', kind: 'obstacle', frames: [leanTo()], shadow: 0.9 }),
+    // where they eat and keep warm
+    () => ({ name: "the cult's watchfire", kind: 'obstacle', frames: [0, 1, 2, 3].map(watchfire), shadow: 0.4 }),
+    () => ({ name: 'a cold fire', kind: 'on the floor', frames: [coldFire()] }),
+    () => ({ name: "the cult's cauldron", kind: 'obstacle', frames: [0, 1, 2, 3].map(cauldron), shadow: 0.45 }),
+    // their stores: whole, and broken
+    () => ({ name: 'supply crates', kind: 'breakable', frames: [crates(false), crates(true)], shadow: 0.36 }),
+    () => ({ name: 'sacks of grain', kind: 'breakable', frames: [sacks(false), sacks(true)], shadow: 0.34 }),
+    () => ({ name: 'firepots', kind: 'breakable', frames: [firepots(false), firepots(true)], shadow: 0.36 }),
+    // their arms, their captives, their lines
+    () => ({ name: 'weapon rack', kind: 'obstacle', frames: [weaponRack()], shadow: 0.45 }),
+    () => ({ name: "the captives' cage", kind: 'obstacle', frames: [cage(false), cage(true)], shadow: 0.7 }),
+    () => ({ name: 'stakes', kind: 'obstacle', frames: [stakes(false), stakes(true)], shadow: 0.7 }),
+    () => ({ name: 'the skull standard', kind: 'obstacle', frames: [skullStandard()], shadow: 0.22 }),
+    () => ({ name: "the cult's lookout", kind: 'obstacle', frames: [lookout()], shadow: 0.8 }),
+    () => ({ name: "the cult's hoist", kind: 'obstacle', frames: [hoist()], shadow: 0.5 }),
+    // their rites and their war
+    () => ({ name: 'offering bowl', kind: 'obstacle', frames: [offeringBowl()], shadow: 0.3 }),
+    () => ({ name: 'war drum', kind: 'obstacle', frames: [warDrum()], shadow: 0.55 }),
+    () => ({ name: 'dead tree', kind: 'obstacle', frames: [deadTree(0), deadTree(7)], shadow: 0.4 }),
+    // their trap: the plate, its warning, the fire bursting up
+    () => ({ name: "the cult's fire trap", kind: 'trap', frames: [firePlate(false), firePlate(true), fireBurst(1), fireBurst(2), fireBurst(3)] }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const CAMP_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function campPiecesHeld(): number {
+  return CAMP_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function campPieceCount(): number {
+  return campMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function campPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...campMakers().map((make, i) => CAMP_AHEAD.step(String(i), make)), () => void campPieces()];
+}
 export function campPieces(): Piece[] {
   if (made) return made;
-  made = [
-    // where they sleep
-    { name: "the cult's tent", kind: 'obstacle', frames: [cultTent(false), cultTent(true)], shadow: 1 },
-    { name: "the cult's pavilion", kind: 'obstacle', frames: [pavilion()], shadow: 1.3 },
-    { name: 'bedroll', kind: 'on the floor', frames: [bedroll(false), bedroll(true)] },
-    { name: 'lean-to', kind: 'obstacle', frames: [leanTo()], shadow: 0.9 },
-    // where they eat and keep warm
-    { name: "the cult's watchfire", kind: 'obstacle', frames: [0, 1, 2, 3].map(watchfire), shadow: 0.4 },
-    { name: 'a cold fire', kind: 'on the floor', frames: [coldFire()] },
-    { name: "the cult's cauldron", kind: 'obstacle', frames: [0, 1, 2, 3].map(cauldron), shadow: 0.45 },
-    // their stores: whole, and broken
-    { name: 'supply crates', kind: 'breakable', frames: [crates(false), crates(true)], shadow: 0.36 },
-    { name: 'sacks of grain', kind: 'breakable', frames: [sacks(false), sacks(true)], shadow: 0.34 },
-    { name: 'firepots', kind: 'breakable', frames: [firepots(false), firepots(true)], shadow: 0.36 },
-    // their arms, their captives, their lines
-    { name: 'weapon rack', kind: 'obstacle', frames: [weaponRack()], shadow: 0.45 },
-    { name: "the captives' cage", kind: 'obstacle', frames: [cage(false), cage(true)], shadow: 0.7 },
-    { name: 'stakes', kind: 'obstacle', frames: [stakes(false), stakes(true)], shadow: 0.7 },
-    { name: 'the skull standard', kind: 'obstacle', frames: [skullStandard()], shadow: 0.22 },
-    { name: "the cult's lookout", kind: 'obstacle', frames: [lookout()], shadow: 0.8 },
-    { name: "the cult's hoist", kind: 'obstacle', frames: [hoist()], shadow: 0.5 },
-    // their rites and their war
-    { name: 'offering bowl', kind: 'obstacle', frames: [offeringBowl()], shadow: 0.3 },
-    { name: 'war drum', kind: 'obstacle', frames: [warDrum()], shadow: 0.55 },
-    { name: 'dead tree', kind: 'obstacle', frames: [deadTree(0), deadTree(7)], shadow: 0.4 },
-    // their trap: the plate, its warning, the fire bursting up
-    { name: "the cult's fire trap", kind: 'trap', frames: [firePlate(false), firePlate(true), fireBurst(1), fireBurst(2), fireBurst(3)] },
-  ];
+  made = campMakers().map((make, i) => CAMP_AHEAD.take(String(i), make));
   return made;
 }
 

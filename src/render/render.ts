@@ -3163,6 +3163,12 @@ export class Renderer {
       if (L.ways.shaft) out.push(() => void shaftStill());
     }
     out.push(...tinkererFxSteps(), ...warlockFxSteps());
+    // (the open ground's terrain ahead of the first drawing, its grids a few rows a stage: render/outdoor.ts aheadSteps; floor 13's
+    // took 1.3 s in that drawing)
+    if (L.land) {
+      const land = L.land;
+      out.push(() => this.outdoor.aheadSteps(land, L.floor));
+    }
     if (L.act1) {
       const n = L.act1.floor;
       out.push(() => act1PieceSteps(n));

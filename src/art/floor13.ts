@@ -27,6 +27,8 @@ import { CANDLE, SWING, bell, bellGlow, metalOf } from './floor11';
 import { rope, timber } from './floor6';
 import { DEAL, IRON, OAK, PAPER, ROPE, SOFT_ID, STONE, checker, cylinder, done, facing, local, lying, scene, slab, turned } from './act2_kit';
 import { FLOW } from './flowing';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
@@ -995,41 +997,81 @@ function millstone(): Sprite {
 
 let made: Piece[] | null = null;
 /** FLOOR 13'S PIECES, the Palimpsest's: 25. */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE MILLRACE'S (floor 13), each
+ * piece's maker in the list's order: the list made a piece a step (millracePieceSteps), or all at once (millracePieces). Each painted as it was.
+ */
+function millraceMakers(): (() => Piece)[] {
+  return [
+    () => ({ name: 'the paper mill', kind: 'obstacle', frames: [paperMill()], shadow: 2.0 }),
+    // (frames: four turning, looking along +y; the same along +x)
+    // (its frames a step each under the loading screen: wheelFrameSteps; 0.75 s in node made at once)
+    () => ({ name: 'the water wheel', kind: 'trap', frames: wheelFrames(), shadow: 1.0 }),
+    // (frames: shut and open along +y, shut and open along +x)
+    () => ({ name: "the race's headgate", kind: 'gate', frames: [0, 1].flatMap((k) => [headgate(false, k), headgate(true, k)]), shadow: 0.9 }),
+    // (frames: whole; half there, while someone is behind it)
+    () => ({ name: 'drying lines', kind: 'obstacle', frames: [dryingLines(false), dryingLines(true)], shadow: 1.0 }),
+    () => ({ name: 'a vat of pulp', kind: 'obstacle', frames: [pulpVat()], shadow: 0.55 }),
+    // (frames: at rest, the warning, falling, struck)
+    () => ({ name: 'the stamping mill', kind: 'trap', frames: [0, 1, 2, 3].map(stampers), shadow: 0.8 }),
+    () => ({ name: 'the screw press', kind: 'obstacle', frames: [screwPress()], shadow: 0.6 }),
+    () => ({ name: 'reams bound for the city', kind: 'breakable', frames: [reams(false), reams(true)], shadow: 0.45 }),
+    () => ({ name: 'bales of rags', kind: 'breakable', frames: [ragBales(false), ragBales(true)], shadow: 0.4 }),
+    () => ({ name: "barrels of the Order's ink", kind: 'breakable', frames: [inkBarrels(false), inkBarrels(true)], shadow: 0.4 }),
+    () => ({ name: 'spilled pulp', kind: 'on the floor', frames: [spilledPulp()] }),
+    () => ({ name: 'emptied jars', kind: 'breakable', frames: [emptiedJars(false), emptiedJars(true)], shadow: 0.35 }),
+    () => ({ name: 'a footbridge over the race', kind: 'floor tile', frames: [footbridge(false), footbridge(true)] }),
+    () => ({ name: 'the cart bridge', kind: 'floor tile', frames: [cartBridge(false), cartBridge(true)] }),
+    () => ({ name: 'the mill bell on its gable (the Muffled Bell)', kind: 'obstacle', frames: [millBell(true), millBell(false, 0), millBell(false, 0.35), millBell(false, -0.35)], shadow: 0.7 }),
+    // (the Bells: quiet, awake, rung one way, rung back)
+    () => ({ name: 'a farm bell on its post', kind: 'obstacle', frames: [0, 1, 2, 3].map(farmBell), shadow: 0.3 }),
+    () => ({ name: 'a scarecrow, gagged', kind: 'obstacle', frames: [scarecrow()], shadow: 0.35 }),
+    () => ({ name: 'stooks of corn', kind: 'breakable', frames: [stooks(false), stooks(true)], shadow: 0.55 }),
+    () => ({ name: 'a hay wain, abandoned', kind: 'obstacle', frames: [hayWain()], shadow: 1.3 }),
+    () => ({ name: 'a pollard willow', kind: 'obstacle', frames: [willow()], shadow: 0.7 }),
+    // (frames: along x, along y)
+    () => ({ name: 'a hedge', kind: 'obstacle', frames: [hedge(0), hedge(1)], shadow: 1.0 }),
+    // (frames: shut and open across x, shut and open across y)
+    () => ({ name: 'a field gate', kind: 'gate', frames: [0, 1].flatMap((k) => [fieldGate(false, k), fieldGate(true, k)]), shadow: 0.8 }),
+    () => ({ name: 'sheets blown into the corn', kind: 'on the floor', frames: [blownSheets()] }),
+    () => ({ name: 'the mould and deckle, a page half made', kind: 'quest', frames: [mouldAndDeckle()], shadow: 0.3 }),
+    () => ({ name: 'a cracked millstone', kind: 'obstacle', frames: [millstone()], shadow: 0.7 }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const MILLRACE_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function millracePiecesHeld(): number {
+  return MILLRACE_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function millracePieceCount(): number {
+  return millraceMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function millracePieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...wheelFrameSteps(), ...millraceMakers().map((make, i) => MILLRACE_AHEAD.step(String(i), make)), () => void millracePieces()];
+}
+/** THE WATER WHEEL's frames, each its maker, in the order they were made (32 with FLOW: 0.75 s in node made at once). */
+function wheelFrameMakers(): (() => Sprite)[] {
+  return FLOW.on ? [0, 1].flatMap((k) => [false, true].flatMap((back) => Array.from({ length: WHEEL_STEPS }, (_, f) => () => waterWheel2(f, k, back)))) : [0, 1].flatMap((k) => [0, 1, 2, 3].map((f) => () => waterWheel(f, k)));
+}
+/** (LOAD_SLICE) Its frames a step has made ahead; each taken once, as the wheel is made. */
+const WHEEL_AHEAD = new Ahead();
+/** (for the tests) How many of its frames are put by, not yet taken. */
+export function wheelFramesHeld(): number {
+  return WHEEL_AHEAD.size;
+}
+function wheelFrames(): Sprite[] {
+  return wheelFrameMakers().map((make, i) => WHEEL_AHEAD.take(String(i), make));
+}
+/** (LOAD_SLICE) Its frames, a step each (none once the Millrace's list is made). */
+function wheelFrameSteps(): LoadStep[] {
+  return wheelFrameMakers().map((make, i) => WHEEL_AHEAD.step(String(i), make));
+}
 export function millracePieces(): Piece[] {
   if (made) return made;
-  made = [
-    { name: 'the paper mill', kind: 'obstacle', frames: [paperMill()], shadow: 2.0 },
-    // (frames: four turning, looking along +y; the same along +x)
-    { name: 'the water wheel', kind: 'trap', frames: FLOW.on ? [0, 1].flatMap((k) => [false, true].flatMap((back) => Array.from({ length: WHEEL_STEPS }, (_, f) => waterWheel2(f, k, back)))) : [0, 1].flatMap((k) => [0, 1, 2, 3].map((f) => waterWheel(f, k))), shadow: 1.0 },
-    // (frames: shut and open along +y, shut and open along +x)
-    { name: "the race's headgate", kind: 'gate', frames: [0, 1].flatMap((k) => [headgate(false, k), headgate(true, k)]), shadow: 0.9 },
-    // (frames: whole; half there, while someone is behind it)
-    { name: 'drying lines', kind: 'obstacle', frames: [dryingLines(false), dryingLines(true)], shadow: 1.0 },
-    { name: 'a vat of pulp', kind: 'obstacle', frames: [pulpVat()], shadow: 0.55 },
-    // (frames: at rest, the warning, falling, struck)
-    { name: 'the stamping mill', kind: 'trap', frames: [0, 1, 2, 3].map(stampers), shadow: 0.8 },
-    { name: 'the screw press', kind: 'obstacle', frames: [screwPress()], shadow: 0.6 },
-    { name: 'reams bound for the city', kind: 'breakable', frames: [reams(false), reams(true)], shadow: 0.45 },
-    { name: 'bales of rags', kind: 'breakable', frames: [ragBales(false), ragBales(true)], shadow: 0.4 },
-    { name: "barrels of the Order's ink", kind: 'breakable', frames: [inkBarrels(false), inkBarrels(true)], shadow: 0.4 },
-    { name: 'spilled pulp', kind: 'on the floor', frames: [spilledPulp()] },
-    { name: 'emptied jars', kind: 'breakable', frames: [emptiedJars(false), emptiedJars(true)], shadow: 0.35 },
-    { name: 'a footbridge over the race', kind: 'floor tile', frames: [footbridge(false), footbridge(true)] },
-    { name: 'the cart bridge', kind: 'floor tile', frames: [cartBridge(false), cartBridge(true)] },
-    { name: 'the mill bell on its gable (the Muffled Bell)', kind: 'obstacle', frames: [millBell(true), millBell(false, 0), millBell(false, 0.35), millBell(false, -0.35)], shadow: 0.7 },
-    // (the Bells: quiet, awake, rung one way, rung back)
-    { name: 'a farm bell on its post', kind: 'obstacle', frames: [0, 1, 2, 3].map(farmBell), shadow: 0.3 },
-    { name: 'a scarecrow, gagged', kind: 'obstacle', frames: [scarecrow()], shadow: 0.35 },
-    { name: 'stooks of corn', kind: 'breakable', frames: [stooks(false), stooks(true)], shadow: 0.55 },
-    { name: 'a hay wain, abandoned', kind: 'obstacle', frames: [hayWain()], shadow: 1.3 },
-    { name: 'a pollard willow', kind: 'obstacle', frames: [willow()], shadow: 0.7 },
-    // (frames: along x, along y)
-    { name: 'a hedge', kind: 'obstacle', frames: [hedge(0), hedge(1)], shadow: 1.0 },
-    // (frames: shut and open across x, shut and open across y)
-    { name: 'a field gate', kind: 'gate', frames: [0, 1].flatMap((k) => [fieldGate(false, k), fieldGate(true, k)]), shadow: 0.8 },
-    { name: 'sheets blown into the corn', kind: 'on the floor', frames: [blownSheets()] },
-    { name: 'the mould and deckle, a page half made', kind: 'quest', frames: [mouldAndDeckle()], shadow: 0.3 },
-    { name: 'a cracked millstone', kind: 'obstacle', frames: [millstone()], shadow: 0.7 },
-  ];
+  made = millraceMakers().map((make, i) => MILLRACE_AHEAD.take(String(i), make));
   return made;
 }

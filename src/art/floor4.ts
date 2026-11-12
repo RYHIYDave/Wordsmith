@@ -55,6 +55,8 @@ import {
 import type { Moment, Piece, PieceKind, Spot, Track } from './floorkit';
 import { FLOOR_DUST, KT, LIGHT_W, TOWARD, dot3, grainStream, onPic, paintGrains, paintPuffs, puffRing } from './floor2';
 import type { Grain, Puff } from './floor2';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 // =================================================================================================
 // The colours
@@ -2498,10 +2500,14 @@ let made: Piece[] | null = null;
 export function forgetMade(): void {
   made = null;
   gates = null;
+  OSSUARY_AHEAD.clear();
 }
 /** THE AMALGAMATION'S FLOOR, every piece, painted the first time they are asked for and kept. */
-export function ossuaryPieces(): Piece[] {
-  if (made) return made;
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE AMALGAMATION'S FLOOR, each piece's
+ * maker in the list's order: the list made a piece a step (ossuaryPieceSteps), or all at once (ossuaryPieces). Each painted as it was.
+ */
+function ossuaryMakers(): (() => Piece)[] {
   /** A wall piece at each of its spots, on both faces; `frames` of it if it moves, `lights` for each. */
   const wall = (name: string, kind: PieceKind, make: (f: number) => WallMake, frames = 1, light?: (f: number, du: number, dv: number) => (alongX: boolean) => Light[]): Piece => {
     const spots: Spot[] = (SPOTS[name] ?? [[0, 0]]).map(([du, dv]) => {
@@ -2517,67 +2523,94 @@ export function ossuaryPieces(): Piece[] {
   };
   const flatW = (paint: (p: Px) => void): ((f: number) => WallMake) => () => ({ flat: paint });
   const fireLight = (h: number) => (f: number, du: number, dv: number) => (alongX: boolean): Light[] => [{ x: (PCX + du) / GRAIN, y: (PFOOT - h - dv) / GRAIN, r: 14 + (f % 2), color: EMBER[2], a: alongX ? 0.5 : 0.42 }];
-  const G = ossuaryGates();
-  made = [
+  return [
     // wall tiles
-    wall('the skull wall', 'wall tile', () => skullWall),
-    wall('bone-lined niche', 'wall tile', () => bonedNiche),
-    { ...wall("the miners' breach", 'wall tile', () => breach), frames: [breachHeap()], shadow: 0.44 },
-    wall('shored rock', 'wall tile', () => shoredRock),
-    wall("the dead's arm", 'wall tile', () => deadArm),
-    wall('seam of ore', 'wall tile', flatW(oreSeam)),
-    wall('the charnel layer', 'wall tile', () => charnelLayer),
+    () => wall('the skull wall', 'wall tile', () => skullWall),
+    () => wall('bone-lined niche', 'wall tile', () => bonedNiche),
+    () => ({ ...wall("the miners' breach", 'wall tile', () => breach), frames: [breachHeap()], shadow: 0.44 }),
+    () => wall('shored rock', 'wall tile', () => shoredRock),
+    () => wall("the dead's arm", 'wall tile', () => deadArm),
+    () => wall('seam of ore', 'wall tile', flatW(oreSeam)),
+    () => wall('the charnel layer', 'wall tile', () => charnelLayer),
     // on the walls
-    wall("miner's lantern", 'on the wall', (f) => minersLantern(f), 4, lanternLight),
-    wall('pick in the wall', 'on the wall', flatW(pickInWall)),
-    wall("the cult's candle", 'on the wall', (f) => ({ ...cultCandle(f), fire: cultCandleFlame(f) }), 4, fireLight(42)),
-    wall('garland of skulls', 'on the wall', () => garland),
-    wall("the miners' ladder", 'on the wall', flatW(ladder)),
-    wall("the miners' tools", 'on the wall', flatW(minersTools)),
-    wall("the cult's daub", 'on the wall', flatW(cultDaub)),
-    wall('ribs on a spike', 'on the wall', () => ribsOnSpike),
+    () => wall("miner's lantern", 'on the wall', (f) => minersLantern(f), 4, lanternLight),
+    () => wall('pick in the wall', 'on the wall', flatW(pickInWall)),
+    () => wall("the cult's candle", 'on the wall', (f) => ({ ...cultCandle(f), fire: cultCandleFlame(f) }), 4, fireLight(42)),
+    () => wall('garland of skulls', 'on the wall', () => garland),
+    () => wall("the miners' ladder", 'on the wall', flatW(ladder)),
+    () => wall("the miners' tools", 'on the wall', flatW(minersTools)),
+    () => wall("the cult's daub", 'on the wall', flatW(cultDaub)),
+    () => wall('ribs on a spike', 'on the wall', () => ribsOnSpike),
     // floor tiles
-    { name: 'the rails', kind: 'floor tile', frames: [onTile(railsTile(true)), onTile(railsTile(false))] },
-    { name: 'earth and bones', kind: 'floor tile', frames: [onTile(earthAndBones)] },
-    { name: 'raked earth', kind: 'floor tile', frames: [onTile(clawRaked)] },
-    { name: 'bone-paved floor', kind: 'floor tile', frames: [onTile(bonePaved, box(0.08, 0.92, 0.08, 0.92))] },
-    { name: 'the drag', kind: 'floor tile', frames: [onTile(dragTrail)] },
-    { name: 'spilled ore', kind: 'floor tile', frames: [onTile(spilledOre)] },
+    () => ({ name: 'the rails', kind: 'floor tile', frames: [onTile(railsTile(true)), onTile(railsTile(false))] }),
+    () => ({ name: 'earth and bones', kind: 'floor tile', frames: [onTile(earthAndBones)] }),
+    () => ({ name: 'raked earth', kind: 'floor tile', frames: [onTile(clawRaked)] }),
+    () => ({ name: 'bone-paved floor', kind: 'floor tile', frames: [onTile(bonePaved, box(0.08, 0.92, 0.08, 0.92))] }),
+    () => ({ name: 'the drag', kind: 'floor tile', frames: [onTile(dragTrail)] }),
+    () => ({ name: 'spilled ore', kind: 'floor tile', frames: [onTile(spilledOre)] }),
     // traps
-    { name: 'bone spikes', kind: 'trap', frames: [boneSpikes(false), boneSpikes(true)] },
-    { name: 'rotten boards', kind: 'trap', frames: [rottenBoards(false), rottenBoards(true)] },
-    wall('jaw slot', 'trap', () => jawSlot),
+    () => ({ name: 'bone spikes', kind: 'trap', frames: [boneSpikes(false), boneSpikes(true)] }),
+    () => ({ name: 'rotten boards', kind: 'trap', frames: [rottenBoards(false), rottenBoards(true)] }),
+    () => wall('jaw slot', 'trap', () => jawSlot),
     // breakables: whole, and what each leaves broken
-    { name: 'ore sack', kind: 'breakable', frames: [oreSack(), brokenOf('sack')], shadow: 0.24 },
-    { name: 'heap of skulls', kind: 'breakable', frames: [skullHeap(), brokenOf('skulls')], shadow: 0.28 },
-    { name: 'oil jug', kind: 'breakable', frames: [oilJug(), brokenOf('jug')], shadow: 0.2 },
-    { name: 'ore tub', kind: 'breakable', frames: [oreTub(), brokenOf('tub')], shadow: 0.28 },
+    () => ({ name: 'ore sack', kind: 'breakable', frames: [oreSack(), brokenOf('sack')], shadow: 0.24 }),
+    () => ({ name: 'heap of skulls', kind: 'breakable', frames: [skullHeap(), brokenOf('skulls')], shadow: 0.28 }),
+    () => ({ name: 'oil jug', kind: 'breakable', frames: [oilJug(), brokenOf('jug')], shadow: 0.2 }),
+    () => ({ name: 'ore tub', kind: 'breakable', frames: [oreTub(), brokenOf('tub')], shadow: 0.28 }),
     // on the floor
-    { name: 'empty boots', kind: 'on the floor', frames: [emptyBoots()], shadow: 0.2 },
-    { name: 'rib cage', kind: 'on the floor', frames: [ribCageLying()], shadow: 0.3 },
-    { name: 'broken ladder', kind: 'on the floor', frames: [brokenLadder()] },
-    { name: 'drill steels', kind: 'on the floor', frames: [drillSteels()] },
-    { name: 'arm from a heap', kind: 'on the floor', frames: [armFromHeap()], shadow: 0.36 },
-    { name: "a cultist's robe", kind: 'on the floor', frames: [emptyRobe()] },
-    { name: 'snapped prop', kind: 'on the floor', frames: [snappedProp()] },
+    () => ({ name: 'empty boots', kind: 'on the floor', frames: [emptyBoots()], shadow: 0.2 }),
+    () => ({ name: 'rib cage', kind: 'on the floor', frames: [ribCageLying()], shadow: 0.3 }),
+    () => ({ name: 'broken ladder', kind: 'on the floor', frames: [brokenLadder()] }),
+    () => ({ name: 'drill steels', kind: 'on the floor', frames: [drillSteels()] }),
+    () => ({ name: 'arm from a heap', kind: 'on the floor', frames: [armFromHeap()], shadow: 0.36 }),
+    () => ({ name: "a cultist's robe", kind: 'on the floor', frames: [emptyRobe()] }),
+    () => ({ name: 'snapped prop', kind: 'on the floor', frames: [snappedProp()] }),
     // obstacles
-    { name: 'the mine cart', kind: 'obstacle', frames: [mineCart()], shadow: 0.4 },
-    { name: "the rails' end", kind: 'obstacle', frames: [railsEnd()], shadow: 0.4 },
-    { name: 'the windlass', kind: 'obstacle', frames: [windlass()], shadow: 0.5 },
-    { name: 'pyramid of skulls', kind: 'obstacle', frames: [skullPyramid()], shadow: 0.46 },
-    { name: 'the charnel heap', kind: 'obstacle', frames: [charnelHeap()], shadow: 0.7 },
-    { name: 'timber crib', kind: 'obstacle', frames: [timberCrib()], shadow: 0.56 },
-    { name: "the cult's altar", kind: 'obstacle', frames: [0, 1, 2, 3].map(cultAltar), shadow: 0.42 },
-    { name: 'the boulder', kind: 'obstacle', frames: [boulder()], shadow: 0.62 },
-    { name: 'the bone column', kind: 'obstacle', frames: [boneColumn()], shadow: 0.42 },
-    { name: 'the reliquary', kind: 'obstacle', frames: [reliquary(false), reliquary(true)], shadow: 0.26 },
+    () => ({ name: 'the mine cart', kind: 'obstacle', frames: [mineCart()], shadow: 0.4 }),
+    () => ({ name: "the rails' end", kind: 'obstacle', frames: [railsEnd()], shadow: 0.4 }),
+    () => ({ name: 'the windlass', kind: 'obstacle', frames: [windlass()], shadow: 0.5 }),
+    () => ({ name: 'pyramid of skulls', kind: 'obstacle', frames: [skullPyramid()], shadow: 0.46 }),
+    () => ({ name: 'the charnel heap', kind: 'obstacle', frames: [charnelHeap()], shadow: 0.7 }),
+    () => ({ name: 'timber crib', kind: 'obstacle', frames: [timberCrib()], shadow: 0.56 }),
+    () => ({ name: "the cult's altar", kind: 'obstacle', frames: [0, 1, 2, 3].map(cultAltar), shadow: 0.42 }),
+    () => ({ name: 'the boulder', kind: 'obstacle', frames: [boulder()], shadow: 0.62 }),
+    () => ({ name: 'the bone column', kind: 'obstacle', frames: [boneColumn()], shadow: 0.42 }),
+    () => ({ name: 'the reliquary', kind: 'obstacle', frames: [reliquary(false), reliquary(true)], shadow: 0.26 }),
     // doors and gates
-    { name: 'the door', kind: 'door', gates: G, frames: [G.leaf(32, 16), G.leaf(-32, 16), G.post] },
-    { name: 'the gate', kind: 'gate', gates: G, frames: [...G.arch(true, false, false).map((q) => q.s), G.pillar(false)] },
-    { name: "the boss's gate", kind: 'gate', gates: G, frames: [...G.arch(true, true, false).map((q) => q.s), G.pillar(true)] },
+    () => {
+      const G = ossuaryGates();
+      return { name: 'the door', kind: 'door', gates: G, frames: [G.leaf(32, 16), G.leaf(-32, 16), G.post] };
+    },
+    () => {
+      const G = ossuaryGates();
+      return { name: 'the gate', kind: 'gate', gates: G, frames: [...G.arch(true, false, false).map((q) => q.s), G.pillar(false)] };
+    },
+    () => {
+      const G = ossuaryGates();
+      return { name: "the boss's gate", kind: 'gate', gates: G, frames: [...G.arch(true, true, false).map((q) => q.s), G.pillar(true)] };
+    },
     // quests
-    { name: 'the eldest skull', kind: 'quest', frames: [eldestSkull()], shadow: 0.16 },
+    () => ({ name: 'the eldest skull', kind: 'quest', frames: [eldestSkull()], shadow: 0.16 }),
   ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; taken once, let go of with the rest (forgetMade). */
+const OSSUARY_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function ossuaryPiecesHeld(): number {
+  return OSSUARY_AHEAD.size;
+}
+/** How many pieces the list has (planning a builder that takes them a piece at a time). */
+export function ossuaryPieceCount(): number {
+  return ossuaryMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function ossuaryPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...ossuaryMakers().map((make, i) => OSSUARY_AHEAD.step(String(i), make)), () => void ossuaryPieces()];
+}
+export function ossuaryPieces(): Piece[] {
+  if (made) return made;
+  made = ossuaryMakers().map((make, i) => OSSUARY_AHEAD.take(String(i), make));
   return made;
 }
 

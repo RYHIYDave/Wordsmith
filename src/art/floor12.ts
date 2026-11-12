@@ -30,6 +30,8 @@ import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import { bright } from './act2_quiet';
 import { BLACK, BRASS, BRONZE, DEAL, HOLE, IRON, MASK, ROPE, SOFT_ID, STRAW, checker, cylinder, done, facing, frontPiece, local, lying, planks, scene, slab, turned } from './act2_kit';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 
@@ -1009,38 +1011,60 @@ function barrow(): Sprite {
 
 let made: Piece[] | null = null;
 /** FLOOR 12'S PIECES, the Rat King's: 25. */
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE UNDERCITY'S (floor 12), each
+ * piece's maker in the list's order: the list made a piece a step (undercityPieceSteps), or all at once (undercityPieces). Each painted as it was.
+ */
+function undercityMakers(): (() => Piece)[] {
+  return [
+    // (frames: shut and open along +y, shut and open along +x)
+    () => ({ name: 'a sluice gate', kind: 'gate', frames: [0, 1].flatMap((k) => [sluiceGate(false, k), sluiceGate(true, k)]), shadow: 1.2 }),
+    () => ({ name: "the sluice's winch", kind: 'obstacle', frames: [winch()], shadow: 0.6 }),
+    // (frames: quiet, the warning, the rush three, looking along +y; the same along +x)
+    () => ({ name: 'the flood, a sluice bursting', kind: 'trap', frames: [0, 1].flatMap((k) => [0, 1, 2, 3, 4].map((f) => floodTrap(f, k))), shadow: 0.4 }),
+    () => ({ name: 'a slick of slime', kind: 'trap', frames: [slick(0), slick(1)] }),
+    () => ({ name: "the diver's bell (the Muffled Bell)", kind: 'obstacle', frames: [diversBell(true), diversBell(false, 0), diversBell(false, 0.12), diversBell(false, -0.12)], shadow: 1.1 }),
+    // (the Bells: quiet, awake, rung one way, rung back)
+    () => ({ name: 'an alarm bell at a sluice', kind: 'obstacle', frames: [0, 1, 2, 3].map(sluiceBell), shadow: 0.3 }),
+    () => ({ name: "a sewerman's handbell", kind: 'on the wall', ...withFramesN([0, 1, 2, 3].map(wallBell)) }),
+    () => ({ name: "the King's nest", kind: 'obstacle', frames: [kingsNest()], shadow: 1.1 }),
+    () => ({ name: 'smashed voice jars', kind: 'breakable', frames: [smashedJars(0), smashedJars(1)], shadow: 0.35 }),
+    () => ({ name: 'a crate of jars, gnawed open', kind: 'breakable', frames: [gnawedCrate(0), gnawedCrate(1)], shadow: 0.4 }),
+    () => ({ name: 'a niche of bottled voices', kind: 'on the wall', ...withFrames(jarNiche()) }),
+    () => ({ name: 'rat holes', kind: 'on the wall', ...withFramesN([ratHoles(true), ratHoles(false)]) }),
+    () => ({ name: 'gnawed bones and rags', kind: 'on the floor', frames: [bonesAndRags()] }),
+    () => ({ name: "the jar of the Crier's voice", kind: 'quest', frames: [criersJar()], shadow: 0.3 }),
+    () => ({ name: "a sewerman's punt, hauled up", kind: 'obstacle', frames: [punt()], shadow: 1.0 }),
+    () => ({ name: 'eel traps', kind: 'breakable', frames: [eelTraps(0), eelTraps(1)], shadow: 0.45 }),
+    () => ({ name: "a sewerman's lantern", kind: 'on the wall', ...withFramesN([sewerLantern(true), sewerLantern(false)]) }),
+    () => ({ name: 'light from the street above', kind: 'on the floor', frames: [streetLight()] }),
+    () => ({ name: 'a chain hoist', kind: 'obstacle', frames: [chainHoist()], shadow: 0.7 }),
+    () => ({ name: 'pale toadstools', kind: 'on the floor', frames: [toadstools(0), toadstools(1)], shadow: 0.12 }),
+    () => ({ name: 'roots through the vault', kind: 'on the wall', ...withFrames(roots()) }),
+    () => ({ name: "a door into the Order's store", kind: 'door', ...withFramesN([storeDoor(false), storeDoor(true)]) }),
+    () => ({ name: 'an iron sewer door', kind: 'door', ...withFramesN([ironDoor(false), ironDoor(true)]) }),
+    () => ({ name: 'a sinkhole in the flags', kind: 'floor tile', frames: [sinkhole()] }),
+    () => ({ name: "a sewerman's barrow", kind: 'obstacle', frames: [barrow()], shadow: 0.5 }),
+  ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const UNDERCITY_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function undercityPiecesHeld(): number {
+  return UNDERCITY_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function undercityPieceCount(): number {
+  return undercityMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function undercityPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...undercityMakers().map((make, i) => UNDERCITY_AHEAD.step(String(i), make)), () => void undercityPieces()];
+}
 export function undercityPieces(): Piece[] {
   if (made) return made;
-  made = [
-    // (frames: shut and open along +y, shut and open along +x)
-    { name: 'a sluice gate', kind: 'gate', frames: [0, 1].flatMap((k) => [sluiceGate(false, k), sluiceGate(true, k)]), shadow: 1.2 },
-    { name: "the sluice's winch", kind: 'obstacle', frames: [winch()], shadow: 0.6 },
-    // (frames: quiet, the warning, the rush three, looking along +y; the same along +x)
-    { name: 'the flood, a sluice bursting', kind: 'trap', frames: [0, 1].flatMap((k) => [0, 1, 2, 3, 4].map((f) => floodTrap(f, k))), shadow: 0.4 },
-    { name: 'a slick of slime', kind: 'trap', frames: [slick(0), slick(1)] },
-    { name: "the diver's bell (the Muffled Bell)", kind: 'obstacle', frames: [diversBell(true), diversBell(false, 0), diversBell(false, 0.12), diversBell(false, -0.12)], shadow: 1.1 },
-    // (the Bells: quiet, awake, rung one way, rung back)
-    { name: 'an alarm bell at a sluice', kind: 'obstacle', frames: [0, 1, 2, 3].map(sluiceBell), shadow: 0.3 },
-    { name: "a sewerman's handbell", kind: 'on the wall', ...withFramesN([0, 1, 2, 3].map(wallBell)) },
-    { name: "the King's nest", kind: 'obstacle', frames: [kingsNest()], shadow: 1.1 },
-    { name: 'smashed voice jars', kind: 'breakable', frames: [smashedJars(0), smashedJars(1)], shadow: 0.35 },
-    { name: 'a crate of jars, gnawed open', kind: 'breakable', frames: [gnawedCrate(0), gnawedCrate(1)], shadow: 0.4 },
-    { name: 'a niche of bottled voices', kind: 'on the wall', ...withFrames(jarNiche()) },
-    { name: 'rat holes', kind: 'on the wall', ...withFramesN([ratHoles(true), ratHoles(false)]) },
-    { name: 'gnawed bones and rags', kind: 'on the floor', frames: [bonesAndRags()] },
-    { name: "the jar of the Crier's voice", kind: 'quest', frames: [criersJar()], shadow: 0.3 },
-    { name: "a sewerman's punt, hauled up", kind: 'obstacle', frames: [punt()], shadow: 1.0 },
-    { name: 'eel traps', kind: 'breakable', frames: [eelTraps(0), eelTraps(1)], shadow: 0.45 },
-    { name: "a sewerman's lantern", kind: 'on the wall', ...withFramesN([sewerLantern(true), sewerLantern(false)]) },
-    { name: 'light from the street above', kind: 'on the floor', frames: [streetLight()] },
-    { name: 'a chain hoist', kind: 'obstacle', frames: [chainHoist()], shadow: 0.7 },
-    { name: 'pale toadstools', kind: 'on the floor', frames: [toadstools(0), toadstools(1)], shadow: 0.12 },
-    { name: 'roots through the vault', kind: 'on the wall', ...withFrames(roots()) },
-    { name: "a door into the Order's store", kind: 'door', ...withFramesN([storeDoor(false), storeDoor(true)]) },
-    { name: 'an iron sewer door', kind: 'door', ...withFramesN([ironDoor(false), ironDoor(true)]) },
-    { name: 'a sinkhole in the flags', kind: 'floor tile', frames: [sinkhole()] },
-    { name: "a sewerman's barrow", kind: 'obstacle', frames: [barrow()], shadow: 0.5 },
-  ];
+  made = undercityMakers().map((make, i) => UNDERCITY_AHEAD.take(String(i), make));
   return made;
 }
 

@@ -49,7 +49,9 @@ import { COAL, EMBER, GOLD, stoneOf } from './props';
 import { FLAME } from './mkit';
 import { SHINES } from './floorkit';
 import type { Piece, PieceKind, Spot } from './floorkit';
-import { WINE, wardenPieces } from './floor1';
+import { WINE, wardenPieceCount, wardenPieceSteps, wardenPieces } from './floor1';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 import { CRYPT_FLOORS, OLD_IRON, OLD_RUST, TIMBER } from './crypt';
 import { Scene } from './floor4';
 import type { V3 } from './floor4';
@@ -1377,21 +1379,81 @@ export function tombStairwell(way: 'x' | 'y'): Sprite {
   return makeStairwell(TOMB_THEME, way);
 }
 /** The place's pictures, made the first time they are asked for and kept (the archway, the stairs and the stairwell when first asked for). */
-export function makeTombArt(): TombArt {
-  if (made) return made;
+/**
+ * THE TOMB'S PICTURES IN PARTS (main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts): what it makes all at once as it
+ * is made (its walls' faces, its tiles, its own pieces and floor 1's in its colours), each a part. As they are made each part is
+ * taken from here where a step of the loading screen has made it ahead (tombSteps), or made then, as before: the same makers, the
+ * same pictures. A part is taken once, and all of it is let go of with the tomb's pictures (forgetTomb).
+ */
+const TOMB_AHEAD = new Ahead();
+/** How the builder gets a part: `key` its name, `make` how it is made. Building, it is taken or made; planning, it is listed as a step. */
+type Part = <T>(key: string, make: () => T) => T;
+const taken: Part = (key, make) => TOMB_AHEAD.take(key, make);
+/** (planning: each part listed as a step, nothing made; what the builder builds with it is thrown away) */
+const planned = (steps: LoadStep[]): Part => (key, make) => {
+  steps.push(TOMB_AHEAD.step(key, make));
+  return null as never;
+};
+/** (for the tests) How many parts are put by, not yet taken. */
+export function tombPartsHeld(): number {
+  return TOMB_AHEAD.size;
+}
+/** What the tomb makes at once as it is made, a part at a time: `part` gives each (planning, it lists them). */
+function tombPartsOf(part: Part): { left: Sprite[][]; right: Sprite[][]; hallLeft: Sprite[][]; hallRight: Sprite[][]; tiles: Piece[]; pieces: Piece[] } {
   const tile = (name: string, frames: Sprite[]): Piece => ({ name, kind: 'floor tile' as PieceKind, frames });
-  const floors = new Map<string, Sprite>();
-  const faces = (alongX: boolean, bays: readonly TombBay[], seed0: number): Sprite[][] => bays.flatMap((bay, b) => [0, 1].map((half) => {
-    const s = wallTile(alongX, 32 * half, (J, up, sgn) => tombAt(J, up, sgn, bay, seed0 + b * 17));
+  const faces = (key: string, alongX: boolean, bays: readonly TombBay[], seed0: number): Sprite[][] => bays.flatMap((bay, b) => [0, 1].map((half) => {
+    const s = part(`${key}:${b}:${half}`, () => wallTile(alongX, 32 * half, (J, up, sgn) => tombAt(J, up, sgn, bay, seed0 + b * 17)));
     return four.map(() => s);
   }));
-  const left = faces(true, TOMB_BAYS, 300);
-  const right = faces(false, TOMB_BAYS, 307);
-  const archways = new Map<boolean, Strip[]>();
   const shaft = (n: keyof typeof SHAFTS): Piece[] => [
-    { name: `daylight on the floor, ${n}`, kind: 'on the floor', frames: [shaftPool(SHAFTS[n])] },
-    { name: `a shaft of daylight, ${n}`, kind: 'on the floor', frames: four.map((f) => shaftAir(SHAFTS[n], f)) },
+    { name: `daylight on the floor, ${n}`, kind: 'on the floor', frames: [part(`pool:${n}`, () => shaftPool(SHAFTS[n]))] },
+    { name: `a shaft of daylight, ${n}`, kind: 'on the floor', frames: four.map((f) => part(`air:${n}:${f}`, () => shaftAir(SHAFTS[n], f))) },
   ];
+  return {
+    left: faces('left', true, TOMB_BAYS, 300),
+    right: faces('right', false, TOMB_BAYS, 307),
+    hallLeft: faces('hall left', true, HALL_BAYS, 471),
+    hallRight: faces('hall right', false, HALL_BAYS, 472),
+    tiles: [
+      ...ROOT_TILES.map(([n, a, b], i) => tile(n, [part(`tile:${n}`, () => rootTile(a, b, i % 4))])),
+      tile('a puddle', four.map((f) => part(`puddle:${f}`, () => puddleTile(f)))),
+      tile('moss', [part('moss', () => mossTile())]),
+      tile('fallen leaves and earth', [part('leaves and earth', () => leavesTile(true, 661))]),
+      tile('fallen leaves', [part('leaves', () => leavesTile(false, 671))]),
+      ...SLAB_TILES.map(([n, ax, head]) => tile(n, [part(`tile:${n}`, () => slabTile(ax, head))])),
+    ],
+    pieces: [
+      { name: 'a chained tomb, along x', kind: 'obstacle', frames: [part('chained x', () => courtTomb(true, true))], shadow: 0.55 },
+      { name: 'a chained tomb, along y', kind: 'obstacle', frames: [part('chained y', () => courtTomb(false, true))], shadow: 0.55 },
+      { name: 'a tomb of the court, along x', kind: 'obstacle', frames: [part('court x', () => courtTomb(true, false))], shadow: 0.55 },
+      { name: 'a tomb of the court, along y', kind: 'obstacle', frames: [part('court y', () => courtTomb(false, false))], shadow: 0.55 },
+      ...shaft('small'),
+      ...shaft('middle'),
+      ...shaft('large'),
+      { name: 'water dripping', kind: 'on the floor', frames: Array.from({ length: DRIP_FRAMES }, (_, f) => part(`drip:${f}`, () => drip(f))) },
+      // (floor 1's own pieces in look B's colours, each a part: floor 1's list made a piece a step first, art/floor1.ts wardenPieceSteps)
+      ...Array.from({ length: wardenPieceCount() }, (_, i) => part(`warden:${i}`, () => gradePiece(wardenPieces()[i]))),
+    ],
+  };
+}
+/**
+ * THE TOMB'S PICTURES AS STEPS OF THE LOADING SCREEN'S (main.ts LOAD_SLICE, art/floors.ts lookPieceSteps): floor 1's own pieces a
+ * piece a step, then each part the tomb makes at once, then the tomb itself (it takes them). None once it is made.
+ */
+export function tombSteps(): LoadStep[] {
+  if (made) return [];
+  const steps: LoadStep[] = [...wardenPieceSteps()];
+  tombPartsOf(planned(steps));
+  steps.push(() => void makeTombArt());
+  return steps;
+}
+export function makeTombArt(): TombArt {
+  if (made) return made;
+  const floors = new Map<string, Sprite>();
+  const own = tombPartsOf(taken);
+  const left = own.left;
+  const right = own.right;
+  const archways = new Map<boolean, Strip[]>();
   made = {
     floor(tx, ty) {
       const a = mod(tx, 4);
@@ -1401,14 +1463,7 @@ export function makeTombArt(): TombArt {
       if (!s) floors.set(key, (s = tileOf((x, y) => tombFloorAt(x, y), a, b)));
       return s;
     },
-    tiles: [
-      ...ROOT_TILES.map(([n, a, b], i) => tile(n, [rootTile(a, b, i % 4)])),
-      tile('a puddle', four.map(puddleTile)),
-      tile('moss', [mossTile()]),
-      tile('fallen leaves and earth', [leavesTile(true, 661)]),
-      tile('fallen leaves', [leavesTile(false, 671)]),
-      ...SLAB_TILES.map(([n, ax, head]) => tile(n, [slabTile(ax, head)])),
-    ],
+    tiles: own.tiles,
     faceLeft: left,
     faceRight: right,
     face(alongX, tx, ty, f = 0) {
@@ -1417,7 +1472,7 @@ export function makeTombArt(): TombArt {
       const b = Math.floor(hash(Math.floor(along / 2), alongX ? ty : tx, alongX ? 77 : 79) * TOMB_BAYS.length);
       return (alongX ? left : right)[2 * b + (second ? 1 : 0)][mod(f, 4)];
     },
-    hall: { faceLeft: faces(true, HALL_BAYS, 471), faceRight: faces(false, HALL_BAYS, 472) },
+    hall: { faceLeft: own.hallLeft, faceRight: own.hallRight },
     archway(alongX) {
       let s = archways.get(alongX);
       if (!s) archways.set(alongX, (s = archwayStrips(alongX)));
@@ -1426,22 +1481,13 @@ export function makeTombArt(): TombArt {
     stairsUp: stairsUpOf,
     stairwell: (way) => makeStairwell(TOMB_THEME, way),
     stairwellOpens: (way, at = [0, 0]) => stairwellOpens(TOMB_THEME, way, at),
-    pieces: [
-      { name: 'a chained tomb, along x', kind: 'obstacle', frames: [courtTomb(true, true)], shadow: 0.55 },
-      { name: 'a chained tomb, along y', kind: 'obstacle', frames: [courtTomb(false, true)], shadow: 0.55 },
-      { name: 'a tomb of the court, along x', kind: 'obstacle', frames: [courtTomb(true, false)], shadow: 0.55 },
-      { name: 'a tomb of the court, along y', kind: 'obstacle', frames: [courtTomb(false, false)], shadow: 0.55 },
-      ...shaft('small'),
-      ...shaft('middle'),
-      ...shaft('large'),
-      { name: 'water dripping', kind: 'on the floor', frames: Array.from({ length: DRIP_FRAMES }, (_, f) => drip(f)) },
-      ...wardenPieces().map(gradePiece),
-    ],
+    pieces: own.pieces,
   };
   return made;
 }
 /** Let the place's pictures go (they are made again if they are wanted). */
 export function forgetTomb(): void {
   made = null;
+  TOMB_AHEAD.clear();
 }
 void BRASS;

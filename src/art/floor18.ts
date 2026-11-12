@@ -30,6 +30,8 @@ import type { Ramp } from './kit';
 import { EMBER } from './props';
 import { checker, cylinder, done, frontPiece, lying, scene, slab, turned } from './act2_kit';
 import { galleryMarble } from './glassgallery';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const fr = (t: number): number => t - Math.floor(t);
 const AXES: readonly [V3, V3, V3] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -1220,49 +1222,71 @@ function apple(): Sprite {
 
 let made: Piece[] | null = null;
 /** THE GLASS GALLERY'S OWN PIECES, the Queen's twenty-five, made the first time they are asked for and kept. */
-export function glassGalleryPieces(): Piece[] {
-  if (made) return made;
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE GLASS GALLERY'S (floor 18), each
+ * piece's maker in the list's order: the list made a piece a step (glassGalleryPieceSteps), or all at once (glassGalleryPieces). Each painted as it was.
+ */
+function glassGalleryMakers(): (() => Piece)[] {
   const two = (f: (s: number) => { left: Sprite; right: Sprite }, states: number[]): { left: Sprite[]; right: Sprite[] } => {
     const ss = states.map(f);
     return { left: ss.map((s) => s.left), right: ss.map((s) => s.right) };
   };
-  made = [
+  return [
     // THE MIRRORS (the hazard): on the wall, both faces: whole, cracked, burst (its shards on the floor before it)
-    { name: 'a tall mirror', kind: 'trap', ...two(tallMirror, [0, 1, 2]) },
-    { name: "a mirror's shards", kind: 'on the floor', frames: [mirrorShards()] },
+    () => ({ name: 'a tall mirror', kind: 'trap', ...two(tallMirror, [0, 1, 2]) }),
+    () => ({ name: "a mirror's shards", kind: 'on the floor', frames: [mirrorShards()] }),
     // (frames: whole, burst)
-    { name: 'a cheval mirror', kind: 'breakable', frames: [chevalMirror(false), chevalMirror(true)], shadow: 0.4 },
+    () => ({ name: 'a cheval mirror', kind: 'breakable', frames: [chevalMirror(false), chevalMirror(true)], shadow: 0.4 }),
     // THE DRESSING ROOMS (frames: its front along +y, along +x; the screen whole, half there)
-    { name: 'a dressing table', kind: 'obstacle', frames: [dressingTable(0), dressingTable(1)], shadow: 0.7 },
-    { name: 'a dressing screen', kind: 'obstacle', frames: [dressingScreen(false), dressingScreen(true)], shadow: 0.7 },
-    { name: 'a wardrobe of gowns', kind: 'obstacle', frames: [wardrobe(0), wardrobe(1)], shadow: 0.8 },
-    { name: 'a velvet banquette', kind: 'obstacle', frames: [banquette(0), banquette(1)], shadow: 0.6 },
-    { name: 'a console table', kind: 'breakable', frames: [consoleTable(false), consoleTable(true)], shadow: 0.5 },
+    () => ({ name: 'a dressing table', kind: 'obstacle', frames: [dressingTable(0), dressingTable(1)], shadow: 0.7 }),
+    () => ({ name: 'a dressing screen', kind: 'obstacle', frames: [dressingScreen(false), dressingScreen(true)], shadow: 0.7 }),
+    () => ({ name: 'a wardrobe of gowns', kind: 'obstacle', frames: [wardrobe(0), wardrobe(1)], shadow: 0.8 }),
+    () => ({ name: 'a velvet banquette', kind: 'obstacle', frames: [banquette(0), banquette(1)], shadow: 0.6 }),
+    () => ({ name: 'a console table', kind: 'breakable', frames: [consoleTable(false), consoleTable(true)], shadow: 0.5 }),
     // LIGHT: only candles (Colour 3)
-    { name: 'a silver candelabrum', kind: 'obstacle', frames: [candelabrum()], shadow: 0.3 },
-    { name: 'a sconce of candles', kind: 'on the wall', ...two(() => sconce(), [0]) },
+    () => ({ name: 'a silver candelabrum', kind: 'obstacle', frames: [candelabrum()], shadow: 0.3 }),
+    () => ({ name: 'a sconce of candles', kind: 'on the wall', ...two(() => sconce(), [0]) }),
     // THE GALLERIES
-    { name: 'a bust on a plinth', kind: 'breakable', frames: [bust(false), bust(true)], shadow: 0.3 },
-    { name: 'a tapestry in rags', kind: 'on the wall', ...two(() => tapestry(), [0]) },
-    { name: "the queen's doors", kind: 'door', ...two((s) => queensDoors(s === 1), [0, 1]) },
+    () => ({ name: 'a bust on a plinth', kind: 'breakable', frames: [bust(false), bust(true)], shadow: 0.3 }),
+    () => ({ name: 'a tapestry in rags', kind: 'on the wall', ...two(() => tapestry(), [0]) }),
+    () => ({ name: "the queen's doors", kind: 'door', ...two((s) => queensDoors(s === 1), [0, 1]) }),
     // (frames: shut and open across x, shut and open across y)
-    { name: 'a gate of wrought silver', kind: 'gate', frames: [0, 1].flatMap((k) => [silverGate(false, k), silverGate(true, k)]), shadow: 0.6 },
+    () => ({ name: 'a gate of wrought silver', kind: 'gate', frames: [0, 1].flatMap((k) => [silverGate(false, k), silverGate(true, k)]), shadow: 0.6 }),
     // THE CHAPEL
-    { name: 'a stained-glass window', kind: 'wall tile', ...two(() => stainedWindow(), [0]) },
-    { name: 'a chapel pew', kind: 'obstacle', frames: [pew(0), pew(1)], shadow: 0.7 },
-    { name: 'a glass coffin', kind: 'obstacle', frames: [glassCoffin()], shadow: 0.9 },
-    { name: 'the colours of the stained glass', kind: 'floor tile', frames: [windowColours()] },
+    () => ({ name: 'a stained-glass window', kind: 'wall tile', ...two(() => stainedWindow(), [0]) }),
+    () => ({ name: 'a chapel pew', kind: 'obstacle', frames: [pew(0), pew(1)], shadow: 0.7 }),
+    () => ({ name: 'a glass coffin', kind: 'obstacle', frames: [glassCoffin()], shadow: 0.9 }),
+    () => ({ name: 'the colours of the stained glass', kind: 'floor tile', frames: [windowColours()] }),
     // THE GLASSHOUSE
-    { name: 'a bench of dead orchids', kind: 'obstacle', frames: [orchidBench(0), orchidBench(1)], shadow: 0.9 },
-    { name: 'an orchid in its pot, dead', kind: 'breakable', frames: [orchidPot(false), orchidPot(true)], shadow: 0.25 },
-    { name: 'a pane fallen from the roof', kind: 'on the floor', frames: [fallenPane()] },
+    () => ({ name: 'a bench of dead orchids', kind: 'obstacle', frames: [orchidBench(0), orchidBench(1)], shadow: 0.9 }),
+    () => ({ name: 'an orchid in its pot, dead', kind: 'breakable', frames: [orchidPot(false), orchidPot(true)], shadow: 0.25 }),
+    () => ({ name: 'a pane fallen from the roof', kind: 'on the floor', frames: [fallenPane()] }),
     // (frames: whole, cracking, broken through: the hazard)
-    { name: 'a skylight', kind: 'trap', frames: [0, 1, 2].map(skylight) },
+    () => ({ name: 'a skylight', kind: 'trap', frames: [0, 1, 2].map(skylight) }),
     // HER THINGS
-    { name: 'a jewel box, spilled', kind: 'on the floor', frames: [jewelBox()] },
-    { name: 'a hand mirror, dropped', kind: 'on the floor', frames: [handMirror()] },
+    () => ({ name: 'a jewel box, spilled', kind: 'on the floor', frames: [jewelBox()] }),
+    () => ({ name: 'a hand mirror, dropped', kind: 'on the floor', frames: [handMirror()] }),
     // THE QUEST: the apple she made (the book)
-    { name: 'the apple on a silver dish', kind: 'quest', frames: [apple()], shadow: 0.3 },
+    () => ({ name: 'the apple on a silver dish', kind: 'quest', frames: [apple()], shadow: 0.3 }),
   ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; each taken once, as the list is made. */
+const GLASSGALLERY_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function glassGalleryPiecesHeld(): number {
+  return GLASSGALLERY_AHEAD.size;
+}
+/** How many pieces the list has. */
+export function glassGalleryPieceCount(): number {
+  return glassGalleryMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function glassGalleryPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...glassGalleryMakers().map((make, i) => GLASSGALLERY_AHEAD.step(String(i), make)), () => void glassGalleryPieces()];
+}
+export function glassGalleryPieces(): Piece[] {
+  if (made) return made;
+  made = glassGalleryMakers().map((make, i) => GLASSGALLERY_AHEAD.take(String(i), make));
   return made;
 }

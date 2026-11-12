@@ -56,6 +56,8 @@ import { GRAIN, INK, ball, blend, compose, hash, limb, lit, mix } from './kit';
 import type { Ramp } from './kit';
 import { COAL, EMBER, GOLD, ROUND_HI, ROUND_LO, column, hoop, stoneOf, tongue, trunk } from './props';
 import type { TrunkLook } from './props';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 // =================================================================================================
 // The colours
@@ -2943,6 +2945,7 @@ let made: Piece[] | null = null;
 export function forgetMade(): void {
   made = null;
   gates = null;
+  WARDEN_AHEAD.clear();
 }
 
 /**
@@ -2979,76 +2982,106 @@ function spotsOf(name: string, paint: (p: Px) => void, frames = 1, light?: (f: n
 }
 
 /** THE WARDEN'S FLOOR, every piece, painted the first time they are asked for and kept. */
-export function wardenPieces(): Piece[] {
-  if (made) return made;
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts) THE WARDEN'S FLOOR, each piece's
+ * maker in the list's order: the list made a piece a step (wardenPieceSteps), or all at once (wardenPieces). Each painted as it was.
+ */
+function wardenMakers(): (() => Piece)[] {
   const w = (name: string, kind: PieceKind, paint: (p: Px) => void): Piece => ({ name, kind, ...spotsOf(name, paint) });
   const torchLight = (f: number, du: number, dv: number) => (alongX: boolean): Light[] => [{ x: (PCX + du) / GRAIN, y: (PFOOT - 52 - dv) / GRAIN, r: 14 + (f % 2), color: EMBER[2], a: alongX ? 0.5 : 0.42 }];
-  const G = wardenGates();
-  made = [
+  return [
     // wall tiles
-    w('burial niche', 'wall tile', niche(true)),
-    w('sealed niche', 'wall tile', niche(false)),
-    w('barred window', 'wall tile', grille),
-    w('horned skull', 'wall tile', (p) => hornedSkull(p)),
-    w("the king's head", 'wall tile', kingsHead),
+    () => w('burial niche', 'wall tile', niche(true)),
+    () => w('sealed niche', 'wall tile', niche(false)),
+    () => w('barred window', 'wall tile', grille),
+    () => w('horned skull', 'wall tile', (p) => hornedSkull(p)),
+    () => w("the king's head", 'wall tile', kingsHead),
     // (where the stones fell in, its three places on the courses' own lines: each its own picture)
-    (() => {
+    () => (() => {
       const spots: Spot[] = ([[0, -8, 0], [1, 8, 0], [2, -8, -32]] as const).map(([k, du, dv]) => ({ du, dv, ...wallSet(fallenIn(k)) }));
       return { name: 'fallen-in stones', kind: 'wall tile' as const, left: spots[0].left, right: spots[0].right, spots };
     })(),
-    w('great crack', 'wall tile', greatCrack),
-    { name: 'crumbled wall', kind: 'wall tile', ...spotsOf('crumbled wall', crumbledWall), frames: [crumbledHeap()], shadow: 0.45 },
-    w('rat hole', 'wall tile', ratHole),
+    () => w('great crack', 'wall tile', greatCrack),
+    () => ({ name: 'crumbled wall', kind: 'wall tile', ...spotsOf('crumbled wall', crumbledWall), frames: [crumbledHeap()], shadow: 0.45 }),
+    () => w('rat hole', 'wall tile', ratHole),
     // floor tiles
-    { name: 'ledger stone', kind: 'floor tile', frames: [onTile(ledger, box(0.06, 0.94, 0.2, 0.8))] },
-    { name: 'grave slab and ring', kind: 'floor tile', frames: [onTile(ringSlab, box(0.12, 0.88, 0.12, 0.88))] },
+    () => ({ name: 'ledger stone', kind: 'floor tile', frames: [onTile(ledger, box(0.06, 0.94, 0.2, 0.8))] }),
+    () => ({ name: 'grave slab and ring', kind: 'floor tile', frames: [onTile(ringSlab, box(0.12, 0.88, 0.12, 0.88))] }),
     // (along x, two tiles worn each its own way and its end; then the same along y, to lead up to the throne)
-    { name: "the king's runner", kind: 'floor tile', frames: [false, true].flatMap((y) => [onTile(runner(false, y, 0)), onTile(runner(false, y, 1)), onTile(runner(true, y, 0))]) },
-    { name: 'drain', kind: 'floor tile', frames: [onTile(drain, box(0.18, 0.82, 0.18, 0.82))] },
-    { name: 'the crown in the floor', kind: 'floor tile', frames: [onTile(inlay, (u, v) => Math.hypot(u - 0.5, v - 0.5) <= 0.34)] },
-    { name: 'sunken grave slab', kind: 'floor tile', frames: [onTile(sunkSlab, box(0.08, 0.92, 0.08, 0.92))] },
+    () => ({ name: "the king's runner", kind: 'floor tile', frames: [false, true].flatMap((y) => [onTile(runner(false, y, 0)), onTile(runner(false, y, 1)), onTile(runner(true, y, 0))]) }),
+    () => ({ name: 'drain', kind: 'floor tile', frames: [onTile(drain, box(0.18, 0.82, 0.18, 0.82))] }),
+    () => ({ name: 'the crown in the floor', kind: 'floor tile', frames: [onTile(inlay, (u, v) => Math.hypot(u - 0.5, v - 0.5) <= 0.34)] }),
+    () => ({ name: 'sunken grave slab', kind: 'floor tile', frames: [onTile(sunkSlab, box(0.08, 0.92, 0.08, 0.92))] }),
     // breakables: whole, and what each leaves broken
-    { name: 'funeral urn', kind: 'breakable', frames: [tallUrn(), urnShards('tall')], shadow: 0.2 },
-    { name: 'squat urn', kind: 'breakable', frames: [squatUrn(), urnShards('squat')], shadow: 0.22 },
-    { name: 'bone box', kind: 'breakable', frames: [boneBox(), boxSplinters()], shadow: 0.26 },
-    { name: 'skull jar', kind: 'breakable', frames: [skullJar(), urnShards('skull')], shadow: 0.2 },
+    () => ({ name: 'funeral urn', kind: 'breakable', frames: [tallUrn(), urnShards('tall')], shadow: 0.2 }),
+    () => ({ name: 'squat urn', kind: 'breakable', frames: [squatUrn(), urnShards('squat')], shadow: 0.22 }),
+    () => ({ name: 'bone box', kind: 'breakable', frames: [boneBox(), boxSplinters()], shadow: 0.26 }),
+    () => ({ name: 'skull jar', kind: 'breakable', frames: [skullJar(), urnShards('skull')], shadow: 0.2 }),
     // on the walls
-    w('banner', 'on the wall', banner(false)),
-    w('banner in rags', 'on the wall', banner(true)),
-    w('shield', 'on the wall', shield),
-    w('keys on a hook', 'on the wall', keysOnHook),
-    w('shackles', 'on the wall', shackles),
-    { name: 'torch', kind: 'on the wall', ...spotsOf('torch', torch as unknown as (p: Px) => void, 4, torchLight) },
-    w('crossed mauls', 'on the wall', crossedMauls),
-    w('horned helm on a peg', 'on the wall', helmOnPeg),
+    () => w('banner', 'on the wall', banner(false)),
+    () => w('banner in rags', 'on the wall', banner(true)),
+    () => w('shield', 'on the wall', shield),
+    () => w('keys on a hook', 'on the wall', keysOnHook),
+    () => w('shackles', 'on the wall', shackles),
+    () => ({ name: 'torch', kind: 'on the wall', ...spotsOf('torch', torch as unknown as (p: Px) => void, 4, torchLight) }),
+    () => w('crossed mauls', 'on the wall', crossedMauls),
+    () => w('horned helm on a peg', 'on the wall', helmOnPeg),
     // on the floor
-    { name: 'fallen guard', kind: 'on the floor', frames: [fallenGuard()] },
-    { name: 'dropped keys', kind: 'on the floor', frames: [droppedKeys()] },
-    { name: 'fallen banner', kind: 'on the floor', frames: [fallenBanner()] },
-    { name: "the statue's head", kind: 'on the floor', frames: [effigyHead()], shadow: 0.24 },
-    { name: 'horned helm', kind: 'on the floor', frames: [droppedHelm()], shadow: 0.2 },
-    { name: 'candles', kind: 'on the floor', frames: [0, 1, 2, 3].map((f) => candles(f)), shadow: 0.26 },
-    { name: 'chain', kind: 'on the floor', frames: [coiledChain()] },
+    () => ({ name: 'fallen guard', kind: 'on the floor', frames: [fallenGuard()] }),
+    () => ({ name: 'dropped keys', kind: 'on the floor', frames: [droppedKeys()] }),
+    () => ({ name: 'fallen banner', kind: 'on the floor', frames: [fallenBanner()] }),
+    () => ({ name: "the statue's head", kind: 'on the floor', frames: [effigyHead()], shadow: 0.24 }),
+    () => ({ name: 'horned helm', kind: 'on the floor', frames: [droppedHelm()], shadow: 0.2 }),
+    () => ({ name: 'candles', kind: 'on the floor', frames: [0, 1, 2, 3].map((f) => candles(f)), shadow: 0.26 }),
+    () => ({ name: 'chain', kind: 'on the floor', frames: [coiledChain()] }),
     // obstacles
-    { name: 'sarcophagus', kind: 'obstacle', frames: [sarcophagus(false)], shadow: 0.55 },
-    { name: 'open sarcophagus', kind: 'obstacle', frames: [sarcophagus(true)], shadow: 0.55 },
-    { name: "the king's tomb", kind: 'obstacle', frames: [effigyTomb()], shadow: 0.6 },
-    { name: 'horned knight', kind: 'obstacle', frames: [knightStatue()], shadow: 0.45 },
-    { name: 'pillar', kind: 'obstacle', frames: [pillar()], shadow: 0.34 },
-    { name: 'cresset', kind: 'obstacle', frames: [0, 1, 2, 3].map(cresset), shadow: 0.28 },
-    { name: 'rack of mauls', kind: 'obstacle', frames: [maulRack()], shadow: 0.4 },
-    { name: "the king's throne", kind: 'obstacle', frames: [throne()], shadow: 0.62 },
-    { name: "the king's coffer", kind: 'obstacle', frames: [coffer(false), coffer(true)], shadow: 0.38 },
+    () => ({ name: 'sarcophagus', kind: 'obstacle', frames: [sarcophagus(false)], shadow: 0.55 }),
+    () => ({ name: 'open sarcophagus', kind: 'obstacle', frames: [sarcophagus(true)], shadow: 0.55 }),
+    () => ({ name: "the king's tomb", kind: 'obstacle', frames: [effigyTomb()], shadow: 0.6 }),
+    () => ({ name: 'horned knight', kind: 'obstacle', frames: [knightStatue()], shadow: 0.45 }),
+    () => ({ name: 'pillar', kind: 'obstacle', frames: [pillar()], shadow: 0.34 }),
+    () => ({ name: 'cresset', kind: 'obstacle', frames: [0, 1, 2, 3].map(cresset), shadow: 0.28 }),
+    () => ({ name: 'rack of mauls', kind: 'obstacle', frames: [maulRack()], shadow: 0.4 }),
+    () => ({ name: "the king's throne", kind: 'obstacle', frames: [throne()], shadow: 0.62 }),
+    () => ({ name: "the king's coffer", kind: 'obstacle', frames: [coffer(false), coffer(true)], shadow: 0.38 }),
     // doors and gates: the floor's own, as the game takes them; each piece's pictures its leaf, its plain gate's arch, its boss's arch
-    { name: 'the door', kind: 'door', gates: G, frames: [G.leaf(32, 16), G.leaf(-32, 16), G.post] },
-    { name: 'the gate', kind: 'gate', gates: G, frames: [...G.arch(true, false, false).map((q) => q.s), G.pillar(false)] },
-    { name: "the boss's gate", kind: 'gate', gates: G, frames: [...G.arch(true, true, false).map((q) => q.s), G.pillar(true)] },
+    () => {
+      const G = wardenGates();
+      return { name: 'the door', kind: 'door', gates: G, frames: [G.leaf(32, 16), G.leaf(-32, 16), G.post] };
+    },
+    () => {
+      const G = wardenGates();
+      return { name: 'the gate', kind: 'gate', gates: G, frames: [...G.arch(true, false, false).map((q) => q.s), G.pillar(false)] };
+    },
+    () => {
+      const G = wardenGates();
+      return { name: "the boss's gate", kind: 'gate', gates: G, frames: [...G.arch(true, true, false).map((q) => q.s), G.pillar(true)] };
+    },
     // traps
-    { name: 'spike grate', kind: 'trap', frames: [spikeGrate(false), spikeGrate(true)] },
-    { name: 'skull plate', kind: 'trap', frames: [crownPlate(false), crownPlate(true)] },
-    w('dart skull', 'trap', (p) => hornedSkull(p, true)),
+    () => ({ name: 'spike grate', kind: 'trap', frames: [spikeGrate(false), spikeGrate(true)] }),
+    () => ({ name: 'skull plate', kind: 'trap', frames: [crownPlate(false), crownPlate(true)] }),
+    () => w('dart skull', 'trap', (p) => hornedSkull(p, true)),
     // quests
-    { name: "the Warden's horn", kind: 'quest', frames: [wardenHorn()], shadow: 0.24 },
+    () => ({ name: "the Warden's horn", kind: 'quest', frames: [wardenHorn()], shadow: 0.24 }),
   ];
+}
+/** (LOAD_SLICE) Pieces a step has made ahead, by their place in the list; taken once, let go of with the rest (forgetMade). */
+const WARDEN_AHEAD = new Ahead();
+/** (for the tests) How many pieces are put by, not yet taken. */
+export function wardenPiecesHeld(): number {
+  return WARDEN_AHEAD.size;
+}
+/** How many pieces the list has (planning a builder that takes them a piece at a time). */
+export function wardenPieceCount(): number {
+  return wardenMakers().length;
+}
+/** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
+export function wardenPieceSteps(): LoadStep[] {
+  if (made) return [];
+  return [...wardenMakers().map((make, i) => WARDEN_AHEAD.step(String(i), make)), () => void wardenPieces()];
+}
+export function wardenPieces(): Piece[] {
+  if (made) return made;
+  made = wardenMakers().map((make, i) => WARDEN_AHEAD.take(String(i), make));
   return made;
 }

@@ -101,3 +101,8 @@ directs and playtests, and Claude writes and tests everything.
   takes all of `ship` into its next update and deletes each once live. His pick, 12 Nov 2026, by 12:23, asked after he said
   “I just feel like tasks are getting half done then getting thrown back into the queue.”: “Off the queue, onto a ship list
   (Recommended)”. Work that waits on his own word (a phone test, a yes to pictures) stays in the queue.
+- WHAT IS LEFT OF YOUR OWN TASK, OR WHAT IT TURNS UP, YOU FINISH IN THE SAME CHAT: do not queue it. When your task is done, ask
+  him by pop-up whether to start a new task, then do it. His words, 12 Nov 2026, 13:38: “Why throw something in the queue when
+  your task is done and you could just start working on it immediately.  Ask if you should start on a new task, then do it.  I’m
+  trying to clear the queue not add to it”; asked whether every chat should work so, “Yes, add it for all chats (Recommended)”
+  (also in the queue's meta/protocol). Finished work goes on the queue page's ship list, not back in the queue (meta/protocol).
