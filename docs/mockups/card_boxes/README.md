@@ -24,4 +24,10 @@ size (844 x 390 at 3), the same moment; made with `tools/scenarios/card_boxes.mj
 CHECKED: tsc clean; `tools/scenarios/cards3.mjs` on the page mended: the cards three to a row in two rows, clear of the buttons,
 a card pressed starts nothing; its last check (CONFIRM starts the hero within four seconds) failed on the page mended AND ON THE
 PAGE AS `main` IS, the same way: a page with no bake beside it, where the heroes' pictures are painted as they are shown; not of
-this. UNIT_LINE
+this. `node tools/unit.mjs --only class_cards_paint,hero_cards_baked` and the core on 5dcc5721c1: 25 files, all passed.
+
+**HIS YES, 12 Nov 2026**, sent `cards_now_and_mended.png` and asked by pop-up whether it is right: **“Yes, hand it to main
+(Recommended)”**. On the queue's ship list as `expand-hero-card-boxes`.
+
+FOR THE MAIN CHAT: merge `fix/hero-card-boxes` (one line of `src/ui/panels.ts`, the README and picture, a scenario). The heroes'
+bake is not touched: the cards' pictures are the same, only where they are cut.
