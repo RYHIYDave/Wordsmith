@@ -35,7 +35,13 @@ import { RIG_CANVAS } from '../dev/sculpt_demon_rig';
 import { CHANGE_ALL, changeFrame } from '../dev/warlock_change';
 import { CHANGE_SCENE } from '../dev/warlock_fx';
 import { crumble } from '../dev/demon_return';
+// (THE LIVING SHADOW, his demon redone: art/shadow_art.ts, behind LIVING_SHADOW, off: off, nothing here is changed)
+import { LIVING_SHADOW, makeShadowArt, shadowChangeClip } from './shadow_art';
 import { warlockFall } from './warlock_fall';
+// (THE MAN BROUGHT UP, from all eight sides, his longer coat and boots to the knee: art/warlock_up_art.ts, behind WARLOCK_UP, off:
+// off, nothing here is changed)
+import { WARLOCK_UP } from './warlock_up';
+import { makeWarlockUpArt } from './warlock_up_art';
 
 /** Which of his pictures: a man or the demon, where (in a fight, in town, on his class card), and a man with his pact full (his arm blazing). */
 export interface WarlockLook {
@@ -178,7 +184,9 @@ function manSet(view: GameView, place: WarlockLook['place'], blaze: boolean, sha
     return set;
   }
   // (CHANGING INTO THE DEMON: the change laid over the rules' time for it; the same with his arm blazing or not)
-  set.clips!.change = own(shared(share, `change:${view}`, () => spread(0, CHANGE_ALL, CHANGE_FRAMES, (t) => asSprite(changeFrame(view, t).d.px, AURA_SCENE, CHANGE_SCENE.ax, CHANGE_SCENE.ay), HEAVY_ART)));
+  set.clips!.change = LIVING_SHADOW.on
+    ? own(shared(share, `shadow-change:${view}`, () => shadowChangeClip(view)))
+    : own(shared(share, `change:${view}`, () => spread(0, CHANGE_ALL, CHANGE_FRAMES, (t) => asSprite(changeFrame(view, t).d.px, AURA_SCENE, CHANGE_SCENE.ax, CHANGE_SCENE.ay), HEAVY_ART)));
   return set;
 }
 
@@ -257,6 +265,7 @@ function demonSet(view: GameView): AnimSet {
 
 /** The warlock's pictures, both views (`share`: what is the same in every place, made once for all of them: WarlockShare). */
 export function makeWarlockArt(look: WarlockLook, share?: WarlockShare): ActorArt {
-  if (look.form === 'demon') return { front: demonSet('front'), back: demonSet('back') };
+  if (look.form === 'demon') return LIVING_SHADOW.on ? makeShadowArt() : { front: demonSet('front'), back: demonSet('back') };
+  if (WARLOCK_UP.on) return makeWarlockUpArt(look, share);
   return { front: manSet('front', look.place, !!look.blaze, share), back: manSet('back', look.place, !!look.blaze, share) };
 }

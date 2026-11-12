@@ -258,9 +258,31 @@ export function drawWarlockSculpt(m: WarlockSculpt, more?: (st: Stage) => void, 
     if (more) more(st);
   }, FRIEND_RIM, () => fireNear);
 }
+/**
+ * HIM BROUGHT UP, where another file dresses him (art/warlock_up.ts, behind its switch WARLOCK_UP, OFF: off, `on` says no and
+ * nothing here is changed): the bones he stands on (his knee joint raised: `body`) and, once his sculpture is made, his coat and
+ * boots made over (`dress`). Read by every painting of him: his own moves, the change, burning out (dev/warlock_change.ts,
+ * dev/shadow_change.ts, dev/shadow_fx.ts), so that he is the one man in all of them.
+ */
+export const WARLOCK_DRESS: { on: () => boolean; body: () => Build; dress: (m: WarlockSculpt, B: Build) => void } = {
+  on: () => false,
+  body: () => WARLOCK_SCULPT_BODY,
+  dress: () => {},
+};
+/** His build as he is painted now: the game's, or brought up (WARLOCK_DRESS). */
+export function warlockBody(): Build {
+  return WARLOCK_DRESS.on() ? WARLOCK_DRESS.body() : WARLOCK_SCULPT_BODY;
+}
+
 /** The warlock's sculpture, on his own bones, or on others (`rig`: a build and a pose of the bones' own, as in his change). */
 export function warlockSculpt(view: GameView, pose?: Bones, turn = 0, rig?: { B: Build; q: Posed }): WarlockSculpt {
-  const B = rig?.B ?? WARLOCK_SCULPT_BODY;
+  const made = warlockSculptOf(view, pose, turn, rig);
+  // (brought up: his coat and boots made over, on the bones he is drawn on: in the change, as they are torn away from him)
+  if (WARLOCK_DRESS.on()) WARLOCK_DRESS.dress(made, rig?.B ?? warlockBody());
+  return made;
+}
+function warlockSculptOf(view: GameView, pose: Bones | undefined, turn: number, rig: { B: Build; q: Posed } | undefined): WarlockSculpt {
+  const B = rig?.B ?? warlockBody();
   const q = rig?.q ?? ((pose ?? warlockStance(B)) as Posed);
   const s = solve(B, q);
   // FROM BEHIND AS THE CAMERA TRULY SEES HIM (skin.ts PaintView 'rear'), not in a mirror as the heroes are: the demon arm is
