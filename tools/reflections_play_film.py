@@ -20,7 +20,7 @@ PARTS = [
     ('ranger', 'THE RANGER', 'Tap: the Shot.   Hold: the Volley.'),
     ('mage', 'THE MAGE', 'Tap: the Wave.   Hold: the Orb.'),
     ('warlock', 'THE WARLOCK', 'Tap: a Hellfire Bolt.   Hold: the Curse, all round it.'),
-    ('tinkerer', 'THE TINKERER', "Tap: a vial.   Hold: her whistle, and the Golem's pound where you stood."),
+    ('tinkerer', 'THE TINKERER', 'Tap: a vial.   Hold: three vials, side by side (no whistle).'),
     ('brawler', 'THE BRAWLER', 'Tap: the jab.   Hold: the roundhouse kick.'),
 ]
 SUB = 'Floor 18: your reflection steps out of a mirror and fights with your moves'
@@ -35,7 +35,7 @@ for name, title, said in PARTS:
     src = os.path.join(root, name)
     notes = glob.glob(os.path.join(src, '*_film.json'))
     if not notes:
-        print('missing', name)
+        if os.environ.get('ONLY') is None: print('missing', name)
         continue
     note = json.load(open(notes[0]))
     fps = note['fps']
