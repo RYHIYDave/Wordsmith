@@ -29,6 +29,8 @@ export default async function (page, snap) {
   await wait(400);
   await hands.press(`class:${cls}`);
   await page.waitForFunction(() => { const g = window.__dbg.game(); return !!g && !g.level.town && g.trial === true; }, null, { timeout: 30000 });
+  // (and the loading screen between floors over: the floor is laid under it, so the game is there before he can play)
+  await page.waitForFunction(() => !window.__dbg.loadingNow(), null, { timeout: 90000, polling: 100 });
   await wait(3000);
   // the unique put on him (his own from his bag where he was handed it; a boss's own is in his stash in town: given him here)
   const set = await page.evaluate((id) => {
