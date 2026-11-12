@@ -181,7 +181,11 @@ export default async function (page, snap) {
 
   // the same Ranger made HARDCORE (as the cards' other mode would have made him), and dying: the run
   // goes, the Lexicon and stash stay
-  await page.evaluate(() => { const g = window.__dbg.game(); g.mode = 'hardcore'; g.enterDungeon(); g.hurtHero(99999, 'phys', [], null); });
+  // (25.3.9: the floor come into first, and its loading screen let go, before he is struck down: since the floors' monsters are taken
+  // in under it (25.3.8) it is up a little longer, and YOU DIED was looked for under it: the playtest's fault, not the game's)
+  await page.evaluate(() => { const g = window.__dbg.game(); g.mode = 'hardcore'; g.enterDungeon(); });
+  await page.waitForFunction(() => { const d = window.__dbg; return !d.loadingNow || !d.loadingNow(); }, null, { timeout: 20000 }).catch(() => {});
+  await page.evaluate(() => { const g = window.__dbg.game(); g.hurtHero(99999, 'phys', [], null); });
   await page.waitForTimeout(500);
   const early2 = await hands.mark('button:New run');
   if (early2) await fail('YOU DIED came up at once: the hero was not shown falling');
