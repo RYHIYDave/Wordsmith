@@ -15,6 +15,10 @@
 //   RUNNING         THE GAME'S RUN, AS IT IS (dev/demon_moves.ts demonRun: every word of his on it kept), on this frame
 //   REARING UP      out of the run onto two legs to stand (new): the game's way of coming to a stand (AnimSet.stops: one
 //                   for each of eight moments of the run)
+//   SLASHING ON THE MOVE, ON TWO LEGS (his word of the film of the above, 11 Nov by 19:59: “This but I want him to be able
+//                   to move around on two legs as he’s swiping”): each slash again with its legs striding under it, up
+//                   on two legs, each of the four ways it may be going as it faces what it fights (new): the game's way
+//                   of an attack made walking (AnimSet.clips.attackWalk, art/moves3.ts walkingOf)
 //
 // What else stands up (Damning, the smoke step's ends, how the change and the burning out end) is asked of him as each is
 // made. His art rulebook's Movement: weight first; each character its own way (its: a feral beast's, huge in the shoulder,
@@ -22,6 +26,7 @@
 // freeze; feet grip the floor, and so do its claws; big wind-up, lightning strike. Everything at thirty a second.
 
 import { GRIP_SPEED, UNITS_PER_TILE } from '../art/moves3';
+import { TUNE } from '../game/defs';
 import { bonesAt, elbowFor, lerp3, norm, solve } from '../art/skeleton';
 import type { Bones, Key3, Motion, Posed, V3 } from '../art/skeleton';
 import type { GameView } from '../art/skin';
@@ -65,6 +70,12 @@ export interface ShadowMove {
   strike?: [number, number];
   /** The moment its blow lands. */
   hit?: number;
+  /**
+   * A move made walking (a slash on the move): the way it goes as it faces its mark (degrees: 0 ahead, 90 to its left, 180
+   * back, 270 to its right, as art/moves3.ts WALKS), and how far the game has carried it that way by a moment (its own measure).
+   */
+  way?: number;
+  along?: (t: number) => number;
 }
 
 /** Eased both ways, 0 to 1. */
@@ -493,6 +504,125 @@ const rearWings = (phase: number): ((t: number) => WingsHeld) =>
     return { open: run.open + (1 - run.open) * w + 0.3 * brake, lift: run.lift + (1 - run.lift) * w + 0.18 * brake, sweep: run.sweep * (1 - w) - 5 * brake };
   });
 
+// ---- SLASHING ON THE MOVE, ON TWO LEGS (his word of the film, 11 Nov by 19:59: “This but I want him to be able to move
+// around on two legs as he’s swiping”). The game lets a hero walk through an attack, slowed for its first moment
+// (game/defs.ts TUNE.attackSlow for attackSlowTime) and at its own pace after, and has the attack again for each of four ways
+// the hero may be going as it faces its mark, its legs stepping that way (art/moves3.ts WALKS, walkingMotion). So each slash
+// again, its chest, arms, head, wings and claws as they are standing, and under them TWO GREAT STRIDES, UP ON TWO LEGS, to
+// the slash's own beat (weight first, Movement 1: “A blow plants the feet, turns the hips and carries through”):
+//   as it winds up, its front hoof stays where it stands and its rear hoof comes up off the floor and swings through, the
+//   way it goes;
+//   it springs off its front hoof as the claw is held, and is off the floor as it swings;
+//   ITS REAR HOOF COMES DOWN AS THE BLOW LANDS, far ahead, and takes its weight through the freeze and the follow-through;
+//   as it draws its claw back its front hoof swings through and lands, its rear hoof gathers in behind it, and it is in its
+//   stance again as the slash ends: legs and all, so that the next slash, its stand or its dropping down takes it up with
+//   no jump.
+// A hoof on the floor stays where it is on the floor (Movement 8), the floor going back under it as fast as the game
+// carries it and the way it goes; it is lifted straight up before it goes anywhere and set straight down.
+/** The four ways it may be going as it slashes (degrees to its left of the way it faces), as the heroes'. */
+export const SLASH_WAYS = [0, 90, 180, 270];
+/** When its hooves lift and land through a slash made walking (frames): the hoof that stays (`front`: going ahead, its front hoof, its left); the hoof that steps (`rear`), which lands as the blow does. */
+const WALK_STEPS = { front: { lift: 9.4, land: 27.2 }, rear: { land: 13.3, lift: 23.3, gather: 29.5 } };
+/** How far the stepping hoof lands on from where it stood, the way it goes (its own measure); how high a hoof is swung. */
+const REAR_AHEAD = 38;
+const STEP_HIGH = 11;
+/** How far the game has carried it by a moment of an attack made walking: slowed for its first moment, at its own pace after. */
+export function slashAlong(t: number): number {
+  return SHADOW_CARRY * (TUNE.attackSlow * Math.min(t, TUNE.attackSlowTime) + Math.max(0, t - TUNE.attackSlowTime));
+}
+function walkingSlashMotion(side: 1 | -1, way: number): Motion {
+  const S0 = SHADOW_STANCE;
+  const slash = slashMotion(side);
+  const c = Math.cos((way * Math.PI) / 180);
+  const sn = Math.sin((way * Math.PI) / 180);
+  const G = slashAlong(SLASH_LONG);
+  const at = (f: number): number => slashAlong(f * FR);
+  type P2 = readonly [number, number];
+  /** A place on the floor, so much further gone by under it. */
+  const back = (p: P2, g: number): P2 => [p[0] - g * c, p[1] - g * sn];
+  /** A hoof swung from one place to another, `u` of the way through: forward, to its left, up, tipped. Straight up first and straight down last. */
+  const swung = (a: P2, b: P2, u: number): [number, number, number, number] => {
+    const k = smooth((u - 0.12) / 0.76);
+    return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, STEP_HIGH * Math.pow(Math.sin(Math.PI * clampN(u, 0, 1)), 0.8), 22 * Math.sin(Math.PI * clampN(u, 0, 1)) * c];
+  };
+  const down = (p: P2): [number, number, number, number] => [p[0], p[1], 0, 0];
+  /** The hoof that stays where it stands through the wind-up, then swings through and lands as it comes back into its stance. */
+  const stays = (home: P2, g: number): [number, number, number, number] => {
+    // (backing away it is lifted a little sooner: its hips thrown back as it winds up leave it less room)
+    const g1 = at(WALK_STEPS.front.lift - (c < -0.5 ? 1.2 : 0));
+    const g2 = at(WALK_STEPS.front.land);
+    if (g <= g1) return down(back(home, g));
+    // (set down where, the floor gone back under it to the slash's end, it stands in its stance)
+    const lands = back(home, -(G - g2));
+    if (g < g2) return swung(back(home, g1), lands, (g - g1) / (g2 - g1));
+    return down(back(lands, g - g2));
+  };
+  /** The hoof that steps at once, lands as the blow lands, and gathers in to where it stands as the slash ends. */
+  const steps = (home: P2, g: number): [number, number, number, number] => {
+    const g1 = at(WALK_STEPS.rear.land);
+    const g2 = at(WALK_STEPS.rear.lift);
+    const g3 = at(WALK_STEPS.rear.gather);
+    // (backing away or going across, not so far: it lands behind or beside hips thrown forward into the blow, and going
+    // across it has crossed under them)
+    const ahead = back(home, -(c < 0.5 ? REAR_AHEAD * 0.74 : REAR_AHEAD));
+    if (g < g1) return swung(home, ahead, g / g1);
+    if (g <= g2) return down(back(ahead, g - g1));
+    const lands = back(home, -(G - g3));
+    if (g < g3) return swung(back(ahead, g2 - g1), lands, (g - g2) / (g3 - g2));
+    return down(back(lands, g - g3));
+  };
+  // (WHICH HOOF STAYS: the one further on the way it is going, which has the room to be left behind as it goes; the other,
+  // behind it, steps past it. Going ahead or to its left that is its front hoof, its left; backing away or going to its
+  // right, its rear)
+  const L: P2 = [S0.lfx, S0.lfy];
+  const R: P2 = [S0.rfx, S0.rfy];
+  const leftStays = L[0] * c + L[1] * sn >= R[0] * c + R[1] * sn;
+  const frontAt = (g: number): [number, number, number, number] => (leftStays ? stays(L, g) : steps(L, g));
+  const rearAt = (g: number): [number, number, number, number] => (leftStays ? steps(R, g) : stays(R, g));
+  const keys: Key3[] = slash.keys.map((k) => {
+    const t = k.at;
+    const f = t / FR;
+    const A = { ...S0, ...k.pose } as Bones;
+    const g = slashAlong(t);
+    const l = frontAt(g);
+    const r = rearAt(g);
+    // (into the going, and out of it into its stance as the slash ends)
+    const w = smooth(f / 5) * (1 - smooth((f - 27) / 4));
+    // (off the floor between its front hoof's leaving it and its rear's landing, and again as it gathers)
+    const air = (a: number, b: number): number => (f > a && f < b ? Math.sin((Math.PI * (f - a)) / (b - a)) : 0);
+    const pose: Bones = {
+      ...A,
+      lfx: l[0], lfy: l[1], lfz: l[2], lfp: l[3],
+      rfx: r[0], rfy: r[1], rfz: r[2], rfp: r[3],
+      // (its hips: lower on its bent legs as it goes; the slash's own throw back, forward and down kept, a little less of it)
+      px: A.px * 0.7,
+      pz: S0.pz - 2.5 * w + (A.pz - S0.pz) * 0.6 + 3 * air(WALK_STEPS.front.lift, WALK_STEPS.rear.land) + 2 * air(WALK_STEPS.rear.lift, WALK_STEPS.front.land),
+      // (leaning the way it goes)
+      pitch: A.pitch + 5 * c * w,
+      roll: A.roll - 3 * sn * w,
+    };
+    return { at: t, ease: 'lin', pose: upElbows(pose, side, track([[0, 0], [RK.drawn * FR, 1], [RK.freeze * FR, 1], [RK.down * FR, 0]], t)) };
+  });
+  return { keys, hit: SLASH_HIT };
+}
+const WAY_NAMES: Record<number, string> = { 0: 'going ahead', 90: 'going to its left', 180: 'backing away', 270: 'going to its right' };
+function walkingSlashMove(side: 1 | -1, way: number): ShadowMove {
+  const still = slashMove(side);
+  return {
+    ...still,
+    name: `${still.name}, ${WAY_NAMES[way]} on two legs`,
+    motion: walkingSlashMotion(side, way),
+    // (its wings a little back with the going)
+    wings: (t) => {
+      const w = still.wings(t);
+      const k = smooth(t / (5 * FR)) * (1 - smooth((t / FR - 27) / 4));
+      return { ...w, sweep: w.sweep + 4 * k * Math.cos((way * Math.PI) / 180) };
+    },
+    way,
+    along: slashAlong,
+  };
+}
+
 /** How high its wrist is when the claw under it is a claw on the floor (the game's run lifts it to 17): lower than this it is its foot. */
 const PAW_BELOW = 24;
 
@@ -515,7 +645,12 @@ export function shadowMoves(): ShadowMove[] {
       return t < lands ? 0.5 : 0.9 + 1.2 * Math.exp(-(t - lands) / 0.09);
     },
   };
-  return [stand, run, slashMove(1), slashMove(-1), drop, ...Array.from({ length: REARS }, (_, i) => rearMove(i / REARS))];
+  return [
+    stand, run, slashMove(1), slashMove(-1), drop,
+    ...Array.from({ length: REARS }, (_, i) => rearMove(i / REARS)),
+    ...SLASH_WAYS.map((way) => walkingSlashMove(1, way)),
+    ...SLASH_WAYS.map((way) => walkingSlashMove(-1, way)),
+  ];
 }
 function rearMove(phase: number): ShadowMove {
   return {
@@ -548,6 +683,11 @@ export function shadowMoving(m: ShadowMove, t: number, pose: Posed): { paws: boo
   more.grip = { L: g(1), R: g(-1) };
   if (m.fire) more.fire = (i) => (m.fire as NonNullable<ShadowMove['fire']>)(t, i);
   if (m.carry) more.carry = m.carry;
+  // (made walking: its smoke in its wake as fast as it is going then)
+  else if (m.along) {
+    more.carry = (m.along(t + FR / 2) - m.along(Math.max(0, t - FR / 2))) / (t < FR / 2 ? t + FR / 2 : FR);
+    more.carryWay = m.way ?? 0;
+  }
   return { paws, more };
 }
 /** Its picture at a moment of a move, from in front or behind, turned `turn`. */

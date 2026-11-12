@@ -4,7 +4,7 @@
 // from in front and from behind, its slashes with what they leave in the air (dev/shadow_fx.ts), each as an RGBA PNG on the
 // slash's scene (520 x 420, its floor point at 260, 326), and a note of what was made (moves.json);
 // tools/shadow_moves_film.py makes the film of them. Nothing of the game imports it.
-//   npx tsx tools/shadow_moves_pics.ts <dir> [stand,run,slashL,slashR,drop,rear0..rear7] [front,back] [turn]
+//   npx tsx tools/shadow_moves_pics.ts <dir> [stand,run,slashL,slashR,drop,rear0..rear7,slashLw0..3,slashRw0..3] [front,back] [turn]
 
 // @ts-ignore - node typings are not part of this project
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -16,7 +16,7 @@ import { RIG_CANVAS } from '../src/dev/sculpt_demon_rig';
 import { solve } from '../src/art/skeleton';
 import type { Posed } from '../src/art/skeleton';
 import { WOLF_B } from '../src/dev/demon_new';
-import { DROP_INTO, DROP_PICTURES, REARS, SHADOW_CARRY, drawShadowAt, shadowMoves, shadowPose } from '../src/dev/shadow_moves';
+import { DROP_INTO, DROP_PICTURES, REARS, SHADOW_CARRY, SLASH_WAYS, drawShadowAt, shadowMoves, shadowPose } from '../src/dev/shadow_moves';
 import type { ShadowMove } from '../src/dev/shadow_moves';
 import { SLASH_SCENE, slashLight } from '../src/dev/shadow_fx';
 import { makeVeteranArt } from '../src/art/veteran_art';
@@ -82,7 +82,8 @@ const dir = process.argv[2];
 if (!dir) throw new Error('npx tsx tools/shadow_moves_pics.ts <dir> [stand,run,slashL,slashR,drop,rear0..rear7] [front,back] [turn]');
 mkdirSync(dir, { recursive: true });
 const all = shadowMoves();
-const KEYS = ['stand', 'run', 'slashL', 'slashR', 'drop', ...Array.from({ length: REARS }, (_, i) => `rear${i}`)];
+// (its slashes made walking: slashLw0 its left claw going ahead, w1 to its left, w2 backing away, w3 to its right; slashRw0..3 its right's)
+const KEYS = ['stand', 'run', 'slashL', 'slashR', 'drop', ...Array.from({ length: REARS }, (_, i) => `rear${i}`), ...SLASH_WAYS.map((_, i) => `slashLw${i}`), ...SLASH_WAYS.map((_, i) => `slashRw${i}`)];
 const which = (process.argv[3] ?? 'stand,run,slashL,slashR,drop,rear5').split(',');
 const views = (process.argv[4] ?? 'front,back').split(',') as ('front' | 'back')[];
 const turn = Number(process.argv[5] ?? 0);
@@ -107,7 +108,9 @@ for (const key of which) {
       save(`${dir}/${key}_${v}_f${String(f).padStart(3, '0')}.png`, scene);
     }
   }
-  (note.moves as Record<string, unknown>)[key] = { name: m.name, frames: n, fps, long: m.long, loops: m.loops, hit: m.hit ?? null, carry: m.carry ?? 0, limbs };
+  // (a move made walking: the way it goes, and how far the game has carried it by each frame)
+  const along = m.along ? Array.from({ length: n }, (_, f) => (m.along as (t: number) => number)(f / fps)) : null;
+  (note.moves as Record<string, unknown>)[key] = { name: m.name, frames: n, fps, long: m.long, loops: m.loops, hit: m.hit ?? null, carry: m.carry ?? 0, way: m.way ?? 0, along, limbs };
 }
 // (the Brawler, the measure for new art: from in front and from behind, his floor point at 18, 60)
 const brawler = makeVeteranArt();

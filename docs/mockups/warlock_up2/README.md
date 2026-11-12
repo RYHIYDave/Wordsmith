@@ -1,12 +1,13 @@
 # THE WARLOCK BROUGHT UP, AND HIS DEMON REDONE (IN HAND; NOTHING HERE IS IN THE GAME)
 
-**WHERE IT STANDS (11 Nov 2026, 19:59 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
+**WHERE IT STANDS (11 Nov 2026, 20:20 Eastern): THE DEMON'S NEW LOOK HAS HIS YES: THE LIVING SHADOW, on a werewolf's frame, up on
 two legs to fight and down on all fours to run, wings of smoke (`src/dev/demon_ideas.ts` shadowInto; `pictures/living_shadow.png`).
 ITS FIRST MOVES ARE MADE AND SHOWN HIM AS A FILM (`src/dev/shadow_moves.ts`; `pictures/living_shadow_moves.mp4`): its stand up on
 two legs, its really wide slashes, dropping onto all fours into the game's run, rearing up out of it. THEY HAVE HIS WORD, 11 Nov by 19:59: “This but I
 want him to be able to move around on two legs as he’s swiping”, and of its other moves, “Yes, all on two legs (Recommended)”
-(the foot of “The Living Shadow's moves” below). NEXT: its slashes made walking on two legs; its other moves up on two legs;
-then its eight sides and the change into it; then the man. Read from “The Living Shadow, drawn properly” down for what is left; the sections before it are how he got
+(the foot of “The Living Shadow's moves” below). ITS SLASHES MADE WALKING ON TWO LEGS ARE MADE AND SHOWN HIM AS A SECOND FILM
+(`pictures/living_shadow_slashing_on_the_move.mp4`), HIS WORD ON THEM AWAITED. NEXT: its other moves up on two legs; then its
+eight sides and the change into it; then the man. Read from “The Living Shadow, drawn properly” down for what is left; the sections before it are how he got
 there, in his words.**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
@@ -278,10 +279,58 @@ hooves gripping the floor as the game carries it). All fours stays for running w
 BEGINS AND ENDS UP ON TWO LEGS: Damning, the smoke step's two ends, the end of the change into it, the start of its burning
 out; none needs asking of him again one by one.
 
-STILL TO DO, IN THIS ORDER (11 Nov, 19:59): (a) ITS SLASHES MADE WALKING ON TWO LEGS, shown him as a film; (b) Damning, the
-smoke step, the change's end and the burning out's start, up on two legs, shown him; then, as before: its eight sides, its
-hide carried by its bones, the change into it; behind a switch that is off, a film and pictures in the game on floor 11
-beside the Brawler; then THE MAN.
+## Its slashes made walking on two legs (`src/dev/shadow_moves.ts` walkingSlashMove; SHOWN HIM AS A SECOND FILM, HIS WORD ON IT AT THE FOOT)
+
+His word above, “This but I want him to be able to move around on two legs as he’s swiping”. THE GAME'S OWN WAY OF AN ATTACK
+MADE WALKING (`art/moves3.ts` walkingMotion, WALKS; `render/figure.ts`, `clips.attackWalk`): the game lets a hero walk through
+an attack, slowed for its first moment (`TUNE.attackSlow` 0.4 for `attackSlowTime` 0.18 s) and at its own pace after, and
+shows the attack again for whichever of four ways the hero is going as it faces its mark: ahead, to its left, back, to its
+right. So EIGHT MOVES: each slash (its left claw's, its right's) each of the four ways (`SLASH_WAYS`), each to the slash's own
+31 frames (the blow on frame 14), in which the game carries it 166.8 of its own measure, 4.26 tiles (`slashAlong`).
+
+- ITS CHEST, ARMS, HEAD, WINGS AND CLAWS ARE THE SLASH'S, as it is made standing (its claws from its shoulders the same, to
+  the frame). Its hips keep seven tenths of the slash's own throw back and forward and six tenths of its rise and drop, ride
+  a little lower, and lean the way it goes.
+- UNDER THEM, TWO GREAT STRIDES, TO THE SLASH'S OWN BEAT (weight first: “A blow plants the feet, turns the hips and carries
+  through”). The hoof further on the way it is going STAYS where it stands through the wind-up (going ahead or to its left,
+  its front hoof, its left; backing away or going to its right, its rear), the floor going back under it; the other STEPS
+  at once, swinging through as it winds up. It springs off the staying hoof at frame 9.4 (8.2 backing away) and is off the
+  floor as the claw swings. THE STEPPING HOOF COMES DOWN AT FRAME 13.3, AS THE BLOW LANDS (frame 14), 38 on from where it
+  stood the way it goes (28 backing away or going across), and carries it through the freeze and the follow-through. It
+  lifts at 23.3; the staying hoof lands at 27.2; the stepping hoof gathers in at 29.5; and at frame 31 it is IN ITS STANCE
+  AGAIN, LEGS AND ALL: the next slash, its stand or its dropping down takes it up with no jump.
+- A hoof on the floor stays where it is on the floor, as far as the game has carried it and the way it goes (never more
+  than 0.2 of its own measure off in a frame); lifted straight up before it goes anywhere, set straight down.
+- NOT A WALK OF ITS OWN: it has no walk on two legs with no slash (his: all fours “when he’s running around”). Its legs are
+  made for the slash they are under, not a round taken up wherever it happens to be: a round at the game's pace did not come
+  back to its stance as a slash ended, and one slash after another its legs jumped.
+
+THE FILM: `pictures/living_shadow_slashing_on_the_move.mp4` (1440 x 702, sixty frames a second, 18.1 s, 4.6 MB), from in
+front and from behind, the floor going by the way it goes and as fast as the game carries it (slowed for each slash's first
+moment): going ahead, left, right, left, right; the same at half speed; then going to its left, backing away, going to its
+right, and ahead again, a slash each; and it stands. `pictures/living_shadow_slashing_on_the_move_sheet.png`.
+
+Made with: `npx tsx tools/shadow_moves_pics.ts <dir> stand,slashLw0,slashLw1,slashLw2,slashLw3,slashRw0,slashRw1,slashRw2,slashRw3 front,back`
+then `python3 tools/shadow_moves_film.py <dir> docs/mockups/warlock_up2/pictures/living_shadow_slashing_on_the_move.mp4 walking`.
+
+CHECKED (`tests/shadow_moves.test.ts`, now 7 of 7): all eight from its stance and back to it legs and all; its claws from
+its shoulders as in the slash made standing; no hoof on the floor sliding; a hoof down as the blow lands and through the
+freeze. LOOKED AT ON SHEETS: going ahead, every frame of its left claw's from behind and of its right's from in front; picked frames
+of the other ways from in front and behind; six frames of the film itself.
+
+FOR THE MAIN CHAT, WHEN IT COMES INTO THE GAME: (1) the game has walking clips for the tap's first swing and the heavy
+(`clips.attackWalk`, `heavyWalk`), none for the combo's second swing (`clips.attack2`): its right claw's four want one
+(`render/figure.ts`, the line that picks `walkers`). (2) After a slash made walking, if it is still going and no slash
+follows, it should drop onto all fours as it does setting off (`AnimSet.start`), not be shown in the run at once. (3) A slash
+begun while it is running on all fours begins from its stance up on two legs: the picture jumps up in one frame, as any
+hero's attack begun running does; a rear-up cannot be played first without the blow coming later than the rules have it.
+
+SHOWN HIM SO, 11 Nov, by 20:20 Eastern (the second film sent). **HIS WORDS: AWAITED.**
+
+STILL TO DO, IN THIS ORDER (11 Nov, 20:20): (a) his word on its slashes made walking; (b) Damning, the smoke step, the
+change's end and the burning out's start, up on two legs, shown him; then, as before: its eight sides, its hide carried by
+its bones, the change into it; behind a switch that is off, a film and pictures in the game on floor 11 beside the Brawler;
+then THE MAN.
 
 THE FIRST THREE'S PICTURES (kept for the record):
 
@@ -304,4 +353,4 @@ ground in the game.
   workspace's own TypeScript 7.0.2, the same before this branch's work as after it: not this branch's.)
 - Nothing of the game imports `src/dev/demon_new.ts`, `demon_ideas.ts`, `shadow_moves.ts` or `shadow_fx.ts`; no file of the game
   is changed.
-- `npx tsx --test tests/shadow_moves.test.ts`: 6 of 6 (above). No other test was run: none touches these files.
+- `npx tsx --test tests/shadow_moves.test.ts`: 7 of 7 (above). No other test was run: none touches these files.

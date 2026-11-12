@@ -544,7 +544,8 @@ export function paintDemon(build: (k: Kit) => Built, view: GameView, pose: Bones
     let trail: readonly [number, number] | undefined;
     if (more.carry) {
       const a = d.st.at(sc.at([0, 0, 0]));
-      const b = d.st.at(sc.at([-more.carry * SMOKE_WAKE, 0, 0]));
+      const wa = ((more.carryWay ?? 0) * Math.PI) / 180;
+      const b = d.st.at(sc.at([-more.carry * SMOKE_WAKE * Math.cos(wa), -more.carry * SMOKE_WAKE * Math.sin(wa), 0]));
       trail = [b[0] - a[0], b[1] - a[1]] as const;
     }
     demonAura(d, { seat: s.head, fires: [], talons: [], aura: { from: built.smoke.map((p) => sc.at(p)), horns: [], jaw: sc.at(built.smoke[0]), claws: [], feet: [], behind: pv !== 'front', time: t, ...(trail ? { trail } : {}) } }, 'smoke');
@@ -562,8 +563,9 @@ export interface Moving {
   wings?: WingsHeld;
   /** How big each fire under its claws burns (1 as the still's). */
   fire?: (i: number) => number;
-  /** How fast it is carried across the floor (its own measure a second): its smoke streams off behind it. */
+  /** How fast it is carried across the floor (its own measure a second): its smoke streams off behind it; and the way it is carried, if not ahead (degrees to its left of the way it faces). */
   carry?: number;
+  carryWay?: number;
   /** Given what was built (where its talons' tips are), once it is drawn. */
   built?: (b: Built, sc: Sculpt) => void;
 }

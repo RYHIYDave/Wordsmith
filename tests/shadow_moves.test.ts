@@ -6,7 +6,10 @@
 //   stance; its dropping down ends as the run is at the moment it leads into);
 //   feet grip the floor (Movement 8), and its claws too on all fours, as far as the game has carried it;
 //   heavy blows land with a freeze (Movement 7); the strike itself the fastest of it by far (Movement 9);
-//   and its slashes are REALLY WIDE (his word, 11 Nov).
+//   and its slashes are REALLY WIDE (his word, 11 Nov);
+//   and it can move around on two legs as it slashes (his word of the film, 11 Nov): each slash made walking, each of the
+//   four ways, from its stance and back to it legs and all, a hoof on the floor staying where it is as the game carries it,
+//   a hoof coming down as the blow lands.
 
 // @ts-ignore
 import nodeTest from 'node:test';
@@ -17,7 +20,7 @@ import type { Posed, Skeleton, V3 } from '../src/art/skeleton';
 import { UNITS_PER_TILE } from '../src/art/moves3';
 import { RAKE_HIT, RAKE_LONG, RK, demonRun } from '../src/dev/demon_moves';
 import { WOLF_B } from '../src/dev/demon_new';
-import { DROP_INTO, DROP_PICTURES, FR, REARS, SHADOW_CARRY, SHADOW_RUN_ROUND, SHADOW_STANCE, shadowMoves, shadowPose } from '../src/dev/shadow_moves';
+import { DROP_INTO, DROP_PICTURES, FR, REARS, SHADOW_CARRY, SHADOW_RUN_ROUND, SHADOW_STANCE, SLASH_WAYS, shadowMoves, shadowPose } from '../src/dev/shadow_moves';
 import type { ShadowMove } from '../src/dev/shadow_moves';
 import { slashTips } from '../src/dev/shadow_fx';
 
@@ -26,7 +29,8 @@ const assert: { deepEqual(a: unknown, b: unknown, m?: string): void; ok(v: unkno
 
 const moves = shadowMoves();
 const [stand, run, slashL, slashR, drop] = moves;
-const rears = moves.slice(5);
+const rears = moves.slice(5, 5 + REARS);
+const walking = moves.slice(5 + REARS);
 const at = (m: ShadowMove, t: number): Skeleton => solve(WOLF_B, shadowPose(m, t));
 const STANCE = solve(WOLF_B, SHADOW_STANCE as Posed);
 const far = (a: V3, b: V3): number => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -122,5 +126,43 @@ test(`its rearing up: one for each of ${REARS} moments of the run, each from the
     assert.deepEqual(slides(m, 30, Math.round(m.long / FR)), [], `${i}`);
     // (slow to stop: its last frame's step small)
     assert.ok(apart(at(m, m.long), at(m, m.long - FR)) < 2, `${i}: settles`);
+  });
+});
+
+test(`its slashes made walking on two legs: both claws, each of ${SLASH_WAYS.length} ways; from its stance and back to it, legs and all; its arms as they are standing; a hoof on the floor stays where it is as the game carries it the way it goes; a hoof down as the blow lands`, () => {
+  assert.deepEqual(walking.length, 2 * SLASH_WAYS.length);
+  walking.forEach((m, i) => {
+    const still = i < SLASH_WAYS.length ? slashL : slashR;
+    const way = SLASH_WAYS[i % SLASH_WAYS.length];
+    assert.deepEqual([m.way, m.hit, m.long], [way, RAKE_HIT, RAKE_LONG], m.name);
+    assert.ok(apart(at(m, 0), STANCE) < 1e-6, `${m.name}: begins in its stance`);
+    assert.ok(apart(at(m, m.long), STANCE) < 1e-6, `${m.name}: ends in its stance`);
+    const th = (way * Math.PI) / 180;
+    const along = m.along as (t: number) => number;
+    const found: string[] = [];
+    let was: Skeleton | null = null;
+    for (let f = 0; f <= 31; f++) {
+      const s = at(m, f * FR);
+      // (its claws from its shoulders as in the slash made standing: the reach keeps its direction)
+      const a = at(still, f * FR);
+      for (const [h, sh] of [['handL', 'shoulderL'], ['handR', 'shoulderR']] as const) {
+        const d = far([s[h][0] - s[sh][0], s[h][1] - s[sh][1], s[h][2] - s[sh][2]], [a[h][0] - a[sh][0], a[h][1] - a[sh][1], a[h][2] - a[sh][2]]);
+        if (d > 0.6) found.push(`${h} ${d.toFixed(1)} off the standing slash's at frame ${f}`);
+      }
+      if (was) {
+        const g = along(f * FR) - along((f - 1) * FR);
+        for (const name of ['toeL', 'toeR'] as const) {
+          const p = was[name];
+          const q = s[name];
+          if (p[2] > HOOF_DOWN || q[2] > HOOF_DOWN) continue;
+          const d = Math.hypot(q[0] + g * Math.cos(th) - p[0], q[1] + g * Math.sin(th) - p[1]);
+          if (d > GIVE) found.push(`${name} slides ${d.toFixed(2)} at frame ${f}`);
+        }
+      }
+      was = s;
+    }
+    assert.deepEqual(found, [], m.name);
+    // (weight first: a hoof on the floor as the blow lands and through the freeze)
+    for (const f of [RK.hit, RK.freeze]) assert.ok(Math.min(at(m, f * FR).toeL[2], at(m, f * FR).toeR[2]) <= HOOF_DOWN, `${m.name}: a hoof down at frame ${f}`);
   });
 });

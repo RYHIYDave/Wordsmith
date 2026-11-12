@@ -6,12 +6,18 @@ stand, its slashes and its rearing up each picture twice (thirty a second, as th
 down each picture once (sixty). On a plain floor of the game's own tiles (64 by 32 picture pixels), which goes by under it
 as fast as the game carries it; the Brawler beside it at the start, for its size. MP4, not a GIF (his word: GIFs do not
 play on his phone).
-   python3 tools/shadow_moves_film.py <frames dir> <out.mp4>"""
-import json, os, subprocess, sys
+   python3 tools/shadow_moves_film.py <frames dir> <out.mp4>            its stand, slashes, dropping down, run and rearing up
+   python3 tools/shadow_moves_film.py <frames dir> <out.mp4> walking    its slashes made walking on two legs, each way it may go
+                                                                       (his word of the first film, 11 Nov: “This but I want
+                                                                       him to be able to move around on two legs as he’s
+                                                                       swiping”): the floor goes by the way it goes, slowed
+                                                                       for each slash's first moment as the game slows it"""
+import json, math, os, subprocess, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 src, out = sys.argv[1], sys.argv[2]
+WALKING = len(sys.argv) > 3 and sys.argv[3] == 'walking'
 note = json.load(open(os.path.join(src, 'moves.json')))
 MOVES = note['moves']
 SC = note['canvas']
@@ -46,8 +52,9 @@ sx, sy = xx - FX, yy - FY
 FWD = {'front': (sx / 32 + sy / 16) / 2, 'back': (sx / 32 - sy / 16) / 2}
 LEFT = {'front': (sx / 32 - sy / 16) / 2, 'back': (-sx / 32 - sy / 16) / 2}
 def floor(view, gone):
-    a = FWD[view] + gone / TILE
-    b = LEFT[view]
+    # (gone: how far it has been carried, forward and to its left)
+    a = FWD[view] + gone[0] / TILE
+    b = LEFT[view] + gone[1] / TILE
     ia, ib = np.floor(a), np.floor(b)
     fa, fb = a - ia, b - ib
     dark = ((ia + ib) % 2 == 0)
@@ -92,58 +99,93 @@ PARTS = [
 ]
 film = []
 gone = 0.0
+side = 0.0
 def stand(a, b, part, hold=2, brawler=False):
     for f in range(a, b):
-        film.extend([('stand', f, gone, part, brawler)] * hold)
+        film.extend([('stand', f, (gone, side), part, brawler)] * hold)
 def clip(key, part, hold=2):
     for f in range(MOVES[key]['frames']):
-        film.extend([(key, f, gone, part, False)] * hold)
-RUN_N = MOVES['run']['frames']
+        film.extend([(key, f, (gone, side), part, False)] * hold)
+def walked(key, part, hold=2):
+    """A slash made walking: the floor gone by the way it goes, as far as the game has carried it by each frame. (Its last
+    frame is its stance again, as the next move's first is: left out.)"""
+    global gone, side
+    m = MOVES[key]
+    th = math.radians(m['way'])
+    for f in range(m['frames'] - 1):
+        film.extend([(key, f, (gone + m['along'][f] * math.cos(th), side + m['along'][f] * math.sin(th)), part, False)] * hold)
+    gone += m['along'][-1] * math.cos(th)
+    side += m['along'][-1] * math.sin(th)
+RUN_N = MOVES.get('run', {}).get('frames', 0)
 def dash(part, rounds, rear, hold=1):
     """It drops down, runs so many rounds and a part of one to the moment it rears up from, and rears up."""
     global gone
     step = CARRY / 60
     for f in range(MOVES['drop']['frames'] - 1):
-        film.extend([('drop', f, gone, part, False)] * hold)
+        film.extend([('drop', f, (gone, side), part, False)] * hold)
         gone += step
     f0 = round(note['dropInto'] * RUN_N)
     f1 = round(rear / note['rears'] * RUN_N) + rounds * RUN_N
     for f in range(f0, f1):
-        film.extend([('run', f % RUN_N, gone, part, False)] * hold)
+        film.extend([('run', f % RUN_N, (gone, side), part, False)] * hold)
         gone += step
     clip(f'rear{rear}', part, hold * 2)
 N_STAND = MOVES['stand']['frames']
-REAR = 5
-# 1. standing: two rounds
-stand(0, N_STAND, 0, brawler=True)
-stand(0, N_STAND, 0, brawler=True)
-# 2. the slashes: left, right, left, right, as four taps would have them
-clip('slashL', 1)
-clip('slashR', 1)
-clip('slashL', 1)
-clip('slashR', 1)
-stand(0, 24, 1)
-# 3. the same at half speed
-clip('slashL', 2, 4)
-clip('slashR', 2, 4)
-stand(0, 12, 2, 4)
-# 4. dropping down, running, rearing up
-stand(N_STAND - 30, N_STAND, 3)
-dash(3, 2, REAR)
-stand(0, 45, 3)
-# 5. the same at half speed
-stand(N_STAND - 10, N_STAND, 4, 4)
-dash(4, 1, REAR, 2)
-stand(0, 12, 4, 4)
-# 6. all of it
-stand(N_STAND - 30, N_STAND, 5)
-clip('slashL', 5)
-clip('slashR', 5)
-dash(5, 2, REAR)
-clip('slashR', 5)
-clip('slashL', 5)
-dash(5, 1, REAR)
-stand(0, N_STAND, 5)
+if WALKING:
+    PARTS = [
+        ('SLASHING ON THE MOVE, ON TWO LEGS', 'Going ahead: left, right, left, right. Two great strides to each slash; a hoof comes down as the blow lands.'),
+        ('THE SAME, AT HALF SPEED', 'A hoof on the floor stays where it is; the floor goes by as fast as the game carries it.'),
+        ('GOING TO ITS LEFT AS IT SLASHES', 'It keeps facing what it fights and steps across.'),
+        ('BACKING AWAY AS IT SLASHES', 'It keeps facing what it fights and gives ground.'),
+        ('GOING TO ITS RIGHT AS IT SLASHES', 'It keeps facing what it fights and steps across.'),
+        ('AND AHEAD AGAIN', 'Then it stands. All fours is only for running with no slash.'),
+    ]
+    stand(N_STAND - 30, N_STAND, 0)
+    for key in ('slashLw0', 'slashRw0', 'slashLw0', 'slashRw0'):
+        walked(key, 0)
+    stand(0, 30, 0)
+    stand(N_STAND - 8, N_STAND, 1, 4)
+    walked('slashLw0', 1, 4)
+    walked('slashRw0', 1, 4)
+    stand(0, 8, 1, 4)
+    stand(N_STAND - 20, N_STAND, 2)
+    walked('slashLw1', 2)
+    walked('slashRw2', 3)
+    walked('slashLw3', 4)
+    walked('slashRw0', 5)
+    stand(0, 60, 5)
+else:
+    REAR = 5
+    # 1. standing: two rounds
+    stand(0, N_STAND, 0, brawler=True)
+    stand(0, N_STAND, 0, brawler=True)
+    # 2. the slashes: left, right, left, right, as four taps would have them
+    clip('slashL', 1)
+    clip('slashR', 1)
+    clip('slashL', 1)
+    clip('slashR', 1)
+    stand(0, 24, 1)
+    # 3. the same at half speed
+    clip('slashL', 2, 4)
+    clip('slashR', 2, 4)
+    stand(0, 12, 2, 4)
+    # 4. dropping down, running, rearing up
+    stand(N_STAND - 30, N_STAND, 3)
+    dash(3, 2, REAR)
+    stand(0, 45, 3)
+    # 5. the same at half speed
+    stand(N_STAND - 10, N_STAND, 4, 4)
+    dash(4, 1, REAR, 2)
+    stand(0, 12, 4, 4)
+    # 6. all of it
+    stand(N_STAND - 30, N_STAND, 5)
+    clip('slashL', 5)
+    clip('slashR', 5)
+    dash(5, 2, REAR)
+    clip('slashR', 5)
+    clip('slashL', 5)
+    dash(5, 1, REAR)
+    stand(0, N_STAND, 5)
 
 ff = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-framerate', '60', '-i', '-',
                        '-c:v', 'libx264', '-preset', 'slow', '-crf', '21', '-tune', 'animation', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], stdin=subprocess.PIPE)
