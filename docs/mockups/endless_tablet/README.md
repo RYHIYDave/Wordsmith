@@ -249,6 +249,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   ahead; he thrown back, his cloak flung forward; its hooves stepped back under it. The lane about 14 tiles. The checks: checkBoss
   on it (all but the skid's plough, which is the move) and his legs outside the boar every frame: all pass. Its hooves are put on
   spots (`BoarPose.feet`, the leg solved to reach), its rider leans (`BoarPose.ride`). Tool: `tools/endless_boss_film.ts`.
+  HIS YES, 12 Nov 2026, by pop-up (asked whether this is the charge; offered next: the wheel round between runs): “Yes, build the
+  wheel-round (Recommended)”.
+- THE WHEEL ROUND (`wheel`, `wheelPoseAt`; `pictures/standard/boss_charge_runs.mp4`: three runs, wheeling round between, each faster
+  (the film plays the second at 1.15 and the third at 1.3 of itself: how fast is the rules', the main chat's), then the wheel at
+  half speed): stopped out of its skid, it spins round on its forehand to face back down its lane, its hindquarters flung round in
+  two hops (still as they come down between), its forefeet stepping round under it, its head swung round first, grit flung out from
+  its hind feet; he turns with it (his hands, knees, feet and staff now turned with him as the boar turns). Done, the game shows it
+  from its other side (from behind, turned over left for right) and the next run goes back down the lane. Through the checks
+  (charge into wheel handed over), his legs outside the boar every frame: all pass.
 
 ## The tools
 

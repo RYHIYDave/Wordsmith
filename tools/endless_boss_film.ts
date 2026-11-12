@@ -7,17 +7,19 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, WS_CANVAS, chargeCarry, chargeSmeared, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, wsMob } from '../src/art/endless_boss';
 import { png } from './king_png';
 
 const [out = '/tmp/wsfilm', move = 'charge', view0 = 'front', w0 = '420', h0 = '300'] = process.argv.slice(2);
 const view = view0 as 'front' | 'rear';
+void view;
 const W = Number(w0);
 const H = Number(h0);
 const TILE = 32 / Math.sqrt(2 / 3);
 mkdirSync(`${out}/f`, { recursive: true });
 const mob = wsMob();
-const st = stage(paintViewOf(mob, view), WS_CANVAS.ax, WS_CANVAS.ay, WS_CANVAS);
+// (the floor as seen from in front: a move seen from behind is him turned round on it)
+const st = stage(paintViewOf(mob, 'front'), WS_CANVAS.ax, WS_CANVAS.ay, WS_CANVAS);
 const at = (p: [number, number, number]): [number, number] => {
   const [x, y] = st.at(p);
   return [x - WS_CANVAS.ax, y - WS_CANVAS.ay];
@@ -30,8 +32,6 @@ const mix = (s: Px, x: number, y: number, c: string, a: number): void => {
   const [r, g, b] = rgb(c);
   s.set(x, y, hex(r0 + (r - r0) * a, g0 + (g - g0) * a, b0 + (b - b0) * a));
 };
-const long = move === 'charge' ? CHARGE.long : 3;
-const carry = (t: number): number => (move === 'charge' ? chargeCarry(t) : 0);
 // (the camera follows him, a little behind: his floor point held near the picture's middle, the floor going by)
 const sx = Math.round(W / 2);
 const sy = Math.round(H / 2 + 50);
@@ -56,7 +56,7 @@ function floor(cx: number, cy: number): Px {
   return s;
 }
 /** The lane, marked while he winds up and holds: a band of the enemy's pink down the floor, chevrons running along it. */
-function lane(s: Px, t: number, ox: number, oy: number): void {
+function lane(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
   const [s0] = CHARGE_STRIKE;
   if (t < 0.15 || t > s0 + 0.05) return;
   const a = Math.min(1, (t - 0.15) / 0.2) * (t > s0 ? 0.5 : 1);
@@ -66,7 +66,7 @@ function lane(s: Px, t: number, ox: number, oy: number): void {
     for (let j = -12; j <= 12; j++) {
       const f = i / 260;
       const side = j / 12;
-      const [x, y] = at([f * L, side * half, 0]);
+      const [x, y] = at([from[0] + dir * f * L, from[1] + side * half, 0]);
       const edge = Math.abs(side) > 0.86;
       // (chevrons running down it, toward where he will go)
       const ch = (f * 26 - t * 5 - Math.abs(side) * 1.2) % 1;
@@ -76,20 +76,25 @@ function lane(s: Px, t: number, ox: number, oy: number): void {
   }
 }
 /** His picture laid on the floor at (ox, oy): his painted pixels, then his lights soft over them. */
-function lay(s: Px, t: number, ox: number, oy: number, ghost = 0): void {
-  const { px, lights } = paintMob(mob, move, t, view);
+function lay(s: Px, mv: string, vw: 'front' | 'rear', t: number, ox: number, oy: number, ghost = 0): void {
+  const { px, lights } = paintMob(mob, mv, t, vw);
   const x0 = Math.round(ox - WS_CANVAS.ax);
   const y0 = Math.round(oy - WS_CANVAS.ay);
+  // (seen from behind going back up the lane: the game's from-behind picture, turned over left for right as the game turns it)
+  const flip = vw === 'rear';
+  const fx = (x: number): number => (flip ? 2 * WS_CANVAS.ax - x : x);
   for (let y = 0; y < px.h; y++) {
-    for (let x = 0; x < px.w; x++) {
-      const c = px.get(x, y);
+    for (let xx = 0; xx < px.w; xx++) {
+      const x = fx(xx);
+      const c = px.get(xx, y);
       if (!c) continue;
       if (ghost) mix(s, x0 + x, y0 + y, c, ghost);
       else if (x0 + x >= 0 && y0 + y >= 0 && x0 + x < W && y0 + y < H) s.set(x0 + x, y0 + y, c);
     }
   }
   if (ghost) return;
-  for (const l of lights) {
+  for (const l0 of lights) {
+    const l = { ...l0, x: fx(l0.x) };
     const [r, g, b] = rgb(l.color);
     for (let y = Math.floor(l.y - l.r); y <= Math.ceil(l.y + l.r); y++) {
       for (let x = Math.floor(l.x - l.r); x <= Math.ceil(l.x + l.r); x++) {
@@ -100,34 +105,89 @@ function lay(s: Px, t: number, ox: number, oy: number, ghost = 0): void {
     }
   }
 }
-const N = Math.round(long * 30);
+type V2 = [number, number];
+/** A piece of the film: a move, from which side he is seen (from behind, he is turned round: the way he goes is the floor's other
+ * way), where on the floor it starts, how much faster than itself it plays. */
+interface Seg {
+  move: string;
+  view: 'front' | 'rear';
+  from: V2;
+  speed: number;
+  long: number;
+  /** where his floor point is, as the move's own points are, at `t` (a charge carries him; a wheel turns him round his forehand) */
+  floorAt: (t: number) => V2;
+}
+const floorOf = (mv: string) => (t: number): V2 => {
+  if (mv === 'charge') return [chargeCarry(t) * TILE, 0];
+  if (mv === 'wheel') {
+    const P = boarPoseAt('wheel', t);
+    return [P.x, P.y];
+  }
+  return [0, 0];
+};
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : 3);
+/** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
+const segs: Seg[] = [];
+{
+  const plan: [string, 'front' | 'rear', number][] = move === 'charge3'
+    ? [['charge', 'front', 1], ['wheel', 'front', 1], ['charge', 'rear', 1.15], ['wheel', 'rear', 1.15], ['charge', 'front', 1.3]]
+    : [[move, view, 1]];
+  let from: V2 = [0, 0];
+  for (const [mv, vw, speed] of plan) {
+    const f = floorOf(mv);
+    const sg: Seg = { move: mv, view: vw, from, speed, long: longOf(mv) / speed, floorAt: f };
+    segs.push(sg);
+    const e = f(longOf(mv));
+    const k = vw === 'front' ? 1 : -1;
+    from = [from[0] + k * e[0], from[1] + k * e[1]];
+  }
+}
 let camX = 0;
 let camY = 0;
-for (let i = 0; i <= N; i++) {
-  const t = i / 30;
-  // (the camera eases after him)
-  const [tx, ty] = at([carry(t) * TILE, 0, 0]);
-  camX += (tx - camX) * (i === 0 ? 1 : 0.32);
-  camY += (ty - camY) * (i === 0 ? 1 : 0.32);
-  // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
-  const kick = move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : 0;
-  const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
-  const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
-  const s = floor(-ox, -oy);
-  lane(s, t, ox, oy);
-  const where = (tt: number): [number, number] => {
-    const [x, y] = at([carry(tt) * TILE, 0, 0]);
-    return [ox + x, oy + y];
-  };
-  // (his strike smeared: after-images of him along the way he came, fading)
-  if (move === 'charge' && chargeSmeared(t)) {
-    for (const [k, a] of [[3, 0.18], [2, 0.3], [1, 0.45]] as const) {
-      const [x, y] = where(t - k * (1 / 90));
-      lay(s, t, x, y, a);
+let i = 0;
+for (const sg of segs) {
+  const n = Math.round(sg.long * 30);
+  const k = sg.view === 'front' ? 1 : -1;
+  for (let j = 0; j <= n; j++, i++) {
+    const t = Math.min(longOf(sg.move), (j / 30) * sg.speed);
+    const world = (tt: number): [number, number, number] => {
+      const f = sg.floorAt(tt);
+      return [sg.from[0] + k * f[0], sg.from[1] + k * f[1], 0];
+    };
+    const [tx, ty] = at(world(t));
+    camX += (tx - camX) * (i === 0 ? 1 : 0.32);
+    camY += (ty - camY) * (i === 0 ? 1 : 0.32);
+    // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
+    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : 0;
+    const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
+    const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
+    const s = floor(-ox, -oy);
+    if (sg.move === 'charge') lane(s, t, ox, oy, sg.from, k);
+    const where = (tt: number): [number, number] => {
+      const [x, y] = at(world(tt));
+      return [ox + x, oy + y];
+    };
+    // (the move's own picture is drawn about its floor point as it stands at nothing: placed at where the segment starts)
+    const base = (): [number, number] => {
+      const [x, y] = at([sg.from[0], sg.from[1], 0]);
+      return [ox + x, oy + y];
+    };
+    if (sg.move === 'charge' && chargeSmeared(t)) {
+      for (const [m, a] of [[3, 0.18], [2, 0.3], [1, 0.45]] as const) {
+        const [x, y] = where(t - m * (1 / 90));
+        lay(s, sg.move, sg.view, t, x, y, a);
+      }
     }
+    if (sg.move === 'wheel') {
+      const [x, y] = base();
+      lay(s, sg.move, sg.view, t, x, y);
+    } else {
+      const [x, y] = where(t);
+      lay(s, sg.move, sg.view, t, x, y);
+    }
+    writeFileSync(`${out}/f/${String(i).padStart(3, '0')}.png`, png(s));
   }
-  const [x, y] = where(t);
-  lay(s, t, x, y);
-  writeFileSync(`${out}/f/${String(i).padStart(3, '0')}.png`, png(s));
 }
+const N = i - 1;
+const long = segs.reduce((a, b) => a + b.long, 0);
 console.log(N + 1, 'frames', long.toFixed(2), 's');

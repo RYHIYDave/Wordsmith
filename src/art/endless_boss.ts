@@ -34,7 +34,7 @@ import { hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
-import type { BossShape, CheckLimb, CheckLump } from './boss_checks';
+import type { BossShape, CheckLimb, CheckLump, Handover } from './boss_checks';
 import type { Ring, Skin, Stage } from './skin';
 import { wornOn } from './skin';
 import { add, buildOf, cross, lerp3, mul, norm, solve, standing, sub } from './skeleton';
@@ -571,23 +571,31 @@ export function riderPose(P: BoarPose, t = 0): Partial<Bones> {
   const a = (t / WS_STAND_LONG) * TAU;
   const lean = P.ride?.lean ?? 0;
   const brace = P.ride?.brace ?? 0;
+  const cy = Math.cos(P.yaw * D), sy = Math.sin(P.yaw * D);
+  const yawed = (x: number, y: number): [number, number] => [x * cy - y * sy, x * sy + y * cy];
+  const hl = yawed(10 + 1.4 * Math.sin(a * 2), 4.0 + 1.0 * Math.cos(a * 2));
+  const hrt = yawed(1.2, -11.5);
   return {
     px: at[0] + 0.9 * Math.sin(a + 0.9), py: at[1] + 0.4 * Math.sin(a + 0.9), pz: at[2] - PELVIS0 + 1.0 * Math.sin(a * 2),
     // (leaning down over its neck into a charge, thrown back against a stop)
     yaw: P.yaw, pitch: -2 + 0.6 * lean - 0.55 * brace + 0.6 * P.pitch, roll: 0, twist: 6 + 2 * Math.sin(a + 0.5), bend: -2 + 0.9 * lean - 0.45 * brace, side: 0, hunch: 5 + 0.4 * lean,
     faceTurn: 4 * Math.sin(a * 0.5), faceUp: 6 + 0.7 * lean + 0.3 * brace, faceTilt: 2,
-    lfx: fl[0], lfy: fl[1] - B.stance, lfz: fl[2] - B.ankle, lfp: 10, lft: 8, lk: 72, lkUp: 8,
-    rfx: frt[0], rfy: frt[1] + B.stance, rfz: frt[2] - B.ankle, rfp: 10, rft: -8, rk: -72, rkUp: 8,
+    // (his knees and feet turned with him, as the boar turns: their ways are the figure's own)
+    lfx: fl[0], lfy: fl[1] - B.stance, lfz: fl[2] - B.ankle, lfp: 10, lft: 8 + P.yaw, lk: 72 + P.yaw, lkUp: 8,
+    rfx: frt[0], rfy: frt[1] + B.stance, rfz: frt[2] - B.ankle, rfp: 10, rft: -8 + P.yaw, rk: -72 + P.yaw, rkUp: 8,
     // (his left hand out before him, fingers clawed, writing on the air; his right hand high, the staff in it)
-    lhIn: 1, lhx: 10 + 1.4 * Math.sin(a * 2), lhy: 4.0 + 1.0 * Math.cos(a * 2), lhz: -2 + 1.2 * Math.sin(a * 2 + 0.6), le: -6,
-    rhIn: 1, rhx: 1.2, rhy: -11.5, rhz: 7 + 0.6 * Math.sin(a), re: 14,
+    // (his hands' places are along the figure's own axes: turned with him as the boar turns)
+    lhIn: 1, lhx: hl[0], lhy: hl[1], lhz: -2 + 1.2 * Math.sin(a * 2 + 0.6), le: -6,
+    rhIn: 1, rhx: hrt[0], rhy: hrt[1], rhz: 7 + 0.6 * Math.sin(a), re: 14,
     out: 0,
   } as Partial<Bones>;
 }
 
 /** His staff: from below his hand to well over his head, taller than he is; the iron ring at its head and his great rune in it. */
 function staffOf(s: Skeleton): { foot: V3; head: V3; ring: V3; up: V3; side: V3 } {
-  const up = norm([0.08, -0.12, 1]);
+  // (leaning a little forward and out to his right, as he faces)
+  const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
+  const up = norm([0.08 * f[0] + 0.12 * f[1], 0.08 * f[1] - 0.12 * f[0], 1]);
   // (through his fist: a little in from his knuckles, toward his body, so that his fingers close round it)
   const grip = add(s.handR, add(mul(s.chest[0], -0.4), mul(s.chest[1], 0.2)));
   const foot = add(grip, mul(up, -26));
@@ -896,6 +904,7 @@ function throbAt(tt: number): number {
 }
 export function boarPoseAt(move: string, t: number): BoarPose {
   if (move === 'charge') return chargePoseAt(t);
+  if (move === 'wheel') return wheelPoseAt(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   const A = BOAR_STAND_AT;
@@ -1107,6 +1116,7 @@ const DUST: readonly string[] = ['#c4b8b4', '#9e9294', '#786c74'];
 export function boarGrains(t: number, move = 'stand'): [V3, string, number][] {
   const out: [V3, string, number][] = [];
   if (move === 'charge') return chargeGrains(t);
+  if (move === 'wheel') return wheelGrains(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   for (const s0 of BOAR_STAND_AT.snorts) {
@@ -1147,6 +1157,84 @@ export function boarGrains(t: number, move = 'stand'): [V3, string, number][] {
   }
   return out;
 }
+
+// THE WHEEL ROUND (his yes, 12 Nov 2026: “Yes, build the wheel-round (Recommended)”, offered as: up to three runs, wheeling round
+// after each skid and coming back faster): stopped, it spins round on its forehand to face back down its lane, its hindquarters
+// flung round in two great hops, its forefeet stepping round under it, its head swung round first; grit thrown out from its hind
+// feet. It ends facing the way it came (the game then shows it from the other side, and the next run goes back down the lane).
+export const WHEEL = { long: 0.72, hops: [[0.06, 0.32], [0.38, 0.62]] as const, steps: [[0.1, 0.2], [0.18, 0.28], [0.42, 0.52], [0.5, 0.6]] as const };
+/** Where it turns: its forehand, on the floor between its forefeet. */
+const WHEEL_PIVOT: V3 = [(SOLE0[0][0] + SOLE0[1][0]) / 2, 0, 0];
+/** How far round it has come at `t` (degrees): each half of it on a hop of its hindquarters, still as they come down between. */
+function wheelYaw(t: number): number {
+  const [[a0, a1], [b0, b1]] = WHEEL.hops;
+  return 90 * smooth01((t - a0) / (a1 - a0)) + 90 * smooth01((t - b0) / (b1 - b0));
+}
+/** A point of it as it stands square, turned round its forehand by `Y` degrees. */
+function wheeled(p: V3, Y: number): V3 {
+  const c = Math.cos(Y * D), sn = Math.sin(Y * D);
+  const d = sub(p, WHEEL_PIVOT);
+  return [WHEEL_PIVOT[0] + d[0] * c - d[1] * sn, WHEEL_PIVOT[1] + d[0] * sn + d[1] * c, p[2]];
+}
+export function wheelPoseAt(t: number): BoarPose {
+  const Y = wheelYaw(t);
+  const spin = bumpOf(t, 0.02, WHEEL.long - 0.04);
+  const feet: Foot[] = [0, 1, 2, 3].map((i): Foot => {
+    const r = SOLE0[i];
+    if (i >= 2) {
+      // (its hind feet: flung round off the floor in two hops, down a moment between)
+      for (const [a, b] of WHEEL.hops) {
+        if (t <= a || t >= b) continue;
+        const v = (t - a) / (b - a);
+        const p = wheeled(r, wheelYaw(t));
+        return [p[0], p[1], 6.5 * S * Math.sin(Math.PI * v) + 0.8, 30 * Math.sin(Math.PI * v)];
+      }
+      const p = wheeled(r, wheelYaw(t));
+      return [p[0], p[1], 0, 0];
+    }
+    // (its forefeet: each stepped round twice under it, down on its spot between)
+    let Yp = 0;
+    for (const [k, [a, b]] of WHEEL.steps.entries()) {
+      if (k % 2 !== i) continue;
+      if (t >= b) Yp = wheelYaw(b);
+      else if (t > a) {
+        const v = (t - a) / (b - a);
+        const from = wheeled(r, Yp);
+        const to = wheeled(r, wheelYaw(b));
+        const w = smooth01(Math.min(1, v * 1.2));
+        return [from[0] + (to[0] - from[0]) * w, from[1] + (to[1] - from[1]) * w, 3.5 * S * Math.sin(Math.PI * v) + 0.8, 50 * Math.sin(Math.PI * v)];
+      }
+    }
+    const p = wheeled(r, Yp);
+    return [p[0], p[1], 0, 0];
+  });
+  // (its body turned round its forehand: where its floor point is carried to, as it turns)
+  const at = sub(WHEEL_PIVOT, rotZ(WHEEL_PIVOT, Y));
+  return {
+    ...BOAR_STAND,
+    x: at[0],
+    y: at[1],
+    z: -1.4 * S * spin,
+    yaw: Y,
+    pitch: -3 * spin,
+    roll: -7 * spin * Math.sin(Math.PI * clamp01(t / WHEEL.long)),
+    // (its head swung round ahead of it)
+    low: BOAR_STAND.low + 4 * spin,
+    look: 28 * bumpOf(t, 0.0, WHEEL.long * 0.8),
+    tilt: -8 * spin,
+    flap: -0.8 * spin,
+    legs: BOAR_STAND.legs,
+    feet,
+    breath: 0.6,
+    sway: t / WS_STAND_LONG + 0.4 * spin,
+    pulse: 0.75,
+    ride: { lean: 10 * spin, brace: 0 },
+  };
+}
+const rotZ = (p: V3, Y: number): V3 => {
+  const c = Math.cos(Y * D), sn = Math.sin(Y * D);
+  return [p[0] * c - p[1] * sn, p[0] * sn + p[1] * c, p[2]];
+};
 
 /** WHAT FLIES OFF IT AS IT CHARGES (as its own points are, the game carrying it on: what is thrown stays where it was thrown):
  * grit thrown back as it paws; the blast of its snort; a ring of grit blown out where it bursts off; grit kicked up at every
@@ -1214,6 +1302,32 @@ function chargeGrains(t: number): [V3, string, number][] {
         const sd = e * 13 + i * 5 + j;
         const sp = (40 + 60 * hash(sd, 1, 8906)) * S * (1 - 0.5 * (e / 18));
         fly([f0[0] + 2 * S + ce, f0[1] + (hash(sd, 2, 8907) - 0.5) * 4 * S, 0.6], [sp + CHARGE.pace * TILE * 0.5 * (1 - e / 18), (hash(sd, 3, 8908) - 0.5) * 40 * S, (12 + 22 * hash(sd, 4, 8909)) * S], te, sd + 500, 0.5, j === 0 ? BREATH : DUST);
+      }
+    }
+  }
+  return out;
+}
+/** WHAT FLIES OFF IT AS IT WHEELS: grit flung out from its hind feet as they leave the floor and as they come down. */
+function wheelGrains(t: number): [V3, string, number][] {
+  const out: [V3, string, number][] = [];
+  const g = 30;
+  for (const [hi, [a, b]] of WHEEL.hops.entries()) {
+    for (const [t0, Y] of [[a, wheelYaw(a)], [b, wheelYaw(b)]] as const) {
+      const u = t - t0;
+      if (u <= 0 || u > 0.45) continue;
+      for (const i of [2, 3]) {
+        const foot = wheeled(SOLE0[i], Y);
+        // (out from the way the hindquarters swing)
+        const sw = rotZ([0, -1, 0], Y);
+        for (let j = 0; j < 9; j++) {
+          const sd = hi * 97 + i * 13 + j + (t0 === a ? 0 : 50);
+          const sp = (30 + 60 * hash(sd, 1, 8921)) * S;
+          const ang = (hash(sd, 2, 8922) - 0.5) * 1.6;
+          const dir: V3 = [sw[0] * Math.cos(ang) - sw[1] * Math.sin(ang), sw[0] * Math.sin(ang) + sw[1] * Math.cos(ang), 0];
+          const p: V3 = [foot[0] + dir[0] * sp * u, foot[1] + dir[1] * sp * u, 0.5 + (12 + 16 * hash(sd, 3, 8923)) * S * u - 0.5 * g * S * u * u];
+          if (p[2] < 0 || hash(sd, Math.floor(u * 30), 8924) < (u / 0.45) * 0.8) continue;
+          out.push([p, DUST[Math.min(2, Math.floor((u / 0.45) * 3))], 1]);
+        }
       }
     }
   }
@@ -1304,7 +1418,7 @@ export function wsMob(): Mob {
     trueBack: true,
     bits: wsBits,
     grains: (_st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand'),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST } },
   } as unknown as Mob;
 }
 
@@ -1370,5 +1484,14 @@ export const WS_SHAPE: BossShape = {
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : 0),
   strikes: { charge: CHARGE_STRIKE },
   smeared: (move: string, t: number) => move === 'charge' && chargeSmeared(t),
+  // (each move from his stand and back, as the game hands over; a run done, it wheels round out of its skid; done wheeling, the
+  // game shows it from its other side and the next run goes back down the lane: that hand-over is the charge's own start drawn the
+  // other way round, and is not one these checks can draw)
+  handovers: [
+    ...['attack', 'reel', 'charge'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
+    { from: 'charge', at: 'end', to: 'wheel', toAt: 0 },
+    { from: 'stand', at: 0, to: 'dying', toAt: 0 },
+    { from: 'stand', at: 0, to: 'walk', toAt: 0 },
+  ],
 };
 void len;
