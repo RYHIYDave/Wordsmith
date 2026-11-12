@@ -46,13 +46,14 @@ export function warlockAskAhead(ask: AskPack, h: WarlockAsked, full: boolean, to
     return;
   }
   if (demon) {
+    // (its stand, and in a fight its two slashes and Damning: a tap, a combo, a hold. Its rear-ups, its slashes made walking and
+    // its smoke step are opened as they are first shown, their first frame meanwhile: asked for ahead every frame they would all be
+    // held at once, some 70 MB of its side, where the budget is 32)
     ask('it-stand', two, true);
     if (town) return;
-    ask('it-rear', two, false);
-    ask('it-slash', two, false);
-    ask('it-walkSlash', two, false);
+    ask('it-slashL', two, false);
+    ask('it-slashR', two, false);
     ask('it-damning', two, false);
-    ask('it-step', two, false);
     return;
   }
   ask(full ? 'standBlaze' : 'stand', eight, true);

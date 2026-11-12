@@ -113,8 +113,9 @@ export function packsOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[
  *   run (and blazing); PACKED, from each side, his stand (`stand`; blazing, `standBlaze`: he stands facing one way at a time), his
  *   bolt, his curse, the smoke step (both its ends), struck (from in front and from behind), his fall, and the change.
  *   THE LIVING SHADOW (its two sides; the game's own demon, with no rearing up, is not packed): HELD, its run on all fours;
- *   PACKED, from each side, its stand (`it-stand`), dropping down and rearing up (`it-rear`), its slashes standing (`it-slash`) and
- *   walking (`it-walkSlash`), Damning, its smoke step, struck, and its burning out (`it-burn`).
+ *   PACKED, from each side, its stand (`it-stand`), dropping down (`it-drop`), each of its eight rear-ups (`it-rear0` to 7), its
+ *   slashes standing (`it-slashL`, `it-slashR`) and each made walking (`it-walkSlash0` to 3), Damning, its smoke step, struck, and
+ *   its burning out (`it-burn`). (A pack is one sheet, 2048 square: its dropping down with its rear-ups did not go on one.)
  * A list's first frame is always held, so a move not unpacked yet shows it, a few hundredths of a second.
  */
 function warlockPacksOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[][] | null {
@@ -139,12 +140,14 @@ function warlockPacksOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[
       put(c?.fall?.frames, 'fall');
       put(c?.change?.frames, 'change');
     } else {
+      // (its big lists each a pack of its own: a pack is one sheet, 2048 square, and its dropping down with its eight rear-ups,
+      // or its four slashes made walking, are more than one; its burning out and the man's change are one each)
       put(side.idle, 'it-stand');
-      put(side.start?.frames, 'it-rear');
-      for (const st of side.stops ?? []) put(st.frames, 'it-rear');
-      put(c?.attack?.frames, 'it-slash');
-      put(c?.attack2?.frames, 'it-slash');
-      for (const w of c?.attackWalk ?? []) put(w.frames, 'it-walkSlash');
+      put(side.start?.frames, 'it-drop');
+      (side.stops ?? []).forEach((st, i) => put(st.frames, `it-rear${i}`));
+      put(c?.attack?.frames, 'it-slashL');
+      put(c?.attack2?.frames, 'it-slashR');
+      (c?.attackWalk ?? []).forEach((w, i) => put(w.frames, `it-walkSlash${i}`));
       put(c?.heavy?.frames, 'it-damning');
       put(c?.leap?.frames, 'it-step');
       put(c?.land?.frames, 'it-step');
