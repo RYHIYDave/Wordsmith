@@ -21,6 +21,14 @@ has seen it in play and said yes; nothing he sees changes while it is off.
   understand that the axe is going to kind of materialize to keep fighting but I do need that to work that way”; “Tap should
   have a small knockback and high stun buildup/chance”.
 
+## HIS YES, 12 Nov 2026
+
+Sent warrior_weapons.mp4 (his three weapons in play, the art chat's axe and maul) and asked “In warrior_weapons.mp4, the Warrior
+uses the art chat's axe and maul from your approved art. Smash knocks enemies back, and two quick Smashes stun. The Earthquake does
+a full spin, then the ground quakes in the floor's own stone. Does it look right to put live?”, he answered by 09:07: “Yes, put it
+live (Recommended)” (offered as: I finish the last pieces (the leap crouches, getting his pictures ready so they load fast on your
+phone), test, and it goes out). So WARRIOR_TREE2 IS ON (2c80300c); the crouches are in (3d below).
+
 ## The steps, and where each stands
 
 1. DONE, 13d80f58: wtree merged onto main 25.3.9 (c020f266). Five conflicts, every side kept (the commit says how). tsc clean.
@@ -57,6 +65,10 @@ has seen it in play and said yes; nothing he sees changes while it is off.
    for that page), all three weapons, a phone's screen: clean; the axe and the maul in his hands, the thrown axe from the art's
    pictures, the ground heaving. THE FILM FOR HIM: tools/warrior_weapons_film.py, 15 s, 960 by 556 (the scratchpad's
    warrior_weapons.mp4, sent 12 Nov).
+3d. DONE (tests/warrior_tree_rules.test.ts 9): Leaping Chop and Shoulder Charge crouch before he leaves the floor (defs.ts
+   `crouch`: 5/30 s, 0.2 s; the move's `crouch`, he stays put meanwhile; render.ts `crouchT`, figure.ts the art's chopCrouch,
+   chargeCrouch); the Charge carries him in half a second (`secs`). LEFT AS IT IS: the Charge's throw aside (Bulldozer carries
+   instead, as the tree has it), Twin Axes' second 0.1 s after the first (both thrown together).
 3. The rules to the art's timings and his rules (the README's “What the main chat needs”, for both weapons): Cleave, the thrown
    axe (out at 0.367 s, AXE_FLIGHT, back, the catch; Twin Axes 14 degrees, the second 0.1 s after), Leaping Chop (0.167 s
    crouched; the blow 1.5 tiles before his feet, 1.6 round), Smash (0.433 s; 0.4 round a point 1.4 before him), Earthquake
