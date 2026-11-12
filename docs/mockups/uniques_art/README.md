@@ -16,9 +16,12 @@ Asked whether this chat may send its own branch to GitHub: “Yes, let it send i
 Shown the nine boots (`pictures/boots.png`) and asked whether this is the look for the other 53: “Yes, draw the rest like
 this (Recommended)”, offered as: the other 53 the same way, in batches by kind; you see each batch.
 
-**He has seen the nine boots and said yes to the look. He has been sent the other 53** (`pictures/jewels.png`,
-`pictures/worn.png`, `pictures/weapons.png`) **and has not yet said yes to them, one by one or all.** The names are still
-his placeholders.
+Shown the other 53 (`pictures/jewels.png`, `pictures/worn.png`, `pictures/weapons.png`) and asked whether all 62 are good
+to hand to the main chat: “Yes, hand them to main (Recommended)”, offered as: queued for the main chat to bring in with the
+unique items, behind their switch, still off.
+
+**So all 62 bag pictures have his yes.** The names are still his placeholders. Asked where what is seen in play should be
+drawn, this chat being long: “A fresh chat from the queue (Recommended)”; it is back in the queue as `draw-unique-items`.
 
 ## What is drawn
 
@@ -82,7 +85,8 @@ queen's looking-glass (floor 18's own book). The Dancing Shoes are a court shoe 
 
 ## Not done
 
-1. **His yes on the 53** (he has seen the boots). Then `UNIQUE_ART.on` goes true when `UNIQUES` does.
+1. **Bringing it in** is the main chat's (queue item `bring-in-unique-item-pictures`): `UNIQUE_ART.on` goes true when
+   `UNIQUES` does (test 1 of tests/items_unique.test.ts asserts it off: change it then).
 2. **What is seen in play**, not begun: the queue item lists it (The Restless Tome's book in flight, The Drowned Arm's
    tentacle, The Queen's Talons' bird, The Fleshmancer's Brand's risen elite, The Rainwalker, The Shepherd's Crook, The
    Tide, The Windcutter's blade of wind, The Fan's three arrows, The Sticky Wrench's stuck vial, The Moth's Wing's darkened
