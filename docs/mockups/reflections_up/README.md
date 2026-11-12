@@ -90,7 +90,9 @@ Not run: the whole suite; `tools/unit.mjs` (run each file alone with tsx here); 
 
 ## His word
 
-Asked, with the two sheets and the film: NOT YET ANSWERED (this foot is kept up to date with what he says).
+12 Nov 2026, sent the two sheets, the sheet of moments and the film, asked by pop-up “Floor 18's reflections, remade from
+the six heroes as they look now (the two sheets and the film): are these your glass copies?”: “Yes, hand to main
+(Recommended)”. So it is handed to the main chat (the queue's item, retitled to bring this branch in).
 
 ## For the main chat, once he says yes
 
