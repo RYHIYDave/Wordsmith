@@ -61,8 +61,8 @@ main 25.3.10 `4f510caa1c9d`, that branch `1b2f6c2fbd50` (its note says nothing t
 - `tests/tinkerer_hold_ahead.test.ts` (new, 5): her art set up does not work out her hold or her fall, a picture of each
   painted does; her hold's keys the very numbers, read at once and made a slice a step (some 380 steps); her fall's the same;
   the Brawler's steadied moves (struck, struck from behind) the same.
-- Unit: see the commit's run (`.unit/<commit>/summary.txt`): `--only tinkerer_hold_ahead,tinkerer_moves,tinkerer,load_slice` and
-  the core.
+- Unit, `--only tinkerer_hold_ahead,tinkerer_moves,tinkerer,load_slice` and the core on 1ed3bcfae4: 27 files, 332 tests, all
+  passed.
 - Playtests above, each finished clean; the town looked at.
 
 NOT CHECKED: his phone; a release build with every bake beside it; the published page's playtests.
