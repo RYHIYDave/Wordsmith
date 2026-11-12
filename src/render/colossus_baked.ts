@@ -93,7 +93,7 @@ export function colossusBakeAsk(): void {
 const KEPT_GROUPS: Record<'arms' | 'p3' | 'p2', { is: (g: string) => boolean; n: number }> = {
   arms: { is: (g) => g.includes('.slam'), n: COLOSSUS_BAKE.slamsKept },
   p3: { is: (g) => /^(slam3|gaze3)\./.test(g), n: 6 },
-  p2: { is: (g) => /^gaze2\./.test(g), n: 3 },
+  p2: { is: (g) => /^gaze2\./.test(g), n: 2 },
 };
 
 /** Fetch a group's sheets, if not held already. */

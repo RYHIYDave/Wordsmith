@@ -56,7 +56,7 @@ def main():
     for slow in (False, True):
         for d, line in clips:
             n = lay(d, line, tmp, n, slow)
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', '30', '-i', os.path.join(tmp, 'f_%05d.png'), '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-crf', '20', '-movflags', '+faststart', out], check=True)
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', '30', '-i', os.path.join(tmp, 'f_%05d.png'), '-c:v', 'libx264', '-preset', 'medium', '-pix_fmt', 'yuv420p', '-crf', '25', '-movflags', '+faststart', out], check=True)
     print(f'{n} frames ({n / 30:.1f} s) into {out}')
 
 
