@@ -1000,3 +1000,10 @@ export function itemArt(key: string, rarity: Rarity): Sprite {
   if (!s) made.set(id, (s = paintItemA(kind, rarity).sprite(16, 16, 2)));
   return s;
 }
+
+// ---------------------------------------------------------------------------------------------
+// FOR NEW KINDS PAINTED BEFORE THEY ARE KINDS (the art chat's mock-ups in src/dev, which the game does not import: the
+// Warrior's battle axe and warhammer, dev/warrior_weapons_items.ts): the painter and its pieces, so a new item is painted
+// exactly as these are. Nothing here changes a picture of the game's.
+export { paint as paintItemParts, poly, cap, ell, path, at, unit, side, add, sub, mul, lerp, len, gem, stud, STONE, TRIM, INLAY, INLAY_LO, UP };
+export type { Part, Shape, Shade, Mark, Mat, Rar, V };

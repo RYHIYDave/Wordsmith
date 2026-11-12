@@ -151,6 +151,12 @@ export interface WuAround {
   smear?: number;
   /** Where the wind has got to, 0..1. */
   wind?: number;
+  /**
+   * WHAT HE HOLDS IN PLACE OF HIS GREAT SWORD (art/warrior_up_weapons.ts, a mock-up behind a switch that is off): `lay` puts it
+   * into his sculpture before it is drawn, so that it and he are one picture; `extras` draws what is of the old kind for it (its
+   * lights, its smear, the strap it hangs from). His great sword is then not drawn. Absent, he is drawn as ever.
+   */
+  held?: { lay(sc: Sculpt): void; extras?(st: Stage, lights: Light[]): void };
 }
 
 /** What a sculpted frame of him is, for the checks: the drawing, and the solids by part. */
@@ -459,6 +465,14 @@ export function paintWarriorUp(s: Skeleton, q: Posed, side: WuSide, B: Build, ar
   const extras = (raw: Stage): void => {
     // (what is drawn of the old kind is laid as he is turned for this side)
     const st = turnedStage(raw, spin);
+    if (around.held) {
+      // (another weapon in place of his great sword: its own lights and smear; his scarf's knot as ever)
+      around.held.extras?.(st, lights);
+      const [kx, ky] = st.at(knot);
+      const far = st.near(knot) < st.near(s.neck);
+      tails = [{ id: 'w-scarf-b', x: kx, y: ky + 0.5, over: !far }, { id: 'w-scarf-a', x: kx, y: ky - 1, over: !far }];
+      return;
+    }
     const carried = away ? onBack(B, s, 'sword') : { grip: s.handR, point: s.point };
     const guard3 = add(carried.grip, mul(carried.point, 1.3));
     const tip3 = add(guard3, mul(carried.point, GREAT_BLADE));
@@ -563,6 +577,7 @@ export function paintWarriorUp(s: Skeleton, q: Posed, side: WuSide, B: Build, ar
       { id: 'w-scarf-a', x: tx, y: ty - 1, over: !behind },
     ];
   };
+  if (around.held) around.held.lay(sc);
   const drawn = draw(sc, view, WU_SPIN[side].ax, CANVAS3.ay, CANVAS3, extras, rim);
   return { px: drawn.px, lights, tails, drawn, sc, s, spin, ax: WU_SPIN[side].ax, ay: CANVAS3.ay, blade: bladeAt };
 }
