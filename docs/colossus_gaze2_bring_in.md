@@ -55,7 +55,10 @@ built from this branch asks for the new folder only.
 1. Merge `build/colossus-gaze2` into `main` (a fast-forward from 10161fc if `main` has not moved; it touches `src/main.ts` in two
    lines only: the import of `colossus_fight` and `dbg.gaze2` after `dbg.colossus`).
 2. Its checks are done (below); with the version's own checks (only what changed and the core), the published page's playtests: add
-   `tools/scenarios/colossus_gaze.mjs` and `colossus_baked.mjs` to the version's wrap script.
+   `tools/scenarios/colossus_gaze2_film.mjs` (with GAZE2 unset it plays the game's own switch, on; it throws if no gaze is filmed,
+   or if one is filmed with the switch on but not along an aim pictured; its pictures are many, so give it an `--out` of its own) and
+   `colossus_baked.mjs` to the version's wrap script. NOT `colossus_gaze.mjs`: on this two-core machine, busy, it stayed in phase 1
+   (its tentacles cut down once, too early) and never reached his gaze, though it ended "clean".
 3. The new Colossus folder goes with the page (gh-pages and the claude.ai page).
 
 ## Checked here
@@ -67,3 +70,12 @@ built from this branch asks for the new folder only.
   `colossus_baked.mjs` on the new mark, clean.
 - Looked at: his eye turned toward the hero's side through the wind-up and following the beam across; no seam seen where his tongue
   is laid over his body (phase 3 is laid the same way).
+
+## On the switch's commit (89be813), and since
+
+- `node tools/unit.mjs --only colossus_gaze2,colossus_gaze2_pack,colossus_fight,colossus_sounds` and the core on 89be813320: 27 files,
+  all passed.
+- A page built from it (`tools/build_to.mjs`, the Colossus at `f133999cbf23`), served: `colossus_gaze2_film.mjs` with the switch as
+  the game has it (on), the hero at (12, 3): his gaze along aim 20 (`gaze2.4`, -12 to 52), clean; his eye turned to the stone's right,
+  the beam from it.
+

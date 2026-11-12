@@ -1,14 +1,14 @@
 // THE SWAMP COLOSSUS'S PHASE 2 GAZE, FILMED (game/colossus_fight.ts GAZE2_AIMED; the queue's aim-colossus-phase-2-gaze): phase 2
 // reached, the hero stood to one side of the stone (U, V: tiles), his gaze begun, the game slowed (dbg.slowmo) and photographed as
 // fast as it will go, each picture named with the gaze's own time (frames of 30 a second), so that a film can be laid at an even 30
-// a second from them (tools/gaze2_film.py). GAZE2=1 with the switch on, else as the game is.
+// a second from them (tools/gaze2_film.py). GAZE2=1 with the switch on, GAZE2=0 off, unset as the game has it (on since his yes).
 //   GAZE2=1 U=2.5 V=2.5 node tools/playtest.mjs --file dist/gaze2.html --serve --touch --size 844x390 --dpr 2 \
 //     --scenario tools/scenarios/colossus_gaze2_film.mjs --out shots/gaze2/on
 export default async function (page, snap) {
-  const on = process.env.GAZE2 === '1';
+  const on = process.env.GAZE2 === undefined ? null : process.env.GAZE2 === '1';
   const U = Number(process.env.U ?? 2.5);
   const V = Number(process.env.V ?? 2.5);
-  await page.evaluate((on) => { const d = window.__dbg; d.colossus.on = true; d.gaze2.on = on; d.saving(false); d.run('warrior', 9); d.seasoned(28); d.autoLevel = false; d.autoWords = false; d.god = true; }, on);
+  await page.evaluate((on) => { const d = window.__dbg; d.colossus.on = true; if (on !== null) d.gaze2.on = on; d.saving(false); d.run('warrior', 9); d.seasoned(28); d.autoLevel = false; d.autoWords = false; d.god = true; }, on);
   await page.waitForTimeout(600);
   await page.evaluate(() => { const g = window.__dbg.game(); g.depth = 10; g.cleared = 9; g.enterDungeon(); const L = g.level; L.explored.fill(1); const h = g.hero; h.x = L.land.landing.x; h.y = L.land.landing.y; });
   await page.waitForTimeout(6000);
@@ -43,6 +43,9 @@ export default async function (page, snap) {
     await snap(`t_${String(Math.round(s.time * 1000)).padStart(9, '0')}`);
     if (t0 !== null && s.time - t0 > 3.4 + 0.6) break;
   }
-  snap.note('gaze', { t0, ...shown, on, U, V });
+  const switched = await page.evaluate(() => window.__dbg.gaze2.on);
+  snap.note('gaze', { t0, ...shown, on: switched, U, V });
+  if (!shown) throw new Error('no gaze filmed');
+  if (switched && shown.pic === null) throw new Error('the switch on, but the gaze not along an aim pictured');
   console.log('gaze', JSON.stringify(shown), 'began at', t0);
 }
