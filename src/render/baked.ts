@@ -10,7 +10,7 @@
 // built without them or opened from a file, a sheet that will not load, a hero whose lists are not as they were baked), the
 // game paints them as it did before: nothing is lost but time.
 
-import { heroLists } from '../art/heroes3';
+import { READY_LIST, cardLists, heroLists } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
 import type { AnimSet } from '../art/actor_types';
@@ -59,23 +59,43 @@ export function keyName(k: BakeKey): string {
 /**
  * Where a hero's baked frames go, as [side, list, frame] (sides as art/sides.ts numbers them: 0 the front, 1 the back, and for a
  * hero painted from eight, the six others after; lists as heroLists has them), in the order they are wanted: standing and
- * running first, then the first frame of every other list, then the rest. On a class card only what a card shows, the front
- * standing and running (render/painter.ts, hero).
+ * running first, then the first frame of every other list, then the rest (his making ready is a card's only: READY_LIST).
+ *
+ * ON A CLASS CARD, EVERYTHING A CARD SHOWS (art/heroes3.ts cardLists): standing and running first, then coming to a stand out
+ * of the run, of the side a card's hero is seen from (of a hero painted from eight sides, not the front); what he does left
+ * standing and his making ready, of the front; each whole. (Till 12 Nov 2026 only the front's standing and running: the rest
+ * was painted where the game is drawn as it was shown, the lag of the hero cards on his phone.)
  */
 export function bakedPlaces(sides: readonly AnimSet[], card: boolean): [number, number, number][] {
   const lists = sides.map((s) => heroLists(s));
   const front = sides[0];
-  const most = [lists[0].indexOf(front.idle), lists[0].indexOf(front.walk)].filter((l) => l >= 0);
   const out: [number, number, number][] = [];
   if (card) {
-    for (const l of most) for (let i = 0; i < lists[0][l].length; i++) out.push([0, l, i]);
+    const c = cardLists(sides);
+    for (const [v, l] of c.at) for (let i = 0; i < lists[v][l].length; i++) out.push([v, l, i]);
+    for (const [v, l, i] of c.one) if (l >= 0 && !c.at.some(([a, b]) => a === v && b === l)) out.push([v, l, i]);
     return out;
   }
+  const most = [lists[0].indexOf(front.idle), lists[0].indexOf(front.walk)].filter((l) => l >= 0);
   const V = lists.length;
+  const rest = (l: number): boolean => !most.includes(l) && l !== READY_LIST;
   for (const l of most) for (let v = 0; v < V; v++) for (let i = 0; i < lists[v][l].length; i++) out.push([v, l, i]);
-  for (let l = 0; l < lists[0].length; l++) if (!most.includes(l)) for (let v = 0; v < V; v++) if (lists[v][l].length) out.push([v, l, 0]);
-  for (let l = 0; l < lists[0].length; l++) if (!most.includes(l)) for (let v = 0; v < V; v++) for (let i = 1; i < lists[v][l].length; i++) out.push([v, l, i]);
+  for (let l = 0; l < lists[0].length; l++) if (rest(l)) for (let v = 0; v < V; v++) if (lists[v][l].length) out.push([v, l, 0]);
+  for (let l = 0; l < lists[0].length; l++) if (rest(l)) for (let v = 0; v < V; v++) for (let i = 1; i < lists[v][l].length; i++) out.push([v, l, i]);
   return out;
+}
+
+/**
+ * How many of bakedPlaces' places are wanted before every other hero's of the group: a card's standing and running (the cards
+ * come up all six at once: each hero's standing and running are laid on the group's first sheet, the rest after: dev/
+ * bake_heroes_page.ts). A hero in his places: all of them (his group is laid a place after another, as it was).
+ */
+export function bakedFirst(sides: readonly AnimSet[], card: boolean): number {
+  if (!card) return bakedPlaces(sides, false).length;
+  const c = cardLists(sides);
+  let n = 0;
+  for (const [v, l] of c.at.slice(0, c.first)) n += heroLists(sides[v])[l].length;
+  return n;
 }
 
 /** The lengths of a hero's lists, every side (to know the baked pictures are of the hero as the game has him now). */

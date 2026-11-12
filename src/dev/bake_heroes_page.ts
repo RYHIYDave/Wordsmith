@@ -7,7 +7,7 @@ import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { Sprite } from '../engine/px';
 import { VETERAN } from '../game/veteran';
-import { bakeGroups, bakedPlaces, heroSides, keyName, listLengths } from '../render/baked';
+import { bakeGroups, bakedFirst, bakedPlaces, heroSides, keyName, listLengths } from '../render/baked';
 import type { BakeFile } from '../render/baked';
 
 /** A sheet's widest and tallest (a phone takes a picture this big in at once without trouble). */
@@ -42,12 +42,17 @@ function group(name: string): { frames: number; places: number; sheets: { w: num
   const dropped = new Set<string>();
   const outKeys: BakeFile['keys'] = [];
   let places = 0;
-  for (const k of keys) {
+  // (each hero's places in the order they are wanted; THE CARDS: every hero's standing and running before anything else of any
+  // of them (render/baked.ts bakedFirst), so that they are on the group's first sheet and all six stand on their cards as it comes)
+  const per = keys.map((k) => {
     const a = art.of(k.cls, { ...lookOfPlace(k.place), vet: k.vet });
     const sides = heroSides(a);
-    const lists = sides.map((s) => heroLists(s));
-    const at: number[] = [];
-    for (const [v, l, i] of bakedPlaces(sides, k.place === 'card')) {
+    return { k, sides, lists: sides.map((s) => heroLists(s)), all: bakedPlaces(sides, k.place === 'card'), first: bakedFirst(sides, k.place === 'card'), at: [] as number[] };
+  });
+  const runs: [(typeof per)[number], number, number][] = [...per.map((p) => [p, 0, p.first] as [(typeof per)[number], number, number]), ...per.map((p) => [p, p.first, p.all.length] as [(typeof per)[number], number, number])];
+  for (const [p, from, to] of runs) {
+    const { lists, at } = p;
+    for (const [v, l, i] of p.all.slice(from, to)) {
       const s = lists[v][l][i];
       const cv = s.img;
       if (!cv || !cv.width || !cv.height) continue;
@@ -75,8 +80,8 @@ function group(name: string): { frames: number; places: number; sheets: { w: num
       at.push(v, l, i, fi);
       places++;
     }
-    outKeys.push({ cls: k.cls, place: k.place, vet: k.vet, lens: listLengths(sides), at });
   }
+  for (const p of per) outKeys.push({ cls: p.k.cls, place: p.k.place, vet: p.k.vet, lens: listLengths(p.sides), at: p.at });
   // (laid on sheets in rows, in the order they are wanted)
   const sheets: { w: number; h: number }[] = [];
   const canvases: HTMLCanvasElement[] = [];

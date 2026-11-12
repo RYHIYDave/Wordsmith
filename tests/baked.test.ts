@@ -5,7 +5,8 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { BAKED, BakedHeroes, bakeGroups, bakeMark, bakedPlaces, keyName, listLengths } from '../src/render/baked';
+import { BAKED, BakedHeroes, bakeGroups, bakeMark, bakedFirst, bakedPlaces, keyName, listLengths } from '../src/render/baked';
+import { READY_LIST } from '../src/art/heroes3';
 import type { AnimSet } from '../src/art/actor_types';
 import type { HeroArt } from '../src/art/heroes';
 
@@ -24,7 +25,7 @@ test('every hero in every place the painter paints him is in one group, and the 
   assert.deepEqual(bakeGroups(false).brawler.map(keyName), ['brawler:town', 'brawler:dungeon'], 'the Brawler as he was, with the Veteran off');
 });
 
-test('every frame of a hero has its place once, standing and running first; a card only its front standing and running', () => {
+test('every frame of a hero has its place once, standing and running first; a card everything a card shows, of the front', () => {
   const front = fake(4);
   const back = fake(4);
   const lens = listLengths([front, back]);
@@ -38,6 +39,27 @@ test('every frame of a hero has its place once, standing and running first; a ca
   const card = bakedPlaces([front, back], true);
   assert.equal(card.length, 4 + 5);
   assert.ok(card.every(([v]) => v === 0));
+  assert.equal(bakedFirst([front, back], true), 4 + 5);
+  assert.equal(bakedFirst([front, back], false), total, 'a hero in a place: his group is laid a place after another');
+  // (THE HERO CARDS FROM THE BAKE, 12 Nov 2026: a hero who comes to a stand out of his run, does things of his own left standing
+  // and makes ready: all of it on his card, standing and running first; in a place, every list but his making ready, a card's only)
+  const f = (k: number): never[] => Array.from({ length: k }, () => ({}) as never);
+  const rich = { ...fake(4), stops: [{ frames: f(2), fps: 1 }, { frames: f(2), fps: 1 }], clips: { idleA: { frames: f(3), fps: 1 }, idleB: { frames: f(7), fps: 1 }, ready: { frames: f(6), fps: 1 } } } as unknown as AnimSet;
+  const richCard = bakedPlaces([rich, back], true);
+  assert.equal(richCard.length, 4 + 5 + 2 + 2 + 3 + 7 + 6);
+  assert.ok(richCard.every(([v]) => v === 0));
+  assert.equal(new Set(richCard.map((p) => p.join(':'))).size, richCard.length, 'none twice');
+  assert.equal(bakedFirst([rich, back], true), 4 + 5, 'standing and running before anything else');
+  const firstLists = new Set(richCard.slice(0, 9).map(([, l]) => l));
+  assert.equal(firstLists.size, 2);
+  assert.ok(richCard.slice(9).every(([, l]) => !firstLists.has(l)));
+  assert.equal(richCard.filter(([, l]) => l === READY_LIST).length, 6, 'his making ready, whole');
+  const richLens = listLengths([rich, back]);
+  const inPlace = bakedPlaces([rich, back], false);
+  assert.equal(inPlace.length, richLens.flat().reduce((a, b) => a + b, 0) - 6);
+  assert.ok(inPlace.every(([, l]) => l !== READY_LIST), 'never in a place');
+  assert.equal(richLens[0][READY_LIST], 6);
+  assert.equal(richLens[0].length - 1, READY_LIST, 'the last list: every other keeps its place');
 });
 
 test('no bake in this build (the tests bundle none): none is looked for, and the heroes are painted as before', () => {

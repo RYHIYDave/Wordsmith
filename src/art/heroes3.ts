@@ -34,10 +34,10 @@ import { makeWarlockArt } from './warlock_art';
 import type { WarlockShare } from './warlock_art';
 // (THE WARRIOR BROUGHT UP TO THE BRAWLER'S LEVEL, behind its switch, off: art/warrior_up.ts)
 import { WARRIOR_UP } from './warrior_up';
-import { makeWarriorUpArt } from './warrior_up_art';
+import { makeWarriorUpArt, wuFacing } from './warrior_up_art';
 // (THE RANGER BROUGHT UP TO THE BRAWLER'S LEVEL, behind its switch, off: art/ranger_up.ts)
 import { RANGER_UP } from './ranger_up';
-import { heroSides } from './sides';
+import { CARD_FACING, EIGHT_ORDER, heroSides } from './sides';
 import { makeRangerUpArt } from './ranger_up_art';
 // (THE MAGE BROUGHT UP TO THE BRAWLER'S LEVEL, behind its switch, off: art/mage_up.ts)
 import { MAGE_UP } from './mage_up';
@@ -376,11 +376,56 @@ const HERO_PICKS: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?
           // (25.2.4: what a hero does standing about, his two gestures (render/figure.ts standingFrame), last, so that every other list
           // keeps its place: till then never baked nor painted ahead, so painted here as he stood, a second and more for the Warrior
           // from eight sides on this machine, many on a phone; his “I couldn’t move for maybe 15 seconds”, 7 Nov 2026)
-          (a) => a.clips?.idleA?.frames ?? [], (a) => a.clips?.idleB?.frames ?? []];
+          (a) => a.clips?.idleA?.frames ?? [], (a) => a.clips?.idleB?.frames ?? [],
+          // (THE HERO CARDS FROM THE BAKE, 12 Nov 2026: a hero making ready on his class card (clips.ready: ui/panels.ts), the last, so
+          // that every other list keeps its place: till then in no list, so never baked nor painted ahead, each frame painted
+          // where the game is drawn as it was shown. READY_LIST)
+          (a) => a.clips?.ready?.frames ?? []];
 
 /** A hero's lists of frames, in the order they are painted ahead (the painter's worker and the page agree on them by this). */
 export function heroLists(set: AnimSet): Sprite[][] {
   return HERO_PICKS.map((pick) => pick(set));
+}
+
+/** Which of heroLists is a hero's making ready on his class card (clips.ready): a card's only, baked and painted ahead for no other place. */
+export const READY_LIST = HERO_PICKS.length - 1;
+
+/**
+ * THE LISTS A CLASS CARD SHOWS (ui/panels.ts drawTitle; render/figure.ts), as [side, list] (the sides as art/sides.ts numbers
+ * them, the lists as heroLists has them), in the order they are wanted:
+ *   STANDING AND RUNNING (the first `first` of them: what is seen as the cards come up, and a card touched or chosen), of the
+ *   side a card's hero is seen from: the front of a hero with two sides; of a hero painted from eight, the side for the way he
+ *   faces there, `toward` (render/figure.ts eightSide);
+ *   then COMING TO A STAND out of the run (AnimSet.stops: a card chosen, then another), of that side;
+ *   then WHAT HE DOES LEFT STANDING (clips.idleA, idleB: the first card's a second and a half after the cards come up) and
+ *   MAKING READY (clips.ready: the hero picked), of the front always (a hero turns to the front for a thing of his own);
+ *   and `one`, single frames, as [side, list, frame]: of a hero painted from eight sides, THE FRONT'S FIRST STANDING FRAME, shown
+ *   for the one frame in which a thing of his own ends, before he is turned back (render/figure.ts standingFrame).
+ * His words, 11 Nov 2026: “Then, character screen lags.  Selecting a character lags.” Of these the bake had only the front's
+ * standing and running: so of a hero painted from eight sides, nothing his card shows; every frame of the Warrior, the Ranger
+ * and the Mage on their cards was painted where the game is drawn, as it was shown (on his phone, 12 Nov, 3 to 5 frames a
+ * second on the cards: docs/requests/phone_check.md). (Setting off, AnimSet.start, goes by how far a hero has walked: a card's
+ * hero runs on the spot, by the clock, and never shows it.)
+ */
+export function cardLists(sides: readonly AnimSet[]): { at: [number, number][]; first: number; one: [number, number, number][] } {
+  const v = sides.length === EIGHT_ORDER.length ? EIGHT_ORDER.indexOf(wuFacing(CARD_FACING.fx, CARD_FACING.fy)) : 0;
+  const seen = sides[v];
+  const front = sides[0];
+  const out: [number, number][] = [];
+  const add = (side: number, l: readonly Sprite[] | undefined): void => {
+    const at = l && l.length ? heroLists(sides[side]).indexOf(l as Sprite[]) : -1;
+    if (at >= 0 && !out.some(([a, b]) => a === side && b === at)) out.push([side, at]);
+  };
+  add(v, seen.idle);
+  add(v, seen.walk);
+  const first = out.length;
+  for (const c of seen.stops ?? []) add(v, c.frames);
+  add(0, front.clips?.idleA?.frames);
+  add(0, front.clips?.idleB?.frames);
+  add(0, front.clips?.ready?.frames);
+  const one: [number, number, number][] = [];
+  if (v !== 0 && (front.clips?.idleA || front.clips?.idleB) && front.idle.length) one.push([0, heroLists(front).indexOf(front.idle), 0]);
+  return { at: out, first, one };
 }
 
 /** The last frame painted ahead of need. Kept only so that the reading of it cannot be optimised away. */
@@ -511,7 +556,8 @@ export function makeHeroArt3(): HeroArt {
         list = [];
         // (standing and running first, then the attacks from start to finish, then the rest; what
         // a hero does when left standing is painted as it is shown, which is slowly enough)
-        const picks = HERO_PICKS;
+        // (his making ready is his card's only: READY_LIST, the last, is not painted ahead for a place)
+        const picks = HERO_PICKS.slice(0, READY_LIST);
         for (const pick of picks) {
           for (const set of heroSides(art)) {
             const frames = pick(set);
