@@ -27,7 +27,7 @@ import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
-import { TALENTS, TALENTS2 } from './game/talents';
+import { TALENTS, TALENTS2, WARRIOR_TREE2 } from './game/talents';
 import { QUEST_MARKS, SPEAK_NEW } from './game/quest_marks';
 import { SMALL_NOTES } from './art/small_notes';
 import { onTop } from './game/act2/quiettower';
@@ -388,6 +388,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let smithTitle: SmithPicture | null = null;
   const ui = new Ui();
   const fx = new Fx();
+  // (THE WARRIOR'S EARTHQUAKE heaves the stone of the floor shown: render/warrior_fx.ts)
+  fx.warrior.theme = () => art.ground.theme;
   const renderer = new Renderer(art);
   // THE FIRST FIVE FLOORS: the painter of what is too heavy to paint here (the bosses of floors 2 to 5,
   // the floors' films). A page opened with #painter=off has none (and #painter=1 or 2 that many workers): for the tests.
@@ -3155,6 +3157,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     speakNew: SPEAK_NEW,
     /** THE SMALL OLDER ART NOTES (art/small_notes.ts), each on at his yes: `smallNotes.shadows`, `.masks`, `.mothView`, `.questRune`. */
     smallNotes: SMALL_NOTES,
+    /** THE WARRIOR'S NEW TREE, drafted (game/talents.ts WARRIOR_TREE2: his three weapons), off until his yes: `warriorTree2.on`. */
+    warriorTree2: WARRIOR_TREE2,
     /** THE LOADING SCREEN as a game begins (LOADING in main.ts), on at his yes: `loading.on` (dbg.run and dbg.first begin without it). */
     loading: LOADING,
     /** THE LOADING SCREEN BETWEEN FLOORS: whether it is up now (and since how long), and, for a playtest begun without it, the level counted as loaded (so that the next is put up between). */

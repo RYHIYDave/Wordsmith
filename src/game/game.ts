@@ -16,7 +16,7 @@ import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
 import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, LASTING, FLEETING, VAST, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, HUSH_LEAVES, mirrorSide, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
-import { bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
+import { asWarriorWeapon, bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
 import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
 import type { Hall } from './level';
@@ -26,7 +26,7 @@ import type { DoorInst } from './doors';
 import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
 import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
 import type { HeroMode } from './modes';
-import { COMPANIONS, TALENTS, TALENTS2, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, cleanTalents, remadeNow, takeProblem, talentById, talentMods, talentPoints, unlearnProblem } from './talents';
+import { COMPANIONS, TALENTS, TALENTS2, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, WARRIOR_TUNE, cleanTalents, remadeNow, takeProblem, talentById, talentMods, talentPoints, unlearnProblem, warriorKit, warriorWeapon, WARRIOR_TREE2 } from './talents';
 import { COMPANION_GROUPS, COMPANION_GROUP_IDS, COMPANION_TUNE, cleanPicks, pickedIn } from './companions';
 import { ROYALS, ROYAL_NAMES, ROYAL_TUNE, canMake, cleanCards, handCards, handPays, royalFloor } from './royal_cards';
 import type { Hand, Royal } from './royal_cards';
@@ -510,6 +510,8 @@ export class Game {
   private reaperAt: number[] = [-9, -9, -9];
   /** REAPING behind (THE LAST WORDS): the spirits risen from those it killed, fighting for him a while (their looks the art chat's). */
   spirits: { id: number; x: number; y: number; t: number; life: number; next: number; skill: number; share: number }[] = [];
+  /** BULLDOZER (the Warrior's warhammer talent): the monsters his Shoulder Charge is carrying before him. */
+  private carried: number[] = [];
   private pullShown: number[] = [-9, -9, -9];
   private copying = false;
   private blowBy: number | undefined = undefined;
@@ -1163,7 +1165,8 @@ export class Game {
     const d = derive(cls, 1, attrs, gear, this.meta.limit);
     // both attacks are the class's own (defs.ts OWN_MOVES; with it off, the weapon's); the evasive move is the character's own
     const weapon = gear.mainhand ? gear.mainhand.weapon : null;
-    const skills = skillsFor(cls, weapon).map((id, i): SkillState => ({
+    // (THE WARRIOR'S THREE WEAPONS, WARRIOR_TREE2: a new Warrior's the greatsword's three, Whirl his hold)
+    const skills = ((cls === 'warrior' ? warriorKit([]) : null) ?? skillsFor(cls, weapon)).map((id, i): SkillState => ({
       id, front: [], behind: [], cd: 0, charges: 1, maxCharges: 1, uses: 0,
       r: resolveSkill(SKILLS[id], [], [], i < 2 ? attackGrows(cls, weapon) : c.primary, d),
     }));
@@ -1293,6 +1296,9 @@ export class Game {
     const want: SkillId[] = [...(h.cls === 'warlock' && h.form === 'demon' ? DEMON_KIT : skillsFor(h.cls, weapon))];
     // (THE TINKERER's tree: CONTRAPTION, his idea, swaps her Vial Toss for the Contraption)
     if (h.cls === 'tinkerer' && this.has('contraptions')) want[0] = 'contraption';
+    // (THE WARRIOR'S THREE WEAPONS, WARRIOR_TREE2: his tap, hold and swipe the picked weapon's; the greatsword's till then)
+    const kit = h.cls === 'warrior' ? warriorKit(TALENTS.on ? h.talents : []) : null;
+    if (kit) for (let k = 0; k < 3; k++) want[k] = kit[k];
     const waiting = [false, false, false];
     const changed = [false, false, false];
     for (let i = 0; i < 3; i++) {
@@ -1591,7 +1597,7 @@ export class Game {
       v.slots.forEach((slot, i) => {
         // (what a vendor has grows with the dungeons as what drops does: plain and magic early, a
         // rare piece now and then; the last two on each shelf are a level better)
-        stock.push(rollItem(level + (i >= v.slots.length - 2 ? 1 : 0), rng, { luck: TUNE.shopLuck, slot, forWeapon: held, weapons: v.weapons, cls: this.hero.cls }));
+        stock.push(this.forHim(rollItem(level + (i >= v.slots.length - 2 ? 1 : 0), rng, { luck: TUNE.shopLuck, slot, forWeapon: held, weapons: v.weapons, cls: this.hero.cls })));
       });
       this.shops[id] = stock;
     }
@@ -4772,6 +4778,10 @@ export class Game {
     if (h.rootAgain) h.rootAgain = Math.max(0, h.rootAgain - dt);
     // (THE LAST WORDS, on monsters: his bleeding runs out)
     if (h.heroBleedT) h.heroBleedT = Math.max(0, h.heroBleedT - dt);
+    if (h.redMistT) h.redMistT = Math.max(0, h.redMistT - dt);
+    // (THE WARRIOR'S THROWN AXE: his hands are empty only while one is out, or its throw is being wound up: a throw broken off
+    // leaves it in them)
+    if (h.handsEmpty && !(h.windup && SKILLS[h.skills[h.windup.skill].id].returns) && !this.projectiles.some((p) => p.returns && !p.hostile)) h.handsEmpty = false;
     // (Frenzied: the frenzy makes every cooldown come round faster; STILLING, on a monster, slower)
     const pace = this.frenzyPace() * ((h.stillT ?? 0) > 0 ? 1 - (h.stillK ?? 0) : 1);
     for (const s of h.skills) {
@@ -4800,11 +4810,14 @@ export class Game {
     if (h.move) {
       const mv = h.move;
       mv.t += dt;
-      const k = Math.min(1, mv.t / mv.dur);
+      // (THE WARRIOR'S WEAPONS: a leap's crouch, where it has one, before he leaves the floor: he stays where he is meanwhile)
+      const off = mv.t - (mv.crouch ?? 0);
+      const k = Math.min(1, Math.max(0, off / mv.dur));
       h.x = mv.x0 + (mv.x1 - mv.x0) * k;
       h.y = mv.y0 + (mv.y1 - mv.y0) * k;
       // (THE SKILL TREES REMADE: Drilled Lunge, every enemy he passes on the way struck)
-      if (mv.kind === 'leap' && this.now('drilledleap')) this.lungeThrough(mv);
+      // (THE WARRIOR'S WARHAMMER: Shoulder Charge strikes every enemy in his way, at its own strength)
+      if (mv.kind === 'leap' && off > 0 && (this.now('drilledleap') || SKILLS[h.skills[2].id].through === true)) this.lungeThrough(mv);
       // (THE WARLOCK: a smoke step curses, the demon's rakes too, whoever it passes through)
       if (mv.kind === 'smoke') this.smokeThrough(mv);
       // (UNIQUE ITEMS: Broken Shackles' price, he can be hit during the move)
@@ -5097,6 +5110,15 @@ export class Game {
     h.attackT = wind + follow;
     h.animT = 0;
     h.windup = { skill: i, tx, ty, t: wind };
+    // (THE WARRIOR'S THROWN AXE: a tap while it flies and his hands are empty, an axe appears in them and he Cleaves; his words of
+    // 11 Nov 2026, 09:07: “I understand that the axe is going to kind of materialize to keep fighting but I do need that to work
+    // that way”. Throwing it leaves his hands empty)
+    h.appear = false;
+    if (h.handsEmpty && i === 0) {
+      h.appear = true;
+      h.handsEmpty = false;
+    }
+    if (SKILLS[h.skills[i].id].returns) h.handsEmpty = true;
     // (THE SECOND BATCH: the bow drawn for a shot or a volley; the Brawler's fist through the air)
     const begun = SKILLS[h.skills[i].id];
     if (wind > 0.05 && (h.skills[i].id === 'shot' || begun.kind === 'volley')) this.sfx('bowDraw', 0.5);
@@ -5443,7 +5465,10 @@ export class Game {
   /** How much faster the frenzy makes the hero's attacks and cooldowns (1: no frenzy). */
   frenzyPace(): number {
     // (THE SKILL TREES: Berserk, below half his life, faster still)
-    return 1 + FRENZY.each * this.hero.frenzy;
+    const h = this.hero;
+    // (THE WARRIOR'S BATTLE AXE: Red Mist, his kills' fury, faster still)
+    const mist = (h.redMistT ?? 0) > 0 ? 1 + WARRIOR_TUNE.redMist.each * (h.redMist ?? 0) : 1;
+    return (1 + FRENZY.each * h.frenzy) * mist;
   }
 
   private noMana(): void {
@@ -5566,7 +5591,7 @@ export class Game {
     }
     if (def.kind === 'leap' && land) {
       const dist = Math.hypot(land.x - h.x, land.y - h.y);
-      h.move = { kind: 'leap', t: 0, dur: 0.26 + dist * 0.03, x0: h.x, y0: h.y, x1: land.x, y1: land.y };
+      h.move = { kind: 'leap', t: 0, dur: def.secs ?? 0.26 + dist * 0.03, x0: h.x, y0: h.y, x1: land.x, y1: land.y, ...(def.crouch ? { crouch: def.crouch } : {}) };
       this.sfx('lunge', 0.7);
       return;
     }
@@ -8723,11 +8748,17 @@ export class Game {
    */
   private land(): void {
     const h = this.hero;
+    // (THE WARRIOR'S WARHAMMER: Bulldozer, those carried are stunned where he stops)
+    for (const id of this.carried) {
+      const m = this.monsters.find((o) => o.id === id);
+      if (m && !m.dead) this.stunMonster(m, WARRIOR_TUNE.bulldozer.stun);
+    }
+    this.carried = [];
     const s = h.skills[2];
     const def = SKILLS[s.id];
     const r = s.r;
-    // (LUNGE: the warrior's lands at his sword's point, before him)
-    const fwd = LUNGE.on && h.cls === 'warrior' ? LUNGE.ahead : 0;
+    // (LUNGE: the warrior's lands at his sword's point, before him; Leaping Chop's axe comes down further on, `ahead`)
+    const fwd = def.ahead ?? (LUNGE.on && h.cls === 'warrior' ? LUNGE.ahead : 0);
     const x = h.x + h.fx * fwd;
     const y = h.y + h.fy * fwd;
     const rad = def.radius * r.size;
@@ -8812,16 +8843,31 @@ export class Game {
       }
     } else if (def.kind === 'burst') {
       // centre it ahead of the hero, pulled back if a wall is in the way
-      let reach = Math.min(def.range, Math.max(len, 0.8));
+      // (THE WARRIOR'S WARHAMMER: the Earthquake's ring round a spot before him, `ahead`, as the art brings the maul down there)
+      let reach = def.ahead ?? Math.min(def.range, Math.max(len, 0.8));
       while (reach > 0.2 && !this.isOpen(ox + dx * reach, oy + dy * reach)) reach -= 0.2;
       const cx = ox + dx * reach;
       const cy = oy + dy * reach;
       const rad = def.radius * r.size;
       this.sfx('slam');
       this.emit({ t: 'shake', amount: 2.5 });
-      for (let k = 0; k < r.count; k++) {
-        if (k === 0) this.blast(i, cx, cy, rad, each, 'slam', 0, echo);
-        else this.after(0.28 * k, () => this.blast(i, cx, cy, rad * 1.15, each, 'slam', k, echo));
+      // (THE WARRIOR'S WARHAMMER: Tremors, Earthquake three shakes, each weaker; and Twin's second after each)
+      const T = WARRIOR_TUNE.tremors;
+      const shakes = s.id === 'quake' && this.has('tremors') ? T.n : 1;
+      for (let q = 0; q < shakes; q++) {
+        const share = each * (shakes > 1 ? T.shares[q] ?? T.shares[T.shares.length - 1] : 1);
+        const round = rad + (shakes > 1 ? q * T.wider : 0);
+        // (the ground heaving, drawn in the floor's own stone: render/warrior_fx.ts)
+        if (s.id === 'quake') {
+          const qe: GameEvent = { t: 'quake', x: cx, y: cy, q: Math.min(2, q), fx: dx, fy: dy };
+          if (q === 0) this.emit(qe);
+          else this.after(q * T.gap, () => this.emit(qe));
+        }
+        for (let k = 0; k < r.count; k++) {
+          const at = q * T.gap + 0.28 * k;
+          if (at === 0) this.blast(i, cx, cy, round, share, 'slam', 0, echo);
+          else this.after(at, () => this.blast(i, cx, cy, round * (k > 0 ? 1.15 : 1), share, 'slam', k, echo, q === 0 && k === 0));
+        }
       }
     } else if (def.kind === 'orb') {
       const rad = def.radius * r.size;
@@ -8886,7 +8932,9 @@ export class Game {
       // (UNIQUE ITEMS: The Fan, each Shot three arrows in a fan, each a little weaker; one enemy takes only one of them)
       const fanned = primary && s.id === 'shot' && this.wears('fan');
       const F = UNIQUE_TUNE.fan;
-      const fan = split ? [-TALENT_TUNE.splitShot.fan, 0, TALENT_TUNE.splitShot.fan] : fanned ? Array.from({ length: F.arrows }, (_, n) => (n - (F.arrows - 1) / 2) * F.spread) : [0];
+      // (THE WARRIOR'S BATTLE AXE: Twin Axes, two thrown, one to each side of the aim, each for less)
+      const twinAxes = def.returns === true && this.has('twinaxes');
+      const fan = twinAxes ? [-WARRIOR_TUNE.twinAxes.fan, WARRIOR_TUNE.twinAxes.fan] : split ? [-TALENT_TUNE.splitShot.fan, 0, TALENT_TUNE.splitShot.fan] : fanned ? Array.from({ length: F.arrows }, (_, n) => (n - (F.arrows - 1) / 2) * F.spread) : [0];
       // (THE SKILL TREES REMADE: Steady Aim, a second stood still and the next arrow goes through every enemy in its line)
       const steady = primary && this.now('steadyaim') && this.stillT >= TALENT_TUNE.steadyAim2.still;
       if (steady) this.stillT = 0;
@@ -8896,8 +8944,8 @@ export class Game {
             const a = base + (r.count === 1 ? 0 : (k - (r.count - 1) / 2) * 0.16) + f;
             this.projectiles.push({
               x: sx + Math.cos(a) * 0.4, y: sy + Math.sin(a) * 0.4, vx: Math.cos(a) * r.projSpeed * long, vy: Math.sin(a) * r.projSpeed * long,
-              r: Math.min(0.6, def.radius * r.size * (r.splash >= 1.5 ? 1.5 : 1)), dist: def.range * long, hostile: false, dmg: fanned ? each * F.share : each, element: r.element,
-              look: s.id === 'hellbolt' ? 'hellbolt' : 'arrow', pierce: r.pierce || steady, pierceN: this.was('piercing') ? TALENT_TUNE.piercing : 0, hit: own, volley: r.count > 1 || split || fanned, skill: i, trail: 0, words, runed: false, clouded: false, age: 0, from: '', n: k, flown: 0,
+              r: Math.min(0.6, def.radius * r.size * (r.splash >= 1.5 ? 1.5 : 1)), dist: def.range * long, hostile: false, dmg: (fanned ? each * F.share : each) * (twinAxes ? WARRIOR_TUNE.twinAxes.share : 1), element: r.element,
+              look: s.id === 'hellbolt' ? 'hellbolt' : def.returns ? 'axe' : 'arrow', pierce: r.pierce || steady || def.returns === true, ...(def.returns ? { returns: true } : {}), pierceN: this.was('piercing') ? TALENT_TUNE.piercing : 0, hit: own, volley: r.count > 1 || split || fanned, skill: i, trail: 0, words, runed: false, clouded: false, age: 0, from: '', n: k, flown: 0,
             });
           }
         }
@@ -9005,7 +9053,31 @@ export class Game {
     this.emit({ t: 'swing', x: ox, y: oy, dx, dy, reach, el: r.element, words, n, echo });
     let best: Monster | null = null;
     let bd = Infinity;
-    const cleave = this.now('sweepingcut');
+    // (THE WARRIOR'S WARHAMMER: Smash comes down on a spot before him, striking all on it: knocked back, and dazed toward a stun)
+    // (Wide Swing, his tree's: the Smash swept round the half circle before him instead, as a Cleave is, every one struck smashed)
+    const wide = r.id === 'smash' && this.has('wideswing');
+    if (def.spot && !wide) {
+      const sx = ox + dx * def.spot.at;
+      const sy = oy + dy * def.spot.at;
+      const rad = def.spot.r * r.size;
+      this.breakProps(sx, sy, rad + 0.3, i);
+      let struck = 0;
+      for (const m of this.monsters) {
+        if (m.dead || this.shutIn(m) || Math.hypot(m.x - sx, m.y - sy) > rad + m.r) continue;
+        this.hitMonster(m, i, frac, struck > 0);
+        struck++;
+        if (!m.dead && r.id === 'smash') this.smashed(m, dx, dy);
+      }
+      this.emit({ t: 'burst', x: sx, y: sy, r: rad + 0.3, el: r.element, style: 'land', words, n, echo });
+      if (struck) {
+        this.landed(i);
+        this.sfx(power ? 'power' : 'hit', 0.8);
+      } else if (this.isOpen(sx, sy)) this.wake(i, sx, sy, 1.0, frac);
+      return;
+    }
+    // (THE WARRIOR'S BATTLE AXE: Cleave strikes every enemy in its arc, as Sweeping Cut makes any swing do; its arc its own)
+    const cleave = this.now('sweepingcut') || def.arc === true || (r.id === 'smash' && this.has('wideswing'));
+    const minDot = def.arcCos ?? 0.35;
     const arc: Monster[] = [];
     for (const m of this.monsters) {
       if (m.dead) continue;
@@ -9015,7 +9087,7 @@ export class Game {
       if (dist > reach + m.r) continue;
       // in front of the hero, or close enough that facing does not matter
       const dot = dist > 0.01 ? (mx * dx + my * dy) / dist : 1;
-      if (dot < 0.35 && dist > 0.9 + m.r) continue;
+      if (dot < minDot && dist > 0.9 + m.r) continue;
       if (cleave) arc.push(m);
       const score = dist - dot * 0.5;
       if (score < bd) {
@@ -9038,6 +9110,7 @@ export class Game {
     if (r.through > 0) this.pierceOn(i, best, tx, ty, dx, dy, frac * r.through);
     // (THE SKILL TREES REMADE: Sweeping Cut, the swing cleaves: every enemy in its arc is struck as hard)
     for (const o of arc) if (o !== best && !o.dead) this.hitMonster(o, i, frac, true);
+    if (wide) for (const o of new Set([best, ...arc])) if (!o.dead) this.smashed(o, dx, dy);
     this.landed(i);
     this.sfx(power ? 'power' : 'hit', 0.7);
     if (words.includes('heavy')) this.emit({ t: 'heavy', x: tx, y: ty, r: 1.1, big: false });
@@ -9936,7 +10009,7 @@ export class Game {
     // (THE SKILL TREES REMADE: Keen Eye, the first arrow at an enemy that has not noticed him a certain critical)
     if (unaware && this.now('keeneye') && this.arrowSkill(i)) crit = true;
     // (THE SKILL TREES: Master Stroke, every fourth hit landed on its own target a certain critical)
-    if (!quiet && this.has('masterstroke') && ++this.strokes >= TALENT_TUNE.masterStroke.every) {
+    if (!quiet && (this.has('masterstroke') || this.has('mastertop')) && ++this.strokes >= TALENT_TUNE.masterStroke.every) {
       this.strokes = 0;
       crit = true;
     }
@@ -10068,6 +10141,17 @@ export class Game {
         m.stillT = STILL.secs;
         if (fresh) this.emit({ t: 'stillOn', id: m.id, x, y, secs: STILL.secs });
       }
+      // (THE WARRIOR'S WARHAMMER: Earthquake stuns what it shakes; Smash staggers what it strikes)
+      const sd = SKILLS[r.id];
+      if (sd.stun) this.stunMonster(m, sd.stun);
+      if (sd.stagger) this.staggerMonster(m, h.x, h.y);
+      // (his tree: Heavy Head, Smash stuns too; Rend, Cleave makes it bleed)
+      if (r.id === 'smash' && this.has('heavyhead')) this.stunMonster(m, WARRIOR_TUNE.heavyHead.secs);
+      if (r.id === 'cleave' && this.has('rend')) {
+        const R = WARRIOR_TUNE.rend;
+        m.bleedDps = Math.max(m.bleedT ? m.bleedDps ?? 0 : 0, (dmg * R.share) / R.secs);
+        m.bleedT = R.secs;
+      }
       // BINDING in front holds what it hits in place
       if (r.bind > 0) {
         const held = this.bindMonster(m, r.bind);
@@ -10129,6 +10213,8 @@ export class Game {
     if (this.was('steadyaim') && this.stillT >= T.steadyAim.still) k *= T.steadyAim.mult;
     if (this.was('farsight')) k *= 1 + T.farSight.most * Math.min(1, Math.hypot(m.x - h.x, m.y - h.y) / T.farSight.at);
     if (this.has('shatter') && m.frozenT > 0) k *= T.shatter;
+    // (THE WARRIOR'S NEW TREE: Executioner, double on one under a quarter of its life)
+    if (this.has('executioner') && m.life < m.maxLife * WARRIOR_TUNE.executioner.under) k *= WARRIOR_TUNE.executioner.mult;
     // (THE TINKERER's tree: Fortune, she hits harder the more gold she carries: 1% of her gold, as a percent)
     if (this.has('fortune')) k *= 1 + h.gold * TINKER_TUNE.talents.fortune;
     return k;
@@ -10314,6 +10400,30 @@ export class Game {
     m.staggerCd = HEAVY.stagger + HEAVY.staggerAgain;
     this.breakOff(m);
     this.emit({ t: 'stagger', id: m.id, x: m.x, y: m.y, fromX, fromY });
+  }
+
+  /**
+   * (THE WARRIOR'S WARHAMMER) What a Smash struck: pushed a little back from him along the blow, where there is floor, and dazed
+   * toward a stun, its daze fading meanwhile (WARRIOR_TUNE.smash; his words of 11 Nov 2026, 09:41: “Tap should have a small
+   * knockback and high stun buildup/chance”).
+   */
+  private smashed(m: Monster, dx: number, dy: number): void {
+    const S = WARRIOR_TUNE.smash;
+    if (!m.boss) {
+      const nx = m.x + dx * S.knock;
+      const ny = m.y + dy * S.knock;
+      if (this.isOpen(nx, ny)) {
+        m.x = nx;
+        m.y = ny;
+      }
+    }
+    const was = Math.max(0, (m.daze ?? 0) - (this.time - (m.dazeAt ?? this.time)) * S.fade);
+    m.daze = was + S.daze;
+    m.dazeAt = this.time;
+    if (m.daze >= 1 - 1e-9) {
+      m.daze = 0;
+      this.stunMonster(m, S.stun);
+    }
   }
 
   /** An attack `m` was winding up is broken off, with the warning of a blow it was about to bring down. */
@@ -10571,6 +10681,15 @@ export class Game {
     }
     // what the killing ability's words add
     const r = m.lastSkill >= 0 ? h.skills[m.lastSkill].r : null;
+    // (THE WARRIOR'S BATTLE AXE: Red Mist, each kill a step faster for a while; Headlong, a kill and Leaping Chop is ready again)
+    if (h.cls === 'warrior' && this.has('redmist')) {
+      h.redMist = Math.min(WARRIOR_TUNE.redMist.most, ((h.redMistT ?? 0) > 0 ? h.redMist ?? 0 : 0) + 1);
+      h.redMistT = WARRIOR_TUNE.redMist.secs;
+    }
+    if (h.cls === 'warrior' && this.has('headlong') && h.skills[2].id === 'chop') {
+      h.skills[2].cd = 0;
+      h.skills[2].charges = h.skills[2].maxCharges;
+    }
     if (r && r.frenzyFeed) {
       // FRENZIED behind: a kill adds to the frenzy and holds it longer (to three times its usual hold)
       h.frenzy = Math.min(this.stackMax(), h.frenzy + 1);
@@ -12377,6 +12496,13 @@ export class Game {
         if (!this.isOpen(nx, ny) && !((this.overRock || through) && nx >= 0 && ny >= 0 && nx < f.w && ny < f.h)) {
           // (THE TRAPS: what the hero shoots may meet a sealed door, and open it)
           if (!p.hostile) this.unseal(p.skill, nx, ny, 0.1);
+          // (THE WARRIOR'S BATTLE AXE: his axe, meeting a wall on its way out, turns back to him; on its way back it flies over)
+          if (!p.hostile && p.returns) {
+            if (!p.back) this.turnBack(p);
+            p.x = nx;
+            p.y = ny;
+            continue;
+          }
           // (THE SKILL TREES REMADE: Ricochet, a hero's arrow bounces off the wall, and flies on)
           if (!p.hostile && p.look === 'arrow' && !p.bounced && this.now('piercing')) {
             p.bounced = true;
@@ -12448,6 +12574,33 @@ export class Game {
             }
           }
         }
+        // (THE WARRIOR'S BATTLE AXE: his thrown axe at the end of its flight turns, and comes back to his hand, through what it
+        // meets again; caught, it is gone)
+        if (!dead && p.returns) {
+          if (!p.back && p.dist <= 0) this.turnBack(p);
+          if (p.back) {
+            const bx = h.x - p.x;
+            const by = h.y - p.y;
+            const bd = Math.hypot(bx, by);
+            if (bd < 0.6 || p.age > 6) {
+              dead = true;
+              // (back to his hands: to empty hands, caught (Twin Axes' two in the one catch, as the last comes); to hands that hold
+              // one, gone into it, a glint)
+              const others = this.projectiles.some((o) => o !== p && o.returns && !o.hostile);
+              if (!h.handsEmpty) this.emit({ t: 'axeGlint', x: h.x, y: h.y });
+              else if (!others) {
+                h.handsEmpty = false;
+                h.caughtAt = this.time;
+                this.emit({ t: 'axeCatch', x: h.x, y: h.y });
+              }
+              break;
+            }
+            const v = Math.hypot(p.vx, p.vy) || 1;
+            p.vx = (bx / bd) * v;
+            p.vy = (by / bd) * v;
+            p.dist = 99;
+          }
+        }
         if (!dead && p.dist <= 0) {
           this.endProjectile(p);
           dead = true;
@@ -12459,6 +12612,14 @@ export class Game {
         if (p.look === 'spear') this.laySpear(p);
       }
     }
+  }
+
+  /** (THE WARRIOR'S BATTLE AXE) His thrown axe turns for home: what it struck on the way out it may strike again on the way back. */
+  private turnBack(p: Projectile): void {
+    p.back = true;
+    p.hit = [];
+    p.dist = 99;
+    this.emit({ t: 'axeTurn', x: p.x, y: p.y });
   }
 
   private projectileHit(p: Projectile, m: Monster): void {
@@ -13045,7 +13206,24 @@ export class Game {
     const unique = this.poolUnique(quality, mf);
     if (unique) return unique;
     // (ENDLESS MODE: what drops grows on as the floors' depth would, `power`)
-    return rollItem(Math.max(1, this.power), this.rng, opts);
+    return this.forHim(rollItem(Math.max(1, this.power), this.rng, opts));
+  }
+
+  /**
+   * THE WARRIOR'S THREE WEAPONS (WARRIOR_TREE2): a piece found, bought or won by a Warrior, a greatsword made his own weapon's kind
+   * (his words: “Swords become hammers become axes.”); and, his weapon picked or changed, every one he carries and wears made it
+   * (`all`; his “Yes, his weapons change too (Recommended)”).
+   */
+  private forHim(it: Item): Item {
+    const h = this.hero;
+    if (h.cls === 'warrior' && WARRIOR_TREE2.on && TALENTS.on) asWarriorWeapon(it, warriorWeapon(h.talents));
+    return it;
+  }
+  private allForHim(): void {
+    const h = this.hero;
+    if (h.cls !== 'warrior' || !WARRIOR_TREE2.on || !TALENTS.on) return;
+    for (const slot of EQUIP_SLOTS) if (h.gear[slot]) this.forHim(h.gear[slot] as Item);
+    for (const it of h.bag) if (it) this.forHim(it);
   }
 
   /** The words a monster will drop when it dies: what hangs over its head. For most monsters, none. */
@@ -14235,7 +14413,7 @@ export class Game {
     // (UNIQUE ITEMS: his “very low chance to give a unique”, TUNE.gambleOdds.unique: one of the pool's of the kind gambled for, if
     // there is one for this hero; a dice of its own, thrown only with the switch on)
     const unique = UNIQUES.on && this.rng.chance(odds.unique) ? this.makePoolUnique(kind.slot, kind.slot === 'mainhand' ? kind.weapon : undefined) : null;
-    const it = unique ?? rollItem(Math.max(1, this.power), this.rng, { slot: kind.slot, rarity, weapons: kind.weapon ? [kind.weapon] : undefined, cls: h.cls });
+    const it = unique ?? this.forHim(rollItem(Math.max(1, this.power), this.rng, { slot: kind.slot, rarity, weapons: kind.weapon ? [kind.weapon] : undefined, cls: h.cls }));
     h.gold -= price;
     h.bag[free] = it;
     this.won = free;
@@ -14274,7 +14452,7 @@ export class Game {
     h.cards = cards;
     this.wonHand = [];
     for (let k = 0; k < pays.n; k++) {
-      const it = rollItem(Math.max(1, this.power) + pays.plus, this.rng, { rarity: pays.rarity, cls: h.cls });
+      const it = this.forHim(rollItem(Math.max(1, this.power) + pays.plus, this.rng, { rarity: pays.rarity, cls: h.cls }));
       h.bag[free[k]] = it;
       this.wonHand.push(free[k]);
     }
@@ -14404,6 +14582,7 @@ export class Game {
     if (why) return why;
     const h = this.hero;
     h.talents.push(id);
+    this.allForHim();
     this.refresh();
     this.emit({ t: 'talent', id });
     this.sfx('equip');
@@ -14453,6 +14632,7 @@ export class Game {
     const h = this.hero;
     h.gold -= this.unlearnPrice();
     h.talents = h.talents.filter((t) => t !== id);
+    this.allForHim();
     this.refresh();
     this.sfx('gold');
     return null;
@@ -15215,7 +15395,20 @@ export class Game {
       if (m.dead || hit.includes(m.id) || this.shutIn(m)) continue;
       if (Math.hypot(m.x - h.x, m.y - h.y) > m.r + TUNE.heroRadius + D.reach) continue;
       hit.push(m.id);
-      this.hitMonster(m, 2, r.countDmg * D.share, hit.length > 1);
+      this.hitMonster(m, 2, r.countDmg * (SKILLS[r.id].through ? 1 : D.share), hit.length > 1);
+      // (THE WARRIOR'S WARHAMMER: Bulldozer, Shoulder Charge carries what it strikes along before him)
+      if (r.id === 'charge' && this.has('bulldozer') && !m.dead && !m.boss) this.carried.push(m.id);
+    }
+    // (Bulldozer: those carried go before him, where there is floor)
+    for (const id of this.carried) {
+      const m = this.monsters.find((o) => o.id === id);
+      if (!m || m.dead) continue;
+      const ax = h.x + h.fx * WARRIOR_TUNE.bulldozer.ahead;
+      const ay = h.y + h.fy * WARRIOR_TUNE.bulldozer.ahead;
+      if (this.isOpen(ax, ay)) {
+        m.x = ax;
+        m.y = ay;
+      }
     }
   }
 

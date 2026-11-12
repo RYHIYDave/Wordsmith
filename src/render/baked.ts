@@ -13,6 +13,8 @@
 import { bakeLists, cardLists, readyList } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
+import { HEAVY_PLACES } from '../art/heroes';
+import { WARRIOR_TREE2 } from '../game/talents';
 import type { AnimSet } from '../art/actor_types';
 import { heroSides } from '../art/sides';
 import { sheetSprite } from '../engine/px';
@@ -52,6 +54,9 @@ export function bakeGroups(vet: boolean): Record<string, BakeKey[]> {
   const k = (cls: ClassId, place: HeroPlace): BakeKey => ({ cls, place, vet: cls === 'brawler' && vet });
   const out: Record<string, BakeKey[]> = { cards: classes.map((c) => k(c, 'card')) };
   for (const c of classes) out[c] = c === 'warlock' ? (['town', 'dungeon', 'demon', 'blaze'] as HeroPlace[]).map((p) => k(c, p)) : [k(c, 'town'), k(c, 'dungeon')];
+  // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: him with the war axe, and with the maul, each a group of its own, taken in
+  // only where his weapon is that one; his great sword's group as it was. Baked only while the tree is on: off, nothing asks for them)
+  if (WARRIOR_TREE2.on) for (const w of ['axe', 'hammer'] as const) out[`warrior-${w}`] = [k('warrior', HEAVY_PLACES[w].town), k('warrior', HEAVY_PLACES[w].dungeon)];
   return out;
 }
 

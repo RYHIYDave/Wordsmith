@@ -25,6 +25,10 @@ import type { ClassId } from '../src/game/types';
 import { land, seasoned } from './helpers';
 import { WAYS, topStep, STAIR_OPENING } from '../src/game/ways';
 import { OWN_MOVES } from '../src/game/defs';
+import { warriorAsBefore } from './warrior_as_before';
+
+// (the Warrior's old moves, as this file was written for them: tests/warrior_as_before.ts)
+warriorAsBefore();
 // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
 // weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
 OWN_MOVES.on = false;
@@ -226,7 +230,11 @@ test('the wind-ups are short: about a quarter of a second at the most, and the e
     // (the Brawler's Cross, his hold, "slow and heavy" as he was made and filmed for the owner: a third of a second)
     // (THE WARRIOR'S AND THE RANGER'S HELD WIND-UPS, Movement 9, with their pictures brought up, 7 Nov 2026: his “Yes, the held
     // wind-up (Recommended)”: the Strike and the Shot a third of a second, the Volley 0.4, the Slam half a second)
-    const most = d.id === 'cross' ? 10 / 30 : d.id === 'strike' || d.id === 'shot' ? 1 / 3 : d.id === 'volley' ? 0.4 : d.id === 'slam' ? 0.5 : 0.3;
+    // (THE WARRIOR'S BATTLE AXE AND WARHAMMER, game/talents.ts WARRIOR_TREE2: each move's wind-up is the art chat's blow, heavy as
+    // drawn, his yes of 12 Nov 2026 by 09:07, “Yes, put it live (Recommended)”, shown them in play: Cleave 10 frames, the thrown axe
+    // 11, Smash 13, Earthquake 19, at 30 a second)
+    const heavy: Record<string, number> = { cleave: 10 / 30, axethrow: 11 / 30, smash: 13 / 30, quake: 19 / 30 };
+    const most = d.id in heavy ? heavy[d.id] + 1e-3 : d.id === 'cross' ? 10 / 30 : d.id === 'strike' || d.id === 'shot' ? 1 / 3 : d.id === 'volley' ? 0.4 : d.id === 'slam' ? 0.5 : 0.3;
     assert.ok(d.windup > 0 && d.windup <= most, `${d.name}: a wind-up, and a short one (${d.windup} s)`);
     assert.ok(d.follow > 0 && d.follow <= 0.5, `${d.name}: and a short follow-through (${d.follow} s)`);
   }

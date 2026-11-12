@@ -77,6 +77,15 @@ export interface FigureState {
    * waits for it (`Clip.poise`) holds there meanwhile.
    */
   poised?: boolean;
+  /**
+   * THE WARRIOR'S THROWN AXE (game/state.ts Hero.handsEmpty, appear, caughtAt): his hands empty while it flies (braced, `clips.hold`
+   * round and round; running, `clips.moves.runEmpty`); how long ago it came back to empty hands, or less than 0 (the catch,
+   * `clips.release`; on the run `clips.moves.runCatch`); the tap now being made began with them empty (its first pictures the axe
+   * appearing, `clips.moves.cleaveAppear`, then the Cleave's own).
+   */
+  axe?: { empty: boolean; caughtT: number; appear: boolean };
+  /** (THE WARRIOR'S WEAPONS) How far into a leap's crouch, in seconds, before he leaves the floor (`clips.moves.chopCrouch`, `chargeCrouch`). */
+  crouchT?: number;
 }
 
 /**
@@ -134,6 +143,28 @@ export const GESTURE_GAP: readonly [number, number] = [5, 9];
 function frameOf(c: Clip, seconds: number): Sprite {
   const n = c.frames.length;
   return c.frames[Math.max(0, Math.min(n - 1, Math.floor(seconds * c.fps + 1e-6)))];
+}
+
+/**
+ * (THE WARRIOR'S THROWN AXE) His picture standing or running while it is out or just caught, where his pictures have them; null
+ * otherwise (as ever). `walking`: running; `walked`: how far he has run (a run whose feet grip the floor goes by it).
+ */
+function axeFrame(set: AnimSet, axe: NonNullable<FigureState['axe']>, walking: boolean, animT: number, walked: number | undefined): Sprite | null {
+  const moves = set.clips?.moves;
+  if (axe.caughtT >= 0) {
+    const c = walking ? moves?.runCatch : set.clips?.release;
+    if (c && axe.caughtT < (c.frames.length - 1) / c.fps) return frameOf(c, axe.caughtT);
+  }
+  if (!axe.empty) return null;
+  if (walking) {
+    const run = moves?.runEmpty;
+    if (!run) return null;
+    const n = run.frames.length;
+    const at = set.walkStride !== undefined && walked !== undefined ? Math.round((walked / set.walkStride) * n) : Math.floor(animT * run.fps);
+    return run.frames[((at % n) + n) % n];
+  }
+  const hold = set.clips?.hold;
+  return hold ? heldFrame(hold, animT) : null;
 }
 
 /**
@@ -597,6 +628,7 @@ export class Figure {
     const fall = down ? set.clips?.fall : undefined;
     this.gone = fall ? Math.min(1, (st.fallT as number) / Math.max(0.1, (fall.frames.length - 1) / fall.fps)) : 0;
     const changing = st.changeK !== undefined && st.changeK >= 0 ? set.clips?.change : undefined;
+    const axeNow = st.axe && !reeling && (anim === 'walk' || anim === 'idle') ? axeFrame(set, st.axe, anim === 'walk', st.animT, st.walked) : null;
     if (fall) {
       s = frameOf(fall, st.fallT as number);
       this.sinceHeld = -1;
@@ -609,6 +641,9 @@ export class Figure {
       this.doing = 0;
     } else if (tumble) {
       s = tumble.frames[Math.max(0, Math.min(tumble.frames.length - 1, Math.floor(st.rollK as number * tumble.frames.length)))];
+    } else if (st.crouchT !== undefined && st.crouchT >= 0 && (set.clips?.moves?.chopCrouch || set.clips?.moves?.chargeCrouch)) {
+      // (THE WARRIOR'S WEAPONS: the crouch before Leaping Chop or Shoulder Charge leaves the floor)
+      s = frameOf((set.clips?.moves?.chopCrouch ?? set.clips?.moves?.chargeCrouch) as Clip, st.crouchT);
     } else if (st.leapK >= 0 && (set.clips?.leap || set.leap)) {
       const c = set.clips?.leap;
       s = c ? c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(st.leapK * c.frames.length)))] : (set.leap as Sprite[])[st.leapK < 0.18 ? 0 : st.leapK < 0.7 ? 1 : 2];
@@ -634,7 +669,17 @@ export class Figure {
       if (held && held.frames.length > 1) s = heldFrame(held, st.holdT as number);
       else if (letGo) s = frameOf(letGo, this.sinceHeld);
       else if (begun) s = attackFrame(begun, st.attackAge, st.attackWind);
-      else if (c) s = attackFrame(c, st.attackAge, st.attackWind);
+      else if (c) {
+        s = attackFrame(c, st.attackAge, st.attackWind);
+        // (THE WARRIOR'S THROWN AXE: a tap begun with his hands empty, its first pictures the axe appearing in them)
+        const gather = st.axe?.appear && st.attackSkill === 0 ? set.clips?.moves?.cleaveAppear : undefined;
+        if (gather) {
+          const hit = c.hit ?? 0;
+          const t = st.attackAge < st.attackWind ? (st.attackWind > 0 ? (st.attackAge / st.attackWind) * hit : hit) : hit + (st.attackAge - st.attackWind);
+          const k = Math.floor(t * c.fps + 1e-6);
+          if (k >= 0 && k < gather.frames.length) s = gather.frames[k];
+        }
+      }
       else {
         const list = st.attackSkill === 1 && set.heavy ? set.heavy : set.attack;
         const k = st.attackAge < st.attackWind ? 0 : st.attackAge - st.attackWind < 0.14 ? 1 : 2;
@@ -647,6 +692,11 @@ export class Figure {
         this.tailAt = st.attackAge < st.attackWind ? (st.attackWind > 0 ? (st.attackAge / st.attackWind) * hit : hit) : hit + (st.attackAge - st.attackWind);
       }
       this.sinceTail = -1;
+    } else if (axeNow) {
+      // (THE WARRIOR'S THROWN AXE: braced or running empty-handed while it flies, and its catch)
+      s = axeNow;
+      this.sinceHeld = -1;
+      this.tailOf = null;
     } else if (reeling) {
       // (rocked back by a blow: in place of the walk or the standing loop, for as long as it lasts)
       this.sinceHeld = -1;

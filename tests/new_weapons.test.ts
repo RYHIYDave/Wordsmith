@@ -23,8 +23,12 @@ import type { RollOpts } from '../src/game/items';
 import { makeIconArt } from '../src/art/icons';
 import { P } from '../src/art/palette';
 import { paintWithoutCanvas, paintingOf } from './helpers';
-import { ALL_CLASS_IDS, ALL_WEAPONS, CLASS_IDS, CLASS_WEAPONS, ICON_KEYS, SLOTS, WEAPONS } from '../src/game/types';
+import { ALL_CLASS_IDS, ALL_WEAPONS, CLASS_IDS, CLASS_WEAPONS, ICON_KEYS, SLOTS, WEAPONS, WARRIOR_WEAPONS } from '../src/game/types';
 import type { ClassId, ClassWeaponKind, Item, Slot, WeaponKind } from '../src/game/types';
+import { warriorAsBefore } from './warrior_as_before';
+
+// (the Warrior's old moves, as this file was written for them: tests/warrior_as_before.ts)
+warriorAsBefore();
 
 paintWithoutCanvas();
 
@@ -82,7 +86,8 @@ test('the switch is off, and off nothing is anyone\'s own', () => {
   }
   // what any hero may find is the five weapons' bases and the rest, as before; the new ones are apart
   assert.ok(ITEM_BASES.every((b) => !isNew(b.weapon)), 'ITEM_BASES holds none of them');
-  assert.deepEqual([...new Set(CLASS_BASES.map((b) => b.weapon))], [...CLASS_WEAPONS]);
+  // (and the Warrior's battle axe and warhammer, his own by his tree, WARRIOR_TREE2: found by none, his greatswords made them)
+  assert.deepEqual([...new Set(CLASS_BASES.map((b) => b.weapon))], [...CLASS_WEAPONS, ...WARRIOR_WEAPONS]);
   assert.deepEqual([...WEAPONS], ['sword', 'greatsword', 'bow', 'wand', 'staff'], 'the five any hero may find');
   } finally {
     NEW_WEAPONS.on = true;

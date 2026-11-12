@@ -318,6 +318,18 @@ export interface Hero {
   dotBy?: { id: number | null; word: 'lasting' | 'fleeting' | null };
   /** (The same) WHICH ABILITY gave each boost he has now: might, haste, frenzy's hold and Guarding's shield (its place among his abilities). */
   boostBy?: { might?: number; haste?: number; frenzy?: number; shield?: number };
+  /** RED MIST (the Warrior's battle axe talent, game/talents.ts WARRIOR_TUNE): kills held, and the seconds left of them. */
+  redMist?: number;
+  redMistT?: number;
+  /**
+   * THE WARRIOR'S THROWN AXE (WARRIOR_TREE2; the art chat's README, step 3b, at his words of 11 Nov 2026, 09:03 to 09:07): his
+   * hands empty while it flies (`handsEmpty`), till a tap makes an axe appear in them (`appear`: this attack began so, its first
+   * frames the axe gathering) or it comes back; and when the game's clock last saw it come back to empty hands (`caughtAt`: the
+   * catch). Coming back to hands that hold one, it is gone into it (an 'axeGlint').
+   */
+  handsEmpty?: boolean;
+  appear?: boolean;
+  caughtAt?: number;
   /** Harm from monsters that carry element words. */
   burnT: number;
   burnDps: number;
@@ -331,7 +343,7 @@ export interface Hero {
   /** `over`: a roll that goes over a ledge or a pit (a dive: it leaves the floor). */
   /** (`hit`: THE SKILL TREES REMADE, Drilled Lunge: the enemies struck on the way, each once.) */
   /** (THE WARLOCK, game/warlock.ts: 'smoke', a smoke step, his or the demon's (`demon`): `hit`, whom it has passed through, each once. THE TINKERER, game/tinkerer.ts: 'blast', her blast jump, flying.) */
-  move: null | { kind: 'leap' | 'roll' | 'smoke' | 'blast' | 'slip'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[]; demon?: boolean };
+  move: null | { kind: 'leap' | 'roll' | 'smoke' | 'blast' | 'slip'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[]; demon?: boolean; crouch?: number };
   /**
    * THE WARLOCK (game/warlock.ts): which he is, a man or the demon (absent: a man); his pact (0 to WARLOCK_TUNE.pact.full;
    * full, a tap on him changes him); and the change he is in the middle of, to the demon or back to a man (nothing harms
@@ -450,6 +462,9 @@ export interface Monster {
   stunT: number;
   staggerT: number;
   staggerCd: number;
+  /** (THE WARRIOR'S WARHAMMER, game.ts smashed) How dazed by his Smashes, 0 to 1 (a full daze stuns it), and when last dazed. */
+  daze?: number;
+  dazeAt?: number;
   /** Precise behind: seconds the mark on it has left (the hero's next hit on it is a certain critical). */
   markT: number;
   /** THE SKILL TREES: seconds left shocked by a lightning hit (Overload's mark; nothing else reads it). */
@@ -611,7 +626,10 @@ export interface Projectile {
   dmg: number;
   element: Element;
   /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) 'spear': the Boneward's, and 'great', the bone marksman's great arrow (Version 19.9). */
-  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great' | 'hellbolt';
+  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great' | 'hellbolt' | 'axe';
+  /** THE WARRIOR'S BATTLE AXE (WARRIOR_TREE2): a thrown axe, that comes back (`returns`), and is on its way back (`back`). */
+  returns?: boolean;
+  back?: boolean;
   pierce: boolean;
   /** THE SKILL TREES (Piercing): how many more enemies a shot that does not pierce may still pass through. */
   pierceN?: number;
@@ -1746,6 +1764,12 @@ export type GameEvent =
   | { t: 'unique'; id: string; what: string; x: number; y: number; x1?: number; y1?: number; r?: number; secs?: number; mid?: number; word?: WordId }
   /** THE SHAFT'S RIM (game/rim.ts): a notch cut in the record stone as he comes home with a new endless level reached: where the stone stands, how many it has now, how many were cut. */
   | { t: 'notch'; x: number; y: number; n: number; cut: number }
+  /** THE WARRIOR'S BATTLE AXE: his thrown axe turns for home, here. */
+  | { t: 'axeTurn'; x: number; y: number }
+  | { t: 'axeCatch'; x: number; y: number }
+  | { t: 'axeGlint'; x: number; y: number }
+  /** (THE WARRIOR'S WARHAMMER) The Earthquake's quake at (x, y): the first (0), or Tremors' second and third (1, 2); (fx, fy) the way he struck. */
+  | { t: 'quake'; x: number; y: number; q: number; fx: number; fy: number }
   | { t: 'levelup' };
 
 /** What the player is asking for this frame, already converted to world space. */

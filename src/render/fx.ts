@@ -27,6 +27,7 @@
 import { COLOSSUS } from '../game/colossus_fight';
 import { WarlockFx } from './warlock_fx';
 import { TinkererFx } from './tinkerer_fx';
+import { WarriorFx } from './warrior_fx';
 import { BrawlerFx } from './brawler_fx';
 import { UniqueFx } from './unique_fx';
 import { baseFigure, figureOf } from '../art/bestiary';
@@ -546,6 +547,8 @@ export class Fx {
   readonly tinkerer = new TinkererFx();
   /** THE BRAWLER's (render/brawler_fx.ts). */
   readonly brawler = new BrawlerFx();
+  /** THE WARRIOR'S WEAPONS' (render/warrior_fx.ts): the thrown axe's glint, the Earthquake's ground in the floor's own stone. */
+  readonly warrior = new WarriorFx();
   /** WHAT THE UNIQUE ITEMS SHOW IN PLAY (render/unique_fx.ts, the art chat's; each behind a switch that is off: render/unique_play.ts). */
   readonly uniques = new UniqueFx();
   particles: Particle[] = [];
@@ -659,6 +662,7 @@ export class Fx {
     this.warlock.clear();
     this.tinkerer.clear();
     this.brawler.clear();
+    this.warrior.clear();
     this.uniques.clear();
     this.particles = [];
     this.floaters = [];
@@ -1161,6 +1165,7 @@ export class Fx {
       this.warlock.handle(e);
       this.tinkerer.handle(e);
       this.brawler.handle(e);
+      this.warrior.handle(e);
       this.uniques.handle(e, this);
       // (UNIQUE ITEMS: the build's plain stand-in for one whose picture is shown: render/unique_fx.ts)
       if (this.uniques.owns(e)) continue;
@@ -1395,6 +1400,8 @@ export class Fx {
         case 'burst': {
           // (THE TINKERER's vials, her Golem's pound and her bomb: drawn by render/tinkerer_fx.ts)
           if (e.style === 'vial' || e.style === 'pound' || e.style === 'bomb') break;
+          // (THE WARRIOR'S EARTHQUAKE: its ground heaves in the floor's stone in place of the slam ring: render/warrior_fx.ts)
+          if (e.style === 'slam' && this.warrior.claims(e.x, e.y)) break;
           // (WORDMELDING's looks, behind MELD3, off: as for a hit)
           const w = meldLookWords(e.words);
           const ramp = this.ramp(e.el);
@@ -2041,6 +2048,7 @@ export class Fx {
     this.warlock.update(dt);
     this.tinkerer.update(dt);
     this.brawler.update(dt);
+    this.warrior.update(dt);
     this.uniques.update(dt);
     this.clock += dt;
     this.sinceHold += real;
@@ -2216,6 +2224,7 @@ export class Fx {
     for (const f of this.rifts) drawRift(g, c, f, this.clock);
     this.warlock.drawGround(g, c);
     this.tinkerer.drawGround(g, c);
+    this.warrior.drawGround(g, c);
     this.uniques.drawGround(g, c);
     // arrows of a volley standing in the floor: a short shaft leaning back the way it fell, its
     // fletching at the top; they fade out where they stand
@@ -2449,6 +2458,7 @@ export class Fx {
     this.warlock.drawAir(g, c);
     this.tinkerer.drawAir(g, c);
     this.brawler.drawAir(g, c);
+    this.warrior.drawAir(g, c);
     this.uniques.drawAir(g, c);
     for (const q of this.whirls) {
       // A whirlwind's turn: two crescents, opposite each other, going round the hero. Each is

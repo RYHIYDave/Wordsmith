@@ -92,7 +92,12 @@ function frame(id: TakeId, hold: Hold, side: WuSide): ArmedFrame {
 }
 const pixel = (p: Px, i: number): string => `${p.d[i * 4]},${p.d[i * 4 + 1]},${p.d[i * 4 + 2]}`;
 
-test('1. the switch is off, and nothing of the game imports the new weapons or their drops', () => {
+// (BROUGHT TO THE GAME, 12 Nov 2026, at his yes of 11 Nov by 10:51, “Yes, hand both to main (Recommended)”: his pictures with the
+// war axe and the maul are the game's where his weapon is one of them, game/talents.ts WARRIOR_TREE2 (docs/warrior_tree_build.md).
+// The art reaches the game only by these files, each asking for it only with his weapon picked: none other may)
+const GAME_USERS = ['art/heroes.ts', 'art/heroes3.ts', 'render/render.ts', 'render/warrior_fx.ts'];
+
+test('1. the art reaches the game only by the files that ask for his weapon; the mock-up switch is off; nothing imports the drops', () => {
   assert.equal(WARRIOR_WEAPONS.on, false, 'WARRIOR_WEAPONS is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
@@ -102,7 +107,7 @@ test('1. the switch is off, and nothing of the game imports the new weapons or t
     const text = fs.readFileSync(`src/${f}`, 'utf8');
     if (/from ['"][^'"]*(warrior_up_weapons|warrior_weapons_items|warrior_up_axe_moves|axe_film_main|warrior_up_hammer_moves|warrior_up_heavy_art|warrior_up_quake_ground)['"]/.test(text)) users.push(f);
   }
-  assert.deepEqual(users, [], 'what imports them');
+  assert.deepEqual(users.filter((f) => !GAME_USERS.includes(f)).sort(), [], 'what imports them');
   // (the film's page holds the game, not the game the page: the game's own entry does not know it)
   assert.ok(!/axe_film|warrior_axe/.test(fs.readFileSync('src/main.ts', 'utf8')), 'main.ts does not know the film or the moves');
   // (the drops reach the game's item painter, art/items_a.ts, only to paint as it paints: it does not reach them)

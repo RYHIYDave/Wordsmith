@@ -35,6 +35,7 @@ import type { WarlockShare } from './warlock_art';
 // (THE WARRIOR BROUGHT UP TO THE BRAWLER'S LEVEL, behind its switch, off: art/warrior_up.ts)
 import { WARRIOR_UP } from './warrior_up';
 import { makeWarriorUpArt, wuFacing } from './warrior_up_art';
+import { makeWarriorHeavyArt } from './warrior_up_heavy_art';
 // (THE RANGER BROUGHT UP TO THE BRAWLER'S LEVEL, behind its switch, off: art/ranger_up.ts)
 import { RANGER_UP } from './ranger_up';
 import { CARD_FACING, EIGHT_ORDER, heroSides } from './sides';
@@ -504,6 +505,17 @@ export function makeHeroArt3(): HeroArt {
     }
     // (THE WARRIOR BROUGHT UP, while art/warrior_up.ts WARRIOR_UP is on: sculpted, every list at 30 a second, his blows by
     // Movement 9: art/warrior_up_art.ts. Off, he is as he was, every frame the same: tests/warrior_up.test.ts)
+    // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: with the war axe or the maul, his pictures with it from his eight
+    // sides, art/warrior_up_heavy_art.ts; his class card is the great sword's, as ever)
+    if (cls === 'warrior' && WARRIOR_UP.on && look.weapon && place !== 'card') {
+      const hkey = `warriorheavy:${look.weapon}:${place}`;
+      let hart = made.get(hkey);
+      if (!hart) {
+        hart = makeWarriorHeavyArt(look.weapon, place) as unknown as ActorArt;
+        made.set(hkey, hart);
+      }
+      return hart;
+    }
     if (cls === 'warrior' && WARRIOR_UP.on) {
       const ukey = `warriorup:${place}`;
       let uart = made.get(ukey);

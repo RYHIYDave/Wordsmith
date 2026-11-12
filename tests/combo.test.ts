@@ -37,6 +37,10 @@ import { paintWithoutCanvas, heroesAsBefore } from './helpers';
 import { mageAsBefore } from './mage_as_before';
 import { MAGE_STANCES, WILD, useMageStances, useWild } from '../src/art/moves3';
 import { OWN_MOVES } from '../src/game/defs';
+import { warriorAsBefore } from './warrior_as_before';
+
+// (the Warrior's old moves, as this file was written for them: tests/warrior_as_before.ts)
+warriorAsBefore();
 
 // (THE WARRIOR AND THE RANGER BROUGHT UP, on since 7 Nov 2026: this file asks of their pictures as they were, art/moves3.ts, kept)
 heroesAsBefore();

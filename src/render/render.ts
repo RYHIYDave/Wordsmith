@@ -34,6 +34,10 @@ import type { ActorArt } from '../art/actor_types';
 import { FIGURE_SIZE, HEAVY_FIGURES, figureOf } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { HeroArt } from '../art/heroes';
+import { HEAVY_PLACES } from '../art/heroes';
+import { heavyDrawn } from '../game/talents';
+import { AXE_FLIGHT, axeFlying } from '../art/warrior_up_axe_moves';
+import { WARRIOR_UP } from '../art/warrior_up';
 import { WORD_COLOR, itemPic } from '../art/icons';
 import type { IconArt } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
@@ -364,6 +368,27 @@ function cutPart(c: number): WallPart {
 /** A whole number of things from a rate that need not be whole: 1.3 is one, and a second one 3 times in 10. */
 function some(rate: number): number {
   return Math.floor(rate) + (Math.random() < rate % 1 ? 1 : 0);
+}
+
+/** (THE WARRIOR'S BATTLE AXE) A thrown axe at (x, y) on the screen, `age` seconds in the air: its haft and its blade, turning. */
+function drawThrownAxe(g: CanvasRenderingContext2D, x: number, y: number, age: number): void {
+  const a = age * 18;
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  const at = (u: number, v: number): [number, number] => [Math.round(x + u * c - v * s), Math.round(y + (u * s + v * c) * 0.6)];
+  g.fillStyle = '#5a3a22';
+  for (let k = -5; k <= 5; k++) {
+    const [px, py] = at(k, 0);
+    g.fillRect(px, py, 1, 1);
+  }
+  g.fillStyle = '#c8ccd8';
+  for (let u = 2; u <= 5; u++) for (let v = 1; v <= 4 - (5 - u); v++) {
+    const [px, py] = at(u, -v);
+    g.fillRect(px, py, 1, 1);
+  }
+  const [ex, ey] = at(5, -1);
+  g.fillStyle = '#f2f4fa';
+  g.fillRect(ex, ey, 1, 1);
 }
 
 function ellipse(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string, alpha: number): void {
@@ -2766,6 +2791,9 @@ export class Renderer {
     return s && SKILLS[s.id].kind === 'whirl' ? 'whirl' : 'beam';
   }
 
+  /** (THE WARRIOR'S BATTLE AXE) His thrown axe's pictures in the air, made the first time one is thrown. */
+  private axeFly: Sprite[] | null = null;
+
   /** The hero's pictures: the class decides the figure, and what is in the hands shows on it. */
   private heroArt(game: Game): ActorArt {
     const h = game.hero;
@@ -2774,11 +2802,14 @@ export class Renderer {
     // is what he carries, with sword and shield otherwise.)
     // (and whether they are in town: the heroes painted over the bones have their weapons on their backs there, art/heroes3.ts)
     // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES: each always drawn with his own weapon, the warrior's the great sword)
+    const arms = heavyDrawn(h.cls, h.talents);
     const look = {
       twoHanded: OWN_MOVES.on ? h.cls === 'warrior' : h.gear.mainhand !== null && h.gear.mainhand.weapon === 'greatsword',
       town: !!game.level.town,
       // (THE WARLOCK: the demon's pictures while he is it; his arm blazing while his pact is full)
       ...(h.cls === 'warlock' ? { demon: h.form === 'demon', blaze: h.form !== 'demon' && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full } : {}),
+      // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: the war axe or the maul in his hands, once his tree has picked it)
+      ...(arms ? { weapon: arms } : {}),
     };
     // Frames are painted ahead of need each time the world is drawn: the hero's, and those of the
     // monsters in this dungeon, turn and turn about. At least one each time, and more for as long
@@ -2849,8 +2880,10 @@ export class Renderer {
     // were done. Until the worker is up, or where there is none, the game paints them ahead as before.)
     const pw = this.painter && this.art.heroes.give ? this.painter : null;
     // (THE WARLOCK: the one he is now first, then his others: the demon's, his arm blazing, as a man in a dungeon)
-    const now = h.cls === 'warlock' && !look.town ? (h.form === 'demon' ? 'demon' : look.blaze ? 'blaze' : 'dungeon') : look.town ? 'town' : 'dungeon';
-    const byWorker = !!pw && pw.hero(h.cls, now) && (!look.town || pw.hero(h.cls, 'dungeon')) && (h.cls !== 'warlock' || look.town || (pw.hero(h.cls, 'dungeon') && pw.hero(h.cls, 'blaze') && pw.hero(h.cls, 'demon')));
+    // (THE WARRIOR'S WEAPON: his places with the war axe or the maul, art/heroes.ts HEAVY_PLACES)
+    const places = arms ? HEAVY_PLACES[arms] : { dungeon: 'dungeon' as const, town: 'town' as const };
+    const now = h.cls === 'warlock' && !look.town ? (h.form === 'demon' ? 'demon' : look.blaze ? 'blaze' : 'dungeon') : look.town ? places.town : places.dungeon;
+    const byWorker = !!pw && pw.hero(h.cls, now) && (!look.town || pw.hero(h.cls, places.dungeon)) && (h.cls !== 'warlock' || look.town || (pw.hero(h.cls, 'dungeon') && pw.hero(h.cls, 'blaze') && pw.hero(h.cls, 'demon')));
     const hero = (): boolean => !byWorker && this.art.heroes.warm(h.cls, look);
     const beast = (): boolean => figs.length > 0 && this.art.bestiary.warm(figs);
     // (Version 19.4: in town, once all of the town's are painted, the hero's pictures for the
@@ -3835,7 +3868,9 @@ export class Renderer {
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);
       // (THE WARLOCK's smoke step is laid out over the step as a leap is: art/warlock_art.ts)
-      const leapK = h.move && (h.move.kind === 'leap' || h.move.kind === 'smoke' || h.move.kind === 'blast' || h.move.kind === 'slip') ? Math.min(1, h.move.t / h.move.dur) : -1;
+      // (THE WARRIOR'S WEAPONS: a leap's crouch before he leaves the floor is its own: `crouchT`, and no leap yet)
+      const crouchT = h.move && h.move.kind === 'leap' && h.move.crouch && h.move.t < h.move.crouch ? h.move.t : -1;
+      const leapK = crouchT >= 0 ? -1 : h.move && (h.move.kind === 'leap' || h.move.kind === 'smoke' || h.move.kind === 'blast' || h.move.kind === 'slip') ? Math.min(1, (h.move.t - (h.move.crouch ?? 0)) / h.move.dur) : -1;
       const changeK = h.change ? Math.min(1, h.change.t / Math.max(1e-6, h.change.dur)) : -1;
       const rollK = h.move && h.move.kind === 'roll' ? Math.min(1, h.move.t / h.move.dur) : -1;
       // (a figure with a tumble of its own is seen making it; one without is drawn faint, to read as a blur)
@@ -3900,7 +3935,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0, ...(crouchT >= 0 ? { crouchT } : {}), ...(heavyDrawn(h.cls, h.talents) === 'axe' ? { axe: { empty: !!h.handsEmpty, caughtT: h.caughtAt !== undefined ? game.time - h.caughtAt : -1, appear: !!h.appear } } : {}) }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       // (THE VETERAN in a move: its frame, turned as he faced as it began: render/veteran_fx.ts. Not narrowed in a turn.)
       const vetSp = this.vetFx.shown(game, heroArt);
       if (vetSp) sp = vetSp;
@@ -4261,6 +4296,18 @@ export class Renderer {
       if (p.look === 'great') {
         const v = Math.hypot(p.vx, p.vy) || 1;
         if (onScreen(p.x, p.y)) drawGreatArrow(g, this.floorAt, p.x, p.y, AIM.z, p.vx / v, p.vy / v, t);
+        continue;
+      }
+      // (THE WARRIOR'S BATTLE AXE: his thrown axe spinning flat, the art chat's pictures of it, art/warrior_up_axe_moves.ts axeFlying,
+      // a turn in AXE_FLIGHT.turn seconds; its anchor the floor under it. Where his pictures are not his own, the stand-in)
+      if (p.look === 'axe') {
+        if (onScreen(p.x, p.y)) {
+          if (WARRIOR_UP.on) {
+            const fly = (this.axeFly ??= axeFlying());
+            const sp = fly[Math.floor((p.age / AXE_FLIGHT.turn) * fly.length) % fly.length];
+            g.drawImage(sp.img, Math.round(wx(cam, p.x, p.y) - sp.ax), Math.round(wy(cam, p.x, p.y) - sp.ay), sp.w, sp.h);
+          } else drawThrownAxe(g, wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 12, p.age);
+        }
         continue;
       }
       // (a hero's arrow, with the ranger's new pictures: from where the arrow on his string was, at its height: game/defs.ts, RANGER_ARROW)

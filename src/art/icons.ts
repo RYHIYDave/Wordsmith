@@ -714,6 +714,9 @@ function makeItemIcons(): Record<IconKey, Sprite> {
     mace: maceIcon(),
     greatsword: greatswordIcon(),
     maul: maulIcon(),
+    // (THE WARRIOR'S THREE WEAPONS, behind WARRIOR_TREE2: the old axe's and maul's pictures standing in until the art chat's)
+    battleaxe: axeIcon(),
+    warhammer: maulIcon(),
     // short and deeply curved, light wood, red grip
     bow: bowIcon(4.5, 4.6, [P.wd5, P.wd4, P.wd3], P.bn2, P.bl4, null),
     // corner to corner and much flatter, dark wood, gold tips, bright string

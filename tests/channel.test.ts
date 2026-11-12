@@ -23,6 +23,10 @@ import type { ClassId, WeaponKind } from '../src/game/types';
 import { attackClip } from '../src/render/figure';
 import { seasoned } from './helpers';
 import { OWN_MOVES } from '../src/game/defs';
+import { warriorAsBefore } from './warrior_as_before';
+
+// (the Warrior's old moves, as this file was written for them: tests/warrior_as_before.ts)
+warriorAsBefore();
 // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
 // weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
 OWN_MOVES.on = false;
