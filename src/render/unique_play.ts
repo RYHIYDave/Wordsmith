@@ -13,6 +13,11 @@
 //           leaping onto the one it touches
 //   risen   THE FLESHMANCER'S BRAND: the elite risen to fight for him, the brand under it, its rising, its blows, its fall
 //   fourth  THE FOURTH GLOBE (the Brawler's): four globes over his head, not three (render/veteran_fx.ts)
+//   arm     THE DROWNED ARM: black water welling up under the enemy, the tentacle bursting up out of it, whipping down across
+//           it as the blow lands, and pulled back under (art/unique_play_art2.ts)
+//   talons  THE QUEEN'S TALONS: one of her flock, black-violet, diving out of the air over him onto the enemy, striking, beating away
+//   wrench  THE STICKY WRENCH: her vial stuck in a lump of pitch on what it landed on, going where that goes, blinking quicker and
+//           quicker, fizzing, until it bursts
 //
 // (Nothing is imported here, so that anything may ask a switch without pulling in the pictures.)
-export const UNIQUE_PLAY = { tome: false, risen: false, fourth: false };
+export const UNIQUE_PLAY = { tome: false, risen: false, fourth: false, arm: false, talons: false, wrench: false };

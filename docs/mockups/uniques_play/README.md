@@ -123,3 +123,89 @@ Nothing of game/ is changed.
    the game's size). Taking it off him is a change to his baked pictures.
 4. **The risen elite's pictures are its kind's standing, walking and attack frames**: a kind that moves by a gait or an act of
    its own (the first five floors' own, Act 1's fliers) is shown by its plain frames, not those.
+
+# The next: The Drowned Arm (branch `art/uniques-play2`, 12 Nov 2026)
+
+Cut from `main` at 10161fc (25.3.10, which has the first three). Pulled from the queue (`draw-unique-items`) by a chat of his
+working from the queue (his words: “Please knock out some queue items”).
+
+**The Drowned Arm** (amulet, the Swamp Colossus's: every 5 seconds a tentacle bursts up under the enemy he is fighting and
+slams it, `game.ts stepArm`). Behind `UNIQUE_PLAY.arm`, off. Its bag picture's drowned olive flesh (`ARM_FLESH`, the bag
+picture's `arm` ramp), a paler inside down which its suckers run (rings with a dark pit, bigger toward its root), a wet glint on
+its lit side, edged in ink. On the rules' `warn` (half a second before the blow) BLACK WATER wells up on the floor there and
+churns (the darkest of the bag picture's water: never bright enough to read as a glow), and the arm bursts up out of it on the
+far side of the enemy from him (as the screen has it: mirrored when he stands on the other side), its tip hooked, swaying; it
+towers, cocks back, and on the `slam` (frame `ARM.slam`, the rules' half a second) it has whipped down across the enemy toward
+him; the water is thrown out in a ring and a spray (with the game's own slam burst and shake, the build's); it lies there a
+moment, bounces once, and is pulled back under, tip last; the water closes. 36 frames at 30 a second, painted once each
+(src/art/unique_play_art2.ts `paintArm`, `paintArmPool`, `armPose`), laid by `UniqueFx` (stands: behind the enemy as it rises,
+over it once it has come down; the water with what lies on the floor).
+
+To see it: `npx tsx tools/uniques_play_peek2.ts arm <out.png>` (every frame big), or in a built page
+`LOOK=arm FILM=2.4 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/arm`
+then `python3 tools/uniques_play_film.py shots/uniques_play/arm <dir> drowned_arm "<frame>:<line>" ...`.
+
+Pictures sent him: `pictures/drowned_arm.png` (four moments, a line under each) and `pictures/drowned_arm.mp4` (2.4 s, the
+Warrior striking a skeleton, at a phone's own size).
+
+Checked: tests/unique_play2.test.ts (new, 3: the switch off; under, up, down across as the blow lands, under again, its root
+where the water is, only its own colours, every pixel whole; the water from the warning to the end, dark) and
+tests/unique_play.test.ts (6, its switches check now counting `arm`) pass, each run alone with tsx; tsc clean; the page built
+and the look filmed: finished clean.
+
+HIS WORD, 12 Nov 2026, by pop-up. Sent the film and the stills, asked whether it is good to hand to main, he asked: “How often
+does the arm come up?” (told him: every 5 seconds, under the enemy he has hit in the last 3 seconds, up to 9 tiles off; if
+none, the moment he lands a hit; 200% of his hit within 1.3 tiles, the water half a second before). Asked again: “It doesn’t
+seem very good if that’s all it does every 5 seconds”. Asked how it should get stronger: “Every 3s, and it stuns
+(Recommended)” (offered as: comes up more often, and whatever it slams is stunned for a moment); and of the look itself: “The
+look is right (Recommended)”. SO: THE LOOK HAS HIS YES, handed to main behind `UNIQUE_PLAY.arm`; AND A RULES CHANGE FOR THE MAIN
+CHAT (the uniques' numbers are its: game/uniques.ts UNIQUE_TUNE.arm.every 5 to 3, and a stun on what it slams in game.ts
+stepArm, as the game stuns elsewhere; its card's line says so). The picture needs nothing new for either: it plays from each
+`warn`, however often.
+
+## The Queen's Talons (same branch, 12 Nov 2026)
+
+At his word, 12 Nov, when the bird had been put back in the queue: “So work on the queen’s talons?  Why just throw it back in
+the queue?”. Behind `UNIQUE_PLAY.talons`, off. HER BIRD IS ONE OF HER FLOCK: the ledge road's vulture (art/ledge_vultures.ts,
+its moves with his yes), painted by its own painter (`paintMob`), turned hers and his (`talonsLook`): its dusty brown feathers
+her black-violet (the boot's bag picture's raven, six tones by how light), its pale head, ruff and talons as they are, its eyes
+the friend's cyan where they were the enemy's fire, and the friend's cyan edge round it (it is his, called by his boots). On the
+rules' `dive` (game.ts callBird: `secs`, 0.35, from him to the nearest enemy) it comes down out of the air over him (`TALONS.high`,
+20 game pixels) onto that enemy in its own head-first stoop (its dive's moments from 0.25 to its blow at 0.7, played over the
+rules' seconds), its shadow under it, so that its talons strike as the rules' blow lands; a burst of her feathers off the one it
+strikes; its strike held and its pull-out (to 1.2); then 0.55 seconds of its own flight, beating up and on the way it came,
+fading (`talonsAt`). From in front or behind, and which way round, by the way it flies, as a monster is shown. Its pictures (its
+dive's 29 moments and its flight's 18, both ways) are painted two a step while the boots are worn, so its first dive waits on
+none of them (`UniqueFx.update`). Looked at in a built page at a phone's size (`LOOK=talons`: the Ranger, two dives, one each
+way): `pictures/queens_talons.mp4` and `pictures/queens_talons.png` (four moments, a line under each), sent him.
+
+Checked: tests/unique_play2_talons.test.ts (new, 3: its switch off; her colours, no brown and nothing of the enemy's fire left,
+the friend's edge round it, every pixel whole or its edge; its way over him, onto the enemy as the blow lands, away, gone),
+tests/unique_play2.test.ts (3) and tests/unique_play.test.ts (6, its switches now counting `talons`) pass, each alone with tsx;
+tsc clean; the look filmed, finished clean.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills, asked whether it is good to hand to main: “Yes, hand it to main
+(Recommended)”. Handed to main with the Drowned Arm (the queue item bring-in-drowned-arm-picture).
+
+HIS WORD ON BOTH, 12 Nov 2026, 13:47 (Eastern), as the next was being made: “I’d like this and the tentacle to count as ally
+damage.  So when we have co-op and support items or whatever it will scale these extra attackers”. Read as: the bird's blow and
+the arm's slam are ALLY DAMAGE, a kind of their own, so that whatever later makes allies hit harder (co-op, support items)
+makes these hit harder too. The game has no such kind yet (damageMonster takes no source): the main chat's to add, and to put
+these two under it (game.ts callBird, stepArm). Nothing in the pictures changes for it.
+
+## The Sticky Wrench (same branch, 12 Nov 2026)
+
+Behind `UNIQUE_PLAY.wrench`, off. On the rules' `stuck` (game.ts: her vial landed, stuck to the enemy it came down on, going
+where that goes, bursting `secs`, 0.7, on), HER VIAL STUCK (`paintStuckVial`, 21 frames over the fuse): her own vial (its glass
+of her cyan brew, its brass cap: dev/contraption_fx.ts's colours) stuck head down at a slant in a lump of dark amber pitch at the
+enemy's middle (on the floor if it came down on nothing), one drip stretching from the pitch; its brew blinking brighter and
+brighter, the blinks closer and closer together (`STICKY.blinks`), a ring of light off it at each and its light on what is
+round it (cyan, the friend's: it is hers); fizzing at its cap, more as its fuse runs out; then the game's own burst, twice as
+wide. Looked at in a built page at a phone's size (`LOOK=wrench`: the Tinkerer, two tosses): `pictures/sticky_wrench.mp4` and
+`pictures/sticky_wrench.png`. Checked: tests/unique_play2_wrench.test.ts (new, 2), and the three other in-play test files, each
+alone with tsx; tsc clean; the look filmed, finished clean. HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills:
+“Yes, hand it to main (Recommended)”.
+
+NOT DRAWN YET (the rest of the queue item's list): The Rainwalker, The Shepherd's Crook, The Tide, The Windcutter (the game already draws its blade as
+the Wave's crescent), The Fan, The Moth's Wing; and which of the moments the build only tells of want a
+picture of their own (to ask him).

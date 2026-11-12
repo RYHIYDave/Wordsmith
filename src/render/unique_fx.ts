@@ -16,6 +16,16 @@
 //                          burning away as its seconds run out; the floor cracked with light where it rose; a burst on the
 //                          one it strikes; and at its end it falls again and fades
 //   THE FOURTH GLOBE       render/veteran_fx.ts (four globes over the Brawler's head)
+//   THE DROWNED ARM        on its 'warn', black water welling up there, the tentacle bursting up out of it a little behind the
+//                          enemy, towering, cocking back and whipping down across it on the 'slam' (the rules' half a second
+//                          on), the water thrown out round it; it lies there a moment and is pulled back under (art ARM)
+//   THE QUEEN'S TALONS     on its 'dive', one of her flock (art paintTalonsBird) coming down out of the air over him onto the
+//                          enemy in its own stoop, over the rules' seconds, its shadow under it; on the blow, its strike and a
+//                          burst of her feathers; then it beats away up the way it came and fades (art talonsAt). Its pictures
+//                          are painted a few at a time while the boots are worn, so its first dive does not wait on them
+//   THE STICKY WRENCH      on its 'stuck', her vial in a lump of pitch where it landed, stuck to the enemy there (and going
+//                          where it goes) at its middle, blinking quicker and quicker, fizzing, a cyan light off it, until the
+//                          rules' fuse is out and it bursts (the game's own burst, twice as wide) (art paintStuckVial)
 
 import type { Sprite } from '../engine/px';
 import type { Px } from '../engine/px';
@@ -33,6 +43,7 @@ import { wx, wy } from './fx';
 import { attackFrame } from './figure';
 import { risingSprite } from './arrivals';
 import { UNIQUE_PLAY } from './unique_play';
+import { ARM, ARM_WATER, BIRD_CANVAS, BIRD_RAVEN, STICKY, STICKY_BREW, TALONS, paintArm, paintArmPool, paintStuckVial, paintTalonsBird, talonsAt } from '../art/unique_play_art2';
 
 /** Picture pixels to a game pixel (the heroes' grain). */
 const G = 2;
@@ -71,6 +82,16 @@ function keep(key: string, paint: () => { px: Px; ax: number; ay: number }): Spr
   return s;
 }
 
+/** Every picture her bird shows (its dive's moments from its stoop to its pull-out, its flight's), by its move and frame (30 a second). */
+const BIRD_FRAMES: ReadonlyArray<readonly ['dive' | 'fly', number]> = [
+  ...Array.from({ length: Math.round((TALONS.end - TALONS.from) * TALONS.fps) + 1 }, (_, i) => ['dive', Math.round(TALONS.from * TALONS.fps) + i] as const),
+  ...Array.from({ length: Math.ceil(TALONS.away * TALONS.fps) + 1 }, (_, i) => ['fly', i] as const),
+];
+/** Her bird at a frame of a move, from in front or behind: painted once and kept. */
+function birdSprite(move: 'dive' | 'fly', i: number, view: 'front' | 'back'): Sprite {
+  return keep(`bird|${move}|${i}|${view}`, () => ({ px: paintTalonsBird(move, i / TALONS.fps, view), ax: BIRD_CANVAS.ax, ay: BIRD_CANVAS.ay }));
+}
+
 export class UniqueFx {
   /** The game being drawn (render/render.ts sets it each frame), and its monsters' pictures. */
   game: Game | null = null;
@@ -88,6 +109,16 @@ export class UniqueFx {
   private cracks: { x: number; y: number; t: number; seed: number }[] = [];
   private falls: { kind: MonsterKind; champion: boolean; x: number; y: number; fx: number; fy: number; r: number; t: number }[] = [];
   private blows: { x: number; y: number; z: number; t: number; seed: number }[] = [];
+  // ---- the drowned arm: each from its warning (the enemy's spot, how long since)
+  private arms: { x: number; y: number; t: number; flip: boolean }[] = [];
+  // ---- the queen's talons: each bird from where it was called (over him) to the enemy, how long it takes, how long since; which way round
+  private birds: { x0: number; y0: number; x1: number; y1: number; secs: number; t: number; back: boolean; flip: boolean; struck: boolean }[] = [];
+  // ---- the sticky wrench: each vial stuck, where (and on whom), how long its fuse, how long since
+  private stuck: { x: number; y: number; mid?: number; z: number; secs: number; t: number }[] = [];
+  /** Its pictures painted ahead while the boots are worn: the next one to paint. */
+  private birdAhead = 0;
+  /** What the effects lend it, from the last event (for the burst of her feathers on the blow, which no event tells of). */
+  private lent: Lent | null = null;
   private looks = new Map<Sprite, Sprite>();
   private lookPx = 0;
   private cuts = new Map<Sprite, Map<number, { sp: Sprite; down: number } | null>>();
@@ -102,6 +133,9 @@ export class UniqueFx {
     this.cracks = [];
     this.falls = [];
     this.blows = [];
+    this.arms = [];
+    this.birds = [];
+    this.stuck = [];
   }
 
   /**
@@ -134,6 +168,35 @@ export class UniqueFx {
       const top = m ? (FIGURE_SIZE[figureOf(m)]?.top ?? 28) : 28;
       this.touches.push({ x: e.x, y: e.y, z: Math.min(20, top * 0.5), t: 0, seed: ++this.seeds });
       this.flare = TOME_FLIES.flare;
+    }
+    this.lent = fx;
+    if (e.id === 'queenstalons' && UNIQUE_PLAY.talons && e.what === 'dive' && e.x1 !== undefined && e.y1 !== undefined) {
+      // (from in front or behind, and which way round on the screen, by the way it flies: as a monster is shown)
+      const dx = e.x1 - e.x;
+      const dy = e.y1 - e.y;
+      const l = Math.hypot(dx, dy) || 1;
+      this.birds.push({ x0: e.x, y0: e.y, x1: e.x1, y1: e.y1, secs: e.secs ?? 0.35, t: 0, back: (dx + dy) / l < -0.2, flip: dx - dy < 0, struck: false });
+      if (this.birds.length > 6) this.birds.shift();
+    }
+    if (e.id === 'stickywrench' && UNIQUE_PLAY.wrench && e.what === 'stuck') {
+      // (on the enemy it landed on, at its middle; else on the floor)
+      const m = e.mid !== undefined ? g?.monsters.find((q) => q.id === e.mid) : undefined;
+      const top = m ? (FIGURE_SIZE[figureOf(m)]?.top ?? 28) : 0;
+      this.stuck.push({ x: e.x, y: e.y, mid: m ? e.mid : undefined, z: m ? Math.min(16, top * 0.45) : 2, secs: e.secs ?? 0.7, t: 0 });
+      if (this.stuck.length > 8) this.stuck.shift();
+    }
+    if (e.id === 'drownedarm' && UNIQUE_PLAY.arm) {
+      if (e.what === 'warn') {
+        // (it comes up on the far side of the enemy from him, as the screen has it, and whips down across it toward him)
+        const h = g?.hero;
+        const flip = !!h && h.x - h.y < e.x - e.y;
+        this.arms.push({ x: e.x, y: e.y, t: 0, flip });
+        if (this.arms.length > 3) this.arms.shift();
+      } else if (e.what === 'slam') {
+        // (the black water thrown out round it as it lands)
+        fx.rings.push({ x: e.x, y: e.y, r: (e.r ?? 1.3) * 1.05, t: 0, dur: 0.4, colors: [ARM_WATER[4], ARM_WATER[3], ARM_WATER[2], ARM_WATER[1]], fill: false, heavy: true });
+        fx.spray(e.x, e.y, 26, [ARM_WATER[4], ARM_WATER[3], ARM_WATER[2], '#687c46'], 2.1, 150, 2);
+      }
     }
     if (e.id === 'fleshmancersbrand' && UNIQUE_PLAY.risen) {
       if (e.what === 'rise') {
@@ -175,6 +238,35 @@ export class UniqueFx {
     this.cracks = this.cracks.filter((c) => c.t < RISEN_SHOWN.cracks);
     for (const f of this.falls) f.t += dt;
     this.falls = this.falls.filter((f) => f.t < RISEN_SHOWN.fall);
+    for (const b of this.birds) {
+      b.t += dt;
+      if (!b.struck && b.t >= b.secs) {
+        b.struck = true;
+        // (a burst of her feathers off the one it strikes)
+        this.lent?.spray(b.x1, b.y1, 12, [BIRD_RAVEN[5], BIRD_RAVEN[4], BIRD_RAVEN[3], BIRD_RAVEN[2]], 1.6, 90, 14);
+      }
+    }
+    this.birds = this.birds.filter((b) => talonsAt(b.t, b.secs) !== null);
+    // (her bird's pictures painted ahead, two a step, while the boots are worn: its first dive waits on none of them)
+    const gm = this.game;
+    if (UNIQUE_PLAY.talons && gm && gm.wears('queenstalons') && this.birdAhead < BIRD_FRAMES.length * 2) {
+      for (let k = 0; k < 2 && this.birdAhead < BIRD_FRAMES.length * 2; k++, this.birdAhead++) {
+        const [move, i] = BIRD_FRAMES[this.birdAhead % BIRD_FRAMES.length];
+        birdSprite(move, i, this.birdAhead < BIRD_FRAMES.length ? 'front' : 'back');
+      }
+    }
+    for (const v of this.stuck) {
+      v.t += dt;
+      // (it goes where what it is stuck to goes)
+      const m = v.mid !== undefined ? this.game?.monsters.find((q) => q.id === v.mid && !q.dead) : undefined;
+      if (m) {
+        v.x = m.x;
+        v.y = m.y;
+      }
+    }
+    this.stuck = this.stuck.filter((v) => v.t < v.secs);
+    for (const a of this.arms) a.t += dt;
+    this.arms = this.arms.filter((a) => a.t * 30 < ARM.frames);
     for (const b of this.blows) b.t += dt;
     this.blows = this.blows.filter((b) => b.t * 30 < RISEN_BLOW_FRAMES);
     // THE TOME: a tongue of its fire left where it is, a thirtieth of a second apart
@@ -289,6 +381,30 @@ export class UniqueFx {
       const s = keep(`touch|${age}|${q.seed % 3}`, () => paintTomeTouch(age, q.seed % 3));
       out.push({ d: q.x + q.y + 0.05, s, x: wx(cam, q.x, q.y), y: wy(cam, q.x, q.y) - q.z, alpha: 1 });
     }
+    // THE STICKY WRENCH: her vial where it is stuck, a little before what it is stuck to
+    for (const v of this.stuck) {
+      const f = Math.min(STICKY.frames - 1, Math.floor((v.t / v.secs) * STICKY.frames));
+      const s = keep(`stuck|${f}`, () => ({ px: paintStuckVial(f), ax: STICKY.ax, ay: STICKY.ay }));
+      out.push({ d: v.x + v.y + 0.06, s, x: wx(cam, v.x, v.y), y: wy(cam, v.x, v.y) - v.z, alpha: 1 });
+    }
+    // THE QUEEN'S TALONS: her bird where it is on its way, its floor point lifted as high as it flies
+    for (const b of this.birds) {
+      const at = talonsAt(b.t, b.secs);
+      if (!at) continue;
+      const x = b.x0 + (b.x1 - b.x0) * at.along;
+      const y = b.y0 + (b.y1 - b.y0) * at.along;
+      const s0 = birdSprite(at.move, Math.round(at.at * TALONS.fps), b.back ? 'back' : 'front');
+      out.push({ d: x + y + (at.high > 8 ? 1.5 : 0.05), s: b.flip ? flipSprite(s0, true) : s0, x: wx(cam, x, y), y: wy(cam, x, y) - at.high, alpha: at.alpha });
+    }
+    // THE DROWNED ARM: from a little behind the enemy (ARM.from), behind it as it rises, over it once it has whipped down across it
+    for (const a of this.arms) {
+      const f = Math.min(ARM.frames - 1, Math.floor(a.t * 30));
+      const [fx0, fy0] = a.flip ? [ARM.from[1], ARM.from[0]] : ARM.from;
+      const bx = a.x + fx0;
+      const by = a.y + fy0;
+      const s0 = keep(`arm|${f}`, () => ({ px: paintArm(f), ax: ARM.ax, ay: ARM.ay }));
+      out.push({ d: f < ARM.slam ? bx + by : a.x + a.y + 0.4, s: a.flip ? flipSprite(s0, true) : s0, x: wx(cam, bx, by), y: wy(cam, bx, by), alpha: 1 });
+    }
     if (!UNIQUE_PLAY.risen || !this.bestiary) return out;
     // THE RISEN ELITE
     const p = g.risen;
@@ -326,6 +442,23 @@ export class UniqueFx {
     };
     const at = this.tomeAt;
     if (at) oval(at.x, at.y, 0.3, 0.24);
+    // HER BIRD'S SHADOW, smaller and fainter the higher it flies
+    for (const b of this.birds) {
+      const at = talonsAt(b.t, b.secs);
+      if (!at) continue;
+      const x = b.x0 + (b.x1 - b.x0) * at.along;
+      const y = b.y0 + (b.y1 - b.y0) * at.along;
+      oval(x, y, 0.42 - Math.min(0.2, at.high / 160), 0.22 * at.alpha * (1 - Math.min(0.6, at.high / 60)));
+    }
+    // THE DROWNED ARM'S BLACK WATER, between where it comes up and the enemy
+    for (const a of this.arms) {
+      const f = Math.min(ARM.frames - 1, Math.floor(a.t * 30));
+      const s = keep(`armpool|${f}`, () => paintArmPool(f));
+      const [fx0, fy0] = a.flip ? [ARM.from[1], ARM.from[0]] : ARM.from;
+      const px = a.x + fx0 * 0.45;
+      const py = a.y + fy0 * 0.45;
+      drawSprite(g, s, Math.round(wx(cam, px, py)), Math.round(wy(cam, px, py)));
+    }
     if (!UNIQUE_PLAY.risen) return;
     for (const c of this.cracks) {
       const grow = Math.min(RISE_CRACKS.grow - 1, Math.floor(c.t * 30 * 0.8));
@@ -358,6 +491,12 @@ export class UniqueFx {
     if (!game) return;
     const at = this.tomeAt;
     if (at) drawGlow(g, wx(cam, at.x, at.y), wy(cam, at.x, at.y) - 2, this.flare > 0 ? 44 : 32, TOME_GLOW, (this.flare > 0 ? 0.3 : 0.15) + 0.02 * Math.sin(this.t * 31));
+    // (her stuck vials' light, flaring with each blink)
+    for (const v of this.stuck) {
+      const f = Math.floor((v.t / v.secs) * STICKY.frames);
+      const hot = STICKY.blinks.some((b) => f === b || f === b + 1);
+      drawGlow(g, wx(cam, v.x, v.y), wy(cam, v.x, v.y) - v.z - 4, hot ? 22 : 12, STICKY_BREW[1], hot ? 0.32 : 0.12);
+    }
     if (!UNIQUE_PLAY.risen) return;
     const p = game.risen;
     if (p) drawGlow(g, wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 12, 30, '#28dcf0', p.act === 'rise' ? 0.2 + 0.25 * (1 - Math.min(1, p.actT / RISEN_SHOWN.rise)) : 0.17);
