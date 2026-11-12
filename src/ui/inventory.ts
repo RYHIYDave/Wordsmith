@@ -69,6 +69,9 @@ import type { Game, ItemRef } from '../game/game';
 import { modLines, statView, flatPair, flatSpan, itemWordOf } from '../game/items';
 import type { ImbueOption } from '../game/items';
 import type { SlotRef } from '../game/state';
+import type { CompanionKind } from '../game/companions';
+import { COMPANION_INFO } from '../game/companions';
+import { uniqueOf } from '../game/uniques';
 import { armorReduction } from '../game/stats';
 import { ATTRS, EQUIP_SLOTS } from '../game/types';
 import { MELD, MELD_DUST_COLOR, rankOf, wordIds } from '../game/melds';
@@ -150,7 +153,8 @@ export interface InvUi {
    * buttons by their labels. (A press arrives between frames, at what was on the screen: the
    * buttons are pressed where they were drawn.)
    */
-  card: { r: Rect; buttons: { id: string; r: Rect }[] } | null;
+  /** (THE PACK COLLAR: `pets`, the row of its companions to pick from on its card, in town) */
+  card: { r: Rect; buttons: { id: string; r: Rect }[]; pets?: { r: Rect; kind: CompanionKind }[] } | null;
 }
 
 /** A button on a card that the service in the other half puts there. */
@@ -842,6 +846,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   // ---- presses, top-most first ------------------------------------------------------------------
   let close = false;
   for (const b of selButtons) if (cardPress(b.label)) b.act();
+  // (THE PACK COLLAR: in town, its companion picked on its card)
+  for (const p of cardWas?.pets ?? []) if (ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) game.pickCollarCompanion(p.kind);
   // (a piece of the service's own, read on the same card: its buttons are the service's)
   const lookWas = side && side.look ? side.look() : null;
   if (lookWas) for (const b of lookWas.buttons) if (!b.disabled && cardPress(b.label)) say(b.act());
@@ -1702,7 +1708,11 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
       return iy;
     };
 
-    const foot = buttons.length ? bh + 5 : 0;
+    // (THE PACK COLLAR, the Ranger's own, in town: over its buttons a row of the companions it may bring, the one it brings lit.
+    // His pick, 12 Nov 2026, by pop-up: “Pick it on the collar”; and “No, one of the other two (Recommended)”: never one at her side)
+    const petKinds: CompanionKind[] = mine && game.level.town && uniqueOf(mine.item)?.id === 'packcollar' ? game.collarChoices() : [];
+    const petRow = petKinds.length ? bh + 3 : 0;
+    const foot = (buttons.length ? bh + 5 : 0) + (petRow && !buttons.length ? petRow + 2 : petRow);
     const tall = content(0, 0, inner, true, Infinity);
     // (WORD_HALF: the card stands above the words' own panel, never over it: the words stay at hand while a piece is read)
     const most = halfR ? Math.max(40, halfR.y - 5) : (below ? gameR.h : H) - 6;
@@ -1768,7 +1778,25 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
         x += bw + 3;
       });
     }
-    st.card = { r: { x: cx, y: cy0, w: cardW, h: ch }, buttons: made };
+    const pets: { r: Rect; kind: CompanionKind }[] = [];
+    if (petKinds.length) {
+      const row = Math.min(inner, one - 10);
+      const now = game.collarCompanion();
+      const pw = Math.floor((row - 3 * (petKinds.length - 1)) / petKinds.length);
+      const py = cy0 + ch - 4 - bh - (buttons.length ? bh + 3 : 0);
+      let x = wornLeft ? cx + cardW - 5 - row : cx + 5;
+      // (a name too long for its button in the game's letters: the whole row in the small ones, all one size)
+      const small = petKinds.some((k) => textWidth(COMPANION_INFO[k].name.toUpperCase()) > pw - 4);
+      for (const k of petKinds) {
+        const label = COMPANION_INFO[k].name.toUpperCase();
+        const r: Rect = { x, y: py, w: pw, h: bh };
+        ui.drawButton(r.x, r.y, r.w, r.h, label, { lit: k === now, primary: k === now, small });
+        ui.mark(`collar:${k}`, r.x, r.y, r.w, r.h);
+        pets.push({ r, kind: k });
+        x += pw + 3;
+      }
+    }
+    st.card = { r: { x: cx, y: cy0, w: cardW, h: ch }, buttons: made, pets };
   }
 
   if (st.noteT > 0) {

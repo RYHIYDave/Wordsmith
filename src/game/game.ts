@@ -27,10 +27,10 @@ import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
 import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
 import type { HeroMode } from './modes';
 import { COMPANIONS, TALENTS, TALENTS2, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, cleanTalents, remadeNow, takeProblem, talentById, talentMods, talentPoints, unlearnProblem } from './talents';
-import { COMPANION_GROUPS, COMPANION_GROUP_IDS, COMPANION_TUNE, cleanPicks, pickedIn } from './companions';
+import { COMPANION_GROUPS, COMPANION_GROUP_IDS, COMPANION_TUNE, cleanPicks, collarChoices, collarPick, groupOf, pickedIn } from './companions';
 import { ROYALS, ROYAL_NAMES, ROYAL_TUNE, canMake, cleanCards, handCards, handPays, royalFloor } from './royal_cards';
 import type { Hand, Royal } from './royal_cards';
-import type { CompanionGroup, CompanionKind } from './companions';
+import type { CompanionGroup, CompanionKind, PetPicks } from './companions';
 import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, STEP_E, STEP_N, STEP_S, STEP_W, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
@@ -171,8 +171,8 @@ export interface RunSave {
   quest?: 'heart' | null;
   /** THE SKILL TREES (game/talents.ts): the talents taken, in the order taken (absent when none). */
   talents?: string[];
-  /** THE RANGER'S COMPANIONS (game/companions.ts): the animal picked for each of his companion talents (absent while COMPANIONS is off, or none picked). */
-  pets?: Partial<Record<CompanionGroup, CompanionKind>>;
+  /** THE RANGER'S COMPANIONS (game/companions.ts): the animal picked for each of his companion talents, and `collar` the Pack Collar's (absent while COMPANIONS is off, or none picked). */
+  pets?: PetPicks;
   /** THE ROYAL CARDS (game/royal_cards.ts): the royals' cards he holds (absent when none). */
   cards?: Partial<Record<Royal, number>>;
   /** (THE SKILL TREES) the picks made on talents that have one (absent when none). */
@@ -8122,15 +8122,40 @@ export class Game {
   private petsWanted(): { group: CompanionGroup; kind: CompanionKind }[] {
     if (!COMPANIONS.on || this.hero.cls !== 'ranger') return [];
     const want = COMPANION_GROUP_IDS.filter((g) => this.has(COMPANION_GROUPS[g].talent)).map((g) => ({ group: g, kind: pickedIn(this.hero.pets, g) }));
-    // (UNIQUE ITEMS: The Pack Collar, one more than he would have: a second from the same list, the first's if he has one, the
-    // hunting list's if he has none: the next in it after his pick, until he has a way to pick it)
+    // (UNIQUE ITEMS: The Pack Collar, one more than he would have: the one picked on the collar, in town, of the list of a
+    // companion talent he has (none: the hunting list), never one he has out; until picked, the next in the list after his own:
+    // companions.ts collarPick)
     if (this.wears('packcollar')) {
-      const group: CompanionGroup = want.length ? want[0].group : 'hunt';
-      const kinds = COMPANION_GROUPS[group].kinds;
-      const first = want.find((w) => w.group === group);
-      want.push({ group, kind: first ? kinds[(kinds.indexOf(first.kind) + 1) % kinds.length] : kinds[0] });
+      const kind = collarPick(this.hero.pets, this.hero.talents);
+      want.push({ group: groupOf(kind), kind });
     }
     return want;
+  }
+
+  /**
+   * THE PACK COLLAR (UNIQUE ITEMS): what its companion may be, for the Ranger now (none: not the Ranger, or the switches off).
+   * His pick, 12 Nov 2026: “Pick it on the collar”; and “No, one of the other two (Recommended)”.
+   */
+  collarChoices(): CompanionKind[] {
+    const h = this.hero;
+    return COMPANIONS.on && UNIQUES.on && h.cls === 'ranger' ? collarChoices(h.pets, h.talents) : [];
+  }
+
+  /** The Pack Collar's companion now: the one it brings when worn (null: it brings none for him). */
+  collarCompanion(): CompanionKind | null {
+    return this.collarChoices().length ? collarPick(this.hero.pets, this.hero.talents) : null;
+  }
+
+  /**
+   * THE PACK COLLAR: pick `kind` as its companion (in town only, from its card in the bag, worn or not). Worn, the one it
+   * brought goes and the one picked is at his side (updatePets, the next step). True if it was picked.
+   */
+  pickCollarCompanion(kind: CompanionKind): boolean {
+    const h = this.hero;
+    if (!this.level.town || !this.collarChoices().includes(kind)) return false;
+    h.pets = { ...(h.pets ?? {}), collar: kind };
+    this.sfx('trapSet', 0.4);
+    return true;
   }
 
   /** Where companion `seat` keeps by him, `back` behind him: the hunting one at his right hand, the wild one at his left. */

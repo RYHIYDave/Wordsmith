@@ -7,7 +7,7 @@ import type { PrisonChannel } from './prison_way';
 import type { ChapelPlan } from './chapel_way';
 import type { GroundsPlan } from './grounds_way';
 import type { LairPlan } from './lair_way';
-import type { CompanionGroup, CompanionKind } from './companions';
+import type { CompanionGroup, CompanionKind, PetPicks } from './companions';
 import type { Royal } from './royal_cards';
 import type { PunchName } from './brawler';
 import type { Sfx } from '../engine/audio';
@@ -369,8 +369,8 @@ export interface Hero {
   pieces?: number;
   /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
   talents: string[];
-  /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three). */
-  pets?: Partial<Record<CompanionGroup, CompanionKind>>;
+  /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three); `collar`, the Pack Collar's. */
+  pets?: PetPicks;
   /** THE VETERAN (game/veteran.ts, behind VETERAN): his globes, the move he is playing and those to come. Not kept in a save. */
   vet?: VetState;
   /** THE ROYAL CARDS (game/royal_cards.ts, the High City's): the royals' cards he holds, kept for good (absent: none). */
