@@ -1337,6 +1337,14 @@ export interface Level {
   bells?: BellsState;
   /** (QUESTS610, PILLARS) Floor 10: the cult's three obelisks feeding the siege in the Drowned Eye's last phase (game/quests610.ts). */
   pillars?: Pillar[];
+  /** THE ENDLESS TOWN, THE SHAFT'S RIM (game/rim.ts, behind ENDLESS_TOWN): what only it has, as it stands now; absent on every other level. */
+  rim?: import('./rim').RimTown;
+  /**
+   * A FINER GRID FOR A TOUCH'S ERRAND (game/nav.ts FineGrid), where the ways a body may walk are narrower than a tile and run
+   * across the grid (the Shaft's Rim, round its pit and between its standing stones): the errand's way is found on it, not on
+   * `walk`. Absent on every other level.
+   */
+  errand?: import('./nav').FineGrid;
 }
 
 /** Things that happened this frame, for the renderer and the sound system. */
@@ -1641,6 +1649,8 @@ export type GameEvent =
    * else it needs. Until they are drawn, each also sends a plain effect of the game's own (a burst, a spark) so that it is seen.
    */
   | { t: 'unique'; id: string; what: string; x: number; y: number; x1?: number; y1?: number; r?: number; secs?: number; mid?: number; word?: WordId }
+  /** THE SHAFT'S RIM (game/rim.ts): a notch cut in the record stone as he comes home with a new endless level reached: where the stone stands, how many it has now, how many were cut. */
+  | { t: 'notch'; x: number; y: number; n: number; cut: number }
   | { t: 'levelup' };
 
 /** What the player is asking for this frame, already converted to world space. */

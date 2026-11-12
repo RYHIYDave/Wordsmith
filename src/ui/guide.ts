@@ -11,7 +11,7 @@
 
 import { PAD_USE } from '../engine/gamepad';
 import { CLASSES, FIRST_LEVELS, FIRST_WORD, HAND_IN, QUEST_ITEM, SKILLS, WORDS, firstWordSkill } from '../game/defs';
-import { QUEST_MARKS, SPEAK_BACK, SPEAK_WHERE } from '../game/quest_marks';
+import { QUEST_MARKS, SPEAK_BACK, SPEAK_WHERE, SPEAK_WHERE_RIM } from '../game/quest_marks';
 import type { SkillId } from '../game/defs';
 import type { Game } from '../game/game';
 import type { GuideRow, GuideStep, SlotRef } from '../game/state';
@@ -108,7 +108,7 @@ export function questBanner(game: Game): Banner | null {
   const sp = game.speakTo;
   if (!QUEST_MARKS.on || !sp || sp.t <= 0) return null;
   const name = sp.who.toUpperCase();
-  const sub = game.level.town ? SPEAK_WHERE[sp.who] ?? '' : SPEAK_BACK;
+  const sub = game.level.town ? (game.level.rim ? SPEAK_WHERE_RIM[sp.who] : undefined) ?? SPEAK_WHERE[sp.who] ?? '' : SPEAK_BACK;
   return { step: 'speak', caption: 'QUEST', text: `Speak to the ${name}`, sub, lines: [], point: null };
 }
 
