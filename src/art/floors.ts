@@ -10,7 +10,7 @@ import { LAIR_TEMPLE, makeLairTempleArt } from './lair_temple';
 import { PRISON, makePrisonArt } from './prison';
 import { GROUNDS, makeGroundsArt } from './grounds';
 import { FIRST5 } from '../game/ways';
-import { cryptFloor, cryptGround, cryptProps, cryptWaySteps, cryptWays } from './crypt';
+import { cryptFloor, cryptGround, cryptGroundSteps, cryptProps, cryptWaySteps, cryptWays } from './crypt';
 import { Ahead } from '../engine/steps';
 import type { LoadStep } from '../engine/steps';
 import type { WaypointArt } from './crypt_ways';
@@ -27,6 +27,10 @@ export function floorLook(depth: number): number {
 /** The floor and walls of look `k` (1 to 5). */
 export function lookGround(k: number): GroundArt {
   return k === 5 ? lairGround() : cryptGround(k);
+}
+/** (LOAD_SLICE) The same as steps of the loading screen's: the Crypt's floors' a picture a step (art/crypt.ts cryptGroundSteps), the lair's at once. */
+export function lookGroundSteps(k: number): LoadStep[] {
+  return k === 5 ? [() => void lairGround()] : cryptGroundSteps(k);
 }
 
 /** What stands and lies in look `k` (1 to 5): the game's braziers, chests, barrels and the rest, in its stone. */

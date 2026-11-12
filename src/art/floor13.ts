@@ -1005,7 +1005,8 @@ function millraceMakers(): (() => Piece)[] {
   return [
     () => ({ name: 'the paper mill', kind: 'obstacle', frames: [paperMill()], shadow: 2.0 }),
     // (frames: four turning, looking along +y; the same along +x)
-    () => ({ name: 'the water wheel', kind: 'trap', frames: FLOW.on ? [0, 1].flatMap((k) => [false, true].flatMap((back) => Array.from({ length: WHEEL_STEPS }, (_, f) => waterWheel2(f, k, back)))) : [0, 1].flatMap((k) => [0, 1, 2, 3].map((f) => waterWheel(f, k))), shadow: 1.0 }),
+    // (its frames a step each under the loading screen: wheelFrameSteps; 0.75 s in node made at once)
+    () => ({ name: 'the water wheel', kind: 'trap', frames: wheelFrames(), shadow: 1.0 }),
     // (frames: shut and open along +y, shut and open along +x)
     () => ({ name: "the race's headgate", kind: 'gate', frames: [0, 1].flatMap((k) => [headgate(false, k), headgate(true, k)]), shadow: 0.9 }),
     // (frames: whole; half there, while someone is behind it)
@@ -1050,7 +1051,24 @@ export function millracePieceCount(): number {
 /** (LOAD_SLICE) The list as steps of the loading screen's: each piece a step, then the list (it takes them). None once it is made. */
 export function millracePieceSteps(): LoadStep[] {
   if (made) return [];
-  return [...millraceMakers().map((make, i) => MILLRACE_AHEAD.step(String(i), make)), () => void millracePieces()];
+  return [...wheelFrameSteps(), ...millraceMakers().map((make, i) => MILLRACE_AHEAD.step(String(i), make)), () => void millracePieces()];
+}
+/** THE WATER WHEEL's frames, each its maker, in the order they were made (32 with FLOW: 0.75 s in node made at once). */
+function wheelFrameMakers(): (() => Sprite)[] {
+  return FLOW.on ? [0, 1].flatMap((k) => [false, true].flatMap((back) => Array.from({ length: WHEEL_STEPS }, (_, f) => () => waterWheel2(f, k, back)))) : [0, 1].flatMap((k) => [0, 1, 2, 3].map((f) => () => waterWheel(f, k)));
+}
+/** (LOAD_SLICE) Its frames a step has made ahead; each taken once, as the wheel is made. */
+const WHEEL_AHEAD = new Ahead();
+/** (for the tests) How many of its frames are put by, not yet taken. */
+export function wheelFramesHeld(): number {
+  return WHEEL_AHEAD.size;
+}
+function wheelFrames(): Sprite[] {
+  return wheelFrameMakers().map((make, i) => WHEEL_AHEAD.take(String(i), make));
+}
+/** (LOAD_SLICE) Its frames, a step each (none once the Millrace's list is made). */
+function wheelFrameSteps(): LoadStep[] {
+  return wheelFrameMakers().map((make, i) => WHEEL_AHEAD.step(String(i), make));
 }
 export function millracePieces(): Piece[] {
   if (made) return made;

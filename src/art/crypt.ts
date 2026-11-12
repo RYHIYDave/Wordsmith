@@ -467,9 +467,27 @@ export function cryptGround(k: number): GroundArt {
   // (only the floor in hand kept: another's pictures let go as this one's are made; his “it’s crashing every couple of levels”)
   if (!g) {
     GROUNDS.clear();
-    GROUNDS.set(k, (g = makeGroundArt(CRYPT_FLOORS[k - 1])));
+    // (each picture taken where a step of the loading screen made it ahead: cryptGroundSteps)
+    GROUNDS.set(k, (g = makeGroundArt(CRYPT_FLOORS[k - 1], (key, make) => GROUND_AHEAD.take(`${k}:${key}`, make))));
+    GROUND_AHEAD.clear();
   }
   return g;
+}
+/** (LOAD_SLICE) The ground's pictures a step has made ahead, by floor and name; taken as the ground is made. */
+const GROUND_AHEAD = new Ahead();
+/**
+ * (LOAD_SLICE; the queue's make-floors-look-builders-in-parts) Floor `k`'s ground as steps of the loading screen's: each of its
+ * pictures a step (made at once, 0.35 to 0.56 s in Chrome), then the ground (it takes them). None once it is made.
+ */
+export function cryptGroundSteps(k: number): LoadStep[] {
+  if (GROUNDS.has(k)) return [];
+  const steps: LoadStep[] = [];
+  makeGroundArt(CRYPT_FLOORS[k - 1], (key, make) => {
+    steps.push(GROUND_AHEAD.step(`${k}:${key}`, make));
+    return null as never;
+  });
+  steps.push(() => void cryptGround(k));
+  return steps;
 }
 /** What stands and lies on the Crypt's floor `k` (1 to 4). */
 export function cryptProps(k: number): DungeonProps {

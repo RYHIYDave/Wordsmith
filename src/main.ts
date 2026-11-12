@@ -36,7 +36,7 @@ import { RIME_SHADE_ON } from './art/rime_shade';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { CRYPT, forgetCrypt } from './art/crypt';
-import { floorLook, forgetPieces, lookGates, lookGround, lookHazards, lookPieceSteps, lookProps } from './art/floors';
+import { floorLook, forgetPieces, lookGates, lookGround, lookGroundSteps, lookHazards, lookPieceSteps, lookProps } from './art/floors';
 import type { LoadStep } from './engine/steps';
 import { YARD } from './art/yard';
 import { YARD_GATE, makeYardGateArt } from './art/yard_gate';
@@ -2164,7 +2164,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const out: LoadStep[] = [];
     const crypt = CRYPT.on && g.inDungeon && !g.practice ? floorLook(g.depth) : 0;
     if (crypt && crypt !== cryptShown) {
-      out.push(() => void lookGround(crypt));
+      // (the floor's ground a picture a step: art/floors.ts lookGroundSteps; made at once, 0.35 to 0.56 s)
+      out.push(() => lookGroundSteps(crypt));
       out.push(() => void lookProps(crypt));
       if (FIRST5.on && crypt >= 1 && crypt <= 5) {
         // (the look's own pieces, its builder in parts where it has them: art/floors.ts lookPieceSteps; NOT ON A FLOOR DRESSED BY

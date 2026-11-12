@@ -47,8 +47,8 @@ import { SHINES } from './floorkit';
 import type { Piece, PieceKind, Spot } from './floorkit';
 import { ossuaryPieceCount, ossuaryPieceSteps, ossuaryPieces } from './floor4';
 import { CAVE_FRAMES, caveFilm } from './cave4';
-import { Ahead } from '../engine/steps';
-import type { LoadStep } from '../engine/steps';
+import { Ahead, finish, stagesStep } from '../engine/steps';
+import type { LoadStep, Stages } from '../engine/steps';
 
 /** THE SWITCH: off until the main chat puts it in, on his yes. */
 export const CHAPEL = { on: false };
@@ -374,6 +374,13 @@ export class Deep {
     return true;
   }
   march(s: Solid, step = 0.012, only?: (px: number, py: number) => boolean): void {
+    finish(this.marchRows(s, step, only));
+  }
+  /**
+   * (LOAD_SLICE) The same, yielding after every `rows` rows of the picture: a heavy solid marched in stages. Each pixel is its own
+   * (it reads and writes only its own depth and colour), so the stages make the very picture `march` makes.
+   */
+  *marchRows(s: Solid, step = 0.012, only?: (px: number, py: number) => boolean, rows = 4): Stages<void> {
     const b = s.box;
     const corners: [number, number][] = [];
     for (const x of [b.x0, b.x1]) for (const y of [b.y0, b.y1]) for (const z of [b.z0, b.z1]) corners.push(this.at(x, y, z));
@@ -424,6 +431,7 @@ export class Deep {
           prevT = t;
         }
       }
+      if ((py - minY + 1) % rows === 0) yield;
     }
   }
 }
@@ -888,9 +896,15 @@ function breakFace(alongX: boolean, f: number) {
 }
 /** The break-in's wall, its rock and its props (the same in every frame), painted once. */
 function breakBase(alongX: boolean): Stretch {
-  const hit = breakBases.get(alongX);
-  if (hit) return hit;
+  return breakBases.get(alongX) ?? finish(breakBaseStages(alongX));
+}
+/**
+ * (LOAD_SLICE) The same, in stages (its rock alone 1.5 s in node made at once): the wall, then the rock a few rows a stage, then
+ * each timber. Kept as it is made, as before.
+ */
+function* breakBaseStages(alongX: boolean): Stages<Stretch> {
   const S = stretchOf(alongX, breakFace(alongX, 0));
+  yield;
   const { D } = S;
   const W = (a: number, b: number, z: number): [number, number, number] => [...worldOf(alongX, a, b), z];
   // THE MINE'S ROCK, through the hole: a mass filling it from the back of the wall, bulging out of the face, lumps on it
@@ -934,7 +948,7 @@ function breakBase(alongX: boolean): Stretch {
   void hy;
   const [bx0, by0] = worldOf(alongX, 0.1, -0.42);
   const [bx1, by1] = worldOf(alongX, 2.9, 0.62);
-  S.D.march({
+  yield* S.D.marchRows({
     box: { x0: Math.min(bx0, bx1), y0: Math.min(by0, by1), z0: 0, x1: Math.max(bx0, bx1), y1: Math.max(by0, by1), z1: HOLE.up + HOLE.rup + 8 },
     inside: (x, y, z) => {
       const [, b] = wallOf(alongX, x, y);
@@ -954,7 +968,7 @@ function breakBase(alongX: boolean): Stretch {
       if (lumpF(x, y, z) > 0.05 && fbm(a * 4, z / 6, 879) > 0.6) return EARTH[clampK(k - 1)];
       return ROCK[clampK(b < -0.05 ? k - 1 : k)];
     },
-  }, 0.02);
+  }, 0.02, undefined, 2);
   // THE PROPS: two posts, a cap across them, a wedge over each post
   const timber: Solid[] = [];
   const yaw = alongX ? 0 : Math.PI / 2;
@@ -963,7 +977,7 @@ function breakBase(alongX: boolean): Stretch {
     timber.push(boxSolid(W(pa, PROPS.out, PROPS.cap - 3), [0.15, 0.12, 3 / 32], yaw, 0, WOOD, false));
   }
   timber.push(boxSolid(W(1.5, PROPS.out, PROPS.cap + 5), [1.42, 0.13, 5 / 32], yaw, 0, WOOD));
-  for (const t of timber) D.march(t, 0.01);
+  for (const t of timber) yield* D.marchRows(t, 0.01);
   breakBases.set(alongX, S);
   return S;
 }
@@ -994,20 +1008,21 @@ function breakInPicture(alongX: boolean, f: number): Sprite {
 }
 
 /** THE ROCK SPILLED FROM THE BREAK: lumps of it and earth heaped on the floor before it, a tile and a half along the wall and half a tile out. Anchored at the floor point under its middle, at the wall's foot. */
-function rockSpill(alongX: boolean): Sprite {
+/** (LOAD_SLICE) In stages: a few rows of each solid marched a stage (0.6 s in node made at once); `finish` runs it through. */
+function* rockSpillStages(alongX: boolean): Stages<Sprite> {
   const p = new Px(120, 96);
   const AX = 60;
   const AY = 66;
   const D = new Deep(p, AX, AY);
   const W = (a: number, b: number, z: number): [number, number, number] => [...(alongX ? [a, b] : [b, a]) as [number, number], z];
   // the earth: a long low heap
-  D.march(rockSolid(W(0, 0.2, -3), alongX ? [0.95, 0.42, 13] : [0.42, 0.95, 13], 9, EARTH));
+  yield* D.marchRows(rockSolid(W(0, 0.2, -3), alongX ? [0.95, 0.42, 13] : [0.42, 0.95, 13], 9, EARTH));
   // the lumps on it and tumbled before it
   for (let i = 0; i < 6; i++) {
     const a = (hash(i, 1, 881) - 0.5) * 1.5;
     const b = 0.1 + hash(i, 2, 881) * 0.4;
     const r = 0.13 + hash(i, 3, 881) * 0.12;
-    D.march(rockSolid(W(a, b, 6 + r * 20), [r, r, 6 + r * 30], 40 + i));
+    yield* D.marchRows(rockSolid(W(a, b, 6 + r * 20), [r, r, 6 + r * 30], 40 + i));
   }
   noLone(p);
   return p.sprite(AX, AY, GRAIN);
@@ -1400,7 +1415,9 @@ const STRETCH_AHEAD = new Ahead();
 export function chapelStretchSteps(alongX: boolean, way: boolean): LoadStep[] {
   const key = `${way ? 'way' : 'break'}${alongX}`;
   const paint = (f: number): Sprite => (way ? wayInPicture(alongX, f) : breakInPicture(alongX, f));
-  return [...four.map((f) => STRETCH_AHEAD.step(`${key}:${f}`, () => paint(f))), () => void (way ? makeChapelArt().wayIn(alongX) : makeChapelArt().breakIn(alongX))];
+  // (the break-in's base, its rock and props the same in every frame, in stages first: its frame 0 took 0.9 to 1.4 s in Chrome)
+  const base = way ? [] : [stagesStep(() => (breakBases.has(alongX) ? null : breakBaseStages(alongX)))];
+  return [...base, ...four.map((f) => STRETCH_AHEAD.step(`${key}:${f}`, () => paint(f))), () => void (way ? makeChapelArt().wayIn(alongX) : makeChapelArt().breakIn(alongX))];
 }
 /**
  * THE CHAPEL'S PICTURES IN PARTS (main.ts LOAD_SLICE; the queue's make-floors-look-builders-in-parts): what it makes all at once as
@@ -1411,10 +1428,17 @@ export function chapelStretchSteps(alongX: boolean, way: boolean): LoadStep[] {
 const CHAPEL_AHEAD = new Ahead();
 /** How the builder gets a part: `key` its name, `make` how it is made. Building, it is taken or made; planning, it is listed as a step. */
 type Part = <T>(key: string, make: () => T) => T;
+/** (a part painted in stages: `stages` its painter as a generator; made at once, run through) */
+type StagedPart = <T>(key: string, stages: () => Stages<T>) => T;
 const taken: Part = (key, make) => CHAPEL_AHEAD.take(key, make);
+const takenStaged: StagedPart = (key, stages) => CHAPEL_AHEAD.take(key, () => finish(stages()));
 /** (planning: each part listed as a step, nothing made; what the builder builds with it is thrown away) */
 const planned = (steps: LoadStep[]): Part => (key, make) => {
   steps.push(CHAPEL_AHEAD.step(key, make));
+  return null as never;
+};
+const plannedStaged = (steps: LoadStep[]): StagedPart => (key, stages) => {
+  steps.push(CHAPEL_AHEAD.staged(key, stages));
   return null as never;
 };
 /** (for the tests) How many parts are put by, not yet taken. */
@@ -1422,7 +1446,7 @@ export function chapelPartsHeld(): number {
   return CHAPEL_AHEAD.size;
 }
 /** What the chapel makes at once as it is made, a part at a time: `part` gives each (planning, it lists them). */
-function chapelPartsOf(part: Part): { faceLeft: Sprite[][]; faceRight: Sprite[][]; hallLeft: Sprite[][]; hallRight: Sprite[][]; tiles: Piece[]; pieces: Piece[] } {
+function chapelPartsOf(part: Part, staged: StagedPart): { faceLeft: Sprite[][]; faceRight: Sprite[][]; hallLeft: Sprite[][]; hallRight: Sprite[][]; tiles: Piece[]; pieces: Piece[] } {
   const faces = (alongX: boolean, kind: WallKind, seed0: number): Sprite[][] => [0, 1, 2, 3].map((k) => four.map((f) => part(`face:${kind}:${alongX}:${k}:${f}`, () => wallTile(alongX, k % 2, seed0 + k * 17, f, kind))));
   const tile = (name: string, frames: Sprite[]): Piece => ({ name, kind: 'floor tile' as PieceKind, frames });
   const one = (key: string, make: () => Sprite): Sprite[] => [part(key, make)];
@@ -1449,8 +1473,9 @@ function chapelPartsOf(part: Part): { faceLeft: Sprite[][]; faceRight: Sprite[][
     pieces: [
       { name: 'candles on the floor, a few', kind: 'on the floor', frames: four.map((f) => part(`candles few:${f}`, () => candlesOnFloor(5, 0.3, 3, f))) },
       { name: 'candles on the floor, many', kind: 'on the floor', frames: four.map((f) => part(`candles many:${f}`, () => candlesOnFloor(9, 0.4, 5, f))) },
-      { name: 'rock spilled from the break, along x', kind: 'obstacle', frames: one('rock x', () => rockSpill(true)), shadow: 0.5 },
-      { name: 'rock spilled from the break, along y', kind: 'obstacle', frames: one('rock y', () => rockSpill(false)), shadow: 0.5 },
+      // (each in stages: 0.6 s each in node made at once)
+      { name: 'rock spilled from the break, along x', kind: 'obstacle', frames: [staged('rock x', () => rockSpillStages(true))], shadow: 0.5 },
+      { name: 'rock spilled from the break, along y', kind: 'obstacle', frames: [staged('rock y', () => rockSpillStages(false))], shadow: 0.5 },
       { name: 'a broken pew', kind: 'obstacle', frames: one('pew snapped', () => pew('snapped', 0.3)), shadow: 0.44 },
       { name: 'a pew thrown down', kind: 'obstacle', frames: one('pew back', () => pew('back', -0.45)), shadow: 0.44 },
       { name: 'a dropped pick', kind: 'on the floor', frames: one('pick', () => droppedPick()) },
@@ -1468,14 +1493,14 @@ function chapelPartsOf(part: Part): { faceLeft: Sprite[][]; faceRight: Sprite[][
 export function chapelSteps(): LoadStep[] {
   if (made) return [];
   const steps: LoadStep[] = [...ossuaryPieceSteps()];
-  chapelPartsOf(planned(steps));
+  chapelPartsOf(planned(steps), plannedStaged(steps));
   steps.push(() => void makeChapelArt());
   return steps;
 }
 export function makeChapelArt(): ChapelArt {
   if (made) return made;
   const floors = new Map<string, Sprite>();
-  const own = chapelPartsOf(taken);
+  const own = chapelPartsOf(taken, takenStaged);
   const faceLeft = own.faceLeft;
   const faceRight = own.faceRight;
   const stretches = new Map<string, ChapelStretch>();

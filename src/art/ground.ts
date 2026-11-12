@@ -806,10 +806,14 @@ function makeGateWall(theme: Theme, part: number, frame: number): Sprite {
 
 /** The gate's pictures: for each frame of its light, its GATE_TILES parts from screen-left to screen-right. */
 export function makeGateWalls(theme: Theme = VAULT, frames = 4): Sprite[][] {
+  return gateWallsOf(theme, (_key, make) => make(), frames);
+}
+/** (LOAD_SLICE) The same, each picture got from `part` (makeGroundArt's). */
+function gateWallsOf(theme: Theme, part: GroundPart, frames = 4): Sprite[][] {
   const out: Sprite[][] = [];
   for (let f = 0; f < frames; f++) {
     const parts: Sprite[] = [];
-    for (let k = 0; k < GATE_TILES; k++) parts.push(makeGateWall(theme, k, f));
+    for (let k = 0; k < GATE_TILES; k++) parts.push(part(`gate ${f}:${k}`, () => makeGateWall(theme, k, f)));
     out.push(parts);
   }
   return out;
@@ -1130,47 +1134,51 @@ export function edgesOf(theme: Theme): Pick<GroundArt, 'edgeLeft' | 'edgeRight'>
     edgeRight: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.08), (u) => u > 0.935),
   };
 }
-export function makeGroundArt(theme: Theme = VAULT): GroundArt {
+/** (LOAD_SLICE) How a builder gets a picture: `key` its name, `make` how it is made (at once by default; a part a step: art/crypt.ts cryptGroundSteps). */
+export type GroundPart = (key: string, make: () => Sprite) => Sprite;
+export function makeGroundArt(theme: Theme = VAULT, part: GroundPart = (_key, make) => make()): GroundArt {
   TALL = WALL_LOOK.tall * GRAIN;
   const LOW = lowHeight();
   // (the top of a whole wall, as much of it as stands over floor raised one level)
   const MID = TALL - LEDGE_H * GRAIN;
-  const parts = (part: WallPart): { tall: Sprite; low: Sprite; mid: Sprite } => ({
-    tall: makeWallPart(theme, WALLS[0], TALL, part),
-    low: makeWallPart(theme, WALLS[0], LOW, part),
-    mid: makeWallPart(theme, WALLS[0], MID, part, true),
+  const tall = TALL;
+  const parts = (side: WallPart): { tall: Sprite; low: Sprite; mid: Sprite } => ({
+    tall: part(`part ${side} tall`, () => makeWallPart(theme, WALLS[0], tall, side)),
+    low: part(`part ${side} low`, () => makeWallPart(theme, WALLS[0], LOW, side)),
+    mid: part(`part ${side} mid`, () => makeWallPart(theme, WALLS[0], MID, side, true)),
   });
   const floors: Sprite[] = [];
-  for (let ty = 0; ty < PERIOD; ty++) for (let tx = 0; tx < PERIOD; tx++) floors.push(makeFloor(theme, tx, ty));
+  for (let ty = 0; ty < PERIOD; ty++) for (let tx = 0; tx < PERIOD; tx++) floors.push(part(`floor ${tx},${ty}`, () => makeFloor(theme, tx, ty)));
+  const each = <T>(key: string, list: readonly T[], make: (t: T, i: number) => Sprite): Sprite[] => list.map((t, i) => part(`${key} ${i}`, () => make(t, i)));
   return {
     floor: (tx, ty) => floors[(((ty % PERIOD) + PERIOD) % PERIOD) * PERIOD + (((tx % PERIOD) + PERIOD) % PERIOD)],
-    wallsTall: WALLS.map((w) => makeWall(theme, w, TALL)),
-    wallsLow: LOW_WALLS.map((w) => makeWall(theme, w, LOW)),
-    shadeLeft: makeShade((u) => (u < 0.16 ? 0.5 : u < 0.36 ? 0.26 : 0)),
-    shadeRight: makeShade((_u, v) => (v < 0.09 ? 0.4 : v < 0.2 ? 0.18 : 0)),
-    shadeCorner: makeShade((u, v) => (u < 0.2 && v < 0.2 ? 0.26 : 0)),
-    gate: makeGateWalls(theme),
-    ledgeLeft: [0, 1, 2].map((k) => makeLedge(theme, k, true)),
-    ledgeRight: [0, 1, 2].map((k) => makeLedge(theme, k, false)),
-    lipLeft: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.22), (_u, v) => v > 0.935),
-    lipRight: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.12), (u) => u > 0.935),
-    rimLeft: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.1), (u) => u < 0.06),
-    rimRight: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.1), (_u, v) => v < 0.06),
-    stairsN: makeStairs(theme, true, false),
-    stairsNSide: makeStairs(theme, true, true),
-    stairsW: makeStairs(theme, false, false),
-    stairsWSide: makeStairs(theme, false, true),
-    pit: makeEdge(PIT_DARK, () => true),
-    pitLeft: [WALLS[0], WALLS[1], WALLS[2]].map((w) => makePitWall(theme, w, true)),
-    pitRight: [WALLS[0], WALLS[1], WALLS[2]].map((w) => makePitWall(theme, w, false)),
+    wallsTall: each('wall tall', WALLS, (w) => makeWall(theme, w, tall)),
+    wallsLow: each('wall low', LOW_WALLS, (w) => makeWall(theme, w, LOW)),
+    shadeLeft: part('shade left', () => makeShade((u) => (u < 0.16 ? 0.5 : u < 0.36 ? 0.26 : 0))),
+    shadeRight: part('shade right', () => makeShade((_u, v) => (v < 0.09 ? 0.4 : v < 0.2 ? 0.18 : 0))),
+    shadeCorner: part('shade corner', () => makeShade((u, v) => (u < 0.2 && v < 0.2 ? 0.26 : 0))),
+    gate: gateWallsOf(theme, part),
+    ledgeLeft: each('ledge left', [0, 1, 2], (k) => makeLedge(theme, k, true)),
+    ledgeRight: each('ledge right', [0, 1, 2], (k) => makeLedge(theme, k, false)),
+    lipLeft: part('lip left', () => makeEdge(mixHex(theme.slab[3], '#ffffff', 0.22), (_u, v) => v > 0.935)),
+    lipRight: part('lip right', () => makeEdge(mixHex(theme.slab[3], '#ffffff', 0.12), (u) => u > 0.935)),
+    rimLeft: part('rim left', () => makeEdge(mixHex(theme.slab[3], '#ffffff', 0.1), (u) => u < 0.06)),
+    rimRight: part('rim right', () => makeEdge(mixHex(theme.slab[3], '#ffffff', 0.1), (_u, v) => v < 0.06)),
+    stairsN: part('stairs N', () => makeStairs(theme, true, false)),
+    stairsNSide: part('stairs N side', () => makeStairs(theme, true, true)),
+    stairsW: part('stairs W', () => makeStairs(theme, false, false)),
+    stairsWSide: part('stairs W side', () => makeStairs(theme, false, true)),
+    pit: part('pit', () => makeEdge(PIT_DARK, () => true)),
+    pitLeft: each('pit left', [WALLS[0], WALLS[1], WALLS[2]], (w) => makePitWall(theme, w, true)),
+    pitRight: each('pit right', [WALLS[0], WALLS[1], WALLS[2]], (w) => makePitWall(theme, w, false)),
     part: { far: parts('far'), near: parts('near'), left: parts('left'), right: parts('right') },
-    shadeAcross: makeShade((u, v) => (u + v < 1 ? 0 : u + v < 1.22 ? 0.42 : u + v < 1.42 ? 0.2 : 0)),
-    edgeLeft: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.16), (_u, v) => v > 0.935),
-    edgeRight: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.08), (u) => u > 0.935),
-    edgeAcross: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.12), (u, v) => u + v < 1 && u + v > 0.9),
-    faceLeft: WALLS.map((w) => makeWall(theme, w, TALL, 'left')),
-    faceRight: WALLS.map((w) => makeWall(theme, w, TALL, 'right')),
-    edgeUpLeft: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.12), (u, v) => u - v <= 0 && u - v > -0.07),
-    edgeUpRight: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.12), (u, v) => u - v >= 0 && u - v < 0.07),
+    shadeAcross: part('shade across', () => makeShade((u, v) => (u + v < 1 ? 0 : u + v < 1.22 ? 0.42 : u + v < 1.42 ? 0.2 : 0))),
+    edgeLeft: part('edge left', () => makeEdge(mixHex(theme.slab[3], '#ffffff', 0.16), (_u, v) => v > 0.935)),
+    edgeRight: part('edge right', () => makeEdge(mixHex(theme.slab[3], '#ffffff', 0.08), (u) => u > 0.935)),
+    edgeAcross: part('edge across', () => makeEdge(mixHex(theme.slab[3], '#ffffff', 0.12), (u, v) => u + v < 1 && u + v > 0.9)),
+    faceLeft: each('face left', WALLS, (w) => makeWall(theme, w, tall, 'left')),
+    faceRight: each('face right', WALLS, (w) => makeWall(theme, w, tall, 'right')),
+    edgeUpLeft: part('edge up left', () => makeEdge(mixHex(theme.slab[3], '#ffffff', 0.12), (u, v) => u - v <= 0 && u - v > -0.07)),
+    edgeUpRight: part('edge up right', () => makeEdge(mixHex(theme.slab[3], '#ffffff', 0.12), (u, v) => u - v >= 0 && u - v < 0.07)),
   };
 }

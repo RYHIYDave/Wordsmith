@@ -12,7 +12,11 @@
 //   6. ACT 1'S AND ACT 2'S FLOORS (render/act1_pieces.ts act1PieceSteps): each of their lists a piece a step, then the list, then the
 //      floor's pieces: a step for every piece, nothing left put by, the floor's pieces those of its lists made at once. (That each
 //      list's makers paint what the list painted before, every picture and every field, was checked once against the code before
-//      this change: docs/requests/look_builders_in_parts.md.)
+//      this change: docs/requests/look_builders_in_parts.md.) Floor 13's water wheel a frame a step;
+//   7. A FLOOR'S GROUND a picture a step (art/crypt.ts cryptGroundSteps): every picture the same as the ground made at once;
+//   8. THE CHAPEL'S BREAK-IN, its rock and props in stages (chapelStretchSteps): its frames the same as made at once;
+//   9. THE OPEN GROUND'S TERRAIN worked out ahead, its grids a few rows a stage (render/outdoor.ts terrainAhead): the ground it
+//      paints the same, pixel for pixel, as from the terrain made at once (the Millrace and the Pinewood, which hold grids).
 //   run: tsx --test tests/look_parts.test.ts
 
 // @ts-ignore - node typings are not part of this project
@@ -32,7 +36,12 @@ import { act1PieceSteps, act1Pieces, forgetAct1 } from '../src/render/act1_piece
 import { campPieceCount, campPieces, campPiecesHeld } from '../src/art/act1_camp';
 import { redoubtPieceCount, redoubtPieces, redoubtPiecesHeld } from '../src/art/redoubt';
 import { quarryPieceCount, quarryPieces, quarryPiecesHeld } from '../src/art/floor6';
-import { millracePieceCount, millracePieces, millracePiecesHeld } from '../src/art/floor13';
+import { WHEEL_STEPS, millracePieceCount, millracePieces, millracePiecesHeld, wheelFramesHeld } from '../src/art/floor13';
+import { FLOW } from '../src/art/flowing';
+import { cryptGround, cryptGroundSteps } from '../src/art/crypt';
+import { chapelStretchSteps } from '../src/art/chapel';
+import { Game } from '../src/game/game';
+import { PIECE, groundPainter, landTerrain, terrainAhead } from '../src/render/outdoor';
 import { hushSetPieceCount, hushSetPieces, hushSetPiecesHeld } from '../src/art/act2_set';
 import { paintWithoutCanvas, paintingOf } from './helpers';
 
@@ -145,7 +154,9 @@ test('3. the chapel made a part a step is the chapel made at once, every picture
   forgetChapel();
   const steps = chapelSteps();
   assert.ok(steps.length > 100, `in parts (${steps.length} steps)`);
-  for (const s of steps.slice(0, -1)) s();
+  // (its two piles of rock in stages: a step gives back the next, as main.ts runSteps takes them)
+  const ran = runAll(steps.slice(0, -1));
+  assert.ok(ran > steps.length, `some parts in stages (${ran} steps run)`);
   assert.ok(chapelPartsHeld() > 0, 'its parts put by');
   steps[steps.length - 1]();
   const B = makeChapelArt();
@@ -202,13 +213,87 @@ test('6. Act 1\'s and Act 2\'s floors: each list a piece a step, then the list; 
   for (const p of [...campPieces(), ...redoubtPieces(), ...quarryPieces()]) assert.ok(names6.includes(p.name), `floor 6 has ${p.name}`);
   // (floor 13: the Hush's set and the Millrace's own)
   const thirteen = act1PieceSteps(13);
-  assert.equal(thirteen.length, hushSetPieceCount() + 2 + millracePieceCount() + 2 + 1, 'floor 13: a step a piece');
+  // (the Millrace's water wheel: its frames a step each, before its pieces)
+  assert.equal(thirteen.length, hushSetPieceCount() + 2 + 2 * 2 * WHEEL_STEPS + millracePieceCount() + 2 + 1, 'floor 13: a step a piece, and the wheel a frame a step');
   runAll(thirteen);
-  assert.deepEqual([hushSetPiecesHeld(), millracePiecesHeld()], [0, 0]);
+  assert.deepEqual([hushSetPiecesHeld(), millracePiecesHeld(), wheelFramesHeld()], [0, 0, 0]);
   const names13 = [...act1Pieces(13).keys()];
   for (const p of [...hushSetPieces(), ...millracePieces()]) assert.ok(names13.includes(p.name), `floor 13 has ${p.name}`);
   // (a list made already is not stepped again: floor 7 shares the Quarry's, made above)
   forgetAct1(-1);
   assert.ok(act1PieceSteps(7).length < quarryPieceCount(), 'the Quarry\'s made: not stepped again for floor 7');
   forgetAct1(-1);
+});
+
+test('7. a floor\'s ground a picture a step is the ground made at once, every picture', () => {
+  for (const k of [2, 4]) {
+    const A = cryptGround(k) as unknown as Record<string, unknown> & { floor(x: number, y: number): Sprite };
+    cryptGround(k === 2 ? 3 : 1);
+    const steps = cryptGroundSteps(k);
+    assert.ok(steps.length > 50, `floor ${k}'s ground: ${steps.length} steps`);
+    runAll(steps);
+    const B = cryptGround(k) as unknown as typeof A;
+    assert.ok(A !== B, 'made again');
+    assert.equal(cryptGroundSteps(k).length, 0, 'none once made');
+    let n = 0;
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
+      same(A.floor(x, y), B.floor(x, y), `floor ${k} tile ${x},${y}`);
+      n++;
+    }
+    const walk = (a: unknown, b: unknown, what: string): void => {
+      if (a && typeof a === 'object' && 'img' in (a as object)) {
+        same(a as Sprite, b as Sprite, what);
+        n++;
+      } else if (Array.isArray(a)) a.forEach((x, i) => walk(x, (b as unknown[])[i], `${what}[${i}]`));
+      else if (a && typeof a === 'object') for (const key of Object.keys(a)) walk((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], `${what}.${key}`);
+    };
+    for (const key of Object.keys(A)) if (typeof A[key] !== 'function') walk(A[key], B[key], `floor ${k} ${key}`);
+    assert.ok(n > 80, `${n} pictures`);
+  }
+});
+
+test('8. the chapel\'s break-in, its rock and props in stages: its frames the same as made at once', () => {
+  assert.equal(FLOW.on, true);
+  forgetChapel();
+  const A = makeChapelArt().breakIn(true).frames;
+  forgetChapel();
+  // (the base is kept for good by its module once made: along y it is not made yet here, so these steps make it in stages; that the
+  // base made so is the one made at once before this change, every pixel, was checked against the old code: the note)
+  const steps = chapelStretchSteps(false, false);
+  const ran = runAll(steps);
+  assert.ok(ran > steps.length + 10, `in stages (${ran} steps run from ${steps.length})`);
+  const B = makeChapelArt().breakIn(false).frames;
+  forgetChapel();
+  const C = makeChapelArt().breakIn(false).frames;
+  B.forEach((s, i) => same(s, C[i], `the break-in along y, frame ${i}`));
+  assert.equal(A.length, 4);
+});
+
+test('9. the open ground\'s terrain worked out ahead, its grids a few rows a stage: the very ground painted', () => {
+  for (const floor of [9, 13]) {
+    const g = Game.forTrial('warrior', 3, floor);
+    const L = g.level;
+    assert.ok(L.land, `floor ${floor}: open ground`);
+    const land = L.land!;
+    const A = landTerrain(land, L.floor, false);
+    const ahead = terrainAhead(land, L.floor, false);
+    const ran = runAll([ahead.fill]);
+    assert.ok(ran > 20, `floor ${floor}: its grids in stages (${ran} steps)`);
+    const paint = groundPainter(land);
+    // (a few pieces across the floor, each 128 picture pixels square)
+    for (const [i, j] of [[0, 0], [2, 3], [5, 1], [3, 6]]) {
+      const a = paint(A, i * PIECE, j * PIECE, PIECE, PIECE).rgba;
+      const b = paint(ahead.T, i * PIECE, j * PIECE, PIECE, PIECE).rgba;
+      let differ = 0;
+      for (let k = 0; k < a.length; k++) if (a[k] !== b[k]) differ++;
+      assert.equal(differ, 0, `floor ${floor}, piece ${i},${j}: pixels unlike`);
+    }
+    // (asked of before its grids are filled, a grid fills itself: the same again)
+    const early = terrainAhead(land, L.floor, false);
+    const c = paint(early.T, 2 * PIECE, 3 * PIECE, PIECE, PIECE).rgba;
+    const a = paint(A, 2 * PIECE, 3 * PIECE, PIECE, PIECE).rgba;
+    let differ = 0;
+    for (let k = 0; k < a.length; k++) if (a[k] !== c[k]) differ++;
+    assert.equal(differ, 0, `floor ${floor}: asked of early, the same`);
+  }
 });
