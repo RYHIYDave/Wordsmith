@@ -15,9 +15,11 @@ export default async function (page, snap) {
   const cls = process.env.CLS || 'warrior';
   const hands = await makeHands(page);
   await page.waitForTimeout(800);
-  const built = await page.evaluate(() => { const d = window.__dbg; return { uniques: d.uniques.on, art: d.uniqueArt.on, stamp: d.build ?? null }; });
+  const built = await page.evaluate(() => { const d = window.__dbg; return { uniques: d.uniques.on, art: d.uniqueArt.on, play: { ...d.uniquePlay }, stamp: d.build ?? null }; });
   log('the page as built', JSON.stringify(built));
   if (!built.uniques || !built.art) bad('the page does not have both switches on');
+  // (and what three of them show in play, on this page since 12 Nov 2026: render/unique_play.ts)
+  if (!built.play.tome || !built.play.risen || !built.play.fourth) bad('the page does not have the three in-play pictures on');
   await snap('1_starting_screen');
   await hands.press('button:OPTIONS');
   await page.waitForTimeout(300);

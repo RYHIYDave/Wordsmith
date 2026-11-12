@@ -3020,6 +3020,9 @@ export class Renderer {
     // (THE WARLOCK's effects read the burning and the cursed off the monsters: render/warlock_fx.ts)
     fx.warlock.game = game;
     fx.brawler.game = game;
+    // (WHAT THE UNIQUE ITEMS SHOW IN PLAY, the art chat's, each behind a switch that is off: render/unique_fx.ts)
+    fx.uniques.game = game;
+    fx.uniques.bestiary = this.art.bestiary;
     // (THE VETERAN, behind a switch that is off: his moves' effects and his globes, render/veteran_fx.ts)
     this.vetFx.step(game, fx, pace / 60);
     // (THE NEW WORDS, a mock-up behind a switch that is off: render/words3.ts)
@@ -3921,6 +3924,9 @@ export class Renderer {
     // THE WARLOCK'S BOUND DEMON (his tree: game/talents.ts), at his side; his shadows where he stepped from (Phantom Step)
     if (game.bound) this.drawBound(game, cam, W, H, pace / 60);
     if (game.decoys.length) this.drawShadows(game, cam, t);
+    // (UNIQUE ITEMS, what they show in play, each behind a switch that is off: The Restless Tome's book and its fire, The
+    // Fleshmancer's Brand's risen elite: render/unique_fx.ts)
+    for (const u of fx.uniques.stands(cam)) this.stand(u.d, u.s, u.x, u.y, null, 0, 1, u.alpha);
 
     for (const p of game.projectiles) {
       const sx = wx(cam, p.x, p.y);

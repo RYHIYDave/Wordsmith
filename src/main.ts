@@ -158,6 +158,7 @@ import { forgetUnusedPictures } from './render/act1_fx/kept';
 import { COLOSSUS, onStoneOrJetty, worldToStone } from './game/colossus_fight';
 import { ITEM_WORDS } from './game/items';
 import { UNIQUES } from './game/uniques';
+import { UNIQUE_PLAY } from './render/unique_play';
 import { ART_TWEAKS } from './art/tweaks';
 
 declare const __BUILD__: string;
@@ -2929,6 +2930,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     uniques: UNIQUES,
     /** (THE UNIQUE ITEMS' OWN PICTURES, art/items_unique.ts, the art chat's) their switch, off until his yes: `uniqueArt.on`. */
     uniqueArt: UNIQUE_ART,
+    /** (WHAT THE UNIQUE ITEMS SHOW IN PLAY, render/unique_play.ts, the art chat's) their switches, each off until his yes: `uniquePlay.tome`, `.risen`, `.fourth`. */
+    uniquePlay: UNIQUE_PLAY,
     /** Game steps per frame while the test bot plays. */
     speed: 1,
     /** Time runs this much slower than real (1 = normal). */
@@ -3198,10 +3201,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // UNIQUES on (they drop at the odds as built, the stranger may sell one, each does what it does) and UNIQUE_ART on (each its own
   // bag picture); and a test hero of the level select, or the practice room's, is handed every unique he could find
   // (Game.giftUniques). A hero begun the ordinary way finds them only as the game gives them. The game itself is untouched.
+  // AND WHAT THREE OF THEM SHOW IN PLAY (render/unique_play.ts UNIQUE_PLAY: The Restless Tome's book in flight, The Fleshmancer's
+  // Brand's risen elite, the fourth globe over the Brawler's head), each with his yes to its picture; on this page at his word,
+  // 12 Nov 2026, by 05:44, asked whether to put the three onto his test page: “Yes, put them on (Recommended)”.
   if ((hash.get('try') ?? (typeof __TRY__ === 'string' ? __TRY__ : '')) === 'uniques') {
     UNIQUES.on = true;
     UNIQUE_ART.on = true;
     TRY_UNIQUES.on = true;
+    UNIQUE_PLAY.tome = true;
+    UNIQUE_PLAY.risen = true;
+    UNIQUE_PLAY.fourth = true;
   }
 
   // THE SWAMP COLOSSUS TRIED (his fight in his own pictures, for the owner to play before it goes live): `#try=colossus` (or a page
