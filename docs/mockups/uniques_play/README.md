@@ -184,6 +184,9 @@ the friend's edge round it, every pixel whole or its edge; its way over him, ont
 tests/unique_play2.test.ts (3) and tests/unique_play.test.ts (6, its switches now counting `talons`) pass, each alone with tsx;
 tsc clean; the look filmed, finished clean.
 
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills, asked whether it is good to hand to main: “Yes, hand it to main
+(Recommended)”. Handed to main with the Drowned Arm (the queue item bring-in-drowned-arm-picture).
+
 NOT DRAWN YET (the rest of the queue item's list): The Rainwalker, The Shepherd's Crook, The Tide, The Windcutter (the game already draws its blade as
 the Wave's crescent), The Fan, The Sticky Wrench, The Moth's Wing; and which of the moments the build only tells of want a
 picture of their own (to ask him).
