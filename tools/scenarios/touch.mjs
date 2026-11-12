@@ -136,6 +136,9 @@ export default async function (page, snap) {
     }
     await up(1);
     await page.waitForTimeout(600);
+    // (25.3.8: not while the floor's loading screen is up. Since the floors' monsters are taken in under it (render/monsters_baked.ts)
+    // it is up a little longer than these 600 ms, and the INVENTORY button was looked for under it: the playtest's fault, not the game's.)
+    await page.waitForFunction(() => { const d = window.__dbg; return !d.loadingNow || !d.loadingNow(); }, null, { timeout: 20000 }).catch(() => {});
     s = await st();
     log(toStairs ? 'steered onto the stairs: in dungeon' : 'steered into the gate: in dungeon', String(!s.town));
     await snap('gate');
