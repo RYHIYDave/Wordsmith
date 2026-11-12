@@ -130,6 +130,31 @@ build-endless-tablet-and-final-boss too.)
   0 at 30 a second, the moment's sound, then the burning frames round; the portal opening after it (below). Which quarters show in
   the socket before all four are in, the main chat's rules say: the picture takes any of them.
 
+### 2. THE PORTAL: DONE, WITH HIS YES
+
+`src/art/endless_portal.ts`, behind the same switch (`ENDLESS_TABLET`, off): nothing of the game imports it.
+- The landing at the tongue's end (art/shaft_rim.ts LANDING) keeps its ring of kerb and its eight posts; ITS FLOOR INSIDE THE RING
+  (radius 0.84 of a tile) SPLITS IN FOUR along the grid's two axes, the same lines as the tablet in the bench's socket; the seams
+  kindle the friend's cyan from the middle out; light bursts up through them (two walls of rays standing on the cross); the four
+  quarters grind back under the ring (slow to start, a lurch, then running, slowing into their slots), dust puffed and chips flung
+  where each goes under, a column of the friend's light standing up out of the widening hole; it settles. Standing open: A WELL, drawn
+  as the shaft itself is (a pictorial cheat: each ring deeper a little smaller), its wall in dressed blocks, A STAIR winding down
+  rightward round its far side from where the tongue comes in (under the near lip it is not seen), the stone taking more of the cyan
+  the deeper it is, and at the bottom the friend's light with THE BOSS'S PINK BURNING TO GOLD in its middle, breathing; motes of cyan
+  rising out of it.
+- `paintPortalFloor(f)` (what lies flat, 96 x 64, the anchor (48, 26) on the landing's middle) and `paintPortalRise(f)` (what stands
+  up out of it, 120 x 240, the anchor (60, 214), laid in depth at the landing's middle). `f`: -1 shut (nothing laid: the ground's
+  own); 0 to `PORTAL_OPEN_FRAMES` - 1 (104 at 30 a second: kindle 24, burst 10, grind 46, settle 24) the opening; past that, standing
+  open (`PORTAL_IDLE`, 48 frames that go round). `portalAt(f)` says where it is. Their lights go with them (cyan; the boss's pink
+  small and only far down). Nothing glows pink or gold but the boss's own light at the bottom.
+- Pictures: `pictures/standard/portal_stills.png`, `portal_opens.mp4` (the game's view beside the landing twice as big). Made by the
+  rim's dev page (modes `portal:<frame>`, `portalfilm`) and `tools/endless_portal_peek.ts`.
+- HIS WORD, 12 Nov 2026, by pop-up, shown the two: “Yes, the portal's done (Recommended)” (offered as: on to the warped wordsmith
+  and his boar).
+- FOR THE MAIN CHAT: the opening runs once, after the tablet's moment at the bench (the main chat's rules say when); then it stands
+  open until he goes down (the way down is the well's stair: the landing's floor no longer walkable where the hole is); the sound of
+  stone grinding and the light's roar. Shut again (the tablet used up, his pick) is -1.
+
 ## The tools
 
 `tools/endless_tablet/` (Python with Pillow and numpy; run from that folder): `kit.py` (a small pixel-art kit: two picture pixels to
