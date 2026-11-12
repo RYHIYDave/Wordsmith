@@ -82,9 +82,9 @@ const BURN = FLAME;
 export const WS_BODY: Build = buildOf(64, 1.3, { shoulders: 0.9, chest: 0.8, depth: 0.82, waist: 0.68, hips: 0.86, legs: 1.0, arms: 1.06, trunk: 1.02, limbs: 0.74 });
 const B = WS_BODY;
 /** Their picture: room for the staff held high, and for the boar's whole length turned any way. */
-export const WS_CANVAS: MobCanvas = { w: 300, h: 300, ax: 150, ay: 214 };
+export const WS_CANVAS: MobCanvas = { w: 340, h: 320, ax: 170, ay: 232 };
 /** The boar's size (its own lengths are a boar 34 at the hump). */
-export const BOAR_SIZE = 1.28;
+export const BOAR_SIZE = 1.5;
 const S = BOAR_SIZE;
 
 // =============================================================================================
@@ -164,19 +164,17 @@ function headOf(P: BoarPose): { at: (fwd: number, out: number, up: number) => V3
 }
 
 // THE WOOL: long locks hanging, combed down and matted; frost on their tips; darker at the roots where it parts.
-function woolSkin(seed: number, burnt?: (u: V3) => string | null): Skin {
-  return (u, tone) => {
-    const b = burnt?.(u);
-    if (b !== undefined && b !== null) return b;
-    // (locks: streaks running down the ball, each its own shade; their parting dark)
-    const ang = Math.atan2(u[1], u[0]);
-    const lock = Math.floor(ang * 5.2 + 40 + 0.8 * Math.sin(u[2] * 3 + seed));
-    const h = hash(lock, seed, 8801);
-    let t = tone + (h > 0.72 ? 1 : h < 0.2 ? -1 : 0);
-    const fr = ((ang * 5.2 + 40 + 0.8 * Math.sin(u[2] * 3 + seed)) % 1 + 1) % 1;
-    if (fr < 0.12 && tone < 3) t -= 1;
+function woolSkin(seed: number): Skin {
+  return (u, tone, x, y) => {
+    // (locks hanging: streaks down the picture, each a few pixels wide, wavering, each its own shade; the dark between them)
+    const wx = x / 2.7 + 0.45 * Math.sin(y * 0.33 + seed * 0.7);
+    const lock = Math.floor(wx);
+    const band = Math.floor((y + hash(lock, 3, 8802) * 9) / 9);
+    const h = hash(lock, band, 8801);
+    let t = tone + (h > 0.74 ? 1 : h < 0.22 ? -1 : 0);
+    if (wx - lock < 0.2 && tone < 3 && tone > 0) t -= 1;
     // (its underside: the locks' tips, frosted)
-    if (u[2] < -0.72 && h > 0.45 && tone >= 2) return FROST;
+    if (u[2] < -0.74 && h > 0.5 && tone >= 2) return FROST;
     return WOOL[T5(t)];
   };
 }
@@ -210,25 +208,42 @@ export function boarBits(P: BoarPose, put: Put, near: number): void {
   const br = 1 - 0.06 * P.breath;
   // ITS BODY: a deep barrel; its shoulders high and heavy, the hump over them where the saddle sits; its chest broad; its back
   // falling away to small hindquarters; a heavy belly
-  ball('boarBody', 'barrel', [-2, 0, 24], [17, 0, 0], [0, 9.6 * br, 0], [0, 0, 9.4], woolSkin(1, near > 0 ? brand(1) : brand(-1)));
+  ball('boarBody', 'barrel', [-2, 0, 24], [17, 0, 0], [0, 9.6 * br, 0], [0, 0, 9.4], woolSkin(1));
   ball('boarBody', 'shoulders', [9, 0, 27], [10.5, 0, 0], [0, 10.8, 0], [0, 0, 11.2], woolSkin(2));
-  ball('boarBody', 'hump', [5, 0, 33], [8.5, 0, 0], [0, 7.6, 0], [0, 0, 4.6], woolSkin(3));
+  ball('boarBody', 'hump', [6, 0, 32.5], [9.5, 0, 0], [0, 8.2, 0], [0, 0, 6.2], woolSkin(3));
   ball('boarBody', 'chest', [16, 0, 21], [6.8, 0, 0], [0, 9.0, 0], [0, 0, 9.0], woolSkin(4));
   ball('boarBody', 'haunch', [-15, 0, 24], [8.2, 0, 0], [0, 8.4, 0], [0, 0, 8.4], woolSkin(5));
   ball('boarBody', 'rump', [-21, 0, 24], [4.4, 0, 0], [0, 7.2, 0], [0, 0, 7.0], woolSkin(6));
   ball('boarBody', 'belly', [0, 0, 18], [13, 0, 0], [0, 8.4 * br, 0], [0, 0, 6.2], woolSkin(7));
+  // (his runes branded on its flank: the wool burnt off round them, the hide dark, the runes burning)
+  for (const k of [-1, 1]) {
+    if (k !== near) continue;
+    put('boarBody', 'brand', {
+      k: 'panel', c: W([-6, k * 9.95, 25.5]), u: turned(P, [4.4 * S, 0, 0]), v: turned(P, [0, 0, 5.2 * S]),
+      skin: (a2, b2) => {
+        const r = Math.hypot(a2, b2 * 0.9);
+        if (r > 1) return null;
+        const gx = Math.floor((a2 * k * 0.5 + 0.5) * 5);
+        const gy = Math.floor((-b2 * 0.5 + 0.5) * 9);
+        const g = RUNE_GRID[0];
+        if (gx >= 0 && gx < 5 && gy >= 0 && gy < 9 && g[gy][gx] === '#') return gy < 3 ? BURN[3] : BURN[2];
+        return r > 0.82 ? HIDE[1] : HIDE[2];
+      },
+    });
+  }
   // ITS NECK AND HEAD
   const H = headOf(P);
   const hb = (piece: string, fwd: number, out: number, up: number, rx: number, ry: number, rz: number, skin: Skin): void =>
     put('boarHead', piece, { k: 'ball', c: H.at(fwd, out, up), ax: [mul(H.f, rx * S), mul(H.l, ry * S), mul(H.u, rz * S)], skin });
-  put('boarBody', 'neck', { k: 'ball', c: W([18, 0, 24]), ax: ax([6.4, 0, 0], [0, 8.6, 0], [0, 0, 8.8]), skin: woolSkin(8) });
-  hb('skull', 4, 0, -0.5, 7.4, 7.0, 7.4, woolSkin(9));
-  hb('face', 10.5, 0, -4.2, 7.4, 5.4, 5.2, HIDE);
-  hb('snout', 17, 0, -7.2, 5.0, 3.6, 3.8, HIDE);
-  hb('jaw', 11.5, 0, -9.2, 6.2, 4.6, 2.8, HIDE);
+  // ITS HEAD: a great wedge carried low, one smooth whole from behind its ears to its snout's flat disc; a heavy jaw under it
+  const hr = (fwd: number, up: number, h: number, w: number): Ring => ({ c: H.at(fwd, 0, up), u: mul(H.u, h * S), v: mul(H.l, w * S) });
+  put('boarHead', 'head', { k: 'cloth', rings: [hr(-3, 0, 6.0, 6.0), hr(2, -0.5, 7.4, 7.0), hr(8, -2.8, 6.4, 5.8), hr(14, -5.4, 4.6, 4.2), hr(19, -7.2, 3.4, 3.2), hr(21, -7.6, 3.0, 3.0)], ramp: HIDE, look: { folds: [], lift: 0.06 }, rigid: true });
+  // (the wool over its poll and down its cheeks, thick)
+  hb('skull', 2.4, 0, 0.8, 6.0, 7.2, 6.0, woolSkin(9));
+  hb('jaw', 11, 0, -8.6, 6.4, 4.8, 2.6, HIDE);
   // (its snout's flat disc, its nostrils)
-  put('boarHead', 'disc', { k: 'ball', c: H.at(21.6, 0, -7.6), ax: [mul(H.f, 1.0 * S), mul(H.l, 3.0 * S), mul(H.u, 2.9 * S)], skin: (u, tone) => HIDE[T5(tone + 1)] });
-  for (const k of [-1, 1]) put('boarHead', 'nostrils', { k: 'dot', p: H.at(22.6, k * 1.2, -7.8), c: CREST[0], facing: H.f });
+  put('boarHead', 'disc', { k: 'ball', c: H.at(21.4, 0, -7.6), ax: [mul(H.f, 0.9 * S), mul(H.l, 3.0 * S), mul(H.u, 2.9 * S)], skin: (u, tone) => HIDE[T5(tone + 1)] });
+  for (const k of [-1, 1]) put('boarHead', 'nostrils', { k: 'dot', p: H.at(22.3, k * 1.2, -7.8), c: CREST[0], facing: H.f });
   // (wool hanging from its cheeks and jowls, a beard of it under its jaw)
   for (const k of [-1, 1]) {
     for (let j = 0; j < 3; j++) {
@@ -248,7 +263,7 @@ export function boarBits(P: BoarPose, put: Put, near: number): void {
   // ITS TUSKS: out of its jaw, curving up and back, cut with his runes that burn
   for (const k of [-1, 1]) {
     const pts: V3[] = [H.at(16.5, k * 3.2, -9), H.at(19.4, k * 5.4, -6.6), H.at(20.6, k * 6.8, -2.2), H.at(19.0, k * 7.2, 2.0), H.at(16.0, k * 6.4, 4.2)];
-    const rr = [2.0, 1.7, 1.3, 0.85, 0.35];
+    const rr = [2.2, 1.9, 1.5, 1.0, 0.4];
     for (let i = 0; i + 1 < pts.length; i++) put('boarHead', 'tusks', { k: 'rod', a: pts[i], b: pts[i + 1], ra: rr[i] * S, rb: rr[i + 1] * S, ramp: TUSK });
     // (the runes cut in them: notches burning down the curve)
     for (const f of [0.35, 0.6, 0.85]) {
@@ -290,17 +305,20 @@ export function boarBits(P: BoarPose, put: Put, near: number): void {
       put(part, 'locks', { k: 'rod', a, b: add(add(a, mul(back, 2.4 * S)), [0, 0, -5.5 * S]), ra: 2.0 * S, rb: 0.5 * S, ramp: WOOL, far });
     }
   }
-  // ITS LOCKS: the long wool hanging down its flanks and belly, swinging, frost on their tips
+  // ITS LOCKS: the long wool hanging in matted locks down its flanks and belly, each its own length and thickness, frost on their tips
   const sw = Math.sin(TAU * P.sway);
-  for (let i = 0; i < 18; i++) {
-    const f = (i % 9) / 8;
-    const k = i < 9 ? 1 : -1;
-    const along = 16 - f * 34;
-    const root = W([along, k * (8.4 - Math.abs(along - 2) * 0.05), 17.5 + 0.12 * Math.max(0, along)]);
-    const long = (5.5 + 2.6 * hash(i, 7, 8807)) * S;
-    const tip = add(add(root, mul(turned(P, [0, k, 0]), 1.2 * S)), [sw * 0.8 * S, 0, -long]);
-    put('boarLocks', 'locks', { k: 'rod', a: root, b: tip, ra: 2.2 * S, rb: 0.6 * S, ramp: WOOL, far: k !== near });
-    put('boarLocks', 'frost', { k: 'dot', p: tip, c: FROST, facing: turned(P, [0, k, 0]) });
+  for (let i = 0; i < 26; i++) {
+    const k = i % 2 ? 1 : -1;
+    const f = hash(i, 11, 8806);
+    const along = 18 - f * 38;
+    const row = hash(i, 13, 8808) > 0.55 ? 1 : 0;
+    const zr = 16.8 + row * 4.4 + 0.1 * Math.max(0, along);
+    const root = W([along, k * (9.0 - Math.abs(along - 2) * 0.06 + row * 0.6), zr]);
+    const long = (4.0 + 4.8 * hash(i, 7, 8807) - row * 1.2) * S;
+    const thick = (1.5 + 1.2 * hash(i, 17, 8809)) * S;
+    const tip = add(add(root, mul(turned(P, [-0.25, k, 0]), 1.3 * S)), [sw * 0.6 * S * (1 + row), 0, -long]);
+    put('boarLocks', 'locks', { k: 'rod', a: root, b: tip, ra: thick, rb: 0.5 * S, ramp: WOOL, far: k !== near });
+    if (hash(i, 19, 8810) > 0.35) put('boarLocks', 'frost', { k: 'dot', p: tip, c: FROST, facing: turned(P, [0, k, 0]) });
   }
   // ITS TAIL: short, a tuft
   const dock = W([-24.5, 0, 28]);
@@ -369,7 +387,8 @@ function ashSkin(seed: number, cuts = 0.08): Skin {
   return (u, tone) => {
     const a = Math.floor((Math.atan2(u[1], u[0]) + 4) * 5);
     const b = Math.floor((u[2] + 1) * 6);
-    if (hash(a, b, seed) < cuts && tone >= 1) return tone >= 3 ? BURN[3] : BURN[2];
+    // (runes cut in his skin: on his face and cheeks, not his crown, so that from behind none reads as a face)
+    if (u[0] > 0.2 && u[2] < 0.45 && hash(a, b, seed) < cuts && tone >= 1) return tone >= 3 ? BURN[3] : BURN[2];
     return ASH[T5(tone)];
   };
 }
@@ -392,18 +411,18 @@ function head(put: Put, s: Skeleton): void {
   // (his mouth a hard line)
   put('head', 'mouth', { k: 'dot', p: at(hr[0] * 0.9, 0, -1.6), c: ASH[0], facing: ff, c2: ASH[0] });
   // THE IRON BAND on his brow, and its stone, cracked, burning
-  const band: Ring = { c: at(0.2, 0, 2.2), u: mul(ff, hr[0] * 0.98), v: mul(fl, hr[1] * 1.0) };
+  const band: Ring = { c: at(0.2, 0, 1.3), u: mul(ff, hr[0] * 0.98), v: mul(fl, hr[1] * 1.0) };
   put('head', 'band', { k: 'band', ring: band, ramp: IRON, rows: 1 });
-  put('head', 'stone', { k: 'ball', c: at(hr[0] * 1.02, 0, 2.0), ax: [mul(ff, 0.7), mul(fl, 1.1), mul(fu, 1.2)], skin: (u) => (Math.abs(u[1] - u[2] * 0.4) < 0.22 ? BURN[3] : SLATE[2]) });
+  put('head', 'stone', { k: 'ball', c: at(hr[0] * 0.86, 0, 1.3), ax: [mul(ff, 0.6), mul(fl, 1.0), mul(fu, 1.05)], skin: (u) => (Math.abs(u[1] - u[2] * 0.4) < 0.22 ? BURN[3] : SLATE[2]) });
   // (his crown: thin white hair over it, combed back under the band)
   put('head', 'crown', { k: 'ball', c: at(-0.9, 0, 1.6), ax: [mul(ff, hr[0] * 0.92), mul(fl, hr[1] * 0.98), mul(fu, hr[2] * 0.78)], skin: (u, tone) => (u[0] > 0.55 && u[2] < 0.35 ? null : HAIR[T5(tone)]) });
   // HIS HAIR: long and white, lank, from under the band at the sides and back, falling over his shoulders and down his back
-  for (let i = 0; i < 9; i++) {
-    const a = (-100 + i * 25) * D;
+  for (let i = 0; i < 7; i++) {
+    const a = (-96 + i * 32) * D;
     const root = at(-Math.cos(a) * hr[0] * 0.55 - 0.8, Math.sin(a) * hr[1] * 0.92, 1.0);
     const down = norm(add(mul(ff, -0.45), [0, 0, -1]));
     const long = 12 + 4 * hash(i, 2, 8811);
-    put('hair', 'hair', { k: 'rod', a: root, b: add(root, add(mul(down, long), mul(fl, Math.sin(a) * 2.0))), ra: 1.25, rb: 0.4, ramp: HAIR });
+    put('hair', 'hair', { k: 'rod', a: root, b: add(root, add(mul(down, long), mul(fl, Math.sin(a) * 2.0))), ra: 1.5, rb: 0.6, ramp: HAIR });
   }
   // HIS BEARD: to his belt, thin and lank, in long strands with the dark between them, each narrowing to a point
   const BEARD_LO: Ramp = [HAIR[0], HAIR[0], HAIR[1], HAIR[2], HAIR[3]];
@@ -531,9 +550,10 @@ function staff(put: Put, s: Skeleton, t: number): void {
 }
 
 /** HIS RUNES ON THE AIR, where his left hand writes, and the cracked rune stones going round him. */
-function runesAbout(put: Put, s: Skeleton, t: number): void {
-  // (the strokes his fingers leave, burning, thinning as they go)
-  for (let i = 0; i < 9; i++) {
+function runesAbout(put: Put, st: Stage, s: Skeleton, t: number): void {
+  // (the strokes his fingers leave, burning, thinning as they go: laid over everything, so only where his hand is not behind him)
+  const seenHand = st.near(s.handL) > st.near(s.ribs) - 1;
+  for (let i = 0; i < (seenHand ? 9 : 0); i++) {
     const age = ((t * 2 + i / 9) % 1);
     const a = (i / 9) * TAU * 1.3 + t * 4;
     const p = add(s.handL, [2.5 + Math.cos(a) * 2.6, Math.sin(a) * 2.6, 1.5 + age * 6]);
@@ -583,7 +603,7 @@ function wsBits(st: Stage, m: Moment): Bit[] {
   put('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
   head(put, s);
   staff(put, s, m.t);
-  runesAbout(put, s, m.t);
+  runesAbout(put, st, s, m.t);
   return bits;
 }
 

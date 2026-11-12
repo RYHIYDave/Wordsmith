@@ -155,6 +155,17 @@ build-endless-tablet-and-final-boss too.)
   open until he goes down (the way down is the well's stair: the landing's floor no longer walkable where the hole is); the sound of
   stone grinding and the light's roar. Shut again (the tablet used up, his pick) is -1.
 
+### 3. THE FINAL BOSS'S LOOK (in hand)
+
+`src/art/endless_boss.ts`, behind the same switch: THE WARPED WORDSMITH on the heroes' bones (`WS_BODY`, 64 tall: a little taller
+than the hero) riding THE GREAT WOOLLY BOAR, its own solids (`boarBits`, as the Princess's steed and the Hollow Stag are), in the
+monsters' painter (art/new_mobs3.ts). `wsMob()` has his stand only so far; `WS_SHAPE` is what the bosses' review takes (his body,
+the staff, the boar's hooves as what grips the floor); his stand passes `checkBoss` (tests/endless_boss.test.ts).
+- First pictures: `pictures/standard/boss_look.png`, `boss_stand.mp4`. HIS WORDS, 12 Nov 2026, by pop-up: “I was thinking the boar a
+  little bigger.  And you’re going to refine that picture right?  It’s looking pretty wonky”. THE BOAR'S DEATH, his pick: “Crashes
+  onto its side (Recommended)” (offered as: killed mid-charge, it ploughs on, flips onto its side and skids to a stop in frost, its
+  runes going out).
+
 ## The tools
 
 `tools/endless_tablet/` (Python with Pillow and numpy; run from that folder): `kit.py` (a small pixel-art kit: two picture pixels to
