@@ -32,7 +32,7 @@ run() {
 }
 two() { while [ "$(jobs -rp | wc -l)" -ge 2 ]; do sleep 0.7; done; }
 (
-# 25.3.11: THE WARRIOR'S WEAPON TREE (build/warrior-tree, WARRIOR_TREE2 on at his word): his axe's and his maul's groups from the
+# 25.3.11 (with 25.3.10 under it): THE WARRIOR'S WEAPON TREE (build/warrior-tree, WARRIOR_TREE2 on at his word): his axe's and his maul's groups from the
 # bake, his three moves with each; the greatsword's as before; the whole Warrior's frames against the old way
 two; WEAPON=battleaxe run warrior_baked_axe $U --scenario $S/warrior_baked.mjs &
 two; WEAPON=warhammer run warrior_baked_hammer $U --scenario $S/warrior_baked.mjs &
@@ -43,6 +43,9 @@ two; run hero_cards_baked $U --scenario $S/hero_cards_baked.mjs &
 # THE LOADING SCREEN'S WORK IN SLICES (build/smooth-loading-frames)
 two; run loading_frames $U --scenario $S/loading_frames.mjs &
 two; run floor_loading $P --scenario $S/floor_loading.mjs &
+# THE MOTH'S PICTURES KEPT PACKED (build/moth-packed): what it holds as it is fought through its phases; the same pictures
+two; SECONDS=200 PHASES=70,140 run moth_memory $P --init tools/mem_probe.js --scenario $S/moth_memory.mjs &
+two; run moth_packed_check --size 1280x720 --scenario $S/moth_packed_check.mjs &
 # the game's main ways
 two; run save --scenario $S/save.mjs &
 two; run touch_wide $P --scenario $S/touch.mjs &
