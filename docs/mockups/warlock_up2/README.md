@@ -685,6 +685,54 @@ and ending on its roar), **“Yes, that's the change (Recommended)”**. SO ITS 
 CHANGE INTO IT ARE SETTLED WITH HIM: none to be shown him again. NEXT: into the game's shape behind a switch that is off, a film
 and pictures in the game on floor 11 beside the Brawler, his yes, then the ship list; then THE MAN.
 
+## In the game's shape, behind a switch that is off (`src/art/shadow_art.ts`; LIVING_SHADOW, off)
+
+The queue chat of 12 Nov (midday), at his word “Work on the next queue item” (13:30 Eastern). Step 3's first half: THE LIVING
+SHADOW'S LISTS IN THE GAME'S OWN SHAPE (art/actor_types.ts AnimSet), as `art/warlock_art.ts` lays out the game's demon today,
+and the switch that puts them in its place. OFF: the game's Warlock and his demon are exactly as they were (`art/warlock_art.ts`
+takes these lists only with it on: `makeWarlockArt` for `form` 'demon', and the man's `clips.change`).
+
+| list | the Living Shadow | the game's demon today |
+|---|---|---|
+| idle | its stand up on two legs, 96 pictures at 30 | 48 at 10, on all fours |
+| walk | the game's run on all fours, 42 at 60, its feet gripping | the same run |
+| start (setting off) | dropping onto all fours into the run, 19 at 60, into the run's 6/42 (`startAt`) | none: the run at once |
+| stops (8) | rearing up out of the run, one for each eighth of its round, 15 each at 30 | none: its stand at once |
+| attack, attack2 | its really wide slashes, left claw then right, 32 each at 30, the blow at frame 14 (the rake's) | its rakes |
+| attackWalk (4) | its left claw's slash made walking on two legs, ahead, to its left, back, to its right | none |
+| heavy | Damning, up on two legs, 49 at 30 (the game's own frames) | its Damning, 49 pictures |
+| leap, land | the smoke step's two ends, up on two legs | the smoke step |
+| reel, lurch | struck hard and from behind | the same, on all fours |
+| change (burning out) | its burning out, crumbling, him on one knee getting up, 170 at 30 | the same, 44 pictures |
+| the man's change | the change into it, then its roar: 106 pictures at 30, the game's own length (3.5 s) | 48 pictures |
+
+Two sides (`front`, `back`), as the man has; its eight (each with his yes) come with the man's eight, step 4.
+
+WHAT THE GAME MUST DO ITSELF, for the main chat when it is switched on (none of it is on its pictures; the earlier sections'
+notes): (1) a slash's streaks of his cyan (`dev/shadow_fx.ts` slashLight), laid as `render/warlock_fx.ts` lays the rake's;
+(2) its roar's rings, lines and spittle from its mouth (`roarLight`, `mouthAt`) and the screen's shake (`ShadowMove.shake`,
+`render/fx.ts`); (3) Damning's and the smoke step's light on the floor (`clawsLight`, `damningScene`, `stepScene`); (4) the
+combo's second swing has no walking clip in the game: its right claw's four are made (`dev/shadow_moves.ts`) and wait for one
+(`render/figure.ts`, the line that picks `walkers`); (5) after a slash made walking, if it is still going and no slash follows,
+its dropping onto all fours (`start`), not the run at once; (6) the puffs of smoke where the man's pieces tear away, if the game
+lays them from the change's own list of them (`render/warlock_fx.ts`): the Living Shadow's change tears the same pieces at the
+same moments, from his bones grown into its frame, not the old demon's. THE HEROES' BAKE: `art/warlock_art.ts` now takes in
+`art/shadow_art.ts` and what it is made of, so the heroes' bake's mark is new even with the switch off (the same pictures):
+the bake is made again with the next version as ever.
+
+CHECKED: `tests/shadow_art.test.ts` (new), 2 of 2: the switch off, the game's demon (its stand at ten, no setting off, stopping
+or slashes made walking) and the game's change (48 pictures) as they were; the switch on, every list above as counted there, its
+blows where its moves land them, and a frame of its stand, run, a slash at its blow, setting off, a rear-up, the man as the
+change begins and it roaring at its end, each painted. tsc clean. `node tools/unit.mjs --only shadow_art,shadow_change,shadow_moves,warlock,warlock_moves,heroes3,cheap_heroes` and the core on
+b21e9bd162: 29 files, 362 tests, all passed (the game's Warlock, his heroes' shape and his frames by hash with the switch off).
+
+NEXT, STEP 3's SECOND HALF: a page of the game with the switch on, in the page and its side painter alike (as the Mage's,
+`tools/mage_up_page.mjs` on `art/mage-up2`: the side painter's worker is the page's own script and has no switch of its own),
+cut from today's `main`; a film and pictures of it IN PLAY on floor 11 beside the Brawler, MP4 (as `tools/scenarios/mage_up_look.mjs`
+and `tools/mage_up_film.py` on `art/mage-up2` made hers): the Warlock changing into it, standing, running and stopping, slashing
+standing and walking, Damning, the smoke step, struck, burning out; his yes; then the ship list. Its frames are heavy to paint
+(about a fifth of a second each here): in play they want the bake, as the Mage's did.
+
 ## The checks so far
 
 - `tsc --noEmit -p tsconfig.json`: nothing from this branch. (One line from `tests/relief.test.ts`, line 378, under the
