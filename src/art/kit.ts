@@ -877,6 +877,28 @@ export const HEAVY = { defer: false, deferred: 0 };
  * its list that is, as a heavy one is (HEAVY); a list with none painted yet paints the one asked for.
  */
 export const LEFT_TO_PAINTER = { on: false };
+/**
+ * THE LAST FRAME SHOWN AS A STAND-IN (a frame not painted yet, shown as the nearest of its list that is: HEAVY, LEFT_TO_PAINTER):
+ * its list and the frame that was asked for, and how many stand-ins there have been. For the Moth's pictures kept packed
+ * (render/painter.ts PACKED): the frame wanted is the one to unpack first.
+ */
+export const STAND_IN: { list: readonly Sprite[] | null; i: number; n: number } = { list: null, i: 0, n: 0 };
+/** Each list of lazy frames, with how to make one of its frames lazy again (`unpaintFrame`). */
+const RELAZY = new WeakMap<readonly Sprite[], (i: number) => void>();
+/**
+ * A frame of a list of lazy frames made lazy again, as if it had never been painted: the next to ask for it paints it, or, the
+ * painter painting it, is shown a stand-in (LEFT_TO_PAINTER). Its picture, if it had one, is handed back for the asker to give
+ * back (engine/px.ts retireSprite); null if it had none, or the list is not one of lazy frames. For a figure whose pictures
+ * are kept packed and unpacked a move at a time (render/painter.ts PACKED): a move let go of is made lazy again.
+ */
+export function unpaintFrame(list: readonly Sprite[], i: number): Sprite | null {
+  const relazy = RELAZY.get(list);
+  if (!relazy || i < 0 || i >= list.length) return null;
+  const d = Object.getOwnPropertyDescriptor(list, i);
+  if (!d || !('value' in d) || !d.value) return null;
+  relazy(i);
+  return d.value as Sprite;
+}
 
 /** The nearest frame of `list` to `i` that is painted already (the earlier first), or null if none is. */
 function paintedOf(list: readonly Sprite[], i: number): Sprite | null {
@@ -902,7 +924,7 @@ function paintedOf(list: readonly Sprite[], i: number): Sprite | null {
  */
 export function lazyFrames(n: number, make: (i: number) => Sprite, heavy = false, stand?: () => readonly Sprite[] | undefined): Sprite[] {
   const out: Sprite[] = new Array<Sprite>(n);
-  for (let i = 0; i < n; i++) {
+  const lazy = (i: number): void => {
     Object.defineProperty(out, i, {
       configurable: true,
       enumerable: true,
@@ -911,6 +933,9 @@ export function lazyFrames(n: number, make: (i: number) => Sprite, heavy = false
           const near = paintedOf(out, i);
           if (near) {
             HEAVY.deferred++;
+            STAND_IN.list = out;
+            STAND_IN.i = i;
+            STAND_IN.n++;
             return near;
           }
           // (`stand`: a list to stand in for this one while none of it is painted, where a frame of it would be the stall: the
@@ -939,7 +964,9 @@ export function lazyFrames(n: number, make: (i: number) => Sprite, heavy = false
         return s;
       },
     });
-  }
+  };
+  for (let i = 0; i < n; i++) lazy(i);
+  RELAZY.set(out, lazy);
   return out;
 }
 

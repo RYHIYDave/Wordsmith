@@ -13,7 +13,7 @@ import { toSprite } from '../../art/kit';
 import { TILE3, paintViewOf } from '../../art/new_mobs3';
 import type { Painted } from '../../art/kit';
 import type { V3 } from '../../art/skeleton';
-import { flipSprite } from '../../engine/px';
+import { PASSING_MS, flipSprite, retireSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { CLOUD_LONG, MOTH_TUNE, artToWorld, beatOf, bookOf, mothPhase, perched, swarmFrom } from '../../game/act1_rules/moth';
 import { clipFrame } from '../figure';
@@ -22,15 +22,50 @@ import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
-const MADE = keptPictures<string, Sprite>();
+/**
+ * ITS EFFECTS' PICTURES, each made the first time it is shown (`owned`: every one made here, by toSprite or as the mirror image
+ * of one of its own). KEPT UP TO `MADE_MOST` BYTES (four a pixel), THE LEAST LATELY SHOWN LET GO OF FIRST, and given back (the
+ * queue's keep-moths-pictures-from-filling-memory, 12 Nov 2026): kept for the whole floor they were 156 MB 240 s into the
+ * fight (measured, a phone's screen in Chrome on a cloud machine), and the words pouring out of it as it dies alone are 113
+ * frames of about 1.2 MB, each shown once. One let go of is made again if it is shown again, as it was the first time.
+ */
+const MADE = keptPictures<string, Sprite>(true);
+export const MADE_MOST = 96 * 1048576;
+let madeBytes = 0;
+const bytesOf = (s: Sprite): number => s.img.width * s.img.height * 4;
 function made(key: string, back: boolean, flip: boolean, make: () => Painted, ax: number = FX_CANVAS.ax, ay: number = FX_CANVAS.ay): Sprite {
   const k = `${key}:${back ? 1 : 0}:${flip ? 1 : 0}`;
   let s = MADE.get(k);
-  if (!s) {
-    s = flip ? flipSprite(made(key, back, false, make, ax, ay)) : toSprite(make(), null, ax, ay);
+  if (s) {
+    // (shown: last in the line of those to let go of)
+    MADE.delete(k);
     MADE.set(k, s);
+    return s;
+  }
+  s = flip ? flipSprite(made(key, back, false, make, ax, ay)) : toSprite(make(), null, ax, ay);
+  // (the floor left, the list emptied and its pictures given back: kept.ts forgetUnusedPictures; counted afresh)
+  if (MADE.size === 0) madeBytes = 0;
+  MADE.set(k, s);
+  madeBytes += bytesOf(s);
+  for (const [old, o] of MADE) {
+    if (madeBytes <= MADE_MOST) break;
+    if (old === k || (flip && old === `${key}:${back ? 1 : 0}:0`)) continue;
+    // (a picture and its mirror image go together: giving back the one gives back the other, engine/px.ts releaseSprite)
+    const base = old.slice(0, -1);
+    for (const one of [`${base}0`, `${base}1`]) {
+      const p = MADE.get(one);
+      if (!p) continue;
+      MADE.delete(one);
+      madeBytes -= bytesOf(p);
+      retireSprite(p, PASSING_MS);
+    }
+    void o;
   }
   return s;
+}
+/** How much its effects' pictures hold now (bytes), for the tests and for measuring. */
+export function mothFxBytes(): number {
+  return MADE.size ? madeBytes : 0;
 }
 /** Its picture's view and turn for a way (game/facing.ts). */
 const viewOf = (fx: number, fy: number): { back: boolean; flip: boolean } => ({ back: fx + fy < -0.2, flip: fx - fy < 0 });

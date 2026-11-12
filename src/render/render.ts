@@ -27,7 +27,7 @@ import { forgetMade as forget_chapel } from '../art/chapel';
 import { forgetMade as forget_chapel_gate } from '../art/chapel_gate';
 import { forgetMade as forget_lair_temple } from '../art/lair_temple';
 import { forgetMade as forget_lair_gate } from '../art/lair_gate';
-import { HEAVY, LEFT_TO_PAINTER } from '../art/kit';
+import { HEAVY, LEFT_TO_PAINTER, STAND_IN } from '../art/kit';
 /** HEAVY FRAMES (art/kit.ts HEAVY) left to the side painter while the world is drawn: on in the game; off, every frame painted when first shown. */
 export const PAINT_DEFER = { on: true };
 import type { ActorArt } from '../art/actor_types';
@@ -2941,11 +2941,18 @@ export class Renderer {
     // (THE FLOORS' MONSTERS BAKED: one whose baked pictures are still coming (called up in a fight, its files asked for as it
     // was first seen) is shown, for a frame of its not here yet, as the nearest that is, never painted here as it is shown:
     // art/kit.ts LEFT_TO_PAINTER. A list with none here yet paints the one asked for, as ever.)
-    if (!this.bakedMobs || !this.bakedMobs.coming(figureOf(m))) return this.monsterSpriteNow(m);
+    // (A FIGURE KEPT PACKED, THE MOTH: likewise, its moves unpacked as they are shown; each picture of it shown told to the
+    // painter, render/painter.ts PACKED, which unpacks its move and keeps what is unpacked within its budget)
+    const f = figureOf(m);
+    const packed = !!this.painter && this.painter.packs(f);
+    if (!packed && (!this.bakedMobs || !this.bakedMobs.coming(f))) return this.monsterSpriteNow(m);
     const left = LEFT_TO_PAINTER.on;
     LEFT_TO_PAINTER.on = true;
+    const stood = STAND_IN.n;
     try {
-      return this.monsterSpriteNow(m);
+      const s = this.monsterSpriteNow(m);
+      if (packed) this.painter!.shown(f, s, STAND_IN.n !== stood);
+      return s;
     } finally {
       LEFT_TO_PAINTER.on = left;
     }
@@ -3006,11 +3013,14 @@ export class Renderer {
     const left = LEFT_TO_PAINTER.on;
     if (this.painter?.paints(f.figure) || this.bakedMobs?.coming(f.figure)) LEFT_TO_PAINTER.on = true;
     let sp: Sprite;
+    const stood = STAND_IN.n;
     try {
       sp = clip.frames[Math.min(last, i)];
     } finally {
       LEFT_TO_PAINTER.on = left;
     }
+    // (A FIGURE KEPT PACKED, THE MOTH: its fall unpacked as it is shown, as its moves are: render/painter.ts PACKED)
+    if (this.painter?.packs(f.figure)) this.painter.shown(f.figure, sp, STAND_IN.n !== stood);
     // (`since`: how long it has lain, in seconds)
     return { sp: f.flip ? flipSprite(sp, true) : sp, lying: i >= last, since: f.t - last / clip.fps };
   }

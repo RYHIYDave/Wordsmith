@@ -428,7 +428,9 @@ export function flippedPixels(): number {
  * with it, and one still held then shows nothing. `reapRetired` is called every frame the world is drawn (render.ts).
  */
 export const RETIRE_MS = 3000;
-const retired: { s: Sprite; at: number; px: number }[] = [];
+/** How long a big mirror image of a passing picture (flipSprite `passing`, kept by nobody) is held after its budget let go of it. */
+export const PASSING_MS = 250;
+const retired: { s: Sprite; due: number; px: number }[] = [];
 let retiredPx = 0;
 const clockMs = (): number => (typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now());
 /**
@@ -436,9 +438,11 @@ const clockMs = (): number => (typeof performance !== 'undefined' && typeof perf
  * with its mirror image and its silhouettes (`releaseSprite`). Only for a picture that is the asker's own to give back: one
  * shared with another list would show nothing there too.
  */
-export function retireSprite(s: Sprite): void {
+// (`ms`: sooner, for a picture whose asker knows nobody holds it past the frame it is drawn in: a move of the Moth's let go of,
+// render/painter.ts PACKED, a hundred megabytes each, which held three seconds were another move or two held)
+export function retireSprite(s: Sprite, ms = RETIRE_MS): void {
   const px = s.img.width * s.img.height;
-  retired.push({ s, at: clockMs(), px });
+  retired.push({ s, due: clockMs() + ms, px });
   retiredPx += px;
 }
 /** How many pixels of pictures let go of are waiting to be given back (for the tests). */
@@ -450,18 +454,26 @@ export function reapRetired(all = false): number {
   if (retired.length === 0) return 0;
   const t = clockMs();
   let n = 0;
-  while (n < retired.length && (all || t - retired[n].at >= RETIRE_MS)) {
-    const r = retired[n++];
-    retiredPx -= r.px;
-    releaseSprite(r.s);
+  let k = 0;
+  for (let j = 0; j < retired.length; j++) {
+    const r = retired[j];
+    if (all || r.due <= t) {
+      retiredPx -= r.px;
+      releaseSprite(r.s);
+      n++;
+    } else retired[k++] = r;
   }
-  if (n) retired.splice(0, n);
+  retired.length = k;
   return n;
 }
 /** The mirror images handed to someone who may keep them (a picture kept among others: its list never gives it back). */
 const keptFlips = new WeakSet<Sprite>();
 /** What each mirror image is the mirror image of (so that one given back by itself is taken out of the lists that hold it). */
 const flipSource = new WeakMap<Sprite, Sprite>();
+/** The picture a sprite is the mirror image of, or the sprite itself if it is none (render/painter.ts: which frame of a figure is shown). */
+export function flipOrigin(s: Sprite): Sprite {
+  return flipSource.get(s) ?? s;
+}
 
 /**
  * The sprite mirrored left-to-right (anchor and lights mirrored too). `passing`: the one asking draws it this frame and keeps
@@ -505,11 +517,14 @@ export function flipSprite(s: Sprite, passing = false): Sprite {
   if (!passing) keptFlips.add(f);
   // (whoever still holds one let go of here, a picture drawn this frame, keeps it a moment yet: it is given back RETIRE_MS on,
   // unless someone who may keep it has had it: then only this list forgets it, as before)
+  // (one nobody who may keep it has had, passing pictures only, is held past the frame it was drawn in by nobody: given back
+  // PASSING_MS on, not RETIRE_MS: the Moth seen from its other side, a picture of up to 832 by 824 every frame, kept 100 MB of its
+  // mirror images waiting so, measured 12 Nov 2026)
   for (const [key, old] of bigFlips) {
     if (bigFlipPx <= FLIP_BUDGET || key === s) break;
     bigFlips.delete(key);
     bigFlipPx -= old.img.width * old.img.height;
-    if (!keptFlips.has(old)) retireSprite(old);
+    if (!keptFlips.has(old)) retireSprite(old, PASSING_MS);
   }
   return f;
 }

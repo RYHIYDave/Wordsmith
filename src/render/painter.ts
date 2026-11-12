@@ -50,7 +50,8 @@ import type { FlowLayer } from '../art/flowing';
 import type { Rows } from '../art/low_stacks';
 // (ACT 2, THE GATE WARD: the shells of its houses walked into, painted here: render/act2_houses.ts)
 import { shellMaker } from './act2_houses';
-import { releaseSprite } from '../engine/px';
+import { flipOrigin, releaseSprite, retireSprite } from '../engine/px';
+import { STAND_IN, unpaintFrame } from '../art/kit';
 import type { BakedHeroes } from './baked';
 import type { Light, Sprite } from '../engine/px';
 
@@ -78,6 +79,87 @@ const SMALL_ROOM = 100;
 /** A worker that has not said it is ready after this long never will, in thousandths of a second. */
 const READY_MS = 20000;
 
+/**
+ * A FIGURE TOO BIG TO HOLD WHOLE IS KEPT PACKED, AND UNPACKED A MOVE AT A TIME (the queue's keep-moths-pictures-from-filling-memory,
+ * 12 Nov 2026). THE MOTH, floor 20's boss (art/act1_figs/moth.ts): 1,316 frames of up to 832 by 824, about 1.3 MB each as a
+ * picture, 1,984 MB were they all held, and the painter's worker handed every one over and nothing let one go before the floor
+ * was left (measured on 25.3.8, a phone's screen in Chrome on a cloud machine: 900 MB of its pictures held 200 s into the fight,
+ * and climbing). A frame of it is 130 to 360 ms to paint (painted again when it is wanted, a move would come seconds late),
+ * but its art is flat colour and packs as a PNG to about 50 KB (33 times smaller; all of it about 65 MB). So:
+ * - THE WORKER PAINTS EVERY FRAME, as before (the first frame of every move first), AND PACKS IT (a PNG, kept in the worker);
+ *   it hands over only the first frame of every move (held always: what is shown while a move is coming) and the frames of a
+ *   move the page wants now.
+ * - THE PAGE ASKS FOR A MOVE AS IT IS SHOWN (the first frame of it shown: Painter.shown, from render/render.ts): the worker
+ *   unpacks it (a PNG made a picture again, beside the game: no painting, about 10 ms a frame), from the frame wanted on.
+ *   Until a frame comes, the nearest of its move that is here is shown (art/kit.ts LEFT_TO_PAINTER), never painted where the
+ *   game is played.
+ * - Its moves unpacked are held up to `budgetMB` (four bytes a pixel, its first frames apart), the least lately shown let go
+ *   of first (never one shown in the last `holdMs`): their frames made lazy again (art/kit.ts unpaintFrame) and their room
+ *   given back by hand (engine/px.ts retireSprite).
+ * - THE SAME PICTURES, EVERY PIXEL (a PNG loses nothing): nothing he sees changes but a stand-in for a frame or two as a move
+ *   begins. Where the worker cannot pack (no OffscreenCanvas.convertToBlob or createImageBitmap there) it says so, and hands
+ *   every frame over, as before. Off (`on` false): as before.
+ */
+export const PACKED: { on: boolean; figures: readonly MonsterFigure[]; budgetMB: { small: number; big: number }; holdMs: number; giveBackMs: number } = {
+  on: true,
+  figures: ['moth'],
+  budgetMB: { small: 96, big: 320 },
+  holdMs: 1500,
+  // (a frame of a move let go of given back this long after: nothing holds a monster's picture past the frame it is drawn in)
+  giveBackMs: 250,
+};
+/** Which frame of a packed figure each picture handed over is: which way round, which list, which frame (paintOrder's). */
+const PACKED_AT = new WeakMap<Sprite, readonly [number, number, number]>();
+/** The room a picture takes (four bytes a pixel). */
+const roomOf = (s: Sprite): number => ((s.img as unknown as { width: number }).width || 0) * ((s.img as unknown as { height: number }).height || 0) * 4;
+const clockNow = (): number => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+/** A packed figure's move as the page holds it: its list (the art's own), the frames of it unpacked here, when it was last shown. */
+interface PackMove {
+  v: number;
+  l: number;
+  frames: Sprite[];
+  held: Map<number, Sprite>;
+  bytes: number;
+  at: number;
+  /** Asked of the worker, and not let go of since. */
+  asked: boolean;
+}
+/** A packed figure as the page holds it. */
+interface PackHere {
+  /** Whether its worker packs it (null: not known yet; it says so with the first frames it hands over). */
+  packs: boolean | null;
+  moves: Map<string, PackMove>;
+  of: Map<readonly Sprite[], PackMove>;
+  /** The room its unpacked frames take (its first frames apart, `keptBytes`). */
+  bytes: number;
+  kept: number;
+  keptBytes: number;
+  shown: number;
+  standIns: number;
+  unpacks: number;
+  letGo: number;
+  /** As the worker last told: its frames packed, and their room as PNGs. */
+  packedN: number;
+  packedBytes: number;
+}
+/** A packed figure's numbers, for the tests and for measuring (megabytes). */
+export interface PackedStats {
+  packs: boolean | null;
+  frames: number;
+  packed: number;
+  packedMB: number;
+  kept: number;
+  keptMB: number;
+  unpacked: number;
+  unpackedMB: number;
+  moves: number;
+  shown: number;
+  standIns: number;
+  unpacks: number;
+  letGo: number;
+}
+
 /** One frame of a figure, handed over: which way round, which list, which frame (paintOrder); its picture, or the frame it is the same picture as. */
 interface Given {
   v: number;
@@ -98,6 +180,9 @@ type Ask =
   | { t: 'mob'; figure: MonsterFigure; pri: number; side?: boolean }
   | { t: 'film'; key: string; pri: number }
   | { t: 'drop'; figure: MonsterFigure }
+  // (A FIGURE KEPT PACKED, PACKED: one of its moves unpacked, from frame `from` on; a move no longer wanted)
+  | { t: 'unpack'; figure: MonsterFigure; v: number; l: number; from: number }
+  | { t: 'unwant'; figure: MonsterFigure; v: number; l: number }
   // (A BOSS'S DEATH PAINTED NEXT: its fall, as it nears it, before the rest of its frames still to come: Painter.dieFirst)
   | { t: 'dieFirst'; figure: MonsterFigure }
   // ACT 1: a floor's outdoor ground (render/outdoor.ts): the floor to paint it from, then its pieces as they are wanted
@@ -119,7 +204,10 @@ interface WallBitMsg {
 /** What a worker tells the page. */
 type Tell =
   | { t: 'ready' }
-  | { t: 'frames'; figure: MonsterFigure; list: Given[]; left: number }
+  // (a figure kept packed, PACKED: `packs`, whether its worker packs it; how many of its frames are packed, and their room)
+  | { t: 'frames'; figure: MonsterFigure; list: Given[]; left: number; packs?: boolean; packed?: number; packedBytes?: number }
+  // (frames of a figure kept packed, unpacked as the page asked)
+  | { t: 'unpacked'; figure: MonsterFigure; list: Given[] }
   | { t: 'film'; key: string; film: unknown; ms: number }
   | { t: 'piece'; id: number; i: number; j: number; bmp: ImageBitmap; ms: number; walls?: WallBitMsg[]; flow?: FlowBits<ImageBitmap> | null }
   // (ACT 2, THE GATE WARD: one house's shell, or `n` -1: they could not be painted)
@@ -139,6 +227,8 @@ interface Lane {
   ready: boolean;
   /** What it has been asked for and has not finished. */
   open: number;
+  /** The figures it keeps packed for the page (PACKED): while it keeps any it is not ended, its work done. */
+  holds: number;
 }
 
 /** What the painter has done, for the tests and for measuring. */
@@ -245,6 +335,8 @@ export class Painter {
     }
     this.sideFigures.clear();
     this.dieAsked.clear();
+    // (a figure kept packed: its worker, and what it packed, ended above; what was unpacked here is let go of with its pictures, below)
+    this.packedFigs.clear();
     for (const film of this.films.values()) eachSprite(film, releaseSprite);
     this.films.clear();
     this.asked.clear();
@@ -264,8 +356,139 @@ export class Painter {
     const lane = this.lane(0);
     if (!lane) return false;
     this.figures.set(figure, { left: -1 });
+    // (one too big to hold whole, PACKED: its worker packs it, and says so with the first frames it hands over)
+    if (PACKED.on && PACKED.figures.includes(figure)) this.packedFigs.set(figure, { packs: null, moves: new Map(), of: new Map(), bytes: 0, kept: 0, keptBytes: 0, shown: 0, standIns: 0, unpacks: 0, letGo: 0, packedN: 0, packedBytes: 0 });
     this.ask(lane, { t: 'mob', figure, pri: 1 });
     return true;
+  }
+
+  /**
+   * THE FIGURES KEPT PACKED (PACKED): what of each is unpacked here, move by move. Its frames are read with LEFT_TO_PAINTER on
+   * (render/render.ts), and each picture of it shown is told here (`shown`).
+   */
+  private packedFigs = new Map<MonsterFigure, PackHere>();
+
+  /** Is this figure kept packed by its worker (its frames to be read as the painter's, and each shown told here)? */
+  packs(figure: MonsterFigure): boolean {
+    return this.state === 'on' && this.packedFigs.get(figure)?.packs === true;
+  }
+
+  /**
+   * A PICTURE OF A FIGURE KEPT PACKED, SHOWN (render/render.ts, each time one is drawn): its move is wanted. Not unpacked here
+   * yet, it is asked for, from the frame wanted on (`standIn`: the picture is a stand-in for one still coming, art/kit.ts
+   * STAND_IN: the frame asked for is that one). And if what is unpacked here is over its budget, the moves least lately shown
+   * are let go of.
+   */
+  shown(figure: MonsterFigure, s: Sprite, standIn: boolean): void {
+    const pk = this.packedFigs.get(figure);
+    if (!pk || pk.packs !== true) return;
+    pk.shown++;
+    let mv: PackMove | undefined;
+    let from = 0;
+    if (standIn) {
+      pk.standIns++;
+      if (STAND_IN.list) {
+        mv = pk.of.get(STAND_IN.list);
+        from = STAND_IN.i;
+      }
+    }
+    if (!mv) {
+      const at = PACKED_AT.get(flipOrigin(s));
+      if (!at) return;
+      mv = pk.moves.get(`${at[0]},${at[1]}`);
+      from = at[2];
+    }
+    if (!mv) return;
+    mv.at = clockNow();
+    if (!mv.asked) {
+      const lane = this.lanes[0];
+      if (!lane) return;
+      mv.asked = true;
+      pk.unpacks++;
+      lane.worker.postMessage({ t: 'unpack', figure, v: mv.v, l: mv.l, from } satisfies Ask);
+    }
+    this.packedFits(figure, pk);
+  }
+
+  /** A packed figure's numbers (null: it is not one, or not on this floor). For the tests and for measuring. */
+  packedStats(figure: MonsterFigure): PackedStats | null {
+    const pk = this.packedFigs.get(figure);
+    if (!pk) return null;
+    let unpacked = 0;
+    let moves = 0;
+    for (const mv of pk.moves.values()) {
+      unpacked += mv.held.size;
+      if (mv.held.size) moves++;
+    }
+    const mb = (b: number): number => +(b / 1048576).toFixed(1);
+    return { packs: pk.packs, frames: this.figures.get(figure) ? pk.packedN : 0, packed: pk.packedN, packedMB: mb(pk.packedBytes), kept: pk.kept, keptMB: mb(pk.keptBytes), unpacked, unpackedMB: mb(pk.bytes), moves, shown: pk.shown, standIns: pk.standIns, unpacks: pk.unpacks, letGo: pk.letGo };
+  }
+
+  /** The moves of a packed figure, its art's own lists, known once its worker has said it packs it. */
+  private packMoves(pk: PackHere, art: ActorArt): void {
+    [art.front, art.back].forEach((set, v) =>
+      framesOf(set).forEach((frames, l) => {
+        const mv: PackMove = { v, l, frames, held: new Map(), bytes: 0, at: 0, asked: false };
+        pk.moves.set(`${v},${l}`, mv);
+        pk.of.set(frames, mv);
+      }),
+    );
+  }
+
+  /**
+   * A frame of a figure handed over, taken (true) or not wanted (false: its picture is the caller's to close). One kept packed:
+   * the first frame of a move is held always; another only if its move is asked for now (one let go of may still have had
+   * frames on their way).
+   */
+  private takeFrame(art: ActorArt, pk: PackHere | undefined, g: Given & { s: Sprite }): boolean {
+    let mv: PackMove | undefined;
+    if (pk?.packs) {
+      mv = pk.moves.get(`${g.v},${g.l}`);
+      if (g.i !== 0 && (!mv || !mv.asked)) return false;
+    }
+    if (!giveFrame(art, g.v, g.l, g.i, g.s)) return false;
+    if (pk?.packs) {
+      PACKED_AT.set(g.s, [g.v, g.l, g.i]);
+      const room = roomOf(g.s);
+      if (g.i === 0) {
+        pk.kept++;
+        pk.keptBytes += room;
+      } else if (mv) {
+        mv.held.set(g.i, g.s);
+        mv.bytes += room;
+        pk.bytes += room;
+      }
+    }
+    return true;
+  }
+
+  /** What of a packed figure is unpacked here kept within its budget: the moves least lately shown let go of, never one shown just now. */
+  private packedFits(figure: MonsterFigure, pk: PackHere): void {
+    const most = (this.small ? PACKED.budgetMB.small : PACKED.budgetMB.big) * 1048576;
+    if (pk.bytes <= most) return;
+    const t = clockNow();
+    const old: PackMove[] = [];
+    for (const mv of pk.moves.values()) if (mv.asked && t - mv.at > PACKED.holdMs) old.push(mv);
+    old.sort((a, b) => a.at - b.at);
+    for (const mv of old) {
+      if (pk.bytes <= most) break;
+      this.letGo(figure, pk, mv);
+    }
+  }
+
+  /** A packed figure's move let go of: its frames made lazy again (shown as stand-ins, asked for again when shown), their room given back. */
+  private letGo(figure: MonsterFigure, pk: PackHere, mv: PackMove): void {
+    for (const i of mv.held.keys()) {
+      const was = unpaintFrame(mv.frames, i);
+      // (given back RETIRE_MS on: whoever holds it this moment, a picture drawn this frame, has done with it by then)
+      if (was) retireSprite(was, PACKED.giveBackMs);
+    }
+    pk.bytes -= mv.bytes;
+    mv.bytes = 0;
+    mv.held.clear();
+    mv.asked = false;
+    pk.letGo++;
+    this.lanes[0]?.worker.postMessage({ t: 'unwant', figure, v: mv.v, l: mv.l } satisfies Ask);
   }
 
   /** A figure of this floor will not be shown again (the Chained One as he was before a chain broke): its pictures are let go of, and the painter stops painting them. */
@@ -276,8 +499,18 @@ export class Painter {
     const drop: Ask = { t: 'drop', figure };
     // (its frames were the first worker's to paint: if it had not finished them, it never will)
     const lane = this.lanes[0];
+    // (one kept packed: its worker keeps it no longer)
+    const pk = this.packedFigs.get(figure);
+    this.packedFigs.delete(figure);
     if (lane) {
       lane.worker.postMessage(drop);
+      if (pk?.packs) {
+        lane.holds = Math.max(0, lane.holds - 1);
+        if (was.left === 0) {
+          lane.open++;
+          this.finished(lane);
+        }
+      }
       if (was.left !== 0) this.finished(lane);
     }
     this.bestiary().forget(figure);
@@ -358,7 +591,7 @@ export class Painter {
         this.fail('ground', err);
         return false;
       }
-      const lane: Lane = { n: -1, worker, ready: false, open: 0 };
+      const lane: Lane = { n: -1, worker, ready: false, open: 0, holds: 0 };
       worker.onmessage = (e: MessageEvent<Tell>) => this.toldGround(lane, e.data);
       worker.onerror = (e: ErrorEvent) => {
         e.preventDefault?.();
@@ -433,7 +666,7 @@ export class Painter {
     } catch {
       return false;
     }
-    const lane: Lane = { n: -2, worker, ready: false, open: 0 };
+    const lane: Lane = { n: -2, worker, ready: false, open: 0, holds: 0 };
     worker.onmessage = (e: MessageEvent<Tell>) => this.toldHero(lane, e.data);
     worker.onerror = (e: ErrorEvent) => {
       e.preventDefault?.();
@@ -633,7 +866,7 @@ export class Painter {
       this.fail('worker', err);
       return null;
     }
-    const lane: Lane = { n, worker, ready: false, open: 0 };
+    const lane: Lane = { n, worker, ready: false, open: 0, holds: 0 };
     worker.onmessage = (e: MessageEvent<Tell>) => this.told(lane, e.data);
     worker.onerror = (e: ErrorEvent) => {
       e.preventDefault?.();
@@ -653,7 +886,8 @@ export class Painter {
   /** A worker has finished one of the things asked of it. With nothing left to do it is ended: what it holds (the art's own keeping of what it made, and its working room) is given back. */
   private finished(lane: Lane): void {
     lane.open--;
-    if (lane.open > 0 || this.lanes[lane.n] !== lane) return;
+    // (one that keeps a figure packed for the page is kept, its work done: ended, what it packed would be gone)
+    if (lane.open > 0 || lane.holds > 0 || this.lanes[lane.n] !== lane) return;
     lane.worker.onmessage = null;
     lane.worker.onerror = null;
     lane.worker.terminate();
@@ -670,22 +904,45 @@ export class Painter {
     if (m.t === 'frames') {
       const want = mine ? this.figures.get(m.figure) : undefined;
       const art = want ? this.bestiary().of(m.figure) : null;
+      // (one kept packed, PACKED: whether its worker packs it, as it says with its first frames; and how far it has packed)
+      const pk = want ? this.packedFigs.get(m.figure) : undefined;
+      if (pk && art) {
+        if (pk.packs === null && m.packs !== undefined) {
+          pk.packs = m.packs;
+          if (m.packs) {
+            this.packMoves(pk, art);
+            lane.holds++;
+          }
+        }
+        if (m.packed !== undefined) pk.packedN = m.packed;
+        if (m.packedBytes !== undefined) pk.packedBytes = m.packedBytes;
+      }
       for (const g of m.list) {
         if (g.s) {
-          if (art && giveFrame(art, g.v, g.l, g.i, g.s)) this.stats.frames++;
+          if (art && this.takeFrame(art, pk, g as Given & { s: Sprite })) this.stats.frames++;
           else {
             (g.s.img as unknown as ImageBitmap).close();
-            if (art) this.stats.late++;
+            if (art && !pk?.packs) this.stats.late++;
           }
-        } else if (g.same && art) {
+        } else if (g.same && art && !(pk?.packs && g.i !== 0)) {
           // (the same picture as another frame, which is here: the painter's, or the game's own)
           const from = framesOf(g.same[0] === 0 ? art.front : art.back)[g.same[1]];
           const d = from ? Object.getOwnPropertyDescriptor(from, g.same[2]) : undefined;
           if (d && 'value' in d && d.value) giveFrame(art, g.v, g.l, g.i, d.value as Sprite);
         }
       }
-      if (want) want.left = m.left;
-      if (m.left === 0 && want) this.finished(lane);
+      if (want) {
+        if (m.left === 0 && want.left !== 0) this.finished(lane);
+        want.left = m.left;
+      }
+      if (pk) this.packedFits(m.figure, pk);
+      return;
+    }
+    if (m.t === 'unpacked') {
+      const pk = mine && this.figures.has(m.figure) ? this.packedFigs.get(m.figure) : undefined;
+      const art = pk ? this.bestiary().of(m.figure) : null;
+      for (const g of m.list) if (g.s && !(art && this.takeFrame(art, pk, g as Given & { s: Sprite }))) (g.s.img as unknown as ImageBitmap).close();
+      if (pk) this.packedFits(m.figure, pk);
       return;
     }
     if (m.t === 'film') {
@@ -750,6 +1007,8 @@ export class Painter {
     this.figures.clear();
     this.sideFigures.clear();
     this.dieAsked.clear();
+    // (a figure kept packed: its frames unpacked here stay; those not are the game's to paint, as before)
+    this.packedFigs.clear();
   }
 }
 
@@ -906,7 +1165,7 @@ export function paintWorkerMain(): void {
   const scope = self as unknown as { postMessage(m: Tell, transfer?: Transferable[]): void; onmessage: ((e: MessageEvent<Ask>) => void) | null };
   const bestiary = makeBestiary();
   interface Job {
-    ask: Exclude<Ask, { t: 'drop' } | { t: 'ground' } | { t: 'dieFirst' }>;
+    ask: Exclude<Ask, { t: 'drop' } | { t: 'ground' } | { t: 'dieFirst' } | { t: 'unpack' } | { t: 'unwant' }>;
     seq: number;
     run?: Generator<void, void, void>;
   }
@@ -1186,17 +1445,130 @@ export function paintWorkerMain(): void {
 
   /** The figures whose death is to be painted next (Painter.dieFirst). */
   const dieSoon = new Set<MonsterFigure>();
+  /**
+   * THE FIGURES KEPT PACKED HERE (PACKED): each frame packed as it is painted (a PNG); the moves the page wants unpacked now
+   * (`wanted`, by "v,l"); those it asked for that are not all painted yet, to be painted next (`soon`); and each move's
+   * unpacking's turn (`gen`: an unpacking still going stops when its move is asked for again or let go of).
+   */
+  interface PackedFrame {
+    blob: Blob | null;
+    coming: Promise<Blob | null> | null;
+    parts: Omit<Sprite, 'img'>;
+    /** The same picture as this frame ("v,l,i"). */
+    same?: string;
+  }
+  interface Packs {
+    figure: MonsterFigure;
+    lens: number[][];
+    frames: Map<string, PackedFrame>;
+    wanted: Set<string>;
+    soon: string[];
+    gen: Map<string, number>;
+    n: number;
+    bytes: number;
+  }
+  const packs = new Map<MonsterFigure, Packs>();
+  // (a PNG made of a canvas, and a picture of a PNG, beside the game: where either cannot be had, every frame is handed over, as before)
+  const canPack = typeof OffscreenCanvas !== 'undefined' && typeof (OffscreenCanvas.prototype as unknown as { convertToBlob?: unknown }).convertToBlob === 'function' && typeof createImageBitmap === 'function';
+  /** A frame packed: its picture made a PNG (a copy taken now), its canvas emptied once that is done unless `keep`. */
+  const pack = (pk: Packs, s: Sprite, keep: boolean): PackedFrame => {
+    const cv = s.img as unknown as OffscreenCanvas;
+    const { img: _img, ...parts } = s;
+    void _img;
+    const f: PackedFrame = { blob: null, coming: null, parts };
+    f.coming = cv.convertToBlob({ type: 'image/png' }).then(
+      (b) => {
+        f.blob = b;
+        f.coming = null;
+        pk.n++;
+        pk.bytes += b.size;
+        if (!keep) {
+          cv.width = 0;
+          cv.height = 0;
+        }
+        return b;
+      },
+      () => {
+        f.coming = null;
+        return null;
+      },
+    );
+    return f;
+  };
+  /**
+   * How many moves are being unpacked now: while any is, the painting waits (a frame of the Moth is 130 to 360 ms of painting
+   * in one go, and an unpacked frame waiting behind it came that late: measured, a third of its pictures shown were stand-ins
+   * while it was still being painted). The unpacking itself is the browser's, beside this thread: about 10 ms a frame.
+   */
+  let unpacking = 0;
+  /** A move of a figure kept packed, unpacked and handed over a frame at a time, from frame `from` on (its first, held always, apart). */
+  const unpack = async (pk: Packs, v: number, l: number, from: number): Promise<void> => {
+    unpacking++;
+    try {
+      await unpackMove(pk, v, l, from);
+    } finally {
+      unpacking--;
+      // (the painting taken up again where it waited)
+      if (unpacking === 0 && !going && jobs.length > 0) {
+        going = true;
+        again();
+      }
+    }
+  };
+  const unpackMove = async (pk: Packs, v: number, l: number, from: number): Promise<void> => {
+    const k = `${v},${l}`;
+    pk.wanted.add(k);
+    const gen = (pk.gen.get(k) ?? 0) + 1;
+    pk.gen.set(k, gen);
+    const n = pk.lens[v]?.[l] ?? 0;
+    let notYet = false;
+    for (let j = 0; j < n; j++) {
+      const i = (((from + j) % n) + n) % n;
+      if (i === 0) continue;
+      let f = pk.frames.get(`${k},${i}`);
+      if (f?.same) f = pk.frames.get(f.same);
+      // (not painted yet: painted next, and handed over as it is, its move being wanted)
+      if (!f) {
+        notYet = true;
+        continue;
+      }
+      const blob = f.blob ?? (f.coming ? await f.coming : null);
+      if (pk.gen.get(k) !== gen) return;
+      if (!blob) continue;
+      let bmp: ImageBitmap;
+      try {
+        bmp = await createImageBitmap(blob);
+      } catch {
+        continue;
+      }
+      if (pk.gen.get(k) !== gen) {
+        bmp.close();
+        return;
+      }
+      const s = { ...f.parts, img: bmp as unknown as HTMLCanvasElement } as Sprite;
+      scope.postMessage({ t: 'unpacked', figure: pk.figure, list: [{ v, l, i, s }] }, [bmp]);
+    }
+    if (notYet && !pk.soon.includes(k)) pk.soon.push(k);
+  };
   /** A figure's frames, painted and handed over a few at a time. */
   function* mob(figure: MonsterFigure, side = false): Generator<void, void, void> {
     const art = bestiary.of(figure);
     const lists = [framesOf(art.front), framesOf(art.back)];
     let order = paintOrder(art);
+    // (ONE TOO BIG TO HOLD WHOLE, PACKED: packed here as it is painted; the first frame of every move painted first, and handed over)
+    const packing = !side && PACKED.on && PACKED.figures.includes(figure);
+    const pk: Packs | null = packing && canPack ? { figure, lens: lists.map((ls) => ls.map((f) => f.length)), frames: new Map(), wanted: new Set(), soon: [], gen: new Map(), n: 0, bytes: 0 } : null;
+    if (pk) {
+      packs.set(figure, pk);
+      order = [...order.filter(([, , i]) => i === 0), ...order.filter(([, , i]) => i !== 0)];
+    }
+    const told = (): { packs?: boolean; packed?: number; packedBytes?: number } => (packing ? { packs: !!pk, packed: pk?.n ?? 0, packedBytes: pk?.bytes ?? 0 } : {});
     let soon = false;
     const sent = new Map<Sprite, [number, number, number]>();
     let list: Given[] = [];
     let transfer: Transferable[] = [];
     let t0 = performance.now();
-    if (order.length === 0) scope.postMessage({ t: 'frames', figure, list, left: 0 });
+    if (order.length === 0) scope.postMessage({ t: 'frames', figure, list, left: 0, ...told() });
     for (let n = 0; n < order.length; n++) {
       // (its death wanted next: what is left of it, its death's frames first)
       if (!soon && dieSoon.has(figure)) {
@@ -1206,19 +1578,35 @@ export function paintWorkerMain(): void {
         const first = rest.filter(([v, l]) => l === dies[v]);
         order = [...order.slice(0, n), ...first, ...rest.filter(([v, l]) => l !== dies[v])];
       }
+      // (a move of one kept packed, wanted by the page and not all painted yet: what is left of it next)
+      if (pk && pk.soon.length) {
+        const want = new Set(pk.soon);
+        pk.soon.length = 0;
+        const rest = order.slice(n);
+        order = [...order.slice(0, n), ...rest.filter(([v, l]) => want.has(`${v},${l}`)), ...rest.filter(([v, l]) => !want.has(`${v},${l}`))];
+      }
       const [v, l, i] = order[n];
       // (reading it is what paints it)
       const s = lists[v][l][i];
       const was = sent.get(s);
-      if (was) list.push({ v, l, i, same: was });
+      if (was) {
+        list.push({ v, l, i, same: was });
+        if (pk) pk.frames.set(`${v},${l},${i}`, { blob: null, coming: null, parts: s, same: was.join(',') });
+      }
       // (a picture handed over already, with another figure's frames, is not sent: the game paints its own, if it is ever shown)
       else if (!emptied(s)) {
         sent.set(s, [v, l, i]);
-        list.push({ v, l, i, s: shipped(s, transfer) });
+        if (!pk) list.push({ v, l, i, s: shipped(s, transfer) });
+        else {
+          // (packed, every frame; handed over too, the first of its move, or one of a move the page wants now)
+          const give = i === 0 || pk.wanted.has(`${v},${l}`);
+          pk.frames.set(`${v},${l},${i}`, pack(pk, s, give));
+          if (give) list.push({ v, l, i, s: shipped(s, transfer) });
+        }
       }
       const last = n === order.length - 1;
       if (last || performance.now() - t0 >= CHUNK_MS) {
-        scope.postMessage({ t: 'frames', figure, list, left: order.length - 1 - n }, transfer);
+        scope.postMessage({ t: 'frames', figure, list, left: order.length - 1 - n, ...told() }, transfer);
         list = [];
         transfer = [];
         if (!last) yield;
@@ -1238,7 +1626,8 @@ export function paintWorkerMain(): void {
     else channel.port2.postMessage(0);
   };
   const pump = (): void => {
-    if (jobs.length === 0) {
+    // (a move of a figure kept packed being unpacked: the painting waits for it, and is taken up again when it is done)
+    if (jobs.length === 0 || unpacking > 0) {
       going = false;
       return;
     }
@@ -1334,6 +1723,24 @@ export function paintWorkerMain(): void {
         if (j.ask.t === 'mob' && j.ask.figure === ask.figure) jobs.splice(i, 1);
       }
       bestiary.forget(ask.figure);
+      // (one kept packed: what was packed of it, and its unpackings still going, are done with)
+      const pk = packs.get(ask.figure);
+      if (pk) for (const k of pk.gen.keys()) pk.gen.set(k, (pk.gen.get(k) ?? 0) + 1);
+      packs.delete(ask.figure);
+      return;
+    }
+    // (A FIGURE KEPT PACKED, PACKED: one of its moves unpacked for the page, beside the painting; or no longer wanted)
+    if (ask.t === 'unpack') {
+      const pk = packs.get(ask.figure);
+      if (pk) void unpack(pk, ask.v, ask.l, ask.from);
+      return;
+    }
+    if (ask.t === 'unwant') {
+      const pk = packs.get(ask.figure);
+      if (!pk) return;
+      const k = `${ask.v},${ask.l}`;
+      pk.wanted.delete(k);
+      pk.gen.set(k, (pk.gen.get(k) ?? 0) + 1);
       return;
     }
     // (a piece of the ground asked for again, wanted sooner: the piece already waiting is wanted that soon, and not painted twice)
