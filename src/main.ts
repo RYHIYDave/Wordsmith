@@ -149,7 +149,7 @@ import type { Side } from './ui/inventory';
 import { drawLexicon, lexiconSide, newLexUi } from './ui/lexicon';
 // (THE LEXICON'S 28 WORDS: the art chat's ways to lay out its stones, a mock-up behind LEX28: its playtest's hands only)
 import { demoLex28 } from './ui/lexicon28';
-import { CARDS3, ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
+import { CARDS3, ENTER_OUT, UNIQUE_PIPS, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
 import type { SmithPicture } from './ui/panels';
 import { altarSide, gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
@@ -3139,6 +3139,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     uniqueArt: UNIQUE_ART,
     /** (WHAT THE UNIQUE ITEMS SHOW IN PLAY, render/unique_play.ts, the art chat's) their switches, each off until his yes: `uniquePlay.tome`, `.risen`, `.fourth`. */
     uniquePlay: UNIQUE_PLAY,
+    /** (A UNIQUE'S PIPS, ui/panels.ts) which of its lines they count and their colour, for pictures of each: `uniquePips.count`, `.colour`, `.free`. */
+    uniquePips: UNIQUE_PIPS,
     /** Game steps per frame while the test bot plays. */
     speed: 1,
     /** Time runs this much slower than real (1 = normal). */
