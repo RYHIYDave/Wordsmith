@@ -203,7 +203,8 @@ brighter, the blinks closer and closer together (`STICKY.blinks`), a ring of lig
 round it (cyan, the friend's: it is hers); fizzing at its cap, more as its fuse runs out; then the game's own burst, twice as
 wide. Looked at in a built page at a phone's size (`LOOK=wrench`: the Tinkerer, two tosses): `pictures/sticky_wrench.mp4` and
 `pictures/sticky_wrench.png`. Checked: tests/unique_play2_wrench.test.ts (new, 2), and the three other in-play test files, each
-alone with tsx; tsc clean; the look filmed, finished clean. His word: below.
+alone with tsx; tsc clean; the look filmed, finished clean. HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills:
+“Yes, hand it to main (Recommended)”.
 
 NOT DRAWN YET (the rest of the queue item's list): The Rainwalker, The Shepherd's Crook, The Tide, The Windcutter (the game already draws its blade as
 the Wave's crescent), The Fan, The Moth's Wing; and which of the moments the build only tells of want a
