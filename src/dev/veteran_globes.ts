@@ -35,8 +35,9 @@ const GLASS = ['#141230', '#1e1b44', '#2a2758', '#4a4688', '#8c88c8'];
 export type GlobeKind = 'punch' | 'kick' | 'jump';
 export type Globe = { kind: 'empty' } | { kind: GlobeKind; level: number } | { kind: 'fire'; of: 'punch' | 'kick' };
 export interface GlobeRow {
-  globes: readonly [Globe, Globe, Globe];
-  /** Three in: the combo locked. */
+  /** Three; four with The Fourth Globe worn (UNIQUE ITEMS, game/uniques.ts; shown behind render/unique_fx.ts UNIQUE_PLAY.fourth). */
+  globes: readonly Globe[];
+  /** All of them in: the combo locked. */
   locked?: boolean;
   /** Where the fire is in its flicker (a frame number; the film's flames lick and leap). */
   flick?: number;
@@ -44,8 +45,10 @@ export interface GlobeRow {
 
 /** Their size, in the picture's pixels at the game's size: each globe's radius, the gap between two, and room above for the fire. */
 export const GLOBE = { r: 5, gap: 3, fire: 8, pad: 2 };
+/** How wide a row of `n` is painted. */
+export const globesW = (n: number): number => GLOBE.pad * 2 + n * (GLOBE.r * 2 + 1) + (n - 1) * GLOBE.gap;
 /** How wide and tall a row of three is painted. */
-export const GLOBES_W = GLOBE.pad * 2 + 3 * (GLOBE.r * 2 + 1) + 2 * GLOBE.gap;
+export const GLOBES_W = globesW(3);
 export const GLOBES_H = GLOBE.pad * 2 + GLOBE.fire + GLOBE.r * 2 + 1 + 2;
 
 const rampOf = (k: GlobeKind | 'punchFire' | 'kickFire'): Ramp => (k === 'punch' || k === 'punchFire' ? GLOBE_GREEN : k === 'kick' || k === 'kickFire' ? GLOBE_ORANGE : GLOBE_WHITE);
@@ -56,9 +59,10 @@ const hash = (n: number): number => {
   return x - Math.floor(x);
 };
 
-/** THREE GLOBES IN A ROW, painted at the game's size. */
+/** THE GLOBES IN A ROW (three; four with The Fourth Globe), painted at the game's size. */
 export function paintGlobes(row: GlobeRow): Px {
-  const px = new Px(GLOBES_W, GLOBES_H);
+  const n = row.globes.length;
+  const px = new Px(globesW(n), GLOBES_H);
   const { r, gap, fire, pad } = GLOBE;
   const set = (x: number, y: number, c: string): void => {
     if (x < 0 || y < 0 || x >= px.w || y >= px.h) return;
@@ -70,11 +74,11 @@ export function paintGlobes(row: GlobeRow): Px {
     px.d[i + 3] = 255;
   };
   const cy = pad + fire + r;
-  const centres = [0, 1, 2].map((i) => pad + r + i * (2 * r + 1 + gap));
-  // THE LOCK: a bar under them, joining all three (drawn first: the globes sit over it)
+  const centres = row.globes.map((_, i) => pad + r + i * (2 * r + 1 + gap));
+  // THE LOCK: a bar under them, joining them all (drawn first: the globes sit over it)
   if (row.locked) {
     const y = cy + r - 1;
-    for (let x = centres[0]; x <= centres[2]; x++) {
+    for (let x = centres[0]; x <= centres[n - 1]; x++) {
       set(x, y, INK);
       set(x, y + 1, GLOBE_WHITE[3]);
       set(x, y + 2, INK);

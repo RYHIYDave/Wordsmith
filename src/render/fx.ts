@@ -28,6 +28,7 @@ import { COLOSSUS } from '../game/colossus_fight';
 import { WarlockFx } from './warlock_fx';
 import { TinkererFx } from './tinkerer_fx';
 import { BrawlerFx } from './brawler_fx';
+import { UniqueFx } from './unique_fx';
 import { baseFigure, figureOf } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
 import { BONE, INDIGO, PINK, PLUM, TEAL } from '../art/kit';
@@ -528,6 +529,8 @@ export class Fx {
   readonly tinkerer = new TinkererFx();
   /** THE BRAWLER's (render/brawler_fx.ts). */
   readonly brawler = new BrawlerFx();
+  /** WHAT THE UNIQUE ITEMS SHOW IN PLAY (render/unique_fx.ts, the art chat's; each behind a switch that is off: render/unique_play.ts). */
+  readonly uniques = new UniqueFx();
   particles: Particle[] = [];
   floaters: Floater[] = [];
   /** The line that last told of might gained ("MIGHT 2"): it is counted up in place while it is fresh. */
@@ -639,6 +642,7 @@ export class Fx {
     this.warlock.clear();
     this.tinkerer.clear();
     this.brawler.clear();
+    this.uniques.clear();
     this.particles = [];
     this.floaters = [];
     this.mightNote = null;
@@ -1140,6 +1144,9 @@ export class Fx {
       this.warlock.handle(e);
       this.tinkerer.handle(e);
       this.brawler.handle(e);
+      this.uniques.handle(e, this);
+      // (UNIQUE ITEMS: the build's plain stand-in for one whose picture is shown: render/unique_fx.ts)
+      if (this.uniques.owns(e)) continue;
       // (WORDMELDING's looks, behind MELD3, off: a melded word's own bolts, blasts and patches are drawn by render/melds3.ts)
       if (meldOwnsEvent(e)) continue;
       // (and the five Volatile melds' blasts, behind VOLATILE3, off: render/volatile3.ts)
@@ -1973,6 +1980,7 @@ export class Fx {
     this.warlock.update(dt);
     this.tinkerer.update(dt);
     this.brawler.update(dt);
+    this.uniques.update(dt);
     this.clock += dt;
     this.sinceHold += real;
     // Nothing here may pile up without limit, whatever is slotted and however fast it is used:
@@ -2147,6 +2155,7 @@ export class Fx {
     for (const f of this.rifts) drawRift(g, c, f, this.clock);
     this.warlock.drawGround(g, c);
     this.tinkerer.drawGround(g, c);
+    this.uniques.drawGround(g, c);
     // arrows of a volley standing in the floor: a short shaft leaning back the way it fell, its
     // fletching at the top; they fade out where they stand
     for (const a of this.stuck) {
@@ -2379,6 +2388,7 @@ export class Fx {
     this.warlock.drawAir(g, c);
     this.tinkerer.drawAir(g, c);
     this.brawler.drawAir(g, c);
+    this.uniques.drawAir(g, c);
     for (const q of this.whirls) {
       // A whirlwind's turn: two crescents, opposite each other, going round the hero. Each is
       // thin at its tail and thick at its leading edge, which is white. They go round with the

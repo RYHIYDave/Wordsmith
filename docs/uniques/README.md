@@ -55,6 +55,8 @@ and `__dbg.game().giveUnique('windcutter', 12)` (any id from UNIQUE_DEFS) puts o
 4. **Pictures** (the art chat's, queue item draw-unique-items): an icon each; and what is seen in play. The build shows
    plain stand-ins (a burst, a spark) and sends an event `{ t: 'unique', id, what, … }` at each moment a picture would hang
    on. The risen elite of The Fleshmancer's Brand and the book of The Restless Tome have no picture of their own.
+   (DRAWN SINCE, 11 Nov, by the Uniques in-play chat, each behind a switch that is off, with the fourth globe:
+   docs/mockups/uniques_play/README.md.)
 5. **The Fourth Globe**: works; the globes over his head (src/dev/veteran_globes.ts) are painted as three, so the fourth is
    not shown.
 6. **The Pack Collar**: the second companion is the next in the same list after his pick. It wants a way to pick, in town.
