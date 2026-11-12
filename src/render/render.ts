@@ -27,7 +27,7 @@ import { forgetMade as forget_chapel } from '../art/chapel';
 import { forgetMade as forget_chapel_gate } from '../art/chapel_gate';
 import { forgetMade as forget_lair_temple } from '../art/lair_temple';
 import { forgetMade as forget_lair_gate } from '../art/lair_gate';
-import { HEAVY, LEFT_TO_PAINTER, STAND_IN } from '../art/kit';
+import { HEAVY, LEFT_TO_PAINTER } from '../art/kit';
 /** HEAVY FRAMES (art/kit.ts HEAVY) left to the side painter while the world is drawn: on in the game; off, every frame painted when first shown. */
 export const PAINT_DEFER = { on: true };
 import type { ActorArt } from '../art/actor_types';
@@ -2948,10 +2948,10 @@ export class Renderer {
     if (!packed && (!this.bakedMobs || !this.bakedMobs.coming(f))) return this.monsterSpriteNow(m);
     const left = LEFT_TO_PAINTER.on;
     LEFT_TO_PAINTER.on = true;
-    const stood = STAND_IN.n;
+    const stood = HEAVY.deferred;
     try {
       const s = this.monsterSpriteNow(m);
-      if (packed) this.painter!.shown(f, s, STAND_IN.n !== stood);
+      if (packed) this.painter!.shown(f, s, HEAVY.deferred !== stood);
       return s;
     } finally {
       LEFT_TO_PAINTER.on = left;
@@ -3013,14 +3013,14 @@ export class Renderer {
     const left = LEFT_TO_PAINTER.on;
     if (this.painter?.paints(f.figure) || this.bakedMobs?.coming(f.figure)) LEFT_TO_PAINTER.on = true;
     let sp: Sprite;
-    const stood = STAND_IN.n;
+    const stood = HEAVY.deferred;
     try {
       sp = clip.frames[Math.min(last, i)];
     } finally {
       LEFT_TO_PAINTER.on = left;
     }
     // (A FIGURE KEPT PACKED, THE MOTH: its fall unpacked as it is shown, as its moves are: render/painter.ts PACKED)
-    if (this.painter?.packs(f.figure)) this.painter.shown(f.figure, sp, STAND_IN.n !== stood);
+    if (this.painter?.packs(f.figure)) this.painter.shown(f.figure, sp, HEAVY.deferred !== stood);
     // (`since`: how long it has lain, in seconds)
     return { sp: f.flip ? flipSprite(sp, true) : sp, lying: i >= last, since: f.t - last / clip.fps };
   }

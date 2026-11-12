@@ -6,8 +6,8 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { LEFT_TO_PAINTER, STAND_IN, lazyFrames, unpaintFrame } from '../src/art/kit';
-import { framesOf, giveFrame } from '../src/art/bestiary';
+import { HEAVY, LEFT_TO_PAINTER, lazyFrames } from '../src/art/kit';
+import { framesOf } from '../src/art/bestiary';
 import type { Bestiary } from '../src/art/bestiary';
 import type { ActorArt, AnimSet } from '../src/art/actor_types';
 import { RETIRE_MS, reapRetired, retireSprite } from '../src/engine/px';
@@ -27,34 +27,7 @@ const sprite = (p: Pic): Sprite => ({ img: p as unknown as HTMLCanvasElement, w:
 /** How many frames were painted here (none should be, for a figure left to the painter). */
 let paintedHere = 0;
 const list = (n: number): Sprite[] => lazyFrames(n, () => (paintedHere++, sprite(pic())));
-const set = (): AnimSet => ({ idle: list(6), walk: list(6), idleFps: 15, walkFps: 15, clips: { attack: { frames: list(8), fps: 30, hit: 0.1 }, die: { frames: list(5), fps: 20 }, reel: { frames: list(3), fps: 30 }, moves: { dust: { frames: list(7), fps: 30 } } } });
-
-test('a frame of lazy frames made lazy again: painted again when asked for, or shown a stand-in while the painter has it', () => {
-  paintedHere = 0;
-  const frames = list(5);
-  const a = frames[2];
-  assert.equal(paintedHere, 1);
-  assert.equal(unpaintFrame(frames, 2), a, 'its picture handed back to be given back');
-  assert.equal(unpaintFrame(frames, 2), null, 'once');
-  const d = Object.getOwnPropertyDescriptor(frames, 2);
-  assert.equal(typeof d?.get, 'function', 'lazy again');
-  // (left to the painter: the nearest painted shown, and which was asked for told)
-  void frames[0];
-  LEFT_TO_PAINTER.on = true;
-  const n0 = STAND_IN.n;
-  try {
-    assert.equal(frames[2], frames[0]);
-  } finally {
-    LEFT_TO_PAINTER.on = false;
-  }
-  assert.equal(STAND_IN.n, n0 + 1);
-  assert.equal(STAND_IN.list, frames);
-  assert.equal(STAND_IN.i, 2);
-  // (the painter's picture taken in again, as the first time)
-  const b = sprite(pic());
-  assert.ok(giveFrame({ front: { idle: frames, walk: [], idleFps: 1, walkFps: 1 }, back: { idle: [], walk: [], idleFps: 1, walkFps: 1 } }, 0, 0, 2, b));
-  assert.equal(frames[2], b);
-});
+const set = (): AnimSet => ({ idle: list(6), walk: list(6), attack: [], idleFps: 15, walkFps: 15, clips: { attack: { frames: list(8), fps: 30, hit: 0.1 }, die: { frames: list(5), fps: 20 }, reel: { frames: list(3), fps: 30 }, moves: { dust: { frames: list(7), fps: 30 } } } });
 
 test('a picture given back sooner than RETIRE_MS when asked', () => {
   reapRetired(true);
@@ -138,18 +111,19 @@ test('THE MOTH KEPT PACKED: its moves first frames held, a move asked for as it 
     // ITS ATTACK SHOWN: a stand-in for frame 3 (only its first frame is here), and so asked for from frame 3
     const attack = art.front.clips!.attack!.frames;
     LEFT_TO_PAINTER.on = true;
-    const n0 = STAND_IN.n;
+    const n0 = HEAVY.deferred;
     const shownNow = attack[3];
     LEFT_TO_PAINTER.on = false;
     assert.equal(shownNow, first.find((g) => g.v === 0 && g.l === 2)!.s, 'its first frame stands in');
     assert.equal(paintedHere, 0, 'nothing painted here');
-    p.shown('moth', shownNow, STAND_IN.n !== n0);
+    p.shown('moth', shownNow, HEAVY.deferred !== n0);
     const ask = worker.asked.filter((a) => a.t === 'unpack');
     assert.deepEqual(ask.map((a) => [a.v, a.l, a.from]), [[0, 2, 3]]);
     p.shown('moth', shownNow, false);
     assert.equal(worker.asked.filter((a) => a.t === 'unpack').length, 1, 'asked once');
     // (unpacked, taken in)
     const up = given([3, 4, 5, 6, 7, 1, 2].map((i) => [0, 2, i] as [number, number, number]));
+    const upPics = up.map((g) => g.s.img as unknown as Pic);
     worker.tell({ t: 'unpacked', figure: 'moth', list: up });
     st = p.packedStats('moth')!;
     assert.equal(st.unpacked, 7);
@@ -162,17 +136,28 @@ test('THE MOTH KEPT PACKED: its moves first frames held, a move asked for as it 
     st = p.packedStats('moth')!;
     assert.equal(st.letGo >= 1, true);
     assert.equal(typeof Object.getOwnPropertyDescriptor(attack, 5)?.get, 'function', 'lazy again');
+    // (lazy again as it was: shown a stand-in while the painter has it, and the frame asked for told)
+    LEFT_TO_PAINTER.on = true;
+    const n1 = HEAVY.deferred;
+    const again = attack[5];
+    LEFT_TO_PAINTER.on = false;
+    assert.equal(again, first.find((g) => g.v === 0 && g.l === 2)!.s);
+    assert.equal(HEAVY.deferred, n1 + 1);
+    assert.equal(paintedHere, 0, 'still nothing painted here');
     assert.deepEqual(worker.asked.filter((a) => a.t === 'unwant').map((a) => [a.v, a.l]).slice(0, 1), [[0, 2]]);
     reapRetired(true);
-    assert.ok(up.every((g) => (g.s.img as unknown as Pic).closed), 'given back');
+    assert.ok(upPics.every((q) => q.closed), 'given back');
+    assert.ok(up.every((g) => (g.s.img as unknown as Pic) !== upPics[0]), 'each sprite showing nothing now');
     assert.ok(!(first[2].s.img as unknown as Pic).closed, 'its first frame held still');
     // (a frame of it still on its way after it was let go of: not taken)
     const late = given([[0, 2, 4]]);
     worker.tell({ t: 'unpacked', figure: 'moth', list: late });
     assert.ok((late[0].s.img as unknown as Pic).closed);
-    // (shown again: asked for again)
-    p.shown('moth', attack[0], false);
-    assert.equal(worker.asked.filter((a) => a.t === 'unpack' && a.l === 2).length, 2);
+    // (shown again, a stand-in for frame 5: asked for again, from frame 5)
+    p.shown('moth', again, true);
+    const asks = worker.asked.filter((a) => a.t === 'unpack' && a.l === 2);
+    assert.equal(asks.length, 2);
+    assert.equal(asks[1].from, 5);
     // ITS WORKER KEPT ONCE ITS PAINTING IS DONE (ended, what it packed would be gone)
     worker.tell({ t: 'frames', figure: 'moth', list: [], left: 0, packs: true });
     assert.equal(p.packs('moth'), true);

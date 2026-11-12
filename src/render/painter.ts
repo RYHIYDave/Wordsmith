@@ -51,7 +51,6 @@ import type { Rows } from '../art/low_stacks';
 // (ACT 2, THE GATE WARD: the shells of its houses walked into, painted here: render/act2_houses.ts)
 import { shellMaker } from './act2_houses';
 import { flipOrigin, releaseSprite, retireSprite } from '../engine/px';
-import { STAND_IN, unpaintFrame } from '../art/kit';
 import type { BakedHeroes } from './baked';
 import type { Light, Sprite } from '../engine/px';
 
@@ -94,8 +93,8 @@ const READY_MS = 20000;
  *   Until a frame comes, the nearest of its move that is here is shown (art/kit.ts LEFT_TO_PAINTER), never painted where the
  *   game is played.
  * - Its moves unpacked are held up to `budgetMB` (four bytes a pixel, its first frames apart), the least lately shown let go
- *   of first (never one shown in the last `holdMs`): their frames made lazy again (art/kit.ts unpaintFrame) and their room
- *   given back by hand (engine/px.ts retireSprite).
+ *   of first (never one shown in the last `holdMs`): their frames made lazy again (their own lazy getters put back: packMoves)
+ *   and their room given back by hand (engine/px.ts retireSprite).
  * - THE SAME PICTURES, EVERY PIXEL (a PNG loses nothing): nothing he sees changes but a stand-in for a frame or two as a move
  *   begins. Where the worker cannot pack (no OffscreenCanvas.convertToBlob or createImageBitmap there) it says so, and hands
  *   every frame over, as before. Off (`on` false): as before.
@@ -119,6 +118,8 @@ interface PackMove {
   v: number;
   l: number;
   frames: Sprite[];
+  /** Each frame's own way of being painted when asked for (its lazy getter, art/kit.ts lazyFrames), wrapped to tell which was asked for: put back as a move is let go of. */
+  lazy: (PropertyDescriptor | undefined)[];
   held: Map<number, Sprite>;
   bytes: number;
   at: number;
@@ -130,7 +131,8 @@ interface PackHere {
   /** Whether its worker packs it (null: not known yet; it says so with the first frames it hands over). */
   packs: boolean | null;
   moves: Map<string, PackMove>;
-  of: Map<readonly Sprite[], PackMove>;
+  /** The last of its frames asked for that was not here (shown as a stand-in, or painted): the one to unpack first. */
+  asked: { mv: PackMove; i: number } | null;
   /** The room its unpacked frames take (its first frames apart, `keptBytes`). */
   bytes: number;
   kept: number;
@@ -357,7 +359,7 @@ export class Painter {
     if (!lane) return false;
     this.figures.set(figure, { left: -1 });
     // (one too big to hold whole, PACKED: its worker packs it, and says so with the first frames it hands over)
-    if (PACKED.on && PACKED.figures.includes(figure)) this.packedFigs.set(figure, { packs: null, moves: new Map(), of: new Map(), bytes: 0, kept: 0, keptBytes: 0, shown: 0, standIns: 0, unpacks: 0, letGo: 0, packedN: 0, packedBytes: 0 });
+    if (PACKED.on && PACKED.figures.includes(figure)) this.packedFigs.set(figure, { packs: null, moves: new Map(), asked: null, bytes: 0, kept: 0, keptBytes: 0, shown: 0, standIns: 0, unpacks: 0, letGo: 0, packedN: 0, packedBytes: 0 });
     this.ask(lane, { t: 'mob', figure, pri: 1 });
     return true;
   }
@@ -376,8 +378,8 @@ export class Painter {
   /**
    * A PICTURE OF A FIGURE KEPT PACKED, SHOWN (render/render.ts, each time one is drawn): its move is wanted. Not unpacked here
    * yet, it is asked for, from the frame wanted on (`standIn`: the picture is a stand-in for one still coming, art/kit.ts
-   * STAND_IN: the frame asked for is that one). And if what is unpacked here is over its budget, the moves least lately shown
-   * are let go of.
+   * HEAVY.deferred: the frame asked for is the last of its asked for that was not here). And if what is unpacked here is over its
+   * budget, the moves least lately shown are let go of.
    */
   shown(figure: MonsterFigure, s: Sprite, standIn: boolean): void {
     const pk = this.packedFigs.get(figure);
@@ -387,11 +389,12 @@ export class Painter {
     let from = 0;
     if (standIn) {
       pk.standIns++;
-      if (STAND_IN.list) {
-        mv = pk.of.get(STAND_IN.list);
-        from = STAND_IN.i;
+      if (pk.asked) {
+        mv = pk.asked.mv;
+        from = pk.asked.i;
       }
     }
+    pk.asked = null;
     if (!mv) {
       const at = PACKED_AT.get(flipOrigin(s));
       if (!at) return;
@@ -424,13 +427,32 @@ export class Painter {
     return { packs: pk.packs, frames: this.figures.get(figure) ? pk.packedN : 0, packed: pk.packedN, packedMB: mb(pk.packedBytes), kept: pk.kept, keptMB: mb(pk.keptBytes), unpacked, unpackedMB: mb(pk.bytes), moves, shown: pk.shown, standIns: pk.standIns, unpacks: pk.unpacks, letGo: pk.letGo };
   }
 
-  /** The moves of a packed figure, its art's own lists, known once its worker has said it packs it. */
+  /**
+   * The moves of a packed figure, its art's own lists, known once its worker has said it packs it. Each frame not here yet keeps
+   * its own lazy getter (art/kit.ts lazyFrames: shown a stand-in while the painter has it, LEFT_TO_PAINTER), wrapped so that the
+   * one asked for is known (`asked`), and put back as its move is let go of (`letGo`). (Done here, not in art/kit.ts: the art's
+   * code is the bakes' marks, tools/bake_heroes.mjs and the others, and a change to it is a new bake of every hero and monster.)
+   */
   private packMoves(pk: PackHere, art: ActorArt): void {
     [art.front, art.back].forEach((set, v) =>
       framesOf(set).forEach((frames, l) => {
-        const mv: PackMove = { v, l, frames, held: new Map(), bytes: 0, at: 0, asked: false };
+        const mv: PackMove = { v, l, frames, lazy: [], held: new Map(), bytes: 0, at: 0, asked: false };
         pk.moves.set(`${v},${l}`, mv);
-        pk.of.set(frames, mv);
+        for (let i = 0; i < frames.length; i++) {
+          const d = Object.getOwnPropertyDescriptor(frames, i);
+          const own = d && typeof d.get === 'function' ? d.get : null;
+          if (!own) continue;
+          const lazy: PropertyDescriptor = {
+            configurable: true,
+            enumerable: true,
+            get(): Sprite {
+              pk.asked = { mv, i };
+              return own.call(frames) as Sprite;
+            },
+          };
+          Object.defineProperty(frames, i, lazy);
+          mv.lazy[i] = lazy;
+        }
       }),
     );
   }
@@ -479,9 +501,14 @@ export class Painter {
   /** A packed figure's move let go of: its frames made lazy again (shown as stand-ins, asked for again when shown), their room given back. */
   private letGo(figure: MonsterFigure, pk: PackHere, mv: PackMove): void {
     for (const i of mv.held.keys()) {
-      const was = unpaintFrame(mv.frames, i);
-      // (given back RETIRE_MS on: whoever holds it this moment, a picture drawn this frame, has done with it by then)
-      if (was) retireSprite(was, PACKED.giveBackMs);
+      const d = Object.getOwnPropertyDescriptor(mv.frames, i);
+      const was = d && 'value' in d ? (d.value as Sprite | undefined) : undefined;
+      const lazy = mv.lazy[i];
+      if (!was || !lazy) continue;
+      // (lazy again: a stand-in shown for it, and it asked for again, when it is shown)
+      Object.defineProperty(mv.frames, i, lazy);
+      // (given back a moment on: whoever holds it this moment, a picture drawn this frame, has done with it by then)
+      retireSprite(was, PACKED.giveBackMs);
     }
     pk.bytes -= mv.bytes;
     mv.bytes = 0;
