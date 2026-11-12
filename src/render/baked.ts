@@ -64,6 +64,22 @@ export const PACKS = {
   fresh: 1500,
   /** How many packs are unpacked at once. */
   atOnce: 2,
+  /**
+   * HOW A PACK'S FRAMES ARE CUT FROM ITS SHEET.
+   * 'canvas': the sheet read as a picture (an Image: the browser reads it beside the game) and each frame drawn out of it into a
+   * canvas of its own, on the game's own thread, a few at a time (`slice` ms of it a frame of the game's), as the game's own
+   * painted frames and their mirror images are canvases, and as the floors' monsters' bake cuts its own
+   * (build/monsters-before-play, render/monsters_baked.ts).
+   * 'bitmap': a picture made by the browser for each frame (createImageBitmap), as what a hero always holds is taken in.
+   * WHY 'canvas': his word from the phone, 11 Nov 2026, of the test page that had him from eight sides, every frame taken in the
+   * second way: a minute to come into town, the loading screen lagging (docs/mockups/eight_sides/BRING_IN.md, its foot). The
+   * eight-sides merge chat's lead (the queue's measure-lag-on-his-phone): an iPhone's browser is known to be slow at making a
+   * picture for every frame. In play a pack would be a hundred such, again and again. Drawing into a canvas is what the game
+   * does every frame. NEITHER WAY HAS BEEN MEASURED ON A PHONE: one word to change when his phone has been.
+   */
+  cut: 'canvas' as 'canvas' | 'bitmap',
+  /** (cut: 'canvas') How long the cutting may take of one frame of the game's, each pack being unpacked (ms). */
+  slice: 2,
 };
 
 /** A list's pack: its name (the move's; the pack is this move from the list's side), and whether the list's first frame is always held. */
@@ -183,6 +199,17 @@ export interface BakePack {
   bytes: number;
 }
 
+/** A frame cut from a pack's sheet: a picture made by the browser, or a canvas (PACKS.cut). */
+type Cut = ImageBitmap | HTMLCanvasElement;
+/** A cut not wanted after all: its room given back. */
+function dropCut(c: Cut): void {
+  if (typeof (c as ImageBitmap).close === 'function') (c as ImageBitmap).close();
+  else {
+    (c as HTMLCanvasElement).width = 0;
+    (c as HTMLCanvasElement).height = 0;
+  }
+}
+
 /** A pack as the game holds it: packed (its file's bytes), being unpacked, or in hand. */
 interface Pack {
   def: BakePack;
@@ -297,21 +324,9 @@ export class BakedHeroes {
     const t0 = this.clock();
     const S = this.stats.packs;
     try {
-      const opts: ImageBitmapOptions = { premultiplyAlpha: 'default', colorSpaceConversion: 'none' };
-      const sheet = await createImageBitmap(p.blob, opts);
-      const bmps: ImageBitmap[] = [];
-      try {
-        // (a few at a time: asking for a cut costs the game's own thread a little, and a big pack's 135 at once was 10 ms of it)
-        const AT = 24;
-        for (let n = 0; n < p.def.frames.length; n += AT) {
-          const w0 = this.clock();
-          const cuts = p.def.frames.slice(n, n + AT).map(([x, y, w, h]) => createImageBitmap(sheet, x, y, w, h, opts));
-          this.worked(w0);
-          bmps.push(...(await Promise.all(cuts)));
-        }
-      } finally {
-        sheet.close();
-      }
+      // (PACKS.cut: each frame a canvas drawn out of the sheet, where there is a page to make canvases on; else, and in the
+      // tests, a picture made by the browser for each)
+      const bmps: Cut[] = PACKS.cut === 'canvas' && typeof document !== 'undefined' && typeof Image !== 'undefined' ? await this.cutCanvases(p) : await this.cutBitmaps(p);
       const g0 = this.clock();
       const sprites: (Sprite | undefined)[] = new Array<Sprite | undefined>(bmps.length);
       for (const [list, i, fi] of p.places) {
@@ -326,7 +341,7 @@ export class BakedHeroes {
         if (sprites[fi]) this.stats.given++;
         else {
           this.stats.unwanted++;
-          bmps[fi].close();
+          dropCut(bmps[fi]);
         }
       }
       p.state = 'held';
@@ -350,6 +365,69 @@ export class BakedHeroes {
     this.trim(p);
     this.worked(l0);
     this.pump();
+  }
+
+  /** A pack's frames, each a picture made by the browser from its sheet (PACKS.cut 'bitmap'), a few asked for at a time. */
+  private async cutBitmaps(p: Pack): Promise<Cut[]> {
+    const opts: ImageBitmapOptions = { premultiplyAlpha: 'default', colorSpaceConversion: 'none' };
+    const sheet = await createImageBitmap(p.blob, opts);
+    const out: Cut[] = [];
+    try {
+      // (a few at a time: asking for a cut costs the game's own thread a little, and a big pack's 135 at once was 10 ms of it)
+      const AT = 24;
+      for (let n = 0; n < p.def.frames.length; n += AT) {
+        const w0 = this.clock();
+        const cuts = p.def.frames.slice(n, n + AT).map(([x, y, w, h]) => createImageBitmap(sheet, x, y, w, h, opts));
+        this.worked(w0);
+        out.push(...(await Promise.all(cuts)));
+      }
+    } finally {
+      sheet.close();
+    }
+    return out;
+  }
+
+  /**
+   * A pack's frames, each a canvas of its own drawn out of its sheet (PACKS.cut 'canvas'): the sheet read as a picture by the
+   * browser, beside the game; then the frames cut on the game's own thread, PACKS.slice ms of it at a time, the game given a
+   * frame of its own between. A canvas refused (an iPhone gives a page only so much room for them): those made are given back,
+   * and the pack is not unpacked.
+   */
+  private async cutCanvases(p: Pack): Promise<Cut[]> {
+    const url = URL.createObjectURL(p.blob);
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = url;
+    const out: HTMLCanvasElement[] = [];
+    try {
+      await img.decode();
+      const all = p.def.frames;
+      while (out.length < all.length) {
+        const t0 = this.clock();
+        do {
+          const [x, y, w, h] = all[out.length];
+          const cv = document.createElement('canvas');
+          cv.width = w;
+          cv.height = h;
+          const g = cv.getContext('2d');
+          if (!g) {
+            out.push(cv);
+            throw new Error('no canvas to be had');
+          }
+          g.drawImage(img, x, y, w, h, 0, 0, w, h);
+          out.push(cv);
+        } while (out.length < all.length && this.clock() - t0 < PACKS.slice);
+        this.worked(t0);
+        if (out.length < all.length) await new Promise<void>((r) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(() => r()) : setTimeout(r, 0)));
+      }
+      return out;
+    } catch (e) {
+      for (const cv of out) dropCut(cv);
+      throw e;
+    } finally {
+      img.src = '';
+      URL.revokeObjectURL(url);
+    }
   }
 
   /** (for the measures) So long on the game's own thread, since `t0`. */

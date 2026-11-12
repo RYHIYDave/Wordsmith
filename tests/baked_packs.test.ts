@@ -376,6 +376,69 @@ test('another hero played: the Brawler\'s packs in hand are let go; his class ca
   }
 });
 
+test('cut as canvases (PACKS.cut, the game\'s own way where there is a page): each frame drawn out of its sheet into a canvas of its own; one refused, the pack is not unpacked and those made are given back', async () => {
+  const was = { ...PACKS };
+  const G = globalThis as unknown as Record<string, unknown>;
+  const had = { document: G.document, Image: G.Image, make: URL.createObjectURL, revoke: URL.revokeObjectURL };
+  interface Canvas { width: number; height: number; sheet?: string; x?: number; getContext(): unknown }
+  const made: Canvas[] = [];
+  let refuse = false;
+  try {
+    PACKS.cut = 'canvas';
+    PACKS.slice = 0;
+    URL.createObjectURL = ((b: { name: string }) => `blob:${b.name}`) as unknown as typeof URL.createObjectURL;
+    URL.revokeObjectURL = () => {};
+    G.Image = class { decoding = ''; src = ''; async decode(): Promise<void> {} };
+    G.document = {
+      createElement: (): Canvas => {
+        const cv: Canvas = {
+          width: 0,
+          height: 0,
+          getContext: () => (refuse && made.length > 3 ? null : { drawImage(img: { src: string }, x: number) { cv.sheet = img.src.slice(5); cv.x = x; } }),
+        };
+        made.push(cv);
+        return cv;
+      },
+    };
+    const { art, b, done, idle } = setUp();
+    b.take('brawler', 'dungeon', true);
+    await done();
+    const jab = heroSides(art)[6].clips!.vet!.jab.frames;
+    b.want('brawler', 'jab', 6);
+    await idle();
+    assert.deepEqual(b.packsHeld(), ['brawler/jab:6']);
+    assert.equal(made.length, 24, 'a canvas for each of its frames');
+    const cv = jab[2].img as unknown as Canvas;
+    assert.equal(cv.sheet, 'brawler-jab-6.png', 'drawn out of its own sheet');
+    assert.deepEqual([cv.width, cv.height], [4, 4]);
+    assert.equal(new Set(made.map((c) => c.x)).size, 24, 'each its own frame');
+    assert.ok(b.stats.packs.work >= 0 && b.stats.packs.unpacked === 1);
+    // (let go: the canvases' room given back by hand)
+    b.letGoAll();
+    reapRetired(true);
+    assert.ok(made.every((c) => c.width === 0), 'given back');
+    // A CANVAS REFUSED: nothing of the pack is given, what was made is given back, and it is tried again when next asked for
+    made.length = 0;
+    refuse = true;
+    b.want('brawler', 'cross', 6);
+    await idle();
+    assert.deepEqual(b.packsHeld(), []);
+    assert.ok(made.length > 0 && made.every((c) => c.width === 0));
+    assert.ok(!isPicture(heroSides(art)[6].clips!.vet!.cross.frames, 2));
+    refuse = false;
+    made.length = 0;
+    b.want('brawler', 'cross', 6);
+    await idle();
+    assert.deepEqual(b.packsHeld(), ['brawler/cross:6']);
+  } finally {
+    Object.assign(PACKS, was);
+    G.document = had.document;
+    G.Image = had.Image;
+    URL.createObjectURL = had.make;
+    URL.revokeObjectURL = had.revoke;
+  }
+});
+
 test('PACKS off: every pack is unpacked as he is taken in, and none is let go', async () => {
   const was = { ...PACKS };
   try {
