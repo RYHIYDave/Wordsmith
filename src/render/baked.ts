@@ -14,7 +14,9 @@ import { heroLists } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
 import type { AnimSet } from '../art/actor_types';
+import { HEAVY } from '../art/kit';
 import { heroSides } from '../art/sides';
+import { retireSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import type { ClassId } from '../game/types';
 
@@ -25,6 +27,64 @@ export const BAKED = { on: true };
 
 /** The folder beside the page the bakes are in, each in a folder of its own named by its mark (tools/build.mjs). */
 export const BAKE_DIR = 'heroes';
+
+/**
+ * A HERO'S MOVES KEPT PACKED (the Brawler memory chat, 11 Nov 2026; the queue's make-brawlers-eight-sides-fit-in-memory; his
+ * words to the main chat, 11 Nov 2026, 19:54: “How do we make the brawler so he’s playable without crashing the game?”).
+ *
+ * The Brawler from all eight sides (art/sides_more.ts EIGHT_MORE.brawler) is 9,666 pictures, 142 MB held from the moment he is
+ * first shown, where he held 36 from two sides and the Ranger, the heaviest hero, holds 92 (docs/mockups/eight_sides/
+ * BRING_IN.md: the weighing). Memory is what froze his phone (25.3.2). So a hero baked IN PACKS holds, always, only what he
+ * shows all the time (his stance, his run, struck, and the first frame of every move: under 10 MB of the Brawler's), and each
+ * of his moves, for each side, is a PACK: one small sheet of its own (the move's frames, its strike's half-frames and its action
+ * lines from that side: half a megabyte to four unpacked, a few tens of kilobytes as a file), fetched with him under the loading
+ * screen and KEPT PACKED, as the file's own bytes. A pack is UNPACKED AS ITS MOVE BEGINS (the game's drawing tells of the list
+ * it asked a frame of and did not find: art/kit.ts HEAVY.asked; and a moment ahead where it can be known: render/veteran_fx.ts
+ * asks for the moves a press would make next), and until its pictures come, a few hundredths of a second, the move shows its
+ * first frame, which is his stance. Unpacked pictures are kept up to `budget`; past it THE LEAST LATELY THROWN ARE LET GO (their
+ * places put back as they were, their room given back: engine/px.ts retireSprite) and unpacked again when next thrown.
+ *
+ * WHICH HERO IS PACKED IS DECIDED AS HE IS BAKED (packsOf, below): a hero not baked in packs is taken in whole, as before.
+ * `on` off: a hero baked in packs has every pack unpacked as he is first taken in and none let go (he holds every picture).
+ */
+export const PACKS = {
+  on: true,
+  /** How many bytes of unpacked packs are kept (four a pixel): with what the Brawler always holds, about what he held from two sides. */
+  budget: 26 * 1048576,
+  /** A pack asked for within this long (ms) is not let go of, whatever the budget: what is being shown is never let go. */
+  fresh: 1500,
+  /** How many packs are unpacked at once. */
+  atOnce: 2,
+};
+
+/** A list's pack: its name (the move's; the pack is this move from the list's side), and whether the list's first frame is always held. */
+export interface PackOf {
+  pack: string;
+  lead: boolean;
+}
+
+/**
+ * THE PACK EACH OF A HERO'S LISTS IS KEPT IN, by side and by list as heroLists has them (null: the list is always held), or
+ * null for a hero who is not packed. PACKED: the Brawler as the Veteran from all eight sides, where the game is played (never
+ * his class card). A move's pack holds its frames, its strike's half-frames and its action lines' three layers; his fall is
+ * a pack of its own; a move's own first frame (his stance) and his fall's are always held, so that a move not unpacked yet
+ * has a frame to show. His stance, his run and struck are always held whole.
+ */
+export function packsOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[][] | null {
+  if (k.cls !== 'brawler' || !k.vet || k.place === 'card' || sides.length !== 8) return null;
+  return sides.map((side) => {
+    const of = new Map<unknown, PackOf>();
+    const c = side.clips;
+    for (const [id, clip] of Object.entries(c?.vet ?? {})) of.set(clip.frames, { pack: id, lead: true });
+    for (const [id, h] of Object.entries(c?.vetHalves ?? {})) of.set(h.frames, { pack: id, lead: false });
+    for (const [id, fx] of Object.entries(c?.vetFx ?? {})) for (const layer of Object.values(fx)) of.set(layer, { pack: id, lead: false });
+    if (c?.fall) of.set(c.fall.frames, { pack: 'fall', lead: true });
+    return heroLists(side).map((l) => of.get(l) ?? null);
+  });
+}
+
+/** A pack's name in its group's file: the move and the side. */
+export const packName = (pack: string, side: number): string => `${pack}:${side}`;
 
 /** The bake this build of the game was made with ('' : none). */
 export function bakeMark(): string {
@@ -96,6 +156,38 @@ export interface BakeFile {
   parts: Omit<Sprite, 'img'>[];
   /** Each hero of the group: the lengths of his lists, and his frames' places, flat, as side, list, frame, the frame's index. */
   keys: { cls: ClassId; place: HeroPlace; vet: boolean; lens: number[][]; at: number[] }[];
+  /** (A hero kept in packs: PACKS) Each pack. What is in `frames` and the keys' `at` is what he always holds. */
+  packs?: BakePack[];
+}
+
+/** A pack of a hero's pictures (PACKS): one move from one side, on a sheet of its own. */
+export interface BakePack {
+  /** The move and the side (packName). */
+  name: string;
+  /** Its sheet's file (a PNG), beside the group's. */
+  sheet: string;
+  /** Each frame on its sheet: [x, y, width, height, the index of its other parts in the group's `parts`]. */
+  frames: [number, number, number, number, number][];
+  /** Its frames' places, flat: the hero (his index in `keys`), side, list, frame, the frame's index in this pack's `frames`. */
+  at: number[];
+  /** How many bytes its pictures are, unpacked (four a pixel). */
+  bytes: number;
+}
+
+/** A pack as the game holds it: packed (its file's bytes), being unpacked, or in hand. */
+interface Pack {
+  def: BakePack;
+  parts: BakeFile['parts'];
+  blob: Blob;
+  /** Its places, each once: the list, the frame, the frame's index in the pack. */
+  places: [Sprite[], number, number][];
+  state: 'packed' | 'unpacking' | 'held';
+  /** Every place a picture of it was given into, and what was there before (the frame's own painter), to put back as it is let go. */
+  held: { list: Sprite[]; i: number; was: PropertyDescriptor; s: Sprite }[];
+  /** When it was last asked for (ms). */
+  used: number;
+  /** How many times it would not unpack (three, and it is left to the painter). */
+  failed: number;
 }
 
 type Give = (cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean) => boolean;
@@ -113,7 +205,24 @@ export class BakedHeroes {
   private readonly groups: Record<string, BakeKey[]>;
   private readonly groupOf = new Map<string, string>();
   /** For measuring: frames taken in, frames not wanted (painted already), how long each group took (ms), and what failed. */
-  readonly stats = { given: 0, unwanted: 0, ms: {} as Record<string, number>, failed: [] as string[] };
+  readonly stats = {
+    given: 0,
+    unwanted: 0,
+    ms: {} as Record<string, number>,
+    failed: [] as string[],
+    /**
+     * THE PACKS (PACKS): how many there are and how many bytes their files are; how many are in hand and their bytes unpacked;
+     * how many times one was unpacked and let go; how many were asked for by the game's drawing with no picture to show yet
+     * (`missed`: a stand-in was shown meanwhile) and how many ahead of need; how long unpacking has taken in all and at worst (ms).
+     */
+    packs: { all: 0, packed: 0, held: 0, bytes: 0, most: 0, unpacked: 0, letGo: 0, missed: 0, ahead: 0, ms: 0, worst: 0 },
+  };
+  /** The packs, by group and name; by the lists they fill; those waiting to be unpacked, the soonest wanted first; how many are being unpacked. */
+  private readonly packs = new Map<string, Pack>();
+  private readonly packOf = new Map<unknown, Pack>();
+  private queue: Pack[] = [];
+  private busy = 0;
+  private readonly clock: () => number = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
   constructor(
     private readonly mark: string,
@@ -124,6 +233,190 @@ export class BakedHeroes {
   ) {
     this.groups = bakeGroups(vet);
     for (const [g, keys] of Object.entries(this.groups)) for (const k of keys) this.groupOf.set(keyName(k), g);
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // THE PACKS (PACKS)
+
+  /**
+   * A MOVE OF A HERO'S IS WANTED, from a side (`pack`: the move's name, as packsOf names it): unpacked if it is not in hand.
+   * `now`: it is being shown (it goes before those asked for ahead of need). True: the hero has such a pack.
+   */
+  want(group: string, pack: string, side: number, now = true): boolean {
+    const p = this.packs.get(`${group}/${packName(pack, side)}`);
+    if (!p) return false;
+    this.ask(p, now, false);
+    return true;
+  }
+
+  /** The game's drawing asked a list for a frame it has not got (art/kit.ts HEAVY.asked): its pack, if it is in one, is unpacked. */
+  private asked(list: readonly Sprite[]): void {
+    const p = this.packOf.get(list);
+    if (p) this.ask(p, true, true);
+  }
+
+  private ask(p: Pack, now: boolean, shown: boolean): void {
+    p.used = this.clock();
+    if (p.state !== 'packed' || p.failed >= 3) return;
+    const at = this.queue.indexOf(p);
+    if (at >= 0) {
+      if (!now) return;
+      this.queue.splice(at, 1);
+    } else if (shown) this.stats.packs.missed++;
+    else this.stats.packs.ahead++;
+    if (now) this.queue.unshift(p);
+    else this.queue.push(p);
+    this.pump();
+  }
+
+  private pump(): void {
+    while (this.busy < PACKS.atOnce && this.queue.length) {
+      const p = this.queue.shift()!;
+      if (p.state === 'packed') void this.unpack(p);
+    }
+  }
+
+  /** Unpack one: its sheet read from its file's bytes, its frames cut from it and given into their places where those are still unpainted. */
+  private async unpack(p: Pack): Promise<void> {
+    p.state = 'unpacking';
+    this.busy++;
+    const t0 = this.clock();
+    const S = this.stats.packs;
+    try {
+      const opts: ImageBitmapOptions = { premultiplyAlpha: 'default', colorSpaceConversion: 'none' };
+      const sheet = await createImageBitmap(p.blob, opts);
+      let bmps: ImageBitmap[];
+      try {
+        bmps = await Promise.all(p.def.frames.map(([x, y, w, h]) => createImageBitmap(sheet, x, y, w, h, opts)));
+      } finally {
+        sheet.close();
+      }
+      const sprites: (Sprite | undefined)[] = new Array<Sprite | undefined>(bmps.length);
+      for (const [list, i, fi] of p.places) {
+        const was = Object.getOwnPropertyDescriptor(list, i);
+        // (a place painted already keeps its picture: nothing of it is the bake's to give back)
+        if (!was || typeof was.get !== 'function') continue;
+        const s = (sprites[fi] ??= { ...p.parts[p.def.frames[fi][4]], img: bmps[fi] as unknown as HTMLCanvasElement } as Sprite);
+        Object.defineProperty(list, i, { value: s, writable: true, configurable: true, enumerable: true });
+        p.held.push({ list, i, was, s });
+      }
+      for (let fi = 0; fi < bmps.length; fi++) {
+        if (sprites[fi]) this.stats.given++;
+        else {
+          this.stats.unwanted++;
+          bmps[fi].close();
+        }
+      }
+      p.state = 'held';
+      p.used = Math.max(p.used, t0);
+      S.held++;
+      S.bytes += p.def.bytes;
+      S.most = Math.max(S.most, S.bytes);
+      S.unpacked++;
+      const ms = this.clock() - t0;
+      S.ms += ms;
+      S.worst = Math.max(S.worst, ms);
+    } catch (e) {
+      p.state = 'packed';
+      p.failed++;
+      if (p.failed >= 3) this.stats.failed.push(`${p.def.name}: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      this.busy--;
+    }
+    this.trim(p);
+    this.pump();
+  }
+
+  /** Past the budget, the least lately asked for are let go (never one asked for a moment ago, nor `keep`, the one that has just come). */
+  private trim(keep: Pack): void {
+    if (!PACKS.on) return;
+    const S = this.stats.packs;
+    if (S.bytes <= PACKS.budget) return;
+    const t = this.clock();
+    const held = [...this.packs.values()].filter((p) => p.state === 'held' && p !== keep).sort((a, b) => a.used - b.used);
+    for (const p of held) {
+      if (S.bytes <= PACKS.budget || t - p.used < PACKS.fresh) break;
+      this.letGo(p);
+    }
+  }
+
+  /** Let a pack go: each place put back as it was (the frame's own painter), its pictures' room given back a moment on (engine/px.ts retireSprite). */
+  private letGo(p: Pack): void {
+    const gone = new Set<Sprite>();
+    for (const h of p.held) {
+      const d = Object.getOwnPropertyDescriptor(h.list, h.i);
+      if (d && 'value' in d && d.value === h.s) Object.defineProperty(h.list, h.i, h.was);
+      gone.add(h.s);
+    }
+    for (const s of gone) retireSprite(s);
+    p.held = [];
+    p.state = 'packed';
+    const S = this.stats.packs;
+    S.held--;
+    S.bytes -= p.def.bytes;
+    S.letGo++;
+  }
+
+  /** The packs in hand, the least lately asked for first (for the tests and the measures). */
+  packsHeld(): string[] {
+    return [...this.packs.entries()].filter(([, p]) => p.state === 'held').sort((a, b) => a[1].used - b[1].used).map(([n]) => n);
+  }
+
+  /** Every pack let go of, whatever the budget (for the tests and the measures). */
+  letGoAll(): void {
+    for (const p of this.packs.values()) if (p.state === 'held') this.letGo(p);
+  }
+
+  /** Every pack unpacked, whatever is asked for (for the measures: what he would hold with none ever let go, PACKS.on off). */
+  unpackAll(): void {
+    for (const p of this.packs.values()) this.ask(p, false, false);
+  }
+
+  /** Is nothing being unpacked or waiting to be (for the tests and the measures)? */
+  packsIdle(): boolean {
+    return this.busy === 0 && this.queue.length === 0;
+  }
+
+  /**
+   * A group's packs, fetched and kept packed: each one's places found among the heroes' lists as the game has them. With PACKS
+   * off, each unpacked here, one after another, and none ever let go.
+   */
+  private async takePacks(g: string, f: BakeFile, lists: Sprite[][][][]): Promise<void> {
+    const defs = f.packs ?? [];
+    const S = this.stats.packs;
+    const AT = 8;
+    for (let n = 0; n < defs.length; n += AT) {
+      const part = defs.slice(n, n + AT);
+      const blobs = await Promise.all(part.map(async (d) => {
+        const r = await this.get(d.sheet);
+        if (!r.ok) throw new Error(`${d.sheet}: ${r.status}`);
+        return r.blob();
+      }));
+      part.forEach((def, q) => {
+        // (each place once: a hero who is the same in town and in a dungeon has the same lists in both)
+        const seen = new Map<Sprite[], Set<number>>();
+        const places: Pack['places'] = [];
+        for (let a = 0; a + 4 < def.at.length; a += 5) {
+          const list = lists[def.at[a]]?.[def.at[a + 1]]?.[def.at[a + 2]];
+          const i = def.at[a + 3];
+          if (!list || i < 0 || i >= list.length) continue;
+          let had = seen.get(list);
+          if (!had) seen.set(list, (had = new Set()));
+          if (had.has(i)) continue;
+          had.add(i);
+          places.push([list, i, def.at[a + 4]]);
+        }
+        const p: Pack = { def, parts: f.parts, blob: blobs[q], places, state: 'packed', held: [], used: 0, failed: 0 };
+        this.packs.set(`${g}/${def.name}`, p);
+        for (const list of seen.keys()) this.packOf.set(list, p);
+        S.all++;
+        S.packed += blobs[q].size;
+      });
+    }
+    if (!defs.length) return;
+    HEAVY.asked = (list) => this.asked(list);
+    if (PACKS.on) return;
+    for (const def of defs) await this.unpack(this.packs.get(`${g}/${def.name}`)!);
   }
 
   /** The baked pictures for this page, or null where there are none to be had (no bake in this build, a page opened from a file). */
@@ -176,9 +469,12 @@ export class BakedHeroes {
       // (each hero's lists as the game has them now, against the bake's)
       const art = this.art();
       const wants = new Map<number, [BakeFile['keys'][number], number, number, number][]>();
+      /** (for the packs: each hero's lists, by side and by list) */
+      const lists: Sprite[][][][] = [];
       for (const k of f.keys) {
         const a = art.of(k.cls, { ...lookOfPlace(k.place), vet: k.vet });
         if (JSON.stringify(listLengths(heroSides(a))) !== JSON.stringify(k.lens)) throw new Error(`${keyName(k)}: its lists are not as baked`);
+        if (f.packs?.length) lists.push(heroSides(a).map((side) => heroLists(side)));
         for (let n = 0; n + 3 < k.at.length; n += 4) {
           const fi = k.at[n + 3];
           let w = wants.get(fi);
@@ -218,6 +514,8 @@ export class BakedHeroes {
           sheet.close();
         }
       }
+      // (a hero kept in packs, PACKS: his packs fetched and kept packed; what came above is what he always holds)
+      if (f.packs?.length) await this.takePacks(g, f, lists);
       this.state.set(g, 'done');
       this.stats.ms[g] = Math.round(performance.now() - t0);
     } catch (e) {

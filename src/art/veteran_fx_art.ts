@@ -270,6 +270,7 @@ export function vetFxFrames(n: number, make: (i: number) => Sprite): Sprite[] {
       enumerable: true,
       get(): Sprite {
         if (HEAVY.defer || LEFT_TO_PAINTER.on) {
+          HEAVY.asked?.(out);
           HEAVY.deferred++;
           return NONE;
         }

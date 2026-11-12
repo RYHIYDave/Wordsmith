@@ -125,7 +125,7 @@ import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
 import { Fx, WORD_HUE, wx, wy } from './render/fx';
 import { NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
-import { BakedHeroes } from './render/baked';
+import { BakedHeroes, PACKS } from './render/baked';
 import { BakedTownsfolk, TOWNSFOLK_BAKED } from './render/townsfolk_baked';
 import { QUESTS15 } from './game/quests15';
 import { TOPS_CACHE } from './render/tops_cache';
@@ -366,6 +366,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // (THE HEROES BAKED, render/baked.ts: their pictures painted when the game was built, beside this page, taken in when a hero is
   // first asked for, in place of the worker painting them; where there are none, as before. His pick, 6 Nov 2026: “Inside the game file”)
   painter.baked = art.heroes.give ? BakedHeroes.make(() => art.heroes, (cls, place, v, l, i, s, vet) => !!art.heroes.give?.(cls, place, v, l, i, s, vet), VETERAN.on) : null;
+  // (THE BRAWLER'S MOVES KEPT PACKED, render/baked.ts PACKS: his drawing asks for the moves he shows and may show next, a moment
+  // ahead: render/veteran_fx.ts askAhead. Where he is not baked in packs, nothing is asked for.)
+  if (painter.baked) {
+    const b = painter.baked;
+    renderer.vetFx.packs = (move, side, now) => void b.want('brawler', move, side, now);
+  }
   // (THE TOWN'S PEOPLE BAKED, render/townsfolk_baked.ts: the sculpted four's pictures, painted when the game was built, beside
   // this page; taken in as a place with them in it is come into and let go of as it is left (placeFrame, loadingFrame). Where they
   // will not come, the town's people are as they were.)
@@ -2583,7 +2589,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   }
   const dbg = {
     /** THE HEROES BAKED (render/baked.ts): what has been taken in from the bake, and what failed (null: no bake on this page). */
-    baked: () => (painter.baked ? { ...painter.baked.stats } : null),
+    baked: () => (painter.baked ? { ...painter.baked.stats, packs: { ...painter.baked.stats.packs } } : null),
+    /**
+     * THE HEROES' PACKS (render/baked.ts PACKS), for the measures: the switch and the budget; `held`, the packs in hand, the
+     * least lately asked for first; `idle`, nothing being unpacked; `all`, every pack unpacked (what he would hold with none
+     * let go: set `on` false first); `letGo`, every pack let go.
+     */
+    packs: { PACKS, held: () => painter.baked?.packsHeld() ?? [], idle: () => painter.baked?.packsIdle() ?? true, all: () => painter.baked?.unpackAll(), letGo: () => painter.baked?.letGoAll() },
     /**
      * THE TOWN'S PEOPLE BAKED (render/townsfolk_baked.ts): what has been taken in from their files and what failed (null: none
      * to be had on this page); whether the sculpted four are the town's people here; and the switches (`on`, `letGo`).
