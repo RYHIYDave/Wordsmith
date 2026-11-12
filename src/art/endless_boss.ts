@@ -62,6 +62,8 @@ const HOOFR: Ramp = ['#0a080c', '#16121a', '#262028', '#3a323c', '#544a54'];
 /** The saddle: old leather, and iron. */
 const LEATHER: Ramp = ['#1a0f0c', '#2e1c16', '#4a2e22', '#6a4430', '#8c5e42'];
 const IRON: Ramp = ['#121218', '#24242e', '#3a3a48', '#585866', '#7e7e8e'];
+/** ITS ARMOUR: blackened iron, old and dented, a cold sheen on its edges. */
+const ARMOUR: Ramp = ['#100e15', '#1f1c26', '#34303d', '#55505f', '#86808f'];
 /** His breeches: a dark grey wool; his riding boots: old black leather. */
 const BREECH: Ramp = ['#141218', '#221f28', '#36323e', '#4c4756', '#666070'];
 const BOOT: Ramp = ['#0c0a0c', '#1a1416', '#2c2224', '#423234', '#5e4a4a'];
@@ -117,6 +119,8 @@ export interface BoarPose {
   /** HOOVES PLANTED (standing): each hoof kept on its own spot on the floor, lifted straight up off it by this much (0 down ... 1 a
    * stamp's height), the leg bending to reach it; not said, each leg swings as `legs` says. */
   lift?: readonly [number, number, number, number];
+  /** HIS POWER IN IT (0 ... 1): the throb of pink in its eyes and the runes in its armour. */
+  pulse?: number;
 }
 export const BOAR_STAND: BoarPose = {
   x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, low: 6, look: 0,
@@ -250,7 +254,7 @@ const brand = (side: number) => (u: V3): string | null => {
 };
 
 /** THE BOAR AS SOLIDS (its parts named `boar...`). */
-export function boarBits(P: BoarPose, put: Put, near: number): void {
+export function boarBits(P: BoarPose, put: Put, near: number, st?: Stage): void {
   const W = (p: V3): V3 => boarAt(P, p);
   const ax = (a: V3, b: V3, c: V3): [V3, V3, V3] => [turned(P, mul(a, S)), turned(P, mul(b, S)), turned(P, mul(c, S))];
   const ball = (part: string, piece: string, at: V3, a: V3, b: V3, c: V3, skin: Skin, far?: boolean): void =>
@@ -328,6 +332,8 @@ export function boarBits(P: BoarPose, put: Put, near: number): void {
   for (let i = 0; i + 1 < ridge.length; i++) put('boarCrest', 'crest', { k: 'rod', a: ridge[i], b: ridge[i + 1], ra: 2.4 * S, rb: 1.9 * S, ramp: CREST });
   for (let i = 0; i < 12; i++) {
     const f = i / 11;
+    // (none on its neck, where its armour lies)
+    if (f < 0.2) continue;
     const seg = Math.min(ridge.length - 2, Math.floor(f * (ridge.length - 1)));
     const p = lerp3(ridge[seg], ridge[seg + 1], f * (ridge.length - 1) - seg);
     const up = norm(add(turned(P, [-0.5, 0, 1]), [(hash(i, 3, 8803) - 0.5) * 0.5, (hash(i, 4, 8804) - 0.5) * 0.6, 0]));
@@ -386,6 +392,146 @@ export function boarBits(P: BoarPose, put: Put, near: number): void {
     const foot = add(add(add(sd.at, mul(sd.f, -0.5)), mul(sd.l, k * 13.4 * S)), [0, 0, -12.0 * S - 0.6]);
     put('boarSaddle', 'stirrups', { k: 'rod', a: hang, b: foot, ra: 0.5, rb: 0.5, ramp: LEATHER, far: k !== near });
     put('boarSaddle', 'stirrups', { k: 'rod', a: add(foot, mul(sd.f, -1.5)), b: add(foot, mul(sd.f, 1.5)), ra: 0.75, rb: 0.75, ramp: IRON, far: k !== near });
+  }
+  boarArmour(P, put, near, st);
+}
+
+/** How a rune of his burns at a throb of `p` (0 ... 1): dark pink, to pink, to gold at its height. */
+const burnAt = (p: number, hot = 0): string => BURN[Math.max(1, Math.min(4, Math.round(1 + 2.2 * p + hot)))];
+const dot3 = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+/** ITS ARMOUR, his: plates of blackened iron hammered to it, his runes cut in them and burning pink with his power, throbbing as
+ * its eyes do. A face plate down its brow and snout, a spike out of its brow; a great plate of lames over each shoulder; a plate
+ * over its hindquarters; iron on its shanks, spiked, its hooves shod in it. And its eyes: his power pouring out of them, pink,
+ * flaring at each throb. In his words, 12 Nov 2026: “The boar really isn’t menacing enough.  Maybe some armor, pink energy
+ * pulsing out of its eyes and runes”, then “Spiked hoof plates”. Each plate is a shell over the part it covers, the wool showing
+ * round it, so it lies on the boar and is not a lump stuck to it. */
+function boarArmour(P: BoarPose, put: Put, near: number, st?: Stage): void {
+  const W = (p: V3): V3 => boarAt(P, p);
+  const pulse = P.pulse ?? 0;
+  const lit = burnAt(pulse);
+  const H = headOf(P);
+  const glyph = (g: ReadonlyArray<string>, a: number, b: number): boolean => {
+    const gx = Math.floor((a + 0.5) * 5);
+    const gy = Math.floor(b * 8);
+    return gx >= 0 && gx < 5 && gy >= 0 && gy < 8 && g[gy][gx] === '#';
+  };
+  /** A SHELL: a ball a little bigger than the part of the boar it covers, painted only where the plate is (`plate` says, for each
+   * way out from its middle: its lame (0, 1, 2 ...) and how far in from its edge it is (0 at its edge ... 1), or null where the
+   * wool shows), its lames lapped (a dark line under each lame's lower edge, a light one along its top), rivets round it. */
+  const shell = (part: string, piece: string, c: V3, r: V3, plate: (u: V3) => { lame: number; inn: number; rune?: boolean } | null, far: boolean): void => {
+    put(part, piece, {
+      k: 'ball', c: W(c), ax: [turned(P, [r[0] * S, 0, 0]), turned(P, [0, r[1] * S, 0]), turned(P, [0, 0, r[2] * S])], far,
+      skin: (u, tone, x, y) => {
+        const q = plate(u);
+        if (!q) return null;
+        if (q.rune) return lit;
+        // (its edge: a hard dark line, a lit lip inside it, a rivet every few pixels along it)
+        if (q.inn < 0.1) return ARMOUR[T5(tone - 2)];
+        if (q.inn < 0.24) return (x + 2 * y) % 5 === 0 ? ARMOUR[4] : ARMOUR[T5(tone + 1)];
+        // (old iron: dents and pits, a tone down here and there)
+        return ARMOUR[T5(tone - (hash(x >> 1, y >> 1, 8871) < 0.12 ? 1 : 0))];
+      },
+    });
+  };
+  // THE SHOULDER PLATES: a great plate of three lames over each shoulder's point, lapped downward; his rune burning in the middle one
+  for (const k of [-1, 1]) {
+    const d0 = norm([0.42, k * 0.8, 0.42], [0, k, 0]);
+    const e1 = norm(cross([0, 0, 1], d0), [1, 0, 0]);
+    const e2 = cross(d0, e1);
+    shell(k === 1 ? 'boarPauldronL' : 'boarPauldronR', 'pauldron', [9, 0, 27], [10.5 * 1.05, 10.2 * 1.06, 11.2 * 1.04], (u) => {
+      const ca = dot3(u, d0);
+      const lim = 0.62;
+      if (ca < lim) return null;
+      const inn = (ca - lim) / (1 - lim);
+      // (its lames: lapped down its height)
+      const h = dot3(u, e2) * k;
+      const lame = h > 0.22 ? 0 : h > -0.14 ? 1 : 2;
+      const lip = lame === 0 ? h - 0.22 : lame === 1 ? h + 0.14 : 1;
+      const a = dot3(u, e1) * k;
+      const rune = lame === 1 && Math.abs(a) < 0.24 && glyph(RUNE_GRID[k > 0 ? 0 : 1], a * 1.9, (0.2 - h) / 0.42);
+      return { lame, inn: lip >= 0 && lip < 0.05 ? 0 : inn, rune };
+    }, k !== near);
+  }
+  // THE PLATE OVER ITS HINDQUARTERS: lapped from its back down over its rump, his rune on it
+  shell('boarCrupper', 'crupper', [-15, 0, 24], [8.2 * 1.06, 8.4 * 1.06, 8.4 * 1.05], (u) => {
+    const d0 = norm([-0.55, 0, 0.83], [0, 0, 1]);
+    const ca = dot3(u, d0);
+    const lim = 0.5;
+    if (ca < lim || u[0] > 0.35) return null;
+    const inn = Math.min((ca - lim) / (1 - lim), (0.35 - u[0]) * 3);
+    const lame = u[0] > -0.15 ? 0 : 1;
+    const rune = Math.abs(u[1]) < 0.2 && u[0] < -0.25 && glyph(RUNE_GRID[0], -u[1] * 2.2, (u[2] - 0.15) / -0.05 * 0 + (0.95 - u[2]) / 0.55);
+    return { lame, inn: Math.abs(u[0] + 0.15) < 0.04 ? 0 : inn, rune };
+  }, false);
+  // THE FACE PLATE: one plate down its brow and the ridge of its snout, narrowing, a keel down its middle, his runes cut either side
+  const slope = norm(add(H.f, mul(H.u, -0.62)), H.f);
+  const nrm = norm(cross(H.l, slope), H.u);
+  const face: [number, number, number, number][] = [[5.4, 4.4, 4.0, 4.8], [10.4, 1.2, 3.8, 4.1], [15.2, -1.9, 3.2, 3.2]];
+  face.forEach(([fw, up, rx, ry], j) => {
+    put('boarFace', 'chamfron', {
+      k: 'ball', c: H.at(fw, 0, up), ax: [mul(slope, rx * S), mul(H.l, ry * S), mul(nrm, 0.85 * S)],
+      skin: (u, tone) => {
+        if (Math.abs(u[1]) > 0.86) return ARMOUR[T5(tone - 2)];
+        if (Math.abs(u[1]) < 0.12) return ARMOUR[T5(tone + 1)];
+        if (j < 2 && Math.abs(u[1]) > 0.2 && Math.abs(u[1]) < 0.62 && glyph(RUNE_GRID[(j + (u[1] > 0 ? 0 : 1)) % 2], (Math.abs(u[1]) - 0.41) * 2.4, (0.7 - u[0]) / 1.4)) return lit;
+        return ARMOUR[T5(tone)];
+      },
+    });
+  });
+  // (a spike out of its brow, forward and up: a horn of iron)
+  const brow = H.at(3.6, 0, 6.2);
+  const hornTo = add(brow, mul(norm(add(H.f, mul(H.u, 1.3)), H.u), 7.0 * S));
+  put('boarHorn', 'browSpike', { k: 'rod', a: brow, b: hornTo, ra: 1.9 * S, rb: 0.15 * S, ramp: ARMOUR });
+  // ITS SHANKS IN IRON, SPIKED; ITS HOOVES SHOD IN IT
+  const fw = turned(P, [1, 0, 0]);
+  for (let i = 0; i < 4; i++) {
+    const { knee, fet, end } = legOf(P, i);
+    const far = (i % 2 === 0 ? 1 : -1) !== near;
+    const hind = i >= 2;
+    const part = `boarGreave${i}`;
+    put(part, 'greave', { k: 'rod', a: lerp3(knee, fet, 0.08), b: fet, ra: 2.6 * S, rb: 2.15 * S, ramp: ARMOUR, far });
+    put(part, 'shoe', { k: 'rod', a: lerp3(fet, end, 0.15), b: end, ra: 2.05 * S, rb: 2.0 * S, ramp: ARMOUR, far });
+    // (spikes, each its own piece of iron so its edge shows: one out of its knee, forward on a foreleg, back on a hind; one out of
+    // each side of its shank; one out of the toe of its shoe, along the floor)
+    const sh = norm(sub(fet, knee), [0, 0, -1]);
+    const sd2 = turned(P, [0, 1, 0]);
+    const outw = mul(sd2, i % 2 === 0 ? 1 : -1);
+    const spike = (a: V3, way: V3, long: number, r: number): void =>
+      put(`boarSpikes${i}`, 'spikes', { k: 'rod', a, b: add(a, mul(way, long * S)), ra: r * S, rb: 0.15 * S, ramp: ARMOUR, far });
+    const kway = norm(add(mul(fw, hind ? -1 : 1), mul(sh, -0.7)), fw);
+    spike(add(lerp3(knee, fet, 0.08), mul(kway, 1.8 * S)), kway, 4.6, 1.3);
+    for (const sgn of [-1, 1]) {
+      const w2 = norm(add(mul(sd2, sgn), mul(sh, -0.2)), sd2);
+      spike(add(lerp3(knee, fet, 0.5), mul(w2, 1.9 * S)), w2, 3.4, 1.1);
+    }
+    const toe = norm(add(fw, [0, 0, 0.18]), fw);
+    spike(add(add(end, mul(fw, 1.4 * S)), [0, 0, 0.3 * S]), toe, 3.6, 1.15);
+    // (his rune cut in the greave's outer face, burning)
+    put(part, 'greave', { k: 'dot', p: add(lerp3(knee, fet, 0.3), mul(outw, 2.55 * S)), c: lit, facing: outw });
+  }
+  // ITS EYES: his power pouring out of them, pink, throbbing: a light on each eye that can be seen, and the burn of it streaming
+  // back off its eye over its head like a flame in a wind, longer and brighter at each throb
+  for (const k of [-1, 1]) {
+    const eye = H.at(8.8, k * 5.0, -1.0);
+    const facing = norm(add(mul(H.l, k), mul(H.f, 0.4)), H.f);
+    if (st && dot3(facing, st.eye) < -0.05) continue;
+    put('glow', 'eyeGlow', { k: 'glow', p: eye, c: BURN[2], r: 5 + 6 * pulse, a: 0.4 + 0.45 * pulse });
+    const n = 6 + Math.round(8 * pulse);
+    const fr = Math.floor(P.sway * WS_STAND_LONG * 15);
+    for (let i = 0; i < n; i++) {
+      const f = (i + 0.5) / n;
+      const flick = hash(i, fr, 8861 + k);
+      const p = add(eye, add(mul(H.f, -(0.8 + 9 * f * (0.45 + 0.75 * pulse)) * S), add(mul(H.u, (0.6 * f + 2.6 * f * f + (flick - 0.5) * 1.2 * f) * S), mul(H.l, k * (0.6 + 0.6 * f) * S))));
+      if (f > 0.35 && flick < 0.35) continue;
+      put('wisps', 'eyeWisps', { k: 'mote', p, c: f < 0.2 ? burnAt(pulse, 1.2) : f < 0.55 ? BURN[2] : BURN[1], size: f < 0.2 ? 2 : 1 });
+    }
+    put('wisps', 'eyeWisps', { k: 'mote', p: eye, c: burnAt(pulse, 1.6), size: 2 });
+  }
+  // (and a little light off the runes in its plates, at each throb)
+  if (pulse > 0.15) {
+    put('glow', 'runeGlow', { k: 'glow', p: W([13.5, near * 10.6, 27]), c: BURN[2], r: 6 + 5 * pulse, a: 0.12 + 0.25 * pulse });
+    put('glow', 'runeGlow', { k: 'glow', p: W([-19, 0, 31]), c: BURN[2], r: 5 + 4 * pulse, a: 0.1 + 0.2 * pulse });
   }
 }
 
@@ -717,6 +863,11 @@ function stampLift(u: number): number {
   const k = (u - hold) / (L - hold);
   return 1 - k * k;
 }
+/** A throb of his power in it: struck in a frame, dying away over the next second (four to its round). */
+function throbAt(tt: number): number {
+  const u = (((tt + 0.3) % 1.2) + 1.2) % 1.2;
+  return u < 0.07 ? u / 0.07 : Math.exp(-(u - 0.07) * 4.2);
+}
 export function boarPoseAt(move: string, t: number): BoarPose {
   void move;
   const T = WS_STAND_LONG;
@@ -760,6 +911,8 @@ export function boarPoseAt(move: string, t: number): BoarPose {
     lift: [lift[0], lift[1], 0, 0],
     breath: br,
     sway: tt / T + 0.25 * shake,
+    // (his power in it: a throb every 1.2 s, struck fast and dying slow; at its height through each snort and each stamp)
+    pulse: Math.max(throbAt(tt), snort, 0.8 * Math.max(lift[0], lift[1])),
   };
 }
 /** WHAT FLIES OFF IT, laid after its edge: a blast of breath out of its snout at each snort, cold, white, spreading and thinning;
@@ -815,7 +968,7 @@ function wsBits(st: Stage, m: Moment): Bit[] {
   const { s } = m;
   const P = boarPoseAt(m.move ?? 'stand', m.t);
   const near = st.near(add(s.pelvis, [0, -3, 0])) > st.near(add(s.pelvis, [0, 3, 0])) ? -1 : 1;
-  boarBits(P, put, near);
+  boarBits(P, put, near, st);
   robe(put, s, P.sway);
   // (his left hand clawed, fingers spread, writing on the air; his right closed round the staff)
   arm(put, s, 'L', s.chest[2], 0.32, 1.25);
@@ -854,8 +1007,9 @@ export function wsMob(): Mob {
     walk: stand,
     reel: stand,
     dying: stand,
-    idleFrames: 48,
-    idleFps: 10,
+    // (at the beasts' 15 frames a second, as the stag, the hounds and the wolves stand: its shake and stamps need them)
+    idleFrames: 72,
+    idleFps: 15,
     walkFrames: 32,
     walkFps: 10,
     pace: 1,

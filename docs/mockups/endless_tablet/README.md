@@ -190,6 +190,16 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   of each forefoot in turn (its head thrown up as the foot comes up out in front of its chest, then struck down where it stood, its
   body jolted, grit thrown out round the hoof). Its hooves stand planted (each leg solved to its own spot on the floor), so its
   breathing and rocking never slide them. The checks (checkBoss on the 144 frames, nothing cyan, his legs outside the boar): all pass.
+- HIS WORDS on that, 12 Nov 2026, by pop-up: “We haven’t talked about his moves.  The boar really isn’t menacing enough.  Maybe
+  some armor, pink energy pulsing out of its eyes and runes”; and 16:24, “Spiked hoof plates”. HIS MOVES are not to be made until
+  they have been talked through with him.
+- MADE FOR THAT (`boarArmour`): plates of blackened iron lying on it (each a shell over the part it covers, the wool showing round
+  it): a plate of three lapped lames over each shoulder, his rune burning in the middle one; a plate over its hindquarters with his
+  rune; a face plate down its brow and snout, a keel down it, his runes cut either side; an iron horn out of its brow; its shanks
+  in iron, spiked at the knee, out of each side and out of the toe of its shoe. ITS EYES pour his power: a pink light on each, the
+  burn of it streaming back over its head. All of it THROBS (`pulse`: a throb every 1.2 s, struck fast and dying slow, and at its
+  height through each snort and stamp), dark pink to pink to gold. Its stand now plays at the beasts' 15 frames a second (as the
+  stag, the hounds and the wolves). The checks: all pass.
 
 ## The tools
 
