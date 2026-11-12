@@ -71,7 +71,7 @@ export function buildBetween(a: Build, b: Build, k: number): Build {
 }
 
 /** A pose with its hands measured from its place on the floor (HandIn 2), whatever they were measured from: so that two poses can be mixed number by number. */
-function handsFromShoulders(B: Build, q: Bones): Bones {
+export function handsFromShoulders(B: Build, q: Bones): Bones {
   const s = solve(B, q as Posed);
   // (measured where they are, from his place on the floor (HandIn 2): the demon's own claws are, planted on the floor; so
   // that the change ends exactly on its own pose)
@@ -86,7 +86,7 @@ function handsFromShoulders(B: Build, q: Bones): Bones {
   return out as unknown as Bones;
 }
 /** One pose into another, `k` of the way, number by number (a number one names and the other does not counts as nothing in the other). */
-function poseBetween(a: Bones, b: Bones, k: number): Bones {
+export function poseBetween(a: Bones, b: Bones, k: number): Bones {
   const out: Record<string, unknown> = { ...a, ...b };
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
   for (const key of keys) {
@@ -189,7 +189,7 @@ export function wingsAt(t: number): DemonWings {
  * (as the demon's horns come through), the skirts of his coat, his breeches and boots (as the hooves come), and the man and
  * his old demon arm inside it. By the stuff it is made of (his sculpture's own: dev/sculpt_warlock.ts) and what it is.
  */
-function tearsAt(mat: number, piece: string, tag: string | undefined, i: number): [number, boolean] {
+export function tearsAt(mat: number, piece: string, tag: string | undefined, i: number): [number, boolean] {
   if (mat === 5 || mat === 6) return [0.1, true];
   if (mat === 4) return [0.16, true];
   if (mat === 9) return [0.22, true];
@@ -313,7 +313,7 @@ function becomingAt(change: WarlockMove, view: GameView, t: number, turn: number
 }
 
 /** The share of the change's time at which it is `k` of the way (the change eases in and out). */
-function untilK(k: number): number {
+export function untilK(k: number): number {
   let lo = 0;
   let hi = 1;
   for (let i = 0; i < 30; i++) {

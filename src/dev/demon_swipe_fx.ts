@@ -330,8 +330,19 @@ function slashes(l: Light, gx: number, gy: number, f: number, seed: number): voi
 
 /** How long its river of smoke lingers on the floor (seconds), and its talons' gouges glow. */
 const RIVER_LIFE = 1.1;
-/** THE SMOKE STEP'S LIGHT AT A MOMENT `t` of its move (`m`): see above. */
-export function smokeStepLight(m: DemonMove, t: number, view: GameView, turn = 0): SwipeLight {
+/** What another body making the same move asks of the smoke step's light (dev/shadow_fx.ts, the Living Shadow up on two legs). */
+export interface StepOwn {
+  /** Where its claws bite into the floor as it coils (its own measure, where it starts); none, if they are not on it. */
+  coil?: [number, number][];
+  /** Where its claws come down at the far end (its left's, its right's; its own measure, from where it starts). */
+  ends?: [[number, number], [number, number]];
+  /** Nothing of the ones in its way. */
+  alone?: boolean;
+  /** No smoke boiling up off it as it coils (the Living Shadow's: his word, 11 Nov 2026, “get rid of the smoke and just leave the wings”). */
+  noBoil?: boolean;
+}
+/** THE SMOKE STEP'S LIGHT AT A MOMENT `t` of its move (`m`): see above. (`own`: StepOwn; not given, as it always was.) */
+export function smokeStepLight(m: DemonMove, t: number, view: GameView, turn = 0, own?: StepOwn): SwipeLight {
   const { w, h } = SWIPE_SCENE;
   const S = swipeTo(view, turn);
   const f = t / FR;
@@ -346,8 +357,7 @@ export function smokeStepLight(m: DemonMove, t: number, view: GameView, turn = 0
   const fl = new Light();
   // ---- AS IT COILS: its claws biting into the floor, cracks glowing under them as its fire builds
   const coil = clamp01((f - 2) / (SS.coiled - 2));
-  (['handL', 'handR'] as const).forEach((j, k) => {
-    const p = jointAt(m, 0, j);
+  (own?.coil ?? (['handL', 'handR'] as const).map((j) => jointAt(m, 0, j))).forEach((p, k) => {
     const heat = f < SS.coiled ? 1 + 1.5 * coil : f < SS.burst + 2 ? 3 : 3 - (f - SS.burst - 2) / 6;
     if (f > 2) for (const c of crackStar(p[0] + 3, p[1], 5, 12, 2, 400 + k * 7)) drawCrack(fd, fl, c, Math.min(1, coil * 1.2), heat, S);
   });
@@ -421,7 +431,7 @@ export function smokeStepLight(m: DemonMove, t: number, view: GameView, turn = 0
   const ul = new Light();
   const usm = new Light();
   const [x0, y0] = S([15, 0, 0]);
-  if (f > 1 && f < SS.burst + 2) {
+  if (!own?.noBoil && f > 1 && f < SS.burst + 2) {
     // (boiling up off its back and shoulders, thicker as it coils: behind it, never over it)
     for (let k = 0; k < 4; k++) {
       const rise = ((t * 1.6 + k / 4) % 1) * 46;
@@ -495,15 +505,16 @@ export function smokeStepLight(m: DemonMove, t: number, view: GameView, turn = 0
   const el = new Light();
   const es = new Light();
   const esm = new Light();
-  strikeFloor(fd, fl, el, es, esm, S, [ENDS.lx, ENDS.ly], f - SS.slam, t, 460, 1);
-  strikeFloor(fd, fl, el, es, esm, S, [ENDS.rx, ENDS.ry], f - SS.slam - 0.5, t, 470, 1);
-  const struck = strikes(m, t, view, turn, fd);
+  const ends = own?.ends ?? ([[ENDS.lx, ENDS.ly], [ENDS.rx, ENDS.ry]] as [[number, number], [number, number]]);
+  strikeFloor(fd, fl, el, es, esm, S, ends[0], f - SS.slam, t, 460, 1);
+  strikeFloor(fd, fl, el, es, esm, S, ends[1], f - SS.slam - 0.5, t, 470, 1);
+  const struck = own?.alone ? [] : strikes(m, t, view, turn, fd);
   return {
     floor: laid(w, h, rsm, fd, fl),
     layers: [
       { px: laid(w, h, usm, new Light(), ul), near: swipeNear([0, 0, 0], view, turn) - 1 },
       { px: laid(w, h, msm, new Light(), ml), near: swipeNear([here, 0, 0], view, turn) + 0.5 },
-      { px: laid(w, h, esm, es, el), near: swipeNear([ENDS.lx, 0, 0], view, turn) },
+      { px: laid(w, h, esm, es, el), near: swipeNear([ends[0][0], 0, 0], view, turn) },
     ],
     struck,
   };
