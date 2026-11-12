@@ -28,6 +28,7 @@ import { forgetMade as forget_chapel_gate } from '../art/chapel_gate';
 import { forgetMade as forget_lair_temple } from '../art/lair_temple';
 import { forgetMade as forget_lair_gate } from '../art/lair_gate';
 import { HEAVY, LEFT_TO_PAINTER } from '../art/kit';
+import { deathOf, isPainted } from './left_to_painter';
 /** HEAVY FRAMES (art/kit.ts HEAVY) left to the side painter while the world is drawn: on in the game; off, every frame painted when first shown. */
 export const PAINT_DEFER = { on: true };
 import type { ActorArt } from '../art/actor_types';
@@ -80,7 +81,7 @@ import { AIM, BODIES, MONSTERS, OWN_MOVES, PACK_LOOK, RANGER_ARROW, SKILLS, SKUL
 import { moveAge, frenzyShift } from '../game/action_f4';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
-import { MELD_DUST_COLOR, withParts } from '../game/melds';
+import { MELD_DUST_COLOR, MELD_TUNE, withParts } from '../game/melds';
 import { TOWN } from '../game/level';
 import type { Monster, Station } from '../game/state';
 import { doorFace, doorTiles, isLeaf } from '../game/doors';
@@ -539,6 +540,13 @@ export class Renderer {
   /** The bosses whose death has been asked to be painted next (Painter.dieFirst, Bestiary.dieFirst); begun again with each floor. */
   private dieSoon = new Set<MonsterFigure>();
   private dieSoonFor: unknown = null;
+  /**
+   * (A BOSS NEARING ITS END) The rest of what its death shows that the game itself paints, as it is first shown, where it is played
+   * (dieAheadOf): each frame still to be painted, painted ahead here with the monsters' frames, a frame at a time; `dieAheadAt`, the
+   * next. Begun again with each floor.
+   */
+  private dieAhead: (() => unknown)[] = [];
+  private dieAheadAt = 0;
   /** THE FIRST FIVE FLOORS, drawn: the mine shaft and its cage, the stairwell's opening (render/dress.ts). */
   readonly dress: FloorDress;
   /** What the renderer lends it. */
@@ -1424,7 +1432,12 @@ export class Renderer {
   constructor(private art: Art) {
     this.dark = document.createElement('canvas');
     this.dg = this.dark.getContext('2d') as CanvasRenderingContext2D;
-    this.bossFx = new BossFx(art.bestiary, <T>(key: string): T | null => this.painter?.filmOf<T>(key) ?? null);
+    this.bossFx = new BossFx(
+      art.bestiary,
+      <T>(key: string): T | null => this.painter?.filmOf<T>(key) ?? null,
+      // (a figure the painter paints, or whose baked pictures are coming: its frames not here yet left to it, as a fallen one's: fallenSprite)
+      (f) => !!this.painter?.paints(f as MonsterFigure) || !!this.bakedMobs?.coming(f as MonsterFigure),
+    );
     this.dress = new FloorDress(() => this.painter);
     // (ACT 1: the outdoor ground's pieces painted by the painter's ground worker, where there is one)
     this.outdoor.painterOf = () => this.painter;
@@ -2785,6 +2798,8 @@ export class Renderer {
     figs.length = 0;
     if (this.dieSoonFor !== game.level) {
       this.dieSoon.clear();
+      this.dieAhead = [];
+      this.dieAheadAt = 0;
       this.dieSoonFor = game.level;
     }
     for (const m of game.monsters) {
@@ -2798,6 +2813,7 @@ export class Renderer {
         this.dieSoon.add(f);
         this.painter?.dieFirst(f);
         this.art.bestiary.dieFirst(f);
+        this.dieAheadOf(m);
       }
       // (THE MONSTERS' ATTACKS: the Warden calls up skeletons: their crawling out of the ground is painted ahead)
       if (m.boss && movesOf(m) && !figs.includes('skeleton')) figs.push('skeleton');
@@ -2854,9 +2870,16 @@ export class Renderer {
     // the hero and the monsters take turns by the frame as well as within one, so that when a
     // picture costs more than the budget, one a frame, the monsters' do not all wait behind his)
     const ahead = (): boolean => !byWorker && !!game.level.town && this.art.heroes.warm(h.cls, { ...look, town: false });
+    // (and what else a boss's death shows that is painted here, as it nears its end: dieAheadOf)
+    const death = (): boolean => {
+      if (this.dieAheadAt >= this.dieAhead.length) return false;
+      this.dieAhead[this.dieAheadAt++]();
+      return true;
+    };
     const heroFirst = (this.warmFrame++ & 1) === 0;
     for (let n = 0; n < 600; n++) {
-      const did = (n % 2 === 0) === heroFirst ? hero() || beast() || ahead() : beast() || hero() || ahead();
+      // (a boss's death's own, once he nears his end, before the rest of the monsters' frames, as his death is: Bestiary.dieFirst)
+      const did = (n % 2 === 0) === heroFirst ? hero() || death() || beast() || ahead() : death() || beast() || hero() || ahead();
       if (!did || performance.now() - began >= budget) break;
     }
     return this.art.heroes.of(h.cls, look);
@@ -2881,6 +2904,39 @@ export class Renderer {
 
   private monsterArt(m: Monster): ActorArt {
     return this.art.bestiary.of(figureOf(m));
+  }
+
+  /**
+   * A BOSS NEARING ITS END: what else its death shows that the game paints where it is played, the first time it is shown, put to
+   * be painted ahead (dieAhead), as its own death is by the painter (render/painter.ts dieFirst). Found 12 Nov 2026 (the queue's
+   * fix-boss-death-stall-and-rime-shade, tools/scenarios/boss_death_stall.mjs): the Fleshmancer's runedust and Meldstone, about a
+   * quarter of a second of painting in the second after he died; the Hush at the King's side unwinding into nothing, as much.
+   */
+  private dieAheadOf(m: Monster): void {
+    const lists: (readonly Sprite[])[] = [];
+    // (the Fleshmancer: the runedust he leaves and the Meldstone bursting up out of his pit, art/meld_drops.ts: game.ts, his drops)
+    const md = this.art.meldDrops;
+    if (m.kind === 'fleshmancer' && MELD_DROPS.on && md) {
+      const heap = heapOf(MELD_TUNE.fleshmancerDust);
+      lists.push(md.spill[heap], md.heap[heap], md.crack, md.stone, md.spinApart, md.spinWhole);
+    }
+    // (one whose death its art keeps among its moves, the Carrion Queen's fall: where the painter does not paint her, here, as the
+    // bestiary's painting ahead knows only a `die`: render/left_to_painter.ts deathOf)
+    const f = figureOf(m);
+    if (!this.painter?.paints(f) && !this.bakedMobs?.coming(f)) {
+      const art = this.art.bestiary.of(f);
+      for (const set of [art.front, art.back]) {
+        const death = deathOf(set);
+        if (death && death !== set.clips?.die?.frames) lists.push(death);
+      }
+    }
+    // (the King: the Hush at his side, its end as he dies: render/act1_fx/gking.ts)
+    if (m.kind === 'gking') {
+      const hush = this.art.bestiary.of('gking:2' as MonsterFigure);
+      for (const set of [hush.front, hush.back]) lists.push(set.clips?.die?.frames ?? []);
+    }
+    // (reading a frame is what paints it: art/kit.ts lazyFrames)
+    for (const list of lists) for (let i = 0; i < list.length; i++) if (!isPainted(list, i)) this.dieAhead.push(() => list[i]);
   }
 
   /** (FLOOR 20) How far the picture leans toward the Moth now (screen pixels), gliding there and back. */

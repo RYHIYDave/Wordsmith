@@ -98,31 +98,91 @@ export function fxAt(view: View, fwd: number, side: number, up = 0, ax: number =
   return [ax + G * (f - l), ay + G * 0.5 * (-f - l) - up];
 }
 const fxAtTurned = (view: View, fwd: number, side: number, up: number, turn: number): [number, number] => fxAt(view, fwd, side, up, FX_CANVAS.ax, FX_CANVAS.ay, turn);
-/** A pen of whole pixels (only where nothing is yet, if `under`). */
-function pen(px: Px, under = false): (x: number, y: number, c: string) => void {
+
+/** A part of the canvas of the mark and the line (picture pixels from its top left): what of it a line's pictures are painted on. */
+export interface FxBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+/** All of it (as the art was drawn, and as its pages show it). (A function, not a constant: one more constant at the top of this
+ * file is one more line in the monsters' bake's code, which brings in this file's FX_CANVAS, and a new bake: tools/bake_monsters.mjs.) */
+function wholeFx(): FxBox {
+  return { x: 0, y: 0, w: FX_CANVAS.w, h: FX_CANVAS.h };
+}
+/**
+ * THE PART OF THE CANVAS ONE LINE COVERS, seen `view`, turned `turn` (the queue's fix-boss-death-stall-and-rime-shade, 12 Nov
+ * 2026: three lines painted on the whole canvas cost about a third of a frame): every pixel its mark, its crust, its creeping
+ * front, its frost-smoke and its crystals can be painted on, with a margin, on whole game pixels (`grain` picture pixels). Its
+ * pictures are painted on this much and no more (7 to 22 in 100 of the canvas, by the way the line runs) and laid where they lie on the whole of it: the
+ * same pixels in the same places (tests/rime_shade_box.test.ts).
+ */
+export function lineBox(view: View, turn = 0, grain = 2): FxBox {
+  const C = FX_CANVAS;
+  const { from, long, half } = RIME_LINE;
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  // (the floor it lies on is a strip, its picture a slanted box: its corners, on the floor and as high as a crystal stands over it,
+  // hold all of it. Along: from the mark's start to past the feathers at its end; across: past the front's bright edge)
+  for (const a of [from - 0.3, from + long + 0.4]) {
+    for (const s of [-half * 1.4, half * 1.4]) {
+      for (const up of [0, 36]) {
+        const [x, y] = fxAt(view, a, s, up, C.ax, C.ay, turn);
+        x0 = Math.min(x0, x);
+        y0 = Math.min(y0, y);
+        x1 = Math.max(x1, x);
+        y1 = Math.max(y1, y);
+      }
+    }
+  }
+  // (and a crystal's lean, width and edge to either side of its foot, and a pixel's rounding)
+  const m = 12;
+  const lo = (v: number): number => Math.max(0, Math.floor((v - m) / grain) * grain);
+  const hiX = Math.min(C.w, Math.ceil((x1 + m) / grain) * grain);
+  const hiY = Math.min(C.h, Math.ceil((y1 + m) / grain) * grain);
+  const x = lo(x0);
+  const y = lo(y0);
+  return { x, y, w: hiX - x, h: hiY - y };
+}
+
+/**
+ * A pen of whole pixels (only where nothing is yet, if `under`). `box`: the picture is that part of the canvas of the mark and the
+ * line (its pixels where they are on the whole canvas, its edge the whole canvas's).
+ */
+function pen(px: Px, under = false, box: FxBox | null = null): (x: number, y: number, c: string) => void {
+  const W = box ? FX_CANVAS.w : px.w;
+  const H = box ? FX_CANVAS.h : px.h;
+  const ox = box ? box.x : 0;
+  const oy = box ? box.y : 0;
   return (x, y, c) => {
     const X = Math.round(x);
     const Y = Math.round(y);
-    if (X < 1 || Y < 1 || X >= px.w - 1 || Y >= px.h - 1) return;
-    if (under && px.d[(Y * px.w + X) * 4 + 3] !== 0) return;
-    px.set(X, Y, c);
+    if (X < 1 || Y < 1 || X >= W - 1 || Y >= H - 1) return;
+    const bx = X - ox;
+    const by = Y - oy;
+    // (never, the box being as it should: tests/rime_shade_box.test.ts)
+    if (bx < 0 || by < 0 || bx >= px.w || by >= px.h) return;
+    if (under && px.d[(by * px.w + bx) * 4 + 3] !== 0) return;
+    px.set(bx, by, c);
   };
 }
 
 /**
  * THE MARK, `t` seconds into its breath (`RS_BREATH`): laid out from it toward you from `RS_BREATH.mark` over `markIn`, its
  * edges dashed in the enemy's pink, a chevron down it every tile; brighter as it is about to come; where the rime has crept
- * over it, gone under the rime. Gone with the line.
+ * over it, gone under the rime. Gone with the line. `box`: only that part of the canvas painted (lineBox), the picture that big.
  */
-export function markPainted(t: number, view: View, turn = 0): Px {
+export function markPainted(t: number, view: View, turn = 0, box: FxBox = wholeFx()): Px {
   const fxAt = (v: View, a: number, b: number, up = 0): [number, number] => fxAtTurned(v, a, b, up, turn);
-  const C = FX_CANVAS;
-  const px = new Px(C.w, C.h);
+  const px = new Px(box.w, box.h);
   const since = t - RS_BREATH.mark;
   if (since < 0) return px;
   const after = t - RS_BREATH.hit;
   if (after > RIME_LINE.long / RIME_LINE.pace + 0.1) return px;
-  const dot = pen(px, true);
+  const dot = pen(px, true, box);
   const { from, long, half } = RIME_LINE;
   const upTo = from + long * smooth(since / RIME_LINE.markIn);
   const front = lineFront(after) ?? -1;
@@ -189,16 +249,16 @@ export function crystalUp(age: number): number {
  * rime, feathered, its edges flecked with the enemy's pink, a bright edge at its creeping front (under the figures). 'air':
  * the crystals standing up out of it, spiking up at its front, settled behind, melting (sorted with the figures: `near`
  * 'behind' only those farther from the eye than a point `at` tiles along it, 'before' only those nearer, 'all' every one).
+ * `box`: only that part of the canvas painted (lineBox), the picture that big, its lights where they are on it.
  */
-export function linePainted(t: number, view: View, layer: 'floor' | 'air', near: 'behind' | 'before' | 'all' = 'all', at = 0, turn = 0): { px: Px; lights: Light[] } {
+export function linePainted(t: number, view: View, layer: 'floor' | 'air', near: 'behind' | 'before' | 'all' = 'all', at = 0, turn = 0, box: FxBox = wholeFx()): { px: Px; lights: Light[] } {
   const fxAt = (v: View, a: number, b: number, up = 0): [number, number] => fxAtTurned(v, a, b, up, turn);
-  const C = FX_CANVAS;
-  const px = new Px(C.w, C.h);
+  const px = new Px(box.w, box.h);
   const lights: Light[] = [];
   const front = lineFront(t);
   if (front === null || t > LINE_GONE + 0.05) return { px, lights };
-  const dot = pen(px);
-  const under = pen(px, true);
+  const dot = pen(px, false, box);
+  const under = pen(px, true, box);
   const { from, half } = RIME_LINE;
   const fr = Math.floor(t * 30 + 1e-6);
   if (layer === 'floor') {
@@ -256,7 +316,7 @@ export function linePainted(t: number, view: View, layer: 'floor' | 'air', near:
         if (life < 0.7) dot(x, y, life < 0.3 ? RS_FROST[4] : RS_FROST[3]);
       }
       const [lx, ly] = fxAt(view, front, 0);
-      lights.push({ x: lx, y: ly - 6, r: 30, color: RS_FROST[3], a: 0.16 });
+      lights.push({ x: lx - box.x, y: ly - 6 - box.y, r: 30, color: RS_FROST[3], a: 0.16 });
     }
     return { px, lights };
   }

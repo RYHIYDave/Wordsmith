@@ -29,6 +29,7 @@
 // there was a film of it, the cage stands in its shaft, a floor's moments do not play.
 
 import { FIRST5_FIGURES, HEAVY_FIGURES, framesOf, giveFrame, makeBestiary, paintOrder } from '../art/bestiary';
+import { deathOf } from './left_to_painter';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { ActorArt, AnimSet } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
@@ -1201,7 +1202,8 @@ export function paintWorkerMain(): void {
       // (its death wanted next: what is left of it, its death's frames first)
       if (!soon && dieSoon.has(figure)) {
         soon = true;
-        const dies = [art.front.clips?.die?.frames, art.back.clips?.die?.frames].map((f, v) => (f ? lists[v].indexOf(f as Sprite[]) : -1));
+        // (its death: its `die`, or the fall one of the descent's figures keeps among its moves: render/left_to_painter.ts deathOf)
+        const dies = [deathOf(art.front), deathOf(art.back)].map((f, v) => (f ? lists[v].indexOf(f) : -1));
         const rest = order.slice(n);
         const first = rest.filter(([v, l]) => l === dies[v]);
         order = [...order.slice(0, n), ...first, ...rest.filter(([v, l]) => l !== dies[v])];

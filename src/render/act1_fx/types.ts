@@ -30,6 +30,11 @@ export interface Act1FxCtx {
   spot: (x: number, y: number, r: number, a: number) => void;
   /** A film the painter has made for this floor (art/films.ts: its key; one of the kind's `films`), or null: not yet, or never (then the kind paints its own). */
   film?<T>(key: string): T | null;
+  /**
+   * Whether a figure's frames are the painter's to paint (render/painter.ts paints, or the floor's bake still coming): a frame of
+   * it not painted yet may be left to it, read through render/left_to_painter.ts leftToPainter, and never painted here as it is shown.
+   */
+  paints?(figure: string): boolean;
 }
 
 export interface Act1Fx {

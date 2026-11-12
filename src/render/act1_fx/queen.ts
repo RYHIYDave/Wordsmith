@@ -22,6 +22,7 @@ import { Q2_FALL, nearRockFrom } from '../../art/act1_figs/queen';
 import { drawSweepRing } from '../../art/boss_shots';
 import { drawAimLine } from '../../art/mob_shots';
 import { Px, flipSprite } from '../../engine/px';
+import { isPainted, leftToPainter } from '../left_to_painter';
 import type { Sprite } from '../../engine/px';
 import { HOME_AT, QN, viewIndex, BURST_PERIL, ECLIPSE_PERIL, VDIVE_PERIL, eclipsePools } from '../../game/act1_rules/queen';
 import { QA_DIVE, QA_ECLIPSE, QUEEN_ACTION } from '../../art/carrion_queen_action';
@@ -82,8 +83,8 @@ function buried(s: Sprite, flip: boolean, rock: (gx: number, gy: number) => bool
   return { ...s, img: out as HTMLCanvasElement };
 }
 
-/** Her fall's frames as drawn, each made the first time it is shown; and what the ground shows round where she went over, asked once a game pixel. */
-const falls = new WeakMap<Peril, { frames: Map<number, Sprite>; rock: (gx: number, gy: number) => boolean }>();
+/** Her fall's frames as drawn (by the art's frame each is made from), each made the first time it is shown; and what the ground shows round where she went over, asked once a game pixel. */
+const falls = new WeakMap<Peril, { frames: Map<Sprite, Sprite>; rock: (gx: number, gy: number) => boolean }>();
 
 // HER MOVES DONE THE ACTION WAY (QUEEN_ACTION: art/carrion_queen_action_fx.ts, his yes, 2 Nov 2026): while she acts, what she will
 // strike marked on the rock (paintRakeMarks, paintGustMarks, paintDiveMarks); where her dive struck, the crater and its cracks and the
@@ -174,13 +175,16 @@ const OLD_FX: Act1Fx = {
         if (r === undefined) seen.set(key, (r = !T.drop(p.x + (gx / 16 + gy / 8) / 2, p.y + (gy / 8 - gx / 16) / 2)));
         return r;
       };
-      falls.set(p, (made = { frames: new Map(), rock }));
+      falls.set(p, (made = { frames: new Map<Sprite, Sprite>(), rock }));
     }
-    let sp = made.frames.get(i);
+    // (a frame of her fall the painter has not handed over yet: the nearest of it that is, never painted here as it is shown;
+    // her fall is her death, painted first as she nears her end: render/left_to_painter.ts deathOf)
+    const frames = clip.frames;
+    const s = leftToPainter(!isPainted(frames, i) && !!c.paints?.('queen'), () => frames[i]);
+    let sp = made.frames.get(s);
     if (!sp) {
-      const s = clip.frames[i];
       sp = back || p.t < Q2_FALL.over ? s : buried(s, flip, made.rock);
-      made.frames.set(i, sp);
+      made.frames.set(s, sp);
     }
     const [sx, sy] = c.at(p.x, p.y);
     c.stand(p.x + p.y, flip ? flipSprite(sp) : sp, sx, sy);
