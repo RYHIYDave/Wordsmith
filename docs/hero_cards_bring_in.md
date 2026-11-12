@@ -14,9 +14,9 @@ the main chat: `main` is untouched, nothing is published.
 
 ## What is on GitHub
 
-- `bring-in/hero-cards`: `main` 0da5127e (25.3.9) with `fix/hero-cards-from-bake` (4f49c885) merged in (no conflicts), one
+- `bring-in/hero-cards` (main 0b79b7ab, records since 0da5127e, merged in after): `main` 0da5127e (25.3.9) with `fix/hero-cards-from-bake` (4f49c885) merged in (no conflicts), one
   commit after it (ceab67ef: a hero's making ready kept out of heroLists, so that THE MONSTERS' BAKE KEEPS MAIN'S MARK,
-  4f510caa1c9d; nothing painted or baked differs), and this note. A FAST-FORWARD FOR `main` while it stands at 0da5127e.
+  4f510caa1c9d; nothing painted or baked differs), and this note. A FAST-FORWARD FOR `main` while it stands at 0b79b7ab.
 - MARKS of `bring-in/hero-cards`, each worked out from the work copy's own folder: heroes 5482604e8eb0 (new); townsfolk
   d4c898fe370d, monsters 4f510caa1c9d (both main's); sounds e4b9ee1ccd00 and the Colossus 7cf0996e564d (main's: no file
   touched).
@@ -95,4 +95,5 @@ The third run (`runs/rmwdkfnt74o2`, 12 Nov 08:10; an iPhone, iOS 18.7, in the Cl
   `[bakedFirst, end)` (render/baked.ts bakedFirst), recording each with its key, as its `all` does; its held frames take their
   order from `all`, so the cards' standing and running stay first. `lens` gains one list (READY_LIST, empty but on a card).
   Whichever comes second takes a new bake.
-- `try/uniques` merges with it clean (tried, not kept).
+- `try/uniques` and `build/smooth-loading-frames` (the Loading-frames chat's, 713b305) merge with it clean (tried, not kept);
+  with the second the heroes' mark is still 5482604e8eb0.
