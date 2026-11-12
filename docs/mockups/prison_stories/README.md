@@ -1,8 +1,8 @@
-# The prison's stories, floors 1 to 4 (BEHIND A SWITCH THAT IS OFF: NOT IN THE GAME UNTIL HIS YES)
+# The prison's stories, floors 1 to 4 (HIS YES TO THE PICTURES: ON, FOR THE MAIN CHAT TO BRING IN)
 
 Branch `build/prison-stories`, from `main` at b09cfabf. Built 12 Nov 2026 by a chat of his working from the queue (its item
 "Pick the stories prison floors 1 to 4 tell", `pick-stories-for-prison-floors-1-to-4`). The switch is `STORIES` in
-`src/game/stories.ts` (off); the pictures here are from the game with it on (`__dbg.stories.on = true`).
+`src/game/stories.ts`, ON at his word (below); the pictures here are from the game with it on.
 
 ## His words
 
@@ -21,6 +21,11 @@ Branch `build/prison-stories`, from `main` at b09cfabf. Built 12 Nov 2026 by a c
   candles, a few on floor 1 and more each floor down to its temple on 5; the Sunken Eye's black water seeping in from floor 3
   down.
 - Told how they were read (a plain message), and that it would be built behind an off switch with pictures from the game first.
+- Shown the five pictures (`pictures/`), told that floors 2 and 3 read best, floor 1's pieces are small and dark, the candles
+  stand out and the black water is quiet like floor 5's; asked by pop-up “The prison stories for floors 1 to 4 (...): are they
+  right?”, his pick, 12 Nov 2026: “Yes, hand it to main (Recommended)” (offered as: it goes on the ready-to-ship list; the main
+  chat turns it on in the next update). The others offered: “Yes, but bolder floor 1”, “Make the black water louder”, “Close,
+  change something”. SO `STORIES.on = true` on this branch.
 
 ## What it does (`src/game/stories.ts`, laid by `src/game/first5.ts` `dress`)
 
@@ -82,5 +87,7 @@ own pictures are the same, pixel for pixel.
 1. Merge `build/prison-stories`. With STORIES off nothing changes; first5.ts's `dress` has the story's hook before its scenes,
    and its scenes' helpers moved out of their `if` (unchanged); the lair's story pieces (art/lair_story.ts) are untouched in
    what they draw.
-2. On his yes to the pictures, `STORIES.on = true` (src/game/stories.ts). No bake changes: the pieces are painted with the floors'.
+2. `STORIES.on` is true on the branch already (his yes). No bake changes: the pieces are painted with the floors'. Floors 1 to 4
+   are laid a little differently from today wherever the way's rooms are (their things now the story's): a playtest that
+   counted on a piece in a room of the way may want looking at.
 3. Floor 5's own story (the queue's `lay-floor-5-as-story-scenes`) can be laid the same way: a `STORY_SETS[5]` of its beats.

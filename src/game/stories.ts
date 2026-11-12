@@ -14,7 +14,8 @@
 //   and the two threads through all five, “Both threads (Recommended)”: the cult's candles, a few on floor 1 and more on each
 //     floor down to its temple on 5; the Sunken Eye's black water seeping in from floor 3 down (art/prison_story.ts: the few
 //     pieces no floor had).
-// Off until he has seen the rooms in pictures from the game and said yes (his rule: pictures first). The rooms off the way keep
+// ON AT HIS WORD: shown the rooms in pictures from the game (docs/mockups/prison_stories/pictures), asked “The prison stories for
+// floors 1 to 4 ...: are they right?”, his pick, 12 Nov 2026: “Yes, hand it to main (Recommended)”. The rooms off the way keep
 // what they have: floors 1 and 2 their scenes (first5.ts SCENES), floors 3 and 4 their things laid about.
 //
 // HOW IT IS LAID. The way's rooms are the map-maker's main path (Room.path, from 1 to the last before the boss's hall; no cell),
@@ -25,8 +26,8 @@
 import type { Room } from './types';
 import type { SceneCtx } from './first5';
 
-/** THE SWITCH, and the floors laid so. */
-export const STORIES: { on: boolean; floors: number[] } = { on: false, floors: [1, 2, 3, 4] };
+/** THE SWITCH (on at his word, 12 Nov 2026), and the floors laid so. */
+export const STORIES: { on: boolean; floors: number[] } = { on: true, floors: [1, 2, 3, 4] };
 
 /** What a story's scene is given: a scene's own (first5.ts SceneCtx), and the threads'. */
 export interface StoryCtx extends SceneCtx {

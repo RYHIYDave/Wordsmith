@@ -2,7 +2,7 @@
 // night it fell”, floor 2 “The endless line”, floor 3 “The thing below”, floor 4 “The miners dig in”, and “Both threads” (the cult's
 // candles more on each floor down; the Sunken Eye's black water from floor 3 down). Held here, the floors in their looks as the
 // game has them (game/floor_looks.ts), over a few seeds each:
-//   1. off until his yes: no story laid, no threads' pieces with the floors' own
+//   1. on at his word; off, no story laid and no threads' pieces with the floors' own
 //   2. on: nearly every room of the way is laid with its beat, the beats in the story's order from the way in to the boss's hall,
 //      every beat there
 //   3. every piece laid is one of the floor's own in its look (or the threads')
@@ -49,15 +49,16 @@ function withStories<T>(on: boolean, f: () => T): T {
   }
 }
 
-test('1. off until his yes: no story laid, no threads\' pieces with the floors\' own', () => {
-  assert.equal(STORIES.on, false);
+test('1. on at his word (12 Nov 2026); off, no story laid and no threads\' pieces with the floors\' own', () => {
+  assert.equal(STORIES.on, true);
   assert.deepEqual(STORIES.floors, [1, 2, 3, 4]);
-  for (const depth of [1, 2, 3, 4]) {
-    const g = floor(depth, 11);
-    assert.equal(g.level.dress?.story, undefined, `floor ${depth}`);
-  }
-  forgetPieces(0);
-  for (const k of [3, 4]) for (const name of [CULT_CANDLES, BLACK_WATER, BLACK_POOL.x, BLACK_POOL.y]) assert.ok(!lookPieces(k).has(name), `floor ${k}: ${name}`);
+  withStories(false, () => {
+    for (const depth of [1, 2, 3, 4]) {
+      const g = floor(depth, 11);
+      assert.equal(g.level.dress?.story, undefined, `floor ${depth}`);
+    }
+    for (const k of [3, 4]) for (const name of [CULT_CANDLES, BLACK_WATER, BLACK_POOL.x, BLACK_POOL.y]) assert.ok(!lookPieces(k).has(name), `floor ${k}: ${name}`);
+  });
 });
 
 test('2. on: the way\'s rooms laid with their beats, in the story\'s order, every beat there', () => {
