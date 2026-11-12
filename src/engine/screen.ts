@@ -46,8 +46,10 @@ export const RES = 2;
  * the page upright and the game turned for him (393 by 723, 3 to a point: his phone check of 12 Nov), comes out at 5; the page
  * sideways (734 by 315) at 4. So on a touch screen an odd number is made one fewer, even, where the view that gives stays within
  * MAX_H game pixels tall: 4 there, the size things are when the page turns with him, a little more of the floor seen.
+ * ON AT HIS WORD, 12 Nov 2026, shown it at his phone's size (docs/mockups/even_pixels/pictures/floor11_now_vs_even.png) and told
+ * things would be about 20% smaller that way of holding it, the buttons too: “Yes, make them even (Recommended)”.
  */
-export const EVEN_PIXELS = { on: false };
+export const EVEN_PIXELS = { on: true };
 /** (EVEN_PIXELS) The tallest view, in game pixels, an even number may give before the odd one is kept (things would be too small). */
 const MAX_H = 324;
 
