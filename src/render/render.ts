@@ -60,6 +60,7 @@ import { WARP_FRAMES, WAY_FRAMES, makeWaypointArt } from '../art/crypt_ways';
 import { CITY } from '../art/hub2';
 import { TALK_FPS, TALK_FRAMES, campFolkFrame } from '../art/hub2_folk';
 import { CAMP_DUSK, campFolk, isCamp } from '../game/camp';
+import { RimView } from './rim';
 import { columnSprite, folkActAt, folkActLong, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
 import { FOLK_SOUND, WORLD_SOUNDS } from '../game/world_sounds';
 import type { TownArt } from '../art/townscene';
@@ -541,6 +542,8 @@ export class Renderer {
   readonly tomb = new TombView();
   /** THE FIRST TOWN AS THE CASTLE'S HALL (render/castle.ts, behind CASTLE_HALL). */
   readonly castle = new CastleView();
+  /** THE ENDLESS TOWN, THE SHAFT'S RIM (render/rim.ts, behind ENDLESS_TOWN). */
+  readonly rim = new RimView();
   /** FLOOR 4, THE BURIED CHAPEL OF BONES (render/chapel.ts, behind CHAPEL). */
   readonly chapel = new ChapelView();
   /** FLOOR 5, THE MINE THAT BECOMES HIS TEMPLE (render/lair.ts, behind LAIR_TEMPLE). */
@@ -553,7 +556,7 @@ export class Renderer {
   private lookNow: LookView | null = null;
   /** The new look of this level's floor, if it has one on. */
   lookOf(L: Game['level']): LookView | null {
-    for (const v of [this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
+    for (const v of [this.rim, this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
     return null;
   }
   /** (forgetLooks) The level the looks were last sorted for. */
@@ -571,7 +574,7 @@ export class Renderer {
     this.stillGlows.forget();
     this.stillFloor.forget();
     this.stillDark.forget();
-    for (const v of [this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) {
+    for (const v of [this.rim, this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) {
       if (v === keep) continue;
       v.forget?.();
       this.lookGrounds.delete(v);
@@ -869,6 +872,8 @@ export class Renderer {
   /** THE WAYS' PICTURES for this level: its floor's; the town's the first floor's (THE CAMP, game/camp.ts: its waypoint in the city's grey stone, art/hub2.ts CITY). */
   private waysOf(L: Game['level']): ReturnType<typeof lookWays> {
     if (isCamp(L)) return (this.cityWays ??= { stair: lookStairs(1), way: makeWaypointArt(CITY) });
+    // (THE SHAFT'S RIM: its waypoint's dais in the rim's stone, as the art chat's pictures have it: render/rim.ts)
+    if (this.rim.on(L)) return this.rim.ways();
     // (THE FIRST TOWN AS THE CASTLE'S HALL: its waypoint's dais in the castle's stone: art/castle_hall.ts)
     if (this.castle.on(L)) return (this.hallWays ??= { stair: lookStairs(1), way: this.castle.A().way });
     return lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
@@ -1095,7 +1100,8 @@ export class Renderer {
       if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
     }
     const slab = L.props.find((p) => p.kind === 'runeSlab');
-    const col = slab ? columnSprite(art, t) : null;
+    // (THE SHAFT'S RIM: no column of light over its slab: the master rune-stone's place is the tablet's socket there, and it is empty)
+    const col = slab && !L.rim ? columnSprite(art, t) : null;
     if (slab && col) {
       // (on the slab's top: 11 game pixels up)
       const sx = wx(cam, slab.x, slab.y);
@@ -2318,7 +2324,9 @@ export class Renderer {
         const sy = Math.round(wy(this.cam, q.x, q.y));
         if (sx - q.s.ax > W || sx - q.s.ax + q.s.w < 0 || sy - q.s.ay > H || sy - q.s.ay + q.s.h < 0) continue;
         if (q.add) g.globalCompositeOperation = 'lighter';
+        if (q.alpha !== undefined) g.globalAlpha = Math.max(0, Math.min(1, q.alpha));
         g.drawImage(q.s.img, sx - q.s.ax, sy - q.s.ay, q.s.w, q.s.h);
+        g.globalAlpha = 1;
         g.globalCompositeOperation = 'source-over';
       }
     }
@@ -3105,6 +3113,8 @@ export class Renderer {
       !!look && look.steady === true && !relief && !f.cut && !this.openGround && !land && !inHall && !yardOn && !groundsSky && !this.dressed &&
       this.stillFloor.draw(g, cam, W, H, P.black, [L, look, this.art.ground, lowAll, WALL_LOOK.away, WALL_LOOK.front, this.floorSig(L)], (c, at) => this.layFloor(c, at, L, t, look, this.art.ground, lowAll));
     // (THE FIRST TOWN AS THE CASTLE'S HALL: the castle's stone above its walls and its roof, behind everything: render/castle.ts)
+    // (THE SHAFT'S RIM: its dark rock going on past the edges of its ground's picture: render/rim.ts)
+    if (look?.behind && !asOneFloor) look.behind(g, cam.ox, cam.oy, W, H);
     if (look?.back && !asOneFloor) {
       for (const q of look.back(L, t)) {
         const sx = Math.round(wx(cam, q.x, q.y));
@@ -3328,7 +3338,9 @@ export class Renderer {
       // (THE FIRST FIVE FLOORS: the floor's own pieces, and its own of the game's things: render/pieces.ts)
       // (QUESTS15: the forge crank in the Stoker's arena, his art's)
       const crank = L.furnace && p === L.furnace.crank ? this.crankSprite(game) : null;
-      const own = crank ?? (this.dressed ? this.pieces.standing(game, p, t) : undefined);
+      // (THE SHAFT'S RIM: the wordsmith's slab with the tablet's socket, the look's own picture of it: render/rim.ts)
+      const ownHere = crank ?? (this.dressed ? this.pieces.standing(game, p, t) : undefined);
+      const own = ownHere !== undefined ? ownHere : this.lookNow?.own ? this.lookNow.own(L, p, t) : undefined;
       if (own !== undefined) sp = own;
       else switch (p.kind) {
         case 'brazier': sp = art.props.brazier[(Math.floor(t * 8) + p.variant) % 4]; break;
@@ -3393,8 +3405,8 @@ export class Renderer {
         const sy = Math.round(wy(cam, q.x, q.y));
         if (sx < -160 || sx > W + 160 || sy < -40 || sy > H + 260) continue;
         const d = q.d ?? q.x + q.y;
-        if (q.add) this.stand(d, q.s, sx, sy, null, 0, 1, 1, null, 0, true);
-        else this.stage.stand(d, q.s, sx, sy, this.stage.veil(q.s, sx, sy, d));
+        if (q.add) this.stand(d, q.s, sx, sy, null, 0, 1, q.alpha ?? 1, null, 0, true);
+        else this.stage.stand(d, q.s, sx, sy, (q.alpha ?? 1) * this.stage.veil(q.s, sx, sy, d));
         if (q.s.lights) this.stage.lit(q.s, sx, sy);
       }
     }
@@ -3422,6 +3434,8 @@ export class Renderer {
       const hop = goal ? Math.round(Math.abs(Math.sin(t * 9)) * 2) : 0;
       this.labels.push({ x: wx(cam, st.x, st.y), y: wy(cam, st.x, st.y) - lift - hop, text: STATION_NAME[st.kind], color: goal ? P.gd4 : near ? P.white : P.tl5 });
     }
+    // (THE SHAFT'S RIM: what it stands that is no service is named as they are: its record stone, its trophies wall: render/rim.ts)
+    if (this.lookNow?.names) for (const n of this.lookNow.names(L)) this.labels.push({ x: wx(cam, n.x, n.y), y: wy(cam, n.x, n.y) - n.lift, text: n.text, color: P.tl5 });
     // (QUEST MARKERS, game/quest_marks.ts: over whoever in town has a quest for him now, over his name; over the floor's waypoint
     // home while he brings something back)
     this.questMarks.length = 0;
@@ -5078,7 +5092,7 @@ export class Renderer {
       }
     }
     // (the town's gate lights the floor before it)
-    if (L.town && !isCamp(L)) spot(wx(cam, TOWN.gate.x, TOWN.gate.y), wy(cam, TOWN.gate.x, TOWN.gate.y) - 14, 84 + Math.sin(t * 3) * 3, 0.9);
+    if (L.town && !isCamp(L) && !L.rim) spot(wx(cam, TOWN.gate.x, TOWN.gate.y), wy(cam, TOWN.gate.x, TOWN.gate.y) - 14, 84 + Math.sin(t * 3) * 3, 0.9);
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx]) continue;
       if (p.kind === 'brazier') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 14, 62 + Math.sin(t * 9 + p.variant) * 3, 0.9);

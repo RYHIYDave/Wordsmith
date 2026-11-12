@@ -356,3 +356,155 @@ export function scatter(walk: Uint8Array, w: number, h: number, x: number, y: nu
   }
   return result;
 }
+
+// ---------------------------------------------------------------------------------------------
+// A FINER GRID FOR A TOUCH'S ERRAND (the Endless town, the Shaft's Rim: game/rim.ts). The Shaft's Rim is round, and so are
+// things that stand on it: its pit, its standing stones, its fires. A body is held off those by their own round, not by a
+// whole tile (Level.fence), so the ways between them are narrower than a tile and run across the grid: the tiles alone
+// cannot say where he may walk. A level that has such ways gives a finer grid, `k` cells to a tile each way, a cell open
+// where a body may stand with its middle on the cell's middle; flowField, flowDir and lineOfSight then go by it as they go
+// by the tiles (every length times `k`; a direction is the same in both).
+
+export interface FineGrid {
+  /** Cells to a tile, each way. */
+  k: number;
+  /** The grid's size in cells. */
+  w: number;
+  h: number;
+  /** 1 where a body may stand with its middle on the cell's middle. */
+  grid: Uint8Array;
+}
+
+/** The finer grid of a place `w` by `h` tiles: each cell asked of `stands(x, y)`, its middle in tiles. */
+export function fineGrid(w: number, h: number, k: number, stands: (x: number, y: number) => boolean): FineGrid {
+  const W = w * k;
+  const H = h * k;
+  const grid = new Uint8Array(W * H);
+  for (let cy = 0; cy < H; cy++) for (let cx = 0; cx < W; cx++) grid[cy * W + cx] = stands((cx + 0.5) / k, (cy + 0.5) / k) ? 1 : 0;
+  return { k, w: W, h: H, grid };
+}
+
+/** The cell nearest (x, y) (in cells) that `is` so, within `reach` cells of the one (x, y) is in; -1 if none is. */
+function nearCell(w: number, h: number, x: number, y: number, is: (i: number) => boolean, reach = 4): number {
+  const cx = Math.floor(x);
+  const cy = Math.floor(y);
+  let best = -1;
+  let bd = Infinity;
+  for (let j = cy - reach; j <= cy + reach; j++) {
+    for (let i = cx - reach; i <= cx + reach; i++) {
+      if (i < 0 || j < 0 || i >= w || j >= h || !is(j * w + i)) continue;
+      const d = (i + 0.5 - x) ** 2 + (j + 0.5 - y) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = j * w + i;
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * WHERE AN ERRAND ON THE FINER GRID MAKES FOR: of the cells that can be walked to from (fromX, fromY), the one nearest
+ * (toX, toY), in tiles. The thing touched stands on ground of its own, shut for more than a cell round it, and a field
+ * laid from a shut cell reaches nothing; so the field is laid from this cell instead. (toX, toY) itself if it can be walked to.
+ */
+export function fineGoal(F: FineGrid, fromX: number, fromY: number, toX: number, toY: number): { x: number; y: number } {
+  const { k, w, h, grid } = F;
+  // (he may stand hard by something, where no cell is open, a cell being open only where his body may stand anywhere in it: the
+  // search begins at the open cell nearest him)
+  const start = nearCell(w, h, fromX * k, fromY * k, (i) => grid[i] === 1);
+  if (start < 0) return { x: toX, y: toY };
+  const seen = new Uint8Array(w * h);
+  const queue = new Int32Array(w * h);
+  let head = 0;
+  let tail = 0;
+  seen[start] = 1;
+  queue[tail++] = start;
+  let best = -1;
+  let bd = Infinity;
+  while (head < tail) {
+    const i = queue[head++];
+    const x = i % w;
+    const y = (i - x) / w;
+    {
+      const d = ((x + 0.5) / k - toX) ** 2 + ((y + 0.5) / k - toY) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = i;
+      }
+    }
+    const left = x > 0 && grid[i - 1] === 1;
+    const right = x < w - 1 && grid[i + 1] === 1;
+    const up = y > 0 && grid[i - w] === 1;
+    const down = y < h - 1 && grid[i + w] === 1;
+    const go = (j: number): void => {
+      if (seen[j]) return;
+      seen[j] = 1;
+      queue[tail++] = j;
+    };
+    if (left) go(i - 1);
+    if (right) go(i + 1);
+    if (up) go(i - w);
+    if (down) go(i + w);
+    // (across a corner only where both cells beside it are open, as the field walks)
+    if (left && up && grid[i - w - 1] === 1) go(i - w - 1);
+    if (right && up && grid[i - w + 1] === 1) go(i - w + 1);
+    if (left && down && grid[i + w - 1] === 1) go(i + w - 1);
+    if (right && down && grid[i + w + 1] === 1) go(i + w + 1);
+  }
+  if (best < 0) return { x: toX, y: toY };
+  const bx = best % w;
+  return { x: (bx + 0.5) / k, y: ((best - bx) / w + 0.5) / k };
+}
+
+const fineStep: Vec = { x: 0, y: 0 };
+/**
+ * WHICH WAY TO WALK ALONG A FIELD ON THE FINER GRID, from (x, y) in tiles. The field leads from cell to cell, an eighth of a
+ * tile at a time, in the grid's eight directions: followed step by step, a body walking across the grid would turn to and fro
+ * with every cell. So the way down the field is traced ahead (`far` cells), and he makes straight for the furthest cell of it
+ * that he can walk straight to (every cell on the line open). (0, 0) where the field leads nowhere from here.
+ */
+export function fineDir(grid: Uint8Array, w: number, h: number, k: number, flow: Uint16Array, x: number, y: number, far = 64, out?: Vec): Vec {
+  const v = out ?? { x: 0, y: 0 };
+  v.x = 0;
+  v.y = 0;
+  let cx = Math.floor(x * k);
+  let cy = Math.floor(y * k);
+  if (cx < 0 || cy < 0 || cx >= w || cy >= h) return v;
+  let tx = -1;
+  let ty = -1;
+  let first = true;
+  // (hard by something he stands in no open cell, and the field knows none of those round him: first to the nearest cell it does know)
+  if (flow[cy * w + cx] === UNREACHABLE) {
+    const near = nearCell(w, h, x * k, y * k, (i) => flow[i] !== UNREACHABLE);
+    if (near < 0) return v;
+    cx = near % w;
+    cy = (near - cx) / w;
+    tx = cx;
+    ty = cy;
+    first = false;
+  }
+  for (let n = 0; n < far; n++) {
+    flowDir(flow, grid, w, h, cx + 0.5, cy + 0.5, fineStep);
+    const bx = fineStep.x > 0.3 ? 1 : fineStep.x < -0.3 ? -1 : 0;
+    const by = fineStep.y > 0.3 ? 1 : fineStep.y < -0.3 ? -1 : 0;
+    if (bx === 0 && by === 0) break;
+    cx += bx;
+    cy += by;
+    // (the first cell of the way is always walked to: he may stand where no line begins, hard by something)
+    if (first || lineOfSight(grid, w, h, x * k, y * k, cx + 0.5, cy + 0.5)) {
+      tx = cx;
+      ty = cy;
+    }
+    first = false;
+  }
+  if (tx < 0) return v;
+  const dx = (tx + 0.5) / k - x;
+  const dy = (ty + 0.5) / k - y;
+  const len = Math.hypot(dx, dy);
+  if (len > 1e-6) {
+    v.x = dx / len;
+    v.y = dy / len;
+  }
+  return v;
+}

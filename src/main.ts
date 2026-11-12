@@ -54,6 +54,9 @@ import type { CryptMarks } from './art/crypt';
 import { CRYPT_LAYOUT, CRYPT_LITTER } from './game/dungeon';
 import { makeTownProps } from './art/town';
 import { CITY } from './art/hub2';
+import { RIM_THEME } from './art/shaft_town';
+import { ENDLESS_TOWN } from './art/shaft_rim';
+import { onWayOut, roundStep } from './game/rim';
 import { isCamp } from './game/camp';
 import { townSprite } from './art/townscene';
 import { makeTownsfolk } from './art/townsfolk';
@@ -111,7 +114,7 @@ import { SHAPES } from './game/level';
 import type { Hall } from './game/level';
 import { LOCK, LockOn, aimAhead, autoTargets, placedAim } from './game/lock';
 import { AIM_MODES, emptyControls } from './game/state';
-import { flowDir, flowField, lineOfSight } from './game/nav';
+import { fineDir, fineGoal, flowDir, flowField, lineOfSight } from './game/nav';
 import type { AimMode, Controls, GameEvent, Level, Meta, Monster, PropInst, Station, TownVoice } from './game/state';
 import { rollItem } from './game/items';
 import { RNG } from './engine/rng';
@@ -323,6 +326,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let hallShown = false;
   let hallEdges: ReturnType<typeof edgesOf> | null = null;
   let cityArt: { town: typeof art.town; props: typeof art.props } | null = null;
+  // (THE SHAFT'S RIM, behind ENDLESS_TOWN: whether its own things are the town's now)
+  let rimShown = false;
+  let rimArt: { town: typeof art.town } | null = null;
   /** The two pictures behind the starting screen. */
   const titleArt = makeTitleArt();
   // WHICH START SCREEN. 'library' is the one the game has had since Version 11 (the library that
@@ -465,7 +471,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let padHoldUses = -1;
   let padPrompt = false;
   /** Something the player touched in order to use it: the hero walks there, and then it is used. */
-  let errand: { kind: Spot; x: number; y: number; t: number; level: Level; flow: Uint16Array; walk: Uint8Array } | null = null;
+  // (`k`, `w`, `h`: the grid its way is found on, and how many of its cells go to a tile: the level's tiles, or its finer grid, game/nav.ts FineGrid)
+  let errand: { kind: Spot; x: number; y: number; t: number; level: Level; flow: Uint16Array; walk: Uint8Array; k: number; w: number; h: number } | null = null;
   // (BOSS_INTRO, FLOOR_NAMES: the boss's name and the floor's, across the screen: ui/cards.ts)
   let bossCard: BossCard | null = null;
   let floorCard: FloorCard | null = null;
@@ -911,7 +918,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const named = (st: { kind: Station; x: number; y: number }, go: { kind: Spot; x: number; y: number } = st): void => {
       const half = (textWidth(STATION_NAME[st.kind], 'small') + 4) / 2 + 2;
       const sx = wx(cam, st.x, st.y);
-      const top = wy(cam, st.x, st.y) - NAME_LIFT[st.kind];
+      const top = wy(cam, st.x, st.y) - ((st as { lift?: number }).lift ?? NAME_LIFT[st.kind]);
       if (Math.abs(px - sx) > half || py < top - 3 || py > top + 8) return;
       const d = Math.hypot(px - sx, py - (top + 3));
       if (d < bd) {
@@ -1130,7 +1137,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const f = g.level.floor;
       // (the way it walks: over an open stairwell's top step only to the stairs themselves, game/ways.ts errandWalk)
       const walk = errandWalk(g.level, spot.x, spot.y);
-      errand = { kind: spot.kind, x: spot.x, y: spot.y, t: 0, level: g.level, flow: flowField(walk, f.w, f.h, spot.x, spot.y, Infinity, undefined, g.level.step), walk };
+      // (THE SHAFT'S RIM, game/rim.ts: its ways are narrower than a tile and run across the grid: the errand's way is found on the
+      // level's finer grid, made for the cell he can walk to that is nearest what was touched)
+      const fine = g.level.errand;
+      if (fine) {
+        const to = fineGoal(fine, h.x, h.y, spot.x, spot.y);
+        errand = { kind: spot.kind, x: spot.x, y: spot.y, t: 0, level: g.level, flow: flowField(fine.grid, fine.w, fine.h, to.x * fine.k, to.y * fine.k), walk: fine.grid, k: fine.k, w: fine.w, h: fine.h };
+      } else errand = { kind: spot.kind, x: spot.x, y: spot.y, t: 0, level: g.level, flow: flowField(walk, f.w, f.h, spot.x, spot.y, Infinity, undefined, g.level.step), walk, k: 1, w: f.w, h: f.h };
       order = null;
       sfx('click');
     } else if (poke) errand = null;
@@ -1530,9 +1543,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         const ex = e.x - ux * short;
         const ey = e.y - uy * short;
         const side = TUNE.heroRadius + 0.05;
-        const clear = (ox: number, oy: number): boolean => lineOfSight(walk, f.w, f.h, h.x + ox, h.y + oy, ex + ox, ey + oy) && g.walksStraight(h.x + ox, h.y + oy, ex + ox, ey + oy);
-        const straight = clear(0, 0) && clear(-uy * side, ux * side) && clear(uy * side, -ux * side);
-        const v = straight ? { x: ux, y: uy } : flowDir(e.flow, walk, f.w, f.h, h.x, h.y, undefined, g.level.step);
+        // (on a level's finer grid a cell is open only where his whole body may stand: the one line through his middle says it all)
+        const clear = (ox: number, oy: number): boolean => lineOfSight(walk, e.w, e.h, (h.x + ox) * e.k, (h.y + oy) * e.k, (ex + ox) * e.k, (ey + oy) * e.k) && g.walksStraight(h.x + ox, h.y + oy, ex + ox, ey + oy);
+        const straight = clear(0, 0) && (e.k > 1 || (clear(-uy * side, ux * side) && clear(uy * side, -ux * side)));
+        const v = straight ? { x: ux, y: uy } : e.k > 1 ? fineDir(walk, e.w, e.h, e.k, e.flow, h.x, h.y) : flowDir(e.flow, walk, f.w, f.h, h.x, h.y, undefined, g.level.step);
         if (v.x === 0 && v.y === 0) {
           // on its tile already, or no path the field knows: head straight for it
           v.x = ux;
@@ -1756,7 +1770,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const campNow = isCamp(g.level);
     if (campNow !== campShown) {
       if (campNow) {
-        if (!hallShown) hallTown = art.town;
+        if (!hallShown && !rimShown) hallTown = art.town;
         cityArt ??= { town: makeTownProps(CITY), props: makeDungeonProps(CITY) };
         art.town = cityArt.town;
         art.props = cityArt.props;
@@ -1765,6 +1779,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         art.props = crypt ? lookProps(crypt) : vault.props;
       }
       campShown = campNow;
+    }
+    // (THE ENDLESS TOWN, game/rim.ts, behind ENDLESS_TOWN: THE SHAFT'S RIM: the town's own things in the rim's stone, art/shaft_town.ts
+    // RIM_THEME, as the art chat's pictures have them, made the first time it is reached; its fires the game's own; the towns' kept)
+    const rimNow = renderer.rim.on(g.level);
+    if (rimNow !== rimShown) {
+      if (rimNow) {
+        rimArt ??= { town: makeTownProps(RIM_THEME) };
+        art.town = rimArt.town;
+      } else if (!campNow) art.town = hallTown;
+      rimShown = rimNow;
     }
     // (THE FIRST TOWN AS THE CASTLE'S HALL, behind CASTLE_HALL: the town's own things in the castle's stone and timber, its
     // braziers, barrels, urn and pillars; its floor's edges toward the eye in its stone: art/castle_hall.ts, render/castle.ts)
@@ -1780,7 +1804,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       } else {
         art.ground = crypt ? lookGround(crypt) : vault.ground;
         if (!campNow) {
-          art.town = hallTown;
+          if (!rimNow) art.town = hallTown;
           art.props = crypt ? lookProps(crypt) : vault.props;
         }
       }
@@ -1923,8 +1947,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (v > 0.02) worldSound(s.name, v);
     }
     if (L.town) {
-      // (the owl in the rafters: its ruffle as its loop comes to it; a hoot now and then)
-      if (CASTLE_HALL.on) {
+      // (the owl in the rafters: its ruffle as its loop comes to it; a hoot now and then; none at the Shaft's Rim, which has no rafters)
+      if (CASTLE_HALL.on && !L.rim) {
         const f = owlFrameAt(clock, 3.1);
         const near = byNearness(Math.hypot(CASTLE_OWL_AT[0] - h.x, CASTLE_OWL_AT[1] - h.y), 4, 16);
         if (f === 12 && W.owl !== 12 && near > 0.02) worldSound('owl_ruffle', 0.7 * near);
@@ -2461,7 +2485,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         if (gate.enter) {
           input.eat('KeyE', 'KeyF', 'Enter');
           panels.open = 'none';
-          g.enterDungeon();
+          // (THE SHAFT'S RIM: in at its gate's panel is down to the endless level he has reached, as its waypoint takes him)
+          if (g.level.rim) g.enterEndless();
+          else g.enterDungeon();
         }
         if (altar.open) {
           input.eat('KeyE', 'KeyF', 'Enter');
@@ -2572,6 +2598,24 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     },
     /** The last floor built (game/act1.ts lastFloor): the playtests go by it. */
     lastFloor: () => lastFloor(),
+    /**
+     * (THE ENDLESS TOWN, the Shaft's Rim: behind ENDLESS_TOWN, art/shaft_rim.ts, off until his yes) Its switch, for the playtests
+     * and pictures; with `level`, the hero set at that endless level and brought home (into it while the switch is on).
+     */
+    /** (the same) A step one of its round things refused, taken round it; whether a place is out on its tongue or landing (game/rim.ts): for its playtest. */
+    roundStep,
+    onWayOut,
+    /** How high over a service its name is written where the level gives none (render.ts NAME_LIFT). */
+    nameLift: (kind: Station) => NAME_LIFT[kind],
+    endlessTown: (on: boolean, level = 0) => {
+      ENDLESS_TOWN.on = on;
+      if (!game || level <= 0) return;
+      game.cleared = Math.max(game.cleared, lastFloor());
+      game.wayDepth = Math.max(game.wayDepth, lastFloor());
+      game.endless = level;
+      game.endlessFloor = endlessFloorFor(game.seed, level, 0);
+      game.enterTown();
+    },
     endless: (on: boolean, level = -1, floor = 0) => {
       ENDLESS.on = on;
       if (!game || level < 0) return;
