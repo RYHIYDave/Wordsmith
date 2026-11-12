@@ -4598,3 +4598,7 @@ The queue page's ship list, taken whole: the floors' monsters in packs, the Tink
 
 The ship list's build/look-builders-in-parts (the loading screens' long waits cut down) and the queue's bring-in-drowned-arm-picture: art/uniques-play2 (three uniques' pictures in play, dark), the Drowned Arm every 3 s and stunning, ally damage. Marks: monsters f8b89d74b5e9 (the same packs); the rest as 25.3.12. gh-pages 5a26388b; the claude.ai page Version 115 (`1794513817-4167`). His new rule for every chat (13:38): finish your own task, then ask before a new one. Next: the Living Shadow (ship list).
 
+## VERSION 25.3.14, LIVE 12 NOV 2026 BY 17:27 (Eastern), BOTH ADDRESSES (the main chat of 12 Nov, session ...STLst)
+
+The Warlock's Living Shadow, on (the ship list's warlock-living-shadow; his yes in play, “Yes, start it now (Recommended)”, and shown it in the game, “Yes, put it live (Recommended)”, by 16:29). Its streaks, roar and Damning's floor painted into its pictures; its second slash made walking; dropping onto all fours; its bars over its own height. Marks: heroes bf0616e062cd, monsters f36114e62e4e; the rest as 25.3.13. gh-pages 92b8178a; the claude.ai page Version 116 (`1794522453-30ba`).
+
