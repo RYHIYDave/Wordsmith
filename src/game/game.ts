@@ -14,7 +14,7 @@ import { RAMPAGE, RING, ringStrikes } from '../art/action_f3_fx';
 import { rampageTravel, rushStopTravel } from '../art/monster_brute';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, LASTING, FLEETING, VAST, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, LASTING, FLEETING, VAST, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, HUSH_LEAVES, mirrorSide, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
 import { bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -76,6 +76,9 @@ import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop,
 import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import { CRANK_TIMES, FIRE, FIRE_GONE, FURNACE_WORD, KEEPER, MELDSTONE_WORDS, QUESTS15, QUEST_TEXT } from './quests15';
 import { CRANK_SOUND, SCENE_SOUNDS, SINGING, trapSound } from './scene_sounds';
+// (THE TEN NEW WORDS' SOUNDS, the sound chat's sixth batch: game/word_sounds.ts)
+import { WORD_AT, WORD_SOUND, WORD_SOUNDS, WORD_SOUND_SOFT } from './word_sounds';
+import type { WordSound } from './word_sounds';
 import { byNearness } from './world_sounds';
 import { QUEST_MARKS, SPEAK_NEW } from './quest_marks';
 import { STOKER_ON } from '../art/stoker';
@@ -212,6 +215,8 @@ export function newGuide(): Guide {
 /** Make a loaded Meta safe to use whatever it contains (old versions, damaged saves). */
 export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   const out = newMeta();
+  // (THE LEXICON IN PAGES: the game's own Lexicon always keeps which pages have been seen, from the first: see below)
+  out.seen = {};
   if (!m || typeof m !== 'object') return out;
   for (const w of wordIds()) {
     const n = m.lexicon ? m.lexicon[w] : 0;
@@ -228,6 +233,12 @@ export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
     // (a word kept in the Lexicon has plainly been found, whatever an older save says)
     if (out.lexicon[w] > 0) out.known[w].found = true;
   }
+  // (THE LEXICON IN PAGES: which words' pages have been looked at since they were found. A save from before this was kept says
+  // nothing of it: every word it had found counts as seen, so that no tab is marked for words he has known a long while.)
+  const seen = out.seen ?? {};
+  out.seen = seen;
+  const kept = m.seen && typeof m.seen === 'object' ? m.seen : null;
+  for (const w of wordIds()) if (out.known[w].found && (kept ? kept[w] === true : true)) seen[w] = true;
   // (gear put by before Version 12 may be of a kind that has gone, or marked as one class's own)
   if (Array.isArray(m.stash)) for (let i = 0; i < TUNE.stashSize; i++) out.stash[i] = m.stash[i] ? migrateItem(m.stash[i] as Item) : null;
   out.deaths = typeof m.deaths === 'number' && Number.isFinite(m.deaths) ? Math.max(0, Math.floor(m.deaths)) : 0;
@@ -2033,6 +2044,7 @@ export class Game {
     if (this.hellwaves.length || this.souls.length || this.bound) this.updateWarlockTree(dt);
     if (this.hero.cls === 'brawler') this.updateBrawl(dt);
     this.updateZones(dt);
+    this.wordStates();
     if (this.perils.length || this.corpses.length) this.bosses.stepPerils(dt);
     this.updateDots(dt);
     if (this.ringWord) {
@@ -3847,6 +3859,19 @@ export class Game {
     else this.sfx(or, orVol);
   }
 
+  /**
+   * (THE TEN NEW WORDS' SOUNDS) CULLING on a monster: its fire kindles as he comes low with one of them awake and near (the look
+   * kindles it then, over 0.3 s: render/words7.ts), and the kindling is heard once each time, not again while it burns.
+   */
+  private cullKindled = false;
+  private wordStates(): void {
+    const h = this.hero;
+    const low = h.life > 0 && h.life < h.d.maxLife * CULL.low;
+    const lit = low && this.monsters.some((m) => !m.dead && m.state !== 'sleep' && m.words.includes('culling') && Math.hypot(m.x - h.x, m.y - h.y) <= 10 && !this.shutIn(m));
+    if (lit && !this.cullKindled) this.wordRec('cull_kindle');
+    this.cullKindled = lit;
+  }
+
   /** (THE SECOND BATCH) The blows counted, for an enemy's hurt now and then. */
   private hurtTick = 0;
   /** When each enemy sound was last heard (its name), so that a pack or a flurry of blows is not a din. */
@@ -3858,6 +3883,36 @@ export class Game {
     this.heard.set(name, this.time);
     this.rec(name, vol, or);
     return true;
+  }
+
+  /**
+   * (THE TEN NEW WORDS' SOUNDS, the sound chat's sixth batch, 9 Nov 2026: game/word_sounds.ts) One of them at its moment, as loud
+   * as its table says (`soft`: a share of that), if it has not been heard within its own gap.
+   */
+  private wordRec(name: WordSound, soft = 1): void {
+    if (!WORD_SOUNDS.on) return;
+    const S = WORD_SOUND[name];
+    const last = this.heard.get(`word:${name}`);
+    if (last !== undefined && this.time - last < S.gap) return;
+    this.heard.set(`word:${name}`, this.time);
+    this.rec(name, S.vol * soft);
+  }
+
+  /**
+   * (THE THREE NEW WORDS' SOUNDS) Lasting's long shimmer or Fleeting's quick flick on top of a use of ability `i`, where it carries
+   * one and there is something of it for the word to work on: what it makes that lasts (an orb, a familiar, a contraption, a
+   * hold, a patch of ground, what it leaves behind), what it lays on an enemy (poison, burning, bleeding) or a boost it gives.
+   */
+  private timeWordSound(i: number): void {
+    const s = this.hero.skills[i];
+    if (!s || !WORD_SOUNDS.on) return;
+    const r = s.r;
+    if (Math.abs(r.last - 1) < 0.001) return;
+    const def = SKILLS[s.id];
+    const makes = def.kind === 'orb' || def.kind === 'summon' || def.kind === 'contraption' || !!def.channel || !!r.zone || r.cloud > 0 || r.mirrorLeave > 0 || this.leaves(r);
+    const lays = r.poison > 0 || r.bleed > 0 || r.element === 'fire' || r.ignite > 0;
+    const gives = r.might > 0 || r.haste > 0 || r.frenzy || r.frenzyFeed || r.shield > 0;
+    if (makes || lays || gives) this.wordRec(r.last > 1 ? 'word_lasting' : 'word_fleeting');
   }
 
   /**
@@ -4948,6 +5003,7 @@ export class Game {
     const def = SKILLS[s.id];
     const r = s.r;
     s.uses++;
+    this.timeWordSound(i);
     h.channel = { skill: i, t: 0, next: 0, bites: 0, tx, ty, wake: 0 };
     let dx = tx - h.x;
     let dy = ty - h.y;
@@ -5164,6 +5220,7 @@ export class Game {
     h.might = Math.min(r.might * (this.has('cadence') ? TALENT_TUNE.cadence : 5), h.might + r.might);
     // (LASTING and FLEETING: as long as everything its ability gives)
     h.mightT = Math.max(h.mightT, 5 * r.last);
+    (h.boostBy ??= {}).might = i;
     this.emit({ t: 'buff', kind: 'might', x: h.x, y: h.y, stacks: Math.max(1, Math.round(h.might / r.might)) });
   }
 
@@ -5174,18 +5231,21 @@ export class Game {
     if (r.haste > 0) {
       h.haste = r.haste;
       h.hasteT = 3 * r.last;
+      (h.boostBy ??= {}).haste = i;
       this.emit({ t: 'buff', kind: 'haste', x: h.x, y: h.y, stacks: 1 });
     }
     // FRENZIED in front: each use adds to the frenzy, up to its most, and holds it a while longer
     if (r.frenzy) {
       h.frenzy = Math.min(this.stackMax(), h.frenzy + 1);
       h.frenzyT = Math.max(h.frenzyT, FRENZY.hold * r.last);
+      (h.boostBy ??= {}).frenzy = i;
       this.emit({ t: 'frenzy', x: h.x, y: h.y, dx: h.fx, dy: h.fy, n: h.frenzy });
     }
     // GUARDING in front: each use gives a shield (a new one is never weaker than what is left of the last)
     if (r.shield > 0) {
       h.shield = Math.max(h.shield, Math.round(h.d.maxLife * r.shield * (this.was('shieldwall') ? TALENT_TUNE.shieldwall : 1)));
       h.shieldT = GUARD.shieldTime * r.last;
+      (h.boostBy ??= {}).shield = i;
       this.emit({ t: 'shield', x: h.x, y: h.y, secs: h.shieldT });
     }
   }
@@ -6387,7 +6447,7 @@ export class Game {
       // (a splash off the one it struck, as a sword's: Flame's explosion, Power's shock through the ground)
       if (r.splash > 0) {
         const rad = r.splash * r.size;
-        this.emit({ t: 'burst', x: first.x, y: first.y, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words, n, echo });
+        this.emit({ t: 'burst', x: first.x, y: first.y, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words, n, echo, ...this.vastEdge(r, rad) });
         for (const o of this.monsters) {
           if (o.dead || hits.includes(o) || this.shutIn(o)) continue;
           if (Math.hypot(o.x - first.x, o.y - first.y) <= rad + o.r) this.hitMonster(o, i, frac * P.share * r.splashDmg, true);
@@ -8424,6 +8484,8 @@ export class Game {
     const behind = this.behinds(i);
     const echo = !primary;
     if (words.length || behind.length || echo) this.emit({ t: 'cast', x: ox, y: oy, dx, dy, kind: def.kind, el: r.element, words, behind, echo });
+    // (THE THREE NEW WORDS' SOUNDS: Lasting's shimmer, Fleeting's flick, on top of the ability they change)
+    if (primary) this.timeWordSound(i);
 
     if (def.kind === 'melee') {
       for (let k = 0; k < r.count; k++) {
@@ -8659,7 +8721,7 @@ export class Game {
       // (THE SKILL TREES: Fuel, Flame's blast wider)
       const rad = r.splash * r.size * (r.element === 'fire' && this.was('fuel') ? TALENT_TUNE.fuel : 1);
       // a full-strength splash is an explosion; Power's is a shock through the ground
-      this.emit({ t: 'burst', x: tx, y: ty, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words, n, echo });
+      this.emit({ t: 'burst', x: tx, y: ty, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words, n, echo, ...this.vastEdge(r, rad) });
       for (const o of this.monsters) {
         if (o.dead || o === best) continue;
         if (Math.hypot(o.x - tx, o.y - ty) <= rad + o.r && !this.shutIn(o)) this.hitMonster(o, i, frac * r.splashDmg, true);
@@ -8683,7 +8745,7 @@ export class Game {
   private blast(i: number, cx: number, cy: number, rad: number, frac: number, style: 'slam' | 'nova' | 'blast' | 'land' | 'whirl' | 'vial' | 'pound' | 'bomb', n = 0, echo = false, leaves = true): void {
     const r = this.hero.skills[i].r;
     const words = this.fronts(i);
-    this.emit({ t: 'burst', x: cx, y: cy, r: rad, el: r.element, style, words, n, echo });
+    this.emit({ t: 'burst', x: cx, y: cy, r: rad, el: r.element, style, words, n, echo, ...this.vastEdge(r, rad) });
     if (words.includes('power')) this.sfx('power', 0.9);
     // (Heavy lands out to the blast's edge; a whirlwind's turns are too many for that, its stuns show it)
     if (words.includes('heavy') && style !== 'whirl') this.emit({ t: 'heavy', x: cx, y: cy, r: rad, big: true });
@@ -8859,6 +8921,7 @@ export class Game {
   private pierceOn(i: number, first: Monster, x: number, y: number, dx: number, dy: number, frac: number): void {
     const L = PIERCE.line;
     this.emit({ t: 'pierceLine', x0: x, y0: y, x1: x + dx * L, y1: y + dy * L });
+    this.wordRec('pierce_shot');
     for (const o of this.monsters) {
       if (o.dead || o === first || this.shutIn(o)) continue;
       const px = o.x - x;
@@ -8885,7 +8948,11 @@ export class Game {
     const L = Math.max(len, PIERCE.line);
     const share = frac * h.skills[i].r.lance;
     const id = h.skills[i].id;
-    this.emit({ t: 'lance', x0, y0, x1: x0 + dx * L, y1: y0 + dy * L, w: PIERCE.lanceW, delay: PIERCE.lanceDelay });
+    // (ITS LOOK FROM A STEP IN FRONT OF HIM, the art chat's ask, 9 Nov 2026: its spear comes down at a slant over the line's
+    // start, so from his feet it came down across him. What it strikes is as it was: everything on the line from where he stands.)
+    const lead = Math.min(PIERCE.lanceLead, L - 0.5);
+    this.emit({ t: 'lance', x0: x0 + dx * lead, y0: y0 + dy * lead, x1: x0 + dx * L, y1: y0 + dy * L, w: PIERCE.lanceW, delay: PIERCE.lanceDelay });
+    this.wordRec('pierce_lance');
     this.after(PIERCE.lanceDelay, () => {
       if (this.hero.skills[i].id !== id) return;
       for (const m of this.monsters) {
@@ -8906,7 +8973,10 @@ export class Game {
     m.bleedDps = Math.max((m.bleedT ?? 0) > 0 ? m.bleedDps ?? 0 : 0, dps);
     m.bleedT = secs;
     m.bleedMove = BLEED.moving;
-    if (fresh) this.emit({ t: 'bleedOn', id: m.id, x: m.x, y: m.y, secs });
+    if (fresh) {
+      this.emit({ t: 'bleedOn', id: m.id, x: m.x, y: m.y, secs });
+      this.wordRec('bleed_open');
+    }
   }
 
   /** BLEEDING behind: thorns at (x, y), cutting whatever walks in them (`updateZones`); one an ability each BLEED.thornEvery seconds. */
@@ -8918,6 +8988,7 @@ export class Game {
     const dur = BLEED.thornLife * this.lastOf(i);
     this.zones.push({ x, y, r: rad, t: 0, dur, kind: 'thorns', element: 'phys', dmg, slow: 0, tick: 0, hostile: false, skill: i, words: ['bleeding'], from: '' });
     this.emit({ t: 'zone', kind: 'thorns', x, y, r: rad, el: 'phys', dur });
+    this.wordRec('bleed_thorns');
   }
 
   /**
@@ -8927,7 +8998,10 @@ export class Game {
   private cullMonster(m: Monster, under: number, i: number, mark = false): boolean {
     if (m.dead || m.boss || m.life <= 0 || this.shutIn(m)) return false;
     if (m.life > m.maxLife * under * (m.elite || m.champion ? CULL.elite : 1)) return false;
-    this.emit({ t: 'culled', id: m.id, x: m.x, y: m.y, ...(mark ? { mark: true } : {}) });
+    // (ONE OF THE HUSHED IS NOT CUT IN TWO: the Hush leaves them and they lie alive, people again; his rule for them, never gory.
+    // `whole` says so to the look: the scythe's blade sweeps through, and it goes down as it always does. game/word_sounds.ts HUSH_LEAVES)
+    this.emit({ t: 'culled', id: m.id, x: m.x, y: m.y, ...(mark ? { mark: true } : {}), ...(CULL.hushedWhole && HUSH_LEAVES.has(m.kind) ? { whole: true } : {}) });
+    this.wordRec(mark ? 'cull_mark' : 'cull_kill');
     this.damageMonster(m, Math.max(1, Math.ceil(m.life + (m.shield || 0))), 'phys', false, i);
     return true;
   }
@@ -8954,22 +9028,25 @@ export class Game {
     const kind = SKILLS[s.id].kind;
     if (r.surge > 0 && s.uses > 0 && s.uses % SURGE.every === 0) {
       this.emit({ t: 'surge', x: h.x, y: h.y, r: SURGE.radius });
+      this.wordRec('surge_wave');
       this.blast(i, h.x, h.y, SURGE.radius, frac * r.surge, 'nova', 0, true, false);
     }
     if (r.mirror > 0) {
-      // (beside him, to his left as he faces; to his right where that is wall; where he stands where both are)
-      const side = MIRRORING.side;
-      let mx = ox - dy * side;
-      let my = oy + dx * side;
-      if (!this.isOpen(mx, my)) {
-        mx = ox + dy * side;
-        my = oy - dx * side;
-      }
+      // (BESIDE HIM WHERE ITS PICTURE STANDS, the art chat's ask of 9 Nov 2026, "make them one place": square to the way he faces,
+      // MIRRORING.side off, on the side of him that is the more ahead of him on the screen (game/defs.ts mirrorSide; the look,
+      // his yes to its film, draws it there: render/words7.ts). Where that is wall, from where he stands. Until now: 0.9 tiles
+      // to his left as he attacked.)
+      const [sx, sy] = mirrorSide(h.fx, h.fy);
+      let mx = ox + sx * MIRRORING.side;
+      let my = oy + sy * MIRRORING.side;
       if (!this.isOpen(mx, my)) {
         mx = ox;
         my = oy;
       }
       this.emit({ t: 'reflection', x: mx, y: my, dx, dy, kind });
+      // (his reflection forming, a little softer than a pane's rise; and its swing in glass, as he swings)
+      this.wordRec('mirror_rise', WORD_SOUND_SOFT.reflection);
+      this.wordRec('mirror_swing');
       this.deliver(i, mx, my, tx + (mx - ox), ty + (my - oy), frac * r.mirror, false);
     }
     for (let k = this.zones.length - 1; k >= 0; k--) {
@@ -8978,6 +9055,12 @@ export class Game {
       this.zones.splice(k, 1);
       const len = Math.hypot(tx - z.x, ty - z.y) || 1;
       this.emit({ t: 'mirrorCast', x: z.x, y: z.y, dx: (tx - z.x) / len, dy: (ty - z.y) / len, kind });
+      // (the pane makes his attack again, then cracks and shatters: the art's beat, WORD_AT.mirrorBreak after)
+      this.wordRec('mirror_swing');
+      const L = this.level;
+      this.after(WORD_AT.mirrorBreak, () => {
+        if (this.level === L) this.wordRec('mirror_break');
+      });
       this.deliver(i, z.x, z.y, tx, ty, frac * z.dmg, false);
     }
     if (r.mirrorLeave > 0 && this.onFloor(h.x, h.y) && this.roomForZone()) {
@@ -9000,6 +9083,7 @@ export class Game {
     });
     if (best < 0) return;
     this.emit({ t: 'surge', x, y, r: SURGE.dodgeRadius, dodge: true });
+    this.wordRec('surge_wave');
     this.blast(best, x, y, SURGE.dodgeRadius, h.skills[best].r.dodgeSurge, 'nova', 0, true, false);
   }
 
@@ -9015,19 +9099,26 @@ export class Game {
     if (r.reap > 0) {
       for (const s of h.skills) if (s.charges < s.maxCharges) s.cd = Math.max(0.01, s.cd - r.reap);
       this.emit({ t: 'reapSoul', x: m.x, y: m.y });
+      this.wordRec('reap_soul');
     }
     if (r.spirit > 0 && !m.boss && i >= 0) this.raiseSpirit(m, i, r.spirit);
     if (r.plunder > 0 || r.plunderBurst > 0) {
       const base = this.plunderGold(m);
       if (r.plunder > 0) {
         this.addDrop('gold', m.x, m.y, Math.max(1, Math.round(base * r.plunder)), null, null);
-        if (this.rng.chance(m.elite || m.champion || m.boss ? PLUNDER.eliteItem : PLUNDER.item)) this.addDrop('item', m.x, m.y, 0, this.rollGear(), null);
+        const item = this.rng.chance(m.elite || m.champion || m.boss ? PLUNDER.eliteItem : PLUNDER.item);
+        if (item) this.addDrop('item', m.x, m.y, 0, this.rollGear(), null);
+        // (its look, the art chat's ask of 8 and 9 Nov 2026: the gold sprayed out of the kill, and the piece with it)
+        this.emit({ t: 'goldSpray', x: m.x, y: m.y, item });
+        this.wordRec('plunder_spray');
       }
       if (r.plunderBurst > 0 && !this.practice) {
         const n = Math.max(1, Math.round(base * r.plunderBurst * (1 + h.d.stats.goldFind / 100)));
         h.gold += n;
         this.emit({ t: 'goldBurst', x: m.x, y: m.y, n });
         this.emit({ t: 'text', x: h.x, y: h.y, text: `+${n}`, color: '#ffe070' });
+        this.wordRec('plunder_spray');
+        this.wordRec('plunder_stream');
       }
     }
   }
@@ -9038,6 +9129,7 @@ export class Game {
     const sp = { id: this.nextThing++, x: m.x, y: m.y, t: 0, life: REAP.spiritSecs, next: 0.3, skill: i, share };
     this.spirits.push(sp);
     this.emit({ t: 'spirit', id: sp.id, x: sp.x, y: sp.y, life: sp.life });
+    this.wordRec('reap_spirit');
   }
 
   /** The spirits: each goes for the nearest enemy and strikes it each REAP.spiritEvery seconds (what it kills is no one's, and raises none); with none near, it keeps by him. */
@@ -9049,6 +9141,8 @@ export class Game {
       sp.next -= dt;
       if (sp.t >= sp.life) {
         this.spirits.splice(k, 1);
+        // (its rising away, softer)
+        this.wordRec('reap_spirit', WORD_SOUND_SOFT.spiritAway);
         continue;
       }
       let best: Monster | null = null;
@@ -9073,6 +9167,7 @@ export class Game {
       if (best && d <= REAP.spiritReach + best.r && sp.next <= 0 && h.skills[sp.skill]) {
         sp.next = REAP.spiritEvery;
         this.emit({ t: 'spiritHit', id: sp.id, x0: sp.x, y0: sp.y, x1: best.x, y1: best.y });
+        this.wordRec('reap_rake');
         this.damageMonster(best, Math.max(1, Math.round(this.avgHit(sp.skill, sp.share))), h.skills[sp.skill].r.element, false, -1);
       }
     }
@@ -9082,6 +9177,11 @@ export class Game {
   private riseAgain(m: Monster): void {
     const { kind, x, y, packId, maxLife } = m;
     this.emit({ t: 'rise', id: m.id, x, y });
+    // (its sound as its body begins to rise in its picture, WORD_AT.riseLead before the rules stand it up: the enemy's fire catching, the lurch up)
+    const L = this.level;
+    this.after(Math.max(0, REAP.riseAfter - WORD_AT.riseLead), () => {
+      if (!this.over && this.level === L) this.wordRec('reap_rise');
+    });
     this.after(REAP.riseAfter, () => {
       if (this.over) return;
       const rng = new RNG((Math.imul(this.seed, 197) + m.id * 6151 + this.kills * 17) >>> 0);
@@ -9379,6 +9479,17 @@ export class Game {
     return true;
   }
 
+  /**
+   * (HIS THREE NEW WORDS: VAST in front, for its look, the art chat's ask of 9 Nov 2026) What an area of ability `r`'s that lands
+   * `rad` wide says of itself: `r0`, where its edge would have been without the word (the look cracks the floor there and rolls
+   * its dust out to the new edge); and Vast's broad whoomph on top of the ability's own sound. Nothing where it does not carry it.
+   */
+  private vastEdge(r: Resolved, rad: number): { r0?: number } {
+    if (!(r.wide > 1)) return {};
+    this.wordRec('word_vast');
+    return { r0: rad / r.wide };
+  }
+
   private addGround(i: number, x: number, y: number, rad: number, frac: number): void {
     const r = this.hero.skills[i].r;
     const z = r.zone;
@@ -9441,7 +9552,10 @@ export class Game {
     this.roomForZone();
     // (HIS THREE NEW WORDS: VAST, on a monster, its warned blows wider; a minion's, of its leader's words, at half)
     const vast = wordShare({ words, half: half ? half.words : undefined }, 'vast');
-    if (vast > 0) rad *= 1 + VAST.monster * vast;
+    if (vast > 0) {
+      rad *= 1 + VAST.monster * vast;
+      this.wordRec('word_vast', WORD_SOUND_SOFT.vastWarn);
+    }
     const z: Zone = { x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from, src };
     if (half) z.half = half;
     if (mark) z.mark = true;
@@ -9535,16 +9649,20 @@ export class Game {
     // (THE CITY'S WORDS: a cursed one struck, its curse flares)
     if (!quiet && (m.hexT ?? 0) > 0) this.emit({ t: 'hexFlare', id: m.id });
     this.damageMonster(m, dmg, r.element, crit, i, !quiet && this.fronts(i).includes('power'), front);
-    // (HIS THREE NEW WORDS: VAST behind, each hit, not a splash's, splashes a share of itself onto every other enemy near what it hit;
-    // a stand-in look, the burst's shock ring, till the art chat's)
+    // (HIS THREE NEW WORDS: VAST behind, each hit, not a splash's, splashes a share of itself onto every other enemy near what it hit.
+    // Told by its own name, `vastSplash`, with those it reached, the art chat's ask of 9 Nov 2026; until then a 'shock' burst, whose
+    // ring is still what is drawn for it where the three's looks are off: render/fx.ts)
     if (r.vast > 0 && !quiet) {
-      let splashed = 0;
+      const ids: number[] = [];
       for (const o of this.monsters) {
         if (o === m || o.dead || this.shutIn(o) || Math.hypot(o.x - x, o.y - y) > VAST.splashR + o.r) continue;
+        ids.push(o.id);
         this.damageMonster(o, Math.max(1, Math.round(dmg * r.vast)), r.element, false, i);
-        splashed++;
       }
-      if (splashed > 0) this.emit({ t: 'burst', x, y, r: VAST.splashR, el: r.element, style: 'shock', words: [], n: 0, echo: false });
+      if (ids.length > 0) {
+        this.emit({ t: 'vastSplash', x, y, r: VAST.splashR, ids, el: r.element });
+        this.wordRec('word_vast');
+      }
     }
     // (THE WARLOCK, game/warlock.ts: his bolt sets it burning in his hellfire; the curse, the smoke steps and the rakes curse it; and every hit feeds his pact)
     if (h.cls === 'warlock') this.warlockHit(m, i, dmg);
@@ -9988,6 +10106,7 @@ export class Game {
         m.mirrorT = MIRRORING.backEvery;
         const back = Math.max(1, Math.round(dmg * MIRRORING.back * mk));
         this.emit({ t: 'mirrorBack', x0: m.x, y0: m.y, x1: this.hero.x, y1: this.hero.y, n: back });
+        this.wordRec('mirror_back');
         this.hurtHero(back, 'phys', [], null, `${m.name}'s reflection`, m.x, m.y);
       }
     }
@@ -10082,6 +10201,7 @@ export class Game {
       // FRENZIED behind: a kill adds to the frenzy and holds it longer (to three times its usual hold)
       h.frenzy = Math.min(this.stackMax(), h.frenzy + 1);
       h.frenzyT = Math.min(FRENZY.hold * 3 * r.last, h.frenzyT + FRENZY.hold * r.last);
+      (h.boostBy ??= {}).frenzy = m.lastSkill;
       this.emit({ t: 'frenzyFed', x: m.x, y: m.y });
     }
     if (r && r.volatile > 0) this.explodeKill(m, r, m.lastSkill);
@@ -10107,6 +10227,7 @@ export class Game {
     if ((m.stolen ?? 0) > 0) {
       this.addDrop('gold', m.x, m.y, m.stolen ?? 0, null, null);
       m.stolen = 0;
+      this.wordRec('plunder_spray');
     }
     this.dropLoot(m);
     // (QUESTS610: a piece of the ward-stone it carried)
@@ -10339,7 +10460,11 @@ export class Game {
       if (gl < 0.01 || (gx * h.fx + gy * h.fy) / gl >= VET_TALENTS.guardUp.cos) dmg *= 1 - VET_TALENTS.guardUp.less;
     }
     // (THE LAST WORDS: CULLING, on a monster, its blows hit much harder while he is low)
-    if (k('culling') > 0 && h.life < h.d.maxLife * CULL.low) dmg *= 1 + CULL.harder * k('culling');
+    if (k('culling') > 0 && h.life < h.d.maxLife * CULL.low) {
+      dmg *= 1 + CULL.harder * k('culling');
+      // (for its look, the art chat's ask: its blow's burst on him)
+      if (by) this.emit({ t: 'cullBlow', id: by.id, x: by.x, y: by.y });
+    }
     dmg = Math.max(1, Math.round(dmg));
     // (Bitter Cold: what strikes him is chilled)
     if (src && !src.dead && this.now('bittercold')) {
@@ -10386,6 +10511,7 @@ export class Game {
     if (k('bleeding') > 0) {
       if ((h.heroBleedT ?? 0) <= 0) {
         this.emit({ t: 'heroBleed', x: h.x, y: h.y, secs: BLEED.heroSecs });
+        this.wordRec('bleed_open');
         this.emit({ t: 'text', x: h.x, y: h.y, text: 'Bleeding', color: '#ff8a80' });
       }
       h.heroBleedDps = Math.max((h.heroBleedT ?? 0) > 0 ? h.heroBleedDps ?? 0 : 0, h.d.maxLife * BLEED.heroDps * k('bleeding'));
@@ -10397,6 +10523,7 @@ export class Game {
       h.gold -= n;
       thief.stolen = (thief.stolen ?? 0) + n;
       this.emit({ t: 'goldStolen', x: h.x, y: h.y, n });
+      this.wordRec('plunder_steal');
       this.emit({ t: 'text', x: h.x, y: h.y, text: `-${n}`, color: '#ff8a80' });
     }
     // GUARDING in front: the shield takes the blow first
@@ -10426,6 +10553,10 @@ export class Game {
     // poison and burning hurt him sooner, the same in all; a minion's, of its leader's words, at half)
     const longer = 1 + LASTING.monster * k('lasting');
     const lasts = longer * (1 - FLEETING.monster * k('fleeting'));
+    // (for the three's looks, the art chat's ask: WHOSE poison, burning or chill is on him, and the word of time it was laid with)
+    if (k('poison') > 0 || parts.some(([e]) => e === 'fire' || e === 'frost')) {
+      h.dotBy = { id: by ? by.id : null, word: k('lasting') > 0 && k('lasting') >= k('fleeting') ? 'lasting' : k('fleeting') > 0 ? 'fleeting' : null };
+    }
     if (k('poison') > 0) {
       // a monster with Poison: most of the blow again, over the next few seconds
       h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, ((dmg * 0.6 * k('poison')) / TUNE.poisonTime) * (longer / lasts));
@@ -10787,6 +10918,7 @@ export class Game {
             m.surgeT = SURGE.monsterEvery;
             if (Math.hypot(h.x - m.x, h.y - m.y) <= SURGE.monsterNear && !this.shutIn(m)) {
               this.addWarn(m.x, m.y, SURGE.monsterRadius, SURGE.monsterWarn, ((m.dmgMin + m.dmgMax) / 2) * SURGE.monsterDmg * sk, this.monsterElement(m), [], `${m.name}'s surge`, m.id, this.halfOf(m));
+              this.wordRec('surge_warn');
             }
           }
         }
@@ -11966,7 +12098,7 @@ export class Game {
     this.sfx(power ? 'power' : 'hit', 0.6);
     if (r.splash > 0) {
       const rad = r.splash * r.size * (r.element === 'fire' && this.was('fuel') ? TALENT_TUNE.fuel : 1);
-      this.emit({ t: 'burst', x, y, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words: p.words });
+      this.emit({ t: 'burst', x, y, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words: p.words, ...this.vastEdge(r, rad) });
       if (r.splashDmg >= 1) this.sfx(r.element === 'frost' ? 'frost' : 'explode', 0.6);
       for (const o of this.monsters) {
         if (o.dead || o === m) continue;
@@ -12161,6 +12293,8 @@ export class Game {
           this.zones.splice(i, 1);
           // (a mark only: its blow is its monster's own, FLOOR 3, MORE ACTION)
           if (z.mark) continue;
+          // (a monster's surge, its wave as its warning runs out)
+          if (z.from.endsWith("'s surge")) this.wordRec('surge_foe');
           this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r, el: z.element, style: 'blast' });
           this.emit({ t: 'shake', amount: 2 });
           if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtFrom(z);
@@ -12258,6 +12392,8 @@ export class Game {
             if (o.dead || o.kind === 'bat' || this.shutIn(o) || Math.hypot(o.x - z.x, o.y - z.y) > z.r + o.r * 0.5) continue;
             this.damageMonster(o, Math.max(1, Math.round(z.dmg * 0.5)), 'phys', false, z.skill, false, undefined, false, true);
             this.bleedMonster(o, z.dmg * 0.5);
+            // (one walking in the briars, cut: no more than three a second, the sound's own gap)
+            this.wordRec('bleed_cut');
           }
         }
         if (z.t >= z.dur) this.zones.splice(i, 1);

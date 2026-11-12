@@ -42,6 +42,9 @@ import type { GameEvent, TownVoice } from '../game/state';
 import type { Element, WordId } from '../game/types';
 import { meldLookWords, meldOwnsEvent } from './melds3';
 import { ownsEventV3 } from './volatile3';
+// (THE TEN NEW WORDS' LOOKS, render/words7.ts and words10.ts: while they are on, what the rules say of the words is theirs to draw)
+import { ownsEventW7 } from './words7';
+import { ownsEventW10 } from './words10';
 import { Wild } from './wild';
 import { RIFT_SMOKE, RIFT_SPARK, drawRift } from './arrivals';
 import type { Rift } from './arrivals';
@@ -1158,6 +1161,9 @@ export class Fx {
       if (meldOwnsEvent(e)) continue;
       // (and the five Volatile melds' blasts, behind VOLATILE3, off: render/volatile3.ts)
       if (ownsEventV3(e)) continue;
+      // (THE TEN NEW WORDS' LOOKS: the seven's and Vast's own moments are drawn by render/words7.ts and words10.ts while those are
+      // on; the plain stand-ins below, the rules' branch's, are left out then: the art chat's ask of 9 Nov 2026)
+      if (ownsEventW7(e) || ownsEventW10(e)) continue;
       switch (e.t) {
         case 'hit': {
           if (e.poison) {
@@ -1929,6 +1935,14 @@ export class Fx {
           break;
         case 'mirrorBack':
           this.groundBolt(e.x0, e.y0, e.x1, e.y1, LAST_FX.mirroring);
+          break;
+        // (HIS THREE NEW WORDS: Vast behind's splash, where its look is off: the plain ring of a shock through the floor, as the
+        // rules' branch drew it)
+        case 'vastSplash':
+          this.handle([{ t: 'burst', x: e.x, y: e.y, r: e.r, el: e.el, style: 'shock', words: [], n: 0, echo: false }], play);
+          break;
+        case 'goldSpray':
+        case 'cullBlow':
           break;
         case 'levelup':
         case 'station':

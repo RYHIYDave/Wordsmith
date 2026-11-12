@@ -16,7 +16,7 @@ import type { HeroPlace } from './art/heroes';
 import { makeHeroArt3, THRUST } from './art/heroes3';
 import { GOLEM_ROCKET } from './art/golem_rocket_fx';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
-import { makeIconArt, useMeldArt } from './art/icons';
+import { makeIconArt, useMeldArt, useWordArt } from './art/icons';
 import { ITEMS_A } from './art/items_a';
 import { MELD_DROPS, makeMeldDropsArt } from './art/meld_drops';
 import { PAINTING } from './art/kit';
@@ -69,7 +69,7 @@ import { LOADING_RING, makeLoadingRing } from './art/loading_ring';
 import type { LoadingRing } from './art/loading_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
-import { footstep, heroVoice, initAudio, isMuted, recordedDetail, recordedState, setLoops, setMuffled, setMuted, sfx, sfxNamed, soundHeard, speak, speakBoss, titleMusic, warmNamed, warmRecorded, warmSteps, worldSound } from './engine/audio';
+import { footstep, heroVoice, initAudio, isMuted, recordedDetail, recordedState, setLoops, setMuffled, setMuted, sfx, sfxNamed, soundHeard, speak, speakBoss, titleMusic, warmAlso, warmNamed, warmRecorded, warmSteps, worldSound } from './engine/audio';
 import { OWL_HOOT, STEP_EVERY, WORLD_SOUNDS, byNearness, groundOf, hushFloor, loopWants } from './game/world_sounds';
 import { MOMENT_VOL, sceneSoundsOf } from './game/scene_sounds';
 import { owlFrameAt } from './art/hall_owl';
@@ -148,9 +148,12 @@ import { WORDS3, demo3, events3 } from './render/words3';
 import { MELD3, MELD_GLYPH, MELD_RAMP, demoM3, eventsM3 } from './render/melds3';
 import { BINDING3, demoB3, eventsB3 } from './render/binding3';
 // (THE SEVEN NEW WORDS' LOOKS, the art chat's mock-up behind a switch that is off: its playtest's hands only)
-import { WORDS7_LOOK, demoW7, eventsW7 } from './render/words7';
+import { W7_GLYPH, W7_RAMP, W7_WORDS, WORDS7_LOOK, demoW7, eventsW7, soundsW7 } from './render/words7';
 // (HIS THREE NEW WORDS' LOOKS, the art chat's mock-up behind a switch that is off: its playtest's hands only)
-import { WORDS10_LOOK, demoW10, eventsW10 } from './render/words10';
+import { W10_GLYPH, W10_RAMP, W10_WORDS, WORDS10_LOOK, demoW10, eventsW10 } from './render/words10';
+// (THE TEN NEW WORDS' SOUNDS, the sound chat's sixth batch: game/word_sounds.ts)
+import { PAGE_TURN, WORD_SOUND, WORD_SOUNDS, wordSoundsOf } from './game/word_sounds';
+import type { WordSound } from './game/word_sounds';
 import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
 import { act1Fx } from './render/act1_fx';
 import { forgetUnusedPictures } from './render/act1_fx/kept';
@@ -307,6 +310,17 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     useMeldArt(art.icons, MELD_RAMP, MELD_GLYPH, VOLT_MELD_IDS);
     for (const w of VOLT_MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];
   }
+  // THE TEN NEW WORDS' LOOKS (render/words7.ts WORDS7_LOOK, the seven; render/words10.ts WORDS10_LOOK, his three: on since the
+  // ten words went live, his yes to their films in the art chat, 9 Nov 2026, “Yes, hand all ten to main (Recommended)”): their
+  // own colours and runes, the art chat's, in place of the placeholders in art/icons.ts and render/fx.ts
+  if (WORDS7_LOOK.on) {
+    useWordArt(art.icons, W7_RAMP, W7_GLYPH, W7_WORDS);
+    for (const w of W7_WORDS) WORD_HUE[w] = W7_RAMP[w][3];
+  }
+  if (WORDS10_LOOK.on) {
+    useWordArt(art.icons, W10_RAMP, W10_GLYPH, W10_WORDS);
+    for (const w of W10_WORDS) WORD_HUE[w] = W10_RAMP[w][3];
+  }
   // RUNEDUST AND THE MELDSTONE DRAWN (art/meld_drops.ts, behind MELD_DROPS): switched on, the rules hold the
   // Fleshmancer's runedust and Meldstone under the floor while he is dragged down (game/melds.ts STONE_RISE),
   // and the screens show the new runedust; off, the stand-ins, as before.
@@ -383,6 +397,34 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let mode: 'title' | 'play' = 'title';
   /** The floor whose enemies' sounds have been fetched (engine/audio.ts warmNamed). */
   let warmedLevel: unknown = null;
+  /**
+   * THE TEN NEW WORDS' SOUNDS (game/word_sounds.ts) are fetched a word at a time, as it comes into play: set in one of his
+   * abilities, or carried by a monster of the place he is in. Looked at as a place is come into and twice a second after; kept
+   * with the place's own sounds and let go with them (engine/audio.ts warmAlso), so a word he has taken out again is not held
+   * for the rest of the game.
+   */
+  let wordsWarmed = '';
+  let wordsWarmedIn: unknown = null;
+  let wordsLooked = 0;
+  const warmWords = (g: Game): void => {
+    const now = performance.now();
+    if (wordsWarmedIn === g.level && now - wordsLooked < 500) return;
+    wordsLooked = now;
+    const words = new Set<WordId>();
+    for (const s of g.hero.skills) if (s) for (const w of [...s.front, ...s.behind]) if (w) words.add(w);
+    for (const m of g.monsters) {
+      if (m.dead) continue;
+      for (const w of m.words) words.add(w);
+      if (m.half) for (const w of m.half) words.add(w);
+    }
+    // (and the Lexicon's page turn, which is the town's)
+    const names = g.level.town ? [...wordSoundsOf(words), PAGE_TURN.name] : wordSoundsOf(words);
+    const key = names.join(',');
+    if (wordsWarmedIn === g.level && key === wordsWarmed) return;
+    if (!warmAlso(names)) return;
+    wordsWarmed = key;
+    wordsWarmedIn = g.level;
+  };
   /** The hero whose voice has been fetched (engine/audio.ts warmRecorded). */
   let warmedFor = '';
   /** THE LOADING SCREEN while a game begins (LOADING, below): how long it has been up, and whether the world has been drawn under it. */
@@ -1660,6 +1702,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (e.world) worldSound(e.name, e.vol ?? 1, e.or, !!e.exact);
       else sfxNamed(e.name, e.vol ?? 1, e.or, !!e.exact);
     }
+    // (THE TEN NEW WORDS' SOUNDS: the sounds of moments only the pictures know, a mirror's pane beginning to grow up: render/words7.ts
+    // soundsW7)
+    if (WORDS7_LOOK.on) for (const name of soundsW7()) if (WORD_SOUNDS.on && name in WORD_SOUND) sfxNamed(name, WORD_SOUND[name as WordSound].vol);
     // (THE FLOORS' SCENE SOUNDS: a blow made in code that stands in for one in a recording, the cage's or the portcullis's, is not
     // sounded while that recording is heard: engine/audio.ts soundHeard)
     const standIn = (e: GameEvent): boolean => e.t === 'sfx' && e.standsFor !== undefined && soundHeard(e.standsFor);
@@ -1669,6 +1714,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     for (const e of g.events) if (e.t === 'voice') heroVoice(e.who, e.cry);
     // (and with the floor's enemies' sounds, THE FLOOR'S OWN SCENE SOUNDS, the eighth batch: game/scene_sounds.ts; let go with them)
     if (warmedLevel !== g.level && warmNamed([...soundsOf(new Set(g.monsters.map((m) => m.kind))), ...(g.level.town ? [] : sceneSoundsOf(g.level.floor.depth))])) warmedLevel = g.level;
+    // (and THE TEN NEW WORDS' SOUNDS, the sixth batch: a word's, as it comes into play, so that its first is heard: warmWords)
+    if (WORD_SOUNDS.on && warmedLevel === g.level) warmWords(g);
     if (warmedFor !== g.hero.cls) {
       warmedFor = g.hero.cls;
       warmRecorded(g.hero.cls);
@@ -2275,6 +2322,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // (THE FLOORS' SCENE SOUNDS, the eighth batch: a moment's own sound, made whole to its film, as its frame 0 is shown; its
       // jolts are in it, so where it is heard the screen is kicked and no blow is made in code on top of it)
       for (const name of renderer.momentSounds()) worldSound(name, MOMENT_VOL, undefined, true);
+      // (THE LEXICON'S PAGE TURN, the sound chat's sixth batch: as one of its tabs is tapped and its page turns: ui/lexicon.ts; the
+      // menus' own click until its recording has come)
+      if (lexUi.turned) {
+        lexUi.turned = false;
+        if (WORD_SOUNDS.on) sfxNamed(PAGE_TURN.name, PAGE_TURN.vol, 'click');
+        else sfx('click');
+      }
       for (const k of renderer.kicks()) {
         fx.shake = Math.max(fx.shake, k.amount);
         if (!(k.of && soundHeard(k.of))) sfx('slam', { vol: k.vol });

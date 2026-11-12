@@ -1254,6 +1254,20 @@ export function useMeldArt(art: IconArt, ramp: Record<MeldId, readonly string[]>
   }
 }
 
+/**
+ * THE TEN NEW WORDS' OWN COLOURS AND RUNES, the art chat's (render/words7.ts W7_RAMP and W7_GLYPH, the seven; render/words10.ts
+ * W10_RAMP and W10_GLYPH, his three), in place of the main chat's placeholders above, as useMeldArt puts the melds': main.ts,
+ * while their looks are on. A ramp's fourth tone is the word's colour, its fifth its glow.
+ */
+export function useWordArt<W extends WordId>(art: IconArt, ramp: Record<W, readonly string[]>, glyph: Record<W, readonly string[]>, ids: readonly W[]): void {
+  for (const w of ids) {
+    WORD_COLOR[w] = ramp[w][3];
+    WORD_GLOW[w] = ramp[w][4];
+    GLYPH[w] = glyph[w];
+    art.word[w] = runeSprite(w);
+  }
+}
+
 function makeWordRunes(): Record<WordId, Sprite> {
   const out = {} as Record<WordId, Sprite>;
   for (const w of [...ALL_WORD_IDS, ...VOLT_MELD_IDS, ...RANK_IDS]) out[w] = runeSprite(w);

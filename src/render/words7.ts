@@ -24,14 +24,15 @@ import { P } from '../art/palette';
 import { Px, flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { MONSTERS, REAP, wordShare } from '../game/defs';
+import { MIRRORING, MONSTERS, REAP, mirrorSide, wordShare } from '../game/defs';
 import type { Game } from '../game/game';
 import type { Monster } from '../game/state';
 import type { Cam, Fallen, Fx } from './fx';
 import { wx, wy } from './fx';
 
 /** The switch. Off: nothing here is drawn or called, and the game is as it was. */
-export const WORDS7_LOOK = { on: false };
+// (ON SINCE THE TEN NEW WORDS WENT LIVE: his yes to their film in the art chat, 9 Nov 2026, “Yes, hand all ten to main (Recommended)”)
+export const WORDS7_LOOK = { on: true };
 
 export type W7Word = 'piercing' | 'bleeding' | 'reaping' | 'culling' | 'surging' | 'plundering' | 'mirroring';
 export const W7_WORDS: readonly W7Word[] = ['piercing', 'bleeding', 'reaping', 'culling', 'surging', 'plundering', 'mirroring'];
@@ -257,6 +258,8 @@ export interface Act {
   fall: Fallen | null;
   /** Reaping behind: its spirit is the rules' own (game.spirits, its id there), not a monster drawn as one. */
   rules: boolean;
+  /** Culling: the one it takes is not cut in two (the rules' `culled` with `whole`: one of the Hushed, never gory); the blade still sweeps through it. */
+  whole: boolean;
 }
 
 /** A splash of blood on the floor, drying. */
@@ -292,6 +295,8 @@ export const W7 = {
   swing: null as { x: number; y: number; dx: number; dy: number; reach: number; at: number } | null,
   /** The bodies Culling cut in two (fx.fallen), and the way the cut went: they lie so. */
   cut: new WeakMap<object, { way: number; src?: Sprite }>(),
+  /** The sounds of moments only the pictures know, since they were last asked for (soundsW7): a mirror's pane beginning to grow up. */
+  sounds: [] as string[],
   /** The rules' spirits (game.spirits): where each was last, the way it faces, whether it moves, how far into its glide. */
   spiritWas: new Map<number, { x: number; y: number; fx: number; fy: number; walkT: number; moving: boolean }>(),
   /** Risings the rules told of as the monster died (their `rise`), waiting for its body to have lain long enough. */
@@ -310,6 +315,7 @@ export function clearW7(): void {
   W7.panes = new WeakMap<object, number>();
   W7.swing = null;
   W7.cut = new WeakMap<object, { way: number; src?: Sprite }>();
+  W7.sounds = [];
   W7.spiritWas.clear();
   W7.rising.length = 0;
   W7.surgeWarns.clear();
@@ -342,6 +348,7 @@ export function playW7(word: W7Word, side: W7Side, o: W7Options): Act {
     dieT: o.dieT ?? 0,
     fall: o.fall ?? null,
     rules: o.rules ?? false,
+    whole: o.whole ?? false,
   };
   W7.acts.push(a);
   return a;
@@ -2518,15 +2525,10 @@ function glassHits(g: CanvasRenderingContext2D, cam: Cam, game: Game, x: number,
  * that is the more ahead of him on the screen (so it is seen standing with him, not behind him).
  */
 function mirrorOffset(h: { fx: number; fy: number }): [number, number] {
-  const l = Math.hypot(h.fx, h.fy) || 1;
-  const fx = h.fx / l;
-  const fy = h.fy / l;
-  // his facing on the screen, and the first of the two sides square to it, on the screen
-  const sfx = (fx - fy) * 16;
-  const sfy = (fx + fy) * 8;
-  const ahead = (-fy - fx) * 16 * sfx + (-fy + fx) * 8 * sfy;
-  const side = ahead >= 0 ? 1 : -1;
-  return [-fy * side * W7_TIME.mirrorStep, fx * side * W7_TIME.mirrorStep];
+  // (ONE PLACE WITH THE RULES since the ten words went live: the rules stand his reflection where this draws it, by the same
+  // side and the same step: game/defs.ts mirrorSide and MIRRORING.side, which is W7_TIME.mirrorStep, held so by tests/words10_live.test.ts)
+  const [sx, sy] = mirrorSide(h.fx, h.fy);
+  return [sx * MIRRORING.side, sy * MIRRORING.side];
 }
 
 /** Behind: a standing pane of mirror where he stood; in it his reflection makes his next attack again; then it cracks and shatters. */
@@ -2755,7 +2757,7 @@ type ZoneLike = { x: number; y: number; r: number; t: number; dur: number; kind?
 const zoneSeed = (z: ZoneLike): number => Math.floor(Math.abs(z.x * 97 + z.y * 131)) % 100000;
 /** An act standing for a zone as it lies (its own clock the zone's). */
 function zoneAct(z: ZoneLike, word: W7Word, side: W7Side): Act {
-  return { id: -1, word, side, part: 'zone', t: z.t, dur: z.dur, seed: zoneSeed(z), x: z.x, y: z.y, x1: z.x, y1: z.y, dx: 1, dy: 0, ids: [], pts: [], r: z.r, delay: 0, width: 1, stone: false, dieT: 0, fall: null, rules: false };
+  return { id: -1, word, side, part: 'zone', t: z.t, dur: z.dur, seed: zoneSeed(z), x: z.x, y: z.y, x1: z.x, y1: z.y, dx: 1, dy: 0, ids: [], pts: [], r: z.r, delay: 0, width: 1, stone: false, dieT: 0, fall: null, rules: false, whole: false };
 }
 /**
  * A mirror rises where he stood only once he has stepped off it, and clear of it (it stands over what is in front of it, so it
@@ -2772,10 +2774,13 @@ function paneUp(raw: object, z: ZoneLike, game: Game): number | null {
   if (up === undefined) {
     up = clear ? 0 : -1;
     W7.panes.set(raw, up);
+    if (clear) W7.sounds.push('mirror_rise');
   }
   if (up < 0 && clear) {
     up = z.t;
     W7.panes.set(raw, up);
+    // (the pane begins to grow up now: its sound's moment, which only the picture knows: soundsW7)
+    W7.sounds.push('mirror_rise');
   }
   return up < 0 ? null : up;
 }
@@ -2871,6 +2876,8 @@ export function lookW7(m: Monster, sp: Sprite): { sp: Sprite; alpha: number; tin
       // (one still standing when the rules cull it: held, glinting; split as the blade goes through)
       const since = a.t - cullThrough();
       if (since < 0) return { sp, alpha: 1, tint: a.t < W7_TIME.cullHold ? [W7_RAMP.culling[3], 0.25] : null, lift: 0 };
+      // (one of the Hushed is left whole: the blade's glint on it, no more)
+      if (a.whole) return { sp, alpha: 1, tint: since < 0.05 ? [W7_RAMP.culling[4], 0.45] : null, lift: 0 };
       return { sp: splitOf(sp, cullSlide(since), a.dx - a.dy >= 0 ? 1 : -1), alpha: 1, tint: since < 0.05 ? [W7_RAMP.culling[4], 0.45] : null, lift: 0 };
     }
     if (a.word === 'culling' && a.side === 'behind' && a.ids[0] === m.id && a.pts.length && a.t - a.pts[0] >= 0 && a.t - a.pts[0] < 0.3) return { sp, alpha: 1, tint: [W7_RAMP.culling[4], 0.35], lift: 0 };
@@ -3334,7 +3341,8 @@ export function tickW7(dt: number, game: Game, fx: Fx): void {
             a.fall = f;
           }
         }
-        if (a.fall) W7.cut.set(a.fall, { way: a.dx - a.dy >= 0 ? 1 : -1 });
+        // (one of the Hushed is not cut in two: it is held the instant the blade takes to go through it, then falls as it always does)
+        if (a.fall && !a.whole) W7.cut.set(a.fall, { way: a.dx - a.dy >= 0 ? 1 : -1 });
       }
       if (a.fall && a.t < W7_TIME.cullHold + W7_TIME.cullSweep) a.fall.t = 0;
     }
@@ -3489,6 +3497,8 @@ type Seen = {
   ids?: number[];
   target?: number;
   mark?: boolean | { x: number; y: number };
+  /** (`culled`: one of the Hushed, not to be cut in two) */
+  whole?: boolean;
   dodge?: boolean;
   item?: boolean;
   n?: number;
@@ -3529,6 +3539,26 @@ function startRise(game: Game, fx: Fx, x: number, y: number): void {
   }
   playW7('reaping', 'monster', { x, y, fall: best, dieT: best ? Math.min(best.t, 1.0) : 0, dur: 0.2 + W7_TIME.rise + 0.4 });
   void game;
+}
+
+/**
+ * WHAT THE RULES SAY OF THE SEVEN IS THE LOOKS' TO DRAW while they are on: the plain stand-ins the rules' branch drew for these
+ * (render/fx.ts: sprays, bolts along the floor, the word CULLED) are left out then, as the art chat asked (9 Nov 2026).
+ */
+const W7_OWN = new Set(['pierceLine', 'lance', 'bleedOn', 'heroBleed', 'reapSoul', 'spirit', 'spiritHit', 'rise', 'culled', 'cullBlow', 'surge', 'goldSpray', 'goldBurst', 'goldStolen', 'reflection', 'mirrorCast', 'mirrorBack']);
+export function ownsEventW7(e: { t: string }): boolean {
+  return WORDS7_LOOK.on && W7_OWN.has(e.t);
+}
+
+/**
+ * The sounds of moments only the pictures know (the names of the sound chat's sixth batch, game/word_sounds.ts), since last
+ * asked: a mirror's pane beginning to grow up, which waits till he has stepped clear of where he stood. main.ts plays them.
+ */
+export function soundsW7(): string[] {
+  if (!W7.sounds.length) return W7.sounds;
+  const said = W7.sounds;
+  W7.sounds = [];
+  return said;
 }
 
 export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
@@ -3645,7 +3675,7 @@ export function eventsW7(events: readonly unknown[], game: Game, fx: Fx): void {
             }
           }
           playW7('culling', 'behind', { part: 'mark', x: mx, y: my, r: Math.min(1.6, mr), x1: x, y1: y, ids: e.id !== undefined ? [e.id] : [], dur: 0.95 });
-        } else playW7('culling', 'front', { x, y, ids: e.id !== undefined ? [e.id] : [], dx: x - h.x, dy: y - h.y, dur: 0.95 });
+        } else playW7('culling', 'front', { x, y, ids: e.id !== undefined ? [e.id] : [], dx: x - h.x, dy: y - h.y, dur: 0.95, whole: !!e.whole });
         break;
       }
       case 'cullBlow': {

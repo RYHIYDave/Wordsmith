@@ -105,7 +105,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     ignite: 0, chill: 0, arcs: 0, arcDmg: 0, leech: 0, volatile: 0, poison: 0, stun: 0, precise: false, frenzy: false, shield: 0, meld,
     might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, pull: 0, split: 0, hex: 0, still: 0, vortex: 0, shards: 0, hexCircle: 0, bubble: 0, bind: 0, snare: 0,
     through: 0, lance: 0, bleed: 0, thorns: 0, reap: 0, spirit: 0, cull: 0, cullMark: 0, surge: 0, dodgeSurge: 0, plunder: 0, plunderBurst: 0, mirror: 0, mirrorLeave: 0,
-    last: 1, pace: 1, boost: 1, vast: 0,
+    last: 1, pace: 1, boost: 1, vast: 0, wide: 1,
     meldBehind, lines,
   };
 
@@ -233,6 +233,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   if (has(front, 'vast')) {
     const wider = Math.min(VAST.widerMost, VAST.wider + 0.001 * growsBy(front, 'vast'));
     size *= 1 + wider;
+    r.wide = 1 + wider;
     dmgMult *= 1 - VAST.softer;
     lines.push(`Vast: ${pct(wider * 100)} bigger area, ${pct(VAST.softer * 100)} less damage.`);
   }

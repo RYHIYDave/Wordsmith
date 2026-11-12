@@ -171,6 +171,8 @@ export interface Resolved {
   pace: number;
   boost: number;
   vast: number;
+  /** VAST in front: how many times as wide its areas land (1 for none), so that what is sent of them can say where their edge was (`r0`). */
+  wide: number;
   /** WORDMELDING: the melded word behind, whose twist what it leaves carries, or null. */
   meldBehind: MeldId | null;
   /** Plain-language lines for the character panel. */
@@ -303,6 +305,14 @@ export interface Hero {
   heroBleedT?: number;
   heroBleedDps?: number;
   heroBleedAt?: { x: number; y: number };
+  /**
+   * (THE TEN NEW WORDS, for their looks: the art chat's asks of 9 Nov 2026) WHOSE poison, burning or chill is on him: the monster
+   * that last laid one on him (its id), and the word of time it laid it with, Lasting or Fleeting (null: neither). Kept while any
+   * of the three is on him.
+   */
+  dotBy?: { id: number | null; word: 'lasting' | 'fleeting' | null };
+  /** (The same) WHICH ABILITY gave each boost he has now: might, haste, frenzy's hold and Guarding's shield (its place among his abilities). */
+  boostBy?: { might?: number; haste?: number; frenzy?: number; shield?: number };
   /** Harm from monsters that carry element words. */
   burnT: number;
   burnDps: number;
@@ -1184,6 +1194,13 @@ export interface Meta {
   lexicon: Record<WordId, number>;
   /** The Lexicon's pages: what has been found, and what each word has been used for. */
   known: Record<WordId, WordLore>;
+  /**
+   * (THE LEXICON IN PAGES, since the ten new words went live) The words whose pages have been looked at since they were found. A
+   * word found and not yet looked at marks its page's tab with a small cyan stud (ui/lexicon28.ts wordFresh; his yes to its
+   * picture in the art chat, 9 Nov 2026). A save from before this was kept says nothing of it: every word it had found counts
+   * as seen (game/game.ts cleanMeta).
+   */
+  seen?: Partial<Record<WordId, boolean>>;
   stash: (Item | null)[];
   deaths: number;
   /** Deepest dungeon any character has cleared. */
@@ -1355,7 +1372,7 @@ export type GameEvent =
    * 'shock' is the knock of a Power hit on the enemies around its target; 'ruin' is a rune going off.
    * `words`, `n`, `echo` as for a swing.
    */
-  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl' | 'vial' | 'pound' | 'bomb'; words?: readonly WordId[]; n?: number; echo?: boolean; meld?: MeldId }
+  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl' | 'vial' | 'pound' | 'bomb'; words?: readonly WordId[]; n?: number; echo?: boolean; meld?: MeldId; r0?: number }
   /** An ability leaves the hero: where from, which way, the words in front of it and behind it. */
   | { t: 'cast'; x: number; y: number; dx: number; dy: number; kind: SkillKind; el: Element; words: readonly WordId[]; behind: readonly WordId[]; echo: boolean }
   /** A word was set into an ability: `name` is the ability's new name. */
@@ -1486,9 +1503,17 @@ export type GameEvent =
   | { t: 'spirit'; id: number; x: number; y: number; life: number }
   | { t: 'spiritHit'; id: number; x0: number; y0: number; x1: number; y1: number }
   | { t: 'rise'; id: number; x: number; y: number }
-  | { t: 'culled'; id: number; x: number; y: number; mark?: boolean }
+  | { t: 'culled'; id: number; x: number; y: number; mark?: boolean; whole?: boolean }
   | { t: 'surge'; x: number; y: number; r: number; dodge?: boolean }
   | { t: 'goldBurst'; x: number; y: number; n: number }
+  // (THE TEN NEW WORDS LIVE, 11 Nov 2026: what the art chat's looks asked for, its board posts of 9 Nov, 14:11 and 19:01)
+  // Plundering in front, the gold a kill drops sprayed out of it (`item`: and a piece with it); Culling on a monster, its harder
+  // blow landing on him while he is low; Vast behind, a hit's splash (`ids`: those it reached); `culled` with `whole`: one of the
+  // Hushed, who is not cut in two (his rule for them: never gory); a `burst` of an area Vast in front made wider carries `r0`,
+  // where its edge would have been.
+  | { t: 'goldSpray'; x: number; y: number; item: boolean }
+  | { t: 'cullBlow'; id: number; x: number; y: number }
+  | { t: 'vastSplash'; x: number; y: number; r: number; ids: number[]; el: Element }
   | { t: 'goldStolen'; x: number; y: number; n: number }
   | { t: 'reflection'; x: number; y: number; dx: number; dy: number; kind: SkillKind }
   | { t: 'mirrorCast'; x: number; y: number; dx: number; dy: number; kind: SkillKind }

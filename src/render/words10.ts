@@ -36,7 +36,8 @@ import type { Cam, Fx } from './fx';
 import { wx, wy } from './fx';
 
 /** The switch. Off: nothing here is drawn, lit, ticked or read, and the game is as it was. */
-export const WORDS10_LOOK = { on: false };
+// (ON SINCE THE TEN NEW WORDS WENT LIVE: his yes to their film in the art chat, 9 Nov 2026, “Yes, hand all ten to main (Recommended)”)
+export const WORDS10_LOOK = { on: true };
 
 export type W10Word = 'lasting' | 'fleeting' | 'vast';
 export const W10_WORDS: readonly W10Word[] = ['lasting', 'fleeting', 'vast'];
@@ -1309,6 +1310,18 @@ function pulse(g: CanvasRenderingContext2D, cx: number, cy: number, rad: number,
 function boosts(game: Game): { word: 'lasting' | 'fleeting'; left: number } | null {
   const h = game.hero;
   let best: { word: 'lasting' | 'fleeting'; left: number } | null = null;
+  // (WHICH ABILITY GAVE EACH BOOST, where the rules say: Hero.boostBy, since the ten words went live. Then the boost is that
+  // ability's, and carries its word or none; before, any of his abilities carrying the word that gives such a boost was taken.)
+  const by = (h as { boostBy?: { might?: number; haste?: number; frenzy?: number; shield?: number } }).boostBy;
+  if (by) {
+    const each: [number | undefined, number][] = [[by.might, h.mightT], [by.haste, h.hasteT], [by.frenzy, h.frenzyT], [by.shield, h.shieldT]];
+    for (const [i, left] of each) {
+      if (i === undefined || !(left > 0)) continue;
+      const w = timeWord(game, i);
+      if (w && (!best || left > best.left)) best = { word: w, left };
+    }
+    return best;
+  }
   h.skills.forEach((s, i) => {
     const w = timeWord(game, i);
     if (!w || !s) return;
@@ -1353,6 +1366,14 @@ function onHim(game: Game): { word: 'lasting' | 'fleeting'; left: number } | nul
   const h = game.hero;
   const left = Math.max(h.poisonT ?? 0, h.burnT ?? 0, h.chillT ?? 0);
   if (left <= 0) return null;
+  // (WHOSE IT IS, where the rules say: Hero.dotBy, the word of time it was laid with, since the ten words went live; before, the
+  // nearest monster carrying the word was taken)
+  const by = (h as { dotBy?: { word: 'lasting' | 'fleeting' | null } }).dotBy;
+  if (by) {
+    if (by.word === 'lasting') return { word: 'lasting', left };
+    if (by.word === 'fleeting' && Math.max(h.poisonT ?? 0, h.burnT ?? 0) > 0) return { word: 'fleeting', left: Math.max(h.poisonT ?? 0, h.burnT ?? 0) };
+    return null;
+  }
   if (nearCarrier(game, 'lasting')) return { word: 'lasting', left };
   if (nearCarrier(game, 'fleeting') && Math.max(h.poisonT ?? 0, h.burnT ?? 0) > 0) return { word: 'fleeting', left: Math.max(h.poisonT ?? 0, h.burnT ?? 0) };
   return null;
@@ -1726,31 +1747,39 @@ export function tickW10(dt: number, game: Game, fx: Fx): void {
 // What the rules said happened (main.ts, while WORDS10_LOOK.on). Everything is read gently: a field missing has a fallback,
 // and an event of another shape is passed over.
 
-type Seen = { t: string; x?: number; y?: number; r?: number; style?: string; words?: readonly string[]; kind?: string; ids?: number[] };
+type Seen = { t: string; x?: number; y?: number; r?: number; r0?: number; style?: string; words?: readonly string[]; kind?: string; ids?: number[] };
+
+/**
+ * WHAT THE RULES SAY OF VAST BEHIND IS THIS LOOK'S TO DRAW while it is on (`vastSplash`): the plain ring that stood in for it
+ * (render/fx.ts, a 'shock' burst's) is left out then, as the art chat asked (9 Nov 2026).
+ */
+export function ownsEventW10(e: { t: string }): boolean {
+  return WORDS10_LOOK.on && e.t === 'vastSplash';
+}
+/** How many times as wide Vast in front lands ability `i`'s areas (the rules' Resolved `wide`; the word's least where they do not say). */
+const wideOf = (game: Game, i: number): number => (game.hero.skills[i]?.r as { wide?: number } | undefined)?.wide ?? 1 + VAST.wider;
 
 export function eventsW10(events: readonly unknown[], game: Game, fx: Fx): void {
   if (!WORDS10_LOOK.on) return;
   for (const raw of events) {
     const e = raw as Seen;
     if (e.t === 'burst' && e.x !== undefined && e.y !== undefined) {
-      // VAST behind: the rules' splash (a 'shock' burst its reach wide, his own); or the splash by its own name, if sent
-      if (e.style === 'shock' && Math.abs((e.r ?? 0) - VAST.splashR) < 1e-6 && !(e.words ?? []).length) {
-        playSplash(game, e.x, e.y, e.r ?? VAST.splashR);
-        continue;
-      }
+      // (VAST behind is told by its own name now, `vastSplash`, below. Until the ten words went live it was read off a 'shock'
+      // burst its reach wide with no words: the Brawler's Aftershock is such a burst too, and is not Vast's.)
       // VAST in front: an area of his landing wider, its dust rolled out to its new edge (a whirlwind's turns come three or four
       // a second: a ring at a time, a new one as the last is winding down)
       if ((e.words ?? []).includes('vast') && (e.r ?? 0) > 0.3) {
         const whirl = e.style === 'whirl';
         if (whirl && W10.acts.some((a) => a.kind === 'ring' && a.whirl && a.t < 0.45)) continue;
-        playW10('vast', 'ring', { x: e.x, y: e.y, r: e.r, r0: (e.r ?? 1) / (1 + VAST.wider), whirl });
+        // (where its edge would have been: the rules' `r0`, since the ten words went live; else by the word's least widening)
+        playW10('vast', 'ring', { x: e.x, y: e.y, r: e.r, r0: e.r0 ?? (e.r ?? 1) / (1 + VAST.wider), whirl });
       }
     } else if (e.t === 'vastSplash' && e.x !== undefined && e.y !== undefined) {
       playSplash(game, e.x, e.y, e.r ?? VAST.splashR, e.ids);
     } else if (e.t === 'zone' && e.x !== undefined && e.y !== undefined) {
       // a patch of his laid wider by Vast in front: its dust rolled out to its edge as it is laid
       const z = game.zones.find((q) => !q.hostile && Math.abs(q.x - (e.x ?? 0)) < 1e-6 && Math.abs(q.y - (e.y ?? 0)) < 1e-6);
-      if (z && z.skill >= 0 && fronts(game, z.skill).includes('vast')) playW10('vast', 'ring', { x: z.x, y: z.y, r: z.r, r0: z.r / (1 + VAST.wider) });
+      if (z && z.skill >= 0 && fronts(game, z.skill).includes('vast')) playW10('vast', 'ring', { x: z.x, y: z.y, r: z.r, r0: z.r / wideOf(game, z.skill) });
     }
   }
   void fx;

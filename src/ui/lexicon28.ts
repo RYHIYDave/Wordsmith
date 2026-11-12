@@ -39,12 +39,29 @@ export const LEX28_WAYS: readonly Lex28Way[] = ['rows', 'side', 'small', 'pages'
  * looked at (their page's tab carries a mark). The game keeps neither: both are the pictures' playtest's to set.
  */
 export const LEX28 = {
-  way: 'rows' as Lex28Way,
+  // ('groups' SINCE THE TEN NEW WORDS WENT LIVE: his pick and his yes, in the art chat, 9 Nov 2026: “Categorize them into pages”,
+  // “By what they do”, “Damage, Strike, Time, Control, Spoils (Recommended)”, “Yes, use them (Recommended)”. 'rows', the game's
+  // own until then, leaves a word's page 88 game pixels on a phone held sideways where the longest need 109.)
+  way: 'groups' as Lex28Way,
   last: null as Lex28Layout | null,
   stones: {} as Partial<Record<WordId, Sprite>>,
   tab: null as number | null,
   fresh: [] as WordId[],
 };
+
+/**
+ * A WORD FOUND AND NOT YET LOOKED AT (its page's tab carries the stud): the game keeps which words' pages have been seen in the
+ * save (Meta.seen, since the ten new words went live); and the pictures' playtest may name some (LEX28.fresh).
+ */
+export function wordFresh(meta: Meta, w: WordId): boolean {
+  return meta.known[w].found && (LEX28.fresh.includes(w) || (!!meta.seen && meta.seen[w] !== true));
+}
+/** These words' pages are being looked at: those of them found are seen from now. */
+export function lexSeen(meta: Meta, words: readonly WordId[]): void {
+  const seen = meta.seen;
+  if (!seen) return;
+  for (const w of words) if (meta.known[w].found && seen[w] !== true) seen[w] = true;
+}
 
 /** The game's touch size: the least a thing pressed with a finger is, each way (a button's height with fingers, town.ts / lexicon.ts `bh`). */
 export const TOUCH_MIN = 18;
@@ -172,13 +189,13 @@ function drawTabs(ui: Ui, meta: Meta, tabs: Rect[], at: number): void {
   const g = ui.g;
   tabs.forEach((t, i) => {
     const on = i === at;
-    ui.box(t.x, t.y, t.w, t.h, on ? THEME.accentBg : THEME.bg2, on ? THEME.accent : THEME.edgeHi);
+    ui.box(t.x, t.y, t.w, t.h, on ? THEME.accentBg : ui.hover(t.x, t.y, t.w, t.h) ? THEME.hot : THEME.bg2, on ? THEME.accent : THEME.edgeHi);
     // (its name, one word, in the middle of it each way: the odd pixel, if any, to the right and below)
     const lines = LEX_PAGES[i].tab;
     const ty = t.y + Math.floor((t.h - (lines.length * 6 - 1)) / 2);
     const col = on ? THEME.accent : THEME.dim;
     lines.forEach((ln, k) => drawText(g, ln, t.x + Math.floor((t.w - textWidth(ln, 'small')) / 2), ty + k * 6, col, { font: 'small' }));
-    if (!on && LEX28.fresh.some((w) => meta.known[w].found && LEX_PAGES[i].words.includes(w))) {
+    if (!on && LEX_PAGES[i].words.some((w) => wordFresh(meta, w))) {
       // (a round stud 5 across, a glint at its top left, ringed in ink where it lies over the tab's rim; clear of the name under it)
       const mx = t.x + t.w - 5;
       const my = t.y - 4;
@@ -196,12 +213,14 @@ function drawTabs(ui: Ui, meta: Meta, tabs: Rect[], at: number): void {
 
 /**
  * The Lexicon's half laid out the way LEX28 says (lexiconSide's draw, behind the switch): its title, the stones, the open word's
- * page, the shelf of kept words. Pictures only: what is pressed is still the game's own layout's.
+ * page, the shelf of kept words. 'groups' IS THE GAME'S OWN since the ten new words went live: its tabs and stones are pressed in
+ * ui/lexicon.ts lexiconSide (a tab opens its page at its first word found; a stone its word's page), and the shelf is the game's,
+ * a kept word picked and TAKE IT OUT. The other ways are pictures only.
  */
 export function drawLex28(ui: Ui, art0: Art, meta: Meta, game: Game, st: LexUi, r: Rect): void {
   const g = ui.g;
   const art = Object.keys(LEX28.stones).length ? { ...art0, icons: { ...art0.icons, word: { ...art0.icons.word, ...LEX28.stones } } } : art0;
-  const L = lex28Layout(sideBody(r, ui.w, ui.h), ui.touch, LEX28.way, st.sel, LEX28.tab);
+  const L = lex28Layout(sideBody(r, ui.w, ui.h), ui.touch, LEX28.way, st.sel, st.tab ?? LEX28.tab);
   LEX28.last = L;
   const found = WORD_IDS.filter((w) => meta.known[w].found);
   // ('groups': the word whose page is open is the open word where it is on the open tab's page, else that page's first found)
@@ -216,7 +235,7 @@ export function drawLex28(ui: Ui, art0: Art, meta: Meta, game: Game, st: LexUi, 
       continue;
     }
     const on = open === c.w;
-    drawWordTile(ui, art, c.r.x, c.r.y, s, s, c.w, 'name', { stone: true, lit: on, edge: on ? THEME.accent : undefined });
+    drawWordTile(ui, art, c.r.x, c.r.y, s, s, c.w, 'name', { stone: true, lit: on || ui.hover(c.r.x, c.r.y, s, s), edge: on ? THEME.accent : undefined });
     // its four pips: in front, behind, on gear, on a dungeon
     const k = meta.known[c.w];
     [k.front, k.behind, k.gear, k.dungeon].forEach((known, i) => {
@@ -241,12 +260,22 @@ export function drawLex28(ui: Ui, art0: Art, meta: Meta, game: Game, st: LexUi, 
   g.fillRect(L.x0, L.shelfY, L.bw, 0.5);
   const capY = L.shelfY + 3 + Math.floor((L.bh - 5) / 2);
   const capW = drawText(g, 'KEPT FOR YOUR NEXT CHARACTER', L.x0, capY, THEME.dim, { font: 'small' });
-  const price = `ONE MORE: ${game.keepCost()} GOLD`;
-  if (capW + 8 + textWidth(price, 'small') <= L.bw) drawText(g, price, L.x0 + L.bw, capY, THEME.gold, { align: 'right', font: 'small' });
+  // (a kept word picked: TAKE IT OUT in the caption's line, where lexiconSide presses it; else the price of one more, where there is room)
+  if (st.pick) {
+    const takeW = textWidth('TAKE IT OUT') + 16;
+    ui.drawButton(r.x + r.w - SIDE_M - takeW, L.shelfY + 3, takeW, L.bh, 'TAKE IT OUT', { lit: true });
+  } else {
+    const price = `ONE MORE: ${game.keepCost()} GOLD`;
+    if (capW + 8 + textWidth(price, 'small') <= L.bw) drawText(g, price, L.x0 + L.bw, capY, THEME.gold, { align: 'right', font: 'small' });
+  }
   const kept = WORD_IDS.filter((w) => meta.lexicon[w] > 0);
   if (!kept.length) drawText(g, 'None.', L.x0, L.keptY + Math.floor((CELL - 5) / 2), THEME.faint, { font: 'small' });
   const keptPitch = kept.length > 1 ? Math.min(PITCH, Math.floor((L.bw - CELL) / (kept.length - 1))) : PITCH;
-  kept.forEach((w, i) => drawWordTile(ui, art, L.x0 + i * keptPitch, L.keptY, CELL, CELL, w, 'name', { stone: true, count: meta.lexicon[w] }));
+  kept.forEach((w, i) => {
+    const kx = L.x0 + i * keptPitch;
+    const on = !!st.pick && st.pick.word === w;
+    drawWordTile(ui, art, kx, L.keptY, CELL, CELL, w, 'name', { stone: true, lit: on || ui.hover(kx, L.keptY, CELL, CELL), edge: on ? THEME.accent : undefined, count: meta.lexicon[w] });
+  });
 }
 
 /** The playtest's hands: `window.__dbg.lex28` (main.ts). Nothing here runs unless a playtest calls it. */
