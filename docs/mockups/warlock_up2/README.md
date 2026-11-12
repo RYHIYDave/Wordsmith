@@ -1,7 +1,7 @@
 **WHERE IT STANDS (12 Nov 2026, 13:5x Eastern): THE LIVING SHADOW'S LOOK AND ALL ITS MOVES HAVE HIS YES (below). NOW MADE AND
-SHOWN HIM AS TWO FILMS, HIS WORD ON THEM AWAITED: ITS EIGHT SIDES (each truly turned, none a mirror), ITS HIDE CARRIED BY ITS
+SHOWN HIM AS TWO FILMS, AND HAVE HIS YES (12 Nov: “Yes, all eight are right (Recommended)”, “Yes, that's the change (Recommended)”): ITS EIGHT SIDES (each truly turned, none a mirror), ITS HIDE CARRIED BY ITS
 BONES, AND THE CHANGE INTO IT (the game's own change with the Living Shadow grown out of him, ending up on two legs and into its
-roar): the section “Its eight sides, its hide carried by its bones, and the change into it” at the foot. NEXT, AT HIS WORD:
+roar): the section “Its eight sides, its hide carried by its bones, and the change into it” at the foot. NEXT:
 into the game's shape behind a switch that is off, a film and pictures in the game on floor 11 beside the Brawler; then THE
 MAN. Read from “The Living Shadow, drawn properly” down for how it got here, in his words.**
 
@@ -615,7 +615,7 @@ NOT YET, FOR THE ONE HE PICKS: finished detail; from behind and its eight sides;
 legs, and dropping to all fours to run; its other moves looked at one by one; the change into it; beside the Gate Ward's
 ground in the game.
 
-## Its eight sides, its hide carried by its bones, and the change into it (SHOWN HIM AS TWO FILMS; HIS WORD AWAITED)
+## Its eight sides, its hide carried by its bones, and the change into it (SHOWN HIM AS TWO FILMS; HIS YES AT THE FOOT)
 
 The queue chat of 12 Nov (midday), a new chat of his working the queue at his word (“Work on the next queue item”, 12:55
 Eastern), from `art/warlock-up2` at fa8dd52.
@@ -678,7 +678,12 @@ frame by frame as the game's demon's have; its eight sides of Damning, the smoke
 same way, not looked at one by one); the main chat's to weigh, its pictures from eight sides held on his phone (its stand alone
 is 96 pictures a side).
 
-SHOWN HIM SO, 12 Nov, by 13:5x Eastern (both films sent). HIS WORD AWAITED.
+SHOWN HIM SO, 12 Nov, by 13:5x Eastern (both films sent; asked by pop-up of each). **HIS WORDS, 12 Nov:** of its eight sides
+(asked whether it looks right from all eight, its hump, embers and tail moving with its bones), **“Yes, all eight are right
+(Recommended)”**; of the change (asked whether that is the change he wants: the game's own, the Living Shadow growing out of him
+and ending on its roar), **“Yes, that's the change (Recommended)”**. SO ITS EIGHT SIDES, ITS HIDE CARRIED BY ITS BONES AND THE
+CHANGE INTO IT ARE SETTLED WITH HIM: none to be shown him again. NEXT: into the game's shape behind a switch that is off, a film
+and pictures in the game on floor 11 beside the Brawler, his yes, then the ship list; then THE MAN.
 
 ## The checks so far
 
