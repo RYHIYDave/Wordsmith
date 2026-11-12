@@ -2,6 +2,7 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
+import { LIVING_SHADOW } from '../art/shadow_art';
 import { COLOSSUS, HIS_PLACE, onStoneOrJetty, stoneToWorld, worldToStone } from '../game/colossus_fight';
 import { colossusOf, colossusOn } from '../game/act1_rules/colossus';
 /** (COLOSSUS) How far the picture leans up toward him on his stone (game pixels). */
@@ -3967,7 +3968,10 @@ export class Renderer {
       // not push it about. With mana to show as well the bar is two pixels taller.
       // (read from a frame painted already, or as it last was: reading one not painted paints it, and the demon's first standing
       // frame painted here, to be read, was the half of a second's stop as the Warlock changed: his lag, 30 Oct 2026)
-      const stand = paintedNear(heroArt.front.idle, 0, true);
+      // (THE LIVING SHADOW: while he changes into it, its own height, not the man's: up on two legs it is taller, and its bars
+      // would cross its face as it rises; art/shadow_art.ts)
+      const into = h.cls === 'warlock' && h.change?.to === 'demon' && LIVING_SHADOW.on ? this.art.heroes.of('warlock', { twoHanded: false, town: !!game.level.town, demon: true }) : null;
+      const stand = paintedNear((into ?? heroArt).front.idle, 0, true);
       const top = stand ? stand.ay + (game.meta.limit === 'mana' ? 2 : 0) : this.heroAt.top;
       this.heroAt = { x: Math.round(sx), y: Math.round(sy), top };
       fx.headroom = top;
