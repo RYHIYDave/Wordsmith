@@ -41,6 +41,10 @@ two; run veteran_play $P --scenario $S/veteran_play.mjs &
 two; CLS=ranger run baked_ranger $P --scenario $S/baked.mjs &
 two; CLS=warlock run baked_warlock $P --scenario $S/baked.mjs &
 two; CLS=warrior run guide_phone_warrior $P --scenario $S/guide.mjs &
+# HIS FRAMES KEPT IN THEIR SHEETS (fix/frames-from-sheets, joined here): every pixel as it was, the browser asked for a picture
+# only for each sheet; the Brawler's, and the Ranger's
+two; CLS=brawler run sheet_frames_brawler $P --scenario $S/sheet_frames.mjs &
+two; CLS=ranger run sheet_frames_ranger $P --scenario $S/sheet_frames.mjs &
 wait
 fi
 if [ "${MEM:-1}" != "0" ]; then

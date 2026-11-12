@@ -18,7 +18,7 @@ import { EIGHT_ORDER, heroSides } from '../src/art/sides';
 import { EIGHT_MORE } from '../src/art/sides_more';
 import { VET_LISTS, makeVeteranArt, makeVeteranCardArt } from '../src/art/veteran_art';
 import { vetFxFrames } from '../src/art/veteran_fx_art';
-import { reapRetired } from '../src/engine/px';
+import { inSheet, reapRetired, sheetCuts, sheetWhere } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
 import { BakedHeroes, PACKS, bakedPlaces, listLengths, packName, packsOf } from '../src/render/baked';
 import type { BakeFile, BakeKey, BakePack, PackOf } from '../src/render/baked';
@@ -65,13 +65,17 @@ test('the Brawler from eight sides: each move from each side is a pack; his stan
 
 // -----------------------------------------------------------------------------------------------
 // THE PACKS TAKEN IN, UNPACKED AND LET GO: a small hero of the Brawler's shape (eight sides; a stance, a run, struck, a fall,
-// two moves with half-frames and lines), a bake of him made as the bake's page makes one, and pictures that say where they
-// were cut from.
+// two moves with half-frames and lines), a bake of him made as the bake's page makes one, and sheets that say which file they
+// are. A pack unpacked is its sheet held whole, its frames kept in it (engine/px.ts sheetSprite).
 
-interface Cut { sheet: string; x: number; y: number; width: number; height: number; closed: boolean; close(): void }
-const cut = (sheet: string, x: number, y: number, w: number, h: number): Cut => ({ sheet, x, y, width: w, height: h, closed: false, close() { this.closed = true; this.width = 0; this.height = 0; } });
-(globalThis as unknown as { createImageBitmap: unknown }).createImageBitmap = async (src: { name?: string; sheet?: string }, x?: number, y?: number, w?: number, h?: number): Promise<Cut> =>
-  typeof x !== 'number' ? cut(src.name ?? '?', 0, 0, 1, 1) : cut(src.sheet ?? '?', x, y!, w!, h!);
+interface Sheet { name: string; width: number; height: number; closed: boolean; close(): void }
+/** (the browser's reading of a sheet's file, in the tests: a sheet of 16 by 16 that says which file it is) */
+(globalThis as unknown as { createImageBitmap: unknown }).createImageBitmap = async (src: { name?: string }): Promise<Sheet> => {
+  const sheet: Sheet = { name: src.name ?? '?', width: 16, height: 16, closed: false, close: () => { sheet.closed = true; } };
+  return sheet;
+};
+/** How many bytes a pack's sheet is, open: 16 by 16, four a pixel. */
+const OPEN = 16 * 16 * 4;
 
 const MOVES = ['jab', 'cross'] as const;
 let painted = 0;
@@ -173,7 +177,8 @@ function shown<T>(read: () => T): T {
     HEAVY.defer = false;
   }
 }
-const sheetOf = (s: Sprite): string => (s.img as unknown as Cut).sheet;
+const bitmapOf = (s: Sprite): Sheet => sheetWhere(s)!.sheet.img as unknown as Sheet;
+const sheetOf = (s: Sprite): string => bitmapOf(s).name;
 
 test('taken in: what he always holds is given; every pack is fetched and kept packed, none unpacked, nothing painted', async () => {
   const was = { ...PACKS };
@@ -218,21 +223,26 @@ test('a move thrown: until its pack is unpacked its first frame is shown; then e
     const first = jab[0];
     assert.equal(shown(() => jab[3]), first, 'not unpacked yet: its first frame, his stance');
     assert.equal(b.stats.packs.missed, 1);
+    const cutBefore = sheetCuts().made;
     await idle();
     assert.deepEqual(b.packsHeld(), ['brawler/jab:2']);
     const s = shown(() => jab[3]);
     assert.notEqual(s, first);
-    assert.equal(sheetOf(s), 'brawler-jab-2.png', 'cut from its own sheet');
+    assert.equal(sheetOf(s), 'brawler-jab-2.png', 'a frame kept in its own sheet');
+    // (ITS FRAMES ARE KEPT IN THE SHEET: none is cut from it as it is unpacked, and one is when it is first drawn)
+    assert.equal(sheetCuts().made, cutBefore, 'unpacked: no frame cut');
+    assert.deepEqual([s.img.width, s.img.height], [4, 4]);
+    assert.equal(sheetCuts().made, cutBefore + 1, 'drawn: that one cut');
     assert.equal(jab[0], first, 'its first frame is the one always held');
     for (let i = 1; i < 5; i++) assert.ok(isPicture(jab, i));
     for (let i = 0; i < 2; i++) assert.ok(isPicture(side.clips!.vetHalves!.jab.frames, i), 'its half-frames');
     for (const layer of ['ground', 'behind', 'front'] as const) for (let i = 0; i < 6; i++) assert.ok(isPicture(side.clips!.vetFx!.jab[layer], i), 'its lines');
     assert.ok(!isPicture(side.clips!.vet!.cross.frames, 1), 'another move from the same side: still packed');
     assert.ok(!isPicture(heroSides(art)[3].clips!.vet!.jab.frames, 1), 'the same move from another side: still packed');
-    assert.equal(b.stats.packs.bytes, (4 + 2 + 18) * 64);
-    // (each picture its own: no two places of the pack show the same cut)
-    const cuts = new Set([1, 2, 3, 4].map((i) => (jab[i].img as unknown as Cut).x));
-    assert.equal(cuts.size, 4);
+    assert.equal(b.stats.packs.bytes, OPEN, 'its sheet, open');
+    // (each frame its own place on the sheet)
+    const at = new Set([1, 2, 3, 4].map((i) => sheetWhere(jab[i])!.x));
+    assert.equal(at.size, 4);
     // A LINE NOT THERE YET IS NOT SHOWN AT ALL, and asks for its pack
     const lines = heroSides(art)[5].clips!.vetFx!.cross.front;
     shown(() => lines[2]);
@@ -257,7 +267,7 @@ test('past the budget the least lately asked for is let go: its places as they w
   try {
     painted = 0;
     const { art, b, done, idle } = setUp();
-    const each = (4 + 2 + 18) * 64;
+    const each = OPEN;
     PACKS.budget = 2 * each;
     PACKS.fresh = 0;
     b.take('brawler', 'dungeon', true);
@@ -268,7 +278,8 @@ test('past the budget the least lately asked for is let go: its places as they w
     b.want('brawler', 'jab', 0);
     await idle();
     const pic = jab0[2];
-    const picture = pic.img as unknown as Cut;
+    const where = sheetWhere(pic)!;
+    const picture = bitmapOf(pic);
     await new Promise((r) => setTimeout(r, 3));
     b.want('brawler', 'cross', 0);
     await idle();
@@ -294,12 +305,12 @@ test('past the budget the least lately asked for is let go: its places as they w
     assert.equal(b.stats.packs.letGo, 2);
     // (the jab's pictures from in front: its places are the frame's own painter again, and their room is given back)
     assert.deepEqual(Object.getOwnPropertyDescriptor(jab0, 2), before);
-    assert.equal(pic.img as unknown, picture, 'not yet: whoever holds it for a moment has done with it first');
-    assert.equal(picture.closed, false);
+    assert.equal(picture.closed, true, 'its sheet closed: its room given back at once');
+    assert.equal(where.sheet.img, null);
+    assert.ok(inSheet(pic), 'what was cut from it for drawing is held a moment yet, for whoever drew it this frame');
     reapRetired(true);
-    assert.equal(picture.closed, true, 'given back');
-    assert.notEqual(pic.img as unknown, picture, 'and whoever still holds it draws nothing (engine/px.ts)');
-    assert.equal((cross0[2].img as unknown as Cut).closed, false, 'the pictures in hand are not');
+    assert.ok(!inSheet(pic), 'and then given back: whoever still holds the frame draws nothing (engine/px.ts)');
+    assert.equal(bitmapOf(cross0[2]).closed, false, 'the sheets open are not closed');
     assert.equal(painted, 0);
   } finally {
     Object.assign(PACKS, was);
@@ -376,69 +387,6 @@ test('another hero played: the Brawler\'s packs in hand are let go; his class ca
   }
 });
 
-test('cut as canvases (PACKS.cut, the game\'s own way where there is a page): each frame drawn out of its sheet into a canvas of its own; one refused, the pack is not unpacked and those made are given back', async () => {
-  const was = { ...PACKS };
-  const G = globalThis as unknown as Record<string, unknown>;
-  const had = { document: G.document, Image: G.Image, make: URL.createObjectURL, revoke: URL.revokeObjectURL };
-  interface Canvas { width: number; height: number; sheet?: string; x?: number; getContext(): unknown }
-  const made: Canvas[] = [];
-  let refuse = false;
-  try {
-    PACKS.cut = 'canvas';
-    PACKS.slice = 0;
-    URL.createObjectURL = ((b: { name: string }) => `blob:${b.name}`) as unknown as typeof URL.createObjectURL;
-    URL.revokeObjectURL = () => {};
-    G.Image = class { decoding = ''; src = ''; async decode(): Promise<void> {} };
-    G.document = {
-      createElement: (): Canvas => {
-        const cv: Canvas = {
-          width: 0,
-          height: 0,
-          getContext: () => (refuse && made.length > 3 ? null : { drawImage(img: { src: string }, x: number) { cv.sheet = img.src.slice(5); cv.x = x; } }),
-        };
-        made.push(cv);
-        return cv;
-      },
-    };
-    const { art, b, done, idle } = setUp();
-    b.take('brawler', 'dungeon', true);
-    await done();
-    const jab = heroSides(art)[6].clips!.vet!.jab.frames;
-    b.want('brawler', 'jab', 6);
-    await idle();
-    assert.deepEqual(b.packsHeld(), ['brawler/jab:6']);
-    assert.equal(made.length, 24, 'a canvas for each of its frames');
-    const cv = jab[2].img as unknown as Canvas;
-    assert.equal(cv.sheet, 'brawler-jab-6.png', 'drawn out of its own sheet');
-    assert.deepEqual([cv.width, cv.height], [4, 4]);
-    assert.equal(new Set(made.map((c) => c.x)).size, 24, 'each its own frame');
-    assert.ok(b.stats.packs.work >= 0 && b.stats.packs.unpacked === 1);
-    // (let go: the canvases' room given back by hand)
-    b.letGoAll();
-    reapRetired(true);
-    assert.ok(made.every((c) => c.width === 0), 'given back');
-    // A CANVAS REFUSED: nothing of the pack is given, what was made is given back, and it is tried again when next asked for
-    made.length = 0;
-    refuse = true;
-    b.want('brawler', 'cross', 6);
-    await idle();
-    assert.deepEqual(b.packsHeld(), []);
-    assert.ok(made.length > 0 && made.every((c) => c.width === 0));
-    assert.ok(!isPicture(heroSides(art)[6].clips!.vet!.cross.frames, 2));
-    refuse = false;
-    made.length = 0;
-    b.want('brawler', 'cross', 6);
-    await idle();
-    assert.deepEqual(b.packsHeld(), ['brawler/cross:6']);
-  } finally {
-    Object.assign(PACKS, was);
-    G.document = had.document;
-    G.Image = had.Image;
-    URL.createObjectURL = had.make;
-    URL.revokeObjectURL = had.revoke;
-  }
-});
-
 test('PACKS off: every pack is unpacked as he is taken in, and none is let go', async () => {
   const was = { ...PACKS };
   try {
@@ -450,7 +398,7 @@ test('PACKS off: every pack is unpacked as he is taken in, and none is let go', 
     await done();
     assert.equal(b.packsHeld().length, 24);
     assert.equal(b.stats.packs.letGo, 0);
-    assert.equal(b.stats.packs.bytes, file.packs!.reduce((n, p) => n + p.bytes, 0));
+    assert.equal(b.stats.packs.bytes, 24 * OPEN, 'every sheet open');
     for (const side of heroSides(art)) for (const l of heroLists(side)) for (let i = 0; i < l.length; i++) assert.ok(isPicture(l, i), 'every frame of his in hand');
   } finally {
     Object.assign(PACKS, was);

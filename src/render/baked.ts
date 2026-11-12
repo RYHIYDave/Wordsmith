@@ -16,8 +16,8 @@ import type { HeroArt, HeroPlace } from '../art/heroes';
 import type { AnimSet } from '../art/actor_types';
 import { ASKED } from '../art/asked';
 import { heroSides } from '../art/sides';
-import { retireSprite } from '../engine/px';
-import type { Sprite } from '../engine/px';
+import { retireSprite, sheetSprite } from '../engine/px';
+import type { FrameSheet, Sprite } from '../engine/px';
 import type { ClassId } from '../game/types';
 
 declare const __HERO_BAKE__: string | undefined;
@@ -29,57 +29,44 @@ export const BAKED = { on: true };
 export const BAKE_DIR = 'heroes';
 
 /**
- * A HERO'S MOVES KEPT PACKED (the Brawler memory chat, 11 Nov 2026; the queue's make-brawlers-eight-sides-fit-in-memory; his
- * words to the main chat, 11 Nov 2026, 19:54: “How do we make the brawler so he’s playable without crashing the game?”).
+ * A HERO'S MOVES KEPT PACKED (the Brawler memory chat, 11 and 12 Nov 2026; the queue's make-brawlers-eight-sides-fit-in-memory;
+ * his words to the main chat, 11 Nov 2026, 19:54: “How do we make the brawler so he’s playable without crashing the game?”).
  *
- * The Brawler from all eight sides (art/sides_more.ts EIGHT_MORE.brawler) is 9,666 pictures, 142 MB held from the moment he is
- * first shown, where he held 36 from two sides and the Ranger, the heaviest hero, holds 92 (docs/mockups/eight_sides/
- * BRING_IN.md: the weighing). Memory is what froze his phone (25.3.2). So a hero baked IN PACKS holds, always, only what he
- * shows all the time (his stance, his run, struck, and the first frame of every move: under 10 MB of the Brawler's), and each
- * of his moves, for each side, is a PACK: one small sheet of its own (the move's frames, its strike's half-frames and its action
- * lines from that side: half a megabyte to four unpacked, a few tens of kilobytes as a file), fetched with him under the loading
- * screen and KEPT PACKED, as the file's own bytes. A pack is UNPACKED AS ITS MOVE BEGINS (the game's drawing tells of the list
- * it asked a frame of and did not find: art/asked.ts; and a moment ahead where it can be known: render/veteran_fx.ts
- * asks for the moves a press would make next), and until its pictures come, a few hundredths of a second, the move shows its
- * first frame, which is his stance. Unpacked pictures are kept up to `budget`; past it THE LEAST LATELY THROWN ARE LET GO (their
- * places put back as they were, their room given back: engine/px.ts retireSprite) and unpacked again when next thrown.
+ * The Brawler from all eight sides (art/sides_more.ts EIGHT_MORE.brawler) is 9,666 pictures: 142 MB as pictures of their own,
+ * about 200 as thirteen sheets held whole (the way every hero's frames are kept since they are drawn from their sheets:
+ * engine/px.ts sheetSprite), where he is 53 from two sides and the Ranger, the heaviest hero, 109. Memory is what froze his
+ * phone (25.3.2). So a hero baked IN PACKS holds, always, only what he shows all the time (his stance, his run, struck, and the
+ * first frame of every move: one sheet, under 10 MB of the Brawler's), and each of his moves, for each side, is a PACK: one
+ * small sheet of its own (the move's frames, its strike's half-frames and its action lines from that side: half a megabyte
+ * to four and a half open, a few tens of kilobytes as a file), fetched with him under the loading screen and KEPT PACKED, as
+ * the file's own bytes. A pack is OPENED AS ITS MOVE BEGINS: its sheet read by the browser, beside the game, and its frames
+ * given into their places as frames kept in that sheet, each cut from it only when it is first drawn, as any hero's
+ * (the game's drawing tells of the list it asked a frame of and did not find: art/asked.ts; and a moment ahead where it can
+ * be known: render/veteran_fx.ts asks for the moves a press would make next). Until its sheet is read, a few hundredths of a
+ * second, the move shows its first frame, which is his stance. Open sheets are kept up to `budget`; past it THE LEAST LATELY
+ * THROWN ARE LET GO (their places put back as they were, their sheet closed, what was cut from it given back: engine/px.ts
+ * retireSprite) and opened again when next thrown.
  *
  * WHICH HERO IS PACKED IS DECIDED AS HE IS BAKED (packsOf, below): a hero not baked in packs is taken in whole, as before.
- * `on` off: a hero baked in packs has every pack unpacked as he is first taken in and none let go (he holds every picture).
+ * `on` off: a hero baked in packs has every pack opened as he is first taken in and none let go (he holds every sheet).
  */
 export const PACKS = {
   on: true,
   /**
-   * How many bytes of unpacked packs are kept (four a pixel). 40 MB: with the 10 he always holds the Brawler holds about 50 MB at
-   * most, where he held 36 from two sides, would hold 143 from eight with none let go, and the Ranger holds 92. Tried on floor 2,
-   * a bot fighting four minutes of the game's time (tools/scenarios/mem_floors.mjs BUDGET): at 26 MB a pack was unpacked 161
-   * times and let go 131; at 40, 72 and 29; at 56 the 54 packs that fight used all stayed in hand (48 MB). A frame's work was
-   * the same at all three.
-   * (WRITTEN AS A PLAIN NUMBER, 40 x 1,048,576: the bake's mark is the hash of the code its page is made of, and a sum here
-   * kept this whole object in it, so that tuning the budget would have made a new mark and a new bake of the same pictures.
-   * As plain numbers nothing of PACKS is in the bake's page: the budget is tuned without baking again.)
+   * How many bytes of packs' sheets are kept open (four a pixel). 32 MB: with the 10 he always holds and the frames cut from
+   * sheets, which every hero shares (engine/px.ts CUT_BUDGET, 24 MB), the Brawler holds about 66 MB at the very most, where
+   * his sheets from eight sides would be about 200 held whole, and from two sides are 53. Tried on floor 2 with a bot fighting
+   * four minutes of the game's time, when a pack's frames were each cut as it was unpacked: at 26 MB a pack was unpacked 161
+   * times and let go 131; at 40, 72 and 29; at 56 none was let go. Opening one is now reading one small sheet, so it may
+   * come and go more often for less.
+   * (PLAIN NUMBERS, 32 x 1,048,576: the bake's mark is the hash of the code its page is made of, and a sum here kept this
+   * whole object in it. As plain numbers nothing of PACKS is in the bake's page: the budget is tuned without baking again.)
    */
-  budget: 41943040,
+  budget: 33554432,
   /** A pack asked for within this long (ms) is not let go of, whatever the budget: what is being shown is never let go. */
   fresh: 1500,
   /** How many packs are unpacked at once. */
   atOnce: 2,
-  /**
-   * HOW A PACK'S FRAMES ARE CUT FROM ITS SHEET.
-   * 'canvas': the sheet read as a picture (an Image: the browser reads it beside the game) and each frame drawn out of it into a
-   * canvas of its own, on the game's own thread, a few at a time (`slice` ms of it a frame of the game's), as the game's own
-   * painted frames and their mirror images are canvases, and as the floors' monsters' bake cuts its own
-   * (build/monsters-before-play, render/monsters_baked.ts).
-   * 'bitmap': a picture made by the browser for each frame (createImageBitmap), as what a hero always holds is taken in.
-   * WHY 'canvas': his word from the phone, 11 Nov 2026, of the test page that had him from eight sides, every frame taken in the
-   * second way: a minute to come into town, the loading screen lagging (docs/mockups/eight_sides/BRING_IN.md, its foot). The
-   * eight-sides merge chat's lead (the queue's measure-lag-on-his-phone): an iPhone's browser is known to be slow at making a
-   * picture for every frame. In play a pack would be a hundred such, again and again. Drawing into a canvas is what the game
-   * does every frame. NEITHER WAY HAS BEEN MEASURED ON A PHONE: one word to change when his phone has been.
-   */
-  cut: 'canvas' as 'canvas' | 'bitmap',
-  /** (cut: 'canvas') How long the cutting may take of one frame of the game's, each pack being unpacked (ms). */
-  slice: 2,
 };
 
 /** A list's pack: its name (the move's; the pack is this move from the list's side), and whether the list's first frame is always held. */
@@ -199,17 +186,6 @@ export interface BakePack {
   bytes: number;
 }
 
-/** A frame cut from a pack's sheet: a picture made by the browser, or a canvas (PACKS.cut). */
-type Cut = ImageBitmap | HTMLCanvasElement;
-/** A cut not wanted after all: its room given back. */
-function dropCut(c: Cut): void {
-  if (typeof (c as ImageBitmap).close === 'function') (c as ImageBitmap).close();
-  else {
-    (c as HTMLCanvasElement).width = 0;
-    (c as HTMLCanvasElement).height = 0;
-  }
-}
-
 /** A pack as the game holds it: packed (its file's bytes), being unpacked, or in hand. */
 interface Pack {
   def: BakePack;
@@ -218,7 +194,11 @@ interface Pack {
   /** Its places, each once: the list, the frame, the frame's index in the pack. */
   places: [Sprite[], number, number][];
   state: 'packed' | 'unpacking' | 'held';
-  /** Every place a picture of it was given into, and what was there before (the frame's own painter), to put back as it is let go. */
+  /** Its sheet, while it is open: its frames are kept in it (engine/px.ts sheetSprite). */
+  sheet: FrameSheet | null;
+  /** How many bytes its sheet is, open (four a pixel). */
+  bytes: number;
+  /** Every place a frame of it was given into, and what was there before (the frame's own painter), to put back as it is let go. */
   held: { list: Sprite[]; i: number; was: PropertyDescriptor; s: Sprite }[];
   /** When it was last asked for (ms). */
   used: number;
@@ -228,30 +208,39 @@ interface Pack {
 
 type Give = (cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean) => boolean;
 
-/** How many of a sheet's frames are cut from it at a time. */
-const AT_ONCE = 48;
-
 /**
  * THE BAKED PICTURES, TAKEN IN (render/painter.ts, Painter.baked): a group is fetched the first time one of its heroes is asked
- * for, a sheet at a time (a sheet is let go of once its frames are cut from it), and every frame handed to the hero's art where
- * it is still unpainted.
+ * for, a sheet at a time, and every frame handed to the hero's art where it is still unpainted.
+ *
+ * THE SHEETS ARE HELD WHOLE, AND NO PICTURE IS MADE FOR A FRAME (engine/px.ts sheetSprite: a frame's picture is cut from its
+ * sheet when it is first asked for). Before, each frame was cut from its sheet as it came, a picture made by the browser for
+ * each (createImageBitmap(sheet, x, y, w, h), 48 at once): on his phone, measured 12 Nov 2026, 7.1 ms a frame on the game's
+ * own thread, 68.5 s of the Brawler's 74-second load into town from eight sides (docs/requests/phone_check.md).
  */
 export class BakedHeroes {
   private state = new Map<string, 'loading' | 'done' | 'failed'>();
   private readonly groups: Record<string, BakeKey[]>;
   private readonly groupOf = new Map<string, string>();
-  /** For measuring: frames taken in, frames not wanted (painted already), how long each group took (ms), and what failed. */
+  /** The sheets in hand: a hero's pictures are kept once they have come (but a packed hero's packs: PACKS). */
+  private readonly sheets: FrameSheet[] = [];
+  /**
+   * For measuring: frames taken in, frames not wanted (painted already), how long each group took (ms), what failed, and the
+   * sheets held and their pixels (what a hero always holds; his packs' sheets are counted in `packs`).
+   */
   readonly stats = {
     given: 0,
     unwanted: 0,
     ms: {} as Record<string, number>,
     failed: [] as string[],
+    sheets: 0,
+    sheetPx: 0,
     /**
-     * THE PACKS (PACKS): how many there are and how many bytes their files are; how many are in hand and their bytes unpacked;
-     * how many times one was unpacked and let go; how many were asked for by the game's drawing with no picture to show yet
-     * (`missed`: a stand-in was shown meanwhile) and how many ahead of need; how long unpacking has taken in all and at worst (ms),
-     * most of it the browser's own, beside the game; and `work`, how much of it was on the game's own thread (asking for the cuts,
-     * giving the pictures into their places, letting others go), in all and at worst in one go (ms).
+     * THE PACKS (PACKS): how many there are and how many bytes their files are; how many are open and their sheets' bytes
+     * (four a pixel) now and at the most; how many times one was opened and let go; how many were asked for by the game's
+     * drawing with no picture to show yet (`missed`: a stand-in was shown meanwhile) and how many ahead of need; how long
+     * opening has taken in all and at worst (ms), nearly all of it the browser reading the sheet, beside the game; and `work`,
+     * how much was on the game's own thread (giving the frames into their places, letting others go), in all and at worst
+     * in one go (ms).
      */
     packs: { all: 0, packed: 0, held: 0, bytes: 0, most: 0, unpacked: 0, letGo: 0, missed: 0, ahead: 0, ms: 0, worst: 0, work: 0, workWorst: 0 },
   };
@@ -316,7 +305,11 @@ export class BakedHeroes {
     }
   }
 
-  /** Unpack one: its sheet read from its file's bytes, its frames cut from it and given into their places where those are still unpainted. */
+  /**
+   * Unpack one: its sheet read from its file's bytes (by the browser, beside the game) and held whole; its frames given into
+   * their places, where those are still unpainted, as frames kept in that sheet (engine/px.ts sheetSprite: none is cut from
+   * it until it is drawn).
+   */
   private async unpack(p: Pack): Promise<void> {
     if (p.state !== 'packed') return;
     p.state = 'unpacking';
@@ -324,30 +317,32 @@ export class BakedHeroes {
     const t0 = this.clock();
     const S = this.stats.packs;
     try {
-      // (PACKS.cut: each frame a canvas drawn out of the sheet, where there is a page to make canvases on; else, and in the
-      // tests, a picture made by the browser for each)
-      const bmps: Cut[] = PACKS.cut === 'canvas' && typeof document !== 'undefined' && typeof Image !== 'undefined' ? await this.cutCanvases(p) : await this.cutBitmaps(p);
+      const bmp = await createImageBitmap(p.blob, { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
       const g0 = this.clock();
-      const sprites: (Sprite | undefined)[] = new Array<Sprite | undefined>(bmps.length);
+      const sheet: FrameSheet = { img: bmp };
+      const sprites: (Sprite | undefined)[] = new Array<Sprite | undefined>(p.def.frames.length);
       for (const [list, i, fi] of p.places) {
         const was = Object.getOwnPropertyDescriptor(list, i);
         // (a place painted already keeps its picture: nothing of it is the bake's to give back)
         if (!was || typeof was.get !== 'function') continue;
-        const s = (sprites[fi] ??= { ...p.parts[p.def.frames[fi][4]], img: bmps[fi] as unknown as HTMLCanvasElement } as Sprite);
+        let s = sprites[fi];
+        if (!s) {
+          const [x, y, w, h, part] = p.def.frames[fi];
+          s = sprites[fi] = sheetSprite(p.parts[part], sheet, x, y, w, h);
+        }
         Object.defineProperty(list, i, { value: s, writable: true, configurable: true, enumerable: true });
         p.held.push({ list, i, was, s });
       }
-      for (let fi = 0; fi < bmps.length; fi++) {
-        if (sprites[fi]) this.stats.given++;
-        else {
-          this.stats.unwanted++;
-          dropCut(bmps[fi]);
-        }
+      for (const s of sprites) {
+        if (s) this.stats.given++;
+        else this.stats.unwanted++;
       }
+      p.sheet = sheet;
+      p.bytes = bmp.width * bmp.height * 4;
       p.state = 'held';
       p.used = Math.max(p.used, t0);
       S.held++;
-      S.bytes += p.def.bytes;
+      S.bytes += p.bytes;
       S.most = Math.max(S.most, S.bytes);
       S.unpacked++;
       this.worked(g0);
@@ -365,69 +360,6 @@ export class BakedHeroes {
     this.trim(p);
     this.worked(l0);
     this.pump();
-  }
-
-  /** A pack's frames, each a picture made by the browser from its sheet (PACKS.cut 'bitmap'), a few asked for at a time. */
-  private async cutBitmaps(p: Pack): Promise<Cut[]> {
-    const opts: ImageBitmapOptions = { premultiplyAlpha: 'default', colorSpaceConversion: 'none' };
-    const sheet = await createImageBitmap(p.blob, opts);
-    const out: Cut[] = [];
-    try {
-      // (a few at a time: asking for a cut costs the game's own thread a little, and a big pack's 135 at once was 10 ms of it)
-      const AT = 24;
-      for (let n = 0; n < p.def.frames.length; n += AT) {
-        const w0 = this.clock();
-        const cuts = p.def.frames.slice(n, n + AT).map(([x, y, w, h]) => createImageBitmap(sheet, x, y, w, h, opts));
-        this.worked(w0);
-        out.push(...(await Promise.all(cuts)));
-      }
-    } finally {
-      sheet.close();
-    }
-    return out;
-  }
-
-  /**
-   * A pack's frames, each a canvas of its own drawn out of its sheet (PACKS.cut 'canvas'): the sheet read as a picture by the
-   * browser, beside the game; then the frames cut on the game's own thread, PACKS.slice ms of it at a time, the game given a
-   * frame of its own between. A canvas refused (an iPhone gives a page only so much room for them): those made are given back,
-   * and the pack is not unpacked.
-   */
-  private async cutCanvases(p: Pack): Promise<Cut[]> {
-    const url = URL.createObjectURL(p.blob);
-    const img = new Image();
-    img.decoding = 'async';
-    img.src = url;
-    const out: HTMLCanvasElement[] = [];
-    try {
-      await img.decode();
-      const all = p.def.frames;
-      while (out.length < all.length) {
-        const t0 = this.clock();
-        do {
-          const [x, y, w, h] = all[out.length];
-          const cv = document.createElement('canvas');
-          cv.width = w;
-          cv.height = h;
-          const g = cv.getContext('2d');
-          if (!g) {
-            out.push(cv);
-            throw new Error('no canvas to be had');
-          }
-          g.drawImage(img, x, y, w, h, 0, 0, w, h);
-          out.push(cv);
-        } while (out.length < all.length && this.clock() - t0 < PACKS.slice);
-        this.worked(t0);
-        if (out.length < all.length) await new Promise<void>((r) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(() => r()) : setTimeout(r, 0)));
-      }
-      return out;
-    } catch (e) {
-      for (const cv of out) dropCut(cv);
-      throw e;
-    } finally {
-      img.src = '';
-      URL.revokeObjectURL(url);
-    }
   }
 
   /** (for the measures) So long on the game's own thread, since `t0`. */
@@ -450,7 +382,11 @@ export class BakedHeroes {
     }
   }
 
-  /** Let a pack go: each place put back as it was (the frame's own painter), its pictures' room given back a moment on (engine/px.ts retireSprite). */
+  /**
+   * Let a pack go: each place put back as it was (the frame's own painter); its sheet closed, its room given back at once; what
+   * was cut from it for drawing given back a moment on (engine/px.ts retireSprite: whoever drew a frame of it this frame holds
+   * it that long; a frame of it asked for after that shows nothing, and its list asks for the pack again).
+   */
   private letGo(p: Pack): void {
     const gone = new Set<Sprite>();
     for (const h of p.held) {
@@ -463,11 +399,18 @@ export class BakedHeroes {
       this.onLetGo?.(s);
       retireSprite(s);
     }
+    const sheet = p.sheet;
+    if (sheet && sheet.img) {
+      const img = sheet.img;
+      sheet.img = null;
+      img.close?.();
+    }
+    p.sheet = null;
     p.held = [];
     p.state = 'packed';
     const S = this.stats.packs;
     S.held--;
-    S.bytes -= p.def.bytes;
+    S.bytes -= p.bytes;
     S.letGo++;
   }
 
@@ -520,7 +463,7 @@ export class BakedHeroes {
           had.add(i);
           places.push([list, i, def.at[a + 4]]);
         }
-        const p: Pack = { def, parts: f.parts, blob: blobs[q], places, state: 'packed', held: [], used: 0, failed: 0 };
+        const p: Pack = { def, parts: f.parts, blob: blobs[q], places, state: 'packed', sheet: null, bytes: 0, held: [], used: 0, failed: 0 };
         this.packs.set(`${g}/${def.name}`, p);
         for (const list of seen.keys()) this.packOf.set(list, p);
         S.all++;
@@ -604,32 +547,30 @@ export class BakedHeroes {
       for (let s = 0; s < f.sheets.length; s++) {
         const rs = await this.get(f.sheets[s]);
         if (!rs.ok) throw new Error(`${f.sheets[s]}: ${rs.status}`);
-        const sheet = await createImageBitmap(await rs.blob(), { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
-        try {
-          const mine: number[] = [];
-          for (let fi = 0; fi < f.frames.length; fi++) if (f.frames[fi][0] === s) mine.push(fi);
-          for (let n = 0; n < mine.length; n += AT_ONCE) {
-            const part = mine.slice(n, n + AT_ONCE);
-            const bmps = await Promise.all(part.map((fi) => {
-              const [, x, y, w, h] = f.frames[fi];
-              return createImageBitmap(sheet, x, y, w, h, { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
-            }));
-            for (let q = 0; q < part.length; q++) {
-              const fi = part[q];
-              const sprite = { ...f.parts[f.frames[fi][5]], img: bmps[q] as unknown as HTMLCanvasElement } as Sprite;
-              let took = false;
-              for (const [k, v, l, i] of wants.get(fi) ?? []) {
-                if (this.give(k.cls, k.place, v, l, i, sprite, k.vet)) took = true;
-              }
-              if (took) this.stats.given++;
-              else {
-                this.stats.unwanted++;
-                bmps[q].close();
-              }
-            }
+        const bmp = await createImageBitmap(await rs.blob(), { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
+        const sheet: FrameSheet = { img: bmp };
+        let kept = 0;
+        for (let fi = 0; fi < f.frames.length; fi++) {
+          if (f.frames[fi][0] !== s) continue;
+          const [, x, y, w, h, part] = f.frames[fi];
+          const sprite = sheetSprite(f.parts[part], sheet, x, y, w, h);
+          let took = false;
+          for (const [k, v, l, i] of wants.get(fi) ?? []) {
+            if (this.give(k.cls, k.place, v, l, i, sprite, k.vet)) took = true;
           }
-        } finally {
-          sheet.close();
+          if (took) {
+            this.stats.given++;
+            kept++;
+          } else this.stats.unwanted++;
+        }
+        if (kept) {
+          this.sheets.push(sheet);
+          this.stats.sheets++;
+          this.stats.sheetPx += bmp.width * bmp.height;
+        } else {
+          // (none of its frames was wanted: nothing holds it)
+          sheet.img = null;
+          bmp.close();
         }
       }
       // (a hero kept in packs, PACKS: his packs fetched and kept packed; what came above is what he always holds)
