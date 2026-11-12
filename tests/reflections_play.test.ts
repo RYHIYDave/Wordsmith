@@ -121,7 +121,7 @@ test('2. ON, EACH FORM ITS HERO AS HE LOOKS NOW: his sides, each blow at his pic
     // (the size the game reads follows the switch)
     assert.equal(act1Fig('reflection:3')!.size.top, SIZE_UP[3].top);
   });
-  assert.equal(act1Fig('reflection:3')!.size.top, 35, 'off: the mage\'s stand-in\'s');
+  off(() => assert.equal(act1Fig('reflection:3')!.size.top, 35, 'off: the mage\'s stand-in\'s'));
 });
 
 test('3. THE WARRIOR HOLDS WHAT HE HOLDS: his war axe\'s form, his maul\'s; the great sword\'s with none picked', () => {

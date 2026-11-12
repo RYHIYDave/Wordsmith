@@ -22,6 +22,7 @@ import { hashSprite, listsOf } from '../tools/cheap_heroes';
 import type { Who } from '../tools/cheap_heroes';
 import { VETERAN } from '../src/game/veteran';
 import { LIVING_SHADOW } from '../src/art/shadow_art';
+import { WARLOCK_UP } from '../src/art/warlock_up';
 
 declare const process: { env: Record<string, string | undefined> };
 const PINNED = JSON.parse(readFileSync(new URL('./cheap_heroes.hashes.json', import.meta.url), 'utf8')) as { lists: Record<string, string[]> };
@@ -32,17 +33,23 @@ for (const who of ['warlock', 'tinkerer', 'tinkerer-kit', 'brawler'] as Who[]) {
     // (the Brawler as he was, the pinned pictures: since 25.0 he is the Veteran, his look the art chat's (game/veteran.ts VETERAN,
     // on at his yes of 3 Nov 2026), and the old one is held here with the switch off)
     // (and the Warlock's demon as it was: since 25.3.14 it is the Living Shadow, art/shadow_art.ts LIVING_SHADOW, on at his yes of
-    // 12 Nov 2026; the old one held here with the switch off)
+    // 12 Nov 2026; the old one held here with the switch off; and the man himself as he was: since 25.3.15 he is brought up,
+    // art/warlock_up.ts WARLOCK_UP, on at his yes of 12 Nov 2026, held off here likewise)
     const was = VETERAN.on;
     const shadow = LIVING_SHADOW.on;
+    const up = WARLOCK_UP.on;
     if (who === 'brawler') VETERAN.on = false;
-    if (who === 'warlock') LIVING_SHADOW.on = false;
+    if (who === 'warlock') {
+      LIVING_SHADOW.on = false;
+      WARLOCK_UP.on = false;
+    }
     let lists: ReturnType<typeof listsOf>;
     try {
       lists = listsOf(who);
     } finally {
       VETERAN.on = was;
       LIVING_SHADOW.on = shadow;
+      WARLOCK_UP.on = up;
     }
     const prefix = who === 'tinkerer-kit' ? /^(golem|contraption):/ : new RegExp(`^${who}:`);
     const pinned = Object.keys(PINNED.lists).filter((k) => prefix.test(k));

@@ -29,6 +29,7 @@
 import type { Light, Sprite } from '../engine/px';
 import type { VetBlowId } from '../game/veteran';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
+import { asking } from './asked';
 import { lazyFrames, toSprite } from './kit';
 import type { GameView } from './skin';
 import { EIGHT_MORE, MORE_SIDES, MORE_TURN } from './sides_more';
@@ -101,7 +102,9 @@ function readsOf(list: () => readonly Sprite[], picks: readonly number[]): Sprit
 
 /** Each frame of a move, frame 0 to `long` - 1, at 30 a second; while none is painted where the game is played, `stand`. */
 function moveClip(view: VetSide, m: VetMotion, stand: () => readonly Sprite[] | undefined): Clip {
-  const c: Clip = { frames: lazyFrames(m.long, (i) => vetFrame(view, m, i), HEAVY_HIM, stand), fps: VFPS };
+  // (`asking`: his moves are kept packed where he is baked from eight sides, render/baked.ts PACKS: a frame asked for and not
+  // there tells the bake, which unpacks the move; art/asked.ts)
+  const c: Clip = { frames: asking(lazyFrames(m.long, (i) => vetFrame(view, m, i), HEAVY_HIM, stand)), fps: VFPS };
   const at = m.strikes.length ? Math.min(...m.strikes.map((s) => s.at)) : undefined;
   if (at !== undefined) c.hit = at / VFPS;
   return c;
@@ -134,7 +137,7 @@ function hisSet(view: VetSide): AnimSet {
       const [from, n] = hv;
       // (while none of them is painted, the move's own frame half a frame on stands in)
       const own = readsOf(() => c.frames, Array.from({ length: n }, (_, k) => Math.min(m.long - 1, Math.ceil(from + k))));
-      vetHalves[id] = { from, frames: lazyFrames(n, (k) => vetFrame(view, m, from + k), HEAVY_HIM, () => own) };
+      vetHalves[id] = { from, frames: asking(lazyFrames(n, (k) => vetFrame(view, m, from + k), HEAVY_HIM, () => own)) };
     }
     const fxOf = (layer: VetFxLayer): Sprite[] => vetFxFrames(m.long + VET_FX_AFTER, (i) => paintVetFx(m, i, view, layer));
     vetFx[id] = { ground: fxOf('ground'), behind: fxOf('behind'), front: fxOf('front') };

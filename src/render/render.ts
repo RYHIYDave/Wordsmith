@@ -3,6 +3,8 @@
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
 import { LIVING_SHADOW } from '../art/shadow_art';
+import { warlockAskAhead } from './warlock_packs';
+import type { AskPack } from './warlock_packs';
 import { COLOSSUS, HIS_PLACE, onStoneOrJetty, stoneToWorld, worldToStone } from '../game/colossus_fight';
 import { colossusOf, colossusOn } from '../game/act1_rules/colossus';
 /** (COLOSSUS) How far the picture leans up toward him on his stone (game pixels). */
@@ -718,6 +720,8 @@ export class Renderer {
   readonly figure = new Figure();
   /** THE VETERAN (game/veteran.ts, behind VETERAN): his frame while a move plays, and what his blows throw off (render/veteran_fx.ts). */
   readonly vetFx = new VeteranFx();
+  /** THE WARLOCK'S PACKS asked for ahead (render/warlock_packs.ts; main.ts sets it where he is baked in packs): none, nothing asked. */
+  warlockPacks: AskPack | null = null;
   /** Which hero the figure was last asked for (a new character starts over). */
   private figureOf = '';
   /** The hero's life as a bar over their head: when it is there and what it shows (lifebar.ts). */
@@ -2833,6 +2837,8 @@ export class Renderer {
       // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: the war axe or the maul in his hands, once his tree has picked it)
       ...(arms ? { weapon: arms } : {}),
     };
+    // (THE WARLOCK KEPT IN PACKS: what he shows and may show next, from his side, asked for a moment ahead: render/warlock_packs.ts)
+    if (h.cls === 'warlock' && this.warlockPacks) warlockAskAhead(this.warlockPacks, h, !!look.blaze, !!game.level.town, !!game.over);
     // Frames are painted ahead of need each time the world is drawn: the hero's, and those of the
     // monsters in this dungeon, turn and turn about. At least one each time, and more for as long
     // as it has cost less than WARM_MS (a fast machine has them all in a second or two; a slow
@@ -4201,7 +4207,10 @@ export class Renderer {
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
       if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
-      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great') {
+      // (THE WARLOCK'S BOLT is his fire alone, drawn with the effects: render/warlock_fx.ts drawBolt. Till 12 Nov 2026 a ball of
+      // light, the purple of its element, was drawn at its nose here as well, under the fire: his words of the bolt in play that day,
+      // “fix the hellfire projectile so it’s tail doesn’t only face one way as well”; and a purple glow is the enemy's)
+      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great' && p.look !== 'hellbolt') {
         // (a familiar's bolt is a small bright mote; anything else that is not an arrow (nor a wave, nor a dart) is a ball of light)
         const mote = p.look === 'mote';
         const frames = mote ? [art.spells.mote[p.element]] : art.icons.orb[p.element];

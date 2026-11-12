@@ -21,7 +21,7 @@ import { NECK_UP, solve } from '../art/skeleton';
 import type { Bones, Build, Posed, V3 } from '../art/skeleton';
 import type { GameView, PaintView } from '../art/skin';
 import type { Drawn, Hit } from './sculpt';
-import { ARM_FIRE, WARLOCK_SCULPT_BODY, drawWarlockSculpt, handFire, noise2, warlockSculpt } from './sculpt_warlock';
+import { ARM_FIRE, warlockBody, drawWarlockSculpt, handFire, noise2, warlockSculpt } from './sculpt_warlock';
 import { DEMON_B, DEMON_FOURS, demonAura, demonInto, fireBehind } from './sculpt_demon_rig';
 import type { DemonBuilt, DemonGrowth, DemonWings } from './sculpt_demon_rig';
 import { five, lifted } from './sculpt_demon';
@@ -214,7 +214,7 @@ const DEMON_HIDE = lifted(five(HULK_HIDES[0].hide));
 /** HIS BONES AT A MOMENT OF THE CHANGE (seconds from his being tapped): the build and the pose, and how far he has become it. */
 export function changeRig(change: WarlockMove, t: number): { B: Build; q: Posed; k: number } {
   const k = becoming(t);
-  const WB = WARLOCK_SCULPT_BODY;
+  const WB = warlockBody();
   const manQ = warlockPose(change.motion, Math.min(t, MORPH_AT));
   if (k <= 0) return { B: WB, q: manQ, k };
   // (ITS ROAR, once it has come: rearing up off its claws, which stay where they are on the floor, and settling a little)
@@ -249,7 +249,7 @@ export function changeFrame(view: GameView, t: number, turn = 0): { d: Drawn; to
 }
 function becomingAt(change: WarlockMove, view: GameView, t: number, turn: number): { d: Drawn; torn: TornAt[]; heart: V3; k: number } {
   const { B, q, k } = changeRig(change, t);
-  const WB = WARLOCK_SCULPT_BODY;
+  const WB = warlockBody();
   const m = warlockSculpt(view, undefined, turn, { B, q });
   const s = m.s;
   // THE DEMON'S HIDE SPREADING OVER HIM from his demon arm, a ragged edge of cyan light running before it (his skin, and the

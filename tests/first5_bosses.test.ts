@@ -36,6 +36,7 @@ import { hookHigh } from '../src/render/bossfx';
 import { act1Rules } from '../src/game/act1_rules/index';
 import { ACTS, AMALGAM, AM_ACTION, BOSSES5, CO_ACTION, CARRY_FOR, CHAINED, FLESHMANCER, FLESH_BLINK, blinkNowhere, blinkedAway, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand, bossPace } from '../src/game/bosses';
 import { HEADSMAN2 } from '../src/art/headsman2';
+import { REFLECTIONS_UP, WEAPON_FORM } from '../src/game/act1_rules/reflection';
 
 // (THE HEADSMAN MADE NEW has a fight of his own, held in tests/headsman2_rules.test.ts: this file holds the first Headsman's)
 HEADSMAN2_FIGHT.on = false;
@@ -872,7 +873,11 @@ test('10. their sizes, as the game goes by them, held against their pictures', (
     for (let y = 0; y < p.h && head === 0; y++) for (let x = ax - 3; x <= ax + 3; x++) if (p.has(x, y)) head = (ay - y) / GRAIN;
     assert.ok(Math.abs(size.top - head) <= 4, `the ${f}: the game takes its head to be ${size.top} up; in the picture it is ${head}`);
     const reach = Math.max(s.ax, s.w - s.ax);
-    assert.ok(size.half <= reach + 1 && size.half >= reach * 0.4, `the ${f}: ${size.half} to either side; the picture reaches ${reach}`);
+    // (FLOOR 18'S REFLECTIONS AS THE HEROES LOOK NOW, REFLECTIONS_UP on at his yes of 12 Nov 2026: the Warrior's copies with his war
+    // axe and his maul, forms 6 and 7, stand with it held out at his side, past his body: their width the body's, as every form's,
+    // half 9; the picture's reach is the weapon's)
+    const held = REFLECTIONS_UP.on && (f === `reflection:${WEAPON_FORM.axe}` || f === `reflection:${WEAPON_FORM.hammer}`);
+    assert.ok(size.half <= reach + 1 && (held || size.half >= reach * 0.4), `the ${f}: ${size.half} to either side; the picture reaches ${reach}`);
   }
   // (and the bestiary lets go of one, and makes it again)
   const hs = art.of('headsman');

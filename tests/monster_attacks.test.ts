@@ -30,6 +30,7 @@
 
 // @ts-ignore
 import nodeTest from 'node:test';
+import { FORMS, REFLECTIONS_UP } from '../src/game/act1_rules/reflection';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
 
@@ -256,6 +257,13 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       // game/act1_rules/moth.ts)
       if (kind === 'moth') {
         assert.equal(n, 5, `${what}: four in the air, and the beat on the book`);
+        continue;
+      }
+      // (FLOOR 18'S REFLECTIONS, REFLECTIONS_UP on at his yes of 12 Nov 2026: one kind, each form (Monster.form: the hero's class, the
+      // Warrior's by his weapon) with its own two, its tap and its hold, of the kind's sixteen; a form makes only its own:
+      // game/act1_rules/reflection.ts; tests/reflections_play.test.ts holds each)
+      if (kind === 'reflection' && REFLECTIONS_UP.on) {
+        assert.equal(n, FORMS * 2, `${what}: each form's own two`);
         continue;
       }
       if (kind === 'rshadow') {

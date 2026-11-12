@@ -64,7 +64,7 @@ const AURA_SLASH: Light = { x: SLASH_SCENE.ax, y: SLASH_SCENE.ay - 56, r: 80, co
 const AURA_CHANGE: Light = { x: CHANGE_SCENE.ax, y: CHANGE_SCENE.ay - 50, r: 70, color: '#28dcf0', a: 0.18 };
 
 const asSprite = (px: Px, aura: Light, ax: number, ay: number): Sprite => toSprite({ px, lights: [] }, aura, ax, ay);
-const itAt = (m: ShadowMove, t: number, view: GameView): Sprite => asSprite(drawShadowAt(view, m, t).px, AURA, RIG_CANVAS.ax, RIG_CANVAS.ay);
+const itAt = (m: ShadowMove, t: number, view: GameView, turn = 0): Sprite => asSprite(drawShadowAt(view, m, t, turn).px, AURA, RIG_CANVAS.ax, RIG_CANVAS.ay);
 /** (on the slash's scene, what the game lays round it painted in with it: the main chat, 12 Nov 2026, LIVING_SHADOW on) */
 const onScene = (px: Px): Sprite => asSprite(px, AURA_SLASH, SLASH_SCENE.ax, SLASH_SCENE.ay);
 
@@ -167,12 +167,16 @@ export function makeShadowArt(): ActorArt {
  * THE CHANGE INTO IT, for the man's set (art/warlock_art.ts, `clips.change`), laid over the rules' time for it as the game's
  * change is: him becoming it on the change's scene (dev/shadow_change.ts), then its roar on its own canvas. Thirty a second.
  */
-export function shadowChangeClip(view: GameView): Clip {
+export function shadowChangeClip(view: GameView, turn = 0): Clip {
   const roar = shadowChangeRoar();
   const n = Math.round(SHADOW_CHANGE_ALL * SHADOW_FPS.lists) + 1;
   return spread(0, SHADOW_CHANGE_ALL, n, (t) =>
     // (its roar with what leaves its mouth and the ring on the floor painted in: the README's (2); the game's own ring at the change's
     // end is not laid over it while LIVING_SHADOW is on: render/warlock_fx.ts)
-    t < ROAR_AT ? asSprite(shadowChangeFrame(view, t).d.px, AURA_CHANGE, CHANGE_SCENE.ax, CHANGE_SCENE.ay) : onScene(roarScene(roar, t - ROAR_AT, view)),
+    t < ROAR_AT ? asSprite(shadowChangeFrame(view, t, turn).d.px, AURA_CHANGE, CHANGE_SCENE.ax, CHANGE_SCENE.ay) : onScene(roarScene(roar, t - ROAR_AT, view, turn)),
   );
+}
+/** The same from a side of the man brought up (art/warlock_up_art.ts): from in front, truly turned `turn` (art/warrior_up.ts WU_SPIN). */
+export function shadowChangeClipOf(turn: number): Clip {
+  return shadowChangeClip('front', turn);
 }

@@ -22,7 +22,7 @@ import type { Bones, Build, Posed, V3 } from '../art/skeleton';
 import type { GameView, PaintView } from '../art/skin';
 import { Px } from '../engine/px';
 import type { Drawn, Hit, Prim } from './sculpt';
-import { ARM_FIRE, WARLOCK_SCULPT_BODY, drawWarlockSculpt, noise2, warlockSculpt } from './sculpt_warlock';
+import { ARM_FIRE, warlockBody, drawWarlockSculpt, noise2, warlockSculpt } from './sculpt_warlock';
 import { MORPH_AT, MORPH_LONG, ROAR_AT, becoming, buildBetween, handsFromShoulders, poseBetween, tearsAt, untilK } from './warlock_change';
 import { warlockPose, withWarlockAt } from './warlock_moves';
 import type { WarlockMove } from './warlock_moves';
@@ -117,7 +117,7 @@ const SHADOW_HIDE = ['#04040a', '#07070f', '#0c0c1a', '#15152c', '#222244'];
  */
 export function shadowChangeRig(change: WarlockMove, t: number): { B: Build; q: Posed; k: number } {
   const k = becoming(t);
-  const WB = WARLOCK_SCULPT_BODY;
+  const WB = warlockBody();
   const manQ = warlockPose(change.motion, Math.min(t, MORPH_AT));
   if (k <= 0) return { B: WB, q: manQ, k };
   if (k >= 1) return { B: WOLF_B, q: DEMON_UP as Posed, k };
