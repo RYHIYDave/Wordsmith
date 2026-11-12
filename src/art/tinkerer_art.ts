@@ -31,6 +31,8 @@ import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { HEAVY, LEFT_TO_PAINTER, lazyFrames, toSprite } from './kit';
 import { CANVAS3 } from './skin';
 import type { GameView } from './skin';
+import { EIGHT_MORE, MORE_SIDES, MORE_TURN } from './sides_more';
+import type { MoreSide } from './sides_more';
 import type { Drawn } from '../dev/sculpt';
 import { BJ, FR, TAP_GRAB, TAP_LET_GO, TRUN_ROUND, TSTAND_LONG, drawTinkerAt, tinkerMoves } from '../dev/tinkerer_moves';
 import type { TinkMove } from '../dev/tinkerer_moves';
@@ -57,8 +59,13 @@ const FLY_FRAMES = 12;
 const AURA: Light = { x: CANVAS3.ax - 4, y: CANVAS3.ay - 30, r: 46, color: '#28dcf0', a: 0.2 };
 const AURA_SMALL: Light = { x: CANVAS3.ax, y: CANVAS3.ay - 10, r: 22, color: '#28dcf0', a: 0.14 };
 
-/** From in front as the game shows heroes; from behind truly (the figure turned +90°: see the head of this file). */
-const TURN: Record<GameView, number> = { front: 0, back: 90 };
+/**
+ * From in front as the game shows heroes; from behind truly (the figure turned +90°: see the head of this file). And, with
+ * art/sides_more.ts EIGHT_MORE.tinkerer on, HER SIX MORE SIDES (the Tinkerer chat, 11 Nov 2026): the same figure at the same
+ * moment, truly turned, 45 degrees apart (MORE_TURN: `front` 0 and `back` 90 as ever, so those two are the same pictures to
+ * the pixel). Her Golem and her Contraption keep their two views.
+ */
+const TURN: Readonly<Record<MoreSide, number>> = MORE_TURN;
 /**
  * THE GOLEM is built facing the eye, a little to the left (dev/sculpt_golem.ts: turned 0, it is the Golem he picked); the
  * game's pictures from in front face down the screen and to the right (turned 45), and truly from behind, up it and to the
@@ -117,8 +124,8 @@ const fallMove = once(tinkerFall);
  * Her standing and running, in a view (her moves for these made at once). One list of each for each view, her class card's and
  * the game's alike: what is painted for the card is not painted again in the game.
  */
-const standRuns = new Map<GameView, { idle: Sprite[]; walk: Sprite[] }>();
-function standRun(view: GameView): { idle: Sprite[]; walk: Sprite[] } {
+const standRuns = new Map<MoreSide, { idle: Sprite[]; walk: Sprite[] }>();
+function standRun(view: MoreSide): { idle: Sprite[]; walk: Sprite[] } {
   const had = standRuns.get(view);
   if (had) return had;
   const moves = tinkerMoves();
@@ -174,7 +181,7 @@ function sameAs(first: Clip, c: Clip, same: (i: number) => boolean): Clip {
   };
 }
 
-function herSet(view: GameView): AnimSet {
+function herSet(view: MoreSide): AnimSet {
   const turn = TURN[view];
   const moves = tinkerMoves();
   const stand = byName(moves, 'Standing');
@@ -216,9 +223,16 @@ function herSet(view: GameView): AnimSet {
   };
 }
 
-/** The Tinkerer's pictures, both views. */
+/**
+ * The Tinkerer's pictures: both views; with art/sides_more.ts EIGHT_MORE.tinkerer on, ALL EIGHT SIDES, each truly painted and
+ * none a mirror (art/sides.ts: the game then shows the side for the way she faces, as it does the Warrior's). Her class card
+ * keeps its two: a card shows her from in front.
+ */
 export function makeTinkererArt(): ActorArt {
-  return { front: herSet('front'), back: herSet('back') };
+  if (!EIGHT_MORE.tinkerer) return { front: herSet('front'), back: herSet('back') };
+  const all = {} as Record<MoreSide, AnimSet>;
+  for (const side of MORE_SIDES) all[side] = herSet(side);
+  return all;
 }
 /**
  * HER ON HER CLASS CARD (ui/panels.ts): standing and running, all a card shows, made at once. (Her whole set waits on her tap and

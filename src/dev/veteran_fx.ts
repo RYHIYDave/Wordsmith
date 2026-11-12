@@ -296,13 +296,17 @@ export type To = (q: V3) => [number, number];
  * tipped `up` off it, `half` its half-spread (radians): its front `front` out (a bright ring of air across the line, inked
  * round, white at its heart), two rings of air left behind it, and streaks of light racing along the cone's skin to the
  * front. `age` frames since the blow; once its front is out (`out`, frames), it breaks up and is gone in five.
+ * `lean` (radians; 0, as it has always been painted): the rings' level axis swung that far toward the line the cone goes out
+ * along, for a cone seen exactly side-on (the Brawler from all eight sides, thrown straight to the left or right of the
+ * screen: art/veteran_fx_art.ts), whose rings would else lie edge-on to the eye, a bar and not a ring.
  */
-export function shockCone(px: Px, to: To, o: V3, dir: number, up: number, half: number, front: number, age: number, out: number, cols: readonly string[], seed: number): void {
+export function shockCone(px: Px, to: To, o: V3, dir: number, up: number, half: number, front: number, age: number, out: number, cols: readonly string[], seed: number, lean = 0): void {
   if (age < 0 || age > out + 5 || front <= 1) return;
   const gone = Math.max(0, Math.min(1, (age - out) / 5));
   const a: V3 = [Math.cos(up) * Math.cos(dir), Math.cos(up) * Math.sin(dir), Math.sin(up)];
-  const v: V3 = [-Math.sin(dir), Math.cos(dir), 0];
-  const w: V3 = [a[1] * v[2] - a[2] * v[1], a[2] * v[0] - a[0] * v[2], a[0] * v[1] - a[1] * v[0]];
+  const v0: V3 = [-Math.sin(dir), Math.cos(dir), 0];
+  const w: V3 = [a[1] * v0[2] - a[2] * v0[1], a[2] * v0[0] - a[0] * v0[2], a[0] * v0[1] - a[1] * v0[0]];
+  const v: V3 = lean ? [v0[0] * Math.cos(lean) + a[0] * Math.sin(lean), v0[1] * Math.cos(lean) + a[1] * Math.sin(lean), v0[2] * Math.cos(lean) + a[2] * Math.sin(lean)] : v0;
   const at = (t: number, phi: number, rho: number): [number, number] => to([o[0] + a[0] * t + (v[0] * Math.cos(phi) + w[0] * Math.sin(phi)) * rho, o[1] + a[1] * t + (v[1] * Math.cos(phi) + w[1] * Math.sin(phi)) * rho, o[2] + a[2] * t + (v[2] * Math.cos(phi) + w[2] * Math.sin(phi)) * rho]);
   const keep = (i: number): boolean => gone <= 0 || rnd(seed * 7 + i) > gone;
   const tan = Math.tan(half);
