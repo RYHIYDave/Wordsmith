@@ -157,3 +157,27 @@ slimmer body are on the ship list (`art/uniques-play3` d2153de). On the old page
 ## Not checked
 
 His phone; the page as the app serves it; a whole run with uniques dropping.
+
+# 12 Nov 2026, evening: HIS YES, SWITCHED ON (branch `build/uniques-on`)
+
+HIS WORDS, to the Uniques tuning chat, by pop-up, after asking “when these uniques drop, are they going to drop at all levels,
+scaled to level of the drop?” and being told yes (each made at the level of the floor it drops on, endless growing them on; the
+pool from floor 2; a boss's own only from that boss): asked to keep that and for his word on the numbers, **“Keep it; numbers
+right, switch on”**.
+
+- `build/uniques-on` (from `try/uniques2`: main d39dcde with `art/uniques-play3` d2153de merged in): `UNIQUES.on`,
+  `UNIQUE_ART.on` and every `UNIQUE_PLAY` switch true. No number changed. The heroes' and the townsfolk's bake marks are the
+  same as 25.3.13's (433864008c88, d4c898fe370d): nothing to bake for it.
+- The tests that said “off until his yes” now say on, and check the off behaviour with the switch off for the moment
+  (tests/uniques_helpers.ts `off`); trades.test.ts's gamble now expects a unique now and then (TUNE.gambleOdds.unique, 0.5%).
+- CHECKED: tsc (only main's own error, tests/relief.test.ts 378); `unit --only` the uniques' seventeen and items_a_game,
+  meld_drops, economy, trades, small, first_levels, town, endless, guide, with the core, on 7d3d032b61: 47 files, 45 passed;
+  trades failed for its old “no uniques yet” and passes on a84cfc17ec; items_a_game's test 4 (“battleaxe: a picture of the
+  art's”) FAILS THE SAME ON MAIN d39dcde: not this change's. A page of the branch (build_to) played as a new player's first
+  dungeon as the Warrior at phone size: finished clean.
+- NOT CHECKED: his phone; the whole suite (with UNIQUES on, every gear roll from floor 2 and every boss's death throws one more
+  die, so a test elsewhere that counts on the exact dice may move); the published page's playtests.
+- STILL OPEN, HIS AT ANY TIME: the names are his placeholders; three add a word not in the game yet (Culling, Mirroring,
+  Lasting); The Third Word and The Ghostwriter drop from nothing until the endless final boss is built.
+- HIS NEXT IDEA, QUEUED AT HIS WORD (“maybe just add that to the queue and we can work on it later”): leveling uniques, each
+  set to one level with fixed numbers, for kitting out a new hero (the queue's design-leveling-uniques).
