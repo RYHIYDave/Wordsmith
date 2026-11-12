@@ -83,11 +83,16 @@ cost thirty would cost less than fifteen did, but it is a change to how they loo
 
 - tests/rime_shade_box.test.ts (2), new.
 - `node tools/unit.mjs --only rime_shade_box,rime_shade,rime_shade_game,monsters_baked,act1_queen,queen_action,
-  carrion_queen2,king,meld_drops,kit,eye_death` (and the core): see the commit's `.unit/<commit>/summary.txt`.
+  carrion_queen2,king,meld_drops,eye_death` and the core on ee57c12ab4: 33 files, 391 tests, all passed.
 - The two playtests above on a page of the branch (`node tools/build_to.mjs dist/fix.html`, `--touch --size 844x390
   --dpr 3`).
 
 ## Bringing it in (the main chat's)
+
+It merges clean with main and, tried and not kept, with each ready branch of 12 Nov: build/moth-packed,
+build/smooth-loading-frames, bring-in/hero-cards, build/warrior-tree, build/brawler-packed. One thing to know with
+build/moth-packed: were the Queen ever kept packed as the Moth is (its PACKED.figures), her fall, drawn by
+render/act1_fx/queen.ts, would have to ask for its move as shown (Painter.shown) as fallenSprite does there.
 
 Merge the branch; nothing to switch on, nothing to bake (the marks are main's). Worth a look in play before a release: floor 7 (her fall off the eyrie's edge,
 under the rock as before) and floor 20 (the lines). Then `tools/scenarios/rime_shade_play.mjs` and a boss film or two
