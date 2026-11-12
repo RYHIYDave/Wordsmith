@@ -1,6 +1,6 @@
 // THE RANGER'S COMPANIONS PICKED IN TOWN (game/companions.ts; a page built with COMPANIONS on): a ranger at level 35 (a point to spend, so that NEW TALENT opens the page) with both
 // companion talents taken, in town, on the inventory's TALENTS page: the Hunting Companion's card with its three to pick
-// from; the wolf picked; the Wild Companion's card. Then out of town: the card says to pick another in town.
+// from; the wolf picked; the Wild Companion's card. (Out of town a tap on its row says “Choose companion in town”: tools/scenarios/pack_collar_pick.mjs, its step 6.)
 //   node tools/playtest.mjs --file dist/trial_comp.html [--touch --size 844x390 --dpr 3] --scenario tools/scenarios/companions_pick.mjs --out shots/comp/pick
 import { makeHands } from './lib.mjs';
 

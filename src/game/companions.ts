@@ -79,19 +79,60 @@ export function groupOf(k: CompanionKind): CompanionGroup {
   return COMPANION_GROUPS.hunt.kinds.includes(k) ? 'hunt' : 'wild';
 }
 
+/**
+ * The picks kept in a hero (and in a save): the animal picked for each of his two companion talents, and (UNIQUE ITEMS) the
+ * Pack Collar's own, `collar`.
+ */
+export type PetPicks = Partial<Record<CompanionGroup | 'collar', CompanionKind>>;
+
 /** The kind picked for a group: the one picked if it is of that group, else the first of the three. */
-export function pickedIn(picks: Partial<Record<CompanionGroup, CompanionKind>> | undefined, group: CompanionGroup): CompanionKind {
+export function pickedIn(picks: PetPicks | undefined, group: CompanionGroup): CompanionKind {
   const p = picks?.[group];
   return p && COMPANION_GROUPS[group].kinds.includes(p) ? p : COMPANION_GROUPS[group].kinds[0];
 }
 
-/** What a save holds of the picks, made sound: only kinds of their own group. */
-export function cleanPicks(v: unknown): Partial<Record<CompanionGroup, CompanionKind>> {
-  const out: Partial<Record<CompanionGroup, CompanionKind>> = {};
+/** What a save holds of the picks, made sound: only kinds of their own group; the Pack Collar's any of the six. */
+export function cleanPicks(v: unknown): PetPicks {
+  const out: PetPicks = {};
   if (!v || typeof v !== 'object') return out;
   for (const g of COMPANION_GROUP_IDS) {
     const k = (v as Record<string, unknown>)[g];
     if (isCompanion(k) && groupOf(k) === g) out[g] = k;
   }
+  const c = (v as Record<string, unknown>).collar;
+  if (isCompanion(c)) out.collar = c;
   return out;
+}
+
+// ---- THE PACK COLLAR (UNIQUE ITEMS, game/uniques.ts `packcollar`, the Ranger's own amulet) -----------------------------------
+//   His doc “Wordsmith: Unique Items”: “One more companion than she would have, at full strength: a second pick from the same
+//   list.” His picks, 12 Nov 2026, by pop-up (the Pack Collar chat): how she picks it, “Pick it on the collar” (offered: tap the
+//   collar in the bag, in town, to pick its companion); and whether it may be the same animal she has, “No, one of the other
+//   two (Recommended)”.
+//   So: from the list of a companion talent she has taken, never one already at her side. Taken as read where he had not said:
+//   with both her talents taken, from either list (the other two of each); with neither, the hunting list, as it was built.
+
+/** The groups whose talents are taken, of `taken` (her talents). */
+export function groupsTaken(taken: readonly string[]): CompanionGroup[] {
+  return COMPANION_GROUP_IDS.filter((g) => taken.includes(COMPANION_GROUPS[g].talent));
+}
+
+/** What the Pack Collar's companion may be: of the lists of the companion talents taken (none: the hunting list), never one of her own picks. */
+export function collarChoices(picks: PetPicks | undefined, taken: readonly string[]): CompanionKind[] {
+  const groups = groupsTaken(taken);
+  const own = groups.map((g) => pickedIn(picks, g));
+  return (groups.length ? groups : (['hunt'] as CompanionGroup[])).flatMap((g) => COMPANION_GROUPS[g].kinds).filter((k) => !own.includes(k));
+}
+
+/**
+ * The Pack Collar's companion: the one picked on the collar while it may be (see collarChoices); else, as it was first built,
+ * the next in the list after her first pick (with no companion talent, the hunting list's first).
+ */
+export function collarPick(picks: PetPicks | undefined, taken: readonly string[]): CompanionKind {
+  const can = collarChoices(picks, taken);
+  if (picks?.collar && can.includes(picks.collar)) return picks.collar;
+  const first = groupsTaken(taken)[0];
+  if (!first) return COMPANION_GROUPS.hunt.kinds[0];
+  const kinds = COMPANION_GROUPS[first].kinds;
+  return kinds[(kinds.indexOf(pickedIn(picks, first)) + 1) % kinds.length];
 }

@@ -19,6 +19,7 @@ import type { HeroMode } from '../game/modes';
 import type { AimMode, Station, VendorId } from '../game/state';
 import { ITEM_ROOM, itemRoom, modLines } from '../game/items';
 import { uniqueLines, uniqueOf } from '../game/uniques';
+import { COMPANION_INFO } from '../game/companions';
 import type { TitleArt } from '../art/title';
 import { TITLE_MARKS, titleRound } from '../art/title';
 import type { Smith2Title } from '../art/title_smith2';
@@ -114,6 +115,12 @@ export function itemCard(game: Game, it: Item, touch = false): Line[] {
   const unique = uniqueOf(it);
   if (unique) {
     for (const l of uniqueLines(unique, h.cls)) lines.push({ text: l.text, color: l.kind === 'does' ? RARITY_COLOR[3] : l.kind === 'note' ? THEME.dim : THEME.bad, small: l.kind === 'note' || l.kind === 'bad' });
+    // (THE PACK COLLAR, the Ranger's: the companion it brings and what it does, as a companion talent's card says it; she picks
+    // another on this card, in town, ui/inventory.ts. His pick, 12 Nov 2026: “Pick it on the collar”. Nothing said of where it
+    // is picked: his words, 12:41, “I’d rather it not say anything until you tap on it or something then a message says
+    // “Choose companion in town” or something like that”)
+    const pet = unique.id === 'packcollar' ? game.collarCompanion() : null;
+    if (pet) lines.push({ text: `${COMPANION_INFO[pet].name.toUpperCase()}: ${COMPANION_INFO[pet].short}`, color: THEME.accent });
   } else {
     // how many more words it will take (the owner: "All items have room for 4 mods. White starts with 0, blue 1-2, yellow 3-4")
     const room = itemRoom(it);
