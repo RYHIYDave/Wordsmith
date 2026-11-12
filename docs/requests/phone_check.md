@@ -205,7 +205,37 @@ TOLD HIM (by 06:44): fixed on his phone, 74 seconds to under 7; the hero cards a
 to the main chat to bring in and publish. HANDED TO MAIN: the queue's `keep-baked-frames-in-their-sheets`, put back waiting,
 and the chat board.
 
-## WHAT WOULD MEND THE HERO CARDS (not built: a build of its own, with a new bake)
+## THE HERO CARDS MEND (the branch `fix/hero-cards-from-bake`, 4f49c885: on `fix/frames-from-sheets` de6fea61)
+
+His word, 12 Nov, by 06:48, asked by pop-up whether to build it next: “Yes, build it (Recommended)”; and at 07:41: “Go”.
+
+WHY THE CARDS WERE SLOW, found as it was built: the bake's cards group held only each hero's FRONT standing and running, and
+a hero painted from eight sides (the Warrior, the Ranger, the Mage) is seen on his card from the side for the way he faces
+there (`toward`), not his front: so NOTHING their cards showed was in the bake; every frame of theirs was painted where the
+game is drawn, as it was shown. And of every hero, what he does left standing, his coming to a stand out of his run and his
+making ready were in no bake.
+
+WHAT IT IS: `art/heroes3.ts` cardLists, everything a card shows; `render/baked.ts` bakedPlaces bakes it all for a card (1,261
+frames for 1,278 places on 2 sheets, 4,793,320 pixels, where 471 frames on one); his making ready a list of its own
+(READY_LIST, the last: every other keeps its place), a card's only; the cards' group asked for as the game starts, all six
+heroes left to it on their cards, their gestures held until it has come. Where there is no bake, as before. NO PICTURE
+CHANGES. THE NEW BAKE, 50c0ea6dc501 (on GitHub as `bake/50c0ea6dc501`, 37 files, 17.11 MB): every hero's own sheets the same
+as main's byte for byte; only the cards' are new.
+
+CHECKED HERE (Chrome): tsc clean; unit --only baked, hero_cards_baked (new), class_cards_paint, figure, heroes3, heroes,
+reflections, sheet_sprite, sides_more, veteran_art, title, cheap_heroes and the core on db26d64ce0: 33 files, 371 tests, all
+passed. On the release build, served, a phone's screen: `tools/scenarios/hero_cards_baked.mjs`: the cards' group came in 639 ms
+with nothing pressed; the cards up 14 s, 53 frames a second, no wait over 83 ms, NOTHING PAINTED, nothing stood in for; every
+card chosen in turn, nothing; the Mage made ready, nothing. With the cards' file held back 6 s (SLOW=6): one frame of each hero
+painted while it was awaited (6, 1,383 ms), nothing after. `phone_check_try.mjs` on the third page, the Mage: the title and the
+cards, 0 painted on every screen; her group whole; 122 of her frames every pixel the same.
+
+**THE THIRD PHONE CHECK** (12 Nov, 12:58 UTC): the same page and link, `PHONE CHECK 3`, the recorder `v` 3 (each screen also
+counts what the game painted on its own thread: `painted`, `paintMs`, `stoodIn`). THE GAME AS IT WOULD GO LIVE: the release
+build of `fix/hero-cards-from-bake`, its bake beside it, the townsfolk's (d4c898fe370d) and the sounds (90 files). Told him to
+pick the Mage. HIS RUN IS AWAITED.
+
+## WHAT WOULD MEND THE HERO CARDS (as first written, before it was built)
 
 - The cards asked for from the bake as the title comes up, not as the cards are shown; all six heroes left to the bake where
   the page has it. No picture changes.
