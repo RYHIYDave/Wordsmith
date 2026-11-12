@@ -7,7 +7,8 @@
 // Its other moves (damning, step, roar, burnout, reel, lurch: dev/shadow_moves.ts shadowOthers) are painted whole, with what
 // they do to the floor and the air (dev/shadow_fx.ts damningScene, stepScene, burnOutScene); Damning and the smoke step for
 // some frames past their end, it standing, so that what they left on the floor is seen to cool.
-//   npx tsx tools/shadow_moves_pics.ts <dir> [stand,run,slashL,slashR,drop,rear0..rear7,slashLw0..3,slashRw0..3,damning,step,roar,burnout,reel,lurch] [front,back] [turn] [frames, as 0,8,24: only these, to look at]
+//   npx tsx tools/shadow_moves_pics.ts <dir> [stand,run,slashL,slashR,drop,rear0..rear7,slashLw0..3,slashRw0..3,damning,step,roar,burnout,reel,lurch,change] [front,back] [turn] [frames, as 0,8,24: only these, to look at]
+// `change`: the change into it, from his being tapped to the end of its roar (dev/shadow_change.ts).
 
 // @ts-ignore - node typings are not part of this project
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -23,6 +24,8 @@ import { DROP_INTO, DROP_PICTURES, OTHER_MOVES, REARS, SHADOW_CARRY, SLASH_WAYS,
 import type { ShadowMove } from '../src/dev/shadow_moves';
 import { SLASH_SCENE, burnOutAll, burnOutScene, damningScene, roarScene, slashLight, stepScene } from '../src/dev/shadow_fx';
 import { makeVeteranArt } from '../src/art/veteran_art';
+import { SHADOW_CHANGE_ALL, shadowChangeScene } from '../src/dev/shadow_change';
+import { MORPH_AT, ROAR_AT } from '../src/dev/warlock_change';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 
 declare const process: { argv: string[]; exit: (n: number) => never };
@@ -101,6 +104,16 @@ const only = process.argv[6] ? new Set(process.argv[6].split(',').map(Number)) :
 const was = existsSync(`${dir}/moves.json`) && !only ? (JSON.parse(readFileSync(`${dir}/moves.json`, 'utf8')) as { moves?: Record<string, unknown> }).moves ?? {} : {};
 const note: Record<string, unknown> = { canvas: SLASH_SCENE, carry: SHADOW_CARRY, moves: { ...was } };
 for (const key of which) {
+  // (THE CHANGE INTO IT, from his being tapped to the end of its roar: dev/shadow_change.ts, thirty pictures a second)
+  if (key === 'change') {
+    const n = Math.round(SHADOW_CHANGE_ALL * 30) + 1;
+    for (let f = 0; f < n; f++) {
+      if (only && !only.has(f)) continue;
+      for (const v of views) save(`${dir}/change_${v}_f${String(f).padStart(3, '0')}.png`, shadowChangeScene(v, f / 30, turn));
+    }
+    (note.moves as Record<string, unknown>)[key] = { name: 'The change into it', frames: n, own: n, fps: 30, long: SHADOW_CHANGE_ALL, morphAt: MORPH_AT, roarAt: ROAR_AT, loops: false };
+    continue;
+  }
   const m = all[KEYS.indexOf(PLAIN[key] ?? key)] as ShadowMove;
   if (!m) throw new Error(`no move ${key}`);
   // (its run and its dropping down into it: sixty pictures to a second, as the game shows them; the rest thirty a second)
