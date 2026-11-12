@@ -12,7 +12,7 @@ import { bindProblem, imbueItem, imbueProblem, itemRoom, rollItem, splitProblem,
 import { ALL_CLASS_IDS } from '../src/game/types';
 import type { ClassId, MonsterKind, WeaponKind } from '../src/game/types';
 import { UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_RULES, UNIQUE_TUNE, bossUnique, finalUniques, makeUnique, poolChance, poolFor, uniqueDef, uniqueLines, uniqueOf, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from '../src/game/uniques';
-import { on } from './uniques_helpers';
+import { off, on } from './uniques_helpers';
 
 /** Each floor's boss, as the game names their kinds (floor 13 is the pair). */
 const BOSS_OF_FLOOR: readonly (readonly MonsterKind[])[] = [
@@ -21,13 +21,15 @@ const BOSS_OF_FLOOR: readonly (readonly MonsterKind[])[] = [
 ];
 const WEAPON_HERO: Record<string, ClassId> = { greatsword: 'warrior', bow: 'ranger', staff: 'mage', tome: 'warlock', wrench: 'tinkerer', wraps: 'brawler' };
 
-test('off until his yes: no unique is made, none is worn, the pool gives none', () => {
-  assert.equal(UNIQUES.on, false);
-  assert.equal(makeUnique('twofacedmask', 10, new RNG(1)), null);
-  assert.equal(poolChance(2, 100, 20), 0);
+test('on at his yes (12 Nov 2026); off: no unique is made, none is worn, the pool gives none', () => {
+  assert.equal(UNIQUES.on, true, 'on: his yes, 12 Nov 2026, “Keep it; numbers right, switch on”');
+  off(() => {
+    assert.equal(makeUnique('twofacedmask', 10, new RNG(1)), null);
+    assert.equal(poolChance(2, 100, 20), 0);
+  });
   const it = on(() => makeUnique('twofacedmask', 10, new RNG(1)))!;
   const gear = { mainhand: null, offhand: null, helm: it, chest: null, gloves: null, belt: null, boots: null, amulet: null, ring1: null, ring2: null };
-  assert.deepEqual(wornUniques(gear, 'warrior'), []);
+  assert.deepEqual(off(() => wornUniques(gear, 'warrior')), []);
   assert.deepEqual(on(() => wornUniques(gear, 'warrior')), ['twofacedmask']);
 });
 

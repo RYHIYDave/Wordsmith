@@ -67,8 +67,8 @@ const only = (ps: [number, number, number, number, number][], cols: readonly str
   for (const p of ps) assert.ok(ok.has(`${p[0]},${p[1]},${p[2]}`), `${what}: a colour that is not its own at ${p[3]},${p[4]}: ${p.slice(0, 3)}`);
 };
 
-test('the switches: each unique’s picture in play is off until his yes', () => {
-  assert.deepEqual(UNIQUE_PLAY, { tome: false, risen: false, fourth: false, arm: false, talons: false, wrench: false, wind: false, moth: false, hush: false, drop: false });
+test('the switches: each unique’s picture in play is on (his yes to each picture, and to the uniques, 12 Nov 2026)', () => {
+  assert.deepEqual(UNIQUE_PLAY, { tome: true, risen: true, fourth: true, arm: true, talons: true, wrench: true, wind: true, moth: true, hush: true, drop: true });
 });
 
 test('The Fourth Globe: three painted as they were; four one globe wider, the first three the same, the bar joining all four', () => {

@@ -22,8 +22,8 @@ interface Assert {
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
 
-test("1. the Queen's Talons' switch is off", () => {
-  assert.equal(UNIQUE_PLAY.talons, false);
+test("1. the Queen's Talons' switch is on", () => {
+  assert.equal(UNIQUE_PLAY.talons, true);
 });
 
 test('2. her colours: no brown feather, nothing of the enemy\'s fire, the friend\'s edge round it', () => {

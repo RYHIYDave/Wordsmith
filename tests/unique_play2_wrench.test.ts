@@ -20,8 +20,8 @@ interface Assert {
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
 
-test("1. the Sticky Wrench's switch is off", () => {
-  assert.equal(UNIQUE_PLAY.wrench, false);
+test("1. the Sticky Wrench's switch is on", () => {
+  assert.equal(UNIQUE_PLAY.wrench, true);
 });
 
 test('2. every frame of its fuse; blinking quicker and quicker; its own colours only', () => {

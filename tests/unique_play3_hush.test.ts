@@ -32,11 +32,16 @@ function moment(what: 'dark' | 'light'): { rings: { colors: readonly string[]; c
   return { rings, sprays };
 }
 
-test("1. the Crier's Hush's switch is off, and its moments show nothing with it off", () => {
-  assert.equal(UNIQUE_PLAY.hush, false);
-  const a = moment('dark');
-  const b = moment('light');
-  assert.equal(a.rings.length + a.sprays.length + b.rings.length + b.sprays.length, 0);
+test("1. the Crier's Hush's switch is on; its moments show nothing with it off", () => {
+  assert.equal(UNIQUE_PLAY.hush, true, 'on: his yes, 12 Nov 2026');
+  UNIQUE_PLAY.hush = false;
+  try {
+    const a = moment('dark');
+    const b = moment('light');
+    assert.equal(a.rings.length + a.sprays.length + b.rings.length + b.sprays.length, 0);
+  } finally {
+    UNIQUE_PLAY.hush = true;
+  }
 });
 
 test('2. on: the Hush closes on it in its grey; its words come back in their own colour', () => {
@@ -52,6 +57,6 @@ test('2. on: the Hush closes on it in its grey; its words come back in their own
     assert.ok(light.rings[0].colors.includes(WORD_COLOR.fire), "its word's own colour");
     for (const c of [...light.rings[0].colors, ...light.sprays.flat()]) assert.ok(c === WORD_COLOR.fire || c === '#ffffff', `${c}: its word's colour or white`);
   } finally {
-    UNIQUE_PLAY.hush = false;
+    UNIQUE_PLAY.hush = true;
   }
 });

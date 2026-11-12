@@ -9,19 +9,20 @@ import assert from 'node:assert/strict';
 import { Game } from '../src/game/game';
 import type { ClassId } from '../src/game/types';
 import { UNIQUE_DEFS, poolFor, uniqueOf } from '../src/game/uniques';
-import { on } from './uniques_helpers';
+import { off, on } from './uniques_helpers';
 
 const CLASSES: ClassId[] = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];
 const fromBosses = UNIQUE_DEFS.filter((d) => d.from === 'boss' || d.from === 'final');
 
-test('off: the test hero is handed nothing, and nothing is said', () => {
+test('off: the test hero is handed nothing, and nothing is said', () =>
+  off(() => {
   const g = Game.forTrial('warrior', 5, 6);
   const said = g.events.length;
   assert.deepEqual(g.giftUniques(), { bag: 0, stash: 0 });
   assert.ok(g.hero.bag.every((it) => !uniqueOf(it)));
   assert.ok(g.meta.stash.every((it) => !it));
   assert.equal(g.events.length, said);
-});
+  }));
 
 test("on: every hero's own pool is in his bag and the bosses' own and the final boss's two are in his stash, each once, each one he can wear", () => {
   on(() => {

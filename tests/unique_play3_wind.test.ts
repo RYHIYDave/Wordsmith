@@ -44,10 +44,15 @@ function draw(fx: number, fy: number, age: number, dist: number): { colours: Set
   return { colours, n, wide: hi - lo };
 }
 
-test("1. the Windcutter's switch is off, and the build's Wave is its own", () => {
-  assert.equal(UNIQUE_PLAY.wind, false);
-  const u = new UniqueFx();
-  assert.equal(u.owns({ t: 'wave', x: 1, y: 1, dx: 1, dy: 0, w: 0.8, el: 'phys', words: [], echo: false } as never), false);
+test("1. the Windcutter's switch is on; with it off the build's Wave is its own", () => {
+  assert.equal(UNIQUE_PLAY.wind, true, 'on: his yes, 12 Nov 2026');
+  UNIQUE_PLAY.wind = false;
+  try {
+    const u = new UniqueFx();
+    assert.equal(u.owns({ t: 'wave', x: 1, y: 1, dx: 1, dy: 0, w: 0.8, el: 'phys', words: [], echo: false } as never), false);
+  } finally {
+    UNIQUE_PLAY.wind = true;
+  }
 });
 
 test('2. every way it flies, every moment: the air, his cyan, its shadow; there at once, wider in flight, frayed at the end', () => {

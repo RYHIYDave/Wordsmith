@@ -23,10 +23,15 @@ const assert: Assert = nodeAssert;
 
 const game = (dark: { skill: number; side: 'front' | 'behind'; idx: number } | null): Game => ({ uq: { dark } }) as unknown as Game;
 
-test("1. the Moth's Wing's switch is off, and with it off no word is shown dark", () => {
-  assert.equal(UNIQUE_PLAY.moth, false);
-  mothNow(game({ skill: 0, side: 'front', idx: 0 }), 1);
-  assert.equal(MOTH.dark, null);
+test("1. the Moth's Wing's switch is on; with it off no word is shown dark", () => {
+  assert.equal(UNIQUE_PLAY.moth, true, 'on: his yes, 12 Nov 2026');
+  UNIQUE_PLAY.moth = false;
+  try {
+    mothNow(game({ skill: 0, side: 'front', idx: 0 }), 1);
+    assert.equal(MOTH.dark, null);
+  } finally {
+    UNIQUE_PLAY.moth = true;
+  }
 });
 
 test('2. on: the dark word shown dark; moved, the first comes back with a flash, then is plain', () => {
@@ -44,6 +49,6 @@ test('2. on: the dark word shown dark; moved, the first comes back with a flash,
     assert.equal(MOTH.dark, null);
     assert.deepEqual(MOTH.back, { skill: 1, side: 'front', idx: 0 }, 'come back at the end of its time, it flashes too');
   } finally {
-    UNIQUE_PLAY.moth = false;
+    UNIQUE_PLAY.moth = true;
   }
 });

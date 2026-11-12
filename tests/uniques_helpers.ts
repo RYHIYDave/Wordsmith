@@ -19,6 +19,17 @@ export function on<T>(f: () => T): T {
   }
 }
 
+/** UNIQUE ITEMS switched off for the length of `f`, and back as they were (on in the game since his yes of 12 Nov 2026). */
+export function off<T>(f: () => T): T {
+  const was = UNIQUES.on;
+  UNIQUES.on = false;
+  try {
+    return f();
+  } finally {
+    UNIQUES.on = was;
+  }
+}
+
 type Inner = { rng: RNG; waveT: number; power: number; spawn: (k: string, x: number, y: number, pack: number, rank: number, boss: boolean, rng: RNG) => Monster; wakeUp: (m: Monster) => void };
 export const inner = (g: Game): Inner => g as unknown as Inner;
 

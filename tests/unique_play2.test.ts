@@ -24,8 +24,8 @@ interface Assert {
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
 
-test("1. the Drowned Arm's switch is off", () => {
-  assert.equal(UNIQUE_PLAY.arm, false);
+test("1. the Drowned Arm's switch is on", () => {
+  assert.equal(UNIQUE_PLAY.arm, true);
 });
 
 test('2. THE DROWNED ARM: under, up, down across the floor as the blow lands, under again; its own colours only', () => {
