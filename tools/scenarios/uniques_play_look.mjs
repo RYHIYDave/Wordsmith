@@ -4,7 +4,8 @@
 //   LOOK=tome node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch \
 //     --scenario tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/tome
 // LOOK: tome (The Restless Tome, the Warlock), risen (The Fleshmancer's Brand, the Warrior), globe (The Fourth Globe, the
-// Brawler), arm (The Drowned Arm, the Warrior), talons (The Queen's Talons, the Ranger), wrench (The Sticky Wrench, the Tinkerer). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
+// Brawler), arm (The Drowned Arm, the Warrior), talons (The Queen's Talons, the Ranger), wrench (The Sticky Wrench, the Tinkerer), wind (The
+// Windcutter, the Warrior: three Strikes in a row, twice), moth (The Moth's Wing, the Warrior: struck, a word of his goes dark). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
 // STAGE=1 (risen, with FILM): the elite set two tiles off and struck dead with no swing of his, so its rising is seen clear.
 // FILM=<seconds>: a film of it in place of the stills, frame by frame (30 a second, the game's clock stepped so that no
 // frame is missed): <out>_f0000.png on, each cut to the part of the screen round him (tools/uniques_play_film.py makes the MP4
@@ -44,7 +45,7 @@ export default async function (page, snap) {
   const elite = process.env.ELITE || 'skeleton';
   const cls = look === 'tome' ? 'warlock' : look === 'globe' ? 'brawler' : look === 'talons' ? 'ranger' : look === 'wrench' ? 'tinkerer' : 'warrior';
   // (LOOK=kinds: every kind of monster risen in turn, to see each one's risen look: below)
-  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : look === 'wrench' ? 'stickywrench' : 'fleshmancersbrand';
+  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : look === 'wrench' ? 'stickywrench' : look === 'wind' ? 'windcutter' : look === 'moth' ? 'mothswing' : 'fleshmancersbrand';
   const set = await page.evaluate(({ cls, id, playOn }) => {
     const d = window.__dbg;
     d.uniques.on = true;
@@ -106,6 +107,38 @@ export default async function (page, snap) {
       const errs = await page.evaluate(() => (window.__errors || []).length);
       if (errs > errs0) { bad(`${kind}: ${errs - errs0} errors on the page`); errs0 = errs; }
     }
+    return;
+  }
+  if (look === 'wind') {
+    // THE WINDCUTTER (the Warrior wearing it): three Strikes in a row at the one before him; the third sends its blade on ahead,
+    // through the ones in its line; then again, facing the other way
+    await mk('skeleton', 2.6, 0.2); await mk('skeleton', 4.2, -0.3); await mk('cultist', 5.8, 0.1); await mk('skeleton', -2.8, 0.2); await mk('skeleton', -4.6, -0.2);
+    const strike = (dx) => () => page.evaluate((dx) => { const d = window.__dbg; const g = d.game(); const h = g.hero; h.swingT = 0; h.fx = Math.sign(dx); h.fy = 0; g.useBasic(h.x + dx, h.y); }, dx);
+    await wait(400);
+    // (BARE=1: its blade alone, sent by the rules with no swing of his, to see it clear)
+    const bare = (fx, fy) => () => page.evaluate(([fx, fy]) => { const g = window.__dbg.game(); const h = g.hero; h.fx = fx; h.fy = fy; g.windBlade(); }, [fx, fy]);
+    const due = process.env.BARE ? [[0.1, bare(1, 0)], [0.8, bare(0.6, -0.8)], [1.5, bare(-1, 0)]] : [[0.2, strike(1)], [0.62, strike(1)], [1.04, strike(1)], [2.2, strike(-1)], [2.62, strike(-1)], [3.04, strike(-1)]];
+    if (film) { await shoot(film, round(300, 160, 300, 110), due); return; }
+    for (const [, f] of due.slice(0, 3)) { await f(); await wait(420); }
+    for (let k = 0; k < 6; k++) { await wait(k === 0 ? 30 : 90); await snap(`${k + 1}_blade`); }
+    return;
+  }
+  if (look === 'moth') {
+    // THE MOTH'S WING (the Warrior wearing it, words on his attacks): struck, one of his words goes dark for a while; struck again,
+    // another; the HUD's skill buttons are where it shows
+    await page.evaluate(() => {
+      const d = window.__dbg; const g = d.game();
+      try { g.socket(0, 'front', 'fire'); g.socket(0, 'front', 'power'); g.socket(1, 'front', 'frost'); g.socket(1, 'behind', 'leech'); } catch (e) { console.log('words: ' + e); }
+      d.god = false;
+    });
+    await mk('skeleton', 1.2, 0.0, { life: 1e7 });
+    const hit = () => page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters[0]; const h = g.hero; h.life = h.d.maxLife; g.hurtHero(3, 'phys', [], m); });
+    await wait(400);
+    const full = { x: 0, y: 0, width: Math.round(mid[0] * 2), height: Math.round(mid[1] * 2) };
+    if (film) { await shoot(film, full, [[0.3, hit], [1.6, hit]]); return; }
+    await snap('1_before'); await hit(); await wait(150); await snap('2_dark'); await hit(); await wait(150); await snap('3_another');
+    const errs = await page.evaluate(() => (window.__errors || []).length);
+    if (errs) bad(`${errs} errors on the page`);
     return;
   }
   if (look === 'wrench') {

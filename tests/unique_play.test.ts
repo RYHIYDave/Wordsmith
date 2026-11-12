@@ -68,7 +68,7 @@ const only = (ps: [number, number, number, number, number][], cols: readonly str
 };
 
 test('the switches: each unique’s picture in play is off until his yes', () => {
-  assert.deepEqual(UNIQUE_PLAY, { tome: false, risen: false, fourth: false, arm: false, talons: false, wrench: false });
+  assert.deepEqual(UNIQUE_PLAY, { tome: false, risen: false, fourth: false, arm: false, talons: false, wrench: false, wind: false });
 });
 
 test('The Fourth Globe: three painted as they were; four one globe wider, the first three the same, the bar joining all four', () => {

@@ -206,6 +206,52 @@ wide. Looked at in a built page at a phone's size (`LOOK=wrench`: the Tinkerer, 
 alone with tsx; tsc clean; the look filmed, finished clean. HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills:
 “Yes, hand it to main (Recommended)”.
 
-NOT DRAWN YET (the rest of the queue item's list): The Rainwalker, The Shepherd's Crook, The Tide, The Windcutter (the game already draws its blade as
-the Wave's crescent), The Fan, The Moth's Wing; and which of the moments the build only tells of want a
-picture of their own (to ask him).
+# The next: branch `art/uniques-play3` (12 Nov 2026, afternoon)
+
+Cut from `art/uniques-play2` at 3668d26a (the three above: bring that in first). Pulled from the queue (`draw-unique-items`) by a
+chat of his working from the queue (his words: “Please work on the queued items”).
+
+## The Rainwalker, the Shepherd's Crook, the Tide, the Fan: as the game shows them (his word)
+
+Shown the Rainwalker as a storm cloud boiling up over her as she looses her Volley, raining round her with the arrows dropping out
+of it, going with her, drifting apart (a film), he said: “I don’t think it needs the cloud, just have the arrows rain as they would
+normally”. Read as: the Rainwalker gets no picture of its own: its Volley rains as every Volley does, and the game already makes it
+follow her. The cloud was taken out; nothing of it is on this branch. Asked whether the same goes for the Shepherd's Crook (the
+Orb follows her), the Tide (the Wave turns and comes back) and the Fan (three arrows a Shot), each already shown with the game's own
+Orb, Wave and arrows: “Yes, leave them (Recommended)”. SO THOSE FOUR NEED NOTHING DRAWN.
+
+## The Windcutter's blade of wind
+
+Asked whether its blade (the build sends it as a shot of the Wave's kind, so it was drawn as the Mage's purple-cyan Wave of force
+coming off the Warrior's sword) should get a look of its own: “Yes, a blade of wind (Recommended)” (offered as: a pale crescent of
+rushing air off his swing, with streaks of wind, no water; the Wave is not water, the offer's words, not the game's).
+
+Behind `UNIQUE_PLAY.wind`, off. Drawn by `UniqueFx.drawBlade` (render/unique_fx.ts), handed it by render/render.ts with the shots
+(a shot with `blade`, as the Warlock's bolt is handed to warlock_fx), point by point in the world as the Wave is, so it lies right
+whichever way it flies: a crescent of rushing air at the height of his swing (`BLADE.high`, 13 game pixels), bowed the way it
+flies, tallest in its middle (`BLADE.tall`), drawn a little wider than what it strikes (`BLADE.wide`, as a swing's own streak is);
+its front a ribbon of white air, a thin wake of the air's greys behind it broken into lines of wind that run back as it flies; his
+cyan along its top (the bag picture's blade, `BLADE.edge`); wind streaming back off it in broken lines, high, middle and low; its
+shadow on the floor; grit kicked up under it as it goes. It spreads off his sword in its first moments (`BLADE.spreads`) and frays
+into wind over its last 1.6 tiles. Its colours are the game's own air (render/wild.ts `AIR`, the Volley's wind). On its `blade`
+event a gust off his sword (hoops of air the way it goes, grit round his feet, a small kick of the screen) in place of the Wave's
+blast and bolts: the `wave` the build tells with it is left out (`UniqueFx.owns`). Nothing of game/ is changed.
+
+To see it: `LOOK=wind FILM=3.7 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario
+tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/wind` (three Strikes in a row, twice, one each way; `BARE=1`: the
+blade alone, sent by the rules with no swing of his, three ways); `npx tsx tools/uniques_play_blade_peek.ts <out.png>` (the blade
+big, by its own code, no browser, four ways at three moments). Pictures sent him: `pictures/windcutter.mp4` and
+`pictures/windcutter.png`.
+
+Checked: tests/unique_play3_wind.test.ts (new, 2: the switch off and the build's Wave its own; every way and moment only the air,
+his cyan and its shadow, there at once, wider in flight, frayed at the end) and tests/unique_play.test.ts (6, its switches check
+counting `wind`), each alone with tsx; tsc clean; the look filmed with the switch on and off (the same frames compared: the white
+crescent stands where the Wave was), finished clean.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills: “Yes, hand it to main (Recommended)”.
+
+## Not drawn yet
+
+The Moth's Wing's darkened word ('dark', 'light'): asked whether it shows on the skill button (today only floating text): “Grey
+the word on its button (Recommended)” (offered as: that word's mark on the skill button goes grey and dim until it comes back).
+And which of the moments the build only tells of want a picture of their own (to ask him).

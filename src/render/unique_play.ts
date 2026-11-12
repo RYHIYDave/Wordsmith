@@ -18,6 +18,8 @@
 //   talons  THE QUEEN'S TALONS: one of her flock, black-violet, diving out of the air over him onto the enemy, striking, beating away
 //   wrench  THE STICKY WRENCH: her vial stuck in a lump of pitch on what it landed on, going where that goes, blinking quicker and
 //           quicker, fizzing, until it bursts
+//   wind    THE WINDCUTTER: its blade a crescent of rushing air at the height of his swing, its edge his cyan, wind streaming
+//           off it, a gust off his sword as it goes; not the Mage's Wave (render/unique_fx.ts drawBlade)
 //
 // (Nothing is imported here, so that anything may ask a switch without pulling in the pictures.)
-export const UNIQUE_PLAY = { tome: false, risen: false, fourth: false, arm: false, talons: false, wrench: false };
+export const UNIQUE_PLAY = { tome: false, risen: false, fourth: false, arm: false, talons: false, wrench: false, wind: false };

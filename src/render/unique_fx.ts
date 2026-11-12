@@ -26,6 +26,11 @@
 //   THE STICKY WRENCH      on its 'stuck', her vial in a lump of pitch where it landed, stuck to the enemy there (and going
 //                          where it goes) at its middle, blinking quicker and quicker, fizzing, a cyan light off it, until the
 //                          rules' fuse is out and it bursts (the game's own burst, twice as wide) (art paintStuckVial)
+//   THE WINDCUTTER         its blade (game.ts windBlade: a shot of the Wave's kind, `blade`, which render.ts hands here) a
+//                          crescent of rushing air at the height of his swing, bowed the way it flies, white, its edge his cyan
+//                          (the bag picture's blade), wind streaming back off it, its shadow on the floor, grit kicked up under
+//                          it; it frays into wind over the end of its flight. On its 'blade', a gust off his sword in place of
+//                          the Wave's blast and bolts (the 'wave' told with it is left out: owns)
 
 import type { Sprite } from '../engine/px';
 import type { Px } from '../engine/px';
@@ -43,6 +48,9 @@ import { wx, wy } from './fx';
 import { attackFrame } from './figure';
 import { risingSprite } from './arrivals';
 import { UNIQUE_PLAY } from './unique_play';
+import { AIR } from './wild';
+import { P } from '../art/palette';
+import type { Projectile } from '../game/state';
 import { ARM, ARM_WATER, BIRD_CANVAS, BIRD_RAVEN, STICKY, STICKY_BREW, TALONS, paintArm, paintArmPool, paintStuckVial, paintTalonsBird, talonsAt } from '../art/unique_play_art2';
 
 /** Picture pixels to a game pixel (the heroes' grain). */
@@ -51,6 +59,13 @@ const G = 2;
 export const TOME_FLIES = { high: 16, bob: 1.5, burns: 0.36, rises: 15, every: 1 / 30, flare: 0.22, most: 16 };
 /** THE RISEN ELITE: how long its rising takes (the rules': game.ts stepRisen), how long its fall is seen and from when it fades; how long the cracks stay, and fade. */
 export const RISEN_SHOWN = { rise: 0.6, strike: 0.6, blow: 0.3, fall: 1.0, fades: 0.4, cracks: 2.6, cracksFade: 0.7 };
+/**
+ * THE WINDCUTTER'S BLADE: how high its middle flies (game pixels: his swing's height), how tall it stands in its middle and at its
+ * tips, how much wider than what it strikes it is drawn, how far its crescent bows (radians each way of its
+ * middle), how long it takes to spread off his sword (seconds), over how many of its last tiles it frays, how far back the wind
+ * streams off it (tiles), its edge's cyan (the bag picture's blade's), how often grit is kicked up under it.
+ */
+export const BLADE = { high: 13, tall: 10, low: 1, wide: 1.2, span: 0.95, spreads: 0.07, frays: 1.6, streams: 1.7, edge: '#8af6f0', grit: 0.035 } as const;
 /** How many pixels of drained pictures are kept (about 8 megabytes); past it the lot is let go and made again as asked for. */
 const LOOK_BUDGET = 2_000_000;
 
@@ -117,6 +132,9 @@ export class UniqueFx {
   private stuck: { x: number; y: number; mid?: number; z: number; secs: number; t: number }[] = [];
   /** Its pictures painted ahead while the boots are worn: the next one to paint. */
   private birdAhead = 0;
+  // ---- the windcutter: where its last blade was sent from (the 'wave' told with it is its stand-in); when grit was last kicked up
+  private bladeAt: { x: number; y: number } | null = null;
+  private gritT = 0;
   /** What the effects lend it, from the last event (for the burst of her feathers on the blow, which no event tells of). */
   private lent: Lent | null = null;
   private looks = new Map<Sprite, Sprite>();
@@ -143,6 +161,11 @@ export class UniqueFx {
    * where the book is, a dozen a turn, “until it is drawn”; raise's ten sparks where the elite rises): is this event one of them?
    */
   owns(e: GameEvent): boolean {
+    // (THE WINDCUTTER: the Wave's blast and bolts the build tells with its blade)
+    if (e.t === 'wave' && this.bladeAt && e.x === this.bladeAt.x && e.y === this.bladeAt.y) {
+      this.bladeAt = null;
+      return true;
+    }
     if (e.t !== 'spark') return false;
     const g = this.game;
     if (!g) return false;
@@ -170,6 +193,17 @@ export class UniqueFx {
       this.flare = TOME_FLIES.flare;
     }
     this.lent = fx;
+    if (e.id === 'windcutter' && UNIQUE_PLAY.wind && e.what === 'blade' && e.x1 !== undefined && e.y1 !== undefined) {
+      // A GUST OFF HIS SWORD as the blade leaves it: hoops of air thrown out the way it goes, a puff of grit round his feet
+      this.bladeAt = { x: e.x, y: e.y };
+      const l = Math.hypot(e.x1 - e.x, e.y1 - e.y) || 1;
+      const ux = (e.x1 - e.x) / l;
+      const uy = (e.y1 - e.y) / l;
+      fx.rings.push({ x: e.x + ux * 0.7, y: e.y + uy * 0.7, r: 0.75, t: 0, dur: 0.18, colors: [AIR[0], AIR[1], AIR[2], AIR[3]], fill: false });
+      fx.rings.push({ x: e.x + ux * 1.3, y: e.y + uy * 1.3, r: 0.5, t: 0, dur: 0.15, colors: [AIR[1], AIR[2], AIR[3]], fill: false });
+      fx.spray(e.x, e.y, 8, [P.st6, P.st5, P.st4], 1.4, 40, 1);
+      fx.shake = Math.max(fx.shake, 1.2);
+    }
     if (e.id === 'queenstalons' && UNIQUE_PLAY.talons && e.what === 'dive' && e.x1 !== undefined && e.y1 !== undefined) {
       // (from in front or behind, and which way round on the screen, by the way it flies: as a monster is shown)
       const dx = e.x1 - e.x;
@@ -265,6 +299,12 @@ export class UniqueFx {
       }
     }
     this.stuck = this.stuck.filter((v) => v.t < v.secs);
+    // THE WINDCUTTER: grit kicked up off the floor under its blade as it goes
+    this.gritT += dt;
+    if (UNIQUE_PLAY.wind && this.lent && gm && this.gritT >= BLADE.grit) {
+      this.gritT = 0;
+      for (const p of gm.projectiles) if (p.blade && p.dist > 0.3) this.lent.spray(p.x, p.y, 1, [P.st6, P.st5, P.st4], 0.9, 35, 1);
+    }
     for (const a of this.arms) a.t += dt;
     this.arms = this.arms.filter((a) => a.t * 30 < ARM.frames);
     for (const b of this.blows) b.t += dt;
@@ -483,6 +523,99 @@ export class UniqueFx {
     g.globalAlpha = 1;
     // (the brands painted are many, a few pixels each: the old ones let go of now and then)
     if (kept.size > 900) for (const k of [...kept.keys()]) if (k.startsWith('brand|')) kept.delete(k);
+  }
+
+  /**
+   * THE WINDCUTTER'S BLADE in flight (render/render.ts hands it here, with the shots): a crescent of rushing air standing at the
+   * height of his swing, bowed the way it flies, tallest in its middle; drawn point by point in the world, as the Wave is, so it
+   * lies right whichever way it goes. Its shadow on the floor; wind streaming back off it in broken lines that run as it flies;
+   * its body a sheet of air, white at its front and thinning back into the air's greys, lines of wind running through it; its
+   * front edge white, its top his cyan. It spreads off his sword in its first moments and frays into wind over the end of its
+   * flight.
+   */
+  drawBlade(g: CanvasRenderingContext2D, cam: Cam, p: Projectile, t: number): void {
+    const sp = Math.hypot(p.vx, p.vy) || 1;
+    const fx = p.vx / sp;
+    const fy = p.vy / sp;
+    const born = Math.min(1, p.age / BLADE.spreads);
+    const fade = Math.max(0, Math.min(1, p.dist / BLADE.frays));
+    const span = BLADE.span * (0.45 + 0.55 * born);
+    // (a little wider than what it strikes, as a swing's own streak is)
+    const R = (p.r * BLADE.wide) / Math.sin(BLADE.span);
+    const run = Math.floor(t * 30);
+    // a point of it: `a` along its bow (radians from its middle), `back` tiles behind its front
+    const at = (a: number, back: number): [number, number] => {
+      const rj = R - back;
+      const ca = Math.cos(a) * rj - R;
+      const sa = Math.sin(a) * rj;
+      return [p.x + fx * ca - fy * sa, p.y + fy * ca + fx * sa];
+    };
+    const steps = Math.max(12, Math.ceil(span * R * 2 * 24));
+    const sx = (x: number, y: number): number => Math.round(wx(cam, x, y));
+    const sy = (x: number, y: number): number => Math.round(wy(cam, x, y));
+    // how tall it stands at a point of its bow (game pixels): tallest in its middle, its tips points; less as it frays
+    const tall = (mid: number): number => Math.max(1, Math.round((BLADE.low + (BLADE.tall - BLADE.low) * Math.pow(mid, 0.7)) * (0.5 + 0.5 * born) * (0.55 + 0.45 * fade)));
+    // ITS SHADOW on the floor under it
+    g.globalAlpha = 0.22 * fade * born;
+    g.fillStyle = '#000000';
+    for (let k = 0; k <= steps; k += 2) {
+      const [x, y] = at(-span + (2 * span * k) / steps, 0.1);
+      g.fillRect(sx(x, y), sy(x, y), 2, 1);
+    }
+    // THE WIND STREAMING BACK OFF IT: broken lines off its back, high, middle and low, running back as it flies; longer as it frays
+    for (let i = 0; i < 7; i++) {
+      const a = span * 0.85 * (-1 + (2 * i) / 6);
+      const mid = 1 - Math.abs(a) / span;
+      const h = tall(mid);
+      for (const [lvl, row] of [[0.85, 0], [0.5, 1], [0.15, 2]] as const) {
+        const long = BLADE.streams * (0.3 + 0.7 * mid) * (row === 1 ? 1 : 0.7) * (1 + 0.8 * (1 - fade)) * born;
+        const z = BLADE.high - h / 2 + h * lvl;
+        for (let b = 0.1, n = 0; b < long; b += 0.05, n++) {
+          if ((n + run + i * 3 + row * 2) % 6 < 2) continue;
+          const k = b / long;
+          g.globalAlpha = (1 - k) * (row === 1 ? 0.8 : 0.6) * (0.45 + 0.55 * fade);
+          g.fillStyle = k < 0.35 ? AIR[1] : k < 0.7 ? AIR[2] : AIR[3];
+          const [x, y] = at(a, b);
+          g.fillRect(sx(x, y), sy(x, y) - Math.round(z), 1, 1);
+        }
+      }
+    }
+    // ITS BODY, back to front: a thin wake of air behind, broken into lines of wind that run back as it flies; its front a
+    // ribbon of white air, tallest in its middle
+    for (let j = 2; j >= 0; j--) {
+      const sj = span * (1 - j * 0.1) * (fade < 1 ? 0.65 + 0.35 * fade : 1);
+      for (let k = 0; k <= steps; k++) {
+        const a = -sj + (2 * sj * k) / steps;
+        const mid = 1 - Math.abs(a) / sj;
+        // (fraying from its tips in at the end of its flight)
+        if (fade < 1 && (k * 7 + run * 3 + j) % 10 >= Math.round(10 * fade)) continue;
+        const [x, y] = at(a, 0.04 + j * 0.1);
+        const h = Math.max(1, Math.round(tall(mid) * (1 - j * 0.2)));
+        const X = sx(x, y);
+        const top = sy(x, y) - Math.round(BLADE.high + h / 2);
+        for (let r = 0; r < h; r++) {
+          if (j > 0 && (r + j + ((k + run * 2) >> 1)) % 3 === 0) continue;
+          g.globalAlpha = (j === 0 ? 0.85 : j === 1 ? 0.4 : 0.22) * (0.4 + 0.6 * fade);
+          g.fillStyle = j === 0 ? (r < h / 2 ? AIR[0] : AIR[1]) : j === 1 ? AIR[2] : AIR[3];
+          g.fillRect(X, top + r, 2, 1);
+        }
+      }
+    }
+    // ITS EDGE, along its top, his cyan (the bag picture's blade)
+    for (let k = 0; k <= steps; k++) {
+      const a = -span + (2 * span * k) / steps;
+      const mid = 1 - Math.abs(a) / span;
+      const [x, y] = at(a, -0.03);
+      const h = tall(mid);
+      const X = sx(x, y);
+      const top = sy(x, y) - Math.round(BLADE.high + h / 2);
+      if (mid > 0.15) {
+        g.globalAlpha = fade * born;
+        g.fillStyle = BLADE.edge;
+        g.fillRect(X, top - 1, 2, 1);
+      }
+    }
+    g.globalAlpha = 1;
   }
 
   /** WHAT IS OVER EVERYTHING (with the air's effects, over the dark): the book's warm light, the risen one's cold light; the burst of its blow. */

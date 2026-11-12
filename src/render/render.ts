@@ -165,6 +165,7 @@ import { blinkNowhere, gaitOf } from '../game/bosses';
 import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
 import { THRUST } from '../art/heroes3';
+import { UNIQUE_PLAY } from './unique_play';
 import { LEAP_LIFT, THRUST_LIFT, drawWildArrow, drawWildWave } from './wild';
 import { golemCharge, makeContraptionArt, makeGolemArt } from '../art/tinkerer_art';
 // (THE GOLEM'S ROCKET JUMP AND ITS RUN, the art chat's, behind GOLEM_ROCKET: off until he has seen them in the game and said yes)
@@ -4201,6 +4202,11 @@ export class Renderer {
       // (THE WARLOCK's bolt: his fire on its side, render/warlock_fx.ts)
       if (p.look === 'hellbolt') {
         if (onScreen(p.x, p.y)) fx.warlock.drawBolt(g, cam, p);
+        continue;
+      }
+      // (UNIQUE ITEMS, behind a switch that is off: the Windcutter's blade, a blade of wind and not the Mage's Wave: render/unique_fx.ts)
+      if (p.blade && UNIQUE_PLAY.wind) {
+        if (onScreen(p.x, p.y)) fx.uniques.drawBlade(g, cam, p, t);
         continue;
       }
       // (THE NEW MONSTERS: a Boneward's spear, flying low from its hand to where it comes down)
