@@ -91,7 +91,7 @@ import { WARLOCK, WARLOCK_TUNE, playableClasses } from './game/warlock';
 import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
 import { sheetCuts, sheetWhere, spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
-import { RES, createScreen } from './engine/screen';
+import { EVEN_PIXELS, RES, createScreen } from './engine/screen';
 import { ACT2_WALLS } from './render/act2_walls';
 import { ARRIVAL_LINES, BODIES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, LEVEL_SELECT, MONSTER_ATTACKS, NEW_MONSTERS, NEW_WEAPONS, OWN_MOVES, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
@@ -3344,6 +3344,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     input,
     ui,
     screen: scr,
+    /** (EVEN_PIXELS, engine/screen.ts) Switched on or off, the screen sized again: for pictures. */
+    evenPixels: (on: boolean) => {
+      EVEN_PIXELS.on = on;
+      window.dispatchEvent(new Event('resize'));
+    },
     cam: () => renderer.cam,
     /** The map-maker's switches for terraces and sunken floor (game/dungeon.ts): pictures of what is not yet in the game switch it on. */
     relief: RELIEF,
