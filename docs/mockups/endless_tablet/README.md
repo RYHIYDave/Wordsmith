@@ -165,6 +165,21 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   little bigger.  And you’re going to refine that picture right?  It’s looking pretty wonky”. THE BOAR'S DEATH, his pick: “Crashes
   onto its side (Recommended)” (offered as: killed mid-charge, it ploughs on, flips onto its side and skids to a stop in frost, its
   runes going out).
+- HIS WORDS on the refined pictures, 12 Nov 2026, 15:4x: “Wait so this is his final look?  Dude not even close.  His hands are all
+  fucked, I can see his legs, the wool is really bad.  Run the checks, read the rules.  This is bad.”; 15:47, “Can’t see his legs”;
+  15:48, “His elbows are sticking out for no reason.”; “The wool looks like scales”; 15:49, “Are the spikes on the bottom supposed to
+  be icicles?  It’s so off.  I don’t want the fastest result, I want a correct result”.
+- REMADE FOR THAT (the same chat): HIS LEGS were inside the boar (made bigger, its flanks had swallowed his feet): now astride,
+  dark breeches and riding boots down its sides into stirrups out past its widest, and A NEW CHECK that holds them there (his knees
+  and shins outside its body, every frame: tests/endless_boss.test.ts; `boarLumps`). HIS HANDS: real hands as the bosses on the bones
+  have them (a palm, four fingers in two joints, a thumb): his right closed round the staff, which runs through his fist; his left
+  open, a claw, writing. HIS ELBOWS in (the pose no longer swings them out). HIS HEAD made as the King's is (art/king.ts head: one
+  head with his face painted on it: eye hollows, heavy brows, hollow cheeks, a long nose), his beard in locks drawn to a point at
+  his belt, his hair in locks of their own lengths over his cloak. THE WOOL made as the game's fur is (art/companions_art.ts fur,
+  art/moth.ts furSkin: the coat's own tone broken by short strokes of the tone below, a few above; here hanging down and running on
+  across its body), not patterned partings (the scales); THE SPIKES GONE: its shag a soft skirt of locks in its body's own part (no
+  seam cutting it into teeth), in shade, their ends round; no frost points. The checks: checkBoss on his stand, nothing cyan, his
+  legs outside the boar: all pass.
 
 ## The tools
 

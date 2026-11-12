@@ -36,6 +36,7 @@ import { FLAME } from './mkit';
 import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
 import type { BossShape, CheckLimb, CheckLump } from './boss_checks';
 import type { Ring, Skin, Stage } from './skin';
+import { wornOn } from './skin';
 import { add, buildOf, cross, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
@@ -50,8 +51,8 @@ const T5 = (k: number): number => (k < 0 ? 0 : k > 4 ? 4 : k);
 
 /** The boar's wool: long and pale, a cold cream gone grey at its roots. */
 export const WOOL: Ramp = ['#2e2a2e', '#57505a', '#8c8488', '#bdb4ae', '#e2dad0'];
-/** Frost on the tips of its locks: a cold white, never a glow. */
-const FROST = '#e8eef2';
+/** Its wool in the shade under it, where it hangs. */
+const SHAG: Ramp = ['#24212a', '#3e3842', '#615a62', '#8c8488', '#b0a8a6'];
 /** Its crest of bristles down its spine, and the dark of its legs and snout where the wool gives out. */
 export const CREST: Ramp = ['#0e0b10', '#1c161c', '#2e242a', '#43363c', '#5c4c52'];
 export const HIDE: Ramp = ['#171217', '#2a2026', '#41333a', '#5b4a50', '#7a666a'];
@@ -61,6 +62,9 @@ const HOOFR: Ramp = ['#0a080c', '#16121a', '#262028', '#3a323c', '#544a54'];
 /** The saddle: old leather, and iron. */
 const LEATHER: Ramp = ['#1a0f0c', '#2e1c16', '#4a2e22', '#6a4430', '#8c5e42'];
 const IRON: Ramp = ['#121218', '#24242e', '#3a3a48', '#585866', '#7e7e8e'];
+/** His breeches: a dark grey wool; his riding boots: old black leather. */
+const BREECH: Ramp = ['#141218', '#221f28', '#36323e', '#4c4756', '#666070'];
+const BOOT: Ramp = ['#0c0a0c', '#1a1416', '#2c2224', '#423234', '#5e4a4a'];
 /** His skin: ashen, the life gone grey out of it. */
 export const ASH: Ramp = ['#2a2430', '#4a4252', '#726878', '#9a909e', '#c2b8c4'];
 /** His order's cloak, gone to violet rags. */
@@ -165,17 +169,15 @@ function headOf(P: BoarPose): { at: (fwd: number, out: number, up: number) => V3
 
 // THE WOOL: long locks hanging, combed down and matted; frost on their tips; darker at the roots where it parts.
 function woolSkin(seed: number): Skin {
-  return (u, tone, x, y) => {
-    // (locks hanging: streaks down the picture, each a few pixels wide, wavering, each its own shade; the dark between them)
-    const wx = x / 2.7 + 0.45 * Math.sin(y * 0.33 + seed * 0.7);
-    const lock = Math.floor(wx);
-    const band = Math.floor((y + hash(lock, 3, 8802) * 9) / 9);
-    const h = hash(lock, band, 8801);
-    let t = tone + (h > 0.74 ? 1 : h < 0.22 ? -1 : 0);
-    if (wx - lock < 0.2 && tone < 3 && tone > 0) t -= 1;
-    // (its underside: the locks' tips, frosted)
-    if (u[2] < -0.74 && h > 0.5 && tone >= 2) return FROST;
-    return WOOL[T5(t)];
+  // THE GAME'S FUR (art/companions_art.ts fur, art/moth.ts furSkin: “a coat's tones broken by short strokes of the tone below, and
+  // a few of the one above”; “never squares”): here the strokes hang down, as long wool hangs, and run on across the body's parts
+  // (laid by the picture's own pixels), so that it is one coat, not lumps, not scales.
+  return (_u, tone, x, y) => {
+    const col = Math.floor(x / 1.6 + 0.6 * Math.sin(y * 0.21 + seed * 0.3));
+    const run = Math.floor((y + 7 * hash(col, 1, 8812)) / 6);
+    const h = hash(col, run, 8811);
+    const k = tone + (h < 0.2 ? -1 : h > 0.92 ? 1 : 0);
+    return WOOL[T5(k)];
   };
 }
 /** His runes branded on its flank: the wool burnt off round them, the hide dark, the runes in it burning. The rune grids are the wordsmith's (art/town.ts RUNES). */
@@ -209,7 +211,7 @@ export function boarBits(P: BoarPose, put: Put, near: number): void {
   // ITS BODY: a deep barrel; its shoulders high and heavy, the hump over them where the saddle sits; its chest broad; its back
   // falling away to small hindquarters; a heavy belly
   ball('boarBody', 'barrel', [-2, 0, 24], [17, 0, 0], [0, 9.6 * br, 0], [0, 0, 9.4], woolSkin(1));
-  ball('boarBody', 'shoulders', [9, 0, 27], [10.5, 0, 0], [0, 10.8, 0], [0, 0, 11.2], woolSkin(2));
+  ball('boarBody', 'shoulders', [9, 0, 27], [10.5, 0, 0], [0, 10.2, 0], [0, 0, 11.2], woolSkin(2));
   ball('boarBody', 'hump', [6, 0, 32.5], [9.5, 0, 0], [0, 8.2, 0], [0, 0, 6.2], woolSkin(3));
   ball('boarBody', 'chest', [16, 0, 21], [6.8, 0, 0], [0, 9.0, 0], [0, 0, 9.0], woolSkin(4));
   ball('boarBody', 'haunch', [-15, 0, 24], [8.2, 0, 0], [0, 8.4, 0], [0, 0, 8.4], woolSkin(5));
@@ -288,7 +290,7 @@ export function boarBits(P: BoarPose, put: Put, near: number): void {
     const part = `boarLeg${i}`;
     const far = (i % 2 === 0 ? 1 : -1) !== near;
     const hind = i >= 2;
-    put(part, 'leg', { k: 'rod', a: top, b: knee, ra: (hind ? 4.4 : 4.0) * S, rb: 2.6 * S, ramp: WOOL, far });
+    put('boarBody', 'legWool', { k: 'rod', a: top, b: knee, ra: (hind ? 4.4 : 4.0) * S, rb: 2.6 * S, ramp: WOOL, far });
     put(part, 'leg', { k: 'rod', a: knee, b: fet, ra: 2.3 * S, rb: 1.8 * S, ramp: HIDE, far });
     put(part, 'leg', { k: 'rod', a: fet, b: end, ra: 1.8 * S, rb: 1.7 * S, ramp: HIDE, far });
     // (the hoof: two toes, a cleft between them)
@@ -298,27 +300,19 @@ export function boarBits(P: BoarPose, put: Put, near: number): void {
       const toe = add(end, mul(side, t * 0.8 * S));
       put(part, 'hoof', { k: 'rod', a: add(toe, [0, 0, 0.6 * S]), b: add(add(toe, mul(fw, 1.4 * S)), [0, 0, -1.0 * S]), ra: 1.2 * S, rb: 0.8 * S, ramp: HOOFR, far });
     }
-    // (wool hanging off the back of its thigh or forearm)
-    const back = mul(fw, hind ? -1 : -0.6);
-    for (let j = 0; j < 2; j++) {
-      const a = lerp3(top, knee, 0.3 + 0.35 * j);
-      put(part, 'locks', { k: 'rod', a, b: add(add(a, mul(back, 2.4 * S)), [0, 0, -5.5 * S]), ra: 2.0 * S, rb: 0.5 * S, ramp: WOOL, far });
-    }
+    void fw;
   }
-  // ITS LOCKS: the long wool hanging in matted locks down its flanks and belly, each its own length and thickness, frost on their tips
+  // ITS SHAG: the long wool hanging from its flanks and belly in a ragged skirt, the boar's own coat (in its body's part, so no
+  // seam cuts it into teeth): many soft locks, each its own length, their ends rounded, in the shade under it
   const sw = Math.sin(TAU * P.sway);
-  for (let i = 0; i < 26; i++) {
+  for (let i = 0; i < 40; i++) {
     const k = i % 2 ? 1 : -1;
-    const f = hash(i, 11, 8806);
-    const along = 18 - f * 38;
-    const row = hash(i, 13, 8808) > 0.55 ? 1 : 0;
-    const zr = 16.8 + row * 4.4 + 0.1 * Math.max(0, along);
-    const root = W([along, k * (9.0 - Math.abs(along - 2) * 0.06 + row * 0.6), zr]);
-    const long = (4.0 + 4.8 * hash(i, 7, 8807) - row * 1.2) * S;
-    const thick = (1.5 + 1.2 * hash(i, 17, 8809)) * S;
-    const tip = add(add(root, mul(turned(P, [-0.25, k, 0]), 1.3 * S)), [sw * 0.6 * S * (1 + row), 0, -long]);
-    put('boarLocks', 'locks', { k: 'rod', a: root, b: tip, ra: thick, rb: 0.5 * S, ramp: WOOL, far: k !== near });
-    if (hash(i, 19, 8810) > 0.35) put('boarLocks', 'frost', { k: 'dot', p: tip, c: FROST, facing: turned(P, [0, k, 0]) });
+    const along = 19 - (i / 39) * 40 + (hash(i, 11, 8806) - 0.5) * 2.4;
+    const fall = Math.max(0, 1 - Math.abs(along + 1) / 24);
+    const root = W([along, k * (8.2 - Math.abs(along - 1) * 0.07), 18.0 + 0.08 * Math.max(0, along)]);
+    const long = (3.2 + 3.4 * fall + 1.6 * hash(i, 7, 8807)) * S;
+    const tip = add(add(root, mul(turned(P, [-0.2, k, 0]), 0.9 * S)), [sw * 0.5 * S, 0, -long]);
+    put('boarBody', 'shag', { k: 'rod', a: root, b: tip, ra: (1.9 + 0.7 * hash(i, 17, 8809)) * S, rb: (0.9 + 0.4 * hash(i, 23, 8813)) * S, ramp: SHAG, far: k !== near });
   }
   // ITS TAIL: short, a tuft
   const dock = W([-24.5, 0, 28]);
@@ -339,10 +333,10 @@ export function boarBits(P: BoarPose, put: Put, near: number): void {
   const girthC = W([2, 0, 24]);
   put('boarSaddle', 'girth', { k: 'band', ring: { c: girthC, u: turned(P, [0, 0, 9.8 * S]), v: turned(P, [0, 10.2 * S, 0]) }, ramp: LEATHER, rows: 1 });
   for (const k of [-1, 1]) {
-    const hang = add(add(sd.at, mul(sd.l, k * 7.4)), mul(sd.u, -2));
-    const foot = add(hang, [0, 0, -14]);
-    put('boarSaddle', 'stirrups', { k: 'rod', a: hang, b: foot, ra: 0.45, rb: 0.45, ramp: LEATHER, far: k !== near });
-    put('boarSaddle', 'stirrups', { k: 'rod', a: add(foot, mul(sd.f, -1.4)), b: add(foot, mul(sd.f, 1.4)), ra: 0.7, rb: 0.7, ramp: IRON, far: k !== near });
+    const hang = add(add(sd.at, mul(sd.l, k * 7.0 * S)), mul(sd.u, -1.6 * S));
+    const foot = add(add(add(sd.at, mul(sd.f, -0.5)), mul(sd.l, k * 13.4 * S)), [0, 0, -12.0 * S - 0.6]);
+    put('boarSaddle', 'stirrups', { k: 'rod', a: hang, b: foot, ra: 0.5, rb: 0.5, ramp: LEATHER, far: k !== near });
+    put('boarSaddle', 'stirrups', { k: 'rod', a: add(foot, mul(sd.f, -1.5)), b: add(foot, mul(sd.f, 1.5)), ra: 0.75, rb: 0.75, ramp: IRON, far: k !== near });
   }
 }
 
@@ -357,18 +351,19 @@ export function riderPose(P: BoarPose, t = 0): Partial<Bones> {
   const seat = saddleOf(P);
   const at = add(seat.at, mul(seat.u, 2.6));
   const foot = (fwd: number, out: number, down: number): V3 => add(add(add(seat.at, mul(seat.f, fwd)), mul(seat.l, out)), [0, 0, -down]);
-  const fl = foot(3.5, 8.2, 18);
-  const frt = foot(3.5, -8.2, 18);
+  // (his feet in the stirrups, out past the boar's flanks at their widest, so his legs go down its sides, not into it)
+  const fl = foot(-0.5, 13.4 * S, 12.0 * S);
+  const frt = foot(-0.5, -13.4 * S, 12.0 * S);
   const a = (t / WS_STAND_LONG) * TAU;
   return {
-    px: at[0], py: at[1] + 1.1 * Math.sin(a + 0.9), pz: at[2] - PELVIS0 + 1.0 * Math.sin(a * 2),
+    px: at[0] + 0.9 * Math.sin(a + 0.9), py: at[1] + 0.4 * Math.sin(a + 0.9), pz: at[2] - PELVIS0 + 1.0 * Math.sin(a * 2),
     yaw: P.yaw, pitch: -2, roll: 0, twist: 6 + 2 * Math.sin(a + 0.5), bend: -2, side: 0, hunch: 5,
     faceTurn: 4 * Math.sin(a * 0.5), faceUp: 6, faceTilt: 2,
-    lfx: fl[0], lfy: fl[1] - B.stance, lfz: fl[2] - B.ankle, lfp: 10, lft: 8, lk: 30, lkUp: 18,
-    rfx: frt[0], rfy: frt[1] + B.stance, rfz: frt[2] - B.ankle, rfp: 10, rft: -8, rk: -30, rkUp: 18,
+    lfx: fl[0], lfy: fl[1] - B.stance, lfz: fl[2] - B.ankle, lfp: 10, lft: 8, lk: 72, lkUp: 8,
+    rfx: frt[0], rfy: frt[1] + B.stance, rfz: frt[2] - B.ankle, rfp: 10, rft: -8, rk: -72, rkUp: 8,
     // (his left hand out before him, fingers clawed, writing on the air; his right hand high, the staff in it)
-    lhIn: 1, lhx: 10 + 1.4 * Math.sin(a * 2), lhy: 5.5 + 1.0 * Math.cos(a * 2), lhz: -2 + 1.2 * Math.sin(a * 2 + 0.6), le: -36,
-    rhIn: 1, rhx: 2.6, rhy: -9.5, rhz: 12 + 0.6 * Math.sin(a), re: 54,
+    lhIn: 1, lhx: 10 + 1.4 * Math.sin(a * 2), lhy: 4.0 + 1.0 * Math.cos(a * 2), lhz: -2 + 1.2 * Math.sin(a * 2 + 0.6), le: -6,
+    rhIn: 1, rhx: 1.2, rhy: -11.5, rhz: 7 + 0.6 * Math.sin(a), re: 14,
     out: 0,
   } as Partial<Bones>;
 }
@@ -376,8 +371,10 @@ export function riderPose(P: BoarPose, t = 0): Partial<Bones> {
 /** His staff: from below his hand to well over his head, taller than he is; the iron ring at its head and his great rune in it. */
 function staffOf(s: Skeleton): { foot: V3; head: V3; ring: V3; up: V3; side: V3 } {
   const up = norm([0.08, -0.12, 1]);
-  const foot = add(s.handR, mul(up, -26));
-  const head = add(s.handR, mul(up, 48));
+  // (through his fist: a little in from his knuckles, toward his body, so that his fingers close round it)
+  const grip = add(s.handR, add(mul(s.chest[0], -0.9), mul(s.chest[1], 0.5)));
+  const foot = add(grip, mul(up, -26));
+  const head = add(grip, mul(up, 48));
   const side = norm(cross(up, [0, 1, 0]), [1, 0, 0]);
   return { foot, head, ring: add(head, mul(up, 6.2)), up, side };
 }
@@ -393,82 +390,140 @@ function ashSkin(seed: number, cuts = 0.08): Skin {
   };
 }
 
-/** HIS HEAD: gaunt, hollow-cheeked; his eyes sunk and burning; the iron band on his brow, its stone cracked and burning; long white hair. */
-function head(put: Put, s: Skeleton): void {
-  const [ff, fl, fu] = s.face;
-  const hr = B.headR;
-  const c = s.head;
-  const at = (f: number, l: number, u: number): V3 => add(c, add(mul(ff, f), add(mul(fl, l), mul(fu, u))));
-  // (his skull long, his cheeks hollow under the bone, his jaw narrow)
-  put('head', 'head', { k: 'ball', c: at(-0.3, 0, 0.4), ax: [mul(ff, hr[0] * 0.95), mul(fl, hr[1] * 0.92), mul(fu, hr[2] * 1.0)], skin: ashSkin(41, 0.05) });
-  put('head', 'jaw', { k: 'ball', c: at(1.0, 0, -2.6), ax: [mul(ff, hr[0] * 0.62), mul(fl, hr[1] * 0.62), mul(fu, hr[2] * 0.42)], skin: ASH });
-  put('head', 'nose', { k: 'rod', a: at(hr[0] * 0.78, 0, 0.6), b: at(hr[0] * 1.02, 0, -1.2), ra: 0.75, rb: 0.6, ramp: ASH });
-  // (his brow heavy over sunk eyes, the eyes burning)
-  put('head', 'brow', { k: 'rod', a: at(hr[0] * 0.7, 2.1, 1.5), b: at(hr[0] * 0.7, -2.1, 1.5), ra: 0.75, rb: 0.75, ramp: ASH });
-  // (the hollows under his cheekbones, dark)
-  for (const k of [-1, 1]) put('head', 'cheeks', { k: 'dot', p: at(hr[0] * 0.8, k * 1.9, -1.0), c: ASH[0], facing: ff });
-  for (const k of [-1, 1]) put('head', 'eyes', { k: 'dot', p: at(hr[0] * 0.86, k * 1.25, 0.4), c: BURN[3], facing: ff, c2: BURN[2] });
-  // (his mouth a hard line)
-  put('head', 'mouth', { k: 'dot', p: at(hr[0] * 0.9, 0, -1.6), c: ASH[0], facing: ff, c2: ASH[0] });
-  // THE IRON BAND on his brow, and its stone, cracked, burning
-  const band: Ring = { c: at(0.2, 0, 1.3), u: mul(ff, hr[0] * 0.98), v: mul(fl, hr[1] * 1.0) };
-  put('head', 'band', { k: 'band', ring: band, ramp: IRON, rows: 1 });
-  put('head', 'stone', { k: 'ball', c: at(hr[0] * 0.86, 0, 1.3), ax: [mul(ff, 0.6), mul(fl, 1.0), mul(fu, 1.05)], skin: (u) => (Math.abs(u[1] - u[2] * 0.4) < 0.22 ? BURN[3] : SLATE[2]) });
-  // (his crown: thin white hair over it, combed back under the band)
-  put('head', 'crown', { k: 'ball', c: at(-0.9, 0, 1.6), ax: [mul(ff, hr[0] * 0.92), mul(fl, hr[1] * 0.98), mul(fu, hr[2] * 0.78)], skin: (u, tone) => (u[0] > 0.55 && u[2] < 0.35 ? null : HAIR[T5(tone)]) });
-  // HIS HAIR: long and white, lank, from under the band at the sides and back, falling over his shoulders and down his back
-  for (let i = 0; i < 7; i++) {
-    const a = (-96 + i * 32) * D;
-    const root = at(-Math.cos(a) * hr[0] * 0.55 - 0.8, Math.sin(a) * hr[1] * 0.92, 1.0);
-    const down = norm(add(mul(ff, -0.45), [0, 0, -1]));
-    const long = 12 + 4 * hash(i, 2, 8811);
-    put('hair', 'hair', { k: 'rod', a: root, b: add(root, add(mul(down, long), mul(fl, Math.sin(a) * 2.0))), ra: 1.5, rb: 0.6, ramp: HAIR });
+/** HIS HEAD, made as the King's is (art/king.ts head: one head, its face painted on it by where on it each pixel is), his own:
+ * gaunt and ashen, the skull close under the skin; his eyes sunk in dark hollows, burning pink; heavy white brows; his cheeks
+ * hollow; a long thin nose; his mouth a hard line; runes cut in his brow and cheeks, burning; long white hair down his back;
+ * the iron band on his brow, its stone cracked and burning; his beard to his belt. */
+function head(put: Put, st: Stage, s: Skeleton, t: number): void {
+  const [ff, fl, fu] = wornOn(st, s, 14);
+  const hr: V3 = [B.headR[0] * 0.94, B.headR[1] * 0.9, B.headR[2] * 1.02];
+  const hc = add(s.head, mul(fu, -0.2));
+  const cut = (u: V3): boolean => {
+    // (his runes: short cuts on his brow and cheeks, burning)
+    const a = Math.floor((u[1] + 1) * 7);
+    const b = Math.floor((u[2] + 1) * 7);
+    return u[0] > 0.55 && Math.abs(u[1]) > 0.18 && hash(a, b, 8831) < 0.1;
+  };
+  const skin: Skin = (u, tone) => {
+    const fwd = u[0];
+    const side = Math.abs(u[1]);
+    // his hair, white, over the top of his head and down the back, thin at the temples
+    // (combed back in strands: a stroke of the tone below now and then, running back over his skull and down)
+    const strand = hash(Math.floor((Math.atan2(u[1], -u[0]) + 4) * 9), 0, 8834) < 0.32 ? 1 : 0;
+    if (fwd < -0.2 || u[2] > 0.66) return HAIR[Math.max(1, tone - strand)];
+    if (side > 0.86 && u[2] > -0.25) return HAIR[Math.max(1, tone - 1 - strand)];
+    // his beard round his jaw and chin
+    if (u[2] < -0.5 + 0.35 * Math.max(0, side - 0.5) && fwd > -0.2) return HAIR[Math.min(4, tone + 1)];
+    // his eyes, sunk deep: dark hollows (the burning in them is laid on after)
+    if (fwd > 0.42 && side > 0.12 && side < 0.58 && u[2] > -0.14 && u[2] < 0.15) return u[2] > 0.07 ? ASH[1] : ASH[0];
+    // his brows, white, heavy, drawn down hard at the middle
+    if (fwd > 0.38 && side < 0.62 && u[2] >= 0.15 && u[2] < 0.3 - 0.14 * side) return HAIR[Math.min(4, tone + 1)];
+    // the hollows of his cheeks, deep under the cheekbones
+    if (fwd > 0.32 && side > 0.38 && u[2] < -0.14 && u[2] > -0.46) return ASH[Math.max(0, tone - 2)];
+    // his long thin nose, lit down its ridge
+    if (fwd > 0.86 && side < 0.11 && u[2] > -0.32 && u[2] < 0.14) return ASH[Math.min(4, tone + 1)];
+    if (cut(u) && tone >= 1) return tone >= 3 ? BURN[3] : BURN[2];
+    return ASH[Math.max(1, tone)];
+  };
+  put('head', 'head', { k: 'ball', c: hc, ax: [mul(ff, hr[0]), mul(fl, hr[1]), mul(fu, hr[2])], skin });
+  // HIS EYES: burning pink, deep in their hollows
+  for (const k of [-1, 1]) {
+    const e = add(hc, add(mul(ff, hr[0] * 0.86), add(mul(fl, k * hr[1] * 0.34), mul(fu, -hr[2] * 0.02))));
+    put('head', 'eyes', { k: 'dot', p: e, c: BURN[3], facing: ff, c2: BURN[2] });
   }
-  // HIS BEARD: to his belt, thin and lank, in long strands with the dark between them, each narrowing to a point
-  const BEARD_LO: Ramp = [HAIR[0], HAIR[0], HAIR[1], HAIR[2], HAIR[3]];
-  for (let i = 0; i < 5; i++) {
-    const o = (i - 2) * 1.15;
-    const root = at(hr[0] * 0.7, o * 0.7, -2.2 - 0.4 * Math.abs(o));
-    const mid = add(lerp3(s.neck, s.ribs, 0.55), add(mul(s.chest[0], B.ribDeep + 1.3), mul(s.chest[1], o * 1.1)));
-    const end = add(lerp3(s.ribs, s.pelvis, 0.85 - 0.1 * Math.abs(o)), add(mul(s.belly[0], B.waistDeep + 1.3 + 0.2 * Math.abs(o)), mul(s.belly[1], o * 1.35)));
-    const ramp = i % 2 ? BEARD_LO : HAIR;
-    put('beard', `beard${i}`, { k: 'rod', a: root, b: mid, ra: 0.9, rb: 0.75, ramp });
-    put('beard', `beard${i}`, { k: 'rod', a: mid, b: end, ra: 0.75, rb: 0.2, ramp });
+  put('head', 'nose', { k: 'rod', a: add(hc, add(mul(ff, hr[0] * 0.9), mul(fu, hr[2] * 0.08))), b: add(hc, add(mul(ff, hr[0] * 1.08), mul(fu, -hr[2] * 0.28))), ra: 0.85, rb: 0.95, ramp: ASH });
+  // (his moustache, thin, drooping into the beard)
+  for (const k of [-1, 1]) {
+    const a = add(hc, add(mul(ff, hr[0] * 1.0), add(mul(fl, k * hr[1] * 0.1), mul(fu, -hr[2] * 0.38))));
+    const b = add(hc, add(mul(ff, hr[0] * 0.94), add(mul(fl, k * hr[1] * 0.46), mul(fu, -hr[2] * 0.62))));
+    const c = add(b, add(mul(ff, 0.5), add(mul(fl, k * 0.6), mul(fu, -3.4))));
+    put('head', 'beard', { k: 'rod', a, b, ra: 0.8, rb: 0.75, ramp: HAIR });
+    put('head', 'beard', { k: 'rod', a: b, b: c, ra: 0.75, rb: 0.35, ramp: HAIR });
+  }
+  // THE IRON BAND on his brow, round over his hair, and its stone set in it at the front, cracked through and burning
+  put('head', 'band', { k: 'band', ring: { c: add(hc, mul(fu, hr[2] * 0.42)), u: mul(ff, hr[0] * 1.02), v: mul(fl, hr[1] * 1.04) }, ramp: IRON, rows: 1 });
+  put('head', 'stone', { k: 'ball', c: add(hc, add(mul(ff, hr[0] * 0.98), mul(fu, hr[2] * 0.44))), ax: [mul(ff, 0.5), mul(fl, 0.95), mul(fu, 0.95)], skin: (u) => (Math.abs(u[1] - u[2] * 0.4) < 0.24 ? BURN[3] : SLATE[2]) });
+  // HIS BEARD: long and thin, white, from his jaw down over his robe to a point at his belt, its locks wavering and drawn
+  // together, the dark between them; lying on his chest and swaying
+  const [cf, cl] = s.chest;
+  const sway = Math.sin((t / WS_STAND_LONG) * TAU * 2) * 0.5;
+  const jaw = add(hc, add(mul(ff, hr[0] * 0.5), mul(fu, -hr[2] * 0.78)));
+  const onChest = (k: number): V3 => add(lerp3(lerp3(s.neck, s.ribs, 0.35), lerp3(s.ribs, s.pelvis, 0.7), k), mul(cf, B.ribDeep + 1.6 - 0.6 * k));
+  const mid = add(onChest(0.25), mul(cl, sway * 0.6));
+  const low = add(onChest(0.8), mul(cl, sway * 1.3));
+  const tip = add(onChest(1.02), add(mul(cl, sway * 1.7), mul(cf, 0.4)));
+  for (let j = -2; j <= 2; j++) {
+    const own = hash(j + 9, 4, 8832);
+    const top = add(jaw, add(mul(fl, j * hr[1] * 0.2), add(mul(fu, Math.abs(j) * 0.9), mul(ff, -Math.abs(j) * 0.6))));
+    const m1 = add(mid, add(mul(cl, j * 0.95), mul(cf, 0.4 - 0.2 * Math.abs(j))));
+    const m2 = add(lerp3(mid, low, 0.6), add(mul(cl, j * 0.6 + Math.sin(t * 2 + j) * 0.3), mul(cf, 0.3 - 0.15 * Math.abs(j))));
+    const end = add(lerp3(low, tip, 0.35 + 0.45 * own - 0.15 * Math.abs(j)), mul(cl, j * 0.3));
+    const r = 1.25 - 0.18 * Math.abs(j);
+    const ramp = j % 2 ? [HAIR[0], HAIR[0], HAIR[1], HAIR[2], HAIR[3]] as Ramp : HAIR;
+    put('beard', 'beard', { k: 'rod', a: top, b: m1, ra: r * 0.9, rb: r, ramp });
+    put('beard', 'beard', { k: 'rod', a: m1, b: m2, ra: r, rb: r * 0.8, ramp });
+    put('beard', 'beard', { k: 'rod', a: m2, b: end, ra: r * 0.8, rb: 0.35, ramp });
+  }
+  // HIS HAIR, long, white and lank, down his back from under the band
+  const crownC = add(hc, mul(fu, hr[2] * 0.5));
+  // (each lock its own length, the shorter ones over the longer, tapering to its end, the darker ones between: a fall of hair
+  // with a ragged end, not a block)
+  for (let j = -3; j <= 3; j++) {
+    const own = hash(j + 20, 5, 8833);
+    const long = 4.2 + 2.0 * own - 0.5 * Math.abs(j);
+    const at0 = add(hc, add(mul(ff, -hr[0] * 0.72), add(mul(fl, j * hr[1] * 0.28), mul(fu, -hr[2] * 0.15))));
+    const pts: V3[] = [add(crownC, add(mul(fl, j * hr[1] * 0.25), mul(ff, -hr[0] * 0.3))), at0];
+    for (let i = 1; i <= 3; i++) {
+      const k = i / 3;
+      pts.push(add(at0, add([0, 0, -long * i], add(mul(ff, -5.2 * k), mul(fl, j * 0.7 * k + Math.sin(t * 2 + j + k * 2) * 0.35 * k)))));
+    }
+    const ramp = j % 2 ? ([HAIR[0], HAIR[0], HAIR[1], HAIR[2], HAIR[3]] as Ramp) : HAIR;
+    for (let i = 1; i < pts.length; i++) put('head', 'hair', { k: 'rod', a: pts[i - 1], b: pts[i], ra: 1.2 - 0.25 * (i - 1), rb: Math.max(0.25, 1.2 - 0.25 * i - (i === pts.length - 1 ? 0.5 : 0)), ramp });
   }
 }
 
-/** AN ARM: a ragged sleeve over a thin ashen arm cut with runes; a long bony hand. */
-function arm(put: Put, s: Skeleton, side: 'L' | 'R'): void {
+/** A HAND, long and bony, as the bosses on the bones have theirs: its back and palm, four fingers in two joints each, a thumb.
+ * `grip` curls the fingers (1 closed round a staff), `spread` fans them (a claw writing on the air). Ashen, cut with runes. */
+function hand(put: Put, side: 'L' | 'R', at: V3, fore: V3, cu: V3, grip: number, spread: number): void {
+  const e1 = norm(sub(cu, mul(fore, fore[0] * cu[0] + fore[1] * cu[1] + fore[2] * cu[2])), [0, 0, 1]);
+  const e2 = norm(cross(fore, e1), [0, 1, 0]);
+  const part = `hand${side}`;
+  put(part, part, { k: 'ball', c: add(at, mul(fore, 0.5)), ax: [mul(fore, 1.75), mul(e2, 1.35), mul(e1, 0.7)], skin: ASH, far: true });
+  // (the knuckles stand out on the back of it)
+  for (let i = 0; i < 4; i++) {
+    const fan = (i - 1.5) * (0.36 + 0.34 * spread);
+    const base = add(at, add(mul(fore, 1.55), mul(e2, fan * 0.75)));
+    const mid = add(base, add(mul(fore, 1.7 * (1 - 0.5 * grip)), add(mul(e1, -0.55 - 0.75 * grip), mul(e2, fan * 0.55 * spread))));
+    const tip = add(mid, add(mul(fore, 1.3 * (1 - 0.85 * grip)), add(mul(e1, -0.75 - 0.6 * grip), mul(e2, fan * 0.4 * spread))));
+    put(part, `finger${side}`, { k: 'rod', a: base, b: mid, ra: 0.52, rb: 0.46, ramp: ASH, far: true });
+    put(part, `finger${side}`, { k: 'rod', a: mid, b: tip, ra: 0.46, rb: 0.26, ramp: ASH, far: true });
+  }
+  const sideK = side === 'L' ? 1 : -1;
+  const tb = add(at, add(mul(fore, 0.6), mul(e2, sideK * 1.0)));
+  const tt = add(tb, add(mul(fore, 1.3 * (1 - 0.4 * grip)), add(mul(e2, sideK * (0.6 - 0.9 * grip)), mul(e1, -0.5 - 0.6 * grip))));
+  put(part, `finger${side}`, { k: 'rod', a: tb, b: tt, ra: 0.46, rb: 0.28, ramp: ASH, far: true });
+}
+
+/** AN ARM: his order's sleeve, wide and ragged, to the forearm; the forearm bare below it, thin, ashen, cut with burning runes; the hand. */
+function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, grip: number, spread: number): void {
   const L = side === 'L';
   const sh = L ? s.shoulderL : s.shoulderR;
   const el = L ? s.elbowL : s.elbowR;
   const ha = L ? s.handL : s.handR;
-  const [r0, r1] = B.armR;
-  // (the sleeve: wide, ragged, falling from the arm; under it the forearm bare from mid-way)
-  put(`arm${side}`, 'sleeve', { k: 'rod', a: sh, b: el, ra: r0 * 1.6, rb: r0 * 1.5, ramp: RAGS });
-  const cuff = lerp3(el, ha, 0.38);
-  put(`arm${side}`, 'sleeve', { k: 'rod', a: el, b: cuff, ra: r0 * 1.5, rb: r1 * 2.1, ramp: RAGS });
-  // (rags hanging off the sleeve)
-  for (let j = 0; j < 2; j++) {
-    const a = lerp3(el, cuff, 0.5 + 0.5 * j);
-    put(`arm${side}`, 'sleeve', { k: 'rod', a, b: add(a, [0, 0, -6 - 2 * j]), ra: 1.3, rb: 0.5, ramp: RAGS });
-  }
-  put(`arm${side}`, 'fore', { k: 'rod', a: cuff, b: ha, ra: r1 * 0.95, rb: r1 * 0.8, ramp: ASH });
+  const [r0, r1, r2] = B.armR;
+  const fore = norm(sub(ha, el), [0, 0, -1]);
+  const wrist = add(ha, mul(fore, -0.9));
+  put(`arm${side}`, `arm${side}`, { k: 'ball', c: sh, ax: [[r0 * 1.5, 0, 0], [0, r0 * 1.5, 0], [0, 0, r0 * 1.5]], skin: RAGS, far: true });
+  put(`arm${side}`, `arm${side}`, { k: 'rod', a: sh, b: el, ra: r0 * 1.4, rb: r1 * 1.5, ramp: RAGS, far: true });
+  const cuff = lerp3(el, wrist, 0.42);
+  put(`fore${side}`, `fore${side}`, { k: 'rod', a: lerp3(el, wrist, 0.3), b: wrist, ra: r1 * 0.95, rb: r2 * 0.95, ramp: ASH, far: true });
+  // (the sleeve: wide at its end, its edge ragged, falling away from the forearm)
+  put(`fore${side}`, `sleeve${side}`, { k: 'rod', a: el, b: cuff, ra: r1 * 1.5, rb: r1 * 2.0, ramp: RAGS, far: true });
+  const hang = add(cuff, [0, 0, -4.5]);
+  put(`fore${side}`, `sleeve${side}`, { k: 'rod', a: cuff, b: hang, ra: r1 * 1.9, rb: 0.5, ramp: RAGS, far: true });
   // (runes cut down the forearm, burning)
-  for (const f of [0.25, 0.55, 0.8]) put(`arm${side}`, 'fore', { k: 'dot', p: lerp3(cuff, ha, f), c: BURN[2], facing: norm(sub(ha, cuff)) });
-  // (the hand: long and bony; the left clawed, the right closed on the staff)
-  const dir = norm(sub(ha, el));
-  put(`arm${side}`, 'hand', { k: 'ball', c: add(ha, mul(dir, 1.0)), ax: [mul(dir, 1.7), mul(norm(cross(dir, [0, 0, 1]), [0, 1, 0]), 1.2), [0, 0, 1.2]], skin: ASH });
-  if (L) {
-    for (let k = 0; k < 4; k++) {
-      const spread = (k - 1.5) * 0.45;
-      const a = add(ha, mul(dir, 2.0));
-      const f = norm(add(dir, add(mul(norm(cross(dir, [0, 0, 1]), [0, 1, 0]), spread), [0, 0, 0.35])));
-      const mid = add(a, mul(f, 2.0));
-      put('armL', 'fingers', { k: 'rod', a, b: mid, ra: 0.45, rb: 0.4, ramp: ASH });
-      put('armL', 'fingers', { k: 'rod', a: mid, b: add(mid, add(mul(f, 1.0), [0, 0, -1.2])), ra: 0.4, rb: 0.25, ramp: ASH });
-    }
-  }
+  for (const f of [0.35, 0.65, 0.9]) put(`fore${side}`, `fore${side}`, { k: 'dot', p: lerp3(cuff, wrist, f), c: BURN[2], facing: norm(cross(fore, [0, 0, 1]), [0, 1, 0]) });
+  hand(put, side, ha, fore, cu, grip, spread);
 }
 
 /** HIS ROBE AND CLOAK: his order's, gone to violet rags; seated, the robe over his thighs, the cloak hanging in strips down the boar's flanks. */
@@ -486,7 +541,8 @@ function robe(put: Put, s: Skeleton, sway: number): void {
   put('body', 'robe', { k: 'cloth', rings, ramp: RAGS, look: { folds: [0, 35, -35, 90, -90], lift: 0.02 } });
   // (a rope belt)
   put('body', 'belt', { k: 'band', ring: { c: waistC, u: mul(s.belly[0], B.waistDeep + 1.7), v: mul(s.belly[1], B.waistHalf + 1.7) }, ramp: LEATHER, rows: 1 });
-  // (his thighs in the robe, out over the saddle; his shins down to the stirrups, wrapped)
+  // HIS LEGS, astride, plain to see: the robe split to ride and falling either side over his thighs; dark breeches; tall
+  // riding boots of old leather to the knee, an iron buckle at the top, his feet in the stirrups
   for (const side of ['L', 'R'] as const) {
     const L = side === 'L';
     const hip = L ? s.hipL : s.hipR;
@@ -494,25 +550,30 @@ function robe(put: Put, s: Skeleton, sway: number): void {
     const ankle = L ? s.ankleL : s.ankleR;
     const heel = L ? s.heelL : s.heelR;
     const toe = L ? s.toeL : s.toeR;
-    put(`leg${side}`, 'thigh', { k: 'rod', a: hip, b: knee, ra: 3.0, rb: 2.4, ramp: RAGS });
-    put(`leg${side}`, 'shin', { k: 'rod', a: knee, b: ankle, ra: 1.8, rb: 1.4, ramp: LEATHER });
-    put(`leg${side}`, 'foot', { k: 'rod', a: add(heel, [0, 0, 0.8]), b: add(toe, [0, 0, 0.7]), ra: 1.2, rb: 1.0, ramp: LEATHER });
+    put(`leg${side}`, `leg${side}`, { k: 'rod', a: hip, b: knee, ra: 2.5, rb: 2.0, ramp: BREECH });
+    put(`leg${side}`, `knee${side}`, { k: 'ball', c: knee, ax: [[2.0, 0, 0], [0, 2.0, 0], [0, 0, 2.0]], skin: BOOT });
+    put(`shin${side}`, `boot${side}`, { k: 'rod', a: lerp3(knee, ankle, 0.08), b: ankle, ra: 2.0, rb: 1.6, ramp: BOOT });
+    put(`shin${side}`, `boot${side}`, { k: 'band', ring: { c: lerp3(knee, ankle, 0.18), u: [1.9, 0, 0], v: [0, 1.9, 0] }, ramp: IRON, rows: 1 });
+    put(`shin${side}`, `foot${side}`, { k: 'rod', a: add(heel, [0, 0, 1.0]), b: add(toe, [0, 0, 0.9]), ra: 1.5, rb: 1.2, ramp: BOOT });
+    // (the robe's skirt over the thigh, falling to the knee on its outside, ragged)
+    const out = norm(sub(hip, s.pelvis), [0, L ? 1 : -1, 0]);
+    const skirtTop = add(hip, mul(out, 1.2));
+    const skirtEnd = add(lerp3(hip, knee, 0.85), add(mul(out, 2.2), [0, 0, -3.5]));
+    put(`skirt${side}`, `skirt${side}`, { k: 'rod', a: skirtTop, b: skirtEnd, ra: 3.0, rb: 1.6, ramp: RAGS });
   }
   // THE CLOAK: from his shoulders, down his back and over the boar's flanks, in strips; its collar high and stiff
   const back = mul(s.upper[0], -1);
-  for (let i = 0; i < 9; i++) {
-    const a = (-70 + i * 17.5) * D;
-    const top = add(neckC, add(mul(back, Math.cos(a) * (B.ribDeep + 1.0)), add(mul(cl, Math.sin(a) * (B.shoulderHalf + 0.8)), mul(cu, 1.2))));
+  for (let i = 0; i < 7; i++) {
+    const a = (-48 + i * 16) * D;
+    const top = add(neckC, add(mul(back, Math.cos(a) * (B.ribDeep + 0.6)), add(mul(cl, Math.sin(a) * (B.shoulderHalf + 0.6)), mul(cu, -1.6))));
     const out = add(mul(back, Math.cos(a) * 0.9), mul(cl, Math.sin(a) * 1.3));
-    const long = 24 + 6 * hash(i, 9, 8821);
+    const long = 20 + 6 * hash(i, 9, 8821);
     const sw = Math.sin(TAU * sway + i * 0.7) * 1.2;
     const mid = add(top, add(mul(out, 5), [sw * 0.4, 0, -long * 0.5]));
     const end = add(mid, add(mul(out, 4), [sw, 0, -long * 0.5]));
     put('cloak', 'cloak', { k: 'rod', a: top, b: mid, ra: 3.0, rb: 2.6, ramp: RAGS });
     put('cloak', 'cloak', { k: 'rod', a: mid, b: end, ra: 2.6, rb: 0.9, ramp: RAGS });
   }
-  // (the collar: stiff, high round the back of his neck)
-  put('cloak', 'collar', { k: 'band', ring: { c: add(neckC, mul(cu, 2.2)), u: mul(cf, B.ribDeep + 0.6), v: mul(cl, B.shoulderHalf * 0.75) }, ramp: RAGS, rows: 2 });
   void sub;
 }
 
@@ -556,9 +617,9 @@ function runesAbout(put: Put, st: Stage, s: Skeleton, t: number): void {
   for (let i = 0; i < (seenHand ? 9 : 0); i++) {
     const age = ((t * 2 + i / 9) % 1);
     const a = (i / 9) * TAU * 1.3 + t * 4;
-    const p = add(s.handL, [2.5 + Math.cos(a) * 2.6, Math.sin(a) * 2.6, 1.5 + age * 6]);
+    const p = add(s.handL, [6.5 + Math.cos(a) * 2.2, Math.sin(a) * 2.2, 2.5 + age * 6]);
     if (age > 0.8) continue;
-    put('air', 'runes', { k: 'mote', p, c: age < 0.25 ? BURN[4] : age < 0.55 ? BURN[3] : BURN[2], size: age < 0.4 ? 2 : 1 });
+    put('air', 'runes', { k: 'mote', p, c: age < 0.25 ? BURN[4] : age < 0.55 ? BURN[3] : BURN[2], size: 1 });
   }
   // (three cracked rune stones going round him, slowly, at his waist; a crack burning in each)
   for (let k = 0; k < 3; k++) {
@@ -597,11 +658,12 @@ function wsBits(st: Stage, m: Moment): Bit[] {
   const near = st.near(add(s.pelvis, [0, -3, 0])) > st.near(add(s.pelvis, [0, 3, 0])) ? -1 : 1;
   boarBits(P, put, near);
   robe(put, s, P.sway);
-  arm(put, s, 'L');
-  arm(put, s, 'R');
+  // (his left hand clawed, fingers spread, writing on the air; his right closed round the staff)
+  arm(put, s, 'L', s.chest[2], 0.3, 1.7);
+  arm(put, s, 'R', s.chest[2], 1, 0);
   // (his neck: thin, the cords of it standing out)
   put('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
-  head(put, s);
+  head(put, st, s, m.t);
   staff(put, s, m.t);
   runesAbout(put, st, s, m.t);
   return bits;
@@ -675,6 +737,17 @@ export function wsSolids(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[] 
     { name: 'hips', c: add(s.pelvis, mul(s.hips[2], B.waist * 0.2)), rot: s.hips, h: [B.pelvisDeep + 1.8, B.pelvisHalf + 1.8, B.waist * 0.7] },
   ];
   return { limbs, lumps };
+}
+/** THE BOAR'S BODY AS THE REVIEW SEES IT: its barrel, its shoulders and hump, its chest, its haunch and its belly, each as it is painted (its middle, and its three half-lengths as directions). His legs must go down its sides, never into it. */
+export function boarLumps(P: BoarPose): { name: string; c: V3; ax: [V3, V3, V3] }[] {
+  const ax = (a: V3, b: V3, c: V3): [V3, V3, V3] => [turned(P, mul(a, S)), turned(P, mul(b, S)), turned(P, mul(c, S))];
+  return [
+    { name: 'barrel', c: boarAt(P, [-2, 0, 24]), ax: ax([17, 0, 0], [0, 9.6, 0], [0, 0, 9.4]) },
+    { name: 'shoulders', c: boarAt(P, [9, 0, 27]), ax: ax([10.5, 0, 0], [0, 10.2, 0], [0, 0, 11.2]) },
+    { name: 'chest', c: boarAt(P, [16, 0, 21]), ax: ax([6.8, 0, 0], [0, 9.0, 0], [0, 0, 9.0]) },
+    { name: 'haunch', c: boarAt(P, [-15, 0, 24]), ax: ax([8.2, 0, 0], [0, 8.4, 0], [0, 0, 8.4]) },
+    { name: 'belly', c: boarAt(P, [0, 0, 18]), ax: ax([13, 0, 0], [0, 8.4, 0], [0, 0, 6.2]) },
+  ];
 }
 /** THE SHAPE THE REVIEW TAKES: his body; the staff he carries (held in his right hand); the boar's hooves, what grips the floor (he rides: his feet are in the stirrups, not on it); the points followed from frame to frame. */
 export const WS_SHAPE: BossShape = {
