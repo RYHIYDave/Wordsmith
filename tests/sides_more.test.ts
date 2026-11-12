@@ -103,8 +103,16 @@ test('the sides, their turns and their ways are the Warrior\'s own', () => {
   });
 });
 
-test('OFF: each has the game\'s two sides, and the Brawler\'s moves go his four ways', () => {
-  assert.deepEqual(EIGHT_MORE, { tinkerer: false, brawler: false }, 'off until his yes and the bake');
+// (LIVE SINCE 25.3.6, 11 Nov 2026: THE TINKERER'S switch is ON in the game, at his “Yes, hand both to main (Recommended)” and with
+// her bake; THE BRAWLER'S is still off, until the pictures he would hold in play, about 144 MB against 36, are weighed. This file
+// holds each against the game as it was: it notes what the game has, puts both off, and sets each on itself as before.)
+const GAME_HAS = { ...EIGHT_MORE };
+EIGHT_MORE.tinkerer = false;
+EIGHT_MORE.brawler = false;
+
+test('the game has the Tinkerer on and the Brawler off (25.3.6); OFF, each has the game\'s two sides, and the Brawler\'s moves go his four ways', () => {
+  assert.deepEqual(GAME_HAS, { tinkerer: true, brawler: false }, 'the Tinkerer live, the Brawler waiting for his memory to be weighed');
+  assert.deepEqual(EIGHT_MORE, { tinkerer: false, brawler: false });
   const t = makeTinkererArt();
   const v = makeVeteranArt();
   assert.equal(isEight(t), false, 'the Tinkerer: two sides');

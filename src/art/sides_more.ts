@@ -25,7 +25,7 @@
 export type MoreSide = 'front' | 'toward' | 'frontL' | 'sideL' | 'backL' | 'away' | 'back' | 'side';
 
 /** The switches: each hero's own. OFF until he has seen the pictures and said yes, and the main chat has baked them. */
-export const EIGHT_MORE = { tinkerer: false, brawler: false };
+export const EIGHT_MORE = { tinkerer: true, brawler: false };
 
 /** The eight sides, the two the game has always had first (art/sides.ts EIGHT_ORDER's order). */
 export const MORE_SIDES: readonly MoreSide[] = ['front', 'back', 'toward', 'frontL', 'sideL', 'backL', 'away', 'side'];
