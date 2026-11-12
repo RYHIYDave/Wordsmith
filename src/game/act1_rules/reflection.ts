@@ -136,7 +136,9 @@ const OLD: Record<Style, { tap: Blow; hold: Blow }> = {
  *   6 THE WARRIOR, war axe: Cleave, across before it (the art's arc and reach: AXE_CLEAVE_ARC, AXE_CLEAVE_REACH); the thrown axe,
  *     out at you and back (the art's flight: AXE_FLIGHT, 6 tiles out and back in a second).
  *   7 THE WARRIOR, maul: Smash, brought down just before it; the Earthquake, the floor heaving round it.
- * Their reach and size the first reflections' where the move is theirs, and near them where it is new (medium: two blows).
+ * Their reach and size the first reflections' where the move is theirs, and near them where it is new (medium: two blows). The
+ * new ones are made close up too (a vial at your feet, the axe thrown from beside you): a copy standing idle at your side is not
+ * fighting you.
  */
 export const UP: readonly { tap: UpBlow; hold: UpBlow }[] = [
   {
@@ -150,8 +152,8 @@ export const UP: readonly { tap: UpBlow; hold: UpBlow }[] = [
     hold: { blow: { k: 'ring', r: 2.6, at: 'self', ahead: 0, sfx: 'curse', near: 0, far: 2.6 }, hit: 0.8, play: 2.2 },
   },
   {
-    tap: { blow: { k: 'lob', burst: 1.2, speed: 7, after: 0.15, look: 'vial', dmg: 1, sfx: 'vial', boom: 'explode', near: 1.5, far: 7 }, hit: 0.5, play: 1.2 },
-    hold: { blow: { k: 'ring', r: 1.8, at: 'mark', ahead: 0, sfx: 'whistle', near: 1.5, far: 7 }, hit: 0.667, play: 1.933 },
+    tap: { blow: { k: 'lob', burst: 1.2, speed: 7, after: 0.15, look: 'vial', dmg: 1, sfx: 'vial', boom: 'explode', near: 0, far: 7 }, hit: 0.5, play: 1.2 },
+    hold: { blow: { k: 'ring', r: 1.8, at: 'mark', ahead: 0, sfx: 'whistle', near: 0, far: 7 }, hit: 0.667, play: 1.933 },
   },
   {
     tap: { blow: { k: 'fan', reach: 1.5, half: 0.6, sfx: 'punchWhoosh', near: 0, far: 1.6 }, hit: 0.4, play: 0.933 },
@@ -159,7 +161,7 @@ export const UP: readonly { tap: UpBlow; hold: UpBlow }[] = [
   },
   {
     tap: { blow: { k: 'fan', reach: 1.7, half: (75 * Math.PI) / 180, sfx: 'swing', near: 0, far: 1.9 }, hit: 0.333, play: 1.2 },
-    hold: { blow: { k: 'shot', n: 1, spread: 0, speed: 12, far: 6, hit: 0.55, back: true, look: 'axe', dmg: 1, sfx: 'whirl', near: 1.5 }, hit: 0.367, play: 1.967 },
+    hold: { blow: { k: 'shot', n: 1, spread: 0, speed: 12, far: 6, hit: 0.55, back: true, look: 'axe', dmg: 1, sfx: 'whirl', near: 0 }, hit: 0.367, play: 1.967 },
   },
   {
     tap: { blow: { k: 'ring', r: 1.1, at: 'ahead', ahead: 1.1, sfx: 'slam', near: 0, far: 1.9 }, hit: 0.433, play: 1.267 },
