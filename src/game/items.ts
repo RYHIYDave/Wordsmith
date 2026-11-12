@@ -1156,6 +1156,73 @@ export function rollItem(ilvl: number, rng: RNG, opts: RollOpts = {}): Item {
   return makeItem(base, level, rarity, affixes, nameFor(base, rarity, affixes, rng));
 }
 
+// ---------------------------------------------------------------------------------------------
+// UNIQUE ITEMS (game/uniques.ts, behind UNIQUES; his rules, 4 Oct and 11 Nov 2026: orange, one or two special modifiers
+// normal gear cannot roll, “They may have other stats, and those may have a range, but those will always be the same and
+// the uniques are uncraftable”). What makes one here: its base (the best name of its kind unlocked at the item level), its
+// fixed list of ordinary stats, each rolled in the range a found affix of that stat has at that level (so only the numbers
+// roll), and its own name. What it does is game/uniques.ts and game/game.ts.
+
+/** The kinds of base a unique may be made on, by the stem of their ids ('hood', 'lifering', 'greatsword', 'tome'). */
+export function baseStems(): string[] {
+  return BASE_GROUPS.map((g) => g.tiers[0].id.replace(/1$/, ''));
+}
+
+/** The slot of the bases of that stem, or null if there is no such kind. */
+export function stemSlot(stem: string): Slot | null {
+  const g = BASE_GROUPS.find((q) => q.tiers[0].id === `${stem}1`);
+  return g ? g.slot : null;
+}
+
+/** The weapon kind of the bases of that stem, if they are weapons. */
+export function stemWeapon(stem: string): WeaponKind | null {
+  const g = BASE_GROUPS.find((q) => q.tiers[0].id === `${stem}1`);
+  return g ? g.weapon : null;
+}
+
+/** May a found affix of this stat sit on this slot (AFFIX_FAMILIES)? A unique's ordinary stats are kept to these. */
+export function statFits(stat: StatKey, slot: Slot): boolean {
+  const f = stat === 'dmgMin' ? AFFIX_FAMILIES.find((q) => q.stat === 'damage') : FAMILY_BY_STAT.get(stat);
+  return !!f && f.weight > 0 && f.slots.includes(slot);
+}
+
+/** The least and the most a found affix of this stat rolls at an item level (“Adds X-Y Damage”, 'dmgMin': its average hit). */
+export function statRangeAt(stat: StatKey, ilvl: number): [number, number] {
+  const level = cleanLevel(ilvl);
+  if (stat === 'dmgMin') {
+    const [lo, hi] = addedDamageAt(level);
+    return [Math.max(1, Math.round(lo)), Math.max(1, Math.round(hi))];
+  }
+  const f = FAMILY_BY_STAT.get(stat);
+  if (!f) return [0, 0];
+  const [lo, hi] = familyRange(f, level);
+  const step = 1 / 10 ** STAT_INFO[stat].dp;
+  const min = Math.max(step, roundStat(stat, lo));
+  return [min, Math.max(min, roundStat(stat, hi))];
+}
+
+/**
+ * A unique piece: `id` (game/uniques.ts), on the best base of kind `stem` unlocked at the item level, called `name`, with
+ * the ordinary stats `stats` in that order, each rolled as a found affix of its stat is at that level. `reqLevel`: the
+ * level it asks for, where that is not its item level's. Null if there is no such kind of base.
+ */
+export function makeUniqueItem(id: string, stem: string, name: string, stats: readonly StatKey[], ilvl: number, rng: RNG, reqLevel?: number): Item | null {
+  const level = cleanLevel(ilvl);
+  const g = BASE_GROUPS.find((q) => q.tiers[0].id === `${stem}1`);
+  if (!g) return null;
+  const unlocked = g.tiers.filter((b) => b.minIlvl <= level);
+  const base = unlocked[unlocked.length - 1] ?? g.tiers[0];
+  const affixes: Affix[] = [];
+  for (const stat of stats) {
+    const f = stat === 'dmgMin' ? AFFIX_FAMILIES.find((q) => q.stat === 'damage') : FAMILY_BY_STAT.get(stat);
+    if (f) affixes.push(rollAffix(f, level, rng));
+  }
+  const it = makeItem(base, level, 3, affixes, name);
+  it.unique = id;
+  if (reqLevel !== undefined) it.reqLevel = Math.max(1, Math.floor(reqLevel));
+  return it;
+}
+
 const WEAPON_KIND_NAME: Record<WeaponKind, string> = { sword: 'Sword', greatsword: 'Greatsword', bow: 'Bow', wand: 'Wand', staff: 'Staff', wraps: CLASS_WEAPON_NAME.wraps, tome: CLASS_WEAPON_NAME.tome, wrench: CLASS_WEAPON_NAME.wrench };
 const OFFHAND_KIND_NAME: Record<OffhandKind, string> = { shield: 'Shield', quiver: 'Quiver', focus: 'Focus' };
 const SLOT_KIND_NAME: Record<Slot, string> = { mainhand: 'Weapon', offhand: 'Off hand', helm: 'Helmet', chest: 'Armour', gloves: 'Gloves', belt: 'Belt', boots: 'Boots', amulet: 'Amulet', ring: 'Ring' };
@@ -1318,6 +1385,8 @@ export function imbueOptions(word: WordId, slot: Slot, ilvl: number): ImbueOptio
 
 /** How many more words a piece will take: four properties in all, less the affixes it came with and the words already in it. */
 export function itemRoom(item: Item): number {
+  // (UNIQUE ITEMS: uncraftable, his words of 11 Nov 2026: “the uniques are uncraftable”)
+  if (item.rarity === 3) return 0;
   return Math.max(0, ITEM_ROOM - item.affixes.length - item.imbues.length);
 }
 
@@ -1437,6 +1506,7 @@ export function imbueOptionsFor(item: Item, word: WordId): ImbueOption[] {
 
 /** Why this word cannot be burned into this piece, or null if it can. */
 export function imbueProblem(item: Item, word: WordId): string | null {
+  if (item.rarity === 3) return 'A unique piece takes no word';
   if (itemRoom(item) <= 0) return 'That piece is full';
   if (imbueOptionsFor(item, word).length === 0) return 'It already has what this word gives';
   return null;

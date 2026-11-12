@@ -633,7 +633,9 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   const ROWS = 3;
   // (THE FIRST LEVELS: none before the ring is lit, and none on an ability not open yet: game.slots, game.moveOpen)
   const [nf, nb] = game.slots();
-  const [maxF, maxB] = socketCount(999);
+  const [maxF0, maxB] = socketCount(999);
+  // (UNIQUE ITEMS: The Third Word, a third slot in front of the tap attack: the rows are as wide as the widest of them)
+  const maxF = Math.max(maxF0, ...h.skills.slice(0, 3).map((k) => (game.moveOpen(h.skills.indexOf(k)) ? k.front.length : 0)));
   // the attack's own plate: as wide as the longest of the three names needs (WHIRLWIND is wider than the 66 the others fit in)
   const AW = Math.max(66, 22 + Math.max(...h.skills.slice(0, 3).map((k) => textWidth(SKILLS[k.id].name.toUpperCase()))) + 4);
   const SQ = CELL + 2; // a socket and the air beside it
@@ -650,7 +652,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     const group = (s: number, sd: 'front' | 'behind', gx: number, gy: number): void => {
       const sk = h.skills[s];
       const open = game.moveOpen(s);
-      const n = !open ? 0 : sd === 'front' ? nf : nb;
+      const n = !open ? 0 : sd === 'front' ? Math.max(nf, sk.front.length) : nb;
       const max = sd === 'front' ? maxF : maxB;
       const words = sd === 'front' ? sk.front : sk.behind;
       // (they stand in the order the name is read in: in front the first word furthest from the
@@ -1425,7 +1427,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     if (!reading && !first) {
       const s = Math.max(0, Math.min(ROWS - 1, st.focus));
       const sk = h.skills[s];
-      const parts = nameParts(SKILLS[sk.id], sk.front, sk.behind);
+      const parts = nameParts(SKILLS[sk.id], sk.eff ? sk.eff.front : sk.front, sk.eff ? sk.eff.behind : sk.behind);
       for (const ln of nameLines(parts, mini.w)) {
         if (y + 8 <= end) drawName(g, ln, mini.x + namePartsWidth(ln) / 2, y);
         y += 10;
@@ -1659,7 +1661,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
         const sk = h.skills[st.look.skill];
         const w = (st.look.side === 'front' ? sk.front : sk.behind)[st.look.idx];
         if (w) {
-          name(nameParts(SKILLS[sk.id], sk.front, sk.behind));
+          name(nameParts(SKILLS[sk.id], sk.eff ? sk.eff.front : sk.front, sk.eff ? sk.eff.behind : sk.behind));
           const label = st.look.side === 'front' ? WORDS[w].front : WORDS[w].behind;
           // (RANK II: a ranked word's line carries its rank, "Poison II:")
           const tag = ['', '', ' II', ' III', ' IV', ' V'][rankOf(w)] ?? '';
@@ -1781,7 +1783,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   if (st.flash && st.flash.t < 1.1 && page === 'attacks') {
     const s = st.flash.skill;
     const sk = h.skills[s];
-    const parts = nameParts(SKILLS[sk.id], sk.front, sk.behind);
+    const parts = nameParts(SKILLS[sk.id], sk.eff ? sk.eff.front : sk.front, sk.eff ? sk.eff.behind : sk.behind);
     const scale = namePartsWidth(parts, 3) <= W - 16 ? 3 : namePartsWidth(parts, 2) <= W - 16 ? 2 : 1;
     const k = st.flash.t;
     // (a name too long for the screen even in the ordinary letters goes on two lines)

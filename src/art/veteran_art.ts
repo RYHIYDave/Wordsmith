@@ -31,6 +31,8 @@ import type { VetBlowId } from '../game/veteran';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { lazyFrames, toSprite } from './kit';
 import type { GameView } from './skin';
+import { EIGHT_MORE, MORE_SIDES, MORE_TURN } from './sides_more';
+import type { MoreSide } from './sides_more';
 import { VET_CANVAS, paintVeteran } from '../dev/sculpt_veteran';
 import type { VetPose } from '../dev/sculpt_veteran';
 import { VET_RUN, VET_STAND, VET_TILE, VFPS, carryAt, motionById, spinAt, vetAt } from '../dev/veteran_moves';
@@ -42,6 +44,12 @@ import type { VetFxLayer } from './veteran_fx_art';
 const AURA: Light = { x: VET_CANVAS.ax - 4, y: VET_CANVAS.ay - 30, r: 46, color: '#28dcf0', a: 0.2 };
 /** From in front as the game shows heroes; from behind truly, turned +90° (as the art's film). */
 export const VET_TURN: Record<GameView, number> = { front: 0, back: 90 };
+/**
+ * A SIDE OF HIS: the two the game has always had, or one of the six more he has from all eight sides (art/sides_more.ts
+ * EIGHT_MORE.brawler; the Tinkerer chat, 11 Nov 2026): the same figure at the same frame, truly turned (MORE_TURN: `front` and
+ * `back` are VET_TURN's own 0 and 90, so those two are the same pictures to the pixel).
+ */
+export type VetSide = MoreSide;
 /** His moves made by a press, in the order the painter paints them (the most thrown first). */
 export const VET_LISTS: readonly VetBlowId[] = ['jab', 'cross', 'hook', 'roundkick', 'dodge', 'push', 'elbow', 'uppercut', 'knee', 'spinkick', 'spinkickClose'];
 /** How far his run's round carries him, tiles (its 12 frames at the game's hero pace). */
@@ -65,16 +73,16 @@ export function vetHalvesOf(m: VetMotion): [number, number] | null {
  * Him at a frame of a move (fractional frames for the half-frames), in a view: THE ART'S POSE PAINTED AS THE ART PAINTS IT.
  * The same pose is the same picture, painted once (the first frame of every move is his stance, still).
  */
-const madeIn = new Map<GameView, Map<string, Sprite>>();
+const madeIn = new Map<VetSide, Map<string, Sprite>>();
 const num = (v: unknown): string =>
   typeof v === 'number' ? (Object.is(v, -0) ? '-0' : String(v)) : Array.isArray(v) ? `[${v.map(num).join(',')}]` : v && typeof v === 'object' ? `{${Object.keys(v).sort().map((k) => `${k}:${num((v as Record<string, unknown>)[k])}`).join(',')}}` : JSON.stringify(v) ?? 'undefined';
 /** The pose and the turn a frame of his is painted from (the art's: vetAt, and the move's whole turn on the view's). */
-export function vetPoseAt(view: GameView, m: VetMotion, f: number): { pose: VetPose; turn: number } {
+export function vetPoseAt(view: VetSide, m: VetMotion, f: number): { pose: VetPose; turn: number } {
   const p = vetAt(m, f);
-  return { pose: p, turn: VET_TURN[view] + spinAt(m, f) };
+  return { pose: p, turn: MORE_TURN[view] + spinAt(m, f) };
 }
 /** Him painted at a frame of a move, as a frame of the game's (a Sprite at the game's grain, his floor point its anchor). */
-export function vetFrame(view: GameView, m: VetMotion, f: number): Sprite {
+export function vetFrame(view: VetSide, m: VetMotion, f: number): Sprite {
   let made = madeIn.get(view);
   if (!made) madeIn.set(view, (made = new Map()));
   const { pose, turn } = vetPoseAt(view, m, f);
@@ -92,7 +100,7 @@ function readsOf(list: () => readonly Sprite[], picks: readonly number[]): Sprit
 }
 
 /** Each frame of a move, frame 0 to `long` - 1, at 30 a second; while none is painted where the game is played, `stand`. */
-function moveClip(view: GameView, m: VetMotion, stand: () => readonly Sprite[] | undefined): Clip {
+function moveClip(view: VetSide, m: VetMotion, stand: () => readonly Sprite[] | undefined): Clip {
   const c: Clip = { frames: lazyFrames(m.long, (i) => vetFrame(view, m, i), HEAVY_HIM, stand), fps: VFPS };
   const at = m.strikes.length ? Math.min(...m.strikes.map((s) => s.at)) : undefined;
   if (at !== undefined) c.hit = at / VFPS;
@@ -100,8 +108,8 @@ function moveClip(view: GameView, m: VetMotion, stand: () => readonly Sprite[] |
 }
 
 /** Him standing and running, in a view: one list of each for each view, his class card's and the game's alike. */
-const standRuns = new Map<GameView, { idle: Sprite[]; walk: Sprite[] }>();
-function standRun(view: GameView): { idle: Sprite[]; walk: Sprite[] } {
+const standRuns = new Map<VetSide, { idle: Sprite[]; walk: Sprite[] }>();
+function standRun(view: VetSide): { idle: Sprite[]; walk: Sprite[] } {
   const had = standRuns.get(view);
   if (had) return had;
   const idle = lazyFrames(VET_STAND.long, (i) => vetFrame(view, VET_STAND, i), HEAVY_HIM);
@@ -111,7 +119,7 @@ function standRun(view: GameView): { idle: Sprite[]; walk: Sprite[] } {
   return made;
 }
 
-function hisSet(view: GameView): AnimSet {
+function hisSet(view: VetSide): AnimSet {
   const { idle, walk } = standRun(view);
   const stand = (): readonly Sprite[] => idle;
   const vet: Record<string, Clip> = {};
@@ -146,9 +154,16 @@ function hisSet(view: GameView): AnimSet {
   };
 }
 
-/** The Veteran's pictures, both views. */
+/**
+ * The Veteran's pictures: both views; with art/sides_more.ts EIGHT_MORE.brawler on, ALL EIGHT SIDES, each truly painted and none
+ * a mirror (art/sides.ts: the game then shows the side for the way he faces, as it does the Warrior's). His class card keeps
+ * its two: a card shows him from in front.
+ */
 export function makeVeteranArt(): ActorArt {
-  return { front: hisSet('front'), back: hisSet('back') };
+  if (!EIGHT_MORE.brawler) return { front: hisSet('front'), back: hisSet('back') };
+  const all = {} as Record<VetSide, AnimSet>;
+  for (const side of MORE_SIDES) all[side] = hisSet(side);
+  return all;
 }
 /** HIM ON HIS CLASS CARD (ui/panels.ts): standing and running, all a card shows. */
 export function makeVeteranCardArt(): ActorArt {

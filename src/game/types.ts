@@ -366,6 +366,12 @@ export interface Item {
    * the same one twice.
    */
   imbues: Imbue[];
+  /**
+   * UNIQUE ITEMS (game/uniques.ts, behind UNIQUES): which unique it is (its id there). A unique is rarity 3, orange; its
+   * `affixes` are its fixed list of ordinary stats, only their numbers rolled; no word is burned into it, and it will not
+   * split or bind. Absent on every other piece.
+   */
+  unique?: string;
 }
 
 // ---------------------------------------------------------------------------------------------

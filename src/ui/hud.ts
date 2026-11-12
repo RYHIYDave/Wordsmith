@@ -1117,7 +1117,8 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   // are not stacked up there (a phone held upright has no room for it: the pips say it)
   if (dodgeShown) {
     const sw = h.skills[2];
-    const parts = nameParts(SKILLS[sw.id], sw.front, sw.behind);
+    // (UNIQUE ITEMS: its name by the words it works with, a unique's added word among them: SkillState.eff)
+    const parts = nameParts(SKILLS[sw.id], sw.eff ? sw.eff.front : sw.front, sw.eff ? sw.eff.behind : sw.behind);
     const named = parts.length > 1 && !stacked;
     if (named) {
       let nx = W - 3 - parts.reduce((a, p, i) => a + textWidth(p.text, 'small') + (i ? 3 : 0), 0);

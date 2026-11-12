@@ -35,6 +35,7 @@
 // knee; else the spinning jump kick.
 
 import { VET_BAKED } from './veteran_baked';
+import { EIGHT_MORE, MORE_WAY, moreSideOf } from '../art/sides_more';
 
 /**
  * THE SWITCH: off, the Brawler is as he was (and he is left out of the release besides: game/brawler.ts BRAWLER, his
@@ -335,16 +336,26 @@ export function vetCarryAt(id: VetBlowId, f: number): [number, number] {
  * of them to what he aims at, and its force goes out the way his picture throws it.
  */
 export function vetFacing(dx: number, dy: number): [number, number] {
+  // (HIS EIGHT WAYS, while art/sides_more.ts EIGHT_MORE.brawler is on: he is painted from all eight sides, so a move faces the
+  // nearest of the eight ways his picture can face, 45 degrees apart: the four above and straight down, up, left and right
+  // of the screen; a unit vector, so he is carried as far along it. The Tinkerer chat, 11 Nov 2026.)
+  if (EIGHT_MORE.brawler) {
+    const w = MORE_WAY[moreSideOf(dx, dy)];
+    return [w[0], w[1]];
+  }
   if (Math.abs(dx) >= Math.abs(dy)) return [dx >= 0 ? 1 : -1, 0];
   return [0, dy >= 0 ? 1 : -1];
 }
 
-/** His left on the game's floor, facing (fx, fy): (fy, -fx); on a picture drawn mirrored (fx - fy < 0), the world's other side, as the picture has it. */
+/**
+ * His left on the game's floor, facing (fx, fy): (fy, -fx); on a picture drawn mirrored (fx - fy < 0), the world's other side, as
+ * the picture has it. (From all eight sides no picture of his is a mirror: his left is his left, whichever way he faces.)
+ */
 export function vetLeft(fx: number, fy: number): [number, number] {
-  return fx - fy < 0 ? [-fy, fx] : [fy, -fx];
+  return !EIGHT_MORE.brawler && fx - fy < 0 ? [-fy, fx] : [fy, -fx];
 }
 
-/** His left about the way his blow goes out (ax, ay), on the side his picture (facing fx, fy) has it: mirrored as it is drawn mirrored. */
+/** His left about the way his blow goes out (ax, ay), on the side his picture (facing fx, fy) has it: mirrored as it is drawn mirrored (from all eight sides, never). */
 export function vetBlowLeft(fx: number, fy: number, ax: number, ay: number): [number, number] {
-  return fx - fy < 0 ? [-ay, ax] : [ay, -ax];
+  return !EIGHT_MORE.brawler && fx - fy < 0 ? [-ay, ax] : [ay, -ax];
 }

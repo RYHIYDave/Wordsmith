@@ -21,7 +21,9 @@ import { Px, drawSprite, flipSprite } from '../engine/px';
 import type { Game } from '../game/game';
 import type { VetGlobe, VetPlaying } from '../game/veteran';
 import { VETERAN } from '../game/veteran';
-import type { ActorArt } from '../art/actor_types';
+import type { ActorArt, AnimSet } from '../art/actor_types';
+import { EIGHT_MORE, MORE_WAY, moreSideOf } from '../art/sides_more';
+import type { MoreSide } from '../art/sides_more';
 import { FIGURE_SIZE, figureOf } from '../art/bestiary';
 import { toSprite } from '../art/kit';
 import { vetFxNone, vetJointAt, vetLastHit, vetLiftAt } from '../art/veteran_fx_art';
@@ -48,12 +50,24 @@ const FILL: Record<'punch' | 'kick' | 'jump', number> = { punch: 4, kick: 9, jum
  * behind facing away; and the game's floor axes of it, his forward and his left (on the mirrored picture his left is the
  * world's right).
  */
-export function vetView(fx: number, fy: number): { left: boolean; away: boolean; f: [number, number]; l: [number, number] } {
+export function vetView(fx: number, fy: number): { left: boolean; away: boolean; side: MoreSide | null; f: [number, number]; l: [number, number] } {
+  // (FROM ALL EIGHT SIDES, art/sides_more.ts EIGHT_MORE.brawler: the side for the way he faces, truly painted and never
+  // mirrored, so his left on the picture is his left on the floor, (fy, -fx), whichever way he faces)
+  if (EIGHT_MORE.brawler) {
+    const side = moreSideOf(fx, fy);
+    const w = MORE_WAY[side];
+    return { left: false, away: false, side, f: [w[0], w[1]], l: [w[1], -w[0]] };
+  }
   const left = fx - fy < 0;
   const away = fx + fy < -0.2;
   const f: [number, number] = away ? (left ? [-1, 0] : [0, -1]) : left ? [0, 1] : [1, 0];
   const s = left ? -1 : 1;
-  return { left, away, f, l: [f[1] * s, -f[0] * s] };
+  return { left, away, side: null, f, l: [f[1] * s, -f[0] * s] };
+}
+/** His pictures for a view: of the side he faces, where he is painted from all eight; else from in front or from behind. */
+function setOf(art: ActorArt, v: { away: boolean; side: MoreSide | null }): AnimSet {
+  const mine = v.side ? (art as unknown as Partial<Record<MoreSide, AnimSet>>)[v.side] : undefined;
+  return mine ?? (v.away ? art.back : art.front);
 }
 /** Where on the screen a point of a move's scene (his measure, along his forward and left, from a floor point) is, from that point (game pixels). */
 function screenOf(v: { f: [number, number]; l: [number, number] }, a: number, b: number): [number, number] {
@@ -237,7 +251,7 @@ export class VeteranFx {
     const mv = this.moveOf(game);
     if (!mv) return null;
     const v = vetView(mv.fx, mv.fy);
-    const c = (v.away ? art.back : art.front).clips?.vet?.[mv.id];
+    const c = setOf(art, v).clips?.vet?.[mv.id];
     if (!c || !c.frames.length) return null;
     const s = c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(mv.f)))];
     return v.left ? flipSprite(s) : s;
@@ -297,7 +311,7 @@ export class VeteranFx {
     const art = this.art;
     if (!art) return null;
     const v = vetView(p.fx, p.fy);
-    const list = (v.away ? art.back : art.front).clips?.vetFx?.[p.m.id]?.[layer];
+    const list = setOf(art, v).clips?.vetFx?.[p.m.id]?.[layer];
     const F = Math.floor(p.f);
     if (!list || F < 0 || F >= list.length) return null;
     const s = list[F];
@@ -340,7 +354,7 @@ export class VeteranFx {
     const live = this.plays.find((p) => p.live);
     if (live && this.moveOf(game)) {
       const v = vetView(live.fx, live.fy);
-      const set = v.away ? art.back : art.front;
+      const set = setOf(art, v);
       const list = set.clips?.vet?.[live.m.id];
       const halves = set.clips?.vetHalves?.[live.m.id];
       const F = Math.floor(live.f);

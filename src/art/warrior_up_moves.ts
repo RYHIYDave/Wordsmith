@@ -44,12 +44,12 @@ export const WU_REST: Bones = { ...WU_REST_SEEN, ...GUARD_LEGS };
 export const WU_TOWN_REST: Bones = { ...WU_TOWN_REST_SEEN, lfy: 8.9, rfy: -6.3 };
 
 /** A foot standing on its toes: the heel up by `deg`, the ball still on the floor (the ankle is that much higher). As moves3.ts. */
-function onToes(deg: number): number {
+export function onToes(deg: number): number {
   const a = (deg * Math.PI) / 180;
   return BODY.ball * Math.sin(a) + B.ankle * Math.cos(a) - B.ankle;
 }
 /** Where the back foot stands from a blow on (as moves3.ts backFoot): its ball where the stance has it, turned -8, on its toes 36. */
-function backFoot(heel = 36, turn = -8): Partial<Bones> {
+export function backFoot(heel = 36, turn = -8): Partial<Bones> {
   const a36 = (heel * Math.PI) / 180;
   const t8 = (turn * Math.PI) / 180;
   // (the ball of his back foot in his guard: the foot flat, turned as it is)
@@ -65,11 +65,11 @@ export function plantedFeet(): Partial<Bones> {
   return { lfx: WU_REST.lfx, lfy: WU_REST.lfy, lfz: 0, lfp: 0, lft: WU_REST.lft, lk: WU_REST.lk, ...backFoot(), rk: -6 };
 }
 /** The first moment of the skip: both feet just off the floor (the front foot lifting, the back pushing up off its ball). */
-function lightFeet(): Partial<Bones> {
+export function lightFeet(): Partial<Bones> {
   return { lfx: 10.6 + DF, lfz: 1.6, lfp: -6, lft: 3, lk: 4, rfx: -9 + DB, rfp: 20, rfz: onToes(20) + 1.3, rft: -40, rk: -24 };
 }
 /** Both feet off the floor for the skip-step the game's step carries him on (TUNE.swingStep in TUNE.swingStepTime). */
-function skipFeet(): Partial<Bones> {
+export function skipFeet(): Partial<Bones> {
   return { lfx: 11 + DF, lfz: 2.6, lfp: -10, lft: 2, lk: 4, rfx: -9 + DB, rfp: 30, rfz: onToes(30) + 1.8, rft: -24, rk: -10 };
 }
 const hilt = (x: number, y: number, z: number): Partial<Bones> => ({ rhIn: 0, rhx: x, rhy: y, rhz: z });

@@ -19,12 +19,13 @@ function attrOf(word: WordId, d: Derived): number {
 }
 
 /** Why a word cannot go into a socket group, or null if it can. */
-export function socketProblem(group: readonly (WordId | null)[], word: WordId): string | null {
+export function socketProblem(group: readonly (WordId | null)[], word: WordId, most = 1): string | null {
   if (!group.includes(null)) return 'No free socket';
   if (group.includes(word)) return 'Already there';
   // ONE DAMAGE WORD A SIDE (his answer, 8 Oct 2026, 16:53: "Yes, one a side (Recommended)"; before, one element a side).
   // (WORDMELDING: a melded word takes that place, his pick of 13 Oct 2026, 12:36: "Yes, it takes that place (Recommended)")
-  if (isDamageWord(word) && group.some((w) => w !== null && isDamageWord(w))) return 'One damage word per side';
+  // (UNIQUE ITEMS: `most`, how many damage words a side holds: one; two with Polyglot's Mantle worn)
+  if (isDamageWord(word) && group.filter((w) => w !== null && isDamageWord(w)).length >= most) return most > 1 ? 'Two damage words per side' : 'One damage word per side';
   return null;
 }
 
@@ -44,12 +45,26 @@ export function skillName(def: SkillDef, front: readonly (WordId | null)[], behi
  * `limit`: how the abilities that wait are held back. 'cooldown': they wait between uses and cost
  * no mana. 'mana': they cost mana and need only a moment between uses.
  */
-export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], behind: readonly (WordId | null)[], grows: Attr | ClassId, d: Derived, limit: Limit = 'cooldown'): Resolved {
+export interface WordBoost {
+  /** How many times its own figure every word on the attack is (1: as ever). */
+  boost?: number;
+  /** The same for the two words of a melded word alone, on top. */
+  meldBoost?: number;
+  /** A meld the words in front make, given as well as what they do apart (the Amalgam's Heart), or null. */
+  meld?: MeldId | null;
+}
+
+/**
+ * (UNIQUE ITEMS, game/uniques.ts: `bent`, what a unique makes of the attack's words: how much stronger each word's own figure
+ * is, “half as strong again”, as RANK II's is for a ranked word, what its attribute adds staying on top; and a meld given
+ * without melding. Left out: every word as it always was, to the last digit.)
+ */
+export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], behind: readonly (WordId | null)[], grows: Attr | ClassId, d: Derived, limit: Limit = 'cooldown', bent?: WordBoost): Resolved {
   // (WORDMELDING: a melded word does the work of both its words, so for all that follows it is both of
   // them; its own twist is added after, by `meld` and `meldBehind`)
   const has = (g: readonly (WordId | null)[], w: WordId): boolean => g.some((x) => x !== null && (x === w || partsOf(x).includes(w)));
   const meldIn = (g: readonly (WordId | null)[]): MeldId | null => (g.find((x): x is MeldId => x !== null && isMeld(x)) ?? null);
-  const meld = meldIn(front);
+  const meld = bent?.meld ?? meldIn(front);
   const meldBehind = meldIn(behind);
   // (one enemy at a time: a blade, a shot, a familiar's bolt. A word that makes "the hit" bigger gives these a splash.)
   const single = def.kind === 'melee' || def.kind === 'projectile' || def.kind === 'summon';
@@ -84,7 +99,16 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     const x = side.find((y) => y !== null && isRank(y) && RANK_OF[y].word === w);
     return x ? rankOf(x) : 1;
   };
-  const rk = (side: readonly (WordId | null)[], w: WordId): number => 1 + RANK_TUNE.step * (rankIn(side, w) - 1);
+  // (UNIQUE ITEMS: `st`, how many times its own figure word `w` on this side is, by what is worn: 1 with nothing worn; `cap`, a
+  // limit that grows with it)
+  const B = bent?.boost ?? 1;
+  const MB = bent?.meldBoost ?? 1;
+  const st = (side: readonly (WordId | null)[], w: WordId): number => {
+    if (MB === 1) return B;
+    const m = meldIn(side);
+    return m && partsOf(m).includes(w) ? B * MB : B;
+  };
+  const rk = (side: readonly (WordId | null)[], w: WordId): number => (1 + RANK_TUNE.step * (rankIn(side, w) - 1)) * st(side, w);
   const rn = (side: readonly (WordId | null)[], w: WordId): string => ['', '', ' II', ' III', ' IV', ' V'][rankIn(side, w)] ?? '';
   let dmgMult = def.dmg * (1 + (prim * ATTR_GIVES.primaryDmg) / 100);
   let size = d.area;
@@ -126,7 +150,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   if (has(front, 'swift')) {
     const a = growsBy(front, 'swift');
     if (def.cooldown > 0) {
-      const cut = Math.min(60, 20 + 0.3 * a);
+      const cut = Math.min(60, 20 * st(front, 'swift') + 0.3 * a);
       if (byMana) {
         mana *= 1 - cut / 100;
         lines.push(`Swift: costs ${pct(cut)} less mana.`);
@@ -135,7 +159,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
         lines.push(`Swift: ${pct(cut)} shorter cooldown.`);
       }
     } else {
-      const fast = 25 + 0.5 * a;
+      const fast = 25 * st(front, 'swift') + 0.5 * a;
       rate *= 1 + fast / 100;
       lines.push(`Swift: +${pct(fast)} attack speed.`);
     }
@@ -144,7 +168,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   if (has(front, 'twin')) {
     // The owner's rule for words that add: they take something too. Two of everything, each the
     // weaker for it, and (for shots) no enemy takes both: a bow at arm's length does not double.
-    const each = Math.min(80, 55 + 0.25 * growsBy(front, 'twin'));
+    const each = Math.min(st(front, 'twin') > 1 ? 100 : 80, 55 * st(front, 'twin') + 0.25 * growsBy(front, 'twin'));
     r.count = 2;
     r.countDmg = each / 100;
     lines.push(
@@ -189,7 +213,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     else lines.push(`Lightning${rn(front, 'lightning')}: lightning damage, arcs to ${r.arcs} more enemies for ${pct(arc)}.`);
   }
   if (has(front, 'leech')) {
-    r.leech = 1 + 0.08 * growsBy(front, 'leech');
+    r.leech = st(front, 'leech') + 0.08 * growsBy(front, 'leech');
     lines.push(`Leeching: heals ${r.leech.toFixed(1)} life per enemy hit.`);
   }
   if (has(front, 'poison')) {
@@ -201,7 +225,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`Poison${rn(front, 'poison')}: ${meld === 'blight' ? 'poisons' : 'hits 20% softer; poisons'} for ${pct(dose)} of the hit a second for ${TUNE.poisonTime} s. Up to ${TUNE.poisonStacks} doses add up.`);
   }
   if (has(front, 'volatile')) {
-    const boom = 12 + 0.2 * growsBy(front, 'volatile');
+    const boom = 12 * st(front, 'volatile') + 0.2 * growsBy(front, 'volatile');
     r.volatile = boom / 100;
     lines.push(`Volatile: enemies it kills explode for ${pct(boom)} of their life.`);
   }
@@ -211,7 +235,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   if (has(front, 'heavy')) {
     // slower, much harder, and it stuns
     const a = growsBy(front, 'heavy');
-    const more = 50 + 0.5 * a;
+    const more = 50 * st(front, 'heavy') + 0.5 * a;
     dmgMult *= 1 + more / 100;
     if (def.cooldown > 0) {
       if (byMana) mana *= HEAVY.slower;
@@ -223,7 +247,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   if (has(front, 'precise')) {
     // his change (5 Oct): more damage, not a critical chance; and a smaller area
     const a = growsBy(front, 'precise');
-    const more = 30 + 0.5 * a;
+    const more = 30 * st(front, 'precise') + 0.5 * a;
     dmgMult *= 1 + more / 100;
     size *= PRECISE.area;
     r.precise = true;
@@ -243,29 +267,29 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   }
   if (has(front, 'guarding')) {
     const a = growsBy(front, 'guarding');
-    r.shield = Math.min(0.2, GUARD.shield + 0.001 * a);
+    r.shield = Math.min(0.2 * st(front, 'guarding'), GUARD.shield * st(front, 'guarding') + 0.001 * a);
     lines.push(`Guarding: each use gives you a shield of ${pct(r.shield * 100)} of your life for ${GUARD.shieldTime} s.`);
   }
   // THE CITY'S WORDS IN FRONT (Version 23.8; his doc "Wordsmith: The New Words": the numbers its starting points, each growing a
   // little with its attribute, a tenth of a percent a point, a two-hundredth of a tile for Pulling's drag)
   if (has(front, 'pulling')) {
-    r.pull = Math.min(PULL.most, PULL.far + 0.005 * growsBy(front, 'pulling'));
+    r.pull = Math.min(PULL.most * st(front, 'pulling'), PULL.far * st(front, 'pulling') + 0.005 * growsBy(front, 'pulling'));
     lines.push(`Pulling: drags the enemies it hits up to ${r.pull.toFixed(1)} tiles toward where it struck.`);
   }
   if (has(front, 'splitting')) {
-    r.split = Math.min(SPLIT.most, SPLIT.share + 0.001 * growsBy(front, 'splitting'));
+    r.split = Math.min(SPLIT.most * st(front, 'splitting'), SPLIT.share * st(front, 'splitting') + 0.001 * growsBy(front, 'splitting'));
     lines.push(`Splitting: its first hit breaks into ${SPLIT.copies} copies of ${pct(r.split * 100)} that fly on to other enemies.`);
   }
   if (has(front, 'hexing')) {
-    r.hex = Math.min(HEX.most, HEX.more + 0.001 * growsBy(front, 'hexing'));
+    r.hex = Math.min(HEX.most * st(front, 'hexing'), HEX.more * st(front, 'hexing') + 0.001 * growsBy(front, 'hexing'));
     lines.push(`Hexing: curses what it hits for ${HEX.secs} s: it takes ${pct(r.hex * 100)} more damage from everything.`);
   }
   if (has(front, 'stilling')) {
-    r.still = Math.min(STILL.most, STILL.slower + 0.001 * growsBy(front, 'stilling'));
+    r.still = Math.min(STILL.most, STILL.slower * st(front, 'stilling') + 0.001 * growsBy(front, 'stilling'));
     lines.push(`Stilling: what it hits is slowed in time for ${STILL.secs} s: it moves, attacks and shoots ${pct(r.still * 100)} slower.`);
   }
   if (has(front, 'binding')) {
-    r.bind = Math.min(BIND.most, BIND.secs + 0.004 * growsBy(front, 'binding'));
+    r.bind = Math.min(BIND.most * st(front, 'binding'), BIND.secs * st(front, 'binding') + 0.004 * growsBy(front, 'binding'));
     lines.push(`Binding: holds what it hits in place for ${secs(r.bind)} s (an elite half as long, a boss not at all).`);
   }
   // ----- THE LAST WORDS (8 Nov 2026; game/defs.ts PIERCE to MIRRORING), in front -----
@@ -306,11 +330,11 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`of Power${rn(behind, 'power')}: each hit that lands adds +${pct(r.might)} damage for 5 s (up to 5 times).`);
   }
   if (has(behind, 'swift')) {
-    r.haste = 15 + 0.2 * growsBy(behind, 'swift');
+    r.haste = 15 * st(behind, 'swift') + 0.2 * growsBy(behind, 'swift');
     lines.push(`of Swiftness: +${pct(r.haste)} movement speed for 3 s after each use.`);
   }
   if (has(behind, 'twin')) {
-    const again = Math.min(100, 40 + 0.5 * growsBy(behind, 'twin'));
+    const again = Math.min(100, 40 * st(behind, 'twin') + 0.5 * growsBy(behind, 'twin'));
     r.echo = again / 100;
     lines.push(`of Echoes: repeats a moment later for ${pct(again)}.`);
   }
@@ -338,7 +362,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     break; // one element behind
   }
   if (has(behind, 'leech')) {
-    const chance = Math.min(90, 35 + 0.4 * growsBy(behind, 'leech'));
+    const chance = Math.min(90, 35 * st(behind, 'leech') + 0.4 * growsBy(behind, 'leech'));
     r.orbChance = chance / 100;
     lines.push(`of Leeching: enemies it kills drop a life orb ${pct(chance)} of the time.`);
   }
@@ -348,14 +372,14 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`of Venom${rn(behind, 'poison')}: leaves a cloud that poisons for ${pct(dose)} of the hit a second.`);
   }
   if (has(behind, 'volatile')) {
-    const boom = 70 + growsBy(behind, 'volatile');
+    const boom = 70 * st(behind, 'volatile') + growsBy(behind, 'volatile');
     r.rune = boom / 100;
     lines.push(`of Ruin: leaves a rune that detonates for ${pct(boom)}.`);
   }
   // THE NEW WORDS BEHIND (Version 19.3)
   if (has(behind, 'heavy')) {
-    r.cracks = HEAVY.cracks;
-    lines.push(`of Quakes: leaves cracked ground for ${HEAVY.cracks} s; an enemy walking onto it is staggered.`);
+    r.cracks = HEAVY.cracks * st(behind, 'heavy');
+    lines.push(`of Quakes: leaves cracked ground for ${secs(r.cracks)} s; an enemy walking onto it is staggered.`);
   }
   if (has(behind, 'precise')) {
     r.mark = true;
@@ -367,28 +391,28 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   }
   if (has(behind, 'guarding')) {
     const a = growsBy(behind, 'guarding');
-    r.ward = Math.min(0.5, GUARD.ward + 0.002 * a);
+    r.ward = Math.min(0.5, GUARD.ward * st(behind, 'guarding') + 0.002 * a);
     lines.push(`of Warding: leaves a ward circle for ${GUARD.wardTime} s; inside it you take ${pct(r.ward * 100)} less damage.`);
   }
   // THE CITY'S WORDS BEHIND (Version 23.8)
   if (has(behind, 'pulling')) {
-    r.vortex = PULL.vortex;
-    lines.push(`of the Vortex: leaves a vortex for ${PULL.vortex} s that keeps drawing enemies in to its middle.`);
+    r.vortex = PULL.vortex * st(behind, 'pulling');
+    lines.push(`of the Vortex: leaves a vortex for ${secs(r.vortex)} s that keeps drawing enemies in to its middle.`);
   }
   if (has(behind, 'splitting')) {
-    r.shards = Math.min(SPLIT.shardMost, SPLIT.shardShare + 0.001 * growsBy(behind, 'splitting'));
+    r.shards = Math.min(SPLIT.shardMost * st(behind, 'splitting'), SPLIT.shardShare * st(behind, 'splitting') + 0.001 * growsBy(behind, 'splitting'));
     lines.push(`of Shards: where it ends, ${SPLIT.shards} shards of ${pct(r.shards * 100)} fly out in every direction.`);
   }
   if (has(behind, 'hexing')) {
-    r.hexCircle = Math.min(HEX.weakest, HEX.weaker + 0.001 * growsBy(behind, 'hexing'));
+    r.hexCircle = Math.min(HEX.weakest, HEX.weaker * st(behind, 'hexing') + 0.001 * growsBy(behind, 'hexing'));
     lines.push(`of Hexes: leaves a hex circle for ${HEX.circle} s; enemies inside deal ${pct(r.hexCircle * 100)} less damage.`);
   }
   if (has(behind, 'stilling')) {
-    r.bubble = Math.min(STILL.crawlMost, STILL.crawl + 0.001 * growsBy(behind, 'stilling'));
+    r.bubble = Math.min(STILL.crawlMost, STILL.crawl * st(behind, 'stilling') + 0.001 * growsBy(behind, 'stilling'));
     lines.push(`of Stillness: leaves a bubble for ${STILL.bubble} s where enemies and their shots are ${pct(r.bubble * 100)} slower.`);
   }
   if (has(behind, 'binding')) {
-    r.snare = Math.min(BIND.snareMost, BIND.snareSecs + 0.004 * growsBy(behind, 'binding'));
+    r.snare = Math.min(BIND.snareMost * st(behind, 'binding'), BIND.snareSecs * st(behind, 'binding') + 0.004 * growsBy(behind, 'binding'));
     lines.push(`of the Snare: leaves a snare; the next enemy to cross it is held in place for ${secs(r.snare)} s.`);
   }
   // ----- THE LAST WORDS, behind -----

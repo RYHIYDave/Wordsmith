@@ -147,7 +147,9 @@ test('1. the switch is ON (his yes, 7 Nov 2026); of the game only art/heroes3.ts
   }
   // (and the Ranger's mock-up, brought up after him on his pieces, behind its own switch; nothing of the game imports it)
   // (and the Mage's, brought up on his eight sides and his pieces the same way, behind MAGE_UP: held by tests/mage_up.test.ts)
-  assert.equal(users.filter((f) => !/^art\/mage_up/.test(f)).sort().join(' '), 'art/heroes3.ts art/ranger_up.ts art/ranger_up_art.ts art/ranger_up_review.ts art/sides.ts render/figure.ts', 'what imports them');
+  // (and the Endless town's preview page, src/dev/preview_shaft_rim.ts, which stands him in its pictures: a page of mock-ups, not
+  // of the game; brought in with art/endless-town, 25.3.6)
+  assert.equal(users.filter((f) => !/^art\/mage_up/.test(f) && f !== 'dev/preview_shaft_rim.ts').sort().join(' '), 'art/heroes3.ts art/ranger_up.ts art/ranger_up_art.ts art/ranger_up_review.ts art/sides.ts render/figure.ts', 'what imports them');
   // (the figure, only for the eight facings: wuFacing, wuTailsFacing and the sides' names; the sides, only their names' type)
   const fig = fs.readFileSync('src/render/figure.ts', 'utf8');
   assert.ok(!/paintWarriorUp|makeWarriorUpArt/.test(fig), 'the figure paints nothing of him');
