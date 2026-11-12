@@ -25,7 +25,10 @@ const near = (a: number, b: number, e = 1e-6): boolean => Math.abs(a - b) < e;
 const painted = (s: Sprite): boolean => !!s && s.w > 10 && s.h > 10;
 
 test('the switch off: the game\'s demon and the change as the game has them', () => {
-  assert.equal(LIVING_SHADOW.on, false, 'off');
+  // (ON SINCE 25.3.14, at his “Yes, start it now (Recommended)” of 12 Nov 2026: off here, for this test only)
+  assert.equal(LIVING_SHADOW.on, true, 'on in the game');
+  LIVING_SHADOW.on = false;
+  try {
   const demon = makeWarlockArt({ form: 'demon', place: 'dungeon' });
   for (const set of [demon.front, demon.back]) {
     assert.equal(set.idleFps, 10, 'the game\'s demon\'s stand at ten a second');
@@ -34,6 +37,9 @@ test('the switch off: the game\'s demon and the change as the game has them', ()
   }
   const man = makeWarlockArt({ form: 'man', place: 'dungeon' });
   assert.equal(man.front.clips?.change?.frames.length, 48, 'the game\'s change, 48 pictures');
+  } finally {
+    LIVING_SHADOW.on = true;
+  }
 });
 
 test('the switch on: its lists in the game\'s shape, at its moves\' own times; a frame of each kind painted', () => {
@@ -55,6 +61,10 @@ test('the switch on: its lists in the game\'s shape, at its moves\' own times; a
       assert.ok(c.attack && c.attack2 && near(c.attack.hit ?? -1, SLASH_HIT) && near(c.attack2.hit ?? -1, SLASH_HIT), 'its two slashes, the blow where the rake\'s lands');
       assert.equal(c.attackWalk?.length, SLASH_WAYS.length, 'its slash made walking, each of the four ways');
       assert.ok(c.attackWalk!.every((w) => near(w.hit ?? -1, SLASH_HIT)), 'each with the blow where it lands standing');
+      // (25.3.14: the combo's second swing made walking too, and its dropping onto all fours after a slash made walking)
+      assert.equal(c.attack2Walk?.length, SLASH_WAYS.length, 'its second slash made walking, each of the four ways');
+      assert.ok(c.attack2Walk!.every((w) => near(w.hit ?? -1, SLASH_HIT)), 'each with its blow');
+      assert.equal(set.dropAfterSwing, true, 'dropping onto all fours after a slash made walking');
       assert.ok(c.heavy && (c.heavy.hit ?? 0) > 0, 'Damning, with its blow');
       assert.ok(c.leap && c.land && c.reel && c.lurch && c.change, 'the smoke step, struck, burning out');
       for (const k of ['attack', 'attack2', 'heavy', 'land', 'reel', 'lurch'] as const) assert.equal(c[k]!.fps, F, `${k} at thirty a second`);
@@ -76,6 +86,6 @@ test('the switch on: its lists in the game\'s shape, at its moves\' own times; a
     // (in town and on his card he is never the demon and never changes: no change of its own there)
     assert.ok(!makeWarlockArt({ form: 'man', place: 'town' }).front.clips?.change, 'no change in town');
   } finally {
-    LIVING_SHADOW.on = false;
+    LIVING_SHADOW.on = true;
   }
 });

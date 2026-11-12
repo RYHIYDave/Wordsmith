@@ -174,6 +174,18 @@ const asDemon = (m: ShadowMove): DemonMove => ({
 const MINE = { dx: SLASH_SCENE.ax - RIG_CANVAS.ax, dy: SLASH_SCENE.ay - RIG_CANVAS.ay };
 
 /**
+ * A SLASH, WHOLE at a moment, for the game (the main chat, 12 Nov 2026: the README's “what the game must lay itself”, (1)): it,
+ * and its talons' streaks of his cyan laid over it (slashLight), on the slash's scene, floor point on floor point, as the films
+ * he said yes to lay them. In its pictures, not drawn by the game frame by frame: painted once, and baked.
+ */
+export function slashScene(m: ShadowMove, t: number, view: GameView, turn = 0): Px {
+  const out = new Px(SLASH_SCENE.w, SLASH_SCENE.h);
+  over(out, drawShadowAt(view, m, t, turn).px, MINE.dx, MINE.dy);
+  over(out, slashLight(m, t, view, turn));
+  return out;
+}
+
+/**
  * Its own picture at a moment of a move; and PAST THE MOVE'S END (a film goes on a moment after it, so that what the move
  * left on the floor is seen to cool where it lies and does not vanish as the move ends) the move it is in then (`after`: its
  * stand), so long into it.

@@ -43,11 +43,15 @@ import { ROAR_AT } from '../dev/warlock_change';
 import { SS } from '../dev/demon_moves';
 import { DROP_INTO, DROP_PICTURES, REARS, SHADOW_RUN_ROUND, SHADOW_STAND_LONG, SLASH_WAYS, drawShadowAt, shadowMoves } from '../dev/shadow_moves';
 import type { ShadowMove } from '../dev/shadow_moves';
-import { SLASH_SCENE, burnOutAll, burnOutScene } from '../dev/shadow_fx';
+import { SLASH_SCENE, burnOutAll, burnOutScene, damningScene, roarScene, slashScene } from '../dev/shadow_fx';
 import { SHADOW_CHANGE_ALL, shadowChangeFrame, shadowChangeRoar } from '../dev/shadow_change';
 
-/** THE SWITCH: OFF. On, the game's Warlock becomes the Living Shadow (art/warlock_art.ts). Not before his yes to it in play. */
-export const LIVING_SHADOW = { on: false };
+/**
+ * THE SWITCH: ON (25.3.14). The game's Warlock becomes the Living Shadow (art/warlock_art.ts). His yes to it in play, 12 Nov 2026 by
+ * 14:10, shown the film of it on floor 11: “Yes, hand it to main (Recommended)”; to the main chat putting it in, “Yes, start it
+ * now (Recommended)”.
+ */
+export const LIVING_SHADOW = { on: true };
 
 /** Every list at thirty a second; its run and setting off sixty, as the game shows a run (the Warrior's and the Mage's too). */
 export const SHADOW_FPS = { lists: 30, run: 60 };
@@ -61,6 +65,8 @@ const AURA_CHANGE: Light = { x: CHANGE_SCENE.ax, y: CHANGE_SCENE.ay - 50, r: 70,
 
 const asSprite = (px: Px, aura: Light, ax: number, ay: number): Sprite => toSprite({ px, lights: [] }, aura, ax, ay);
 const itAt = (m: ShadowMove, t: number, view: GameView): Sprite => asSprite(drawShadowAt(view, m, t).px, AURA, RIG_CANVAS.ax, RIG_CANVAS.ay);
+/** (on the slash's scene, what the game lays round it painted in with it: the main chat, 12 Nov 2026, LIVING_SHADOW on) */
+const onScene = (px: Px): Sprite => asSprite(px, AURA_SLASH, SLASH_SCENE.ax, SLASH_SCENE.ay);
 
 // (the game's own ways of laying a move out as frames: as art/warlock_art.ts has them, kept apart so that this file is taken in
 // only through the switch)
@@ -98,16 +104,17 @@ function three(c: Clip): Sprite[] {
 
 /** Its moves by name (dev/shadow_moves.ts shadowMoves: stand, run, its two slashes, dropping down, eight rear-ups, eight slashes made walking, then its other moves). */
 function movesOf(): {
-  stand: ShadowMove; run: ShadowMove; slashL: ShadowMove; slashR: ShadowMove; drop: ShadowMove; rears: ShadowMove[]; walkL: ShadowMove[];
+  stand: ShadowMove; run: ShadowMove; slashL: ShadowMove; slashR: ShadowMove; drop: ShadowMove; rears: ShadowMove[]; walkL: ShadowMove[]; walkR: ShadowMove[];
   damning: ShadowMove; step: ShadowMove; burn: ShadowMove; reel: ShadowMove; lurch: ShadowMove;
 } {
   const all = shadowMoves();
   const [stand, run, slashL, slashR, drop] = all;
   const rears = all.slice(5, 5 + REARS);
   const walkL = all.slice(5 + REARS, 5 + REARS + SLASH_WAYS.length);
+  const walkR = all.slice(5 + REARS + SLASH_WAYS.length, 5 + REARS + 2 * SLASH_WAYS.length);
   const others = all.slice(5 + REARS + 2 * SLASH_WAYS.length);
   const [damning, step, , burn, reel, lurch] = others;
-  return { stand, run, slashL, slashR, drop, rears, walkL, damning, step, burn, reel, lurch };
+  return { stand, run, slashL, slashR, drop, rears, walkL, walkR, damning, step, burn, reel, lurch };
 }
 
 /** THE LIVING SHADOW: one view, in the game's shape. */
@@ -119,11 +126,15 @@ export function shadowDemonSet(view: GameView): AnimSet {
   // (setting off: its pictures sixty to a second of the run, chosen by how far it has gone, into the run's own picture)
   const start: Clip = { frames: lazyFrames(DROP_PICTURES + 1, (i) => itAt(m.drop, Math.min(m.drop.long, i / SHADOW_FPS.run), view), true), fps: SHADOW_FPS.run };
   const stops = m.rears.map((r) => clip(0, r.long, F, (t) => itAt(r, t, view)));
-  const slash = (s: ShadowMove): Clip => clip(0, s.long, F, (t) => itAt(s, t, view), s.hit, true);
+  // (ITS SLASHES WITH THEIR STREAKS, and DAMNING WITH THE FLOOR TORN UNDER ITS CLAWS: what the game lays round it, painted in with
+  // it on the slash's scene, as the films he said yes to have them: the main chat, 12 Nov 2026, at his “Yes, start it now
+  // (Recommended)”, the README's (1) and (3); the combo's second swing made walking too, the README's (4): clips.attack2Walk)
+  const slash = (s: ShadowMove): Clip => clip(0, s.long, F, (t) => onScene(slashScene(s, t, view)), s.hit, true);
   const attack = slash(m.slashL);
   const attack2 = slash(m.slashR);
   const attackWalk = m.walkL.map(slash);
-  const heavy = clip(0, m.damning.long, F, (t) => itAt(m.damning, t, view), m.damning.hit, true);
+  const attack2Walk = m.walkR.map(slash);
+  const heavy = clip(0, m.damning.long, F, (t) => onScene(damningScene(m.damning, t, view)), m.damning.hit, true);
   const leap = spread(SS.burst / 30, SS.out / 30, STEP_FRAMES, (t) => itAt(m.step, t, view));
   const land = clip(SS.out / 30, m.step.long, F, (t) => itAt(m.step, t, view));
   const reel = clip(0, m.reel.long, F, (t) => itAt(m.reel, t, view));
@@ -141,8 +152,9 @@ export function shadowDemonSet(view: GameView): AnimSet {
     walkStride: GRIP_SPEED * SHADOW_RUN_ROUND,
     start,
     startAt: DROP_INTO,
+    dropAfterSwing: true,
     stops,
-    clips: { attack, attack2, attackWalk, heavy, leap, land, reel, lurch, change: burnOut },
+    clips: { attack, attack2, attackWalk, attack2Walk, heavy, leap, land, reel, lurch, change: burnOut },
   };
 }
 
@@ -159,6 +171,8 @@ export function shadowChangeClip(view: GameView): Clip {
   const roar = shadowChangeRoar();
   const n = Math.round(SHADOW_CHANGE_ALL * SHADOW_FPS.lists) + 1;
   return spread(0, SHADOW_CHANGE_ALL, n, (t) =>
-    t < ROAR_AT ? asSprite(shadowChangeFrame(view, t).d.px, AURA_CHANGE, CHANGE_SCENE.ax, CHANGE_SCENE.ay) : itAt(roar, t - ROAR_AT, view),
+    // (its roar with what leaves its mouth and the ring on the floor painted in: the README's (2); the game's own ring at the change's
+    // end is not laid over it while LIVING_SHADOW is on: render/warlock_fx.ts)
+    t < ROAR_AT ? asSprite(shadowChangeFrame(view, t).d.px, AURA_CHANGE, CHANGE_SCENE.ax, CHANGE_SCENE.ay) : onScene(roarScene(roar, t - ROAR_AT, view)),
   );
 }

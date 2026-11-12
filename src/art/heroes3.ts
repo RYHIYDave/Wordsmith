@@ -400,6 +400,8 @@ export function bakeLists(set: AnimSet): Sprite[][] {
   // Axes' own, the leaps' crouches. Not in heroLists, for the same reason as his making ready: 25.3.11's page check found them
   // painted where the game is drawn)
   for (const k of HEAVY_MOVES) out.push(set.clips?.moves?.[k]?.frames ?? []);
+  // (THE LIVING SHADOW's second swing made walking, the four ways, after them for the same reason: art/shadow_art.ts)
+  for (let k = 0; k < 4; k++) out.push(set.clips?.attack2Walk?.[k]?.frames ?? []);
   return out;
 }
 

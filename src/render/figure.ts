@@ -398,6 +398,8 @@ export class Figure {
   private stopOf = 0;
   /** Whether what was last shown was the hero standing (or nothing yet), and how far the hero had gone (FigureState.walked) when they last set off from a stand. */
   private stoodLast = true;
+  /** The swing shown last was one made walking (clips.attackWalk, attack2Walk): for AnimSet.dropAfterSwing. */
+  private swungWalking = false;
   private runFrom = 0;
   /** How much of the light has gone out of a hero who has fallen, 0..1: what glows on their tails (a feather) goes with it. */
   private gone = 0;
@@ -652,8 +654,9 @@ export class Figure {
       // MADE WALKING (clips.attackWalk, heavyWalk): the one for the way the hero goes as they face
       // their mark, as the picture has them (the view from behind is a mirror, and so is a figure
       // turned to screen-left: what is the figure's left in the picture is the world's right in each)
-      const walkers = st.attackSkill === 1 ? set.clips?.heavyWalk : st.attackSkill === 0 ? set.clips?.attackWalk : undefined;
+      const walkers = st.attackSkill === 1 ? set.clips?.heavyWalk : st.attackSkill === 0 ? set.clips?.attackWalk : st.attackSkill === 2 ? set.clips?.attack2Walk : undefined;
       if (walkers && walkers.length === 4 && way >= 0) c = walkers[way];
+      this.swungWalking = !!walkers && walkers.length === 4 && way >= 0;
       const holding = st.holdT !== undefined && st.holdT >= 0;
       const kind = st.holdAs ?? 'beam';
       const held = holding ? (kind === 'whirl' ? set.clips?.whirl : set.clips?.hold) : undefined;
@@ -772,7 +775,9 @@ export class Figure {
     }
     // (anything but standing ends coming to a stand)
     if (!stands) this.sinceStop = -1;
-    this.stoodLast = stands;
+    // (AnimSet.dropAfterSwing: a swing made walking, the run going on after it, set off again as from a stand: the Living Shadow
+    // drops onto all fours out of a slash made on two legs, not into its run at once: the README's (5))
+    this.stoodLast = stands || (anim === 'attack' && this.swungWalking && !!set.dropAfterSwing);
     if (left) s = flipSprite(s);
     // (in a turn the knots the tails hang from close in on the middle with the figure)
     const q = this.squash;

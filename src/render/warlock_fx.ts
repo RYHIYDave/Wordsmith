@@ -32,6 +32,7 @@ import type { GameEvent, Projectile } from '../game/state';
 import type { Game } from '../game/game';
 import { Light, SMOKE, burn, burst, cloud, fire, smolder } from '../dev/warlock_fx';
 import { HELL } from '../dev/sculpt_warlock';
+import { LIVING_SHADOW } from '../art/shadow_art';
 import { STUFF, crackStar, drawCrack, drawHole, jet } from '../dev/demon_fx';
 import type { Cam } from './fx';
 import { wx, wy } from './fx';
@@ -146,7 +147,8 @@ export class WarlockFx {
         for (const a of e.at) this.erupts.push({ x: a.x, y: a.y, t: 0 });
         break;
       case 'roar':
-        this.rings.push({ x: e.x, y: e.y, r: e.r, t: 0 });
+        // (THE LIVING SHADOW: its roar's ring is painted into the end of its change, art/shadow_art.ts shadowChangeClip: not laid twice)
+        if (!(e.formed && LIVING_SHADOW.on)) this.rings.push({ x: e.x, y: e.y, r: e.r, t: 0 });
         break;
       case 'change':
         this.embers.push({ x: e.x, y: e.y, t: 0 });

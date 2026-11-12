@@ -61,6 +61,8 @@ export interface AnimSet {
    */
   start?: Clip;
   startAt?: number;
+  /** After a swing made walking, the run going on, `start` played again as from a stand (THE LIVING SHADOW: dropping onto all fours). */
+  dropAfterSwing?: boolean;
   /**
    * THE WALK THE OTHER WAYS: when the hero walks one way while facing another (turned to a mark),
    * the walk's legs stepping to their left, back, and to their right, as the picture has them;
@@ -89,6 +91,8 @@ export interface AnimSet {
      * their right, as the picture has them). Shown in place of `attack` and `heavy` while the hero
      * moves (render/figure.ts). Absent: the attack is shown as it is standing.
      */
+    /** (THE LIVING SHADOW, the combo's second swing made walking, one for each of the four ways, as `attackWalk`: render/figure.ts) */
+    attack2Walk?: Clip[];
     attackWalk?: Clip[];
     heavyWalk?: Clip[];
     heavy?: Clip;

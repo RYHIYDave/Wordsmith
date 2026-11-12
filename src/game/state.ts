@@ -1706,7 +1706,7 @@ export type GameEvent =
   /** (THE WARLOCK: one struck by a smoke step passing through it; `n` 1 for Twin's second, `echo` the echo's) */
   | { t: 'smokeHit'; id: number; x: number; y: number; n: number; echo: boolean }
   | { t: 'change'; to: 'demon' | 'man'; x: number; y: number }
-  | { t: 'roar'; x: number; y: number; r: number }
+  | { t: 'roar'; x: number; y: number; r: number; /** the Warlock's change into the demon ended (not the Bound Demon torn out) */ formed?: boolean }
   | { t: 'pactFull'; x: number; y: number }
   | { t: 'freeze'; x: number; y: number }
   | { t: 'shatter'; x: number; y: number }

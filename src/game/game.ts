@@ -8702,7 +8702,7 @@ export class Game {
       h.pact = WARLOCK_TUNE.pact.full;
       this.refresh();
       const R = WARLOCK_TUNE.change.roar;
-      this.emit({ t: 'roar', x: h.x, y: h.y, r: R });
+      this.emit({ t: 'roar', x: h.x, y: h.y, r: R, formed: true });
       this.emit({ t: 'shake', amount: 5 });
       this.sfx('explode', 0.8);
       for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - h.x, m.y - h.y) <= R + m.r) this.throwMonster(m, h.x, h.y, 1.5, 0.25);
