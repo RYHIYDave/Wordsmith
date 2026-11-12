@@ -25,6 +25,8 @@ import { FLAME_FRAMES, GROUND, paintFlame, paintPitGlow, paintPost, paintRimGrou
 import { BENCH_SOCKET, GATE_SOCKETS, RECORD_NOTCHES, TORCH_FRAMES, TROPHY_MOUNTS, paintGate as gatePiece, paintRecord as recordPiece, paintSocketSlab, paintTorchFlame, paintTorchPost, paintTrophies as trophiesPiece, paintTrophy, paintTrophyWall, rimPieces } from '../art/shaft_props';
 import type { Piece } from '../art/shaft_props';
 import { SOCKET_LIT_FRAMES, paintSocketTablet } from '../art/endless_tablet';
+import { PORTAL_IDLE, PORTAL_OPEN_FRAMES, paintPortalFloor, paintPortalRise } from '../art/endless_portal';
+import { LANDING as TONGUE_LANDING } from '../art/shaft_rim';
 import { stoneOf } from '../art/props';
 import { isEight } from '../art/sides';
 import { wuFacing } from '../art/warrior_up_art';
@@ -469,7 +471,7 @@ const RUNE_STONES: readonly (readonly [number, number])[] = [[-2, -1], [-1, -2],
 interface Put { d: number; f: () => void }
 interface Lit { s?: Sprite; x: number; y: number; r?: number; c?: string; a?: number }
 
-export function scene(heroAt: [number, number] | null, v2 = false, t = 0, o: { v3?: boolean; heroSprite?: Sprite; tablet?: { held: readonly boolean[]; lit: number } } = {}): { cv: HTMLCanvasElement; labels: { x: number; y: number; text: string }[] } {
+export function scene(heroAt: [number, number] | null, v2 = false, t = 0, o: { v3?: boolean; heroSprite?: Sprite; tablet?: { held: readonly boolean[]; lit: number }; portal?: number } = {}): { cv: HTMLCanvasElement; labels: { x: number; y: number; text: string }[] } {
   const B = new Buf();
   const lights: Lit[] = [];
   const labels: { x: number; y: number; text: string }[] = [];
@@ -508,6 +510,13 @@ export function scene(heroAt: [number, number] | null, v2 = false, t = 0, o: { v
     paintPortal(B);
     portalPosts(B, false);
   }
+  // (endless mode's portal, the art chat's of 12 Nov: the landing opening, art/endless_portal.ts; its floor lies flat)
+  if (o.portal !== undefined && o.portal >= 0) {
+    const fl = spr(paintPortalFloor(o.portal));
+    const [lgx, lgy] = at(TONGUE_LANDING[0], TONGUE_LANDING[1]);
+    B.sprite(fl, lgx, lgy);
+    if (fl.lights?.length) lights.push({ s: fl, x: lgx, y: lgy });
+  }
 
   // ---- what stands, nearest last
   const puts: Put[] = [];
@@ -531,6 +540,15 @@ export function scene(heroAt: [number, number] | null, v2 = false, t = 0, o: { v
       }
     });
   };
+  // (endless mode's portal: what rises out of the landing, laid in depth at its middle)
+  if (o.portal !== undefined && o.portal >= 0) {
+    const rs = spr(paintPortalRise(o.portal));
+    put(TONGUE_LANDING[0], TONGUE_LANDING[1], () => {
+      const [lgx, lgy] = at(TONGUE_LANDING[0], TONGUE_LANDING[1]);
+      B.sprite(rs, lgx, lgy);
+      if (rs.lights?.length) lights.push({ s: rs, x: lgx, y: lgy });
+    });
+  }
   // the smithy (as the game's TOWN lays it: the rack three tiles along from the forge, the trough beside, the anvil and the armourer before it)
   const [fx, fy] = LAYOUT.forge;
   stand('forge', c([fx, fy]), 0, 0.5);
@@ -806,7 +824,7 @@ function main(): void {
   document.body.style.background = '#05040f';
   document.body.appendChild(out);
   out.style.display = 'block';
-  if (mode === 'whole3' || mode.startsWith('view3') || mode.startsWith('tablet') || mode === 'props1' || mode === 'props2' || mode === 'film' || mode === 'check') {
+  if (mode === 'whole3' || mode.startsWith('view3') || mode.startsWith('tablet') || mode.startsWith('portal') || mode === 'props1' || mode === 'props2' || mode === 'film' || mode === 'check') {
     main3(mode, out);
     return;
   }
@@ -968,6 +986,39 @@ function main3(mode: string, out: HTMLCanvasElement): void {
       cap(g, "The Shaft's Rim, alive", 16, PH3 * 2 + 14);
     };
     (window as unknown as { __filmSeconds: number }).__filmSeconds = FILM_SECONDS;
+    done();
+    return;
+  }
+  if (mode.startsWith('portal')) {
+    // ENDLESS MODE'S PORTAL (art/endless_portal.ts): the camera on the knight on the tongue, a step out from the rim, the landing before him
+    //   portal:<frame>   one picture (-1 shut);   portalfilm   the opening and a little of it standing open (window.__film(t))
+    const hero: [number, number] = [polar(172, 3.15)[0], polar(172, 3.15)[1]];
+    const kn = { x: hero[0], y: hero[1], fx: 1, fy: 0.15, walking: false, walked: 0 };
+    const [hx, hy] = at(hero[0], hero[1]);
+    out.width = PW3 * 2;
+    out.height = PH3 * 2 + CAP3;
+    const g = g0();
+    const shot = (f: number, t: number, caption: string): void => {
+      const { cv } = scene(hero, true, t, { v3: true, heroSprite: knightSprite(kn, t), portal: f });
+      g.imageSmoothingEnabled = false;
+      g.fillStyle = '#07060f';
+      g.fillRect(0, 0, out.width, out.height);
+      g.drawImage(cv, Math.round((PW3 / 2 - hx + 40) * 2), Math.round((PH3 / 2 - camY(hy) + 10) * 2));
+      g.fillStyle = '#0d1030';
+      g.fillRect(0, PH3 * 2, out.width, CAP3);
+      cap(g, caption, 16, PH3 * 2 + 14);
+    };
+    const capOf = (f: number): string => (f < 0 ? 'The landing, shut' : f < 24 ? 'The seams kindle' : f < 34 ? 'The light bursts through' : f < 80 ? 'The landing opens' : 'The way down');
+    if (mode === 'portalfilm') {
+      (window as unknown as { __film: (t: number) => void }).__film = (t: number): void => {
+        const f = Math.floor((t - 1) * 30);
+        shot(f < 0 ? -1 : f, t, capOf(f));
+      };
+      (window as unknown as { __filmSeconds: number }).__filmSeconds = 1 + (PORTAL_OPEN_FRAMES + PORTAL_IDLE * 2) / 30;
+    } else {
+      const f = Number(mode.split(':')[1] ?? '-1');
+      shot(f, 0.4, capOf(f));
+    }
     done();
     return;
   }
