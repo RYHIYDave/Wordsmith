@@ -95,3 +95,8 @@ directs and playtests, and Claude writes and tests everything.
   his phone: leave the ranks alone. Reading it is not a go-ahead: pull an item only when he asks
   for work from the queue or names one, and an item is never his yes to what a chat would ask him
   first. Put here at his word to the main chat, 9 Nov 2026, by 21:43: “Yes, add it (Recommended)”.
+- WHAT IS LEFT OF YOUR OWN TASK, OR WHAT IT TURNS UP, YOU FINISH IN THE SAME CHAT: do not queue it. When your task is done, ask
+  him by pop-up whether to start a new task, then do it. His words, 12 Nov 2026, 13:38: “Why throw something in the queue when
+  your task is done and you could just start working on it immediately.  Ask if you should start on a new task, then do it.  I’m
+  trying to clear the queue not add to it”; asked whether every chat should work so, “Yes, add it for all chats (Recommended)”
+  (also in the queue's meta/protocol). Finished work goes on the queue page's ship list, not back in the queue (meta/protocol).

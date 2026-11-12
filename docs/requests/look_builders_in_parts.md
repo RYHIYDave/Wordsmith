@@ -31,6 +31,31 @@ THE PICTURES ARE THE SAME: every picture of the tomb, the chapel, floors 1's and
 pictures, and every other field of every piece) hashed on the code before (713b305) and after, made at once: the same, line for
 line. Made a part a step, the tomb's and the chapel's are the very pictures made at once, pixel for pixel (the tests).
 
+## Then, the last heavy pictures (his word, 12 Nov 2026, 13:38)
+
+Shown that what was left had been queued, he wrote: “Why throw something in the queue when your task is done and you could just
+start working on it immediately.  Ask if you should start on a new task, then do it.  I’m trying to clear the queue not add to
+it”. Asked by pop-up, his picks: start on it now, “Yes, start it now (Recommended)”; and that every chat should work so, “Yes, add
+it for all chats (Recommended)” (put in the queue's rules, its document meta/protocol, and in CLAUDE.md on this branch). So, here:
+
+4. **A PICTURE PAINTED IN STAGES** (`engine/steps.ts` `Stages`, `finish`, `stagesStep`, `Ahead.staged`): a painter written as a
+   generator, yielding between stages; run through, it is the painter as it was; under the loading screen, 25 ms of its stages a
+   step. `art/chapel.ts` `Deep.marchRows`: a solid marched a few rows a stage (each pixel reads and writes only its own depth and
+   colour, so the picture is the very one `march` makes; `march` runs it through). In stages: the chapel's two piles of rock
+   (`rockSpillStages`, 0.6 s each in node) and the break-in's base, its rock and props (`breakBaseStages`, its frame 0 0.9 to 1.4 s
+   in Chrome), the base first in `chapelStretchSteps`.
+5. **FLOOR 13'S WATER WHEEL a frame a step** (`art/floor13.ts` `wheelFrameSteps`, 32 frames, 0.75 s at once in node).
+6. **A FLOOR'S GROUND a picture a step** (`art/ground.ts` `makeGroundArt` takes a `part`; `art/crypt.ts` `cryptGroundSteps`;
+   `art/floors.ts` `lookGroundSteps`, in `main.ts` `placeSteps`): about 70 pictures, 0.35 to 0.56 s at once.
+7. **THE OPEN GROUND'S TERRAIN AHEAD of the floor's first drawing** (`render/outdoor.ts` `terrainAhead`, `Outdoor.aheadSteps`, in
+   `render.ts` `prepareSteps`): its look made with its grids (`gridField`) left to fill, then the grids two rows a stage; a grid
+   asked of before it is filled fills itself at once. The same values cell by cell. The Millrace's seven grids took 1.3 s of
+   floor 13's first drawing on the game's own thread (the painter's worker works out its own, off it, as before).
+
+THE PICTURES ARE THE SAME: floors 1 to 4's ground art, the break-in's and way-in's frames (384 pictures) hashed on 713b305 and
+after: the same; everything fingerprinted before, again the same. The ground painted from a terrain worked out ahead is the
+ground painted from one made at once, pixel for pixel (the tests, floors 9 and 13).
+
 ## Measured (Chrome on a two-core cloud machine, a phone's screen, `tools/scenarios/loading_frames.mjs`, no bakes beside the page; NOT A PHONE)
 
 The longest wait the browser showed under each loading screen:
@@ -44,7 +69,23 @@ The longest wait the browser showed under each loading screen:
 | floor 13 | 1,733 ms (the first drawing) | 2,033 ms; 1,500 ms (the first drawing) |
 | into town | 617 ms | 467 ms (not changed by this) |
 
-Still long, each now ONE picture of its own (not of this build to cut):
+AFTER THE LAST HEAVY PICTURES (the same machine and way):
+
+| loading screen | before (713b305) | after all of this |
+|---|---|---|
+| floor 1 | 1,233 ms; 1,217 ms | 350 ms |
+| floor 4 | 1,517 ms; 1,700 ms | 250 ms |
+| floor 6 | 1,433 ms | 333 ms; 500 ms |
+| floor 9 | 1,600 ms (the first drawing) | 433 ms |
+| floor 11 | 783 ms | 283 ms |
+| floor 13 | 2,033 ms (the first drawing) | 567 ms (and one wait of 533 to 750 ms as the floor is made, before the loading screen's work: the game's own, not a picture) |
+
+What is left over 250 ms: single pieces of 0.2 to 0.3 s (the redoubt's gatehouse, the Gate Ward's broken gate); on open ground,
+the first drawing painting a piece or two of the ground on the game's thread while the painter's worker is still working out its
+own terrain; and, on this page with no bakes, the monsters' frames painted as they are first shown (the bakes beside the release
+take that away).
+
+BEFORE THE LAST HEAVY PICTURES, these were still long, each ONE picture of its own:
 - FLOOR 4: one or two steps of 0.9 to 1.4 s: most likely the chapel's break-in, its first frame (`chapelStretchSteps`, a frame a
   step already: in node its frame 0 alone takes 1.5 s); and its two piles of rock from the break (`rockSpill`, 0.6 s each in node:
   seven solids marched into one picture). And `lookGround(4)`, 0.35 to 0.56 s (the ground's art, one step).
@@ -76,10 +117,18 @@ Bring in `build/smooth-loading-frames` first, then merge this (it is that branch
 `src/art`, `src/render/act1_pieces.ts` and `src/main.ts` `placeSteps`, one line). Nothing to switch on.
 
 THE MARKS: the heroes' (1fdc8d09059a) and the townsfolk's (d4c898fe370d) are unchanged. THE MONSTERS' MARK CHANGES, the same
-pictures: 1b2f6c2fbd50 on 713b305, 747581f240e2 here. Their bake page's bundle, diffed before and after, differs ONLY by four
-lines, `var OSSUARY_AHEAD = new Ahead()`, `CHAPEL_AHEAD`, `WARDEN_AHEAD`, `TOMB_AHEAD` (the modules' holders, kept for their
-side effect): no painting code. So no painting is needed: `node tools/bake_monsters.mjs --from <the mark before>` takes the
+pictures: 1b2f6c2fbd50 on 713b305, 2bb4f2030010 at 249ae53. Their bake page's bundle, diffed before and after, differs ONLY by
+the modules' holders kept for their side effect (`var OSSUARY_AHEAD = new Ahead()`, `CHAPEL_AHEAD`, `WARDEN_AHEAD`, `TOMB_AHEAD`,
+`GROUND_AHEAD`), engine/steps.ts's new `staged`, `stagesStep` and `STAGE_MS`, and one local name esbuild renamed (`finish` to
+`finish2`, in the gaits' GRIP_RUNS, for the new export's name): no painting code. So no painting is needed: `node tools/bake_monsters.mjs --from <the mark before>` takes the
 kept bake's figures as the new mark's. (TO KNOW: 713b305's own monsters' mark, 1b2f6c2fbd50, is not main's 4f510caa1c9d:
 `build/smooth-loading-frames` changes it by itself; its note says main's bakes go with it. Worth a look as it is brought in.)
 
 The published page's playtests, `loading_frames.mjs` with `FLOORS=1,4,6,11` among them.
+
+After the last heavy pictures, `node tools/unit.mjs --only` look_parts, load_slice, chapel, tomb, floor4, floor13, ground, crypt,
+terrain, millrace, pinewood, outdoor_shadows, act2_walls and the core on 249ae53e18: 36 files, 32 passed, 4 failed: chapel, floor4
+and tomb on their “Colour 4” checks, and crypt on its two (its dungeons “as at aaa8310”, and a place darker than any word's
+colour): THE SAME FAIL THE SAME WAY ON 713b305 (crypt run alone there: the same two). `tests/look_parts.test.ts` now 9, all pass.
+Playtests on a page of 249ae53: `loading_frames.mjs` (floors 1, 4, 6, 9, 11, 13), `guide.mjs`, `floor_loading.mjs`: finished
+clean; floors 9 and 13 looked at after their loading screens.
