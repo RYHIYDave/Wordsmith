@@ -5,20 +5,23 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { DEEP_WORDS_FROM, PRISON_WORD_IDS, WORD_IDS, WORD_TIERS, wordsAt } from '../src/game/types';
+import { DEEP_WORDS_FROM, LAST_WORDS_FROM, LAST_WORD_IDS, PRISON_WORD_IDS, WORD_IDS, WORD_TIERS, wordsAt } from '../src/game/types';
 import { FIRST_WORD } from '../src/game/defs';
 
-test('the prison (floors 1 to 5) has its six words; floors 6 to 10 the thirteen; the city all', () => {
+test('the prison (floors 1 to 5) has its six words; floors 6 to 10 the thirteen and his three of 9 Nov; the city all but the last words', () => {
   assert.equal(WORD_TIERS.on, true);
   for (let d = 1; d < WORD_TIERS.mid; d++) assert.deepEqual([...wordsAt(d)].sort(), [...PRISON_WORD_IDS].sort(), `floor ${d}`);
   assert.equal(PRISON_WORD_IDS.length, 6);
   for (const w of ['power', 'poison', 'frost', 'fire', 'lightning', 'swift']) assert.ok(PRISON_WORD_IDS.includes(w as never), w);
   for (let d = WORD_TIERS.mid; d < DEEP_WORDS_FROM; d++) {
     const ws = wordsAt(d);
-    assert.equal(ws.length, 13, `floor ${d}`);
-    for (const w of ['leech', 'twin', 'precise', 'heavy', 'frenzied', 'volatile', 'guarding']) assert.ok(ws.includes(w as never), `${w} on floor ${d}`);
+    // (and his three of 9 Nov 2026, Lasting, Fleeting and Vast, found from floor 6 like Precise and Heavy)
+    assert.equal(ws.length, 16, `floor ${d}`);
+    for (const w of ['leech', 'twin', 'precise', 'heavy', 'frenzied', 'volatile', 'guarding', 'lasting', 'fleeting', 'vast']) assert.ok(ws.includes(w as never), `${w} on floor ${d}`);
   }
-  assert.deepEqual(wordsAt(DEEP_WORDS_FROM), WORD_IDS);
+  // (from 11 all but the last words, found from 16: LAST_WORDS_FROM)
+  assert.deepEqual(wordsAt(DEEP_WORDS_FROM), WORD_IDS.filter((w) => !LAST_WORD_IDS.includes(w)));
+  assert.deepEqual(wordsAt(LAST_WORDS_FROM), WORD_IDS);
 });
 
 test("each hero's first word is his own, one of the prison's six, as he picked them", () => {

@@ -147,6 +147,89 @@ on try-out 10, “All good, hand over (Recommended)”. For floor 10's new fight
 - The old `eye_roar`, `eye_hurt`, `eye_death` (second batch) were made for his old look. His fight's other sounds (the
   slams, the waves, his hurt and his death) come once the art chat has drawn them.
 
+## Sixth batch: the ten new words (the sound chat, 9 Nov 2026)
+
+His words, 9 Nov 2026: what next, “Words, then the Colossus (Recommended)”. Shown them on try-out 11 (The Ten New
+Words), by 20:20 Eastern his pick: “All good, hand over (Recommended)”. Asked about the art chat's two small
+extras: “Both (Recommended)” (the Lexicon's page turn is here; the Colossus's ward hum is in the seventh batch).
+
+Two takes of each sound (`_1`, `_2`): one at random each time, pitch spread as the combat sounds. Made by the same chain
+as the combat sounds, so RECORDED_GAIN holds. Nothing is wired in. 52 mp3, about 1 MB.
+
+Each sound starts with its event: its big moment lands on the art chat's beat (its 13:45 and 19:01 posts of 9 Nov),
+so play it as the event is sent. Names are the art chat's events as it read them from your words7 and words10.
+
+### Piercing
+- `pierce_shot`: `pierceLine`, the bolt kindling (0.03 s) and zipping through what it pierces, bursting at the end.
+- `pierce_lance`: `lance`, light seeping along the crack (0 to 0.5 s), the spear slamming down at 0.5 s, the crack
+  cooling. About 2 s.
+
+### Bleeding
+- `bleed_open`: `bleedOn`, a wound opening, the spurt at 0.05 s. Also `heroBleed` (a monster's slash on him).
+- `bleed_thorns`: the thorns zone, the briars bursting up at 0.22 s.
+- `bleed_cut`: something walking in the briars, cut. 0.4 s, so it can repeat; no more than three a second.
+
+### Reaping
+- `reap_soul`: `reapSoul`, torn out at 0.15 s, streaking in, taken at 0.7 s.
+- `reap_spirit`: `spirit`, the little grey Shade rising (0.45 s). Its rising away at 6 s can use it again at half
+  volume, or nothing.
+- `reap_rake`: `spiritHit`, the Shade's claw rake.
+- `reap_rise`: `rise`, a corpse catching the enemy's fire at 0.2 s and lurching up by 1.0 s.
+
+### Culling
+- `cull_kill`: `culled`, a held hush, then the scythe's sweep at about 0.23 s. No thud of its own: the monster's own
+  death sound still plays after it.
+- `cull_mark`: the reaper zone taking one, flaring, its blade rising at 0.2 s, burning out.
+- `cull_kindle`: a monster's fire kindling when he is low (Culling on a monster).
+
+### Surging
+- `surge_wave`: `surge`, a flash at his feet and the ring running out (0.05, 0.42). Also out of his dodge.
+- `surge_warn`: a monster's warning ring (`surgeWarn`, or your usual warning ring), its beat quickening for 1.0 s.
+- `surge_foe`: that monster's wave, at the end of its warning.
+
+### Plundering
+- `plunder_spray`: `goldBurst` and `goldSpray`, coins spraying at 0.05 s and clinking down.
+- `plunder_stream`: gold arcing coin by coin into his purse, 0.1 to 1.0 s.
+- `plunder_steal`: `goldStolen`, coins snatched on hooks. The coins bursting out of it when it dies:
+  `plunder_spray`.
+
+### Mirroring
+- `mirror_swing`: his reflection's glass swing (the game's own swing, on the reflection).
+- `mirror_rise`: `mirrorCast`, the pane growing up (about 0.25 s); also `reflection`, his reflection forming, a little
+  softer.
+- `mirror_break`: the pane cracking and shattering.
+- `mirror_back`: `mirrorBack`, a monster cracking like a mirror, held 0.12 s, then the shards flying back into him.
+
+### The three, on top of the skill they change (3 to 4 dB quieter on purpose)
+- `word_lasting`: as Lasting extends something: a long shimmer, built in 0.3 s, lingering.
+- `word_fleeting`: Fleeting's quick rising flick.
+- `word_vast`: Vast's broad whoomph, the strike at 0.15 s, settling by 0.75 s. Also a monster's Vast warning, softer.
+
+### The Lexicon
+- `page_turn`: a soft page turn as a tab is tapped. As quiet as the menu sounds.
+
+### As wired (the ten words chat, 11 Nov 2026: game/word_sounds.ts has each sound's loudness and its least gap)
+Played by the rules as each event is sent (game/game.ts `wordRec`), behind `WORD_SOUNDS` (on). Where the game's moment
+is not the event's own:
+- `reap_rise` begins 1.0 s before the rules stand the monster up again (0.5 s after `rise` is sent, which is as it
+  dies): as its body begins to rise in its picture.
+- `cull_kill` on a cull in front, `cull_mark` on one taken by a reaper's mark (`culled` with `mark`). `cull_kindle`
+  once each time he comes under 35% of his life with an awake monster carrying Culling within 10 tiles.
+- `surge_warn` as a monster's surge lays its warning ring; `surge_foe` as that warning runs out and its wave lands.
+- `plunder_spray` on `goldSpray` (in front) and `goldBurst` (behind), and as a monster that dies carrying his gold
+  drops it; `plunder_stream` with `goldBurst`.
+- `mirror_rise` as the mirror's pane begins to grow up, which the picture decides (it waits till he has stepped clear
+  of where he stood: render/words7.ts `soundsW7`, played by main.ts); and, softer (0.7), as his reflection forms
+  (`reflection`), with `mirror_swing`. On `mirrorCast`: `mirror_swing`, then `mirror_break` 0.38 s after (the pane's
+  attack, then its cracking).
+- `word_lasting` and `word_fleeting` at a use of an ability carrying the word, where it has something to work on (it
+  makes something that lasts, lays poison, burning or bleeding, or gives a boost); `word_vast` on an area landed wider
+  by Vast in front and on Vast behind's splash (`vastSplash`), and softer (0.6) as a monster's warning is laid wider.
+- `reap_spirit` again at half volume as the Shade rises away.
+- `page_turn` as one of the Lexicon's tabs is tapped and its page turns (the menus' click until it has come).
+Packed apart (tools/sound_packs.mjs): the ten words' 50 files in `words-pack.mp3`, fetched a word at a time as it comes
+into play (main.ts `warmWords`); the page turn with the town's.
+
 ## Seventh batch: the rest of the Swamp Colossus's fight (the sound chat, 9 Nov 2026)
 
 His words, 9 Nov 2026: “Words, then the Colossus (Recommended)”. Shown them on try-out 12 (The Swamp Colossus's

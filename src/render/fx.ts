@@ -43,6 +43,9 @@ import type { GameEvent, TownVoice } from '../game/state';
 import type { Element, WordId } from '../game/types';
 import { meldLookWords, meldOwnsEvent } from './melds3';
 import { ownsEventV3 } from './volatile3';
+// (THE TEN NEW WORDS' LOOKS, render/words7.ts and words10.ts: while they are on, what the rules say of the words is theirs to draw)
+import { ownsEventW7 } from './words7';
+import { ownsEventW10 } from './words10';
 import { Wild } from './wild';
 import { RIFT_SMOKE, RIFT_SPARK, drawRift } from './arrivals';
 import type { Rift } from './arrivals';
@@ -431,10 +434,24 @@ const BUBBLE: readonly string[] = [P.vn5, P.vn4, P.vn4, P.vn3];
 const HUSH: readonly string[] = ['#e2dfe8', '#b8b4c6', '#8e8aa0', '#6a6680'];
 const BELL_CYAN: readonly string[] = ['#22d0e0', '#b8fff8', '#0c6a80'];
 const BELL_BURST: readonly string[] = ['#ffffff', '#b8fff8', '#22d0e0'];
+/** THE LAST WORDS (8 Nov 2026): the stand-ins' colours, each word's own and lighter, until the art chat's looks. */
+const LAST_FX = {
+  piercing: ['#d8e0e8', '#f2f6fa', '#ffffff'],
+  bleeding: ['#c0303a', '#ec9aa0', '#801820'],
+  reaping: ['#6a8a7a', '#c4d8cc', '#3a5a4a'],
+  culling: ['#b8acc8', '#5a4a6a', '#e0d8ec'],
+  surging: ['#3a78c8', '#a8ccf2', '#ffffff'],
+  plundering: ['#ffe070', '#c8a040', '#fff4c0'],
+  mirroring: ['#a0b8c8', '#dce8f0', '#ffffff'],
+} as const;
 /** The colour each word's name is shown in when it joins an ability. */
 export const WORD_HUE: Record<WordId, string> = { power: P.bl4, swift: P.gn4, twin: P.tl4, fire: P.fr4, frost: P.bu4, lightning: P.lt3, leech: P.bl5, volatile: P.pu4, poison: P.vn4, heavy: '#ac8753', precise: '#eef4fa', frenzied: '#ff5c33', guarding: '#30a868',
   // (the city's words, Version 23.8)
   pulling: '#7a76e0', splitting: '#dcaaf6', hexing: '#b8b4c8', stilling: '#86eaae', binding: '#c8b48a',
+  // (THE LAST WORDS, 8 Nov 2026: as art/icons.ts has them, placeholders until the art chat's)
+  piercing: '#d8e0e8', bleeding: '#a0203a', reaping: '#6a8a7a', culling: '#5a4a6a', surging: '#3a78c8', plundering: '#b8a040', mirroring: '#a0b8c8',
+  // (HIS THREE NEW WORDS, 9 Nov 2026: as art/icons.ts has them, placeholders)
+  lasting: '#b09080', fleeting: '#e8d0f8', vast: '#7a5a3a',
   // (WORDMELDING: the melded words take their colours from art/icons.ts)
   eruption: '#ff9a5a', avalanche: '#b8dcff', thunder: '#c8a8ff', blight: '#8aa040', scald: '#e0b0c0', wildfire: '#d86040', fumes: '#c89838', hailstorm: '#e8f0c0', frostbite: '#6898b0', contagion: '#90e0a0',
   // (Volatile's melds, behind VOLT_MELDS, off: placeholders until the art chat's)
@@ -1151,6 +1168,9 @@ export class Fx {
       if (meldOwnsEvent(e)) continue;
       // (and the five Volatile melds' blasts, behind VOLATILE3, off: render/volatile3.ts)
       if (ownsEventV3(e)) continue;
+      // (THE TEN NEW WORDS' LOOKS: the seven's and Vast's own moments are drawn by render/words7.ts and words10.ts while those are
+      // on; the plain stand-ins below, the rules' branch's, are left out then: the art chat's ask of 9 Nov 2026)
+      if (ownsEventW7(e) || ownsEventW10(e)) continue;
       switch (e.t) {
         case 'hit': {
           if (e.poison) {
@@ -1890,6 +1910,47 @@ export class Fx {
           break;
         case 'burned':
           break; // the inventory screen shows what the word became
+        // (THE LAST WORDS, 8 Nov 2026: plain stand-ins in each word's colour until the art chat's looks)
+        case 'pierceLine':
+        case 'lance':
+          this.groundBolt(e.x0, e.y0, e.x1, e.y1, LAST_FX.piercing);
+          break;
+        case 'bleedOn':
+        case 'heroBleed':
+          this.spray(e.x, e.y, 5, LAST_FX.bleeding, 30, 20);
+          break;
+        case 'reapSoul':
+        case 'rise':
+          this.spray(e.x, e.y, 6, LAST_FX.reaping, 25, 40);
+          break;
+        case 'spiritHit':
+          this.groundBolt(e.x0, e.y0, e.x1, e.y1, LAST_FX.reaping);
+          break;
+        case 'culled':
+          this.float(e.x, e.y, 'CULLED', LAST_FX.culling[0]);
+          break;
+        case 'surge':
+          this.spray(e.x, e.y, 10, LAST_FX.surging, 60, 10);
+          break;
+        case 'goldBurst':
+        case 'goldStolen':
+          this.spray(e.x, e.y, 8, LAST_FX.plundering, 50, 40);
+          break;
+        case 'reflection':
+        case 'mirrorCast':
+          this.spray(e.x, e.y, 6, LAST_FX.mirroring, 20, 30);
+          break;
+        case 'mirrorBack':
+          this.groundBolt(e.x0, e.y0, e.x1, e.y1, LAST_FX.mirroring);
+          break;
+        // (HIS THREE NEW WORDS: Vast behind's splash, where its look is off: the plain ring of a shock through the floor, as the
+        // rules' branch drew it)
+        case 'vastSplash':
+          this.handle([{ t: 'burst', x: e.x, y: e.y, r: e.r, el: e.el, style: 'shock', words: [], n: 0, echo: false }], play);
+          break;
+        case 'goldSpray':
+        case 'cullBlow':
+          break;
         case 'levelup':
         case 'station':
           break;

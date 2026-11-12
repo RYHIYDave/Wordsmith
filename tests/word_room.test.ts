@@ -19,7 +19,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { wordIds } from '../src/game/melds';
 import { CELL, PITCH } from '../src/ui/panels';
-import { INV_MIN_W, SWAP_W, WORD_HALF, WORD_ROOM, gameRect, halfRoom, invRect, layPouch } from '../src/ui/inventory';
+import { INV_MIN_W, NARROW_STONE, SWAP_W, TIGHT_STONE, WORD_HALF, WORD_ROOM, gameRect, halfRoom, invRect, layPouch } from '../src/ui/inventory';
 
 const ALL = wordIds();
 const SCREENS = [
@@ -70,5 +70,19 @@ test('at a service, the bottom turned to ALL has a place for every word, beside 
   const lines = Math.floor((stripH - 7) / 22);
   const lay = layPouch(ALL, () => 6, bodyW - SWAP_W - 3, lines, 3);
   assert.equal(lay.hidden, 0, `${lines} lines, ${bodyW - SWAP_W - 3} wide`);
+  // (THE TEN NEW WORDS, live since 11 Nov 2026: 48 words and melded words in all, where four lines of the narrow stones hold 44:
+  // there the stones stand a pixel narrower, TIGHT_STONE, each still wide enough for its rune stone, none over another)
+  assert.equal(ALL.length, 48);
+  assert.ok(lay.cells.every((c) => c.w === TIGHT_STONE), 'every word as a stone a pixel narrower');
+  assert.ok(TIGHT_STONE >= 14 && TIGHT_STONE < NARROW_STONE, 'no narrower than its rune stone');
+  for (let i = 1; i < lay.cells.length; i++) {
+    const a = lay.cells[i - 1];
+    const b = lay.cells[i];
+    assert.ok(b.line > a.line || b.x >= a.x + a.w + 1, `${b.word} clear of ${a.word}`);
+  }
+  for (const c of lay.cells) assert.ok(c.x + c.w <= bodyW - SWAP_W - 3 && c.line < lines, `${c.word} inside`);
+  // (with the 38 there were, the narrow stones as they were)
+  const before = layPouch(ALL.slice(0, 38), () => 6, bodyW - SWAP_W - 3, lines, 3);
+  assert.ok(before.hidden === 0 && before.cells.every((c) => c.w === NARROW_STONE), 'fewer words: the narrow stones, as before');
   assert.ok(invRect(507, 234).w >= INV_MIN_W);
 });

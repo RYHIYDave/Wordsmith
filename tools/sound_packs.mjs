@@ -10,8 +10,14 @@ import path from 'node:path';
 
 const HEROES = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];
 const CORE = new Set(['swing', 'hit', 'crit', 'slam', 'monster_die', 'hurt', 'pickup', 'gold', 'word', 'rare', 'potion', 'level_up', 'portal', 'door', 'gate_rise', 'gate_fall', 'click', 'equip', 'buy', 'deny', 'imbue', 'death', 'echo', 'might', 'orb', 'boss_roar']);
-const TOWN = new Set(['anvil', 'owl_hoot', 'owl_ruffle', 'crystal', 'rune_write', 'rune_drive', 'ring_power', 'coin']);
+const TOWN = new Set(['anvil', 'owl_hoot', 'owl_ruffle', 'crystal', 'rune_write', 'rune_drive', 'ring_power', 'coin', 'page_turn']);
 const WORLD = /^(break_|chest$|rift_|trap_|sealed_door$)/;
+/**
+ * THE TEN NEW WORDS' SOUNDS (the sound chat's sixth batch, 9 Nov 2026: assets/sound/README.md; game/word_sounds.ts): a pack of
+ * their own, about 850 KB, fetched the first time one of the ten words comes into play (from floor 6) and not with the heroes'
+ * skills as a game begins. The Lexicon's page turn goes with the town's.
+ */
+const WORDS10 = /^(pierce_(shot|lance)|bleed_(open|thorns|cut)|reap_(soul|spirit|rake|rise)|cull_(kill|mark|kindle)|surge_(wave|warn|foe)|plunder_(spray|stream|steal)|mirror_(swing|rise|break|back)|word_(lasting|fleeting|vast))$/;
 /**
  * THE FLOORS' SCENE SOUNDS (the sound chat's eighth batch, 9 Nov 2026: assets/sound/README.md; game/scene_sounds.ts says which floor
  * plays which): packs of their own by act, floors 1 to 5, 6 to 10, 11 to 15 and 16 to 20, so that a floor fetches its own act's
@@ -37,6 +43,7 @@ export function packOf(base, bosses = new Set()) {
   if (TOWN.has(base)) return 'town';
   if (WORLD.test(base)) return 'world';
   for (const [pack, names] of SCENE) if (names.test(base)) return pack;
+  if (WORDS10.test(base)) return 'words';
   if (base.startsWith('colossus_')) return 'colossus';
   const who = base.split('_')[0];
   if (bosses.has(who)) return 'bosses';

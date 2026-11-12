@@ -3,7 +3,7 @@
 // Every pairing is assembled from the same few parts (bigger, faster, doubled, element, ground
 // patch, echo, rune, buff), so no pairing needs its own code or its own art.
 
-import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, BIND, CLASSES, FRENZY, GUARD, HEAVY, HEX, HYBRID_LESS, MANA_MODE, OWN_MOVES, PRECISE, PULL, SKILLS, SPLIT, STILL, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
+import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, BIND, BLEED, CULL, FLEETING, LASTING, MIRRORING, VAST, PIERCE, PLUNDER, REAP, SURGE, CLASSES, FRENZY, GUARD, HEAVY, HEX, HYBRID_LESS, MANA_MODE, OWN_MOVES, PRECISE, PULL, SKILLS, SPLIT, STILL, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
 import type { Limit, SkillDef } from './defs';
 import type { Derived, Resolved } from './state';
 import type { Attr, ClassId, Element, MeldId, WeaponKind, WordId } from './types';
@@ -127,7 +127,10 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     id: def.id, name: skillName(def, front, behind), element, dmgMult: 0, size: 1, rate: 0, cooldown: 0, mana: 0,
     count: 1, countDmg: 1, splash: 0, splashDmg: 0, pierce: false, projSpeed: 0,
     ignite: 0, chill: 0, arcs: 0, arcDmg: 0, leech: 0, volatile: 0, poison: 0, stun: 0, precise: false, frenzy: false, shield: 0, meld,
-    might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, pull: 0, split: 0, hex: 0, still: 0, vortex: 0, shards: 0, hexCircle: 0, bubble: 0, bind: 0, snare: 0, meldBehind, lines,
+    might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, pull: 0, split: 0, hex: 0, still: 0, vortex: 0, shards: 0, hexCircle: 0, bubble: 0, bind: 0, snare: 0,
+    through: 0, lance: 0, bleed: 0, thorns: 0, reap: 0, spirit: 0, cull: 0, cullMark: 0, surge: 0, dodgeSurge: 0, plunder: 0, plunderBurst: 0, mirror: 0, mirrorLeave: 0,
+    last: 1, pace: 1, boost: 1, vast: 0, wide: 1,
+    meldBehind, lines,
   };
 
   // ----- in front: the hit -----
@@ -250,6 +253,14 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     r.precise = true;
     lines.push(`Precise: +${pct(more)} damage, ${pct((1 - PRECISE.area) * 100)} smaller area.`);
   }
+  // HIS THREE NEW WORDS (9 Nov 2026; game/defs.ts LASTING): VAST in front, the opposite of Precise
+  if (has(front, 'vast')) {
+    const wider = Math.min(VAST.widerMost, VAST.wider + 0.001 * growsBy(front, 'vast'));
+    size *= 1 + wider;
+    r.wide = 1 + wider;
+    dmgMult *= 1 - VAST.softer;
+    lines.push(`Vast: ${pct(wider * 100)} bigger area, ${pct(VAST.softer * 100)} less damage.`);
+  }
   if (has(front, 'frenzied')) {
     r.frenzy = true;
     lines.push(`Frenzied: each use makes the next ${pct(FRENZY.each * 100)} faster, up to ${FRENZY.max} times; it fades ${FRENZY.hold} s after the last.`);
@@ -280,6 +291,36 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   if (has(front, 'binding')) {
     r.bind = Math.min(BIND.most * st(front, 'binding'), BIND.secs * st(front, 'binding') + 0.004 * growsBy(front, 'binding'));
     lines.push(`Binding: holds what it hits in place for ${secs(r.bind)} s (an elite half as long, a boss not at all).`);
+  }
+  // ----- THE LAST WORDS (8 Nov 2026; game/defs.ts PIERCE to MIRRORING), in front -----
+  if (has(front, 'piercing')) {
+    r.pierce = true;
+    r.through = Math.min(PIERCE.throughMost, PIERCE.through + 0.002 * growsBy(front, 'piercing'));
+    lines.push(`Piercing: goes through every enemy in its path (a blow goes on through the first, ${PIERCE.line} tiles, for ${pct(r.through * 100)}).`);
+  }
+  if (has(front, 'bleeding')) {
+    r.bleed = Math.min(BLEED.dpsMost, BLEED.dps + 0.001 * growsBy(front, 'bleeding'));
+    lines.push(`Bleeding: what it hits bleeds for ${pct(r.bleed * 100)} of the hit a second for ${BLEED.secs} s, ${BLEED.moving} times as much while it moves.`);
+  }
+  if (has(front, 'reaping')) {
+    r.reap = Math.min(REAP.secsMost, REAP.secs + 0.001 * growsBy(front, 'reaping'));
+    lines.push(`Reaping: an enemy it kills leaves a soul that takes ${secs(r.reap)} s off every cooldown.`);
+  }
+  if (has(front, 'culling')) {
+    r.cull = Math.min(CULL.underMost, CULL.under + 0.0005 * growsBy(front, 'culling'));
+    lines.push(`Culling: an enemy it leaves under ${pct(r.cull * 100)} of its life dies outright (an elite under half that, a boss never).`);
+  }
+  if (has(front, 'surging')) {
+    r.surge = Math.min(SURGE.dmgMost, SURGE.dmg + 0.001 * growsBy(front, 'surging'));
+    lines.push(`Surging: every ${SURGE.every}rd use releases a shockwave round you for ${pct(r.surge * 100)} of a hit.`);
+  }
+  if (has(front, 'plundering')) {
+    r.plunder = Math.min(PLUNDER.goldMost, PLUNDER.gold + 0.005 * growsBy(front, 'plundering'));
+    lines.push(`Plundering: an enemy it kills drops ${pct(r.plunder * 100)} more gold, and now and then an extra item.`);
+  }
+  if (has(front, 'mirroring')) {
+    r.mirror = Math.min(MIRRORING.shareMost, MIRRORING.share + 0.001 * growsBy(front, 'mirroring'));
+    lines.push(`Mirrored: a reflection of you makes the same attack beside you, for ${pct(r.mirror * 100)}.`);
   }
 
   // ----- behind: the wake -----
@@ -374,6 +415,52 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     r.snare = Math.min(BIND.snareMost * st(behind, 'binding'), BIND.snareSecs * st(behind, 'binding') + 0.004 * growsBy(behind, 'binding'));
     lines.push(`of the Snare: leaves a snare; the next enemy to cross it is held in place for ${secs(r.snare)} s.`);
   }
+  // ----- THE LAST WORDS, behind -----
+  if (has(behind, 'piercing')) {
+    r.lance = Math.min(PIERCE.lanceMost, PIERCE.lance + 0.002 * growsBy(behind, 'piercing'));
+    lines.push(`of the Lance: a moment later a lance of light strikes down its line for ${pct(r.lance * 100)} of a hit.`);
+  }
+  if (has(behind, 'bleeding')) {
+    r.thorns = Math.min(BLEED.thornsMost, BLEED.thorns + 0.001 * growsBy(behind, 'bleeding'));
+    lines.push(`of Thorns: leaves thorns for ${BLEED.thornLife} s that cut whatever walks in them for ${pct(r.thorns * 100)} of a hit a second, and make it bleed.`);
+  }
+  if (has(behind, 'reaping')) {
+    r.spirit = Math.min(REAP.spiritDmgMost, REAP.spiritDmg + 0.001 * growsBy(behind, 'reaping'));
+    lines.push(`of Spirits: an enemy it kills rises as a spirit that fights for you for ${REAP.spiritSecs} s, for ${pct(r.spirit * 100)} of a hit.`);
+  }
+  if (has(behind, 'culling')) {
+    r.cullMark = Math.min(CULL.markMost, CULL.markUnder + 0.0005 * growsBy(behind, 'culling'));
+    lines.push(`of the Reaper: leaves a reaper's mark; the first enemy under ${pct(r.cullMark * 100)} of its life to cross it dies.`);
+  }
+  if (has(behind, 'surging')) {
+    r.dodgeSurge = Math.min(SURGE.dodgeMost, SURGE.dodge + 0.001 * growsBy(behind, 'surging'));
+    lines.push(`of the Surge: your dodge releases a surge for ${pct(r.dodgeSurge * 100)} of this attack's hit.`);
+  }
+  if (has(behind, 'plundering')) {
+    r.plunderBurst = Math.min(PLUNDER.burstMost, PLUNDER.burst + 0.005 * growsBy(behind, 'plundering'));
+    lines.push(`of Plunder: an enemy it kills bursts with gold that flies to you, ${pct(r.plunderBurst * 100)} more.`);
+  }
+  if (has(behind, 'mirroring')) {
+    r.mirrorLeave = Math.min(MIRRORING.leaveMost, MIRRORING.leaveShare + 0.001 * growsBy(behind, 'mirroring'));
+    lines.push(`of Mirrors: leaves a mirror where you stood; your next attack it makes again from there, for ${pct(r.mirrorLeave * 100)}.`);
+  }
+  if (has(behind, 'vast')) {
+    r.vast = Math.min(VAST.splashMost, VAST.splash + 0.001 * growsBy(behind, 'vast'));
+    lines.push(`of the Expanse: each hit splashes ${pct(r.vast * 100)} of itself onto every enemy within ${VAST.splashR} tiles of what it hits.`);
+  }
+  // LASTING and FLEETING, the same wherever they sit (his “Well it makes everything connected to lasting last longer”)
+  const lastSide = has(front, 'lasting') ? front : has(behind, 'lasting') ? behind : null;
+  if (lastSide) {
+    const longer = Math.min(LASTING.longerMost, LASTING.longer + 0.001 * growsBy(lastSide, 'lasting'));
+    r.last *= 1 + longer;
+    lines.push(`${lastSide === front ? 'Lasting' : 'of Ages'}: everything it makes and gives lasts ${pct(longer * 100)} longer; its poison and burning as hard, for longer.`);
+  }
+  if (has(front, 'fleeting') || has(behind, 'fleeting')) {
+    r.last *= 1 - FLEETING.shorter;
+    r.pace /= 1 - FLEETING.shorter;
+    r.boost *= 1 + FLEETING.stronger;
+    lines.push(`${has(front, 'fleeting') ? 'Fleeting' : 'of Moments'}: everything it makes is ${pct(FLEETING.shorter * 100)} shorter and does as much in that time; its boosts ${pct(FLEETING.stronger * 100)} stronger.`);
+  }
   if (softer) dmgMult *= 0.7;
 
   // ----- WORDMELDING: each melded word's twist, in front and behind (game/melds.ts) -----
@@ -442,6 +529,13 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     else if (meldBehind === 'chainreaction') twist('your runes are linked: one going off sets off the rest.');
     else if (meldBehind === 'rupture') twist('the rune bursts into a poison cloud.');
   }
+
+  // (LASTING and FLEETING on what it leaves and the boosts it gives, every word's above: its ground, longer or shorter, Fleeting's
+  // as much in all; Fleeting's boosts stronger)
+  if (r.zone) r.zone = { ...r.zone, dur: r.zone.dur * r.last, dps: r.zone.dps * r.pace };
+  r.might *= r.boost;
+  r.haste *= r.boost;
+  r.shield *= r.boost;
 
   r.dmgMult = dmgMult;
   r.size = size;

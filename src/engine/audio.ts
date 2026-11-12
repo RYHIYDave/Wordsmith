@@ -990,6 +990,25 @@ export function warmNamed(names: readonly string[]): boolean {
   return true;
 }
 
+/**
+ * Fetch these sounds too, with the place's own: kept as long as the place's are, and let go with them (warmNamed) unless they are
+ * asked for again in the next. For what comes into play part way through a place: the ten new words' sounds, a word's as it is
+ * set in one of his abilities or met on a monster (main.ts warmWords). False before the sound has started.
+ */
+export function warmAlso(names: readonly string[]): boolean {
+  const c = ctx;
+  if (!c || !RECORDED.on) return false;
+  for (const n of names) {
+    for (const k of [1, 2]) {
+      const f = `${n}_${k}.mp3`;
+      warmedLast.add(f);
+      warmedEver.add(f);
+      fetchRecorded(c, f, false);
+    }
+  }
+  return true;
+}
+
 /** Fetch the combat sounds, and a hero's voice where one is named (the hero played). */
 export function warmRecorded(hero?: Speaker): void {
   const c = ctx;

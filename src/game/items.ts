@@ -479,6 +479,59 @@ const IMBUE_TABLE: Record<BaseWordId, readonly ImbueRule[]> = {
     { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'str']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'armor'], ['suffix', 'str']] },
   ],
+  // THE LAST WORDS (8 Nov 2026; his words, of them, “And those all craftable as well”): each its own on what strikes, or its
+  // attribute; something of the same mind on what keeps
+  // (PIERCING: critical damage, or Dexterity)
+  piercing: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'critMult'], ['suffix', 'dex']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'critMult'], ['suffix', 'dex']] },
+  ],
+  // (BLEEDING: physical damage or Strength; life coming back, or Strength)
+  bleeding: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'physPct'], ['suffix', 'str']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'lifeRegen'], ['suffix', 'str']] },
+  ],
+  // (REAPING: life on a kill, or Intelligence; faster cooldowns, or Intelligence)
+  reaping: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'lifeOnKill'], ['suffix', 'int']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'cdr'], ['suffix', 'int']] },
+  ],
+  // (CULLING: more damage or Strength; more life or Strength)
+  culling: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'str']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'maxLife'], ['suffix', 'str']] },
+  ],
+  // (SURGING: a bigger area, or Intelligence; mana, or Intelligence)
+  surging: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'areaPct'], ['suffix', 'int']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'manaRegen'], ['suffix', 'int']] },
+  ],
+  // (PLUNDERING: more gold, or Dexterity; better finds, or Dexterity)
+  plundering: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'goldFind'], ['suffix', 'dex']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'magicFind'], ['suffix', 'dex']] },
+  ],
+  // (MIRRORING: more damage, or Intelligence; a chance to block, or Intelligence)
+  mirroring: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'int']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'blockChance'], ['suffix', 'int']] },
+  ],
+  // HIS THREE NEW WORDS (9 Nov 2026; every word craftable, his 8 Nov “And those all craftable as well”)
+  // (LASTING: more damage or Intelligence; life coming back, or Intelligence)
+  lasting: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'int']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'lifeRegen'], ['suffix', 'int']] },
+  ],
+  // (FLEETING: faster cooldowns, or Dexterity, on either)
+  fleeting: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'cdr'], ['suffix', 'dex']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'cdr'], ['suffix', 'dex']] },
+  ],
+  // (VAST: a bigger area, or Strength; armour, or Strength)
+  vast: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'areaPct'], ['suffix', 'str']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'armor'], ['suffix', 'str']] },
+  ],
   // (there is no poison damage or poison resistance on gear yet: poison grows with all damage, and is outlasted with life)
   poison: [
     { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'dex']] },

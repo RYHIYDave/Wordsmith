@@ -126,11 +126,27 @@ test('words added with no slot used: Twin behind the hold, Binding behind the sw
   assert.ok(resolveSkill(SKILLS.whirlwind, tow.front, tow.behind, 'str', D).pull > 0);
   // set by hand as well: once, the slots all still his
   assert.deepEqual(bendWords(1, [sk(), sk([null, null], ['twin', 'swift'])], ctx(['cantorsecho'])).behind, ['twin', 'swift']);
-  // (the ten new words: the Hood's Culling, the Glass's Mirroring, The Long Echo's Lasting, once they are in the game; until then, nothing)
+  // (THE TEN NEW WORDS ARE IN THE GAME WITH THESE, since the two were brought together, 11 Nov 2026: the Hood's Culling, the
+  // Glass's Mirroring and The Long Echo's Lasting are words of the game by these very ids, added with no slot used, and each
+  // is at work in what the attack resolves to. A word renamed, or one of the three taken out, fails here and not in silence:
+  // game/uniques.ts adds a word only if it is one, and says nothing where it is not.)
   for (const [id, w, i] of [['headsmanshood', 'culling', 0], ['queensglass', 'mirroring', 0], ['longecho', 'lasting', 1]] as [string, string, number][]) {
+    assert.ok(has(w) && (WORD_IDS as readonly string[]).includes(w), `${w}: a word of the game`);
     const b = bendWords(i, three, ctx([id]));
-    assert.deepEqual(b.front, has(w) ? [null, null, w] : [null, null], `${id}: ${w}`);
+    assert.deepEqual(b.front, [null, null, w], `${id}: ${w}`);
   }
+  const hood = bendWords(0, three, ctx(['headsmanshood']));
+  assert.ok(resolveSkill(SKILLS.strike, hood.front, hood.behind, 'str', D).cull > 0, "The Headsman's Hood: his tap attack culls");
+  assert.deepEqual(bendWords(1, three, ctx(['headsmanshood'])).front, [null, null], 'the tap attack only');
+  const glass = bendWords(0, three, ctx(['queensglass']));
+  assert.ok(resolveSkill(SKILLS.strike, glass.front, glass.behind, 'str', D).mirror > 0, "The Queen's Glass: his reflection attacks with him");
+  assert.deepEqual(bendWords(1, three, ctx(['queensglass'])).front, [null, null], 'the tap attack only');
+  for (const i of [0, 1, 2]) {
+    const echoes = bendWords(i, three, ctx(['longecho']));
+    assert.ok(resolveSkill([SKILLS.strike, SKILLS.whirlwind, SKILLS.leap][i], echoes.front, echoes.behind, 'str', D).last > 1, `The Long Echo: attack ${i} lasts longer`);
+  }
+  // (set by hand as well: there once)
+  assert.deepEqual(bendWords(0, [sk(['culling', null])], ctx(['headsmanshood'])).front, ['culling', null]);
 });
 
 test('The King\'s Knot: the word of a monster he killed, in front of his tap attack, lent beside his own', () => {

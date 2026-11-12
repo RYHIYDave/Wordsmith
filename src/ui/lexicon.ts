@@ -32,6 +32,10 @@ import { SIDE_M, putDown, sideBody, sideFrame } from './town';
 import { THEME, inside } from './ui';
 import type { Rect, Ui } from './ui';
 import { drawWordTile } from './words';
+// (THE LEXICON'S 28 WORDS: the art chat's ways to lay out its stones, behind LEX28, whose way 'rows' is this file's own. ITS WAY
+// IS 'groups' SINCE THE TEN NEW WORDS WENT LIVE: the Lexicon in five pages by what the words do, his yes to its picture in the
+// art chat, 9 Nov 2026, “Yes, use them (Recommended)”. What is pressed there is in lexiconSide, below.)
+import { LEX28, LEX_BOOK, LEX_PAGES, drawLex28, drawTabs, lex28Layout, lexPageOf, lexSeen } from './lexicon28';
 
 export interface LexUi {
   /** The word whose page is open. */
@@ -42,10 +46,14 @@ export interface LexUi {
   hand: WordId | null;
   note: string;
   noteT: number;
+  /** In town, the Lexicon in pages ('groups'): the page opened by its tab (LEX_PAGES); null, the open word's own page. */
+  tab?: number | null;
+  /** (The same) One of its tabs has just been tapped and its page turned: main.ts plays the page turn and puts this out. */
+  turned?: boolean;
 }
 
 export function newLexUi(): LexUi {
-  return { sel: null, pick: null, hand: null, note: '', noteT: 0 };
+  return { sel: null, pick: null, hand: null, note: '', noteT: 0, tab: null, turned: false };
 }
 
 const SLOT_NAME: Record<Slot, string> = { mainhand: 'weapon', offhand: 'off hand', helm: 'helm', chest: 'chest', gloves: 'gloves', belt: 'belt', boots: 'boots', amulet: 'amulet', ring: 'ring' };
@@ -208,7 +216,14 @@ export function lexiconSide(ui: Ui, art: Art, meta: Meta, game: Game, st: LexUi,
   const found = WORD_IDS.filter((w) => meta.known[w].found);
   if (st.sel && !meta.known[st.sel].found) st.sel = null;
   if (!st.sel && found.length) st.sel = found[0];
-  const cells = WORD_IDS.map((w, i) => ({ w, r: { x: x0 + (i % perRow) * pitch, y: bodyY + Math.floor(i / perRow) * (CELL + 2), w: CELL, h: CELL } }));
+  // (THE LEXICON IN PAGES, 'groups': a row of five tabs, the open page's stones in one row under them: ui/lexicon28.ts lays it
+  // out and draws it; here its tabs and its stones are pressed. Any other way of the mock-up's is drawn only, over the game's rows.)
+  const pages = LEX28.way === 'groups' ? lex28Layout(sideBody(r, ui.w, ui.h), T, 'groups', st.sel, st.tab ?? LEX28.tab) : null;
+  const tabs = pages?.tabs ?? [];
+  const cells = pages ? pages.cells : WORD_IDS.map((w, i) => ({ w, r: { x: x0 + (i % perRow) * pitch, y: bodyY + Math.floor(i / perRow) * (CELL + 2), w: CELL, h: CELL } }));
+  tabs.forEach((t, i) => ui.mark(`lextab:${i}`, t.x, t.y, t.w, t.h));
+  // (the page that is open is being looked at: its words found are seen, and mark no tab)
+  if (pages) lexSeen(meta, LEX_PAGES[pages.tab].words);
   const kept = WORD_IDS.filter((w) => meta.lexicon[w] > 0);
   // (the shelf has one row: more kinds kept than it holds side by side, and they stand closer)
   const keptPitch = kept.length > 1 ? Math.min(pitch, Math.floor((bw - CELL) / (kept.length - 1))) : pitch;
@@ -225,8 +240,20 @@ export function lexiconSide(ui: Ui, art: Art, meta: Meta, game: Game, st: LexUi,
       // a word has been taken in hand over there: its page is the one opened here
       if (inv.word !== st.hand) {
         st.hand = inv.word;
-        if (inv.word && meta.known[inv.word].found) st.sel = inv.word;
+        if (inv.word && meta.known[inv.word].found) {
+          st.sel = inv.word;
+          st.tab = null;
+        }
       }
+      // (THE LEXICON IN PAGES: a tab tapped, its page opens at its first word found; a page with none found yet is opened too)
+      tabs.forEach((t, i) => {
+        if (!ui.pressIn(t.x, t.y, t.w, t.h)) return;
+        if (pages && i !== pages.tab) st.turned = true;
+        st.tab = i;
+        const first = LEX_PAGES[i].words.find((w) => meta.known[w].found);
+        if (first) st.sel = first;
+        st.pick = null;
+      });
       // (and whatever the inventory has in hand, what was picked here is put down)
       if (inv.sel || inv.word || inv.pending || inv.look) st.pick = null;
       if (st.pick && ui.pressIn(takeR.x, takeR.y, takeR.w, takeR.h)) say(game.withdrawWord(st.pick.word));
@@ -239,7 +266,10 @@ export function lexiconSide(ui: Ui, art: Art, meta: Meta, game: Game, st: LexUi,
         if (!ui.pressIn(c.r.x, c.r.y, c.r.w, c.r.h)) continue;
         putDown(inv);
         st.hand = null;
-        if (meta.known[c.w].found) st.sel = c.w;
+        if (meta.known[c.w].found) {
+          st.sel = c.w;
+          st.tab = null;
+        }
         st.pick = { from: 'kept', word: c.w };
       }
       if (ui.press && !ui.used && inside(r, ui.press.x, ui.press.y)) st.pick = null;
@@ -249,6 +279,8 @@ export function lexiconSide(ui: Ui, art: Art, meta: Meta, game: Game, st: LexUi,
     wordButtons: (w) => [{ label: `KEEP: ${cost} GOLD`, act: () => game.depositWord(w), lit: game.hero.gold >= cost, disabled: game.hero.gold < cost }],
 
     draw(): void {
+      // (the art chat's ways for 28 words, behind a switch whose way 'rows' is the game's own: ui/lexicon28.ts)
+      if (LEX28.way !== 'rows') return drawLex28(ui, art, meta, game, st, r);
       sideFrame(ui, r, 'LEXICON', `${found.length} OF ${WORD_IDS.length} FOUND`);
       for (const c of cells) {
         if (!meta.known[c.w].found) {
@@ -307,15 +339,27 @@ export function drawLexicon(ui: Ui, art: Art, meta: Meta, st: LexUi, dt: number)
   const py = Math.max(3, Math.floor((H - ph) / 2));
   const hdr = T ? 23 : 18;
   const rowH = T ? 19 : 17;
+  // (THE BOOK IN PAGES, since the ten new words went live: the Lexicon's five pages by what the words do, his at the lectern
+  // (ui/lexicon28.ts LEX_PAGES), here too: a row of tabs under the title, and the list is the open page's words. The page open:
+  // the one its tab opened, else the open word's.)
+  const paged = LEX28.way === 'groups' && LEX_BOOK.pages;
+  const at = paged ? (st.tab !== null && st.tab !== undefined && st.tab >= 0 && st.tab < LEX_PAGES.length ? st.tab : st.sel ? lexPageOf(st.sel) : 0) : -1;
+  const listed: readonly WordId[] = paged ? LEX_PAGES[at].words : WORD_IDS;
+  const tabH = T ? 18 : 15;
+  const tabW = Math.min(58, Math.floor((pw - 12 - (LEX_PAGES.length - 1) * 2) / LEX_PAGES.length));
+  const tabs: Rect[] = paged ? LEX_PAGES.map((_, i) => ({ x: px + 6 + i * (tabW + 2), y: py + hdr + 2, w: tabW, h: tabH })) : [];
+  const headH = hdr + 2 + (paged ? tabH + 3 : 0);
   // (one column of words beside the page; two where one would run off the foot of the panel, as
   // Version 19.3's thirteen do on a phone held sideways)
-  const cols = narrow ? 3 : hdr + 2 + WORD_IDS.length * rowH + 4 <= ph ? 1 : 2;
+  const cols = narrow ? 3 : headH + listed.length * rowH + 4 <= ph ? 1 : 2;
   const listW = narrow ? pw - 12 : 104 * cols;
   const cellW = Math.floor(listW / cols);
   const listX = px + 6;
-  const listY = py + hdr + 2;
-  const cells: { r: Rect; w: WordId }[] = WORD_IDS.map((w, i) => ({ r: { x: listX + (i % cols) * cellW, y: listY + Math.floor(i / cols) * rowH, w: cellW - 2, h: rowH - 2 }, w }));
-  const listH = Math.ceil(WORD_IDS.length / cols) * rowH;
+  const listY = py + headH;
+  const cells: { r: Rect; w: WordId }[] = listed.map((w, i) => ({ r: { x: listX + (i % cols) * cellW, y: listY + Math.floor(i / cols) * rowH, w: cellW - 2, h: rowH - 2 }, w }));
+  const listH = Math.ceil(listed.length / cols) * rowH;
+  // (the word whose page is written: the open word where it is on the open page, else that page's first found, or none yet)
+  const open: WordId | null = paged ? (st.sel && listed.includes(st.sel) ? st.sel : listed.find((w) => meta.known[w].found) ?? null) : st.sel;
   // the strip at the bottom: the words kept in the book
   const chipW = T ? 34 : 30;
   const chipH = T ? 20 : 16;
@@ -336,20 +380,37 @@ export function drawLexicon(ui: Ui, art: Art, meta: Meta, st: LexUi, dt: number)
 
   for (const c of cells) ui.mark(`lex:${c.w}`, c.r.x, c.r.y, c.r.w, c.r.h);
   for (const c of chips) ui.mark(`kept:${c.w}`, c.r.x, c.r.y, c.r.w, c.r.h);
+  tabs.forEach((t, i) => ui.mark(`lextab:${i}`, t.x, t.y, t.w, t.h));
 
   // ---- presses ----------------------------------------------------------------------------------
   let close = false;
   if (ui.pressIn(closeR.x, closeR.y, closeR.w, closeR.h)) close = true;
+  // (a tab tapped: its page opens at its first word found; a page with none found yet is opened too)
+  tabs.forEach((t, i) => {
+    if (!ui.pressIn(t.x, t.y, t.w, t.h)) return;
+    if (i !== at) st.turned = true;
+    st.tab = i;
+    const first = LEX_PAGES[i].words.find((w) => meta.known[w].found);
+    if (first) st.sel = first;
+  });
   for (const c of cells) {
     if (!ui.pressIn(c.r.x, c.r.y, c.r.w, c.r.h)) continue;
     if (meta.known[c.w].found) st.sel = c.w;
   }
   for (const c of chips) {
     if (!ui.pressIn(c.r.x, c.r.y, c.r.w, c.r.h)) continue;
-    if (meta.known[c.w].found) st.sel = c.w;
+    if (meta.known[c.w].found) {
+      st.sel = c.w;
+      st.tab = null;
+    }
   }
   const inPanel = ui.press && !ui.used && ui.press.x >= px && ui.press.y >= py && ui.press.x < px + pw && ui.press.y < py + ph;
   if (ui.press && !ui.used && !inPanel) close = true;
+
+  // (THE LEXICON IN PAGES: the page that is open here is being looked at: its words found are seen, and mark no tab; without
+  // the pages, the word whose page is open)
+  if (paged) lexSeen(meta, listed);
+  else if (st.sel) lexSeen(meta, [st.sel]);
 
   // ---- draw -------------------------------------------------------------------------------------
   ui.shade(0.75);
@@ -359,6 +420,7 @@ export function drawLexicon(ui: Ui, art: Art, meta: Meta, st: LexUi, dt: number)
   ui.text(`${found.length} of ${WORD_IDS.length} words found`, hx, py + (T ? 10 : 7), THEME.dim, 'left', true);
   ui.drawButton(closeR.x, closeR.y, closeR.w, closeR.h, 'x', {});
   if (st.noteT > 0) ui.text(st.note, closeR.x - 5, py + (T ? 8 : 5), THEME.bad, 'right');
+  if (paged) drawTabs(ui, meta, tabs, at);
 
   // the list: a line for each word there is; the ones not found yet are only a line
   for (const c of cells) {
@@ -368,7 +430,7 @@ export function drawLexicon(ui: Ui, art: Art, meta: Meta, st: LexUi, dt: number)
       drawText(g, '? ? ?', c.r.x + Math.floor(c.r.w / 2), c.r.y + Math.floor((c.r.h - 5) / 2), THEME.faint, { align: 'center', font: 'small' });
       continue;
     }
-    const on = st.sel === c.w;
+    const on = open === c.w;
     const hot = ui.hover(c.r.x, c.r.y, c.r.w, c.r.h);
     ui.box(c.r.x, c.r.y, c.r.w, c.r.h, on ? THEME.hot : hot ? THEME.hot : THEME.bg2, on ? THEME.accent : WORD_COLOR[c.w]);
     const icon = art.icons.word[c.w];
@@ -384,7 +446,8 @@ export function drawLexicon(ui: Ui, art: Art, meta: Meta, st: LexUi, dt: number)
   }
 
   // the page of the word that is open
-  if (st.sel) drawWordPage(g, meta, st.sel, pageX, pageY, pageW, pageH, !narrow);
+  if (open) drawWordPage(g, meta, open, pageX, pageY, pageW, pageH, !narrow);
+  else if (paged && found.length) drawText(g, 'No word of this page found yet.', pageX, pageY + 2, THEME.dim);
   else wrapText('No word found yet. The first lies in a satchel, half way through the first dungeon.', pageW, 'normal').forEach((row, i) => drawText(g, row, pageX, pageY + 2 + i * 9, THEME.dim));
 
   // the strip: words kept in the book between characters
