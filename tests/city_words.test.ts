@@ -24,7 +24,7 @@ import { Game } from '../src/game/game';
 import { imbueItem, rollItem } from '../src/game/items';
 import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Monster, Zone } from '../src/game/state';
-import { WORD_IDS } from '../src/game/types';
+import { LAST_WORD_IDS, WORD_IDS } from '../src/game/types';
 import type { ClassId, Element, MonsterKind, WordId } from '../src/game/types';
 import { RNG as Dice } from '../src/engine/rng';
 import { Fx } from '../src/render/fx';
@@ -125,9 +125,11 @@ test('1. the four are shaping words, in every list of words, and found only from
   assert.deepEqual(['pulling', 'splitting', 'hexing', 'stilling'].map((w) => WORDS[w as WordId].behind), ['of the Vortex', 'of Shards', 'of Hexes', 'of Stillness']);
   assert.equal(DEEP_WORDS_FROM, 11);
   for (const p of [1, 5, 10]) assert.ok(!wordsAt(p).some((w) => DEEP_WORDS.includes(w)), `none on floor ${p}`);
-  for (const p of [11, 15, 21]) assert.deepEqual(wordsAt(p), WORD_IDS, `all of them at level ${p}`);
-  // (before 11, the same thirteen in the same order: what was drawn before is drawn now)
-  assert.deepEqual(wordsAt(10), WORD_IDS.slice(0, 13));
+  // (all of them from 11, but the last words, found from 16: LAST_WORDS_FROM, 8 Nov 2026)
+  for (const p of [11, 15]) assert.deepEqual(wordsAt(p), WORD_IDS.filter((w) => !LAST_WORD_IDS.includes(w)), `all of them at level ${p}, the last words from 16`);
+  assert.deepEqual(wordsAt(21), WORD_IDS, 'all at level 21');
+  // (before 11, the same thirteen in the same order, and his three of 9 Nov 2026 after them: what was drawn before is drawn now)
+  assert.deepEqual(wordsAt(10), [...WORD_IDS.slice(0, 13), 'lasting', 'fleeting', 'vast']);
 });
 
 test('2. before floor 11 no monster carries one of the four and none drops; from floor 11 they do', () => {

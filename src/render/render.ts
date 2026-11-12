@@ -101,6 +101,10 @@ import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tin
 import { MELD3, airM3, floorM3, heroAlphaM3, lightsM3, overM3, ownsZone, rotting, shiftM3, tickM3, tintM3 } from './melds3';
 import { BINDING3, airB3, floorB3, lightsB3, ownsZoneB3, tickB3, tintB3 } from './binding3';
 import { VOLATILE3, airV3, floorV3, lightsV3, overV3, ownsZoneV3, shiftV3, tickV3, tintV3 } from './volatile3';
+// (THE SEVEN NEW WORDS' LOOKS, a mock-up of the art chat's behind a switch that is off: render/words7.ts)
+import { WORDS7_LOOK, airW7, fallenW7, floorW7, heroW7, lightsW7, lookW7, lyingW7, ownsZoneW7, spiritsW7, tickW7 } from './words7';
+// (HIS THREE NEW WORDS' LOOKS, Lasting, Fleeting and Vast, a mock-up of the art chat's behind a switch that is off: render/words10.ts)
+import { WORDS10_LOOK, airW10, floorW10, heroW10, lightsW10, thingW10, tickW10 } from './words10';
 import { BossFx } from './bossfx';
 import { FloorDress } from './dress';
 import type { Kick } from './dress';
@@ -2348,6 +2352,14 @@ export class Renderer {
     }
     // (THE FIRST FIVE FLOORS: what the bosses of floors 2 to 5 warn of, leave and cast shadows of on the floor: render/bossfx.ts)
     if (game.perils.length || game.boss || game.level.act1 || game.monsters.some((m) => m.state === 'act')) this.bossFx.ground(g, this.floorAt, game, t, here);
+    // (THE LAST WORDS: Reaping's spirits, a plain stand-in in the word's colour until the art chat's look; with its look on, the
+    // little grey Shade stands among the figures instead: render/words7.ts spiritsW7)
+    for (const sp of game.spirits) {
+      if (WORDS7_LOOK.on || !here(sp.x, sp.y)) continue;
+      const fade = Math.min(1, (sp.life - sp.t) * 2, sp.t * 4);
+      ellipse(g, wx(cam, sp.x, sp.y), wy(cam, sp.x, sp.y) - 8, 0.35, WORD_COLOR.reaping, 0.6 * fade);
+      ringDots(g, wx(cam, sp.x, sp.y), wy(cam, sp.x, sp.y) - 8, 0.35, WORD_COLOR.reaping);
+    }
     for (const z of game.zones) {
       // (THE MONSTERS' ATTACKS: the line a red troll will charge along, in the red circle's own reds: art/charge_lane.ts)
       if (z.kind === 'lane') {
@@ -2386,10 +2398,20 @@ export class Renderer {
       // (Heavy's cracked ground and Guarding's ward are drawn with the new words' looks: words3.ts, floor3; and since Version 23.8
       // Pulling's vortex, Hexing's circle and Stilling's bubble)
       if (z.kind === 'cracks' || z.kind === 'ward' || z.kind === 'vortex' || z.kind === 'hex' || z.kind === 'bubble' || z.kind === 'snare') continue;
+      // (THE LAST WORDS, 8 Nov 2026: Bleeding's thorns, Culling's reaper's mark, Mirroring's mirror: plain stand-ins in the word's colour
+      // until the art chat's looks)
+      if (z.kind === 'thorns' || z.kind === 'reaper' || z.kind === 'mirror') {
+        const col = WORD_COLOR[z.kind === 'thorns' ? 'bleeding' : z.kind === 'reaper' ? 'culling' : 'mirroring'];
+        ellipse(g, cx, cy, z.r, col, 0.22 * Math.min(1, (z.dur - z.t) * 2));
+        ringDots(g, cx, cy, z.r, col);
+        continue;
+      }
       // (a melded word's patch has a look of its own, behind MELD3, off: render/melds3.ts, floorM3)
       if (ownsZone(z)) continue;
       // (Binding's snare has a look of its own, behind BINDING3, off: render/binding3.ts, floorB3)
       if (ownsZoneB3(z)) continue;
+      // (and the seven new words' zones, thorns, the reaper's mark and the mirror, behind WORDS7_LOOK, off: render/words7.ts)
+      if (ownsZoneW7(z)) continue;
       // (and the five Volatile melds' runes and patches, behind VOLATILE3, off: render/volatile3.ts, floorV3)
       if (ownsZoneV3(z)) continue;
       if (z.kind === 'warn') {
@@ -2532,6 +2554,8 @@ export class Renderer {
     if (MELD3.on && !this.skip.has('ground')) floorM3(g, cam, t, game, here);
     if (BINDING3.on && !this.skip.has('ground')) floorB3(g, cam, t, game, here);
     if (VOLATILE3.on && !this.skip.has('ground')) floorV3(g, cam, t, game, here);
+    if (WORDS7_LOOK.on && !this.skip.has('ground')) floorW7(g, cam, t, game, here);
+    if (WORDS10_LOOK.on && !this.skip.has('ground')) floorW10(g, cam, t, game, here);
     for (const tr of game.traps) {
       if (!here(tr.x, tr.y)) continue;
       const frames = art.icons.trap[tr.element];
@@ -2601,7 +2625,9 @@ export class Renderer {
       const pieces = f.figure === 'stoker' ? Math.min(1, Math.max(0, 1 - shown.since / STOKER_PIECES_FADE)) : 1;
       if (pieces <= 0) continue;
       g.globalAlpha = (1 - (1 - BODY_DIM) * Math.min(1, Math.max(0, shown.since) / BODY_SETTLES)) * going * pieces;
-      g.drawImage(shown.sp.img, Math.round(sx) - shown.sp.ax, Math.round(sy) - shown.sp.ay, shown.sp.w, shown.sp.h);
+      // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: one Culling cut down lies in its two halves: render/words7.ts)
+      const lie = (WORDS7_LOOK.on ? lyingW7(f) : null) ?? shown.sp;
+      g.drawImage(lie.img, Math.round(sx) - lie.ax, Math.round(sy) - lie.ay, lie.w, lie.h);
     }
     g.globalAlpha = 1;
     // (the effects that lie flat are drawn once, over the last floor to be drawn)
@@ -3017,6 +3043,10 @@ export class Renderer {
     if (BINDING3.on) tickB3(pace / 60, game, fx);
     // (THE FIVE VOLATILE MELDS' looks, behind a switch that is off: render/volatile3.ts)
     if (VOLATILE3.on) tickV3(pace / 60, game, fx);
+    // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: render/words7.ts)
+    if (WORDS7_LOOK.on) tickW7(pace / 60, game, fx);
+    // (HIS THREE NEW WORDS' LOOKS, behind a switch that is off: render/words10.ts)
+    if (WORDS10_LOOK.on) tickW10(pace / 60, game, fx);
     const cam = this.cam;
     // Where on the screen the hero stands: the middle, or the middle of the part left to the world.
     // The picture glides from the one to the other, by the wall clock (the world may be standing
@@ -3522,7 +3552,9 @@ export class Renderer {
       if (fall && fall.alpha <= 0) continue;
       const fy = fall ? sy - fall.up : sy;
       if (shown.sp.lights && (!fall || fall.alpha >= 1)) this.monsterLit.push({ s: shown.sp, x: Math.round(sx), y: Math.round(fy) });
-      this.stand(f.x + f.y, shown.sp, sx, fy, null, 0, 1, fall ? fall.alpha : 1);
+      // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: one Culling cut down falls split along the cut: render/words7.ts)
+      const sp7 = WORDS7_LOOK.on ? fallenW7(f, shown.sp) : null;
+      this.stand(f.x + f.y, sp7 ?? shown.sp, sx, fy, null, 0, 1, fall ? fall.alpha : 1);
       hid?.(f.x, f.y);
     }
     // (THE MONSTERS' ATTACKS: the dead the Warden has called, crawling out of the ground: the skeleton's own picture of it, art/mkit.ts crawlOut)
@@ -3596,7 +3628,13 @@ export class Renderer {
         sx += ox;
         sy += oy;
       }
-      const sp = this.monsterSprite(m);
+      let sp = this.monsterSprite(m);
+      // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: a spirit Reaping raised, one Culling cut down: render/words7.ts)
+      const w7 = WORDS7_LOOK.on ? lookW7(m, sp) : null;
+      if (w7) {
+        sp = w7.sp;
+        sy -= w7.lift;
+      }
       // (FLOOR 4, MORE ACTION: the dagger cultist's frenzy carries him in its own pictures, the rules the way he truly faces: his
       // picture drawn back by what it carries him, so that it is where the rules have him: game/action_f4.ts frenzyShift)
       if (m.frenzy && (m.state === 'windup' || m.state === 'recover')) {
@@ -3670,8 +3708,13 @@ export class Renderer {
           overA = tn[1];
         }
       }
+      // (the seven new words' looks, behind a switch that is off: lit as one is pierced, cut down, or flashes like a mirror)
+      if (WORDS7_LOOK.on && w7 && w7.tint && (!over || w7.tint[1] > overA)) {
+        over = silhouette(sp, w7.tint[0]);
+        overA = w7.tint[1];
+      }
       // (THE CITY'S WORDS, Version 23.8: one of the two a Splitting monster split into is smaller)
-      this.stand(m.x + m.y + depthBy, sp, sx, sy, over, overA, m.split ? SPLIT.look : 1);
+      this.stand(m.x + m.y + depthBy, sp, sx, sy, over, overA, m.split ? SPLIT.look : 1, WORDS7_LOOK.on && w7 ? w7.alpha : 1);
       // (THE NEW WORDS, a mock-up behind a switch that is off: a slowed monster's echoes linger after it)
       if (WORDS3.on) for (const e of echoes3(m)) this.stand(e.x + e.y - 0.02, silhouette(sp, e.color), wx(cam, e.x, e.y), wy(cam, e.x, e.y), null, 0, 1, e.alpha);
       hid?.(m.x, m.y);
@@ -3681,6 +3724,8 @@ export class Renderer {
       // a guardian smoulders in the colour of its first word
       if (m.champion && m.words.length && Math.random() < 0.25 * amb) fx.mote(m.x + (Math.random() - 0.5) * 0.8, m.y + (Math.random() - 0.5) * 0.8, [WORD_COLOR[m.words[0]], P.white]);
     }
+    // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: the rules' spirits (game.spirits), each the little grey Shade: render/words7.ts)
+    if (WORDS7_LOOK.on) for (const c of spiritsW7(game, cam)) this.stand(c.depth, c.sp, c.x, c.y, null, 0, 1, c.alpha);
 
     {
       const sx = wx(cam, h.x, h.y);
@@ -3807,6 +3852,10 @@ export class Renderer {
         // (THE NEW WORDS, a mock-up behind a switch that is off: a frenzy of three or more shivers the hero in its colour)
         const copies = WORDS3.on ? heroCopies3(t) : null;
         if (copies) for (const dx of copies.dx) this.stand(h.x + h.y - 0.01, silhouette(sp, copies.color), sx + dx, sy, null, 0, 1, copies.alpha);
+        // (THE SEVEN NEW WORDS' LOOKS, behind a switch that is off: Mirroring's reflection of him, in glass, beside him: render/words7.ts)
+        if (WORDS7_LOOK.on) for (const c of heroW7(sp, h, cam)) this.stand(c.depth, c.sp, c.x, c.y, null, 0, 1, c.alpha);
+        // (HIS THREE NEW WORDS' LOOKS, behind a switch that is off: a boost Fleeting gave him, a stutter of after-images: render/words10.ts)
+        if (WORDS10_LOOK.on) for (const c of heroW10(sp, h, cam, game)) this.stand(c.depth, c.sp, c.x, c.y, null, 0, 1, c.alpha);
         if (relief && !h.move) this.hide(h.x, h.y, heroLift);
         this.heroLit = { x: Math.round(sx), y: Math.round(sy) };
         // BIG AND WILD (art/moves3.ts, WILD): where the power she holds burns, and how hot, for the
@@ -3865,6 +3914,8 @@ export class Renderer {
       // (it does not flicker out of sight as it goes: it shrinks, and blinks in its last moments)
       if (dying < 0.5 && Math.floor(t * 24) % 2 === 0) continue;
       this.stand(o.x + o.y + 0.01, sp, sx, sy - 13 + bob, tint ? silhouette(sp, tint) : null, tintA, scale);
+      // (HIS THREE NEW WORDS' LOOKS, behind a switch that is off: Fleeting on its ability, a stutter of after-images of it: render/words10.ts)
+      if (WORDS10_LOOK.on) for (const c of thingW10(game, o.skill, o.id, sp, sx, sy - 13 + bob)) this.stand(o.x + o.y + 0.005, c.sp, c.x, c.y, null, 0, scale, c.alpha);
       if (live && Math.random() < 0.35 * amb) fx.mote(o.x + (Math.random() - 0.5) * 0.7, o.y + (Math.random() - 0.5) * 0.7, SPELL_TONES[o.element].slice(1));
     }
     // Familiars: small sprites of energy that keep to the hero's shoulder, bobbing. One that has
@@ -4437,6 +4488,8 @@ export class Renderer {
     if (MELD3.on && !this.skip.has('fx')) airM3(g, cam, t, game);
     if (BINDING3.on && !this.skip.has('fx')) airB3(g, cam, t, game);
     if (VOLATILE3.on && !this.skip.has('fx')) airV3(g, cam, t, game);
+    if (WORDS7_LOOK.on && !this.skip.has('fx')) airW7(g, cam, t, game);
+    if (WORDS10_LOOK.on && !this.skip.has('fx')) airW10(g, cam, t, game);
     if (!this.skip.has('fx')) fx.drawAir(g, cam);
     // (THE VETERAN's over everything: his smears, his force, the bursts of his blows; his globes: render/veteran_fx.ts)
     if (!this.skip.has('fx')) this.vetFx.drawAir(g, cam, game);
@@ -5121,7 +5174,7 @@ export class Renderer {
     for (const z of game.zones) {
       if (this.skip.has('zlight')) break;
       if (z.kind !== 'burn' && z.kind !== 'storm' && z.kind !== 'rune' && z.kind !== 'ice' && z.kind !== 'venom') continue;
-      if (ownsZone(z) || ownsZoneB3(z) || ownsZoneV3(z)) continue;
+      if (ownsZone(z) || ownsZoneB3(z) || ownsZoneV3(z) || ownsZoneW7(z)) continue;
       const small = z.r < 1.2;
       if (small) {
         let near = false;
@@ -5145,6 +5198,8 @@ export class Renderer {
     if (MELD3.on) lightsM3(spot, cam, game, t);
     if (BINDING3.on) lightsB3(spot, cam, game, t);
     if (VOLATILE3.on) lightsV3(spot, cam, game, t);
+    if (WORDS7_LOOK.on) lightsW7(spot, cam, game, t);
+    if (WORDS10_LOOK.on) lightsW10(spot, cam, game, t);
     // (THE FIRST FIVE FLOORS: what of the bosses' doings lights the dark)
     this.bossFx.lights(spot);
     // a burst of fire or a bolt of lightning lights up the room for a moment

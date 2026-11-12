@@ -61,6 +61,19 @@ export const WORD_COLOR: Record<WordId, string> = {
   stilling: '#86eaae',
   // (BINDING: parchment, the art chat's, render/binding3.ts BIND_RAMP, his yes by 22:00, 21 Oct)
   binding: '#c8b48a',
+  // (THE LAST WORDS, 8 Nov 2026: the main chat's placeholders until the art chat's, pictures to him first; each picked away from the
+  // other words, the friend's cyan and the enemy's pink and gold)
+  piercing: '#d8e0e8',
+  bleeding: '#a0203a',
+  reaping: '#6a8a7a',
+  culling: '#5a4a6a',
+  surging: '#3a78c8',
+  plundering: '#b8a040',
+  mirroring: '#a0b8c8',
+  // (HIS THREE NEW WORDS, 9 Nov 2026: placeholders until the art chat's, pictures to him first)
+  lasting: '#b09080',
+  fleeting: '#e8d0f8',
+  vast: '#7a5a3a',
   // (WORDMELDING: the melded words' colours, the planning chat's placeholders until the art chat's,
   // pictures to him first; each picked as far, as the eye sees colour, from every other word, the
   // friend's cyan and the enemy's pink and gold as it could be)
@@ -1068,6 +1081,25 @@ export const GLYPH: Record<WordId, readonly string[]> = {
   stilling: ['XXXXXX', '.X..X.', '..oo..', '..oo..', '.X..X.', 'XXXXXX'],
   // (BINDING: a band tied in a knot, the art chat's BIND_GLYPH)
   binding: ['XX...XX', 'X.X.X.X', 'X..o..X', 'X.X.X.X', 'XX...XX', '...X...', '..X.X..'],
+  // (THE LAST WORDS: the main chat's placeholder runes until the art chat's)
+  // a spearhead
+  piercing: ['...X...', '..XoX..', '..XoX..', '.XXoXX.', '...X...', '...X...', '..XXX..'],
+  // a drop falling from a cut
+  bleeding: ['X.....X', '.X...X.', '..XoX..', '...X...', '..XXX..', '..XoX..', '...X...'],
+  // a sickle
+  reaping: ['..XXX..', '.X...X.', '......X', '.....X.', '...oX..', '..X....', '.X.....'],
+  // a falling blade
+  culling: ['XXXXXXX', 'X.....X', '.X...X.', '..XoX..', '...X...', '...X...', '..XXX..'],
+  // a wave breaking
+  surging: ['..XX...', '.X..X..', 'X..o.X.', '....X.X', '...X..X', 'XXX...X', '.......'],
+  // a coin with a hand round it
+  plundering: ['.XXXXX.', 'X.....X', 'X..o..X', 'X.....X', '.XXXXX.', 'X.X.X.X', '.X.X.X.'],
+  // two faces, one the other's reflection
+  mirroring: ['XX.X.XX', 'X..X..X', 'X.oXo.X', 'X..X..X', 'XX.X.XX', '...X...', '...X...'],
+  // (HIS THREE NEW WORDS, placeholders) an hourglass; two chevrons running on; a ring opening outward
+  lasting: ['XXXXXX', '.X..X.', '..oo..', '..oo..', '.X..X.', 'XXXXXX'],
+  fleeting: ['X..X..', '.X..X.', '..oX.X', '..oX.X', '.X..X.', 'X..X..'],
+  vast: ['X.XX.X', '.X..X.', 'X.oo.X', 'X.oo.X', '.X..X.', 'X.XX.X'],
   // (WORDMELDING: the melded words' runes, the planning chat's placeholders until the art chat's)
   // a mountain blowing its top
   eruption: ['.o..o.', '..oo..', '..XX..', '.XXXX.', '.XXoX.', 'XXXXXX'],
@@ -1124,6 +1156,16 @@ export const WORD_GLOW: Record<WordId, string> = {
   hexing: '#e6e2ee',
   stilling: '#d0fce4',
   binding: '#f2e8cc',
+  piercing: '#f2f6fa',
+  bleeding: '#ec9aa0',
+  reaping: '#c4d8cc',
+  culling: '#b8acc8',
+  surging: '#a8ccf2',
+  plundering: '#ecdca0',
+  mirroring: '#dce8f0',
+  lasting: '#e4d4c8',
+  fleeting: '#f8f0fc',
+  vast: '#c8a888',
   // (WORDMELDING: halfway to white from each one's colour)
   eruption: '#ffccac',
   avalanche: '#dcedff',
