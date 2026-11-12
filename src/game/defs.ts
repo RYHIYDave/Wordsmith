@@ -2002,6 +2002,14 @@ export const COMBO = { on: true };
  */
 export const RANGER_ARROW = { on: true, from: 0.794, height: 22.25, long: 11, volleyFrom: 0.266, volleyHeight: 27.6 };
 
+/**
+ * ALLY DAMAGE: the hits of what fights beside him that is not his own blow, a kind of damage of its own: the Drowned Arm's tentacle
+ * and the Queen's Talons' birds (game.ts allyDamage). His words, 12 Nov 2026, 13:47: “I’d like this and the tentacle to count as
+ * ally damage.  So when we have co-op and support items or whatever it will scale these extra attackers”. `more`: what makes allies
+ * hit harder multiplies it (nothing yet: 1).
+ */
+export const ALLY_DAMAGE = { more: 1 };
+
 export const TUNE = {
   heroRadius: 0.3,
   heroSpeed: 4.6, // tiles per second

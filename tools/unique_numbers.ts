@@ -32,7 +32,7 @@ const NUMS: Record<string, string> = {
   headsmanshood: 'No number: it adds the word.',
   fleshmancersbrand: `Fights for ${T.brand.secs} seconds; a blow every ${T.brand.every} seconds for ${pc(T.brand.share)} of your hit.`,
   cantorsecho: 'No number: it adds the word.',
-  drownedarm: `Every ${T.arm.every} seconds; ${pc(T.arm.share)} of your hit to everything within ${T.arm.r} tiles of it; seen ${T.arm.lead} seconds before it lands.`,
+  drownedarm: `Every ${T.arm.every} seconds; ${pc(T.arm.share)} of your hit to everything within ${T.arm.r} tiles of it, each stunned ${T.arm.stun} seconds (an elite half as long, never a boss); seen ${T.arm.lead} seconds before it lands. Ally damage.`,
   criershush: `Within ${T.hush.reach} tiles of you. Not a boss's words.`,
   kingsknot: `${T.knot.secs} seconds.`,
   physicianscoat: `One flask for every ${T.coat.hits} hits on elites and bosses.`,
@@ -40,7 +40,7 @@ const NUMS: Record<string, string> = {
   wardenskeys: `Doors open from ${T.keys.reach} tiles; ${T.keys.more} more piece in every chest.`,
   amalgamsheart: 'No number: the meld, free.',
   halfcarvedhand: `Below ${pc(T.halfHand.below)} life: attacks ${pc(T.halfHand.attack)} faster, feet ${pc(T.halfHand.move)} faster.`,
-  queenstalons: `${pc(T.talons.share)} of your hit; no more than one bird every ${T.talons.gap} seconds.`,
+  queenstalons: `${pc(T.talons.share)} of your hit; no more than one bird every ${T.talons.gap} seconds. Ally damage.`,
   hollowcrown: 'No number: it adds the word.',
   nettleshirt: `+${pc(T.nettle.each)} every ${T.nettle.every} seconds unhit, up to +${pc(T.nettle.most)} (${(T.nettle.most / T.nettle.each) * T.nettle.every} seconds).`,
   dancingshoes: 'No number: the rule itself.',
@@ -131,7 +131,7 @@ Each of these is yours to change.
 - **The King's Knot:** the borrowed word sits beside your own, even where it is a second damage word.
 - **The Rainwalker with the Hail talent:** the rain goes with her. Hail's longer, wider rain still counts; its chasing an enemy does not.
 - **The Unsigned Pact:** the demon never takes your last ${pc(T.pact.floor)} of life, and a tap on him sends it away.
-- **The Pack Collar:** the second companion is the next in the same list after your pick. It needs a way to pick, in town.
+- **The Pack Collar:** you pick its companion on the collar's card, in town, and never the animal she already has (your picks, 12 Nov). Until picked, the next in the list after hers. With both companion talents, from either list; with none, the hunting list.
 - **Ordinary stats:** two on most. None on the five your doc marks “Nothing else on it”. One on Broken Shackles, as you said: movement speed. Each rolls as a found affix of the item's level, not as a crafted one, so a unique is always short of a well-crafted yellow in raw stats.
 
 ## The numbers

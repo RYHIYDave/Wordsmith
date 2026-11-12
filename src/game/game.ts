@@ -14,7 +14,7 @@ import { RAMPAGE, RING, ringStrikes } from '../art/action_f3_fx';
 import { rampageTravel, rushStopTravel } from '../art/monster_brute';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, LASTING, FLEETING, VAST, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, HUSH_LEAVES, mirrorSide, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { ACTION_F2, ALLY_DAMAGE, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, LASTING, FLEETING, VAST, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, HUSH_LEAVES, mirrorSide, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
 import { asWarriorWeapon, bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -14988,9 +14988,15 @@ export class Game {
       this.sfx('slam', 0.7);
       for (const o of this.monsters) {
         if (o.dead || this.shutIn(o) || Math.hypot(o.x - x, o.y - y) > A.r + o.r) continue;
-        this.damageMonster(o, this.uniqueHit(A.share), 'phys', false, -1);
+        this.allyDamage(o, this.uniqueHit(A.share), 'phys');
+        this.stunMonster(o, A.stun);
       }
     });
+  }
+
+  /** ALLY DAMAGE (defs.ts ALLY_DAMAGE): a hit of what fights beside him, the tentacle's or a bird's, made as hard as allies hit now. */
+  private allyDamage(m: Monster, dmg: number, el: Element): void {
+    this.damageMonster(m, dmg * ALLY_DAMAGE.more, el, false, -1);
   }
 
   // ---- THE QUEEN'S TALONS ----
@@ -15020,7 +15026,7 @@ export class Game {
       if (!m || this.over) return;
       this.emit({ t: 'spark', x: m.x, y: m.y, el: 'phys', n: 6 });
       this.sfx('hit', 0.5);
-      this.damageMonster(m, this.uniqueHit(B.share), 'phys', false, -1);
+      this.allyDamage(m, this.uniqueHit(B.share), 'phys');
     });
   }
 

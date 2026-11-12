@@ -6,7 +6,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { RNG } from '../src/engine/rng';
-import { TUNE } from '../src/game/defs';
+import { ALLY_DAMAGE, TUNE } from '../src/game/defs';
 import { doorMiddle } from '../src/game/doors';
 import { Game } from '../src/game/game';
 import { plainWeapon, rollItem } from '../src/game/items';
@@ -350,6 +350,9 @@ test('The Drowned Arm: every few seconds a tentacle bursts up under the enemy he
     assert.ok(near(hurt(m) - hit, slam, 0.02), `${hurt(m) - hit} against ${slam}`);
     assert.ok(hurt(by) > 0, 'and what stands by it');
     assert.equal(hurt(far), 0);
+    // (his pick, 12 Nov 2026: “Every 3s, and it stuns (Recommended)”)
+    assert.equal(T.arm.every, 3);
+    assert.ok(m.stunT > 0 && by.stunT > 0 && far.stunT === 0, 'what it slams is stunned');
     // not again until its time has come round; and none with nobody fought
     const again = wait(g, T.arm.every - 1.5);
     assert.equal(seen(again, 'drownedarm', 'slam').length, 0);
@@ -371,6 +374,19 @@ test('The Queen\'s Talons: each critical hit calls a bird that dives on the near
     const st = g.hero.d.stats;
     const bird = Math.round(100 * T.talons.share * (1 + (st.dmgPct + st.physPct) / 100));
     assert.ok(near(hurt(m) - hit, bird, 0.02), `${hurt(m) - hit} against ${bird}`);
+    // ALLY DAMAGE (his words, 12 Nov 2026, 13:47): what makes allies hit harder makes the bird's hit harder
+    ALLY_DAMAGE.more = 2;
+    try {
+      steady(g, 100, true);
+      ready(g);
+      wait(g, T.talons.gap + 0.1);
+      tap(g);
+      const before = hurt(m);
+      wait(g, T.talons.dive + 0.1);
+      assert.ok(near(hurt(m) - before, 2 * bird, 0.02), `the bird's, doubled: ${hurt(m) - before} against ${2 * bird}`);
+    } finally {
+      ALLY_DAMAGE.more = 1;
+    }
     // no critical hit, no bird
     steady(g, 100, false);
     ready(g);

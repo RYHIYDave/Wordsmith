@@ -61,8 +61,15 @@ export const UNIQUE_TUNE = {
   keys: { reach: 1.7, more: 1 },
   /** THE CRIER'S HUSH: a monster this near him has its words darkened (not a boss's: his to say). */
   hush: { reach: 2.5, bosses: false },
-  /** THE DROWNED ARM: every so many seconds a tentacle comes up under the enemy he is fighting (one he struck within `fresh` seconds, within `reach`), slamming all within `r` of it for this share of his hit, `lead` seconds after it is seen. */
-  arm: { every: 5, share: 2, r: 1.3, lead: 0.5, reach: 9, fresh: 3 },
+  /**
+   * THE DROWNED ARM: every so many seconds a tentacle comes up under the enemy he is fighting (one he struck within `fresh` seconds,
+   * within `reach`), slamming all within `r` of it for this share of his hit, `lead` seconds after it is seen, and stunning what it
+   * slams for `stun` seconds (not a boss; an elite half as long, as every stun). ALLY DAMAGE (game.ts allyDamage). His words, 12 Nov
+   * 2026, of every 5 seconds: “It doesn’t seem very good if that’s all it does every 5 seconds”; his pick, “Every 3s, and it stuns
+   * (Recommended)” (offered as: comes up more often, and whatever it slams is stunned for a moment). The stun's length, the main
+   * chat's: a moment, 0.6 s (two quick Smashes of the Warrior's stun for 1 s).
+   */
+  arm: { every: 3, share: 2, r: 1.3, lead: 0.5, reach: 9, fresh: 3, stun: 0.6 },
   /** THE QUEEN'S TALONS: each critical hit calls a bird that dives on the nearest enemy for this share of his hit, `dive` seconds after; no more often than `gap`. */
   talons: { share: 0.6, dive: 0.35, gap: 0.4, reach: 7 },
   /** THE FLESHMANCER'S BRAND: an elite he kills rises and fights for him for so many seconds, each blow this share of his hit, a blow every so often. One at a time. */
@@ -208,7 +215,7 @@ export const UNIQUE_DEFS: readonly UniqueDef[] = [
   { id: 'headsmanshood', name: "The Headsman's Hood", stem: 'hood', from: 'boss', boss: ['headsman'], floor: 2, bends: 'words', stats: [], word: 'culling', does: () => ['Adds CULLING in front of your tap attack. No slot used.'] },
   { id: 'fleshmancersbrand', name: "The Fleshmancer's Brand", stem: 'silkgloves', from: 'boss', boss: ['fleshmancer'], floor: 5, bends: 'hero', stats: ['int', 'lifeOnHit'], does: () => [`An elite you kill rises and fights for you for ${T.brand.secs} seconds. One at a time.`] },
   { id: 'cantorsecho', name: "The Cantor's Echo", stem: 'lifering', from: 'boss', boss: ['cantor'], floor: 8, bends: 'words', stats: ['critChance', 'maxMana'], does: () => ['Adds TWIN behind your hold attack. No slot used.'] },
-  { id: 'drownedarm', name: 'The Drowned Arm', stem: 'stramulet', from: 'boss', boss: ['eye'], floor: 10, bends: 'hero', stats: ['maxLife', 'physPct'], does: () => [`Every ${T.arm.every} seconds a tentacle bursts up under the enemy you are fighting and slams it for ${pc(T.arm.share)} of your hit.`] },
+  { id: 'drownedarm', name: 'The Drowned Arm', stem: 'stramulet', from: 'boss', boss: ['eye'], floor: 10, bends: 'hero', stats: ['maxLife', 'physPct'], does: () => [`Every ${T.arm.every} seconds a tentacle bursts up under the enemy you are fighting and slams it for ${pc(T.arm.share)} of your hit, stunning it for a moment.`] },
   { id: 'criershush', name: "The Crier's Hush", stem: 'hood', from: 'boss', boss: ['crier'], floor: 11, bends: 'words', stats: ['cdr', 'frostRes'], does: () => ['A monster standing close to you has its words darkened: they do nothing.'] },
   { id: 'kingsknot', name: "The King's Knot", stem: 'sash', from: 'boss', boss: ['ratking'], floor: 12, bends: 'words', stats: ['maxLife', 'magicFind'], does: () => [`Kill a monster that carries a word: your tap attack carries it too for ${T.knot.secs} seconds.`] },
   { id: 'physicianscoat', name: "The Physician's Coat", stem: 'robe', from: 'boss', boss: ['physician'], floor: 14, bends: 'hero', stats: ['maxLife', 'lifeRegen'], does: () => [`Flasks refill from the hits you land on elites and bosses: one for every ${T.coat.hits}.`], price: () => 'No refills from kills.' },

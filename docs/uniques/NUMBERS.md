@@ -61,10 +61,10 @@ Each of these is yours to change.
 | The Amalgam's Heart (Amulet) | No number: the meld, free. | Max Life, Area of Effect |
 | The Fleshmancer's Brand (Gloves) | Fights for 15 seconds; a blow every 1.2 seconds for 60% of your hit. | Intelligence, Life on Hit |
 | The Half-Carved Hand (Gloves) | Below 50% life: attacks 30% faster, feet 20% faster. | Strength, Max Life |
-| The Queen's Talons (Boots) | 60% of your hit; no more than one bird every 0.4 seconds. | Dexterity, Max Life |
+| The Queen's Talons (Boots) | 60% of your hit; no more than one bird every 0.4 seconds. Ally damage. | Dexterity, Max Life |
 | The Cantor's Echo (Ring) | No number: it adds the word. | Critical Chance, Max Mana (reads as Cooldown Recovery) |
 | The Hollow Crown (Helm) | No number: it adds the word. | Max Life, Cooldown Recovery |
-| The Drowned Arm (Amulet) | Every 5 seconds; 200% of your hit to everything within 1.3 tiles of it; seen 0.5 seconds before it lands. | Max Life, Physical Damage |
+| The Drowned Arm (Amulet) | Every 3 seconds; 200% of your hit to everything within 1.3 tiles of it, each stunned 0.6 seconds (an elite half as long, never a boss); seen 0.5 seconds before it lands. Ally damage. | Max Life, Physical Damage |
 | The Crier's Hush (Helm) | Within 2.5 tiles of you. Not a boss's words. | Cooldown Recovery, Frost Resistance |
 | The King's Knot (Belt) | 6 seconds. | Max Life, Magic Find |
 | The Quill's Band (Ring) | Hold attack's words 50% stronger. | Max Mana (reads as Cooldown Recovery), Intelligence |
