@@ -50,7 +50,7 @@ export const LAIR_STORY = { on: false };
 // =================================================================================================
 // THE COLOURS
 
-type R5 = readonly [string, string, string, string, string];
+export type R5 = readonly [string, string, string, string, string];
 const SEAM = '#07060a';
 /**
  * THE SWAMP'S BLACK WATER: black, and in its sheen the fen's own water (art/fen.ts C_FEN, floor 10's: its darkest tones, and
@@ -173,14 +173,18 @@ const splitV = (u: number): number => SEEP.v + Math.round(1.4 * Math.sin(u * 0.7
  * on its own: wavering and joined they read as a creeper.)
  */
 function seep(part: LairPart): (p: Px) => void {
-  const lip = WALL[part];
+  return seepOn(WALL[part]);
+}
+/** (the same, down a wall of stone `lip`, its seam to its lit edge: floors 3 and 4's, art/prison_story.ts; `soak` false: no damp between the runs) */
+export function seepOn(lip: R5, soak = true): (p: Px) => void {
   /** Where the light lies on a long run: the wall's own stone, wet and dark, a glint in it. */
   const sheen = mix(lip[4], SWAMP[2], 0.5);
   /** The stone dark with the wet, under the split and between the runs. */
   const damp = mix(lip[1], SWAMP[0], 0.45);
   return (p) => {
     // the wet stone: dark under the split and down the face about the runs, ragged at its edges, wider at the floor
-    for (let v = SEEP.v - 2; v >= 0; v--) {
+    // (`soak` false: the stone between the runs left as the wall has it, for a wall whose face is carved: floors 3 and 4's looks)
+    for (let v = SEEP.v - 2; v >= 0 && soak; v--) {
       const low = v < 6 ? (6 - v) * 0.5 : 0;
       const l = Math.round((v > 24 ? -7 : -4.5) - low + (hash(v >> 1, 1, 873) - 0.5) * 2.2);
       const r = Math.round((v > 28 ? 7 : 6.5) + low + (hash(v >> 1, 2, 873) - 0.5) * 2.2);
@@ -193,6 +197,9 @@ function seep(part: LairPart): (p: Px) => void {
         p.set(fx(u), fy(v), wide === 2 && v > 4 && (v + u * 5) % 19 < 3 ? ((v + u * 5) % 19 === 1 ? SWAMP[4] : sheen) : SWAMP[0]);
         if (wide === 2) p.set(fx(u + 1), fy(v), SWAMP[0]);
       }
+      // (on a dark wall left as it is, `soak` false: the wet catching the light down the run's lit side, a dull green, so that it
+      // reads against the stone; a glint here and there)
+      if (!soak) for (let v = v0 - 1; v >= Math.max(foot, 1); v--) p.set(fx(u - 1), fy(v), (v + u * 7) % 13 === 2 ? SWAMP[4] : (v + u) % 4 === 0 ? SWAMP[2] : SWAMP[3]);
       if (foot > 0) {
         // the drop hanging at its end: round, a glint on it
         p.set(fx(u), fy(foot - 1), SWAMP[4]).set(fx(u + 1), fy(foot - 1), SWAMP[0]).set(fx(u), fy(foot - 2), SWAMP[0]).set(fx(u + 1), fy(foot - 2), SWAMP[0]);
@@ -283,7 +290,7 @@ const TH = 32;
 const HALF = TW / 2;
 const halfWidth = (y: number): number => (y < TH / 2 ? 2 * y + 1 : 2 * (TH - 1 - y) + 1);
 /** A floor tile's picture from a painter of the world (x, y in tiles; the tile is the one at (tx, ty), u and v across it from its top corner). */
-function tileOf(paint: (u: number, v: number, x: number, y: number) => string, tx: number, ty: number): Sprite {
+export function tileOf(paint: (u: number, v: number, x: number, y: number) => string, tx: number, ty: number): Sprite {
   const p = new Px(TW, TH);
   for (let y = 0; y < TH; y++) {
     const hw = halfWidth(y);
@@ -303,33 +310,40 @@ const floorAt = (part: LairPart) => (x: number, y: number): string => (part === 
 
 /** How far the pool reaches out from the wall, `s` along it (0 to 1): half a round pool lying against the wall under where the water comes down, its edge wavering. */
 export const POOL = { r: 0.44 };
-const poolReach = (s: number, seed: number): number => Math.sqrt(Math.max(0, POOL.r ** 2 - (s - 0.5) ** 2)) * (0.92 + 0.13 * Math.sin(s * 9 + seed) + 0.07 * Math.sin(s * 19 + seed * 2.3));
+export const poolReach = (s: number, seed: number): number => Math.sqrt(Math.max(0, POOL.r ** 2 - (s - 0.5) ** 2)) * (0.92 + 0.13 * Math.sin(s * 9 + seed) + 0.07 * Math.sin(s * 19 + seed * 2.3));
 
 /** BLACK WATER POOLED at the foot of a wall along x (the tile's far edge, v = 0) or along y (u = 0), over a part's floor. */
 function pooled(part: LairPart, at: 'x' | 'y'): Sprite {
   const floor = floorAt(part);
   const seed = at === 'x' ? 0.7 : 2.9;
   return tileOf((u, v, x, y) => {
-    const s = at === 'x' ? u : v;
-    const out = at === 'x' ? v : u;
-    const reach = poolReach(s, seed);
-    const d = reach - out;
     const f = floor(x, y);
-    if (reach <= 0 || d < -0.06) return f;
-    // the floor round it, dark with the damp
-    if (d < 0) return mix(f === SEAM ? FLAGS[1] : f, SWAMP[0], d > -0.028 ? 0.6 : 0.32);
-    // its near edge: the line of light where the water meets the floor, in a few short lengths (never a ring round it)
-    if (d < 0.03 && s > 0.24 && s < 0.76 && noise(s * 11, seed, 883) > 0.42) return noise(s * 23, seed, 884) > 0.45 ? SWAMP[4] : SWAMP[3];
-    // black and still; the sheen lying along its middle in a streak or two
-    const rel = out / reach;
-    if (rel > 0.3 && rel < 0.64) {
-      const n = noise(s * 3 + seed, rel * 5, 885);
-      if (n > 0.66) return SWAMP[3];
-      if (n > 0.5) return SWAMP[2];
-      return SWAMP[1];
-    }
-    return rel > 0.22 && rel < 0.72 ? SWAMP[1] : SWAMP[0];
+    return poolAt(u, v, at, seed, f, f === SEAM ? FLAGS[1] : f);
   }, at === 'x' ? 1 : 2, at === 'x' ? 2 : 1);
+}
+/**
+ * A point (u, v) of a tile of BLACK WATER POOLED at the foot of a wall along x (v = 0) or along y (u = 0): the colour there, over
+ * floor `f` (`damp`: the floor the damp darkens round it). (Floors 3 and 4's pools too: art/prison_story.ts.)
+ */
+export function poolAt(u: number, v: number, at: 'x' | 'y', seed: number, f: string, damp = f): string {
+  const s = at === 'x' ? u : v;
+  const out = at === 'x' ? v : u;
+  const reach = poolReach(s, seed);
+  const d = reach - out;
+  if (reach <= 0 || d < -0.06) return f;
+  // the floor round it, dark with the damp
+  if (d < 0) return mix(damp, SWAMP[0], d > -0.028 ? 0.6 : 0.32);
+  // its near edge: the line of light where the water meets the floor, in a few short lengths (never a ring round it)
+  if (d < 0.03 && s > 0.24 && s < 0.76 && noise(s * 11, seed, 883) > 0.42) return noise(s * 23, seed, 884) > 0.45 ? SWAMP[4] : SWAMP[3];
+  // black and still; the sheen lying along its middle in a streak or two
+  const rel = out / reach;
+  if (rel > 0.3 && rel < 0.64) {
+    const n = noise(s * 3 + seed, rel * 5, 885);
+    if (n > 0.66) return SWAMP[3];
+    if (n > 0.5) return SWAMP[2];
+    return SWAMP[1];
+  }
+  return rel > 0.22 && rel < 0.72 ? SWAMP[1] : SWAMP[0];
 }
 
 // ---- DRAG MARKS, laid in a run as the rails are (art/lair_temple.ts RAIL_TILES)
