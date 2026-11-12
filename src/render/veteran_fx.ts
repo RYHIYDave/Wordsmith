@@ -17,12 +17,12 @@
 // after-images, just behind him (behind); the rest over everything (drawAir).
 
 import type { Sprite } from '../engine/px';
-import { Px, drawSprite, flipSprite } from '../engine/px';
+import { Px, drawSprite, flipSprite, retireSprite } from '../engine/px';
 import type { Game } from '../game/game';
 import type { VetGlobe, VetPlaying } from '../game/veteran';
-import { VETERAN } from '../game/veteran';
+import { VETERAN, vetFireFor, vetMoveFor } from '../game/veteran';
 import type { ActorArt, AnimSet } from '../art/actor_types';
-import { EIGHT_MORE, MORE_WAY, moreSideOf } from '../art/sides_more';
+import { EIGHT_MORE, MORE_SIDES, MORE_WAY, moreSideOf } from '../art/sides_more';
 import type { MoreSide } from '../art/sides_more';
 import { FIGURE_SIZE, figureOf } from '../art/bestiary';
 import { toSprite } from '../art/kit';
@@ -152,6 +152,66 @@ export class VeteranFx {
     this.drain = null;
   }
 
+  /**
+   * HIS MOVES KEPT PACKED (render/baked.ts PACKS; main.ts sets this where he is baked so): told each move he is showing or may
+   * show next, by its name and the side it is thrown from (as the game numbers a hero's sides: art/sides.ts), so that its
+   * pictures are unpacked by the time they are shown. `now`: it is being shown.
+   */
+  packs: ((move: string, side: number, now: boolean) => void) | null = null;
+
+  /**
+   * WHAT HE IS SHOWING AND WHAT A PRESS WOULD MAKE NEXT, asked for (his packs: render/baked.ts PACKS). Shown now: every move
+   * of his whose lines are still on the floor or in the air; his fall. Ahead of need: the presses already made and waiting
+   * their turn (each thrown at what it was aimed at), and the move a tap, a hold or a swipe would make now, from the side he
+   * faces (a tap or a hold made on a swipe: the move it sets in fire). What cannot be known ahead (a blow at an enemy off to
+   * one side of him) is asked for as it begins, by the drawing itself (art/asked.ts).
+   */
+  private askAhead(game: Game): void {
+    const ask = this.packs;
+    if (!ask || !EIGHT_MORE.brawler) return;
+    const h = game.hero;
+    const sideOf = (fx: number, fy: number): number => MORE_SIDES.indexOf(moreSideOf(fx, fy));
+    for (const p of this.plays) ask(p.m.id, sideOf(p.fx, p.fy), true);
+    const mine = sideOf(h.fx, h.fy);
+    // (his life run out: his fall is shown, and then as its last frame, for as long as the run's end is looked at)
+    if (game.over) ask('fall', mine, true);
+    const v = h.vet;
+    // (in a town nothing is fought: nothing is asked for ahead there)
+    if (!v || game.level.town) return;
+    let swiped = !!v.fireReady || v.move?.id === 'dodge';
+    for (const q of v.queue) {
+      // (a blow goes at the enemy its press aimed at, where it is now; a dodge springs away from where it was swiped to)
+      const o = q.tid !== undefined ? game.monsters.find((m) => m.id === q.tid && !m.dead) : undefined;
+      const dx = (o ? o.x : q.tx) - h.x;
+      const dy = (o ? o.y : q.ty) - h.y;
+      const far = Math.hypot(dx, dy) > 0.3;
+      ask(q.id, far ? (q.id === 'dodge' ? sideOf(-dx, -dy) : sideOf(dx, dy)) : mine, false);
+      if (q.id === 'dodge') swiped = true;
+    }
+    // (three globes in and the combo is locked: no press makes a move until it is played out)
+    if (v.globes.length >= 3) return;
+    const before = [...v.done, ...(v.move ? [v.move.id] : []), ...v.queue.map((q) => q.id)];
+    // (the side he faces; and the side of the nearest enemy, where his next blow is likeliest to go)
+    const sides = [mine];
+    let best = 4;
+    let near = -1;
+    for (const m of game.monsters) {
+      if (m.dead) continue;
+      const d = Math.hypot(m.x - h.x, m.y - h.y);
+      if (d > 0.3 && d < best) [best, near] = [d, sideOf(m.x - h.x, m.y - h.y)];
+    }
+    if (near >= 0 && near !== mine) sides.push(near);
+    for (const side of sides) {
+      ask(vetMoveFor('tap', before), side, false);
+      ask(vetMoveFor('hold', before), side, false);
+      if (swiped) {
+        ask(vetFireFor('tap', before), side, false);
+        ask(vetFireFor('hold', before), side, false);
+      }
+    }
+    ask('dodge', mine, false);
+  }
+
   /** The move he is playing, if any. */
   private moveOf(game: Game): VetPlaying | null {
     return this.on(game) ? (game.hero.vet?.move ?? null) : null;
@@ -198,6 +258,8 @@ export class VeteranFx {
       }
     }
     this.plays = this.plays.filter((p) => p.live || p.f < p.m.long + AFTER);
+    // (HIS MOVES KEPT PACKED, render/baked.ts PACKS: what he shows and may show next, asked for)
+    if (this.packs) this.askAhead(game);
     this.bursts = this.bursts.filter((b) => this.plays.includes(b.play) && b.play.f - b.born < 10);
     for (const [id, t] of this.launched) {
       const m = game.monsters.find((q) => q.id === id);
@@ -262,6 +324,18 @@ export class VeteranFx {
   liftOf(game: Game): number {
     const mv = this.moveOf(game);
     return mv ? vetLiftAt(motionById(mv.id), Math.floor(mv.f)) : 0;
+  }
+
+  /**
+   * A FRAME OF HIS IS LET GO (his moves kept packed, render/baked.ts PACKS: a pack's pictures given back): the after-images made
+   * from it are given back with it, a moment on (engine/px.ts retireSprite), not left for the browser to notice. A frame unpacked
+   * again is a new picture, and its after-images are made again when they are next shown.
+   */
+  forget(s: Sprite): void {
+    const m = this.ghosts.get(s);
+    if (!m) return;
+    for (const g of m.values()) retireSprite(g);
+    this.ghosts.delete(s);
   }
 
   /** An after-image of him: every solid pixel of a frame, its rim one colour and the rest another (the art's ghost). */

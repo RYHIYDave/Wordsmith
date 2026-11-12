@@ -53,15 +53,21 @@ export async function bakeHeroes({ log = console.log } = {}) {
         // (the sheet as written, read back as the game reads it, against every frame on it as painted)
         const ck = await page.evaluate(([name, k, b]) => window.bake.check(name, k, b), [g, n, png.toString('base64')]);
         if (ck.differ) throw new Error(`${g} sheet ${n}: ${ck.differ} pixels of its ${ck.frames} frames are not as painted (by ${ck.most} at most)`);
-        const name = `${g}-${n}.png`;
+        // (a hero kept in packs, render/baked.ts PACKS: after the sheets he always holds, one for each pack, named by it:
+        // <group>-<move>-<side>.png)
+        const pack = n >= info.held ? file.packs[n - info.held] : null;
+        const name = pack ? `${g}-${pack.name.replace(/[^a-zA-Z0-9]+/g, '-')}.png` : `${g}-${n}.png`;
+        if (names.includes(name)) throw new Error(`${g}: two sheets named ${name}`);
         fs.writeFileSync(path.join(dir, name), png);
         names.push(name);
+        if (pack) pack.sheet = name;
         bytes += png.length;
       }
       await page.evaluate((name) => window.bake.drop(name), g);
-      fs.writeFileSync(path.join(dir, `${g}.json`), JSON.stringify({ mark, ...file, sheets: names }));
+      fs.writeFileSync(path.join(dir, `${g}.json`), JSON.stringify({ mark, ...file, sheets: names.slice(0, info.held) }));
       said.groups[g] = { frames: info.frames, places: info.places, sheets: names.length, mb: +(bytes / 1e6).toFixed(2), s: +(info.ms / 1000).toFixed(1) };
-      log(`baked ${g}: ${info.frames} frames for ${info.places} places, ${names.length} sheets, ${(bytes / 1e6).toFixed(2)} MB (${(info.ms / 1000).toFixed(1)} s to paint)`);
+      if (info.packs) Object.assign(said.groups[g], { packs: info.packs, heldMb: +(info.heldBytes / 1048576).toFixed(1), packsMb: +(info.packBytes / 1048576).toFixed(1) });
+      log(`baked ${g}: ${info.frames} frames for ${info.places} places, ${names.length} sheets, ${(bytes / 1e6).toFixed(2)} MB (${(info.ms / 1000).toFixed(1)} s to paint)${info.packs ? `; ${info.packs} packs: ${(info.heldBytes / 1048576).toFixed(1)} MB always held, ${(info.packBytes / 1048576).toFixed(1)} MB in packs, unpacked` : ''}`);
     }
   } finally {
     await browser.close();

@@ -128,7 +128,7 @@ import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
 import { Fx, WORD_HUE, wx, wy } from './render/fx';
 import { NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
-import { BakedHeroes } from './render/baked';
+import { BakedHeroes, PACKS } from './render/baked';
 import { BakedTownsfolk, TOWNSFOLK_BAKED } from './render/townsfolk_baked';
 import { BakedMonsters, CUT_MS, MONSTERS_BAKED, bringsOf } from './render/monsters_baked';
 import { HEAVY_FIGURES, framesOf, paintOrder } from './art/bestiary';
@@ -406,6 +406,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // (THE HERO CARDS' PICTURES, the bake's group `cards`, asked for now, as the game starts: the title is up for a moment before the
   // cards are, and they are fetched while it is; before, they were asked for only as the cards were first shown)
   painter.baked?.take('warrior', 'card', false);
+  // (THE BRAWLER'S MOVES KEPT PACKED, render/baked.ts PACKS: his drawing asks for the moves he shows and may show next, a moment
+  // ahead: render/veteran_fx.ts askAhead. Where he is not baked in packs, nothing is asked for.)
+  if (painter.baked) {
+    const b = painter.baked;
+    renderer.vetFx.packs = (move, side, now) => void b.want('brawler', move, side, now);
+    b.onLetGo = (s) => renderer.vetFx.forget(s);
+  }
   // (THE TOWN'S PEOPLE BAKED, render/townsfolk_baked.ts: the sculpted four's pictures, painted when the game was built, beside
   // this page; taken in as a place with them in it is come into and let go of as it is left (placeFrame, loadingFrame). Where they
   // will not come, the town's people are as they were.)
@@ -2898,7 +2905,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   }
   const dbg = {
     /** THE HEROES BAKED (render/baked.ts): what has been taken in from the bake, and what failed (null: no bake on this page). */
-    baked: () => (painter.baked ? { ...painter.baked.stats } : null),
+    baked: () => (painter.baked ? { ...painter.baked.stats, packs: { ...painter.baked.stats.packs } } : null),
+    /**
+     * THE HEROES' PACKS (render/baked.ts PACKS), for the measures: the switch and the budget; `held`, the packs in hand, the
+     * least lately asked for first; `idle`, nothing being unpacked; `all`, every pack unpacked (what he would hold with none
+     * let go: set `on` false first); `letGo`, every pack let go.
+     */
+    packs: { PACKS, held: () => painter.baked?.packsHeld() ?? [], idle: () => painter.baked?.packsIdle() ?? true, all: () => painter.baked?.unpackAll(), letGo: () => painter.baked?.letGoAll() },
     /** FRAMES KEPT IN THEIR SHEETS (engine/px.ts sheetSprite): how many have been cut from their sheets, and where a frame is on its sheet (the playtests: tools/scenarios/sheet_frames.mjs). */
     sheetCuts: () => sheetCuts(),
     sheetWhere: (s: Sprite) => sheetWhere(s),

@@ -16,6 +16,7 @@ import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { GRID } from './skeleton';
 import type { Skeleton, V3 } from './skeleton';
+import { ASKED } from './asked';
 import { HEAVY, LEFT_TO_PAINTER, toSprite } from './kit';
 import { MORE_TURN } from './sides_more';
 import type { MoreSide } from './sides_more';
@@ -270,6 +271,8 @@ export function vetFxFrames(n: number, make: (i: number) => Sprite): Sprite[] {
       enumerable: true,
       get(): Sprite {
         if (HEAVY.defer || LEFT_TO_PAINTER.on) {
+          // (his moves kept packed, render/baked.ts PACKS: the bake is told, and unpacks this move's pack)
+          ASKED.told?.(out);
           HEAVY.deferred++;
           return NONE;
         }
