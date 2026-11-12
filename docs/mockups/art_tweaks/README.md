@@ -84,3 +84,13 @@ LAIR_LIGHTS.dark 0.8 to 0.65 as floor 3's; the old values in the comments there.
 HIS WORD, 12 Nov 2026, by pop-up, sent `pictures/8_floor5_before_after.png` (the temple and the mine, before and after, the share
 under each), told floors 2, 4 and 15 sit at or lighter than floor 3 and floor 12's dark is the black above its walls: “Yes, as shown
 (Recommended)”.
+
+AFTER HIS YES, TO KEEP HIS RULEBOOK'S COLOUR 4 (a floor darker than the darkest word, tests/lair_temple.test.ts and lair_story): lifted
+with the rest, the stone's and the flags' brightest tone put the temple's walls one over the line (62 against 61) and the Eye in its
+stone over; so those two tones are held just under it ('#3e374f', '#3e374d'), and the threshold's T_STONE left as it was (lifted, it
+was further over). Measured again: the temple 65%, the mine 56%, as shown him. CHECKED: `node tools/unit.mjs --only
+lair_temple,lair_story,floor5` on 71683a26e4 and on main d39dcde8e4: the same three files fail on both, with the very same
+items (Colour 4's mine floor, rails, threshold and more, and lair_temple's first test, which lair_story's import has failed since
+25.3.6): none of them this change's. On fbc87f6450, before the hold: --only lair_temple, lair_story, floor5, floor5_look,
+floor_looks_game, ways_art, fleshmancer and the core: 30 files, 27 passed, the same three failed. Its look filmed: nothing but stills
+(tools/scenarios/dark_floors.mjs), finished clean.
