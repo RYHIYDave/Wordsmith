@@ -53,7 +53,7 @@ declare const __MONSTER_BAKE__: string | undefined;
  * (not the game's own, which a slow frame holds back) from when they were asked for: where they are slow to come (a slow
  * device, a poor line) he plays, and they go on coming as he does, a little each frame.
  */
-export const MONSTERS_BAKED = { on: true, waitHeavy: true, waitMost: 6000 };
+export const MONSTERS_BAKED = { on: true, waitHeavy: true, waitMost: 8000 };
 
 /** The folder beside the page the bakes are in, each in a folder of its own named by its mark (tools/build.mjs). */
 export const MONSTER_BAKE_DIR = 'monsters';
@@ -110,7 +110,7 @@ export const STAND_IN_MS = 5000;
  * under the loading screen (it goes on turning), and as the game is played (a figure first seen in a fight: the game is
  * never held up by it).
  */
-export const CUT_MS = { loading: 6, play: 2 };
+export const CUT_MS = { loading: 8, play: 2 };
 /**
  * THE MOST OF THE BAKE'S PICTURES HELD AT ONCE ON A DEVICE WITH LITTLE ROOM (a phone), megabytes in hand: an iPhone gives a
  * page only so much room for its canvases (384 MB has been its limit, and the game's own take their share), and one that

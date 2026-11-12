@@ -344,13 +344,13 @@ test('the frames are cut a few at a time, the page given back to draw between: a
   assert.equal(b.stats.given, n - 1);
   assert.ok(w.turns >= n - 1, `${w.turns} turns for ${n - 1} frames`);
   assert.ok(b.stats.cutLongest < 15, `the longest turn ${b.stats.cutLongest.toFixed(1)} ms`);
-  // (and where it is quick, many a turn: under the loading screen six thousandths of a second at a time, two in play)
+  // (and where it is quick, many a turn: under the loading screen eight thousandths of a second at a time, two in play)
   const q = world();
   const c = new BakedMonsters('m1', () => q.bestiary, q.opts);
   c.take(FIG);
   await settle(c);
   assert.ok(q.turns < 20, `${q.turns} turns`);
-  assert.deepEqual(CUT_MS, { loading: 6, play: 2 });
+  assert.deepEqual(CUT_MS, { loading: 8, play: 2 });
 });
 
 test('a phone (little room): a boss\'s pictures are not taken in, the painter\'s as before; and no more of the others at once than it has room for', async () => {
