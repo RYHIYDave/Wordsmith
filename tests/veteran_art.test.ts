@@ -1,7 +1,8 @@
 // THE VETERAN'S PICTURES IN THE GAME (art/veteran_art.ts, render/veteran_fx.ts; behind game/veteran.ts VETERAN): his frames are
 // the art chat's (dev/veteran_moves.ts VET_MOTIONS), every list as long as its move, a frame the art's pose painted as the art's
 // film paints it; his steps baked for the rules (game/veteran_baked.ts) the art's own; the game turns his picture and lays his
-// effects as the art's film lays them, from in front and from behind, mirrored or not.
+// effects as the art's film lays them: from in front and from behind, mirrored or not, as the game has him (art/sides_more.ts
+// EIGHT_MORE.brawler, off at his word from the phone, 11 Nov 2026); with that on, from each of his eight sides and never mirrored.
 //   run: tsx --test tests/veteran_art.test.ts
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
@@ -19,6 +20,7 @@ import { VET_MOTIONS, VET_RUN, VET_TILE, carryAt, motionById, placeOf, spinAt, v
 import { VET_BAKED } from '../src/game/veteran_baked';
 import { VETERAN, VET_MOVES } from '../src/game/veteran';
 import { vetView } from '../src/render/veteran_fx';
+import { EIGHT_MORE, MORE_TURN, MORE_WAY, moreSideOf } from '../src/art/sides_more';
 import { VET_FX_AFTER, VET_FX_LAYERS, paintVetFx } from '../src/art/veteran_fx_art';
 import { hsv } from './floor_checks';
 import { paintWithoutCanvas, paintingOf, unlike } from './helpers';
@@ -95,9 +97,9 @@ test('his steps baked for the rules are the art\'s own: carryAt, placeOf and spi
   assert.ok(!/from ['"][^'"]*dev\//.test(src), 'the baked steps import nothing of src/dev');
 });
 
-test('the game turns him as it turns heroes, and lays his effects as the art\'s film does: from in front and behind, mirrored or not', () => {
-  // (the art's film: a point of his scene (his forward, his left) turned by the view, 0 from in front, 90 from behind, and
-  // projected; a mirrored picture mirrors it about him)
+test('the game turns him as it turns heroes, and lays his effects as the art\'s film does: from each of his eight sides, never mirrored; with his eight sides off, from in front and behind, mirrored or not', () => {
+  // (the art's film: a point of his scene (his forward, his left) turned by the view and projected; a mirrored picture mirrors
+  // it about him)
   const art = (a: number, b: number, V: number, left: boolean): [number, number] => {
     const r = (V * Math.PI) / 180;
     const x = a * Math.cos(r) - b * Math.sin(r);
@@ -105,18 +107,49 @@ test('the game turns him as it turns heroes, and lays his effects as the art\'s 
     const sx = (GRID * (x + y)) / 2;
     return [left ? -sx : sx, (GRID * 0.5 * (x - y)) / 2];
   };
-  for (const [fx, fy] of [[1, 0], [0, 1], [0, -1], [-1, 0], [0.8, 0.6], [-0.6, -0.8]]) {
-    const v = vetView(fx, fy);
-    for (const [a, b] of [[10, 0], [0, 10], [7, -4], [-30, 22]]) {
-      const X = (a * v.f[0] + b * v.l[0]) / VET_TILE;
-      const Y = (a * v.f[1] + b * v.l[1]) / VET_TILE;
-      const game: [number, number] = [(X - Y) * 16, (X + Y) * 8];
-      const want = art(a, b, v.away ? 90 : 0, v.left);
-      assert.ok(Math.abs(game[0] - want[0]) < 1e-9 && Math.abs(game[1] - want[1]) < 1e-9, `facing ${fx},${fy}: (${a}, ${b}) at ${game} on the screen, the art's ${want}`);
+  const FACINGS = [[1, 0], [0, 1], [0, -1], [-1, 0], [0.8, 0.6], [-0.6, -0.8], [0.7, -0.7], [-0.7, 0.7]];
+  const POINTS = [[10, 0], [0, 10], [7, -4], [-30, 22]];
+  const laid = (v: { f: [number, number]; l: [number, number] }, a: number, b: number): [number, number] => {
+    const X = (a * v.f[0] + b * v.l[0]) / VET_TILE;
+    const Y = (a * v.f[1] + b * v.l[1]) / VET_TILE;
+    return [(X - Y) * 16, (X + Y) * 8];
+  };
+  const was = EIGHT_MORE.brawler;
+  try {
+    // (THE GAME HAS HIS EIGHT SIDES OFF, at his word from the phone, 11 Nov 2026: docs/mockups/eight_sides/BRING_IN.md, its foot.
+    // WHEN HE GOES ON: this line, tests/sides_more.test.ts test 2 and tests/veteran_rules.test.ts's `eightWas`.)
+    assert.equal(was, false, 'his eight sides are off in the game');
+    // (HIS EIGHT SIDES ON, art/sides_more.ts EIGHT_MORE.brawler: the side for the way he faces, the art's figure turned as that
+    // side is, MORE_TURN, and no picture of his a mirror)
+    EIGHT_MORE.brawler = true;
+    for (const [fx, fy] of FACINGS) {
+      const v = vetView(fx, fy);
+      assert.equal(v.side, moreSideOf(fx, fy), `facing ${fx},${fy}: the side for the way he faces`);
+      assert.equal(v.left, false, `facing ${fx},${fy}: never mirrored`);
+      assert.deepEqual(v.f, [...MORE_WAY[v.side!]], 'his forward is the way his side faces');
+      assert.deepEqual(v.l, [v.f[1], -v.f[0]], 'his left is his left');
+      for (const [a, b] of POINTS) {
+        const game = laid(v, a, b);
+        const want = art(a, b, MORE_TURN[v.side!], false);
+        assert.ok(Math.abs(game[0] - want[0]) < 1e-9 && Math.abs(game[1] - want[1]) < 1e-9, `facing ${fx},${fy} (${v.side}): (${a}, ${b}) at ${game} on the screen, the art's ${want}`);
+      }
     }
-    // (the way the picture faces is the way the game faces a hero: render/figure.ts)
-    assert.equal(v.left, fx - fy < 0);
-    assert.equal(v.away, fx + fy < -0.2);
+    // (HIS EIGHT SIDES OFF, as the game has him: his four ways, 0 from in front, 90 from behind, the other two mirrored)
+    EIGHT_MORE.brawler = false;
+    for (const [fx, fy] of FACINGS.slice(0, 6)) {
+      const v = vetView(fx, fy);
+      assert.equal(v.side, null);
+      for (const [a, b] of POINTS) {
+        const game = laid(v, a, b);
+        const want = art(a, b, v.away ? 90 : 0, v.left);
+        assert.ok(Math.abs(game[0] - want[0]) < 1e-9 && Math.abs(game[1] - want[1]) < 1e-9, `off, facing ${fx},${fy}: (${a}, ${b}) at ${game} on the screen, the art's ${want}`);
+      }
+      // (the way the picture faces is the way the game faces a hero: render/figure.ts)
+      assert.equal(v.left, fx - fy < 0);
+      assert.equal(v.away, fx + fy < -0.2);
+    }
+  } finally {
+    EIGHT_MORE.brawler = was;
   }
 });
 

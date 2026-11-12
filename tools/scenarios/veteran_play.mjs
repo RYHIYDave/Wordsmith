@@ -68,6 +68,13 @@ export default async function (page, snap) {
     d.autoLevel = false; d.autoWords = false; d.god = true;
     const g = d.game(); g.waveT = 1e9; g.monsters.length = 0;
   });
+  // (AUTO AIM, as its head says: until 11 Nov 2026 it was played with the playtests' own "where the thumb taps", the thumb down
+  // straight to the right of him and the skeletons down and to the right, and his blows found them only because his picture
+  // then faced the nearest of FOUR ways and carried him at them; from all eight sides, art/sides_more.ts, he faces and is
+  // carried where the thumb aimed, straight to the right, as he should. And the loading screen waited out: his pictures from
+  // eight sides are four times as many to take in, and taps made under it went nowhere.)
+  await page.evaluate(() => window.__dbg.setAim('auto'));
+  for (let i = 0; i < 600; i++) { if (!(await page.evaluate(() => window.__dbg.loadingNow()))) break; await page.waitForTimeout(50); }
   await page.waitForTimeout(1500);
   let s = await st();
   check('the Brawler is the Veteran: Punch, Kick, Jump', JSON.stringify(s.skills) === JSON.stringify(['vpunch', 'vkick', 'vjump']), JSON.stringify(s.skills));
