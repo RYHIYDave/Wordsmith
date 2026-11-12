@@ -487,13 +487,14 @@ test('The Tow Line and The Company Scrip: her Golem rides the Blast Jump on its 
     const golem = I(g).golems[0];
     const m = dummy(g, 7.5, 0);
     // (his word, 12 Nov 2026: its own rocket jump, off with her, to where she comes down, free: towRide)
-    golem.jumpCd = 2;
+    const gj = golem as unknown as { jumpCd?: number };
+    gj.jumpCd = 2;
     const ev = swipe(g, 6, 0, 0.8);
     assert.equal(seen(ev, 'towline', 'ride').length, 1);
     assert.ok(Math.hypot(golem.x - g.hero.x, golem.y - g.hero.y) < 2, 'it lands by her');
     assert.ok(ev.some((e) => e.t === 'golemArrive'), 'it comes down by its rocket jump (its fist slam)');
     assert.ok(!ev.some((e) => e.t === 'golemPound'), 'not a pound where it stands: it rode');
-    assert.equal(golem.jumpCd ?? 0, 0, 'free: its jump ready again');
+    assert.equal(gj.jumpCd ?? 0, 0, 'free: its jump ready again');
     assert.ok(hurt(m) > 0);
     // The Company Scrip
     const s = wear(room('tinkerer'), 'companyscrip');

@@ -316,9 +316,29 @@ NOT CHECKED: his phone (the slimmer Golem is a feel); tools/unit.mjs.
 HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills, asked whether to hand it to main with the Golem's slimmer body: “Yes,
 hand it to main (Recommended)”.
 
+## The Crier's Hush: the hushed enemies
+
+Behind `UNIQUE_PLAY.hush`, off. Its rules (game.ts hushNear) keep an enemy's words in `Monster.dark` while it is within reach, and
+tell of each as `dark` and `light`. While it is hushed its elite ring and its name are drawn in the Hush's dead grey (art/crier.ts
+`HUSH`, the Crier's own, the grey his Hush writes the hero's words in), where the build fell back to a plain pink ring
+(render/render.ts: the ring in drawWorld, `nameColor`); wisps of the Hush drift up off it a few a second (UniqueFx.update). On its
+`dark`, a ring of the Hush's grey closes in on it (the effects' `closing` ring) and its dead air is puffed up off it; on its
+`light`, a ring and a spray of its word's own colour, with white. (PACK_MARKS, off, draws no mark for a hushed one: its words are
+kept off it; with the marks on, that is the main chat's to weigh.)
+
+To see it: `LOOK=hush FILM=4.4 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario
+tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/hushfilm` (the Warrior walks up to three elites with words and away).
+Pictures sent him: `pictures/criershush.mp4` and `pictures/criershush.png`.
+
+Checked: tests/unique_play3_hush.test.ts (new, 2: its switch off and nothing with it off; on, the closing ring and the puff in the
+Hush's grey, the return in the word's own colour) and tests/unique_play.test.ts (6, counting `hush`), each alone with tsx; tsc
+clean; the look filmed, finished clean.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills: “Yes, hand it to main (Recommended)”.
+
 ## For the main chat
 
-Bring in `art/uniques-play2` first (the queue's bring-in-drowned-arm-picture), then this branch: `wind` and `moth` go on with the
+Bring in `art/uniques-play2` first (the queue's bring-in-drowned-arm-picture), then this branch: `wind`, `moth` and `hush` go on with the
 uniques (`UNIQUES`), with the others; test 1 of tests/unique_play.test.ts asserts every switch off: change it then.
 
 ## Not drawn yet

@@ -5,7 +5,8 @@
 //     --scenario tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/tome
 // LOOK: tome (The Restless Tome, the Warlock), risen (The Fleshmancer's Brand, the Warrior), globe (The Fourth Globe, the
 // Brawler), arm (The Drowned Arm, the Warrior), talons (The Queen's Talons, the Ranger), wrench (The Sticky Wrench, the Tinkerer), wind (The
-// Windcutter, the Warrior: three Strikes in a row, twice), moth (The Moth's Wing, the Warrior: struck, a word of his goes dark), tow (The Tow Line,
+// Windcutter, the Warrior: three Strikes in a row, twice), moth (The Moth's Wing, the Warrior: struck, a word of his goes dark), hush (The Crier's Hush, the Warrior walking up to
+// elites and away), tow (The Tow Line,
 // the Tinkerer: her Golem whistled out, then her Blast Jump, twice; it rides each on its own rocket jump). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
 // STAGE=1 (risen, with FILM): the elite set two tiles off and struck dead with no swing of his, so its rising is seen clear.
 // FILM=<seconds>: a film of it in place of the stills, frame by frame (30 a second, the game's clock stepped so that no
@@ -46,7 +47,7 @@ export default async function (page, snap) {
   const elite = process.env.ELITE || 'skeleton';
   const cls = look === 'tome' ? 'warlock' : look === 'globe' ? 'brawler' : look === 'talons' ? 'ranger' : look === 'wrench' || look === 'tow' ? 'tinkerer' : 'warrior';
   // (LOOK=kinds: every kind of monster risen in turn, to see each one's risen look: below)
-  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : look === 'wrench' ? 'stickywrench' : look === 'wind' ? 'windcutter' : look === 'moth' ? 'mothswing' : look === 'tow' ? 'towline' : 'fleshmancersbrand';
+  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : look === 'wrench' ? 'stickywrench' : look === 'wind' ? 'windcutter' : look === 'moth' ? 'mothswing' : look === 'tow' ? 'towline' : look === 'hush' ? 'criershush' : 'fleshmancersbrand';
   const set = await page.evaluate(({ cls, id, playOn }) => {
     const d = window.__dbg;
     d.uniques.on = true;
@@ -122,6 +123,29 @@ export default async function (page, snap) {
     if (film) { await shoot(film, round(300, 160, 300, 110), due); return; }
     for (const [, f] of due.slice(0, 3)) { await f(); await wait(420); }
     for (let k = 0; k < 6; k++) { await wait(k === 0 ? 30 : 90); await snap(`${k + 1}_blade`); }
+    return;
+  }
+  if (look === 'hush') {
+    // THE CRIER'S HUSH (the Warrior wearing it): elites with words about; he walks up to them (within its reach their words go dark)
+    // and away again (they come back)
+    const el = (dx, dy, w, name) => page.evaluate(([dx, dy, w, name]) => {
+      const g = window.__dbg.game(); const h = g.hero;
+      const m = g.spawn('skeleton', h.x + dx, h.y + dy, 1, 0, false, g.rng);
+      g.wakeUp(m); m.speed = 0; m.cd = 1e9; m.life = m.maxLife = 1e7; m.elite = true; m.name = name; m.words = [w];
+      return m.id;
+    }, [dx, dy, w, name]);
+    await el(3.6, -1.0, 'fire', 'Burning Bones'); await el(4.4, 0.9, 'frost', 'Frozen Bones'); await el(6.4, -0.2, 'lightning', 'Crackling Bones');
+    await page.evaluate(() => {
+      const g = window.__dbg.game();
+      const run = g.update.bind(g);
+      g.update = (dt, c) => { if (window.__go) { c.mx = window.__go[0]; c.my = window.__go[1]; } return run(dt, c); };
+    });
+    const go = (x, y) => () => page.evaluate(([x, y]) => { window.__go = x || y ? [x, y] : null; }, [x, y]);
+    await wait(500);
+    const due = [[0.3, go(1, 0)], [1.5, go(0, 0)], [2.6, go(-1, 0)], [3.9, go(0, 0)]];
+    if (film) { await shoot(film, round(260, 190, 330, 110), due); return; }
+    await snap('1_before'); await go(1, 0)(); await wait(1200); await go(0, 0)(); await snap('2_hushed'); await wait(300); await snap('3_hushed');
+    await go(-1, 0)(); await wait(1300); await go(0, 0)(); await snap('4_back');
     return;
   }
   if (look === 'tow') {

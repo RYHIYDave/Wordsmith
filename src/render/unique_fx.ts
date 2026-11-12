@@ -26,6 +26,10 @@
 //   THE STICKY WRENCH      on its 'stuck', her vial in a lump of pitch where it landed, stuck to the enemy there (and going
 //                          where it goes) at its middle, blinking quicker and quicker, fizzing, a cyan light off it, until the
 //                          rules' fuse is out and it bursts (the game's own burst, twice as wide) (art paintStuckVial)
+//   THE CRIER'S HUSH       an enemy near him whose words it has darkened (game.ts hushNear, Monster.dark): on its 'dark', a ring
+//                          of the Hush's dead grey (art/crier.ts HUSH, the Crier's own) closing in on it and its dead air puffed
+//                          up off it; while it is hushed, wisps of the Hush drifting up off it (its ring and its name the Hush's
+//                          grey: render/render.ts); on its 'light', a flash of its word's own colour as its words come back
 //   THE WINDCUTTER         its blade (game.ts windBlade: a shot of the Wave's kind, `blade`, which render.ts hands here) a
 //                          crescent of rushing air at the height of his swing, bowed the way it flies, white, its edge his cyan
 //                          (the bag picture's blade), wind streaming back off it, its shadow on the floor, grit kicked up under
@@ -51,6 +55,8 @@ import { UNIQUE_PLAY } from './unique_play';
 import { AIR } from './wild';
 import { P } from '../art/palette';
 import type { Projectile } from '../game/state';
+import { HUSH } from '../art/crier';
+import { WORD_COLOR } from '../art/icons';
 import { ARM, ARM_WATER, BIRD_CANVAS, BIRD_RAVEN, STICKY, STICKY_BREW, TALONS, paintArm, paintArmPool, paintStuckVial, paintTalonsBird, talonsAt } from '../art/unique_play_art2';
 
 /** Picture pixels to a game pixel (the heroes' grain). */
@@ -81,7 +87,7 @@ export interface UniqueStand {
 interface Lent {
   shake: number;
   fallen: { x: number; y: number; t: number }[];
-  rings: { x: number; y: number; r: number; t: number; dur: number; colors: readonly string[]; fill: boolean; heavy?: boolean }[];
+  rings: { x: number; y: number; r: number; t: number; dur: number; colors: readonly string[]; fill: boolean; heavy?: boolean; closing?: boolean }[];
   spray(x: number, y: number, n: number, colors: readonly string[], speed: number, up: number, z?: number): void;
 }
 
@@ -135,6 +141,8 @@ export class UniqueFx {
   // ---- the windcutter: where its last blade was sent from (the 'wave' told with it is its stand-in); when grit was last kicked up
   private bladeAt: { x: number; y: number } | null = null;
   private gritT = 0;
+  // ---- the crier's hush: when the wisps off the hushed were last sent up
+  private wispT = 0;
   /** What the effects lend it, from the last event (for the burst of her feathers on the blow, which no event tells of). */
   private lent: Lent | null = null;
   private looks = new Map<Sprite, Sprite>();
@@ -203,6 +211,20 @@ export class UniqueFx {
       fx.rings.push({ x: e.x + ux * 1.3, y: e.y + uy * 1.3, r: 0.5, t: 0, dur: 0.15, colors: [AIR[1], AIR[2], AIR[3]], fill: false });
       fx.spray(e.x, e.y, 8, [P.st6, P.st5, P.st4], 1.4, 40, 1);
       fx.shake = Math.max(fx.shake, 1.2);
+    }
+    if (e.id === 'criershush' && UNIQUE_PLAY.hush) {
+      const m = e.mid !== undefined ? g?.monsters.find((q) => q.id === e.mid) : undefined;
+      const top = m ? (FIGURE_SIZE[figureOf(m)]?.top ?? 28) : 28;
+      if (e.what === 'dark') {
+        // THE HUSH CLOSES ON IT: a ring of its dead grey closing in, its dead air puffed up off it
+        fx.rings.push({ x: e.x, y: e.y, r: 1.4, t: 0, dur: 0.34, colors: [HUSH[4], HUSH[3], HUSH[2]], fill: false, closing: true });
+        fx.spray(e.x, e.y, 12, [HUSH[4], HUSH[3], HUSH[2]], 0.7, 55, Math.round(top * 0.6));
+      } else if (e.what === 'light' && m && m.words.length) {
+        // ITS WORDS COME BACK: a flash of its word's own colour
+        const c = WORD_COLOR[m.words[0]];
+        fx.rings.push({ x: e.x, y: e.y, r: 1.1, t: 0, dur: 0.26, colors: ['#ffffff', c, c], fill: false });
+        fx.spray(e.x, e.y, 8, [c, '#ffffff'], 1.1, 70, Math.round(top * 0.6));
+      }
     }
     if (e.id === 'queenstalons' && UNIQUE_PLAY.talons && e.what === 'dive' && e.x1 !== undefined && e.y1 !== undefined) {
       // (from in front or behind, and which way round on the screen, by the way it flies: as a monster is shown)
@@ -299,6 +321,16 @@ export class UniqueFx {
       }
     }
     this.stuck = this.stuck.filter((v) => v.t < v.secs);
+    // THE CRIER'S HUSH: wisps of the Hush drifting up off each it has hushed, a few a second
+    this.wispT += dt;
+    if (UNIQUE_PLAY.hush && this.lent && gm && this.wispT >= 0.2) {
+      this.wispT = 0;
+      for (const m of gm.monsters) {
+        if (!m.dark || m.dead) continue;
+        const top = FIGURE_SIZE[figureOf(m)]?.top ?? 28;
+        this.lent.spray(m.x, m.y, 1, [HUSH[4], HUSH[3]], 0.25, 22, Math.round(top * 0.85));
+      }
+    }
     // THE WINDCUTTER: grit kicked up off the floor under its blade as it goes
     this.gritT += dt;
     if (UNIQUE_PLAY.wind && this.lent && gm && this.gritT >= BLADE.grit) {
