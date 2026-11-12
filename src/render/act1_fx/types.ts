@@ -50,4 +50,11 @@ export interface Act1Fx {
   over?(m: Monster): number;
   /** Out of sight where it lies (under the water, not yet risen): nothing of it is drawn, its shadow, its ring, its bar and its name too (render.ts). */
   hidden?(m: Monster): boolean;
+  /**
+   * NOTHING OF ITS FIGURE'S OWN PICTURES IS EVER DRAWN (the Swamp Colossus: he and his arms are monsters of the Drowned Eye's
+   * kind, always `hidden`, drawn from his own baked pictures): they are not painted ahead for the floor, by the painter or by
+   * the game (render/render.ts). Found 11 Nov 2026 as the floors' monsters were baked: on floor 10 the painter's worker was
+   * painting the Drowned Eye's 1,352 places, a fifth to two thirds of a second each and 330 MB held whole, for nothing.
+   */
+  noFigure?: boolean;
 }

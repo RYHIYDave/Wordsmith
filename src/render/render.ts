@@ -2763,6 +2763,8 @@ export class Renderer {
     }
     for (const m of game.monsters) {
       if (m.dead) continue;
+      // (one whose figure's own pictures are never drawn, the Swamp Colossus and his arms: none of them is painted ahead)
+      if (act1Fx(m.kind)?.noFigure) continue;
       const f = figureOf(m);
       if (!figs.includes(f)) figs.push(f);
       // (A BOSS NEARING ITS END: its death painted next by the painter, so that its fall is not painted here as it is shown)

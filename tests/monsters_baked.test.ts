@@ -19,6 +19,9 @@ import { PAINTING } from '../src/art/kit';
 import type { Sprite } from '../src/engine/px';
 import { BakedMonsters, HOLD_MOST_MB, MONSTERS_BAKED, STAND_IN_MS, TOO_BIG, bakeName, bakedFigures, bringsOf, figureLens, monsterBakeMark } from '../src/render/monsters_baked';
 import type { MonsterBakeFile } from '../src/render/monsters_baked';
+import { COLOSSUS } from '../src/game/colossus_fight';
+import { ACT1_KINDS, ACT2_KINDS, HIGH_KINDS } from '../src/game/types';
+import { act1Fx } from '../src/render/act1_fx/index';
 import { paintWithoutCanvas } from './helpers';
 
 interface Assert {
@@ -41,7 +44,7 @@ test('the figures that are baked: every one with pictures of its own, each once,
   assert.ok(!all.includes('eye'));
   assert.deepEqual([...TOO_BIG], ['moth']);
   assert.ok(!all.includes('moth'));
-  assert.equal(HOLD_MOST_MB, 400);
+  assert.equal(HOLD_MOST_MB, 600);
   // (a kind's other looks, each a figure of its own: '<kind>:<form>', its files <kind>_<form>)
   const looks = all.filter((f) => f.includes(':'));
   assert.ok(looks.length > 0);
@@ -64,6 +67,22 @@ test('the bake paints with the switches the game puts on as it starts: the same 
   // (and before it makes a picture)
   const page = read('src/dev/bake_monsters_page.ts');
   for (const c of bake) assert.ok(page.indexOf(c) < page.indexOf('const bestiary = makeBestiary();'), c);
+});
+
+test('the Swamp Colossus and his arms are not painted ahead: nothing of the Drowned Eye\'s own pictures is drawn while he is floor 10\'s boss', () => {
+  assert.equal(COLOSSUS.on, true);
+  assert.equal(act1Fx('eye')?.noFigure, true, 'the renderer leaves the kind out of the painting ahead');
+  assert.ok(!bakedFigures().includes('eye'), 'and it is not baked');
+  // (and no other kind: each of the others is shown by its own pictures)
+  for (const k of [...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS]) if (k !== 'eye') assert.ok(!act1Fx(k)?.noFigure, k);
+  // (with the Colossus off the Drowned Eye is floor 10's boss as he was: painted by the painter, and baked)
+  COLOSSUS.on = false;
+  try {
+    assert.ok(!act1Fx('eye')?.noFigure);
+    assert.ok(bakedFigures().includes('eye'));
+  } finally {
+    COLOSSUS.on = true;
+  }
 });
 
 test('what a figure brings into its floor is asked for with it: what it becomes, and what it calls up', () => {

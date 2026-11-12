@@ -26,10 +26,12 @@ export function bakedFigures(): MonsterFigure[] {
  * THE MOST OF ONE FIGURE'S PICTURES THAT IS TAKEN IN AT ONCE, megabytes in hand (four bytes a pixel): a baked figure comes
  * whole, under the loading screen, where the painter's worker hands its frames over one after another. The bake's tool
  * (tools/bake_monsters.mjs) stops at a figure over this, to be named in `TOO_BIG`. As measured at the bake of 11 Nov 2026: the
- * Carrion Queen 387 and the Flame Unfinished 380, the two biggest under it (each is in hand whole today too, a minute or two
- * after its floor is come into, from the painter); the others' bosses 20 to 125; a floor's ordinary kinds 1 to 15 each.
+ * Carrion Queen 537 and the Flame Unfinished 380, the two biggest under it; the other bosses 5 to 124; a floor's other
+ * kinds half a megabyte to 29 each. EACH IS IN HAND WHOLE WITHOUT THE BAKE TOO, a minute or two after its floor is come into: the painter's
+ * worker paints every frame of a boss and hands it over, and nothing lets one go before the floor is left. The bake does not
+ * hold more; it holds it sooner. (Their frames are tight already: cut down to what is painted in each they would be 1% less.)
  */
-export const HOLD_MOST_MB = 400;
+export const HOLD_MOST_MB = 600;
 /**
  * TOO BIG TO HOLD WHOLE: THE MOTH, floor 20's (art/act1_figs/moth.ts: 1,304 frames of up to 832 by 824, 1,984 MB in hand were
  * they all held). Not baked, not taken in: as before.

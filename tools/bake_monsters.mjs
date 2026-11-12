@@ -96,8 +96,9 @@ export async function bakeMonsters({ log = console.log, jobs = 2, only = null, f
     await first.setContent('<!doctype html><html><body></body></html>');
     await first.addScriptTag({ content: code });
     const all = await first.evaluate(() => window.bakeMob.figures());
+    // (the most of one figure's pictures that may be taken in at once, megabytes in hand: render/monsters_bake_list.ts HOLD_MOST_MB)
+    const most = await first.evaluate(() => window.bakeMob.most());
     await first.close();
-    const most = await first.evaluate(() => window.bakeMob.most()).catch(() => Infinity);
     for (const f of only ?? []) if (!all.includes(f)) throw new Error(`no figure ${f}`);
     // (--from: another mark's figures taken as this one's, where this one has them not: each file's mark written anew)
     if (from && from !== mark) {
