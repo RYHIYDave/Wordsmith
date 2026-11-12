@@ -172,6 +172,12 @@ export interface UniqueDef {
   does: () => string[];
   /** Its price, as its card says it; absent, none. */
   price?: () => string;
+  /**
+   * How many special modifiers it has, where that is not one (his rule, 4 Oct 2026: “1-2 unique modifiers that can't be rolled
+   * on normal gear”). Only The Warden's Keys has two (the doors, the chests). Not the count of `does` lines: Bloodprice's
+   * second line only says how its one works. Its pips count them (ui/panels.ts drawItemPips).
+   */
+  powers?: number;
 }
 
 const T = UNIQUE_TUNE;
@@ -209,7 +215,7 @@ export const UNIQUE_DEFS: readonly UniqueDef[] = [
   { id: 'queensglass', name: "The Queen's Glass", stem: 'manaring', from: 'boss', boss: ['gqueen'], floor: 18, bends: 'words', stats: ['critChance', 'dex'], word: 'mirroring', does: () => ['Adds MIRRORING in front of your tap attack. No slot used.'] },
 
   // ---- THIRD BATCH: THE NINE BOSSES LEFT ----
-  { id: 'wardenskeys', name: "The Warden's Keys", stem: 'heavybelt', from: 'boss', boss: ['warden'], floor: 1, bends: 'hero', stats: ['goldFind', 'magicFind'], does: () => ['Every sealed word door opens to you without its word.', `Every chest holds ${T.keys.more === 1 ? 'one more piece' : `${T.keys.more} more pieces`}.`] },
+  { id: 'wardenskeys', name: "The Warden's Keys", stem: 'heavybelt', from: 'boss', boss: ['warden'], floor: 1, bends: 'hero', stats: ['goldFind', 'magicFind'], powers: 2, does: () => ['Every sealed word door opens to you without its word.', `Every chest holds ${T.keys.more === 1 ? 'one more piece' : `${T.keys.more} more pieces`}.`] },
   { id: 'amalgamsheart', name: "The Amalgam's Heart", stem: 'intamulet', from: 'boss', boss: ['amalgam'], floor: 4, bends: 'words', stats: ['maxLife', 'areaPct'], does: () => ['When the two words in front of your tap attack can be melded, it gets their meld as well. No melding, no runedust.'] },
   { id: 'halfcarvedhand', name: 'The Half-Carved Hand', stem: 'gauntlets', from: 'boss', boss: ['unfinished'], floor: 6, bends: 'hero', stats: ['str', 'maxLife'], does: () => [`Below half life you attack ${pc(T.halfHand.attack)} faster and move ${pc(T.halfHand.move)} faster.`], price: () => 'The danger.' },
   { id: 'queenstalons', name: "The Queen's Talons", stem: 'leatherboots', from: 'boss', boss: ['queen'], floor: 7, bends: 'hero', stats: ['dex', 'maxLife'], does: () => [`Each critical hit calls one of her birds: it dives on the nearest enemy for ${pc(T.talons.share)} of your hit.`] },
@@ -311,6 +317,11 @@ export function uniqueLines(d: UniqueDef, cls: ClassId): { text: string; kind: '
   if (!wordIsIn(d)) out.push({ text: 'Its word is not in the game yet.', kind: 'bad' });
   out.push({ text: 'Cannot be crafted', kind: 'note' });
   return out;
+}
+
+/** How many special modifiers it has (one, or two). */
+export function uniquePowers(d: UniqueDef): number {
+  return d.powers ?? 1;
 }
 
 /** Make a unique of this id at an item level: its fixed stats rolled. Null with the switch off, or for an id not known. */

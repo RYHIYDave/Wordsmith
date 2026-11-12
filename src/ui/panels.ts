@@ -18,7 +18,7 @@ import { ENDLESS, endlessName } from '../game/endless';
 import type { HeroMode } from '../game/modes';
 import type { AimMode, Station, VendorId } from '../game/state';
 import { ITEM_ROOM, itemRoom, modLines } from '../game/items';
-import { uniqueLines, uniqueOf } from '../game/uniques';
+import { uniqueLines, uniqueOf, uniquePowers } from '../game/uniques';
 import { COMPANION_INFO } from '../game/companions';
 import type { TitleArt } from '../art/title';
 import { TITLE_MARKS, titleRound } from '../art/title';
@@ -149,19 +149,60 @@ export function itemCard(game: Game, it: Item, touch = false): Line[] {
  * the bag, on the hero, at the vendor's and in the stash, without being read.
  */
 export function drawItemPips(g: CanvasRenderingContext2D, it: Item, x: number, y: number): void {
-  const lit: string[] = [];
-  for (let i = 0; i < it.affixes.length; i++) lit.push(THEME.magic);
-  for (const im of it.imbues) lit.push(WORD_COLOR[im.word] ?? THEME.text);
-  // (UNIQUE ITEMS: a unique takes no word: its four places all in its own orange)
-  if (it.rarity === 3) for (let i = 0; i < ITEM_ROOM; i++) lit[i] = RARITY_COLOR[3];
+  const unique = it.rarity === 3;
+  const lit = unique ? uniquePips(it) : [];
+  if (!unique) {
+    for (let i = 0; i < it.affixes.length; i++) lit.push(THEME.magic);
+    for (const im of it.imbues) lit.push(WORD_COLOR[im.word] ?? THEME.text);
+  }
   const w = 3;
   const total = ITEM_ROOM * (w + 1) - 1;
   let px = x + Math.floor((CELL - total) / 2);
   for (let i = 0; i < ITEM_ROOM; i++) {
-    g.fillStyle = lit[i] ?? THEME.edge;
-    g.fillRect(px, y + CELL - 2.5, w, 1.5);
+    // (a unique takes no word, so it shows no free place: only its own pips, in the same places as any piece's)
+    const c = lit[i] ?? (unique && !UNIQUE_PIPS.free ? null : THEME.edge);
+    if (c) {
+      g.fillStyle = c;
+      g.fillRect(px, y + CELL - 2.5, w, 1.5);
+    }
     px += w + 1;
   }
+}
+
+/**
+ * UNIQUE ITEMS: what a unique's pips show. Until 12 Nov 2026 every unique lit all four places in its orange. His words to the
+ * Uniques in-play chat, 11 Nov 2026, shown that: “I think it just has pips equal to the number of mods it has”. Read as: one pip
+ * for each mod it has, as other pieces have, and no free places (it takes no word). HIS PICKS, 12 Nov 2026 (the Pips chat, by
+ * pop-up, shown pictures of each way: docs/requests/unique_pips.md): of which lines get a pip, “Every line, price too”; of their
+ * colour, “All orange”. So: a pip for each of its ordinary stats, each special modifier and its price, all in its orange (at most
+ * four: two stats, and two modifiers or one and a price). Behind UNIQUES with the rest of them (game/uniques.ts), so nothing shows
+ * it until uniques are on. The other ways stay, one word each, for pictures.
+ */
+export const UNIQUE_PIPS = {
+  /**
+   * 'lines' (his pick): its ordinary stats, its modifiers (game/uniques.ts uniquePowers) and its price;
+   * 'all': its ordinary stats and its modifiers; 'stats': its ordinary stats only.
+   */
+  count: 'lines' as 'all' | 'stats' | 'lines',
+  /** 'orange' (his pick): all orange; 'split': its stats pale blue as any piece's are (as their lines on its card are), its modifiers orange, its price red. */
+  colour: 'orange' as 'split' | 'orange',
+  /** The places a unique has no pip for, drawn dim as a free place is on other pieces (false: not drawn: it takes no word). */
+  free: false,
+};
+
+/** A unique's pips, left to right as its card reads: its ordinary stats, what it does, its price. At most the four places. */
+export function uniquePips(it: Item): string[] {
+  const d = uniqueOf(it);
+  const orange = RARITY_COLOR[3];
+  const split = UNIQUE_PIPS.colour === 'split';
+  const out: string[] = [];
+  for (let i = 0; i < it.affixes.length; i++) out.push(split ? THEME.magic : orange);
+  if (UNIQUE_PIPS.count !== 'stats') {
+    const n = d ? uniquePowers(d) : 1;
+    for (let i = 0; i < n; i++) out.push(orange);
+    if (UNIQUE_PIPS.count === 'lines' && d?.price) out.push(split ? THEME.bad : orange);
+  }
+  return out.slice(0, ITEM_ROOM);
 }
 
 export function wordCard(w: WordId): Line[] {
