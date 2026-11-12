@@ -1702,9 +1702,6 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (e.world) worldSound(e.name, e.vol ?? 1, e.or, !!e.exact);
       else sfxNamed(e.name, e.vol ?? 1, e.or, !!e.exact);
     }
-    // (THE TEN NEW WORDS' SOUNDS: the sounds of moments only the pictures know, a mirror's pane beginning to grow up: render/words7.ts
-    // soundsW7)
-    if (WORDS7_LOOK.on) for (const name of soundsW7()) if (WORD_SOUNDS.on && name in WORD_SOUND) sfxNamed(name, WORD_SOUND[name as WordSound].vol);
     // (THE FLOORS' SCENE SOUNDS: a blow made in code that stands in for one in a recording, the cage's or the portcullis's, is not
     // sounded while that recording is heard: engine/audio.ts soundHeard)
     const standIn = (e: GameEvent): boolean => e.t === 'sfx' && e.standsFor !== undefined && soundHeard(e.standsFor);
@@ -2108,6 +2105,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       ui.press = press;
       drawText(cg, __BUILD__, scr.w - 3, 2, '#3a3040', { align: 'right', font: 'small' });
       if (titleLex) {
+        // (THE LEXICON'S PAGE TURN, as in town: one of the book's tabs tapped)
+        if (lexUi.turned) {
+          lexUi.turned = false;
+          if (WORD_SOUNDS.on) sfxNamed(PAGE_TURN.name, PAGE_TURN.vol, 'click');
+          else sfx('click');
+        }
         if (drawLexicon(ui, art, meta, lexUi, dt) || input.pressed('Escape')) {
           titleLex = false;
           sfx('click');
@@ -2322,6 +2325,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // (THE FLOORS' SCENE SOUNDS, the eighth batch: a moment's own sound, made whole to its film, as its frame 0 is shown; its
       // jolts are in it, so where it is heard the screen is kicked and no blow is made in code on top of it)
       for (const name of renderer.momentSounds()) worldSound(name, MOMENT_VOL, undefined, true);
+      // (THE TEN NEW WORDS' SOUNDS: the sounds of moments only the pictures know, a mirror's pane beginning to grow up: render/words7.ts
+      // soundsW7. Here and not in the drain, which is left at once on a frame the rules sent nothing)
+      if (WORDS7_LOOK.on) for (const name of soundsW7()) if (WORD_SOUNDS.on && name in WORD_SOUND) sfxNamed(name, WORD_SOUND[name as WordSound].vol);
       // (THE LEXICON'S PAGE TURN, the sound chat's sixth batch: as one of its tabs is tapped and its page turns: ui/lexicon.ts; the
       // menus' own click until its recording has come)
       if (lexUi.turned) {

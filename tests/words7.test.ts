@@ -72,6 +72,16 @@ const on = <T>(fn: () => T): T => {
     WORDS7_LOOK.on = was;
   }
 };
+// (THE SWITCH IS ON SINCE THE TEN NEW WORDS WENT LIVE, 11 Nov 2026: what is asked of it switched off is asked with it put off)
+const off = <T>(fn: () => T): T => {
+  const was = WORDS7_LOOK.on;
+  WORDS7_LOOK.on = false;
+  try {
+    return fn();
+  } finally {
+    WORDS7_LOOK.on = was;
+  }
+};
 
 function lab(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
@@ -162,8 +172,8 @@ function stage(word: W7Word, side: W7Side): { gm: Game; at: number } {
   return { gm, at: t };
 }
 
-test('1. the switch is off, everything the renderer asks of it is behind it, and nothing else of the game reaches it', () => {
-  assert.equal(WORDS7_LOOK.on, false);
+test('1. the switch is on (since the ten new words went live), everything the renderer asks of it is behind it, and nothing else of the game reaches it but the effects, which leave their stand-ins out for it', () => {
+  assert.equal(WORDS7_LOOK.on, true, 'on since the ten new words went live (his yes to their film, 9 Nov 2026)');
   const calls = ['tickW7(', 'floorW7(', 'airW7(', 'lightsW7(', 'lookW7(', 'heroW7(', 'fallenW7(', 'lyingW7(', 'spiritsW7('];
   const lines = (readFileSync(new URL('../src/render/render.ts', import.meta.url), 'utf8') as string).split('\n');
   let found = 0;
@@ -177,7 +187,8 @@ test('1. the switch is off, everything the renderer asks of it is behind it, and
     }
   });
   assert.equal(found, calls.length, 'every hook is found in render.ts, once');
-  // what of the game imports it: the renderer (behind the switch) and main.ts (the playtest's hands, __dbg.words7) only
+  // what of the game imports it: the renderer (behind the switch), main.ts (its events, its runes and colours, the playtest's hands,
+  // __dbg.words7) and the effects (render/fx.ts: ownsEventW7, the stand-ins left out while it is on) only
   const importers: string[] = [];
   const walk = (dir: string): void => {
     for (const f of readdirSync(dir) as string[]) {
@@ -187,15 +198,16 @@ test('1. the switch is off, everything the renderer asks of it is behind it, and
     }
   };
   walk(new URL('../src', import.meta.url).pathname);
-  assert.deepEqual(importers.sort(), ['main.ts', 'render/render.ts']);
+  assert.deepEqual(importers.sort(), ['main.ts', 'render/fx.ts', 'render/render.ts']);
   const main = (readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8') as string).split('\n');
   const calls7 = main.filter((l) => /eventsW7\(|tickW7\(|playW7\(/.test(l) && !l.trimStart().startsWith('import'));
   assert.equal(calls7.length, 1, 'main.ts calls up the looks once, by the events');
   assert.ok(calls7[0].includes('WORDS7_LOOK.on'), `main.ts calls the looks without the switch: ${calls7[0].trim()}`);
-  assert.equal(ownsZoneW7({ kind: 'thorns' }), false, 'with the switch off the renderer keeps every patch');
+  assert.equal(off(() => ownsZoneW7({ kind: 'thorns' })), false, 'with the switch off the renderer keeps every patch');
+  assert.equal(ownsZoneW7({ kind: 'thorns' }), true, 'and on, the thorns are the look\'s');
 });
 
-test('2. with the switch off, nothing here draws, lights, changes a picture or keeps time, whatever it is told', () => {
+test('2. with the switch off, nothing here draws, lights, changes a picture or keeps time, whatever it is told', () => off(() => {
   assert.equal(WORDS7_LOOK.on, false);
   for (const word of W7_WORDS) {
     for (const side of W7_SIDES) {
@@ -219,7 +231,7 @@ test('2. with the switch off, nothing here draws, lights, changes a picture or k
   }
   assert.equal(W7.heroSp, null, 'not even the hero is looked at');
   clearW7();
-});
+}));
 
 test('3. their colours: six tones, told apart from every word, the melds, the friend, the enemy and one another; Plundering clear of the gold; nothing cyan or pink', () => {
   const others: Record<string, string> = { ...(WORD_COLOR as Record<string, string>), cyan: '#28dcf0', runedust: '#5ce8f8', pink: '#ff4f8a', gold: '#ffd27a', binding: BIND_RAMP[3] };

@@ -5349,6 +5349,8 @@ export class Game {
     dy /= len;
     if (front.length || behind.length) this.emit({ t: 'cast', x: x0, y: y0, dx, dy, kind: def.kind, el: r.element, words: front, behind, echo: false });
     this.boons(2);
+    // (THE THREE NEW WORDS' SOUNDS: Lasting's shimmer, Fleeting's flick, on top of the move they change)
+    this.timeWordSound(2);
     // (THE LAST WORDS: SURGING behind any of his abilities, his dodge releases a surge where it begins)
     this.dodgeSurge(x0, y0);
     if (def.kind === 'warp' && land) {

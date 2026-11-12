@@ -167,7 +167,8 @@ function stages(): Stage[] {
 const EVENTS: [string, Record<string, unknown>, string][] = [
   ['an orb wave wider', { t: 'burst', x: 11, y: 9, r: 2.8, el: 'phys', style: 'nova', words: ['vast'], n: 0, echo: false }, 'vast:front'],
   ["a whirlwind's turn wider", { t: 'burst', x: 10, y: 10, r: 2.86, el: 'phys', style: 'whirl', words: ['vast'], n: 0, echo: false }, 'vast:front'],
-  ["Vast behind's splash", { t: 'burst', x: 11, y: 9, r: VAST.splashR, el: 'phys', style: 'shock', words: [], n: 0, echo: false }, 'vast:behind'],
+  // (Vast behind's splash is told by its own name since the ten new words went live, 11 Nov 2026; a 'shock' burst its reach wide is
+  // no longer read as it: the Brawler's Aftershock is such a burst)
   ['the splash by its own name', { t: 'vastSplash', x: 11, y: 9, r: VAST.splashR, ids: [5, 6] }, 'vast:behind'],
 ];
 const near = (): Monster[] => [monster(4, 11, 9), monster(5, 11.9, 9.4), monster(6, 11.4, 8.2)];
@@ -258,6 +259,10 @@ test('1. each look is drawn from its cause, through its beats, and gone, every p
 });
 
 test('2. with the switch off, nothing at all, whatever the rules send or keep', () => {
+  // (the switch is on since the ten new words went live, 11 Nov 2026: put off for this)
+  const was = WORDS10_LOOK.on;
+  WORDS10_LOOK.on = false;
+  try {
   assert.equal(WORDS10_LOOK.on, false);
   for (const s of stages()) {
     clearW10();
@@ -279,6 +284,9 @@ test('2. with the switch off, nothing at all, whatever the rules send or keep', 
     assert.deepEqual(thingW10(s.gm, 1, 1, {} as never, 0, 0), []);
   }
   assert.equal(W10.seen.length, 0, 'not even the hero is looked at');
+  } finally {
+    WORDS10_LOOK.on = was;
+  }
 });
 
 test("3. nothing cyan on a monster's side; the enemy's pink there", () => {

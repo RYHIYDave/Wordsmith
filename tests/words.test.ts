@@ -19,7 +19,7 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { SKILLS, TUNE, WORDS } from '../src/game/defs';
+import { FLEETING, SKILLS, TUNE, WORDS } from '../src/game/defs';
 import type { SkillDef } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { RNG } from '../src/engine/rng';
@@ -61,6 +61,13 @@ function sides(): WordId[][] {
 
 /** The nine words there were before Version 19.3. */
 const FIRST_NINE: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison'];
+/**
+ * THE TEN NEW WORDS (live since 11 Nov 2026): his seven for the last levels (8 Nov) and his three (9 Nov). With them a side can
+ * be filled 397 ways where the eighteen made 162, and every side with a newer word against every single word would be some
+ * 21,000 loadouts an ability where it was 4,700: so the eighteen are put through as they were, and the ten are SAMPLED (below).
+ */
+const THE_TEN: readonly WordId[] = ['piercing', 'bleeding', 'reaping', 'culling', 'surging', 'plundering', 'mirroring', 'lasting', 'fleeting', 'vast'];
+const isTen = (w: WordId): boolean => THE_TEN.includes(w);
 
 /**
  * The loadouts used for each ability: every one made of the first nine words (36 x 36); and every
@@ -68,10 +75,18 @@ const FIRST_NINE: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost'
  * the other (each loadout once).
  */
 function loadouts(): [WordId[], WordId[]][] {
-  const all = sides();
+  const every = sides();
+  // (the eighteen as they were put through before the ten: every loadout of the first nine; every side with one of the nine
+  // newer of them, against the empty side and each single one of the eighteen)
+  const all = every.filter((s) => !s.some(isTen));
   const old = all.filter((s) => s.every((w) => FIRST_NINE.includes(w)));
   const fresh = all.filter((s) => s.some((w) => !FIRST_NINE.includes(w)));
   const singles = all.filter((s) => s.length <= 1);
+  // (THE TEN, sampled: every side that holds one of them, alone or beside any other word, in front and then behind against the
+  // empty side; and each of them alone on a side against every single word there is on the other, both ways round)
+  const ten = every.filter((s) => s.some(isTen));
+  const tenAlone = ten.filter((s) => s.length === 1);
+  const everySingle = every.filter((s) => s.length === 1);
   const out: [WordId[], WordId[]][] = [];
   const have = new Set<string>();
   const add = (f: WordId[], b: WordId[]): void => {
@@ -83,6 +98,16 @@ function loadouts(): [WordId[], WordId[]][] {
   for (const f of old) for (const b of old) add(f, b);
   for (const s of fresh) {
     for (const o of singles) {
+      add(s, o);
+      add(o, s);
+    }
+  }
+  for (const s of ten) {
+    add(s, []);
+    add([], s);
+  }
+  for (const s of tenAlone) {
+    for (const o of everySingle) {
       add(s, o);
       add(o, s);
     }
@@ -131,10 +156,19 @@ function checkNumbers(def: SkillDef, front: readonly WordId[], behind: readonly 
   assert.equal(r.stun, inFront('heavy')?.stun ?? 0, `${name} stun`);
   assert.equal(r.precise, !!inFront('precise'), `${name} precise`);
   assert.equal(r.frenzy, !!inFront('frenzied'), `${name} frenzy`);
-  assert.equal(r.shield, inFront('guarding')?.shield ?? 0, `${name} shield`);
+  // (THE TEN: LASTING and FLEETING, the same wherever they sit, and each once however often it is there. Lasting makes what the
+  // ability makes and gives last longer; Fleeting a third shorter, as much in that time, its boosts stronger)
+  const lasting = inFront('lasting') ?? atBack('lasting');
+  const fleeting = front.includes('fleeting') || behind.includes('fleeting');
+  near(r.last, (lasting ? lasting.last : 1) * (fleeting ? 1 - FLEETING.shorter : 1), `${name} how long what it makes lasts`);
+  near(r.pace, fleeting ? 1 / (1 - FLEETING.shorter) : 1, `${name} how fast what it makes works`);
+  near(r.boost, fleeting ? 1 + FLEETING.stronger : 1, `${name} how strong its boosts are`);
+  assert.ok(r.last > 0 && r.pace > 0 && r.boost > 0, `${name}: its times are above nothing`);
+  if (lasting) assert.ok(lasting.last > 1, `${name}: Lasting lasts longer`);
+  near(r.shield, (inFront('guarding')?.shield ?? 0) * r.boost, `${name} shield`);
   // behind
-  assert.equal(r.might, atBack('power')?.might ?? 0, `${name} might`);
-  assert.equal(r.haste, atBack('swift')?.haste ?? 0, `${name} haste`);
+  near(r.might, (atBack('power')?.might ?? 0) * r.boost, `${name} might`);
+  near(r.haste, (atBack('swift')?.haste ?? 0) * r.boost, `${name} haste`);
   assert.equal(r.echo, atBack('twin')?.echo ?? 0, `${name} echo`);
   assert.equal(r.orbChance, atBack('leech')?.orbChance ?? 0, `${name} orb chance`);
   assert.equal(r.rune, atBack('volatile')?.rune ?? 0, `${name} rune`);
@@ -144,13 +178,24 @@ function checkNumbers(def: SkillDef, front: readonly WordId[], behind: readonly 
   assert.equal(r.frenzyFeed, !!atBack('frenzied'), `${name} frenzy fed by kills`);
   assert.equal(r.ward, atBack('guarding')?.ward ?? 0, `${name} ward`);
   const ground = behind.find(isElement);
-  assert.deepEqual(r.zone, ground ? resolveSkill(def, [], [ground], cls, d).zone : null, `${name} ground`);
-  assert.equal(r.pierce, !!ground, `${name} passes through`);
+  // (its ground as the word alone leaves it, for as long as Lasting or Fleeting make of it, Fleeting's as much in all)
+  const alone = ground ? resolveSkill(def, [], [ground], cls, d).zone : null;
+  assert.deepEqual(r.zone, alone ? { ...alone, dur: alone.dur * r.last, dps: alone.dps * r.pace } : null, `${name} ground`);
+  // (what leaves ground passes through; and so does PIERCING in front)
+  assert.equal(r.pierce, !!ground || front.includes('piercing'), `${name} passes through`);
+  // (THE TEN: the seven of the last levels, what each gives in front and behind; VAST's splash behind, and how much wider in front)
+  const TEN_FRONT: readonly [WordId, 'through' | 'bleed' | 'reap' | 'cull' | 'surge' | 'plunder' | 'mirror'][] = [['piercing', 'through'], ['bleeding', 'bleed'], ['reaping', 'reap'], ['culling', 'cull'], ['surging', 'surge'], ['plundering', 'plunder'], ['mirroring', 'mirror']];
+  for (const [w, k] of TEN_FRONT) assert.equal(r[k], inFront(w)?.[k] ?? 0, `${name}: ${w} in front`);
+  const TEN_BEHIND: readonly [WordId, 'lance' | 'thorns' | 'spirit' | 'cullMark' | 'dodgeSurge' | 'plunderBurst' | 'mirrorLeave' | 'vast'][] = [['piercing', 'lance'], ['bleeding', 'thorns'], ['reaping', 'spirit'], ['culling', 'cullMark'], ['surging', 'dodgeSurge'], ['plundering', 'plunderBurst'], ['mirroring', 'mirrorLeave'], ['vast', 'vast']];
+  for (const [w, k] of TEN_BEHIND) assert.equal(r[k], atBack(w)?.[k] ?? 0, `${name}: ${w} behind`);
+  assert.equal(r.wide, inFront('vast')?.wide ?? 1, `${name}: how much wider Vast lands it`);
   // the element is the one in front, failing that the one behind
   const el = (front.find(isElement) ?? behind.find(isElement)) as WordId | undefined;
   assert.equal(r.element, el ? (WORDS[el].element as Element) : 'phys', `${name} element`);
   // every word says what it does, and is in the name
-  assert.equal(r.lines.length, 1 + front.length + behind.length, `${name}: one line of description for each word`);
+  // (Lasting or Fleeting in front and behind at once does its work once, and says so once)
+  const twice = ['lasting', 'fleeting'].filter((w) => front.includes(w as WordId) && behind.includes(w as WordId)).length;
+  assert.equal(r.lines.length, 1 + front.length + behind.length - twice, `${name}: one line of description for each word`);
   assert.equal(r.name, skillName(def, front, behind));
   for (const w of front) assert.ok(r.name.includes(WORDS[w].front), `${name} names ${w} in front`);
   for (const w of behind) assert.ok(r.name.includes(WORDS[w].behind.replace(/^of /, '')), `${name} names ${w} behind`);
@@ -199,6 +244,25 @@ function checkWordAlone(def: SkillDef, cls: ClassId, d: Derived): void {
   assert.ok(f('guarding').shield > 0 && f('guarding').shield <= 0.2, `${n}: Guarding gives a shield`);
   assert.ok(b('heavy').cracks > 0 && b('precise').mark && b('frenzied').frenzyFeed, `${n}: of Quakes cracks the ground, of the Mark marks, of Frenzy feeds the frenzy`);
   assert.ok(b('guarding').ward > 0 && b('guarding').ward <= 0.5, `${n}: of Warding leaves a ward`);
+  // (THE TEN NEW WORDS, live since 11 Nov 2026)
+  assert.ok(f('piercing').pierce && f('piercing').through > 0 && f('piercing').through < 1, `${n}: Piercing goes on through, for less than the hit`);
+  assert.ok(b('piercing').lance > 0, `${n}: of the Lance strikes down its line`);
+  assert.ok(f('bleeding').bleed > 0 && b('bleeding').thorns > 0, `${n}: Bleeding makes them bleed, of Thorns leaves thorns`);
+  assert.ok(f('reaping').reap > 0 && b('reaping').spirit > 0, `${n}: Reaping takes time off his cooldowns, of Spirits raises one`);
+  assert.ok(f('culling').cull > 0 && f('culling').cull < 0.5 && b('culling').cullMark > 0 && b('culling').cullMark < 0.5, `${n}: Culling takes the nearly dead, of the Reaper leaves its mark`);
+  assert.ok(f('surging').surge > 0 && b('surging').dodgeSurge > 0, `${n}: Surging gathers a shockwave, of the Surge gives his dodge one`);
+  assert.ok(f('plundering').plunder > 0 && b('plundering').plunderBurst > 0, `${n}: Plundering drops more gold, of Plunder bursts it out`);
+  assert.ok(f('mirroring').mirror > 0 && f('mirroring').mirror < 1 && b('mirroring').mirrorLeave > 0 && b('mirroring').mirrorLeave < 1, `${n}: Mirrored makes it again beside him, weaker; of Mirrors leaves a mirror`);
+  for (const [side, at] of [[f, 'in front'], [b, 'behind']] as const) {
+    const L = side('lasting');
+    assert.ok(L.last > 1 && L.pace === 1 && L.boost === 1 && L.dmgMult === bare.dmgMult, `${n}: Lasting ${at} is longer, and no stronger`);
+    const F = side('fleeting');
+    assert.ok(F.last < 1 && F.pace > 1 && F.boost > 1, `${n}: Fleeting ${at} is shorter, faster, its boosts stronger`);
+    near(F.last * F.pace, 1, `${n}: Fleeting ${at} does as much in its shorter time`);
+  }
+  assert.ok(f('vast').size > bare.size && f('vast').wide > 1 && f('vast').dmgMult < bare.dmgMult, `${n}: Vast is a bigger area for a little less damage`);
+  near(f('vast').size, bare.size * f('vast').wide, `${n}: Vast's widening is what it says`);
+  assert.ok(b('vast').vast > 0 && b('vast').vast < 1 && b('vast').size === bare.size, `${n}: of the Expanse splashes a share of each hit, no wider`);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -414,7 +478,9 @@ function useOnce(cls: ClassId, weapon: WeaponKind, skill: number, front: readonl
   // (a volley: the arrows in the air, the rain, and the same again for the one "of Echoes" looses)
   // (a Contraption: set up, its time (short here: see contraptionLife), its falling apart and its last vial's flight; the Golem: its pound, a second for Twin, a weaker one for of Echoes)
   const CT = TINKER_TUNE.contraption;
-  const until = def.kind === 'orb' ? TUNE.orbLife + 1.8 : def.kind === 'summon' ? TUNE.familiarLife + 3.2 : def.kind === 'volley' ? (TUNE.volleyDelay + TUNE.volleyLife) * 2 + 3 : def.kind === 'contraption' ? CT.set + CT.life + CT.broke + CT.flight + 1.2 : def.kind === 'golem' ? 6 : 3.6;
+  // (LASTING: what it makes is out half again as long, and more with his Intelligence: the time allowed runs as long)
+  const longer = Math.max(1, s.r.last);
+  const until = def.kind === 'orb' ? TUNE.orbLife * longer + 1.8 : def.kind === 'summon' ? TUNE.familiarLife * longer + 3.2 : def.kind === 'volley' ? (TUNE.volleyDelay + TUNE.volleyLife) * 2 + 3 : def.kind === 'contraption' ? CT.set + CT.life * longer + CT.broke + CT.flight + 1.2 : def.kind === 'golem' ? 6 : 3.6;
   for (let step = 1; step * DT < until; step++) {
     g.update(DT, c);
     look();
@@ -448,8 +514,16 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     assert.deepEqual([...cast.behind].sort(), [...behind].sort(), `${name}: ...and its words behind`);
     assert.equal(cast.el, r.element);
   }
-  const first = hits[0] as Extract<GameEvent, { t: 'hit' }>;
+  // (of Thorns and of the Reaper: where its thorns or its mark are laid before its blow lands, an evasive move's where it began,
+  // their cut or their cull comes first: a plain blow, no word's. The ability's own hit is the first that is not one.)
+  const own = behind.includes('bleeding') || behind.includes('culling') ? hits.find((e) => e.t === 'hit' && (e.el === r.element && (!front.length || !!e.words))) : undefined;
+  const first = (own ?? hits[0]) as Extract<GameEvent, { t: 'hit' }>;
   assert.equal(first.el, r.element, `${name}: the hit is of the ability's element`);
+  // (THE TEN, MIRRORING in front: his reflection makes the attack with him, weaker, as an echo is made: one more of whatever the
+  // ability makes, told as an echo's is. Not of an attack that is held, a Whirlwind or a Beam, nor of his evasive move: the rules as built.)
+  const evasive = seen.g.hero.skills[2].id === def.id;
+  const once = !def.channel && !evasive;
+  const copies = front.includes('mirroring') && once ? 1 : 0;
   if (front.length) assert.deepEqual([...(first.words ?? [])].sort(), [...front].sort(), `${name}: the hit carries the words in front`);
 
   // ---- in front: the hit
@@ -470,13 +544,13 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     else if (def.kind === 'melee') assert.ok(any((e) => e.t === 'swing' && !e.echo && e.n === 0) && any((e) => e.t === 'swing' && !e.echo && e.n === 1), `${name}: Twin cuts twice`);
     else if (def.kind === 'burst' || def.kind === 'orb' || def.kind === 'whirl' || def.kind === 'leap' || def.kind === 'warp') assert.ok(any((e) => e.t === 'burst' && !e.echo && e.n === 0) && any((e) => e.t === 'burst' && !e.echo && e.n === 1), `${name}: Twin bursts twice`);
     else if (def.kind === 'volley') assert.ok(any((e) => e.t === 'volleyFall' && !e.echo && e.n === 0) && any((e) => e.t === 'volleyFall' && !e.echo && e.n === 1) && count((e) => e.t === 'volleyUp' && !e.echo) === 1, `${name}: Twin brings the arrows down in pairs`);
-    else if (def.kind === 'projectile') assert.ok(seen.shots === 2 && seen.shotTwins === 1, `${name}: Twin looses two shots, one of them the mirror's`);
-    else if (def.kind === 'wave') assert.ok(seen.shots === 2 && seen.shotTwins === 1 && count((e) => e.t === 'wave' && !e.echo) === 1, `${name}: Twin sends two waves, one of them the mirror's`);
+    else if (def.kind === 'projectile') assert.ok(seen.shots === 2 * (1 + copies) && seen.shotTwins === 1 + copies, `${name}: Twin looses two shots, one of them the mirror's`);
+    else if (def.kind === 'wave') assert.ok(seen.shots === 2 * (1 + copies) && seen.shotTwins === 1 + copies && count((e) => e.t === 'wave' && !e.echo) === 1, `${name}: Twin sends two waves, one of them the mirror's`);
     else if (def.kind === 'beam') assert.ok(any((e) => e.t === 'beamBite' && e.n === 0) && any((e) => e.t === 'beamBite' && e.n === 1), `${name}: Twin fires two beams`);
     else if (def.kind === 'summon') assert.ok(seen.twinSeen && seen.mostShots >= 2, `${name}: Twin makes every familiar shoot two bolts, one of them the mirror's`);
     else assert.equal(seen.traps, 2, `${name}: Twin lays two traps`);
-  } else if (def.kind === 'projectile') assert.equal(seen.shots, 1, `${name}: one shot`);
-  else if (def.kind === 'wave') assert.ok(seen.shots === 1 && count((e) => e.t === 'wave' && !e.echo) === 1, `${name}: one wave`);
+  } else if (def.kind === 'projectile') assert.equal(seen.shots, 1 + copies, `${name}: one shot`);
+  else if (def.kind === 'wave') assert.ok(seen.shots === 1 + copies && count((e) => e.t === 'wave' && !e.echo) === 1, `${name}: one wave`);
   else if (def.kind === 'roll') assert.equal(seen.traps, 1, `${name}: one trap`);
   else if (def.kind === 'volley') assert.ok(count((e) => e.t === 'volleyUp' && !e.echo) === 1 && !any((e) => e.t === 'volleyFall' && e.n > 0), `${name}: one volley, its arrows one at a time`);
   else if (def.kind === 'beam') assert.ok(any((e) => e.t === 'beamBite' && e.n === 0) && !any((e) => e.t === 'beamBite' && e.n > 0), `${name}: one beam`);
@@ -489,6 +563,7 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
   else if (def.kind === 'golem') assert.ok(count((e) => e.t === 'golemPound' && !e.echo) === 1, `${name}: one pound`);
   else if (def.kind === 'blastjump') assert.ok(!any((e) => e.t === 'burst' && e.style === 'bomb' && (e.n ?? 0) > 0), `${name}: one bomb`);
   else if (def.kind === 'punch' || def.kind === 'slip') assert.ok(!any((e) => e.t === 'punch' && e.n > 0), `${name}: one blow`);
+  // (his reflection sets no orb of its own: as an echo does, it has the orb that was set send one more wave)
   if (def.kind === 'orb') assert.equal(count((e) => e.t === 'orbSet'), 1, `${name}: one orb is set`);
   if (def.channel) {
     assert.deepEqual([count((e) => e.t === 'channel'), count((e) => e.t === 'channelEnd')], [1, 1], `${name}: it began once and ended once`);
@@ -512,7 +587,7 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
   else assert.equal(seen.haste, 0);
   if (behind.includes('twin')) {
     assert.ok(any((e) => e.t === 'echo' && e.delay > 0), `${name}: of Echoes is announced`);
-    assert.equal(count((e) => e.t === 'cast' && e.echo), 1, `${name}: ...and repeats once, and only once`);
+    assert.equal(count((e) => e.t === 'cast' && e.echo), 1 + copies, `${name}: ...and repeats once, and only once`);
     if (def.kind === 'melee') assert.ok(any((e) => e.t === 'swing' && e.echo === true), `${name}: the echo cuts`);
     if (def.kind === 'burst' || def.kind === 'orb' || def.kind === 'whirl' || def.kind === 'leap' || def.kind === 'warp') assert.ok(any((e) => e.t === 'burst' && e.echo === true), `${name}: the echo bursts`);
     if (def.kind === 'volley') assert.ok(any((e) => e.t === 'volleyUp' && e.echo === true) && any((e) => e.t === 'volleyFall' && e.echo === true), `${name}: the echo is a second rain`);
@@ -533,7 +608,10 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     // (haste is given by the use, once: the echo is not a use. Might is given by every blow that
     // lands, and the echo's blow is one: see tests/power.test.ts.)
     assert.equal(count((e) => e.t === 'buff' && e.kind === 'haste'), behind.includes('swift') ? 1 : 0, `${name}: the echo does not give haste again`);
-  } else assert.ok(!any((e) => (e.t === 'cast' && e.echo) || e.t === 'echo'), `${name}: no echo without of Echoes`);
+  } else {
+    assert.ok(!any((e) => e.t === 'echo'), `${name}: no echo without of Echoes`);
+    assert.equal(count((e) => e.t === 'cast' && e.echo), copies, `${name}: nothing made again but by his reflection`);
+  }
   const ground = behind.find(isElement);
   for (const [w, kind] of [['fire', 'burn'], ['frost', 'ice'], ['lightning', 'storm']] as const) {
     if (ground === w) assert.ok(any((e) => e.t === 'zone' && e.kind === kind), `${name}: of ${w} leaves ${kind} ground`);
@@ -561,7 +639,8 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     if (def.kind !== 'whirl' && def.kind !== 'beam' && def.kind !== 'volley') assert.ok(any((e) => e.t === 'heavy'), `${name}: Heavy lands with its weight`);
   } else assert.ok(!any((e) => e.t === 'stun' || e.t === 'heavy'), `${name}: no stun without Heavy`);
   if (behind.includes('heavy')) {
-    assert.ok(any((e) => e.t === 'zone' && e.kind === 'cracks' && e.dur === 4), `${name}: of Quakes cracks the ground`);
+    // (for its four seconds; longer or shorter as Lasting or Fleeting make of it)
+    assert.ok(any((e) => e.t === 'zone' && e.kind === 'cracks' && Math.abs((e.dur ?? 0) - 4 * r.last) < 1e-9), `${name}: of Quakes cracks the ground`);
   } else assert.ok(!any((e) => (e.t === 'zone' && e.kind === 'cracks') || e.t === 'stagger'), `${name}: no cracked ground without of Quakes`);
   if (behind.includes('precise') && !weak) {
     assert.equal(count((e) => e.t === 'markOn'), 1, `${name}: of the Mark marks the first it hits, once a use`);
@@ -575,7 +654,7 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
   if (!front.includes('frenzied') && !behind.includes('frenzied')) assert.equal(seen.frenzy, 0, `${name}: no frenzy without the word`);
   if (front.includes('guarding')) assert.ok(any((e) => e.t === 'shield') && seen.shield > 0, `${name}: Guarding gives a shield`);
   else assert.ok(!any((e) => e.t === 'shield') && seen.shield === 0, `${name}: no shield without Guarding`);
-  if (behind.includes('guarding')) assert.ok(any((e) => e.t === 'zone' && e.kind === 'ward' && e.dur === 4), `${name}: of Warding leaves its circle`);
+  if (behind.includes('guarding')) assert.ok(any((e) => e.t === 'zone' && e.kind === 'ward' && Math.abs((e.dur ?? 0) - 4 * r.last) < 1e-9), `${name}: of Warding leaves its circle`);
   else assert.ok(!any((e) => e.t === 'zone' && e.kind === 'ward'), `${name}: no ward without of Warding`);
 
   // ---- the city's words (Version 23.8), in front and behind
@@ -594,23 +673,91 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
   }
   if (behind.includes('splitting')) assert.ok(any((e) => e.t === 'shards'), `${name}: of Shards throws its shards`);
   else assert.ok(!any((e) => e.t === 'shards'), `${name}: no shards without of Shards`);
+  // ---- THE TEN NEW WORDS (live since 11 Nov 2026), in front and behind. (Lasting, Fleeting and Vast in front are in the numbers.)
+  // PIERCING: a blow goes on through the first it meets, down a line (a shot's passing through is in its numbers); behind, its lance
+  if (front.includes('piercing') && def.kind === 'melee') assert.ok(any((e) => e.t === 'pierceLine'), `${name}: Piercing's blow goes on through the first`);
+  if (!front.includes('piercing')) assert.ok(!any((e) => e.t === 'pierceLine'), `${name}: no blow goes on through without Piercing`);
+  if (behind.includes('piercing')) {
+    assert.ok(any((e) => e.t === 'lance'), `${name}: of the Lance strikes down its line`);
+    for (const e of ev) if (e.t === 'lance') assert.ok(Math.hypot(e.x1 - e.x0, e.y1 - e.y0) >= 0.5, `${name}: the lance's look has a line to run along`);
+  } else assert.ok(!any((e) => e.t === 'lance'), `${name}: no lance without of the Lance`);
+  // BLEEDING: what it hits bleeds (what dies at a touch is not there to bleed); behind, its thorns, which make what stands in them bleed
+  if (front.includes('bleeding') && !weak) assert.ok(any((e) => e.t === 'bleedOn'), `${name}: Bleeding makes what it hits bleed`);
+  if (!front.includes('bleeding') && !behind.includes('bleeding')) assert.ok(!any((e) => e.t === 'bleedOn'), `${name}: nothing bleeds without the word`);
+  if (behind.includes('bleeding')) assert.ok(any((e) => e.t === 'zone' && e.kind === 'thorns'), `${name}: of Thorns leaves its thorns`);
+  else assert.ok(!any((e) => e.t === 'zone' && e.kind === 'thorns'), `${name}: no thorns without of Thorns`);
+  // REAPING: a kill leaves a soul; behind, a kill raises a spirit
+  if (front.includes('reaping') && weak) assert.ok(any((e) => e.t === 'reapSoul'), `${name}: Reaping takes a soul from its kill`);
+  if (!front.includes('reaping')) assert.ok(!any((e) => e.t === 'reapSoul'), `${name}: no soul without Reaping`);
+  if (behind.includes('reaping') && weak) assert.ok(any((e) => e.t === 'spirit'), `${name}: of Spirits raises a spirit from its kill`);
+  if (!behind.includes('reaping')) assert.ok(!any((e) => e.t === 'spirit' || e.t === 'spiritHit'), `${name}: no spirit without of Spirits`);
+  // CULLING: behind, its reaper's mark (in front it takes only what its hit leaves nearly dead: these are either far from it or dead)
+  if (behind.includes('culling')) assert.ok(any((e) => e.t === 'zone' && e.kind === 'reaper'), `${name}: of the Reaper leaves its mark`);
+  else assert.ok(!any((e) => e.t === 'zone' && e.kind === 'reaper'), `${name}: no reaper's mark without of the Reaper`);
+  if (!front.includes('culling') && !behind.includes('culling')) assert.ok(!any((e) => e.t === 'culled'), `${name}: nothing is culled without the word`);
+  // SURGING: in front its shockwave comes every third use, not on the first; behind, it is his dodge that releases one: his evasive move
+  if (evasive && behind.includes('surging')) assert.ok(any((e) => e.t === 'surge' && e.dodge === true), `${name}: of the Surge, his dodge releases a surge`);
+  else assert.ok(!any((e) => e.t === 'surge'), `${name}: no surge from one use of an attack`);
+  // PLUNDERING: a kill drops more gold, sprayed out of it (behind, its gold flies to his purse: not in the practice room, where he has none)
+  if (front.includes('plundering') && weak) assert.ok(any((e) => e.t === 'goldSpray'), `${name}: Plundering sprays more gold out of its kill`);
+  if (!front.includes('plundering')) assert.ok(!any((e) => e.t === 'goldSpray'), `${name}: no gold sprayed without Plundering`);
+  assert.ok(!any((e) => e.t === 'goldBurst' || e.t === 'goldStolen'), `${name}: no gold changes hands in the practice room`);
+  // MIRRORING: his reflection makes the attack with him; behind, a mirror left where he stood. (His attacks that go off at once:
+  // one held, a Whirlwind or a Beam, and his evasive move are not made by the reflection, nor leave a mirror: the rules as built.)
+  if (copies) assert.equal(count((e) => e.t === 'reflection'), 1, `${name}: Mirrored, his reflection makes the attack with him, once`);
+  else assert.ok(!any((e) => e.t === 'reflection'), `${name}: no reflection without Mirrored`);
+  if (behind.includes('mirroring') && once) assert.ok(any((e) => e.t === 'zone' && e.kind === 'mirror'), `${name}: of Mirrors leaves a mirror where he stood`);
+  else assert.ok(!any((e) => e.t === 'zone' && e.kind === 'mirror'), `${name}: no mirror without of Mirrors`);
+  // (a mirror is spent by his NEXT attack: one use never spends its own)
+  assert.ok(!any((e) => e.t === 'mirrorCast' || e.t === 'mirrorBack'), `${name}: one use spends no mirror, and nothing here sends harm back`);
+  // VAST behind: each hit splashes onto the others near what it hit, told by its own name with those it reached
+  for (const e of ev) {
+    if (e.t !== 'vastSplash') continue;
+    assert.ok(behind.includes('vast'), `${name}: no splash without of the Expanse`);
+    assert.ok(e.ids.length > 0 && e.r > 0, `${name}: a splash reaches someone`);
+  }
+  // (Vast in front: an area it lands wider says where its edge would have been, inside the edge it has)
+  for (const e of ev) {
+    if (e.t !== 'burst' || e.r0 === undefined) continue;
+    assert.ok(front.includes('vast'), `${name}: only Vast in front says where an edge would have been`);
+    assert.ok(e.r0 > 0 && e.r0 < e.r, `${name}: the edge it would have had (${e.r0}) is inside the one it has (${e.r})`);
+  }
+  // (none of the events the looks asked for is sent for a monster's side here: nothing here carries a word)
+  assert.ok(!any((e) => e.t === 'cullBlow' || e.t === 'heroBleed' || e.t === 'rise'), `${name}: no monster's side of a word here`);
   if (weak) assert.ok(seen.g.kills > 0, `${name}: weak monsters die to it`);
 }
 
 // ---------------------------------------------------------------------------------------------
 
-/** How many loadouts each ability is put through (`loadouts`): 2,568 for the thirteen; with the city's four (Version 23.8), 5,120; with Binding (Version 23.9), 6,003. */
-const LOADOUTS = 6003;
+/**
+ * How many loadouts each ability is put through (`loadouts`): 2,568 for the thirteen; with the city's four (Version 23.8), 5,120;
+ * with Binding (Version 23.9), 6,003; with the ten new words, sampled (11 Nov 2026), 6,933: the 235 sides that hold one of the
+ * ten against the empty side, in front and behind (470), and each of the ten alone against every single word, both ways round
+ * (10 x 28 x 2 = 560, less the 100 met twice where both are of the ten).
+ */
+const LOADOUTS = 6933;
 
 test('the rule of the sockets: any word or any two different words to a side, but never two damage words', () => {
   const all = sides();
-  // (the empty side, eighteen words alone, and every pair of them but the ten of two damage words: the city's four since Version 23.8, Binding since 23.9)
-  assert.equal(all.length, 162);
+  // (the empty side, the 28 words alone, and every pair of them but the ten of two damage words: the city's four since Version
+  // 23.8, Binding since 23.9, the ten new words since 11 Nov 2026; 162 with the eighteen)
+  assert.equal(all.length, 397);
+  assert.equal(all.filter((q) => !q.some(isTen)).length, 162, 'the eighteen as they were');
   assert.equal(all.length, 1 + WORD_IDS.length + (WORD_IDS.length * (WORD_IDS.length - 1)) / 2 - 10);
   // (the first nine's 36 x 36 = 1,296; the 46 sides with a newer word, each against the empty side
   // and the thirteen single words, in front and behind: 46 x 14 x 2 = 1,288, less the 16 met twice,
   // where a newer word alone is on both sides)
   assert.equal(loadouts().length, LOADOUTS);
+  assert.equal(loadouts().filter(([f, b]) => !f.some(isTen) && !b.some(isTen)).length, 6003, 'the eighteen put through as they were');
+  // (every one of the ten is used alone in front and alone behind, and beside every other word on its side)
+  for (const w of THE_TEN) {
+    for (const o of WORD_IDS) {
+      if (o === w) continue;
+      assert.ok(loadouts().some(([f, b]) => f.includes(w) && f.includes(o) && !b.length), `${w} shares the front with ${o}`);
+      assert.ok(loadouts().some(([f, b]) => b.includes(w) && b.includes(o) && !f.length), `${w} shares the back with ${o}`);
+      assert.ok(loadouts().some(([f, b]) => f.length === 1 && f[0] === w && b.length === 1 && b[0] === o), `${w} in front, ${o} behind`);
+    }
+  }
   for (const a of WORD_IDS) {
     for (const b of WORD_IDS) {
       const why = socketProblem([a, null], b);
@@ -680,8 +827,8 @@ for (const { cls, weapon, skill, demon, talents = [] } of CASES) {
       // against monsters that can take it: every word that acts on a hit must act
       checkActed(def, front, behind, useOnce(cls, weapon, skill, front, behind, false, name, demon, talents), false, name);
       uses++;
-      // against monsters that die at a touch: the words that act on a kill
-      if (front.includes('volatile') || behind.includes('leech') || behind.includes('frenzied')) {
+      // against monsters that die at a touch: the words that act on a kill (of the ten: Reaping's soul and spirit, Plundering's gold)
+      if (front.includes('volatile') || behind.includes('leech') || behind.includes('frenzied') || front.includes('reaping') || behind.includes('reaping') || front.includes('plundering')) {
         checkActed(def, front, behind, useOnce(cls, weapon, skill, front, behind, true, `${name} (kills)`, demon, talents), true, `${name} (kills)`);
         uses++;
       }

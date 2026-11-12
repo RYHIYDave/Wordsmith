@@ -17,7 +17,8 @@ import { Game } from '../src/game/game';
 import { WORD_IDS } from '../src/game/types';
 import type { Limit } from '../src/game/types';
 import { gameRect, invRect } from '../src/ui/inventory';
-import { lexLayout, wordPage } from '../src/ui/lexicon';
+import { wordPage } from '../src/ui/lexicon';
+import { LEX28, LEX_PAGES, lex28Layout } from '../src/ui/lexicon28';
 import { CELL, PITCH } from '../src/ui/panels';
 import { CARD_ROOM, SIDE_M, sideBody } from '../src/ui/town';
 
@@ -64,23 +65,40 @@ test('the vendor\'s shelves and the stash go into their half, with room under th
   }
 });
 
-test('the Lexicon in its half: rows of rune stones, the page, and the shelf of kept words, one under another', () => {
+test('the Lexicon in its half: its five tabs, the open page\'s row of rune stones, the page, and the shelf of kept words, one under another', () => {
+  // (THE LEXICON IN PAGES, the game's own since the ten new words went live, 11 Nov 2026: ui/lexicon28.ts, the way 'groups'; his
+  // pick in the art chat, 9 Nov, “Categorize them into pages”, “By what they do”. Until then: every word's stone in rows across
+  // the top, ui/lexicon.ts lexLayout, which with 28 words left a page 88 game pixels on a phone held sideways.)
+  assert.equal(LEX28.way, 'groups');
+  assert.deepEqual(LEX_PAGES.flatMap((q) => [...q.words]).sort(), [...WORD_IDS].sort(), 'every word is on one page');
   for (const s of SCREENS) {
     const side = gameRect(s.w, s.h);
     const body = sideBody(side, s.w, s.h);
     // (where the inventory lies under the service, the foot of the service's half is left to what is read)
     assert.equal(body.h, s.h > s.w ? side.h - CARD_ROOM : side.h, s.name);
-    const lay = lexLayout(body, s.touch);
-    // (thirteen words, since Version 19.3: in one row where they fit, else in rows as even as can be)
-    assert.ok(lay.perRow * lay.rows >= WORD_IDS.length && lay.perRow * (lay.rows - 1) < WORD_IDS.length, `${s.name}: every word has its place, and no row is empty`);
-    assert.ok(lay.x0 + (lay.perRow - 1) * lay.pitch + CELL <= side.x + side.w - SIDE_M, `${s.name}: every word's stone is inside the half`);
-    assert.ok(lay.pitch >= CELL, `${s.name}: the stones do not overlap`);
-    assert.ok(lay.bodyY + lay.rows * (CELL + 2) - 2 <= lay.pageY, `${s.name}: the page starts under the stones`);
-    assert.ok(lay.pageY + lay.pageH <= lay.shelfY, `${s.name}: and ends over the shelf`);
-    assert.ok(lay.keptY + CELL <= body.y + body.h, `${s.name}: the kept words are inside the part the service keeps`);
-    // (since Version 19.3's second row of stones, a phone held sideways has 110: the tallest page,
-    // Twin's, is 103 there, and the next test reads every page whole on every screen)
-    assert.ok(lay.pageH >= 108, `${s.name}: the page has room (${lay.pageH})`);
+    LEX_PAGES.forEach((pg, k) => {
+      const lay = lex28Layout(body, s.touch, 'groups', pg.words[0]);
+      assert.equal(lay.tab, k, `${s.name}: a word opens its own page`);
+      const tabs = lay.tabs ?? [];
+      assert.equal(tabs.length, LEX_PAGES.length, `${s.name}: a tab for each page`);
+      tabs.forEach((t, i) => {
+        assert.ok(t.h >= 18 && t.w >= 18, `${s.name}: tab ${i} can be pressed with a finger (${t.w} by ${t.h})`);
+        assert.ok(t.x >= side.x + SIDE_M && t.x + t.w <= side.x + side.w - SIDE_M, `${s.name}: tab ${i} is inside the half`);
+        if (i > 0) assert.ok(tabs[i - 1].x + tabs[i - 1].w < t.x, `${s.name}: the tabs do not overlap`);
+      });
+      assert.equal(lay.cells.length, pg.words.length, `${s.name}: the open page's stones, every one`);
+      lay.cells.forEach((c, i) => {
+        assert.ok(c.r.x + CELL <= side.x + side.w - SIDE_M, `${s.name}, ${pg.name}: every word's stone is inside the half`);
+        assert.ok(c.r.y >= tabs[0].y + tabs[0].h, `${s.name}, ${pg.name}: the stones are under the tabs`);
+        if (i > 0) assert.ok(lay.cells[i - 1].r.x + CELL <= c.r.x, `${s.name}, ${pg.name}: the stones do not overlap`);
+        assert.ok(c.r.y + CELL <= lay.page.y, `${s.name}, ${pg.name}: the page starts under the stones`);
+      });
+      assert.ok(lay.page.y + lay.page.h <= lay.shelfY, `${s.name}: and ends over the shelf`);
+      assert.ok(lay.keptY + CELL <= body.y + body.h, `${s.name}: the kept words are inside the part the service keeps`);
+      // (the longest pages, Reaping's and Mirroring's with every use known, are 109 on a phone held sideways: the next test reads
+      // every page whole on every screen)
+      assert.ok(lay.page.h >= 108, `${s.name}: the page has room (${lay.page.h})`);
+    });
   }
 });
 
@@ -91,12 +109,15 @@ test('every word\'s page, with everything about it known, is written whole in th
   for (const limit of ['cooldown', 'mana'] as Limit[]) {
     meta.limit = limit;
     for (const s of SCREENS) {
-      const lay = lexLayout(sideBody(gameRect(s.w, s.h), s.w, s.h), s.touch);
+      const body = sideBody(gameRect(s.w, s.h), s.w, s.h);
       for (const w of WORD_IDS) {
-        const page = wordPage(meta, w, lay.bw, false, true);
+        // (its own page of the Lexicon's five, open on it)
+        const lay = lex28Layout(body, s.touch, 'groups', w);
+        assert.ok(lay.cells.some((c) => c.w === w), `${s.name}: ${WORDS[w].name}'s stone is on the page it opens`);
+        const page = wordPage(meta, w, lay.page.w, false, true);
         assert.equal(page.parts.length, 4, 'what it is; on an attack; on gear; on a dungeon');
         const tall = page.nameH + page.parts.reduce((a, p) => a + p.gap + p.h, 0);
-        assert.ok(tall - 1 <= lay.pageH, `${s.name}, ${limit}: ${WORDS[w].name}'s page is ${tall} tall and has ${lay.pageH}`);
+        assert.ok(tall - 1 <= lay.page.h, `${s.name}, ${limit}: ${WORDS[w].name}'s page is ${tall} tall and has ${lay.page.h}`);
         for (const p of page.parts) for (const r of p.rows) assert.ok(r.text.length > 0, 'no empty line');
       }
     }

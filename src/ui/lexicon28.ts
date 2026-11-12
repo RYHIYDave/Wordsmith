@@ -63,6 +63,14 @@ export function lexSeen(meta: Meta, words: readonly WordId[]): void {
   for (const w of words) if (meta.known[w].found && seen[w] !== true) seen[w] = true;
 }
 
+/**
+ * THE BOOK ON THE STARTING SCREEN IN THE SAME FIVE PAGES (ui/lexicon.ts drawLexicon), behind a switch of its own: with 28 words its
+ * list, a line a word in two columns, runs off the foot of its panel on a phone held sideways and on a PC (14 lines of 19 where
+ * there is room for 10). On: the five tabs under its title, as at the lectern, and under them the open page's words only, nine
+ * at most. NOT YET SEEN BY HIM: a picture to him before it goes live (docs/words10_live.md); off, the list as it was.
+ */
+export const LEX_BOOK = { pages: true };
+
 /** The game's touch size: the least a thing pressed with a finger is, each way (a button's height with fingers, town.ts / lexicon.ts `bh`). */
 export const TOUCH_MIN = 18;
 
@@ -185,7 +193,7 @@ export function pageHeight(meta: Meta, w: WordId, pw: number): number {
  * says a thing can be pressed. The tab of a page holding a word found since the Lexicon was last looked at (LEX28.fresh) carries
  * a small cyan stud on its top right corner (the open page's none: it is being looked at).
  */
-function drawTabs(ui: Ui, meta: Meta, tabs: Rect[], at: number): void {
+export function drawTabs(ui: Ui, meta: Meta, tabs: Rect[], at: number): void {
   const g = ui.g;
   tabs.forEach((t, i) => {
     const on = i === at;

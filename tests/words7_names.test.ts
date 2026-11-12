@@ -179,6 +179,10 @@ test("6. a monster's surge: the rules' own warning; its wave as the warning runs
 });
 
 test('7. with the switch off, none of it', () => {
+  // (the switch is on since the ten new words went live, 11 Nov 2026: put off for this)
+  const was = WORDS7_LOOK.on;
+  WORDS7_LOOK.on = false;
+  try {
   assert.equal(WORDS7_LOOK.on, false);
   const gm = game([monster(1, 11, 10, { stolen: 2 })], { spirits: [{ id: 1, x: 11, y: 10, t: 0, life: 6, next: 0.3 }] });
   const fx = new Fx();
@@ -191,4 +195,7 @@ test('7. with the switch off, none of it', () => {
   assert.equal(W7.acts.length, 0);
   assert.equal(W7.rising.length, 0);
   assert.equal(W7.spiritWas.size, 0);
+  } finally {
+    WORDS7_LOOK.on = was;
+  }
 });

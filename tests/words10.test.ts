@@ -56,6 +56,16 @@ const on = <T>(fn: () => T): T => {
     WORDS10_LOOK.on = was;
   }
 };
+// (THE SWITCH IS ON SINCE THE TEN NEW WORDS WENT LIVE, 11 Nov 2026: what is asked of it switched off is asked with it put off)
+const off = <T>(fn: () => T): T => {
+  const was = WORDS10_LOOK.on;
+  WORDS10_LOOK.on = false;
+  try {
+    return fn();
+  } finally {
+    WORDS10_LOOK.on = was;
+  }
+};
 /** A canvas that only counts and keeps what is drawn on it: each pixel's colour, and whether it was laid on whole pixels. */
 function canvas(): { g: CanvasRenderingContext2D; drawn: () => number; colours: Set<string>; crisp: () => boolean } {
   let n = 0;
@@ -184,8 +194,8 @@ function stages(): { name: string; gm: Game; act?: () => void; colours: readonly
   return out;
 }
 
-test('1. the switch is off, everything the renderer and main.ts ask of it is behind it, and nothing else of the game reaches it', () => {
-  assert.equal(WORDS10_LOOK.on, false);
+test('1. the switch is on (since the ten new words went live), everything the renderer and main.ts ask of it is behind it, and nothing else of the game reaches it but the effects, which leave their stand-in out for it', () => {
+  assert.equal(WORDS10_LOOK.on, true, 'on since the ten new words went live (his yes to their film, 9 Nov 2026)');
   const calls = ['tickW10(', 'floorW10(', 'airW10(', 'lightsW10(', 'heroW10(', 'thingW10('];
   const lines = (readFileSync(new URL('../src/render/render.ts', import.meta.url), 'utf8') as string).split('\n');
   let found = 0;
@@ -208,14 +218,15 @@ test('1. the switch is off, everything the renderer and main.ts ask of it is beh
     }
   };
   walk(new URL('../src', import.meta.url).pathname);
-  assert.deepEqual(importers.sort(), ['main.ts', 'render/render.ts']);
+  // (and the effects, render/fx.ts: ownsEventW10, Vast behind's plain ring left out while the look is on)
+  assert.deepEqual(importers.sort(), ['main.ts', 'render/fx.ts', 'render/render.ts']);
   const main = (readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8') as string).split('\n');
   const calls10 = main.filter((l) => /eventsW10\(|tickW10\(|playW10\(/.test(l) && !l.trimStart().startsWith('import'));
   assert.equal(calls10.length, 1, 'main.ts calls up the looks once, by the events');
   assert.ok(calls10[0].includes('WORDS10_LOOK.on'), `main.ts calls the looks without the switch: ${calls10[0].trim()}`);
 });
 
-test('2. with the switch off, nothing here draws, lights, reads, changes a picture or keeps time, whatever it is told', () => {
+test('2. with the switch off, nothing here draws, lights, reads, changes a picture or keeps time, whatever it is told', () => off(() => {
   assert.equal(WORDS10_LOOK.on, false);
   for (const s of stages()) {
     clearW10();
@@ -235,13 +246,13 @@ test('2. with the switch off, nothing here draws, lights, reads, changes a pictu
     assert.equal(lit, 0);
     assert.deepEqual(heroW10({} as never, s.gm.hero, cam, s.gm), []);
     assert.deepEqual(thingW10(s.gm, 1, 1, {} as never, 0, 0), []);
-    eventsW10([{ t: 'burst', x: 11, y: 9, r: 2.8, style: 'nova', words: ['vast'] }, { t: 'burst', x: 11, y: 9, r: VAST.splashR, style: 'shock', words: [] }], s.gm, fx);
+    eventsW10([{ t: 'burst', x: 11, y: 9, r: 2.8, style: 'nova', words: ['vast'] }, { t: 'vastSplash', x: 11, y: 9, r: VAST.splashR, ids: [] }], s.gm, fx);
     assert.equal(W10.acts.length, acts.length, 'no look begun');
     assert.equal(fx.particles.length + fx.rings.length + fx.flashes.length, 0);
   }
   assert.equal(W10.seen.length, 0, 'not even the hero is looked at');
   clearW10();
-});
+}));
 
 test("3. their colours: six tones; all 28 words told apart, and from the melds, Binding, the friend and the enemy; Lasting clear of the gold; nothing cyan or pink; our Bleeding clear of Volatile's melds", () => {
   // the 28 words: the eighteen as the game has them, the seven and the three as the art chat draws them
@@ -347,11 +358,18 @@ test("6. the rules' numbers; their events call the looks up; forgotten on a new 
     assert.equal(W10.acts.length, 1, "only Vast's burst rings");
     assert.equal(W10.acts[0].kind, 'ring');
     assert.ok(Math.abs(W10.acts[0].r0 - 2.8 / (1 + VAST.wider)) < 1e-9, 'its old edge, before Vast widened it');
-    // Vast behind: the rules' splash (a 'shock' burst its reach wide), to the near ones only
-    eventsW10([{ t: 'burst', x: 11, y: 9, r: VAST.splashR, el: 'phys', style: 'shock', words: [], n: 0, echo: false }], gm, new Fx());
+    // Vast behind: the rules' splash by its own name, `vastSplash` (since the ten words went live), to those it reached
+    eventsW10([{ t: 'vastSplash', x: 11, y: 9, r: VAST.splashR, ids: [2], el: 'phys' }], gm, new Fx());
     const sp = W10.acts.find((a) => a.kind === 'splash');
     assert.ok(sp, 'its splash');
     assert.equal(sp?.to.length, 1, 'thrown to the one near it, not to the one struck nor the one far');
+    // (a 'shock' burst its reach wide with no words is no longer read as it: the Brawler's Aftershock is such a burst)
+    const before = W10.acts.length;
+    eventsW10([{ t: 'burst', x: 11, y: 9, r: VAST.splashR, el: 'phys', style: 'shock' }], gm, new Fx());
+    assert.equal(W10.acts.length, before, "a plain shock burst is not Vast's");
+    // and where the rules say where its edge was (`r0`), the ring begins there
+    eventsW10([{ t: 'burst', x: 11, y: 9, r: 3.2, r0: 2, el: 'phys', style: 'nova', words: ['vast'] }], gm, new Fx());
+    assert.equal(W10.acts[W10.acts.length - 1].r0, 2, "its old edge, the rules' own");
     // its time runs, and it is gone
     tickW10(5, gm, new Fx());
     assert.equal(W10.acts.length, 0, 'each is gone when its time is up');
@@ -362,8 +380,8 @@ test("6. the rules' numbers; their events call the looks up; forgotten on a new 
   });
 });
 
-test("7. the Lexicon's 28 stones: the switch on the game's own rows; every way's stones at the touch size, inside, apart; the way picked gives every page its room", () => {
-  assert.equal(LEX28.way, 'rows', "the game's own Lexicon");
+test("7. the Lexicon's 28 stones: the switch on his pages ('groups', since the ten new words went live); every way's stones at the touch size, inside, apart; the way picked gives every page its room", () => {
+  assert.equal(LEX28.way, 'groups', "his pages: “Categorize them into pages”, “Yes, use them (Recommended)” (9 Nov 2026)");
   assert.deepEqual(LEX28.stones, {}, 'no stones laid in');
   assert.equal(WORD_IDS.length, 28);
   // what reaches it: the Lexicon's half (its draw, behind the switch) and main.ts (the playtest's hands) only
@@ -457,9 +475,9 @@ test("8. the Lexicon in pages by what they do ('groups'): all 28 words, each onc
   const G = lex28Layout(half, true, 'groups', 'reaping');
   assert.ok(pageHeight(meta, 'reaping', G.page.w) <= G.page.h, `Reaping's page ${pageHeight(meta, 'reaping', G.page.w)}, its room ${G.page.h}`);
   assert.equal(G.page.w, 242, "the half's whole width");
-  // with LEX28 'rows' (the game's own) nothing changes: the switch as it is, no page opened by a tab, nothing marked; its layout the
-  // game's own (ui/lexicon.ts lexLayout, lexiconSide's stones), no tabs
-  assert.equal(LEX28.way, 'rows');
+  // with LEX28 'rows' (the game's own until the ten new words went live) nothing changes: no page opened by a tab, nothing marked;
+  // its layout the game's own (ui/lexicon.ts lexLayout, lexiconSide's stones), no tabs
+  assert.equal(LEX28.way, 'groups');
   assert.equal(LEX28.tab, null);
   assert.deepEqual(LEX28.fresh, []);
   const own = lexLayout(half, true);

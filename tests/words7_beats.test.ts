@@ -188,6 +188,10 @@ test('2. what the rules keep is drawn while it is kept, and gone after', () => {
 });
 
 test('3. with the switch off, nothing at all, whatever the rules say', () => {
+  // (the switch is on since the ten new words went live, 11 Nov 2026: put off for this)
+  const was = WORDS7_LOOK.on;
+  WORDS7_LOOK.on = false;
+  try {
   assert.equal(WORDS7_LOOK.on, false);
   clearW7();
   const gm = world();
@@ -200,6 +204,9 @@ test('3. with the switch off, nothing at all, whatever the rules say', () => {
   assert.equal(W7.acts.length, 0);
   assert.equal(draw(gm).n, 0);
   assert.equal(lit(gm), 0);
+  } finally {
+    WORDS7_LOOK.on = was;
+  }
 });
 
 test("4. nothing cyan on a monster's side; the enemy's pink there", () => {

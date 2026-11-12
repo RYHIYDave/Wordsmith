@@ -14,7 +14,7 @@ const TOWN = new Set(['anvil', 'owl_hoot', 'owl_ruffle', 'crystal', 'rune_write'
 const WORLD = /^(break_|chest$|rift_|trap_|sealed_door$)/;
 /**
  * THE TEN NEW WORDS' SOUNDS (the sound chat's sixth batch, 9 Nov 2026: assets/sound/README.md; game/word_sounds.ts): a pack of
- * their own, about 1 MB, fetched the first time one of the ten words comes into play (from floor 6) and not with the heroes'
+ * their own, about 850 KB, fetched the first time one of the ten words comes into play (from floor 6) and not with the heroes'
  * skills as a game begins. The Lexicon's page turn goes with the town's.
  */
 const WORDS10 = /^(pierce_(shot|lance)|bleed_(open|thorns|cut)|reap_(soul|spirit|rake|rise)|cull_(kill|mark|kindle)|surge_(wave|warn|foe)|plunder_(spray|stream|steal)|mirror_(swing|rise|break|back)|word_(lasting|fleeting|vast))$/;
