@@ -200,6 +200,8 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   burn of it streaming back over its head. All of it THROBS (`pulse`: a throb every 1.2 s, struck fast and dying slow, and at its
   height through each snort and stamp), dark pink to pink to gold. Its stand now plays at the beasts' 15 frames a second (as the
   stag, the hounds and the wolves). The checks: all pass.
+- HIS YES, 12 Nov 2026, by pop-up (asked whether it is menacing enough now): “Yes, it's menacing (Recommended)”. Next: his moves,
+  talked through with him first.
 
 ## The tools
 
