@@ -32,6 +32,15 @@ has seen it in play and said yes; nothing he sees changes while it is off.
    render.ts asks with it, and asks the painter for his weapon's places; painter.ts their order; render/baked.ts a group for him
    with each weapon (`warrior-axe`, `warrior-hammer`) while the tree is on, taken in only where his weapon is that one.
    tests/warrior_weapons.test.ts 1 now lets the art reach the game by art/heroes.ts and art/heroes3.ts only (GAME_USERS).
+3a. DONE (tests/warrior_tree_rules.test.ts, 5 pass; tests/warrior_tree.test.ts 2 told the quake is before him): the numbers.
+   defs.ts: Cleave 0.333 s, 1.7 tiles, 75 degrees either side (`arcCos`); the thrown axe 0.367 s, 6 tiles; Leaping Chop's blow
+   1.5 before where he lands (`ahead`), 1.6 round; Smash 0.433 s on a spot 1.4 before him, 0.4 round (`spot`); Earthquake
+   0.633 s, round a spot 1.4 before him (`ahead`), 2.0 round; Shoulder Charge 6 tiles, 0.7 either side. talents.ts WARRIOR_TUNE:
+   Twin Axes 14 degrees; Tremors three, 0.35 s apart, each 0.6 wider, at 1, 0.6, 0.35; SMASH'S KNOCK AND DAZE (his words of 11
+   Nov, 09:41, “Tap should have a small knockback and high stun buildup/chance”): pushed 0.4 tiles back, dazed 0.6 a blow, the
+   daze fading 0.15 a second, a full daze a 1 s stun (two blows in quick turn stun; game.ts `smashed`; bosses are not stunned,
+   as ever). Wide Swing sweeps the Smash round as a Cleave, each struck smashed. NOT YET: the leaps' crouches (0.167, 0.2 s),
+   the Charge's 0.5 s and skid, its throw aside, Twin Axes' second 0.1 s after.
 3. The rules to the art's timings and his rules (the README's “What the main chat needs”, for both weapons): Cleave, the thrown
    axe (out at 0.367 s, AXE_FLIGHT, back, the catch; Twin Axes 14 degrees, the second 0.1 s after), Leaping Chop (0.167 s
    crouched; the blow 1.5 tiles before his feet, 1.6 round), Smash (0.433 s; 0.4 round a point 1.4 before him), Earthquake

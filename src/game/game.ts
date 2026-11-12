@@ -8743,8 +8743,8 @@ export class Game {
     const s = h.skills[2];
     const def = SKILLS[s.id];
     const r = s.r;
-    // (LUNGE: the warrior's lands at his sword's point, before him)
-    const fwd = LUNGE.on && h.cls === 'warrior' ? LUNGE.ahead : 0;
+    // (LUNGE: the warrior's lands at his sword's point, before him; Leaping Chop's axe comes down further on, `ahead`)
+    const fwd = def.ahead ?? (LUNGE.on && h.cls === 'warrior' ? LUNGE.ahead : 0);
     const x = h.x + h.fx * fwd;
     const y = h.y + h.fy * fwd;
     const rad = def.radius * r.size;
@@ -8829,7 +8829,8 @@ export class Game {
       }
     } else if (def.kind === 'burst') {
       // centre it ahead of the hero, pulled back if a wall is in the way
-      let reach = Math.min(def.range, Math.max(len, 0.8));
+      // (THE WARRIOR'S WARHAMMER: the Earthquake's ring round a spot before him, `ahead`, as the art brings the maul down there)
+      let reach = def.ahead ?? Math.min(def.range, Math.max(len, 0.8));
       while (reach > 0.2 && !this.isOpen(ox + dx * reach, oy + dy * reach)) reach -= 0.2;
       const cx = ox + dx * reach;
       const cy = oy + dy * reach;
@@ -8840,11 +8841,12 @@ export class Game {
       const T = WARRIOR_TUNE.tremors;
       const shakes = s.id === 'quake' && this.has('tremors') ? T.n : 1;
       for (let q = 0; q < shakes; q++) {
-        const share = shakes > 1 ? each * T.share : each;
+        const share = each * (shakes > 1 ? T.shares[q] ?? T.shares[T.shares.length - 1] : 1);
+        const round = rad + (shakes > 1 ? q * T.wider : 0);
         for (let k = 0; k < r.count; k++) {
           const at = q * T.gap + 0.28 * k;
-          if (at === 0) this.blast(i, cx, cy, rad, share, 'slam', 0, echo);
-          else this.after(at, () => this.blast(i, cx, cy, rad * (k > 0 ? 1.15 : 1), share, 'slam', k, echo, q === 0 && k === 0));
+          if (at === 0) this.blast(i, cx, cy, round, share, 'slam', 0, echo);
+          else this.after(at, () => this.blast(i, cx, cy, round * (k > 0 ? 1.15 : 1), share, 'slam', k, echo, q === 0 && k === 0));
         }
       }
     } else if (def.kind === 'orb') {
@@ -9031,8 +9033,31 @@ export class Game {
     this.emit({ t: 'swing', x: ox, y: oy, dx, dy, reach, el: r.element, words, n, echo });
     let best: Monster | null = null;
     let bd = Infinity;
-    // (THE WARRIOR'S BATTLE AXE: Cleave strikes every enemy in its arc, as Sweeping Cut makes any swing do)
+    // (THE WARRIOR'S WARHAMMER: Smash comes down on a spot before him, striking all on it: knocked back, and dazed toward a stun)
+    // (Wide Swing, his tree's: the Smash swept round the half circle before him instead, as a Cleave is, every one struck smashed)
+    const wide = r.id === 'smash' && this.has('wideswing');
+    if (def.spot && !wide) {
+      const sx = ox + dx * def.spot.at;
+      const sy = oy + dy * def.spot.at;
+      const rad = def.spot.r * r.size;
+      this.breakProps(sx, sy, rad + 0.3, i);
+      let struck = 0;
+      for (const m of this.monsters) {
+        if (m.dead || this.shutIn(m) || Math.hypot(m.x - sx, m.y - sy) > rad + m.r) continue;
+        this.hitMonster(m, i, frac, struck > 0);
+        struck++;
+        if (!m.dead && r.id === 'smash') this.smashed(m, dx, dy);
+      }
+      this.emit({ t: 'burst', x: sx, y: sy, r: rad + 0.3, el: r.element, style: 'pound', words, n, echo });
+      if (struck) {
+        this.landed(i);
+        this.sfx(power ? 'power' : 'hit', 0.8);
+      } else if (this.isOpen(sx, sy)) this.wake(i, sx, sy, 1.0, frac);
+      return;
+    }
+    // (THE WARRIOR'S BATTLE AXE: Cleave strikes every enemy in its arc, as Sweeping Cut makes any swing do; its arc its own)
     const cleave = this.now('sweepingcut') || def.arc === true || (r.id === 'smash' && this.has('wideswing'));
+    const minDot = def.arcCos ?? 0.35;
     const arc: Monster[] = [];
     for (const m of this.monsters) {
       if (m.dead) continue;
@@ -9042,7 +9067,7 @@ export class Game {
       if (dist > reach + m.r) continue;
       // in front of the hero, or close enough that facing does not matter
       const dot = dist > 0.01 ? (mx * dx + my * dy) / dist : 1;
-      if (dot < 0.35 && dist > 0.9 + m.r) continue;
+      if (dot < minDot && dist > 0.9 + m.r) continue;
       if (cleave) arc.push(m);
       const score = dist - dot * 0.5;
       if (score < bd) {
@@ -9065,6 +9090,7 @@ export class Game {
     if (r.through > 0) this.pierceOn(i, best, tx, ty, dx, dy, frac * r.through);
     // (THE SKILL TREES REMADE: Sweeping Cut, the swing cleaves: every enemy in its arc is struck as hard)
     for (const o of arc) if (o !== best && !o.dead) this.hitMonster(o, i, frac, true);
+    if (wide) for (const o of new Set([best, ...arc])) if (!o.dead) this.smashed(o, dx, dy);
     this.landed(i);
     this.sfx(power ? 'power' : 'hit', 0.7);
     if (words.includes('heavy')) this.emit({ t: 'heavy', x: tx, y: ty, r: 1.1, big: false });
@@ -10354,6 +10380,30 @@ export class Game {
     m.staggerCd = HEAVY.stagger + HEAVY.staggerAgain;
     this.breakOff(m);
     this.emit({ t: 'stagger', id: m.id, x: m.x, y: m.y, fromX, fromY });
+  }
+
+  /**
+   * (THE WARRIOR'S WARHAMMER) What a Smash struck: pushed a little back from him along the blow, where there is floor, and dazed
+   * toward a stun, its daze fading meanwhile (WARRIOR_TUNE.smash; his words of 11 Nov 2026, 09:41: “Tap should have a small
+   * knockback and high stun buildup/chance”).
+   */
+  private smashed(m: Monster, dx: number, dy: number): void {
+    const S = WARRIOR_TUNE.smash;
+    if (!m.boss) {
+      const nx = m.x + dx * S.knock;
+      const ny = m.y + dy * S.knock;
+      if (this.isOpen(nx, ny)) {
+        m.x = nx;
+        m.y = ny;
+      }
+    }
+    const was = Math.max(0, (m.daze ?? 0) - (this.time - (m.dazeAt ?? this.time)) * S.fade);
+    m.daze = was + S.daze;
+    m.dazeAt = this.time;
+    if (m.daze >= 1 - 1e-9) {
+      m.daze = 0;
+      this.stunMonster(m, S.stun);
+    }
   }
 
   /** An attack `m` was winding up is broken off, with the warning of a blow it was about to bring down. */

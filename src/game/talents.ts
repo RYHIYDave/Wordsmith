@@ -769,10 +769,16 @@ export type WarriorWeapon = 'greatsword' | 'battleaxe' | 'warhammer';
  * stops; Executioner's double harm under a quarter of life.
  */
 export const WARRIOR_TUNE = {
-  twinAxes: { fan: 0.28, share: 0.65 },
+  // (Twin Axes 14 degrees either side of his aim, as the art throws them: art/warrior_up_axe_moves.ts AXE_TWIN_SPREAD)
+  twinAxes: { fan: (14 * Math.PI) / 180, share: 0.65 },
   rend: { share: 1 / 3, secs: 3 },
   redMist: { each: 0.08, secs: 4, most: 5 },
-  tremors: { n: 3, gap: 0.45, share: 0.55 },
+  // (Tremors as the art draws them, art/warrior_up_hammer_moves.ts HAMMER_TREMORS: three quakes from the one blow, 0.35 s apart,
+  // each 0.6 tiles wider round, at 1, 0.6 and 0.35 of the blow)
+  tremors: { n: 3, gap: 0.35, wider: 0.6, shares: [1, 0.6, 0.35] as readonly number[] },
+  // (SMASH, his words of 11 Nov 2026, 09:41: “Tap should have a small knockback and high stun buildup/chance”: what it strikes is
+  // pushed `knock` tiles back, and dazed `daze` a blow, the daze fading `fade` a second; a full daze stuns it `stun` seconds)
+  smash: { knock: 0.4, daze: 0.6, fade: 0.15, stun: 1.0 },
   heavyHead: { secs: 0.5 },
   bulldozer: { ahead: 0.9, stun: 0.8 },
   executioner: { under: 0.25, mult: 2 },

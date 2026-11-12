@@ -453,6 +453,9 @@ export interface Monster {
   stunT: number;
   staggerT: number;
   staggerCd: number;
+  /** (THE WARRIOR'S WARHAMMER, game.ts smashed) How dazed by his Smashes, 0 to 1 (a full daze stuns it), and when last dazed. */
+  daze?: number;
+  dazeAt?: number;
   /** Precise behind: seconds the mark on it has left (the hero's next hit on it is a certain critical). */
   markT: number;
   /** THE SKILL TREES: seconds left shocked by a lightning hit (Overload's mark; nothing else reads it). */

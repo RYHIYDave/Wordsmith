@@ -130,6 +130,15 @@ export interface SkillDef {
   through?: boolean;
   stun?: number;
   stagger?: boolean;
+  /**
+   * (THE WARRIOR'S WEAPONS, to the art chat's frames: docs/mockups/warrior_weapons/README.md, “What the main chat needs”) `arcCos`:
+   * a swing's arc, the cosine of how far to either side of his aim it reaches (Cleave's 75 degrees); `ahead`: tiles before him
+   * where a burst is centred, or a leap's blow falls (the Earthquake's 1.4, Leaping Chop's 1.5); `spot`: a melee blow that comes
+   * down on a spot `at` tiles before him, striking all within `r` of it (Smash).
+   */
+  arcCos?: number;
+  ahead?: number;
+  spot?: { at: number; r: number };
 }
 
 export const SKILLS: Record<SkillId, SkillDef> = {
@@ -151,12 +160,12 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   // (more hits, less damage) in the passive tree”. The numbers the main chat's starting points; their pictures the greatsword's
   // standing in, until the art chat's axe and hammer.
   whirl: { id: 'whirl', name: 'Whirl', kind: 'burst', icon: 'whirl', dmg: 1.4, cooldown: 3.0, mana: 12, range: 0, radius: 2.0, speed: 0, sockets: true, desc: 'One great spin: everything around you is cut, harder than a Strike.', verb: 'WHIRL', windup: 0.25, follow: 0.35 },
-  cleave: { id: 'cleave', name: 'Cleave', kind: 'melee', icon: 'strike', dmg: 0.9, cooldown: 0, mana: 0, range: 1.8, radius: 0, speed: 0, sockets: true, desc: 'A wide chop: every enemy in its arc is struck.', verb: 'CLEAVE', windup: 0.36, follow: 0.32, arc: true },
-  axethrow: { id: 'axethrow', name: 'Axe Throw', kind: 'projectile', icon: 'slam', dmg: 1.2, cooldown: 2.5, mana: 10, range: 7, radius: 0.45, speed: 11, sockets: true, desc: 'Throw your axe: it flies through what it meets, and comes back to you, striking again.', verb: 'THROW', windup: 0.3, follow: 0.3, returns: true },
-  chop: { id: 'chop', name: 'Leaping Chop', kind: 'leap', icon: 'leap', dmg: 0.9, cooldown: 4.5, mana: 0, range: 6, radius: 1.8, speed: 0, sockets: true, desc: 'Leap at a spot and bring your axe down where you land. Nothing can hit you as you go.', verb: 'CHOP', windup: 0, follow: 0 },
-  smash: { id: 'smash', name: 'Smash', kind: 'melee', icon: 'slam', dmg: 1.25, cooldown: 0, mana: 0, range: 1.7, radius: 0, speed: 0, sockets: true, desc: 'A heavy blow on one enemy: it staggers.', verb: 'SMASH', windup: 0.45, follow: 0.38, stagger: true },
-  quake: { id: 'quake', name: 'Earthquake', kind: 'burst', icon: 'slam', dmg: 1.3, cooldown: 4.0, mana: 14, range: 0, radius: 2.6, speed: 0, sockets: true, desc: 'Bring the hammer down: the ground round you shakes, and what stands on it is stunned.', verb: 'QUAKE', windup: 0.5, follow: 0.4, stun: 0.6 },
-  charge: { id: 'charge', name: 'Shoulder Charge', kind: 'leap', icon: 'leap', dmg: 0.6, cooldown: 4.0, mana: 0, range: 5, radius: 1.4, speed: 0, sockets: true, desc: 'Charge at a spot, shoulder first, striking every enemy in your way. Nothing can hit you as you go.', verb: 'CHARGE', windup: 0, follow: 0, through: true },
+  cleave: { id: 'cleave', name: 'Cleave', kind: 'melee', icon: 'strike', dmg: 0.9, cooldown: 0, mana: 0, range: 1.7, radius: 0, speed: 0, sockets: true, desc: 'A wide chop: every enemy in its arc is struck.', verb: 'CLEAVE', windup: 0.333, follow: 0.32, arc: true, arcCos: 0.259 },
+  axethrow: { id: 'axethrow', name: 'Axe Throw', kind: 'projectile', icon: 'slam', dmg: 1.2, cooldown: 2.5, mana: 10, range: 6, radius: 0.45, speed: 12, sockets: true, desc: 'Throw your axe: it flies through what it meets, and comes back to you, striking again.', verb: 'THROW', windup: 0.367, follow: 0.3, returns: true },
+  chop: { id: 'chop', name: 'Leaping Chop', kind: 'leap', icon: 'leap', dmg: 0.9, cooldown: 4.5, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Leap at a spot and bring your axe down where you land. Nothing can hit you as you go.', verb: 'CHOP', windup: 0, follow: 0, ahead: 1.5 },
+  smash: { id: 'smash', name: 'Smash', kind: 'melee', icon: 'slam', dmg: 1.25, cooldown: 0, mana: 0, range: 1.4, radius: 0, speed: 0, sockets: true, desc: 'The maul brought down on a spot before you: what it strikes staggers back, and a second blow soon after stuns it.', verb: 'SMASH', windup: 0.433, follow: 0.38, stagger: true, spot: { at: 1.4, r: 0.4 } },
+  quake: { id: 'quake', name: 'Earthquake', kind: 'burst', icon: 'slam', dmg: 1.3, cooldown: 4.0, mana: 14, range: 0, radius: 2.0, speed: 0, sockets: true, desc: 'A full spin, then the maul brought down: the ground before you quakes, and what stands on it is stunned.', verb: 'QUAKE', windup: 0.633, follow: 0.4, stun: 0.6, ahead: 1.4 },
+  charge: { id: 'charge', name: 'Shoulder Charge', kind: 'leap', icon: 'leap', dmg: 0.6, cooldown: 4.0, mana: 0, range: 6, radius: 0.7, speed: 0, sockets: true, desc: 'Charge at a spot, shoulder first, striking every enemy in your way. Nothing can hit you as you go.', verb: 'CHARGE', windup: 0, follow: 0, through: true },
   leap: { id: 'leap', name: 'Lunge', kind: 'leap', icon: 'leap', dmg: 0.5, cooldown: 4.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Dive at a spot, your sword out before you. Nothing can hit you as you go, and the point strikes where you land.', verb: 'LUNGE', windup: 0, follow: 0 },
   shot: { id: 'shot', name: 'Shot', kind: 'projectile', icon: 'shot', dmg: 1.0, cooldown: 0, mana: 0, range: 11, radius: 0.25, speed: 16, sockets: true, desc: 'Loose an arrow at one enemy.', verb: 'SHOOT', windup: 0.333, follow: 0.32 },
   // VOLLEY, the bow's slow attack (the owner, 20:02): "Target an area and the ranger fires a bunch

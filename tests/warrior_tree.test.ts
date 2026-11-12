@@ -163,15 +163,18 @@ test('2. the moves at work', () => treeOn(() => {
     assert.ok(seen.some((e) => e.t === 'axeTurn'), 'it turned for home');
     assert.equal(g.projectiles.filter((p) => !p.hostile).length, 0, 'and was caught');
   }
-  // Smash staggers; Earthquake stuns
+  // Smash staggers; Earthquake stuns, in its ring round a spot 1.4 tiles before him (the art's: docs/warrior_tree_build.md, step 3),
+  // and not what is behind him
   {
     const { g, a, seen } = warrior(['warhammer']);
     const m = put(g, a, 'skeleton', 1.3, 0);
     use(g, seen, 0, m.x, m.y);
     assert.ok(seen.some((e) => e.t === 'stagger' && e.id === m.id), 'Smash staggers');
-    const q = put(g, a, 'skeleton', -1.2, 1);
-    use(g, seen, 1, g.hero.x, g.hero.y);
+    const q = put(g, a, 'skeleton', 2.6, 1);
+    const back = put(g, a, 'skeleton', -1.6, 0);
+    use(g, seen, 1, g.hero.x + 3, g.hero.y);
     assert.ok(seen.some((e) => e.t === 'stun' && e.id === q.id), 'Earthquake stuns');
+    assert.ok(!seen.some((e) => e.t === 'stun' && e.id === back.id), 'not behind him');
   }
   // Shoulder Charge strikes what is in his way
   {
