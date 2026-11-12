@@ -9,9 +9,10 @@
 //   the enemy's colours”). The hero's own are the friend's cyan; these are drawn plainly here, the pink of the enemy, not his.
 // With REFLECTIONS_UP (the heroes as they look now: each form's own blows, game/act1_rules/reflection.ts UP) the same, by what
 // each blow is (its `Blow`): a cut, a ring round a spot (a slam, a quake, the Curse, the Golem's pound), what it sends (an arrow,
-// a hellfire bolt, a thrown axe out and back), a wave, a thing lobbed (an orb, a vial); the warnings as before for those that were.
+// a hellfire bolt, a thrown axe out and back), a wave, things lobbed (an orb, a vial, three vials); the warnings as before for those
+// that were.
 import type { Clip } from '../../art/actor_types';
-import { REFLECT, blowOf, hitOf, isHold, isTap, lobOfPeril, ringAt, shotOfPeril, shotOut, warnOf } from '../../game/act1_rules/reflection';
+import { REFLECT, blowOf, hitOf, isHold, isTap, lobMarks, lobOfPeril, ringAt, shotOfPeril, shotOut, warnOf } from '../../game/act1_rules/reflection';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx } from './types';
 
@@ -54,7 +55,7 @@ export const FX: Act1Fx | null = {
       } else if (b.k === 'wave') {
         const Wv = REFLECT.magic.wave;
         drawStripWarn(c.g, c.at, w, 0.4, Wv.speed * Wv.long, -Wv.half, Wv.half, k, c.t);
-      } else round(m.a1?.tx ?? m.x, m.a1?.ty ?? m.y, b.burst);
+      } else for (const [x, y] of lobMarks(m, b)) round(x, y, b.burst);
       return;
     }
     // (an orb or a vial on its way: where it will burst, warned the whole way)

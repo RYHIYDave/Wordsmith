@@ -67,9 +67,7 @@ import { EIGHT_MORE, MORE_SIDES, MORE_TURN } from './sides_more';
 import type { MoreSide } from './sides_more';
 import { TAP_GRAB, TAP_LET_GO, TRUN_ROUND, TSTAND_LONG, drawTinkerAt, tinkerMoves } from '../dev/tinkerer_moves';
 import type { TinkMove } from '../dev/tinkerer_moves';
-import { HOLD, drawTinkerHoldAt, tinkerHold } from '../dev/tinkerer_hold';
 import { tinkerLurch, tinkerReel } from '../dev/tinkerer_hits';
-import { TINKER_TUNE } from '../game/tinkerer';
 import { VET_CANVAS, paintVeteran } from '../dev/sculpt_veteran';
 import { VET_RUN, VET_STAND, VFPS, motionById } from '../dev/veteran_moves';
 import type { VetMotion } from '../dev/veteran_moves';
@@ -437,9 +435,6 @@ function tinkerer(): HeroGlass {
   const tap = named('Tap');
   // (her tap as the game shows it: the vial toss, a vial of hers in her fist from when it is off her belt to when she lets it go)
   const toss: TinkMove = { ...tap, name: 'Tap: a vial tossed', hold: (t) => ({ wrench: 0, twirl: false, spin: 0, vial: t >= TAP_GRAB && t < TAP_LET_GO ? 1 : 0, held: null }) };
-  let held: TinkMove | null = null;
-  const hold = (): TinkMove => (held ??= tinkerHold());
-  const P = TINKER_TUNE.golem.pound;
   const track = (name: string, m: () => TinkMove, hit?: number, drawn = drawTinkerAt, round?: number): Track => ({
     name,
     get long() {
@@ -460,7 +455,9 @@ function tinkerer(): HeroGlass {
     stand: track(stand.name, () => stand, undefined, drawTinkerAt, TSTAND_LONG),
     run: track(run.name, () => run, undefined, drawTinkerAt, TRUN_ROUND),
     tap: track(toss.name, () => toss, TAP_LET_GO),
-    hold: track('Tap and hold: her whistle', hold, (HOLD.blow - Math.round((P.lead + P.hit) * 30)) / 30, drawTinkerHoldAt),
+    // (HER HOLD IS HER VIALS TOO, his word of 12 Nov 2026, shown her copy whistling for a Golem that is not there: “I think just
+    // have the tinkerer throw her vials if there’s no golem”: her toss, three vials thrown: game/act1_rules/reflection.ts UP)
+    hold: track('Tap and hold: three vials tossed', () => toss, TAP_LET_GO),
     lurch: track(lurch.name, () => lurch),
     reel: track(reel.name, () => reel),
     idleFps: 10,

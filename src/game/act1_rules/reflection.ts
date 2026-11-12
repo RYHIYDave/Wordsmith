@@ -82,11 +82,12 @@ export const STEP = { near: 9, long: 1.6, through: 0.72, out: 0.85 };
  * What a blow does as it lands:
  *   fan    a cut before it, `reach` tiles out and `half` radians to either side (a sword's, an axe's cleave, a jab, a kick);
  *   ring   all round a spot, `r` tiles: round itself (`at` 'self'), `ahead` tiles before it (a slam brought down), or where the
- *          hero stood as it began (`at` 'mark': the Golem's pound she whistles for);
+ *          hero stood as it began (`at` 'mark': none uses it since the Tinkerer's whistle went, his word of 12 Nov);
  *   shot   `n` things sent at the hero, `spread` radians either side, `speed` tiles a second, as far as `far`, striking within
  *          `hit` of him: an arrow, a volley, a hellfire bolt; an axe that comes back (`back`);
  *   wave   the Mage's wave rolling at him (REFLECT.magic.wave);
- *   lob    a thing lobbed where he stood, bursting there `burst` tiles round, `after` seconds after it lands: an orb, a vial.
+ *   lob    `n` things lobbed where he stood (`spread` tiles apart across the way they go), each bursting there `burst` tiles round,
+ *          `after` seconds after it lands: an orb, a vial, three vials.
  * `dmg`: of its act's own; `sfx`: its sound as it lands (and `boom` as a lob bursts); `look`: how what it sends is drawn
  * (render/act1_fx/reflection.ts); `near`, `far`: the hero's distance it is made at.
  */
@@ -95,7 +96,7 @@ export type Blow =
   | { k: 'ring'; r: number; at: 'self' | 'ahead' | 'mark'; ahead: number; sfx: Sfx; near: number; far: number }
   | { k: 'shot'; n: number; spread: number; speed: number; far: number; hit: number; back: boolean; look: 'arrow' | 'bolt' | 'axe'; dmg: number; sfx: Sfx; near: number }
   | { k: 'wave'; sfx: Sfx; near: number; far: number }
-  | { k: 'lob'; burst: number; speed: number; after: number; look: 'orb' | 'vial'; dmg: number; sfx: Sfx; boom: Sfx; near: number; far: number };
+  | { k: 'lob'; n: number; spread: number; burst: number; speed: number; after: number; look: 'orb' | 'vial'; dmg: number; sfx: Sfx; boom: Sfx; near: number; far: number };
 
 /** A form's tap or hold with the heroes as they look now: its blow, and when it lands in its picture and how long that plays. */
 export interface UpBlow {
@@ -120,7 +121,7 @@ const OLD: Record<Style, { tap: Blow; hold: Blow }> = {
   },
   magic: {
     tap: { k: 'wave', sfx: 'wave', near: 0, far: M.far },
-    hold: { k: 'lob', burst: M.orb.burst, speed: M.orb.speed, after: M.orb.after, look: 'orb', dmg: 1.5, sfx: 'orb', boom: 'explode', near: 2, far: M.far },
+    hold: { k: 'lob', n: 1, spread: 0, burst: M.orb.burst, speed: M.orb.speed, after: M.orb.after, look: 'orb', dmg: 1.5, sfx: 'orb', boom: 'explode', near: 2, far: M.far },
   },
 };
 
@@ -131,7 +132,8 @@ const OLD: Record<Style, { tap: Blow; hold: Blow }> = {
  *   1 THE RANGER: the Shot; the Volley (as the first reflections').
  *   2 THE MAGE: the Wave; the Orb (as the first reflections').
  *   3 THE WARLOCK: the Hellfire Bolt, at you; the Curse, chains of smoke round it (his, round him: game/defs.ts curse).
- *   4 THE TINKERER: a vial tossed where you stood; her whistle, and the Golem's pound where you stood (no Golem of glass drawn).
+ *   4 THE TINKERER: a vial tossed where you stood; three of them, side by side (no whistle: his word of 12 Nov 2026, shown her
+ *     copy whistling for a Golem that was not there, “I think just have the tinkerer throw her vials if there’s no golem”).
  *   5 THE BRAWLER: the jab, short and quick before it; the roundhouse kick, wide round its front.
  *   6 THE WARRIOR, war axe: Cleave, across before it (the art's arc and reach: AXE_CLEAVE_ARC, AXE_CLEAVE_REACH); the thrown axe,
  *     out at you and back (the art's flight: AXE_FLIGHT, 6 tiles out and back in a second).
@@ -152,8 +154,8 @@ export const UP: readonly { tap: UpBlow; hold: UpBlow }[] = [
     hold: { blow: { k: 'ring', r: 2.6, at: 'self', ahead: 0, sfx: 'curse', near: 0, far: 2.6 }, hit: 0.8, play: 2.2 },
   },
   {
-    tap: { blow: { k: 'lob', burst: 1.2, speed: 7, after: 0.15, look: 'vial', dmg: 1, sfx: 'vial', boom: 'explode', near: 0, far: 7 }, hit: 0.5, play: 1.2 },
-    hold: { blow: { k: 'ring', r: 1.8, at: 'mark', ahead: 0, sfx: 'whistle', near: 0, far: 7 }, hit: 0.667, play: 1.933 },
+    tap: { blow: { k: 'lob', n: 1, spread: 0, burst: 1.2, speed: 7, after: 0.15, look: 'vial', dmg: 1, sfx: 'vial', boom: 'explode', near: 0, far: 7 }, hit: 0.5, play: 1.2 },
+    hold: { blow: { k: 'lob', n: 3, spread: 1.6, burst: 1.2, speed: 7, after: 0.15, look: 'vial', dmg: 0.8, sfx: 'vial', boom: 'explode', near: 0, far: 7 }, hit: 0.5, play: 1.2 },
   },
   {
     tap: { blow: { k: 'fan', reach: 1.5, half: 0.6, sfx: 'punchWhoosh', near: 0, far: 1.6 }, hit: 0.4, play: 0.933 },
@@ -227,6 +229,21 @@ export function ringAt(m: Monster, b: Extract<Blow, { k: 'ring' }>): { x: number
   if (b.at === 'ahead') return { x: m.x + m.fx * b.ahead, y: m.y + m.fy * b.ahead };
   if (b.at === 'mark') return { x: m.a1?.tx ?? m.x, y: m.a1?.ty ?? m.y };
   return { x: m.x, y: m.y };
+}
+/** Where each of a lob's things comes down: where the hero stood as it began, and the others `spread` apart across its way. */
+export function lobMarks(m: Monster, b: Extract<Blow, { k: 'lob' }>): [number, number][] {
+  const tx = m.a1?.tx ?? m.x;
+  const ty = m.a1?.ty ?? m.y;
+  if (b.n <= 1) return [[tx, ty]];
+  const d = Math.hypot(tx - m.x, ty - m.y) || 1;
+  const sx = -(ty - m.y) / d;
+  const sy = (tx - m.x) / d;
+  const out: [number, number][] = [];
+  for (let i = 0; i < b.n; i++) {
+    const k = (i - (b.n - 1) / 2) * b.spread;
+    out.push([tx + sx * k, ty + sy * k]);
+  }
+  return out;
 }
 /** How far out a shot is `t` seconds after it was sent (one that comes back, back toward where it was sent from after `far`). */
 export function shotOut(b: Extract<Blow, { k: 'shot' }>, t: number): number {
@@ -357,14 +374,13 @@ export const RULES: Act1Rules | null = {
       R.peril(m, 'act1', m.x + m.fx * 0.5, m.y + m.fy * 0.5, { a1: 'reflection:wave', dur: M.wave.long, dmg });
       return;
     }
-    const k = m.a1 ?? {};
-    const tx = k.tx ?? h.x;
-    const ty = k.ty ?? h.y;
-    const d = Math.max(0.5, Math.hypot(tx - m.x, ty - m.y));
-    const p = R.peril(m, 'act1', m.x, m.y, { a1: SENT[b.look], dur: d / b.speed + b.after + 0.3, dmg: dmg * b.dmg });
-    p.a = tx;
-    p.b = ty;
-    p.c = d / b.speed;
+    for (const [tx, ty] of lobMarks(m, b)) {
+      const d = Math.max(0.5, Math.hypot(tx - m.x, ty - m.y));
+      const p = R.peril(m, 'act1', m.x, m.y, { a1: SENT[b.look], dur: d / b.speed + b.after + 0.3, dmg: dmg * b.dmg });
+      p.a = tx;
+      p.b = ty;
+      p.c = d / b.speed;
+    }
   },
   peril(R, p) {
     if (p.done) return;
@@ -418,6 +434,7 @@ export function shotOfPeril(p: Pick<Peril, 'a1'>): Extract<Blow, { k: 'shot' }> 
 /** The lob a peril of a reflection's is, by its kind: the orb, or the Tinkerer's vial. */
 export function lobOfPeril(p: Pick<Peril, 'a1'>): Extract<Blow, { k: 'lob' }> | null {
   if (p.a1 === 'reflection:orb') return OLD.magic.hold as Extract<Blow, { k: 'lob' }>;
+  // (the hold's three as the tap's one: the same flight and burst; each one's harm its own, the peril's)
   if (p.a1 === 'reflection:vial') return UP[4].tap.blow as Extract<Blow, { k: 'lob' }>;
   return null;
 }

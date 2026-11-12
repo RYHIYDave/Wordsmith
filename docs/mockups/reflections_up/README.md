@@ -140,11 +140,13 @@ the main chat: cut from `main` at 40c62c8d (25.3.11) with this branch (7fcc5330)
   makes only its own (`reflection:tap3`, `reflection:hold3`: `can`). As read by this chat (to tell him; his to change):
   0 great sword, Strike (a cut) and the Slam (a ring before it); 1 the Ranger, the Shot and the Volley; 2 the Mage, the Wave and the
   Orb (both as the first reflections'); 3 the Warlock, a Hellfire Bolt at him and the Curse all round it; 4 the Tinkerer, a vial
-  tossed where he stood and her whistle, the Golem's pound where he stood (NO GOLEM OF GLASS DRAWN); 5 the Brawler, the jab and
+  tossed where he stood, and on the hold THREE VIALS side by side (NO WHISTLE: his word of 12 Nov 2026, shown her copy whistling for
+  a Golem that was not there, “I think just have the tinkerer throw her vials if there’s no golem”; her copy's hold picture is her
+  toss: art/reflections_up.ts); 5 the Brawler, the jab and
   the roundhouse kick (a wide fan); 6 war axe, Cleave and the thrown axe out at him and back (the art's flight, a second);
   7 maul, Smash and the Earthquake round it. Their reach the first reflections' where the move is theirs, near them where new
   (medium: two blows). What it sends is drawn in the enemy's pink (render/act1_fx/reflection.ts: the bolt, the axe turning end
-  over end, the vial); a slam, a quake, the Curse and the pound leave the game's ring (`burst`).
+  over end, the vial); a slam, a quake and the Curse leave the game's ring (`burst`).
 - FETCHED BY FORM: the floor's figures are its monsters' own (a reflection's is `reflection:<form>`), so only the hero's own form is
   painted or taken in; the glass Queen's call for hers (monsters_baked.ts BRINGS `gqueen`) now asks, under the loading screen, for
   the hero's own form's (main.ts), where it asked for the knight's whatever the hero was.

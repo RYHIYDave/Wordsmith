@@ -126,7 +126,9 @@ test("2. A REFLECTION HAS THE HERO'S SIDES, and his stance, run, tap and hold as
       assert.equal(a.walkStride, b.walkStride, `${at}: its stride`);
       for (const k of ['attack', 'heavy'] as const) {
         const ca = a.clips?.[k];
-        const cb = b.clips?.[k];
+        // (THE TINKERER'S HOLD IS HER VIAL TOSS, his word of 12 Nov 2026: “I think just have the tinkerer throw her vials if there’s
+        // no golem”: her copy's hold is her own tap's picture)
+        const cb = cls === 'tinkerer' && k === 'heavy' ? b.clips?.attack : b.clips?.[k];
         assert.ok(ca && cb, `${at}: ${k}`);
         assert.equal(ca!.frames.length, cb!.frames.length, `${at}: ${k}'s frames`);
         assert.equal(ca!.fps, cb!.fps, `${at}: ${k}'s pace`);

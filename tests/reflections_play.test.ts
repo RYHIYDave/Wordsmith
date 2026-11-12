@@ -4,6 +4,7 @@
 //      (the Warrior's weapon makes no other); the two acts as they were; each blow its style's, landing at its style's moment;
 //   2. ON, EACH FORM ITS HERO AS HE LOOKS NOW, from his sides (eight, or two while his are two), each blow landing when its
 //      picture's does and played as long (UP: the art's clips' `hit`, its tracks' length), each standing as tall as SIZE_UP says;
+//      the Tinkerer throwing her vials, tap and hold (his word);
 //   3. THE WARRIOR HOLDS WHAT HE HOLDS: with his war axe or his maul, that form (on); the knight's whatever he holds (off);
 //   4. A FORM MAKES ONLY ITS OWN BLOWS, each act its warning and then its picture's length;
 //   5. A FIGURE SEEN FROM EIGHT SIDES, as the bestiary, the painter and the bake count it: all eight sides' lists (figureLens), each
@@ -104,6 +105,15 @@ test('2. ON, EACH FORM ITS HERO AS HE LOOKS NOW: his sides, each blow at his pic
       const tall = (s.ay * d - top) / d;
       assert.ok(Math.abs(tall - SIZE_UP[form].top) <= 2.6, `form ${form}: stands ${tall} tall, SIZE_UP ${SIZE_UP[form].top}`);
     }
+    // (THE TINKERER THROWS HER VIALS, tap and hold, no whistle: his word of 12 Nov 2026, “I think just have the tinkerer throw her
+    // vials if there’s no golem”: one, then three side by side, her toss's picture for both)
+    const tap = UP[FORM_OF.tinkerer].tap.blow;
+    const hold = UP[FORM_OF.tinkerer].hold.blow;
+    assert.ok(tap.k === 'lob' && tap.look === 'vial' && tap.n === 1, 'her tap: a vial');
+    assert.ok(hold.k === 'lob' && hold.look === 'vial' && hold.n === 3, 'her hold: three vials');
+    assert.ok(!UP.some((u) => u.tap.blow.sfx === 'whistle' || u.hold.blow.sfx === 'whistle'), 'no whistle');
+    const her = figOf(FORM_OF.tinkerer).front.clips!;
+    assert.equal(her.heavy!.frames.length, her.attack!.frames.length, 'her hold her toss');
     // (the size the game reads follows the switch)
     assert.equal(act1Fig('reflection:3')!.size.top, SIZE_UP[3].top);
   });
