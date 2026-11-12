@@ -77,8 +77,8 @@ export async function bakeTownsfolk({ log = console.log } = {}) {
       log(`sheet ${n}: ${w}x${h}, ${ck.frames} frames, read back the same as painted, ${(png.length / 1e6).toFixed(2)} MB`);
     }
     fs.writeFileSync(path.join(dir, `${GROUP}.json`), JSON.stringify({ mark, group: GROUP, ...file, sheets: names }));
-    Object.assign(said, { frames: info.frames, places: info.places, sheets: names.length, mb: +(bytes / 1e6).toFixed(2), heldMb: +((info.px * 4) / 1e6).toFixed(1), paintS: +(info.ms / 1000).toFixed(1) });
-    log(`baked the townsfolk: ${info.frames} frames for ${info.places} places, ${names.length} sheets, ${(bytes / 1e6).toFixed(2)} MB (${(info.ms / 1000).toFixed(1)} s to paint; ${((info.px * 4) / 1e6).toFixed(1)} MB as pictures in hand)`);
+    Object.assign(said, { frames: info.frames, first: info.first, places: info.places, sheets: names.length, mb: +(bytes / 1e6).toFixed(2), heldMb: +((info.px * 4) / 1e6).toFixed(1), paintS: +(info.ms / 1000).toFixed(1) });
+    log(`baked the townsfolk: ${info.frames} frames (the first ${info.first} the loops the town shows at once) for ${info.places} places, ${names.length} sheets, ${(bytes / 1e6).toFixed(2)} MB (${(info.ms / 1000).toFixed(1)} s to paint; ${((info.px * 4) / 1e6).toFixed(1)} MB as pictures in hand)`);
   } finally {
     await browser.close();
   }

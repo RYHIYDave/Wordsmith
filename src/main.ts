@@ -377,12 +377,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   };
   /**
    * THE TOWN'S PEOPLE'S PICTURES FOR THIS PLACE: asked for where they stand, let go of where they do not (they are some 30 MB in
-   * hand). True while they are still coming (the loading screen waits for them).
+   * hand). True while the first of them are still coming, the loops the town shows at once (the loading screen waits for those).
    */
   const folkPictures = (g: Game): boolean => {
     const b = bakedFolk;
     if (!b) return false;
-    if (hasFolk(g.level) && townsfolk3Shown() && TOWNSFOLK3_HEAVY.on) return b.take() && !b.settled();
+    if (hasFolk(g.level) && townsfolk3Shown() && TOWNSFOLK3_HEAVY.on) return b.take() && !b.ready();
     if (TOWNSFOLK_BAKED.letGo) b.letGo();
     return false;
   };
@@ -2559,7 +2559,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
      * THE TOWN'S PEOPLE BAKED (render/townsfolk_baked.ts): what has been taken in from their files and what failed (null: none
      * to be had on this page); whether the sculpted four are the town's people here; and the switches (`on`, `letGo`).
      */
-    bakedFolk: () => (bakedFolk ? { ...bakedFolk.stats, done: bakedFolk.done(), settled: bakedFolk.settled(), shown: townsfolk3Shown() } : null),
+    bakedFolk: () => (bakedFolk ? { ...bakedFolk.stats, ready: bakedFolk.ready(), done: bakedFolk.done(), settled: bakedFolk.settled(), shown: townsfolk3Shown() } : null),
     townsfolkBaked: TOWNSFOLK_BAKED,
     /** THE QUEST LINE OF FLOORS 1 TO 5 (game/quests15.ts QUESTS15): off until his yes in play; its pictures and playtests switch it on (`quests15.on`). */
     quests15: QUESTS15,

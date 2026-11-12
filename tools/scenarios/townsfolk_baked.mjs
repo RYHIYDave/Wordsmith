@@ -2,8 +2,8 @@
 // published game is, its bake beside it (dist/townsfolk/<mark>/):
 //   node tools/build_to.mjs dist/tf_bake.html --townsfolk      (or the release: node tools/build.mjs, then the wrapped page)
 //   node tools/playtest.mjs --serve --file dist/tf_bake.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/townsfolk_baked.mjs --out shots/townsfolk_baked/t
-// A new game begun as he begins one: the town's loading screen waits for the townsfolk's pictures; they come whole from the files
-// and the game paints none of them; each of the four is seen at his work, doing what he does now and then, and turned to the
+// A new game begun as he begins one: the town's loading screen waits for the first of the townsfolk's pictures (the loops the
+// town shows as it is come into); the rest come a moment after; they come whole from the files and the game paints none of them; each of the four is seen at his work, doing what he does now and then, and turned to the
 // hero; their sounds come at their moments (the anvil as the hammer lands, the crystal as it blazes, the coin as it is flicked);
 // the pictures are let go of as he goes down to floor 1, and come again as he comes back. Lines marked !! are problems.
 //   FILE=1: the page opened as a file (no --serve): the town's people are as they were, and nothing is fetched or painted heavy.
@@ -63,10 +63,16 @@ export default async function (page, snap) {
     return;
   }
   if (!st0) { bad('no townsfolk bake on this page (build with it, and serve the page)'); return; }
-  if (!st0.done || st0.failed.length) bad(`the pictures did not come whole as the loading screen lifted: ${JSON.stringify(st0)}`);
+  if (!st0.ready || st0.failed.length) bad(`the loops the town shows at once had not come as the loading screen lifted: ${JSON.stringify(st0)}`);
   if (!st0.shown || l0.fps !== 30) bad('the sculpted four are not the town\'s people here');
-  if (l0.unpainted) bad(`${l0.unpainted} of their ${l0.places} places still unpainted as the town is first seen`);
-  if (l0.fromFiles !== l0.places) bad(`${l0.places - l0.fromFiles} of their ${l0.places} places were painted here, not taken from the files`);
+  // (the rest: a moment after)
+  await page.waitForFunction(() => window.__dbg.bakedFolk().settled, null, { timeout: 30000 }).catch(() => bad('the rest of the pictures did not come within 30 s'));
+  const stA = await page.evaluate(() => window.__dbg.bakedFolk());
+  const lA = await lists();
+  log('all of them come', `${JSON.stringify(stA)} ${JSON.stringify(lA)}`);
+  if (!stA.done || stA.failed.length) bad(`the pictures did not come whole: ${JSON.stringify(stA)}`);
+  if (lA.unpainted) bad(`${lA.unpainted} of their ${lA.places} places still unpainted`);
+  if (lA.fromFiles !== lA.places) bad(`${lA.places - lA.fromFiles} of their ${lA.places} places were painted here, not taken from the files`);
   log('fetched', fetched.join(', '));
 
   // (each at his work, then come right up to: he turns; the ring lit, so that the wordsmith works and is not cold)
@@ -117,7 +123,7 @@ export default async function (page, snap) {
   log('after the town is walked', JSON.stringify(l1));
   if (l1.painted !== paintedBefore) log('  frames painted in the town meanwhile (not theirs, if all theirs came from the files)', l1.painted - paintedBefore);
   if (l1.unpainted || l1.fromFiles !== l1.places) bad('some of their frames were painted in the town');
-  if (st1.held !== st0.held) bad(`pictures in hand changed in the town: ${st0.held} then ${st1.held}`);
+  if (st1.held !== stA.held) bad(`pictures in hand changed in the town: ${stA.held} then ${st1.held}`);
 
   // (down to floor 1: let go; back to the town: come again)
   await page.evaluate(() => { const g = window.__dbg.game(); g.depth = 1; g.cleared = 0; g.enterDungeon('gate'); });
@@ -131,7 +137,7 @@ export default async function (page, snap) {
   await snap('floor1');
   await page.evaluate(() => window.__dbg.game().enterTown());
   await page.waitForFunction(() => { const d = window.__dbg; return d.game().level.town && (!d.loadingNow || !d.loadingNow()); }, null, { timeout: 40000 }).catch(() => bad('the town did not come again'));
-  await page.waitForTimeout(800);
+  await page.waitForFunction(() => window.__dbg.bakedFolk().settled, null, { timeout: 30000 }).catch(() => bad('the pictures did not come again within 30 s'));
   const st3 = await page.evaluate(() => window.__dbg.bakedFolk());
   const l3 = await lists();
   log('back in the town', `${JSON.stringify(st3)} ${JSON.stringify(l3)}`);

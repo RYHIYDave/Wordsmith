@@ -8,6 +8,8 @@
 // THE PICTURES are the very ones the game would paint (the bake's page makes them with the game's own code, and each sheet is
 // read back and checked against them, pixel by pixel), given into the same lists in the same places (art/townsfolk3.ts folkLists), where a place
 // is still unpainted.
+// THE LOADING SCREEN WAITS FOR THE FIRST OF THEM ONLY, the loops the town shows as it is come into (about a quarter); the rest
+// come a moment after, as the town is played, and until then the loop at their work stands in for a loop turned or an act.
 // WHILE HE IS IN THE TOWN ONLY: the pictures are let go of as he leaves it (their room given back: they are some tens of
 // megabytes, and it was memory that froze his phone, 11 Nov 2026), and taken in again, under the loading screen, as he comes back.
 // WHERE THEY ARE NOT TO BE HAD (no bake in this build, a page opened from a file, a sheet that will not load, lists that are not
@@ -42,12 +44,14 @@ export interface FolkBakeFile {
   frames: [number, number, number, number, number, number][];
   /** A frame's other parts (Sprite without its picture: its size, anchor, lights...), shared by the frames that have the same. */
   parts: Omit<Sprite, 'img'>[];
+  /** How many of the frames, from the first, the loops the town shows as it is come into are made of (the loading screen waits for these). */
+  first: number;
   /** Each list, as art/townsfolk3.ts folkLists names them: the frame each of its places shows, in order (-1: a place with no picture). */
   lists: { name: string; at: number[] }[];
 }
 
-/** How many of a sheet's frames are cut from it at a time. */
-const AT_ONCE = 48;
+/** How many of a sheet's frames are cut from it at a time: the first, under the loading screen; and the rest, as the town is played. */
+const AT_ONCE = { first: 96, rest: 32 };
 
 type Get = (name: string) => Promise<Response>;
 
@@ -62,10 +66,15 @@ export class BakedTownsfolk {
   private held: { list: Sprite[]; i: number; was: PropertyDescriptor }[] = [];
   /** The pictures in hand. */
   private sprites: Sprite[] = [];
+  /** Have the first of them come: the loops the town shows as it is come into? */
+  private firstIn = false;
   /** Told, once, when they will not come (main.ts puts the town's people back as they were). */
   onFail: (() => void) | null = null;
-  /** For measuring: frames taken in and frames not wanted (painted already) in the last load, how long it took (ms), how many times they have come and gone, and what failed. */
-  readonly stats = { given: 0, unwanted: 0, ms: 0, loads: 0, letGo: 0, held: 0, failed: [] as string[] };
+  /**
+   * For measuring: frames taken in and frames not wanted (painted already) in the last load, how long the first of them took
+   * and how long all (ms), how many times they have come and gone, how many are in hand, and what failed.
+   */
+  readonly stats = { given: 0, unwanted: 0, firstMs: 0, ms: 0, loads: 0, letGo: 0, held: 0, failed: [] as string[] };
 
   constructor(
     private readonly mark: string,
@@ -92,7 +101,16 @@ export class BakedTownsfolk {
     return true;
   }
 
-  /** Have they come whole, or failed (nothing more to wait for)? */
+  /**
+   * Is there nothing more for the loading screen to wait for: the loops the town shows as it is come into have come (the rest
+   * come a moment after, as the town is played: until then the loop at their work stands in for a loop turned or an act:
+   * art/townsfolk3.ts), or none will?
+   */
+  ready(): boolean {
+    return this.firstIn || this.state === 'done' || this.state === 'failed';
+  }
+
+  /** Have they come whole, or failed (nothing more to come)? */
   settled(): boolean {
     return this.state === 'done' || this.state === 'failed';
   }
@@ -130,6 +148,7 @@ export class BakedTownsfolk {
     for (const s of this.sprites) releaseSprite(s);
     this.sprites.length = 0;
     this.stats.held = 0;
+    this.firstIn = false;
   }
 
   private async load(): Promise<void> {
@@ -138,6 +157,7 @@ export class BakedTownsfolk {
     this.state = 'loading';
     this.stats.given = 0;
     this.stats.unwanted = 0;
+    this.firstIn = false;
     const t0 = performance.now();
     try {
       const r = await this.get(`${TOWNSFOLK_GROUP}.json`);
@@ -146,6 +166,7 @@ export class BakedTownsfolk {
       const f = (await r.json()) as FolkBakeFile;
       if (!live()) return;
       if (f.mark !== this.mark || f.group !== TOWNSFOLK_GROUP) throw new Error('of another bake');
+      if (!(f.first >= 0 && f.first <= f.frames.length)) throw new Error('its first frames are not said');
       // (the lists as the game has them now, against the bake's: the same names in the same order, as long)
       const mine = this.lists();
       if (mine.length !== f.lists.length) throw new Error(`${mine.length} lists, the bake has ${f.lists.length}`);
@@ -171,8 +192,12 @@ export class BakedTownsfolk {
           if (!live()) return;
           const on: number[] = [];
           for (let fi = 0; fi < f.frames.length; fi++) if (f.frames[fi][0] === s) on.push(fi);
-          for (let n = 0; n < on.length; n += AT_ONCE) {
-            const part = on.slice(n, n + AT_ONCE);
+          for (let n = 0; n < on.length; ) {
+            // (the first of them in bigger handfuls, to be quick under the loading screen; never past the last of the first)
+            const fi0 = on[n];
+            const many = fi0 < f.first ? Math.min(AT_ONCE.first, f.first - fi0) : AT_ONCE.rest;
+            const part = on.slice(n, n + many);
+            n += part.length;
             const bmps = await Promise.all(part.map((fi) => {
               const [, x, y, w, h] = f.frames[fi];
               return createImageBitmap(sheet, x, y, w, h, { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
@@ -202,6 +227,10 @@ export class BakedTownsfolk {
               }
             }
             this.stats.held = this.sprites.length;
+            if (!this.firstIn && part[part.length - 1] + 1 >= f.first) {
+              this.firstIn = true;
+              this.stats.firstMs = Math.round(performance.now() - t0);
+            }
           }
         } finally {
           sheet.close();

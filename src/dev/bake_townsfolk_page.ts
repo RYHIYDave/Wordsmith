@@ -82,7 +82,7 @@ function paint(l: number): { name: string; places: number; frames: number; ms: n
 }
 
 /** Lay every frame painted on sheets, in rows, in the order they are wanted. What can be said of the whole. */
-function pack(): { frames: number; places: number; sheets: { w: number; h: number }[]; dropped: string[]; ms: number; px: number } {
+function pack(): { frames: number; first: number; places: number; sheets: { w: number; h: number }[]; dropped: string[]; ms: number; px: number } {
   for (let l = 0; l < lists.length; l++) if (at[l].length !== lists[l].list.length) throw new Error(`${lists[l].name}: not painted`);
   const sheets: { w: number; h: number }[] = [];
   const canvases: HTMLCanvasElement[] = [];
@@ -127,8 +127,13 @@ function pack(): { frames: number; places: number; sheets: { w: number; h: numbe
     canvases.push(cv);
   }
   for (const p of lay) canvases[p.sx].getContext('2d')!.drawImage(frames[p.fi].s.img, p.x, p.y);
-  made = { file: { sheets, frames: placed, parts, lists: lists.map((li, l) => ({ name: li.name, at: at[l] })) }, canvases, sources: frames.map((f) => f.s.img) };
-  return { frames: frames.length, places: at.reduce((n, a) => n + a.length, 0), sheets, dropped: [...dropped], ms: paintMs, px };
+  // (how many of the frames, from the first, the loops the town shows at once are made of: they were painted first, so they are
+  // the first on the first sheet; the loading screen waits for these and no more)
+  let first = 0;
+  for (let l = 0; l < lists.length; l++) if (lists[l].first) for (const fi of at[l]) first = Math.max(first, fi + 1);
+  for (let l = 0; l < lists.length; l++) if (!lists[l].first && lists[l + 1]?.first) throw new Error('the first lists are not the first');
+  made = { file: { sheets, frames: placed, parts, first, lists: lists.map((li, l) => ({ name: li.name, at: at[l] })) }, canvases, sources: frames.map((f) => f.s.img) };
+  return { frames: frames.length, first, places: at.reduce((n, a) => n + a.length, 0), sheets, dropped: [...dropped], ms: paintMs, px };
 }
 
 function have(): Made {

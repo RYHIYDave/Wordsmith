@@ -76,11 +76,14 @@ function soundAt(moves: TownMoves<unknown>): number {
 
 /** One of them as the town has its people: the loop facing their work, what they do now and then, and the loop turned to whoever comes up. */
 function townsman<P>(moves: TownMoves<P>, work: Facing, sculpt: (p: P, turn: number) => TownFigure, aura: Light | null): Townsman {
-  const loop = (to: Facing): Sprite[] => lazyFrames(moves.idleLong, (i) => spriteOf(sculpt(moves.idle(i), FACING_TURN3[to]), aura), TOWNSFOLK3_HEAVY.on);
+  // (`stand`, art/kit.ts lazyFrames: until a frame of the act or of a turned loop has come from the files, the loop at their
+  // work is shown in its place, and nothing is painted where the game is played: the loops at work come first, under the
+  // loading screen, and the rest a moment after: render/townsfolk_baked.ts)
+  const loop = (to: Facing, stand?: () => Sprite[]): Sprite[] => lazyFrames(moves.idleLong, (i) => spriteOf(sculpt(moves.idle(i), FACING_TURN3[to]), aura), TOWNSFOLK3_HEAVY.on, stand);
   const idle = loop(work);
-  const act = lazyFrames(moves.actLong + 1, (i) => spriteOf(sculpt(moves.act(i), FACING_TURN3[work]), aura), TOWNSFOLK3_HEAVY.on);
+  const act = lazyFrames(moves.actLong + 1, (i) => spriteOf(sculpt(moves.act(i), FACING_TURN3[work]), aura), TOWNSFOLK3_HEAVY.on, () => idle);
   const turned = {} as Record<Facing, Sprite[]>;
-  for (const to of ['se', 'sw', 'ne', 'nw'] as const) turned[to] = to === work ? idle : loop(to);
+  for (const to of ['se', 'sw', 'ne', 'nw'] as const) turned[to] = to === work ? idle : loop(to, () => idle);
   return { idle, act, loops: moves.loops, work, turned, fps: TFPS, actFps: TFPS, soundAt: soundAt(moves) };
 }
 
@@ -91,8 +94,8 @@ export function makeTownsfolk3(): Townsfolk {
   const wordsmith = townsman(WORDSMITH_MOVES, 'sw', sculptWordsmith, AURA_SMITH);
   // (the stranger: against his wall, facing down the screen to the right; turned to someone, his eyes stay on them)
   const sIdle = lazyFrames(STRANGER_MOVES.idleLong, (i) => spriteOf(sculptStranger(STRANGER_MOVES.idle(i), 0), null), TOWNSFOLK3_HEAVY.on);
-  const sAct = lazyFrames(STRANGER_MOVES.actLong + 1, (i) => spriteOf(sculptStranger(STRANGER_MOVES.act(i), 0), null), TOWNSFOLK3_HEAVY.on);
-  const watching = (to: -1 | 1): Sprite[] => lazyFrames(STRANGER_MOVES.idleLong, (i) => spriteOf(sculptStranger(strangerWatching(i, to), 0), null), TOWNSFOLK3_HEAVY.on);
+  const sAct = lazyFrames(STRANGER_MOVES.actLong + 1, (i) => spriteOf(sculptStranger(STRANGER_MOVES.act(i), 0), null), TOWNSFOLK3_HEAVY.on, () => sIdle);
+  const watching = (to: -1 | 1): Sprite[] => lazyFrames(STRANGER_MOVES.idleLong, (i) => spriteOf(sculptStranger(strangerWatching(i, to), 0), null), TOWNSFOLK3_HEAVY.on, () => sIdle);
   const right = watching(-1);
   const left = watching(1);
   const stranger: Townsman = { idle: sIdle, act: sAct, loops: STRANGER_MOVES.loops, work: 'se', turned: { se: left, ne: left, sw: right, nw: right }, fps: TFPS, actFps: TFPS, soundAt: soundAt(STRANGER_MOVES) };
@@ -101,9 +104,10 @@ export function makeTownsfolk3(): Townsfolk {
 
 /** The wordsmith while his ring is dark (art/quest3.ts): the same loop with the runes on him cold, and no work. */
 export function makeSmithDark3(): Townsman {
-  const loop = (to: Facing): Sprite[] => lazyFrames(WORDSMITH_MOVES.idleLong, (i) => spriteOf(sculptWordsmith({ ...WORDSMITH_MOVES.idle(i), dark: true }, FACING_TURN3[to]), AURA_DARK), TOWNSFOLK3_HEAVY.on);
+  const loop = (to: Facing, stand?: () => Sprite[]): Sprite[] => lazyFrames(WORDSMITH_MOVES.idleLong, (i) => spriteOf(sculptWordsmith({ ...WORDSMITH_MOVES.idle(i), dark: true }, FACING_TURN3[to]), AURA_DARK), TOWNSFOLK3_HEAVY.on, stand);
   const idle = loop('sw');
-  return { idle, act: [], loops: 1, work: 'sw', turned: { sw: idle, se: loop('se'), ne: loop('ne'), nw: loop('nw') }, fps: TFPS, actFps: TFPS };
+  const still = (): Sprite[] => idle;
+  return { idle, act: [], loops: 1, work: 'sw', turned: { sw: idle, se: loop('se', still), ne: loop('ne', still), nw: loop('nw', still) }, fps: TFPS, actFps: TFPS };
 }
 
 let dark3: Townsman | null = null;
@@ -115,31 +119,32 @@ export function smithDark3(): Townsman {
   return (dark3 ??= makeSmithDark3());
 }
 
-/** One list of frames of one of them, by its name. */
+/** One list of frames of one of them, by its name. `first`: one of the loops the town shows as it is come into, which the loading screen waits for. */
 export interface FolkList {
   name: string;
   list: Sprite[];
+  first: boolean;
 }
 
 const WHO = ['armourer', 'mystic', 'wordsmith', 'stranger'] as const;
 const WAYS = ['se', 'sw', 'ne', 'nw'] as const;
 
 /**
- * THE LISTS THE BAKE FILLS (tools/bake_townsfolk.mjs, render/townsfolk_baked.ts), each once, in the order they are wanted: the loops the town shows as it is come into (the four at
- * their work, and the wordsmith with his ring dark, as a new hero's town has him), then what each does now and then, then the
- * loops turned to whoever comes up (a list that is another's, as a loop turned the way of its work is the loop itself, is not
- * named twice). The bake's page and the game both go by this.
+ * THE LISTS THE BAKE FILLS (tools/bake_townsfolk.mjs, render/townsfolk_baked.ts), each once, in the order they are wanted: FIRST
+ * the loops the town shows as it is come into (the four at their work, and the wordsmith with his ring dark, as a new hero's
+ * town has him); then what each does now and then; then the loops turned to whoever comes up (a list that is another's, as a
+ * loop turned the way of its work is the loop itself, is not named twice). The bake's page and the game both go by this.
  */
 export function folkLists(folk: Townsfolk, dark: Townsman): FolkList[] {
   const out: FolkList[] = [];
   const seen = new Set<Sprite[]>();
-  const add = (name: string, list: Sprite[]): void => {
+  const add = (name: string, list: Sprite[], first = false): void => {
     if (seen.has(list)) return;
     seen.add(list);
-    out.push({ name, list });
+    out.push({ name, list, first });
   };
-  for (const w of WHO) add(`${w}:idle`, folk[w].idle);
-  add('smithDark:idle', dark.idle);
+  for (const w of WHO) add(`${w}:idle`, folk[w].idle, true);
+  add('smithDark:idle', dark.idle, true);
   for (const w of WHO) add(`${w}:act`, folk[w].act);
   for (const w of WHO) for (const to of WAYS) add(`${w}:${to}`, folk[w].turned[to]);
   for (const to of WAYS) add(`smithDark:${to}`, dark.turned[to]);
