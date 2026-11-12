@@ -44,7 +44,7 @@ be better instead of just improved paintings”.
 ## Not done, and why
 
 - THE REST OF THE DARK FLOORS. Near-black share of the play area, one big room each, the map shown: floor 5 55%, floor 12
-  40%, floors 2, 4 and 15 about a third. Floor 5 looks like floor 3's case. Not tried.
+  40%, floors 2, 4 and 15 about a third. Floor 5 looks like floor 3's case. Not tried. DONE 12 Nov 2026: below.
 - UNEVEN PIXELS. `engine/screen.ts` picks a whole number of screen pixels to a game pixel, and the picture holds two
   picture pixels to a game pixel. When that number is odd (5 at 844x390 x3, the size the project's phone pictures are taken
   at) each picture pixel is 2.5 screen pixels: 2 and 3 by turns (picture 3). His iPhone 16 held sideways is on the edge
@@ -57,3 +57,40 @@ be better instead of just improved paintings”.
 and as tried. `node tools/unit.mjs --only prison,prison_way,stoker,new_mobs3,chapel,floor6,millrace,act2_millrace,floor13,terrain,lifebar`
 (and the core) on b6f3d06e: UNIT DONE b6f3d06ebf: 34 files, 34 passed, 0 failed (0 passed alone); 396 tests. The other 378
 test files were not run.
+
+# The rest of the dark floors (12 Nov 2026, branch `art/dark-floors` from main d39dcde, 25.3.13)
+
+The queue's `look-at-the-other-dark-floors`, pulled by a chat of his working from the queue (he picked it, 12 Nov: “Skip to the
+dark floors”). MEASURED ALIKE, floor 3 as he passed it the yardstick: `tools/scenarios/dark_floors.mjs` (each floor entered as the
+game lays it, seed 4242, nobody about, everything seen; the hero in the middle of its biggest and its second biggest room, not the
+boss's; the share of the play area above the foot's buttons whose light is under 28 of 255; at 852x393, three dots a point). This
+measure reads darker than the review's (floor 3 as passed: 62% and 60% here, 35% there): the same yardstick for every floor.
+
+| floor | biggest room | second |
+|---|---|---|
+| 2, the Headsman's Yard | 50% | 57% |
+| 3, as he passed it | 62% | 60% |
+| 4, the Ossuary | 53% | 52% |
+| 5, the Fleshmancer's Lair | 76% (the temple's stone) | 58% (the mine) |
+| 12, the King's Cistern | 63% | 66% (mostly the black above its walls: its floor reads) |
+| 15, the Reading Room | 61% | 59% |
+
+So FLOOR 5'S TEMPLE was the one darker than floor 3 as he passed it, its stone and flags painted as near-black as floor 3's were.
+LIFTED THE SAME WAY, NOT BEHIND A SWITCH: `art/lair_temple.ts` STONE and FLAGS tone for tone by floor 3's own lift (each channel
+times what floor 3's tone was raised by), the threshold's T_STONE with them (it is “a tone lifted” from the temple's), and
+LAIR_LIGHTS.dark 0.8 to 0.65 as floor 3's; the old values in the comments there. The mine's rock and earth as they were. The temple
+78% to 65%; the mine 60% to 56% (its dark alone). Floors 2, 4, 12 and 15 left as they are.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent `pictures/8_floor5_before_after.png` (the temple and the mine, before and after, the share
+under each), told floors 2, 4 and 15 sit at or lighter than floor 3 and floor 12's dark is the black above its walls: “Yes, as shown
+(Recommended)”.
+
+AFTER HIS YES, TO KEEP HIS RULEBOOK'S COLOUR 4 (a floor darker than the darkest word, tests/lair_temple.test.ts and lair_story): lifted
+with the rest, the stone's and the flags' brightest tone put the temple's walls one over the line (62 against 61) and the Eye in its
+stone over; so those two tones are held just under it ('#3e374f', '#3e374d'), and the threshold's T_STONE left as it was (lifted, it
+was further over). Measured again: the temple 65%, the mine 56%, as shown him. CHECKED: `node tools/unit.mjs --only
+lair_temple,lair_story,floor5` on 71683a26e4 and on main d39dcde8e4: the same three files fail on both, with the very same
+items (Colour 4's mine floor, rails, threshold and more, and lair_temple's first test, which lair_story's import has failed since
+25.3.6): none of them this change's. On fbc87f6450, before the hold: --only lair_temple, lair_story, floor5, floor5_look,
+floor_looks_game, ways_art, fleshmancer and the core: 30 files, 27 passed, the same three failed. Its look filmed: nothing but stills
+(tools/scenarios/dark_floors.mjs), finished clean.
