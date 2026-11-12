@@ -31,11 +31,12 @@ import type { VetFxLayer } from '../art/veteran_fx_art';
 import { VET_STAND, VET_TILE, forceGeo, motionById, placeOf } from '../dev/veteran_moves';
 import type { Strike, VetMotion } from '../dev/veteran_moves';
 import { FX_KICK, FX_PUNCH, floorRing, impact, stars } from '../dev/veteran_fx';
-import { GLOBES_H, GLOBES_W, paintGlobes } from '../dev/veteran_globes';
+import { GLOBES_H, globesW, paintGlobes } from '../dev/veteran_globes';
 import type { Globe } from '../dev/veteran_globes';
 import type { Cam } from './fx';
 import { wx, wy } from './fx';
 import { LIFE_BAR } from './lifebar';
+import { UNIQUE_PLAY } from './unique_play';
 
 /** Picture pixels to a game pixel (the art's effects are painted at the heroes' grain). */
 const G2 = 2;
@@ -417,17 +418,22 @@ export class VeteranFx {
       }
       return { kind: s.kind, level: Math.min(level(s), drain) };
     };
-    let row: readonly [Globe, Globe, Globe];
+    // (UNIQUE ITEMS, THE FOURTH GLOBE worn: his combos hold four, and four are over his head: the art chat's, behind
+    // render/unique_play.ts UNIQUE_PLAY.fourth, off; with it off three are painted, as they were)
+    const n = UNIQUE_PLAY.fourth && game.wears('fourthglobe') ? 4 : 3;
+    const W = globesW(n);
+    const all = [...Array(n).keys()];
+    let row: Globe[];
     let locked: boolean;
     if (this.drain) {
       const k = Math.max(0, 1 - ((this.clock - this.drain.t0) * 30) / 8);
       const ss = this.drain.slots;
-      row = [globeOf(ss[0], k), globeOf(ss[1], k), globeOf(ss[2], k)];
-      locked = ss.length >= 3 && k >= 0.6;
+      row = all.map((i) => globeOf(ss[i], k));
+      locked = ss.length >= n && k >= 0.6;
     } else {
-      row = [globeOf(this.slots[0]), globeOf(this.slots[1]), globeOf(this.slots[2])];
-      // (locked once the third is in, and filled)
-      locked = this.slots.length >= 3 && row.every((r) => r.kind === 'fire' || (r.kind !== 'empty' && r.level >= 1));
+      row = all.map((i) => globeOf(this.slots[i]));
+      // (locked once the last is in, and filled)
+      locked = this.slots.length >= n && row.every((r) => r.kind === 'fire' || (r.kind !== 'empty' && r.level >= 1));
     }
     const gl = paintGlobes({ globes: row, locked, flick });
     // (over his head, as the art's film has them, ten of his measure over it, following him through his moves; and never down
@@ -440,19 +446,19 @@ export class VeteranFx {
     const [dx, dy] = screenOf(vetView(mv ? mv.fx : h.fx, mv ? mv.fy : h.fy), head[0] - o[0], head[1] - o[1]);
     const tx = this.heroAt.x + dx;
     const ty = this.heroAt.y + dy - (head[2] + 10) / G2;
-    const bx = Math.round(tx - GLOBES_W / G2 / 2);
+    const bx = Math.round(tx - W / G2 / 2);
     const by = Math.round(Math.min(ty - (GLOBES_H + 2) / G2, this.barY - 1 - GLOBES_H / G2));
     let cv = this.globeCv;
-    if (!cv) {
+    if (!cv || cv.width !== W) {
       cv = this.globeCv = document.createElement('canvas');
-      cv.width = GLOBES_W;
+      cv.width = W;
       cv.height = GLOBES_H;
     }
     const c = cv.getContext('2d') as CanvasRenderingContext2D;
-    const im = c.createImageData(GLOBES_W, GLOBES_H);
+    const im = c.createImageData(W, GLOBES_H);
     im.data.set(gl.d);
     c.putImageData(im, 0, 0);
-    g.drawImage(cv, bx, by, GLOBES_W / G2, GLOBES_H / G2);
-    this.globesAt = { x: bx, y: by, w: GLOBES_W / G2, h: GLOBES_H / G2 };
+    g.drawImage(cv, bx, by, W / G2, GLOBES_H / G2);
+    this.globesAt = { x: bx, y: by, w: W / G2, h: GLOBES_H / G2 };
   }
 }

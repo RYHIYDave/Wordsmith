@@ -1300,7 +1300,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     const bad = it && c.sel.kind === 'bag' && game.useProblem(it) !== null;
     g.globalAlpha = worn ? 1 : dimBag;
     const edge = waiting || looked || aim ? THEME.accent : ok ? (blink ? THEME.accent : THEME.accentLo) : it ? RARITY_COLOR[it.rarity] : THEME.edge;
-    ui.slot(c.r.x, c.r.y, CELL, it && !away ? itemPic(art.icons, it.icon, it.rarity) : null, edge, lit);
+    ui.slot(c.r.x, c.r.y, CELL, it && !away ? itemPic(art.icons, it.icon, it.rarity, it.unique) : null, edge, lit);
     if (!it && c.sel.kind === 'gear') {
       // an empty slot on the hero shows, faintly, the kind of thing that goes in it (at its size in game pixels: the new
       // pictures, ITEMS_A, are painted two to a game pixel)
@@ -1841,7 +1841,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   }
   // and so does a piece of gear (a finger hides what is under it: the piece floats above the finger)
   if (carryAt && carried) {
-    const icon = itemPic(art.icons, carried.icon, carried.rarity);
+    const icon = itemPic(art.icons, carried.icon, carried.rarity, carried.unique);
     const cx = Math.round(carryAt.x - CELL / 2);
     const cyy = Math.round(carryAt.y - (T ? CELL + 8 : CELL / 2));
     g.globalAlpha = 0.95;

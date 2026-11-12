@@ -236,7 +236,7 @@ function keeperSide(ui: Ui, art: Art, st: Panels, inv: InvUi, r: Rect, spec: Kee
         const away = !!carryAt && !!st.carry && st.carry.id === c.id;
         const picked = c.id === st.pick && !!it;
         const lit = picked || (!T && !!it && ui.hover(c.r.x, c.r.y, c.r.w, c.r.h));
-        ui.slot(c.r.x, c.r.y, CELL, it && !away ? itemPic(art.icons, it.icon, it.rarity) : null, picked ? THEME.accent : it ? RARITY_COLOR[it.rarity] : THEME.edge, lit);
+        ui.slot(c.r.x, c.r.y, CELL, it && !away ? itemPic(art.icons, it.icon, it.rarity, it.unique) : null, picked ? THEME.accent : it ? RARITY_COLOR[it.rarity] : THEME.edge, lit);
         if (it && !away) drawItemPips(g, it, c.r.x, c.r.y);
         if (it && !away && c.shelf.dim && c.shelf.dim(it)) {
           g.globalAlpha = 0.45;
@@ -272,7 +272,7 @@ function keeperSide(ui: Ui, art: Art, st: Panels, inv: InvUi, r: Rect, spec: Kee
       }
       // the piece follows the finger (a finger hides what is under it: the piece floats above it)
       g.globalAlpha = 0.95;
-      ui.slot(Math.round(carryAt.x - CELL / 2), Math.round(carryAt.y - (T ? CELL + 8 : CELL / 2)), CELL, itemPic(art.icons, c.item.icon, c.item.rarity), RARITY_COLOR[c.item.rarity], true);
+      ui.slot(Math.round(carryAt.x - CELL / 2), Math.round(carryAt.y - (T ? CELL + 8 : CELL / 2)), CELL, itemPic(art.icons, c.item.icon, c.item.rarity, c.item.unique), RARITY_COLOR[c.item.rarity], true);
       g.globalAlpha = 1;
     },
   };

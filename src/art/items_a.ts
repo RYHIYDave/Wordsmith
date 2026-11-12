@@ -177,7 +177,8 @@ interface Mark {
 interface Part {
   s: Shape;
   cut?: readonly Shape[];
-  m: Mat;
+  /** Its material: one of the materials above, or five tones of its own (the unique items': art/items_unique.ts). */
+  m: Mat | Ramp;
   sh: Shade;
   /** Added to its light: a part turned toward the light or away. */
   bias?: number;
@@ -272,7 +273,7 @@ function paint(parts: readonly Part[], rar: Rar): Px {
   }
   tone.set(t2);
   const out = new Px(N, N);
-  const ramps = parts.map((pt) => M[pt.m] as Ramp);
+  const ramps = parts.map((pt) => (typeof pt.m === 'string' ? M[pt.m] : pt.m) as Ramp);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     const i = own(x, y);
     if (i < 0) continue;
@@ -1007,3 +1008,8 @@ export function itemArt(key: string, rarity: Rarity): Sprite {
 // exactly as these are. Nothing here changes a picture of the game's.
 export { paint as paintItemParts, poly, cap, ell, path, at, unit, side, add, sub, mul, lerp, len, gem, stud, STONE, TRIM, INLAY, INLAY_LO, UP };
 export type { Part, Shape, Shade, Mark, Mat, Rar, V };
+
+// THE PAINTER'S KIT, for the unique items' own pictures (art/items_unique.ts): the same materials, shapes, light, ink and rim,
+// so a unique's picture is painted exactly as these are and sits beside them at the same grain. Nothing here paints anything.
+export const ITEM_A_KIT = { M, poly, cap, ell, path, add, sub, mul, lerp, len, unit, side, at, paint, gem, stud, cog, squeeze, UP, INLAY, INLAY_LO, PAINTERS };
+export type { Mat as ItemAMat, Ramp as ItemARamp, V as ItemAV, Shape as ItemAShape, Shade as ItemAShade, Mark as ItemAMark, Part as ItemAPart };
