@@ -1,8 +1,8 @@
 // THE VETERAN'S PICTURES IN THE GAME (art/veteran_art.ts, render/veteran_fx.ts; behind game/veteran.ts VETERAN): his frames are
 // the art chat's (dev/veteran_moves.ts VET_MOTIONS), every list as long as its move, a frame the art's pose painted as the art's
 // film paints it; his steps baked for the rules (game/veteran_baked.ts) the art's own; the game turns his picture and lays his
-// effects as the art's film lays them: from each of his eight sides and never mirrored (art/sides_more.ts EIGHT_MORE.brawler, on
-// since 11 Nov 2026); with that off, from in front and from behind, mirrored or not.
+// effects as the art's film lays them: from in front and from behind, mirrored or not, as the game has him (art/sides_more.ts
+// EIGHT_MORE.brawler, off at his word from the phone, 11 Nov 2026); with that on, from each of his eight sides and never mirrored.
 //   run: tsx --test tests/veteran_art.test.ts
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
@@ -116,9 +116,13 @@ test('the game turns him as it turns heroes, and lays his effects as the art\'s 
   };
   const was = EIGHT_MORE.brawler;
   try {
-    // (AS THE GAME HAS HIM, art/sides_more.ts EIGHT_MORE.brawler on, brought in 11 Nov 2026: the side for the way he faces, the
-    // art's figure turned as that side is, MORE_TURN, and no picture of his a mirror)
-    assert.equal(was, true, 'his eight sides are on in the game');
+    // (`main` HAS HIS EIGHT SIDES OFF, at his word from the phone, 11 Nov 2026: docs/mockups/eight_sides/BRING_IN.md, its foot.
+    // ON ON THIS BRANCH, build/brawler-packed (his moves kept packed: docs/mockups/eight_sides/PACKED.md). The three lines that
+    // say so: this one, tests/sides_more.test.ts test 2 and tests/veteran_rules.test.ts's `eightWas`.)
+    assert.equal(was, true, 'his eight sides are on on this branch');
+    // (HIS EIGHT SIDES ON, art/sides_more.ts EIGHT_MORE.brawler: the side for the way he faces, the art's figure turned as that
+    // side is, MORE_TURN, and no picture of his a mirror)
+    EIGHT_MORE.brawler = true;
     for (const [fx, fy] of FACINGS) {
       const v = vetView(fx, fy);
       assert.equal(v.side, moreSideOf(fx, fy), `facing ${fx},${fy}: the side for the way he faces`);
@@ -131,7 +135,7 @@ test('the game turns him as it turns heroes, and lays his effects as the art\'s 
         assert.ok(Math.abs(game[0] - want[0]) < 1e-9 && Math.abs(game[1] - want[1]) < 1e-9, `facing ${fx},${fy} (${v.side}): (${a}, ${b}) at ${game} on the screen, the art's ${want}`);
       }
     }
-    // (HIS EIGHT SIDES OFF, as he was until then: his four ways, 0 from in front, 90 from behind, the other two mirrored)
+    // (HIS EIGHT SIDES OFF, as the game has him: his four ways, 0 from in front, 90 from behind, the other two mirrored)
     EIGHT_MORE.brawler = false;
     for (const [fx, fy] of FACINGS.slice(0, 6)) {
       const v = vetView(fx, fy);

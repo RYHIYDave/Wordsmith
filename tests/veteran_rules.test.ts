@@ -355,9 +355,11 @@ test('25.0.1: a swipe with his jump ready breaks a locked combo and he jumps out
 
 test('25.0.1: each blow goes straight at what it was aimed at, though his picture faces the nearest of his eight ways (of his four, his eight sides off)', () => withVet(() => {
   // (an enemy off the nearest of his ways, a tile and a half off: struck. From eight sides, art/sides_more.ts EIGHT_MORE.brawler,
-  // on since 11 Nov 2026, his picture is at most 22.5 degrees off it; with that off, of his four ways, at most 45)
+  // his picture is at most 22.5 degrees off it; with that off, as `main` has him at his word from the phone, 11 Nov 2026, of
+  // his four ways, at most 45. ON ON THIS BRANCH, build/brawler-packed. The three lines that say so: this one,
+  // tests/sides_more.test.ts test 2 and tests/veteran_art.test.ts's `was`.)
   const eightWas = EIGHT_MORE.brawler;
-  assert.equal(eightWas, true, 'his eight sides are on in the game');
+  assert.equal(eightWas, true, 'his eight sides are on on this branch');
   try {
     for (const eight of [true, false]) {
       EIGHT_MORE.brawler = eight;

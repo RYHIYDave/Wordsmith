@@ -4,6 +4,10 @@ Branch `bring-in/eight-sides`, cut from `main` at 95eefb7 (25.3.5) with `art/tin
 merged clean. The chat that pulled the queue's `bring-in-tinkerer-brawler-eight-sides`, 11 Nov 2026 (a new chat of his,
 working from the queue). What the art is, and his yes to it: `README.md` beside this file (the Tinkerer chat's).
 
+**SINCE, AND LAST: HIS WORD FROM THE PHONE HAS COME (11 Nov, by 22:23: the test page lagged from its title screen on; the
+foot of this file). THE BRAWLER'S SWITCH STAYS OFF. `main` (9f3cf44, 25.3.7) is merged into this branch with his switch off
+and `main`'s bake mark kept: the foot of this file.**
+
 **SINCE (the main chat's note in the queue, 11 Nov, 21:26; `main` looked at, a8d9111): the main chat merged
 `art/tinkerer-brawler-eight` itself the same evening and put 25.3.6 live with `EIGHT_MORE = { tinkerer: true, brawler: false }`
 and a bake of its own. THE TINKERER'S EIGHT SIDES ARE LIVE; the Brawler's are in `main`, off, for their memory (the queue's
@@ -224,5 +228,39 @@ TOLD HIM: the page is in the chat; on its starting screen Options, the level sel
 there; play a few floors, turning and fighting every way, and say how it runs: smooth, stutters, or freezes; the first
 loading screen with him is a little longer; nothing is live.
 
-**HIS WORD FROM THE PHONE: NOT YET.** MAIN: until it is written here, the Brawler's switch does not go live. This chat holds
-the queue's item meanwhile and puts it back when he has answered.
+**HIS WORD FROM THE PHONE, 11 Nov 2026, between 22:10 and 22:23 (Eastern), to the chat that pulled the queue's item after
+this one (the Eight-sides merge chat; a new chat of his, working from the queue).** Asked by pop-up: “The Brawler from eight
+sides only goes live on your word from the phone. Have you played him on the test page yet, and how did it run?” (offered:
+“Ran smooth”, “Stutters or freezes”, “Not tried yet”). He wrote his own answer:
+
+> “First of all the title screen lags.  It’s the first thing you see.  How can it lag?  Then, character screen lags.  Selecting a character lags.  60 SECOND LOAD TIME to enter THE TOWN.  There’s not even a single enemy in the town why in gods name would I take that long to load”
+
+And at 22:23: “THE LOADING SCREEN LAGS”.
+
+READ AS (told him so): the test page ran badly on his phone: the title screen, the hero screen, picking a hero and the loading
+screen itself lag, and coming into town took 60 seconds. SO THE BRAWLER'S SWITCH STAYS OFF, AND NOTHING GOES LIVE FROM THIS
+BRANCH. He did not say which hero he picked, nor whether the game's own page does the same on his phone: not asked yet.
+
+WHAT IS KNOWN OF THE 60 SECONDS, FROM THE CODE (not measured on a phone; nobody can from here):
+- The loading screen (`main.ts` loadingFrame) waits for the hero's baked group to be settled, or for `LOADING.most`, 15 s of
+  the game's own clock (`l.t += dt`), whichever is first; and a frame's `dt` is never more than 0.05 s (`main.ts`, the frame's
+  first line). So 15 s of the game's clock is 300 frames at the least: at 5 frames a second, 60 s on the wall. A loading
+  screen that lags and a wait of a minute are the same thing seen twice: if that is what it was, his phone drew about 5
+  frames a second under the screen, and the Brawler's 9,666 frames were NOT all in hand when it gave up at its cap.
+  (A reading of his two reports against the code; not measured.)
+- His frames are taken in one at a time (`render/baked.ts` load): a sheet decoded, then `createImageBitmap(sheet, x, y, w, h)`
+  for every frame, 48 at once: 9,666 small pictures made for him, 2,459 for the Tinkerer, 7,253 for the Ranger who is live.
+  Here (Chrome) that is 1.3 s for him. What an iPhone's browser does with thousands of small pictures made this way is the
+  first thing to measure on his phone.
+- The title screen, the hero screen and picking a hero come before any of that, and they lagged too: so it is not his eight
+  sides alone. NOT LOOKED INTO YET.
+
+WHAT THIS CHAT DID WITH THE BRANCH, at his pick (“Main chat publishes (Recommended)”, the same pop-up): `main` at 9f3cf44
+(25.3.7) merged with it, THE BRAWLER'S SWITCH OFF AS `main` HAS IT, on the branch itself. The two files both had edited:
+`src/art/sides_more.ts` (the switch as `main`'s, `{ tinkerer: true, brawler: false }`, its comment made true);
+`tests/sides_more.test.ts` (the branch's, which holds every test whichever way the switches stand; test 2 asks what the game
+has: the Tinkerer on, the Brawler off). `tests/veteran_art.test.ts` test 4 and `tests/veteran_rules.test.ts` now say his
+eight sides are off in the game and set them on themselves to check his eight ways (the three lines to turn when he goes on
+are named in each). THE HEROES' MARK IS `main`'s, 0ed837378e63 (the bake page's bundle made from the merged code): NO NEW
+BAKE, and nothing the game shows is changed: it is tests, playtests and notes. What was checked: the foot of the branch's
+last commit message and the queue's item.

@@ -25,9 +25,13 @@
 export type MoreSide = 'front' | 'toward' | 'frontL' | 'sideL' | 'backL' | 'away' | 'back' | 'side';
 
 /**
- * The switches: each hero's own. ON since they were brought in and baked, 11 Nov 2026, at his “Yes, hand both to main
- * (Recommended)” of that day by 17:00 (he had the pictures and the films). Off, each is as the game had them: two sides, the
- * other two ways mirrored, the Brawler's moves his four ways.
+ * The switches: each hero's own. THE TINKERER'S IS ON, live since 25.3.6 (11 Nov 2026), at his “Yes, hand both to main
+ * (Recommended)” of that day and with her bake. THE BRAWLER'S IS OFF IN `main`, at his word from the phone, 11 Nov 2026, by 22:23, on
+ * the test page that had both on (docs/mockups/eight_sides/BRING_IN.md, its foot): it does not go on until that is mended and
+ * he says so. ON THIS BRANCH (build/brawler-packed, the Brawler memory chat, 12 Nov 2026) IT IS ON: this branch is the mending
+ * (his moves kept packed, render/baked.ts PACKS; docs/mockups/eight_sides/PACKED.md), and he is on here so that it can be
+ * baked, played and put before him on a test page. IT GOES ON IN `main` ONLY AT HIS WORD.
+ * Off, each is as the game had them: two sides, the other two ways mirrored, the Brawler's moves his four ways.
  */
 export const EIGHT_MORE = { tinkerer: true, brawler: true };
 

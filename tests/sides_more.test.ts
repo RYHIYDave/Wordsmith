@@ -1,5 +1,5 @@
-// THE TINKERER AND THE BRAWLER FROM ALL EIGHT SIDES (art/sides_more.ts EIGHT_MORE, ON since they were brought in and baked,
-// 11 Nov 2026; the Tinkerer chat, 11 Nov 2026;
+// THE TINKERER AND THE BRAWLER FROM ALL EIGHT SIDES (art/sides_more.ts EIGHT_MORE: the Tinkerer's on, live since 25.3.6; the
+// Brawler's off, at his word from the phone, 11 Nov 2026; the Tinkerer chat, 11 Nov 2026;
 // docs/mockups/eight_sides/README.md). Off, the game has each from two sides and the Brawler's moves go four ways, as ever. On,
 // each has eight sets, the two the game had THE VERY SAME PICTURES (nothing of either is repainted: the Brawler is his measure
 // for art), the six more each truly turned and none a mirror; and the Brawler's moves, action lines and blows go eight ways.
@@ -115,9 +115,12 @@ test('the sides, their turns and their ways are the Warrior\'s own', () => {
   });
 });
 
-test('the switches are ON in the game; OFF, each has the game\'s two sides, and the Brawler\'s moves go his four ways', () => {
-  // (ON since they were brought in and baked, 11 Nov 2026, at his “Yes, hand both to main (Recommended)”)
-  assert.deepEqual(EIGHT_MORE, { tinkerer: true, brawler: true }, 'on in the game: brought in and baked');
+test('the game has the Tinkerer on, and on this branch the Brawler; OFF, each has the game\'s two sides, and the Brawler\'s moves go his four ways', () => {
+  // (THE TINKERER'S ON, live since 25.3.6, 11 Nov 2026, at his “Yes, hand both to main (Recommended)”. THE BRAWLER'S: off in `main`
+  // at his word from the phone on the test page that had both on, 11 Nov 2026 (docs/mockups/eight_sides/BRING_IN.md, its foot);
+  // ON ON THIS BRANCH, build/brawler-packed, which mends it (his moves kept packed: docs/mockups/eight_sides/PACKED.md). The
+  // three lines that say so: this one, tests/veteran_art.test.ts's `was` and tests/veteran_rules.test.ts's `eightWas`.)
+  assert.deepEqual(EIGHT_MORE, { tinkerer: true, brawler: true }, 'the Tinkerer live; the Brawler on on this branch, his moves kept packed');
   asOff(() => {
     const t = makeTinkererArt();
     const v = makeVeteranArt();
