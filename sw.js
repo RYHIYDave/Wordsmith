@@ -19,8 +19,8 @@ self.addEventListener('fetch', (e) => {
       if (r && r.ok) {
         c.put(page ? './index.html' : req, r.clone());
         // (the heroes baked: a bake's pictures kept, the older bakes' let go)
-        const m = /\/(heroes|sounds|colossus)\/([0-9a-f]+)\//.exec(req.url);
-        if (m) c.keys().then((ks) => ks.forEach((k) => { const n = /\/(heroes|sounds|colossus)\/([0-9a-f]+)\//.exec(k.url); if (n && n[1] === m[1] && n[2] !== m[2]) c.delete(k); }));
+        const m = /\/(heroes|sounds|colossus|townsfolk)\/([0-9a-f]+)\//.exec(req.url);
+        if (m) c.keys().then((ks) => ks.forEach((k) => { const n = /\/(heroes|sounds|colossus|townsfolk)\/([0-9a-f]+)\//.exec(k.url); if (n && n[1] === m[1] && n[2] !== m[2]) c.delete(k); }));
       }
       return r;
     }).catch(() => null);
