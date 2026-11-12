@@ -57,19 +57,16 @@ The ten: Piercing, Bleeding, Reaping, Culling, Surging, Plundering, Mirroring (f
 - **The sounds' levels and gaps** are this chat's starting points from the sound chat's notes: `WORD_SOUND` in
   `src/game/word_sounds.ts`. `WORD_SOUNDS.on = false` silences all 25 at once.
 
-## Two things that change how the game looks and are NOT yet his yes
+## Two small looks that 28 words needed, with his yes
 
-Both are needed because there are now 28 words; both are one switch.
+Shown a picture of each from this chat, 11 Nov 2026, by 22:37 (Eastern); each is one switch.
 
-1. **The book on the starting screen in the same five pages** (`LEX_BOOK.pages` in `src/ui/lexicon28.ts`, on in this branch).
-   With 28 words its old list runs off the foot of its panel (14 lines where there is room for 10). Pictures:
-   `node tools/playtest.mjs ... --scenario tools/scenarios/words10_book.mjs` (pictures are not kept in the project). Off, the
-   list is as it was (and runs off).
+1. **The book on the starting screen in the same five pages** (`LEX_BOOK.pages` in `src/ui/lexicon28.ts`, on). With 28 words
+   its old list ran off the foot of its panel (14 lines where there is room for 10). Asked “Use it?”, his pick: “Yes, five
+   pages (Recommended)”. Pictures again: `tools/scenarios/words10_book.mjs`.
 2. **Stones a pixel closer where more than 44 different words are carried** (`TIGHT_STONE` in `src/ui/inventory.ts`): with the
-   ten there are 48 words and melded words, and four lines held 44. Only seen by someone carrying more than 44 kinds at once.
-   Picture: `tools/scenarios/words10_pouch.mjs`.
-
-He was asked about both from this chat on 11 Nov, with pictures; his answers are on the chat board.
+   ten there are 48 words and melded words, and four lines held 44. Asked “OK?”, his pick: “Yes, a pixel closer
+   (Recommended)”. Picture again: `tools/scenarios/words10_pouch.mjs`.
 
 ## What was checked (11 Nov 2026)
 

@@ -67,7 +67,7 @@ export function lexSeen(meta: Meta, words: readonly WordId[]): void {
  * THE BOOK ON THE STARTING SCREEN IN THE SAME FIVE PAGES (ui/lexicon.ts drawLexicon), behind a switch of its own: with 28 words its
  * list, a line a word in two columns, runs off the foot of its panel on a phone held sideways and on a PC (14 lines of 19 where
  * there is room for 10). On: the five tabs under its title, as at the lectern, and under them the open page's words only, nine
- * at most. NOT YET SEEN BY HIM: a picture to him before it goes live (docs/words10_live.md); off, the list as it was.
+ * at most. HIS YES to its picture, 11 Nov 2026, by 22:37 (Eastern): “Yes, five pages (Recommended)” (docs/words10_live.md); off, the list as it was.
  */
 export const LEX_BOOK = { pages: true };
 
