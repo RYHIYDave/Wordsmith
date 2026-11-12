@@ -64,6 +64,10 @@ own pictures are the same, pixel for pixel.
   order, every beat there; every piece laid is one of the floor's own in its look or the threads'; nothing cut off; the threads
   (candles more on floor 3 than floor 1, black water only from floor 3 down, each pool before its own face; the pieces in both
   looks, the swamp's colours kept, nothing cyan).
+- `node tools/unit.mjs --only prison_stories,lair_story,first5_floors` at c366cd0e: 24 of 25 files; lair_story's own test 1
+  (nothing of the game imports it) now lets art/prison_story.ts borrow its painters (no piece of floor 5's is made there); its
+  test 7 (Colour 4, the drag marks and the mine's pools 75 against the darkest word's 61) fails the same on main b09cfabf: not
+  this branch's (its pictures are the same pixel for pixel).
 - `tools/scenarios/story_look.mjs`: a still of each room of the way, in order (DEPTH 1 to 4, SEED; STORIES=0 for the same rooms
   without it; FIND="a piece|another" for a still of the first of each laid). The pictures in `pictures/`: `floor1_story.png`
   to `floor4_story.png`, one room for each beat in order (floor 1 seed 33, the others 7919), at 1.3 times the game's size on
