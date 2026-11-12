@@ -4,7 +4,10 @@
 //   LOOK=tome node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch \
 //     --scenario tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/tome
 // LOOK: tome (The Restless Tome, the Warlock), risen (The Fleshmancer's Brand, the Warrior), globe (The Fourth Globe, the
-// Brawler), arm (The Drowned Arm, the Warrior), talons (The Queen's Talons, the Ranger), wrench (The Sticky Wrench, the Tinkerer). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
+// Brawler), arm (The Drowned Arm, the Warrior), talons (The Queen's Talons, the Ranger), wrench (The Sticky Wrench, the Tinkerer), wind (The
+// Windcutter, the Warrior: three Strikes in a row, twice), moth (The Moth's Wing, the Warrior: struck, a word of his goes dark), hush (The Crier's Hush, the Warrior walking up to
+// elites and away), drop (a unique of the pool and a boss's own dropped by him, a moment apart), tow (The Tow Line,
+// the Tinkerer: her Golem whistled out, then her Blast Jump, twice; it rides each on its own rocket jump). PLAY=off: the same as the build shows it today (its stand-ins). ELITE: the kind of the elite he kills (risen).
 // STAGE=1 (risen, with FILM): the elite set two tiles off and struck dead with no swing of his, so its rising is seen clear.
 // FILM=<seconds>: a film of it in place of the stills, frame by frame (30 a second, the game's clock stepped so that no
 // frame is missed): <out>_f0000.png on, each cut to the part of the screen round him (tools/uniques_play_film.py makes the MP4
@@ -42,9 +45,9 @@ export default async function (page, snap) {
   const mid = await page.evaluate(() => [innerWidth / 2, innerHeight / 2]);
   const round = (l, t, r, b) => ({ x: Math.round(mid[0] - l), y: Math.round(mid[1] - t), width: l + r, height: t + b });
   const elite = process.env.ELITE || 'skeleton';
-  const cls = look === 'tome' ? 'warlock' : look === 'globe' ? 'brawler' : look === 'talons' ? 'ranger' : look === 'wrench' ? 'tinkerer' : 'warrior';
+  const cls = look === 'tome' ? 'warlock' : look === 'globe' ? 'brawler' : look === 'talons' ? 'ranger' : look === 'wrench' || look === 'tow' ? 'tinkerer' : 'warrior';
   // (LOOK=kinds: every kind of monster risen in turn, to see each one's risen look: below)
-  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : look === 'wrench' ? 'stickywrench' : 'fleshmancersbrand';
+  const id = look === 'tome' ? 'restlesstome' : look === 'globe' ? 'fourthglobe' : look === 'arm' ? 'drownedarm' : look === 'talons' ? 'queenstalons' : look === 'wrench' ? 'stickywrench' : look === 'wind' ? 'windcutter' : look === 'moth' ? 'mothswing' : look === 'tow' ? 'towline' : look === 'hush' ? 'criershush' : look === 'drop' ? 'rainwalker' : 'fleshmancersbrand';
   const set = await page.evaluate(({ cls, id, playOn }) => {
     const d = window.__dbg;
     d.uniques.on = true;
@@ -106,6 +109,112 @@ export default async function (page, snap) {
       const errs = await page.evaluate(() => (window.__errors || []).length);
       if (errs > errs0) { bad(`${kind}: ${errs - errs0} errors on the page`); errs0 = errs; }
     }
+    return;
+  }
+  if (look === 'wind') {
+    // THE WINDCUTTER (the Warrior wearing it): three Strikes in a row at the one before him; the third sends its blade on ahead,
+    // through the ones in its line; then again, facing the other way
+    await mk('skeleton', 2.6, 0.2); await mk('skeleton', 4.2, -0.3); await mk('cultist', 5.8, 0.1); await mk('skeleton', -2.8, 0.2); await mk('skeleton', -4.6, -0.2);
+    const strike = (dx) => () => page.evaluate((dx) => { const d = window.__dbg; const g = d.game(); const h = g.hero; h.swingT = 0; h.fx = Math.sign(dx); h.fy = 0; g.useBasic(h.x + dx, h.y); }, dx);
+    await wait(400);
+    // (BARE=1: its blade alone, sent by the rules with no swing of his, to see it clear)
+    const bare = (fx, fy) => () => page.evaluate(([fx, fy]) => { const g = window.__dbg.game(); const h = g.hero; h.fx = fx; h.fy = fy; g.windBlade(); }, [fx, fy]);
+    const due = process.env.BARE ? [[0.1, bare(1, 0)], [0.8, bare(0.6, -0.8)], [1.5, bare(-1, 0)]] : [[0.2, strike(1)], [0.62, strike(1)], [1.04, strike(1)], [2.2, strike(-1)], [2.62, strike(-1)], [3.04, strike(-1)]];
+    if (film) { await shoot(film, round(300, 160, 300, 110), due); return; }
+    for (const [, f] of due.slice(0, 3)) { await f(); await wait(420); }
+    for (let k = 0; k < 6; k++) { await wait(k === 0 ? 30 : 90); await snap(`${k + 1}_blade`); }
+    return;
+  }
+  if (look === 'drop') {
+    // A UNIQUE DROPPED: one of the pool's and a boss's own, set down on the floor by him a moment apart, as a drop is (Game.addDrop)
+    const drop = (id, dx, dy) => () => page.evaluate(([id, dx, dy]) => {
+      const g = window.__dbg.game(); const h = g.hero;
+      g.giveUnique(id, 12);
+      const i = h.bag.findIndex((it) => it && it.unique === id);
+      const it = h.bag[i]; h.bag[i] = null;
+      g.addDrop('item', h.x + dx, h.y + dy, 0, it, null);
+    }, [id, dx, dy]);
+    await wait(400);
+    const due = [[0.3, drop('fan', 1.8, -0.6)], [1.6, drop('mothswing', 0.4, 1.9)]];
+    if (film) { await shoot(film, round(250, 230, 250, 110), due); return; }
+    await due[0][1](); await wait(120); await snap('1_lands'); await wait(600); await snap('2_lying');
+    await due[1][1](); await wait(150); await snap('3_another'); await wait(900); await snap('4_both');
+    return;
+  }
+  if (look === 'hush') {
+    // THE CRIER'S HUSH (the Warrior wearing it): elites with words about; he walks up to them (within its reach their words go dark)
+    // and away again (they come back)
+    const el = (dx, dy, w, name) => page.evaluate(([dx, dy, w, name]) => {
+      const g = window.__dbg.game(); const h = g.hero;
+      const m = g.spawn('skeleton', h.x + dx, h.y + dy, 1, 0, false, g.rng);
+      g.wakeUp(m); m.speed = 0; m.cd = 1e9; m.life = m.maxLife = 1e7; m.elite = true; m.name = name; m.words = [w];
+      return m.id;
+    }, [dx, dy, w, name]);
+    await el(3.6, -1.0, 'fire', 'Burning Bones'); await el(4.4, 0.9, 'frost', 'Frozen Bones'); await el(6.4, -0.2, 'lightning', 'Crackling Bones');
+    await page.evaluate(() => {
+      const g = window.__dbg.game();
+      const run = g.update.bind(g);
+      g.update = (dt, c) => { if (window.__go) { c.mx = window.__go[0]; c.my = window.__go[1]; } return run(dt, c); };
+    });
+    const go = (x, y) => () => page.evaluate(([x, y]) => { window.__go = x || y ? [x, y] : null; }, [x, y]);
+    await wait(500);
+    const due = [[0.3, go(1, 0)], [1.5, go(0, 0)], [2.6, go(-1, 0)], [3.9, go(0, 0)]];
+    if (film) { await shoot(film, round(260, 190, 330, 110), due); return; }
+    await snap('1_before'); await go(1, 0)(); await wait(1200); await go(0, 0)(); await snap('2_hushed'); await wait(300); await snap('3_hushed');
+    await go(-1, 0)(); await wait(1300); await go(0, 0)(); await snap('4_back');
+    return;
+  }
+  if (look === 'tow') {
+    // THE TOW LINE (the Tinkerer wearing it): her Golem whistled out by her; then her Blast Jump, there and back; it rides each on its
+    // own rocket jump, off with her, and comes down by her with its fist slam
+    // (the enemies by where she starts, so the Golem has none to jump at: any flight of its to where she lands is the ride)
+    await mk('skeleton', 1.6, 1.2, { life: 1e7 }); await mk('skeleton', 2.2, -0.4, { life: 1e7 });
+    await page.evaluate(() => {
+      const g = window.__dbg.game();
+      const run = g.update.bind(g);
+      window.__rides = 0;
+      g.update = (dt, c) => {
+        if (window.__once) { Object.assign(c, window.__once); window.__once = null; }
+        const r = run(dt, c);
+        for (const e of g.events) if (e.t === 'unique' && e.id === 'towline' && e.what === 'ride') window.__rides++;
+        return r;
+      };
+    });
+    const whistle = () => page.evaluate(() => { const g = window.__dbg.game(); const h = g.hero; h.skills[1].cd = 0; h.mana = 999; g.useSkill(1, h.x + 1.5, h.y + 1); });
+    const jump = (dx, dy) => () => page.evaluate(([dx, dy]) => { const g = window.__dbg.game(); const h = g.hero; const s = h.skills[2]; s.cd = 0; s.charges = Math.max(1, s.maxCharges); window.__once = { evade: true, evadeX: h.x + dx, evadeY: h.y + dy }; }, [dx, dy]);
+    await whistle(); await wait(1800);
+    const due = [[0.3, jump(5.5, -1)], [2.6, jump(-5.5, 1)]];
+    if (film) {
+      await shoot(film, round(330, 220, 330, 120), due);
+      say(`rides: ${await page.evaluate(() => window.__rides)}`);
+      return;
+    }
+    await due[0][1]();
+    for (let k = 0; k < 6; k++) { await wait(k === 0 ? 150 : 130); await snap(`${k + 1}_ride`); }
+    const golems = await page.evaluate(() => ({ rides: window.__rides, golems: window.__dbg.game().golems.map((q) => ({ x: q.x, y: q.y, act: q.act, cd: q.jumpCd })), hero: [window.__dbg.game().hero.x, window.__dbg.game().hero.y] }));
+    say(`after: ${JSON.stringify(golems)}`);
+    return;
+  }
+  if (look === 'moth') {
+    // THE MOTH'S WING (the Warrior wearing it, words on his attacks): struck, one of his words goes dark for a while; struck again,
+    // another; the HUD's skill buttons are where it shows
+    await page.evaluate(() => {
+      const d = window.__dbg; const g = d.game();
+      const h = g.hero;
+      for (const w of ['fire', 'power', 'frost', 'leech', 'swift', 'twin']) h.words[w] = (h.words[w] || 0) + 1;
+      const why = [g.socket(0, 'front', 'fire'), g.socket(0, 'behind', 'power'), g.socket(1, 'front', 'frost'), g.socket(1, 'behind', 'leech'), g.socket(2, 'front', 'swift'), g.socket(2, 'behind', 'twin')];
+      console.log('socketed: ' + JSON.stringify(why));
+      d.god = false;
+    });
+    await mk('skeleton', 1.2, 0.0, { life: 1e7 });
+    const hit = () => page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters[0]; const h = g.hero; h.life = h.d.maxLife; g.hurtHero(3, 'phys', [], m); });
+    await wait(400);
+    // (the foot of the screen, where his attacks are written, and him over it)
+    const low = { x: 0, y: Math.round(mid[1] * 0.7), width: Math.round(mid[0] * 2), height: Math.round(mid[1] * 1.3) };
+    if (film) { await shoot(film, low, [[0.3, hit], [1.8, hit]]); return; }
+    await snap('1_before'); await hit(); await wait(150); await snap('2_dark'); await hit(); await wait(150); await snap('3_another');
+    const errs = await page.evaluate(() => (window.__errors || []).length);
+    if (errs) bad(`${errs} errors on the page`);
     return;
   }
   if (look === 'wrench') {

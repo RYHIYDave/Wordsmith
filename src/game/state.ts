@@ -1051,6 +1051,8 @@ export interface Golem {
   jx?: number;
   jy?: number;
   jumpCd?: number;
+  /** UNIQUE ITEMS, THE TOW LINE: this jump is the ride with her blast jump (free: its jump's wait set back to none as it lands). */
+  towed?: boolean;
   /** (GOLEM_COMBO) Which blow of its combo comes next (0, 1: a punch; 2: its slam), and how long since its last. */
   combo?: number;
   comboT?: number;

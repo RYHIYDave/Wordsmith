@@ -170,6 +170,8 @@ import { blinkNowhere, gaitOf } from '../game/bosses';
 import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
 import { THRUST } from '../art/heroes3';
+import { HUSH } from '../art/crier';
+import { UNIQUE_PLAY } from './unique_play';
 import { LEAP_LIFT, THRUST_LIFT, drawWildArrow, drawWildWave } from './wild';
 import { golemCharge, makeContraptionArt, makeGolemArt } from '../art/tinkerer_art';
 // (THE GOLEM'S ROCKET JUMP AND ITS RUN, the art chat's, behind GOLEM_ROCKET: off until he has seen them in the game and said yes)
@@ -419,6 +421,8 @@ function unseen(m: Monster): boolean {
 
 /** The colour of a named monster's name: its word's; with PACK_LOOK, a blue pack's blue and a yellow pack's leader's yellow (the colours of magic and rare things). */
 function nameColor(m: Monster): string {
+  // (UNIQUE ITEMS, behind a switch that is off: The Crier's Hush, its words darkened: written in the Hush's dead grey)
+  if (UNIQUE_PLAY.hush && m.dark) return HUSH[4];
   if (PACK_LOOK.on && m.rarity === 'blue') return RARITY_COLOR[1];
   if (PACK_LOOK.on && m.rarity === 'leader') return RARITY_COLOR[2];
   return m.words.length ? WORD_COLOR[m.words[0]] : P.fr4;
@@ -2714,7 +2718,8 @@ export class Renderer {
       const words = m.rarity === 'minion' ? (m.half ?? []) : m.words;
       if (marks && m.rarity && words.length) drawPackMark(g, this.floorAt, m.x, m.y, m.r, { rarity: m.rarity, words, cry: m.rallyT ? Math.min(1, m.rallyT / 0.5) : 0 }, t);
       else if ((named(m) || m.boss) && !(marks && m.rarity === 'minion')) {
-        const col = m.words.length ? WORD_COLOR[m.words[0]] : P.fr4;
+        // (UNIQUE ITEMS, behind a switch that is off: The Crier's Hush, its words darkened: its ring the Hush's dead grey)
+        const col = UNIQUE_PLAY.hush && m.dark ? HUSH[3] : m.words.length ? WORD_COLOR[m.words[0]] : P.fr4;
         ringDots(g, cx, cy, m.r * (1.5 + 0.12 * Math.sin(t * 5)), col);
       }
       if (m.id === this.lockId) lockRing(g, cx, cy, Math.max(0.62, m.r * 1.9), t);
@@ -4356,6 +4361,11 @@ export class Renderer {
       // (THE WARLOCK's bolt: his fire on its side, render/warlock_fx.ts)
       if (p.look === 'hellbolt') {
         if (onScreen(p.x, p.y)) fx.warlock.drawBolt(g, cam, p);
+        continue;
+      }
+      // (UNIQUE ITEMS, behind a switch that is off: the Windcutter's blade, a blade of wind and not the Mage's Wave: render/unique_fx.ts)
+      if (p.blade && UNIQUE_PLAY.wind) {
+        if (onScreen(p.x, p.y)) fx.uniques.drawBlade(g, cam, p, t);
         continue;
       }
       // (THE NEW MONSTERS: a Boneward's spear, flying low from its hand to where it comes down)

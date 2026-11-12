@@ -107,8 +107,13 @@ const ECHO_DELAY = 0.8;
 export const CORNER_SLACK = 0.3;
 /** (wayRound) How far about itself a body looks for its way round (tiles). */
 export const WAY_ROUND = 14;
-/** Her Golem's half width as it walks (tiles). */
-export const GOLEM_R = 0.45;
+/**
+ * Her Golem's half width as it walks (tiles): as hers (TUNE.heroRadius), so that it goes wherever she can and is caught on no door,
+ * corner or pillar she is not; nothing but walls stands in its way (no monster and not she). His words, 12 Nov 2026, of the Golem:
+ * “Also can you make him almost intangible?  He has a lot of collision issues and is never really where you want him to be” (it was
+ * 0.45, nine tenths of a tile wide, in doors one tile wide).
+ */
+export const GOLEM_R = 0.3;
 /** A volley's arrows are announced to the effects this long before each lands, so that it is seen falling. */
 const VOLLEY_SEEN = 0.3;
 /** "of Echoes" behind an attack that is held: the phantom's beam or whirl bites this many times. */
@@ -5622,6 +5627,8 @@ export class Game {
       if (r.echo > 0) this.echoOf(2, x0, y0, dx, dy, () => bomb(0, r.countDmg * r.echo, true));
       h.move = { kind: 'blast', t: 0, dur: TINKER_TUNE.blast.secs, x0: h.x, y0: h.y, x1: land.x, y1: land.y };
       if (!this.hitInMove()) h.invuln = Math.max(h.invuln, TINKER_TUNE.blast.secs + 0.1);
+      // (UNIQUE ITEMS: The Tow Line, her Golem rides the Blast Jump with her: its own rocket jump, off with her, to where she comes down)
+      if (this.wears('towline')) this.towRide(x0, y0, land.x, land.y);
       return;
     }
     // (THE WARLOCK, game/warlock.ts: the smoke step, his or the demon's)
@@ -7352,19 +7359,12 @@ export class Game {
   private blastLands(): void {
     const h = this.hero;
     this.emit({ t: 'blastLand', x: h.x, y: h.y });
-    // (UNIQUE ITEMS: The Tow Line, her Golem rides the Blast Jump with her and lands with a ground pound)
+    // (UNIQUE ITEMS: The Tow Line: a Golem that did not ride her jump (it was by where she came down already) pounds where it
+    // stands as she lands; one that rode it pounds as it comes down: towRide)
     if (this.wears('towline')) {
       for (const g0 of this.golemsUp()) {
         const gs = h.skills[g0.skill];
-        if (!gs || SKILLS[gs.id].kind !== 'golem') continue;
-        const at = this.golemSpot(g0.seat, 0.6);
-        const from = { x: g0.x, y: g0.y };
-        if (this.isOpen(at.x, at.y)) [g0.x, g0.y] = [at.x, at.y];
-        else [g0.x, g0.y] = [h.x, h.y];
-        g0.act = 'stand';
-        g0.actT = 0;
-        g0.did = false;
-        this.emit({ t: 'unique', id: 'towline', what: 'ride', x: from.x, y: from.y, x1: g0.x, y1: g0.y });
+        if (!gs || SKILLS[gs.id].kind !== 'golem' || g0.towed || g0.act === 'jump') continue;
         this.golemPounds(g0.skill, g0.x, g0.y, gs.r.countDmg * UNIQUE_TUNE.tow.share, 0, false, g0);
       }
     }
@@ -7390,6 +7390,52 @@ export class Game {
   /** Her Golems out and not winding down. */
   private golemsUp(): Golem[] {
     return this.golems.filter((g) => g.act !== 'down');
+  }
+
+  /**
+   * UNIQUE ITEMS, THE TOW LINE: as she blasts off from (x0, y0) for (x1, y1), each Golem of hers rides it: its own rocket jump, off
+   * with her (no crouch first: it blasts off with her bomb), coming down at its own side of where she comes down, as it keeps by her,
+   * landing as its own jump lands (its fist slam). Free: its jump's wait is not looked at, and is set back to none as it lands. His
+   * words, 12 Nov 2026, asked whether the Tow Line wanted a look of its own (the Golem blinked to her side as she landed): “The golem
+   * has a rocket jump as well so it can be like a free cooldown reset and he uses him jump to the same spot as the hero”. One by
+   * where she comes down already, charging its shot, or in the air, does not ride: it pounds where it stands as she lands.
+   */
+  private towRide(x0: number, y0: number, x1: number, y1: number): void {
+    const h = this.hero;
+    const d = Math.hypot(x1 - x0, y1 - y0);
+    const ux = d > 0.01 ? (x1 - x0) / d : h.fx;
+    const uy = d > 0.01 ? (y1 - y0) / d : h.fy;
+    for (const g of this.golemsUp()) {
+      const gs = h.skills[g.skill];
+      if (!gs || SKILLS[gs.id].kind !== 'golem' || g.act === 'jump' || g.act === 'charge') continue;
+      // (at its own side of her, a little behind, as it keeps by her: golemSpot's, about where she comes down)
+      const side = g.seat === 0 ? 1.2 : g.seat === 1 ? -1.2 : 0;
+      const back = 0.6 + (g.seat >= 2 ? 1.3 : 0);
+      let tx = x1 - uy * side - ux * back;
+      let ty = y1 + ux * side - uy * back;
+      if (!this.isOpen(tx, ty)) [tx, ty] = [x1, y1];
+      const far = Math.hypot(tx - g.x, ty - g.y);
+      if (far < 1) continue;
+      g.fx = (tx - g.x) / far;
+      g.fy = (ty - g.y) / far;
+      g.jx = g.x;
+      g.jy = g.y;
+      g.ax = tx;
+      g.ay = ty;
+      g.act = 'jump';
+      // (the art's rocket jump from the frame before its blast: off with her)
+      g.actT = GOLEM_ROCKET.on ? (ROCKET.blast - 1) / 30 : 0;
+      g.did = false;
+      g.combo = 0;
+      g.towed = true;
+      // (the stand-in jump, the rocket's art off, pounds as it lands only with a count)
+      g.twin = GOLEM_ROCKET.on ? undefined : 1;
+      this.emit({ t: 'unique', id: 'towline', what: 'ride', x: g.x, y: g.y, x1: tx, y1: ty });
+      if (!GOLEM_ROCKET.on) {
+        this.emit({ t: 'bombsAway', x: g.x, y: g.y, r: 1 });
+        this.sfx('explode', 0.45);
+      }
+    }
   }
 
   /** Where Golem `seat` keeps by her, `back` behind her: the first at her one side, Mark II's second at her other. */
@@ -7692,6 +7738,7 @@ export class Game {
       }
       g.act = 'arrive';
       g.actT = 0;
+      g.towed = undefined;
       this.emit({ t: 'golemArrive', x: g.x, y: g.y });
       return;
     }
@@ -7720,7 +7767,9 @@ export class Game {
         this.emit({ t: 'golemArrive', x: g.x, y: g.y });
         this.emit({ t: 'shake', amount: 2 });
         this.sfx('slam', 0.6);
-        g.jumpCd = J.wait;
+        // (UNIQUE ITEMS: The Tow Line's ride is free: its jump's wait set back to none)
+        g.jumpCd = g.towed ? 0 : J.wait;
+        g.towed = undefined;
         // (GOLEM_COMBO, her hold's jump, the stand-in's: it lands as its pound; Twin, a second)
         if (g.twin) {
           for (let k = 0; k < g.twin; k++) {
@@ -8117,7 +8166,9 @@ export class Game {
       // words, 3 Nov 2026, shown it in the game: “The jump needs to include the fist slam.  Thats kinda the whole point”.
       // The crater and the dust are its landing's own: golemLandFx)
       this.golemPounds(g.skill, g.x, g.y, this.golemFrac(g), 0, false, g, true);
-      g.jumpCd = J.wait;
+      // (UNIQUE ITEMS: The Tow Line's ride is free: its jump's wait set back to none)
+      g.jumpCd = g.towed ? 0 : J.wait;
+      g.towed = undefined;
       // (GOLEM_COMBO, her hold's jump: Twin, a second pound where it came down)
       const at0 = { x: g.x, y: g.y };
       for (let k = 1; k < (g.twin ?? 1); k++) this.after(TINKER_TUNE.golem.pound.long * k, () => g.act !== 'down' && this.golems.includes(g) && this.golemPounds(g.skill, at0.x, at0.y, this.golemFrac(g), k, false, g));

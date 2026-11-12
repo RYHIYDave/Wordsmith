@@ -483,17 +483,22 @@ test('The Sticky Wrench and The Foreman\'s Wrench: vials stick and burst a momen
     assert.equal(I(alone).vials.length, 1);
   }));
 
-test('The Tow Line and The Company Scrip: her Golem rides the Blast Jump and lands with a ground pound; no cooldown, for gold', () =>
+test('The Tow Line and The Company Scrip: her Golem rides the Blast Jump on its own rocket jump and lands with its fist slam, free; no cooldown, for gold', () =>
   on(() => {
     const g = wear(room('tinkerer'), 'towline');
     steady(g);
     cast(g, 3, 0, 0, 1.5);
     const golem = I(g).golems[0];
     const m = dummy(g, 7.5, 0);
+    // (his word, 12 Nov 2026: its own rocket jump, off with her, to where she comes down, free: towRide)
+    const gj = golem as unknown as { jumpCd?: number };
+    gj.jumpCd = 2;
     const ev = swipe(g, 6, 0, 0.8);
     assert.equal(seen(ev, 'towline', 'ride').length, 1);
     assert.ok(Math.hypot(golem.x - g.hero.x, golem.y - g.hero.y) < 2, 'it lands by her');
-    assert.ok(ev.some((e) => e.t === 'golemPound'), 'with a ground pound');
+    assert.ok(ev.some((e) => e.t === 'golemArrive'), 'it comes down by its rocket jump (its fist slam)');
+    assert.ok(!ev.some((e) => e.t === 'golemPound'), 'not a pound where it stands: it rode');
+    assert.equal(gj.jumpCd ?? 0, 0, 'free: its jump ready again');
     assert.ok(hurt(m) > 0);
     // The Company Scrip
     const s = wear(room('tinkerer'), 'companyscrip');
