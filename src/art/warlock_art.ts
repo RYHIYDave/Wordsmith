@@ -38,6 +38,10 @@ import { crumble } from '../dev/demon_return';
 // (THE LIVING SHADOW, his demon redone: art/shadow_art.ts, behind LIVING_SHADOW, off: off, nothing here is changed)
 import { LIVING_SHADOW, makeShadowArt, shadowChangeClip } from './shadow_art';
 import { warlockFall } from './warlock_fall';
+// (THE MAN BROUGHT UP, from all eight sides, his longer coat and boots to the knee: art/warlock_up_art.ts, behind WARLOCK_UP, off:
+// off, nothing here is changed)
+import { WARLOCK_UP } from './warlock_up';
+import { makeWarlockUpArt } from './warlock_up_art';
 
 /** Which of his pictures: a man or the demon, where (in a fight, in town, on his class card), and a man with his pact full (his arm blazing). */
 export interface WarlockLook {
@@ -262,5 +266,6 @@ function demonSet(view: GameView): AnimSet {
 /** The warlock's pictures, both views (`share`: what is the same in every place, made once for all of them: WarlockShare). */
 export function makeWarlockArt(look: WarlockLook, share?: WarlockShare): ActorArt {
   if (look.form === 'demon') return LIVING_SHADOW.on ? makeShadowArt() : { front: demonSet('front'), back: demonSet('back') };
+  if (WARLOCK_UP.on) return makeWarlockUpArt(look, share);
   return { front: manSet('front', look.place, !!look.blaze, share), back: manSet('back', look.place, !!look.blaze, share) };
 }
