@@ -92,7 +92,7 @@ export default async function (page, snap) {
   const packed = !!baked && baked.packs.all > 0;
   const packsNow = () => page.evaluate(() => { const d = window.__dbg; const b = d.baked(); return { ...b.packs, failed: [...b.failed], budget: d.packs.PACKS.budget, on: d.packs.PACKS.on }; });
   const mb = (n) => (n / 1048576).toFixed(1);
-  const saidPacks = (k) => `${k.held} of ${k.all} in hand, ${mb(k.bytes)} MB unpacked (the most at once ${mb(k.most)}; the budget ${mb(k.budget)}) | unpacked ${k.unpacked} times, let go ${k.letGo} | asked for with nothing of it to show yet ${k.missed} times, ahead of need ${k.ahead} | unpacking took ${Math.round(k.ms)} ms in all, ${Math.round(k.worst)} ms at worst`;
+  const saidPacks = (k) => `${k.held} of ${k.all} in hand, ${mb(k.bytes)} MB unpacked (the most at once ${mb(k.most)}; the budget ${mb(k.budget)}) | unpacked ${k.unpacked} times, let go ${k.letGo} | asked for with nothing of it to show yet ${k.missed} times, ahead of need ${k.ahead} | unpacking took ${Math.round(k.ms)} ms in all, ${Math.round(k.worst)} ms at worst, of it on the game's own thread ${Math.round(k.work)} ms in all, ${k.workWorst.toFixed(1)} ms at worst in one go`;
   log('his pictures', baked ? `baked: ${baked.given} frames taken in, the Brawler's group ${baked.done ? 'come whole' : 'not come yet'}${baked.ms.brawler ? ` in ${baked.ms.brawler} ms` : ''}${baked.failed.length ? `, FAILED ${baked.failed.join('; ')}` : ''}` : 'not baked on this page: painted as the game is played');
   /** His lists' frames, every side: how many are in hand, and how many still to paint (not read: reading one would paint it). */
   const inHand = () => page.evaluate(() => {

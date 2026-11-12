@@ -219,9 +219,11 @@ export class BakedHeroes {
     /**
      * THE PACKS (PACKS): how many there are and how many bytes their files are; how many are in hand and their bytes unpacked;
      * how many times one was unpacked and let go; how many were asked for by the game's drawing with no picture to show yet
-     * (`missed`: a stand-in was shown meanwhile) and how many ahead of need; how long unpacking has taken in all and at worst (ms).
+     * (`missed`: a stand-in was shown meanwhile) and how many ahead of need; how long unpacking has taken in all and at worst (ms),
+     * most of it the browser's own, beside the game; and `work`, how much of it was on the game's own thread (asking for the cuts,
+     * giving the pictures into their places, letting others go), in all and at worst in one go (ms).
      */
-    packs: { all: 0, packed: 0, held: 0, bytes: 0, most: 0, unpacked: 0, letGo: 0, missed: 0, ahead: 0, ms: 0, worst: 0 },
+    packs: { all: 0, packed: 0, held: 0, bytes: 0, most: 0, unpacked: 0, letGo: 0, missed: 0, ahead: 0, ms: 0, worst: 0, work: 0, workWorst: 0 },
   };
   /** The packs, by group and name; by the lists they fill; those waiting to be unpacked, the soonest wanted first; how many are being unpacked. */
   private readonly packs = new Map<string, Pack>();
@@ -294,12 +296,20 @@ export class BakedHeroes {
     try {
       const opts: ImageBitmapOptions = { premultiplyAlpha: 'default', colorSpaceConversion: 'none' };
       const sheet = await createImageBitmap(p.blob, opts);
-      let bmps: ImageBitmap[];
+      const bmps: ImageBitmap[] = [];
       try {
-        bmps = await Promise.all(p.def.frames.map(([x, y, w, h]) => createImageBitmap(sheet, x, y, w, h, opts)));
+        // (a few at a time: asking for a cut costs the game's own thread a little, and a big pack's 135 at once was 10 ms of it)
+        const AT = 24;
+        for (let n = 0; n < p.def.frames.length; n += AT) {
+          const w0 = this.clock();
+          const cuts = p.def.frames.slice(n, n + AT).map(([x, y, w, h]) => createImageBitmap(sheet, x, y, w, h, opts));
+          this.worked(w0);
+          bmps.push(...(await Promise.all(cuts)));
+        }
       } finally {
         sheet.close();
       }
+      const g0 = this.clock();
       const sprites: (Sprite | undefined)[] = new Array<Sprite | undefined>(bmps.length);
       for (const [list, i, fi] of p.places) {
         const was = Object.getOwnPropertyDescriptor(list, i);
@@ -322,6 +332,7 @@ export class BakedHeroes {
       S.bytes += p.def.bytes;
       S.most = Math.max(S.most, S.bytes);
       S.unpacked++;
+      this.worked(g0);
       const ms = this.clock() - t0;
       S.ms += ms;
       S.worst = Math.max(S.worst, ms);
@@ -332,8 +343,17 @@ export class BakedHeroes {
     } finally {
       this.busy--;
     }
+    const l0 = this.clock();
     this.trim(p);
+    this.worked(l0);
     this.pump();
+  }
+
+  /** (for the measures) So long on the game's own thread, since `t0`. */
+  private worked(t0: number): void {
+    const ms = this.clock() - t0;
+    this.stats.packs.work += ms;
+    this.stats.packs.workWorst = Math.max(this.stats.packs.workWorst, ms);
   }
 
   /** Past the budget, the least lately asked for are let go (never one asked for a moment ago, nor `keep`, the one that has just come). */
