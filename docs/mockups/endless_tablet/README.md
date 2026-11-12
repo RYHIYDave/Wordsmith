@@ -180,6 +180,16 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   across its body), not patterned partings (the scales); THE SPIKES GONE: its shag a soft skirt of locks in its body's own part (no
   seam cutting it into teeth), in shade, their ends round; no frost points. The checks: checkBoss on his stand, nothing cyan, his
   legs outside the boar: all pass.
+- HIS WORDS on the remade look, 12 Nov 2026: “Look at the brawlers hands, then look at the wordsmiths hands.  I’ve probably talked
+  about hands on this project 10 times and every time a new hand shows up it’s wrong”; then “And the boar just doesn’t move at all?
+  Doesn’t breathe?  Doesnt snort?  Doesn’t shake its head like a dog?  Doesn’t stamp its feet?”
+- MADE FOR THAT: HIS HANDS to the Brawler's size (the hand 1.75 times what it was, knuckles, a thumb on its own side; his right a fist
+  round the staff, his left an open claw), set beside the Brawler's fists to check. THE BOAR ALIVE (`BOAR_STAND_AT`, a 4.8 s round):
+  three deep breaths (its barrel and back rising); two SNORTS (its head thrown up, a puff of white breath out of each nostril, swelling
+  and thinning); a HEAD SHAKE like a dog's (its head swung and rolled hard, its ears and jowls flung, eased in and out); and a STAMP
+  of each forefoot in turn (its head thrown up as the foot comes up out in front of its chest, then struck down where it stood, its
+  body jolted, grit thrown out round the hoof). Its hooves stand planted (each leg solved to its own spot on the floor), so its
+  breathing and rocking never slide them. The checks (checkBoss on the 144 frames, nothing cyan, his legs outside the boar): all pass.
 
 ## The tools
 

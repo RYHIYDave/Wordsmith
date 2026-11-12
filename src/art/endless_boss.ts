@@ -111,6 +111,12 @@ export interface BoarPose {
   /** How far its flanks are drawn in with its breath (0 ... 1), and its wool's swing (a round, 0 ... 1). */
   breath: number;
   sway: number;
+  /** Its head rolled over (degrees, + to its right: shaking), and its ears flung (-1 ... 1: left behind as its head swings). */
+  tilt?: number;
+  flap?: number;
+  /** HOOVES PLANTED (standing): each hoof kept on its own spot on the floor, lifted straight up off it by this much (0 down ... 1 a
+   * stamp's height), the leg bending to reach it; not said, each leg swings as `legs` says. */
+  lift?: readonly [number, number, number, number];
 }
 export const BOAR_STAND: BoarPose = {
   x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, low: 6, look: 0,
@@ -150,8 +156,46 @@ function legOf(P: BoarPose, i: number): { top: V3; knee: V3; fet: V3; end: V3 } 
   const knee = add(top, mul(dir(a1), l1 * S));
   const fet = add(knee, mul(dir(a1 + a2), l2 * S));
   const end = add(fet, mul(dir(a1 + a2 + 22), l3 * S));
-  return { top, knee, fet, end };
+  if (!P.lift) return { top, knee, fet, end };
+  // PLANTED: its hoof where it stands (its spot as it stands square, carried with it if it has moved), lifted straight up off it
+  // by `lift`; the pastern as it stands; the knee (forward on a foreleg) or the hock (back on a hind) bent to reach
+  const R = PLANT[i];
+  const c = Math.cos(P.yaw * D), sn = Math.sin(P.yaw * D);
+  const at = (v: V3): V3 => [P.x + v[0] * c - v[1] * sn, P.y + v[0] * sn + v[1] * c, v[2]];
+  // (lifted, its hoof comes up and out in front of its chest, under its jaw where it is seen, its pastern folding back so the
+  // hoof hangs, its sole to the rear; then struck back down where it stood)
+  const p = P.lift[i];
+  const fh = norm([c, sn, 0], [1, 0, 0]);
+  const up: V3 = add([0, 0, p * STAMP_UP * S], mul(fh, p * STAMP_OUT * S));
+  const pFet = add(at(R.fet), up);
+  const a = (STAND_PASTERN - STAMP_FOLD * p) * D;
+  const pEnd = p > 0 ? add(pFet, mul(add(mul(fh, Math.sin(a)), [0, 0, -Math.cos(a)]), l3 * S)) : add(at(R.end), up);
+  const L1 = l1 * S;
+  const L2 = l2 * S;
+  const v = sub(pFet, top);
+  const d = Math.max(Math.abs(L1 - L2) + 0.01, Math.min(L1 + L2 - 0.01, len(v)));
+  const u = norm(v, [0, 0, -1]);
+  const fw0 = turned(P, [1, 0, 0]);
+  const want = mul(norm([fw0[0], fw0[1], 0], [1, 0, 0]), i < 2 ? 1 : -1);
+  const n = norm(sub(want, mul(u, want[0] * u[0] + want[1] * u[1] + want[2] * u[2])), want);
+  const ca = (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d);
+  const sa = Math.sqrt(Math.max(0, 1 - ca * ca));
+  const kneeIK = add(top, add(mul(u, L1 * ca), mul(n, L1 * sa)));
+  const fetIK = add(top, mul(u, d));
+  return { top, knee: kneeIK, fet: fetIK, end: add(fetIK, sub(pEnd, pFet)) };
 }
+/** How high a stamp lifts a hoof off the floor, how far out in front it brings it, how far its pastern folds (its own lengths,
+ * degrees), and the pastern's slope as it stands (forward of straight down, degrees). */
+const STAMP_UP = 7.5;
+const STAMP_OUT = 7;
+const STAMP_FOLD = 70;
+const STAND_PASTERN = 20;
+/** Where each hoof stands as it stands square (its pastern's top and its end): its spot on the floor. */
+const PLANT: { fet: V3; end: V3 }[] = [0, 1, 2, 3].map((i) => {
+  const P = { ...BOAR_STAND, lift: undefined };
+  const L = legOf(P, i);
+  return { fet: L.fet, end: L.end };
+});
 /** Its hooves' soles (near fore, off fore, near hind, off hind). */
 export function boarSoles(P: BoarPose): V3[] {
   return [0, 1, 2, 3].map((i) => add(legOf(P, i).end, [0, 0, -1.8 * S]));
@@ -162,7 +206,11 @@ function headOf(P: BoarPose): { at: (fwd: number, out: number, up: number) => V3
   // (the head turns and drops about its poll, behind its ears)
   const poll = boarAt(P, [19, 0, 26]);
   const f = turned(P, turn([1, 0, 0], P.look, P.low, 0));
-  const l = turned(P, turn([0, 1, 0], P.look, 0, 0));
+  const l0 = turned(P, turn([0, 1, 0], P.look, 0, 0));
+  // (shaking: its head rolled over about its own forward)
+  const tl = ((P.tilt ?? 0) * Math.PI) / 180;
+  const u0 = norm(cross(f, l0), [0, 0, 1]);
+  const l = norm(add(mul(l0, Math.cos(tl)), mul(u0, -Math.sin(tl))), l0);
   const u = norm(cross(f, l), [0, 0, 1]);
   return { at: (fwd, out, up) => add(poll, add(mul(f, fwd * S), add(mul(l, out * S), mul(u, up * S)))), f, l, u };
 }
@@ -250,7 +298,7 @@ export function boarBits(P: BoarPose, put: Put, near: number): void {
   for (const k of [-1, 1]) {
     for (let j = 0; j < 3; j++) {
       const a = H.at(5 + j * 2.6, k * (5.4 - j * 0.5), -4 - j * 0.6);
-      const b = add(a, add(mul(H.l, k * 1.4 * S), [0, 0, -(5.5 - j) * S]));
+      const b = add(a, add(mul(H.l, (k * 1.4 - 2.4 * (P.flap ?? 0)) * S), [0, 0, -(5.5 - j) * S]));
       put('boarHead', 'jowls', { k: 'rod', a, b, ra: 2.0 * S, rb: 0.6 * S, ramp: WOOL });
     }
   }
@@ -259,7 +307,8 @@ export function boarBits(P: BoarPose, put: Put, near: number): void {
   // ITS EARS: small, pointed, laid back, the wool long on them
   for (const k of [-1, 1]) {
     const a = H.at(1, k * 4.4, 4.8);
-    const b = add(a, add(mul(H.f, -3.4 * S), add(mul(H.l, k * 2.0 * S), mul(H.u, 2.6 * S))));
+    const fl = P.flap ?? 0;
+    const b = add(a, add(mul(H.f, -3.4 * S), add(mul(H.l, (k * 2.0 - 2.2 * fl) * S), mul(H.u, (2.6 + 0.8 * Math.abs(fl)) * S))));
     put('boarHead', 'ears', { k: 'rod', a, b, ra: 1.8 * S, rb: 0.3 * S, ramp: WOOL });
   }
   // ITS TUSKS: out of its jaw, curving up and back, cut with his runes that burn
@@ -372,7 +421,7 @@ export function riderPose(P: BoarPose, t = 0): Partial<Bones> {
 function staffOf(s: Skeleton): { foot: V3; head: V3; ring: V3; up: V3; side: V3 } {
   const up = norm([0.08, -0.12, 1]);
   // (through his fist: a little in from his knuckles, toward his body, so that his fingers close round it)
-  const grip = add(s.handR, add(mul(s.chest[0], -0.9), mul(s.chest[1], 0.5)));
+  const grip = add(s.handR, add(mul(s.chest[0], -0.4), mul(s.chest[1], 0.2)));
   const foot = add(grip, mul(up, -26));
   const head = add(grip, mul(up, 48));
   const side = norm(cross(up, [0, 1, 0]), [1, 0, 0]);
@@ -482,26 +531,35 @@ function head(put: Put, st: Stage, s: Skeleton, t: number): void {
   }
 }
 
-/** A HAND, long and bony, as the bosses on the bones have theirs: its back and palm, four fingers in two joints each, a thumb.
- * `grip` curls the fingers (1 closed round a staff), `spread` fans them (a claw writing on the air). Ashen, cut with runes. */
+/** A HAND, as big as the game draws hands, so that it reads (the Brawler's fists the measure: about half his head across; as heads,
+ * hands are drawn bigger than life): its back and palm, four fingers in two joints each, a thumb on its own side (a right hand the
+ * mirror of a left). `grip` curls the fingers (1: a fist closed round a staff), `spread` fans them (an open claw writing on the air).
+ * Long, bony and ashen; its knuckles standing out. */
+const HAND = 1.75;
 function hand(put: Put, side: 'L' | 'R', at: V3, fore: V3, cu: V3, grip: number, spread: number): void {
   const e1 = norm(sub(cu, mul(fore, fore[0] * cu[0] + fore[1] * cu[1] + fore[2] * cu[2])), [0, 0, 1]);
   const e2 = norm(cross(fore, e1), [0, 1, 0]);
   const part = `hand${side}`;
-  put(part, part, { k: 'ball', c: add(at, mul(fore, 0.5)), ax: [mul(fore, 1.75), mul(e2, 1.35), mul(e1, 0.7)], skin: ASH, far: true });
-  // (the knuckles stand out on the back of it)
+  const k = HAND;
+  // (the palm and the back of the hand: a closed fist is a solid block of it, an open hand flatter)
+  put(part, part, { k: 'ball', c: add(at, mul(fore, 0.7 * k)), ax: [mul(fore, (1.25 - 0.15 * grip) * k), mul(e2, 1.05 * k), mul(e1, (0.55 + 0.35 * grip) * k)], skin: ASH, far: true });
   for (let i = 0; i < 4; i++) {
-    const fan = (i - 1.5) * (0.36 + 0.34 * spread);
-    const base = add(at, add(mul(fore, 1.55), mul(e2, fan * 0.75)));
-    const mid = add(base, add(mul(fore, 1.7 * (1 - 0.5 * grip)), add(mul(e1, -0.55 - 0.75 * grip), mul(e2, fan * 0.55 * spread))));
-    const tip = add(mid, add(mul(fore, 1.3 * (1 - 0.85 * grip)), add(mul(e1, -0.75 - 0.6 * grip), mul(e2, fan * 0.4 * spread))));
-    put(part, `finger${side}`, { k: 'rod', a: base, b: mid, ra: 0.52, rb: 0.46, ramp: ASH, far: true });
-    put(part, `finger${side}`, { k: 'rod', a: mid, b: tip, ra: 0.46, rb: 0.26, ramp: ASH, far: true });
+    const fan = (i - 1.5) * (0.42 + 0.38 * spread);
+    const base = add(at, add(mul(fore, 1.45 * k), mul(e2, fan * 0.62 * k)));
+    // (the knuckle: a bump on the back of the hand)
+    put(part, `knuckle${side}`, { k: 'ball', c: add(base, mul(e1, 0.25 * k)), ax: [mul(fore, 0.38 * k), mul(e2, 0.36 * k), mul(e1, 0.34 * k)], skin: ASH, far: true });
+    const mid = add(base, add(mul(fore, 1.1 * k * (1 - 0.55 * grip)), add(mul(e1, (-0.3 - 0.75 * grip) * k), mul(e2, fan * 0.4 * spread * k))));
+    const tip = add(mid, add(mul(fore, 0.85 * k * (1 - 0.9 * grip)), add(mul(e1, (-0.45 - 0.55 * grip) * k), mul(e2, fan * 0.3 * spread * k))));
+    put(part, `finger${side}`, { k: 'rod', a: base, b: mid, ra: 0.34 * k, rb: 0.3 * k, ramp: ASH, far: true });
+    put(part, `finger${side}`, { k: 'rod', a: mid, b: tip, ra: 0.3 * k, rb: 0.2 * k, ramp: ASH, far: true });
   }
+  // (the thumb, on its own side: for a right hand the mirror of a left; round the staff in a fist, out and up in a claw)
   const sideK = side === 'L' ? 1 : -1;
-  const tb = add(at, add(mul(fore, 0.6), mul(e2, sideK * 1.0)));
-  const tt = add(tb, add(mul(fore, 1.3 * (1 - 0.4 * grip)), add(mul(e2, sideK * (0.6 - 0.9 * grip)), mul(e1, -0.5 - 0.6 * grip))));
-  put(part, `finger${side}`, { k: 'rod', a: tb, b: tt, ra: 0.46, rb: 0.28, ramp: ASH, far: true });
+  const tb = add(at, add(mul(fore, 0.55 * k), add(mul(e2, sideK * 0.85 * k), mul(e1, -0.2 * k))));
+  const tm = add(tb, add(mul(fore, 0.7 * k), add(mul(e2, sideK * (0.45 - 0.55 * grip) * k), mul(e1, (-0.35 - 0.4 * grip) * k))));
+  const tt = add(tm, add(mul(fore, 0.55 * k * (1 - 0.5 * grip)), add(mul(e2, sideK * (0.2 - 0.5 * grip) * k), mul(e1, -0.25 * k))));
+  put(part, `finger${side}`, { k: 'rod', a: tb, b: tm, ra: 0.36 * k, rb: 0.32 * k, ramp: ASH, far: true });
+  put(part, `finger${side}`, { k: 'rod', a: tm, b: tt, ra: 0.32 * k, rb: 0.22 * k, ramp: ASH, far: true });
 }
 
 /** AN ARM: his order's sleeve, wide and ragged, to the forearm; the forearm bare below it, thin, ashen, cut with burning runes; the hand. */
@@ -632,22 +690,123 @@ function runesAbout(put: Put, st: Stage, s: Skeleton, t: number): void {
 // =============================================================================================
 // THE TWO TOGETHER, AS THE PAINTER TAKES THEM
 
-/** The boar's pose at a moment of a move: standing, breathing heavily, its head tossing a little, a forefoot pawing. */
+/** ITS STAND, ALIVE (his words, 12 Nov: “Doesn’t breathe?  Doesnt snort?  Doesn’t shake its head like a dog?  Doesn’t stamp its
+ * feet?”; his rulebook, Movement 6, “Alive when still”, and Animations 1, as far as it will go): over WS_STAND_LONG seconds it
+ * breathes deep (three breaths, its barrel swelling, its back rising), SNORTS twice (its head thrown up, a blast of breath from its
+ * snout), SHAKES ITS HEAD like a dog (its head rolling and swinging hard, its ears and jowls flung), and STAMPS each forefoot in turn
+ * (lifted high, slammed down where it was, its body jolted, dust kicked up). Each moment eased in and out, so nothing leaps. */
+export const BOAR_STAND_AT = {
+  breaths: 3,
+  snorts: [0.55, 3.25],
+  snortLong: 0.55,
+  shake: [1.75, 2.75] as const,
+  stamps: [[0, 1.05], [1, 3.85]] as const,
+  stampLong: 0.62,
+};
+const bumpOf = (t: number, a: number, b: number): number => (t <= a || t >= b ? 0 : Math.sin((Math.PI * (t - a)) / (b - a)) ** 2);
+const smooth01 = (v: number): number => { const c = clamp01(v); return c * c * (3 - 2 * c); };
+/** How far a stamp is at `u` seconds into it: the foot lifted high (slowly), held, then slammed down (fast, eased into the floor). */
+function stampLift(u: number): number {
+  const L = BOAR_STAND_AT.stampLong;
+  if (u <= 0 || u >= L) return 0;
+  const up = 0.34;
+  const hold = 0.44;
+  if (u < up) return smooth01(u / up);
+  if (u < hold) return 1;
+  // (down: accelerating into the floor over four frames)
+  const k = (u - hold) / (L - hold);
+  return 1 - k * k;
+}
 export function boarPoseAt(move: string, t: number): BoarPose {
   void move;
-  const a = (t / WS_STAND_LONG) * TAU;
-  const paw = clamp01(Math.sin(a * 2 + 0.3)) ** 2;
+  const T = WS_STAND_LONG;
+  const tt = ((t % T) + T) % T;
+  const A = BOAR_STAND_AT;
+  // (its breath: deep, three to the round)
+  const br = 0.5 - 0.5 * Math.cos((tt / T) * TAU * A.breaths);
+  // (a snort: its head thrown up fast and let down slower)
+  let snort = 0;
+  for (const s0 of A.snorts) {
+    const u = tt - s0;
+    if (u > 0 && u < A.snortLong) snort = Math.max(snort, u < 0.15 ? smooth01(u / 0.15) : 1 - smooth01((u - 0.15) / (A.snortLong - 0.15)));
+  }
+  // (its head shaken like a dog's: three swings, hard, eased in and out)
+  const [h0, h1] = A.shake;
+  const env = bumpOf(tt, h0, h1);
+  const ph = ((tt - h0) / (h1 - h0)) * TAU * 2.5;
+  const shake = env * Math.sin(ph);
+  const flap = -env * Math.cos(ph);
+  // (its stamps)
+  const lift = [0, 0];
+  let jolt = 0;
+  for (const [leg, s0] of A.stamps) {
+    const u = tt - s0;
+    lift[leg] = Math.max(lift[leg], stampLift(u));
+    // (the slam: its body jolted down and over as the foot strikes, and settling)
+    const after = u - A.stampLong;
+    if (after > -0.06 && after < 0.36) jolt = Math.max(jolt, bumpOf(after, -0.06, 0.36));
+  }
   return {
     ...BOAR_STAND,
-    z: -0.3 * Math.sin(a * 2),
-    pitch: 0.6 * Math.sin(a * 2),
-    low: BOAR_STAND.low + 3 * Math.sin(a + 0.4) - 2 * clamp01(Math.sin(a * 2 - 1)),
-    look: 4 * Math.sin(a * 0.5),
-    // (a forefoot pawing the floor: lifted straight up off its spot (its knee forward as its shank folds back), struck down where it was)
-    legs: [[2 + 16 * paw, -4 - 36 * paw], [2, -4], [-8, 14], [-8, 14]],
-    breath: 0.5 + 0.5 * Math.sin(a * 2),
-    sway: t / WS_STAND_LONG,
+    z: 0.9 * br - 0.9 * jolt,
+    pitch: 1.2 * br - 1.2 * snort + 1.5 * jolt,
+    roll: 2.0 * shake * 0.6 + (lift[0] - lift[1]) * 1.6,
+    // (its head thrown up as it lifts a foot to stamp, and brought down hard with it)
+    low: BOAR_STAND.low - 2 * br - 14 * snort - 13 * Math.max(lift[0], lift[1]) + 5 * jolt,
+    look: 3 * Math.sin((tt / T) * TAU) + 11 * shake,
+    tilt: 22 * shake,
+    flap,
+    legs: BOAR_STAND.legs,
+    lift: [lift[0], lift[1], 0, 0],
+    breath: br,
+    sway: tt / T + 0.25 * shake,
   };
+}
+/** WHAT FLIES OFF IT, laid after its edge: a blast of breath out of its snout at each snort, cold, white, spreading and thinning;
+ * dust kicked up round a stamped hoof. Never a glow. */
+const BREATH: readonly string[] = ['#e6e4ea', '#c9c6d0', '#a8a4b0', '#878392'];
+const DUST: readonly string[] = ['#c4b8b4', '#9e9294', '#786c74'];
+export function boarGrains(t: number): [V3, string, number][] {
+  const out: [V3, string, number][] = [];
+  const T = WS_STAND_LONG;
+  const tt = ((t % T) + T) % T;
+  for (const s0 of BOAR_STAND_AT.snorts) {
+    const u = tt - s0 - 0.08;
+    if (u <= 0 || u > 0.75) continue;
+    const P = boarPoseAt('stand', s0 + 0.1);
+    const H = headOf(P);
+    // (a puff out of each nostril: blown forward and a little down, slowing, swelling and thinning as it goes, rising as it cools)
+    const fh = norm([H.f[0], H.f[1], 0], [1, 0, 0]);
+    const blow = norm(add(fh, [0, 0, -0.25]), fh);
+    const age = u / 0.75;
+    for (const k of [-1, 1]) {
+      const nose = H.at(22.6, k * 1.2, -8.2);
+      const mid = add(add(add(nose, mul(blow, 11 * S * (1 - Math.exp(-u * 5)))), mul(H.l, k * 2.2 * u * S)), [0, 0, 5 * u * u]);
+      const r = (1.2 + 6 * Math.sqrt(u)) * S;
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * TAU + 2.4 * hash(i, k + 3, 8841);
+        const rr = r * Math.sqrt(0.15 + 0.85 * hash(i, k + 4, 8842));
+        const p: V3 = add(mid, [Math.cos(a) * rr, Math.sin(a) * rr * 0.9, Math.sin(a * 2 + 1) * rr * 0.35]);
+        // (it thins from its edge in: the outer grains go first)
+        if (hash(i, Math.floor(u * 20), 8844) < age * (0.45 + 0.6 * (rr / r))) continue;
+        out.push([p, BREATH[Math.min(3, Math.floor(age * 3 + (rr / r) * 1.2))], age < 0.55 && rr < r * 0.7 ? 2 : 1]);
+      }
+    }
+  }
+  for (const [leg, s0] of BOAR_STAND_AT.stamps) {
+    const u = tt - s0 - BOAR_STAND_AT.stampLong;
+    if (u <= 0 || u > 0.5) continue;
+    const sole = boarSoles(boarPoseAt('stand', s0 + BOAR_STAND_AT.stampLong + 0.02))[leg];
+    // (a ring of grit thrown out low round the hoof as it strikes, flying out, falling back and thinning)
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * TAU + hash(i, leg, 8845);
+      const d = (3 + 14 * u) * (0.55 + 0.6 * hash(i, 9, 8846)) * S;
+      const p: V3 = [sole[0] + Math.cos(a) * d, sole[1] + Math.sin(a) * d * 0.8, 0.5 + (16 * u - 30 * u * u) * (0.6 + 0.8 * hash(i, 11, 8847))];
+      if (p[2] < 0.2 || hash(i, Math.floor(u * 30), 8848) < u * 1.5) continue;
+      out.push([p, DUST[Math.min(2, Math.floor(u * 6))], 1]);
+    }
+  }
+  return out;
 }
 
 function wsBits(st: Stage, m: Moment): Bit[] {
@@ -659,7 +818,7 @@ function wsBits(st: Stage, m: Moment): Bit[] {
   boarBits(P, put, near);
   robe(put, s, P.sway);
   // (his left hand clawed, fingers spread, writing on the air; his right closed round the staff)
-  arm(put, s, 'L', s.chest[2], 0.3, 1.7);
+  arm(put, s, 'L', s.chest[2], 0.32, 1.25);
   arm(put, s, 'R', s.chest[2], 1, 0);
   // (his neck: thin, the cords of it standing out)
   put('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
@@ -670,10 +829,10 @@ function wsBits(st: Stage, m: Moment): Bit[] {
 }
 
 /** HIS STAND IN THE SADDLE: 3.2 s round. */
-export const WS_STAND_LONG = 3.2;
+export const WS_STAND_LONG = 4.8;
 function standMotion(): Motion {
   const keys: Key3[] = [];
-  const N = 32;
+  const N = Math.round(WS_STAND_LONG * 30);
   for (let i = 0; i <= N; i++) {
     const t = (i / N) * WS_STAND_LONG;
     keys.push({ at: t, ease: 'lin', pose: riderPose(boarPoseAt('stand', t), t) });
@@ -695,7 +854,7 @@ export function wsMob(): Mob {
     walk: stand,
     reel: stand,
     dying: stand,
-    idleFrames: 32,
+    idleFrames: 48,
     idleFps: 10,
     walkFrames: 32,
     walkFps: 10,
@@ -709,6 +868,7 @@ export function wsMob(): Mob {
     canvas: WS_CANVAS,
     trueBack: true,
     bits: wsBits,
+    grains: (_st: Stage, m: Moment) => boarGrains(m.t),
   } as unknown as Mob;
 }
 
