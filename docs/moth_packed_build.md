@@ -5,10 +5,14 @@ The queue's `keep-moths-pictures-from-filling-memory`, pulled by a chat of its o
 (queue item keep-moths-pictures-from-filling-memory).” He had not asked for the item itself: the Monsters-before-play chat found
 it baking the floors' monsters.
 
-Branch `build/moth-packed`, cut from `main` at e1b3274 (25.3.8): a fast-forward for `main` while it stands there. `PACKED.on` is
+Branch `build/moth-packed`, cut from `main` at e1b3274 (25.3.8), WITH MAIN 25.3.9 (0b79b7ab) MERGED IN at 9e8fc1a0 (its message
+says "into try/moth-on-2539", the scratch branch it was tried on): a fast-forward for `main` while it stands at 0b79b7ab. One
+conflict, in `engine/px.ts` retireSprite: 25.3.9's `imgPx(s)` (a sheet's frame not cut to be counted) kept, with this branch's
+`ms` and due times. `PACKED.on` is
 ON on the branch (`src/render/painter.ts`). IT CHANGES NOTHING HE SEES: the same pictures, every pixel (checked, below), but a
 stand-in for a frame or two as a move of the Moth begins. Off, or where its worker cannot pack, the Moth is as it was.
-NO NEW BAKE: the bakes' marks on the branch are main's (heroes 1fdc8d09059a, townsfolk d4c898fe370d, monsters 1cbff15ba80a).
+NO NEW BAKE: the bakes' marks on the branch are main's (on 25.3.9 and on the branch alike: heroes 1fdc8d09059a, townsfolk
+d4c898fe370d, monsters 4f510caa1c9d; 25.3.9's own change to engine/px.ts moved the monsters' from 1cbff15ba80a, not this branch).
 `art/kit.ts` is in every bake's code: it is not touched.
 
 ## What was wrong (measured on main before the change)
@@ -105,8 +109,8 @@ published page's playtests; the whole suite.
 
 ## For the main chat, bringing it in
 
-1. Merge `build/moth-packed` (a fast-forward while main is at e1b3274).
-2. The release build: NO NEW BAKE (the marks are main's).
+1. Merge `build/moth-packed` (a fast-forward while main is at 0b79b7ab, 25.3.9).
+2. The release build: no bake for this branch (the marks are main's).
 3. The published page's playtests, with these two among them: `tools/scenarios/moth_memory.mjs` on a phone's screen
    (`--serve --touch --size 844x390 --dpr 3 --init tools/mem_probe.js`; SECONDS, PHASES, DIE, WHO=1 for what holds the
    pictures) and `tools/scenarios/moth_packed_check.mjs` (`--serve --size 1280x720`).
@@ -118,3 +122,10 @@ published page's playtests; the whole suite.
    one name each in `PACKED.figures`, then weighed.
 
 UNIT, on the code's last commit: `UNIT DONE ed2707e94d: 29 files, 29 passed, 0 failed (0 passed alone)` (the six named and the core 23).
+UNIT, on the merge with 25.3.9: `UNIT DONE 9e8fc1a045: 28 files, 28 passed, 0 failed (0 passed alone)` (moth_packed,
+memory_floors, sheet_sprite, kit, figure and the core). ON THE MERGE TOO, a readable build of it (`dist/moth_merged.html`):
+`moth_packed_check.mjs`, 248 frames in hand, none unlike; `moth_memory.mjs` on a phone's screen, 160 s (PHASES=60,110, DIE=140),
+clean: the page 983 to 1,179 MB through the fight, its pictures handed over 49 to 178 MB, canvases 114 to 196 MB, then 783 MB
+once the floor was left. In its last phase, as it came down on the book, 19 frames over 50 ms in 20 s: its perch's frames not
+painted yet stood in for, and its effects' pictures (the wind of its beat, its words) painted the first time they were shown,
+where the game is played, as on main.
