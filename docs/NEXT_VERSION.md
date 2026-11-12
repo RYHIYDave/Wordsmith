@@ -4594,3 +4594,7 @@ His words that morning: 07:32, “I really just need the queue cleared and we ca
 
 The queue page's ship list, taken whole: the floors' monsters in packs, the Tinkerer's art set up in parts, the Pack Collar's picker and the companion cards, a unique's pips (dark), floor 18's new reflections' art (dark; the wiring queued as wire-floor-18-new-reflections); and the queue's wire-shafts-rim-sounds (the Shaft's Rim's own sounds; the rare chime as any unique lands, dark). Marks: heroes 433864008c88, monsters 46328e6bc77d (packs), sounds b151ec214bc7, Colossus f133999cbf23, townsfolk d4c898fe370d. gh-pages 1206d580; the claude.ai page Version 114 (`1794511751-e2b5`), 228 files, no monsters' folder (the page's 256 MB a version: below, the handoff). The queue's add-missing-words-findings-to-words-doc was found already done (his Words doc, its section on what the set is missing, with a column for his call) and taken off.
 
+## VERSION 25.3.13, LIVE 12 NOV 2026 BY 15:03 (Eastern), BOTH ADDRESSES (the main chat of 12 Nov, session ...STLst)
+
+The ship list's build/look-builders-in-parts (the loading screens' long waits cut down) and the queue's bring-in-drowned-arm-picture: art/uniques-play2 (three uniques' pictures in play, dark), the Drowned Arm every 3 s and stunning, ally damage. Marks: monsters f8b89d74b5e9 (the same packs); the rest as 25.3.12. gh-pages 5a26388b; the claude.ai page Version 115 (`1794513817-4167`). His new rule for every chat (13:38): finish your own task, then ask before a new one. Next: the Living Shadow (ship list).
+
