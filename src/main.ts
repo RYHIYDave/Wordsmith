@@ -127,7 +127,7 @@ import { NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render'
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
 import { BakedHeroes } from './render/baked';
 import { BakedTownsfolk, TOWNSFOLK_BAKED } from './render/townsfolk_baked';
-import { BakedMonsters, MONSTERS_BAKED, bringsOf } from './render/monsters_baked';
+import { BakedMonsters, CUT_MS, MONSTERS_BAKED, bringsOf } from './render/monsters_baked';
 import { HEAVY_FIGURES, framesOf, paintOrder } from './art/bestiary';
 import type { MonsterFigure } from './art/bestiary';
 import { act1Stages } from './art/act1_figs/index';
@@ -403,8 +403,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // the floor's other pictures as it is left. His words, 11 Nov 2026, 21:30: “Explain to me why the game lags at literally every
   // new screen regardless of introducing loading screens?”: the floor's monsters were painted as he fought, the first time each
   // frame was shown. Where the files are not to be had, as before.)
-  const bakedMobs = BakedMonsters.make(() => art.bestiary);
+  // (`small`, a phone: a boss's pictures, a hundred to five hundred megabytes, are not taken in whole there: the painter's, as
+  // before. `slice`: how long at a time their frames are cut from the sheets: more under the loading screen than in play.)
+  const bakedMobs = BakedMonsters.make(() => art.bestiary, { small: scr.touch, slice: () => (loading ? CUT_MS.loading : CUT_MS.play) });
   renderer.bakedMobs = bakedMobs;
+  /** The place whose monsters' pictures were last asked for, and when (the clock on the wall: MONSTERS_BAKED.waitMost). */
+  let mobsFor: unknown = null;
+  let mobsAt = 0;
   /**
    * THE PLACE'S MONSTERS' PICTURES: asked for, the figures that stand in it and what they will call up or become
    * (render/monsters_baked.ts bringsOf; a boss with moves of his own calls the dead, as render.ts has it). True while any of
@@ -413,6 +418,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const mobPictures = (g: Game): boolean => {
     const b = bakedMobs;
     if (!b) return false;
+    if (mobsFor !== g.level) {
+      mobsFor = g.level;
+      mobsAt = performance.now();
+    }
     let coming = false;
     const seen = new Set<MonsterFigure>();
     const want = (f: MonsterFigure): void => {
@@ -429,7 +438,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       for (const o of bringsOf(f, (x) => act1Stages(x)?.next as MonsterFigure[] | undefined)) want(o);
       if (m.boss && movesOf(m)) want('skeleton');
     }
-    return coming;
+    // (waited for no longer than `waitMost` by the clock on the wall: after it he plays, and they go on coming)
+    return coming && performance.now() - mobsAt < MONSTERS_BAKED.waitMost;
   };
   // (the worker is started at once: the hero's pictures are wanted from the first moment)
   painter.warmGround();
@@ -1893,6 +1903,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       painter.restart();
       // (and every other figure but this place's own monsters': ACT 1's floors each bring their own kinds)
       art.bestiary.forgetOthers(new Set(g.monsters.map((m) => figureOf(m))));
+      // (THE FLOORS' MONSTERS BAKED: told of the new place, the last one's let go of: render/monsters_baked.ts)
+      bakedMobs?.newPlace();
       // (and what the kinds' effects kept that the place just left did not touch: render/act1_fx/kept.ts)
       forgetUnusedPictures();
       // (the films this place will want: the fifth floor's cage coming down and going up; on the four
@@ -2635,19 +2647,20 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     townsfolkBaked: TOWNSFOLK_BAKED,
     /**
      * THE FLOORS' MONSTERS BAKED (render/monsters_baked.ts): what has been taken in from their files and what failed (null: none
-     * to be had on this page); which of the figures standing here have come whole (null: one that is not baked, painted as
-     * before); and the switch (`monstersBaked.on`: off, the monsters are painted as the game is played, as before; a playtest
+     * to be had on this page); which of the figures standing here have come whole (null: one that is not taken in on this
+     * device, a boss on a phone or one that is not baked; 'no room': one left out of this place for want of room on a phone:
+     * each painted as before); and the switch (`monstersBaked.on`: off, the monsters are painted as the game is played, as before; a playtest
      * that throws the art's own switches puts it off first).
      */
-    bakedMobs: () => (bakedMobs ? { ...bakedMobs.stats, ms: { ...bakedMobs.stats.ms }, failed: [...bakedMobs.stats.failed], here: game ? Object.fromEntries([...new Set(game.monsters.filter((m) => !m.dead).map((m) => figureOf(m)))].map((f) => [f, bakedMobs.has(f) ? bakedMobs.done(f) : null])) : {} } : null),
+    bakedMobs: () => (bakedMobs ? { ...bakedMobs.stats, ms: { ...bakedMobs.stats.ms }, failed: [...bakedMobs.stats.failed], here: game ? Object.fromEntries([...new Set(game.monsters.filter((m) => !m.dead).map((m) => figureOf(m)))].map((f) => [f, !bakedMobs.has(f) ? null : bakedMobs.leftOut(f) ? 'no room' : bakedMobs.done(f)])) : {} } : null),
     monstersBaked: MONSTERS_BAKED,
     /** (for the tests) the failures forgotten: each figure may be asked for once more. */
     bakedMobsAgain: (): void => bakedMobs?.again(),
     /**
      * (for the tests) A FIGURE'S PICTURES IN HAND AGAINST THE GAME'S OWN PAINTING OF THEM: `n` of its places, spread through the
      * order they are wanted, each painted afresh here (a bestiary of its own) and held against the picture the
-     * game has there, pixel by pixel and part by part. `fromFiles`: how many of its places hold a picture that was not painted
-     * on this page (the bake's); `unpainted`: how many hold none yet.
+     * game has there, pixel by pixel and part by part. `fromFiles`: how many of its places hold a picture given from the
+     * bake's files (not painted on this page); `unpainted`: how many hold none yet.
      */
     bakedMobsCheck: (figure: MonsterFigure, n = 12): { places: number; fromFiles: number; unpainted: number; checked: number; differ: number; worst: string } => {
       const mine = art.bestiary.of(figure);
@@ -2661,7 +2674,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         const d = Object.getOwnPropertyDescriptor(lists[v][l], i);
         const sp = d && 'value' in d && d.value ? (d.value as Sprite) : null;
         if (!sp) out.unpainted++;
-        else if (typeof (sp.img as unknown as { getContext?: unknown }).getContext !== 'function') out.fromFiles++;
+        else if (bakedMobs?.isBaked(sp)) out.fromFiles++;
         return sp;
       });
       const cv = document.createElement('canvas');

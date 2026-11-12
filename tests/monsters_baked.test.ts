@@ -17,7 +17,8 @@ import type { Bestiary, MonsterFigure } from '../src/art/bestiary';
 import type { ActorArt } from '../src/art/actor_types';
 import { PAINTING } from '../src/art/kit';
 import type { Sprite } from '../src/engine/px';
-import { BakedMonsters, HOLD_MOST_MB, MONSTERS_BAKED, STAND_IN_MS, TOO_BIG, bakeName, bakedFigures, bringsOf, figureLens, monsterBakeMark } from '../src/render/monsters_baked';
+import { BakedMonsters, CUT_MS, HOLD_MOST_MB, MONSTERS_BAKED, SMALL_MOST_MB, STAND_IN_MS, TOO_BIG, bakeName, bakedFigures, bringsOf, figureLens, monsterBakeMark } from '../src/render/monsters_baked';
+import type { BakedMonstersOptions, Sheet } from '../src/render/monsters_baked';
 import type { MonsterBakeFile } from '../src/render/monsters_baked';
 import { COLOSSUS } from '../src/game/colossus_fight';
 import { ACT1_KINDS, ACT2_KINDS, HIGH_KINDS } from '../src/game/types';
@@ -103,7 +104,8 @@ test('what a figure brings into its floor is asked for with it: what it becomes,
 // ---------------------------------------------------------------------------------------------
 // THE TAKING IN, with the bestiary's own pictures of the cave bat (none of them painted: reading a frame is what paints it)
 // and stand-ins for the page: a bake of the bat laid out from the game's own order of its frames, a frame for each place but
-// the last two, which show the same picture; two sheets; and pictures that only say when they are closed.
+// the last two, which show the same picture; two sheets, each opened and its frames cut from it a few at a time; and pictures
+// that only say when they are let go of.
 
 interface World {
   /** Let the second sheet come (it waits, where a test holds it back). */
@@ -111,16 +113,20 @@ interface World {
   bestiary: Bestiary;
   file: MonsterBakeFile;
   places: [number, number, number][];
+  /** Sheets opened and frames cut; sheets closed and frames let go of. */
   opened: number;
   closed: number;
+  /** How many turns the cutting took. */
+  turns: number;
   fetched: string[];
-  get: (name: string) => Promise<Response>;
+  /** What the bake is made with: its files, its sheets, its one figure, and "a little later". */
+  opts: BakedMonstersOptions;
 }
 
 const FIG: MonsterFigure = 'bat';
 
-function world(change: (f: MonsterBakeFile) => void = () => {}, missing: string[] = [], hold = false): World {
-  const w = { opened: 0, closed: 0, fetched: [] as string[] } as World;
+function world(change: (f: MonsterBakeFile) => void = () => {}, missing: string[] = [], hold = false, more: Partial<BakedMonstersOptions> & { noCanvasAfter?: number; slow?: boolean } = {}): World {
+  const w = { opened: 0, closed: 0, turns: 0, fetched: [] as string[] } as World;
   const held = new Promise<void>((ok) => { w.rest = ok; });
   w.bestiary = makeBestiary();
   const art = w.bestiary.of(FIG);
@@ -140,16 +146,32 @@ function world(change: (f: MonsterBakeFile) => void = () => {}, missing: string[
     lens: figureLens(art), at,
   };
   change(w.file);
-  w.get = async (name: string): Promise<Response> => {
+  const get = async (name: string): Promise<Response> => {
+    w.fetched.push(name);
+    const ok = !missing.includes(name);
+    return { ok, status: ok ? 200 : 404, json: async () => JSON.parse(JSON.stringify(w.file)) } as unknown as Response;
+  };
+  let cuts = 0;
+  const open = async (name: string): Promise<Sheet> => {
     w.fetched.push(name);
     if (hold && name === 'bat-1.png') await held;
-    const ok = !missing.includes(name);
-    return { ok, status: ok ? 200 : 404, json: async () => JSON.parse(JSON.stringify(w.file)), blob: async () => ({}) } as unknown as Response;
-  };
-  (globalThis as unknown as { createImageBitmap: unknown }).createImageBitmap = async (_from: unknown, _x?: number, _y?: number, bw?: number, bh?: number) => {
+    if (missing.includes(name)) throw new Error(`${name}: will not open`);
     w.opened++;
-    return { width: bw ?? 16, height: bh ?? 16, close: () => { w.closed++; } };
+    return {
+      cut(_x, _y, cw, ch) {
+        if (more.noCanvasAfter !== undefined && cuts >= more.noCanvasAfter) return null;
+        cuts++;
+        // (a slow device: a frame takes longer to cut than a turn is long)
+        if (more.slow) for (const t0 = performance.now(); performance.now() - t0 < 1.2; );
+        w.opened++;
+        return { width: cw, height: ch, close: () => { w.closed++; } } as unknown as HTMLCanvasElement;
+      },
+      close() { w.closed++; },
+    };
   };
+  const later = (f: () => void): void => { w.turns++; setTimeout(f, 0); };
+  const { noCanvasAfter: _n, slow: _s, ...given } = more;
+  w.opts = { get, open, names: [FIG], later, ...given };
   return w;
 }
 
@@ -175,7 +197,7 @@ test('taken in: every place of the figure is given its picture from the sheets, 
   const before = PAINTING.frames;
   const own = listsOf(art)[v0][l0][i0];
   assert.equal(PAINTING.frames, before + 1);
-  const b = new BakedMonsters('m1', () => w.bestiary, w.get, [FIG]);
+  const b = new BakedMonsters('m1', () => w.bestiary, w.opts);
   assert.equal(b.settled(FIG), false, 'not asked for yet: the loading screen has it to wait for');
   assert.equal(b.take(FIG), true, 'coming');
   assert.equal(b.coming(FIG), true);
@@ -188,8 +210,11 @@ test('taken in: every place of the figure is given its picture from the sheets, 
   assert.equal(unpainted(w, art), 0, 'every place has its picture');
   assert.equal(PAINTING.frames, before + 1, 'none painted here');
   assert.ok(listsOf(art)[v0][l0][i0] === own, 'the place the game had painted keeps its own picture');
-  // (n - 1 frames in the file; the one for the place painted already is not wanted)
-  assert.deepEqual({ ...b.stats, ms: 0 }, { given: n - 2, unwanted: 1, loads: 1, stopped: 0, ms: 0, failed: [] });
+  // (n - 1 frames in the file; the one for the place painted already is not wanted, and is not cut)
+  assert.deepEqual({ ...b.stats, ms: 0, cutMs: 0, cutLongest: 0 }, { given: n - 2, unwanted: 1, loads: 1, stopped: 0, noRoom: 0, ms: 0, cutMs: 0, cutLongest: 0, failed: [] });
+  // (and which of its pictures are the bake's is known)
+  assert.equal(b.isBaked(listsOf(art)[v0][l0][i0]), false, 'the one painted here');
+  assert.equal(b.isBaked(listsOf(art)[w.places[0][0]][w.places[0][1]][w.places[0][2]]), true);
   // (a picture shown in two places is one picture; with its other parts as baked)
   const [va, la, ia] = w.places[n - 2];
   const [vb, lb, ib] = w.places[n - 1];
@@ -197,9 +222,9 @@ test('taken in: every place of the figure is given its picture from the sheets, 
   const [v1, l1, i1] = w.places[1];
   assert.equal(listsOf(art)[v1][l1][i1].ay, 2);
   assert.equal(listsOf(art)[v1][l1][i1].density, 2);
-  // (the two sheets and the frame nobody wanted are closed; those in hand are not)
-  assert.equal(w.opened, 2 + (n - 1));
-  assert.equal(w.closed, 2 + 1);
+  // (the two sheets opened and closed again; a canvas cut for each frame wanted, all in hand)
+  assert.equal(w.opened, 2 + (n - 2));
+  assert.equal(w.closed, 2);
   // (and it is the same asked again: nothing more is fetched)
   assert.equal(b.take(FIG), true);
   assert.equal(w.fetched.length, 3);
@@ -207,7 +232,7 @@ test('taken in: every place of the figure is given its picture from the sheets, 
 
 test('let go with the floor: forgotten by the bestiary, its pictures\' room is given back, and they come again the next time it is asked for', async () => {
   const w = world();
-  const b = new BakedMonsters('m1', () => w.bestiary, w.get, [FIG]);
+  const b = new BakedMonsters('m1', () => w.bestiary, w.opts);
   b.take(FIG);
   await settle(b);
   const n = w.places.length;
@@ -234,7 +259,7 @@ test('let go with the floor: forgotten by the bestiary, its pictures\' room is g
 test('forgotten while its pictures are still coming: the load stops, nothing of it is left in hand, and nothing is painted', async () => {
   const w = world(() => {}, [], true);
   const before = PAINTING.frames;
-  const b = new BakedMonsters('m1', () => w.bestiary, w.get, [FIG]);
+  const b = new BakedMonsters('m1', () => w.bestiary, w.opts);
   b.take(FIG);
   // (the first sheet's have come; the second is held back)
   for (let n = 0; n < 400 && w.fetched.length < 3; n++) await new Promise((r) => setTimeout(r, 1));
@@ -256,7 +281,7 @@ test('forgotten while its pictures are still coming: the load stops, nothing of 
 
 test('still coming after five seconds (a slow line): no longer stood in for, painted as it is shown as before, and the files fill the rest as they come', async () => {
   const w = world(() => {}, [], true);
-  const b = new BakedMonsters('m1', () => w.bestiary, w.get, [FIG]);
+  const b = new BakedMonsters('m1', () => w.bestiary, w.opts);
   b.take(FIG);
   assert.equal(b.coming(FIG), true);
   const real = performance.now;
@@ -286,7 +311,7 @@ test('where they will not come (another bake\'s file, a figure not as it was bak
   ];
   for (const [what, make, some] of cases) {
     const w = make();
-    const b = new BakedMonsters('m1', () => w.bestiary, w.get, [FIG]);
+    const b = new BakedMonsters('m1', () => w.bestiary, w.opts);
     assert.equal(b.take(FIG), true, what);
     await settle(b);
     assert.equal(b.done(FIG), false, what);
@@ -308,9 +333,74 @@ test('where they will not come (another bake\'s file, a figure not as it was bak
   }
 });
 
+test('the frames are cut a few at a time, the page given back to draw between: a turn is never long, however slow the device', async () => {
+  // (a device on which one frame takes longer to cut than a turn is long: one a turn, never none)
+  const w = world(() => {}, [], false, { slow: true, slice: () => 0.5 });
+  const b = new BakedMonsters('m1', () => w.bestiary, w.opts);
+  b.take(FIG);
+  await settle(b);
+  assert.equal(b.done(FIG), true);
+  const n = w.places.length;
+  assert.equal(b.stats.given, n - 1);
+  assert.ok(w.turns >= n - 1, `${w.turns} turns for ${n - 1} frames`);
+  assert.ok(b.stats.cutLongest < 15, `the longest turn ${b.stats.cutLongest.toFixed(1)} ms`);
+  // (and where it is quick, many a turn: under the loading screen six thousandths of a second at a time, two in play)
+  const q = world();
+  const c = new BakedMonsters('m1', () => q.bestiary, q.opts);
+  c.take(FIG);
+  await settle(c);
+  assert.ok(q.turns < 20, `${q.turns} turns`);
+  assert.deepEqual(CUT_MS, { loading: 6, play: 2 });
+});
+
+test('a phone (little room): a boss\'s pictures are not taken in, the painter\'s as before; and no more of the others at once than it has room for', async () => {
+  const w = world(() => {}, [], false, { small: true, names: [FIG, 'queen', 'brute'] });
+  const b = new BakedMonsters('m1', () => w.bestiary, w.opts);
+  assert.equal(b.has('queen'), false);
+  assert.equal(b.take('queen'), false);
+  assert.equal(b.settled('queen'), true, 'nothing for the loading screen to wait for');
+  assert.equal(b.has(FIG), true);
+  assert.equal(b.take(FIG), true);
+  await settle(b);
+  assert.equal(b.done(FIG), true, 'a small one comes as anywhere');
+  // (where there is room for all of it, a boss is the bake's)
+  const big = new BakedMonsters('m1', () => w.bestiary, { ...w.opts, small: false });
+  assert.equal(big.has('queen'), true);
+  // (the room: 64 MB of them at once. A figure that would take it over is left out, as before, and asked for again in the next place)
+  assert.equal(SMALL_MOST_MB, 64);
+  const full = world((f) => { f.frames[0][3] = 4000; f.frames[0][4] = 4001; }, [], false, { small: true });
+  const c = new BakedMonsters('m1', () => full.bestiary, full.opts);
+  assert.equal(c.take(FIG), true);
+  await settle(c);
+  assert.equal(c.done(FIG), false);
+  assert.equal(c.settled(FIG), true);
+  assert.deepEqual({ noRoom: c.stats.noRoom, failed: c.stats.failed, given: c.stats.given }, { noRoom: 1, failed: [], given: 0 });
+  assert.equal(c.take(FIG), false, 'not asked for again in this place');
+  c.newPlace();
+  assert.equal(c.take(FIG), true, 'but in the next');
+  await settle(c);
+});
+
+test('no more canvases to be had (an iPhone\'s limit met): the figure coming stops, nothing more is taken in on this page, and all are painted as before', async () => {
+  const w = world(() => {}, [], false, { noCanvasAfter: 5, names: [FIG, 'brute'] });
+  const b = new BakedMonsters('m1', () => w.bestiary, w.opts);
+  assert.equal(b.take(FIG), true);
+  await settle(b);
+  assert.equal(b.done(FIG), false);
+  assert.equal(b.stats.given, 5);
+  assert.equal(b.stats.failed.length, 1);
+  assert.ok(/no room for more pictures/.test(b.stats.failed[0]), b.stats.failed[0]);
+  assert.equal(b.take(FIG), false);
+  assert.equal(b.take('brute'), false, 'nor any other figure');
+  assert.equal(b.settled('brute'), true);
+  // (the five that came are the figure's own, let go of with it; both sheets are closed)
+  w.bestiary.forget(FIG);
+  assert.equal(w.opened, w.closed);
+});
+
 test('a figure that is not baked, and the switch off: nothing is fetched, nothing waited for', async () => {
   const w = world();
-  const b = new BakedMonsters('m1', () => w.bestiary, w.get, [FIG]);
+  const b = new BakedMonsters('m1', () => w.bestiary, w.opts);
   assert.equal(b.take('brute'), false);
   assert.equal(b.settled('brute'), true);
   assert.equal(b.coming('brute'), false);

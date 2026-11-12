@@ -8,6 +8,8 @@
 // picture not painted on this page; some of each held against the game's own painting of them, pixel by pixel; then the bot
 // plays at the game's own speed and the game itself paints no monster's frame (what it does paint is named: a readable build);
 // then on to the next floor, the last one's pictures let go of. Lines marked !! are problems.
+// WITH --touch (a phone: little room) a boss's pictures are not taken in (the painter's, as before), nor more of the others at
+// once than there is room for; WITHOUT it (a desk's screen) every figure of the bake's is.
 //   FILE=1: the page opened as a file (no --serve): nothing is fetched, and the monsters are painted as before.
 export default async function (page) {
   const errs = [];
@@ -59,9 +61,10 @@ export default async function (page) {
       if (at.st.failed.length) bad(`failed: ${at.st.failed.join('; ')}`);
       for (const f of at.figs) {
         const c = at.checks[f];
-        // (one that is not baked: the Drowned Eye's kind while the Colossus is floor 10's, the Moth: as before)
-        if (at.st.here[f] === null) {
-          console.log(`   (${f}: not baked, as before: ${c.unpainted} of its ${c.places} places hold no picture)`);
+        // (one that is not taken in here: the Drowned Eye's kind while the Colossus is floor 10's, the Moth; on a phone's
+        // screen a boss, and what there was no room for with the place's others: as before)
+        if (at.st.here[f] === null || at.st.here[f] === 'no room') {
+          console.log(`   (${f}: ${at.st.here[f] === null ? 'not taken in here' : 'no room for it with the others'}, as before: ${c.unpainted} of its ${c.places} places hold no picture)`);
           continue;
         }
         if (!at.st.here[f]) bad(`${f}: its pictures had not come whole as the loading screen lifted`);

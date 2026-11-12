@@ -166,17 +166,20 @@ function file(): string {
 }
 
 /**
- * A sheet as written (a PNG, base64) checked against the frames it holds: each frame cut from it as the game cuts it
- * (render/monsters_baked.ts), pixel by pixel against the frame as painted. How many pixels differ, and by how much at most.
+ * A sheet as written (a PNG, base64) checked against the frames it holds: each frame cut from it AS THE GAME CUTS IT
+ * (render/monsters_baked.ts openSheet: the file read as a picture, the frame drawn out of it into a canvas of its own), pixel
+ * by pixel against the frame as painted. How many pixels differ, and by how much at most.
  */
 async function check(n: number, png: string): Promise<{ frames: number; differ: number; most: number }> {
   const m = have();
   const bin = atob(png);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  const sheetBmp = await createImageBitmap(new Blob([bytes], { type: 'image/png' }), { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
-  const cv = document.createElement('canvas');
-  const g = cv.getContext('2d', { willReadFrequently: true })!;
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = url;
+  await img.decode();
   let count = 0;
   let differ = 0;
   let most = 0;
@@ -184,11 +187,11 @@ async function check(n: number, png: string): Promise<{ frames: number; differ: 
     const [s, x, y, w, h] = m.file.frames[fi];
     if (s !== n) continue;
     count++;
-    const bmp = await createImageBitmap(sheetBmp, x, y, w, h, { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
+    const cv = document.createElement('canvas');
     cv.width = w;
     cv.height = h;
-    g.drawImage(bmp, 0, 0);
-    bmp.close();
+    const g = cv.getContext('2d')!;
+    g.drawImage(img, x, y, w, h, 0, 0, w, h);
     const got = g.getImageData(0, 0, w, h).data;
     const want = m.sources[fi].getContext('2d')!.getImageData(0, 0, w, h).data;
     for (let i = 0; i < got.length; i += 4) {
@@ -198,10 +201,11 @@ async function check(n: number, png: string): Promise<{ frames: number; differ: 
         most = Math.max(most, d);
       }
     }
+    cv.width = 0;
+    cv.height = 0;
   }
-  sheetBmp.close();
-  cv.width = 0;
-  cv.height = 0;
+  img.src = '';
+  URL.revokeObjectURL(url);
   return { frames: count, differ, most };
 }
 
