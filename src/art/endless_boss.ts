@@ -121,6 +121,11 @@ export interface BoarPose {
   lift?: readonly [number, number, number, number];
   /** HIS POWER IN IT (0 ... 1): the throb of pink in its eyes and the runes in its armour. */
   pulse?: number;
+  /** ITS HOOVES PUT ON SPOTS (the moves): for each that is, its sole (where it is, as the boar's own points are) and how far its
+   * pastern is folded back (degrees); null, as `lift` or `legs` has it. */
+  feet?: ReadonlyArray<readonly [number, number, number, number] | null>;
+  /** HIM IN THE SADDLE, as it moves under him: leaning forward into a charge (degrees), braced back against a stop (degrees). */
+  ride?: { lean: number; brace: number };
 }
 export const BOAR_STAND: BoarPose = {
   x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, low: 6, look: 0,
@@ -160,40 +165,54 @@ function legOf(P: BoarPose, i: number): { top: V3; knee: V3; fet: V3; end: V3 } 
   const knee = add(top, mul(dir(a1), l1 * S));
   const fet = add(knee, mul(dir(a1 + a2), l2 * S));
   const end = add(fet, mul(dir(a1 + a2 + 22), l3 * S));
-  if (!P.lift) return { top, knee, fet, end };
-  // PLANTED: its hoof where it stands (its spot as it stands square, carried with it if it has moved), lifted straight up off it
-  // by `lift`; the pastern as it stands; the knee (forward on a foreleg) or the hock (back on a hind) bent to reach
-  const R = PLANT[i];
+  // WHERE ITS HOOF GOES, if it is put somewhere: its sole on a spot (the moves: galloping, skidding, rearing), and how far its
+  // pastern folds back; or, standing, PLANTED where it stands, lifted off it to stamp
   const c = Math.cos(P.yaw * D), sn = Math.sin(P.yaw * D);
-  const at = (v: V3): V3 => [P.x + v[0] * c - v[1] * sn, P.y + v[0] * sn + v[1] * c, v[2]];
-  // (lifted, its hoof comes up and out in front of its chest, under its jaw where it is seen, its pastern folding back so the
-  // hoof hangs, its sole to the rear; then struck back down where it stood)
-  const p = P.lift[i];
-  const fh = norm([c, sn, 0], [1, 0, 0]);
-  const up: V3 = add([0, 0, p * STAMP_UP * S], mul(fh, p * STAMP_OUT * S));
-  const pFet = add(at(R.fet), up);
-  const a = (STAND_PASTERN - STAMP_FOLD * p) * D;
-  const pEnd = p > 0 ? add(pFet, mul(add(mul(fh, Math.sin(a)), [0, 0, -Math.cos(a)]), l3 * S)) : add(at(R.end), up);
+  const fh: V3 = [c, sn, 0];
+  const pastern = (fold: number): V3 => {
+    const a = (REST_PASTERN[i] - fold) * D;
+    return mul(add(mul(fh, Math.sin(a)), [0, 0, -Math.cos(a)]), l3 * S);
+  };
+  let pEnd: V3;
+  let pv: V3;
+  const F = P.feet?.[i];
+  if (F) {
+    pv = pastern(F[3]);
+    pEnd = [F[0], F[1], F[2] + SOLE * S];
+  } else if (P.lift) {
+    // (its spot as it stands square, carried with it if it has moved; lifted, its hoof comes up and out in front of its chest,
+    // under its jaw where it is seen, its pastern folding back so the hoof hangs, its sole to the rear; then struck back down)
+    const R = PLANT[i];
+    const at = (v: V3): V3 => [P.x + v[0] * c - v[1] * sn, P.y + v[0] * sn + v[1] * c, v[2]];
+    const p = P.lift[i];
+    const up: V3 = add([0, 0, p * STAMP_UP * S], mul(fh, p * STAMP_OUT * S));
+    pv = pastern(STAMP_FOLD * p);
+    pEnd = add(add(at(R.fet), up), pastern(0));
+    pEnd = add(sub(pEnd, pastern(0)), pv);
+  } else return { top, knee, fet, end };
+  // (the knee forward on a foreleg, the hock back on a hind, bent to reach)
+  const pFet = sub(pEnd, pv);
   const L1 = l1 * S;
   const L2 = l2 * S;
   const v = sub(pFet, top);
   const d = Math.max(Math.abs(L1 - L2) + 0.01, Math.min(L1 + L2 - 0.01, len(v)));
   const u = norm(v, [0, 0, -1]);
-  const fw0 = turned(P, [1, 0, 0]);
-  const want = mul(norm([fw0[0], fw0[1], 0], [1, 0, 0]), i < 2 ? 1 : -1);
+  const want = mul(fh, i < 2 ? 1 : -1);
   const n = norm(sub(want, mul(u, want[0] * u[0] + want[1] * u[1] + want[2] * u[2])), want);
   const ca = (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d);
   const sa = Math.sqrt(Math.max(0, 1 - ca * ca));
   const kneeIK = add(top, add(mul(u, L1 * ca), mul(n, L1 * sa)));
   const fetIK = add(top, mul(u, d));
-  return { top, knee: kneeIK, fet: fetIK, end: add(fetIK, sub(pEnd, pFet)) };
+  return { top, knee: kneeIK, fet: fetIK, end: add(fetIK, pv) };
 }
+/** How far a hoof's end stands above the floor (its sole; its own lengths), and each pastern's slope standing (degrees forward). */
+const SOLE = 1.8;
+const REST_PASTERN = [0, 1, 2, 3].map((i) => BOAR_STAND.legs[i][0] + BOAR_STAND.legs[i][1] + 22);
 /** How high a stamp lifts a hoof off the floor, how far out in front it brings it, how far its pastern folds (its own lengths,
  * degrees), and the pastern's slope as it stands (forward of straight down, degrees). */
 const STAMP_UP = 7.5;
 const STAMP_OUT = 7;
 const STAMP_FOLD = 70;
-const STAND_PASTERN = 20;
 /** Where each hoof stands as it stands square (its pastern's top and its end): its spot on the floor. */
 const PLANT: { fet: V3; end: V3 }[] = [0, 1, 2, 3].map((i) => {
   const P = { ...BOAR_STAND, lift: undefined };
@@ -202,7 +221,7 @@ const PLANT: { fet: V3; end: V3 }[] = [0, 1, 2, 3].map((i) => {
 });
 /** Its hooves' soles (near fore, off fore, near hind, off hind). */
 export function boarSoles(P: BoarPose): V3[] {
-  return [0, 1, 2, 3].map((i) => add(legOf(P, i).end, [0, 0, -1.8 * S]));
+  return [0, 1, 2, 3].map((i) => add(legOf(P, i).end, [0, 0, -SOLE * S]));
 }
 
 // ITS HEAD AND NECK: a short, thick neck under the hump; a big wedge of a head carried low; a long snout to a flat disc.
@@ -550,10 +569,13 @@ export function riderPose(P: BoarPose, t = 0): Partial<Bones> {
   const fl = foot(-0.5, 13.4 * S, 12.0 * S);
   const frt = foot(-0.5, -13.4 * S, 12.0 * S);
   const a = (t / WS_STAND_LONG) * TAU;
+  const lean = P.ride?.lean ?? 0;
+  const brace = P.ride?.brace ?? 0;
   return {
     px: at[0] + 0.9 * Math.sin(a + 0.9), py: at[1] + 0.4 * Math.sin(a + 0.9), pz: at[2] - PELVIS0 + 1.0 * Math.sin(a * 2),
-    yaw: P.yaw, pitch: -2, roll: 0, twist: 6 + 2 * Math.sin(a + 0.5), bend: -2, side: 0, hunch: 5,
-    faceTurn: 4 * Math.sin(a * 0.5), faceUp: 6, faceTilt: 2,
+    // (leaning down over its neck into a charge, thrown back against a stop)
+    yaw: P.yaw, pitch: -2 + 0.6 * lean - 0.55 * brace + 0.6 * P.pitch, roll: 0, twist: 6 + 2 * Math.sin(a + 0.5), bend: -2 + 0.9 * lean - 0.45 * brace, side: 0, hunch: 5 + 0.4 * lean,
+    faceTurn: 4 * Math.sin(a * 0.5), faceUp: 6 + 0.7 * lean + 0.3 * brace, faceTilt: 2,
     lfx: fl[0], lfy: fl[1] - B.stance, lfz: fl[2] - B.ankle, lfp: 10, lft: 8, lk: 72, lkUp: 8,
     rfx: frt[0], rfy: frt[1] + B.stance, rfz: frt[2] - B.ankle, rfp: 10, rft: -8, rk: -72, rkUp: 8,
     // (his left hand out before him, fingers clawed, writing on the air; his right hand high, the staff in it)
@@ -589,7 +611,7 @@ function ashSkin(seed: number, cuts = 0.08): Skin {
  * gaunt and ashen, the skull close under the skin; his eyes sunk in dark hollows, burning pink; heavy white brows; his cheeks
  * hollow; a long thin nose; his mouth a hard line; runes cut in his brow and cheeks, burning; long white hair down his back;
  * the iron band on his brow, its stone cracked and burning; his beard to his belt. */
-function head(put: Put, st: Stage, s: Skeleton, t: number): void {
+function head(put: Put, st: Stage, s: Skeleton, t: number, wind = 0): void {
   const [ff, fl, fu] = wornOn(st, s, 14);
   const hr: V3 = [B.headR[0] * 0.94, B.headR[1] * 0.9, B.headR[2] * 1.02];
   const hc = add(s.head, mul(fu, -0.2));
@@ -670,7 +692,9 @@ function head(put: Put, st: Stage, s: Skeleton, t: number): void {
     const pts: V3[] = [add(crownC, add(mul(fl, j * hr[1] * 0.25), mul(ff, -hr[0] * 0.3))), at0];
     for (let i = 1; i <= 3; i++) {
       const k = i / 3;
-      pts.push(add(at0, add([0, 0, -long * i], add(mul(ff, -5.2 * k), mul(fl, j * 0.7 * k + Math.sin(t * 2 + j + k * 2) * 0.35 * k)))));
+      // (streaming out behind him in the wind of a charge)
+      const w = wind * k;
+      pts.push(add(at0, add([-w * long * 2.4, Math.abs(wind) * Math.sin(t * 27 + j + k * 3) * 0.6 * k, -long * i * (1 - 0.55 * Math.abs(wind))], add(mul(ff, -5.2 * k), mul(fl, j * 0.7 * k + Math.sin(t * 2 + j + k * 2) * 0.35 * k)))));
     }
     const ramp = j % 2 ? ([HAIR[0], HAIR[0], HAIR[1], HAIR[2], HAIR[3]] as Ramp) : HAIR;
     for (let i = 1; i < pts.length; i++) put('head', 'hair', { k: 'rod', a: pts[i - 1], b: pts[i], ra: 1.2 - 0.25 * (i - 1), rb: Math.max(0.25, 1.2 - 0.25 * i - (i === pts.length - 1 ? 0.5 : 0)), ramp });
@@ -731,7 +755,7 @@ function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, grip: number, sprea
 }
 
 /** HIS ROBE AND CLOAK: his order's, gone to violet rags; seated, the robe over his thighs, the cloak hanging in strips down the boar's flanks. */
-function robe(put: Put, s: Skeleton, sway: number): void {
+function robe(put: Put, s: Skeleton, sway: number, wind = 0, t = 0): void {
   const [cf, cl, cu] = s.chest;
   // (his chest and belly under the robe: thin; the robe's body)
   const neckC = lerp3(s.ribs, s.neck, 0.7);
@@ -773,8 +797,10 @@ function robe(put: Put, s: Skeleton, sway: number): void {
     const out = add(mul(back, Math.cos(a) * 0.9), mul(cl, Math.sin(a) * 1.3));
     const long = 20 + 6 * hash(i, 9, 8821);
     const sw = Math.sin(TAU * sway + i * 0.7) * 1.2;
-    const mid = add(top, add(mul(out, 5), [sw * 0.4, 0, -long * 0.5]));
-    const end = add(mid, add(mul(out, 4), [sw, 0, -long * 0.5]));
+    // (in the wind of a charge it streams out behind him, snapping; flung forward as it stops dead)
+    const fl = Math.abs(wind) * Math.sin(t * 31 + i * 1.9) * 2.2;
+    const mid = add(top, add(mul(out, 5), [sw * 0.4 - wind * long * 0.38, fl * 0.4, -long * 0.5 * (1 - 0.5 * Math.abs(wind))]));
+    const end = add(mid, add(mul(out, 4), [sw - wind * long * 0.48, fl, -long * 0.5 * (1 - 0.65 * Math.abs(wind)) + fl * 0.6]));
     put('cloak', 'cloak', { k: 'rod', a: top, b: mid, ra: 3.0, rb: 2.6, ramp: RAGS });
     put('cloak', 'cloak', { k: 'rod', a: mid, b: end, ra: 2.6, rb: 0.9, ramp: RAGS });
   }
@@ -869,7 +895,7 @@ function throbAt(tt: number): number {
   return u < 0.07 ? u / 0.07 : Math.exp(-(u - 0.07) * 4.2);
 }
 export function boarPoseAt(move: string, t: number): BoarPose {
-  void move;
+  if (move === 'charge') return chargePoseAt(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   const A = BOAR_STAND_AT;
@@ -915,12 +941,172 @@ export function boarPoseAt(move: string, t: number): BoarPose {
     pulse: Math.max(throbAt(tt), snort, 0.8 * Math.max(lift[0], lift[1])),
   };
 }
+// =============================================================================================
+// THE CHARGE (his pick, 12 Nov 2026: “Boar charge (Recommended)”, offered as: it stamps and snorts as a warning, then charges in a
+// straight line and skids to a stop; up to three runs, wheeling round, faster each time). By his Movement 9 (“the wind up and wind
+// down are big but the actual punch is lightning quick”) and Monsters 4 (the warning is a pose):
+//   THE WIND-UP   its head drops, its haunches sink, its near forefoot paws the floor twice, throwing grit back; it snorts, its
+//                 eyes flaring; he leans down over its neck
+//   HELD          trembling, its eyes blazing, his rune-staff high (the lane is marked on the floor: the rules are the main chat's)
+//   THE STRIKE    TWO FRAMES, smeared: it bursts off, all four hooves off the floor
+//   THE RUN       a flat-out gallop down the lane, the game carrying it (`chargeCarry`), each hoof down on its own spot of the floor
+//                 while the floor goes by under it; grit thrown up at each footfall; he low over its neck, his cloak streaming
+//   THE SKID      forelegs braced out before it, haunches sat down, its hooves ploughing (the one time a hoof slides: his pick,
+//                 “Heavy charges, skid and turn (Recommended)”), grit and frost sprayed out ahead; he thrown back in the saddle
+//   AT REST       its hooves stepped back under it, a snort.
+/** A tile in the figure's own lengths. */
+const TILE = 32 / Math.sqrt(2 / 3);
+const FR = 1 / 30;
+const fr = (n: number): number => n / 30;
+export const CHARGE_STRIKE = [fr(32), fr(34)] as const;
+export const CHARGE = {
+  lower: 0.3,
+  paws: [[0.34, 0.56], [0.6, 0.82]] as const,
+  snort: 0.84,
+  held: 0.88,
+  strike: CHARGE_STRIKE,
+  launch: [1.1, 2.5] as const,
+  pace: 11,
+  run: 0.62,
+  skid: 0.55,
+  settle: 0.6,
+  /** the lane: how long (tiles), and how wide to either side of its middle */
+  lane: 0,
+  half: 1.0,
+  long: 0,
+};
+CHARGE.long = CHARGE_STRIKE[1] + CHARGE.run + CHARGE.skid + CHARGE.settle;
+/** When it starts to skid, and when it has stopped. */
+const SKID0 = CHARGE_STRIKE[1] + CHARGE.run;
+const SKID1 = SKID0 + CHARGE.skid;
+export const CHARGE_SKID = [SKID0, SKID1] as const;
+/** How far the game has carried it down its lane, `t` seconds into the charge (tiles). */
+export function chargeCarry(t: number): number {
+  const [s0, s1] = CHARGE_STRIKE;
+  const [l0, l1] = CHARGE.launch;
+  if (t <= s0) return 0;
+  if (t < s0 + FR) return l0 * ((t - s0) / FR);
+  if (t < s1) return l0 + (l1 - l0) * ((t - s0 - FR) / FR);
+  const run = l1 + CHARGE.pace * Math.min(CHARGE.run, t - s1);
+  if (t <= SKID0) return run;
+  // (the skid: slowing from its pace to nothing, harder at the first)
+  const u = Math.min(1, (t - SKID0) / CHARGE.skid);
+  return run + CHARGE.pace * CHARGE.skid * (u - u * u / 2) * (1 - 0.15 * u * (1 - u));
+}
+CHARGE.lane = chargeCarry(CHARGE.long) + 1.2;
+export const chargeSmeared = (t: number): boolean => t > CHARGE_STRIKE[0] + 1e-6 && t <= CHARGE_STRIKE[1] + FR + 1e-6;
+/** Its soles as it stands square (as its own points are, the floor point under it at nothing). */
+const SOLE0: V3[] = [0, 1, 2, 3].map((i) => add(legOf({ ...BOAR_STAND, lift: [0, 0, 0, 0] }, i).end, [0, 0, -SOLE * S]));
+// ITS GALLOP: each hoof down on its own spot of the floor while the floor goes by under it (a stride, how much of it a hoof is
+// down for, when in the stride each comes down: its hind feet a beat before its fore)
+const STRIDE = 2.9 * TILE;
+const HALF = 7 * S;
+const SPAN = 2 * HALF;
+const FIRST = CHARGE.launch[1] * TILE;
+const ORDER = [0.5, 0.62, 0.0, 0.1];
+const plantAt = (i: number, k: number): number => FIRST + (k + ORDER[i]) * STRIDE;
+type Foot = readonly [number, number, number, number];
+function gallopFoot(i: number, c: number): Foot {
+  const r = SOLE0[i];
+  const fore = i < 2;
+  const p0 = plantAt(i, 0);
+  if (c < p0 - HALF) {
+    // (bursting off: its forelegs flung out before it, its hind legs thrust out behind, all four off the floor)
+    const v = clamp01(c / (p0 - HALF));
+    const arc = Math.sin(Math.PI * v);
+    const w = Math.min(1, v * 1.2);
+    const reach = Math.sin(Math.PI * w);
+    const lift = 0.8 * Math.min(1, v * 8);
+    return fore ? [r[0] + HALF * smooth01(w) + 6 * S * reach, r[1], 8 * S * arc + lift, 85 * arc] : [r[0] + HALF * smooth01(w) - 10 * S * reach, r[1], 6 * S * arc + lift, 30 * arc];
+  }
+  const kf = (c - p0 + HALF) / STRIDE;
+  const k = Math.floor(kf);
+  const u = (kf - k) * STRIDE;
+  if (u < SPAN) return [r[0] + (plantAt(i, k) - c), r[1], 0, 0];
+  const v = (u - SPAN) / (STRIDE - SPAN);
+  const arc = Math.sin(Math.PI * v);
+  // (it reaches its next spot a little before it comes down, so that it comes down on it, not sliding onto it; clear of the floor
+  // till then)
+  return [r[0] - HALF + SPAN * smooth01(Math.min(1, v * 1.18)) + (fore ? 4 : -4) * S * arc, r[1], (fore ? 9 : 7) * S * arc + 0.8, (fore ? 95 : 40) * arc];
+}
+/** Its skid: its forelegs braced out before it, its hind feet under its belly, all ploughing (as its own points are). */
+const SKID_FEET: Foot[] = [0, 1, 2, 3].map((i) => (i < 2 ? [SOLE0[i][0] + 5 * S, SOLE0[i][1], 0, -8] : [SOLE0[i][0] + 5 * S, SOLE0[i][1], 0, 10]));
+/** Where its hooves are as it begins to skid (the gallop's last), and as it comes to rest. */
+function chargeFeet(t: number): Foot[] {
+  const c = chargeCarry(t) * TILE;
+  const [s0] = CHARGE_STRIKE;
+  return [0, 1, 2, 3].map((i): Foot => {
+    const rest: Foot = [SOLE0[i][0], SOLE0[i][1], 0, 0];
+    if (t <= s0) {
+      // (its near forefoot pawing: lifted out before it, struck down, dragged back over the floor throwing grit, twice)
+      if (i === 1) {
+        for (const [a, b] of CHARGE.paws) {
+          if (t <= a || t >= b) continue;
+          const u = (t - a) / (b - a);
+          const fwd = u < 0.4 ? smooth01(u / 0.4) : 1 - smooth01((u - 0.4) / 0.6);
+          const up = u < 0.4 ? Math.sin((Math.PI / 2) * smooth01(u / 0.4)) : u < 0.55 ? 1 - smooth01((u - 0.4) / 0.15) * 0.9 : 0.1 * (1 - smooth01((u - 0.55) / 0.45));
+          return [rest[0] + (7 * fwd - 3 * smooth01((u - 0.4) / 0.6) * (u > 0.4 ? 1 : 0)) * S, rest[1], Math.max(0.75, 6 * S * up), 70 * up];
+        }
+      }
+      return rest;
+    }
+    if (t <= SKID0) return gallopFoot(i, c);
+    // (into the skid: each hoof thrown down onto its braced spot over a few frames, then held there, ploughing)
+    const g = gallopFoot(i, chargeCarry(SKID0) * TILE);
+    const sk = SKID_FEET[i];
+    if (t <= SKID1) {
+      const v = smooth01((t - SKID0) / 0.12);
+      return [g[0] + (sk[0] - g[0]) * v, g[1], g[2] * (1 - v), g[3] + (sk[3] - g[3]) * v];
+    }
+    // (stepped back under it, one after another)
+    const w0 = SKID1 + 0.04 + [0.0, 0.12, 0.2, 0.3][i];
+    const v = clamp01((t - w0) / 0.18);
+    const arc = Math.sin(Math.PI * v);
+    return [sk[0] + (rest[0] - sk[0]) * smooth01(v), sk[1], 4 * S * arc, sk[3] * (1 - smooth01(v)) + 40 * arc];
+  });
+}
+export function chargePoseAt(t: number): BoarPose {
+  const [s0, s1] = CHARGE_STRIKE;
+  const c = chargeCarry(t) * TILE;
+  // (head down and haunches sunk for the wind-up; flat out; sat back in the skid; at rest)
+  const low = smooth01(t / CHARGE.lower) * (1 - smooth01((t - SKID0) / 0.2));
+  const run = clamp01((t - s0) / FR) * (1 - smooth01((t - SKID0) / 0.14));
+  const skid = smooth01((t - SKID0) / 0.12) * (1 - smooth01((t - SKID1 - 0.05) / 0.45));
+  const ph = TAU * ((c - FIRST) / STRIDE);
+  const rock = t > s1 ? run : 0;
+  // (its paws: it dips onto each; then held, trembling; its snort)
+  let dip = 0;
+  for (const [a, b] of CHARGE.paws) dip += bumpOf(t, a + 0.4 * (b - a), b);
+  const held = t > CHARGE.held && t < s0 ? 1 : 0;
+  const shiver = held * (0.5 * Math.sin(t * 90) + 0.3 * Math.sin(t * 137));
+  const snort = bumpOf(t, CHARGE.snort - 0.05, CHARGE.snort + 0.3);
+  const after = bumpOf(t, SKID1 + 0.1, SKID1 + 0.5);
+  return {
+    ...BOAR_STAND,
+    x: 0,
+    z: -2.2 * low * S - 1.2 * dip + 0.5 * shiver - 2.4 * S * skid + rock * S * (1.0 * Math.cos(ph) - 1.0),
+    pitch: -4 * low + 3 * skid + rock * 3.5 * Math.sin(ph) - 0.6 * snort,
+    roll: 1.2 * dip + 0.6 * shiver,
+    low: BOAR_STAND.low + 16 * low - 22 * skid - 12 * snort + 6 * after + rock * 3 * Math.cos(ph + 0.5),
+    look: 2 * shiver - 8 * after * Math.sin((t - SKID1) * 20),
+    tilt: 10 * after * Math.sin((t - SKID1) * 20 + 0.6),
+    flap: run * 0.9 + 0.6 * skid - after * Math.cos((t - SKID1) * 20),
+    legs: BOAR_STAND.legs,
+    feet: chargeFeet(t),
+    breath: 0.5 + 0.5 * snort,
+    sway: t / WS_STAND_LONG + 0.3 * run * Math.sin(ph),
+    pulse: Math.max(smooth01((t - 0.2) / 0.6), 0.6) * (t > SKID1 + 0.3 ? 1 - 0.6 * smooth01((t - SKID1 - 0.3) / 0.3) : 1),
+    ride: { lean: 26 * Math.max(low * 0.5, run), brace: 20 * skid },
+  };
+}
+
 /** WHAT FLIES OFF IT, laid after its edge: a blast of breath out of its snout at each snort, cold, white, spreading and thinning;
  * dust kicked up round a stamped hoof. Never a glow. */
 const BREATH: readonly string[] = ['#e6e4ea', '#c9c6d0', '#a8a4b0', '#878392'];
 const DUST: readonly string[] = ['#c4b8b4', '#9e9294', '#786c74'];
-export function boarGrains(t: number): [V3, string, number][] {
+export function boarGrains(t: number, move = 'stand'): [V3, string, number][] {
   const out: [V3, string, number][] = [];
+  if (move === 'charge') return chargeGrains(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   for (const s0 of BOAR_STAND_AT.snorts) {
@@ -962,6 +1148,89 @@ export function boarGrains(t: number): [V3, string, number][] {
   return out;
 }
 
+/** WHAT FLIES OFF IT AS IT CHARGES (as its own points are, the game carrying it on: what is thrown stays where it was thrown):
+ * grit thrown back as it paws; the blast of its snort; a ring of grit blown out where it bursts off; grit kicked up at every
+ * footfall; and in the skid, grit and frost sprayed out ahead of its ploughing forefeet. */
+function chargeGrains(t: number): [V3, string, number][] {
+  const out: [V3, string, number][] = [];
+  const c = chargeCarry(t) * TILE;
+  const g = 30;
+  // (thrown from `p0` (on the floor's own spot) at `t0`, at `v` a second, falling; kept while it is above the floor)
+  const fly = (p0: V3, v: V3, t0: number, seed: number, long: number, cols: readonly string[]): void => {
+    const u = t - t0;
+    if (u <= 0 || u > long) return;
+    const p: V3 = [p0[0] + v[0] * u - c, p0[1] + v[1] * u, p0[2] + v[2] * u - 0.5 * g * S * u * u];
+    if (p[2] < 0) return;
+    if (hash(seed, Math.floor(u * 30), 8891) < (u / long) * 0.8) return;
+    out.push([p, cols[Math.min(cols.length - 1, Math.floor((u / long) * cols.length))], u < 0.1 && seed % 3 === 0 ? 2 : 1]);
+  };
+  // (its paws: grit flung back off its forefoot as it drags it)
+  for (const [a, b] of CHARGE.paws) {
+    const t0 = a + 0.45 * (b - a);
+    const foot = SOLE0[1];
+    for (let i = 0; i < 12; i++) fly([foot[0] + 4 * S, foot[1] + (hash(i, 1, 8892) - 0.5) * 3 * S, 0.5], [-(40 + 50 * hash(i, 2, 8893)) * S, (hash(i, 3, 8894) - 0.5) * 30 * S, (14 + 16 * hash(i, 4, 8895)) * S], t0 + 0.02 * (i % 4), i + 100 * a, 0.5, DUST);
+  }
+  // (its snort)
+  {
+    const u = t - CHARGE.snort;
+    if (u > 0 && u < 0.6) {
+      const H = headOf(chargePoseAt(CHARGE.snort + 0.05));
+      for (const k of [-1, 1]) {
+        const nose = H.at(22.6, k * 1.2, -8.2);
+        for (let i = 0; i < 10; i++) {
+          const a = (i / 10) * TAU + hash(i, k, 8896);
+          const r = (1.5 + 7 * Math.sqrt(u)) * S * Math.sqrt(0.2 + 0.8 * hash(i, k + 5, 8897));
+          const p = add(add(nose, mul(H.f, 10 * S * (1 - Math.exp(-u * 6)))), [Math.cos(a) * r, Math.sin(a) * r, 4 * u + Math.sin(a) * r * 0.3]);
+          if (hash(i, Math.floor(u * 20), 8898) < (u / 0.6) * 0.9) continue;
+          out.push([p, BREATH[Math.min(3, Math.floor((u / 0.6) * 4))], u < 0.25 ? 2 : 1]);
+        }
+      }
+    }
+  }
+  // (bursting off: a ring of grit blown out round where it stood)
+  for (let i = 0; i < 26; i++) {
+    const a = (i / 26) * TAU + hash(i, 6, 8899);
+    const sp = (60 + 70 * hash(i, 7, 8900)) * S;
+    const at: V3 = [SOLE0[2][0] + 6 * S + Math.cos(a) * 10 * S, Math.sin(a) * 9 * S, 0.5];
+    fly(at, [Math.cos(a) * sp - 30 * S, Math.sin(a) * sp * 0.8, (10 + 18 * hash(i, 8, 8901)) * S], CHARGE_STRIKE[0], i + 7, 0.55, DUST);
+  }
+  // (every footfall of its gallop: grit kicked up back off the hoof)
+  for (let i = 0; i < 4; i++) {
+    for (let k = 0; k < 8; k++) {
+      const pk = plantAt(i, k);
+      if (pk > chargeCarry(SKID0) * TILE) break;
+      const t0 = chargeTimeAt(pk / TILE);
+      const foot: V3 = [SOLE0[i][0] + pk - 0, SOLE0[i][1], 0.4];
+      for (let j = 0; j < 8; j++) fly([foot[0], foot[1] + (hash(j, i, 8902) - 0.5) * 3 * S, 0.4], [-(10 + 40 * hash(j, k, 8903)) * S, (hash(j, k + 9, 8904) - 0.5) * 30 * S, (10 + 16 * hash(j, k + 3, 8905)) * S], t0, i * 31 + k * 7 + j, 0.45, DUST);
+    }
+  }
+  // (the skid: grit and frost sprayed out ahead of its forefeet as they plough, the whole way)
+  for (let e = 0; e < 18; e++) {
+    const te = SKID0 + 0.04 + (e / 18) * (CHARGE.skid - 0.08);
+    const ce = chargeCarry(te) * TILE;
+    for (const i of [0, 1]) {
+      const f0 = SKID_FEET[i];
+      for (let j = 0; j < 3; j++) {
+        const sd = e * 13 + i * 5 + j;
+        const sp = (40 + 60 * hash(sd, 1, 8906)) * S * (1 - 0.5 * (e / 18));
+        fly([f0[0] + 2 * S + ce, f0[1] + (hash(sd, 2, 8907) - 0.5) * 4 * S, 0.6], [sp + CHARGE.pace * TILE * 0.5 * (1 - e / 18), (hash(sd, 3, 8908) - 0.5) * 40 * S, (12 + 22 * hash(sd, 4, 8909)) * S], te, sd + 500, 0.5, j === 0 ? BREATH : DUST);
+      }
+    }
+  }
+  return out;
+}
+/** When in the charge it has been carried `d` tiles. */
+function chargeTimeAt(d: number): number {
+  let lo = 0;
+  let hi = CHARGE.long;
+  for (let i = 0; i < 40; i++) {
+    const m = (lo + hi) / 2;
+    if (chargeCarry(m) < d) lo = m;
+    else hi = m;
+  }
+  return hi;
+}
+
 function wsBits(st: Stage, m: Moment): Bit[] {
   const bits: Bit[] = [];
   const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
@@ -969,13 +1238,15 @@ function wsBits(st: Stage, m: Moment): Bit[] {
   const P = boarPoseAt(m.move ?? 'stand', m.t);
   const near = st.near(add(s.pelvis, [0, -3, 0])) > st.near(add(s.pelvis, [0, 3, 0])) ? -1 : 1;
   boarBits(P, put, near, st);
-  robe(put, s, P.sway);
+  // (the wind of its going: on him as it charges, the other way as it stops dead)
+  const wind = ((P.ride?.lean ?? 0) - 1.6 * (P.ride?.brace ?? 0)) / 22;
+  robe(put, s, P.sway, wind, m.t);
   // (his left hand clawed, fingers spread, writing on the air; his right closed round the staff)
   arm(put, s, 'L', s.chest[2], 0.32, 1.25);
   arm(put, s, 'R', s.chest[2], 1, 0);
   // (his neck: thin, the cords of it standing out)
   put('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
-  head(put, st, s, m.t);
+  head(put, st, s, m.t, wind);
   staff(put, s, m.t);
   runesAbout(put, st, s, m.t);
   return bits;
@@ -993,6 +1264,16 @@ function standMotion(): Motion {
   return { loop: 0, keys };
 }
 const REST: Bones = { ...standing(B), ...riderPose(BOAR_STAND, 0) } as Bones;
+/** A move's motion: his pose in the saddle, every frame (30 a second), as the boar moves under him. */
+function moveMotion(move: string, long: number): Motion {
+  const keys: Key3[] = [];
+  const N = Math.round(long * 30);
+  for (let i = 0; i <= N; i++) {
+    const t = i / 30;
+    keys.push({ at: t, ease: 'lin', pose: riderPose(boarPoseAt(move, t), t) });
+  }
+  return { keys };
+}
 
 /** THEM AS A MONSTER OF THE GAME'S (only the stand so far: the look, for his yes; the moves come after). */
 export function wsMob(): Mob {
@@ -1022,7 +1303,8 @@ export function wsMob(): Mob {
     canvas: WS_CANVAS,
     trueBack: true,
     bits: wsBits,
-    grains: (_st: Stage, m: Moment) => boarGrains(m.t),
+    grains: (_st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand'),
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST } },
   } as unknown as Mob;
 }
 
@@ -1078,7 +1360,15 @@ export const WS_SHAPE: BossShape = {
     const H = headOf(P);
     const st = staffOf(s);
     const soles = boarSoles(P);
-    return { head: s.head, handL: s.handL, handR: s.handR, pelvis: s.pelvis, ring: st.ring, snout: H.at(21.6, 0, -7.6), hoof0: soles[0], hoof2: soles[2] };
+    const pts: Record<string, V3> = { head: s.head, handL: s.handL, handR: s.handR, pelvis: s.pelvis, ring: st.ring, snout: H.at(21.6, 0, -7.6) };
+    // (its hooves followed as it stands and stamps; galloping, each is down on its own spot of the floor and held to that by
+    // SLIDE, not followed as a thing in the air)
+    if (move !== 'charge') Object.assign(pts, { hoof0: soles[0], hoof2: soles[2] });
+    return pts;
   },
+  // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
+  carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : 0),
+  strikes: { charge: CHARGE_STRIKE },
+  smeared: (move: string, t: number) => move === 'charge' && chargeSmeared(t),
 };
 void len;

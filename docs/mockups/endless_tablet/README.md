@@ -237,6 +237,19 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   behind him and does all he does; to attack, he forges one word and the shade another, and the two meld, seen, into the new
   attack. The shade is his (pink, never cyan). It stands for “once thrown, he grows huge” in his brief.
 
+### HIS MOVES, MADE (each a film for his yes)
+
+- THE CHARGE (`charge`, `chargePoseAt`; `pictures/standard/boss_charge.mp4`, from in front, from behind, then the burst and the skid
+  at half speed): by Movement 9 and Monsters 4. ITS WIND-UP: head down, haunches sunk, its near forefoot pawing twice, grit flung
+  back; it snorts, its eyes flaring; he leans down over its neck; the lane marked on the floor (the rules are the main chat's: the
+  film only shows it). HELD, trembling. THE STRIKE: two frames, smeared, all four hooves off the floor (the screen kicks). THE RUN:
+  11 tiles a second, the game carrying it (`chargeCarry`), each hoof down on its own spot of the floor while the floor goes by,
+  grit kicked up at every footfall; he low over its neck, his cloak and hair streaming. THE SKID: forelegs braced out, haunches
+  down, hooves ploughing (the one time a hoof slides: his pick, “Heavy charges, skid and turn (Recommended)”), grit and frost sprayed
+  ahead; he thrown back, his cloak flung forward; its hooves stepped back under it. The lane about 14 tiles. The checks: checkBoss
+  on it (all but the skid's plough, which is the move) and his legs outside the boar every frame: all pass. Its hooves are put on
+  spots (`BoarPose.feet`, the leg solved to reach), its rider leans (`BoarPose.ride`). Tool: `tools/endless_boss_film.ts`.
+
 ## The tools
 
 `tools/endless_tablet/` (Python with Pillow and numpy; run from that folder): `kit.py` (a small pixel-art kit: two picture pixels to
