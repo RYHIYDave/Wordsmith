@@ -10,7 +10,10 @@ The ten: Piercing, Bleeding, Reaping, Culling, Surging, Plundering, Mirroring (f
 
 ## What the branch is
 
-- `origin/main` at 95eefb7 (25.3.5), with `origin/art/words10` at 44f836a4 brought in (a clean merge), then this chat's work.
+- Begun from `origin/main` at 95eefb7 (25.3.5), with `origin/art/words10` at 44f836a4 brought in (a clean merge: the ten
+  words' rules, their looks and the Lexicon in pages), then this chat's work; then **today's `main` at a8d9111d (25.3.6)
+  merged in**, so the branch is `main` as last released plus the ten words. One place was in two minds (`game.ts`, `hurtHero`:
+  the unique items' answer to a blow, and the three words' poison); both kept.
 - The switches are ON: `WORDS7_LOOK`, `WORDS10_LOOK` (the art chat's looks, his yes of 9 Nov in the art chat), `LEX28.way =
   'groups'` (the Lexicon in five pages: Damage, Strike, Time, Control, Spoils; his yes of 9 Nov), and a new one, `WORD_SOUNDS`
   (the sound chat's sixth batch).
@@ -80,14 +83,22 @@ The main chat's own checks before a release apply as always.
 
 ## What is left for the main chat
 
-1. Bring `build/words10` into `main` (it is `main` at 95eefb7 plus the work; if `main` has moved, merge).
+1. Bring `build/words10` into `main` (it holds `main` at a8d9111d, 25.3.6; if `main` has moved since, merge).
 2. `node tools/build.mjs`, and publish **the new sounds folder beside the page**: the sounds' mark changed (52 new files, the
    packs' index with them). `tools/build_served.mjs` here makes a page with its sounds folder for playtests only.
 3. The published page's own playtests; `tools/scenarios/words10_live.mjs` is the one for this.
 4. The handoff, the design notes and the version number: not touched here (they are the main chat's record).
-5. **The three unique items** (branch `uniques`) add words by id: `'culling'`, `'mirroring'`, `'lasting'`. Those are the words'
-   own ids here (`src/game/types.ts`). When `uniques` is in `main` too, add the check the queue item asks for in
-   `tests/uniques_words.test.ts`.
+5. **The three unique items: done here**, as the unique items came in with 25.3.6. The Headsman's Hood (`'culling'`), The
+   Queen's Glass (`'mirroring'`) and The Long Echo (`'lasting'`) add the words by the words' own ids; with the ten in the game
+   their cards no longer say “Its word is not in the game yet.” and each works. `tests/uniques_words.test.ts` now holds it
+   firmly (each a word of the game, added with no slot used, and at work in what the attack resolves to). Their words' sounds
+   are fetched ahead while the piece is worn (`main.ts`, `warmWords`).
+
+## Found on the way, and mended
+
+- **A saying of Surging's was the wand's already** (“Wave goodbye.”, in `QUIPS`; `tests/guide.test.ts` wants no line in two
+  lists). Surging's is now “Third time's the charm.” (its shockwave comes every third use). One line in `src/game/defs.ts`.
+- The Brawler's Aftershock was drawn as Vast's splash (the same plain ring): the rules now say which is which.
 
 ## Found on the way, not changed
 

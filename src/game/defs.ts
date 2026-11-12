@@ -2375,7 +2375,7 @@ export const QUIPS: {
     bleeding: ['First blood.', 'Open wide.', 'Cut deep.'],
     reaping: ['Harvest time.', 'Gathered in.', 'Reap it.'],
     culling: ['Too weak.', 'Thinned out.', 'Last breath.'],
-    surging: ['Here it comes.', 'Wave goodbye.', 'Swell.'],
+    surging: ['Here it comes.', "Third time's the charm.", 'Swell.'],
     plundering: ['Mine now.', 'Pay up.', 'Spoils.'],
     mirroring: ['Seeing double.', 'Twice the me.', 'Reflect on that.'],
     lasting: ['Still going.', 'Here to stay.', 'Built to last.'],
