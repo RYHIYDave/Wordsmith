@@ -1,9 +1,9 @@
-**WHERE IT STANDS (12 Nov 2026, by 13:30 Eastern): THE LIVING SHADOW'S LOOK AND ALL ITS MOVES HAVE HIS YES (below). NOW MADE AND
-SHOWN HIM AS TWO FILMS, AND HAVE HIS YES (12 Nov: “Yes, all eight are right (Recommended)”, “Yes, that's the change (Recommended)”): ITS EIGHT SIDES (each truly turned, none a mirror), ITS HIDE CARRIED BY ITS
-BONES, AND THE CHANGE INTO IT (the game's own change with the Living Shadow grown out of him, ending up on two legs and into its
-roar): the section “Its eight sides, its hide carried by its bones, and the change into it” at the foot. NEXT:
-into the game's shape behind a switch that is off, a film and pictures in the game on floor 11 beside the Brawler; then THE
-MAN. Read from “The Living Shadow, drawn properly” down for how it got here, in his words.**
+**WHERE IT STANDS (12 Nov 2026, by 14:10 Eastern): THE LIVING SHADOW IS DONE AND HANDED TO THE MAIN CHAT, WITH HIS YES: its look,
+every move, its eight sides, its hide carried by its bones, the change into it, in the game's shape behind LIVING_SHADOW (off),
+and seen in play on floor 11 beside the Brawler (his “Yes, hand it to main (Recommended)”; the change's time in play kept at
+the game's 2.4 s, his “Keep the game's 2.4 s (Recommended)”). On the queue's ship list as `warlock-living-shadow`. WHAT THE MAIN
+CHAT MUST DO: the sections “In the game's shape, behind a switch that is off” and “In play on floor 11” at the foot. WHAT IS
+LEFT OF THIS BRANCH'S WORK: THE MAN, his eight sides (“What that means for the work”, below).**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
 queue's `finish-mage-and-warlock-eight-sides` (the Mage's half is done: `art/mage-up2`). It takes up the art chat's helper's
@@ -771,6 +771,12 @@ SEEN IN IT, AND TOLD HIM:
 - After its slash made walking it shows its run at once, as the section above's note (5) says the game does for now.
 - The cyan bar over it is the game's own pact bar, at a man's height: up on two legs it is taller, and the bar crosses its
   horns, and in some frames of the change its face. For the main chat: raise it for the Living Shadow.
+
+SHOWN HIM SO (the film and the measure sent; asked by pop-up). **HIS WORDS, 12 Nov, by 14:10 Eastern:** asked whether it is
+right in play, **“Yes, hand it to main (Recommended)”**; asked whether the change in play should stay the game's 2.4 s or
+take its own 3.5 s, **“Keep the game's 2.4 s (Recommended)”**. SO THE LIVING SHADOW IS HANDED TO THE MAIN CHAT: on the queue's
+ship list (`warlock-living-shadow`), this branch at the commit there. The rules' change time stays 2.4 s. What is left of the
+queue's item is THE MAN: his eight sides (step 4, above).
 
 ## The checks so far
 
