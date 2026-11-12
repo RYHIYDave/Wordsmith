@@ -18,6 +18,16 @@
 //   talons  THE QUEEN'S TALONS: one of her flock, black-violet, diving out of the air over him onto the enemy, striking, beating away
 //   wrench  THE STICKY WRENCH: her vial stuck in a lump of pitch on what it landed on, going where that goes, blinking quicker and
 //           quicker, fizzing, until it bursts
+//   moth    THE MOTH'S WING: the word a hit has darkened written grey and dim where his attacks are written at the foot of the
+//           screen (or its rune stone greyed), its pip grey on the dodge's button, and a flash of white as it comes back
+//           (ui/hud.ts MOTH)
+//   hush    THE CRIER'S HUSH: an enemy near him whose words it has darkened shows it: its ring and its name the Hush's dead
+//           grey, wisps of the Hush drifting off it; a ring of the Hush closing on it as its words go, and a flash of its word's
+//           colour as they come back (render/unique_fx.ts, render/render.ts)
+//   drop    EVERY UNIQUE THAT DROPS (any, the pool's or a boss's own, as his word has it): a beam of the uniques' orange standing
+//           on it where it lies, shooting up as it lands with a ring on the floor, motes rising up it (render/unique_fx.ts)
+//   wind    THE WINDCUTTER: its blade a crescent of rushing air at the height of his swing, its edge his cyan, wind streaming
+//           off it, a gust off his sword as it goes; not the Mage's Wave (render/unique_fx.ts drawBlade)
 //
 // (Nothing is imported here, so that anything may ask a switch without pulling in the pictures.)
-export const UNIQUE_PLAY = { tome: false, risen: false, fourth: false, arm: false, talons: false, wrench: false };
+export const UNIQUE_PLAY = { tome: false, risen: false, fourth: false, arm: false, talons: false, wrench: false, wind: false, moth: false, hush: false, drop: false };

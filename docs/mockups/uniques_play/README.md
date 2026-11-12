@@ -206,6 +206,163 @@ wide. Looked at in a built page at a phone's size (`LOOK=wrench`: the Tinkerer, 
 alone with tsx; tsc clean; the look filmed, finished clean. HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills:
 “Yes, hand it to main (Recommended)”.
 
-NOT DRAWN YET (the rest of the queue item's list): The Rainwalker, The Shepherd's Crook, The Tide, The Windcutter (the game already draws its blade as
-the Wave's crescent), The Fan, The Moth's Wing; and which of the moments the build only tells of want a
-picture of their own (to ask him).
+# The next: branch `art/uniques-play3` (12 Nov 2026, afternoon)
+
+Cut from `art/uniques-play2` at 3668d26a (the three above: bring that in first). Pulled from the queue (`draw-unique-items`) by a
+chat of his working from the queue (his words: “Please work on the queued items”).
+
+## The Rainwalker, the Shepherd's Crook, the Tide, the Fan: as the game shows them (his word)
+
+Shown the Rainwalker as a storm cloud boiling up over her as she looses her Volley, raining round her with the arrows dropping out
+of it, going with her, drifting apart (a film), he said: “I don’t think it needs the cloud, just have the arrows rain as they would
+normally”. Read as: the Rainwalker gets no picture of its own: its Volley rains as every Volley does, and the game already makes it
+follow her. The cloud was taken out; nothing of it is on this branch. Asked whether the same goes for the Shepherd's Crook (the
+Orb follows her), the Tide (the Wave turns and comes back) and the Fan (three arrows a Shot), each already shown with the game's own
+Orb, Wave and arrows: “Yes, leave them (Recommended)”. SO THOSE FOUR NEED NOTHING DRAWN.
+
+## The Windcutter's blade of wind
+
+Asked whether its blade (the build sends it as a shot of the Wave's kind, so it was drawn as the Mage's purple-cyan Wave of force
+coming off the Warrior's sword) should get a look of its own: “Yes, a blade of wind (Recommended)” (offered as: a pale crescent of
+rushing air off his swing, with streaks of wind, no water; the Wave is not water, the offer's words, not the game's).
+
+Behind `UNIQUE_PLAY.wind`, off. Drawn by `UniqueFx.drawBlade` (render/unique_fx.ts), handed it by render/render.ts with the shots
+(a shot with `blade`, as the Warlock's bolt is handed to warlock_fx), point by point in the world as the Wave is, so it lies right
+whichever way it flies: a crescent of rushing air at the height of his swing (`BLADE.high`, 13 game pixels), bowed the way it
+flies, tallest in its middle (`BLADE.tall`), drawn a little wider than what it strikes (`BLADE.wide`, as a swing's own streak is);
+its front a ribbon of white air, a thin wake of the air's greys behind it broken into lines of wind that run back as it flies; his
+cyan along its top (the bag picture's blade, `BLADE.edge`); wind streaming back off it in broken lines, high, middle and low; its
+shadow on the floor; grit kicked up under it as it goes. It spreads off his sword in its first moments (`BLADE.spreads`) and frays
+into wind over its last 1.6 tiles. Its colours are the game's own air (render/wild.ts `AIR`, the Volley's wind). On its `blade`
+event a gust off his sword (hoops of air the way it goes, grit round his feet, a small kick of the screen) in place of the Wave's
+blast and bolts: the `wave` the build tells with it is left out (`UniqueFx.owns`). Nothing of game/ is changed.
+
+To see it: `LOOK=wind FILM=3.7 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario
+tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/wind` (three Strikes in a row, twice, one each way; `BARE=1`: the
+blade alone, sent by the rules with no swing of his, three ways); `npx tsx tools/uniques_play_blade_peek.ts <out.png>` (the blade
+big, by its own code, no browser, four ways at three moments). Pictures sent him: `pictures/windcutter.mp4` and
+`pictures/windcutter.png`.
+
+Checked: tests/unique_play3_wind.test.ts (new, 2: the switch off and the build's Wave its own; every way and moment only the air,
+his cyan and its shadow, there at once, wider in flight, frayed at the end) and tests/unique_play.test.ts (6, its switches check
+counting `wind`), each alone with tsx; tsc clean; the look filmed with the switch on and off (the same frames compared: the white
+crescent stands where the Wave was), finished clean.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills: “Yes, hand it to main (Recommended)”.
+
+## The Moth's Wing's dark word on his buttons
+
+Asked whether its darkened word shows on the skill button (the build tells of it only as floating text, “Power dark”): “Grey the
+word on its button (Recommended)” (offered as: that word's mark on the skill button goes grey and dim until it comes back).
+
+Behind `UNIQUE_PLAY.moth`, off. In ui/hud.ts (`MOTH`, `mothNow`, set each frame from `Game.uq.dark`, as the Hush's `HUSHED` is
+from `Game.hushT`): the word the rules have darkened (which attack, which side, which place) is written in a dim grey
+(`MOTH.color`) where his attacks are written at the foot of the screen, or, where the plates are too tight for the word and it is
+shown as its rune stone, the stone greyed (its own light kept, its colour out, half as bright: `greyed`, made once a stone); its pip
+on the dodge's button grey; and the word coming back, whether its four seconds are up or a new hit has moved the dark to another,
+written white for `MOTH.flashes` (0.3 seconds). The floating text the build shows stays. Nothing of game/ is changed.
+
+To see it: `LOOK=moth FILM=6.6 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario
+tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/mothfilm` (the Warrior with words on all three moves, hit twice).
+Pictures sent him: `pictures/mothswing.mp4` and `pictures/mothswing.png`.
+
+Checked: tests/unique_play3_moth.test.ts (new, 2: its switch off and nothing dark with it off; on, the dark word dark, the one
+moved from or come back flashing for its moment then plain) and tests/unique_play.test.ts (6, counting `moth`), each alone with tsx;
+tsc clean; the look filmed, finished clean.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills: “Yes, hand it to main (Recommended)”.
+
+## The moments the build only tells of: his picks
+
+Asked which want a picture of their own: the Pivot (Whirlwind's own cut), the Receipt (a punch), the Warden's Keys (the door
+opening), the Hair Trigger (the trap going off), the Tuning Staff (the Orb's pulse), the Short Way (the Warp's burst at both ends)
+and Bloodprice (Power's embers circling him) already show through the game's own effects: “Yes, leave them (Recommended)”. Of those
+showing nothing, or popping, he picked THE TOW LINE and THE CRIER'S HUSH (not the Unsigned Pact, not the Winning Streak), and wrote:
+“The golem has a rocket jump as well so it can be like a free cooldown reset and he uses him jump to the same spot as the hero.
+Also can you make him almost intangible?  He has a lot of collision issues and is never really where you want him to be”. Of the
+last two, the unique drop (not the King's Knot), and: “Base uniques are uniques just like boss drops, I don’t know why you want to
+distinguish between the two.  Whatever we do any unique drop it should apply to all drops”. Read as (told him): the Tow Line, the
+Golem's own rocket jump to where she lands, free; the Golem almost intangible, everywhere; the Crier's Hush, a look for the enemies
+near him losing their words; every unique that drops, pool or boss, a beam of orange light where it lands. The King's Knot, the
+Unsigned Pact and the Winning Streak stay as they are.
+
+## The Tow Line: the Golem rides her jump on its own rocket jump (RULES, game/game.ts)
+
+`towRide` (new): as she blasts off (the blast jump's start), each Golem of hers fires its own rocket jump with her (from the frame
+before its blast, `ROCKET.blast - 1`: no crouch, it goes up with her bomb) to its own side of where she comes down, as it keeps by
+her (golemSpot's sides), and lands as its own jump lands, its fist slam (stepRocket's `golemPounds` with `landing`: the crater and
+dust its landing's own, no `golemPound` event). FREE: its jump's wait is not looked at, and as it lands it is set back to none
+(`Golem.towed`, state.ts; cleared as it lands, or if it is whistled back). One within a tile of its spot, charging its shot or in the
+air already, does not ride: it pounds where it stands as she lands (blastLands, its pound as before). The old blink to her side as
+she landed is gone. It lands about a quarter of a second after her (its flight 21 frames, hers 18). The pound's strength is now its
+own jump's (golemFrac) where it was her blast's countDmg times UNIQUE_TUNE.tow.share: the main chat's numbers to keep or change.
+
+## The Golem almost intangible (RULES, game/game.ts GOLEM_R, NOT BEHIND A SWITCH)
+
+His words above. The Golem's walk meets only walls (no monster and not she stand in its way: the bodies kept apart in
+updateMonsters are monsters and her); what caught it was its own width, `GOLEM_R` 0.45, nine tenths of a tile, in doors one tile
+wide, round pillars and corners. Now 0.3, as hers (TUNE.heroRadius): it goes wherever she can. ITS LOOK IS UNCHANGED; it goes live
+with the next update once merged.
+
+To see the ride: `LOOK=tow FILM=4.6 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario
+tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/towfilm` (her Golem whistled out by two enemies, then her Blast Jump
+there and back; `rides: 2` printed). Pictures sent him: `pictures/towline.mp4` and `pictures/towline.png`.
+
+Checked: tests/uniques_heroes.test.ts (21; its Tow Line test now: one ride, it lands by her, by its rocket jump and not a pound
+where it stood, its jump ready again, the dummy hurt); tests/tinkerer, golem_rocket, golem_combo, golem_moves, golem_gun,
+golem_charge, tinkerer_talents, tinkerer_moves, action_f6 all pass, each alone with tsx; tsc clean; the look filmed, finished clean.
+NOT CHECKED: his phone (the slimmer Golem is a feel); tools/unit.mjs.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills, asked whether to hand it to main with the Golem's slimmer body: “Yes,
+hand it to main (Recommended)”.
+
+## The Crier's Hush: the hushed enemies
+
+Behind `UNIQUE_PLAY.hush`, off. Its rules (game.ts hushNear) keep an enemy's words in `Monster.dark` while it is within reach, and
+tell of each as `dark` and `light`. While it is hushed its elite ring and its name are drawn in the Hush's dead grey (art/crier.ts
+`HUSH`, the Crier's own, the grey his Hush writes the hero's words in), where the build fell back to a plain pink ring
+(render/render.ts: the ring in drawWorld, `nameColor`); wisps of the Hush drift up off it a few a second (UniqueFx.update). On its
+`dark`, a ring of the Hush's grey closes in on it (the effects' `closing` ring) and its dead air is puffed up off it; on its
+`light`, a ring and a spray of its word's own colour, with white. (PACK_MARKS, off, draws no mark for a hushed one: its words are
+kept off it; with the marks on, that is the main chat's to weigh.)
+
+To see it: `LOOK=hush FILM=4.4 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario
+tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/hushfilm` (the Warrior walks up to three elites with words and away).
+Pictures sent him: `pictures/criershush.mp4` and `pictures/criershush.png`.
+
+Checked: tests/unique_play3_hush.test.ts (new, 2: its switch off and nothing with it off; on, the closing ring and the puff in the
+Hush's grey, the return in the word's own colour) and tests/unique_play.test.ts (6, counting `hush`), each alone with tsx; tsc
+clean; the look filmed, finished clean.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills: “Yes, hand it to main (Recommended)”.
+
+## Every unique dropped: a beam of orange
+
+His words above (“Whatever we do any unique drop it should apply to all drops”). Behind `UNIQUE_PLAY.drop`, off. Drawn from the
+floor's drops themselves (any item of rarity 3, the pool's or a boss's own; no event needed: a pool unique tells of none), in
+`UniqueFx.drawBeams` (over everything, as a word's shaft is) and its ring in `drawGround`: a beam of the uniques' orange
+(art/palette.ts `RARITY_COLOR[3]`, the colour their names are written in), its middle brighter and its core white, `DROP_BEAM.tall`
+(96) game pixels, thinning to nothing at its top and breathing, motes of it rising up it; as it lands it shoots up out of the floor in
+`DROP_BEAM.rises` (0.3 s), white for its first moment, and a ring of white then orange runs out on the floor round it. Taken up, it
+is gone with the drop. Its light is drawn over the dark; the floor's own light round it is the game's (a rare's or a unique's spot).
+
+To see it: `LOOK=drop FILM=3.4 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario
+tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/dropfilm` (a pool unique, the Fan, and a boss's own, the Moth's Wing,
+set down by him as a drop is, a moment apart). Pictures sent him: `pictures/uniquedrop.mp4` and `pictures/uniquedrop.png`.
+
+Checked: tests/unique_play3_drop.test.ts (new, 2: its switch off and nothing drawn; on, any unique's beam in the orange and white,
+white and its ring as it lands, nothing for a rare nor for one not yet seen) and tests/unique_play.test.ts (6, counting `drop`),
+each alone with tsx; tsc clean; the look filmed, finished clean.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills: “Yes, hand it to main (Recommended)”.
+
+## For the main chat
+
+Bring in `art/uniques-play2` first (the queue's bring-in-drowned-arm-picture), then this branch: `wind`, `moth`, `hush` and `drop` go on
+with the uniques (`UNIQUES`), with the others; test 1 of tests/unique_play.test.ts asserts every switch off: change it then.
+
+## Nothing left to draw
+
+Every unique's moment in play is drawn with his yes or left as the game shows it at his word (above). Left for others, not drawn
+here: the Warlock's own red book still at his hip while the Restless Tome flies (his baked pictures; told him 11 Nov); a pool
+unique landing with no sound (the queue's wire-shafts-rim-sounds has his pick, the rare chime as any unique lands).

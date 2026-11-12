@@ -36,6 +36,8 @@ import type { Banner } from './guide';
 import { THEME } from './ui';
 import type { Ui } from './ui';
 import { arrow, drawWordTile, nameParts, tileWidth, wordForm } from './words';
+import { UNIQUE_PLAY } from '../render/unique_play';
+import type { Sprite } from '../engine/px';
 
 export interface HudOut {
   /** Open the inventory: -1 = no; 0, 1 or 2 = that ability's phrase (or the evasive move's button) was pressed; 3 = the INVENTORY button. */
@@ -522,6 +524,8 @@ interface Piece {
   word: WordId | null;
   /** An empty socket that a spare word could go into right now. */
   glow: boolean;
+  /** UNIQUE ITEMS, The Moth's Wing: this word is dark (its rune stone greyed). */
+  dark?: boolean;
 }
 
 /**
@@ -537,26 +541,29 @@ function phrase(h: Hero, s: number, tight: number): Piece[] {
   const glowF = fits(sk.front);
   const glowB = fits(sk.behind);
   // (ACT 2, THE HUSH on the hero, Game.hush: his doc, "a status that darkens your words for a few seconds": his words written dark)
-  const word = (w: WordId, form: 'front' | 'behind', rune: boolean): Piece => {
+  // (UNIQUE ITEMS, The Moth's Wing: the one word a hit has darkened written grey and dim, and white for a moment as it comes back)
+  const word = (w: WordId, form: 'front' | 'behind', rune: boolean, k: number): Piece => {
     const text = wordForm(w, form);
-    const color = HUSHED.on ? HUSHED.color : WORD_COLOR[w];
-    return rune ? { kind: 'rune', text, color, w: 12, word: w, glow: false } : { kind: 'word', text, color, w: textWidth(text), word: w, glow: false };
+    const dark = mothIs(MOTH.dark, s, form, k);
+    const back = !dark && mothIs(MOTH.back, s, form, k);
+    const color = HUSHED.on ? HUSHED.color : dark ? MOTH.color : back ? MOTH.flash : WORD_COLOR[w];
+    return rune ? { kind: 'rune', text, color, w: 12, word: w, glow: false, dark } : { kind: 'word', text, color, w: textWidth(text), word: w, glow: false };
   };
   const empty = (glow: boolean): Piece => ({ kind: 'empty', text: '', color: '', w: SLOT_W, word: null, glow });
-  for (const w of sk.front) out.push(w ? word(w, 'front', tight >= 2) : empty(glowF));
+  sk.front.forEach((w, k) => out.push(w ? word(w, 'front', tight >= 2, k) : empty(glowF)));
   const name = SKILLS[sk.id].name.toUpperCase();
   out.push({ kind: 'name', text: name, color: P.white, w: textWidth(name), word: null, glow: false });
   let first = true;
-  for (const w of sk.behind) {
+  sk.behind.forEach((w, k) => {
     if (!w) {
       out.push(empty(glowB));
-      continue;
+      return;
     }
     const link = first ? 'of' : 'and';
     out.push({ kind: 'link', text: link, color: THEME.dim, w: textWidth(link, 'small'), word: null, glow: false });
-    out.push(word(w, 'behind', tight >= 1));
+    out.push(word(w, 'behind', tight >= 1, k));
     first = false;
-  }
+  });
   return out;
 }
 
@@ -571,7 +578,7 @@ function drawPhrase(g: CanvasRenderingContext2D, art: Art, ps: Piece[], x0: numb
     if (p.kind === 'word' || p.kind === 'name') drawText(g, p.text, x, ty, p.color, { shadow: P.ink });
     else if (p.kind === 'link') drawText(g, p.text, x, ty + 3, p.color, { font: 'small' });
     else if (p.kind === 'rune' && p.word) {
-      const icon = art.icons.word[p.word];
+      const icon = p.dark ? greyed(art.icons.word[p.word]) : art.icons.word[p.word];
       g.drawImage(icon.img, x, y + Math.floor((h - icon.h) / 2));
     } else {
       // an empty socket: a dark notch with a plus in it. It glows while a spare word could go in.
@@ -939,8 +946,53 @@ function drawGesture(g: CanvasRenderingContext2D, kind: 'stick' | 'tap' | 'hold'
 /** ACT 2, THE HUSH: whether the hero's words are dark this frame (set by drawHud from Game.hushT), and the dark they are written in. */
 const HUSHED = { on: false, color: '#4a4658' };
 
+/**
+ * UNIQUE ITEMS, THE MOTH'S WING (behind UNIQUE_PLAY.moth, off): the word of his a hit has darkened this frame (set by drawHud from
+ * Game.uq.dark: which attack, which side, which place), and the one that has just come back, and when; the grey it is written in,
+ * and the white it flashes as it comes back, for so long (seconds).
+ */
+type MothSpot = { skill: number; side: 'front' | 'behind'; idx: number };
+export const MOTH = { dark: null as MothSpot | null, back: null as MothSpot | null, backAt: -9, color: '#6a6478', flash: '#ffffff', flashes: 0.3 };
+const mothIs = (q: MothSpot | null, skill: number, side: 'front' | 'behind', idx: number): boolean => !!q && q.skill === skill && q.side === side && q.idx === idx;
+/** MOTH: this frame's dark word and the one coming back, from the game's (and the clock), with the switch on. */
+export function mothNow(game: Game, t: number): void {
+  const now = UNIQUE_PLAY.moth ? game.uq.dark : null;
+  const was = MOTH.dark;
+  if (was && !(now && mothIs(now, was.skill, was.side, was.idx))) {
+    MOTH.back = was;
+    MOTH.backAt = t;
+  }
+  MOTH.dark = now ? { ...now } : null;
+  if (MOTH.back && t - MOTH.backAt > MOTH.flashes) MOTH.back = null;
+}
+/** A word's rune stone greyed and dimmed (made once a stone, and kept). */
+const greyStones = new Map<Sprite, Sprite>();
+function greyed(s: Sprite): Sprite {
+  let o = greyStones.get(s);
+  if (o) return o;
+  const cv = document.createElement('canvas');
+  cv.width = s.img.width;
+  cv.height = s.img.height;
+  const c = cv.getContext('2d') as CanvasRenderingContext2D;
+  c.drawImage(s.img, 0, 0);
+  const im = c.getImageData(0, 0, cv.width, cv.height);
+  const d = im.data;
+  for (let i = 0; i < d.length; i += 4) {
+    // (its own light kept, its colour taken out, and half as bright)
+    const l = (0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]) * 0.55;
+    d[i] = Math.round(l * 1.0);
+    d[i + 1] = Math.round(l * 0.96);
+    d[i + 2] = Math.round(l * 1.12);
+  }
+  c.putImageData(im, 0, 0);
+  o = { ...s, img: cv };
+  greyStones.set(s, o);
+  return o;
+}
+
 export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: Input, inp: HudIn): HudOut {
   HUSHED.on = game.hushT > 0;
+  mothNow(game, t);
   const g = ui.g;
   const W = ui.w;
   const H = ui.h;
@@ -1032,17 +1084,25 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     ui.slot(ex, py, ps, art.icons.ability[def.icon], THEME.edgeHi);
     // its words (Version 12.2): a pip for each in its colour, those in front along the top of the
     // button and those behind along the bottom; and its name above, where there is room (below)
-    s.front.filter((w): w is WordId => w !== null).forEach((w, i) => {
+    // (UNIQUE ITEMS, The Moth's Wing: a dark word's pip grey, white for a moment as it comes back)
+    const pip = (w: WordId, side: 'front' | 'behind', k: number): string => (mothIs(MOTH.dark, 2, side, k) ? MOTH.color : mothIs(MOTH.back, 2, side, k) ? MOTH.flash : WORD_COLOR[w]);
+    let fi = 0;
+    s.front.forEach((w, k) => {
+      if (!w) return;
       g.fillStyle = P.ink;
-      g.fillRect(ex + 1 + i * 5, py + 1, 5, 5);
-      g.fillStyle = WORD_COLOR[w];
-      g.fillRect(ex + 2 + i * 5, py + 2, 3, 3);
+      g.fillRect(ex + 1 + fi * 5, py + 1, 5, 5);
+      g.fillStyle = pip(w, 'front', k);
+      g.fillRect(ex + 2 + fi * 5, py + 2, 3, 3);
+      fi++;
     });
-    s.behind.filter((w): w is WordId => w !== null).forEach((w, i) => {
+    let bi = 0;
+    s.behind.forEach((w, k) => {
+      if (!w) return;
       g.fillStyle = P.ink;
-      g.fillRect(ex + 1 + i * 5, py + ps - 6, 5, 5);
-      g.fillStyle = WORD_COLOR[w];
-      g.fillRect(ex + 2 + i * 5, py + ps - 5, 3, 3);
+      g.fillRect(ex + 1 + bi * 5, py + ps - 6, 5, 5);
+      g.fillStyle = pip(w, 'behind', k);
+      g.fillRect(ex + 2 + bi * 5, py + ps - 5, 3, 3);
+      bi++;
     });
     if (def.cooldown > 0 && s.charges < 1) {
       const cover = Math.max(0, Math.min(1, s.cd / Math.max(0.01, s.r.cooldown)));
