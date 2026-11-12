@@ -88,6 +88,7 @@ export interface PackOf {
  * has a frame to show. His stance, his run and struck are always held whole.
  */
 export function packsOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[][] | null {
+  if (k.cls === 'warlock') return warlockPacksOf(k, sides);
   if (k.cls !== 'brawler' || !k.vet || k.place === 'card' || sides.length !== 8) return null;
   return sides.map((side) => {
     const of = new Map<unknown, PackOf>();
@@ -96,6 +97,61 @@ export function packsOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[
     for (const [id, h] of Object.entries(c?.vetHalves ?? {})) of.set(h.frames, { pack: id, lead: false });
     for (const [id, fx] of Object.entries(c?.vetFx ?? {})) for (const layer of Object.values(fx)) of.set(layer, { pack: id, lead: false });
     if (c?.fall) of.set(c.fall.frames, { pack: 'fall', lead: true });
+    return bakeLists(side).map((l) => of.get(l) ?? null);
+  });
+}
+
+/**
+ * THE WARLOCK KEPT IN PACKS (the queue's finish-mage-and-warlock-eight-sides, 12 Nov 2026; his words, asked whether the Warlock
+ * brought up was right and told he would want packing for his phone: “Why don’t you pack him away?”). Brought up from all eight
+ * sides (art/warlock_up.ts WARLOCK_UP) he is 6,136 frames, about 142 MB as pictures of their own, where he was 28 from two
+ * sides; and his demon redone, the Living Shadow (art/shadow_art.ts LIVING_SHADOW), is 1,506 from its two sides, about 145 MB,
+ * where the game's demon is 78. So, as the Brawler is, he holds always only what he shows all the time and the first frame of
+ * every move, and every move of his, from each side, is a pack of its own, opened as it is shown (and a moment ahead:
+ * render/warlock_packs.ts):
+ *   A MAN BROUGHT UP (eight sides; where the game is played: in town, in a dungeon, his arm blazing; never his card): HELD, his
+ *   run (and blazing); PACKED, from each side, his stand (`stand`; blazing, `standBlaze`: he stands facing one way at a time), his
+ *   bolt, his curse, the smoke step (both its ends), struck (from in front and from behind), his fall, and the change.
+ *   THE LIVING SHADOW (its two sides; the game's own demon, with no rearing up, is not packed): HELD, its run on all fours;
+ *   PACKED, from each side, its stand (`it-stand`), dropping down and rearing up (`it-rear`), its slashes standing (`it-slash`) and
+ *   walking (`it-walkSlash`), Damning, its smoke step, struck, and its burning out (`it-burn`).
+ * A list's first frame is always held, so a move not unpacked yet shows it, a few hundredths of a second.
+ */
+function warlockPacksOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[][] | null {
+  if (k.place === 'card') return null;
+  const shadow = k.place === 'demon' && sides.length === 2 && !!sides[0].stops?.length;
+  const man = k.place !== 'demon' && sides.length === 8;
+  if (!shadow && !man) return null;
+  return sides.map((side) => {
+    const of = new Map<unknown, PackOf>();
+    const put = (l: readonly unknown[] | undefined, pack: string): void => {
+      if (l && l.length) of.set(l, { pack, lead: true });
+    };
+    const c = side.clips;
+    if (man) {
+      put(side.idle, k.place === 'blaze' ? 'standBlaze' : 'stand');
+      put(c?.attack?.frames, 'bolt');
+      put(c?.heavy?.frames, 'curse');
+      put(c?.leap?.frames, 'step');
+      put(c?.land?.frames, 'step');
+      put(c?.reel?.frames, 'struck');
+      put(c?.lurch?.frames, 'struck');
+      put(c?.fall?.frames, 'fall');
+      put(c?.change?.frames, 'change');
+    } else {
+      put(side.idle, 'it-stand');
+      put(side.start?.frames, 'it-rear');
+      for (const st of side.stops ?? []) put(st.frames, 'it-rear');
+      put(c?.attack?.frames, 'it-slash');
+      put(c?.attack2?.frames, 'it-slash');
+      for (const w of c?.attackWalk ?? []) put(w.frames, 'it-walkSlash');
+      put(c?.heavy?.frames, 'it-damning');
+      put(c?.leap?.frames, 'it-step');
+      put(c?.land?.frames, 'it-step');
+      put(c?.reel?.frames, 'it-struck');
+      put(c?.lurch?.frames, 'it-struck');
+      put(c?.change?.frames, 'it-burn');
+    }
     return bakeLists(side).map((l) => of.get(l) ?? null);
   });
 }

@@ -2,6 +2,8 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
+import { warlockAskAhead } from './warlock_packs';
+import type { AskPack } from './warlock_packs';
 import { COLOSSUS, HIS_PLACE, onStoneOrJetty, stoneToWorld, worldToStone } from '../game/colossus_fight';
 import { colossusOf, colossusOn } from '../game/act1_rules/colossus';
 /** (COLOSSUS) How far the picture leans up toward him on his stone (game pixels). */
@@ -710,6 +712,8 @@ export class Renderer {
   readonly figure = new Figure();
   /** THE VETERAN (game/veteran.ts, behind VETERAN): his frame while a move plays, and what his blows throw off (render/veteran_fx.ts). */
   readonly vetFx = new VeteranFx();
+  /** THE WARLOCK'S PACKS asked for ahead (render/warlock_packs.ts; main.ts sets it where he is baked in packs): none, nothing asked. */
+  warlockPacks: AskPack | null = null;
   /** Which hero the figure was last asked for (a new character starts over). */
   private figureOf = '';
   /** The hero's life as a bar over their head: when it is there and what it shows (lifebar.ts). */
@@ -2824,6 +2828,8 @@ export class Renderer {
       // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: the war axe or the maul in his hands, once his tree has picked it)
       ...(arms ? { weapon: arms } : {}),
     };
+    // (THE WARLOCK KEPT IN PACKS: what he shows and may show next, from his side, asked for a moment ahead: render/warlock_packs.ts)
+    if (h.cls === 'warlock' && this.warlockPacks) warlockAskAhead(this.warlockPacks, h, !!look.blaze, !!game.level.town, !!game.over);
     // Frames are painted ahead of need each time the world is drawn: the hero's, and those of the
     // monsters in this dungeon, turn and turn about. At least one each time, and more for as long
     // as it has cost less than WARM_MS (a fast machine has them all in a second or two; a slow
