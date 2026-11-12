@@ -8,13 +8,27 @@ worn, which only exists with `UNIQUES` on. With a switch off that unique is show
 These are the three the build had no picture for at all (docs/uniques/README.md 4 and 5), as the queue item asked to start
 with: The Restless Tome's book in flight, The Fleshmancer's Brand's risen elite, the fourth globe over the Brawler's head.
 
-## His words
+## His words (11 Nov 2026, evening, each by pop-up)
 
-Sent to him 11 Nov 2026 (evening): a picture of each of the three (`pictures/restless_tome.png`,
-`pictures/fleshmancers_brand.png`, `pictures/fourth_globe.png`) and a short film of each (MP4), and asked of each by pop-up
-whether it is good to hand to the main chat; and, as the queue item asked, a picture of a unique's card
-(`pictures/unique_card.png`) and whether that look is right. HIS ANSWERS ARE NOT IN YET: until they are, none of the three
-has his yes.
+Sent a picture of each of the three (`pictures/restless_tome.png`, `pictures/fleshmancers_brand.png`,
+`pictures/fourth_globe.png`) and a short film of each (MP4, made by tools/uniques_play_film.py), and asked of each whether
+its look is good to hand to the main chat:
+
+- The Restless Tome, offered as: your red book flies round you beating its boards like wings, red-orange fire streaming
+  behind it, and its fire leaps onto an enemy it touches: “Yes, hand it to main (Recommended)”.
+- The Fleshmancer's Brand, offered as: the elite you killed is pulled back up, drained grey and glowing your cyan, with the
+  brand's ring under it burning away as its 15 seconds run out: “Yes, hand it to main (Recommended)”.
+- The Fourth Globe, offered as: a fourth globe the same as the other three over the Brawler's head, and the bar joins all
+  four when the combo locks: “Yes, hand it to main (Recommended)”.
+
+**So all three have his yes**, each offered as: queued for the main chat to bring in, behind its switch, still off.
+
+And, as the queue item asked, a picture of a unique's card as the build has it (`pictures/unique_card.png`: its name and what
+it does in orange, its price in red, four orange pips under it in the bag), asked whether that look is right. His own words:
+“I think it just has pips equal to the number of mods it has”. Read as: a unique should not always show four orange pips; it
+shows one for each mod it has, as other pieces do (src/ui/panels.ts `drawItemPips` lights all four for a unique today). He
+said nothing against the card's colours. Not this chat's to change (the card and the pips are the build's): passed on as a
+queue item for the main chat, his words in it; which of a unique's lines count as mods is that chat's to ask him.
 
 ## What is drawn
 
@@ -89,12 +103,14 @@ Nothing of game/ is changed.
   turn (`LOOK=kinds`): no error on the page.
 - Every picture looked at big (tools/uniques_play_peek.ts) and at a phone's own size in the game, beside the Brawler and
   the Warlock.
-- The unit suite's own run of what this is about: see the foot of this note.
+- `node tools/unit.mjs --only unique_play,veteran,veteran_art,items_unique,uniques_game` on 0937ccb6fe (the five and the core
+  23): 28 files, 415 tests, 28 passed, 0 failed.
 
 ## Not done
 
-1. **Bringing it in** is the main chat's: each switch goes on with `UNIQUES`, on his yes to that picture. Test 1 of
-   tests/unique_play.test.ts asserts them off: change it then.
+1. **Bringing it in** is the main chat's (queue item `bring-in-unique-play-pictures`): all three have his yes, so each
+   switch goes on when `UNIQUES` does. Test 1 of tests/unique_play.test.ts asserts them off: change it then. The build's two
+   stand-ins (game.ts stepTome's spark, raise's sparks) can go then too; until they do `UniqueFx.owns` leaves them out.
 2. **The rest of the queue item's list**, not begun: The Drowned Arm's tentacle (`warn`, `slam`), The Queen's Talons' bird
    (`dive`), The Rainwalker, The Shepherd's Crook, The Tide (`turn`), The Windcutter's blade of wind (`blade`), The Fan's three
    arrows, The Sticky Wrench's stuck vial (`stuck`), The Moth's Wing's darkened word (`dark`, `light`); and the moments the
