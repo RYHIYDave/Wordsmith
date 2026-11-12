@@ -73,6 +73,8 @@ own pictures are the same, pixel for pixel.
   (nothing of the game imports it) now lets art/prison_story.ts borrow its painters (no piece of floor 5's is made there); its
   test 7 (Colour 4, the drag marks and the mine's pools 75 against the darkest word's 61) fails the same on main b09cfabf: not
   this branch's (its pictures are the same pixel for pixel).
+- With it ON (aa77d350): `node tools/unit.mjs --changed`, 24 of 24 files (what changed and the core); the floors' own playtest
+  `tools/scenarios/first5_floor.mjs` on floors 1 to 4 (phone size, a page of the branch), all four clean, their moments played.
 - `tools/scenarios/story_look.mjs`: a still of each room of the way, in order (DEPTH 1 to 4, SEED; STORIES=0 for the same rooms
   without it; FIND="a piece|another" for a still of the first of each laid). The pictures in `pictures/`: `floor1_story.png`
   to `floor4_story.png`, one room for each beat in order (floor 1 seed 33, the others 7919), at 1.3 times the game's size on
