@@ -189,7 +189,7 @@ test('5. Leaping Chop: the blow 1.5 tiles before where he lands, 1.6 round', () 
   use(g, seen, 2, g.hero.x + 4, g.hero.y);
   run(g, seen, 1.2);
   const blow = seen.find((e): e is Extract<GameEvent, { t: 'burst' }> => e.t === 'burst' && e.style === 'land');
-  assert.ok(blow, 'it came down');
+  if (!blow) assert.fail('it came down');
   assert.ok(near(blow.x - g.hero.x, 1.5, 0.05) && near(blow.r, 1.6, 0.05), `${(blow.x - g.hero.x).toFixed(2)} before him, ${blow.r} round`);
   void a;
 }));
