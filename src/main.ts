@@ -87,7 +87,7 @@ import { Input } from './engine/input';
 import { LEDGE_H, screenDirToWorld, sx as isoSX, sy as isoSY, toWorldX, toWorldY } from './engine/iso';
 import { WARLOCK, WARLOCK_TUNE, playableClasses } from './game/warlock';
 import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
-import { spriteCovers } from './engine/px';
+import { sheetCuts, sheetWhere, spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { RES, createScreen } from './engine/screen';
 import { ACT2_WALLS } from './render/act2_walls';
@@ -2727,11 +2727,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const dbg = {
     /** THE HEROES BAKED (render/baked.ts): what has been taken in from the bake, and what failed (null: no bake on this page). */
     baked: () => (painter.baked ? { ...painter.baked.stats } : null),
+    /** FRAMES KEPT IN THEIR SHEETS (engine/px.ts sheetSprite): how many have been cut from their sheets, and where a frame is on its sheet (the playtests: tools/scenarios/sheet_frames.mjs). */
+    sheetCuts: () => sheetCuts(),
+    sheetWhere: (s: Sprite) => sheetWhere(s),
     /**
      * THE TOWN'S PEOPLE BAKED (render/townsfolk_baked.ts): what has been taken in from their files and what failed (null: none
      * to be had on this page); whether the sculpted four are the town's people here; and the switches (`on`, `letGo`).
      */
     bakedFolk: () => (bakedFolk ? { ...bakedFolk.stats, ready: bakedFolk.ready(), done: bakedFolk.done(), settled: bakedFolk.settled(), shown: townsfolk3Shown() } : null),
+    /** The town's people's lists, as their bake fills them (the playtests: tools/scenarios/sheet_frames.mjs). */
+    folkLists: () => folkLists(art.folk, smithDark3()),
     townsfolkBaked: TOWNSFOLK_BAKED,
     /**
      * THE FLOORS' MONSTERS BAKED (render/monsters_baked.ts): what has been taken in from their files and what failed (null: none

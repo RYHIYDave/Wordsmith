@@ -41,7 +41,9 @@ export default async function (page, snap) {
           places++;
           const dsc = Object.getOwnPropertyDescriptor(list, i);
           if (dsc && typeof dsc.get === 'function') unpainted++;
-          else if (dsc && dsc.value && typeof dsc.value.img.getContext !== 'function') bitmaps++;
+          // (from the files: a frame kept in its sheet, engine/px.ts sheetSprite; asked so, it is not cut for the counting. Before
+          // the sheets were held, a picture the browser had made for it, which has no getContext.)
+          else if (dsc && dsc.value && (d.sheetWhere ? !!d.sheetWhere(dsc.value) : typeof dsc.value.img.getContext !== 'function')) bitmaps++;
         }
       }
     }

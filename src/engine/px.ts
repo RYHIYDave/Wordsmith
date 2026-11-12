@@ -23,6 +23,7 @@ export interface Light {
  * Draw sprites with `drawSprite`, which lays the picture down at its size in game pixels.
  */
 export interface Sprite {
+  /** The picture. (A baked frame kept in its sheet has none of its own until something asks for this: `sheetSprite`, below.) */
   img: HTMLCanvasElement;
   w: number;
   h: number;
@@ -418,6 +419,141 @@ export function flippedPixels(): number {
   return bigFlipPx;
 }
 
+// ---------------------------------------------------------------------------------------------
+// FRAMES KEPT IN THEIR SHEETS (the heroes' and the townsfolk's baked pictures: render/baked.ts, render/townsfolk_baked.ts).
+//
+// HIS PHONE, MEASURED FOR THE FIRST TIME (the phone check, 12 Nov 2026: docs/requests/phone_check.md; an iPhone, in the Claude
+// app; his words of the evening before, of the eight-sides test page: “60 SECOND LOAD TIME to enter THE TOWN”, “THE LOADING
+// SCREEN LAGS”): a picture made by the browser for every baked frame as it was taken in (createImageBitmap(sheet, x, y, w, h))
+// was 7.1 ms a frame there, on the game's own thread: 68.5 s of the Brawler's 74-second load into town, the screen standing
+// still up to 9 s at a time, and twice the page restarted itself. The same on the machine every chat tests on: 3 s. Drawn, a
+// frame straight from its sheet or from a small canvas cut from it cost his phone nothing more than the picture did.
+// His word, asked whether to build it: “Yes, build it (Recommended)”.
+//
+// So NO PICTURE IS MADE FOR A FRAME AS IT IS TAKEN IN. The sheet is held whole. A baked frame's Sprite knows its sheet and
+// where it is on it, and its `img` is cut from the sheet (a small canvas, as a painted frame's is) the first time something
+// asks for it: nothing that draws a Sprite is changed, and what is drawn is the same pixels. The cut pictures in hand are
+// kept to CUT_BUDGET: past it the least lately asked for are let go of (given back RETIRE_MS on, as any picture let go of
+// is), and cut again from the sheet should they be asked for again.
+
+/** A sheet of baked frames, held whole by whoever took it in (`img` null: let go of; its frames then show nothing). */
+export interface FrameSheet {
+  img: (CanvasImageSource & { width: number; height: number; close?: () => void }) | null;
+}
+interface Cut {
+  sheet: FrameSheet;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Its picture, cut from the sheet (null: not cut, or let go of). */
+  cv: HTMLCanvasElement | null;
+}
+/** How many pixels of frames cut from their sheets are kept in hand (24 MB of pictures). */
+export const CUT_BUDGET = { px: 6_000_000 };
+const cuts = new WeakMap<Sprite, Cut>();
+/** The frames cut and in hand, the least lately asked for first. */
+const inHand = new Map<Sprite, Cut>();
+let inHandPx = 0;
+let lastAsked: Sprite | null = null;
+const cutCount = { made: 0, letGo: 0 };
+const retiredCuts: { cv: HTMLCanvasElement; at: number }[] = [];
+
+function letCutGo(s: Sprite, c: Cut): void {
+  const cv = c.cv;
+  if (!cv) return;
+  c.cv = null;
+  if (inHand.delete(s)) inHandPx -= c.w * c.h;
+  if (lastAsked === s) lastAsked = null;
+  cutCount.letGo++;
+  // (whoever drew it this frame holds it a moment yet: given back RETIRE_MS on, as a picture retired is)
+  retiredCuts.push({ cv, at: clockMs() });
+}
+function cutOf(s: Sprite, c: Cut): HTMLCanvasElement {
+  if (c.cv) {
+    // (asked for again: to the back of the line of those to let go of)
+    if (lastAsked !== s) {
+      inHand.delete(s);
+      inHand.set(s, c);
+      lastAsked = s;
+    }
+    return c.cv;
+  }
+  const from = c.sheet.img;
+  if (!from) return pictureOfNothing();
+  let cv: HTMLCanvasElement;
+  if (typeof document === 'undefined') {
+    // (where there is no page, in the unit tests: a stand-in of the same size)
+    cv = { width: c.w, height: c.h } as HTMLCanvasElement;
+  } else {
+    cv = document.createElement('canvas');
+    cv.width = c.w;
+    cv.height = c.h;
+    cv.getContext('2d')!.drawImage(from, c.x, c.y, c.w, c.h, 0, 0, c.w, c.h);
+  }
+  c.cv = cv;
+  inHand.set(s, c);
+  inHandPx += c.w * c.h;
+  lastAsked = s;
+  cutCount.made++;
+  for (const [old, oc] of inHand) {
+    if (inHandPx <= CUT_BUDGET.px || old === s) break;
+    letCutGo(old, oc);
+  }
+  return cv;
+}
+function reapCuts(all: boolean): void {
+  if (retiredCuts.length === 0) return;
+  const t = clockMs();
+  let n = 0;
+  while (n < retiredCuts.length && (all || t - retiredCuts[n].at >= RETIRE_MS)) {
+    const cv = retiredCuts[n++].cv;
+    cv.width = 0;
+    cv.height = 0;
+  }
+  if (n) retiredCuts.splice(0, n);
+}
+/**
+ * A baked frame, kept in its sheet: `part` is the rest of the Sprite (its size, anchor, lights...), and (x, y, w, h) where
+ * its picture is on the sheet, in the sheet's pixels. Its `img` is cut from the sheet when it is first asked for. Given
+ * another picture (`s.img = ...`: the picture of nothing, as it is let go of), it is a Sprite as any other from then on.
+ */
+export function sheetSprite(part: Omit<Sprite, 'img'>, sheet: FrameSheet, x: number, y: number, w: number, h: number): Sprite {
+  const s = { ...part } as Sprite;
+  const c: Cut = { sheet, x, y, w, h, cv: null };
+  cuts.set(s, c);
+  Object.defineProperty(s, 'img', {
+    configurable: true,
+    enumerable: true,
+    get: () => cutOf(s, c),
+    set: (v: HTMLCanvasElement) => {
+      letCutGo(s, c);
+      cuts.delete(s);
+      Object.defineProperty(s, 'img', { value: v, writable: true, configurable: true, enumerable: true });
+    },
+  });
+  return s;
+}
+/** How many pixels a picture is, without making it (a frame kept in its sheet is not cut for the asking). */
+export function imgPx(s: Sprite): number {
+  const c = cuts.get(s);
+  return c ? c.w * c.h : s.img.width * s.img.height;
+}
+/** Is this a frame kept in its sheet (and not let go of)? */
+export function inSheet(s: Sprite): boolean {
+  return cuts.has(s);
+}
+/** Where a frame kept in its sheet is on it (null: not one, or let go of). For the playtests (tools/scenarios/sheet_frames.mjs). */
+export function sheetWhere(s: Sprite): { sheet: FrameSheet; x: number; y: number; w: number; h: number; cut: boolean } | null {
+  const c = cuts.get(s);
+  return c ? { sheet: c.sheet, x: c.x, y: c.y, w: c.w, h: c.h, cut: !!c.cv } : null;
+}
+/** For measuring and the tests: frames cut from their sheets so far, let go of, in hand now and their pixels, and waiting to be given back. */
+export function sheetCuts(): { made: number; letGo: number; inHand: number; px: number; waiting: number } {
+  return { made: cutCount.made, letGo: cutCount.letGo, inHand: inHand.size, px: inHandPx, waiting: retiredCuts.length };
+}
+
+
 /**
  * PICTURES PUSHED OUT OF A BUDGET ARE GIVEN BACK, NOT ONLY FORGOTTEN (11 Nov 2026; his words: “lag and freezing issues after
  * playing a few levels”). A big mirror image or a silhouette let go of by its list kept its room until the browser noticed
@@ -437,7 +573,7 @@ const clockMs = (): number => (typeof performance !== 'undefined' && typeof perf
  * shared with another list would show nothing there too.
  */
 export function retireSprite(s: Sprite): void {
-  const px = s.img.width * s.img.height;
+  const px = imgPx(s);
   retired.push({ s, at: clockMs(), px });
   retiredPx += px;
 }
@@ -447,6 +583,7 @@ export function retiredPixels(): number {
 }
 /** Give back the pictures let go of RETIRE_MS ago or more (`all`: every one of them, now). How many were given back. */
 export function reapRetired(all = false): number {
+  reapCuts(all);
   if (retired.length === 0) return 0;
   const t = clockMs();
   let n = 0;
@@ -516,12 +653,21 @@ export function flipSprite(s: Sprite, passing = false): Sprite {
 
 /** A picture of nothing: what a sprite that has been let go of shows (so that whoever still holds it draws nothing, and nothing breaks). */
 let nothing: HTMLCanvasElement | null = null;
-function blank(s: Sprite): void {
+function pictureOfNothing(): HTMLCanvasElement {
   if (!nothing) {
     // (where there is no page, in the unit tests: a stand-in of the same size)
     nothing = typeof document !== 'undefined' ? document.createElement('canvas') : ({ width: 1, height: 1 } as HTMLCanvasElement);
     nothing.width = 1;
     nothing.height = 1;
+  }
+  return nothing;
+}
+function blank(s: Sprite): void {
+  const nothing = pictureOfNothing();
+  // (a frame kept in its sheet: only what was cut for it is its own to give back; the sheet is its holder's to close)
+  if (cuts.has(s)) {
+    s.img = nothing;
+    return;
   }
   const img = s.img as unknown as { close?: () => void; width: number; height: number };
   if ((img as unknown) === nothing) return;
@@ -540,7 +686,7 @@ function blank(s: Sprite): void {
  * that nobody holds a picture any more). The sprite is left showing nothing.
  */
 export function releaseSprite(s: Sprite): void {
-  const area = s.img.width * s.img.height;
+  const area = imgPx(s);
   // (itself a mirror image: the lists that hold it as one forget it, so that its picture is made again if it is asked for)
   const of = flipSource.get(s);
   if (of) {
