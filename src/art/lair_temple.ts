@@ -86,14 +86,16 @@ export const BAY = 2;
 
 type R5 = readonly [string, string, string, string, string];
 // (THE TEMPLE'S STONE AND FLAGS LIFTED A NOTCH, as floor 3's were with his yes of 9 Nov 2026 (art/prison.ts STONE): tone for tone by
-// the same lift, and its dark thinned from 0.8 to 0.65 as floor 3's (LAIR_LIGHTS, below; the threshold's T_STONE with them). The
+// the same lift, and its dark thinned from 0.8 to 0.65 as floor 3's (LAIR_LIGHTS, below), but its brightest tone held under the
+// darkest word (his rulebook's Colour 4, tests/lair_temple.test.ts: lifted with the rest it stood one over); the threshold's T_STONE
+// left as it was (still a tone above the temple's, the way on). The
 // queue's look-at-the-other-dark-floors, 12 Nov 2026: of floors 2, 3, 4, 5, 12 and 15 measured alike, floor 5's temple was the one
 // darker than floor 3 as he passed it. The stone was '#08070c', '#121018', '#1c1924', '#282433', '#3b3549'; the flags '#09080d',
 // '#131118', '#1d1a24', '#292532', '#3a3446'. The mine's rock and earth are as they were.)
 export const ROCK: R5 = ['#110d0b', '#211914', '#30251d', '#433428', '#5b4836'];
-export const STONE: R5 = ['#0e0c16', '#1a1724', '#272333', '#342f44', '#423b53'];
+export const STONE: R5 = ['#0e0c16', '#1a1724', '#272333', '#342f44', '#3e374f'];
 export const EARTH: R5 = ['#0f0b09', '#1c1510', '#291f17', '#372a1f', '#4a3a2b'];
-export const FLAGS: R5 = ['#100e18', '#1b1824', '#282433', '#353042', '#413a4f'];
+export const FLAGS: R5 = ['#100e18', '#1b1824', '#282433', '#353042', '#3e374d'];
 export const BONE: R5 = ['#1a1716', '#302a26', '#4a4139', '#655a4d', '#7f725f'];
 export const WOOD: R5 = ['#140d09', '#26180f', '#3a2616', '#50351f', '#6a472a'];
 export const IRON: R5 = ['#0a0a0c', '#161518', '#232026', '#332f37', '#4c4752'];
@@ -842,8 +844,7 @@ function thresholdTop(du: number): number {
 }
 
 /** The threshold's stone: the temple's, a tone lifted (it is the way on, and is seen from across the dark, as his gate is). */
-// (lifted with the temple's stone, 12 Nov 2026: it was '#0e0c13', '#1a1722', '#25212e', '#332e3e', '#4a4359')
-const T_STONE: R5 = ['#191523', '#252132', '#342e41', '#423c52', '#534a65'];
+const T_STONE: R5 = ['#0e0c13', '#1a1722', '#25212e', '#332e3e', '#4a4359'];
 /** THE THRESHOLD's face at a point (du from the way's middle, screen-relative: less than 0 toward the light; up). Null: the way, or nothing. `wall`: it is the rock of the wall it is cut into (it fades as the wall does). */
 function thresholdAt(du: number, up: number): { c: string; wall: boolean } | null {
   const S = T_STONE;
