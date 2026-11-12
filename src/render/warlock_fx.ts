@@ -30,7 +30,7 @@ import type { Sprite } from '../engine/px';
 import { drawSprite } from '../engine/px';
 import type { GameEvent, Projectile } from '../game/state';
 import type { Game } from '../game/game';
-import { Light, SMOKE, burn, burst, cloud, fire, smolder } from '../dev/warlock_fx';
+import { Light, SMOKE, bolt, burn, burst, cloud, fire, smolder } from '../dev/warlock_fx';
 import { HELL } from '../dev/sculpt_warlock';
 import { STUFF, crackStar, drawCrack, drawHole, jet } from '../dev/demon_fx';
 import type { Cam } from './fx';
@@ -72,8 +72,20 @@ const BURN_LOOP = 1.6;
 const burnFrames = (): Sprite[] => loop('burn', 16, (i) => piece(96, 140, 48, 120, (fl) => burn(fl, 48, 120, 36, 62, (i / 16) * BURN_LOOP, 1)));
 /** THE CURSED ONE'S SMOKE, round and round. */
 const smolderFrames = (): Sprite[] => loop('smolder', 16, (i) => piece(96, 150, 48, 128, (fl, sm) => smolder(fl, sm, 48, 128, 36, 62, (i / 16) * BURN_LOOP, 1, 3)));
-/** THE BOLT, its fire on its side, leaning back off the way it flies (left or right on the screen). */
-const boltFrames = (lean: number): Sprite[] => loop(`bolt${lean}`, 6, (i) => piece(60, 60, 30, 34, (fl) => fire(fl, 30, 34, 3.4, i * 0.07, lean)));
+/**
+ * THE BOLT IN FLIGHT, its tail streaming back behind it WHICHEVER WAY IT FLIES (his words, 12 Nov 2026, of the bolt seen in play:
+ * “fix the hellfire projectile so it’s tail doesn’t only face one way as well”). Before, his fire stood upright and only leaned left
+ * or right, so flying up or down the screen its tail still pointed up. Now it is the art's own bolt (dev/warlock_fx.ts bolt: his fire
+ * laid on its side along the way it flies, as the bolt leaving his claws is drawn), its nose at the anchor, for each of BOLT_WAYS
+ * ways round the screen; the one nearest the way it flies is drawn.
+ */
+const BOLT_WAYS = 16;
+const boltFrames = (way: number): Sprite[] =>
+  loop(`bolt${way}`, 6, (i) => {
+    const a = (way / BOLT_WAYS) * Math.PI * 2;
+    const [ux, uy] = [Math.cos(a), Math.sin(a)];
+    return piece(76, 76, 38, 38, (fl) => bolt(fl, 38, 38, ux, uy, 3.4, i * 0.07, [38 - ux * 999, 38 - uy * 999]));
+  });
 /** A BURST of his fire's flecks, fading. */
 const burstFrames = (): Sprite[] => loop('burst', 8, (i) => piece(64, 50, 32, 25, (fl) => burst(fl, 32, 25, 14, i / 8, 7)));
 /** A BALL of his fire, as a burn leaps. */
@@ -353,9 +365,11 @@ export class WarlockFx {
 
   /** HIS BOLT in flight: his fire laid on its side, leaning back off the way it flies. */
   drawBolt(g: CanvasRenderingContext2D, c: Cam, p: Projectile): void {
+    // (the way it flies on the screen: a step along the floor's x goes down and right, along its y down and left)
     const sdx = (p.vx - p.vy) * 16;
-    const lean = sdx >= 0 ? -1 : 1;
-    const fr = boltFrames(lean);
+    const sdy = (p.vx + p.vy) * 8;
+    const way = ((Math.round((Math.atan2(sdy, sdx) / (Math.PI * 2)) * BOLT_WAYS) % BOLT_WAYS) + BOLT_WAYS) % BOLT_WAYS;
+    const fr = boltFrames(way);
     drawSprite(g, fr[Math.floor(this.t * 20) % fr.length], Math.round(wx(c, p.x, p.y)), Math.round(wy(c, p.x, p.y) - 14));
   }
 }

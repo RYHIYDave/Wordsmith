@@ -86,8 +86,9 @@ export function fire(l: Light, cx: number, cy: number, size: number, t: number, 
   }
 }
 
-/** THE BOLT, its nose at (`cx`, `cy`), flying the way (`wx`, `wy`) (a unit, on the picture): his fire laid on its side, streaming back. */
-function bolt(l: Light, cx: number, cy: number, wx: number, wy: number, size: number, t: number, from: [number, number]): void {
+/** THE BOLT, its nose at (`cx`, `cy`), flying the way (`wx`, `wy`) (a unit, on the picture): his fire laid on its side, streaming back.
+ * (The game draws its bolt in flight with it too: render/warlock_fx.ts drawBolt.) */
+export function bolt(l: Light, cx: number, cy: number, wx: number, wy: number, size: number, t: number, from: [number, number]): void {
   // (a pixel of the picture, as the fire sees it: `across` it, and `yy` up it, which is back along the way it flies; its
   // tail drawn out half as long again by its speed)
   const H = Math.round(size * 3.3);
