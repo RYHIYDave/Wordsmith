@@ -4,7 +4,8 @@
 # wrapped as the site serves it, SERVED from dist/ with the heroes', sounds', Colossus's and townsfolk's files beside it.
 #   node tools/build.mjs && git checkout Play.html && bash tools/brawler_packed_play.sh
 # PLAYED (two at a time): his eight ways in a fight with a thumb, his pictures the bake's and his moves from his packs
-# (sides_more_fight.mjs, BAKED=1); the regression's own of him (veteran_play.mjs).
+# (sides_more_fight.mjs, BAKED=1); the regression's own of him (veteran_play.mjs); and, the bake being a new one for every hero,
+# the Ranger and the Warlock taken in from it (baked.mjs) and a new player's first dungeon with the Warrior (guide.mjs).
 # WEIGHED (each alone on the machine; MEM=0: not these): the same sitting as docs/mockups/eight_sides/BRING_IN.md, the Brawler in
 # town and on floors 1 to 3 played by the bot: with his moves kept packed (the game as it is); and with every pack unpacked and
 # none let go (PACKS=0: what he holds from eight sides without this).
@@ -35,6 +36,11 @@ two() { while [ "$(jobs -rp | wc -l)" -ge 2 ]; do sleep 0.7; done; }
 if [ "${PLAY:-1}" != "0" ]; then
 two; BAKED=1 run sides_fight $P --scenario $S/sides_more_fight.mjs &
 two; run veteran_play $P --scenario $S/veteran_play.mjs &
+# THE OTHER HEROES, whose files the bake lays out as before: two of them taken in whole from this bake, none of them painted
+# (the Ranger, the heaviest; the Warlock, of four places), and a new player's first dungeon with the Warrior
+two; CLS=ranger run baked_ranger $P --scenario $S/baked.mjs &
+two; CLS=warlock run baked_warlock $P --scenario $S/baked.mjs &
+two; CLS=warrior run guide_phone_warrior $P --scenario $S/guide.mjs &
 wait
 fi
 if [ "${MEM:-1}" != "0" ]; then
