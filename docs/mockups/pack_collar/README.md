@@ -29,7 +29,12 @@ Behind UNIQUES (off): nothing he sees in the game changes.
   says “Choose companion in town”. One letter size for the whole row.
 - HIS WORDS, 12 Nov, 12:41, told the card said PICK ANOTHER IN TOWN out of town: “I’d rather it not say anything until you
   tap on it or something then a message says “Choose companion in town” or something like that”. Read as: no line about
-  it on the card; the row shown out of town too; a tap there gives that message. Picture 5.
+  it on the card; the row shown out of town too; a tap there gives that message. Picture 5. Shown it, 12:43: “Yes, hand it
+  to main (Recommended)”.
+- THE COMPANION TALENTS' CARDS THE SAME (ui/talents.ts): asked, 12:43, whether they should work the same way, “Yes, same on
+  those (Recommended)”. Their PICK ANOTHER IN TOWN line is gone; their row of three is shown out of town too, and a tap there
+  picks nothing and says “Choose companion in town”. Picture 6. NOT BEHIND UNIQUES: COMPANIONS is on in the release, so this
+  part shows in the live game once merged.
 
 ## Checked
 

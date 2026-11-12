@@ -1,7 +1,7 @@
 // THE PACK COLLAR'S COMPANION PICKED ON THE COLLAR (game/companions.ts collarChoices; ui/inventory.ts, the row on its card; UNIQUES
 // switched on for this page only): a Ranger at level 35 in town with the Hunting Companion taken, the collar worn; its card read
 // on the GEAR page: her hawk and the collar's snake at her side, the row of the two it may bring (never her hawk); the wolf
-// picked on the card; the collar in the bag; both talents, four to pick; out of town, a tap says “Choose companion in town”. His picks, 12
+// picked on the card; the collar in the bag; both talents, four to pick; out of town, a tap says “Choose companion in town”; and the same on the Hunting Companion's talent card. His picks, 12
 // Nov 2026: “Pick it on the collar”; “No, one of the other two (Recommended)”. For a look, and for his pictures.
 //   node tools/build_to.mjs dist/collar.html
 //   node tools/playtest.mjs --file dist/collar.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/pack_collar_pick.mjs --out shots/collar/a
@@ -99,5 +99,16 @@ export default async function (page, snap) {
   const after = await page.evaluate(() => { const d = window.__dbg; return { note: d.invUi.note, pick: d.game().hero.pets.collar ?? null }; });
   check(`out of town, a tap: "${after.note}", nothing picked (${after.pick})`, after.note === 'Choose companion in town' && after.pick === before);
   await snap('5_out_of_town_tapped');
+  // (6: the companion talents' cards the same, his pick 12 Nov 2026: “Yes, same on those (Recommended)”: out of town their row
+  // of three shown, no line about it, a tap picks nothing and says “Choose companion in town”)
+  await page.evaluate(() => { const d = window.__dbg; d.invUi.note = ''; d.invUi.noteT = 0; d.invUi.sel = null; d.invUi.page = 'talents'; d.invUi.talents.sel = 'huntcompanion'; });
+  await page.waitForTimeout(600);
+  const own = await page.evaluate(() => window.__dbg.game().hero.pets.hunt ?? 'hawk');
+  check('the talent card out of town: its row of three', (await hands.mark('button:HAWK')) && (await hands.mark('button:SNAKE')) && (await hands.mark('button:WOLF')));
+  await hands.press(own === 'wolf' ? 'button:SNAKE' : 'button:WOLF');
+  await page.waitForTimeout(250);
+  const t6 = await page.evaluate(() => { const d = window.__dbg; return { note: d.invUi.note, pick: d.game().hero.pets.hunt ?? 'hawk' }; });
+  check(`the talent card out of town, a tap: "${t6.note}", nothing picked (${t6.pick})`, t6.note === 'Choose companion in town' && t6.pick === own);
+  await snap('6_talent_card_out_of_town');
   if (fails) throw new Error(`${fails} thing(s) wrong with the Pack Collar's picker`);
 }

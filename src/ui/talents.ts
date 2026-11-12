@@ -463,7 +463,9 @@ function cardLines(game: Game, t: TalentDef, tree: TalentTree): { text: string; 
   if (tree.draft && !t.works) out.push({ text: 'A DRAFT: NOT IN PLAY YET', color: THEME.dim, small: true });
   if (pet) {
     for (const l of wrapText(`${COMPANION_INFO[pet].name.toUpperCase()}: ${COMPANION_INFO[pet].short}`, CARD - 10)) out.push({ text: l, color: THEME.accent, small: false });
-    if (!game.level.town) out.push({ text: 'PICK ANOTHER IN TOWN', color: THEME.dim, small: true });
+    // (nothing said of where it is picked: out of town a tap on its row says so. His words of the Pack Collar's card, 12 Nov
+    // 2026, 12:41, “I’d rather it not say anything until you tap on it or something then a message says “Choose companion in
+    // town””; asked whether the companion talents' cards should be the same, “Yes, same on those (Recommended)”)
   }
   return out;
 }
@@ -492,8 +494,12 @@ export function talentPresses(ui: Ui, game: Game, st: TalentUi, lay: TalentLayou
     const why = game.unlearnTalent(st.sel);
     if (why) say = why;
   }
-  // (THE RANGER'S COMPANIONS: in town, one of its three picked)
-  for (const p of card?.pets ?? []) if (ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) game.pickCompanion(p.kind);
+  // (THE RANGER'S COMPANIONS: in town, one of its three picked; out of town a tap says where. His pick, 12 Nov 2026)
+  for (const p of card?.pets ?? []) {
+    if (!ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) continue;
+    if (game.level.town) game.pickCompanion(p.kind);
+    else say = 'Choose companion in town';
+  }
   // (a press anywhere else on the card is the card's: it does not close the inventory)
   if (card && ui.press && !ui.used && inside(card.r, ui.press.x, ui.press.y)) ui.used = true;
   const pad = ui.touch ? 3 : 1;
@@ -702,7 +708,8 @@ export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayo
   const textH = lines.reduce((a, l) => a + LINE_H[l.small ? 'small' : 'normal'] + (l.small ? 2 : 1), 0);
   // (THE RANGER'S COMPANIONS, taken, in town: a row of its three to pick from; shown him, by 23:37, 28 Oct, “Yes, like this (Recommended)”)
   const group = COMPANIONS.on ? groupOfTalent(def.id) : null;
-  const picking = !!group && took && game.level.town;
+  // (out of town too, since 12 Nov 2026: a tap there says “Choose companion in town”, his words)
+  const picking = !!group && took;
   // (a pick of two, once taken: a row of its two over the TAKEN row, the one picked lit)
   const pickRow = took && def.pick ? bh + 3 : 0;
   const ch = 5 + textH + 3 + (picking ? bh + 3 : 0) + pickRow + bh + 5;
