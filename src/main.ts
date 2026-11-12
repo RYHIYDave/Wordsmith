@@ -36,7 +36,8 @@ import { RIME_SHADE_ON } from './art/rime_shade';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { CRYPT, forgetCrypt } from './art/crypt';
-import { floorLook, forgetPieces, lookGates, lookGround, lookHazards, lookProps } from './art/floors';
+import { floorLook, forgetPieces, lookGates, lookGround, lookHazards, lookPieceSteps, lookProps } from './art/floors';
+import type { LoadStep } from './engine/steps';
 import { YARD } from './art/yard';
 import { YARD_GATE, makeYardGateArt } from './art/yard_gate';
 import { PRISON_GATE, makePrisonGateArt } from './art/prison_gate';
@@ -532,13 +533,32 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   /** The hero whose voice has been fetched (engine/audio.ts warmRecorded). */
   let warmedFor = '';
   /** THE LOADING SCREEN while a game begins (LOADING, below): how long it has been up, and whether the world has been drawn under it. */
-  let loading: { t: number; frames: number; drawn: boolean; least?: number } | null = null;
+  let loading: { t: number; frames: number; drawn: boolean; least?: number; steps?: LoadStep[]; placed?: boolean } | null = null;
   /** Its switch (ON at his yes to its picture, loading_screen.png, by 22:55: “Yes, but nicer later”: the art chat to draw a better one), the least it is up (s), and the most it waits for the hero's pictures (s). */
   // (`between`: and between floors, the level changed in play (by the stairs, a way, the waypoint), up `betweenLeast` at the
   // least: THE LOADING SCREEN BETWEEN FLOORS, as the main chat put it to the other chats, 8 Nov 2026)
   const LOADING = { on: true, least: 0.5, most: 15, between: true, betweenLeast: 0.2 };
+  /**
+   * THE LOADING SCREEN'S WORK IN SLICES (the queue's smooth-the-loading-screens-long-frames). His words of 11 Nov 2026, 22:23, to
+   * the eight-sides chat: “THE LOADING SCREEN LAGS”. On his phone, 12 Nov (the phone check's run rmwdh7eupd67), two waits of 1.7 s
+   * and 1.4 s under it into town: the new place's pictures made in one frame, and the world's first drawing, which made the rest.
+   * Now what the screen waits for is made a step at a time, `ms` of the game's own work a frame (at least one step), so that its
+   * ring goes on turning: the new place's own pictures, each builder a step of its own (placeSteps), then placeFrame as before; the
+   * floor's monsters asked for; the level's own (render.ts prepareSteps); and, ahead, what the world's first drawing would make
+   * (the effects' lists a frame at a time, the pieces of Act 1's floors, the ground's pieces asked of the painter's worker). The
+   * pictures are the very ones, made by the same code; only when they are made changes. `ms`: about the ring's own rate (it turns
+   * at 10 frames a second: art/loading_ring.ts), so that it looks as it does at full speed and the screen is up little longer.
+   * Off: as before, all of it in one frame.
+   */
+  const LOAD_SLICE = { on: true, ms: 50 };
   /** The level the loading screen was last up for (THE LOADING SCREEN BETWEEN FLOORS: a level other than it, in play, puts it up again). */
   let loadedFor: unknown = null;
+  /**
+   * For measuring (the queue's smooth-the-loading-screens-long-frames): each loading screen's own frames, the last few screens
+   * kept: how long the game's own work took in each frame (ms), and what it did ('place': the new place's pictures; 'step': its
+   * work in slices; 'draw': the world drawn under it). window.__dbg.loadingLog.
+   */
+  const loadingLog: { level: number; frames: [number, number, string][]; ms: number; slow: [number, string][] }[] = [];
   /** THE LOADING SCREEN'S PICTURE (art/loading_ring.ts, behind LOADING_RING, off until his yes to its picture): made the first time it is drawn. */
   let loadingRing: LoadingRing | null = null;
   let bot: BotState | null = null;
@@ -2034,6 +2054,23 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const loadingFrame = (g: Game, dt: number, cg: CanvasRenderingContext2D): void => {
     const l = loading;
     if (!l) return;
+    // (for measuring: this frame's own work, and what it did: loadingLog)
+    if (l.frames === 0) {
+      loadingLog.push({ level: g.depth, frames: [], ms: 0, slow: [] });
+      if (loadingLog.length > 6) loadingLog.shift();
+    }
+    const log = loadingLog[loadingLog.length - 1];
+    const t0 = performance.now();
+    let did = '';
+    try {
+      did = loadingWork(g, dt, cg, l);
+    } finally {
+      const ms = performance.now() - t0;
+      log.ms += ms;
+      if (log.frames.length < 400) log.frames.push([l.frames, Math.round(ms * 10) / 10, did]);
+    }
+  };
+  const loadingWork = (g: Game, dt: number, cg: CanvasRenderingContext2D, l: NonNullable<typeof loading>): string => {
     l.t += dt;
     l.frames++;
     // (ENDLESS MODE'S SPLASH WAITS FOR THE LOADING SCREEN, 25.3.2: endless opens as the last floor is beaten and the hero comes
@@ -2049,8 +2086,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       loading = null;
       loadedFor = g.level;
       drawLoading(cg, l.t);
-      return;
+      return 'lift';
     }
+    let did = '';
     // (his baked pictures for where he is, asked for as render.ts would on his first frame, and waited for)
     let waiting = false;
     const b = painter.baked;
@@ -2064,20 +2102,103 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (folkPictures(g)) waiting = true;
     // (the screen up first, then, while his pictures come, the level's own made: the castle hall's, the stairs')
     if (l.frames === 2) {
-      // (the new place's own pictures first: its floor's ground, pieces and gates; the painter set to it)
-      placeFrame(g);
-      // (THE FLOORS' MONSTERS BAKED: asked for now, the last place's let go of (placeFrame), before the level's own pictures
-      // are made, so that their files are on their way meanwhile)
-      mobPictures(g);
-      renderer.prepare(g);
+      if (LOAD_SLICE.on) {
+        // (THE LOADING SCREEN'S WORK IN SLICES: the same, a step at a time, from this frame on: LOAD_SLICE)
+        l.steps = loadSteps(g, l);
+      } else {
+        // (the new place's own pictures first: its floor's ground, pieces and gates; the painter set to it)
+        placeFrame(g);
+        // (THE FLOORS' MONSTERS BAKED: asked for now, the last place's let go of (placeFrame), before the level's own pictures
+        // are made, so that their files are on their way meanwhile)
+        mobPictures(g);
+        renderer.prepare(g);
+        l.placed = true;
+        did = 'place';
+      }
+    }
+    if (l.steps?.length) {
+      runSteps(l.steps, LOAD_SLICE.ms);
+      did = 'step';
     }
     // (THE FLOORS' MONSTERS BAKED: this place's monsters' pictures waited for: none is painted as he fights. render/monsters_baked.ts)
-    if (l.frames >= 2 && mobPictures(g)) waiting = true;
-    if (l.frames > 2 && l.t >= (l.least ?? LOADING.least) && (!waiting || l.t >= LOADING.most)) {
-      renderer.draw(cg, scr.w, scr.h, g, fx, clock, 0);
-      l.drawn = true;
+    if (l.placed && mobPictures(g)) waiting = true;
+    // (THE LOADING SCREEN'S WORK IN SLICES: and its steps still to do)
+    const late = l.t >= LOADING.most;
+    if (l.frames > 2 && l.placed && l.t >= (l.least ?? LOADING.least) && ((!waiting && !l.steps?.length) || late)) {
+      // (the most it waits run out with work still to do: the rest of it done now, as before)
+      if (l.steps?.length) runSteps(l.steps, Infinity);
+      // (the world drawn under the screen; with the work in slices, the open ground's pieces the screen shows asked of the ground's
+      // worker, not painted at once: drawn again each frame until they have come, render/outdoor.ts `asking`)
+      const asking = LOAD_SLICE.on && !late;
+      renderer.underLoading = asking;
+      try {
+        renderer.draw(cg, scr.w, scr.h, g, fx, clock, 0);
+      } finally {
+        renderer.underLoading = false;
+      }
+      if (!asking || !renderer.groundComing()) l.drawn = true;
+      did = 'draw';
     }
     drawLoading(cg, l.t);
+    return did;
+  };
+  /**
+   * THE LOADING SCREEN'S WORK, AS STEPS (LOAD_SLICE): the new place's own pictures, a builder a step (placeSteps); placeFrame (it
+   * finds them made); the floor's monsters asked for; then the level's own, and what the world's first drawing would make, as the
+   * renderer has them (render.ts prepareSteps). A step may give back more steps, done next.
+   */
+  const loadSteps = (g: Game, l: NonNullable<typeof loading>): LoadStep[] => [
+    ...placeSteps(g),
+    () => {
+      placeFrame(g);
+      l.placed = true;
+    },
+    // (THE FLOORS' MONSTERS BAKED: asked for now, the last place's let go of (placeFrame), before the level's own pictures are
+    // made, so that their files are on their way meanwhile)
+    () => void mobPictures(g),
+    () => renderer.prepareSteps(g),
+  ];
+  /**
+   * THE NEW PLACE'S OWN PICTURES AHEAD (LOAD_SLICE): each builder placeFrame will call for this place, called a step at a time
+   * before it, so that it finds them made (each is kept once made: art/floors.ts, art/crypt.ts, render/castle.ts). The same
+   * builders, the same pictures. A place whose pictures are in hand already has no steps here.
+   */
+  const placeSteps = (g: Game): LoadStep[] => {
+    const out: LoadStep[] = [];
+    const crypt = CRYPT.on && g.inDungeon && !g.practice ? floorLook(g.depth) : 0;
+    if (crypt && crypt !== cryptShown) {
+      out.push(() => void lookGround(crypt));
+      out.push(() => void lookProps(crypt));
+      if (FIRST5.on && crypt >= 1 && crypt <= 5) {
+        // (the look's own pieces, its builder in parts where it has them: art/floors.ts lookPieceSteps)
+        out.push(() => lookPieceSteps(crypt));
+        out.push(() => void lookGates(crypt));
+        out.push(() => void lookHazards(crypt, FLOOR_SETS[crypt - 1].traps));
+      }
+    }
+    if (isCamp(g.level) && !campShown && !cityArt) {
+      let town: typeof art.town | null = null;
+      out.push(() => void (town = makeTownProps(CITY)));
+      out.push(() => void (cityArt ??= { town: town ?? makeTownProps(CITY), props: makeDungeonProps(CITY) }));
+    }
+    if (renderer.rim.on(g.level) && !rimShown && !rimArt) out.push(() => void (rimArt ??= { town: makeTownProps(RIM_THEME) }));
+    // (THE FIRST TOWN AS THE CASTLE'S HALL: its pictures in parts, render/castle.ts steps)
+    if (renderer.castle.on(g.level) && !hallShown) out.push(() => renderer.castle.steps());
+    return out;
+  };
+  /** Steps done, first first, until `ms` thousandths of a second of them are done (at least one); one that gives back more has them done next. */
+  const runSteps = (steps: LoadStep[], ms: number): void => {
+    const t0 = performance.now();
+    const log = loadingLog[loadingLog.length - 1];
+    do {
+      const step = steps.shift()!;
+      const s0 = performance.now();
+      const more = step();
+      if (more && more.length) steps.unshift(...more);
+      // (for measuring: a step over 80 ms, and what it was: loadingLog `slow`)
+      const took = performance.now() - s0;
+      if (took > 80 && log && log.slow.length < 16) log.slow.push([Math.round(took), String(step).replace(/\s+/g, ' ').slice(0, 90)]);
+    } while (steps.length && performance.now() - t0 < ms);
   };
   /**
    * THE WORLD'S SOUNDS (game/world_sounds.ts; the sound chat's fourth batch): each frame of play, his footsteps by the ground, the
@@ -3038,6 +3159,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     loading: LOADING,
     /** THE LOADING SCREEN BETWEEN FLOORS: whether it is up now (and since how long), and, for a playtest begun without it, the level counted as loaded (so that the next is put up between). */
     loadingNow: (): { t: number; frames: number } | null => (loading ? { t: loading.t, frames: loading.frames } : null),
+    /** For measuring: the last few loading screens' own frames, each [frame, ms of the game's own work, what it did], and their sum. */
+    loadingLog: () => loadingLog.map((e) => ({ level: e.level, ms: Math.round(e.ms), frames: e.frames.slice(), slow: e.slow.slice() })),
     loadedHere: (): void => {
       loadedFor = game ? game.level : null;
     },

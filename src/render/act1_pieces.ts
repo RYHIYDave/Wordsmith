@@ -69,37 +69,54 @@ import { FLOW } from '../art/flowing';
 import { F8F9_FIX } from '../game/f8f9';
 import { bridgeOf, doorOf, forgetMade as forgetF8F9Made } from '../art/f8f9';
 import type { Painter } from './painter';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 
 const MAPS = new Map<number, Map<string, Piece>>();
 /** The pieces of floor `n` of the descent (6 to 10) by name, with the set's camp and the strongholds' (made the first time they are asked for, and kept until `forgetAct1`). */
 export function act1Pieces(n: number): Map<string, Piece> {
   let m = MAPS.get(n);
   if (m) return m;
+  m = new Map(act1ListsOf(n, (key, make) => LISTS_AHEAD.take(`${n}:${key}`, make)).map((p) => [p.name, p]));
+  LISTS_AHEAD.clear();
+  MAPS.set(n, m);
+  return m;
+}
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) Each list of pieces floor `n` is made of, a part a step of the loading
+ * screen's may have made ahead (act1PieceSteps), taken as the floor's pieces are made, or made then as before.
+ */
+const LISTS_AHEAD = new Ahead();
+type ListPart = (key: string, make: () => Piece[]) => Piece[];
+/** The lists floor `n`'s pieces are made of, in order, each got from `part` (its name and how it is made). */
+function act1ListsOf(n: number, part: ListPart): Piece[] {
   // (THE CAMP INSIDE VELLUM'S GATE, game/camp.ts: the Gate Ward's pieces, the Hush's set and the hub's own, art/hub2.ts)
-  if (n === CAMP_DRESS) {
-    m = new Map<string, Piece>([...hushSetPieces(), ...gateWardPieces(), ...(hubPieces() as unknown as Piece[])].map((p) => [p.name, p]));
-    MAPS.set(n, m);
-    return m;
-  }
+  if (n === CAMP_DRESS) return [...part('hush', hushSetPieces), ...part('gateWard', gateWardPieces), ...part('hub', () => hubPieces() as unknown as Piece[])];
   // (ACT 2, PART TWO, THE HIGH CITY: each floor's own 25 and the High City's 25, the art chat's; floor 16 her vines in its gardens too)
   if (n >= 16) {
-    m = new Map([...highCitySetPieces(), ...(n === 20 ? withEmptyLectern(quietTowerPieces()) : n === 19 ? keepPieces() : n === 18 ? glassGalleryPieces() : n === 17 ? masquePieces() : [...swanGardensPieces(), ...herVinesPieces()])].map((p) => [p.name, p]));
-    MAPS.set(n, m);
-    return m;
+    const own3 = (): Piece[] => (n === 20 ? withEmptyLectern(quietTowerPieces()) : n === 19 ? keepPieces() : n === 18 ? glassGalleryPieces() : n === 17 ? masquePieces() : [...swanGardensPieces(), ...herVinesPieces()]);
+    return [...part('highCity', highCitySetPieces), ...part('own', own3)];
   }
   // (ACT 2, THE HUSH: each floor's own 25 and the set's 25 of the Hush, the art chat's; nothing of the descent's camp or strongholds)
   if (n >= 11) {
-    const own2 = n === 11 ? gateWardPieces() : n === 12 ? undercityPieces() : n === 13 ? millracePieces() : n === 14 ? houseOfQuietPieces() : greatLibraryPieces();
-    m = new Map([...hushSetPieces(), ...own2].map((p) => [p.name, p]));
-    MAPS.set(n, m);
-    return m;
+    const own2 = (): Piece[] => (n === 11 ? gateWardPieces() : n === 12 ? undercityPieces() : n === 13 ? millracePieces() : n === 14 ? houseOfQuietPieces() : greatLibraryPieces());
+    return [...part('hush', hushSetPieces), ...part('own', own2)];
   }
-  const own = n === 6 ? quarryPieces() : n === 7 ? ledgePieces() : n === 8 ? canyonPieces() : n === 9 ? pinewoodPieces() : fenPieces();
+  const own = (): Piece[] => (n === 6 ? quarryPieces() : n === 7 ? ledgePieces() : n === 8 ? canyonPieces() : n === 9 ? pinewoodPieces() : fenPieces());
   // (the strongholds' gatehouse, court, altar, braziers and banners are the Quarry's: art/floor6.ts; the hall's, the redoubt's)
-  const shared = n === 6 ? [] : quarryPieces().filter((p) => p.name.startsWith("the redoubt's") || p.name.startsWith("the court's") || p.name === 'the altar of the words' || p.name === "the cult's brazier" || p.name === "the cult's banner" || p.name === 'pine' || p.name === 'boulder');
-  m = new Map([...campPieces(), ...redoubtPieces(), ...shared, ...own].map((p) => [p.name, p]));
-  MAPS.set(n, m);
-  return m;
+  const shared = (): Piece[] => (n === 6 ? [] : quarryPieces().filter((p) => p.name.startsWith("the redoubt's") || p.name.startsWith("the court's") || p.name === 'the altar of the words' || p.name === "the cult's brazier" || p.name === "the cult's banner" || p.name === 'pine' || p.name === 'boulder'));
+  return [...part('camp', campPieces), ...part('redoubt', redoubtPieces), ...part('shared', shared), ...part('own', own)];
+}
+/** The steps that make floor `n`'s pieces a list at a time (none where they are made), then its pieces. */
+export function act1PieceSteps(n: number): LoadStep[] {
+  if (MAPS.has(n)) return [];
+  const steps: LoadStep[] = [];
+  act1ListsOf(n, (key, make) => {
+    steps.push(LISTS_AHEAD.step(`${n}:${key}`, make));
+    return [];
+  });
+  steps.push(() => void act1Pieces(n));
+  return steps;
 }
 /** Let go of every floor's pieces but this one's. */
 export function forgetAct1(keep: number): void {

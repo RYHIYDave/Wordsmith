@@ -6,6 +6,7 @@
 
 import type { Sprite } from '../engine/px';
 import type { Level, PropInst } from '../game/state';
+import type { LoadStep } from '../engine/steps';
 
 /** Where a light burns: its floor point (tiles), how far up from it and across (game pixels), the hole's radius and strength, its glow. */
 export interface LookLight {
@@ -57,6 +58,8 @@ export interface LookView {
   forget?(): void;
   /** Make its pictures now (as the floor is come into). */
   warm(): void;
+  /** (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) What its first drawing of level `L` makes the first time, as steps ahead (render.ts prepareSteps). */
+  steps?(L: Level): LoadStep[];
   /** One of its own floor tiles at (tx, ty), or null (`t` the clock). */
   laid(L: Level, tx: number, ty: number, t: number): Sprite | null;
   /** Its flags at (tx, ty). */

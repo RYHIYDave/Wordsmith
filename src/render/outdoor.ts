@@ -584,6 +584,15 @@ export class OutdoorGround {
     }
   }
 
+  /**
+   * UNDER THE LOADING SCREEN (main.ts LOAD_SLICE, the loading screen's work in slices): while on, the screen's pieces are never
+   * painted all at once as a floor is first drawn; they are asked of the ground's worker (or, with none, painted a few a frame),
+   * and the loading screen stays up until they have come (`missing`).
+   */
+  asking = false;
+  /** How many of the screen's pieces the last drawing had not got (drawn in the floor's deep colour). */
+  missing = 0;
+
   /** Let go of everything (the floor has been left). */
   clear(): void {
     for (const p of this.pieces.values()) this.drop(p);
@@ -678,11 +687,14 @@ export class OutdoorGround {
    * then, with the time left, the pieces round the screen.
    */
   draw(g: CanvasRenderingContext2D, cam: Cam, W: number, H: number, fresh: boolean): void {
+    this.missing = 0;
     if (!this.T || !this.land) return;
     this.frame++;
     // (the floor's first frame, or a jump of the camera half a screen or more, as by a waypoint: the screen painted at once)
+    // (UNDER THE LOADING SCREEN, `asking`: never at once; the screen's pieces asked of the ground's worker, or, with none, painted
+    // here a few at a time, BUDGET * 3 a frame: main.ts LOAD_SLICE)
     const was = this.camWas;
-    const first = fresh || !was || Math.abs(cam.ox - was.ox) > W / 2 || Math.abs(cam.oy - was.oy) > H / 2;
+    const first = !this.asking && (fresh || !was || Math.abs(cam.ox - was.ox) > W / 2 || Math.abs(cam.oy - was.oy) > H / 2);
     this.camWas = { ox: cam.ox, oy: cam.oy };
     const t0 = performance.now();
     // THE SKY, behind (the Ledge Road)
@@ -716,6 +728,7 @@ export class OutdoorGround {
         }
         const sx = cam.ox + (i * PIECE) / GRAIN;
         const sy = cam.oy + (j * PIECE) / GRAIN;
+        if (!p) this.missing++;
         if (p) {
           p.seen = this.frame;
           g.drawImage(p.cvs, sx, sy, PIECE / GRAIN, PIECE / GRAIN);
