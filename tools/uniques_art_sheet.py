@@ -12,7 +12,7 @@ RAW = 'shots/uniques_art/raw/'
 BATCHES = {
     'boots': {
         'title': 'The nine boots, each its own',
-        'was': 'boots',
+        'was': ['boots'],
         'lines': {
             'longecho': 'A tall sea-blue boot banded in silver, and its own echo behind it, twice.',
             'brokenshackles': "A prisoner's worn boot, an iron shackle round it, its chain snapped.",
@@ -23,6 +23,77 @@ BATCHES = {
             'shortway': "Soft violet, its toe curled back on itself, the Warp's cyan round the ankle.",
             'clovenboots': "The demon's leg: red leather, black fur, a cloven hoof, an ember in it.",
             'sprungheels': 'Bound in linen like his wraps, a brass spring coiled under the heel.',
+        },
+    },
+    'jewels': {
+        'title': 'The eight amulets and the seven rings',
+        'was': ['amulet', 'ring'],
+        'lines': {
+            'thirdword': 'A gold plate with three sockets for words: two dark, the third lit.',
+            'drownedarm': "One of the Colossus's arms, coiled, still dripping.",
+            'amalgamsheart': 'A heart of bone and raw flesh, stitched into one with gold.',
+            'clockworksongbird': 'A gold bird on its perch, a cog in its wing. It hangs by its winding key.',
+            'dogearedpage': 'A worn page on a thong, its corner folded down, one word still bright.',
+            'packcollar': "A companion's collar: green leather, spikes, a tag with a paw on it.",
+            'prism': "A three-sided crystal: fire's orange, frost's blue, lightning's yellow.",
+            'unsignedpact': 'The pact, rolled and sealed in red, singed, the line for a name still bare.',
+            'censorsseal': 'A black iron signet, its face red, a black bar struck across it.',
+            'quillsband': 'A silver band with a white quill laid over it, ink at its point.',
+            'cantorsecho': "Two stones where a ring has one, alike, in Twin's sea-green.",
+            'queensglass': "A small round looking-glass under her crown's glass spikes.",
+            'ghostwriter': "A ghost-pale band, its head a gold pen's nib with a bead of cyan.",
+            'alloyband': 'Gold and steel twisted into one band, one stone of two colours.',
+            'companyscrip': 'A brass company token for a head: toothed, a square hole punched in it.',
+        },
+    },
+    'worn': {
+        'title': 'The gloves, belts, helmets and armour',
+        'was': ['gloves', 'belt', 'hood', 'helm', 'robe', 'armor'],
+        'lines': {
+            'freehand': 'Violet silk with the fingers cut away: the hand left free.',
+            'fleshmancersbrand': 'Grey dead hide sewn with black thread, his brand burning on its back.',
+            'halfcarvedhand': 'Pale stone: the thumb and two fingers carved, the rest still the block.',
+            'press': 'A plate gauntlet shut into a fist, a gilt spike on every knuckle.',
+            'hairtrigger': "An archer's glove, a trap's steel teeth on it, a hair from finger to thumb.",
+            'receipt': "A prize fighter's padded glove, red, laced at the wrist.",
+            'bloodprice': 'A blood-red belt with two round red flasks hung from it.',
+            'kingsknot': "A girdle of rats' tails, tied in the knot that made them one king.",
+            'wardenskeys': "The warden's belt, his iron ring and two keys on it.",
+            'miserspurse': 'A fat purse, drawn shut and padlocked, coins already getting out.',
+            'towline': 'A belt of stout line with a steel tow hook in a brass collar.',
+            'twofacedmask': 'One mask, two faces: the pale half smiling, the dark half not.',
+            'headsmanshood': "The executioner's tall pointed hood, blood-red, the rope at its neck.",
+            'criershush': 'The bell of his brass trumpet as a helmet, gagged with his wine-red cloth.',
+            'hollowcrown': 'His antlers on a band of bark bound with briar, and nothing inside.',
+            'longodds': 'A plain steel helmet with a great bone die for a crest, sixes up.',
+            'polyglotsmantle': 'Five cloths in one mantle, a colour for each word of damage.',
+            'physicianscoat': 'His long black waxed coat and cape, his strap of vials across it.',
+            'mothswing': "A cloak cut from the grey moth's wings, their rings still on it.",
+            'nettleshirt': 'Woven of green nettle stems, leaves on it, one sleeve never finished.',
+        },
+    },
+    'weapons': {
+        'title': "The eighteen weapons, three for each hero's own",
+        'was': ['greatsword', 'bow', 'staff', 'tome', 'wrench', 'wraps'],
+        'lines': {
+            'millstone': 'A heavy blade with a millstone for a guard.',
+            'windcutter': 'A pale curved blade slotted for the wind, a winged guard, white streamers.',
+            'undertow': "A blade the colour of deep water, an anchor's arms for a guard.",
+            'rainwalker': 'A storm-grey bow with a rain cloud caught on its tip, raining.',
+            'fan': 'Three arrows on the string at once, spread.',
+            'poachersbow': "A rough bow with a trap's teeth along it and a snare hung from its tip.",
+            'shepherdscrook': "A shepherd's crook, her violet orb kept in the bend of it, and a bell.",
+            'tide': 'Driftwood, its head a wave of sea-glass curling over, foam at its lip.',
+            'tuningstaff': 'Black and gold, ending in a steel tuning fork with a small orb in it.',
+            'ledgerofdebts': 'An account book in green cloth and red hide, the tally cut in its brass plate.',
+            'restlesstome': 'The book open and in the air, its leaves lifting, fire streaming off it.',
+            'burningverse': 'Charred black and shut, three lines of a verse still burning through it.',
+            'secondwhistle': 'Her wrench with two brass whistles tied to it where she carries one.',
+            'stickywrench': 'Its jaw clotted with green paste, a vial stuck fast in it.',
+            'foremanswrench': 'Striped yellow and black, a gear at its throat, a star on its jaw.',
+            'lastround': "His wraps scorched, the front fist alight in the kick's orange fire.",
+            'fourthglobe': 'A globe on every knuckle: green, orange, white, and a fourth.',
+            'winningstreak': "A champion's wraps with a winner's blue rosette pinned on.",
         },
     },
 }
@@ -75,7 +146,7 @@ def main():
         cells.append((i, wrap(probe, names[i], fn, cw - 24), wrap(probe, b['lines'][i], fl, cw - 36)))
     rows = [cells[r:r + cols] for r in range(0, len(cells), cols)]
     row_h = [slot + 14 + max(len(c[1]) for c in row) * 32 + 6 + max(len(c[2]) for c in row) * 25 + 34 for row in rows]
-    top = 250
+    top = 250 if len(b['was']) == 1 else 270
     game_h = 0
     crop = None
     if shot:
@@ -92,11 +163,17 @@ def main():
     # what they all wear today
     wk = 3
     ws = 32 * wk + 16
-    d.rectangle([30, 100, 30 + ws - 1, 100 + ws - 1], fill=SLOT, outline=ORANGE, width=3)
-    wi = icon('base_' + b['was'], wk)
-    im.paste(wi, (38, 108), wi)
-    d.text((30 + ws + 20, 112), 'Today all %d wear this picture.' % len(ids), font=fh, fill=SOFT)
-    d.text((30 + ws + 20, 146), 'Below: a picture of its own for each.', font=fh, fill=SOFT)
+    wx = 30
+    for kind in b['was']:
+        d.rectangle([wx, 100, wx + ws - 1, 100 + ws - 1], fill=SLOT, outline=ORANGE, width=3)
+        wi = icon('base_' + kind, wk)
+        im.paste(wi, (wx + 8, 108), wi)
+        wx += ws + 10
+    if len(b['was']) == 1:
+        d.text((wx + 10, 112), 'Today all %d wear this picture.' % len(ids), font=fh, fill=SOFT)
+        d.text((wx + 10, 146), 'Below: a picture of its own for each.', font=fh, fill=SOFT)
+    else:
+        d.text((30, 100 + ws + 10), 'Today these %d wear one of the pictures above. Below: its own for each.' % len(ids), font=fl, fill=SOFT)
     y = top
     for row, rh in zip(rows, row_h):
         for c, (i, nlines, tlines) in enumerate(row):
@@ -116,7 +193,7 @@ def main():
         y += rh
     if crop:
         d.text((30, y + 10), 'In the game, on your phone', font=fh, fill=PALE)
-        d.text((30, y + 44), 'The bag, as the game itself draws it, with three ordinary pieces after them.', font=fl, fill=SOFT)
+        d.text((30, y + 44), 'The bag, as the game itself draws it.', font=fl, fill=SOFT)
         im.paste(crop, (30, y + 84))
     im.save(out)
     print(out, im.size)
