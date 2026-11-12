@@ -28,7 +28,8 @@ it does in orange, its price in red, four orange pips under it in the bag), aske
 “I think it just has pips equal to the number of mods it has”. Read as: a unique should not always show four orange pips; it
 shows one for each mod it has, as other pieces do (src/ui/panels.ts `drawItemPips` lights all four for a unique today). He
 said nothing against the card's colours. Not this chat's to change (the card and the pips are the build's): passed on as a
-queue item for the main chat, his words in it; which of a unique's lines count as mods is that chat's to ask him.
+queue item `match-unique-pips-to-its-mods`, his words in it; which of a unique's lines count as mods is that chat's to ask
+him.
 
 ## What is drawn
 
@@ -116,7 +117,8 @@ Nothing of game/ is changed.
    arrows, The Sticky Wrench's stuck vial (`stuck`), The Moth's Wing's darkened word (`dark`, `light`); and the moments the
    build only tells of (Bloodprice, The Winning Streak, The Tow Line, The Unsigned Pact, The Pivot, The Receipt, The King's
    Knot, The Crier's Hush, The Warden's Keys, The Hair Trigger, The Tuning Staff, The Short Way, a boss's own dropped).
-   `UniqueFx.handle` is where each hangs; a switch each in `UNIQUE_PLAY`.
+   `UniqueFx.handle` is where each hangs; a switch each in `UNIQUE_PLAY`. Back in the queue as `draw-unique-items`, for a fresh
+   chat (this one being long).
 3. **The Warlock's own book**: the red book chained at his hip is still on him while the Tome flies (it is a few pixels at
    the game's size). Taking it off him is a change to his baked pictures.
 4. **The risen elite's pictures are its kind's standing, walking and attack frames**: a kind that moves by a gait or an act of
