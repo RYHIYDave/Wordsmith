@@ -17,7 +17,8 @@ import type { Sprite } from '../engine/px';
 import { GRID } from './skeleton';
 import type { Skeleton, V3 } from './skeleton';
 import { HEAVY, LEFT_TO_PAINTER, toSprite } from './kit';
-import type { GameView } from './skin';
+import { MORE_TURN } from './sides_more';
+import type { MoreSide } from './sides_more';
 import { forceFront, forceGeo, placeOf, poseAt, roundSpan, skel, worldOf } from '../dev/veteran_moves';
 import type { Joint, Strike, VetMotion } from '../dev/veteran_moves';
 import { FX_KICK, FX_PUNCH, coneBlast, crescent, dust, floorRing, floorTrace, impact, shockCone, smear, speedLines } from '../dev/veteran_fx';
@@ -77,14 +78,49 @@ function crescentOf(m: VetMotion, s: Strike, F: number): { o: V3; a0: number; a1
   return { o: g.o as V3, a0, a1, front, gone, thick: g.shape === 'round' ? 18 : s.heavy ? 14 : 11, r0: g.shape === 'round' ? undefined : g.r0 };
 }
 
+/** How open a cone's rings must show to the eye to be left as they are (1 a full circle, 0 edge-on), and how far one that shows less is leaned (degrees). */
+const CONE_OPEN = 0.4;
+const CONE_LEAN = 30;
+/**
+ * A CONE SEEN SIDE-ON, LEANED (the Tinkerer chat, 11 Nov 2026; his six more sides, art/sides_more.ts). A straight blow's cone
+ * of force (his jab, his cross, his flying knee) thrown straight to the left or right of the screen has its rings edge-on to
+ * the game's eye: each a bar, and the air inside them a strip of noise, where from every other side they are the rings he
+ * knows. So on those sides the rings' level axis is swung toward the cone's line (dev/veteran_fx.ts shockCone `lean`), the
+ * side nearer the eye trailing, by up to CONE_LEAN degrees: the most where they would lie exactly edge-on, none where a ring
+ * already shows CONE_OPEN of a circle (his uppercut's, which goes up, shows its ring from every side). NEVER from in front or
+ * from behind (`front`, `back`): those two are the pictures the game has always had, to the pixel.
+ */
+function coneLean(view: MoreSide, to: (q: readonly number[]) => [number, number], o: readonly number[], dir: number, up: number): number {
+  if (view === 'front' || view === 'back') return 0;
+  const at = to(o);
+  // (the cone's line, the rings' level axis (his left of the line) and their other axis, as shockCone has them, on the picture)
+  const a = [Math.cos(up) * Math.cos(dir), Math.cos(up) * Math.sin(dir), Math.sin(up)];
+  const v = [-Math.sin(dir), Math.cos(dir), 0];
+  const w = [a[1] * v[2] - a[2] * v[1], a[2] * v[0] - a[0] * v[2], a[0] * v[1] - a[1] * v[0]];
+  const seen = (d: number[]): [number, number] => {
+    const q = to([o[0] + d[0], o[1] + d[1], o[2] + d[2]]);
+    return [q[0] - at[0], q[1] - at[1]];
+  };
+  const A = seen(a);
+  const V = seen(v);
+  const W = seen(w);
+  // (how open a ring shows: twice its two axes' area over the sum of their squares; 1 a circle, 0 a bar)
+  const open = (2 * Math.abs(V[0] * W[1] - V[1] * W[0])) / Math.max(1e-9, V[0] * V[0] + V[1] * V[1] + W[0] * W[0] + W[1] * W[1]);
+  if (open >= CONE_OPEN) return 0;
+  // (the way it already opens, if it does; edge-on, the side nearer the eye, lower on the picture, trails)
+  const way = Math.abs(V[0]) > 1e-9 ? Math.sign(V[0] * A[0]) || 1 : V[1] < 0 ? 1 : -1;
+  return way * ((CONE_LEAN * Math.PI) / 180) * (1 - open / CONE_OPEN);
+}
+
 /**
  * ONE LAYER OF HIS EFFECTS AT A FRAME OF A MOVE (0 to its `long` + VET_FX_AFTER), in a view (from in front, or truly from
  * behind: turned 90°, as his frames), as the art's film paints them: a sprite at the game's grain whose anchor is the floor
  * point where he stood as the move began. (Mirrored, as his frames are, for a hero facing screen-left.)
  */
-export function paintVetFx(m: VetMotion, F: number, view: GameView, layer: VetFxLayer): Sprite {
+export function paintVetFx(m: VetMotion, F: number, view: MoreSide, layer: VetFxLayer): Sprite {
   const px = new Px(FX_CANVAS.w, FX_CANVAS.h);
-  const V = view === 'back' ? 90 : 0;
+  // (turned as his frames are for the side: art/sides_more.ts MORE_TURN, from in front 0 and from behind 90 as ever)
+  const V = MORE_TURN[view];
   const r = (V * Math.PI) / 180;
   const c = Math.cos(r);
   const sn = Math.sin(r);
@@ -198,7 +234,7 @@ export function paintVetFx(m: VetMotion, F: number, view: GameView, layer: VetFx
         const age = F - fa;
         if (age < 0 || age > Fo.long + 7) continue;
         const g = forceGeo(m, s);
-        if (g.shape === 'cone') shockCone(px, to, g.o, g.dir, g.up, g.half, forceFront(m, s, F), age, Fo.long + 1, kindCols(s.kind), s.at * 13);
+        if (g.shape === 'cone') shockCone(px, to, g.o, g.dir, g.up, g.half, forceFront(m, s, F), age, Fo.long + 1, kindCols(s.kind), s.at * 13, coneLean(view, to, g.o, g.dir, g.up));
         else {
           const cr = crescentOf(m, s, F);
           if (cr) crescent(px, to, cr.o, cr.a0, cr.a1, cr.front, cr.thick, kindCols(s.kind), cr.gone, s.at * 13, (q) => !behind(q), cr.r0);
