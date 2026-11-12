@@ -20,7 +20,7 @@ import { LIVING_SHADOW } from '../src/art/shadow_art';
 import { heroSides } from '../src/art/sides';
 import { bakeLists } from '../src/art/heroes3';
 import type { AnimSet } from '../src/art/actor_types';
-import { warlockAskAhead } from '../src/render/warlock_packs';
+import { CHANGE_AHEAD, warlockAskAhead } from '../src/render/warlock_packs';
 import { paintWithoutCanvas } from './helpers';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
@@ -103,17 +103,21 @@ test('3. the Living Shadow: its run held; every other move of it a pack, one a s
 });
 
 test('4. asked for ahead: what he shows from his side, and what a press may make him show next', () => {
+  let clock = 100;
   const asked = (h: Parameters<typeof warlockAskAhead>[1], full = false, town = false, over = false): string[] => {
     const out: string[] = [];
-    warlockAskAhead((p, s, now) => out.push(`${p}:${s}${now ? '!' : ''}`), h, full, town, over);
+    warlockAskAhead((p, s, now) => out.push(`${p}:${s}${now ? '!' : ''}`), h, full, town, over, clock);
     return out;
   };
   // (facing down and right: side 0; straight down: 2, 'toward'; up the screen: the demon from behind, 1)
-  assert.deepEqual(asked({ fx: 1, fy: 0 }), ['stand:0!', 'bolt:0', 'curse:0', 'step:0'], 'a man standing in a fight');
-  assert.deepEqual(asked({ fx: 0.71, fy: 0.71 }, true), ['standBlaze:2!', 'bolt:2', 'curse:2', 'step:2', 'change:2'], 'his pact full: blazing, and the change');
+  assert.deepEqual(asked({ fx: 1, fy: 0 }), ['stand:0!', 'bolt:0'], 'a man standing in a fight: his stand, and his bolt (a tap)');
+  assert.deepEqual(asked({ fx: 0.71, fy: 0.71 }, true), ['standBlaze:2!', 'bolt:2'], 'his pact full, just turned this way: blazing');
+  clock += CHANGE_AHEAD;
+  assert.deepEqual(asked({ fx: 0.71, fy: 0.71 }, true), ['standBlaze:2!', 'bolt:2', 'change:2'], 'his pact full, facing this way a moment: the change from it too');
+  clock += 1;
   assert.deepEqual(asked({ fx: 1, fy: 0 }, false, true), ['stand:0!'], 'in town only his stand');
   assert.deepEqual(asked({ fx: 0.71, fy: 0.71, change: { to: 'demon', t: 0, dur: 2.4 } }), ['change:2!', 'it-stand:0'], 'changing: the change, then its stand');
   assert.deepEqual(asked({ fx: -0.71, fy: -0.71, form: 'demon', change: { to: 'man', t: 0, dur: 2 } }), ['it-burn:1!', 'stand:6'], 'burning out: it, then his stand');
-  assert.deepEqual(asked({ fx: -0.71, fy: -0.71, form: 'demon' }), ['it-stand:1!', 'it-slashL:1', 'it-slashR:1', 'it-damning:1'], 'the demon in a fight');
+  assert.deepEqual(asked({ fx: -0.71, fy: -0.71, form: 'demon' }), ['it-stand:1!', 'it-slashL:1'], 'the demon in a fight: its stand, and its first slash (a tap)');
   assert.deepEqual(asked({ fx: 1, fy: 0 }, false, false, true), ['fall:0!'], 'his life run out: his fall');
 });

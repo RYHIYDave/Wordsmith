@@ -104,7 +104,17 @@ export default async function (page, snap) {
   const PLAN = [];
   let t = 0;
   const add = (long, what, part) => { PLAN.push({ from: t, to: t + long, part, ...what }); t += long; };
+  const BOLTS = process.env.BOLTS === '1';
   const W = { downright: [1, 0], toward: [0.71, 0.71], downleft: [0, 1], left: [-0.71, 0.71], upleft: [-1, 0], away: [-0.71, -0.71], upright: [0, -1], right: [0.71, -0.71] };
+  // (BOLTS=1: only his bolt, thrown each of six ways, for a close look at it in flight)
+  if (BOLTS) {
+    add(0.8, { face: W.downright }, 'The hellfire bolt, thrown each way');
+    for (const k of ['upright', 'away', 'upleft', 'left', 'toward', 'right']) {
+      add(0.12, { face: W[k], fire: W[k] }, 'The hellfire bolt, thrown each way');
+      add(1.0, {}, 'The hellfire bolt, thrown each way');
+    }
+  }
+  if (!BOLTS) {
   add(1.6, { face: W.downright }, 'Standing, hunched and pained');
   for (const [k, name] of [['toward', 'toward you'], ['downleft', 'down-left'], ['left', 'left'], ['upleft', 'up-left'], ['away', 'away from you'], ['upright', 'up-right'], ['right', 'right'], ['downright', 'down-right']]) add(0.75, { face: W[k] }, `Turned through his eight sides: ${name}`);
   add(1.1, { run: W.toward }, 'Running, and stopping');
@@ -124,6 +134,7 @@ export default async function (page, snap) {
   add(0.4, { face: W.toward }, 'Tapped: he changes into the Living Shadow');
   add(0.1, { change: true }, 'Tapped: he changes into the Living Shadow');
   add(3.6, {}, 'Tapped: he changes into the Living Shadow');
+  }
   const total = Math.round(t * FPS);
   const dir = process.env.FRAMES || `${out}_frames`;
   fs.rmSync(dir, { recursive: true, force: true });
@@ -145,6 +156,10 @@ export default async function (page, snap) {
     if (i % 15 === 0) forms.push(`${i}:${(await where()).form}`);
   }
   await page.evaluate(() => { window.__dbg.slowmo = 1; });
+  // (KEPT IN PACKS, render/baked.ts PACKS, on a page with his bake beside it: how many came and went, and how many were shown before
+  // they were in hand, their first frame meanwhile)
+  const packs = await page.evaluate(() => { const b = window.__dbg.baked && window.__dbg.baked(); return b && b.packs && b.packs.all ? b.packs : null; });
+  if (packs) log('packs', JSON.stringify(packs));
   log('forms', forms.join(' '));
   log('film', `${total} frames in ${dir}`);
   void snap;

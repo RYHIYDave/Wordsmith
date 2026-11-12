@@ -4170,7 +4170,10 @@ export class Renderer {
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
       if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
-      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great') {
+      // (THE WARLOCK'S BOLT is his fire alone, drawn with the effects: render/warlock_fx.ts drawBolt. Till 12 Nov 2026 a ball of
+      // light, the purple of its element, was drawn at its nose here as well, under the fire: his words of the bolt in play that day,
+      // “fix the hellfire projectile so it’s tail doesn’t only face one way as well”; and a purple glow is the enemy's)
+      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great' && p.look !== 'hellbolt') {
         // (a familiar's bolt is a small bright mote; anything else that is not an arrow (nor a wave, nor a dart) is a ball of light)
         const mote = p.look === 'mote';
         const frames = mote ? [art.spells.mote[p.element]] : art.icons.orb[p.element];

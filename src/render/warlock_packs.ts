@@ -25,8 +25,13 @@ export interface WarlockAsked {
  * Ask for his packs: `full`, his pact is full (his arm blazing; a tap changes him); `town`, in a town (nothing is fought); `over`,
  * his life has run out (his fall).
  */
-export function warlockAskAhead(ask: AskPack, h: WarlockAsked, full: boolean, town: boolean, over: boolean): void {
+export function warlockAskAhead(ask: AskPack, h: WarlockAsked, full: boolean, town: boolean, over: boolean, at = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000): void {
   const eight = MORE_SIDES.indexOf(moreSideOf(h.fx, h.fy));
+  // (how long he has faced this side)
+  if (eight !== FACING.side) {
+    FACING.side = eight;
+    FACING.since = at;
+  }
   // (the demon from its two sides: from behind while it faces up the screen, render/figure.ts)
   const two = h.fx + h.fy < -0.2 ? 1 : 0;
   const demon = h.form === 'demon';
@@ -45,22 +50,28 @@ export function warlockAskAhead(ask: AskPack, h: WarlockAsked, full: boolean, to
     ask(demon ? 'it-stand' : 'fall', demon ? two : eight, true);
     return;
   }
+  // WHAT IS ASKED FOR AHEAD IS KEPT SMALL: a pack asked for within the last 1.5 s is never let go (render/baked.ts PACKS.fresh), and
+  // he turns from side to side as he fights, so whatever is asked ahead from his side is held from every side he has faced. First
+  // tried (a bot fighting floors 1 and 2): the change too while his pact was full, and the demon's two slashes and Damning; open
+  // packs came to 90 MB at the most where the budget is 32. Now only his stand and what a tap makes him do, and the change once he
+  // has faced one way a moment (below); the rest (his curse, the demon's other moves) opened as each is first shown, its first
+  // frame shown meanwhile, a few hundredths of a second.
   if (demon) {
-    // (its stand, and in a fight its two slashes and Damning: a tap, a combo, a hold. Its rear-ups, its slashes made walking and
-    // its smoke step are opened as they are first shown, their first frame meanwhile: asked for ahead every frame they would all be
-    // held at once, some 70 MB of its side, where the budget is 32)
     ask('it-stand', two, true);
     if (town) return;
     ask('it-slashL', two, false);
-    ask('it-slashR', two, false);
-    ask('it-damning', two, false);
     return;
   }
   ask(full ? 'standBlaze' : 'stand', eight, true);
   if (town) return;
   ask('bolt', eight, false);
-  ask('curse', eight, false);
-  ask('step', eight, false);
-  // (his pact full: a tap on him changes him)
-  if (full) ask('change', eight, false);
+  // (HIS PACT FULL, a tap on him changes him: the change from his side, once he has faced it CHANGE_AHEAD seconds. Its sheet takes
+  // the longest of his to read, up to 0.4 s seen here, and shown not yet in hand it would stand on its first frame that long; but
+  // asked for from every side he faced as he turned, one of 8 MB each, they would all be held)
+  if (full && at - FACING.since >= CHANGE_AHEAD) ask('change', eight, false);
 }
+
+/** How long he has faced a side before the change from it is asked for ahead (seconds). */
+export const CHANGE_AHEAD = 0.4;
+/** The side he faced last, and since when (seconds). */
+const FACING = { side: -1, since: 0 };

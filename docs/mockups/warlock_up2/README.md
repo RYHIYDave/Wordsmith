@@ -4,7 +4,7 @@ and seen in play on floor 11 beside the Brawler (his “Yes, hand it to main (Re
 the game's 2.4 s, his “Keep the game's 2.4 s (Recommended)”). On the queue's ship list as `warlock-living-shadow`. WHAT THE MAIN
 CHAT MUST DO: the sections “In the game's shape, behind a switch that is off” and “In play on floor 11”. THE MAN, his eight sides,
 his longer heavy coat and boots to the knee, every list at 30 a second, IS MADE on the branch `art/warlock-man8` (cut from this
-one), behind WARLOCK_UP (off), and shown him in play: the section “The man” at the foot (HIS_WORD).**
+one), behind WARLOCK_UP (off), and shown him in play: the section “The man” at the foot (his word on the pictures awaited; then, at his words “Why don’t you pack him away?”, packed and the bolt mended on `build/warlock-packed`: the section “The Warlock kept in packs” at the foot).**
 
 Branch `art/warlock-up2`, from `main` at 9d3501b (25.3.3). The Warlock chat, 11 Nov 2026, a new chat of his, working the
 queue's `finish-mage-and-warlock-eight-sides` (the Mage's half is done: `art/mage-up2`). It takes up the art chat's helper's
@@ -931,7 +931,7 @@ SEEN IN IT, AND TOLD HIM:
   Shadow or the game's demon as LIVING_SHADOW says, his card's making ready, one list where blazing changes nothing; (4) a moment
   of every move from every side crisp, his cyan edge, nothing cut off; his boots in the game's boots' place; (5) no leg through
   his coat where it hangs, every move he stands in, every sixth of a second.
-- UNIT_LINE
+- `node tools/unit.mjs --only warlock_up,cheap_heroes,warlock,warlock_moves,shadow_art,shadow_change,heroes3` and the core on 67f61ff3b4 (art/warlock-man8): 29 files, 350 tests, all passed (the Warlock's frames by hash with the switch off among them: `cheap_heroes`).
 - The film's playtest and the stills' finished clean (no errors).
 
 ## The checks so far
@@ -941,3 +941,79 @@ SEEN IN IT, AND TOLD HIM:
 - Nothing of the game imports `src/dev/demon_new.ts`, `demon_ideas.ts`, `shadow_moves.ts`, `shadow_fx.ts` or
   `demon_swipe_fx.ts`; no file of the game is changed.
 - `npx tsx --test tests/shadow_moves.test.ts`: 17 of 17 (above). No other test was run: none imports these files.
+
+## The Warlock kept in packs, and the bolt's tail (branch `build/warlock-packed`; his words of 12 Nov)
+
+Shown the film of the man brought up and told he would want packing for his phone (about 140 MB of pictures where he was 28),
+**HIS WORDS, 12 Nov 2026** (asked by pop-up whether the Warlock brought up was right): **“Why don’t you pack him away?
+And fix the hellfire projectile so it’s tail doesn’t only face one way as well”**. Read as, and told him so: this chat packs him
+itself, as the Brawler's moves are packed, rather than leave it to the main chat; and the bolt in flight trails its tail behind
+it whichever way it flies.
+
+BRANCH `build/warlock-packed`, CUT FROM TODAY'S `main` (d39dcde8, 25.3.13), with:
+- `art/warlock-man8` merged (the man brought up, and `art/warlock-up2` whole under it: the Living Shadow). No conflicts.
+- `build/brawler-packed` (73c77f9) merged, for its packs of a hero's moves (`render/baked.ts` PACKS: a pack is one move from one
+  side on a sheet of its own, kept packed as its file's bytes, opened as it is shown or a moment ahead, the least lately shown let
+  go past the budget). Three conflicts, each of `main`'s since that branch was cut: `src/dev/bake_heroes_page.ts` (main's
+  `bakeLists` and every hero's card pictures first, `bakedFirst`, kept; the packs' plan laid over them), `src/main.ts` (both
+  kept), `src/render/baked.ts` (main's hand-in measures kept beside the packs' own); `packsOf` now reads `bakeLists`. THE
+  BRAWLER'S SWITCH IS LEFT OFF HERE, as `main` has it, its three test lines as `main` has them: his yes to the packed Brawler is
+  still his to give from his phone (`build/brawler-packed`'s PACKED.md). When he gives it, `main` turns his switch on; nothing of
+  his needs merging again.
+
+THE BOLT (`render/warlock_fx.ts` drawBolt): the game drew his fire in flight standing upright, leaning only left or right, so
+flying up or down the screen its tail still pointed up. Now it draws the art's own bolt (`dev/warlock_fx.ts` bolt, exported: his
+fire laid on its side along the way it flies, as the bolt leaving his claws is drawn in the art's films), its nose at the
+projectile, the nearest of 16 ways round the screen, at the game's size. AND NO BALL OF LIGHT AT ITS NOSE: the game drew every
+projectile that is not an arrow (nor a wave, a dart, a spear, a great arrow) as a ball of light, the purple of its element, and so
+under his bolt too (`render/render.ts`, the projectiles' pass); a purple glow is the enemy's. The hellfire bolt is now left out of
+it: his fire alone. (A word set into his bolt tinted that ball; with no ball, his bolt shows no word's colour in flight.)
+`pictures/warlock_bolt_now_and_fixed.png` (2090 x 526): thrown each of six ways, now above and fixed below, in the game on floor
+11 (`BOLTS=1` with the scenario below, on the page as he is now and on the packed page).
+
+WHAT IS PACKED (`render/baked.ts` warlockPacksOf; `tests/warlock_packs.test.ts`, 4 of 4):
+- THE MAN BROUGHT UP (eight sides), where the game is played (never his card): HELD, his run (and blazing); PACKED, from each
+  side, his stand (blazing, its own), his bolt, his curse, the smoke step, struck, his fall, the change.
+- THE LIVING SHADOW (two sides; the game's own demon is not packed): HELD, its run; PACKED, from each side, its stand, dropping
+  down, each of its eight rear-ups, each slash standing and made walking, Damning, its smoke step, struck, its burning out. (A pack
+  is one sheet, 2048 square: its dropping down with its rear-ups, tried as one pack, did not go on one.)
+- Every list's first frame is held, so a move not open yet shows it for the few hundredths of a second its sheet takes to read.
+- ASKED FOR A MOMENT AHEAD (`render/warlock_packs.ts`): his stand from the side he faces and his bolt (a tap); with his pact
+  full, the change from his side once he has faced it 0.4 s (its sheet is his biggest, up to 0.4 s to read here); the demon's
+  stand and its first slash; while he changes, the change and then the demon's stand; as it burns out, that and then his stand.
+  First tried with the change asked for at once while his pact was full, and the demon's other slash and Damning too: as he turned
+  in a fight each side's were asked in turn, and a pack asked for in the last 1.5 s is never let go, so 90 MB were open at the most
+  where the budget is 32. As it is now, 64.4 MB at the most (below).
+
+HIS BAKE (`tools/warlock_packed_page.mjs`: his group only, the bake's page with both switches on; mark a0c436de425a): 7,368
+frames for 13,690 places, 106 sheets, 6.88 MB as files; 104 packs; 15.9 MB always held, 254.9 MB of frames in packs (327.5 MB of
+sheets with every pack open).
+
+WEIGHED IN PLAY (Chrome on a cloud machine at a phone's size, 844 x 390 at 3; NOT A PHONE): the test bot as the Warlock, floors 1
+and 2, 30 s of play each at six times the game's speed (`tools/scenarios/mem_floors.mjs`, CLS=warlock; PACKS=0 every pack open):
+
+| as it is come into | pictures held, kept packed | every pack open | the page's process, packed | every pack open |
+|---|---|---|---|---|
+| town | 21.7 MB | 346.0 MB | 659 MB | 974 MB |
+| floor 1 | 39.5 | 359.9 | 825 | 1,178 |
+| floor 1, played | 131.6 | 428.7 | 633 | 979 |
+| floor 2 | 88.1 | 383.4 | 827 | 1,146 |
+| floor 2, played | 133.1 | 428.6 | 987 | 1,247 |
+
+(“pictures held”: the page's own pictures, the floors' among them; the same in both but for his.) His packs: open at the most
+64.4 MB, 29.1 at the end; opened 99 times and let go 94; EVERY ONE ASKED FOR AHEAD, NONE SHOWN BEFORE IT WAS IN HAND; opening them
+3.3 s in all, the browser reading the sheets beside the game, 72 ms of it on the game's own thread, 5.8 ms at worst in one go. A
+frame's work while the bot fought, floor 2: 7.1 ms in the middle packed, 7.2 every pack open. (Every pack open is about what he
+would hold unpacked: his sheets whole, 327.5 MB.)
+
+THE FILM'S SCENARIO ON THE PACKED PAGE (served, the clock slowed for each frame; `tools/scenarios/warlock_up_look.mjs` now says how
+his packs went): standing, his eight sides, running, his bolt and curse, the smoke step, the change into the Living Shadow, all from
+his packs: 25 opened, 21 let go, 46.6 MB open at the most; finished clean but for the one file it could not find (another hero's
+group: only his is baked).
+
+NOT CHECKED: his phone; a release build with every hero's bake (only his group is baked here: the other heroes are painted in
+play on this page); the published page's playtests.
+
+FOR THE MAIN CHAT: bring in `build/warlock-packed` in place of `art/warlock-man8` and `art/warlock-up2` (it holds both, and
+`build/brawler-packed` with the Brawler's switch off); then, at his yes, switch WARLOCK_UP and LIVING_SHADOW on and bake. The
+budget, `PACKS.budget`, is the Brawler's and his alike: one number.
