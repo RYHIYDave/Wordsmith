@@ -781,6 +781,15 @@ export function warriorWeapon(taken: readonly string[]): WarriorWeapon {
   return (WEAPON_PICKS.find((w) => taken.includes(w)) as WarriorWeapon | undefined) ?? 'greatsword';
 }
 /**
+ * His weapon as it is drawn (art/heroes.ts HeroLook.weapon): the war axe, the maul, or null for the great sword (and for every hero
+ * but him, and with WARRIOR_TREE2 off).
+ */
+export function heavyDrawn(cls: ClassId, taken: readonly string[]): 'axe' | 'hammer' | null {
+  if (cls !== 'warrior' || !WARRIOR_TREE2.on) return null;
+  const w = warriorWeapon(taken);
+  return w === 'battleaxe' ? 'axe' : w === 'warhammer' ? 'hammer' : null;
+}
+/**
  * Each weapon's tap, hold and swipe (game/defs.ts SKILLS): the greatsword's Strike, Whirl and Lunge; the battle axe's Cleave, Axe
  * Throw and Leaping Chop; the warhammer's Smash, Earthquake and Shoulder Charge. His choice of 7 Nov, 21:12, “Each its own
  * (Recommended)”, of the swipe.

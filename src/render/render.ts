@@ -34,6 +34,8 @@ import type { ActorArt } from '../art/actor_types';
 import { FIGURE_SIZE, HEAVY_FIGURES, figureOf } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { HeroArt } from '../art/heroes';
+import { HEAVY_PLACES } from '../art/heroes';
+import { heavyDrawn } from '../game/talents';
 import { WORD_COLOR, itemPic } from '../art/icons';
 import type { IconArt } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
@@ -2791,11 +2793,14 @@ export class Renderer {
     // is what he carries, with sword and shield otherwise.)
     // (and whether they are in town: the heroes painted over the bones have their weapons on their backs there, art/heroes3.ts)
     // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES: each always drawn with his own weapon, the warrior's the great sword)
+    const arms = heavyDrawn(h.cls, h.talents);
     const look = {
       twoHanded: OWN_MOVES.on ? h.cls === 'warrior' : h.gear.mainhand !== null && h.gear.mainhand.weapon === 'greatsword',
       town: !!game.level.town,
       // (THE WARLOCK: the demon's pictures while he is it; his arm blazing while his pact is full)
       ...(h.cls === 'warlock' ? { demon: h.form === 'demon', blaze: h.form !== 'demon' && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full } : {}),
+      // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: the war axe or the maul in his hands, once his tree has picked it)
+      ...(arms ? { weapon: arms } : {}),
     };
     // Frames are painted ahead of need each time the world is drawn: the hero's, and those of the
     // monsters in this dungeon, turn and turn about. At least one each time, and more for as long
@@ -2866,8 +2871,10 @@ export class Renderer {
     // were done. Until the worker is up, or where there is none, the game paints them ahead as before.)
     const pw = this.painter && this.art.heroes.give ? this.painter : null;
     // (THE WARLOCK: the one he is now first, then his others: the demon's, his arm blazing, as a man in a dungeon)
-    const now = h.cls === 'warlock' && !look.town ? (h.form === 'demon' ? 'demon' : look.blaze ? 'blaze' : 'dungeon') : look.town ? 'town' : 'dungeon';
-    const byWorker = !!pw && pw.hero(h.cls, now) && (!look.town || pw.hero(h.cls, 'dungeon')) && (h.cls !== 'warlock' || look.town || (pw.hero(h.cls, 'dungeon') && pw.hero(h.cls, 'blaze') && pw.hero(h.cls, 'demon')));
+    // (THE WARRIOR'S WEAPON: his places with the war axe or the maul, art/heroes.ts HEAVY_PLACES)
+    const places = arms ? HEAVY_PLACES[arms] : { dungeon: 'dungeon' as const, town: 'town' as const };
+    const now = h.cls === 'warlock' && !look.town ? (h.form === 'demon' ? 'demon' : look.blaze ? 'blaze' : 'dungeon') : look.town ? places.town : places.dungeon;
+    const byWorker = !!pw && pw.hero(h.cls, now) && (!look.town || pw.hero(h.cls, places.dungeon)) && (h.cls !== 'warlock' || look.town || (pw.hero(h.cls, 'dungeon') && pw.hero(h.cls, 'blaze') && pw.hero(h.cls, 'demon')));
     const hero = (): boolean => !byWorker && this.art.heroes.warm(h.cls, look);
     const beast = (): boolean => figs.length > 0 && this.art.bestiary.warm(figs);
     // (Version 19.4: in town, once all of the town's are painted, the hero's pictures for the

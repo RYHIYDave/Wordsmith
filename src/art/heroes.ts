@@ -3,6 +3,7 @@
 // its own (hero_warrior.ts, hero_ranger.ts, hero_mage.ts), painted with the kit at twice the grain
 // of the first builds' art. Frames are painted the first time they are shown.
 
+import type { HeavyWeapon } from './warrior_up_heavy_art';
 import type { Sprite } from '../engine/px';
 import type { TailDef } from '../engine/tails';
 import type { ClassId } from '../game/types';
@@ -37,6 +38,11 @@ export interface HeroLook {
    * own, says so); absent, as game/veteran.ts VETERAN is.
    */
   vet?: boolean;
+  /**
+   * THE WARRIOR'S WEAPON (game/talents.ts WARRIOR_TREE2: his tree's first point picks it): the war axe or the maul, each drawn in
+   * his hands from his eight sides (art/warrior_up_heavy_art.ts); absent, the great sword, as ever.
+   */
+  weapon?: HeavyWeapon;
 }
 
 /**
@@ -44,10 +50,14 @@ export interface HeroLook {
  * others (art/warlock_art.ts): the demon's, and his with his arm blazing; and (28 Oct 2026) the new classes on their class
  * cards, too heavy for the start screen to paint as it draws them (`card`).
  */
-export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card';
+export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card' | 'axe' | 'axeTown' | 'hammer' | 'hammerTown';
+/** (THE WARRIOR'S WEAPON, WARRIOR_TREE2) His places with the war axe and the maul: in a dungeon, and in town. */
+export const HEAVY_PLACES: Readonly<Record<HeavyWeapon, { dungeon: HeroPlace; town: HeroPlace }>> = { axe: { dungeon: 'axe', town: 'axeTown' }, hammer: { dungeon: 'hammer', town: 'hammerTown' } };
 /** The look each of those is. */
 export function lookOfPlace(place: HeroPlace): HeroLook {
   if (place === 'card') return { twoHanded: true, town: true, card: true };
+  if (place === 'axe' || place === 'axeTown') return { twoHanded: true, town: place === 'axeTown', weapon: 'axe' };
+  if (place === 'hammer' || place === 'hammerTown') return { twoHanded: true, town: place === 'hammerTown', weapon: 'hammer' };
   return { twoHanded: true, town: place === 'town', ...(place === 'demon' ? { demon: true } : place === 'blaze' ? { blaze: true } : {}) };
 }
 
