@@ -16,6 +16,9 @@
 //                          burning away as its seconds run out; the floor cracked with light where it rose; a burst on the
 //                          one it strikes; and at its end it falls again and fades
 //   THE FOURTH GLOBE       render/veteran_fx.ts (four globes over the Brawler's head)
+//   THE DROWNED ARM        on its 'warn', black water welling up there, the tentacle bursting up out of it a little behind the
+//                          enemy, towering, cocking back and whipping down across it on the 'slam' (the rules' half a second
+//                          on), the water thrown out round it; it lies there a moment and is pulled back under (art ARM)
 
 import type { Sprite } from '../engine/px';
 import type { Px } from '../engine/px';
@@ -33,6 +36,7 @@ import { wx, wy } from './fx';
 import { attackFrame } from './figure';
 import { risingSprite } from './arrivals';
 import { UNIQUE_PLAY } from './unique_play';
+import { ARM, ARM_WATER, paintArm, paintArmPool } from '../art/unique_play_art2';
 
 /** Picture pixels to a game pixel (the heroes' grain). */
 const G = 2;
@@ -88,6 +92,8 @@ export class UniqueFx {
   private cracks: { x: number; y: number; t: number; seed: number }[] = [];
   private falls: { kind: MonsterKind; champion: boolean; x: number; y: number; fx: number; fy: number; r: number; t: number }[] = [];
   private blows: { x: number; y: number; z: number; t: number; seed: number }[] = [];
+  // ---- the drowned arm: each from its warning (the enemy's spot, how long since)
+  private arms: { x: number; y: number; t: number; flip: boolean }[] = [];
   private looks = new Map<Sprite, Sprite>();
   private lookPx = 0;
   private cuts = new Map<Sprite, Map<number, { sp: Sprite; down: number } | null>>();
@@ -102,6 +108,7 @@ export class UniqueFx {
     this.cracks = [];
     this.falls = [];
     this.blows = [];
+    this.arms = [];
   }
 
   /**
@@ -134,6 +141,19 @@ export class UniqueFx {
       const top = m ? (FIGURE_SIZE[figureOf(m)]?.top ?? 28) : 28;
       this.touches.push({ x: e.x, y: e.y, z: Math.min(20, top * 0.5), t: 0, seed: ++this.seeds });
       this.flare = TOME_FLIES.flare;
+    }
+    if (e.id === 'drownedarm' && UNIQUE_PLAY.arm) {
+      if (e.what === 'warn') {
+        // (it comes up on the far side of the enemy from him, as the screen has it, and whips down across it toward him)
+        const h = g?.hero;
+        const flip = !!h && h.x - h.y < e.x - e.y;
+        this.arms.push({ x: e.x, y: e.y, t: 0, flip });
+        if (this.arms.length > 3) this.arms.shift();
+      } else if (e.what === 'slam') {
+        // (the black water thrown out round it as it lands)
+        fx.rings.push({ x: e.x, y: e.y, r: (e.r ?? 1.3) * 1.05, t: 0, dur: 0.4, colors: [ARM_WATER[4], ARM_WATER[3], ARM_WATER[2], ARM_WATER[1]], fill: false, heavy: true });
+        fx.spray(e.x, e.y, 26, [ARM_WATER[4], ARM_WATER[3], ARM_WATER[2], '#687c46'], 2.1, 150, 2);
+      }
     }
     if (e.id === 'fleshmancersbrand' && UNIQUE_PLAY.risen) {
       if (e.what === 'rise') {
@@ -175,6 +195,8 @@ export class UniqueFx {
     this.cracks = this.cracks.filter((c) => c.t < RISEN_SHOWN.cracks);
     for (const f of this.falls) f.t += dt;
     this.falls = this.falls.filter((f) => f.t < RISEN_SHOWN.fall);
+    for (const a of this.arms) a.t += dt;
+    this.arms = this.arms.filter((a) => a.t * 30 < ARM.frames);
     for (const b of this.blows) b.t += dt;
     this.blows = this.blows.filter((b) => b.t * 30 < RISEN_BLOW_FRAMES);
     // THE TOME: a tongue of its fire left where it is, a thirtieth of a second apart
@@ -289,6 +311,15 @@ export class UniqueFx {
       const s = keep(`touch|${age}|${q.seed % 3}`, () => paintTomeTouch(age, q.seed % 3));
       out.push({ d: q.x + q.y + 0.05, s, x: wx(cam, q.x, q.y), y: wy(cam, q.x, q.y) - q.z, alpha: 1 });
     }
+    // THE DROWNED ARM: from a little behind the enemy (ARM.from), behind it as it rises, over it once it has whipped down across it
+    for (const a of this.arms) {
+      const f = Math.min(ARM.frames - 1, Math.floor(a.t * 30));
+      const [fx0, fy0] = a.flip ? [ARM.from[1], ARM.from[0]] : ARM.from;
+      const bx = a.x + fx0;
+      const by = a.y + fy0;
+      const s0 = keep(`arm|${f}`, () => ({ px: paintArm(f), ax: ARM.ax, ay: ARM.ay }));
+      out.push({ d: f < ARM.slam ? bx + by : a.x + a.y + 0.4, s: a.flip ? flipSprite(s0, true) : s0, x: wx(cam, bx, by), y: wy(cam, bx, by), alpha: 1 });
+    }
     if (!UNIQUE_PLAY.risen || !this.bestiary) return out;
     // THE RISEN ELITE
     const p = g.risen;
@@ -326,6 +357,15 @@ export class UniqueFx {
     };
     const at = this.tomeAt;
     if (at) oval(at.x, at.y, 0.3, 0.24);
+    // THE DROWNED ARM'S BLACK WATER, between where it comes up and the enemy
+    for (const a of this.arms) {
+      const f = Math.min(ARM.frames - 1, Math.floor(a.t * 30));
+      const s = keep(`armpool|${f}`, () => paintArmPool(f));
+      const [fx0, fy0] = a.flip ? [ARM.from[1], ARM.from[0]] : ARM.from;
+      const px = a.x + fx0 * 0.45;
+      const py = a.y + fy0 * 0.45;
+      drawSprite(g, s, Math.round(wx(cam, px, py)), Math.round(wy(cam, px, py)));
+    }
     if (!UNIQUE_PLAY.risen) return;
     for (const c of this.cracks) {
       const grow = Math.min(RISE_CRACKS.grow - 1, Math.floor(c.t * 30 * 0.8));

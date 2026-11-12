@@ -123,3 +123,38 @@ Nothing of game/ is changed.
    the game's size). Taking it off him is a change to his baked pictures.
 4. **The risen elite's pictures are its kind's standing, walking and attack frames**: a kind that moves by a gait or an act of
    its own (the first five floors' own, Act 1's fliers) is shown by its plain frames, not those.
+
+# The next: The Drowned Arm (branch `art/uniques-play2`, 12 Nov 2026)
+
+Cut from `main` at 10161fc (25.3.10, which has the first three). Pulled from the queue (`draw-unique-items`) by a chat of his
+working from the queue (his words: “Please knock out some queue items”).
+
+**The Drowned Arm** (amulet, the Swamp Colossus's: every 5 seconds a tentacle bursts up under the enemy he is fighting and
+slams it, `game.ts stepArm`). Behind `UNIQUE_PLAY.arm`, off. Its bag picture's drowned olive flesh (`ARM_FLESH`, the bag
+picture's `arm` ramp), a paler inside down which its suckers run (rings with a dark pit, bigger toward its root), a wet glint on
+its lit side, edged in ink. On the rules' `warn` (half a second before the blow) BLACK WATER wells up on the floor there and
+churns (the darkest of the bag picture's water: never bright enough to read as a glow), and the arm bursts up out of it on the
+far side of the enemy from him (as the screen has it: mirrored when he stands on the other side), its tip hooked, swaying; it
+towers, cocks back, and on the `slam` (frame `ARM.slam`, the rules' half a second) it has whipped down across the enemy toward
+him; the water is thrown out in a ring and a spray (with the game's own slam burst and shake, the build's); it lies there a
+moment, bounces once, and is pulled back under, tip last; the water closes. 36 frames at 30 a second, painted once each
+(src/art/unique_play_art2.ts `paintArm`, `paintArmPool`, `armPose`), laid by `UniqueFx` (stands: behind the enemy as it rises,
+over it once it has come down; the water with what lies on the floor).
+
+To see it: `npx tsx tools/uniques_play_peek2.ts arm <out.png>` (every frame big), or in a built page
+`LOOK=arm FILM=2.4 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/arm`
+then `python3 tools/uniques_play_film.py shots/uniques_play/arm <dir> drowned_arm "<frame>:<line>" ...`.
+
+Pictures sent him: `pictures/drowned_arm.png` (four moments, a line under each) and `pictures/drowned_arm.mp4` (2.4 s, the
+Warrior striking a skeleton, at a phone's own size).
+
+Checked: tests/unique_play2.test.ts (new, 3: the switch off; under, up, down across as the blow lands, under again, its root
+where the water is, only its own colours, every pixel whole; the water from the warning to the end, dark) and
+tests/unique_play.test.ts (6, its switches check now counting `arm`) pass, each run alone with tsx; tsc clean; the page built
+and the look filmed: finished clean.
+
+His word: below. NOT DRAWN YET (the rest of the queue item's list): The Queen's Talons' bird (a first try in
+src/art/unique_play_art2.ts `paintBird`, NOT shown to him: it reads as a dark blob and wants drawing again, by hand-placed
+pixels rather than shapes), The Rainwalker, The Shepherd's Crook, The Tide, The Windcutter (the game already draws its blade as
+the Wave's crescent), The Fan, The Sticky Wrench, The Moth's Wing; and which of the moments the build only tells of want a
+picture of their own (to ask him).
