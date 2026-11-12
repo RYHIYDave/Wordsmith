@@ -1,0 +1,55 @@
+{
+ "mark": "e0ac1c19738f",
+ "groups": {
+  "cards": {
+   "frames": 471,
+   "places": 471,
+   "sheets": 1,
+   "mb": 0.18,
+   "s": 41
+  },
+  "warrior": {
+   "frames": 2504,
+   "places": 4217,
+   "sheets": 3,
+   "mb": 1.2,
+   "s": 85.9
+  },
+  "ranger": {
+   "frames": 7253,
+   "places": 8668,
+   "sheets": 7,
+   "mb": 3.24,
+   "s": 468.4
+  },
+  "mage": {
+   "frames": 4110,
+   "places": 5222,
+   "sheets": 5,
+   "mb": 1.77,
+   "s": 808
+  },
+  "warlock": {
+   "frames": 1441,
+   "places": 2646,
+   "sheets": 7,
+   "mb": 3.09,
+   "s": 299.6
+  },
+  "tinkerer": {
+   "frames": 2459,
+   "places": 5088,
+   "sheets": 2,
+   "mb": 0.85,
+   "s": 113.4
+  },
+  "brawler": {
+   "frames": 9666,
+   "places": 42992,
+   "sheets": 13,
+   "mb": 4.06,
+   "s": 435
+  }
+ },
+ "s": 2300
+}
