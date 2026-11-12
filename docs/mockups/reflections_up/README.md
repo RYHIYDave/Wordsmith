@@ -111,3 +111,64 @@ the six heroes as they look now (the two sheets and the film): are these your gl
 - The Warlock is being redrawn (the queue's finish-mage-and-warlock-eight-sides) and the Brawler's eight sides wait on his
   word: both reflections are made from their painters, so they follow them (the Living Shadow's demon is not a reflection's:
   his reflection is the man).
+
+## In the game, behind its switch (the queue's `wire-floor-18-new-reflections`, branch `build/reflections-in-play`)
+
+Built by a chat of his working from the queue (his words, 12 Nov 2026, 13:32 Eastern: “Please work on the next queue item”), not
+the main chat: cut from `main` at 40c62c8d (25.3.11) with this branch (7fcc5330) merged in, as the main chat did for 25.3.12.
+`main` untouched, nothing published. EVERYTHING BELOW IS BEHIND `REFLECTIONS_UP`, OFF: off, the game is as it was, to the number
+(tests/reflections_play.test.ts, check 1).
+
+- THE SWITCH lives with the rules now (game/act1_rules/reflection.ts `REFLECTIONS_UP`; this file hands it on). It is on only in a
+  page built to try it (`__TRY__` 'reflections': tools/reflections_try_page.mjs), so that the game and its painter's worker, the
+  same script, have it on from the first (it says which pictures a figure is made of, and the two must agree). AT HIS YES: make it
+  `{ on: true }`.
+- THE FIGURE (art/act1_figs/reflection.ts): each form's look is `makeReflectionUpArt().ofForm(form)` with the switch on, the first
+  reflections' with it off. EIGHT FORMS NOW: the six classes (FORM_OF), and THE WARRIOR HOLDING WHAT HE HOLDS (`WEAPON_FORM`:
+  6 his war axe, 7 his maul; game/talents.ts heavyDrawn, by his tree as it comes into the world: `formOf`). With the switch off
+  6 and 7 are the knight's and never come. The axe's and the maul's copies are made here from his own moves with them
+  (`warriorWith`: stand, run, Cleave, the thrown axe thrown, braced while it flies and caught, Smash, the Earthquake, struck; what
+  his hands hold never seen through by a crack: `heldFrom`). Sizes: `SIZE_UP`, read live (FIGURE_SIZE holds the very object).
+- SEEN FROM EIGHT SIDES, as the heroes are: render/render.ts `monsterSpriteNow` shows the side for the way it faces
+  (art/warrior_up_art.ts `wuFacing`), kept until it has clearly turned out of it (as the hero's figure keeps his, `EIGHT_STICK`),
+  never mirrored; its fall from the side it faced (fx.ts `Fallen.fx/fy`). Every other monster as ever. THE BESTIARY, THE PAINTER'S
+  WORKER AND THE MONSTERS' BAKE go by every side a figure has (art/sides.ts `heroSides`: front and back first, so every other
+  figure is numbered as it was): art/bestiary.ts (its painting ahead, `forget`, `paintOrder`, `giveFrame`), render/painter.ts,
+  render/monsters_bake_list.ts `figureLens`, render/monsters_baked.ts, src/dev/bake_monsters_page.ts.
+- EACH FORM'S OWN TWO BLOWS (game/act1_rules/reflection.ts `UP`), the hero's own tap and hold, each landing when its picture's does
+  and played as long (the art's clips' `hit` and length: check 2 holds them to it), after the same warnings as before; each form
+  makes only its own (`reflection:tap3`, `reflection:hold3`: `can`). As read by this chat (to tell him; his to change):
+  0 great sword, Strike (a cut) and the Slam (a ring before it); 1 the Ranger, the Shot and the Volley; 2 the Mage, the Wave and the
+  Orb (both as the first reflections'); 3 the Warlock, a Hellfire Bolt at him and the Curse all round it; 4 the Tinkerer, a vial
+  tossed where he stood, and on the hold THREE VIALS side by side (NO WHISTLE: his word of 12 Nov 2026, shown her copy whistling for
+  a Golem that was not there, “I think just have the tinkerer throw her vials if there’s no golem”; her copy's hold picture is her
+  toss: art/reflections_up.ts); 5 the Brawler, the jab and
+  the roundhouse kick (a wide fan); 6 war axe, Cleave and the thrown axe out at him and back (the art's flight, a second);
+  7 maul, Smash and the Earthquake round it. Their reach the first reflections' where the move is theirs, near them where new
+  (medium: two blows). What it sends is drawn in the enemy's pink (render/act1_fx/reflection.ts: the bolt, the axe turning end
+  over end, the vial); a slam, a quake and the Curse leave the game's ring (`burst`).
+- FETCHED BY FORM: the floor's figures are its monsters' own (a reflection's is `reflection:<form>`), so only the hero's own form is
+  painted or taken in; the glass Queen's call for hers (monsters_baked.ts BRINGS `gqueen`) now asks, under the loading screen, for
+  the hero's own form's (main.ts), where it asked for the knight's whatever the hero was.
+
+### Checked
+tsc clean; tests/reflections_play.test.ts (new, 5); `node tools/unit.mjs --only act2_gqueen,reflections,reflections_up,
+reflections_play,monsters_baked` and the core on 0dc6e26b5b: 28 files, 318 tests, all passed. The heroes' bake mark unchanged
+(0b437a9dc71f). Filmed in play on floor 18 with the switch on (tools/scenarios/reflections_in_play.mjs, every form; the film
+`pictures/reflections_in_play.mp4`, made by tools/reflections_play_film.py). NOT CHECKED: his phone; a release build with the
+bakes; the published page's playtests.
+
+### His word on it in play
+12 Nov 2026, by pop-up. Sent the film of every form (pictures/reflections_in_play.mp4, as it was then), asked whether that is how
+they should fight: “I think just have the tinkerer throw her vials if there’s no golem”; and “Yes, send it to GitHub
+(Recommended)”. Done: her hold three vials, her toss's picture; the film made again. Sent her ten seconds again
+(tinkerer_vials.mp4, not kept here: the film's own part), asked whether they are ready for the main chat to switch on, by 15:28
+Eastern: “Yes, hand it to main (Recommended)”.
+
+### For the main chat, to bring it in
+- THE MONSTERS' MARK CHANGES (the bestiary and the bake's page go by every side): 72241754ab67 (25.3.11) to a new one. WITH THE
+  SWITCH OFF the pictures are the same (the first reflections' are, to the pixel, as this branch's README says; nothing else is
+  touched): `node tools/bake_monsters.mjs --from 72241754ab67`. With the switch on, the reflections' eight figures are new
+  pictures: bake them (`--only reflection,reflection:1,...,reflection:7`) and take the rest `--from`.
+- HIS YES IS GIVEN (above): `REFLECTIONS_UP` `{ on: true }` (game/act1_rules/reflection.ts), the bake, a release, the
+  published page's playtests (tools/scenarios/reflections_in_play.mjs on the release page, each CLS, and high18_reflections.mjs).

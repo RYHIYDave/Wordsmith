@@ -435,7 +435,7 @@ export class Painter {
    * code is the bakes' marks, tools/bake_heroes.mjs and the others, and a change to it is a new bake of every hero and monster.)
    */
   private packMoves(pk: PackHere, art: ActorArt): void {
-    [art.front, art.back].forEach((set, v) =>
+    heroSides(art).forEach((set, v) =>
       framesOf(set).forEach((frames, l) => {
         const mv: PackMove = { v, l, frames, lazy: [], held: new Map(), bytes: 0, at: 0, asked: false };
         pk.moves.set(`${v},${l}`, mv);
@@ -844,7 +844,7 @@ export class Painter {
           if (art && giveFrame(art, g.v, g.l, g.i, g.s)) this.sideFrames++;
           else (g.s.img as unknown as ImageBitmap).close();
         } else if (g.same && art) {
-          const from = framesOf(g.same[0] === 0 ? art.front : art.back)[g.same[1]];
+          const from = heroSides(art)[g.same[0]] ? framesOf(heroSides(art)[g.same[0]])[g.same[1]] : undefined;
           const d = from ? Object.getOwnPropertyDescriptor(from, g.same[2]) : undefined;
           if (d && 'value' in d && d.value) giveFrame(art, g.v, g.l, g.i, d.value as Sprite);
         }
@@ -954,7 +954,7 @@ export class Painter {
           }
         } else if (g.same && art && !(pk?.packs && g.i !== 0)) {
           // (the same picture as another frame, which is here: the painter's, or the game's own)
-          const from = framesOf(g.same[0] === 0 ? art.front : art.back)[g.same[1]];
+          const from = heroSides(art)[g.same[0]] ? framesOf(heroSides(art)[g.same[0]])[g.same[1]] : undefined;
           const d = from ? Object.getOwnPropertyDescriptor(from, g.same[2]) : undefined;
           if (d && 'value' in d && d.value) giveFrame(art, g.v, g.l, g.i, d.value as Sprite);
         }
@@ -1069,7 +1069,7 @@ function emptied(s: Sprite): boolean {
 
 /** Is every frame of a figure painted (none still waiting to be painted the first time it is shown)? */
 function allPainted(art: ActorArt): boolean {
-  const lists = [framesOf(art.front), framesOf(art.back)];
+  const lists = heroSides(art).map(framesOf);
   for (const [v, l, i] of paintOrder(art)) {
     const d = Object.getOwnPropertyDescriptor(lists[v][l], i);
     if (d && typeof d.get === 'function') return false;
@@ -1581,7 +1581,8 @@ export function paintWorkerMain(): void {
   /** A figure's frames, painted and handed over a few at a time. */
   function* mob(figure: MonsterFigure, side = false): Generator<void, void, void> {
     const art = bestiary.of(figure);
-    const lists = [framesOf(art.front), framesOf(art.back)];
+    // (every side it is seen from: one seen from eight, floor 18's reflections, its eight, as art/bestiary.ts paintOrder numbers them)
+    const lists = heroSides(art).map(framesOf);
     let order = paintOrder(art);
     // (ONE TOO BIG TO HOLD WHOLE, PACKED: packed here as it is painted; the first frame of every move painted first, and handed over)
     const packing = !side && PACKED.on && PACKED.figures.includes(figure);
@@ -1602,7 +1603,7 @@ export function paintWorkerMain(): void {
       if (!soon && dieSoon.has(figure)) {
         soon = true;
         // (its death: its `die`, or the fall one of the descent's figures keeps among its moves: render/left_to_painter.ts deathOf)
-        const dies = [deathOf(art.front), deathOf(art.back)].map((f, v) => (f ? lists[v].indexOf(f) : -1));
+        const dies = heroSides(art).map(deathOf).map((f, v) => (f ? lists[v].indexOf(f) : -1));
         const rest = order.slice(n);
         const first = rest.filter(([v, l]) => l === dies[v]);
         order = [...order.slice(0, n), ...first, ...rest.filter(([v, l]) => l !== dies[v])];

@@ -52,6 +52,7 @@ import { PACK_MARKS } from '../render/pack_marks';
 import { ACT1 } from '../game/act1';
 import { ACT1_KINDS, ACT2_KINDS, HIGH_KINDS } from '../game/types';
 import { ACT1_FIGS, act1Fig, act1Look, act1Looks } from './act1_figs/index';
+import { heroSides } from './sides';
 
 /**
  * THE MONSTERS' ATTACKS (Version 19.8; game/defs.ts MONSTER_ATTACKS): the rules of the monsters' moves
@@ -452,7 +453,8 @@ export function makeBestiary(): Bestiary {
         (a) => [a.clips?.die?.frames ?? []],
       ];
       for (const pick of picks) {
-        for (const set of [art.front, art.back]) {
+        // (every side it is seen from: its front and back; one seen from eight sides, floor 18's reflections, all eight: art/sides.ts)
+        for (const set of heroSides(art)) {
           for (const frames of pick(set)) {
             for (let i = 0; i < frames.length; i++) {
               const one = (): Sprite => (warmed = frames[i]);
@@ -497,7 +499,7 @@ export function makeBestiary(): Bestiary {
       const art = made.get(figure);
       made.delete(figure);
       todo.delete(figure);
-      if (art) for (const set of [art.front, art.back]) for (const frames of framesOf(set)) freeFrames(frames);
+      if (art) for (const set of heroSides(art)) for (const frames of framesOf(set)) freeFrames(frames);
     },
     forgetOthers(keep: ReadonlySet<MonsterFigure>): void {
       for (const figure of [...made.keys()]) if (!keep.has(figure)) this.forget(figure);
@@ -529,7 +531,7 @@ export function framesOf(set: AnimSet): Sprite[][] {
 
 /**
  * A figure's frames in the order they are painted ahead of need, each as [which way round (0 the front, 1
- * the back), which list (its place in `framesOf`), which frame]: standing (the first thing seen of a
+ * the back; one seen from eight sides, its others after them, art/sides.ts EIGHT_ORDER), which list (its place in `framesOf`), which frame]: standing (the first thing seen of a
  * monster), walking, its attacks from start to finish, its flinch as it is struck, its other moves (THE MONSTERS' ATTACKS:
  * art/actor_types.ts, AnimSet.clips.moves; but not one that is pictures only and never played: the
  * Headsman's `holds`, art/bosses3.ts), and last its death: by the time one of them is killed, how it falls
@@ -537,7 +539,8 @@ export function framesOf(set: AnimSet): Sprite[][] {
  * goes by it, and so a frame is the same frame to the painter and to the game.
  */
 export function paintOrder(art: ActorArt): [number, number, number][] {
-  const sets = [art.front, art.back];
+  // (one seen from eight sides, floor 18's reflections: its eight, numbered as the heroes' are, the front and back first: art/sides.ts)
+  const sets = heroSides(art);
   const lists = sets.map(framesOf);
   const picks: ((a: AnimSet) => readonly (readonly Sprite[])[])[] = [
     (a) => [a.idle],
@@ -584,7 +587,7 @@ export function freeFrames(frames: Sprite[]): void {
  * has painted that frame itself meanwhile (then false, and the picture is not wanted).
  */
 export function giveFrame(art: ActorArt, v: number, l: number, i: number, s: Sprite): boolean {
-  const frames = framesOf(v === 0 ? art.front : art.back)[l];
+  const frames = heroSides(art)[v] ? framesOf(heroSides(art)[v])[l] : undefined;
   if (!frames || i < 0 || i >= frames.length) return false;
   const d = Object.getOwnPropertyDescriptor(frames, i);
   if (!d || typeof d.get !== 'function') return false;

@@ -1,5 +1,11 @@
-// FLOOR 18'S REFLECTIONS OF THE HEROES AS THEY LOOK NOW (the queue's make-floor-18-reflections, 12 Nov 2026). A MOCK-UP: behind
-// REFLECTIONS_UP, off; nothing of the game imports this file.
+// FLOOR 18'S REFLECTIONS OF THE HEROES AS THEY LOOK NOW (the queue's make-floor-18-reflections, 12 Nov 2026). Behind
+// REFLECTIONS_UP, off: floor 18's figure (art/act1_figs/reflection.ts) takes these with it on, the first reflections' with it off
+// (the queue's wire-floor-18-new-reflections, 12 Nov 2026). The switch is the rules' (game/act1_rules/reflection.ts), handed on.
+//
+// THE WARRIOR HOLDS WHAT HE HOLDS (his weapon tree, live since 25.3.11): with his war axe or his maul his copy is made from his own
+// moves with it (art/warrior_up_axe_moves.ts, art/warrior_up_hammer_moves.ts, paintAxe): standing and running with it, its tap
+// and its hold (Cleave and the thrown axe, braced while it flies and caught; Smash and the Earthquake), struck as he is with it
+// (art/warrior_up_heavy_art.ts heavyMoves). What he holds is never seen through by its cracks, as a limb is not (`heldFrom`).
 //
 // The ask (the main chat's board post of 7 Nov and an older one; the Mage added by the Mage chat, 11 Nov): floor 18's mirror
 // reflections are made from the OLD heroes' moves (art/reflections.ts, from art/heroes3.ts paintMove3); wanted, glass copies of
@@ -61,9 +67,7 @@ import { EIGHT_MORE, MORE_SIDES, MORE_TURN } from './sides_more';
 import type { MoreSide } from './sides_more';
 import { TAP_GRAB, TAP_LET_GO, TRUN_ROUND, TSTAND_LONG, drawTinkerAt, tinkerMoves } from '../dev/tinkerer_moves';
 import type { TinkMove } from '../dev/tinkerer_moves';
-import { HOLD, drawTinkerHoldAt, tinkerHold } from '../dev/tinkerer_hold';
 import { tinkerLurch, tinkerReel } from '../dev/tinkerer_hits';
-import { TINKER_TUNE } from '../game/tinkerer';
 import { VET_CANVAS, paintVeteran } from '../dev/sculpt_veteran';
 import { VET_RUN, VET_STAND, VFPS, motionById } from '../dev/veteran_moves';
 import type { VetMotion } from '../dev/veteran_moves';
@@ -73,9 +77,15 @@ import type { WarlockMove } from '../dev/warlock_moves';
 import { BOLT_HIT, CURSE_HIT, warlockSpells } from '../dev/warlock_spells';
 import { warlockLurch, warlockReel } from '../dev/warlock_hits';
 import { GRIP_SPEED } from './moves3';
+import { AXE_BRACED, AXE_CATCH, AXE_CLEAVE, AXE_FLIGHT, AXE_RUN, AXE_STAND, AXE_THROW, paintAxe } from './warrior_up_axe_moves';
+import type { AxeMove } from './warrior_up_axe_moves';
+import { HAMMER_QUAKE, HAMMER_RUN, HAMMER_SMASH, HAMMER_STAND } from './warrior_up_hammer_moves';
+import { heavyMoves } from './warrior_up_heavy_art';
+import type { HeavyWeapon } from './warrior_up_heavy_art';
+import { FORMS, REFLECTIONS_UP, WEAPON_FORM } from '../game/act1_rules/reflection';
 
-/** THE SWITCH, OFF. Nothing of the game reads this file. */
-export const REFLECTIONS_UP = { on: false };
+/** THE SWITCH, OFF: the rules' (game/act1_rules/reflection.ts), handed on. */
+export { REFLECTIONS_UP };
 
 // =============================================================================================
 // ONE FRAME OF A SCULPTED HERO, TURNED TO GLASS
@@ -89,6 +99,8 @@ export interface Sculpted {
   sc: Sculpt;
   ax: number;
   ay: number;
+  /** The stuffs (material numbers) of what his hands hold begin here (the Warrior's war axe and maul: ArmedFrame.firstMat). */
+  heldFrom?: number;
 }
 /** A frame of his reflection: the glass, where its eyes and cracks were laid (for the checks), and its floor point. */
 export interface Glassed extends Silvered {
@@ -156,6 +168,7 @@ export function glassUp(f: Sculpted, eye: (c: string, w: number, h: number) => b
     const solids = crackSolids(sc);
     // (which of his materials are worn only by his limbs and what they hold: a crack is never seen through one)
     const limbMat = sc.mats.map((_, i) => {
+      if (f.heldFrom !== undefined && i >= f.heldFrom) return true;
       const pieces = sc.prims.filter((q) => q.mat === i).map((q) => q.piece);
       return pieces.length > 0 && pieces.every((pc) => LIMB.test(pc));
     });
@@ -322,6 +335,55 @@ function warrior(): HeroGlass {
     heavy: false,
   };
 }
+/**
+ * THE WARRIOR WITH HIS WAR AXE OR HIS MAUL (what he holds: game/talents.ts heavyDrawn): his own moves with it. The thrown axe is his
+ * throw, then braced while it flies, then the catch as it comes back (the art's flight: AXE_FLIGHT, a second out and back): the
+ * rules' axe flies as long (game/act1_rules/reflection.ts UP).
+ */
+function warriorWith(weapon: HeavyWeapon): HeroGlass {
+  const p = (m: AxeMove, t: number, side: string): Sculpted => {
+    const f = paintAxe(m, t, side as never, null);
+    return { ...upFrame(f), heldFrom: f.firstMat };
+  };
+  const endOfAxe = (m: AxeMove): number => (m.keys.length ? m.keys[m.keys.length - 1].at : 0);
+  const axeMove = (m: AxeMove): Track => ({ name: m.name, long: endOfAxe(m), loops: m.loop !== undefined, from: m.loop ?? 0, hit: m.hit, paint: (t, side) => p(m, t, side) });
+  const struck = heavyMoves(weapon);
+  let hold: Track;
+  if (weapon === 'axe') {
+    // (thrown at its hit, out and back in AXE_FLIGHT.time: braced until then, then caught; the catch's moment is its start)
+    const out = AXE_THROW.hit ?? 0;
+    const throwEnd = endOfAxe(AXE_THROW);
+    const back = out + AXE_FLIGHT.time;
+    const braced = endOfAxe(AXE_BRACED);
+    hold = {
+      name: 'The thrown axe: thrown, braced while it flies, caught',
+      long: back + endOfAxe(AXE_CATCH),
+      loops: false,
+      from: 0,
+      hit: out,
+      paint: (t, side) => {
+        if (t < throwEnd) return p(AXE_THROW, t, side);
+        if (t < back) return p(AXE_BRACED, braced > 1e-6 ? (t - throwEnd) % braced : 0, side);
+        return p(AXE_CATCH, t - back, side);
+      },
+    };
+  } else hold = axeMove(HAMMER_QUAKE);
+  return {
+    cls: 'warrior',
+    sides: WU_SIDES,
+    stand: axeMove(weapon === 'axe' ? AXE_STAND : HAMMER_STAND),
+    run: axeMove(weapon === 'axe' ? AXE_RUN : HAMMER_RUN),
+    tap: axeMove(weapon === 'axe' ? AXE_CLEAVE : HAMMER_SMASH),
+    hold,
+    lurch: axeMove(struck.lurch),
+    reel: axeMove(struck.reel),
+    idleFps: 30,
+    walkFps: 30,
+    clipFps: 30,
+    eye: eyesWarrior,
+    heavy: false,
+  };
+}
 function ranger(): HeroGlass {
   const p = (m: Move3, t: number, side: string): Sculpted => upFrame(paintRuMove(m, t, side as never, null));
   return {
@@ -373,9 +435,6 @@ function tinkerer(): HeroGlass {
   const tap = named('Tap');
   // (her tap as the game shows it: the vial toss, a vial of hers in her fist from when it is off her belt to when she lets it go)
   const toss: TinkMove = { ...tap, name: 'Tap: a vial tossed', hold: (t) => ({ wrench: 0, twirl: false, spin: 0, vial: t >= TAP_GRAB && t < TAP_LET_GO ? 1 : 0, held: null }) };
-  let held: TinkMove | null = null;
-  const hold = (): TinkMove => (held ??= tinkerHold());
-  const P = TINKER_TUNE.golem.pound;
   const track = (name: string, m: () => TinkMove, hit?: number, drawn = drawTinkerAt, round?: number): Track => ({
     name,
     get long() {
@@ -396,7 +455,9 @@ function tinkerer(): HeroGlass {
     stand: track(stand.name, () => stand, undefined, drawTinkerAt, TSTAND_LONG),
     run: track(run.name, () => run, undefined, drawTinkerAt, TRUN_ROUND),
     tap: track(toss.name, () => toss, TAP_LET_GO),
-    hold: track('Tap and hold: her whistle', hold, (HOLD.blow - Math.round((P.lead + P.hit) * 30)) / 30, drawTinkerHoldAt),
+    // (HER HOLD IS HER VIALS TOO, his word of 12 Nov 2026, shown her copy whistling for a Golem that is not there: “I think just
+    // have the tinkerer throw her vials if there’s no golem”: her toss, three vials thrown: game/act1_rules/reflection.ts UP)
+    hold: track('Tap and hold: three vials tossed', () => toss, TAP_LET_GO),
     lurch: track(lurch.name, () => lurch),
     reel: track(reel.name, () => reel),
     idleFps: 10,
@@ -491,6 +552,18 @@ export function heroGlass(cls: ClassId): HeroGlass {
   if (!h) madeHero.set(cls, (h = HEROES[cls]()));
   return h;
 }
+/** The class of each of the rules' forms (game/act1_rules/reflection.ts FORM_OF, WEAPON_FORM). */
+export const FORM_CLASS: readonly ClassId[] = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler', 'warrior', 'warrior'];
+const madeForm = new Map<number, HeroGlass>();
+/** The hero a reflection of a form is made from: his class's, and the Warrior with his war axe or his maul. */
+export function formGlass(form: number): HeroGlass {
+  if (form === WEAPON_FORM.axe || form === WEAPON_FORM.hammer) {
+    let h = madeForm.get(form);
+    if (!h) madeForm.set(form, (h = warriorWith(form === WEAPON_FORM.axe ? 'axe' : 'hammer')));
+    return h;
+  }
+  return heroGlass(FORM_CLASS[form] ?? 'warrior');
+}
 
 // =============================================================================================
 // ITS PICTURES
@@ -584,20 +657,22 @@ export function glassSet(h: HeroGlass, side: string): AnimSet {
  * YOUR REFLECTIONS' PICTURES, THE HEROES AS THEY LOOK NOW: `of(cls)` the glass copy of that hero, from every side he has (the
  * game shows the side for the way it faces, as it does the hero's: art/sides.ts).
  */
-export function makeReflectionUpArt(): { of(cls: ClassId): ActorArt } {
-  const made = new Map<ClassId, ActorArt>();
+export function makeReflectionUpArt(): { of(cls: ClassId): ActorArt; ofForm(form: number): ActorArt } {
+  const made = new Map<HeroGlass, ActorArt>();
+  const art = (h: HeroGlass): ActorArt => {
+    let a = made.get(h);
+    if (!a) {
+      const all: Record<string, AnimSet> = {};
+      for (const side of h.sides) all[side] = glassSet(h, side);
+      a = all as unknown as ActorArt;
+      made.set(h, a);
+    }
+    return a;
+  };
   return {
-    of(cls: ClassId): ActorArt {
-      let art = made.get(cls);
-      if (!art) {
-        const h = heroGlass(cls);
-        const all: Record<string, AnimSet> = {};
-        for (const side of h.sides) all[side] = glassSet(h, side);
-        art = all as unknown as ActorArt;
-        made.set(cls, art);
-      }
-      return art;
-    },
+    of: (cls: ClassId): ActorArt => art(heroGlass(cls)),
+    /** (THE RULES' FORMS, 0 to FORMS - 1: the six classes, and the Warrior with his war axe and his maul) */
+    ofForm: (form: number): ActorArt => art(formGlass(Math.max(0, Math.min(FORMS - 1, form)))),
   };
 }
 
