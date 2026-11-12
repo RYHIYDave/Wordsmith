@@ -395,3 +395,43 @@ into its start; the Quarry's chisel, the Masque's clock and floor 5's pulse are 
 have what a moment needed, another take from this batch stands in: the ravens' wings are the pigeons' slowed down, the
 cart rolls on the iron ball's roll, the floor 1 stone strikes are the ledge's rock, the bells and the clock ring on a
 little longer than their takes did.
+
+## Ninth batch: the Shaft's Rim, the Endless town's own sounds (the sound chat, 12 Nov 2026)
+
+His word, 12 Nov 2026, asked about 10:05 Eastern whether the town should have sounds of its own: “Yes, make them
+(Recommended)”. Shown them on try-out 14 (Wordsmith Unique & Rim Sounds, https://claude.ai/artifact/2nRWUUX6xjbcFKqw1no2ka),
+about 10:45 his word: “It good, kinda loud but I’m sure it’ll be evened out in the mix for game”. So the three loops here
+are 3 dB under the try-out's. Seven files, nothing wired in, no name clashes with the earlier batches. Made and levelled as
+the floors' scene sounds (the eighth batch), so RECORDED_GAIN holds.
+
+### The loops: WAV at 32 kHz, as the fourth and eighth batches' (mp3 adds silence at the ends, which clicks in a loop)
+Each comes round with no seam. They go in `loopWants` (src/game/world_sounds.ts), where its note says the rim's own sounds
+are the sound chat's to make (`L.rim`).
+- `rim_rumble_loop.wav` (10.4 s): the shaft, always on in the town: its far low rumble and the fire roaring far below.
+  Mixed quiet, like the floors' backgrounds, so play it at full volume (`out.rim_rumble = 1`). It swells with the far
+  fire's glow (art/shaft_rim.ts `pitGlowAt`: 0.62 + 0.3 sin²(2πt / 2.6), a swell every 1.3 s), eight swells to the loop,
+  at its quietest at the loop's start. To keep it in step with the glow, start it at offset (t mod 10.4) on the clock
+  `pitGlowAt` is given; `setLoops` starts every loop at 0, so that is an offset there. Out of step it still sounds right.
+- `rim_draught_loop.wav` (8 s): the cold air coming up out of the shaft, louder at the brink (the art chat's list). My
+  suggestion: by his distance from the brink, `Math.abs(Math.hypot(x - RIM.cx, y - RIM.cy) - RIM.pit)` (art/shaft_rim.ts
+  `RIM`), at 0.25 + 0.75 × `byNearness(d, 1, 7)`, so it is never quite gone in this town.
+- `rim_torch_loop.wav` (8 s): one of the four torches on posts round the shaft (`rimPieces()` of kind `'torch'`,
+  art/shaft_props.ts; not `shaftTorches()`, which are the ones down in the pit). The nearest heard, as the braziers'
+  `fire_small`: 0.55 × `byNearness(d, 1.5, 7)`. The braziers keep the game's own `fire_small`.
+
+### The one-shots: two takes each, mp3, one at random each time
+- `notch` (`notch_1` 2.2 s, `notch_2` 1.9 s): a notch cut in the record stone, on the event `{ t: 'notch', x, y, n, cut }`
+  as he comes home (Game.comeToRim). Take 1: three chisel strikes, then a faint ring as the notch glows. Take 2: two
+  strikes, the second ringing. Play it once even when several notches are cut at once.
+- `trophy_hang` (`trophy_hang_1` 1.6 s, `trophy_hang_2` 1.5 s): a trophy hung on its mount, iron onto the hook, then a dull
+  knock against the wall. For later: the mounts stay empty until the tablet's quarters are built
+  (build-endless-tablet-and-final-boss).
+- A word set in one of the gate's three sockets keeps the game's own sound for a word set on the gate (the art chat's list).
+
+### The unique drop: no new sound, his pick
+The queue's make-unique-drop-sound (his words to the Uniques art chat, 11 Nov: “We need a new sound for when I unique drops”)
+was made as two ideas and shown on try-out 14 beside what plays today. His pick, 12 Nov, about 10:50: “Keep today's rare
+chime” (offered as: no new sound; every unique plays what a boss's unique plays now). And for picking one up: “Keep the rare
+chime (Recommended)”. So no files for it here. For the main chat: as built (behind UNIQUES), only a boss's own unique plays `rare`
+as it lands (Game.dropBossUnique); a unique of the pool (poolUnique, through rollGear) lands with no sound. To follow his pick,
+play `this.sfx('rare', 0.9)` as any unique lands. The stranger's gamble already plays `rare` as one is bought.

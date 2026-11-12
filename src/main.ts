@@ -78,7 +78,7 @@ import type { LoadingRing } from './art/loading_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
 import { footstep, heroVoice, initAudio, isMuted, recordedDetail, recordedState, setLoops, setMuffled, setMuted, sfx, sfxNamed, soundHeard, speak, speakBoss, titleMusic, warmAlso, warmNamed, warmRecorded, warmSteps, worldSound } from './engine/audio';
-import { OWL_HOOT, STEP_EVERY, WORLD_SOUNDS, byNearness, groundOf, hushFloor, loopWants } from './game/world_sounds';
+import { OWL_HOOT, RIM_SOUNDS, STEP_EVERY, WORLD_SOUNDS, byNearness, groundOf, hushFloor, loopWants } from './game/world_sounds';
 import { MOMENT_VOL, sceneSoundsOf } from './game/scene_sounds';
 import { owlFrameAt } from './art/hall_owl';
 import { CASTLE_HALL, CASTLE_OWL_AT } from './art/castle_hall';
@@ -1849,6 +1849,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (e.world) worldSound(e.name, e.vol ?? 1, e.or, !!e.exact);
       else sfxNamed(e.name, e.vol ?? 1, e.or, !!e.exact);
     }
+    // (THE SHAFT'S RIM: a notch cut in the record stone as he comes home, once however many: game/world_sounds.ts RIM_SOUNDS)
+    if (g.events.some((e) => e.t === 'notch')) worldSound('notch', RIM_SOUNDS.notch);
     // (THE FLOORS' SCENE SOUNDS: a blow made in code that stands in for one in a recording, the cage's or the portcullis's, is not
     // sounded while that recording is heard: engine/audio.ts soundHeard)
     const standIn = (e: GameEvent): boolean => e.t === 'sfx' && e.standsFor !== undefined && soundHeard(e.standsFor);

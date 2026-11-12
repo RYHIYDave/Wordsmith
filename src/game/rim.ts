@@ -194,7 +194,9 @@ export const RIM_AT = (() => {
     const p = P.find((q) => q.kind === k)!;
     return { x: p.at[0], y: p.at[1] };
   };
-  return { gate: at('gate'), record: at('record'), trophies: at('trophies') };
+  // (the shaft's middle and its brink's round, and the four torches on posts round it: for the rim's own sounds, game/world_sounds.ts)
+  const torches = P.filter((q) => q.kind === 'torch').map((q) => ({ x: q.at[0], y: q.at[1] }));
+  return { gate: at('gate'), record: at('record'), trophies: at('trophies'), pit: { x: RIM.cx, y: RIM.cy, r: RIM.pit }, torches };
 })();
 
 /** Which service each of the town's own things on a tile is used at, and how high over it its name is written (game pixels; none: render.ts NAME_LIFT). */

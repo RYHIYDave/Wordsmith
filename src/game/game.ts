@@ -13232,7 +13232,12 @@ export class Game {
     if (LOOT2.on && this.power >= LOOT2.from) opts.luck = [(opts.luck?.[0] ?? 1) * LOOT2.deep, (opts.luck?.[1] ?? 1) * LOOT2.deep];
     // (UNIQUE ITEMS: now and then, one of the pool's in its place: game/uniques.ts UNIQUE_DROPS; never with the switch off)
     const unique = this.poolUnique(quality, mf);
-    if (unique) return unique;
+    // (every unique lands with the rare chime, as a boss's own does: his pick to the sound chat, 12 Nov 2026, “Keep today's rare
+    // chime”; every caller here drops what it rolls)
+    if (unique) {
+      this.sfx('rare', 0.9);
+      return unique;
+    }
     // (ENDLESS MODE: what drops grows on as the floors' depth would, `power`)
     return this.forHim(rollItem(Math.max(1, this.power), this.rng, opts));
   }

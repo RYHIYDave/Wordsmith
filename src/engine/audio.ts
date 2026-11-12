@@ -1146,7 +1146,7 @@ export function footstep(ground: Ground, vol = STEP_VOL): void {
 const loops = new Map<string, { src: AudioBufferSourceNode; g: GainNode; quiet: number }>();
 /** How long a loop unwanted is kept going, silent, before it is let go of (seconds). */
 const LOOP_KEEP = 6;
-const FLOOR_LOOP = /^(bed_f\d+|furnace|pillar_fire)$/;
+const FLOOR_LOOP = /^(bed_f\d+|furnace|pillar_fire|rim_(rumble|draught|torch))$/;
 /** The floor's own loops asked for and not yet let go (their names). */
 const floorLoops = new Set<string>();
 export function setLoops(want: Readonly<Record<string, number>>): void {

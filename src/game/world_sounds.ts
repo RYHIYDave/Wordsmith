@@ -9,6 +9,7 @@ import { isCamp } from './camp';
 import { doorMiddle } from './doors';
 import type { Game } from './game';
 import { CRANK_TIMES } from './quests15';
+import { RIM_AT } from './rim';
 import { FURNACE_LOOP, PILLAR_LOOP, bedOf } from './scene_sounds';
 
 /** The switch: off, none of the world's sounds is played (the scene's sounds made in code play as before). */
@@ -44,6 +45,19 @@ export function byNearness(d: number, near: number, far: number): number {
   return 1 - (d - near) / (far - near);
 }
 
+/**
+ * THE SHAFT'S RIM'S OWN SOUNDS (the sound chat's ninth batch, 12 Nov 2026: assets/sound/README.md; his “Yes, make them
+ * (Recommended)”, and of try-out 14, “It good, kinda loud but I’m sure it’ll be evened out in the mix for game”): the shaft's
+ * rumble always, mixed quiet so at full; the draught up out of it, louder at the brink and never quite gone in this town; the
+ * nearest of the four torches on posts round it. The notch cut in the record stone as he comes home, once however many.
+ */
+export const RIM_SOUNDS = {
+  rumble: 1,
+  draught: { least: 0.25, near: 1, far: 7 },
+  torch: { vol: 0.55, near: 1.5, far: 7 },
+  notch: 0.9,
+} as const;
+
 /** The loops wanted now and how loud: the fires near him, the water on the wet floors, the ring's hum, the hall's and the camp's air; the floor's own background, its furnace, its burning pillars. */
 export function loopWants(g: Game, castleHall: boolean): Record<string, number> {
   const L = g.level;
@@ -59,8 +73,17 @@ export function loopWants(g: Game, castleHall: boolean): Record<string, number> 
       if (st.kind === 'armourer') out.fire_big = 0.5 * byNearness(near(st.x, st.y), 2, 9);
       if (st.kind === 'wordsmith') out.ring_hum = 0.55 * byNearness(near(st.x, st.y), 2.5, 10);
     }
-    // (the Shaft's Rim, the Endless town, is no hall: its own sounds are the sound chat's to make, docs/endless_town_build.md)
+    // (the Shaft's Rim, the Endless town, is no hall: its own sounds, the sound chat's ninth batch, RIM_SOUNDS)
     if (castleHall && !L.rim) out.bed_hall = 0.45;
+    if (L.rim) {
+      const R = RIM_SOUNDS;
+      out.rim_rumble = R.rumble;
+      const brink = Math.abs(near(RIM_AT.pit.x, RIM_AT.pit.y) - RIM_AT.pit.r);
+      out.rim_draught = R.draught.least + (1 - R.draught.least) * byNearness(brink, R.draught.near, R.draught.far);
+      let torch = 0;
+      for (const t of RIM_AT.torches) torch = Math.max(torch, byNearness(near(t.x, t.y), R.torch.near, R.torch.far));
+      if (torch > 0) out.rim_torch = R.torch.vol * torch;
+    }
   }
   if (isCamp(L)) out.bed_camp = 0.45;
   const d = L.floor.depth;

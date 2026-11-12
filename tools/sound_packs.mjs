@@ -10,7 +10,7 @@ import path from 'node:path';
 
 const HEROES = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];
 const CORE = new Set(['swing', 'hit', 'crit', 'slam', 'monster_die', 'hurt', 'pickup', 'gold', 'word', 'rare', 'potion', 'level_up', 'portal', 'door', 'gate_rise', 'gate_fall', 'click', 'equip', 'buy', 'deny', 'imbue', 'death', 'echo', 'might', 'orb', 'boss_roar']);
-const TOWN = new Set(['anvil', 'owl_hoot', 'owl_ruffle', 'crystal', 'rune_write', 'rune_drive', 'ring_power', 'coin', 'page_turn']);
+const TOWN = new Set(['anvil', 'owl_hoot', 'owl_ruffle', 'crystal', 'rune_write', 'rune_drive', 'ring_power', 'coin', 'page_turn', 'notch', 'trophy_hang']);
 const WORLD = /^(break_|chest$|rift_|trap_|sealed_door$)/;
 /**
  * THE TEN NEW WORDS' SOUNDS (the sound chat's sixth batch, 9 Nov 2026: assets/sound/README.md; game/word_sounds.ts): a pack of
