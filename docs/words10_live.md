@@ -69,7 +69,7 @@ Both are needed because there are now 28 words; both are one switch.
    ten there are 48 words and melded words, and four lines held 44. Only seen by someone carrying more than 44 kinds at once.
    Picture: `tools/scenarios/words10_pouch.mjs`.
 
-He was asked about both from this chat on 11 Nov; his answers are on the queue item and the chat board.
+He was asked about both from this chat on 11 Nov, with pictures; his answers are on the chat board.
 
 ## What was checked (11 Nov 2026)
 
@@ -111,7 +111,8 @@ The main chat's own checks before a release apply as always.
 4. The handoff, the design notes and the version number: not touched here (they are the main chat's record).
 5. **The three unique items: done here**, as the unique items came in with 25.3.6. The Headsman's Hood (`'culling'`), The
    Queen's Glass (`'mirroring'`) and The Long Echo (`'lasting'`) add the words by the words' own ids; with the ten in the game
-   their cards no longer say “Its word is not in the game yet.” and each works. `tests/uniques_words.test.ts` now holds it
+   their cards no longer say “Its word is not in the game yet.” and each works (the unique items themselves are still dark
+   in `main`, `UNIQUES` off: this is for when they go on). `tests/uniques_words.test.ts` now holds it
    firmly (each a word of the game, added with no slot used, and at work in what the attack resolves to). Their words' sounds
    are fetched ahead while the piece is worn (`main.ts`, `warmWords`).
 
