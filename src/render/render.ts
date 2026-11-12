@@ -3480,7 +3480,7 @@ export class Renderer {
       // (QUESTS610: a piece of the ward-stone: the Meldstone's picture stands in for it until the art chat draws it)
       else if (dr.kind === 'piece') sp = art.icons.meldstone;
       // (the same picture as in the bag, at its rarity: with ITEMS_A on the art chat's, painted finer than a game pixel; stand draws it at its size)
-      else if (dr.item) sp = itemPic(art.icons, dr.item.icon, dr.item.rarity);
+      else if (dr.item) sp = itemPic(art.icons, dr.item.icon, dr.item.rarity, dr.item.unique);
       else continue;
       if (dr.kind === 'orb') {
         // a life orb beats like a heart

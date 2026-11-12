@@ -56,6 +56,8 @@ test('the switch is ON at his yes of 3 Nov 2026, and the game asks for the new p
   assert.equal(ITEMS_A.on, true, 'ITEMS_A is on');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/items_a.ts') continue;
+    // (the unique items' own pictures are painted with these pictures' kit, ITEM_A_KIT: it asks for no picture; tests/items_unique.test.ts)
+    if (f === 'art/items_unique.ts') continue;
     const src = fs.readFileSync(`src/${f}`, 'utf8');
     if (f === 'art/icons.ts') {
       assert.ok(/import \{ ITEMS_A, itemAKind, itemArt \} from '\.\/items_a';/.test(src), 'art/icons.ts asks for them (itemPic)');

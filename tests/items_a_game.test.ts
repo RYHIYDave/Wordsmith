@@ -62,13 +62,13 @@ function everyKey(): IconKey[] {
 
 /** Each place that shows an item, and how it must ask for its picture: the file, the call, what it is. */
 const PLACES: readonly { file: string; call: string; what: string }[] = [
-  { file: 'src/ui/inventory.ts', call: 'itemPic(art.icons, it.icon, it.rarity)', what: 'the bag and the hero\'s gear, at the piece\'s rarity' },
-  { file: 'src/ui/inventory.ts', call: 'itemPic(art.icons, carried.icon, carried.rarity)', what: 'the piece carried under the finger' },
+  { file: 'src/ui/inventory.ts', call: 'itemPic(art.icons, it.icon, it.rarity, it.unique)', what: 'the bag and the hero\'s gear, at the piece\'s rarity (a unique\'s own picture: tests/items_unique.test.ts)' },
+  { file: 'src/ui/inventory.ts', call: 'itemPic(art.icons, carried.icon, carried.rarity, carried.unique)', what: 'the piece carried under the finger' },
   { file: 'src/ui/inventory.ts', call: 'itemPic(art.icons, GHOST[c.sel.slot], 0)', what: 'the empty slot\'s ghost, the kind\'s Normal' },
-  { file: 'src/ui/town.ts', call: 'itemPic(art.icons, it.icon, it.rarity)', what: 'the stash and the vendors\' shelves, each piece its own rarity' },
-  { file: 'src/ui/town.ts', call: 'itemPic(art.icons, c.item.icon, c.item.rarity)', what: 'the piece carried out of the stash or a shelf' },
+  { file: 'src/ui/town.ts', call: 'itemPic(art.icons, it.icon, it.rarity, it.unique)', what: 'the stash and the vendors\' shelves, each piece its own rarity' },
+  { file: 'src/ui/town.ts', call: 'itemPic(art.icons, c.item.icon, c.item.rarity, c.item.unique)', what: 'the piece carried out of the stash or a shelf' },
   { file: 'src/ui/trades.ts', call: 'itemPic(art.icons, c.kind.icon, 0)', what: 'the stranger\'s throws: a kind, no rarity yet, so Normal' },
-  { file: 'src/render/render.ts', call: 'itemPic(art.icons, dr.item.icon, dr.item.rarity)', what: 'loot lying on the floor, at its rarity' },
+  { file: 'src/render/render.ts', call: 'itemPic(art.icons, dr.item.icon, dr.item.rarity, dr.item.unique)', what: 'loot lying on the floor, at its rarity' },
 ];
 
 test('every place that shows an item asks itemPic for it, with the rarity it knows', () => {

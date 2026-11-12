@@ -18,6 +18,7 @@ import { GOLEM_ROCKET } from './art/golem_rocket_fx';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
 import { makeIconArt, useMeldArt } from './art/icons';
 import { ITEMS_A } from './art/items_a';
+import { UNIQUE_ART } from './art/items_unique';
 import { MELD_DROPS, makeMeldDropsArt } from './art/meld_drops';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
@@ -2829,6 +2830,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     itemWords: ITEM_WORDS,
     /** (UNIQUE ITEMS, game/uniques.ts) their switch, for their test pages (a unique is made and put in his bag by Game.giveUnique). */
     uniques: UNIQUES,
+    /** (THE UNIQUE ITEMS' OWN PICTURES, art/items_unique.ts, the art chat's) their switch, off until his yes: `uniqueArt.on`. */
+    uniqueArt: UNIQUE_ART,
     /** Game steps per frame while the test bot plays. */
     speed: 1,
     /** Time runs this much slower than real (1 = normal). */
