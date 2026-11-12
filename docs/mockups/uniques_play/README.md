@@ -250,8 +250,36 @@ crescent stands where the Wave was), finished clean.
 
 HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills: “Yes, hand it to main (Recommended)”.
 
+## The Moth's Wing's dark word on his buttons
+
+Asked whether its darkened word shows on the skill button (the build tells of it only as floating text, “Power dark”): “Grey the
+word on its button (Recommended)” (offered as: that word's mark on the skill button goes grey and dim until it comes back).
+
+Behind `UNIQUE_PLAY.moth`, off. In ui/hud.ts (`MOTH`, `mothNow`, set each frame from `Game.uq.dark`, as the Hush's `HUSHED` is
+from `Game.hushT`): the word the rules have darkened (which attack, which side, which place) is written in a dim grey
+(`MOTH.color`) where his attacks are written at the foot of the screen, or, where the plates are too tight for the word and it is
+shown as its rune stone, the stone greyed (its own light kept, its colour out, half as bright: `greyed`, made once a stone); its pip
+on the dodge's button grey; and the word coming back, whether its four seconds are up or a new hit has moved the dark to another,
+written white for `MOTH.flashes` (0.3 seconds). The floating text the build shows stays. Nothing of game/ is changed.
+
+To see it: `LOOK=moth FILM=6.6 node tools/playtest.mjs --file dist/uniques_play.html --size 852x393 --dpr 3 --touch --scenario
+tools/scenarios/uniques_play_look.mjs --out shots/uniques_play/mothfilm` (the Warrior with words on all three moves, hit twice).
+Pictures sent him: `pictures/mothswing.mp4` and `pictures/mothswing.png`.
+
+Checked: tests/unique_play3_moth.test.ts (new, 2: its switch off and nothing dark with it off; on, the dark word dark, the one
+moved from or come back flashing for its moment then plain) and tests/unique_play.test.ts (6, counting `moth`), each alone with tsx;
+tsc clean; the look filmed, finished clean.
+
+HIS WORD, 12 Nov 2026, by pop-up, sent the film and the stills: “Yes, hand it to main (Recommended)”.
+
+## For the main chat
+
+Bring in `art/uniques-play2` first (the queue's bring-in-drowned-arm-picture), then this branch: `wind` and `moth` go on with the
+uniques (`UNIQUES`), with the others; test 1 of tests/unique_play.test.ts asserts every switch off: change it then.
+
 ## Not drawn yet
 
-The Moth's Wing's darkened word ('dark', 'light'): asked whether it shows on the skill button (today only floating text): “Grey
-the word on its button (Recommended)” (offered as: that word's mark on the skill button goes grey and dim until it comes back).
-And which of the moments the build only tells of want a picture of their own (to ask him).
+Which of the moments the build only tells of want a picture of their own (to ask him): Bloodprice ('fury'), The Winning Streak
+('streak'), The Tow Line ('ride'), The Unsigned Pact ('feeds'), The Pivot ('turn'), The Receipt ('answer'), The King's Knot
+('borrow'), The Crier's Hush ('dark', 'light'), The Warden's Keys ('open'), The Hair Trigger ('shot'), The Tuning Staff ('pulse'),
+The Short Way ('back'), and 'drop' when a boss's own falls.

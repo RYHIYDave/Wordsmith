@@ -128,14 +128,18 @@ export default async function (page, snap) {
     // another; the HUD's skill buttons are where it shows
     await page.evaluate(() => {
       const d = window.__dbg; const g = d.game();
-      try { g.socket(0, 'front', 'fire'); g.socket(0, 'front', 'power'); g.socket(1, 'front', 'frost'); g.socket(1, 'behind', 'leech'); } catch (e) { console.log('words: ' + e); }
+      const h = g.hero;
+      for (const w of ['fire', 'power', 'frost', 'leech', 'swift', 'twin']) h.words[w] = (h.words[w] || 0) + 1;
+      const why = [g.socket(0, 'front', 'fire'), g.socket(0, 'behind', 'power'), g.socket(1, 'front', 'frost'), g.socket(1, 'behind', 'leech'), g.socket(2, 'front', 'swift'), g.socket(2, 'behind', 'twin')];
+      console.log('socketed: ' + JSON.stringify(why));
       d.god = false;
     });
     await mk('skeleton', 1.2, 0.0, { life: 1e7 });
     const hit = () => page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters[0]; const h = g.hero; h.life = h.d.maxLife; g.hurtHero(3, 'phys', [], m); });
     await wait(400);
-    const full = { x: 0, y: 0, width: Math.round(mid[0] * 2), height: Math.round(mid[1] * 2) };
-    if (film) { await shoot(film, full, [[0.3, hit], [1.6, hit]]); return; }
+    // (the foot of the screen, where his attacks are written, and him over it)
+    const low = { x: 0, y: Math.round(mid[1] * 0.7), width: Math.round(mid[0] * 2), height: Math.round(mid[1] * 1.3) };
+    if (film) { await shoot(film, low, [[0.3, hit], [1.8, hit]]); return; }
     await snap('1_before'); await hit(); await wait(150); await snap('2_dark'); await hit(); await wait(150); await snap('3_another');
     const errs = await page.evaluate(() => (window.__errors || []).length);
     if (errs) bad(`${errs} errors on the page`);
