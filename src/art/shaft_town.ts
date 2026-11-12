@@ -1,5 +1,5 @@
 // THE ENDLESS TOWN, THE SHAFT'S RIM: THE GAME'S OWN THINGS IN ITS STONE. Nothing is drawn here: this is what the art chat's
-// pictures of the town were made with (its dev page, src/dev/preview_shaft_rim.ts: the stone and the theme below are that
+// pictures of the town were made with (its dev page, the Shaft's Rim's preview page under src/dev: the stone and the theme below are that
 // page's, to the letter; his yes to those pictures, 11 Nov 2026, by 13:43: “Yes, hand it to main (Recommended)”), set where the
 // game can reach it. Behind ENDLESS_TOWN (art/shaft_rim.ts), off.
 //

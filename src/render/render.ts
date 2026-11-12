@@ -2324,9 +2324,11 @@ export class Renderer {
         const sy = Math.round(wy(this.cam, q.x, q.y));
         if (sx - q.s.ax > W || sx - q.s.ax + q.s.w < 0 || sy - q.s.ay > H || sy - q.s.ay + q.s.h < 0) continue;
         if (q.add) g.globalCompositeOperation = 'lighter';
-        if (q.alpha !== undefined) g.globalAlpha = Math.max(0, Math.min(1, q.alpha));
+        // (how strongly, where the look says: the Shaft's Rim's far fire, breathing)
+        const was = g.globalAlpha;
+        if (q.alpha !== undefined) g.globalAlpha = Math.max(0, Math.min(1, q.alpha)) * was;
         g.drawImage(q.s.img, sx - q.s.ax, sy - q.s.ay, q.s.w, q.s.h);
-        g.globalAlpha = 1;
+        if (q.alpha !== undefined) g.globalAlpha = was;
         g.globalCompositeOperation = 'source-over';
       }
     }

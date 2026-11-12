@@ -1,7 +1,7 @@
 // THE ENDLESS TOWN, THE SHAFT'S RIM, DRAWN (the art chat's pictures, art/shaft_rim.ts and art/shaft_props.ts; his yes to all of
 // it there, 11 Nov 2026, by 13:43: “Yes, hand it to main (Recommended)”; behind ENDLESS_TOWN, off until his yes to pictures of it
 // from the game). Laid as the art chat's list for the main chat says (docs/mockups/endless_town/README.md, "ONE LIST FOR THE MAIN
-// CHAT"), and as its dev page drew the pictures he said yes to (src/dev/preview_shaft_rim.ts `scene`):
+// CHAT"), and as its dev page drew the pictures he said yes to (the Shaft's Rim's preview page under src/dev, its `scene`):
 //   - THE GROUND: one picture, painted once as the town is come into (under its loading screen), laid behind everything: the
 //     paving, the kerb, the cliff, the pit and its stair, the portal's tongue and landing. The floor's own tiles draw nothing.
 //   - OVER THE GROUND, before anything stands: the soft shadow under each thing; THE FAR FIRE down the shaft, added, its strength

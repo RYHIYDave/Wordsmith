@@ -918,7 +918,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const named = (st: { kind: Station; x: number; y: number }, go: { kind: Spot; x: number; y: number } = st): void => {
       const half = (textWidth(STATION_NAME[st.kind], 'small') + 4) / 2 + 2;
       const sx = wx(cam, st.x, st.y);
-      const top = wy(cam, st.x, st.y) - ((st as { lift?: number }).lift ?? NAME_LIFT[st.kind]);
+      // (THE SHAFT'S RIM: a name is touched where it is written, at the level's own height for it. The camp's names are written
+      // at heights of their own too (StationSpot.lift) and are still touched at the first town's: left as it is, for the main chat)
+      const top = wy(cam, st.x, st.y) - ((g.level.rim ? (st as { lift?: number }).lift : undefined) ?? NAME_LIFT[st.kind]);
       if (Math.abs(px - sx) > half || py < top - 3 || py > top + 8) return;
       const d = Math.hypot(px - sx, py - (top + 3));
       if (d < bd) {
