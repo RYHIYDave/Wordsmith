@@ -55,8 +55,11 @@ export const PACKS = {
    * a bot fighting four minutes of the game's time (tools/scenarios/mem_floors.mjs BUDGET): at 26 MB a pack was unpacked 161
    * times and let go 131; at 40, 72 and 29; at 56 the 54 packs that fight used all stayed in hand (48 MB). A frame's work was
    * the same at all three.
+   * (WRITTEN AS A PLAIN NUMBER, 40 x 1,048,576: the bake's mark is the hash of the code its page is made of, and a sum here
+   * kept this whole object in it, so that tuning the budget would have made a new mark and a new bake of the same pictures.
+   * As plain numbers nothing of PACKS is in the bake's page: the budget is tuned without baking again.)
    */
-  budget: 40 * 1048576,
+  budget: 41943040,
   /** A pack asked for within this long (ms) is not let go of, whatever the budget: what is being shown is never let go. */
   fresh: 1500,
   /** How many packs are unpacked at once. */
