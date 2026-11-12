@@ -2635,10 +2635,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     townsfolkBaked: TOWNSFOLK_BAKED,
     /**
      * THE FLOORS' MONSTERS BAKED (render/monsters_baked.ts): what has been taken in from their files and what failed (null: none
-     * to be had on this page); which of the figures standing here have come whole; and the switch (`monstersBaked.on`: off, the
-     * monsters are painted as the game is played, as before; a playtest that throws the art's own switches puts it off first).
+     * to be had on this page); which of the figures standing here have come whole (null: one that is not baked, painted as
+     * before); and the switch (`monstersBaked.on`: off, the monsters are painted as the game is played, as before; a playtest
+     * that throws the art's own switches puts it off first).
      */
-    bakedMobs: () => (bakedMobs ? { ...bakedMobs.stats, ms: { ...bakedMobs.stats.ms }, failed: [...bakedMobs.stats.failed], here: game ? Object.fromEntries([...new Set(game.monsters.filter((m) => !m.dead).map((m) => figureOf(m)))].map((f) => [f, bakedMobs.done(f)])) : {} } : null),
+    bakedMobs: () => (bakedMobs ? { ...bakedMobs.stats, ms: { ...bakedMobs.stats.ms }, failed: [...bakedMobs.stats.failed], here: game ? Object.fromEntries([...new Set(game.monsters.filter((m) => !m.dead).map((m) => figureOf(m)))].map((f) => [f, bakedMobs.has(f) ? bakedMobs.done(f) : null])) : {} } : null),
     monstersBaked: MONSTERS_BAKED,
     /** (for the tests) the failures forgotten: each figure may be asked for once more. */
     bakedMobsAgain: (): void => bakedMobs?.again(),

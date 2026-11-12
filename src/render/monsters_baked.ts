@@ -138,6 +138,11 @@ export class BakedMonsters {
     return BakedMonsters.toBeHad() ? new BakedMonsters(monsterBakeMark(), bestiary) : null;
   }
 
+  /** Is this figure one of the bake's (whether or not its pictures have come)? */
+  has(figure: MonsterFigure): boolean {
+    return this.names.has(figure);
+  }
+
   /** Its pictures as the bestiary holds them now, if this figure's asking is for those (not for ones since forgotten). */
   private now(figure: MonsterFigure): Asked | null {
     const a = this.asked.get(figure);

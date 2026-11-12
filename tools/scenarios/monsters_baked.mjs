@@ -59,6 +59,11 @@ export default async function (page) {
       if (at.st.failed.length) bad(`failed: ${at.st.failed.join('; ')}`);
       for (const f of at.figs) {
         const c = at.checks[f];
+        // (one that is not baked: the Drowned Eye's kind while the Colossus is floor 10's, the Moth: as before)
+        if (at.st.here[f] === null) {
+          console.log(`   (${f}: not baked, as before: ${c.unpainted} of its ${c.places} places hold no picture)`);
+          continue;
+        }
         if (!at.st.here[f]) bad(`${f}: its pictures had not come whole as the loading screen lifted`);
         if (c.unpainted) bad(`${f}: ${c.unpainted} of its ${c.places} places hold no picture yet`);
         if (c.fromFiles !== c.places - c.unpainted) console.log(`   (${f}: ${c.places - c.unpainted - c.fromFiles} of its ${c.places} places hold a picture painted on this page)`);
