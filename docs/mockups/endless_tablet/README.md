@@ -321,6 +321,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   out over you”. SO: one rune only: written at his hand, flung out over the hero, bursting there (the hammer forming out of the
   burst, about its head); the rune that flew up off his staff is gone.
   HIS YES, 12 Nov 2026, by pop-up: “Yes, on to Flame (Recommended)”.
+- FLAME, THE FIRESTORM (`flame`, `flamePoseAt`, `FIRE_DROPS`, `firestormBits`, `paintFirestorm`; `pictures/standard/boss_flame.mp4`,
+  then the cast and the first wave at half speed): by his rules for the words. HE WRITES the Flame rune (the word's own glyph, its
+  orange with his pink at its heart) at his hand and flings it out high over the room; IT BURSTS in a ring of fire, which hangs
+  there while it pours them down; THE FIREBALLS, as solids (each a ball of fire lit round, white-hot at its heart, his pink at its
+  edge, a tail of fire and smoke), are flung down out of the burst in arcs, three waves, each faster (5, 6, 7), each onto its own mark
+  on the floor (a ring of the word's orange with his pink through it, filling as it comes: where they fall is the rules'); each lands
+  in a splash of fire and leaves the floor scorched and BURNING to the end of it, flames standing up off it as solids, flickering, so
+  there is less and less room to stand. He holds his staff high through it, calling them down. The checks on his cast, his legs
+  outside the boar: all pass.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.

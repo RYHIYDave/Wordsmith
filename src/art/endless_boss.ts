@@ -927,6 +927,7 @@ export function boarPoseAt(move: string, t: number): BoarPose {
   if (move === 'gore') return gorePoseAt(t);
   if (move === 'stomp') return stompPoseAt(t);
   if (move === 'power') return powerPoseAt(t);
+  if (move === 'flame') return flamePoseAt(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   const A = BOAR_STAND_AT;
@@ -1743,6 +1744,99 @@ export function paintPowerHammer(t: number, view: 'front' | 'rear'): Painted {
   return { px, lights } as Painted;
 }
 
+// FLAME: THE FIRESTORM (his pick, 12 Nov 2026: “Firestorm (Recommended)”, offered as: he hurls the rune skyward; it bursts and
+// fireballs rain across the room, each onto a warning mark, leaving burning ground so there's less and less room to stand). By his
+// rules for the words: one rune, flung out over the room, bursting; what strikes is what it makes, made as solids.
+//   HE WRITES IT   his left hand claws the Flame rune on the air; he flings it out high over the room
+//   IT BURSTS      a ring of fire in the air; out of it the fireballs come, each flung down in an arc onto its own mark on the floor
+//                  (marked on the floor first, a ring of the word's orange with his pink through it: where they fall is the rules')
+//   THE STORM      he holds his staff high, calling them down; three waves, each faster; each fireball lands in a burst of fire and
+//                  leaves the floor burning where it fell, the flames standing up off it, so there is less and less room to stand
+export const FIRE = { write: [0.12, 0.7] as const, cast: 0.74, burst: 1.0, warn: 0.7, fall: 0.5, long: 4.6, high: 200 };
+/** Where each fireball lands (its own lengths from the storm's middle on the floor) and when (seconds into the move). */
+export const FIRE_DROPS: ReadonlyArray<{ at: V3; t: number }> = ((): { at: V3; t: number }[] => {
+  const out: { at: V3; t: number }[] = [];
+  const waves: [number, number, number][] = [[1.55, 5, 0.12], [2.3, 6, 0.09], [3.0, 7, 0.07]];
+  let k = 0;
+  for (const [t0, n, gap] of waves) {
+    for (let i = 0; i < n; i++, k++) {
+      const a = hash(k, 1, 8981) * TAU;
+      const r = (0.4 + 2.6 * Math.sqrt(hash(k, 2, 8982))) * TILE;
+      out.push({ at: [Math.cos(a) * r, Math.sin(a) * r, 0], t: t0 + i * gap });
+    }
+  }
+  return out;
+})();
+function flameCast(t: number): Cast {
+  const raise = smooth01((t - (FIRE.cast - 0.3)) / 0.25) * (1 - smooth01((t - FIRE.long + 0.5) / 0.4));
+  const write = bumpOf(t, FIRE.write[0] - 0.05, FIRE.write[1] + 0.1);
+  return { raise, hammer: 0, write: Math.max(write, 0.6 * bumpOf(t, FIRE.burst, FIRE.long - 0.4)), stroke: (t - FIRE.write[0]) * TAU * 2.2, lead: 0 };
+}
+export function flamePoseAt(t: number): BoarPose {
+  const P = boarPoseAt('stand', t);
+  let flare = 0;
+  for (const d of FIRE_DROPS) flare = Math.max(flare, 0.7 * bumpOf(t, d.t - 0.05, d.t + 0.3));
+  return { ...P, pulse: Math.max(P.pulse ?? 0, 0.6 * smooth01(t / 0.6), flare), ride: { lean: 0, brace: 0, still: true, cast: flameCast(t) } };
+}
+/** The Flame word's own orange, his pink through it: from its dark edge to its white-hot heart. */
+const FIRE_RAMP: Ramp = ['#7a1058', '#e0287a', '#ff8a2a', '#ffc860', '#fff0a0'];
+export const FIRE_CANVAS: MobCanvas = { w: 640, h: 460, ax: 320, ay: 300 };
+/** Where the burst is (as the storm's own points are): high over its middle. */
+export const FIRE_BURST: V3 = [-1.2 * TILE, 0, FIRE.high];
+/** THE FIRESTORM'S SOLIDS, `t` seconds into the move, as the storm's own points are (its middle on the floor at nothing): each
+ * fireball flung down in its arc out of the burst (a ball of fire, white-hot at its heart, his pink at its edge, a tail of fire and
+ * smoke behind it); and each place one has fallen burning, the flames standing up off it, flickering. */
+export function firestormBits(t: number, put: Put): void {
+  const fr0 = Math.floor(t * 30);
+  for (const [k, d] of FIRE_DROPS.entries()) {
+    const t0 = d.t - FIRE.fall;
+    if (t > t0 && t < d.t) {
+      const u = (t - t0) / FIRE.fall;
+      // (flung out of the burst, falling faster as it comes)
+      const p: V3 = [FIRE_BURST[0] + (d.at[0] - FIRE_BURST[0]) * u, FIRE_BURST[1] + (d.at[1] - FIRE_BURST[1]) * u, FIRE_BURST[2] * (1 - u * u) + 40 * Math.sin(Math.PI * u) * (1 - u)];
+      const R = 9;
+      put(`fireball${k % 4}`, 'fireball', { k: 'ball', c: p, ax: [[R, 0, 0], [0, R, 0], [0, 0, R]], skin: (_u, tone) => FIRE_RAMP[T5(tone + 1)] });
+      // (its tail: fire, then smoke, back up the way it came)
+      const back = norm(sub(FIRE_BURST, p), [0, 0, 1]);
+      for (let j = 1; j < 9; j++) {
+        const q = add(p, add(mul(back, j * 5.5), [(hash(k, j + fr0, 8983) - 0.5) * 4, (hash(k, j, 8984) - 0.5) * 4, 0]));
+        put('fireTrail', 'trail', { k: 'mote', p: q, c: j < 3 ? FIRE_RAMP[3] : j < 5 ? FIRE_RAMP[2] : j < 7 ? FIRE_RAMP[1] : '#3a2a30', size: j < 4 ? 2 : 1 });
+      }
+      put('glow', 'fireGlow', { k: 'glow', p, c: FIRE_RAMP[2], r: 14, a: 0.5 });
+    }
+    // (where it fell: a burst of fire as it lands, then the floor burning there to the end, flames standing up off it)
+    if (t >= d.t) {
+      const u = t - d.t;
+      const fade = 1 - smooth01((t - (FIRE.long - 0.35)) / 0.35);
+      const big = 1 + 1.4 * Math.exp(-u * 7);
+      for (let j = 0; j < 9; j++) {
+        const a = (j / 9) * TAU + hash(k, j, 8985);
+        const rr = (3 + 13 * hash(k, j + 3, 8986)) * Math.min(1, 0.5 + u * 3);
+        const base: V3 = [d.at[0] + Math.cos(a) * rr, d.at[1] + Math.sin(a) * rr * 0.9, 0];
+        const h = (10 + 14 * hash(k, j + fr0 * 3, 8987)) * big * fade;
+        if (h < 2) continue;
+        const sway: V3 = [Math.sin(t * 9 + j) * 2.5, Math.cos(t * 7 + j) * 2, 0];
+        put(`burn${k % 3}`, 'flames', { k: 'rod', a: base, b: add(add(base, sway), [0, 0, h]), ra: 3.6, rb: 0.6, ramp: FIRE_RAMP });
+      }
+      if (u < 0.25) {
+        for (let j = 0; j < 16; j++) {
+          const a = (j / 16) * TAU;
+          const rr = 8 + 60 * u;
+          put('fireSplash', 'splash', { k: 'mote', p: [d.at[0] + Math.cos(a) * rr, d.at[1] + Math.sin(a) * rr, 6 + 30 * u - 120 * u * u], c: FIRE_RAMP[j % 2 ? 3 : 2], size: u < 0.1 ? 2 : 1 });
+        }
+      }
+      put('glow', 'burnGlow', { k: 'glow', p: [d.at[0], d.at[1], 10], c: FIRE_RAMP[2], r: 22 * fade, a: (0.25 + 0.3 * Math.exp(-u * 5)) * fade });
+    }
+  }
+}
+export function paintFirestorm(t: number, view: 'front' | 'rear'): Painted {
+  const st = stage(view, FIRE_CANVAS.ax, FIRE_CANVAS.ay, FIRE_CANVAS);
+  const bits: Bit[] = [];
+  firestormBits(t, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 40]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+
 /** THE POWER RUNE: its glyph (the word's own, art/icons.ts GLYPH, two chevrons pointing up), `k` picture pixels to its cell, in the
  * word's red with his pink through its middle and a hot edge; ink round it. */
 export const POWER_GLYPH = ['..oo..', '.XXXX.', 'XX..XX', '..oo..', '.XXXX.', 'XX..XX'];
@@ -1930,7 +2024,7 @@ export function wsMob(): Mob {
     trueBack: true,
     bits: wsBits,
     grains: (_st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand'),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST } },
   } as unknown as Mob;
 }
 
@@ -2004,7 +2098,7 @@ export const WS_SHAPE: BossShape = {
   // game shows it from its other side and the next run goes back down the lane: that hand-over is the charge's own start drawn the
   // other way round, and is not one these checks can draw)
   handovers: [
-    ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
+    ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power', 'flame'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
     { from: 'charge', at: 'end', to: 'wheel', toAt: 0 },
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },

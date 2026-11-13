@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, HAMMER_CANVAS, POWER, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -37,7 +37,7 @@ const mix = (s: Px, x: number, y: number, c: string, a: number): void => {
 };
 // (the camera follows him, a little behind: his floor point held near the picture's middle, the floor going by)
 const sx = Math.round(W / 2);
-const sy = move === 'power' ? H - 70 : Math.round(H / 2 + 50);
+const sy = move === 'power' || move === 'flame' ? H - 90 : Math.round(H / 2 + 50);
 /** The floor: dark flags, their joints, lit a little toward the upper left (moved by the camera: `cx`, `cy`). */
 function floor(cx: number, cy: number): Px {
   const s = new Px(W, H);
@@ -244,6 +244,106 @@ function layPainted(s: Px, p: { px: Px; lights: { x: number; y: number; r: numbe
     for (let y = Math.floor(l.y - l.r); y <= Math.ceil(l.y + l.r); y++) for (let x = Math.floor(l.x - l.r); x <= Math.ceil(l.x + l.r); x++) {
       const q = Math.hypot(x - l.x, y - l.y) / l.r;
       if (q < 1) mix(s, x0 + x, y0 + y, hex(r, g, b), (l.a ?? 0.5) * (1 - q) * (1 - q));
+    }
+  }
+}
+/** A word's glyph as a little picture: its own colour, his pink at its heart, a hot edge, inked round. */
+function glyphOf(rows: readonly string[], k: number, own: string, hot: string): (string | null)[][] {
+  const n = rows.length;
+  const W2 = n * k + 2;
+  const g: (string | null)[][] = Array.from({ length: W2 }, () => Array(W2).fill(null));
+  for (let y = 0; y < n * k; y++) for (let x = 0; x < n * k; x++) {
+    const c = rows[Math.floor(y / k)][Math.floor(x / k)];
+    if (c === '.') continue;
+    g[y + 1][x + 1] = c === 'o' ? '#ff4f8a' : (y % k) === 0 ? hot : own;
+  }
+  for (let y = 0; y < W2; y++) for (let x = 0; x < W2; x++) if (!g[y][x] && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[y + dy]?.[x + dx] && g[y + dy][x + dx] !== '#1a0610')) g[y][x] = '#1a0610';
+  return g;
+}
+const FIRE_GLYPH = glyphOf(['..X...', '..XX..', 'X.XXX.', 'XXXoXX', 'XXooXX', '.XooX.'], 2, '#ff8a2a', '#ffc860');
+/** THE FIRESTORM'S SCENE: the hero dodging; each fireball's mark on the floor before it falls, the floor scorched where it fell (under
+ * the storm's own solids, painted as he is); his rune flung out high over the room and bursting into a ring of fire. */
+const STORM_AT: V2 = [4.6 * TILE, 0.2 * TILE];
+const FIRE_HERO = (t: number): V2 => {
+  // (dodging each wave as its marks show, and getting out of the fire at the last)
+  const path: [number, V2][] = [[0, [4.2 * TILE, 0.3 * TILE]], [1.0, [4.2 * TILE, 0.3 * TILE]], [1.45, [5.6 * TILE, 1.9 * TILE]], [2.05, [6.4 * TILE, 0.6 * TILE]], [2.75, [7.4 * TILE, -0.6 * TILE]], [3.4, [8.4 * TILE, 0.4 * TILE]], [99, [8.4 * TILE, 0.4 * TILE]]];
+  for (let i = 1; i < path.length; i++) {
+    const [ta, pa] = path[i - 1], [tb, pb] = path[i];
+    if (t <= tb) { const u = (t - ta) / (tb - ta); const w = u * u * (3 - 2 * u); return [pa[0] + (pb[0] - pa[0]) * w, pa[1] + (pb[1] - pa[1]) * w]; }
+  }
+  return path[path.length - 1][1];
+};
+function flameScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: number, after: boolean): void {
+  const wp = (p: V2, up = 0): [number, number] => { const [x, y] = at([from[0] + dir * p[0], from[1] + dir * p[1], up]); return [Math.round(ox + x), Math.round(oy + y)]; };
+  const sp = (p: V3): V2 => [STORM_AT[0] + p[0], STORM_AT[1] + p[1]];
+  if (!after) {
+    for (const d of FIRE_DROPS) {
+      const c = sp(d.at);
+      // (its mark: a ring of orange with his pink through it, filling as it comes)
+      if (t > d.t - FIRE.warn && t < d.t) {
+        const u = (t - (d.t - FIRE.warn)) / FIRE.warn;
+        for (let i = 0; i < 160; i++) {
+          const a = (i / 160) * Math.PI * 2;
+          for (let r = 0; r < 0.7 * TILE; r += 1.5) {
+            const [x, y] = wp([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]);
+            const edge = r > 0.62 * TILE;
+            const fill = r < 0.7 * TILE * u;
+            if (edge) mix(s, x, y, i % 8 < 4 ? '#ff8a2a' : '#ff4f8a', 0.7);
+            else if (fill) mix(s, x, y, '#ff8a2a', 0.18 + 0.1 * u);
+          }
+        }
+      }
+      // (the floor scorched where it fell)
+      if (t >= d.t) {
+        for (let i = 0; i < 120; i++) {
+          const a = (i / 120) * Math.PI * 2;
+          for (let r = 0; r < 0.6 * TILE; r += 1.5) {
+            const [x, y] = wp([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]);
+            mix(s, x, y, '#140a0c', 0.55 * (1 - r / (0.6 * TILE)) + 0.15);
+          }
+        }
+      }
+    }
+    return;
+  }
+  const [hx, hy] = wp(FIRE_HERO(t));
+  hero(s, hx, hy);
+  // (his rune: written at his hand, flung out high over the room, bursting into a ring of fire)
+  const sk = skeletonAt(mob, 'flame', t);
+  const [bx, by] = wp(sp(FIRE_BURST), FIRE_BURST[2]);
+  if (t > FIRE.write[0] && t <= FIRE.cast) {
+    const [x, y] = at([from[0] + dir * sk.handL[0], from[1] + dir * sk.handL[1], sk.handL[2] + 6]);
+    stamp(s, FIRE_GLYPH, ox + x, oy + y, 1, Math.min(1, (t - FIRE.write[0]) / (FIRE.write[1] - FIRE.write[0])));
+  } else if (t > FIRE.cast && t < FIRE.burst) {
+    const sk2 = skeletonAt(mob, 'flame', FIRE.cast);
+    const [x0, y0] = at([from[0] + dir * sk2.handL[0], from[1] + dir * sk2.handL[1], sk2.handL[2] + 6]);
+    const u = (t - FIRE.cast) / (FIRE.burst - FIRE.cast);
+    const X = ox + x0 + (bx - ox - x0) * u, Y = oy + y0 + (by - oy - y0) * u - 50 * Math.sin(Math.PI * u);
+    stamp(s, FIRE_GLYPH, X, Y, 1);
+    for (let k = 1; k < 6; k++) stamp(s, FIRE_GLYPH, X - (bx - ox - x0) * 0.035 * k, Y + 6 * k, 0.4 / k);
+  }
+  // (the storm, painted as he is)
+  layPainted(s, paintFirestorm(t, 'front'), FIRE_CANVAS, wp(STORM_AT)[0], wp(STORM_AT)[1], 0);
+  if (t >= FIRE.burst && t < FIRE.burst + 0.6) {
+    const b = (t - FIRE.burst) / 0.6;
+    for (let i = 0; i < 72; i++) {
+      const a = (i / 72) * Math.PI * 2;
+      const r = 8 + 70 * Math.sqrt(b);
+      mix(s, Math.round(bx + Math.cos(a) * r), Math.round(by + Math.sin(a) * r * 0.45), i % 3 ? '#ff8a2a' : '#ff4f8a', (1 - b) * 0.9);
+      mix(s, Math.round(bx + Math.cos(a) * (r - 3)), Math.round(by + Math.sin(a) * (r - 3) * 0.45), '#ffc860', (1 - b) * 0.6);
+    }
+    for (let yy = -30; yy <= 30; yy++) for (let xx = -30; xx <= 30; xx++) {
+      const q = Math.hypot(xx, yy) / 30;
+      if (q < 1) mix(s, bx + xx, by + yy, '#fff0d0', 0.8 * (1 - b) * (1 - q));
+    }
+  }
+  // (and the burst's fire hanging there while it pours them down)
+  if (t >= FIRE.burst + 0.3 && t < FIRE_DROPS[FIRE_DROPS.length - 1].t) {
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * Math.PI * 2 + t * 1.5;
+      const r = 40 + 8 * Math.sin(t * 7 + i);
+      if ((i + Math.floor(t * 30)) % 3 === 0) continue;
+      mix(s, Math.round(bx + Math.cos(a) * r), Math.round(by + Math.sin(a) * r * 0.45), i % 2 ? '#ff8a2a' : '#ff4f8a', 0.6);
     }
   }
 }
@@ -470,7 +570,7 @@ const floorOf = (mv: string) => (t: number): V2 => {
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
@@ -499,11 +599,11 @@ for (const sg of segs) {
       const f = sg.floorAt(tt);
       return [sg.from[0] + k * f[0], sg.from[1] + k * f[1], 0];
     };
-    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + 4.3 * TILE, sg.from[1] + 0.3 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
-    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : 0;
+    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : 0;
     const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
     const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
     const s = floor(-ox, -oy);
@@ -511,6 +611,7 @@ for (const sg of segs) {
     if (sg.move === 'gore') sweep(s, t, ox, oy, sg.from, k);
     if (sg.move === 'stomp') blast(s, t, ox, oy, sg.from, k);
     if (sg.move === 'power') powerScene(s, t, ox, oy, sg.from, k, false);
+    if (sg.move === 'flame') flameScene(s, t, ox, oy, sg.from, k, false);
     const where = (tt: number): [number, number] => {
       const [x, y] = at(world(tt));
       return [ox + x, oy + y];
@@ -539,7 +640,7 @@ for (const sg of segs) {
       const [x, y] = base();
       for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
     }
-    if (sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power') {
+    if (sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame') {
       const [x, y] = base();
       lay(s, sg.move, sg.view, t, x, y);
     } else {
@@ -547,6 +648,7 @@ for (const sg of segs) {
       lay(s, sg.move, sg.view, t, x, y);
     }
     if (sg.move === 'power') powerScene(s, t, ox, oy, sg.from, k, true);
+    if (sg.move === 'flame') flameScene(s, t, ox, oy, sg.from, k, true);
     writeFileSync(`${out}/f/${String(i).padStart(3, '0')}.png`, png(s));
   }
 }
