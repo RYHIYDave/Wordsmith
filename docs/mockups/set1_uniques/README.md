@@ -55,6 +55,11 @@ To put them live, set both switches on and change the two lines in `tests/set1_u
 - `tests/set1_uniques.test.ts` (new): off none is had; each weapon's three found only by a Warrior with that weapon; each of the
   six doing what its card says.
 - `tests/set1_look.test.ts` (new): the switch off draws nothing, and the six bag pictures are sound.
-- The unit run `--only` of what it touches, with the core: see the ship document.
+- Unit runs `--only` of what it touches, with the core: on 65b6e37bba, set1_uniques, items_unique, uniques, uniques_heroes,
+  uniques_game, uniques_drops, warrior_uniques_drop, warrior_tree, warrior_tree_rules, unique_play and unique_play2 with the core
+  (35 files): all passed but set1_look. Its two faults were mended, and on 45c8a8a440 set1_look, set1_uniques and items_unique
+  with the core (26 files) all passed.
+- Filmed from a built page (`tools/scenarios/set1_look.mjs`, each of the six): clean, no page errors.
+- His page: [Set 1 Uniques](https://claude.ai/artifact/EaAEmfdgGSiU8Yr5CbWUbL), the six pictures and the film.
 
 Not checked: his phone.
