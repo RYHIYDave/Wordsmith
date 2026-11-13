@@ -109,8 +109,18 @@ ALL OF IT IS BUILT, BEHIND `SWAP_MOVES` (game/talents.ts, OFF): off, the game is
   behind the arrow; Rally a ring of cyan going out from him, cyan motes and a mark over each companion while it lasts.
 - FILMED in the practice room at a phone's size (tools/scenarios/swap_moves_film.mjs, CLS=mage|ranger): with the stand-ins,
   pictures/mage_moves_standin.mp4 and ranger_moves_standin.mp4 (12 Nov, night); with their own looks, pictures/mage_moves.mp4
-  and ranger_moves.mp4 (13 Nov). Her ATTACKS page with CHANGE, through the game's own page (tools/scenarios/swap_moves_attacks.mjs):
+  and ranger_moves.mp4 (13 Nov); bold, mage_moves_bold.mp4 and ranger_moves_bold.mp4. Her ATTACKS page with CHANGE, through the game's own page (tools/scenarios/swap_moves_attacks.mjs):
   pictures/mage_attacks_change.png (her tap Wave, then Ball).
+- MADE BOLD (13 Nov, morning). Shown the films with their first looks, asked whether to hand them to main, his words: “Did you
+  change anything from the stand in cause it sure doesn’t look like it”. Read as: at a phone's size they read as the stand-ins
+  did (they were drawn at the stand-ins' size). So each is now about twice as big, with a soft glow (drawn added onto what is
+  under it): Ball 6 pixels round in its glow, sparks going round it, a tail of eight; Spear 36 pixels and five wide, a leaf
+  head nine long, its glow, three streaks; the Aura's edge three thick, its floor breathing, a flash as it comes on, FIRE flames
+  standing all round its edge and thirty embers, LIGHTNING runs of light along its edge and seven bolts leaping off it, FROST
+  shards of ice round its edge, snow, eight frost stars; Snare its rope three thick, half as big again, the ground in it lit
+  cyan while set; Snipe a light gathering at his bow as he draws, a cross of light at full, a streak sixty long; Rally three
+  rings going out and a burst of light round him, his companions glowing cyan with a double mark over each.
+  pictures/before_after_mage.png and before_after_ranger.png: each, as he saw it and now, at the same moment of the film.
 - CHECKED: tsc clean; tests/swap_moves.test.ts 12 of 12; unit `--only swap_moves, companions, practice_talents, talent_lines,
   talents, talents2, tinkerer_talents, traps, warrior_tree` and the core on 0b2a71349b: 30 passed, word_kinds.test.ts failing as
   it pinned the spells; mended (Ball and Spear are spells): `--only word_kinds` and the core on c0106ac4d5, all passed.
