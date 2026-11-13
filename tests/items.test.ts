@@ -44,6 +44,10 @@ import { derive } from '../src/game/stats';
 import type { ItemBase, RollOpts } from '../src/game/items';
 import { CLASS_IDS, EQUIP_SLOTS, ICON_KEYS, SLOTS, STAT_KEYS, WORD_IDS } from '../src/game/types';
 import type { Affix, BaseWordId, ClassId, EquipSlot, Item, OffhandKind, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from '../src/game/types';
+import { swordsAsBefore } from './swords_as_before';
+
+// (the plain sword among the things to be had, as this file was written for it: tests/swords_as_before.ts)
+swordsAsBefore();
 
 interface Assert {
   ok(value: unknown, message?: string): void;

@@ -9,7 +9,8 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { ONE_HAND_SWORDS, gambleKinds, vendorStock } from '../src/game/defs';
+import { ONE_HAND_SWORDS, TUNE, VENDOR_IDS, gambleKinds, vendorStock } from '../src/game/defs';
+import { CLASS_IDS } from '../src/game/types';
 import { Game } from '../src/game/game';
 import { rollItem } from '../src/game/items';
 import { RNG } from '../src/engine/rng';
@@ -35,6 +36,20 @@ test('1. no one-handed sword found, sold or gambled for; the greatsword and the 
   const g = gambleKinds('warrior');
   assert.ok(!g.some((k) => k.slot === 'mainhand' && k.weapon === 'sword'), 'none gambled for');
   assert.ok(g.some((k) => k.name === 'Shield'), "the shield still gambled for (the Tinkerer's wrench takes it)");
+  // (each shelf as long as ever, for every hero, and no sword on it)
+  for (const cls of CLASS_IDS) {
+    for (const id of VENDOR_IDS) {
+      const v = vendorStock(id, cls);
+      assert.equal(v.weapons.length + v.slots.length, TUNE.shopSize, `${cls}, ${id}: a full shelf`);
+    }
+    const h = new Game(cls, 5);
+    h.rollShop();
+    for (const id of VENDOR_IDS) {
+      const shelf = h.shops[id];
+      assert.equal(shelf.length, TUNE.shopSize, `${cls}, ${id}: ${shelf.length} on the shelf`);
+      assert.ok(shelf.every((it) => it && it.weapon !== 'sword'), `${cls}, ${id}: a sword on the shelf`);
+    }
+  }
 });
 
 test('2. a Warrior finds only his weapon\'s uniques; another hero none; a unique he carries keeps its weapon', () => {

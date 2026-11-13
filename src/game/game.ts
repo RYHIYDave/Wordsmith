@@ -1383,7 +1383,7 @@ export class Game {
       if (def.kind === 'leap' && this.was('drilledleap')) s.r.cooldown *= TALENT_TUNE.drilledLeap;
       // (the roll's two charges are a thing of cooldowns: when mana is the limit, mana is; Light Step, three)
       s.maxCharges = def.kind === 'roll' && this.meta.limit === 'cooldown' ? (this.has('lightstep') ? TALENT_TUNE.lightStep.charges : 2) : 1;
-      // (UNIQUE ITEMS: The Sprung Heels, the Brawler's jump twice)
+      // (UNIQUE ITEMS: Springheel, the Brawler's jump twice)
       if (def.kind === 'vjump' && this.wears('sprungheels')) s.maxCharges = UNIQUE_TUNE.heels.jumps;
       if (changed[i]) {
         s.charges = waiting[i] && s.r.cooldown > 0 ? 0 : 1;
@@ -5029,7 +5029,7 @@ export class Game {
     const wind = Math.min(def.windup, 0.4 / rate);
     // STRIKE, A TWO-HIT COMBO (defs.ts, COMBO): the second swing if this one comes soon enough
     // after a first, else the first; and a small step forward with either.
-    // (UNIQUE ITEMS: The Windcutter, Strikes in a row counted: one that follows the last soon enough, as his combo's second does)
+    // (UNIQUE ITEMS: Windcutter, Strikes in a row counted: one that follows the last soon enough, as his combo's second does)
     if (s.id === 'strike' && this.wears('windcutter')) this.uq.strikes = h.comboT > 0 ? this.uq.strikes + 1 : 1;
     if (COMBO.on && def.kind === 'melee') {
       h.combo = h.combo === 0 && h.comboT > 0 ? 1 : 0;
@@ -5172,7 +5172,7 @@ export class Game {
       else this.deliver(0, h.x, h.y, h.x + h.fx, h.y + h.fy, 1, true);
       // (THE WARLOCK's tree: the demon's rakes counted, every third a Hellwave)
       if (s.id === 'rake') this.rakeDone(h.x, h.y, h.fx, h.fy, 1);
-      // (UNIQUE ITEMS: The Windcutter, every third Strike in a row sends a blade of wind on ahead)
+      // (UNIQUE ITEMS: Windcutter, every third Strike in a row sends a blade of wind on ahead)
       if (s.id === 'strike' && this.uq.strikes >= UNIQUE_TUNE.windcutter.every && this.wears('windcutter')) {
         this.uq.strikes = 0;
         this.windBlade();
@@ -5245,7 +5245,7 @@ export class Game {
     const tick = (def.tick ?? 0.25) / s.r.pace;
     const byMana = s.r.mana > 0;
     if (ch.bites > 0) {
-      // (UNIQUE ITEMS: The Millstone, Whirlwind has no time limit: he spins for as long as he holds)
+      // (UNIQUE ITEMS: Millstone, Whirlwind has no time limit: he spins for as long as he holds)
       const spent = byMana ? h.mana <= 0 : ch.t >= length - 1e-6 && !(def.kind === 'whirl' && this.wears('millstone'));
       if (!c.hold || spent) {
         this.endChannel(true);
@@ -5493,7 +5493,7 @@ export class Game {
     if (!this.moveOpen(2)) return;
     // (FROZEN IN PLACE by the Drowned's frost grab: no dodging out of it)
     if ((h.iceT ?? 0) > 0) return;
-    // (UNIQUE ITEMS: The Short Way, Warp again soon enough and she snaps back to where she started, the Warp not spent)
+    // (UNIQUE ITEMS: Shortcut, Warp again soon enough and she snaps back to where she started, the Warp not spent)
     if (this.uq.back && SKILLS[s.id].kind === 'warp' && this.wears('shortway') && this.time <= this.uq.back.until) {
       this.snapBack();
       return;
@@ -5574,7 +5574,7 @@ export class Game {
       this.emit({ t: 'burst', x: h.x, y: h.y, r: 0.8, el: 'frost', style: 'warp' });
       // (THE SKILL TREES: Frost Warp, Flame Warp; Storm Warp where she arrives, below)
       if (TALENTS.on) this.talentWarp(x0, y0, land.x, land.y);
-      // (UNIQUE ITEMS: The Short Way, her Warp talents go off at both ends; and for a moment warping again snaps her back)
+      // (UNIQUE ITEMS: Shortcut, her Warp talents go off at both ends; and for a moment warping again snaps her back)
       if (this.wears('shortway')) {
         if (TALENTS.on) this.talentWarp(land.x, land.y, x0, y0);
         this.uq.back = { x: x0, y: y0, until: this.time + UNIQUE_TUNE.shortWay.secs };
@@ -6269,7 +6269,7 @@ export class Game {
       v.globes.push('jump');
       v.queue.push({ id: 'dodge', globe: v.globes.length - 1, tx: sx, ty: sy });
       v.idle = 0;
-      // (UNIQUE ITEMS: The Sprung Heels, he can jump again in the air: the jump he is in ends here, and the next begins from it)
+      // (UNIQUE ITEMS: Springheel, he can jump again in the air: the jump he is in ends here, and the next begins from it)
       if (v.move && v.move.id === 'dodge' && v.move.f >= VET_MOVES.dodge.air![0] && this.wears('sprungheels')) {
         v.done.push('dodge');
         v.move = null;
@@ -6474,7 +6474,7 @@ export class Game {
       if (this.vetFull(v) && !v.queue.length) {
         v.globes = [];
         v.done = [];
-        // (UNIQUE ITEMS: The Winning Streak, every combo he finishes makes his next blows hit harder)
+        // (UNIQUE ITEMS: Hot Streak, every combo he finishes makes his next blows hit harder)
         if (this.wears('winningstreak')) {
           this.uq.streak++;
           this.emit({ t: 'unique', id: 'winningstreak', what: 'streak', x: h.x, y: h.y, mid: this.uq.streak });
@@ -7118,7 +7118,7 @@ export class Game {
    * one. MAD MIXTURE: a brew at random, burning, freezing or poisoning.)
    */
   private brewVial(v: Vial): void {
-    // (UNIQUE ITEMS: The Sticky Wrench, her vials stick to what they hit and burst a moment later, twice as wide)
+    // (UNIQUE ITEMS: Tarwrench, her vials stick to what they hit and burst a moment later, twice as wide)
     if (this.wears('stickywrench') && !v.bomb) v.sticky = true;
     if (this.has('thebigone') && ++this.vialsThrown % TINKER_TUNE.talents.bigOne.every === 0) v.big = true;
     if (this.has('madmixture')) v.brew = this.rng.pick<Brew>(['burn', 'freeze', 'poison']);
@@ -7269,7 +7269,7 @@ export class Game {
     // (CLUSTER VIALS: a little one bursts smaller; THE BIG ONE, three times as wide)
     if (v.little) rad *= T.cluster.size;
     if (v.big) rad *= T.bigOne.wide;
-    // (UNIQUE ITEMS: The Sticky Wrench, twice as wide)
+    // (UNIQUE ITEMS: Tarwrench, twice as wide)
     if (v.sticky) rad *= UNIQUE_TUNE.sticky.wide;
     const x = v.x1;
     const y = v.y1;
@@ -7669,7 +7669,7 @@ export class Game {
     for (let k = this.vials.length - 1; k >= 0; k--) {
       const v = this.vials[k];
       v.t += dt;
-      // (UNIQUE ITEMS: The Sticky Wrench: landed, it sticks, to the enemy it landed on if there is one, and goes where that goes)
+      // (UNIQUE ITEMS: Tarwrench: landed, it sticks, to the enemy it landed on if there is one, and goes where that goes)
       if (v.sticky && v.fuse === undefined && v.t >= v.flight) {
         const S = UNIQUE_TUNE.sticky;
         v.fuse = S.fuse;
@@ -8862,7 +8862,7 @@ export class Game {
       else this.after(0.28 * k, () => this.blast(2, x, y, rad * 1.15, r.countDmg, 'land', k, false, false));
     }
     if (r.echo > 0) this.echoOf(2, x, y, h.fx, h.fy, () => this.blast(2, x, y, rad, r.countDmg * r.echo, 'land', 0, true, false));
-    // (UNIQUE ITEMS: The Pivot, Lunge ends in a free turn of Whirlwind where he lands)
+    // (UNIQUE ITEMS: Pirouette, Lunge ends in a free turn of Whirlwind where he lands)
     if (this.wears('pivot') && this.moveOpen(1) && SKILLS[h.skills[1].id].kind === 'whirl') {
       const P = UNIQUE_TUNE.pivot;
       this.emit({ t: 'unique', id: 'pivot', what: 'turn', x: h.x, y: h.y, secs: P.gap * P.cuts });
@@ -9013,7 +9013,7 @@ export class Game {
       // (THE SKILL TREES: Long Shot, further and faster; Piercing, through one more; Split Shot, every third in three)
       const long = this.was('longshot') ? TALENT_TUNE.longShot : 1;
       const split = primary && this.was('splitshot') && ++this.shots % TALENT_TUNE.splitShot.every === 0;
-      // (UNIQUE ITEMS: The Fan, each Shot three arrows in a fan, each a little weaker; one enemy takes only one of them)
+      // (UNIQUE ITEMS: Threefold, each Shot three arrows in a fan, each a little weaker; one enemy takes only one of them)
       const fanned = primary && s.id === 'shot' && this.wears('fan');
       const F = UNIQUE_TUNE.fan;
       // (THE WARRIOR'S BATTLE AXE: Twin Axes, two thrown, one to each side of the aim, each for less)
@@ -9089,7 +9089,7 @@ export class Game {
       // The arrows go up from the bow, and a moment later begin to come down round the spot that
       // was aimed at: as near to there as the hero can see, within the bow's reach. (The echo is a
       // second, weaker rain on the same spot.)
-      // (UNIQUE ITEMS: The Rainwalker, Volley rains round him and goes with him)
+      // (UNIQUE ITEMS: Rainwalker, Volley rains round him and goes with him)
       const walker = this.wears('rainwalker');
       const p = walker ? { x: h.x, y: h.y } : this.reachPoint(tx, ty, def.range);
       // (THE SKILL TREES: Hail, longer and wider)
@@ -10136,7 +10136,7 @@ export class Game {
       m.burnT = (3 + (sear ? TALENT_TUNE.searing.secs : 0)) * r.last;
     }
     if (r.chill > 0) this.chillMonster(m, r.chill);
-    // (UNIQUE ITEMS: The Prism, fire, frost and lightning each count as all three: what one of them hits burns, is chilled and is shocked)
+    // (UNIQUE ITEMS: Prismheart, fire, frost and lightning each count as all three: what one of them hits burns, is chilled and is shocked)
     const prism = r.element !== 'phys' && this.wears('prism');
     if (prism) {
       const Pm = UNIQUE_TUNE.prism;
@@ -10536,7 +10536,7 @@ export class Game {
     if (this.now('resolute')) return;
     // (THE BRAWLER'S TREE: Iron Chin, nothing knocks him back while he winds up a hold)
     if (this.ironChin()) return;
-    // (UNIQUE ITEMS: The Standing Stone, nothing shoves him while he stands still)
+    // (UNIQUE ITEMS: Menhir, nothing shoves him while he stands still)
     if (this.rooted()) return;
     let dx = h.x - fromX;
     let dy = h.y - fromY;
@@ -10597,7 +10597,7 @@ export class Game {
     if (this.now('resolute')) return;
     // (THE BRAWLER'S TREE: Iron Chin, nor drags him off his feet while he winds up a hold)
     if (this.ironChin()) return;
-    // (UNIQUE ITEMS: The Standing Stone)
+    // (UNIQUE ITEMS: Menhir)
     if (this.rooted()) return;
     const dx = fromX - h.x;
     const dy = fromY - h.y;
@@ -11032,7 +11032,7 @@ export class Game {
     if (this.now('thickskin') && h.life < h.d.maxLife * TALENT_TUNE.thickSkin2.below) dmg *= 1 - TALENT_TUNE.thickSkin2.less;
     // (THE BRAWLER'S TREE: Iron Chin, winding up a hold he takes a third less)
     if (this.ironChin()) dmg *= 1 - BRAWL_TUNE.talents.ironChin.less;
-    // (UNIQUE ITEMS: The Moth's Wing, less from every hit; The Standing Stone, less while he stands still)
+    // (UNIQUE ITEMS: The Moth's Wing, less from every hit; Menhir, less while he stands still)
     if (this.wears('mothswing')) dmg *= 1 - UNIQUE_TUNE.moth.less;
     if (this.rooted()) dmg *= 1 - UNIQUE_TUNE.stone.less;
     // (THE VETERAN'S TREE: Guard Up, between his blows his fists are up: a blow from in front of him does half harm)
@@ -12635,7 +12635,7 @@ export class Game {
           // is not spent on one, so a shot aimed at a monster still gets there. (The owner, with
           // Version 12: "can't be broken by projectile attacks. That needs to be fixed".)
           this.breakProps(p.x, p.y, p.r, p.skill);
-          // (UNIQUE ITEMS: The Hair Trigger, an arrow crossing one of his traps sets it off; The Tuning Staff, a Wave through his Orb makes it pulse)
+          // (UNIQUE ITEMS: The Hair Trigger, an arrow crossing one of his traps sets it off; Resonance, a Wave through his Orb makes it pulse)
           if (this.worn.length) this.crossings(p);
           for (const m of this.monsters) {
             if (m.dead || p.hit.includes(m.id)) continue;
@@ -12766,7 +12766,7 @@ export class Game {
 
   private endProjectile(p: Projectile): void {
     this.emit({ t: 'spark', x: p.x, y: p.y, el: p.element, n: 4 });
-    // (UNIQUE ITEMS: The Tide, the Wave comes back)
+    // (UNIQUE ITEMS: Ebb and Flow, the Wave comes back)
     if (!p.hostile && p.look === 'wave' && !p.home && !p.blade && this.wears('tide')) this.turnTide(p);
     if (!p.hostile) {
       const r = this.hero.skills[p.skill].r;
@@ -12865,7 +12865,7 @@ export class Game {
       const r = s.r;
       const words = this.fronts(v.skill);
       const reach = TUNE.volleyHit * r.size;
-      // (UNIQUE ITEMS: The Rainwalker, the rain is where he is)
+      // (UNIQUE ITEMS: Rainwalker, the rain is where he is)
       if (v.walker) {
         v.x = this.hero.x;
         v.y = this.hero.y;

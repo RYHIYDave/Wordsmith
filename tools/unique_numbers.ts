@@ -125,11 +125,11 @@ Each of these is yours to change.
 - **A hero-only piece on another hero:** he can wear it, its stats count, and its rule does nothing.
 - **A word a unique adds, set by hand on that attack too:** it is there once. Nothing more.
 - **“Half as strong again”:** ${pc(T.half)} more on the word's own number, the way Rank II works. Two such uniques worn together add up: twice as strong, not two and a quarter.
-- **The Nettle Shirt with The Clockwork Songbird:** they stack, by adding.
+- **Nettleweave with The Clockwork Songbird:** they stack, by adding.
 - **The Crier's Hush:** it darkens elites' and packs' words, not a boss's.
 - **The Fleshmancer's Brand:** a new elite killed takes the place of the one risen.
 - **The King's Knot:** the borrowed word sits beside your own, even where it is a second damage word.
-- **The Rainwalker with the Hail talent:** the rain goes with her. Hail's longer, wider rain still counts; its chasing an enemy does not.
+- **Rainwalker with the Hail talent:** the rain goes with her. Hail's longer, wider rain still counts; its chasing an enemy does not.
 - **The Unsigned Pact:** the demon never takes your last ${pc(T.pact.floor)} of life, and a tap on him sends it away.
 - **The Pack Collar:** you pick its companion on the collar's card, in town, and never the animal she already has (your picks, 12 Nov). Until picked, the next in the list after hers. With both companion talents, from either list; with none, the hunting list.
 - **Ordinary stats:** two on most. None on the five your doc marks “Nothing else on it”. One on Broken Shackles, as you said: movement speed. Each rolls as a found affix of the item's level, not as a crafted one, so a unique is always short of a well-crafted yellow in raw stats.

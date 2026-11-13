@@ -503,7 +503,7 @@ export const PULL = { far: 1.5, most: 2.5, reach: 2.2, stop: 0.62, secs: 0.24, v
  * `life` of its life, drawn `look` the size (and they split no more).
  */
 /**
- * SPLITTING, EACH ARROW. His question, 12 Nov 2026, 19:17 (Eastern), of Split Shot, Splitting on his tap and The Fan: “How many arrows
+ * SPLITTING, EACH ARROW. His question, 12 Nov 2026, 19:17 (Eastern), of Split Shot, Splitting on his tap and Threefold: “How many arrows
  * should there be from all that combined?”; told that Splitting broke only the first arrow of a tap, his pick: “Every arrow splits, 21
  * (Recommended)” (offered as: each of the Fan's 3 arrows throws 3 copies when it hits, and 3 more when it kills). So each of several
  * shots loosed by one use (game/state.ts Projectile.volley: the Fan's, a Twin pair) splits once of its own; Split Shot's arrows split
@@ -1632,7 +1632,9 @@ export const ONE_HAND_SWORDS = { on: false };
 
 export function vendorStock(id: VendorId, cls: ClassId | null | undefined): { weapons: readonly WeaponKind[]; slots: readonly Slot[] } {
   const v0 = VENDORS[id];
-  const v = ONE_HAND_SWORDS.on ? v0 : { ...v0, weapons: v0.weapons.filter((w) => w !== 'sword') };
+  // (ONE_HAND_SWORDS off: no plain sword on the shelf; a rolled main-hand piece takes its place, so the shelf stays TUNE.shopSize)
+  const cut = v0.weapons.filter((w) => w !== 'sword');
+  const v = ONE_HAND_SWORDS.on || cut.length === v0.weapons.length ? v0 : { ...v0, weapons: cut, slots: ['mainhand' as Slot, ...v0.slots] };
   const own = classWeapon(cls);
   if (!own || CLASS_WEAPON_VENDOR[own] !== id) return v;
   const first = v.slots.indexOf('mainhand');

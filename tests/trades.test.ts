@@ -19,6 +19,10 @@ import { emptyControls } from '../src/game/state';
 import type { GameEvent } from '../src/game/state';
 import { WORD_IDS } from '../src/game/types';
 import type { WordId } from '../src/game/types';
+import { swordsAsBefore } from './swords_as_before';
+
+// (the plain sword among the things to be had, as this file was written for it: tests/swords_as_before.ts)
+swordsAsBefore();
 
 const spare = (g: Game): number => WORD_IDS.reduce((a, w) => a + g.hero.words[w], 0);
 

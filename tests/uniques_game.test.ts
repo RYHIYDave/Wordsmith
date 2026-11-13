@@ -101,7 +101,7 @@ test('Bloodprice: a flask heals nothing and he hits harder for a while; kills st
     assert.equal(g.hero.potions, 1);
   }));
 
-test('The Free Hand: with a wand or a tome and no focus beside it, faster attacks and harder critical hits', () =>
+test('Open Palm: with a wand or a tome and no focus beside it, faster attacks and harder critical hits', () =>
   on(() => {
     const g = room('mage');
     g.hero.gear.mainhand = plainWeapon('wand', 10);
@@ -150,7 +150,7 @@ test('The Half-Carved Hand: below half life he attacks and moves faster', () =>
     assert.ok(near(full.swing / low.swing, 1 + T.halfHand.attack, 0.03), `hands: ${full.swing / low.swing}`);
   }));
 
-test('The Dancing Shoes: nothing slows him or holds him in place', () =>
+test('Light Feet: nothing slows him or holds him in place', () =>
   on(() => {
     const g = wear(room('ranger'), 'dancingshoes');
     const h = g.hero;
@@ -170,7 +170,7 @@ test('The Dancing Shoes: nothing slows him or holds him in place', () =>
     assert.ok(h.y > y + 0.5, 'he walks on');
   }));
 
-test('The Standing Stone: stood still he takes less and nothing shoves him; it ends the moment he moves', () =>
+test('Menhir: stood still he takes less and nothing shoves him; it ends the moment he moves', () =>
   on(() => {
     const g = wear(room('warrior'), 'standingstone');
     g.hero.d.lifeRegen = 0;
@@ -444,7 +444,7 @@ test('The King\'s Knot: kill a monster that carries a word, and his tap attack c
     assert.equal(g.uq.borrowed, null);
   }));
 
-test('The Nettle Shirt: her Vow, his words stronger the longer he goes unhit; a hit breaks it and it starts over', () =>
+test('Nettleweave: her Vow, his words stronger the longer he goes unhit; a hit breaks it and it starts over', () =>
   on(() => {
     const g = wear(room('warrior'), 'nettleshirt');
     words(g, 0, ['power', null]);
