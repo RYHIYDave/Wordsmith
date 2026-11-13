@@ -305,8 +305,18 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   down”; and 20:06: “I want the runes to create something, not use the rune itself”. READ AS (told him so): FOR ALL FIVE WORDS, the
   rune is the spell he writes, and what strikes is what it makes: for Power, a great hammer of its red with his pink through it,
   out of the rune, swung down three times; the Firestorm's rune calls down the fireballs, Frost's raises the ice, Lightning's lets
-  out the ball lightning, Poison's sows the spore mines. Power remade so (`powerHammerAt`): the rune hangs; the hammer comes out of
-  it and swings.
+  out the ball lightning, Poison's sows the spore mines.
+- HIS WORDS on that remake (a flat hammer swung from the rune, which still hung there): “Dude cmon.  Seriously you think that’s what I
+  meant?  A poorly drawn flat 2D hammer swinging on a hinge from the rune I specifically said I didn’t want in the spell”; then 20:14,
+  “Don’t have it swing, have it crush straight down, top of the hammer first”. Owned (the rune had been kept in the spell after his
+  word; the hammer was drawn flat, not to the game's standard). REMADE (`powerHammerBits`, `paintPowerHammer`, `HAMMER_CANVAS`): the
+  rune he writes is flung, flies over the hero and BURSTS, and is gone; out of the burst a great war hammer forms, SCULPTED AS SOLIDS
+  as he is and painted by the monsters' painter: a block of a head (six faces, each lit as it faces the light, its edges bevelled
+  and caught bright), Power's red, banded near each end in darker riveted iron, cracked down its faces with his pink burning in the
+  cracks, its striking faces dark iron with a hot pink heart; a long haft, its grain burning; a pommel; sparks crackling off it, a
+  light on it. It hangs HEAD DOWN, its haft straight up, over the hero, trembling; at each of his three blows it is CRUSHED STRAIGHT
+  DOWN head first in two frames (smeared) onto its shadow: the crater, the ring of force, stone flying; it heaves back up; after the
+  third it shatters into sparks.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.

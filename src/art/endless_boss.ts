@@ -32,11 +32,13 @@
 
 import { hash } from './kit';
 import type { Ramp } from './kit';
-import { FLAME } from './mkit';
+import { ENEMY_RIM, FLAME } from './mkit';
+import { paintBits } from './new_mobs3';
+import type { Painted } from './kit';
 import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
 import type { BossShape, CheckLimb, CheckLump, Handover } from './boss_checks';
 import type { Ring, Skin, Stage } from './skin';
-import { wornOn } from './skin';
+import { stage, wornOn } from './skin';
 import { add, buildOf, cross, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
@@ -1606,6 +1608,139 @@ export function powerHammerAt(t: number): { formed: number; swing: number; gone:
   }
   return { formed, swing, gone: smooth01((t - POWER.slams[2] - 0.12) / 0.3) };
 }
+// THE HAMMER (his words, 12 Nov 2026: “I want him to form the rune, then a big hammer materializes from the rune and slams down”;
+// “I want the runes to create something, not use the rune itself”; and of the first try, “A poorly drawn flat 2D hammer swinging on a
+// hinge from the rune I specifically said I didn't want in the spell”). So: the rune he flings bursts over the hero, and out of the
+// burst a great war hammer forms, made of solids as he is: a heavy barrel of a head banded in darker iron, its faces rimmed, cracks
+// down it burning with his pink, a long haft, a pommel; Power's own red, his pink through it, crackling. No hand holds it: it hangs
+// head down over the hero, its haft straight up, and is crushed straight down head first by his power (his words: “Don’t have it
+// swing, have it crush straight down, top of the hammer first”). Its points are as the floor's, the place it strikes at nothing.
+const HAMMER_RED: Ramp = ['#2a0610', '#6e1020', '#a81c2c', '#e03c44', '#ff8a80'];
+const HAMMER_IRON: Ramp = ['#140408', '#2a0610', '#4a0c18', '#7a1a2a', '#a8343e'];
+const HAMMER_HAFT: Ramp = ['#1a0610', '#3a0a12', '#5e1222', '#8a1e2e', '#b83a46'];
+export const HAMMER_CANVAS: MobCanvas = { w: 340, h: 440, ax: 170, ay: 380 };
+/** Its grip and the way its haft runs from the grip to the head's middle (degrees from straight down), as it comes down: 0 raised
+ * high over the place it strikes, 1 struck. It hangs head down, its haft straight up, and is crushed straight down head first (his
+ * words, 12 Nov 2026: “Don’t have it swing, have it crush straight down, top of the hammer first”), a little tilt as it trembles. */
+function hammerHold(k: number, t: number): { grip: V3; ang: number } {
+  const R = 84;
+  const up = 128 + 5 * Math.sin(t * 3.1);
+  const z = up + (25 - up) * k;
+  const tremble = (1 - k) * 2.5 * Math.sin(t * 23);
+  return { grip: [0, 0, z + R], ang: tremble };
+}
+/** How far it has come down (0 raised ... 1 struck) `t` seconds into his Power. */
+function hammerSwung(t: number): number {
+  const hm = powerHammerAt(t);
+  return 1 - hm.swing / -165;
+}
+export function powerHammerBits(t: number, put: Put): void {
+  const hm = powerHammerAt(t);
+  if (hm.formed <= 0 || hm.gone >= 1) return;
+  const k = hammerSwung(t);
+  const { grip, ang } = hammerHold(k, t);
+  // (forming out of the burst: grown from small; shattering: shrunk into its sparks)
+  const sc = (0.35 + 0.65 * smooth01(hm.formed)) * (1 - 0.6 * hm.gone);
+  const R = 84 * sc;
+  // (its head across the way it is seen, so that it is seen whole, a hammer upside down)
+  // (turned a little off square to the eye, so that its top, its front and one striking face all show)
+  const across = norm([1, 0.55, 0]);
+  const side = norm([-0.55, 1, 0]);
+  const dir: V3 = add(mul(across, Math.sin(ang * D)), [0, 0, -Math.cos(ang * D)]);
+  const hx: V3 = add(mul(across, Math.cos(ang * D)), [0, 0, Math.sin(ang * D)]);
+  const hc = add(grip, mul(dir, R));
+  const HL = 36 * sc;
+  const HR = 25 * sc;
+  const ring = (along: number, r: number) => ({ c: add(hc, mul(hx, along)), u: mul(dir, r), v: mul(side, r) });
+  // (its head: a great block, each face lit as it faces the light; its long faces Power's red, banded near each end in darker iron
+  // riveted down the band, cracked down the middle with his pink burning in the cracks; its striking faces dark iron, a hot pink
+  // heart in each; every edge bevelled, the edges toward the light caught bright)
+  const HH = HR;
+  const HD = HR * 0.92;
+  const box: [V3, number, V3, number, V3, number, 'long' | 'face'][] = [
+    [dir, HH, hx, HL, side, HD, 'long'], [mul(dir, -1), HH, hx, HL, side, HD, 'long'],
+    [side, HD, hx, HL, dir, HH, 'long'], [mul(side, -1), HD, hx, HL, dir, HH, 'long'],
+    [hx, HL, side, HD, dir, HH, 'face'], [mul(hx, -1), HL, side, HD, dir, HH, 'face'],
+  ];
+  const crack = (a: number, b: number, seed: number): boolean => {
+    // (two jagged cracks running along its middle, a branch off each)
+    const f1 = 0.08 * Math.sin(a * 9 + seed) + 0.05 * Math.sin(a * 23 + seed * 2);
+    const f2 = -0.42 + 0.07 * Math.sin(a * 11 + seed * 3);
+    const br = Math.abs(a - 0.2 * Math.sin(seed)) < 0.22 && Math.abs(b - (f1 + (a - 0.2 * Math.sin(seed)) * 1.6)) < 0.05;
+    return (Math.abs(b - f1) < 0.045 && Math.abs(a) < 0.62) || (Math.abs(b - f2) < 0.035 && Math.abs(a + 0.1) < 0.35) || br;
+  };
+  box.forEach(([n, hn, u, hu, v, hv, kind], fi) => {
+    put('hammerHead', 'head', {
+      k: 'panel', c: add(hc, mul(n, hn)), u: mul(u, hu), v: mul(v, hv),
+      // (each face drawn both ways round: the nearer face hides the farther, as its depth says)
+      skin: (a0, b0, _front, tone0) => {
+        // (where on the face, as a share of its half-sizes; never darker than its second tone, so its shadowed faces still read)
+        const a = a0 / hu, b = b0 / hv;
+        const tone = Math.max(1, tone0);
+        const edgeA = Math.abs(a) > 0.95, edgeB = Math.abs(b) > 0.93;
+        const lit = tone >= 3;
+        if (kind === 'face') {
+          const r = Math.hypot(a, b);
+          if (edgeA || edgeB) return HAMMER_IRON[T5(tone + (lit ? 1 : -1))];
+          if (r < 0.32) return r < 0.16 ? FLAME[3] : FLAME[2];
+          if (r < 0.42) return HAMMER_IRON[T5(tone - 1)];
+          return HAMMER_IRON[T5(tone)];
+        }
+        if (edgeA || edgeB) return (edgeB ? b > 0 : a < 0) && lit ? HAMMER_RED[4] : HAMMER_RED[T5(tone - 1)];
+        // (its iron bands near each end, riveted)
+        if (Math.abs(a) > 0.66 && Math.abs(a) < 0.86) {
+          const mid = Math.abs(Math.abs(a) - 0.76) < 0.035 && Math.abs((b * 4) % 1) < 0.2;
+          return mid ? HAMMER_IRON[4] : HAMMER_IRON[T5(tone)];
+        }
+        if (crack(a, b, fi * 1.7)) return Math.abs(a) < 0.3 ? FLAME[3] : FLAME[2];
+        return HAMMER_RED[T5(tone)];
+      },
+    });
+  });
+  put('hammerBands', 'collar', { k: 'band', ring: { c: add(hc, mul(dir, -HH)), u: mul(hx, 9 * sc), v: mul(side, 9 * sc) }, ramp: HAMMER_IRON, rows: 2 });
+  // (its haft and pommel)
+  put('hammerHaft', 'haft', { k: 'rod', a: grip, b: add(hc, mul(dir, -HR * 0.8)), ra: 6 * sc, rb: 7 * sc, ramp: HAMMER_HAFT });
+  put('hammerHaft', 'pommel', { k: 'ball', c: add(grip, mul(dir, -3 * sc)), ax: [mul(dir, 9 * sc), mul(side, 10 * sc), mul(hx, 10 * sc)], skin: HAMMER_IRON });
+  // (its haft's grain burning; brighter as it strikes)
+  const hot = 0.5 + 0.5 * Math.max(0, 1 - Math.abs(k - 1) * 4);
+  for (let i = 0; i < 9; i++) {
+    const p = lerp3(grip, hc, 0.12 + i * 0.08);
+    put('hammerHaft', 'haft', { k: 'dot', p: add(p, mul(side, -6.5 * sc)), c: FLAME[2], facing: mul(side, -1) });
+  }
+  // (its power, crackling off it: sparks jumping off its head, a light on it)
+  const fr0 = Math.floor(t * 30);
+  for (let i = 0; i < 14; i++) {
+    const h = hash(i, fr0, 8971);
+    if (h < 0.45) continue;
+    const a = h * TAU * 3;
+    const along = (hash(i, fr0, 8972) - 0.5) * 2 * HL;
+    const n = add(mul(dir, Math.cos(a)), mul(side, Math.sin(a)));
+    const p = add(add(hc, mul(hx, along)), mul(n, HR * (1.2 + 0.6 * hash(i, fr0, 8973))));
+    put('sparks', 'sparks', { k: 'mote', p, c: h > 0.85 ? FLAME[4] : h > 0.65 ? FLAME[3] : FLAME[2], size: 1 });
+  }
+  put('glow', 'hammerGlow', { k: 'glow', p: hc, c: FLAME[2], r: 40 * sc, a: 0.25 + 0.3 * hot });
+  // (shattering: its pieces' sparks flung out)
+  if (hm.gone > 0) {
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * TAU;
+      const r = (10 + 90 * hm.gone) * (0.5 + 0.5 * hash(i, 3, 8974));
+      const p = add(hc, [Math.cos(a) * r, Math.sin(a) * r * 0.9, Math.sin(a * 2) * r * 0.4 + 20 * hm.gone]);
+      if (hash(i, fr0, 8975) < hm.gone * 0.8) continue;
+      put('sparks', 'sparks', { k: 'mote', p, c: i % 3 ? FLAME[2] : POWER_RED[2], size: hm.gone < 0.4 ? 2 : 1 });
+    }
+  }
+}
+/** THE HAMMER PAINTED, as the game paints its monsters, `t` seconds into his Power: its picture (anchored on the place it strikes)
+ * and its lights. */
+export function paintPowerHammer(t: number, view: 'front' | 'rear'): Painted {
+  const st = stage(view, HAMMER_CANVAS.ax, HAMMER_CANVAS.ay, HAMMER_CANVAS);
+  const bits: Bit[] = [];
+  powerHammerBits(t, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 60]);
+  const px = st.whole(ENEMY_RIM);
+  return { px, lights } as Painted;
+}
+
 /** THE POWER RUNE: its glyph (the word's own, art/icons.ts GLYPH, two chevrons pointing up), `k` picture pixels to its cell, in the
  * word's red with his pink through its middle and a hot edge; ink round it. */
 export const POWER_GLYPH = ['..oo..', '.XXXX.', 'XX..XX', '..oo..', '.XXXX.', 'XX..XX'];

@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, POWER, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, powerHammerAt, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, HAMMER_CANVAS, POWER, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -37,7 +37,7 @@ const mix = (s: Px, x: number, y: number, c: string, a: number): void => {
 };
 // (the camera follows him, a little behind: his floor point held near the picture's middle, the floor going by)
 const sx = Math.round(W / 2);
-const sy = Math.round(H / 2 + 50);
+const sy = move === 'power' ? H - 70 : Math.round(H / 2 + 50);
 /** The floor: dark flags, their joints, lit a little toward the upper left (moved by the camera: `cx`, `cy`). */
 function floor(cx: number, cy: number): Px {
   const s = new Px(W, H);
@@ -229,6 +229,24 @@ function stamp(s: Px, g: (string | null)[][], cx: number, cy: number, a = 1, rev
     if (a >= 1) { if (X >= 0 && Y >= 0 && X < s.w && Y < s.h) s.set(X, Y, c); } else mix(s, X, Y, c, a);
   }
 }
+/** A painted picture laid on the floor at (ox, oy) by its canvas's anchor, its lights soft over it (or faint, as an after-image). */
+function layPainted(s: Px, p: { px: Px; lights: { x: number; y: number; r: number; color: string; a?: number }[] }, can: { ax: number; ay: number }, ox: number, oy: number, ghost: number): void {
+  const x0 = Math.round(ox - can.ax), y0 = Math.round(oy - can.ay);
+  for (let y = 0; y < p.px.h; y++) for (let x = 0; x < p.px.w; x++) {
+    const c = p.px.get(x, y);
+    if (!c) continue;
+    if (ghost) mix(s, x0 + x, y0 + y, c, ghost);
+    else if (x0 + x >= 0 && y0 + y >= 0 && x0 + x < s.w && y0 + y < s.h) s.set(x0 + x, y0 + y, c);
+  }
+  if (ghost) return;
+  for (const l of p.lights) {
+    const [r, g, b] = rgb(l.color);
+    for (let y = Math.floor(l.y - l.r); y <= Math.ceil(l.y + l.r); y++) for (let x = Math.floor(l.x - l.r); x <= Math.ceil(l.x + l.r); x++) {
+      const q = Math.hypot(x - l.x, y - l.y) / l.r;
+      if (q < 1) mix(s, x0 + x, y0 + y, hex(r, g, b), (l.a ?? 0.5) * (1 - q) * (1 - q));
+    }
+  }
+}
 /** THE HAMMER OUT OF THE RUNE: hung from the rune at (x, y), its haft `L` long to the middle of its head, swung `swing` degrees from
  * straight down (raised back up over the rune at -150); of the word's red with his pink through it, a hot edge, inked; coming out of
  * the rune as `formed` goes to 1 (from the rune down, in sparks). */
@@ -343,30 +361,37 @@ function powerScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
     stamp(s, GLYPH_SMALL, ox + x + flyUp * 10, oy + y - flyUp * 160, 1, rev);
     if (flyUp > 0) for (let k = 1; k < 8; k++) stamp(s, GLYPH_SMALL, ox + x + flyUp * 10, oy + y - flyUp * 160 + k * 6, 0.5 / k);
   }
-  // (the rune hanging high over its shadow, and the hammer out of it: swung down onto the shadow in each strike, smeared round its
-  // arc; heaved back up; bursting with the rune after the last)
-  if (R.formed > 0 && R.gone < 1) {
-    // (the rune holds the hammer by its haft's end, over the shadow at the hammer's own length: raised, its head is high over the
-    // rune; struck, its head is on the floor)
-    const L = 88;
-    const [fx0, fy0] = wp(sh, 0);
-    const x = fx0, y = fy0 - L - 10;
-    void R.up;
-    const hm = powerHammerAt(t);
-    if (hm.formed > 0) {
-      if (powerSmeared(t)) {
-        const prev = powerHammerAt(t - 1 / 30).swing;
-        for (let k = 1; k <= 5; k++) hammer(s, x, y, L, prev + ((hm.swing - prev) * k) / 6, hm.formed, 0.18 + 0.06 * k);
+  // (the rune he flings: flying from his hand up over the hero, and bursting there; out of the burst, the hammer)
+  if (t > POWER.cast && t < POWER.cast + 0.5) {
+    const sk2 = skeletonAt(mob, 'power', POWER.cast);
+    const [hx0, hy0] = at([from[0] + dir * sk2.handL[0], from[1] + dir * sk2.handL[1], sk2.handL[2] + 6]);
+    const [tx0, ty0] = wp(sh, 128);
+    const u = Math.min(1, (t - POWER.cast) / 0.25);
+    const X = ox + hx0 + (tx0 - ox - hx0) * u, Y = oy + hy0 + (ty0 - oy - hy0) * u - 60 * Math.sin(Math.PI * u);
+    if (u < 1) {
+      stamp(s, GLYPH_SMALL, X, Y, 1);
+      for (let k = 1; k < 6; k++) stamp(s, GLYPH_SMALL, X - (tx0 - ox - hx0) * 0.04 * k, Y + 8 * k * (1 - 2 * u), 0.4 / k);
+    } else {
+      // (it bursts: a flash and a ring of sparks, and it is gone)
+      const b = (t - POWER.cast - 0.25) / 0.25;
+      for (let i = 0; i < 48; i++) {
+        const a = (i / 48) * Math.PI * 2;
+        const r = 6 + 50 * b * (0.6 + 0.4 * ((i * 0.618) % 1));
+        mix(s, Math.round(tx0 + Math.cos(a) * r), Math.round(ty0 + Math.sin(a) * r * 0.7), i % 3 ? '#ff4f8a' : '#fff0a0', 1 - b);
       }
-      hammer(s, x, y, L, hm.swing, hm.formed, 1);
-    }
-    const bob = Math.round(1.5 * Math.sin(t * 5));
-    stamp(s, GLYPH_BIG, x, y + bob, R.formed < 1 ? R.formed : 1);
-    for (let yy = -44; yy <= 44; yy++) for (let xx = -44; xx <= 44; xx++) {
-      const q = Math.hypot(xx, yy) / 44;
-      if (q < 1) mix(s, x + xx, y + bob + yy, '#ff4f8a', 0.12 * (1 - q) * (1 - q) * R.formed);
+      for (let yy = -24; yy <= 24; yy++) for (let xx = -24; xx <= 24; xx++) {
+        const q = Math.hypot(xx, yy) / 24;
+        if (q < 1) mix(s, tx0 + xx, ty0 + yy, '#fff0d0', 0.7 * (1 - b) * (1 - q));
+      }
     }
   }
+  // (the hammer, painted as he is, on the rune's shadow; smeared down its fall as it crushes)
+  {
+    const [fx0, fy0] = wp(sh, 0);
+    if (powerSmeared(t)) for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) layPainted(s, paintPowerHammer(t - m / 90, 'front'), HAMMER_CANVAS, fx0, fy0, a);
+    layPainted(s, paintPowerHammer(t, 'front'), HAMMER_CANVAS, fx0, fy0, 0);
+  }
+  void R;
   // (stone thrown up out of each crater; and after the last, the rune's shards)
   for (const [bi, h] of POWER.slams.entries()) {
     const u = t - h;
