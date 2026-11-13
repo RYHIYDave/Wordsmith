@@ -503,7 +503,13 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   fifths of the room (the warning), his pink along the edge of the one strip it will not reach; the wall the room's width; the wave
   sweeps across and the room lies BURIED under deep drifts, held a moment (1.4 s), then they slump and melt away (1.8 s); the hero
   caught in it frozen in a block of clear ice till it melts (the film shows him caught). How long the freeze holds in play is the
-  main chat's (his words passed on in its queue item).
+  main chat's (his words passed on in its queue item). HIS WORDS, 13 Nov 2026: “Well it kinda right but it’s just a bunch of balls
+  and not snow”, “No I didn’t get the film.”, “It’s not okay”. REMADE SO: all of it one body of snow, no seams through it; the room
+  buried under ONE SNOWFIELD (soft drifts and hollows with no pattern to them, lit where they rise toward the upper left, blue in
+  their shade, glittering, its edge ragged and drifted, its lip nearest the eye in shade; melting, it opens in holes and is gone);
+  the wave A BILLOWING WALL OF POWDER (dense and white at its heart, its edges ragged and smoking off, its crest curling over,
+  powder smoking up off it and flakes blown ahead). (THUNDER, Power and Lightning, made and held till Avalanche has his yes:
+  `thunder`, `THUNDER`, three great bolts each locking on faster.)
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
