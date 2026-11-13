@@ -36,9 +36,10 @@ test('every word is a damage word or a shaping word: the damage words add damage
 
 test('attacks and spells: the staff and the wand cast spells, and so does the mage\'s Warp; the rest are attacks', () => {
   const spells = (Object.keys(SKILLS) as SkillId[]).filter((id) => isSpell(id)).sort();
-  assert.deepEqual(spells, ['beam', 'familiar', 'orb', 'warp', 'wave']);
-  for (const id of ['strike', 'slam', 'whirlwind', 'leap', 'shot', 'volley', 'trap'] as const) assert.equal(isSpell(id), false, id);
-  assert.equal(SPELL_SKILLS.size, 5);
+  // (and the Mage's Ball and Spear, her moves to swap, game/swap_moves.ts: spells as her Wave and Orb are)
+  assert.deepEqual(spells, ['ball', 'beam', 'familiar', 'orb', 'spear', 'warp', 'wave']);
+  for (const id of ['strike', 'slam', 'whirlwind', 'leap', 'shot', 'volley', 'trap', 'snare', 'snipe', 'rally'] as const) assert.equal(isSpell(id), false, id);
+  assert.equal(SPELL_SKILLS.size, 7);
 });
 
 test('one damage word on each side: a second is refused, whichever two; a shaping word beside one is not', () => {
