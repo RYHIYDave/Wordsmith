@@ -182,10 +182,10 @@ test('4. Widowfall: Leaping Chop lands with a Cleave all round him, and all it s
 test('5. Death Knell: what his hammer stuns rings; struck ringing, it peals and stuns all round it, and those ring; each stun shorter', () =>
   set1(() => {
     const g = warrior('warhammer', [], 'deathknell');
-    // (it where the Smash comes down, 1.4 tiles before him; the pack beyond the Earthquake's ring, within the peal's)
+    // (it where the Smash comes down, 1.4 tiles before him; the pack set down after his Earthquake, within the peal's reach of it)
     const a = dummy(g, 1.4, 0);
-    const pack = [dummy(g, 4.2, 0.6), dummy(g, 4.2, -0.6)];
     const ev = cast(g, 1, 0, 0, 0.1);
+    const pack = [dummy(g, 3.8, 0.6), dummy(g, 3.8, -0.6)];
     assert.ok(ev.some((e) => e.t === 'stun' && e.id === a.id), 'Earthquake stuns it');
     assert.ok((a.knellT ?? 0) > 0 && seen(ev, 'deathknell', 'ring').length >= 1, 'and it rings');
     assert.ok(a.stunT <= (SKILLS.quake.stun ?? 0) * (1 - g.ut.knell.shorter) + 1e-6, `its stun shorter (${a.stunT.toFixed(2)})`);

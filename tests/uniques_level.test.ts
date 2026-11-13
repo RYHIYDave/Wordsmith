@@ -152,6 +152,8 @@ test('7. THE ROT AXE: a physical hit does no harm of its own; it poisons for its
     const g = wear(room('warrior'), 'rotaxe');
     const axe = g.hero.gear.mainhand!;
     steady(g, 100);
+    // (the practice room's rolled gear may carry Poison Damage, which would add to the poison: set aside, as the blow is measured)
+    g.hero.d.stats.poisonPct = 0;
     const m = dummy(g, 1, 0);
     const ev = tap(g);
     assert.ok(!ev.some((e) => e.t === 'hit' && !e.onHero && !e.poison && e.amount > 0), 'no hit of its own');
