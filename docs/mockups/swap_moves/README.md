@@ -96,11 +96,21 @@ ALL OF IT IS BUILT, BEHIND `SWAP_MOVES` (game/talents.ts, OFF): off, the game is
   (drawn while held, loosed on letting go or at 3 s; through its line; 0.6 to 2.6 of a hit by the draw, full at 1.5 s); RALLY (his
   companions' waits 30% quicker and their bites 30% harder, 5 s; 8 s to wait). With Snipe and Rally both, CHANGE on his hold.
   Rally hangs off Windrunner where companions are off (they are on in the release).
-- THE LOOKS ARE STAND-INS: Ball a ball of light drawn large; Spear a streak of her element, its head lit; Aura a ring of its
-  colour edged in cyan; Snare the trap's jaws; Snipe an arrow; Rally sparks; the skill bar's icons borrowed (Orb, Shot, Trap,
-  Volley). Their own looks are for after his yes to the moves in play.
-- FILMED in the practice room at a phone's size with the stand-ins (tools/scenarios/swap_moves_film.mjs, CLS=mage|ranger):
-  pictures/mage_moves_standin.mp4 (Ball, Spear, Beam, the three Auras), pictures/ranger_moves_standin.mp4 (Snare, Snipe, Rally).
+- THEIR LOOKS (13 Nov 2026, morning, after his words at 07:40: “Why wouldn’t you just finish the task while I was sleeping?”;
+  the night's films had stand-ins): THE ICONS (art/ability_icons.ts, at the heroes' grain as every attack's): Ball, her violet
+  ball flying in on its tail into a burst; Spear, a long shaft of her violet light with a leaf of a head; Snare, a loop of rope
+  lying open, its twist, knot and peg, a glint of cyan; Snipe, an arrow through the cyan ring of its mark; Rally, his horn and
+  its call in cyan (tools/swap_moves_icons.ts makes a picture of them). IN THE WORLD (render/swap_fx.ts), in the spell tones
+  (art/spells.ts: her violet with no word's element, else the element's): Ball a lit ball, its tail of motes and its shadow,
+  bursting in the game's own blast; Spear a shaft of light, a bright core, a leaf head, a streak of air; the Aura a ring of its
+  tones on the floor, turning, edged in the friend's cyan, faintly filled, FIRE embers rising, LIGHTNING crackle on its edge,
+  FROST motes drifting down and frost stars on its edge, her shield Guarding's own; Snare its rope (the binding on what it holds
+  is Binding's own); Snipe his aim drawn along the floor as he draws, fuller and brighter, a glint at full, and a white streak
+  behind the arrow; Rally a ring of cyan going out from him, cyan motes and a mark over each companion while it lasts.
+- FILMED in the practice room at a phone's size (tools/scenarios/swap_moves_film.mjs, CLS=mage|ranger): with the stand-ins,
+  pictures/mage_moves_standin.mp4 and ranger_moves_standin.mp4 (12 Nov, night); with their own looks, pictures/mage_moves.mp4
+  and ranger_moves.mp4 (13 Nov). Her ATTACKS page with CHANGE, through the game's own page (tools/scenarios/swap_moves_attacks.mjs):
+  pictures/mage_attacks_change.png (her tap Wave, then Ball).
 - CHECKED: tsc clean; tests/swap_moves.test.ts 12 of 12; unit `--only swap_moves, companions, practice_talents, talent_lines,
   talents, talents2, tinkerer_talents, traps, warrior_tree` and the core on 0b2a71349b: 30 passed, word_kinds.test.ts failing as
   it pinned the spells; mended (Ball and Spear are spells): `--only word_kinds` and the core on c0106ac4d5, all passed.
