@@ -83,28 +83,22 @@ export function cleanOffer(v: unknown, clean: (it: Item) => Item): Item[] | unde
 export const QUEST1115_TEXT = {
   jarAsk: 'The mystic: "Every voice in this city is gone, and I cannot hear a thing in it. The Silent Order bottles what it steals. Bring me one of their jars from the sewers, and let us hear what it says."',
   jarAskPrompt: 'Mystic: a task',
-  jarHere: 'The mystic wants one of the Silent Order\'s bottled voices. They say the Rat King hoards them in his cistern.',
-  jarGot: 'You take the jar of the CRIER\'S VOICE. Bring it to the mystic.',
+  jarHere: 'Find the Crier\'s voice.',
+  jarGot: 'You take the CRIER\'S VOICE.',
   jarLabel: 'The Crier\'s voice',
   jarGivePrompt: 'Mystic: the Crier\'s voice',
-  jarGiven: (word: string) => `The mystic uncorks the jar, and the Crier speaks: "They are binding our words into a book, in the library. The Censor strikes out every page, but not the ones written before the Hush. Three survive." She gives you a word for it: ${word}.`,
-  pagesHere: (floor: number) =>
-    floor === 13
-      ? 'The Crier said the oldest unstruck page lies under the Palimpsest\'s layers.'
-      : floor === 14
-        ? 'The Crier said the Physician keeps an unstruck page in his ledger.'
-        : 'The Crier said the last unstruck page is chained somewhere in the stacks.',
-  pageGot: (k: number) => `You take an UNSTRUCK PAGE (${k} of 3). The Censor cannot strike it out.`,
-  pagesWhole: 'All three UNSTRUCK PAGES. Lay one down when the Censor\'s ink fills the floor.',
+  jarGiven: (word: string) => `The mystic uncorks the jar. The Crier: "They bind our words into a book in the library. The Censor strikes out every page but those written before the Hush. Three survive: one under the Palimpsest, one in the Physician's ledger, one chained in the stacks." She gives you ${word}.`,
+  pagesHere: (_floor: number) => 'An unstruck page is on this floor.',
+  pageGot: (k: number) => `UNSTRUCK PAGE (${k} of 3).`,
   pageLabel: 'Unstruck page',
   pagePrompt: (left: number) => `Unstruck page: wipe away the ink (${left} left)`,
-  pageLaid: (left: number) => (left > 0 ? `The unstruck page drinks up his ink. ${left} still in hand.` : 'The last unstruck page drinks up his ink.'),
+  pageLaid: (left: number) => `The page drinks up his ink (${left} left).`,
   clapperAsk: 'The armourer: "The Silent Order tore the clappers out of every bell in the city. A bell with no tongue. If you ever get one ringing again, bring me what\'s left of it."',
   clapperAskPrompt: 'Armourer: a task',
-  clapperGot: 'A CLAPPER falls out of the Muffled Bell. Bring it to the armourer.',
+  clapperGot: 'You take the CLAPPER.',
   clapperLabel: 'Bell clapper',
   clapperGivePrompt: 'Armourer: the clapper',
-  clapperGiven: 'The armourer hangs the clapper in the camp\'s bell, and it rings. "For your trouble. Take your pick." He lays out three pieces: take one.',
-  offerAgain: 'The armourer still has your pick laid out: take one.',
-  offerTaken: 'The armourer takes the other two back.',
+  clapperGiven: 'The armourer hangs the clapper in the camp\'s bell, and it rings. "For your trouble. Take your pick of the three."',
+  offerAgain: 'Your pick is laid out by the forge.',
+  offerTaken: 'The armourer takes the others back.',
 };

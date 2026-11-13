@@ -1269,7 +1269,7 @@ export class Game {
     if (!this.practice) this.meta.known[w].found = true;
     this.emit({ t: 'ring', x, y });
     this.sfx('rare');
-    this.msg('The ring is lit.', MSG.word);
+    this.msg('The ring is lit.', MSG.quest);
     // (the word once the ring has powered up: the owner, 9 Oct 2026, 22:12)
     this.ringWord = { word: w, t: QUEST_ITEM.ringSecs };
   }
@@ -3174,7 +3174,7 @@ export class Game {
     if (h.feather !== 'got' && h.feather !== 'given') {
       h.feather = 'got';
       this.emit({ t: 'text', x: m.x, y: m.y, text: 'A FEATHER', color: '#e8dcc0' });
-      this.msg(QUEST610_TEXT.featherGot, MSG.word);
+      this.msg(QUEST610_TEXT.featherGot, MSG.quest);
     }
     if (h.citySeen) return;
     const L = this.level;
@@ -3249,7 +3249,7 @@ export class Game {
     for (const p of this.level.pillars) this.emit({ t: 'spark', x: p.x, y: p.y, el: 'lightning', n: 14 });
     // (the Swamp Colossus's kindle in his slide's own sound, on the art's frames: game/act1_rules/colossus.ts `sounds`)
     if (!COLOSSUS.on) this.sfx('thunder', 0.6);
-    this.msg(piecesInHand(this.hero.pieces, this.level.pillars) > 0 ? QUEST610_TEXT.pillarsLit : QUEST610_TEXT.pillarsLitNoPiece, MSG.foe);
+    this.msg(piecesInHand(this.hero.pieces, this.level.pillars) > 0 ? QUEST610_TEXT.pillarsLit : QUEST610_TEXT.pillarsLitNoPiece, MSG.quest);
   }
 
   /** (PILLARS) The burning obelisk the hero stands beside with a piece of the ward-stone in hand, if any. */
@@ -3305,9 +3305,9 @@ export class Game {
 
   /** (PILLARS) One out: said; the last, the siege broken. */
   private pillarOut(said: string): void {
-    this.msg(said, MSG.good);
+    this.msg(said, MSG.quest);
     if (pillarsBurning(this.level.pillars) > 0) return;
-    this.msg(QUEST610_TEXT.siegeBroken, MSG.good);
+    this.msg(QUEST610_TEXT.siegeBroken, MSG.quest);
     const m = this.monsters.find((q) => q.kind === 'eye' && !q.dead);
     if (m) this.emit({ t: 'text', x: m.x, y: m.y, text: 'Siege broken', color: '#7fe8ff' });
   }
@@ -3332,7 +3332,7 @@ export class Game {
     }
     const stag = this.monsters.find((m) => m.boss && m.kind === 'stag');
     if (stag && this.wantsPiece(2)) stag.piece = 2;
-    this.msg(QUEST610_TEXT.piecesHere, MSG.omen);
+    this.msg(QUEST610_TEXT.piecesHere, MSG.quest);
   }
 
   /** (QUESTS610) A step of the scene playing; what the player would do is set aside, and what it has him do given instead. */
@@ -13587,14 +13587,14 @@ export class Game {
         const k = piecesTaken(h.pieces);
         this.emit({ t: 'text', x: h.x, y: h.y, text: `WARD-STONE ${k} / 3`, color: '#e8dcc0' });
         this.sfx('rare');
-        this.msg(QUEST610_TEXT.pieceGot(k), MSG.word);
-        if (k >= 3) this.msg(QUEST610_TEXT.piecesWhole, MSG.good);
+        this.msg(QUEST610_TEXT.pieceGot(k), MSG.quest);
+        if (k >= 3) this.msg(QUEST610_TEXT.piecesWhole, MSG.quest);
       } else if (dr.kind === 'stone') {
         // (WORDMELDING) the Meldstone, to be brought to the wordsmith
         if (h.meld === null) h.meld = 'stone';
         this.emit({ t: 'stoneGot', x: dr.x, y: dr.y });
         this.sfx('rare');
-        this.msg('You take the MELDSTONE. Bring it to the wordsmith.', MSG.word);
+        this.msg('You take the MELDSTONE.', MSG.quest);
       }
       this.drops.splice(i, 1);
     }
@@ -13754,7 +13754,7 @@ export class Game {
       this.emit({ t: 'quest', x: b.x, y: b.y });
       // (since Version 19.6 the stone lies by his hand, the art chat's: art/quest3.ts)
       // (short: the line at the top says where it goes, for a few seconds; 9 Oct 2026, 22:12, "too in your face with all the text")
-      this.msg(`You take ${QUEST_ITEM.the}. Bring it to the wordsmith.`, MSG.word);
+      this.msg(`You take ${QUEST_ITEM.the}.`, MSG.quest);
       return;
     }
     this.drops.push({ x: b.x, y: b.y, kind: 'word', gold: 0, item: null, word: w, age: 0 });
@@ -13875,12 +13875,12 @@ export class Game {
     if (what === 'featherAsk') {
       h.feather = 'asked';
       this.sfx('power', 0.6);
-      this.msg(QUEST610_TEXT.featherAsk, MSG.word);
+      this.msg(QUEST610_TEXT.featherAsk, MSG.quest);
       return;
     }
     h.feather = 'given';
     this.sfx('rare');
-    this.msg(QUEST610_TEXT.featherGiven, MSG.word);
+    this.msg(QUEST610_TEXT.featherGiven, MSG.quest);
   }
 
   // ---------------------------------------------------------------------------------------------------
@@ -13915,7 +13915,7 @@ export class Game {
       else h.clapper = 'asked';
       this.emit({ t: 'questGiven', x, y });
       this.sfx('power', 0.6);
-      this.msg(what === 'jarAsk' ? QUEST1115_TEXT.jarAsk : QUEST1115_TEXT.clapperAsk, MSG.word);
+      this.msg(what === 'jarAsk' ? QUEST1115_TEXT.jarAsk : QUEST1115_TEXT.clapperAsk, MSG.quest);
       return;
     }
     if (what === 'jarGive') {
@@ -13928,7 +13928,7 @@ export class Game {
       this.emit({ t: 'questGiven', x, y });
       this.emit({ t: 'wordGot', word: w });
       this.sfx('rare');
-      this.msg(QUEST1115_TEXT.jarGiven(WORDS[w].name.toUpperCase()), MSG.word);
+      this.msg(QUEST1115_TEXT.jarGiven(WORDS[w].name.toUpperCase()), MSG.quest);
       return;
     }
     // (the clapper: hung in the camp's bell; his pick of three fully modded rares laid out before the armourer)
@@ -13937,7 +13937,7 @@ export class Game {
     h.laidOut = CLAPPER_REWARD.slots.map((sl) => this.forHim(rollFullRare(ilvl, sl, this.rng, { cls: h.cls })));
     this.emit({ t: 'questGiven', x, y });
     this.sfx('rare');
-    this.msg(QUEST1115_TEXT.clapperGiven, MSG.word);
+    this.msg(QUEST1115_TEXT.clapperGiven, MSG.quest);
     this.campBellHung(true);
     this.layOut(x, y);
   }
@@ -14021,14 +14021,14 @@ export class Game {
     const ar = this.level.stations.find((s) => s.kind === 'armourer');
     if (!ar) return;
     this.layOut(ar.x, ar.y);
-    this.msg(QUEST1115_TEXT.offerAgain, MSG.word);
+    this.msg(QUEST1115_TEXT.offerAgain, MSG.quest);
   }
 
   /** (QUESTS1115) One of the armourer's pick taken (already in the bag): the others laid with it go back. */
   private pickTaken(dr: Drop): void {
     this.drops = this.drops.filter((d) => d !== dr && !d.choice);
     this.hero.laidOut = undefined;
-    this.msg(QUEST1115_TEXT.offerTaken, MSG.word);
+    this.msg(QUEST1115_TEXT.offerTaken, MSG.quest);
   }
 
   /** (QUESTS1115) Is the hero after the unstruck pages (the jar brought), and has he not yet page `n`? */
@@ -14061,15 +14061,14 @@ export class Game {
     if (dr.thing === 'clapper') {
       h.clapper = 'got';
       this.sfx('rare');
-      this.msg(QUEST1115_TEXT.clapperGot, MSG.word);
+      this.msg(QUEST1115_TEXT.clapperGot, MSG.quest);
       this.emit({ t: 'text', x: h.x, y: h.y, text: 'CLAPPER', color: '#e8dcc0' });
       return;
     }
     h.pages = (h.pages ?? 0) | (1 << (dr.page ?? 0));
     const k = pagesTaken(h.pages);
     this.sfx('rare');
-    this.msg(QUEST1115_TEXT.pageGot(k), MSG.word);
-    if (k >= 3) this.msg(QUEST1115_TEXT.pagesWhole, MSG.good);
+    this.msg(QUEST1115_TEXT.pageGot(k), MSG.quest);
     this.emit({ t: 'text', x: h.x, y: h.y, text: `UNSTRUCK PAGE ${k} / 3`, color: '#e8dcc0' });
   }
 
@@ -14082,16 +14081,16 @@ export class Game {
     L.pagesUsed = 0;
     if (this.depth === 12 && h.jar !== 'got' && h.jar !== 'given') {
       this.jarAt = L.props.find((p) => p.kind === 'piece' && p.name === CRIERS_JAR && p.state === 0) ?? null;
-      if (this.jarAt && h.jar === 'asked') this.msg(QUEST1115_TEXT.jarHere, MSG.omen);
+      if (this.jarAt && h.jar === 'asked') this.msg(QUEST1115_TEXT.jarHere, MSG.quest);
     }
-    if ((this.depth === 13 && this.wantsPage(0)) || (this.depth === 14 && this.wantsPage(1))) this.msg(QUEST1115_TEXT.pagesHere(this.depth), MSG.omen);
+    if ((this.depth === 13 && this.wantsPage(0)) || (this.depth === 14 && this.wantsPage(1))) this.msg(QUEST1115_TEXT.pagesHere(this.depth), MSG.quest);
     if (this.depth === 15 && this.wantsPage(2)) {
       // (the third, chained in the stacks: in a side area of the library, the one furthest from where he comes in)
       const sides = (L.land?.areas ?? []).filter((a) => a.role === 'side');
       const side = sides.sort((a, b) => Math.hypot(b.blob.x - h.x, b.blob.y - h.y) - Math.hypot(a.blob.x - h.x, a.blob.y - h.y))[0];
       if (side) {
         this.dropPage(2, side.blob.x, side.blob.y);
-        this.msg(QUEST1115_TEXT.pagesHere(15), MSG.omen);
+        this.msg(QUEST1115_TEXT.pagesHere(15), MSG.quest);
       }
     }
   }
@@ -14108,7 +14107,7 @@ export class Game {
     this.jarAt = null;
     h.jar = 'got';
     this.sfx('rare');
-    this.msg(QUEST1115_TEXT.jarGot, MSG.word);
+    this.msg(QUEST1115_TEXT.jarGot, MSG.quest);
     this.emit({ t: 'text', x: h.x, y: h.y, text: "THE CRIER'S VOICE", color: '#e8dcc0' });
   }
 
@@ -14130,7 +14129,7 @@ export class Game {
     this.emit({ t: 'bells', what: 'ring', x: h.x, y: h.y, k: 0, n: 0 });
     this.emit({ t: 'spark', x: h.x, y: h.y, el: 'frost', n: 24 });
     this.sfx('power', 0.8);
-    this.msg(QUEST1115_TEXT.pageLaid(pagesInHand(h.pages, L.pagesUsed)), MSG.good);
+    this.msg(QUEST1115_TEXT.pageLaid(pagesInHand(h.pages, L.pagesUsed)), MSG.quest);
   }
 
   /** QUESTS15: what the armourer has for this hero: the furnace quest (his ring lit, the furnace burning), or its reward (the furnace out). */
@@ -14259,7 +14258,7 @@ export class Game {
     h.furnace = 'gear';
     this.emit({ t: 'quest', x, y });
     this.sfx('rare');
-    this.msg(QUEST_TEXT.gearTaken, MSG.word);
+    this.msg(QUEST_TEXT.gearTaken, MSG.quest);
   }
 
   /**
@@ -14291,7 +14290,7 @@ export class Game {
     if (STOKER_ON.on && d.want === 0 && d.fell === undefined) d.want = 1;
     if (!F.told && Math.hypot(at.x - h.x, at.y - h.y) < TUNE.aggroRadius) {
       F.told = true;
-      this.msg(QUEST_TEXT.fireSeen, MSG.omen);
+      this.msg(QUEST_TEXT.fireSeen, MSG.quest);
     }
     if (STOKER_ON.on) return;
     F.fireT -= dt;
@@ -14315,7 +14314,7 @@ export class Game {
     const h = this.hero;
     if (!F) return;
     if (h.furnace !== 'gear') {
-      if (!F.toldCrank) this.msg(QUEST_TEXT.crankNoGear, MSG.omen);
+      if (!F.toldCrank) this.msg(QUEST_TEXT.crankNoGear, MSG.quest);
       F.toldCrank = true;
       return;
     }
@@ -14347,7 +14346,7 @@ export class Game {
         });
       }
     }
-    this.msg(QUEST_TEXT.furnaceOut, MSG.good);
+    this.msg(QUEST_TEXT.furnaceOut, MSG.quest);
     this.visionT = 0;
   }
 
@@ -14358,7 +14357,7 @@ export class Game {
       h.furnace = 'asked';
       this.emit({ t: 'questGiven', x, y });
       this.sfx('power', 0.6);
-      this.msg(QUEST_TEXT.furnaceAsk, MSG.word);
+      this.msg(QUEST_TEXT.furnaceAsk, MSG.quest);
       return;
     }
     h.furnace = 'done';
@@ -14368,7 +14367,7 @@ export class Game {
     this.refresh();
     this.emit({ t: 'wordGot', word: w });
     this.sfx('rare');
-    this.msg(QUEST_TEXT.reward(WORDS[w].name.toUpperCase()), MSG.word);
+    this.msg(QUEST_TEXT.reward(WORDS[w].name.toUpperCase()), MSG.quest);
   }
 
   /** EXITS: the wordsmith has a quest to give this hero: his ring is dark, the stone not found, the quest not yet given. */
@@ -14381,7 +14380,7 @@ export class Game {
     this.questGiven = true;
     this.emit({ t: 'questGiven', x, y });
     this.sfx('power', 0.6);
-    this.msg(QUEST_ITEM.ask, MSG.word);
+    this.msg(QUEST_ITEM.ask, MSG.quest);
   }
 
   /** HAND_IN: give what `handInNear` says, if anything. True if something was given. */
@@ -14417,7 +14416,7 @@ export class Game {
       this.hero.meldAsk = true;
       this.emit({ t: 'questGiven', x: st.x, y: st.y });
       this.sfx('power', 0.6);
-      this.msg(QUEST_TEXT.meldAsk, MSG.word);
+      this.msg(QUEST_TEXT.meldAsk, MSG.quest);
     } else this.lightRing(st.x, st.y);
     return true;
   }
@@ -14430,7 +14429,7 @@ export class Game {
     this.emit({ t: 'stoneGiven', x, y });
     this.emit({ t: 'text', x, y, text: 'MELDING', color: MELD_DUST_COLOR });
     this.sfx('rare');
-    this.msg('The wordsmith takes the MELDSTONE. He can meld words now.', MSG.word);
+    this.msg('The wordsmith takes the MELDSTONE. He can meld words now.', MSG.quest);
     // (QUESTS15: two words to meld, and his lesson; and the gate down the mountain unbarred)
     if (QUESTS15.on && !this.practice) {
       const [a, b] = MELDSTONE_WORDS;
@@ -14440,8 +14439,8 @@ export class Game {
       this.meta.known[b].found = true;
       this.refresh();
       this.emit({ t: 'wordGot', word: a });
-      this.msg(QUEST_TEXT.meldWords(WORDS[a].name.toUpperCase(), WORDS[b].name.toUpperCase()), MSG.word);
-      for (const line of QUEST_TEXT.lesson) this.msg(line, MSG.word);
+      this.msg(QUEST_TEXT.meldWords(WORDS[a].name.toUpperCase(), WORDS[b].name.toUpperCase()), MSG.quest);
+      for (const line of QUEST_TEXT.lesson) this.msg(line, MSG.quest);
       if (this.wayDepth < 6) {
         this.wayDepth = 6;
         const W = this.level.ways;
@@ -14450,7 +14449,7 @@ export class Game {
           W.unbar = -1;
           this.toldBarred = true;
         }
-        this.msg(QUEST_TEXT.gateUnbarred, MSG.good);
+        this.msg(QUEST_TEXT.gateUnbarred, MSG.quest);
       }
     }
   }

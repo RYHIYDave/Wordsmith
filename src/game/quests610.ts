@@ -60,10 +60,10 @@ export const EYRIE_LINES: Readonly<Record<ClassId, string>> = {
 export const QUEST610_TEXT = {
   featherAsk: 'The mystic: "No word has come up from the town below in weeks, and the stars will not say why. The Queen vulture nests on the Ledge Road and sees everything. Bring me one of her feathers, and I will see what she has seen."',
   featherAskPrompt: 'Mystic: a task',
-  featherGot: 'You pluck a long black FEATHER from the Queen. Bring it to the mystic.',
+  featherGot: 'You pluck the Queen\'s FEATHER.',
   featherGivePrompt: 'Mystic: the Queen\'s feather',
   featherGiven: 'The mystic: "A dome of the cult\'s siege magic, fed from three pillars in the Sunken Fen. Only a ward-stone can put them out, and the cult broke theirs in three. Two pieces are hidden in the Pinewood. The Stag carries the third."',
-  piecesHere: 'The mystic said two pieces of the ward-stone lie in the Pinewood\'s side areas, and the Stag carries the third.',
+  piecesHere: 'Pieces of the ward-stone are on this floor.',
   pieceGot: (k: number) => `You take a piece of the WARD-STONE (${k} of 3).`,
   piecesWhole: 'All three pieces of the WARD-STONE. The pillars in the Sunken Fen wait.',
   pieceLabel: 'Ward-stone piece',
