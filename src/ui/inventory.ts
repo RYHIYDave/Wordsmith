@@ -66,7 +66,7 @@ import { drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import { ATTR_NAME, CLASSES, ELEMENT_NAME, growsWith, FIRST_LEVELS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
 import type { Game, ItemRef } from '../game/game';
-import { modLines, statView, flatPair, flatSpan, itemWordOf } from '../game/items';
+import { modLines, statView, flatPair, flatSpan, itemWordOf, POISON_DMG } from '../game/items';
 import type { ImbueOption } from '../game/items';
 import type { SlotRef } from '../game/state';
 import type { CompanionKind } from '../game/companions';
@@ -1944,6 +1944,8 @@ function drawStats(ui: Ui, game: Game, r: Rect): void {
     ['FIRE RESIST', `${Math.round(d.resFire)}%`],
     ['FROST RESIST', `${Math.round(d.resFrost)}%`],
     ['LIGHTNING RESIST', `${Math.round(d.resLight)}%`],
+    // (POISON DAMAGE, game/items.ts POISON_DMG: with it on, or where his gear has some)
+    ...(POISON_DMG.on || d.resPoison ? [['POISON RESIST', `${Math.round(d.resPoison)}%`] as [string, string]] : []),
     ['FLASKS', `${h.potions}`],
   ];
   const attack: [string, string][] = [
@@ -1998,6 +2000,7 @@ function drawGlance(ui: Ui, game: Game, r: Rect): void {
     ['FIRE', `${Math.round(d.resFire)}%`],
     ['FROST', `${Math.round(d.resFrost)}%`],
     ['LIGHTNING', `${Math.round(d.resLight)}%`],
+    ...(POISON_DMG.on || d.resPoison ? [['POISON', `${Math.round(d.resPoison)}%`] as [string, string]] : []),
   ];
   const pitch = Math.max(9, Math.min(12, Math.floor(r.h / rows.length)));
   let y = r.y + Math.max(0, Math.floor((r.h - (rows.length - 1) * pitch - 8) / 2));

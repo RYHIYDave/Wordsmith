@@ -97,7 +97,7 @@ import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 import { leadPoint } from './lock';
 import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_SOUNDS, HURT_BIG, VOICE, bossSound } from './sound_families';
 import { BOSS_CALLS, bossCall } from './boss_calls';
-import { UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
+import { LEVEL_DEFS, LEVEL_UNIQUES, UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, levelChance, levelPoolFor, uniqueDef, urollOf, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
 import type { BendCtx, UniqueDef } from './uniques';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
@@ -586,6 +586,8 @@ export class Game {
     tomeAt: new Map<number, number>(),
     /** THE UNSIGNED PACT: the demon is staying on his life. */
     feeding: false,
+    /** THE PACKSTRAP (a leveling unique): when a blow last reached him. */
+    hurtAt: -1e9,
   };
   /** THE FLESHMANCER'S BRAND: the elite risen to fight for him, or null. */
   risen: Risen | null = null;
@@ -1372,6 +1374,13 @@ export class Game {
       const wb = bent ? bent.behind : s.behind;
       s.eff = bent ? { front: bent.front, behind: bent.behind } : undefined;
       s.r = resolveSkill(def, dark ? wf.map(() => null) : wf, dark ? wb.map(() => null) : wb, grows, h.d, this.meta.limit, bent && !dark ? { boost: bent.boost, meldBoost: bent.meldBoost, meld: bent.meld } : undefined);
+      // (THE LEVELING UNIQUES: The Kindling Rod, every hit fire and no other kind of damage; The Last Word, every cooldown longer, as
+      // it rolled)
+      if (this.wears('kindlingrod')) {
+        s.r.element = 'fire';
+        s.r.poison = 0;
+      }
+      if (this.wears('lastword')) s.r.cooldown *= 1 + this.wornRoll('lastword', 'cool') / 100;
       // (UNIQUE ITEMS: Broken Shackles, the swipe move with no cooldown; The Cloven Boots, the demon's Smoke Step with none)
       if (i === 2 && (this.wears('brokenshackles') || (this.wears('clovenboots') && h.form === 'demon'))) {
         s.r.cooldown = 0;
@@ -4768,6 +4777,13 @@ export class Game {
         h.shieldT = 0;
         h.shield = 0;
       }
+    }
+    // (THE LEVELING UNIQUES: The Packstrap, Guarding's shield always on him; broken, back once no blow has reached him for a while. His
+    // words: “always gives GUARDIAN” so you always have a shield.  Comes back after a few seconds after it breaks.  Nothing else.”;
+    // “4 seconds without taking damage”)
+    if (this.worn.length && this.wears('packstrap') && h.shield <= 0 && this.time - this.uq.hurtAt >= this.wornRoll('packstrap', 'back')) {
+      h.shield = Math.max(1, Math.round(d.maxLife * (this.wornRoll('packstrap', 'size') / 100)));
+      h.shieldT = 1e9;
     }
     if (h.chillT > 0) h.chillT -= dt;
     if (h.shockT > 0) h.shockT -= dt;
@@ -10098,8 +10114,12 @@ export class Game {
       crit = true;
       m.markT = 0;
     }
+    // (THE LEVELING UNIQUES: The Sure Thing, every hit a critical one, and a critical hit no harder: his “100% chance to crit, crits
+    // do no extra damage”)
+    const sureThing = this.worn.length > 0 && this.wears('surething');
+    if (sureThing) crit = true;
     // (Hunter's Mark: the mark's critical is a triple one)
-    if (crit) dmg *= 1 + (d.critMult / 100) * (spent && this.has('huntersmark') ? TALENT_TUNE.huntersMark : 1);
+    if (crit && !sureThing) dmg *= 1 + (d.critMult / 100) * (spent && this.has('huntersmark') ? TALENT_TUNE.huntersMark : 1);
     if (this.worn.length) {
       // (UNIQUE ITEMS: The Queen's Talons, each critical hit calls a bird; The Drowned Arm, the enemy he is fighting is the one he
       // last struck; The Physician's Coat, hits landed on elites and bosses refill his flasks)
@@ -10167,11 +10187,18 @@ export class Game {
     }
     // (THE CITY'S WORDS: a cursed one struck, its curse flares)
     if (!quiet && (m.hexT ?? 0) > 0) this.emit({ t: 'hexFlare', id: m.id });
-    this.damageMonster(m, dmg, r.element, crit, i, !quiet && this.fronts(i).includes('power'), front);
+    // (THE LEVELING UNIQUES: The Rot Axe, a physical hit does no harm of its own; it poisons instead, below. His words: “a battle axe
+    // that deals no physical damage but deals 150% poison damage and has 10-20 flat poison damage on it”)
+    const rot = r.element === 'phys' && this.worn.length > 0 && this.wears('rotaxe') ? this.wornRoll('rotaxe', 'rot') / 100 : 0;
+    if (rot > 0) {
+      m.barT = 4;
+      m.lastSkill = i;
+      if (m.state === 'sleep') this.wakeUp(m);
+    } else this.damageMonster(m, dmg, r.element, crit, i, !quiet && this.fronts(i).includes('power'), front);
     // (HIS THREE NEW WORDS: VAST behind, each hit, not a splash's, splashes a share of itself onto every other enemy near what it hit.
     // Told by its own name, `vastSplash`, with those it reached, the art chat's ask of 9 Nov 2026; until then a 'shock' burst, whose
     // ring is still what is drawn for it where the three's looks are off: render/fx.ts)
-    if (r.vast > 0 && !quiet) {
+    if (r.vast > 0 && !quiet && rot <= 0) {
       const ids: number[] = [];
       for (const o of this.monsters) {
         if (o === m || o.dead || this.shutIn(o) || Math.hypot(o.x - x, o.y - y) > VAST.splashR + o.r) continue;
@@ -10198,7 +10225,11 @@ export class Game {
     // (WORDMELDING: Blight in front, its poison biting harder the lower the enemy's life)
     const blight = r.meld === 'blight' && !m.dead ? 1 + (MELD_TUNE.blight.most - 1) * (1 - Math.max(0, m.life) / m.maxLife) : 1;
     // (LASTING: as hard a second, for longer; FLEETING: harder a second, the same in all in its shorter time)
-    if (r.poison > 0) this.poisonMonster(m, dmg * r.poison * blight * r.pace, i, TUNE.poisonTime * r.last);
+    // (POISON DAMAGE, items.ts POISON_DMG: what his gear adds to a hit that poisons, over the poison's time; THE ROT AXE's dose)
+    let dose = r.poison > 0 ? dmg * r.poison * blight * r.pace : 0;
+    if (rot > 0) dose += (dmg * rot) / TUNE.poisonTime;
+    if (dose > 0 && (st.poisonMin || st.poisonMax)) dose += this.rng.range(st.poisonMin, Math.max(st.poisonMin, st.poisonMax)) / TUNE.poisonTime;
+    if (dose > 0) this.poisonMonster(m, dose, i, TUNE.poisonTime * r.last);
     if (r.meld || r.meldBehind) this.meldHit(m, i, dmg, x, y, quiet, wasBurning, wasChilled);
     if (!m.dead) {
       // HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too
@@ -10305,6 +10336,9 @@ export class Game {
    */
   private poisonMonster(m: Monster, dps: number, skill: number, secs: number = TUNE.poisonTime): void {
     if (m.dead) return;
+    // (POISON DAMAGE, items.ts POISON_DMG: all his poison is poison damage, and gear's Poison Damage makes it more)
+    const more = this.hero.d.stats.poisonPct;
+    if (more) dps *= Math.max(0, 1 + more / 100);
     if (m.poisonT <= 0) {
       m.poisonDps = 0;
       m.poisonN = 0;
@@ -10973,6 +11007,8 @@ export class Game {
     const h = this.hero;
     // (UNIQUE ITEMS: Broken Shackles, he can be hit during his swipe move)
     if (this.over || h.invuln > 0 || (h.move && !this.hitInMove())) return;
+    // (THE PACKSTRAP: a blow reached him, shield or none: its shield comes back only so long after the last)
+    this.uq.hurtAt = this.time;
     // (THE HIGH CITY, FLOOR 18: a monster's blow landing on him by a tall mirror cracks it too: game/act2/gallery_rules.ts)
     if (src && this.level.land?.gallery) this.mirrorsStruck(h.x, h.y, 0.3);
     this.slainBy = src ? src.name : from;
@@ -11137,7 +11173,9 @@ export class Game {
     }
     if (k('poison') > 0) {
       // a monster with Poison: most of the blow again, over the next few seconds
-      h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, ((dmg * 0.6 * k('poison')) / TUNE.poisonTime) * (longer / lasts));
+      // (POISON DAMAGE, items.ts POISON_DMG: his Poison Resistance takes off its share)
+      const kept = d.resPoison ? 1 - d.resPoison / 100 : 1;
+      h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, ((dmg * 0.6 * k('poison') * kept) / TUNE.poisonTime) * (longer / lasts));
       h.poisonT = TUNE.poisonTime * lasts;
     }
     // (what each element of the blow leaves: a minion's half of Flame burns half as hard)
@@ -14736,10 +14774,24 @@ export class Game {
     return UNIQUES.on && this.worn.includes(id);
   }
 
+  /** THE LEVELING UNIQUES (game/uniques.ts LEVEL_DEFS): what the piece of that id he wears rolled for one of its rule's numbers. */
+  wornRoll(id: string, key: string): number {
+    const d = uniqueDef(id);
+    if (!d) return 0;
+    for (const s of EQUIP_SLOTS) {
+      const it = this.hero.gear[s];
+      if (it && it.unique === id) return urollOf(it, d, key);
+    }
+    return urollOf(undefined, d, key);
+  }
+
   /** What the game knows of him that bends his words (game/uniques.ts bendWords). */
   private bendCtx(): BendCtx {
     const U = this.uq;
-    return { worn: this.worn, full: U.full, vow: U.vow, dark: U.dark, borrowed: U.borrowed };
+    const ctx: BendCtx = { worn: this.worn, full: U.full, vow: U.vow, dark: U.dark, borrowed: U.borrowed };
+    // (THE LAST WORD, a leveling unique: every word of his tap and hold attacks stronger, as it rolled)
+    if (this.wears('lastword')) ctx.lastWord = this.wornRoll('lastword', 'words') / 100;
+    return ctx;
   }
 
   /** What the uniques worn add to his stats that is not written on them as a stat: THE FREE HAND, a wand or a tome and no focus beside it. */
@@ -15329,8 +15381,16 @@ export class Game {
   private poolUnique(quality: number, mf: number, slot?: Slot, weapon?: WeaponKind | null): Item | null {
     if (!UNIQUES.on || this.practice) return null;
     const p = poolChance(quality, mf, Math.max(1, this.power));
-    if (p <= 0 || !this.rng.chance(p)) return null;
-    return this.makePoolUnique(slot, weapon);
+    if (p > 0 && this.rng.chance(p)) return this.makePoolUnique(slot, weapon);
+    // (THE LEVELING UNIQUES, behind LEVEL_UNIQUES: a roll of their own, as often; one of those of this floor's level or below)
+    const q = levelChance(quality, mf);
+    if (q > 0 && this.rng.chance(q)) {
+      let pool = levelPoolFor(this.hero.cls, Math.max(1, this.power));
+      if (slot) pool = pool.filter((d) => uniqueSlot(d) === slot);
+      if (weapon) pool = pool.filter((d) => uniqueWeapon(d) === weapon);
+      if (pool.length) return makeUnique(this.rng.pick(pool).id, 1, this.rng);
+    }
+    return null;
   }
 
   /** One of the pool's for this hero (of that slot, of that weapon, where asked), made for this floor. */
@@ -15391,7 +15451,28 @@ export class Game {
       this.meta.stash[free] = it;
       out.stash++;
     }
-    this.msg(this.practice ? 'Test page. Your unique items are in your bag.' : "Test page. Your unique items are in your bag; the bosses' own are in the stash in town.", MSG.word);
+    // (THE LEVELING UNIQUES, with their switch on: every one he could find, his level or not, made so he can wear it on this page:
+    // in his bag where there is room, then the stash)
+    let level = 0;
+    if (LEVEL_UNIQUES.on) {
+      for (const d of LEVEL_DEFS) {
+        if (d.cls && d.cls !== h.cls) continue;
+        const it = makeUnique(d.id, 1, rng);
+        if (!it) continue;
+        it.reqLevel = Math.min(it.reqLevel, Math.max(1, h.level));
+        const bag = h.bag.indexOf(null);
+        const stash = this.practice ? -1 : this.meta.stash.indexOf(null);
+        if (bag >= 0) {
+          h.bag[bag] = it;
+          out.bag++;
+        } else if (stash >= 0) {
+          this.meta.stash[stash] = it;
+          out.stash++;
+        } else continue;
+        level++;
+      }
+    }
+    this.msg(this.practice ? 'Test page. Your unique items are in your bag.' : `Test page. Your unique items are in your bag; the bosses' own${level ? ' and the rest' : ''} are in the stash in town.`, MSG.word);
     return out;
   }
 

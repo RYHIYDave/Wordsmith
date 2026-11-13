@@ -240,12 +240,22 @@ export type StatKey =
   | 'magicFind' // % increased item rarity
   | 'stunChance' // % chance that a hit stuns (Heavy, burned into gear)
   | 'blockChance' // % chance to block a blow (Guarding, burned into gear)
-  | 'pickupPct'; // % further that gold and orbs fly to the hero from (Pulling, burned into gear: Version 23.8)
+  | 'pickupPct' // % further that gold and orbs fly to the hero from (Pulling, burned into gear: Version 23.8)
+  // POISON DAMAGE (his words, 12 Nov 2026: “There really should be poison damage in the game”; his picks, “Over a few seconds,
+  // stacking (Recommended)” and “On all gear, like fire (Recommended)”): items.ts POISON_DMG. Poison lands over the poison's
+  // time and stacks, as the Poison word's does; the hero's poison of every kind is poison damage.
+  | 'poisonMin' // "Adds X-Y Poison Damage to Poison Hits": more poison, over its time, on a hit that poisons
+  | 'poisonMax'
+  | 'poisonPct' // % increased poison damage (all the hero's poison)
+  | 'poisonRes' // % less poison taken (capped as the others)
+  // (THE LEVELING UNIQUES, game/uniques.ts LEVEL_DEFS: The Lantern Cap's price, his “Gimme -10% max life”)
+  | 'maxLifePct'; // % more (or less) max life
 
 export const STAT_KEYS: readonly StatKey[] = [
   'str', 'dex', 'int', 'dmgMin', 'dmgMax', 'fireMin', 'fireMax', 'frostMin', 'frostMax', 'lightMin', 'lightMax', 'dmgPct', 'physPct', 'firePct', 'frostPct', 'lightPct', 'atkSpeed',
   'critChance', 'critMult', 'maxLife', 'lifeRegen', 'lifeOnHit', 'lifeOnKill', 'maxMana', 'manaRegen',
   'armor', 'fireRes', 'frostRes', 'lightRes', 'moveSpeed', 'cdr', 'areaPct', 'goldFind', 'magicFind', 'stunChance', 'blockChance', 'pickupPct',
+  'poisonMin', 'poisonMax', 'poisonPct', 'poisonRes', 'maxLifePct',
 ];
 
 export type Stats = Record<StatKey, number>;
@@ -378,6 +388,11 @@ export interface Item {
    * split or bind. Absent on every other piece.
    */
   unique?: string;
+  /**
+   * THE LEVELING UNIQUES (game/uniques.ts LEVEL_DEFS): what its own rule's numbers rolled to, by name (his words, 12 Nov 2026:
+   * “If one has a roll, they all have to have a roll.  And I think we want rolls”). Absent on every other piece.
+   */
+  uroll?: Record<string, number>;
 }
 
 // ---------------------------------------------------------------------------------------------

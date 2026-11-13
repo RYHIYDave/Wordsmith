@@ -77,6 +77,11 @@ export const STAT_INFO: Record<StatKey, StatInfo> = {
   stunChance: { label: 'Chance to Stun', pct: true, dp: 0 },
   blockChance: { label: 'Chance to Block', pct: true, dp: 0 },
   pickupPct: { label: 'Pickup Reach', pct: true, dp: 0 },
+  poisonMin: { label: 'Minimum Poison Damage', pct: false, dp: 0 },
+  poisonMax: { label: 'Maximum Poison Damage', pct: false, dp: 0 },
+  poisonPct: { label: 'Poison Damage', pct: true, dp: 0 },
+  poisonRes: { label: 'Poison Resistance', pct: true, dp: 0 },
+  maxLifePct: { label: 'Max Life', pct: true, dp: 0 },
 };
 
 // =============================================================================================
@@ -297,6 +302,17 @@ const ADDED_DAMAGE_SHARE: Range = [0.2, 0.3];
 const DEFAULT_AFFIX_WEIGHT = 10;
 
 // What an affix does past AFFIX_HIGH_ILVL:
+/**
+ * POISON DAMAGE, ITS OWN KIND, AS FIRE IS (his words, 12 Nov 2026, asked how a unique axe's poison should hurt: “There really
+ * should be poison damage in the game”; then, “Over a few seconds, stacking (Recommended)” and “On all gear, like fire
+ * (Recommended)”). On: gear rolls Poison Damage and Poison Resistance as it rolls fire's, and the Poison word burned into gear
+ * gives poison's own (elementImbue), flat poison on a weapon, gloves and a ring. The stats themselves always work where a piece
+ * has them (game/game.ts: the hero's poison of every kind more, flat poison on a hit that poisons, poison on him resisted): with
+ * this off, nothing has them. OFF until his yes.
+ */
+export const POISON_DMG = { on: false };
+const POISON_STATS = new Set<string>(['poisonPct', 'poisonRes']);
+
 /** Plain amounts (life, armour, attributes...) keep climbing at the same pace, as monsters do. */
 const GROWS = true;
 /** Percentages stay at their level-15 range, so stacking them cannot run away in deep dungeons. */
@@ -364,6 +380,9 @@ const AFFIX_FAMILIES: readonly FamilyDef[] = [
   suffix('fireres',   'fireRes',    NOT_MAINHAND,       [8, 14],    [25, 40],   LEVELS_OFF, ['of the Hearth', 'of the Brazier', 'of the Forge', 'of the Pyre']),
   suffix('frostres',  'frostRes',   NOT_MAINHAND,       [8, 14],    [25, 40],   LEVELS_OFF, ['of Wool', 'of Fur', 'of the Thaw', 'of Midsummer']),
   suffix('lightres',  'lightRes',   NOT_MAINHAND,       [8, 14],    [25, 40],   LEVELS_OFF, ['of Grounding', 'of Earthing', 'of the Lull', 'of Clear Skies']),
+  // (POISON DAMAGE, as fire's: rolled only with POISON_DMG on, pickFamilies; with it off, every roll is as it was)
+  prefix('poison',    'poisonPct',  OFFENCE_AND_OFFHAND, [6, 12],   [25, 45],   LEVELS_OFF, ['Noxious', 'Venomous', 'Virulent', 'Pestilent']),
+  suffix('poisonres', 'poisonRes',  NOT_MAINHAND,       [8, 14],    [25, 40],   LEVELS_OFF, ['of the Antidote', 'of Purity', 'of the Cure', 'of Immunity']),
   suffix('gold',      'goldFind',   FIND_SLOTS,         [8, 15],    [30, 50],   LEVELS_OFF, ['of Pennies', 'of Coin', 'of Plenty', 'of Riches']),
   suffix('mf',        'magicFind',  FIND_SLOTS,         [8, 15],    [30, 50],   LEVELS_OFF, ['of Luck', 'of Omens', 'of Windfall', 'of Providence']),
   // (Version 19.3: two stats that come only from a word burned into gear, never rolled on a drop: weight 0. Their sizes are set here, for the imbue.)
@@ -536,12 +555,23 @@ const IMBUE_TABLE: Record<BaseWordId, readonly ImbueRule[]> = {
     { slots: OFFENCE_SLOTS, options: [['prefix', 'areaPct'], ['suffix', 'str']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'armor'], ['suffix', 'str']] },
   ],
-  // (there is no poison damage or poison resistance on gear yet: poison grows with all damage, and is outlasted with life)
+  // (with POISON_DMG off, no poison damage or poison resistance on gear: poison grows with all damage, and is outlasted with life;
+  // on, poison's own, as fire's: POISON_IMBUE)
   poison: [
     { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'dex']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'maxLife'], ['suffix', 'dex']] },
   ],
 };
+
+/** The Poison word on gear with POISON_DMG on: poison's own, as the elements' (elementImbue). */
+function poisonImbue(): readonly ImbueRule[] {
+  return POISON_IMBUE ?? (POISON_IMBUE = elementImbue('poisonPct', 'poisonRes', 'poisonMin'));
+}
+let POISON_IMBUE: ImbueRule[] | null = null;
+/** The table a base word goes by on gear: the Poison word's own with POISON_DMG on. */
+function imbueTable(word: BaseWordId): readonly ImbueRule[] | undefined {
+  return word === 'poison' && POISON_DMG.on ? poisonImbue() : IMBUE_TABLE[word];
+}
 
 /** The three element words share one pattern: damage on the weapon, resistance on protective pieces, either on the rest. */
 function elementImbue(damage: StatKey, resistance: StatKey, flat: StatKey): ImbueRule[] {
@@ -628,6 +658,11 @@ const SCORE_PER_POINT: Record<StatKey, number> = {
   stunChance: 5,
   blockChance: 5,
   pickupPct: 0.3,
+  poisonMin: 0,
+  poisonMax: 0,
+  poisonPct: 1.2,
+  poisonRes: 1.2,
+  maxLifePct: 6,
 };
 
 /** itemValue: gold for a Normal helm at item level 1, and the gold each further level adds. */
@@ -701,6 +736,14 @@ export function modLines(mods: readonly StatMod[], limit: Limit): string[] {
       merged.set(Math.min(minAt[k], maxAt[k]), `Adds ${lo}-${hi} ${f.label}`);
       hidden.add(Math.max(minAt[k], maxAt[k]));
     }
+  }
+  // (THE LEVELING UNIQUES: the four resistances at one roll, one line)
+  const res = ['fireRes', 'frostRes', 'lightRes', 'poisonRes'] as const;
+  const resAt = res.map((s) => mods.findIndex((m) => m.stat === s));
+  if (resAt.every((i) => i >= 0 && !hidden.has(i)) && resAt.every((i) => mods[i].value === mods[resAt[0]].value)) {
+    const v = mods[resAt[0]].value;
+    merged.set(Math.min(...resAt), `${v < 0 ? '-' : '+'}${Math.abs(v).toFixed(0)}% All Resistances`);
+    for (const i of resAt) if (i !== Math.min(...resAt)) hidden.add(i);
   }
   // (THE SAME MOD TWICE: lines that read the same, a piece rolled before statGroup, shown as one, their values added)
   const lines: string[] = [];
@@ -1090,6 +1133,7 @@ export const FLAT_PAIRS: readonly { min: StatKey; max: StatKey; label: string }[
   { min: 'fireMin', max: 'fireMax', label: 'Fire Damage to Fire Hits' },
   { min: 'frostMin', max: 'frostMax', label: 'Frost Damage to Frost Hits' },
   { min: 'lightMin', max: 'lightMax', label: 'Lightning Damage to Lightning Hits' },
+  { min: 'poisonMin', max: 'poisonMax', label: 'Poison Damage to Poison Hits' },
 ];
 /** The flat pair whose least is `stat`, if it is one (a crafting outcome names its pair by its least). */
 export function flatPair(stat: StatKey): { min: StatKey; max: StatKey; label: string } | undefined {
@@ -1101,7 +1145,7 @@ export function flatSpan(min: number, max: number): [number, number] {
 }
 
 function pickFamilies(kind: 'prefix' | 'suffix', slot: Slot, count: number, rng: RNG, taken: Set<string> = new Set()): FamilyDef[] {
-  const pool = AFFIX_FAMILIES.filter((f) => f.kind === kind && f.slots.includes(slot) && !taken.has(statGroup(f.stat as StatKey)));
+  const pool = AFFIX_FAMILIES.filter((f) => f.kind === kind && f.slots.includes(slot) && !taken.has(statGroup(f.stat as StatKey)) && (POISON_DMG.on || !POISON_STATS.has(f.stat)));
   const picked: FamilyDef[] = [];
   while (picked.length < count && pool.length > 0) {
     const i = rng.weightedIndex(pool.map((f) => f.weight));
@@ -1224,6 +1268,26 @@ export function makeUniqueItem(id: string, stem: string, name: string, stats: re
   const it = makeItem(base, level, 3, affixes, name);
   it.unique = id;
   if (reqLevel !== undefined) it.reqLevel = Math.max(1, Math.floor(reqLevel));
+  return it;
+}
+
+/**
+ * THE LEVELING UNIQUES (game/uniques.ts LEVEL_DEFS): a unique of its own level, its stats as given (`groups`, each one property:
+ * a stat, a flat pair, or the four resistances at one roll), already rolled. Made on the best base of its stem at that level;
+ * a weapon keeps its base's damage and nothing else of it, any other piece nothing of its base (his words, of the first of
+ * them: “boots with nothing but 20% movement speed”). It asks for its level.
+ */
+export function makeSetUniqueItem(id: string, stem: string, name: string, groups: readonly (readonly StatMod[])[], level: number): Item | null {
+  const lv = cleanLevel(level);
+  const g = BASE_GROUPS.find((q) => q.tiers[0].id === `${stem}1`);
+  if (!g) return null;
+  const unlocked = g.tiers.filter((b) => b.minIlvl <= lv);
+  const base = unlocked[unlocked.length - 1] ?? g.tiers[0];
+  const affixes: Affix[] = groups.map((mods, k) => ({ id: `lvu${k}_${mods[0].stat}`, kind: k % 2 === 0 ? 'prefix' : 'suffix', tier: 1, label: '', mods: mods.map((m) => ({ stat: m.stat, value: m.value })) }));
+  const it = makeItem(base, lv, 3, affixes, name);
+  it.implicit = it.implicit.filter((m) => it.slot === 'mainhand' && (m.stat === 'dmgMin' || m.stat === 'dmgMax'));
+  it.unique = id;
+  it.reqLevel = lv;
   return it;
 }
 
@@ -1362,7 +1426,7 @@ export function imbueRules(word: WordId): { slots: readonly Slot[]; stats: StatK
     }
     return [...groups.values()];
   }
-  return (IMBUE_TABLE[baseOf(word)] ?? IMBUE_TABLE.power).map((r) => ({ slots: r.slots, stats: r.options.map((o) => o[1]) }));
+  return (imbueTable(baseOf(word)) ?? IMBUE_TABLE.power).map((r) => ({ slots: r.slots, stats: r.options.map((o) => o[1]) }));
 }
 
 /** The word whose table a word goes by on gear: a ranked word's is its word's; a melded word has two (MELD_OF), and is not asked. */
@@ -1373,7 +1437,7 @@ function baseOf(word: WordId): BaseWordId {
 /** What one power word can become on this slot, at this level, this strong (the table's rule, rolled in a same-level affix's range). */
 function wordOptions(word: BaseWordId, slot: Slot, level: number, strength: number): ImbueOption[] {
   // The table covers every word and slot; the fallbacks only keep a bad save from breaking the game.
-  const rules = IMBUE_TABLE[word] ?? IMBUE_TABLE.power;
+  const rules = imbueTable(word) ?? IMBUE_TABLE.power;
   const rule = rules.find((r) => r.slots.includes(slot)) ?? rules[0];
   return rule.options.map(([kind, stat]) => {
     // (FLAT DAMAGE: its average hit, as the found “adds damage” affix rolls it)

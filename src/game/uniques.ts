@@ -22,10 +22,10 @@
 // is in game/game.ts, each where it happens, under “UNIQUE ITEMS”.
 
 import type { RNG } from '../engine/rng';
-import { WORDS } from './defs';
-import { makeUniqueItem, stemSlot, stemWeapon } from './items';
+import { TUNE, WORDS } from './defs';
+import { makeSetUniqueItem, makeUniqueItem, stemSlot, stemWeapon } from './items';
 import { isDamageWord, isMeld, meldOf } from './melds';
-import type { ClassId, EquipSlot, Item, MeldId, MonsterKind, Slot, StatKey, WeaponKind, WordId } from './types';
+import type { ClassId, EquipSlot, Item, MeldId, MonsterKind, Slot, StatKey, StatMod, WeaponKind, WordId } from './types';
 import { EQUIP_SLOTS } from './types';
 
 /**
@@ -142,6 +142,8 @@ export const UNIQUE_DROPS = {
   boss: 0.1,
   pool: { plain: 0.002, elite: 0.004, hoard: 0.008, from: 2 },
   final: 0.25,
+  /** THE LEVELING UNIQUES (LEVEL_DEFS): a roll of their own, as often as the pool's, on any floor; the pool's odds are not touched. */
+  level: { plain: 0.002, elite: 0.004, hoard: 0.008 },
 };
 
 /** How the rules read what he has not settled, each one line to change. */
@@ -155,7 +157,7 @@ export const UNIQUE_RULES = {
 // =============================================================================================
 // THE LIST
 
-export type UniqueFrom = 'pool' | 'boss' | 'final';
+export type UniqueFrom = 'pool' | 'boss' | 'final' | 'level';
 
 export interface UniqueDef {
   id: string;
@@ -179,10 +181,16 @@ export interface UniqueDef {
   word?: string;
   /** The level it asks for, where that is not its item level's. */
   reqLevel?: number;
-  /** What it does, as its card says it (with the numbers). */
-  does: () => string[];
+  /** What it does, as its card says it (with the numbers; a leveling unique's as `it` rolled them). */
+  does: (it?: Item) => string[];
   /** Its price, as its card says it; absent, none. */
-  price?: () => string;
+  price?: (it?: Item) => string;
+  /** THE LEVELING UNIQUES (LEVEL_DEFS): its level, set; it drops on any floor whose level is that or past it. */
+  level?: number;
+  /** THE LEVELING UNIQUES: its stats, each rolled in its own range (one roll for all of `stats` where there are more). */
+  rolls?: readonly LevelRoll[];
+  /** THE LEVELING UNIQUES: its own rule's numbers, each rolled in its range, kept on the piece (Item.uroll). */
+  specials?: Readonly<Record<string, readonly [number, number]>>;
   /**
    * How many special modifiers it has, where that is not one (his rule, 4 Oct 2026: “1-2 unique modifiers that can't be rolled
    * on normal gear”). Only The Warden's Keys has two (the doors, the chests). Not the count of `does` lines: Bloodprice's
@@ -284,7 +292,94 @@ export const UNIQUE_DEFS: readonly UniqueDef[] = [
 
 export type UniqueId = string;
 
-const BY_ID = new Map<string, UniqueDef>(UNIQUE_DEFS.map((d) => [d.id, d]));
+// =============================================================================================
+// THE LEVELING UNIQUES
+//
+// HIS IDEA, 12 Nov 2026, 18:19 Eastern, told the 62 are made at the level of the floor they drop on: “i like that idea,
+// especially for uniques that dont have values for what their special mods do.  but i also want some uniques that are specific
+// to the level and drop for leveling.  like level 1 uniques boots with nothing but 20% movement speed.  things to twink out
+// your character.  or a battle axe that deals no physical damage but deals 150% poison damage and has 10-20 flat poison damage
+// on it.” HIS PICKS, by pop-up, the same evening (docs/uniques/LEVELING.md has them all): where they drop, “Any level higher
+// than its base level.  So some crazy endgame unique can’t drop in level 1 but a level 1 unique can drop in endless.”; who
+// wears them, “Anyone, unless it's a hero's weapon (Recommended)”; how many, “About 20, spread more evenly”, “Levels 1 to 30:
+// 15 on the way, 5 endgame (Recommended)”; each of the twenty one pop-up at a time, as written here; and of their numbers, “If
+// one has a roll, they all have to have a roll.  And I think we want rolls” (read as, told him: each rolls from about a fifth
+// under to a fifth over what was agreed; The Last Word's price 50 to 100%, his own range). AND THE ENDGAME RULE, his words of
+// two of them: “Things that are going to exceed what a yellow rare item can roll without a drawback are going to be BiS.  And
+// will hurt build diversity”: past level 20, past a rare's best only with a price.
+// Each is its level's own: made at its level, asking for it, its numbers its own and never grown with the floor. A piece of armour
+// or jewellery carries nothing of its base (“nothing but 20% movement speed”); a weapon its base's damage alone. OFF until his
+// yes (LEVEL_UNIQUES), and nothing without the uniques' own switch.
+
+/** THE SWITCH: OFF until his yes. Nothing of these drops, or is made, with it off (or with UNIQUES off). */
+export const LEVEL_UNIQUES = { on: false };
+
+/** One of a leveling unique's stats: one roll from `lo` to `hi`, for every stat of `stats` (the Lantern Cap's four resistances are one). A flat pair: `pair`, its least rolled in `lo`, its most in `hi2`. */
+export interface LevelRoll {
+  stats: readonly StatKey[];
+  lo: number;
+  hi: number;
+  /** A flat pair (“Adds X-Y”): its most rolled from `lo2` to `hi2`, `stats` its least and most. */
+  lo2?: number;
+  hi2?: number;
+}
+
+const ALL_RES: readonly StatKey[] = ['fireRes', 'frostRes', 'lightRes', 'poisonRes'];
+const R = (stats: StatKey | readonly StatKey[], lo: number, hi: number): LevelRoll => ({ stats: typeof stats === 'string' ? [stats] : stats, lo, hi });
+const PAIR = (min: StatKey, max: StatKey, lo: number, hi: number, lo2: number, hi2: number): LevelRoll => ({ stats: [min, max], lo, hi, lo2, hi2 });
+/** What a piece rolled for one of its own rule's numbers (its range's middle on a piece made before it had one). */
+export function urollOf(it: Item | undefined, d: UniqueDef, key: string): number {
+  const v = it?.uroll?.[key];
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  const r = d.specials?.[key];
+  return r ? (r[0] + r[1]) / 2 : 0;
+}
+const U = (it: Item | undefined, d: () => UniqueDef, key: string): number => Math.round(urollOf(it, d(), key));
+const lv = (id: string): UniqueDef => LEVEL_DEFS.find((d) => d.id === id)!;
+
+/**
+ * THE TWENTY, as he passed them (each a pop-up, 12 Nov 2026; his changes in his words in docs/uniques/LEVELING.md). Fifteen on
+ * the way down, five from endless level 21 on. Names are placeholders, his to change.
+ */
+export const LEVEL_DEFS: readonly UniqueDef[] = [
+  // ---- ON THE WAY: LEVELS 1 TO 18 ----
+  { id: 'errandboots', name: 'The Errand Boots', stem: 'leatherboots', from: 'level', level: 1, bends: 'hero', powers: 0, stats: ['moveSpeed'], rolls: [R('moveSpeed', 16, 24)], does: () => [] },
+  { id: 'tinband', name: 'The Tin Band', stem: 'lifering', from: 'level', level: 2, bends: 'hero', powers: 0, stats: ['maxLife', 'lifeOnHit'], rolls: [R('maxLife', 24, 36), R('lifeOnHit', 1.6, 2.4)], does: () => [] },
+  // (his word: “Gimme -15% attack speed, and more flat damage”)
+  { id: 'scrappersmitts', name: "Scrapper's Mitts", stem: 'leathergloves', from: 'level', level: 3, bends: 'hero', powers: 0, stats: ['atkSpeed', 'dmgMin'], rolls: [R('atkSpeed', -18, -12), PAIR('dmgMin', 'dmgMax', 5, 7, 8, 12)], does: () => [] },
+  { id: 'coppercharm', name: 'The Copper Charm', stem: 'dexamulet', from: 'level', level: 4, bends: 'hero', powers: 0, stats: ['magicFind', 'goldFind'], rolls: [R('magicFind', 40, 60), R('goldFind', 40, 60)], does: () => [] },
+  { id: 'fledgling', name: 'The Fledgling', stem: 'bow', from: 'level', level: 5, cls: 'ranger', bends: 'hero', powers: 0, stats: ['atkSpeed', 'critChance'], rolls: [R('atkSpeed', 20, 30), R('critChance', 5, 7)], does: () => [] },
+  // (his word: “Gimme -10% max life or something like that”)
+  { id: 'lanterncap', name: 'The Lantern Cap', stem: 'hood', from: 'level', level: 6, bends: 'hero', powers: 0, stats: ['fireRes', 'maxLifePct'], rolls: [R(ALL_RES, 20, 30), R('maxLifePct', -12, -8)], does: () => [] },
+  { id: 'tapedknuckles', name: 'Taped Knuckles', stem: 'wraps', from: 'level', level: 7, cls: 'brawler', bends: 'hero', powers: 0, stats: ['critChance', 'critMult'], rolls: [R('critChance', 6, 10), R('critMult', 48, 72)], does: () => [] },
+  // (his word: ““Can deal no other type of damage” would be if you wanted it to ONLY deal fire damage.  If that what you’re going
+  // for.  Which I like”)
+  { id: 'kindlingrod', name: 'The Kindling Rod', stem: 'staff', from: 'level', level: 8, cls: 'mage', bends: 'hero', stats: ['fireMin', 'firePct'], rolls: [PAIR('fireMin', 'fireMax', 6, 10, 11, 17), R('firePct', 32, 48)], does: () => ['Every hit is fire. Can deal no other type of damage.'] },
+  // (his own, his first words of it; “Yes, level 10 (Recommended)”)
+  { id: 'rotaxe', name: 'The Rot Axe', stem: 'battleaxe', from: 'level', level: 10, cls: 'warrior', bends: 'hero', stats: ['poisonMin'], rolls: [PAIR('poisonMin', 'poisonMax', 8, 12, 16, 24)], specials: { rot: [120, 180] }, does: (it) => [`Deals no physical damage. Its hits poison for ${U(it, () => lv('rotaxe'), 'rot')}% of their damage instead, over ${TUNE.poisonTime} seconds; poison stacks.`] },
+  // (his words: “How about like “always gives GUARDIAN” so you always have a shield.  Comes back after a few seconds after it
+  // breaks.  Nothing else.”; then “4 seconds without taking damage”)
+  { id: 'packstrap', name: 'The Packstrap', stem: 'leatherbelt', from: 'level', level: 11, bends: 'hero', stats: [], specials: { size: [8, 12], back: [3.2, 4.8] }, does: (it) => [`You always have Guarding's shield: ${U(it, () => lv('packstrap'), 'size')}% of your life. Broken, it comes back after ${urollOf(it, lv('packstrap'), 'back').toFixed(1)} seconds without taking damage.`] },
+  { id: 'hornbook', name: 'The Hornbook', stem: 'tome', from: 'level', level: 12, cls: 'warlock', bends: 'hero', powers: 0, stats: ['firePct', 'cdr'], rolls: [R('firePct', 40, 60), R('cdr', 12, 18)], does: () => [] },
+  { id: 'borrowedspanner', name: 'The Borrowed Spanner', stem: 'wrench', from: 'level', level: 13, cls: 'tinkerer', bends: 'hero', powers: 0, stats: ['atkSpeed', 'dex'], rolls: [R('atkSpeed', 20, 30), R('dex', 16, 24)], does: () => [] },
+  { id: 'quiltedcoat', name: 'The Quilted Coat', stem: 'jerkin', from: 'level', level: 14, bends: 'hero', powers: 0, stats: ['armor', 'maxLife'], rolls: [R('armor', 96, 144), R('maxLife', 64, 96)], does: () => [] },
+  { id: 'poisonerslocket', name: "The Poisoner's Locket", stem: 'dexamulet', from: 'level', level: 16, bends: 'hero', powers: 0, stats: ['poisonPct', 'poisonMin'], rolls: [R('poisonPct', 32, 48), PAIR('poisonMin', 'poisonMax', 8, 12, 14, 22)], does: () => [] },
+  // (his idea, typed into a pop-up: “You gotta have something that has 100% chance to crit, crits do no extra damage.  Always a
+  // classic”; “Yes, level 18 ring (Recommended)”. It has no number to roll)
+  { id: 'surething', name: 'The Sure Thing', stem: 'lifering', from: 'level', level: 18, bends: 'hero', stats: [], does: () => ['Every hit is a critical hit.'], price: () => 'Critical hits do no extra damage.' },
+
+  // ---- THE ENDGAME: LEVELS 21 TO 30, FROM ENDLESS LEVEL 1 ON ----
+  // (his word: “How about -25% to all resistances”)
+  { id: 'longroad', name: 'The Long Road', stem: 'leatherboots', from: 'level', level: 21, bends: 'hero', powers: 0, stats: ['moveSpeed', 'cdr', 'fireRes'], rolls: [R('moveSpeed', 28, 42), R('cdr', 20, 30), R(ALL_RES, -30, -20)], does: () => [] },
+  { id: 'thousandcuts', name: 'The Thousand Cuts', stem: 'leathergloves', from: 'level', level: 23, bends: 'hero', powers: 0, stats: ['atkSpeed', 'critChance', 'dmgPct'], rolls: [R('atkSpeed', 32, 48), R('critChance', 5, 7), R('dmgPct', -30, -20)], does: () => [] },
+  { id: 'vaultdoor', name: 'The Vault Door', stem: 'plate', from: 'level', level: 25, bends: 'hero', powers: 0, stats: ['armor', 'maxLife', 'fireRes', 'moveSpeed'], rolls: [R('armor', 240, 360), R('maxLife', 160, 240), R(ALL_RES, 20, 30), R('moveSpeed', -24, -16)], does: () => [] },
+  // (his words: “Maybe pick one element then a weakness to another.  Like 60% frost damage, take 20% more fire damage”)
+  { id: 'rimecrown', name: 'The Rime Crown', stem: 'helm', from: 'level', level: 27, bends: 'hero', powers: 0, stats: ['frostPct', 'fireRes'], rolls: [R('frostPct', 48, 72), R('fireRes', -24, -16)], does: () => [] },
+  // (his price: “Higher price.  50% longer.  Or give everything a roll 50-100% longer.”)
+  { id: 'lastword', name: 'The Last Word', stem: 'manaring', from: 'level', level: 30, bends: 'words', stats: [], specials: { words: [40, 60], cool: [50, 100] }, does: (it) => [`Every word on your tap and hold attacks is ${U(it, () => lv('lastword'), 'words')}% stronger.`], price: (it) => `Your abilities' cooldowns are ${U(it, () => lv('lastword'), 'cool')}% longer.` },
+];
+
+const BY_ID = new Map<string, UniqueDef>([...UNIQUE_DEFS, ...LEVEL_DEFS].map((d) => [d.id, d]));
 
 /** The unique of that id, if there is one. */
 export function uniqueDef(id: string | undefined): UniqueDef | undefined {
@@ -317,10 +412,10 @@ export function wordIsIn(d: UniqueDef): boolean {
  * What a unique's card says under its ordinary stats: what it does, its price, whose it is. `cls`: the hero reading it (a
  * hero-only piece, or a weapon's, read by another says so).
  */
-export function uniqueLines(d: UniqueDef, cls: ClassId): { text: string; kind: 'does' | 'price' | 'note' | 'bad' }[] {
+export function uniqueLines(d: UniqueDef, cls: ClassId, it?: Item): { text: string; kind: 'does' | 'price' | 'note' | 'bad' }[] {
   const out: { text: string; kind: 'does' | 'price' | 'note' | 'bad' }[] = [];
-  for (const l of d.does()) out.push({ text: l, kind: 'does' });
-  if (d.price) out.push({ text: d.price(), kind: 'price' });
+  for (const l of d.does(it)) out.push({ text: l, kind: 'does' });
+  if (d.price) out.push({ text: d.price(it), kind: 'price' });
   if (d.cls) {
     const mine = d.cls === cls;
     out.push({ text: d.only ? `${CLASS_NAME[d.cls]} only` : `The ${CLASS_NAME[d.cls]}'s`, kind: mine ? 'note' : 'bad' });
@@ -339,7 +434,39 @@ export function uniquePowers(d: UniqueDef): number {
 export function makeUnique(id: string, ilvl: number, rng: RNG): Item | null {
   const d = uniqueDef(id);
   if (!UNIQUES.on || !d) return null;
+  // (THE LEVELING UNIQUES: its own level, whatever the floor; its own numbers rolled)
+  if (d.from === 'level') return makeLevelUnique(d, rng);
   return makeUniqueItem(d.id, d.stem, d.name, d.stats, ilvl, rng, d.reqLevel);
+}
+
+/** A leveling unique made: at its level, asking for it; each of its stats and its rule's numbers rolled in their ranges. Null with either switch off. */
+export function makeLevelUnique(d: UniqueDef, rng: RNG): Item | null {
+  if (!UNIQUES.on || !LEVEL_UNIQUES.on || d.from !== 'level') return null;
+  const level = d.level ?? 1;
+  const groups: StatMod[][] = [];
+  for (const r of d.rolls ?? []) {
+    if (r.lo2 !== undefined && r.hi2 !== undefined) {
+      const lo = Math.round(rng.range(r.lo, r.hi));
+      const hi = Math.max(lo + 1, Math.round(rng.range(r.lo2, r.hi2)));
+      groups.push([{ stat: r.stats[0], value: lo }, { stat: r.stats[1], value: hi }]);
+    } else {
+      const v = rollIn(r.stats[0], r.lo, r.hi, rng);
+      groups.push(r.stats.map((stat) => ({ stat, value: v })));
+    }
+  }
+  const it = makeSetUniqueItem(d.id, d.stem, d.name, groups, level);
+  if (!it) return null;
+  if (d.specials) {
+    it.uroll = {};
+    for (const [k, [lo, hi]] of Object.entries(d.specials)) it.uroll[k] = Math.round(rng.range(lo, hi) * 10) / 10;
+  }
+  return it;
+}
+
+/** A value rolled from lo to hi, kept as its stat's figures are (a whole number, or one decimal for life on hit). */
+function rollIn(stat: StatKey, lo: number, hi: number, rng: RNG): number {
+  const v = rng.range(lo, hi);
+  return stat === 'lifeOnHit' || stat === 'lifeRegen' ? Math.round(v * 10) / 10 : Math.round(v);
 }
 
 /** Does this unique's rule work for a hero of this class (a hero-only piece, a weapon's: only for him)? */
@@ -353,6 +480,8 @@ export function wornUniques(gear: Record<EquipSlot, Item | null>, cls: ClassId):
   const out: string[] = [];
   for (const s of EQUIP_SLOTS) {
     const d = uniqueOf(gear[s]);
+    // (a leveling unique's rule only with its switch on: its stats count as any piece's)
+    if (d && d.from === 'level' && !LEVEL_UNIQUES.on) continue;
     if (d && worksFor(d, cls) && !out.includes(d.id)) out.push(d.id);
   }
   return out;
@@ -384,6 +513,23 @@ export function finalUniques(): UniqueDef[] {
 }
 
 /** The chance that a piece of gear of this quality (Game.rollGear's) is a pool unique instead, with this magic find (%), at this floor's power. */
+/**
+ * THE LEVELING UNIQUES a hero of this class may find where the floor's level is `power`: every one of that level or below (his
+ * words: “Any level higher than its base level”), never another hero's weapon. Empty with either switch off.
+ */
+export function levelPoolFor(cls: ClassId, power: number): UniqueDef[] {
+  if (!UNIQUES.on || !LEVEL_UNIQUES.on) return [];
+  return LEVEL_DEFS.filter((d) => (d.level ?? 1) <= power && (!d.cls || d.cls === cls));
+}
+
+/** How often a piece of gear that drops is one of the leveling uniques instead: as the pool's (`UNIQUE_DROPS.level`), on any floor. 0 with either switch off. */
+export function levelChance(quality: number, magicFind: number): number {
+  if (!UNIQUES.on || !LEVEL_UNIQUES.on) return 0;
+  const P = UNIQUE_DROPS.level;
+  const base = quality >= 2 ? P.hoard : quality === 1 ? P.elite : P.plain;
+  return base * Math.max(0, 1 + (Number.isFinite(magicFind) ? magicFind : 0) / 100);
+}
+
 export function poolChance(quality: number, magicFind: number, power: number): number {
   if (!UNIQUES.on || power < UNIQUE_DROPS.pool.from) return 0;
   const P = UNIQUE_DROPS.pool;
@@ -406,6 +552,8 @@ export interface BendCtx {
   dark: { skill: number; side: 'front' | 'behind'; idx: number } | null;
   /** THE KING'S KNOT: the word his tap attack has borrowed, or null. */
   borrowed: WordId | null;
+  /** THE LAST WORD (a leveling unique): how much stronger every word of his tap and hold attacks is (0.4 to 0.6 as rolled); absent, none. */
+  lastWord?: number;
 }
 
 export interface Bent {
@@ -497,8 +645,10 @@ export function bendWords(i: number, skills: readonly { front: readonly (WordId 
   if (i === 1 && has('quillsband')) more += T.half;
   if (has('clockworksongbird') && ctx.full) more += T.half;
   if (has('nettleshirt')) more += Math.max(0, Math.min(T.nettle.most, ctx.vow));
-  out.boost = 1 + more;
-  out.meldBoost = has('alloyband') ? 1 + T.half : 1;
+  // (THE LAST WORD, a leveling unique: every word of the tap and hold attacks, melded ones too)
+  const last = i < 2 && has('lastword') && ctx.lastWord ? ctx.lastWord : 0;
+  out.boost = 1 + more + last;
+  out.meldBoost = (has('alloyband') ? 1 + T.half : 1) + last;
   return out;
 }
 
