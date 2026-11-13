@@ -330,6 +330,13 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   in a splash of fire and leaves the floor scorched and BURNING to the end of it, flames standing up off it as solids, flickering, so
   there is less and less room to stand. He holds his staff high through it, calling them down. The checks on his cast, his legs
   outside the boar: all pass.
+- HIS WORDS on it, 12 Nov 2026, by pop-up: “nah more like a meteor shower”. READ AS (told him so): the rune bursts high over the room
+  and the sky opens; burning rocks streak down out of it at a steep slant, fast, long tails of fire and smoke behind them, one after
+  another, each smashing into its mark: a blast of fire, a crater, rock and embers flying, the ground left burning. REMADE SO: each
+  METEOR a rock as a solid (dark, its molten cracks glowing) at the head of a mantle and tail of fire (solids), sparks and smoke
+  streaming behind, down from high over his side of the room (`METEOR_FROM`), a third of a second from the sky to the floor; three
+  waves of 6, 8 and 10, each quicker; each lands in a blast (a flash of fire, fire and rock flung out and up), leaves a crater (blasted
+  dark, its rim glowing and cooling) and the floor burning in it.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.

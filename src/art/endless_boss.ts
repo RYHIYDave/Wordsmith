@@ -1752,11 +1752,11 @@ export function paintPowerHammer(t: number, view: 'front' | 'rear'): Painted {
 //                  (marked on the floor first, a ring of the word's orange with his pink through it: where they fall is the rules')
 //   THE STORM      he holds his staff high, calling them down; three waves, each faster; each fireball lands in a burst of fire and
 //                  leaves the floor burning where it fell, the flames standing up off it, so there is less and less room to stand
-export const FIRE = { write: [0.12, 0.7] as const, cast: 0.74, burst: 1.0, warn: 0.7, fall: 0.5, long: 4.6, high: 200 };
+export const FIRE = { write: [0.12, 0.7] as const, cast: 0.74, burst: 1.0, warn: 0.75, fall: 0.34, long: 4.6, high: 260 };
 /** Where each fireball lands (its own lengths from the storm's middle on the floor) and when (seconds into the move). */
 export const FIRE_DROPS: ReadonlyArray<{ at: V3; t: number }> = ((): { at: V3; t: number }[] => {
   const out: { at: V3; t: number }[] = [];
-  const waves: [number, number, number][] = [[1.55, 5, 0.12], [2.3, 6, 0.09], [3.0, 7, 0.07]];
+  const waves: [number, number, number][] = [[1.5, 6, 0.1], [2.25, 8, 0.075], [3.0, 10, 0.055]];
   let k = 0;
   for (const [t0, n, gap] of waves) {
     for (let i = 0; i < n; i++, k++) {
@@ -1778,6 +1778,9 @@ export function flamePoseAt(t: number): BoarPose {
   for (const d of FIRE_DROPS) flare = Math.max(flare, 0.7 * bumpOf(t, d.t - 0.05, d.t + 0.3));
   return { ...P, pulse: Math.max(P.pulse ?? 0, 0.6 * smooth01(t / 0.6), flare), ride: { lean: 0, brace: 0, still: true, cast: flameCast(t) } };
 }
+/** The way the meteors come down out of the sky (up the way they came): steep, from high over his side of the room. */
+export const METEOR_FROM: V3 = norm([-0.75, -0.3, 2.0]);
+const ROCK: Ramp = ['#140c0e', '#2a1a1a', '#43292a', '#5e3c36', '#7a5446'];
 /** The Flame word's own orange, his pink through it: from its dark edge to its white-hot heart. */
 const FIRE_RAMP: Ramp = ['#7a1058', '#e0287a', '#ff8a2a', '#ffc860', '#fff0a0'];
 export const FIRE_CANVAS: MobCanvas = { w: 640, h: 460, ax: 320, ay: 300 };
@@ -1791,18 +1794,38 @@ export function firestormBits(t: number, put: Put): void {
   for (const [k, d] of FIRE_DROPS.entries()) {
     const t0 = d.t - FIRE.fall;
     if (t > t0 && t < d.t) {
+      // (A METEOR, his words of 12 Nov 2026, “nah more like a meteor shower”: a burning rock streaking down out of the sky the burst
+      // opened, steep and fast, its molten cracks glowing, a mantle of fire about it and a long tail of fire and smoke behind)
       const u = (t - t0) / FIRE.fall;
-      // (flung out of the burst, falling faster as it comes)
-      const p: V3 = [FIRE_BURST[0] + (d.at[0] - FIRE_BURST[0]) * u, FIRE_BURST[1] + (d.at[1] - FIRE_BURST[1]) * u, FIRE_BURST[2] * (1 - u * u) + 40 * Math.sin(Math.PI * u) * (1 - u)];
-      const R = 9;
-      put(`fireball${k % 4}`, 'fireball', { k: 'ball', c: p, ax: [[R, 0, 0], [0, R, 0], [0, 0, R]], skin: (_u, tone) => FIRE_RAMP[T5(tone + 1)] });
-      // (its tail: fire, then smoke, back up the way it came)
-      const back = norm(sub(FIRE_BURST, p), [0, 0, 1]);
-      for (let j = 1; j < 9; j++) {
-        const q = add(p, add(mul(back, j * 5.5), [(hash(k, j + fr0, 8983) - 0.5) * 4, (hash(k, j, 8984) - 0.5) * 4, 0]));
-        put('fireTrail', 'trail', { k: 'mote', p: q, c: j < 3 ? FIRE_RAMP[3] : j < 5 ? FIRE_RAMP[2] : j < 7 ? FIRE_RAMP[1] : '#3a2a30', size: j < 4 ? 2 : 1 });
+      const p = add(d.at, mul(METEOR_FROM, 520 * (1 - Math.pow(u, 1.15))));
+      const R = 8.5;
+      put(`meteor${k % 4}`, 'rock', { k: 'ball', c: p, ax: [[R, 0, 0], [0, R * 0.85, 0], [0, 0, R * 0.95]], skin: (uu, tone) => {
+        const crack = hash(Math.floor((uu[0] + 1) * 5), Math.floor((uu[2] + 1) * 5) + k, 8988) < 0.3;
+        return crack ? FIRE_RAMP[T5(tone + 1)] : ROCK[T5(tone)];
+      } });
+      // (its mantle and tail: fire wrapped about it and streaming back up the way it came, as solids, then sparks and smoke)
+      const back = METEOR_FROM;
+      put('meteorFire', 'mantle', { k: 'rod', a: add(p, mul(back, R * 0.9)), b: add(p, mul(back, 40)), ra: R * 1.1, rb: 3, ramp: FIRE_RAMP });
+      put('meteorFire', 'tail', { k: 'rod', a: add(p, mul(back, 20)), b: add(p, mul(back, 80)), ra: 4.2, rb: 0.6, ramp: FIRE_RAMP });
+      for (let j = 0; j < 16; j++) {
+        const q = add(p, add(mul(back, 70 + j * 9), [(hash(k, j + fr0, 8983) - 0.5) * 6, (hash(k, j, 8984) - 0.5) * 6, (hash(k, j + 9, 8989) - 0.5) * 6]));
+        put('fireTrail', 'trail', { k: 'mote', p: q, c: j < 4 ? FIRE_RAMP[3] : j < 8 ? FIRE_RAMP[2] : j < 11 ? FIRE_RAMP[1] : j % 2 ? '#3a2a30' : '#52404a', size: j < 6 ? 2 : 1 });
       }
-      put('glow', 'fireGlow', { k: 'glow', p, c: FIRE_RAMP[2], r: 14, a: 0.5 });
+      put('glow', 'fireGlow', { k: 'glow', p, c: FIRE_RAMP[2], r: 18, a: 0.6 });
+    }
+    // (the blast as it strikes: fire flung out and up, rock thrown)
+    if (t >= d.t && t < d.t + 0.45) {
+      const u = t - d.t;
+      for (let j = 0; j < 20; j++) {
+        const a = (j / 20) * TAU + hash(k, j, 8990);
+        const sp = 90 + 110 * hash(k, j + 1, 8991);
+        const q: V3 = [d.at[0] + Math.cos(a) * sp * u, d.at[1] + Math.sin(a) * sp * u * 0.9, 4 + (70 + 80 * hash(k, j + 2, 8992)) * u - 260 * u * u];
+        if (q[2] < 0) continue;
+        if (j % 4 === 0) put('meteorRock', 'chunk', { k: 'ball', c: q, ax: [[2.6, 0, 0], [0, 2.2, 0], [0, 0, 2.4]], skin: ROCK });
+        else put('fireSplash', 'splash', { k: 'mote', p: q, c: FIRE_RAMP[j % 3 ? 3 : 2], size: u < 0.15 ? 2 : 1 });
+      }
+      if (u < 0.12) put('blast', 'blast', { k: 'ball', c: [d.at[0], d.at[1], 10], ax: [[20 + 80 * u, 0, 0], [0, 18 + 70 * u, 0], [0, 0, 14 + 40 * u]], skin: (_uu, tone) => FIRE_RAMP[T5(tone + 2)] });
+      put('glow', 'blastGlow', { k: 'glow', p: [d.at[0], d.at[1], 14], c: FIRE_RAMP[3], r: 40, a: 0.7 * (1 - u / 0.45) });
     }
     // (where it fell: a burst of fire as it lands, then the floor burning there to the end, flames standing up off it)
     if (t >= d.t) {

@@ -293,13 +293,16 @@ function flameScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
           }
         }
       }
-      // (the floor scorched where it fell)
+      // (its crater: the floor blasted dark, its rim glowing, cooling)
       if (t >= d.t) {
-        for (let i = 0; i < 120; i++) {
-          const a = (i / 120) * Math.PI * 2;
-          for (let r = 0; r < 0.6 * TILE; r += 1.5) {
+        const cool = Math.min(1, (t - d.t) / 1.5);
+        for (let i = 0; i < 140; i++) {
+          const a = (i / 140) * Math.PI * 2;
+          for (let r = 0; r < 0.75 * TILE; r += 1.5) {
             const [x, y] = wp([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]);
-            mix(s, x, y, '#140a0c', 0.55 * (1 - r / (0.6 * TILE)) + 0.15);
+            const rim = r > 0.58 * TILE;
+            if (rim) mix(s, x, y, (i + Math.floor(r)) % 5 < 2 ? '#ff8a2a' : '#3a1a14', 0.7 - 0.4 * cool);
+            else mix(s, x, y, '#0e080a', 0.75);
           }
         }
       }
