@@ -572,6 +572,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   vapour, not a solid: drawn soft and banded as pixel art draws smoke (the film's `steam`), lit from above, each billow's lobes
   shaded (a first try as solid balls read as a heap of balls; a second as columns read as pillars). Through the bosses' checks
   (0 findings).
+  HIS WORDS, by pop-up: “Have it hide him then he fires beams of fire and cold through the steam, one rotating clockwise and the
+  other rotating counter clockwise.  From him to the fall so you have to dodge them.  And if you go into the steam you get burned
+  and chilled” (read: from him to the wall). REMADE SO: the floor round him ices over (the warning), heats, and flashes into a
+  great cloud of steam round him, hiding him (its edge on the floor in the bosses' warning colour all the while: going into it
+  burns and chills); two lines on the floor warn where the beams will start; then out of the steam he fires a beam of fire
+  (molten gold, orange, his pink round it), sweeping round clockwise, and a beam of cold (white, ice-pale, his pink round it),
+  sweeping round counter-clockwise, each from him to the room's wall, scissoring past each other for 4.5 s; the hero dodges
+  through each as it comes; the floor they sweep is left scorched and glowing, or rimed; they stop, the steam thins, and he stands
+  there again. The room's walls drawn so the beams are seen to reach them. Through the bosses' checks (0 findings).
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

@@ -3702,34 +3702,51 @@ export function paintBlight(t: number, view: 'front' | 'rear', nearer: V3 | null
 }
 
 // SCALD (Flame and Frost, melded: the game's meld, render/melds3.ts, “steam rising off scalding water”; and on the ground, as the
-// game has it, “Fire meeting ice on the ground bursts into steam that hurts and hides”): he writes Flame, his shade writes Frost;
-// melded, the slam drives the rune into the floor at his feet, and A RING OF ICE races out round him over the floor, a broad band
-// of it, leaving him and the ground at his feet bare (the warning: the ice flushed in the colour of every boss's warning on the
-// ground, its edges hot); fire glows up through its cracks, hotter and hotter, the ice hissing; then the whole ring FLASHES into
-// scalding steam: great billows of it boiling up and rolling over, hiding all in it, his pink-hot at their roots; it hangs, drifts
-// and thins away off a wet floor. The safe ground is close to him, inside the ring, or far out past it. His rules for the words
-// stand: one rune (the meld's), what it makes made as solids (the steam's billows).
-export const SCALD = { r0: 2.0, r1: 6.4, freeze: [0.05, 0.55] as const, heat: [0.55, 1.55] as const, flash: 1.65, rise: 0.5, hang: 1.4, thin: 1.3, puffs: 60, end: 6.4 };
+// game has it, “Fire meeting ice on the ground bursts into steam that hurts and hides”). AS HE LAID IT OUT (his words, 13 Nov 2026:
+// “Have it hide him then he fires beams of fire and cold through the steam, one rotating clockwise and the other rotating counter
+// clockwise.  From him to the fall so you have to dodge them.  And if you go into the steam you get burned and chilled”; read: from
+// him to the wall): he writes Flame, his shade writes Frost; melded, the slam drives the rune into the floor at his feet and the
+// floor round him ICES OVER (the warning: the ice flushed in the colour of every boss's warning on the ground, its edge hot); fire
+// glows up through its cracks, hotter and hotter; then it FLASHES into scalding steam, great billows boiling up round him and
+// hiding him (one who goes into it is burned and chilled); out of it, a moment's warning (two lines on the floor where they will
+// start), he fires TWO BEAMS through the steam out to the walls, one of fire sweeping round clockwise, one of cold sweeping round
+// counter-clockwise, scissoring past each other: the hero has to dodge through each as it comes; they leave the floor scorched and
+// rimed behind them; they stop; the steam thins and he stands there again. His rules for the words stand: one rune (the meld's);
+// the steam is vapour and the beams light, as his Lightning's bolts are.
+export const SCALD = { r: 2.6, freeze: [0.05, 0.4] as const, heat: [0.4, 1.1] as const, flash: 1.2, rise: 0.5, tele: [1.8, 2.3] as const, beams: [2.3, 6.8] as const, turn: 70, fire0: 95, frost0: -150, hang: 5.2, thin: 1.1, puffs: 46, end: 9.5 };
 export const SCALD_CANVAS: MobCanvas = { w: 1200, h: 900, ax: 600, ay: 560 };
 const STEAM: Ramp = ['#5a4446', '#a08884', '#d8c4bc', '#f2e4dc', '#ffffff'];
 /** How far out the ice has raced (his floor point's own lengths, from him), `t` into the move. */
 export const scaldIce = (t: number): number => {
   const u = clamp01((t - MELD.slam - SCALD.freeze[0]) / (SCALD.freeze[1] - SCALD.freeze[0]));
-  return (SCALD.r0 + (SCALD.r1 - SCALD.r0) * (1 - (1 - u) * (1 - u))) * TILE;
+  return SCALD.r * TILE * (1 - (1 - u) * (1 - u)) + 2;
 };
-/** Whether a spot of the floor is in the ring (its ragged edges, frost-fronted). */
+/** Whether a spot of the floor is under the ice (and then the steam) round him (its edge ragged, frost-fronted). */
 export function scaldIn(x: number, y: number, pad = 0): boolean {
   const r = Math.hypot(x, y), a = Math.atan2(y, x);
-  const rag = (k: number): number => (Math.sin(a * 7 + k) * 0.5 + Math.sin(a * 13 + k * 2) * 0.3 + Math.sin(a * 23 + k) * 0.2) * 0.22 * TILE;
-  return r > SCALD.r0 * TILE + rag(1) - pad && r < SCALD.r1 * TILE + rag(4) + pad;
+  const rag = (Math.sin(a * 7 + 4) * 0.5 + Math.sin(a * 13 + 8) * 0.3 + Math.sin(a * 23 + 4) * 0.2) * 0.22 * TILE;
+  return r < SCALD.r * TILE + rag + pad;
 }
-/** The steam's billows: where each boils up (his floor point's own lengths), how big it grows, how high it rises. */
+/** Where each beam points (an angle over the floor, in degrees, his own: the fire's turning clockwise as the eye sees it, the cold's
+ * counter-clockwise), `t` into the move; and how far on it is (0 before, 1 once firing; null once stopped). */
+export function scaldBeam(kind: 'fire' | 'frost', t: number): { deg: number; on: number } | null {
+  const u = t - MELD.slam - SCALD.beams[0];
+  if (t - MELD.slam < SCALD.tele[0] || u > SCALD.beams[1] - SCALD.beams[0]) return null;
+  const w = Math.max(0, u);
+  return { deg: kind === 'fire' ? SCALD.fire0 - SCALD.turn * w : SCALD.frost0 + SCALD.turn * w, on: u < 0 ? 0 : Math.min(1, u / 0.08) };
+}
+/** Where a beam pointing `deg` meets the room's wall (his floor point's own lengths). */
+export function scaldWall(deg: number): V3 {
+  const c = Math.cos(deg * D), sn = Math.sin(deg * D);
+  let k = Infinity;
+  if (c > 1e-6) k = Math.min(k, (ARENA.x[1] * TILE) / c); else if (c < -1e-6) k = Math.min(k, (ARENA.x[0] * TILE) / c);
+  if (sn > 1e-6) k = Math.min(k, (ARENA.y[1] * TILE) / sn); else if (sn < -1e-6) k = Math.min(k, (ARENA.y[0] * TILE) / sn);
+  return [c * k, sn * k, 0];
+}
+/** The steam's billows: where each boils up round him (his floor point's own lengths), how big it grows, how high it rises. */
 export const SCALD_PUFFS: ReadonlyArray<{ at: V3; R: number; up: number; d: number }> = Array.from({ length: SCALD.puffs }, (_, i) => {
-  for (let k = 0; ; k++) {
-    const a = hash(i, k, 9601) * TAU, r = (SCALD.r0 + (SCALD.r1 - SCALD.r0) * Math.sqrt(hash(i, k, 9602))) * TILE;
-    const x = Math.cos(a) * r, y = Math.sin(a) * r;
-    if (scaldIn(x, y, -6) || k > 20) return { at: [x, y, 0] as V3, R: 20 + 14 * hash(i, 3, 9603), up: 40 + 150 * hash(i, 4, 9604), d: hash(i, 5, 9605) };
-  }
+  const a = hash(i, 1, 9601) * TAU, r = SCALD.r * TILE * 0.92 * Math.sqrt(hash(i, 2, 9602));
+  return { at: [Math.cos(a) * r, Math.sin(a) * r, 0] as V3, R: 22 + 14 * hash(i, 3, 9603), up: 70 + 110 * hash(i, 4, 9604), d: hash(i, 5, 9605) };
 });
 /** THE SCALD'S SOLIDS, `t` into the move: hot droplets flung out of the steam as it flashes (the steam itself is vapour, not a solid:
  * drawn soft, banded, as `scaldSteamAt` has it). Only those `keep` keeps (by their floor point). */
@@ -3762,9 +3779,9 @@ export function scaldSteamAt(t: number): { at: V3; puffs: [number, number, numbe
     if (u < 0) continue;
     const r = clamp01(u / SCALD.rise), e = 1 - (1 - r) * (1 - r);
     const R = p.R * (0.4 + 0.6 * e) * (1 + 0.3 * gone);
-    const n = Math.hypot(p.at[0], p.at[1]) || 1, drift = 12 * u;
+    const n = Math.hypot(p.at[0], p.at[1]) || 1, drift = 6 * Math.min(u, 1.5);
     const at: V3 = [p.at[0] + (p.at[0] / n) * drift, p.at[1] + (p.at[1] / n) * drift, 0];
-    const top = p.up * e + 14 * u;
+    const top = p.up * e + 6 * Math.min(u, 2);
     // (a plume of it: lumpy billows heaped up its height, each over the last and swaying off it, widening as it rises)
     const n2 = Math.max(1, Math.ceil(top / (0.7 * R)));
     const k0 = SCALD_PUFFS.indexOf(p);
