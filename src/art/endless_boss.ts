@@ -905,6 +905,7 @@ function throbAt(tt: number): number {
 export function boarPoseAt(move: string, t: number): BoarPose {
   if (move === 'charge') return chargePoseAt(t);
   if (move === 'wheel') return wheelPoseAt(t);
+  if (move === 'gore') return gorePoseAt(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   const A = BOAR_STAND_AT;
@@ -1117,6 +1118,7 @@ export function boarGrains(t: number, move = 'stand'): [V3, string, number][] {
   const out: [V3, string, number][] = [];
   if (move === 'charge') return chargeGrains(t);
   if (move === 'wheel') return wheelGrains(t);
+  if (move === 'gore') return goreGrains(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   for (const s0 of BOAR_STAND_AT.snorts) {
@@ -1235,6 +1237,131 @@ const rotZ = (p: V3, Y: number): V3 => {
   const c = Math.cos(Y * D), sn = Math.sin(Y * D);
   return [p[0] * c - p[1] * sn, p[0] * sn + p[1] * c, p[2]];
 };
+
+// THE GORE (his pick, 12 Nov 2026: “Tusk gore (Recommended)”, offered as: up close, it hooks its tusks up and throws you back). By
+// his Movement 9 and Monsters 4:
+//   THE WIND-UP  rocked back on its haunches, its head swung low and round to its right, cocked so its left tusk is down by the
+//                floor, its near forefoot pawing once; he leans back, his staff high
+//   HELD         trembling, snorting, its eyes blazing (its sweep marked on the floor before it: the rules are the main chat's)
+//   THE STRIKE   ONE FRAME, smeared: its head hooked up and across, its right to its left, its forequarters heaved up and forward
+//   AFTER        its head flung high and over, held, shaken; settling back to its stand
+// (one frame: wound up in one, hooked through in the next, a flash from either side)
+export const GORE_STRIKE = [fr(21), fr(22)] as const;
+export const GORE = { lower: 0.5, paw: [0.12, 0.38] as const, snort: 0.5, held: 0.52, strike: GORE_STRIKE, hit: GORE_STRIKE[1], high: 1.15, long: 2.1, arc: 150, reach: 2.6 };
+export const goreSmeared = (t: number): boolean => t > GORE_STRIKE[0] + 1e-6 && t <= GORE_STRIKE[1] + FR + 1e-6;
+/** The gore's way: 0 at rest, 1 wound up (head low and round), -1 hooked through (head flung up and over); its lunge. */
+function goreWay(t: number): number {
+  const [s0, s1] = GORE_STRIKE;
+  if (t <= GORE.lower) return smooth01(t / GORE.lower);
+  if (t <= s0) return 1;
+  if (t <= s1) return 1 - 2 * ((t - s0) / (s1 - s0));
+  // (carried on through, held high, then let down)
+  if (t <= s1 + 0.25) return -1 - 0.14 * Math.sin((Math.PI / 2) * ((t - s1) / 0.25));
+  if (t <= GORE.high) return -1.14 + 0.06 * smooth01((t - s1 - 0.25) / (GORE.high - s1 - 0.25));
+  return -1.08 * (1 - smooth01((t - GORE.high) / (GORE.long - GORE.high)));
+}
+export function gorePoseAt(t: number): BoarPose {
+  const w = goreWay(t);
+  const wound = Math.max(0, w);
+  const thrown = Math.max(0, -w);
+  const [s0] = GORE_STRIKE;
+  const held = t > GORE.held && t < s0 ? 1 : 0;
+  const shiver = held * (0.4 * Math.sin(t * 90) + 0.25 * Math.sin(t * 137));
+  const snort = bumpOf(t, GORE.snort - 0.04, GORE.snort + 0.3);
+  // (shaken high after it hooks through)
+  const shake = bumpOf(t, GORE.hit + 0.18, GORE.high + 0.1);
+  const feet: Foot[] = [0, 1, 2, 3].map((i): Foot => {
+    if (i === 1 && t > GORE.paw[0] && t < GORE.paw[1]) {
+      const u = (t - GORE.paw[0]) / (GORE.paw[1] - GORE.paw[0]);
+      const fwd = u < 0.4 ? smooth01(u / 0.4) : 1 - smooth01((u - 0.4) / 0.6);
+      const up = u < 0.4 ? Math.sin((Math.PI / 2) * smooth01(u / 0.4)) : u < 0.55 ? 1 - 0.9 * smooth01((u - 0.4) / 0.15) : 0.1 * (1 - smooth01((u - 0.55) / 0.45));
+      return [SOLE0[i][0] + 6 * fwd * S, SOLE0[i][1], Math.max(0.75, 5.5 * S * up), 60 * up];
+    }
+    return [SOLE0[i][0], SOLE0[i][1], 0, 0];
+  });
+  return {
+    ...BOAR_STAND,
+    x: (-2.2 * wound + 2.6 * thrown) * S,
+    z: (-1.4 * wound - 2.1 * thrown) * S + 0.4 * shiver,
+    pitch: -3 * wound + 5 * thrown,
+    roll: -5 * wound + 6 * thrown + 0.5 * shiver,
+    low: BOAR_STAND.low + 26 * wound - 50 * thrown - 6 * snort,
+    look: -38 * wound + 30 * thrown + 1.2 * shiver + 6 * shake * Math.sin((t - GORE.hit) * 26),
+    tilt: -20 * wound + 24 * thrown + 10 * shake * Math.sin((t - GORE.hit) * 26 + 0.7),
+    flap: 0.6 * wound - 1.0 * thrown,
+    legs: BOAR_STAND.legs,
+    feet,
+    breath: 0.5 + 0.5 * snort,
+    sway: t / WS_STAND_LONG + 0.3 * thrown,
+    pulse: Math.max(0.55, smooth01((t - 0.15) / 0.3)) * (t > GORE.high ? 1 - 0.5 * smooth01((t - GORE.high) / 0.5) : 1),
+    ride: { lean: 10 * thrown, brace: 12 * wound },
+  };
+}
+/** The gore's striking end: the tip of its left tusk, the one that leads as it hooks up and across. */
+export function goreTip(P: BoarPose): V3 {
+  return headOf(P).at(16.0, 6.4, 4.2);
+}
+/** WHAT FLIES OFF IT AS IT GORES: grit flung back as it paws; its snort; the hook's track, a crescent of pink-white off its tusk
+ * through the strike, fading; grit and frost flung up from the floor its tusk tore through. */
+function goreGrains(t: number): [V3, string, number][] {
+  const out: [V3, string, number][] = [];
+  const g = 30;
+  // (the paw)
+  {
+    const t0 = GORE.paw[0] + 0.45 * (GORE.paw[1] - GORE.paw[0]);
+    for (let i = 0; i < 12; i++) {
+      const u = t - t0 - 0.02 * (i % 4);
+      if (u <= 0 || u > 0.5) continue;
+      const p: V3 = [SOLE0[1][0] + 4 * S - (40 + 50 * hash(i, 2, 8931)) * S * u, SOLE0[1][1] + (hash(i, 3, 8932) - 0.5) * 30 * S * u, 0.5 + (14 + 16 * hash(i, 4, 8933)) * S * u - 0.5 * g * S * u * u];
+      if (p[2] < 0 || hash(i, Math.floor(u * 30), 8934) < (u / 0.5) * 0.8) continue;
+      out.push([p, DUST[Math.min(2, Math.floor((u / 0.5) * 3))], 1]);
+    }
+  }
+  // (its snort)
+  {
+    const u = t - GORE.snort;
+    if (u > 0 && u < 0.6) {
+      const H = headOf(gorePoseAt(GORE.snort + 0.05));
+      for (const k of [-1, 1]) {
+        const nose = H.at(22.6, k * 1.2, -8.2);
+        for (let i = 0; i < 10; i++) {
+          const a = (i / 10) * TAU + hash(i, k, 8935);
+          const r = (1.5 + 7 * Math.sqrt(u)) * S * Math.sqrt(0.2 + 0.8 * hash(i, k + 5, 8936));
+          const p = add(add(nose, mul(H.f, 9 * S * (1 - Math.exp(-u * 6)))), [Math.cos(a) * r, Math.sin(a) * r, 4 * u + Math.sin(a) * r * 0.3]);
+          if (hash(i, Math.floor(u * 20), 8937) < (u / 0.6) * 0.9) continue;
+          out.push([p, BREATH[Math.min(3, Math.floor((u / 0.6) * 4))], u < 0.25 ? 2 : 1]);
+        }
+      }
+    }
+  }
+  // (the hook's track: where its tusk tip went through the strike and a little after, a crescent fading from its far end)
+  const [s0, s1] = GORE_STRIKE;
+  if (t > s0 && t < s1 + 0.3) {
+    const age = Math.max(0, t - s1);
+    const n = 26;
+    for (let i = 0; i <= n; i++) {
+      const tt = s0 + (i / n) * (Math.min(t, s1 + 0.1) - s0);
+      const p = goreTip(gorePoseAt(tt));
+      const f = i / n;
+      if (age > 0 && f < age / 0.3) continue;
+      const hot = f > 0.6 ? FLAME[4] : f > 0.3 ? FLAME[3] : FLAME[2];
+      out.push([p, age > 0.18 ? FLAME[1] : hot, f > 0.5 && age < 0.12 ? 2 : 1]);
+      out.push([add(p, [0, 0, -1.2]), age > 0.12 ? FLAME[1] : FLAME[2], 1]);
+    }
+  }
+  // (grit and frost torn up from the floor before it as its tusk comes through)
+  for (let i = 0; i < 22; i++) {
+    const u = t - s0 - 0.01 * (i % 3);
+    if (u <= 0 || u > 0.6) continue;
+    const a = (-0.6 + 1.2 * hash(i, 1, 8938)) + 0.2;
+    const sp = (40 + 70 * hash(i, 2, 8939)) * S;
+    const from: V3 = [SOLE0[0][0] + 12 * S, (hash(i, 5, 8940) - 0.5) * 10 * S, 0.5];
+    const p: V3 = [from[0] + Math.cos(a) * sp * u, from[1] + Math.sin(a) * sp * u, from[2] + (30 + 30 * hash(i, 3, 8941)) * S * u - 0.5 * g * S * u * u];
+    if (p[2] < 0 || hash(i, Math.floor(u * 30), 8942) < (u / 0.6) * 0.8) continue;
+    out.push([p, i % 3 === 0 ? BREATH[1] : DUST[Math.min(2, Math.floor((u / 0.6) * 3))], u < 0.1 ? 2 : 1]);
+  }
+  return out;
+}
 
 /** WHAT FLIES OFF IT AS IT CHARGES (as its own points are, the game carrying it on: what is thrown stays where it was thrown):
  * grit thrown back as it paws; the blast of its snort; a ring of grit blown out where it bursts off; grit kicked up at every
@@ -1418,7 +1545,7 @@ export function wsMob(): Mob {
     trueBack: true,
     bits: wsBits,
     grains: (_st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand'),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -1482,13 +1609,15 @@ export const WS_SHAPE: BossShape = {
   },
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : 0),
-  strikes: { charge: CHARGE_STRIKE },
-  smeared: (move: string, t: number) => move === 'charge' && chargeSmeared(t),
+  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE },
+  smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)),
+  // (the end the boar strikes with in its gore: its leading tusk's tip)
+  tip: (move: string, t: number) => (move === 'gore' ? goreTip(boarPoseAt('gore', t)) : null),
   // (each move from his stand and back, as the game hands over; a run done, it wheels round out of its skid; done wheeling, the
   // game shows it from its other side and the next run goes back down the lane: that hand-over is the charge's own start drawn the
   // other way round, and is not one these checks can draw)
   handovers: [
-    ...['attack', 'reel', 'charge'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
+    ...['attack', 'reel', 'charge', 'gore'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
     { from: 'charge', at: 'end', to: 'wheel', toAt: 0 },
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },

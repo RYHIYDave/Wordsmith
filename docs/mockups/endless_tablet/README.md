@@ -258,6 +258,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   its hind feet; he turns with it (his hands, knees, feet and staff now turned with him as the boar turns). Done, the game shows it
   from its other side (from behind, turned over left for right) and the next run goes back down the lane. Through the checks
   (charge into wheel handed over), his legs outside the boar every frame: all pass.
+  HIS YES, 12 Nov 2026, by pop-up: “Yes, on to the gore (Recommended)”.
+- THE GORE (`gore`, `gorePoseAt`; `pictures/standard/boss_gore.mp4`, from in front, from behind, then the hook at half speed): by
+  Movement 9 and Monsters 4. ITS WIND-UP: rocked back on its haunches, its head swung low and round to its right, cocked so its left
+  tusk is down by the floor, its near forefoot pawing once; he leans back. HELD, trembling, snorting, its eyes blazing (its sweep,
+  150 degrees out to 2.6 tiles before it, marked on the floor in the film: the rules are the main chat's). THE STRIKE: ONE FRAME,
+  smeared: its head hooked up and across, its right to its left, its forequarters heaved up and forward; the hook's track left as a
+  crescent of pink to gold off its tusk; grit and frost torn up off the floor; the screen kicks. AFTER: its head flung high, held,
+  shaken, let down. The checks (the blow drawn back, held, followed through; the strike a flash from in front and behind), his legs
+  outside the boar: all pass.
 
 ## The tools
 

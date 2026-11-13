@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, wsMob } from '../src/art/endless_boss';
 import { png } from './king_png';
 
 const [out = '/tmp/wsfilm', move = 'charge', view0 = 'front', w0 = '420', h0 = '300'] = process.argv.slice(2);
@@ -75,6 +75,25 @@ function lane(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): 
     }
   }
 }
+/** The gore's sweep, marked while it winds up and holds: a fan of the enemy's pink before it, its edge bright. */
+function sweep(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
+  const [s0] = GORE_STRIKE;
+  if (t < 0.12 || t > s0 + 0.06) return;
+  const a = Math.min(1, (t - 0.12) / 0.15) * (t > s0 ? 0.5 : 1);
+  const R = GORE.reach * TILE;
+  const half = (GORE.arc / 2) * (Math.PI / 180);
+  for (let i = 0; i <= 90; i++) {
+    for (let j = 0; j <= 60; j++) {
+      const ang = -half + (2 * half * i) / 90;
+      const r = (R * j) / 60;
+      const [x, y] = at([from[0] + dir * (30 + r * Math.cos(ang)), from[1] + dir * r * Math.sin(ang), 0]);
+      const edge = j > 56;
+      const ring = ((r / R) * 6 - t * 3) % 1;
+      const on = edge ? 0.55 : ring > 0 && ring < 0.18 ? 0.3 : 0.1;
+      mix(s, Math.round(ox + x), Math.round(oy + y), '#ff4f8a', on * a);
+    }
+  }
+}
 /** His picture laid on the floor at (ox, oy): his painted pixels, then his lights soft over them. */
 function lay(s: Px, mv: string, vw: 'front' | 'rear', t: number, ox: number, oy: number, ghost = 0): void {
   const { px, lights } = paintMob(mob, mv, t, vw);
@@ -125,7 +144,7 @@ const floorOf = (mv: string) => (t: number): V2 => {
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
@@ -158,11 +177,12 @@ for (const sg of segs) {
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
-    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : 0;
+    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : 0;
     const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
     const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
     const s = floor(-ox, -oy);
     if (sg.move === 'charge') lane(s, t, ox, oy, sg.from, k);
+    if (sg.move === 'gore') sweep(s, t, ox, oy, sg.from, k);
     const where = (tt: number): [number, number] => {
       const [x, y] = at(world(tt));
       return [ox + x, oy + y];
@@ -178,7 +198,12 @@ for (const sg of segs) {
         lay(s, sg.move, sg.view, t, x, y, a);
       }
     }
-    if (sg.move === 'wheel') {
+    if (sg.move === 'gore' && goreSmeared(t)) {
+      // (its strike smeared: after-images of its head hooking through, fading)
+      const [x, y] = base();
+      for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
+    }
+    if (sg.move === 'wheel' || sg.move === 'gore') {
       const [x, y] = base();
       lay(s, sg.move, sg.view, t, x, y);
     } else {
