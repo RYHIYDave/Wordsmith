@@ -38,7 +38,7 @@ import { GLYPH, WORD_COLOR, WORD_GLOW } from './icons';
 import { P as PAL } from './palette';
 import { paintBits } from './new_mobs3';
 import type { Painted } from './kit';
-import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
+import type { Bit, Mob, MobCanvas, Moment, Put, Shape } from './new_mobs3';
 import type { BossShape, CheckLimb, CheckLump, Handover } from './boss_checks';
 import type { Ring, Skin, Stage } from './skin';
 import { stage, wornOn } from './skin';
@@ -1618,7 +1618,9 @@ export const FALL = {
   raise: [2.5, 2.9] as const,
   slam: 92 / 30,
   ring: { reach: 4.6, long: 0.62 },
-  long: 4.7,
+  /** his shade tearing up out of him as he strikes (the move's own time), risen */
+  shade: [3.15, 4.05] as const,
+  long: 5.4,
 };
 export const SLAM_STRIKE = [FALL.slam - 2 / 30, FALL.slam] as const;
 export const slamSmeared = (t: number): boolean => t > SLAM_STRIKE[0] + 1e-6 && t <= SLAM_STRIKE[1] + 1 / 30 + 1e-6;
@@ -2854,6 +2856,88 @@ export function wsMob(): Mob {
     grains: (st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
     more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST } },
   } as unknown as Mob;
+}
+
+
+// =============================================================================================
+// HIS SHADE (his words, 12 Nov 2026, for the second phase: “how about a large pink energy shade that looms above him and mimics his
+// movements.  he forges a word, as he would in phase one, the shade also phases a word, and they meld into the new attack.”; and,
+// of his rising: “i want to be nervous that hes now on foot”): a great figure of his own pink, more than twice his height, risen
+// out of him as he strikes the floor and looming over him from behind, a little off the floor; it does whatever he does, a moment
+// after him, as a shadow does; made of his power, it burns: bands of it rising through it, flickering, its eyes white-hot. It is
+// painted apart from him, on his own bones, every part of him made great: the game lays it behind him, its light over the floor.
+export const SHADE = { size: 2.35, behind: 30, side: -6, up: 12, lag: 0.1 };
+export const SHADE_CANVAS: MobCanvas = { w: 460, h: 560, ax: 230, ay: 470 };
+/** His pink as the shade is made of it: dark at its depths, hot at its edges and its eyes. */
+export const SHADE_PINK: Ramp = ['#2a0618', '#5e0f36', '#a01e58', '#e2367a', '#ff7aa8'];
+const SHADE_HOT = '#ffd8e6';
+/** A part of him made great, about `O` (his floor point), by `k`, and moved by `off`. */
+function greatShape(sh: Shape, O: V3, k: number, off: V3): Shape {
+  const P = (p: V3): V3 => add(add(O, mul(sub(p, O), k)), off);
+  const R = (r: Ring): Ring => ({ c: P(r.c), u: mul(r.u, k), v: mul(r.v, k) });
+  switch (sh.k) {
+    case 'rod': return { ...sh, a: P(sh.a), b: P(sh.b), ra: sh.ra * k, rb: sh.rb * k };
+    case 'ball': return { ...sh, c: P(sh.c), ax: [mul(sh.ax[0], k), mul(sh.ax[1], k), mul(sh.ax[2], k)] };
+    case 'cloth': return { ...sh, rings: sh.rings.map(R) };
+    case 'band': return { ...sh, ring: R(sh.ring) };
+    case 'panel': return { ...sh, c: P(sh.c), u: mul(sh.u, k), v: mul(sh.v, k) };
+    case 'thread': return { ...sh, a: P(sh.a), b: P(sh.b) };
+    case 'dot': return { ...sh, p: P(sh.p) };
+    case 'mote': return { ...sh, p: P(sh.p), size: Math.min(3, Math.round(sh.size * Math.sqrt(k))) };
+    case 'glow': return { ...sh, p: P(sh.p), r: sh.r * k };
+    default: return sh;
+  }
+}
+/** A colour of his made of the shade's pink: its light kept, its colour his pink. */
+function shadeOf(c: string): string {
+  const n = parseInt(c.slice(1, 7), 16);
+  const l = 0.3 * ((n >> 16) & 255) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255);
+  return SHADE_PINK[Math.max(0, Math.min(4, Math.round((l / 255) * 5.2 - 0.3)))];
+}
+/** HIS SHADE, `t` seconds into a move, risen as far as `grow` (0, inside him ... 1, looming over him), from his skeleton then: his
+ * picture made great and made of his pink, bands of it rising through it. Its canvas's anchor is his floor point. */
+export function paintShade(s: Skeleton, t: number, view: 'front' | 'rear', grow = 1, lean = 0): Painted {
+  const st = stage(view, SHADE_CANVAS.ax, SHADE_CANVAS.ay, SHADE_CANVAS);
+  const raw: Bit[] = [];
+  const put0: Put = (part, piece, shape) => raw.push({ part, piece, shape });
+  robe(put0, s, t / WS_STAND_LONG, 0.35 * Math.sin(t * 2.1), t);
+  arm(put0, s, 'L', s.chest[2], 0.32, 1.25);
+  arm(put0, s, 'R', s.chest[2], 1, 0);
+  put0('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
+  head(put0, st, s, t, 0.3);
+  staff(put0, s, t, 0);
+  const O: V3 = [s.pelvis[0], s.pelvis[1], 0];
+  const k = 1 + (SHADE.size - 1) * grow;
+  const off: V3 = [-SHADE.behind * grow - O[0] + lean, SHADE.side * grow - O[1], SHADE.up * grow];
+  // (bands of it rising through it, flickering: where they are it is thin)
+  const band = (x: number, y: number): boolean => ((y + Math.floor(t * 40)) % 7 === 0 && hash(x >> 2, (y + Math.floor(t * 40)) >> 3, 9301) < 0.7) || hash(x, y + Math.floor(t * 30) * 3, 9302) < 0.06;
+  const bits: Bit[] = raw.map(({ part, piece, shape }) => {
+    const sh = greatShape(shape, O, k, off);
+    if (sh.k === 'rod' || sh.k === 'cloth' || sh.k === 'band') return { part, piece, shape: { ...sh, ramp: (sh.ramp as Ramp).map(shadeOf) as unknown as Ramp } as Shape };
+    if (sh.k === 'dot') return { part, piece, shape: { ...sh, c: part === 'head' ? SHADE_HOT : shadeOf(sh.c), ...(sh.c2 ? { c2: shadeOf(sh.c2) } : {}) } };
+    if (sh.k === 'mote') return { part, piece, shape: { ...sh, c: SHADE_HOT } };
+    if (sh.k === 'glow') return { part, piece, shape: { ...sh, c: BURN[2] } };
+    if (sh.k === 'ball') {
+      const sk = sh.skin;
+      return { part, piece, shape: { ...sh, skin: (u: V3, tone: number, x: number, y: number) => {
+        if (band(x, y)) return null;
+        const c = Array.isArray(sk) ? (sk as Ramp)[T5(tone)] : (sk as (u: V3, tone: number, x: number, y: number) => string | null)(u, tone, x, y);
+        return c ? shadeOf(c) : c;
+      } } };
+    }
+    if (sh.k === 'panel') {
+      const sk = sh.skin;
+      return { part, piece, shape: { ...sh, skin: (a: number, b: number, front: boolean, tone: number) => { const c = sk(a, b, front, tone); return c ? shadeOf(c) : c; } } };
+    }
+    return { part, piece, shape: sh };
+  });
+  // (its light: a great glow of his pink about it, and its eyes)
+  bits.push({ part: 'glow', piece: 'shadeGlow', shape: { k: 'glow', p: add(add(O, mul(sub(lerp3(s.ribs, s.neck, 0.3), O), k)), off), c: BURN[2], r: 40 * k * 0.6, a: 0.16 + 0.1 * Math.sin(t * 5) } });
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  const px = st.whole(SHADE_HOT);
+  // (bands of it rising through it, flickering, its edge thin: cut through the finished picture)
+  for (let y = 0; y < px.h; y++) for (let x = 0; x < px.w; x++) if (px.get(x, y) && band(x, y)) px.d[(y * px.w + x) * 4 + 3] = 0;
+  return { px, lights } as Painted;
 }
 
 // =============================================================================================

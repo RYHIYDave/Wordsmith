@@ -393,9 +393,32 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   the word's colours, sparks thrown off where it writes; written, it flares and hangs burning before him until he throws it. REMADE
   SO in all five films (`tools/endless_boss_film.ts`: `strokeOrder`, `bareGlyph`, `writeRune`, `runeSpot`, `clawTip`); each film's
   half-speed replay now starts at the gathering.
-- NEXT: Poison for his yes; then the boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his
-  death. Before he goes in the game: his other facing painted turned round, not flipped (his words: “I see his staff swapping
-  hands.  It's gonna have to get unmirrored at some point”).
+- HIS YES, 12 Nov 2026, by pop-up: “hell yes man thats so awesome.  perfect.  yes lets move on great job” (to: in all five films he
+  makes each rune himself, the bare symbol, no stone; the stone only on Poison's traps; Poison done).
+- HIS WORDS AS THE BOAR'S DEATH WAS MADE, 12 Nov 2026: “and we want a short line from the wordsmith as an audio signal of the
+  attack” (read so: each of his attacks has a short spoken line as he begins it, so it is heard coming; the lines written here for his
+  yes, voiced by the sound chat); “and a line about how he.ll miss his steed, or get revenge for his steed during the phase change”;
+  “make sure you follow the rules, make it badass, i want to be nervous that hes now on foot”; “and figure out a way for the boar to
+  leave the arena so hes not just there for the rest of the fight.  like he turns to ash after the rune power seeps out of him”; and,
+  22:45: “going to bed, just keep working on the fight, and ill see what you cooked up in the morning.  make me proud man.  we've set
+  a strong foundation, just follow the rules”.
+- THE BOAR'S DEATH AND HIS RISING (`fall`, `FALL`, `fallPoseAt`, `fallCarry`, `fallRider`, `fallGrains`, `ashPut`, `paintShade`;
+  `pictures/standard/boss_fall.mp4`: the charge, killed, all of it; then from the kill at half speed). KILLED mid-gallop down its lane
+  (a flash of his pink out of all of it), its front gives way, its head driven down, its legs slack; over onto its side, the floor
+  coming up to meet it (dust and frost), sliding on in frost and grit, stopped, a last kick. HE is thrown up out of the saddle (his
+  legs out past its flanks till he is clear), over its head, and lands ON HIS FEET well clear, crouched deep, his boots sliding on in
+  the frost (never kneeling); he looks back over his shoulder to it (his line for his steed goes here). ITS POWER SEEPS OUT OF IT
+  INTO HIM: its runes go out one by one (brand, armour, greaves, tusks, its eyes last), each flickering out, a ribbon of his pink
+  streaming off each through the air into his chest; it greys to ash as they go; he burns brighter with each (a light about him, his
+  eyes blazing, the air crackling). HE RISES, his staff thrust high (held, the warning), THE SLAM (two frames, smeared; the frame
+  held a tenth of a second, his Movement 7): a ring of his pink rolls out over the floor, cracks thrown out under it; where it meets
+  the boar THE ASH BURSTS AND BLOWS AWAY, from its top down, nothing left but a scorch: the arena clear. Dead, the boar has the dark
+  seam for its edge, not his pink (the pink edge is the living's). HIS SHADE tears up out of him as he strikes and looms over him
+  from behind (his own figure made great, more than twice his height, of his pink, bands of it rising through it, doing as he does a
+  moment after him): the second phase begins. Through the bosses' checks (0 findings) and the boss tests (4 of 4).
+- NEXT: the second phase on foot: his shade with him in every move, the melds (he forges one word, the shade another, they meld);
+  his last stand; his death; his lines, for his yes; his other facing turned round, not flipped.
+
 
 ## The tools
 

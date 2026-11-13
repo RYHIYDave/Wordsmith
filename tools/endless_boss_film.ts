@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { FALL, fallCarry, slamAt, slamRing, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -1025,6 +1025,21 @@ function slamFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
     }
   }
 }
+/** His shade laid on the floor at (ox, oy), its anchor his floor point: see-through as far as `a`, its light over all. */
+function layShade(s: Px, p: { px: Px; lights: { x: number; y: number; r: number; color: string; a?: number }[] }, ox: number, oy: number, a: number): void {
+  const x0 = Math.round(ox - SHADE_CANVAS.ax), y0 = Math.round(oy - SHADE_CANVAS.ay);
+  for (let y = 0; y < p.px.h; y++) for (let x = 0; x < p.px.w; x++) {
+    const c = p.px.get(x, y);
+    if (c) mix(s, x0 + x, y0 + y, c, a);
+  }
+  for (const l of p.lights) {
+    const [r, g, b] = rgb(l.color);
+    for (let y = Math.floor(l.y - l.r); y <= Math.ceil(l.y + l.r); y++) for (let x = Math.floor(l.x - l.r); x <= Math.ceil(l.x + l.r); x++) {
+      const q = Math.hypot(x - l.x, y - l.y) / l.r;
+      if (q < 1) mix(s, x0 + x, y0 + y, hex(r, g, b), (l.a ?? 0.5) * a * (1 - q) * (1 - q));
+    }
+  }
+}
 /** His picture laid again over itself, washed with his pink. */
 function flash(s: Px, mv: string, vw: 'front' | 'rear', t: number, ox: number, oy: number, a: number): void {
   const { px } = paintMob(mob, mv, t, vw);
@@ -1124,7 +1139,9 @@ for (const sg of segs) {
     const fallFilm = move === 'fall';
     const FALL_END = fallCarry(FALL.long) * TILE;
     const lead = sg.move === 'fall' ? 50 + 60 * Math.min(1, t / 1.2) : 50;
-    const [tx, ty] = fallFilm ? at([world(t)[0] + lead, world(t)[1] - 50 * (lead / 110), 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    // (as his shade rises, the camera lifts to take it in)
+    const lift = sg.move === 'fall' ? 60 * Math.min(1, Math.max(0, (t - FALL.shade[0]) / (FALL.shade[1] - FALL.shade[0]))) : 0;
+    const [tx, ty] = fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
@@ -1179,6 +1196,14 @@ for (const sg of segs) {
     if (sg.move === 'frost' && frostSmeared(t)) {
       const [x, y] = base();
       for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
+    }
+    if (sg.move === 'fall' && t > FALL.shade[0]) {
+      // (HIS SHADE, torn up out of him as he strikes, looming over him from behind: laid behind him, see-through, its light over all)
+      const grow = Math.min(1, Math.max(0, (t - FALL.shade[0]) / (FALL.shade[1] - FALL.shade[0])));
+      const g = grow * grow * (3 - 2 * grow);
+      const sk = skeletonAt(mob, 'fall', Math.max(FALL.shade[0], t - SHADE.lag));
+      const [x, y] = at([sg.from[0] + k * (fallCarry(t) * TILE + sk.pelvis[0]), sg.from[1] + k * sk.pelvis[1], 0]);
+      layShade(s, paintShade(sk, t, sg.view, g), ox + x, oy + y, 0.25 + 0.42 * g);
     }
     if (sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost' || sg.move === 'lightning' || sg.move === 'poison') {
       const [x, y] = base();
