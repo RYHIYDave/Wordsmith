@@ -185,6 +185,14 @@ export interface UniqueDef {
   does: (it?: Item) => string[];
   /** Its price, as its card says it; absent, none. */
   price?: (it?: Item) => string;
+  /**
+   * ITS NUMBERS ROLL (his words, 12 Nov 2026, 20:12: “I’d like the uniques we have currently to have rolls if they have those
+   * types of mods.  Or maybe add some of those mods that might need a roll.  We just want a little randomness, and to give a
+   * player something to keep playing for, like a really well rolled unique”): the numbers of UNIQUE_TUNE its card states, as
+   * 'group.key' (or 'half'), each rolled per piece from ROLL_SPAN[0] to ROLL_SPAN[1] times the tune's (Item.uroll keeps the
+   * factor: a number retuned moves every piece with it). Absent: nothing of it rolls.
+   */
+  rolled?: readonly string[];
   /** THE LEVELING UNIQUES (LEVEL_DEFS): its level, set; it drops on any floor whose level is that or past it. */
   level?: number;
   /** THE LEVELING UNIQUES: its stats, each rolled in its own range (one roll for all of `stats` where there are more). */
@@ -201,22 +209,67 @@ export interface UniqueDef {
 
 const T = UNIQUE_TUNE;
 const pc = (n: number): string => `${Math.round(n * 100)}%`;
-const HALF = (): string => `${pc(T.half)} stronger`;
+const HALF = (it?: Item): string => `${pc(tuned(it, 'half'))} stronger`;
+
+/**
+ * HOW FAR A NUMBER OF THE 62 ROLLS: from a fifth under the tune's to a fifth over (told him, 12 Nov 2026, as the leveling
+ * uniques' were: “from about 20% under to 20% over”), prices too. One line to change.
+ */
+export const ROLL_SPAN: readonly [number, number] = [0.8, 1.2];
+/** The numbers that are counts: rolled, then made whole (one for every so many hits). */
+const WHOLE = new Set(['coat.hits']);
+const tuneAt = (path: string): number => {
+  const [g, k] = path.split('.');
+  const v = k ? (UNIQUE_TUNE as unknown as Record<string, Record<string, number>>)[g]?.[k] : (UNIQUE_TUNE as unknown as Record<string, number>)[g];
+  return typeof v === 'number' ? v : 0;
+};
+/** A number of the 62 as this piece rolled it: the tune's, times the piece's roll for it (a piece with none, or none given: the tune's own). */
+export function tuned(it: Item | null | undefined, path: string): number {
+  const f = it?.uroll?.[path];
+  const v = tuneAt(path) * (typeof f === 'number' && Number.isFinite(f) ? f : 1);
+  return WHOLE.has(path) ? Math.max(1, Math.round(v)) : v;
+}
+/** Seconds as a card says them: a whole number where it is one, else to a tenth. */
+const secs = (v: number): string => (Math.abs(v - Math.round(v)) < 0.05 ? `${Math.round(v)}` : v.toFixed(1));
+
+/**
+ * THE TUNE AS THE PIECES HE WEARS ROLLED IT (Game.refresh: Game.ut): UNIQUE_TUNE copied, each number of a worn piece's (whose rule
+ * works for him) at its roll; and the “half as strong again” of each that has one, by its id (`halves`: the Seal, the Band, the
+ * Alloy Band and the Songbird each its own).
+ */
+export function rolledTune(gear: Record<EquipSlot, Item | null>, worn: readonly string[]): { tune: typeof UNIQUE_TUNE; halves: Record<string, number> } {
+  const tune = JSON.parse(JSON.stringify(UNIQUE_TUNE)) as typeof UNIQUE_TUNE;
+  const halves: Record<string, number> = {};
+  for (const s of EQUIP_SLOTS) {
+    const it = gear[s];
+    const d = uniqueOf(it);
+    if (!it || !d || !d.rolled || !worn.includes(d.id)) continue;
+    for (const path of d.rolled) {
+      const v = tuned(it, path);
+      if (path === 'half') halves[d.id] = v;
+      else {
+        const [g, k] = path.split('.');
+        (tune as unknown as Record<string, Record<string, number>>)[g][k] = v;
+      }
+    }
+  }
+  return { tune, halves };
+}
 
 /** The 62, in the order of his doc. */
 export const UNIQUE_DEFS: readonly UniqueDef[] = [
   // ---- FIRST BATCH: THE SIX THAT BEND WORDSMITHING ----
   { id: 'twofacedmask', name: 'Two-Faced Mask', stem: 'hood', from: 'pool', bends: 'words', stats: [], does: () => ['The first word in front of your tap attack also works as if set behind it.'] },
-  { id: 'censorsseal', name: "The Censor's Seal", stem: 'lifering', from: 'boss', boss: ['censor'], floor: 15, bends: 'words', stats: ['atkSpeed', 'critChance'], does: () => [`The words on your tap attack are ${HALF()}.`], price: () => 'Your hold attack takes no words.' },
-  { id: 'quillsband', name: "The Quill's Band", stem: 'lifering', from: 'boss', boss: ['scraper', 'quill'], floor: 13, bends: 'words', stats: ['maxMana', 'int'], does: () => [`The words on your hold attack are ${HALF()}.`], price: () => 'Your tap attack takes no words.' },
+  { id: 'censorsseal', name: "The Censor's Seal", stem: 'lifering', from: 'boss', boss: ['censor'], floor: 15, bends: 'words', stats: ['atkSpeed', 'critChance'], rolled: ['half'], does: (it) => [`The words on your tap attack are ${HALF(it)}.`], price: () => 'Your hold attack takes no words.' },
+  { id: 'quillsband', name: "The Quill's Band", stem: 'lifering', from: 'boss', boss: ['scraper', 'quill'], floor: 13, bends: 'words', stats: ['maxMana', 'int'], rolled: ['half'], does: (it) => [`The words on your hold attack are ${HALF(it)}.`], price: () => 'Your tap attack takes no words.' },
   { id: 'polyglotsmantle', name: "Polyglot's Mantle", stem: 'robe', from: 'pool', bends: 'words', stats: [], does: () => ['Every attack takes two damage words on a side, each with its full effect.'] },
   { id: 'longecho', name: 'The Long Echo', stem: 'greaves', from: 'pool', bends: 'words', stats: ['moveSpeed', 'maxLife'], word: 'lasting', does: () => ['Adds LASTING to every attack. No slot used.'] },
   { id: 'thirdword', name: 'The Third Word', stem: 'intamulet', from: 'final', bends: 'words', stats: [], does: () => ['A third word slot in front of your tap attack.'] },
 
   // ---- FIRST BATCH: THE EIGHT THAT BEND THE HERO ----
   { id: 'brokenshackles', name: 'Broken Shackles', stem: 'greaves', from: 'boss', boss: ['chained'], floor: 3, bends: 'hero', stats: ['moveSpeed'], does: () => ['Your swipe move has no cooldown.'], price: () => 'You can be hit during the move.' },
-  { id: 'bloodprice', name: 'Bloodprice', stem: 'heavybelt', from: 'pool', bends: 'hero', stats: ['maxLife', 'str'], does: () => [`Drinking a flask makes you hit ${pc(T.bloodprice.more)} harder for ${T.bloodprice.secs} seconds.`, 'Kills still refill them.'], price: () => 'Flasks no longer heal.' },
-  { id: 'freehand', name: 'The Free Hand', stem: 'silkgloves', from: 'pool', bends: 'hero', stats: ['int', 'critChance'], does: () => [`With a wand or a tome and no focus beside it: +${T.freeHand.atkSpeed}% Attack Speed, +${T.freeHand.critMult}% Critical Damage.`], price: () => 'The focus.' },
+  { id: 'bloodprice', name: 'Bloodprice', stem: 'heavybelt', from: 'pool', bends: 'hero', stats: ['maxLife', 'str'], rolled: ['bloodprice.more', 'bloodprice.secs'], does: (it) => [`Drinking a flask makes you hit ${pc(tuned(it, 'bloodprice.more'))} harder for ${secs(tuned(it, 'bloodprice.secs'))} seconds.`, 'Kills still refill them.'], price: () => 'Flasks no longer heal.' },
+  { id: 'freehand', name: 'The Free Hand', stem: 'silkgloves', from: 'pool', bends: 'hero', stats: ['int', 'critChance'], rolled: ['freeHand.atkSpeed', 'freeHand.critMult'], does: (it) => [`With a wand or a tome and no focus beside it: +${Math.round(tuned(it, 'freeHand.atkSpeed'))}% Attack Speed, +${Math.round(tuned(it, 'freeHand.critMult'))}% Critical Damage.`], price: () => 'The focus.' },
   { id: 'millstone', name: 'The Millstone', stem: 'greatsword', from: 'pool', cls: 'warrior', bends: 'hero', stats: ['areaPct', 'lifeOnHit'], does: () => ['Whirlwind has no time limit: you spin for as long as you hold.'] },
   { id: 'rainwalker', name: 'The Rainwalker', stem: 'bow', from: 'pool', cls: 'ranger', bends: 'hero', stats: ['areaPct', 'dex'], does: () => ['Volley rains around you, and moves with you.'] },
   { id: 'shepherdscrook', name: "The Shepherd's Crook", stem: 'staff', from: 'pool', cls: 'mage', bends: 'hero', stats: ['areaPct', 'int'], does: () => ['The Orb follows you.'] },
@@ -225,56 +278,56 @@ export const UNIQUE_DEFS: readonly UniqueDef[] = [
 
   // ---- SECOND BATCH: EIGHT BOSS DROPS ----
   { id: 'headsmanshood', name: "The Headsman's Hood", stem: 'hood', from: 'boss', boss: ['headsman'], floor: 2, bends: 'words', stats: [], word: 'culling', does: () => ['Adds CULLING in front of your tap attack. No slot used.'] },
-  { id: 'fleshmancersbrand', name: "The Fleshmancer's Brand", stem: 'silkgloves', from: 'boss', boss: ['fleshmancer'], floor: 5, bends: 'hero', stats: ['int', 'lifeOnHit'], does: () => [`An elite you kill rises and fights for you for ${T.brand.secs} seconds. One at a time.`] },
+  { id: 'fleshmancersbrand', name: "The Fleshmancer's Brand", stem: 'silkgloves', from: 'boss', boss: ['fleshmancer'], floor: 5, bends: 'hero', stats: ['int', 'lifeOnHit'], rolled: ['brand.secs'], does: (it) => [`An elite you kill rises and fights for you for ${secs(tuned(it, 'brand.secs'))} seconds. One at a time.`] },
   { id: 'cantorsecho', name: "The Cantor's Echo", stem: 'lifering', from: 'boss', boss: ['cantor'], floor: 8, bends: 'words', stats: ['critChance', 'maxMana'], does: () => ['Adds TWIN behind your hold attack. No slot used.'] },
-  { id: 'drownedarm', name: 'The Drowned Arm', stem: 'stramulet', from: 'boss', boss: ['eye'], floor: 10, bends: 'hero', stats: ['maxLife', 'physPct'], does: () => [`Every ${T.arm.every} seconds a tentacle bursts up under the enemy you are fighting and slams it for ${pc(T.arm.share)} of your hit, stunning it for a moment.`] },
+  { id: 'drownedarm', name: 'The Drowned Arm', stem: 'stramulet', from: 'boss', boss: ['eye'], floor: 10, bends: 'hero', stats: ['maxLife', 'physPct'], rolled: ['arm.every', 'arm.share'], does: (it) => [`Every ${secs(tuned(it, 'arm.every'))} seconds a tentacle bursts up under the enemy you are fighting and slams it for ${pc(tuned(it, 'arm.share'))} of your hit, stunning it for a moment.`] },
   { id: 'criershush', name: "The Crier's Hush", stem: 'hood', from: 'boss', boss: ['crier'], floor: 11, bends: 'words', stats: ['cdr', 'frostRes'], does: () => ['A monster standing close to you has its words darkened: they do nothing.'] },
-  { id: 'kingsknot', name: "The King's Knot", stem: 'sash', from: 'boss', boss: ['ratking'], floor: 12, bends: 'words', stats: ['maxLife', 'magicFind'], does: () => [`Kill a monster that carries a word: your tap attack carries it too for ${T.knot.secs} seconds.`] },
-  { id: 'physicianscoat', name: "The Physician's Coat", stem: 'robe', from: 'boss', boss: ['physician'], floor: 14, bends: 'hero', stats: ['maxLife', 'lifeRegen'], does: () => [`Flasks refill from the hits you land on elites and bosses: one for every ${T.coat.hits}.`], price: () => 'No refills from kills.' },
+  { id: 'kingsknot', name: "The King's Knot", stem: 'sash', from: 'boss', boss: ['ratking'], floor: 12, bends: 'words', stats: ['maxLife', 'magicFind'], rolled: ['knot.secs'], does: (it) => [`Kill a monster that carries a word: your tap attack carries it too for ${secs(tuned(it, 'knot.secs'))} seconds.`] },
+  { id: 'physicianscoat', name: "The Physician's Coat", stem: 'robe', from: 'boss', boss: ['physician'], floor: 14, bends: 'hero', stats: ['maxLife', 'lifeRegen'], rolled: ['coat.hits'], does: (it) => [`Flasks refill from the hits you land on elites and bosses: one for every ${tuned(it, 'coat.hits')}.`], price: () => 'No refills from kills.' },
   { id: 'queensglass', name: "The Queen's Glass", stem: 'manaring', from: 'boss', boss: ['gqueen'], floor: 18, bends: 'words', stats: ['critChance', 'dex'], word: 'mirroring', does: () => ['Adds MIRRORING in front of your tap attack. No slot used.'] },
 
   // ---- THIRD BATCH: THE NINE BOSSES LEFT ----
   { id: 'wardenskeys', name: "The Warden's Keys", stem: 'heavybelt', from: 'boss', boss: ['warden'], floor: 1, bends: 'hero', stats: ['goldFind', 'magicFind'], powers: 2, does: () => ['Every sealed word door opens to you without its word.', `Every chest holds ${T.keys.more === 1 ? 'one more piece' : `${T.keys.more} more pieces`}.`] },
   { id: 'amalgamsheart', name: "The Amalgam's Heart", stem: 'intamulet', from: 'boss', boss: ['amalgam'], floor: 4, bends: 'words', stats: ['maxLife', 'areaPct'], does: () => ['When the two words in front of your tap attack can be melded, it gets their meld as well. No melding, no runedust.'] },
-  { id: 'halfcarvedhand', name: 'The Half-Carved Hand', stem: 'gauntlets', from: 'boss', boss: ['unfinished'], floor: 6, bends: 'hero', stats: ['str', 'maxLife'], does: () => [`Below half life you attack ${pc(T.halfHand.attack)} faster and move ${pc(T.halfHand.move)} faster.`], price: () => 'The danger.' },
-  { id: 'queenstalons', name: "The Queen's Talons", stem: 'leatherboots', from: 'boss', boss: ['queen'], floor: 7, bends: 'hero', stats: ['dex', 'maxLife'], does: () => [`Each critical hit calls one of her birds: it dives on the nearest enemy for ${pc(T.talons.share)} of your hit.`] },
+  { id: 'halfcarvedhand', name: 'The Half-Carved Hand', stem: 'gauntlets', from: 'boss', boss: ['unfinished'], floor: 6, bends: 'hero', stats: ['str', 'maxLife'], rolled: ['halfHand.attack', 'halfHand.move'], does: (it) => [`Below half life you attack ${pc(tuned(it, 'halfHand.attack'))} faster and move ${pc(tuned(it, 'halfHand.move'))} faster.`], price: () => 'The danger.' },
+  { id: 'queenstalons', name: "The Queen's Talons", stem: 'leatherboots', from: 'boss', boss: ['queen'], floor: 7, bends: 'hero', stats: ['dex', 'maxLife'], rolled: ['talons.share'], does: (it) => [`Each critical hit calls one of her birds: it dives on the nearest enemy for ${pc(tuned(it, 'talons.share'))} of your hit.`] },
   { id: 'hollowcrown', name: 'The Hollow Crown', stem: 'helm', from: 'boss', boss: ['stag'], floor: 9, bends: 'words', stats: ['maxLife', 'cdr'], does: () => ['Adds BINDING behind your swipe move: a snare left where you dodge from. No slot used.'] },
-  { id: 'nettleshirt', name: 'The Nettle Shirt', stem: 'jerkin', from: 'boss', boss: ['princess'], floor: 16, bends: 'words', stats: ['dex', 'maxLife'], does: () => [`Her Vow: your words grow ${pc(T.nettle.each)} stronger for every ${T.nettle.every} seconds you go unhit, up to ${pc(T.nettle.most)}.`], price: () => 'A hit breaks the vow, and it starts over.' },
+  { id: 'nettleshirt', name: 'The Nettle Shirt', stem: 'jerkin', from: 'boss', boss: ['princess'], floor: 16, bends: 'words', stats: ['dex', 'maxLife'], rolled: ['nettle.each', 'nettle.every', 'nettle.most'], does: (it) => [`Her Vow: your words grow ${pc(tuned(it, 'nettle.each'))} stronger for every ${secs(tuned(it, 'nettle.every'))} seconds you go unhit, up to ${pc(tuned(it, 'nettle.most'))}.`], price: () => 'A hit breaks the vow, and it starts over.' },
   { id: 'dancingshoes', name: 'The Dancing Shoes', stem: 'leatherboots', from: 'boss', boss: ['prince'], floor: 17, bends: 'hero', stats: ['dex', 'magicFind'], does: () => ['Nothing can slow you or hold you in place.'] },
-  { id: 'clockworksongbird', name: 'The Clockwork Songbird', stem: 'dexamulet', from: 'boss', boss: ['gking'], floor: 19, bends: 'words', stats: ['maxLife', 'critMult'], does: () => [`While your life is full the bird sings, and your words are ${HALF()}.`], price: () => 'It falls silent when you are hurt.' },
-  { id: 'mothswing', name: "The Moth's Wing", stem: 'robe', from: 'boss', boss: ['moth'], floor: 20, bends: 'hero', stats: ['maxLife', 'lifeRegen'], does: () => [`You take ${pc(T.moth.less)} less damage from every hit.`], price: () => `Each hit you take darkens one of your words for ${T.moth.dark} seconds. Only one word is ever dark.` },
+  { id: 'clockworksongbird', name: 'The Clockwork Songbird', stem: 'dexamulet', from: 'boss', boss: ['gking'], floor: 19, bends: 'words', stats: ['maxLife', 'critMult'], rolled: ['half'], does: (it) => [`While your life is full the bird sings, and your words are ${HALF(it)}.`], price: () => 'It falls silent when you are hurt.' },
+  { id: 'mothswing', name: "The Moth's Wing", stem: 'robe', from: 'boss', boss: ['moth'], floor: 20, bends: 'hero', stats: ['maxLife', 'lifeRegen'], rolled: ['moth.less', 'moth.dark'], does: (it) => [`You take ${pc(tuned(it, 'moth.less'))} less damage from every hit.`], price: (it) => `Each hit you take darkens one of your words for ${secs(tuned(it, 'moth.dark'))} seconds. Only one word is ever dark.` },
 
   // ---- MORE FOR THE POOL, AND ONE MORE FOR THE FINAL BOSS ----
   { id: 'dogearedpage', name: 'The Dog-Eared Page', stem: 'intamulet', from: 'pool', bends: 'words', stats: [], reqLevel: 1, does: () => ['All your word slots are open, whatever your level.'] },
   { id: 'ghostwriter', name: 'The Ghostwriter', stem: 'lifering', from: 'final', bends: 'words', stats: ['maxMana', 'dex'], does: () => ['Your swipe move also carries every word set on your tap attack.'] },
-  { id: 'miserspurse', name: "The Miser's Purse", stem: 'heavybelt', from: 'pool', bends: 'hero', stats: ['goldFind', 'maxLife'], does: () => [`The more gold you carry, the harder you hit: ${pc(T.purse.each * 1000)} for every 1,000.`], price: () => `Every hit you take spills ${pc(T.purse.spill)} of your gold.` },
-  { id: 'alloyband', name: 'The Alloy Band', stem: 'lifering', from: 'pool', bends: 'words', stats: ['int', 'maxMana'], does: () => [`Melded words set in your attacks are ${HALF()}.`] },
-  { id: 'longodds', name: 'The Long Odds', stem: 'helm', from: 'pool', bends: 'hero', stats: ['maxLife', 'magicFind'], does: () => [`You hit elites and bosses ${pc(T.odds.more)} harder.`], price: () => `You hit everything else ${pc(T.odds.less)} softer.` },
-  { id: 'standingstone', name: 'The Standing Stone', stem: 'greaves', from: 'pool', bends: 'hero', stats: ['maxLife', 'lightRes'], does: () => [`While you stand still you take ${pc(T.stone.less)} less damage and nothing can shove you.`] },
+  { id: 'miserspurse', name: "The Miser's Purse", stem: 'heavybelt', from: 'pool', bends: 'hero', stats: ['goldFind', 'maxLife'], rolled: ['purse.each', 'purse.spill'], does: (it) => [`The more gold you carry, the harder you hit: ${pc(tuned(it, 'purse.each') * 1000)} for every 1,000.`], price: (it) => `Every hit you take spills ${pc(tuned(it, 'purse.spill'))} of your gold.` },
+  { id: 'alloyband', name: 'The Alloy Band', stem: 'lifering', from: 'pool', bends: 'words', stats: ['int', 'maxMana'], rolled: ['half'], does: (it) => [`Melded words set in your attacks are ${HALF(it)}.`] },
+  { id: 'longodds', name: 'The Long Odds', stem: 'helm', from: 'pool', bends: 'hero', stats: ['maxLife', 'magicFind'], rolled: ['odds.more', 'odds.less'], does: (it) => [`You hit elites and bosses ${pc(tuned(it, 'odds.more'))} harder.`], price: (it) => `You hit everything else ${pc(tuned(it, 'odds.less'))} softer.` },
+  { id: 'standingstone', name: 'The Standing Stone', stem: 'greaves', from: 'pool', bends: 'hero', stats: ['maxLife', 'lightRes'], rolled: ['stone.less'], does: (it) => [`While you stand still you take ${pc(tuned(it, 'stone.less'))} less damage and nothing can shove you.`] },
 
   // ---- FOR EACH WEAPON AND EACH HERO: THE WARRIOR ----
-  { id: 'windcutter', name: 'The Windcutter', stem: 'greatsword', from: 'pool', cls: 'warrior', bends: 'hero', stats: ['atkSpeed', 'critChance'], does: () => [`Every third Strike in a row sends a blade of wind on ahead, through everything in its line, for ${pc(T.windcutter.share)} of the Strike.`] },
+  { id: 'windcutter', name: 'The Windcutter', stem: 'greatsword', from: 'pool', cls: 'warrior', bends: 'hero', stats: ['atkSpeed', 'critChance'], rolled: ['windcutter.share'], does: (it) => [`Every third Strike in a row sends a blade of wind on ahead, through everything in its line, for ${pc(tuned(it, 'windcutter.share'))} of the Strike.`] },
   { id: 'undertow', name: 'The Undertow', stem: 'greatsword', from: 'pool', cls: 'warrior', bends: 'words', stats: ['areaPct', 'str'], does: () => ['Adds PULLING in front of your hold attack: Whirlwind drags in what it cuts. No slot used.'] },
   { id: 'pivot', name: 'The Pivot', stem: 'greaves', from: 'pool', cls: 'warrior', only: true, bends: 'hero', stats: ['moveSpeed', 'str'], does: () => ['Lunge ends in a free turn of Whirlwind where you land.'] },
-  { id: 'press', name: 'The Press', stem: 'gauntlets', from: 'pool', cls: 'warrior', only: true, bends: 'hero', stats: ['str', 'lifeOnHit'], does: () => [`You hit ${pc(T.press.each)} harder for each enemy close round you, up to ${pc(T.press.most)}.`] },
+  { id: 'press', name: 'The Press', stem: 'gauntlets', from: 'pool', cls: 'warrior', only: true, bends: 'hero', stats: ['str', 'lifeOnHit'], rolled: ['press.each', 'press.most'], does: (it) => [`You hit ${pc(tuned(it, 'press.each'))} harder for each enemy close round you, up to ${pc(tuned(it, 'press.most'))}.`] },
 
   // ---- THE RANGER ----
-  { id: 'fan', name: 'The Fan', stem: 'bow', from: 'pool', cls: 'ranger', bends: 'hero', stats: ['atkSpeed', 'critChance'], does: () => ['Each Shot looses three arrows in a fan.'], price: () => `Each arrow hits for ${pc(T.fan.share)}.` },
+  { id: 'fan', name: 'The Fan', stem: 'bow', from: 'pool', cls: 'ranger', bends: 'hero', stats: ['atkSpeed', 'critChance'], does: () => ['Each Shot looses three arrows in a fan.'], rolled: ['fan.share'], price: (it) => `Each arrow hits for ${pc(tuned(it, 'fan.share'))}.` },
   { id: 'poachersbow', name: "The Poacher's Bow", stem: 'bow', from: 'pool', cls: 'ranger', bends: 'hero', stats: ['dmgPct', 'dex'], does: () => ['Where a Volley falls, it leaves one of your traps.'] },
   { id: 'packcollar', name: 'The Pack Collar', stem: 'dexamulet', from: 'pool', cls: 'ranger', only: true, bends: 'hero', stats: ['maxLife', 'lifeOnKill'], does: () => ['One more companion, at full strength: a second pick from the same list.'] },
   { id: 'hairtrigger', name: 'The Hair Trigger', stem: 'leathergloves', from: 'pool', cls: 'ranger', only: true, bends: 'hero', stats: ['critChance', 'dex'], does: () => ['An arrow of yours that crosses one of your traps sets it off at once, twice as hard.'] },
 
   // ---- THE MAGE ----
-  { id: 'tide', name: 'The Tide', stem: 'staff', from: 'pool', cls: 'mage', bends: 'hero', stats: ['dmgPct', 'critChance'], does: () => [`The Wave comes back: it turns and passes through everything again on its way home, for ${pc(T.tide.share)}.`] },
+  { id: 'tide', name: 'The Tide', stem: 'staff', from: 'pool', cls: 'mage', bends: 'hero', stats: ['dmgPct', 'critChance'], rolled: ['tide.share'], does: (it) => [`The Wave comes back: it turns and passes through everything again on its way home, for ${pc(tuned(it, 'tide.share'))}.`] },
   { id: 'tuningstaff', name: 'The Tuning Staff', stem: 'staff', from: 'pool', cls: 'mage', bends: 'hero', stats: ['atkSpeed', 'areaPct'], does: () => ['A Wave that passes through your Orb makes it pulse at once, twice as hard.'] },
   { id: 'prism', name: 'The Prism', stem: 'intamulet', from: 'pool', cls: 'mage', only: true, bends: 'hero', stats: ['dmgPct', 'maxMana'], does: () => ['Fire, frost and lightning each count as all three: what burns is chilled and shocked too.'] },
-  { id: 'shortway', name: 'The Short Way', stem: 'leatherboots', from: 'pool', cls: 'mage', only: true, bends: 'hero', stats: ['maxMana', 'int'], does: () => [`Warp again within ${T.shortWay.secs} seconds to snap back to where you started.`] },
+  { id: 'shortway', name: 'The Short Way', stem: 'leatherboots', from: 'pool', cls: 'mage', only: true, bends: 'hero', stats: ['maxMana', 'int'], rolled: ['shortWay.secs'], does: (it) => [`Warp again within ${secs(tuned(it, 'shortWay.secs'))} seconds to snap back to where you started.`] },
 
   // ---- THE WARLOCK ----
-  { id: 'ledgerofdebts', name: 'The Ledger of Debts', stem: 'tome', from: 'pool', cls: 'warlock', bends: 'hero', stats: ['firePct', 'int'], does: () => [`The Hellfire Bolt hits ${pc(T.ledger.each)} harder for every cursed enemy near you, up to ${pc(T.ledger.most)}.`] },
+  { id: 'ledgerofdebts', name: 'The Ledger of Debts', stem: 'tome', from: 'pool', cls: 'warlock', bends: 'hero', stats: ['firePct', 'int'], rolled: ['ledger.each', 'ledger.most'], does: (it) => [`The Hellfire Bolt hits ${pc(tuned(it, 'ledger.each'))} harder for every cursed enemy near you, up to ${pc(tuned(it, 'ledger.most'))}.`] },
   { id: 'restlesstome', name: 'The Restless Tome', stem: 'tome', from: 'pool', cls: 'warlock', bends: 'hero', stats: ['firePct', 'critMult'], does: () => ['The tome leaves your hand and swirls around you. It puts hellfire on any enemy it touches.'] },
   { id: 'burningverse', name: 'The Burning Verse', stem: 'tome', from: 'pool', cls: 'warlock', bends: 'hero', stats: ['dmgPct', 'lifeOnKill'], does: () => ['A burn you cause on a cursed enemy never goes out.'] },
-  { id: 'unsignedpact', name: 'The Unsigned Pact', stem: 'stramulet', from: 'pool', cls: 'warlock', only: true, bends: 'hero', stats: ['maxLife', 'lifeOnKill'], does: () => ['The demon does not burn out. When the pact runs dry it stays, for as long as you can pay.'], price: () => `It feeds on your life: ${pc(T.pact.drain)} a second.` },
+  { id: 'unsignedpact', name: 'The Unsigned Pact', stem: 'stramulet', from: 'pool', cls: 'warlock', only: true, bends: 'hero', stats: ['maxLife', 'lifeOnKill'], does: () => ['The demon does not burn out. When the pact runs dry it stays, for as long as you can pay.'], rolled: ['pact.drain'], price: (it) => `It feeds on your life: ${pc(tuned(it, 'pact.drain'))} a second.` },
   { id: 'clovenboots', name: 'The Cloven Boots', stem: 'greaves', from: 'pool', cls: 'warlock', only: true, bends: 'hero', stats: ['moveSpeed', 'str'], does: () => ['While the demon has you, Smoke Step has no cooldown.'] },
 
   // ---- THE TINKERER ----
@@ -436,7 +489,14 @@ export function makeUnique(id: string, ilvl: number, rng: RNG): Item | null {
   if (!UNIQUES.on || !d) return null;
   // (THE LEVELING UNIQUES: its own level, whatever the floor; its own numbers rolled)
   if (d.from === 'level') return makeLevelUnique(d, rng);
-  return makeUniqueItem(d.id, d.stem, d.name, d.stats, ilvl, rng, d.reqLevel);
+  const it = makeUniqueItem(d.id, d.stem, d.name, d.stats, ilvl, rng, d.reqLevel);
+  // (ITS NUMBERS ROLL, his words of 12 Nov 2026: “to give a player something to keep playing for, like a really well rolled unique”;
+  // after its stats, so they are rolled as before)
+  if (it && d.rolled && d.rolled.length) {
+    it.uroll = {};
+    for (const path of d.rolled) it.uroll[path] = Math.round(rng.range(ROLL_SPAN[0], ROLL_SPAN[1]) * 100) / 100;
+  }
+  return it;
 }
 
 /** A leveling unique made: at its level, asking for it; each of its stats and its rule's numbers rolled in their ranges. Null with either switch off. */
@@ -554,6 +614,10 @@ export interface BendCtx {
   borrowed: WordId | null;
   /** THE LAST WORD (a leveling unique): how much stronger every word of his tap and hold attacks is (0.4 to 0.6 as rolled); absent, none. */
   lastWord?: number;
+  /** ITS NUMBERS ROLL: each “half as strong again” as its piece rolled it, by its id (rolledTune); absent, the tune's. */
+  halves?: Record<string, number>;
+  /** ITS NUMBERS ROLL: the tune as his pieces rolled it (rolledTune); absent, the tune's own. */
+  tune?: typeof UNIQUE_TUNE;
 }
 
 export interface Bent {
@@ -641,14 +705,15 @@ export function bendWords(i: number, skills: readonly { front: readonly (WordId 
   }
   // HOW STRONG: each “half as strong again” adds its half; her Vow adds what it has grown to
   let more = 0;
-  if (i === 0 && has('censorsseal')) more += T.half;
-  if (i === 1 && has('quillsband')) more += T.half;
-  if (has('clockworksongbird') && ctx.full) more += T.half;
-  if (has('nettleshirt')) more += Math.max(0, Math.min(T.nettle.most, ctx.vow));
+  const half = (id: string): number => ctx.halves?.[id] ?? T.half;
+  if (i === 0 && has('censorsseal')) more += half('censorsseal');
+  if (i === 1 && has('quillsband')) more += half('quillsband');
+  if (has('clockworksongbird') && ctx.full) more += half('clockworksongbird');
+  if (has('nettleshirt')) more += Math.max(0, Math.min((ctx.tune ?? T).nettle.most, ctx.vow));
   // (THE LAST WORD, a leveling unique: every word of the tap and hold attacks, melded ones too)
   const last = i < 2 && has('lastword') && ctx.lastWord ? ctx.lastWord : 0;
   out.boost = 1 + more + last;
-  out.meldBoost = (has('alloyband') ? 1 + T.half : 1) + last;
+  out.meldBoost = (has('alloyband') ? 1 + half('alloyband') : 1) + last;
   return out;
 }
 
