@@ -128,7 +128,8 @@ export interface BoarPose {
   ride?: { lean: number; brace: number };
 }
 export const BOAR_STAND: BoarPose = {
-  x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, low: 6, look: 0,
+  // (its head carried as it was drawn: `low` is how far it is lowered, so its stand's -6 tips its snout a little up)
+  x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, low: -6, look: 0,
   legs: [[2, -4], [2, -4], [-8, 14], [-8, 14]],
   breath: 0, sway: 0,
 };
@@ -228,7 +229,8 @@ export function boarSoles(P: BoarPose): V3[] {
 function headOf(P: BoarPose): { at: (fwd: number, out: number, up: number) => V3; f: V3; l: V3; u: V3 } {
   // (the head turns and drops about its poll, behind its ears)
   const poll = boarAt(P, [19, 0, 26]);
-  const f = turned(P, turn([1, 0, 0], P.look, P.low, 0));
+  // (lowered by `low`: + down, as its pose says; a turn's pitch is + up)
+  const f = turned(P, turn([1, 0, 0], P.look, -P.low, 0));
   const l0 = turned(P, turn([0, 1, 0], P.look, 0, 0));
   // (shaking: its head rolled over about its own forward)
   const tl = ((P.tilt ?? 0) * Math.PI) / 180;
@@ -1240,16 +1242,17 @@ const rotZ = (p: V3, Y: number): V3 => {
 
 // THE GORE (his pick, 12 Nov 2026: “Tusk gore (Recommended)”, offered as: up close, it hooks its tusks up and throws you back). By
 // his Movement 9 and Monsters 4:
-//   THE WIND-UP  rocked back on its haunches, its head swung low and round to its right, cocked so its left tusk is down by the
-//                floor, its near forefoot pawing once; he leans back, his staff high
+//   THE WIND-UP  rocked back on its haunches, its head dropped right down to the floor, its tusks levelled forward, its near
+//                forefoot pawing once; he leans back, his staff high
 //   HELD         trembling, snorting, its eyes blazing (its sweep marked on the floor before it: the rules are the main chat's)
-//   THE STRIKE   ONE FRAME, smeared: its head hooked up and across, its right to its left, its forequarters heaved up and forward
+//   THE STRIKE   ONE FRAME, smeared: its head swung straight up, hooking with its tusks (his words, 12 Nov 2026: “A gore would be a
+//                swing up of the head, trying to hook with the horns”), its forequarters heaved up and forward behind it
 //   AFTER        its head flung high and over, held, shaken; settling back to its stand
 // (one frame: wound up in one, hooked through in the next, a flash from either side)
 export const GORE_STRIKE = [fr(21), fr(22)] as const;
-export const GORE = { lower: 0.5, paw: [0.12, 0.38] as const, snort: 0.5, held: 0.52, strike: GORE_STRIKE, hit: GORE_STRIKE[1], high: 1.15, long: 2.1, arc: 150, reach: 2.6 };
+export const GORE = { lower: 0.5, paw: [0.12, 0.38] as const, snort: 0.5, held: 0.52, strike: GORE_STRIKE, hit: GORE_STRIKE[1], high: 1.15, long: 2.1, arc: 90, reach: 2.4 };
 export const goreSmeared = (t: number): boolean => t > GORE_STRIKE[0] + 1e-6 && t <= GORE_STRIKE[1] + FR + 1e-6;
-/** The gore's way: 0 at rest, 1 wound up (head low and round), -1 hooked through (head flung up and over); its lunge. */
+/** The gore's way: 0 at rest, 1 wound up (its head down at the floor), -1 hooked through (its head swung up high); its lunge. */
 function goreWay(t: number): number {
   const [s0, s1] = GORE_STRIKE;
   if (t <= GORE.lower) return smooth01(t / GORE.lower);
@@ -1277,18 +1280,25 @@ export function gorePoseAt(t: number): BoarPose {
       const up = u < 0.4 ? Math.sin((Math.PI / 2) * smooth01(u / 0.4)) : u < 0.55 ? 1 - 0.9 * smooth01((u - 0.4) / 0.15) : 0.1 * (1 - smooth01((u - 0.55) / 0.45));
       return [SOLE0[i][0] + 6 * fwd * S, SOLE0[i][1], Math.max(0.75, 5.5 * S * up), 60 * up];
     }
+    // (its forefeet heaved up off the floor with the toss, and brought down again on their spots)
+    if (i < 2) {
+      const up = bumpOf(t, GORE.hit - FR, GORE.high + 0.12) ** 0.6;
+      if (up > 0) return [SOLE0[i][0] + 2.5 * S * up, SOLE0[i][1], 5.5 * S * up + 0.8 * Math.min(1, up * 6), 55 * up];
+    }
     return [SOLE0[i][0], SOLE0[i][1], 0, 0];
   });
+  // (the toss rears its forequarters up off the floor)
+  const rear = bumpOf(t, GORE.hit - FR, GORE.high + 0.12) ** 0.6;
   return {
     ...BOAR_STAND,
     x: (-2.2 * wound + 2.6 * thrown) * S,
-    z: (-1.4 * wound - 2.1 * thrown) * S + 0.4 * shiver,
-    pitch: -3 * wound + 5 * thrown,
-    roll: -5 * wound + 6 * thrown + 0.5 * shiver,
-    low: BOAR_STAND.low + 26 * wound - 50 * thrown - 6 * snort,
-    look: -38 * wound + 30 * thrown + 1.2 * shiver + 6 * shake * Math.sin((t - GORE.hit) * 26),
-    tilt: -20 * wound + 24 * thrown + 10 * shake * Math.sin((t - GORE.hit) * 26 + 0.7),
-    flap: 0.6 * wound - 1.0 * thrown,
+    z: (-1.4 * wound - 2.1 * thrown + 1.2 * rear) * S + 0.4 * shiver,
+    pitch: -4 * wound + 4 * thrown + 9 * rear,
+    roll: -1.5 * wound + 2 * thrown + 0.5 * shiver,
+    low: BOAR_STAND.low + 30 * wound - 58 * thrown - 6 * snort,
+    look: -7 * wound + 8 * thrown + 1.2 * shiver + 6 * shake * Math.sin((t - GORE.hit) * 26),
+    tilt: -6 * wound + 9 * thrown + 10 * shake * Math.sin((t - GORE.hit) * 26 + 0.7),
+    flap: 0.3 * wound - 1.0 * thrown,
     legs: BOAR_STAND.legs,
     feet,
     breath: 0.5 + 0.5 * snort,
@@ -1297,7 +1307,7 @@ export function gorePoseAt(t: number): BoarPose {
     ride: { lean: 10 * thrown, brace: 12 * wound },
   };
 }
-/** The gore's striking end: the tip of its left tusk, the one that leads as it hooks up and across. */
+/** The gore's striking end: the tip of its left tusk, as it hooks up. */
 export function goreTip(P: BoarPose): V3 {
   return headOf(P).at(16.0, 6.4, 4.2);
 }

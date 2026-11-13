@@ -267,6 +267,13 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   crescent of pink to gold off its tusk; grit and frost torn up off the floor; the screen kicks. AFTER: its head flung high, held,
   shaken, let down. The checks (the blow drawn back, held, followed through; the strike a flash from in front and behind), his legs
   outside the boar: all pass.
+- HIS WORDS on it, 12 Nov 2026, by pop-up: “A gore would be a swing up of the head, trying to hook with the horns”. READ AS (told him
+  so): an upward toss, its head dropped to the floor, held, then swung straight up hooking with its tusks, its forequarters heaving
+  up behind it. REMADE SO: wound up, its head down at the floor, tusks levelled; the strike one frame, its head swung up (and
+  barely to the side); its forefeet heaved up off the floor with the toss and brought down on their spots; the sweep marked
+  before it narrower (90 degrees, 2.4 tiles). AND FOUND (and mended for every move): its head's `low` had been turning it up where
+  it said down, so the snorts had dropped its head and the charge's wind-up had lifted it; now down is down (its stand drawn as it
+  was). The checks: all pass. `boss_gore.mp4` and `boss_charge_runs.mp4` made again.
 
 ## The tools
 
