@@ -1,10 +1,10 @@
-// THE WARRIOR'S WEAPON UNIQUES MADE HIS WEAPON, AND NO ONE-HANDED SWORDS FOR NOW (his picks, 12 Nov 2026, asked how the Warrior's
-// weapon uniques should drop once the axe and the hammer have their own: “i would say 1 but for the sake of build diversity i think
-// 2 is the way to go”, 2 offered as “Any, turned into his weapon”; and of plain swords and greatswords: “keep as today, and we dont
-// need one handed swords yet.  so those can stay out of the game for now until we add the gladiator ...”). Held:
+// THE WARRIOR'S WEAPON UNIQUES, EACH ITS OWN WEAPON'S, AND NO ONE-HANDED SWORDS FOR NOW (his picks, 12 Nov 2026: of plain swords
+// and greatswords, “keep as today, and we dont need one handed swords yet.  so those can stay out of the game for now until we add
+// the gladiator ...”; asked whether the Warrior's weapon uniques should work on any of his three weapons, “Each keeps its weapon's
+// moves”: so each drops only for the weapon he uses). Held:
 //   1. no one-handed sword is found, sold or gambled for (ONE_HAND_SWORDS off); greatswords as ever; the shield still to be had;
-//   2. a Warrior of the axe, or of the hammer, finds the greatsword's uniques too, made his weapon, its power and name kept; one of
-//      the greatsword finds them as they are; another hero never finds them.
+//   2. a Warrior finds only the uniques of the weapon he uses; another hero never finds them; a unique he carries keeps its own
+//      weapon when his weapon changes.
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
 // @ts-ignore
@@ -37,31 +37,39 @@ test('1. no one-handed sword found, sold or gambled for; the greatsword and the 
   assert.ok(g.some((k) => k.name === 'Shield'), "the shield still gambled for (the Tinkerer's wrench takes it)");
 });
 
-test('2. a Warrior of the axe or the hammer finds the greatsword\'s uniques made his weapon; one of the greatsword as they are; no other hero', () => {
+test('2. a Warrior finds only his weapon\'s uniques; another hero none; a unique he carries keeps its weapon', () => {
   assert.equal(UNIQUES.on, true);
   const greatswords = poolFor('warrior').filter((d) => uniqueWeapon(d) === 'greatsword');
   assert.ok(greatswords.length >= 3, 'the greatsword\'s own uniques');
-  for (const [pick, want] of [['battleaxe', 'battleaxe'], ['warhammer', 'warhammer'], [null, 'greatsword']] as const) {
+  for (const pick of ['battleaxe', 'warhammer', null] as const) {
     const g = new Game('warrior', 5);
     if (pick) g.hero.talents.push(pick);
+    const his = pick ?? 'greatsword';
     const a = g as unknown as Inner;
     const seen = new Set<string>();
-    for (let i = 0; i < 200; i++) {
-      const it = a.makePoolUnique('mainhand', want);
-      assert.ok(it, `${want}: a unique for his weapon`);
-      const d = uniqueDef(it.unique);
-      if (!d) throw new Error('a unique');
-      assert.equal(it.weapon, want, `${d.id}: made his ${want}`);
-      assert.equal(it.icon, want, `${d.id}: its picture key his weapon's`);
-      assert.equal(it.name, d.name, `${d.id}: its name kept`);
+    for (let i = 0; i < 300; i++) {
+      const it = a.makePoolUnique(undefined, null);
+      const d = it ? uniqueDef(it.unique) : undefined;
+      if (!d) continue;
+      const w = uniqueWeapon(d);
+      if (w === 'greatsword' || w === 'battleaxe' || w === 'warhammer') assert.equal(w, his, `${his}: ${d.id} found`);
+      if (it && w) assert.equal(it.weapon, w, `${d.id}: its own weapon`);
       seen.add(d.id);
     }
-    for (const d of greatswords) assert.ok(seen.has(d.id), `${want}: ${d.id} found too`);
+    if (his === 'greatsword') for (const d of greatswords) assert.ok(seen.has(d.id), `the greatsword's ${d.id} found`);
+    else for (const d of greatswords) assert.ok(!seen.has(d.id), `${his}: the greatsword's ${d.id} not found`);
   }
+  // (a greatsword's unique carried by a Warrior who takes up the axe stays a greatsword, its moves its own)
+  const g = new Game('warrior', 5);
+  assert.ok(g.giveUnique(greatswords[0].id), 'given');
+  g.hero.talents.push('battleaxe');
+  (g as unknown as { allForHim: () => void }).allForHim();
+  const held = g.hero.bag.find((q) => q?.unique === greatswords[0].id);
+  assert.equal(held?.weapon, 'greatsword', 'still a greatsword');
   // (another hero: none of the Warrior's)
   const r = new Game('ranger', 5) as unknown as Inner;
   for (let i = 0; i < 100; i++) {
-    const it = r.makePoolUnique('mainhand', null);
+    const it = r.makePoolUnique(undefined, null);
     const d = it ? uniqueDef(it.unique) : undefined;
     assert.ok(!d || d.cls !== 'warrior', `the Ranger found ${d?.id}`);
   }

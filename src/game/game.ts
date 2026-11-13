@@ -13310,7 +13310,8 @@ export class Game {
    */
   private forHim(it: Item): Item {
     const h = this.hero;
-    if (h.cls === 'warrior' && WARRIOR_TREE2.on && TALENTS.on) asWarriorWeapon(it, warriorWeapon(h.talents));
+    // (a unique keeps its own weapon, and its moves: his pick of 12 Nov 2026, “Each keeps its weapon's moves”)
+    if (h.cls === 'warrior' && WARRIOR_TREE2.on && TALENTS.on && !it.unique) asWarriorWeapon(it, warriorWeapon(h.talents));
     return it;
   }
   private allForHim(): void {
@@ -15347,16 +15348,20 @@ export class Game {
   private makePoolUnique(slot?: Slot, weapon?: WeaponKind | null): Item | null {
     let pool: UniqueDef[] = poolFor(this.hero.cls);
     if (slot) pool = pool.filter((d) => uniqueSlot(d) === slot);
-    // (THE WARRIOR'S WEAPON UNIQUES, his pick of 12 Nov 2026: any of his three weapons' uniques may drop for him, made the weapon he
-    // uses, its power kept, as a greatsword found is: “i would say 1 but for the sake of build diversity i think 2 is the way to go”,
-    // 2 offered as “Any, turned into his weapon”. So a greatsword's, an axe's or a hammer's counts as his weapon's here, and
-    // `forHim` makes it his kind)
-    const family = (k: WeaponKind | null | undefined): boolean => k === 'greatsword' || k === 'battleaxe' || k === 'warhammer';
-    const his = this.hero.cls === 'warrior' && WARRIOR_TREE2.on && TALENTS.on;
-    if (weapon) pool = pool.filter((d) => uniqueWeapon(d) === weapon || (his && family(weapon) && family(uniqueWeapon(d))));
+    // (THE WARRIOR'S WEAPON UNIQUES, his picks of 12 Nov 2026: each keeps its own weapon's moves (asked whether they should work on
+    // any of his three weapons, “Each keeps its weapon's moves”), so a Warrior finds only the uniques of the weapon he uses: his
+    // greatsword's while he swings the greatsword, his axe's with the axe, his hammer's with the hammer; never another's of his
+    // three, nor another hero's (UNIQUE_RULES.ownOnly))
+    if (this.hero.cls === 'warrior' && WARRIOR_TREE2.on && TALENTS.on) {
+      const his = warriorWeapon(this.hero.talents);
+      pool = pool.filter((d) => {
+        const w = uniqueWeapon(d);
+        return (w !== 'greatsword' && w !== 'battleaxe' && w !== 'warhammer') || w === his;
+      });
+    }
+    if (weapon) pool = pool.filter((d) => uniqueWeapon(d) === weapon);
     if (!pool.length) return null;
-    const it = makeUnique(this.rng.pick(pool).id, Math.max(1, this.power), this.rng);
-    return it ? this.forHim(it) : null;
+    return makeUnique(this.rng.pick(pool).id, Math.max(1, this.power), this.rng);
   }
 
   /** A boss dies: his own unique, now and then. */
@@ -15366,7 +15371,6 @@ export class Game {
     if (!d || !this.rng.chance(UNIQUE_DROPS.boss)) return;
     const it = makeUnique(d.id, Math.max(1, this.power), this.rng);
     if (!it) return;
-    this.forHim(it);
     this.addDrop('item', m.x, m.y, 0, it, null);
     this.emit({ t: 'unique', id: d.id, what: 'drop', x: m.x, y: m.y });
     this.sfx('rare', 0.9);

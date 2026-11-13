@@ -15,7 +15,6 @@ import type { AbilityId, Element, IconKey, MeldId, Rarity, WordId } from '../gam
 import { makeAbilityIcons } from './ability_icons';
 import { ITEMS_A, itemAKind, itemArt } from './items_a';
 import { uniqueArt } from './items_unique';
-import { uniqueDef, uniqueWeapon } from '../game/uniques';
 
 export interface IconArt {
   /** 16x16, anchor (8, 8). Today's item pictures, one for every rarity: ask for an item's picture with itemPic (below), never here. */
@@ -626,11 +625,7 @@ function beltIcon(): Sprite {
 export function itemPic(icons: IconArt, key: IconKey, rarity: Rarity, unique?: string): Sprite {
   // (A UNIQUE ITEM'S OWN PICTURE, art/items_unique.ts, behind UNIQUE_ART, off: the piece's `unique`, where the place has a
   // piece; with the switch off, or for a unique not drawn yet, uniqueArt gives nothing and the picture is its base's, as before)
-  // (THE WARRIOR'S WEAPON UNIQUES made the weapon he uses, his pick of 12 Nov 2026: a greatsword's made an axe shows the axe's
-  // picture at its rarity, not its own greatsword's, until each is drawn as all three)
-  const d = unique !== undefined ? uniqueDef(unique) : undefined;
-  const made = !!d && uniqueWeapon(d) !== null && uniqueWeapon(d) !== key;
-  return (unique !== undefined && !made ? uniqueArt(unique) : null) ?? (ITEMS_A.on && itemAKind(key) ? itemArt(key, rarity) : icons.item[key]);
+  return (unique !== undefined ? uniqueArt(unique) : null) ?? (ITEMS_A.on && itemAKind(key) ? itemArt(key, rarity) : icons.item[key]);
 }
 
 // ---------------------------------------------------------------------------------------------
