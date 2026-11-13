@@ -16,10 +16,10 @@ export default async function (page, snap) {
   void snap;
   const layouts = {
     siphon: [['cultist', 2.2, -0.4, 'a'], ['skeleton', 1.4, 1.5, 'b']],
-    cauterize: [['cultist', 1.25, -0.2, 'a'], ['skeleton', 1.3, 1.4, 'b']],
+    cauterize: [['cultist', 1.25, -0.2, 'a'], ['skeleton', 1.0, 1.2, 'b']],
     forking: [['skeleton', 1.25, -0.2, 'a'], ['cultist', 2.9, 0.6, 'b'], ['skeleton', 2.4, -1.6, 'c']],
     shiver: [['skeleton', 1.25, -0.2, 'a'], ['cultist', 1.1, 1.5, 'b']],
-    sunder: [['brute', 1.4, -0.2, 'a'], ['skeleton', 1.2, 1.6, 'b']],
+    sunder: [['brute', 1.4, -0.2, 'a'], ['skeleton', 1.0, 1.2, 'b']],
     fervor: [['skeleton', 1.2, -0.3, 'a'], ['skeleton', 1.0, 1.0, 'b'], ['cultist', -0.2, 1.3, 'c'], ['skeleton', -1.2, 0.6, 'd'], ['skeleton', -1.1, -0.8, 'e']],
     rimeward: [['skeleton', 1.15, -0.1, 'a'], ['cultist', 1.0, 1.4, 'b']],
     implode: [['skeleton', 1.25, -0.2, 'a'], ['skeleton', 2.6, 1.3, 'b'], ['cultist', 2.8, -1.4, 'c'], ['skeleton', 3.4, 0.2, 'd'], ['skeleton', 1.0, 1.9, 'e']],
@@ -89,10 +89,11 @@ export default async function (page, snap) {
         once('s2', t, half + 0.3, () => swing('b'));
       },
       cauterize: (t) => {
+        // (burning: life enough, 10, that its burning and the burning ground do not kill it before the blow lands)
         once('p', t, 0, () => { for (const r of ['a', 'b']) { const m = M(r); m.burnT = 99; m.burnDps = 0; } });
-        once('s1', t, 0.3, () => { M('a').life = 1; swing('a'); });
+        once('s1', t, 0.3, () => { M('a').life = 10; swing('a'); });
         once('h', t, half, behind);
-        once('s2', t, half + 0.3, () => { M('b').life = 1; swing('b'); });
+        once('s2', t, half + 0.3, () => { M('b').life = 10; swing('b'); });
       },
       forking: (t) => {
         once('s1', t, 0.25, () => swing('a'));
