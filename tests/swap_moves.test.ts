@@ -203,3 +203,85 @@ test('9. LASTING AURA: on without a tap, and it stays on', () => swapOn(() => {
   for (let t = 0; t < 12; t += DT) g.update(DT, emptyControls());
   assert.ok(g.auraNow(), 'on after twice its seconds, no tap');
 }));
+
+/** The Ranger with the stones on the way to each of `ids`, as his tree joins them. */
+function ranger(ids: string[]): { g: Game; a: Inside } {
+  const tree = TREES.ranger;
+  const way = (id: string): string[] => {
+    const out: string[] = [];
+    let at = tree.talents.find((t) => t.id === id);
+    while (at) {
+      out.unshift(at.id);
+      at = at.from.length ? tree.talents.find((t) => t.id === at!.from[0]) : undefined;
+    }
+    return out;
+  };
+  return hero('ranger', [...new Set(ids.flatMap(way))]);
+}
+
+/** His hold at (x, y), held `secs`, then let go, and a second for it to fly. */
+function holdAt(g: Game, x: number, y: number, secs: number): void {
+  for (const s of g.hero.skills) s.cd = 0;
+  const c = emptyControls();
+  c.cast = true;
+  c.castX = x;
+  c.castY = y;
+  c.hold = true;
+  g.update(DT, c);
+  for (let t = 0; t < secs; t += DT) {
+    const k = emptyControls();
+    k.hold = true;
+    k.castX = x;
+    k.castY = y;
+    g.update(DT, k);
+  }
+  for (let t = 0; t < 1.2; t += DT) g.update(DT, emptyControls());
+}
+
+test('10. his SNARE: thrown where he aims; what is on it held fast, then it bursts', () => swapOn(() => {
+  const { g, a } = ranger(['snare']);
+  assert.equal(g.hero.skills[0].id, 'snare');
+  const m = put(g, a, 4, 0);
+  const h = g.hero;
+  h.swingT = 0;
+  const c = emptyControls();
+  c.aimX = m.x;
+  c.aimY = m.y;
+  c.fire = true;
+  g.update(DT, c);
+  const off = emptyControls();
+  off.aimX = m.x;
+  off.aimY = m.y;
+  land(g, off, DT, () => {});
+  let held = false;
+  for (let t = 0; t < 1.5 && !held; t += DT) {
+    g.update(DT, emptyControls());
+    held = m.stunT > 0;
+  }
+  assert.ok(held, 'held fast');
+  assert.ok(!hurt(m), 'not hurt while held');
+  for (let t = 0; t < 2.5; t += DT) g.update(DT, emptyControls());
+  assert.ok(hurt(m), 'then it bursts');
+}));
+
+test('11. his SNIPE: through every enemy in its line; drawn longer, harder', () => swapOn(() => {
+  const quick = ranger(['snipe']);
+  assert.equal(quick.g.hero.skills[1].id, 'snipe');
+  const q = [put(quick.g, quick.a, 3, 0), put(quick.g, quick.a, 6, 0)];
+  holdAt(quick.g, q[1].x, q[1].y, 0.1);
+  for (const m of q) assert.ok(hurt(m), 'through its line');
+  const long = ranger(['snipe']);
+  const l = put(long.g, long.a, 3, 0);
+  holdAt(long.g, l.x, l.y, 1.6);
+  assert.ok(l.maxLife - l.life > (q[0].maxLife - q[0].life) * 1.8, 'a full draw far harder than a quick one');
+}));
+
+test('12. his RALLY: his companions quickened for a few seconds', () => swapOn(() => {
+  const { g } = ranger(['rally']);
+  assert.equal(g.hero.skills[1].id, 'rally');
+  holdAt(g, g.hero.x + 2, g.hero.y, 0.1);
+  const inside = g as unknown as { rallyT: number };
+  assert.ok(inside.rallyT > 0, 'on');
+  for (let t = 0; t < 6; t += DT) g.update(DT, emptyControls());
+  assert.equal(inside.rallyT, 0, 'over after its seconds');
+}));

@@ -301,7 +301,7 @@ const RANGER2: TalentTree = {
     ...RANGER.talents.map((t) => ({ ...t, works: true })),
     { id: 'snare', name: 'Snare', big: true, path: 'traps', at: [6.9, -0.25], from: ['widetraps'], text: 'Your tap becomes SNARE, in place of Shot: a snare thrown where you point; what walks into it is held fast, then it bursts.' },
     { id: 'snipe', name: 'Snipe', big: true, path: 'arrows', at: [6.9, 4.25], from: ['splitshot'], text: 'Your hold becomes SNIPE, in place of Volley: draw and hold, the longer the harder the shot, and it goes through enemies. Volley takes one: Snipe or Rally.' },
-    { id: 'rally', name: 'Rally', big: true, path: 'wind', at: [2.6, 0.3], from: ['wildcompanion'], text: 'Your hold becomes RALLY, in place of Volley: a call that gives your companions and allies near you faster, harder attacks for a few seconds. Volley takes one: Snipe or Rally.' },
+    { id: 'rally', name: 'Rally', big: true, path: 'wind', at: [2.6, 0.3], from: COMPANIONS.on ? ['wildcompanion'] : ['windrunner'], text: 'Your hold becomes RALLY, in place of Volley: a call that gives your companions and allies near you faster, harder attacks for a few seconds. Volley takes one: Snipe or Rally.' },
   ],
 };
 

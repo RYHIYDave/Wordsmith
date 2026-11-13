@@ -4818,6 +4818,8 @@ export class Game {
     if (h.cls === 'warlock') this.stepPact(dt, c);
     // (THE MAGE'S AURA, game/swap_moves.ts: a tap on her)
     if (SWAP_MOVES.on && h.cls === 'mage') this.stepAura(dt, c);
+    // (THE RANGER'S RALLY: its seconds run down)
+    if (this.rallyT > 0) this.rallyT = Math.max(0, this.rallyT - dt);
     if (h.change) return;
     // A leap or roll in progress carries the hero and nothing else happens.
     if (h.move) {
@@ -5174,7 +5176,7 @@ export class Game {
       }
       // (the quick attack goes the way the hero faces, from wherever they have got to; THE TINKERER's vial and Contraption,
       // thrown, to where it was aimed)
-      if (def.kind === 'contraption' || def.kind === 'vialtoss') this.deliver(0, h.x, h.y, w.tx, w.ty, 1, true);
+      if (def.kind === 'contraption' || def.kind === 'vialtoss' || def.kind === 'snare') this.deliver(0, h.x, h.y, w.tx, w.ty, 1, true);
       else this.deliver(0, h.x, h.y, h.x + h.fx, h.y + h.fy, 1, true);
       // (THE WARLOCK's tree: the demon's rakes counted, every third a Hellwave)
       if (s.id === 'rake') this.rakeDone(h.x, h.y, h.fx, h.fy, 1);
@@ -5248,6 +5250,24 @@ export class Game {
     const def = SKILLS[s.id];
     // (LASTING and FLEETING: held longer or shorter; FLEETING's bites coming faster, as many in all)
     const length = (def.channel ?? 0) * s.r.last;
+    // (THE RANGER'S SNIPE, game/swap_moves.ts: he draws while it is held, aimed where his finger is; let go, or drawn its longest,
+    // the arrow flies, the harder the longer he drew)
+    if (def.kind === 'snipe') {
+      if (c.hold) {
+        ch.tx = c.castX;
+        ch.ty = c.castY;
+      }
+      this.face(ch.tx, ch.ty);
+      ch.t += dt;
+      if (!c.hold || ch.t >= length) {
+        const i = ch.skill;
+        this.snipePower = Math.min(1, ch.t / SWAP_TUNE.snipe.full);
+        this.endChannel(false);
+        this.deliver(i, h.x, h.y, ch.tx, ch.ty, 1, true);
+        this.snipePower = 0;
+      }
+      return;
+    }
     const tick = (def.tick ?? 0.25) / s.r.pace;
     const byMana = s.r.mana > 0;
     if (ch.bites > 0) {
@@ -8293,7 +8313,8 @@ export class Game {
     const C = COMPANION_TUNE;
     const K = C.kinds[p.kind];
     p.actT += dt;
-    p.cd = Math.max(0, p.cd - dt);
+    // (THE RANGER'S RALLY: his companions' waits run out faster while it lasts)
+    p.cd = Math.max(0, p.cd - dt * (this.rallyT > 0 ? 1 + SWAP_TUNE.rally.atk / 100 : 1));
     // (left far behind, or somewhere it may not stand: at his side again)
     if (Math.hypot(p.x - h.x, p.y - h.y) > C.lost || !this.isOpen(p.x, p.y)) {
       const q = this.petBeside(p.kind, p.group, p.seat);
@@ -8399,7 +8420,7 @@ export class Game {
     const st = d.stats;
     const K = COMPANION_TUNE.kinds;
     const share = K[p.kind].share;
-    let dmg = this.rng.range(d.dmgMin, d.dmgMax) * share * (1 + (st.dmgPct + st.physPct + h.might) / 100);
+    let dmg = this.rng.range(d.dmgMin, d.dmgMax) * share * (1 + (st.dmgPct + st.physPct + h.might) / 100) * (this.rallyT > 0 ? 1 + SWAP_TUNE.rally.dmg / 100 : 1);
     const crit = this.rng.chance(d.critChance / 100);
     if (crit) dmg *= 1 + d.critMult / 100;
     dmg = Math.max(1, Math.round(dmg));
@@ -8906,8 +8927,8 @@ export class Game {
     const s = h.skills[i];
     const r = s.r;
     const def = SKILLS[s.id];
-    // (an attack that goes on while held is not made here: beginChannel and channelBite)
-    if (def.channel) return;
+    // (an attack that goes on while held is not made here: beginChannel and channelBite. The Ranger's Snipe is drawn so, and loosed here)
+    if (def.channel && def.kind !== 'snipe') return;
     let dx = tx - ox;
     let dy = ty - oy;
     const len = Math.hypot(dx, dy);
@@ -9066,6 +9087,33 @@ export class Game {
       }
       // (THE BRAWLER'S TREE: Double Jab, his jab is two quick jabs)
       if (name === 'jab' && primary && this.has('doublejab')) this.secondJab(i, dx, dy, each, r.count);
+    } else if (def.kind === 'snare') {
+      // (THE RANGER'S SNARE, game/swap_moves.ts: thrown where he aimed, no further than its reach; what walks in is held, then it
+      // bursts. A few lie at once: one more takes the place of the oldest)
+      if (primary) {
+        const p = this.reachPoint(tx, ty, def.range);
+        this.traps.push({ x: p.x, y: p.y, arm: TUNE.trapArm, life: SWAP_TUNE.snare.life, skill: i, frac: each, element: r.element, snare: true });
+        while (this.traps.filter((q) => q.snare).length > SWAP_TUNE.snare.max) this.traps.splice(this.traps.findIndex((q) => q.snare), 1);
+        this.sfx('trapSet');
+      }
+    } else if (def.kind === 'snipe') {
+      // (THE RANGER'S SNIPE, game/swap_moves.ts: one arrow, through everything in its line, the harder the longer he drew)
+      const T = SWAP_TUNE.snipe;
+      const a = Math.atan2(dy, dx);
+      this.projectiles.push({
+        x: ox + Math.cos(a) * 0.4, y: oy + Math.sin(a) * 0.4, vx: Math.cos(a) * r.projSpeed, vy: Math.sin(a) * r.projSpeed,
+        r: def.radius * r.size, dist: def.range, hostile: false, dmg: each * (T.least + (T.most - T.least) * this.snipePower), element: r.element,
+        look: 'arrow', pierce: true, hit: [], volley: false, skill: i, trail: 0, words, runed: false, clouded: false, age: 0, from: '', n: 0,
+      });
+      this.sfx('shot', 0.9);
+    } else if (def.kind === 'rally') {
+      // (THE RANGER'S RALLY, game/swap_moves.ts: his companions near him attack faster and harder for a few seconds)
+      if (primary) {
+        this.rallyT = SWAP_TUNE.rally.secs;
+        this.sfx('equip', 0.9);
+        this.emit({ t: 'spark', x: h.x, y: h.y, el: 'phys', n: 12 });
+        for (const p of this.pets) this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 8 });
+      }
     } else if (def.kind === 'vialtoss') {
       // (THE TINKERER, game/tinkerer.ts: her vial lobbed where she aimed, no further than its range; Twin, a second beside it;
       // "of Echoes", a weaker one after)
@@ -12808,7 +12856,24 @@ export class Game {
           }
         }
       }
-      if (go) {
+      if (go && t.snare) {
+        // (THE RANGER'S SNARE: what is on it held fast, then it bursts)
+        this.traps.splice(i, 1);
+        const S = SWAP_TUNE.snare;
+        const s = this.hero.skills[t.skill];
+        const rad = S.r * (s ? s.r.size : 1);
+        this.sfx('trapSet', 1);
+        for (const m of this.monsters) {
+          if (m.dead || Math.hypot(m.x - t.x, m.y - t.y) > rad + m.r) continue;
+          m.stunT = Math.max(m.stunT, S.hold);
+          this.emit({ t: 'bind', id: m.id, secs: S.hold });
+        }
+        const { skill, x, y, frac } = t;
+        this.after(S.hold, () => {
+          this.sfx('trapBoom');
+          this.blast(skill, x, y, rad, frac * S.share, 'blast');
+        });
+      } else if (go) {
         const s = this.hero.skills[t.skill];
         this.traps.splice(i, 1);
         this.sfx('trapBoom');
@@ -14726,6 +14791,9 @@ export class Game {
    * long, “one, and then maybe another passive that leaves it on further into the tree”.
    */
   private aura = { on: 0, wait: 0, tick: 0, shieldBack: 0 };
+  /** (THE RANGER'S RALLY) Its seconds left; and (his SNIPE) the draw of the arrow being loosed now, 0 to 1. */
+  private rallyT = 0;
+  private snipePower = 0;
 
   /** Whether the hero has talent `id` (for the controls: the Mage's Aura is a tap on her only once she has it). */
   talentTaken(id: string): boolean {

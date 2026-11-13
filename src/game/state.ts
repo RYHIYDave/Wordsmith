@@ -845,6 +845,8 @@ export interface Trap {
   element: Element;
   /** UNIQUE ITEMS, THE HAIR TRIGGER: an arrow of his has crossed it: it goes off now, however lately laid, this many times as hard. */
   shot?: number;
+  /** (THE RANGER'S SNARE, game/swap_moves.ts) a snare thrown, not a trap of his roll: what walks in is held, then it bursts. */
+  snare?: boolean;
 }
 
 /**
