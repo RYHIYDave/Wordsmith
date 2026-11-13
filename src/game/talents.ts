@@ -754,10 +754,34 @@ export function takeProblem(cls: ClassId, level: number, taken: readonly string[
     const next = nextTalentLevel(level);
     return next === null ? 'No points left' : `Next point at level ${next}`;
   }
-  if (t.from.length && !t.from.some((f) => taken.includes(f))) return 'Take the one before it first';
+  if (!wayOpen(cls, t, taken)) return 'Take one joined to it first';
   if (otherWeapon(cls, id, taken)) return 'One weapon only';
+  if (notHisWeapon(cls, t, taken)) return 'Not your weapon';
   if (waitsForWeapon(cls, t, taken)) return 'Pick your weapon first';
   return null;
+}
+
+/**
+ * THE LINES WORK BOTH WAYS. His words, 12 Nov 2026, 18:09 (Eastern): “i cant go from quick draw to venom in the skill tree for the
+ * ranger”; asked whether to make it so on every tree, his pick: “Every tree, both ways (Recommended)” (offered as: any talent joined
+ * by a line to one you have can be taken, on all six heroes). So a talent is open once one joined to it by a line is his, the one
+ * before it or one after it; where the tree begins (no line before it) is open as before. Off: only the ones before it, as it was.
+ */
+export const BOTH_WAYS = { on: true };
+/** The talents joined to `t` by a line: those before it and those it leads to. */
+export function joinedTo(cls: ClassId, t: TalentDef): string[] {
+  const after = TREES[cls].talents.filter((q) => q.from.includes(t.id)).map((q) => q.id);
+  return BOTH_WAYS.on ? [...t.from, ...after] : [...t.from];
+}
+/** Whether the way to `t` is open: where the tree begins, or joined to one that is his. */
+function wayOpen(cls: ClassId, t: TalentDef, taken: readonly string[]): boolean {
+  return !t.from.length || joinedTo(cls, t).some((f) => taken.includes(f));
+}
+/** (the Warrior's new tree) the talents on a weapon's own path are that weapon's: with the lines both ways, one wielding another may not cross into them. */
+const PATH_WEAPON: Readonly<Record<string, string>> = { axe: 'battleaxe', gsword: 'greatsword', hammer: 'warhammer' };
+function notHisWeapon(cls: ClassId, t: TalentDef, taken: readonly string[]): boolean {
+  const w = PATH_WEAPON[t.path];
+  return cls === 'warrior' && WARRIOR_TREE2.on && !!w && t.id !== w && !taken.includes(w);
 }
 
 /** (the Warrior's new tree, WARRIOR_TREE2) his three weapons: only one may be his. */
@@ -830,7 +854,7 @@ export function unlearnProblem(cls: ClassId, taken: readonly string[], id: strin
   for (let n = 0; n <= rest.length; n++) {
     for (const t of rest) {
       const def = talentOf(cls, t);
-      if (def && (!def.from.length || def.from.some((f) => reach.has(f)))) reach.add(t);
+      if (def && wayOpen(cls, def, [...reach]) && !notHisWeapon(cls, def, rest)) reach.add(t);
     }
   }
   return reach.size === rest.length ? null : 'Undo the ones after it first';
@@ -839,7 +863,7 @@ export function unlearnProblem(cls: ClassId, taken: readonly string[], id: strin
 /** Whether the talent could be taken were there a point to spend (its way is open). */
 export function talentOpen(cls: ClassId, taken: readonly string[], id: string): boolean {
   const t = talentOf(cls, id);
-  return !!t && !taken.includes(id) && (!t.from.length || t.from.some((f) => taken.includes(f))) && !otherWeapon(cls, id, taken) && !waitsForWeapon(cls, t, taken);
+  return !!t && !taken.includes(id) && wayOpen(cls, t, taken) && !otherWeapon(cls, id, taken) && !notHisWeapon(cls, t, taken) && !waitsForWeapon(cls, t, taken);
 }
 
 /** What the taken talents add to the hero's numbers (the talents that are numbers only). */
