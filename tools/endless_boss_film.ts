@@ -15,6 +15,7 @@ import { png } from './king_png';
 import { GLYPH, WORD_COLOR, WORD_GLOW } from '../src/art/icons';
 import { MELD_GLYPH, MELD_RAMP } from '../src/render/melds3';
 import { P as PAL } from '../src/art/palette';
+import { FLAME } from '../src/art/mkit';
 
 const [out = '/tmp/wsfilm', move = 'charge', view0 = 'front', w0 = '420', h0 = '300'] = process.argv.slice(2);
 const view = view0 as 'front' | 'rear';
@@ -192,11 +193,27 @@ const BRAWLER = ((): { w: number; h: number; px: (string | null)[] } => {
   }
   return { w, h, px };
 })();
-function hero(s: Px, x: number, y: number): void {
+function hero(s: Px, x: number, y: number, ghost = 1): void {
   for (let j = 0; j < BRAWLER.h; j++) for (let i = 0; i < BRAWLER.w; i++) {
     const c = BRAWLER.px[j * BRAWLER.w + i];
-    if (c && x - BRAWLER.w / 2 + i >= 0 && y - BRAWLER.h + j >= 0 && x - BRAWLER.w / 2 + i < s.w && y - BRAWLER.h + j < s.h) s.set(Math.round(x - BRAWLER.w / 2 + i), Math.round(y - BRAWLER.h + 2 + j), c);
+    if (!c || !(x - BRAWLER.w / 2 + i >= 0 && y - BRAWLER.h + j >= 0 && x - BRAWLER.w / 2 + i < s.w && y - BRAWLER.h + j < s.h)) continue;
+    if (ghost < 1) mix(s, Math.round(x - BRAWLER.w / 2 + i), Math.round(y - BRAWLER.h + 2 + j), c, ghost);
+    else s.set(Math.round(x - BRAWLER.w / 2 + i), Math.round(y - BRAWLER.h + 2 + j), c);
   }
+}
+/** WHERE THE HERO IS in Thunder's film (his own lengths): standing where each ring locks on to him, then dashing out of it to where
+ * the next will lock on, before the bolt falls; out of the last to safe ground. */
+const THUNDER_HERO_OUT: [number, number, number] = [7.8 * TILE, 2.6 * TILE, 0];
+function thunderHeroAt(t: number): [number, number, number] {
+  const pts = [...THUNDER_STRIKES.map((st) => [st.at[0], st.at[1], 0] as [number, number, number]), THUNDER_HERO_OUT];
+  for (const [k, st] of THUNDER_STRIKES.entries()) {
+    const d0 = st.lock + 0.12, d1 = d0 + 0.3;
+    if (t >= d1) continue;
+    if (t <= d0) return pts[k];
+    const u = (t - d0) / 0.3, e = u * u * (3 - 2 * u);
+    return [pts[k][0] + (pts[k + 1][0] - pts[k][0]) * e, pts[k][1] + (pts[k + 1][1] - pts[k][1]) * e, 0];
+  }
+  return pts[pts.length - 1];
 }
 /** The Power rune's glyph, `k` pixels a cell, the word's red with his pink through its middle, a hot edge, inked round. */
 function powerGlyph(k: number): (string | null)[][] {
@@ -1216,13 +1233,24 @@ function thunderFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: n
     if (t >= st.lock && t < st.t) {
       const f = (t - st.lock) / (st.t - st.lock);
       const R = THUNDER.R * TILE * (1.35 - 0.35 * f);
+      // (THE WARNING in the colour of every boss's warning on the ground (his words, 13 Nov 2026, of Avalanche's: “whatever you use for
+      // normal hit box warnings on the ground”: art/mkit.ts FLAME, as art/boss_shots.ts draws them): the floor inside it flushed and
+      // throbbing, stronger as it charges; its ring, a hot arc running round it, crackling)
+      const throb = 0.75 + 0.25 * Math.sin(t * 14);
+      for (let yy = -R; yy <= R; yy += 1.2) for (let xx = -R; xx <= R; xx += 1.2) {
+        if (Math.hypot(xx, yy) >= R - 2) continue;
+        const [px, py] = P(st.at[0] + xx, st.at[1] + yy);
+        mix(s, px, py, FLAME[2], (0.12 + 0.22 * f) * throb);
+      }
+      const run = (t * 1.6) % 1;
       for (let i = 0; i < 260; i++) {
         const a = (i / 260) * Math.PI * 2;
-        const j = (fr + i) % 7 === 0 ? 2 : 0;
-        for (let w = 0; w < 3; w++) { const [px, py] = P(st.at[0] + Math.cos(a) * (R - w + j), st.at[1] + Math.sin(a) * (R - w + j)); mix(s, px, py, w === 0 ? '#f0e4ff' : i % 13 === 0 ? '#ff4f8a' : '#bc84ff', 0.5 + 0.45 * f); }
+        const lead = 1 - ((((i / 260 - run) % 1) + 1) % 1);
+        const hot = lead > 0.85 ? (lead - 0.85) / 0.15 : 0;
+        const j = (fr + i) % 7 === 0 ? 1.5 : 0;
+        for (let w = 0; w < 3; w++) { const [px, py] = P(st.at[0] + Math.cos(a) * (R - w + j), st.at[1] + Math.sin(a) * (R - w + j)); mix(s, px, py, w === 2 ? FLAME[0] : hot > 0.5 || w === 0 && i % 9 === 0 ? FLAME[3] : FLAME[2], Math.min(1, 0.55 + 0.4 * f + 0.4 * hot)); }
       }
-      // (the floor inside it darkening as it charges, crackling)
-      for (let i = 0; i < 40 * f; i++) { const a = ((i * 2.4 + fr) % 6.28), d = R * ((i * 0.37 + fr * 0.1) % 1); const [px, py] = P(st.at[0] + Math.cos(a) * d, st.at[1] + Math.sin(a) * d); mix(s, px, py, '#f0e4ff', 0.8); }
+      for (let i = 0; i < 40 * f; i++) { const a = ((i * 2.4 + fr) % 6.28), d = R * ((i * 0.37 + fr * 0.1) % 1); const [px, py] = P(st.at[0] + Math.cos(a) * d, st.at[1] + Math.sin(a) * d); mix(s, px, py, FLAME[4], 0.8); }
     }
     if (t >= st.t) {
       const cool = Math.min(1, (t - st.t) / 1.6);
@@ -1417,7 +1445,7 @@ for (const sg of segs) {
     const lead = sg.move === 'fall' ? 50 + 60 * Math.min(1, t / 1.2) : 50;
     // (as his shade rises, the camera lifts to take it in)
     const lift = sg.move === 'fall' ? 60 * Math.min(1, Math.max(0, (t - FALL.shade[0]) / (FALL.shade[1] - FALL.shade[0]))) : 0;
-    const [tx, ty] = thunderFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 70]) : avalFilm ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 30]) : turnFilm ? at([sg.from[0] + 0.6 * TILE, sg.from[1] - 0.2 * TILE, 70]) : hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    const [tx, ty] = thunderFilm ? at([sg.from[0] + 4.8 * TILE, sg.from[1] - 0.2 * TILE, 70]) : avalFilm ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 30]) : turnFilm ? at([sg.from[0] + 0.6 * TILE, sg.from[1] - 0.2 * TILE, 70]) : hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
@@ -1468,8 +1496,15 @@ for (const sg of segs) {
     }
     if (sg.move === 'eruption' || sg.move === 'foot' || sg.move === 'hailstorm' || sg.move === 'turn' || sg.move === 'avalanche' || sg.move === 'thunder') {
       // (the hero, out before him)
-      const hh = sg.move === 'thunder' ? [6.6 * TILE, -2.0 * TILE, 0] : sg.move === 'hailstorm' ? HAIL_HERO : sg.move === 'avalanche' ? [AVAL.safe.at[0] * TILE, AVAL.safe.at[1] * TILE, 0] : [5.0 * TILE, -1.6 * TILE, 0];
+      const hh = sg.move === 'thunder' ? thunderHeroAt(t) : sg.move === 'hailstorm' ? HAIL_HERO : sg.move === 'avalanche' ? [AVAL.safe.at[0] * TILE, AVAL.safe.at[1] * TILE, 0] : [5.0 * TILE, -1.6 * TILE, 0];
       const [hx, hy] = at([sg.from[0] + k * hh[0], sg.from[1] + k * hh[1], 0]);
+      if (sg.move === 'thunder') for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) {
+        // (dashing: after-images of him where he was a moment ago)
+        const p = thunderHeroAt(t - m / 30);
+        if (Math.hypot(p[0] - hh[0], p[1] - hh[1]) < 4) continue;
+        const [gx, gy] = at([sg.from[0] + k * p[0], sg.from[1] + k * p[1], 0]);
+        hero(s, ox + gx, oy + gy, a);
+      }
       hero(s, ox + hx, oy + hy);
       // (HIS SHADE, behind him, doing as he does a moment after him)
       const sk = skeletonAt(mob, sg.move, Math.max(0, t - SHADE.lag));

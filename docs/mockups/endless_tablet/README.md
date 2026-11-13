@@ -529,6 +529,12 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   round him: the red runs right up under his feet and the snow pours straight past him, his own spell; he stands shin-deep in the
   river of it, the big masses breaking past his body and powder thrown up off his legs, the snow nearer the eye drawn over him and
   his shade (in the film, `layOver`). HIS YES to Avalanche with that change.
+- THUNDER (Power and Lightning; `thunder`, `THUNDER`, `thunderBits`; `pictures/standard/boss_thunder.mp4`), made for his yes: he
+  writes Power, his shade Lightning; melded, the slam flings the rune up out of sight; a ring locks on where the hero stands, in the
+  bosses' own ground-warning colours (art/mkit.ts FLAME, as art/boss_shots.ts draws them: his word of Avalanche's warning), the floor
+  inside it flushed and throbbing, a hot arc running round it, tightening as it charges; the hero dashes out of it; one great bolt
+  (his Lightning's colours) hammers down on the spot: a crater, cracks glowing, jagged four-faced chunks of the floor thrown out
+  tumbling, a thunderclap ring rolling out. Three times, each locking on faster, each where the hero has gone.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

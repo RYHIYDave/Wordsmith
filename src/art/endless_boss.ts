@@ -3488,7 +3488,7 @@ export function paintAvalanche(t: number, view: 'front' | 'rear', nearer: V3 | n
 // floor blasted into a crater, rock thrown out of it, a THUNDERCLAP ring rolling out over the floor, sparks crawling from it. Three
 // times, each locking on faster, following the hero. His rules for the words stand: one rune (the meld's), what it makes made as
 // solids (the rock it throws; the bolt is light, as his Lightning's are).
-export const THUNDER = { strikes: [{ at: [4.4, -0.8], warn: 0.95 }, { at: [5.4, 0.9], warn: 0.7 }, { at: [3.9, 1.6], warn: 0.5 }] as const, first: 0.75, gap: 0.35, R: 1.6, clap: 4.2, clapLong: 0.55, bolt: 0.22, end: 5.0 };
+export const THUNDER = { strikes: [{ at: [3.6, -1.6], warn: 0.95 }, { at: [5.0, -0.2], warn: 0.7 }, { at: [6.4, 1.2], warn: 0.5 }] as const, first: 0.75, gap: 0.35, R: 1.6, clap: 4.2, clapLong: 0.55, bolt: 0.22, end: 5.0 };
 export const THUNDER_CANVAS: MobCanvas = { w: 900, h: 640, ax: 260, ay: 420 };
 /** Each strike: where (his floor point's own lengths), when its ring locks on, when the bolt falls (the move's own time). */
 export const THUNDER_STRIKES: ReadonlyArray<{ at: V3; lock: number; t: number }> = ((): { at: V3; lock: number; t: number }[] => {
@@ -3515,9 +3515,26 @@ export function thunderBits(t: number, put: Put): void {
       const w = Math.min(u, tl);
       const fade = u > 2.2 ? 1 - Math.min(1, (u - 2.2) / 0.6) : 1;
       if (fade <= 0) continue;
-      const R = (2.4 + 2.6 * hash(k, i, 9924)) * (0.6 + 0.4 * fade);
-      const c: V3 = [s.at[0] + Math.cos(a) * sp * w, s.at[1] + Math.sin(a) * sp * w, Math.max(R * 0.7, vz * w - 0.5 * g * w * w)];
-      put(`rock${k}`, 'rock', { k: 'ball', c, ax: [[R, 0, 0], [0, R * 0.85, 0], [0, 0, R * 0.8]], skin: (u2, tone, x, y) => (u < 0.6 && (x + y) % 6 === 0 ? '#bc84ff' : THUNDER_ROCK[T5(tone)]) });
+      const R = (3.6 + 3.6 * hash(k, i, 9924)) * (0.6 + 0.4 * fade);
+      const c: V3 = [s.at[0] + Math.cos(a) * sp * w, s.at[1] + Math.sin(a) * sp * w, Math.max(R * 0.55, vz * w - 0.5 * g * w * w)];
+      // (a jagged chunk of the floor, four-faced, tumbling as it flies, still once it lies)
+      const spin = w * (8 + 10 * hash(k, i, 9925));
+      const ax = norm([hash(k, i, 9926) - 0.5, hash(k, i, 9927) - 0.5, hash(k, i, 9928) - 0.5]);
+      const corner = ([x, y, z]: V3, j: number): V3 => {
+        const r = R * (0.75 + 0.6 * hash(k, i * 4 + j, 9929));
+        const d = norm([x, y, z]);
+        // (turned about its own axis by `spin`: Rodrigues)
+        const cs = Math.cos(spin), sn = Math.sin(spin), dt = ax[0] * d[0] + ax[1] * d[1] + ax[2] * d[2];
+        const cr: V3 = [ax[1] * d[2] - ax[2] * d[1], ax[2] * d[0] - ax[0] * d[2], ax[0] * d[1] - ax[1] * d[0]];
+        return [c[0] + r * (d[0] * cs + cr[0] * sn + ax[0] * dt * (1 - cs)), c[1] + r * (d[1] * cs + cr[1] * sn + ax[1] * dt * (1 - cs)), Math.max(0.3, c[2] + r * (d[2] * cs + cr[2] * sn + ax[2] * dt * (1 - cs)))];
+      };
+      const P4 = ([[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]] as V3[]).map((d, j) => corner(d, j));
+      const hot = u < 0.6;
+      for (const [a0, b0, c0] of [[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]]) {
+        const p0 = P4[a0], e1 = sub(P4[b0], p0), e2 = sub(P4[c0], p0);
+        const lu = len(e1) / 2, lv = len(e2) / 2;
+        put(`rock${k}`, 'rock', { k: 'panel', c: add(p0, mul(add(e1, e2), 0.5)), u: mul(e1, 0.5), v: mul(e2, 0.5), skin: (aa, bb, _f, tone) => (aa / lu + bb / lv > 0 ? null : hot && hash(Math.round(aa * 2), Math.round(bb * 2), 9930 + i) > 0.86 ? '#ff9cc0' : THUNDER_ROCK[T5(tone)]) });
+      }
     }
     if (u < 0.3) put('glow', 'boltGlow', { k: 'glow', p: [s.at[0], s.at[1], 20], c: '#f0e4ff', r: 70, a: 0.6 * (1 - u / 0.3) });
   }
