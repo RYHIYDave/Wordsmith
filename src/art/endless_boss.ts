@@ -2925,7 +2925,7 @@ export function wsMob(): Mob {
       for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
     },
     grains: (st: Stage, m: Moment) => m.move === 'death' ? deathGrains(m.t, DEATH_HEART()) : boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, blight: { name: 'blight', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, blight: { name: 'blight', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, scald: { name: 'scald', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -3701,6 +3701,94 @@ export function paintBlight(t: number, view: 'front' | 'rear', nearer: V3 | null
   return { px: st.whole(nearer ? null : ENEMY_RIM), lights: nearer ? [] : lights } as Painted;
 }
 
+// SCALD (Flame and Frost, melded: the game's meld, render/melds3.ts, “steam rising off scalding water”; and on the ground, as the
+// game has it, “Fire meeting ice on the ground bursts into steam that hurts and hides”): he writes Flame, his shade writes Frost;
+// melded, the slam drives the rune into the floor at his feet, and A RING OF ICE races out round him over the floor, a broad band
+// of it, leaving him and the ground at his feet bare (the warning: the ice flushed in the colour of every boss's warning on the
+// ground, its edges hot); fire glows up through its cracks, hotter and hotter, the ice hissing; then the whole ring FLASHES into
+// scalding steam: great billows of it boiling up and rolling over, hiding all in it, his pink-hot at their roots; it hangs, drifts
+// and thins away off a wet floor. The safe ground is close to him, inside the ring, or far out past it. His rules for the words
+// stand: one rune (the meld's), what it makes made as solids (the steam's billows).
+export const SCALD = { r0: 2.0, r1: 6.4, freeze: [0.05, 0.55] as const, heat: [0.55, 1.55] as const, flash: 1.65, rise: 0.5, hang: 1.4, thin: 1.3, puffs: 60, end: 6.4 };
+export const SCALD_CANVAS: MobCanvas = { w: 1200, h: 900, ax: 600, ay: 560 };
+const STEAM: Ramp = ['#5a4446', '#a08884', '#d8c4bc', '#f2e4dc', '#ffffff'];
+/** How far out the ice has raced (his floor point's own lengths, from him), `t` into the move. */
+export const scaldIce = (t: number): number => {
+  const u = clamp01((t - MELD.slam - SCALD.freeze[0]) / (SCALD.freeze[1] - SCALD.freeze[0]));
+  return (SCALD.r0 + (SCALD.r1 - SCALD.r0) * (1 - (1 - u) * (1 - u))) * TILE;
+};
+/** Whether a spot of the floor is in the ring (its ragged edges, frost-fronted). */
+export function scaldIn(x: number, y: number, pad = 0): boolean {
+  const r = Math.hypot(x, y), a = Math.atan2(y, x);
+  const rag = (k: number): number => (Math.sin(a * 7 + k) * 0.5 + Math.sin(a * 13 + k * 2) * 0.3 + Math.sin(a * 23 + k) * 0.2) * 0.22 * TILE;
+  return r > SCALD.r0 * TILE + rag(1) - pad && r < SCALD.r1 * TILE + rag(4) + pad;
+}
+/** The steam's billows: where each boils up (his floor point's own lengths), how big it grows, how high it rises. */
+export const SCALD_PUFFS: ReadonlyArray<{ at: V3; R: number; up: number; d: number }> = Array.from({ length: SCALD.puffs }, (_, i) => {
+  for (let k = 0; ; k++) {
+    const a = hash(i, k, 9601) * TAU, r = (SCALD.r0 + (SCALD.r1 - SCALD.r0) * Math.sqrt(hash(i, k, 9602))) * TILE;
+    const x = Math.cos(a) * r, y = Math.sin(a) * r;
+    if (scaldIn(x, y, -6) || k > 20) return { at: [x, y, 0] as V3, R: 20 + 14 * hash(i, 3, 9603), up: 40 + 150 * hash(i, 4, 9604), d: hash(i, 5, 9605) };
+  }
+});
+/** THE SCALD'S SOLIDS, `t` into the move: hot droplets flung out of the steam as it flashes (the steam itself is vapour, not a solid:
+ * drawn soft, banded, as `scaldSteamAt` has it). Only those `keep` keeps (by their floor point). */
+export function scaldBits(t: number, put: Put, keep: (x: number, y: number) => boolean = () => true): void {
+  const f = t - MELD.slam - SCALD.flash;
+  if (f < 0) return;
+  const gone = clamp01((f - SCALD.rise - SCALD.hang) / SCALD.thin);
+  if (gone >= 1) return;
+  // (hot droplets flung out of it as it flashes)
+  if (f < 0.8) for (let i = 0; i < 70; i++) {
+    const p = SCALD_PUFFS[i % SCALD_PUFFS.length];
+    if (!keep(p.at[0], p.at[1])) continue;
+    const a = hash(i, 1, 9607) * TAU, sp = 60 + 80 * hash(i, 2, 9608), vz = 120 + 100 * hash(i, 3, 9609), g = 600;
+    const z = vz * f - 0.5 * g * f * f;
+    if (z < 0) continue;
+    put('drops', 'drop', { k: 'mote', p: [p.at[0] + Math.cos(a) * sp * f, p.at[1] + Math.sin(a) * sp * f, z], c: i % 4 ? '#fff4ec' : '#ff9cc0', size: 1 });
+  }
+  if (f < 0.35) put('glow', 'scaldGlow', { k: 'glow', p: [0, 0, 20], c: '#ffb090', r: 260, a: 0.4 * (1 - f / 0.35) });
+}
+/** THE STEAM, `t` into the move: each billow's plume (his floor point's own lengths: where it stands on the floor, the heights and
+ * sizes of the puffs it boils up in), how thick it is (0 ... 1, thinning away), how hot it is at its root (as it flashes). */
+export function scaldSteamAt(t: number): { at: V3; puffs: [number, number, number, number][]; thick: number; hot: number }[] {
+  const f = t - MELD.slam - SCALD.flash;
+  if (f < 0) return [];
+  const gone = clamp01((f - SCALD.rise - SCALD.hang) / SCALD.thin);
+  if (gone >= 1) return [];
+  const out: { at: V3; puffs: [number, number, number, number][]; thick: number; hot: number }[] = [];
+  for (const p of SCALD_PUFFS) {
+    const u = f - p.d * 0.12;
+    if (u < 0) continue;
+    const r = clamp01(u / SCALD.rise), e = 1 - (1 - r) * (1 - r);
+    const R = p.R * (0.4 + 0.6 * e) * (1 + 0.3 * gone);
+    const n = Math.hypot(p.at[0], p.at[1]) || 1, drift = 12 * u;
+    const at: V3 = [p.at[0] + (p.at[0] / n) * drift, p.at[1] + (p.at[1] / n) * drift, 0];
+    const top = p.up * e + 14 * u;
+    // (a plume of it: lumpy billows heaped up its height, each over the last and swaying off it, widening as it rises)
+    const n2 = Math.max(1, Math.ceil(top / (0.7 * R)));
+    const k0 = SCALD_PUFFS.indexOf(p);
+    const puffs: [number, number, number, number][] = Array.from({ length: n2 + 1 }, (_, j) => {
+      const rj = R * (1 + (0.55 * j) / n2) * (0.75 + 0.5 * hash(k0, j, 9621));
+      const sw = R * 0.5 * (j / n2 + 0.2);
+      return [R * 0.6 + (top * j) / n2, rj, sw * Math.sin(j * 1.7 + k0 + t * 1.3), sw * 0.6 * Math.cos(j * 1.3 + k0 * 2 + t * 1.1)];
+    });
+    out.push({ at, puffs, thick: (1 - gone) * Math.min(1, u / 0.08), hot: Math.max(0, 1 - u / 0.3) });
+  }
+  return out;
+}
+/** The scald's picture; with `nearer` (a floor point in his own lengths), only its steam nearer the eye than that, inked but without
+ * its rim or its light: laid over a figure (him, his shade, the hero) where it stands in it. */
+export function paintScald(t: number, view: 'front' | 'rear', nearer: V3 | null = null): Painted {
+  const st = stage(view, SCALD_CANVAS.ax, SCALD_CANVAS.ay, SCALD_CANVAS);
+  const bits: Bit[] = [];
+  const lo = nearer ? st.near(nearer) : -Infinity;
+  scaldBits(t, (part, piece, shape) => bits.push({ part, piece, shape }), (x, y) => st.near([x, y, 0]) >= lo);
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(nearer ? null : ENEMY_RIM), lights: nearer ? [] : lights } as Painted;
+}
+
+
 // THUNDER (Power and Lightning, melded: “a storm cloud and its one great bolt”): he writes Power, his shade writes Lightning; melded,
 // the slam flings the rune straight up out of sight; a GREAT RING of crackling violet locks onto where the hero stands, tightening as
 // it charges (the warning); then ONE GREAT BOLT, a pillar of violet-white lightning the width of a man, hammers down on it: the
@@ -3973,7 +4061,7 @@ export const WS_SHAPE: BossShape = {
   },
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : move === 'fall' ? fallCarry(t) * TILE : 0),
-  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE, avalanche: MELD_STRIKE, thunder: MELD_STRIKE, blight: MELD_STRIKE },
+  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE, avalanche: MELD_STRIKE, thunder: MELD_STRIKE, blight: MELD_STRIKE, scald: MELD_STRIKE },
   // (his hammer from the sky: three blows of his staff, each its own wind-up, flash and follow-through)
   blows: { power: POWER.slams.map((h, i) => ({ hit: h, strike: POWER_STRIKES[i], from: i ? POWER.slams[i - 1] + 0.1 : 0, until: i < 2 ? POWER.slams[i + 1] - POWER.raise : Infinity })) },
   smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)) || (move === 'frost' && frostSmeared(t)) || (move === 'fall' && slamSmeared(t)) || (FOOT_MOVES.has(move) && move !== 'foot' && meldSmeared(t)),
@@ -3991,7 +4079,7 @@ export const WS_SHAPE: BossShape = {
     { from: 'fall', at: 'end', to: 'foot', toAt: 0, shift: footFrom() },
     { from: 'foot', at: 0, to: 'death', toAt: 0 },
     { from: 'foot', at: 0, to: 'turn', toAt: 0 },
-    ...['eruption', 'hailstorm', 'avalanche', 'thunder', 'blight'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
+    ...['eruption', 'hailstorm', 'avalanche', 'thunder', 'blight', 'scald'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
   ],

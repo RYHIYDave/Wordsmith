@@ -561,6 +561,17 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   rot creeps over most of the room (nine fingers, out to the room's walls); 22 dead trees about twice his height burst up out of
   it, each a twisting trunk on flared roots, ridged bark, crooked limbs forking into claws, his pink glowing out of a split at its
   foot; they stand, go grey, lose their limbs and sink back to stumps in the rot, which dries and is gone.
+  HIS YES: “Yes, on to Scald (Recommended)”.
+- SCALD (Flame and Frost; `scald`, `SCALD`, `scaldIce`, `scaldIn`, `scaldSteamAt`; `pictures/standard/boss_scald.mp4`), made for
+  his yes: the game's meld is “steam rising off scalding water”, and on the ground “Fire meeting ice on the ground bursts into
+  steam that hurts and hides”. He writes Flame, his shade Frost; melded, the slam drives the rune into the floor at his feet and a
+  broad ring of ice races out round him (the warning: flushed in the bosses' ground-warning colour, its edges hot gold), leaving
+  him and the ground close about him bare; fire glows up through its cracks, hotter and hotter, the screen trembling; then the whole
+  ring flashes into scalding steam, billows boiling up in great plumes, hot pink at their roots, hiding all in them; it hangs,
+  thins and is gone. The safe ground is close to him, inside the ring (the hero runs in to him), or far out past it. The steam is
+  vapour, not a solid: drawn soft and banded as pixel art draws smoke (the film's `steam`), lit from above, each billow's lobes
+  shaded (a first try as solid balls read as a heap of balls; a second as columns read as pillars). Through the bosses' checks
+  (0 findings).
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
