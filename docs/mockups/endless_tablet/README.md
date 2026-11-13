@@ -288,6 +288,10 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   into it.)
   HIS YES, 12 Nov 2026, by pop-up: “Yes, on to his words (Recommended)” (offered as: next, his five word attacks from the saddle,
   starting with Power's hammer from the sky).
+- HIS WORDS, 12 Nov 2026, 19:55: “I see his staff swapping hands.  It’s gonna have to get unmirrored at some point”. READ AS (told him
+  so): where the game turns his picture over for the other way he faces (the run back up the lane, from behind), the staff goes into
+  his left hand; before he goes in the game, his pictures for that way must be PAINTED TURNED ROUND, NOT FLIPPED, so that he always
+  holds it in his right (he and the boar are solids: the painter can draw them from that side true). On the list, before he goes in.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.
