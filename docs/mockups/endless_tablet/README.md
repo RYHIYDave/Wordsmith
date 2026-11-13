@@ -377,9 +377,16 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   A POISON RUNE BURNS ITSELF INTO THE FLOOR (a solid lying on it: the word's drop in its green, his pink at its heart, ringed, glowing,
   pulsing: a set trap); stepped near, it SNAPS (flaring white-hot) and the cloud of poison bursts up out of it and hangs. (His rule
   that the runes make what strikes stands: the thrown rune makes the traps; the traps make the clouds.)
-- NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
-  Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
-  boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.
+- HIS WORDS on it, 12 Nov 2026: “is that the rune for poison?  gimme a bigger spread with the same amount of traps”. Read so: the
+  drop was a stand-in, not the game's own Poison rune (the skull). REMADE SO: the traps carry the skull, and the same ten are spread
+  wider over the room (from 1.6 to 5 tiles out, where they were packed nearer).
+- HIS WORDS, 12 Nov 2026: “i want to see the runes i see in my lexicon on thiese attacks”. Read so: every word's rune, at his hand
+  as he writes it and as it flies, is the Lexicon's own rune stone (the carved stone tablet with the word's glyph in its colour,
+  `lexiconRune`, drawn as the Lexicon's `runeSprite` draws it), not a rune drawn for the boss. REMADE SO in all five films (Power,
+  Flame, Frost, Lightning, Poison), and Poison's floor traps are that same stone. Commit aec723f; the boss's tests pass (4 of 4).
+- NEXT: Poison for his yes; then the boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his
+  death. Before he goes in the game: his other facing painted turned round, not flipped (his words: “I see his staff swapping
+  hands.  It's gonna have to get unmirrored at some point”).
 
 ## The tools
 
