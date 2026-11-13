@@ -535,6 +535,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   inside it flushed and throbbing, a hot arc running round it, tightening as it charges; the hero dashes out of it; one great bolt
   (his Lightning's colours) hammers down on the spot: a crater, cracks glowing, jagged four-faced chunks of the floor thrown out
   tumbling, a thunderclap ring rolling out. Three times, each locking on faster, each where the hero has gone.
+  HIS WORDS, by pop-up: “The lightning doesn’t look like lightning but I like the idea.  Maybe more strikes, 6-7 total”; and then:
+  “Also the word is thunder so that should be involved somehow”. REMADE SO: the bolt is real lightning (`skyBolt`): one thin
+  white-hot channel, jagged at every scale, forking as it comes down, his Lightning's yellow round it and his pink glow round that;
+  it strikes, flickers out, strikes again and fades, the room flashing with it. SEVEN strikes, each locking on faster (0.9 s down to
+  0.42 s). AND THE THUNDER: storm clouds gather over the room as the rune goes up into them, rolls of their shadow drifting over the
+  floor, a flicker inside them and a rumble (the screen trembling) as each ring locks on; a moment after each bolt its THUNDERCLAP
+  rolls out over the floor, a thick hard white ring of force, the floor rippling under it, its dust churned up and thrown behind it,
+  the screen jolting: one caught in it is knocked back (in the film the hero dodges each bolt by a hair and the clap shoves him on,
+  into where the next ring locks on). For the sound chat: each bolt's crack, then its thunder, a deep boom rolling after it.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

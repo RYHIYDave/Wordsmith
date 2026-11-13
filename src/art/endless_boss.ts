@@ -3487,8 +3487,31 @@ export function paintAvalanche(t: number, view: 'front' | 'rear', nearer: V3 | n
 // it charges (the warning); then ONE GREAT BOLT, a pillar of violet-white lightning the width of a man, hammers down on it: the
 // floor blasted into a crater, rock thrown out of it, a THUNDERCLAP ring rolling out over the floor, sparks crawling from it. Three
 // times, each locking on faster, following the hero. His rules for the words stand: one rune (the meld's), what it makes made as
-// solids (the rock it throws; the bolt is light, as his Lightning's are).
-export const THUNDER = { strikes: [{ at: [3.6, -1.6], warn: 0.95 }, { at: [5.0, -0.2], warn: 0.7 }, { at: [6.4, 1.2], warn: 0.5 }] as const, first: 0.75, gap: 0.35, R: 1.6, clap: 4.2, clapLong: 0.55, bolt: 0.22, end: 5.0 };
+// solids (the rock it throws; the bolt is light, as his Lightning's are). Seven times (his word, below).
+// MORE STRIKES (his words, 13 Nov 2026: “The lightning doesn’t look like lightning but I like the idea.  Maybe more strikes, 6-7
+// total”): seven, each locking on faster than the last, each where the hero has gone.
+// AND THE THUNDER IN IT (his words, 13 Nov 2026: “Also the word is thunder so that should be involved somehow”): storm clouds gather
+// over the room as the rune goes up into them, rumbling as each ring locks on; and a moment after each bolt its THUNDERCLAP rolls out
+// over the floor from where it struck, a ring of force rippling the floor and throwing up its dust: one caught in it is knocked back.
+export const THUNDER = {
+  strikes: [
+    { at: [2.6, -2.4], warn: 0.9 }, { at: [4.3, -0.7], warn: 0.78 }, { at: [6.0, 1.0], warn: 0.68 }, { at: [8.2, 0.05], warn: 0.6 },
+    { at: [6.5, -1.65], warn: 0.52 }, { at: [4.8, -3.35], warn: 0.46 }, { at: [3.1, -5.05], warn: 0.42 },
+  ] as const,
+  first: 0.75, gap: 0.35, R: 1.6, clap: 3.2, clapAfter: 0.08, clapLong: 0.5, bolt: 0.3, clouds: [0.05, 0.7] as const, end: 9.6,
+};
+/** How far a strike's thunderclap has rolled out from where it struck (his floor point's own lengths), `u` seconds after the bolt;
+ * null before it comes or once it is gone. */
+export function thunderClapR(u: number): number | null {
+  const v = (u - THUNDER.clapAfter) / THUNDER.clapLong;
+  if (v < 0 || v >= 1) return null;
+  return 10 + THUNDER.clap * TILE * (1 - (1 - v) * (1 - v));
+}
+/** When a strike's thunderclap reaches `d` from where it struck (seconds after the bolt). */
+export function thunderClapAt(d: number): number {
+  const C = THUNDER.clap * TILE;
+  return THUNDER.clapAfter + (1 - Math.sqrt(Math.max(0, 1 - (d - 10) / C))) * THUNDER.clapLong;
+}
 export const THUNDER_CANVAS: MobCanvas = { w: 900, h: 640, ax: 260, ay: 420 };
 /** Each strike: where (his floor point's own lengths), when its ring locks on, when the bolt falls (the move's own time). */
 export const THUNDER_STRIKES: ReadonlyArray<{ at: V3; lock: number; t: number }> = ((): { at: V3; lock: number; t: number }[] => {
