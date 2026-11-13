@@ -2127,9 +2127,11 @@ export function paintSpores(t: number, fired: ReadonlyArray<number | null>, view
 }
 
 /** THE RUNE AS HIS LEXICON SHOWS IT (art/icons.ts runeSprite, the very same: a stone tablet, its top and left edges lit, its foot and
- * right in shadow, the word's own glyph carved in it in the word's colour, its heart glowing, inked round), so that the rune he writes
- * and throws is the one the hero knows from the Lexicon (his words, 12 Nov 2026: “i want to see the runes i see in my lexicon on
- * thiese attacks”). 14 by 14 picture pixels, null where there is nothing. */
+ * right in shadow, the word's own glyph carved in it in the word's colour, its heart glowing, inked round): Poison's traps on the
+ * floor are it (his words, 12 Nov 2026: “i want to see the runes i see in my lexicon on thiese attacks”; then “not with the stone
+ * around it, just the symbol carved into it”, “i do like the stone with poison on the ground tho”, “just one the ground”, “and just
+ * poison”: the runes he writes and throws are the bare symbol, tools/endless_boss_film.ts writeRune). 14 by 14 picture pixels,
+ * null where there is nothing. */
 export function lexiconRune(word: 'power' | 'fire' | 'frost' | 'lightning' | 'poison'): (string | null)[][] {
   const base = [
     '............',

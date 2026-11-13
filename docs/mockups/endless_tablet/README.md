@@ -384,6 +384,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   as he writes it and as it flies, is the Lexicon's own rune stone (the carved stone tablet with the word's glyph in its colour,
   `lexiconRune`, drawn as the Lexicon's `runeSprite` draws it), not a rune drawn for the boss. REMADE SO in all five films (Power,
   Flame, Frost, Lightning, Poison), and Poison's floor traps are that same stone. Commit aec723f; the boss's tests pass (4 of 4).
+- HIS WORDS, 12 Nov 2026, by pop-up: “not with the stone around it, just the symbol carved into it.  and have him like create it not
+  just pull it out of thin air or whatever”; then “i do like the stone with poison on the ground tho”, “just one the ground”, “and
+  just poison”. Read so: the runes he writes and throws are the bare symbol from the Lexicon (its glyph in the word's colour, its
+  heart in the word's glow, inked round), with no stone; the stone stays only on Poison's traps on the floor. And he MAKES each rune:
+  his pink gathers out of the air into his raised claw, a spark swelling there; then a beam reaches from his claw and writes the
+  symbol on the air stroke by stroke (on along each stroke, his claw lifted between strokes), the fresh strokes white-hot, cooling to
+  the word's colours, sparks thrown off where it writes; written, it flares and hangs burning before him until he throws it. REMADE
+  SO in all five films (`tools/endless_boss_film.ts`: `strokeOrder`, `bareGlyph`, `writeRune`, `runeSpot`, `clawTip`); each film's
+  half-speed replay now starts at the gathering.
 - NEXT: Poison for his yes; then the boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his
   death. Before he goes in the game: his other facing painted turned round, not flipped (his words: “I see his staff swapping
   hands.  It's gonna have to get unmirrored at some point”).

@@ -7,11 +7,13 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, lexiconRune, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
 import { png } from './king_png';
+import { GLYPH, WORD_COLOR, WORD_GLOW } from '../src/art/icons';
+import { P as PAL } from '../src/art/palette';
 
 const [out = '/tmp/wsfilm', move = 'charge', view0 = 'front', w0 = '420', h0 = '300'] = process.argv.slice(2);
 const view = view0 as 'front' | 'rear';
@@ -217,11 +219,139 @@ function powerGlyph(k: number): (string | null)[][] {
   return g;
 }
 const GLYPH_BIG = powerGlyph(9);
-/** THE RUNES AS HIS LEXICON SHOWS THEM (his words, 12 Nov 2026: “i want to see the runes i see in my lexicon on thiese attacks”): each
- * word's own rune stone, as the Lexicon draws it, twice its size. */
-const big2 = (g: (string | null)[][]): (string | null)[][] => g.flatMap((r) => [r.flatMap((c) => [c, c]), r.flatMap((c) => [c, c])]);
-const LEX = { power: big2(lexiconRune('power')), fire: big2(lexiconRune('fire')), frost: big2(lexiconRune('frost')), lightning: big2(lexiconRune('lightning')), poison: big2(lexiconRune('poison')) };
-const GLYPH_SMALL = LEX.power;
+/** THE RUNES HE WRITES (his words, 12 Nov 2026: “i want to see the runes i see in my lexicon on thiese attacks”, then “not with the
+ * stone around it, just the symbol carved into it.  and have him like create it not just pull it out of thin air or whatever”): each
+ * word's symbol as the Lexicon carves it (art/icons.ts GLYPH, in WORD_COLOR with WORD_GLOW at its heart), with no stone round it,
+ * RUNE_K pixels to its cell, inked round. (The stone stays only on Poison's traps on the floor: “i do like the stone with poison on
+ * the ground tho”, “just one the ground”, “and just poison”.) */
+type Word = 'power' | 'fire' | 'frost' | 'lightning' | 'poison';
+const RUNE_K = 4;
+const RUNE_PINK = '#ff4f8a';
+const RUNE_HOT = '#fffbe8';
+/** The order his claw writes a symbol's cells in: on along a stroke while it goes on (straight on first, then round a corner), the
+ * claw lifted to the topmost cell not yet written when a stroke ends. */
+function strokeOrder(rows: readonly string[]): { x: number; y: number; lift: boolean }[] {
+  const left = new Set<string>();
+  rows.forEach((r, y) => [...r].forEach((c, x) => { if (c !== '.') left.add(`${x},${y}`); }));
+  const out: { x: number; y: number; lift: boolean }[] = [];
+  let cur: [number, number] | null = null;
+  let d: [number, number] = [0, 0];
+  while (left.size) {
+    let next: [number, number] | null = null;
+    if (cur) for (const [dx, dy] of [d, [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]] as [number, number][]) {
+      if ((dx || dy) && left.has(`${cur[0] + dx},${cur[1] + dy}`)) { next = [cur[0] + dx, cur[1] + dy]; break; }
+    }
+    const lift = !next;
+    if (!next) for (const k of left) {
+      const [x, y] = k.split(',').map(Number);
+      if (!next || y < next[1] || (y === next[1] && x < next[0])) next = [x, y];
+    }
+    const n2 = next as [number, number];
+    d = cur && !lift ? [n2[0] - cur[0], n2[1] - cur[1]] : [0, 0];
+    left.delete(`${n2[0]},${n2[1]}`);
+    out.push({ x: n2[0], y: n2[1], lift: lift && out.length > 0 });
+    cur = n2;
+  }
+  return out;
+}
+/** The symbol as a little picture, `lit` of its cells written (in stroke order; all of them when not given), the freshest white-hot
+ * and cooling through its glow to its own colour; inked round. */
+function bareGlyph(word: Word, lit = Infinity): (string | null)[][] {
+  const rows = GLYPH[word];
+  const n = rows.length, W2 = n * RUNE_K + 2;
+  const order = strokeOrder(rows);
+  const g: (string | null)[][] = Array.from({ length: W2 }, () => Array(W2).fill(null));
+  order.forEach((c, i) => {
+    if (i >= Math.ceil(lit)) return;
+    const age = lit - i;
+    const own = rows[c.y][c.x] === 'o' ? WORD_GLOW[word] : WORD_COLOR[word];
+    const col = age < 1.6 ? RUNE_HOT : age < 4 ? WORD_GLOW[word] : own;
+    for (let y = 0; y < RUNE_K; y++) for (let x = 0; x < RUNE_K; x++) g[1 + c.y * RUNE_K + y][1 + c.x * RUNE_K + x] = col;
+  });
+  for (let y = 0; y < W2; y++) for (let x = 0; x < W2; x++) if (!g[y][x] && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[y + dy]?.[x + dx] && g[y + dy][x + dx] !== PAL.ink)) g[y][x] = PAL.ink;
+  return g;
+}
+const BARE: Record<Word, (string | null)[][]> = { power: bareGlyph('power'), fire: bareGlyph('fire'), frost: bareGlyph('frost'), lightning: bareGlyph('lightning'), poison: bareGlyph('poison') };
+const GLYPH_SMALL = BARE.power;
+/** HE MAKES IT (his words: “have him like create it not just pull it out of thin air”): over his writing, `p` from 0 to 1, his pink
+ * gathers out of the air into his raised claw, a spark swelling there; then a beam of it reaches out from his claw and writes the
+ * symbol on the air, stroke by stroke, at (X, Y), the fresh strokes white-hot and cooling to the word's colours, sparks thrown off
+ * where it writes; written, it flares, and hangs there burning (`held` seconds) until he throws it. (fx, fy) is his claw's tip. */
+function writeRune(s: Px, word: Word, X: number, Y: number, fx: number, fy: number, p: number, held: number, t: number): void {
+  const GATHER = 0.22;
+  const rows = GLYPH[word];
+  const n = rows.length, half = (n * RUNE_K) / 2;
+  const order = strokeOrder(rows);
+  const fr = Math.floor(t * 30);
+  const spark = (x: number, y: number, r: number, a: number): void => {
+    for (let yy = -Math.ceil(r); yy <= Math.ceil(r); yy++) for (let xx = -Math.ceil(r); xx <= Math.ceil(r); xx++) {
+      const q = Math.hypot(xx, yy) / Math.max(0.6, r);
+      if (q <= 1) mix(s, Math.round(x + xx), Math.round(y + yy), q < 0.45 ? RUNE_HOT : RUNE_PINK, a * (q < 0.45 ? 1 : 0.85 * (1 - q * 0.5)));
+    }
+  };
+  if (p < GATHER) {
+    // (gathering: his pink and the word's colour drawn in out of the air, spiralling into his claw; a spark swelling there)
+    const g = p / GATHER;
+    for (let i = 0; i < 16; i++) {
+      const ph = g * 1.7 - (i / 16) * 0.7;
+      if (ph <= 0 || ph >= 1) continue;
+      const a = i * 2.39 + ph * 3.2;
+      const r = 34 * (1 - ph) * (0.8 + 0.4 * ((i * 37) % 7) / 7);
+      const x = fx + Math.cos(a) * r, y = fy + Math.sin(a) * r * 0.75;
+      const c = i % 3 === 0 ? WORD_COLOR[word] : RUNE_PINK;
+      mix(s, Math.round(x), Math.round(y), c, 0.95);
+      if (i % 2 === 0) mix(s, Math.round(x - Math.cos(a) * 2), Math.round(y - Math.sin(a) * 1.5), c, 0.45);
+    }
+    spark(fx, fy, 0.8 + 2.4 * g, 0.9);
+    return;
+  }
+  const w = Math.min(1, (p - GATHER) / (1 - GATHER));
+  const lit = w * order.length;
+  // (a haze of his pink about what is written)
+  const R = half + 7;
+  for (let yy = -R; yy <= R; yy++) for (let xx = -R; xx <= R; xx++) {
+    const q = Math.hypot(xx, yy) / R;
+    if (q < 1) mix(s, Math.round(X + xx), Math.round(Y + yy), RUNE_PINK, (0.1 + 0.12 * Math.min(1, held * 4)) * w * (1 - q) * (1 - q));
+  }
+  // (written, it flares white for a moment)
+  const flare = held > 0 && held < 0.1;
+  stamp(s, flare ? bareGlyph(word, order.length + 1.2 - held * 30) : bareGlyph(word, held > 0 ? Infinity : lit), X, Y, 1);
+  if (w < 1) {
+    // (the beam: from his claw to where it writes, flickering; dimmer while his claw is lifted between strokes)
+    const i = Math.min(order.length - 1, Math.floor(lit));
+    const a0 = order[Math.max(0, i - 1)], a1 = order[i];
+    const f = lit - i;
+    const cx = (a1.lift ? a1.x : a0.x + (a1.x - a0.x) * f) * RUNE_K + RUNE_K / 2 + 1, cy = (a1.lift ? a1.y : a0.y + (a1.y - a0.y) * f) * RUNE_K + RUNE_K / 2 + 1;
+    const px = Math.round(X - half - 1 + cx), py = Math.round(Y - half - 1 + cy);
+    const steps = Math.max(1, Math.ceil(Math.hypot(px - fx, py - fy)));
+    for (let k = 0; k <= steps; k++) {
+      const u = k / steps;
+      const wob = Math.sin(u * 9 + fr * 1.7) * 0.8 * Math.sin(Math.PI * u);
+      const bx = Math.round(fx + (px - fx) * u + wob), by = Math.round(fy + (py - fy) * u - wob);
+      if (((k + fr) % 5) === 0) continue;
+      mix(s, bx, by, (k + fr) % 3 === 0 ? RUNE_HOT : RUNE_PINK, a1.lift ? 0.4 : 0.9);
+    }
+    spark(fx, fy, 1.6, 0.9);
+    spark(px, py, 2.2, 1);
+    // (sparks thrown off where it writes)
+    for (let k = 0; k < 6; k++) {
+      const h = Math.sin((fr * 7 + k * 13) * 12.9898) * 43758.5453;
+      const r = (h - Math.floor(h));
+      const a = r * Math.PI * 2, d = 3 + 6 * ((k * 0.37 + r * 3) % 1);
+      mix(s, Math.round(px + Math.cos(a) * d), Math.round(py + Math.sin(a) * d - 1), k % 2 ? RUNE_PINK : WORD_GLOW[word], 0.9);
+    }
+  }
+}
+/** Where a rune hangs as he writes it (out before his raised claw, above it: on the floor's own place, so it stays put while his
+ * hand works), and his claw's tip `t` seconds in; both as picture places from the move's floor point. */
+function runeSpot(move: string, tw: number, from: V2, dir: number): [number, number] {
+  const h = skeletonAt(mob, move, tw).handL;
+  return at([from[0] + dir * (h[0] + 9), from[1] + dir * h[1], h[2] + 15]);
+}
+function clawTip(move: string, t: number, from: V2, dir: number): [number, number] {
+  const h = skeletonAt(mob, move, t).handL;
+  return at([from[0] + dir * (h[0] + 1.5), from[1] + dir * h[1], h[2] + 1.5]);
+}
 function stamp(s: Px, g: (string | null)[][], cx: number, cy: number, a = 1, reveal = 1): void {
   const n = g.length;
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
@@ -264,7 +394,7 @@ function glyphOf(rows: readonly string[], k: number, own: string, hot: string): 
   for (let y = 0; y < W2; y++) for (let x = 0; x < W2; x++) if (!g[y][x] && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[y + dy]?.[x + dx] && g[y + dy][x + dx] !== '#1a0610')) g[y][x] = '#1a0610';
   return g;
 }
-const FIRE_GLYPH = LEX.fire;
+const FIRE_GLYPH = BARE.fire;
 /** THE FIRESTORM'S SCENE: the hero dodging; each fireball's mark on the floor before it falls, the floor scorched where it fell (under
  * the storm's own solids, painted as he is); his rune flung out high over the room and bursting into a ring of fire. */
 const STORM_AT: V2 = [4.6 * TILE, 0.2 * TILE];
@@ -319,12 +449,12 @@ function flameScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
   const sk = skeletonAt(mob, 'flame', t);
   const [bx, by] = wp(sp(FIRE_BURST), FIRE_BURST[2]);
   if (t > FIRE.write[0] && t <= FIRE.cast) {
-    const [x, y] = at([from[0] + dir * sk.handL[0], from[1] + dir * sk.handL[1], sk.handL[2] + 6]);
-    stamp(s, FIRE_GLYPH, ox + x, oy + y, 1, Math.min(1, (t - FIRE.write[0]) / (FIRE.write[1] - FIRE.write[0])));
+    const [x, y] = runeSpot('flame', FIRE.write[1], from, dir);
+    const [fx, fy] = clawTip('flame', t, from, dir);
+    writeRune(s, 'fire', ox + x, oy + y, ox + fx, oy + fy, Math.min(1, (t - FIRE.write[0]) / (FIRE.write[1] - FIRE.write[0])), Math.max(0, t - FIRE.write[1]), t);
   } else if (t > FIRE.cast && t < FIRE.cast + 0.3) {
     // (fired straight up into the sky, out of sight, a streak of fire behind it)
-    const sk2 = skeletonAt(mob, 'flame', FIRE.cast);
-    const [x0, y0] = at([from[0] + dir * sk2.handL[0], from[1] + dir * sk2.handL[1], sk2.handL[2] + 6]);
+    const [x0, y0] = runeSpot('flame', FIRE.write[1], from, dir);
     const u = (t - FIRE.cast) / 0.3;
     const X = ox + x0, Y = oy + y0 - 420 * u * u - 60 * u;
     stamp(s, FIRE_GLYPH, X, Y, 1);
@@ -335,7 +465,7 @@ function flameScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
   void bx;
   void by;
 }
-const FROST_GLYPH = LEX.frost;
+const FROST_GLYPH = BARE.frost;
 const ICE_AT: V2 = [FROST.from * TILE, 0];
 const FROST_HERO = (t: number): V2 => {
   const path: [number, V2][] = [[0, [6.2 * TILE, 0.2 * TILE]], [0.9, [6.2 * TILE, 0.2 * TILE]], [1.3, [6.6 * TILE, 1.5 * TILE]], [99, [6.6 * TILE, 1.5 * TILE]]];
@@ -371,12 +501,12 @@ function frostScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
   const [s0, hit] = FROST_STRIKE;
   const [ix, iy] = wp(ICE_AT);
   if (t > FROST.write[0] && t <= s0) {
-    const [x, y] = at([from[0] + dir * sk.handL[0], from[1] + dir * sk.handL[1], sk.handL[2] + 6]);
-    stamp(s, FROST_GLYPH, ox + x, oy + y, 1, Math.min(1, (t - FROST.write[0]) / (FROST.write[1] - FROST.write[0])));
+    const [x, y] = runeSpot('frost', FROST.write[1], from, dir);
+    const [fx, fy] = clawTip('frost', t, from, dir);
+    writeRune(s, 'frost', ox + x, oy + y, ox + fx, oy + fy, Math.min(1, (t - FROST.write[0]) / (FROST.write[1] - FROST.write[0])), Math.max(0, t - FROST.write[1]), t);
   } else if (t > s0 && t <= hit) {
     // (driven down into the floor with his staff: two frames, smeared)
-    const sk2 = skeletonAt(mob, 'frost', s0);
-    const [x0, y0] = at([from[0] + dir * sk2.handL[0], from[1] + dir * sk2.handL[1], sk2.handL[2] + 6]);
+    const [x0, y0] = runeSpot('frost', FROST.write[1], from, dir);
     const u = (t - s0) / (hit - s0);
     for (let k = 0; k < 6; k++) {
       const v = Math.max(0, u - k * 0.12);
@@ -398,7 +528,7 @@ function frostScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
     }
   }
 }
-const BOLT_GLYPH = LEX.lightning;
+const BOLT_GLYPH = BARE.lightning;
 const CRACK_AT: V2 = [4.4 * TILE, 0.3 * TILE];
 const BOLT_HERO = (t: number): V2 => {
   const path: [number, V2][] = [[0, [5.6 * TILE, 0.5 * TILE]], [1.2, [5.6 * TILE, 0.5 * TILE]], [2.2, [7.2 * TILE, 1.8 * TILE]], [3.0, [7.6 * TILE, -0.6 * TILE]], [3.8, [6.4 * TILE, -2.0 * TILE]], [99, [6.4 * TILE, -2.0 * TILE]]];
@@ -454,11 +584,11 @@ function boltScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
   const sk = skeletonAt(mob, 'lightning', t);
   const [cx, cy] = wp(CRACK_AT, 80);
   if (t > BOLT.write[0] && t <= BOLT.cast) {
-    const [x, y] = at([from[0] + dir * sk.handL[0], from[1] + dir * sk.handL[1], sk.handL[2] + 6]);
-    stamp(s, BOLT_GLYPH, ox + x, oy + y, 1, Math.min(1, (t - BOLT.write[0]) / (BOLT.write[1] - BOLT.write[0])));
+    const [x, y] = runeSpot('lightning', BOLT.write[1], from, dir);
+    const [fx, fy] = clawTip('lightning', t, from, dir);
+    writeRune(s, 'lightning', ox + x, oy + y, ox + fx, oy + fy, Math.min(1, (t - BOLT.write[0]) / (BOLT.write[1] - BOLT.write[0])), Math.max(0, t - BOLT.write[1]), t);
   } else if (t > BOLT.cast && t < BOLT.crack) {
-    const sk2 = skeletonAt(mob, 'lightning', BOLT.cast);
-    const [x0, y0] = at([from[0] + dir * sk2.handL[0], from[1] + dir * sk2.handL[1], sk2.handL[2] + 6]);
+    const [x0, y0] = runeSpot('lightning', BOLT.write[1], from, dir);
     const u = (t - BOLT.cast) / (BOLT.crack - BOLT.cast);
     const X = ox + x0 + (cx - ox - x0) * u, Y = oy + y0 + (cy - oy - y0) * u - 40 * Math.sin(Math.PI * u);
     stamp(s, BOLT_GLYPH, X, Y, 1);
@@ -579,7 +709,7 @@ function boltLine(s: Px, x0: number, y0: number, x1: number, y1: number, seed: n
     }
   }
 }
-const SPORE_GLYPH = LEX.poison;
+const SPORE_GLYPH = BARE.poison;
 const SPORE_AT: V2 = [4.6 * TILE, 0.2 * TILE];
 const SPORE_HERO = (t: number): V2 => {
   const path: [number, V2][] = [[0, [5.0 * TILE, 0.4 * TILE]], [1.8, [5.0 * TILE, 0.4 * TILE]], [2.7, [7.2 * TILE, 2.2 * TILE]], [3.6, [9.0 * TILE, 0.0 * TILE]], [4.5, [7.4 * TILE, -2.8 * TILE]], [99, [7.4 * TILE, -2.8 * TILE]]];
@@ -625,11 +755,11 @@ function sporeScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
   const sk = skeletonAt(mob, 'poison', t);
   const [cx, cy] = wp(SPORE_AT, 70);
   if (t > SPORE.write[0] && t <= SPORE.cast) {
-    const [x, y] = at([from[0] + dir * sk.handL[0], from[1] + dir * sk.handL[1], sk.handL[2] + 6]);
-    stamp(s, SPORE_GLYPH, ox + x, oy + y, 1, Math.min(1, (t - SPORE.write[0]) / (SPORE.write[1] - SPORE.write[0])));
+    const [x, y] = runeSpot('poison', SPORE.write[1], from, dir);
+    const [fx, fy] = clawTip('poison', t, from, dir);
+    writeRune(s, 'poison', ox + x, oy + y, ox + fx, oy + fy, Math.min(1, (t - SPORE.write[0]) / (SPORE.write[1] - SPORE.write[0])), Math.max(0, t - SPORE.write[1]), t);
   } else if (t > SPORE.cast && t < SPORE.burst) {
-    const sk2 = skeletonAt(mob, 'poison', SPORE.cast);
-    const [x0, y0] = at([from[0] + dir * sk2.handL[0], from[1] + dir * sk2.handL[1], sk2.handL[2] + 6]);
+    const [x0, y0] = runeSpot('poison', SPORE.write[1], from, dir);
     const u = (t - SPORE.cast) / (SPORE.burst - SPORE.cast);
     const X = ox + x0 + (cx - ox - x0) * u, Y = oy + y0 + (cy - oy - y0) * u - 40 * Math.sin(Math.PI * u);
     stamp(s, SPORE_GLYPH, X, Y, 1);
@@ -755,15 +885,14 @@ function powerScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
   // (the rune he writes, at his hand, stroke by stroke, until he flings it out over the hero: one rune, that one)
   const sk = skeletonAt(mob, 'power', t);
   if (t > POWER.write[0] && t <= POWER.cast) {
-    const [x, y] = at([from[0] + dir * sk.handL[0], from[1] + dir * sk.handL[1], sk.handL[2] + 6]);
-    const rev = Math.min(1, (t - POWER.write[0]) / (POWER.write[1] - POWER.write[0]));
-    stamp(s, GLYPH_SMALL, ox + x, oy + y, 1, rev);
+    const [x, y] = runeSpot('power', POWER.write[1], from, dir);
+    const [fx, fy] = clawTip('power', t, from, dir);
+    writeRune(s, 'power', ox + x, oy + y, ox + fx, oy + fy, Math.min(1, (t - POWER.write[0]) / (POWER.write[1] - POWER.write[0])), Math.max(0, t - POWER.write[1]), t);
   }
 
   // (the rune he flings: flying from his hand up over the hero, and bursting there; out of the burst, the hammer)
   if (t > POWER.cast && t < POWER.cast + 0.5) {
-    const sk2 = skeletonAt(mob, 'power', POWER.cast);
-    const [hx0, hy0] = at([from[0] + dir * sk2.handL[0], from[1] + dir * sk2.handL[1], sk2.handL[2] + 6]);
+    const [hx0, hy0] = runeSpot('power', POWER.write[1], from, dir);
     const [tx0, ty0] = wp(sh, 133);
     const u = Math.min(1, (t - POWER.cast) / 0.25);
     const X = ox + hx0 + (tx0 - ox - hx0) * u, Y = oy + hy0 + (ty0 - oy - hy0) * u - 60 * Math.sin(Math.PI * u);
