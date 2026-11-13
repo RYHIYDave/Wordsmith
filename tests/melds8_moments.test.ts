@@ -88,7 +88,7 @@ test('1. Forking: its moment from the one struck to the other, the arc marked as
   const f = arena('forking', [[1.1, 0], [2.4, 0.6]]);
   strike(f);
   const e = moment(f, 'forking');
-  assert.ok(e, 'its moment');
+  if (!e) throw new Error('its moment');
   assert.equal(e.x1, f.mons[1].x);
   assert.equal(e.y1, f.mons[1].y);
   assert.equal(e.k, 1, 'in front: full');

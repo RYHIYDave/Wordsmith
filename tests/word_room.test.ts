@@ -19,7 +19,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { wordIds } from '../src/game/melds';
 import { CELL, PITCH } from '../src/ui/panels';
-import { INV_MIN_W, NARROW_STONE, SWAP_W, TIGHT_STONE, WORD_HALF, WORD_ROOM, gameRect, halfRoom, invRect, layPouch } from '../src/ui/inventory';
+import { INV_MIN_W, NARROW_STONE, SWAP_W, TIGHT_STONE, TOUCH_STONE, WORD_HALF, WORD_ROOM, gameRect, halfRoom, invRect, layPouch } from '../src/ui/inventory';
 
 const ALL = wordIds();
 const SCREENS = [
@@ -72,14 +72,19 @@ test('at a service, the bottom turned to ALL has a place for every word, beside 
   assert.equal(lay.hidden, 0, `${lines} lines, ${bodyW - SWAP_W - 3} wide`);
   // (THE TEN NEW WORDS, live since 11 Nov 2026: 48 words and melded words in all, where four lines of the narrow stones hold 44:
   // there the stones stand a pixel narrower, TIGHT_STONE, each still wide enough for its rune stone, none over another)
-  assert.equal(ALL.length, 48);
-  assert.ok(lay.cells.every((c) => c.w === TIGHT_STONE), 'every word as a stone a pixel narrower');
-  assert.ok(TIGHT_STONE >= 14 && TIGHT_STONE < NARROW_STONE, 'no narrower than its rune stone');
+  // (AND THE EIGHT MELDS ACROSS THE GROUPS, live since 25.3.17: 56 in all, where four lines of those hold 48: there the stones
+  // stand touching, TOUCH_STONE, the rune stone's own width, none over another)
+  assert.equal(ALL.length, 56);
+  assert.ok(lay.cells.every((c) => c.w === TOUCH_STONE), 'every word as its stone, touching');
+  assert.ok(TOUCH_STONE === 14 && TOUCH_STONE < TIGHT_STONE && TIGHT_STONE < NARROW_STONE, 'no narrower than its rune stone');
   for (let i = 1; i < lay.cells.length; i++) {
     const a = lay.cells[i - 1];
     const b = lay.cells[i];
-    assert.ok(b.line > a.line || b.x >= a.x + a.w + 1, `${b.word} clear of ${a.word}`);
+    assert.ok(b.line > a.line || b.x >= a.x + a.w, `${b.word} clear of ${a.word}`);
   }
+  // (with the 48 there were, the stones a pixel apart, as they were)
+  const was48 = layPouch(ALL.slice(0, 48), () => 6, bodyW - SWAP_W - 3, lines, 3);
+  assert.ok(was48.hidden === 0 && was48.cells.every((c) => c.w === TIGHT_STONE), '48 words: the tight stones, as before');
   for (const c of lay.cells) assert.ok(c.x + c.w <= bodyW - SWAP_W - 3 && c.line < lines, `${c.word} inside`);
   // (with the 38 there were, the narrow stones as they were)
   const before = layPouch(ALL.slice(0, 38), () => 6, bodyW - SWAP_W - 3, lines, 3);
