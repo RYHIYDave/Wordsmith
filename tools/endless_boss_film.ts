@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -331,6 +331,69 @@ function flameScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
   void bx;
   void by;
 }
+const FROST_GLYPH = glyphOf(['X..X..X', '.X.X.X.', '..XoX..', 'XXoooXX', '..XoX..', '.X.X.X.', 'X..X..X'], 2, '#58a8f0', '#f2f6ff');
+const ICE_AT: V2 = [FROST.from * TILE, 0];
+const FROST_HERO = (t: number): V2 => {
+  const path: [number, V2][] = [[0, [6.2 * TILE, 0.2 * TILE]], [0.9, [6.2 * TILE, 0.2 * TILE]], [1.3, [6.6 * TILE, 1.5 * TILE]], [99, [6.6 * TILE, 1.5 * TILE]]];
+  for (let i = 1; i < path.length; i++) {
+    const [ta, pa] = path[i - 1], [tb, pb] = path[i];
+    if (t <= tb) { const u = (t - ta) / (tb - ta); const w = u * u * (3 - 2 * u); return [pa[0] + (pb[0] - pa[0]) * w, pa[1] + (pb[1] - pa[1]) * w]; }
+  }
+  return path[path.length - 1][1];
+};
+/** FROST'S SCENE: the rune driven into the floor before him; out of it the ice racing at the hero (painted as he is), the floor frozen
+ * white behind it. */
+function frostScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: number, after: boolean): void {
+  const wp = (p: V2, up = 0): [number, number] => { const [x, y] = at([from[0] + dir * p[0], from[1] + dir * p[1], up]); return [Math.round(ox + x), Math.round(oy + y)]; };
+  if (!after) {
+    // (the floor frozen white behind the ice as it races, and about where the rune struck)
+    for (const sp of FROST_SPIKES) {
+      if (t < sp.t) continue;
+      const u = Math.min(1, (t - sp.t) / 0.15);
+      const c: V2 = [ICE_AT[0] + sp.at[0], ICE_AT[1] + sp.at[1]];
+      for (let i = 0; i < 40; i++) {
+        const a = (i / 40) * Math.PI * 2;
+        for (let r = 0; r < 14 * u; r += 1.5) {
+          const [x, y] = wp([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]);
+          mix(s, x, y, (i * 7 + Math.floor(r)) % 9 === 0 ? '#f2f6ff' : '#b4d6f6', 0.22);
+        }
+      }
+    }
+    return;
+  }
+  const [hx, hy] = wp(FROST_HERO(t));
+  hero(s, hx, hy);
+  const sk = skeletonAt(mob, 'frost', t);
+  const [s0, hit] = FROST_STRIKE;
+  const [ix, iy] = wp(ICE_AT);
+  if (t > FROST.write[0] && t <= s0) {
+    const [x, y] = at([from[0] + dir * sk.handL[0], from[1] + dir * sk.handL[1], sk.handL[2] + 6]);
+    stamp(s, FROST_GLYPH, ox + x, oy + y, 1, Math.min(1, (t - FROST.write[0]) / (FROST.write[1] - FROST.write[0])));
+  } else if (t > s0 && t <= hit) {
+    // (driven down into the floor with his staff: two frames, smeared)
+    const sk2 = skeletonAt(mob, 'frost', s0);
+    const [x0, y0] = at([from[0] + dir * sk2.handL[0], from[1] + dir * sk2.handL[1], sk2.handL[2] + 6]);
+    const u = (t - s0) / (hit - s0);
+    for (let k = 0; k < 6; k++) {
+      const v = Math.max(0, u - k * 0.12);
+      stamp(s, FROST_GLYPH, ox + x0 + (ix - ox - x0) * v, oy + y0 + (iy - oy - y0) * v, k === 0 ? 1 : 0.4 / k);
+    }
+  }
+  layPainted(s, paintFrost(t, 'front'), ICE_CANVAS, ix, iy, 0);
+  // (where it struck: it shatters, a flash of white and his pink, a ring of frost thrown out)
+  if (t > hit && t < hit + 0.5) {
+    const b = (t - hit) / 0.5;
+    for (let yy = -22; yy <= 22; yy++) for (let xx = -32; xx <= 32; xx++) {
+      const q = Math.hypot(xx / 32, yy / 22);
+      if (q < 1) mix(s, ix + xx, iy + yy, q < 0.4 ? '#ff4f8a' : '#f2f6ff', 0.75 * (1 - b) * (1 - q));
+    }
+    for (let i = 0; i < 90; i++) {
+      const a = (i / 90) * Math.PI * 2;
+      const r = 10 + 60 * Math.sqrt(b);
+      mix(s, Math.round(ix + Math.cos(a) * r), Math.round(iy + Math.sin(a) * r * 0.5), i % 4 ? '#b4d6f6' : '#ff4f8a', 0.8 * (1 - b));
+    }
+  }
+}
 /** THE HAMMER OUT OF THE RUNE: hung from the rune at (x, y), its haft `L` long to the middle of its head, swung `swing` degrees from
  * straight down (raised back up over the rune at -150); of the word's red with his pink through it, a hot edge, inked; coming out of
  * the rune as `formed` goes to 1 (from the rune down, in sparks). */
@@ -554,7 +617,7 @@ const floorOf = (mv: string) => (t: number): V2 => {
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
@@ -583,11 +646,11 @@ for (const sg of segs) {
       const f = sg.floorAt(tt);
       return [sg.from[0] + k * f[0], sg.from[1] + k * f[1], 0];
     };
-    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : at(world(t));
+    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
-    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : 0;
+    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : sg.move === 'frost' ? Math.max(0, 1 - Math.abs(t - FROST.hit - 0.03) / 0.25) * 5 : 0;
     const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
     const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
     const s = floor(-ox, -oy);
@@ -596,6 +659,7 @@ for (const sg of segs) {
     if (sg.move === 'stomp') blast(s, t, ox, oy, sg.from, k);
     if (sg.move === 'power') powerScene(s, t, ox, oy, sg.from, k, false);
     if (sg.move === 'flame') flameScene(s, t, ox, oy, sg.from, k, false);
+    if (sg.move === 'frost') frostScene(s, t, ox, oy, sg.from, k, false);
     const where = (tt: number): [number, number] => {
       const [x, y] = at(world(tt));
       return [ox + x, oy + y];
@@ -624,7 +688,11 @@ for (const sg of segs) {
       const [x, y] = base();
       for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
     }
-    if (sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame') {
+    if (sg.move === 'frost' && frostSmeared(t)) {
+      const [x, y] = base();
+      for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
+    }
+    if (sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost') {
       const [x, y] = base();
       lay(s, sg.move, sg.view, t, x, y);
     } else {
@@ -633,6 +701,7 @@ for (const sg of segs) {
     }
     if (sg.move === 'power') powerScene(s, t, ox, oy, sg.from, k, true);
     if (sg.move === 'flame') flameScene(s, t, ox, oy, sg.from, k, true);
+    if (sg.move === 'frost') frostScene(s, t, ox, oy, sg.from, k, true);
     writeFileSync(`${out}/f/${String(i).padStart(3, '0')}.png`, png(s));
   }
 }

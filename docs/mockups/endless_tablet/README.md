@@ -341,6 +341,14 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   rune STRAIGHT UP into the sky, out of sight (no burst in sight); the meteors fall AT RANDOM OVER THE WHOLE ARENA (14 tiles by 10 about
   its middle, none within 2 tiles of him), not about the hero, each still marked first. The film shows the whole arena.
   HIS YES, 12 Nov 2026, by pop-up: “Yes, on to Frost (Recommended)”.
+- FROST, ICE SPIKES (`frost`, `frostPoseAt`, `FROST_SPIKES`, `frostBits`, `paintFrost`; `pictures/standard/boss_frost.mp4`, then the
+  strike and the ice at half speed): by his rules for the words. HE WRITES the Frost rune (the word's own snowflake, its blue with his
+  pink at its heart) at his hand, raises his staff, HELD; in TWO FRAMES (smeared) he drives his staff down and the rune down with it
+  into the floor before him, where it SHATTERS (white and pink, a ring of frost thrown out, the screen kicked). Out of that place FIVE
+  LINES OF JAGGED ICE burst up out of the floor in a fan, racing out across the room at the hero, a cluster of spikes at each step
+  (solids, the word's blue to white, never the friend's cyan; a pink glint at the heart of the big ones), each up in a flash with
+  shards flung off; the floor FROZEN white behind them (the film draws it: how slippery is the rules'); they stand, then shatter.
+  The checks (his blow drawn back, held, followed through, a flash), his legs outside the boar, nothing cyan: all pass.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.

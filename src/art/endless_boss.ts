@@ -928,6 +928,7 @@ export function boarPoseAt(move: string, t: number): BoarPose {
   if (move === 'stomp') return stompPoseAt(t);
   if (move === 'power') return powerPoseAt(t);
   if (move === 'flame') return flamePoseAt(t);
+  if (move === 'frost') return frostPoseAt(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   const A = BOAR_STAND_AT;
@@ -1864,6 +1865,96 @@ export function paintFirestorm(t: number, view: 'front' | 'rear'): Painted {
   return { px: st.whole(ENEMY_RIM), lights } as Painted;
 }
 
+// FROST: ICE SPIKES (his pick, 12 Nov 2026: “Ice spikes (Recommended)”, offered as: jagged ice bursts up out of the floor in lines
+// racing at you, leaving the floor frozen and slippery behind them). By his rules for the words: one rune; what strikes is what it
+// makes, as solids.
+//   HE WRITES IT   his left hand claws the Frost rune on the air; he raises his staff high, HELD
+//   THE STRIKE     two frames: he drives his staff down and the rune down with it into the floor before him, where it shatters
+//   THE ICE        out of the place it struck, five lines of jagged ice burst up out of the floor in a fan, racing out across the
+//                  room at the hero, a cluster of spikes at each step, each up in a flash; the floor frozen white behind them (the
+//                  film draws it: how slippery is the rules'); they stand, then shatter into shards
+export const FROST_STRIKE = [fr(26), fr(28)] as const;
+export const FROST = { write: [0.12, 0.62] as const, raise: 0.42, hit: FROST_STRIKE[1], lines: 5, fan: 72, steps: 11, step: 0.55, race: 0.055, grow: 0.08, stand: 1.3, long: 3.4, from: 2.4 };
+export const frostSmeared = (t: number): boolean => t > FROST_STRIKE[0] + 1e-6 && t <= FROST_STRIKE[1] + FR + 1e-6;
+function frostCast(t: number): Cast {
+  const [s0, h] = FROST_STRIKE;
+  let raise = 0;
+  let hammer = 0;
+  if (t > h - FROST.raise && t <= s0) raise = smooth01((t - (h - FROST.raise)) / (FROST.raise - 0.14));
+  if (t > s0 && t <= h) {
+    const u = (t - s0) / (h - s0);
+    raise = 1 - u;
+    hammer = u;
+  }
+  if (t > h) {
+    const u = (t - h) / 0.5;
+    hammer = u < 0.25 ? 1 + 0.15 * Math.sin((Math.PI / 2) * (u / 0.25)) : 1.15 * (1 - smooth01((u - 0.25) / 0.75));
+  }
+  const write = bumpOf(t, FROST.write[0] - 0.05, FROST.write[1] + 0.1);
+  return { raise, hammer, write, stroke: (t - FROST.write[0]) * TAU * 2.2, lead: bumpOf(t, s0 - 0.08, h + 0.25) };
+}
+export function frostPoseAt(t: number): BoarPose {
+  const P = boarPoseAt('stand', t);
+  return { ...P, pulse: Math.max(P.pulse ?? 0, 0.6 * smooth01(t / 0.5), bumpOf(t, FROST.hit - 0.05, FROST.hit + 0.6)), ride: { lean: 0, brace: 0, still: true, cast: frostCast(t) } };
+}
+/** The Frost word's own blue, his pink at its heart: ice from its deep shadow to its white edge (never the friend's cyan). */
+const ICE: Ramp = ['#1a2448', '#2e4f86', '#58a8f0', '#b4d6f6', '#f2f6ff'];
+export const ICE_CANVAS: MobCanvas = { w: 720, h: 420, ax: 200, ay: 300 };
+/** Each spike of ice, as the ice's own points are (the place the rune struck at nothing, its lines fanned out along +x): where its
+ * foot is, the way it leans, how tall, how thick, and when it bursts up. */
+export const FROST_SPIKES: ReadonlyArray<{ at: V3; lean: V3; tall: number; r: number; t: number }> = ((): { at: V3; lean: V3; tall: number; r: number; t: number }[] => {
+  const out: { at: V3; lean: V3; tall: number; r: number; t: number }[] = [];
+  for (let l = 0; l < FROST.lines; l++) {
+    const a = ((l / (FROST.lines - 1)) - 0.5) * FROST.fan * D;
+    for (let j = 0; j < FROST.steps; j++) {
+      const d = (0.6 + j * FROST.step) * TILE;
+      const c: V3 = [Math.cos(a) * d, Math.sin(a) * d, 0];
+      const n = 3 + (j % 2);
+      for (let m = 0; m < n; m++) {
+        const k = l * 100 + j * 7 + m;
+        const off: V3 = [(hash(k, 1, 8994) - 0.5) * 9, (hash(k, 2, 8995) - 0.5) * 9, 0];
+        const lean = norm([Math.cos(a) * 0.35 + (hash(k, 3, 8996) - 0.5) * 0.9, Math.sin(a) * 0.35 + (hash(k, 4, 8997) - 0.5) * 0.9, 1], [0, 0, 1]);
+        out.push({ at: add(c, off), lean, tall: (m === 0 ? 30 : 14 + 12 * hash(k, 5, 8998)) * (1 + 0.35 * (j / FROST.steps)), r: m === 0 ? 6.5 : 3.5 + 2 * hash(k, 6, 8999), t: FROST.hit + 0.04 + j * FROST.race });
+      }
+    }
+  }
+  return out;
+})();
+/** THE ICE'S SOLIDS, `t` seconds into the move: each spike bursting up out of the floor in a flash, standing, then shattering. */
+export function frostBits(t: number, put: Put): void {
+  for (const [i, sp] of FROST_SPIKES.entries()) {
+    const u = t - sp.t;
+    if (u <= 0) continue;
+    const end = sp.t + FROST.stand;
+    const grow = Math.min(1, u / FROST.grow);
+    const gone = smooth01((t - end) / 0.18);
+    if (gone >= 1) {
+      continue;
+    }
+    const h = sp.tall * (grow < 1 ? 0.25 + 0.75 * grow : 1 + 0.08 * Math.exp(-(u - FROST.grow) * 12)) * (1 - 0.7 * gone);
+    const tip = add(sp.at, mul(sp.lean, h));
+    put(`ice${i % 5}`, 'spike', { k: 'rod', a: add(sp.at, [0, 0, -2]), b: tip, ra: sp.r * (1 - 0.4 * gone), rb: 0.35, ramp: ICE });
+    // (his pink at the heart of the bigger ones, a glint of it)
+    if (sp.r > 6) put(`ice${i % 5}`, 'spike', { k: 'dot', p: lerp3(sp.at, tip, 0.35), c: '#ff4f8a', facing: [1, 0, 0], c2: '#e0287a' });
+    // (bursting up: shards flung off it; shattering: it breaks into them)
+    if (u < 0.15 || gone > 0) {
+      const w = u < 0.15 ? u : t - end;
+      for (let m = 0; m < 5; m++) {
+        const a = (m / 5) * TAU + hash(i, m, 9001);
+        const q: V3 = [sp.at[0] + Math.cos(a) * (4 + 60 * w), sp.at[1] + Math.sin(a) * (4 + 60 * w), 2 + 40 * w - 120 * w * w + (gone > 0 ? h * 0.5 : 0)];
+        if (q[2] > 0) put('iceShards', 'shards', { k: 'mote', p: q, c: m % 2 ? ICE[4] : ICE[3], size: 1 });
+      }
+    }
+  }
+}
+export function paintFrost(t: number, view: 'front' | 'rear'): Painted {
+  const st = stage(view, ICE_CANVAS.ax, ICE_CANVAS.ay, ICE_CANVAS);
+  const bits: Bit[] = [];
+  frostBits(t, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+
 /** THE POWER RUNE: its glyph (the word's own, art/icons.ts GLYPH, two chevrons pointing up), `k` picture pixels to its cell, in the
  * word's red with his pink through its middle and a hot edge; ink round it. */
 export const POWER_GLYPH = ['..oo..', '.XXXX.', 'XX..XX', '..oo..', '.XXXX.', 'XX..XX'];
@@ -2051,7 +2142,7 @@ export function wsMob(): Mob {
     trueBack: true,
     bits: wsBits,
     grains: (_st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand'),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -2115,17 +2206,17 @@ export const WS_SHAPE: BossShape = {
   },
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : 0),
-  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE },
+  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE },
   // (his hammer from the sky: three blows of his staff, each its own wind-up, flash and follow-through)
   blows: { power: POWER.slams.map((h, i) => ({ hit: h, strike: POWER_STRIKES[i], from: i ? POWER.slams[i - 1] + 0.1 : 0, until: i < 2 ? POWER.slams[i + 1] - POWER.raise : Infinity })) },
-  smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)),
+  smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)) || (move === 'frost' && frostSmeared(t)),
   // (the end the boar strikes with in its gore: its leading tusk's tip)
-  tip: (move: string, t: number, s: Skeleton) => (move === 'gore' ? goreTip(boarPoseAt('gore', t)) : move === 'stomp' ? stompTip(boarPoseAt('stomp', t)) : move === 'power' ? staffOf(s, staffTiltOf(boarPoseAt('power', t))).ring : null),
+  tip: (move: string, t: number, s: Skeleton) => (move === 'gore' ? goreTip(boarPoseAt('gore', t)) : move === 'stomp' ? stompTip(boarPoseAt('stomp', t)) : move === 'power' || move === 'frost' ? staffOf(s, staffTiltOf(boarPoseAt(move, t))).ring : null),
   // (each move from his stand and back, as the game hands over; a run done, it wheels round out of its skid; done wheeling, the
   // game shows it from its other side and the next run goes back down the lane: that hand-over is the charge's own start drawn the
   // other way round, and is not one these checks can draw)
   handovers: [
-    ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power', 'flame'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
+    ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power', 'flame', 'frost'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
     { from: 'charge', at: 'end', to: 'wheel', toAt: 0 },
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
