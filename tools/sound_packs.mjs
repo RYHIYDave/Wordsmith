@@ -20,6 +20,11 @@ const WORLD = /^(break_|chest$|rift_|trap_|sealed_door$|fire_pop$)/;
  */
 const WORDS10 = /^(pierce_(shot|lance)|bleed_(open|thorns|cut)|reap_(soul|spirit|rake|rise)|cull_(kill|mark|kindle)|surge_(wave|warn|foe)|plunder_(spray|stream|steal)|mirror_(swing|rise|break|back)|word_(lasting|fleeting|vast))$/;
 /**
+ * THE EIGHT MELDS' SOUNDS (the sound chat's twelfth batch, 12 Nov 2026: assets/sound/README.md; game/meld8_sounds.ts): a pack of
+ * their own, about 430 KB, fetched the first time one of the eight melds comes into his abilities.
+ */
+const MELDS8 = /^meld_(siphon|cauterize|forking|shiver|sunder|sunder_hit|fervor|fervor_flare|rimeward|implode)$/;
+/**
  * THE FLOORS' SCENE SOUNDS (the sound chat's eighth batch, 9 Nov 2026: assets/sound/README.md; game/scene_sounds.ts says which floor
  * plays which): packs of their own by act, floors 1 to 5, 6 to 10, 11 to 15 and 16 to 20, so that a floor fetches its own act's
  * (2.2 MB the first act's, under 1 MB each of the others) and not all 82 with the heroes' skills. The moments by their floor (f1_stone to f15_chandelier); the quest
@@ -46,6 +51,7 @@ export function packOf(base, bosses = new Set()) {
   if (WORLD.test(base)) return 'world';
   for (const [pack, names] of SCENE) if (names.test(base)) return pack;
   if (WORDS10.test(base)) return 'words';
+  if (MELDS8.test(base)) return 'melds';
   if (base.startsWith('colossus_')) return 'colossus';
   const who = base.split('_')[0];
   if (bosses.has(who)) return 'bosses';

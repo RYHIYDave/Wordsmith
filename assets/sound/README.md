@@ -534,3 +534,40 @@ already) or in a fight's set moves.
 
 Try-out 16 plays them so (the first one there comes a little sooner, so it is heard). Made from the earlier batches' own takes, but
 floor 10's new drone (34 credits). Nothing is wired in.
+
+## Twelfth batch: the eight melds' sounds (the sound chat, 12 Nov 2026)
+
+His ask, 12 Nov 2026, 20:18 Eastern: “Need sounds for the new melds.  It's in the queue” (the queue's
+make-sounds-for-eight-melds). Shown them on try-out 17 (Wordsmith Eight Melds, https://claude.ai/artifact/SAWrZdpzaPiaejzAVggVx8),
+the art chat's film of the eight at work with each sound played on its event: “All good, hand over (Recommended)”.
+
+Two takes of each sound (`_1`, `_2`), through `worldSound`, which picks a take and its pitch. Made by the same chain as the
+combat sounds, so RECORDED_GAIN holds. Nothing is wired in. 20 mp3, about 430 KB.
+
+### Which sound for which moment
+Each plays as the rules send its look's event (`{ t: 'meld8', id, ... }`, src/render/melds8.ts on art/melds8-looks), from its
+start: its big moment is built in on the look's own beat (M8_LOOK), so nothing needs delaying.
+
+| Event | Sound | Its beats (s from the event) |
+|---|---|---|
+| `siphon` (a tick of his poison that heals him) | `meld_siphon` | venom squeezed out 0, drawn off to him, the pulse on him at 0.44 (the beads' flight × 0.8). About 0.95 s. |
+| `cauterize` (a burning one killed) | `meld_cauterize` | the flash 0, its fire torn off 0.16, thrown at him 0.42, the brand at 0.78 (flash + tear + fly), steam. 1.9 s. |
+| `forking` (a hit's arc) | `meld_forking` | the bolt 0, its fork 0.12, the after-image 0.3. 0.6 s. |
+| `shiver` (a critical hit that freezes) | `meld_shiver` | the cross-hairs' click 0, the white crack and the needles 0.14, mist. 1.4 s. |
+| `sunder` (one stunned by a Sunder hit) | `meld_sunder` | the blow's thud 0, the crack splitting 0.05 to 0.5, embers. 1.45 s. |
+| `sunder`, `what: 'hit'` (a blow on one sundered) | `meld_sunder_hit` | the crack flaring, chips. 0.45 s. |
+| `fervor` (a kill), `n` under `most` | `meld_fervor` | the embers streaming in 0 to 0.4, flames catching at his feet at 0.4. 1.3 s. |
+| `fervor`, `n === most` (the fifth) | `meld_fervor_flare` | in place of `meld_fervor`: a whoomp, the flare at 0.5. 1.4 s. |
+| `rimeward` (a blow he blocked) | `meld_rimeward` | the pane of rime 0, its shatter at 0.22 (the pane × 0.7), a cold breath 0.75. 1.3 s. |
+| `implode` (a hit that will burst) | `meld_implode` | the pull 0 to 0.4, the burst at 0.4. Play it as the hit lands: the burst is built in at the rules' `wait` (0.4); if `wait` changes, ask the sound chat for a new cut. 1.35 s. |
+
+### How loud
+`worldSound(name, 1)` in front (`k` 1); behind (`k` MELD8_TUNE.behind, 0.5) at 0.6: `worldSound(name, k < 1 ? 0.6 : 1)`, as try-out 17
+plays them.
+
+### How often
+Siphon comes on every tick of his poison and Forking on every hit, so they are the quietest (made 4 to 5 dB under the loudest) and
+short. Even so, give Siphon at most one every 0.5 s (the film's ticks are 0.55 apart), and Forking at most four a second; the others
+come seldom enough as they are.
+
+Wired in by the main chat for 25.3.17 (13 Nov 2026): game/meld8_sounds.ts.

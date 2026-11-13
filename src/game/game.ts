@@ -2,6 +2,7 @@
 // frame by frame. It knows nothing about drawing or input; it reads Controls and emits GameEvents.
 
 import { MELDS8, MELD8_TUNE as M8 } from './melds8';
+import { MELD8_SOUNDS, meld8SoundOf } from './meld8_sounds';
 import { MOVE_PICK, SWAP_TUNE, moveChoices, swapInto } from './swap_moves';
 import type { AuraKind } from './swap_moves';
 import { BARS_LASTS, BARS_PERIL, RAIN_LASTS, RAIN_PERIL, cageHero } from './action_f1';
@@ -4027,6 +4028,11 @@ export class Game {
 
   emit(e: GameEvent): void {
     this.events.push(e);
+    // (THE EIGHT MELDS' SOUNDS, the sound chat's twelfth batch: each meld's moment heard as it is sent, game/meld8_sounds.ts)
+    if (e.t === 'meld8' && MELD8_SOUNDS.on) {
+      const s = meld8SoundOf(e);
+      if (s) this.world(s.name, s.vol, undefined, s.gap);
+    }
   }
 
   msg(text: string, color: string = MSG.plain): void {

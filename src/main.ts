@@ -172,6 +172,8 @@ import { W10_GLYPH, W10_RAMP, W10_WORDS, WORDS10_LOOK, demoW10, eventsW10 } from
 // (THE TEN NEW WORDS' SOUNDS, the sound chat's sixth batch: game/word_sounds.ts)
 import { PAGE_TURN, WORD_SOUND, WORD_SOUNDS, wordSoundsOf } from './game/word_sounds';
 import type { WordSound } from './game/word_sounds';
+// (THE EIGHT MELDS' SOUNDS, the sound chat's twelfth batch: game/meld8_sounds.ts)
+import { MELD8_SOUNDS, meld8SoundsOf } from './game/meld8_sounds';
 import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
 import { M8_GLYPH, M8_LOOK, M8_RAMP, MELDS8_LOOK } from './render/melds8';
 import { MELDS8 } from './game/melds8';
@@ -553,6 +555,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     }
     // (and the Lexicon's page turn, which is the town's)
     const names = g.level.town ? [...wordSoundsOf(words), PAGE_TURN.name] : wordSoundsOf(words);
+    // (and THE EIGHT MELDS' SOUNDS, the twelfth batch, of the melds his abilities make: game/meld8_sounds.ts)
+    if (MELD8_SOUNDS.on) {
+      const melds = new Set<string>();
+      for (const s of g.hero.skills) if (s) for (const m of [s.r.meld, s.r.meldBehind]) if (m) melds.add(m);
+      names.push(...meld8SoundsOf(melds));
+    }
     const key = names.join(',');
     if (wordsWarmedIn === g.level && key === wordsWarmed) return;
     if (!warmAlso(names)) return;
