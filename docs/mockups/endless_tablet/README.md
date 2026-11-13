@@ -452,8 +452,27 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   boss_hailstorm, boss_death). HIS LAST STAND, his pick: “He climbs into his shade” (offered as: he becomes one giant of pink
   energy, slow and huge, melds raining down).
 - Through the bosses' checks (0 findings: fall, foot, eruption, death) and the boss tests (4 of 4).
-- NEXT: his last stand (he climbs into his shade); the other eight melds, each for his yes; his other facing turned round, not
-  flipped.
+- HIS WORDS, 13 Nov 2026, 07:38: “His casting arm is still sticking out awkwardly and the hand on the staff is clipping.  That’s a
+  rule broken.  It’s not very visible when he’s normal sized, but glaring when the shade pops up.  Also the shade is a bit too close
+  to him.  Not so much a carbon copy in pink but more raw energy”. MENDED: on foot his writing arm is in by his side, its elbow down,
+  its forearm forward, the hand clawed before him (and in the saddle, at rest, his writing hand in before his belly, raised only to
+  write); his staff stands upright in his fist out at his right side, his forearm across it, never along it, and planted, his fist
+  sliding along it so its foot is on the floor, its length kept (`staffOf`'s `planted`). HIS SHADE REMADE AS RAW ENERGY
+  (`paintShade`): a towering mass of his pink fire only loosely his shape: a hood of flame with narrow slits of white fire for eyes
+  and tongues of fire swept back off its crown; great shoulders flowing down into a robe of fire that frays into tongues before it
+  reaches the floor (it floats); arms that are streams of it, its hands clawed flares; his staff a beam of light, its ring blazing;
+  sparks streaming up off all of it; white-hot at its heart, crimson at its edges, see-through and ragged where it thins. Further
+  back and higher (52 behind him, 24 up). The films again: boss_fall, boss_eruption, boss_hailstorm, boss_death.
+- HIS LAST STAND (`ascend`, `meldrain`, `ASCEND`, `RAIN`, `ascendRiderAt`, `giantBonesAt`; `pictures/standard/boss_last_stand.mp4`),
+  his pick “He climbs into his shade”: struck, he looks up at it; it stoops to him, reaching its great hand down; he rises off the
+  floor, arms spread, his head back, drawn up and back into its chest; a flash as he goes in. It burns solid round him and grows
+  greater still, coming down onto the floor, he its heart, burning white and pink inside it, seen through it; it throws back its head
+  and thrusts its staff up (its roar is the sound chat's) and STAMPS: cracks out from its staff, a ring of his pink rolling out over
+  the floor (two frames, smeared, the frame held). Then, its staff held up, MELDS RAIN: meld runes (each its own, the game's)
+  falling out of the top of the picture all over the floor, each ringed first in its own colour, each bursting in its own colours,
+  his pink through them.
+- Through the bosses' checks (0 findings, every move) and the boss tests.
+- NEXT: the other eight melds, each for his yes; his other facing turned round, not flipped.
 
 
 ## The tools

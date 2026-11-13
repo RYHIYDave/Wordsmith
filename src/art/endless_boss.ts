@@ -3285,7 +3285,7 @@ export { HAIL_HERO };
 //                his gameplay rulebook asks of a last phase.
 export const ASCEND = { struck: 0.3, rise: [0.5, 1.5] as const, enter: 1.55, stand: [1.7, 2.35] as const, roar: [2.35, 2.95] as const, stomp: 102 / 30, long: 4.2 };
 export const ASCEND_STRIKE = [ASCEND.stomp - 2 / 30, ASCEND.stomp] as const;
-export const RAIN = { long: 4.6, runes: 30, from: 0.5, to: 3.6, warn: 0.6, fall: 0.22 };
+export const RAIN = { long: 4.6, runes: 48, from: 0.5, to: 3.6, warn: 0.6, fall: 0.22 };
 /** Where he floats inside it, as its heart (from his floor point: the giant stands where the shade stood). */
 const HEART_AT: V3 = [-24, -6, 92];
 /** Floating as its heart: his arms spread, his head back, his legs hanging. */
@@ -3338,8 +3338,8 @@ export const giantSolidAt = (move: string, t: number): number => (move === 'meld
 export const RAIN_RUNES: ReadonlyArray<{ meld: string; at: V3; t: number }> = Array.from({ length: RAIN.runes }, (_, i) => {
   const melds = ['eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion'];
   const a = hash(i, 1, 9701) * TAU;
-  const r = (1.8 + 5.4 * Math.sqrt(hash(i, 2, 9702))) * TILE;
-  return { meld: melds[i % melds.length], at: [2.4 * TILE + Math.cos(a) * r, Math.sin(a) * r * 0.85, 0] as V3, t: RAIN.from + (RAIN.to - RAIN.from) * (i / RAIN.runes) + 0.05 * hash(i, 3, 9703) };
+  const r = (1.4 + 5.6 * Math.sqrt(hash(i, 2, 9702))) * TILE;
+  return { meld: melds[i % melds.length], at: [1.8 * TILE + Math.cos(a) * r, Math.sin(a) * r * 0.85, 0] as V3, t: RAIN.from + (RAIN.to - RAIN.from) * (i / RAIN.runes) + 0.05 * hash(i, 3, 9703) };
 });
 
 /** Where his heart is as he implodes (as his own points are). */
@@ -3397,11 +3397,13 @@ function shadeOf(c: string): string {
  * before it reaches the floor (no legs: it floats); arms that are streams of it, its hands clawed flares; his staff a beam of light,
  * its ring blazing; sparks streaming up off all of it. White-hot at its heart, his pink, deep crimson at its edges, see-through and
  * ragged where it thins, bands of it rising through it. Its canvas's anchor is his floor point. */
-export function paintShade(s: Skeleton, t: number, view: 'front' | 'rear', grow = 1, lean = 0, solid = 0): Painted {
+export function paintShade(s: Skeleton, t: number, view: 'front' | 'rear', grow = 1, lean = 0, solid = 0, landed = 0): Painted {
   const st = stage(view, SHADE_CANVAS.ax, SHADE_CANVAS.ay, SHADE_CANVAS);
   const O: V3 = [s.pelvis[0], s.pelvis[1], 0];
-  const k = 1 + (SHADE.size - 1) * grow;
-  const off: V3 = [-SHADE.behind * grow - O[0] + lean, SHADE.side * grow - O[1], SHADE.up * grow];
+  // (in his last stand, burned solid round him, it grows greater still: slow and huge)
+  const k = (1 + (SHADE.size - 1) * grow) * (1 + 0.4 * solid);
+  // (risen, it floats; in his last stand, burned solid round him, it comes down onto the floor)
+  const off: V3 = [-SHADE.behind * grow - O[0] + lean, SHADE.side * grow - O[1], SHADE.up * grow * (1 - landed)];
   const G = (p: V3): V3 => add(add(O, mul(sub(p, O), k)), off);
   // (its mass: fuller than his own, a body of fire)
   const q = k * 0.9;
