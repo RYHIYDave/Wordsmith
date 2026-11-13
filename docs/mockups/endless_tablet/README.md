@@ -292,6 +292,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   so): where the game turns his picture over for the other way he faces (the run back up the lane, from behind), the staff goes into
   his left hand; before he goes in the game, his pictures for that way must be PAINTED TURNED ROUND, NOT FLIPPED, so that he always
   holds it in his right (he and the boar are solids: the painter can draw them from that side true). On the list, before he goes in.
+- POWER, THE HAMMER FROM THE SKY (`power`, `powerPoseAt`, `powerRuneAt`, `POWER_GLYPH`; `pictures/standard/boss_power.mp4`, then the
+  first blow at half speed): HE WRITES IT, his left hand clawing its strokes on the air (the word's own glyph, two chevrons, in its
+  red with his pink through the middle and a hot edge); he thrusts his staff up and it flies off into the sky. IT HANGS high over
+  the hero, big, its shadow on the floor chasing the hero a beat behind (fixed the moment he raises his staff: where it falls is the
+  rules'). THREE BLOWS, by Movement 9: he raises his staff high, HELD; in two frames he hammers it down forward, his hips first, and
+  the rune drops onto its shadow in the same two frames, smeared down its fall: a crater, a ring of force, stone flying, the screen
+  kicked; it heaves up for the next. After the third it bursts into shards. The checks (each blow drawn back, held, followed
+  through, a flash, the hips first), his legs outside the boar: all pass. The hero in the film is the Brawler's standing frame,
+  stepping aside (the film's stand-in).
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.

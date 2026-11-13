@@ -98,6 +98,15 @@ const S = BOAR_SIZE;
 
 /** One leg: its upper bone's swing from hanging straight down (degrees, + forward), its lower's bend from the upper's line (+ forward). */
 export type BoarLeg = readonly [number, number];
+/** HIM CASTING FROM THE SADDLE: his staff raised high (0 ... 1), hammered down forward (0 ... 1, and on a little), his left hand
+ * writing a rune on the air (0 ... 1, and where in its strokes), his hips going first into each blow (0 ... 1). */
+export interface Cast {
+  raise: number;
+  hammer: number;
+  write: number;
+  stroke: number;
+  lead: number;
+}
 export interface BoarPose {
   x: number;
   y: number;
@@ -125,7 +134,7 @@ export interface BoarPose {
    * pastern is folded back (degrees); null, as `lift` or `legs` has it. */
   feet?: ReadonlyArray<readonly [number, number, number, number] | null>;
   /** HIM IN THE SADDLE, as it moves under him: leaning forward into a charge (degrees), braced back against a stop (degrees). */
-  ride?: { lean: number; brace: number; still?: boolean };
+  ride?: { lean: number; brace: number; still?: boolean; cast?: Cast };
 }
 export const BOAR_STAND: BoarPose = {
   // (its head carried as it was drawn: `low` is how far it is lowered, so its stand's -6 tips its snout a little up)
@@ -575,30 +584,35 @@ export function riderPose(P: BoarPose, t = 0): Partial<Bones> {
   const brace = P.ride?.brace ?? 0;
   const cy = Math.cos(P.yaw * D), sy = Math.sin(P.yaw * D);
   const yawed = (x: number, y: number): [number, number] => [x * cy - y * sy, x * sy + y * cy];
-  const hl = yawed(10 + 1.4 * Math.sin(a * 2), 4.0 + 1.0 * Math.cos(a * 2));
-  const hrt = yawed(1.2, -11.5);
+  const cast = P.ride?.cast;
+  const cr = cast?.raise ?? 0, ch = cast?.hammer ?? 0, cw = cast?.write ?? 0, cs = cast?.stroke ?? 0, cl = cast?.lead ?? 0;
+  // (writing: his clawed hand raised and tracing the rune's strokes on the air before him)
+  const hl = yawed(10 + 1.4 * Math.sin(a * 2) + 3 * cw * Math.sin(cs), 4.0 + 1.0 * Math.cos(a * 2) + 2.5 * cw * Math.cos(cs));
+  // (his staff hand: up high, then brought down forward like a hammer)
+  const hrt = yawed(1.2 + 9 * ch, -11.5 + 2 * ch);
   return {
     px: at[0] + 0.9 * Math.sin(a + 0.9), py: at[1] + 0.4 * Math.sin(a + 0.9), pz: at[2] - PELVIS0 + 1.0 * Math.sin(a * 2),
     // (leaning down over its neck into a charge, thrown back against a stop)
     // (his seat tips with the boar's back: reared, he is tipped back with it as far as he does not lean into it)
-    yaw: P.yaw, pitch: -2 + 0.6 * lean - 0.55 * brace - 0.45 * P.pitch, roll: 0, twist: 6 + 2 * Math.sin(a + 0.5), bend: -2 + 0.9 * lean - 0.45 * brace, side: 0, hunch: 5 + 0.4 * lean,
+    yaw: P.yaw, pitch: -2 + 0.6 * lean - 0.55 * brace - 0.45 * P.pitch + 6 * cl, roll: 0, twist: 6 + 2 * Math.sin(a + 0.5), bend: -2 + 0.9 * lean - 0.45 * brace + 14 * ch, side: 0, hunch: 5 + 0.4 * lean,
     faceTurn: 4 * Math.sin(a * 0.5), faceUp: 6 + 0.7 * lean + 0.3 * brace, faceTilt: 2,
     // (his knees and feet turned with him, as the boar turns: their ways are the figure's own)
     lfx: fl[0], lfy: fl[1] - B.stance, lfz: fl[2] - B.ankle, lfp: 10, lft: 8 + P.yaw, lk: 72 + P.yaw, lkUp: 8,
     rfx: frt[0], rfy: frt[1] + B.stance, rfz: frt[2] - B.ankle, rfp: 10, rft: -8 + P.yaw, rk: -72 + P.yaw, rkUp: 8,
     // (his left hand out before him, fingers clawed, writing on the air; his right hand high, the staff in it)
     // (his hands' places are along the figure's own axes: turned with him as the boar turns)
-    lhIn: 1, lhx: hl[0], lhy: hl[1], lhz: -2 + 1.2 * Math.sin(a * 2 + 0.6), le: -6,
-    rhIn: 1, rhx: hrt[0], rhy: hrt[1], rhz: 7 + 0.6 * Math.sin(a), re: 14,
+    lhIn: 1, lhx: hl[0], lhy: hl[1], lhz: -2 + 1.2 * Math.sin(a * 2 + 0.6) + 7 * cw + 3 * cw * Math.sin(cs * 2), le: -6,
+    rhIn: 1, rhx: hrt[0], rhy: hrt[1], rhz: 7 + 0.6 * Math.sin(a) + 12 * cr * (1 - ch) - 8 * ch, re: 14,
     out: 0,
   } as Partial<Bones>;
 }
 
 /** His staff: from below his hand to well over his head, taller than he is; the iron ring at its head and his great rune in it. */
-function staffOf(s: Skeleton): { foot: V3; head: V3; ring: V3; up: V3; side: V3 } {
-  // (leaning a little forward and out to his right, as he faces)
+function staffOf(s: Skeleton, tilt = 0): { foot: V3; head: V3; ring: V3; up: V3; side: V3 } {
+  // (leaning a little forward and out to his right, as he faces; brought down forward by `tilt` degrees as he hammers with it)
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
-  const up = norm([0.08 * f[0] + 0.12 * f[1], 0.08 * f[1] - 0.12 * f[0], 1]);
+  const up0 = norm([0.08 * f[0] + 0.12 * f[1], 0.08 * f[1] - 0.12 * f[0], 1]);
+  const up = norm(add(mul(up0, Math.cos(tilt * D)), mul(f, Math.sin(tilt * D))), up0);
   // (through his fist: a little in from his knuckles, toward his body, so that his fingers close round it)
   const grip = add(s.handR, add(mul(s.chest[0], -0.4), mul(s.chest[1], 0.2)));
   const foot = add(grip, mul(up, -26));
@@ -819,8 +833,8 @@ function robe(put: Put, s: Skeleton, sway: number, wind = 0, t = 0): void {
 }
 
 /** HIS STAFF: old dark wood, iron-shod, runes cut down it burning; the iron ring at its head, his great rune burning in it. */
-function staff(put: Put, s: Skeleton, t: number): void {
-  const st = staffOf(s);
+function staff(put: Put, s: Skeleton, t: number, tilt = 0): void {
+  const st = staffOf(s, tilt);
   put('staff', 'staff', { k: 'rod', a: st.foot, b: st.head, ra: 1.05, rb: 1.2, ramp: STAFF });
   put('staff', 'staff', { k: 'rod', a: st.foot, b: add(st.foot, mul(st.up, 3)), ra: 1.25, rb: 1.2, ramp: IRON });
   // (runes cut down it, burning, each lit in turn)
@@ -910,6 +924,7 @@ export function boarPoseAt(move: string, t: number): BoarPose {
   if (move === 'wheel') return wheelPoseAt(t);
   if (move === 'gore') return gorePoseAt(t);
   if (move === 'stomp') return stompPoseAt(t);
+  if (move === 'power') return powerPoseAt(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   const A = BOAR_STAND_AT;
@@ -1512,6 +1527,76 @@ function stompGrains(t: number): [V3, string, number][] {
   return out;
 }
 
+/** How far his staff is brought down forward (degrees): as far as he hammers with it. */
+const staffTiltOf = (P: BoarPose): number => 64 * (P.ride?.cast?.hammer ?? 0);
+
+// =============================================================================================
+// HIS WORDS FROM THE SADDLE (his picks, 12 Nov 2026: each damage word its own attack, “Own colour, pink through it (Recommended)”)
+//
+// POWER: THE HAMMER FROM THE SKY (“Hammer from the sky (Recommended)”, offered as: a giant Power rune forms high over you, its shadow
+// chasing you across the floor, then slams down three times in a row: craters, shockwaves, stone flying). By his Movement 9:
+//   HE WRITES IT  his left hand claws the rune's strokes on the air, burning red with pink through them; he thrusts his staff up and
+//                 it flies up off its ring into the sky
+//   IT HANGS      high over the hero, turning, its shadow on the floor chasing the hero (where it falls is the rules', the main
+//                 chat's: the film follows the hero a beat behind)
+//   THREE BLOWS   each: he raises his staff high, HELD; in two frames he hammers it down forward, his hips first, and the rune drops
+//                 out of the sky onto its shadow in the same two frames: a crater, a ring of force, stone flying, the screen kicked;
+//                 it heaves up again for the next. After the third it bursts into shards and burns out.
+export const POWER = { write: [0.12, 0.7] as const, cast: 0.74, slams: [fr(42), fr(62), fr(81)] as const, raise: 0.42, back: 0.32, long: 3.4, high: 3.0 };
+/** Each blow's strike: two frames, to the moment it lands. */
+export const POWER_STRIKES = POWER.slams.map((h) => [h - 2 * FR, h] as const);
+export const powerSmeared = (t: number): boolean => POWER_STRIKES.some(([a, b]) => t > a + 1e-6 && t <= b + FR + 1e-6);
+/** His staff through the three blows: raised and held before each, hammered down in two frames, carried on a little, brought back. */
+function powerCast(t: number): Cast {
+  let raise = 0;
+  let hammer = 0;
+  let lead = 0;
+  // (thrust up as the rune flies off it)
+  raise = Math.max(raise, smooth01((t - (POWER.cast - 0.3)) / 0.25) * (t < POWER.slams[0] ? 1 : 0));
+  for (const h of POWER.slams) {
+    const s0 = h - 2 * FR;
+    if (t > h - POWER.raise && t <= s0) raise = Math.max(raise, smooth01((t - (h - POWER.raise)) / (POWER.raise - 0.14)));
+    if (t > s0 && t <= h) {
+      const u = (t - s0) / (h - s0);
+      raise = Math.max(raise, 1 - u);
+      hammer = Math.max(hammer, u);
+    }
+    if (t > h && t < h + POWER.back) {
+      const u = (t - h) / POWER.back;
+      hammer = Math.max(hammer, u < 0.25 ? 1 + 0.15 * Math.sin((Math.PI / 2) * (u / 0.25)) : 1.15 * (1 - smooth01((u - 0.25) / 0.75)));
+    }
+    // (his hips into it first: from just before the strike)
+    lead = Math.max(lead, bumpOf(t, s0 - 0.08, h + 0.25));
+  }
+  const write = bumpOf(t, POWER.write[0] - 0.05, POWER.write[1] + 0.1);
+  return { raise, hammer, write, stroke: (t - POWER.write[0]) * TAU * 2.2, lead };
+}
+export function powerPoseAt(t: number): BoarPose {
+  const P = boarPoseAt('stand', t);
+  // (the boar under him braced, its eyes and runes flaring at each blow)
+  let flare = 0;
+  for (const h of POWER.slams) flare = Math.max(flare, bumpOf(t, h - 0.05, h + 0.5));
+  return { ...P, pulse: Math.max(P.pulse ?? 0, 0.6 * smooth01(t / 0.6), flare), ride: { lean: 0, brace: 0, still: true, cast: powerCast(t) } };
+}
+/** Where the rune is over its shadow (its own lengths above the floor) and how much of it has formed, `t` seconds into the move: it
+ * flies up from his staff, forms high, drops onto its shadow in each strike, heaves up again; bursts after the last. */
+export function powerRuneAt(t: number): { up: number; formed: number; gone: number } {
+  const H = POWER.high * TILE;
+  const formed = smooth01((t - POWER.cast) / 0.4);
+  let up = H;
+  for (const [s0, h] of POWER_STRIKES) {
+    if (t > s0 && t <= h) up = Math.min(up, H * (1 - (t - s0) / (h - s0)));
+    else if (t > h && t < h + 0.55) up = Math.min(up, H * smooth01((t - h - 0.08) / 0.45));
+  }
+  const last = POWER.slams[2];
+  const gone = smooth01((t - last - 0.05) / 0.25);
+  return { up, formed, gone };
+}
+/** THE POWER RUNE: its glyph (the word's own, art/icons.ts GLYPH, two chevrons pointing up), `k` picture pixels to its cell, in the
+ * word's red with his pink through its middle and a hot edge; ink round it. */
+export const POWER_GLYPH = ['..oo..', '.XXXX.', 'XX..XX', '..oo..', '.XXXX.', 'XX..XX'];
+export const POWER_RED = ['#3a0a12', '#a81c2c', '#e03c44', '#ff8a80'] as const;
+
 /** WHAT FLIES OFF IT AS IT CHARGES (as its own points are, the game carrying it on: what is thrown stays where it was thrown):
  * grit thrown back as it paws; the blast of its snort; a ring of grit blown out where it bursts off; grit kicked up at every
  * footfall; and in the skid, grit and frost sprayed out ahead of its ploughing forefeet. */
@@ -1637,7 +1722,7 @@ function wsBits(st: Stage, m: Moment): Bit[] {
   // (his neck: thin, the cords of it standing out)
   put('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
   head(put, st, s, m.t, wind);
-  staff(put, s, m.t);
+  staff(put, s, m.t, staffTiltOf(P));
   runesAbout(put, st, s, m.t);
   return bits;
 }
@@ -1694,7 +1779,7 @@ export function wsMob(): Mob {
     trueBack: true,
     bits: wsBits,
     grains: (_st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand'),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -1738,8 +1823,8 @@ export function boarLumps(P: BoarPose): { name: string; c: V3; ax: [V3, V3, V3] 
 /** THE SHAPE THE REVIEW TAKES: his body; the staff he carries (held in his right hand); the boar's hooves, what grips the floor (he rides: his feet are in the stirrups, not on it); the points followed from frame to frame. */
 export const WS_SHAPE: BossShape = {
   body: (s: Skeleton) => wsSolids(s),
-  things: (_move: string, _t: number, s: Skeleton) => {
-    const st = staffOf(s);
+  things: (move: string, t: number, s: Skeleton) => {
+    const st = staffOf(s, staffTiltOf(boarPoseAt(move, t)));
     const pts: V3[] = [];
     for (let i = 0; i <= 12; i++) pts.push(lerp3(st.foot, st.head, i / 12));
     return [{ name: 'staff', pts, r: 1.2, may: ['foreR', 'upperR'] }];
@@ -1748,7 +1833,7 @@ export const WS_SHAPE: BossShape = {
   follow: (move: string, t: number, s: Skeleton, _q: Posed) => {
     const P = boarPoseAt(move, t);
     const H = headOf(P);
-    const st = staffOf(s);
+    const st = staffOf(s, staffTiltOf(P));
     const soles = boarSoles(P);
     const pts: Record<string, V3> = { head: s.head, handL: s.handL, handR: s.handR, pelvis: s.pelvis, ring: st.ring, snout: H.at(21.6, 0, -7.6) };
     // (its hooves followed as it stands and stamps; galloping, each is down on its own spot of the floor and held to that by
@@ -1759,14 +1844,16 @@ export const WS_SHAPE: BossShape = {
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : 0),
   strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE },
-  smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)),
+  // (his hammer from the sky: three blows of his staff, each its own wind-up, flash and follow-through)
+  blows: { power: POWER.slams.map((h, i) => ({ hit: h, strike: POWER_STRIKES[i], from: i ? POWER.slams[i - 1] + 0.1 : 0, until: i < 2 ? POWER.slams[i + 1] - POWER.raise : Infinity })) },
+  smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)),
   // (the end the boar strikes with in its gore: its leading tusk's tip)
-  tip: (move: string, t: number) => (move === 'gore' ? goreTip(boarPoseAt('gore', t)) : move === 'stomp' ? stompTip(boarPoseAt('stomp', t)) : null),
+  tip: (move: string, t: number, s: Skeleton) => (move === 'gore' ? goreTip(boarPoseAt('gore', t)) : move === 'stomp' ? stompTip(boarPoseAt('stomp', t)) : move === 'power' ? staffOf(s, staffTiltOf(boarPoseAt('power', t))).ring : null),
   // (each move from his stand and back, as the game hands over; a run done, it wheels round out of its skid; done wheeling, the
   // game shows it from its other side and the next run goes back down the lane: that hand-over is the charge's own start drawn the
   // other way round, and is not one these checks can draw)
   handovers: [
-    ...['attack', 'reel', 'charge', 'gore', 'stomp'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
+    ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
     { from: 'charge', at: 'end', to: 'wheel', toAt: 0 },
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },

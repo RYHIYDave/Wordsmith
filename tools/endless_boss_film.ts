@@ -7,7 +7,10 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, STOMP, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, POWER, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { skeletonAt } from '../src/art/new_mobs3';
+import { readFileSync } from 'node:fs';
+import { inflateSync } from 'node:zlib';
 import { png } from './king_png';
 
 const [out = '/tmp/wsfilm', move = 'charge', view0 = 'front', w0 = '420', h0 = '300'] = process.argv.slice(2);
@@ -153,6 +156,195 @@ function blast(s: Px, t: number, ox: number, oy: number, from: V2, dir: number):
     }
   }
 }
+// THE HERO, for the words: the Brawler's standing frame (the live heroes' bake), dodging; the film's stand-in for whoever fights him
+const BRAWLER = ((): { w: number; h: number; px: (string | null)[] } => {
+  // (a PNG read by hand: RGBA, 8-bit, no interlace; the bake's own)
+  const buf = readFileSync('tools/endless_tablet/brawler.png');
+  const w = buf.readUInt32BE(16);
+  const h = buf.readUInt32BE(20);
+  const chunks: Buffer[] = [];
+  for (let o = 8; o < buf.length; ) {
+    const n = buf.readUInt32BE(o);
+    const ty = buf.toString('ascii', o + 4, o + 8);
+    if (ty === 'IDAT') chunks.push(buf.subarray(o + 8, o + 8 + n));
+    o += 12 + n;
+  }
+  const raw = inflateSync(Buffer.concat(chunks));
+  const px: (string | null)[] = [];
+  const bpp = 4;
+  const prev = new Uint8Array(w * bpp);
+  for (let y = 0; y < h; y++) {
+    const f = raw[y * (w * bpp + 1)];
+    const row = new Uint8Array(w * bpp);
+    for (let x = 0; x < w * bpp; x++) {
+      const v = raw[y * (w * bpp + 1) + 1 + x];
+      const a = x >= bpp ? row[x - bpp] : 0;
+      const b = prev[x];
+      const c = x >= bpp ? prev[x - bpp] : 0;
+      const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2 * c);
+      row[x] = (v + (f === 1 ? a : f === 2 ? b : f === 3 ? (a + b) >> 1 : f === 4 ? (pa <= pb && pa <= pc ? a : pb <= pc ? b : c) : 0)) & 255;
+    }
+    prev.set(row);
+    for (let x = 0; x < w; x++) px.push(row[x * 4 + 3] > 128 ? hex(row[x * 4], row[x * 4 + 1], row[x * 4 + 2]) : null);
+  }
+  return { w, h, px };
+})();
+function hero(s: Px, x: number, y: number): void {
+  for (let j = 0; j < BRAWLER.h; j++) for (let i = 0; i < BRAWLER.w; i++) {
+    const c = BRAWLER.px[j * BRAWLER.w + i];
+    if (c && x - BRAWLER.w / 2 + i >= 0 && y - BRAWLER.h + j >= 0 && x - BRAWLER.w / 2 + i < s.w && y - BRAWLER.h + j < s.h) s.set(Math.round(x - BRAWLER.w / 2 + i), Math.round(y - BRAWLER.h + 2 + j), c);
+  }
+}
+/** The Power rune's glyph, `k` pixels a cell, the word's red with his pink through its middle, a hot edge, inked round. */
+function powerGlyph(k: number): (string | null)[][] {
+  const n = POWER_GLYPH.length;
+  const W2 = n * k + 2;
+  const g: (string | null)[][] = Array.from({ length: W2 }, () => Array(W2).fill(null));
+  const on = (cx: number, cy: number): string => (cy >= 0 && cx >= 0 && cy < n && cx < n ? POWER_GLYPH[cy][cx] : '.');
+  for (let y = 0; y < n * k; y++) for (let x = 0; x < n * k; x++) {
+    const c = on(Math.floor(x / k), Math.floor(y / k));
+    if (c === '.') continue;
+    const fx = (x % k) / (k - 1), fy = (y % k) / (k - 1);
+    const edge = fy < 0.2 || fx < 0.15;
+    g[y + 1][x + 1] = c === 'o' ? (edge ? '#fff0a0' : '#ff4f8a') : edge ? POWER_RED[3] : fy > 0.75 ? POWER_RED[1] : POWER_RED[2];
+  }
+  // (ink round it)
+  for (let y = 0; y < W2; y++) for (let x = 0; x < W2; x++) {
+    if (g[y][x]) continue;
+    const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[y + dy]?.[x + dx] && g[y + dy][x + dx] !== '#1a0610');
+    if (nb) g[y][x] = '#1a0610';
+  }
+  return g;
+}
+const GLYPH_BIG = powerGlyph(9);
+const GLYPH_SMALL = powerGlyph(2);
+function stamp(s: Px, g: (string | null)[][], cx: number, cy: number, a = 1, reveal = 1): void {
+  const n = g.length;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const c = g[y][x];
+    if (!c) continue;
+    // (written stroke by stroke: its cells from the bottom up)
+    if (reveal < 1 && y / n < 1 - reveal) continue;
+    const X = Math.round(cx - n / 2 + x), Y = Math.round(cy - n / 2 + y);
+    if (a >= 1) { if (X >= 0 && Y >= 0 && X < s.w && Y < s.h) s.set(X, Y, c); } else mix(s, X, Y, c, a);
+  }
+}
+/** POWER'S SCENE: the hero dodging, the rune's shadow chasing a beat behind him, the rune hanging high over it, dropping onto it in
+ * each strike (a crater, a ring of force, stone flying), heaving up again; bursting after the last. */
+const HERO_AT = (t: number): V2 => {
+  // (where the hero is: stepping aside before each blow lands)
+  const T0 = 5.2 * TILE;
+  const path: [number, V2][] = [[0, [T0, 0]], [POWER.slams[0] - 0.22, [T0, 0]], [POWER.slams[0] - 0.02, [T0 + 0.4 * TILE, 1.3 * TILE]], [POWER.slams[1] - 0.24, [T0 + 0.3 * TILE, 1.6 * TILE]], [POWER.slams[1] - 0.04, [T0 - 0.9 * TILE, 0.9 * TILE]], [POWER.slams[2] - 0.22, [T0 - 1.1 * TILE, 0.7 * TILE]], [POWER.slams[2] - 0.02, [T0 + 1.2 * TILE, -1.4 * TILE]], [99, [T0 + 1.2 * TILE, -1.4 * TILE]]];
+  for (let i = 1; i < path.length; i++) {
+    const [ta, pa] = path[i - 1], [tb, pb] = path[i];
+    if (t <= tb) { const u = (t - ta) / (tb - ta); const w = u * u * (3 - 2 * u); return [pa[0] + (pb[0] - pa[0]) * w, pa[1] + (pb[1] - pa[1]) * w]; }
+  }
+  return path[path.length - 1][1];
+};
+const SHADOW_AT = (t: number): V2 => {
+  // (the shadow chases him a beat behind, and is fixed the moment the staff is raised for each blow)
+  let lock = t;
+  for (const h of POWER.slams) if (t > h - 0.3 && t <= h + 0.45) lock = h - 0.3;
+  const lag = 0.32;
+  return HERO_AT(Math.max(0, lock - lag));
+};
+function powerScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: number, after: boolean): void {
+  const R = powerRuneAt(t);
+  const sh = SHADOW_AT(t);
+  const wp = (p: V2, up = 0): [number, number] => { const [x, y] = at([from[0] + dir * p[0], from[1] + dir * p[1], up]); return [Math.round(ox + x), Math.round(oy + y)]; };
+  if (!after) {
+    // (craters left by each blow, fading after a while)
+    for (const h of POWER.slams) {
+      const u = t - h;
+      if (u < 0) continue;
+      const at0 = SHADOW_AT(h);
+      const fade = 1 - Math.min(1, Math.max(0, (u - 1.6) / 0.6));
+      for (let i = 0; i < 260; i++) {
+        const a = (i / 260) * Math.PI * 2;
+        for (let r = 0; r < 0.9 * TILE; r += 1.5) {
+          const [x, y] = wp([at0[0] + r * Math.cos(a), at0[1] + r * Math.sin(a)]);
+          const rim = r > 0.75 * TILE;
+          mix(s, x, y, rim ? '#4a3a40' : '#120c10', (rim ? 0.4 : 0.55) * fade);
+        }
+      }
+      // (the ring of force)
+      const v = u / 0.4;
+      if (v < 1) {
+        const rr = (0.6 + 1.6 * Math.sqrt(v)) * TILE;
+        for (let i = 0; i < 360; i++) {
+          const a = (i / 360) * Math.PI * 2;
+          for (let j = 0; j < 4; j++) {
+            const [x, y] = wp([at0[0] + (rr - j * 1.5) * Math.cos(a), at0[1] + (rr - j * 1.5) * Math.sin(a)]);
+            mix(s, x, y, j === 0 ? '#fff0d0' : j === 1 ? '#ff8a80' : '#e03c44', (1 - v) * (j === 0 ? 0.9 : 0.6));
+          }
+        }
+      }
+    }
+    // (the shadow: the rune's own shape thrown down, growing hard as it drops)
+    if (R.formed > 0 && R.gone < 1) {
+      const near = 1 - R.up / (POWER.high * TILE);
+      const a = 0.18 + 0.5 * near;
+      for (let i = 0; i < 200; i++) {
+        const ang = (i / 200) * Math.PI * 2;
+        for (let r = 0; r < 1.3 * TILE; r += 1.5) {
+          const [x, y] = wp([sh[0] + r * Math.cos(ang), sh[1] + r * Math.sin(ang)]);
+          const edge = r > 1.22 * TILE;
+          mix(s, x, y, edge ? '#ff4f8a' : '#3a0a12', (edge ? 0.7 : 0.35) * a * R.formed * (1 - R.gone));
+        }
+      }
+    }
+    return;
+  }
+  // (the hero)
+  const [hx, hy] = wp(HERO_AT(t));
+  hero(s, hx, hy);
+  // (the rune he writes, at his hand, then flying up off his staff)
+  const sk = skeletonAt(mob, 'power', t);
+  if (t > POWER.write[0] && t < POWER.cast + 0.25) {
+    const [x, y] = at([from[0] + dir * sk.handL[0], from[1] + dir * sk.handL[1], sk.handL[2] + 6]);
+    const flyUp = Math.max(0, t - POWER.cast) / 0.25;
+    const rev = Math.min(1, (t - POWER.write[0]) / (POWER.write[1] - POWER.write[0]));
+    stamp(s, GLYPH_SMALL, ox + x + flyUp * 10, oy + y - flyUp * 160, 1, rev);
+    if (flyUp > 0) for (let k = 1; k < 8; k++) stamp(s, GLYPH_SMALL, ox + x + flyUp * 10, oy + y - flyUp * 160 + k * 6, 0.5 / k);
+  }
+  // (the rune high over its shadow: dropping in each strike, smeared down its fall)
+  if (R.formed > 0 && R.gone < 1) {
+    const [x, y] = wp(sh, R.up + 30);
+    const bob = Math.round(2 * Math.sin(t * 5));
+    if (powerSmeared(t)) for (let k = 1; k <= 5; k++) stamp(s, GLYPH_BIG, x, y + bob - k * 18, 0.5 / k);
+    stamp(s, GLYPH_BIG, x, y + bob, R.formed < 1 ? R.formed : 1);
+    // (its glow)
+    for (let yy = -40; yy <= 40; yy++) for (let xx = -40; xx <= 40; xx++) {
+      const q = Math.hypot(xx, yy) / 40;
+      if (q < 1) mix(s, x + xx, y + bob + yy, '#ff4f8a', 0.12 * (1 - q) * (1 - q) * R.formed);
+    }
+  }
+  // (stone thrown up out of each crater; and after the last, the rune's shards)
+  for (const [bi, h] of POWER.slams.entries()) {
+    const u = t - h;
+    if (u <= 0 || u > 0.8) continue;
+    const at0 = SHADOW_AT(h);
+    for (let i = 0; i < 30; i++) {
+      const a = (i / 30) * Math.PI * 2 + i;
+      const sp = (40 + 60 * ((i * 0.618) % 1)) * 1.6;
+      const z = (60 + 50 * ((i * 0.37) % 1)) * u - 0.5 * 200 * u * u;
+      if (z < 0) continue;
+      const [x, y] = wp([at0[0] + Math.cos(a) * sp * u, at0[1] + Math.sin(a) * sp * u], z);
+      const c = i % 3 === 0 ? '#9a8e94' : i % 3 === 1 ? '#6a5e64' : '#c4b8b4';
+      s.set(Math.max(0, Math.min(W - 1, x)), Math.max(0, Math.min(H - 1, y)), c);
+      if (i % 4 === 0 && x + 1 < W && y + 1 < H && x >= 0 && y >= 0) { s.set(x + 1, y, c); s.set(x, y + 1, c); }
+    }
+    if (bi === 2) {
+      for (let i = 0; i < 40; i++) {
+        const a = (i / 40) * Math.PI * 2;
+        const r = (20 + 140 * u) * (0.6 + 0.4 * ((i * 0.618) % 1));
+        const [x, y] = wp([at0[0], at0[1]], 30 + 40 * u);
+        const X = Math.round(x + Math.cos(a) * r * 0.5), Y = Math.round(y + Math.sin(a) * r * 0.35 - 30 * u);
+        if (u < 0.6) mix(s, X, Y, i % 2 ? '#ff4f8a' : '#e03c44', 1 - u / 0.6);
+      }
+    }
+  }
+}
 /** His picture laid on the floor at (ox, oy): his painted pixels, then his lights soft over them. */
 function lay(s: Px, mv: string, vw: 'front' | 'rear', t: number, ox: number, oy: number, ghost = 0): void {
   const { px, lights } = paintMob(mob, mv, t, vw);
@@ -203,7 +395,7 @@ const floorOf = (mv: string) => (t: number): V2 => {
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
@@ -232,17 +424,18 @@ for (const sg of segs) {
       const f = sg.floorAt(tt);
       return [sg.from[0] + k * f[0], sg.from[1] + k * f[1], 0];
     };
-    const [tx, ty] = at(world(t));
+    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 2.4 * TILE, sg.from[1] + 0.4 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
-    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : 0;
+    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : 0;
     const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
     const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
     const s = floor(-ox, -oy);
     if (sg.move === 'charge') lane(s, t, ox, oy, sg.from, k);
     if (sg.move === 'gore') sweep(s, t, ox, oy, sg.from, k);
     if (sg.move === 'stomp') blast(s, t, ox, oy, sg.from, k);
+    if (sg.move === 'power') powerScene(s, t, ox, oy, sg.from, k, false);
     const where = (tt: number): [number, number] => {
       const [x, y] = at(world(tt));
       return [ox + x, oy + y];
@@ -267,13 +460,18 @@ for (const sg of segs) {
       const [x, y] = base();
       for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
     }
-    if (sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp') {
+    if (sg.move === 'power' && powerSmeared(t)) {
+      const [x, y] = base();
+      for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
+    }
+    if (sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power') {
       const [x, y] = base();
       lay(s, sg.move, sg.view, t, x, y);
     } else {
       const [x, y] = where(t);
       lay(s, sg.move, sg.view, t, x, y);
     }
+    if (sg.move === 'power') powerScene(s, t, ox, oy, sg.from, k, true);
     writeFileSync(`${out}/f/${String(i).padStart(3, '0')}.png`, png(s));
   }
 }
