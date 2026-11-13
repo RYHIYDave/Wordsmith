@@ -3375,7 +3375,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     lex28: demoLex28(() => meta),
     /** THE FIVE VOLATILE MELDS' looks (render/volatile3.ts): Demolition, Powderkeg, Shatter, Chain Reaction and Rupture at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */
     volatile3: demoV3(fx, () => game),
-    /** ARCS KEEP JUMPING (game/defs.ts ARC_CHAIN): off until his yes; its film switches it on for its own page. */
+    /** ARCS KEEP JUMPING (game/defs.ts ARC_CHAIN): on since his yes; its film switches it off and on. */
     arcChain: ARC_CHAIN,
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,

@@ -256,7 +256,7 @@ Two heroes of the same class differ by the talents they pick and the words in th
   if you focused really hard into lightning as a mage.”; asked whether to put it in this book:
   “Yes, add it (Recommended)”. The first two, the same evening: every arrow of a tap splits with
   Splitting (“Every arrow splits, 21 (Recommended)”), and a lightning arc keeps jumping, enemy to
-  enemy (“Arcs keep jumping (Recommended)”).
+  enemy (“Arcs keep jumping (Recommended)”; shown it, “Yes, switch it on (Recommended)”).
 - **Talent points come with levels:** ten, one at every fifth level (your answer of 8 Oct, 15:16:
   “10, one every 5 levels (Recommended)”).
 - **Picks can be undone in town, for gold,** so a new build costs something to try: 10 gold for

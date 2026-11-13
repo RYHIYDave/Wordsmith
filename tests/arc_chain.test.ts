@@ -1,4 +1,4 @@
-// ARCS KEEP JUMPING (game/defs.ts ARC_CHAIN, off until his yes). His words, 12 Nov 2026, 19:24: “Same kind of thing with all the
+// ARCS KEEP JUMPING (game/defs.ts ARC_CHAIN, on at his yes to its film: “Yes, switch it on (Recommended)”). His words, 12 Nov 2026, 19:24: “Same kind of thing with all the
 // jumping lightning bolts if you focused really hard into lightning as a mage.”; his pick: “Arcs keep jumping (Recommended)”. Checks:
 //   1. on, a Lightning hit's arcs each jump on, enemy to enemy, as many jumps as it has arcs, reaching further; off (the game as it
 //      is), each arc strikes once.
@@ -26,13 +26,14 @@ function crowd(): { arcs: number; seen: Extract<GameEvent, { t: 'arc' }>[] } {
 }
 
 test('1. on: each arc jumps on, as many jumps as the hit has arcs; off, as the game is, each arc strikes once', () => {
-  const off = crowd();
-  ARC_CHAIN.on = true;
-  let on: ReturnType<typeof crowd>;
+  assert.equal(ARC_CHAIN.on, true);
+  const on = crowd();
+  ARC_CHAIN.on = false;
+  let off: ReturnType<typeof crowd>;
   try {
-    on = crowd();
+    off = crowd();
   } finally {
-    ARC_CHAIN.on = false;
+    ARC_CHAIN.on = true;
   }
   assert.ok(off.arcs >= 2, `arcs ${off.arcs}`);
   // (her bolt goes through the crowd: each of its hits arcs; switched on, each of those arcs jumps on as many times again)

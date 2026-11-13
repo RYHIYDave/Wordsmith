@@ -508,9 +508,10 @@ export const PULL = { far: 1.5, most: 2.5, reach: 2.2, stop: 0.62, secs: 0.24, v
  * whether each arc should keep jumping, his pick: “Arcs keep jumping (Recommended)” (offered as: each arc jumps on, enemy to enemy, as
  * many jumps as the hit has arcs, never the same enemy twice; a 4-arc hit up to 16 strikes; built for him to try before it goes live).
  * So each arc (game.ts hitMonster, Lightning's arcs and Forking's) jumps on from the one it struck to the nearest within `reach` tiles
- * not yet struck by that hit, as hard as an arc, `gap` seconds a jump. OFF until his yes to it.
+ * not yet struck by that hit, as hard as an arc, `gap` seconds a jump. ON at his yes to its film (docs/mockups/arc_chain), 12 Nov:
+ * “Yes, switch it on (Recommended)”.
  */
-export const ARC_CHAIN = { on: false, reach: 3.5, gap: 0.07 };
+export const ARC_CHAIN = { on: true, reach: 3.5, gap: 0.07 };
 export const SPLIT = { copies: 3, share: 0.4, most: 0.6, reach: 3.2, speed: 9, shards: 6, shardShare: 0.25, shardMost: 0.4, shardReach: 3, shardWidth: 0.45, every: 0.3, life: 0.5, look: 0.75 };
 /**
  * HEXING (Intelligence). In front: a curse for `secs` on what it hits: it takes `more` more damage from everything. Behind: a hex
