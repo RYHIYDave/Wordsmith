@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -394,6 +394,127 @@ function frostScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
     }
   }
 }
+const BOLT_GLYPH = glyphOf(['...XX.', '..XX..', '.XoooX', '...XX.', '..XX..', '.XX...'], 2, '#fff060', '#fffbe0');
+const CRACK_AT: V2 = [4.4 * TILE, 0.3 * TILE];
+const BOLT_HERO = (t: number): V2 => {
+  const path: [number, V2][] = [[0, [5.6 * TILE, 0.5 * TILE]], [1.2, [5.6 * TILE, 0.5 * TILE]], [2.2, [7.2 * TILE, 1.8 * TILE]], [3.0, [7.6 * TILE, -0.6 * TILE]], [3.8, [6.4 * TILE, -2.0 * TILE]], [99, [6.4 * TILE, -2.0 * TILE]]];
+  for (let i = 1; i < path.length; i++) {
+    const [ta, pa] = path[i - 1], [tb, pb] = path[i];
+    if (t <= tb) { const u = (t - ta) / (tb - ta); const w = u * u * (3 - 2 * u); return [pa[0] + (pb[0] - pa[0]) * w, pa[1] + (pb[1] - pa[1]) * w]; }
+  }
+  return path[path.length - 1][1];
+};
+/** Where each orb is (the floor's points, its height over it), drifting after the hero from where the rune cracked. */
+const ORB_PATHS: [number, number][][] = ((): [number, number][][] => {
+  const out: [number, number][][] = [];
+  for (let k = 0; k < BOLT.orbs; k++) {
+    const a = (k / BOLT.orbs) * Math.PI * 2 + 0.4;
+    let x = CRACK_AT[0] + Math.cos(a) * 0.5 * TILE, y = CRACK_AT[1] + Math.sin(a) * 0.5 * TILE;
+    const path: [number, number][] = [];
+    for (let i = 0; i <= Math.round(BOLT.long * 30); i++) {
+      const t = i / 30;
+      if (t > BOLT.crack) {
+        // (each hunts its own side of the hero, so they come at him from about him, not in a clump)
+        const h0 = BOLT_HERO(t - 0.4 - 0.15 * k);
+        const h: V2 = [h0[0] + Math.cos(a + t * 0.6) * 1.3 * TILE, h0[1] + Math.sin(a + t * 0.6) * 1.3 * TILE];
+        const dx = h[0] - x, dy = h[1] - y, d = Math.hypot(dx, dy) || 1;
+        const sp = (0.75 + 0.2 * k) * TILE / 30;
+        x += (dx / d) * sp + Math.cos(t * 3 + k * 2) * 0.6;
+        y += (dy / d) * sp + Math.sin(t * 2.6 + k) * 0.6;
+      }
+      path.push([x, y]);
+    }
+    out.push(path);
+  }
+  return out;
+})();
+function boltScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: number, after: boolean): void {
+  const wp = (p: V2, up = 0): [number, number] => { const [x, y] = at([from[0] + dir * p[0], from[1] + dir * p[1], up]); return [Math.round(ox + x), Math.round(oy + y)]; };
+  const fi = Math.min(ORB_PATHS[0].length - 1, Math.round(t * 30));
+  if (!after) {
+    // (the floor scorched where each orb burst)
+    for (const [k, b] of BOLT.bursts.entries()) {
+      if (t < b) continue;
+      const c = ORB_PATHS[k][Math.round(b * 30)];
+      for (let i = 0; i < 120; i++) {
+        const a = (i / 120) * Math.PI * 2;
+        for (let r = 0; r < 0.8 * TILE; r += 1.5) {
+          const [x, y] = wp([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]);
+          if ((i * 3 + Math.floor(r)) % 11 < 3 || r < 0.35 * TILE) mix(s, x, y, '#120c10', 0.6);
+        }
+      }
+    }
+    return;
+  }
+  const [hx, hy] = wp(BOLT_HERO(t));
+  hero(s, hx, hy);
+  const sk = skeletonAt(mob, 'lightning', t);
+  const [cx, cy] = wp(CRACK_AT, 80);
+  if (t > BOLT.write[0] && t <= BOLT.cast) {
+    const [x, y] = at([from[0] + dir * sk.handL[0], from[1] + dir * sk.handL[1], sk.handL[2] + 6]);
+    stamp(s, BOLT_GLYPH, ox + x, oy + y, 1, Math.min(1, (t - BOLT.write[0]) / (BOLT.write[1] - BOLT.write[0])));
+  } else if (t > BOLT.cast && t < BOLT.crack) {
+    const sk2 = skeletonAt(mob, 'lightning', BOLT.cast);
+    const [x0, y0] = at([from[0] + dir * sk2.handL[0], from[1] + dir * sk2.handL[1], sk2.handL[2] + 6]);
+    const u = (t - BOLT.cast) / (BOLT.crack - BOLT.cast);
+    const X = ox + x0 + (cx - ox - x0) * u, Y = oy + y0 + (cy - oy - y0) * u - 40 * Math.sin(Math.PI * u);
+    stamp(s, BOLT_GLYPH, X, Y, 1);
+    for (let k = 1; k < 6; k++) stamp(s, BOLT_GLYPH, X - (cx - ox - x0) * 0.035 * k, Y + 5 * k, 0.4 / k);
+  }
+  // (it cracks open: a flash, bolts thrown down to the floor)
+  if (t >= BOLT.crack && t < BOLT.crack + 0.35) {
+    const b = (t - BOLT.crack) / 0.35;
+    for (let yy = -30; yy <= 30; yy++) for (let xx = -30; xx <= 30; xx++) {
+      const q = Math.hypot(xx, yy) / 30;
+      if (q < 1) mix(s, cx + xx, cy + yy, '#fffbe0', 0.85 * (1 - b) * (1 - q));
+    }
+    for (let k = 0; k < 4; k++) {
+      const a = (k / 4) * Math.PI * 2 + 0.7;
+      const [fx, fy] = wp([CRACK_AT[0] + Math.cos(a) * 1.4 * TILE, CRACK_AT[1] + Math.sin(a) * 1.4 * TILE]);
+      let X = cx, Y = cy;
+      for (let j = 1; j <= 14; j++) {
+        const f = j / 14;
+        const nx = Math.round(cx + (fx - cx) * f + (Math.sin(j * 7.3 + k * 3 + Math.floor(t * 30)) * 5)), ny = Math.round(cy + (fy - cy) * f);
+        for (let m = 0; m <= 6; m++) mix(s, Math.round(X + (nx - X) * m / 6), Math.round(Y + (ny - Y) * m / 6), j % 3 ? '#fffbe0' : '#fff060', 1 - b);
+        X = nx; Y = ny;
+      }
+    }
+  }
+  // (the orbs, painted as he is: drifting after the hero, zapping the floor, swelling, bursting)
+  if (t >= BOLT.crack) {
+    for (let k = 0; k < BOLT.orbs; k++) {
+      const b = BOLT.bursts[k];
+      if (t > b + 0.4) continue;
+      const c = ORB_PATHS[k][fi];
+      const bob = 22 + 4 * Math.sin(t * 4 + k);
+      if (t <= b) {
+        const swell = Math.max(0, 1 - (b - t) / 0.4);
+        const zt = ((t + k * 0.17) % 0.4);
+        const zap: V3 | null = zt < 0.08 ? [(Math.sin(k * 3 + Math.floor((t + k * 0.17) / 0.4) * 1.7)) * 26, (Math.cos(k * 5 + Math.floor((t + k * 0.17) / 0.4) * 2.3)) * 22, -bob] : null;
+        const [x, y] = wp(c);
+        layPainted(s, paintOrb([0, 0, bob], t, k, swell, zap, 'front'), ORB_CANVAS, x, y, 0);
+      } else {
+        // (it bursts: a flash and a ring of bolts thrown out along the floor)
+        const u = (t - b) / 0.4;
+        const [x, y] = wp(c, bob);
+        for (let yy = -36; yy <= 36; yy++) for (let xx = -36; xx <= 36; xx++) {
+          const q = Math.hypot(xx, yy) / 36;
+          if (q < 1) mix(s, x + xx, y + yy, q < 0.5 ? '#fffbe0' : '#ff4f8a', 0.85 * (1 - u) * (1 - q));
+        }
+        for (let m = 0; m < 8; m++) {
+          const a = (m / 8) * Math.PI * 2 + k;
+          let X = x, Y = y + bob * 0.6;
+          for (let j = 1; j <= 8; j++) {
+            const r = j * 7 * (0.5 + u);
+            const nx = Math.round(x + Math.cos(a) * r + Math.sin(j * 5 + m) * 3), ny = Math.round(y + bob * 0.6 + Math.sin(a) * r * 0.5);
+            for (let q = 0; q <= 5; q++) mix(s, Math.round(X + (nx - X) * q / 5), Math.round(Y + (ny - Y) * q / 5), j % 2 ? '#fff060' : '#fffbe0', 1 - u);
+            X = nx; Y = ny;
+          }
+        }
+      }
+    }
+  }
+}
 /** THE HAMMER OUT OF THE RUNE: hung from the rune at (x, y), its haft `L` long to the middle of its head, swung `swing` degrees from
  * straight down (raised back up over the rune at -150); of the word's red with his pink through it, a hot edge, inked; coming out of
  * the rune as `formed` goes to 1 (from the rune down, in sparks). */
@@ -617,7 +738,7 @@ const floorOf = (mv: string) => (t: number): V2 => {
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
@@ -646,11 +767,11 @@ for (const sg of segs) {
       const f = sg.floorAt(tt);
       return [sg.from[0] + k * f[0], sg.from[1] + k * f[1], 0];
     };
-    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : at(world(t));
+    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
-    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : sg.move === 'frost' ? Math.max(0, 1 - Math.abs(t - FROST.hit - 0.03) / 0.25) * 5 : 0;
+    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : sg.move === 'frost' ? Math.max(0, 1 - Math.abs(t - FROST.hit - 0.03) / 0.25) * 5 : sg.move === 'lightning' ? Math.max(0, ...BOLT.bursts.map((b) => 1 - Math.abs(t - b - 0.03) / 0.15), 1 - Math.abs(t - BOLT.crack) / 0.12) * 4 : 0;
     const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
     const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
     const s = floor(-ox, -oy);
@@ -660,6 +781,7 @@ for (const sg of segs) {
     if (sg.move === 'power') powerScene(s, t, ox, oy, sg.from, k, false);
     if (sg.move === 'flame') flameScene(s, t, ox, oy, sg.from, k, false);
     if (sg.move === 'frost') frostScene(s, t, ox, oy, sg.from, k, false);
+    if (sg.move === 'lightning') boltScene(s, t, ox, oy, sg.from, k, false);
     const where = (tt: number): [number, number] => {
       const [x, y] = at(world(tt));
       return [ox + x, oy + y];
@@ -692,7 +814,7 @@ for (const sg of segs) {
       const [x, y] = base();
       for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
     }
-    if (sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost') {
+    if (sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost' || sg.move === 'lightning') {
       const [x, y] = base();
       lay(s, sg.move, sg.view, t, x, y);
     } else {
@@ -702,6 +824,7 @@ for (const sg of segs) {
     if (sg.move === 'power') powerScene(s, t, ox, oy, sg.from, k, true);
     if (sg.move === 'flame') flameScene(s, t, ox, oy, sg.from, k, true);
     if (sg.move === 'frost') frostScene(s, t, ox, oy, sg.from, k, true);
+    if (sg.move === 'lightning') boltScene(s, t, ox, oy, sg.from, k, true);
     writeFileSync(`${out}/f/${String(i).padStart(3, '0')}.png`, png(s));
   }
 }

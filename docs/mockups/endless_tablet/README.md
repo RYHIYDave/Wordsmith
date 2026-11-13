@@ -350,6 +350,13 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   shards flung off; the floor FROZEN white behind them (the film draws it: how slippery is the rules'); they stand, then shatter.
   The checks (his blow drawn back, held, followed through, a flash), his legs outside the boar, nothing cyan: all pass.
   HIS YES, 12 Nov 2026, by pop-up: “Yes, on to Lightning (Recommended)”.
+- LIGHTNING, BALL LIGHTNING (`lightning`, `boltPoseAt`, `orbBits`, `paintOrb`; `pictures/standard/boss_lightning.mp4`, then the
+  bursts at half speed): by his rules for the words. HE WRITES the Lightning rune (the word's own bolt, its yellow with his pink at its
+  heart) and flings it out over the room, where IT CRACKS OPEN in a flash, bolts thrown down to the floor, and lets out FOUR ORBS (as
+  solids: balls of light, the word's yellow white-hot at the heart, his pink at their edge, arcs crackling off them every frame); they
+  DRIFT AFTER THE HERO, slow, each from its own side, each ZAPPING the floor about it as it goes (a jagged bolt down); each SWELLS,
+  flickering, and BURSTS in a flash and a ring of bolts thrown out along the floor, which is scorched there. How they hunt is the
+  rules'. The checks on his cast, his legs outside the boar: all pass.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.

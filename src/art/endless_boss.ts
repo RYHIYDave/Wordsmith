@@ -929,6 +929,7 @@ export function boarPoseAt(move: string, t: number): BoarPose {
   if (move === 'power') return powerPoseAt(t);
   if (move === 'flame') return flamePoseAt(t);
   if (move === 'frost') return frostPoseAt(t);
+  if (move === 'lightning') return boltPoseAt(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   const A = BOAR_STAND_AT;
@@ -1955,6 +1956,70 @@ export function paintFrost(t: number, view: 'front' | 'rear'): Painted {
   return { px: st.whole(ENEMY_RIM), lights } as Painted;
 }
 
+// LIGHTNING: BALL LIGHTNING (his pick, 12 Nov 2026: “Ball lightning”, offered as: slow crackling orbs drift after you, zapping
+// anything near, then burst). By his rules for the words: one rune, flung out over the hero; what strikes is what it makes, as solids.
+//   HE WRITES IT   his left hand claws the Lightning rune on the air; he flings it out over the room
+//   IT CRACKS      over the room it cracks open in a flash, bolts thrown down to the floor, and lets out the orbs
+//   THE ORBS       four balls of lightning, the word's yellow white-hot at the heart with his pink about them, crackling, arcs
+//                  jumping off them; they drift after the hero, slow, each zapping the floor about it as it goes (how they hunt is
+//                  the rules': the film has them drift after the hero); each swells, flickering, and bursts in a blast of bolts
+export const BOLT = { write: [0.12, 0.62] as const, cast: 0.68, crack: 0.95, orbs: 4, long: 4.2, bursts: [3.0, 3.25, 3.45, 3.65] as const, swell: 0.4 };
+function boltCast(t: number): Cast {
+  const raise = smooth01((t - (BOLT.cast - 0.3)) / 0.25) * (1 - smooth01((t - BOLT.long + 0.5) / 0.4));
+  const write = bumpOf(t, BOLT.write[0] - 0.05, BOLT.write[1] + 0.1);
+  return { raise, hammer: 0, write: Math.max(write, 0.5 * bumpOf(t, BOLT.crack, BOLT.long - 0.4)), stroke: (t - BOLT.write[0]) * TAU * 2.2, lead: 0 };
+}
+export function boltPoseAt(t: number): BoarPose {
+  const P = boarPoseAt('stand', t);
+  let flare = 0.6 * smooth01(t / 0.5);
+  for (const b of BOLT.bursts) flare = Math.max(flare, bumpOf(t, b - 0.05, b + 0.4));
+  return { ...P, pulse: Math.max(P.pulse ?? 0, flare), ride: { lean: 0, brace: 0, still: true, cast: boltCast(t) } };
+}
+/** The Lightning word's own yellow, white-hot at its heart, his pink about it. */
+const BOLT_RAMP: Ramp = ['#c0206a', '#ff4f8a', '#ffd84a', '#fff060', '#fffbe0'];
+export const ORB_CANVAS: MobCanvas = { w: 160, h: 200, ax: 80, ay: 160 };
+/** ONE ORB OF BALL LIGHTNING as solids, at `p` (its own points), `t` seconds into the move: a ball of light, white-hot at its heart,
+ * his pink about it, crackling (arcs jumping off it, flickering each frame); swelling and flickering at `swell` (0 ... 1) before it
+ * bursts; `zap`, a bolt down to the floor beside it (from 0 just struck to 1 gone, or none). */
+export function orbBits(put: Put, p: V3, t: number, seed: number, swell: number, zap: V3 | null): void {
+  const fr0 = Math.floor(t * 30);
+  const R = 11 * (1 + 0.6 * swell) * (1 + 0.08 * Math.sin(t * 40 + seed));
+  // (the word's yellow, white-hot at its heart; his pink only at its edge)
+  put('orb', 'orb', { k: 'ball', c: p, ax: [[R, 0, 0], [0, R, 0], [0, 0, R]], skin: (u, tone) => {
+    const edge = Math.hypot(u[0], u[1], u[2] * 0.2);
+    if (edge > 0.9) return BOLT_RAMP[1];
+    if (edge > 0.78) return BOLT_RAMP[2];
+    return tone >= 2 ? BOLT_RAMP[4] : BOLT_RAMP[3];
+  } });
+  // (its crackle: arcs jumping off it, a new set each frame)
+  for (let a = 0; a < 3 + Math.round(4 * swell); a++) {
+    let q = p;
+    const dir = norm([hash(a, fr0, 9011) - 0.5, hash(a, fr0, 9012) - 0.5, hash(a, fr0, 9013) - 0.5], [1, 0, 0]);
+    for (let j = 0; j < 5; j++) {
+      q = add(q, add(mul(dir, R * 0.45), [(hash(a, j + fr0, 9014) - 0.5) * 5, (hash(a, j + fr0, 9015) - 0.5) * 5, (hash(a, j + fr0, 9016) - 0.5) * 5]));
+      if (j > 0) put('orbArcs', 'arc', { k: 'mote', p: q, c: j < 3 ? BOLT_RAMP[4] : BOLT_RAMP[3], size: 1 });
+    }
+  }
+  if (zap) {
+    // (a bolt down to the floor: jagged, white-hot)
+    let q = p;
+    for (let j = 0; j < 12; j++) {
+      const f = (j + 1) / 12;
+      const want = lerp3(p, zap, f);
+      q = add(want, [(hash(seed, j + fr0, 9017) - 0.5) * 7, (hash(seed, j + fr0, 9018) - 0.5) * 7, 0]);
+      put('orbArcs', 'zap', { k: 'mote', p: q, c: j % 3 ? BOLT_RAMP[4] : BOLT_RAMP[3], size: j < 2 ? 2 : 1 });
+    }
+  }
+  put('glow', 'orbGlow', { k: 'glow', p, c: BOLT_RAMP[3], r: 18 + 20 * swell, a: 0.5 + 0.3 * swell });
+}
+export function paintOrb(p: V3, t: number, seed: number, swell: number, zap: V3 | null, view: 'front' | 'rear'): Painted {
+  const st = stage(view, ORB_CANVAS.ax, ORB_CANVAS.ay, ORB_CANVAS);
+  const bits: Bit[] = [];
+  orbBits((part, piece, shape) => bits.push({ part, piece, shape }), p, t, seed, swell, zap);
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+
 /** THE POWER RUNE: its glyph (the word's own, art/icons.ts GLYPH, two chevrons pointing up), `k` picture pixels to its cell, in the
  * word's red with his pink through its middle and a hot edge; ink round it. */
 export const POWER_GLYPH = ['..oo..', '.XXXX.', 'XX..XX', '..oo..', '.XXXX.', 'XX..XX'];
@@ -2142,7 +2207,7 @@ export function wsMob(): Mob {
     trueBack: true,
     bits: wsBits,
     grains: (_st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand'),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST } },
   } as unknown as Mob;
 }
 
@@ -2216,7 +2281,7 @@ export const WS_SHAPE: BossShape = {
   // game shows it from its other side and the next run goes back down the lane: that hand-over is the charge's own start drawn the
   // other way round, and is not one these checks can draw)
   handovers: [
-    ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power', 'flame', 'frost'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
+    ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power', 'flame', 'frost', 'lightning'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
     { from: 'charge', at: 'end', to: 'wheel', toAt: 0 },
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
