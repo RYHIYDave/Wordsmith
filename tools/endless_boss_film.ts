@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { DEATH, ERUPT, ERUPT_AT, ERUPT_CANVAS, ERUPT_VENTS, MELD, eruptRace, meldSmeared, paintEruption, FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { HAIL, HAIL_BOLTS, HAIL_CANVAS, HAIL_HERO, HAIL_STONES, hailCloudAt, paintHail, DEATH, ERUPT, ERUPT_AT, ERUPT_CANVAS, ERUPT_VENTS, MELD, eruptRace, meldSmeared, paintEruption, FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -1031,7 +1031,7 @@ function slamFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
  * attack”): he writes his word at his hand; his shade, a moment after him, writes the other at its great hand; his staff thrust
  * high, the two fly up and meet over him, wheel round each other faster and faster and MELD in a flash into the meld's own rune,
  * blazing; the slam drives it down into the floor where it goes in. (`under`: what is laid under him; else, over him.) */
-function meldScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: number, mv: string, mine: Word, its: Word, meldRows: readonly string[], meldCols: [string, string], into: V3, under: boolean): void {
+function meldScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: number, mv: string, mine: Word, its: Word, meldRows: readonly string[], meldCols: [string, string], into: V3, under: boolean, sky = false): void {
   const W3 = (p: V3): [number, number] => { const [x, y] = at([from[0] + dir * p[0], from[1] + dir * p[1], p[2]]); return [ox + x, oy + y]; };
   const skAt = (tt: number) => skeletonAt(mob, mv, Math.max(0, tt));
   const O = (sk: ReturnType<typeof skAt>): V3 => [sk.pelvis[0], sk.pelvis[1], 0];
@@ -1043,7 +1043,7 @@ function meldScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
   if (under) {
     // (where it went in: the floor split, a fissure racing out along each way, molten in its depths, his pink at its heart; cooling
     // after the last vent has blown)
-    if (t < MELD.slam) return;
+    if (t < MELD.slam || sky) return;
     const race = eruptRace(t);
     const last = Math.max(...ERUPT_VENTS.map((v) => v.t));
     const cool = Math.min(1, Math.max(0, (t - last - 0.6) / 1.6));
@@ -1122,7 +1122,11 @@ function meldScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
       if (q < 1) mix(s, Math.round(mx + xx), Math.round(my + yy), '#ff4f8a', (0.16 + 0.08 * Math.sin(t * 30)) * (1 - q) * (1 - q));
     }
     stamp(s, meldGlyph, mx, my, 1);
-  } else if (t > MELD.slam - 2 / 30 && t <= MELD.slam + 1 / 30) {
+  } else if (sky && t > MELD.slam - 2 / 30 && t < MELD.slam + 0.3) {
+    // (flung straight up out of sight by the slam, a streak of it behind)
+    const u = (t - (MELD.slam - 2 / 30)) / (0.3 + 2 / 30);
+    for (let k2 = 0; k2 < 8; k2++) stamp(s, meldGlyph, mx, my - 520 * u * u - 80 * u + 12 * k2, k2 === 0 ? 1 : 0.45 / k2);
+  } else if (!sky && t > MELD.slam - 2 / 30 && t <= MELD.slam + 1 / 30) {
     // (driven down: two frames, smeared)
     const u = Math.min(1, (t - (MELD.slam - 2 / 30)) / (2 / 30));
     const [ix, iy] = W3(into);
@@ -1131,7 +1135,7 @@ function meldScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
       stamp(s, meldGlyph, mx + (ix - mx) * v, my + (iy - my) * v, k2 === 0 ? 1 : 0.4 / k2);
     }
   }
-  if (t > MELD.slam && t < MELD.slam + 0.4) {
+  if (!sky && t > MELD.slam && t < MELD.slam + 0.4) {
     // (where it went in: a flash of the meld's colour and his pink, a ring of it thrown out)
     const b = (t - MELD.slam) / 0.4;
     const [ix, iy] = W3(into);
@@ -1139,6 +1143,62 @@ function meldScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
       const q = Math.hypot(xx / 40, yy / 26);
       if (q < 1) mix(s, ix + xx, iy + yy, q < 0.35 ? '#fff0b0' : q < 0.7 ? meldCols[0] : '#ff4f8a', 0.8 * (1 - b) * (1 - q));
     }
+  }
+}
+/** THE HAILSTORM ON THE FLOOR: each stone's shadow growing as it comes; a splash of frost where it struck, thawing; each bolt's
+ * spot ringed in crackling white first, scorched after. */
+function hailFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
+  const P = (x: number, y: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, 0]); return [Math.round(ox + px), Math.round(oy + py)]; };
+  // (the cloud's shadow over the room)
+  const cl = hailCloudAt(t);
+  if (cl > 0) {
+    for (let y = 0; y < s.h; y += 1) for (let x = (y % 2); x < s.w; x += 2) mix(s, x, y, '#06060e', 0.22 * cl);
+    // (the storm cloud's shadow, in great dark rolls drifting over the floor)
+    for (let i = 0; i < 9; i++) {
+      const cx = (-1 + 10 * ((i * 0.618) % 1)) * TILE + t * 22, cy = (-4 + 8 * ((i * 0.381 + 0.2) % 1)) * TILE;
+      const R = (1.6 + 1.2 * ((i * 0.77) % 1)) * TILE;
+      for (let yy = -R; yy <= R; yy += 1.4) for (let xx = -R; xx <= R; xx += 1.4) {
+        const q = Math.hypot(xx, yy) / R;
+        if (q >= 1) continue;
+        const [px, py] = P(cx + xx, cy + yy);
+        mix(s, px, py, '#04040a', 0.22 * cl * (1 - q * q));
+      }
+    }
+  }
+  for (const [k, h] of HAIL_STONES.entries()) {
+    const u = t - (h.t - HAIL.warn);
+    if (u < 0) continue;
+    if (t < h.t) {
+      const f = u / HAIL.warn;
+      const R = h.r * (1.2 + 1.6 * f);
+      for (let yy = -R; yy <= R; yy += 0.7) for (let xx = -R; xx <= R; xx += 0.7) if (Math.hypot(xx, yy) < R) { const [px, py] = P(h.at[0] + xx, h.at[1] + yy); mix(s, px, py, '#0a0a18', 0.35 + 0.35 * f); }
+      continue;
+    }
+    const w = t - h.t;
+    const fade = 1 - Math.min(1, w / 2.2);
+    if (fade <= 0) continue;
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2;
+      const r = h.r * (1.4 + 1.6 * ((i * 0.618 + k) % 1));
+      for (let d = 0; d < r; d += 0.8) { const [px, py] = P(h.at[0] + Math.cos(a) * d, h.at[1] + Math.sin(a) * d); mix(s, px, py, d < r * 0.5 ? '#eef2ff' : '#b4cce8', 0.6 * fade); }
+    }
+  }
+  for (const b of HAIL_BOLTS) {
+    const u = t - (b.t - HAIL.boltWarn);
+    if (u < 0) continue;
+    if (t < b.t) {
+      const f = u / HAIL.boltWarn;
+      const R = 22 - 6 * f;
+      for (let i = 0; i < 120; i++) {
+        const a = (i / 120) * Math.PI * 2;
+        const j = (Math.floor(t * 30) + i) % 6 === 0 ? 2 : 0;
+        const [px, py] = P(b.at[0] + Math.cos(a) * (R + j), b.at[1] + Math.sin(a) * (R + j));
+        mix(s, px, py, i % 9 === 0 ? '#ff4f8a' : '#eef2ff', 0.5 + 0.4 * f);
+      }
+      continue;
+    }
+    const fade = 1 - Math.min(1, (t - b.t) / 2.0);
+    for (let yy = -14; yy <= 14; yy++) for (let xx = -14; xx <= 14; xx++) { const q = Math.hypot(xx, yy) / 14; if (q < 1) { const [px, py] = P(b.at[0] + xx, b.at[1] + yy); mix(s, px, py, '#0e0b10', 0.5 * fade * (1 - q)); } }
   }
 }
 /** His shade laid on the floor at (ox, oy), its anchor his floor point: see-through as far as `a`, its light over all. */
@@ -1220,7 +1280,7 @@ const floorOf = (mv: string) => (t: number): V2 => {
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : mv === 'fall' ? FALL.long : mv === 'eruption' ? ERUPT.end : mv === 'foot' ? 4.8 : mv === 'death' ? DEATH.long : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : mv === 'fall' ? FALL.long : mv === 'eruption' ? ERUPT.end : mv === 'foot' ? 4.8 : mv === 'death' ? DEATH.long : mv === 'hailstorm' ? HAIL.end : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
@@ -1254,12 +1314,13 @@ for (const sg of segs) {
     };
     const fallFilm = move === 'fall';
     const meldFilm = sg.move === 'eruption';
+    const hailFilm = sg.move === 'hailstorm';
     const deathFilm = sg.move === 'death';
     const FALL_END = fallCarry(FALL.long) * TILE;
     const lead = sg.move === 'fall' ? 50 + 60 * Math.min(1, t / 1.2) : 50;
     // (as his shade rises, the camera lifts to take it in)
     const lift = sg.move === 'fall' ? 60 * Math.min(1, Math.max(0, (t - FALL.shade[0]) / (FALL.shade[1] - FALL.shade[0]))) : 0;
-    const [tx, ty] = deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    const [tx, ty] = hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
@@ -1296,9 +1357,14 @@ for (const sg of segs) {
         }
       }
     }
-    if (sg.move === 'eruption' || sg.move === 'foot') {
-      // (the hero, between the fissures, out before him)
-      const [hx, hy] = at([sg.from[0] + k * 5.0 * TILE, sg.from[1] - k * 1.6 * TILE, 0]);
+    if (sg.move === 'hailstorm') {
+      hailFloor(s, t, ox, oy, sg.from, k);
+      meldScene(s, t, ox, oy, sg.from, k, 'hailstorm', 'frost', 'lightning', MELD_GLYPH.hailstorm, [MELD_RAMP.hailstorm[3], MELD_RAMP.hailstorm[4]], [0, 0, 0], true, true);
+    }
+    if (sg.move === 'eruption' || sg.move === 'foot' || sg.move === 'hailstorm') {
+      // (the hero, out before him)
+      const hh = sg.move === 'hailstorm' ? HAIL_HERO : [5.0 * TILE, -1.6 * TILE, 0];
+      const [hx, hy] = at([sg.from[0] + k * hh[0], sg.from[1] + k * hh[1], 0]);
       hero(s, ox + hx, oy + hy);
       // (HIS SHADE, behind him, doing as he does a moment after him)
       const sk = skeletonAt(mob, sg.move, Math.max(0, t - SHADE.lag));
@@ -1358,11 +1424,11 @@ for (const sg of segs) {
       const [x, y] = at([sg.from[0] + k * (fallCarry(t) * TILE + sk.pelvis[0]), sg.from[1] + k * sk.pelvis[1], 0]);
       layShade(s, paintShade(sk, t, sg.view, g), ox + x, oy + y, 0.25 + 0.42 * g);
     }
-    if (sg.move === 'eruption' && meldSmeared(t)) {
+    if ((sg.move === 'eruption' || sg.move === 'hailstorm') && meldSmeared(t)) {
       const [x, y] = base();
       for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
     }
-    if (sg.move === 'foot' || sg.move === 'death' || sg.move === 'eruption' || sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost' || sg.move === 'lightning' || sg.move === 'poison') {
+    if (sg.move === 'foot' || sg.move === 'death' || sg.move === 'eruption' || sg.move === 'hailstorm' || sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost' || sg.move === 'lightning' || sg.move === 'poison') {
       const [x, y] = base();
       lay(s, sg.move, sg.view, t, x, y);
     } else {
@@ -1377,6 +1443,21 @@ for (const sg of segs) {
       // (killed: his pink flaring out of all of it at once)
       const [x, y] = where(t);
       flash(s, sg.move, sg.view, t, x, y, t < FALL.kill + 1 / 30 ? 0.75 : 0.4);
+    }
+    if (sg.move === 'hailstorm') {
+      const [x, y] = base();
+      layPainted(s, paintHail(t, sg.view), HAIL_CANVAS, x, y, 0);
+      // (its bolts, cracking down out of the cloud's belly onto their spots, forking)
+      for (const [bi, b] of HAIL_BOLTS.entries()) {
+        if (t < b.t || t > b.t + 0.13) continue;
+        const [x0, y0] = at([sg.from[0] + k * (b.at[0] - 20), sg.from[1] + k * b.at[1], HAIL.high - 10]);
+        const [x1, y1] = at([sg.from[0] + k * b.at[0], sg.from[1] + k * b.at[1], 0]);
+        // (from out of the picture's top, where the cloud is)
+        boltLine(s, ox + x1 - 30, 0, ox + x1, oy + y1, bi * 17 + Math.floor(t * 60), 3, 1, 3);
+        if (t < b.t + 1 / 30) for (let yy = 0; yy < s.h; yy++) for (let xx = 0; xx < s.w; xx++) mix(s, xx, yy, '#cad6ff', 0.16);
+        void x0; void y0;
+      }
+      meldScene(s, t, ox, oy, sg.from, k, 'hailstorm', 'frost', 'lightning', MELD_GLYPH.hailstorm, [MELD_RAMP.hailstorm[3], MELD_RAMP.hailstorm[4]], [0, 0, 0], false, true);
     }
     if (sg.move === 'eruption') {
       const [x, y] = base();

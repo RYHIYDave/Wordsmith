@@ -428,8 +428,13 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   `eruptBits`; `pictures/standard/boss_eruption.mp4`): he writes Power, his shade Flame; where the meld goes in, the floor splits
   in three fissures racing out toward the hero, molten in their depths, his pink at their heart, a vent swelling along each (the
   warning); then from the nearest out, in a rolling wave, each vent BLOWS: a jet of molten rock spraying wide at its top, gobs
-  flung out of it, rocks thrown in arcs and smouldering where they land; each falls back into a pool of rock cooling. The other
-  nine melds are to come, each for his yes.
+  flung out of it, rocks thrown in arcs and smouldering where they land; each falls back into a pool of rock cooling. HAILSTORM
+  (Frost and Lightning; `hailstorm`, `HAIL`, `hailBits`; `pictures/standard/boss_hailstorm.mp4`): he writes Frost, his shade
+  Lightning; melded, the slam flings the rune straight up out of sight; the storm is high over the room, out of the picture, seen
+  by its shadow drifting over the floor in great dark rolls and by its light as its bolts go; HAIL hammers down at random all over
+  the floor (each stone's shadow growing as it comes, the warning; each a lump of ice with its streak behind it, shattering where
+  it strikes, shards flung, a splash of frost left, thawing); every so often a BOLT cracks down out of the top of the picture onto
+  a spot ringed first in crackling white, the whole room lit for a frame. The other eight melds are to come, each for his yes.
 - HIS DEATH (`death`, `DEATH`, `deathRiderAt`, `dyingPut`, `deathGrains`; `pictures/standard/boss_death.mp4`), by his brief (“he is
   overwhelmed by the word power he is using and implodes in pink energy that dissipates into tiny runes that blink out until
   nothing is left”; never on his knees): STRUCK, a flash, rocked back a step; OVERWHELMED, wrenched up and back, arched, his staff

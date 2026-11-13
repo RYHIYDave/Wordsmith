@@ -2874,7 +2874,7 @@ export function wsMob(): Mob {
       for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
     },
     grains: (st: Stage, m: Moment) => m.move === 'death' ? deathGrains(m.t, DEATH_HEART()) : boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -3169,6 +3169,80 @@ function dyingPut(put: Put, o: number, k: number, heart: V3): Put {
   };
 }
 
+
+// HAILSTORM (Frost and Lightning, melded: “a storm cloud and its hail”): he writes Frost, his shade writes Lightning; melded, the slam
+// flings the rune STRAIGHT UP out of sight, and a STORM CLOUD boils out over the whole room, low and dark, lightning crawling in
+// its belly; out of it HAIL hammers down at random all over the floor, each stone's shadow on the floor growing as it comes (the
+// warning), each stone a lump of ice shattering where it strikes, shards flung, a splash of frost left; and every so often a BOLT
+// of lightning cracks down out of the cloud onto a spot ringed first in crackling white, the cloud lit from inside as it goes. Then
+// the cloud thins and is gone. His rules for the words stand: one rune (the meld's), what it makes made as solids.
+export const HAIL = { up: 0.3, cloud: [0.15, 0.85] as const, high: 190, stones: 110, fall: 0.42, warn: 0.55, rain: [0.9, 3.7] as const, bolts: 7, boltWarn: 0.55, gone: [4.2, 5.0] as const, end: 5.4 };
+export const HAIL_CANVAS: MobCanvas = { w: 940, h: 720, ax: 300, ay: 520 };
+/** The room the storm covers (his floor point's own lengths, tiles): forward, and to either side. */
+const HAIL_AREA = { x: [-1.5, 9.5] as const, y: [-4.5, 4.5] as const };
+const HAIL_HERO: V3 = [4.4 * TILE, -1.2 * TILE, 0];
+/** Each hailstone: where it strikes, when (the move's own time), how big. None on him; none on the hero (so he is not covered). */
+export const HAIL_STONES: ReadonlyArray<{ at: V3; t: number; r: number }> = ((): { at: V3; t: number; r: number }[] => {
+  const out: { at: V3; t: number; r: number }[] = [];
+  for (let i = 0; out.length < HAIL.stones && i < 4000; i++) {
+    const x = (HAIL_AREA.x[0] + (HAIL_AREA.x[1] - HAIL_AREA.x[0]) * hash(i, 1, 9601)) * TILE;
+    const y = (HAIL_AREA.y[0] + (HAIL_AREA.y[1] - HAIL_AREA.y[0]) * hash(i, 2, 9602)) * TILE;
+    if (Math.hypot(x, y) < 1.8 * TILE || Math.hypot(x - HAIL_HERO[0], y - HAIL_HERO[1]) < 0.9 * TILE) continue;
+    out.push({ at: [x, y, 0], t: MELD.slam + HAIL.rain[0] + (HAIL.rain[1] - HAIL.rain[0]) * hash(i, 3, 9603), r: 3.2 + 2.3 * hash(i, 4, 9604) });
+  }
+  return out;
+})();
+/** Each bolt: where it strikes and when. */
+export const HAIL_BOLTS: ReadonlyArray<{ at: V3; t: number }> = Array.from({ length: HAIL.bolts }, (_, i) => {
+  const a = hash(i, 1, 9611) * TAU;
+  const r = (2.2 + 4.2 * hash(i, 2, 9612)) * TILE;
+  return { at: [3.6 * TILE + Math.cos(a) * r, Math.sin(a) * r * 0.8, 0] as V3, t: MELD.slam + HAIL.rain[0] + 0.25 + i * ((HAIL.rain[1] - HAIL.rain[0] - 0.4) / HAIL.bolts) };
+});
+const STORM: Ramp = ['#141a34', '#2c3a6a', '#45528a', '#6878b8', '#8c9ad0'];
+const HAIL_ICE: Ramp = ['#4a6a9a', '#7c9cc8', '#b4cce8', '#e2eefa', '#ffffff'];
+/** How thick the cloud is, `t` into the move (0 ... 1). */
+export const hailCloudAt = (t: number): number => smooth01((t - MELD.slam - HAIL.cloud[0]) / (HAIL.cloud[1] - HAIL.cloud[0])) * (1 - smooth01((t - MELD.slam - HAIL.gone[0]) / (HAIL.gone[1] - HAIL.gone[0])));
+/** THE HAILSTORM'S SOLIDS, `t` into the move: its cloud, its stones falling and shattering, its bolts' light. */
+export function hailBits(t: number, put: Put): void {
+  const cl = hailCloudAt(t);
+  // (the cloud itself is high over the room, out of the picture: what is seen of it is its shadow on the floor, drifting, and its
+  // light as its bolts go: the film's and the game's floor)
+  // (the hail: each stone falling out of the cloud, a little slanted, and shattering where it strikes, shards flung)
+  for (const [k, h] of HAIL_STONES.entries()) {
+    const u = t - (h.t - HAIL.fall);
+    if (u < 0) continue;
+    if (u < HAIL.fall) {
+      const f = u / HAIL.fall;
+      const c: V3 = [h.at[0] - 18 * (1 - f), h.at[1] + 6 * (1 - f), HAIL.high * (1 - f * f) + h.r];
+      put('hail', 'stone', { k: 'ball', c, ax: [[h.r, 0, 0], [0, h.r, 0], [0, 0, h.r * 1.2]], skin: HAIL_ICE });
+      // (its streak behind it, the way it came)
+      put('hail', 'streak', { k: 'rod', a: c, b: add(c, [-9, 3, 26]), ra: h.r * 0.45, rb: 0.3, ramp: HAIL_ICE });
+      continue;
+    }
+    const w = u - HAIL.fall;
+    if (w > 0.45) continue;
+    for (let i = 0; i < 5; i++) {
+      const a = hash(k, i, 9613) * TAU;
+      const d = (8 + 20 * hash(k, i, 9614)) * w / 0.45;
+      const z = Math.max(1, 10 * Math.sin(Math.PI * Math.min(1, w / 0.35)) * (0.5 + hash(k, i, 9615)));
+      const r = h.r * 0.45;
+      put('hail', 'shard', { k: 'ball', c: [h.at[0] + Math.cos(a) * d, h.at[1] + Math.sin(a) * d, z], ax: [[r, 0, 0], [0, r * 0.7, 0], [0, 0, r]], skin: HAIL_ICE });
+    }
+  }
+  for (const b of HAIL_BOLTS) if (t > b.t && t < b.t + 0.2) {
+    put('glow', 'boltGlow', { k: 'glow', p: [b.at[0], b.at[1], 6], c: '#eef2ff', r: 40, a: 0.5 * (1 - (t - b.t) / 0.2) });
+    put('glow', 'boltPink', { k: 'glow', p: [b.at[0], b.at[1], 6], c: '#ff4f8a', r: 22, a: 0.3 * (1 - (t - b.t) / 0.2) });
+  }
+}
+export function paintHail(t: number, view: 'front' | 'rear'): Painted {
+  const st = stage(view, HAIL_CANVAS.ax, HAIL_CANVAS.ay, HAIL_CANVAS);
+  const bits: Bit[] = [];
+  hailBits(t, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 40]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+export { HAIL_HERO };
+
 /** Where his heart is as he implodes (as his own points are). */
 let DEATH_H: V3 | null = null;
 const DEATH_HEART = (): V3 => (DEATH_H ??= heartOf(solve(B, { ...standing(B), ...deathRiderAt(DEATH.implode[0]) } as never)));
@@ -3328,7 +3402,7 @@ export const WS_SHAPE: BossShape = {
   },
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : move === 'fall' ? fallCarry(t) * TILE : 0),
-  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE },
+  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE },
   // (his hammer from the sky: three blows of his staff, each its own wind-up, flash and follow-through)
   blows: { power: POWER.slams.map((h, i) => ({ hit: h, strike: POWER_STRIKES[i], from: i ? POWER.slams[i - 1] + 0.1 : 0, until: i < 2 ? POWER.slams[i + 1] - POWER.raise : Infinity })) },
   smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)) || (move === 'frost' && frostSmeared(t)) || (move === 'fall' && slamSmeared(t)) || (FOOT_MOVES.has(move) && move !== 'foot' && meldSmeared(t)),
@@ -3345,7 +3419,7 @@ export const WS_SHAPE: BossShape = {
     // (risen, on foot: his stand, and each meld from it and back)
     { from: 'fall', at: 'end', to: 'foot', toAt: 0, shift: footFrom() },
     { from: 'foot', at: 0, to: 'death', toAt: 0 },
-    ...['eruption'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
+    ...['eruption', 'hailstorm'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
   ],
