@@ -173,7 +173,8 @@ import { act1Fx } from './render/act1_fx';
 import { forgetUnusedPictures } from './render/act1_fx/kept';
 import { mothFxBytes } from './render/act1_fx/moth';
 import { COLOSSUS, GAZE2_AIMED, onStoneOrJetty, worldToStone } from './game/colossus_fight';
-import { ITEM_WORDS } from './game/items';
+import { ITEM_WORDS, MELD_LINE } from './game/items';
+import { FOE_WORDS } from './game/defs';
 import { UNIQUES, uniqueOf } from './game/uniques';
 import { UNIQUE_PLAY } from './render/unique_play';
 import { ART_TWEAKS } from './art/tweaks';
@@ -3375,6 +3376,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     lex28: demoLex28(() => meta),
     /** THE FIVE VOLATILE MELDS' looks (render/volatile3.ts): Demolition, Powderkeg, Shatter, Chain Reaction and Rupture at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */
     volatile3: demoV3(fx, () => game),
+    /** EVERY WORD ON A DUNGEON (game/foe_melds.ts, FOE_WORDS) and the one-line meld card (game/items.ts, MELD_LINE): OFF in the game until his yes; their pictures switch them on for themselves. */
+    foeWords: FOE_WORDS,
+    meldLine: MELD_LINE,
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
     /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): ON since Version 19.2, on his yes; pictures of the swings as they were before switch it off and paint the heroes again (true: the mended, the game's own, back). */
