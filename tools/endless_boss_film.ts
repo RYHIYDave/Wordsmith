@@ -7,12 +7,13 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { ERUPT, ERUPT_AT, ERUPT_CANVAS, ERUPT_VENTS, MELD, eruptRace, meldSmeared, paintEruption, FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
 import { png } from './king_png';
 import { GLYPH, WORD_COLOR, WORD_GLOW } from '../src/art/icons';
+import { MELD_GLYPH, MELD_RAMP } from '../src/render/melds3';
 import { P as PAL } from '../src/art/palette';
 
 const [out = '/tmp/wsfilm', move = 'charge', view0 = 'front', w0 = '420', h0 = '300'] = process.argv.slice(2);
@@ -256,17 +257,18 @@ function strokeOrder(rows: readonly string[]): { x: number; y: number; lift: boo
 }
 /** The symbol as a little picture, `lit` of its cells written (in stroke order; all of them when not given), the freshest white-hot
  * and cooling through its glow to its own colour; inked round. */
-function bareGlyph(word: Word, lit = Infinity): (string | null)[][] {
-  const rows = GLYPH[word];
-  const n = rows.length, W2 = n * RUNE_K + 2;
+function bareGlyph(word: Word, lit = Infinity, K = RUNE_K, rows0?: readonly string[], cols?: [string, string]): (string | null)[][] {
+  const rows = rows0 ?? GLYPH[word];
+  const n = rows.length, W2 = n * K + 2;
   const order = strokeOrder(rows);
   const g: (string | null)[][] = Array.from({ length: W2 }, () => Array(W2).fill(null));
   order.forEach((c, i) => {
     if (i >= Math.ceil(lit)) return;
     const age = lit - i;
-    const own = rows[c.y][c.x] === 'o' ? WORD_GLOW[word] : WORD_COLOR[word];
-    const col = age < 1.6 ? RUNE_HOT : age < 4 ? WORD_GLOW[word] : own;
-    for (let y = 0; y < RUNE_K; y++) for (let x = 0; x < RUNE_K; x++) g[1 + c.y * RUNE_K + y][1 + c.x * RUNE_K + x] = col;
+    const [wc, wg] = cols ?? [WORD_COLOR[word], WORD_GLOW[word]];
+    const own = rows[c.y][c.x] === 'o' ? wg : wc;
+    const col = age < 1.6 ? RUNE_HOT : age < 4 ? wg : own;
+    for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) g[1 + c.y * K + y][1 + c.x * K + x] = col;
   });
   for (let y = 0; y < W2; y++) for (let x = 0; x < W2; x++) if (!g[y][x] && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[y + dy]?.[x + dx] && g[y + dy][x + dx] !== PAL.ink)) g[y][x] = PAL.ink;
   return g;
@@ -277,10 +279,10 @@ const GLYPH_SMALL = BARE.power;
  * gathers out of the air into his raised claw, a spark swelling there; then a beam of it reaches out from his claw and writes the
  * symbol on the air, stroke by stroke, at (X, Y), the fresh strokes white-hot and cooling to the word's colours, sparks thrown off
  * where it writes; written, it flares, and hangs there burning (`held` seconds) until he throws it. (fx, fy) is his claw's tip. */
-function writeRune(s: Px, word: Word, X: number, Y: number, fx: number, fy: number, p: number, held: number, t: number): void {
+function writeRune(s: Px, word: Word, X: number, Y: number, fx: number, fy: number, p: number, held: number, t: number, K = RUNE_K): void {
   const GATHER = 0.22;
   const rows = GLYPH[word];
-  const n = rows.length, half = (n * RUNE_K) / 2;
+  const n = rows.length, half = (n * K) / 2;
   const order = strokeOrder(rows);
   const fr = Math.floor(t * 30);
   const spark = (x: number, y: number, r: number, a: number): void => {
@@ -315,13 +317,13 @@ function writeRune(s: Px, word: Word, X: number, Y: number, fx: number, fy: numb
   }
   // (written, it flares white for a moment)
   const flare = held > 0 && held < 0.1;
-  stamp(s, flare ? bareGlyph(word, order.length + 1.2 - held * 30) : bareGlyph(word, held > 0 ? Infinity : lit), X, Y, 1);
+  stamp(s, flare ? bareGlyph(word, order.length + 1.2 - held * 30, K) : bareGlyph(word, held > 0 ? Infinity : lit, K), X, Y, 1);
   if (w < 1) {
     // (the beam: from his claw to where it writes, flickering; dimmer while his claw is lifted between strokes)
     const i = Math.min(order.length - 1, Math.floor(lit));
     const a0 = order[Math.max(0, i - 1)], a1 = order[i];
     const f = lit - i;
-    const cx = (a1.lift ? a1.x : a0.x + (a1.x - a0.x) * f) * RUNE_K + RUNE_K / 2 + 1, cy = (a1.lift ? a1.y : a0.y + (a1.y - a0.y) * f) * RUNE_K + RUNE_K / 2 + 1;
+    const cx = (a1.lift ? a1.x : a0.x + (a1.x - a0.x) * f) * K + K / 2 + 1, cy = (a1.lift ? a1.y : a0.y + (a1.y - a0.y) * f) * K + K / 2 + 1;
     const px = Math.round(X - half - 1 + cx), py = Math.round(Y - half - 1 + cy);
     const steps = Math.max(1, Math.ceil(Math.hypot(px - fx, py - fy)));
     for (let k = 0; k <= steps; k++) {
@@ -1025,6 +1027,120 @@ function slamFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
     }
   }
 }
+/** A MELD (his words: “he forges a word, as he would in phase one, the shade also phases a word, and they meld into the new
+ * attack”): he writes his word at his hand; his shade, a moment after him, writes the other at its great hand; his staff thrust
+ * high, the two fly up and meet over him, wheel round each other faster and faster and MELD in a flash into the meld's own rune,
+ * blazing; the slam drives it down into the floor where it goes in. (`under`: what is laid under him; else, over him.) */
+function meldScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: number, mv: string, mine: Word, its: Word, meldRows: readonly string[], meldCols: [string, string], into: V3, under: boolean): void {
+  const W3 = (p: V3): [number, number] => { const [x, y] = at([from[0] + dir * p[0], from[1] + dir * p[1], p[2]]); return [ox + x, oy + y]; };
+  const skAt = (tt: number) => skeletonAt(mob, mv, Math.max(0, tt));
+  const O = (sk: ReturnType<typeof skAt>): V3 => [sk.pelvis[0], sk.pelvis[1], 0];
+  const great = (sk: ReturnType<typeof skAt>, p: V3): V3 => { const o = O(sk); return [o[0] + (p[0] - o[0]) * SHADE.size - SHADE.behind, o[1] + (p[1] - o[1]) * SHADE.size + SHADE.side, (p[2]) * SHADE.size + SHADE.up]; };
+  const spotOf = (h: V3): V3 => [h[0] + 9, h[1], h[2] + 15];
+  const mySpot = spotOf(skAt(MELD.write[1]).handL);
+  const itsSpot = great(skAt(MELD.write[1]), spotOf(skAt(MELD.write[1]).handL));
+  const M: V3 = [8, -4, 112];
+  if (under) {
+    // (where it went in: the floor split, a fissure racing out along each way, molten in its depths, his pink at its heart; cooling
+    // after the last vent has blown)
+    if (t < MELD.slam) return;
+    const race = eruptRace(t);
+    const last = Math.max(...ERUPT_VENTS.map((v) => v.t));
+    const cool = Math.min(1, Math.max(0, (t - last - 0.6) / 1.6));
+    for (const [f, deg] of ERUPT.fans.entries()) {
+      const a = (deg * Math.PI) / 180;
+      const L = race * ERUPT.long * TILE;
+      for (let d = 0; d < L; d += 0.7) {
+        const wob = Math.sin(d * 0.31 + f * 2) * 3 + Math.sin(d * 0.9 + f) * 1.2;
+        const x = into[0] + Math.cos(a) * d - Math.sin(a) * wob, y = into[1] + Math.sin(a) * d + Math.cos(a) * wob;
+        const w = 1.8 + 1.2 * Math.sin(d * 0.2 + f);
+        for (let q = -w - 1.5; q <= w + 1.5; q += 0.7) {
+          const [px, py] = W3([x - Math.sin(a) * q, y + Math.cos(a) * q, 0]);
+          const edge = Math.abs(q) > w;
+          const heart = Math.abs(q) < 0.6;
+          const c = edge ? '#140808' : heart ? (cool < 0.5 ? '#ff4f8a' : '#4a1208') : cool < 0.6 ? (d % 9 < 4 ? '#ffb43a' : '#c25a12') : '#2a0e0a';
+          mix(s, Math.round(px), Math.round(py), c, edge ? 0.7 : 0.9 - 0.4 * cool);
+        }
+      }
+    }
+    return;
+  }
+  // (his rune, written at his hand; the shade's, a moment after, at its great hand, twice the size)
+  const myHeld = Math.max(0, t - MELD.write[1]);
+  if (t > MELD.write[0] && t <= MELD.up) {
+    const [x, y] = W3(mySpot);
+    const [fx, fy] = W3([skAt(t).handL[0] + 1.5, skAt(t).handL[1], skAt(t).handL[2] + 1.5]);
+    writeRune(s, mine, x, y, fx, fy, Math.min(1, (t - MELD.write[0]) / (MELD.write[1] - MELD.write[0])), myHeld, t);
+  }
+  const tl = t - SHADE.lag;
+  if (tl > MELD.write[0] && t <= MELD.up + SHADE.lag * 0.5) {
+    const [x, y] = W3(itsSpot);
+    const h = great(skAt(tl), skAt(tl).handL);
+    const [fx, fy] = W3(h);
+    writeRune(s, its, x, y, fx, fy, Math.min(1, (tl - MELD.write[0]) / (MELD.write[1] - MELD.write[0])), Math.max(0, tl - MELD.write[1]), t, RUNE_K * 2);
+  }
+  // (up, and meeting over him: wheeling round each other faster and faster, closing)
+  if (t > MELD.up && t < MELD.melded) {
+    const u = Math.min(1, (t - MELD.up) / (MELD.meet - MELD.up));
+    const e = u * u * (3 - 2 * u);
+    const lift = (a: V3): V3 => [a[0] + (M[0] - a[0]) * e, a[1] + (M[1] - a[1]) * e, a[2] + (M[2] - a[2]) * e + 30 * Math.sin(Math.PI * u)];
+    let pa = lift(mySpot), pb = lift(itsSpot);
+    if (t > MELD.meet) {
+      const w = (t - MELD.meet) / (MELD.melded - MELD.meet);
+      const r = 16 * (1 - w);
+      const th = 18 * w * w + 2;
+      pa = [M[0] + Math.cos(th) * r, M[1] + Math.sin(th) * r, M[2] + Math.sin(th) * r * 0.4];
+      pb = [M[0] - Math.cos(th) * r, M[1] - Math.sin(th) * r, M[2] - Math.sin(th) * r * 0.4];
+      // (sparks thrown off them as they close)
+      for (let i = 0; i < 10; i++) {
+        const a2 = i * 2.4 + t * 13;
+        const [qx, qy] = W3([M[0] + Math.cos(a2) * (r + 6 + (i % 3) * 3), M[1] + Math.sin(a2) * (r + 6), M[2] + Math.sin(a2 * 1.3) * 8]);
+        mix(s, Math.round(qx), Math.round(qy), i % 2 ? '#ff4f8a' : '#fffbe8', 0.9);
+      }
+    }
+    const ga = bareGlyph(mine), gb = bareGlyph(its, Infinity, RUNE_K + 2);
+    const [xa, ya] = W3(pa), [xb, yb] = W3(pb);
+    stamp(s, gb, xb, yb, 1);
+    stamp(s, ga, xa, ya, 1);
+  }
+  // (MELDED: a flash of white and his pink, and the meld's own rune blazing where they met; driven down into the floor by the slam)
+  const big = 5;
+  const meldGlyph = bareGlyph('power', Infinity, big, meldRows, meldCols);
+  const [mx, my] = W3(M);
+  if (t >= MELD.melded && t < MELD.melded + 0.22) {
+    const b = (t - MELD.melded) / 0.22;
+    for (let yy = -40; yy <= 40; yy++) for (let xx = -40; xx <= 40; xx++) {
+      const q = Math.hypot(xx, yy) / (14 + 30 * b);
+      if (q < 1) mix(s, Math.round(mx + xx), Math.round(my + yy), q < 0.5 ? '#fffbe8' : '#ff4f8a', 0.85 * (1 - b) * (1 - q));
+    }
+  }
+  if (t >= MELD.melded && t <= MELD.slam - 2 / 30 + 1e-6) {
+    // (blazing: a haze of his pink about it, throbbing)
+    const R = 30;
+    for (let yy = -R; yy <= R; yy++) for (let xx = -R; xx <= R; xx++) {
+      const q = Math.hypot(xx, yy) / R;
+      if (q < 1) mix(s, Math.round(mx + xx), Math.round(my + yy), '#ff4f8a', (0.16 + 0.08 * Math.sin(t * 30)) * (1 - q) * (1 - q));
+    }
+    stamp(s, meldGlyph, mx, my, 1);
+  } else if (t > MELD.slam - 2 / 30 && t <= MELD.slam + 1 / 30) {
+    // (driven down: two frames, smeared)
+    const u = Math.min(1, (t - (MELD.slam - 2 / 30)) / (2 / 30));
+    const [ix, iy] = W3(into);
+    for (let k2 = 0; k2 < 6; k2++) {
+      const v = Math.max(0, u - k2 * 0.12);
+      stamp(s, meldGlyph, mx + (ix - mx) * v, my + (iy - my) * v, k2 === 0 ? 1 : 0.4 / k2);
+    }
+  }
+  if (t > MELD.slam && t < MELD.slam + 0.4) {
+    // (where it went in: a flash of the meld's colour and his pink, a ring of it thrown out)
+    const b = (t - MELD.slam) / 0.4;
+    const [ix, iy] = W3(into);
+    for (let yy = -26; yy <= 26; yy++) for (let xx = -40; xx <= 40; xx++) {
+      const q = Math.hypot(xx / 40, yy / 26);
+      if (q < 1) mix(s, ix + xx, iy + yy, q < 0.35 ? '#fff0b0' : q < 0.7 ? meldCols[0] : '#ff4f8a', 0.8 * (1 - b) * (1 - q));
+    }
+  }
+}
 /** His shade laid on the floor at (ox, oy), its anchor his floor point: see-through as far as `a`, its light over all. */
 function layShade(s: Px, p: { px: Px; lights: { x: number; y: number; r: number; color: string; a?: number }[] }, ox: number, oy: number, a: number): void {
   const x0 = Math.round(ox - SHADE_CANVAS.ax), y0 = Math.round(oy - SHADE_CANVAS.ay);
@@ -1104,7 +1220,7 @@ const floorOf = (mv: string) => (t: number): V2 => {
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : mv === 'fall' ? FALL.long : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : mv === 'fall' ? FALL.long : mv === 'eruption' ? ERUPT.end : mv === 'foot' ? 4.8 : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
@@ -1137,11 +1253,12 @@ for (const sg of segs) {
       return [sg.from[0] + k * f[0], sg.from[1] + k * f[1], 0];
     };
     const fallFilm = move === 'fall';
+    const meldFilm = sg.move === 'eruption';
     const FALL_END = fallCarry(FALL.long) * TILE;
     const lead = sg.move === 'fall' ? 50 + 60 * Math.min(1, t / 1.2) : 50;
     // (as his shade rises, the camera lifts to take it in)
     const lift = sg.move === 'fall' ? 60 * Math.min(1, Math.max(0, (t - FALL.shade[0]) / (FALL.shade[1] - FALL.shade[0]))) : 0;
-    const [tx, ty] = fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    const [tx, ty] = meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
@@ -1152,6 +1269,16 @@ for (const sg of segs) {
     if (sg.move === 'charge') lane(s, t, ox, oy, sg.from, k);
     if (sg.move === 'fall') scrape(s, t, ox, oy, sg.from, k);
     if (sg.move === 'fall') slamFloor(s, t, ox, oy, sg.from, k);
+    if (sg.move === 'eruption') meldScene(s, t, ox, oy, sg.from, k, 'eruption', 'power', 'fire', MELD_GLYPH.eruption, [MELD_RAMP.eruption[3], MELD_RAMP.eruption[4]], ERUPT_AT, true);
+    if (sg.move === 'eruption' || sg.move === 'foot') {
+      // (the hero, between the fissures, out before him)
+      const [hx, hy] = at([sg.from[0] + k * 5.0 * TILE, sg.from[1] - k * 1.6 * TILE, 0]);
+      hero(s, ox + hx, oy + hy);
+      // (HIS SHADE, behind him, doing as he does a moment after him)
+      const sk = skeletonAt(mob, sg.move, Math.max(0, t - SHADE.lag));
+      const [x, y] = at([sg.from[0] + k * sk.pelvis[0], sg.from[1] + k * sk.pelvis[1], 0]);
+      layShade(s, paintShade(sk, t, sg.view, 1), ox + x, oy + y, 0.67);
+    }
     if (fallFilm) {
       // (the hero, out of its lane, watching; just past where his ring will reach)
       const last = segs[segs.length - 1];
@@ -1205,7 +1332,11 @@ for (const sg of segs) {
       const [x, y] = at([sg.from[0] + k * (fallCarry(t) * TILE + sk.pelvis[0]), sg.from[1] + k * sk.pelvis[1], 0]);
       layShade(s, paintShade(sk, t, sg.view, g), ox + x, oy + y, 0.25 + 0.42 * g);
     }
-    if (sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost' || sg.move === 'lightning' || sg.move === 'poison') {
+    if (sg.move === 'eruption' && meldSmeared(t)) {
+      const [x, y] = base();
+      for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
+    }
+    if (sg.move === 'foot' || sg.move === 'eruption' || sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost' || sg.move === 'lightning' || sg.move === 'poison') {
       const [x, y] = base();
       lay(s, sg.move, sg.view, t, x, y);
     } else {
@@ -1216,6 +1347,11 @@ for (const sg of segs) {
       // (killed: his pink flaring out of all of it at once)
       const [x, y] = where(t);
       flash(s, sg.move, sg.view, t, x, y, t < FALL.kill + 1 / 30 ? 0.75 : 0.4);
+    }
+    if (sg.move === 'eruption') {
+      const [x, y] = base();
+      layPainted(s, paintEruption(t, sg.view), ERUPT_CANVAS, x, y, 0);
+      meldScene(s, t, ox, oy, sg.from, k, 'eruption', 'power', 'fire', MELD_GLYPH.eruption, [MELD_RAMP.eruption[3], MELD_RAMP.eruption[4]], ERUPT_AT, false);
     }
     if (sg.move === 'power') powerScene(s, t, ox, oy, sg.from, k, true);
     if (sg.move === 'flame') flameScene(s, t, ox, oy, sg.from, k, true);
