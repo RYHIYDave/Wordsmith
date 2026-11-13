@@ -1862,11 +1862,13 @@ function fallRiderAt(t: number): { pelvis: V3; footL: V3; footR: V3 } {
     const wy = y0 + side * smooth01(u / tf);
     const wz = z0 + vz * u - 0.5 * g * u * u;
     const pel: V3 = [wx - c(t), wy, wz];
-    const tuck = smooth01(u / 0.14);
+    // (his legs go up with him still astride, out past its flanks, till he is clear of it; then drawn up under him)
+    const pel0: V3 = [x0 - c(T0), y0, z0];
+    const tuck = smooth01((u - 0.12) / 0.16);
     const reach = smooth01((u - 0.6 * tf) / (0.4 * tf));
     const rel = (L: boolean): V3 => add(mul(L ? [-3, 5, -17] : [-5, -5, -15], 1 - reach), mul(L ? [7, 5, -28.5] : [-5, -5, -28], reach));
     const onFloor = (p: V3): V3 => [p[0], p[1], Math.max(B.ankle + 0.4, p[2])];
-    return { pelvis: pel, footL: onFloor(lerp3(ankL0, add(pel, rel(true)), tuck)), footR: onFloor(lerp3(ankR0, add(pel, rel(false)), tuck)) };
+    return { pelvis: pel, footL: onFloor(lerp3(add(ankL0, sub(pel, pel0)), add(pel, rel(true)), tuck)), footR: onFloor(lerp3(add(ankR0, sub(pel, pel0)), add(pel, rel(false)), tuck)) };
   }
   // (down: his boots on the floor and sliding on in the frost, slowing; his landing taken in his knees, deep, and held; then risen,
   // driven down into his knees by his slam, and standing low over it, breathing)
