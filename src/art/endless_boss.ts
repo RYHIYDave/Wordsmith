@@ -2755,6 +2755,23 @@ function wsBits(st: Stage, m: Moment): Bit[] {
   // (its end: gone to ash, and blown away)
   const ash = P.ash ?? 0, cr = P.crumble ?? 0;
   if (!onFoot && cr < 1) boarBits(P, ash > 0 || cr > 0 ? ashPut(put, ash, cr) : put, near, st);
+  // (his death: overwhelmed, burning paler and pinker, light splitting out of him; then crushed in to his heart, and gone)
+  if (m.move === 'death') {
+    const k = implodeAt(m.t);
+    if (k <= 0.001) return bits;
+    const o = overwhelmAt(m.t);
+    const heart = heartOf(s);
+    const dp = dyingPut(put, o, k, heart);
+    const wind = 0.4 * o * Math.sin(m.t * 17);
+    robe(dp, s, P.sway, wind, m.t);
+    arm(dp, s, 'L', s.chest[2], 0.32, 1.25);
+    arm(dp, s, 'R', s.chest[2], 1, 0);
+    dp('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
+    head(dp, st, s, m.t, wind);
+    staff(dp, s, m.t, 0);
+    put('glow', 'dying', { k: 'glow', p: heart, c: '#ff7aa8', r: 20 + 40 * o + 30 * (1 - k), a: 0.2 + 0.4 * o });
+    return bits;
+  }
   // (his power swelling in him: its runes' power streaming into him, at its height as he strikes: a light about him, his eyes
   // blazing, the air crackling with his pink, sparks running up him)
   const surge = P.ride?.surge ?? 0;
@@ -2856,8 +2873,8 @@ export function wsMob(): Mob {
       }
       for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
     },
-    grains: (st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
+    grains: (st: Stage, m: Moment) => m.move === 'death' ? deathGrains(m.t, DEATH_HEART()) : boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -3051,13 +3068,117 @@ export function paintEruption(t: number, view: 'front' | 'rear'): Painted {
   return { px: st.whole(ENEMY_RIM), lights } as Painted;
 }
 
+
+// HIS DEATH (his brief, 12 Nov 2026: “Remember we’re trying to stay away from “falling to their knees”.  I think he is overwhelmed by
+// the word power he is using and implodes in pink energy that dissipates into tiny runes that blink out until nothing is left”):
+//   STRUCK       the last blow: a flash; he is rocked back a step, never down
+//   OVERWHELMED  the power he holds turns on him: he is wrenched upright and back, arched, his staff thrust up as if to hold it
+//                off, shaking; light splits out through him in cracks, more and more of him burning white and pink; bolts of it
+//                lash out of him to the floor; his shade is dragged back down into him, writhing
+//   IMPLODES     all of him, staff and all, is crushed in to a point at his heart in a quarter of a second, white-hot
+//   THE RUNES    a beat; then a ring of his light, and a burst of TINY RUNES flung out from where he was, drifting out and up,
+//                each blinking out on its own, until nothing is left.
+export const DEATH = { struck: 0.12, over: [0.12, 1.1] as const, shade: [0.25, 0.95] as const, implode: [1.1, 1.35] as const, burst: 1.42, runes: 150, long: 3.9 };
+/** How far the power has him (0 ... 1): light splitting out through him. */
+export const overwhelmAt = (t: number): number => smooth01((t - DEATH.over[0]) / (DEATH.over[1] - DEATH.over[0]));
+/** How much of him is left as he implodes (1 ... 0). */
+export const implodeAt = (t: number): number => { const u = clamp01((t - DEATH.implode[0]) / (DEATH.implode[1] - DEATH.implode[0])); return 1 - u * u * u; };
+/** His bones as he dies: rocked back a step; wrenched up and back, arched, his staff thrust high, shaking. */
+export function deathRiderAt(t: number): Partial<Bones> {
+  const hit = bumpOf(t, 0, 0.3);
+  const o = overwhelmAt(t);
+  const shake = o * (t < DEATH.implode[1] ? 1 : 0);
+  const j = (k: number): number => shake * 2.2 * Math.sin(t * (53 + k * 7) + k);
+  const ARCH: Look = { ...FOOT_RAISE, pitch: -16, bend: -12, hunch: -4, faceUp: 34, faceTilt: 8, lhx: 2, lhy: 15, lhz: 12, le: 50, rhx: 1, rhy: -8, rhz: 27, re: 34 };
+  let L = mixLook(FOOT_OVER, { ...FOOT_OVER, pitch: -6, bend: -4, faceUp: 22, lhx: 4, lhy: 12, lhz: 6, le: 30 }, hit);
+  L = mixLook(L, ARCH, o);
+  L = { ...L, pitch: L.pitch + j(1), roll: L.roll + j(2), faceTurn: L.faceTurn + 3 * j(3), lhz: L.lhz + j(4), rhz: L.rhz + 0.5 * j(5) };
+  const b = footBones(L, 4 - 5 * o - 2 * hit, t, 0);
+  // (rocked back a step: his pelvis back over his right foot)
+  return { ...b, px: -3.5 * smooth01(t / 0.25) };
+}
+/** WHAT IS LEFT OF HIM: tiny runes, flung out from where he imploded, drifting out and up, each blinking out on its own, until
+ * nothing is left; and the bolts that lash out of him as it overwhelms him. As his own points are. */
+const TINY: readonly (readonly string[])[] = [['X.X', '.X.', 'X.X'], ['.X.', 'XXX', '.X.'], ['XX.', '.X.', '.XX'], ['X..', 'XXX', '..X'], ['.X.', 'X.X', '.X.'], ['XXX', '.X.', '.X.']];
+function deathGrains(t: number, heart: V3): [V3, string, number][] {
+  const out: [V3, string, number][] = [];
+  const right: V3 = [0.613, 0.613, 0];
+  if (t >= DEATH.burst) {
+    for (let i = 0; i < DEATH.runes; i++) {
+      const u = t - DEATH.burst - 0.12 * hash(i, 1, 9501);
+      if (u <= 0) continue;
+      // (each goes out at its own moment; flickering a little before it does)
+      const life = 0.5 + 1.9 * hash(i, 2, 9502);
+      if (u > life) continue;
+      if (u > life - 0.25 && hash(i, Math.floor(u * 20), 9503) < 0.5) continue;
+      const a = hash(i, 3, 9504) * TAU;
+      const up = (hash(i, 4, 9505) - 0.3) * 1.6;
+      const sp = 40 + 110 * hash(i, 5, 9506);
+      const d = sp * (1 - Math.exp(-u * 2.2)) / 2.2;
+      const p: V3 = [heart[0] + Math.cos(a) * d, heart[1] + Math.sin(a) * d, Math.max(3, heart[2] + up * d * 0.5 + 14 * u)];
+      const g = TINY[i % TINY.length];
+      const hot = u < 0.3 ? '#fffbe8' : i % 3 === 0 ? BURN[4] : i % 3 === 1 ? BURN[3] : '#ff7aa8';
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) if (g[r][c] === 'X') out.push([add(add(p, mul(right, c - 1)), [0, 0, 1 - r]), hot, 1]);
+    }
+  }
+  // (bolts lashing out of him to the floor as it overwhelms him: jagged, white at their core, gone in a frame or two)
+  const o = overwhelmAt(t);
+  if (o > 0.1 && t < DEATH.implode[1]) {
+    const fr = Math.floor(t * 30);
+    const n = Math.floor(1 + 4 * o);
+    for (let b = 0; b < n; b++) {
+      if (hash(b, fr, 9510) > 0.55 + 0.3 * o) continue;
+      const a = hash(b, fr, 9511) * TAU;
+      const r = 20 + 30 * hash(b, fr, 9512);
+      const end: V3 = [heart[0] + Math.cos(a) * r, heart[1] + Math.sin(a) * r, 0];
+      let p: V3 = heart;
+      for (let k = 1; k <= 14; k++) {
+        const f = k / 14;
+        const q: V3 = [heart[0] + (end[0] - heart[0]) * f + (hash(b, fr * 31 + k, 9513) - 0.5) * 7, heart[1] + (end[1] - heart[1]) * f + (hash(b, fr * 37 + k, 9514) - 0.5) * 7, heart[2] * (1 - f)];
+        for (let m = 0; m < 3; m++) out.push([lerp3(p, q, m / 3), m % 2 ? BURN[3] : '#fffbe8', 1]);
+        p = q;
+      }
+    }
+  }
+  return out;
+}
+/** His heart (as his own points are): where he implodes to. */
+const heartOf = (s: Skeleton): V3 => lerp3(s.ribs, s.neck, 0.35);
+/** As he is overwhelmed and implodes: every part of him burning paler and pinker, light splitting out of him in cracks; then
+ * crushed in to his heart. */
+function dyingPut(put: Put, o: number, k: number, heart: V3): Put {
+  const hotOf = (c: string): string => {
+    const n = parseInt(c.slice(1, 7), 16);
+    const m = (v: number, w: number): number => Math.round(v + (w - v) * Math.min(1, 0.75 * o + 1.2 * (1 - k)));
+    return `#${[m((n >> 16) & 255, 255), m((n >> 8) & 255, 150), m(n & 255, 200)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+  };
+  const crack = (x: number, y: number): boolean => o > 0.15 && hash(x >> 1, y >> 1, 9520) < 0.07 + 0.3 * o * o && ((x + y * 3) % 5 === 0 || (x * 2 - y) % 7 === 0);
+  return (part, piece, shape) => {
+    const sh = k < 1 ? greatShape(shape, heart, k, [0, 0, 0]) : shape;
+    if (sh.k === 'rod' || sh.k === 'cloth' || sh.k === 'band') return put(part, piece, { ...sh, ramp: (sh.ramp as Ramp).map(hotOf) as unknown as Ramp } as Shape);
+    if (sh.k === 'ball') {
+      const sk = sh.skin;
+      return put(part, piece, { ...sh, skin: (u: V3, tone: number, x: number, y: number) => {
+        if (crack(x, y)) return '#fff0f6';
+        const c = Array.isArray(sk) ? (sk as Ramp)[T5(tone)] : (sk as (u: V3, tone: number, x: number, y: number) => string | null)(u, tone, x, y);
+        return c ? hotOf(c) : c;
+      } });
+    }
+    if (sh.k === 'dot') return put(part, piece, { ...sh, c: hotOf(sh.c), ...(sh.c2 ? { c2: hotOf(sh.c2) } : {}) });
+    put(part, piece, sh);
+  };
+}
+
+/** Where his heart is as he implodes (as his own points are). */
+let DEATH_H: V3 | null = null;
+const DEATH_HEART = (): V3 => (DEATH_H ??= heartOf(solve(B, { ...standing(B), ...deathRiderAt(DEATH.implode[0]) } as never)));
 /** Where the game has him as he stands, risen: where he landed, from the floor point it carried down its lane. */
 export function footFrom(): [number, number] {
   const p = fallRiderAt(FALL.long).pelvis;
   return [p[0], p[1]];
 }
 /** His moves on foot (no boar under him). */
-export const FOOT_MOVES = new Set<string>(['foot', 'eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion']);
+export const FOOT_MOVES = new Set<string>(['foot', 'death', 'eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion']);
 
 // =============================================================================================
 // HIS SHADE (his words, 12 Nov 2026, for the second phase: “how about a large pink energy shade that looms above him and mimics his
@@ -3223,6 +3344,7 @@ export const WS_SHAPE: BossShape = {
     { from: 'charge', at: FALL.from, to: 'fall', toAt: 0 },
     // (risen, on foot: his stand, and each meld from it and back)
     { from: 'fall', at: 'end', to: 'foot', toAt: 0, shift: footFrom() },
+    { from: 'foot', at: 0, to: 'death', toAt: 0 },
     ...['eruption'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
