@@ -76,7 +76,7 @@ function tap(g: Game, x: number, y: number): void {
   off.aimX = x;
   off.aimY = y;
   land(g, off, DT, () => {});
-  if (letGo) for (let t = 0; t < 1.2; t += DT) g.update(DT, emptyControls());
+  for (let t = 0; t < 1.2; t += DT) g.update(DT, emptyControls());
 }
 
 const ids = (g: Game): string[] => g.hero.skills.map((s) => s.id);
