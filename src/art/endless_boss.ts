@@ -930,6 +930,7 @@ export function boarPoseAt(move: string, t: number): BoarPose {
   if (move === 'flame') return flamePoseAt(t);
   if (move === 'frost') return frostPoseAt(t);
   if (move === 'lightning') return boltPoseAt(t);
+  if (move === 'poison') return sporePoseAt(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   const A = BOAR_STAND_AT;
@@ -2021,6 +2022,104 @@ export function paintOrb(p: V3, t: number, seed: number, swell: number, zaps: Re
   return { px: st.whole(ENEMY_RIM), lights } as Painted;
 }
 
+// POISON: SPORE MINES (his pick, 12 Nov 2026: “Spore mines”, offered as: runes sink into the floor around you and burst into poison
+// clouds when you come near). By his rules for the words (the rune makes what strikes; one rune, flung out over the hero; solids):
+//   HE WRITES IT   his left hand claws the Poison rune on the air; he flings it out over the room
+//   IT BURSTS      into a spray of spores flung out all round, each sinking into the floor where it lands
+//   THE MINES      out of each a spore pod sprouts (a swollen bulb of the word's acid green, his pink glowing in its veins, breathing);
+//                  when the hero comes near one it swells and bursts in a cloud of poison that billows and hangs (how near, how long
+//                  and how much are the rules': the film sets them off as the hero passes)
+export const SPORE = { write: [0.12, 0.62] as const, cast: 0.68, burst: 0.95, land: [1.2, 1.6] as const, sprout: 0.3, swell: 0.25, cloud: 1.7, long: 5.2, pods: 10 };
+function sporeCast(t: number): Cast {
+  const raise = smooth01((t - (SPORE.cast - 0.3)) / 0.25) * (1 - smooth01((t - SPORE.long + 0.5) / 0.4));
+  const write = bumpOf(t, SPORE.write[0] - 0.05, SPORE.write[1] + 0.1);
+  return { raise, hammer: 0, write, stroke: (t - SPORE.write[0]) * TAU * 2.2, lead: 0 };
+}
+export function sporePoseAt(t: number): BoarPose {
+  const P = boarPoseAt('stand', t);
+  return { ...P, pulse: Math.max(P.pulse ?? 0, 0.6 * smooth01(t / 0.5)), ride: { lean: 0, brace: 0, still: true, cast: sporeCast(t) } };
+}
+/** The Poison word's own acid green, his pink in its veins. */
+const SPORE_GREEN: Ramp = ['#1e2a0c', '#3e5212', '#6e8a18', '#b4cc24', '#e2f07a'];
+const SPORE_GAS: Ramp = ['#2a3412', '#4a5a1c', '#7a8e2a', '#a8bc48', '#cede7a'];
+/** Where each pod is (the spores' own points: the place the rune burst, on the floor) and when it lands. */
+export const SPORE_PODS: ReadonlyArray<{ at: V3; land: number }> = Array.from({ length: SPORE.pods }, (_, k) => {
+  const a = (k / SPORE.pods) * TAU + 0.5 * hash(k, 1, 9021);
+  const r = (1.2 + 2.0 * hash(k, 2, 9022)) * TILE;
+  return { at: [Math.cos(a) * r, Math.sin(a) * r, 0] as V3, land: SPORE.land[0] + (SPORE.land[1] - SPORE.land[0]) * hash(k, 3, 9023) };
+});
+export const SPORE_CANVAS: MobCanvas = { w: 720, h: 460, ax: 360, ay: 300 };
+/** THE SPORES' SOLIDS, `t` seconds into the move, each pod set off at `fired[k]` (or never): spores flung out of the burst, sinking
+ * in; pods sprouting, breathing, swelling and bursting; their clouds billowing and hanging, thinning. `from` is where the burst is
+ * (over the place, as its points are). */
+export function sporeBits(t: number, fired: ReadonlyArray<number | null>, put: Put): void {
+  const B: V3 = [0, 0, 70];
+  for (const [k, pod] of SPORE_PODS.entries()) {
+    // (flung out of the burst in an arc, sinking into the floor)
+    if (t > SPORE.burst && t < pod.land) {
+      const u = (t - SPORE.burst) / (pod.land - SPORE.burst);
+      const p: V3 = [B[0] + (pod.at[0] - B[0]) * u, B[1] + (pod.at[1] - B[1]) * u, B[2] * (1 - u) + 50 * Math.sin(Math.PI * u)];
+      put('spores', 'spore', { k: 'ball', c: p, ax: [[3, 0, 0], [0, 3, 0], [0, 0, 3]], skin: SPORE_GREEN });
+      put('spores', 'trail', { k: 'mote', p: add(p, [0, 0, 4]), c: '#ff4f8a', size: 1 });
+      continue;
+    }
+    if (t < pod.land) continue;
+    const f = fired[k];
+    const grow = smooth01((t - pod.land) / SPORE.sprout);
+    if (f === null || f === undefined || t < f + SPORE.swell) {
+      // (the pod: a swollen bulb out of the floor, breathing; swelling hard when set off)
+      const sw = f !== null && f !== undefined && t > f ? smooth01((t - f) / SPORE.swell) : 0;
+      const breath = 1 + 0.06 * Math.sin(t * 5 + k);
+      const R = (7 + 3 * hash(k, 4, 9024)) * grow * breath * (1 + 0.6 * sw);
+      if (R < 0.5) continue;
+      const c: V3 = [pod.at[0], pod.at[1], R * 0.7];
+      put(`pod${k % 4}`, 'bulb', { k: 'ball', c, ax: [[R, 0, 0], [0, R, 0], [0, 0, R * 1.05]], skin: (u, tone) => {
+        // (its veins glowing with his pink; dark spots)
+        const vein = Math.abs(Math.sin(Math.atan2(u[1], u[0]) * 3 + u[2] * 4)) < 0.12;
+        if (vein) return sw > 0.5 ? '#ffd0e0' : '#ff4f8a';
+        if (hash(Math.floor((u[0] + 1) * 4), Math.floor((u[2] + 1) * 4) + k, 9025) < 0.18) return SPORE_GREEN[T5(tone - 2)];
+        return SPORE_GREEN[T5(tone)];
+      } });
+      // (a few stalks of spore heads on it)
+      for (let j = 0; j < 3; j++) {
+        const a = j * 2.1 + k;
+        const base = add(c, [Math.cos(a) * R * 0.5, Math.sin(a) * R * 0.5, R * 0.75]);
+        const tip = add(base, [Math.cos(a) * 3 * grow, Math.sin(a) * 3 * grow, 5 * grow]);
+        put(`pod${k % 4}`, 'stalk', { k: 'rod', a: base, b: tip, ra: 1.0, rb: 1.6, ramp: SPORE_GREEN });
+      }
+      put('glow', 'podGlow', { k: 'glow', p: c, c: '#b4cc24', r: 10 + 12 * sw, a: 0.25 + 0.5 * sw });
+      continue;
+    }
+    // (burst: its cloud billowing out and up, hanging, thinning)
+    const u = t - f - SPORE.swell;
+    if (u > SPORE.cloud) continue;
+    const fade = 1 - smooth01((u - SPORE.cloud * 0.6) / (SPORE.cloud * 0.4));
+    for (let j = 0; j < 9; j++) {
+      const a = (j / 9) * TAU + hash(k, j, 9026);
+      const spread = (10 + 34 * Math.sqrt(Math.min(1, u / 0.5))) * (0.6 + 0.4 * hash(k, j + 1, 9027));
+      const R = (9 + 10 * Math.min(1, u / 0.4)) * (0.7 + 0.5 * hash(k, j + 2, 9028)) * (0.4 + 0.6 * fade);
+      const c: V3 = [pod.at[0] + Math.cos(a) * spread, pod.at[1] + Math.sin(a) * spread * 0.9, 8 + 14 * Math.min(1, u / 0.6) + Math.sin(t * 2 + j) * 2];
+      put(`cloud${k % 3}`, 'gas', { k: 'ball', c, ax: [[R, 0, 0], [0, R, 0], [0, 0, R * 0.8]], skin: (uu, tone, x, y) => {
+        // (thinning as it goes: its pixels dropping out from its edge, in a dither)
+        if (fade < 1 && ((x * 3 + y * 5) % 7) / 7 > fade + 0.15) return null;
+        return Math.hypot(uu[0], uu[1]) > 0.8 ? SPORE_GAS[T5(tone - 1)] : SPORE_GAS[T5(tone)];
+      } });
+    }
+    if (u < 0.2) for (let j = 0; j < 14; j++) {
+      const a = (j / 14) * TAU;
+      put('spores', 'spray', { k: 'mote', p: [pod.at[0] + Math.cos(a) * (6 + 120 * u), pod.at[1] + Math.sin(a) * (6 + 120 * u), 6 + 50 * u], c: j % 2 ? '#ff4f8a' : '#e2f07a', size: 2 });
+    }
+    put('glow', 'cloudGlow', { k: 'glow', p: [pod.at[0], pod.at[1], 14], c: '#b4cc24', r: 34 * fade, a: 0.3 * fade });
+  }
+}
+export function paintSpores(t: number, fired: ReadonlyArray<number | null>, view: 'front' | 'rear'): Painted {
+  const st = stage(view, SPORE_CANVAS.ax, SPORE_CANVAS.ay, SPORE_CANVAS);
+  const bits: Bit[] = [];
+  sporeBits(t, fired, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+
 /** THE POWER RUNE: its glyph (the word's own, art/icons.ts GLYPH, two chevrons pointing up), `k` picture pixels to its cell, in the
  * word's red with his pink through its middle and a hot edge; ink round it. */
 export const POWER_GLYPH = ['..oo..', '.XXXX.', 'XX..XX', '..oo..', '.XXXX.', 'XX..XX'];
@@ -2208,7 +2307,7 @@ export function wsMob(): Mob {
     trueBack: true,
     bits: wsBits,
     grains: (_st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand'),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST } },
   } as unknown as Mob;
 }
 
@@ -2282,7 +2381,7 @@ export const WS_SHAPE: BossShape = {
   // game shows it from its other side and the next run goes back down the lane: that hand-over is the charge's own start drawn the
   // other way round, and is not one these checks can draw)
   handovers: [
-    ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power', 'flame', 'frost', 'lightning'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
+    ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power', 'flame', 'frost', 'lightning', 'poison'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
     { from: 'charge', at: 'end', to: 'wheel', toAt: 0 },
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },

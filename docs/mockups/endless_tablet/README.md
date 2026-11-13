@@ -363,6 +363,16 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   His pick on that, by pop-up: “More crackle”. SO: twice the arcs crackling off it, thicker near it; small bolts flickering down to
   the floor beside it between its zaps, more as it swells; its zaps and its burst drawn as true bolts (jagged, forking, a white-hot
   core inside the word's yellow, a faint pink edge, new every frame); a bigger burst.
+  HIS YES, 12 Nov 2026, by pop-up: “Yes, on to Poison (Recommended)”.
+- POISON, SPORE MINES (`poison`, `sporePoseAt`, `SPORE_PODS`, `sporeBits`, `paintSpores`; `pictures/standard/boss_poison.mp4`, then the
+  cast and the sprouting at half speed): by his rules for the words (the rune makes what strikes, so the mines are pods, not runes).
+  HE WRITES the Poison rune (a drop, the word's acid green with his pink at its heart) and flings it out over the room, where it
+  BURSTS into a spray of spores flung out all round, each sinking into the floor where it lands; out of each A SPORE POD SPROUTS
+  (solids: a swollen bulb of the word's green, dark spotted, his pink glowing in its veins, spore stalks on it, breathing), its reach
+  faint on the floor about it. When the hero comes near one it SWELLS (its veins white-hot, its reach bright) and BURSTS in a CLOUD
+  OF POISON (solid puffs of the word's green billowing out and up, hanging, thinning from their edges), spores sprayed out; the floor
+  stained where it hung. How near, how long and how much are the rules'. The hero is kept in sight over the clouds. The checks on
+  his cast, his legs outside the boar: all pass.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.
