@@ -3266,6 +3266,7 @@ export class Renderer {
     fx.brawler.game = game;
     // (WHAT THE UNIQUE ITEMS SHOW IN PLAY, the art chat's, each behind a switch that is off: render/unique_fx.ts)
     fx.uniques.game = game;
+    fx.set1.game = game;
     fx.melds8.game = game;
     fx.uniques.bestiary = this.art.bestiary;
     // (THE VETERAN, behind a switch that is off: his moves' effects and his globes, render/veteran_fx.ts)

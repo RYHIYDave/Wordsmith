@@ -1523,6 +1523,391 @@ function winningstreak(): Part[] {
 }
 
 // ---------------------------------------------------------------------------------------------
+// SET 1: THE WARRIOR'S BATTLE AXES AND WARHAMMERS (game/uniques.ts SET1_DEFS, behind SET1, off until his yes to these pictures).
+// Painted by the main chat, 12 Nov 2026, at his word: “just do number 1, get it all finished, screw what chat its supposed to go
+// to”. As the 62 are: the item pictures' kit, on the diagonal, the butt at the bottom left, as the game's weapons lie; each told
+// from the others by its head's shape and its colours. Nothing glows but the meteor's fire, as fire glows on an item already.
+
+/** Their materials of their own, five tones each, darkest to brightest. */
+const S1 = {
+  /** Red Tithe's blade: steel gone black-red with blood */
+  blood: ['#12060a', '#2e0c12', '#5a1420', '#8e2430', '#c85a5e'],
+  /** Death Knell's bell: old bronze */
+  bronze: ['#2a1606', '#5a3410', '#946024', '#c8963e', '#f2d48a'],
+  /** Starbreaker's head: dark iron fallen from the sky, stone-grey */
+  meteor: ['#0c0a12', '#1c1824', '#322a3a', '#544658', '#86788a'],
+} satisfies Record<string, Ramp>;
+/** The meteor's fire in its cracks, and its white heart. */
+const MOLTEN = '#ff8a2a';
+const MOLTEN_HI = '#ffd27a';
+
+/** The butt of a Set 1 weapon's haft; a point `d` along the haft (toward the upper right) and `a` across it (+: lower right). */
+const AX_O: V = [5.4, 26.6];
+const ax = (d: number, a: number): V => at(AX_O, UP, d, a);
+const axPoly = (pts: readonly [number, number][]): Shape => poly(...pts.map(([d, a]) => ax(d, a)));
+const axMarks = (pts: readonly [number, number][], t: number | string): Mark[] => pts.slice(1).map((q, i) => ({ a: ax(pts[i][0], pts[i][1]), b: ax(q[0], q[1]), t }));
+
+/** A haft from its butt along the diagonal, `long` picture pixels, its grip wrapped, and its knob. */
+function haft(o: { wood: Part['m']; grip: Part['m']; knob: Part['m']; long?: number; w?: number }): Part[] {
+  const L = o.long ?? 25;
+  const w = o.w ?? 1.3;
+  const A = ax(0.8, 0), B = ax(L, 0), g0 = ax(2.2, 0), g1 = ax(9.6, 0);
+  const marks: Mark[] = [];
+  for (let d = 3.2; d < 9.2; d += 2.4) marks.push({ a: ax(d, -w - 0.4), b: ax(d + 1, w + 0.4), t: 1 });
+  return [
+    { s: cap(A, B, w), m: o.wood, sh: { k: 'cyl', a: A, b: B, w }, bias: 0.1 },
+    { s: cap(g0, g1, w + 0.35), m: o.grip, sh: { k: 'cyl', a: g0, b: g1, w: w + 0.35 }, bias: 0.16, marks },
+    { s: ell(ax(0.4, 0), w + 0.9), m: o.knob, sh: { k: 'dome', c: ax(0.4, 0), r: w + 0.9 }, shine: true },
+  ];
+}
+/** A band round the haft at `d`. */
+const axBand = (d: number, r: number, m: Part['m']): Part => ({ s: axPoly([[d - 0.8, -r], [d + 0.8, -r], [d + 0.8, r], [d - 0.8, r]]), m, sh: { k: 'cyl', a: ax(d, -r), b: ax(d, r), w: 0.8 }, shine: true });
+
+/**
+ * GYRE (battle axe, the Warrior's: his thrown axe stops at the end of its flight and spins there, cutting everything round it).
+ * A double-bitted axe whose two blades sweep opposite ways round its eye, a pinwheel even lying still; a spiral cut in the boss
+ * over the eye; a storm-grey haft and a blue grip.
+ */
+function gyre(): Part[] {
+  const parts = haft({ wood: R.storm, grip: 'blue', knob: 'steel', long: 26 });
+  // (each point kept within the frame: along and across together no more than 32)
+  const up: [number, number][] = [[19.2, -1.8], [23.0, -1.8], [25.0, -4.6], [25.6, -6.4], [23.4, -8.6], [21.0, -10.0], [18.2, -8.6], [16.4, -7.0], [18.6, -4.0]];
+  const down = up.map(([d, a]) => [42.2 - d, -a] as [number, number]);
+  for (const [i, b] of [up, down].entries()) {
+    const edge = b.slice(3, 8);
+    parts.push({ s: axPoly(b), m: 'steel', sh: { k: 'flat', bev: 1.5 }, shine: true, bias: i ? -0.06 : 0.06, marks: [...axMarks(edge, 4), ...axMarks(edge.map(([d, a]) => [d + (i ? 0.6 : -0.6) * 0, a * 0.82] as [number, number]), 3)] });
+  }
+  const c = ax(21.1, 0);
+  parts.push({ s: ell(c, 2.7), m: 'dsteel', sh: { k: 'dome', c, r: 2.7 }, shine: true });
+  parts.push(gem(c, 1.5, 'sapphire'));
+  parts.push({ s: poly(ax(26.2, -1.2), ax(28.8, 0), ax(26.2, 1.2)), m: 'steel', sh: { k: 'ridge', a: ax(26.2, 0), b: ax(28.8, 0) }, shine: true });
+  parts.push(axBand(16.6, 1.9, 'dsteel'));
+  return parts;
+}
+
+/**
+ * RED TITHE (battle axe, the Warrior's: one that dies bleeding throws its blood to the nearest other). A bearded axe, its blade
+ * gone black-red with blood, a channel cut along its edge, drops falling from its beard; a gold coin, the tithe, hung on a cord
+ * from its poll.
+ */
+function redtithe(): Part[] {
+  const parts = haft({ wood: 'ebony', grip: 'red', knob: 'dsteel' });
+  const blade: [number, number][] = [[17.6, -1.8], [23.6, -1.8], [25.0, -4.4], [27.2, -9.0], [24.2, -10.6], [20.4, -10.8], [16.8, -10.0], [13.2, -9.4], [10.8, -7.4], [12.0, -6.0], [14.2, -5.8], [16.2, -4.6], [17.0, -2.6]];
+  const edge = blade.slice(3, 9);
+  parts.push({ s: axPoly(blade), m: S1.blood, sh: { k: 'flat', bev: 1.5 }, shine: true, marks: [...axMarks(edge, 4), ...axMarks(edge.map(([d, a]) => [d, a + 1.6] as [number, number]), 1)] });
+  parts.push({ s: axPoly([[23.6, 1.8], [19.0, 1.8], [19.4, 3.6], [23.2, 3.6]]), m: 'dsteel', sh: { k: 'flat', bev: 0.9 }, shine: true });
+  // the drops falling off its beard (straight down the picture)
+  for (const [d, a, r] of [[9.0, -5.6, 0.95], [7.0, -3.6, 0.8]] as const) parts.push({ s: ell(ax(d, a), r, r * 1.3), m: 'ruby', sh: { k: 'dome', c: ax(d, a), r }, shine: true });
+  // the tithe: a coin on a cord from the poll
+  parts.push({ s: path([ax(21.2, 3.6), ax(20.6, 5.0)], [0.5, 0.5]), m: 'string', sh: { k: 'soft', r: 0.5 } });
+  const coin = ax(19.8, 6.8);
+  parts.push({ s: ell(coin, 2.2), m: 'gold', sh: { k: 'dome', c: coin, r: 2.2 }, shine: true, marks: [{ a: [coin[0] - 0.8, coin[1]], b: [coin[0] + 0.8, coin[1]], t: 1 }, { a: [coin[0], coin[1] - 0.8], b: [coin[0], coin[1] + 0.8], t: 1 }] });
+  parts.push(axBand(16.0, 1.9, 'dsteel'));
+  return move(parts, 1.0, 1.0);
+}
+
+/**
+ * WIDOWFALL (battle axe, the Warrior's: Leaping Chop lands with a Cleave all round him, and all it strikes bleed). A long black
+ * crescent of a blade, horned top and bottom, its edge silver, a moon pierced through it; a pale mourning ribbon tied under the head.
+ */
+function widowfall(): Part[] {
+  const parts = haft({ wood: 'ebony', grip: 'vcloth', knob: 'steel' });
+  // (a true crescent: its horns turned back toward the haft, its back hollowed between them)
+  const blade: [number, number][] = [[18.4, -1.8], [22.6, -1.8], [22.2, -4.0], [24.4, -5.0], [26.8, -4.6], [28.8, -3.6], [29.4, -6.8], [28.2, -9.6], [24.6, -11.2], [20.0, -11.2], [16.0, -10.0], [13.4, -7.8], [12.4, -4.6], [14.4, -5.0], [16.6, -5.6], [18.4, -4.0]];
+  const edge = blade.slice(5, 13);
+  parts.push({ s: axPoly(blade), m: R.velvet, sh: { k: 'flat', bev: 1.6 }, shine: true, marks: [...axMarks(edge, '#d8dcf0'), ...axMarks(edge.map(([d, a]) => [d, a + 1.1] as [number, number]), 4)] });
+  parts.push({ s: poly(ax(25.0, -1.2), ax(27.8, 0), ax(25.0, 1.2)), m: 'steel', sh: { k: 'ridge', a: ax(25, 0), b: ax(27.8, 0) }, shine: true });
+  // the ribbon's two tails, then its knot
+  parts.push({ s: path([ax(16.2, 1.2), ax(14.0, 3.8), ax(11.4, 5.2)], [1.0, 0.9, 0.6]), m: 'linen', sh: { k: 'soft', r: 0.8 }, bias: 0.05 });
+  parts.push({ s: path([ax(15.8, 1.4), ax(15.2, 4.8), ax(13.2, 7.2)], [1.0, 0.9, 0.6]), m: 'linen', sh: { k: 'soft', r: 0.8 }, bias: -0.1 });
+  parts.push({ s: ell(ax(16.4, 0.6), 1.6, 1.3), m: 'linen', sh: { k: 'soft', r: 1 }, bias: 0.15 });
+  // (its tall blade reaches higher than the others': the whole brought down and right into the middle of its frame)
+  return move(parts, 1.6, 1.6);
+}
+
+/**
+ * DEATH KNELL (warhammer, the Warrior's: every enemy his hammer stuns rings like a bell). Its head is a bell, old bronze, lying
+ * across the haft, its crown to the upper left and its mouth to the lower right, its clapper showing; two bands round it; a ring
+ * at its crown.
+ */
+function deathknell(): Part[] {
+  const parts = haft({ wood: 'ebony', grip: 'leather', knob: 'brass', long: 20 });
+  const bell: [number, number][] = [[19.6, -6.6], [22.6, -6.6], [24.0, -5.4], [24.2, -1.0], [25.4, 3.2], [26.6, 5.4], [26.4, 6.4], [15.8, 6.4], [15.6, 5.4], [16.8, 3.2], [18.0, -1.0], [18.2, -5.4]];
+  parts.push(link(ax(21.1, -7.6), 1.7, 1.3, 'brass', 45));
+  parts.push({ s: axPoly(bell), m: S1.bronze, sh: { k: 'cyl', a: ax(17, 0), b: ax(25.2, 0), w: 4.2 }, shine: true, bias: 0.05, marks: [...axMarks([[18.2, -3.4], [24.1, -3.4]], 1), ...axMarks([[16.6, 3.8], [25.6, 3.8]], 1), ...axMarks([[16.0, 5.6], [26.2, 5.6]], 4)] });
+  // the mouth's dark inside, and the clapper in it
+  parts.push({ s: axPoly([[16.4, 6.0], [25.8, 6.0], [25.2, 7.0], [17.0, 7.0]]), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  const cl = ax(21.1, 7.4);
+  parts.push({ s: ell(cl, 1.5), m: 'dsteel', sh: { k: 'dome', c: cl, r: 1.5 }, shine: true });
+  return parts;
+}
+
+/**
+ * DEADWEIGHT (warhammer, the Warrior's: the hammer grows heavier with every Smash in a row). A great crude block of dark iron,
+ * chains wrapped twice round it, and an iron weight hung from it on a short chain; a thick haft.
+ */
+function deadweight(): Part[] {
+  const parts = haft({ wood: 'wood', grip: 'dleather', knob: 'dsteel', long: 24, w: 1.6 });
+  parts.push({ s: axPoly([[16.8, -6.4], [26.4, -6.4], [26.4, 6.4], [16.8, 6.4]]), m: R.rust, sh: { k: 'flat', bev: 1.8 }, shine: true, bias: 0.04 });
+  for (const a of [-6.4, 6.4]) parts.push({ s: axPoly([[16.2, a - 0.9], [27.0, a - 0.9], [27.0, a + 0.9], [16.2, a + 0.9]]), m: 'dsteel', sh: { k: 'flat', bev: 0.8 }, shine: true, marks: [{ a: ax(16.6, a + (a > 0 ? 0.7 : -0.7)), b: ax(26.6, a + (a > 0 ? 0.7 : -0.7)), t: 4 }] });
+  // the chains round it
+  for (const d of [19.0, 24.2]) for (let k = 0; k < 6; k++) {
+    const a = -5.0 + k * 2.0;
+    parts.push(link(ax(d, a), k % 2 ? 0.8 : 1.05, k % 2 ? 1.05 : 0.8, 'steel', 45));
+  }
+  // the weight on its chain
+  for (const [d, a] of [[19.6, 8.4], [18.6, 9.8]] as const) parts.push(link(ax(d, a), 0.8, 1.0, 'steel', 45));
+  const wt = ax(17.0, 11.8);
+  parts.push({ s: ell(wt, 2.5, 2.2), m: 'dsteel', sh: { k: 'dome', c: wt, r: 2.5 }, shine: true, marks: [{ a: [wt[0] - 1, wt[1] + 0.4], b: [wt[0] + 1, wt[1] + 0.4], t: 1 }] });
+  return parts;
+}
+
+/**
+ * STARBREAKER (warhammer, the Warrior's: Earthquake pulls a meteor down out of the sky). A rough head of dark iron fallen from the
+ * sky, cracked through with its fire still in it; a star set in its face; an ebony haft banded in iron.
+ */
+function starbreaker(): Part[] {
+  const parts = haft({ wood: 'ebony', grip: 'red', knob: 'dsteel' });
+  const head: [number, number][] = [[18.2, -6.4], [21.0, -7.4], [24.6, -6.6], [26.4, -3.4], [26.0, 0.6], [26.8, 4.2], [24.8, 6.6], [20.6, 7.0], [17.4, 6.0], [16.4, 2.4], [17.0, -1.4], [16.6, -4.2]];
+  const cracks: Mark[] = [
+    ...axMarks([[18.0, -5.0], [19.6, -3.6], [19.0, -2.0], [20.4, -1.0]], MOLTEN),
+    ...axMarks([[25.2, 4.6], [23.6, 3.8], [24.0, 2.4], [22.6, 1.6]], MOLTEN),
+    ...axMarks([[24.8, -5.2], [23.4, -3.8]], MOLTEN),
+    ...axMarks([[18.6, 5.0], [20.0, 3.8]], MOLTEN),
+    { a: ax(19.6, -3.6), t: MOLTEN_HI },
+    { a: ax(23.6, 3.8), t: MOLTEN_HI },
+  ];
+  parts.push({ s: axPoly(head), m: S1.meteor, sh: { k: 'soft', r: 2.4 }, shine: true, marks: cracks });
+  const c = ax(21.6, 0.4);
+  const star: V[] = [];
+  for (let k = 0; k < 10; k++) {
+    const a = -Math.PI / 2 + (k / 10) * Math.PI * 2;
+    const r = k % 2 ? 1.1 : 2.8;
+    star.push([c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r]);
+  }
+  parts.push({ s: poly(...star), m: 'fire', sh: { k: 'dome', c, r: 2.6 }, shine: true, flush: true });
+  parts.push(axBand(15.6, 2.0, 'dsteel'));
+  parts.push(axBand(13.8, 1.8, 'dsteel'));
+  return parts;
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE TWENTY LEVELING UNIQUES (game/uniques.ts LEVEL_DEFS, on since his “Switch them on now” of 12 Nov 2026; until drawn, they
+// showed their base's orange look). Painted by the main chat, 13 Nov 2026, from the queue's draw-leveling-unique-pictures, at his
+// pick “Leveling uniques' pictures (Recommended)”. The early ones humble, worn things; the endgame's heavier and stranger. Each
+// on the game's own base picture (PAINTERS), dyed and added to, so a boot is a boot.
+
+const LV = {
+  tin: ['#24262f', '#454856', '#727686', '#a2a6b4', '#d8dae4'],
+  copper: ['#2a1208', '#5a2a12', '#9a5226', '#d08a4e', '#f6c08c'],
+  sapling: ['#1a2a0e', '#34501a', '#5a7e2a', '#8cb04a', '#c8e08a'],
+  quilt: ['#221e3a', '#3e3868', '#5e589a', '#8a84c4', '#c2bcea'],
+  hornpale: ['#3a2e1c', '#6a5432', '#a08454', '#d0b680', '#f4e6bc'],
+  rot: ['#0e1a0a', '#1e3412', '#3a5a1a', '#6a8a2a', '#a8c45a'],
+  ice: ['#16304e', '#28588a', '#58a0d0', '#a6dcf4', '#effcff'],
+  /** a fire's tongues, red to white-yellow (no cyan in it) */
+  flame: ['#7a1a06', '#d04810', '#ff8a2a', '#ffd27a', '#fff4d6'],
+  /** road dust on grey leather */
+  dust: ['#2e2820', '#544a3c', '#7e7260', '#a89a84', '#d2c6ae'],
+} satisfies Record<string, Ramp>;
+
+/** THE ERRAND BOOTS (level 1: faster feet). A runner's plain brown boots, a white wing at the ankle and a letter tucked in the cuff. */
+function errandboots(): Part[] {
+  const parts = PAINTERS.boots(0);
+  parts.push({ s: cap([14.4, 3.2], [20.6, 1.8], 1.2), m: 'linen', sh: { k: 'cyl', a: [14.4, 3.2], b: [20.6, 1.8], w: 1.2 }, bias: 0.1, marks: [{ a: [17.2, 1.6], b: [17.6, 3.6], t: '#b02a2a' }] });
+  parts.push({ s: poly([24.8, 9.0], [29.4, 4.0], [30.0, 6.6], [29.0, 9.4], [26.6, 12.2], [24.8, 12.6]), m: 'feather', sh: { k: 'soft', r: 1.2 }, bias: 0.15, marks: [{ a: [25.4, 10.6], b: [29.0, 5.4], t: 2 }] });
+  return parts;
+}
+
+/** THE TIN BAND (level 2: life, and life on hit). A plain ring of dented tin, a flat little plate on top stamped with a cross. */
+function tinband(): Part[] {
+  const parts = band(LV.tin);
+  parts.push({ s: poly([11.0, 9.6], [21.0, 9.6], [21.6, 14.0], [10.4, 14.0]), m: LV.tin, sh: { k: 'flat', bev: 1.0 }, shine: true, marks: [{ a: [16, 10.4], b: [16, 13.2], t: 1 }, { a: [13.6, 11.8], b: [18.4, 11.8], t: 1 }] });
+  parts[0] = { ...parts[0], marks: [...(parts[0].marks ?? []), { a: [22.4, 25.6], t: 1 }, { a: [9.0, 23.4], t: 1 }] };
+  return parts;
+}
+
+/** SCRAPPER'S MITTS (level 3: slower swings, more flat damage). Heavy patched leather mitts, iron studs across the knuckles. */
+function scrappersmitts(): Part[] {
+  const parts = dye(PAINTERS.gloves(0), { steel: 'leather', dsteel: 'dleather' });
+  for (const x of [12.0, 15.0, 18.0, 21.0]) parts.push(stud([x, 12.6 - (x - 12) * 0.08], 1.15, 'dsteel'));
+  parts.push({ s: poly([13.0, 15.6], [19.0, 15.0], [19.4, 19.4], [13.2, 20.0]), m: R.rag, sh: { k: 'flat', bev: 0.6 }, marks: [{ a: [13.4, 16.0], b: [18.8, 15.4], t: 4 }, { a: [13.6, 19.4], b: [19.0, 18.8], t: 4 }] });
+  return parts;
+}
+
+/** THE COPPER CHARM (level 4: magic find, gold find). A copper chain, and for its charm a copper horseshoe, open end up. */
+function coppercharm(): Part[] {
+  const parts = hung(LV.copper);
+  const shoe: V[] = [[11.6, 16.6], [11.0, 21.4], [12.6, 25.6], [16.0, 27.4], [19.4, 25.6], [21.0, 21.4], [20.4, 16.6]];
+  parts.push({ s: path(shoe, shoe.map(() => 2.0)), m: LV.copper, sh: { k: 'soft', r: 1.4 }, shine: true, marks: ([[11.6, 20.0], [13.0, 24.4], [19.0, 24.4], [20.4, 20.0]] as V[]).map((a) => ({ a, t: 0 })) });
+  return parts;
+}
+
+/** THE FLEDGLING (level 5, a bow, the Ranger's: faster shots, sharper). A young green bow, leaves still sprouting from its limb. */
+function fledgling(): Part[] {
+  const parts = dye(PAINTERS.bow(0), { wood: LV.sapling, dleather: 'green' });
+  for (const [x, y, rot] of [[22.4, 6.4, -30], [26.4, 9.4, 20], [9.4, 25.0, -60]] as const) parts.push({ s: ell([x, y], 2.0, 1.0, rot), m: 'green', sh: { k: 'soft', r: 0.8 }, bias: 0.15, marks: [{ a: [x - 1.2, y], b: [x + 1.2, y], t: 3 }] });
+  return parts;
+}
+
+/** THE LANTERN CAP (level 6: every resistance, less life). A grey traveller's hood, a small brass lantern hung at its front, lit. */
+function lanterncap(): Part[] {
+  const parts = dye(PAINTERS.hood(0), { green: R.rag });
+  parts.push({ s: path([[9.4, 16.2], [8.4, 18.6]], [0.5, 0.5]), m: 'brass', sh: { k: 'flat' }, shine: true });
+  parts.push({ s: poly([6.0, 19.4], [10.8, 19.4], [11.4, 26.0], [5.4, 26.0]), cut: [poly([7.0, 20.8], [9.8, 20.8], [10.2, 24.6], [6.6, 24.6])], m: 'brass', sh: { k: 'flat', bev: 0.8 }, shine: true });
+  parts.push({ s: poly([7.0, 20.8], [9.8, 20.8], [10.2, 24.6], [6.6, 24.6]), m: 'fire', sh: { k: 'dome', c: [8.4, 22.8], r: 2.2 }, shine: true, flush: true });
+  return parts;
+}
+
+/** TAPED KNUCKLES (level 7, wraps, the Brawler's: sharper, harder criticals). His wraps, red tape bound twice round the knuckles. */
+function tapedknuckles(): Part[] {
+  const parts = PAINTERS.wraps(0);
+  parts.push({ s: poly([5.6, 9.4], [28.0, 7.2], [28.4, 9.6], [6.0, 11.8]), m: 'red', sh: { k: 'flat', bev: 0.6 }, bias: 0.1, marks: [{ a: [6.4, 10.2], b: [27.6, 8.0], t: 4 }] });
+  parts.push({ s: poly([5.2, 14.8], [27.0, 13.0], [27.4, 15.4], [5.6, 17.2]), m: 'red', sh: { k: 'flat', bev: 0.6 }, bias: 0.05 });
+  return parts;
+}
+
+/** THE KINDLING ROD (level 8, a staff, the Mage's: every hit fire). A plain staff whose head is a bundle of kindling, burning. */
+function kindlingrod(): Part[] {
+  const parts = dye(PAINTERS.staff(0), { violet: LV.flame, vcloth: LV.flame, core: LV.flame, amber: LV.flame, sapphire: LV.flame, topaz: LV.flame, ruby: LV.flame });
+  for (const [a, b] of [[[19.4, 9.6], [24.8, 4.6]], [[20.6, 11.0], [26.6, 6.6]], [[18.2, 8.6], [22.6, 3.4]]] as [V, V][]) parts.push({ s: cap(a, b, 0.75), m: 'wood', sh: { k: 'cyl', a, b, w: 0.75 } });
+  parts.push({ s: poly([18.6, 7.4], [20.2, 2.6], [22.4, 5.2], [24.4, 2.0], [26.0, 5.6], [28.8, 3.6], [28.4, 9.2], [25.4, 12.0], [21.0, 11.4]), m: LV.flame, sh: { k: 'soft', r: 1.6 }, shine: true, bias: 0.15 });
+  parts.push({ s: poly([21.4, 8.0], [22.6, 5.6], [24.2, 7.2], [25.6, 5.4], [26.4, 8.6], [23.8, 10.0]), m: LV.flame, sh: { k: 'flat' }, flush: true, bias: 0.55 });
+  return parts;
+}
+
+/** THE ROT AXE (level 10, a battle axe, the Warrior's: its hits poison, and do no physical harm). Its blade gone green with rot, dripping. */
+function rotaxe(): Part[] {
+  const parts = haft({ wood: 'wood', grip: 'green', knob: 'dsteel' });
+  const blade: [number, number][] = [[17.6, -1.8], [23.6, -1.8], [25.0, -4.4], [26.4, -8.4], [23.6, -10.2], [20.0, -10.6], [16.4, -9.8], [14.4, -7.4], [15.6, -4.6], [17.0, -2.6]];
+  const edge = blade.slice(3, 8);
+  const spots: Mark[] = [[21.0, -6.0], [19.0, -8.0], [23.4, -7.2], [20.4, -3.6]].map(([d, a]) => ({ a: ax(d, a), t: 0 }));
+  parts.push({ s: axPoly(blade), m: LV.rot, sh: { k: 'flat', bev: 1.5 }, shine: true, marks: [...axMarks(edge, 4), ...spots] });
+  for (const [d, a, r] of [[13.6, -6.2, 0.9], [12.0, -4.6, 0.7]] as const) parts.push({ s: ell(ax(d, a), r, r * 1.3), m: 'green', sh: { k: 'dome', c: ax(d, a), r }, shine: true });
+  parts.push(axBand(16.0, 1.9, 'dsteel'));
+  return move(parts, 1.0, 1.0);
+}
+
+/** THE PACKSTRAP (level 11, a belt: Guarding's shield always, back after a few seconds unhit). A plain strap, a little round shield buckled at the hip. */
+function packstrap(): Part[] {
+  const parts = [...loop('leather'), ...buckle('steel', 'leather')];
+  const c: V = [6.2, 18.8];
+  parts.push({ s: ell(c, 5.0), m: 'teal', sh: { k: 'dome', c, r: 5.0 }, shine: true, marks: [{ a: [c[0] - 3.6, c[1]], b: [c[0] + 3.6, c[1]], t: 1 }, { a: [c[0], c[1] - 3.6], b: [c[0], c[1] + 3.6], t: 1 }] });
+  parts.push({ s: ell(c, 5.0), cut: [ell(c, 3.9)], m: 'steel', sh: { k: 'flat', bev: 0.6 }, shine: true });
+  parts.push(stud(c, 1.4, 'steel'));
+  return parts;
+}
+
+/** THE HORNBOOK (level 12, a tome, the Warlock's: fire, shorter cooldowns). A child's first book: its cover pale horn over the letters, brass at its corners. */
+function hornbook(): Part[] {
+  const parts = dye(PAINTERS.tome(0), { bookred: LV.hornpale, red: LV.hornpale, black: 'dleather' });
+  for (const [x0, y0] of [[12.6, 9.6], [12.6, 13.6], [12.6, 17.6]] as const) parts.push({ s: poly([x0, y0], [x0 + 9.0, y0], [x0 + 9.0, y0 + 0.9], [x0, y0 + 0.9]), m: 'black', sh: { k: 'flat' }, flush: true, bias: -0.2 });
+  return parts;
+}
+
+/** THE BORROWED SPANNER (level 13, a wrench, the Tinkerer's: faster, nimbler). An old tin-grey spanner with someone else's name tag tied on. */
+function borrowedspanner(): Part[] {
+  const parts = dye(PAINTERS.wrench(0), { steel: LV.tin });
+  parts.push({ s: path([[22.4, 11.6], [24.4, 14.0], [25.6, 15.4]], [0.4, 0.4, 0.4]), m: 'string', sh: { k: 'flat' } });
+  parts.push({ s: poly([24.4, 15.0], [29.6, 15.6], [29.0, 21.0], [23.8, 20.4]), m: 'linen', sh: { k: 'flat', bev: 0.6 }, bias: 0.1, marks: [{ a: [25.2, 17.2], b: [28.4, 17.6], t: 1 }, { a: [25.0, 19.0], b: [27.6, 19.2], t: 1 }] });
+  return parts;
+}
+
+/** THE QUILTED COAT (level 14: armour, life). A soft coat of indigo cloth, quilted in diamonds. */
+function quiltedcoat(): Part[] {
+  const parts = dye(PAINTERS.armor(0), { steel: LV.quilt, dsteel: LV.quilt });
+  const q: Mark[] = [];
+  for (let k = -3; k <= 3; k++) {
+    q.push({ a: [8 + k * 3.4, 8], b: [8 + k * 3.4 + 10, 26], t: 1 });
+    q.push({ a: [24 - k * 3.4, 8], b: [24 - k * 3.4 - 10, 26], t: 1 });
+  }
+  parts.push({ s: poly([7.6, 8.0], [24.4, 8.0], [24.0, 17.4], [8.0, 17.4]), m: LV.quilt, sh: { k: 'soft', r: 2.4 }, bias: 0.05, marks: q });
+  return parts;
+}
+
+/** THE POISONER'S LOCKET (level 16: poison). A gold chain, and for its locket a small green glass vial, its cork sealed with wax. */
+function poisonerslocket(): Part[] {
+  const parts = hung('gold', [16, 13.4]);
+  parts.push({ s: cap([16, 15.0], [16, 16.4], 1.3), m: 'red', sh: { k: 'cyl', a: [14.7, 15.6], b: [17.3, 15.6], w: 1.3 } });
+  parts.push({ s: cap([16, 17.0], [16, 18.6], 1.2), m: R.glass, sh: { k: 'cyl', a: [16, 17], b: [16, 18.6], w: 1.2 }, shine: true });
+  parts.push({ s: ell([16, 23.4], 4.6, 5.0), m: R.slime, sh: { k: 'dome', c: [15.2, 22.4], r: 4.6, ry: 5.0 }, shine: true, marks: [{ a: [13.8, 21.0], b: [13.4, 24.0], t: 4 }, { a: [15.0, 25.4], b: [17.2, 25.4], t: 0 }] });
+  return parts;
+}
+
+/** THE SURE THING (level 18, a ring: every hit a critical, no harder). A gold ring set with a white die, its six showing. */
+function surething(): Part[] {
+  const parts = band('gold');
+  parts.push({ s: poly([10.6, 4.2], [21.4, 4.2], [21.4, 14.6], [10.6, 14.6]), m: 'ivory', sh: { k: 'flat', bev: 1.6 }, shine: true, marks: ([[13.2, 6.8], [13.2, 9.4], [13.2, 12.0], [18.8, 6.8], [18.8, 9.4], [18.8, 12.0]] as V[]).map((a) => ({ a, t: '#120c1c' })) });
+  return parts;
+}
+
+/** THE LONG ROAD (level 21, boots: much faster, shorter cooldowns, every resistance lower). Tall traveller's boots, grey with the road's dust, a brass compass at the cuff. */
+function longroad(): Part[] {
+  const parts = tallBoot({ hide: LV.dust, cuff: 'dleather', sole: 'dleather' });
+  parts[0] = { ...parts[0], marks: [...(parts[0].marks ?? []), { a: [6.0, 25.4], b: [12.0, 24.8], t: 4 }, { a: [14.0, 22.0], b: [18.0, 21.6], t: 4 }] };
+  for (const y of [12.6, 17.6]) parts.push({ s: poly([12.4, y], [24.8, y - 0.6], [24.9, y + 1.2], [12.4, y + 1.8]), m: 'dleather', sh: { k: 'flat', bev: 0.6 }, marks: [{ a: [20.2, y + 0.2], t: '#e0b050' }] });
+  const c: V = [18.6, 5.2];
+  parts.push({ s: ell(c, 2.6), m: 'brass', sh: { k: 'dome', c, r: 2.6 }, shine: true, marks: [{ a: [c[0], c[1] - 1.6], b: [c[0], c[1] + 1.6], t: '#b02a2a' }] });
+  return parts;
+}
+
+/** THE THOUSAND CUTS (level 23, gloves: faster, sharper, softer). A black glove, a little steel claw on every fingertip. */
+function thousandcuts(): Part[] {
+  const parts = hand({ cuff: R.wax, palm: R.wax, finger: R.wax, back: R.wax, shine: true, joints: 3 });
+  for (const [, b] of FINGERS) parts.push({ s: poly([b[0] - 1.3, b[1] + 1.8], [b[0] + 1.3, b[1] + 1.8], [b[0], b[1] - 0.8]), m: 'steel', sh: { k: 'ridge', a: [b[0], b[1] + 1.8], b: [b[0], b[1] - 0.8] }, shine: true });
+  return parts;
+}
+
+/** THE VAULT DOOR (level 25, plate: much armour and life, every resistance, slower feet). Dark plate with a vault's dial set in its chest. */
+function vaultdoor(): Part[] {
+  const parts = dye(PAINTERS.armor(0), { steel: 'dsteel', leather: 'dleather' });
+  const c: V = [16, 13.0];
+  const spokes: Mark[] = [];
+  for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; spokes.push({ a: [c[0] + Math.cos(a) * 1.8, c[1] + Math.sin(a) * 1.8], b: [c[0] + Math.cos(a) * 4.4, c[1] + Math.sin(a) * 4.4], t: 1 }); }
+  parts.push({ s: ell(c, 5.4), m: 'brass', sh: { k: 'dome', c, r: 5.4 }, shine: true, marks: spokes });
+  parts.push({ s: ell(c, 5.4), cut: [ell(c, 4.4)], m: 'gold', sh: { k: 'flat', bev: 0.5 }, shine: true });
+  parts.push({ s: ell(c, 1.7), m: 'steel', sh: { k: 'dome', c, r: 1.7 }, shine: true });
+  return parts;
+}
+
+/** THE RIME CROWN (level 27, a helm: frost far stronger, fire hurts more). A helm gone ice-blue, a crown of icicles round its brow. */
+function rimecrown(): Part[] {
+  const parts = dye(PAINTERS.helm(0), { steel: LV.ice, dsteel: LV.ice, leather: R.sea });
+  for (const [x, h] of [[11.6, 4.6], [15.0, 6.2], [18.4, 7.0], [21.8, 6.2], [25.2, 4.6]] as const) parts.push({ s: poly([x - 1.6, 13.4], [x + 1.6, 13.4], [x, 13.4 - h]), m: R.glass, sh: { k: 'ridge', a: [x, 13.4], b: [x, 13.4 - h] }, shine: true });
+  parts.push({ s: poly([9.6, 12.8], [27.2, 12.8], [27.2, 14.6], [9.6, 14.6]), m: R.glass, sh: { k: 'flat', bev: 0.6 }, shine: true });
+  return parts;
+}
+
+/** THE LAST WORD (level 30, a ring: every word stronger, every cooldown longer). A dark ring sealed with red wax, a full stop pressed in it. */
+function lastword(): Part[] {
+  const parts = band('dsteel');
+  const c: V = [16, 8.6];
+  parts.push({ s: poly([9.0, 8.0], [11.0, 3.8], [16.0, 2.6], [21.4, 3.6], [23.2, 8.2], [21.6, 13.0], [16.0, 14.6], [10.4, 13.2]), m: 'red', sh: { k: 'dome', c, r: 7.0, ry: 6.0 }, shine: true });
+  parts.push({ s: ell(c, 4.4, 3.8), m: 'red', sh: { k: 'flat', bev: 1.0 }, bias: -0.15, flush: true });
+  parts.push({ s: ell([16.6, 9.4], 1.4), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  return parts;
+}
+
+/** The twenty's pictures, by their ids in game/uniques.ts LEVEL_DEFS: kept apart from the 62's list, as Set 1's are. */
+const LEVEL_PAINTERS: Record<string, () => Part[]> = {
+  errandboots, tinband, scrappersmitts, coppercharm, fledgling, lanterncap, tapedknuckles, kindlingrod, rotaxe, packstrap,
+  hornbook, borrowedspanner, quiltedcoat, poisonerslocket, surething, longroad, thousandcuts, vaultdoor, rimecrown, lastword,
+};
+/** The ids of the twenty leveling uniques' pictures. */
+export const LEVEL_ART_IDS: readonly string[] = Object.keys(LEVEL_PAINTERS);
+/**
+ * The twenty's pictures' switch: off, each shows its base's orange look, as before. ON at his yes, 13 Nov 2026, shown them on his
+ * page Leveling Uniques Pictures (https://claude.ai/artifact/Ybwk34vtkh5dK4zuvh93Mh) and asked whether they go live in the
+ * evening's update: “Yes, put them live (Recommended)”.
+ */
+export const LEVEL_ART = { on: true };
+
+/** Set 1's pictures, by their ids in game/uniques.ts SET1_DEFS: kept apart from the 62's (UNIQUE_ART_IDS), as Set 1 is behind its own switch. */
+const SET1_PAINTERS: Record<string, () => Part[]> = { gyre, redtithe, widowfall, deathknell, deadweight, starbreaker };
+/** The ids of Set 1's pictures. */
+export const SET1_ART_IDS: readonly string[] = Object.keys(SET1_PAINTERS);
+
+// ---------------------------------------------------------------------------------------------
 
 /** Every unique with a picture of its own here, by its id in game/uniques.ts UNIQUE_DEFS. */
 const UNIQUE_PAINTERS: Record<string, () => Part[]> = {
@@ -1542,7 +1927,8 @@ export const UNIQUE_ART_IDS: readonly string[] = Object.keys(UNIQUE_PAINTERS);
 
 /** One unique's own picture: 32 by 32 picture pixels, as art/items_a.ts paintItemA's, with the orange rim. Null for one not drawn. */
 export function paintUnique(id: string): Px | null {
-  const f = Object.prototype.hasOwnProperty.call(UNIQUE_PAINTERS, id) ? UNIQUE_PAINTERS[id] : undefined;
+  const own = (m: Record<string, () => Part[]>): (() => Part[]) | undefined => (Object.prototype.hasOwnProperty.call(m, id) ? m[id] : undefined);
+  const f = own(UNIQUE_PAINTERS) ?? own(SET1_PAINTERS) ?? (LEVEL_ART.on ? own(LEVEL_PAINTERS) : undefined);
   return f ? paint(f(), 3) : null;
 }
 

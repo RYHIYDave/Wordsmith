@@ -161,6 +161,9 @@ export function wear(g: Game, ...ids: string[]): Game {
     const it = makeUnique(id, g.hero.level, new RNG(11)) as Item;
     if (!it) throw new Error(`no unique '${id}' (is the switch on?)`);
     it.reqLevel = 1;
+    // (ITS NUMBERS ROLL: one of the 62 put on at the tune's own numbers, which its rules' tests go by; its rolls have their own test,
+    // tests/uniques_rolls.test.ts. A leveling unique keeps what it rolled)
+    if (d.from !== 'level') delete it.uroll;
     const s = uniqueSlot(d);
     const slot: EquipSlot = s === 'ring' ? (g.hero.gear.ring1 && g.hero.gear.ring1.rarity === 3 ? 'ring2' : 'ring1') : s;
     g.hero.gear[slot] = it;

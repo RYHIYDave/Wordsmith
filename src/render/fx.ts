@@ -30,6 +30,7 @@ import { TinkererFx } from './tinkerer_fx';
 import { WarriorFx } from './warrior_fx';
 import { BrawlerFx } from './brawler_fx';
 import { UniqueFx } from './unique_fx';
+import { Set1Fx } from './set1_fx';
 import { M8Fx, MELDS8_LOOK } from './melds8';
 import { baseFigure, figureOf } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
@@ -557,6 +558,8 @@ export class Fx {
   readonly warrior = new WarriorFx();
   /** WHAT THE UNIQUE ITEMS SHOW IN PLAY (render/unique_fx.ts, the art chat's; each behind a switch that is off: render/unique_play.ts). */
   readonly uniques = new UniqueFx();
+  /** (UNIQUE ITEMS, SET 1: the battle axe's and the warhammer's, behind SET1_LOOK, off) render/set1_fx.ts */
+  readonly set1 = new Set1Fx();
   /** THE EIGHT MELDS ACROSS THE GROUPS' LOOKS (render/melds8.ts, behind MELDS8_LOOK, off: with it off it takes and draws nothing). */
   readonly melds8 = new M8Fx();
   particles: Particle[] = [];
@@ -672,6 +675,7 @@ export class Fx {
     this.brawler.clear();
     this.warrior.clear();
     this.uniques.clear();
+    this.set1.clear();
     this.melds8.clear();
     this.particles = [];
     this.floaters = [];
@@ -1176,9 +1180,11 @@ export class Fx {
       this.brawler.handle(e);
       this.warrior.handle(e);
       this.uniques.handle(e, this);
+      this.set1.handle(e);
       this.melds8.handle(e);
-      // (UNIQUE ITEMS: the build's plain stand-in for one whose picture is shown: render/unique_fx.ts)
+      // (UNIQUE ITEMS: the build's plain stand-in for one whose picture is shown: render/unique_fx.ts, render/set1_fx.ts)
       if (this.uniques.owns(e)) continue;
+      if (this.set1.owns(e)) continue;
       // (WORDMELDING's looks, behind MELD3, off: a melded word's own bolts, blasts and patches are drawn by render/melds3.ts)
       if (meldOwnsEvent(e)) continue;
       // (and the five Volatile melds' blasts, behind VOLATILE3, off: render/volatile3.ts)
@@ -2064,6 +2070,7 @@ export class Fx {
     this.brawler.update(dt);
     this.warrior.update(dt);
     this.uniques.update(dt);
+    this.set1.update(dt);
     this.melds8.update(dt);
     this.clock += dt;
     this.sinceHold += real;
@@ -2241,6 +2248,7 @@ export class Fx {
     this.tinkerer.drawGround(g, c);
     this.warrior.drawGround(g, c);
     this.uniques.drawGround(g, c);
+    this.set1.drawGround(g, c);
     this.melds8.drawGround(g, c);
     // arrows of a volley standing in the floor: a short shaft leaning back the way it fell, its
     // fletching at the top; they fade out where they stand
@@ -2476,6 +2484,7 @@ export class Fx {
     this.brawler.drawAir(g, c);
     this.warrior.drawAir(g, c);
     this.uniques.drawAir(g, c);
+    this.set1.drawAir(g, c);
     this.melds8.drawAir(g, c);
     for (const q of this.whirls) {
       // A whirlwind's turn: two crescents, opposite each other, going round the hero. Each is

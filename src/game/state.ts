@@ -44,6 +44,8 @@ export interface Derived {
   resFire: number;
   resFrost: number;
   resLight: number;
+  /** POISON DAMAGE (items.ts POISON_DMG): % less poison taken, capped as the others. */
+  resPoison: number;
   /** Tiles per second. */
   moveSpeed: number;
   /** Cooldown recovery, 0 to 0.6. */
@@ -579,6 +581,8 @@ export interface Monster {
    */
   bleedT?: number;
   bleedDps?: number;
+  /** UNIQUE ITEMS, DEATH KNELL (game/uniques.ts): stunned by his hammer, it rings like a bell so many seconds yet; struck ringing, it peals. */
+  knellT?: number;
   /** BLEEDING (THE LAST WORDS): how many times as much it bleeds while it walks (Bleeding's; Honed Edge's bleeding is the same either way), and where it stood at the last tick of its harm. */
   bleedMove?: number;
   bleedAt?: { x: number; y: number };
@@ -641,6 +645,8 @@ export interface Projectile {
   /** THE WARRIOR'S BATTLE AXE (WARRIOR_TREE2): a thrown axe, that comes back (`returns`), and is on its way back (`back`). */
   returns?: boolean;
   back?: boolean;
+  /** UNIQUE ITEMS, GYRE (game/uniques.ts): a thrown axe stopped at the end of its flight, spinning there: seconds left, seconds to its next cut. */
+  gyre?: { t: number; tick: number };
   pierce: boolean;
   /** THE SKILL TREES (Piercing): how many more enemies a shot that does not pierce may still pass through. */
   pierceN?: number;

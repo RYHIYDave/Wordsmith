@@ -503,7 +503,7 @@ export const PULL = { far: 1.5, most: 2.5, reach: 2.2, stop: 0.62, secs: 0.24, v
  * `life` of its life, drawn `look` the size (and they split no more).
  */
 /**
- * SPLITTING, EACH ARROW. His question, 12 Nov 2026, 19:17 (Eastern), of Split Shot, Splitting on his tap and The Fan: “How many arrows
+ * SPLITTING, EACH ARROW. His question, 12 Nov 2026, 19:17 (Eastern), of Split Shot, Splitting on his tap and Threefold: “How many arrows
  * should there be from all that combined?”; told that Splitting broke only the first arrow of a tap, his pick: “Every arrow splits, 21
  * (Recommended)” (offered as: each of the Fan's 3 arrows throws 3 copies when it hits, and 3 more when it kills). So each of several
  * shots loosed by one use (game/state.ts Projectile.volley: the Fan's, a Twin pair) splits once of its own; Split Shot's arrows split
@@ -1660,8 +1660,19 @@ export const CLASS_WEAPON_VENDOR: Readonly<Record<ClassWeaponKind, VendorId>> = 
  * in the place of the first rolled main-hand piece, so that a shelf stays TUNE.shopSize; and his weapon among those its rolled
  * pieces may be. Any other hero, or with the switch off: VENDORS's, as it is.
  */
+/**
+ * ONE-HANDED SWORDS, OUT FOR NOW: none found, sold or gambled for (a sword already carried is kept). His words, 12 Nov 2026, asked
+ * whether plain swords and greatswords should drop for every hero: “keep as today, and we dont need one handed swords yet.  so
+ * those can stay out of the game for now until we add the gladiator who will have single sword, dual swords, or sword and shield.
+ * but thats down the road a ways”. On again with the Gladiator.
+ */
+export const ONE_HAND_SWORDS = { on: false };
+
 export function vendorStock(id: VendorId, cls: ClassId | null | undefined): { weapons: readonly WeaponKind[]; slots: readonly Slot[] } {
-  const v = VENDORS[id];
+  const v0 = VENDORS[id];
+  // (ONE_HAND_SWORDS off: no plain sword on the shelf; a rolled main-hand piece takes its place, so the shelf stays TUNE.shopSize)
+  const cut = v0.weapons.filter((w) => w !== 'sword');
+  const v = ONE_HAND_SWORDS.on || cut.length === v0.weapons.length ? v0 : { ...v0, weapons: cut, slots: ['mainhand' as Slot, ...v0.slots] };
   const own = classWeapon(cls);
   if (!own || CLASS_WEAPON_VENDOR[own] !== id) return v;
   const first = v.slots.indexOf('mainhand');
@@ -1707,10 +1718,12 @@ export const CLASS_WEAPON_NAME: Readonly<Record<ClassWeaponKind, string>> = { wr
  * weapon too, after the other weapons. Any other hero, or with the switch off: GAMBLE_KINDS itself.
  */
 export function gambleKinds(cls: ClassId | null | undefined): readonly GambleKind[] {
+  // (ONE_HAND_SWORDS off: no sword to gamble for; the shield stays, as it goes with the Tinkerer's wrench too)
+  const kinds = ONE_HAND_SWORDS.on ? GAMBLE_KINDS : GAMBLE_KINDS.filter((k) => !(k.slot === 'mainhand' && k.weapon === 'sword'));
   const own = classWeapon(cls);
-  if (!own) return GAMBLE_KINDS;
-  const at = GAMBLE_KINDS.filter((k) => k.slot === 'mainhand').length;
-  return [...GAMBLE_KINDS.slice(0, at), { name: CLASS_WEAPON_NAME[own], slot: 'mainhand', weapon: own, icon: own }, ...GAMBLE_KINDS.slice(at)];
+  if (!own) return kinds;
+  const at = kinds.filter((k) => k.slot === 'mainhand').length;
+  return [...kinds.slice(0, at), { name: CLASS_WEAPON_NAME[own], slot: 'mainhand', weapon: own, icon: own }, ...kinds.slice(at)];
 }
 
 /** The town's people who have something to say (state.ts, TownVoice). */

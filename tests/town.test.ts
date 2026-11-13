@@ -16,6 +16,10 @@ import { emptyControls } from '../src/game/state';
 import type { Station } from '../src/game/state';
 import { CLASS_IDS, EQUIP_SLOTS, WORD_IDS } from '../src/game/types';
 import { WAYS, topStep, STAIR_OPENING } from '../src/game/ways';
+import { swordsAsBefore } from './swords_as_before';
+
+// (the plain sword among the things to be had, as this file was written for it: tests/swords_as_before.ts)
+swordsAsBefore();
 
 /** THE WAYS (game/ways.ts, on since Version 20.2), set for the length of `run` and put back. */
 function waysSet<T>(on: boolean, run: () => T): T {

@@ -28,7 +28,7 @@ const I = (g: Game): In => g as unknown as In;
 // ---------------------------------------------------------------------------------------------
 // THE WARRIOR
 
-test('The Millstone: Whirlwind has no time limit, he spins for as long as he holds', () =>
+test('Millstone: Whirlwind has no time limit, he spins for as long as he holds', () =>
   on(() => {
     const held = (g: Game, secs: number): boolean => {
       const c: Controls = { ...emptyControls(), cast: true, hold: true, castX: g.hero.x + 1, castY: g.hero.y };
@@ -46,7 +46,7 @@ test('The Millstone: Whirlwind has no time limit, he spins for as long as he hol
     assert.ok(g.hero.skills[1].cd > 0, 'and its cooldown begins');
   }));
 
-test('The Windcutter: every third Strike in a row sends a blade of wind on ahead, through everything in its line', () =>
+test('Windcutter: every third Strike in a row sends a blade of wind on ahead, through everything in its line', () =>
   on(() => {
     const g = wear(room('warrior'), 'windcutter');
     steady(g);
@@ -81,13 +81,13 @@ test('The Windcutter: every third Strike in a row sends a blade of wind on ahead
     assert.equal(seen(cold, 'windcutter').length, 0, 'not in a row: no blade');
   }));
 
-test('The Undertow, The Pivot, The Press: Pulling on his Whirlwind; a turn of it where his Lunge lands; harder the more close round him', () =>
+test('Undertow, Pirouette, Crowdbreaker: Pulling on his Whirlwind; a turn of it where his Lunge lands; harder the more close round him', () =>
   on(() => {
     const u = wear(room('warrior'), 'undertow');
     assert.ok(u.hero.skills[1].r.pull > 0, 'Whirlwind drags in what it cuts');
     assert.deepEqual(u.hero.skills[1].front, [null, null], 'no slot used');
     assert.equal(u.hero.skills[0].r.pull, 0);
-    // The Pivot
+    // Pirouette
     const lunge = (g: Game, off = false): { ev: GameEvent[]; hurt: number } => {
       steady(g);
       if (off) g.worn = []; // its ordinary stats still on him, but not what it does
@@ -106,7 +106,7 @@ test('The Undertow, The Pivot, The Press: Pulling on his Whirlwind; a turn of it
     // (another hero's boots do nothing for him)
     const r = wear(room('ranger'), 'pivot');
     assert.equal(r.wears('pivot'), false);
-    // The Press
+    // Crowdbreaker
     const p = wear(room('warrior'), 'press');
     steady(p);
     const m = dummy(p, 1, 0);
@@ -126,7 +126,7 @@ test('The Undertow, The Pivot, The Press: Pulling on his Whirlwind; a turn of it
 // ---------------------------------------------------------------------------------------------
 // THE RANGER
 
-test('The Rainwalker: Volley rains round him and moves with him', () =>
+test('Rainwalker: Volley rains round him and moves with him', () =>
   on(() => {
     const g = wear(room('ranger'), 'rainwalker');
     cast(g, 7, 0);
@@ -144,7 +144,7 @@ test('The Rainwalker: Volley rains round him and moves with him', () =>
     assert.ok(Math.hypot(I(p).volleys[0].x - p.hero.x, I(p).volleys[0].y - p.hero.y) > 5);
   }));
 
-test('The Fan: each Shot looses three arrows in a fan, each a little weaker; one enemy takes only one of them', () =>
+test('Threefold: each Shot looses three arrows in a fan, each a little weaker; one enemy takes only one of them', () =>
   on(() => {
     const g = wear(room('ranger'), 'fan');
     steady(g);
@@ -190,7 +190,8 @@ test('The Poacher\'s Bow and The Hair Trigger: a Volley leaves one of his traps;
     assert.deepEqual(plain, { hurt: 0, gone: false }, 'an arrow over a trap does nothing to it');
     const shot = burst(true);
     assert.equal(shot.gone, true, 'set off at once');
-    const t = room('ranger');
+    // (a trap's own blow, by the same hero with the same gear on: the practice room's is rolled, and the gloves count)
+    const t = wear(room('ranger'), 'hairtrigger');
     steady(t);
     const st = t.hero.d.stats;
     const once = Math.round(100 * t.hero.skills[2].r.dmgMult * (1 + (st.dmgPct + st.physPct) / 100));
@@ -236,7 +237,7 @@ test('The Shepherd\'s Crook: the Orb follows him', () =>
     assert.deepEqual([I(p).orbs[0].x, I(p).orbs[0].y], [at.x, at.y], 'without it: where it was set');
   }));
 
-test('The Tide and The Tuning Staff: the Wave comes back through everything; a Wave through his Orb makes it pulse, twice as hard', () =>
+test('Ebb and Flow and Resonance: the Wave comes back through everything; a Wave through his Orb makes it pulse, twice as hard', () =>
   on(() => {
     const g = wear(room('mage'), 'tide');
     steady(g);
@@ -248,7 +249,7 @@ test('The Tide and The Tuning Staff: the Wave comes back through everything; a W
     const back = Math.round(100 * g.hero.skills[0].r.dmgMult * T.tide.share * (1 + (st.dmgPct + st.physPct) / 100));
     assert.ok(near(hurt(m), wave + back, 0.02), `out and home: ${hurt(m)} against ${wave + back}`);
     assert.equal(I(g).projectiles.length, 0, 'home, it is gone: it turns only once');
-    // The Tuning Staff
+    // Resonance
     const t = wear(room('mage'), 'tuningstaff');
     steady(t);
     cast(t, 4, 0, 0, 0.3);
@@ -261,7 +262,7 @@ test('The Tide and The Tuning Staff: the Wave comes back through everything; a W
     assert.ok(hurt(far) - before >= pulse * 0.98, `a pulse twice as hard: ${hurt(far) - before} against ${pulse}`);
   }));
 
-test('The Prism: fire, frost and lightning each count as all three: what one of them hits burns, is chilled and is shocked', () =>
+test('Prismheart: fire, frost and lightning each count as all three: what one of them hits burns, is chilled and is shocked', () =>
   on(() => {
     for (const w of ['fire', 'frost', 'lightning'] as const) {
       const g = wear(room('mage'), 'prism');
@@ -285,7 +286,7 @@ test('The Prism: fire, frost and lightning each count as all three: what one of 
     assert.deepEqual([q.burnT > 0, q.chillT > 0, q.shockT > 0], [true, false, false]);
   }));
 
-test('The Short Way: Warp again within two seconds to snap back to where she started; later, an ordinary Warp', () =>
+test('Shortcut: Warp again within two seconds to snap back to where she started; later, an ordinary Warp', () =>
   on(() => {
     const g = wear(room('mage'), 'shortway');
     const x0 = g.hero.x;
@@ -434,7 +435,7 @@ test('The Second Whistle: one more Golem than she would have, each at full stren
     assert.equal(whistles(g, 1), 3, 'and no fourth');
   }));
 
-test('The Sticky Wrench and The Foreman\'s Wrench: vials stick and burst a moment later, twice as wide; each Golem lobs one as well', () =>
+test('Tarwrench and The Foreman\'s Wrench: vials stick and burst a moment later, twice as wide; each Golem lobs one as well', () =>
   on(() => {
     const toss = (g: Game, secs: number): { m: number; edge: number; whole: number } => {
       steady(g);
@@ -569,7 +570,7 @@ test('The Last Round and The Fourth Globe: the third globe sets itself in fire, 
     assert.equal(f.hero.vet!.globes.length, 0, 'played out, its globes go out');
   }));
 
-test('The Winning Streak: every combo he finishes makes his blows hit harder; getting hit ends it', () =>
+test('Hot Streak: every combo he finishes makes his blows hit harder; getting hit ends it', () =>
   on(() => {
     const g = wear(room('brawler'), 'winningstreak');
     steady(g);
@@ -588,7 +589,7 @@ test('The Winning Streak: every combo he finishes makes his blows hit harder; ge
     assert.equal(g.uq.streak, 0);
   }));
 
-test('The Sprung Heels and The Receipt: a second jump before he lands; a blow from in front answered with a free punch', () =>
+test('Springheel and Return to Sender: a second jump before he lands; a blow from in front answered with a free punch', () =>
   on(() => {
     const g = wear(room('brawler'), 'sprungheels');
     assert.equal(g.hero.skills[2].maxCharges, T.heels.jumps);
@@ -604,7 +605,7 @@ test('The Sprung Heels and The Receipt: a second jump before he lands; a blow fr
     assert.equal(g.hero.skills[2].charges, 0);
     // without them: one
     assert.equal(room('brawler').hero.skills[2].maxCharges, 1);
-    // The Receipt
+    // Return to Sender
     const r = wear(room('brawler'), 'receipt');
     steady(r);
     const front = dummy(r, 1.5, 0);

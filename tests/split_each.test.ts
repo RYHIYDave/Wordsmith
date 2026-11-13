@@ -1,4 +1,4 @@
-// SPLITTING, EACH ARROW (game/defs.ts SPLIT_EACH). His question, 12 Nov 2026, 19:17, of Split Shot, Splitting on his tap and The Fan:
+// SPLITTING, EACH ARROW (game/defs.ts SPLIT_EACH). His question, 12 Nov 2026, 19:17, of Split Shot, Splitting on his tap and Threefold:
 // “How many arrows should there be from all that combined?”; his pick: “Every arrow splits, 21 (Recommended)”. Checks:
 //   1. the Fan with Splitting on Shot: each of its three arrows, striking its own enemy, breaks into copies (three splits, not one);
 //   2. one arrow alone splits once a use, as before; and off, the Fan's three split once a use, as before.

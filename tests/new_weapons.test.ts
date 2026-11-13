@@ -26,9 +26,12 @@ import { paintWithoutCanvas, paintingOf } from './helpers';
 import { ALL_CLASS_IDS, ALL_WEAPONS, CLASS_IDS, CLASS_WEAPONS, ICON_KEYS, SLOTS, WEAPONS, WARRIOR_WEAPONS } from '../src/game/types';
 import type { ClassId, ClassWeaponKind, Item, Slot, WeaponKind } from '../src/game/types';
 import { warriorAsBefore } from './warrior_as_before';
+import { swordsAsBefore } from './swords_as_before';
 
 // (the Warrior's old moves, as this file was written for them: tests/warrior_as_before.ts)
 warriorAsBefore();
+// (the plain sword among the things to be had, as this file was written for it: tests/swords_as_before.ts)
+swordsAsBefore();
 
 paintWithoutCanvas();
 

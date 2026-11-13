@@ -39,11 +39,15 @@ import {
   setNextUid,
   starterWeapon,
   statView,
-  statGroup, flatPair } from '../src/game/items';
+  statGroup, flatPair, POISON_DMG } from '../src/game/items';
 import { derive } from '../src/game/stats';
 import type { ItemBase, RollOpts } from '../src/game/items';
 import { CLASS_IDS, EQUIP_SLOTS, ICON_KEYS, SLOTS, STAT_KEYS, WORD_IDS } from '../src/game/types';
 import type { Affix, BaseWordId, ClassId, EquipSlot, Item, OffhandKind, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from '../src/game/types';
+import { swordsAsBefore } from './swords_as_before';
+
+// (the plain sword among the things to be had, as this file was written for it: tests/swords_as_before.ts)
+swordsAsBefore();
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -128,12 +132,15 @@ const AFFIX_SPEC: Record<string, AffixSpec> = {
   fireRes: { kind: 'suffix', slots: NOT_MAINHAND, at1: [8, 14], at15: [25, 40] },
   frostRes: { kind: 'suffix', slots: NOT_MAINHAND, at1: [8, 14], at15: [25, 40] },
   lightRes: { kind: 'suffix', slots: NOT_MAINHAND, at1: [8, 14], at15: [25, 40] },
+  // (POISON DAMAGE, as fire's: game/items.ts POISON_DMG, on at his yes of 12 Nov 2026, “Switch them on now”)
+  poisonPct: { kind: 'prefix', slots: OFFENCE_AND_OFFHAND, at1: [6, 12], at15: [25, 45] },
+  poisonRes: { kind: 'suffix', slots: NOT_MAINHAND, at1: [8, 14], at15: [25, 40] },
   goldFind: { kind: 'suffix', slots: FIND, at1: [8, 15], at15: [30, 50] },
   magicFind: { kind: 'suffix', slots: FIND, at1: [8, 15], at15: [30, 50] },
 };
 /** Everything the two newest slots may roll, as listed in the brief ('damage' is "Adds X-Y Damage"). */
-const OFFHAND_AFFIXES = ['maxLife', 'maxMana', 'armor', 'str', 'dex', 'int', 'fireRes', 'frostRes', 'lightRes', 'critChance', 'dmgPct', 'firePct', 'frostPct', 'lightPct', 'cdr', 'lifeRegen', 'manaRegen'];
-const BELT_AFFIXES = ['maxLife', 'maxMana', 'armor', 'str', 'dex', 'int', 'fireRes', 'frostRes', 'lightRes', 'lifeRegen', 'manaRegen', 'goldFind', 'magicFind'];
+const OFFHAND_AFFIXES = ['maxLife', 'maxMana', 'armor', 'str', 'dex', 'int', 'fireRes', 'frostRes', 'lightRes', 'critChance', 'dmgPct', 'firePct', 'frostPct', 'lightPct', 'cdr', 'lifeRegen', 'manaRegen', 'poisonPct', 'poisonRes'];
+const BELT_AFFIXES = ['maxLife', 'maxMana', 'armor', 'str', 'dex', 'int', 'fireRes', 'frostRes', 'lightRes', 'lifeRegen', 'manaRegen', 'goldFind', 'magicFind', 'poisonRes'];
 /** The only stats that keep a decimal. */
 const ONE_DECIMAL: StatKey[] = ['lifeRegen', 'manaRegen', 'lifeOnHit'];
 
@@ -168,7 +175,9 @@ function expectedImbue(word: BaseWordId, slot: Slot): ImbuePick[] {
       return offence ? [['prefix', 'lifeOnHit'], ['suffix', 'lifeOnKill']] : [['prefix', 'maxLife'], ['suffix', 'lifeRegen']];
     case 'volatile':
       return offence ? [['prefix', 'areaPct'], ['suffix', 'int']] : [['prefix', 'maxMana'], ['suffix', 'int']];
+    // (POISON DAMAGE on: poison's own, as Flame's; off, as it was: game/items.ts POISON_DMG)
     case 'poison':
+      if (POISON_DMG.on) return element('poisonPct', 'poisonRes', 'poisonMin');
       return offence ? [['prefix', 'dmgPct'], ['suffix', 'dex']] : [['prefix', 'maxLife'], ['suffix', 'dex']];
     // (the new words, Version 19.3: his doc "Wordsmith: The New Words")
     case 'heavy':

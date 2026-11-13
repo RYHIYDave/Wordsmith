@@ -1,0 +1,154 @@
+[
+ {
+  "id": "errandboots",
+  "name": "The Errand Boots",
+  "level": 1,
+  "cls": null,
+  "lines": []
+ },
+ {
+  "id": "tinband",
+  "name": "The Tin Band",
+  "level": 2,
+  "cls": null,
+  "lines": []
+ },
+ {
+  "id": "scrappersmitts",
+  "name": "Scrapper's Mitts",
+  "level": 3,
+  "cls": null,
+  "lines": []
+ },
+ {
+  "id": "coppercharm",
+  "name": "The Copper Charm",
+  "level": 4,
+  "cls": null,
+  "lines": []
+ },
+ {
+  "id": "fledgling",
+  "name": "The Fledgling",
+  "level": 5,
+  "cls": "ranger",
+  "lines": []
+ },
+ {
+  "id": "lanterncap",
+  "name": "The Lantern Cap",
+  "level": 6,
+  "cls": null,
+  "lines": []
+ },
+ {
+  "id": "tapedknuckles",
+  "name": "Taped Knuckles",
+  "level": 7,
+  "cls": "brawler",
+  "lines": []
+ },
+ {
+  "id": "kindlingrod",
+  "name": "The Kindling Rod",
+  "level": 8,
+  "cls": "mage",
+  "lines": [
+   "Every hit is fire. Can deal no other type of damage."
+  ]
+ },
+ {
+  "id": "rotaxe",
+  "name": "The Rot Axe",
+  "level": 10,
+  "cls": "warrior",
+  "lines": [
+   "Deals no physical damage. Its hits poison for 150% of their damage instead, over 4 seconds; poison stacks."
+  ]
+ },
+ {
+  "id": "packstrap",
+  "name": "The Packstrap",
+  "level": 11,
+  "cls": null,
+  "lines": [
+   "You always have Guarding's shield: 10% of your life. Broken, it comes back after 4.0 seconds without taking damage."
+  ]
+ },
+ {
+  "id": "hornbook",
+  "name": "The Hornbook",
+  "level": 12,
+  "cls": "warlock",
+  "lines": []
+ },
+ {
+  "id": "borrowedspanner",
+  "name": "The Borrowed Spanner",
+  "level": 13,
+  "cls": "tinkerer",
+  "lines": []
+ },
+ {
+  "id": "quiltedcoat",
+  "name": "The Quilted Coat",
+  "level": 14,
+  "cls": null,
+  "lines": []
+ },
+ {
+  "id": "poisonerslocket",
+  "name": "The Poisoner's Locket",
+  "level": 16,
+  "cls": null,
+  "lines": []
+ },
+ {
+  "id": "surething",
+  "name": "The Sure Thing",
+  "level": 18,
+  "cls": null,
+  "lines": [
+   "Every hit is a critical hit.",
+   "Critical hits do no extra damage."
+  ]
+ },
+ {
+  "id": "longroad",
+  "name": "The Long Road",
+  "level": 21,
+  "cls": null,
+  "lines": []
+ },
+ {
+  "id": "thousandcuts",
+  "name": "The Thousand Cuts",
+  "level": 23,
+  "cls": null,
+  "lines": []
+ },
+ {
+  "id": "vaultdoor",
+  "name": "The Vault Door",
+  "level": 25,
+  "cls": null,
+  "lines": []
+ },
+ {
+  "id": "rimecrown",
+  "name": "The Rime Crown",
+  "level": 27,
+  "cls": null,
+  "lines": []
+ },
+ {
+  "id": "lastword",
+  "name": "The Last Word",
+  "level": 30,
+  "cls": null,
+  "lines": [
+   "Every word on your tap and hold attacks is 50% stronger.",
+   "Your abilities' cooldowns are 75% longer."
+  ]
+ }
+]

@@ -98,7 +98,7 @@ import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 import { leadPoint } from './lock';
 import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_SOUNDS, HURT_BIG, VOICE, bossSound } from './sound_families';
 import { BOSS_CALLS, bossCall } from './boss_calls';
-import { UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
+import { LEVEL_DEFS, LEVEL_UNIQUES, UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, levelChance, levelPoolFor, rolledTune, uniqueDef, urollOf, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
 import type { BendCtx, UniqueDef } from './uniques';
 import { FOE_WORDS } from './defs';
 import { foeAfterBlow, foeBlast, foeDeath, foeHarder, foeTick, foeWordsOf, foeZone, layProblem, rankOfElement, secondElement, upTo, wordsWeight } from './foe_melds';
@@ -554,6 +554,13 @@ export class Game {
    * off, or with none worn.
    */
   worn: string[] = [];
+  /**
+   * UNIQUE ITEMS, ITS NUMBERS ROLL (his words, 12 Nov 2026: “We just want a little randomness, and to give a player something to keep
+   * playing for, like a really well rolled unique”): UNIQUE_TUNE as the pieces he wears rolled it (game/uniques.ts rolledTune), read
+   * by every rule of theirs here; and each “half as strong again” by its piece's id.
+   */
+  ut: typeof UNIQUE_TUNE = UNIQUE_TUNE;
+  halves: Record<string, number> = {};
   uq = {
     /** THE CLOCKWORK SONGBIRD: his life is full (the bird sings). */
     full: true,
@@ -591,6 +598,15 @@ export class Game {
     tomeAt: new Map<number, number>(),
     /** THE UNSIGNED PACT: the demon is staying on his life. */
     feeding: false,
+    /** DEADWEIGHT (Set 1): Smashes in a row so far, when the last was, the weight the Smash being made carries, and whether it lands as an Earthquake. */
+    weight: 0,
+    weightAt: -1e9,
+    weightHit: 0,
+    weightQuake: false,
+    /** STARBREAKER (Set 1): where the meteor called with an Earthquake begun is falling. */
+    meteor: null as { x: number; y: number } | null,
+    /** THE PACKSTRAP (a leveling unique): when a blow last reached him. */
+    hurtAt: -1e9,
   };
   /** THE FLESHMANCER'S BRAND: the elite risen to fight for him, or null. */
   risen: Risen | null = null;
@@ -1296,6 +1312,15 @@ export class Game {
     const h = this.hero;
     // (UNIQUE ITEMS: which he wears that work for him; none with the switch off)
     this.worn = wornUniques(h.gear, h.cls);
+    // (ITS NUMBERS ROLL: the tune as the pieces he wears rolled it)
+    if (this.worn.length) {
+      const r = rolledTune(h.gear, this.worn);
+      this.ut = r.tune;
+      this.halves = r.halves;
+    } else {
+      this.ut = UNIQUE_TUNE;
+      this.halves = {};
+    }
     h.d = derive(h.cls, h.level, h.attrs, h.gear, this.meta.limit, this.worn.length ? [...talentMods(h.cls, h.talents), ...this.uniqueMods()] : talentMods(h.cls, h.talents));
     // (THE SKILL TREES: Thick Skin)
     if (this.was('thickskin')) h.d.maxLife = Math.round(h.d.maxLife * TALENT_TUNE.thickSkin);
@@ -1380,6 +1405,13 @@ export class Game {
       const wb = bent ? bent.behind : s.behind;
       s.eff = bent ? { front: bent.front, behind: bent.behind } : undefined;
       s.r = resolveSkill(def, dark ? wf.map(() => null) : wf, dark ? wb.map(() => null) : wb, grows, h.d, this.meta.limit, bent && !dark ? { boost: bent.boost, meldBoost: bent.meldBoost, meld: bent.meld } : undefined);
+      // (THE LEVELING UNIQUES: The Kindling Rod, every hit fire and no other kind of damage; The Last Word, every cooldown longer, as
+      // it rolled)
+      if (this.wears('kindlingrod')) {
+        s.r.element = 'fire';
+        s.r.poison = 0;
+      }
+      if (this.wears('lastword')) s.r.cooldown *= 1 + this.wornRoll('lastword', 'cool') / 100;
       // (UNIQUE ITEMS: Broken Shackles, the swipe move with no cooldown; The Cloven Boots, the demon's Smoke Step with none)
       if (i === 2 && (this.wears('brokenshackles') || (this.wears('clovenboots') && h.form === 'demon'))) {
         s.r.cooldown = 0;
@@ -1389,8 +1421,8 @@ export class Game {
       if (def.kind === 'leap' && this.was('drilledleap')) s.r.cooldown *= TALENT_TUNE.drilledLeap;
       // (the roll's two charges are a thing of cooldowns: when mana is the limit, mana is; Light Step, three)
       s.maxCharges = def.kind === 'roll' && this.meta.limit === 'cooldown' ? (this.has('lightstep') ? TALENT_TUNE.lightStep.charges : 2) : 1;
-      // (UNIQUE ITEMS: The Sprung Heels, the Brawler's jump twice)
-      if (def.kind === 'vjump' && this.wears('sprungheels')) s.maxCharges = UNIQUE_TUNE.heels.jumps;
+      // (UNIQUE ITEMS: Springheel, the Brawler's jump twice)
+      if (def.kind === 'vjump' && this.wears('sprungheels')) s.maxCharges = this.ut.heels.jumps;
       if (changed[i]) {
         s.charges = waiting[i] && s.r.cooldown > 0 ? 0 : 1;
         s.cd = s.charges < 1 ? s.r.cooldown : 0;
@@ -4862,6 +4894,13 @@ export class Game {
         h.shield = 0;
       }
     }
+    // (THE LEVELING UNIQUES: The Packstrap, Guarding's shield always on him; broken, back once no blow has reached him for a while. His
+    // words: “always gives GUARDIAN” so you always have a shield.  Comes back after a few seconds after it breaks.  Nothing else.”;
+    // “4 seconds without taking damage”)
+    if (this.worn.length && this.wears('packstrap') && h.shield <= 0 && this.time - this.uq.hurtAt >= this.wornRoll('packstrap', 'back')) {
+      h.shield = Math.max(1, Math.round(d.maxLife * (this.wornRoll('packstrap', 'size') / 100)));
+      h.shieldT = 1e9;
+    }
     if (h.chillT > 0) h.chillT -= dt;
     if (h.shockT > 0) h.shockT -= dt;
     if (h.burnT > 0) h.burnT -= dt;
@@ -5078,8 +5117,8 @@ export class Game {
     h.potions--;
     if (this.guide) this.guide.flask = true;
     if (blood) {
-      this.uq.bloodT = UNIQUE_TUNE.bloodprice.secs;
-      this.emit({ t: 'unique', id: 'bloodprice', what: 'fury', x: h.x, y: h.y, secs: UNIQUE_TUNE.bloodprice.secs });
+      this.uq.bloodT = this.ut.bloodprice.secs;
+      this.emit({ t: 'unique', id: 'bloodprice', what: 'fury', x: h.x, y: h.y, secs: this.ut.bloodprice.secs });
       this.emit({ t: 'buff', kind: 'might', x: h.x, y: h.y, stacks: 5 });
     } else this.healHero(h.d.maxLife * TUNE.potionHeal * (this.was('secondwind') ? TALENT_TUNE.secondWind : 1));
     this.sfx('potion');
@@ -5123,8 +5162,21 @@ export class Game {
     const wind = Math.min(def.windup, 0.4 / rate);
     // STRIKE, A TWO-HIT COMBO (defs.ts, COMBO): the second swing if this one comes soon enough
     // after a first, else the first; and a small step forward with either.
-    // (UNIQUE ITEMS: The Windcutter, Strikes in a row counted: one that follows the last soon enough, as his combo's second does)
+    // (UNIQUE ITEMS: Windcutter, Strikes in a row counted: one that follows the last soon enough, as his combo's second does)
     if (s.id === 'strike' && this.wears('windcutter')) this.uq.strikes = h.comboT > 0 ? this.uq.strikes + 1 : 1;
+    // (UNIQUE ITEMS, SET 1: Deadweight, each Smash in a row heavier: harder, and slower; the last of them an Earthquake of its own)
+    if (s.id === 'smash' && this.wears('deadweight')) {
+      const W = this.ut.weight;
+      const U = this.uq;
+      U.weightHit = U.weight;
+      rate /= 1 + W.slower * U.weight;
+      h.swingT = 1 / rate;
+      U.weight++;
+      U.weightQuake = U.weight >= W.every;
+      if (U.weightQuake) U.weight = 0;
+      U.weightAt = this.time;
+      this.emit({ t: 'unique', id: 'deadweight', what: 'weight', x: h.x, y: h.y, r: U.weightQuake ? W.every : U.weight });
+    }
     if (COMBO.on && def.kind === 'melee') {
       h.combo = h.combo === 0 && h.comboT > 0 ? 1 : 0;
       h.comboT = 1 / rate + TUNE.comboWindow;
@@ -5173,6 +5225,16 @@ export class Game {
    */
   private begin(i: number, tx: number, ty: number, wind: number): void {
     const h = this.hero;
+    // (UNIQUE ITEMS, SET 1: Starbreaker, an Earthquake begun calls a meteor down out of the sky, over the spot the maul will come
+    // down on: it falls while he winds up, and lands as the hammer hits, deliver)
+    if (h.skills[i]?.id === 'quake' && this.wears('starbreaker')) {
+      let reach = SKILLS.quake.ahead ?? 1.4;
+      while (reach > 0.2 && !this.isOpen(h.x + h.fx * reach, h.y + h.fy * reach)) reach -= 0.2;
+      const x = h.x + h.fx * reach;
+      const y = h.y + h.fy * reach;
+      this.uq.meteor = { x, y };
+      this.emit({ t: 'unique', id: 'starbreaker', what: 'fall', x, y, r: UNIQUE_TUNE.star.r, secs: wind });
+    }
     // (Strike's combo, defs.ts COMBO: anything but Strike between two Strikes makes the second the first swing again)
     if (i !== 0) {
       h.combo = 0;
@@ -5266,8 +5328,8 @@ export class Game {
       else this.deliver(0, h.x, h.y, h.x + h.fx, h.y + h.fy, 1, true);
       // (THE WARLOCK's tree: the demon's rakes counted, every third a Hellwave)
       if (s.id === 'rake') this.rakeDone(h.x, h.y, h.fx, h.fy, 1);
-      // (UNIQUE ITEMS: The Windcutter, every third Strike in a row sends a blade of wind on ahead)
-      if (s.id === 'strike' && this.uq.strikes >= UNIQUE_TUNE.windcutter.every && this.wears('windcutter')) {
+      // (UNIQUE ITEMS: Windcutter, every third Strike in a row sends a blade of wind on ahead)
+      if (s.id === 'strike' && this.uq.strikes >= this.ut.windcutter.every && this.wears('windcutter')) {
         this.uq.strikes = 0;
         this.windBlade();
       }
@@ -5339,7 +5401,7 @@ export class Game {
     const tick = (def.tick ?? 0.25) / s.r.pace;
     const byMana = s.r.mana > 0;
     if (ch.bites > 0) {
-      // (UNIQUE ITEMS: The Millstone, Whirlwind has no time limit: he spins for as long as he holds)
+      // (UNIQUE ITEMS: Millstone, Whirlwind has no time limit: he spins for as long as he holds)
       const spent = byMana ? h.mana <= 0 : ch.t >= length - 1e-6 && !(def.kind === 'whirl' && this.wears('millstone'));
       if (!c.hold || spent) {
         this.endChannel(true);
@@ -5587,7 +5649,7 @@ export class Game {
     if (!this.moveOpen(2)) return;
     // (FROZEN IN PLACE by the Drowned's frost grab: no dodging out of it)
     if ((h.iceT ?? 0) > 0) return;
-    // (UNIQUE ITEMS: The Short Way, Warp again soon enough and she snaps back to where she started, the Warp not spent)
+    // (UNIQUE ITEMS: Shortcut, Warp again soon enough and she snaps back to where she started, the Warp not spent)
     if (this.uq.back && SKILLS[s.id].kind === 'warp' && this.wears('shortway') && this.time <= this.uq.back.until) {
       this.snapBack();
       return;
@@ -5668,10 +5730,10 @@ export class Game {
       this.emit({ t: 'burst', x: h.x, y: h.y, r: 0.8, el: 'frost', style: 'warp' });
       // (THE SKILL TREES: Frost Warp, Flame Warp; Storm Warp where she arrives, below)
       if (TALENTS.on) this.talentWarp(x0, y0, land.x, land.y);
-      // (UNIQUE ITEMS: The Short Way, her Warp talents go off at both ends; and for a moment warping again snaps her back)
+      // (UNIQUE ITEMS: Shortcut, her Warp talents go off at both ends; and for a moment warping again snaps her back)
       if (this.wears('shortway')) {
         if (TALENTS.on) this.talentWarp(land.x, land.y, x0, y0);
-        this.uq.back = { x: x0, y: y0, until: this.time + UNIQUE_TUNE.shortWay.secs };
+        this.uq.back = { x: x0, y: y0, until: this.time + this.ut.shortWay.secs };
       }
       h.x = land.x;
       h.y = land.y;
@@ -6232,7 +6294,7 @@ export class Game {
     const h = this.hero;
     let sp = h.d.moveSpeed * (1 + h.haste / 100) * (1 + this.talentSpeed() / 100);
     // (UNIQUE ITEMS: The Half-Carved Hand, faster on his feet below half his life)
-    if (this.wears('halfcarvedhand') && h.life < h.d.maxLife * UNIQUE_TUNE.halfHand.below) sp *= 1 + UNIQUE_TUNE.halfHand.move;
+    if (this.wears('halfcarvedhand') && h.life < h.d.maxLife * this.ut.halfHand.below) sp *= 1 + this.ut.halfHand.move;
     if (h.chillT > 0) sp *= 1 - h.chill;
     // (THE HIGH CITY, FLOOR 19: slowed in the King's Hush's grey fog: game/act1_rules/gking.ts)
     if ((h.slowT ?? 0) > 0) sp *= 1 - (h.slowBy ?? 0);
@@ -6255,7 +6317,7 @@ export class Game {
 
   /** How many globes his combos hold: three; UNIQUE ITEMS, The Fourth Globe: four. */
   vetMost(): number {
-    return this.wears('fourthglobe') ? UNIQUE_TUNE.fourth.globes : 3;
+    return this.wears('fourthglobe') ? this.ut.fourth.globes : 3;
   }
 
   /** Is his combo locked: every globe it holds filled? */
@@ -6363,7 +6425,7 @@ export class Game {
       v.globes.push('jump');
       v.queue.push({ id: 'dodge', globe: v.globes.length - 1, tx: sx, ty: sy });
       v.idle = 0;
-      // (UNIQUE ITEMS: The Sprung Heels, he can jump again in the air: the jump he is in ends here, and the next begins from it)
+      // (UNIQUE ITEMS: Springheel, he can jump again in the air: the jump he is in ends here, and the next begins from it)
       if (v.move && v.move.id === 'dodge' && v.move.f >= VET_MOVES.dodge.air![0] && this.wears('sprungheels')) {
         v.done.push('dodge');
         v.move = null;
@@ -6568,7 +6630,7 @@ export class Game {
       if (this.vetFull(v) && !v.queue.length) {
         v.globes = [];
         v.done = [];
-        // (UNIQUE ITEMS: The Winning Streak, every combo he finishes makes his next blows hit harder)
+        // (UNIQUE ITEMS: Hot Streak, every combo he finishes makes his next blows hit harder)
         if (this.wears('winningstreak')) {
           this.uq.streak++;
           this.emit({ t: 'unique', id: 'winningstreak', what: 'streak', x: h.x, y: h.y, mid: this.uq.streak });
@@ -7199,7 +7261,7 @@ export class Game {
     if (n === 0 && !echo && this.wears('foremanswrench')) {
       for (const g0 of this.golemsUp()) {
         if (g0.act === 'arrive') continue;
-        const gv: Vial = { x0: g0.x, y0: g0.y, x1, y1, t: 0, flight: T.flight, skill: i, frac: frac * UNIQUE_TUNE.foreman.share, wake: false, foreman: true };
+        const gv: Vial = { x0: g0.x, y0: g0.y, x1, y1, t: 0, flight: T.flight, skill: i, frac: frac * this.ut.foreman.share, wake: false, foreman: true };
         this.brewVial(gv);
         this.vials.push(gv);
         this.emit({ t: 'vial', id: -1, x0: g0.x, y0: g0.y, x1, y1, flight: T.flight, n: 0, ...(gv.big ? { big: true } : {}) });
@@ -7212,7 +7274,7 @@ export class Game {
    * one. MAD MIXTURE: a brew at random, burning, freezing or poisoning.)
    */
   private brewVial(v: Vial): void {
-    // (UNIQUE ITEMS: The Sticky Wrench, her vials stick to what they hit and burst a moment later, twice as wide)
+    // (UNIQUE ITEMS: Tarwrench, her vials stick to what they hit and burst a moment later, twice as wide)
     if (this.wears('stickywrench') && !v.bomb) v.sticky = true;
     if (this.has('thebigone') && ++this.vialsThrown % TINKER_TUNE.talents.bigOne.every === 0) v.big = true;
     if (this.has('madmixture')) v.brew = this.rng.pick<Brew>(['burn', 'freeze', 'poison']);
@@ -7363,8 +7425,8 @@ export class Game {
     // (CLUSTER VIALS: a little one bursts smaller; THE BIG ONE, three times as wide)
     if (v.little) rad *= T.cluster.size;
     if (v.big) rad *= T.bigOne.wide;
-    // (UNIQUE ITEMS: The Sticky Wrench, twice as wide)
-    if (v.sticky) rad *= UNIQUE_TUNE.sticky.wide;
+    // (UNIQUE ITEMS: Tarwrench, twice as wide)
+    if (v.sticky) rad *= this.ut.sticky.wide;
     const x = v.x1;
     const y = v.y1;
     this.emit({ t: 'vialBurst', x, y, r: rad, ...(v.little ? { little: true } : {}), ...(v.big ? { big: true } : {}), ...(v.brew ? { brew: v.brew } : {}), ...(v.bomb ? { bomb: true } : {}) });
@@ -7461,7 +7523,7 @@ export class Game {
       for (const g0 of this.golemsUp()) {
         const gs = h.skills[g0.skill];
         if (!gs || SKILLS[gs.id].kind !== 'golem' || g0.towed || g0.act === 'jump') continue;
-        this.golemPounds(g0.skill, g0.x, g0.y, gs.r.countDmg * UNIQUE_TUNE.tow.share, 0, false, g0);
+        this.golemPounds(g0.skill, g0.x, g0.y, gs.r.countDmg * this.ut.tow.share, 0, false, g0);
       }
     }
     const s = h.skills[2];
@@ -7480,7 +7542,7 @@ export class Game {
   /** How many Golems she may have out at once: one; two with her tree's MARK II. */
   private golemsMost(): number {
     // (UNIQUE ITEMS: The Second Whistle, one more than she would have, at full strength)
-    return (this.has('markii') ? TINKER_TUNE.talents.markII : 1) + (this.wears('secondwhistle') ? UNIQUE_TUNE.whistle.more : 0);
+    return (this.has('markii') ? TINKER_TUNE.talents.markII : 1) + (this.wears('secondwhistle') ? this.ut.whistle.more : 0);
   }
 
   /** Her Golems out and not winding down. */
@@ -7763,9 +7825,9 @@ export class Game {
     for (let k = this.vials.length - 1; k >= 0; k--) {
       const v = this.vials[k];
       v.t += dt;
-      // (UNIQUE ITEMS: The Sticky Wrench: landed, it sticks, to the enemy it landed on if there is one, and goes where that goes)
+      // (UNIQUE ITEMS: Tarwrench: landed, it sticks, to the enemy it landed on if there is one, and goes where that goes)
       if (v.sticky && v.fuse === undefined && v.t >= v.flight) {
-        const S = UNIQUE_TUNE.sticky;
+        const S = this.ut.sticky;
         v.fuse = S.fuse;
         let bd: number = S.grab;
         for (const m of this.monsters) {
@@ -8782,7 +8844,7 @@ export class Game {
       if ((h.pact ?? 0) <= 0) {
         // (UNIQUE ITEMS: The Unsigned Pact, the pact dry, the demon stays for as long as he can pay: it feeds on his life, and lets
         // him go when he has little left, or at his word: a tap on him)
-        const U = UNIQUE_TUNE.pact;
+        const U = this.ut.pact;
         if (this.wears('unsignedpact') && h.life > h.d.maxLife * U.floor && !c.change) {
           if (!this.uq.feeding) this.emit({ t: 'unique', id: 'unsignedpact', what: 'feeds', x: h.x, y: h.y });
           this.uq.feeding = true;
@@ -8929,7 +8991,7 @@ export class Game {
     // (THE WARRIOR'S WARHAMMER: Bulldozer, those carried are stunned where he stops)
     for (const id of this.carried) {
       const m = this.monsters.find((o) => o.id === id);
-      if (m && !m.dead) this.stunMonster(m, WARRIOR_TUNE.bulldozer.stun);
+      if (m && !m.dead) this.hammerStun(m, WARRIOR_TUNE.bulldozer.stun);
     }
     this.carried = [];
     const s = h.skills[2];
@@ -8956,9 +9018,15 @@ export class Game {
       else this.after(0.28 * k, () => this.blast(2, x, y, rad * 1.15, r.countDmg, 'land', k, false, false));
     }
     if (r.echo > 0) this.echoOf(2, x, y, h.fx, h.fy, () => this.blast(2, x, y, rad, r.countDmg * r.echo, 'land', 0, true, false));
-    // (UNIQUE ITEMS: The Pivot, Lunge ends in a free turn of Whirlwind where he lands)
+    // (UNIQUE ITEMS, SET 1: Widowfall, Leaping Chop lands with a Cleave all round him; all it strikes bleed, hitMonster)
+    if (s.id === 'chop' && this.wears('widowfall')) {
+      const W = UNIQUE_TUNE.widow;
+      this.emit({ t: 'unique', id: 'widowfall', what: 'cleave', x: h.x, y: h.y, r: W.r });
+      this.blast(2, h.x, h.y, W.r, r.countDmg * W.share, 'whirl', 0, false, false);
+    }
+    // (UNIQUE ITEMS: Pirouette, Lunge ends in a free turn of Whirlwind where he lands)
     if (this.wears('pivot') && this.moveOpen(1) && SKILLS[h.skills[1].id].kind === 'whirl') {
-      const P = UNIQUE_TUNE.pivot;
+      const P = this.ut.pivot;
       this.emit({ t: 'unique', id: 'pivot', what: 'turn', x: h.x, y: h.y, secs: P.gap * P.cuts });
       for (let k = 0; k < P.cuts; k++) {
         this.after(P.gap * k, () => {
@@ -9032,6 +9100,13 @@ export class Game {
       // (THE WARRIOR'S WARHAMMER: Tremors, Earthquake three shakes, each weaker; and Twin's second after each)
       const T = WARRIOR_TUNE.tremors;
       const shakes = s.id === 'quake' && this.has('tremors') ? T.n : 1;
+      // (UNIQUE ITEMS, SET 1: Starbreaker, the meteor lands as the hammer hits; with Tremors its fire goes out again with each shake)
+      const star = s.id === 'quake' && primary && this.wears('starbreaker');
+      if (star) {
+        this.uq.meteor = null;
+        this.meteorLands(i, cx, cy, 1, true);
+        for (let q = 1; q < shakes; q++) this.after(q * T.gap, () => this.meteorLands(i, cx, cy, T.shares[q] ?? T.shares[T.shares.length - 1], false));
+      }
       for (let q = 0; q < shakes; q++) {
         const share = each * (shakes > 1 ? T.shares[q] ?? T.shares[T.shares.length - 1] : 1);
         const round = rad + (shakes > 1 ? q * T.wider : 0);
@@ -9107,9 +9182,9 @@ export class Game {
       // (THE SKILL TREES: Long Shot, further and faster; Piercing, through one more; Split Shot, every third in three)
       const long = this.was('longshot') ? TALENT_TUNE.longShot : 1;
       const split = primary && this.was('splitshot') && ++this.shots % TALENT_TUNE.splitShot.every === 0;
-      // (UNIQUE ITEMS: The Fan, each Shot three arrows in a fan, each a little weaker; one enemy takes only one of them)
+      // (UNIQUE ITEMS: Threefold, each Shot three arrows in a fan, each a little weaker; one enemy takes only one of them)
       const fanned = primary && s.id === 'shot' && this.wears('fan');
-      const F = UNIQUE_TUNE.fan;
+      const F = this.ut.fan;
       // (THE WARRIOR'S BATTLE AXE: Twin Axes, two thrown, one to each side of the aim, each for less)
       const twinAxes = def.returns === true && this.has('twinaxes');
       const fan = twinAxes ? [-WARRIOR_TUNE.twinAxes.fan, WARRIOR_TUNE.twinAxes.fan] : split ? [-TALENT_TUNE.splitShot.fan, 0, TALENT_TUNE.splitShot.fan] : fanned ? Array.from({ length: F.arrows }, (_, n) => (n - (F.arrows - 1) / 2) * F.spread) : [0];
@@ -9183,7 +9258,7 @@ export class Game {
       // The arrows go up from the bow, and a moment later begin to come down round the spot that
       // was aimed at: as near to there as the hero can see, within the bow's reach. (The echo is a
       // second, weaker rain on the same spot.)
-      // (UNIQUE ITEMS: The Rainwalker, Volley rains round him and goes with him)
+      // (UNIQUE ITEMS: Rainwalker, Volley rains round him and goes with him)
       const walker = this.wears('rainwalker');
       const p = walker ? { x: h.x, y: h.y } : this.reachPoint(tx, ty, def.range);
       // (THE SKILL TREES: Hail, longer and wider)
@@ -9221,6 +9296,42 @@ export class Game {
     }
   }
 
+  /**
+   * (UNIQUE ITEMS, SET 1: STARBREAKER) The meteor his Earthquake called lands at (x, y), as the hammer hits (`first`): its fire
+   * strikes all round, and the floor is left burning; with Tremors, its fire goes out again with each later shake, `k` as hard.
+   */
+  private meteorLands(i: number, x: number, y: number, k: number, first: boolean): void {
+    const S = UNIQUE_TUNE.star;
+    if (this.over) return;
+    this.emit({ t: 'unique', id: 'starbreaker', what: first ? 'land' : 'shake', x, y, r: S.r });
+    // (the build's plain stand-in: a blast of fire; its own picture, the meteor falling and striking, is render/set1_fx.ts's)
+    this.emit({ t: 'burst', x, y, r: S.r, el: 'fire', style: 'blast' });
+    this.sfx('fire', first ? 0.9 : 0.6);
+    if (first) this.emit({ t: 'shake', amount: 3 });
+    for (const m of this.monsters) {
+      if (m.dead || this.shutIn(m) || Math.hypot(m.x - x, m.y - y) > S.r + m.r) continue;
+      this.damageMonster(m, this.talentHit('fire', S.share * k), 'fire', false, i);
+    }
+    if (first && this.roomForZone() && this.onFloor(x, y)) {
+      this.zones.push({ x, y, r: S.burnR, t: 0, dur: S.burnSecs, kind: 'burn', element: 'fire', dmg: this.talentHit('fire', S.burn), slow: 0, tick: 0.2, hostile: false, skill: -1, words: [], from: '' });
+      this.emit({ t: 'zone', kind: 'burn', x, y, r: S.burnR, el: 'fire' });
+    }
+  }
+
+  /** (UNIQUE ITEMS, SET 1: DEADWEIGHT) The weight's last Smash, ability `i`, lands at (x, y) as an Earthquake of its own: the ground quakes, and what stands on it is struck and stunned. */
+  private weightQuake(i: number, x: number, y: number, dx: number, dy: number, frac: number): void {
+    const W = this.ut.weight;
+    this.emit({ t: 'unique', id: 'deadweight', what: 'quake', x, y, r: W.r });
+    this.emit({ t: 'quake', x, y, q: 0, fx: dx, fy: dy });
+    this.emit({ t: 'shake', amount: 3 });
+    this.sfx('slam');
+    this.blast(i, x, y, W.r, frac * W.quake, 'slam');
+    const stun = SKILLS.quake.stun ?? 0.6;
+    for (const m of this.monsters) {
+      if (!m.dead && !this.shutIn(m) && Math.hypot(m.x - x, m.y - y) <= W.r + m.r) this.hammerStun(m, stun);
+    }
+  }
+
   /** One melee hit from (ox, oy) in direction (dx, dy). */
   private strike(i: number, ox: number, oy: number, dx: number, dy: number, frac: number, n = 0, echo = false): void {
     const r = this.hero.skills[i].r;
@@ -9239,6 +9350,11 @@ export class Game {
     // (the spot no smaller for a word that narrows a blow, Precise: the maul's head is the size it is; wider for one that widens it)
     const spot = def.spot && !wide ? { x: ox + dx * def.spot.at, y: oy + dy * def.spot.at, r: def.spot.r * Math.max(1, r.size) } : null;
     if (spot) this.emit({ t: 'burst', x: spot.x, y: spot.y, r: spot.r + 0.3, el: r.element, style: 'land', words, n, echo });
+    // (UNIQUE ITEMS, SET 1: Deadweight, the last Smash of the weight lands as an Earthquake of its own)
+    if (r.id === 'smash' && n === 0 && !echo && this.uq.weightQuake) {
+      this.uq.weightQuake = false;
+      this.weightQuake(i, spot ? spot.x : ox + dx * reach * 0.8, spot ? spot.y : oy + dy * reach * 0.8, dx, dy, frac);
+    }
     // (THE WARRIOR'S BATTLE AXE: Cleave strikes every enemy in its arc, as Sweeping Cut makes any swing do; its arc its own)
     const cleave = this.now('sweepingcut') || def.arc === true || wide || !!spot;
     const minDot = def.arcCos ?? 0.35;
@@ -9382,7 +9498,7 @@ export class Game {
       }
       // (UNIQUE ITEMS: The Shepherd's Crook, the Orb follows him)
       if (this.wears('shepherdscrook')) {
-        const C = UNIQUE_TUNE.crook;
+        const C = this.ut.crook;
         const hh = this.hero;
         const dd = Math.hypot(hh.x - o.x, hh.y - o.y);
         if (dd > C.near) {
@@ -10195,8 +10311,12 @@ export class Game {
       crit = true;
       m.markT = 0;
     }
+    // (THE LEVELING UNIQUES: The Sure Thing, every hit a critical one, and a critical hit no harder: his “100% chance to crit, crits
+    // do no extra damage”)
+    const sureThing = this.worn.length > 0 && this.wears('surething');
+    if (sureThing) crit = true;
     // (Hunter's Mark: the mark's critical is a triple one)
-    if (crit) dmg *= 1 + (d.critMult / 100) * (spent && this.has('huntersmark') ? TALENT_TUNE.huntersMark : 1);
+    if (crit && !sureThing) dmg *= 1 + (d.critMult / 100) * (spent && this.has('huntersmark') ? TALENT_TUNE.huntersMark : 1);
     if (this.worn.length) {
       // (UNIQUE ITEMS: The Queen's Talons, each critical hit calls a bird; The Drowned Arm, the enemy he is fighting is the one he
       // last struck; The Physician's Coat, hits landed on elites and bosses refill his flasks)
@@ -10205,10 +10325,12 @@ export class Game {
         this.uq.armId = m.id;
         this.uq.armAt = this.time;
       }
-      if ((m.elite || m.boss) && this.wears('physicianscoat') && ++this.uq.coatHits >= UNIQUE_TUNE.coat.hits) {
+      if ((m.elite || m.boss) && this.wears('physicianscoat') && ++this.uq.coatHits >= this.ut.coat.hits) {
         this.uq.coatHits = 0;
         if (h.potions < TUNE.potionMax) h.potions++;
       }
+      // (SET 1: Death Knell, struck while it rings, it peals)
+      if ((m.knellT ?? 0) > 0 && this.wears('deathknell')) this.peal(m);
     }
     // (WORDMELDING: Avalanche behind, a hit on a chilled enemy hits harder)
     if (r.meldBehind === 'avalanche' && m.chillT > 0) {
@@ -10231,10 +10353,10 @@ export class Game {
       m.burnT = (3 + (sear ? TALENT_TUNE.searing.secs : 0)) * r.last;
     }
     if (r.chill > 0) this.chillMonster(m, r.chill);
-    // (UNIQUE ITEMS: The Prism, fire, frost and lightning each count as all three: what one of them hits burns, is chilled and is shocked)
+    // (UNIQUE ITEMS: Prismheart, fire, frost and lightning each count as all three: what one of them hits burns, is chilled and is shocked)
     const prism = r.element !== 'phys' && this.wears('prism');
     if (prism) {
-      const Pm = UNIQUE_TUNE.prism;
+      const Pm = this.ut.prism;
       if (r.ignite <= 0) {
         const dps = (dmg * Pm.burn) / 3;
         if (m.burnT <= 0) this.emit({ t: 'ignite', x, y });
@@ -10264,11 +10386,18 @@ export class Game {
     }
     // (THE CITY'S WORDS: a cursed one struck, its curse flares)
     if (!quiet && (m.hexT ?? 0) > 0) this.emit({ t: 'hexFlare', id: m.id });
-    this.damageMonster(m, dmg, r.element, crit, i, !quiet && this.fronts(i).includes('power'), front);
+    // (THE LEVELING UNIQUES: The Rot Axe, a physical hit does no harm of its own; it poisons instead, below. His words: “a battle axe
+    // that deals no physical damage but deals 150% poison damage and has 10-20 flat poison damage on it”)
+    const rot = r.element === 'phys' && this.worn.length > 0 && this.wears('rotaxe') ? this.wornRoll('rotaxe', 'rot') / 100 : 0;
+    if (rot > 0) {
+      m.barT = 4;
+      m.lastSkill = i;
+      if (m.state === 'sleep') this.wakeUp(m);
+    } else this.damageMonster(m, dmg, r.element, crit, i, !quiet && this.fronts(i).includes('power'), front);
     // (HIS THREE NEW WORDS: VAST behind, each hit, not a splash's, splashes a share of itself onto every other enemy near what it hit.
     // Told by its own name, `vastSplash`, with those it reached, the art chat's ask of 9 Nov 2026; until then a 'shock' burst, whose
     // ring is still what is drawn for it where the three's looks are off: render/fx.ts)
-    if (r.vast > 0 && !quiet) {
+    if (r.vast > 0 && !quiet && rot <= 0) {
       const ids: number[] = [];
       for (const o of this.monsters) {
         if (o === m || o.dead || this.shutIn(o) || Math.hypot(o.x - x, o.y - y) > VAST.splashR + o.r) continue;
@@ -10302,7 +10431,11 @@ export class Game {
     // (WORDMELDING: Blight in front, its poison biting harder the lower the enemy's life)
     const blight = r.meld === 'blight' && !m.dead ? 1 + (MELD_TUNE.blight.most - 1) * (1 - Math.max(0, m.life) / m.maxLife) : 1;
     // (LASTING: as hard a second, for longer; FLEETING: harder a second, the same in all in its shorter time)
-    if (r.poison > 0) this.poisonMonster(m, dmg * r.poison * blight * r.pace, i, TUNE.poisonTime * r.last);
+    // (POISON DAMAGE, items.ts POISON_DMG: what his gear adds to a hit that poisons, over the poison's time; THE ROT AXE's dose)
+    let dose = r.poison > 0 ? dmg * r.poison * blight * r.pace : 0;
+    if (rot > 0) dose += (dmg * rot) / TUNE.poisonTime;
+    if (dose > 0 && (st.poisonMin || st.poisonMax)) dose += this.rng.range(st.poisonMin, Math.max(st.poisonMin, st.poisonMax)) / TUNE.poisonTime;
+    if (dose > 0) this.poisonMonster(m, dose, i, TUNE.poisonTime * r.last);
     if (r.meld || r.meldBehind) this.meldHit(m, i, dmg, x, y, quiet, wasBurning, wasChilled);
     if (!m.dead) {
       // HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too
@@ -10326,14 +10459,20 @@ export class Game {
       }
       // (THE WARRIOR'S WARHAMMER: Earthquake stuns what it shakes; Smash staggers what it strikes)
       const sd = SKILLS[r.id];
-      if (sd.stun) this.stunMonster(m, sd.stun);
+      if (sd.stun) this.hammerStun(m, sd.stun);
       if (sd.stagger) this.staggerMonster(m, h.x, h.y);
       // (his tree: Heavy Head, Smash stuns too; Rend, Cleave makes it bleed)
-      if (r.id === 'smash' && this.has('heavyhead')) this.stunMonster(m, WARRIOR_TUNE.heavyHead.secs);
+      if (r.id === 'smash' && this.has('heavyhead')) this.hammerStun(m, WARRIOR_TUNE.heavyHead.secs);
       if (r.id === 'cleave' && this.has('rend')) {
         const R = WARRIOR_TUNE.rend;
         m.bleedDps = Math.max(m.bleedT ? m.bleedDps ?? 0 : 0, (dmg * R.share) / R.secs);
         m.bleedT = R.secs;
+      }
+      // (UNIQUE ITEMS, SET 1: Widowfall, every enemy Leaping Chop strikes bleeds)
+      if (r.id === 'chop' && this.wears('widowfall')) {
+        const W = UNIQUE_TUNE.widow;
+        m.bleedDps = Math.max(m.bleedT ? m.bleedDps ?? 0 : 0, (dmg * W.bleed) / W.secs);
+        m.bleedT = Math.max(m.bleedT ?? 0, W.secs);
       }
       // BINDING in front holds what it hits in place
       if (r.bind > 0) {
@@ -10430,6 +10569,9 @@ export class Game {
    */
   private poisonMonster(m: Monster, dps: number, skill: number, secs: number = TUNE.poisonTime): void {
     if (m.dead) return;
+    // (POISON DAMAGE, items.ts POISON_DMG: all his poison is poison damage, and gear's Poison Damage makes it more)
+    const more = this.hero.d.stats.poisonPct;
+    if (more) dps *= Math.max(0, 1 + more / 100);
     if (m.poisonT <= 0) {
       m.poisonDps = 0;
       m.poisonN = 0;
@@ -10622,6 +10764,31 @@ export class Game {
    * HEAVY: monster `m` is stunned for `secs`: it cannot move or attack, and what it was winding up
    * is broken off. An elite (a guardian too) for half as long; a boss never.
    */
+  /** (THE WARRIOR'S WARHAMMER) A stun of his hammer's. (UNIQUE ITEMS, SET 1: Death Knell, each shorter, its price, and what it stuns rings like a bell.) */
+  private hammerStun(m: Monster, secs: number): void {
+    const knell = this.wears('deathknell');
+    const K = this.ut.knell;
+    this.stunMonster(m, knell ? secs * (1 - K.shorter) : secs);
+    if (!knell || m.dead || m.boss || m.stunT <= 0) return;
+    const fresh = (m.knellT ?? 0) <= 0;
+    m.knellT = K.secs;
+    if (fresh) this.emit({ t: 'unique', id: 'deathknell', what: 'ring', x: m.x, y: m.y, mid: m.id, secs: K.secs });
+  }
+
+  /** (UNIQUE ITEMS, SET 1: DEATH KNELL) Struck while it rings, `m` peals: a shockwave stuns everything round it, and those ring too. */
+  private peal(m: Monster): void {
+    const K = this.ut.knell;
+    m.knellT = 0;
+    this.emit({ t: 'unique', id: 'deathknell', what: 'peal', x: m.x, y: m.y, r: K.r, mid: m.id });
+    // (the build's plain stand-in: a ring of its shock; its own picture is render/set1_fx.ts's)
+    this.emit({ t: 'burst', x: m.x, y: m.y, r: K.r, el: 'phys', style: 'nova' });
+    this.sfx('slam', 0.5);
+    for (const o of this.monsters) {
+      if (o === m || o.dead || this.shutIn(o) || Math.hypot(o.x - m.x, o.y - m.y) > K.r + o.r) continue;
+      this.hammerStun(o, K.stun);
+    }
+  }
+
   private stunMonster(m: Monster, secs: number, meld?: MeldId): void {
     if (m.dead || m.boss) return;
     const t = m.elite ? secs / 2 : secs;
@@ -10664,7 +10831,7 @@ export class Game {
     m.dazeAt = this.time;
     if (m.daze >= 1 - 1e-9) {
       m.daze = 0;
-      this.stunMonster(m, S.stun);
+      this.hammerStun(m, S.stun);
     }
   }
 
@@ -10692,7 +10859,7 @@ export class Game {
     if (this.now('resolute')) return;
     // (THE BRAWLER'S TREE: Iron Chin, nothing knocks him back while he winds up a hold)
     if (this.ironChin()) return;
-    // (UNIQUE ITEMS: The Standing Stone, nothing shoves him while he stands still)
+    // (UNIQUE ITEMS: Menhir, nothing shoves him while he stands still)
     if (this.rooted()) return;
     let dx = h.x - fromX;
     let dy = h.y - fromY;
@@ -10753,7 +10920,7 @@ export class Game {
     if (this.now('resolute')) return;
     // (THE BRAWLER'S TREE: Iron Chin, nor drags him off his feet while he winds up a hold)
     if (this.ironChin()) return;
-    // (UNIQUE ITEMS: The Standing Stone)
+    // (UNIQUE ITEMS: Menhir)
     if (this.rooted()) return;
     const dx = fromX - h.x;
     const dy = fromY - h.y;
@@ -11146,6 +11313,8 @@ export class Game {
     const h = this.hero;
     // (UNIQUE ITEMS: Broken Shackles, he can be hit during his swipe move)
     if (this.over || h.invuln > 0 || (h.move && !this.hitInMove())) return;
+    // (THE PACKSTRAP: a blow reached him, shield or none: its shield comes back only so long after the last)
+    this.uq.hurtAt = this.time;
     // (THE HIGH CITY, FLOOR 18: a monster's blow landing on him by a tall mirror cracks it too: game/act2/gallery_rules.ts)
     if (src && this.level.land?.gallery) this.mirrorsStruck(h.x, h.y, 0.3);
     this.slainBy = src ? src.name : from;
@@ -11209,9 +11378,9 @@ export class Game {
     if (this.now('thickskin') && h.life < h.d.maxLife * TALENT_TUNE.thickSkin2.below) dmg *= 1 - TALENT_TUNE.thickSkin2.less;
     // (THE BRAWLER'S TREE: Iron Chin, winding up a hold he takes a third less)
     if (this.ironChin()) dmg *= 1 - BRAWL_TUNE.talents.ironChin.less;
-    // (UNIQUE ITEMS: The Moth's Wing, less from every hit; The Standing Stone, less while he stands still)
-    if (this.wears('mothswing')) dmg *= 1 - UNIQUE_TUNE.moth.less;
-    if (this.rooted()) dmg *= 1 - UNIQUE_TUNE.stone.less;
+    // (UNIQUE ITEMS: The Moth's Wing, less from every hit; Menhir, less while he stands still)
+    if (this.wears('mothswing')) dmg *= 1 - this.ut.moth.less;
+    if (this.rooted()) dmg *= 1 - this.ut.stone.less;
     // (THE VETERAN'S TREE: Guard Up, between his blows his fists are up: a blow from in front of him does half harm)
     if (this.vetOn() && !this.hero.vet?.move && this.has('vguardup')) {
       const gx = fromX - h.x;
@@ -11323,7 +11492,9 @@ export class Game {
     }
     if (k('poison') > 0) {
       // a monster with Poison: most of the blow again, over the next few seconds
-      h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, ((dmg * 0.6 * k('poison')) / TUNE.poisonTime) * (longer / lasts));
+      // (POISON DAMAGE, items.ts POISON_DMG: his Poison Resistance takes off its share)
+      const kept = d.resPoison ? 1 - d.resPoison / 100 : 1;
+      h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, ((dmg * 0.6 * k('poison') * kept) / TUNE.poisonTime) * (longer / lasts));
       h.poisonT = TUNE.poisonTime * lasts;
     }
     // (what each element of the blow leaves: a minion's half of Flame burns half as hard; EVERY WORD ON A DUNGEON: a melded word's
@@ -12751,6 +12922,11 @@ export class Game {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
       p.age += dt;
+      // (UNIQUE ITEMS, SET 1: Gyre, his axe stopped at the end of its flight, spinning there)
+      if (p.gyre) {
+        if (this.stepGyre(p, dt)) this.projectiles.splice(i, 1);
+        continue;
+      }
       const sp = Math.hypot(p.vx, p.vy) || 1;
       // (THE CITY'S WORDS, Version 23.8: a monster's shot in Stilling's bubble crawls)
       const crawl = p.hostile && !p.trap ? this.patchAt('bubble', p.x, p.y) : null;
@@ -12769,6 +12945,8 @@ export class Game {
           if (!p.hostile) this.unseal(p.skill, nx, ny, 0.1);
           // (THE WARRIOR'S BATTLE AXE: his axe, meeting a wall on its way out, turns back to him; on its way back it flies over)
           if (!p.hostile && p.returns) {
+            // (UNIQUE ITEMS, SET 1: Gyre, it stops where its flight ends, and spins there)
+            if (!p.back && this.parks(p)) break;
             if (!p.back) this.turnBack(p);
             p.x = nx;
             p.y = ny;
@@ -12820,7 +12998,7 @@ export class Game {
           // is not spent on one, so a shot aimed at a monster still gets there. (The owner, with
           // Version 12: "can't be broken by projectile attacks. That needs to be fixed".)
           this.breakProps(p.x, p.y, p.r, p.skill);
-          // (UNIQUE ITEMS: The Hair Trigger, an arrow crossing one of his traps sets it off; The Tuning Staff, a Wave through his Orb makes it pulse)
+          // (UNIQUE ITEMS: The Hair Trigger, an arrow crossing one of his traps sets it off; Resonance, a Wave through his Orb makes it pulse)
           if (this.worn.length) this.crossings(p);
           for (const m of this.monsters) {
             if (m.dead || p.hit.includes(m.id)) continue;
@@ -12848,6 +13026,7 @@ export class Game {
         // (THE WARRIOR'S BATTLE AXE: his thrown axe at the end of its flight turns, and comes back to his hand, through what it
         // meets again; caught, it is gone)
         if (!dead && p.returns) {
+          if (!p.back && p.dist <= 0 && this.parks(p)) break;
           if (!p.back && p.dist <= 0) this.turnBack(p);
           if (p.back) {
             const bx = h.x - p.x;
@@ -12883,6 +13062,52 @@ export class Game {
         if (p.look === 'spear') this.laySpear(p);
       }
     }
+  }
+
+  /**
+   * (UNIQUE ITEMS, SET 1: GYRE) With Gyre worn, his thrown axe at the end of its flight (or where a wall ends it) stops there and
+   * spins, and does not come back: whether it did. No more than so many spin at once: the oldest falls.
+   */
+  private parks(p: Projectile): boolean {
+    if (p.hostile || !this.wears('gyre')) return false;
+    const G = this.ut.gyre;
+    const mine = this.projectiles.filter((q) => q.gyre && !q.hostile && q.gyre.t > 0).sort((a, b) => (a.gyre?.t ?? 0) - (b.gyre?.t ?? 0));
+    // (the oldest falls, in its own next step: not spliced out here, in the middle of the loop)
+    for (let k = 0; k <= mine.length - G.most; k++) (mine[k].gyre as { t: number }).t = 0;
+    p.gyre = { t: G.secs, tick: 0 };
+    p.vx = 0;
+    p.vy = 0;
+    p.dist = 99;
+    p.returns = false;
+    p.back = false;
+    p.hit = [];
+    this.emit({ t: 'unique', id: 'gyre', what: 'spin', x: p.x, y: p.y, r: G.r, secs: G.secs });
+    return true;
+  }
+
+  /** (UNIQUE ITEMS, SET 1: GYRE) An axe spinning where its flight ended: it cuts everything round it every so often, and falls when its seconds are out. Whether it is gone. */
+  private stepGyre(p: Projectile, dt: number): boolean {
+    const G = this.ut.gyre;
+    const q = p.gyre as { t: number; tick: number };
+    q.t -= dt;
+    q.tick -= dt;
+    if (q.t <= 0 || this.over) {
+      this.emit({ t: 'unique', id: 'gyre', what: 'fall', x: p.x, y: p.y });
+      // (the build's plain stand-in for its fall: render/set1_fx.ts draws the axe falling)
+      this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 4 });
+      return true;
+    }
+    if (q.tick <= 0) {
+      q.tick += G.tick;
+      let any = false;
+      for (const m of this.monsters) {
+        if (m.dead || this.shutIn(m) || Math.hypot(m.x - p.x, m.y - p.y) > G.r + m.r) continue;
+        this.hitMonster(m, p.skill, p.dmg * G.share, true);
+        any = true;
+      }
+      if (any) this.sfx('hit', 0.35);
+    }
+    return false;
   }
 
   /** (THE WARRIOR'S BATTLE AXE) His thrown axe turns for home: what it struck on the way out it may strike again on the way back. */
@@ -12951,7 +13176,7 @@ export class Game {
 
   private endProjectile(p: Projectile): void {
     this.emit({ t: 'spark', x: p.x, y: p.y, el: p.element, n: 4 });
-    // (UNIQUE ITEMS: The Tide, the Wave comes back)
+    // (UNIQUE ITEMS: Ebb and Flow, the Wave comes back)
     if (!p.hostile && p.look === 'wave' && !p.home && !p.blade && this.wears('tide')) this.turnTide(p);
     if (!p.hostile) {
       const r = this.hero.skills[p.skill].r;
@@ -13050,7 +13275,7 @@ export class Game {
       const r = s.r;
       const words = this.fronts(v.skill);
       const reach = TUNE.volleyHit * r.size;
-      // (UNIQUE ITEMS: The Rainwalker, the rain is where he is)
+      // (UNIQUE ITEMS: Rainwalker, the rain is where he is)
       if (v.walker) {
         v.x = this.hero.x;
         v.y = this.hero.y;
@@ -13088,7 +13313,7 @@ export class Game {
         if (!v.trapped && !v.echo && this.wears('poachersbow')) {
           v.trapped = true;
           const ts = this.hero.skills[2];
-          if (ts && SKILLS[ts.id].kind === 'roll' && this.isOpen(v.x, v.y)) this.layTrap(2, v.x, v.y, ts.r.countDmg * UNIQUE_TUNE.poacher.share);
+          if (ts && SKILLS[ts.id].kind === 'roll' && this.isOpen(v.x, v.y)) this.layTrap(2, v.x, v.y, ts.r.countDmg * this.ut.poacher.share);
         }
         for (let c = 0; c < v.count; c++) {
           const at = v.at?.[v.n * v.count + c] ?? this.volleySpot(v, v.n, c);
@@ -13518,7 +13743,8 @@ export class Game {
    */
   private forHim(it: Item): Item {
     const h = this.hero;
-    if (h.cls === 'warrior' && WARRIOR_TREE2.on && TALENTS.on) asWarriorWeapon(it, warriorWeapon(h.talents));
+    // (a unique keeps its own weapon, and its moves: his pick of 12 Nov 2026, “Each keeps its weapon's moves”)
+    if (h.cls === 'warrior' && WARRIOR_TREE2.on && TALENTS.on && !it.unique) asWarriorWeapon(it, warriorWeapon(h.talents));
     return it;
   }
   private allForHim(): void {
@@ -13790,7 +14016,7 @@ export class Game {
         const firstInVault = !!room && !this.level.props.some((o) => o !== p && o.kind === 'chest' && o.state === 1 && o.tx >= room.x && o.ty >= room.y && o.tx < room.x + room.w && o.ty < room.y + room.h);
         // (one piece; a vault's chest may hold a second, and the first piece out of a vault's chest is a hoard's)
         // (UNIQUE ITEMS: The Warden's Keys, every chest holds one more piece)
-        const n = TUNE.chestItems + (room && this.rng.chance(0.5) ? 1 : 0) + (this.wears('wardenskeys') ? UNIQUE_TUNE.keys.more : 0);
+        const n = TUNE.chestItems + (room && this.rng.chance(0.5) ? 1 : 0) + (this.wears('wardenskeys') ? this.ut.keys.more : 0);
         for (let i = 0; i < n; i++) this.addDrop('item', p.x, p.y + 0.6, 0, this.rollGear(room && i === 0 ? 2 : 1), null);
         this.addDrop('gold', p.x, p.y + 0.6, this.rng.int(10, 20) * Math.max(1, this.power) * (room ? 2 : 1), null, null);
         if (this.rng.chance((firstInVault ? TUNE.vaultWord : TUNE.chestWord) * wordGrowth(this.power)) && this.wordsFall()) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(wordsAt(this.power)));
@@ -14958,10 +15184,24 @@ export class Game {
     return UNIQUES.on && this.worn.includes(id);
   }
 
+  /** THE LEVELING UNIQUES (game/uniques.ts LEVEL_DEFS): what the piece of that id he wears rolled for one of its rule's numbers. */
+  wornRoll(id: string, key: string): number {
+    const d = uniqueDef(id);
+    if (!d) return 0;
+    for (const s of EQUIP_SLOTS) {
+      const it = this.hero.gear[s];
+      if (it && it.unique === id) return urollOf(it, d, key);
+    }
+    return urollOf(undefined, d, key);
+  }
+
   /** What the game knows of him that bends his words (game/uniques.ts bendWords). */
   private bendCtx(): BendCtx {
     const U = this.uq;
-    return { worn: this.worn, full: U.full, vow: U.vow, dark: U.dark, borrowed: U.borrowed };
+    const ctx: BendCtx = { worn: this.worn, full: U.full, vow: U.vow, dark: U.dark, borrowed: U.borrowed, halves: this.halves, tune: this.ut };
+    // (THE LAST WORD, a leveling unique: every word of his tap and hold attacks stronger, as it rolled)
+    if (this.wears('lastword')) ctx.lastWord = this.wornRoll('lastword', 'words') / 100;
+    return ctx;
   }
 
   /** What the uniques worn add to his stats that is not written on them as a stat: THE FREE HAND, a wand or a tome and no focus beside it. */
@@ -14970,7 +15210,7 @@ export class Game {
     const out: StatMod[] = [];
     const w = h.gear.mainhand?.weapon;
     if (this.wears('freehand') && (w === 'wand' || w === 'tome') && !h.gear.offhand) {
-      out.push({ stat: 'atkSpeed', value: UNIQUE_TUNE.freeHand.atkSpeed }, { stat: 'critMult', value: UNIQUE_TUNE.freeHand.critMult });
+      out.push({ stat: 'atkSpeed', value: this.ut.freeHand.atkSpeed }, { stat: 'critMult', value: this.ut.freeHand.critMult });
     }
     return out;
   }
@@ -14979,7 +15219,7 @@ export class Game {
   private uniqueHitMult(m: Monster, i: number): number {
     if (!this.worn.length) return 1;
     const h = this.hero;
-    const T = UNIQUE_TUNE;
+    const T = this.ut;
     const U = this.uq;
     let k = 1;
     // BLOODPRICE: a flask's fury
@@ -15005,13 +15245,17 @@ export class Game {
       for (const o of this.monsters) if (!o.dead && (o.curseT ?? 0) > 0 && Math.hypot(o.x - h.x, o.y - h.y) <= T.ledger.near + o.r) n++;
       k *= 1 + Math.min(T.ledger.most, T.ledger.each * n);
     }
+    // (SET 1) DEADWEIGHT: each Smash in a row harder than the last; RED TITHE: Cleave a little softer (its price)
+    const sid = h.skills[i]?.id;
+    if (sid === 'smash' && U.weightHit > 0 && this.wears('deadweight')) k *= 1 + T.weight.more * U.weightHit;
+    if (sid === 'cleave' && this.wears('redtithe')) k *= 1 - T.tithe.cleave;
     return k;
   }
 
   /** THE HALF-CARVED HAND: how much faster his attacks are now (1: no faster). */
   private handPace(): number {
     const h = this.hero;
-    return this.wears('halfcarvedhand') && h.life < h.d.maxLife * UNIQUE_TUNE.halfHand.below ? 1 + UNIQUE_TUNE.halfHand.attack : 1;
+    return this.wears('halfcarvedhand') && h.life < h.d.maxLife * this.ut.halfHand.below ? 1 + this.ut.halfHand.attack : 1;
   }
 
   /** BROKEN SHACKLES: he can be hit during his swipe move (its price). */
@@ -15021,7 +15265,7 @@ export class Game {
 
   /** THE STANDING STONE: is he standing still, as it counts it? */
   private rooted(): boolean {
-    return this.wears('standingstone') && this.uq.still >= UNIQUE_TUNE.stone.after && !this.hero.move;
+    return this.wears('standingstone') && this.uq.still >= this.ut.stone.after && !this.hero.move;
   }
 
   /** A hit his own gear makes by itself (a tentacle, a bird, a risen elite): `share` of his weapon hit, physical. */
@@ -15036,7 +15280,7 @@ export class Game {
   private updateUniques(dt: number, walked: number): void {
     const h = this.hero;
     const U = this.uq;
-    const T = UNIQUE_TUNE;
+    const T = this.ut;
     if (this.risen) this.stepRisen(dt);
     if (!this.worn.length) {
       // (nothing worn: what a unique was keeping is let go, once)
@@ -15091,6 +15335,13 @@ export class Game {
       }
     }
     if (U.bloodT > 0) U.bloodT = Math.max(0, U.bloodT - dt);
+    // (SET 1) DEATH KNELL: the rings die away; DEADWEIGHT: stopped swinging, the weight drains away, a blow's worth at a time
+    if (this.wears('deathknell')) for (const m of this.monsters) if ((m.knellT ?? 0) > 0) m.knellT = Math.max(0, (m.knellT ?? 0) - dt);
+    if (U.weight > 0 && this.time - U.weightAt > T.weight.keep) {
+      U.weight--;
+      U.weightAt = this.time - T.weight.keep + T.weight.drain;
+      this.emit({ t: 'unique', id: 'deadweight', what: 'weight', x: h.x, y: h.y, r: U.weight });
+    }
     // THE STANDING STONE: how long he has stood still
     U.still = walked > 0.001 || h.move ? 0 : U.still + dt;
     // THE DANCING SHOES: nothing slows him or holds him in place
@@ -15116,7 +15367,7 @@ export class Game {
     if (!this.worn.length) return;
     const h = this.hero;
     const U = this.uq;
-    const T = UNIQUE_TUNE;
+    const T = this.ut;
     let again = false;
     // THE NETTLE SHIRT: a hit breaks the vow, and it starts over
     if (this.wears('nettleshirt')) {
@@ -15180,7 +15431,7 @@ export class Game {
     if (!this.worn.length) return;
     const h = this.hero;
     const U = this.uq;
-    const T = UNIQUE_TUNE;
+    const T = this.ut;
     // THE KING'S KNOT: a monster that carried a word: his tap attack carries it too for a while (a word it has in front already is not borrowed)
     if (this.wears('kingsknot')) {
       const theirs = m.dark ? m.dark.words : m.words;
@@ -15199,6 +15450,36 @@ export class Game {
     }
     // THE FLESHMANCER'S BRAND: an elite he kills rises and fights for him
     if (this.wears('fleshmancersbrand') && m.elite && !m.boss) this.raise(m);
+    // (SET 1) RED TITHE: one that dies bleeding throws its blood to the nearest other, which starts bleeding too
+    if ((m.bleedT ?? 0) > 0 && (m.bleedDps ?? 0) > 0 && this.wears('redtithe')) this.tithe(m);
+  }
+
+  /** (UNIQUE ITEMS, SET 1: RED TITHE) `m` died bleeding: its blood flies to the nearest other enemy (within reach), which bleeds as hard. */
+  private tithe(m: Monster): void {
+    const R = this.ut.tithe;
+    let best: Monster | null = null;
+    let bd: number = R.reach;
+    for (const o of this.monsters) {
+      if (o === m || o.dead || this.shutIn(o)) continue;
+      const d = Math.hypot(o.x - m.x, o.y - m.y) - o.r;
+      if (d < bd) {
+        bd = d;
+        best = o;
+      }
+    }
+    if (!best) return;
+    const dps = m.bleedDps ?? 0;
+    const id = best.id;
+    this.emit({ t: 'unique', id: 'redtithe', what: 'throw', x: m.x, y: m.y, x1: best.x, y1: best.y, secs: R.fly, mid: id });
+    this.after(R.fly, () => {
+      const o = this.monsters.find((q) => q.id === id && !q.dead);
+      if (!o || this.over) return;
+      const fresh = (o.bleedT ?? 0) < 0.5;
+      o.bleedDps = Math.max((o.bleedT ?? 0) > 0 ? o.bleedDps ?? 0 : 0, dps);
+      o.bleedT = Math.max(o.bleedT ?? 0, R.secs);
+      if (fresh) this.emit({ t: 'bleedOn', id: o.id, x: o.x, y: o.y, secs: R.secs });
+      this.emit({ t: 'spark', x: o.x, y: o.y, el: 'phys', n: 3 });
+    });
   }
 
   // ---- THE CRIER'S HUSH ----
@@ -15206,7 +15487,7 @@ export class Game {
   /** A monster standing close to him has its words darkened: kept off it (Monster.dark) until it steps away. */
   private hushNear(): void {
     const h = this.hero;
-    const T = UNIQUE_TUNE.hush;
+    const T = this.ut.hush;
     const on = this.wears('criershush');
     for (const m of this.monsters) {
       if (m.dead) continue;
@@ -15241,7 +15522,7 @@ export class Game {
   private stepArm(dt: number): void {
     const h = this.hero;
     const U = this.uq;
-    const A = UNIQUE_TUNE.arm;
+    const A = this.ut.arm;
     U.armT -= dt;
     if (U.armT > 0) return;
     const m = this.time - U.armAt <= A.fresh ? this.monsters.find((q) => q.id === U.armId && !q.dead) : undefined;
@@ -15278,7 +15559,7 @@ export class Game {
   private callBird(): void {
     const h = this.hero;
     const U = this.uq;
-    const B = UNIQUE_TUNE.talons;
+    const B = this.ut.talons;
     if (this.time - U.talonAt < B.gap) return;
     let best: Monster | null = null;
     let bd: number = B.reach;
@@ -15307,7 +15588,7 @@ export class Game {
 
   /** An elite he killed rises where it fell, to fight for him for a while. One at a time: a new one takes the place of the last. */
   private raise(m: Monster): void {
-    const B = UNIQUE_TUNE.brand;
+    const B = this.ut.brand;
     if (this.risen) this.emit({ t: 'unique', id: 'fleshmancersbrand', what: 'fall', x: this.risen.x, y: this.risen.y });
     const at = this.isOpen(m.x, m.y) ? { x: m.x, y: m.y } : this.floorNear(m.x, m.y);
     this.risen = { kind: m.kind, name: m.name, x: at.x, y: at.y, fx: m.fx, fy: m.fy, r: m.r, t: B.secs, act: 'rise', actT: 0, did: false, target: -1, cd: 0, walked: 0, champion: m.champion };
@@ -15321,7 +15602,7 @@ export class Game {
     const p = this.risen;
     if (!p) return;
     const h = this.hero;
-    const B = UNIQUE_TUNE.brand;
+    const B = this.ut.brand;
     p.t -= dt;
     p.actT += dt;
     p.cd = Math.max(0, p.cd - dt);
@@ -15405,7 +15686,7 @@ export class Game {
     for (const d of L.doors) {
       if (d.spot.kind !== 'worddoor' || d.want !== 0) continue;
       const at = doorMiddle(d.spot);
-      if (Math.hypot(at.x - h.x, at.y - h.y) > UNIQUE_TUNE.keys.reach) continue;
+      if (Math.hypot(at.x - h.x, at.y - h.y) > this.ut.keys.reach) continue;
       this.openSeal(d, null);
       this.emit({ t: 'unique', id: 'wardenskeys', what: 'open', x: at.x, y: at.y });
       this.msg('The seal opens to the Warden\'s keys.', MSG.word);
@@ -15418,7 +15699,7 @@ export class Game {
   private windBlade(): void {
     const h = this.hero;
     const r = h.skills[0].r;
-    const W = UNIQUE_TUNE.windcutter;
+    const W = this.ut.windcutter;
     const words = this.fronts(0);
     this.projectiles.push({
       x: h.x + h.fx * 0.6, y: h.y + h.fy * 0.6, vx: h.fx * W.speed, vy: h.fy * W.speed, r: W.half * r.size, dist: W.range, hostile: false, dmg: W.share, element: r.element,
@@ -15432,7 +15713,7 @@ export class Game {
   /** What a shot of his crosses on its way: THE HAIR TRIGGER, an arrow over one of his traps sets it off, harder; THE TUNING STAFF, a Wave through his Orb makes it pulse at once, harder. */
   private crossings(p: Projectile): void {
     if (p.look === 'arrow' && this.traps.length && this.wears('hairtrigger')) {
-      const G = UNIQUE_TUNE.trigger;
+      const G = this.ut.trigger;
       for (const t of this.traps) {
         if (t.shot || Math.hypot(t.x - p.x, t.y - p.y) > G.near + p.r) continue;
         t.shot = G.mult;
@@ -15446,7 +15727,7 @@ export class Game {
         const s = this.hero.skills[o.skill];
         if (!s || SKILLS[s.id].kind !== 'orb') continue;
         this.emit({ t: 'unique', id: 'tuningstaff', what: 'pulse', x: o.x, y: o.y });
-        this.orbWave(o.skill, o.x, o.y, SKILLS[s.id].radius * s.r.size, o.frac * UNIQUE_TUNE.tuning.mult, false, false);
+        this.orbWave(o.skill, o.x, o.y, SKILLS[s.id].radius * s.r.size, o.frac * this.ut.tuning.mult, false, false);
       }
     }
   }
@@ -15462,7 +15743,7 @@ export class Game {
     if (d < 0.8) return;
     const sp = Math.hypot(p.vx, p.vy) || s.r.projSpeed;
     this.projectiles.push({
-      x: p.x, y: p.y, vx: (dx / d) * sp, vy: (dy / d) * sp, r: p.r, dist: d, hostile: false, dmg: p.dmg * UNIQUE_TUNE.tide.share, element: p.element,
+      x: p.x, y: p.y, vx: (dx / d) * sp, vy: (dy / d) * sp, r: p.r, dist: d, hostile: false, dmg: p.dmg * this.ut.tide.share, element: p.element,
       look: 'wave', pierce: true, hit: [], volley: false, skill: p.skill, trail: 0, words: p.words, runed: true, clouded: true, left: true, age: 0, from: '', n: p.n, home: true,
     });
     this.emit({ t: 'unique', id: 'tide', what: 'turn', x: p.x, y: p.y, x1: h.x, y1: h.y });
@@ -15513,7 +15794,7 @@ export class Game {
   private stepTome(dt: number): void {
     const h = this.hero;
     const U = this.uq;
-    const B = UNIQUE_TUNE.tome;
+    const B = this.ut.tome;
     if (h.change) return;
     const was = U.tomeA;
     U.tomeA = (U.tomeA + ((Math.PI * 2) / B.turn) * dt) % (Math.PI * 2);
@@ -15537,7 +15818,7 @@ export class Game {
     if (!this.wears('companyscrip')) return;
     const h = this.hero;
     const s = h.skills[i];
-    const cost = Math.max(1, Math.round(UNIQUE_TUNE.scrip.gold * Math.max(1, this.power)));
+    const cost = Math.max(1, Math.round(this.ut.scrip.gold * Math.max(1, this.power)));
     if (!s || h.gold < cost) return;
     h.gold -= cost;
     s.charges = s.maxCharges;
@@ -15551,14 +15832,33 @@ export class Game {
   private poolUnique(quality: number, mf: number, slot?: Slot, weapon?: WeaponKind | null): Item | null {
     if (!UNIQUES.on || this.practice) return null;
     const p = poolChance(quality, mf, Math.max(1, this.power));
-    if (p <= 0 || !this.rng.chance(p)) return null;
-    return this.makePoolUnique(slot, weapon);
+    if (p > 0 && this.rng.chance(p)) return this.makePoolUnique(slot, weapon);
+    // (THE LEVELING UNIQUES, behind LEVEL_UNIQUES: a roll of their own, as often; one of those of this floor's level or below)
+    const q = levelChance(quality, mf);
+    if (q > 0 && this.rng.chance(q)) {
+      let pool = levelPoolFor(this.hero.cls, Math.max(1, this.power));
+      if (slot) pool = pool.filter((d) => uniqueSlot(d) === slot);
+      if (weapon) pool = pool.filter((d) => uniqueWeapon(d) === weapon);
+      if (pool.length) return makeUnique(this.rng.pick(pool).id, 1, this.rng);
+    }
+    return null;
   }
 
   /** One of the pool's for this hero (of that slot, of that weapon, where asked), made for this floor. */
   private makePoolUnique(slot?: Slot, weapon?: WeaponKind | null): Item | null {
     let pool: UniqueDef[] = poolFor(this.hero.cls);
     if (slot) pool = pool.filter((d) => uniqueSlot(d) === slot);
+    // (THE WARRIOR'S WEAPON UNIQUES, his picks of 12 Nov 2026: each keeps its own weapon's moves (asked whether they should work on
+    // any of his three weapons, “Each keeps its weapon's moves”), so a Warrior finds only the uniques of the weapon he uses: his
+    // greatsword's while he swings the greatsword, his axe's with the axe, his hammer's with the hammer; never another's of his
+    // three, nor another hero's (UNIQUE_RULES.ownOnly))
+    if (this.hero.cls === 'warrior' && WARRIOR_TREE2.on && TALENTS.on) {
+      const his = warriorWeapon(this.hero.talents);
+      pool = pool.filter((d) => {
+        const w = uniqueWeapon(d);
+        return (w !== 'greatsword' && w !== 'battleaxe' && w !== 'warhammer') || w === his;
+      });
+    }
     if (weapon) pool = pool.filter((d) => uniqueWeapon(d) === weapon);
     if (!pool.length) return null;
     return makeUnique(this.rng.pick(pool).id, Math.max(1, this.power), this.rng);
@@ -15613,7 +15913,28 @@ export class Game {
       this.meta.stash[free] = it;
       out.stash++;
     }
-    this.msg(this.practice ? 'Test page. Your unique items are in your bag.' : "Test page. Your unique items are in your bag; the bosses' own are in the stash in town.", MSG.word);
+    // (THE LEVELING UNIQUES, with their switch on: every one he could find, his level or not, made so he can wear it on this page:
+    // in his bag where there is room, then the stash)
+    let level = 0;
+    if (LEVEL_UNIQUES.on) {
+      for (const d of LEVEL_DEFS) {
+        if (d.cls && d.cls !== h.cls) continue;
+        const it = makeUnique(d.id, 1, rng);
+        if (!it) continue;
+        it.reqLevel = Math.min(it.reqLevel, Math.max(1, h.level));
+        const bag = h.bag.indexOf(null);
+        const stash = this.practice ? -1 : this.meta.stash.indexOf(null);
+        if (bag >= 0) {
+          h.bag[bag] = it;
+          out.bag++;
+        } else if (stash >= 0) {
+          this.meta.stash[stash] = it;
+          out.stash++;
+        } else continue;
+        level++;
+      }
+    }
+    this.msg(this.practice ? 'Test page. Your unique items are in your bag.' : `Test page. Your unique items are in your bag; the bosses' own${level ? ' and the rest' : ''} are in the stash in town.`, MSG.word);
     return out;
   }
 
