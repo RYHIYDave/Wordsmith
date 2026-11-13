@@ -1895,8 +1895,12 @@ const LEVEL_PAINTERS: Record<string, () => Part[]> = {
 };
 /** The ids of the twenty leveling uniques' pictures. */
 export const LEVEL_ART_IDS: readonly string[] = Object.keys(LEVEL_PAINTERS);
-/** The twenty's pictures' switch: OFF until his yes to them (PICTURES FIRST); off, each shows its base's orange look, as before. */
-export const LEVEL_ART = { on: false };
+/**
+ * The twenty's pictures' switch: off, each shows its base's orange look, as before. ON at his yes, 13 Nov 2026, shown them on his
+ * page Leveling Uniques Pictures (https://claude.ai/artifact/Ybwk34vtkh5dK4zuvh93Mh) and asked whether they go live in the
+ * evening's update: “Yes, put them live (Recommended)”.
+ */
+export const LEVEL_ART = { on: true };
 
 /** Set 1's pictures, by their ids in game/uniques.ts SET1_DEFS: kept apart from the 62's (UNIQUE_ART_IDS), as Set 1 is behind its own switch. */
 const SET1_PAINTERS: Record<string, () => Part[]> = { gyre, redtithe, widowfall, deathknell, deadweight, starbreaker };

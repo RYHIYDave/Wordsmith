@@ -1,5 +1,5 @@
-// THE TWENTY LEVELING UNIQUES' BAG PICTURES (art/items_unique.ts LEVEL_PAINTERS, behind LEVEL_ART, off until his yes). Held:
-//   1. off, none is painted: each shows its base's orange look, as before;
+// THE TWENTY LEVELING UNIQUES' BAG PICTURES (art/items_unique.ts LEVEL_PAINTERS, behind LEVEL_ART, on at his yes). Held:
+//   1. on at his yes (13 Nov 2026); off, none is painted: each shows its base's orange look, as before;
 //   2. on, each of the twenty: 32 by 32, crisp, a clear pixel round it, the uniques' orange rim round its ink, big enough, and its
 //      own; one for each of game/uniques.ts LEVEL_DEFS.
 // @ts-ignore - node typings are not part of this project
@@ -15,9 +15,14 @@ const N = 32;
 const has = (p: Px, x: number, y: number): boolean => x >= 0 && y >= 0 && x < N && y < N && p.d[(y * N + x) * 4 + 3] > 0;
 const same = (a: Px, b: Px): boolean => a.d.length === b.d.length && a.d.every((v, i) => v === b.d[i]);
 
-test('1. off, none of the twenty is painted', () => {
-  assert.equal(LEVEL_ART.on, false, 'off until his yes to the pictures');
-  for (const id of LEVEL_ART_IDS) assert.equal(paintUnique(id), null, `${id}: its base's look`);
+test('1. on at his yes; off, none of the twenty is painted', () => {
+  assert.equal(LEVEL_ART.on, true, 'on: his yes, 13 Nov 2026, “Yes, put them live (Recommended)”');
+  LEVEL_ART.on = false;
+  try {
+    for (const id of LEVEL_ART_IDS) assert.equal(paintUnique(id), null, `${id}: its base's look`);
+  } finally {
+    LEVEL_ART.on = true;
+  }
 });
 
 test('2. on, the twenty: sound, each its own, one for each leveling unique', () => {
@@ -47,6 +52,6 @@ test('2. on, the twenty: sound, each its own, one for each leveling unique', () 
     }
     for (let i = 0; i < pics.length; i++) for (let j = i + 1; j < pics.length; j++) assert.ok(!same(pics[i][1], pics[j][1]), `${pics[i][0]} and ${pics[j][0]} are the same picture`);
   } finally {
-    LEVEL_ART.on = false;
+    LEVEL_ART.on = true;
   }
 });
