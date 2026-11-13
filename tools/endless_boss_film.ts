@@ -383,6 +383,19 @@ function layPainted(s: Px, p: { px: Px; lights: { x: number; y: number; r: numbe
     }
   }
 }
+/** A painting laid only where the frame has changed since `was` (where a figure has just been drawn): what is nearer the eye than
+ * the figure, over it. */
+function layOver(s: Px, was: Uint8ClampedArray, p: { px: Px }, can: { ax: number; ay: number }, ox: number, oy: number): void {
+  const x0 = Math.round(ox - can.ax), y0 = Math.round(oy - can.ay);
+  for (let y = 0; y < p.px.h; y++) for (let x = 0; x < p.px.w; x++) {
+    const X = x0 + x, Y = y0 + y;
+    if (X < 0 || Y < 0 || X >= s.w || Y >= s.h) continue;
+    const i = (Y * s.w + X) * 4;
+    if (s.d[i] === was[i] && s.d[i + 1] === was[i + 1] && s.d[i + 2] === was[i + 2]) continue;
+    const c = p.px.get(x, y);
+    if (c) s.set(X, Y, c);
+  }
+}
 /** A word's glyph as a little picture: its own colour, his pink at its heart, a hot edge, inked round. */
 function glyphOf(rows: readonly string[], k: number, own: string, hot: string): (string | null)[][] {
   const n = rows.length;
@@ -1147,6 +1160,8 @@ function meldScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
 }
 /** THE AVALANCHE ON THE FLOOR: the lane it will take rimed white first, racing out from where the rune went in, its edges his pink;
  * behind the wave, the snow it leaves, thawing. */
+/** About where his shade stands on the floor (his own lengths): the avalanche's snow is laid in slices about it. */
+const AVAL_SHADE_AT: V3 = [-SHADE.behind, SHADE.side, 0];
 function avalFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
   const P = (x: number, y: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, 0]); return [Math.round(ox + px), Math.round(oy + py)]; };
   const W = (x: number, y: number, z: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, z]); return [Math.round(ox + px), Math.round(oy + py)]; };
@@ -1178,7 +1193,7 @@ function avalFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
   if (t < MELD.slam) return;
   // (THE WARNING: the whole floor in the colour of every boss's warning on the ground (his words, 13 Nov 2026: “I’m gonna color to be
   // red or pink cause whatever you use for normal hit box warnings on the ground”: the bosses' warnings' own, art/mkit.ts FLAME[2],
-  // the safe spot's edge in its hot gold), but the one safe spot and his own ground; throbbing; gone as the snow's tail passes)
+  // the safe strip's edge in its hot gold), but the one safe strip (not his ground: “he’s fine”); throbbing; gone as the tail passes)
   const on = Math.min(1, Math.max(0, (t - MELD.slam - AVAL.red[0]) / (AVAL.red[1] - AVAL.red[0])));
   const Tl = avalTail(t);
   const throb = 0.75 + 0.25 * Math.sin(t * 12);
@@ -1459,8 +1474,16 @@ for (const sg of segs) {
       // (HIS SHADE, behind him, doing as he does a moment after him)
       const sk = skeletonAt(mob, sg.move, Math.max(0, t - SHADE.lag));
       const [x, y] = at([sg.from[0] + k * sk.pelvis[0], sg.from[1] + k * sk.pelvis[1], 0]);
+      // (the avalanche pours straight past him and his shade (his words, 13 Nov 2026: “it doesn’t need the circle under the boss, he’s
+      // fine”): all of it laid before them; then, where the shade is drawn, the snow nearer the eye than it over it; below, the same
+      // for him)
+      const [bx, by] = at([sg.from[0], sg.from[1], 0]);
+      if (sg.move === 'avalanche') layPainted(s, paintAvalanche(t, sg.view), AVAL_CANVAS, ox + bx, oy + by, 0);
+      const was = sg.move === 'avalanche' ? s.d.slice() : null;
       layShade(s, paintShade(sk, t, sg.view, 1, 0, sg.move === 'turn' ? shadeGlide(turnYaw, t) : undefined), ox + x, oy + y, 0.78);
+      if (was) layOver(s, was, paintAvalanche(t, sg.view, AVAL_SHADE_AT), AVAL_CANVAS, ox + bx, oy + by);
     }
+    const beforeHim = sg.move === 'avalanche' ? s.d.slice() : null;
     if (fallFilm) {
       // (the hero, out of its lane, watching; just past where his ring will reach)
       const last = segs[segs.length - 1];
@@ -1549,8 +1572,8 @@ for (const sg of segs) {
     }
     if (sg.move === 'avalanche') {
       const [x, y] = base();
-      layPainted(s, paintAvalanche(t, sg.view), AVAL_CANVAS, x, y, 0);
-      // (the hero, in the safe spot, nearer the eye than the snow: drawn over it)
+      if (beforeHim) layOver(s, beforeHim, paintAvalanche(t, sg.view, [0, 0, 0]), AVAL_CANVAS, x, y);
+      // (the hero, in the safe strip, nearer the eye than the snow: drawn over it)
       { const [hx, hy] = at([sg.from[0] + k * AVAL.safe.at[0] * TILE, sg.from[1] + k * AVAL.safe.at[1] * TILE, 0]); hero(s, ox + hx, oy + hy); }
       meldScene(s, t, ox, oy, sg.from, k, 'avalanche', 'power', 'frost', MELD_GLYPH.avalanche, [MELD_RAMP.avalanche[3], MELD_RAMP.avalanche[4]], [ARENA.x[0] * TILE, 0, 40], false, false);
     }

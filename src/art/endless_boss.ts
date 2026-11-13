@@ -3343,12 +3343,13 @@ export { HAIL_HERO };
 // warning covers the whole arena but a little spot at the top or the bottom; rumbling builds; then a freight train of snow flies
 // across the screen wherever the floor is red, for a few seconds; one in it is frozen and takes a ton of damage; when it is done,
 // that is it). So: he writes Power, his shade writes Frost; melded, the slam flings the rune to the wall, where it sinks in, a flash;
-// THE WARNING floods the floor red, all of it but the one safe spot (and the ground he stands on: it is his); the wall RUMBLES, the
-// screen shaking harder and harder, snow sifting out of its cracks; then THE SNOW COMES OUT OF THE WALL like a freight train: a
-// torrent of powder and streaking snow, ice boulders hurtling in it, tearing across the room the whole way, parting round the safe
-// spot and round him, for a few seconds; its tail passes, and that is it. Here, out of the left wall, the safe spot at the bottom.
+// THE WARNING floods the floor red, all of it but the one safe strip; the wall RUMBLES, the screen shaking harder and harder, snow
+// sifting out of its cracks; then THE SNOW COMES OUT OF THE WALL like a freight train: a torrent of powder and streaking snow, ice
+// boulders hurtling in it, tearing across the room the whole way, sparing only the safe strip, for a few seconds; its tail passes,
+// and that is it. HE NEEDS NO SAFE PLACE (his words, 13 Nov 2026: “it doesn’t need the circle under the boss, he’s fine”): the red
+// runs right up under his feet and the snow pours straight past him, his own spell. Here, out of the left wall, the strip at the bottom.
 export const ARENA = { x: [-3, 12.2] as const, y: [-5.6, 5.2] as const };
-export const AVAL = { red: [0.3, 0.75] as const, rumble: [0.75, 1.95] as const, cross: 0.35, stream: 2.6, tail: 0.45, safe: { side: 'bottom' as 'top' | 'bottom', w: 1.6, at: [6.2, -4.8] as const }, his: 1.3, boulders: 26, end: 7.2 };
+export const AVAL = { red: [0.3, 0.75] as const, rumble: [0.75, 1.95] as const, cross: 0.35, stream: 2.6, tail: 0.45, safe: { side: 'bottom' as 'top' | 'bottom', w: 1.6, at: [6.2, -4.8] as const }, boulders: 26, end: 7.2 };
 export const AVAL_CANVAS: MobCanvas = { w: 1300, h: 820, ax: 420, ay: 470 };
 const SNOW: Ramp = ['#34485c', '#6a8aa2', '#a5c6d7', '#e2f0f8', '#ffffff'];
 const AVAL_ICE: Ramp = ['#1a2430', '#34485c', '#6a8aa2', '#a5c6d7', '#e2f0f8'];
@@ -3364,16 +3365,20 @@ export function avalTail(t: number): number {
   return (ARENA.x[0] + (ARENA.x[1] - ARENA.x[0]) * u) * TILE;
 }
 /** Whether a spot of the floor is spared it: THE SAFE STRIP (his words, 13 Nov 2026: “The safe spots should be a strip along the top of
- * the arena or the bottom of the arena”: the whole length of the room, along the top edge or the bottom, the way the snow goes), and
- * his own ground. */
+ * the arena or the bottom of the arena”: the whole length of the room, along the top edge or the bottom, the way the snow goes). Not
+ * his own ground: “he’s fine”. */
 export function avalSpared(x: number, y: number, pad = 0): boolean {
+  void x;
   const w = AVAL.safe.w * TILE + pad;
-  const strip = AVAL.safe.side === 'bottom' ? y < ARENA.y[0] * TILE + w : y > ARENA.y[1] * TILE - w;
-  return strip || Math.hypot(x, y) < AVAL.his * TILE + pad;
+  return AVAL.safe.side === 'bottom' ? y < ARENA.y[0] * TILE + w : y > ARENA.y[1] * TILE - w;
 }
+/** Whether a mass of the snow (its middle, its half-length along the room and its half-width) would go through his body: those break
+ * past him instead; the river of it still runs right up to his legs (no safe place round him: “he’s fine”). */
+const avalThroughHim = (x: number, y: number, hx: number, hy: number): boolean => Math.abs(y) < hy + 12 && Math.abs(x) < hx + 14;
 /** THE AVALANCHE'S SOLIDS, `t` into the move: the torrent of snow tearing across the room out of the wall, its boulders, its
- * streaks, its powder; parting round the safe spot and round him. All of it one body of snow, no seams through it. */
-export function avalancheBits(t: number, put: Put): void {
+ * streaks, its powder; sparing the safe strip, pouring straight past him. All of it one body of snow, no seams through it. Only
+ * what `keep` keeps (by its floor point): the snow nearer the eye than he is, to be laid over him where he stands in it. */
+export function avalancheBits(t: number, put: Put, keep: (x: number, y: number) => boolean = () => true, glow = true): void {
   const out = AVAL_OUT();
   if (t < out) return;
   const F = avalFront(t), Tl = avalTail(t);
@@ -3391,12 +3396,12 @@ export function avalancheBits(t: number, put: Put): void {
   const L = (ARENA.x[1] - ARENA.x[0]) * TILE;
   const flow = speed * (t - out);
   // (THE TORRENT'S BODY: one river of snow the whole room's width, no gaps in it, streaked along the way it goes, tearing past;
-  // ragged at its front and its tail; parting round the safe spot and round him)
+  // ragged at its front and its tail; sparing the safe strip; round his legs)
   {
     const cx = (F + Tl) / 2, cy = (y0 + y1) / 2, hx = (F - Tl) / 2, hy = (y1 - y0) / 2;
     put('snow', 'river', { k: 'panel', c: [cx, cy, 16], u: [hx, 0, 0], v: [0, hy, 0], skin: (a, b2) => {
       const x = cx + a, y = cy + b2;
-      if (avalSpared(x, y, 3 + 4 * hash(Math.floor(x / 3), Math.floor(y / 3), 9961))) return null;
+      if (!keep(x, y) || avalSpared(x, y, 3 + 4 * hash(Math.floor(x / 3), Math.floor(y / 3), 9961))) return null;
       if (hx - Math.abs(a) < 10 * hash(Math.floor(y / 3), 1, 9962)) return null;
       const n = hash(Math.floor((x - flow) / 7), Math.floor(y / 2), 9963);
       return n > 0.85 ? '#ffffff' : n > 0.5 ? SNOW[3] : n > 0.2 ? SNOW[2] : SNOW[1];
@@ -3406,8 +3411,8 @@ export function avalancheBits(t: number, put: Put): void {
   for (let i = 0; i < 70; i++) {
     const y = y0 + (y1 - y0) * hash(i, 1, 9951);
     const x = ARENA.x[0] * TILE + ((hash(i, 2, 9952) * L + flow * 1.1) % L);
-    if (x > F || x < Tl || avalSpared(x, y, 8)) continue;
     const R = 8 + 6 * hash(i, 3, 9953);
+    if (x > F || x < Tl || avalSpared(x, y, 8) || !keep(x, y) || avalThroughHim(x, y, R * 3.6, R)) continue;
     const h = 22 + 34 * hash(i, 4, 9954);
     put('snow', 'powder', { k: 'ball', c: [x, y, 14 + h * 0.4], ax: [[R * 3.6, 0, 0], [0, R, 0], [0, 0, h * 0.45]], skin: (u, tone, px, py) => {
       const rim = 1 - Math.max(0, u[0] * 0.5 + 0.5 - Math.hypot(u[1], u[2]) * 0.2);
@@ -3419,7 +3424,7 @@ export function avalancheBits(t: number, put: Put): void {
   // (its front: a heaving wall of it, tallest, blasting on)
   if (F < ARENA.x[1] * TILE - 2) for (let i = 0; i < 16; i++) {
     const y = y0 + ((y1 - y0) * i) / 15;
-    if (avalSpared(F, y, 6)) continue;
+    if (avalSpared(F, y, 6) || !keep(F - 26, y) || avalThroughHim(F - 26, y, 42, 15)) continue;
     put('snow', 'front', { k: 'ball', c: [F - 26, y + 6 * Math.sin(t * 9 + i), 26], ax: [[42, 0, 0], [0, 15, 0], [0, 0, 30]], skin: (u, tone, px, py) => {
       const rim = 1 - Math.max(0, u[0] * 0.5 + 0.5 - Math.hypot(u[1], u[2]) * 0.2);
       const n = hash((px - fr * 6) >> 3, py >> 1, 9970 + i);
@@ -3432,44 +3437,48 @@ export function avalancheBits(t: number, put: Put): void {
     const y = y0 + (y1 - y0) * hash(i, 5, 9955);
     const x = ARENA.x[0] * TILE + ((hash(i, 6, 9956) * L + speed * 1.3 * (t - out)) % L);
     const z = 6 + 50 * hash(i, 7, 9957);
-    if (x > F || x - 40 < Tl || avalSpared(x, y, 2)) continue;
+    if (x > F || x - 40 < Tl || avalSpared(x, y, 2) || !keep(x - 20, y)) continue;
     put('streaks', 'streak', { k: 'rod', a: [x - 40, y, z], b: [x, y, z], ra: 0.7, rb: 1.1, ramp: SNOW });
   }
   // (ice boulders hurtling in it, bounding)
   for (let k = 0; k < AVAL.boulders; k++) {
     const y = y0 + (y1 - y0) * hash(k, 1, 9904);
     const x = ARENA.x[0] * TILE + ((hash(k, 8, 9958) * L + speed * 0.9 * (t - out)) % L);
-    if (x > F || x < Tl || avalSpared(x, y, 8)) continue;
     const bounce = Math.abs(Math.sin(t * (7 + 3 * hash(k, 3, 9906)) + k)) * (12 + 22 * hash(k, 4, 9907));
     const R = 6 + 6 * hash(k, 5, 9908);
+    if (x > F || x < Tl || avalSpared(x, y, 8) || !keep(x, y) || avalThroughHim(x, y, R, R)) continue;
     put('boulders', 'ice', { k: 'ball', c: [x, y, R + bounce], ax: [[R, 0, 0], [0, R * 0.85, 0], [0, 0, R * 0.9]], skin: (u, tone, px, py) => ((px + py + fr) % 5 === 0 ? AVAL_ICE[4] : AVAL_ICE[T5(tone)]) });
   }
-  // (powder flung up and curling round the safe spot's edge and his, and off its top)
-  for (let i = 0; i < 160; i++) {
-    const a = hash(i, 9, 9959) * TAU;
+  // (powder thrown up off the torrent's flank, along the safe strip's edge; and off his legs as it breaks on him and pours past)
+  const edge = AVAL.safe.side === 'bottom' ? ARENA.y[0] * TILE + AVAL.safe.w * TILE : ARENA.y[1] * TILE - AVAL.safe.w * TILE;
+  for (let i = 0; i < 120; i++) {
     const u = (t * 2 + hash(i, 10, 9960)) % 1;
-    let x: number, y: number;
-    if (i % 2) {
-      // (along the safe strip's edge, powder thrown up off the torrent's flank)
-      const edge = AVAL.safe.side === 'bottom' ? ARENA.y[0] * TILE + AVAL.safe.w * TILE : ARENA.y[1] * TILE - AVAL.safe.w * TILE;
+    let x: number, y: number, z: number;
+    if (i % 3) {
       x = ARENA.x[0] * TILE + (ARENA.x[1] - ARENA.x[0]) * TILE * hash(i, 11, 9965);
       y = edge + (AVAL.safe.side === 'bottom' ? 1 : -1) * (2 + 8 * u);
+      z = 8 + 30 * u * (1 - u) * 2;
+      x += 20 * u;
     } else {
-      x = Math.cos(a) * (AVAL.his * TILE + 4 + 10 * u);
-      y = Math.sin(a) * (AVAL.his * TILE + 4 + 10 * u);
-      if (Math.cos(a) > 0.3) continue;
+      const a = (hash(i, 9, 9959) - 0.5) * 2.4;
+      x = -8 + 30 * u;
+      y = 14 * Math.sin(a) + 10 * u * Math.sign(a);
+      z = 14 + 46 * u * (1 - u) * 2 * hash(i, 12, 9966);
     }
-    if (x > F || x < Tl) continue;
-    put('spray', 'snow', { k: 'mote', p: [x + 20 * u, y, 8 + 30 * u * (1 - u) * 2], c: u < 0.4 ? '#ffffff' : '#a5c6d7', size: u < 0.3 ? 2 : 1 });
+    if (x > F || x < Tl || !keep(x, y)) continue;
+    put('spray', 'snow', { k: 'mote', p: [x, y, z], c: u < 0.4 ? '#ffffff' : '#a5c6d7', size: u < 0.3 ? 2 : 1 });
   }
-  put('glow', 'avalGlow', { k: 'glow', p: [(F + Tl) / 2, 0, 30], c: '#e2f0f8', r: 160, a: 0.22 });
+  if (glow) put('glow', 'avalGlow', { k: 'glow', p: [(F + Tl) / 2, 0, 30], c: '#e2f0f8', r: 160, a: 0.22 });
 }
-export function paintAvalanche(t: number, view: 'front' | 'rear'): Painted {
+/** The avalanche's picture; with `nearer` (a floor point in his own lengths), only its snow nearer the eye than that, inked but
+ * without its rim or its light: laid over him (or his shade) where he stands in it, as it pours past him. */
+export function paintAvalanche(t: number, view: 'front' | 'rear', nearer: V3 | null = null): Painted {
   const st = stage(view, AVAL_CANVAS.ax, AVAL_CANVAS.ay, AVAL_CANVAS);
   const bits: Bit[] = [];
-  avalancheBits(t, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lo = nearer ? st.near(nearer) : -Infinity;
+  avalancheBits(t, (part, piece, shape) => bits.push({ part, piece, shape }), (x, y) => st.near([x, y, 0]) >= lo, !nearer);
   const lights = paintBits(st, bits, [0, 0, 30]);
-  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+  return { px: st.whole(nearer ? null : ENEMY_RIM), lights: nearer ? [] : lights } as Painted;
 }
 
 

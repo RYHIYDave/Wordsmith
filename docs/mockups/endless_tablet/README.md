@@ -525,6 +525,10 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   HIS WORDS: “Very close.  The safe spots should be a strip along the top of the arena or the bottom of the arena”. SO: the safe
   place is a strip the room's whole length along its top edge or its bottom (here the bottom), the way the snow goes, its edge a
   line of hot gold; the torrent throws powder up off its flank along it.
+  HIS WORDS, by pop-up: “Yes but it doesn’t need the circle under the boss, he’s fine.  Then we can move on”. SO: no safe place
+  round him: the red runs right up under his feet and the snow pours straight past him, his own spell; he stands shin-deep in the
+  river of it, the big masses breaking past his body and powder thrown up off his legs, the snow nearer the eye drawn over him and
+  his shade (in the film, `layOver`). HIS YES to Avalanche with that change.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
