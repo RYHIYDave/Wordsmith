@@ -3,6 +3,7 @@
 
 import type { VetState } from './veteran';
 import type { Pillar } from './quests610';
+import type { QuestThing } from './quests1115';
 import type { PrisonChannel } from './prison_way';
 import type { ChapelPlan } from './chapel_way';
 import type { GroundsPlan } from './grounds_way';
@@ -379,6 +380,11 @@ export interface Hero {
   citySeen?: boolean;
   /** (QUESTS610) The ward-stone's pieces taken, one bit each (1, 2, 4: the Pinewood's side area's, its lair's, the Stag's). */
   pieces?: number;
+  /** THE QUEST LINE OF FLOORS 11 TO 15 (game/quests1115.ts, QUESTS1115): the mystic's jar of the Crier's voice; the unstruck pages taken, one bit each (1, 2, 4: the Palimpsest's, the Physician's, the stacks'); the armourer's clapper; his pick of three, laid out and not yet taken. */
+  jar?: 'asked' | 'got' | 'given';
+  pages?: number;
+  clapper?: 'asked' | 'got' | 'given';
+  laidOut?: Item[];
   /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
   talents: string[];
   /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three); `collar`, the Pack Collar's. */
@@ -1133,10 +1139,15 @@ export interface Drop {
   x: number;
   y: number;
   /** (WORDMELDING: 'dust', runedust, as much as `gold` says; 'stone', the Meldstone) */
-  kind: 'gold' | 'item' | 'word' | 'orb' | 'dust' | 'stone' | 'card' | 'piece';
+  kind: 'gold' | 'item' | 'word' | 'orb' | 'dust' | 'stone' | 'card' | 'piece' | 'quest';
   gold: number;
   /** (QUESTS610, 'piece': which of the ward-stone's three pieces, 0 to 2: game/quests610.ts) */
   piece?: number;
+  /** (QUESTS1115, 'quest': what it is, and for a page which of the three, 0 to 2: game/quests1115.ts) */
+  thing?: QuestThing;
+  page?: number;
+  /** (QUESTS1115: one of a pick laid out, 'item': the others laid with it go once one is taken) */
+  choice?: boolean;
   item: Item | null;
   word: WordId | null;
   age: number;
@@ -1424,6 +1435,10 @@ export interface Level {
   bells?: BellsState;
   /** (QUESTS610, PILLARS) Floor 10: the cult's three obelisks feeding the siege in the Drowned Eye's last phase (game/quests610.ts). */
   pillars?: Pillar[];
+  /** (QUESTS1115) How many unstruck pages have been laid down on this floor (spent for this fight). */
+  pagesUsed?: number;
+  /** (QUESTS1115) The camp's bell, the clapper hung in it: where it stands, and when it was last rung (Game.time). */
+  campBell?: { x: number; y: number; rungAt: number };
   /** THE ENDLESS TOWN, THE SHAFT'S RIM (game/rim.ts, behind ENDLESS_TOWN): what only it has, as it stands now; absent on every other level. */
   rim?: import('./rim').RimTown;
   /**

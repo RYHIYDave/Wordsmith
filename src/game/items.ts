@@ -1160,6 +1160,20 @@ export function rollItem(ilvl: number, rng: RNG, opts: RollOpts = {}): Item {
   return makeItem(base, level, rarity, affixes, nameFor(base, rarity, affixes, rng));
 }
 
+/**
+ * (QUESTS1115, the armourer's reward for the clapper: his words, 13 Nov 2026, “a fully modded rare gloves boots or helm”) A
+ * rare of `slot` with every affix a rare may roll: two prefixes and two suffixes (where the slot has that many), at item level
+ * `ilvl`.
+ */
+export function rollFullRare(ilvl: number, slot: Slot, rng: RNG, opts: RollOpts = {}): Item {
+  const level = cleanLevel(ilvl);
+  const base = pickBase(slot, level, rng, opts.forWeapon, opts.weapons, opts.cls);
+  const taken = new Set<string>();
+  const families = [...pickFamilies('prefix', slot, 2, rng, taken), ...pickFamilies('suffix', slot, 2, rng, taken)];
+  const affixes = families.map((f) => rollAffix(f, level, rng));
+  return makeItem(base, level, 2, affixes, nameFor(base, 2, affixes, rng));
+}
+
 // ---------------------------------------------------------------------------------------------
 // UNIQUE ITEMS (game/uniques.ts, behind UNIQUES; his rules, 4 Oct and 11 Nov 2026: orange, one or two special modifiers
 // normal gear cannot roll, “They may have other stats, and those may have a range, but those will always be the same and

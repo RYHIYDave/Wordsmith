@@ -70,6 +70,7 @@ import { beside, fromFigure, handOf } from '../facing';
 import type { Game } from '../game';
 import type { Level, Monster, Peril } from '../state';
 import { T_FLOOR } from '../types';
+import { INK } from '../ink_hooks';
 import type { Act1Rules } from './types';
 
 const D = Math.PI / 180;
@@ -928,6 +929,13 @@ function dryAll(L: Level): void {
   if (!k) return;
   for (const p of [...k.list]) dryAway(k, p);
 }
+
+/** (QUESTS1115, game/quests1115.ts: an unstruck page laid down in his fight) All his ink lying on the floor dries away at once, as at his death. */
+export function inkWiped(L: Level): void {
+  dryAll(L);
+}
+INK.count = inkedCount;
+INK.wipe = inkWiped;
 
 /** The peril of his act now (his Redaction's bars, or the blacking out's), kept while the act is made. */
 const LAYING = new WeakMap<Monster, Peril>();
