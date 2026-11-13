@@ -113,3 +113,62 @@ export function stepTempleDoor(L: Level, hero: { x: number; y: number }, time: n
   }
   return out;
 }
+
+/** The two kinds that carry the door's keys. */
+export const KEY_BEARERS = ['keyblade', 'keyflame'] as const;
+
+/**
+ * WHERE THE KEY-BEARERS WAIT: two rooms of the mine (never the start, never the temple), as far from where he comes in as can be had
+ * and far from each other, a side branch's or a guardian's or an elite's before any other; the middle of each, on the floor. Fewer
+ * than two if the mine has not the rooms (a floor so poor is laid again: level.ts).
+ */
+export function keyBearerSpots(L: Level): { x: number; y: number; room: number }[] {
+  const f = L.floor;
+  const part = L.lair?.part;
+  const start = f.rooms.find((r) => r.kind === 'start') ?? f.rooms[0];
+  const sx = start.x + start.w / 2;
+  const sy = start.y + start.h / 2;
+  const mid = (r: { x: number; y: number; w: number; h: number }): { x: number; y: number } => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+  const cands = f.rooms.filter((r) => {
+    if (r.kind === 'start' || r.kind === 'boss' || r.cell || r.w * r.h < 20) return false;
+    const c = mid(r);
+    return !part || part[Math.floor(c.y) * f.w + Math.floor(c.x)] === 1;
+  });
+  const score = (r: (typeof cands)[number]): number => {
+    const c = mid(r);
+    const far = Math.hypot(c.x - sx, c.y - sy);
+    return far + (r.path < 0 ? 12 : 0) + (r.kind === 'guardian' ? 10 : r.kind === 'elite' ? 6 : 0);
+  };
+  cands.sort((a, b) => score(b) - score(a) || a.id - b.id);
+  const out: { x: number; y: number; room: number }[] = [];
+  const spotIn = (r: (typeof cands)[number]): { x: number; y: number } | null => {
+    const c = mid(r);
+    let best: { x: number; y: number } | null = null;
+    let bd = Infinity;
+    for (let y = r.y; y < r.y + r.h; y++) {
+      for (let x = r.x; x < r.x + r.w; x++) {
+        if (L.walk[y * f.w + x] !== 1) continue;
+        const d = Math.hypot(x + 0.5 - c.x, y + 0.5 - c.y);
+        if (d < bd) {
+          bd = d;
+          best = { x: x + 0.5, y: y + 0.5 };
+        }
+      }
+    }
+    return best;
+  };
+  for (const r of cands) {
+    if (out.length >= 2) break;
+    const s = spotIn(r);
+    if (!s) continue;
+    if (out.some((o) => Math.hypot(o.x - s.x, o.y - s.y) < 12)) continue;
+    out.push({ ...s, room: r.id });
+  }
+  // (rooms too near each other only: the best two of them anyway)
+  for (const r of cands) {
+    if (out.length >= 2) break;
+    const s = spotIn(r);
+    if (s && !out.some((o) => o.room === r.id)) out.push({ ...s, room: r.id });
+  }
+  return out;
+}

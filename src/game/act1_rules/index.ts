@@ -7,6 +7,7 @@ import type { Monster } from '../state';
 import type { MonsterKind } from '../types';
 import type { Act1Rules } from './types';
 import { RULES as chanter } from './chanter';
+import { RULES_BLADE as keyblade, RULES_FLAME as keyflame } from './keybearers';
 import { RULES as firepot } from './firepot';
 import { RULES as qgolem } from './qgolem';
 import { RULES as rubbling } from './rubbling';
@@ -130,6 +131,9 @@ export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>
   moth,
   rshade,
   stoker,
+  // (floor 5's temple door's key-bearers)
+  keyblade,
+  keyflame,
 };
 
 /** The rules of a kind of the descent's own (null: not one, or not built yet). */

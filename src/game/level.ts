@@ -1,7 +1,7 @@
 // Builds the two kinds of level: the town hub and a generated dungeon.
 
 import { TEMPLE_DOOR } from '../art/temple_door';
-import { placeTempleDoor } from './temple_door';
+import { keyBearerSpots, placeTempleDoor } from './temple_door';
 import { carveArena } from './furnace_arena';
 import { RNG } from '../engine/rng';
 import { TUNE } from './defs';
@@ -941,8 +941,8 @@ export function makeDungeon(depth: number, seed: number, opts: { furnace?: boole
     level.lair = planLair(level);
     layLair(level);
     // (FLOOR 5, behind TEMPLE_DOOR: the temple's door set in its threshold; a floor with no threshold to set it in is laid again,
-    // from the next seed, until one has: game/temple_door.ts)
-    if (TEMPLE_DOOR.on && !placeTempleDoor(level) && (opts.tries ?? 0) < 12) return makeDungeon(depth, seed + 7919, { ...opts, tries: (opts.tries ?? 0) + 1 });
+    // from the next seed, until one has; and one without two rooms of the mine for the door's key-bearers: game/temple_door.ts)
+    if (TEMPLE_DOOR.on && (!placeTempleDoor(level) || keyBearerSpots(level).length < 2) && (opts.tries ?? 0) < 12) return makeDungeon(depth, seed + 7919, { ...opts, tries: (opts.tries ?? 0) + 1 });
   }
   return level;
 }

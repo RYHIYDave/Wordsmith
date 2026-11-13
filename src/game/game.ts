@@ -1,7 +1,7 @@
 // The rules of the game: one Game object holds a run (one character's life) and advances it
 // frame by frame. It knows nothing about drawing or input; it reads Controls and emits GameEvents.
 
-import { stepTempleDoor } from './temple_door';
+import { KEY_BEARERS, keyBearerSpots, stepTempleDoor } from './temple_door';
 import { BARS_LASTS, BARS_PERIL, RAIN_LASTS, RAIN_PERIL, cageHero } from './action_f1';
 import { RIME_LASTS, RIME_PERIL, SIGIL_LASTS, SIGIL_PERIL } from './action_f2';
 import { RAMPAGE_BLOWS, RING_LASTS, RING_PERIL, chargeOf, greenTroll, rushMayEnd } from './action_f3';
@@ -1755,6 +1755,8 @@ export class Game {
       bx = back.x;
       by = back.y;
     }
+    // (FLOOR 5, behind TEMPLE_DOOR: the temple door's two key-bearers, each in a room of the mine: keyBearers)
+    if (this.level.temple) this.keyBearers();
     // (ACT 1: where a boss of the descent's own stands, as his rules have it: the eyrie's edge, the Eye's pool)
     const bk = bossKind(this.depth);
     const placed = ACT1.on ? act1Rules(bk)?.bossAt?.(this.level) ?? null : null;
@@ -13920,6 +13922,35 @@ export class Game {
       L.walk[i] = on ? 0 : 1;
       if (!STOKER_ON.on) L.open[i] = on ? 0 : 1;
     }
+  }
+
+  /**
+   * FLOOR 5, behind TEMPLE_DOOR: THE TEMPLE DOOR'S TWO KEY-BEARERS (game/temple_door.ts keyBearerSpots; their rules,
+   * game/act1_rules/keybearers.ts), the Knife in the first room, the Flame in the second: each a mini-boss, as hard for its floor
+   * as the Stoker is for his, an elite's name over him. A guardian of the room is gone for him; its others stay as his escort.
+   */
+  private keyBearers(): void {
+    const spots = keyBearerSpots(this.level);
+    const rooms = this.level.floor.rooms;
+    spots.forEach((s, i) => {
+      const room = rooms.find((r) => r.id === s.room);
+      if (room) this.monsters = this.monsters.filter((o) => !(o.champion && o.x >= room.x && o.y >= room.y && o.x < room.x + room.w && o.y < room.y + room.h));
+      const kind = KEY_BEARERS[i];
+      const m = this.spawn(kind, s.x, s.y, -4 - i, 0, false, this.rng);
+      m.maxLife = Math.round(MONSTERS[kind].life * (1 + 0.4 * (this.power - 1)) * this.tough);
+      m.life = m.maxLife;
+      m.elite = true;
+    });
+  }
+
+  /** FLOOR 5, behind TEMPLE_DOOR: one of the temple door's keys, taken where it lies (its bearer fallen: game/act1_rules/keybearers.ts). */
+  templeKeyTaken(x: number, y: number): void {
+    const T = this.level.temple;
+    if (!T) return;
+    T.keys = Math.min(T.need, T.keys + 1);
+    this.emit({ t: 'quest', x, y });
+    this.sfx('rare');
+    this.msg(T.keys >= T.need ? 'Both keys. The temple door awaits.' : `A key to the temple door. ${T.keys} of ${T.need}.`, MSG.word);
   }
 
   /** QUESTS15: the crank's gear, picked up where it lies (the Stoker fallen: game/act1_rules/stoker.ts). */

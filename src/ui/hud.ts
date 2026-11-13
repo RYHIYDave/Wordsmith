@@ -10,6 +10,7 @@
 // it was: it is a button, and a button wants to be under a thumb. (The life is also a bar over the
 // hero's head: render/lifebar.ts.)
 
+import { keySprite } from '../art/key_bearers_fx';
 import { isCamp } from '../game/camp';
 import { RIM_NAME } from '../game/rim';
 import { WORD_COLOR } from '../art/icons';
@@ -235,6 +236,27 @@ function drawBellsClock(g: CanvasRenderingContext2D, game: Game, W: number, y: n
   g.fillRect(x, y + 11, bw, 4);
   g.fillStyle = left < 5 && Math.floor(t * 4) % 2 === 0 ? '#b8fff8' : '#22d0e0';
   g.fillRect(x, y + 11, Math.round((bw * left) / B.limit), 4);
+  return true;
+}
+
+/**
+ * FLOOR 5, behind TEMPLE_DOOR: THE TEMPLE DOOR'S KEYS, across the top of the screen once he knows of them (the door has told him, or he
+ * holds one) and until the door opens: how many he holds of its two, each a key, brass if held, dark if not. Returns whether it is drawn.
+ */
+function drawTempleKeys(g: CanvasRenderingContext2D, game: Game, W: number, y: number): boolean {
+  const L = game.level;
+  const T = L.temple;
+  if (!T || (!T.told && T.keys === 0) || L.doors[T.door].open >= 1) return false;
+  const cx = Math.floor(W / 2);
+  drawText(g, `TEMPLE KEYS  ${T.keys} / ${T.need}`, cx - 12, y, '#dcaa52', { align: 'center', shadow: P.ink });
+  const half = Math.floor(textWidth(`TEMPLE KEYS  ${T.keys} / ${T.need}`) / 2);
+  for (let i = 0; i < T.need; i++) {
+    const s = keySprite(0);
+    const x = cx - 12 + half + 10 + i * 13;
+    g.globalAlpha = i < T.keys ? 1 : 0.3;
+    g.drawImage(s.img, x - s.ax, y + 4 - s.ay, s.w, s.h);
+    g.globalAlpha = 1;
+  }
   return true;
 }
 
@@ -1413,7 +1435,8 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   });
 
   // ---- ACT 2, THE BELLS: the clock (his doc: "a timer runs across the top of the screen") ---------
-  const bellsUp = drawBellsClock(g, game, W, bossUp ? 4 + 20 * bossRows : 4, t);
+  // (FLOOR 5, behind TEMPLE_DOOR: the temple door's keys, in the same place: the two are never on the same floor)
+  const bellsUp = drawBellsClock(g, game, W, bossUp ? 4 + 20 * bossRows : 4, t) || drawTempleKeys(g, game, W, bossUp ? 4 + 20 * bossRows : 4);
 
   // ---- the first dungeon's prompt, and the word just found ------------------------------------
   // (a word found is the bigger news: for its moment it takes the prompt's place)

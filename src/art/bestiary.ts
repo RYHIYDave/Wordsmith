@@ -314,6 +314,9 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   rshade: { top: 32, half: 11 },
   // (floor 3's Stoker twice the knight, his firebox broad: art/stoker.ts)
   stoker: { top: 90, half: 18 },
+  // (floor 5's key-bearers: the dagger cultist a head taller, KEY_K; the Flame's crown of fire over his cowl)
+  keyblade: { top: 35, half: 11 },
+  keyflame: { top: 40, half: 11 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
   ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)

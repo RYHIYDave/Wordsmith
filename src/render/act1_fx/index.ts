@@ -83,6 +83,7 @@ import { FX as gking } from './gking';
 import { FX as hshape } from './hshape';
 import { FX as rshade } from './rshade';
 import { FX as stoker } from './stoker';
+import { FX_BLADE as keyblade, FX_FLAME as keyflame } from './keybearers';
 import { FX as rshadow } from './rshadow';
 import { FX as moth } from './moth';
 
@@ -166,6 +167,9 @@ export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   moth,
   rshade,
   stoker,
+  // (floor 5's temple door's key-bearers)
+  keyblade,
+  keyflame,
 };
 
 export function act1Fx(kind: string): Act1Fx | null {
