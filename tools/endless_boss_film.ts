@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { ASCEND, RAIN, RAIN_RUNES, giantSkeletonAt, giantSolidAt, HAIL, HAIL_BOLTS, HAIL_CANVAS, HAIL_HERO, HAIL_STONES, hailCloudAt, paintHail, DEATH, ERUPT, ERUPT_AT, ERUPT_CANVAS, ERUPT_VENTS, MELD, eruptRace, meldSmeared, paintEruption, FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { HAIL, HAIL_BOLTS, HAIL_CANVAS, HAIL_HERO, HAIL_STONES, hailCloudAt, paintHail, DEATH, ERUPT, ERUPT_AT, ERUPT_CANVAS, ERUPT_VENTS, MELD, eruptRace, meldSmeared, paintEruption, FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -1201,76 +1201,6 @@ function hailFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
     for (let yy = -14; yy <= 14; yy++) for (let xx = -14; xx <= 14; xx++) { const q = Math.hypot(xx, yy) / 14; if (q < 1) { const [px, py] = P(b.at[0] + xx, b.at[1] + yy); mix(s, px, py, '#0e0b10', 0.5 * fade * (1 - q)); } }
   }
 }
-/** HIS LAST STAND: the giant (his shade, its own bones, burning solid round him), him rising into its chest and floating there,
- * its stamp's ring and cracks, and the melds raining. `under`: the floor's part. */
-function lastStand(s: Px, t: number, ox: number, oy: number, from: V2, dir: number, mv: string, under: boolean): void {
-  const P = (x: number, y: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, 0]); return [Math.round(ox + px), Math.round(oy + py)]; };
-  if (under) {
-    // (its stamp: cracks out from where its staff strikes, and its ring rolling out over the floor)
-    if (mv === 'ascend' && t >= ASCEND.stomp) {
-      const g = giantSkeletonAt('ascend', ASCEND.stomp);
-      const sto = staffFootOfGiant(g);
-      const u = (t - ASCEND.stomp) / 0.7;
-      const r = 6 + 5.2 * TILE * (1 - (1 - Math.min(1, u)) * (1 - Math.min(1, u)));
-      if (u < 1.1) for (let i = 0; i < 520; i++) {
-        const a = (i / 520) * Math.PI * 2;
-        for (let w = -12; w <= 3; w++) { const [px, py] = P(sto[0] + Math.cos(a) * (r + w), sto[1] + Math.sin(a) * (r + w)); mix(s, px, py, w > 0 ? '#ffd0e0' : w > -2 ? '#ff4f8a' : '#2a0a18', (w > -2 ? 0.85 : 0.35 * (1 + w / 12)) * Math.max(0, 1 - 0.7 * u)); }
-      }
-      const cool = Math.min(1, (t - ASCEND.stomp) / 1.4);
-      for (let kk = 0; kk < 11; kk++) {
-        let ang = (kk / 11) * Math.PI * 2 + 0.4 * Math.sin(kk * 3.1);
-        let x = sto[0], y = sto[1];
-        const long = (40 + 34 * ((kk * 0.618) % 1)) * Math.min(1, (t - ASCEND.stomp) / 0.12);
-        for (let d = 0; d < long; d += 1) { ang += 0.3 * Math.sin(d * 0.5 + kk); x += Math.cos(ang); y += Math.sin(ang); const [px, py] = P(x, y); mix(s, px, py, '#0e0b10', 0.85); mix(s, px + 1, py, '#0e0b10', 0.5); if (d < long * 0.7) mix(s, px, py - 1, '#ff4f8a', 0.7 * (1 - cool)); }
-      }
-    }
-    // (the melds raining: each ringed in its own colour on the floor first; scorched where it struck)
-    if (mv === 'meldrain') for (const r of RAIN_RUNES) {
-      const cols = MELD_RAMP[r.meld as keyof typeof MELD_RAMP];
-      const u = t - (r.t - RAIN.warn);
-      if (u < 0) continue;
-      if (t < r.t) {
-        const f = u / RAIN.warn;
-        const R = 26 - 7 * f;
-        for (let i = 0; i < 140; i++) { const a = (i / 110) * Math.PI * 2; const [px, py] = P(r.at[0] + Math.cos(a) * R, r.at[1] + Math.sin(a) * R); mix(s, px, py, i % 8 === 0 ? '#ff4f8a' : cols[4], 0.45 + 0.45 * f); }
-        continue;
-      }
-      const fade = 1 - Math.min(1, (t - r.t) / 1.6);
-      for (let yy = -12; yy <= 12; yy++) for (let xx = -12; xx <= 12; xx++) { const q = Math.hypot(xx, yy) / 12; if (q < 1) { const [px, py] = P(r.at[0] + xx, r.at[1] + yy); mix(s, px, py, q < 0.5 ? cols[1] : '#0e0b10', 0.55 * fade * (1 - q)); } }
-    }
-    return;
-  }
-  // (the melds raining: each falling out of the top of the picture, its own rune, a streak behind it; bursting where it strikes in its
-  // own colours, his pink through them)
-  if (mv === 'meldrain') for (const [ri, r] of RAIN_RUNES.entries()) {
-    const cols = MELD_RAMP[r.meld as keyof typeof MELD_RAMP];
-    const [gx, gy] = P(r.at[0], r.at[1]);
-    if (t > r.t - RAIN.fall && t < r.t) {
-      const f = (t - (r.t - RAIN.fall)) / RAIN.fall;
-      const g = bareGlyph('power', Infinity, 3, MELD_GLYPH[r.meld as keyof typeof MELD_GLYPH], [cols[3], cols[4]]);
-      const Y = gy - (1 - f) * (gy + 30);
-      for (let k2 = 0; k2 < 6; k2++) stamp(s, g, gx, Y - k2 * 10, k2 === 0 ? 1 : 0.45 / k2);
-    } else if (t >= r.t && t < r.t + 0.45) {
-      const b = (t - r.t) / 0.45;
-      for (let yy = -46; yy <= 46; yy++) for (let xx = -62; xx <= 62; xx++) {
-        const q = Math.hypot(xx / 62, yy / 40) / (0.4 + 0.6 * b);
-        if (q < 1) mix(s, gx + xx, gy + yy - 6, q < 0.3 ? '#ffffff' : q < 0.6 ? cols[4] : q < 0.85 ? cols[3] : '#ff4f8a', 0.8 * (1 - b) * (1 - q * 0.5));
-      }
-      for (let i = 0; i < 14; i++) {
-        const a = (i / 14) * Math.PI * 2 + ri;
-        const d = 10 + 64 * b;
-        mix(s, Math.round(gx + Math.cos(a) * d), Math.round(gy - 6 + Math.sin(a) * d * 0.6 - 18 * b * (1 - b) * 4), i % 3 ? cols[4] : '#ff4f8a', 1 - b);
-      }
-    }
-  }
-}
-/** Where the giant's staff strikes the floor (his floor point's own lengths). */
-function staffFootOfGiant(g: ReturnType<typeof giantSkeletonAt>): [number, number] {
-  // (the giant is his bones made great, standing where his shade stood: its staff in its right fist, upright at its side)
-  const hand = g.handR;
-  const O = [g.pelvis[0], g.pelvis[1]];
-  return [(hand[0] - O[0]) * SHADE.size - SHADE.behind, (hand[1] - O[1]) * SHADE.size + SHADE.side];
-}
 /** His shade laid on the floor at (ox, oy), its anchor his floor point: see-through as far as `a`, its light over all. */
 function layShade(s: Px, p: { px: Px; lights: { x: number; y: number; r: number; color: string; a?: number }[] }, ox: number, oy: number, a: number): void {
   const x0 = Math.round(ox - SHADE_CANVAS.ax), y0 = Math.round(oy - SHADE_CANVAS.ay);
@@ -1350,7 +1280,7 @@ const floorOf = (mv: string) => (t: number): V2 => {
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : mv === 'fall' ? FALL.long : mv === 'eruption' ? ERUPT.end : mv === 'foot' ? 4.8 : mv === 'death' ? DEATH.long : mv === 'hailstorm' ? HAIL.end : mv === 'ascend' ? ASCEND.long : mv === 'meldrain' ? RAIN.long : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : mv === 'fall' ? FALL.long : mv === 'eruption' ? ERUPT.end : mv === 'foot' ? 4.8 : mv === 'death' ? DEATH.long : mv === 'hailstorm' ? HAIL.end : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
@@ -1358,7 +1288,6 @@ const segs: Seg[] = [];
   const plan: [string, 'front' | 'rear', number, number?][] = move === 'charge3'
     ? [['charge', 'front', 1], ['wheel', 'front', 1], ['charge', 'rear', 1.15], ['wheel', 'rear', 1.15], ['charge', 'front', 1.3]]
     : move === 'fall' ? [['charge', view, 1, FALL.from], ['fall', view, 1]]
-    : move === 'ascend' ? [['ascend', view, 1], ['meldrain', view, 1]]
     : [[move, view, 1]];
   let from: V2 = [0, 0];
   for (const [mv, vw, speed, until] of plan) {
@@ -1387,16 +1316,15 @@ for (const sg of segs) {
     const meldFilm = sg.move === 'eruption';
     const hailFilm = sg.move === 'hailstorm';
     const deathFilm = sg.move === 'death';
-    const standFilm = sg.move === 'ascend' || sg.move === 'meldrain';
     const FALL_END = fallCarry(FALL.long) * TILE;
     const lead = sg.move === 'fall' ? 50 + 60 * Math.min(1, t / 1.2) : 50;
     // (as his shade rises, the camera lifts to take it in)
     const lift = sg.move === 'fall' ? 60 * Math.min(1, Math.max(0, (t - FALL.shade[0]) / (FALL.shade[1] - FALL.shade[0]))) : 0;
-    const [tx, ty] = standFilm ? at([sg.from[0] + 0.6 * TILE, sg.from[1] - 1.0 * TILE, 115]) : hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    const [tx, ty] = hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
-    const kick = sg.move === 'ascend' ? Math.max(0, 1 - Math.abs(t - ASCEND.stomp - 0.03) / 0.35) * 9 + (t > ASCEND.roar[0] && t < ASCEND.roar[1] ? 2 : 0) : sg.move === 'meldrain' ? Math.max(0, ...RAIN_RUNES.map((r) => 1 - Math.abs(t - r.t - 0.02) / 0.12)) * 3 : sg.move === 'death' ? Math.max(0, 1 - Math.abs(t - 0.02) / 0.12) * 3 + Math.max(0, 1 - Math.abs(t - DEATH.burst - 0.02) / 0.25) * 7 + (t > 0.3 && t < 1.35 ? 1.5 : 0) : sg.move === 'fall' ? Math.max(0, 1 - Math.abs(t - FALL.kill - 0.02) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - FALL.kill - 0.22) / 0.15) * 5 + Math.max(0, 1 - Math.abs(t - FALL.slam - 0.03) / 0.3) * 8 : sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : sg.move === 'frost' ? Math.max(0, 1 - Math.abs(t - FROST.hit - 0.03) / 0.25) * 5 : sg.move === 'lightning' ? Math.max(0, ...[...BOLT.bursts, ...BOLT.zaps].map((b) => 1 - Math.abs(t - b - 0.03) / 0.15), 1 - Math.abs(t - BOLT.crack) / 0.12) * 4 : 0;
+    const kick = sg.move === 'death' ? Math.max(0, 1 - Math.abs(t - 0.02) / 0.12) * 3 + Math.max(0, 1 - Math.abs(t - DEATH.burst - 0.02) / 0.25) * 7 + (t > 0.3 && t < 1.35 ? 1.5 : 0) : sg.move === 'fall' ? Math.max(0, 1 - Math.abs(t - FALL.kill - 0.02) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - FALL.kill - 0.22) / 0.15) * 5 + Math.max(0, 1 - Math.abs(t - FALL.slam - 0.03) / 0.3) * 8 : sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : sg.move === 'frost' ? Math.max(0, 1 - Math.abs(t - FROST.hit - 0.03) / 0.25) * 5 : sg.move === 'lightning' ? Math.max(0, ...[...BOLT.bursts, ...BOLT.zaps].map((b) => 1 - Math.abs(t - b - 0.03) / 0.15), 1 - Math.abs(t - BOLT.crack) / 0.12) * 4 : 0;
     const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
     const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
     const s = floor(-ox, -oy);
@@ -1404,16 +1332,6 @@ for (const sg of segs) {
     if (sg.move === 'fall') scrape(s, t, ox, oy, sg.from, k);
     if (sg.move === 'fall') slamFloor(s, t, ox, oy, sg.from, k);
     if (sg.move === 'eruption') meldScene(s, t, ox, oy, sg.from, k, 'eruption', 'power', 'fire', MELD_GLYPH.eruption, [MELD_RAMP.eruption[3], MELD_RAMP.eruption[4]], ERUPT_AT, true);
-    if (sg.move === 'ascend' || sg.move === 'meldrain') {
-      lastStand(s, t, ox, oy, sg.from, k, sg.move, true);
-      const [hx, hy] = at([sg.from[0] + k * 3.4 * TILE, sg.from[1] - k * 2.8 * TILE, 0]);
-      hero(s, ox + hx, oy + hy);
-      // (THE GIANT: his shade, its own bones now, burning solid round him, come down onto the floor)
-      const gsk = giantSkeletonAt(sg.move, t);
-      const sol = giantSolidAt(sg.move, t);
-      const [x, y] = at([sg.from[0], sg.from[1], 0]);
-      layShade(s, paintShade(gsk, t, sg.view, 1, 0, sol, sol), ox + x, oy + y, 0.78 + 0.18 * sol);
-    }
     if (sg.move === 'death') {
       // (the hero, who struck the last blow, before him)
       const [hx, hy] = at([sg.from[0] + k * 2.9 * TILE, sg.from[1] - k * 1.7 * TILE, 0]);
@@ -1510,14 +1428,7 @@ for (const sg of segs) {
       const [x, y] = base();
       for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
     }
-    if (sg.move === 'ascend' || sg.move === 'meldrain') {
-      // (him: rising into its chest; once in, its heart, burning inside it, seen through it)
-      const [x, y] = base();
-      const inside = sg.move === 'meldrain' || t >= ASCEND.enter;
-      lay(s, sg.move, sg.view, t, x, y, inside ? 0.82 : 0);
-      if (sg.move === 'ascend' && t >= ASCEND.enter && t < ASCEND.enter + 0.2) flash(s, sg.move, sg.view, t, x, y, 0.9 * (1 - (t - ASCEND.enter) / 0.2));
-      lastStand(s, t, ox, oy, sg.from, k, sg.move, false);
-    } else if (sg.move === 'foot' || sg.move === 'death' || sg.move === 'eruption' || sg.move === 'hailstorm' || sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost' || sg.move === 'lightning' || sg.move === 'poison') {
+    if (sg.move === 'foot' || sg.move === 'death' || sg.move === 'eruption' || sg.move === 'hailstorm' || sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost' || sg.move === 'lightning' || sg.move === 'poison') {
       const [x, y] = base();
       lay(s, sg.move, sg.view, t, x, y);
     } else {
@@ -1559,7 +1470,6 @@ for (const sg of segs) {
     if (sg.move === 'lightning') boltScene(s, t, ox, oy, sg.from, k, true);
     if (sg.move === 'poison') sporeScene(s, t, ox, oy, sg.from, k, true);
     writeFileSync(`${out}/f/${String(i).padStart(3, '0')}.png`, png(s));
-    if (sg.move === 'ascend' && t >= ASCEND.stomp - 1e-6 && t < ASCEND.stomp + 1 / 30 - 1e-6) for (let h = 0; h < 3; h++) writeFileSync(`${out}/f/${String(++i).padStart(3, '0')}.png`, png(s));
     if (sg.move === 'fall' && t >= FALL.slam - 1e-6 && t < FALL.slam + 1 / 30 - 1e-6) for (let h = 0; h < 3; h++) writeFileSync(`${out}/f/${String(++i).padStart(3, '0')}.png`, png(s));
   }
 }

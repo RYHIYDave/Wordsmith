@@ -1,6 +1,6 @@
 // ENDLESS MODE'S FINAL BOSS, THE WARPED WORDSMITH ON THE GREAT WOOLLY BOAR: his look standing, through the bosses' checks (his
 // rulebook's How art is made 7) for his moves so far: his stand; the boar's charge, wheel round, gore, and rear up and stomp; his
-// word attacks from the saddle: Power, Flame, Frost, Lightning, Poison; the boar's death and his rising on foot; on foot, his stand and his melds (Eruption, Hailstorm); his last stand; his death.
+// word attacks from the saddle: Power, Flame, Frost, Lightning, Poison; the boar's death and his rising on foot; on foot, his stand and his melds (Eruption, Hailstorm); his death.
 // @ts-ignore
 import test from 'node:test';
 // @ts-ignore
@@ -19,7 +19,7 @@ test("his stand passes the bosses' checks", () => {
 test("the boar's charge, wheel round, gore and stomp, his five words, and the boar's death and his rising, pass the bosses' checks (but the skid: its hooves ploughing, his pick)", () => {
   // (the one place a hoof slides: the skid at the end of each run, its hooves ploughing the floor, as he picked it, 12 Nov 2026:
   // “Heavy charges, skid and turn (Recommended)”; anything else that slides, or anything else at all, is a finding)
-  const found = checkBoss(wsMob(), WS_SHAPE, ['charge', 'wheel', 'gore', 'stomp', 'power', 'flame', 'frost', 'lightning', 'poison', 'fall', 'foot', 'eruption', 'hailstorm', 'death', 'ascend', 'meldrain']).filter(
+  const found = checkBoss(wsMob(), WS_SHAPE, ['charge', 'wheel', 'gore', 'stomp', 'power', 'flame', 'frost', 'lightning', 'poison', 'fall', 'foot', 'eruption', 'hailstorm', 'death']).filter(
     (f) => !(f.kind === 'slide' && /^hoof[0-3] \(down from /.test(f.what) && ((d) => d >= CHARGE_SKID[0] - 1e-6 && d <= CHARGE_SKID[1])(Number(/from ([\d.]+)/.exec(f.what)?.[1]))),
   );
   assert.deepEqual(findingsSaid(found), []);

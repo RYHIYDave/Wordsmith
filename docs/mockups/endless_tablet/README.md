@@ -471,6 +471,11 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   the floor (two frames, smeared, the frame held). Then, its staff held up, MELDS RAIN: meld runes (each its own, the game's)
   falling out of the top of the picture all over the floor, each ringed first in its own colour, each bursting in its own colours,
   his pink through them.
+- HIS WORDS, 13 Nov 2026, by pop-up: of the raw-energy shade, “I take it back, I like the old shade better”; of the last stand,
+  “Let’s just cut the last stand, I think the shade with him on foot and the multitude of melds and moves will make it unique and
+  memorable”. SO: THE OLD SHADE IS BACK (his own figure made great, of his pink, bands rising through it), kept further back and
+  higher as he asked before, his arms and staff in it as mended; THE LAST STAND IS CUT (made at 06891c2, in the branch's history;
+  `boss_last_stand.mp4` taken away). The fight: phase 1 on the boar; phase 2 on foot with his shade and the melds; his death.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other eight melds, each for his yes; his other facing turned round, not flipped.
 

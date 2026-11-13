@@ -2764,18 +2764,6 @@ function wsBits(st: Stage, m: Moment): Bit[] {
   // (its end: gone to ash, and blown away)
   const ash = P.ash ?? 0, cr = P.crumble ?? 0;
   if (!onFoot && cr < 1) boarBits(P, ash > 0 || cr > 0 ? ashPut(put, ash, cr) : put, near, st);
-  // (his last stand: in the shade's chest, its heart, burning white and pink)
-  if ((m.move === 'ascend' && m.t >= ASCEND.enter) || m.move === 'meldrain') {
-    const heart = heartOf(s);
-    const dp = dyingPut(put, 0.55, 1, heart);
-    robe(dp, s, P.sway, 0.3 * Math.sin(m.t * 3), m.t);
-    arm(dp, s, 'L', s.chest[2], 0.32, 1.25);
-    arm(dp, s, 'R', s.chest[2], 1, 0);
-    dp('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
-    head(dp, st, s, m.t, 0.3);
-    put('glow', 'heart', { k: 'glow', p: heart, c: '#ff7aa8', r: 36, a: 0.45 + 0.1 * Math.sin(m.t * 6) });
-    return bits;
-  }
   // (his death: overwhelmed, burning paler and pinker, light splitting out of him; then crushed in to his heart, and gone)
   if (m.move === 'death') {
     const k = implodeAt(m.t);
@@ -2895,7 +2883,7 @@ export function wsMob(): Mob {
       for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
     },
     grains: (st: Stage, m: Moment) => m.move === 'death' ? deathGrains(m.t, DEATH_HEART()) : boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, ascend: { name: 'ascend', motion: footMotion((t) => ascendRiderAt(t), ASCEND.long), rest: REST }, meldrain: { name: 'meldrain', motion: footMotion((t) => ascendRiderAt(t, 'meldrain'), RAIN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -3272,75 +3260,8 @@ export function paintHail(t: number, view: 'front' | 'rear'): Painted {
 export { HAIL_HERO };
 
 
-// HIS LAST STAND (his pick, 13 Nov 2026: “He climbs into his shade”, offered as: he becomes one giant of pink energy, slow and huge,
-// melds raining down; his first brief: “thrown from the boar partway, HE GROWS HUGE”). At his last stretch of life:
-//   STRUCK       rocked back; he looks up at his shade
-//   CLIMBS IN    his shade stoops to him, reaching its great hand down; he rises off the floor, arms spread, his head back, drawn up
-//                and back into its chest; a flash as he goes in
-//   THE GIANT    the shade burns solid round him, he its heart, burning white and pink inside it; it straightens, slow and huge; it
-//                throws back its head and thrusts its staff up (his roar is the sound chat's); and STAMPS, the floor cracking out from
-//                its foot, a ring of his pink rolling out (a lightning strike of two frames, smeared, the frame held)
-//   MELDS RAIN   its staff thrust up, held: meld runes rain down out of the top of the picture all over the floor, each ringed in its
-//                own colour first, each bursting where it strikes in its own colours, his pink through them: stuff everywhere, as
-//                his gameplay rulebook asks of a last phase.
-export const ASCEND = { struck: 0.3, rise: [0.5, 1.5] as const, enter: 1.55, stand: [1.7, 2.35] as const, roar: [2.35, 2.95] as const, stomp: 102 / 30, long: 4.2 };
-export const ASCEND_STRIKE = [ASCEND.stomp - 2 / 30, ASCEND.stomp] as const;
-export const RAIN = { long: 4.6, runes: 48, from: 0.5, to: 3.6, warn: 0.6, fall: 0.22 };
-/** Where he floats inside it, as its heart (from his floor point: the giant stands where the shade stood). */
-const HEART_AT: V3 = [-24, -6, 92];
-/** Floating as its heart: his arms spread, his head back, his legs hanging. */
-const HEART_LOOK: Look = { ...FOOT_RAISE, pitch: -12, bend: -10, hunch: -4, faceUp: 34, faceTilt: 6, lfp: 40, lk: 10, rk: -10, lkUp: 10, lhx: 1, lhy: 15, lhz: 10, le: 55, rhx: 1, rhy: -13, rhz: 10, re: 50 };
-/** His bones through his last stand: struck, rising into it, floating in it. */
-export function ascendRiderAt(t: number, move = 'ascend'): Partial<Bones> {
-  if (move === 'meldrain' || t >= ASCEND.enter) {
-    const L: Look = { ...HEART_LOOK, faceTilt: HEART_LOOK.faceTilt + 4 * Math.sin(t * 2), lhz: HEART_LOOK.lhz + 1.5 * Math.sin(t * 3) };
-    const b = footBones(L, 0, t, 0);
-    const bob = 1.2 * Math.sin(t * 2.2);
-    return { ...b, px: HEART_AT[0], py: HEART_AT[1], pz: HEART_AT[2] + bob, lfx: HEART_AT[0] + 3, lfy: HEART_AT[1] + 3 - B.stance, lfz: HEART_AT[2] + bob - 28, rfx: HEART_AT[0] - 1, rfy: HEART_AT[1] - 3 + B.stance, rfz: HEART_AT[2] + bob - 27 };
-  }
-  const hit = bumpOf(t, 0, ASCEND.struck + 0.2);
-  const u = smooth01((t - ASCEND.rise[0]) / (ASCEND.rise[1] - ASCEND.rise[0]));
-  const lookUp: Look = { ...FOOT_OVER, pitch: -4, bend: -2, faceUp: 36, faceTurn: -10, lhx: 6, lhy: 12, lhz: 8, le: 30 };
-  let L = mixLook(FOOT_OVER, { ...FOOT_OVER, pitch: -6, bend: -4, faceUp: 22 }, hit);
-  L = mixLook(L, lookUp, smooth01((t - 0.25) / 0.3));
-  L = mixLook(L, HEART_LOOK, u);
-  const b = footBones(L, 4 * (1 - u), t, 0);
-  // (rising off the floor and back into its chest; his feet leaving the floor last)
-  const px = HEART_AT[0] * u, py = HEART_AT[1] * u, pz = -4 * (1 - u) + HEART_AT[2] * u * u;
-  const fl = smooth01((t - ASCEND.rise[0] - 0.1) / 0.6);
-  return { ...b, px, py, pz, lfx: FOOT_L[0] + (px + 3 - FOOT_L[0]) * fl, lfy: FOOT_L[1] - B.stance + (py + 3 - FOOT_L[1]) * fl, lfz: (pz - 28) * fl, rfx: FOOT_R[0] + (px - 1 - FOOT_R[0]) * fl, rfy: FOOT_R[1] + B.stance + (py - 3 - FOOT_R[1]) * fl, rfz: (pz - 27) * fl };
-}
-/** THE SHADE'S OWN BONES through his last stand (it no longer does as he does): stooping to him, reaching its great hand down to
- * him; straightening round him; its roar, head back, staff thrust up; its stamp; standing, huge and slow; its staff held up as its
- * melds rain. Its own floor point is where it stands, so its bones are his, from nothing. */
-export function giantBonesAt(move: string, t: number): Partial<Bones> {
-  const STOOP: Look = { ...FOOT_OVER, pitch: 34, bend: 30, hunch: 22, faceUp: -26, lhx: 14, lhy: 6, lhz: -18, le: 20 };
-  const ROAR: Look = { ...FOOT_RAISE, pitch: -14, bend: -10, faceUp: 40, faceTilt: 4 };
-  const STAMP: Look = { ...FOOT_SLAM, pitch: 18, bend: 22 };
-  if (move === 'meldrain') {
-    const up = smooth01(t / 0.5) * (1 - smooth01((t - RAIN.to) / 0.6));
-    return footBones(mixLook(FOOT_OVER, { ...ROAR, faceUp: 18 }, up), 4 - 2 * up + 0.8 * Math.sin(t * 1.6), t, 1);
-  }
-  let L = mixLook(FOOT_OVER, STOOP, smooth01((t - 0.35) / 0.5) * (1 - smooth01((t - ASCEND.enter) / 0.5)));
-  L = mixLook(L, ROAR, smooth01((t - ASCEND.roar[0]) / (ASCEND.roar[1] - ASCEND.roar[0])));
-  L = mixLook(L, STAMP, clamp01((t - ASCEND_STRIKE[0]) / (ASCEND.stomp - ASCEND_STRIKE[0])));
-  L = mixLook(L, FOOT_OVER, smooth01((t - ASCEND.stomp - 0.2) / 0.7));
-  const st = t < ASCEND.stomp ? clamp01((t - ASCEND_STRIKE[0]) / (ASCEND.stomp - ASCEND_STRIKE[0])) : 1 - smooth01((t - ASCEND.stomp - 0.2) / 0.7);
-  return footBones(L, 4 + 6 * st + 3 * smooth01((t - 0.35) / 0.5) * (1 - smooth01((t - ASCEND.enter) / 0.5)), t, 1);
-}
-/** The shade's skeleton, as the painter takes it. */
-export function giantSkeletonAt(move: string, t: number): Skeleton {
-  return solve(B, { ...standing(B), ...giantBonesAt(move, t) } as never);
-}
-/** How solid the shade has burned round him (0, as it was ... 1, his body now). */
-export const giantSolidAt = (move: string, t: number): number => (move === 'meldrain' ? 1 : smooth01((t - ASCEND.enter) / 0.45));
-/** Each rune that rains: its meld, where it strikes and when. */
-export const RAIN_RUNES: ReadonlyArray<{ meld: string; at: V3; t: number }> = Array.from({ length: RAIN.runes }, (_, i) => {
-  const melds = ['eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion'];
-  const a = hash(i, 1, 9701) * TAU;
-  const r = (1.4 + 5.6 * Math.sqrt(hash(i, 2, 9702))) * TILE;
-  return { meld: melds[i % melds.length], at: [1.8 * TILE + Math.cos(a) * r, Math.sin(a) * r * 0.85, 0] as V3, t: RAIN.from + (RAIN.to - RAIN.from) * (i / RAIN.runes) + 0.05 * hash(i, 3, 9703) };
-});
+// (HIS LAST STAND was made and CUT at his word, 13 Nov 2026: “Let’s just cut the last stand, I think the shade with him on foot and
+// the multitude of melds and moves will make it unique and memorable”: in the branch's history at 06891c2.)
 
 /** Where his heart is as he implodes (as his own points are). */
 let DEATH_H: V3 | null = null;
@@ -3353,7 +3274,7 @@ export function footFrom(): [number, number] {
 /** Whether his staff is planted on the floor (on foot: his fist sliding along it, its foot down), or held as he rides. */
 export const plantedIn = (move: string, t: number): number => (FOOT_MOVES.has(move) ? 1 : move === 'fall' ? smooth01((t - FALL.kill - FALL.throw - FALL.fly) / 0.35) : 0);
 /** His moves on foot (no boar under him). */
-export const FOOT_MOVES = new Set<string>(['foot', 'death', 'ascend', 'meldrain', 'eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion']);
+export const FOOT_MOVES = new Set<string>(['foot', 'death', 'eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion']);
 
 // =============================================================================================
 // HIS SHADE (his words, 12 Nov 2026, for the second phase: “how about a large pink energy shade that looms above him and mimics his
@@ -3390,108 +3311,51 @@ function shadeOf(c: string): string {
   const l = 0.3 * ((n >> 16) & 255) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255);
   return SHADE_PINK[Math.max(0, Math.min(4, Math.round((l / 255) * 5.2 - 0.3)))];
 }
-/** HIS SHADE, `t` seconds into a move, risen as far as `grow` (0, inside him ... 1, looming over him), from his skeleton then: RAW
- * ENERGY in his shape, not a copy of him (his words, 13 Nov 2026: “the shade is a bit too close to him.  Not so much a carbon copy in
- * pink but more raw energy”): a towering mass of his pink fire loosely his shape: a hooded head of flame with two white-hot eyes and
- * tongues of it rising off its crown; a body that flows down from great shoulders into a robe of fire that frays into rising tongues
- * before it reaches the floor (no legs: it floats); arms that are streams of it, its hands clawed flares; his staff a beam of light,
- * its ring blazing; sparks streaming up off all of it. White-hot at its heart, his pink, deep crimson at its edges, see-through and
- * ragged where it thins, bands of it rising through it. Its canvas's anchor is his floor point. */
-export function paintShade(s: Skeleton, t: number, view: 'front' | 'rear', grow = 1, lean = 0, solid = 0, landed = 0): Painted {
+/** HIS SHADE (his words, 13 Nov 2026, of a remake as raw fire: “I take it back, I like the old shade better”: his own figure made
+ * great and made of his pink), `t` seconds into a move, risen as far as `grow` (0, inside him ... 1, looming over him), from his skeleton then: his
+ * picture made great and made of his pink, bands of it rising through it. Its canvas's anchor is his floor point. */
+export function paintShade(s: Skeleton, t: number, view: 'front' | 'rear', grow = 1, lean = 0): Painted {
   const st = stage(view, SHADE_CANVAS.ax, SHADE_CANVAS.ay, SHADE_CANVAS);
+  const raw: Bit[] = [];
+  const put0: Put = (part, piece, shape) => raw.push({ part, piece, shape });
+  robe(put0, s, t / WS_STAND_LONG, 0.35 * Math.sin(t * 2.1), t);
+  arm(put0, s, 'L', s.chest[2], 0.32, 1.25);
+  arm(put0, s, 'R', s.chest[2], 1, 0);
+  put0('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
+  head(put0, st, s, t, 0.3);
+  staff(put0, s, t, 0, true);
   const O: V3 = [s.pelvis[0], s.pelvis[1], 0];
-  // (in his last stand, burned solid round him, it grows greater still: slow and huge)
-  const k = (1 + (SHADE.size - 1) * grow) * (1 + 0.4 * solid);
-  // (risen, it floats; in his last stand, burned solid round him, it comes down onto the floor)
-  const off: V3 = [-SHADE.behind * grow - O[0] + lean, SHADE.side * grow - O[1], SHADE.up * grow * (1 - landed)];
-  const G = (p: V3): V3 => add(add(O, mul(sub(p, O), k)), off);
-  // (its mass: fuller than his own, a body of fire)
-  const q = k * 0.9;
-  const fr = Math.floor(t * 30);
-  const bits: Bit[] = [];
-  const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
-  // (its fire: white-hot where it faces out at its heart, his pink, crimson and dark at its edges; ragged and see-through where it
-  // thins, in bands rising through it)
-  const ENERGY = ['#3a0820', '#7a1446', '#c42a6e', '#ff4f8a', '#ff9cc0', '#ffe4ee'];
-  const fire = (heat: number, seed: number): ((u: V3, tone: number, x: number, y: number) => string | null) => (u, tone, x, y) => {
-    const face = clamp01(Math.abs(u[0]) * 0.6 + Math.max(0, -u[1]) * 0.2 + 0.5 - Math.hypot(u[1], u[2]) * 0.45);
-    const n = hash((x >> 1) + seed, (y + fr * 2) >> 1, 9801);
-    const edge = 1 - face;
-    if (n < edge * (0.85 - 0.35 * solid) - 0.1) return null;
-    const band = hash(0, ((y + fr * 3) / 4) | 0, 9810 + seed) < 0.22;
-    const h = heat * (0.45 + 0.55 * face) + (band ? 0.15 : 0) + 0.15 * (n - 0.5);
-    return ENERGY[Math.max(0, Math.min(5, Math.round(h * 5.4 - 0.6 + (tone - 2) * 0.25)))];
-  };
-  const blob = (part: string, c: V3, r: number, heat: number, seed: number, squash = 1): void =>
-    put(part, 'fire', { k: 'ball', c, ax: [[r, 0, 0], [0, r, 0], [0, 0, r * squash]], skin: fire(heat, seed) });
-  const tongue = (from: V3, len0: number, w: number, seed: number): void => {
-    const flick = 0.6 + 0.4 * Math.sin(t * 9 + seed * 1.7) + 0.2 * hash(seed, fr >> 1, 9802);
-    const sway = Math.sin(t * 5 + seed) * 3 * k * 0.4;
-    put('tongues', 'tongue', { k: 'rod', a: from, b: add(from, [sway - 3 - 0.25 * Math.abs(len0), sway * 0.5, len0 * flick]), ra: w, rb: 0.4, ramp: ['#ff4f8a', '#ff7aa8', '#ff9cc0', '#ffd0e0', '#ffe4ee'] as unknown as Ramp });
-  };
-  const head = G(s.head), neck = G(s.neck), chest = G(lerp3(s.ribs, s.neck, 0.4)), pelvis = G(s.pelvis);
-  const shL = G(s.shoulderL), shR = G(s.shoulderR), elL = G(s.elbowL), elR = G(s.elbowR), hL = G(s.handL), hR = G(s.handR);
-  const knee = G(lerp3(s.kneeL, s.kneeR, 0.5));
-  // (its body: great shoulders and chest, flowing down into a robe of fire that flares and frays)
-  blob('body', chest, 9 * q, 1, 1, 1.15);
-  blob('body', lerp3(shL, shR, 0.5), 8 * q, 0.9, 2, 0.8);
-  for (const sh of [shL, shR]) blob('body', sh, 5.2 * q, 0.8, 3, 0.9);
-  for (let i = 0; i <= 6; i++) {
-    const f = i / 6;
-    const c = lerp3(lerp3(chest, pelvis, Math.min(1, f * 1.6)), knee, Math.max(0, f * 1.6 - 0.6));
-    const sw = Math.sin(t * 3 + i * 0.9) * f * 3;
-    blob('robe', add(c, [sw - f * 4, sw * 0.4, -f * 6]), (7.5 + 6 * f) * q, 0.95 - 0.55 * f, 10 + i, 1.1);
-  }
-  // (its hem fraying into tongues of fire before it reaches the floor: it floats)
-  for (let i = 0; i < 9; i++) {
-    const a = (i / 9) * TAU + t * 0.6;
-    const r = 12 * q;
-    const base = add(knee, [Math.cos(a) * r - 4, Math.sin(a) * r * 0.8, -10 - 4 * hash(i, 1, 9803)]);
-    tongue(base, -(10 + 8 * hash(i, 2, 9804)) * q, 2.6, i + 40);
-  }
-  // (its arms: streams of it; its hands clawed flares)
-  for (const [a, b, c, side] of [[shL, elL, hL, 0], [shR, elR, hR, 1]] as const) {
-    for (let i = 0; i <= 4; i++) blob(`arm${side}`, lerp3(a, b, i / 4), (4.4 - 0.4 * i) * q, 0.85, 20 + i + side * 7);
-    for (let i = 0; i <= 4; i++) blob(`arm${side}`, lerp3(b, c, i / 4), (3.4 - 0.3 * i) * q, 0.9, 30 + i + side * 7);
-    blob(`arm${side}`, c, 3.6 * q, 1.05, 40 + side);
-    for (let j = 0; j < 4; j++) {
-      const d = norm(add(sub(c, b), [(j - 1.5) * 1.2, (j - 1.5) * 0.8, 0.4]), [1, 0, 0]);
-      put(`arm${side}`, 'claw', { k: 'rod', a: c, b: add(c, mul(d, (4 + 1.5 * Math.sin(t * 11 + j)) * q)), ra: 1.1, rb: 0.3, ramp: ENERGY.slice(1, 6) as unknown as Ramp });
+  const k = 1 + (SHADE.size - 1) * grow;
+  const off: V3 = [-SHADE.behind * grow - O[0] + lean, SHADE.side * grow - O[1], SHADE.up * grow];
+  // (bands of it rising through it, flickering: where they are it is thin)
+  const band = (x: number, y: number): boolean => ((y + Math.floor(t * 40)) % 7 === 0 && hash(x >> 2, (y + Math.floor(t * 40)) >> 3, 9301) < 0.7) || hash(x, y + Math.floor(t * 30) * 3, 9302) < 0.06;
+  const bits: Bit[] = raw.map(({ part, piece, shape }) => {
+    const sh = greatShape(shape, O, k, off);
+    if (sh.k === 'rod' || sh.k === 'cloth' || sh.k === 'band') return { part, piece, shape: { ...sh, ramp: (sh.ramp as Ramp).map(shadeOf) as unknown as Ramp } as Shape };
+    if (sh.k === 'dot') return { part, piece, shape: { ...sh, c: part === 'head' ? SHADE_HOT : shadeOf(sh.c), ...(sh.c2 ? { c2: shadeOf(sh.c2) } : {}) } };
+    if (sh.k === 'mote') return { part, piece, shape: { ...sh, c: SHADE_HOT } };
+    if (sh.k === 'glow') return { part, piece, shape: { ...sh, c: BURN[2] } };
+    if (sh.k === 'ball') {
+      const sk = sh.skin;
+      return { part, piece, shape: { ...sh, skin: (u: V3, tone: number, x: number, y: number) => {
+        if (band(x, y)) return null;
+        const c = Array.isArray(sk) ? (sk as Ramp)[T5(tone)] : (sk as (u: V3, tone: number, x: number, y: number) => string | null)(u, tone, x, y);
+        return c ? shadeOf(c) : c;
+      } } };
     }
-  }
-  // (its head: a hood of flame, no face but its eyes, white-hot; tongues of fire rising off its crown)
-  blob('head', lerp3(neck, head, 0.4), 5 * q, 0.8, 50);
-  blob('head', head, 6.2 * q, 1, 51, 1.1);
-  const f0 = norm([s.face[0][0], s.face[0][1], 0], [1, 0, 0]);
-  const l0: V3 = [-f0[1], f0[0], 0];
-  for (const e of [-1, 1]) {
-    const ep = add(add(head, mul(f0, 6.3 * q)), add(mul(l0, e * 2.2 * q), [0, 0, 0.8 * q]));
-    // (narrow, slanting, burning: slits of white fire, never round)
-    put('head', 'eye', { k: 'ball', c: add(ep, [0, 0, e * 0.3 * q]), ax: [mul(f0, 0.5 * q), add(mul(l0, 1.5 * q), [0, 0, -e * 0.35 * q]), [0, 0, 0.42 * q]], skin: (u) => (Math.abs(u[1]) < 0.6 ? '#ffffff' : '#ffe4ee') });
-  }
-  for (let i = 0; i < 6; i++) tongue(add(head, [-2 + (i - 2.5) * 1.6, (i % 2 ? 1 : -1) * 1.5, 4 * q]), (9 + 6 * hash(i, 3, 9805)) * q, 2.2, i + 60);
-  for (const sh of [shL, shR]) for (let i = 0; i < 3; i++) tongue(add(sh, [(i - 1) * 2, 0, 3]), (6 + 4 * hash(i, 4, 9806)) * q, 1.8, i + 70 + (sh === shL ? 0 : 5));
-  // (his staff: a beam of light, its ring blazing)
-  const sto = staffOf(s, 0, true);
-  const fA = G(sto.foot), fB = G(sto.head), ring = G(sto.ring);
-  put('staff', 'beam', { k: 'rod', a: fA, b: fB, ra: 1.6, rb: 2.0, ramp: ENERGY.slice(1, 6) as unknown as Ramp });
-  for (let i = 0; i < 16; i++) {
-    const a0 = (i / 16) * TAU, a1 = ((i + 1) / 16) * TAU;
-    const R = 5.4 * k;
-    const side = mul(sto.side, 1), up = sto.up;
-    put('staff', 'ring', { k: 'rod', a: add(ring, add(mul(side, Math.cos(a0) * R), mul(up, Math.sin(a0) * R))), b: add(ring, add(mul(side, Math.cos(a1) * R), mul(up, Math.sin(a1) * R))), ra: 1.6, rb: 1.6, ramp: ['#c42a6e', '#ff4f8a', '#ff9cc0', '#ffe4ee', '#ffffff'] as unknown as Ramp });
-  }
-  // (sparks streaming up off all of it)
-  for (let i = 0; i < 26; i++) {
-    const from = [chest, pelvis, knee, head, hL, hR, shL, shR][i % 8];
-    const u = ((t * 0.9 + hash(i, 5, 9807)) % 1);
-    put('sparks', 'spark', { k: 'mote', p: add(from, [(hash(i, 6, 9808) - 0.5) * 22 * q - u * 6, (hash(i, 7, 9809) - 0.5) * 16 * q, u * 40 * q]), c: u < 0.3 ? '#ffe4ee' : u < 0.7 ? '#ff4f8a' : '#c42a6e', size: u < 0.4 ? 2 : 1 });
-  }
+    if (sh.k === 'panel') {
+      const sk = sh.skin;
+      return { part, piece, shape: { ...sh, skin: (a: number, b: number, front: boolean, tone: number) => { const c = sk(a, b, front, tone); return c ? shadeOf(c) : c; } } };
+    }
+    return { part, piece, shape: sh };
+  });
   // (its light: a great glow of his pink about it, and its eyes)
-  put('glow', 'shadeGlow', { k: 'glow', p: chest, c: BURN[2], r: 44 * q, a: 0.18 + 0.1 * Math.sin(t * 5) });
-  put('glow', 'shadeEyes', { k: 'glow', p: head, c: '#ffe4ee', r: 10 * q, a: 0.4 });
+  bits.push({ part: 'glow', piece: 'shadeGlow', shape: { k: 'glow', p: add(add(O, mul(sub(lerp3(s.ribs, s.neck, 0.3), O), k)), off), c: BURN[2], r: 40 * k * 0.6, a: 0.16 + 0.1 * Math.sin(t * 5) } });
   const lights = paintBits(st, bits, [0, 0, 20]);
-  return { px: st.whole(null), lights } as Painted;
+  const px = st.whole(SHADE_HOT);
+  // (bands of it rising through it, flickering, its edge thin: cut through the finished picture)
+  for (let y = 0; y < px.h; y++) for (let x = 0; x < px.w; x++) if (px.get(x, y) && band(x, y)) px.d[(y * px.w + x) * 4 + 3] = 0;
+  return { px, lights } as Painted;
 }
 
 // =============================================================================================
@@ -3544,7 +3408,7 @@ export const WS_SHAPE: BossShape = {
   grips: (move: string, t: number, s: Skeleton) => [
     // (killed, they grip nothing: dragged as it slides)
     ...((move === 'fall' && t > FALL.kill) || FOOT_MOVES.has(move) ? [] : boarSoles(boarPoseAt(move, t)).map((p, i) => ({ name: `hoof${i}`, p }))),
-    ...((move === 'fall' && fallLanded(t)) || (FOOT_MOVES.has(move) && move !== 'meldrain' && !(move === 'ascend' && t > ASCEND.rise[0] + 0.1)) ? [{ name: 'heelL', p: s.heelL }, { name: 'toeL', p: s.toeL }, { name: 'heelR', p: s.heelR }, { name: 'toeR', p: s.toeR }] : []),
+    ...((move === 'fall' && fallLanded(t)) || FOOT_MOVES.has(move) ? [{ name: 'heelL', p: s.heelL }, { name: 'toeL', p: s.toeL }, { name: 'heelR', p: s.heelR }, { name: 'toeR', p: s.toeR }] : []),
   ],
   follow: (move: string, t: number, s: Skeleton, _q: Posed) => {
     const P = boarPoseAt(move, t);
@@ -3566,7 +3430,7 @@ export const WS_SHAPE: BossShape = {
   blows: { power: POWER.slams.map((h, i) => ({ hit: h, strike: POWER_STRIKES[i], from: i ? POWER.slams[i - 1] + 0.1 : 0, until: i < 2 ? POWER.slams[i + 1] - POWER.raise : Infinity })) },
   smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)) || (move === 'frost' && frostSmeared(t)) || (move === 'fall' && slamSmeared(t)) || (FOOT_MOVES.has(move) && move !== 'foot' && meldSmeared(t)),
   // (the end the boar strikes with in its gore: its leading tusk's tip)
-  tip: (move: string, t: number, s: Skeleton) => (move === 'gore' ? goreTip(boarPoseAt('gore', t)) : move === 'stomp' ? stompTip(boarPoseAt('stomp', t)) : move === 'power' || move === 'frost' ? staffOf(s, staffTiltOf(boarPoseAt(move, t))).ring : move === 'fall' || (FOOT_MOVES.has(move) && !['foot', 'death', 'ascend', 'meldrain'].includes(move)) ? staffOf(s, 0, plantedIn(move, t)).ring : null),
+  tip: (move: string, t: number, s: Skeleton) => (move === 'gore' ? goreTip(boarPoseAt('gore', t)) : move === 'stomp' ? stompTip(boarPoseAt('stomp', t)) : move === 'power' || move === 'frost' ? staffOf(s, staffTiltOf(boarPoseAt(move, t))).ring : move === 'fall' || (FOOT_MOVES.has(move) && !['foot', 'death'].includes(move)) ? staffOf(s, 0, plantedIn(move, t)).ring : null),
   // (each move from his stand and back, as the game hands over; a run done, it wheels round out of its skid; done wheeling, the
   // game shows it from its other side and the next run goes back down the lane: that hand-over is the charge's own start drawn the
   // other way round, and is not one these checks can draw)
@@ -3578,8 +3442,6 @@ export const WS_SHAPE: BossShape = {
     // (risen, on foot: his stand, and each meld from it and back)
     { from: 'fall', at: 'end', to: 'foot', toAt: 0, shift: footFrom() },
     { from: 'foot', at: 0, to: 'death', toAt: 0 },
-    { from: 'foot', at: 0, to: 'ascend', toAt: 0 },
-    { from: 'ascend', at: 'end', to: 'meldrain', toAt: 0 },
     ...['eruption', 'hailstorm'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
