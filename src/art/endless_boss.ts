@@ -30,7 +30,8 @@
 // cyan. On the heroes' bones he rides as the Princess rides her steed (art/princess_ride.ts); the boar is its own solids, as the
 // steed and the Hollow Stag are, in the same painter (art/new_mobs3.ts paintBits).
 
-import { hash } from './kit';
+import { INK, hash } from './kit';
+import type { Px } from '../engine/px';
 import type { Ramp } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
 import { GLYPH, WORD_COLOR, WORD_GLOW } from './icons';
@@ -138,8 +139,30 @@ export interface BoarPose {
    * pastern is folded back (degrees); null, as `lift` or `legs` has it. */
   feet?: ReadonlyArray<readonly [number, number, number, number] | null>;
   /** HIM IN THE SADDLE, as it moves under him: leaning forward into a charge (degrees), braced back against a stop (degrees). */
-  ride?: { lean: number; brace: number; still?: boolean; cast?: Cast };
+  ride?: { lean: number; brace: number; still?: boolean; cast?: Cast; surge?: number };
+  /** ITS DEATH: how far its legs have gone slack, from where `feet` put them to hanging as `legs` says (0 ... 1); how far its runes
+   * have gone out, one after another (0 ... 1, `runeOn`); how far its stirrups hang from its own saddle with no feet in them
+   * (0 ... 1). */
+  limp?: number;
+  dead?: number;
+  free?: number;
+  /** ITS END: how grey it has gone to ash (0 ... 1), and how far its ash has burst and blown away (0 ... 1, gone). */
+  ash?: number;
+  crumble?: number;
 }
+/** WHETHER A RUNE OF ITS IS LIT (1) OR GONE OUT (0), the rune going out at `when` of its dying: lit as it was, flickering as it
+ * goes, then dark. */
+export function runeOn(P: BoarPose, when: number): number {
+  const d = P.dead ?? 0;
+  if (d <= when - 0.08) return 1;
+  if (d >= when) return 0;
+  return hash(Math.floor(d * 300), Math.round(when * 100), 7711) < (when - d) / 0.08 ? 1 : 0;
+}
+/** When each of its runes goes out, in its dying (0 ... 1): the brand on its flank first, then its armour's, its greaves', the
+ * runes cut in its tusks, its eyes last. */
+export const RUNES_OUT = { brand: 0.18, armour: 0.38, greaves: 0.52, tusks: 0.68, eyes: 0.94 } as const;
+/** A rune gone out: a cold scar where it burned. */
+const SCAR = ['#1e1216', '#2e1a20', '#3e2228'] as const;
 export const BOAR_STAND: BoarPose = {
   // (its head carried as it was drawn: `low` is how far it is lowered, so its stand's -6 tips its snout a little up)
   x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, low: -6, look: 0,
@@ -204,6 +227,7 @@ function legOf(P: BoarPose, i: number): { top: V3; knee: V3; fet: V3; end: V3 } 
     pEnd = add(add(at(R.fet), up), pastern(0));
     pEnd = add(sub(pEnd, pastern(0)), pv);
   } else return { top, knee, fet, end };
+  const slack = P.limp ?? 0;
   // (the knee forward on a foreleg, the hock back on a hind, bent to reach)
   const pFet = sub(pEnd, pv);
   const L1 = l1 * S;
@@ -217,7 +241,11 @@ function legOf(P: BoarPose, i: number): { top: V3; knee: V3; fet: V3; end: V3 } 
   const sa = Math.sqrt(Math.max(0, 1 - ca * ca));
   const kneeIK = add(top, add(mul(u, L1 * ca), mul(n, L1 * sa)));
   const fetIK = add(top, mul(u, d));
-  return { top, knee: kneeIK, fet: fetIK, end: add(fetIK, pv) };
+  const endIK = add(fetIK, pv);
+  if (slack <= 0) return { top, knee: kneeIK, fet: fetIK, end: endIK };
+  // (going slack: from where it was put to hanging as `legs` says; lying on the floor where it meets it)
+  const up = (p: V3, r: number): V3 => [p[0], p[1], Math.max(r, p[2])];
+  return { top, knee: up(lerp3(kneeIK, knee, slack), 2.4 * S), fet: up(lerp3(fetIK, fet, slack), 1.9 * S), end: up(lerp3(endIK, end, slack), 1.8 * S + 0.4) };
 }
 /** How far a hoof's end stands above the floor (its sole; its own lengths), and each pastern's slope standing (degrees forward). */
 const SOLE = 1.8;
@@ -314,7 +342,7 @@ export function boarBits(P: BoarPose, put: Put, near: number, st?: Stage): void 
         const gx = Math.floor((a2 * k * 0.5 + 0.5) * 5);
         const gy = Math.floor((-b2 * 0.5 + 0.5) * 9);
         const g = RUNE_GRID[0];
-        if (gx >= 0 && gx < 5 && gy >= 0 && gy < 9 && g[gy][gx] === '#') return gy < 3 ? BURN[3] : BURN[2];
+        if (gx >= 0 && gx < 5 && gy >= 0 && gy < 9 && g[gy][gx] === '#') return runeOn(P, RUNES_OUT.brand) ? (gy < 3 ? BURN[3] : BURN[2]) : gy < 3 ? SCAR[2] : SCAR[1];
         return r > 0.82 ? HIDE[1] : HIDE[2];
       },
     });
@@ -341,7 +369,8 @@ export function boarBits(P: BoarPose, put: Put, near: number, st?: Stage): void 
     }
   }
   // ITS EYES: small, sunk, burning
-  for (const k of [-1, 1]) hb('eyes', 8.6, k * 4.9, -1.2, 1.1, 0.7, 0.9, (u) => (Math.hypot(u[1], u[2]) < 0.6 ? BURN[3] : BURN[2]));
+  const eyesOn = runeOn(P, RUNES_OUT.eyes);
+  for (const k of [-1, 1]) hb('eyes', 8.6, k * 4.9, -1.2, 1.1, 0.7, 0.9, (u) => (Math.hypot(u[1], u[2]) < 0.6 ? (eyesOn ? BURN[3] : SCAR[1]) : eyesOn ? BURN[2] : SCAR[0]));
   // ITS EARS: small, pointed, laid back, the wool long on them
   for (const k of [-1, 1]) {
     const a = H.at(1, k * 4.4, 4.8);
@@ -358,7 +387,7 @@ export function boarBits(P: BoarPose, put: Put, near: number, st?: Stage): void 
     for (const f of [0.35, 0.6, 0.85]) {
       const seg = Math.min(pts.length - 2, Math.floor(f * (pts.length - 1)));
       const ff = f * (pts.length - 1) - seg;
-      put('boarHead', 'tusks', { k: 'dot', p: lerp3(pts[seg], pts[seg + 1], ff), c: BURN[2], facing: H.l });
+      put('boarHead', 'tusks', { k: 'dot', p: lerp3(pts[seg], pts[seg + 1], ff), c: runeOn(P, RUNES_OUT.tusks) ? BURN[2] : TUSK[0], facing: H.l });
     }
   }
   // ITS CREST: a ridge of dark bristles down its spine, from its poll over the hump (under the saddle) to its rump
@@ -400,7 +429,9 @@ export function boarBits(P: BoarPose, put: Put, near: number, st?: Stage): void 
     const fall = Math.max(0, 1 - Math.abs(along + 1) / 24);
     const root = W([along, k * (8.2 - Math.abs(along - 1) * 0.07), 18.0 + 0.08 * Math.max(0, along)]);
     const long = (3.2 + 3.4 * fall + 1.6 * hash(i, 7, 8807)) * S;
-    const tip = add(add(root, mul(turned(P, [-0.2, k, 0]), 0.9 * S)), [sw * 0.5 * S, 0, -long]);
+    const tip0 = add(add(root, mul(turned(P, [-0.2, k, 0]), 0.9 * S)), [sw * 0.5 * S, 0, -long]);
+    // (lying on the floor where it reaches it)
+    const tip: V3 = [tip0[0], tip0[1], Math.max(0.6, tip0[2])];
     put('boarBody', 'shag', { k: 'rod', a: root, b: tip, ra: (1.9 + 0.7 * hash(i, 17, 8809)) * S, rb: (0.9 + 0.4 * hash(i, 23, 8813)) * S, ramp: SHAG, far: k !== near });
   }
   // ITS TAIL: short, a tuft
@@ -423,7 +454,8 @@ export function boarBits(P: BoarPose, put: Put, near: number, st?: Stage): void 
   put('boarSaddle', 'girth', { k: 'band', ring: { c: girthC, u: turned(P, [0, 0, 9.8 * S]), v: turned(P, [0, 10.2 * S, 0]) }, ramp: LEATHER, rows: 1 });
   for (const k of [-1, 1]) {
     const hang = add(add(sd.at, mul(sd.l, k * 7.0 * S)), mul(sd.u, -1.6 * S));
-    const foot = add(add(add(sd.at, mul(sd.f, -0.5)), mul(sd.l, k * 13.4 * S)), [0, 0, -12.0 * S - 0.6]);
+    const fr = P.free ?? 0;
+    const foot = add(add(add(sd.at, mul(sd.f, -0.5)), mul(sd.l, k * (13.4 - 5.6 * fr) * S)), add(mul([0, 0, -12.0 * S - 0.6], 1 - fr), mul(sd.u, -(10 * S) * fr)));
     put('boarSaddle', 'stirrups', { k: 'rod', a: hang, b: foot, ra: 0.5, rb: 0.5, ramp: LEATHER, far: k !== near });
     put('boarSaddle', 'stirrups', { k: 'rod', a: add(foot, mul(sd.f, -1.5)), b: add(foot, mul(sd.f, 1.5)), ra: 0.75, rb: 0.75, ramp: IRON, far: k !== near });
   }
@@ -443,7 +475,8 @@ const dot3 = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 function boarArmour(P: BoarPose, put: Put, near: number, st?: Stage): void {
   const W = (p: V3): V3 => boarAt(P, p);
   const pulse = P.pulse ?? 0;
-  const lit = burnAt(pulse);
+  // (dying, its runes go out one after another: a cold scar where each burned)
+  const lit = runeOn(P, RUNES_OUT.armour) ? burnAt(pulse) : SCAR[1];
   const H = headOf(P);
   const glyph = (g: ReadonlyArray<string>, a: number, b: number): boolean => {
     const gx = Math.floor((a + 0.5) * 5);
@@ -542,7 +575,7 @@ function boarArmour(P: BoarPose, put: Put, near: number, st?: Stage): void {
     const toe = norm(add(fw, [0, 0, 0.18]), fw);
     spike(add(add(end, mul(fw, 1.4 * S)), [0, 0, 0.3 * S]), toe, 3.6, 1.15);
     // (his rune cut in the greave's outer face, burning)
-    put(part, 'greave', { k: 'dot', p: add(lerp3(knee, fet, 0.3), mul(outw, 2.55 * S)), c: lit, facing: outw });
+    put(part, 'greave', { k: 'dot', p: add(lerp3(knee, fet, 0.3), mul(outw, 2.55 * S)), c: runeOn(P, RUNES_OUT.greaves) ? burnAt(pulse) : SCAR[1], facing: outw });
   }
   // ITS EYES: his power pouring out of them, pink, throbbing: a light on each eye that can be seen, and the burn of it streaming
   // back off its eye over its head like a flame in a wind, longer and brighter at each throb
@@ -550,6 +583,8 @@ function boarArmour(P: BoarPose, put: Put, near: number, st?: Stage): void {
     const eye = H.at(8.8, k * 5.0, -1.0);
     const facing = norm(add(mul(H.l, k), mul(H.f, 0.4)), H.f);
     if (st && dot3(facing, st.eye) < -0.05) continue;
+    // (gone out: nothing pours out of them)
+    if (!runeOn(P, RUNES_OUT.eyes)) continue;
     put('glow', 'eyeGlow', { k: 'glow', p: eye, c: BURN[2], r: 5 + 6 * pulse, a: 0.4 + 0.45 * pulse });
     const n = 6 + Math.round(8 * pulse);
     const fr = Math.floor(P.sway * WS_STAND_LONG * 15);
@@ -563,7 +598,7 @@ function boarArmour(P: BoarPose, put: Put, near: number, st?: Stage): void {
     put('wisps', 'eyeWisps', { k: 'mote', p: eye, c: burnAt(pulse, 1.6), size: 2 });
   }
   // (and a little light off the runes in its plates, at each throb)
-  if (pulse > 0.15) {
+  if (pulse > 0.15 && runeOn(P, RUNES_OUT.armour)) {
     put('glow', 'runeGlow', { k: 'glow', p: W([13.5, near * 10.6, 27]), c: BURN[2], r: 6 + 5 * pulse, a: 0.12 + 0.25 * pulse });
     put('glow', 'runeGlow', { k: 'glow', p: W([-19, 0, 31]), c: BURN[2], r: 5 + 4 * pulse, a: 0.1 + 0.2 * pulse });
   }
@@ -925,6 +960,7 @@ function throbAt(tt: number): number {
 }
 export function boarPoseAt(move: string, t: number): BoarPose {
   if (move === 'charge') return chargePoseAt(t);
+  if (move === 'fall') return fallPoseAt(t);
   if (move === 'wheel') return wheelPoseAt(t);
   if (move === 'gore') return gorePoseAt(t);
   if (move === 'stomp') return stompPoseAt(t);
@@ -1141,9 +1177,10 @@ export function chargePoseAt(t: number): BoarPose {
  * dust kicked up round a stamped hoof. Never a glow. */
 const BREATH: readonly string[] = ['#e6e4ea', '#c9c6d0', '#a8a4b0', '#878392'];
 const DUST: readonly string[] = ['#c4b8b4', '#9e9294', '#786c74'];
-export function boarGrains(t: number, move = 'stand'): [V3, string, number][] {
+export function boarGrains(t: number, move = 'stand', near = -1): [V3, string, number][] {
   const out: [V3, string, number][] = [];
   if (move === 'charge') return chargeGrains(t);
+  if (move === 'fall') return fallGrains(t, near);
   if (move === 'wheel') return wheelGrains(t);
   if (move === 'gore') return goreGrains(t);
   if (move === 'stomp') return stompGrains(t);
@@ -1534,6 +1571,381 @@ function stompGrains(t: number): [V3, string, number][] {
   }
   return out;
 }
+
+// =============================================================================================
+// THE BOAR'S DEATH AND HIS RISING (his pick, 12 Nov 2026: “Crashes onto its side (Recommended)”, offered as: killed mid-charge, it
+// ploughs on, flips onto its side and skids to a stop in frost, its runes going out; his fight: “I want two phases, one saddled,
+// then another after the boar dies”; thrown clear, he lands on his feet, never on his knees: “Remember we’re trying to stay away
+// from “falling to their knees””; and his words as it was made, 12 Nov 2026: “make sure you follow the rules, make it badass, i
+// want to be nervous that hes now on foot”, “figure out a way for the boar to leave the arena so hes not just there for the rest of
+// the fight.  like he turns to ash after the rune power seeps out of him”). By his Movement 9 and his Monsters rules:
+//   KILLED       mid-gallop down its lane: a flash of his pink out of all of it at once; its front gives way, its head driven
+//                down into the floor, its legs gone slack
+//   PLOUGHING    on with all its weight, nose down, and over onto its side (its left: its belly and its legs to the side it is seen
+//                from), the floor coming up to meet it, dust and frost thrown out where it hits; on its side, sliding on down its
+//                lane in a spray of frost and grit, slowing, stopped; a last kick of its hind legs
+//   HIM THROWN   up out of the saddle as it goes over, on over its head, his cloak streaming, his staff held high; down ON HIS
+//                FEET well clear of it, crouched deep, his boots sliding on in the frost; held there, his head turned back over
+//                his shoulder to it (his line for his steed is the sound chat's)
+//   ITS POWER    its runes go out one after another, each flickering and gone, and the power that burned in each SEEPS OUT OF IT
+//                and streams through the air INTO HIM, a ribbon of his pink; as it goes, the boar greys to ash; he burns
+//                brighter with each, his eyes blazing, the air crackling round him
+//   HE RISES     tall, slowly, his head coming round to the hero; his staff thrust high over his head, his rune blazing in its ring,
+//                the room's light drawn into it; then THE SLAM: the staff driven down into the floor, a lightning strike of two
+//                frames, smeared; a ring of his pink rolls out across the whole floor, cracks thrown out under it; where it meets
+//                the boar the ash of it bursts and blows away, nothing left but a scorch on the floor
+//   ON FOOT      he stands over the place, hunched forward like something hunting, his staff planted, his writing hand clawed out
+//                before him, his runes burning brighter than they ever did in the saddle: the second phase begins.
+export const FALL = {
+  /** where in the charge it is killed (the charge's own time: flat out down its lane), and how long its gallop goes on before */
+  from: CHARGE_STRIKE[1] + 0.3,
+  kill: 0.3,
+  /** after the kill: its slide (to a stop), its roll onto its side; its last kick */
+  skid: 0.62,
+  roll: [0.08, 0.5] as const,
+  kick: 1.3,
+  /** its runes going out, the power of each streaming into him (each this long in the air); it greying to ash */
+  out: [1.35, 2.65] as const,
+  stream: 0.42,
+  grey: [1.45, 2.85] as const,
+  /** him (after the kill): thrown, flying, sliding on his feet */
+  throw: 0.12,
+  fly: 0.5,
+  slide: 0.28,
+  /** him (the move's own time): looking back at it, rising, his staff raised; the slam (its strike), its ring's reach (tiles) and how long it rolls */
+  look: [1.3, 1.95] as const,
+  rise: [1.95, 2.55] as const,
+  raise: [2.5, 2.9] as const,
+  slam: 92 / 30,
+  ring: { reach: 4.6, long: 0.62 },
+  long: 4.7,
+};
+export const SLAM_STRIKE = [FALL.slam - 2 / 30, FALL.slam] as const;
+export const slamSmeared = (t: number): boolean => t > SLAM_STRIKE[0] + 1e-6 && t <= SLAM_STRIKE[1] + 1 / 30 + 1e-6;
+/** How far the game has carried it down its lane, `t` seconds into its death (tiles): its gallop, then slowing to nothing. */
+export function fallCarry(t: number): number {
+  const c0 = chargeCarry(FALL.from);
+  if (t <= FALL.kill) return chargeCarry(FALL.from + t) - c0;
+  const ck = chargeCarry(FALL.from + FALL.kill) - c0;
+  const u = Math.min(FALL.skid, t - FALL.kill);
+  return ck + CHARGE.pace * (u - (u * u) / (2 * FALL.skid));
+}
+/** How low it reaches (the floor's height of its lowest point, its body's and its head's, standing where it is, at z 0). */
+function lowestOf(P: BoarPose): number {
+  let lo = Infinity;
+  for (const l of boarLumps(P)) lo = Math.min(lo, l.c[2] - Math.hypot(l.ax[0][2], l.ax[1][2], l.ax[2][2]));
+  const H = headOf(P);
+  for (const [f, o, u, r] of [[2.4, 0, 0.8, 6.6], [11, 0, -8.6, 4.8], [14, 0, -5.4, 4.6], [21.4, 0, -7.6, 3.0]] as const) lo = Math.min(lo, H.at(f, o, u)[2] - r * S);
+  return lo;
+}
+/** Its feet as it is killed (the gallop's), and its legs slack: stiff and splayed, the upper pair (its right) one way and the pair
+ * under it the other, so they read as legs and not a heap. */
+const KILL_FEET = (): Foot[] => chargeFeet(FALL.from + FALL.kill);
+const SLACK_LEGS: BoarPose['legs'] = [[22, -8], [44, -16], [-14, 12], [-38, 22]];
+/** Where the ring reaches its middle and when (from where his staff strikes the floor): how far it has rolled, `t` into the move. */
+export function slamRing(t: number): number {
+  const u = (t - FALL.slam) / FALL.ring.long;
+  return u <= 0 ? 0 : FALL.ring.reach * TILE * Math.min(1, 1 - (1 - u) * (1 - u));
+}
+/** When the ring meets the boar's ash and blows it away. */
+const ASH_BLOWN = (): number => {
+  const d = Math.hypot(slamAt()[0] - 6 * S, slamAt()[1]) - 18 * S;
+  let t = FALL.slam;
+  while (slamRing(t) < d && t < FALL.slam + FALL.ring.long) t += 1 / 120;
+  return t;
+};
+let ASH_AT: number | null = null;
+const ashBlownAt = (): number => (ASH_AT ??= ASH_BLOWN());
+export function fallPoseAt(t: number): BoarPose {
+  const K = FALL.kill;
+  const g = chargePoseAt(FALL.from + Math.min(t, K));
+  if (t <= K) return g;
+  const u = t - K;
+  // (its front gives way, its head driven down; its legs gone slack; over onto its side, rocking back a little as it lands on it)
+  const buckle = smooth01(u / 0.16);
+  const rl = smooth01((u - FALL.roll[0]) / (FALL.roll[1] - FALL.roll[0]));
+  const rock = bumpOf(u, FALL.roll[1] - 0.05, FALL.roll[1] + 0.3);
+  const kick = bumpOf(t, FALL.kick, FALL.kick + 0.32);
+  const slide = clamp01(u / FALL.skid);
+  const legs: BoarPose['legs'] = [
+    [SLACK_LEGS[0][0], SLACK_LEGS[0][1]],
+    [SLACK_LEGS[1][0], SLACK_LEGS[1][1]],
+    [SLACK_LEGS[2][0] - 30 * kick, SLACK_LEGS[2][1] - 26 * kick],
+    [SLACK_LEGS[3][0] - 22 * kick, SLACK_LEGS[3][1] - 18 * kick],
+  ];
+  // (him: the wind of his flight in his cloak; flung forward as he lands; still, crouched and risen; blown back by his own slam;
+  // and his power growing in him as its runes stream into him, at its height as he strikes)
+  const T0 = K + FALL.throw;
+  const land = T0 + FALL.fly;
+  const flying = t > T0 && t < land ? 1 : 0;
+  const arrived = RUNE_TIMES.filter((w) => t > w + FALL.stream).length / RUNE_TIMES.length;
+  const P: BoarPose = {
+    ...g,
+    z: 0,
+    pitch: g.pitch * (1 - buckle) - 15 * buckle * (1 - rl) - 2 * rl,
+    roll: -90 * rl + 6 * rock,
+    low: g.low * (1 - buckle) + 30 * buckle * (1 - rl) + 10 * rl,
+    look: -8 * rl,
+    tilt: -12 * rl,
+    flap: (g.flap ?? 0) * (1 - buckle) + 1.2 * buckle * (1 - slide) * Math.sin(u * 30),
+    legs,
+    feet: KILL_FEET(),
+    limp: smooth01(u / 0.22),
+    breath: 0.5 * (1 - smooth01(u / 0.4)),
+    sway: g.sway + 0.2 * (1 - slide) * Math.sin(u * 14),
+    // (the kill: his pink flaring out of it all at once; then smouldering low until its runes go out)
+    pulse: u < 0.1 ? 1 : 0.25 + 0.75 * (1 - smooth01((u - 0.1) / 0.5)),
+    dead: clamp01((t - FALL.out[0]) / (FALL.out[1] - FALL.out[0])),
+    free: smooth01((u - FALL.throw) / 0.25),
+    ash: smooth01((t - FALL.grey[0]) / (FALL.grey[1] - FALL.grey[0])),
+    crumble: t > FALL.slam ? smooth01((t - ashBlownAt()) / 0.4) : 0,
+    ride: t <= T0
+      ? { lean: 26 + 22 * bumpOf(u, 0, 2 * FALL.throw), brace: 0 }
+      : { lean: 22 * flying + 18 * bumpOf(t, FALL.slam, FALL.slam + 0.5), brace: 10 * bumpOf(t, land - 0.02, land + 0.3), still: !flying && t > land + 0.3 && t < FALL.slam, surge: Math.min(1, 0.15 * smooth01((t - land) / 0.4) + 0.75 * arrived + 0.4 * bumpOf(t, FALL.raise[0], FALL.slam + 0.25)) },
+  };
+  // (down: falling as its legs go, and on the floor once it is there, rolling over on it)
+  const floor = 1.4 - lowestOf(P);
+  const fall = g.z - 0.5 * 900 * u * u;
+  return { ...P, z: Math.max(floor, fall) };
+}
+/** When each rune of it goes out, and its power leaves it for him (the move's own time). */
+const RUNE_TIMES = Object.values(RUNES_OUT).map((w) => FALL.out[0] + w * (FALL.out[1] - FALL.out[0]));
+/** Where its runes are as it lies (as its own points are): the brand on its flank, its armour's, its greaves', its tusks', its eyes. */
+function runeSpots(near: number): [number, V3][] {
+  const R = fallPoseAt(FALL.out[0]);
+  const H = headOf(R);
+  return [
+    [RUNE_TIMES[0], boarAt(R, [-6, near * 9.95, 25.5])],
+    [RUNE_TIMES[1], boarAt(R, [13.5, near * 10.6, 27])],
+    [RUNE_TIMES[1] + 0.05, boarAt(R, [-19, 0, 31])],
+    [RUNE_TIMES[2], boarAt(R, [10, near * 6, 10])],
+    [RUNE_TIMES[3], H.at(15, near * 6, -10)],
+    [RUNE_TIMES[4], H.at(8.8, near * 5.0, -1.0)],
+  ];
+}
+/** WHAT FLIES OFF IT AS IT DIES, carried as the charge's are (what is thrown stays where it was thrown): its gallop's grit before;
+ * a burst of dust and frost where it hits the floor; frost and grit sprayed out ahead of it as it slides on its side; frost thrown
+ * up from his boots as he lands sliding; the power of each rune as it goes out, streaming through the air into him; sparks and
+ * stone thrown up where his staff strikes; its ash bursting and blown away as his ring meets it. */
+function fallGrains(t: number, near: number): [V3, string, number][] {
+  const out: [V3, string, number][] = [];
+  const K = FALL.kill;
+  if (t < K) return chargeGrains(FALL.from + t);
+  const c = fallCarry(t) * TILE;
+  const G = 30 * S;
+  const FROSTED = ['#eef4fa', '#c4d4e4', '#93a8c0'] as const;
+  const ASHES = ['#cfc8c6', '#a8a0a2', '#847c80', '#5e585c'] as const;
+  const fly = (p0: V3, v: V3, t0: number, seed: number, long: number, cols: readonly string[], g = G): void => {
+    const u = t - t0;
+    if (u <= 0 || u > long) return;
+    const p: V3 = [p0[0] + v[0] * u - c, p0[1] + v[1] * u, p0[2] + v[2] * u - 0.5 * g * u * u];
+    if (p[2] < 0) return;
+    if (hash(seed, Math.floor(u * 30), 8971) < (u / long) * 0.8) return;
+    out.push([p, cols[Math.min(cols.length - 1, Math.floor((u / long) * cols.length))], u < 0.1 && seed % 3 === 0 ? 2 : 1]);
+  };
+  // (where it hits the floor: dust and frost thrown out all round its front)
+  const hit = K + 0.2;
+  for (let i = 0; i < 44; i++) {
+    const a = (i / 44) * TAU;
+    const at = add(boarAt(fallPoseAt(hit), [12, 0, 14]), [fallCarry(hit) * TILE, 0, -10]);
+    const sp = (28 + 40 * hash(i, 1, 8972)) * S;
+    fly([at[0], at[1], 1], [Math.cos(a) * sp + 160 * S, Math.sin(a) * sp, (14 + 22 * hash(i, 2, 8973)) * S], hit, i, 0.7, i % 3 ? FROSTED : DUST);
+  }
+  // (on its side, sliding: frost and grit sprayed out ahead of it and off its side, every few frames)
+  for (let e = 0; e < 20; e++) {
+    const te = K + 0.22 + e * 0.02;
+    if (te > K + FALL.skid) break;
+    const ce = fallCarry(te) * TILE;
+    const speed = CHARGE.pace * TILE * (1 - (te - K) / FALL.skid);
+    for (let j = 0; j < 4; j++) {
+      const sd = e * 7 + j;
+      const p0: V3 = [ce + (18 + 14 * hash(sd, 1, 8974)) * S, (hash(sd, 2, 8975) - 0.5) * 22 * S, 1];
+      fly(p0, [speed * (0.9 + 0.4 * hash(sd, 3, 8976)), (hash(sd, 4, 8977) - 0.5) * 70 * S, (10 + 18 * hash(sd, 5, 8978)) * S], te, 100 + sd, 0.5, j % 2 ? FROSTED : DUST);
+    }
+  }
+  // (his boots sliding on as he lands: frost thrown up off them)
+  const land = K + FALL.throw + FALL.fly;
+  for (let e = 0; e < 10; e++) {
+    const te = land + e * 0.03;
+    if (te > land + FALL.slide) break;
+    const b = fallRiderAt(te);
+    const ce = fallCarry(te) * TILE;
+    for (const [side, f] of [[1, b.footL], [-1, b.footR]] as const) {
+      for (let j = 0; j < 3; j++) {
+        const sd = 300 + e * 9 + j * 3 + (side > 0 ? 1 : 0);
+        fly([f[0] + ce + 3, f[1], 1], [(60 + 80 * hash(sd, 1, 8982)) * S * (1 - e / 10), side * (12 + 30 * hash(sd, 2, 8983)) * S, (8 + 14 * hash(sd, 3, 8984)) * S], te, sd, 0.45, FROSTED);
+      }
+    }
+  }
+  // (ITS POWER SEEPING OUT OF IT INTO HIM: as each rune goes out, a ribbon of his pink rises off it and streams through the air,
+  // arcing, into his chest; tiny runes blinking off its tail)
+  for (const [k, [t0, from]] of runeSpots(near).entries()) {
+    const u = (t - t0) / FALL.stream;
+    if (u <= 0 || u > 1.25) continue;
+    const b = fallRiderAt(t);
+    const to = add(b.pelvis, [1, 0, 17]);
+    const mid = add(lerp3(from, to, 0.5), [0, (k % 2 ? 1 : -1) * 14, 34 + 8 * (k % 3)]);
+    const along = (v: number): V3 => { const q = Math.max(0, Math.min(1, v)); return add(add(mul(from, (1 - q) * (1 - q)), mul(mid, 2 * q * (1 - q))), mul(to, q * q)); };
+    for (let i = 0; i < 22; i++) {
+      const v = u * u - i * 0.032;
+      if (v <= 0 || v > 1) continue;
+      const p = along(v);
+      const wob: V3 = [Math.sin(t * 40 + i) * 1.2, Math.cos(t * 33 + i * 1.7) * 1.2, Math.sin(t * 27 + i * 0.9) * 1.2];
+      out.push([add(p, wob), i < 2 ? BURN[4] : i < 8 ? BURN[3] : BURN[2], i < 10 ? 2 : 1]);
+      if (i % 3 === 1) out.push([add(p, [-wob[1], wob[0], 2.2]), BURN[3], 1]);
+    }
+    // (off its tail, tiny runes blinking out where it left it)
+    for (let i = 0; i < 6; i++) {
+      const w = t - t0 - 0.04 * i;
+      if (w <= 0 || w > 0.6 || hash(k * 13 + i, Math.floor(w * 15), 8979) < w / 0.6) continue;
+      const a = hash(k, i, 8980) * TAU;
+      out.push([[from[0] + Math.cos(a) * (2 + 5 * w) * S, from[1] + Math.sin(a) * (2 + 5 * w) * S, from[2] + (2 + 10 * w) * S], i % 2 ? BURN[3] : BURN[2], 1]);
+    }
+  }
+  // (as it greys, ash already lifting off it in flakes, drifting)
+  const R = fallPoseAt(FALL.out[1]);
+  for (let i = 0; i < 30; i++) {
+    const te = FALL.grey[0] + (FALL.grey[1] - FALL.grey[0] + 0.3) * hash(i, 1, 8990);
+    const p0 = boarAt(R, [-20 + 40 * hash(i, 2, 8991), (hash(i, 3, 8992) - 0.5) * 16, 22 + 14 * hash(i, 4, 8993)]);
+    fly([p0[0] + c, p0[1], p0[2]], [(-8 + 16 * hash(i, 5, 8994)) * S, (-6 + 12 * hash(i, 6, 8995)) * S, (6 + 6 * hash(i, 7, 8996)) * S], te, 500 + i, 1.4, ASHES, 2 * S);
+  }
+  // (THE SLAM: sparks of his pink and chips of stone thrown up all round where his staff strikes)
+  const at = slamAt();
+  for (let i = 0; i < 36; i++) {
+    const a = (i / 36) * TAU + hash(i, 1, 8997);
+    const sp = (30 + 60 * hash(i, 2, 8998)) * S;
+    fly([at[0] + c, at[1], 1], [Math.cos(a) * sp, Math.sin(a) * sp, (20 + 34 * hash(i, 3, 8999)) * S], FALL.slam, 700 + i, 0.6, i % 3 ? [BURN[4], BURN[3], BURN[2]] : DUST);
+  }
+  // (ITS ASH, BURST AND BLOWN AWAY as his ring meets it: the whole of it, from its top down, flung out away from him, rising,
+  // thinning to nothing)
+  const t1 = ashBlownAt();
+  for (let i = 0; i < 160; i++) {
+    const h = hash(i, 4, 9001);
+    const p0 = boarAt(R, [-24 + 46 * hash(i, 5, 9002), (hash(i, 6, 9003) - 0.5) * 18, 15 + 22 * h]);
+    const away = norm([p0[0] - at[0], p0[1] - at[1], 0], [-1, 0, 0]);
+    const sp = (40 + 70 * hash(i, 7, 9004)) * S;
+    // (its top first)
+    const te = t1 + 0.35 * (1 - (p0[2] - 10) / 40) * hash(i, 8, 9005) + 0.1 * (1 - h);
+    fly([p0[0] + c, p0[1], p0[2]], [away[0] * sp, away[1] * sp, (10 + 26 * hash(i, 9, 9006)) * S], te, 900 + i, 0.9 + 0.5 * hash(i, 10, 9007), ASHES, 4 * S);
+  }
+  return out;
+}
+/** Where his staff strikes the floor (as the boar's own points are, the floor point under it: the carry is done by then). */
+let SLAM_AT: V3 | null = null;
+export function slamAt(): V3 {
+  if (SLAM_AT) return SLAM_AT;
+  const s = solve(B, { ...standing(B), ...fallRider(FALL.slam) } as never);
+  const f = staffOf(s, 0).foot;
+  return (SLAM_AT = [f[0], f[1], 0]);
+}
+/** HIM THROWN CLEAR AND DOWN ON HIS FEET (as the boar's own points are, the floor point under it): where his pelvis is, and his feet
+ * (each ankle), `t` seconds into its death, once he has left the saddle. */
+function fallRiderAt(t: number): { pelvis: V3; footL: V3; footR: V3 } {
+  const T0 = FALL.kill + FALL.throw;
+  const R0 = { ...standing(B), ...riderPose(fallPoseAt(T0), T0) } as Bones;
+  const c = (tt: number): number => fallCarry(tt) * TILE;
+  // (where he leaves the saddle from, on the floor's own place)
+  const x0 = R0.px + c(T0), y0 = R0.py, z0 = R0.pz + PELVIS0;
+  const vx = CHARGE.pace * TILE;
+  const vz = 150;
+  const zl = PELVIS0 - 13;
+  const tf = FALL.fly;
+  const g = (2 * (z0 + vz * tf - zl)) / (tf * tf);
+  const u = Math.max(0, t - T0);
+  const side = 22;
+  const ankL0: V3 = [R0.lfx, R0.lfy + B.stance, R0.lfz + B.ankle];
+  const ankR0: V3 = [R0.rfx, R0.rfy - B.stance, R0.rfz + B.ankle];
+  if (u < tf) {
+    // (flying: on at the gallop's pace, slowing; up, then down; his feet drawn up under him, then reaching for where they will come
+    // down, never through the floor)
+    const wx = x0 + vx * (u - (0.2 * u * u) / tf);
+    const wy = y0 + side * smooth01(u / tf);
+    const wz = z0 + vz * u - 0.5 * g * u * u;
+    const pel: V3 = [wx - c(t), wy, wz];
+    const tuck = smooth01(u / 0.14);
+    const reach = smooth01((u - 0.6 * tf) / (0.4 * tf));
+    const rel = (L: boolean): V3 => add(mul(L ? [-3, 5, -17] : [-5, -5, -15], 1 - reach), mul(L ? [7, 5, -28.5] : [-5, -5, -28], reach));
+    const onFloor = (p: V3): V3 => [p[0], p[1], Math.max(B.ankle + 0.4, p[2])];
+    return { pelvis: pel, footL: onFloor(lerp3(ankL0, add(pel, rel(true)), tuck)), footR: onFloor(lerp3(ankR0, add(pel, rel(false)), tuck)) };
+  }
+  // (down: his boots on the floor and sliding on in the frost, slowing; his landing taken in his knees, deep, and held; then risen,
+  // driven down into his knees by his slam, and standing low over it, breathing)
+  const xl = x0 + vx * (tf - 0.2 * tf);
+  const v1 = vx * 0.6;
+  const w = u - tf;
+  const ws = Math.min(w, FALL.slide);
+  const wx = xl + v1 * (ws - (ws * ws) / (2 * FALL.slide));
+  const vl = vz - g * tf;
+  const give = vl * w * Math.exp(-w / 0.05);
+  const risen = smooth01((t - FALL.rise[0]) / (FALL.rise[1] - FALL.rise[0]));
+  const up = 1.5 * smooth01((t - FALL.raise[0]) / (FALL.raise[1] - FALL.raise[0]));
+  const slam = t < FALL.slam ? smooth01((t - SLAM_STRIKE[0]) / (FALL.slam - SLAM_STRIKE[0])) : 1 - 0.45 * smooth01((t - FALL.slam - 0.08) / 0.6);
+  const breath = smooth01((t - FALL.slam - 0.3) / 0.4) * 0.7 * Math.sin((t - FALL.slam) * 3.4);
+  const pz = zl + give + (PELVIS0 - zl) * risen + up * (1 - slam) - 8 * slam + breath;
+  const wy = y0 + side;
+  return { pelvis: [wx - c(t), wy, pz], footL: [wx + 7 - c(t), wy + 5, B.ankle], footR: [wx - 5 - c(t), wy - 5, B.ankle] };
+}
+/** His pose through it: in the saddle, jolted forward as it is killed; then thrown, flying, landing, looking back, risen, his staff
+ * raised, the slam, standing over it (his bones). */
+export function fallRider(t: number): Partial<Bones> {
+  const T0 = FALL.kill + FALL.throw;
+  if (t <= T0) return riderPose(fallPoseAt(t), t);
+  const R0 = { ...standing(B), ...riderPose(fallPoseAt(T0), T0) } as Bones;
+  const b = fallRiderAt(t);
+  const u = t - T0;
+  const tf = FALL.fly;
+  const fl = Math.sin(Math.PI * clamp01(u / tf));
+  const reach = smooth01((u - 0.6 * tf) / (0.4 * tf));
+  type Look = { pitch: number; roll: number; twist: number; bend: number; hunch: number; faceTurn: number; faceUp: number; faceTilt: number; lfp: number; lft: number; rft: number; lk: number; rk: number; lkUp: number; lhx: number; lhy: number; lhz: number; le: number; rhx: number; rhy: number; rhz: number; re: number };
+  const SEAT: Look = { pitch: R0.pitch, roll: R0.roll, twist: R0.twist, bend: R0.bend, hunch: R0.hunch ?? 5, faceTurn: R0.faceTurn, faceUp: R0.faceUp, faceTilt: R0.faceTilt, lfp: R0.lfp, lft: R0.lft, rft: R0.rft, lk: R0.lk, rk: R0.rk, lkUp: R0.lkUp, lhx: R0.lhx, lhy: R0.lhy, lhz: R0.lhz, le: R0.le, rhx: R0.rhx, rhy: R0.rhy, rhz: R0.rhz, re: R0.re };
+  // (thrown: tipped forward and tucked, his left arm flung out for his balance, his staff high)
+  const FLY: Look = { pitch: 12 + 14 * fl, roll: 6 * fl, twist: 0, bend: 10, hunch: 8, faceTurn: 0, faceUp: 8, faceTilt: 4, lfp: 30 * (1 - reach), lft: 10, rft: -10, lk: 12, rk: -12, lkUp: 20, lhx: 3, lhy: 15, lhz: 7, le: 30, rhx: 3, rhy: -10, rhz: 15, re: 20 };
+  // (landed: crouched deep over his knees, his left hand out behind him low, his staff up)
+  const LAND: Look = { ...FLY, pitch: 20, roll: 0, twist: 4, bend: 18, hunch: 10, faceTurn: -4, faceUp: 20, faceTilt: 0, lfp: 0, lft: 12, rft: -14, lk: 16, rk: -16, lkUp: 4, lhx: -3, lhy: 13, lhz: -7, le: 24, rhx: 6, rhy: -11, rhz: 6, re: 18 };
+  // (looking back over his shoulder to it, still crouched: his head bowed a little)
+  const LOOK: Look = { ...LAND, twist: -24, faceTurn: -80, faceUp: -4, faceTilt: -8, lhz: -9 };
+  // (risen: tall, his head come round to the hero; his writing hand out before him)
+  const RISEN: Look = { ...LAND, pitch: -2, twist: 0, bend: 0, hunch: 5, faceTurn: 0, faceUp: 8, faceTilt: 2, lk: 8, rk: -8, lkUp: 0, lhx: 10, lhy: 4, lhz: 1, le: -6, rhx: 1.2, rhy: -11.5, rhz: 14, re: 14 };
+  // (his staff thrust high over his head, arched back, his face up to it, his left hand clawed up and wide)
+  const RAISE: Look = { ...RISEN, pitch: -8, bend: -6, hunch: 0, faceUp: 24, lhx: 4, lhy: 12, lhz: 14, le: 40, rhx: 2, rhy: -6, rhz: 26, re: 30 };
+  // (the slam: driven down, his staff's foot into the floor at his right side, his head up, glaring; then standing over it, hunched
+  // forward like something hunting, his staff planted, his writing hand clawed out before him)
+  const SLAM: Look = { ...RISEN, pitch: 16, bend: 20, hunch: 10, faceUp: 16, lhx: 6, lhy: 14, lhz: -2, le: 30, rhx: 9, rhy: -9, rhz: -12, re: 10 };
+  const OVER: Look = { ...SLAM, pitch: 10, bend: 10, hunch: 14, faceUp: 14, lhx: 10, lhy: 6, lhz: 3, le: 10 };
+  // (each in turn, eased; the slam itself two frames)
+  const steps: [Look, number][] = [
+    [FLY, smooth01(u / 0.12)],
+    [LAND, smooth01((u - tf + 0.04) / 0.08)],
+    [LOOK, smooth01((t - FALL.look[0]) / 0.3) * (1 - 0)],
+    [RISEN, smooth01((t - FALL.rise[0]) / (FALL.rise[1] - FALL.rise[0]))],
+    [RAISE, smooth01((t - FALL.raise[0]) / (FALL.raise[1] - FALL.raise[0]))],
+    [SLAM, clamp01((t - SLAM_STRIKE[0]) / (FALL.slam - SLAM_STRIKE[0]))],
+    [OVER, smooth01((t - FALL.slam - 0.12) / 0.6)],
+  ];
+  const L: Look = { ...SEAT };
+  for (const [to, f] of steps) for (const k of Object.keys(L) as (keyof Look)[]) L[k] += (to[k] - L[k]) * f;
+  // (his staff planted after the slam: its foot kept on the floor)
+  return {
+    px: b.pelvis[0], py: b.pelvis[1], pz: b.pelvis[2] - PELVIS0,
+    yaw: 0, pitch: L.pitch, roll: L.roll, twist: L.twist, bend: L.bend, side: 0, hunch: L.hunch,
+    faceTurn: L.faceTurn, faceUp: L.faceUp, faceTilt: L.faceTilt,
+    lfx: b.footL[0], lfy: b.footL[1] - B.stance, lfz: b.footL[2] - B.ankle,
+    rfx: b.footR[0], rfy: b.footR[1] + B.stance, rfz: b.footR[2] - B.ankle,
+    lfp: L.lfp, rfp: L.lfp, lft: L.lft, rft: L.rft, lk: L.lk, rk: L.rk, lkUp: L.lkUp, rkUp: L.lkUp,
+    lhIn: 1, lhx: L.lhx, lhy: L.lhy, lhz: L.lhz + (t > FALL.slam ? 1.2 * Math.sin(t * 4) : 0), le: L.le,
+    rhIn: 1, rhx: L.rhx, rhy: L.rhy, rhz: L.rhz, re: L.re,
+    out: 0,
+  } as Partial<Bones>;
+}
+/** Its death as a move: his bones, every frame (30 a second). */
+function fallMotion(): Motion {
+  const keys: Key3[] = [];
+  const N = Math.round(FALL.long * 30);
+  for (let i = 0; i <= N; i++) keys.push({ at: i / 30, ease: 'lin', pose: fallRider(i / 30) });
+  return { keys, hit: FALL.slam };
+}
+/** His boots, down on the floor (as his skeleton has them), once he has landed. */
+export const fallLanded = (t: number): boolean => t >= FALL.kill + FALL.throw + FALL.fly - 1e-6;
 
 /** How far his staff is brought down forward (degrees): as far as he hammers with it. */
 const staffTiltOf = (P: BoarPose): number => 64 * (P.ride?.cast?.hammer ?? 0);
@@ -2279,13 +2691,79 @@ function chargeTimeAt(d: number): number {
   return hi;
 }
 
+/** A colour gone to ash: its light kept, its colour gone, as far as `a` (0 ... 1). */
+function ashOf(c: string, a: number): string {
+  const n = parseInt(c.slice(1, 7), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const l = 0.3 * r + 0.59 * g + 0.11 * b;
+  const ash = 54 + 0.62 * l;
+  const m = (v: number, w: number): number => Math.round(v + (w - v) * a);
+  return `#${[m(r, ash), m(g, ash * 0.97), m(b, ash * 0.99)].map((v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('')}`;
+}
+/** ITS END (his words, 12 Nov 2026: “like he turns to ash after the rune power seeps out of him”): everything of it painted gone to
+ * ash as far as `a`; and, blown away as far as `cr`, its small pieces gone one by one and its great ones eaten away in flakes
+ * from their tops down. Its glows go out as it greys. */
+function ashPut(put: Put, a: number, cr: number): Put {
+  let n = 0;
+  const ramp = (r: Ramp): Ramp => r.map((c) => ashOf(c, a)) as unknown as Ramp;
+  // (a flake of it gone: in blotches, its top first)
+  const gone = (x: number, y: number): boolean => cr > 0 && 0.55 * hash(Math.floor(x / 2), Math.floor(y / 2), 9011) + 0.45 * clamp01((y - 150) / 120) < cr * 1.25 - 0.05;
+  return (part, piece, shape) => {
+    const when = hash(n++, 3, 9101);
+    if (shape.k === 'glow') {
+      if (a < 0.6) put(part, piece, { ...shape, a: shape.a * (1 - a / 0.6) });
+      return;
+    }
+    if (shape.k !== 'ball' && shape.k !== 'panel' && cr > 0.15 + 0.7 * when) return;
+    if (shape.k === 'rod' || shape.k === 'cloth' || shape.k === 'band') return put(part, piece, { ...shape, ramp: ramp(shape.ramp) } as never);
+    if (shape.k === 'dot') return put(part, piece, { ...shape, c: ashOf(shape.c, a), ...(shape.c2 ? { c2: ashOf(shape.c2, a) } : {}) });
+    if (shape.k === 'mote' || shape.k === 'thread') return put(part, piece, { ...shape, c: ashOf(shape.c, a) } as never);
+    if (shape.k === 'ball') {
+      const sk = shape.skin;
+      const R = Array.isArray(sk) ? ramp(sk as Ramp) : null;
+      return put(part, piece, { ...shape, skin: (u: V3, tone: number, x: number, y: number) => {
+        if (gone(x, y)) return null;
+        if (R) return R[T5(tone)];
+        const c = (sk as (u: V3, tone: number, x: number, y: number) => string | null)(u, tone, x, y);
+        return c ? ashOf(c, a) : c;
+      } });
+    }
+    if (shape.k === 'panel') {
+      const sk = shape.skin;
+      return put(part, piece, { ...shape, skin: (pa: number, pb: number, front: boolean, tone: number) => {
+        if (cr > 0 && hash(Math.floor(pa * 6 + 9), Math.floor(pb * 6 + 9), 9012) < cr * 1.2 - 0.1) return null;
+        const c = sk(pa, pb, front, tone);
+        return c ? ashOf(c, a) : c;
+      } });
+    }
+    put(part, piece, shape);
+  };
+}
 function wsBits(st: Stage, m: Moment): Bit[] {
   const bits: Bit[] = [];
   const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
   const { s } = m;
   const P = boarPoseAt(m.move ?? 'stand', m.t);
   const near = st.near(add(s.pelvis, [0, -3, 0])) > st.near(add(s.pelvis, [0, 3, 0])) ? -1 : 1;
-  boarBits(P, put, near, st);
+  // (its end: gone to ash, and blown away)
+  const ash = P.ash ?? 0, cr = P.crumble ?? 0;
+  if (cr < 1) boarBits(P, ash > 0 || cr > 0 ? ashPut(put, ash, cr) : put, near, st);
+  // (his power swelling in him: its runes' power streaming into him, at its height as he strikes: a light about him, his eyes
+  // blazing, the air crackling with his pink, sparks running up him)
+  const surge = P.ride?.surge ?? 0;
+  if (surge > 0) {
+    put('glow', 'surge', { k: 'glow', p: lerp3(s.ribs, s.neck, 0.4), c: BURN[2], r: 14 + 26 * surge, a: 0.1 + 0.28 * surge });
+    put('glow', 'surgeEyes', { k: 'glow', p: s.head, c: BURN[3], r: 5 + 7 * surge, a: 0.25 + 0.45 * surge });
+    const n = Math.round(22 * surge);
+    const fr = Math.floor(m.t * 30);
+    for (let i = 0; i < n; i++) {
+      const h = hash(i, fr, 9021);
+      const along = lerp3(s.pelvis, s.head, h);
+      const a2 = hash(i, fr + 1, 9022) * TAU;
+      const r = 6 + 6 * hash(i, fr + 2, 9023);
+      put('air', 'crackle', { k: 'mote', p: add(along, [Math.cos(a2) * r, Math.sin(a2) * r, 2 + 8 * hash(i, fr + 3, 9024)]), c: i % 3 === 0 ? BURN[4] : BURN[3], size: i % 4 === 0 ? 2 : 1 });
+    }
+  }
   // (the wind of its going: on him as it charges, the other way as it stops dead)
   const wind = P.ride?.still ? 0 : ((P.ride?.lean ?? 0) - 1.6 * (P.ride?.brace ?? 0)) / 22;
   robe(put, s, P.sway, wind, m.t);
@@ -2351,8 +2829,28 @@ export function wsMob(): Mob {
     canvas: WS_CANVAS,
     trueBack: true,
     bits: wsBits,
-    grains: (_st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand'),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST } },
+    // (dead, the boar is no longer a living monster: its edge is the dark seam, not his pink; his own stays pink)
+    finish: (px: Px, _st: Stage, m: Moment, partAt: (k: number) => string | null) => {
+      if (m.move !== 'fall' || m.t <= FALL.kill + 0.1) return;
+      const boarAt0 = (x: number, y: number): number => {
+        if (x < 0 || y < 0 || x >= px.w || y >= px.h) return 0;
+        const n = partAt(y * px.w + x);
+        return n === null ? 0 : n.startsWith('boar') ? 1 : 2;
+      };
+      // (its pink edge, outside its dark seam: whatever is painted of no part, and nearest the boar within two pixels, not him)
+      const ink = INK.toLowerCase();
+      const fix: number[] = [];
+      for (let y = 0; y < px.h; y++) for (let x = 0; x < px.w; x++) {
+        const c = px.get(x, y);
+        if (!c || c.toLowerCase() === ink || partAt(y * px.w + x) !== null) continue;
+        let b = 0, o = 0;
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const w = boarAt0(x + dx, y + dy); if (w === 1) b++; else if (w === 2) o++; }
+        if (b > 0 && o === 0) fix.push(x, y);
+      }
+      for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
+    },
+    grains: (st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST } },
   } as unknown as Mob;
 }
 
@@ -2402,7 +2900,12 @@ export const WS_SHAPE: BossShape = {
     for (let i = 0; i <= 12; i++) pts.push(lerp3(st.foot, st.head, i / 12));
     return [{ name: 'staff', pts, r: 1.2, may: ['foreR', 'upperR'] }];
   },
-  grips: (move: string, t: number) => boarSoles(boarPoseAt(move, t)).map((p, i) => ({ name: `hoof${i}`, p })),
+  // (its hooves; and, its death, his boots once he is down on them: thrown clear, he lands on his feet)
+  grips: (move: string, t: number, s: Skeleton) => [
+    // (killed, they grip nothing: dragged as it slides)
+    ...(move === 'fall' && t > FALL.kill ? [] : boarSoles(boarPoseAt(move, t)).map((p, i) => ({ name: `hoof${i}`, p }))),
+    ...(move === 'fall' && fallLanded(t) ? [{ name: 'heelL', p: s.heelL }, { name: 'toeL', p: s.toeL }, { name: 'heelR', p: s.heelR }, { name: 'toeR', p: s.toeR }] : []),
+  ],
   follow: (move: string, t: number, s: Skeleton, _q: Posed) => {
     const P = boarPoseAt(move, t);
     const H = headOf(P);
@@ -2411,23 +2914,25 @@ export const WS_SHAPE: BossShape = {
     const pts: Record<string, V3> = { head: s.head, handL: s.handL, handR: s.handR, pelvis: s.pelvis, ring: st.ring, snout: H.at(21.6, 0, -7.6) };
     // (its hooves followed as it stands and stamps; galloping, each is down on its own spot of the floor and held to that by
     // SLIDE, not followed as a thing in the air)
-    if (move !== 'charge') Object.assign(pts, { hoof0: soles[0], hoof2: soles[2] });
+    if (move !== 'charge' && move !== 'fall') Object.assign(pts, { hoof0: soles[0], hoof2: soles[2] });
     return pts;
   },
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
-  carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : 0),
-  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE },
+  carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : move === 'fall' ? fallCarry(t) * TILE : 0),
+  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE },
   // (his hammer from the sky: three blows of his staff, each its own wind-up, flash and follow-through)
   blows: { power: POWER.slams.map((h, i) => ({ hit: h, strike: POWER_STRIKES[i], from: i ? POWER.slams[i - 1] + 0.1 : 0, until: i < 2 ? POWER.slams[i + 1] - POWER.raise : Infinity })) },
-  smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)) || (move === 'frost' && frostSmeared(t)),
+  smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)) || (move === 'frost' && frostSmeared(t)) || (move === 'fall' && slamSmeared(t)),
   // (the end the boar strikes with in its gore: its leading tusk's tip)
-  tip: (move: string, t: number, s: Skeleton) => (move === 'gore' ? goreTip(boarPoseAt('gore', t)) : move === 'stomp' ? stompTip(boarPoseAt('stomp', t)) : move === 'power' || move === 'frost' ? staffOf(s, staffTiltOf(boarPoseAt(move, t))).ring : null),
+  tip: (move: string, t: number, s: Skeleton) => (move === 'gore' ? goreTip(boarPoseAt('gore', t)) : move === 'stomp' ? stompTip(boarPoseAt('stomp', t)) : move === 'power' || move === 'frost' ? staffOf(s, staffTiltOf(boarPoseAt(move, t))).ring : move === 'fall' ? staffOf(s, 0).foot : null),
   // (each move from his stand and back, as the game hands over; a run done, it wheels round out of its skid; done wheeling, the
   // game shows it from its other side and the next run goes back down the lane: that hand-over is the charge's own start drawn the
   // other way round, and is not one these checks can draw)
   handovers: [
     ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power', 'flame', 'frost', 'lightning', 'poison'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
     { from: 'charge', at: 'end', to: 'wheel', toAt: 0 },
+    // (killed mid-charge, flat out down its lane)
+    { from: 'charge', at: FALL.from, to: 'fall', toAt: 0 },
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
   ],

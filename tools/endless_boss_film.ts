@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { FALL, fallCarry, slamAt, slamRing, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -39,7 +39,7 @@ const mix = (s: Px, x: number, y: number, c: string, a: number): void => {
 };
 // (the camera follows him, a little behind: his floor point held near the picture's middle, the floor going by)
 const sx = Math.round(W / 2);
-const sy = move === 'power' ? H - 90 : move === 'flame' ? Math.round(H / 2 + 40) : Math.round(H / 2 + 50);
+const sy = move === 'fall' ? Math.round(H / 2 + 20) : move === 'power' ? H - 90 : move === 'flame' ? Math.round(H / 2 + 40) : Math.round(H / 2 + 50);
 /** The floor: dark flags, their joints, lit a little toward the upper left (moved by the camera: `cx`, `cy`). */
 function floor(cx: number, cy: number): Px {
   const s = new Px(W, H);
@@ -949,6 +949,92 @@ function powerScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
     }
   }
 }
+/** ITS DEATH ON THE FLOOR: where it hit and slid on its side, the floor ploughed dark down the middle, frost thrown up white at
+ * its edges; where his boots slid as he landed, two streaks of frost. */
+function scrape(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
+  const hit = FALL.kill + 0.2;
+  if (t < hit) return;
+  const a0 = fallCarry(hit) * TILE + 6, a1 = fallCarry(t) * TILE + 30;
+  for (let x = a0; x <= a1; x += 1.2) {
+    const fade = 0.6 + 0.4 * Math.min(1, (x - a0) / 60);
+    for (let j = -20; j <= 20; j++) {
+      const side = j / 20;
+      const wob = Math.sin(x * 0.21 + j * 1.7) * 0.5 + 0.5;
+      const [px, py] = at([from[0] + dir * x, from[1] + dir * (side * 0.62 * TILE - 4), 0]);
+      if (Math.abs(side) > 0.78) mix(s, Math.round(ox + px), Math.round(oy + py), '#c4d4e4', (0.35 + 0.3 * wob) * fade);
+      else if (Math.abs(side) < 0.6) mix(s, Math.round(ox + px), Math.round(oy + py), '#0e0b10', (0.3 + 0.2 * wob) * fade);
+    }
+  }
+  const land = FALL.kill + FALL.throw + FALL.fly;
+  if (t < land) return;
+  const sk0 = skeletonAt(mob, 'fall', land), sk = skeletonAt(mob, 'fall', Math.min(t, land + FALL.slide));
+  for (const [a, b] of [[sk0.heelL, sk.heelL], [sk0.heelR, sk.heelR]] as const) {
+    const xa = a[0] + fallCarry(land) * TILE, xb = b[0] + fallCarry(Math.min(t, land + FALL.slide)) * TILE;
+    for (let x = xa; x <= xb; x += 1) for (const dy of [-1.2, 0, 1.2]) {
+      const [px, py] = at([from[0] + dir * x, from[1] + dir * (a[1] + dy), 0]);
+      mix(s, Math.round(ox + px), Math.round(oy + py), dy ? '#93a8c0' : '#eef4fa', dy ? 0.35 : 0.6);
+    }
+  }
+}
+/** HIS SLAM ON THE FLOOR: where his staff strikes, the floor cracked out from it, the cracks glowing his pink and cooling; his ring
+ * rolling out over the whole floor, a bright edge with the floor heaved and darkened behind it, thinning as it goes; where the boar
+ * lay, a scorch of its ash once it has blown away. */
+function slamFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
+  if (t < FALL.slam) return;
+  const c = fallCarry(t) * TILE;
+  const a0 = slamAt();
+  const P = (x: number, y: number): [number, number] => {
+    const [px, py] = at([from[0] + dir * (c + x), from[1] + dir * y, 0]);
+    return [Math.round(ox + px), Math.round(oy + py)];
+  };
+  // (the scorch where it lay)
+  const fade = Math.min(1, (t - FALL.slam - 0.25) / 0.4);
+  if (fade > 0) for (let yy = -16; yy <= 16; yy++) for (let xx = -38; xx <= 34; xx++) {
+    const q = Math.hypot(xx / 38, yy / 16);
+    if (q >= 1) continue;
+    const [x, y] = P(xx, yy * 1.4);
+    mix(s, x, y, (xx * 7 + yy * 13) % 5 === 0 ? '#5e585c' : '#141014', 0.45 * fade * (1 - q * q));
+  }
+  // (cracks out from where it struck, glowing and cooling)
+  const cool = Math.min(1, (t - FALL.slam) / 1.2);
+  for (let k = 0; k < 9; k++) {
+    let ang = (k / 9) * Math.PI * 2 + 0.4 * Math.sin(k * 3.1);
+    let x = a0[0], y = a0[1];
+    const long = (26 + 22 * ((k * 0.618) % 1)) * Math.min(1, (t - FALL.slam) / 0.12);
+    for (let d = 0; d < long; d += 1) {
+      ang += 0.35 * Math.sin(d * 0.6 + k);
+      x += Math.cos(ang);
+      y += Math.sin(ang);
+      const [px, py] = P(x, y);
+      mix(s, px, py, '#0e0b10', 0.8);
+      if (d < long * 0.7) mix(s, px, py - 1, '#ff4f8a', 0.6 * (1 - cool));
+    }
+  }
+  // (the ring)
+  const r = slamRing(t);
+  const u = (t - FALL.slam) / FALL.ring.long;
+  if (u > 0 && u < 1.15) {
+    const a = u < 1 ? 1 - 0.6 * u : (1.15 - u) / 0.15 * 0.4;
+    for (let i = 0; i < 480; i++) {
+      const ang = (i / 480) * Math.PI * 2;
+      for (let w = -10; w <= 3; w += 1) {
+        const [px, py] = P(a0[0] + Math.cos(ang) * (r + w), a0[1] + Math.sin(ang) * (r + w));
+        if (w > -2) mix(s, px, py, w > 0 ? '#ffd0e0' : '#ff4f8a', 0.85 * a);
+        else mix(s, px, py, '#2a0a18', 0.35 * a * (1 + w / 10));
+      }
+    }
+  }
+}
+/** His picture laid again over itself, washed with his pink. */
+function flash(s: Px, mv: string, vw: 'front' | 'rear', t: number, ox: number, oy: number, a: number): void {
+  const { px } = paintMob(mob, mv, t, vw);
+  const x0 = Math.round(ox - WS_CANVAS.ax), y0 = Math.round(oy - WS_CANVAS.ay);
+  for (let y = 0; y < px.h; y++) for (let xx = 0; xx < px.w; xx++) {
+    if (!px.get(xx, y)) continue;
+    const x = vw === 'rear' ? 2 * WS_CANVAS.ax - xx : xx;
+    mix(s, x0 + x, y0 + y, '#ffc2d8', a);
+  }
+}
 /** His picture laid on the floor at (ox, oy): his painted pixels, then his lights soft over them. */
 function lay(s: Px, mv: string, vw: 'front' | 'rear', t: number, ox: number, oy: number, ghost = 0): void {
   const { px, lights } = paintMob(mob, mv, t, vw);
@@ -990,28 +1076,35 @@ interface Seg {
   long: number;
   /** where his floor point is, as the move's own points are, at `t` (a charge carries him; a wheel turns him round his forehand) */
   floorAt: (t: number) => V2;
+  /** where in the move it is cut (its end, if it is not), and whether it goes straight on from the one before (its first frame that one's last) */
+  end?: number;
+  join?: boolean;
 }
 const floorOf = (mv: string) => (t: number): V2 => {
   if (mv === 'charge') return [chargeCarry(t) * TILE, 0];
+  if (mv === 'fall') return [fallCarry(t) * TILE, 0];
   if (mv === 'wheel') {
     const P = boarPoseAt('wheel', t);
     return [P.x, P.y];
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : mv === 'fall' ? FALL.long : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
-  const plan: [string, 'front' | 'rear', number][] = move === 'charge3'
+  // (its death: the charge down its lane, killed flat out, and on from there)
+  const plan: [string, 'front' | 'rear', number, number?][] = move === 'charge3'
     ? [['charge', 'front', 1], ['wheel', 'front', 1], ['charge', 'rear', 1.15], ['wheel', 'rear', 1.15], ['charge', 'front', 1.3]]
+    : move === 'fall' ? [['charge', view, 1, FALL.from], ['fall', view, 1]]
     : [[move, view, 1]];
   let from: V2 = [0, 0];
-  for (const [mv, vw, speed] of plan) {
+  for (const [mv, vw, speed, until] of plan) {
     const f = floorOf(mv);
-    const sg: Seg = { move: mv, view: vw, from, speed, long: longOf(mv) / speed, floorAt: f };
+    const end = until ?? longOf(mv);
+    const sg: Seg = { move: mv, view: vw, from, speed, long: end / speed, floorAt: f, end, join: segs.length > 0 && mv === 'fall' };
     segs.push(sg);
-    const e = f(longOf(mv));
+    const e = f(end);
     const k = vw === 'front' ? 1 : -1;
     from = [from[0] + k * e[0], from[1] + k * e[1]];
   }
@@ -1022,21 +1115,32 @@ let i = 0;
 for (const sg of segs) {
   const n = Math.round(sg.long * 30);
   const k = sg.view === 'front' ? 1 : -1;
-  for (let j = 0; j <= n; j++, i++) {
-    const t = Math.min(longOf(sg.move), (j / 30) * sg.speed);
+  for (let j = sg.join ? 1 : 0; j <= n; j++, i++) {
+    const t = Math.min(sg.end ?? longOf(sg.move), (j / 30) * sg.speed);
     const world = (tt: number): [number, number, number] => {
       const f = sg.floorAt(tt);
       return [sg.from[0] + k * f[0], sg.from[1] + k * f[1], 0];
     };
-    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    const fallFilm = move === 'fall';
+    const FALL_END = fallCarry(FALL.long) * TILE;
+    const lead = sg.move === 'fall' ? 50 + 60 * Math.min(1, t / 1.2) : 50;
+    const [tx, ty] = fallFilm ? at([world(t)[0] + lead, world(t)[1] - 50 * (lead / 110), 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
-    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : sg.move === 'frost' ? Math.max(0, 1 - Math.abs(t - FROST.hit - 0.03) / 0.25) * 5 : sg.move === 'lightning' ? Math.max(0, ...[...BOLT.bursts, ...BOLT.zaps].map((b) => 1 - Math.abs(t - b - 0.03) / 0.15), 1 - Math.abs(t - BOLT.crack) / 0.12) * 4 : 0;
+    const kick = sg.move === 'fall' ? Math.max(0, 1 - Math.abs(t - FALL.kill - 0.02) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - FALL.kill - 0.22) / 0.15) * 5 + Math.max(0, 1 - Math.abs(t - FALL.slam - 0.03) / 0.3) * 8 : sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : sg.move === 'frost' ? Math.max(0, 1 - Math.abs(t - FROST.hit - 0.03) / 0.25) * 5 : sg.move === 'lightning' ? Math.max(0, ...[...BOLT.bursts, ...BOLT.zaps].map((b) => 1 - Math.abs(t - b - 0.03) / 0.15), 1 - Math.abs(t - BOLT.crack) / 0.12) * 4 : 0;
     const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
     const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
     const s = floor(-ox, -oy);
     if (sg.move === 'charge') lane(s, t, ox, oy, sg.from, k);
+    if (sg.move === 'fall') scrape(s, t, ox, oy, sg.from, k);
+    if (sg.move === 'fall') slamFloor(s, t, ox, oy, sg.from, k);
+    if (fallFilm) {
+      // (the hero, out of its lane, watching; just past where his ring will reach)
+      const last = segs[segs.length - 1];
+      const [hx, hy] = at([last.from[0] + FALL_END + 130 + 3.3 * TILE, last.from[1] - 3.6 * TILE, 0]);
+      hero(s, ox + hx, oy + hy);
+    }
     if (sg.move === 'gore') sweep(s, t, ox, oy, sg.from, k);
     if (sg.move === 'stomp') blast(s, t, ox, oy, sg.from, k);
     if (sg.move === 'power') powerScene(s, t, ox, oy, sg.from, k, false);
@@ -1083,12 +1187,18 @@ for (const sg of segs) {
       const [x, y] = where(t);
       lay(s, sg.move, sg.view, t, x, y);
     }
+    if (sg.move === 'fall' && t > FALL.kill - 1e-6 && t < FALL.kill + 2.5 / 30) {
+      // (killed: his pink flaring out of all of it at once)
+      const [x, y] = where(t);
+      flash(s, sg.move, sg.view, t, x, y, t < FALL.kill + 1 / 30 ? 0.75 : 0.4);
+    }
     if (sg.move === 'power') powerScene(s, t, ox, oy, sg.from, k, true);
     if (sg.move === 'flame') flameScene(s, t, ox, oy, sg.from, k, true);
     if (sg.move === 'frost') frostScene(s, t, ox, oy, sg.from, k, true);
     if (sg.move === 'lightning') boltScene(s, t, ox, oy, sg.from, k, true);
     if (sg.move === 'poison') sporeScene(s, t, ox, oy, sg.from, k, true);
     writeFileSync(`${out}/f/${String(i).padStart(3, '0')}.png`, png(s));
+    if (sg.move === 'fall' && t >= FALL.slam - 1e-6 && t < FALL.slam + 1 / 30 - 1e-6) for (let h = 0; h < 3; h++) writeFileSync(`${out}/f/${String(++i).padStart(3, '0')}.png`, png(s));
   }
 }
 const N = i - 1;
