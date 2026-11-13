@@ -104,6 +104,11 @@ directs and playtests, and Claude writes and tests everything.
 - ONE UPDATE A DAY. The ship list collects all day; the main chat puts it out once, in the evening, as one update. His question,
   12 Nov 2026, 20:33, after six updates that day: “dont you think 6 updates in one day is a little excessive?”; asked how often
   updates should go out, his pick: “Once a day (Recommended)”.
+- WHEN HE STEPS AWAY (bed, work, “I’ll see it in the morning”), KEEP WORKING UNTIL THE TASK IS COMPLETELY DONE, ITS LOOKS
+  INCLUDED, BEFORE ENDING YOUR REPLY: a chat works only while its reply runs. Do not stop at stand-ins or a first pass: pictures
+  first only keeps things from going live before he has seen them, not from being made. His words, 13 Nov 2026, 07:40, after a
+  chat stopped at stand-in looks overnight: “Why wouldn’t you just finish the task while I was sleeping?”; asked whether every
+  chat should work so, “Yes, add it for all chats (Recommended)” (also in the queue's meta/protocol).
 - WHAT IS LEFT OF YOUR OWN TASK, OR WHAT IT TURNS UP, YOU FINISH IN THE SAME CHAT: do not queue it. When your task is done, ask
   him by pop-up whether to start a new task, then do it. His words, 12 Nov 2026, 13:38: “Why throw something in the queue when
   your task is done and you could just start working on it immediately.  Ask if you should start on a new task, then do it.  I’m
