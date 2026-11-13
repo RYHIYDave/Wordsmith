@@ -17,7 +17,7 @@ import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
 import { ACTION_F2, ALLY_DAMAGE, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, LASTING, FLEETING, VAST, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, HUSH_LEAVES, mirrorSide, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, SPLIT_EACH, HEX, STILL, ARC_CHAIN } from './defs';
 import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
-import { asWarriorWeapon, bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
+import { asWarriorWeapon, bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueLines, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
 import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
 import type { Hall } from './level';
@@ -75,7 +75,7 @@ import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
 import { ENDLESS_TOWN, RIM_ARRIVE, RIM_AT, RIM_RULES, makeRim, notchesFor, roundStep } from './rim';
 import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, HellWave, Hero, Level, Meta, Monster, OrbInst, Peril, Pet, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Soul, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
-import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS, MELD8_IDS } from './types';
+import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS, MELD8_IDS, HELD_WORD_IDS } from './types';
 import { CRANK_TIMES, FIRE, FIRE_GONE, FURNACE_WORD, KEEPER, MELDSTONE_WORDS, QUESTS15, QUEST_TEXT } from './quests15';
 import { CRANK_SOUND, SCENE_SOUNDS, SINGING, trapSound } from './scene_sounds';
 // (THE TEN NEW WORDS' SOUNDS, the sound chat's sixth batch: game/word_sounds.ts)
@@ -100,6 +100,8 @@ import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_SOUNDS, HURT_BIG, VOICE, 
 import { BOSS_CALLS, bossCall } from './boss_calls';
 import { UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
 import type { BendCtx, UniqueDef } from './uniques';
+import { FOE_WORDS } from './defs';
+import { foeAfterBlow, foeBlast, foeDeath, foeHarder, foeTick, foeWordsOf, foeZone, layProblem, rankOfElement, secondElement, upTo, wordsWeight } from './foe_melds';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
 /** Seconds before "of Echoes" repeats an ability. */
@@ -1098,7 +1100,8 @@ export class Game {
     g.mode = HERO_MODES.includes(s.mode as HeroMode) ? (s.mode as HeroMode) : MODE_BEFORE;
     g.runTime = Math.max(0, num(s.runTime, 0));
     if (Array.isArray(s.plan)) {
-      for (const w of s.plan) if (WORD_IDS.includes(w) && g.plan.length < TUNE.planMax && !g.plan.includes(w)) g.plan.push(w);
+      // (EVERY WORD ON A DUNGEON, FOE_WORDS: a melded or ranked word laid on the gate is kept too)
+      for (const w of s.plan) if ((WORD_IDS.includes(w) || (FOE_WORDS.on && HELD_WORD_IDS.includes(w))) && g.plan.length < TUNE.planMax && !g.plan.includes(w)) g.plan.push(w);
     }
     g.bodySearched = s.body === true;
     g.questGiven = EXITS.on && s.asked === true;
@@ -1802,7 +1805,7 @@ export class Game {
    */
   private fillPack(kind: MonsterKind, x: number, y: number, size: number, tier: 'normal' | 'elite' | 'champion', pi: number, rng: RNG, lot: RNG, tiers: RNG, grow: RNG | null = null): void {
     const f = this.level.floor;
-    const twin = this.dungeonWords.includes('twin') ? Math.round(size * GATE_TWIN_PACKS) : size;
+    const twin = foeWordsOf(this.dungeonWords).includes('twin') ? Math.round(size * GATE_TWIN_PACKS) : size;
     const big = twin * packGrowth(this.power);
     const n = big > twin && grow ? Math.floor(big) + (grow.next() < big - Math.floor(big) ? 1 : 0) : twin;
     const spots = scatter(this.level.walk, f.w, f.h, x, y, n, rng);
@@ -1980,7 +1983,7 @@ export class Game {
     if (boss && words.length) {
       carries = [lot ? lot.pick(words) : words[0]];
       if (lot) {
-        let p = TUNE.bossExtraPerDepth * (P - 1) + TUNE.bossExtraPerWord * this.dungeonWords.length + (greater ? TUNE.bossExtraGreater : 0);
+        let p = TUNE.bossExtraPerDepth * (P - 1) + TUNE.bossExtraPerWord * wordsWeight(this.dungeonWords) + (greater ? TUNE.bossExtraGreater : 0);
         while (carries.length < 3 && p > 0 && lot.chance(Math.min(0.95, p))) {
           const spare = wordsAt(P).filter((w) => !carries.includes(w));
           carries.push(lot.pick(spare));
@@ -1991,14 +1994,16 @@ export class Game {
       // (WORDS GROW WITH THE LEVELS, defs.ts WORD_GROWTH: the likelier the deeper)
       const p = (champion ? TUNE.guardianCarry : TUNE.eliteCarry) * wordGrowth(P);
       // (the more words are burned into the dungeon, the likelier: that is what burning them buys)
-      if (lot.chance(Math.min(1, p * (1 + 0.3 * this.dungeonWords.length)))) carries = [lot.pick(words)];
+      if (lot.chance(Math.min(1, p * (1 + 0.3 * wordsWeight(this.dungeonWords))))) carries = [lot.pick(words)];
     }
     // (THE FIRST LEVELS: before the ring is lit nothing gives up a word)
     if (!this.wordsFall()) carries = [];
     if (!bare) {
-      for (const w of this.dungeonWords) if (!words.includes(w)) words.push(w);
+      // (EVERY WORD ON A DUNGEON: a melded word its two words and itself, a ranked word its word and itself: foe_melds.ts)
+      const laid = foeWordsOf(this.dungeonWords);
+      for (const w of laid) if (!words.includes(w)) words.push(w);
       // (a word burned in at the gate is every monster's, a minion's at full strength too)
-      half = half.filter((w) => !this.dungeonWords.includes(w));
+      half = half.filter((w) => !laid.includes(w));
     }
     const has = { words, half };
     // (ENDLESS MODE: on an endless level as strong as its depth, `power`, and 10% more for each endless level before it, `tough`)
@@ -2983,7 +2988,7 @@ export class Game {
    *   IN, THIS ASKS THE WRONG THING (a monster that can come at him must be one he can hurt):
    *   tests/doors.test.ts holds the two together, and will say so.
    */
-  private shutIn(m: { x: number; y: number }): boolean {
+  shutIn(m: { x: number; y: number }): boolean {
     const L = this.level;
     if (L.doors.length === 0) return false;
     const h = this.hero;
@@ -3627,11 +3632,15 @@ export class Game {
     const st = this.level.holds?.[n];
     if (!st || st.open) return 'The door is open';
     if (!(this.hero.words[word] > 0)) return 'No spare word';
-    if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks and gear only';
-    if (WORDS[word].kind === 'rank') return 'A ranked word goes on attacks and gear only';
+    // (EVERY WORD ON A DUNGEON, FOE_WORDS: a melded and a ranked word too, his 12 Nov 2026 picks: game/foe_melds.ts)
+    if (WORDS[word].kind === 'meld' && !FOE_WORDS.on) return 'A melded word goes on attacks and gear only';
+    if (WORDS[word].kind === 'rank' && !FOE_WORDS.on) return 'A ranked word goes on attacks and gear only';
     if (st.words.length >= HOLD_TUNE.most) return `At most ${HOLD_TUNE.most} words`;
     if (st.words.includes(word)) return 'Already on the altar';
-    if (WORDS[word].element && st.words.some((w) => WORDS[w].element)) return 'One element per stronghold';
+    if (FOE_WORDS.on) {
+      const why = layProblem(st.words, word, 'stronghold');
+      if (why) return why === 'Already on it' ? 'Already on the altar' : why;
+    } else if (WORDS[word].element && st.words.some((w) => WORDS[w].element)) return 'One element per stronghold';
     return null;
   }
 
@@ -3766,10 +3775,11 @@ export class Game {
       // (its last fight won: the reward)
       if (st.entered && !st.won && !(HOLD_WAVES.on && st.wave && st.wave < HOLD_WAVES.n) && !this.monsters.some((m) => !m.dead && (m.packId === st.pack || (st.packs ?? []).includes(m.packId))) && !this.stillComing([st.pack, ...(st.packs ?? [])])) {
         st.won = true;
-        const n = st.words.length;
+        // (EVERY WORD ON A DUNGEON: a melded or ranked word counts as two, his “Counts as two words (Recommended)”)
+        const n = wordsWeight(st.words);
         const at = q.fight;
-        if (MELD.on && HOLD_TUNE.dust[n] > 0) this.addDrop('dust', at.x, at.y, Math.round(HOLD_TUNE.dust[n] * (LOOT2.on ? LOOT2.dust : 1)), null, null);
-        const items = LOOT2.on ? LOOT2.hold[n] : HOLD_TUNE.items[n];
+        if (MELD.on && upTo(HOLD_TUNE.dust, n) > 0) this.addDrop('dust', at.x, at.y, Math.round(upTo(HOLD_TUNE.dust, n) * (LOOT2.on ? LOOT2.dust : 1)), null, null);
+        const items = LOOT2.on ? upTo(LOOT2.hold, n) : upTo(HOLD_TUNE.items, n);
         for (let i = 0; i < items; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(LOOT2.on ? (i < 2 ? 4 : 2) : i === 0 ? 2 : 1), null);
         this.addDrop('gold', at.x, at.y, this.rng.int(15, 30) * Math.max(1, this.power) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
         this.sfx('rare');
@@ -3857,13 +3867,15 @@ export class Game {
     const rng = new RNG((Math.imul(this.seed, 31) + n * 7919 + this.depth) >>> 0);
     const f = L.floor;
     const spots = scatter(L.walk, f.w, f.h, q.fight.x, q.fight.y + 1.2, HOLD_TUNE.pack, rng);
-    const lead = this.bareDungeon() ? [] : this.drawWords(rng, 2).filter((w) => !st.words.includes(w));
-    const more = 1 + HOLD_TUNE.life * Math.max(0, st.words.length - 1);
+    // (EVERY WORD ON A DUNGEON: what the words at the door come to on each monster, a melded word its two and itself: foe_melds.ts)
+    const laid = foeWordsOf(st.words);
+    const lead = this.bareDungeon() ? [] : this.drawWords(rng, 2).filter((w) => !laid.includes(w));
+    const more = 1 + HOLD_TUNE.life * Math.max(0, wordsWeight(st.words) - 1);
     spots.forEach((s, i) => {
       const m = this.spawn(i === 0 ? this.leaderOf(kind) : kind, s.x, s.y, st.pack, i === 0 ? 1 : 0, false, rng, null, { rarity: i === 0 ? 'leader' : 'minion', words: lead });
       // (the words burned at the door are every one's, whole, as a word burned into a dungeon at the gate is)
-      for (const w of st.words) if (!m.words.includes(w)) m.words.push(w);
-      if (m.half) m.half = m.half.filter((w) => !st.words.includes(w));
+      for (const w of laid) if (!m.words.includes(w)) m.words.push(w);
+      if (m.half) m.half = m.half.filter((w) => !laid.includes(w));
       m.life = m.maxLife = Math.round(m.maxLife * more);
       m.state = 'chase';
     });
@@ -3884,7 +3896,7 @@ export class Game {
     st.packs = [];
     const rng = new RNG((Math.imul(this.seed, 31) + n * 7919 + k * 104729 + this.depth) >>> 0);
     const f = L.floor;
-    const more = (1 + HOLD_TUNE.life * Math.max(0, st.words.length - 1)) * (1 + HOLD_WAVES.life * (k - 1));
+    const more = (1 + HOLD_TUNE.life * Math.max(0, wordsWeight(st.words) - 1)) * (1 + HOLD_WAVES.life * (k - 1));
     const make = WAVE_MAKE[Math.min(k, WAVE_MAKE.length) - 1];
     if (k > 1) {
       this.msg(`Wave ${k} of ${HOLD_WAVES.n}`, MSG.foe);
@@ -3909,13 +3921,14 @@ export class Game {
       const a = (j / make.length) * Math.PI * 2 + rng.range(-0.4, 0.4);
       const spots = scatter(L.walk, f.w, f.h, q.fight.x + Math.cos(a) * 1.6, q.fight.y + 1.2 + Math.sin(a) * 1.2, size, rng);
       const rarity = pk.rarity;
-      const words = this.bareDungeon() ? [] : rarity === 'yellow' ? this.drawWords(rng, 2).filter((w) => !st.words.includes(w)) : rarity === 'blue' ? this.drawWords(rng, 1).filter((w) => !st.words.includes(w)) : [];
+      const laid = foeWordsOf(st.words);
+      const words = this.bareDungeon() ? [] : rarity === 'yellow' ? this.drawWords(rng, 2).filter((w) => !laid.includes(w)) : rarity === 'blue' ? this.drawWords(rng, 1).filter((w) => !laid.includes(w)) : [];
       spots.forEach((s, i) => {
         const lead = rarity === 'yellow' && i === 0;
         const m = this.spawn(lead ? this.leaderOf(kind) : kind, s.x, s.y, pid, lead ? 1 : 0, false, rng, null, rarity === 'plain' ? null : { rarity: rarity === 'blue' ? 'blue' : lead ? 'leader' : 'minion', words });
         // (the words burned at the door are every one's, whole, as a word burned into a dungeon at the gate is)
-        for (const w of st.words) if (!m.words.includes(w)) m.words.push(w);
-        if (m.half) m.half = m.half.filter((w) => !st.words.includes(w));
+        for (const w of laid) if (!m.words.includes(w)) m.words.push(w);
+        if (m.half) m.half = m.half.filter((w) => !laid.includes(w));
         m.life = m.maxLife = Math.round(m.maxLife * more);
         m.state = 'chase';
         m.cd = 0.5 + 0.15 * i;
@@ -3956,7 +3969,7 @@ export class Game {
     this.sfx('gateRise', 0.8);
   }
 
-  private after(t: number, fn: () => void): void {
+  after(t: number, fn: () => void): void {
     this.later.push({ t, fn });
   }
 
@@ -4853,6 +4866,9 @@ export class Game {
     if (h.shockT > 0) h.shockT -= dt;
     if (h.burnT > 0) h.burnT -= dt;
     if (h.poisonT > 0) h.poisonT -= dt;
+    // (EVERY WORD ON A DUNGEON: Blight's and Frostbite's go with the poison and the chill they ride on)
+    if (h.poisonT <= 0 && h.blightMore) h.blightMore = 0;
+    if (h.chillT <= 0 && h.frostbiteDps) h.frostbiteDps = 0;
     // (THE CITY'S WORDS, on monsters: a curse on him and his cooldowns slowed run out)
     if (h.hexT) h.hexT = Math.max(0, h.hexT - dt);
     if (h.stillT) h.stillT = Math.max(0, h.stillT - dt);
@@ -10725,7 +10741,7 @@ export class Game {
   }
 
   /** A monster's warning or lane lands on the hero (THE CITY'S WORDS: by the monster that laid it, for Hexing's circle). */
-  private hurtFrom(z: Zone): void {
+  hurtFrom(z: Zone): void {
     this.blowBy = z.src;
     this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
     this.blowBy = undefined;
@@ -10750,7 +10766,7 @@ export class Game {
 
   /** `poison`: the harm is poison working (its number is drawn in poison's colour, and it does not flash the monster). */
   /** `dot`: harm over time (burning, fire or ice on the ground): no flash (9 Oct 2026, 22:12, "mobs shouldn’t flash white when taking dot damage"). */
-  private damageMonster(m: Monster, dmg: number, el: Element, crit: boolean, skill: number, heavy = false, words?: readonly WordId[], poison = false, dot = false): void {
+  damageMonster(m: Monster, dmg: number, el: Element, crit: boolean, skill: number, heavy = false, words?: readonly WordId[], poison = false, dot = false): void {
     // (what is shut in a room is out of reach, of an arc of lightning and of what burns on the ground too: `shutIn`)
     if (m.dead || this.shutIn(m)) return;
     // (SUNDER, game/melds8.ts: stunned by a Sunder hit, it takes more from everything while the stun lasts)
@@ -10943,8 +10959,12 @@ export class Game {
     // a monster carrying Volatile goes off after a short warning (a minion, of its leader's Volatile, at half strength)
     const blast = wordShare(m, 'volatile');
     if (blast > 0) {
-      this.addWarn(m.x, m.y, 1.8, 0.7, ((m.dmgMin + m.dmgMax) / 2) * 1.5 * blast, this.monsterElement(m), [], `${m.name}'s dying blast`, undefined, this.halfOf(m));
+      // (EVERY WORD ON A DUNGEON: Demolition's, huge and slow to go off: game/foe_melds.ts)
+      const big = FOE_WORDS.on ? foeBlast(m) : null;
+      this.addWarn(m.x, m.y, big ? big.r : 1.8, big ? big.wait : 0.7, ((m.dmgMin + m.dmgMax) / 2) * (big ? big.k : 1.5) * blast, this.monsterElement(m), [], `${m.name}'s dying blast`, undefined, this.halfOf(m));
     }
+    // (EVERY WORD ON A DUNGEON: what its melded word leaves as it dies: game/foe_melds.ts)
+    if (FOE_WORDS.on) foeDeath(this, m);
     // THE CITY'S WORDS (Version 23.8): one carrying Splitting splits in two at half its life (a minion, of its leader's, too)
     if (wordShare(m, 'splitting') > 0 && !m.split && !m.boss) this.splitMonster(m);
     // THE LAST WORDS, on a monster: one carrying Reaping rises once; one carrying Plundering drops all it stole
@@ -11140,7 +11160,10 @@ export class Game {
     const hv = half ?? (src ? this.halfOf(src) : undefined);
     const k = (w: WordId): number => wordShare({ words, half: hv ? hv.words : undefined }, w);
     const elK = hv && el !== hv.base && hv.words.includes(el as WordId) ? PACKS.minion : 1;
-    const parts: [Element, number][] = elK < 1 && hv ? [[el, elK], [hv.base, 1 - elK]] : [[el, 1]];
+    // (EVERY WORD ON A DUNGEON, FOE_WORDS: a melded word of two elements on a monster, Scald, Wildfire, Hailstorm: its blow half of
+    // each, and each leaves what it leaves, whole: game/foe_melds.ts)
+    const two = FOE_WORDS.on && !(elK < 1 && hv) ? secondElement(words, el) : null;
+    const parts: [Element, number][] = elK < 1 && hv ? [[el, elK], [hv.base, 1 - elK]] : two ? [[el, 0.5], [two, 0.5]] : [[el, 1]];
     // GUARDING burned into gear: a chance to block the blow, which then does nothing at all
     const block = Math.min(GUARD.blockCap, d.stats.blockChance);
     if (block > 0 && this.rng.chance(block / 100)) {
@@ -11202,6 +11225,8 @@ export class Game {
       // (for its look, the art chat's ask: its blow's burst on him)
       if (by) this.emit({ t: 'cullBlow', id: by.id, x: by.x, y: by.y });
     }
+    // (EVERY WORD ON A DUNGEON: Avalanche on him chilled, Blight's poison on him, Scald's crack: game/foe_melds.ts)
+    if (FOE_WORDS.on) dmg *= foeHarder(this, k, parts);
     dmg = Math.max(1, Math.round(dmg));
     // (Bitter Cold: what strikes him is chilled)
     if (src && !src.dead && this.now('bittercold')) {
@@ -11301,8 +11326,10 @@ export class Game {
       h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, ((dmg * 0.6 * k('poison')) / TUNE.poisonTime) * (longer / lasts));
       h.poisonT = TUNE.poisonTime * lasts;
     }
-    // (what each element of the blow leaves: a minion's half of Flame burns half as hard)
-    for (const [e, share] of parts) {
+    // (what each element of the blow leaves: a minion's half of Flame burns half as hard; EVERY WORD ON A DUNGEON: a melded word's
+    // two elements each whole, a ranked word's half as strong again)
+    for (const [e, part] of parts) {
+      const share = (two ? 1 : part) * rankOfElement(words, e);
       if (e === 'fire') {
         h.burnDps = Math.max(h.burnT > 0 ? h.burnDps : 0, ((dmg * 0.3 * share) / 3) * (longer / lasts));
         h.burnT = 3 * lasts;
@@ -11313,6 +11340,8 @@ export class Game {
         h.shockT = Math.max(h.shockT, 3 * share);
       }
     }
+    // (EVERY WORD ON A DUNGEON: what its melded word leaves on him and round him, Blight, Frostbite, Wildfire, Eruption, Thunder)
+    if (FOE_WORDS.on) foeAfterBlow(this, k, by, dmg);
     // (LEECH on a monster heals what its blow takes: 9 Oct 2026, 22:12, "bosses with leech are very hard to kill"; asked,
     // "What its blow takes (Recommended)". Until then, 15% of its whole life a blow.)
     if (src && !src.dead && k('leech') > 0) {
@@ -11654,6 +11683,8 @@ export class Game {
       // (THE LAST WORDS, on a monster: Mirroring's wait; SURGING's shockwave every few seconds while he is near, after a warning)
       if (m.mirrorT) m.mirrorT = Math.max(0, m.mirrorT - dt);
       if (m.frozenT <= 0 && m.stunT <= 0) {
+        // (EVERY WORD ON A DUNGEON: Hailstorm's hail round him: game/foe_melds.ts)
+        if (FOE_WORDS.on) foeTick(this, m, dt, Math.hypot(h.x - m.x, h.y - m.y));
         const sk = wordShare(m, 'surging');
         if (sk > 0) {
           m.surgeT = (m.surgeT ?? SURGE.monsterEvery) - dt;
@@ -11958,7 +11989,7 @@ export class Game {
     }
   }
 
-  private shootAt(m: Monster, angle: number, speed: number, dmg: number, el: Element, look: 'arrow' | 'bolt', range: number): void {
+  shootAt(m: Monster, angle: number, speed: number, dmg: number, el: Element, look: 'arrow' | 'bolt', range: number): void {
     this.projectiles.push({
       x: m.x + Math.cos(angle) * 0.4, y: m.y + Math.sin(angle) * 0.4, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
       r: look === 'bolt' ? 0.3 : 0.2, dist: range, hostile: true, dmg, element: el, look, pierce: false, hit: [], volley: false, skill: -1,
@@ -13231,6 +13262,8 @@ export class Game {
         if (z.t >= z.dur) this.zones.splice(i, 1);
         continue;
       }
+      // (EVERY WORD ON A DUNGEON: a monster's ground, hostile, its melded word's: game/foe_melds.ts)
+      if (z.foe && foeZone(this, z, i, dt)) continue;
       // (WORDMELDING: the twists of what a melded word behind leaves, game/melds.ts)
       if (z.meld && this.meldZone(z, i, dt)) continue;
       z.tick -= dt;
@@ -13387,6 +13420,16 @@ export class Game {
         this.die();
       }
     }
+    // (EVERY WORD ON A DUNGEON: Frostbite, while he is chilled by it)
+    if (h.chillT > 0 && (h.frostbiteDps ?? 0) > 0 && !this.over) {
+      const dmg = Math.max(1, Math.round((h.frostbiteDps ?? 0) * 0.5));
+      h.life -= dmg;
+      this.emit({ t: 'hit', x: h.x, y: h.y, amount: dmg, crit: false, el: 'frost', onHero: true });
+      if (h.life <= 0) {
+        this.slainBy = 'frostbite';
+        this.die();
+      }
+    }
     if (h.poisonT > 0 && !this.over) {
       const dmg = Math.max(1, Math.round(h.poisonDps * 0.5));
       h.life -= dmg;
@@ -13446,7 +13489,7 @@ export class Game {
    * meant to be made good with words.
    */
   private rollGear(quality: 0 | 1 | 2 | 3 | 4 = 0): Item {
-    const mf = this.hero.d.stats.magicFind + 25 * this.dungeonWords.length;
+    const mf = this.hero.d.stats.magicFind + 25 * wordsWeight(this.dungeonWords);
     // (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: his class's own weapon is among what may drop, for him alone)
     const opts: RollOpts = { forWeapon: this.weapon(), magicFind: mf, cls: this.hero.cls };
     if (quality === 1) opts.luck = TUNE.betterLuck;
@@ -13506,7 +13549,7 @@ export class Game {
     }
     // (the dead that rise for a new player's first word leave nothing: they are there to be felled; nor the Amalgamation's bone mites)
     if (m.packId === RISEN_PACK || m.kind === 'mite') return;
-    const bonus = 1 + 0.3 * this.dungeonWords.length;
+    const bonus = 1 + 0.3 * wordsWeight(this.dungeonWords);
     const goldBase = Math.max(1, this.power);
     if (m.boss) {
       // (WORDMELDING: the Fleshmancer drops runedust, the only one who does for now, his pick; and the
@@ -13572,7 +13615,7 @@ export class Game {
   private gainXp(n: number): void {
     const h = this.hero;
     if (this.practice) return;
-    h.xp += Math.round(n * (1 + 0.1 * this.dungeonWords.length));
+    h.xp += Math.round(n * (1 + 0.1 * wordsWeight(this.dungeonWords)));
     while (h.xp >= xpToNext(h.level)) {
       h.xp -= xpToNext(h.level);
       h.level++;
@@ -14329,15 +14372,19 @@ export class Game {
     if (!(this.hero.words[word] > 0)) return 'No spare word';
     // (WORDMELDING: a melded word is for attacks only, for now, his words; RANK II likewise, as read. On gear too since
     // EVERY WORD ON GEAR, his words of 8 Nov 2026, 06:45, “Every rune sorry”: game/items.ts)
-    if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks and gear only';
-    if (WORDS[word].kind === 'rank') return 'A ranked word goes on attacks and gear only';
+    // (EVERY WORD ON A DUNGEON, FOE_WORDS: the gate too, his pick of 12 Nov 2026, “Yes, the gate too (Recommended)”)
+    if (WORDS[word].kind === 'meld' && !FOE_WORDS.on) return 'A melded word goes on attacks and gear only';
+    if (WORDS[word].kind === 'rank' && !FOE_WORDS.on) return 'A ranked word goes on attacks and gear only';
     // (THE FIRST LEVELS: no words on the first dungeon's monsters, his note of 21:05: a word laid
     // on its gate would be burned for nothing. A later hero may carry one from the Lexicon.)
     // (THE SHAFT'S RIM: its gate's words go into the next endless level, and floor 1 as one is without the lesson: game/endless.ts)
     if (FIRST_LEVELS.on && !this.practice && this.depth <= 1 && !this.level.rim) return FIRST_GATE;
     if (this.plan.length >= TUNE.planMax) return `At most ${TUNE.planMax} words`;
     if (this.plan.includes(word)) return 'Already burning';
-    if (WORDS[word].element && this.plan.some((w) => WORDS[w].element)) return 'One element per dungeon';
+    if (FOE_WORDS.on) {
+      const why = layProblem(this.plan, word, 'dungeon');
+      if (why) return why === 'Already on it' ? 'Already burning' : why;
+    } else if (WORDS[word].element && this.plan.some((w) => WORDS[w].element)) return 'One element per dungeon';
     return null;
   }
 
@@ -14404,7 +14451,7 @@ export class Game {
     if (ref.kind === 'gear') this.refresh();
     this.learn(word, 'gear');
     this.sfx('imbue');
-    this.emit({ t: 'burned', word, item: it.name, text: modLines(made.mods, this.meta.limit).join(', ') });
+    this.emit({ t: 'burned', word, item: it.name, text: imbueLines(made, this.meta.limit).join(', ') });
     return null;
   }
 

@@ -19,7 +19,8 @@ import { itemWordOf } from '../game/items';
 import { WORD_COLOR } from '../art/icons';
 import { P } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
-import { ATTR_NAME, WORDS, growsWith } from '../game/defs';
+import { ATTR_NAME, FOE_WORDS, WORDS, growsWith } from '../game/defs';
+import { foeText } from '../game/foe_melds';
 import type { Game } from '../game/game';
 import { imbueRules, statView, flatPair } from '../game/items';
 import type { Meta } from '../game/state';
@@ -138,7 +139,10 @@ export function wordPage(meta: Meta, w: WordId, pw: number, big: boolean, tight 
               head('ON GEAR'),
               ...(!k.gear ? [line(unknown, false)] : [...(tight ? [line(gearLines(w, meta.limit).join(' '), true)] : gearLines(w, meta.limit).map((l) => line(l, true))), line(gearNote(w), true)]),
             ]),
-            lay(2, [head('ON A DUNGEON'), line(wd.kind === 'rank' ? 'A ranked word goes on attacks and gear only.' : 'A melded word goes on attacks and gear only.', true)]),
+            // (EVERY WORD ON A DUNGEON, FOE_WORDS: on a dungeon and a stronghold too, what it does to every monster there: game/foe_melds.ts)
+            FOE_WORDS.on
+              ? lay(2, [head('ON A DUNGEON'), line(k.dungeon ? `Every monster in it: ${foeText(w).charAt(0).toLowerCase()}${foeText(w).slice(1)} Counts as two words: richer loot, and words are likelier.` : unknown, k.dungeon)])
+              : lay(2, [head('ON A DUNGEON'), line(wd.kind === 'rank' ? 'A ranked word goes on attacks and gear only.' : 'A melded word goes on attacks and gear only.', true)]),
           ]
         : [
             // (what it may become on gear, slot by slot: a line each, or run together where room is short)
