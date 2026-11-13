@@ -510,6 +510,18 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   the wave A BILLOWING WALL OF POWDER (dense and white at its heart, its edges ragged and smoking off, its crest curling over,
   powder smoking up off it and flakes blown ahead). (THUNDER, Power and Lightning, made and held till Avalanche has his yes:
   `thunder`, `THUNDER`, three great bolts each locking on faster.)
+- AVALANCHE AS HE LAID IT OUT, 13 Nov 2026 (asked what was still off): “OK, here’s what I want. The word Smith does his room. The flies
+  to either the left or the right side of the wall. A red warning covers the entire arena except for a little spot at the top or a
+  little spot at the bottom then you hear rumbling building up to like a wall like a freight train of snow flying across the street
+  wherever that red is on the floor goes on for a few seconds freezes if you’re in it and you take a ton of damage and then once
+  it’s done, that’s it”; and of the warning's colour: “Yeah, I’m gonna color to be red or pink cause whatever you use for normal hit
+  box warnings on the ground”. REMADE SO (`ARENA`, `AVAL`, `AVAL_OUT`, `avalSpared`, `avalancheBits`): the slam flings the meld rune
+  to the left wall, where it sinks in, a flash; the whole floor floods in the bosses' own ground-warning colour (art/mkit.ts FLAME[2],
+  as their warnings are drawn: art/boss_shots.ts), all but one little safe spot (here at the bottom) and his own ground, the safe
+  spot's edge in its hot gold; the wall rumbles, frost creeping over it, snow sifting out, the screen shaking harder and harder; then
+  the snow comes out of the wall like a freight train: one river of snow the room's width, streaked the way it goes, long masses of
+  powder hurled along it, speed lines, ice boulders hurtling, parting round the safe spot and round him, for 2.6 s; its tail passes
+  and that is it (no burying, no melting). One caught in it frozen and hurt hard: the main chat's numbers.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
