@@ -498,6 +498,12 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   floor into a great wall, heaving, and then it comes: a wave of snow taller than he is rolling down the lane, its crest curling over,
   boulders of ice tumbling in it and bounding out ahead, snow flung off its face, his pink deep in it; at the lane's end it breaks
   into drifts that slump and melt away.
+- HIS WORDS on it, 13 Nov 2026, by pop-up: “No I want avalanche to bury about 4/5ths of the whole arena, then melt away.  If you’re
+  hit your frozen for a duration long enough that you are going to get hit.  Arms look good”. REMADE SO: the frost races out over four
+  fifths of the room (the warning), his pink along the edge of the one strip it will not reach; the wall the room's width; the wave
+  sweeps across and the room lies BURIED under deep drifts, held a moment (1.4 s), then they slump and melt away (1.8 s); the hero
+  caught in it frozen in a block of clear ice till it melts (the film shows him caught). How long the freeze holds in play is the
+  main chat's (his words passed on in its queue item).
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

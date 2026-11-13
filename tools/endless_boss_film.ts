@@ -1148,19 +1148,37 @@ function meldScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
 /** THE AVALANCHE ON THE FLOOR: the lane it will take rimed white first, racing out from where the rune went in, its edges his pink;
  * behind the wave, the snow it leaves, thawing. */
 function avalFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
-  if (t < MELD.slam) return;
   const P = (x: number, y: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, 0]); return [Math.round(ox + px), Math.round(oy + py)]; };
+  // (the room: its floor's edge, the dark beyond it, so that four fifths of it reads as four fifths)
+  for (let yy = 0; yy < s.h; yy++) for (let xx = 0; xx < s.w; xx++) {
+    const wx = ((xx - ox) / 0.816 + (yy - oy) / 0.408) / 2, wy = ((xx - ox) / 0.816 - (yy - oy) / 0.408) / 2;
+    const fx = dir * (wx - from[0]) / TILE, fy = dir * (wy - from[1]) / TILE;
+    if (fx < -3 || fx > 12.2 || fy < -5.6 || fy > 5.2) mix(s, xx, yy, '#06040a', 0.72);
+  }
+  if (t < MELD.slam) return;
+  // (four fifths of the room rimed white, racing out from where the rune went in; his pink along the edge of the strip it will not reach)
   const r = Math.min(1, Math.max(0, (t - MELD.slam - AVAL.rime[0]) / (AVAL.rime[1] - AVAL.rime[0])));
+  const melt = avalMelt(t);
   const x0 = AVAL.start * TILE, x1 = x0 + (AVAL.long * TILE - x0) * r;
-  const X = avalFront(t), melt = avalMelt(t);
-  const half = AVAL.half * TILE;
-  for (let x = x0; x <= x1; x += 1.2) for (let y = -half; y <= half; y += 1.2) {
-    const edge = Math.abs(y) > half - 3;
+  const y0 = AVAL.y[0] * TILE, y1 = AVAL.y[1] * TILE;
+  for (let x = x0; x <= x1; x += 1.2) for (let y = y0; y <= y1; y += 1.2) {
     const [px, py] = P(x, y);
-    const behind = x < X - 10;
     const n = Math.sin(x * 0.37 + y * 0.21) + Math.sin(x * 0.13 - y * 0.41);
-    if (behind) mix(s, px, py, n > 0.9 ? '#ffffff' : n > -0.4 ? '#e2f0f8' : '#a5c6d7', (0.25 + 0.2 * (n + 2) / 4) * (1 - melt));
-    else mix(s, px, py, edge ? '#ff4f8a' : n > 1.4 ? '#ffffff' : '#a5c6d7', edge ? 0.7 : n > 1.4 ? 0.5 : 0.1);
+    if (y > y1 - 3) mix(s, px, py, '#ff4f8a', 0.75 * (1 - melt));
+    else mix(s, px, py, n > 1.4 ? '#ffffff' : '#a5c6d7', (n > 1.4 ? 0.45 : 0.12) * (1 - melt));
+  }
+}
+/** THE HERO CAUGHT IN IT: frozen in a block of ice from the moment the wave reaches him until it melts. */
+function frozenHero(s: Px, t: number, hx: number, hy: number, at0: number): void {
+  if (avalFront(t) < at0 || avalMelt(t) >= 0.98) return;
+  const a = 1 - avalMelt(t);
+  // (a block of clear ice, lit from the upper left: its top face bright, its left face light, its right in shade, glints across it)
+  for (let y = -54; y <= 4; y++) for (let x = -17; x <= 17; x++) {
+    const top = y < -48;
+    const edge = Math.abs(x) > 15 || y > 2;
+    const glint = (x - y) % 9 === 0 && x < 4 && y > -46;
+    const c = top ? '#ffffff' : edge ? '#e2f0f8' : glint ? '#ffffff' : x < 0 ? '#cfe4f2' : '#a5c6d7';
+    mix(s, hx + x, hy + y, c, (top ? 0.9 : edge ? 0.9 : glint ? 0.85 : 0.6) * a);
   }
 }
 /** THE HAILSTORM ON THE FLOOR: each stone's shadow growing as it comes; a splash of frost where it struck, thawing; each bolt's
@@ -1340,7 +1358,7 @@ for (const sg of segs) {
     const lead = sg.move === 'fall' ? 50 + 60 * Math.min(1, t / 1.2) : 50;
     // (as his shade rises, the camera lifts to take it in)
     const lift = sg.move === 'fall' ? 60 * Math.min(1, Math.max(0, (t - FALL.shade[0]) / (FALL.shade[1] - FALL.shade[0]))) : 0;
-    const [tx, ty] = avalFilm ? at([sg.from[0] + 4.0 * TILE, sg.from[1] - 0.6 * TILE, 60]) : turnFilm ? at([sg.from[0] + 0.6 * TILE, sg.from[1] - 0.2 * TILE, 70]) : hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    const [tx, ty] = avalFilm ? at([sg.from[0] + 5.0 * TILE, sg.from[1] - 1.0 * TILE, 40]) : turnFilm ? at([sg.from[0] + 0.6 * TILE, sg.from[1] - 0.2 * TILE, 70]) : hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
@@ -1387,7 +1405,7 @@ for (const sg of segs) {
     }
     if (sg.move === 'eruption' || sg.move === 'foot' || sg.move === 'hailstorm' || sg.move === 'turn' || sg.move === 'avalanche') {
       // (the hero, out before him)
-      const hh = sg.move === 'hailstorm' ? HAIL_HERO : sg.move === 'avalanche' ? [5.0 * TILE, -3.7 * TILE, 0] : [5.0 * TILE, -1.6 * TILE, 0];
+      const hh = sg.move === 'hailstorm' ? HAIL_HERO : sg.move === 'avalanche' ? [6.4 * TILE, -1.2 * TILE, 0] : [5.0 * TILE, -1.6 * TILE, 0];
       const [hx, hy] = at([sg.from[0] + k * hh[0], sg.from[1] + k * hh[1], 0]);
       hero(s, ox + hx, oy + hy);
       // (HIS SHADE, behind him, doing as he does a moment after him)
@@ -1471,8 +1489,8 @@ for (const sg of segs) {
     if (sg.move === 'avalanche') {
       const [x, y] = base();
       layPainted(s, paintAvalanche(t, sg.view), AVAL_CANVAS, x, y, 0);
-      // (the hero, out of its lane and nearer the eye than it: drawn over it)
-      { const [hx, hy] = at([sg.from[0] + k * 5.0 * TILE, sg.from[1] - k * 3.7 * TILE, 0]); hero(s, ox + hx, oy + hy); }
+      // (the hero, caught in it: frozen in ice till it melts, drawn over it)
+      { const [hx, hy] = at([sg.from[0] + k * 6.4 * TILE, sg.from[1] - k * 1.2 * TILE, 0]); hero(s, ox + hx, oy + hy); frozenHero(s, t, ox + hx, oy + hy, 6.4 * TILE); }
       meldScene(s, t, ox, oy, sg.from, k, 'avalanche', 'power', 'frost', MELD_GLYPH.avalanche, [MELD_RAMP.avalanche[3], MELD_RAMP.avalanche[4]], [AVAL.start * TILE, 0, 0], false, false);
     }
     if (sg.move === 'hailstorm') {

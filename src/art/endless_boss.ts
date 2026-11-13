@@ -3335,70 +3335,80 @@ export { HAIL_HERO };
 // the multitude of melds and moves will make it unique and memorable”: in the branch's history at 06891c2.)
 
 
-// AVALANCHE (Power and Frost, melded: “a mountainside shedding its snow”): he writes Power, his shade writes Frost; melded, the slam
-// drives the rune into the floor before him, and FROST RACES OUT down a broad lane before him (the warning: the lane it will take,
-// rimed white, its edges his pink); before him the snow BUILDS UP OUT OF THE FLOOR into a great wall, heaving, and then it COMES:
-// a wave of snow taller than he is rolling down the lane, its crest curling over, boulders of ice tumbling in it and bounding out
-// ahead of it, snow flung up off its face; it runs out at the lane's end and BREAKS into drifts that slump and melt away. His rules
-// for the words stand: one rune (the meld's), what it makes made as solids.
-export const AVAL = { half: 2.0, long: 9.0, rime: [0.05, 0.55] as const, build: [0.35, 0.85] as const, run: [0.85, 2.0] as const, start: 1.1, melt: 2.4, end: 5.4, boulders: 14 };
-export const AVAL_CANVAS: MobCanvas = { w: 900, h: 600, ax: 260, ay: 380 };
+// AVALANCHE (Power and Frost, melded: “a mountainside shedding its snow”; his words, 13 Nov 2026: “I want avalanche to bury about
+// 4/5ths of the whole arena, then melt away.  If you’re hit your frozen for a duration long enough that you are going to get hit”):
+// he writes Power, his shade writes Frost; melded, the slam drives the rune into the floor before him and FROST RACES OUT OVER FOUR
+// FIFTHS OF THE ROOM (the warning: all of it rimed white, his pink along the edge of the one strip it will not reach); before him the
+// snow BUILDS UP OUT OF THE FLOOR into a great wall the room's width, heaving, and then it COMES: a wave of snow taller than he is
+// rolling across the room, its crest curling over, boulders of ice tumbling in it and bounding out ahead, snow flung off its face;
+// behind it the room lies BURIED under deep drifts; held a moment, they slump and MELT AWAY. One caught in it is frozen in ice till
+// it melts (how long is the main chat's). His rules for the words stand: one rune (the meld's), what it makes made as solids.
+export const AVAL = { y: [-5.2, 2.8] as const, start: 1.1, long: 11.5, rime: [0.05, 0.55] as const, build: [0.35, 0.85] as const, run: [0.85, 2.25] as const, bury: 1.4, melt: 1.8, end: 6.8, boulders: 22 };
+export const AVAL_CANVAS: MobCanvas = { w: 1200, h: 820, ax: 360, ay: 470 };
 const SNOW: Ramp = ['#34485c', '#6a8aa2', '#a5c6d7', '#e2f0f8', '#ffffff'];
 const AVAL_ICE: Ramp = ['#1a2430', '#34485c', '#6a8aa2', '#a5c6d7', '#e2f0f8'];
-/** Where the wave's front is down its lane (his floor point's own lengths), `t` into the move; and how far it has built (0 ... 1). */
+/** Where the wave's front is across the room (his floor point's own lengths), `t` into the move; and how far it has built (0 ... 1). */
 export function avalFront(t: number): number {
   const u = clamp01((t - MELD.slam - AVAL.run[0]) / (AVAL.run[1] - AVAL.run[0]));
   return (AVAL.start + (AVAL.long - AVAL.start) * (u * (2 - u))) * TILE;
 }
 export const avalBuilt = (t: number): number => smooth01((t - MELD.slam - AVAL.build[0]) / (AVAL.build[1] - AVAL.build[0]));
-/** How far it has broken and melted at the lane's end (0 ... 1). */
-export const avalMelt = (t: number): number => smooth01((t - MELD.slam - AVAL.run[1]) / AVAL.melt);
-/** THE AVALANCHE'S SOLIDS, `t` into the move: the wall building, the wave rolling, its crest, its boulders, its spray; its drifts. */
+/** How far the snow has melted away (0 ... 1), after lying a while. */
+export const avalMelt = (t: number): number => smooth01((t - MELD.slam - AVAL.run[1] - AVAL.bury) / AVAL.melt);
+/** THE AVALANCHE'S SOLIDS, `t` into the move: the wall building, the wave rolling, its crest, its boulders, its spray; the drifts it
+ * buries the room under, melting. */
 export function avalancheBits(t: number, put: Put): void {
   const b = avalBuilt(t);
   if (b <= 0) return;
   const X = avalFront(t);
   const melt = avalMelt(t);
-  const H = (98 * b) * (1 - 0.85 * melt);
+  const ran = clamp01((t - MELD.slam - AVAL.run[1]) / 0.35);
+  const H = 98 * b * (1 - ran);
   const snowSkin = (seed: number): ((u: V3, tone: number, x: number, y: number) => string | null) => (u, tone, x, y) => {
     if (melt > 0 && hash(x >> 1, y >> 1, 9901 + seed) < melt * 1.1 - 0.1) return null;
-    // (his pink deep in it, where it is thickest)
     if (u[0] > 0.55 && hash(x >> 1, (y + Math.floor(t * 20)) >> 1, 9902) < 0.06) return '#ff9cc0';
     return SNOW[T5(tone + (hash(x >> 2, y >> 2, 9903 + seed) < 0.3 ? -1 : 0))];
   };
-  const halfW = AVAL.half * TILE;
-  // (the wave: across its whole lane, tallest at its face, its crest curling over before it; heaving)
-  for (let i = 0; i < 9; i++) {
-    const y = -halfW + (2 * halfW * i) / 8;
+  const y0 = AVAL.y[0] * TILE, y1 = AVAL.y[1] * TILE;
+  const across = 17;
+  // (the wave: across four fifths of the room, tallest at its face, its crest curling over; when it has run its length it slumps)
+  if (H > 2) for (let i = 0; i < across; i++) {
+    const y = y0 + ((y1 - y0) * i) / (across - 1);
     for (let j = 0; j < 5; j++) {
-      const back = j * 15;
       const h = H * (1 - 0.18 * j) * (0.85 + 0.15 * Math.sin(t * 9 + i * 1.3 + j));
       const R = (19 - 2 * j) * (0.6 + 0.4 * b);
-      put(`wave${i % 3}`, 'snow', { k: 'ball', c: [X - back, y + 3 * Math.sin(t * 7 + i), Math.max(R * 0.6, h * 0.5)], ax: [[R, 0, 0], [0, R * 0.95, 0], [0, 0, Math.max(R * 0.7, h * 0.55)]], skin: snowSkin(i * 7 + j) });
+      put(`wave${i % 3}`, 'snow', { k: 'ball', c: [X - j * 15, y + 3 * Math.sin(t * 7 + i), Math.max(R * 0.6, h * 0.5)], ax: [[R, 0, 0], [0, R * 0.95, 0], [0, 0, Math.max(R * 0.7, h * 0.55)]], skin: snowSkin(i * 7 + j) });
     }
-    // (its crest, curling over before it)
-    if (melt < 0.6) {
-      put(`wave${i % 3}`, 'crest', { k: 'ball', c: [X + 10, y, H * 0.92], ax: [[14, 0, 0], [0, 12, 0], [0, 0, 9]], skin: snowSkin(i * 13 + 5) });
-      put(`wave${i % 3}`, 'crest', { k: 'ball', c: [X + 20, y + 2, H * 0.78], ax: [[8, 0, 0], [0, 9, 0], [0, 0, 7]], skin: snowSkin(i * 17 + 3) });
+    put(`wave${i % 3}`, 'crest', { k: 'ball', c: [X + 10, y, H * 0.92], ax: [[14, 0, 0], [0, 12, 0], [0, 0, 9]], skin: snowSkin(i * 13 + 5) });
+    put(`wave${i % 3}`, 'crest', { k: 'ball', c: [X + 20, y + 2, H * 0.78], ax: [[8, 0, 0], [0, 9, 0], [0, 0, 7]], skin: snowSkin(i * 17 + 3) });
+  }
+  // (the drifts it buries the room under, behind it: deep, lumpy; slumping and melting away)
+  for (let gx = AVAL.start * TILE + 6; gx < AVAL.long * TILE; gx += 1.15 * TILE) {
+    for (let gy = y0; gy <= y1; gy += 1.0 * TILE) {
+      const x = gx + (hash(gx | 0, gy | 0, 9912) - 0.5) * 18, y = gy + (hash(gy | 0, gx | 0, 9913) - 0.5) * 14;
+      if (x > X - 22) continue;
+      const h = (18 + 10 * hash(x | 0, y | 0, 9914)) * (1 - melt);
+      if (h < 1.5) continue;
+      const R = 0.75 * TILE;
+      put(`drift${(gx / TILE) % 3 | 0}`, 'drift', { k: 'ball', c: [x, y, 0], ax: [[R, 0, 0], [0, R * 0.9, 0], [0, 0, h]], skin: snowSkin(((x * 7 + y) | 0) % 97) });
     }
   }
   // (boulders of ice tumbling in it, some bounding out ahead of it)
-  for (let k = 0; k < AVAL.boulders; k++) {
-    const y = -halfW + 2 * halfW * hash(k, 1, 9904);
+  if (H > 2) for (let k = 0; k < AVAL.boulders; k++) {
+    const y = y0 + (y1 - y0) * hash(k, 1, 9904);
     const lead = (hash(k, 2, 9905) - 0.3) * 30;
     const bounce = Math.abs(Math.sin(t * (5 + 3 * hash(k, 3, 9906)) + k)) * (10 + 16 * hash(k, 4, 9907));
     const R = 6 + 5 * hash(k, 5, 9908);
-    if (melt > 0.5) continue;
     put('boulders', 'ice', { k: 'ball', c: [X + lead, y, R + bounce * b], ax: [[R, 0, 0], [0, R * 0.85, 0], [0, 0, R * 0.9]], skin: (u, tone, x, y2) => ((x + y2 + Math.floor(t * 18)) % 5 === 0 ? AVAL_ICE[4] : AVAL_ICE[T5(tone)]) });
   }
   // (snow flung up off its face)
-  if (melt < 0.4) for (let i = 0; i < 40; i++) {
-    const y = -halfW + 2 * halfW * hash(i, 6, 9909);
+  if (H > 2) for (let i = 0; i < 70; i++) {
+    const y = y0 + (y1 - y0) * hash(i, 6, 9909);
     const u = (t * 2.2 + hash(i, 7, 9910)) % 1;
     put('spray', 'snow', { k: 'mote', p: [X + 8 + 20 * u, y + (hash(i, 8, 9911) - 0.5) * 10, H * (0.6 + 0.6 * u) - 30 * u * u], c: u < 0.5 ? '#ffffff' : '#a5c6d7', size: u < 0.3 ? 2 : 1 });
   }
-  put('glow', 'avalGlow', { k: 'glow', p: [X, 0, H * 0.5], c: '#e2f0f8', r: 50, a: 0.25 * b * (1 - melt) });
-  put('glow', 'avalPink', { k: 'glow', p: [X - 10, 0, H * 0.4], c: '#ff4f8a', r: 26, a: 0.18 * b * (1 - melt) });
+  put('glow', 'avalGlow', { k: 'glow', p: [X, (y0 + y1) / 2, H * 0.5], c: '#e2f0f8', r: 90, a: 0.25 * b * (1 - ran) });
+  put('glow', 'avalPink', { k: 'glow', p: [X - 10, (y0 + y1) / 2, H * 0.4], c: '#ff4f8a', r: 40, a: 0.16 * b * (1 - ran) });
 }
 export function paintAvalanche(t: number, view: 'front' | 'rear'): Painted {
   const st = stage(view, AVAL_CANVAS.ax, AVAL_CANVAS.ay, AVAL_CANVAS);
