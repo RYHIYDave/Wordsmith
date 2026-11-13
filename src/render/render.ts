@@ -8,6 +8,8 @@ import type { AskPack } from './warlock_packs';
 import { COLOSSUS, HIS_PLACE, onStoneOrJetty, stoneToWorld, worldToStone } from '../game/colossus_fight';
 import { colossusOf, colossusOn } from '../game/act1_rules/colossus';
 /** (COLOSSUS) How far the picture leans up toward him on his stone (game pixels). */
+/** (THE MAGE'S SPEAR, its stand-in look) the streak's colour by its element. */
+const MSPEAR_COLOR: Record<string, string> = { phys: '#e8eef8', fire: '#ff8a3c', frost: '#8ad0ff', lightning: '#f8e060', poison: '#9ad04a' };
 const COLOSSUS_LEAN = 55;
 /** (COLOSSUS) As he changes, how far down the screen his middle at the water is put (the art chat's stills: 131 of 234). */
 const COLOSSUS_SHOW = 0.6;
@@ -4210,7 +4212,7 @@ export class Renderer {
       // (THE WARLOCK'S BOLT is his fire alone, drawn with the effects: render/warlock_fx.ts drawBolt. Till 12 Nov 2026 a ball of
       // light, the purple of its element, was drawn at its nose here as well, under the fire: his words of the bolt in play that day,
       // “fix the hellfire projectile so it’s tail doesn’t only face one way as well”; and a purple glow is the enemy's)
-      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great' && p.look !== 'hellbolt') {
+      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great' && p.look !== 'hellbolt' && p.look !== 'mspear') {
         // (a familiar's bolt is a small bright mote; anything else that is not an arrow (nor a wave, nor a dart) is a ball of light)
         const mote = p.look === 'mote';
         const frames = mote ? [art.spells.mote[p.element]] : art.icons.orb[p.element];
@@ -4218,7 +4220,8 @@ export class Renderer {
         const mine = !p.hostile;
         const power = mine && p.words.includes('power');
         const volatile = mine && p.words.includes('volatile');
-        const scale = mote ? (power ? 1.8 : 1) : p.r > 0.4 || power ? 2 : 1;
+        // (THE MAGE'S BALL, game/swap_moves.ts: a stand-in till its own picture, the ball of light drawn large)
+        const scale = mote ? (power ? 1.8 : 1) : p.r > 0.4 || power || p.look === 'ball' ? 2 : 1;
         const sp = frames[Math.floor(p.age * 12) % frames.length];
         // Volatile will not hold still
         const jx = volatile ? Math.round((Math.random() - 0.5) * 3) : 0;
@@ -4407,6 +4410,26 @@ export class Renderer {
       // (UNIQUE ITEMS, behind a switch that is off: the Windcutter's blade, a blade of wind and not the Mage's Wave: render/unique_fx.ts)
       if (p.blade && UNIQUE_PLAY.wind) {
         if (onScreen(p.x, p.y)) fx.uniques.drawBlade(g, cam, p, t);
+        continue;
+      }
+      // (THE MAGE'S SPEAR, game/swap_moves.ts: a stand-in till its own picture: a thin streak of her element along its flight, its
+      // head lit; of no element of its own, as his words have it)
+      if (p.look === 'mspear') {
+        if (onScreen(p.x, p.y)) {
+          const v = Math.hypot(p.vx, p.vy) || 1;
+          const bx = p.x - (p.vx / v) * 1.1;
+          const by = p.y - (p.vy / v) * 1.1;
+          const x0 = wx(cam, bx, by), y0 = wy(cam, bx, by) - 10, x1 = wx(cam, p.x, p.y), y1 = wy(cam, p.x, p.y) - 10;
+          const col = MSPEAR_COLOR[p.element] ?? MSPEAR_COLOR.phys;
+          g.strokeStyle = col;
+          g.lineWidth = 2;
+          g.beginPath();
+          g.moveTo(Math.round(x0) + 0.5, Math.round(y0) + 0.5);
+          g.lineTo(Math.round(x1) + 0.5, Math.round(y1) + 0.5);
+          g.stroke();
+          g.fillStyle = '#ffffff';
+          g.fillRect(Math.round(x1) - 1, Math.round(y1) - 1, 3, 3);
+        }
         continue;
       }
       // (THE NEW MONSTERS: a Boneward's spear, flying low from its hand to where it comes down)

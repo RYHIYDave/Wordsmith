@@ -626,7 +626,9 @@ export interface Projectile {
   dmg: number;
   element: Element;
   /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) 'spear': the Boneward's, and 'great', the bone marksman's great arrow (Version 19.9). */
-  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great' | 'hellbolt' | 'axe';
+  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great' | 'hellbolt' | 'axe'
+    // (THE MAGE'S BALL and SPEAR, game/swap_moves.ts: `mspear` hers, not the Boneward's)
+    | 'ball' | 'mspear';
   /** THE WARRIOR'S BATTLE AXE (WARRIOR_TREE2): a thrown axe, that comes back (`returns`), and is on its way back (`back`). */
   returns?: boolean;
   back?: boolean;

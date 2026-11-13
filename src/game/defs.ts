@@ -38,7 +38,10 @@ export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volle
   | 'vpunch' | 'vkick' | 'vjump'
   // (THE WARRIOR'S THREE WEAPONS, behind game/talents.ts WARRIOR_TREE2: the greatsword's Whirl; the battle axe's Cleave, Axe Throw
   // and Leaping Chop; the warhammer's Smash, Earthquake and Shoulder Charge)
-  | 'whirl' | 'cleave' | 'axethrow' | 'chop' | 'smash' | 'quake' | 'charge';
+  | 'whirl' | 'cleave' | 'axethrow' | 'chop' | 'smash' | 'quake' | 'charge'
+  // (THE MAGE'S AND THE RANGER'S MOVES TO SWAP, behind game/talents.ts SWAP_MOVES: her Ball and Spear (and Beam, Version 12's);
+  // his Snare, Snipe and Rally. game/swap_moves.ts)
+  | 'ball' | 'spear' | 'snare' | 'snipe' | 'rally';
 
 /**
  * How an ability is delivered. Power words act on the kind, never on one specific ability.
@@ -65,6 +68,9 @@ export type SkillKind = 'melee' | 'burst' | 'whirl' | 'projectile' | 'volley' | 
   // (THE BRAWLER, game/brawler.ts: `punch`, the punch of a combo its place makes; `slip`, a weaving dash, untouchable, and a
   // counter hook where he comes up)
   | 'punch' | 'slip'
+  // (THE RANGER'S MOVES TO SWAP, game/swap_moves.ts: `snare`, a snare thrown to a spot that holds what walks in, then bursts;
+  // `snipe`, a held draw loosed on letting go, the harder the longer, through everything; `rally`, a call that quickens his allies)
+  | 'snare' | 'snipe' | 'rally'
   // (THE VETERAN, game/veteran.ts: `vblow`, a punch or a kick of his combo, its force reaching out past the fist or foot;
   // `vjump`, his jump: the dodge, or spent on a globe set in fire)
   | 'vblow' | 'vjump';
@@ -211,6 +217,14 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   // have: read back to the owner at 18:37, "Warp burst where the mage arrives", and not objected
   // to. A word that could be set there and do nothing would break his first rule for words.)
   warp: { id: 'warp', name: 'Warp', kind: 'warp', icon: 'warp', dmg: 0.5, cooldown: 5.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Vanish and reappear at a spot, instantly, in a burst that hurts what stands there.', verb: 'WARP', windup: 0, follow: 0 },
+  // (THE MAGE'S AND THE RANGER'S MOVES TO SWAP, behind game/talents.ts SWAP_MOVES; his words in docs/mockups/swap_moves/README.md.
+  // Hers have no element of their own: they take her words' as Wave and Orb do, his 22:06 question answered as: Wave wide and short,
+  // BALL stops and explodes, SPEAR thin and long. Their icons are stand-ins, the game's own, until theirs are drawn.)
+  ball: { id: 'ball', name: 'Ball', kind: 'projectile', icon: 'orb', dmg: 0.9, cooldown: 0, mana: 0, range: 8, radius: 0.35, speed: 10, sockets: true, desc: 'A ball flies at the enemy and bursts where it hits, hurting all round it.', verb: 'THROW A BALL', windup: 0.18, follow: 0.32 },
+  spear: { id: 'spear', name: 'Spear', kind: 'projectile', icon: 'shot', dmg: 0.8, cooldown: 0, mana: 0, range: 11, radius: 0.25, speed: 17, sockets: true, desc: 'A spear flies where you point, through every enemy in its line.', verb: 'THROW A SPEAR', windup: 0.2, follow: 0.32 },
+  snare: { id: 'snare', name: 'Snare', kind: 'snare', icon: 'trap', dmg: 0.9, cooldown: 0, mana: 0, range: 7, radius: 1.3, speed: 0, sockets: true, desc: 'Throw a snare where you point: what walks into it is held fast, then it bursts.', verb: 'SET A SNARE', windup: 0.24, follow: 0.3 },
+  snipe: { id: 'snipe', name: 'Snipe', kind: 'snipe', icon: 'shot', dmg: 1.2, cooldown: 3.0, mana: 10, range: 14, radius: 0.3, speed: 26, sockets: true, desc: 'Draw and hold: the longer you hold, the harder the shot, and it goes through enemies.', verb: 'SNIPE', windup: 0.333, follow: 0.32 },
+  rally: { id: 'rally', name: 'Rally', kind: 'rally', icon: 'volley', dmg: 0, cooldown: 8.0, mana: 12, range: 0, radius: 6, speed: 0, sockets: true, desc: 'A call: your companions and allies near you attack faster and harder for a few seconds.', verb: 'RALLY', windup: 0.3, follow: 0.3 },
   // THE WARLOCK (game/warlock.ts, behind WARLOCK; his design in the art chat, 25 Oct 2026). As a man: his tap, “Hellfire
   // bolt (Recommended)”; his tap and hold and swipe, “I was thinking tap does a single target shot that hits an enemy and
   // does a relatively strong DOT.  The tap and hold is an AOE that curses all enemies with a smaller DOT.  If a cursed enemy
@@ -377,7 +391,7 @@ export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword:
  * weapon decides, a sword, a great sword or a bow making attacks and a staff or a wand spells; the
  * evasive moves go with their class (Leap and Trap attacks, Warp a spell).
  */
-export const SPELL_SKILLS: ReadonlySet<SkillId> = new Set<SkillId>(['wave', 'orb', 'familiar', 'beam', 'warp']);
+export const SPELL_SKILLS: ReadonlySet<SkillId> = new Set<SkillId>(['wave', 'orb', 'familiar', 'beam', 'warp', 'ball', 'spear']);
 export function isSpell(id: SkillId): boolean {
   return SPELL_SKILLS.has(id);
 }
@@ -2478,9 +2492,14 @@ export const QUIPS: {
     quake: ['The ground answers.', 'Ground shaker.'],
     charge: ['Coming through.', 'Make way.'],
     shot: ['Bullseye.', 'Right on the mark.'],
+    snare: ['Caught.', 'Hold still.'],
+    snipe: ['From afar.', 'Never saw it.'],
+    rally: ['Sic em.', 'All together now.'],
     volley: ['Heads up.', 'Rain check?', 'Forecast: arrows.'],
     trap: ['Watch your step.', 'Walked right into it.'],
     wave: ['Swept away.', 'Making waves.', 'A sweeping statement.'],
+    ball: ['Have a ball.', 'Bowled over.'],
+    spear: ['Run through.', 'Point taken.'],
     orb: ['Full stop.', 'Period.', 'Give me some space.'],
     beam: ['Underlined.', 'Crossed out.', 'Read between the lines.'],
     familiar: ["Teacher's pet.", 'Good help is hard to find.'],

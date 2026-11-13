@@ -1,6 +1,7 @@
 // The rules of the game: one Game object holds a run (one character's life) and advances it
 // frame by frame. It knows nothing about drawing or input; it reads Controls and emits GameEvents.
 
+import { MOVE_PICK, SWAP_TUNE, moveChoices, swapInto } from './swap_moves';
 import { BARS_LASTS, BARS_PERIL, RAIN_LASTS, RAIN_PERIL, cageHero } from './action_f1';
 import { RIME_LASTS, RIME_PERIL, SIGIL_LASTS, SIGIL_PERIL } from './action_f2';
 import { RAMPAGE_BLOWS, RING_LASTS, RING_PERIL, chargeOf, greenTroll, rushMayEnd } from './action_f3';
@@ -1119,7 +1120,7 @@ export class Game {
     // (the Tinkerer's Tesla Coil became her Gun Arm, 31 Oct: one taken before is the Gun Arm now)
     h.talents = cleanTalents(h.cls, h.level, s.talents?.map((t) => (t === 'teslacoil' ? 'gunarm' : t)));
     h.picks = {};
-    for (const [id, p] of Object.entries(s.picks ?? {})) if (talentById(h.cls, id)?.pick?.ids.includes(p)) h.picks[id] = p;
+    for (const [id, p] of Object.entries(s.picks ?? {})) if (talentById(h.cls, id)?.pick?.ids.includes(p) || ((MOVE_PICK as readonly string[]).includes(id) && typeof p === 'string' && p in SKILLS)) h.picks[id] = p;
     if (s.guide && typeof s.guide === 'object') {
       // (the prompts carry on from where they were; what was set stays set)
       const q = s.guide;
@@ -1303,6 +1304,8 @@ export class Game {
     const want: SkillId[] = [...(h.cls === 'warlock' && h.form === 'demon' ? DEMON_KIT : skillsFor(h.cls, weapon))];
     // (THE TINKERER's tree: CONTRAPTION, his idea, swaps her Vial Toss for the Contraption)
     if (h.cls === 'tinkerer' && this.has('contraptions')) want[0] = 'contraption';
+    // (THE MAGE'S AND THE RANGER'S MOVES TO SWAP, game/swap_moves.ts: hers as she sets them; his Snare, Snipe or Rally)
+    swapInto(h.cls, TALENTS.on ? h.talents : [], h.picks, want);
     // (THE WARRIOR'S THREE WEAPONS, WARRIOR_TREE2: his tap, hold and swipe the picked weapon's; the greatsword's till then)
     const kit = h.cls === 'warrior' ? warriorKit(TALENTS.on ? h.talents : []) : null;
     if (kit) for (let k = 0; k < 3; k++) want[k] = kit[k];
@@ -9029,7 +9032,7 @@ export class Game {
             this.projectiles.push({
               x: sx + Math.cos(a) * 0.4, y: sy + Math.sin(a) * 0.4, vx: Math.cos(a) * r.projSpeed * long, vy: Math.sin(a) * r.projSpeed * long,
               r: Math.min(0.6, def.radius * r.size * (r.splash >= 1.5 ? 1.5 : 1)), dist: def.range * long, hostile: false, dmg: (fanned ? each * F.share : each) * (twinAxes ? WARRIOR_TUNE.twinAxes.share : 1), element: r.element,
-              look: s.id === 'hellbolt' ? 'hellbolt' : def.returns ? 'axe' : 'arrow', pierce: r.pierce || steady || def.returns === true, ...(def.returns ? { returns: true } : {}), pierceN: this.was('piercing') ? TALENT_TUNE.piercing : 0, hit: own, volley: r.count > 1 || split || fanned, skill: i, trail: 0, words, runed: false, clouded: false, age: 0, from: '', n: k, flown: 0,
+              look: s.id === 'hellbolt' ? 'hellbolt' : s.id === 'ball' ? 'ball' : s.id === 'spear' ? 'mspear' : def.returns ? 'axe' : 'arrow', pierce: r.pierce || steady || def.returns === true || s.id === 'spear', ...(def.returns ? { returns: true } : {}), pierceN: this.was('piercing') ? TALENT_TUNE.piercing : 0, hit: own, volley: r.count > 1 || split || fanned, skill: i, trail: 0, words, runed: false, clouded: false, age: 0, from: '', n: k, flown: 0,
             });
           }
         }
@@ -12721,6 +12724,8 @@ export class Game {
     this.striking = p;
     this.hitMonster(m, p.skill, p.dmg, false, far);
     this.striking = null;
+    // (THE MAGE'S BALL, game/swap_moves.ts: it stops on what it hits and bursts there, hurting all round it)
+    if (p.look === 'ball') this.ballBurst(p, m);
     // (Long Shot, the arrow knocks back what it hits; Split Shot, one that kills splits into three, flying on)
     if (arrow && !m.dead && this.now('longshot')) this.throwMonster(m, m.x - p.vx, m.y - p.vy, TALENT_TUNE.longShot2.far);
     if (arrow && m.dead && !p.split && this.now('splitshot')) this.splitArrow(p, m);
@@ -14696,6 +14701,37 @@ export class Game {
     if (!this.level.town) return 'Undone in town only';
     if (this.hero.gold < this.unlearnPrice()) return `Needs ${this.unlearnPrice()} gold`;
     return null;
+  }
+
+  /** (THE MAGE'S BALL) Its burst where it struck `m`: every other enemy within its reach takes a share of the hit. */
+  private ballBurst(p: Projectile, m: Monster): void {
+    const r = this.hero.skills[p.skill].r;
+    const rad = SWAP_TUNE.ball.r * r.size;
+    this.emit({ t: 'burst', x: m.x, y: m.y, r: rad, el: r.element, style: 'blast', words: p.words, ...this.vastEdge(r, rad) });
+    this.sfx(r.element === 'frost' ? 'frost' : 'explode', 0.55);
+    for (const o of this.monsters) {
+      if (o.dead || o === m || Math.hypot(o.x - m.x, o.y - m.y) > rad + o.r || this.shutIn(o)) continue;
+      this.hitMonster(o, p.skill, p.dmg * SWAP_TUNE.ball.share, true);
+    }
+    this.breakProps(m.x, m.y, rad, p.skill);
+  }
+
+  /** (THE MAGE'S AND THE RANGER'S MOVES TO SWAP) The moves attack `s` could be changed to on the ATTACKS page; none, no change. */
+  moveChoicesOf(s: number): SkillId[] {
+    const h = this.hero;
+    return moveChoices(h.cls, TALENTS.on ? h.talents : [], s, h.skills.map((k) => k.id));
+  }
+
+  /** (THE MAGE'S AND THE RANGER'S MOVES TO SWAP) Change attack `s` to the next move it could be: false where it cannot change. */
+  changeMove(s: number): boolean {
+    const list = this.moveChoicesOf(s);
+    if (list.length < 2) return false;
+    const h = this.hero;
+    const next = list[(list.indexOf(h.skills[s].id) + 1) % list.length];
+    (h.picks ??= {})[MOVE_PICK[s]] = next;
+    this.refresh();
+    this.sfx('equip');
+    return true;
   }
 
   /** (THE SKILL TREES) The pick made on talent `id`, where it has one: its first until another is picked. */
