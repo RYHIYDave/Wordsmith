@@ -2,8 +2,9 @@
 // docs/mockups/swap_moves/README.md), on their bodies brought up (art/ranger_up_moves.ts, art/mage_up_moves.ts). His words,
 // 13 Nov 2026, 10:20, shown Snipe on the Volley's kneel: “Why is snipe using the same bent knee animation as volley?  These are so
 // half assed man.  Do it right so I don’t have to keep redoing these over and over and over again”. So none borrows another's:
-//   SNIPE   his Shot's draw carried on past full to his cheek, the bow raised to his eye (the hold begun); held there, steady,
-//           a tremor in it (the hold); the loose, the string hand flying back, a step of recoil (let go);
+//   SNIPE   his Shot's draw carried on past full to his cheek, the bow raised to his eye (the hold begun); held, the draw
+//           deepening as it fills, then a tremor in it at its fullest (the hold); the loose with force, the string hand thrown back,
+//           the bow kicking up, a hard step of recoil (let go);
 //   SNARE   its loop whirled over his head in his string hand, the bow dropped low in the other with no arrow on it, then thrown
 //           straight out at the mark;
 //   RALLY   his call: the bow raised high overhead, his horn put to his lips with the other hand and blown, his head back;
@@ -47,32 +48,53 @@ export const RU_SNIPE_START3: Move3 = {
   motion: { keys: [...RU_SHOT3.motion.keys.filter((k) => k.at <= 0.234), { at: 0.4, pose: ANCHOR, ease: 'out' }] },
 };
 
-/** SNIPE, held: steady at the anchor, a tremor in the string hand and the bow (0.4 s round). */
+/**
+ * SNIPE, held: his draw deepening the whole time it fills (his words: “I want snipe to grow in power as you hold”): from the
+ * anchor the string hand goes on back past his cheek, the bow bends further, his bow arm locks out and he settles lower and
+ * leans back into it, over the draw's 1.5 s (game/swap_moves.ts SWAP_TUNE.snipe.full); then held at its fullest, a tremor in
+ * the string hand and the bow (looped from 1.5 s).
+ */
+const DEEP: P = {
+  ...ANCHOR,
+  rhx: (ANCHOR.rhx ?? 7) - 5.5,
+  rhz: (ANCHOR.rhz ?? 7) + 0.8,
+  lhx: (ANCHOR.lhx ?? 21) + 1.6,
+  lhz: (ANCHOR.lhz ?? 8) + 0.8,
+  draw: 1.6,
+  bend: -11,
+  pz: -7.9,
+  px: -1,
+  twist: (ANCHOR.twist ?? -44) - 7,
+  faceUp: 4,
+};
 export const RU_SNIPE_HOLD3: Move3 = {
   ...RU_SHOT3,
   name: 'Snipe: held',
   motion: {
-    loop: 0,
+    loop: 1.5,
     keys: [
       { at: 0, pose: ANCHOR },
-      { at: 0.1, pose: { ...ANCHOR, rhx: (ANCHOR.rhx ?? 7) - 0.5, lhz: (ANCHOR.lhz ?? 8) + 0.4 }, ease: 'io' },
-      { at: 0.2, pose: { ...ANCHOR, rhz: (ANCHOR.rhz ?? 7) + 0.3, lhx: (ANCHOR.lhx ?? 21) - 0.3 }, ease: 'io' },
-      { at: 0.3, pose: { ...ANCHOR, rhx: (ANCHOR.rhx ?? 7) + 0.3, lhz: (ANCHOR.lhz ?? 8) - 0.3 }, ease: 'io' },
-      { at: 0.4, pose: ANCHOR, ease: 'io' },
+      { at: 1.5, pose: DEEP, ease: 'out' },
+      { at: 1.6, pose: { ...DEEP, rhx: (DEEP.rhx ?? 4) - 0.5, lhz: (DEEP.lhz ?? 8) + 0.4 }, ease: 'io' },
+      { at: 1.7, pose: { ...DEEP, rhz: (DEEP.rhz ?? 7) + 0.4, lhx: (DEEP.lhx ?? 22) - 0.4 }, ease: 'io' },
+      { at: 1.8, pose: { ...DEEP, rhx: (DEEP.rhx ?? 4) + 0.4, lhz: (DEEP.lhz ?? 8) - 0.4 }, ease: 'io' },
+      { at: 1.9, pose: DEEP, ease: 'io' },
     ],
   },
 };
 
-/** SNIPE, let go: the loose from the anchor, the string hand flying back past his ear, a step of recoil, and back to his guard. */
+/** SNIPE, let go: the loose from his fullest draw, with force: the string hand thrown back past his ear, the bow kicking up, a hard step of recoil, and back to his guard. */
 export const RU_SNIPE_LOOSE3: Move3 = {
   ...RU_SHOT3,
   name: 'Snipe: loosed',
   motion: {
     hit: FR,
     keys: [
-      { at: 0, pose: ANCHOR },
-      { at: FR, pose: { ...at(RU_SHOT3, RU_SHOT_HIT), rhx: -3, rhz: (ANCHOR.rhz ?? 7) + 2, lhz: (ANCHOR.lhz ?? 8) + 1, draw: 0, pz: -6.1, bend: -6, px: -1.2 } },
-      { at: 5 * FR, pose: { ...at(RU_SHOT3, 0.467), lhz: (ANCHOR.lhz ?? 8), px: -1, bend: -4 }, ease: 'out' },
+      { at: 0, pose: DEEP },
+      // (with force: the string hand thrown far back past his ear, the bow kicking up, a hard step back)
+      { at: FR, pose: { ...at(RU_SHOT3, RU_SHOT_HIT), rhx: -7, rhz: (ANCHOR.rhz ?? 7) + 3, re: -20, lhz: (ANCHOR.lhz ?? 8) + 3, wEl: 18, draw: 0, pz: -5.8, bend: -9, px: -2.6, twist: (ANCHOR.twist ?? -44) - 8 } },
+      { at: 3 * FR, pose: { ...at(RU_SHOT3, RU_SHOT_HIT), rhx: -6, rhz: (ANCHOR.rhz ?? 7) + 2, lhz: (ANCHOR.lhz ?? 8) + 2, wEl: 10, draw: 0, pz: -6, bend: -7, px: -2.4 }, ease: 'out' },
+      { at: 7 * FR, pose: { ...at(RU_SHOT3, 0.467), lhz: (ANCHOR.lhz ?? 8), px: -1.6, bend: -4 }, ease: 'io' },
       { at: 10 * FR, pose: { ...at(RU_SHOT3, 0.6), px: -0.6 }, ease: 'io' },
       { at: 18 * FR, pose: {}, ease: 'io' },
     ],

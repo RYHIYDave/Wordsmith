@@ -4427,7 +4427,7 @@ export class Renderer {
         continue;
       }
       // (THE RANGER'S SNIPE: the streak behind the arrow it loosed, under the arrow)
-      if (!p.hostile && p.look === 'arrow' && game.hero.skills[p.skill]?.id === 'snipe' && onScreen(p.x, p.y)) drawSnipeStreak(g, cam, p.x, p.y, p.vx, p.vy);
+      if (!p.hostile && p.look === 'arrow' && game.hero.skills[p.skill]?.id === 'snipe' && onScreen(p.x, p.y)) drawSnipeStreak(g, cam, p.x, p.y, p.vx, p.vy, p.snipe ?? 0, p.age);
       // (THE NEW MONSTERS: a Boneward's spear, flying low from its hand to where it comes down)
       if (p.look === 'spear') {
         const v = Math.hypot(p.vx, p.vy) || 1;

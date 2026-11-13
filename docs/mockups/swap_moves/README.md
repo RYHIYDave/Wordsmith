@@ -156,6 +156,18 @@ ALL OF IT IS BUILT, BEHIND `SWAP_MOVES` (game/talents.ts, OFF): off, the game is
   tiles. Its icon redrawn to match (a cut crystal, its shards).
   FILMED with all of it (tools/scenarios/swap_moves_film.mjs): pictures/mage_moves_own.mp4 and ranger_moves_own.mp4; each move
   frame by frame from those films, pictures/mage_own_moves.png and ranger_own_moves.png.
+- SNIPE GROWS (13 Nov). Shown the films, asked whether they go to tonight's update, his answer: “Looks good.  I want snipe to grow
+  in power as you hold, then do a little glint when it’s at full, then you release for a bigger arrow hitbox with more momentum
+  and force.  For the animation.”. Read as: yes to the rest; Snipe reworked so:
+    HELD   his draw deepens the whole 1.5 s it fills (art/swap_moves_art.ts RU_SNIPE_HOLD3: the string hand on back past his
+           cheek, the bow bending further, lower, leaning back into it), then a tremor at its fullest; the light at the arrowhead
+           grows, motes of it drawn in round it (render/swap_fx.ts drawSnipeDraw);
+    FULL   A GLINT: a star of light flashing on the arrowhead, a ring going out from it; then a twinkle now and then;
+    LOOSED with force: a burst of air off the bow, his string hand thrown back past his ear, the bow kicking up, a hard step of
+           recoil (RU_SNIPE_LOOSE3); the arrow drawn over with a shaft of light, longer and broader the fuller the draw, its streak
+           thicker; and in play (game/swap_moves.ts SWAP_TUNE.snipe) the fuller the draw, the WIDER its hitbox (two and a half
+           times at full), the FASTER it flies (1.7 times) and the further it KNOCKS BACK what it hits (1.4 tiles at full).
+  pictures/snipe_grows.png; the Ranger's film again, pictures/ranger_moves_own.mp4. Tests 11b, 11c.
 - KNOWN: switched on, an old Mage's stones past the middle (her warps and on) are not hers until she takes Aura (cleanTalents
   checks the way); their points come back to spend.
 

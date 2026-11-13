@@ -285,6 +285,29 @@ test('11b. his SNIPE held: he is seen drawing all the while he holds it (his own
   assert.equal(g.hero.attackSkill, 1);
 }));
 
+test('11c. his SNIPE drawn full: a wider arrow, faster, and what it hits knocked back (his words: “a bigger arrow hitbox with more momentum and force”)', () => swapOn(() => {
+  const loosed = (secs: number): { r: number; v: number; snipe: number } => {
+    const { g, a } = ranger(['snipe']);
+    const m = put(g, a, 9, 0);
+    holdAt(g, m.x, m.y, secs, false);
+    for (let t = 0; t < 0.6 && !g.projectiles.some((q) => q.snipe !== undefined); t += DT) g.update(DT, emptyControls());
+    const p = g.projectiles.find((q) => q.snipe !== undefined);
+    if (!p) throw new Error('no arrow loosed');
+    return { r: p.r, v: Math.hypot(p.vx, p.vy), snipe: p.snipe as number };
+  };
+  const quick = loosed(0.1);
+  const full = loosed(1.9);
+  assert.ok(full.snipe >= 1 && quick.snipe < 0.2, 'how full each was');
+  assert.ok(full.r > quick.r * 2, 'wider');
+  assert.ok(full.v > quick.v * 1.5, 'faster');
+  const { g, a } = ranger(['snipe']);
+  const m = put(g, a, 3, 0);
+  const x0 = m.x;
+  holdAt(g, m.x + 6, m.y, 1.9);
+  assert.ok(hurt(m), 'struck');
+  assert.ok(m.x - x0 > 0.6, 'knocked back');
+}));
+
 test('12. his RALLY: his companions quickened for a few seconds', () => swapOn(() => {
   const { g } = ranger(['rally']);
   assert.equal(g.hero.skills[1].id, 'rally');

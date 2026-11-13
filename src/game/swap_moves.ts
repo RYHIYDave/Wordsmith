@@ -16,8 +16,14 @@ export const SWAP_TUNE = {
   ball: { r: 1.6, share: 0.6 },
   /** SNARE: how long what walks in is held (s); how long it lies waiting (s); the burst's share of a hit, and its reach. */
   snare: { hold: 2.0, life: 10, share: 1.0, r: 1.3, max: 3 },
-  /** SNIPE: the draw to its fullest (s); the shot let go at once and at its fullest, as shares of a hit. */
-  snipe: { full: 1.5, least: 0.6, most: 2.6 },
+  /**
+   * SNIPE: the draw to its fullest (s); the shot let go at once and at its fullest, as shares of a hit; and, drawn to its
+   * fullest, how much wider the arrow is (its reach to either side: `wide` more, 1.5 = two and a half times), how much faster it
+   * flies (`fast` more), and how far it knocks back what it hits (`push`, tiles). His words, 13 Nov 2026: “I want snipe to grow
+   * in power as you hold, then do a little glint when it’s at full, then you release for a bigger arrow hitbox with more
+   * momentum and force”.
+   */
+  snipe: { full: 1.5, least: 0.6, most: 2.6, wide: 1.5, fast: 0.7, push: 1.4 },
   /** RALLY: how long (s), and how much faster and harder his companions and allies near him attack (%). */
   rally: { secs: 5, atk: 30, dmg: 30 },
   /**

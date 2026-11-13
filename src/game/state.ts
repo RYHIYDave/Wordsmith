@@ -626,6 +626,8 @@ export interface Projectile {
   dmg: number;
   element: Element;
   /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) 'spear': the Boneward's, and 'great', the bone marksman's great arrow (Version 19.9). */
+  /** (THE RANGER'S SNIPE, game/swap_moves.ts) An arrow of a Snipe: how full its draw was, 0..1 (wider, faster, knocking back the fuller). */
+  snipe?: number;
   look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great' | 'hellbolt' | 'axe'
     // (THE MAGE'S BALL and SPEAR, game/swap_moves.ts: `mspear` hers, not the Boneward's)
     | 'ball' | 'mspear';

@@ -9104,12 +9104,16 @@ export class Game {
       // (THE RANGER'S SNIPE, game/swap_moves.ts: one arrow, through everything in its line, the harder the longer he drew)
       const T = SWAP_TUNE.snipe;
       const a = Math.atan2(dy, dx);
+      // (the fuller the draw, the wider the arrow, the faster it flies and the harder it knocks back what it hits)
+      const k = this.snipePower;
+      const sp = r.projSpeed * (1 + T.fast * k);
       this.projectiles.push({
-        x: ox + Math.cos(a) * 0.4, y: oy + Math.sin(a) * 0.4, vx: Math.cos(a) * r.projSpeed, vy: Math.sin(a) * r.projSpeed,
-        r: def.radius * r.size, dist: def.range, hostile: false, dmg: each * (T.least + (T.most - T.least) * this.snipePower), element: r.element,
-        look: 'arrow', pierce: true, hit: [], volley: false, skill: i, trail: 0, words, runed: false, clouded: false, age: 0, from: '', n: 0,
+        x: ox + Math.cos(a) * 0.4, y: oy + Math.sin(a) * 0.4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        r: def.radius * r.size * (1 + T.wide * k), dist: def.range, hostile: false, dmg: each * (T.least + (T.most - T.least) * k), element: r.element,
+        look: 'arrow', pierce: true, hit: [], volley: false, skill: i, trail: 0, words, runed: false, clouded: false, age: 0, from: '', n: 0, snipe: k,
       });
       this.sfx('shot', 0.9);
+      if (k >= 1) this.sfx('power', 0.6);
     } else if (def.kind === 'rally') {
       // (THE RANGER'S RALLY, game/swap_moves.ts: his companions near him attack faster and harder for a few seconds)
       if (primary) {
@@ -12783,6 +12787,8 @@ export class Game {
     if (p.look === 'ball') this.ballBurst(p, m);
     // (Long Shot, the arrow knocks back what it hits; Split Shot, one that kills splits into three, flying on)
     if (arrow && !m.dead && this.now('longshot')) this.throwMonster(m, m.x - p.vx, m.y - p.vy, TALENT_TUNE.longShot2.far);
+    // (THE RANGER'S SNIPE, game/swap_moves.ts: knocked back, the further the fuller the draw)
+    if (arrow && !m.dead && p.snipe && p.snipe > 0.05) this.throwMonster(m, m.x - p.vx, m.y - p.vy, SWAP_TUNE.snipe.push * p.snipe);
     if (arrow && m.dead && !p.split && this.now('splitshot')) this.splitArrow(p, m);
     // (an arrow or a wave that goes through several is still one blow)
     if (!p.mighted) {
@@ -14810,11 +14816,11 @@ export class Game {
     return kind && this.aura.on > 0 ? { kind, r: SWAP_TUNE.aura.r, t: SWAP_TUNE.aura.secs - this.aura.on } : null;
   }
 
-  /** (THE RANGER'S SNIPE) While he draws it: where he aims, and how full the draw is (0 to 1); null, he is not drawing. */
-  snipeDraw(): { tx: number; ty: number; power: number } | null {
+  /** (THE RANGER'S SNIPE) While he draws it: where he aims, how full the draw is (0 to 1), and how long since it came full (s; less than 0, not yet); null, he is not drawing. */
+  snipeDraw(): { tx: number; ty: number; power: number; sinceFull: number } | null {
     const ch = this.hero.channel;
     if (!ch || this.hero.skills[ch.skill]?.id !== 'snipe') return null;
-    return { tx: ch.tx, ty: ch.ty, power: Math.min(1, ch.t / SWAP_TUNE.snipe.full) };
+    return { tx: ch.tx, ty: ch.ty, power: Math.min(1, ch.t / SWAP_TUNE.snipe.full), sinceFull: ch.t - SWAP_TUNE.snipe.full };
   }
 
   /** (THE RANGER'S RALLY) While it lasts: its seconds left, and since he called. */

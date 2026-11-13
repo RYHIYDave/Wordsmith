@@ -29,7 +29,7 @@ const PLANS = {
     ],
   },
   ranger: {
-    secs: 21,
+    secs: 22,
     take: ['fleet', 'windrunner', 'wildcompanion', 'keeneye', 'venom', 'huntcompanion', 'quickdraw', 'longshot', 'lightstep', 'huntersmark', 'widetraps', 'snare', 'splitshot', 'snipe'],
     plan: [
       [0.0, 'caption', 'THE RANGER\'S NEW MOVES'],
@@ -37,8 +37,8 @@ const PLANS = {
       [0.8, 'free', 0], [0.8, 'free', 1], [0.8, 'free', 2],
       [1.0, 'tap', 2.4, 0.4], [2.2, 'tap', 2.6, -0.8],
       [6.6, 'line'],
-      [6.8, 'caption', 'SNIPE (in place of Volley): drawn to his cheek and held; the longer, the harder'],
-      [7.4, 'hold', 7, 0, 0.2], [9.0, 'hold', 7, 0, 1.6],
+      [6.8, 'caption', 'SNIPE (in place of Volley): held, it grows; a glint at full; loosed, a bigger, faster arrow that knocks back'],
+      [7.4, 'hold', 7, 0, 0.2], [9.0, 'hold', 7, 0, 2.6],
       [12.3, 'take+', 'rally'], [12.3, 'set', 1, 'rally'],
       [12.3, 'caption', 'RALLY (another in place of Volley): his horn; his companions faster and harder'],
       [12.5, 'free', 0], [12.5, 'free', 1], [12.5, 'free', 2], [12.5, 'free', 3],
