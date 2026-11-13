@@ -2,8 +2,10 @@
 
 Branch `build/leveling-uniques`, cut from `build/uniques-on` (the 62 switched on at his yes; that branch is on the ship list as
 `build-unique-items`). Made by the Uniques tuning chat, 12 Nov 2026, from the queue item `design-leveling-uniques`, pulled at
-his pick “Leveling uniques now”. **Nothing here is live: LEVEL_UNIQUES and POISON_DMG are off in the game; both are on for his
-unique-items test page only (src/main.ts, `try=uniques`). The 62's rolls are not behind a switch: they ride with the uniques.**
+his pick “Leveling uniques now”. **SWITCHED ON AT HIS YES (12 Nov 2026, by 21:3x Eastern), asked how to go on once they were on
+his test page: “Switch them on now”. LEVEL_UNIQUES and POISON_DMG are on in the game on this branch; nothing is live until the
+main chat's next update. The 62's rolls ride with the uniques. The 20 show their base's orange look until their own bag pictures
+are drawn (the queue's draw-leveling-unique-pictures); he was told so before he said it.**
 
 ## His words
 
@@ -114,3 +116,21 @@ and POISON_DMG are on too (src/main.ts), and a test hero of the level select is 
 
 His phone; the page as the app serves it; a whole run with them dropping. The Warrior holding a Battle Axe is drawn with the
 weapon his talents picked (a greatsword till then): not this branch's.
+
+## Switched on (12 Nov 2026, evening)
+
+- `LEVEL_UNIQUES.on` and `POISON_DMG.on` true (src/game/uniques.ts, src/game/items.ts). The tests that said off now say on, and
+  check what off does with the switches off for the moment; the 62's own drop and hand-out tests set the leveling ones aside
+  (their own roll and hand-out are tests/uniques_level.test.ts'). With poison on, gear rolls two more families, so seeded rolls
+  of gear change: tests that read the practice room's rolled gear were made to set it aside where they measure a size or a blow
+  (warrior_tree_rules' helper takes Area of Effect off its gear; uniques_heroes' Hair Trigger reads the same hero; guide's Poison
+  reads his Poison Damage); the items brief knows poison's two affixes and the Poison word's crafting; economy counts a boss's own
+  unique over his hoard.
+- CHECKED: tsc (main's own error only); `unit --only` 42 named and the core on e3ab1219fb: 60 files, 51 passed; of the nine,
+  seven were the tests above, mended and passed on 9ef97ea530 (with uniques_level and flat_damage: 31 files, all passed);
+  items_a_game (test 4, the Battle Axe's picture) and castle_hall (Colour 4) fail the same on main 2a3f5119 (checked). A page of
+  the branch (`build_to`) played as a new player's first dungeon as the Warrior and the save scenario, at phone size: both
+  finished clean.
+- MERGE: the branch merges clean into main 2a3f5119 (25.3.16, which has `build/uniques-on`): checked with a trial merge.
+  build/meld-words-everywhere (the Crafting chat's, not yet merged) also touches items.ts's card lines (MELD_LINE in modLines):
+  this branch adds the four resistances' one line there.
