@@ -1648,7 +1648,9 @@ export function powerHammerBits(t: number, put: Put): void {
   const side = norm([-0.55, 1, 0]);
   const dir: V3 = add(mul(across, Math.sin(ang * D)), [0, 0, -Math.cos(ang * D)]);
   const hx: V3 = add(mul(across, Math.cos(ang * D)), [0, 0, Math.sin(ang * D)]);
-  const hc = add(grip, mul(dir, R));
+  // (it grows out of the burst about its head, where the rune burst)
+  const hc = add(grip, mul(dir, 84));
+  const gripS = sub(hc, mul(dir, R));
   const HL = 36 * sc;
   const HR = 25 * sc;
   const ring = (along: number, r: number) => ({ c: add(hc, mul(hx, along)), u: mul(dir, r), v: mul(side, r) });
@@ -1699,12 +1701,12 @@ export function powerHammerBits(t: number, put: Put): void {
   });
   put('hammerBands', 'collar', { k: 'band', ring: { c: add(hc, mul(dir, -HH)), u: mul(hx, 9 * sc), v: mul(side, 9 * sc) }, ramp: HAMMER_IRON, rows: 2 });
   // (its haft and pommel)
-  put('hammerHaft', 'haft', { k: 'rod', a: grip, b: add(hc, mul(dir, -HR * 0.8)), ra: 6 * sc, rb: 7 * sc, ramp: HAMMER_HAFT });
-  put('hammerHaft', 'pommel', { k: 'ball', c: add(grip, mul(dir, -3 * sc)), ax: [mul(dir, 9 * sc), mul(side, 10 * sc), mul(hx, 10 * sc)], skin: HAMMER_IRON });
+  put('hammerHaft', 'haft', { k: 'rod', a: gripS, b: add(hc, mul(dir, -HR * 0.8)), ra: 6 * sc, rb: 7 * sc, ramp: HAMMER_HAFT });
+  put('hammerHaft', 'pommel', { k: 'ball', c: add(gripS, mul(dir, -3 * sc)), ax: [mul(dir, 9 * sc), mul(side, 10 * sc), mul(hx, 10 * sc)], skin: HAMMER_IRON });
   // (its haft's grain burning; brighter as it strikes)
   const hot = 0.5 + 0.5 * Math.max(0, 1 - Math.abs(k - 1) * 4);
   for (let i = 0; i < 9; i++) {
-    const p = lerp3(grip, hc, 0.12 + i * 0.08);
+    const p = lerp3(gripS, hc, 0.12 + i * 0.08);
     put('hammerHaft', 'haft', { k: 'dot', p: add(p, mul(side, -6.5 * sc)), c: FLAME[2], facing: mul(side, -1) });
   }
   // (its power, crackling off it: sparks jumping off its head, a light on it)

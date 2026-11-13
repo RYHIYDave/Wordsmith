@@ -352,26 +352,35 @@ function powerScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
   // (the hero)
   const [hx, hy] = wp(HERO_AT(t));
   hero(s, hx, hy);
-  // (the rune he writes, at his hand, then flying up off his staff)
+  // (the rune he writes, at his hand, stroke by stroke, until he flings it out over the hero: one rune, that one)
   const sk = skeletonAt(mob, 'power', t);
-  if (t > POWER.write[0] && t < POWER.cast + 0.25) {
+  if (t > POWER.write[0] && t <= POWER.cast) {
     const [x, y] = at([from[0] + dir * sk.handL[0], from[1] + dir * sk.handL[1], sk.handL[2] + 6]);
-    const flyUp = Math.max(0, t - POWER.cast) / 0.25;
     const rev = Math.min(1, (t - POWER.write[0]) / (POWER.write[1] - POWER.write[0]));
-    stamp(s, GLYPH_SMALL, ox + x + flyUp * 10, oy + y - flyUp * 160, 1, rev);
-    if (flyUp > 0) for (let k = 1; k < 8; k++) stamp(s, GLYPH_SMALL, ox + x + flyUp * 10, oy + y - flyUp * 160 + k * 6, 0.5 / k);
+    stamp(s, GLYPH_SMALL, ox + x, oy + y, 1, rev);
   }
+
   // (the rune he flings: flying from his hand up over the hero, and bursting there; out of the burst, the hammer)
   if (t > POWER.cast && t < POWER.cast + 0.5) {
     const sk2 = skeletonAt(mob, 'power', POWER.cast);
     const [hx0, hy0] = at([from[0] + dir * sk2.handL[0], from[1] + dir * sk2.handL[1], sk2.handL[2] + 6]);
-    const [tx0, ty0] = wp(sh, 128);
+    const [tx0, ty0] = wp(sh, 133);
     const u = Math.min(1, (t - POWER.cast) / 0.25);
     const X = ox + hx0 + (tx0 - ox - hx0) * u, Y = oy + hy0 + (ty0 - oy - hy0) * u - 60 * Math.sin(Math.PI * u);
     if (u < 1) {
       stamp(s, GLYPH_SMALL, X, Y, 1);
       for (let k = 1; k < 6; k++) stamp(s, GLYPH_SMALL, X - (tx0 - ox - hx0) * 0.04 * k, Y + 8 * k * (1 - 2 * u), 0.4 / k);
-    } else {
+    }
+  }
+  // (the hammer, painted as he is, on the rune's shadow; smeared down its fall as it crushes)
+  {
+    const [fx0, fy0] = wp(sh, 0);
+    if (powerSmeared(t)) for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) layPainted(s, paintPowerHammer(t - m / 90, 'front'), HAMMER_CANVAS, fx0, fy0, a);
+    layPainted(s, paintPowerHammer(t, 'front'), HAMMER_CANVAS, fx0, fy0, 0);
+  }
+  // (the rune bursting over the hero, over the hammer forming out of it)
+  if (t >= POWER.cast + 0.25 && t < POWER.cast + 0.5) {
+    const [tx0, ty0] = wp(sh, 133);
       // (it bursts: a flash and a ring of sparks, and it is gone)
       const b = (t - POWER.cast - 0.25) / 0.25;
       for (let i = 0; i < 48; i++) {
@@ -383,13 +392,6 @@ function powerScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
         const q = Math.hypot(xx, yy) / 24;
         if (q < 1) mix(s, tx0 + xx, ty0 + yy, '#fff0d0', 0.7 * (1 - b) * (1 - q));
       }
-    }
-  }
-  // (the hammer, painted as he is, on the rune's shadow; smeared down its fall as it crushes)
-  {
-    const [fx0, fy0] = wp(sh, 0);
-    if (powerSmeared(t)) for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) layPainted(s, paintPowerHammer(t - m / 90, 'front'), HAMMER_CANVAS, fx0, fy0, a);
-    layPainted(s, paintPowerHammer(t, 'front'), HAMMER_CANVAS, fx0, fy0, 0);
   }
   void R;
   // (stone thrown up out of each crater; and after the last, the rune's shards)
