@@ -10,8 +10,9 @@
 //   AURA     a ring on the floor round her, turning, edged in cyan, faintly filled; FIRE embers rising in it, LIGHTNING crackle
 //            running round its edge, FROST motes drifting down and frost stars on its edge (her shield is Guarding's own);
 //   SNARE    a loop of rope lying open, its twist, its knot and peg, a glint of cyan while it is set;
-//   SNIPE    while he draws, his aim along the floor and a light gathering at the arrowhead, motes drawn into it, the bigger and
-//            brighter the longer he holds; at full A GLINT, a star of light and a ring off the arrowhead, then a twinkle; loosed, a
+//   SNIPE    while he draws, CHARGING UP: a ring on the floor round him filling like a clock in three steps, each with a pulse;
+//            light rising off him; streaks drawn in to the arrowhead; an arrow of light growing along his arrow; he glows cyan the
+//            fuller; at full A GLINT, a star of light and a ring off the arrowhead, then a twinkle; loosed, a
 //            burst of air off the bow and the arrow drawn over with a shaft of light, longer, broader and its streak thicker the
 //            fuller the draw;
 //   RALLY    a ring of cyan going out from him as he calls; while it lasts, cyan motes rising off his companions.
@@ -425,12 +426,14 @@ export function drawSnare(g: G, cam: Cam, x: number, y: number, set: boolean, t:
 }
 
 /**
- * (THE RANGER'S SNIPE) While he draws: his aim along the floor, reaching further and brighter as the draw fills; at the arrow's
- * head a light gathering, motes of it drawn in round it, bigger and brighter the longer he holds. At full, A GLINT: a star of
- * light flashing on the arrowhead and a ring going out from it (his words: “then do a little glint when it’s at full”), then a
- * small twinkle now and then while he holds on.
+ * (THE RANGER'S SNIPE) While he draws, CHARGING UP, to be read at a glance (his words, shown it first: “I don’t read it as
+ * charging up at all”): a ring on the floor round him filling like a clock as the draw fills, in three steps, each step a pulse
+ * of light going out from it; light rising off him, more and brighter the fuller; streaks of it drawn in from all round to the
+ * arrowhead; an arrow of light growing along his arrow; the light at the arrowhead swelling; his aim along the floor reaching
+ * further. (He himself glows cyan the fuller he is: render/render.ts.) At full A GLINT: a star of light flashing on the arrowhead
+ * and a ring going out, the floor ring closing white; then a twinkle now and then while he holds on.
  */
-export function drawSnipeDraw(g: G, cam: Cam, game: Game, t: number): void {
+export function drawSnipeDraw(g: G, cam: Cam, game: Game, t: number, layer: 'floor' | 'air' = 'floor'): void {
   const d = game.snipeDraw();
   if (!d) return;
   const h = game.hero;
@@ -439,37 +442,107 @@ export function drawSnipeDraw(g: G, cam: Cam, game: Game, t: number): void {
   const l = Math.hypot(dx, dy) || 1;
   const P = d.power;
   const full = P >= 1;
+  const FULL = d.held - d.sinceFull;
+  // (on the floor, under him: the ring, its pulses, his aim; in the air, over him: the rest)
+  if (layer === 'air') {
+    snipeAir(g, cam, game, t, d);
+    return;
+  }
+  // THE FLOOR RING, filling like a clock from the top, in three steps; the part still to fill faint
+  const RR = 0.8;
+  const N = 72;
+  for (let k = 0; k < N; k++) {
+    const f = k / N;
+    const a = -Math.PI * 0.75 + f * Math.PI * 2;
+    const X = wx(cam, h.x + Math.cos(a) * RR, h.y + Math.sin(a) * RR);
+    const Y = wy(cam, h.x + Math.cos(a) * RR, h.y + Math.sin(a) * RR);
+    if (f <= P) {
+      const edge = !full && P - f < 0.03;
+      dot(g, X - 1, Y - 1, edge ? '#ffffff' : full && d.sinceFull < 0.3 ? '#ffffff' : full ? C[3] : C[2], 2, 2);
+    } else {
+      g.globalAlpha = 0.3;
+      dot(g, X, Y, C[1], 1, 1);
+      g.globalAlpha = 1;
+    }
+    // (its three steps marked)
+    if (k % (N / 3) === 0) dot(g, X - 1, Y - 2, f <= P ? '#ffffff' : C[1], 2, 3);
+  }
+  // each step reached: a pulse of light going out from the ring
+  for (let s = 1; s <= 3; s++) {
+    const age = d.held - (FULL * s) / 3;
+    if (age < 0 || age > 0.35) continue;
+    const k = age / 0.35;
+    g.globalAlpha = 1 - k;
+    floorRing(g, cam, h.x, h.y, RR + k * (0.6 + 0.4 * s), s === 3 ? '#ffffff' : C[3], 1, 0);
+    g.globalAlpha = 1;
+  }
+  // his aim along the floor
   const reach = Math.min(l, 14) * (0.3 + 0.7 * P);
   const n = Math.round(reach * 4);
-  for (let k = 2; k < n; k++) {
+  for (let k = 3; k < n; k++) {
     const X = wx(cam, h.x + (dx / l) * (k / 4), h.y + (dy / l) * (k / 4));
     const Y = wy(cam, h.x + (dx / l) * (k / 4), h.y + (dy / l) * (k / 4));
     g.globalAlpha = 0.35 + 0.65 * P * (1 - k / (n + 4));
-    dot(g, X, Y, full ? C[2] : C[1], 2, full ? 2 : 1);
+    dot(g, X, Y, full ? C[3] : C[2], 2, full ? 2 : 1);
+  }
+  g.globalAlpha = 1;
+}
+
+/** (the same) What is in the air, drawn over him. */
+function snipeAir(g: G, cam: Cam, game: Game, t: number, d: { tx: number; ty: number; power: number; held: number; sinceFull: number }): void {
+  const h = game.hero;
+  const dx = d.tx - h.x;
+  const dy = d.ty - h.y;
+  const P = d.power;
+  const full = P >= 1;
+  const hx = wx(cam, h.x, h.y);
+  const hy = wy(cam, h.x, h.y);
+  // LIGHT RISING OFF HIM, more and brighter the fuller
+  const wisps = Math.round(3 + 11 * P);
+  for (let k = 0; k < wisps; k++) {
+    const ph = (t * (0.9 + 0.8 * P) + k * 0.137) % 1;
+    const a = k * 2.39996;
+    const r = 0.25 + 0.25 * ((k * 7) % 5) / 5;
+    const X = wx(cam, h.x + Math.cos(a) * r, h.y + Math.sin(a) * r);
+    const Y = wy(cam, h.x + Math.cos(a) * r, h.y + Math.sin(a) * r) - ph * 34;
+    g.globalAlpha = Math.sin(ph * Math.PI) * (0.35 + 0.65 * P);
+    dot(g, X, Y, full ? C[3] : C[2], 1, 2 + Math.round(3 * P));
   }
   g.globalAlpha = 1;
   // the arrowhead, at his bow, at his eye
   const [ux, uy] = screenWay(dx, dy);
-  const bx = wx(cam, h.x, h.y) + ux * 8;
-  const by = wy(cam, h.x, h.y) - 17 + uy * 4;
-  // the light gathering there, and motes of it drawn in round it, more and quicker the fuller
-  glow(g, bx, by, 4 + 6 * P, C[2], 0.16 + 0.2 * P);
-  const motes = 3 + Math.round(5 * P);
-  for (let k = 0; k < motes; k++) {
-    const ph = (t * (1.4 + P) + k / motes) % 1;
-    const a = k * 2.4 + t * 3;
-    const r = (1 - ph) * (8 + 8 * P);
-    g.globalAlpha = Math.min(1, ph * 2) * (0.5 + 0.5 * P);
-    dot(g, bx + Math.cos(a) * r, by + Math.sin(a) * r * 0.7, ph > 0.7 ? C[3] : C[2], 1, 1);
+  const bx = hx + ux * 8;
+  const by = hy - 17 + uy * 4;
+  // STREAKS DRAWN IN from all round to the arrowhead, more and quicker the fuller
+  const streaks = Math.round(4 + 10 * P);
+  for (let k = 0; k < streaks; k++) {
+    const ph = (t * (1.2 + 1.6 * P) + k / streaks) % 1;
+    const a = k * 2.39996 + Math.floor(t * (1.2 + 1.6 * P) + k / streaks) * 1.3;
+    const r = (1 - ph) * (18 + 16 * P) + 3;
+    const cx = Math.cos(a);
+    const cy = Math.sin(a) * 0.75;
+    g.globalAlpha = Math.min(1, ph * 3) * (0.5 + 0.5 * P);
+    for (let i = 0; i < 3; i++) dot(g, bx + cx * (r + i * 1.5), by + cy * (r + i * 1.5), i === 0 ? C[3] : C[2]);
   }
   g.globalAlpha = 1;
-  disc(g, bx, by, 1 + 2.8 * P, C[2]);
-  disc(g, bx, by, 0.6 + 1.4 * P, C[3]);
+  // AN ARROW OF LIGHT growing along his arrow, back from the head toward the string
+  const AL = Math.round(4 + 14 * P);
+  for (let i = 0; i < AL; i++) {
+    dot(g, bx - ux * i, by - uy * i, i < 3 ? '#ffffff' : C[3]);
+    if (P > 0.45) {
+      dot(g, bx - ux * i - uy, by - uy * i + ux, C[2]);
+      dot(g, bx - ux * i + uy, by - uy * i - ux, C[2]);
+    }
+  }
+  // the light at the arrowhead, swelling
+  glow(g, bx, by, 4 + 7 * P, C[2], 0.18 + 0.22 * P);
+  disc(g, bx, by, 1 + 2.6 * P, C[2]);
+  disc(g, bx, by, 0.5 + 1.5 * P, full ? '#ffffff' : C[3]);
   // AT FULL: the glint, then its twinkle
   const s = d.sinceFull;
   if (s >= 0 && s < 0.32) {
     const k = s / 0.32;
-    const big = Math.round(16 * (k < 0.25 ? k / 0.25 : 1 - (k - 0.25) / 0.75));
+    const big = Math.round(18 * (k < 0.25 ? k / 0.25 : 1 - (k - 0.25) / 0.75));
     glow(g, bx, by, 6 + big * 0.6, '#ffffff', 0.3 * (1 - k));
     dot(g, bx - big, by, '#ffffff', 2 * big + 1, 1);
     dot(g, bx, by - big, '#ffffff', 1, 2 * big + 1);
@@ -483,13 +556,13 @@ export function drawSnipeDraw(g: G, cam: Cam, game: Game, t: number): void {
     g.globalAlpha = 1 - k;
     for (let i = 0; i < 24; i++) {
       const a = (i / 24) * Math.PI * 2;
-      const r = 3 + k * 14;
+      const r = 3 + k * 16;
       dot(g, bx + Math.cos(a) * r, by + Math.sin(a) * r * 0.75, C[3]);
     }
     g.globalAlpha = 1;
   } else if (s >= 0.32 && (s % 0.6) < 0.08) {
-    dot(g, bx - 4, by, '#ffffff', 9, 1);
-    dot(g, bx, by - 4, '#ffffff', 1, 9);
+    dot(g, bx - 5, by, '#ffffff', 11, 1);
+    dot(g, bx, by - 5, '#ffffff', 1, 11);
   }
 }
 

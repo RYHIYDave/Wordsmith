@@ -14816,11 +14816,11 @@ export class Game {
     return kind && this.aura.on > 0 ? { kind, r: SWAP_TUNE.aura.r, t: SWAP_TUNE.aura.secs - this.aura.on } : null;
   }
 
-  /** (THE RANGER'S SNIPE) While he draws it: where he aims, how full the draw is (0 to 1), and how long since it came full (s; less than 0, not yet); null, he is not drawing. */
-  snipeDraw(): { tx: number; ty: number; power: number; sinceFull: number } | null {
+  /** (THE RANGER'S SNIPE) While he draws it: where he aims, how full the draw is (0 to 1), how long he has held it (s), and how long since it came full (s; less than 0, not yet); null, he is not drawing. */
+  snipeDraw(): { tx: number; ty: number; power: number; held: number; sinceFull: number } | null {
     const ch = this.hero.channel;
     if (!ch || this.hero.skills[ch.skill]?.id !== 'snipe') return null;
-    return { tx: ch.tx, ty: ch.ty, power: Math.min(1, ch.t / SWAP_TUNE.snipe.full), sinceFull: ch.t - SWAP_TUNE.snipe.full };
+    return { tx: ch.tx, ty: ch.ty, power: Math.min(1, ch.t / SWAP_TUNE.snipe.full), held: ch.t, sinceFull: ch.t - SWAP_TUNE.snipe.full };
   }
 
   /** (THE RANGER'S RALLY) While it lasts: its seconds left, and since he called. */

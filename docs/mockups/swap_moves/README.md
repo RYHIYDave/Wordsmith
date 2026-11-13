@@ -168,6 +168,12 @@ ALL OF IT IS BUILT, BEHIND `SWAP_MOVES` (game/talents.ts, OFF): off, the game is
            thicker; and in play (game/swap_moves.ts SWAP_TUNE.snipe) the fuller the draw, the WIDER its hitbox (two and a half
            times at full), the FASTER it flies (1.7 times) and the further it KNOCKS BACK what it hits (1.4 tiles at full).
   pictures/snipe_grows.png; the Ranger's film again, pictures/ranger_moves_own.mp4. Tests 11b, 11c.
+  Shown it (and Snipe alone, pictures/snipe_film.mp4, at speed and at half speed), his words: “I don’t read it as charging up at
+  all”. So the CHARGE made plain (render/swap_fx.ts drawSnipeDraw, render/render.ts): a ring on the floor round him filling like
+  a clock as the draw fills, in three steps, each step a pulse of light going out from it, closing white at full; light rising
+  off him, more and brighter the fuller; streaks of light drawn in from all round to the arrowhead; an arrow of light growing
+  along his arrow; he himself glowing cyan, more and quicker the fuller, a white flash as it comes full with the glint.
+  pictures/snipe_grows.png and snipe_film.mp4 again.
 - KNOWN: switched on, an old Mage's stones past the middle (her warps and on) are not hers until she takes Aura (cleanTalents
   checks the way); their points come back to spend.
 

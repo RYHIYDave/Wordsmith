@@ -4073,6 +4073,12 @@ export class Renderer {
       } else if (h.poisonT > 0) {
         over = silhouette(sp, P.vn4);
         overA = 0.3;
+      } else if (SWAP_MOVES.on && game.snipeDraw()) {
+        // (THE RANGER'S SNIPE CHARGING: he glows cyan, the more and the quicker it beats the fuller the draw; white as it comes full)
+        const sd = game.snipeDraw() as { power: number; sinceFull: number };
+        const glint = sd.sinceFull >= 0 && sd.sinceFull < 0.18;
+        over = silhouette(sp, glint ? '#ffffff' : '#22d0e0');
+        overA = glint ? 0.45 * (1 - sd.sinceFull / 0.18) + 0.15 : (0.08 + 0.24 * sd.power) * (0.75 + 0.25 * Math.sin(t * (6 + 10 * sd.power)));
       }
       // A warp: the figure the mage was phases out where they stood, and the mage phases in here.
       const wp = fx.warp;
@@ -4782,7 +4788,10 @@ export class Renderer {
     // (THE VETERAN's over everything: his smears, his force, the bursts of his blows; his globes: render/veteran_fx.ts)
     if (!this.skip.has('fx')) this.vetFx.drawAir(g, cam, game);
     // (THE RANGER'S RALLY, over the figures: render/swap_fx.ts)
-    if (SWAP_MOVES.on && !this.skip.has('fx')) drawRallyAir(g, cam, game, t);
+    if (SWAP_MOVES.on && !this.skip.has('fx')) {
+      drawRallyAir(g, cam, game, t);
+      drawSnipeDraw(g, cam, game, t, 'air');
+    }
     if (MELD3.on && !this.skip.has('fx')) overM3(g, cam, t);
     if (VOLATILE3.on && !this.skip.has('fx')) overV3(g, cam, t);
     if (!game.scene) this.drawWordDrops(g, W, H, game, t);
