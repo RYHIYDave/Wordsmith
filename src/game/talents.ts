@@ -287,11 +287,11 @@ const MAGE2: TalentTree = {
   talents: [
     ...MAGE.talents.map((t) => (MAGE2_AT[t.id] ? { ...t, works: true, ...MAGE2_AT[t.id] } : { ...t, works: true })),
     // (the swaps, beside each path's first stone)
-    { id: 'ball', name: 'Ball', big: true, path: 'fire', at: [1.5, -0.9], from: ['kindling'], text: 'Learn BALL: a comet thrown from your hand flies at the enemy and bursts where it hits. Put it on your tap or your hold (ATTACKS).' },
-    { id: 'beam', name: 'Beam', big: true, path: 'lightning', at: [1.5, 1.1], from: ['charged'], text: 'Learn BEAM: it burns toward your finger for as long as you hold, steered as you move it, through everything in its line. It goes on your hold (ATTACKS).' },
-    { id: 'spear', name: 'Spear', big: true, path: 'frost', at: [1.5, 4.9], from: ['bittercold'], text: 'Learn SPEAR: a crystal lance hurled where you point, through every enemy in its line. Put it on your tap or your hold (ATTACKS).' },
+    { id: 'ball', name: 'Ball', big: true, path: 'fire', at: [1.5, -0.9], from: ['kindling'], text: 'Learn BALL: a comet that bursts on the first enemy it hits. Set it on tap or hold (ATTACKS).' },
+    { id: 'beam', name: 'Beam', big: true, path: 'lightning', at: [1.5, 1.1], from: ['charged'], text: 'Learn BEAM: held, it burns toward your finger through all in its line. On hold (ATTACKS).' },
+    { id: 'spear', name: 'Spear', big: true, path: 'frost', at: [1.5, 4.9], from: ['bittercold'], text: 'Learn SPEAR: a crystal lance through every enemy in its line. Set it on tap or hold (ATTACKS).' },
     // (where her paths meet, and the far end)
-    { id: 'aura', name: 'Aura', big: true, path: 'aura', at: [3, 2], from: ['searing', 'forking', 'deepfreeze'], pick: { ids: ['fire', 'lightning', 'frost'], names: ['FIRE', 'LIGHTNING', 'FROST'], lock: true }, text: 'AURA: tap yourself for a circle round you, a few seconds, then a wait. Pick its kind as you take it (unlearn to change): FIRE burns every enemy in it; LIGHTNING sends bolts to every enemy in it; FROST shields you and chills the enemies in it.' },
+    { id: 'aura', name: 'Aura', big: true, path: 'aura', at: [3, 2], from: ['searing', 'forking', 'deepfreeze'], pick: { ids: ['fire', 'lightning', 'frost'], names: ['FIRE', 'LIGHTNING', 'FROST'], lock: true }, text: 'AURA: tap yourself. FIRE burns all near; LIGHTNING bolts them; FROST shields and chills.' },
     { id: 'lasting', name: 'Lasting Aura', big: true, path: 'aura', at: [7, 2], from: ['inferno', 'stormcaller', 'shatter'], text: 'Your Aura stays on.' },
   ],
 };
@@ -299,9 +299,9 @@ const RANGER2: TalentTree = {
   ...RANGER,
   talents: [
     ...RANGER.talents.map((t) => ({ ...t, works: true })),
-    { id: 'snare', name: 'Snare', big: true, path: 'traps', at: [6.9, -0.25], from: ['widetraps'], text: 'Your tap becomes SNARE, in place of Shot: a snare thrown where you point; what walks into it is held fast, then it bursts.' },
-    { id: 'snipe', name: 'Snipe', big: true, path: 'arrows', at: [6.9, 4.25], from: ['splitshot'], text: 'Your hold becomes SNIPE, in place of Volley: draw and hold, and it charges; the longer, the harder, wider and faster the arrow, through enemies, knocking them back. Volley takes one: Snipe or Rally.' },
-    { id: 'rally', name: 'Rally', big: true, path: 'wind', at: [2.6, 0.3], from: COMPANIONS.on ? ['wildcompanion'] : ['windrunner'], text: 'Your hold becomes RALLY, in place of Volley: a call that gives your companions and allies near you faster, harder attacks for a few seconds. Volley takes one: Snipe or Rally.' },
+    { id: 'snare', name: 'Snare', big: true, path: 'traps', at: [6.9, -0.25], from: ['widetraps'], text: 'SNARE, for Shot: thrown where you point; what walks in is held, then it bursts.' },
+    { id: 'snipe', name: 'Snipe', big: true, path: 'arrows', at: [6.9, 4.25], from: ['splitshot'], text: 'SNIPE, for Volley: hold to charge; a harder, wider, faster arrow that knocks back.' },
+    { id: 'rally', name: 'Rally', big: true, path: 'wind', at: [2.6, 0.3], from: COMPANIONS.on ? ['wildcompanion'] : ['windrunner'], text: 'RALLY, for Volley: your companions and allies near you attack faster and harder.' },
   ],
 };
 

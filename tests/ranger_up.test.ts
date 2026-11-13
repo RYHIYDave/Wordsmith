@@ -73,7 +73,8 @@ test('1. the switch is ON (his yes, 7 Nov 2026); of the game only art/heroes3.ts
     if (!f.endsWith('.ts') || f.startsWith('art/ranger_up')) continue;
     if (/from ['"][^'"]*ranger_up(_moves|_art|_review)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
-  assert.equal(users.sort().join(' '), 'art/heroes3.ts', 'what imports them');
+  // (and floor 18's reflections of him, since 25.3.12; and his moves to swap, art/swap_moves_art.ts, sculpted on his body)
+  assert.equal(users.sort().join(' '), 'art/heroes3.ts art/reflections_up.ts art/swap_moves_art.ts', 'what imports them');
   assert.ok(/if \(cls === 'ranger' && RANGER_UP\.on\)/.test(fs.readFileSync('src/art/heroes3.ts', 'utf8')), 'heroes3 reaches them only through the switch');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('art/ranger_up') || f.startsWith('dev/')) continue;
