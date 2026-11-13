@@ -350,3 +350,38 @@ Played once from its folder before it was published: `sides_more_fight`, 124 che
 TOLD HIM: the same link; close it and open it again if he had it open; what is in it; to try it the same way.
 
 HIS WORD GOES HERE, and into the queue's item; the main chat switches him on only then.
+
+## HIS WORD FROM THE PHONE, 12 Nov 2026, by 20:28 (Eastern): ON
+
+Asked by pop-up in the Brawler switch chat (a chat of his that pulled the queue item make-brawlers-eight-sides-fit-in-memory),
+after it checked the test page was still this build (version `1794487473-d68d`, the join with frames-from-sheets):
+
+- “On the Brawler test page (TEST BRAWLER PACKED), how did his fight play on your phone, turning and fighting every way?”
+  Offered: “Smooth, switch him on”, “Stutters now and then”, “Freezes or crashes”, “Haven't played it yet”.
+  **HIS PICK: “Smooth, switch him on”.**
+- “How long did coming into town as the Brawler take on your phone (it was about a minute before)?”
+  Offered: “A few seconds”, “10 to 30 seconds”, “Still about a minute”, “Didn't notice / not played”.
+  **HIS PICK: “A few seconds”.**
+
+So PACKS.budget stays 32 MB (no tune asked for). THE SWITCH IS TURNED ON THE BRANCH `build/brawler-on`, on main 2a3f5119
+(25.3.16, live), which already holds this build through build/warlock-packed with his switch off: `EIGHT_MORE.brawler` true
+(art/sides_more.ts) and the three test lines that say so (tests/sides_more.test.ts test 2, tests/veteran_art.test.ts's `was`,
+tests/veteran_rules.test.ts's `eightWas`). Nothing else of the game changes. With it, as reflections_up.ts reads the same switch,
+FLOOR 18'S GLASS COPY OF HIM (form 5, the monsters' figure `reflection:5`) is seen from his eight sides too, as the other heroes'
+copies are.
+
+ALSO ON THE BRANCH, ITS OWN COMMIT: tests/veteran.test.ts tests 1 and 79 FAILED ON 25.3.15 ITSELF, his switch on or off (they read
+the files' text: art/reflections_up.ts, in the game since 25.3.12, brings in his painter and his moves, and the list of the game's
+files that may do so had not been told). The list now has it (`sculpt_veteran`, `veteran_moves`, as art/veteran_art.ts).
+
+CHECKED, on this machine: tsc clean; unit `--only sides_more, veteran_art, veteran_rules, veteran_packs, baked_packs, veteran,
+vet_hold_aim, reflections_up, reflections_play, cheap_heroes, hero_cards_baked, monsters_baked, warlock_packs, sheet_sprite,
+figure` and the core on 0615b2d1d5: 38 files, 491 tests, 37 passed, veteran.test.ts failing as said; with it mended, `--only
+veteran` and the core on ae8aa2392e: 24 files, all passed; moved onto main 2a3f5119 (25.3.16), tsc clean and the same fifteen and
+the core on 64acd2b30b: 38 files, 491 tests, all passed. NOT CHECKED: a baked page of this branch, and its playtests (the release's).
+
+THE BAKES MOVE (this machine's marks, its esbuild not quite the main chat's, so its numbers are not main's; the change is what
+counts): heroes 67b5ec06aa7c on main to 4462935038ae here; monsters a578c6af9973 to 892b244d4ebf. So the release bakes THE
+HEROES AGAIN (the Brawler's group from eight sides, in packs: on the branch it was 129 files, 20.78 MB) and, of the monsters, only
+`reflection:5` (`tools/bake_monsters.mjs --only reflection:5 --from <the live mark>` as the handoff says for --from). Then the
+release's playtests of him: the list in tools/brawler_packed_play.sh (sides_more_fight above all).

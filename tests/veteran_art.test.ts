@@ -116,9 +116,10 @@ test('the game turns him as it turns heroes, and lays his effects as the art\'s 
   };
   const was = EIGHT_MORE.brawler;
   try {
-    // (THE GAME HAS HIS EIGHT SIDES OFF, at his word from the phone, 11 Nov 2026: docs/mockups/eight_sides/BRING_IN.md, its foot.
-    // WHEN HE GOES ON: this line, tests/sides_more.test.ts test 2 and tests/veteran_rules.test.ts's `eightWas`.)
-    assert.equal(was, false, 'his eight sides are off in the game');
+    // (THE GAME HAS HIS EIGHT SIDES ON, at his word from the phone on the packed test page, 12 Nov 2026, by 20:28: “Smooth, switch
+    // him on” (docs/mockups/eight_sides/PACKED.md, its foot). The three lines that say so: this one, tests/sides_more.test.ts test 2
+    // and tests/veteran_rules.test.ts's `eightWas`.)
+    assert.equal(was, true, 'his eight sides are on in the game');
     // (HIS EIGHT SIDES ON, art/sides_more.ts EIGHT_MORE.brawler: the side for the way he faces, the art's figure turned as that
     // side is, MORE_TURN, and no picture of his a mirror)
     EIGHT_MORE.brawler = true;

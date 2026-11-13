@@ -62,6 +62,10 @@ const GAME_DOOR: Record<string, readonly string[]> = {
   'art/veteran_art.ts': ['sculpt_veteran', 'veteran_moves'],
   'art/veteran_fx_art.ts': ['veteran_moves', 'veteran_fx'],
   'render/veteran_fx.ts': ['veteran_moves', 'veteran_fx', 'veteran_globes'],
+  // (floor 18's glass copy of him, painted by his own painter from his own moves, as art/veteran_art.ts is: in the game since
+  // 25.3.12, the Reflections chat's art/reflections-up; this list had not been told, so tests 1 and 79 failed on 25.3.15 with his
+  // switch on or off)
+  'art/reflections_up.ts': ['sculpt_veteran', 'veteran_moves'],
 };
 test('the game brings in the Veteran only through its own pictures of him (art/veteran_art.ts, art/veteran_fx_art.ts, render/veteran_fx.ts), never his sheet', () => {
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {

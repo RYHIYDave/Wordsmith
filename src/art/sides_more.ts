@@ -26,13 +26,13 @@ export type MoreSide = 'front' | 'toward' | 'frontL' | 'sideL' | 'backL' | 'away
 
 /**
  * The switches: each hero's own. THE TINKERER'S IS ON, live since 25.3.6 (11 Nov 2026), at his “Yes, hand both to main
- * (Recommended)” of that day and with her bake. THE BRAWLER'S IS OFF, at his word from the phone, 11 Nov 2026, by 22:23, on the test
- * page that had both on (docs/mockups/eight_sides/BRING_IN.md, its foot): it does not go on until that is mended and he says so.
- * (build/warlock-packed holds the mending, build/brawler-packed, merged for its packs of a hero's moves, which the Warlock now
- * uses too: with the Brawler's switch left off here, as `main` has it.)
+ * (Recommended)” of that day and with her bake. THE BRAWLER'S IS ON, at his word from the phone, 12 Nov 2026, by 20:28 (Eastern),
+ * on the test page of build/brawler-packed (his moves kept packed, render/baked.ts PACKS; docs/mockups/eight_sides/PACKED.md, its
+ * foot): asked how his fight played, “Smooth, switch him on”; asked how long coming into town took, “A few seconds”. (It was off
+ * from his word of 11 Nov, by 22:23, on the first test page: BRING_IN.md, its foot.)
  * Off, each is as the game had them: two sides, the other two ways mirrored, the Brawler's moves his four ways.
  */
-export const EIGHT_MORE = { tinkerer: true, brawler: false };
+export const EIGHT_MORE = { tinkerer: true, brawler: true };
 
 /** The eight sides, the two the game has always had first (art/sides.ts EIGHT_ORDER's order). */
 export const MORE_SIDES: readonly MoreSide[] = ['front', 'back', 'toward', 'frontL', 'sideL', 'backL', 'away', 'side'];

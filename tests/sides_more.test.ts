@@ -115,11 +115,11 @@ test('the sides, their turns and their ways are the Warrior\'s own', () => {
   });
 });
 
-test('the game has the Tinkerer on and the Brawler off; OFF, each has the game\'s two sides, and the Brawler\'s moves go his four ways', () => {
-  // (THE TINKERER'S ON, live since 25.3.6, 11 Nov 2026, at his “Yes, hand both to main (Recommended)”; THE BRAWLER'S OFF, at his word
-  // from the phone on the test page that had both on, 11 Nov 2026: docs/mockups/eight_sides/BRING_IN.md, its foot. WHEN HE GOES
-  // ON: this line, tests/veteran_art.test.ts's `was` and tests/veteran_rules.test.ts's `eightWas`.)
-  assert.deepEqual(EIGHT_MORE, { tinkerer: true, brawler: false }, 'the Tinkerer live, the Brawler off at his word from the phone');
+test('the game has the Tinkerer and the Brawler on; OFF, each has the game\'s two sides, and the Brawler\'s moves go his four ways', () => {
+  // (THE TINKERER'S ON, live since 25.3.6, 11 Nov 2026, at his “Yes, hand both to main (Recommended)”; THE BRAWLER'S ON, at his word
+  // from the phone on the packed test page, 12 Nov 2026, by 20:28: “Smooth, switch him on” (docs/mockups/eight_sides/PACKED.md, its
+  // foot). The three lines that say so: this one, tests/veteran_art.test.ts's `was` and tests/veteran_rules.test.ts's `eightWas`.)
+  assert.deepEqual(EIGHT_MORE, { tinkerer: true, brawler: true }, 'the Tinkerer live, the Brawler on at his word from the phone');
   asOff(() => {
     const t = makeTinkererArt();
     const v = makeVeteranArt();
