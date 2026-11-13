@@ -2,8 +2,8 @@
 // chat draws them, and shown him first (his rule: pictures first). An UNSTRUCK PAGE: an old leaf of the city's paper lying on
 // the floor, its lines of plain dark ink whole (none struck through), a rim of the friend's cyan (his rulebook's Colour 3:
 // what glows on a friend is cyan). THE CLAPPER: a bell's iron tongue, its ring at one end and its swollen bob at the other,
-// lying on its side. The Crier's jar is the art chat's own (art/floor12.ts criersJar); the camp's bell is floor 11's watch
-// bell, the art chat's (art/floor11.ts watchBellFrames).
+// lying on its side. The Crier's jar is the art chat's own (art/floor12.ts criersJar); the camp's bell is floor 11's wayside
+// shrine's bell, the art chat's (art/floor11.ts shrineBellFrames).
 
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';

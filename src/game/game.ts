@@ -21,6 +21,7 @@ import type { ImbueOption, RollOpts } from './items';
 import { rollFullRare } from './items';
 import { INK } from './ink_hooks';
 import { CRIERS_JAR } from './act2/undercity';
+import { GW_ZONES } from './act2/gateward';
 import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
 import type { Hall } from './level';
 import { alongCut, bodyInWall, inWall } from './cut';
@@ -3518,8 +3519,9 @@ export class Game {
       const m = this.monsters.find((o) => o.id === id && !o.dead);
       if (m) this.damageMonster(m, m.life + m.shield + 1, 'phys', false, -1);
     }
-    // (on the floor beside that bell: a bell stands solid, some against a house front, so the nearest walkable tile to it)
-    const at = this.floorNear(last.x, last.y);
+    // (on the floor beside that bell: a bell stands solid, some against a house front, so the nearest walkable tile to it out in the
+    // open: on the Gate Ward never inside a house, where its roof hides the floor until he walks in)
+    const at = this.openNear(last.x, last.y);
     const n = B.plan.bells.length;
     const first = this.drops.length;
     if (MELD.on) this.addDrop('dust', at.x, at.y, Math.round((BELLS_TUNE.dust + Math.floor(n / 2)) * (LOOT2.on ? LOOT2.dust : 1)), null, null);
@@ -3530,7 +3532,8 @@ export class Game {
     const W = L.floor.w;
     for (let i = first; i < this.drops.length; i++) {
       const d = this.drops[i];
-      if (L.walk[Math.floor(d.y) * W + Math.floor(d.x)] === 1) continue;
+      const di = Math.floor(d.y) * W + Math.floor(d.x);
+      if (L.walk[di] === 1 && !this.roofed(di)) continue;
       d.x = at.x + this.rng.range(-0.3, 0.3);
       d.y = at.y + this.rng.range(-0.3, 0.3);
     }
@@ -13287,6 +13290,34 @@ export class Game {
   // Loot, pickups, experience
 
   /** The middle of the floor tile nearest a place (for a place over a pit); the place itself if no floor is near. */
+  /** (ACT 2, THE GATE WARD: its houses walked into) Is tile `i` inside a house, under a roof that hides its floor until he walks in? */
+  private roofed(i: number): boolean {
+    const land = this.level.land as { kind?: string; zones?: Uint8Array } | undefined;
+    return land?.kind === 'gateward' && land.zones?.[i] === GW_ZONES.Room;
+  }
+
+  /** The middle of the walkable tile nearest (x, y) out in the open (not under a roof: roofed), within 6 tiles; else floorNear's. */
+  private openNear(x: number, y: number): { x: number; y: number } {
+    const f = this.level.floor;
+    const cx = Math.floor(x);
+    const cy = Math.floor(y);
+    let best: { x: number; y: number } | null = null;
+    let bd = Infinity;
+    for (let ty = cy - 6; ty <= cy + 6; ty++) {
+      for (let tx = cx - 6; tx <= cx + 6; tx++) {
+        if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
+        const i = ty * f.w + tx;
+        if (this.level.walk[i] !== 1 || this.roofed(i)) continue;
+        const d = (tx + 0.5 - x) * (tx + 0.5 - x) + (ty + 0.5 - y) * (ty + 0.5 - y);
+        if (d < bd) {
+          bd = d;
+          best = { x: tx + 0.5, y: ty + 0.5 };
+        }
+      }
+    }
+    return best ?? this.floorNear(x, y);
+  }
+
   private floorNear(x: number, y: number): { x: number; y: number } {
     const f = this.level.floor;
     const cx = Math.floor(x);
@@ -14095,6 +14126,8 @@ export class Game {
     const h = this.hero;
     L.pagesUsed = (L.pagesUsed ?? 0) + 1;
     INK.wipe(L);
+    // (the page's moment: the friend's cyan rings out from him, as a bell's ring does, and sparks)
+    this.emit({ t: 'bells', what: 'ring', x: h.x, y: h.y, k: 0, n: 0 });
     this.emit({ t: 'spark', x: h.x, y: h.y, el: 'frost', n: 24 });
     this.sfx('power', 0.8);
     this.msg(QUEST1115_TEXT.pageLaid(pagesInHand(h.pages, L.pagesUsed)), MSG.good);

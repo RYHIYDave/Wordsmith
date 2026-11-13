@@ -163,7 +163,7 @@ import { EYRIE_SCENE, QUEST610_TEXT } from '../game/quests610';
 import { QUEST1115_TEXT } from '../game/quests1115';
 import { CRIERS_JAR } from '../game/act2/undercity';
 import { clapperSprite, pageSprite } from '../art/quest1115';
-import { watchBellFrames } from '../art/floor11';
+import { shrineBellFrames } from '../art/floor11';
 import { onTop } from '../game/act2/quiettower';
 /** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
 const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as const;
@@ -3651,11 +3651,11 @@ export class Renderer {
         const sy = wy(cam, f.x, f.y);
         this.stand(f.x + f.y + 0.02, sp, sx, sy, null, 0, 1, veil(sp, sx, sy, f.x + f.y));
       }
-      // (QUESTS1115: the camp's bell, the clapper hung in it: floor 11's watch bell, still, swinging a moment as it is rung)
+      // (QUESTS1115: the camp's bell, the clapper hung in it: floor 11's wayside shrine's bell, still, swinging a moment as it is rung)
       if (L.campBell) {
         const cb = L.campBell;
         const since = game.time - cb.rungAt;
-        const fr = (this.campBellFrames ??= watchBellFrames());
+        const fr = (this.campBellFrames ??= shrineBellFrames());
         const sp = since >= 0 && since < 2.4 ? fr[1 + (Math.floor(since * 5) % 2)] : fr[0];
         const sx = wx(cam, cb.x, cb.y);
         const sy = wy(cam, cb.x, cb.y);
