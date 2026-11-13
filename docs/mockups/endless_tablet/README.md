@@ -373,6 +373,10 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   OF POISON (solid puffs of the word's green billowing out and up, hanging, thinning from their edges), spores sprayed out; the floor
   stained where it hung. How near, how long and how much are the rules'. The hero is kept in sight over the clouds. The checks on
   his cast, his legs outside the boar: all pass.
+- HIS WORDS on it, by pop-up: “have them be poison runes on the ground that trigger like a trap”. REMADE SO: where each spore sinks,
+  A POISON RUNE BURNS ITSELF INTO THE FLOOR (a solid lying on it: the word's drop in its green, his pink at its heart, ringed, glowing,
+  pulsing: a set trap); stepped near, it SNAPS (flaring white-hot) and the cloud of poison bursts up out of it and hangs. (His rule
+  that the runes make what strikes stands: the thrown rune makes the traps; the traps make the clouds.)
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.

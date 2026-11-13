@@ -2026,9 +2026,10 @@ export function paintOrb(p: V3, t: number, seed: number, swell: number, zaps: Re
 // clouds when you come near). By his rules for the words (the rune makes what strikes; one rune, flung out over the hero; solids):
 //   HE WRITES IT   his left hand claws the Poison rune on the air; he flings it out over the room
 //   IT BURSTS      into a spray of spores flung out all round, each sinking into the floor where it lands
-//   THE MINES      out of each a spore pod sprouts (a swollen bulb of the word's acid green, his pink glowing in its veins, breathing);
-//                  when the hero comes near one it swells and bursts in a cloud of poison that billows and hangs (how near, how long
-//                  and how much are the rules': the film sets them off as the hero passes)
+//   THE TRAPS      where each sank a poison rune burns itself into the floor, ringed, glowing, pulsing (his words: “have them be
+//                  poison runes on the ground that trigger like a trap”); when the hero comes near one it snaps, flaring white-hot,
+//                  and a cloud of poison bursts up out of it, billows and hangs (how near, how long and how much are the rules': the
+//                  film sets them off as the hero passes)
 export const SPORE = { write: [0.12, 0.62] as const, cast: 0.68, burst: 0.95, land: [1.2, 1.6] as const, sprout: 0.3, swell: 0.25, cloud: 1.7, long: 5.2, pods: 10 };
 function sporeCast(t: number): Cast {
   const raise = smooth01((t - (SPORE.cast - 0.3)) / 0.25) * (1 - smooth01((t - SPORE.long + 0.5) / 0.4));
@@ -2042,7 +2043,9 @@ export function sporePoseAt(t: number): BoarPose {
 /** The Poison word's own acid green, his pink in its veins. */
 const SPORE_GREEN: Ramp = ['#1e2a0c', '#3e5212', '#6e8a18', '#b4cc24', '#e2f07a'];
 const SPORE_GAS: Ramp = ['#2a3412', '#4a5a1c', '#7a8e2a', '#a8bc48', '#cede7a'];
-/** Where each pod is (the spores' own points: the place the rune burst, on the floor) and when it lands. */
+/** The Poison rune's glyph (a drop), as the traps are burned in the floor: 'X' the word's green, 'o' his pink. */
+const SPORE_RUNE = ['..X...', '.XXX..', 'XXoXX.', 'XoooX.', 'XXoXX.', '.XXX..'];
+/** Where each trap is (the spores' own points: the place the rune burst, on the floor) and when its spore lands. */
 export const SPORE_PODS: ReadonlyArray<{ at: V3; land: number }> = Array.from({ length: SPORE.pods }, (_, k) => {
   const a = (k / SPORE.pods) * TAU + 0.5 * hash(k, 1, 9021);
   const r = (1.2 + 2.0 * hash(k, 2, 9022)) * TILE;
@@ -2067,27 +2070,24 @@ export function sporeBits(t: number, fired: ReadonlyArray<number | null>, put: P
     const f = fired[k];
     const grow = smooth01((t - pod.land) / SPORE.sprout);
     if (f === null || f === undefined || t < f + SPORE.swell) {
-      // (the pod: a swollen bulb out of the floor, breathing; swelling hard when set off)
+      // (THE TRAP, his words of 12 Nov 2026: “have them be poison runes on the ground that trigger like a trap”: where each spore sank
+      // a poison rune burns itself into the floor, a ring round it, glowing faintly and pulsing, set; stepped near, it snaps: flaring
+      // white-hot as it goes off)
       const sw = f !== null && f !== undefined && t > f ? smooth01((t - f) / SPORE.swell) : 0;
-      const breath = 1 + 0.06 * Math.sin(t * 5 + k);
-      const R = (7 + 3 * hash(k, 4, 9024)) * grow * breath * (1 + 0.6 * sw);
-      if (R < 0.5) continue;
-      const c: V3 = [pod.at[0], pod.at[1], R * 0.7];
-      put(`pod${k % 4}`, 'bulb', { k: 'ball', c, ax: [[R, 0, 0], [0, R, 0], [0, 0, R * 1.05]], skin: (u, tone) => {
-        // (its veins glowing with his pink; dark spots)
-        const vein = Math.abs(Math.sin(Math.atan2(u[1], u[0]) * 3 + u[2] * 4)) < 0.12;
-        if (vein) return sw > 0.5 ? '#ffd0e0' : '#ff4f8a';
-        if (hash(Math.floor((u[0] + 1) * 4), Math.floor((u[2] + 1) * 4) + k, 9025) < 0.18) return SPORE_GREEN[T5(tone - 2)];
-        return SPORE_GREEN[T5(tone)];
+      const pulse = 0.5 + 0.5 * Math.sin(t * 4 + k * 1.3);
+      const R = 19 * (0.6 + 0.4 * grow) * (1 + 0.15 * sw);
+      put(`trap${k % 4}`, 'rune', { k: 'panel', c: [pod.at[0], pod.at[1], 0.4], u: [R, 0, 0], v: [0, R, 0], skin: (a, b) => {
+        const x = a / R, y = b / R;
+        const r = Math.hypot(x, y);
+        if (r > 1) return null;
+        if (r > 0.86) return sw > 0.4 ? '#fff0d0' : pulse > 0.5 || grow < 1 ? SPORE_GREEN[3] : SPORE_GREEN[2];
+        const gx = Math.floor((x * 0.62 + 0.5) * 6), gy = Math.floor((-y * 0.62 + 0.5) * 6);
+        const c = gx >= 0 && gx < 6 && gy >= 0 && gy < 6 ? SPORE_RUNE[gy][gx] : '.';
+        if (c === '.') return null;
+        if (sw > 0.4) return '#fff0d0';
+        return c === 'o' ? '#ff4f8a' : pulse > 0.6 ? SPORE_GREEN[4] : SPORE_GREEN[3];
       } });
-      // (a few stalks of spore heads on it)
-      for (let j = 0; j < 3; j++) {
-        const a = j * 2.1 + k;
-        const base = add(c, [Math.cos(a) * R * 0.5, Math.sin(a) * R * 0.5, R * 0.75]);
-        const tip = add(base, [Math.cos(a) * 3 * grow, Math.sin(a) * 3 * grow, 5 * grow]);
-        put(`pod${k % 4}`, 'stalk', { k: 'rod', a: base, b: tip, ra: 1.0, rb: 1.6, ramp: SPORE_GREEN });
-      }
-      put('glow', 'podGlow', { k: 'glow', p: c, c: '#b4cc24', r: 10 + 12 * sw, a: 0.25 + 0.5 * sw });
+      put('glow', 'trapGlow', { k: 'glow', p: [pod.at[0], pod.at[1], 2], c: '#b4cc24', r: 12 + 18 * sw, a: 0.15 + 0.15 * pulse + 0.6 * sw });
       continue;
     }
     // (burst: its cloud billowing out and up, hanging, thinning)
