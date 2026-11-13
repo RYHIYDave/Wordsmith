@@ -1,93 +1,132 @@
-// THE QUEST LINE OF FLOORS 11 TO 15 (game/quests1115.ts, QUESTS1115, OFF): what it lays on the floor, painted here until the art
-// chat draws them, and shown him first (his rule: pictures first). An UNSTRUCK PAGE: an old leaf of the city's paper lying on
-// the floor, its lines of plain dark ink whole (none struck through), a rim of the friend's cyan (his rulebook's Colour 3:
-// what glows on a friend is cyan). THE CLAPPER: a bell's iron tongue, its ring at one end and its swollen bob at the other,
-// lying on its side. The Crier's jar is the art chat's own (art/floor12.ts criersJar); the camp's bell is floor 11's wayside
-// shrine's bell, the art chat's (art/floor11.ts shrineBellFrames).
+// THE QUEST LINE OF FLOORS 11 TO 15 (game/quests1115.ts, QUESTS1115): what it lays on the floor, SCULPTED as the art chat's
+// pieces are (art/act2_kit.ts: built in depth, 40 units to a tile, then turned into pixel art at two picture pixels to a game
+// pixel, its seams in deep indigo, lit from the upper left, a step quieter than any word), at his word, 13 Nov 2026, shown the
+// stand-ins: “Yes, but redraw the page and clapper first”, then “Just draw them”.
+//   AN UNSTRUCK PAGE: an old leaf of the city's paper lying on the floor, a corner curled up off it, its lines of plain dark ink
+//     whole (none struck through), its first letter a capital of the friend's cyan (his rulebook: what glows on a friend is cyan;
+//     wordsmithing glows), a little of that light on the floor round it, a soft shadow under the curl.
+//   THE CLAPPER: a bell's iron tongue lying on its side, its eye (the ring it hung by) flat on the floor at one end, its shaft
+//     thickening to the swollen bob at the other; the Bells' metal rung, a breath of the friend's cyan in its lights (as a rung
+//     bell's, art/floor11.ts metalOf); a soft shadow under it.
+// The Crier's jar is the art chat's own (art/floor12.ts criersJar); the camp's bell is floor 11's wayside shrine's bell, the art
+// chat's (art/floor11.ts shrineBellFrames).
 
-import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
-import { BLACK, IRON, PAPER, lying } from './act2_kit';
-import { CYAN, mix } from './kit';
+import { BLACK, IRON, PAPER, SOFT_ID, checker, done, scene } from './act2_kit';
+import { toneAt } from './floor4';
+import type { V3 } from './floor4';
+import type { Ramp } from './kit';
+import { CYAN, hash, mix } from './kit';
 
 let PAGE: Sprite | null = null;
 let CLAPPER: Sprite | null = null;
 
-/** An unstruck page lying on the floor (anchored at its middle). */
+/** The soft shadow on the floor: a dark oval, half there (no seam round it). */
+const SHADOW = '#08060c';
+
+/** An unstruck page lying on the floor (anchored where its middle lies). */
 export function pageSprite(): Sprite {
   if (PAGE) return PAGE;
-  const turn = 0.35;
+  const S = scene(64, 40, 32, 22);
+  // (the leaf's own frame, turned a little on the floor: `a` along its lines, `b` down the page)
+  const turn = 0.32;
   const c = Math.cos(turn);
   const s = Math.sin(turn);
-  const HU = 0.3;
-  const HV = 0.22;
-  PAGE = lying(40, 22, 20, 11, (u, v) => {
-    // (the page's own axes, turned a little on the floor)
-    const a = u * c + v * s;
-    const b = -u * s + v * c;
-    const ea = HU - Math.abs(a);
-    const eb = HV - Math.abs(b);
-    if (ea < -0.035 || eb < -0.035) return null;
-    // its rim: the friend's cyan, just outside the paper
-    if (ea < 0 || eb < 0) return mix(CYAN[2], PAPER[4], 0.25);
-    // the paper's edge, a shade darker; one corner turned up
-    if (ea < 0.025 || eb < 0.025) return PAPER[2];
-    if (a > HU - 0.09 && b > HV - 0.09 && a + b > HU + HV - 0.1) return PAPER[1];
-    // its lines of writing, whole: rows of dark ink with gaps where the words part
-    const row = (b + HV) / 0.055;
-    const inRow = row - Math.floor(row);
-    const n = Math.floor(row);
-    if (n >= 1 && n <= 6 && inRow > 0.45 && inRow < 0.8 && Math.abs(a) < HU - 0.05) {
-      const word = Math.floor((a + HU) / 0.07 + n * 1.7);
-      if (word % 4 !== 3 && !(n === 6 && a > 0.05)) return BLACK[3];
+  const P = (a: number, b: number, z: number): V3 => [a * c - b * s, a * s + b * c, z];
+  const A = 15;
+  const B = 10.5;
+  const CURL = 8;
+  // its shadow: thin, soft (half there), along its lower edges and under the curled corner
+  S.quad([P(-A + 1, -B + 1, 0.05), P(A + 1.6, -B + 1, 0.05), P(A + 1.6, B + 1.6, 0.05), P(-A + 1, B + 1.6, 0.05)], (u, v, w) => {
+    const a = -A + 1 + (2 * A + 0.6) * u;
+    const b = -B + 1 + (2 * B + 0.6) * v;
+    const edge = a > A - 0.4 || b > B - 0.4 || a + b > A + B - CURL - 1.2;
+    return edge && checker(S, w) ? SHADOW : null;
+  }, SOFT_ID + 1);
+  // the leaf, flat, but for its curled corner
+  S.quad([P(-A, -B, 0.6), P(A, -B, 0.6), P(A, B, 0.6), P(-A, B, 0.6)], (u, v) => {
+    const a = -A + 2 * A * u;
+    const b = -B + 2 * B * v;
+    if (a + b > A + B - CURL) return null;
+    // its deckled edge, a shade down, and the foxing of age now and then
+    const ea = A - Math.abs(a);
+    const eb = B - Math.abs(b);
+    const rough = hash(Math.floor(a * 2), Math.floor(b * 2), 1151);
+    if (ea < 0.9 + rough * 0.6 || eb < 0.9 + rough * 0.6) return PAPER[2];
+    // the capital: the first letter, the friend's cyan
+    if (a > -A + 1.8 && a < -A + 4.6 && b > -B + 1.7 && b < -B + 4.6) {
+      const inner = a > -A + 2.5 && a < -A + 3.9 && b > -B + 2.4 && b < -B + 3.9;
+      return inner ? CYAN[3] : CYAN[2];
     }
-    return (Math.floor((a + b) * 40) & 7) === 0 ? PAPER[3] : PAPER[4];
-  });
+    // its lines of writing, whole: rows of dark ink, the words parted by gaps; the first rows begun after the capital
+    const row = (b + B - 1.9) / 2.05;
+    const n = Math.floor(row);
+    const f = row - n;
+    if (n >= 0 && n <= 6 && f < 0.42) {
+      const from = n <= 1 ? -A + 5.6 : -A + 2;
+      const to = n === 6 ? 2 : A - 2.4;
+      if (a > from && a < to) {
+        const word = Math.floor((a + A + n * 3.1) / 3.4);
+        const inWord = (a + A + n * 3.1) / 3.4 - word;
+        if (inWord < 0.8 - 0.25 * hash(word, n, 1153)) return BLACK[3];
+      }
+    }
+    return hash(Math.floor(a), Math.floor(b), 1157) < 0.06 ? PAPER[3] : PAPER[4];
+  }, 1);
+  // the curled corner: lifted off the floor and rolled back over, its underside (the back of the leaf) a shade darker
+  const k0 = P(A - CURL, B, 0.6);
+  const k1 = P(A, B - CURL, 0.6);
+  const tip = P(A - CURL * 0.45, B - CURL * 0.45, 6.2);
+  const mid = P(A - CURL * 0.22, B - CURL * 0.22, 3.4);
+  const nrm: V3 = [-0.45, -0.45, 0.77];
+  S.quad([k0, mid, k1, tip], (u, v) => (u + v > 1.6 ? PAPER[1] : toneAt(nrm, PAPER, 0.05)), 2);
+  PAGE = done(S, 32, 22, [{ at: [-4, -4, 1], r: 9, color: CYAN[2], a: 0.18 }]);
   return PAGE;
 }
 
-/** The clapper, lying on its side (anchored where it touches the floor's middle). */
+/** The Bells' iron, rung: a breath of the friend's cyan in its lights (as a rung bell's metal, art/floor11.ts). */
+const RUNG_IRON: Ramp = IRON.map((c, i) => mix(c, i >= 3 ? '#b8fff8' : '#22d0e0', i >= 3 ? 0.28 : 0.1)) as unknown as Ramp;
+
+/** The clapper, lying on its side (anchored where its middle lies on the floor). */
 export function clapperSprite(): Sprite {
   if (CLAPPER) return CLAPPER;
-  const W = 26;
-  const H = 18;
-  const p = new Px(W, H);
-  const put = (x: number, y: number, t: number): void => {
-    const k = Math.max(0, Math.min(4, Math.round(t)));
-    p.set(Math.round(x), Math.round(y), IRON[k]);
-  };
-  // the shaft: from its ring (up left) to the bob (down right), lit along its top
-  const x0 = 6;
-  const y0 = 6;
-  const x1 = 17;
-  const y1 = 11;
-  for (let i = 0; i <= 40; i++) {
-    const t = i / 40;
-    const x = x0 + (x1 - x0) * t;
-    const y = y0 + (y1 - y0) * t;
-    put(x, y, 3);
-    put(x, y + 1, 1);
+  const S = scene(80, 52, 38, 30);
+  // (it lies across the screen: along the world's +x and -y, the bob to the right)
+  const dx = 0.8;
+  const dy = -0.6;
+  const eye: V3 = [-16 * dx, -16 * dy, 1.5];
+  const bob: V3 = [11 * dx, 11 * dy, 5];
+  const neck: V3 = [bob[0] - dx * 6, bob[1] - dy * 6, 3.3];
+  // its shadow on the floor, under the bob most
+  S.quad([[-20, -16, 0.05], [20, -16, 0.05], [20, 16, 0.05], [-20, 16, 0.05]], (_u, _v, w) => {
+    const toBob = Math.hypot((w[0] - bob[0] - 1.5) / 7.4, (w[1] - bob[1] - 1.2) / 6.2);
+    // (along the shaft: the nearest point of it)
+    const t = Math.max(0, Math.min(1, ((w[0] - eye[0]) * dx + (w[1] - eye[1]) * dy) / Math.hypot(bob[0] - eye[0], bob[1] - eye[1])));
+    const px = eye[0] + (bob[0] - eye[0]) * t + 0.8;
+    const py = eye[1] + (bob[1] - eye[1]) * t + 0.8;
+    const toShaft = Math.hypot(w[0] - px, w[1] - py) / 2.6;
+    if (toBob < 1 || toShaft < 1) return checker(S, w) ? SHADOW : null;
+    return null;
+  }, SOFT_ID + 1);
+  // its eye: the ring it hung by, flat on the floor, a link of round iron
+  const ringC: V3 = [eye[0] - dx * 3.3, eye[1] - dy * 3.3, 1.2];
+  const R = 3.3;
+  for (let i = 0; i < 14; i++) {
+    const a0 = (i / 14) * Math.PI * 2;
+    const a1 = ((i + 1) / 14) * Math.PI * 2;
+    S.rod([ringC[0] + Math.cos(a0) * R, ringC[1] + Math.sin(a0) * R, 1.1], [ringC[0] + Math.cos(a1) * R, ringC[1] + Math.sin(a1) * R, 1.1], 1.1, 1.1, RUNG_IRON, 3);
   }
-  // its ring
-  for (let a = 0; a < Math.PI * 2; a += 0.15) {
-    const x = x0 - 2 + Math.cos(a) * 2.6;
-    const y = y0 - 1 + Math.sin(a) * 1.8;
-    put(x, y, Math.sin(a) < 0 ? 3 : 2);
-  }
-  // the bob: a swollen weight, round, lit from the upper left
-  for (let y = -4; y <= 4; y++) {
-    for (let x = -4; x <= 4; x++) {
-      const d = Math.hypot(x, y * 1.1);
-      if (d > 3.9) continue;
-      const lit = (-x - y) / 6 + 0.3 * (1 - d / 4);
-      put(x1 + 3 + x, y1 + 1 + y, d > 3.2 ? 0 : 1.5 + lit * 2.2);
-    }
-  }
-  // a glint of the friend's cyan on the bob: the Bells' metal, rung
-  p.set(x1 + 1, y1 - 2, CYAN[3]);
-  // its shadow on the floor
-  for (let x = 4; x < 24; x++) if (!p.get(x, 14)) p.set(x, 14, '#00000040');
-  CLAPPER = p.sprite(13, 13);
+  // the shaft, thickening from the eye to the bob's neck
+  S.rod(eye, neck, 1.5, 2.1, RUNG_IRON, 4);
+  // the collar where it meets the bob
+  S.ball(neck, 2.7, RUNG_IRON, 5);
+  // the bob: swollen, a little longer than it is round, its striking face worn bright where it met the bell
+  const side: V3 = [-dy, dx, 0];
+  S.egg(bob, [[dx, dy, 0], side, [0, 0, 1]], [6.4, 5.1, 5], (nn, w) => {
+    const strike = (w[0] - bob[0]) * dx + (w[1] - bob[1]) * dy > 4.2 && w[2] > 4;
+    return strike ? RUNG_IRON[4] : toneAt(nn, RUNG_IRON, 0);
+  }, 6);
+  CLAPPER = done(S, 38, 30, [{ at: bob, r: 8, color: CYAN[2], a: 0.14 }]);
   return CLAPPER;
 }
 

@@ -3760,11 +3760,12 @@ export class Renderer {
         this.labels.push({ x: sx, y: sy - 14, text: `The ${ROYAL_NAMES[dr.royal].one}'s card`, color: royalLabelColor(dr.royal) });
         continue;
       }
-      // (QUESTS1115, behind its switch: an unstruck page, or the clapper, painted until the art chat draws them: art/quest1115.ts)
+      // (QUESTS1115, behind its switch: an unstruck page, or the clapper, sculpted: art/quest1115.ts)
       if (dr.kind === 'quest') {
         const qs = dr.thing === 'clapper' ? clapperSprite() : pageSprite();
         this.stand(dr.x + dr.y - 0.2, qs, sx, sy - pop);
         hid?.(dr.x, dr.y);
+        if (qs.lights) this.propLit.push({ s: qs, x: Math.round(sx), y: Math.round(sy - pop) });
         this.labels.push({ x: sx, y: sy - 18, text: dr.thing === 'clapper' ? QUEST1115_TEXT.clapperLabel : QUEST1115_TEXT.pageLabel, color: '#e8dcc0' });
         if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, ['#7fe8ff', P.white]);
         continue;
