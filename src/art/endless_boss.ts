@@ -833,11 +833,12 @@ function gripHand(put: Put, side: 'L' | 'R', at: V3, ax: V3, fore: V3): void {
     put(`hand${side}`, `crease${side}`, { k: 'rod', a, b, ra: 0.2 * k, rb: 0.2 * k, ramp: CREASE });
   }
   // (his thumb, over the top of his fingers from the inside, its tip down in front: its own, a seam round it)
-  const t0 = add(at, add(mul(up, 1.55 * k), add(mul(o, -0.6 * k), mul(w, sk * 1.1 * k))));
-  const t1 = add(at, add(mul(up, 1.75 * k), add(mul(o, 0.9 * k), mul(w, sk * 0.6 * k))));
-  const t2 = add(at, add(mul(up, 1.25 * k), add(mul(o, 1.75 * k), mul(w, -sk * 0.1 * k))));
-  put(`thumb${side}`, `thumb${side}`, { k: 'rod', a: t0, b: t1, ra: 0.62 * k, rb: 0.56 * k, ramp: ASH });
-  put(`thumb${side}`, `thumb${side}`, { k: 'rod', a: t1, b: t2, ra: 0.56 * k, rb: 0.45 * k, ramp: ASH });
+  // (his words, 13 Nov 2026: “The thumb is too big”: a thumb, not a second fist: thin, short, lying along the top of his fist)
+  const t0 = add(at, add(mul(up, 1.4 * k), add(mul(o, -0.2 * k), mul(w, sk * 0.95 * k))));
+  const t1 = add(at, add(mul(up, 1.55 * k), add(mul(o, 0.85 * k), mul(w, sk * 0.45 * k))));
+  const t2 = add(at, add(mul(up, 1.3 * k), add(mul(o, 1.5 * k), mul(w, -sk * 0.05 * k))));
+  put(`thumb${side}`, `thumb${side}`, { k: 'rod', a: t0, b: t1, ra: 0.34 * k, rb: 0.31 * k, ramp: ASH });
+  put(`thumb${side}`, `thumb${side}`, { k: 'rod', a: t1, b: t2, ra: 0.31 * k, rb: 0.24 * k, ramp: ASH });
 }
 /** AN ARM: his order's sleeve, wide and ragged, to the forearm; the forearm bare below it, thin, ashen, cut with burning runes; the hand. */
 function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, grip: number, spread: number, holds?: V3): void {
