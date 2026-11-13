@@ -7,7 +7,7 @@ levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs
 the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9, the
 fixes and word slots of Version 20.0, the skill trees and the controller of Version 20.1, and his
 new shape for the game of 10 Oct, sets of five floors with the Crypt first, written in), and both
-change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. Since 20 Oct (in this copy, by the main chat, with his yes): endless mode, past the last floor built; packs growing with the levels, and nothing out of reach up in the air. Since 21 Oct (the same): words growing with the levels; Rank II. Since 23 Oct (the same): the ways between the floors; a boss's fight made long by what it throws, not by more life. The two pictures in the doc are written out here in words. How it was
+change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. Since 20 Oct (in this copy, by the main chat, with his yes): endless mode, past the last floor built; packs growing with the levels, and nothing out of reach up in the air. Since 21 Oct (the same): words growing with the levels; Rank II. Since 23 Oct (the same): the ways between the floors; a boss's fight made long by what it throws, not by more life. Since 12 Nov (the same, by a queue chat): a build's parts compound. The two pictures in the doc are written out here in words. How it was
 found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
@@ -249,6 +249,14 @@ Two heroes of the same class differ by the talents they pick and the words in th
   one point every five levels, we want them to be more significant than “25% increased _______””;
   the trees as the page “The Skill Trees, Revised” has them, your words to it of 17 Oct, 19:42 (16:42
   your time): “Everything looks good”.
+- **The deeper the build, the more its parts compound.** What one part of a build makes, the next
+  part works on too: more arrows each split, more arcs each jump on, nothing that stacks held to
+  once. Your words of 12 Nov 2026, 19:24 (Eastern): “I want things to compound on each other as you
+  get further and further into your build.  Same kind of thing with all the jumping lightning bolts
+  if you focused really hard into lightning as a mage.”; asked whether to put it in this book:
+  “Yes, add it (Recommended)”. The first two, the same evening: every arrow of a tap splits with
+  Splitting (“Every arrow splits, 21 (Recommended)”), and a lightning arc keeps jumping, enemy to
+  enemy (“Arcs keep jumping (Recommended)”).
 - **Talent points come with levels:** ten, one at every fifth level (your answer of 8 Oct, 15:16:
   “10, one every 5 levels (Recommended)”).
 - **Picks can be undone in town, for gold,** so a new build costs something to try: 10 gold for
