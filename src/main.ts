@@ -180,8 +180,9 @@ import { forgetUnusedPictures } from './render/act1_fx/kept';
 import { mothFxBytes } from './render/act1_fx/moth';
 import { COLOSSUS, GAZE2_AIMED, onStoneOrJetty, worldToStone } from './game/colossus_fight';
 import { ITEM_WORDS } from './game/items';
-import { UNIQUES, uniqueOf } from './game/uniques';
+import { SET1, UNIQUES, uniqueOf } from './game/uniques';
 import { UNIQUE_PLAY } from './render/unique_play';
+import { SET1_LOOK } from './render/set1_fx';
 import { ART_TWEAKS } from './art/tweaks';
 
 declare const __BUILD__: string;
@@ -3362,6 +3363,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     uniqueArt: UNIQUE_ART,
     /** (WHAT THE UNIQUE ITEMS SHOW IN PLAY, render/unique_play.ts, the art chat's) their switches, each off until his yes: `uniquePlay.tome`, `.risen`, `.fourth`. */
     uniquePlay: UNIQUE_PLAY,
+    /** (UNIQUE ITEMS, SET 1: the battle axe's and the warhammer's, game/uniques.ts SET1 and render/set1_fx.ts SET1_LOOK) their switches, off until his yes: `set1.on`, `set1Look.on`. */
+    set1: SET1,
+    set1Look: SET1_LOOK,
     /** (A UNIQUE'S PIPS, ui/panels.ts) which of its lines they count and their colour, for pictures of each: `uniquePips.count`, `.colour`, `.free`. */
     uniquePips: UNIQUE_PIPS,
     /** Game steps per frame while the test bot plays. */

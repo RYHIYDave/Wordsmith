@@ -1523,6 +1523,178 @@ function winningstreak(): Part[] {
 }
 
 // ---------------------------------------------------------------------------------------------
+// SET 1: THE WARRIOR'S BATTLE AXES AND WARHAMMERS (game/uniques.ts SET1_DEFS, behind SET1, off until his yes to these pictures).
+// Painted by the main chat, 12 Nov 2026, at his word: “just do number 1, get it all finished, screw what chat its supposed to go
+// to”. As the 62 are: the item pictures' kit, on the diagonal, the butt at the bottom left, as the game's weapons lie; each told
+// from the others by its head's shape and its colours. Nothing glows but the meteor's fire, as fire glows on an item already.
+
+/** Their materials of their own, five tones each, darkest to brightest. */
+const S1 = {
+  /** Red Tithe's blade: steel gone black-red with blood */
+  blood: ['#12060a', '#2e0c12', '#5a1420', '#8e2430', '#c85a5e'],
+  /** Death Knell's bell: old bronze */
+  bronze: ['#2a1606', '#5a3410', '#946024', '#c8963e', '#f2d48a'],
+  /** Starbreaker's head: dark iron fallen from the sky, stone-grey */
+  meteor: ['#0c0a12', '#1c1824', '#322a3a', '#544658', '#86788a'],
+} satisfies Record<string, Ramp>;
+/** The meteor's fire in its cracks, and its white heart. */
+const MOLTEN = '#ff8a2a';
+const MOLTEN_HI = '#ffd27a';
+
+/** The butt of a Set 1 weapon's haft; a point `d` along the haft (toward the upper right) and `a` across it (+: lower right). */
+const AX_O: V = [5.4, 26.6];
+const ax = (d: number, a: number): V => at(AX_O, UP, d, a);
+const axPoly = (pts: readonly [number, number][]): Shape => poly(...pts.map(([d, a]) => ax(d, a)));
+const axMarks = (pts: readonly [number, number][], t: number | string): Mark[] => pts.slice(1).map((q, i) => ({ a: ax(pts[i][0], pts[i][1]), b: ax(q[0], q[1]), t }));
+
+/** A haft from its butt along the diagonal, `long` picture pixels, its grip wrapped, and its knob. */
+function haft(o: { wood: Part['m']; grip: Part['m']; knob: Part['m']; long?: number; w?: number }): Part[] {
+  const L = o.long ?? 25;
+  const w = o.w ?? 1.3;
+  const A = ax(0.8, 0), B = ax(L, 0), g0 = ax(2.2, 0), g1 = ax(9.6, 0);
+  const marks: Mark[] = [];
+  for (let d = 3.2; d < 9.2; d += 2.4) marks.push({ a: ax(d, -w - 0.4), b: ax(d + 1, w + 0.4), t: 1 });
+  return [
+    { s: cap(A, B, w), m: o.wood, sh: { k: 'cyl', a: A, b: B, w }, bias: 0.1 },
+    { s: cap(g0, g1, w + 0.35), m: o.grip, sh: { k: 'cyl', a: g0, b: g1, w: w + 0.35 }, bias: 0.16, marks },
+    { s: ell(ax(0.4, 0), w + 0.9), m: o.knob, sh: { k: 'dome', c: ax(0.4, 0), r: w + 0.9 }, shine: true },
+  ];
+}
+/** A band round the haft at `d`. */
+const axBand = (d: number, r: number, m: Part['m']): Part => ({ s: axPoly([[d - 0.8, -r], [d + 0.8, -r], [d + 0.8, r], [d - 0.8, r]]), m, sh: { k: 'cyl', a: ax(d, -r), b: ax(d, r), w: 0.8 }, shine: true });
+
+/**
+ * GYRE (battle axe, the Warrior's: his thrown axe stops at the end of its flight and spins there, cutting everything round it).
+ * A double-bitted axe whose two blades sweep opposite ways round its eye, a pinwheel even lying still; a spiral cut in the boss
+ * over the eye; a storm-grey haft and a blue grip.
+ */
+function gyre(): Part[] {
+  const parts = haft({ wood: R.storm, grip: 'blue', knob: 'steel', long: 26 });
+  const up: [number, number][] = [[19.2, -1.8], [23.0, -1.8], [25.6, -5.0], [27.8, -9.6], [24.4, -10.4], [21.0, -10.6], [17.8, -9.6], [16.4, -7.6], [18.6, -4.2]];
+  const down = up.map(([d, a]) => [42.2 - d, -a] as [number, number]);
+  for (const [i, b] of [up, down].entries()) {
+    const edge = b.slice(3, 8);
+    parts.push({ s: axPoly(b), m: 'steel', sh: { k: 'flat', bev: 1.5 }, shine: true, bias: i ? -0.06 : 0.06, marks: [...axMarks(edge, 4), ...axMarks(edge.map(([d, a]) => [d + (i ? 0.6 : -0.6) * 0, a * 0.82] as [number, number]), 3)] });
+  }
+  const c = ax(21.1, 0);
+  parts.push({ s: ell(c, 2.7), m: 'dsteel', sh: { k: 'dome', c, r: 2.7 }, shine: true });
+  parts.push(gem(c, 1.5, 'sapphire'));
+  parts.push({ s: poly(ax(26.2, -1.2), ax(28.8, 0), ax(26.2, 1.2)), m: 'steel', sh: { k: 'ridge', a: ax(26.2, 0), b: ax(28.8, 0) }, shine: true });
+  parts.push(axBand(16.6, 1.9, 'dsteel'));
+  return parts;
+}
+
+/**
+ * RED TITHE (battle axe, the Warrior's: one that dies bleeding throws its blood to the nearest other). A bearded axe, its blade
+ * gone black-red with blood, a channel cut along its edge, drops falling from its beard; a gold coin, the tithe, hung on a cord
+ * from its poll.
+ */
+function redtithe(): Part[] {
+  const parts = haft({ wood: 'ebony', grip: 'red', knob: 'dsteel' });
+  const blade: [number, number][] = [[17.6, -1.8], [23.6, -1.8], [25.0, -4.4], [27.2, -9.0], [24.2, -10.6], [20.4, -10.8], [16.8, -10.0], [13.2, -9.4], [10.8, -7.4], [12.0, -6.0], [14.2, -5.8], [16.2, -4.6], [17.0, -2.6]];
+  const edge = blade.slice(3, 9);
+  parts.push({ s: axPoly(blade), m: S1.blood, sh: { k: 'flat', bev: 1.5 }, shine: true, marks: [...axMarks(edge, 4), ...axMarks(edge.map(([d, a]) => [d, a + 1.6] as [number, number]), 1)] });
+  parts.push({ s: axPoly([[23.6, 1.8], [19.0, 1.8], [19.4, 3.6], [23.2, 3.6]]), m: 'dsteel', sh: { k: 'flat', bev: 0.9 }, shine: true });
+  // the drops falling off its beard (straight down the picture)
+  for (const [d, a, r] of [[9.0, -5.6, 0.95], [7.0, -3.6, 0.8]] as const) parts.push({ s: ell(ax(d, a), r, r * 1.3), m: 'ruby', sh: { k: 'dome', c: ax(d, a), r }, shine: true });
+  // the tithe: a coin on a cord from the poll
+  parts.push({ s: path([ax(21.2, 3.6), ax(20.6, 5.0)], [0.5, 0.5]), m: 'string', sh: { k: 'soft', r: 0.5 } });
+  const coin = ax(19.8, 6.8);
+  parts.push({ s: ell(coin, 2.2), m: 'gold', sh: { k: 'dome', c: coin, r: 2.2 }, shine: true, marks: [{ a: [coin[0] - 0.8, coin[1]], b: [coin[0] + 0.8, coin[1]], t: 1 }, { a: [coin[0], coin[1] - 0.8], b: [coin[0], coin[1] + 0.8], t: 1 }] });
+  parts.push(axBand(16.0, 1.9, 'dsteel'));
+  return parts;
+}
+
+/**
+ * WIDOWFALL (battle axe, the Warrior's: Leaping Chop lands with a Cleave all round him, and all it strikes bleed). A long black
+ * crescent of a blade, horned top and bottom, its edge silver, a moon pierced through it; a pale mourning ribbon tied under the head.
+ */
+function widowfall(): Part[] {
+  const parts = haft({ wood: 'ebony', grip: 'vcloth', knob: 'steel' });
+  // (a true crescent: its horns turned back toward the haft, its back hollowed between them)
+  const blade: [number, number][] = [[18.4, -1.8], [22.6, -1.8], [22.2, -4.0], [24.4, -5.0], [26.8, -4.6], [28.8, -3.6], [29.4, -6.8], [28.2, -9.6], [24.6, -11.2], [20.0, -11.2], [16.0, -10.0], [13.4, -7.8], [12.4, -4.6], [14.4, -5.0], [16.6, -5.6], [18.4, -4.0]];
+  const edge = blade.slice(5, 13);
+  parts.push({ s: axPoly(blade), m: R.velvet, sh: { k: 'flat', bev: 1.6 }, shine: true, marks: [...axMarks(edge, '#d8dcf0'), ...axMarks(edge.map(([d, a]) => [d, a + 1.1] as [number, number]), 4)] });
+  parts.push({ s: poly(ax(25.0, -1.2), ax(27.8, 0), ax(25.0, 1.2)), m: 'steel', sh: { k: 'ridge', a: ax(25, 0), b: ax(27.8, 0) }, shine: true });
+  // the ribbon's two tails, then its knot
+  parts.push({ s: path([ax(16.2, 1.2), ax(14.0, 3.8), ax(11.4, 5.2)], [1.0, 0.9, 0.6]), m: 'linen', sh: { k: 'soft', r: 0.8 }, bias: 0.05 });
+  parts.push({ s: path([ax(15.8, 1.4), ax(15.2, 4.8), ax(13.2, 7.2)], [1.0, 0.9, 0.6]), m: 'linen', sh: { k: 'soft', r: 0.8 }, bias: -0.1 });
+  parts.push({ s: ell(ax(16.4, 0.6), 1.6, 1.3), m: 'linen', sh: { k: 'soft', r: 1 }, bias: 0.15 });
+  return parts;
+}
+
+/**
+ * DEATH KNELL (warhammer, the Warrior's: every enemy his hammer stuns rings like a bell). Its head is a bell, old bronze, lying
+ * across the haft, its crown to the upper left and its mouth to the lower right, its clapper showing; two bands round it; a ring
+ * at its crown.
+ */
+function deathknell(): Part[] {
+  const parts = haft({ wood: 'ebony', grip: 'leather', knob: 'brass', long: 20 });
+  const bell: [number, number][] = [[19.6, -6.6], [22.6, -6.6], [24.0, -5.4], [24.2, -1.0], [25.4, 3.2], [26.6, 5.4], [26.4, 6.4], [15.8, 6.4], [15.6, 5.4], [16.8, 3.2], [18.0, -1.0], [18.2, -5.4]];
+  parts.push(link(ax(21.1, -7.6), 1.7, 1.3, 'brass', 45));
+  parts.push({ s: axPoly(bell), m: S1.bronze, sh: { k: 'cyl', a: ax(17, 0), b: ax(25.2, 0), w: 4.2 }, shine: true, bias: 0.05, marks: [...axMarks([[18.2, -3.4], [24.1, -3.4]], 1), ...axMarks([[16.6, 3.8], [25.6, 3.8]], 1), ...axMarks([[16.0, 5.6], [26.2, 5.6]], 4)] });
+  // the mouth's dark inside, and the clapper in it
+  parts.push({ s: axPoly([[16.4, 6.0], [25.8, 6.0], [25.2, 7.0], [17.0, 7.0]]), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  const cl = ax(21.1, 7.4);
+  parts.push({ s: ell(cl, 1.5), m: 'dsteel', sh: { k: 'dome', c: cl, r: 1.5 }, shine: true });
+  return parts;
+}
+
+/**
+ * DEADWEIGHT (warhammer, the Warrior's: the hammer grows heavier with every Smash in a row). A great crude block of dark iron,
+ * chains wrapped twice round it, and an iron weight hung from it on a short chain; a thick haft.
+ */
+function deadweight(): Part[] {
+  const parts = haft({ wood: 'wood', grip: 'dleather', knob: 'dsteel', long: 24, w: 1.6 });
+  parts.push({ s: axPoly([[16.8, -6.4], [26.4, -6.4], [26.4, 6.4], [16.8, 6.4]]), m: R.rust, sh: { k: 'flat', bev: 1.8 }, shine: true, bias: 0.04 });
+  for (const a of [-6.4, 6.4]) parts.push({ s: axPoly([[16.2, a - 0.9], [27.0, a - 0.9], [27.0, a + 0.9], [16.2, a + 0.9]]), m: 'dsteel', sh: { k: 'flat', bev: 0.8 }, shine: true, marks: [{ a: ax(16.6, a + (a > 0 ? 0.7 : -0.7)), b: ax(26.6, a + (a > 0 ? 0.7 : -0.7)), t: 4 }] });
+  // the chains round it
+  for (const d of [19.0, 24.2]) for (let k = 0; k < 6; k++) {
+    const a = -5.0 + k * 2.0;
+    parts.push(link(ax(d, a), k % 2 ? 0.8 : 1.05, k % 2 ? 1.05 : 0.8, 'steel', 45));
+  }
+  // the weight on its chain
+  for (const [d, a] of [[19.6, 8.4], [18.6, 9.8]] as const) parts.push(link(ax(d, a), 0.8, 1.0, 'steel', 45));
+  const wt = ax(17.0, 11.8);
+  parts.push({ s: ell(wt, 2.5, 2.2), m: 'dsteel', sh: { k: 'dome', c: wt, r: 2.5 }, shine: true, marks: [{ a: [wt[0] - 1, wt[1] + 0.4], b: [wt[0] + 1, wt[1] + 0.4], t: 1 }] });
+  return parts;
+}
+
+/**
+ * STARBREAKER (warhammer, the Warrior's: Earthquake pulls a meteor down out of the sky). A rough head of dark iron fallen from the
+ * sky, cracked through with its fire still in it; a star set in its face; an ebony haft banded in iron.
+ */
+function starbreaker(): Part[] {
+  const parts = haft({ wood: 'ebony', grip: 'red', knob: 'dsteel' });
+  const head: [number, number][] = [[18.2, -6.4], [21.0, -7.4], [24.6, -6.6], [26.4, -3.4], [26.0, 0.6], [26.8, 4.2], [24.8, 6.6], [20.6, 7.0], [17.4, 6.0], [16.4, 2.4], [17.0, -1.4], [16.6, -4.2]];
+  const cracks: Mark[] = [
+    ...axMarks([[18.0, -5.0], [19.6, -3.6], [19.0, -2.0], [20.4, -1.0]], MOLTEN),
+    ...axMarks([[25.2, 4.6], [23.6, 3.8], [24.0, 2.4], [22.6, 1.6]], MOLTEN),
+    ...axMarks([[24.8, -5.2], [23.4, -3.8]], MOLTEN),
+    ...axMarks([[18.6, 5.0], [20.0, 3.8]], MOLTEN),
+    { a: ax(19.6, -3.6), t: MOLTEN_HI },
+    { a: ax(23.6, 3.8), t: MOLTEN_HI },
+  ];
+  parts.push({ s: axPoly(head), m: S1.meteor, sh: { k: 'soft', r: 2.4 }, shine: true, marks: cracks });
+  const c = ax(21.6, 0.4);
+  const star: V[] = [];
+  for (let k = 0; k < 10; k++) {
+    const a = -Math.PI / 2 + (k / 10) * Math.PI * 2;
+    const r = k % 2 ? 1.1 : 2.8;
+    star.push([c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r]);
+  }
+  parts.push({ s: poly(...star), m: 'fire', sh: { k: 'dome', c, r: 2.6 }, shine: true, flush: true });
+  parts.push(axBand(15.6, 2.0, 'dsteel'));
+  parts.push(axBand(13.8, 1.8, 'dsteel'));
+  return parts;
+}
+
+/** Set 1's pictures, by their ids in game/uniques.ts SET1_DEFS: kept apart from the 62's (UNIQUE_ART_IDS), as Set 1 is behind its own switch. */
+const SET1_PAINTERS: Record<string, () => Part[]> = { gyre, redtithe, widowfall, deathknell, deadweight, starbreaker };
+/** The ids of Set 1's pictures. */
+export const SET1_ART_IDS: readonly string[] = Object.keys(SET1_PAINTERS);
+
+// ---------------------------------------------------------------------------------------------
 
 /** Every unique with a picture of its own here, by its id in game/uniques.ts UNIQUE_DEFS. */
 const UNIQUE_PAINTERS: Record<string, () => Part[]> = {
@@ -1542,7 +1714,8 @@ export const UNIQUE_ART_IDS: readonly string[] = Object.keys(UNIQUE_PAINTERS);
 
 /** One unique's own picture: 32 by 32 picture pixels, as art/items_a.ts paintItemA's, with the orange rim. Null for one not drawn. */
 export function paintUnique(id: string): Px | null {
-  const f = Object.prototype.hasOwnProperty.call(UNIQUE_PAINTERS, id) ? UNIQUE_PAINTERS[id] : undefined;
+  const own = (m: Record<string, () => Part[]>): (() => Part[]) | undefined => (Object.prototype.hasOwnProperty.call(m, id) ? m[id] : undefined);
+  const f = own(UNIQUE_PAINTERS) ?? own(SET1_PAINTERS);
   return f ? paint(f(), 3) : null;
 }
 
