@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, POWER, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, POWER, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, powerHammerAt, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -229,6 +229,42 @@ function stamp(s: Px, g: (string | null)[][], cx: number, cy: number, a = 1, rev
     if (a >= 1) { if (X >= 0 && Y >= 0 && X < s.w && Y < s.h) s.set(X, Y, c); } else mix(s, X, Y, c, a);
   }
 }
+/** THE HAMMER OUT OF THE RUNE: hung from the rune at (x, y), its haft `L` long to the middle of its head, swung `swing` degrees from
+ * straight down (raised back up over the rune at -150); of the word's red with his pink through it, a hot edge, inked; coming out of
+ * the rune as `formed` goes to 1 (from the rune down, in sparks). */
+function hammer(s: Px, x: number, y: number, L: number, swing: number, formed: number, a: number): void {
+  const ph = (swing * Math.PI) / 180;
+  const d: V2 = [-Math.sin(ph), Math.cos(ph)];
+  const pp: V2 = [d[1], -d[0]];
+  const HW = 30, HH = 17, SW = 3.6;
+  const reach = L * formed;
+  const box = L + HW + 4;
+  const ink: [number, number][] = [];
+  const put2 = (X: number, Y: number, c: string): void => { if (a >= 1) { if (X >= 0 && Y >= 0 && X < s.w && Y < s.h) s.set(X, Y, c); } else mix(s, X, Y, c, a); };
+  for (let Y = Math.floor(y - box); Y <= y + box; Y++) for (let X = Math.floor(x - box); X <= x + box; X++) {
+    const rx = X - x, ry = Y - y;
+    const v = rx * d[0] + ry * d[1];
+    const u = rx * pp[0] + ry * pp[1];
+    if (v < 4 || v > reach + HH) continue;
+    let c: string | null = null;
+    if (Math.abs(v - L) <= HH && Math.abs(u) <= HW && reach >= L - HH) {
+      // (its head: a great block, lit on its upper side, his pink burning down its middle, its faces' edges hot)
+      const top = v - L < -HH + 3;
+      const end = Math.abs(u) > HW - 3;
+      c = Math.abs(v - L) < 2.2 ? '#ff4f8a' : top || end ? POWER_RED[3] : v - L > HH - 3 ? POWER_RED[1] : POWER_RED[2];
+      if (Math.abs(u) < 3 && Math.abs(v - L) < 4) c = '#fff0a0';
+    } else if (Math.abs(u) <= SW && v <= Math.min(reach, L - HH)) {
+      // (its haft, a pink line of power down it)
+      c = Math.abs(u) < 0.9 ? '#ff4f8a' : u < 0 ? POWER_RED[2] : POWER_RED[1];
+    } else if (Math.abs(v - L) <= HH + 1.5 && Math.abs(u) <= HW + 1.5 && reach >= L - HH) ink.push([X, Y]);
+    else if (Math.abs(u) <= SW + 1.2 && v <= Math.min(reach, L - HH)) ink.push([X, Y]);
+    if (!c) continue;
+    // (still coming out of the rune: its far end in sparks)
+    if (formed < 1 && v > reach - 10 && ((X * 7 + Y * 13) % 5) / 5 > (reach - v) / 10) continue;
+    put2(X, Y, c);
+  }
+  for (const [X, Y] of ink) put2(X, Y, '#1a0610');
+}
 /** POWER'S SCENE: the hero dodging, the rune's shadow chasing a beat behind him, the rune hanging high over it, dropping onto it in
  * each strike (a crater, a ring of force, stone flying), heaving up again; bursting after the last. */
 const HERO_AT = (t: number): V2 => {
@@ -307,15 +343,27 @@ function powerScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
     stamp(s, GLYPH_SMALL, ox + x + flyUp * 10, oy + y - flyUp * 160, 1, rev);
     if (flyUp > 0) for (let k = 1; k < 8; k++) stamp(s, GLYPH_SMALL, ox + x + flyUp * 10, oy + y - flyUp * 160 + k * 6, 0.5 / k);
   }
-  // (the rune high over its shadow: dropping in each strike, smeared down its fall)
+  // (the rune hanging high over its shadow, and the hammer out of it: swung down onto the shadow in each strike, smeared round its
+  // arc; heaved back up; bursting with the rune after the last)
   if (R.formed > 0 && R.gone < 1) {
-    const [x, y] = wp(sh, R.up + 30);
-    const bob = Math.round(2 * Math.sin(t * 5));
-    if (powerSmeared(t)) for (let k = 1; k <= 5; k++) stamp(s, GLYPH_BIG, x, y + bob - k * 18, 0.5 / k);
+    // (the rune holds the hammer by its haft's end, over the shadow at the hammer's own length: raised, its head is high over the
+    // rune; struck, its head is on the floor)
+    const L = 88;
+    const [fx0, fy0] = wp(sh, 0);
+    const x = fx0, y = fy0 - L - 10;
+    void R.up;
+    const hm = powerHammerAt(t);
+    if (hm.formed > 0) {
+      if (powerSmeared(t)) {
+        const prev = powerHammerAt(t - 1 / 30).swing;
+        for (let k = 1; k <= 5; k++) hammer(s, x, y, L, prev + ((hm.swing - prev) * k) / 6, hm.formed, 0.18 + 0.06 * k);
+      }
+      hammer(s, x, y, L, hm.swing, hm.formed, 1);
+    }
+    const bob = Math.round(1.5 * Math.sin(t * 5));
     stamp(s, GLYPH_BIG, x, y + bob, R.formed < 1 ? R.formed : 1);
-    // (its glow)
-    for (let yy = -40; yy <= 40; yy++) for (let xx = -40; xx <= 40; xx++) {
-      const q = Math.hypot(xx, yy) / 40;
+    for (let yy = -44; yy <= 44; yy++) for (let xx = -44; xx <= 44; xx++) {
+      const q = Math.hypot(xx, yy) / 44;
       if (q < 1) mix(s, x + xx, y + bob + yy, '#ff4f8a', 0.12 * (1 - q) * (1 - q) * R.formed);
     }
   }
@@ -424,7 +472,7 @@ for (const sg of segs) {
       const f = sg.floorAt(tt);
       return [sg.from[0] + k * f[0], sg.from[1] + k * f[1], 0];
     };
-    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 2.4 * TILE, sg.from[1] + 0.4 * TILE, 0]) : at(world(t));
+    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)

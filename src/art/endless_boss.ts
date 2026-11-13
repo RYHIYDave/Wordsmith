@@ -1537,11 +1537,13 @@ const staffTiltOf = (P: BoarPose): number => 64 * (P.ride?.cast?.hammer ?? 0);
 // chasing you across the floor, then slams down three times in a row: craters, shockwaves, stone flying). By his Movement 9:
 //   HE WRITES IT  his left hand claws the rune's strokes on the air, burning red with pink through them; he thrusts his staff up and
 //                 it flies up off its ring into the sky
-//   IT HANGS      high over the hero, turning, its shadow on the floor chasing the hero (where it falls is the rules', the main
-//                 chat's: the film follows the hero a beat behind)
-//   THREE BLOWS   each: he raises his staff high, HELD; in two frames he hammers it down forward, his hips first, and the rune drops
-//                 out of the sky onto its shadow in the same two frames: a crater, a ring of force, stone flying, the screen kicked;
-//                 it heaves up again for the next. After the third it bursts into shards and burns out.
+//   IT HANGS      high over the hero, its shadow on the floor chasing the hero (where it falls is the rules', the main chat's: the
+//                 film follows the hero a beat behind); A GREAT HAMMER MATERIALIZES OUT OF IT (his words, 12 Nov 2026: “I want him to
+//                 form the rune, then a big hammer materializes from the rune and slams down”), of the same red with his pink through
+//                 it, raised back up over the rune
+//   THREE BLOWS   each: he raises his staff high, HELD; in two frames he hammers it down forward, his hips first, and the hammer
+//                 swings down out of the sky in the same two frames onto the rune's shadow: a crater, a ring of force, stone flying,
+//                 the screen kicked; it is heaved back up for the next. After the third, hammer and rune burst into shards.
 export const POWER = { write: [0.12, 0.7] as const, cast: 0.74, slams: [fr(42), fr(62), fr(81)] as const, raise: 0.42, back: 0.32, long: 3.4, high: 3.0 };
 /** Each blow's strike: two frames, to the moment it lands. */
 export const POWER_STRIKES = POWER.slams.map((h) => [h - 2 * FR, h] as const);
@@ -1578,19 +1580,31 @@ export function powerPoseAt(t: number): BoarPose {
   for (const h of POWER.slams) flare = Math.max(flare, bumpOf(t, h - 0.05, h + 0.5));
   return { ...P, pulse: Math.max(P.pulse ?? 0, 0.6 * smooth01(t / 0.6), flare), ride: { lean: 0, brace: 0, still: true, cast: powerCast(t) } };
 }
-/** Where the rune is over its shadow (its own lengths above the floor) and how much of it has formed, `t` seconds into the move: it
- * flies up from his staff, forms high, drops onto its shadow in each strike, heaves up again; bursts after the last. */
+/** Where the rune is over its shadow (its own lengths above the floor), how much of it has formed, and how far it has burst, `t`
+ * seconds into the move: it flies up off his staff and forms high over the hero, and hangs there while its hammer swings; it bursts
+ * with the hammer after the last blow. */
 export function powerRuneAt(t: number): { up: number; formed: number; gone: number } {
-  const H = POWER.high * TILE;
-  const formed = smooth01((t - POWER.cast) / 0.4);
-  let up = H;
+  const formed = smooth01((t - POWER.cast) / 0.35);
+  const gone = smooth01((t - POWER.slams[2] - 0.12) / 0.3);
+  return { up: POWER.high * TILE, formed, gone };
+}
+/** THE HAMMER OUT OF THE RUNE (his words, 12 Nov 2026: “I want him to form the rune, then a big hammer materializes from the rune and
+ * slams down”): how much of it has come out of the rune (0 ... 1), and its swing (degrees from hanging straight down from the rune:
+ * raised back up over it, -165, held; swung down onto the floor in each strike's two frames; heaved back up for the next), `t`
+ * seconds into the move. Its head comes down on the rune's shadow. */
+export function powerHammerAt(t: number): { formed: number; swing: number; gone: number } {
+  const formed = smooth01((t - POWER.cast - 0.25) / 0.4);
+  const UP = -165;
+  let swing = UP;
   for (const [s0, h] of POWER_STRIKES) {
-    if (t > s0 && t <= h) up = Math.min(up, H * (1 - (t - s0) / (h - s0)));
-    else if (t > h && t < h + 0.55) up = Math.min(up, H * smooth01((t - h - 0.08) / 0.45));
+    if (t > s0 && t <= h) swing = UP * (1 - (t - s0) / (h - s0));
+    else if (t > h && t < h + 0.55) {
+      const u = (t - h) / 0.55;
+      // (it lies a moment where it struck, then is heaved back up for the next)
+      swing = u < 0.25 ? 0 : UP * smooth01((u - 0.25) / 0.75);
+    }
   }
-  const last = POWER.slams[2];
-  const gone = smooth01((t - last - 0.05) / 0.25);
-  return { up, formed, gone };
+  return { formed, swing, gone: smooth01((t - POWER.slams[2] - 0.12) / 0.3) };
 }
 /** THE POWER RUNE: its glyph (the word's own, art/icons.ts GLYPH, two chevrons pointing up), `k` picture pixels to its cell, in the
  * word's red with his pink through its middle and a hot edge; ink round it. */

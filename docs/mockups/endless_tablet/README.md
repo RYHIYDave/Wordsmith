@@ -301,6 +301,12 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   kicked; it heaves up for the next. After the third it bursts into shards. The checks (each blow drawn back, held, followed
   through, a flash, the hips first), his legs outside the boar: all pass. The hero in the film is the Brawler's standing frame,
   stepping aside (the film's stand-in).
+- HIS WORDS on it, 12 Nov 2026, by pop-up: “I want him to form the rune, then a big hammer materializes from the rune and slams
+  down”; and 20:06: “I want the runes to create something, not use the rune itself”. READ AS (told him so): FOR ALL FIVE WORDS, the
+  rune is the spell he writes, and what strikes is what it makes: for Power, a great hammer of its red with his pink through it,
+  out of the rune, swung down three times; the Firestorm's rune calls down the fireballs, Frost's raises the ice, Lightning's lets
+  out the ball lightning, Poison's sows the spore mines. Power remade so (`powerHammerAt`): the rune hangs; the hammer comes out of
+  it and swings.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.
