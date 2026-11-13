@@ -54,6 +54,12 @@ Made by the Brawler switch chat (13 Nov 2026) on its branch design/f5-temple-doo
   TEMPLE KEYS n / 2 and a key for each, brass if held.
 - Films from the game itself (tools/scenarios/key_bearers_film.mjs, cut by tools/key_bearers_cut.py): pictures/key_bearers_film.mp4.
 
+- His word to the film of their fights, 13 Nov 2026: “It’s good.  Gimme a flip in the knife guys jump.  And keep the key count on the side
+  with the other quest information”. So: THE KNIFE'S LEAP turns a whole flip in the air, heels over head, tucked, his blade turning with him
+  (KB_LEAP: leaving the floor at 0.5 s, over by 0.84, plunging at 0.9); and THE KEY COUNT stands at the top left beside INVENTORY, with the
+  master rune-stone and the Meldstone when he carries them: a key for each, brass if held, dark if not, and how many (game.ts; ui/hud.ts).
+- The whole event filmed in play (tools/scenarios/temple_event_film.mjs, the whole screen): pictures/temple_event_film.mp4.
+
 ## Still to make
 
-- His yes to their moves in play; then the whole event filmed, from the first bearer to the temple opening; then the switch on.
+- His yes to the whole event; then the switch on, and it goes to the ship list.

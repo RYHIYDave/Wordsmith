@@ -1,6 +1,7 @@
 # THE KEY-BEARERS' FILM (tools/scenarios/key_bearers_film.mjs): its frames cut in round the hero and the bearer, made bigger, each
 # part's name over it, as an mp4 at thirty frames a second.
 #   python3 tools/key_bearers_cut.py <frames prefix, e.g. shots/keybearers/k> <out.mp4> [crop w] [centre y]
+#   (crop w 0: the whole screen as the player sees it, every part, its name in a band under it)
 import glob, json, os, subprocess, sys, tempfile
 from PIL import Image, ImageDraw, ImageFont
 pre, out = sys.argv[1], sys.argv[2]
@@ -18,10 +19,18 @@ for i, f in enumerate(frames):
     for part in parts:
         if i >= part[0]:
             title = part[1]
-            if len(part) > 3: pw, pc = part[2], part[3]
+            if len(part) > 3 and cw != 0: pw, pc = part[2], part[3]
     ph = round(pw * 9 / 16)
     im = Image.open(f).convert('RGB')
     W, H = im.size
+    if cw == 0:
+        # (the whole screen, its name in a band under it)
+        full = Image.new('RGB', (W, H + 56), (20, 16, 30))
+        full.paste(im, (0, 0))
+        if title:
+            ImageDraw.Draw(full).text((W // 2, H + 28), title, font=F, fill=(232, 246, 255), anchor='mm')
+        full.save(os.path.join(tmp, 'f%04d.png' % i))
+        continue
     x0 = W // 2 - pw // 2
     y0 = max(0, min(H - ph, pc - ph // 2))
     im = im.crop((x0, y0, x0 + pw, y0 + ph)).resize((1280, 720), Image.NEAREST)
