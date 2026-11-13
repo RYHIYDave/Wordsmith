@@ -320,6 +320,7 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
 - HIS WORDS on it, 12 Nov 2026, by pop-up: “i dont like that he sends a rune into the air and also one out over you.  just have it go
   out over you”. SO: one rune only: written at his hand, flung out over the hero, bursting there (the hammer forming out of the
   burst, about its head); the rune that flew up off his staff is gone.
+  HIS YES, 12 Nov 2026, by pop-up: “Yes, on to Flame (Recommended)”.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.
