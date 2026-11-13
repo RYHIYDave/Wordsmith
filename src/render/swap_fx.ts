@@ -621,7 +621,7 @@ export function drawSnipeStreak(g: G, cam: Cam, x: number, y: number, vx: number
   // the streak behind it
   // (no longer than the way it has come: it does not reach back through him as it leaves the bow)
   const LONG = Math.min(44 + 56 * P, 6 + age * Math.hypot(vx, vy) * 20);
-  const W = Math.round(1 + 2 * P);
+  const W = Math.round(1 + 3 * P);
   for (let i = 4; i < LONG; i++) {
     const a = Math.max(0, 1 - i / LONG);
     g.globalAlpha = a;
@@ -634,7 +634,7 @@ export function drawSnipeStreak(g: G, cam: Cam, x: number, y: number, vx: number
   }
   g.globalAlpha = 1;
   // the arrow itself in light, over the arrow: longer and broader the fuller the draw, its sharp head, its vanes
-  lightArrow(g, tx, ty, ux, uy, Math.round(14 + 16 * P), 2 + 2.6 * P, 3 + 3 * P);
+  lightArrow(g, tx, ty, ux, uy, Math.round(14 + 16 * P), 2 + 3.4 * P, 3 + 3.5 * P);
 }
 
 /** (THE RANGER'S RALLY) As he calls: rings of cyan going out from him, and his call's light bursting round him. */

@@ -404,8 +404,8 @@ export function bakeLists(set: AnimSet): Sprite[][] {
   // (THE LIVING SHADOW's second swing made walking, the four ways, after them for the same reason: art/shadow_art.ts)
   for (let k = 0; k < 4; k++) out.push(set.clips?.attack2Walk?.[k]?.frames ?? []);
   // (THE MAGE'S AND THE RANGER'S MOVES TO SWAP, art/swap_moves_art.ts: their own moves, clips.moves, after them for the same
-  // reason; only with their switch on, so that with it off every hero's lists, and the bake's marks, are as they were)
-  if (SWAP_MOVES.on) for (const k of SWAP_CLIP_KEYS) out.push(set.clips?.moves?.[k]?.frames ?? []);
+  // reason; only theirs, and only with their switch on, so that every other hero's lists are as they were)
+  if (SWAP_MOVES.on && SWAP_CLIP_KEYS.some((k) => set.clips?.moves?.[k])) for (const k of SWAP_CLIP_KEYS) out.push(set.clips?.moves?.[k]?.frames ?? []);
   return out;
 }
 

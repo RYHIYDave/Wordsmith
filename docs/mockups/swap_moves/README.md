@@ -179,6 +179,8 @@ ALL OF IT IS BUILT, BEHIND `SWAP_MOVES` (game/talents.ts, OFF): off, the game is
   going from wood to cyan to near white in the draw's three steps, its head and vanes white, sparks running along it; the glint
   at full a thin star on its tip; loosed, the arrow drawn in light with a sharp head and vanes (render/swap_fx.ts lightArrow), and
   the burst off the bow a whoosh of air swept back from it, not a ring. pictures/snipe_grows.png and snipe_film.mp4 again.
+  Shown it, his words: “Give me a little wider AoE and it’s good to go”. So at full its hitbox is three and a third times as wide
+  (SWAP_TUNE.snipe.wide 2.3, was 1.5), its arrow of light and its streak broader to match; and his yes to ship them all.
 - KNOWN: switched on, an old Mage's stones past the middle (her warps and on) are not hers until she takes Aura (cleanTalents
   checks the way); their points come back to spend.
 

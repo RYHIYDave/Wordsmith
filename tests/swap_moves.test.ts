@@ -82,12 +82,20 @@ function tap(g: Game, x: number, y: number): void {
 const ids = (g: Game): string[] => g.hero.skills.map((s) => s.id);
 const hurt = (m: Monster): boolean => m.life < m.maxLife;
 
-test('1. off, the game is as it was', () => {
-  assert.equal(SWAP_MOVES.on, false, 'off until his yes to the moves in play');
-  assert.deepEqual(ids(hero('mage', []).g).slice(0, 2), ['wave', 'orb']);
-  assert.deepEqual(ids(hero('ranger', []).g).slice(0, 2), ['shot', 'volley']);
-  assert.ok(!TREES.mage.talents.some((t) => t.id === 'aura'), 'her old tree');
-  assert.ok(!TREES.ranger.talents.some((t) => t.id === 'snare'), 'his old tree');
+test('1. on, at his yes; off, the game is as it was', () => {
+  assert.equal(SWAP_MOVES.on, true, 'on: his word, 13 Nov 2026, “Give me a little wider AoE and it’s good to go”');
+  assert.ok(TREES.mage.talents.some((t) => t.id === 'aura'), 'her new tree');
+  assert.ok(TREES.ranger.talents.some((t) => t.id === 'snare'), 'his new tree');
+  const was = SWAP_MOVES.on;
+  SWAP_MOVES.on = false;
+  try {
+    assert.deepEqual(ids(hero('mage', []).g).slice(0, 2), ['wave', 'orb']);
+    assert.deepEqual(ids(hero('ranger', []).g).slice(0, 2), ['shot', 'volley']);
+    assert.ok(!TREES.mage.talents.some((t) => t.id === 'aura'), 'her old tree');
+    assert.ok(!TREES.ranger.talents.some((t) => t.id === 'snare'), 'his old tree');
+  } finally {
+    SWAP_MOVES.on = was;
+  }
 });
 
 test('2. on, she sets any two of what she has learned on her tap and hold; never one in both; Beam only held', () => swapOn(() => {
