@@ -58,7 +58,11 @@ export default async function (page, snap) {
   await snap('3_a_bell_rung');
   await page.waitForTimeout(3000);
   await snap('4_the_arrows');
-  await page.evaluate(() => { const g = window.__dbg.game(); const B = g.level.bells; for (let i = 1; i < B.plan.bells.length; i++) { const b = B.plan.bells[i]; g.bellsStruck(b.x, b.y, 0.6); } });
+  // (his word, 13 Nov 2026: the loot bursts out of the bell rung last: so he walks to the last one before it is rung, to see it)
+  await page.evaluate(() => { const g = window.__dbg.game(); const B = g.level.bells; for (let i = 1; i < B.plan.bells.length - 1; i++) { const b = B.plan.bells[i]; g.bellsStruck(b.x, b.y, 0.6); } });
+  await page.evaluate(() => { const g = window.__dbg.game(); const B = g.level.bells; const b = B.plan.bells[B.plan.bells.length - 1]; g.hero.x = b.x - 1.4; g.hero.y = b.y + 1.0; });
+  await page.waitForTimeout(800);
+  await page.evaluate(() => { const g = window.__dbg.game(); const B = g.level.bells; const b = B.plan.bells[B.plan.bells.length - 1]; g.bellsStruck(b.x, b.y, 0.6); });
   await page.waitForTimeout(300);
   await snap('5_every_bell');
   await page.waitForTimeout(1500);
