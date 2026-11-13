@@ -3495,10 +3495,19 @@ export class Game {
     // (on the floor beside that bell: a bell stands solid, some against a house front, so the nearest walkable tile to it)
     const at = this.floorNear(last.x, last.y);
     const n = B.plan.bells.length;
+    const first = this.drops.length;
     if (MELD.on) this.addDrop('dust', at.x, at.y, Math.round((BELLS_TUNE.dust + Math.floor(n / 2)) * (LOOT2.on ? LOOT2.dust : 1)), null, null);
     for (let i = 0; i < n; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(i < 2 ? 4 : 2), null);
     this.addDrop('gold', at.x, at.y, this.rng.int(BELLS_TUNE.gold, BELLS_TUNE.gold * 2) * Math.max(1, this.power) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
     if (this.wordsFall() && this.rng.chance(BELLS_TUNE.word * wordGrowth(this.power))) this.addDrop('word', at.x, at.y, 0, null, this.rng.pick(wordsAt(this.power)));
+    // (none of it left lying on the bell itself, or on anything else he cannot stand on: what the scatter put there is on the floor beside it)
+    const W = L.floor.w;
+    for (let i = first; i < this.drops.length; i++) {
+      const d = this.drops[i];
+      if (L.walk[Math.floor(d.y) * W + Math.floor(d.x)] === 1) continue;
+      d.x = at.x + this.rng.range(-0.3, 0.3);
+      d.y = at.y + this.rng.range(-0.3, 0.3);
+    }
     this.emit({ t: 'bells', what: 'won', x: last.x, y: last.y, n });
     this.sfx('rare');
     this.msg('Every bell peals at once. The Hush shatters!', MSG.good);
