@@ -502,6 +502,14 @@ export const PULL = { far: 1.5, most: 2.5, reach: 2.2, stop: 0.62, secs: 0.24, v
  * every direction, each `shardShare` of the hit, out to `shardReach`. On a monster: dying, it splits into two of its kind at
  * `life` of its life, drawn `look` the size (and they split no more).
  */
+/**
+ * SPLITTING, EACH ARROW. His question, 12 Nov 2026, 19:17 (Eastern), of Split Shot, Splitting on his tap and The Fan: “How many arrows
+ * should there be from all that combined?”; told that Splitting broke only the first arrow of a tap, his pick: “Every arrow splits, 21
+ * (Recommended)” (offered as: each of the Fan's 3 arrows throws 3 copies when it hits, and 3 more when it kills). So each of several
+ * shots loosed by one use (game/state.ts Projectile.volley: the Fan's, a Twin pair) splits once of its own; Split Shot's arrows split
+ * no more; everything else once a use, as it was (a spin's turns are many). Off: once a use for all.
+ */
+export const SPLIT_EACH = { on: true };
 export const SPLIT = { copies: 3, share: 0.4, most: 0.6, reach: 3.2, speed: 9, shards: 6, shardShare: 0.25, shardMost: 0.4, shardReach: 3, shardWidth: 0.45, every: 0.3, life: 0.5, look: 0.75 };
 /**
  * HEXING (Intelligence). In front: a curse for `secs` on what it hits: it takes `more` more damage from everything. Behind: a hex

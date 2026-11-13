@@ -640,6 +640,8 @@ export interface Projectile {
   hit: number[];
   /** One of several shots loosed by a single use. */
   volley: boolean;
+  /** SPLITTING, EACH ARROW (game/defs.ts SPLIT_EACH): this one of several has broken into its copies already. */
+  splitDone?: boolean;
   /** Hero shots: which ability fired it. */
   skill: number;
   /** Tiles flown since it last left a ground patch. */

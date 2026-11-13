@@ -14,7 +14,7 @@ import { RAMPAGE, RING, ringStrikes } from '../art/action_f3_fx';
 import { rampageTravel, rushStopTravel } from '../art/monster_brute';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { ACTION_F2, ALLY_DAMAGE, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, LASTING, FLEETING, VAST, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, HUSH_LEAVES, mirrorSide, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { ACTION_F2, ALLY_DAMAGE, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, LASTING, FLEETING, VAST, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, HUSH_LEAVES, mirrorSide, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, SPLIT_EACH, HEX, STILL } from './defs';
 import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
 import { asWarriorWeapon, bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -501,6 +501,8 @@ export class Game {
    * weakens it).
    */
   private splitUse: number[] = [-1, -1, -1];
+  /** The hero's shot striking now (projectileHit), for SPLITTING, EACH ARROW. */
+  private striking: Projectile | null = null;
   private shardsAt: number[] = [-9, -9, -9];
   /** BINDING behind: when each ability last laid a snare (game/defs.ts BIND.every). */
   private snareAt: number[] = [-9, -9, -9];
@@ -10135,8 +10137,13 @@ export class Game {
     // (THE WARLOCK, game/warlock.ts: his bolt sets it burning in his hellfire; the curse, the smoke steps and the rakes curse it; and every hit feeds his pact)
     if (h.cls === 'warlock') this.warlockHit(m, i, dmg);
     // (THE CITY'S WORDS: SPLITTING in front, its first hit each use breaks into copies that fly on)
-    if (r.split > 0 && !quiet && !this.copying && this.splitUse[i] !== h.skills[i].uses) {
-      this.splitUse[i] = h.skills[i].uses;
+    // EACH ARROW (his pick, 12 Nov 2026, “Every arrow splits, 21 (Recommended)”): one of several shots loosed by one use (the Fan's
+    // three, a Twin pair) breaks into copies of its own, once each; Split Shot's arrows split no more; anything else once a use, as before
+    const shot = SPLIT_EACH.on && this.striking && this.striking.volley && !this.striking.split ? this.striking : null;
+    const fresh = shot ? !shot.splitDone : this.splitUse[i] !== h.skills[i].uses;
+    if (r.split > 0 && !quiet && !this.copying && fresh) {
+      if (shot) shot.splitDone = true;
+      else this.splitUse[i] = h.skills[i].uses;
       this.splitOff(m, i, frac * r.split, x, y);
     }
     // (THE SKILL TREES REMADE: Giant Slayer, each hit on an elite or a boss cracks its guard)
@@ -12659,7 +12666,10 @@ export class Game {
     // (THE SECOND BATCH: an arrow striking home)
     if (arrow) this.sfx('arrowHit', 0.5);
     const far = arrow && (p.flown ?? 0) > TALENT_TUNE.farSight2.at && this.now('farsight');
+    // (SPLITTING, EACH ARROW: one of several shots of a use breaks into its own copies, once; below, hitMonster)
+    this.striking = p;
     this.hitMonster(m, p.skill, p.dmg, false, far);
+    this.striking = null;
     // (Long Shot, the arrow knocks back what it hits; Split Shot, one that kills splits into three, flying on)
     if (arrow && !m.dead && this.now('longshot')) this.throwMonster(m, m.x - p.vx, m.y - p.vy, TALENT_TUNE.longShot2.far);
     if (arrow && m.dead && !p.split && this.now('splitshot')) this.splitArrow(p, m);
