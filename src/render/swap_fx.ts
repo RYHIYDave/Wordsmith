@@ -12,9 +12,10 @@
 //   SNARE    a loop of rope lying open, its twist, its knot and peg, a glint of cyan while it is set;
 //   SNIPE    while he draws, CHARGING UP: a ring on the floor round him filling like a clock in three steps, each with a pulse;
 //            light rising off him; streaks drawn in to the arrowhead; an arrow of light growing along his arrow; he glows cyan the
-//            fuller; at full A GLINT, a star of light and a ring off the arrowhead, then a twinkle; loosed, a
-//            burst of air off the bow and the arrow drawn over with a shaft of light, longer, broader and its streak thicker the
-//            fuller the draw;
+//            fuller; the light gathering in his arrow itself, an arrow of light, its shaft, sharp head and vanes growing; at full
+//            A GLINT, a thin star of light on its tip, then a twinkle; loosed, a whoosh of air off the bow and the arrow drawn in
+//            light over the arrow, longer and broader, its streak thicker, the fuller the draw (no ball of light anywhere: his
+//            words, “your losing the arrow and looks like a ball from the mage attacks”);
 //   RALLY    a ring of cyan going out from him as he calls; while it lasts, cyan motes rising off his companions.
 import { CYAN } from '../art/kit';
 import { SPELL_TONES } from '../art/spells';
@@ -426,6 +427,45 @@ export function drawSnare(g: G, cam: Cam, x: number, y: number, set: boolean, t:
 }
 
 /**
+ * An arrow drawn in light, its point at (x, y), going (ux, uy) on the screen: its shaft `long` pixels back, white at its heart; its
+ * head sharp and barbed, `head` pixels to either side; its vanes at the back, `vane` long (0, none); dark-edged so it stands off
+ * the floor. Its light at `a`. (THE RANGER'S SNIPE: in his hands as it charges, and loosed.)
+ */
+function lightArrow(g: G, x: number, y: number, ux: number, uy: number, long: number, head: number, vane: number, a = 1): void {
+  const px = -uy;
+  const py = ux;
+  const H = Math.max(1, Math.round(head));
+  const HL = Math.round(H * 2.4);
+  const thick = head >= 3 ? 1 : 0;
+  const at = (along: number, across: number): [number, number] => [x - ux * along + px * across, y - uy * along + py * across];
+  g.globalAlpha = a;
+  // its dark edge
+  for (let i = -1; i <= long + 1; i++) for (let w = -thick - 1; w <= thick + 1; w++) dot(g, ...at(i, w), '#0a2030');
+  for (let i = -1; i <= HL + 1; i++) {
+    const half = Math.round((Math.min(i, HL) / HL) * H) + 1;
+    for (let w = -half; w <= half; w++) dot(g, ...at(i, w), '#0a2030');
+  }
+  // the shaft
+  for (let i = 0; i <= long; i++) for (let w = -thick; w <= thick; w++) dot(g, ...at(i, w), w === 0 ? '#ffffff' : C[3]);
+  // the vanes, swept back from its end
+  if (vane > 0) {
+    const V = Math.round(vane);
+    for (let i = 0; i < V; i++) {
+      for (const side of [1, -1]) {
+        dot(g, ...at(long - V + i + 1, side * (1 + i * 0.7)), i === V - 1 ? C[1] : C[2]);
+        dot(g, ...at(long - V + i + 2, side * (1 + i * 0.7)), C[1]);
+      }
+    }
+  }
+  // the head: a sharp point, widening to its barbs, its lit edges
+  for (let i = 0; i <= HL; i++) {
+    const half = Math.round((i / HL) * H);
+    for (let w = -half; w <= half; w++) dot(g, ...at(i, w), w === 0 ? '#ffffff' : Math.abs(w) === half ? C[2] : C[3]);
+  }
+  g.globalAlpha = 1;
+}
+
+/**
  * (THE RANGER'S SNIPE) While he draws, CHARGING UP, to be read at a glance (his words, shown it first: “I don’t read it as
  * charging up at all”): a ring on the floor round him filling like a clock as the draw fills, in three steps, each step a pulse
  * of light going out from it; light rising off him, more and brighter the fuller; streaks of it drawn in from all round to the
@@ -458,7 +498,7 @@ export function drawSnipeDraw(g: G, cam: Cam, game: Game, t: number, layer: 'flo
     const Y = wy(cam, h.x + Math.cos(a) * RR, h.y + Math.sin(a) * RR);
     if (f <= P) {
       const edge = !full && P - f < 0.03;
-      dot(g, X - 1, Y - 1, edge ? '#ffffff' : full && d.sinceFull < 0.3 ? '#ffffff' : full ? C[3] : C[2], 2, 2);
+      dot(g, X - 1, Y - 1, edge ? '#ffffff' : full && d.sinceFull < 0.3 ? '#ffffff' : C[2], 2, 2);
     } else {
       g.globalAlpha = 0.3;
       dot(g, X, Y, C[1], 1, 1);
@@ -514,7 +554,7 @@ function snipeAir(g: G, cam: Cam, game: Game, t: number, d: { tx: number; ty: nu
   const bx = hx + ux * 8;
   const by = hy - 17 + uy * 4;
   // STREAKS DRAWN IN from all round to the arrowhead, more and quicker the fuller
-  const streaks = Math.round(4 + 10 * P);
+  const streaks = Math.round(3 + 5 * P);
   for (let k = 0; k < streaks; k++) {
     const ph = (t * (1.2 + 1.6 * P) + k / streaks) % 1;
     const a = k * 2.39996 + Math.floor(t * (1.2 + 1.6 * P) + k / streaks) * 1.3;
@@ -522,47 +562,28 @@ function snipeAir(g: G, cam: Cam, game: Game, t: number, d: { tx: number; ty: nu
     const cx = Math.cos(a);
     const cy = Math.sin(a) * 0.75;
     g.globalAlpha = Math.min(1, ph * 3) * (0.5 + 0.5 * P);
-    for (let i = 0; i < 3; i++) dot(g, bx + cx * (r + i * 1.5), by + cy * (r + i * 1.5), i === 0 ? C[3] : C[2]);
+    for (let i = 0; i < 3; i++) dot(g, bx + cx * (r + i * 1.5), by + cy * (r + i * 1.5), i === 0 ? C[3] : C[1]);
   }
   g.globalAlpha = 1;
-  // AN ARROW OF LIGHT growing along his arrow, back from the head toward the string
-  const AL = Math.round(4 + 14 * P);
-  for (let i = 0; i < AL; i++) {
-    dot(g, bx - ux * i, by - uy * i, i < 3 ? '#ffffff' : C[3]);
-    if (P > 0.45) {
-      dot(g, bx - ux * i - uy, by - uy * i + ux, C[2]);
-      dot(g, bx - ux * i + uy, by - uy * i - ux, C[2]);
-    }
-  }
-  // the light at the arrowhead, swelling
-  glow(g, bx, by, 4 + 7 * P, C[2], 0.18 + 0.22 * P);
-  disc(g, bx, by, 1 + 2.6 * P, C[2]);
-  disc(g, bx, by, 0.5 + 1.5 * P, full ? '#ffffff' : C[3]);
-  // AT FULL: the glint, then its twinkle
+  // (THE LIGHT GATHERS IN HIS ARROW ITSELF, its own shape: drawn with him, art/ranger_up.ts prop 8. No ball of light at its head:
+  // his words, shown one, “your losing the arrow and looks like a ball from the mage attacks”)
+  // AT FULL: the glint, a thin star of light on its tip, then its twinkle
   const s = d.sinceFull;
   if (s >= 0 && s < 0.32) {
     const k = s / 0.32;
-    const big = Math.round(18 * (k < 0.25 ? k / 0.25 : 1 - (k - 0.25) / 0.75));
-    glow(g, bx, by, 6 + big * 0.6, '#ffffff', 0.3 * (1 - k));
+    const big = Math.round(14 * (k < 0.25 ? k / 0.25 : 1 - (k - 0.25) / 0.75));
     dot(g, bx - big, by, '#ffffff', 2 * big + 1, 1);
     dot(g, bx, by - big, '#ffffff', 1, 2 * big + 1);
-    const dg = Math.round(big * 0.45);
+    const dg = Math.round(big * 0.4);
     for (let i = 1; i <= dg; i++) {
       dot(g, bx + i, by + i, C[3]);
       dot(g, bx - i, by - i, C[3]);
       dot(g, bx + i, by - i, C[3]);
       dot(g, bx - i, by + i, C[3]);
     }
-    g.globalAlpha = 1 - k;
-    for (let i = 0; i < 24; i++) {
-      const a = (i / 24) * Math.PI * 2;
-      const r = 3 + k * 16;
-      dot(g, bx + Math.cos(a) * r, by + Math.sin(a) * r * 0.75, C[3]);
-    }
-    g.globalAlpha = 1;
   } else if (s >= 0.32 && (s % 0.6) < 0.08) {
-    dot(g, bx - 5, by, '#ffffff', 11, 1);
-    dot(g, bx, by - 5, '#ffffff', 1, 11);
+    dot(g, bx - 4, by, '#ffffff', 9, 1);
+    dot(g, bx, by - 4, '#ffffff', 1, 9);
   }
 }
 
@@ -578,22 +599,24 @@ export function drawSnipeStreak(g: G, cam: Cam, x: number, y: number, vx: number
   const py = ux;
   const tx = wx(cam, x, y);
   const ty = wy(cam, x, y) - 9;
-  // the burst off the bow as it is loosed: a ring of air thrown out across the way it goes, and two wings of it, at where it left
+  // the whoosh off the bow as it is loosed: air thrown out to either side and swept back, at where it left (no ring, no ball)
   if (age < 0.22) {
     const k = age / 0.22;
     const lx = wx(cam, x - vx * age, y - vy * age);
     const ly = wy(cam, x - vx * age, y - vy * age) - 9;
-    const R = (4 + 10 * P) * (0.4 + 0.6 * k);
-    g.globalAlpha = (1 - k) * (0.5 + 0.5 * P);
-    for (let i = 0; i < 28; i++) {
-      const a = (i / 28) * Math.PI * 2;
-      const across = Math.cos(a) * R;
-      const along = Math.sin(a) * R * 0.45;
-      dot(g, lx + px * across + ux * along, ly + py * across + uy * along, i % 2 ? C[3] : C[2]);
+    g.globalAlpha = (1 - k) * (0.6 + 0.4 * P);
+    const R = (3 + 6 * P) * (0.5 + 0.5 * k);
+    for (const side of [1, -1]) {
+      for (let line = 0; line < 3; line++) {
+        const off = R + line * (2 + 2 * P);
+        const len = Math.round((6 + 10 * P) * (1 - line * 0.25));
+        for (let i = 0; i < len; i++) {
+          const sweep = i * (0.9 + 0.4 * line);
+          dot(g, lx + px * side * (off + i * 0.35) - ux * sweep, ly + py * side * (off + i * 0.35) - uy * sweep, line === 0 ? C[3] : C[2]);
+        }
+      }
     }
-    for (const side of [1, -1]) for (let i = 0; i < 6 + 8 * P; i++) dot(g, lx + px * side * (R + i * 0.8) - ux * i * 1.4, ly + py * side * (R + i * 0.8) - uy * i * 1.4, C[2]);
     g.globalAlpha = 1;
-    if (k < 0.4) glow(g, lx, ly, 8 + 10 * P, '#ffffff', 0.4 * (1 - k / 0.4));
   }
   // the streak behind it
   // (no longer than the way it has come: it does not reach back through him as it leaves the bow)
@@ -610,17 +633,8 @@ export function drawSnipeStreak(g: G, cam: Cam, x: number, y: number, vx: number
     }
   }
   g.globalAlpha = 1;
-  // the arrow of light over the arrow: its shaft and its head, longer and broader the fuller the draw
-  const SHAFT = Math.round(10 + 14 * P);
-  const HEAD = Math.round(1 + 2.5 * P);
-  glow(g, tx, ty, 6 + 8 * P, C[2], 0.3 + 0.2 * P);
-  for (let i = 0; i < SHAFT; i++) {
-    for (let w = -W + 1; w <= W - 1; w++) dot(g, tx - ux * i + px * w, ty - uy * i + py * w, w === 0 ? '#ffffff' : C[3]);
-  }
-  for (let i = 0; i <= HEAD * 2; i++) {
-    const half = Math.min(i, HEAD);
-    for (let w = -half; w <= half; w++) dot(g, tx + ux * (HEAD * 2 - i) * 0.9 + px * w, ty + uy * (HEAD * 2 - i) * 0.9 + py * w, Math.abs(w) === half && half > 0 ? C[2] : '#ffffff');
-  }
+  // the arrow itself in light, over the arrow: longer and broader the fuller the draw, its sharp head, its vanes
+  lightArrow(g, tx, ty, ux, uy, Math.round(14 + 16 * P), 2 + 2.6 * P, 3 + 3 * P);
 }
 
 /** (THE RANGER'S RALLY) As he calls: rings of cyan going out from him, and his call's light bursting round him. */

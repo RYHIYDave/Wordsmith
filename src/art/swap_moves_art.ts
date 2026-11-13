@@ -72,13 +72,14 @@ export const RU_SNIPE_HOLD3: Move3 = {
   name: 'Snipe: held',
   motion: {
     loop: 1.5,
+    // (prop 8: his arrow filling with light as the draw fills, `pt` 0 to 1 over the 1.5 s, art/ranger_up.ts)
     keys: [
-      { at: 0, pose: ANCHOR },
-      { at: 1.5, pose: DEEP, ease: 'out' },
-      { at: 1.6, pose: { ...DEEP, rhx: (DEEP.rhx ?? 4) - 0.5, lhz: (DEEP.lhz ?? 8) + 0.4 }, ease: 'io' },
-      { at: 1.7, pose: { ...DEEP, rhz: (DEEP.rhz ?? 7) + 0.4, lhx: (DEEP.lhx ?? 22) - 0.4 }, ease: 'io' },
-      { at: 1.8, pose: { ...DEEP, rhx: (DEEP.rhx ?? 4) + 0.4, lhz: (DEEP.lhz ?? 8) - 0.4 }, ease: 'io' },
-      { at: 1.9, pose: DEEP, ease: 'io' },
+      { at: 0, pose: { ...ANCHOR, prop: 8, pt: 0 } },
+      { at: 1.5, pose: { ...DEEP, prop: 8, pt: 1 }, ease: 'out' },
+      { at: 1.6, pose: { ...DEEP, prop: 8, pt: 1, rhx: (DEEP.rhx ?? 4) - 0.5, lhz: (DEEP.lhz ?? 8) + 0.4 }, ease: 'io' },
+      { at: 1.7, pose: { ...DEEP, prop: 8, pt: 1, rhz: (DEEP.rhz ?? 7) + 0.4, lhx: (DEEP.lhx ?? 22) - 0.4 }, ease: 'io' },
+      { at: 1.8, pose: { ...DEEP, prop: 8, pt: 1, rhx: (DEEP.rhx ?? 4) + 0.4, lhz: (DEEP.lhz ?? 8) - 0.4 }, ease: 'io' },
+      { at: 1.9, pose: { ...DEEP, prop: 8, pt: 1 }, ease: 'io' },
     ],
   },
 };

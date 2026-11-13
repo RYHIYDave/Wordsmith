@@ -665,7 +665,26 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
       thread(nocks[0], s.handR, CYAN[3]);
       thread(s.handR, nocks[1], CYAN[3]);
       const point = add(s.handR, mul(p3, ARROW_LONG * B.tall));
-      arrowAt(s.handR, point);
+      // (THE RANGER'S SNIPE CHARGING, art/swap_moves_art.ts RU_SNIPE_HOLD3, prop 8: his arrow itself filling with light as the
+      // draw fills, `pt` 0..1, in three steps, its shaft, its head and its vanes, sparks of light running along it; his own
+      // arrow, its own shape. Only the moves to swap have it)
+      const charge = q.prop === 8 ? Math.max(0, Math.min(1, q.pt)) : -1;
+      const step = charge < 0 ? -1 : charge >= 0.999 ? 3 : charge >= 0.66 ? 2 : charge >= 0.33 ? 1 : 0;
+      const charged = step < 0 ? undefined : [
+        { shaft: P.wd5, head: CYAN[3], tip: '#ffffff', vane: CYAN[2], vane2: CYAN[3] },
+        { shaft: CYAN[1], head: CYAN[3], tip: '#ffffff', vane: CYAN[3], vane2: '#ffffff' },
+        { shaft: CYAN[2], head: '#ffffff', tip: '#ffffff', vane: CYAN[3], vane2: '#ffffff' },
+        { shaft: CYAN[3], head: '#ffffff', tip: '#ffffff', vane: '#ffffff', vane2: '#ffffff' },
+      ][step];
+      arrowAt(s.handR, point, line, charged);
+      if (step >= 1) {
+        // (sparks running along it, more at each step)
+        for (let k = 0; k < step * 2; k++) {
+          const f = (charge * 3.7 + k * 0.29) % 1;
+          const [sx, sy] = st.at(lerp3(s.handR, point, f));
+          st.over.set(Math.round(sx), Math.round(sy) - 1 - (k % 2), k % 2 ? CYAN[3] : '#ffffff');
+        }
+      }
       if (WILD.on && q.draw >= 0.85) {
         const PALE = '#e6eef8';
         const [x1, y1] = st.at(point);

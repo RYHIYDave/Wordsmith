@@ -174,6 +174,11 @@ ALL OF IT IS BUILT, BEHIND `SWAP_MOVES` (game/talents.ts, OFF): off, the game is
   off him, more and brighter the fuller; streaks of light drawn in from all round to the arrowhead; an arrow of light growing
   along his arrow; he himself glowing cyan, more and quicker the fuller, a white flash as it comes full with the glint.
   pictures/snipe_grows.png and snipe_film.mp4 again.
+  Shown it, his words: “It does read as charging but your losing the arrow and looks like a ball from the mage attacks”. So no
+  ball of light anywhere: the light gathers IN HIS ARROW ITSELF, its own shape (art/ranger_up.ts prop 8, RU_SNIPE_HOLD3): its shaft
+  going from wood to cyan to near white in the draw's three steps, its head and vanes white, sparks running along it; the glint
+  at full a thin star on its tip; loosed, the arrow drawn in light with a sharp head and vanes (render/swap_fx.ts lightArrow), and
+  the burst off the bow a whoosh of air swept back from it, not a ring. pictures/snipe_grows.png and snipe_film.mp4 again.
 - KNOWN: switched on, an old Mage's stones past the middle (her warps and on) are not hers until she takes Aura (cleanTalents
   checks the way); their points come back to spend.
 
