@@ -126,8 +126,8 @@ import { fineDir, fineGoal, flowDir, flowField, lineOfSight } from './game/nav';
 import type { AimMode, Controls, GameEvent, Level, Meta, Monster, PropInst, Station, TownVoice } from './game/state';
 import { rollItem } from './game/items';
 import { RNG } from './engine/rng';
-import { ALL_CLASS_IDS, CLASS_IDS, MELD_IDS, VOLT_MELD_IDS, WORD_IDS } from './game/types';
-import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
+import { ALL_CLASS_IDS, CLASS_IDS, MELD8_IDS, MELD_IDS, VOLT_MELD_IDS, WORD_IDS } from './game/types';
+import type { ClassId, Item, MeldId, Rarity, Slot, WordId } from './game/types';
 import { Fx, WORD_HUE, wx, wy } from './render/fx';
 import { NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
@@ -173,7 +173,8 @@ import { W10_GLYPH, W10_RAMP, W10_WORDS, WORDS10_LOOK, demoW10, eventsW10 } from
 import { PAGE_TURN, WORD_SOUND, WORD_SOUNDS, wordSoundsOf } from './game/word_sounds';
 import type { WordSound } from './game/word_sounds';
 import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
-import { M8_LOOK, MELDS8_LOOK } from './render/melds8';
+import { M8_GLYPH, M8_LOOK, M8_RAMP, MELDS8_LOOK } from './render/melds8';
+import { MELDS8 } from './game/melds8';
 import type { M8Event } from './render/melds8';
 import { act1Fx } from './render/act1_fx';
 import { forgetUnusedPictures } from './render/act1_fx/kept';
@@ -340,6 +341,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   if (VOLATILE3.on) {
     useMeldArt(art.icons, MELD_RAMP, MELD_GLYPH, VOLT_MELD_IDS);
     for (const w of VOLT_MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];
+  }
+  // THE EIGHT MELDS ACROSS THE GROUPS' LOOKS (render/melds8.ts MELDS8_LOOK, the art chat's, his yes of 12 Nov 2026, with their
+  // rules, game/melds8.ts MELDS8): their own colours and runes in place of the placeholders
+  if (MELDS8.on && MELDS8_LOOK.on) {
+    useMeldArt(art.icons, M8_RAMP as unknown as Record<MeldId, readonly string[]>, M8_GLYPH as unknown as Record<MeldId, readonly string[]>, MELD8_IDS);
+    for (const w of MELD8_IDS) WORD_HUE[w] = (M8_RAMP as unknown as Record<string, readonly string[]>)[w][3];
   }
   // THE TEN NEW WORDS' LOOKS (render/words7.ts WORDS7_LOOK, the seven; render/words10.ts WORDS10_LOOK, his three: on since the
   // ten words went live, his yes to their films in the art chat, 9 Nov 2026, “Yes, hand all ten to main (Recommended)”): their

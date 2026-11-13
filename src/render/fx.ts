@@ -30,7 +30,7 @@ import { TinkererFx } from './tinkerer_fx';
 import { WarriorFx } from './warrior_fx';
 import { BrawlerFx } from './brawler_fx';
 import { UniqueFx } from './unique_fx';
-import { M8Fx } from './melds8';
+import { M8Fx, MELDS8_LOOK } from './melds8';
 import { baseFigure, figureOf } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
 import { BONE, INDIGO, PINK, PLUM, TEAL } from '../art/kit';
@@ -1408,6 +1408,8 @@ export class Fx {
           break;
         }
         case 'burst': {
+          // (IMPLODE's burst, with its own look on: drawn by render/melds8.ts at its `wait`)
+          if (e.meld === 'implode' && MELDS8_LOOK.on) break;
           // (THE TINKERER's vials, her Golem's pound and her bomb: drawn by render/tinkerer_fx.ts)
           if (e.style === 'vial' || e.style === 'pound' || e.style === 'bomb') break;
           // (THE WARRIOR'S EARTHQUAKE: its ground heaves in the floor's stone in place of the slam ring: render/warrior_fx.ts)
@@ -1557,6 +1559,8 @@ export class Fx {
           break;
         }
         case 'arc': {
+          // (FORKING's arc, with its own look on: drawn by render/melds8.ts)
+          if (e.meld === 'forking' && MELDS8_LOOK.on) break;
           if (e.sky) {
             this.skyBolt(e.x1, e.y1, false);
             break;

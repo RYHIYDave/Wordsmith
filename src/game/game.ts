@@ -4708,17 +4708,32 @@ export class Game {
   }
   /** After a hero's hit lands: SHIVER (a critical hit freezes), SUNDER (one it stunned takes more), CAUTERIZE and FERVOR (a kill). */
   private meld8Struck(m: Monster, i: number, crit: boolean, wasBurning: boolean): void {
+    // (each meld's moment sent as it happens, for its look: { t: 'meld8' }, render/melds8.ts)
     const shiver = this.meld8(i, 'shiver');
-    if (crit && shiver > 0 && !m.dead && !m.boss) m.frozenT = Math.max(m.frozenT, M8.shiver.secs * shiver * (m.elite ? 0.5 : 1));
+    if (crit && shiver > 0 && !m.dead && !m.boss) {
+      m.frozenT = Math.max(m.frozenT, M8.shiver.secs * shiver * (m.elite ? 0.5 : 1));
+      this.emit({ t: 'meld8', id: 'shiver', on: m.id, k: shiver });
+    }
     const sunder = this.meld8(i, 'sunder');
-    if (sunder > 0 && !m.dead) m.sunder = M8.sunder.more * sunder;
+    if (sunder > 0 && !m.dead) {
+      m.sunder = M8.sunder.more * sunder;
+      // (stunned by it: its crack, while the stun lasts; a blow on it then is its look's 'hit', damageMonster)
+      if (m.stunT > 0 && !(m.sunderTill !== undefined && m.sunderTill > this.time)) {
+        m.sunderTill = this.time + m.stunT;
+        this.emit({ t: 'meld8', id: 'sunder', on: m.id, secs: m.stunT, k: sunder });
+      }
+    }
     if (!m.dead) return;
     const caut = this.meld8(i, 'cauterize');
-    if (caut > 0 && wasBurning) this.healHero(this.hero.d.maxLife * M8.cauterize.heal * caut);
+    if (caut > 0 && wasBurning) {
+      this.healHero(this.hero.d.maxLife * M8.cauterize.heal * caut);
+      this.emit({ t: 'meld8', id: 'cauterize', x: m.x, y: m.y, k: caut });
+    }
     const ferv = this.meld8(i, 'fervor');
     if (ferv > 0) {
       this.fervorN = Math.min(M8.fervor.most, (this.fervorT > 0 ? this.fervorN : 0) + ferv);
       this.fervorT = M8.fervor.secs;
+      this.emit({ t: 'meld8', id: 'fervor', x: m.x, y: m.y, n: Math.ceil(this.fervorN), most: M8.fervor.most, secs: M8.fervor.secs, k: ferv });
     }
   }
   /** A step of IMPLODE's bursts and FERVOR's time. */
@@ -4728,7 +4743,8 @@ export class Game {
     for (const b of this.implosions) {
       b.t -= dt;
       if (b.t > 0) continue;
-      this.emit({ t: 'burst', x: b.x, y: b.y, r: b.r, el: b.el, style: 'shock' });
+      // (the meld's own: its look draws its burst at `wait`, render/melds8.ts, and the game's ring is left out for it, render/fx.ts)
+      this.emit({ t: 'burst', x: b.x, y: b.y, r: b.r, el: b.el, style: 'shock', meld: 'implode' });
       for (const o of this.monsters) if (!o.dead && Math.hypot(o.x - b.x, o.y - b.y) < b.r) this.damageMonster(o, b.dmg, b.el, false, b.i);
     }
     this.implosions = this.implosions.filter((b) => b.t > 0);
@@ -10421,12 +10437,28 @@ export class Game {
           }
         }
         if (near) {
-          this.emit({ t: 'arc', x0: m.x, y0: m.y, x1: near.x, y1: near.y });
+          // (the game's arc, marked as the meld's: its own look draws it, render/melds8.ts, and the game's is left out for it)
+          this.emit({ t: 'arc', x0: m.x, y0: m.y, x1: near.x, y1: near.y, meld: 'forking' });
+          this.emit({ t: 'meld8', id: 'forking', x: m.x, y: m.y, x1: near.x, y1: near.y, k: fork });
           this.damageMonster(near, dmg * M8.forking.share * fork, r.element, false, i);
         }
       }
       const imp = this.meld8(i, 'implode');
-      if (imp > 0) this.implosions.push({ x, y, t: M8.implode.wait, dmg: dmg * M8.implode.share * imp, r: M8.implode.r * (imp < 1 ? 0.7 : 1), i, el: r.element });
+      if (imp > 0) {
+        const br = M8.implode.r * (imp < 1 ? 0.7 : 1);
+        // (IMPLODE's pull, as game/melds8.ts says it: those within `reach` drawn `pull` toward where it landed, not through walls;
+        // no boss)
+        for (const o of this.monsters) {
+          if (o.dead || o.boss || this.shutIn(o)) continue;
+          const d0 = Math.hypot(x - o.x, y - o.y);
+          if (d0 > M8.implode.reach || d0 < 0.05) continue;
+          const go = Math.min(M8.implode.pull * imp, Math.max(0, d0 - o.r));
+          const grid = o.kind === 'bat' ? this.level.open : this.level.walk;
+          for (let k = 0; k < 6; k++) this.slide(o, Math.min(o.r, 0.42), ((x - o.x) / d0) * (go / 6), ((y - o.y) / d0) * (go / 6), grid);
+        }
+        this.implosions.push({ x, y, t: M8.implode.wait, dmg: dmg * M8.implode.share * imp, r: br, i, el: r.element });
+        this.emit({ t: 'meld8', id: 'implode', x, y, reach: M8.implode.reach, r: br, wait: M8.implode.wait, k: imp });
+      }
     }
     if (mf === 'eruption' && !quiet) {
       // the blast leaves a pool of molten ground
@@ -10687,7 +10719,11 @@ export class Game {
     // (what is shut in a room is out of reach, of an arc of lightning and of what burns on the ground too: `shutIn`)
     if (m.dead || this.shutIn(m)) return;
     // (SUNDER, game/melds8.ts: stunned by a Sunder hit, it takes more from everything while the stun lasts)
-    if (m.sunder && m.stunT > 0) dmg *= 1 + m.sunder;
+    if (m.sunder && m.stunT > 0) {
+      dmg *= 1 + m.sunder;
+      // (a blow on one sundered while its crack shows: its look's 'hit', the crack flaring; not what burns or poisons it)
+      if (!dot && !poison && m.sunderTill !== undefined && m.sunderTill > this.time) this.emit({ t: 'meld8', id: 'sunder', what: 'hit', on: m.id });
+    }
     // (BOSS_INTRO: nor is a boss who waits, until his gate has fallen and his line is said: `bossWaits`)
     if (this.bossWaits(m)) {
       if (this.time - this.waitTold > 0.7) {
@@ -11076,7 +11112,10 @@ export class Game {
       // (RIME WARD, game/melds8.ts: what he blocks, chilled)
       if (MELDS8.on && src && !src.dead) {
         const k = Math.max(0, ...h.skills.map((_s, j) => this.meld8(j, 'rimeward')));
-        if (k > 0) src.chillT = Math.max(src.chillT, M8.rimeward.secs * k);
+        if (k > 0) {
+          src.chillT = Math.max(src.chillT, M8.rimeward.secs * k);
+          this.emit({ t: 'meld8', id: 'rimeward', on: src.id, secs: M8.rimeward.secs * k, k });
+        }
       }
       this.emit({ t: 'blocked', x: h.x, y: h.y, fromX, fromY });
       this.emit({ t: 'text', x: h.x, y: h.y, text: 'Blocked', color: '#9fe8c0' });
@@ -13270,7 +13309,10 @@ export class Game {
         // (SIPHON, game/melds8.ts: the poison of an attack carrying it heals the hero as it eats)
         if (MELDS8.on && m.lastSkill >= 0) {
           const k = this.meld8(m.lastSkill, 'siphon');
-          if (k > 0) this.healHero(tick * M8.siphon.heal * k);
+          if (k > 0) {
+            this.healHero(tick * M8.siphon.heal * k);
+            this.emit({ t: 'meld8', id: 'siphon', on: m.id, k });
+          }
         }
       }
       // (WORDMELDING: Frostbite in front, a chilled enemy loses life, a frozen one twice as fast)

@@ -17,8 +17,8 @@
 //   IMPLODE    Pulling + Volatile  drags enemies together, then the spot bursts
 
 
-/** Off: none of the eight is made or found; on at his yes to their looks at work. */
-export const MELDS8 = { on: false };
+/** THE SWITCH: ON (Version 25.3.17: his take of all eight of the draft, 8 Nov 2026; their looks' yes of 12 Nov, render/melds8.ts). */
+export const MELDS8 = { on: true };
 
 export type Meld8Id = 'siphon' | 'cauterize' | 'forking' | 'shiver' | 'sunder' | 'fervor' | 'rimeward' | 'implode';
 // (their ids and their two words: game/types.ts MELD8_IDS, MELD_OF)

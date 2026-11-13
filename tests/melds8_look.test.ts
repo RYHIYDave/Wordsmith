@@ -56,8 +56,10 @@ const mon = (id: number, x: number, y: number): Monster => ({ id, kind: 'skeleto
 const game = (): Game => ({ hero: { x: 10, y: 10 }, monsters: [mon(1, 11.2, 10.1), mon(2, 12.5, 11)] }) as unknown as Game;
 const moment = (id: M8Id) => ({ t: 'meld8' as const, id, on: 1, x: 11.2, y: 10.1, x1: 12.5, y1: 11, n: 2, most: 5, secs: 1.2, reach: 3, r: 2.2, wait: 0.4 });
 
-test('1. off: nothing is taken, ticked or drawn', () => {
-  assert.equal(MELDS8_LOOK.on, false);
+test('1. off: nothing is taken, ticked or drawn (on in the game since 25.3.17, with the eight melds\' rules: off here for this test)', () => {
+  assert.equal(MELDS8_LOOK.on, true, 'on in the game');
+  MELDS8_LOOK.on = false;
+  try {
   const fx = new M8Fx();
   fx.game = game();
   for (const id of M8_IDS) fx.handle(moment(id));
@@ -66,6 +68,9 @@ test('1. off: nothing is taken, ticked or drawn', () => {
   fx.drawGround(c.g, cam);
   fx.drawAir(c.g, cam);
   assert.equal(c.drawn(), 0);
+  } finally {
+    MELDS8_LOOK.on = true;
+  }
 });
 
 test("2. their colours: six tones; told apart from every word's, the friend's and the enemy's, and from each other; nothing cyan or pink", () => {
@@ -107,6 +112,7 @@ test('3. their runes: 7 by 7, each its own', () => {
 });
 
 test('4. on: each look draws at its moment, on whole pixels, and is gone when it is over', () => {
+  const was = MELDS8_LOOK.on;
   MELDS8_LOOK.on = true;
   try {
     withPage(() => {
@@ -133,6 +139,6 @@ test('4. on: each look draws at its moment, on whole pixels, and is gone when it
       }
     });
   } finally {
-    MELDS8_LOOK.on = false;
+    MELDS8_LOOK.on = was;
   }
 });

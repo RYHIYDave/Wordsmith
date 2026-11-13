@@ -462,6 +462,8 @@ export interface Monster {
   stunT: number;
   /** (SUNDER, game/melds8.ts) How much more it takes while stunned, stunned by a Sunder hit. */
   sunder?: number;
+  /** (SUNDER's look) The game's time its sundered stun's look runs to: a blow before then is a blow on one sundered. */
+  sunderTill?: number;
   staggerT: number;
   staggerCd: number;
   /** (THE WARRIOR'S WARHAMMER, game.ts smashed) How dazed by his Smashes, 0 to 1 (a full daze stuns it), and when last dazed. */
@@ -1524,6 +1526,12 @@ export type GameEvent =
    * Wildfire's, Hailstorm's and Contagion's arcs, the sparks and strikes of what they leave behind).
    */
   | { t: 'arc'; x0: number; y0: number; x1: number; y1: number; sky?: boolean; meld?: MeldId }
+  /**
+   * THE EIGHT MELDS ACROSS THE GROUPS' MOMENTS (game/melds8.ts; their looks render/melds8.ts M8Event, the art chat's, his yes of
+   * 12 Nov 2026): `id` the meld, `k` how strongly (1 in front, MELD8_TUNE.behind behind), `on` the monster it is on, `x`/`y` where,
+   * `x1`/`y1` an arc's far end, Fervor's `n` of `most` and `secs`, Implode's `reach`, `r` and `wait`, Sunder's `what: 'hit'`.
+   */
+  | { t: 'meld8'; id: MeldId; what?: 'hit'; k?: number; x?: number; y?: number; x1?: number; y1?: number; on?: number; n?: number; most?: number; secs?: number; reach?: number; r?: number; wait?: number }
   /** What a word behind an ability gives the hero: "of Power" stacks might, "of Swiftness" gives haste. */
   | { t: 'buff'; kind: 'might' | 'haste'; x: number; y: number; stacks: number }
   /** "of Echoes": the ability will repeat from here in `delay` seconds. */
