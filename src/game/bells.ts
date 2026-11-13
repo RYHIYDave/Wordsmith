@@ -17,7 +17,8 @@
 // it with any attack (a ranger can ring one from afar); 15 seconds a bell; each tough enemy tougher than the last, shown as a
 // yellow pack's leader; a bell's ring knocks back the enemies near it; time out: the Hush lifts, no explosion, what fell is
 // kept; the explosion gear, gold, runedust and a chance at a word (floors 11 to 15's runedust, as the strongholds' was on 6
-// to 10); one event a floor; the event's Hush brings enemies only (it does not darken his words: that is the bosses').
+// to 10), bursting out of the bell he rings last (his word, 13 Nov 2026: "I want the loot to always drop from the final bell
+// that is being rung in the sequence by the player."; before, out of the Muffled Bell); one event a floor; the event's Hush brings enemies only (it does not darken his words: that is the bosses').
 //
 // WHERE: each floor's map-maker lays the plan (Land.bells, game/act2_types.ts) and its dresser the pieces (props of kind
 // 'piece' by the art's names, render/act1_pieces.ts draws them by their `state`); the rules are Game's ("ACT 2: THE BELLS"),

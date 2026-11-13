@@ -1459,8 +1459,8 @@ export type GameEvent =
   | { t: 'hushed'; on: boolean }
   /**
    * ACT 2, THE BELLS (game/bells.ts): the Muffled Bell struck, the Hush pouring out of it ('start'); a bell rung, the `k`th of
-   * `n` ('ring'); one of the Hush risen out of it ('rise'); all rung in time, the Hush shattering and the Muffled Bell bursting
-   * ('won'); the clock run out, the Hush lifting ('lost').
+   * `n` ('ring'); one of the Hush risen out of it ('rise'); all rung in time, the Hush shattering and the bell rung last bursting
+   * in the loot explosion ('won', at that bell); the clock run out, the Hush lifting ('lost').
    */
   | { t: 'bells'; what: 'start' | 'ring' | 'rise' | 'won' | 'lost'; x: number; y: number; k?: number; n?: number }
   /** (ARRIVALS, game/arrivals.ts) One coming up out of a rift in the floor: the rift opens `delay` seconds from now, it is out `secs` after; `r` its size (tiles); 'out', it has stepped out. */

@@ -159,6 +159,33 @@ test('each bell rung chips the Hush back, calls a tough one (a leader, tougher e
   assert.equal(L.props[B.muffled].state, BELL_STILL, 'the Muffled Bell too');
 }));
 
+// His word, 13 Nov 2026: "I want the loot to always drop from the final bell that is being rung in the sequence by the player."
+test('the loot explosion bursts out of the bell rung last, whichever it is, not out of the Muffled Bell', () => act2(() => {
+  const { g, L, B } = withBells();
+  (g as unknown as Inside).bellsStruck(B.plan.muffled.x, B.plan.muffled.y, 0.5);
+  const n = B.plan.bells.length;
+  // (rung out of the plan's order: the second to the last, then the first, last of all)
+  for (let i = 1; i < n; i++) (g as unknown as Inside).bellsStruck(B.plan.bells[i].x, B.plan.bells[i].y, 0.6);
+  assert.equal(B.phase, 'on', 'one bell still to ring');
+  // (what the Hush raised is taken away first, so that every drop now is the explosion's own)
+  g.monsters = g.monsters.filter((m) => !B.ids.includes(m.id));
+  g.risers.length = 0;
+  g.drops.length = 0;
+  const last = B.plan.bells[0];
+  (g as unknown as Inside).bellsStruck(last.x, last.y, 0.6);
+  assert.equal(B.phase, 'won');
+  assert.equal(g.drops.filter((d) => d.kind === 'item').length, n, 'the explosion: a piece of gear a bell');
+  assert.ok(g.drops.some((d) => d.kind === 'gold'), 'and gold');
+  for (const d of g.drops) {
+    const away = Math.hypot(d.x - last.x, d.y - last.y);
+    assert.ok(away < 2.5, `the ${d.kind} fell by the bell rung last (${away.toFixed(2)} tiles from it)`);
+    assert.equal(L.walk[Math.floor(d.y) * L.floor.w + Math.floor(d.x)], 1, `the ${d.kind} on the floor, where he can walk to it`);
+  }
+  if (Math.hypot(last.x - B.plan.muffled.x, last.y - B.plan.muffled.y) > 5) {
+    assert.ok(!g.drops.some((d) => Math.hypot(d.x - B.plan.muffled.x, d.y - B.plan.muffled.y) < 2.5), 'none of it at the Muffled Bell');
+  }
+}));
+
 test('what the Hush raises comes up awake: on floor 14 no patient of it lies down in a ward bed', () => act2(() => {
   const g = seasoned(new Game('warrior', 14), 30);
   (g as unknown as { god: boolean }).god = true;

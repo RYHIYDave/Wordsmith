@@ -3446,7 +3446,7 @@ export class Game {
     // (THE FLOORS' SCENE SOUNDS: the bell rings out, in place of the portal's sound)
     this.sceneSound('bell_ring', 0.9, 'portal', 0.7, true);
     if (k >= n) {
-      this.bellsWon();
+      this.bellsWon(b);
       return;
     }
     this.msg(`A bell rings: ${k} of ${n}.`, MSG.word);
@@ -3473,8 +3473,12 @@ export class Game {
     this.arriveFrom(from);
   }
 
-  /** All rung in time: every bell peals at once, the Hush shatters (what it raised falls), and the Muffled Bell bursts in a big loot explosion. */
-  private bellsWon(): void {
+  /**
+   * All rung in time: every bell peals at once, the Hush shatters (what it raised falls), and the big loot explosion bursts out
+   * of `last`, the bell he rang last, whichever of them it was. His words, 13 Nov 2026: "I want the loot to always drop from the
+   * final bell that is being rung in the sequence by the player." (Before, it burst out of the Muffled Bell.)
+   */
+  private bellsWon(last: { x: number; y: number }): void {
     const L = this.level;
     const B = L.bells;
     if (!B) return;
@@ -3488,13 +3492,14 @@ export class Game {
       const m = this.monsters.find((o) => o.id === id && !o.dead);
       if (m) this.damageMonster(m, m.life + m.shield + 1, 'phys', false, -1);
     }
-    const at = { x: B.plan.muffled.x, y: B.plan.muffled.y + 1 };
+    // (on the floor beside that bell: a bell stands solid, some against a house front, so the nearest walkable tile to it)
+    const at = this.floorNear(last.x, last.y);
     const n = B.plan.bells.length;
     if (MELD.on) this.addDrop('dust', at.x, at.y, Math.round((BELLS_TUNE.dust + Math.floor(n / 2)) * (LOOT2.on ? LOOT2.dust : 1)), null, null);
     for (let i = 0; i < n; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(i < 2 ? 4 : 2), null);
     this.addDrop('gold', at.x, at.y, this.rng.int(BELLS_TUNE.gold, BELLS_TUNE.gold * 2) * Math.max(1, this.power) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
     if (this.wordsFall() && this.rng.chance(BELLS_TUNE.word * wordGrowth(this.power))) this.addDrop('word', at.x, at.y, 0, null, this.rng.pick(wordsAt(this.power)));
-    this.emit({ t: 'bells', what: 'won', x: B.plan.muffled.x, y: B.plan.muffled.y, n });
+    this.emit({ t: 'bells', what: 'won', x: last.x, y: last.y, n });
     this.sfx('rare');
     this.msg('Every bell peals at once. The Hush shatters!', MSG.good);
   }
