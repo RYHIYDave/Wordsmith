@@ -190,7 +190,8 @@ test('The Poacher\'s Bow and The Hair Trigger: a Volley leaves one of his traps;
     assert.deepEqual(plain, { hurt: 0, gone: false }, 'an arrow over a trap does nothing to it');
     const shot = burst(true);
     assert.equal(shot.gone, true, 'set off at once');
-    const t = room('ranger');
+    // (a trap's own blow, by the same hero with the same gear on: the practice room's is rolled, and the gloves count)
+    const t = wear(room('ranger'), 'hairtrigger');
     steady(t);
     const st = t.hero.d.stats;
     const once = Math.round(100 * t.hero.skills[2].r.dmgMult * (1 + (st.dmgPct + st.physPct) / 100));

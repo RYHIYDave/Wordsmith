@@ -57,6 +57,9 @@ function warrior(talents: string[] = [], level = 30): { g: Game; a: Inside; seen
   h.fx = 1;
   h.fy = 0;
   for (const t of talents) assert.equal(g.takeTalent(t), null, `takes ${t}`);
+  // (the practice room's gear is rolled, and may carry Area of Effect: taken off it, these measure the moves' own sizes)
+  for (const it of Object.values(h.gear)) if (it) it.affixes = it.affixes.filter((x) => !x.mods.some((m) => m.stat === 'areaPct'));
+  g.refresh();
   g.events.length = 0;
   return { g, a, seen: [] };
 }

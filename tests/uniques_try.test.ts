@@ -8,7 +8,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/game';
 import type { ClassId } from '../src/game/types';
-import { UNIQUE_DEFS, poolFor, uniqueOf } from '../src/game/uniques';
+import { LEVEL_UNIQUES, UNIQUE_DEFS, poolFor, uniqueOf } from '../src/game/uniques';
+
+// (THE 62 ALONE: the leveling uniques, on since his yes of 12 Nov 2026, have a roll and a hand-out of their own, and their own test,
+// tests/uniques_level.test.ts; here they are set aside)
+LEVEL_UNIQUES.on = false;
 import { off, on } from './uniques_helpers';
 
 const CLASSES: ClassId[] = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];

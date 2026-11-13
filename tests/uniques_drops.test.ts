@@ -12,7 +12,11 @@ import { Game } from '../src/game/game';
 import { itemValue, rollItem } from '../src/game/items';
 import type { Monster } from '../src/game/state';
 import type { Item } from '../src/game/types';
-import { UNIQUES, UNIQUE_DROPS, UNIQUE_RULES, bossUnique, makeUnique, poolFor, uniqueOf } from '../src/game/uniques';
+import { LEVEL_UNIQUES, UNIQUES, UNIQUE_DROPS, UNIQUE_RULES, bossUnique, makeUnique, poolFor, uniqueOf } from '../src/game/uniques';
+
+// (THE 62 ALONE: the leveling uniques, on since his yes of 12 Nov 2026, have a roll and a hand-out of their own, and their own test,
+// tests/uniques_level.test.ts; here they are set aside)
+LEVEL_UNIQUES.on = false;
 import { itemCard } from '../src/ui/panels';
 import { inner, off as off_, on, wear } from './uniques_helpers';
 
