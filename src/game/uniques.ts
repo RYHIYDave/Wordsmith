@@ -124,6 +124,23 @@ export const UNIQUE_TUNE = {
   heels: { jumps: 2 },
   /** THE RECEIPT: a blow from within this of straight ahead (cosine), from within `reach`, answered with a punch of this share of his hit; no more often than `gap`. */
   receipt: { share: 1, cos: 0.5, reach: 2.6, gap: 0.4 },
+  // ---- SET 1, THE BATTLE AXE AND THE WARHAMMER (SET1, below: off until his yes to their pictures) ----
+  /** GYRE: his thrown axe, at the end of its flight, spins there so many seconds, cutting all within `r` every `tick` seconds for this share of the throw's hit; so many at once (another takes the oldest's place). */
+  gyre: { secs: 3, r: 1.3, tick: 0.35, share: 0.3, most: 2 },
+  /** RED TITHE: the blood of an enemy that dies bleeding flies (in so many seconds) to the nearest other within `reach`, which bleeds as hard, for so many seconds; Cleave this much softer (its price). */
+  tithe: { reach: 6, fly: 0.25, secs: 3, cleave: 0.15 },
+  /** WIDOWFALL: Leaping Chop lands with a Cleave all round him, so wide, this share of the Chop's hit; all it strikes bleed this share of the hit again over so many seconds. */
+  widow: { r: 2.4, share: 0.8, bleed: 0.5, secs: 3 },
+  /** DEATH KNELL: an enemy his hammer stuns rings so many seconds; struck while it rings, it peals: everything within `r` of it stunned so long (and ringing too). Each stun of his hammer this much shorter (its price). */
+  knell: { secs: 4, r: 2.6, stun: 0.6, shorter: 0.3 },
+  /**
+   * DEADWEIGHT: each Smash in a row this much harder than the first for each before it, and this much slower; the `every`th lands
+   * as an Earthquake of its own (`quake` times a Smash's hit, `r` wide) and the weight starts over. Kept `keep` seconds after a
+   * blow; then one blow's weight lost every `drain` seconds.
+   */
+  weight: { more: 0.15, slower: 0.1, every: 5, quake: 1.5, r: 2.0, keep: 1.2, drain: 0.5 },
+  /** STARBREAKER: Earthquake's meteor: its fire this share of a hit, `r` wide; the floor left burning `burnSecs` seconds, `burnR` wide, this share a fifth of a second. */
+  star: { share: 1.5, r: 1.6, burn: 0.12, burnR: 1.5, burnSecs: 3 },
 };
 
 /**
@@ -282,9 +299,43 @@ export const UNIQUE_DEFS: readonly UniqueDef[] = [
   { id: 'receipt', name: 'Return to Sender', stem: 'gauntlets', from: 'pool', cls: 'brawler', only: true, bends: 'hero', stats: ['str', 'maxLife'], does: () => ['A blow you take from in front is answered at once with a free punch.'] },
 ];
 
+/**
+ * SET 1: THE BATTLE AXE'S AND THE WARHAMMER'S UNIQUES, the Warrior's, three each, each its own weapon's (his pick of 12 Nov 2026:
+ * “Each keeps its weapon's moves”). His words, 12 Nov 2026, asked for them: “lets do axe and hammer”; of the first hammer drafts,
+ * “kinda just throwing one unique per ability at me, its a little uninspired”; his picks (his doc “Wordsmith: Unique Items”, the
+ * Warrior's table): Gyre, his idea, “i like the spinning return but how about it stops and spins for a duration.. you can have two
+ * out, and another throw replaces the oldest one.  or they expire”; Red Tithe; Widowfall; Death Knell; Deadweight; Starbreaker,
+ * his idea, “maybe the hammer hold pulls a meteor down that lands as the hammer hits.  the rest is the same.  maybe a fire damage
+ * mod on that one”. Their names his pick of a set, “Set 1 (Recommended)”, after “i dont like that we just added 6 uniques called
+ * "The ____ _____"”. Built at his word of 12 Nov 2026, by 22:50: “just do number 1, get it all finished, screw what chat its
+ * supposed to go to.  im going to bed, get these ready for the next update”.
+ *
+ * BEHIND `SET1`, OFF until his yes to their pictures (PICTURES FIRST): off, none drops, is gambled for or is on his test page; what
+ * they do is in game/game.ts under “UNIQUE ITEMS, SET 1”. Their numbers, UNIQUE_TUNE gyre … star, a proposal, his to change.
+ */
+export const SET1 = { on: false };
+const GY = T.gyre;
+export const SET1_DEFS: readonly UniqueDef[] = [
+  // ---- THE BATTLE AXE ----
+  { id: 'gyre', name: 'Gyre', stem: 'battleaxe', from: 'pool', cls: 'warrior', bends: 'hero', stats: ['atkSpeed', 'areaPct'], does: () => [`Your thrown axe stops at the end of its flight and spins there for ${GY.secs} seconds, cutting everything round it, then falls.`, `${GY.most === 2 ? 'Two' : GY.most} can spin at once; another throw takes the place of the oldest.`] },
+  { id: 'redtithe', name: 'Red Tithe', stem: 'battleaxe', from: 'pool', cls: 'warrior', bends: 'hero', stats: ['physPct', 'lifeOnHit'], does: () => ['An enemy that dies bleeding throws its blood to the nearest other, which starts bleeding too.', 'With Rend, one Cleave can bleed a whole room.'], price: () => `Cleave hits ${pc(T.tithe.cleave)} weaker.` },
+  { id: 'widowfall', name: 'Widowfall', stem: 'battleaxe', from: 'pool', cls: 'warrior', bends: 'hero', stats: ['str', 'critChance'], does: () => ['Leaping Chop lands with a Cleave all round you, and every enemy it hits bleeds.', 'With Headlong, each kill sends you leaping again.'] },
+  // ---- THE WARHAMMER ----
+  { id: 'deathknell', name: 'Death Knell', stem: 'warhammer', from: 'pool', cls: 'warrior', bends: 'hero', stats: ['str', 'areaPct'], does: () => ['Every enemy your hammer stuns rings like a bell. Strike a ringing one and it peals: a shockwave stuns everything round it, and those ring too.'], price: () => `Each stun is ${pc(T.knell.shorter)} shorter.` },
+  { id: 'deadweight', name: 'Deadweight', stem: 'warhammer', from: 'pool', cls: 'warrior', bends: 'hero', stats: ['physPct', 'str'], does: () => [`The hammer grows heavier with every Smash in a row: each hits ${pc(T.weight.more)} harder than the last. The ${T.weight.every === 5 ? 'fifth' : `${T.weight.every}th`} lands as an Earthquake of its own, and the weight starts over.`, 'Stop swinging and it drains away.'], price: () => 'Slower swings while it is heavy.' },
+  { id: 'starbreaker', name: 'Starbreaker', stem: 'warhammer', from: 'pool', cls: 'warrior', bends: 'hero', stats: ['firePct', 'str'], does: () => ['Earthquake pulls a meteor down out of the sky: it lands as the hammer hits, and sets the floor burning.', 'With Tremors, it shakes three times.'] },
+];
+
+/** Every unique this build knows: the 62, and Set 1 (whether or not its switch is on: a piece of it carried is still itself). */
+const ALL_DEFS: readonly UniqueDef[] = [...UNIQUE_DEFS, ...SET1_DEFS];
+/** The uniques that may be had now: the 62, and Set 1 with its switch on. */
+export function liveDefs(): readonly UniqueDef[] {
+  return SET1.on ? ALL_DEFS : UNIQUE_DEFS;
+}
+
 export type UniqueId = string;
 
-const BY_ID = new Map<string, UniqueDef>(UNIQUE_DEFS.map((d) => [d.id, d]));
+const BY_ID = new Map<string, UniqueDef>(ALL_DEFS.map((d) => [d.id, d]));
 
 /** The unique of that id, if there is one. */
 export function uniqueDef(id: string | undefined): UniqueDef | undefined {
@@ -370,17 +421,17 @@ export function wearProblem(it: Item, cls: ClassId): string | null {
 
 /** The uniques the pool may give a hero of this class: the ones for everyone, and his own (UNIQUE_RULES.ownOnly; else every hero's). */
 export function poolFor(cls: ClassId): UniqueDef[] {
-  return UNIQUE_DEFS.filter((d) => d.from === 'pool' && (!d.cls || d.cls === cls || !UNIQUE_RULES.ownOnly));
+  return liveDefs().filter((d) => d.from === 'pool' && (!d.cls || d.cls === cls || !UNIQUE_RULES.ownOnly));
 }
 
 /** The unique a boss of this kind drops, if he has one. */
 export function bossUnique(kind: MonsterKind): UniqueDef | undefined {
-  return UNIQUE_DEFS.find((d) => d.from === 'boss' && d.boss !== undefined && d.boss.includes(kind));
+  return liveDefs().find((d) => d.from === 'boss' && d.boss !== undefined && d.boss.includes(kind));
 }
 
 /** The endless final boss's two. */
 export function finalUniques(): UniqueDef[] {
-  return UNIQUE_DEFS.filter((d) => d.from === 'final');
+  return liveDefs().filter((d) => d.from === 'final');
 }
 
 /** The chance that a piece of gear of this quality (Game.rollGear's) is a pool unique instead, with this magic find (%), at this floor's power. */

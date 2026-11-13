@@ -588,6 +588,13 @@ export class Game {
     tomeAt: new Map<number, number>(),
     /** THE UNSIGNED PACT: the demon is staying on his life. */
     feeding: false,
+    /** DEADWEIGHT (Set 1): Smashes in a row so far, when the last was, the weight the Smash being made carries, and whether it lands as an Earthquake. */
+    weight: 0,
+    weightAt: -1e9,
+    weightHit: 0,
+    weightQuake: false,
+    /** STARBREAKER (Set 1): where the meteor called with an Earthquake begun is falling. */
+    meteor: null as { x: number; y: number } | null,
   };
   /** THE FLESHMANCER'S BRAND: the elite risen to fight for him, or null. */
   risen: Risen | null = null;
@@ -5031,6 +5038,19 @@ export class Game {
     // after a first, else the first; and a small step forward with either.
     // (UNIQUE ITEMS: Windcutter, Strikes in a row counted: one that follows the last soon enough, as his combo's second does)
     if (s.id === 'strike' && this.wears('windcutter')) this.uq.strikes = h.comboT > 0 ? this.uq.strikes + 1 : 1;
+    // (UNIQUE ITEMS, SET 1: Deadweight, each Smash in a row heavier: harder, and slower; the last of them an Earthquake of its own)
+    if (s.id === 'smash' && this.wears('deadweight')) {
+      const W = UNIQUE_TUNE.weight;
+      const U = this.uq;
+      U.weightHit = U.weight;
+      rate /= 1 + W.slower * U.weight;
+      h.swingT = 1 / rate;
+      U.weight++;
+      U.weightQuake = U.weight >= W.every;
+      if (U.weightQuake) U.weight = 0;
+      U.weightAt = this.time;
+      this.emit({ t: 'unique', id: 'deadweight', what: 'weight', x: h.x, y: h.y, r: U.weightQuake ? W.every : U.weight });
+    }
     if (COMBO.on && def.kind === 'melee') {
       h.combo = h.combo === 0 && h.comboT > 0 ? 1 : 0;
       h.comboT = 1 / rate + TUNE.comboWindow;
@@ -5079,6 +5099,16 @@ export class Game {
    */
   private begin(i: number, tx: number, ty: number, wind: number): void {
     const h = this.hero;
+    // (UNIQUE ITEMS, SET 1: Starbreaker, an Earthquake begun calls a meteor down out of the sky, over the spot the maul will come
+    // down on: it falls while he winds up, and lands as the hammer hits, deliver)
+    if (h.skills[i]?.id === 'quake' && this.wears('starbreaker')) {
+      let reach = SKILLS.quake.ahead ?? 1.4;
+      while (reach > 0.2 && !this.isOpen(h.x + h.fx * reach, h.y + h.fy * reach)) reach -= 0.2;
+      const x = h.x + h.fx * reach;
+      const y = h.y + h.fy * reach;
+      this.uq.meteor = { x, y };
+      this.emit({ t: 'unique', id: 'starbreaker', what: 'fall', x, y, r: UNIQUE_TUNE.star.r, secs: wind });
+    }
     // (Strike's combo, defs.ts COMBO: anything but Strike between two Strikes makes the second the first swing again)
     if (i !== 0) {
       h.combo = 0;
@@ -8835,7 +8865,7 @@ export class Game {
     // (THE WARRIOR'S WARHAMMER: Bulldozer, those carried are stunned where he stops)
     for (const id of this.carried) {
       const m = this.monsters.find((o) => o.id === id);
-      if (m && !m.dead) this.stunMonster(m, WARRIOR_TUNE.bulldozer.stun);
+      if (m && !m.dead) this.hammerStun(m, WARRIOR_TUNE.bulldozer.stun);
     }
     this.carried = [];
     const s = h.skills[2];
@@ -8862,6 +8892,12 @@ export class Game {
       else this.after(0.28 * k, () => this.blast(2, x, y, rad * 1.15, r.countDmg, 'land', k, false, false));
     }
     if (r.echo > 0) this.echoOf(2, x, y, h.fx, h.fy, () => this.blast(2, x, y, rad, r.countDmg * r.echo, 'land', 0, true, false));
+    // (UNIQUE ITEMS, SET 1: Widowfall, Leaping Chop lands with a Cleave all round him; all it strikes bleed, hitMonster)
+    if (s.id === 'chop' && this.wears('widowfall')) {
+      const W = UNIQUE_TUNE.widow;
+      this.emit({ t: 'unique', id: 'widowfall', what: 'cleave', x: h.x, y: h.y, r: W.r });
+      this.blast(2, h.x, h.y, W.r, r.countDmg * W.share, 'whirl', 0, false, false);
+    }
     // (UNIQUE ITEMS: Pirouette, Lunge ends in a free turn of Whirlwind where he lands)
     if (this.wears('pivot') && this.moveOpen(1) && SKILLS[h.skills[1].id].kind === 'whirl') {
       const P = UNIQUE_TUNE.pivot;
@@ -8938,6 +8974,13 @@ export class Game {
       // (THE WARRIOR'S WARHAMMER: Tremors, Earthquake three shakes, each weaker; and Twin's second after each)
       const T = WARRIOR_TUNE.tremors;
       const shakes = s.id === 'quake' && this.has('tremors') ? T.n : 1;
+      // (UNIQUE ITEMS, SET 1: Starbreaker, the meteor lands as the hammer hits; with Tremors its fire goes out again with each shake)
+      const star = s.id === 'quake' && primary && this.wears('starbreaker');
+      if (star) {
+        this.uq.meteor = null;
+        this.meteorLands(i, cx, cy, 1, true);
+        for (let q = 1; q < shakes; q++) this.after(q * T.gap, () => this.meteorLands(i, cx, cy, T.shares[q] ?? T.shares[T.shares.length - 1], false));
+      }
       for (let q = 0; q < shakes; q++) {
         const share = each * (shakes > 1 ? T.shares[q] ?? T.shares[T.shares.length - 1] : 1);
         const round = rad + (shakes > 1 ? q * T.wider : 0);
@@ -9127,6 +9170,42 @@ export class Game {
     }
   }
 
+  /**
+   * (UNIQUE ITEMS, SET 1: STARBREAKER) The meteor his Earthquake called lands at (x, y), as the hammer hits (`first`): its fire
+   * strikes all round, and the floor is left burning; with Tremors, its fire goes out again with each later shake, `k` as hard.
+   */
+  private meteorLands(i: number, x: number, y: number, k: number, first: boolean): void {
+    const S = UNIQUE_TUNE.star;
+    if (this.over) return;
+    this.emit({ t: 'unique', id: 'starbreaker', what: first ? 'land' : 'shake', x, y, r: S.r });
+    // (the build's plain stand-in: a blast of fire; its own picture, the meteor falling and striking, is render/set1_fx.ts's)
+    this.emit({ t: 'burst', x, y, r: S.r, el: 'fire', style: 'blast' });
+    this.sfx('fire', first ? 0.9 : 0.6);
+    if (first) this.emit({ t: 'shake', amount: 3 });
+    for (const m of this.monsters) {
+      if (m.dead || this.shutIn(m) || Math.hypot(m.x - x, m.y - y) > S.r + m.r) continue;
+      this.damageMonster(m, this.talentHit('fire', S.share * k), 'fire', false, i);
+    }
+    if (first && this.roomForZone() && this.onFloor(x, y)) {
+      this.zones.push({ x, y, r: S.burnR, t: 0, dur: S.burnSecs, kind: 'burn', element: 'fire', dmg: this.talentHit('fire', S.burn), slow: 0, tick: 0.2, hostile: false, skill: -1, words: [], from: '' });
+      this.emit({ t: 'zone', kind: 'burn', x, y, r: S.burnR, el: 'fire' });
+    }
+  }
+
+  /** (UNIQUE ITEMS, SET 1: DEADWEIGHT) The weight's last Smash, ability `i`, lands at (x, y) as an Earthquake of its own: the ground quakes, and what stands on it is struck and stunned. */
+  private weightQuake(i: number, x: number, y: number, dx: number, dy: number, frac: number): void {
+    const W = UNIQUE_TUNE.weight;
+    this.emit({ t: 'unique', id: 'deadweight', what: 'quake', x, y, r: W.r });
+    this.emit({ t: 'quake', x, y, q: 0, fx: dx, fy: dy });
+    this.emit({ t: 'shake', amount: 3 });
+    this.sfx('slam');
+    this.blast(i, x, y, W.r, frac * W.quake, 'slam');
+    const stun = SKILLS.quake.stun ?? 0.6;
+    for (const m of this.monsters) {
+      if (!m.dead && !this.shutIn(m) && Math.hypot(m.x - x, m.y - y) <= W.r + m.r) this.hammerStun(m, stun);
+    }
+  }
+
   /** One melee hit from (ox, oy) in direction (dx, dy). */
   private strike(i: number, ox: number, oy: number, dx: number, dy: number, frac: number, n = 0, echo = false): void {
     const r = this.hero.skills[i].r;
@@ -9145,6 +9224,11 @@ export class Game {
     // (the spot no smaller for a word that narrows a blow, Precise: the maul's head is the size it is; wider for one that widens it)
     const spot = def.spot && !wide ? { x: ox + dx * def.spot.at, y: oy + dy * def.spot.at, r: def.spot.r * Math.max(1, r.size) } : null;
     if (spot) this.emit({ t: 'burst', x: spot.x, y: spot.y, r: spot.r + 0.3, el: r.element, style: 'land', words, n, echo });
+    // (UNIQUE ITEMS, SET 1: Deadweight, the last Smash of the weight lands as an Earthquake of its own)
+    if (r.id === 'smash' && n === 0 && !echo && this.uq.weightQuake) {
+      this.uq.weightQuake = false;
+      this.weightQuake(i, spot ? spot.x : ox + dx * reach * 0.8, spot ? spot.y : oy + dy * reach * 0.8, dx, dy, frac);
+    }
     // (THE WARRIOR'S BATTLE AXE: Cleave strikes every enemy in its arc, as Sweeping Cut makes any swing do; its arc its own)
     const cleave = this.now('sweepingcut') || def.arc === true || wide || !!spot;
     const minDot = def.arcCos ?? 0.35;
@@ -10114,6 +10198,8 @@ export class Game {
         this.uq.coatHits = 0;
         if (h.potions < TUNE.potionMax) h.potions++;
       }
+      // (SET 1: Death Knell, struck while it rings, it peals)
+      if ((m.knellT ?? 0) > 0 && this.wears('deathknell')) this.peal(m);
     }
     // (WORDMELDING: Avalanche behind, a hit on a chilled enemy hits harder)
     if (r.meldBehind === 'avalanche' && m.chillT > 0) {
@@ -10229,14 +10315,20 @@ export class Game {
       }
       // (THE WARRIOR'S WARHAMMER: Earthquake stuns what it shakes; Smash staggers what it strikes)
       const sd = SKILLS[r.id];
-      if (sd.stun) this.stunMonster(m, sd.stun);
+      if (sd.stun) this.hammerStun(m, sd.stun);
       if (sd.stagger) this.staggerMonster(m, h.x, h.y);
       // (his tree: Heavy Head, Smash stuns too; Rend, Cleave makes it bleed)
-      if (r.id === 'smash' && this.has('heavyhead')) this.stunMonster(m, WARRIOR_TUNE.heavyHead.secs);
+      if (r.id === 'smash' && this.has('heavyhead')) this.hammerStun(m, WARRIOR_TUNE.heavyHead.secs);
       if (r.id === 'cleave' && this.has('rend')) {
         const R = WARRIOR_TUNE.rend;
         m.bleedDps = Math.max(m.bleedT ? m.bleedDps ?? 0 : 0, (dmg * R.share) / R.secs);
         m.bleedT = R.secs;
+      }
+      // (UNIQUE ITEMS, SET 1: Widowfall, every enemy Leaping Chop strikes bleeds)
+      if (r.id === 'chop' && this.wears('widowfall')) {
+        const W = UNIQUE_TUNE.widow;
+        m.bleedDps = Math.max(m.bleedT ? m.bleedDps ?? 0 : 0, (dmg * W.bleed) / W.secs);
+        m.bleedT = Math.max(m.bleedT ?? 0, W.secs);
       }
       // BINDING in front holds what it hits in place
       if (r.bind > 0) {
@@ -10466,6 +10558,31 @@ export class Game {
    * HEAVY: monster `m` is stunned for `secs`: it cannot move or attack, and what it was winding up
    * is broken off. An elite (a guardian too) for half as long; a boss never.
    */
+  /** (THE WARRIOR'S WARHAMMER) A stun of his hammer's. (UNIQUE ITEMS, SET 1: Death Knell, each shorter, its price, and what it stuns rings like a bell.) */
+  private hammerStun(m: Monster, secs: number): void {
+    const knell = this.wears('deathknell');
+    const K = UNIQUE_TUNE.knell;
+    this.stunMonster(m, knell ? secs * (1 - K.shorter) : secs);
+    if (!knell || m.dead || m.boss || m.stunT <= 0) return;
+    const fresh = (m.knellT ?? 0) <= 0;
+    m.knellT = K.secs;
+    if (fresh) this.emit({ t: 'unique', id: 'deathknell', what: 'ring', x: m.x, y: m.y, mid: m.id, secs: K.secs });
+  }
+
+  /** (UNIQUE ITEMS, SET 1: DEATH KNELL) Struck while it rings, `m` peals: a shockwave stuns everything round it, and those ring too. */
+  private peal(m: Monster): void {
+    const K = UNIQUE_TUNE.knell;
+    m.knellT = 0;
+    this.emit({ t: 'unique', id: 'deathknell', what: 'peal', x: m.x, y: m.y, r: K.r, mid: m.id });
+    // (the build's plain stand-in: a ring of its shock; its own picture is render/set1_fx.ts's)
+    this.emit({ t: 'burst', x: m.x, y: m.y, r: K.r, el: 'phys', style: 'nova' });
+    this.sfx('slam', 0.5);
+    for (const o of this.monsters) {
+      if (o === m || o.dead || this.shutIn(o) || Math.hypot(o.x - m.x, o.y - m.y) > K.r + o.r) continue;
+      this.hammerStun(o, K.stun);
+    }
+  }
+
   private stunMonster(m: Monster, secs: number, meld?: MeldId): void {
     if (m.dead || m.boss) return;
     const t = m.elite ? secs / 2 : secs;
@@ -10508,7 +10625,7 @@ export class Game {
     m.dazeAt = this.time;
     if (m.daze >= 1 - 1e-9) {
       m.daze = 0;
-      this.stunMonster(m, S.stun);
+      this.hammerStun(m, S.stun);
     }
   }
 
@@ -12566,6 +12683,11 @@ export class Game {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
       p.age += dt;
+      // (UNIQUE ITEMS, SET 1: Gyre, his axe stopped at the end of its flight, spinning there)
+      if (p.gyre) {
+        if (this.stepGyre(p, dt)) this.projectiles.splice(i, 1);
+        continue;
+      }
       const sp = Math.hypot(p.vx, p.vy) || 1;
       // (THE CITY'S WORDS, Version 23.8: a monster's shot in Stilling's bubble crawls)
       const crawl = p.hostile && !p.trap ? this.patchAt('bubble', p.x, p.y) : null;
@@ -12584,6 +12706,8 @@ export class Game {
           if (!p.hostile) this.unseal(p.skill, nx, ny, 0.1);
           // (THE WARRIOR'S BATTLE AXE: his axe, meeting a wall on its way out, turns back to him; on its way back it flies over)
           if (!p.hostile && p.returns) {
+            // (UNIQUE ITEMS, SET 1: Gyre, it stops where its flight ends, and spins there)
+            if (!p.back && this.parks(p)) break;
             if (!p.back) this.turnBack(p);
             p.x = nx;
             p.y = ny;
@@ -12663,6 +12787,7 @@ export class Game {
         // (THE WARRIOR'S BATTLE AXE: his thrown axe at the end of its flight turns, and comes back to his hand, through what it
         // meets again; caught, it is gone)
         if (!dead && p.returns) {
+          if (!p.back && p.dist <= 0 && this.parks(p)) break;
           if (!p.back && p.dist <= 0) this.turnBack(p);
           if (p.back) {
             const bx = h.x - p.x;
@@ -12698,6 +12823,52 @@ export class Game {
         if (p.look === 'spear') this.laySpear(p);
       }
     }
+  }
+
+  /**
+   * (UNIQUE ITEMS, SET 1: GYRE) With Gyre worn, his thrown axe at the end of its flight (or where a wall ends it) stops there and
+   * spins, and does not come back: whether it did. No more than so many spin at once: the oldest falls.
+   */
+  private parks(p: Projectile): boolean {
+    if (p.hostile || !this.wears('gyre')) return false;
+    const G = UNIQUE_TUNE.gyre;
+    const mine = this.projectiles.filter((q) => q.gyre && !q.hostile && q.gyre.t > 0).sort((a, b) => (a.gyre?.t ?? 0) - (b.gyre?.t ?? 0));
+    // (the oldest falls, in its own next step: not spliced out here, in the middle of the loop)
+    for (let k = 0; k <= mine.length - G.most; k++) (mine[k].gyre as { t: number }).t = 0;
+    p.gyre = { t: G.secs, tick: 0 };
+    p.vx = 0;
+    p.vy = 0;
+    p.dist = 99;
+    p.returns = false;
+    p.back = false;
+    p.hit = [];
+    this.emit({ t: 'unique', id: 'gyre', what: 'spin', x: p.x, y: p.y, r: G.r, secs: G.secs });
+    return true;
+  }
+
+  /** (UNIQUE ITEMS, SET 1: GYRE) An axe spinning where its flight ended: it cuts everything round it every so often, and falls when its seconds are out. Whether it is gone. */
+  private stepGyre(p: Projectile, dt: number): boolean {
+    const G = UNIQUE_TUNE.gyre;
+    const q = p.gyre as { t: number; tick: number };
+    q.t -= dt;
+    q.tick -= dt;
+    if (q.t <= 0 || this.over) {
+      this.emit({ t: 'unique', id: 'gyre', what: 'fall', x: p.x, y: p.y });
+      // (the build's plain stand-in for its fall: render/set1_fx.ts draws the axe falling)
+      this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 4 });
+      return true;
+    }
+    if (q.tick <= 0) {
+      q.tick += G.tick;
+      let any = false;
+      for (const m of this.monsters) {
+        if (m.dead || this.shutIn(m) || Math.hypot(m.x - p.x, m.y - p.y) > G.r + m.r) continue;
+        this.hitMonster(m, p.skill, p.dmg * G.share, true);
+        any = true;
+      }
+      if (any) this.sfx('hit', 0.35);
+    }
+    return false;
   }
 
   /** (THE WARRIOR'S BATTLE AXE) His thrown axe turns for home: what it struck on the way out it may strike again on the way back. */
@@ -14794,6 +14965,10 @@ export class Game {
       for (const o of this.monsters) if (!o.dead && (o.curseT ?? 0) > 0 && Math.hypot(o.x - h.x, o.y - h.y) <= T.ledger.near + o.r) n++;
       k *= 1 + Math.min(T.ledger.most, T.ledger.each * n);
     }
+    // (SET 1) DEADWEIGHT: each Smash in a row harder than the last; RED TITHE: Cleave a little softer (its price)
+    const sid = h.skills[i]?.id;
+    if (sid === 'smash' && U.weightHit > 0 && this.wears('deadweight')) k *= 1 + T.weight.more * U.weightHit;
+    if (sid === 'cleave' && this.wears('redtithe')) k *= 1 - T.tithe.cleave;
     return k;
   }
 
@@ -14880,6 +15055,13 @@ export class Game {
       }
     }
     if (U.bloodT > 0) U.bloodT = Math.max(0, U.bloodT - dt);
+    // (SET 1) DEATH KNELL: the rings die away; DEADWEIGHT: stopped swinging, the weight drains away, a blow's worth at a time
+    if (this.wears('deathknell')) for (const m of this.monsters) if ((m.knellT ?? 0) > 0) m.knellT = Math.max(0, (m.knellT ?? 0) - dt);
+    if (U.weight > 0 && this.time - U.weightAt > T.weight.keep) {
+      U.weight--;
+      U.weightAt = this.time - T.weight.keep + T.weight.drain;
+      this.emit({ t: 'unique', id: 'deadweight', what: 'weight', x: h.x, y: h.y, r: U.weight });
+    }
     // THE STANDING STONE: how long he has stood still
     U.still = walked > 0.001 || h.move ? 0 : U.still + dt;
     // THE DANCING SHOES: nothing slows him or holds him in place
@@ -14988,6 +15170,36 @@ export class Game {
     }
     // THE FLESHMANCER'S BRAND: an elite he kills rises and fights for him
     if (this.wears('fleshmancersbrand') && m.elite && !m.boss) this.raise(m);
+    // (SET 1) RED TITHE: one that dies bleeding throws its blood to the nearest other, which starts bleeding too
+    if ((m.bleedT ?? 0) > 0 && (m.bleedDps ?? 0) > 0 && this.wears('redtithe')) this.tithe(m);
+  }
+
+  /** (UNIQUE ITEMS, SET 1: RED TITHE) `m` died bleeding: its blood flies to the nearest other enemy (within reach), which bleeds as hard. */
+  private tithe(m: Monster): void {
+    const R = UNIQUE_TUNE.tithe;
+    let best: Monster | null = null;
+    let bd: number = R.reach;
+    for (const o of this.monsters) {
+      if (o === m || o.dead || this.shutIn(o)) continue;
+      const d = Math.hypot(o.x - m.x, o.y - m.y) - o.r;
+      if (d < bd) {
+        bd = d;
+        best = o;
+      }
+    }
+    if (!best) return;
+    const dps = m.bleedDps ?? 0;
+    const id = best.id;
+    this.emit({ t: 'unique', id: 'redtithe', what: 'throw', x: m.x, y: m.y, x1: best.x, y1: best.y, secs: R.fly, mid: id });
+    this.after(R.fly, () => {
+      const o = this.monsters.find((q) => q.id === id && !q.dead);
+      if (!o || this.over) return;
+      const fresh = (o.bleedT ?? 0) < 0.5;
+      o.bleedDps = Math.max((o.bleedT ?? 0) > 0 ? o.bleedDps ?? 0 : 0, dps);
+      o.bleedT = Math.max(o.bleedT ?? 0, R.secs);
+      if (fresh) this.emit({ t: 'bleedOn', id: o.id, x: o.x, y: o.y, secs: R.secs });
+      this.emit({ t: 'spark', x: o.x, y: o.y, el: 'phys', n: 3 });
+    });
   }
 
   // ---- THE CRIER'S HUSH ----
