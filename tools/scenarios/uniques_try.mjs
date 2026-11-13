@@ -45,8 +45,10 @@ export default async function (page, snap) {
   });
   log('the test hero', `floor ${st.depth}, level ${st.level}, trial=${st.trial}; ${st.bag.length} uniques in his bag, ${st.stash.length} in his stash; ${st.cannot.length} he cannot wear`);
   if (st.depth !== want || !st.trial) bad('not the level select\'s test hero on the floor asked for');
-  if (st.bag.length !== 15) bad(`his bag has ${st.bag.length} uniques, not his fifteen`);
-  if (st.stash.length !== 22) bad(`his stash has ${st.stash.length} uniques, not the twenty-two`);
+  // (and since 12 Nov 2026, evening, his fifteen leveling uniques, LEVEL_UNIQUES on for this page: his bag's nine free places,
+  // then the stash)
+  if (st.bag.length !== 24) bad(`his bag has ${st.bag.length} uniques, not his fifteen and nine of the leveling ones`);
+  if (st.stash.length !== 28) bad(`his stash has ${st.stash.length} uniques, not the twenty-two and six of the leveling ones`);
   if (st.cannot.length) bad(`he cannot wear ${st.cannot.join(', ')}`);
   await snap('2_on_the_floor');
   // the bag, with a finger: INVENTORY, then the first piece read
