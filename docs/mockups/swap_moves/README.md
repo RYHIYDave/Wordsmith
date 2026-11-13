@@ -35,36 +35,48 @@ later as skill-tree swaps”: Beam is still in the code (game/defs.ts SKILLS.bea
 5. How long the Aura stays on, offered “A few seconds, then a wait (Recommended)”, “On till tapped off, costs mana” and
    “Always on once taken”, his words: “one, and then maybe another passive that leaves it on further into the tree”.
 
-SO, THE MAGE (read back to him as each came):
+SO, THE MAGE (read back to him as each came; as it stands after 7):
 
-| Where | Her move | Becomes | What it does |
-|---|---|---|---|
-| FIRE path, one stone | Wave (tap) | **BALL** | a ball of fire flies at the enemy and bursts where it hits (his “fireball”; named in the plain words he asked for) |
-| LIGHTNING path, one stone | Orb (hold) | **BEAM** | his Beam of 4 Oct: it burns toward your finger while held, steered as you move it, through everything in its line |
-| FROST path, one stone | Orb (hold) | **SPEAR** | a spear of ice flies where you point, through every enemy in its line, freezing the last it hits |
-| WHERE HER THREE PATHS JOIN, in the middle | (new) a tap on her | **AURA** | a circle round her, its kind picked as she takes the stone: FIRE burns every enemy in it; LIGHTNING sends bolts to every enemy in it; FROST shields her and chills the enemies in it. A few seconds on, then a wait |
-| FURTHER UP THE TREE, past the Aura | | (a stone) | the Aura stays on |
+| Where | Stone | What it gives |
+|---|---|---|
+| FIRE path, beside its first stone | **BALL** | a move: a ball flies at the enemy and bursts where it hits (his “fireball”, but of no element of its own) |
+| LIGHTNING path, beside its first stone | **BEAM** | a move: his Beam of 4 Oct, burning toward your finger while held, steered as you move it, through everything in its line (held only) |
+| FROST path, beside its first stone | **SPEAR** | a move: a spear flies where you point, through every enemy in its line (not of ice) |
+| WHERE HER THREE PATHS JOIN, in the middle | **AURA** | a tap on her: a circle round her, its kind picked as she takes the stone: FIRE burns every enemy in it; LIGHTNING sends bolts to every enemy in it; FROST shields her and chills the enemies in it. A few seconds on, then a wait |
+| THE FAR END, from any path's last stone | **LASTING AURA** | the Aura stays on |
 
-Orb wears one swap at a time: Beam or Spear. A tap on her is the Warlock's own way of changing (game/warlock.ts: his pact
-full, a tap on him); on a pad, as his, the right bumper.
+The new moves have no element of their own: they take her words' as Wave and Orb do. She can take stones on any path, and on
+her ATTACKS page she puts any two of Wave, Orb, Ball, Beam and Spear on her tap and her hold (Beam only on the hold). A tap on
+her is the Warlock's own way of changing (game/warlock.ts: his pact full, a tap on him); on a pad, as his, the right bumper.
 
 ### The Ranger
+
+7. (The Mage again, 21:48) “i dont want spear to be ice spear, i want it to be spear, same with the others.  youll be able to dip
+   into multiple trees so maybe you want spear and ball or beam and spear”. Offered: each stone adds its move and she sets any two
+   of her moves on tap and hold, or each stone swaps a set one: **“She sets tap and hold (Recommended)”**.
 
 6. Offered two stones changing his hold, Volley (arrows path: Barrage, arrows streaming where you point while held; traps
    path: Snare, a snare thrown where you point, what walks in held fast, then it bursts), his Shot staying, his words: “i like
    snare, maybe something like SNIPE where the longer you hold it the more damage the shot goes and it pierces through enemies”
 
+8. Asked whether he too sets any two of his moves on tap and hold: “i like snare to swap for shot and snipe to swap for volley”.
+9. 21:53: “and maybe something for the companions?  like Rally or something that gives nearby allies attack speed and damage or
+   something”; and “as another swap for volley”.
+
 SO, THE RANGER (his companions, live, are his other new):
 
 | Where | His move | Becomes | What it does |
 |---|---|---|---|
-| ARROWS path, one stone | Volley (hold) | **SNIPE** | hold to draw: the longer the hold, the harder the shot, and it goes through enemies |
-| TRAPS path, one stone | Volley (hold) | **SNARE** | a snare thrown where you point; what walks into it is held fast, then it bursts |
+| TRAPS barb, beside its first stone | Shot (tap) | **SNARE** | a snare thrown where you point; what walks into it is held fast, then it bursts |
+| ARROWS barb, beside its first stone | Volley (hold) | **SNIPE** | hold to draw: the longer the hold, the harder the shot, and it goes through enemies |
+| beside his WILD COMPANION | Volley (hold) | **RALLY** | a call: his companions and allies near him attack faster and harder for a few seconds |
 
-Volley wears one at a time: Snipe or Snare. His Shot and his Trap roll stay.
+Volley takes one: Snipe or Rally. He can have Snare and Snipe (or Rally) together. His Trap roll stays.
 
 ## Next
 
-1. THE TREES' NEW SHAPE AS A PICTURE, for his yes (pictures first): the Mage's three paths meeting in the middle at the Aura,
-   the stone that leaves it on further up; each swap's stone on its path; the Ranger's two stones on his arrow.
+1. THE TREES' NEW SHAPE, DRAFTED IN THE GAME (game/talents.ts SWAP_MOVES, off: MAGE2, RANGER2; ui/talents.ts the new runes) and
+   pictured from its own TALENTS page (tools/scenarios/swap_moves_trees.mjs; pictures/mage_tree_draft.png,
+   ranger_tree_draft.png), for his yes. Every old stone keeps its id and works as now; the Mage's warps and what follows them
+   moved past the Aura (MAGE2_AT). The new stones' cards say “A DRAFT: NOT IN PLAY YET”.
 2. The rules, behind a switch that is off; each move's look painted and shown him in play, his yes; then the ship list.

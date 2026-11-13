@@ -239,6 +239,72 @@ const RANGER: TalentTree = {
   ],
 };
 
+// ---- the mage's and the ranger's moves to swap (drafted, 12 Nov 2026) ---------------------------------------------------
+/**
+ * MOVES TO SWAP FOR THE MAGE AND THE RANGER, DRAFTED (docs/mockups/swap_moves/README.md has every word of his). His words, 4 Nov
+ * 2026, 19:18: “Him and the mage and less so the ranger need some work to get up to the level of the new three classes.”; 19:19:
+ * “They just need different moves to swap between.” His picks, 12 Nov 2026, by pop-up: the Mage, “No weapon pick, swaps in her
+ * paths”; “beam is good for lightning, ball for tap maybe in the fire slot for fireball, blizzard is too on the nose.  and id like
+ * the trees to reconnect in the middle to a tap on the hero ability called Aura and it turns on an aura around the mage.  it can do
+ * something like fire DoT or send out bolts to every enemy in the aura, or shields you and chills enemies in the circle”; the frost
+ * swap “Spear”; the Aura's kind “She picks when she takes it”; how long, “one, and then maybe another passive that leaves it on
+ * further into the tree”. The Ranger: “i like snare, maybe something like SNIPE where the longer you hold it the more damage the
+ * shot goes and it pierces through enemies”. Then, 21:48: “i dont want spear to be ice spear, i want it to be spear, same with the
+ * others.  youll be able to dip into multiple trees so maybe you want spear and ball or beam and spear”; her moves, “She sets tap and
+ * hold (Recommended)”; his, “i like snare to swap for shot and snipe to swap for volley”. So: her three paths meet in the middle at
+ * AURA, every path through it; beside each path's first stone a new move of no element (BALL, BEAM, SPEAR), each LEARNED, and she
+ * puts any two of Wave, Orb, Ball, Beam and Spear on her tap and hold (Beam held only); LASTING AURA at the far end, reached from
+ * any path's last stone. His: SNARE in place of Shot, SNIPE in place of Volley, beside the first stone of each barb of his arrow's
+ * head; and 21:53, “and maybe something for the companions?  like Rally or something that gives nearby allies attack speed and
+ * damage or something”, “as another swap for volley”: RALLY beside his Wild Companion, Volley taking Snipe or Rally. THE TREES ONLY, TO SHOW HIM (the cards say what each will do; the new stones do nothing yet), off.
+ */
+export const SWAP_MOVES = { on: false };
+const AURA_C = '#d8c8ff';
+/** The Mage's stones moved for the drafted shape (where each sits now, and what leads to it), by id; the rest as MAGE has them. */
+const MAGE2_AT: Record<string, { at: readonly [number, number]; from: readonly string[] }> = {
+  flamewarp: { at: [4, 0], from: ['aura'] },
+  fuel: { at: [5, 0], from: ['flamewarp'] },
+  inferno: { at: [6, 0], from: ['fuel'] },
+  stormwarp: { at: [4, 2], from: ['aura'] },
+  overload: { at: [5, 2], from: ['stormwarp'] },
+  stormcaller: { at: [6, 2], from: ['overload'] },
+  frostwarp: { at: [4, 4], from: ['aura'] },
+  rime: { at: [5, 4], from: ['frostwarp'] },
+  shatter: { at: [6, 4], from: ['rime'] },
+};
+const MAGE2: TalentTree = {
+  cls: 'mage',
+  shape: 'three paths from her rune, meeting in the middle at her Aura',
+  root: [0, 2],
+  draft: true,
+  paths: [
+    { id: 'fire', name: 'FIRE', color: FIRE, label: { node: 'flamewarp', side: 'above' } },
+    { id: 'lightning', name: 'LIGHTNING', color: LIGHT, label: { node: 'stormwarp', side: 'below' } },
+    { id: 'frost', name: 'FROST', color: FROST, label: { node: 'frostwarp', side: 'below' } },
+    { id: 'aura', name: 'AURA', color: AURA_C, label: { node: 'aura', side: 'above' } },
+  ],
+  talents: [
+    ...MAGE.talents.map((t) => (MAGE2_AT[t.id] ? { ...t, works: true, ...MAGE2_AT[t.id] } : { ...t, works: true })),
+    // (the swaps, beside each path's first stone)
+    { id: 'ball', name: 'Ball', big: true, path: 'fire', at: [1.5, -0.9], from: ['kindling'], text: 'Learn BALL: a ball flies at the enemy and bursts where it hits. Put it on your tap or your hold (ATTACKS).' },
+    { id: 'beam', name: 'Beam', big: true, path: 'lightning', at: [1.5, 1.1], from: ['charged'], text: 'Learn BEAM: it burns toward your finger for as long as you hold, steered as you move it, through everything in its line. It goes on your hold (ATTACKS).' },
+    { id: 'spear', name: 'Spear', big: true, path: 'frost', at: [1.5, 4.9], from: ['bittercold'], text: 'Learn SPEAR: a spear flies where you point, through every enemy in its line. Put it on your tap or your hold (ATTACKS).' },
+    // (where her paths meet, and the far end)
+    { id: 'aura', name: 'Aura', big: true, path: 'aura', at: [3, 2], from: ['searing', 'forking', 'deepfreeze'], text: 'AURA: tap yourself for a circle round you, a few seconds, then a wait. Pick its kind as you take it: FIRE burns every enemy in it; LIGHTNING sends bolts to every enemy in it; FROST shields you and chills the enemies in it.' },
+    { id: 'lasting', name: 'Lasting Aura', big: true, path: 'aura', at: [7, 2], from: ['inferno', 'stormcaller', 'shatter'], text: 'Your Aura stays on.' },
+  ],
+};
+const RANGER2: TalentTree = {
+  ...RANGER,
+  draft: true,
+  talents: [
+    ...RANGER.talents.map((t) => ({ ...t, works: true })),
+    { id: 'snare', name: 'Snare', big: true, path: 'traps', at: [6.9, -0.25], from: ['widetraps'], text: 'Your tap becomes SNARE, in place of Shot: a snare thrown where you point; what walks into it is held fast, then it bursts.' },
+    { id: 'snipe', name: 'Snipe', big: true, path: 'arrows', at: [6.9, 4.25], from: ['splitshot'], text: 'Your hold becomes SNIPE, in place of Volley: draw and hold, the longer the harder the shot, and it goes through enemies. Volley takes one: Snipe or Rally.' },
+    { id: 'rally', name: 'Rally', big: true, path: 'wind', at: [2.6, 0.3], from: ['wildcompanion'], text: 'Your hold becomes RALLY, in place of Volley: a call that gives your companions and allies near you faster, harder attacks for a few seconds. Volley takes one: Snipe or Rally.' },
+  ],
+};
+
 // ---- the warrior: two swords crossed --------------------------------------------------------------
 const TECHNIQUE = '#ff6a50';
 const IRON = '#a8c0d8';
@@ -604,8 +670,13 @@ export const TREES: Record<ClassId, TalentTree> = {
   get warrior(): TalentTree {
     return WARRIOR_TREE2.on ? WARRIOR2 : WARRIOR;
   },
-  ranger: RANGER,
-  mage: MAGE,
+  // (the Mage's and the Ranger's moves to swap, drafted: while SWAP_MOVES is on)
+  get ranger(): TalentTree {
+    return SWAP_MOVES.on ? RANGER2 : RANGER;
+  },
+  get mage(): TalentTree {
+    return SWAP_MOVES.on ? MAGE2 : MAGE;
+  },
   warlock: WARLOCK_TREE,
   tinkerer: TINKERER_TREE,
   // (the Brawler made again as the Veteran: his tree, while VETERAN is on)
