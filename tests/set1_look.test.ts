@@ -49,11 +49,13 @@ test('1. the six bag pictures: sound, each its own, apart from the 62\'s', () =>
 function counting(): { g: CanvasRenderingContext2D; n: () => number } {
   let n = 0;
   const g = new Proxy({} as Record<string, unknown>, {
-    get: (_t, k) => (k === 'canvas' ? {} : typeof k === 'string' && /^(fill|stroke|draw|ellipse|arc|rect|beginPath|moveTo|lineTo|save|restore|translate|scale|closePath|clip)/.test(k) ? () => { n++; } : undefined),
+    get: (_t, k) => (k === 'canvas' ? {} : typeof k === 'string' && /^(fill|stroke|draw|ellipse|arc|rect|beginPath|moveTo|lineTo|save|restore|translate|scale|closePath|clip|create)/.test(k) ? () => { n++; return { addColorStop: () => undefined }; } : undefined),
     set: () => true,
   }) as unknown as CanvasRenderingContext2D;
   return { g, n: () => n };
 }
+// (a glow is painted once on a small canvas of its own, engine/px.ts glowOf: here a stand-in for the browser's)
+(globalThis as unknown as { document: unknown }).document = { createElement: () => ({ width: 0, height: 0, getContext: () => counting().g }) };
 
 test('2. their looks in play: off, nothing; on, the meteor falling, its stand-in left out', () => {
   assert.equal(SET1_LOOK.on, false, 'off until his yes to their pictures');

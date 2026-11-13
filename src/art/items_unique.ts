@@ -1570,7 +1570,8 @@ const axBand = (d: number, r: number, m: Part['m']): Part => ({ s: axPoly([[d - 
  */
 function gyre(): Part[] {
   const parts = haft({ wood: R.storm, grip: 'blue', knob: 'steel', long: 26 });
-  const up: [number, number][] = [[19.2, -1.8], [23.0, -1.8], [25.6, -5.0], [27.8, -9.6], [24.4, -10.4], [21.0, -10.6], [17.8, -9.6], [16.4, -7.6], [18.6, -4.2]];
+  // (each point kept within the frame: along and across together no more than 32)
+  const up: [number, number][] = [[19.2, -1.8], [23.0, -1.8], [25.0, -4.6], [25.6, -6.4], [23.4, -8.6], [21.0, -10.0], [18.2, -8.6], [16.4, -7.0], [18.6, -4.0]];
   const down = up.map(([d, a]) => [42.2 - d, -a] as [number, number]);
   for (const [i, b] of [up, down].entries()) {
     const edge = b.slice(3, 8);
@@ -1602,7 +1603,7 @@ function redtithe(): Part[] {
   const coin = ax(19.8, 6.8);
   parts.push({ s: ell(coin, 2.2), m: 'gold', sh: { k: 'dome', c: coin, r: 2.2 }, shine: true, marks: [{ a: [coin[0] - 0.8, coin[1]], b: [coin[0] + 0.8, coin[1]], t: 1 }, { a: [coin[0], coin[1] - 0.8], b: [coin[0], coin[1] + 0.8], t: 1 }] });
   parts.push(axBand(16.0, 1.9, 'dsteel'));
-  return parts;
+  return move(parts, 1.0, 1.0);
 }
 
 /**
@@ -1620,7 +1621,8 @@ function widowfall(): Part[] {
   parts.push({ s: path([ax(16.2, 1.2), ax(14.0, 3.8), ax(11.4, 5.2)], [1.0, 0.9, 0.6]), m: 'linen', sh: { k: 'soft', r: 0.8 }, bias: 0.05 });
   parts.push({ s: path([ax(15.8, 1.4), ax(15.2, 4.8), ax(13.2, 7.2)], [1.0, 0.9, 0.6]), m: 'linen', sh: { k: 'soft', r: 0.8 }, bias: -0.1 });
   parts.push({ s: ell(ax(16.4, 0.6), 1.6, 1.3), m: 'linen', sh: { k: 'soft', r: 1 }, bias: 0.15 });
-  return parts;
+  // (its tall blade reaches higher than the others': the whole brought down and right into the middle of its frame)
+  return move(parts, 1.6, 1.6);
 }
 
 /**
