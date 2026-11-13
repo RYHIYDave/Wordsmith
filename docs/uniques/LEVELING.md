@@ -86,11 +86,31 @@ the rolls reads as the tune's own. In play the rules read the tune as the worn p
 “half as strong again” is its own piece's (`Game.halves`). Counts are made whole (the Physician's Coat's hits). The others (the
 Two-Faced Mask and its like, and counts such as the Fan's three arrows or the Fourth Globe's four) roll nothing yet.
 
+## His test page
+
+The same link as the 62's, **https://claude.ai/artifact/TDTUvbr5FhjV56vrCu3Tbs**, version `1794536201-d24b` (12 Nov 2026,
+about 21:15 Eastern): `index.html` alone published again (sha256 begins 44db29a6675aaeb6, 7,941,217 bytes; the stamp TEST UNIQUES
+2026-11-12); the four folders as they were (25.3.13's marks: the bakes' marks are unchanged by this branch). On it LEVEL_UNIQUES
+and POISON_DMG are on too (src/main.ts), and a test hero of the level select is handed his fifteen leveling uniques beside the 62
+(his bag's nine free places, then the stash), each made so he can wear it there.
+
 ## Checked
 
-See the foot of this file.
+- `tsc --noEmit`: only main's own error (tests/relief.test.ts 378).
+- tests/uniques_level.test.ts (new, 12) and tests/uniques_rolls.test.ts (new, 3), all passed.
+- `unit --only` the uniques' tests, the items', the words', melds, economy, trades, small, first_levels, town, endless, guide,
+  tinkerer, golem_rocket and the core on 02a5083134: 54 files, 50 passed. Of the four: flat_damage (it read every flat pair as
+  one of the four elements) and uniques_game's first test (a unique made by hand, read at the tune's own numbers) mended and
+  passed on fe412d80f1; items_a_game's test 4 (“battleaxe: a picture of the art's”) fails the same on main d39dcde; words.test.ts
+  ran out of its twenty minutes beside another file, and passed alone, 35 of 35, in 29 minutes.
+- Played as published, served from its folder, a finger on a phone's screen (852 by 393, three dots to a point):
+  `uniques_try.mjs` as the Warrior on floor 12 and the Ranger on floor 8 (24 uniques in his bag, 28 in his stash, none he cannot
+  wear); `uniques_level_look.mjs` (new) as the Warrior on floor 10 with the Rot Axe, the Packstrap and the Lantern Cap: his
+  shield on him, his Strike poisoning a monster of the floor's own (no number of its own; the poison's numbers in poison's
+  colour), the shield broken and back after its time by the game's clock, the three cards read (the axe's rule with its roll,
+  “+21% All Resistances”, “-12% Max Life” in red, Poison on the character sheet). All finished clean; pictures looked at.
 
 ## Not checked
 
-His phone. The look of a Rot Axe hit (no number of its own, then the poison's), the Packstrap's shield returning, and the red
-minus lines: on his test page only, for his eye.
+His phone; the page as the app serves it; a whole run with them dropping. The Warrior holding a Battle Axe is drawn with the
+weapon his talents picked (a greatsword till then): not this branch's.
