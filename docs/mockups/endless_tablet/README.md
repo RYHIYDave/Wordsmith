@@ -476,6 +476,10 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   memorable”. SO: THE OLD SHADE IS BACK (his own figure made great, of his pink, bands rising through it), kept further back and
   higher as he asked before, his arms and staff in it as mended; THE LAST STAND IS CUT (made at 06891c2, in the branch's history;
   `boss_last_stand.mp4` taken away). The fight: phase 1 on the boar; phase 2 on foot with his shade and the melds; his death.
+- HIS WORDS, 13 Nov 2026, by pop-up: “No the hand on the staff is bad.  It doesn’t read as a hand”. REMADE (`gripHand`): his fist
+  is built round the staff, as the Brawler's fists are: a chunky rounded block bigger than life, closed right round the staff so the
+  staff is not seen through it; a row of four knuckles down its front with dark creases between his fingers; his thumb over the top
+  from the inside, its tip down in front, a seam round it; his sleeve kept off it.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other eight melds, each for his yes; his other facing turned round, not flipped.
 

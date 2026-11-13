@@ -654,7 +654,7 @@ function staffOf(s: Skeleton, tilt = 0, planted: boolean | number = false): { fo
   const up0 = norm([0.08 * f[0] + 0.12 * f[1], 0.08 * f[1] - 0.12 * f[0], 1]);
   const up = norm(add(mul(up0, Math.cos(tilt * D)), mul(f, Math.sin(tilt * D))), up0);
   // (through his fist: a little in from his knuckles, toward his body, so that his fingers close round it)
-  const grip = add(s.handR, add(mul(s.chest[0], -0.4), mul(s.chest[1], 0.2)));
+  const grip = gripOf(s);
   // (riding, held a third of the way up; on foot, planted: his fist where it is on it, its foot on the floor, as far down as 40
   // below his fist (his staff raised, its foot off the floor), its length kept)
   const w = typeof planted === 'number' ? planted : planted ? 1 : 0;
@@ -801,8 +801,46 @@ function hand(put: Put, side: 'L' | 'R', at: V3, fore: V3, cu: V3, grip: number,
   put(part, `finger${side}`, { k: 'rod', a: tm, b: tt, ra: 0.32 * k, rb: 0.22 * k, ramp: ASH, far: true });
 }
 
+/** Where his staff passes through his right fist: a little in from his knuckles, toward his body. */
+function gripOf(s: Skeleton): V3 {
+  return add(s.handR, add(mul(s.chest[0], -0.4), mul(s.chest[1], 0.2)));
+}
+/** HIS FIST ROUND HIS STAFF (his words, 13 Nov 2026: “the hand on the staff is bad.  It doesn’t read as a hand”): built round the
+ * staff, not a hand closed on nothing: the back of his hand on the wrist's side; four fingers, each its own, wrapped round the staff
+ * one over another, their knuckles in a row; his thumb wrapped over the top of them from the other side. The staff goes in at its
+ * top and out at its foot. At the Brawler's fists' size, as all his hands are. */
+function gripHand(put: Put, side: 'L' | 'R', at: V3, ax: V3, fore: V3): void {
+  const k = HAND;
+  const up = norm(ax, [0, 0, 1]);
+  // (across the staff: o from his wrist through the staff, w round it)
+  const o = norm(sub(fore, mul(up, fore[0] * up[0] + fore[1] * up[1] + fore[2] * up[2])), [1, 0, 0]);
+  const w = norm(cross(up, o), [0, 1, 0]);
+  const sk = side === 'L' ? -1 : 1;
+  // (THE FIST, as the Brawler's are: a chunky rounded block, bigger than life, closed right round the staff so the staff is not seen
+  // through it, lit from the upper left)
+  put(`hand${side}`, `fist${side}`, { k: 'ball', c: add(at, mul(o, 0.35 * k)), ax: [mul(o, 1.75 * k), mul(w, 1.6 * k), mul(up, 1.75 * k)], skin: ASH });
+  // (its knuckles, a row of four down the front of it where his fingers bend round the staff: the line of them is what reads)
+  for (let i = 0; i < 4; i++) {
+    const h = (1.05 - i * 0.7) * k;
+    put(`hand${side}`, `knuckle${side}`, { k: 'ball', c: add(at, add(mul(up, h), add(mul(o, 1.55 * k), mul(w, -sk * 0.75 * k)))), ax: [mul(o, 0.42 * k), mul(w, 0.5 * k), mul(up, 0.4 * k)], skin: ASH });
+  }
+  // (the creases between his fingers, dark across the front of his fist)
+  const CREASE: Ramp = ['#100c14', '#1a1620', '#241e2a', '#2e2836', '#3a3442'];
+  for (let i = 0; i < 3; i++) {
+    const h = (0.7 - i * 0.7) * k;
+    const a = add(at, add(mul(up, h), add(mul(o, 1.62 * k), mul(w, -sk * 1.05 * k))));
+    const b = add(at, add(mul(up, h + 0.08 * k), add(mul(o, 1.75 * k), mul(w, sk * 0.55 * k))));
+    put(`hand${side}`, `crease${side}`, { k: 'rod', a, b, ra: 0.2 * k, rb: 0.2 * k, ramp: CREASE });
+  }
+  // (his thumb, over the top of his fingers from the inside, its tip down in front: its own, a seam round it)
+  const t0 = add(at, add(mul(up, 1.55 * k), add(mul(o, -0.6 * k), mul(w, sk * 1.1 * k))));
+  const t1 = add(at, add(mul(up, 1.75 * k), add(mul(o, 0.9 * k), mul(w, sk * 0.6 * k))));
+  const t2 = add(at, add(mul(up, 1.25 * k), add(mul(o, 1.75 * k), mul(w, -sk * 0.1 * k))));
+  put(`thumb${side}`, `thumb${side}`, { k: 'rod', a: t0, b: t1, ra: 0.62 * k, rb: 0.56 * k, ramp: ASH });
+  put(`thumb${side}`, `thumb${side}`, { k: 'rod', a: t1, b: t2, ra: 0.56 * k, rb: 0.45 * k, ramp: ASH });
+}
 /** AN ARM: his order's sleeve, wide and ragged, to the forearm; the forearm bare below it, thin, ashen, cut with burning runes; the hand. */
-function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, grip: number, spread: number): void {
+function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, grip: number, spread: number, holds?: V3): void {
   const L = side === 'L';
   const sh = L ? s.shoulderL : s.shoulderR;
   const el = L ? s.elbowL : s.elbowR;
@@ -816,11 +854,14 @@ function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, grip: number, sprea
   put(`fore${side}`, `fore${side}`, { k: 'rod', a: lerp3(el, wrist, 0.3), b: wrist, ra: r1 * 0.95, rb: r2 * 0.95, ramp: ASH, far: true });
   // (the sleeve: wide at its end, its edge ragged, falling away from the forearm)
   put(`fore${side}`, `sleeve${side}`, { k: 'rod', a: el, b: cuff, ra: r1 * 1.5, rb: r1 * 2.0, ramp: RAGS, far: true });
-  const hang = add(cuff, [0, 0, -4.5]);
+  // (not over his fist on his staff)
+  const hang = add(cuff, [0, 0, holds ? -2 : -4.5]);
   put(`fore${side}`, `sleeve${side}`, { k: 'rod', a: cuff, b: hang, ra: r1 * 1.9, rb: 0.5, ramp: RAGS, far: true });
   // (runes cut down the forearm, burning)
   for (const f of [0.35, 0.65, 0.9]) put(`fore${side}`, `fore${side}`, { k: 'dot', p: lerp3(cuff, wrist, f), c: BURN[2], facing: norm(cross(fore, [0, 0, 1]), [0, 1, 0]) });
-  hand(put, side, ha, fore, cu, grip, spread);
+  // (holding his staff, his fist is round it; else his hand as it is)
+  if (holds) gripHand(put, side, gripOf(s), holds, fore);
+  else hand(put, side, ha, fore, cu, grip, spread);
 }
 
 /** HIS ROBE AND CLOAK: his order's, gone to violet rags; seated, the robe over his thighs, the cloak hanging in strips down the boar's flanks. */
@@ -2774,7 +2815,7 @@ function wsBits(st: Stage, m: Moment): Bit[] {
     const wind = 0.4 * o * Math.sin(m.t * 17);
     robe(dp, s, P.sway, wind, m.t);
     arm(dp, s, 'L', s.chest[2], 0.32, 1.25);
-    arm(dp, s, 'R', s.chest[2], 1, 0);
+    arm(dp, s, 'R', s.chest[2], 1, 0, staffOf(s, 0, true).up);
     dp('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
     head(dp, st, s, m.t, wind);
     staff(dp, s, m.t, 0, true);
@@ -2802,7 +2843,7 @@ function wsBits(st: Stage, m: Moment): Bit[] {
   robe(put, s, P.sway, wind, m.t);
   // (his left hand clawed, fingers spread, writing on the air; his right closed round the staff)
   arm(put, s, 'L', s.chest[2], 0.32, 1.25);
-  arm(put, s, 'R', s.chest[2], 1, 0);
+  arm(put, s, 'R', s.chest[2], 1, 0, staffOf(s, staffTiltOf(P), plantedIn(m.move ?? 'stand', m.t)).up);
   // (his neck: thin, the cords of it standing out)
   put('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
   head(put, st, s, m.t, wind);
@@ -3320,7 +3361,7 @@ export function paintShade(s: Skeleton, t: number, view: 'front' | 'rear', grow 
   const put0: Put = (part, piece, shape) => raw.push({ part, piece, shape });
   robe(put0, s, t / WS_STAND_LONG, 0.35 * Math.sin(t * 2.1), t);
   arm(put0, s, 'L', s.chest[2], 0.32, 1.25);
-  arm(put0, s, 'R', s.chest[2], 1, 0);
+  arm(put0, s, 'R', s.chest[2], 1, 0, staffOf(s, 0, true).up);
   put0('neck', 'neck', { k: 'rod', a: lerp3(s.ribs, s.neck, 0.5), b: lerp3(s.neck, s.head, 0.5), ra: 1.6, rb: 1.3, ramp: ASH });
   head(put0, st, s, t, 0.3);
   staff(put0, s, t, 0, true);
