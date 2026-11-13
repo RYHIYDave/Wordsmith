@@ -2,6 +2,7 @@
 // frame by frame. It knows nothing about drawing or input; it reads Controls and emits GameEvents.
 
 import { MOVE_PICK, SWAP_TUNE, moveChoices, swapInto } from './swap_moves';
+import type { AuraKind } from './swap_moves';
 import { BARS_LASTS, BARS_PERIL, RAIN_LASTS, RAIN_PERIL, cageHero } from './action_f1';
 import { RIME_LASTS, RIME_PERIL, SIGIL_LASTS, SIGIL_PERIL } from './action_f2';
 import { RAMPAGE_BLOWS, RING_LASTS, RING_PERIL, chargeOf, greenTroll, rushMayEnd } from './action_f3';
@@ -27,7 +28,7 @@ import type { DoorInst } from './doors';
 import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
 import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
 import type { HeroMode } from './modes';
-import { COMPANIONS, TALENTS, TALENTS2, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, WARRIOR_TUNE, cleanTalents, remadeNow, takeProblem, talentById, talentMods, talentPoints, unlearnProblem, warriorKit, warriorWeapon, WARRIOR_TREE2 } from './talents';
+import { COMPANIONS, SWAP_MOVES, TALENTS, TALENTS2, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, WARRIOR_TUNE, cleanTalents, remadeNow, takeProblem, talentById, talentMods, talentPoints, unlearnProblem, warriorKit, warriorWeapon, WARRIOR_TREE2 } from './talents';
 import { COMPANION_GROUPS, COMPANION_GROUP_IDS, COMPANION_TUNE, cleanPicks, collarChoices, collarPick, groupOf, pickedIn } from './companions';
 import { ROYALS, ROYAL_NAMES, ROYAL_TUNE, canMake, cleanCards, handCards, handPays, royalFloor } from './royal_cards';
 import type { Hand, Royal } from './royal_cards';
@@ -4815,6 +4816,8 @@ export class Game {
       return;
     }
     if (h.cls === 'warlock') this.stepPact(dt, c);
+    // (THE MAGE'S AURA, game/swap_moves.ts: a tap on her)
+    if (SWAP_MOVES.on && h.cls === 'mage') this.stepAura(dt, c);
     if (h.change) return;
     // A leap or roll in progress carries the hero and nothing else happens.
     if (h.move) {
@@ -14716,6 +14719,91 @@ export class Game {
     this.breakProps(m.x, m.y, rad, p.skill);
   }
 
+  /**
+   * (THE MAGE'S AURA, game/swap_moves.ts) Its seconds still on, its wait, the time to its next bite, and the time to Lasting's
+   * shield coming back: his words, “a tap on the hero ability called Aura and it turns on an aura around the mage.  it can do
+   * something like fire DoT or send out bolts to every enemy in the aura, or shields you and chills enemies in the circle”; how
+   * long, “one, and then maybe another passive that leaves it on further into the tree”.
+   */
+  private aura = { on: 0, wait: 0, tick: 0, shieldBack: 0 };
+
+  /** Whether the hero has talent `id` (for the controls: the Mage's Aura is a tap on her only once she has it). */
+  talentTaken(id: string): boolean {
+    return this.has(id);
+  }
+
+  /** (THE MAGE'S AURA) What is round her now, for the picture: its kind, its reach, how long it has been on; null, nothing. */
+  auraNow(): { kind: AuraKind; r: number; t: number } | null {
+    const kind = this.auraKind();
+    return kind && this.aura.on > 0 ? { kind, r: SWAP_TUNE.aura.r, t: SWAP_TUNE.aura.secs - this.aura.on } : null;
+  }
+
+  /** (THE MAGE'S AURA) Its kind, where she has its stone (her pick on it; fire till she picks). */
+  private auraKind(): AuraKind | null {
+    if (!SWAP_MOVES.on || this.hero.cls !== 'mage' || !this.has('aura')) return null;
+    return (this.pickOf('aura') as AuraKind | null) ?? 'fire';
+  }
+
+  private stepAura(dt: number, c: Controls): void {
+    const A = SWAP_TUNE.aura;
+    const a = this.aura;
+    const kind = this.auraKind();
+    if (!kind || this.level.town || this.over) {
+      a.on = 0;
+      return;
+    }
+    const h = this.hero;
+    const lasting = this.has('lasting');
+    if (a.wait > 0) a.wait = Math.max(0, a.wait - dt);
+    if (a.on <= 0 && (lasting || (c.change && a.wait <= 0))) {
+      // (it begins: her tap, or with Lasting Aura, at once and for good)
+      a.on = A.secs;
+      a.tick = 0;
+      this.sfx(kind === 'fire' ? 'explode' : kind === 'lightning' ? 'thunder' : 'frost', 0.5);
+      this.emit({ t: 'spark', x: h.x, y: h.y, el: kind, n: 10 });
+      if (kind === 'frost') this.auraShield();
+    }
+    if (a.on <= 0) return;
+    if (lasting) a.on = A.secs;
+    else {
+      a.on -= dt;
+      if (a.on <= 0) {
+        a.on = 0;
+        a.wait = A.wait;
+        return;
+      }
+    }
+    // (Lasting, frost: the shield comes back a wait after it has gone)
+    if (kind === 'frost' && lasting && h.shield <= 0) {
+      a.shieldBack -= dt;
+      if (a.shieldBack <= 0) this.auraShield();
+    }
+    a.tick -= dt;
+    if (a.tick > 0) return;
+    a.tick = kind === 'lightning' ? A.every : 0.5;
+    for (const m of this.monsters) {
+      if (m.dead || m.state === 'sleep' || this.shutIn(m) || Math.hypot(m.x - h.x, m.y - h.y) > A.r + m.r) continue;
+      if (kind === 'fire') this.damageMonster(m, this.talentHit('fire', A.burn * 0.5), 'fire', false, -1, false, undefined, false, true);
+      else if (kind === 'lightning') {
+        this.emit({ t: 'arc', x0: h.x, y0: h.y, x1: m.x, y1: m.y });
+        m.shockT = TALENT_TUNE.shockSecs;
+        this.damageMonster(m, this.talentHit('lightning', A.bolt), 'lightning', false, -1);
+      } else {
+        m.chill = Math.max(m.chillT > 0 ? m.chill : 0, A.chill);
+        m.chillT = Math.max(m.chillT, 0.7);
+      }
+    }
+  }
+
+  /** (THE MAGE'S AURA, frost) Her shield: a share of her life, while the Aura is on (Lasting: till it breaks). */
+  private auraShield(): void {
+    const h = this.hero;
+    const A = SWAP_TUNE.aura;
+    h.shield = Math.max(h.shield, Math.round(h.d.maxLife * A.shield));
+    h.shieldT = Math.max(h.shieldT, this.has('lasting') ? 1e6 : A.secs);
+    this.aura.shieldBack = A.wait;
+  }
+
   /** (THE MAGE'S AND THE RANGER'S MOVES TO SWAP) The moves attack `s` could be changed to on the ATTACKS page; none, no change. */
   moveChoicesOf(s: number): SkillId[] {
     const h = this.hero;
@@ -14748,6 +14836,8 @@ export class Game {
     if (!def?.pick || !def.pick.ids.includes(which)) return 'Nothing to pick';
     if (!this.hero.talents.includes(id)) return 'Take it first';
     if (this.pickOf(id) === which) return null;
+    // (the Mage's Aura: “She picks when she takes it”: once picked, it stays till she unlearns it)
+    if (def.pick.lock && this.hero.picks?.[id]) return 'Unlearn to change';
     (this.hero.picks ??= {})[id] = which;
     this.refresh();
     this.emit({ t: 'talent', id });
@@ -14762,6 +14852,8 @@ export class Game {
     const h = this.hero;
     h.gold -= this.unlearnPrice();
     h.talents = h.talents.filter((t) => t !== id);
+    // (a pick that stays till unlearned goes with it: the Mage's Aura)
+    if (talentById(h.cls, id)?.pick?.lock && h.picks) delete h.picks[id];
     this.allForHim();
     this.refresh();
     this.sfx('gold');

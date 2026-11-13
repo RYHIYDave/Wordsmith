@@ -1354,6 +1354,19 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (onHim && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full && h.form !== 'demon') c.change = true;
     }
     if (h.cls === 'warlock' && input.pressed('KeyR')) c.change = true;
+    // THE MAGE'S AURA (game/swap_moves.ts, behind SWAP_MOVES): a touch or a click on her turns it on, his words, “a tap on the hero
+    // ability called Aura”; on a keyboard, R; on a pad, the right bumper (padControls). A touch on her is no attack.
+    if (SWAP_MOVES.on && h.cls === 'mage' && poke && !spot && g.talentTaken('aura')) {
+      const hx = toScreen(isoSX(h.x, h.y) + cam.ox);
+      const hy = toScreen(isoSY(h.x, h.y) + cam.oy);
+      if (Math.abs(poke.x - hx) <= 12 && poke.y >= hy - 44 && poke.y <= hy + 6 && !monsterAt(g, poke.x, poke.y)) {
+        c.change = true;
+        input.tap = null;
+        input.poke = null;
+        input.lpress = null;
+      }
+    }
+    if (h.cls === 'mage' && input.pressed('KeyR')) c.change = true;
     // THE BRAWLER (game/veteran.ts): a touch or a click on his globes, or on him, while a combo of his is going, cancels it, and is
     // no attack (his word, 3 Nov 2026: “There needs to be a way to cancel the combo.  How about if you tap the globes?”); on a
     // keyboard, R as well; on a pad, the right bumper (padControls). Generous: a thumb is wide and the globes small.

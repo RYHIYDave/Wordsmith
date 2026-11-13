@@ -4144,6 +4144,30 @@ export class Renderer {
       }
     }
 
+    // (THE MAGE'S AURA, game/swap_moves.ts, behind SWAP_MOVES: a stand-in till its own picture: a ring of her pick's colour on the
+    // floor round her, edged in the friend's cyan, breathing)
+    const aura = game.auraNow();
+    if (aura) {
+      const h = game.hero;
+      const col = aura.kind === 'fire' ? '#ff8a3c' : aura.kind === 'lightning' ? '#f8e060' : '#8ad0ff';
+      const breathe = 0.55 + 0.25 * Math.sin(t * 4);
+      for (const [rr, c, a] of [[aura.r, col, breathe], [aura.r - 0.12, '#5ff0ff', breathe * 0.6]] as const) {
+        g.globalAlpha = a;
+        g.strokeStyle = c;
+        g.lineWidth = 1;
+        g.beginPath();
+        for (let k = 0; k <= 40; k++) {
+          const ang = (k / 40) * Math.PI * 2;
+          const px = wx(cam, h.x + Math.cos(ang) * rr, h.y + Math.sin(ang) * rr);
+          const py = wy(cam, h.x + Math.cos(ang) * rr, h.y + Math.sin(ang) * rr);
+          if (k === 0) g.moveTo(px, py);
+          else g.lineTo(px, py);
+        }
+        g.stroke();
+      }
+      g.globalAlpha = 1;
+    }
+
     // The orb the staff has set down: a large ball hanging over the floor. It comes in at a pop,
     // swells as its next wave gathers, and gutters in its last half second.
     for (const o of game.orbs) {

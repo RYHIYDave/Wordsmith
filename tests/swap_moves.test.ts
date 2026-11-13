@@ -152,3 +152,54 @@ test('5. the Ranger: Snare for his Shot; Snipe or Rally for his Volley, his pick
   assert.deepEqual(g.moveChoicesOf(1), [], 'one hold learned: nothing to pick');
   assert.deepEqual(g.moveChoicesOf(0), [], 'his tap is Snare, no pick');
 }));
+
+/** A tap on her (as main.ts makes it), then `secs` of the game. */
+function tapHer(g: Game, secs: number): void {
+  const c = emptyControls();
+  c.change = true;
+  g.update(DT, c);
+  for (let t = 0; t < secs; t += DT) g.update(DT, emptyControls());
+}
+
+test('6. her AURA: its kind picked once on its stone (unlearn to change), of three', () => swapOn(() => {
+  const { g } = hero('mage', ['kindling', 'searing', 'aura']);
+  assert.equal(g.pickOf('aura'), 'fire', 'fire till she picks');
+  assert.equal(g.choosePick('aura', 'frost'), null, 'she picks frost');
+  assert.equal(g.pickOf('aura'), 'frost');
+  assert.equal(g.choosePick('aura', 'lightning'), 'Unlearn to change', 'picked once');
+  assert.equal(g.pickOf('aura'), 'frost');
+}));
+
+test('7. FIRE: a tap on her and every enemy in it burns; not one outside it; a few seconds on, then a wait', () => swapOn(() => {
+  const { g, a } = hero('mage', ['kindling', 'searing', 'aura']);
+  const inside = put(g, a, 2, 0);
+  const outside = put(g, a, 6, 0);
+  tapHer(g, 2);
+  assert.ok(hurt(inside), 'what is in it burns');
+  assert.ok(!hurt(outside), 'what is outside it does not');
+  assert.ok(g.auraNow(), 'on');
+  for (let t = 0; t < 5; t += DT) g.update(DT, emptyControls());
+  assert.equal(g.auraNow(), null, 'off after its seconds');
+  tapHer(g, 0.2);
+  assert.equal(g.auraNow(), null, 'a tap in its wait does nothing');
+}));
+
+test('8. LIGHTNING bolts every enemy in it; FROST shields her and chills them', () => swapOn(() => {
+  const { g, a } = hero('mage', ['kindling', 'searing', 'aura']);
+  g.choosePick('aura', 'lightning');
+  const m = put(g, a, 2.5, 0);
+  tapHer(g, 1);
+  assert.ok(hurt(m), 'bolted');
+  const { g: f, a: fa } = hero('mage', ['kindling', 'searing', 'aura']);
+  f.choosePick('aura', 'frost');
+  const c = put(f, fa, 2, 0);
+  tapHer(f, 0.6);
+  assert.ok(f.hero.shield > 0, 'her shield');
+  assert.ok(c.chillT > 0 && c.chill > 0, 'chilled');
+}));
+
+test('9. LASTING AURA: on without a tap, and it stays on', () => swapOn(() => {
+  const { g } = hero('mage', ['kindling', 'searing', 'aura', 'flamewarp', 'fuel', 'inferno', 'lasting']);
+  for (let t = 0; t < 12; t += DT) g.update(DT, emptyControls());
+  assert.ok(g.auraNow(), 'on after twice its seconds, no tap');
+}));

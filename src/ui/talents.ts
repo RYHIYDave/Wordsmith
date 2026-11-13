@@ -776,7 +776,8 @@ export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayo
   const picks: { r: Rect; id: string }[] = [];
   if (pickRow && def.pick) {
     const now = game.pickOf(def.id);
-    const pw = Math.floor((cr.w - 10 - 3) / 2);
+    const n = def.pick.ids.length;
+    const pw = Math.floor((cr.w - 10 - 3 * (n - 1)) / n);
     def.pick.ids.forEach((id, k) => {
       const r = { x: cr.x + 5 + k * (pw + 3), y: by - pickRow, w: pw, h: bh };
       ui.drawButton(r.x, r.y, r.w, r.h, def.pick!.names[k], { primary: now === id });

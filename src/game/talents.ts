@@ -93,7 +93,7 @@ export interface TalentDef {
    * A pick of two that comes with it (the Tinkerer's Gun Arm and Contraption, his “On the talent itself (Recommended)”, 31 Oct
    * 2026): the first is hers as she takes it; on its card, the other's button switches to it. Game.pickOf says which.
    */
-  pick?: { ids: readonly [string, string]; names: readonly [string, string] };
+  pick?: { ids: readonly string[]; names: readonly string[]; /** (the Mage's Aura: “She picks when she takes it”) picked once; unlearn to change */ lock?: boolean };
   /** (on a drafted tree, `draft`) this one is made to work already. */
   works?: boolean;
 }
@@ -290,7 +290,7 @@ const MAGE2: TalentTree = {
     { id: 'beam', name: 'Beam', big: true, path: 'lightning', at: [1.5, 1.1], from: ['charged'], text: 'Learn BEAM: it burns toward your finger for as long as you hold, steered as you move it, through everything in its line. It goes on your hold (ATTACKS).' },
     { id: 'spear', name: 'Spear', big: true, path: 'frost', at: [1.5, 4.9], from: ['bittercold'], text: 'Learn SPEAR: a spear flies where you point, through every enemy in its line. Put it on your tap or your hold (ATTACKS).' },
     // (where her paths meet, and the far end)
-    { id: 'aura', name: 'Aura', big: true, path: 'aura', at: [3, 2], from: ['searing', 'forking', 'deepfreeze'], text: 'AURA: tap yourself for a circle round you, a few seconds, then a wait. Pick its kind as you take it: FIRE burns every enemy in it; LIGHTNING sends bolts to every enemy in it; FROST shields you and chills the enemies in it.' },
+    { id: 'aura', name: 'Aura', big: true, path: 'aura', at: [3, 2], from: ['searing', 'forking', 'deepfreeze'], pick: { ids: ['fire', 'lightning', 'frost'], names: ['FIRE', 'LIGHTNING', 'FROST'], lock: true }, text: 'AURA: tap yourself for a circle round you, a few seconds, then a wait. Pick its kind as you take it (unlearn to change): FIRE burns every enemy in it; LIGHTNING sends bolts to every enemy in it; FROST shields you and chills the enemies in it.' },
     { id: 'lasting', name: 'Lasting Aura', big: true, path: 'aura', at: [7, 2], from: ['inferno', 'stormcaller', 'shatter'], text: 'Your Aura stays on.' },
   ],
 };
