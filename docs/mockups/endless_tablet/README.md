@@ -286,6 +286,11 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   forefoot stepped once as it settles. The checks (the blow drawn back, held, followed through; a flash from in front and behind;
   the hips first), his legs outside the boar: all pass. (His rider's seat now tips back with the boar as far as he does not lean
   into it.)
+  HIS YES, 12 Nov 2026, by pop-up: “Yes, on to his words (Recommended)” (offered as: next, his five word attacks from the saddle,
+  starting with Power's hammer from the sky).
+- NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
+  Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
+  boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.
 
 ## The tools
 
