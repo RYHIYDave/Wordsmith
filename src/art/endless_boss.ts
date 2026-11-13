@@ -2925,7 +2925,7 @@ export function wsMob(): Mob {
       for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
     },
     grains: (st: Stage, m: Moment) => m.move === 'death' ? deathGrains(m.t, DEATH_HEART()) : boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -3028,7 +3028,13 @@ export function turnAt(t: number): Partial<Bones> {
   const yl = footYaw(Y < 0 ? false : true), yr = footYaw(Y < 0 ? true : false);
   const fl = rot(FOOT_L, yl), fr = rot(FOOT_R, yr);
   const b = footStandAt(t);
-  return { ...b, yaw: Y, lfx: fl[0], lfy: fl[1] - B.stance, lfz: 3 * lift(Y >= 0) + 0, lft: (b.lft ?? 12) + yl, lk: (b.lk ?? 8) + yl, rfx: fr[0], rfy: fr[1] + B.stance, rfz: 3 * lift(Y < 0), rft: (b.rft ?? -14) + yr, rk: (b.rk ?? -8) + yr };
+  // (his hands' places are along the figure's own axes, which do not turn with him: turned with him, as in the saddle, else his arms
+  // twist as he turns; his words, 13 Nov 2026: “His arm is all messed up again when he turns”)
+  const c = Math.cos((Y * Math.PI) / 180), sn = Math.sin((Y * Math.PI) / 180);
+  const yh = (x: number, y: number): [number, number] => [x * c - y * sn, x * sn + y * c];
+  const [lhx, lhy] = yh(b.lhx ?? 0, b.lhy ?? 0);
+  const [rhx, rhy] = yh(b.rhx ?? 0, b.rhy ?? 0);
+  return { ...b, yaw: Y, lhx, lhy, rhx, rhy, lfx: fl[0], lfy: fl[1] - B.stance, lfz: 3 * lift(Y >= 0) + 0, lft: (b.lft ?? 12) + yl, lk: (b.lk ?? 8) + yl, rfx: fr[0], rfy: fr[1] + B.stance, rfz: 3 * lift(Y < 0), rft: (b.rft ?? -14) + yr, rk: (b.rk ?? -8) + yr };
 }
 /** His motion on foot, every frame. */
 function footMotion(at: (t: number) => Partial<Bones>, long: number, loop = false): Motion {
@@ -3328,6 +3334,77 @@ export { HAIL_HERO };
 // (HIS LAST STAND was made and CUT at his word, 13 Nov 2026: “Let’s just cut the last stand, I think the shade with him on foot and
 // the multitude of melds and moves will make it unique and memorable”: in the branch's history at 06891c2.)
 
+
+// AVALANCHE (Power and Frost, melded: “a mountainside shedding its snow”): he writes Power, his shade writes Frost; melded, the slam
+// drives the rune into the floor before him, and FROST RACES OUT down a broad lane before him (the warning: the lane it will take,
+// rimed white, its edges his pink); behind him the snow BUILDS UP OUT OF THE FLOOR into a great wall, heaving, and then it COMES:
+// a wave of snow taller than he is rolling down the lane, its crest curling over, boulders of ice tumbling in it and bounding out
+// ahead of it, snow flung up off its face; it runs out at the lane's end and BREAKS into drifts that slump and melt away. His rules
+// for the words stand: one rune (the meld's), what it makes made as solids.
+export const AVAL = { half: 2.0, long: 9.0, rime: [0.05, 0.55] as const, build: [0.35, 0.85] as const, run: [0.85, 2.0] as const, start: -0.6, melt: 2.4, end: 5.4, boulders: 9 };
+export const AVAL_CANVAS: MobCanvas = { w: 900, h: 600, ax: 260, ay: 380 };
+const SNOW: Ramp = ['#34485c', '#6a8aa2', '#a5c6d7', '#e2f0f8', '#ffffff'];
+const AVAL_ICE: Ramp = ['#1a2430', '#34485c', '#6a8aa2', '#a5c6d7', '#e2f0f8'];
+/** Where the wave's front is down its lane (his floor point's own lengths), `t` into the move; and how far it has built (0 ... 1). */
+export function avalFront(t: number): number {
+  const u = clamp01((t - MELD.slam - AVAL.run[0]) / (AVAL.run[1] - AVAL.run[0]));
+  return (AVAL.start + (AVAL.long - AVAL.start) * (u * (2 - u))) * TILE;
+}
+export const avalBuilt = (t: number): number => smooth01((t - MELD.slam - AVAL.build[0]) / (AVAL.build[1] - AVAL.build[0]));
+/** How far it has broken and melted at the lane's end (0 ... 1). */
+export const avalMelt = (t: number): number => smooth01((t - MELD.slam - AVAL.run[1]) / AVAL.melt);
+/** THE AVALANCHE'S SOLIDS, `t` into the move: the wall building, the wave rolling, its crest, its boulders, its spray; its drifts. */
+export function avalancheBits(t: number, put: Put): void {
+  const b = avalBuilt(t);
+  if (b <= 0) return;
+  const X = avalFront(t);
+  const melt = avalMelt(t);
+  const H = (62 * b) * (1 - 0.85 * melt);
+  const snowSkin = (seed: number): ((u: V3, tone: number, x: number, y: number) => string | null) => (u, tone, x, y) => {
+    if (melt > 0 && hash(x >> 1, y >> 1, 9901 + seed) < melt * 1.1 - 0.1) return null;
+    // (his pink deep in it, where it is thickest)
+    if (u[0] > 0.55 && hash(x >> 1, (y + Math.floor(t * 20)) >> 1, 9902) < 0.06) return '#ff9cc0';
+    return SNOW[T5(tone + (hash(x >> 2, y >> 2, 9903 + seed) < 0.3 ? -1 : 0))];
+  };
+  const halfW = AVAL.half * TILE;
+  // (the wave: across its whole lane, tallest at its face, its crest curling over before it; heaving)
+  for (let i = 0; i < 9; i++) {
+    const y = -halfW + (2 * halfW * i) / 8;
+    for (let j = 0; j < 4; j++) {
+      const back = j * 13;
+      const h = H * (1 - 0.22 * j) * (0.85 + 0.15 * Math.sin(t * 9 + i * 1.3 + j));
+      const R = (14 - 2 * j) * (0.6 + 0.4 * b);
+      put(`wave${i % 3}`, 'snow', { k: 'ball', c: [X - back, y + 3 * Math.sin(t * 7 + i), Math.max(R * 0.6, h * 0.5)], ax: [[R, 0, 0], [0, R * 0.95, 0], [0, 0, Math.max(R * 0.7, h * 0.55)]], skin: snowSkin(i * 7 + j) });
+    }
+    // (its crest, curling over before it)
+    if (melt < 0.6) put(`wave${i % 3}`, 'crest', { k: 'ball', c: [X + 6, y, H * 0.95], ax: [[9, 0, 0], [0, 9, 0], [0, 0, 6]], skin: snowSkin(i * 13 + 5) });
+  }
+  // (boulders of ice tumbling in it, some bounding out ahead of it)
+  for (let k = 0; k < AVAL.boulders; k++) {
+    const y = -halfW + 2 * halfW * hash(k, 1, 9904);
+    const lead = (hash(k, 2, 9905) - 0.3) * 30;
+    const bounce = Math.abs(Math.sin(t * (5 + 3 * hash(k, 3, 9906)) + k)) * (10 + 16 * hash(k, 4, 9907));
+    const R = 5 + 4 * hash(k, 5, 9908);
+    if (melt > 0.5) continue;
+    put('boulders', 'ice', { k: 'ball', c: [X + lead, y, R + bounce * b], ax: [[R, 0, 0], [0, R * 0.85, 0], [0, 0, R * 0.9]], skin: (u, tone, x, y2) => ((x + y2 + Math.floor(t * 18)) % 5 === 0 ? AVAL_ICE[4] : AVAL_ICE[T5(tone)]) });
+  }
+  // (snow flung up off its face)
+  if (melt < 0.4) for (let i = 0; i < 40; i++) {
+    const y = -halfW + 2 * halfW * hash(i, 6, 9909);
+    const u = (t * 2.2 + hash(i, 7, 9910)) % 1;
+    put('spray', 'snow', { k: 'mote', p: [X + 8 + 20 * u, y + (hash(i, 8, 9911) - 0.5) * 10, H * (0.6 + 0.6 * u) - 30 * u * u], c: u < 0.5 ? '#ffffff' : '#a5c6d7', size: u < 0.3 ? 2 : 1 });
+  }
+  put('glow', 'avalGlow', { k: 'glow', p: [X, 0, H * 0.5], c: '#e2f0f8', r: 50, a: 0.25 * b * (1 - melt) });
+  put('glow', 'avalPink', { k: 'glow', p: [X - 10, 0, H * 0.4], c: '#ff4f8a', r: 26, a: 0.18 * b * (1 - melt) });
+}
+export function paintAvalanche(t: number, view: 'front' | 'rear'): Painted {
+  const st = stage(view, AVAL_CANVAS.ax, AVAL_CANVAS.ay, AVAL_CANVAS);
+  const bits: Bit[] = [];
+  avalancheBits(t, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 30]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+
 /** Where his heart is as he implodes (as his own points are). */
 let DEATH_H: V3 | null = null;
 const DEATH_HEART = (): V3 => (DEATH_H ??= heartOf(solve(B, { ...standing(B), ...deathRiderAt(DEATH.implode[0]) } as never)));
@@ -3512,7 +3589,7 @@ export const WS_SHAPE: BossShape = {
   },
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : move === 'fall' ? fallCarry(t) * TILE : 0),
-  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE },
+  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE, avalanche: MELD_STRIKE },
   // (his hammer from the sky: three blows of his staff, each its own wind-up, flash and follow-through)
   blows: { power: POWER.slams.map((h, i) => ({ hit: h, strike: POWER_STRIKES[i], from: i ? POWER.slams[i - 1] + 0.1 : 0, until: i < 2 ? POWER.slams[i + 1] - POWER.raise : Infinity })) },
   smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)) || (move === 'frost' && frostSmeared(t)) || (move === 'fall' && slamSmeared(t)) || (FOOT_MOVES.has(move) && move !== 'foot' && meldSmeared(t)),
@@ -3530,7 +3607,7 @@ export const WS_SHAPE: BossShape = {
     { from: 'fall', at: 'end', to: 'foot', toAt: 0, shift: footFrom() },
     { from: 'foot', at: 0, to: 'death', toAt: 0 },
     { from: 'foot', at: 0, to: 'turn', toAt: 0 },
-    ...['eruption', 'hailstorm'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
+    ...['eruption', 'hailstorm', 'avalanche'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
   ],

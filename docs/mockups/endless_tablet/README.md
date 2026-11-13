@@ -490,7 +490,8 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   beat after him (0.3 s), never a jump; always on the far side of him from the eye (within 78 degrees of straight up the picture), so
   facing away he has it looming over him from just above, never round in front covering him. SHOWN turning (`turn`, `TURN`,
   `turnAt`: a heavy turn to his right, held, then back round to his left, his feet stepping round, his staff lifted off the floor as
-  he turns; `pictures/standard/boss_turn.mp4`).
+  he turns; `pictures/standard/boss_turn.mp4`). HIS WORDS: “His arm is all messed up again when he turns”: his hands turned with
+  him (their places are along the figure’s own axes, which do not turn), as in the saddle.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other eight melds, each for his yes; his other facing turned round, not flipped.
 
