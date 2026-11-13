@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import { cleanPicks, collarChoices, collarPick } from '../src/game/companions';
-import { on, room, wear } from './uniques_helpers';
+import { off, on, room, wear } from './uniques_helpers';
 
 const DT = 1 / 60;
 const HUNT = ['keeneye', 'venom', 'huntcompanion'];
@@ -80,8 +80,10 @@ test('picked on the collar in town, only in town; the one at her side changes; k
 
 test('with the switch off, or for another hero, it offers nothing', () => {
   const t = on(() => inTown(HUNT));
-  assert.deepEqual(t.collarChoices(), [], 'UNIQUES off');
-  assert.equal(t.collarCompanion(), null);
+  off(() => {
+    assert.deepEqual(t.collarChoices(), [], 'UNIQUES off');
+    assert.equal(t.collarCompanion(), null);
+  });
   on(() => {
     const w = new Game('warrior', 5);
     if (!w.level.town) w.enterTown();

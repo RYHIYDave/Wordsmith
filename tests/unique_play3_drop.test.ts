@@ -54,9 +54,14 @@ function draw(drops: { rarity: number; age: number; seen?: boolean }[]): { colou
   return { colours, n };
 }
 
-test('1. its switch is off, and with it off nothing is drawn for a unique on the floor', () => {
-  assert.equal(UNIQUE_PLAY.drop, false);
-  assert.equal(draw([{ rarity: 3, age: 1 }]).n, 0);
+test('1. its switch is on; with it off nothing is drawn for a unique on the floor', () => {
+  assert.equal(UNIQUE_PLAY.drop, true, 'on: his yes, 12 Nov 2026');
+  UNIQUE_PLAY.drop = false;
+  try {
+    assert.equal(draw([{ rarity: 3, age: 1 }]).n, 0);
+  } finally {
+    UNIQUE_PLAY.drop = true;
+  }
 });
 
 test("2. on: a unique stands in the uniques' orange and white; an ordinary piece, or one not yet seen, in nothing", () => {
@@ -73,6 +78,6 @@ test("2. on: a unique stands in the uniques' orange and white; an ordinary piece
     assert.equal(draw([{ rarity: 2, age: 1 }]).n, 0, 'a rare: nothing');
     assert.equal(draw([{ rarity: 3, age: 1, seen: false }]).n, 0, 'not yet seen: nothing');
   } finally {
-    UNIQUE_PLAY.drop = false;
+    UNIQUE_PLAY.drop = true;
   }
 });

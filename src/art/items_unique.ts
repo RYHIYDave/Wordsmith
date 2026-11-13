@@ -18,8 +18,8 @@ import type { Px, Sprite } from '../engine/px';
 import { ITEM_A_KIT } from './items_a';
 import type { ItemAMark, ItemAPart, ItemARamp, ItemAShade, ItemAShape, ItemAV } from './items_a';
 
-/** The switch: OFF. On, a unique that has a picture of its own here shows it in place of its base's orange look. */
-export const UNIQUE_ART = { on: false };
+/** The switch: ON with the uniques, at his yes of 12 Nov 2026 (game/uniques.ts UNIQUES). On, a unique that has a picture of its own here shows it in place of its base's orange look. */
+export const UNIQUE_ART = { on: true };
 
 const { poly, cap, ell, path, add, sub, mul, lerp, len, unit, at, paint, gem, stud, cog, squeeze, UP, INLAY, PAINTERS } = ITEM_A_KIT;
 type V = ItemAV;

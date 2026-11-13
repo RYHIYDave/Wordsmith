@@ -15,9 +15,12 @@ export default async function (page, snap) {
   const cls = process.env.CLS || 'warrior';
   const hands = await makeHands(page);
   await page.waitForTimeout(800);
-  const built = await page.evaluate(() => { const d = window.__dbg; return { uniques: d.uniques.on, art: d.uniqueArt.on, stamp: d.build ?? null }; });
+  const built = await page.evaluate(() => { const d = window.__dbg; return { uniques: d.uniques.on, art: d.uniqueArt.on, play: { ...d.uniquePlay }, stamp: d.build ?? null }; });
   log('the page as built', JSON.stringify(built));
   if (!built.uniques || !built.art) bad('the page does not have both switches on');
+  // (and what they show in play, every switch of render/unique_play.ts, on this page since 12 Nov 2026)
+  const off = Object.entries(built.play).filter(([, v]) => !v).map(([k]) => k);
+  if (off.length) bad(`the page has in-play pictures off: ${off.join(', ')}`);
   await snap('1_starting_screen');
   await hands.press('button:OPTIONS');
   await page.waitForTimeout(300);
@@ -28,6 +31,8 @@ export default async function (page, snap) {
   await hands.press(`class:${cls}`);
   // (the loading screen, then the floor)
   await page.waitForFunction(() => { const g = window.__dbg.game(); return !!g && !g.level.town && g.trial === true; }, null, { timeout: 30000 });
+  // (and the loading screen between floors over: the floor is laid under it, so the game is there before he can play)
+  await page.waitForFunction(() => !window.__dbg.loadingNow(), null, { timeout: 90000, polling: 100 });
   await page.waitForTimeout(3000);
   const st = await page.evaluate(() => {
     const g = window.__dbg.game(); const h = g.hero;
@@ -70,13 +75,13 @@ export default async function (page, snap) {
   await page.waitForTimeout(300);
   // to town by the waypoint beside where he came in (every floor but the first has one), then the stash, both touched
   if (want >= 2) {
-    const town = () => page.evaluate(() => { const g = window.__dbg.game(); return !!g && g.level.town === true; });
+    const town = () => page.evaluate(() => { const d = window.__dbg; const g = d.game(); return !!g && g.level.town === true && !d.loadingNow(); });
     let p = await page.evaluate(() => { const d = window.__dbg; const w = d.game().level.ways?.way; return w ? d.at(w.x, w.y) : null; });
     if (!p) bad('no waypoint on this floor');
     else {
       await hands.pressAt(p.x, p.y - 4);
       const t0 = Date.now();
-      while (!(await town()) && Date.now() - t0 < 12000) await page.waitForTimeout(200);
+      while (!(await town()) && Date.now() - t0 < 60000) await page.waitForTimeout(200);
       if (!(await town())) bad('touching the waypoint did not bring him to town');
       await page.waitForTimeout(1500);
       await snap('6_in_town');

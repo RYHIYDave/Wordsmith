@@ -14,7 +14,7 @@ import type { Monster } from '../src/game/state';
 import type { Item } from '../src/game/types';
 import { UNIQUES, UNIQUE_DROPS, UNIQUE_RULES, bossUnique, makeUnique, poolFor, uniqueOf } from '../src/game/uniques';
 import { itemCard } from '../src/ui/panels';
-import { inner, on, wear } from './uniques_helpers';
+import { inner, off as off_, on, wear } from './uniques_helpers';
 
 type Loot = { rollGear: (q?: number) => Item; dropLoot: (m: Monster) => void; power: number; depth: number; rng: RNG };
 const loot = (g: Game): Loot => g as unknown as Loot;
@@ -39,7 +39,9 @@ test('off: nothing that drops is ever a unique, and the dice are thrown as they 
   const a = deep();
   const b = deep();
   const off: Item[] = [];
-  for (let k = 0; k < 400; k++) off.push(loot(a).rollGear(k % 5));
+  off_(() => {
+    for (let k = 0; k < 400; k++) off.push(loot(a).rollGear(k % 5));
+  });
   assert.equal(off.some((it) => it.rarity === 3), false);
   // (on, with no chance of one: the same pieces as with it off, to the last number: the switch itself changes no roll)
   const P = UNIQUE_DROPS.pool;

@@ -53,8 +53,8 @@ function everyUnique(): Item[] {
 const has = (p: Px, x: number, y: number): boolean => x >= 0 && y >= 0 && x < p.w && y < p.h && p.d[(y * p.w + x) * 4 + 3] > 0;
 const same = (a: Px, b: Px): boolean => a.w === b.w && a.h === b.h && a.d.every((v, i) => v === b.d[i]);
 
-test('the switch is off; off, every unique shows its base\'s picture, the very same one as before', () => {
-  assert.equal(UNIQUE_ART.on, false, 'UNIQUE_ART is off until his yes');
+test('the switch is on (his yes, 12 Nov 2026); off, every unique shows its base\'s picture, the very same one as before', () => {
+  assert.equal(UNIQUE_ART.on, true, 'UNIQUE_ART on: his yes, 12 Nov 2026, “Keep it; numbers right, switch on”');
   assert.equal(ITEMS_A.on, true);
   withSwitches(true, false, () => {
     for (const it of everyUnique()) {

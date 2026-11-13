@@ -12,12 +12,13 @@ import { Game } from '../src/game/game';
 import { plainWeapon, rollItem } from '../src/game/items';
 import { emptyControls } from '../src/game/state';
 import { UNIQUES, UNIQUE_TUNE, makeUnique } from '../src/game/uniques';
-import { DT, dummy, hurt, inner, on, ready, room, seen, steady, strike, swipe, tap, wait, wear, words } from './uniques_helpers';
+import { DT, dummy, hurt, inner, off, on, ready, room, seen, steady, strike, swipe, tap, wait, wear, words } from './uniques_helpers';
 
 const T = UNIQUE_TUNE;
 const near = (a: number, b: number, eps = 1e-6): boolean => Math.abs(a - b) <= eps * Math.max(1, Math.abs(a), Math.abs(b));
 
-test('with the switch off a unique worn does nothing: the game is as it was', () => {
+test('with the switch off a unique worn does nothing: the game is as it was', () =>
+  off(() => {
   const g = room('warrior');
   const it = on(() => makeUnique('longodds', 10, new RNG(1)))!;
   it.reqLevel = 1;
@@ -39,7 +40,7 @@ test('with the switch off a unique worn does nothing: the game is as it was', ()
     tap(g);
     assert.ok(near(hurt(m), plain * (1 - T.odds.less), 0.02), 'on: an ordinary monster struck softer');
   });
-});
+  }));
 
 test('Broken Shackles: the swipe move has no cooldown; its price, he can be hit during the move', () =>
   on(() => {

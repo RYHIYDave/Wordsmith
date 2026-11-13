@@ -3635,10 +3635,15 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // UNIQUES on (they drop at the odds as built, the stranger may sell one, each does what it does) and UNIQUE_ART on (each its own
   // bag picture); and a test hero of the level select, or the practice room's, is handed every unique he could find
   // (Game.giftUniques). A hero begun the ordinary way finds them only as the game gives them. The game itself is untouched.
+  // AND WHAT THEY SHOW IN PLAY (render/unique_play.ts UNIQUE_PLAY, every switch: the Tome, the risen elite, the fourth globe, the
+  // Drowned Arm, the Queen's Talons, the Sticky Wrench, the Windcutter, the Moth's Wing, the Crier's Hush, the beam on a unique
+  // dropped), each with his yes to its picture; as the three were put on this page at his word of 12 Nov 2026, by 05:44: “Yes, put
+  // them on (Recommended)”.
   if ((hash.get('try') ?? (typeof __TRY__ === 'string' ? __TRY__ : '')) === 'uniques') {
     UNIQUES.on = true;
     UNIQUE_ART.on = true;
     TRY_UNIQUES.on = true;
+    for (const k of Object.keys(UNIQUE_PLAY) as (keyof typeof UNIQUE_PLAY)[]) UNIQUE_PLAY[k] = true;
   }
 
   // THE SWAMP COLOSSUS TRIED (his fight in his own pictures, for the owner to play before it goes live): `#try=colossus` (or a page

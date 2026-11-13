@@ -30,4 +30,6 @@
 //           off it, a gust off his sword as it goes; not the Mage's Wave (render/unique_fx.ts drawBlade)
 //
 // (Nothing is imported here, so that anything may ask a switch without pulling in the pictures.)
-export const UNIQUE_PLAY = { tome: false, risen: false, fourth: false, arm: false, talons: false, wrench: false, wind: false, moth: false, hush: false, drop: false };
+// ON with the uniques (game/uniques.ts UNIQUES), each with his yes to its picture, at his yes of 12 Nov 2026: “Keep it; numbers right,
+// switch on”.
+export const UNIQUE_PLAY = { tome: true, risen: true, fourth: true, arm: true, talons: true, wrench: true, wind: true, moth: true, hush: true, drop: true };

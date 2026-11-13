@@ -28,8 +28,12 @@ import { isDamageWord, isMeld, meldOf } from './melds';
 import type { ClassId, EquipSlot, Item, MeldId, MonsterKind, Slot, StatKey, WeaponKind, WordId } from './types';
 import { EQUIP_SLOTS } from './types';
 
-/** UNIQUE ITEMS: off until his yes. */
-export const UNIQUES = { on: false };
+/**
+ * UNIQUE ITEMS: ON, at his yes. Played on his test page (https://claude.ai/artifact/TDTUvbr5FhjV56vrCu3Tbs), asked whether to
+ * keep them made at the level of the floor they drop on and what his word on the numbers was, 12 Nov 2026, by 18:1x Eastern:
+ * “Keep it; numbers right, switch on”.
+ */
+export const UNIQUES = { on: true };
 
 // =============================================================================================
 // THE NUMBERS (every one a proposal, his to change: docs/uniques/NUMBERS.md)
