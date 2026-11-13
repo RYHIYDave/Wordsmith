@@ -44,6 +44,8 @@ export interface Derived {
   resFire: number;
   resFrost: number;
   resLight: number;
+  /** POISON DAMAGE (items.ts POISON_DMG): % less poison taken, capped as the others. */
+  resPoison: number;
   /** Tiles per second. */
   moveSpeed: number;
   /** Cooldown recovery, 0 to 0.6. */

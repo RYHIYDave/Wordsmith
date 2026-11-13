@@ -179,8 +179,8 @@ import { act1Fx } from './render/act1_fx';
 import { forgetUnusedPictures } from './render/act1_fx/kept';
 import { mothFxBytes } from './render/act1_fx/moth';
 import { COLOSSUS, GAZE2_AIMED, onStoneOrJetty, worldToStone } from './game/colossus_fight';
-import { ITEM_WORDS } from './game/items';
-import { SET1, UNIQUES, uniqueOf } from './game/uniques';
+import { ITEM_WORDS, POISON_DMG } from './game/items';
+import { LEVEL_UNIQUES, SET1, UNIQUES, uniqueOf } from './game/uniques';
 import { UNIQUE_PLAY } from './render/unique_play';
 import { SET1_LOOK } from './render/set1_fx';
 import { ART_TWEAKS } from './art/tweaks';
@@ -3663,6 +3663,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     UNIQUE_ART.on = true;
     TRY_UNIQUES.on = true;
     for (const k of Object.keys(UNIQUE_PLAY) as (keyof typeof UNIQUE_PLAY)[]) UNIQUE_PLAY[k] = true;
+    // (AND HIS LEVELING UNIQUES AND POISON DAMAGE, both off in the game until his yes: his “Yes, build it now (Recommended)” of 12 Nov
+    // 2026, offered as: built behind a switch that stays off, then a test page for you)
+    LEVEL_UNIQUES.on = true;
+    POISON_DMG.on = true;
   }
 
   // THE SWAMP COLOSSUS TRIED (his fight in his own pictures, for the owner to play before it goes live): `#try=colossus` (or a page

@@ -8,6 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEEP_WORDS, LOOT2, TUNE, WORDS, WORD_GROWTH, useFirstLevels, wordsAt } from '../src/game/defs';
 import { Game } from '../src/game/game';
+import { uniqueDef } from '../src/game/uniques';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
 import { CLASS_IDS, WORD_IDS } from '../src/game/types';
@@ -342,7 +343,10 @@ test('loot is scaled back: one piece from a guardian, two from a boss, one from 
         a.kill(m);
         const items = g.drops.filter((d) => d.kind === 'item');
         if (m.boss) {
-          assert.equal(items.length, (LOOT2.on ? LOOT2.boss : TUNE.bossItems) + (depth % 5 === 0 ? TUNE.bossItemsFifth : 0), `the boss of dungeon ${depth} leaves its hoard`);
+          // (UNIQUE ITEMS, on since 25.3.16: now and then a boss leaves his own unique as well, over his hoard: game/uniques.ts UNIQUE_DROPS.boss)
+          const own = items.filter((d) => d.item && d.item.unique && uniqueDef(d.item.unique)?.from === 'boss').length;
+          assert.ok(own <= 1, 'at most his own one');
+          assert.equal(items.length - own, (LOOT2.on ? LOOT2.boss : TUNE.bossItems) + (depth % 5 === 0 ? TUNE.bossItemsFifth : 0), `the boss of dungeon ${depth} leaves its hoard`);
           if (LOOT2.on && depth >= LOOT2.from) assert.equal(items[0].item!.rarity, 2, 'in the descent, its first piece rare');
           assert.ok(items[0].item!.rarity >= 1, 'whose first piece is never plain (it is no longer rare for certain: gear is made good with words)');
         } else if (m.champion) {

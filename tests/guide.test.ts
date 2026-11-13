@@ -988,7 +988,10 @@ test('Poison in front: a softer hit that poisons; doses add up, and each new one
   const hit = direct && direct.t === 'hit' ? direct.amount : 0;
   assert.ok(ev.some((e) => e.t === 'poisoned'), 'it takes hold');
   assert.equal(m.poisonN, 1);
-  assert.ok(Math.abs(m.poisonDps - hit * r.poison) < 1e-9, 'one dose: its share of the hit, every second');
+  // (POISON DAMAGE, on since his yes of 12 Nov 2026: his gear's Poison Damage makes it more; no flat poison on the practice room's gear)
+  const more = 1 + h.d.stats.poisonPct / 100;
+  assert.equal(h.d.stats.poisonMin + h.d.stats.poisonMax, 0);
+  assert.ok(Math.abs(m.poisonDps - hit * r.poison * more) < 1e-9, 'one dose: its share of the hit, every second');
   assert.ok(m.poisonT > TUNE.poisonTime - 0.6 && m.poisonT <= TUNE.poisonTime);
   // it works: twice a second, in whole numbers, marked as poison
   const life0 = m.life;
@@ -1006,7 +1009,7 @@ test('Poison in front: a softer hit that poisons; doses add up, and each new one
   // a second hit: a second dose, and the time starts again
   use(g, 0, 3, 0, 0.45);
   assert.equal(m.poisonN, 2);
-  assert.ok(m.poisonDps > hit * r.poison * 1.5);
+  assert.ok(m.poisonDps > hit * r.poison * more * 1.5);
   assert.ok(m.poisonT > TUNE.poisonTime - 0.6);
   // it stops adding up at the limit
   for (let k = 0; k < TUNE.poisonStacks + 3; k++) use(g, 0, 3, 0, 0.9);

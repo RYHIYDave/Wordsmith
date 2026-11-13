@@ -110,7 +110,7 @@ test('2. Gyre: the thrown axe stops where its flight ends and spins there, cutti
     const at = hurt(far);
     wait(g, 1.2);
     assert.ok(hurt(far) > at, `it goes on cutting what is round it (${at} then ${hurt(far)})`);
-    const fall = wait(g, T.gyre.secs);
+    const fall = wait(g, g.ut.gyre.secs);
     assert.equal(seen(fall, 'gyre', 'fall').length, 1, 'and falls');
     assert.equal(g.projectiles.filter((p) => !p.hostile).length, 0, 'gone');
     // two at once; a third throw takes the place of the oldest
@@ -147,7 +147,8 @@ test('3. Red Tithe: one that dies bleeding throws its blood to the nearest other
     ready(soft);
     tap(soft, 1, 0, 0.6);
     const without = hurt(m1) - with1;
-    assert.ok(Math.abs(with1 / without - (1 - T.tithe.cleave)) < 0.02, `${with1} against ${without}`);
+    // (its price as his piece rolled it: Game.ut)
+    assert.ok(Math.abs(with1 / without - (1 - soft.ut.tithe.cleave)) < 0.02, `${with1} against ${without}`);
   }));
 
 test('4. Widowfall: Leaping Chop lands with a Cleave all round him, and all it strikes bleed', () =>
@@ -187,7 +188,7 @@ test('5. Death Knell: what his hammer stuns rings; struck ringing, it peals and 
     const ev = cast(g, 1, 0, 0, 0.1);
     assert.ok(ev.some((e) => e.t === 'stun' && e.id === a.id), 'Earthquake stuns it');
     assert.ok((a.knellT ?? 0) > 0 && seen(ev, 'deathknell', 'ring').length >= 1, 'and it rings');
-    assert.ok(a.stunT <= (SKILLS.quake.stun ?? 0) * (1 - T.knell.shorter) + 1e-6, `its stun shorter (${a.stunT.toFixed(2)})`);
+    assert.ok(a.stunT <= (SKILLS.quake.stun ?? 0) * (1 - g.ut.knell.shorter) + 1e-6, `its stun shorter (${a.stunT.toFixed(2)})`);
     for (const m of pack) assert.equal(m.stunT, 0, 'the others not yet');
     // struck while it rings (its stun over, his Earthquake's follow-through done): it peals
     wait(g, 0.6);
@@ -218,7 +219,7 @@ test('6. Deadweight: each Smash in a row harder than the last; the fifth an Eart
       quakes += seen(ev, 'deadweight', 'quake').length;
     }
     for (let k = 1; k < 4; k++) assert.ok(blows[k] > blows[k - 1] * 1.05, `each harder than the last: ${blows.join(', ')}`);
-    assert.ok(Math.abs(blows[1] / blows[0] - (1 + T.weight.more)) < 0.03, `${(T.weight.more * 100).toFixed(0)}% harder: ${blows[1]} after ${blows[0]}`);
+    assert.ok(Math.abs(blows[1] / blows[0] - (1 + g.ut.weight.more)) < 0.03, `${(g.ut.weight.more * 100).toFixed(0)}% harder: ${blows[1]} after ${blows[0]}`);
     assert.equal(quakes, 1, 'the fifth an Earthquake of its own');
     assert.ok(blows[4] > blows[3] * 1.5, `and the fifth the heaviest of all, the quake with it: ${blows.join(', ')}`);
     assert.equal(g.uq.weight, 0, 'and the weight starts over');

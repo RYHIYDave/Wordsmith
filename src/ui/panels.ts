@@ -109,12 +109,13 @@ export function itemCard(game: Game, it: Item, touch = false): Line[] {
   }
   const limit = game.meta.limit;
   for (const l of modLines(rest, limit)) lines.push({ text: l, color: THEME.text });
-  for (const a of it.affixes) for (const l of modLines(a.mods, limit)) lines.push({ text: l, color: THEME.magic });
+  // (THE LEVELING UNIQUES: a stat that takes away, its price, in red as a unique's price is)
+  for (const a of it.affixes) for (const l of modLines(a.mods, limit)) lines.push({ text: l, color: it.rarity === 3 && l.startsWith('-') ? THEME.bad : THEME.magic });
   for (const im of it.imbues) for (const l of modLines(im.mods, limit)) lines.push({ text: `${WORDS[im.word].name}: ${l}`, color: WORD_COLOR[im.word] });
   // (UNIQUE ITEMS, game/uniques.ts: under its ordinary stats, what it does in its own orange, its price, whose it is; it takes no word)
   const unique = uniqueOf(it);
   if (unique) {
-    for (const l of uniqueLines(unique, h.cls)) lines.push({ text: l.text, color: l.kind === 'does' ? RARITY_COLOR[3] : l.kind === 'note' ? THEME.dim : THEME.bad, small: l.kind === 'note' || l.kind === 'bad' });
+    for (const l of uniqueLines(unique, h.cls, it)) lines.push({ text: l.text, color: l.kind === 'does' ? RARITY_COLOR[3] : l.kind === 'note' ? THEME.dim : THEME.bad, small: l.kind === 'note' || l.kind === 'bad' });
     // (THE PACK COLLAR, the Ranger's: the companion it brings and what it does, as a companion talent's card says it; she picks
     // another on this card, in town, ui/inventory.ts. His pick, 12 Nov 2026: “Pick it on the collar”. Nothing said of where it
     // is picked: his words, 12:41, “I’d rather it not say anything until you tap on it or something then a message says

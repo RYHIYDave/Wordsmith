@@ -22,6 +22,8 @@ test('with the switch off a unique worn does nothing: the game is as it was', ()
   const g = room('warrior');
   const it = on(() => makeUnique('longodds', 10, new RNG(1)))!;
   it.reqLevel = 1;
+  // (at the tune's own numbers, as wear() puts them on: its rolls have their own test)
+  delete it.uroll;
   g.hero.gear.helm = it;
   g.refresh();
   assert.equal(UNIQUES.on, false);

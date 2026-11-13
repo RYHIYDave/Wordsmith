@@ -7,7 +7,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { RNG } from '../src/engine/rng';
-import { FLAT_PAIRS, imbueItem, imbueOptions, imbueOptionsFor, modLines, rollItem } from '../src/game/items';
+import { FLAT_PAIRS, POISON_DMG, imbueItem, imbueOptions, imbueOptionsFor, modLines, rollItem } from '../src/game/items';
 import type { Item, Slot } from '../src/game/types';
 import { Game } from '../src/game/game';
 import { rangeText } from '../src/ui/inventory';
@@ -29,12 +29,20 @@ test('crafted on a weapon, gloves and a ring: the damage words may give flat dam
   assert.deepEqual(stats('fire', 'ring'), ['firePct', 'fireMin', 'fireRes']);
   assert.deepEqual(stats('fire', 'mainhand'), ['firePct', 'fireMin']);
   assert.deepEqual(stats('power', 'gloves'), ['physPct', 'dmgMin', 'str']);
-  assert.ok(!stats('poison', 'ring').some((s) => s.endsWith('Min')), 'poison: none yet (its harm is over time)');
+  // (POISON DAMAGE on since his yes of 12 Nov 2026: the Poison word gives poison's own, as Flame's; off, none)
+  assert.deepEqual(stats('poison', 'mainhand'), ['poisonPct', 'poisonMin']);
+  const was = POISON_DMG.on;
+  POISON_DMG.on = false;
+  assert.ok(!stats('poison', 'ring').some((s) => s.endsWith('Min')), 'poison off: none');
+  POISON_DMG.on = was;
 });
 
 test('crafted, it is one property, “Adds X-Y”, least below most, growing deeper down; never twice on a piece', () => {
+  const was = POISON_DMG.on;
   for (const f of FLAT_PAIRS) {
-    const word = f.min === 'dmgMin' ? 'power' : f.min === 'fireMin' ? 'fire' : f.min === 'frostMin' ? 'frost' : 'lightning';
+    // (POISON DAMAGE's, the Poison word's on gear with its switch on: game/items.ts POISON_DMG)
+    POISON_DMG.on = f.min === 'poisonMin';
+    const word = f.min === 'dmgMin' ? 'power' : f.min === 'fireMin' ? 'fire' : f.min === 'frostMin' ? 'frost' : f.min === 'lightMin' ? 'lightning' : 'poison';
     const ring = plain('ring');
     const k = imbueOptionsFor(ring, word).findIndex((o) => o.stat === f.min);
     assert.ok(k >= 0, word);
@@ -48,6 +56,7 @@ test('crafted, it is one property, “Adds X-Y”, least below most, growing dee
     assert.deepEqual(modLines(made.mods, 'cooldown'), [`Adds ${made.mods[0].value}-${made.mods[1].value} ${f.label}`]);
     assert.ok(!imbueOptionsFor(ring, word).some((o) => o.stat === f.min), 'not twice');
   }
+  POISON_DMG.on = was;
   const lo = imbueOptions('fire', 'ring', 2).find((o) => o.stat === 'fireMin')!;
   const hi = imbueOptions('fire', 'ring', 25).find((o) => o.stat === 'fireMin')!;
   assert.ok(hi.max > lo.max * 2, `deeper, more (${lo.max} to ${hi.max})`);
