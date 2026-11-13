@@ -874,6 +874,21 @@ export function paintMageUp(s: Skeleton, q: Posed, side: MuSide, B: Build, aroun
       if (s.handL[2] < s.waist[2] + 2) bookShut(layer, lx, ly - 1);
       else book(layer, st.over, lx + 1, ly - 2, q.pt > 0.12 && q.pt < 0.88 ? ((q.pt - 0.12) / 0.76) % 1 : 0, lights);
     }
+    // (THE BALL, art/swap_moves_art.ts MU_BALL3: the comet held in her free hand as she winds up to throw it, prop 6, `pt` how
+    // far it has grown, 0..1; gone from her hand as she lets it go. Only the moves to swap have it)
+    if (q.prop === 6) {
+      const [lx, ly] = st.at(s.handL);
+      // (over everything, as her crystal's sparks are: it is light, and seen through the hat's brim)
+      const layer = st.over;
+      const r = 2.2 + 1.6 * Math.max(0, Math.min(1, q.pt));
+      const R = Math.ceil(r);
+      for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+        const d = Math.hypot(dx, dy);
+        if (d <= r) layer.set(Math.round(lx + dx), Math.round(ly - 1 + dy), d < r * 0.45 ? '#ffffff' : d < r * 0.8 ? SPARK[3] : SPARK[2]);
+        else if (d <= r + 1.2 && hash(Math.round(lx + dx), Math.round(ly + dy), Math.round(q.pt * 9)) < 0.35) layer.set(Math.round(lx + dx), Math.round(ly - 1 + dy), SPARK[2]);
+      }
+      lights.push({ x: lx, y: ly - 1, r: 11 + 7 * q.pt, color: SPARK[3], a: 0.5 + 0.25 * q.pt });
+    }
     // her braids: where the game hangs the rest of each ('a' always the one over her right shoulder)
     tails = tailsAt.map((t) => {
       const [x, y] = st.at(t.p);

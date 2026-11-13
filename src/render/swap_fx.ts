@@ -3,8 +3,10 @@
 // has always been drawn in (art/spells.ts SPELL_TONES: violet with no word's element, else the element's own), his in rope and
 // the friend's cyan. Hers have no element of their own (his words: “i dont want spear to be ice spear, i want it to be spear,
 // same with the others”): they take her words'. To be shown him in play before any goes live.
-//   BALL     a ball of three tones and a white heart, the light from the upper left, its tail of fading motes, its shadow below;
-//   SPEAR    a shaft of light with a bright core and a leaf of a head, a streak of air behind it;
+//   BALL     A COMET (his pick): a small dense head, white at its heart, a long ragged tail of her colour streaming off it, sparks
+//            shed behind; where it strikes, a SPLASH: a flash, a ring of its light across the floor, drops flung up and falling;
+//   SPEAR    A CRYSTAL LANCE (his pick): a long cut crystal of her magic, its lit face pale and the other deep, a white ridge down it
+//            and a glint running along it, shards of it trailing behind;
 //   AURA     a ring on the floor round her, turning, edged in cyan, faintly filled; FIRE embers rising in it, LIGHTNING crackle
 //            running round its edge, FROST motes drifting down and frost stars on its edge (her shield is Guarding's own);
 //   SNARE    a loop of rope lying open, its twist, its knot and peg, a glint of cyan while it is set;
@@ -71,41 +73,109 @@ function screenWay(vx: number, vy: number): [number, number] {
   return [sx / l, sy / l];
 }
 
-/** (THE MAGE'S BALL) In flight at (x, y), going (vx, vy): big, lit, its glow about it, its tail behind, sparks going round it. */
-export function drawBall(g: G, cam: Cam, x: number, y: number, vx: number, vy: number, el: Element, t: number): void {
+/**
+ * (THE MAGE'S BALL, A COMET: his pick, “Comet (Recommended)”) In flight at (x, y), going (vx, vy): a small dense head, white at
+ * its heart, and a long ragged tail of her colour streaming off it, its strands of different lengths and flickering, sparks shed
+ * off it falling behind.
+ */
+export function drawBall(g: G, cam: Cam, x: number, y: number, vx: number, vy: number, el: Element, t: number, flown?: number): void {
   const T = tonesOf(el);
   const LIFT = 13;
+  const [ux, uy] = screenWay(vx, vy);
+  const px = -uy;
+  const py = ux;
   const sx = wx(cam, x, y);
   const sy = wy(cam, x, y);
-  // its shadow on the floor
-  g.globalAlpha = 0.4;
+  const hx = sx;
+  const hy = sy - LIFT;
+  // its shadow on the floor, long as the comet is
+  g.globalAlpha = 0.35;
   g.fillStyle = '#000000';
-  g.fillRect(Math.round(sx) - 5, Math.round(sy), 11, 2);
-  g.fillRect(Math.round(sx) - 3, Math.round(sy) - 1, 7, 1);
+  for (let i = 0; i < 16; i += 2) g.fillRect(Math.round(sx - ux * i) - 2, Math.round(sy - uy * i * 0.5), 5, 1);
   g.globalAlpha = 1;
-  // the tail: motes falling behind it, smaller and darker the further back
-  const v = Math.hypot(vx, vy) || 1;
-  for (let k = 8; k >= 1; k--) {
-    const bx = x - (vx / v) * 0.2 * k;
-    const by = y - (vy / v) * 0.2 * k;
-    const wob = Math.sin(t * 30 + k * 1.7) * 1;
-    disc(g, wx(cam, bx, by), wy(cam, bx, by) - LIFT + wob, Math.max(0.6, 4.6 - k * 0.55), k < 3 ? T[2] : k < 6 ? T[1] : T[0]);
+  // the tail: nine strands off the back of the head, each its own length, flickering, fanned a little and narrowing to nothing
+  const STRANDS = [-3, -2, -1.5, -1, 0, 1, 1.5, 2, 3];
+  for (let s = 0; s < STRANDS.length; s++) {
+    const off = STRANDS[s];
+    // (short as it leaves her hand, streaming out to its whole length in its first tiles)
+    const long = (20 + 22 * (1 - Math.abs(off) / 3.4) + 7 * Math.sin(t * 23 + s * 2.1)) * Math.min(1, 0.25 + (flown ?? 9) * 0.6);
+    for (let i = 3; i < long; i++) {
+      const k = i / long;
+      const fan = off * (1 + k * 1.6) + Math.sin(t * 31 + i * 0.45 + s) * k * 1.4;
+      const c = k < 0.22 ? T[3] : k < 0.5 ? T[2] : k < 0.78 ? T[1] : T[0];
+      g.globalAlpha = k < 0.6 ? 1 : 1 - (k - 0.6) * 1.8;
+      dot(g, hx - ux * i + px * fan, hy - uy * i + py * fan, c);
+    }
   }
-  glow(g, sx, sy - LIFT, 14, T[2], 0.3);
-  // the ball: dark all round, its body toward the light, its light, its heart
-  disc(g, sx, sy - LIFT, 6.2, T[0]);
-  disc(g, sx - 0.7, sy - LIFT - 0.7, 5.2, T[1]);
-  disc(g, sx - 1.8, sy - LIFT - 1.8, 3.2, T[2]);
-  dot(g, sx - 3, sy - LIFT - 3, T[3], 2, 2);
-  // sparks going round it
-  for (let k = 0; k < 3; k++) {
-    const a = t * 9 + (k / 3) * Math.PI * 2;
-    dot(g, sx + Math.cos(a) * 9, sy - LIFT + Math.sin(a) * 5, k === 0 ? T[3] : T[2], 2, 2);
+  g.globalAlpha = 1;
+  // sparks shed off the tail, falling behind it
+  for (let k = 0; k < 6; k++) {
+    const ph = (t * 3.2 + k * 0.173) % 1;
+    const back = 10 + ph * 34;
+    const side = Math.sin(k * 7.3 + Math.floor(t * 3.2 + k * 0.173) * 3.1) * 6;
+    g.globalAlpha = 1 - ph;
+    dot(g, hx - ux * back + px * side, hy - uy * back + py * side + ph * 6, ph < 0.4 ? T[3] : T[2], 2, 1);
+  }
+  g.globalAlpha = 1;
+  // the head: its glow, dark all round, its body, its white heart, a streak of light off its front
+  glow(g, hx, hy, 15, T[2], 0.34);
+  disc(g, hx, hy, 4.4, T[1]);
+  disc(g, hx + ux * 0.6, hy + uy * 0.6, 3.4, T[2]);
+  disc(g, hx + ux * 0.8, hy + uy * 0.8, 2.2, T[3]);
+  dot(g, hx + ux * 1.2 - 0.5, hy + uy * 1.2 - 0.5, '#ffffff', 2, 2);
+  glow(g, hx, hy, 6, T[3], 0.35);
+}
+
+/** (THE COMET'S SPLASH, where it bursts: game/game.ts ballBurst's event, `comet`) Kept here until each has played out. */
+const SPLASHES: { x: number; y: number; el: Element; r: number; at: number | null }[] = [];
+export function cometSplash(x: number, y: number, el: Element, r: number): void {
+  if (SPLASHES.length < 12) SPLASHES.push({ x, y, el, r, at: null });
+}
+/** The splashes: a flash, a ring of her light thrown out across the floor as far as its burst reaches, and drops of it flung up and falling. */
+export function drawSplashes(g: G, cam: Cam, t: number): void {
+  const DUR = 0.55;
+  for (let n = SPLASHES.length - 1; n >= 0; n--) {
+    const s = SPLASHES[n];
+    if (s.at === null || t < s.at) s.at = t;
+    const age = t - s.at;
+    if (age > DUR) {
+      SPLASHES.splice(n, 1);
+      continue;
+    }
+    const k = age / DUR;
+    const T = tonesOf(s.el);
+    const sx = wx(cam, s.x, s.y);
+    const sy = wy(cam, s.x, s.y);
+    // the flash
+    if (k < 0.3) {
+      glow(g, sx, sy - 10, 22 * (1 - k), T[3], 0.5 * (1 - k / 0.3));
+      disc(g, sx, sy - 10, 7 * (1 - k / 0.3), '#ffffff');
+    }
+    // the ring across the floor, broken up as it goes
+    g.globalAlpha = 1 - k;
+    floorRing(g, cam, s.x, s.y, s.r * (0.25 + 0.75 * Math.sqrt(k)), k < 0.4 ? T[3] : T[2], k < 0.5 ? 1 : 2, k * 2);
+    floorRing(g, cam, s.x, s.y, s.r * (0.15 + 0.6 * Math.sqrt(k)), T[1], 3, -k * 3);
+    // the drops: thrown up and out, falling, each a short streak
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2 + (i % 3) * 0.4;
+      const out = s.r * (0.4 + 0.5 * ((i * 37) % 10) / 10) * Math.min(1, k * 1.6);
+      const up = 26 * (0.6 + ((i * 53) % 7) / 10) * (k * 1.6 - k * k * 2.2);
+      const dx = wx(cam, s.x + Math.cos(a) * out, s.y + Math.sin(a) * out);
+      const dy = wy(cam, s.x + Math.cos(a) * out, s.y + Math.sin(a) * out) - Math.max(0, up);
+      dot(g, dx, dy, i % 3 === 0 ? T[3] : T[2], 2, 2);
+      dot(g, dx, dy + 2, T[1], 1, 2);
+    }
+    g.globalAlpha = 1;
   }
 }
 
-/** (THE MAGE'S SPEAR) In flight at (x, y), going (vx, vy), its point there: a long shaft of light, a leaf of a head, its glow, its streak. */
-export function drawSpear(g: G, cam: Cam, x: number, y: number, vx: number, vy: number, el: Element): void {
+/**
+ * (THE MAGE'S SPEAR, A CRYSTAL LANCE: his pick, “Crystal lance (Recommended)”) In flight at (x, y), going (vx, vy), its point
+ * there: a long cut crystal of her magic, pointed at both ends and widest a third of the way back, its face toward the light
+ * pale, the other deep, a ridge of white down its length and a cut across it where it is widest, its edges lit, a glint running
+ * down it; shards of it trailing behind, turning as they go.
+ */
+export function drawSpear(g: G, cam: Cam, x: number, y: number, vx: number, vy: number, el: Element, t = 0, flown?: number): void {
   const T = tonesOf(el);
   const LIFT = 12;
   const [ux, uy] = screenWay(vx, vy);
@@ -113,29 +183,54 @@ export function drawSpear(g: G, cam: Cam, x: number, y: number, vx: number, vy: 
   const py = ux;
   const tx = wx(cam, x, y);
   const ty = wy(cam, x, y) - LIFT;
-  const LONG = 36;
-  // the air streaming behind it
-  for (const [off, from, to, c, a] of [[3, 30, 64, T[1], 0.6], [-3, 34, 70, T[0], 0.55], [0, 36, 80, T[2], 0.4]] as const) {
-    g.globalAlpha = a;
-    for (let i = from; i < to; i += 2) dot(g, tx - ux * i + px * off, ty - uy * i + py * off, c);
+  // (as it leaves her crystal it is short, and grows to its whole length in its first tiles: it does not reach back through her)
+  const LONG = Math.round(Math.min(44, 12 + (flown ?? 9) * 26));
+  const WIDE = Math.round(LONG * 0.3);
+  const half = (i: number): number => (i < WIDE ? (i * 5.6) / WIDE : 5.6 * (1 - (i - WIDE) / (LONG - WIDE)));
+  // which side of it faces the light (up the screen, else to the left)
+  const lit = (k: number): boolean => (Math.abs(py) > 0.2 ? py * k < 0 : px * k < 0);
+  // its shadow on the floor
+  g.globalAlpha = 0.3;
+  for (let i = 0; i < LONG; i += 2) dot(g, tx - ux * i, ty + LIFT - uy * i * 0.5, '#000000', 2, 1);
+  g.globalAlpha = 1;
+  // the shards trailing it, turning as they fall behind
+  for (let s = 0; s < 5; s++) {
+    const ph = (t * 2.6 + s * 0.2) % 1;
+    const back = LONG + 2 + ph * 30;
+    const side = Math.sin(s * 5.1 + Math.floor(t * 2.6 + s * 0.2) * 2.3) * 4;
+    const cx = tx - ux * back + px * side;
+    const cy = ty - uy * back + py * side + ph * 4;
+    g.globalAlpha = 1 - ph;
+    const spin = Math.floor((t * 12 + s) % 2);
+    dot(g, cx, cy - 1, T[3]);
+    dot(g, cx - 1 + spin, cy, T[2], 2 - spin, 1);
+    dot(g, cx, cy + 1, T[1]);
   }
   g.globalAlpha = 1;
   // its glow along its length
-  for (let i = 0; i < LONG; i += 6) glow(g, tx - ux * i, ty - uy * i, 7, T[2], 0.16);
-  // the shaft: dark edges, the body, the light toward the sky, a white core near the head
-  for (let i = 6; i < LONG; i++) {
-    dot(g, tx - ux * i + px * 2, ty - uy * i + py * 2, T[0]);
-    dot(g, tx - ux * i - px * 2, ty - uy * i - py * 2, T[0]);
-    dot(g, tx - ux * i + px, ty - uy * i + py, T[2]);
-    dot(g, tx - ux * i - px, ty - uy * i - py, T[1]);
-    dot(g, tx - ux * i, ty - uy * i, i < 18 ? T[3] : T[2]);
+  for (let i = 0; i < LONG; i += 7) glow(g, tx - ux * i, ty - uy * i, 8, T[2], 0.15);
+  // its dark edge all round, as everything in the game has, so that it stands off the floor
+  for (let i = -1; i <= LONG + 1; i++) {
+    const W = Math.round(half(Math.max(0, Math.min(LONG, i)))) + 1;
+    for (let k = -W; k <= W; k++) dot(g, tx - ux * i + px * k, ty - uy * i + py * k, '#140a24');
   }
-  // the head: a leaf, widest a little back from its point, lit along its upper edge
-  const W = [0, 1, 2, 3, 4, 4, 3, 3, 2];
-  for (let i = 0; i < W.length; i++) {
-    for (let k = -W[i]; k <= W[i]; k++) dot(g, tx - ux * i + px * k, ty - uy * i + py * k, k === 0 ? T[3] : Math.abs(k) === W[i] ? T[0] : k > 0 ? T[2] : T[1]);
+  // the crystal: row by row from its point back
+  const glint = (t * 70) % (LONG + 20);
+  for (let i = 0; i <= LONG; i++) {
+    const w = half(i);
+    const W = Math.round(w);
+    for (let k = -W; k <= W; k++) {
+      let c: string;
+      if (W > 0 && Math.abs(k) === W) c = lit(k) ? T[2] : T[0];
+      else if (k === 0) c = Math.abs(i - glint) < 3 ? '#ffffff' : T[3];
+      else if (Math.abs(i - WIDE) < 1) c = T[3];
+      else c = lit(k) ? (Math.abs(k) === 1 ? T[3] : T[2]) : Math.abs(k) === 1 ? T[1] : T[0];
+      dot(g, tx - ux * i + px * k, ty - uy * i + py * k, c);
+    }
   }
-  glow(g, tx, ty, 6, T[3], 0.3);
+  // the point burning white
+  glow(g, tx, ty, 6, T[3], 0.32);
+  dot(g, tx - 0.5, ty - 0.5, '#ffffff', 2, 2);
 }
 
 /** (THE MAGE'S AURA) On the floor round her while it is on: its kind, its reach, how long it has been on. */

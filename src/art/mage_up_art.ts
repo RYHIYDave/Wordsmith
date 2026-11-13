@@ -16,6 +16,8 @@
 //   ready         (from in front, in town and on her card) making ready when picked
 // A list the same in two places is ONE list, painted once.
 
+import { MU_BALL3, MU_SPEAR3 } from './swap_moves_art';
+import { SWAP_MOVES } from '../game/talents';
 import type { Light, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { lazyFrames, lightsOut, toSprite } from './kit';
@@ -166,6 +168,8 @@ function setOf(view: MuSide, place: 'dungeon' | 'town' | 'card', shared: Shared)
     set.startAt = start.phase;
   }
   const clips = set.clips as NonNullable<AnimSet['clips']>;
+  // (THE MAGE'S MOVES TO SWAP, behind SWAP_MOVES, art/swap_moves_art.ts: Ball flung off a jab, Spear driven out with a lunge)
+  if (SWAP_MOVES.on) clips.moves = { ...(clips.moves ?? {}), ball: clip(MU_BALL3, FPS), spear: clip(MU_SPEAR3, FPS) };
   // (the Beam: held, and let go; begun from her guard only where there is fighting, as art/heroes3.ts has it)
   clips.hold = clip(M.beam, FPS);
   if (fights) clips.holdStart = clip(M.beamstart, FPS);

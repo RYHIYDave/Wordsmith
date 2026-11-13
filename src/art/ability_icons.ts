@@ -696,32 +696,28 @@ function ballMove(): Px {
   return p;
 }
 
-/** Spear: a spear of her magic, a long shaft of light with a leaf of a head, flying up to the right, the air streaming off it. */
+/** Spear, a crystal lance (his pick): a long cut crystal pointed at both ends, widest a third of the way back from its point, its lit face pale and the other deep, a ridge of white down it and a cut across it; shards trailing. */
 function spearMove(): Px {
   const p = new Px(N, N);
-  const tail: Pt = [2.5, 29.5];
+  const tail: Pt = [4, 28];
   const tip: Pt = [29.5, 2.5];
-  // the air it has come through
-  for (const [x0, y0, len] of [[2, 20, 7], [11, 30, 7], [6, 27, 4]] as const) {
-    for (let i = 0; i <= len; i++) p.set(x0 + i, y0 - i, i === len ? VIOLET3[2] : VIOLET3[1]);
+  // the shards it sheds, behind it
+  for (const [x, y, c] of [[2, 25, 1], [6, 30, 1], [1, 30, 0], [9, 27, 2]] as const) {
+    p.set(x, y, VIOLET3[c]);
+    if (c > 0) p.set(x + 1, y - 1, c === 2 ? WHITE : VIOLET3[2]);
   }
-  // the shaft: light, a bright line down its middle
-  fill(p, (x, y) => {
-    const { t, off, len } = along(x, y, tail, tip);
-    const r = t * len;
-    if (t < 0 || r > len - 9 || Math.abs(off) > 1.6) return null;
-    return Math.abs(off) < 0.5 ? WHITE : off > 0 ? VIOLET3[2] : VIOLET3[1];
-  });
-  // the head: a leaf, widest a third of the way back from its point, lit along its upper edge
   part(p, (s) => {
     fill(s, (x, y) => {
       const { t, off, len } = along(x, y, tail, tip);
       const back = (1 - t) * len;
-      if (back < -0.2 || back > 10) return null;
-      const w = back < 3.4 ? 0.4 + back * 0.95 : 3.6 * (1 - (back - 3.4) / 6.6) + 0.6;
+      if (back < -0.2 || back > len + 0.2) return null;
+      const WIDE = len * 0.3;
+      const w = back < WIDE ? 0.3 + (back / WIDE) * 3.6 : 3.9 * (1 - (back - WIDE) / (len - WIDE)) + 0.3;
       if (Math.abs(off) > w) return null;
-      if (Math.abs(off) < 0.5) return WHITE;
-      return off > 0 ? VIOLET3[2] : VIOLET3[0];
+      if (Math.abs(off) < 0.55) return WHITE;
+      if (Math.abs(back - WIDE) < 0.6) return off > 0 ? WHITE : VIOLET3[2];
+      if (Math.abs(off) > w - 0.9) return off > 0 ? VIOLET3[2] : VIOLET3[0];
+      return off > 0 ? (Math.abs(off) < 1.6 ? VIOLET3[2] : VIOLET3[1]) : Math.abs(off) < 1.6 ? VIOLET3[1] : VIOLET3[0];
     });
   });
   // the flare at its point

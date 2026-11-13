@@ -2,7 +2,7 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
-import { drawAura as drawSwapAura, drawBall, drawRally, drawRallyAir, drawSnare, drawSnipeDraw, drawSnipeStreak, drawSpear } from './swap_fx';
+import { drawAura as drawSwapAura, drawBall, drawRally, drawRallyAir, drawSnare, drawSnipeDraw, drawSnipeStreak, drawSpear, drawSplashes } from './swap_fx';
 import { SWAP_MOVES } from '../game/talents';
 import { LIVING_SHADOW } from '../art/shadow_art';
 import { warlockAskAhead } from './warlock_packs';
@@ -4054,7 +4054,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0, ...(crouchT >= 0 ? { crouchT } : {}), ...(heavyDrawn(h.cls, h.talents) === 'axe' ? { axe: { empty: !!h.handsEmpty, caughtT: h.caughtAt !== undefined ? game.time - h.caughtAt : -1, appear: !!h.appear } } : {}) }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackMove: SWAP_MOVES.on ? h.skills[h.attackSkill]?.id : undefined, attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0, ...(crouchT >= 0 ? { crouchT } : {}), ...(heavyDrawn(h.cls, h.talents) === 'axe' ? { axe: { empty: !!h.handsEmpty, caughtT: h.caughtAt !== undefined ? game.time - h.caughtAt : -1, appear: !!h.appear } } : {}) }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       // (THE VETERAN in a move: its frame, turned as he faced as it began: render/veteran_fx.ts. Not narrowed in a turn.)
       const vetSp = this.vetFx.shown(game, heroArt);
       if (vetSp) sp = vetSp;
@@ -4151,6 +4151,7 @@ export class Renderer {
       drawSwapAura(g, cam, game, t);
       drawSnipeDraw(g, cam, game, t);
       drawRally(g, cam, game, t);
+      drawSplashes(g, cam, t);
     }
 
     // The orb the staff has set down: a large ball hanging over the floor. It comes in at a pop,
@@ -4422,7 +4423,7 @@ export class Renderer {
       }
       // (THE MAGE'S BALL and SPEAR, game/swap_moves.ts: render/swap_fx.ts)
       if (p.look === 'ball' || p.look === 'mspear') {
-        if (onScreen(p.x, p.y)) (p.look === 'ball' ? drawBall : drawSpear)(g, cam, p.x, p.y, p.vx, p.vy, p.element, t);
+        if (onScreen(p.x, p.y)) (p.look === 'ball' ? drawBall : drawSpear)(g, cam, p.x, p.y, p.vx, p.vy, p.element, t, p.flown);
         continue;
       }
       // (THE RANGER'S SNIPE: the streak behind the arrow it loosed, under the arrow)

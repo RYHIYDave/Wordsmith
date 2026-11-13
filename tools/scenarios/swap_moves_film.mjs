@@ -1,5 +1,5 @@
 // THE MAGE'S AND THE RANGER'S MOVES TO SWAP AT WORK (game/swap_moves.ts, behind SWAP_MOVES), filmed for the owner in the practice
-// room, a frame at a time, a caption over each part (THE LOOKS ARE STAND-INS: a ball of light, a streak, a ring, the trap's jaws).
+// room, a frame at a time, a caption over each part.
 //   node tools/build_to.mjs dist/swapfilm.html
 //   CLS=mage node tools/playtest.mjs --file dist/swapfilm.html --touch --size 844x390 --dpr 2 --scenario tools/scenarios/swap_moves_film.mjs --out shots/swapfilm/mage/f
 //   env ONLY=s,s,...: stills at those seconds only. FROM=s: no stills before then (the game runs on at its own pace).
@@ -16,12 +16,12 @@ const PLANS = {
     secs: 27,
     take: ['kindling', 'ball', 'searing', 'charged', 'beam', 'forking', 'bittercold', 'spear', 'deepfreeze', 'aura'],
     plan: [
-      [0.0, 'caption', 'THE MAGE\'S NEW MOVES (stand-in looks)'],
-      [0.6, 'set', 0, 'ball'], [0.6, 'caption', 'BALL: stops on the first enemy and bursts there'],
+      [0.0, 'caption', 'THE MAGE\'S NEW MOVES'],
+      [0.6, 'set', 0, 'ball'], [0.6, 'caption', 'BALL, A COMET: thrown from her hand; bursts on the first enemy'],
       [1.0, 'tapM', 0], [2.0, 'tapM', 1], [3.0, 'tapM', 2], [4.0, 'tapM', 3],
-      [5.2, 'set', 0, 'spear'], [5.2, 'caption', 'SPEAR: thin and long, through every enemy in its line'],
+      [5.2, 'set', 0, 'spear'], [5.2, 'caption', 'SPEAR, A CRYSTAL LANCE: hurled; through every enemy in its line'],
       [5.6, 'tap', 7, 0], [6.6, 'tap', 7, 0.3], [7.6, 'tap', 7, -0.3],
-      [9.0, 'set', 1, 'beam'], [9.0, 'caption', 'BEAM: held, steered with the finger'],
+      [9.0, 'set', 1, 'beam'], [9.0, 'caption', 'BEAM: her Beam as it was; held, steered with the finger'],
       [9.4, 'hold', 5, -1.5, 0.9], [10.3, 'hold', 5, 0, 0.9], [11.2, 'hold', 5, 1.5, 0.9],
       [13.0, 'aura', 'fire'], [13.0, 'caption', 'AURA, FIRE: a tap on her; every enemy in it burns'], [13.4, 'free', 0], [13.4, 'free', 1], [13.4, 'free', 2], [13.5, 'tapHer'],
       [18.0, 'aura', 'lightning'], [18.0, 'caption', 'AURA, LIGHTNING: bolts to every enemy in it'], [18.2, 'tapHer'],
@@ -32,15 +32,15 @@ const PLANS = {
     secs: 21,
     take: ['fleet', 'windrunner', 'wildcompanion', 'keeneye', 'venom', 'huntcompanion', 'quickdraw', 'longshot', 'lightstep', 'huntersmark', 'widetraps', 'snare', 'splitshot', 'snipe'],
     plan: [
-      [0.0, 'caption', 'THE RANGER\'S NEW MOVES (stand-in looks)'],
-      [0.6, 'caption', 'SNARE (in place of Shot): thrown; what walks in is held, then it bursts'],
+      [0.0, 'caption', 'THE RANGER\'S NEW MOVES'],
+      [0.6, 'caption', 'SNARE (in place of Shot): whirled and thrown; what walks in is held, then it bursts'],
       [0.8, 'free', 0], [0.8, 'free', 1], [0.8, 'free', 2],
       [1.0, 'tap', 2.4, 0.4], [2.2, 'tap', 2.6, -0.8],
       [6.6, 'line'],
-      [6.8, 'caption', 'SNIPE (in place of Volley): hold to draw; the longer, the harder; through its line'],
+      [6.8, 'caption', 'SNIPE (in place of Volley): drawn to his cheek and held; the longer, the harder'],
       [7.4, 'hold', 7, 0, 0.2], [9.0, 'hold', 7, 0, 1.6],
       [12.3, 'take+', 'rally'], [12.3, 'set', 1, 'rally'],
-      [12.3, 'caption', 'RALLY (another in place of Volley): his companions faster and harder for a few seconds'],
+      [12.3, 'caption', 'RALLY (another in place of Volley): his horn; his companions faster and harder'],
       [12.5, 'free', 0], [12.5, 'free', 1], [12.5, 'free', 2], [12.5, 'free', 3],
       [13.4, 'hold', 2, 0, 0.1],
     ],

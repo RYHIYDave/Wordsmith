@@ -276,6 +276,15 @@ test('11. his SNIPE: through every enemy in its line; drawn longer, harder', () 
   assert.ok(l.maxLife - l.life > (q[0].maxLife - q[0].life) * 1.8, 'a full draw far harder than a quick one');
 }));
 
+test('11b. his SNIPE held: he is seen drawing all the while he holds it (his own held pictures, not his guard)', () => swapOn(() => {
+  const { g, a } = ranger(['snipe']);
+  const m = put(g, a, 6, 0);
+  holdAt(g, m.x, m.y, 1.2);
+  assert.ok(g.hero.channel, 'still drawing');
+  assert.equal(g.hero.anim, 'attack', 'held in the attack, as a held beam is');
+  assert.equal(g.hero.attackSkill, 1);
+}));
+
 test('12. his RALLY: his companions quickened for a few seconds', () => swapOn(() => {
   const { g } = ranger(['rally']);
   assert.equal(g.hero.skills[1].id, 'rally');

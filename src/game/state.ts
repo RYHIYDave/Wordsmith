@@ -1454,7 +1454,7 @@ export type GameEvent =
    * 'shock' is the knock of a Power hit on the enemies around its target; 'ruin' is a rune going off.
    * `words`, `n`, `echo` as for a swing.
    */
-  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl' | 'vial' | 'pound' | 'bomb'; words?: readonly WordId[]; n?: number; echo?: boolean; meld?: MeldId; r0?: number }
+  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl' | 'vial' | 'pound' | 'bomb'; words?: readonly WordId[]; n?: number; echo?: boolean; meld?: MeldId; r0?: number; comet?: boolean }
   /** An ability leaves the hero: where from, which way, the words in front of it and behind it. */
   | { t: 'cast'; x: number; y: number; dx: number; dy: number; kind: SkillKind; el: Element; words: readonly WordId[]; behind: readonly WordId[]; echo: boolean }
   /** A word was set into an ability: `name` is the ability's new name. */

@@ -124,6 +124,35 @@ ALL OF IT IS BUILT, BEHIND `SWAP_MOVES` (game/talents.ts, OFF): off, the game is
 - CHECKED: tsc clean; tests/swap_moves.test.ts 12 of 12; unit `--only swap_moves, companions, practice_talents, talent_lines,
   talents, talents2, tinkerer_talents, traps, warrior_tree` and the core on 0b2a71349b: 30 passed, word_kinds.test.ts failing as
   it pinned the spells; mended (Ball and Spear are spells): `--only word_kinds` and the core on c0106ac4d5, all passed.
+- THEIR OWN ANIMATIONS AND HIS PICKED LOOKS (13 Nov, morning). His picks for the looks: “Her Beam from before (Recommended)”,
+  “Comet (Recommended)”, “Crystal lance (Recommended)”, after his words “Spear could be better, ball just looks like orb as a
+  projectile, and beam has been made before so you should have a reference. The old beam is one of my favorite animations”; and
+  at 10:20, shown Snipe on the Volley's kneel: “Why is snipe using the same bent knee animation as volley?  These are so half
+  assed man.  Do it right so I don't have to keep redoing these over and over and over again”. So every new move has its own
+  animation, sculpted on the heroes' own bones (art/swap_moves_art.ts) and checked frame by frame from four sides
+  (tools/move_strip.ts), none borrowed:
+    SNIPE  his Shot's draw carried on to his cheek, the bow raised to his eye (holdStart); held there, a tremor in it, the light
+           gathering at his bow (hold; the game now keeps him in it while he holds, as a held Beam is kept); the loose, his
+           string hand flying back past his ear, a step of recoil (release);
+    SNARE  its loop whirled over his head in his string hand, the bow dropped low with no arrow on it, then thrown straight out
+           at the mark (a loop of rope drawn in his hand, art/ranger_up.ts prop 6);
+    RALLY  the bow raised high overhead, his horn put to his lips and blown, his head back (the horn drawn in his hand,
+           prop 7, matching his icon);
+    BALL   her own throw: her free hand lets go of the staff, her hips come all the way round, the comet glowing in that hand
+           behind her hat (art/mage_up.ts prop 6), then thrown overhand with a step, the hand following through;
+    SPEAR  the staff carried like a javelin beside her head, her free arm reaching at the mark, then driven forward with a
+           lunge; the lance leaves her crystal;
+    BEAM   her Beam as it was: checked against the game at 4c288ce5, the same Beam, untouched.
+  Each move's clip is chosen by the move's own name (render/figure.ts `attackMove`, clips.moves), standing or walking; Snipe's
+  are the Ranger's clips.hold, holdStart and release. All only with SWAP_MOVES on, so with it off every hero's lists and the
+  bake's marks are as they were (art/heroes3.ts bakeLists).
+  THE LOOKS: Ball a COMET: a small dense head, white at its heart, a long ragged tail of her colour in nine flickering strands
+  streaming off it, sparks shed behind, short as it leaves her hand and streaming out to its whole length; where it strikes, a
+  SPLASH (render/swap_fx.ts drawSplashes): a flash, two rings of its light across the floor out to its burst's reach, drops of
+  it flung up and falling. Spear a CRYSTAL LANCE: a long cut crystal of her magic, dark-edged as everything in the game is,
+  widest a third back from its point, its lit face pale and the other deep, a white ridge and a glint running down it, a cut
+  across it where it is widest, shards of it trailing, short as it leaves her crystal and grown to its length in its first
+  tiles. Its icon redrawn to match (a cut crystal, its shards).
 - KNOWN: switched on, an old Mage's stones past the middle (her warps and on) are not hers until she takes Aura (cleanTalents
   checks the way); their points come back to spend.
 

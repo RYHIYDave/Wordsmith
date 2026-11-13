@@ -5259,6 +5259,10 @@ export class Game {
       }
       this.face(ch.tx, ch.ty);
       ch.t += dt;
+      // (the picture: he holds his draw for as long as he holds it, as a held attack's is held)
+      h.attackSkill = ch.skill;
+      h.attackT = Math.max(h.attackT, def.follow);
+      h.attackAge = h.attackWind + CHANNEL_POSE;
       if (!c.hold || ch.t >= length) {
         const i = ch.skill;
         this.snipePower = Math.min(1, ch.t / SWAP_TUNE.snipe.full);
@@ -14775,7 +14779,7 @@ export class Game {
   private ballBurst(p: Projectile, m: Monster): void {
     const r = this.hero.skills[p.skill].r;
     const rad = SWAP_TUNE.ball.r * r.size;
-    this.emit({ t: 'burst', x: m.x, y: m.y, r: rad, el: r.element, style: 'blast', words: p.words, ...this.vastEdge(r, rad) });
+    this.emit({ t: 'burst', x: m.x, y: m.y, r: rad, el: r.element, style: 'blast', words: p.words, comet: true, ...this.vastEdge(r, rad) });
     this.sfx(r.element === 'frost' ? 'frost' : 'explode', 0.55);
     for (const o of this.monsters) {
       if (o.dead || o === m || Math.hypot(o.x - m.x, o.y - m.y) > rad + o.r || this.shutIn(o)) continue;
