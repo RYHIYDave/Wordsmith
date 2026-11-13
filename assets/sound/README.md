@@ -487,3 +487,50 @@ with the music just before its start, then aligned to the sample on the waveform
 before the start. Floor 3's walk is two whole phrases of its machine groove, each ending on the song's own one-second stop; its
 synth break at 1:30 (a held drone and two big hits) is not a groove, so it was not used. On a phone speaker floor 3 loses the
 most (about 9 dB, most of it low synth bass); the rest lose 4 to 6.
+
+## Eleventh batch: steady backgrounds, their standout sounds played at random (the sound chat, 12 Nov 2026)
+
+His words to the sound chat, 12 Nov 2026, from 17:59 Eastern: “there is a sound effect in the town im hearing way too often”,
+“the swap sounds are repeating way too often as well in area 10”, “its like a rustling sound in the town”. Found: every
+background loop below was 8 or 10 s round with sounds in it that stand out (the castle hall's far fire crackling, the Fen's
+frogs croaking on a beat, floor 1's drips, floor 4's timbers ...), so each came back on the same beat every pass. Asked how to fix
+it: “Steady loops, sounds at random (Recommended)”; and the other loops like it: “Yes, all of them (Recommended)”. Shown on
+try-out 16 (Wordsmith Steady Backgrounds, https://claude.ai/artifact/Mc84z3Q37xmQKym4nJBVDx), before and after: “All good, hand
+over (Recommended)”.
+
+### 13 loops, replacing the files of the same name (WAV at 32 kHz, as before; the same volumes as now)
+`bed_hall_loop.wav`, `bed_camp_loop.wav`, `fire_small_loop.wav`, `water_loop.wav` (the fourth batch's) and `bed_f1_loop.wav`,
+`bed_f2_loop.wav`, `bed_f3_loop.wav`, `bed_f4_loop.wav`, `bed_f6_loop.wav`, `bed_f7_loop.wav`, `bed_f8_loop.wav`,
+`bed_f10_loop.wav`, `bed_f14_loop.wav` (the eighth batch's). The same place's background with nothing in it that stands out: the
+takes' steady parts stitched in short random pieces, three layers deep, so nothing comes round on a beat; the same length and
+loudness as before, so `loopWants` stays as it is. Floor 10's is a new take: the insects' drone, made without frogs. Floors 5, 13
+and 17 keep their beat (the pulse, the mill, the clock); the other floors had nothing in them that stood out: not touched.
+
+### 13 sounds to play now and then at random (two takes each, mp3, through `worldSound`, which picks a take and its pitch)
+Each is one of the sounds that stood out in its loop, levelled so that at the volume below it is as loud as it was in the loop.
+Each has its own countdown, as the owl's hoot (`OWL_HOOT`, main.ts): when it runs out, play the sound and set the countdown again
+at random between the two times; the first one, too, at random between them, from coming onto the floor or into the town.
+
+| Where | Sound | Every (s, at random) | Volume | What |
+|---|---|---|---|---|
+| The castle hall (as `bed_hall`) | `amb_hall` | 8 to 20 | 1.78 | the far fire crackling |
+| The camp (as `bed_camp`) | `amb_camp` | 8 to 20 | 1.42 | its fire crackling |
+| Near a brazier (as `fire_small`) | `fire_pop` | 3 to 9 | 2.15 × the nearest brazier's nearness, `byNearness(d, 1.5, 7)` | a pop |
+| Floor 1 | `amb_f1` | 5 to 15 | 1 | a drip, or a far door |
+| Floor 2 | `amb_f2` | 8 to 20 | 1 | the rope creaking |
+| Floor 3 | `amb_f3` | 6 to 16 | 1 | chains clinking |
+| Floor 4 | `amb_f4` | 8 to 20 | 1.13 | a timber creaking, or bones settling |
+| Floor 6 | `amb_f6` | 10 to 24 | 1 | the far chisel striking three times, or rubble |
+| Floor 7 | `amb_f7` | 10 to 25 | 1 | a vulture far off |
+| Floor 8 | `amb_f8` | 25 to 50 | 1 | a rockfall echoing down the gorge |
+| Floor 10 | `amb_f10` | 3 to 10 | 2.36 | a frog |
+| Floor 10 | `amb_f10_bog` | 6 to 15 | 1.16 | the bog bubbling |
+| Floor 14 | `amb_f14` | 8 to 20 | 1.28 | the ward creaking |
+
+The volumes are `worldSound`'s (it plays a take at half, RECORDED_GAIN): the hall's and the camp's are their loop's 0.45 × 3.96 and
+× 3.15, the brazier's its loop's 0.55 × 3.91, because those crackles are sharp and their files had to stay under full scale. Floor
+14 is a Hush floor: its sound goes through the muffling with everything else. None at the Shaft's Rim (its own sounds are steady
+already) or in a fight's set moves.
+
+Try-out 16 plays them so (the first one there comes a little sooner, so it is heard). Made from the earlier batches' own takes, but
+floor 10's new drone (34 credits). Nothing is wired in.

@@ -117,3 +117,54 @@ export const FOLK_SOUND: Readonly<Record<string, string>> = {
 };
 /** The owl's hoot, now and then: once in this many seconds, at random between. */
 export const OWL_HOOT = { from: 20, to: 40 };
+
+/**
+ * THE STANDOUT SOUNDS, NOW AND THEN (the sound chat's eleventh batch, 12 Nov 2026: assets/sound/README.md). His words from 17:59
+ * Eastern: “there is a sound effect in the town im hearing way too often”, “the swap sounds are repeating way too often as well
+ * in area 10”; his picks: “Steady loops, sounds at random (Recommended)”, “Yes, all of them (Recommended)”, and of try-out 16,
+ * “All good, hand over (Recommended)”. The loops (the castle hall's, the camp's, the braziers', the water's, floors 1, 2, 3, 4, 6,
+ * 7, 8, 10 and 14's) are steady now, and what stood out in each is played on its own countdown, as the owl's hoot: at random
+ * between `from` and `to` seconds, the first one too, from coming into the place; at `vol` (worldSound's).
+ */
+export type Ambient = { readonly name: string; readonly from: number; readonly to: number; readonly vol: number };
+export const AMBIENT = {
+  hall: { name: 'amb_hall', from: 8, to: 20, vol: 1.78 },
+  camp: { name: 'amb_camp', from: 8, to: 20, vol: 1.42 },
+  /** (near a brazier: its pop, at `vol` times the nearest brazier's nearness, as the fire's loop: byNearness(d, 1.5, 7)) */
+  fire: { name: 'fire_pop', from: 3, to: 9, vol: 2.15 },
+} as const satisfies Record<string, Ambient>;
+/** Each floor's own (none on 5, 13 and 17, whose loops keep their beat, nor on the floors whose loops had nothing standing out). */
+export const AMBIENT_FLOORS: Readonly<Record<number, readonly Ambient[]>> = {
+  1: [{ name: 'amb_f1', from: 5, to: 15, vol: 1 }],
+  2: [{ name: 'amb_f2', from: 8, to: 20, vol: 1 }],
+  3: [{ name: 'amb_f3', from: 6, to: 16, vol: 1 }],
+  4: [{ name: 'amb_f4', from: 8, to: 20, vol: 1.13 }],
+  6: [{ name: 'amb_f6', from: 10, to: 24, vol: 1 }],
+  7: [{ name: 'amb_f7', from: 10, to: 25, vol: 1 }],
+  8: [{ name: 'amb_f8', from: 25, to: 50, vol: 1 }],
+  10: [
+    { name: 'amb_f10', from: 3, to: 10, vol: 2.36 },
+    { name: 'amb_f10_bog', from: 6, to: 15, vol: 1.16 },
+  ],
+  14: [{ name: 'amb_f14', from: 8, to: 20, vol: 1.28 }],
+};
+
+/** The standout sounds of this place, each with how loud it is heard now (0: not now, its countdown going on all the same). */
+export function ambientWants(g: Game, castleHall: boolean): { a: Ambient; vol: number }[] {
+  const L = g.level;
+  const h = g.hero;
+  const out: { a: Ambient; vol: number }[] = [];
+  if (L.town && castleHall && !L.rim) out.push({ a: AMBIENT.hall, vol: AMBIENT.hall.vol });
+  if (isCamp(L)) out.push({ a: AMBIENT.camp, vol: AMBIENT.camp.vol });
+  let fire = 0;
+  let braziers = false;
+  for (const p of L.props) {
+    if (p.kind !== 'brazier' || p.state === 1) continue;
+    braziers = true;
+    fire = Math.max(fire, byNearness(Math.hypot(p.x - h.x, p.y - h.y), 1.5, 7));
+  }
+  if (braziers) out.push({ a: AMBIENT.fire, vol: AMBIENT.fire.vol * fire });
+  // (wherever the floor's own loop plays, as loopWants's bedOf: its standouts with it)
+  if (!L.town) for (const a of AMBIENT_FLOORS[L.floor.depth] ?? []) out.push({ a, vol: a.vol });
+  return out;
+}

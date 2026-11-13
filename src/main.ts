@@ -80,7 +80,7 @@ import type { LoadingRing } from './art/loading_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
 import { footstep, heroVoice, initAudio, isMuted, levelMusic, musicDetail, recordedDetail, recordedState, setLoops, setMuffled, setMuted, sfx, sfxNamed, soundHeard, speak, speakBoss, titleMusic, warmAlso, warmNamed, warmRecorded, warmSteps, worldSound } from './engine/audio';
-import { OWL_HOOT, RIM_SOUNDS, STEP_EVERY, WORLD_SOUNDS, byNearness, groundOf, hushFloor, loopWants } from './game/world_sounds';
+import { OWL_HOOT, RIM_SOUNDS, STEP_EVERY, WORLD_SOUNDS, ambientWants, byNearness, groundOf, hushFloor, loopWants } from './game/world_sounds';
 import { fightMusic, fightWas, musicPlace } from './game/level_music';
 import { MOMENT_VOL, sceneSoundsOf } from './game/scene_sounds';
 import { owlFrameAt } from './art/hall_owl';
@@ -1875,7 +1875,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // (the hero's own voice, the sound chat's: engine/audio.ts heroVoice; and his voice and the combat sounds fetched once he plays)
     for (const e of g.events) if (e.t === 'voice') heroVoice(e.who, e.cry);
     // (and with the floor's enemies' sounds, THE FLOOR'S OWN SCENE SOUNDS, the eighth batch: game/scene_sounds.ts; let go with them)
-    if (warmedLevel !== g.level && warmNamed([...soundsOf(new Set(g.monsters.map((m) => m.kind))), ...(g.level.town ? [] : sceneSoundsOf(g.level.floor.depth))])) warmedLevel = g.level;
+    if (warmedLevel !== g.level && warmNamed([...soundsOf(new Set(g.monsters.map((m) => m.kind))), ...(g.level.town ? [] : sceneSoundsOf(g.level.floor.depth)), ...ambientWants(g, CASTLE_HALL.on).map((w) => w.a.name)])) warmedLevel = g.level;
     // (and THE TEN NEW WORDS' SOUNDS, the sixth batch: a word's, as it comes into play, so that its first is heard: warmWords)
     if (WORD_SOUNDS.on && warmedLevel === g.level) warmWords(g);
     if (warmedFor !== g.hero.cls) {
@@ -2252,7 +2252,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
    * loops by nearness, the town's people's sounds as they are drawn doing what they do now and then, the owl in the rafters, the
    * ring flaring as the master rune-stone is given; on the Hush floors all of it thin and muffled.
    */
-  const worldWas = { level: null as unknown, x: 0, y: 0, step: 0, owl: -1, hoot: 25, given: -1 };
+  const worldWas = { level: null as unknown, x: 0, y: 0, step: 0, owl: -1, hoot: 25, given: -1, amb: {} as Record<string, number> };
   /** (ACT 1'S LEVEL MUSIC: how long since a fight was last on, game/level_music.ts) */
   const musicWas = fightWas();
   const worldFrame = (g: Game, dt: number, paused: boolean): void => {
@@ -2265,6 +2265,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       W.y = h.y;
       W.step = 0;
       warmSteps(groundOf(g));
+      // (the standout sounds' countdowns begin again in each new place)
+      W.amb = {};
     }
     setMuffled(hushFloor(g));
     setLoops(g.over ? {} : loopWants(g, CASTLE_HALL.on));
@@ -2281,6 +2283,19 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         footstep(ground);
       }
     } else W.step = Math.min(W.step, STEP_EVERY.at * 0.6);
+    // (THE STANDOUT SOUNDS NOW AND THEN, the sound chat's eleventh batch: each on its own countdown, as the owl's hoot, the first one
+    // too at random from coming into the place; heard only when near enough, the countdown going on all the same: game/world_sounds.ts)
+    if (!g.over) {
+      for (const { a, vol } of ambientWants(g, CASTLE_HALL.on)) {
+        const left = (W.amb[a.name] ??= a.from + Math.random() * (a.to - a.from)) - (paused ? 0 : dt);
+        if (left > 0) {
+          W.amb[a.name] = left;
+          continue;
+        }
+        W.amb[a.name] = a.from + Math.random() * (a.to - a.from);
+        if (vol > 0.02) worldSound(a.name, vol);
+      }
+    }
     // (the town's people, as they begin what they do now and then: render.ts)
     for (const s of renderer.townSounds) {
       const v = 0.85 * byNearness(Math.hypot(s.x - h.x, s.y - h.y), 3, 13);

@@ -10,8 +10,9 @@ import path from 'node:path';
 
 const HEROES = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];
 const CORE = new Set(['swing', 'hit', 'crit', 'slam', 'monster_die', 'hurt', 'pickup', 'gold', 'word', 'rare', 'potion', 'level_up', 'portal', 'door', 'gate_rise', 'gate_fall', 'click', 'equip', 'buy', 'deny', 'imbue', 'death', 'echo', 'might', 'orb', 'boss_roar']);
-const TOWN = new Set(['anvil', 'owl_hoot', 'owl_ruffle', 'crystal', 'rune_write', 'rune_drive', 'ring_power', 'coin', 'page_turn', 'notch', 'trophy_hang']);
-const WORLD = /^(break_|chest$|rift_|trap_|sealed_door$)/;
+const TOWN = new Set(['anvil', 'owl_hoot', 'owl_ruffle', 'crystal', 'rune_write', 'rune_drive', 'ring_power', 'coin', 'page_turn', 'notch', 'trophy_hang', 'amb_hall', 'amb_camp']);
+// (the eleventh batch's brazier pop, heard by any brazier: with the world's)
+const WORLD = /^(break_|chest$|rift_|trap_|sealed_door$|fire_pop$)/;
 /**
  * THE TEN NEW WORDS' SOUNDS (the sound chat's sixth batch, 9 Nov 2026: assets/sound/README.md; game/word_sounds.ts): a pack of
  * their own, about 850 KB, fetched the first time one of the ten words comes into play (from floor 6) and not with the heroes'
@@ -25,9 +26,10 @@ const WORDS10 = /^(pierce_(shot|lance)|bleed_(open|thorns|cut)|reap_(soul|spirit
  * pieces and the traps by name.
  */
 const SCENE = [
-  ['scene-1', /^(f[1-5]_|crank_(gear|turn)$|furnace_out$|gate_fire_out$|cage_(down|up)$)/],
-  ['scene-2', /^(ledge_crumble|eyrie_wind|singing_stones|bog_step|altar_word|seal_burn)$/],
-  ['scene-3', /^(f1[1-5]_|bell_(ring|muffled)$)/],
+  // (and the eleventh batch's standouts by their floor's act: amb_f1 to amb_f4; amb_f6 to amb_f10_bog; amb_f14)
+  ['scene-1', /^(f[1-5]_|amb_f[1-5]$|crank_(gear|turn)$|furnace_out$|gate_fire_out$|cage_(down|up)$)/],
+  ['scene-2', /^(ledge_crumble|eyrie_wind|singing_stones|bog_step|altar_word|seal_burn|amb_f([6-9]|10)(_bog)?)$/],
+  ['scene-3', /^(f1[1-5]_|amb_f1[1-5]$|bell_(ring|muffled)$)/],
   ['scene-4', /^(nettle|clock_chime|mirror_crack|skylight|portcullis|pitch_pour|songbird)$/],
 ];
 
