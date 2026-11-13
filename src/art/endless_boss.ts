@@ -33,6 +33,8 @@
 import { hash } from './kit';
 import type { Ramp } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
+import { GLYPH, WORD_COLOR, WORD_GLOW } from './icons';
+import { P as PAL } from './palette';
 import { paintBits } from './new_mobs3';
 import type { Painted } from './kit';
 import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
@@ -2043,12 +2045,15 @@ export function sporePoseAt(t: number): BoarPose {
 /** The Poison word's own acid green, his pink in its veins. */
 const SPORE_GREEN: Ramp = ['#1e2a0c', '#3e5212', '#6e8a18', '#b4cc24', '#e2f07a'];
 const SPORE_GAS: Ramp = ['#2a3412', '#4a5a1c', '#7a8e2a', '#a8bc48', '#cede7a'];
-/** The Poison rune's glyph (a drop), as the traps are burned in the floor: 'X' the word's green, 'o' his pink. */
-const SPORE_RUNE = ['..X...', '.XXX..', 'XXoXX.', 'XoooX.', 'XXoXX.', '.XXX..'];
+/** The Poison rune's glyph, the word's own (art/icons.ts GLYPH: the skull), as the traps are burned in the floor: 'X' the word's
+ * green, 'o' his pink. */
+export const SPORE_RUNE = ['.XXXX.', 'XXXXXX', 'X.XX.X', 'XXXXXX', '.XooX.', '.X..X.'];
+const LEX_POISON = ((): (string | null)[][] => lexiconRune('poison'))();
 /** Where each trap is (the spores' own points: the place the rune burst, on the floor) and when its spore lands. */
 export const SPORE_PODS: ReadonlyArray<{ at: V3; land: number }> = Array.from({ length: SPORE.pods }, (_, k) => {
   const a = (k / SPORE.pods) * TAU + 0.5 * hash(k, 1, 9021);
-  const r = (1.2 + 2.0 * hash(k, 2, 9022)) * TILE;
+  // (spread wide: his words, 12 Nov 2026, “gimme a bigger spread with the same amount of traps”)
+  const r = (1.6 + 3.4 * hash(k, 2, 9022)) * TILE;
   return { at: [Math.cos(a) * r, Math.sin(a) * r, 0] as V3, land: SPORE.land[0] + (SPORE.land[1] - SPORE.land[0]) * hash(k, 3, 9023) };
 });
 export const SPORE_CANVAS: MobCanvas = { w: 720, h: 460, ax: 360, ay: 300 };
@@ -2081,11 +2086,12 @@ export function sporeBits(t: number, fired: ReadonlyArray<number | null>, put: P
         const r = Math.hypot(x, y);
         if (r > 1) return null;
         if (r > 0.86) return sw > 0.4 ? '#fff0d0' : pulse > 0.5 || grow < 1 ? SPORE_GREEN[3] : SPORE_GREEN[2];
-        const gx = Math.floor((x * 0.62 + 0.5) * 6), gy = Math.floor((-y * 0.62 + 0.5) * 6);
-        const c = gx >= 0 && gx < 6 && gy >= 0 && gy < 6 ? SPORE_RUNE[gy][gx] : '.';
-        if (c === '.') return null;
+        // (the Lexicon's own Poison rune, its stone and all, laid in the floor)
+        const gx = Math.floor((x * 0.68 + 0.5) * 14), gy = Math.floor((-y * 0.68 + 0.5) * 14);
+        const c = gx >= 0 && gx < 14 && gy >= 0 && gy < 14 ? LEX_POISON[gy][gx] : null;
+        if (!c) return null;
         if (sw > 0.4) return '#fff0d0';
-        return c === 'o' ? '#ff4f8a' : pulse > 0.6 ? SPORE_GREEN[4] : SPORE_GREEN[3];
+        return c;
       } });
       put('glow', 'trapGlow', { k: 'glow', p: [pod.at[0], pod.at[1], 2], c: '#b4cc24', r: 12 + 18 * sw, a: 0.15 + 0.15 * pulse + 0.6 * sw });
       continue;
@@ -2118,6 +2124,43 @@ export function paintSpores(t: number, fired: ReadonlyArray<number | null>, view
   sporeBits(t, fired, (part, piece, shape) => bits.push({ part, piece, shape }));
   const lights = paintBits(st, bits, [0, 0, 20]);
   return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+
+/** THE RUNE AS HIS LEXICON SHOWS IT (art/icons.ts runeSprite, the very same: a stone tablet, its top and left edges lit, its foot and
+ * right in shadow, the word's own glyph carved in it in the word's colour, its heart glowing, inked round), so that the rune he writes
+ * and throws is the one the hero knows from the Lexicon (his words, 12 Nov 2026: “i want to see the runes i see in my lexicon on
+ * thiese attacks”). 14 by 14 picture pixels, null where there is nothing. */
+export function lexiconRune(word: 'power' | 'fire' | 'frost' | 'lightning' | 'poison'): (string | null)[][] {
+  const base = [
+    '............',
+    '..11111111..',
+    '.1222222223.',
+    '.1222222223.',
+    '.1222222223.',
+    '.1222222223.',
+    '.1222222223.',
+    '.1222222223.',
+    '.1222222223.',
+    '.1222222223.',
+    '..33333333..',
+    '............',
+  ];
+  const col: Record<string, string> = { '1': PAL.st6, '2': PAL.st5, '3': PAL.st3 };
+  const g: (string | null)[][] = base.map((r) => [...r].map((c) => col[c] ?? null));
+  const rows = GLYPH[word];
+  const n = rows.length;
+  const on = (gx: number, gy: number): boolean => gy >= 0 && gy < n && gx >= 0 && gx < n && rows[gy].charAt(gx) !== '.';
+  for (let gy = 0; gy < n; gy++) for (let gx = 0; gx < n; gx++) {
+    if (!on(gx, gy)) continue;
+    if (!on(gx, gy - 1) && g[2 + gy]) g[2 + gy][3 + gx] = PAL.st3;
+    if (!on(gx - 1, gy) && g[3 + gy]) g[3 + gy][2 + gx] = PAL.st3;
+  }
+  for (let gy = 0; gy < n; gy++) for (let gx = 0; gx < n; gx++) if (on(gx, gy) && g[3 + gy]) g[3 + gy][3 + gx] = rows[gy].charAt(gx) === 'o' ? WORD_GLOW[word] : WORD_COLOR[word];
+  // (inked round, as the Lexicon's are)
+  const W = 14;
+  const out: (string | null)[][] = Array.from({ length: W }, (_, y) => Array.from({ length: W }, (_, x) => g[y - 1]?.[x - 1] ?? null));
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) if (!out[y][x] && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => (g[y + dy - 1]?.[x + dx - 1] ?? null) !== null)) out[y][x] = PAL.ink;
+  return out;
 }
 
 /** THE POWER RUNE: its glyph (the word's own, art/icons.ts GLYPH, two chevrons pointing up), `k` picture pixels to its cell, in the

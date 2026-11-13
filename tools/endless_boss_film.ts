@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, lexiconRune, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -217,7 +217,11 @@ function powerGlyph(k: number): (string | null)[][] {
   return g;
 }
 const GLYPH_BIG = powerGlyph(9);
-const GLYPH_SMALL = powerGlyph(2);
+/** THE RUNES AS HIS LEXICON SHOWS THEM (his words, 12 Nov 2026: “i want to see the runes i see in my lexicon on thiese attacks”): each
+ * word's own rune stone, as the Lexicon draws it, twice its size. */
+const big2 = (g: (string | null)[][]): (string | null)[][] => g.flatMap((r) => [r.flatMap((c) => [c, c]), r.flatMap((c) => [c, c])]);
+const LEX = { power: big2(lexiconRune('power')), fire: big2(lexiconRune('fire')), frost: big2(lexiconRune('frost')), lightning: big2(lexiconRune('lightning')), poison: big2(lexiconRune('poison')) };
+const GLYPH_SMALL = LEX.power;
 function stamp(s: Px, g: (string | null)[][], cx: number, cy: number, a = 1, reveal = 1): void {
   const n = g.length;
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
@@ -260,7 +264,7 @@ function glyphOf(rows: readonly string[], k: number, own: string, hot: string): 
   for (let y = 0; y < W2; y++) for (let x = 0; x < W2; x++) if (!g[y][x] && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[y + dy]?.[x + dx] && g[y + dy][x + dx] !== '#1a0610')) g[y][x] = '#1a0610';
   return g;
 }
-const FIRE_GLYPH = glyphOf(['..X...', '..XX..', 'X.XXX.', 'XXXoXX', 'XXooXX', '.XooX.'], 2, '#ff8a2a', '#ffc860');
+const FIRE_GLYPH = LEX.fire;
 /** THE FIRESTORM'S SCENE: the hero dodging; each fireball's mark on the floor before it falls, the floor scorched where it fell (under
  * the storm's own solids, painted as he is); his rune flung out high over the room and bursting into a ring of fire. */
 const STORM_AT: V2 = [4.6 * TILE, 0.2 * TILE];
@@ -331,7 +335,7 @@ function flameScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
   void bx;
   void by;
 }
-const FROST_GLYPH = glyphOf(['X..X..X', '.X.X.X.', '..XoX..', 'XXoooXX', '..XoX..', '.X.X.X.', 'X..X..X'], 2, '#58a8f0', '#f2f6ff');
+const FROST_GLYPH = LEX.frost;
 const ICE_AT: V2 = [FROST.from * TILE, 0];
 const FROST_HERO = (t: number): V2 => {
   const path: [number, V2][] = [[0, [6.2 * TILE, 0.2 * TILE]], [0.9, [6.2 * TILE, 0.2 * TILE]], [1.3, [6.6 * TILE, 1.5 * TILE]], [99, [6.6 * TILE, 1.5 * TILE]]];
@@ -394,7 +398,7 @@ function frostScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
     }
   }
 }
-const BOLT_GLYPH = glyphOf(['...XX.', '..XX..', '.XoooX', '...XX.', '..XX..', '.XX...'], 2, '#fff060', '#fffbe0');
+const BOLT_GLYPH = LEX.lightning;
 const CRACK_AT: V2 = [4.4 * TILE, 0.3 * TILE];
 const BOLT_HERO = (t: number): V2 => {
   const path: [number, V2][] = [[0, [5.6 * TILE, 0.5 * TILE]], [1.2, [5.6 * TILE, 0.5 * TILE]], [2.2, [7.2 * TILE, 1.8 * TILE]], [3.0, [7.6 * TILE, -0.6 * TILE]], [3.8, [6.4 * TILE, -2.0 * TILE]], [99, [6.4 * TILE, -2.0 * TILE]]];
@@ -575,10 +579,10 @@ function boltLine(s: Px, x0: number, y0: number, x1: number, y1: number, seed: n
     }
   }
 }
-const SPORE_GLYPH = glyphOf(['..X...', '.XXX..', 'XXoXX.', 'XoooX.', 'XXoXX.', '.XXX..'], 2, '#b4cc24', '#e2f07a');
+const SPORE_GLYPH = LEX.poison;
 const SPORE_AT: V2 = [4.6 * TILE, 0.2 * TILE];
 const SPORE_HERO = (t: number): V2 => {
-  const path: [number, V2][] = [[0, [5.0 * TILE, 0.4 * TILE]], [1.8, [5.0 * TILE, 0.4 * TILE]], [2.6, [6.4 * TILE, 1.6 * TILE]], [3.4, [7.6 * TILE, 0.2 * TILE]], [4.2, [6.6 * TILE, -1.8 * TILE]], [99, [6.6 * TILE, -1.8 * TILE]]];
+  const path: [number, V2][] = [[0, [5.0 * TILE, 0.4 * TILE]], [1.8, [5.0 * TILE, 0.4 * TILE]], [2.7, [7.2 * TILE, 2.2 * TILE]], [3.6, [9.0 * TILE, 0.0 * TILE]], [4.5, [7.4 * TILE, -2.8 * TILE]], [99, [7.4 * TILE, -2.8 * TILE]]];
   for (let i = 1; i < path.length; i++) {
     const [ta, pa] = path[i - 1], [tb, pb] = path[i];
     if (t <= tb) { const u = (t - ta) / (tb - ta); const w = u * u * (3 - 2 * u); return [pa[0] + (pb[0] - pa[0]) * w, pa[1] + (pb[1] - pa[1]) * w]; }
@@ -895,7 +899,7 @@ for (const sg of segs) {
       const f = sg.floorAt(tt);
       return [sg.from[0] + k * f[0], sg.from[1] + k * f[1], 0];
     };
-    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.0 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    const [tx, ty] = sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
