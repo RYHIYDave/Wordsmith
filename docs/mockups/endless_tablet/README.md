@@ -360,6 +360,9 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
 - HIS WORDS on it, by pop-up: “one big orb that zaps out periodically”. REMADE SO: ONE GREAT ORB out of the rune's crack (twice the
   size, crackling harder), drifting after the hero; three times (`BOLT.zaps`) it SWELLS and crackles, its reach (2.6 tiles) marked on
   the floor round it, then ZAPS OUT: seven bolts lancing from it across the floor all round, the floor scorched; at the last it BURSTS.
+  His pick on that, by pop-up: “More crackle”. SO: twice the arcs crackling off it, thicker near it; small bolts flickering down to
+  the floor beside it between its zaps, more as it swells; its zaps and its burst drawn as true bolts (jagged, forking, a white-hot
+  core inside the word's yellow, a faint pink edge, new every frame); a bigger burst.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.

@@ -509,26 +509,69 @@ function boltScene(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
       }
       if (t <= b) {
         const [x, y] = wp(c);
-        layPainted(s, paintOrb([0, 0, bob], t, k, swell, zaps, 'front'), ORB_CANVAS, x, y, 0);
+        layPainted(s, paintOrb([0, 0, bob], t, k, swell, [], 'front'), ORB_CANVAS, x, y, 0);
+        const [ox2, oy2] = wp(c, bob);
+        // (its zaps: thick bolts lancing out across the floor all round, new each frame)
+        for (const [zi, z] of zaps.entries()) {
+          const [zx, zy] = wp([c[0] + z[0], c[1] + z[1]]);
+          boltLine(s, ox2, oy2, zx, zy, zi * 31 + Math.floor(t * 30) * 7, 1.6, 1, 1);
+        }
+        // (and its crackle between: small bolts down to the floor beside it, flickering)
+        const fq = Math.floor(t * 30);
+        if (fq % 4 === 0 || swell > 0.5) {
+          for (let m = 0; m < 1 + Math.round(3 * swell); m++) {
+            const a = ((fq * 2.39 + m * 1.7) % (Math.PI * 2));
+            const [zx, zy] = wp([c[0] + Math.cos(a) * 0.9 * TILE, c[1] + Math.sin(a) * 0.9 * TILE]);
+            boltLine(s, ox2, oy2, zx, zy, fq * 13 + m, 1, 0.9, 0);
+          }
+        }
       } else {
         // (it bursts: a great flash and a ring of bolts thrown out along the floor)
         const u = (t - b) / 0.45;
         const [x, y] = wp(c, bob);
-        for (let yy = -60; yy <= 60; yy++) for (let xx = -60; xx <= 60; xx++) {
-          const q = Math.hypot(xx, yy) / 60;
+        for (let yy = -90; yy <= 90; yy++) for (let xx = -90; xx <= 90; xx++) {
+          const q = Math.hypot(xx, yy) / 90;
           if (q < 1) mix(s, x + xx, y + yy, q < 0.5 ? '#fffbe0' : '#ff4f8a', 0.9 * (1 - u) * (1 - q));
         }
-        for (let m = 0; m < 12; m++) {
-          const a = (m / 12) * Math.PI * 2;
-          let X = x, Y = y + bob * 0.6;
-          for (let j = 1; j <= 12; j++) {
-            const r = j * 9 * (0.5 + u);
-            const nx = Math.round(x + Math.cos(a) * r + Math.sin(j * 5 + m) * 4), ny = Math.round(y + bob * 0.6 + Math.sin(a) * r * 0.5);
-            for (let q = 0; q <= 5; q++) mix(s, Math.round(X + (nx - X) * q / 5), Math.round(Y + (ny - Y) * q / 5), j % 2 ? '#fff060' : '#fffbe0', 1 - u);
-            X = nx; Y = ny;
-          }
+        for (let m = 0; m < 10; m++) {
+          const a = (m / 10) * Math.PI * 2;
+          const r = 140 * (0.4 + u);
+          boltLine(s, x, y + Math.round(bob * 0.6), Math.round(x + Math.cos(a) * r), Math.round(y + bob * 0.6 + Math.sin(a) * r * 0.5), m * 17 + Math.floor(t * 30), 1.6, 1 - u, 1);
         }
       }
+    }
+  }
+}
+/** A BOLT OF LIGHTNING drawn from (x0, y0) to (x1, y1): jagged, forking, a white-hot core inside the word's yellow inside his pink;
+ * new every frame. */
+function boltLine(s: Px, x0: number, y0: number, x1: number, y1: number, seed: number, w: number, a = 1, fork = 2): void {
+  const n = Math.max(5, Math.round(Math.hypot(x1 - x0, y1 - y0) / 10));
+  const pts: [number, number][] = [[x0, y0]];
+  const nx = -(y1 - y0), ny = x1 - x0, nl = Math.hypot(nx, ny) || 1;
+  for (let j = 1; j < n; j++) {
+    const f = j / n;
+    const h = Math.sin(seed * 12.9898 + j * 78.233) * 43758.5453;
+    const jit = (h - Math.floor(h)) * 2 - 1;
+    pts.push([x0 + (x1 - x0) * f + (nx / nl) * jit * 4.5, y0 + (y1 - y0) * f + (ny / nl) * jit * 4.5]);
+  }
+  pts.push([x1, y1]);
+  for (let j = 1; j < pts.length; j++) {
+    const [ax, ay] = pts[j - 1], [bx, by] = pts[j];
+    const m = Math.ceil(Math.hypot(bx - ax, by - ay));
+    for (let q = 0; q <= m; q++) {
+      const X = Math.round(ax + (bx - ax) * q / m), Y = Math.round(ay + (by - ay) * q / m);
+      const Wi = Math.ceil(w) + 1;
+      for (let dy = -Wi; dy <= Wi; dy++) for (let dx = -Wi; dx <= Wi; dx++) {
+        const d = Math.hypot(dx, dy);
+        if (d > w + 1) continue;
+        mix(s, X + dx, Y + dy, d <= w * 0.5 ? '#fffbe0' : d <= w ? '#fff060' : '#ff4f8a', a * (d <= w ? 1 : 0.35));
+      }
+    }
+    // (forks off it)
+    if (fork > 0 && j % 4 === 2) {
+      const ang = Math.atan2(by - ay, bx - ax) + (j % 2 ? 0.7 : -0.7);
+      const L = 14 + 10 * ((seed * 7 + j) % 3);
+      boltLine(s, bx, by, bx + Math.cos(ang) * L, by + Math.sin(ang) * L, seed * 3 + j, Math.max(0, w - 1), a * 0.8, fork - 1);
     }
   }
 }

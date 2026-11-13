@@ -1994,12 +1994,12 @@ export function orbBits(put: Put, p: V3, t: number, seed: number, swell: number,
     return tone >= 2 ? BOLT_RAMP[4] : BOLT_RAMP[3];
   } });
   // (its crackle: arcs jumping off it, a new set each frame)
-  for (let a = 0; a < 6 + Math.round(8 * swell); a++) {
+  for (let a = 0; a < 14 + Math.round(14 * swell); a++) {
     let q = p;
     const dir = norm([hash(a, fr0, 9011) - 0.5, hash(a, fr0, 9012) - 0.5, hash(a, fr0, 9013) - 0.5], [1, 0, 0]);
     for (let j = 0; j < 5; j++) {
       q = add(q, add(mul(dir, R * 0.32), [(hash(a, j + fr0, 9014) - 0.5) * 7, (hash(a, j + fr0, 9015) - 0.5) * 7, (hash(a, j + fr0, 9016) - 0.5) * 7]));
-      if (j > 0) put('orbArcs', 'arc', { k: 'mote', p: q, c: j < 3 ? BOLT_RAMP[4] : BOLT_RAMP[3], size: 1 });
+      if (j > 0) put('orbArcs', 'arc', { k: 'mote', p: q, c: j < 3 ? BOLT_RAMP[4] : BOLT_RAMP[3], size: j < 3 ? 2 : 1 });
     }
   }
   for (const [zi, zap] of zaps.entries()) {
