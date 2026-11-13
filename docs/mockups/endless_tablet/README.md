@@ -349,6 +349,7 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   (solids, the word's blue to white, never the friend's cyan; a pink glint at the heart of the big ones), each up in a flash with
   shards flung off; the floor FROZEN white behind them (the film draws it: how slippery is the rules'); they stand, then shatter.
   The checks (his blow drawn back, held, followed through, a flash), his legs outside the boar, nothing cyan: all pass.
+  HIS YES, 12 Nov 2026, by pop-up: “Yes, on to Lightning (Recommended)”.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.
