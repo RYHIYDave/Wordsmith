@@ -492,8 +492,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   `turnAt`: a heavy turn to his right, held, then back round to his left, his feet stepping round, his staff lifted off the floor as
   he turns; `pictures/standard/boss_turn.mp4`). HIS WORDS: “His arm is all messed up again when he turns”: his hands turned with
   him (their places are along the figure’s own axes, which do not turn), as in the saddle.
+- HIS YES to the turn: “Yes, on to Avalanche (Recommended)”. AVALANCHE (Power and Frost; `avalanche`, `AVAL`, `avalancheBits`;
+  `pictures/standard/boss_avalanche.mp4`): he writes Power, his shade Frost; melded, the slam drives the rune into the floor before
+  him and frost races out down a broad lane (the warning: rimed white, its edges his pink); before him the snow builds up out of the
+  floor into a great wall, heaving, and then it comes: a wave of snow taller than he is rolling down the lane, its crest curling over,
+  boulders of ice tumbling in it and bounding out ahead, snow flung off its face, his pink deep in it; at the lane's end it breaks
+  into drifts that slump and melt away.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
-- NEXT: the other eight melds, each for his yes; his other facing turned round, not flipped.
+- NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
+  turned round, not flipped.
 
 
 ## The tools

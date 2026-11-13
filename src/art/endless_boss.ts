@@ -3337,11 +3337,11 @@ export { HAIL_HERO };
 
 // AVALANCHE (Power and Frost, melded: “a mountainside shedding its snow”): he writes Power, his shade writes Frost; melded, the slam
 // drives the rune into the floor before him, and FROST RACES OUT down a broad lane before him (the warning: the lane it will take,
-// rimed white, its edges his pink); behind him the snow BUILDS UP OUT OF THE FLOOR into a great wall, heaving, and then it COMES:
+// rimed white, its edges his pink); before him the snow BUILDS UP OUT OF THE FLOOR into a great wall, heaving, and then it COMES:
 // a wave of snow taller than he is rolling down the lane, its crest curling over, boulders of ice tumbling in it and bounding out
 // ahead of it, snow flung up off its face; it runs out at the lane's end and BREAKS into drifts that slump and melt away. His rules
 // for the words stand: one rune (the meld's), what it makes made as solids.
-export const AVAL = { half: 2.0, long: 9.0, rime: [0.05, 0.55] as const, build: [0.35, 0.85] as const, run: [0.85, 2.0] as const, start: -0.6, melt: 2.4, end: 5.4, boulders: 9 };
+export const AVAL = { half: 2.0, long: 9.0, rime: [0.05, 0.55] as const, build: [0.35, 0.85] as const, run: [0.85, 2.0] as const, start: 1.1, melt: 2.4, end: 5.4, boulders: 14 };
 export const AVAL_CANVAS: MobCanvas = { w: 900, h: 600, ax: 260, ay: 380 };
 const SNOW: Ramp = ['#34485c', '#6a8aa2', '#a5c6d7', '#e2f0f8', '#ffffff'];
 const AVAL_ICE: Ramp = ['#1a2430', '#34485c', '#6a8aa2', '#a5c6d7', '#e2f0f8'];
@@ -3359,7 +3359,7 @@ export function avalancheBits(t: number, put: Put): void {
   if (b <= 0) return;
   const X = avalFront(t);
   const melt = avalMelt(t);
-  const H = (62 * b) * (1 - 0.85 * melt);
+  const H = (98 * b) * (1 - 0.85 * melt);
   const snowSkin = (seed: number): ((u: V3, tone: number, x: number, y: number) => string | null) => (u, tone, x, y) => {
     if (melt > 0 && hash(x >> 1, y >> 1, 9901 + seed) < melt * 1.1 - 0.1) return null;
     // (his pink deep in it, where it is thickest)
@@ -3370,21 +3370,24 @@ export function avalancheBits(t: number, put: Put): void {
   // (the wave: across its whole lane, tallest at its face, its crest curling over before it; heaving)
   for (let i = 0; i < 9; i++) {
     const y = -halfW + (2 * halfW * i) / 8;
-    for (let j = 0; j < 4; j++) {
-      const back = j * 13;
-      const h = H * (1 - 0.22 * j) * (0.85 + 0.15 * Math.sin(t * 9 + i * 1.3 + j));
-      const R = (14 - 2 * j) * (0.6 + 0.4 * b);
+    for (let j = 0; j < 5; j++) {
+      const back = j * 15;
+      const h = H * (1 - 0.18 * j) * (0.85 + 0.15 * Math.sin(t * 9 + i * 1.3 + j));
+      const R = (19 - 2 * j) * (0.6 + 0.4 * b);
       put(`wave${i % 3}`, 'snow', { k: 'ball', c: [X - back, y + 3 * Math.sin(t * 7 + i), Math.max(R * 0.6, h * 0.5)], ax: [[R, 0, 0], [0, R * 0.95, 0], [0, 0, Math.max(R * 0.7, h * 0.55)]], skin: snowSkin(i * 7 + j) });
     }
     // (its crest, curling over before it)
-    if (melt < 0.6) put(`wave${i % 3}`, 'crest', { k: 'ball', c: [X + 6, y, H * 0.95], ax: [[9, 0, 0], [0, 9, 0], [0, 0, 6]], skin: snowSkin(i * 13 + 5) });
+    if (melt < 0.6) {
+      put(`wave${i % 3}`, 'crest', { k: 'ball', c: [X + 10, y, H * 0.92], ax: [[14, 0, 0], [0, 12, 0], [0, 0, 9]], skin: snowSkin(i * 13 + 5) });
+      put(`wave${i % 3}`, 'crest', { k: 'ball', c: [X + 20, y + 2, H * 0.78], ax: [[8, 0, 0], [0, 9, 0], [0, 0, 7]], skin: snowSkin(i * 17 + 3) });
+    }
   }
   // (boulders of ice tumbling in it, some bounding out ahead of it)
   for (let k = 0; k < AVAL.boulders; k++) {
     const y = -halfW + 2 * halfW * hash(k, 1, 9904);
     const lead = (hash(k, 2, 9905) - 0.3) * 30;
     const bounce = Math.abs(Math.sin(t * (5 + 3 * hash(k, 3, 9906)) + k)) * (10 + 16 * hash(k, 4, 9907));
-    const R = 5 + 4 * hash(k, 5, 9908);
+    const R = 6 + 5 * hash(k, 5, 9908);
     if (melt > 0.5) continue;
     put('boulders', 'ice', { k: 'ball', c: [X + lead, y, R + bounce * b], ax: [[R, 0, 0], [0, R * 0.85, 0], [0, 0, R * 0.9]], skin: (u, tone, x, y2) => ((x + y2 + Math.floor(t * 18)) % 5 === 0 ? AVAL_ICE[4] : AVAL_ICE[T5(tone)]) });
   }
