@@ -26,6 +26,7 @@
 
 import { COLOSSUS } from '../game/colossus_fight';
 import { WarlockFx } from './warlock_fx';
+import { cometSplash } from './swap_fx';
 import { TinkererFx } from './tinkerer_fx';
 import { WarriorFx } from './warrior_fx';
 import { BrawlerFx } from './brawler_fx';
@@ -1176,6 +1177,8 @@ export class Fx {
   handle(events: GameEvent[], play: (name: Sfx, vol?: number) => void): void {
     for (const e of events) {
       this.warlock.handle(e);
+      // (THE MAGE'S BALL, a comet: its splash where it bursts, render/swap_fx.ts)
+      if (e.t === 'burst' && e.comet) cometSplash(e.x, e.y, e.el, e.r);
       this.tinkerer.handle(e);
       this.brawler.handle(e);
       this.warrior.handle(e);

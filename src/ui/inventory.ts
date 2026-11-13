@@ -1466,6 +1466,18 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
       const pace = paceText(game, s).long;
       small(`${lo === hi ? lo : `${lo} to ${hi}`} ${el}damage a hit${pace ? `, ${pace}` : ''}.`, P.white);
       sk.r.lines.forEach((l, i) => small(l, i === 0 ? THEME.dim : THEME.text));
+      // (THE MAGE'S AND THE RANGER'S MOVES TO SWAP, game/swap_moves.ts: the move in this place changed to the next it could be;
+      // hers, “She sets tap and hold (Recommended)”; his hold, Snipe or Rally where he has both)
+      const choices = game.moveChoicesOf(s);
+      if (choices.length > 1) {
+        const next = choices[(choices.indexOf(sk.id) + 1) % choices.length];
+        const label = `CHANGE TO ${SKILLS[next].name.toUpperCase()}`;
+        const bw = textWidth(label) + 14;
+        const br: Rect = { x: mini.x + mini.w - bw, y: end - pbh, w: bw, h: pbh };
+        ui.drawButton(br.x, br.y, br.w, br.h, label, { primary: true });
+        ui.mark('button:CHANGE', br.x, br.y, br.w, br.h);
+        if (ui.pressIn(br.x, br.y, br.w, br.h)) game.changeMove(s);
+      }
     }
   }
 

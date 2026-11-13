@@ -31,6 +31,8 @@ export interface FigureState {
   fy: number;
   /** The attack being made: 0 the quick one, 1 the slow one; how long ago it began; how long its wind-up is. */
   attackSkill: number;
+  /** (THE MAGE'S AND THE RANGER'S MOVES TO SWAP) The attack's own name, where its figure has a clip of its own for it (clips.moves). */
+  attackMove?: string;
   attackAge: number;
   attackWind: number;
   /** How far through a leap, 0..1, or -1 when not leaping. */
@@ -650,11 +652,13 @@ export class Figure {
       const c = set.clips?.leap;
       s = c ? c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(st.leapK * c.frames.length)))] : (set.leap as Sprite[])[st.leapK < 0.18 ? 0 : st.leapK < 0.7 ? 1 : 2];
     } else if (anim === 'attack') {
-      let c = (st.punch !== undefined ? set.clips?.punches?.[st.punch] : undefined) ?? (st.attackSkill === 1 ? set.clips?.heavy : st.attackSkill === 2 ? set.clips?.attack2 : undefined) ?? (st.tapAs !== undefined ? set.clips?.tapAs?.[st.tapAs] : undefined) ?? set.clips?.attack;
+      // (THE MAGE'S AND THE RANGER'S MOVES TO SWAP: a move with a clip of its own is that clip, standing or walking)
+      const own = st.attackMove !== undefined ? set.clips?.moves?.[st.attackMove] : undefined;
+      let c = own ?? (st.punch !== undefined ? set.clips?.punches?.[st.punch] : undefined) ?? (st.attackSkill === 1 ? set.clips?.heavy : st.attackSkill === 2 ? set.clips?.attack2 : undefined) ?? (st.tapAs !== undefined ? set.clips?.tapAs?.[st.tapAs] : undefined) ?? set.clips?.attack;
       // MADE WALKING (clips.attackWalk, heavyWalk): the one for the way the hero goes as they face
       // their mark, as the picture has them (the view from behind is a mirror, and so is a figure
       // turned to screen-left: what is the figure's left in the picture is the world's right in each)
-      const walkers = st.attackSkill === 1 ? set.clips?.heavyWalk : st.attackSkill === 0 ? set.clips?.attackWalk : st.attackSkill === 2 ? set.clips?.attack2Walk : undefined;
+      const walkers = own ? undefined : st.attackSkill === 1 ? set.clips?.heavyWalk : st.attackSkill === 0 ? set.clips?.attackWalk : st.attackSkill === 2 ? set.clips?.attack2Walk : undefined;
       if (walkers && walkers.length === 4 && way >= 0) c = walkers[way];
       this.swungWalking = !!walkers && walkers.length === 4 && way >= 0;
       const holding = st.holdT !== undefined && st.holdT >= 0;

@@ -17,6 +17,7 @@
 // hero with a look that says so (`HeroLook.town`) stands, runs and passes the time as the town
 // moves have it (moves3.ts: ktown, rtown and the rest).
 
+import { SWAP_MOVES } from '../game/talents';
 import type { Light, Sprite } from '../engine/px';
 import type { ClassId, FirstClass } from '../game/types';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
@@ -402,8 +403,14 @@ export function bakeLists(set: AnimSet): Sprite[][] {
   for (const k of HEAVY_MOVES) out.push(set.clips?.moves?.[k]?.frames ?? []);
   // (THE LIVING SHADOW's second swing made walking, the four ways, after them for the same reason: art/shadow_art.ts)
   for (let k = 0; k < 4; k++) out.push(set.clips?.attack2Walk?.[k]?.frames ?? []);
+  // (THE MAGE'S AND THE RANGER'S MOVES TO SWAP, art/swap_moves_art.ts: their own moves, clips.moves, after them for the same
+  // reason; only theirs, and only with their switch on, so that every other hero's lists are as they were)
+  if (SWAP_MOVES.on && SWAP_CLIP_KEYS.some((k) => set.clips?.moves?.[k])) for (const k of SWAP_CLIP_KEYS) out.push(set.clips?.moves?.[k]?.frames ?? []);
   return out;
 }
+
+/** (the same) The Mage's and the Ranger's moves to swap, their own, after the rest. */
+const SWAP_CLIP_KEYS = ['snare', 'rally', 'ball', 'spear'] as const;
 
 /** (the same) The Warrior's weapons' own moves, as the bake holds them after his making ready. */
 const HEAVY_MOVES = ['runEmpty', 'runCatch', 'twinRunCatch', 'cleaveAppear', 'twinThrow', 'twinBraced', 'twinCatch', 'chopCrouch', 'chargeCrouch'] as const;

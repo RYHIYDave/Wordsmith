@@ -2,6 +2,8 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
+import { drawAura as drawSwapAura, drawBall, drawRally, drawRallyAir, drawSnare, drawSnipeDraw, drawSnipeStreak, drawSpear, drawSplashes } from './swap_fx';
+import { SWAP_MOVES } from '../game/talents';
 import { LIVING_SHADOW } from '../art/shadow_art';
 import { warlockAskAhead } from './warlock_packs';
 import type { AskPack } from './warlock_packs';
@@ -2662,7 +2664,9 @@ export class Renderer {
           j++;
         }
       }
-      g.drawImage(sp.img, Math.round(cx) - sp.ax, Math.round(cy) - sp.ay);
+      // (THE RANGER'S SNARE, game/swap_moves.ts: its rope, render/swap_fx.ts)
+      if (tr.snare) drawSnare(g, cam, tr.x, tr.y, tr.arm <= 0, t, tr, game.hero.x, game.hero.y);
+      else g.drawImage(sp.img, Math.round(cx) - sp.ax, Math.round(cy) - sp.ay);
     }
     // A volley's patch of ground (Version 12.2): marked from the moment the arrows leave the bow,
     // so that the player sees where they will come down. While they are still in the air a second
@@ -4051,7 +4055,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0, ...(crouchT >= 0 ? { crouchT } : {}), ...(heavyDrawn(h.cls, h.talents) === 'axe' ? { axe: { empty: !!h.handsEmpty, caughtT: h.caughtAt !== undefined ? game.time - h.caughtAt : -1, appear: !!h.appear } } : {}) }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackMove: SWAP_MOVES.on ? h.skills[h.attackSkill]?.id : undefined, attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0, ...(crouchT >= 0 ? { crouchT } : {}), ...(heavyDrawn(h.cls, h.talents) === 'axe' ? { axe: { empty: !!h.handsEmpty, caughtT: h.caughtAt !== undefined ? game.time - h.caughtAt : -1, appear: !!h.appear } } : {}) }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       // (THE VETERAN in a move: its frame, turned as he faced as it began: render/veteran_fx.ts. Not narrowed in a turn.)
       const vetSp = this.vetFx.shown(game, heroArt);
       if (vetSp) sp = vetSp;
@@ -4070,6 +4074,12 @@ export class Renderer {
       } else if (h.poisonT > 0) {
         over = silhouette(sp, P.vn4);
         overA = 0.3;
+      } else if (SWAP_MOVES.on && game.snipeDraw()) {
+        // (THE RANGER'S SNIPE CHARGING: he glows cyan, the more and the quicker it beats the fuller the draw; white as it comes full)
+        const sd = game.snipeDraw() as { power: number; sinceFull: number };
+        const glint = sd.sinceFull >= 0 && sd.sinceFull < 0.18;
+        over = silhouette(sp, glint ? '#ffffff' : '#22d0e0');
+        overA = glint ? 0.45 * (1 - sd.sinceFull / 0.18) + 0.15 : (0.08 + 0.24 * sd.power) * (0.75 + 0.25 * Math.sin(t * (6 + 10 * sd.power)));
       }
       // A warp: the figure the mage was phases out where they stood, and the mage phases in here.
       const wp = fx.warp;
@@ -4143,6 +4153,14 @@ export class Renderer {
       }
     }
 
+    // (THE MAGE'S AURA, THE RANGER'S SNIPE DRAWN AND HIS RALLY, game/swap_moves.ts, behind SWAP_MOVES: render/swap_fx.ts)
+    if (SWAP_MOVES.on) {
+      drawSwapAura(g, cam, game, t);
+      drawSnipeDraw(g, cam, game, t);
+      drawRally(g, cam, game, t);
+      drawSplashes(g, cam, t);
+    }
+
     // The orb the staff has set down: a large ball hanging over the floor. It comes in at a pop,
     // swells as its next wave gathers, and gutters in its last half second.
     for (const o of game.orbs) {
@@ -4211,7 +4229,7 @@ export class Renderer {
       // (THE WARLOCK'S BOLT is his fire alone, drawn with the effects: render/warlock_fx.ts drawBolt. Till 12 Nov 2026 a ball of
       // light, the purple of its element, was drawn at its nose here as well, under the fire: his words of the bolt in play that day,
       // “fix the hellfire projectile so it’s tail doesn’t only face one way as well”; and a purple glow is the enemy's)
-      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great' && p.look !== 'hellbolt') {
+      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great' && p.look !== 'hellbolt' && p.look !== 'mspear' && p.look !== 'ball') {
         // (a familiar's bolt is a small bright mote; anything else that is not an arrow (nor a wave, nor a dart) is a ball of light)
         const mote = p.look === 'mote';
         const frames = mote ? [art.spells.mote[p.element]] : art.icons.orb[p.element];
@@ -4410,6 +4428,13 @@ export class Renderer {
         if (onScreen(p.x, p.y)) fx.uniques.drawBlade(g, cam, p, t);
         continue;
       }
+      // (THE MAGE'S BALL and SPEAR, game/swap_moves.ts: render/swap_fx.ts)
+      if (p.look === 'ball' || p.look === 'mspear') {
+        if (onScreen(p.x, p.y)) (p.look === 'ball' ? drawBall : drawSpear)(g, cam, p.x, p.y, p.vx, p.vy, p.element, t, p.flown);
+        continue;
+      }
+      // (THE RANGER'S SNIPE: the streak behind the arrow it loosed, under the arrow)
+      if (!p.hostile && p.look === 'arrow' && game.hero.skills[p.skill]?.id === 'snipe' && onScreen(p.x, p.y)) drawSnipeStreak(g, cam, p.x, p.y, p.vx, p.vy, p.snipe ?? 0, p.age);
       // (THE NEW MONSTERS: a Boneward's spear, flying low from its hand to where it comes down)
       if (p.look === 'spear') {
         const v = Math.hypot(p.vx, p.vy) || 1;
@@ -4763,6 +4788,11 @@ export class Renderer {
     if (!this.skip.has('fx')) fx.drawAir(g, cam);
     // (THE VETERAN's over everything: his smears, his force, the bursts of his blows; his globes: render/veteran_fx.ts)
     if (!this.skip.has('fx')) this.vetFx.drawAir(g, cam, game);
+    // (THE RANGER'S RALLY, over the figures: render/swap_fx.ts)
+    if (SWAP_MOVES.on && !this.skip.has('fx')) {
+      drawRallyAir(g, cam, game, t);
+      drawSnipeDraw(g, cam, game, t, 'air');
+    }
     if (MELD3.on && !this.skip.has('fx')) overM3(g, cam, t);
     if (VOLATILE3.on && !this.skip.has('fx')) overV3(g, cam, t);
     if (!game.scene) this.drawWordDrops(g, W, H, game, t);

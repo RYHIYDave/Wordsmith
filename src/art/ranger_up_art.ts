@@ -16,6 +16,8 @@
 //   ready         (from in front, in town and on his card) unslinging his bow when picked, into his guard
 // A list the same in two places is ONE list, painted once.
 
+import { RU_SNARE3, RU_RALLY3, RU_SNIPE_HOLD3, RU_SNIPE_LOOSE3, RU_SNIPE_START3 } from './swap_moves_art';
+import { SWAP_MOVES } from '../game/talents';
 import type { Light, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { lazyFrames, lightsOut, toSprite } from './kit';
@@ -166,6 +168,14 @@ function setOf(view: RuSide, place: 'dungeon' | 'town' | 'card', shared: Shared)
   set.start = clip(start.move, GRIP_FPS);
   set.startAt = start.phase;
   const clips = set.clips as NonNullable<AnimSet['clips']>;
+  // (THE RANGER'S MOVES TO SWAP, behind SWAP_MOVES, art/swap_moves_art.ts: Snipe drawn, held and loosed, his own and not the
+  // Volley's kneel; Snare thrown, Rally called. Only with the switch on, so the bake is the same without it)
+  if (SWAP_MOVES.on) {
+    clips.hold = clip(RU_SNIPE_HOLD3, FPS);
+    if (fights) clips.holdStart = clip(RU_SNIPE_START3, FPS);
+    clips.release = clip(RU_SNIPE_LOOSE3, FPS);
+    clips.moves = { ...(clips.moves ?? {}), snare: clip(RU_SNARE3, FPS), rally: clip(RU_RALLY3, FPS) };
+  }
   if (fights) {
     set.walkWays = ruRunWays().map((m, i) => list(`way:${i}`, () => {
       const { end, from } = spanOf(m);

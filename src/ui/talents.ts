@@ -75,6 +75,18 @@ const FIST: readonly string[] = ['.XXXXX.', 'XoXoXoX', 'XXXXXXX', 'XXXXXX.', '.X
 const KICK: readonly string[] = ['X......', '.X.....', '..X....', '..XXXXo', '..XXXX.'];
 const LEAP: readonly string[] = ['...X...', '..XoX..', '.X.X.X.', '...X...', 'X.X.X.X'];
 const FLAME: readonly string[] = ['...X...', '..XX.X.', '.XXoXX.', '.XoooX.', '..XXX..'];
+// (the Mage's and the Ranger's moves to swap, drafted 12 Nov 2026, game/talents.ts SWAP_MOVES: her Aura a ring; each new move its
+// own rune, in no element's colour, as his words have them: “i dont want spear to be ice spear, i want it to be spear, same with
+// the others”)
+const RING: readonly string[] = ['..XXX..', '.X...X.', 'X..o..X', '.X...X.', '..XXX..'];
+const MOVE_RUNE: Readonly<Record<string, readonly string[]>> = {
+  ball: ['..XXX..', '.XXoXX.', '.XoooX.', '.XXoXX.', '..XXX..'],
+  beam: ['.......', 'X......', 'XooXXXX', 'X......', '.......'],
+  spear: ['.......', '.....X.', 'XXXXXoX', '.....X.', '.......'],
+  snare: ['..XXX..', '.X...X.', '.X...X.', '..X.X..', '...o...'],
+  snipe: ['...X...', '.X.X.X.', 'XXXoXXX', '.X.X.X.', '...X...'],
+  rally: ['X......', 'XX...X.', 'XXXXXo.', 'XX...X.', 'X......'],
+};
 /** A rune and its two colours. */
 interface Rune {
   rows: readonly string[];
@@ -114,6 +126,7 @@ const PATH_RUNE: Record<string, (color: string) => Rune> = {
   punch: (c) => ({ rows: FIST, color: c, glow: P.white }),
   kick: (c) => ({ rows: KICK, color: c, glow: P.white }),
   jump: (c) => ({ rows: LEAP, color: c, glow: P.white }),
+  aura: (c) => ({ rows: RING, color: c, glow: P.white }),
 };
 /** The rune a talent's stone carries: its word's, if it works with one; else its path's. */
 function runeOf(tree: TalentTree, t: TalentDef): Rune {
@@ -121,6 +134,8 @@ function runeOf(tree: TalentTree, t: TalentDef): Rune {
   if (word) return wordRune(word);
   const path = tree.paths.find((p) => p.id === t.path);
   const color = path ? path.color : THEME.text;
+  // (the new moves to swap carry their own, in no element's colour)
+  if (MOVE_RUNE[t.id]) return { rows: MOVE_RUNE[t.id], color: THEME.text, glow: P.white };
   // (the Ranger's companions carry a paw)
   if (t.id === 'huntcompanion' || t.id === 'wildcompanion') return { rows: PAW, color, glow: P.white };
   // (the Veteran's fire: the globes over his punch and his kick set in fire)
@@ -761,7 +776,8 @@ export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayo
   const picks: { r: Rect; id: string }[] = [];
   if (pickRow && def.pick) {
     const now = game.pickOf(def.id);
-    const pw = Math.floor((cr.w - 10 - 3) / 2);
+    const n = def.pick.ids.length;
+    const pw = Math.floor((cr.w - 10 - 3 * (n - 1)) / n);
     def.pick.ids.forEach((id, k) => {
       const r = { x: cr.x + 5 + k * (pw + 3), y: by - pickRow, w: pw, h: bh };
       ui.drawButton(r.x, r.y, r.w, r.h, def.pick!.names[k], { primary: now === id });

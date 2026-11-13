@@ -665,7 +665,26 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
       thread(nocks[0], s.handR, CYAN[3]);
       thread(s.handR, nocks[1], CYAN[3]);
       const point = add(s.handR, mul(p3, ARROW_LONG * B.tall));
-      arrowAt(s.handR, point);
+      // (THE RANGER'S SNIPE CHARGING, art/swap_moves_art.ts RU_SNIPE_HOLD3, prop 8: his arrow itself filling with light as the
+      // draw fills, `pt` 0..1, in three steps, its shaft, its head and its vanes, sparks of light running along it; his own
+      // arrow, its own shape. Only the moves to swap have it)
+      const charge = q.prop === 8 ? Math.max(0, Math.min(1, q.pt)) : -1;
+      const step = charge < 0 ? -1 : charge >= 0.999 ? 3 : charge >= 0.66 ? 2 : charge >= 0.33 ? 1 : 0;
+      const charged = step < 0 ? undefined : [
+        { shaft: P.wd5, head: CYAN[3], tip: '#ffffff', vane: CYAN[2], vane2: CYAN[3] },
+        { shaft: CYAN[1], head: CYAN[3], tip: '#ffffff', vane: CYAN[3], vane2: '#ffffff' },
+        { shaft: CYAN[2], head: '#ffffff', tip: '#ffffff', vane: CYAN[3], vane2: '#ffffff' },
+        { shaft: CYAN[3], head: '#ffffff', tip: '#ffffff', vane: '#ffffff', vane2: '#ffffff' },
+      ][step];
+      arrowAt(s.handR, point, line, charged);
+      if (step >= 1) {
+        // (sparks running along it, more at each step)
+        for (let k = 0; k < step * 2; k++) {
+          const f = (charge * 3.7 + k * 0.29) % 1;
+          const [sx, sy] = st.at(lerp3(s.handR, point, f));
+          st.over.set(Math.round(sx), Math.round(sy) - 1 - (k % 2), k % 2 ? CYAN[3] : '#ffffff');
+        }
+      }
       if (WILD.on && q.draw >= 0.85) {
         const PALE = '#e6eef8';
         const [x1, y1] = st.at(point);
@@ -708,6 +727,57 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
         const rows = sq.doing === 'run' ? (sq.step % 2 === 0 ? SQ_RUN : SQ_BUNCH) : Math.floor(q.pt * 90) % 5 === 1 ? SQ_FLICK : SQ_SIT;
         squirrel(layer, x, y, st.seen(s.chest[0])[0] * sq.looks >= 0 ? 1 : -1, rows);
       }
+    }
+    // (THE SNARE, art/swap_moves_art.ts RU_SNARE3: its loop whirled over his head before he throws it, prop 6, `pt` how far
+    // round it has gone; a loop of rope tipped a little forward, his hand on its edge, its weight glinting on the far side; gone
+    // from his hand as he lets it go. Only the moves to swap have it)
+    if (q.prop === 6) {
+      const layer = st.part(st.near(s.handR) + 0.5);
+      const R = 6.6;
+      const phi = q.pt * Math.PI * 4;
+      const c: V3 = [s.handR[0] + Math.cos(phi) * R, s.handR[1] + Math.sin(phi) * R, s.handR[2] + 2.5];
+      const on = (a: number): V3 => [c[0] - Math.cos(a) * R, c[1] - Math.sin(a) * R, c[2] - Math.cos(a) * R * 0.35];
+      for (let i = 0; i < 48; i++) {
+        const [x, y] = st.at(on(phi + (i / 48) * Math.PI * 2));
+        layer.set(Math.round(x), Math.round(y) + 1, BROWN[1]);
+      }
+      for (let i = 0; i < 48; i++) {
+        const [x, y] = st.at(on(phi + (i / 48) * Math.PI * 2));
+        layer.set(Math.round(x), Math.round(y), i % 12 === 6 ? CYAN[2] : BROWN[3]);
+      }
+      const [wx, wy] = st.at(on(phi + Math.PI)).map(Math.round);
+      layer.set(wx, wy, '#ffffff').set(wx + 1, wy, CYAN[3]).set(wx, wy + 1, CYAN[3]).set(wx + 1, wy + 1, CYAN[2]);
+      lights.push({ x: wx, y: wy, r: 7, color: CYAN[3], a: 0.5 });
+    }
+    // (THE RALLY, art/swap_moves_art.ts RU_RALLY3: his horn, at his lips in his string hand, curving up and out to its bell,
+    // prop 7. Only the moves to swap have it)
+    if (q.prop === 7) {
+      const [fw, lf, up] = s.face;
+      const layer = st.part(st.near(s.handR) + 1.4);
+      const at = (u: number): V3 => add(s.handR, add(add(mul(fw, -1.2 + u * 11), mul(up, 0.8 + u * 3 + u * u * 7)), mul(lf, -u * 2.4)));
+      const HORN = ['#7e4f2c', '#c9a878', '#e8dcc0'] as const;
+      for (let n = 0; n <= 16; n++) {
+        const u = n / 16;
+        const [x, y] = st.at(at(u));
+        const r = 0.8 + u * u * 2.9;
+        const band = Math.abs(u - 0.2) < 0.04 || Math.abs(u - 0.78) < 0.04;
+        const R = Math.ceil(r);
+        for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+          const d = Math.hypot(dx, dy);
+          if (d > r) continue;
+          const c = band ? (dx + dy < 0 ? '#e4e8f0' : '#9aa2b8') : dx + dy < -r * 0.5 ? HORN[2] : dx + dy > r * 0.6 ? HORN[0] : HORN[1];
+          layer.set(Math.round(x + dx), Math.round(y + dy), c);
+        }
+      }
+      // (its bell: a rim of silver, a glint of cyan on it, dark within)
+      const [bx, by] = st.at(at(1.04));
+      const br = 3.9;
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+        const d = Math.hypot(dx, dy);
+        if (d > br) continue;
+        layer.set(Math.round(bx + dx), Math.round(by + dy), d > br - 1.1 ? (dx + dy < 0 ? '#e4e8f0' : '#9aa2b8') : '#2a1a10');
+      }
+      layer.set(Math.round(bx - 2), Math.round(by - 2), CYAN[3]);
     }
     if (q.prop === 2) {
       const d = heading(q.pAz, q.pEl);

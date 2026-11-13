@@ -11,6 +11,7 @@ import { Game } from '../src/game/game';
 import type { RunSave } from '../src/game/game';
 import { TALENTS, TALENTS2, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, TREES, cleanTalents, nextTalentLevel, takeProblem, talentMods, talentName, talentOpen, talentPoints, talentText, talentWord, unlearnProblem } from '../src/game/talents';
 import type { TalentDef, TalentFigure } from '../src/game/talents';
+import { SWAP_MOVES } from '../src/game/talents';
 import { ALL_CLASS_IDS, CLASS_IDS, WORD_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
 import { wrapText } from '../src/engine/font';
@@ -32,6 +33,17 @@ function held(to: boolean, fn: () => void): void {
   }
 }
 const on = (fn: () => void): void => held(true, fn);
+
+/** The Mage's and the Ranger's moves to swap (game/talents.ts SWAP_MOVES) set aside, for what is said of the trees as drafted. */
+function swapOff(fn: () => void): void {
+  const was = SWAP_MOVES.on;
+  SWAP_MOVES.on = false;
+  try {
+    fn();
+  } finally {
+    SWAP_MOVES.on = was;
+  }
+}
 
 test("the game's switch is on, since his word of 10 Oct 2026, 01:55 (Version 20.1)", () => {
   assert.equal(TALENTS.on, true);
@@ -66,31 +78,35 @@ test('ten points, one at every fifth level', () => {
 });
 
 test('each class has fifteen talents in a shape of its own, every one reachable, more than the ten points can take', () => {
-  for (const cls of CLASS_IDS) {
-    const tree = TREES[cls];
-    assert.equal(tree.cls, cls);
-    assert.equal(tree.talents.length, 15, cls);
-    const ids = tree.talents.map((t) => t.id);
-    assert.equal(new Set(ids).size, ids.length, `${cls}: each id once`);
-    for (const t of tree.talents) {
-      for (const f of t.from) assert.ok(ids.includes(f), `${cls}: ${t.id} comes from ${f}, which is in the tree`);
-      assert.ok(tree.paths.some((p) => p.id === t.path), `${cls}: ${t.id} is on a path of the tree`);
-      if (t.word) assert.ok(WORD_IDS.includes(t.word), `${cls}: ${t.id} works with a word of the game`);
+  // (the trees as drafted, 28 Oct 2026: the Mage's and the Ranger's moves to swap, on since 13 Nov, add stones of their own,
+  // tests/swap_moves.test.ts)
+  swapOff(() => {
+    for (const cls of CLASS_IDS) {
+      const tree = TREES[cls];
+      assert.equal(tree.cls, cls);
+      assert.equal(tree.talents.length, 15, cls);
+      const ids = tree.talents.map((t) => t.id);
+      assert.equal(new Set(ids).size, ids.length, `${cls}: each id once`);
+      for (const t of tree.talents) {
+        for (const f of t.from) assert.ok(ids.includes(f), `${cls}: ${t.id} comes from ${f}, which is in the tree`);
+        assert.ok(tree.paths.some((p) => p.id === t.path), `${cls}: ${t.id} is on a path of the tree`);
+        if (t.word) assert.ok(WORD_IDS.includes(t.word), `${cls}: ${t.id} works with a word of the game`);
+      }
+      // (every talent can be reached from a place to start)
+      const reach = new Set(tree.talents.filter((t) => !t.from.length).map((t) => t.id));
+      assert.ok(reach.size >= 1, `${cls}: somewhere to start`);
+      for (let n = 0; n < 20; n++) for (const t of tree.talents) if (t.from.some((f) => reach.has(f))) reach.add(t.id);
+      assert.equal(reach.size, 15, `${cls}: every talent reachable`);
+      // a mix: some big changes, more small steps; and a few that work with words
+      const big = tree.talents.filter((t) => t.big).length;
+      assert.ok(big >= 4 && big <= 6, `${cls}: ${big} big talents`);
+      const worded = tree.talents.filter((t) => t.word).length;
+      assert.ok(worded >= 2 && worded <= 4, `${cls}: ${worded} talents that work with words ("a few")`);
+      // the figures and the paths' names stand by talents of the tree
+      for (const p of tree.paths) assert.ok(ids.includes(p.label.node), `${cls}: ${p.id}'s name by ${p.label.node}`);
+      for (const f of tree.figures ?? []) for (const id of figureIds(f)) assert.ok(ids.includes(id), `${cls}: a figure through ${id}`);
     }
-    // (every talent can be reached from a place to start)
-    const reach = new Set(tree.talents.filter((t) => !t.from.length).map((t) => t.id));
-    assert.ok(reach.size >= 1, `${cls}: somewhere to start`);
-    for (let n = 0; n < 20; n++) for (const t of tree.talents) if (t.from.some((f) => reach.has(f))) reach.add(t.id);
-    assert.equal(reach.size, 15, `${cls}: every talent reachable`);
-    // a mix: some big changes, more small steps; and a few that work with words
-    const big = tree.talents.filter((t) => t.big).length;
-    assert.ok(big >= 4 && big <= 6, `${cls}: ${big} big talents`);
-    const worded = tree.talents.filter((t) => t.word).length;
-    assert.ok(worded >= 2 && worded <= 4, `${cls}: ${worded} talents that work with words ("a few")`);
-    // the figures and the paths' names stand by talents of the tree
-    for (const p of tree.paths) assert.ok(ids.includes(p.label.node), `${cls}: ${p.id}'s name by ${p.label.node}`);
-    for (const f of tree.figures ?? []) for (const id of figureIds(f)) assert.ok(ids.includes(id), `${cls}: a figure through ${id}`);
-  }
+  });
 });
 
 /** The talents a figure is drawn through. */
@@ -183,25 +199,29 @@ test('THE BRAWLER AS THE VETERAN (3 Nov 2026): fifteen on his three globes, ever
 });
 
 test('the shapes: the mage three paths of five from her rune; the arrow two feathers to start from; the swords two pommels and a crossing that is both', () => {
-  const mage = TREES.mage;
-  assert.ok(mage.root, 'her rune');
-  for (const path of ['fire', 'lightning', 'frost']) {
-    const ts = mage.talents.filter((t) => t.path === path);
-    assert.equal(ts.length, 5, path);
-    assert.equal(ts.filter((t) => !t.from.length).length, 1, `${path} starts at her rune`);
-    assert.ok(ts[ts.length - 1].big, `${path} ends in a big talent`);
-  }
-  const ranger = TREES.ranger;
-  assert.deepEqual(ranger.talents.filter((t) => !t.from.length).map((t) => t.id).sort(), ['fleet', 'keeneye']);
-  const point = ranger.talents.find((t) => t.id === 'farsight')!;
-  assert.deepEqual([...point.from].sort(), ['hail', 'minefield', 'piercing'], "the arrow's barbs and middle meet at its point");
-  const warrior = TREES.warrior;
-  assert.deepEqual(warrior.talents.filter((t) => !t.from.length).map((t) => t.id).sort(), ['honededge', 'thickskin']);
-  const cross = warrior.talents.find((t) => t.id === 'earthshaker')!;
-  assert.deepEqual([...cross.from].sort(), ['bulwark', 'drilledleap'], 'the crossing is reached from either sword');
-  // (past the crossing, either sword's tip)
-  assert.equal(talentOpen('warrior', ['honededge', 'cadence', 'drilledleap', 'earthshaker'], 'thorns'), true);
-  assert.equal(talentOpen('warrior', ['honededge', 'cadence', 'drilledleap', 'earthshaker'], 'giantslayer'), true);
+  // (the trees as drafted, 28 Oct 2026: the Mage's and the Ranger's moves to swap, on since 13 Nov, add stones of their own,
+  // tests/swap_moves.test.ts)
+  swapOff(() => {
+    const mage = TREES.mage;
+    assert.ok(mage.root, 'her rune');
+    for (const path of ['fire', 'lightning', 'frost']) {
+      const ts = mage.talents.filter((t) => t.path === path);
+      assert.equal(ts.length, 5, path);
+      assert.equal(ts.filter((t) => !t.from.length).length, 1, `${path} starts at her rune`);
+      assert.ok(ts[ts.length - 1].big, `${path} ends in a big talent`);
+    }
+    const ranger = TREES.ranger;
+    assert.deepEqual(ranger.talents.filter((t) => !t.from.length).map((t) => t.id).sort(), ['fleet', 'keeneye']);
+    const point = ranger.talents.find((t) => t.id === 'farsight')!;
+    assert.deepEqual([...point.from].sort(), ['hail', 'minefield', 'piercing'], "the arrow's barbs and middle meet at its point");
+    const warrior = TREES.warrior;
+    assert.deepEqual(warrior.talents.filter((t) => !t.from.length).map((t) => t.id).sort(), ['honededge', 'thickskin']);
+    const cross = warrior.talents.find((t) => t.id === 'earthshaker')!;
+    assert.deepEqual([...cross.from].sort(), ['bulwark', 'drilledleap'], 'the crossing is reached from either sword');
+    // (past the crossing, either sword's tip)
+    assert.equal(talentOpen('warrior', ['honededge', 'cadence', 'drilledleap', 'earthshaker'], 'thorns'), true);
+    assert.equal(talentOpen('warrior', ['honededge', 'cadence', 'drilledleap', 'earthshaker'], 'giantslayer'), true);
+  });
 });
 
 test('a talent is taken with a point, once, after one that leads to it', () => {

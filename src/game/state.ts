@@ -641,7 +641,11 @@ export interface Projectile {
   dmg: number;
   element: Element;
   /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) 'spear': the Boneward's, and 'great', the bone marksman's great arrow (Version 19.9). */
-  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great' | 'hellbolt' | 'axe';
+  /** (THE RANGER'S SNIPE, game/swap_moves.ts) An arrow of a Snipe: how full its draw was, 0..1 (wider, faster, knocking back the fuller). */
+  snipe?: number;
+  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great' | 'hellbolt' | 'axe'
+    // (THE MAGE'S BALL and SPEAR, game/swap_moves.ts: `mspear` hers, not the Boneward's)
+    | 'ball' | 'mspear';
   /** THE WARRIOR'S BATTLE AXE (WARRIOR_TREE2): a thrown axe, that comes back (`returns`), and is on its way back (`back`). */
   returns?: boolean;
   back?: boolean;
@@ -863,6 +867,8 @@ export interface Trap {
   element: Element;
   /** UNIQUE ITEMS, THE HAIR TRIGGER: an arrow of his has crossed it: it goes off now, however lately laid, this many times as hard. */
   shot?: number;
+  /** (THE RANGER'S SNARE, game/swap_moves.ts) a snare thrown, not a trap of his roll: what walks in is held, then it bursts. */
+  snare?: boolean;
 }
 
 /**
@@ -1470,7 +1476,7 @@ export type GameEvent =
    * 'shock' is the knock of a Power hit on the enemies around its target; 'ruin' is a rune going off.
    * `words`, `n`, `echo` as for a swing.
    */
-  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl' | 'vial' | 'pound' | 'bomb'; words?: readonly WordId[]; n?: number; echo?: boolean; meld?: MeldId; r0?: number }
+  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl' | 'vial' | 'pound' | 'bomb'; words?: readonly WordId[]; n?: number; echo?: boolean; meld?: MeldId; r0?: number; comet?: boolean }
   /** An ability leaves the hero: where from, which way, the words in front of it and behind it. */
   | { t: 'cast'; x: number; y: number; dx: number; dy: number; kind: SkillKind; el: Element; words: readonly WordId[]; behind: readonly WordId[]; echo: boolean }
   /** A word was set into an ability: `name` is the ability's new name. */

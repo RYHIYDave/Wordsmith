@@ -663,10 +663,144 @@ function warp(): Px {
 }
 
 // ---------------------------------------------------------------------------------------------
+// THE MAGE'S AND THE RANGER'S MOVES TO SWAP (game/swap_moves.ts, behind SWAP_MOVES; docs/mockups/swap_moves/README.md). Hers in
+// her violet, the colour her magic is drawn in before a word gives it one (his words: “i dont want spear to be ice spear, i want
+// it to be spear, same with the others”); his in his greens and wood, the friend's cyan where they are lit.
+
+/** Ball: a ball of her magic flying in from the lower left, its tail behind it, and where it strikes, a burst. */
+function ballMove(): Px {
+  const p = new Px(N, N);
+  // the tail it leaves: wide at the ball, thin and dark far behind it
+  trail(p, [2, 29], [7, 22], [15.5, 17.5], 0.4, 4.4, VIOLET3[0]);
+  trail(p, [5, 26.5], [9, 21.5], [15.5, 17], 0.3, 2.8, VIOLET3[1]);
+  // the burst where it strikes: a star of light behind it, on the far side
+  const at: Pt = [21.5, 11];
+  const star = (long: number, short: number, col: string): void => {
+    const pts: Pt[] = [];
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 - Math.PI / 4;
+      const r = i % 4 === 0 ? long : i % 2 === 0 ? short : short * 0.5;
+      pts.push([at[0] + Math.cos(a) * r, at[1] + Math.sin(a) * r]);
+    }
+    p.poly(pts, col);
+  };
+  star(10.4, 7, VIOLET3[0]);
+  star(9, 5.6, VIOLET3[1]);
+  // the ball itself
+  part(p, (s) => {
+    ball(s, [17.5, 14.5], 6.6, VIOLET3);
+    s.ellipse(15, 12, 1.8, 1.7, WHITE);
+  });
+  // the bits it throws as it breaks
+  p.rect(28, 4, 2, 2, WHITE).rect(29, 15, 2, 2, VIOLET3[2]).rect(23, 2, 1, 1, VIOLET3[2]).rect(10, 9, 1, 1, VIOLET3[2]);
+  return p;
+}
+
+/** Spear, a crystal lance (his pick): a long cut crystal pointed at both ends, widest a third of the way back from its point, its lit face pale and the other deep, a ridge of white down it and a cut across it; shards trailing. */
+function spearMove(): Px {
+  const p = new Px(N, N);
+  const tail: Pt = [4, 28];
+  const tip: Pt = [29.5, 2.5];
+  // the shards it sheds, behind it
+  for (const [x, y, c] of [[2, 25, 1], [6, 30, 1], [1, 30, 0], [9, 27, 2]] as const) {
+    p.set(x, y, VIOLET3[c]);
+    if (c > 0) p.set(x + 1, y - 1, c === 2 ? WHITE : VIOLET3[2]);
+  }
+  part(p, (s) => {
+    fill(s, (x, y) => {
+      const { t, off, len } = along(x, y, tail, tip);
+      const back = (1 - t) * len;
+      if (back < -0.2 || back > len + 0.2) return null;
+      const WIDE = len * 0.3;
+      const w = back < WIDE ? 0.3 + (back / WIDE) * 3.6 : 3.9 * (1 - (back - WIDE) / (len - WIDE)) + 0.3;
+      if (Math.abs(off) > w) return null;
+      if (Math.abs(off) < 0.55) return WHITE;
+      if (Math.abs(back - WIDE) < 0.6) return off > 0 ? WHITE : VIOLET3[2];
+      if (Math.abs(off) > w - 0.9) return off > 0 ? VIOLET3[2] : VIOLET3[0];
+      return off > 0 ? (Math.abs(off) < 1.6 ? VIOLET3[2] : VIOLET3[1]) : Math.abs(off) < 1.6 ? VIOLET3[1] : VIOLET3[0];
+    });
+  });
+  // the flare at its point
+  glint(p, 29, 3, 2, VIOLET3[2], WHITE);
+  return p;
+}
+
+/** Snare: a loop of rope lying open on the floor, its knot, and the line running off to the peg it is staked to; a glint of cyan: it is set. */
+function snareMove(): Px {
+  const p = new Px(N, N);
+  // the loop, lying on the floor
+  floorRing(p, [15, 20], 11.5, 6.2, 2.2, WOOD3);
+  // (laid with a twist: a dark turn every few pixels round it)
+  fill(p, (x, y) => {
+    const d = Math.hypot((x - 15) / 11.5, (y - 20) / 6.2);
+    if (Math.abs((d - 1) * 6.2) > 1.1) return null;
+    const a = Math.atan2((y - 20) / 6.2, (x - 15) / 11.5);
+    return Math.floor((a + Math.PI) * 4.2) % 3 === 0 ? WOOD3[0] : null;
+  });
+  // its knot, on the near side, and the line to the peg
+  part(p, (s) => {
+    ball(s, [21.5, 25.2], 2.3, WOOD3);
+    bar(s, [23, 26], [28.5, 29.5], 0.9, 0.9, WOOD3);
+  });
+  // the peg, driven in
+  part(p, (s) => {
+    bar(s, [28.5, 23.5], [28.8, 30.5], 1.3, 1.1, STEEL3);
+    s.rect(27, 22, 4, 2, STEEL3[2]);
+  });
+  // set: a cyan glint on the far side of the loop, and the ring of it on the floor inside
+  oval(p, [15, 20], 7.5, 3.6, 1, CYAN3[1]);
+  glint(p, 10, 14, 2, CYAN3[2], WHITE);
+  glint(p, 20, 15, 1, CYAN3[2], WHITE);
+  return p;
+}
+
+/** Snipe: one arrow, far and fast, going straight through the cyan ring of its mark, a long streak of air behind it. */
+function snipeMove(): Px {
+  const p = new Px(N, N);
+  // the mark: a ring and its four ticks, in cyan
+  const c: Pt = [19.5, 12.5];
+  oval(p, c, 8.2, 8.2, 1.3, CYAN3[1]);
+  for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]] as const) {
+    for (let i = 9.5; i <= 12.5; i++) p.set(Math.round(c[0] + dx * i), Math.round(c[1] + dy * i), CYAN3[2]);
+  }
+  // the long streak behind it
+  for (let i = 0; i <= 18; i++) p.set(1 + i, 30 - i, i > 14 ? WHITE : CYAN3[1]);
+  for (let i = 0; i <= 10; i++) p.set(1 + i, 27 - i, CYAN3[0]);
+  // the arrow, through the middle of the ring
+  arrow(p, [9.5, 22.5], [28.5, 3.5]);
+  return p;
+}
+
+/** Rally: his horn, big in the hand, the bell up and to the right, and the call going out of it in rings of the friend's cyan. */
+function rallyMove(): Px {
+  const p = new Px(N, N);
+  const bell: Pt = [18.5, 12.5];
+  // the call, out of the bell
+  crescent(p, bell, 13.5, 2.4, -95, 20, CYAN3[2], CYAN3[1], null);
+  crescent(p, bell, 9.6, 2.1, -90, 15, WHITE, CYAN3[2], null);
+  // the horn: a curving bar, thin at the mouthpiece and wide at the bell
+  part(p, (s) => trail(s, [2.5, 29.5], [4.5, 15.5], [16, 14.5], 1.2, 4.6, BROWN[1], BROWN[3]));
+  // the bell's rim, its mouth dark, and two bands of steel along it
+  part(p, (s) => {
+    s.ellipse(17, 14.2, 2.6, 5.4, STEEL3[1]);
+    s.ellipse(16.4, 13.6, 1.4, 3.8, STEEL3[2]);
+    s.ellipse(17.6, 14.6, 1.1, 3.4, INK);
+    bar(s, [1.5, 22.5], [5.5, 23.5], 1, 1, STEEL3, true);
+    bar(s, [4.5, 16.5], [8, 19.5], 1, 1, STEEL3, true);
+  });
+  // a strap of his green hanging off it
+  trail(p, [3, 23.5], [10, 30], [12.5, 21.5], 0.8, 0.8, LEAF3[1]);
+  return p;
+}
+
+/** (the moves to swap's five, and the ones they sit beside, for a picture of them: tools/swap_moves_icons.ts) */
+export const SWAP_ICON_PAINTERS: Record<string, () => Px> = { wave, orb, beam, ball: ballMove, spear: spearMove, shot, volley, trap, snare: snareMove, snipe: snipeMove, rally: rallyMove };
+
+// ---------------------------------------------------------------------------------------------
 
 // (THE WARLOCK, behind WARLOCK: his six, art/warlock_icons.ts, a first pass to show him; THE VETERAN, behind VETERAN: his
 // Punch, Kick and Jump, art/veteran_icons.ts, a first pass to show him: nothing of the old Brawler's)
-const PAINTERS: Record<AbilityId, () => Px> = { strike, slam, whirl, leap, shot, volley, trap, wave, orb, beam, familiar, warp, hellbolt: hellboltIcon, curse: curseIcon, smokestep: smokestepIcon, rake: rakeIcon, damning: damningIcon, demonstep: demonstepIcon, vialtoss: vialtossIcon, contraption: contraptionIcon, golem: golemIcon, blastjump: blastjumpIcon, jab: jabIcon, cross: crossIcon, slip: slipIcon, vetpunch: vetPunchIcon, vetkick: vetKickIcon, vetjump: vetJumpIcon };
+const PAINTERS: Record<AbilityId, () => Px> = { strike, slam, whirl, leap, shot, volley, trap, wave, orb, beam, familiar, warp, hellbolt: hellboltIcon, curse: curseIcon, smokestep: smokestepIcon, rake: rakeIcon, damning: damningIcon, demonstep: demonstepIcon, vialtoss: vialtossIcon, contraption: contraptionIcon, golem: golemIcon, blastjump: blastjumpIcon, jab: jabIcon, cross: crossIcon, slip: slipIcon, vetpunch: vetPunchIcon, vetkick: vetKickIcon, vetjump: vetJumpIcon, ball: ballMove, spear: spearMove, snare: snareMove, snipe: snipeMove, rally: rallyMove };
 
 /** Every attack's icon: sixteen game pixels square, anchor in the middle, painted two picture pixels to a game pixel. */
 export function makeAbilityIcons(): Record<AbilityId, Sprite> {

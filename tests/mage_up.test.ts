@@ -28,6 +28,7 @@ import * as nodeFs from 'node:fs';
 import * as nodePath from 'node:path';
 
 import { MAGE_UP, MU_SKIN } from '../src/art/mage_up';
+import { SWAP_MOVES } from '../src/game/talents';
 import { makeMageUpArt, paintMuMove } from '../src/art/mage_up_art';
 import { MU_BODY, MU_KEYS, MU_KNEE_UP, MU_MOVES, MU_SHIN_RATIO } from '../src/art/mage_up_moves';
 import { WU_RIM, WU_SIDES } from '../src/art/warrior_up';
@@ -66,7 +67,8 @@ test('1. the switch is ON (live since 25.3.4, at his “Yes, hand her to main (R
     if (!f.endsWith('.ts') || f.startsWith('art/mage_up')) continue;
     if (/from ['"][^'"]*mage_up(_moves|_art)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
-  assert.equal(users.join(' '), 'art/heroes3.ts', 'what imports them');
+  // (and floor 18's reflections of her, since 25.3.12; and her moves to swap, art/swap_moves_art.ts, sculpted on her body)
+  assert.equal(users.join(' '), 'art/heroes3.ts art/reflections_up.ts art/swap_moves_art.ts', 'what imports them');
   const h3 = fs.readFileSync('src/art/heroes3.ts', 'utf8');
   assert.ok(/if \(cls === 'mage' && MAGE_UP\.on\)/.test(h3), 'heroes3 reaches them only through the switch');
   assert.equal((h3.match(/makeMageUpArt\(/g) ?? []).length, 1, 'and only there');
@@ -181,7 +183,9 @@ test('3. her lists with the switch on: eight sides, the game\'s own lists, stand
       const front = side === 'front';
       // (the game's own lists: what she does when left standing only from in front, as the game paints it)
       const want = Object.keys(ca).filter((k) => front || !['idleA', 'idleB', 'ready'].includes(k)).sort();
-      assert.deepEqual(Object.keys(cb).sort(), want, `${tag}: the same lists`);
+      // (and, with the moves to swap on, her own moves for them, Ball's and Spear's: art/swap_moves_art.ts)
+      assert.deepEqual(Object.keys(cb).filter((k) => !(SWAP_MOVES.on && k === 'moves')).sort(), want, `${tag}: the same lists`);
+      if (SWAP_MOVES.on) assert.deepEqual(Object.keys(cb.moves ?? {}).sort(), ['ball', 'spear'], `${tag}: Ball's and Spear's own`);
       for (const k of want) {
         const x = ca[k] as Clip;
         const y = cb[k] as Clip;

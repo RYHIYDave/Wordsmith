@@ -30,7 +30,7 @@ import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
-import { TALENTS, TALENTS2, WARRIOR_TREE2 } from './game/talents';
+import { SWAP_MOVES, TALENTS, TALENTS2, WARRIOR_TREE2 } from './game/talents';
 import { QUEST_MARKS, SPEAK_NEW } from './game/quest_marks';
 import { SMALL_NOTES } from './art/small_notes';
 import { onTop } from './game/act2/quiettower';
@@ -1363,6 +1363,19 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (onHim && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full && h.form !== 'demon') c.change = true;
     }
     if (h.cls === 'warlock' && input.pressed('KeyR')) c.change = true;
+    // THE MAGE'S AURA (game/swap_moves.ts, behind SWAP_MOVES): a touch or a click on her turns it on, his words, “a tap on the hero
+    // ability called Aura”; on a keyboard, R; on a pad, the right bumper (padControls). A touch on her is no attack.
+    if (SWAP_MOVES.on && h.cls === 'mage' && poke && !spot && g.talentTaken('aura')) {
+      const hx = toScreen(isoSX(h.x, h.y) + cam.ox);
+      const hy = toScreen(isoSY(h.x, h.y) + cam.oy);
+      if (Math.abs(poke.x - hx) <= 12 && poke.y >= hy - 44 && poke.y <= hy + 6 && !monsterAt(g, poke.x, poke.y)) {
+        c.change = true;
+        input.tap = null;
+        input.poke = null;
+        input.lpress = null;
+      }
+    }
+    if (h.cls === 'mage' && input.pressed('KeyR')) c.change = true;
     // THE BRAWLER (game/veteran.ts): a touch or a click on his globes, or on him, while a combo of his is going, cancels it, and is
     // no attack (his word, 3 Nov 2026: “There needs to be a way to cancel the combo.  How about if you tap the globes?”); on a
     // keyboard, R as well; on a pad, the right bumper (padControls). Generous: a thumb is wide and the globes small.
@@ -3246,6 +3259,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     smallNotes: SMALL_NOTES,
     /** THE WARRIOR'S NEW TREE, drafted (game/talents.ts WARRIOR_TREE2: his three weapons), off until his yes: `warriorTree2.on`. */
     warriorTree2: WARRIOR_TREE2,
+    /** THE MAGE'S AND THE RANGER'S MOVES TO SWAP, their trees drafted (game/talents.ts SWAP_MOVES), off until his yes: `swapMoves.on`. */
+    swapMoves: SWAP_MOVES,
     /** THE LOADING SCREEN as a game begins (LOADING in main.ts), on at his yes: `loading.on` (dbg.run and dbg.first begin without it). */
     loading: LOADING,
     /** THE LOADING SCREEN BETWEEN FLOORS: whether it is up now (and since how long), and, for a playtest begun without it, the level counted as loaded (so that the next is put up between). */
