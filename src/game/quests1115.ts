@@ -1,4 +1,5 @@
-// THE QUEST LINE OF FLOORS 11 TO 15 (QUESTS1115: OFF until his yes to its pictures; pictures first, his rule).
+// THE QUEST LINE OF FLOORS 11 TO 15 (QUESTS1115: ON at his yes to its pictures, 13 Nov 2026, the page and the clapper drawn: “Yes,
+// switch them on (Recommended)”).
 //
 // Planned with him 13 Nov 2026 (Eastern), in a chat of his of that day, and written into his doc "Wordsmith Act 2: The Hush
 // (Levels 11–15)" (https://claude.ai/artifact/MRXBE78NUCTvSnZJNeCPE1), its sections "The quest line: The Unstruck Pages" and
@@ -35,7 +36,7 @@
 import type { Item, WordId } from './types';
 import { DEEP_WORD_IDS } from './types';
 
-export const QUESTS1115 = { on: false };
+export const QUESTS1115 = { on: true };
 
 /** Where the hero stands in a quest of these: asked; carrying the thing; brought. */
 export type Step1115 = 'asked' | 'got' | 'given';
