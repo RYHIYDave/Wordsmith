@@ -82,3 +82,29 @@ are right (each told in a line: the page does by hand what the rules will), his 
   the eight are drawn here, so leave them out or swallow them (Implode's look draws its own burst at `wait`).
 - Sunder's `what: 'hit'` is a look of its own: send it on each blow that lands on one sundered while it is stunned.
 - The page that films them: `tools/scenarios/melds8_looks.mjs` (LOOK=<meld>; it does by hand what the rules will).
+
+## In the game, ON (the main chat of 12 Nov, session ...STLst; for Version 25.3.17)
+
+Asked by pop-up, 12 Nov 2026, what to do next, his pick: **“Put the 8 new melds live (Recommended)”** (the queue's
+put-eight-new-melds-live). On branch `build/melds8-live`, cut from main 2a3f5119 (25.3.16):
+- the rules, branch `melds8` 458b1d37, merged (game.ts's one conflict, both sides kept); `MELDS8` and `MELDS8_LOOK` ON;
+- each meld's moment sent by the rules as `{ t: 'meld8' }` with what its look needs (game/state.ts GameEvent): Siphon on each tick
+  of its poison that heals, Cauterize on a burning one killed by the blow, Forking with its arc's ends, Shiver on a critical hit
+  that freezes, Sunder on one stunned (its 'hit' on each blow while its crack shows: Monster.sunderTill), Fervor at a kill with
+  its count, Rime Ward on a blow blocked, Implode with its reach, round and wait;
+- IMPLODE'S PULL, which the rules said and did not do: those within `reach` drawn `pull` toward where it struck (not bosses, not
+  through walls: `slide`), then its burst;
+- the game's own arc (Forking) and ring (Implode) marked as the melds' and left out where their looks draw them (render/fx.ts);
+- their stones and colours in the game (main.ts useMeldArt with M8_RAMP, M8_GLYPH);
+- 56 words and melded words in all: where even the tight stones have no room (the bottom turned to ALL at a service, on the
+  narrowest panel), the stones stand touching, TOUCH_STONE (ui/inventory.ts); on his phone's size all 56 fit as before.
+
+CHECKED: tsc; tests/melds8_moments.test.ts (new, 5); unit --only melds8, melds8_look, melds8_moments, melds, volatile_melds,
+volatile3, rank2, quests15, word_room, attr_split, meld_drops and the core: melds' “nothing else melds” and word_room's ALL
+mended for the eight, then all passed (64b06e3f85, 26 files). Filmed in play, the rules doing the work
+(tools/scenarios/melds8_play.mjs, every meld's moments counted, front and behind; tools/melds8_film.py): pictures/
+not kept here (sent him as 2_melds8_at_work.mp4, 2_melds8_stills.png, 3_all_56_words_at_a_service.png).
+
+HIS YES, 12 Nov 2026, asked by pop-up by 21:56 Eastern whether they go out in tomorrow evening's update: **“Yes, ship them
+tomorrow (Recommended)”**. NOT CHECKED: his phone; the release's playtests (with tomorrow's update). Their sounds are the sound
+chat's queue item make-sounds-for-eight-melds.

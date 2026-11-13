@@ -18,7 +18,8 @@ import type { Cam } from './fx';
 import { wx, wy } from './fx';
 
 /** The switch. Off: nothing here is drawn, lit, ticked or read, and the game is as it was. */
-export const MELDS8_LOOK = { on: false };
+// ON with their rules (game/melds8.ts MELDS8), Version 25.3.17: his “Yes, hand them to main (Recommended)”, 12 Nov 2026.
+export const MELDS8_LOOK = { on: true };
 
 export const M8_IDS = ['siphon', 'cauterize', 'forking', 'shiver', 'sunder', 'fervor', 'rimeward', 'implode'] as const;
 export type M8Id = (typeof M8_IDS)[number];

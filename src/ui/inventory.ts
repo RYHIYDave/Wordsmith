@@ -442,18 +442,18 @@ const sameSel = (a: Sel | null, b: Sel): boolean => !!a && a.kind === b.kind && 
  * says how many.
  */
 export function layPouch(words: readonly WordId[], count: (w: WordId) => number, maxW: number, room: number, gap: number, runes = false): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number; bare: boolean; stones: boolean; narrow: boolean; hidden: number } {
-  const lay = (how: 'full' | 'bare' | 'stones' | 'narrow' | 'tight'): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number } => {
+  const lay = (how: 'full' | 'bare' | 'stones' | 'narrow' | 'tight' | 'touch'): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number } => {
     const cells: { word: WordId; x: number; line: number; w: number }[] = [];
     let x = 0;
     let line = 0;
     for (const w of words) {
-      const tw = how === 'stones' ? CELL : how === 'narrow' ? NARROW_STONE : how === 'tight' ? TIGHT_STONE : Math.min(maxW, tileWidth(w, 'name', count(w), how === 'bare'));
+      const tw = how === 'stones' ? CELL : how === 'narrow' ? NARROW_STONE : how === 'tight' ? TIGHT_STONE : how === 'touch' ? TOUCH_STONE : Math.min(maxW, tileWidth(w, 'name', count(w), how === 'bare'));
       if (x > 0 && x + tw > maxW) {
         x = 0;
         line++;
       }
       cells.push({ word: w, x, line, w: tw });
-      x += tw + (how === 'narrow' || how === 'tight' ? 1 : gap);
+      x += tw + (how === 'touch' ? 0 : how === 'narrow' || how === 'tight' ? 1 : gap);
     }
     return { cells, lines: cells.length ? cells[cells.length - 1].line + 1 : 1 };
   };
@@ -476,6 +476,9 @@ export function layPouch(words: readonly WordId[], count: (w: WordId) => number,
   }
   // (and where even those do not all go in, a pixel narrower still)
   if (out.lines > room) out = lay('tight');
+  // (and where even those do not all go in, the stones side by side, touching: since the eight melds across the groups, 25.3.17,
+  // 56 words and melded words, the bottom turned to ALL at a service on a phone held sideways)
+  if (out.lines > room) out = lay('touch');
   const shown = out.cells.filter((c) => c.line < room);
   return { cells: shown, lines: Math.min(out.lines, room), bare, stones, narrow, hidden: out.cells.length - shown.length };
 }
@@ -487,6 +490,8 @@ export function layPouch(words: readonly WordId[], count: (w: WordId) => number,
 export const NARROW_STONE = 16;
 /** ...and where more words are carried than even those have room for: the stone in a tile a pixel narrower (see layPouch). */
 export const TIGHT_STONE = 15;
+/** ...and where even those have not room enough: the stone itself (14 pixels), stones touching (see layPouch). */
+export const TOUCH_STONE = 14;
 
 /** How an attack is limited, said short ("1.74/S", "5.0 S", "14 MANA") and long. */
 function paceText(game: Game, s: number): { short: string; long: string } {

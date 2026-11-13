@@ -18,6 +18,7 @@ import { HAND_IN } from '../src/game/defs';
 import { Game, newMeta } from '../src/game/game';
 import type { ItemRef } from '../src/game/game';
 import { MELD, MELD_HAND_IN, MELD_TUNE, RANK2, VOLT_MELDS, isDamageWord, meldOf, meldProblem, partsOf, savedMeta, withParts } from '../src/game/melds';
+import { MELDS8 } from '../src/game/melds8';
 import { emptyControls } from '../src/game/state';
 import type { GameEvent, Monster, Resolved } from '../src/game/state';
 import { ALL_WORD_IDS, MELD_IDS, MELD_OF, WORD_IDS } from '../src/game/types';
@@ -161,10 +162,13 @@ test('the ten melded words: every two of the five damage words make one, both wa
   assert.equal(seen.size, 10, 'each pair once');
   // (VERSION 23.7: with RANK2 on, two of one damage word make its rank II, tests/rank2.test.ts; this holds the ten, with it off;
   // and since Version 23.9 Volatile's five, VOLT_MELDS on, tests/volatile_melds.test.ts: held off here too)
+  // (and since 25.3.17 the eight across the groups, MELDS8 on, tests/melds8.test.ts: held off here as well)
   const rank = RANK2.on;
   const volt = VOLT_MELDS.on;
+  const eight = MELDS8.on;
   RANK2.on = false;
   VOLT_MELDS.on = false;
+  MELDS8.on = false;
   try {
     for (const a of WORD_IDS) {
       for (const b of WORD_IDS) {
@@ -181,6 +185,7 @@ test('the ten melded words: every two of the five damage words make one, both wa
   } finally {
     RANK2.on = rank;
     VOLT_MELDS.on = volt;
+    MELDS8.on = eight;
   }
   // (with Volatile's five on, a damage word and Volatile meld too, and the refusal says so)
   assert.equal(meldProblem('swift', 'fire'), VOLT_MELDS.on ? 'Only damage words and Volatile meld' : 'Only damage words meld');
