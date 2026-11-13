@@ -32,7 +32,9 @@ export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley'
   | 'jab' | 'cross' | 'slip'
   // (THE VETERAN, behind VETERAN: his Punch (a tap), his Kick (a hold), his Jump (a swipe); art/veteran_icons.ts, a first pass
   // to show him)
-  | 'vetpunch' | 'vetkick' | 'vetjump';
+  | 'vetpunch' | 'vetkick' | 'vetjump'
+  // (THE MAGE'S AND THE RANGER'S MOVES TO SWAP, behind SWAP_MOVES: her Ball and Spear; his Snare, Snipe and Rally; art/ability_icons.ts)
+  | 'ball' | 'spear' | 'snare' | 'snipe' | 'rally';
 
 /** Power words: dropped by enemies, slotted into an ability to change it. */
 export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding' | 'pulling' | 'splitting' | 'hexing' | 'stilling' | 'binding'

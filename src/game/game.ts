@@ -14806,6 +14806,18 @@ export class Game {
     return kind && this.aura.on > 0 ? { kind, r: SWAP_TUNE.aura.r, t: SWAP_TUNE.aura.secs - this.aura.on } : null;
   }
 
+  /** (THE RANGER'S SNIPE) While he draws it: where he aims, and how full the draw is (0 to 1); null, he is not drawing. */
+  snipeDraw(): { tx: number; ty: number; power: number } | null {
+    const ch = this.hero.channel;
+    if (!ch || this.hero.skills[ch.skill]?.id !== 'snipe') return null;
+    return { tx: ch.tx, ty: ch.ty, power: Math.min(1, ch.t / SWAP_TUNE.snipe.full) };
+  }
+
+  /** (THE RANGER'S RALLY) While it lasts: its seconds left, and since he called. */
+  rallyNow(): { left: number; since: number } | null {
+    return this.rallyT > 0 ? { left: this.rallyT, since: SWAP_TUNE.rally.secs - this.rallyT } : null;
+  }
+
   /** (THE MAGE'S AURA) Its kind, where she has its stone (her pick on it; fire till she picks). */
   private auraKind(): AuraKind | null {
     if (!SWAP_MOVES.on || this.hero.cls !== 'mage' || !this.has('aura')) return null;

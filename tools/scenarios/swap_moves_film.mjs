@@ -2,7 +2,7 @@
 // room, a frame at a time, a caption over each part (THE LOOKS ARE STAND-INS: a ball of light, a streak, a ring, the trap's jaws).
 //   node tools/build_to.mjs dist/swapfilm.html
 //   CLS=mage node tools/playtest.mjs --file dist/swapfilm.html --touch --size 844x390 --dpr 2 --scenario tools/scenarios/swap_moves_film.mjs --out shots/swapfilm/mage/f
-//   env FROM=s: no stills before then (the game runs on at its own pace).
+//   env ONLY=s,s,...: stills at those seconds only. FROM=s: no stills before then (the game runs on at its own pace).
 //   then: ffmpeg -framerate 30 -i shots/swapfilm/mage/f_f%03d.png -pix_fmt yuv420p mage.mp4
 const FPS = 30;
 
@@ -108,18 +108,18 @@ export default async function (page, snap) {
       return run(dt, c);
     };
   }, [P.plan, ids]);
-  const c0 = await page.evaluate(() => window.__dbg.clock());
   const total = Math.round(P.secs * FPS);
   const from = Number(process.env.FROM || 0);
   for (let i = 0; i < total; i++) {
-    const skip = i / FPS < from;
+    const only = process.env.ONLY ? process.env.ONLY.split(',').map(Number) : null;
+    const skip = only ? !only.some((s) => Math.abs(i / FPS - s) < 0.5 / FPS) : i / FPS < from;
     await page.evaluate((s) => { window.__dbg.slowmo = s; }, skip ? 1 : 0.25);
+    // (by the film's own clock, the one its plan runs by)
     await page.waitForFunction((at) => {
-      const d = window.__dbg;
-      if (d.clock() < at) return false;
-      d.slowmo = 1e-6;
+      if (window.__sfilm.t < at) return false;
+      window.__dbg.slowmo = 1e-6;
       return true;
-    }, c0 + i / FPS, { polling: 'raf', timeout: 120000 });
+    }, i / FPS, { polling: 'raf', timeout: 120000 });
     if (skip) continue;
     await snap(`f${String(i).padStart(3, '0')}`);
     if (i % 90 === 0) console.log(`  ${(i / FPS).toFixed(1)} s`);

@@ -2,14 +2,14 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
+import { drawAura as drawSwapAura, drawBall, drawRally, drawRallyAir, drawSnare, drawSnipeDraw, drawSnipeStreak, drawSpear } from './swap_fx';
+import { SWAP_MOVES } from '../game/talents';
 import { LIVING_SHADOW } from '../art/shadow_art';
 import { warlockAskAhead } from './warlock_packs';
 import type { AskPack } from './warlock_packs';
 import { COLOSSUS, HIS_PLACE, onStoneOrJetty, stoneToWorld, worldToStone } from '../game/colossus_fight';
 import { colossusOf, colossusOn } from '../game/act1_rules/colossus';
 /** (COLOSSUS) How far the picture leans up toward him on his stone (game pixels). */
-/** (THE MAGE'S SPEAR, its stand-in look) the streak's colour by its element. */
-const MSPEAR_COLOR: Record<string, string> = { phys: '#e8eef8', fire: '#ff8a3c', frost: '#8ad0ff', lightning: '#f8e060', poison: '#9ad04a' };
 const COLOSSUS_LEAN = 55;
 /** (COLOSSUS) As he changes, how far down the screen his middle at the water is put (the art chat's stills: 131 of 234). */
 const COLOSSUS_SHOW = 0.6;
@@ -2664,7 +2664,9 @@ export class Renderer {
           j++;
         }
       }
-      g.drawImage(sp.img, Math.round(cx) - sp.ax, Math.round(cy) - sp.ay);
+      // (THE RANGER'S SNARE, game/swap_moves.ts: its rope, render/swap_fx.ts)
+      if (tr.snare) drawSnare(g, cam, tr.x, tr.y, tr.arm <= 0, t);
+      else g.drawImage(sp.img, Math.round(cx) - sp.ax, Math.round(cy) - sp.ay);
     }
     // A volley's patch of ground (Version 12.2): marked from the moment the arrows leave the bow,
     // so that the player sees where they will come down. While they are still in the air a second
@@ -4144,28 +4146,11 @@ export class Renderer {
       }
     }
 
-    // (THE MAGE'S AURA, game/swap_moves.ts, behind SWAP_MOVES: a stand-in till its own picture: a ring of her pick's colour on the
-    // floor round her, edged in the friend's cyan, breathing)
-    const aura = game.auraNow();
-    if (aura) {
-      const h = game.hero;
-      const col = aura.kind === 'fire' ? '#ff8a3c' : aura.kind === 'lightning' ? '#f8e060' : '#8ad0ff';
-      const breathe = 0.55 + 0.25 * Math.sin(t * 4);
-      for (const [rr, c, a] of [[aura.r, col, breathe], [aura.r - 0.12, '#5ff0ff', breathe * 0.6]] as const) {
-        g.globalAlpha = a;
-        g.strokeStyle = c;
-        g.lineWidth = 1;
-        g.beginPath();
-        for (let k = 0; k <= 40; k++) {
-          const ang = (k / 40) * Math.PI * 2;
-          const px = wx(cam, h.x + Math.cos(ang) * rr, h.y + Math.sin(ang) * rr);
-          const py = wy(cam, h.x + Math.cos(ang) * rr, h.y + Math.sin(ang) * rr);
-          if (k === 0) g.moveTo(px, py);
-          else g.lineTo(px, py);
-        }
-        g.stroke();
-      }
-      g.globalAlpha = 1;
+    // (THE MAGE'S AURA, THE RANGER'S SNIPE DRAWN AND HIS RALLY, game/swap_moves.ts, behind SWAP_MOVES: render/swap_fx.ts)
+    if (SWAP_MOVES.on) {
+      drawSwapAura(g, cam, game, t);
+      drawSnipeDraw(g, cam, game, t);
+      drawRally(g, cam, game, t);
     }
 
     // The orb the staff has set down: a large ball hanging over the floor. It comes in at a pop,
@@ -4236,7 +4221,7 @@ export class Renderer {
       // (THE WARLOCK'S BOLT is his fire alone, drawn with the effects: render/warlock_fx.ts drawBolt. Till 12 Nov 2026 a ball of
       // light, the purple of its element, was drawn at its nose here as well, under the fire: his words of the bolt in play that day,
       // “fix the hellfire projectile so it’s tail doesn’t only face one way as well”; and a purple glow is the enemy's)
-      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great' && p.look !== 'hellbolt' && p.look !== 'mspear') {
+      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great' && p.look !== 'hellbolt' && p.look !== 'mspear' && p.look !== 'ball') {
         // (a familiar's bolt is a small bright mote; anything else that is not an arrow (nor a wave, nor a dart) is a ball of light)
         const mote = p.look === 'mote';
         const frames = mote ? [art.spells.mote[p.element]] : art.icons.orb[p.element];
@@ -4244,8 +4229,7 @@ export class Renderer {
         const mine = !p.hostile;
         const power = mine && p.words.includes('power');
         const volatile = mine && p.words.includes('volatile');
-        // (THE MAGE'S BALL, game/swap_moves.ts: a stand-in till its own picture, the ball of light drawn large)
-        const scale = mote ? (power ? 1.8 : 1) : p.r > 0.4 || power || p.look === 'ball' ? 2 : 1;
+        const scale = mote ? (power ? 1.8 : 1) : p.r > 0.4 || power ? 2 : 1;
         const sp = frames[Math.floor(p.age * 12) % frames.length];
         // Volatile will not hold still
         const jx = volatile ? Math.round((Math.random() - 0.5) * 3) : 0;
@@ -4436,26 +4420,13 @@ export class Renderer {
         if (onScreen(p.x, p.y)) fx.uniques.drawBlade(g, cam, p, t);
         continue;
       }
-      // (THE MAGE'S SPEAR, game/swap_moves.ts: a stand-in till its own picture: a thin streak of her element along its flight, its
-      // head lit; of no element of its own, as his words have it)
-      if (p.look === 'mspear') {
-        if (onScreen(p.x, p.y)) {
-          const v = Math.hypot(p.vx, p.vy) || 1;
-          const bx = p.x - (p.vx / v) * 1.1;
-          const by = p.y - (p.vy / v) * 1.1;
-          const x0 = wx(cam, bx, by), y0 = wy(cam, bx, by) - 10, x1 = wx(cam, p.x, p.y), y1 = wy(cam, p.x, p.y) - 10;
-          const col = MSPEAR_COLOR[p.element] ?? MSPEAR_COLOR.phys;
-          g.strokeStyle = col;
-          g.lineWidth = 2;
-          g.beginPath();
-          g.moveTo(Math.round(x0) + 0.5, Math.round(y0) + 0.5);
-          g.lineTo(Math.round(x1) + 0.5, Math.round(y1) + 0.5);
-          g.stroke();
-          g.fillStyle = '#ffffff';
-          g.fillRect(Math.round(x1) - 1, Math.round(y1) - 1, 3, 3);
-        }
+      // (THE MAGE'S BALL and SPEAR, game/swap_moves.ts: render/swap_fx.ts)
+      if (p.look === 'ball' || p.look === 'mspear') {
+        if (onScreen(p.x, p.y)) (p.look === 'ball' ? drawBall : drawSpear)(g, cam, p.x, p.y, p.vx, p.vy, p.element, t);
         continue;
       }
+      // (THE RANGER'S SNIPE: the streak behind the arrow it loosed, under the arrow)
+      if (!p.hostile && p.look === 'arrow' && game.hero.skills[p.skill]?.id === 'snipe' && onScreen(p.x, p.y)) drawSnipeStreak(g, cam, p.x, p.y, p.vx, p.vy);
       // (THE NEW MONSTERS: a Boneward's spear, flying low from its hand to where it comes down)
       if (p.look === 'spear') {
         const v = Math.hypot(p.vx, p.vy) || 1;
@@ -4809,6 +4780,8 @@ export class Renderer {
     if (!this.skip.has('fx')) fx.drawAir(g, cam);
     // (THE VETERAN's over everything: his smears, his force, the bursts of his blows; his globes: render/veteran_fx.ts)
     if (!this.skip.has('fx')) this.vetFx.drawAir(g, cam, game);
+    // (THE RANGER'S RALLY, over the figures: render/swap_fx.ts)
+    if (SWAP_MOVES.on && !this.skip.has('fx')) drawRallyAir(g, cam, game, t);
     if (MELD3.on && !this.skip.has('fx')) overM3(g, cam, t);
     if (VOLATILE3.on && !this.skip.has('fx')) overV3(g, cam, t);
     if (!game.scene) this.drawWordDrops(g, W, H, game, t);
