@@ -13,7 +13,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import type { RNG } from '../src/engine/rng';
-import { SKILLS, WORDS } from '../src/game/defs';
+import { FOE_WORDS, SKILLS, WORDS } from '../src/game/defs';
 import { HAND_IN } from '../src/game/defs';
 import { Game, newMeta } from '../src/game/game';
 import type { ItemRef } from '../src/game/game';
@@ -591,7 +591,8 @@ test('a melded word goes on attacks and gear: not laid on the gate, not kept in 
     assert.ok(i >= 0);
     const why = g.imbueProblem({ kind: 'bag', i } as ItemRef, 'eruption');
     assert.ok(why === null || why === 'That piece is full' || why === 'It already has what this word gives', `on gear, yes: ${why}`);
-    assert.equal(g.planProblem('eruption'), 'A melded word goes on attacks and gear only');
+    // (EVERY WORD ON A DUNGEON, FOE_WORDS, on at his yes of 12 Nov 2026: a melded word goes on the gate too: tests/foe_melds.test.ts)
+    assert.equal(g.planProblem('eruption'), FOE_WORDS.on ? null : 'A melded word goes on attacks and gear only');
     g.hero.gold = 1e6;
     assert.equal(g.depositWord('eruption'), 'The Lexicon keeps no melded word');
     assert.equal(g.socket(0, 'front', 'eruption'), null, 'on an attack, yes');

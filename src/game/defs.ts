@@ -1176,10 +1176,10 @@ export function wordShare(m: { words: readonly WordId[]; half?: readonly WordId[
  * EVERY WORD ON A DUNGEON. His words, 4 Nov 2026, 19:07: “And ALL words need to be craftable on items and put into strongholds.”
  * Talked through 12 Nov 2026 (the Crafting chat, by pop-up): a melded word and a ranked one go on a stronghold's altar, “Counts
  * as two words (Recommended)”, and on the town's gate, “Yes, the gate too (Recommended)”; on a monster a melded word is “Both
- * words plus a twist (Recommended)” (game/foe_melds.ts), a ranked word its word “half as strong again”. OFF until his yes to it
- * in play (its grounds and rings are new to the eye).
+ * words plus a twist (Recommended)” (game/foe_melds.ts), a ranked word its word “half as strong again”. ON at his yes to the film of
+ * them in play (docs/mockups/foe_melds/pictures/enemy_melds.mp4), 12 Nov 2026: “Yes, hand it to main (Recommended)”.
  */
-export const FOE_WORDS = { on: false };
+export const FOE_WORDS = { on: true };
 /** A ranked word on a monster: its word this much as strong (Rank II on an attack is half as strong again). */
 export const FOE_RANK = 1.5;
 /** Each base word's Rank II, for the monsters' share (above). */

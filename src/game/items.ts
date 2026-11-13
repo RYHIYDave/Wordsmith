@@ -1426,10 +1426,10 @@ export function rarityFor(count: number): Rarity {
 // GEAR, MELD_GEAR_STRENGTH), as two lines each rolled on its own; asked what was left, 12 Nov 2026 (the Crafting chat): “One line,
 // crafting only (Recommended)”: a melded word's two properties of one kind (two kinds of damage, two resistances) are rolled
 // once and shown as one line, “+25% Frost and Lightning Damage”; only from melded words at the bench, never on found gear. A
-// pair of two kinds (Strength and fire damage, flat damage and a percentage) stays two lines. Behind MELD_LINE: OFF until his yes
-// to its picture.
+// pair of two kinds (Strength and fire damage, flat damage and a percentage) stays two lines. Behind MELD_LINE: ON at his yes to its
+// picture (docs/mockups/foe_melds/pictures/card_now_and_one_line.png), 12 Nov 2026: “Yes, hand it to main (Recommended)”.
 
-export const MELD_LINE = { on: false };
+export const MELD_LINE = { on: true };
 const DAMAGE_PCT: readonly StatKey[] = ['physPct', 'firePct', 'frostPct', 'lightPct'];
 const RESIST: readonly StatKey[] = ['fireRes', 'frostRes', 'lightRes'];
 /** Two stats a melded word's property may show as one line: both a kind of damage, or both a resistance. */

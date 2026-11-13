@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { SKILLS, WORDS } from '../src/game/defs';
+import { FOE_WORDS, SKILLS, WORDS } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { imbueProblem } from '../src/game/items';
 import { MELD, MELD_TUNE, RANK2, VOLT_MELDS, isDamageWord, meldOf, meldProblem, partsOf, savedWords, withParts, wordIds } from '../src/game/melds';
@@ -124,7 +124,9 @@ test('a ranked word goes on attacks and gear: not laid on the gate, not kept in 
   const g = seasoned(new Game('warrior', 8), 10);
   const h = g.hero;
   h.words.poison2 = 1;
-  assert.equal(g.planProblem('poison2'), 'A ranked word goes on attacks and gear only');
+  // (EVERY WORD ON A DUNGEON, FOE_WORDS, on at his yes of 12 Nov 2026: a ranked word goes on the gate too: tests/foe_melds.test.ts)
+  if (FOE_WORDS.on) assert.notEqual(g.planProblem('poison2'), 'A ranked word goes on attacks and gear only');
+  else assert.equal(g.planProblem('poison2'), 'A ranked word goes on attacks and gear only');
   assert.equal(g.depositWord('poison2'), 'The Lexicon keeps no ranked word');
   const piece = Object.values(h.gear).find((it) => it && it.affixes.length + it.imbues.length < 4);
   if (piece) assert.equal(imbueProblem(piece, 'poison2'), null);

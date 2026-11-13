@@ -57,10 +57,10 @@ frozen (he can be: `rooted`/`frozen` in game.ts); Fervor's a count on the monste
 My readings, told him: a melded word on the altar or the gate brings its own elements, and no other word of an element may lie
 beside it; nor a word already in a melded word on it (no Frost beside Hailstorm, no Power II beside Eruption).
 
-## What is built (all behind switches that are OFF: with them off the game is as it was)
+## What is built (behind two switches, both ON on this branch at his yes, below; off, the game is as it was)
 
 `src/game/foe_melds.ts` (new) has the rules, the numbers (FOE_TUNE: starting points to tune) and the twists' words (FOE_TEXT).
-Its switch is `FOE_WORDS` in `src/game/defs.ts` (wordShare reads it there, for the ranked words).
+Its switch is `FOE_WORDS` in `src/game/defs.ts` (wordShare reads it there, for the ranked words): ON.
 
 - THE ALTAR AND THE GATE (game.ts altarProblem, planProblem): melded and ranked words go on, with the readings above
   (foe_melds.ts layProblem). The gate's words kept in a save include them (HELD_WORD_IDS).
@@ -76,7 +76,7 @@ Its switch is `FOE_WORDS` in `src/game/defs.ts` (wordShare reads it there, for t
   ground is a hostile `burn` or `venom` zone with `foe` set; it harms the hero, not the monsters), the hero's ticks (Frostbite).
   Their looks are the game's own (the warning ring, the ground fire and poison, frost bolts, arcs): nothing new drawn.
 - THE WORD'S PAGE (ui/lexicon.ts): ON A DUNGEON, for a melded or ranked word, what it does to every monster and “Counts as two words”.
-- THE ONE-LINE MELD CARD, behind `MELD_LINE` (game/items.ts, OFF): a melded word's two properties of one kind (two damages, two
+- THE ONE-LINE MELD CARD, behind `MELD_LINE` (game/items.ts, ON): a melded word's two properties of one kind (two damages, two
   resistances) rolled once, one line: “Hailstorm: +20% Frost and Lightning Damage” (imbueLines, used by the card, the bench's word
   and the burned message). Pairs of two kinds stay two lines. Only from melded words; nothing on found gear changes.
 - Made public in game.ts for the module: shutIn, after, hurtFrom, shootAt, damageMonster (nothing else of them changed).
@@ -102,4 +102,14 @@ NOT CHECKED: his phone; a stronghold played through with melded words laid; the 
 
 ## His word on the pictures
 
-(below, as he gives it)
+12 Nov 2026, about 21:25 Eastern, sent both pictures and asked by pop-up whether to hand it all to the main chat switched on:
+“Yes, hand it to main (Recommended)”. So FOE_WORDS and MELD_LINE are ON on this branch; tests/melds.test.ts and tests/rank2.test.ts
+(which held melded and ranked words off the gate) now follow the switch.
+
+## For the main chat
+
+Merge `build/meld-words-everywhere` (from main ac80ec7; it touches game.ts in about a dozen marked places, defs.ts wordShare,
+items.ts imbueItem, state.ts four fields, lexicon.ts, panels.ts, inventory.ts, main.ts __dbg). Nothing to bake. Tell him what
+changes in play: melded and ranked words go on stronghold altars and the town gate and count as two; monsters carry their twists.
+To tune once he has played it: FOE_TUNE (foe_melds.ts) and the strongholds' tables past three words (upTo). When the eight new
+melds go live (put-eight-new-melds-live), add their eight twists here as the table above has them.
