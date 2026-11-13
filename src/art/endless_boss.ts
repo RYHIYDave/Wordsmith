@@ -2925,7 +2925,7 @@ export function wsMob(): Mob {
       for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
     },
     grains: (st: Stage, m: Moment) => m.move === 'death' ? deathGrains(m.t, DEATH_HEART()) : boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, blight: { name: 'blight', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -3482,6 +3482,196 @@ export function paintAvalanche(t: number, view: 'front' | 'rear', nearer: V3 | n
 }
 
 
+// BLIGHT (Power and Poison, melded: the game's meld, render/melds3.ts, “a dead tree standing in rot”): he writes Power, his shade
+// writes Poison; melded, the slam drives the rune down into the floor before him, and THE ROT SPREADS out of where it went in: a
+// stain of black-green rot creeping over the floor in long fingers, forking as they go (the warning: the rotted floor flushed in
+// the colour of every boss's warning on the ground, its creeping front hot); then the rot HEAVES: from the rune outward, dead trees
+// punch up out of it everywhere it reached, gnarled trunks and spiked branches, his pink seeping from their cracks, rotten clods
+// thrown up with them, spores rising; they stand a moment, then crack, crumble and sink back into the rot, which dries and is gone.
+// His rules for the words stand: one rune (the meld's), what it makes made as solids (the trees).
+export const BLIGHT = { at: 2.4, fingers: 8, core: 1.3, spread: [0.05, 1.35] as const, heave: 1.5, ripple: 0.3, rise: 0.14, hold: 0.75, wither: 0.9, dry: 1.0, end: 6.3 };
+export const BLIGHT_CANVAS: MobCanvas = { w: 980, h: 640, ax: 380, ay: 360 };
+export const BLIGHT_AT: V3 = [BLIGHT.at * TILE, 0, 0];
+const BARK: Ramp = ['#0a0908', '#1a1812', '#2c2a1c', '#44452a', '#606638'];
+const DEAD_ASH: Ramp = ['#141214', '#2a2628', '#48424a', '#6e6670', '#948c96'];
+/** The rot's fingers: each a line of points over the floor (his floor point's own lengths), how wide it is at each (half), and how
+ * far the rot has crept to reach each, from where the rune went in. */
+export const BLIGHT_FINGERS: ReadonlyArray<{ pts: V3[]; w: number[]; d: number[] }> = ((): { pts: V3[]; w: number[]; d: number[] }[] => {
+  const out: { pts: V3[]; w: number[]; d: number[] }[] = [];
+  const grow = (x0: number, y0: number, a0: number, L: number, w0: number, d0: number, seed: number, depth: number): void => {
+    const pts: V3[] = [], w: number[] = [], d: number[] = [];
+    let x = x0, y = y0, a = a0;
+    const n = Math.ceil(L / 4);
+    for (let i = 0; i <= n; i++) {
+      const f = i / n;
+      pts.push([x, y, 0]); w.push(w0 * (1 - 0.75 * f)); d.push(d0 + f * L);
+      a += (hash(seed, i, 9501) - 0.5) * 0.45;
+      x += (Math.cos(a) * L) / n; y += (Math.sin(a) * L) / n;
+    }
+    out.push({ pts, w, d });
+    if (depth < 1) for (let b = 0; b < 2; b++) {
+      if (hash(seed, b, 9502) < 0.3) continue;
+      const j = Math.floor(n * (0.3 + 0.4 * hash(seed, b, 9503)));
+      grow(pts[j][0], pts[j][1], a0 + (b ? 1 : -1) * (0.5 + 0.5 * hash(seed, b, 9504)), L * (0.35 + 0.25 * hash(seed, b, 9505)), w[j] * 0.8, d[j], seed * 7 + b + 1, depth + 1);
+    }
+  };
+  for (let f = 0; f < BLIGHT.fingers; f++) {
+    const a = (f / BLIGHT.fingers) * TAU + 0.3 + (hash(f, 1, 9506) - 0.5) * 0.45;
+    const r0 = BLIGHT.core * TILE * 0.8;
+    grow(BLIGHT_AT[0] + Math.cos(a) * r0, BLIGHT_AT[1] + Math.sin(a) * r0, a, (3.0 + 2.0 * hash(f, 2, 9507)) * TILE, (0.32 + 0.14 * hash(f, 3, 9508)) * TILE, r0, f + 1, 0);
+  }
+  return out;
+})();
+/** THE ROT'S REACH over the floor, worked out once: a grid (a cell a length) of how far the rot has to creep to reach each spot, and
+ * how deep into a finger it is (1 at its middle, 0 at its edge); nothing where it never reaches. */
+export const BLIGHT_FIELD = ((): { x0: number; y0: number; w: number; h: number; at: Float32Array; deep: Float32Array; far: number } => {
+  const R = 7.5 * TILE;
+  const x0 = Math.floor(BLIGHT_AT[0] - R), y0 = Math.floor(BLIGHT_AT[1] - R), w = Math.ceil(2 * R), h = Math.ceil(2 * R);
+  const at = new Float32Array(w * h).fill(Infinity), deep = new Float32Array(w * h);
+  const mark = (cx: number, cy: number, d: number, dp: number): void => {
+    const k = (cy - y0) * w + (cx - x0);
+    if (cx < x0 || cy < y0 || cx >= x0 + w || cy >= y0 + h) return;
+    if (d < at[k]) at[k] = d;
+    if (dp > deep[k]) deep[k] = dp;
+  };
+  const core = BLIGHT.core * TILE;
+  for (let yy = -core; yy <= core; yy++) for (let xx = -core; xx <= core; xx++) {
+    const r = Math.hypot(xx, yy);
+    const rim = core * (0.85 + 0.15 * Math.sin(Math.atan2(yy, xx) * 5));
+    if (r < rim) mark(Math.round(BLIGHT_AT[0] + xx), Math.round(BLIGHT_AT[1] + yy), r, 1 - r / rim);
+  }
+  let far = core;
+  for (const fg of BLIGHT_FINGERS) for (let i = 1; i < fg.pts.length; i++) {
+    const [ax, ay] = fg.pts[i - 1], [bx, by] = fg.pts[i];
+    const L = Math.hypot(bx - ax, by - ay) || 1, wm = Math.max(fg.w[i - 1], fg.w[i]);
+    for (let yy = Math.floor(Math.min(ay, by) - wm); yy <= Math.ceil(Math.max(ay, by) + wm); yy++) for (let xx = Math.floor(Math.min(ax, bx) - wm); xx <= Math.ceil(Math.max(ax, bx) + wm); xx++) {
+      const u = clamp01(((xx - ax) * (bx - ax) + (yy - ay) * (by - ay)) / (L * L));
+      const px = ax + (bx - ax) * u, py = ay + (by - ay) * u, dist = Math.hypot(xx - px, yy - py);
+      const ww = (fg.w[i - 1] + (fg.w[i] - fg.w[i - 1]) * u) * (0.85 + 0.3 * hash(Math.floor(xx / 5), Math.floor(yy / 5), 9509));
+      if (dist > ww) continue;
+      const d = fg.d[i - 1] + (fg.d[i] - fg.d[i - 1]) * u + dist * 0.5;
+      far = Math.max(far, d);
+      mark(xx, yy, d, 1 - dist / ww);
+    }
+  }
+  return { x0, y0, w, h, at, deep, far };
+})();
+/** How far the rot has crept (as `BLIGHT_FIELD`'s `at`), `t` into the move. */
+export const blightReach = (t: number): number => {
+  const u = clamp01((t - MELD.slam - BLIGHT.spread[0]) / (BLIGHT.spread[1] - BLIGHT.spread[0]));
+  return (1 - (1 - u) * (1 - u) * (1 - u)) * BLIGHT_FIELD.far * 1.02 + (u > 0 ? 1 : -1);
+};
+/** The rot at a spot of the floor: how far it had to creep to get there (Infinity, never), and how deep into a finger it is. */
+export function blightAt(x: number, y: number): { at: number; deep: number } {
+  const cx = Math.round(x) - BLIGHT_FIELD.x0, cy = Math.round(y) - BLIGHT_FIELD.y0;
+  if (cx < 0 || cy < 0 || cx >= BLIGHT_FIELD.w || cy >= BLIGHT_FIELD.h) return { at: Infinity, deep: 0 };
+  const k = cy * BLIGHT_FIELD.w + cx;
+  return { at: BLIGHT_FIELD.at[k], deep: BLIGHT_FIELD.deep[k] };
+}
+/** The dead trees: where each stands (his floor point's own lengths), how big, and when it bursts up (the move's own time). */
+export const BLIGHT_TREES: ReadonlyArray<{ at: V3; size: number; t: number; seed: number }> = ((): { at: V3; size: number; t: number; seed: number }[] => {
+  const out: { at: V3; size: number; t: number; seed: number }[] = [];
+  const when = (d: number): number => MELD.slam + BLIGHT.heave + BLIGHT.ripple * (d / BLIGHT_FIELD.far);
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * TAU + 0.5, r = (0.3 + 0.25 * hash(i, 1, 9511)) * BLIGHT.core * TILE;
+    out.push({ at: [BLIGHT_AT[0] + Math.cos(a) * r, BLIGHT_AT[1] + Math.sin(a) * r, 0], size: 1.45 + 0.2 * hash(i, 2, 9512), t: when(r), seed: i });
+  }
+  for (const [f, fg] of BLIGHT_FINGERS.entries()) {
+    const L = fg.d[fg.d.length - 1] - fg.d[0];
+    if (L < 1.4 * TILE) continue;
+    const n = Math.max(1, Math.round(L / (1.7 * TILE)));
+    for (let j = 0; j < n; j++) {
+      const u = (j + 0.4 + 0.3 * hash(f, j, 9513)) / n, i = Math.min(fg.pts.length - 2, Math.floor(u * (fg.pts.length - 1))), v = u * (fg.pts.length - 1) - i;
+      const a = fg.pts[i], b = fg.pts[i + 1], w = fg.w[i] + (fg.w[i + 1] - fg.w[i]) * v;
+      const nx = -(b[1] - a[1]), ny = b[0] - a[0], nl = Math.hypot(nx, ny) || 1, side = (hash(f, j, 9514) - 0.5) * 0.6 * w;
+      const at: V3 = [a[0] + (b[0] - a[0]) * v + (nx / nl) * side, a[1] + (b[1] - a[1]) * v + (ny / nl) * side, 0];
+      out.push({ at, size: 0.85 + 0.55 * (w / (0.46 * TILE)) * (0.8 + 0.4 * hash(f, j, 9515)), t: when(fg.d[i] + (fg.d[i + 1] - fg.d[i]) * v), seed: 100 + f * 31 + j });
+    }
+  }
+  return out;
+})();
+/** THE BLIGHT'S SOLIDS, `t` into the move: the dead trees punching up out of the rot, standing, cracking, crumbling and sinking
+ * back; splinters thrown up with them; spores rising. */
+export function blightBits(t: number, put: Put, keep: (x: number, y: number) => boolean = () => true): void {
+  const out = (t2: number): number => { const c = clamp01(t2); const s2 = 1.9; return 1 + (s2 + 1) * Math.pow(c - 1, 3) + s2 * Math.pow(c - 1, 2); };
+  for (const [n, tr] of BLIGHT_TREES.entries()) {
+    const u = t - tr.t;
+    if (u < 0 || !keep(tr.at[0], tr.at[1])) continue;
+    const wi = clamp01((u - BLIGHT.rise - BLIGHT.hold) / BLIGHT.wither);
+    if (wi >= 1) continue;
+    const g = out(u / BLIGHT.rise) * (1 - wi);
+    const S = tr.size, sd = tr.seed;
+    const H = (52 + 30 * hash(sd, 1, 9521)) * S;
+    const la = hash(sd, 2, 9522) * TAU, lean = (0.12 + 0.2 * hash(sd, 3, 9523)) * H;
+    const ramp = wi > 0.15 ? DEAD_ASH : BARK;
+    const part = `tree${n % 6}`;
+    // (its trunk, gnarled, bent at two knees, thick at its foot; the whole of it rising out of the rot, scaled up out of it as it
+    // punches up)
+    const P = (fx: number, fy: number, fz: number): V3 => [tr.at[0] + fx * g, tr.at[1] + fy * g, fz * g];
+    const k1: V3 = [Math.cos(la + 1.2) * lean * 0.3, Math.sin(la + 1.2) * lean * 0.3, H * 0.34];
+    const k2: V3 = [Math.cos(la - 0.4) * lean * 0.6, Math.sin(la - 0.4) * lean * 0.6, H * 0.66];
+    const top: V3 = [Math.cos(la) * lean, Math.sin(la) * lean, H];
+    const trunk: [V3, V3, number, number][] = [[[0, 0, 0], k1, 4.6 * S, 3.2 * S], [k1, k2, 3.2 * S, 2.0 * S], [k2, top, 2.0 * S, 0.7 * S]];
+    for (const [a2, b2, ra, rb] of trunk) put(part, 'trunk', { k: 'rod', a: P(...a2), b: P(...b2), ra: ra * Math.max(0.4, g), rb: rb * Math.max(0.4, g), ramp });
+    // (its roots, clawing out over the rot at its foot)
+    for (let r = 0; r < 4; r++) {
+      const ra = la + (r / 4) * TAU + hash(sd, r, 9524);
+      const kn: V3 = [Math.cos(ra) * 7 * S, Math.sin(ra) * 7 * S, 4 * S];
+      put(part, 'root', { k: 'rod', a: P(0, 0, 6 * S), b: P(...kn), ra: 2.6 * S, rb: 1.4 * S, ramp });
+      put(part, 'root', { k: 'rod', a: P(...kn), b: P(Math.cos(ra + 0.3) * 14 * S, Math.sin(ra + 0.3) * 14 * S, 0.5), ra: 1.4 * S, rb: 0.4, ramp });
+    }
+    // (its branches, dead, crooked: reaching out and up from its upper knee and its top, bent once, forking into claws at their
+    // ends; the first of it to break off as it crumbles)
+    if (wi < 0.5) for (const [bi, from] of ([k2, top] as V3[]).entries()) for (let b = 0; b < (bi === 0 ? 2 : 3); b++) {
+      const h0 = hash(sd, bi * 5 + b, 9525), h1 = hash(sd, bi * 5 + b, 9526), h2 = hash(sd, bi * 5 + b, 9527);
+      const ba = la + (bi === 0 ? (b ? 1 : -1) * (1.2 + 0.8 * h0) : (b - 1) * 1.6 + (h0 - 0.5) * 0.8), up = 0.35 + 0.55 * h1, L = (16 + 12 * h2) * S * (1 - wi * 2);
+      const elbow: V3 = [from[0] + Math.cos(ba) * L * 0.55, from[1] + Math.sin(ba) * L * 0.55, from[2] + up * L * 0.3];
+      const tip: V3 = [elbow[0] + Math.cos(ba + 0.5) * L * 0.5, elbow[1] + Math.sin(ba + 0.5) * L * 0.5, elbow[2] + up * L * 0.8];
+      put(part, 'branch', { k: 'rod', a: P(...from), b: P(...elbow), ra: 1.6 * S, rb: 1.0 * S, ramp });
+      put(part, 'branch', { k: 'rod', a: P(...elbow), b: P(...tip), ra: 1.0 * S, rb: 0.35, ramp });
+      for (const c of [-0.7, 0.7]) {
+        const tl = L * 0.32;
+        put(part, 'twig', { k: 'rod', a: P(...tip), b: P(tip[0] + Math.cos(ba + c) * tl, tip[1] + Math.sin(ba + c) * tl, tip[2] + tl * 0.5), ra: 0.5 * S, rb: 0.25, ramp });
+      }
+      const sa = ba - 0.9;
+      put(part, 'twig', { k: 'rod', a: P(...elbow), b: P(elbow[0] + Math.cos(sa) * L * 0.3, elbow[1] + Math.sin(sa) * L * 0.3, elbow[2] + L * 0.25), ra: 0.6 * S, rb: 0.25, ramp });
+    }
+    // (his pink seeping out of the cracks in its bark, going out as it dies)
+    if (wi < 0.3) for (let c = 0; c < 2; c++) {
+      const f = 0.2 + 0.35 * c, [a, b] = f < 0.38 ? [[0, 0, 0] as V3, k1] : f < 0.72 ? [k1, k2] : [k2, top];
+      const v = hash(sd, c, 9529);
+      const q: V3 = [a[0] + (b[0] - a[0]) * v, a[1] + (b[1] - a[1]) * v, a[2] + (b[2] - a[2]) * v];
+      put('seep', 'seep', { k: 'mote', p: P(q[0] + Math.cos(la + c) * 2.2 * S, q[1] + Math.sin(la + c) * 2.2 * S, q[2]), c: c % 2 ? '#ff4f8a' : '#ff9cc0', size: 1 });
+    }
+    // (splinters of the floor and rot thrown up as it bursts out, falling back)
+    if (u < 0.7) for (let c = 0; c < 6; c++) {
+      const a2 = hash(sd, c, 9530) * TAU, sp = 40 + 60 * hash(sd, c, 9531), vz = 90 + 90 * hash(sd, c, 9532), gz = 520;
+      const w = Math.min(u, (2 * vz) / gz);
+      put('splinters', 'splinter', { k: 'mote', p: [tr.at[0] + Math.cos(a2) * sp * w, tr.at[1] + Math.sin(a2) * sp * w, Math.max(0, vz * w - 0.5 * gz * w * w)], c: c % 3 ? '#2c2a1c' : '#7e9a3a', size: 2 });
+    }
+    // (spores rising off it while it stands)
+    if (wi === 0 && u > BLIGHT.rise) for (let c = 0; c < 3; c++) {
+      const v = ((u - BLIGHT.rise) * 0.8 + hash(sd, c, 9534)) % 1;
+      put('spores', 'spore', { k: 'mote', p: [tr.at[0] + Math.cos(c * 2.1 + sd) * 10 * S + 6 * v, tr.at[1] + Math.sin(c * 2.1 + sd) * 10 * S, 8 + 50 * v * S], c: '#b8cc7a', size: v < 0.5 ? 2 : 1 });
+    }
+    // (crumbling: its ash falling off it as it sinks)
+    if (wi > 0) for (let c = 0; c < 6; c++) {
+      const v = (wi * 1.5 + hash(sd, c, 9535)) % 1;
+      put('ash', 'ash', { k: 'mote', p: [tr.at[0] + (hash(sd, c, 9536) - 0.5) * 16 * S, tr.at[1] + (hash(sd, c, 9537) - 0.5) * 16 * S, H * (1 - wi) * (1 - v)], c: c % 2 ? '#6e6670' : '#948c96', size: 2 });
+    }
+  }
+}
+/** The blight's picture; with `nearer` (a floor point in his own lengths), only its trees nearer the eye than that, inked but without
+ * their rim: laid over a figure (him, his shade, the hero) where it stands among them. */
+export function paintBlight(t: number, view: 'front' | 'rear', nearer: V3 | null = null): Painted {
+  const st = stage(view, BLIGHT_CANVAS.ax, BLIGHT_CANVAS.ay, BLIGHT_CANVAS);
+  const bits: Bit[] = [];
+  const lo = nearer ? st.near(nearer) : -Infinity;
+  blightBits(t, (part, piece, shape) => bits.push({ part, piece, shape }), (x, y) => st.near([x, y, 0]) >= lo);
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(nearer ? null : ENEMY_RIM), lights: nearer ? [] : lights } as Painted;
+}
+
 // THUNDER (Power and Lightning, melded: “a storm cloud and its one great bolt”): he writes Power, his shade writes Lightning; melded,
 // the slam flings the rune straight up out of sight; a GREAT RING of crackling violet locks onto where the hero stands, tightening as
 // it charges (the warning); then ONE GREAT BOLT, a pillar of violet-white lightning the width of a man, hammers down on it: the
@@ -3754,7 +3944,7 @@ export const WS_SHAPE: BossShape = {
   },
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : move === 'fall' ? fallCarry(t) * TILE : 0),
-  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE, avalanche: MELD_STRIKE, thunder: MELD_STRIKE },
+  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE, avalanche: MELD_STRIKE, thunder: MELD_STRIKE, blight: MELD_STRIKE },
   // (his hammer from the sky: three blows of his staff, each its own wind-up, flash and follow-through)
   blows: { power: POWER.slams.map((h, i) => ({ hit: h, strike: POWER_STRIKES[i], from: i ? POWER.slams[i - 1] + 0.1 : 0, until: i < 2 ? POWER.slams[i + 1] - POWER.raise : Infinity })) },
   smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)) || (move === 'frost' && frostSmeared(t)) || (move === 'fall' && slamSmeared(t)) || (FOOT_MOVES.has(move) && move !== 'foot' && meldSmeared(t)),
@@ -3772,7 +3962,7 @@ export const WS_SHAPE: BossShape = {
     { from: 'fall', at: 'end', to: 'foot', toAt: 0, shift: footFrom() },
     { from: 'foot', at: 0, to: 'death', toAt: 0 },
     { from: 'foot', at: 0, to: 'turn', toAt: 0 },
-    ...['eruption', 'hailstorm', 'avalanche', 'thunder'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
+    ...['eruption', 'hailstorm', 'avalanche', 'thunder', 'blight'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
   ],

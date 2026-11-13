@@ -544,6 +544,16 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   rolls out over the floor, a thick hard white ring of force, the floor rippling under it, its dust churned up and thrown behind it,
   the screen jolting: one caught in it is knocked back (in the film the hero dodges each bolt by a hair and the clap shoves him on,
   into where the next ring locks on). For the sound chat: each bolt's crack, then its thunder, a deep boom rolling after it.
+  HIS YES: “Yes, on to Blight (Recommended)”.
+- AVALANCHE'S FILM sent again: Eruption's cracks had been drawn on its floor by mistake (the film's `meldScene`); now only
+  Eruption's.
+- BLIGHT (Power and Poison; `blight`, `BLIGHT`, `BLIGHT_FINGERS`, `BLIGHT_FIELD`, `BLIGHT_TREES`, `blightBits`;
+  `pictures/standard/boss_blight.mp4`), made for his yes: the game's meld is “a dead tree standing in rot”. He writes Power, his
+  shade Poison; melded, the slam drives the rune into the floor before him and the rot spreads out of it in long forking fingers
+  over the floor (the warning: flushed in the bosses' own ground-warning colour, its creeping front hot gold); the hero steps out of
+  a finger's path into a gap; then the rot heaves: from the rune outward, gnarled dead trees punch up out of it everywhere it
+  reached, about his height, crooked branches clawing, his pink seeping from their bark, splinters thrown up, spores rising; they
+  stand, then go grey, crack, crumble and sink back into the rot, which dries and is gone. Through the bosses' checks (0 findings).
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
