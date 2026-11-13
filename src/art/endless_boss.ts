@@ -1762,10 +1762,11 @@ export const FIRE_DROPS: ReadonlyArray<{ at: V3; t: number }> = ((): { at: V3; t
     for (let i = 0; i < n; i++, k++) {
       // (anywhere over the whole arena, at random: his words, 12 Nov 2026, “like he fires the rune into the sky and meteors fall
       // randomly over the whole arena”; the arena 14 tiles by 10 about its middle)
-      const at: V3 = [(hash(k, 1, 8981) - 0.5) * 14 * TILE, (hash(k, 2, 8982) - 0.5) * 10 * TILE, 0];
+      let x = (hash(k, 1, 8981) - 0.5) * 14 * TILE;
+      const y = (hash(k, 2, 8982) - 0.5) * 10 * TILE;
       // (none on him: the arena's middle is 4.6 tiles before him, and none falls within 2 of where he stands)
-      if (Math.hypot(at[0] + 4.6 * TILE, at[1]) < 2 * TILE) at[0] += 3 * TILE;
-      out.push({ at, t: t0 + i * gap });
+      if (Math.hypot(x + 4.6 * TILE, y) < 2 * TILE) x += 3 * TILE;
+      out.push({ at: [x, y, 0], t: t0 + i * gap });
     }
   }
   return out;
