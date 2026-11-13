@@ -62,6 +62,15 @@ export const MELD_RAMP: Record<MeldId, readonly string[]> = {
   contagion: ['#08240c', '#105a1a', '#22a02c', '#62ff5a', '#c4ffb0', '#f4fff0'],
   // (VOLATILE'S FIVE MELDS: the art chat's, render/volatile3.ts, his yes by 20:35, 21 Oct 2026: “Yes, send to main (Recommended)”)
   ...VMELD_RAMP,
+  // (THE EIGHT MELDS ACROSS THE GROUPS, game/melds8.ts: stand-ins from their words until the art chat's)
+  siphon: ['#161c0a', '#2e3a12', '#52661e', '#7e9a3a', '#b8cc7a', '#e8f0c8'],
+  cauterize: ['#1c0806', '#4a1208', '#8a2c0c', '#c25a12', '#ffb43a', '#fff0b0'],
+  forking: ['#1c1038', '#3a2070', '#6c48c0', '#bc84ff', '#f0e4ff', '#ffffff'],
+  shiver: ['#1a2430', '#34485c', '#6a8aa2', '#a5c6d7', '#e2f0f8', '#ffffff'],
+  sunder: ['#1c0806', '#4a1208', '#8a2c0c', '#c25a12', '#ffb43a', '#fff0b0'],
+  fervor: ['#3a1004', '#8a2a06', '#e06a10', '#ffb81c', '#fff4c0', '#ffffff'],
+  rimeward: ['#141a34', '#2c3a6a', '#6878b8', '#cad6ff', '#eef2ff', '#ffffff'],
+  implode: ['#08240c', '#105a1a', '#22a02c', '#62ff5a', '#c4ffb0', '#f4fff0'],
 };
 export const MELD_COLOR = Object.fromEntries(MELD_IDS.map((w) => [w, MELD_RAMP[w][3]])) as Record<MeldId, string>;
 export const MELD_GLOW = Object.fromEntries(MELD_IDS.map((w) => [w, MELD_RAMP[w][4]])) as Record<MeldId, string>;
@@ -95,6 +104,15 @@ export const MELD_GLYPH: Record<MeldId, readonly string[]> = {
   contagion: ['oo...oo', 'oo...oo', '..X.X..', '...o...', '..X.X..', 'oo...oo', 'oo...oo'],
   // (VOLATILE'S FIVE MELDS: the art chat's, render/volatile3.ts)
   ...VMELD_GLYPH,
+  // (THE EIGHT MELDS ACROSS THE GROUPS, game/melds8.ts: stand-ins from their words until the art chat's)
+  siphon: ['X..X..X', '.X.X.X.', '..XXX..', '...X...', '...X...', '.ooXoo.', 'ooooooo'],
+  cauterize: ['o..o..o', '.o.o.o.', '...o...', '..XoX..', '.XXoXX.', '.XXXXX.', 'XXXXXXX'],
+  forking: ['.XX.XX.', 'XXXXXXX', '.......', '...oo..', '..oo...', '...oo..', '..o....'],
+  shiver: ['X......', 'XX..o..', 'XXX...o', 'XXXX.o.', 'XXXXX..', 'XXXXXXo', 'XXXXXXX'],
+  sunder: ['o..o..o', '.o.o.o.', '...o...', '..XoX..', '.XXoXX.', '.XXXXX.', 'XXXXXXX'],
+  fervor: ['...X...', '..XX...', '.XXXX.X', '.XooXXX', 'XXXooXX', 'XXooXXX', '.XXXXX.'],
+  rimeward: ['.XXXXX.', 'XXXXXXX', '.XXXXX.', '.......', 'o.o..o.', '..o.o..', 'o....o.'],
+  implode: ['oo...oo', 'oo...oo', '..X.X..', '...o...', '..X.X..', 'oo...oo', 'oo...oo'],
 };
 
 /** What each glyph is, for the pictures' labels. */
@@ -110,6 +128,15 @@ export const MELD_GLYPH_IS: Record<MeldId, string> = {
   frostbite: 'jaws of ice and a drop of venom',
   contagion: 'the sick, each passing it on',
   ...VMELD_GLYPH_IS,
+  // (THE EIGHT MELDS ACROSS THE GROUPS: stand-in glyphs, their words' own, until the art chat's)
+  siphon: 'a mouth drinking from a poisoned cup',
+  cauterize: 'a wound sealed by flame',
+  forking: 'a bolt splitting in two',
+  shiver: 'a crack running through ice',
+  sunder: 'a shield broken in half',
+  fervor: 'a flame leaning into the wind',
+  rimeward: 'a shield furred with frost',
+  implode: 'stones falling into a hole',
 };
 
 const isMeldId = (w: WordId): w is MeldId => (MELD_IDS as readonly WordId[]).includes(w);

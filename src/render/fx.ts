@@ -458,6 +458,8 @@ export const WORD_HUE: Record<WordId, string> = { power: P.bl4, swift: P.gn4, tw
   eruption: '#ff9a5a', avalanche: '#b8dcff', thunder: '#c8a8ff', blight: '#8aa040', scald: '#e0b0c0', wildfire: '#d86040', fumes: '#c89838', hailstorm: '#e8f0c0', frostbite: '#6898b0', contagion: '#90e0a0',
   // (Volatile's melds, behind VOLT_MELDS, off: placeholders until the art chat's)
   demolition: '#b05a48', powderkeg: '#c8642a', shatter: '#8c9ce8', chainreaction: '#a8a0ff', rupture: '#8aa86a',
+  // (THE EIGHT MELDS ACROSS THE GROUPS: their words' colours until the art chat's)
+  siphon: P.vn4, cauterize: P.fr4, forking: P.lt3, shiver: P.bu4, sunder: P.bl4, fervor: P.fr4, rimeward: P.bu4, implode: P.pu4,
   // (RANK II: a ranked word in its word's colour)
   power2: P.bl4, fire2: P.fr4, frost2: P.bu4, lightning2: P.lt3, poison2: P.vn4 };
 

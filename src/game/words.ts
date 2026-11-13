@@ -9,6 +9,7 @@ import type { Derived, Resolved } from './state';
 import type { Attr, ClassId, Element, MeldId, WeaponKind, WordId } from './types';
 import { RANK_OF } from './types';
 import { MELD_TUNE, RANK_TUNE, isDamageWord, isMeld, isRank, partsOf, rankOf } from './melds';
+import { MELD8_TUNE as M8 } from './melds8';
 
 const pct = (n: number): string => `${Math.round(n)}%`;
 const secs = (n: number): string => String(Math.round(n * 10) / 10);
@@ -491,6 +492,15 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     else if (meld === 'shatter') twist(`a frozen enemy killed bursts into shards that hit those around it for ${pct(T.shatter.share * 100)} of its life.`);
     else if (meld === 'chainreaction') twist(`an exploding enemy sends arcs to the ${T.chainreaction.arcs} nearest; those it kills explode too.`);
     else if (meld === 'rupture') twist('a poisoned enemy killed bursts, splashing its poison on those around.');
+    // (THE EIGHT ACROSS THE GROUPS, behind MELDS8: game/melds8.ts)
+    else if (meld === 'siphon') twist(`your poison heals you ${pct(M8.siphon.heal * 100)} of the harm it does.`);
+    else if (meld === 'cauterize') twist(`killing a burning enemy heals you ${pct(M8.cauterize.heal * 100)} of your life.`);
+    else if (meld === 'forking') twist(`every hit arcs to the nearest other enemy within ${M8.forking.reach} tiles for ${pct(M8.forking.share * 100)} of it.`);
+    else if (meld === 'shiver') twist(`a critical hit freezes the target for ${M8.shiver.secs} s.`);
+    else if (meld === 'sunder') twist(`an enemy it stuns takes ${pct(M8.sunder.more * 100)} more from every hit while stunned.`);
+    else if (meld === 'fervor') twist(`each kill burns ${pct(M8.fervor.burn * 100)} hotter for ${M8.fervor.secs} s, up to ${M8.fervor.most} at once.`);
+    else if (meld === 'rimeward') twist(`blocking a hit chills its maker by ${pct(M8.rimeward.slow * 100)} for ${M8.rimeward.secs} s.`);
+    else if (meld === 'implode') twist(`drags enemies within ${M8.implode.reach} tiles together, then bursts there for ${pct(M8.implode.share * 100)} of the hit.`);
   }
   if (meldBehind) {
     const T = MELD_TUNE;
@@ -528,6 +538,15 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     else if (meldBehind === 'shatter') twist('the rune freezes what is near, then bursts.');
     else if (meldBehind === 'chainreaction') twist('your runes are linked: one going off sets off the rest.');
     else if (meldBehind === 'rupture') twist('the rune bursts into a poison cloud.');
+    // (THE EIGHT ACROSS THE GROUPS, behind: the same twist, `behind` as strong)
+    else if (meldBehind === 'siphon') twist(`your poison heals you ${pct(M8.siphon.heal * M8.behind * 100)} of the harm it does.`);
+    else if (meldBehind === 'cauterize') twist(`killing a burning enemy heals you ${pct(M8.cauterize.heal * M8.behind * 100)} of your life.`);
+    else if (meldBehind === 'forking') twist(`every hit arcs to another enemy nearby for ${pct(M8.forking.share * M8.behind * 100)} of it.`);
+    else if (meldBehind === 'shiver') twist(`a critical hit freezes the target for ${M8.shiver.secs * M8.behind} s.`);
+    else if (meldBehind === 'sunder') twist(`an enemy it stuns takes ${pct(M8.sunder.more * M8.behind * 100)} more while stunned.`);
+    else if (meldBehind === 'fervor') twist(`each kill burns ${pct(M8.fervor.burn * M8.behind * 100)} hotter for a few seconds.`);
+    else if (meldBehind === 'rimeward') twist(`blocking a hit chills its maker by ${pct(M8.rimeward.slow * M8.behind * 100)}.`);
+    else if (meldBehind === 'implode') twist(`drags enemies together a little, then a small burst for ${pct(M8.implode.share * M8.behind * 100)} of the hit.`);
   }
 
   // (LASTING and FLEETING on what it leaves and the boosts it gives, every word's above: its ground, longer or shorter, Fleeting's

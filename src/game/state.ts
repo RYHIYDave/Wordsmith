@@ -460,6 +460,8 @@ export interface Monster {
    * (its attack broken off), and the seconds before cracked ground may stagger it again.
    */
   stunT: number;
+  /** (SUNDER, game/melds8.ts) How much more it takes while stunned, stunned by a Sunder hit. */
+  sunder?: number;
   staggerT: number;
   staggerCd: number;
   /** (THE WARRIOR'S WARHAMMER, game.ts smashed) How dazed by his Smashes, 0 to 1 (a full daze stuns it), and when last dazed. */

@@ -17,8 +17,9 @@
 // All of it behind MELD, which is off: with it off nothing of this can be had, and the game is as it was.
 // The numbers below are starting points, to be tuned once he has played them.
 
+import { MELDS8 } from './melds8';
 import { WORDS } from './defs';
-import { MELD_IDS, MELD_OF, RANK_IDS, RANK_OF, VOLT_MELD_IDS, WORD_IDS } from './types';
+import { MELD_IDS, MELD_OF, RANK_IDS, RANK_OF, VOLT_MELD_IDS, WORD_IDS, MELD8_IDS } from './types';
 import type { Meta } from './state';
 import type { BaseWordId, MeldId, RankId, WordId } from './types';
 
@@ -115,7 +116,8 @@ export const MELD_TUNE = {
 export function wordIds(): readonly WordId[] {
   if (!MELD.on) return WORD_IDS;
   // (VOLATILE'S MELDS, with VOLT_MELDS on)
-  const melds = VOLT_MELDS.on ? [...MELD_IDS, ...VOLT_MELD_IDS] : MELD_IDS;
+  // (THE EIGHT ACROSS THE GROUPS, with MELDS8 on: game/melds8.ts)
+  const melds = [...MELD_IDS, ...(VOLT_MELDS.on ? VOLT_MELD_IDS : []), ...(MELDS8.on ? MELD8_IDS : [])];
   return RANK2.on ? [...WORD_IDS, ...melds, ...RANK_IDS] : [...WORD_IDS, ...melds];
 }
 
@@ -170,7 +172,7 @@ export function withParts(side: readonly (WordId | null)[]): WordId[] {
 /** What two words make when melded, or null if they don't meld (a shaping word, a melded word; the same word twice, unless RANK2 is on: then that word a rank up). */
 export function meldOf(a: WordId, b: WordId): MeldId | RankId | null {
   if (a === b) return RANK2.on && WORDS[a].kind === 'damage' ? rankUp(a) : null;
-  for (const m of VOLT_MELDS.on ? [...MELD_IDS, ...VOLT_MELD_IDS] : MELD_IDS) {
+  for (const m of [...MELD_IDS, ...(VOLT_MELDS.on ? VOLT_MELD_IDS : []), ...(MELDS8.on ? MELD8_IDS : [])]) {
     const [x, y] = MELD_OF[m];
     if ((x === a && y === b) || (x === b && y === a)) return m;
   }
@@ -183,6 +185,11 @@ export function meldProblem(a: WordId | null, b: WordId | null): string | null {
   if (RANK2.on && (isRank(a) || isRank(b))) return a === b ? 'Rank II is the top, for now' : 'A ranked word melds no further';
   if (a === b && !RANK2.on) return 'Two different words';
   if (isMeld(a) || isMeld(b)) return 'A melded word melds no further';
+  // (THE EIGHT ACROSS THE GROUPS, with MELDS8 on: their two words meld, whatever their groups)
+  if (MELDS8.on) {
+    const m = meldOf(a, b);
+    if (m && MELD8_IDS.includes(m as MeldId)) return null;
+  }
   // (VOLATILE'S MELDS: with VOLT_MELDS on, Volatile melds with a damage word too)
   const volt = VOLT_MELDS.on && ((a === 'volatile' && WORDS[b].kind === 'damage') || (b === 'volatile' && WORDS[a].kind === 'damage'));
   if (!volt && (WORDS[a].kind !== 'damage' || WORDS[b].kind !== 'damage')) return VOLT_MELDS.on ? 'Only damage words and Volatile meld' : 'Only damage words meld';
@@ -191,8 +198,11 @@ export function meldProblem(a: WordId | null, b: WordId | null): string | null {
 
 /** What of a record of words is written to a save: with MELD off, nothing of the melded words, so a save is as it was before them. */
 export function savedWords<T>(rec: Record<WordId, T>): Record<WordId, T> {
-  if (MELD.on && RANK2.on && VOLT_MELDS.on) return rec;
+  if (MELD.on && RANK2.on && VOLT_MELDS.on && MELDS8.on) return rec;
   const out: Partial<Record<WordId, T>> = { ...rec };
+  // (THE EIGHT ACROSS THE GROUPS: with MELDS8 off, nothing of them)
+  if (!MELD.on || !MELDS8.on) for (const m of MELD8_IDS) delete out[m];
+  if (MELD.on && RANK2.on && VOLT_MELDS.on) return out as Record<WordId, T>;
   // (VOLATILE'S MELDS: with VOLT_MELDS off, nothing of them)
   if (!MELD.on || !VOLT_MELDS.on) for (const m of VOLT_MELD_IDS) delete out[m];
   if (MELD.on && RANK2.on) return out as Record<WordId, T>;
