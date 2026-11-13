@@ -48,7 +48,7 @@ carry nothing of their base; a weapon its base's damage alone. A price among its
 | 2 | Ring | The Tin Band | +24–36 life, +1.6–2.4 life on hit | yes |
 | 3 | Gloves | Scrapper's Mitts | −12 to −18% attack speed; adds 5–7 to 8–12 damage | “Gimme -15% attack speed, and more flat damage”; then yes |
 | 4 | Amulet | The Copper Charm | +40–60% magic find, +40–60% gold find | yes |
-| 5 | Bow (Ranger) | The Fledgling | +20–30% attack speed, +5–7% critical chance | yes |
+| 5 | Bow (Ranger) | The Fledgling | +50–75% attack speed, +5–7% critical chance | yes; 13 Nov: “Give that level 5 bow more attack speed.  Like 50% at least” |
 | 6 | Helm | The Lantern Cap | +20–30% to all four resistances (one roll); −8 to −12% max life | “Gimme -10% max life or something like that” |
 | 7 | Wraps (Brawler) | Taped Knuckles | +6–10% critical chance, +48–72% critical damage | yes |
 | 8 | Staff (Mage) | The Kindling Rod | every hit fire, no other kind of damage; adds 6–10 to 11–17 fire to fire hits; +32–48% fire damage | his wording: “Can deal no other type of damage” |

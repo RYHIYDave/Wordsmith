@@ -457,7 +457,8 @@ export const LEVEL_DEFS: readonly UniqueDef[] = [
   // (his word: “Gimme -15% attack speed, and more flat damage”)
   { id: 'scrappersmitts', name: "Scrapper's Mitts", stem: 'leathergloves', from: 'level', level: 3, bends: 'hero', powers: 0, stats: ['atkSpeed', 'dmgMin'], rolls: [R('atkSpeed', -18, -12), PAIR('dmgMin', 'dmgMax', 5, 7, 8, 12)], does: () => [] },
   { id: 'coppercharm', name: 'The Copper Charm', stem: 'dexamulet', from: 'level', level: 4, bends: 'hero', powers: 0, stats: ['magicFind', 'goldFind'], rolls: [R('magicFind', 40, 60), R('goldFind', 40, 60)], does: () => [] },
-  { id: 'fledgling', name: 'The Fledgling', stem: 'bow', from: 'level', level: 5, cls: 'ranger', bends: 'hero', powers: 0, stats: ['atkSpeed', 'critChance'], rolls: [R('atkSpeed', 20, 30), R('critChance', 5, 7)], does: () => [] },
+  // (his word, 13 Nov 2026, of its attack speed, 20–30% until then: “Give that level 5 bow more attack speed.  Like 50% at least”)
+  { id: 'fledgling', name: 'The Fledgling', stem: 'bow', from: 'level', level: 5, cls: 'ranger', bends: 'hero', powers: 0, stats: ['atkSpeed', 'critChance'], rolls: [R('atkSpeed', 50, 75), R('critChance', 5, 7)], does: () => [] },
   // (his word: “Gimme -10% max life or something like that”)
   { id: 'lanterncap', name: 'The Lantern Cap', stem: 'hood', from: 'level', level: 6, bends: 'hero', powers: 0, stats: ['fireRes', 'maxLifePct'], rolls: [R(ALL_RES, 20, 30), R('maxLifePct', -12, -8)], does: () => [] },
   { id: 'tapedknuckles', name: 'Taped Knuckles', stem: 'wraps', from: 'level', level: 7, cls: 'brawler', bends: 'hero', powers: 0, stats: ['critChance', 'critMult'], rolls: [R('critChance', 6, 10), R('critMult', 48, 72)], does: () => [] },
