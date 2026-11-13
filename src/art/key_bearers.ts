@@ -13,7 +13,7 @@ import { COWL_R, DAGGER_CULTIST, FRENZY_CULTIST, KNIFE_BODY, KNIFE_CANVAS, KNIFE
 import { clamp01, curve, fireBall, rampAt, sampled, shiver, tr } from './fleshmancer';
 import { FLAME } from './mkit';
 import type { Ramp } from './kit';
-import { TILE3, handAt, sphere } from './new_mobs3';
+import { TILE3, handAt, skeletonAt, sphere } from './new_mobs3';
 import type { Bit, Mob, Moment, Shape } from './new_mobs3';
 import { wornOn } from './skin';
 import type { Ring, Stage } from './skin';
@@ -230,6 +230,82 @@ const THROW_MOVE = {
   trailOver: (t: number) => t > KB_THROW.hit - 0.06 && t <= KB_THROW.hit + 0.01,
   trailSpan: 2,
 };
+export const KB_LEAP_NAME = 'The Keybearer of the Knife leaps, flips and plunges';
+/**
+ * His leap: how long; the warning (rearing up, held from `rise`); when he leaves the floor, when his flip is done, and when he comes
+ * down and plunges his blade (its blow).
+ */
+export const KB_LEAP = { long: 1.5, rise: 0.3, leap: 0.5, flipped: 0.84, hit: 0.9 } as const;
+/** How far his flip carries him over the floor (his own lengths, before he is grown): the dagger cultist's leap's. */
+const LEAP_ON = 24;
+/**
+ * THE LEAP AND PLUNGE, WITH A FLIP (his word, 13 Nov 2026: “Gimme a flip in the knife guys jump”). The dagger cultist's leap (art/
+ * cultists.ts knifeBlow): he plants himself and sinks; rears up, both hands hauling the blade high, its point down, the light on it (THE
+ * WARNING, held trembling, 0.3 to 0.5 s); then he LEAPS, and in the air TURNS RIGHT OVER, heels over head, tucked, the blade held to him
+ * turning with him (0.5 to 0.84); comes down feet first and in a frame PLUNGES the blade into the floor before him (0.9), bent double over
+ * it; wrenches it free and springs back where he began.
+ */
+function knifeFlipLeap(): Motion {
+  const R = KNIFE_REST;
+  const { long: L, hit: H, leap: J, flipped: F } = KB_LEAP;
+  const held = (t: number): number => rampAt(t, 0.28, 0.32) * (1 - rampAt(t, 0.48, 0.5));
+  // (his turn over in the air, degrees: none on the floor, the whole of one by his landing)
+  const turn = (t: number): number => 360 * rampAt(t, J + 0.02, F);
+  // (how tucked he is: his feet drawn up to him in the air, on the floor where they plant)
+  const tuck = (t: number): number => rampAt(t, J, J + 0.06) * (1 - rampAt(t, F, H - 0.01));
+  const s0 = skeletonAt(DAGGER_CULTIST, 'stand', 0);
+  const hip = s0.pelvis[2] - R.pz;
+  const pz = (t: number): number => tr([[0, R.pz], [0.14, R.pz - 2.5], [0.3, R.pz + 1.5], [0.44, R.pz + 1.8], [J, R.pz - 2.5], [J + 0.06, R.pz + 9], [0.67, R.pz + 17], [0.77, R.pz + 15], [F, R.pz + 5], [H, R.pz - 9], [1.0, R.pz - 10], [1.18, R.pz - 7], [L, R.pz]])(t) + shiver(t, 0.25, 1) * held(t);
+  const px = tr([[0, R.px], [0.14, 0], [0.44, -1.5], [J, -1.2], [J + 0.06, 3], [F, LEAP_ON - 2], [H, LEAP_ON], [1.08, LEAP_ON + 0.5], [1.25, 17], [L, R.px]]);
+  // (a foot: where it plants on the floor, or tucked in to him as he turns over: his pelvis, turned, a tucked leg's length below it)
+  const foot = (t: number, plant: number, side: number): [number, number, number] => {
+    const k = tuck(t);
+    const a = (turn(t) * Math.PI) / 180;
+    const tx = px(t) + 1.5 - 11 * Math.sin(a);
+    const tz = Math.max(0, hip + pz(t) - 11 * Math.cos(a));
+    return [plant + (tx - plant) * k, tz * k, turn(t) * k + side * 0];
+  };
+  const rPlant = tr([[0, R.rfx], [J, R.rfx], [H, LEAP_ON + 7], [1.12, LEAP_ON + 7], [1.28, 18], [L, R.rfx]]);
+  const lPlant = tr([[0, R.lfx], [J, R.lfx], [H, LEAP_ON - 6], [1.18, LEAP_ON - 6], [1.34, 6], [L, R.lfx]]);
+  const lift = (pts: ReadonlyArray<readonly [number, number]>) => tr(pts);
+  const keys = sampled(L, {
+    pz,
+    px,
+    pitch: (t) => tr([[0, R.pitch], [0.14, 4], [0.3, -6], [0.44, -8], [J, -4], [J + 0.06, 6], [F, 10], [H, 32], [1.08, 30], [1.25, 20], [L, R.pitch]])(t) + turn(t),
+    bend: (t) => tr([[0, R.bend], [0.14, 6], [0.3, -10], [0.44, -12], [J, -6], [J + 0.06, 8], [F, 10], [H, 26], [1.08, 24], [1.25, 16], [L, R.bend]])(t) + 26 * Math.sin(Math.PI * clamp01((t - J) / (F - J))) + shiver(t, 0.6, 2) * held(t),
+    twist: tr([[0, R.twist], [0.3, -6], [0.44, -8], [H, 6], [L, R.twist]]),
+    yaw: tr([[0, R.yaw], [0.3, 0], [H, -4], [L, R.yaw]]),
+    faceUp: tr([[0, R.faceUp], [0.3, 22], [0.44, 24], [J, 10], [F, 0], [H, -4], [1.15, 0], [L, R.faceUp]]),
+    faceTurn: tr([[0, R.faceTurn], [0.3, 0], [L, R.faceTurn]]),
+    rhx: tr([[0, R.rhx], [0.14, 2], [0.3, 2.5], [0.44, 1.5], [J, 0.5], [J + 0.08, 4], [F, 4], [H - FR30, 3], [H, 14], [1.08, 14], [1.25, 9], [L, R.rhx]]),
+    rhy: tr([[0, R.rhy], [0.3, 5], [J, 5], [H, 5], [1.25, 0], [L, R.rhy]]),
+    rhz: (t) => tr([[0, R.rhz], [0.14, 14], [0.3, 20], [0.44, 21], [J, 22], [J + 0.08, 12], [F, 14], [H - FR30, 20], [H, -20], [1.08, -21], [1.25, -9], [L, R.rhz]])(t) + shiver(t, 0.35, 3) * held(t),
+    re: tr([[0, R.re], [0.3, 40], [H, 15], [L, R.re]]),
+    wAz: tr([[0, R.wAz], [0.3, 10], [H, 5], [1.25, 0], [L, R.wAz]]),
+    // (the blade turning over with him: its way in his own axes held as his body turns)
+    wEl: (t) => tr([[0, R.wEl], [0.14, 20], [0.3, -55], [J, -60], [F, -60], [H - FR30, -70], [H, -84], [1.08, -84], [1.25, -40], [L, R.wEl]])(t) - turn(t),
+    lhx: tr([[0, R.lhx], [0.14, 4], [0.3, 3], [J, 1.5], [J + 0.08, 4.5], [F, 4.5], [H - FR30, 3], [H, 13.5], [1.08, 13.5], [1.25, 9], [L, R.lhx]]),
+    lhy: tr([[0, R.lhy], [0.14, -2], [0.3, -5], [H, -5], [1.25, -1], [L, R.lhy]]),
+    lhz: (t) => tr([[0, R.lhz], [0.14, 10], [0.3, 19], [0.44, 20], [J, 21], [J + 0.08, 11], [F, 13], [H - FR30, 19], [H, -18], [1.08, -19], [1.25, -9], [L, R.lhz]])(t) + shiver(t, 0.35, 4) * held(t),
+    le: tr([[0, R.le], [0.3, -30], [H, -10], [L, R.le]]),
+    rfx: (t) => foot(t, rPlant(t), -1)[0],
+    rfz: (t) => (tuck(t) > 0 ? foot(t, rPlant(t), -1)[1] : lift([[0, 0], [1.16, 0], [1.22, 3], [1.28, 0], [L, 0]])(t)),
+    rfp: (t) => (tuck(t) > 0 ? foot(t, rPlant(t), -1)[2] : tr([[0, 0], [J - 0.02, 20], [J, 0], [L, 0]])(t)),
+    lfx: (t) => foot(t, lPlant(t), 1)[0],
+    lfz: (t) => (tuck(t) > 0 ? foot(t, lPlant(t), 1)[1] : lift([[0, 0], [1.22, 0], [1.28, 3], [1.34, 0], [L, 0]])(t)),
+    lfp: (t) => (tuck(t) > 0 ? foot(t, lPlant(t), 1)[2] : tr([[0, 0], [J - 0.02, 30], [J, 0], [L, 0]])(t)),
+    draw: tr([[0, R.draw], [0.2, 1], [1.15, 1], [L, R.draw]]),
+    gale: tr([[0, 0.1], [J, 0.2], [J + 0.06, 0.8], [H, 1], [1.1, 0.5], [L, 0.15]]),
+  }, { prop: 0, pAz: 0, pEl: 0 });
+  return { keys, hit: H };
+}
+/** The light on his blade as he rears up with it (the warning): up as it goes up, brightest just before he leaps, gone as it strikes. */
+function leapGlint(t: number): number {
+  const { hit: H, leap: J } = KB_LEAP;
+  if (t < 0.18 || t > H) return 0;
+  return t < 0.42 ? (t - 0.18) / 0.24 : t < J ? 1 : Math.max(0, 1 - (t - J) / 0.1);
+}
+
 /** Where the knife leaves his hand as he throws (tiles before him, to his left; game pixels up): the game sends it from there. */
 export function throwFrom(): [number, number, number] {
   const p = handAt(KEY_BLADE, 'throw', KB_THROW.hit, 'L');
@@ -246,7 +322,7 @@ export const KEY_BLADE: Mob = {
   pace: KNIFE_PACE * KEY_K,
   dying: { ...DAGGER_CULTIST.dying, name: 'The Keybearer of the Knife falls' },
   more: {
-    leap: { ...DAGGER_CULTIST.attack, name: 'The Keybearer of the Knife leaps and plunges' },
+    leap: { name: KB_LEAP_NAME, motion: knifeFlipLeap(), rest: KNIFE_REST, glint: leapGlint, dust: true },
     throw: THROW_MOVE,
   },
   canvas: { w: Math.round(KNIFE_CANVAS.w * KEY_K) + 8, h: Math.round(KNIFE_CANVAS.h * KEY_K) + 8, ax: Math.round(KNIFE_CANVAS.ax * KEY_K) + 4, ay: Math.round(KNIFE_CANVAS.ay * KEY_K) + 4 },

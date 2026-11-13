@@ -240,27 +240,6 @@ function drawBellsClock(g: CanvasRenderingContext2D, game: Game, W: number, y: n
 }
 
 /**
- * FLOOR 5, behind TEMPLE_DOOR: THE TEMPLE DOOR'S KEYS, across the top of the screen once he knows of them (the door has told him, or he
- * holds one) and until the door opens: how many he holds of its two, each a key, brass if held, dark if not. Returns whether it is drawn.
- */
-function drawTempleKeys(g: CanvasRenderingContext2D, game: Game, W: number, y: number): boolean {
-  const L = game.level;
-  const T = L.temple;
-  if (!T || (!T.told && T.keys === 0) || L.doors[T.door].open >= 1) return false;
-  const cx = Math.floor(W / 2);
-  drawText(g, `TEMPLE KEYS  ${T.keys} / ${T.need}`, cx - 12, y, '#dcaa52', { align: 'center', shadow: P.ink });
-  const half = Math.floor(textWidth(`TEMPLE KEYS  ${T.keys} / ${T.need}`) / 2);
-  for (let i = 0; i < T.need; i++) {
-    const s = keySprite(0);
-    const x = cx - 12 + half + 10 + i * 13;
-    g.globalAlpha = i < T.keys ? 1 : 0.3;
-    g.drawImage(s.img, x - s.ax, y + 4 - s.ay, s.w, s.h);
-    g.globalAlpha = 1;
-  }
-  return true;
-}
-
-/**
  * ACT 2, THE BELLS ON A MAP (his word of 18 Oct, 05:31; his doc: "the ground the Hush covers shows as a grey veil, its edge
  * pulsing, so you can see at a glance where it reaches ... Each bell still to ring has a mark, which goes out when rung, and each
  * bell rung chips the veil back"). Within `R` tiles of the hero: the veil on every tile of the Hush (seen or not: it is fog over
@@ -1382,6 +1361,25 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     const cy = btnY + btnH / 2;
     g.drawImage(ic.img, Math.round(cx - ic.ax * pop), Math.round(cy - ic.ay * pop), Math.round(ic.w * pop), Math.round(ic.h * pop));
   }
+  // (FLOOR 5, behind TEMPLE_DOOR: THE TEMPLE DOOR'S KEYS here with what else of a quest he carries, his word of 13 Nov 2026: “keep the key
+  // count on the side with the other quest information”: once he knows of them, until the door opens, a key for each of its two, brass if
+  // held and dark if not, and how many of them he holds)
+  {
+    const T = game.level.temple;
+    if (T && (T.told || T.keys > 0) && game.level.doors[T.door].open < 1) {
+      const both = (QUEST3.on && QUEST3.carried ? 16 : 0) + (MELD_DROPS.on && game.hero.meld === 'stone' ? 16 : 0);
+      let kx = lx + (spare > 0 ? 26 : 0) + both + 7;
+      const cy = btnY + btnH / 2;
+      const s = keySprite(0);
+      for (let i = 0; i < T.need; i++) {
+        g.globalAlpha = i < T.keys ? 1 : 0.35;
+        g.drawImage(s.img, Math.round(kx - s.ax), Math.round(cy - s.ay), s.w, s.h);
+        kx += 13;
+      }
+      g.globalAlpha = 1;
+      drawText(g, `${T.keys}/${T.need}`, kx - 4, Math.round(cy - 3), '#dcaa52', { font: 'small', shadow: P.ink });
+    }
+  }
 
   // ---- top right: minimap and pause ---------------------------------------------------------
   const mw = Math.min(66, Math.floor(W * 0.2));
@@ -1435,8 +1433,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   });
 
   // ---- ACT 2, THE BELLS: the clock (his doc: "a timer runs across the top of the screen") ---------
-  // (FLOOR 5, behind TEMPLE_DOOR: the temple door's keys, in the same place: the two are never on the same floor)
-  const bellsUp = drawBellsClock(g, game, W, bossUp ? 4 + 20 * bossRows : 4, t) || drawTempleKeys(g, game, W, bossUp ? 4 + 20 * bossRows : 4);
+  const bellsUp = drawBellsClock(g, game, W, bossUp ? 4 + 20 * bossRows : 4, t);
 
   // ---- the first dungeon's prompt, and the word just found ------------------------------------
   // (a word found is the bigger news: for its moment it takes the prompt's place)

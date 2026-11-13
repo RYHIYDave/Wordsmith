@@ -9,7 +9,8 @@
 //   THE STAB, his basic blow: the dagger cultist's frenzy, four stabs in a blur stepping in (each struck where his picture has him
 //     then, along the way it faces: action_f4.ts pictureWays), then winded, your opening; carried on where his steps took him.
 //   THE THROW: from 3 to 9 tiles, a knife drawn from his bandolier and flung at you (`keyblade:knife`, flying straight).
-//   THE LEAP: from 1.8 to 4.5 tiles, he leaps at you and plunges his blade down where he lands, struck within LEAP.r of it.
+//   THE LEAP: from 1.8 to 4.5 tiles, he leaps at you, turning a flip in the air (his word: “Gimme a flip in the knife guys jump”),
+//     and plunges his blade down where he lands, struck within LEAP.r of it.
 // THE KEYBEARER OF THE FLAME ('keyflame'), walking in procession:
 //   THE SIGIL, his basic blow: the fire cultist's sigil made bigger (SIGIL_R tiles), under you as his hand begins to trace it, erupting
 //     at his slam and burning on after (`keyflame:sigil`; the art and its timings the cultist's own, art/action_f2_fx.ts).
@@ -18,9 +19,9 @@
 //     edge passes you, unless you are rolling through it.
 // Each, killed, drops his key (`keyblade:key`): it tumbles ringing from his hip to the floor, and is taken as he walks onto it.
 
-import { DAGGER_CULTIST, FRENZY, FRENZY_HITS, FRENZY_STEP, KNIFE_BLOW } from '../../art/cultists';
+import { DAGGER_CULTIST, FRENZY, FRENZY_HITS, FRENZY_STEP } from '../../art/cultists';
 import { SIGIL, SIGIL_LONG, burnRadius } from '../../art/action_f2_fx';
-import { FL_FAN, FL_PACE, FL_RING, FL_SIGIL, KB_THROW, KEY_BLADE, KEY_K, fanFrom, throwFrom } from '../../art/key_bearers';
+import { FL_FAN, FL_PACE, FL_RING, FL_SIGIL, KB_LEAP, KB_THROW, KEY_BLADE, KEY_K, fanFrom, throwFrom } from '../../art/key_bearers';
 import { TILE3 } from '../../art/new_mobs3';
 import { pictureWays } from '../action_f4';
 import type { ActDef, BossRules } from '../bosses';
@@ -61,12 +62,12 @@ export const ringAt = (t: number): number => Math.min(KF.ring.to, KF.ring.from +
 const BLADE_ACTS: readonly ActDef[] = [
   { id: 'keyblade:stab', clip: 'attack', long: FRENZY.long, hit: FRENZY_HITS[0], dmg: 0.45, cooldown: 0, first: 0, after: 0.5, near: 0, far: 2.4 },
   { id: 'keyblade:throw', clip: 'throw', long: KB_THROW.long, hit: KB_THROW.hit, dmg: 1, cooldown: 4.5, first: 1.5, after: 0.6, near: 3, far: 9 },
-  { id: 'keyblade:leap', clip: 'leap', long: KNIFE_BLOW.long, hit: KNIFE_BLOW.hit, dmg: 1.4, cooldown: 6, first: 2.5, after: 0.7, near: 1.8, far: 4.5 },
+  { id: 'keyblade:leap', clip: 'leap', long: KB_LEAP.long, hit: KB_LEAP.hit, dmg: 1.4, cooldown: 6, first: 2.5, after: 0.6, near: 1.8, far: 4.5 },
 ];
 const FLAME_ACTS: readonly ActDef[] = [
   { id: 'keyflame:sigil', clip: 'attack', long: FL_SIGIL.long, hit: FL_SIGIL.hit, dmg: 1.2, cooldown: 0, first: 0, after: 1.0, near: 0, far: 8 },
-  { id: 'keyflame:fan', clip: 'fan', long: FL_FAN.long, hit: FL_FAN.hit, dmg: 0.8, cooldown: 4, first: 1.5, after: 0.8, near: 0, far: 9 },
-  { id: 'keyflame:ring', clip: 'ring', long: FL_RING.long, hit: FL_RING.hit, dmg: 1.3, cooldown: 8, first: 3, after: 0.9, near: 0, far: 3.5 },
+  { id: 'keyflame:fan', clip: 'fan', long: FL_FAN.long, hit: FL_FAN.hit, dmg: 1.25, cooldown: 4, first: 1.5, after: 0.8, near: 0, far: 9 },
+  { id: 'keyflame:ring', clip: 'ring', long: FL_RING.long, hit: FL_RING.hit, dmg: 1.5, cooldown: 8, first: 3, after: 0.9, near: 0, far: 3.5 },
 ];
 
 /** Whether the hero can be struck now: not rolling, not unhurtable, the game not over. */
@@ -157,7 +158,7 @@ export const RULES_BLADE: Act1Rules = {
     }
     if (a.id === 'keyblade:leap') {
       // (in the air from his leap to his plunge: carried on toward where the hero stood)
-      const L0 = KNIFE_BLOW.leap;
+      const L0 = KB_LEAP.leap;
       const H = a.hit;
       if (m.act && t1 > L0 && t0 < H) carry(R, m, m.fx, m.fy, (m.act.a * (Math.min(t1, H) - Math.max(t0, L0))) / (H - L0));
       if (at(H)) {
