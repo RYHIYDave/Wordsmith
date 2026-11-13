@@ -29,7 +29,12 @@ test('crafted on a weapon, gloves and a ring: the damage words may give flat dam
   assert.deepEqual(stats('fire', 'ring'), ['firePct', 'fireMin', 'fireRes']);
   assert.deepEqual(stats('fire', 'mainhand'), ['firePct', 'fireMin']);
   assert.deepEqual(stats('power', 'gloves'), ['physPct', 'dmgMin', 'str']);
-  assert.ok(!stats('poison', 'ring').some((s) => s.endsWith('Min')), 'poison: none yet (its harm is over time)');
+  // (POISON DAMAGE on since his yes of 12 Nov 2026: the Poison word gives poison's own, as Flame's; off, none)
+  assert.deepEqual(stats('poison', 'mainhand'), ['poisonPct', 'poisonMin']);
+  const was = POISON_DMG.on;
+  POISON_DMG.on = false;
+  assert.ok(!stats('poison', 'ring').some((s) => s.endsWith('Min')), 'poison off: none');
+  POISON_DMG.on = was;
 });
 
 test('crafted, it is one property, “Adds X-Y”, least below most, growing deeper down; never twice on a piece', () => {

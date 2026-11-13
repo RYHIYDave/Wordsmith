@@ -364,8 +364,11 @@ export type UniqueId = string;
 // or jewellery carries nothing of its base (“nothing but 20% movement speed”); a weapon its base's damage alone. OFF until his
 // yes (LEVEL_UNIQUES), and nothing without the uniques' own switch.
 
-/** THE SWITCH: OFF until his yes. Nothing of these drops, or is made, with it off (or with UNIQUES off). */
-export const LEVEL_UNIQUES = { on: false };
+/**
+ * THE SWITCH: ON, at his yes, 12 Nov 2026, by 21:2x Eastern, told they were on his test page and asked how to go on: “Switch them
+ * on now”. Nothing of these drops, or is made, with it off (or with UNIQUES off).
+ */
+export const LEVEL_UNIQUES = { on: true };
 
 /** One of a leveling unique's stats: one roll from `lo` to `hi`, for every stat of `stats` (the Lantern Cap's four resistances are one). A flat pair: `pair`, its least rolled in `lo`, its most in `hi2`. */
 export interface LevelRoll {

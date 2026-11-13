@@ -308,9 +308,9 @@ const DEFAULT_AFFIX_WEIGHT = 10;
  * (Recommended)”). On: gear rolls Poison Damage and Poison Resistance as it rolls fire's, and the Poison word burned into gear
  * gives poison's own (elementImbue), flat poison on a weapon, gloves and a ring. The stats themselves always work where a piece
  * has them (game/game.ts: the hero's poison of every kind more, flat poison on a hit that poisons, poison on him resisted): with
- * this off, nothing has them. OFF until his yes.
+ * this off, nothing has them. ON, at his yes with the leveling uniques, 12 Nov 2026: “Switch them on now”.
  */
-export const POISON_DMG = { on: false };
+export const POISON_DMG = { on: true };
 const POISON_STATS = new Set<string>(['poisonPct', 'poisonRes']);
 
 /** Plain amounts (life, armour, attributes...) keep climbing at the same pace, as monsters do. */

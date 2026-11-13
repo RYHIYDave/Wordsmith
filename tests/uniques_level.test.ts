@@ -36,18 +36,25 @@ const CLASSES: ClassId[] = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 
 const near = (a: number, b: number, eps: number): boolean => Math.abs(a - b) <= eps;
 const statsOf = (it: Item): Map<StatKey, number> => new Map(it.affixes.flatMap((a) => a.mods).map((m) => [m.stat, m.value]));
 
-test('1. both off until his yes; off, nothing of them is made or dropped, and no poison is rolled on gear', () => {
-  assert.equal(LEVEL_UNIQUES.on, false);
-  assert.equal(POISON_DMG.on, false);
-  on(() => {
-    assert.equal(makeUnique('errandboots', 1, new RNG(1)), null);
-    assert.deepEqual(levelPoolFor('warrior', 40), []);
-    assert.equal(levelChance(2, 100), 0);
-  });
-  const rng = new RNG(5);
-  for (let k = 0; k < 3000; k++) {
-    const it = rollItem(1 + (k % 30), rng);
-    for (const a of it.affixes) for (const m of a.mods) assert.ok(m.stat !== 'poisonPct' && m.stat !== 'poisonRes', `${it.name}: poison rolled with the switch off`);
+test('1. both on at his yes (“Switch them on now”); off, nothing of them is made or dropped, and no poison is rolled on gear', () => {
+  assert.equal(LEVEL_UNIQUES.on, true);
+  assert.equal(POISON_DMG.on, true);
+  const was = [LEVEL_UNIQUES.on, POISON_DMG.on];
+  LEVEL_UNIQUES.on = false;
+  POISON_DMG.on = false;
+  try {
+    on(() => {
+      assert.equal(makeUnique('errandboots', 1, new RNG(1)), null);
+      assert.deepEqual(levelPoolFor('warrior', 40), []);
+      assert.equal(levelChance(2, 100), 0);
+    });
+    const rng = new RNG(5);
+    for (let k = 0; k < 3000; k++) {
+      const it = rollItem(1 + (k % 30), rng);
+      for (const a of it.affixes) for (const m of a.mods) assert.ok(m.stat !== 'poisonPct' && m.stat !== 'poisonRes', `${it.name}: poison rolled with the switch off`);
+    }
+  } finally {
+    [LEVEL_UNIQUES.on, POISON_DMG.on] = was;
   }
 });
 
