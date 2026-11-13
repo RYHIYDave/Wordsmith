@@ -2665,7 +2665,7 @@ export class Renderer {
         }
       }
       // (THE RANGER'S SNARE, game/swap_moves.ts: its rope, render/swap_fx.ts)
-      if (tr.snare) drawSnare(g, cam, tr.x, tr.y, tr.arm <= 0, t);
+      if (tr.snare) drawSnare(g, cam, tr.x, tr.y, tr.arm <= 0, t, tr, game.hero.x, game.hero.y);
       else g.drawImage(sp.img, Math.round(cx) - sp.ax, Math.round(cy) - sp.ay);
     }
     // A volley's patch of ground (Version 12.2): marked from the moment the arrows leave the bow,

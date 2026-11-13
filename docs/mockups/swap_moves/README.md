@@ -135,7 +135,8 @@ ALL OF IT IS BUILT, BEHIND `SWAP_MOVES` (game/talents.ts, OFF): off, the game is
            gathering at his bow (hold; the game now keeps him in it while he holds, as a held Beam is kept); the loose, his
            string hand flying back past his ear, a step of recoil (release);
     SNARE  its loop whirled over his head in his string hand, the bow dropped low with no arrow on it, then thrown straight out
-           at the mark (a loop of rope drawn in his hand, art/ranger_up.ts prop 6);
+           at the mark (a loop of rope drawn in his hand, art/ranger_up.ts prop 6); the loop is seen to fly from his hand, spinning,
+           in an arc to where it lands (render/swap_fx.ts drawSnare);
     RALLY  the bow raised high overhead, his horn put to his lips and blown, his head back (the horn drawn in his hand,
            prop 7, matching his icon);
     BALL   her own throw: her free hand lets go of the staff, her hips come all the way round, the comet glowing in that hand
@@ -153,6 +154,8 @@ ALL OF IT IS BUILT, BEHIND `SWAP_MOVES` (game/talents.ts, OFF): off, the game is
   widest a third back from its point, its lit face pale and the other deep, a white ridge and a glint running down it, a cut
   across it where it is widest, shards of it trailing, short as it leaves her crystal and grown to its length in its first
   tiles. Its icon redrawn to match (a cut crystal, its shards).
+  FILMED with all of it (tools/scenarios/swap_moves_film.mjs): pictures/mage_moves_own.mp4 and ranger_moves_own.mp4; each move
+  frame by frame from those films, pictures/mage_own_moves.png and ranger_own_moves.png.
 - KNOWN: switched on, an old Mage's stones past the middle (her warps and on) are not hers until she takes Aura (cleanTalents
   checks the way); their points come back to spend.
 

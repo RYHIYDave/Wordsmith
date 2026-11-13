@@ -347,7 +347,44 @@ export function drawAura(g: G, cam: Cam, game: Game, t: number): void {
 }
 
 /** (THE RANGER'S SNARE) A loop of rope lying open on the floor at (x, y): `set` once it is armed. */
-export function drawSnare(g: G, cam: Cam, x: number, y: number, set: boolean, t: number): void {
+/** (each snare, from the moment it is first drawn: when, and where he stood, for its flight to where it lands) */
+const THROWN = new WeakMap<object, { t0: number; x: number; y: number }>();
+const SNARE_FLIES = 0.22;
+
+/**
+ * (THE RANGER'S SNARE) Where it lies. First its flight from his hand: the loop spinning open as it goes, in an arc, out to
+ * where it lands (his throw is seen to land); then the loop lying open on the floor.
+ */
+export function drawSnare(g: G, cam: Cam, x: number, y: number, set: boolean, t: number, of?: object, fromX?: number, fromY?: number): void {
+  if (of && fromX !== undefined && fromY !== undefined) {
+    let th = THROWN.get(of);
+    if (!th || t < th.t0) THROWN.set(of, (th = { t0: t, x: fromX, y: fromY }));
+    const k = (t - th.t0) / SNARE_FLIES;
+    if (k < 1) {
+      const fx = th.x + (x - th.x) * k;
+      const fy = th.y + (y - th.y) * k;
+      const lift = 30 * (1 - k) + Math.sin(k * Math.PI) * 14;
+      const r = 0.3 + 0.32 * k;
+      const spin = t * 30;
+      for (let i = 0; i < 28; i++) {
+        const a = (i / 28) * Math.PI * 2;
+        const X = wx(cam, fx + Math.cos(a) * r, fy + Math.sin(a) * r);
+        const Y = wy(cam, fx + Math.cos(a) * r, fy + Math.sin(a) * r) - lift;
+        dot(g, X - 1, Y - 1, (i + Math.round(spin)) % 4 === 0 ? ROPE[0] : Math.sin(a + spin * 0.2) < 0 ? ROPE[2] : ROPE[1], 2, 2);
+      }
+      // (its weight, glinting, and its shadow on the floor below)
+      const wa = spin * 0.4;
+      const WX = wx(cam, fx + Math.cos(wa) * r, fy + Math.sin(wa) * r);
+      const WY = wy(cam, fx + Math.cos(wa) * r, fy + Math.sin(wa) * r) - lift;
+      glow(g, WX, WY, 5, C[2], 0.3);
+      dot(g, WX - 1, WY - 1, C[3], 2, 2);
+      g.globalAlpha = 0.3;
+      g.fillStyle = '#000000';
+      g.fillRect(Math.round(wx(cam, fx, fy)) - 5, Math.round(wy(cam, fx, fy)), 11, 2);
+      g.globalAlpha = 1;
+      return;
+    }
+  }
   const R = 0.62;
   const n = 44;
   // set: the ground inside it lit in cyan, beating
