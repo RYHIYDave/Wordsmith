@@ -274,6 +274,18 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   before it narrower (90 degrees, 2.4 tiles). AND FOUND (and mended for every move): its head's `low` had been turning it up where
   it said down, so the snorts had dropped its head and the charge's wind-up had lifted it; now down is down (its stand drawn as it
   was). The checks: all pass. `boss_gore.mp4` and `boss_charge_runs.mp4` made again.
+  HIS ANSWER to the remade gore, by pop-up (asked whether this is the gore; offered next: the rear up and stomp): “K”.
+- THE REAR UP AND STOMP (`stomp`, `stompPoseAt`; `pictures/standard/boss_stomp.mp4`, from in front, from behind, then the slam at
+  half speed): by Movement 9 and Monsters 4. ITS WIND-UP: it gathers, rears up onto its hind legs (50 degrees, its haunches let
+  down under it, its hind feet planted), its forefeet off the floor beating the air, its head flung up bellowing, a blast of breath
+  out of its snout; he leans into its neck, his cloak hanging. HELD at its height, trembling (the reach of its blast marked on the
+  floor, 4.5 tiles round its forefeet, in the film: the rules are the main chat's). THE STRIKE: two frames, smeared: it crashes down
+  onto its forefeet. THE BLAST: the floor cracked out from its forefeet, a hot line down each crack; three shock rings rolling out
+  one after another, each a bright edge with the floor heaved and darkened behind it; stone, grit and frost thrown up in a ring,
+  dust rolling out low; the screen kicks hard; its head whipped down and shaken, its body squashed down and coming back up, each
+  forefoot stepped once as it settles. The checks (the blow drawn back, held, followed through; a flash from in front and behind;
+  the hips first), his legs outside the boar: all pass. (His rider's seat now tips back with the boar as far as he does not lean
+  into it.)
 
 ## The tools
 

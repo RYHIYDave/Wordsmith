@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, STOMP, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { png } from './king_png';
 
 const [out = '/tmp/wsfilm', move = 'charge', view0 = 'front', w0 = '420', h0 = '300'] = process.argv.slice(2);
@@ -94,6 +94,65 @@ function sweep(s: Px, t: number, ox: number, oy: number, from: V2, dir: number):
     }
   }
 }
+/** The stomp: where its blast will reach, marked while it rears and holds (its edge bright, rings running in toward it); then, as
+ * it lands, the floor cracked out from its forefeet and shock rings rolling out one after another, each a bright edge with the
+ * floor heaved and darkened behind it. */
+function blast(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
+  const [s0, s1] = STOMP_STRIKE;
+  const R = STOMP.reach * TILE;
+  const mid: V2 = [from[0] + dir * 30, from[1]];
+  const pt = (r: number, a: number): [number, number] => {
+    const [x, y] = at([mid[0] + r * Math.cos(a), mid[1] + r * Math.sin(a), 0]);
+    return [Math.round(ox + x), Math.round(oy + y)];
+  };
+  if (t > 0.12 && t < s0 + 0.05) {
+    const a0 = Math.min(1, (t - 0.12) / 0.2) * (t > s0 ? 0.5 : 1);
+    for (let i = 0; i < 360; i++) {
+      const a = (i / 360) * Math.PI * 2;
+      for (let j = 0; j <= 40; j++) {
+        const r = (R * j) / 40;
+        const run = ((1 - r / R) * 5 + t * 2.5) % 1;
+        const on = j >= 39 ? 0.6 : run < 0.14 ? 0.22 : 0.07;
+        const [x, y] = pt(r, a);
+        mix(s, x, y, '#ff4f8a', on * a0);
+      }
+    }
+  }
+  if (t > s1) {
+    const u = t - s1;
+    // (the floor cracked out from where it struck: dark, a hot line down each crack at first)
+    for (let k = 0; k < 9; k++) {
+      let a = (k / 9) * Math.PI * 2 + 0.4 * Math.sin(k * 7.1);
+      let r = 6;
+      const long = R * (0.35 + 0.3 * ((k * 0.618) % 1)) * Math.min(1, u / 0.1);
+      while (r < long) {
+        const [x, y] = pt(r, a);
+        mix(s, x, y, '#100c10', 0.85);
+        mix(s, x + 1, y, '#100c10', 0.5);
+        if (u < 0.5) mix(s, x, y, '#ff4f8a', 0.6 * (1 - u / 0.5));
+        a += 0.06 * Math.sin(r * 0.3 + k);
+        r += 1.5;
+      }
+    }
+    // (the rings rolling out)
+    for (const w0 of STOMP.rings) {
+      const v = (u - w0) / STOMP.ringLong;
+      if (v <= 0 || v >= 1) continue;
+      const rr = R * (1 - (1 - v) * (1 - v));
+      const fade = 1 - v;
+      for (let i = 0; i < 720; i++) {
+        const a = (i / 720) * Math.PI * 2;
+        for (let j = 0; j < 7; j++) {
+          const r = rr - j * 1.6;
+          if (r < 2) continue;
+          const [x, y] = pt(r, a);
+          const c = j === 0 ? '#fff0d0' : j < 2 ? '#ff7aa8' : j < 4 ? '#c0206a' : '#3a1a2a';
+          mix(s, x, y, c, (j === 0 ? 0.9 : j < 4 ? 0.6 : 0.35) * fade);
+        }
+      }
+    }
+  }
+}
 /** His picture laid on the floor at (ox, oy): his painted pixels, then his lights soft over them. */
 function lay(s: Px, mv: string, vw: 'front' | 'rear', t: number, ox: number, oy: number, ghost = 0): void {
   const { px, lights } = paintMob(mob, mv, t, vw);
@@ -144,7 +203,7 @@ const floorOf = (mv: string) => (t: number): V2 => {
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
@@ -177,12 +236,13 @@ for (const sg of segs) {
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
-    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : 0;
+    const kick = sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : 0;
     const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
     const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
     const s = floor(-ox, -oy);
     if (sg.move === 'charge') lane(s, t, ox, oy, sg.from, k);
     if (sg.move === 'gore') sweep(s, t, ox, oy, sg.from, k);
+    if (sg.move === 'stomp') blast(s, t, ox, oy, sg.from, k);
     const where = (tt: number): [number, number] => {
       const [x, y] = at(world(tt));
       return [ox + x, oy + y];
@@ -203,7 +263,11 @@ for (const sg of segs) {
       const [x, y] = base();
       for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
     }
-    if (sg.move === 'wheel' || sg.move === 'gore') {
+    if (sg.move === 'stomp' && stompSmeared(t)) {
+      const [x, y] = base();
+      for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
+    }
+    if (sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp') {
       const [x, y] = base();
       lay(s, sg.move, sg.view, t, x, y);
     } else {

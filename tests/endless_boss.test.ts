@@ -1,5 +1,5 @@
 // ENDLESS MODE'S FINAL BOSS, THE WARPED WORDSMITH ON THE GREAT WOOLLY BOAR: his look standing, through the bosses' checks (his
-// rulebook's How art is made 7) for his moves so far: his stand; the boar's charge, wheel round and gore.
+// rulebook's How art is made 7) for his moves so far: his stand; the boar's charge, wheel round, gore, and rear up and stomp.
 // @ts-ignore
 import test from 'node:test';
 // @ts-ignore
@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { checkBoss, findingsSaid } from '../src/art/boss_checks';
 import { paintMob } from '../src/art/new_mobs3';
 import { SPARK, CYAN } from '../src/art/kit';
-import { CHARGE, CHARGE_SKID, GORE, WHEEL, WS_SHAPE, boarLumps, boarPoseAt, wsMob } from '../src/art/endless_boss';
+import { CHARGE, CHARGE_SKID, GORE, STOMP, WHEEL, WS_SHAPE, boarLumps, boarPoseAt, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 
 test("his stand passes the bosses' checks", () => {
@@ -15,10 +15,10 @@ test("his stand passes the bosses' checks", () => {
   assert.deepEqual(findingsSaid(found), []);
 });
 
-test("the boar's charge, its wheel round and its gore pass the bosses' checks (but its skid: its hooves ploughing, his pick)", () => {
+test("the boar's charge, wheel round, gore and stomp pass the bosses' checks (but its skid: its hooves ploughing, his pick)", () => {
   // (the one place a hoof slides: the skid at the end of each run, its hooves ploughing the floor, as he picked it, 12 Nov 2026:
   // “Heavy charges, skid and turn (Recommended)”; anything else that slides, or anything else at all, is a finding)
-  const found = checkBoss(wsMob(), WS_SHAPE, ['charge', 'wheel', 'gore']).filter(
+  const found = checkBoss(wsMob(), WS_SHAPE, ['charge', 'wheel', 'gore', 'stomp']).filter(
     (f) => !(f.kind === 'slide' && /^hoof[0-3] \(down from /.test(f.what) && ((d) => d >= CHARGE_SKID[0] - 1e-6 && d <= CHARGE_SKID[1])(Number(/from ([\d.]+)/.exec(f.what)?.[1]))),
   );
   assert.deepEqual(findingsSaid(found), []);
@@ -44,6 +44,7 @@ test('his legs go down the boar\u2019s sides, never into it (his knees and shins
   for (let i = 0; i <= Math.round(CHARGE.long * 30); i++) moments.push(['charge', i / 30]);
   for (let i = 0; i <= Math.round(WHEEL.long * 30); i++) moments.push(['wheel', i / 30]);
   for (let i = 0; i <= Math.round(GORE.long * 30); i++) moments.push(['gore', i / 30]);
+  for (let i = 0; i <= Math.round(STOMP.long * 30); i++) moments.push(['stomp', i / 30]);
   for (const [move, t] of moments) {
     const s = skeletonAt(mob, move, t);
     const lumps = boarLumps(boarPoseAt(move, t));

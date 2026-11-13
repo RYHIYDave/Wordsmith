@@ -125,7 +125,7 @@ export interface BoarPose {
    * pastern is folded back (degrees); null, as `lift` or `legs` has it. */
   feet?: ReadonlyArray<readonly [number, number, number, number] | null>;
   /** HIM IN THE SADDLE, as it moves under him: leaning forward into a charge (degrees), braced back against a stop (degrees). */
-  ride?: { lean: number; brace: number };
+  ride?: { lean: number; brace: number; still?: boolean };
 }
 export const BOAR_STAND: BoarPose = {
   // (its head carried as it was drawn: `low` is how far it is lowered, so its stand's -6 tips its snout a little up)
@@ -580,7 +580,8 @@ export function riderPose(P: BoarPose, t = 0): Partial<Bones> {
   return {
     px: at[0] + 0.9 * Math.sin(a + 0.9), py: at[1] + 0.4 * Math.sin(a + 0.9), pz: at[2] - PELVIS0 + 1.0 * Math.sin(a * 2),
     // (leaning down over its neck into a charge, thrown back against a stop)
-    yaw: P.yaw, pitch: -2 + 0.6 * lean - 0.55 * brace + 0.6 * P.pitch, roll: 0, twist: 6 + 2 * Math.sin(a + 0.5), bend: -2 + 0.9 * lean - 0.45 * brace, side: 0, hunch: 5 + 0.4 * lean,
+    // (his seat tips with the boar's back: reared, he is tipped back with it as far as he does not lean into it)
+    yaw: P.yaw, pitch: -2 + 0.6 * lean - 0.55 * brace - 0.45 * P.pitch, roll: 0, twist: 6 + 2 * Math.sin(a + 0.5), bend: -2 + 0.9 * lean - 0.45 * brace, side: 0, hunch: 5 + 0.4 * lean,
     faceTurn: 4 * Math.sin(a * 0.5), faceUp: 6 + 0.7 * lean + 0.3 * brace, faceTilt: 2,
     // (his knees and feet turned with him, as the boar turns: their ways are the figure's own)
     lfx: fl[0], lfy: fl[1] - B.stance, lfz: fl[2] - B.ankle, lfp: 10, lft: 8 + P.yaw, lk: 72 + P.yaw, lkUp: 8,
@@ -908,6 +909,7 @@ export function boarPoseAt(move: string, t: number): BoarPose {
   if (move === 'charge') return chargePoseAt(t);
   if (move === 'wheel') return wheelPoseAt(t);
   if (move === 'gore') return gorePoseAt(t);
+  if (move === 'stomp') return stompPoseAt(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   const A = BOAR_STAND_AT;
@@ -1121,6 +1123,7 @@ export function boarGrains(t: number, move = 'stand'): [V3, string, number][] {
   if (move === 'charge') return chargeGrains(t);
   if (move === 'wheel') return wheelGrains(t);
   if (move === 'gore') return goreGrains(t);
+  if (move === 'stomp') return stompGrains(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   for (const s0 of BOAR_STAND_AT.snorts) {
@@ -1373,6 +1376,142 @@ function goreGrains(t: number): [V3, string, number][] {
   return out;
 }
 
+// THE REAR UP AND STOMP (his words, 12 Nov 2026: “And I want a rear up and stomp with a big aoe from the boar as well”; offered:
+// it rears onto its hind legs with him still in the saddle, then slams down, the floor cracking and shock rings rolling out one
+// after another, a warning ring on the floor first). By his Movement 9 and Monsters 4:
+//   THE WIND-UP  it gathers, haunches down; rears up onto its hind legs, its forefeet off the floor, pawing the air, its head flung
+//                up, bellowing (a blast of breath up out of its snout); he leans into its neck, his staff high
+//   HELD         reared at its height, trembling, its forefeet beating the air (the rings it will send out marked on the floor)
+//   THE STRIKE   TWO FRAMES, smeared: it crashes down onto its forefeet
+//   THE BLAST    the floor cracks under its forefeet and shock rings roll out from them one after another (the film draws them: how
+//                far, how many and how hard are the rules', the main chat's); stone and grit and frost thrown up in a ring; the screen
+//                kicks hard; its head whipped down, shaken; its body squashed down and coming back up
+export const STOMP_STRIKE = [fr(30), fr(32)] as const;
+export const STOMP = { gather: 0.15, up: 0.78, held: 0.8, strike: STOMP_STRIKE, hit: STOMP_STRIKE[1], rings: [0, 0.22, 0.44] as const, ringLong: 0.7, reach: 4.5, long: 2.0, height: 50 };
+export const stompSmeared = (t: number): boolean => t > STOMP_STRIKE[0] + 1e-6 && t <= STOMP_STRIKE[1] + FR + 1e-6;
+/** How far it is reared (0 down ... 1 at its height). */
+function rearOf(t: number): number {
+  const [s0, s1] = STOMP_STRIKE;
+  if (t <= STOMP.gather) return 0;
+  if (t <= STOMP.up) {
+    const u = (t - STOMP.gather) / (STOMP.up - STOMP.gather);
+    return 1 - (1 - u) * (1 - u) * (1 - u) * (1 + 0.0 * u);
+  }
+  if (t <= s0) return 1;
+  if (t <= s1) return 1 - (t - s0) / (s1 - s0);
+  return 0;
+}
+/** Its hind leg's top as it stands (its own points): it rears about it, its haunches let down. */
+const HAUNCH: V3 = [-14, 0, 22.8];
+export function stompPoseAt(t: number): BoarPose {
+  const [s0, s1] = STOMP_STRIKE;
+  const r = rearOf(t);
+  const th = STOMP.height * r;
+  const gather = bumpOf(t, 0, STOMP.gather * 2.2);
+  const held = t > STOMP.held && t < s0 ? 1 : 0;
+  const shiver = held * (0.4 * Math.sin(t * 88) + 0.25 * Math.sin(t * 133));
+  // (the slam: squashed down, nose down, coming back up)
+  const after = t > s1 ? t - s1 : -1;
+  const squash = after >= 0 ? Math.exp(-after * 7) * (after < 0.04 ? 1 : 1) : 0;
+  const settle = after >= 0 ? smooth01(after / 0.7) : 0;
+  // (reared about its haunches, they let down as it goes up: where its body must be for its haunch to stay over its hind feet)
+  const drop = (4.5 * r + 1.2 * gather) * S;
+  const c = Math.cos(th * D), sn = Math.sin(th * D);
+  const rel: V3 = mul(sub(HAUNCH, PIVOT), S);
+  const x2 = rel[0] * c - rel[2] * sn;
+  const z2 = rel[0] * sn + rel[2] * c;
+  const px = rel[0] - x2;
+  const pz = rel[2] - z2 - drop;
+  const P0: BoarPose = { ...BOAR_STAND, x: px, z: pz, pitch: th };
+  // (its forefeet: off the floor as it rears, tucked and beating the air; slammed down on their spots)
+  const air = smooth01((t - 0.11) / 0.12) * (t < s0 ? 1 : 1 - (t - s0) / (s1 - s0));
+  const feet: Foot[] = [0, 1, 2, 3].map((i): Foot => {
+    const rest: Foot = [SOLE0[i][0], SOLE0[i][1], 0, 0];
+    if (i >= 2) return rest;
+    if (t > s1) {
+      // (down, then each stepped once, settling)
+      const w0 = s1 + 0.45 + 0.16 * i;
+      const v = clamp01((t - w0) / 0.2);
+      const arc = Math.sin(Math.PI * v);
+      return arc > 0 ? [rest[0], rest[1], 3.5 * S * arc + 0.8, 40 * arc] : rest;
+    }
+    if (air <= 0) return rest;
+    const ph = (t - 0.3) * TAU * 2.6 + i * Math.PI;
+    const local: V3 = [14.6 + 2.2 * Math.sin(ph), i === 0 ? 6.4 : -6.4, 10.5 + 2.2 * Math.cos(ph)];
+    const up = boarAt(P0, local);
+    const sole: V3 = [up[0], up[1], up[2] - SOLE * S];
+    return [rest[0] + (sole[0] - rest[0]) * air, rest[1] + (sole[1] - rest[1]) * air, Math.max(0.8 * Math.min(1, air * 8), sole[2] * air), 95 * air];
+  });
+  return {
+    ...BOAR_STAND,
+    x: px,
+    z: pz - 2.2 * S * squash + 0.4 * shiver,
+    pitch: th - 6 * squash * (1 - settle) + 0.4 * shiver,
+    roll: 0.6 * shiver,
+    // (its head flung up as it rears, bellowing; whipped down as it lands, shaken)
+    low: BOAR_STAND.low - 26 * r - 10 * bumpOf(t, 0.45, 0.85) + 30 * squash + 12 * bumpOf(t, s1, s1 + 0.9),
+    look: 1.2 * shiver + 10 * bumpOf(t, s1 + 0.1, s1 + 0.8) * Math.sin((t - s1) * 24),
+    tilt: 12 * bumpOf(t, s1 + 0.1, s1 + 0.8) * Math.sin((t - s1) * 24 + 0.6),
+    flap: -0.9 * r + 1.0 * squash,
+    legs: BOAR_STAND.legs,
+    feet,
+    breath: 0.5 + 0.5 * bumpOf(t, 0.45, 0.85),
+    sway: t / WS_STAND_LONG + 0.3 * squash,
+    pulse: Math.max(0.6, smooth01((t - 0.2) / 0.5)) * (t > s1 + 0.6 ? 1 - 0.5 * smooth01((t - s1 - 0.6) / 0.6) : 1),
+    // (he leans into its neck as it rears, and is thrown down with it as it lands)
+    ride: { lean: 34 * (t <= s1 ? smooth01((t - STOMP.gather) / 0.4) : 1 - smooth01((t - s1) / 0.4)) + 12 * squash, brace: 0, still: true },
+  };
+}
+/** The stomp's striking end: its snout, crashing down with it. */
+export function stompTip(P: BoarPose): V3 {
+  return headOf(P).at(21.6, 0, -7.6);
+}
+/** WHAT FLIES OFF IT AS IT STOMPS: its bellow, a blast of breath up out of its snout; as it lands, stone, grit and frost thrown up in a
+ * ring out from its forefeet, and dust rolling out low. */
+function stompGrains(t: number): [V3, string, number][] {
+  const out: [V3, string, number][] = [];
+  const g = 30;
+  // (its bellow)
+  {
+    const u = t - 0.5;
+    if (u > 0 && u < 0.7) {
+      const H = headOf(stompPoseAt(0.55));
+      for (const k of [-1, 1]) {
+        const nose = H.at(22.6, k * 1.2, -8.2);
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * TAU + hash(i, k, 8951);
+          const rr = (1.5 + 8 * Math.sqrt(u)) * S * Math.sqrt(0.2 + 0.8 * hash(i, k + 5, 8952));
+          const p = add(add(nose, mul(H.f, 12 * S * (1 - Math.exp(-u * 5)))), [Math.cos(a) * rr, Math.sin(a) * rr, 6 * u + Math.sin(a) * rr * 0.3]);
+          if (hash(i, Math.floor(u * 20), 8953) < (u / 0.7) * 0.9) continue;
+          out.push([p, BREATH[Math.min(3, Math.floor((u / 0.7) * 4))], u < 0.3 ? 2 : 1]);
+        }
+      }
+    }
+  }
+  // (the landing: a ring of stone, grit and frost thrown up and out, falling; dust rolling out low behind it)
+  const at: V3 = [(SOLE0[0][0] + SOLE0[1][0]) / 2, 0, 0];
+  const u0 = t - STOMP.hit;
+  if (u0 > 0 && u0 < 0.9) {
+    for (let i = 0; i < 48; i++) {
+      const u = u0 - 0.01 * (i % 3);
+      if (u <= 0) continue;
+      const a = (i / 48) * TAU + 0.3 * hash(i, 1, 8954);
+      const sp = (50 + 90 * hash(i, 2, 8955)) * S;
+      const p: V3 = [at[0] + Math.cos(a) * (4 * S + sp * u), at[1] + Math.sin(a) * (4 * S + sp * u) * 0.9, 0.5 + (24 + 40 * hash(i, 3, 8956)) * S * u - 0.5 * g * S * u * u];
+      if (p[2] < 0 || hash(i, Math.floor(u * 30), 8957) < (u / 0.9) * 0.85) continue;
+      const big = i % 5 === 0 && u < 0.35;
+      out.push([p, i % 4 === 0 ? BREATH[1] : big ? SLATE[2] : DUST[Math.min(2, Math.floor((u / 0.9) * 3))], big ? 2 : 1]);
+    }
+    for (let i = 0; i < 36; i++) {
+      const a = (i / 36) * TAU;
+      const rr = (5 + 70 * Math.sqrt(u0)) * S * (0.85 + 0.3 * hash(i, 4, 8958));
+      if (hash(i, Math.floor(u0 * 20), 8959) < (u0 / 0.9) * 0.9) continue;
+      out.push([[at[0] + Math.cos(a) * rr, at[1] + Math.sin(a) * rr * 0.9, 1 + 3 * S * u0], DUST[1 + (i % 2)], 1]);
+    }
+  }
+  return out;
+}
+
 /** WHAT FLIES OFF IT AS IT CHARGES (as its own points are, the game carrying it on: what is thrown stays where it was thrown):
  * grit thrown back as it paws; the blast of its snort; a ring of grit blown out where it bursts off; grit kicked up at every
  * footfall; and in the skid, grit and frost sprayed out ahead of its ploughing forefeet. */
@@ -1490,7 +1629,7 @@ function wsBits(st: Stage, m: Moment): Bit[] {
   const near = st.near(add(s.pelvis, [0, -3, 0])) > st.near(add(s.pelvis, [0, 3, 0])) ? -1 : 1;
   boarBits(P, put, near, st);
   // (the wind of its going: on him as it charges, the other way as it stops dead)
-  const wind = ((P.ride?.lean ?? 0) - 1.6 * (P.ride?.brace ?? 0)) / 22;
+  const wind = P.ride?.still ? 0 : ((P.ride?.lean ?? 0) - 1.6 * (P.ride?.brace ?? 0)) / 22;
   robe(put, s, P.sway, wind, m.t);
   // (his left hand clawed, fingers spread, writing on the air; his right closed round the staff)
   arm(put, s, 'L', s.chest[2], 0.32, 1.25);
@@ -1555,7 +1694,7 @@ export function wsMob(): Mob {
     trueBack: true,
     bits: wsBits,
     grains: (_st: Stage, m: Moment) => boarGrains(m.t, m.move ?? 'stand'),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -1619,15 +1758,15 @@ export const WS_SHAPE: BossShape = {
   },
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : 0),
-  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE },
-  smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)),
+  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE },
+  smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)),
   // (the end the boar strikes with in its gore: its leading tusk's tip)
-  tip: (move: string, t: number) => (move === 'gore' ? goreTip(boarPoseAt('gore', t)) : null),
+  tip: (move: string, t: number) => (move === 'gore' ? goreTip(boarPoseAt('gore', t)) : move === 'stomp' ? stompTip(boarPoseAt('stomp', t)) : null),
   // (each move from his stand and back, as the game hands over; a run done, it wheels round out of its skid; done wheeling, the
   // game shows it from its other side and the next run goes back down the lane: that hand-over is the charge's own start drawn the
   // other way round, and is not one these checks can draw)
   handovers: [
-    ...['attack', 'reel', 'charge', 'gore'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
+    ...['attack', 'reel', 'charge', 'gore', 'stomp'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
     { from: 'charge', at: 'end', to: 'wheel', toAt: 0 },
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
