@@ -19,7 +19,7 @@
 // table), so a deliberate rule change needs the same change there.
 
 import type { RNG } from '../engine/rng';
-import { CLASSES, CLASS_WEAPON_NAME, classWeapon } from './defs';
+import { CLASSES, CLASS_WEAPON_NAME, ONE_HAND_SWORDS, classWeapon } from './defs';
 import type { Affix, BaseWordId, ClassId, ClassWeaponKind, IconKey, Imbue, Item, Limit, MeldId, OffhandKind, OldWeaponKind, RankId, Rarity, Slot, StatKey, StatMod, WarriorWeaponKind, WeaponKind, WordId } from './types';
 import { MELD_OF, RANK_OF, SLOTS } from './types';
 
@@ -1016,7 +1016,8 @@ function rollRarity(rng: RNG, ilvl: number, magicFind: number, luck: readonly [n
 function pickBase(slot: Slot, ilvl: number, rng: RNG, forWeapon?: WeaponKind | null, weapons?: readonly WeaponKind[], cls?: ClassId | null): ItemBase {
   // (THE NEW CLASSES' WEAPONS: one is a kind among the rest only for a hero of its class, and only while NEW_WEAPONS is on)
   const mine = classWeapon(cls);
-  let groups = BASE_GROUPS.filter((g) => g.slot === slot && (!g.own || g.weapon === mine));
+  // (ONE_HAND_SWORDS off, defs.ts: no one-handed sword is found until the Gladiator)
+  let groups = BASE_GROUPS.filter((g) => g.slot === slot && (!g.own || g.weapon === mine) && (ONE_HAND_SWORDS.on || g.weapon !== 'sword'));
   if ((slot === 'mainhand' || slot === 'offhand') && weapons && weapons.length > 0) {
     const own = groups.filter((g) => (g.weapon !== null && weapons.includes(g.weapon)) || g.pairsWith.some((w) => weapons.includes(w)));
     if (own.length > 0) groups = own;
