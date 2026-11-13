@@ -554,6 +554,13 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   a finger's path into a gap; then the rot heaves: from the rune outward, gnarled dead trees punch up out of it everywhere it
   reached, about his height, crooked branches clawing, his pink seeping from their bark, splinters thrown up, spores rising; they
   stand, then go grey, crack, crumble and sink back into the rot, which dries and is gone. Through the bosses' checks (0 findings).
+  HIS WORDS, by pop-up: “Gotta be way bigger.  And let’s do a little better on those trees”; and: “And can you tell Me what the
+  attack even does?” (told him: the rot creeping out is the warning, exactly where the trees will come up; standing on rot when
+  they burst, you're impaled, a big hit and Blight's poison, biting harder the lower your life; dodge into a gap between the
+  fingers before it heaves; the trees stand about a second as walls, then crumble; the numbers the main chat's). REMADE SO: the
+  rot creeps over most of the room (nine fingers, out to the room's walls); 22 dead trees about twice his height burst up out of
+  it, each a twisting trunk on flared roots, ridged bark, crooked limbs forking into claws, his pink glowing out of a split at its
+  foot; they stand, go grey, lose their limbs and sink back to stumps in the rot, which dries and is gone.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

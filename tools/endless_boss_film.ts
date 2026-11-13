@@ -1297,10 +1297,10 @@ function avalFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
 /** WHERE THE HERO IS in Blight's film (his own lengths): out before him in the path of a finger of the rot as it creeps, stepping
  * aside into a gap between two as it comes for him, before the trees burst up. */
 const BLIGHT_HERO = ((): { from: [number, number, number]; to: [number, number, number] } => {
-  const r = 3.9 * TILE;
+  const r = 5.6 * TILE;
   const clear = (x: number, y: number, pad: number): boolean => { for (let a = 0; a < 16; a++) for (const d of [0, pad * 0.33, pad * 0.66, pad]) if (blightAt(x + Math.cos(a * 0.4) * d, y + Math.sin(a * 0.4) * d).at < Infinity) return false; return true; };
   let best: [number, number, number] = [BLIGHT_AT[0] + r, BLIGHT_AT[1], 0], bestA = Infinity;
-  for (const pad of [1.1, 0.9, 0.7]) {
+  for (const pad of [1.4, 1.2, 1.0, 0.8]) {
     for (let i = -75; i <= 75; i++) {
       const a = (i * Math.PI) / 180, x = BLIGHT_AT[0] + Math.cos(a) * r, y = BLIGHT_AT[1] + Math.sin(a) * r;
       if (clear(x, y, pad * TILE) && Math.abs(a) < bestA) { bestA = Math.abs(a); best = [x, y, 0]; }
@@ -1315,7 +1315,7 @@ const BLIGHT_HERO = ((): { from: [number, number, number]; to: [number, number, 
   return { from, to: best };
 })();
 function blightHeroAt(t: number): [number, number, number] {
-  const d0 = MELD.slam + 0.72, u = Math.min(1, Math.max(0, (t - d0) / 0.24)), e = u * u * (3 - 2 * u);
+  const d0 = MELD.slam + 0.95, u = Math.min(1, Math.max(0, (t - d0) / 0.3)), e = u * u * (3 - 2 * u);
   const { from: a, to: b } = BLIGHT_HERO;
   return [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e, 0];
 }
@@ -1628,7 +1628,7 @@ for (const sg of segs) {
     // (as his shade rises, the camera lifts to take it in)
     const lift = sg.move === 'fall' ? 60 * Math.min(1, Math.max(0, (t - FALL.shade[0]) / (FALL.shade[1] - FALL.shade[0]))) : 0;
     const blightFilm = sg.move === 'blight';
-    const [tx, ty] = blightFilm ? at([sg.from[0] + BLIGHT_AT[0] + 0.6 * TILE, sg.from[1] + BLIGHT_AT[1], 55]) : thunderFilm ? at([sg.from[0] + 4.85 * TILE, sg.from[1] - 1.75 * TILE, 70]) : avalFilm ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 30]) : turnFilm ? at([sg.from[0] + 0.6 * TILE, sg.from[1] - 0.2 * TILE, 70]) : hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    const [tx, ty] = blightFilm ? at([sg.from[0] + BLIGHT_AT[0] + 1.6 * TILE, sg.from[1] + BLIGHT_AT[1], 110]) : thunderFilm ? at([sg.from[0] + 4.85 * TILE, sg.from[1] - 1.75 * TILE, 70]) : avalFilm ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 30]) : turnFilm ? at([sg.from[0] + 0.6 * TILE, sg.from[1] - 0.2 * TILE, 70]) : hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)

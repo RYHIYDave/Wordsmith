@@ -3489,10 +3489,15 @@ export function paintAvalanche(t: number, view: 'front' | 'rear', nearer: V3 | n
 // punch up out of it everywhere it reached, gnarled trunks and spiked branches, his pink seeping from their cracks, rotten clods
 // thrown up with them, spores rising; they stand a moment, then crack, crumble and sink back into the rot, which dries and is gone.
 // His rules for the words stand: one rune (the meld's), what it makes made as solids (the trees).
-export const BLIGHT = { at: 2.4, fingers: 8, core: 1.3, spread: [0.05, 1.35] as const, heave: 1.5, ripple: 0.3, rise: 0.14, hold: 0.75, wither: 0.9, dry: 1.0, end: 6.3 };
-export const BLIGHT_CANVAS: MobCanvas = { w: 980, h: 640, ax: 380, ay: 360 };
+// WAY BIGGER, AND BETTER TREES (his words, 13 Nov 2026: “Gotta be way bigger.  And let’s do a little better on those trees”): the
+// rot creeps over most of the room; the trees tower over him, twisting trunks on flared roots, ridged bark, branches forking and
+// forking again into claws, his pink glowing out of splits in the wood.
+export const BLIGHT = { at: 3.0, fingers: 9, core: 2.0, spread: [0.05, 1.5] as const, heave: 1.65, ripple: 0.35, rise: 0.2, hold: 0.9, wither: 1.0, dry: 1.0, end: 7.0 };
+export const BLIGHT_CANVAS: MobCanvas = { w: 1300, h: 960, ax: 560, ay: 600 };
 export const BLIGHT_AT: V3 = [BLIGHT.at * TILE, 0, 0];
 const BARK: Ramp = ['#0a0908', '#1a1812', '#2c2a1c', '#44452a', '#606638'];
+const CREASE_BARK: Ramp = ['#030302', '#070605', '#0c0b08', '#14130e', '#1e1d14'];
+const SPLIT_GLOW: Ramp = ['#7a1058', '#c0206a', '#ff4f8a', '#ff9cc0', '#ffd0e0'];
 const DEAD_ASH: Ramp = ['#141214', '#2a2628', '#48424a', '#6e6670', '#948c96'];
 /** The rot's fingers: each a line of points over the floor (his floor point's own lengths), how wide it is at each (half), and how
  * far the rot has crept to reach each, from where the rune went in. */
@@ -3504,28 +3509,30 @@ export const BLIGHT_FINGERS: ReadonlyArray<{ pts: V3[]; w: number[]; d: number[]
     const n = Math.ceil(L / 4);
     for (let i = 0; i <= n; i++) {
       const f = i / n;
-      pts.push([x, y, 0]); w.push(w0 * (1 - 0.75 * f)); d.push(d0 + f * L);
+      if (i > 1 && (x < (ARENA.x[0] + 0.4) * TILE || x > (ARENA.x[1] - 0.4) * TILE || y < (ARENA.y[0] + 0.4) * TILE || y > (ARENA.y[1] - 0.4) * TILE)) break;
+      pts.push([x, y, 0]); w.push(w0 * (1 - 0.7 * f)); d.push(d0 + f * L);
       a += (hash(seed, i, 9501) - 0.5) * 0.45;
       x += (Math.cos(a) * L) / n; y += (Math.sin(a) * L) / n;
     }
+    if (pts.length < 2) return;
     out.push({ pts, w, d });
     if (depth < 1) for (let b = 0; b < 2; b++) {
       if (hash(seed, b, 9502) < 0.3) continue;
-      const j = Math.floor(n * (0.3 + 0.4 * hash(seed, b, 9503)));
+      const j = Math.min(pts.length - 1, Math.floor(n * (0.3 + 0.4 * hash(seed, b, 9503))));
       grow(pts[j][0], pts[j][1], a0 + (b ? 1 : -1) * (0.5 + 0.5 * hash(seed, b, 9504)), L * (0.35 + 0.25 * hash(seed, b, 9505)), w[j] * 0.8, d[j], seed * 7 + b + 1, depth + 1);
     }
   };
   for (let f = 0; f < BLIGHT.fingers; f++) {
     const a = (f / BLIGHT.fingers) * TAU + 0.3 + (hash(f, 1, 9506) - 0.5) * 0.45;
     const r0 = BLIGHT.core * TILE * 0.8;
-    grow(BLIGHT_AT[0] + Math.cos(a) * r0, BLIGHT_AT[1] + Math.sin(a) * r0, a, (3.0 + 2.0 * hash(f, 2, 9507)) * TILE, (0.32 + 0.14 * hash(f, 3, 9508)) * TILE, r0, f + 1, 0);
+    grow(BLIGHT_AT[0] + Math.cos(a) * r0, BLIGHT_AT[1] + Math.sin(a) * r0, a, (5.5 + 3.5 * hash(f, 2, 9507)) * TILE, (0.5 + 0.2 * hash(f, 3, 9508)) * TILE, r0, f + 1, 0);
   }
   return out;
 })();
 /** THE ROT'S REACH over the floor, worked out once: a grid (a cell a length) of how far the rot has to creep to reach each spot, and
  * how deep into a finger it is (1 at its middle, 0 at its edge); nothing where it never reaches. */
 export const BLIGHT_FIELD = ((): { x0: number; y0: number; w: number; h: number; at: Float32Array; deep: Float32Array; far: number } => {
-  const R = 7.5 * TILE;
+  const R = 12.5 * TILE;
   const x0 = Math.floor(BLIGHT_AT[0] - R), y0 = Math.floor(BLIGHT_AT[1] - R), w = Math.ceil(2 * R), h = Math.ceil(2 * R);
   const at = new Float32Array(w * h).fill(Infinity), deep = new Float32Array(w * h);
   const mark = (cx: number, cy: number, d: number, dp: number): void => {
@@ -3574,18 +3581,18 @@ export const BLIGHT_TREES: ReadonlyArray<{ at: V3; size: number; t: number; seed
   const when = (d: number): number => MELD.slam + BLIGHT.heave + BLIGHT.ripple * (d / BLIGHT_FIELD.far);
   for (let i = 0; i < 3; i++) {
     const a = (i / 3) * TAU + 0.5, r = (0.3 + 0.25 * hash(i, 1, 9511)) * BLIGHT.core * TILE;
-    out.push({ at: [BLIGHT_AT[0] + Math.cos(a) * r, BLIGHT_AT[1] + Math.sin(a) * r, 0], size: 1.45 + 0.2 * hash(i, 2, 9512), t: when(r), seed: i });
+    out.push({ at: [BLIGHT_AT[0] + Math.cos(a) * r, BLIGHT_AT[1] + Math.sin(a) * r, 0], size: 1.25 + 0.15 * hash(i, 2, 9512), t: when(r), seed: i });
   }
   for (const [f, fg] of BLIGHT_FINGERS.entries()) {
     const L = fg.d[fg.d.length - 1] - fg.d[0];
-    if (L < 1.4 * TILE) continue;
-    const n = Math.max(1, Math.round(L / (1.7 * TILE)));
+    if (L < 2.2 * TILE) continue;
+    const n = Math.max(1, Math.round(L / (3.3 * TILE)));
     for (let j = 0; j < n; j++) {
       const u = (j + 0.4 + 0.3 * hash(f, j, 9513)) / n, i = Math.min(fg.pts.length - 2, Math.floor(u * (fg.pts.length - 1))), v = u * (fg.pts.length - 1) - i;
       const a = fg.pts[i], b = fg.pts[i + 1], w = fg.w[i] + (fg.w[i + 1] - fg.w[i]) * v;
       const nx = -(b[1] - a[1]), ny = b[0] - a[0], nl = Math.hypot(nx, ny) || 1, side = (hash(f, j, 9514) - 0.5) * 0.6 * w;
       const at: V3 = [a[0] + (b[0] - a[0]) * v + (nx / nl) * side, a[1] + (b[1] - a[1]) * v + (ny / nl) * side, 0];
-      out.push({ at, size: 0.85 + 0.55 * (w / (0.46 * TILE)) * (0.8 + 0.4 * hash(f, j, 9515)), t: when(fg.d[i] + (fg.d[i + 1] - fg.d[i]) * v), seed: 100 + f * 31 + j });
+      out.push({ at, size: 0.75 + 0.45 * (w / (0.6 * TILE)) * (0.8 + 0.4 * hash(f, j, 9515)), t: when(fg.d[i] + (fg.d[i + 1] - fg.d[i]) * v), seed: 100 + f * 31 + j });
     }
   }
   return out;
@@ -3601,47 +3608,69 @@ export function blightBits(t: number, put: Put, keep: (x: number, y: number) => 
     if (wi >= 1) continue;
     const g = out(u / BLIGHT.rise) * (1 - wi);
     const S = tr.size, sd = tr.seed;
-    const H = (52 + 30 * hash(sd, 1, 9521)) * S;
-    const la = hash(sd, 2, 9522) * TAU, lean = (0.12 + 0.2 * hash(sd, 3, 9523)) * H;
+    const H = (120 + 50 * hash(sd, 1, 9521)) * S;
     const ramp = wi > 0.15 ? DEAD_ASH : BARK;
     const part = `tree${n % 6}`;
-    // (its trunk, gnarled, bent at two knees, thick at its foot; the whole of it rising out of the rot, scaled up out of it as it
-    // punches up)
-    const P = (fx: number, fy: number, fz: number): V3 => [tr.at[0] + fx * g, tr.at[1] + fy * g, fz * g];
-    const k1: V3 = [Math.cos(la + 1.2) * lean * 0.3, Math.sin(la + 1.2) * lean * 0.3, H * 0.34];
-    const k2: V3 = [Math.cos(la - 0.4) * lean * 0.6, Math.sin(la - 0.4) * lean * 0.6, H * 0.66];
-    const top: V3 = [Math.cos(la) * lean, Math.sin(la) * lean, H];
-    const trunk: [V3, V3, number, number][] = [[[0, 0, 0], k1, 4.6 * S, 3.2 * S], [k1, k2, 3.2 * S, 2.0 * S], [k2, top, 2.0 * S, 0.7 * S]];
-    for (const [a2, b2, ra, rb] of trunk) put(part, 'trunk', { k: 'rod', a: P(...a2), b: P(...b2), ra: ra * Math.max(0.4, g), rb: rb * Math.max(0.4, g), ramp });
-    // (its roots, clawing out over the rot at its foot)
-    for (let r = 0; r < 4; r++) {
-      const ra = la + (r / 4) * TAU + hash(sd, r, 9524);
-      const kn: V3 = [Math.cos(ra) * 7 * S, Math.sin(ra) * 7 * S, 4 * S];
-      put(part, 'root', { k: 'rod', a: P(0, 0, 6 * S), b: P(...kn), ra: 2.6 * S, rb: 1.4 * S, ramp });
-      put(part, 'root', { k: 'rod', a: P(...kn), b: P(Math.cos(ra + 0.3) * 14 * S, Math.sin(ra + 0.3) * 14 * S, 0.5), ra: 1.4 * S, rb: 0.4, ramp });
-    }
-    // (its branches, dead, crooked: reaching out and up from its upper knee and its top, bent once, forking into claws at their
-    // ends; the first of it to break off as it crumbles)
-    if (wi < 0.5) for (const [bi, from] of ([k2, top] as V3[]).entries()) for (let b = 0; b < (bi === 0 ? 2 : 3); b++) {
-      const h0 = hash(sd, bi * 5 + b, 9525), h1 = hash(sd, bi * 5 + b, 9526), h2 = hash(sd, bi * 5 + b, 9527);
-      const ba = la + (bi === 0 ? (b ? 1 : -1) * (1.2 + 0.8 * h0) : (b - 1) * 1.6 + (h0 - 0.5) * 0.8), up = 0.35 + 0.55 * h1, L = (16 + 12 * h2) * S * (1 - wi * 2);
-      const elbow: V3 = [from[0] + Math.cos(ba) * L * 0.55, from[1] + Math.sin(ba) * L * 0.55, from[2] + up * L * 0.3];
-      const tip: V3 = [elbow[0] + Math.cos(ba + 0.5) * L * 0.5, elbow[1] + Math.sin(ba + 0.5) * L * 0.5, elbow[2] + up * L * 0.8];
-      put(part, 'branch', { k: 'rod', a: P(...from), b: P(...elbow), ra: 1.6 * S, rb: 1.0 * S, ramp });
-      put(part, 'branch', { k: 'rod', a: P(...elbow), b: P(...tip), ra: 1.0 * S, rb: 0.35, ramp });
-      for (const c of [-0.7, 0.7]) {
-        const tl = L * 0.32;
-        put(part, 'twig', { k: 'rod', a: P(...tip), b: P(tip[0] + Math.cos(ba + c) * tl, tip[1] + Math.sin(ba + c) * tl, tip[2] + tl * 0.5), ra: 0.5 * S, rb: 0.25, ramp });
+    // (the whole of it rising out of the rot, scaled up out of it as it punches up)
+    const P = (q2: V3): V3 => [tr.at[0] + q2[0] * g, tr.at[1] + q2[1] * g, q2[2] * g];
+    const rod = (piece: string, a2: V3, b2: V3, ra: number, rb: number, rp: Ramp = ramp): void => put(part, piece, { k: 'rod', a: P(a2), b: P(b2), ra: ra * Math.max(0.4, g), rb: rb * Math.max(0.4, g), ramp: rp });
+    let q = (sd * 2654435761) >>> 0;
+    const rnd = (): number => { q = (q + 0x6d2b79f5) >>> 0; let z = q; z = Math.imul(z ^ (z >>> 15), z | 1); z ^= z + Math.imul(z ^ (z >>> 7), z | 61); return ((z ^ (z >>> 14)) >>> 0) / 4294967296; };
+    const turnBy = (v: V3, amt: number): V3 => norm([v[0] + (rnd() - 0.5) * amt, v[1] + (rnd() - 0.5) * amt, v[2] + (rnd() - 0.5) * amt * 0.6]);
+    // (A LIMB: crooked, in bends, tapering; at its end it forks again, two or three ways, into smaller limbs, down to claws. The
+    // trunk is the first of them: its bark ridged (dark creases running up it, twisting round it), his pink glowing out of a split
+    // in it. As it crumbles its smallest limbs break off first.)
+    const limb = (from: V3, dir: V3, L: number, r: number, depth: number): void => {
+      if (depth >= 2 && wi > 0.35) return;
+      if (depth >= 1 && wi > 0.6) return;
+      let p = from, d = dir;
+      const segs = depth === 0 ? 4 : 3;
+      for (let k = 0; k < segs; k++) {
+        d = turnBy(d, depth === 0 ? 0.3 : 0.45);
+        if (depth > 0) d = norm([d[0], d[1], d[2] + 0.2]);
+        const e: V3 = [p[0] + d[0] * (L / segs), p[1] + d[1] * (L / segs), Math.max(1, p[2] + d[2] * (L / segs))];
+        const ra = r * (1 - (0.55 * k) / segs), rb = r * (1 - (0.55 * (k + 1)) / segs);
+        rod(depth === 0 ? 'trunk' : 'limb', p, e, ra, rb);
+        if (depth <= 1 && ra > 2.2) {
+          const side = norm(cross(d, [0, 0, 1])), up2 = norm(cross(side, d));
+          const nC = depth === 0 ? 4 : 2;
+          for (let c = 0; c < nC; c++) {
+            const an = (c / nC) * TAU + k * 0.5 + sd;
+            const o = (rr: number): V3 => add(mul(side, Math.cos(an) * rr), mul(up2, Math.sin(an) * rr));
+            rod('crease', add(p, o(ra * 0.97)), add(e, o(rb * 0.97)), Math.max(0.7, ra * 0.2), Math.max(0.5, rb * 0.2), CREASE_BARK);
+          }
+          if (depth === 0 && k < 3 && wi < 0.3) {
+            const o = add(mul(side, Math.cos(sd) * ra * 0.9), mul(up2, Math.sin(sd) * ra * 0.9));
+            rod('split', add(p, o), add(e, mul(o, rb / ra)), Math.max(0.9, ra * 0.26), Math.max(0.6, rb * 0.2), SPLIT_GLOW);
+            if (k === 1) put('splitGlow', 'glow', { k: 'glow', p: P(add(p, o)), c: '#ff4f8a', r: 14 * S, a: 0.35 * (1 - wi / 0.3) });
+          }
+        }
+        p = e;
       }
-      const sa = ba - 0.9;
-      put(part, 'twig', { k: 'rod', a: P(...elbow), b: P(elbow[0] + Math.cos(sa) * L * 0.3, elbow[1] + Math.sin(sa) * L * 0.3, elbow[2] + L * 0.25), ra: 0.6 * S, rb: 0.25, ramp });
-    }
-    // (his pink seeping out of the cracks in its bark, going out as it dies)
-    if (wi < 0.3) for (let c = 0; c < 2; c++) {
-      const f = 0.2 + 0.35 * c, [a, b] = f < 0.38 ? [[0, 0, 0] as V3, k1] : f < 0.72 ? [k1, k2] : [k2, top];
-      const v = hash(sd, c, 9529);
-      const q: V3 = [a[0] + (b[0] - a[0]) * v, a[1] + (b[1] - a[1]) * v, a[2] + (b[2] - a[2]) * v];
-      put('seep', 'seep', { k: 'mote', p: P(q[0] + Math.cos(la + c) * 2.2 * S, q[1] + Math.sin(la + c) * 2.2 * S, q[2]), c: c % 2 ? '#ff4f8a' : '#ff9cc0', size: 1 });
+      if (depth >= 2) {
+        // (claws at its end)
+        for (const c of [-0.6, 0.6]) {
+          const cd = turnBy(norm([d[0] + c * d[1], d[1] - c * d[0], d[2] + 0.3]), 0.3), cl = L * 0.35;
+          rod('claw', p, [p[0] + cd[0] * cl, p[1] + cd[1] * cl, p[2] + cd[2] * cl], r * 0.5, 0.3);
+        }
+        return;
+      }
+      const kids = depth === 0 ? 2 + (rnd() < 0.5 ? 1 : 0) : 2;
+      for (let c = 0; c < kids; c++) {
+        const sp = (depth === 0 ? 0.5 : 0.55) + 0.35 * rnd(), an = (c / kids) * TAU + rnd() * 1.2;
+        const side = norm(cross(d, [Math.cos(an), Math.sin(an), 0.2]));
+        const nd = norm(add(mul(d, Math.cos(sp)), mul(side, Math.sin(sp))));
+        limb(p, norm([nd[0], nd[1], Math.max(0.15, nd[2])]), L * (0.6 + 0.15 * rnd()), r * 0.5, depth + 1);
+      }
+    };
+    const la = rnd() * TAU, lean = 0.1 + 0.15 * rnd();
+    limb([0, 0, 0], norm([Math.cos(la) * lean, Math.sin(la) * lean, 1]), H * 0.55, 9 * S, 0);
+    // (flared roots clawing out over the rot at its foot)
+    for (let r = 0; r < 5; r++) {
+      const ra = (r / 5) * TAU + rnd() * 0.8;
+      const kn: V3 = [Math.cos(ra) * 9 * S, Math.sin(ra) * 9 * S, 5 * S];
+      rod('root', [0, 0, 12 * S], kn, 5 * S, 3 * S);
+      rod('root', kn, [Math.cos(ra + 0.3) * 22 * S, Math.sin(ra + 0.3) * 22 * S, 0.5], 3 * S, 0.6);
     }
     // (splinters of the floor and rot thrown up as it bursts out, falling back)
     if (u < 0.7) for (let c = 0; c < 6; c++) {
