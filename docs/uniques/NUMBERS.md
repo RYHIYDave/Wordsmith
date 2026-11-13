@@ -27,11 +27,11 @@ Each of these is yours to change.
 - **A hero-only piece on another hero:** he can wear it, its stats count, and its rule does nothing.
 - **A word a unique adds, set by hand on that attack too:** it is there once. Nothing more.
 - **“Half as strong again”:** 50% more on the word's own number, the way Rank II works. Two such uniques worn together add up: twice as strong, not two and a quarter.
-- **The Nettle Shirt with The Clockwork Songbird:** they stack, by adding.
+- **Nettleweave with The Clockwork Songbird:** they stack, by adding.
 - **The Crier's Hush:** it darkens elites' and packs' words, not a boss's.
 - **The Fleshmancer's Brand:** a new elite killed takes the place of the one risen.
 - **The King's Knot:** the borrowed word sits beside your own, even where it is a second damage word.
-- **The Rainwalker with the Hail talent:** the rain goes with her. Hail's longer, wider rain still counts; its chasing an enemy does not.
+- **Rainwalker with the Hail talent:** the rain goes with her. Hail's longer, wider rain still counts; its chasing an enemy does not.
 - **The Unsigned Pact:** the demon never takes your last 10% of life, and a tap on him sends it away.
 - **The Pack Collar:** you pick its companion on the collar's card, in town, and never the animal she already has (your picks, 12 Nov). Until picked, the next in the list after hers. With both companion talents, from either list; with none, the hunting list.
 - **Ordinary stats:** two on most. None on the five your doc marks “Nothing else on it”. One on Broken Shackles, as you said: movement speed. Each rolls as a found affix of the item's level, not as a crafted one, so a unique is always short of a well-crafted yellow in raw stats.
@@ -45,12 +45,12 @@ Each of these is yours to change.
 | Polyglot's Mantle (Chest) | Two damage words a side, where the rule is one. | Nothing else |
 | The Long Echo (Boots) | No number: it adds the word. | Movement Speed, Max Life |
 | Bloodprice (Belt) | 60% harder for 6 seconds. | Max Life, Strength |
-| The Free Hand (Gloves) | +20% Attack Speed, +50% Critical Damage. | Intelligence, Critical Chance |
+| Open Palm (Gloves) | +20% Attack Speed, +50% Critical Damage. | Intelligence, Critical Chance |
 | The Dog-Eared Page (Amulet) | Asks for level 1, so a new hero can put it on. | Nothing else |
 | The Miser's Purse (Belt) | 10% harder for every 1,000 gold (the Tinkerer's Fortune talent's own rate); a hit spills 2% of your gold on the floor, to pick up again. | Gold Find, Max Life |
 | The Alloy Band (Ring) | Melded words 50% stronger. | Intelligence, Max Mana (reads as Cooldown Recovery) |
 | The Long Odds (Helm) | 40% harder against elites and bosses; 25% softer against the rest. | Max Life, Magic Find |
-| The Standing Stone (Boots) | After 0.4 seconds still: 40% less damage. | Max Life, Lightning Resistance |
+| Menhir (Boots) | After 0.4 seconds still: 40% less damage. | Max Life, Lightning Resistance |
 
 ### One for each boss, floors 1 to 20
 | Unique | Proposed | Also on it |
@@ -70,8 +70,8 @@ Each of these is yours to change.
 | The Quill's Band (Ring) | Hold attack's words 50% stronger. | Max Mana (reads as Cooldown Recovery), Intelligence |
 | The Physician's Coat (Chest) | One flask for every 12 hits on elites and bosses. | Max Life, Life Regen |
 | The Censor's Seal (Ring) | Tap attack's words 50% stronger. | Attack Speed, Critical Chance |
-| The Nettle Shirt (Chest) | +10% every 3 seconds unhit, up to +50% (15 seconds). | Dexterity, Max Life |
-| The Dancing Shoes (Boots) | No number: the rule itself. | Dexterity, Magic Find |
+| Nettleweave (Chest) | +10% every 3 seconds unhit, up to +50% (15 seconds). | Dexterity, Max Life |
+| Light Feet (Boots) | No number: the rule itself. | Dexterity, Magic Find |
 | The Queen's Glass (Ring) | No number: it adds the word. | Critical Chance, Dexterity |
 | The Clockwork Songbird (Amulet) | Words 50% stronger at full life. | Max Life, Critical Damage |
 | The Moth's Wing (Chest) | 30% less damage; a word dark for 4 seconds. | Max Life, Life Regen |
@@ -85,17 +85,17 @@ Each of these is yours to change.
 ### The Warrior
 | Unique | Proposed | Also on it |
 | --- | --- | --- |
-| The Millstone (Greatsword) | No time limit. | Area of Effect, Life on Hit |
-| The Windcutter (Greatsword) | Every 3 Strikes; 150% of a Strike; flies 7 tiles. | Attack Speed, Critical Chance |
-| The Undertow (Greatsword) | No number: it adds the word. | Area of Effect, Strength |
-| The Pivot (Boots) | 2 cuts of Whirlwind. | Movement Speed, Strength |
-| The Press (Gloves) | 8% for each enemy within 3 tiles, up to 40%. | Strength, Life on Hit |
+| Millstone (Greatsword) | No time limit. | Area of Effect, Life on Hit |
+| Windcutter (Greatsword) | Every 3 Strikes; 150% of a Strike; flies 7 tiles. | Attack Speed, Critical Chance |
+| Undertow (Greatsword) | No number: it adds the word. | Area of Effect, Strength |
+| Pirouette (Boots) | 2 cuts of Whirlwind. | Movement Speed, Strength |
+| Crowdbreaker (Gloves) | 8% for each enemy within 3 tiles, up to 40%. | Strength, Life on Hit |
 
 ### The Ranger
 | Unique | Proposed | Also on it |
 | --- | --- | --- |
-| The Rainwalker (Bow) | No number: the rule itself. | Area of Effect, Dexterity |
-| The Fan (Bow) | 3 arrows, each 70% of a Shot. One enemy takes only one of them. | Attack Speed, Critical Chance |
+| Rainwalker (Bow) | No number: the rule itself. | Area of Effect, Dexterity |
+| Threefold (Bow) | 3 arrows, each 70% of a Shot. One enemy takes only one of them. | Attack Speed, Critical Chance |
 | The Poacher's Bow (Bow) | The trap bursts as hard as one of your own (100%). | Damage, Dexterity |
 | The Pack Collar (Amulet) | One more companion. | Max Life, Life on Kill |
 | The Hair Trigger (Gloves) | 2 times as hard. | Critical Chance, Dexterity |
@@ -104,10 +104,10 @@ Each of these is yours to change.
 | Unique | Proposed | Also on it |
 | --- | --- | --- |
 | The Shepherd's Crook (Staff) | The Orb comes after you at 4.5 tiles a second and stops 1.6 tiles off. | Area of Effect, Intelligence |
-| The Tide (Staff) | 70% on the way home. | Damage, Critical Chance |
-| The Tuning Staff (Staff) | 2 times as hard. | Attack Speed, Area of Effect |
-| The Prism (Amulet) | What the hit's own element does not do: a chill of 30%, a burn of 30% of the hit over 3 seconds, and shocked. | Damage, Max Mana (reads as Cooldown Recovery) |
-| The Short Way (Boots) | 2 seconds. | Max Mana (reads as Cooldown Recovery), Intelligence |
+| Ebb and Flow (Staff) | 70% on the way home. | Damage, Critical Chance |
+| Resonance (Staff) | 2 times as hard. | Attack Speed, Area of Effect |
+| Prismheart (Amulet) | What the hit's own element does not do: a chill of 30%, a burn of 30% of the hit over 3 seconds, and shocked. | Damage, Max Mana (reads as Cooldown Recovery) |
+| Shortcut (Boots) | 2 seconds. | Max Mana (reads as Cooldown Recovery), Intelligence |
 
 ### The Warlock
 | Unique | Proposed | Also on it |
@@ -122,7 +122,7 @@ Each of these is yours to change.
 | Unique | Proposed | Also on it |
 | --- | --- | --- |
 | The Second Whistle (Wrench) | 1 more Golem. | Damage, Intelligence |
-| The Sticky Wrench (Wrench) | Bursts 0.7 seconds after it lands, 2 times as wide. | Area of Effect, Dexterity |
+| Tarwrench (Wrench) | Bursts 0.7 seconds after it lands, 2 times as wide. | Area of Effect, Dexterity |
 | The Foreman's Wrench (Wrench) | Each Golem's vial is 60% of yours. | Attack Speed, Intelligence |
 | The Tow Line (Belt) | A full ground pound where it lands. | Max Life, Dexterity |
 | The Company Scrip (Ring) | 3 gold a use for each floor of depth (floor 10: 30 gold). No gold: the cooldown as ever. | Gold Find, Dexterity |
@@ -132,9 +132,9 @@ Each of these is yours to change.
 | --- | --- | --- |
 | The Last Round (Wraps) | No number: the third globe. | Critical Damage, Strength |
 | The Fourth Globe (Wraps) | 4 globes. | Attack Speed, Dexterity |
-| The Winning Streak (Wraps) | 6% a combo, up to 60%. | Physical Damage, Life on Hit |
-| The Sprung Heels (Boots) | 2 jumps. | Dexterity, Max Life |
-| The Receipt (Gloves) | A punch of 100% of your hit; no more than one every 0.4 seconds. | Strength, Max Life |
+| Hot Streak (Wraps) | 6% a combo, up to 60%. | Physical Damage, Life on Hit |
+| Springheel (Boots) | 2 jumps. | Dexterity, Max Life |
+| Return to Sender (Gloves) | A punch of 100% of your hit; no more than one every 0.4 seconds. | Strength, Max Life |
 
 ## What the ordinary stats roll
 
