@@ -66,7 +66,7 @@ import { drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import { ATTR_NAME, CLASSES, ELEMENT_NAME, growsWith, FIRST_LEVELS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
 import type { Game, ItemRef } from '../game/game';
-import { modLines, statView, flatPair, flatSpan, itemWordOf } from '../game/items';
+import { imbueLines, modLines, statView, flatPair, flatSpan, itemWordOf } from '../game/items';
 import type { ImbueOption } from '../game/items';
 import type { SlotRef } from '../game/state';
 import type { CompanionKind } from '../game/companions';
@@ -799,7 +799,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     const it = itemOf(p.sel);
     const why = game.imbue(p.sel.kind === 'gear' ? { kind: 'gear', slot: p.sel.slot } : { kind: 'bag', i: p.sel.i }, p.word);
     if (why) say(why);
-    else if (it && it.imbues.length) st.result = { word: p.word, item: it.name, text: modLines(it.imbues[it.imbues.length - 1].mods, game.meta.limit).join(', '), t: 0 };
+    else if (it && it.imbues.length) st.result = { word: p.word, item: it.name, text: imbueLines(it.imbues[it.imbues.length - 1], game.meta.limit).join(', '), t: 0 };
   };
   /** Put a piece on, or take it off. */
   const wear = (sel: Sel): void => {

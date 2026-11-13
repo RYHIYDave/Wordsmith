@@ -1165,9 +1165,25 @@ export function packKinds(depth: number, elite = false): MonsterDef[] {
  */
 export function wordShare(m: { words: readonly WordId[]; half?: readonly WordId[]; rallyT?: number }, w: WordId): number {
   if (!m.words.includes(w)) return 0;
+  // (EVERY WORD ON A DUNGEON, game/foe_melds.ts: a ranked word laid on a dungeon or a stronghold gives its monsters its word
+  // half as strong again, his pick of 12 Nov 2026, “Yes, half as strong again (Recommended)”)
+  const rank = FOE_WORDS.on && w in RANK_BY_WORD && m.words.includes(RANK_BY_WORD[w as keyof typeof RANK_BY_WORD]) ? FOE_RANK : 1;
   // (THE SKELETON CHAMPION'S RALLYING CRY, Version 19.9: his minions' words whole for a while: RALLY)
-  return m.half && m.half.includes(w) && !(m.rallyT !== undefined && m.rallyT > 0) ? PACKS.minion : 1;
+  return rank * (m.half && m.half.includes(w) && !(m.rallyT !== undefined && m.rallyT > 0) ? PACKS.minion : 1);
 }
+
+/**
+ * EVERY WORD ON A DUNGEON. His words, 4 Nov 2026, 19:07: “And ALL words need to be craftable on items and put into strongholds.”
+ * Talked through 12 Nov 2026 (the Crafting chat, by pop-up): a melded word and a ranked one go on a stronghold's altar, “Counts
+ * as two words (Recommended)”, and on the town's gate, “Yes, the gate too (Recommended)”; on a monster a melded word is “Both
+ * words plus a twist (Recommended)” (game/foe_melds.ts), a ranked word its word “half as strong again”. OFF until his yes to it
+ * in play (its grounds and rings are new to the eye).
+ */
+export const FOE_WORDS = { on: false };
+/** A ranked word on a monster: its word this much as strong (Rank II on an attack is half as strong again). */
+export const FOE_RANK = 1.5;
+/** Each base word's Rank II, for the monsters' share (above). */
+export const RANK_BY_WORD = { power: 'power2', fire: 'fire2', frost: 'frost2', lightning: 'lightning2', poison: 'poison2' } as const satisfies Partial<Record<WordId, WordId>>;
 
 /**
  * THE MONSTERS' ATTACKS (Version 19.8). The owner, 9 Oct 2026, 08:15: "Tiny and small mobs should

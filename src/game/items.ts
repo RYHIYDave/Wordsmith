@@ -1421,6 +1421,36 @@ export function rarityFor(count: number): Rarity {
 }
 
 // =============================================================================================
+// MIXED ELEMENTS IN ONE LINE. His words, 4 Nov 2026, 19:11: “Like, hypothetically, is lightning II would give you “50% lightning
+// damage”, then hailstorm would give you “25% lightning and frost damage”.” Hailstorm on gear already gave both (EVERY WORD ON
+// GEAR, MELD_GEAR_STRENGTH), as two lines each rolled on its own; asked what was left, 12 Nov 2026 (the Crafting chat): “One line,
+// crafting only (Recommended)”: a melded word's two properties of one kind (two kinds of damage, two resistances) are rolled
+// once and shown as one line, “+25% Frost and Lightning Damage”; only from melded words at the bench, never on found gear. A
+// pair of two kinds (Strength and fire damage, flat damage and a percentage) stays two lines. Behind MELD_LINE: OFF until his yes
+// to its picture.
+
+export const MELD_LINE = { on: false };
+const DAMAGE_PCT: readonly StatKey[] = ['physPct', 'firePct', 'frostPct', 'lightPct'];
+const RESIST: readonly StatKey[] = ['fireRes', 'frostRes', 'lightRes'];
+/** Two stats a melded word's property may show as one line: both a kind of damage, or both a resistance. */
+export function oneLineKind(a: StatKey, b: StatKey): boolean {
+  return a !== b && ((DAMAGE_PCT.includes(a) && DAMAGE_PCT.includes(b)) || (RESIST.includes(a) && RESIST.includes(b)));
+}
+
+/** The lines a word burned into a piece reads as: a melded word's two of a kind, as much as each other, one line (MELD_LINE); else modLines. */
+export function imbueLines(im: Imbue, limit: Limit): string[] {
+  const [a, b] = im.mods;
+  if (MELD_LINE.on && im.mods.length === 2 && oneLineKind(a.stat, b.stat) && a.value === b.value) {
+    const la = statView(a.stat, limit).label.split(' ');
+    const lb = statView(b.stat, limit).label.split(' ');
+    // (“Frost Damage” and “Lightning Damage”: “Frost and Lightning Damage”)
+    const line = modText(a, limit).replace(la.join(' '), `${la.slice(0, -1).join(' ')} and ${lb.join(' ')}`);
+    return [line];
+  }
+  return modLines(im.mods, limit);
+}
+
+// =============================================================================================
 // SPLITTING AND BINDING CHANGE THE ITEM. His words, 4 Nov 2026, 19:15: “And I really love the erasing type words that don’t craft a
 // specific mod but change the item in a different way.  Like splitting would make take a single item and turn it into two items and
 // divide the mods up between them.  And maybe another that takes two items and slaps them into 1 item and takes mods from both.”
@@ -1556,8 +1586,8 @@ export function imbueItem(item: Item, word: WordId, rng: RNG, choice?: number): 
     // (FLAT DAMAGE: an average hit rolled, then split into its least and most, as the found affix's)
     mods: pair ? (([lo, hi]) => [{ stat: pair.min, value: lo }, { stat: pair.max, value: hi }])(damageRange(rng.range(option.min, option.max))) : [{ stat: option.stat, value: rollStat(option.stat, option.min, option.max, rng) }],
   };
-  // (a melded word: its second property, rolled on its own)
-  if (option.also) imbue.mods.push({ stat: option.also.stat, value: rollStat(option.also.stat, option.also.min, option.also.max, rng) });
+  // (a melded word: its second property, rolled on its own; MELD_LINE, two of a kind, as much as the first: one line, one number)
+  if (option.also) imbue.mods.push({ stat: option.also.stat, value: MELD_LINE.on && oneLineKind(option.stat, option.also.stat) && !pair ? imbue.mods[0].value : rollStat(option.also.stat, option.also.min, option.also.max, rng) });
   item.imbues.push(imbue);
   if (item.rarity < 3) item.rarity = Math.max(item.rarity, rarityFor(item.affixes.length + item.imbues.length)) as Rarity;
   return imbue;

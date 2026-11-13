@@ -17,7 +17,7 @@ import { MODE_LINE } from '../game/modes';
 import { ENDLESS, endlessName } from '../game/endless';
 import type { HeroMode } from '../game/modes';
 import type { AimMode, Station, VendorId } from '../game/state';
-import { ITEM_ROOM, itemRoom, modLines } from '../game/items';
+import { ITEM_ROOM, imbueLines, itemRoom, modLines } from '../game/items';
 import { uniqueLines, uniqueOf, uniquePowers } from '../game/uniques';
 import { COMPANION_INFO } from '../game/companions';
 import type { TitleArt } from '../art/title';
@@ -110,7 +110,7 @@ export function itemCard(game: Game, it: Item, touch = false): Line[] {
   const limit = game.meta.limit;
   for (const l of modLines(rest, limit)) lines.push({ text: l, color: THEME.text });
   for (const a of it.affixes) for (const l of modLines(a.mods, limit)) lines.push({ text: l, color: THEME.magic });
-  for (const im of it.imbues) for (const l of modLines(im.mods, limit)) lines.push({ text: `${WORDS[im.word].name}: ${l}`, color: WORD_COLOR[im.word] });
+  for (const im of it.imbues) for (const l of imbueLines(im, limit)) lines.push({ text: `${WORDS[im.word].name}: ${l}`, color: WORD_COLOR[im.word] });
   // (UNIQUE ITEMS, game/uniques.ts: under its ordinary stats, what it does in its own orange, its price, whose it is; it takes no word)
   const unique = uniqueOf(it);
   if (unique) {

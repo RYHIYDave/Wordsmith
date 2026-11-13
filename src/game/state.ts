@@ -309,6 +309,10 @@ export interface Hero {
   /** BLEEDING on monsters (THE LAST WORDS): seconds left bleeding, its harm a second, and where he stood at the last tick of it. */
   heroBleedT?: number;
   heroBleedDps?: number;
+  /** (EVERY WORD ON A DUNGEON, game/foe_melds.ts) Blight on a monster: while its poison is on him he takes this much more from everything. */
+  blightMore?: number;
+  /** (the same) Frostbite on a monster: while he is chilled he loses this much life a second. */
+  frostbiteDps?: number;
   heroBleedAt?: { x: number; y: number };
   /**
    * (THE TEN NEW WORDS, for their looks: the art chat's asks of 9 Nov 2026) WHOSE poison, burning or chill is on him: the monster
@@ -582,6 +586,9 @@ export interface Monster {
   risen?: boolean;
   stolen?: number;
   surgeT?: number;
+  /** (EVERY WORD ON A DUNGEON, game/foe_melds.ts) its blows counted toward its melded word's twist (Eruption's heat, Thunder's clap); and Hailstorm's wait. */
+  foeN?: number;
+  hailT?: number;
   mirrorT?: number;
   /**
    * THE WARLOCK (game/warlock.ts): burning in his hellfire (the Hellfire Bolt's), and cursed (the Curse's smoulder): each its
@@ -741,6 +748,9 @@ export interface Zone {
   onIt?: number[];
   /** VOLATILE'S MELDS (behind VOLT_MELDS): a Chain Reaction rune already set off by another's link. */
   linked?: boolean;
+  /** (EVERY WORD ON A DUNGEON, game/foe_melds.ts) a monster's melded word whose ground this is (hostile: it harms the hero), and whether it has gone off (Fumes' cloud). */
+  foe?: MeldId;
+  blown?: boolean;
   /** WORDMELDING: the melded word whose look it has, for the pictures only (render/melds3.ts): a patch its twist in front left (Eruption's molten pool, Fumes' cloud), or what one behind left (as `meld`). */
   look?: MeldId;
 }
