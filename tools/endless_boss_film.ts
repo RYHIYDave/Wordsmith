@@ -1369,7 +1369,7 @@ for (const sg of segs) {
       // (HIS SHADE, behind him, doing as he does a moment after him)
       const sk = skeletonAt(mob, sg.move, Math.max(0, t - SHADE.lag));
       const [x, y] = at([sg.from[0] + k * sk.pelvis[0], sg.from[1] + k * sk.pelvis[1], 0]);
-      layShade(s, paintShade(sk, t, sg.view, 1), ox + x, oy + y, 0.67);
+      layShade(s, paintShade(sk, t, sg.view, 1), ox + x, oy + y, 0.78);
     }
     if (fallFilm) {
       // (the hero, out of its lane, watching; just past where his ring will reach)
