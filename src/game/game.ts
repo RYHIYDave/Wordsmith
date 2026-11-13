@@ -14,7 +14,7 @@ import { RAMPAGE, RING, ringStrikes } from '../art/action_f3_fx';
 import { rampageTravel, rushStopTravel } from '../art/monster_brute';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { ACTION_F2, ALLY_DAMAGE, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, LASTING, FLEETING, VAST, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, HUSH_LEAVES, mirrorSide, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { ACTION_F2, ALLY_DAMAGE, ACTION_F3, ACTION_F4, AIM, BIND, BLEED, CULL, MIRRORING, LASTING, FLEETING, VAST, PIERCE, PLUNDER, REAP, SURGE, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, HUSH_LEAVES, mirrorSide, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL, ARC_CHAIN } from './defs';
 import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
 import { asWarriorWeapon, bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -10218,15 +10218,36 @@ export class Game {
         .filter((o) => !o.dead && o !== m && Math.hypot(o.x - x, o.y - y) <= 3.5)
         .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))
         .slice(0, r.arcs + (this.has('forking') ? TALENT_TUNE.forking : 0));
+      const arc = Math.max(1, Math.round(dmg * r.arcDmg));
       for (const o of near) {
         this.emit({ t: 'arc', x0: x, y0: y, x1: o.x, y1: o.y, ...(r.meld ? { meld: r.meld } : {}) });
         if (TALENTS.on) o.shockT = TALENT_TUNE.shockSecs;
-        const arc = Math.max(1, Math.round(dmg * r.arcDmg));
         this.damageMonster(o, arc, 'lightning', false, i);
         // (WORDMELDING: what an arc carries with it)
         if (r.meld) this.meldArc(o, m, i, arc, near);
       }
       if (near.length) this.sfx('zap', 0.6);
+      // ARCS KEEP JUMPING (ARC_CHAIN): each arc jumps on from the one it struck, enemy to enemy, as many jumps as the hit has arcs,
+      // never to one this hit has struck; each jump a moment after the last, so that the eye can follow it
+      if (ARC_CHAIN.on && near.length) {
+        const struck = new Set<number>([m.id, ...near.map((o) => o.id)]);
+        const jumps = near.length;
+        const jump = (from: Monster, left: number, k: number): void => {
+          if (left <= 0) return;
+          this.after(ARC_CHAIN.gap * k, () => {
+            const next = this.monsters
+              .filter((o) => !o.dead && !struck.has(o.id) && Math.hypot(o.x - from.x, o.y - from.y) <= ARC_CHAIN.reach)
+              .sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y))[0];
+            if (!next) return;
+            struck.add(next.id);
+            this.emit({ t: 'arc', x0: from.x, y0: from.y, x1: next.x, y1: next.y, ...(r.meld ? { meld: r.meld } : {}) });
+            if (TALENTS.on) next.shockT = TALENT_TUNE.shockSecs;
+            this.damageMonster(next, arc, 'lightning', false, i);
+            jump(next, left - 1, 1);
+          });
+        };
+        for (const o of near) jump(o, jumps - 1, 1);
+      }
     }
     // (THE SKILL TREES REMADE: Charged, the charge gathered as he moved goes off with this hit)
     if (!quiet && this.charge >= 1 && this.now('charged')) this.releaseCharge(m, x, y);

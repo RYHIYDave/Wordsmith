@@ -93,7 +93,7 @@ import { sheetCuts, sheetWhere, spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { RES, createScreen } from './engine/screen';
 import { ACT2_WALLS } from './render/act2_walls';
-import { ARRIVAL_LINES, BODIES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, LEVEL_SELECT, MONSTER_ATTACKS, NEW_MONSTERS, NEW_WEAPONS, OWN_MOVES, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARC_CHAIN, ARRIVAL_LINES, BODIES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, LEVEL_SELECT, MONSTER_ATTACKS, NEW_MONSTERS, NEW_WEAPONS, OWN_MOVES, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { ALTAR_GOES } from './game/act1_holds';
 import { DRESS_EDGES } from './game/act1_dress';
@@ -3375,6 +3375,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     lex28: demoLex28(() => meta),
     /** THE FIVE VOLATILE MELDS' looks (render/volatile3.ts): Demolition, Powderkeg, Shatter, Chain Reaction and Rupture at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */
     volatile3: demoV3(fx, () => game),
+    /** ARCS KEEP JUMPING (game/defs.ts ARC_CHAIN): off until his yes; its film switches it on for its own page. */
+    arcChain: ARC_CHAIN,
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
     /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): ON since Version 19.2, on his yes; pictures of the swings as they were before switch it off and paint the heroes again (true: the mended, the game's own, back). */
