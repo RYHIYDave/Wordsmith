@@ -76,7 +76,7 @@ function tap(g: Game, x: number, y: number): void {
   off.aimX = x;
   off.aimY = y;
   land(g, off, DT, () => {});
-  for (let t = 0; t < 1.2; t += DT) g.update(DT, emptyControls());
+  if (letGo) for (let t = 0; t < 1.2; t += DT) g.update(DT, emptyControls());
 }
 
 const ids = (g: Game): string[] => g.hero.skills.map((s) => s.id);
@@ -220,7 +220,7 @@ function ranger(ids: string[]): { g: Game; a: Inside } {
 }
 
 /** His hold at (x, y), held `secs`, then let go, and a second for it to fly. */
-function holdAt(g: Game, x: number, y: number, secs: number): void {
+function holdAt(g: Game, x: number, y: number, secs: number, letGo = true): void {
   for (const s of g.hero.skills) s.cd = 0;
   const c = emptyControls();
   c.cast = true;
@@ -235,7 +235,7 @@ function holdAt(g: Game, x: number, y: number, secs: number): void {
     k.castY = y;
     g.update(DT, k);
   }
-  for (let t = 0; t < 1.2; t += DT) g.update(DT, emptyControls());
+  if (letGo) for (let t = 0; t < 1.2; t += DT) g.update(DT, emptyControls());
 }
 
 test('10. his SNARE: thrown where he aims; what is on it held fast, then it bursts', () => swapOn(() => {
@@ -279,7 +279,7 @@ test('11. his SNIPE: through every enemy in its line; drawn longer, harder', () 
 test('11b. his SNIPE held: he is seen drawing all the while he holds it (his own held pictures, not his guard)', () => swapOn(() => {
   const { g, a } = ranger(['snipe']);
   const m = put(g, a, 6, 0);
-  holdAt(g, m.x, m.y, 1.2);
+  holdAt(g, m.x, m.y, 1.2, false);
   assert.ok(g.hero.channel, 'still drawing');
   assert.equal(g.hero.anim, 'attack', 'held in the attack, as a held beam is');
   assert.equal(g.hero.attackSkill, 1);
