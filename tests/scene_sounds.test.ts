@@ -69,7 +69,15 @@ test('the packs: each floor\'s scene sounds are in its own act\'s pack, and no o
   for (const d of FLOORS) for (const n of sceneSoundsOf(d)) assert.equal(packOf(n), `scene-${sceneAct(d)}`, `${n}, floor ${d}`);
   const all = (fs.readdirSync(DIR) as string[]).filter((f) => f.endsWith('.mp3')).map((f) => f.replace(/_\d+\.mp3$/, ''));
   const inScene = new Set(all.filter((b) => String(packOf(b)).startsWith('scene-')));
-  assert.equal(inScene.size, 41, 'only the batch\'s');
+  // (and, since 25.3.16, the floors' standouts played now and then, the sound chat's eleventh batch: amb_f1 to amb_f14, each in
+  // its floor's act's pack, game/world_sounds.ts AMBIENT_FLOORS)
+  const standouts = [...inScene].filter((b) => /^amb_f\d/.test(b));
+  for (const b of standouts) {
+    const d = Number(/^amb_f(\d+)/.exec(b)![1]);
+    assert.equal(packOf(b), `scene-${sceneAct(d)}`, `${b}: its floor's act's pack`);
+  }
+  assert.equal(standouts.length, 10, 'the eleventh batch\'s ten floors\' standouts');
+  assert.equal(inScene.size - standouts.length, 41, 'only the batch\'s');
   assert.deepEqual([1, 5, 6, 10, 11, 15, 16, 20].map(sceneAct), [1, 1, 2, 2, 3, 3, 4, 4]);
 });
 
