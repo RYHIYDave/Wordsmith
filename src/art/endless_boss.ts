@@ -1747,8 +1747,8 @@ export function paintPowerHammer(t: number, view: 'front' | 'rear'): Painted {
 // FLAME: THE FIRESTORM (his pick, 12 Nov 2026: “Firestorm (Recommended)”, offered as: he hurls the rune skyward; it bursts and
 // fireballs rain across the room, each onto a warning mark, leaving burning ground so there's less and less room to stand). By his
 // rules for the words: one rune, flung out over the room, bursting; what strikes is what it makes, made as solids.
-//   HE WRITES IT   his left hand claws the Flame rune on the air; he flings it out high over the room
-//   IT BURSTS      a ring of fire in the air; out of it the fireballs come, each flung down in an arc onto its own mark on the floor
+//   HE WRITES IT   his left hand claws the Flame rune on the air; he fires it straight up into the sky, out of sight
+//   THE SKY OPENS  meteors come down out of it at random over the whole arena, each onto its own mark on the floor
 //                  (marked on the floor first, a ring of the word's orange with his pink through it: where they fall is the rules')
 //   THE STORM      he holds his staff high, calling them down; three waves, each faster; each fireball lands in a burst of fire and
 //                  leaves the floor burning where it fell, the flames standing up off it, so there is less and less room to stand
@@ -1760,9 +1760,12 @@ export const FIRE_DROPS: ReadonlyArray<{ at: V3; t: number }> = ((): { at: V3; t
   let k = 0;
   for (const [t0, n, gap] of waves) {
     for (let i = 0; i < n; i++, k++) {
-      const a = hash(k, 1, 8981) * TAU;
-      const r = (0.4 + 2.6 * Math.sqrt(hash(k, 2, 8982))) * TILE;
-      out.push({ at: [Math.cos(a) * r, Math.sin(a) * r, 0], t: t0 + i * gap });
+      // (anywhere over the whole arena, at random: his words, 12 Nov 2026, “like he fires the rune into the sky and meteors fall
+      // randomly over the whole arena”; the arena 14 tiles by 10 about its middle)
+      const at: V3 = [(hash(k, 1, 8981) - 0.5) * 14 * TILE, (hash(k, 2, 8982) - 0.5) * 10 * TILE, 0];
+      // (none on him: the arena's middle is 4.6 tiles before him, and none falls within 2 of where he stands)
+      if (Math.hypot(at[0] + 4.6 * TILE, at[1]) < 2 * TILE) at[0] += 3 * TILE;
+      out.push({ at, t: t0 + i * gap });
     }
   }
   return out;
