@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/game';
 import type { ClassId } from '../src/game/types';
-import { UNIQUE_DEFS, poolFor, uniqueOf } from '../src/game/uniques';
+import { SET1, UNIQUE_DEFS, poolFor, uniqueOf } from '../src/game/uniques';
 import { off, on } from './uniques_helpers';
 
 const CLASSES: ClassId[] = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];
@@ -36,7 +36,8 @@ test("on: every hero's own pool is in his bag and the bosses' own and the final 
       assert.deepEqual(inStash, fromBosses.map((d) => d.id).sort(), `${cls}: his stash`);
       assert.deepEqual(got, { bag: pool.length, stash: fromBosses.length }, cls);
       // (the ten for everyone, his weapon's three, his own two; the twenty bosses' and the final boss's two)
-      assert.equal(pool.length, 15, cls);
+      // (and the Warrior's six more with Set 1, on at his yes of 13 Nov 2026: the battle axe's three and the warhammer's three)
+      assert.equal(pool.length, cls === 'warrior' && SET1.on ? 21 : 15, cls);
       assert.equal(fromBosses.length, 22);
       for (const it of [...g.hero.bag, ...g.meta.stash]) if (it && uniqueOf(it)) assert.equal(g.useProblem(it), null, `${cls}: ${it.name}`);
     }

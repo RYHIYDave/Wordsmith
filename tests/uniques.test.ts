@@ -11,7 +11,7 @@ import { TUNE } from '../src/game/defs';
 import { bindProblem, imbueItem, imbueProblem, itemRoom, rollItem, splitProblem, statFits, statGroup, statRangeAt, stemSlot } from '../src/game/items';
 import { ALL_CLASS_IDS } from '../src/game/types';
 import type { ClassId, MonsterKind, WeaponKind } from '../src/game/types';
-import { UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_RULES, UNIQUE_TUNE, bossUnique, finalUniques, makeUnique, poolChance, poolFor, uniqueDef, uniqueLines, uniqueOf, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from '../src/game/uniques';
+import { SET1, UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_RULES, UNIQUE_TUNE, bossUnique, finalUniques, makeUnique, poolChance, poolFor, uniqueDef, uniqueLines, uniqueOf, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from '../src/game/uniques';
 import { off, on } from './uniques_helpers';
 
 /** Each floor's boss, as the game names their kinds (floor 13 is the pair). */
@@ -172,7 +172,9 @@ test('the pool: the ten for everyone and the hero\'s own five, never another her
   on(() => {
     for (const cls of ALL_CLASS_IDS) {
       const pool = poolFor(cls);
-      assert.equal(pool.length, 15, cls);
+      // (the Warrior's six more with Set 1, on at his yes of 13 Nov 2026: the battle axe's three and the warhammer's three; each
+      // drops only for the weapon he uses, game.ts makePoolUnique)
+      assert.equal(pool.length, cls === 'warrior' && SET1.on ? 21 : 15, cls);
       assert.ok(pool.every((d) => !d.cls || d.cls === cls));
       assert.ok(pool.every((d) => d.from === 'pool'));
     }
