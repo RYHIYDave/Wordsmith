@@ -481,6 +481,16 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   staff is not seen through it; a row of four knuckles down its front with dark creases between his fingers; his thumb over the top
   from the inside, its tip down in front, a seam round it; his sleeve kept off it. HIS WORDS: “The thumb is too big”: made a thumb,
   thin and short, lying along the top of his fist.
+- HIS WORDS on the thumb made smaller: “Not really but I’m sick of working on it so move on”. LEFT AS IT IS; NOT QUITE RIGHT IN HIS
+  EYES: his fist on the staff may want another look one day.
+- HIS QUESTION, 13 Nov 2026, 09:50: “How is going to turn if the shade stands behind him?  Is the shade going to teleport around him
+  as he turns?”; his pick: “Glides round behind him (Recommended)” (offered as: it sweeps round on a curve a beat after he turns,
+  never teleporting, and never steps in front of him or your view of him). MADE (`SHADE_GLIDE`, `shadeWants`, `shadeGlide`,
+  `paintShade`'s `around`): it stands behind his back as he faces, eased round after where it wants to be the short way round, a
+  beat after him (0.3 s), never a jump; always on the far side of him from the eye (within 78 degrees of straight up the picture), so
+  facing away he has it looming over him from just above, never round in front covering him. SHOWN turning (`turn`, `TURN`,
+  `turnAt`: a heavy turn to his right, held, then back round to his left, his feet stepping round, his staff lifted off the floor as
+  he turns; `pictures/standard/boss_turn.mp4`).
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other eight melds, each for his yes; his other facing turned round, not flipped.
 

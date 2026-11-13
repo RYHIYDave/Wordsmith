@@ -2925,7 +2925,7 @@ export function wsMob(): Mob {
       for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
     },
     grains: (st: Stage, m: Moment) => m.move === 'death' ? deathGrains(m.t, DEATH_HEART()) : boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -3006,6 +3006,29 @@ export function meldRiderAt(t: number): Partial<Bones> {
   const up = 1.5 * smooth01((t - MELD.raise[0]) / (MELD.raise[1] - MELD.raise[0]));
   const slam = t < MELD.slam ? clamp01((t - MELD_STRIKE[0]) / (MELD.slam - MELD_STRIKE[0])) : 1 - smooth01((t - MELD.slam - 0.15) / 0.7);
   return footBones(L, 4 * (1 - smooth01(t / 0.3)) - up * (1 - slam) + 8 * slam + 6 * on + 4 * smooth01((t - MELD.slam - 0.15) / 0.7) * (t > MELD.slam ? 1 : 0), t, 1 - w);
+}
+/** HIM TURNING ON FOOT (to show his shade gliding round after him): a heavy turn to his right, held, then back round to his left, his
+ * feet stepping round, each lifted and put down where it goes; his facing (degrees) over time. */
+export const TURN = { long: 3.6, turns: [[0.3, 1.0, -110], [2.0, 2.6, 50]] as const };
+export function turnYaw(t: number): number {
+  let y = 0;
+  for (const [a, b, to] of TURN.turns) y += (to - y) * smooth01((t - a) / (b - a));
+  return y;
+}
+export function turnAt(t: number): Partial<Bones> {
+  const Y = turnYaw(t);
+  // (each foot turned round with him in its own half of the turn, lifted as it goes)
+  const footYaw = (first: boolean): number => {
+    let y = 0;
+    for (const [a, b, to] of TURN.turns) { const m = (a + b) / 2; y += (to - y) * smooth01((t - (first ? a : m - 0.05)) / ((b - a) / 2 + 0.05)); }
+    return y;
+  };
+  const lift = (first: boolean): number => TURN.turns.reduce((acc, [a, b]) => { const m = (a + b) / 2; return Math.max(acc, bumpOf(t, first ? a : m - 0.05, first ? m + 0.05 : b)); }, 0);
+  const rot = (p: V3, deg: number): V3 => { const c = Math.cos((deg * Math.PI) / 180), sn = Math.sin((deg * Math.PI) / 180); return [p[0] * c - p[1] * sn, p[0] * sn + p[1] * c, p[2]]; };
+  const yl = footYaw(Y < 0 ? false : true), yr = footYaw(Y < 0 ? true : false);
+  const fl = rot(FOOT_L, yl), fr = rot(FOOT_R, yr);
+  const b = footStandAt(t);
+  return { ...b, yaw: Y, lfx: fl[0], lfy: fl[1] - B.stance, lfz: 3 * lift(Y >= 0) + 0, lft: (b.lft ?? 12) + yl, lk: (b.lk ?? 8) + yl, rfx: fr[0], rfy: fr[1] + B.stance, rfz: 3 * lift(Y < 0), rft: (b.rft ?? -14) + yr, rk: (b.rk ?? -8) + yr };
 }
 /** His motion on foot, every frame. */
 function footMotion(at: (t: number) => Partial<Bones>, long: number, loop = false): Motion {
@@ -3314,9 +3337,9 @@ export function footFrom(): [number, number] {
   return [p[0], p[1]];
 }
 /** Whether his staff is planted on the floor (on foot: his fist sliding along it, its foot down), or held as he rides. */
-export const plantedIn = (move: string, t: number): number => (FOOT_MOVES.has(move) ? 1 : move === 'fall' ? smooth01((t - FALL.kill - FALL.throw - FALL.fly) / 0.35) : 0);
+export const plantedIn = (move: string, t: number): number => (move === 'turn' ? 1 - TURN.turns.reduce((m, [a0, b0]) => Math.max(m, bumpOf(t, a0 - 0.1, b0 + 0.1)), 0) : FOOT_MOVES.has(move) ? 1 : move === 'fall' ? smooth01((t - FALL.kill - FALL.throw - FALL.fly) / 0.35) : 0);
 /** His moves on foot (no boar under him). */
-export const FOOT_MOVES = new Set<string>(['foot', 'death', 'eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion']);
+export const FOOT_MOVES = new Set<string>(['foot', 'turn', 'death', 'eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion']);
 
 // =============================================================================================
 // HIS SHADE (his words, 12 Nov 2026, for the second phase: “how about a large pink energy shade that looms above him and mimics his
@@ -3326,6 +3349,27 @@ export const FOOT_MOVES = new Set<string>(['foot', 'death', 'eruption', 'avalanc
 // after him, as a shadow does; made of his power, it burns: bands of it rising through it, flickering, its eyes white-hot. It is
 // painted apart from him, on his own bones, every part of him made great: the game lays it behind him, its light over the floor.
 export const SHADE = { size: 2.35, behind: 52, side: -10, up: 24, lag: 0.1 };
+/** WHERE IT STANDS ROUND HIM (his pick, 13 Nov 2026, asked how it turns with him: “Glides round behind him (Recommended)”, offered as:
+ * it sweeps round on a curve a beat after he turns, never teleporting, and never steps in front of him or your view of him): behind
+ * his back, at its distance, as he faces; but always on the far side of him from the eye, so that it never covers him or his warnings
+ * (his rulebook's Animations 4): facing away, it looms over him from just above, not round in front. The game glides it there,
+ * `shadeGlide`. Angles are the floor's own (radians: 0 his forward at rest, + to his left). */
+export const SHADE_GLIDE = { lag: 0.3, far: (135 * Math.PI) / 180, within: (78 * Math.PI) / 180 };
+const wrapA = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
+/** Where it wants to be, his facing `yaw` (degrees): behind him, kept to the far side. */
+export function shadeWants(yaw: number): number {
+  const behind = wrapA((yaw * Math.PI) / 180 + Math.PI + Math.atan2(-SHADE.side, SHADE.behind));
+  const d = wrapA(behind - SHADE_GLIDE.far);
+  return wrapA(SHADE_GLIDE.far + Math.max(-SHADE_GLIDE.within, Math.min(SHADE_GLIDE.within, d)));
+}
+/** Where it is, `t` seconds on, his facing over time `yawAt` (degrees): eased round after where it wants to be, the short way round,
+ * a beat after him, never a jump. */
+export function shadeGlide(yawAt: (t: number) => number, t: number): number {
+  let a = shadeWants(yawAt(0));
+  const dt = 1 / 60;
+  for (let u = dt; u <= t + 1e-9; u += dt) a = wrapA(a + wrapA(shadeWants(yawAt(u)) - a) * (1 - Math.exp(-dt / SHADE_GLIDE.lag)));
+  return a;
+}
 export const SHADE_CANVAS: MobCanvas = { w: 460, h: 560, ax: 230, ay: 470 };
 /** His pink as the shade is made of it: dark at its depths, hot at its edges and its eyes. */
 export const SHADE_PINK: Ramp = ['#2a0618', '#5e0f36', '#a01e58', '#e2367a', '#ff7aa8'];
@@ -3356,7 +3400,7 @@ function shadeOf(c: string): string {
 /** HIS SHADE (his words, 13 Nov 2026, of a remake as raw fire: “I take it back, I like the old shade better”: his own figure made
  * great and made of his pink), `t` seconds into a move, risen as far as `grow` (0, inside him ... 1, looming over him), from his skeleton then: his
  * picture made great and made of his pink, bands of it rising through it. Its canvas's anchor is his floor point. */
-export function paintShade(s: Skeleton, t: number, view: 'front' | 'rear', grow = 1, lean = 0): Painted {
+export function paintShade(s: Skeleton, t: number, view: 'front' | 'rear', grow = 1, lean = 0, around = Math.atan2(SHADE.side, -SHADE.behind)): Painted {
   const st = stage(view, SHADE_CANVAS.ax, SHADE_CANVAS.ay, SHADE_CANVAS);
   const raw: Bit[] = [];
   const put0: Put = (part, piece, shape) => raw.push({ part, piece, shape });
@@ -3368,7 +3412,8 @@ export function paintShade(s: Skeleton, t: number, view: 'front' | 'rear', grow 
   staff(put0, s, t, 0, true);
   const O: V3 = [s.pelvis[0], s.pelvis[1], 0];
   const k = 1 + (SHADE.size - 1) * grow;
-  const off: V3 = [-SHADE.behind * grow - O[0] + lean, SHADE.side * grow - O[1], SHADE.up * grow];
+  const far = Math.hypot(SHADE.behind, SHADE.side) * grow;
+  const off: V3 = [Math.cos(around) * far - O[0] + lean, Math.sin(around) * far - O[1], SHADE.up * grow];
   // (bands of it rising through it, flickering: where they are it is thin)
   const band = (x: number, y: number): boolean => ((y + Math.floor(t * 40)) % 7 === 0 && hash(x >> 2, (y + Math.floor(t * 40)) >> 3, 9301) < 0.7) || hash(x, y + Math.floor(t * 30) * 3, 9302) < 0.06;
   const bits: Bit[] = raw.map(({ part, piece, shape }) => {
@@ -3484,6 +3529,7 @@ export const WS_SHAPE: BossShape = {
     // (risen, on foot: his stand, and each meld from it and back)
     { from: 'fall', at: 'end', to: 'foot', toAt: 0, shift: footFrom() },
     { from: 'foot', at: 0, to: 'death', toAt: 0 },
+    { from: 'foot', at: 0, to: 'turn', toAt: 0 },
     ...['eruption', 'hailstorm'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
