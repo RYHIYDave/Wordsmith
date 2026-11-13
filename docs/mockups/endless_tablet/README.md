@@ -442,12 +442,17 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   pink, bolts lashing out of him to the floor, his shade dragged back down into him, writhing; IMPLODES, all of him, staff and all,
   crushed in to a point at his heart in a quarter of a second; a beat; then a ring of his light and a burst of TINY RUNES flung
   out, drifting out and up, each blinking out on its own until nothing is left.
-- HIS LINES, drafted for his yes (the sound chat voices them; each said as the move begins, so it is heard coming): Power, “Be
-  crushed beneath the Word!”; Flame, “Let the sky burn!”; Frost, “Be still. Forever.”; Lightning, “Hear the storm speak!”; Poison,
-  “Every step, a grave.”; his steed, looking back at it, “Rest, old friend. Your fury lives in me.”, then on the slam, “You will
-  pay for this!”; Eruption, “The deep fire answers me!”; his death, “Too many... words...”.
+- HIS LINES (the sound chat voices them: the queue's boss-voices-and-roars; each said as the move begins, so it is heard coming).
+  Drafted long first; his words, 13 Nov 2026, by pop-up: “The attack lines are too long winded.  One to two word lines.  The boar
+  death line is solid, his death line is bad”, then “No sorry the boar death is fine, HIS death, the “too many words” line is bad”;
+  his death, his pick: “A scream cut short”. SO: Power “Kneel!”; Flame “Burn!”; Frost “Be still.”; Lightning “Storm, come!”;
+  Poison “Rot.”; Eruption “Rise, fire!”; Hailstorm “Shatter!”; his steed's death, as drafted: “Rest, old friend. Your fury lives in
+  me.”, and on the slam “You will pay for this!”; his death, a scream cut short as he implodes.
+- HIS YES TO THE NIGHT'S FILMS, 13 Nov 2026, by pop-up: “Yes, keep going (Recommended)” (boss_fall, boss_eruption,
+  boss_hailstorm, boss_death). HIS LAST STAND, his pick: “He climbs into his shade” (offered as: he becomes one giant of pink
+  energy, slow and huge, melds raining down).
 - Through the bosses' checks (0 findings: fall, foot, eruption, death) and the boss tests (4 of 4).
-- NEXT: his lines, for his yes; the other nine melds, each for his yes; his last stand; his other facing turned round, not
+- NEXT: his last stand (he climbs into his shade); the other eight melds, each for his yes; his other facing turned round, not
   flipped.
 
 
