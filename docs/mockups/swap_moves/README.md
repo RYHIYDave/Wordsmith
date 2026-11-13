@@ -60,6 +60,11 @@ her is the Warlock's own way of changing (game/warlock.ts: his pact full, a tap 
    snare, maybe something like SNIPE where the longer you hold it the more damage the shot goes and it pierces through enemies”
 
 8. Asked whether he too sets any two of his moves on tap and hold: “i like snare to swap for shot and snipe to swap for volley”.
+10. Asked (22:06) “what is the distinction between ball, wave, and spear?”, told: Wave wide and short, Ball stops and explodes, Spear
+    thin and long, each taking her words' element; his words: “nice, thats exactly what i was thinking”.
+11. Shown the two drafted trees (pictures/mage_tree_draft.png, ranger_tree_draft.png): **“Yes, build it (Recommended)”**. At 22:44:
+    “k going to bed, just finish up those trees and moves and ill see themm in the morning”.
+
 9. 21:53: “and maybe something for the companions?  like Rally or something that gives nearby allies attack speed and damage or
    something”; and “as another swap for volley”.
 
@@ -73,10 +78,40 @@ SO, THE RANGER (his companions, live, are his other new):
 
 Volley takes one: Snipe or Rally. He can have Snare and Snipe (or Rally) together. His Trap roll stays.
 
+## In the game, behind its switch (12 Nov 2026, by 23:00)
+
+ALL OF IT IS BUILT, BEHIND `SWAP_MOVES` (game/talents.ts, OFF): off, the game is as it was (tests/swap_moves.test.ts test 1).
+
+- THE TREES: MAGE2 and RANGER2 (game/talents.ts), as he was shown them. Every old stone keeps its id and works as now.
+- game/swap_moves.ts: SWAP_TUNE (every number below, ours, his to change); which moves go where (swapInto, moveChoices).
+- HER MOVES: BALL (a projectile that stops on the first enemy and bursts, 1.6 tiles, 60% of the hit round it; 0.9 of a hit);
+  SPEAR (through everything in its line, 11 tiles, fast; 0.8 of a hit); BEAM (Version 12's, as it was). On her ATTACKS page the
+  touched attack shows CHANGE TO …, cycling through what she has learned (ui/inventory.ts); kept in her picks (`@tap`, `@hold`),
+  saved. Never one move in both places; Beam only on her hold. Ball and Spear are spells, as Wave and Orb.
+- HER AURA: a tap on her (main.ts, as the Warlock's change), R, or the right bumper; its kind picked on its stone's card, three
+  buttons, once (`pick.lock`: “Unlearn to change”); 6 s on, 10 s wait; 3.2 tiles; FIRE burns every enemy in it (30% of a hit a
+  second), LIGHTNING bolts each every 0.8 s (45% of a hit, shocked), FROST a shield on her of 25% of her life and every enemy in it
+  at half speed. LASTING AURA: on, always (frost's shield back 10 s after it breaks).
+- HIS: SNARE on his tap (thrown where he aims, 7 tiles; what walks in held 2 s, then a burst of a hit; three lie at once); SNIPE
+  (drawn while held, loosed on letting go or at 3 s; through its line; 0.6 to 2.6 of a hit by the draw, full at 1.5 s); RALLY (his
+  companions' waits 30% quicker and their bites 30% harder, 5 s; 8 s to wait). With Snipe and Rally both, CHANGE on his hold.
+  Rally hangs off Windrunner where companions are off (they are on in the release).
+- THE LOOKS ARE STAND-INS: Ball a ball of light drawn large; Spear a streak of her element, its head lit; Aura a ring of its
+  colour edged in cyan; Snare the trap's jaws; Snipe an arrow; Rally sparks; the skill bar's icons borrowed (Orb, Shot, Trap,
+  Volley). Their own looks are for after his yes to the moves in play.
+- FILMED in the practice room at a phone's size with the stand-ins (tools/scenarios/swap_moves_film.mjs, CLS=mage|ranger):
+  pictures/mage_moves_standin.mp4 (Ball, Spear, Beam, the three Auras), pictures/ranger_moves_standin.mp4 (Snare, Snipe, Rally).
+- CHECKED: tsc clean; tests/swap_moves.test.ts 12 of 12; unit `--only swap_moves, companions, practice_talents, talent_lines,
+  talents, talents2, tinkerer_talents, traps, warrior_tree` and the core on 0b2a71349b: 30 passed, word_kinds.test.ts failing as
+  it pinned the spells; mended (Ball and Spear are spells): `--only word_kinds` and the core on c0106ac4d5, all passed.
+- KNOWN: switched on, an old Mage's stones past the middle (her warps and on) are not hers until she takes Aura (cleanTalents
+  checks the way); their points come back to spend.
+
 ## Next
 
 1. THE TREES' NEW SHAPE, DRAFTED IN THE GAME (game/talents.ts SWAP_MOVES, off: MAGE2, RANGER2; ui/talents.ts the new runes) and
    pictured from its own TALENTS page (tools/scenarios/swap_moves_trees.mjs; pictures/mage_tree_draft.png,
    ranger_tree_draft.png), for his yes. Every old stone keeps its id and works as now; the Mage's warps and what follows them
    moved past the Aura (MAGE2_AT). The new stones' cards say “A DRAFT: NOT IN PLAY YET”.
-2. The rules, behind a switch that is off; each move's look painted and shown him in play, his yes; then the ship list.
+2. DONE: the rules, behind the switch (above). LEFT: HIS YES TO THE MOVES IN PLAY (the two films); then each move's own look and
+   icon, drawn to the game's standard and shown him; then SWAP_MOVES on and the ship list.
