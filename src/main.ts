@@ -1,6 +1,7 @@
 // Entry point: builds the art, then runs the frame loop that ties input, rules, drawing and
 // interface together.
 
+import { TEMPLE_DOOR } from './art/temple_door';
 import { STORIES } from './game/stories';
 import { LAIR_STORY } from './art/lair_story';
 import { actsOf } from './game/bosses';
@@ -3031,6 +3032,47 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     game: () => game,
     /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
     levelSelect: LEVEL_SELECT,
+    /** THE LEVEL SELECT'S TEST HERO on floor `floor` (as its page's), for the playtests: nothing saved. */
+    trial: (cls: ClassId, floor: number, seed = 9) => {
+      saving = false;
+      saved = null;
+      begin(Game.forTrial(cls, seed, floor, meta));
+      loading = null;
+    },
+    /**
+     * FLOOR 5'S TEMPLE DOOR (art/temple_door.ts, game/temple_door.ts), for the pictures and the playtests: its switch; give him
+     * `n` keys; its state; stand him before it on the mine's side, `back` tiles out, facing it.
+     */
+    templeDoor: {
+      sw: TEMPLE_DOOR,
+      keys: (n: number) => {
+        const T = game?.level.temple;
+        if (T) T.keys = n;
+      },
+      state: () => {
+        const L = game?.level;
+        const T = L?.temple;
+        return L && T ? { keys: T.keys, chain: [...T.chain], began: T.began, open: L.doors[T.door].open, at: { ...T.at }, time: game?.time } : null;
+      },
+      standBefore: (back = 2.6) => {
+        const g = game;
+        const T = g?.level.temple;
+        if (!g || !T) return null;
+        const m = doorMiddle(g.level.doors[T.door].spot);
+        const out = -T.at.temple;
+        const h = g.hero;
+        if (T.at.alongX) {
+          h.x = m.x;
+          h.y = m.y + out * back;
+        } else {
+          h.x = m.x + out * back;
+          h.y = m.y;
+        }
+        h.fx = T.at.alongX ? 0 : -out;
+        h.fy = T.at.alongX ? -out : 0;
+        return { x: h.x, y: h.y };
+      },
+    },
     /** (THE HIGH CITY, behind HIGH_CITY, game/act1.ts: off until his yes) Its switch, for the playtests and pictures. */
     highCity: HIGH_CITY,
     /** (THE HIGH CITY, FLOOR 17) the ebony clock made to chime now, for the films: game/act2/masque_rules.ts. */

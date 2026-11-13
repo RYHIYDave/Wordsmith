@@ -30,6 +30,8 @@ export interface LookStand {
   add?: boolean;
   /** How strongly it is drawn, 0 to 1 (none: wholly): the Shaft's Rim's far fire, breathing. */
   alpha?: number;
+  /** The tile whose being seen shows it (none: the tile it stands on): floor 5's threshold with the temple's door in it, seen from the mine. */
+  seen?: number;
 }
 /** A name a look writes over something it stands that is no service (the Shaft's Rim's record stone and trophies wall): its floor point, how high over it (game pixels), the words. */
 export interface LookName {
