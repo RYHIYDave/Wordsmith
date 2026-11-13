@@ -310,10 +310,12 @@ export const UNIQUE_DEFS: readonly UniqueDef[] = [
  * "The ____ _____"”. Built at his word of 12 Nov 2026, by 22:50: “just do number 1, get it all finished, screw what chat its
  * supposed to go to.  im going to bed, get these ready for the next update”.
  *
- * BEHIND `SET1`, OFF until his yes to their pictures (PICTURES FIRST): off, none drops, is gambled for or is on his test page; what
- * they do is in game/game.ts under “UNIQUE ITEMS, SET 1”. Their numbers, UNIQUE_TUNE gyre … star, a proposal, his to change.
+ * BEHIND `SET1`: off, none drops, is gambled for or is on his test page; what they do is in game/game.ts under “UNIQUE ITEMS,
+ * SET 1”. Their numbers, UNIQUE_TUNE gyre … star, a proposal, his to change. ON at his yes, 13 Nov 2026, shown their pictures and
+ * a film of them at work on his page Set 1 Uniques (https://claude.ai/artifact/EaAEmfdgGSiU8Yr5CbWUbL) and asked whether they go
+ * live in the evening's update: “Yes, put them live (Recommended)”.
  */
-export const SET1 = { on: false };
+export const SET1 = { on: true };
 const GY = T.gyre;
 export const SET1_DEFS: readonly UniqueDef[] = [
   // ---- THE BATTLE AXE ----

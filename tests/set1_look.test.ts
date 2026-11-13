@@ -58,7 +58,9 @@ function counting(): { g: CanvasRenderingContext2D; n: () => number } {
 (globalThis as unknown as { document: unknown }).document = { createElement: () => ({ width: 0, height: 0, getContext: () => counting().g }) };
 
 test('2. their looks in play: off, nothing; on, the meteor falling, its stand-in left out', () => {
-  assert.equal(SET1_LOOK.on, false, 'off until his yes to their pictures');
+  assert.equal(SET1_LOOK.on, true, 'on: his yes, 13 Nov 2026, “Yes, put them live (Recommended)”');
+  // (switched off, as it was until his yes, for the first half)
+  SET1_LOOK.on = false;
   const cam = { ox: 0, oy: 0 } as Parameters<Set1Fx['drawAir']>[1];
   const fall: GameEvent = { t: 'unique', id: 'starbreaker', what: 'fall', x: 3, y: 3, r: 1.6, secs: 0.6 };
   const land: GameEvent = { t: 'unique', id: 'starbreaker', what: 'land', x: 3, y: 3, r: 1.6 };
@@ -91,6 +93,6 @@ test('2. their looks in play: off, nothing; on, the meteor falling, its stand-in
     fx.drawAir(d.g, cam);
     assert.ok(d.n() > 0, 'its strike drawn');
   } finally {
-    SET1_LOOK.on = false;
+    SET1_LOOK.on = true;
   }
 });

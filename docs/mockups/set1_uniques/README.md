@@ -31,7 +31,10 @@ bag pictures and looks in play are all here.
 
 The numbers are a proposal, his to change: `UNIQUE_TUNE` gyre, tithe, widow, knell, weight and star in `src/game/uniques.ts`.
 
-## Switches (all OFF until his yes to the pictures)
+## Switches: ON at his yes
+
+Shown his page and asked whether they go live in the evening's update of 13 Nov 2026, his pick: “Yes, put them live
+(Recommended)”. Both switches below are on.
 
 - `SET1` (`src/game/uniques.ts`): off, none of the six drops, is gambled for or is on his test page. Their rules are in
   `src/game/game.ts` under “UNIQUE ITEMS, SET 1”.
@@ -39,8 +42,7 @@ The numbers are a proposal, his to change: `UNIQUE_TUNE` gyre, tithe, widow, kne
 - Their bag pictures are in `src/art/items_unique.ts` (SET1_PAINTERS). They are only ever asked for by a piece of Set 1, so
   they show only once `SET1` is on.
 
-To put them live, set both switches on and change the two lines in `tests/set1_uniques.test.ts` and
-`tests/set1_look.test.ts` that hold them off.
+The two tests hold them on, and check them switched off too.
 
 ## Pictures for him
 

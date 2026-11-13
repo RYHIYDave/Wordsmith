@@ -61,8 +61,14 @@ function warrior(w: 'battleaxe' | 'warhammer', talents: string[], ...uniques: st
 const bleeding = (m: Monster): boolean => (m.bleedT ?? 0) > 0 && (m.bleedDps ?? 0) > 0;
 
 test('1. off, none is had; on, each weapon\'s three for a Warrior who uses it, and for no one else', () => {
-  assert.equal(SET1.on, false, 'off until his yes to their pictures');
-  assert.ok(!poolFor('warrior').some((d) => [...AXE, ...HAMMER].includes(d.id)), 'off: not in the pool');
+  assert.equal(SET1.on, true, 'on: his yes, 13 Nov 2026, “Yes, put them live (Recommended)”');
+  // (switched off, as it was until his yes: none in the pool)
+  SET1.on = false;
+  try {
+    assert.ok(!poolFor('warrior').some((d) => [...AXE, ...HAMMER].includes(d.id)), 'off: not in the pool');
+  } finally {
+    SET1.on = true;
+  }
   set1(() => {
     assert.equal(SET1_DEFS.length, 6);
     for (const d of SET1_DEFS) {

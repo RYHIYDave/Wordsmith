@@ -25,8 +25,11 @@ import { UNIQUE_TUNE } from '../game/uniques';
 import type { Cam } from './fx';
 import { wx, wy } from './fx';
 
-/** The switch. Off: nothing here is drawn, ticked or read, and the six show as the build's stand-ins. */
-export const SET1_LOOK = { on: false };
+/**
+ * The switch. Off: nothing here is drawn, ticked or read, and the six show as the build's stand-ins. ON at his yes, 13 Nov 2026,
+ * shown these looks in a film on his page Set 1 Uniques: “Yes, put them live (Recommended)”.
+ */
+export const SET1_LOOK = { on: true };
 
 /** Their colours: the meteor's fire (its rock is Starbreaker's head's), blood, the bell's bronze sound, wind, iron. */
 export const SET1_COLORS = {
