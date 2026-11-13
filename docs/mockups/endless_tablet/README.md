@@ -340,6 +340,7 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
 - HIS WORDS on that, by pop-up: “like he fires the rune into the sky and meteors fall randomly over the whole arena”. SO: he fires the
   rune STRAIGHT UP into the sky, out of sight (no burst in sight); the meteors fall AT RANDOM OVER THE WHOLE ARENA (14 tiles by 10 about
   its middle, none within 2 tiles of him), not about the hero, each still marked first. The film shows the whole arena.
+  HIS YES, 12 Nov 2026, by pop-up: “Yes, on to Frost (Recommended)”.
 - NEXT: HIS WORDS FROM THE SADDLE, one at a time, each a film for his yes: Power (the hammer from the sky), Flame (the firestorm),
   Frost (ice spikes), Lightning (ball lightning), Poison (spore mines); each in its own colour with his pink through it. Then the
   boar's death and his landing; then phase 2 (his pink shade, the melds); his last stand; his death.
