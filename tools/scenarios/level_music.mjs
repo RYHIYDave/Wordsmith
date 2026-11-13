@@ -2,10 +2,28 @@
 // he begins one; the town's walk faded in; floor 1's walk, the town's let go of; a fight on floor 1 (an enemy woken beside him):
 // its music in at full, the walk down to nothing; the fight over (the enemy gone off and asleep): the fight's faded out, the walk
 // back; floor 3's, floor 1's let go of; the title: none held. What failed, and no errors. Served with its sounds: --serve.
+// THE TEST BROWSER CANNOT DECODE THE MUSIC'S AAC (Playwright's Chromium has no AAC, as the title theme's title.mp4 shows: every
+// phone's web view and real Chrome and Safari do): so each music file it asks for is handed it as the same music made WAV, as long
+// to the sample (ffmpeg, 8 kHz mono, made here), and what is tested is the game's playing of it: when each loop starts, fades and is
+// let go.
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import { makeHands, log } from './lib.mjs';
 export default async function (page, snap) {
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e && e.stack || e)));
+  const wavs = new Map();
+  await page.route(/\/sounds\/[0-9a-f]+\/music_[a-z0-9_]+\.mp4$/, (route) => {
+    const name = route.request().url().replace(/.*\//, '');
+    let b = wavs.get(name);
+    if (!b) {
+      b = execFileSync('ffmpeg', ['-v', 'error', '-i', path.join('assets', 'sound', name), '-ac', '1', '-ar', '8000', '-f', 'wav', '-'], { maxBuffer: 64 << 20 });
+      wavs.set(name, b);
+    }
+    return route.fulfill({ status: 200, contentType: 'audio/wav', body: b });
+  });
+  if (!fs.existsSync(path.join('assets', 'sound', 'music_town_walk.mp4'))) console.log('  !! the music files are not in assets/sound');
   const hands = await makeHands(page);
   await page.waitForTimeout(300);
   await hands.press('button:NEW GAME');
