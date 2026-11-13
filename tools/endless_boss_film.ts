@@ -1186,7 +1186,7 @@ function avalFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
     if (x < Tl) continue;
     const [px, py] = P(x, y);
     if (avalSpared(x, y)) {
-      if (avalSpared(x, y) && !avalSpared(x, y, -2.5)) mix(s, px, py, '#ffb070', 0.85 * on);
+      if (!avalSpared(x, y, -2.5)) mix(s, px, py, '#ffb070', 0.85 * on);
       continue;
     }
     mix(s, px, py, '#ff4f8a', 0.3 * on * throb);

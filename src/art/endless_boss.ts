@@ -3348,7 +3348,7 @@ export { HAIL_HERO };
 // torrent of powder and streaking snow, ice boulders hurtling in it, tearing across the room the whole way, parting round the safe
 // spot and round him, for a few seconds; its tail passes, and that is it. Here, out of the left wall, the safe spot at the bottom.
 export const ARENA = { x: [-3, 12.2] as const, y: [-5.6, 5.2] as const };
-export const AVAL = { red: [0.3, 0.75] as const, rumble: [0.75, 1.95] as const, cross: 0.35, stream: 2.6, tail: 0.45, safe: { at: [10.4, -4.0] as const, r: 1.55 }, his: 1.3, boulders: 26, end: 7.2 };
+export const AVAL = { red: [0.3, 0.75] as const, rumble: [0.75, 1.95] as const, cross: 0.35, stream: 2.6, tail: 0.45, safe: { side: 'bottom' as 'top' | 'bottom', w: 1.6, at: [6.2, -4.8] as const }, his: 1.3, boulders: 26, end: 7.2 };
 export const AVAL_CANVAS: MobCanvas = { w: 1300, h: 820, ax: 420, ay: 470 };
 const SNOW: Ramp = ['#34485c', '#6a8aa2', '#a5c6d7', '#e2f0f8', '#ffffff'];
 const AVAL_ICE: Ramp = ['#1a2430', '#34485c', '#6a8aa2', '#a5c6d7', '#e2f0f8'];
@@ -3363,9 +3363,13 @@ export function avalTail(t: number): number {
   const u = clamp01((t - AVAL_OUT() - AVAL.cross - AVAL.stream) / AVAL.tail);
   return (ARENA.x[0] + (ARENA.x[1] - ARENA.x[0]) * u) * TILE;
 }
-/** Whether a spot of the floor is spared it: the safe spot, and his own ground. */
+/** Whether a spot of the floor is spared it: THE SAFE STRIP (his words, 13 Nov 2026: “The safe spots should be a strip along the top of
+ * the arena or the bottom of the arena”: the whole length of the room, along the top edge or the bottom, the way the snow goes), and
+ * his own ground. */
 export function avalSpared(x: number, y: number, pad = 0): boolean {
-  return Math.hypot(x - AVAL.safe.at[0] * TILE, y - AVAL.safe.at[1] * TILE) < AVAL.safe.r * TILE + pad || Math.hypot(x, y) < AVAL.his * TILE + pad;
+  const w = AVAL.safe.w * TILE + pad;
+  const strip = AVAL.safe.side === 'bottom' ? y < ARENA.y[0] * TILE + w : y > ARENA.y[1] * TILE - w;
+  return strip || Math.hypot(x, y) < AVAL.his * TILE + pad;
 }
 /** THE AVALANCHE'S SOLIDS, `t` into the move: the torrent of snow tearing across the room out of the wall, its boulders, its
  * streaks, its powder; parting round the safe spot and round him. All of it one body of snow, no seams through it. */
@@ -3443,10 +3447,19 @@ export function avalancheBits(t: number, put: Put): void {
   // (powder flung up and curling round the safe spot's edge and his, and off its top)
   for (let i = 0; i < 160; i++) {
     const a = hash(i, 9, 9959) * TAU;
-    const round = i % 2 ? [AVAL.safe.at[0] * TILE, AVAL.safe.at[1] * TILE, AVAL.safe.r * TILE] : [0, 0, AVAL.his * TILE];
     const u = (t * 2 + hash(i, 10, 9960)) % 1;
-    const x = round[0] + Math.cos(a) * (round[2] + 4 + 10 * u), y = round[1] + Math.sin(a) * (round[2] + 4 + 10 * u);
-    if (x > F || x < Tl || Math.cos(a) > 0.3) continue;
+    let x: number, y: number;
+    if (i % 2) {
+      // (along the safe strip's edge, powder thrown up off the torrent's flank)
+      const edge = AVAL.safe.side === 'bottom' ? ARENA.y[0] * TILE + AVAL.safe.w * TILE : ARENA.y[1] * TILE - AVAL.safe.w * TILE;
+      x = ARENA.x[0] * TILE + (ARENA.x[1] - ARENA.x[0]) * TILE * hash(i, 11, 9965);
+      y = edge + (AVAL.safe.side === 'bottom' ? 1 : -1) * (2 + 8 * u);
+    } else {
+      x = Math.cos(a) * (AVAL.his * TILE + 4 + 10 * u);
+      y = Math.sin(a) * (AVAL.his * TILE + 4 + 10 * u);
+      if (Math.cos(a) > 0.3) continue;
+    }
+    if (x > F || x < Tl) continue;
     put('spray', 'snow', { k: 'mote', p: [x + 20 * u, y, 8 + 30 * u * (1 - u) * 2], c: u < 0.4 ? '#ffffff' : '#a5c6d7', size: u < 0.3 ? 2 : 1 });
   }
   put('glow', 'avalGlow', { k: 'glow', p: [(F + Tl) / 2, 0, 30], c: '#e2f0f8', r: 160, a: 0.22 });

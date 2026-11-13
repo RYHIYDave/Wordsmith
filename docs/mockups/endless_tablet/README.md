@@ -522,6 +522,9 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   the snow comes out of the wall like a freight train: one river of snow the room's width, streaked the way it goes, long masses of
   powder hurled along it, speed lines, ice boulders hurtling, parting round the safe spot and round him, for 2.6 s; its tail passes
   and that is it (no burying, no melting). One caught in it frozen and hurt hard: the main chat's numbers.
+  HIS WORDS: “Very close.  The safe spots should be a strip along the top of the arena or the bottom of the arena”. SO: the safe
+  place is a strip the room's whole length along its top edge or its bottom (here the bottom), the way the snow goes, its edge a
+  line of hot gold; the torrent throws powder up off its flank along it.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
