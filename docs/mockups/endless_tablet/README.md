@@ -416,8 +416,34 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   seam for its edge, not his pink (the pink edge is the living's). HIS SHADE tears up out of him as he strikes and looms over him
   from behind (his own figure made great, more than twice his height, of his pink, bands of it rising through it, doing as he does a
   moment after him): the second phase begins. Through the bosses' checks (0 findings) and the boss tests (4 of 4).
-- NEXT: the second phase on foot: his shade with him in every move, the melds (he forges one word, the shade another, they meld);
-  his last stand; his death; his lines, for his yes; his other facing turned round, not flipped.
+- THE SECOND PHASE, ON FOOT (made the night of 12 to 13 Nov 2026 at his word, “just keep working on the fight”; not yet shown him):
+  HIS STAND ON FOOT (`foot`, `footStandAt`, `FOOT_OVER`): hunched forward like something hunting, his staff planted, his writing hand
+  clawed out before him; breathing deep and hard, his shoulders heaving; his head jerking round to the hero and back now and then;
+  his runes burning brighter than in the saddle, the air crackling about him; HIS SHADE behind him all the while, doing as he does a
+  moment after him (`paintShade`, laid behind him by the game). THE MELDS (`MELD`, `meldRiderAt`; the film's `meldScene`): he
+  writes his word at his hand as in the saddle; his shade, a moment after him, writes the other word at its great hand, twice the
+  size; his staff thrust high, the two runes fly up and meet over him, wheel round each other faster and faster and MELD in a flash
+  into the meld's own rune (the game's, render/melds3.ts, the bare symbol in its own colours); THE SLAM (two frames, smeared)
+  drives it down into the floor, and what it makes rises out of the floor. ERUPTION (Power and Flame; `eruption`, `ERUPT`,
+  `eruptBits`; `pictures/standard/boss_eruption.mp4`): he writes Power, his shade Flame; where the meld goes in, the floor splits
+  in three fissures racing out toward the hero, molten in their depths, his pink at their heart, a vent swelling along each (the
+  warning); then from the nearest out, in a rolling wave, each vent BLOWS: a jet of molten rock spraying wide at its top, gobs
+  flung out of it, rocks thrown in arcs and smouldering where they land; each falls back into a pool of rock cooling. The other
+  nine melds are to come, each for his yes.
+- HIS DEATH (`death`, `DEATH`, `deathRiderAt`, `dyingPut`, `deathGrains`; `pictures/standard/boss_death.mp4`), by his brief (“he is
+  overwhelmed by the word power he is using and implodes in pink energy that dissipates into tiny runes that blink out until
+  nothing is left”; never on his knees): STRUCK, a flash, rocked back a step; OVERWHELMED, wrenched up and back, arched, his staff
+  thrust high as if to hold it off, shaking, light splitting out through him in cracks, more and more of him burning white and
+  pink, bolts lashing out of him to the floor, his shade dragged back down into him, writhing; IMPLODES, all of him, staff and all,
+  crushed in to a point at his heart in a quarter of a second; a beat; then a ring of his light and a burst of TINY RUNES flung
+  out, drifting out and up, each blinking out on its own until nothing is left.
+- HIS LINES, drafted for his yes (the sound chat voices them; each said as the move begins, so it is heard coming): Power, “Be
+  crushed beneath the Word!”; Flame, “Let the sky burn!”; Frost, “Be still. Forever.”; Lightning, “Hear the storm speak!”; Poison,
+  “Every step, a grave.”; his steed, looking back at it, “Rest, old friend. Your fury lives in me.”, then on the slam, “You will
+  pay for this!”; Eruption, “The deep fire answers me!”; his death, “Too many... words...”.
+- Through the bosses' checks (0 findings: fall, foot, eruption, death) and the boss tests (4 of 4).
+- NEXT: his lines, for his yes; the other nine melds, each for his yes; his last stand; his other facing turned round, not
+  flipped.
 
 
 ## The tools
