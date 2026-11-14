@@ -4,7 +4,8 @@
 //   1. its eleven files are in assets/sound, each its loop and 2 s more (the guard), shipped as files of their own, not packed
 //      (MP3 since 14 Nov 2026: they were AAC in .mp4, which claude.ai's check of a page's files before it is shared does not take);
 //   2. the loops' lengths and fight-in points are the tenth batch's table's, to the figure;
-//   3. the place: the prison town, floors 1 to 5; not the camp, the Rim, floor 6 on, nor the endless levels;
+//   3. the place: the prison town, floors 1 to 10 (6 to 10 the thirteenth batch's, 14 Nov 2026); not the camp, the Rim, floor
+//      11 on, nor the endless levels;
 //   4. a fight: on as soon as an enemy is awake and near him, still on a few seconds after the last is gone, then off; never in
 //      town; a new floor starts with none.
 // @ts-ignore - node typings are not part of this project
@@ -53,8 +54,8 @@ function onFloor(depth: number, seed = 5): Game {
 
 const loops = Object.values(MUSIC_PLACES).flatMap((p) => (p.fight ? [p.walk, p.fight] : [p.walk]));
 
-test('1. its eleven files are in assets/sound, each its loop and the 2 s guard, shipped as files of their own', () => {
-  assert.equal(loops.length, 11);
+test('1. its twenty-one files are in assets/sound, each its loop and the 2 s guard, shipped as files of their own', () => {
+  assert.equal(loops.length, 21, 'the tenth batch\'s eleven and the thirteenth\'s ten');
   for (const t of loops) {
     const f = `${DIR}/${t.file}`;
     assert.ok(fs.existsSync(f), t.file);
@@ -76,7 +77,7 @@ test("2. the loops' lengths and the fights' points are the tenth batch's table's
   assert.ok(from >= 0, 'the tenth batch in the README');
   const part = readme.slice(from);
   const rows = [...part.matchAll(/^\|[^|\n]*\| `(music_[a-z0-9_]+\.mp3)` \| *([\d.]+) *\| *([\d.]*) *\|/gm)];
-  assert.equal(rows.length, 11, 'eleven rows');
+  assert.equal(rows.length, 21, 'eleven rows, and the thirteenth batch\'s ten after them');
   for (const r of rows) {
     const t = loops.find((q) => q.file === r[1]);
     if (!t) throw new Error(`${r[1]}: not played`);
@@ -85,12 +86,12 @@ test("2. the loops' lengths and the fights' points are the tenth batch's table's
   }
 });
 
-test('3. the place: the prison town, floors 1 to 5; not the camp, the Rim, floor 6 on, nor the endless levels', () => {
+test('3. the place: the prison town, floors 1 to 10; not the camp, the Rim, floor 11 on, nor the endless levels', () => {
   const g = new Game('warrior', 3);
   assert.equal(g.level.town, true);
   assert.equal(musicPlace(g), 'town');
-  for (let d = 1; d <= 5; d++) assert.equal(musicPlace(onFloor(d)), `f${d}`, `floor ${d}`);
-  assert.equal(musicPlace(onFloor(6)), null, 'floor 6: none made yet');
+  for (let d = 1; d <= 10; d++) assert.equal(musicPlace(onFloor(d)), `f${d}`, `floor ${d}`);
+  assert.equal(musicPlace(onFloor(11)), null, 'floor 11: none made yet');
   const e = onFloor(2);
   e.inEndless = true;
   assert.equal(musicPlace(e), null, 'the endless levels');

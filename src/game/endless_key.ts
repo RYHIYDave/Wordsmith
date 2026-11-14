@@ -18,8 +18,12 @@
 //
 // NOTHING OF THE GAME USES THIS WHILE `ENDLESS_KEY.on` IS OFF (his rule: pictures first).
 
-/** The switch (off until he has seen it in the game and said yes). */
-export const ENDLESS_KEY = { on: false };
+/**
+ * The switch: ON at his word, 14 Nov 2026 (Eastern), asked by the main chat before tonight's update whether the shards and the final
+ * boss should go live (he had said yes to each stage as it was built, docs/mockups/endless_tablet/BUILD.md): “Yes, switch it on
+ * (Recommended)”.
+ */
+export const ENDLESS_KEY = { on: true };
 
 /** The floors whose bosses each carry a quarter, in the quarters' order (art/endless_tablet.ts: k 0 to 3). */
 export const QUARTER_FLOORS = [5, 10, 15, 20] as const;

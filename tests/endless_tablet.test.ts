@@ -17,8 +17,8 @@ const PINKISH = (c: string): boolean => {
   return r > 150 && r - g > 80 && b > 60 && b < r;
 };
 
-test('the switch is off, and nothing of the game imports these files', () => {
-  assert.equal(ENDLESS_TABLET.on, false);
+test('the switch is on (his yes, 14 Nov 2026), and nothing of the game imports these files', () => {
+  assert.equal(ENDLESS_TABLET.on, true, 'his “Yes, switch it on (Recommended)”');
   const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e: { isDirectory: () => boolean; name: string }) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.ts') ? [`${dir}/${e.name}`] : []));
   for (const f of walk('src').filter((f) => !f.startsWith('src/dev/') && !/endless_(tablet|portal|boss)\.ts$/.test(f))) {
     const s = readFileSync(f, 'utf8');

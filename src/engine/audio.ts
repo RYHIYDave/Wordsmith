@@ -1391,6 +1391,13 @@ export const MUSIC_PLACES: Readonly<Record<string, { readonly walk: MusicLoop; r
   f3: { walk: { file: 'music_f3_walk.mp3', loop: 29.4062 }, fight: { file: 'music_f3_fight.mp3', loop: 30.0115, fightIn: 0.945 } },
   f4: { walk: { file: 'music_f4_walk.mp3', loop: 29.9445 }, fight: { file: 'music_f4_fight.mp3', loop: 35.1143, fightIn: 0.006 } },
   f5: { walk: { file: 'music_f5_walk.mp3', loop: 27.9472 }, fight: { file: 'music_f5_fight.mp3', loop: 31.4438, fightIn: 0.497 } },
+  // (THE WILDS, floors 6 to 10: the sound chat's thirteenth batch, his songs, “Should be everything for 6-10”, and on try-out 18 his
+  // “All good, hand over (Recommended)”; its table, to the sample at 48 kHz: assets/sound/README.md, "Thirteenth batch")
+  f6: { walk: { file: 'music_f6_walk.mp3', loop: 26.7458 }, fight: { file: 'music_f6_fight.mp3', loop: 25.7787, fightIn: 2.161 } },
+  f7: { walk: { file: 'music_f7_walk.mp3', loop: 27.6948 }, fight: { file: 'music_f7_fight.mp3', loop: 26.4213, fightIn: 0.843 } },
+  f8: { walk: { file: 'music_f8_walk.mp3', loop: 29.2397 }, fight: { file: 'music_f8_fight.mp3', loop: 39.0779, fightIn: 0.161 } },
+  f9: { walk: { file: 'music_f9_walk.mp3', loop: 27.6584 }, fight: { file: 'music_f9_fight.mp3', loop: 33.6587, fightIn: 0.641 } },
+  f10: { walk: { file: 'music_f10_walk.mp3', loop: 36.1024 }, fight: { file: 'music_f10_fight.mp3', loop: 35.6684, fightIn: 0.006 } },
 };
 
 type MusicPlaying = { src: AudioBufferSourceNode; g: GainNode };

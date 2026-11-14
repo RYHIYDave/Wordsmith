@@ -580,3 +580,51 @@ short. Even so, give Siphon at most one every 0.5 s (the film's ticks are 0.55 a
 come seldom enough as they are.
 
 Wired in by the main chat for 25.3.17 (13 Nov 2026): game/meld8_sounds.ts.
+
+## Thirteenth batch: the Wilds' level music, floors 6 to 10, looped (the sound chat, 14 Nov 2026)
+
+His five songs, made by him in Suno from the sound chat's briefs (the doc "Wordsmith Level Music Briefs"), sent 14 Nov 2026,
+13:15 Eastern: “Should be everything for 6-10”. Cut into loops and shown on try-out 18 (Wordsmith Wilds Music,
+https://claude.ai/artifact/LDaXew9wvNmadCFZ5Wvgu3), his pick: “All good, hand over (Recommended)”. Ten files, made as the tenth
+batch's (Act 1's town and floors 1 to 5) now are, no name clashes. Play them as the game plays the tenth batch's: nothing new to build.
+
+### The files: MP3, 48 kHz stereo, as the main chat's fix/music-mp3 made the tenth batch's
+libmp3lame VBR q1, as that fix's (claude.ai's share check takes no sound-only .mp4). Each is one loop and then its first 2 s again
+(a guard). The decoded buffer, `loop = true`, `loopStart = 0`, `loopEnd` = its loop length below (to the sample, at 48 kHz): add
+them to `MUSIC_PLACES` as the tenth batch's are. In Chromium's own decode each file is exactly the loop and the guard long and lies
+at 0 to the sample (against the same loop decoded from AAC, whose offset was checked as the tenth batch's), and every join, looped,
+is a smaller step than the loop's own 99th percentile (0.1 to 0.43 of it). Not checked: Safari's decode (as with that fix).
+
+| Place | File | Loop length (s) | Fight in at (s) | From his song |
+|---|---|---|---|---|
+| Floor 6, the Quarry | `music_f6_walk.mp3` | 26.7458 | | “Quarry” 0:37 to 1:04 |
+| | `music_f6_fight.mp3` | 25.7787 | 2.161 | 3:00 to 3:26 |
+| Floor 7, the Ledge Road | `music_f7_walk.mp3` | 27.6948 | | “Carrion Queen's Eyrie” 1:04 to 1:32 |
+| | `music_f7_fight.mp3` | 26.4213 | 0.843 | 2:51 to 3:17 |
+| Floor 8, Echo Canyon | `music_f8_walk.mp3` | 29.2397 | | “Level 8” 0:41 to 1:10 |
+| | `music_f8_fight.mp3` | 39.0779 | 0.161 | 2:15 to 2:54 |
+| Floor 9, the Pinewood | `music_f9_walk.mp3` | 27.6584 | | “Hollow Stag” 0:53 to 1:20 |
+| | `music_f9_fight.mp3` | 33.6587 | 0.641 | 2:30 to 3:04 |
+| Floor 10, the Sunken Fen | `music_f10_walk.mp3` | 36.1024 | | “Sunken Eye” 0:45 to 1:21 |
+| | `music_f10_fight.mp3` | 35.6684 | 0.006 | 2:44 to 3:20 |
+
+Loudness (EBU R128) as Act 1's: the walks -19 LUFS, the fights -17. The same music volume as the tenth batch's.
+
+### How try-out 18 plays them (as try-out 15 did, which the game follows)
+The walk from 0 on coming onto the floor, faded in over 0.6 s; a fight's buffer started at its “Fight in at” point at full volume
+and the walk faded to 0 over 0.6 s but kept running; the fight over, it faded out over 1.5 s and the walk came back up over 1.5 s
+where it had got to. Each floor's fight is its boss's music too, as Act 1's.
+
+### Made to fit
+Each loop's end found by matching the music, as the tenth batch's (Suno's tempo drifts). Floor 8's fight runs through its song's
+sparser middle stretch and back into the wall of riffs, so it is the longest (39 s). On a phone speaker floor 10's fight loses the
+most (about 7 dB, its fuzz bass); floor 7 the least (about 3).
+
+Decoded, a floor's walk and fight together about 22 to 27 MB, as Act 1's.
+
+### Still to come
+His songs for floors 11 to 20 and the Masque's waltz (the briefs doc). And his word of 14 Nov 2026: the Twisted Wordsmith, endless
+mode's final boss, fights to the title theme (“i want to use the main theme for the fight with the twisted wordsmith”): the title theme’s file
+as it is, no new file.
+
+Wired in by the main chat for 25.3.20 (14 Nov 2026): engine/audio.ts MUSIC_PLACES f6 to f10, game/level_music.ts musicPlace (floors 1 to 10).

@@ -27,8 +27,11 @@ import { GRAIN, INK, SPARK } from './kit';
 import { RARITY_COLOR } from './palette';
 import { BENCH_SOCKET } from './shaft_props';
 
-/** The switch: OFF. On, the game may show these (the main chat's: the quarters as loot, the socket, the rules). */
-export const ENDLESS_TABLET = { on: false };
+/**
+ * The switch: ON at his word, 14 Nov 2026, with ENDLESS_KEY (game/endless_key.ts): “Yes, switch it on (Recommended)”. On, the game may
+ * show these (the main chat's: the quarters as loot, the socket, the rules).
+ */
+export const ENDLESS_TABLET = { on: true };
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // THE STONE: the Shaft's Rim's own top stone (art/shaft_props.ts S), dark to light, and one tone past it for the rim's crest.
