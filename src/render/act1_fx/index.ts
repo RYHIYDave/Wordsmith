@@ -86,6 +86,7 @@ import { FX as stoker } from './stoker';
 import { FX_BLADE as keyblade, FX_FLAME as keyflame } from './keybearers';
 import { FX as rshadow } from './rshadow';
 import { FX as moth } from './moth';
+import { FX as wsboss } from './wsboss';
 
 export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   // (the first floors' own, done the action way: floor 1's, behind ACTION_F1; their perils only)
@@ -165,6 +166,8 @@ export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   hshape,
   rshadow,
   moth,
+  // (ENDLESS MODE'S FINAL BOSS, behind ENDLESS_KEY)
+  wsboss,
   rshade,
   stoker,
   // (floor 5's temple door's key-bearers)

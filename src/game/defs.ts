@@ -1052,6 +1052,8 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // (floor 5's temple door's key-bearers, behind TEMPLE_DOOR: mini-bosses, each as hard for its floor as the rules make it, game.ts keyBearers)
   keyblade: { kind: 'keyblade', name: 'The Keybearer of the Knife', life: 120, dmgMin: 8, dmgMax: 12, speed: 3.224, radius: 0.4, range: 2.4, windup: 0.5, cooldown: 1.6, xp: 60, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'large' },
   keyflame: { kind: 'keyflame', name: 'The Keybearer of the Flame', life: 100, dmgMin: 9, dmgMax: 13, speed: 1.4, radius: 0.4, range: 8, windup: 1.2, cooldown: 2.4, xp: 60, ranged: false, projSpeed: 0, keepMax: 0, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'large' },
+  // (ENDLESS MODE'S FINAL BOSS, behind ENDLESS_KEY: “the biggest, baddest boss in the game”; his numbers the main chat's to tune)
+  wsboss: { kind: 'wsboss', name: 'The Warped Wordsmith', life: 1700, dmgMin: 30, dmgMax: 42, speed: 0, radius: 1.5, range: 3.0, windup: 0.9, cooldown: 2.0, xp: 3000, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 999, weight: 0, size: 'boss' },
   moth: { kind: 'moth', name: 'The Moth', life: 780, dmgMin: 27, dmgMax: 38, speed: 3.0, radius: 1.4, range: 8.0, windup: 0.9, cooldown: 2.2, xp: 1250, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
@@ -1611,6 +1613,8 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   // (floor 20: the Moth makes no sound at all until it dies screaming, the first sound it ever makes (his doc): a silence over it
   // as its name comes up, as the Censor's)
   moth: ['...'],
+  // (ENDLESS MODE'S FINAL BOSS: his spoken lines are the sound chat's (the queue's boss-voices-and-roars): none written here yet)
+  wsboss: ['...'],
 };
 
 /**
@@ -1901,7 +1905,7 @@ export const HUSH_FOR = 4;
  */
 export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
   on: true,
-  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5, prince: 1.5, gqueen: 1.5, gking: 1.5, moth: 1.5 },
+  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5, prince: 1.5, gqueen: 1.5, gking: 1.5, moth: 1.5, wsboss: 2 },
 };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];

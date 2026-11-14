@@ -73,6 +73,7 @@ import { CITY } from '../art/hub2';
 import { TALK_FPS, TALK_FRAMES, campFolkFrame } from '../art/hub2_folk';
 import { CAMP_DUSK, campFolk, isCamp } from '../game/camp';
 import { RimView } from './rim';
+import { FinalArenaView } from './final_arena';
 import { columnSprite, folkActAt, folkActLong, folkSoundAt, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
 import { FOLK_SOUND, WORLD_SOUNDS } from '../game/world_sounds';
 import type { TownArt } from '../art/townscene';
@@ -614,6 +615,8 @@ export class Renderer {
   readonly castle = new CastleView();
   /** THE ENDLESS TOWN, THE SHAFT'S RIM (render/rim.ts, behind ENDLESS_TOWN). */
   readonly rim = new RimView();
+  /** (ENDLESS_KEY: the bottom of the shaft, the final boss's arena: render/final_arena.ts) */
+  readonly finalArena = new FinalArenaView();
   /** FLOOR 4, THE BURIED CHAPEL OF BONES (render/chapel.ts, behind CHAPEL). */
   readonly chapel = new ChapelView();
   /** FLOOR 5, THE MINE THAT BECOMES HIS TEMPLE (render/lair.ts, behind LAIR_TEMPLE). */
@@ -626,7 +629,7 @@ export class Renderer {
   private lookNow: LookView | null = null;
   /** The new look of this level's floor, if it has one on. */
   lookOf(L: Game['level']): LookView | null {
-    for (const v of [this.rim, this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
+    for (const v of [this.rim, this.finalArena, this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
     return null;
   }
   /** (forgetLooks) The level the looks were last sorted for. */
@@ -644,7 +647,7 @@ export class Renderer {
     this.stillGlows.forget();
     this.stillFloor.forget();
     this.stillDark.forget();
-    for (const v of [this.rim, this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) {
+    for (const v of [this.rim, this.finalArena, this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) {
       if (v === keep) continue;
       v.forget?.();
       this.lookGrounds.delete(v);

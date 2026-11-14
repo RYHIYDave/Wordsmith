@@ -63,6 +63,7 @@ import { stairwellKicks, stairwellOpens } from './stairwell_open';
 import { boulderRolling, hurledBlock, stompCracks } from './unfinished';
 // (THE HIGH CITY, FLOOR 16: the Princess's things)
 import { princessThings } from './act1_figs/princess';
+import { wsThings } from './act1_figs/wsboss';
 import { deerThings } from './act1_figs/deer';
 import { drownedThings } from './act1_figs/drowned';
 import { stagThings } from './act1_figs/stag';
@@ -348,6 +349,8 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
   }
   // (THE HIGH CITY, FLOOR 16: what the Princess casts and sends, as render/act1_fx/princess.ts asks for it)
   if (kind === 'things' && a === 'princess') return princessThings();
+  // (ENDLESS MODE'S FINAL BOSS: his words' things, as render/act1_fx/wsboss.ts asks for them)
+  if (kind === 'things' && a === 'wsboss') return wsThings();
   // (FLOOR 9: the deer's hedge of bramble, as render/act1_fx/deer.ts asks for it)
   if (kind === 'things' && a === 'deer') return deerThings();
   // (FLOOR 10: the Drowned's slick, as render/act1_fx/drowned.ts asks for it)

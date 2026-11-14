@@ -49,7 +49,8 @@ import { ACT1, HIGH_CITY, act2Floor, cityFloor, highFloor, lastFloor } from './a
 import { ENDLESS, ENDLESS_OPENS, ENDLESS_WARN, endlessFloorFor, endlessName, endlessPower, endlessTough } from './endless';
 import { ENDLESS_KEY, KEY_TEXT, KEY_TIMES, PORTAL_NEAR, quarterCount, quarterOf, quartersOf, tabletWhole } from './endless_key';
 import { PORTAL_OPEN_FRAMES } from '../art/endless_portal';
-import { LANDING, TONGUE } from '../art/shaft_rim';
+import { LANDING } from '../art/shaft_rim';
+import { FINAL_ARRIVE, FINAL_BOSS_AT, FINAL_DEPTH, FINAL_NAME, FINAL_WAKE, makeFinalArena } from './final_arena';
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
 // (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds)
 import { inNettles, nettleSlow, stepGardens } from './act2/garden_rules';
@@ -143,7 +144,7 @@ const VOLATILE_ONLY: readonly WordId[] = ['volatile'];
 const RISEN_PACK = -7;
 
 /** THE WAYS (ways.ts): where a way out of a level goes: down the stairwell; through the gate into the first floor, or out of it to town; by a waypoint to town, or back from town. */
-type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut' | 'stairsIn' | 'quarry' | 'towerUp' | 'towerDown' | 'stoneIn' | 'stoneOut';
+type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut' | 'stairsIn' | 'quarry' | 'towerUp' | 'towerDown' | 'stoneIn' | 'stoneOut' | 'final';
 
 /**
  * What survives closing the game in the middle of a run: the character and how far they have got.
@@ -485,6 +486,8 @@ export class Game {
   endless = 0;
   endlessFloor = 0;
   inEndless = false;
+  /** (ENDLESS_KEY: at the bottom of the shaft, in the final boss's arena: game/final_arena.ts) An endless level to the rest of the game. */
+  inFinal = false;
   /** THE SHAFT'S RIM (game/rim.ts, behind ENDLESS_TOWN): the endless level his record stone was last cut to (a notch is cut for each one reached since, as he comes home). */
   rimSeen = 0;
   /**
@@ -1070,7 +1073,7 @@ export class Game {
       v: 1, cls: h.cls, seed: this.seed, level: h.level, xp: h.xp, pending: h.pending, attrs: { ...h.attrs },
       gear: { ...h.gear }, bag: [...h.bag], words: savedWords(this.ringWord ? { ...h.words, [this.ringWord.word]: h.words[this.ringWord.word] + 1 } : { ...h.words }),
       sockets: h.skills.map((s) => ({ front: [...s.front], behind: [...s.behind] })),
-      gold: h.gold, potionKills: h.potionKills, depth: this.depth, cleared: this.cleared, kills: this.kills, runTime: this.runTime, maxUid,
+      gold: h.gold, potionKills: h.potionKills, depth: this.inFinal ? Math.max(1, this.endlessFloor) : this.depth, cleared: this.cleared, kills: this.kills, runTime: this.runTime, maxUid,
       plan: [...this.plan],
       body: this.bodySearched,
       // (EXITS: nor whether the wordsmith has given his quest, while theirs is off)
@@ -1606,6 +1609,7 @@ export class Game {
     this.inDungeon = false;
     // (ENDLESS MODE: in town he is on no endless level; the waypoint takes him back to the one he reached)
     this.inEndless = false;
+    this.inFinal = false;
     this.dungeonWords = [];
     const h = this.hero;
     const f = this.level.floor;
@@ -2216,6 +2220,8 @@ export class Game {
     if (this.level.land?.landing) this.updateStone();
     // (ENDLESS_KEY: the tablet set in the bench at the Shaft's Rim, the landing opening, the way down: game/endless_key.ts)
     if (this.level.rim) this.updateKey(dt);
+    // (ENDLESS_KEY: the bottom of the shaft: he does not wait long for the hero to come to him)
+    if (this.inFinal) this.updateArena(dt);
     if (this.level.bells) this.updateBells(dt);
     // (THE WAYS: and where a way out of it has been taken, the rest is the next level's, from its next step)
     if (this.level.ways && this.updateWays(dt)) return;
@@ -2510,8 +2516,13 @@ export class Game {
       this.throughTower(to === 'towerUp');
       return;
     }
+    // (ENDLESS_KEY: down through the open landing at the Shaft's Rim, to the bottom of the shaft)
+    if (to === 'final') {
+      this.enterArena();
+      return;
+    }
     // (ENDLESS MODE: from an endless level, every way on, the stairwell, the mine shaft and the way on alike, to the next)
-    if (ENDLESS.on && this.inEndless && (to === 'up' || to === 'on' || to === 'down')) {
+    if (ENDLESS.on && this.inEndless && !this.inFinal && (to === 'up' || to === 'on' || to === 'down')) {
       this.nextEndless();
       return;
     }
@@ -2541,6 +2552,7 @@ export class Game {
       // (EXITS, game/camp.ts: out of the camp by its barricaded street, into the city: floor 11)
       this.depth = 11;
       this.inEndless = false;
+      this.inFinal = false;
       this.enterDungeon();
       this.cameT = 0;
       return;
@@ -2596,18 +2608,21 @@ export class Game {
     } else if (to === 'gateIn') {
       this.depth = 1;
       this.inEndless = false;
+      this.inFinal = false;
       this.enterDungeon('gate');
       this.cameT = 0;
     } else if (to === 'stairsIn') {
       // (EXITS: down the town's stairs, to the first floor, in at its doorway, the stairs up)
       this.depth = 1;
       this.inEndless = false;
+      this.inFinal = false;
       this.enterDungeon('gate');
       this.cameT = 0;
     } else if (to === 'quarry') {
       // (EXITS: out of the town's gate, onto the mountain: the Quarry, the first floor of the descent)
       this.depth = 6;
       this.inEndless = false;
+      this.inFinal = false;
       this.enterDungeon();
       this.cameT = 0;
     } else if (to === 'gateOut') {
@@ -2622,6 +2637,7 @@ export class Game {
       // (ENDLESS MODE: the town's waypoint takes him back to the endless level he reached: his pick, “Pick up where you left off”)
       this.depth = this.endlessFloor;
       this.inEndless = true;
+      this.inFinal = false;
       this.enterDungeon('way');
     } else {
       this.depth = Math.max(2, this.wayDepth);
@@ -2638,6 +2654,7 @@ export class Game {
     this.endlessFloor = endlessFloorFor(this.seed, this.endless, this.depth);
     this.depth = this.endlessFloor;
     this.inEndless = true;
+    this.inFinal = false;
     this.enterDungeon();
     this.cameT = 0;
     this.msg(`${endlessName(was)} cleared`, MSG.good);
@@ -2797,30 +2814,61 @@ export class Game {
     if (R.key.open && !this.leaving && Math.hypot(h.x - LANDING[0], h.y - LANDING[1]) < PORTAL_NEAR) this.enterFinal();
   }
 
-  /**
-   * (ENDLESS_KEY) Down through the open landing to the final boss. THE ARENA IS THE NEXT STAGE'S (the queue's
-   * build-endless-tablet-and-final-boss): until it is built he is told so and set back on the tongue.
-   */
+  /** (ENDLESS_KEY) Down through the open landing, into its light, to the bottom of the shaft (the curtain falls as for any way). */
   private enterFinal(): void {
-    const h = this.hero;
-    const [lx, ly] = LANDING;
-    // (back along the tongue, the way he came out on it)
-    const a = (TONGUE.at * Math.PI) / 180;
-    h.x = lx + Math.cos(a) * (PORTAL_NEAR + 0.25);
-    h.y = ly + Math.sin(a) * (PORTAL_NEAR + 0.25);
-    h.move = null;
-    if (this.time - (this.finalToldAt ?? -99) > 4) {
-      this.finalToldAt = this.time;
-      this.msg(KEY_TEXT.notYet, MSG.quest);
-    }
+    this.msg(KEY_TEXT.through, MSG.quest);
+    this.leave('final');
   }
-  private finalToldAt?: number;
+
+  /** (ENDLESS_KEY) A step in the arena: the boss wakes as he comes near, or a moment after he has come down, whichever is first. */
+  private updateArena(dt: number): void {
+    this.arenaT += dt;
+    const b = this.boss;
+    if (b && !b.dead && b.state === 'sleep' && this.arenaT >= FINAL_WAKE) this.wakeUp(b);
+  }
+  private arenaT = 0;
+
+  /**
+   * (ENDLESS_KEY) THE BOTTOM OF THE SHAFT (game/final_arena.ts): he comes down in the portal's light; the warped wordsmith waits on
+   * his boar across the floor. An endless level to the rest of the game (its strength the endless level he has reached; a death
+   * here the hero's end), its own place. The landing above stays open for him until the fight is won (THE BUILD's stage 4): a
+   * hero saved down here is back at the Rim when he comes back to the game, the landing still open.
+   */
+  enterArena(): void {
+    this.clearLevel();
+    this.depth = FINAL_DEPTH;
+    this.inEndless = true;
+    this.inFinal = true;
+    this.arenaT = 0;
+    this.dungeonWords = [];
+    const seed = (Math.imul(this.seed, 7919) + this.endless * 15485863 + 0x5eed) >>> 0;
+    this.level = makeFinalArena(seed);
+    this.inDungeon = true;
+    const h = this.hero;
+    h.x = FINAL_ARRIVE.x;
+    h.y = FINAL_ARRIVE.y;
+    h.fx = FINAL_ARRIVE.fx;
+    h.fy = FINAL_ARRIVE.fy;
+    const f = this.level.floor;
+    this.flow = new Uint16Array(f.w * f.h);
+    const rng = new RNG(seed ^ 0x5bd1e995);
+    const lot = new RNG(seed ^ 0x2c1b3c6d);
+    this.boss = this.spawn('wsboss', FINAL_BOSS_AT.x, FINAL_BOSS_AT.y, -2, 0, true, rng, lot);
+    this.boss.fx = FINAL_BOSS_AT.fx;
+    this.boss.fy = FINAL_BOSS_AT.fy;
+    this.updateVision(1);
+    if (FLOOR_NAMES.on && !this.practice) this.emit({ t: 'floorName', name: FINAL_NAME.level, level: endlessName(this.endless), warn: ENDLESS_WARN });
+    else this.msg(`${FINAL_NAME.level}: ${ENDLESS_WARN}`, MSG.head);
+    this.sfx('portal');
+    this.entry = null;
+  }
 
   /** THE SHAFT'S RIM: in at the gate's panel, down to the endless level he has reached, as its waypoint takes him (the words on the gate burned into it). */
   enterEndless(): void {
     if (!(ENDLESS.on && this.endless > 0)) return;
     this.depth = this.endlessFloor;
     this.inEndless = true;
+    this.inFinal = false;
     this.enterDungeon('way');
   }
 

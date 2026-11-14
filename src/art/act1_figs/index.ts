@@ -63,8 +63,11 @@ import { FIG as stoker } from './stoker';
 import { FIG_BLADE as keyblade, FIG_FLAME as keyflame } from './keybearers';
 import { FIG as rshadow } from './rshadow';
 import { FIG as moth } from './moth';
+import { FIG as wsboss } from './wsboss';
 
 export const ACT1_FIGS: Readonly<Partial<Record<MonsterKind, Act1Fig | null>>> = {
+  // (ENDLESS MODE'S FINAL BOSS, behind ENDLESS_KEY)
+  wsboss,
   chanter,
   firepot,
   qgolem,

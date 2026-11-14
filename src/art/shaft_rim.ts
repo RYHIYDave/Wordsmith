@@ -258,13 +258,13 @@ const DOOR_H = 0.5;
 /** The top storey's doorway is lower: its pass's landing is only a third of a storey under the brink. */
 const doorH = (k: number): number => (k === 0 ? 0.31 : DOOR_H);
 
-const NIGHT = hx('#07060f');
-const ROCK = ['#141118', '#1d1820', '#272029', '#332a33'].map(hx);
+export const NIGHT = hx('#07060f');
+export const ROCK = ['#141118', '#1d1820', '#272029', '#332a33'].map(hx);
 const FLAGS = TOWN.flag;
 const STONE = TOWN.stone;
 
 /** Light by bands, the dither only where two bands meet. */
-function lit(c: C, k: number, x: number, y: number, floor = 0.18): C {
+export function lit(c: C, k: number, x: number, y: number, floor = 0.18): C {
   const v = Math.max(0, k) * 4;
   const i = Math.floor(v);
   const f = v - i;
@@ -335,7 +335,7 @@ function kerbAt(x: number, y: number, px: number, py: number): C {
 }
 
 /** THE ROUGH ROCK past the rim. */
-function rockAt(x: number, y: number, px: number, py: number): C {
+export function rockAt(x: number, y: number, px: number, py: number): C {
   const k = rnd(Math.floor(x * 2.2 + Math.sin(y * 3) * 0.6), Math.floor(y * 2.2 + Math.sin(x * 2.7) * 0.6), 31);
   const seam = rnd(Math.floor(x * 2.2 + 0.2 + Math.sin(y * 3) * 0.6), Math.floor(y * 2.2 + 0.1 + Math.sin(x * 2.7) * 0.6), 31) !== k;
   const c = seam ? ROCK[0] : ROCK[k < 0.3 ? 1 : k > 0.8 ? 3 : 2];
@@ -343,7 +343,7 @@ function rockAt(x: number, y: number, px: number, py: number): C {
 }
 
 /** THE CLIFF round the back: courses of rough stone, darker as it rises, lost in the dark. `z` up from its foot, `u` along it (tiles). */
-function cliffAt(u: number, z: number, px: number, py: number): C {
+export function cliffAt(u: number, z: number, px: number, py: number): C {
   const row = Math.floor(z / 7 + rnd(Math.floor(u * 1.4), 0, 33) * 0.4);
   const col = Math.floor(u * 1.4 + (row & 1 ? 0.5 : 0) + rnd(row, 1, 34) * 0.3);
   const fz = z / 7 + rnd(Math.floor(u * 1.4), 0, 33) * 0.4 - row;

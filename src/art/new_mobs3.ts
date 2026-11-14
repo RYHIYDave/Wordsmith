@@ -3767,13 +3767,13 @@ export function walkFpsAt(mob: Mob, pace: number): number {
 }
 
 /** A frame as the game holds it: cut down to the figure, with its lights and its pool of light. */
-function frameOf3(mob: Mob, which: MobAct | string, t: number, view: GameView): Sprite {
+function frameOf3(mob: Mob, which: MobAct | string, t: number, view: GameView | 'frontL' | 'rearL'): Sprite {
   const can = canvasOf(mob);
   return toSprite(paintMob(mob, which, t, view), mob.aura, can.ax, can.ay);
 }
 
 /** A monster on the bones as the game holds a monster's pictures, one facing: its stand, its walk, its attack and its other moves, struck, its death. */
-export function mobSet(mob: Mob, view: GameView, pace: number): AnimSet {
+export function mobSet(mob: Mob, view: GameView | 'frontL' | 'rearL', pace: number): AnimSet {
   const idle = lazyFrames(mob.idleFrames, (i) => frameOf3(mob, 'stand', i / mob.idleFps, view));
   const walk = lazyFrames(mob.walkFrames, (i) => frameOf3(mob, 'walk', i / mob.walkFps, view));
   const keys = mob.attack.motion.keys;
@@ -3784,7 +3784,7 @@ export function mobSet(mob: Mob, view: GameView, pace: number): AnimSet {
   const dieN = Math.round(mob.dieTime * DEATH_FPS) + 1;
   // (a dying thing has no pool of light behind it, and no edge of light round it)
   const can = canvasOf(mob);
-  const die: Clip = { frames: lazyFrames(dieN, (i) => toSprite(deathOfMob(mob, i / (dieN - 1), view), null, can.ax, can.ay)), fps: DEATH_FPS };
+  const die: Clip = { frames: lazyFrames(dieN, (i) => toSprite(deathOfMob(mob, i / (dieN - 1), view === 'frontL' ? 'front' : view === 'rearL' ? 'back' : view), null, can.ax, can.ay)), fps: DEATH_FPS };
   const rn = Math.round(mob.reelTime * CLIP_FPS3) + 1;
   const reel: Clip = { frames: lazyFrames(rn, (i) => frameOf3(mob, 'reel', i / CLIP_FPS3, view)), fps: CLIP_FPS3 };
   const clips: NonNullable<AnimSet['clips']> = { attack, die, reel };

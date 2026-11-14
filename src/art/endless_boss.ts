@@ -40,7 +40,7 @@ import { paintBits } from './new_mobs3';
 import type { Painted } from './kit';
 import type { Bit, Mob, MobCanvas, Moment, Put, Shape } from './new_mobs3';
 import type { BossShape, CheckLimb, CheckLump, Handover } from './boss_checks';
-import type { Ring, Skin, Stage } from './skin';
+import type { PaintView, Ring, Skin, Stage } from './skin';
 import { stage, wornOn } from './skin';
 import { add, buildOf, cross, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
@@ -4358,3 +4358,160 @@ export const WS_SHAPE: BossShape = {
   ],
 };
 void len;
+
+
+// =============================================================================================
+// HIS FIRST PHASE'S WORDS, A THING AT A TIME, FOR THE GAME (the queue's build-endless-tablet-and-final-boss, stage 2: the main
+// chat's). The films above paint each word whole, at the places the film chose; the game lays each thing where its rules put it
+// (game/act1_rules/wsboss.ts) and draws it there (render/act1_fx/wsboss.ts): each painter here is the very same solids as the film's,
+// for one thing, its own floor point at nothing.
+
+/** ONE METEOR, `u` seconds from its landing (negative while it falls; FIRE.fall before), `k` its looks (0 ... 3): the burning rock
+ * streaking down out of the sky, its blast as it strikes, the floor burning where it fell, flames standing up off it (as
+ * firestormBits paints each of its own). `fade` (0 ... 1) its burning going out. */
+export function meteorBits(k: number, u: number, fade: number, put: Put): void {
+  const at: V3 = [0, 0, 0];
+  const fr0 = Math.floor((u + 10) * 30);
+  if (u < 0 && u > -FIRE.fall) {
+    const w = (u + FIRE.fall) / FIRE.fall;
+    const p = add(at, mul(METEOR_FROM, 520 * (1 - Math.pow(w, 1.15))));
+    const R = 8.5;
+    put(`meteor${k % 4}`, 'rock', { k: 'ball', c: p, ax: [[R, 0, 0], [0, R * 0.85, 0], [0, 0, R * 0.95]], skin: (uu, tone) => {
+      const crack = hash(Math.floor((uu[0] + 1) * 5), Math.floor((uu[2] + 1) * 5) + k, 8988) < 0.3;
+      return crack ? FIRE_RAMP[T5(tone + 1)] : ROCK[T5(tone)];
+    } });
+    const back = METEOR_FROM;
+    put('meteorFire', 'mantle', { k: 'rod', a: add(p, mul(back, R * 0.9)), b: add(p, mul(back, 40)), ra: R * 1.1, rb: 3, ramp: FIRE_RAMP });
+    put('meteorFire', 'tail', { k: 'rod', a: add(p, mul(back, 20)), b: add(p, mul(back, 80)), ra: 4.2, rb: 0.6, ramp: FIRE_RAMP });
+    for (let j = 0; j < 16; j++) {
+      const q = add(p, add(mul(back, 70 + j * 9), [(hash(k, j + fr0, 8983) - 0.5) * 6, (hash(k, j, 8984) - 0.5) * 6, (hash(k, j + 9, 8989) - 0.5) * 6]));
+      put('fireTrail', 'trail', { k: 'mote', p: q, c: j < 4 ? FIRE_RAMP[3] : j < 8 ? FIRE_RAMP[2] : j < 11 ? FIRE_RAMP[1] : j % 2 ? '#3a2a30' : '#52404a', size: j < 6 ? 2 : 1 });
+    }
+    put('glow', 'fireGlow', { k: 'glow', p, c: FIRE_RAMP[2], r: 18, a: 0.6 });
+    return;
+  }
+  if (u < 0) return;
+  if (u < 0.45) {
+    for (let j = 0; j < 20; j++) {
+      const a = (j / 20) * TAU + hash(k, j, 8990);
+      const sp = 90 + 110 * hash(k, j + 1, 8991);
+      const q: V3 = [Math.cos(a) * sp * u, Math.sin(a) * sp * u * 0.9, 4 + (70 + 80 * hash(k, j + 2, 8992)) * u - 260 * u * u];
+      if (q[2] < 0) continue;
+      if (j % 4 === 0) put('meteorRock', 'chunk', { k: 'ball', c: q, ax: [[2.6, 0, 0], [0, 2.2, 0], [0, 0, 2.4]], skin: ROCK });
+      else put('fireSplash', 'splash', { k: 'mote', p: q, c: FIRE_RAMP[j % 3 ? 3 : 2], size: u < 0.15 ? 2 : 1 });
+    }
+    if (u < 0.12) put('blast', 'blast', { k: 'ball', c: [0, 0, 10], ax: [[20 + 80 * u, 0, 0], [0, 18 + 70 * u, 0], [0, 0, 14 + 40 * u]], skin: (_uu, tone) => FIRE_RAMP[T5(tone + 2)] });
+    put('glow', 'blastGlow', { k: 'glow', p: [0, 0, 14], c: FIRE_RAMP[3], r: 40, a: 0.7 * (1 - u / 0.45) });
+  }
+  const big = 1 + 1.4 * Math.exp(-u * 7);
+  for (let j = 0; j < 9; j++) {
+    const a = (j / 9) * TAU + hash(k, j, 8985);
+    const rr = (3 + 13 * hash(k, j + 3, 8986)) * Math.min(1, 0.5 + u * 3);
+    const base: V3 = [Math.cos(a) * rr, Math.sin(a) * rr * 0.9, 0];
+    const h = (10 + 14 * hash(k, j + fr0 * 3, 8987)) * big * fade;
+    if (h < 2) continue;
+    const sway: V3 = [Math.sin(u * 9 + j) * 2.5, Math.cos(u * 7 + j) * 2, 0];
+    put(`burn${k % 3}`, 'flames', { k: 'rod', a: base, b: add(add(base, sway), [0, 0, h]), ra: 3.6, rb: 0.6, ramp: FIRE_RAMP });
+  }
+  if (u < 0.25) {
+    for (let j = 0; j < 16; j++) {
+      const a = (j / 16) * TAU;
+      const rr = 8 + 60 * u;
+      put('fireSplash', 'splash', { k: 'mote', p: [Math.cos(a) * rr, Math.sin(a) * rr, 6 + 30 * u - 120 * u * u], c: FIRE_RAMP[j % 2 ? 3 : 2], size: u < 0.1 ? 2 : 1 });
+    }
+  }
+  put('glow', 'burnGlow', { k: 'glow', p: [0, 0, 10], c: FIRE_RAMP[2], r: 22 * fade, a: (0.25 + 0.3 * Math.exp(-u * 5)) * fade });
+}
+export const METEOR_CANVAS: MobCanvas = { w: 300, h: 480, ax: 190, ay: 400 };
+export function paintMeteor(k: number, u: number, fade: number, view: PaintView = 'front'): Painted {
+  const st = stage(view, METEOR_CANVAS.ax, METEOR_CANVAS.ay, METEOR_CANVAS);
+  const bits: Bit[] = [];
+  meteorBits(k, u, fade, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 40]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+/** THE ICE, `t` seconds into his Frost, seen the way he faces (the four ways he is painted from). */
+export function paintFrostAt(t: number, view: PaintView): Painted {
+  const st = stage(view, ICE_CANVAS.ax, ICE_CANVAS.ay, ICE_CANVAS);
+  const bits: Bit[] = [];
+  frostBits(t, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+/** THE ORB at its own floor point, `high` of its lengths over it (paintOrb's, no zaps: the game draws its zaps). */
+export function paintOrbAt(t: number, swell: number, high: number): Painted {
+  return paintOrb([0, 0, high], t, 7, swell, [], 'front');
+}
+/** THE SPORES IN FLIGHT only, `t` seconds into his Poison: flung out of the burst over the place, each sinking where it lands. */
+export function sporeFlightBits(t: number, put: Put): void {
+  const B: V3 = [0, 0, 70];
+  for (const pod of SPORE_PODS) {
+    if (!(t > SPORE.burst && t < pod.land)) continue;
+    const u = (t - SPORE.burst) / (pod.land - SPORE.burst);
+    const p: V3 = [B[0] + (pod.at[0] - B[0]) * u, B[1] + (pod.at[1] - B[1]) * u, B[2] * (1 - u) + 50 * Math.sin(Math.PI * u)];
+    put('spores', 'spore', { k: 'ball', c: p, ax: [[3, 0, 0], [0, 3, 0], [0, 0, 3]], skin: SPORE_GREEN });
+    put('spores', 'trail', { k: 'mote', p: add(p, [0, 0, 4]), c: '#ff4f8a', size: 1 });
+  }
+}
+export function paintSporeFlight(t: number): Painted {
+  const st = stage('front', SPORE_CANVAS.ax, SPORE_CANVAS.ay, SPORE_CANVAS);
+  const bits: Bit[] = [];
+  sporeFlightBits(t, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+/** ONE TRAP, its rune burned in the floor, `u` seconds since its spore sank (growing in, then pulsing); `sw` (0 ... 1) how far it
+ * has snapped, flaring white-hot as it goes off; `k` its looks. */
+export function trapBits(k: number, u: number, sw: number, put: Put): void {
+  const grow = smooth01(u / SPORE.sprout);
+  const pulse = 0.5 + 0.5 * Math.sin(u * 4 + k * 1.3);
+  const R = 19 * (0.6 + 0.4 * grow) * (1 + 0.15 * sw);
+  put(`trap${k % 4}`, 'rune', { k: 'panel', c: [0, 0, 0.4], u: [R, 0, 0], v: [0, R, 0], skin: (a, b) => {
+    const x = a / R, y = b / R;
+    const r = Math.hypot(x, y);
+    if (r > 1) return null;
+    if (r > 0.86) return sw > 0.4 ? '#fff0d0' : pulse > 0.5 || grow < 1 ? SPORE_GREEN[3] : SPORE_GREEN[2];
+    const gx = Math.floor((x * 0.68 + 0.5) * 14), gy = Math.floor((-y * 0.68 + 0.5) * 14);
+    const c = gx >= 0 && gx < 14 && gy >= 0 && gy < 14 ? LEX_POISON[gy][gx] : null;
+    if (!c) return null;
+    if (sw > 0.4) return '#fff0d0';
+    return c;
+  } });
+  put('glow', 'trapGlow', { k: 'glow', p: [0, 0, 2], c: '#b4cc24', r: 12 + 18 * sw, a: 0.15 + 0.15 * pulse + 0.6 * sw });
+}
+export const TRAP_CANVAS: MobCanvas = { w: 120, h: 90, ax: 60, ay: 50 };
+export function paintTrap(k: number, u: number, sw: number): Painted {
+  const st = stage('front', TRAP_CANVAS.ax, TRAP_CANVAS.ay, TRAP_CANVAS);
+  const bits: Bit[] = [];
+  trapBits(k, u, sw, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+/** ONE TRAP'S CLOUD, `u` seconds since it burst: billowing out and up, hanging, thinning (as sporeBits paints each of its own). */
+export function sporeCloudBits(k: number, u: number, put: Put): void {
+  if (u > SPORE.cloud) return;
+  const fade = 1 - smooth01((u - SPORE.cloud * 0.6) / (SPORE.cloud * 0.4));
+  for (let j = 0; j < 9; j++) {
+    const a = (j / 9) * TAU + hash(k, j, 9026);
+    const spread = (10 + 34 * Math.sqrt(Math.min(1, u / 0.5))) * (0.6 + 0.4 * hash(k, j + 1, 9027));
+    const R = (9 + 10 * Math.min(1, u / 0.4)) * (0.7 + 0.5 * hash(k, j + 2, 9028)) * (0.4 + 0.6 * fade);
+    const c: V3 = [Math.cos(a) * spread, Math.sin(a) * spread * 0.9, 8 + 14 * Math.min(1, u / 0.6) + Math.sin(u * 2 + j) * 2];
+    put(`cloud${k % 3}`, 'gas', { k: 'ball', c, ax: [[R, 0, 0], [0, R, 0], [0, 0, R * 0.8]], skin: (uu, tone, x, y) => {
+      if (fade < 1 && ((x * 3 + y * 5) % 7) / 7 > fade + 0.15) return null;
+      return Math.hypot(uu[0], uu[1]) > 0.8 ? SPORE_GAS[T5(tone - 1)] : SPORE_GAS[T5(tone)];
+    } });
+  }
+  if (u < 0.2) for (let j = 0; j < 14; j++) {
+    const a = (j / 14) * TAU;
+    put('spores', 'spray', { k: 'mote', p: [Math.cos(a) * (6 + 120 * u), Math.sin(a) * (6 + 120 * u), 6 + 50 * u], c: j % 2 ? '#ff4f8a' : '#e2f07a', size: 2 });
+  }
+  put('glow', 'cloudGlow', { k: 'glow', p: [0, 0, 14], c: '#b4cc24', r: 34 * fade, a: 0.3 * fade });
+}
+export const CLOUD_CANVAS: MobCanvas = { w: 200, h: 170, ax: 100, ay: 110 };
+export function paintSporeCloud(k: number, u: number): Painted {
+  const st = stage('front', CLOUD_CANVAS.ax, CLOUD_CANVAS.ay, CLOUD_CANVAS);
+  const bits: Bit[] = [];
+  sporeCloudBits(k, u, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}

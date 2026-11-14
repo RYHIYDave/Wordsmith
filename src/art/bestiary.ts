@@ -50,7 +50,7 @@ import { WARDEN_LOCKDOWN, WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
 import { ACT1 } from '../game/act1';
-import { ACT1_KINDS, ACT2_KINDS, HIGH_KINDS } from '../game/types';
+import { ACT1_KINDS, ACT2_KINDS, FINAL_KINDS, HIGH_KINDS } from '../game/types';
 import { ACT1_FIGS, act1Fig, act1Look, act1Looks } from './act1_figs/index';
 import { heroSides } from './sides';
 
@@ -195,9 +195,9 @@ export const NEW_FIGURES: readonly MonsterFigure[] = ['shade', 'boneward', 'gole
 
 /** THE FIRST FIVE FLOORS' figures: the bosses of floors 2 to 5 (the Chained One in each of his three states), the bone beast, and the cult's two. */
 // (ACT 2, THE HUSH: its kinds as the descent's, once built, and their other looks: art/act1_figs/types.ts `looks`)
-export const FIRST5_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm', ...[...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].filter((k) => act1Fig(k) !== null), ...(act1Looks() as MonsterFigure[])];
+export const FIRST5_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm', ...[...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS, ...FINAL_KINDS].filter((k) => act1Fig(k) !== null), ...(act1Looks() as MonsterFigure[])];
 /** Those of them that are heavy to paint and to hold (art/bosses3.ts: seconds of painting, tens of megabytes): made for the floor they are on, and let go of after it (Bestiary.forget). */
-export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'fleshmancer', ...[...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].filter((k) => act1Fig(k)?.heavy), ...(act1Looks() as MonsterFigure[]).filter((f) => act1Fig(f)?.heavy)];
+export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'fleshmancer', ...[...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS, ...FINAL_KINDS].filter((k) => act1Fig(k)?.heavy), ...(act1Looks() as MonsterFigure[]).filter((f) => act1Fig(f)?.heavy)];
 
 /** The figure a monster is shown as. (In the rules a guardian is a brute, and more; the Chained One is one monster, as free as he is: `form`.) */
 export function figureOf(m: { kind: MonsterKind; champion: boolean; form?: number }): MonsterFigure {
@@ -310,6 +310,8 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   hshape: { top: 30, half: 10 },
   rshadow: { top: 33, half: 9 },
   moth: { top: 322, half: 70 },
+  // (ENDLESS MODE'S FINAL BOSS: the warped wordsmith on his boar, art/endless_boss.ts)
+  wsboss: { top: 132, half: 62 },
   // (the Rime Shade hunched, its head where its picture has it: tests/first5_bosses.test.ts 10)
   rshade: { top: 32, half: 11 },
   // (floor 3's Stoker twice the knight, his firebox broad: art/stoker.ts)
@@ -318,7 +320,7 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   keyblade: { top: 35, half: 11 },
   keyflame: { top: 40, half: 11 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
-  ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
+  ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS, ...FINAL_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)
   ...Object.fromEntries(act1Looks().map((k) => [k, act1Fig(k)!.size])),
 };
@@ -559,6 +561,8 @@ export function paintOrder(art: ActorArt): [number, number, number][] {
   const order = art.coarse ? [picks[5], picks[0], picks[1], picks[2], picks[3], picks[4], picks[6]] : picks;
   for (const pick of order) {
     for (let v = 0; v < sets.length; v++) {
+      // (a side that is the very set of an earlier side, painted once: the final boss's four sides stand for eight)
+      if (sets.indexOf(sets[v]) !== v) continue;
       for (const frames of pick(sets[v])) {
         const l = lists[v].indexOf(frames as Sprite[]);
         if (l < 0) continue;

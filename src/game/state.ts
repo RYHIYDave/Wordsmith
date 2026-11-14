@@ -1487,6 +1487,8 @@ export interface Level {
   campBell?: { x: number; y: number; rungAt: number };
   /** THE ENDLESS TOWN, THE SHAFT'S RIM (game/rim.ts, behind ENDLESS_TOWN): what only it has, as it stands now; absent on every other level. */
   rim?: import('./rim').RimTown;
+  /** (ENDLESS_KEY: the bottom of the shaft, the final boss's arena: game/final_arena.ts) Where he came down. */
+  final?: { arrive: { x: number; y: number } };
   /**
    * A FINER GRID FOR A TOUCH'S ERRAND (game/nav.ts FineGrid), where the ways a body may walk are narrower than a tile and run
    * across the grid (the Shaft's Rim, round its pit and between its standing stones): the errand's way is found on it, not on

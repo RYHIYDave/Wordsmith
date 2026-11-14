@@ -66,6 +66,7 @@ import { RULES as rshade } from './rshade';
 import { RULES as stoker } from './stoker';
 import { RULES as rshadow } from './rshadow';
 import { RULES as moth } from './moth';
+import { RULES as wsboss } from './wsboss';
 
 export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>> = {
   chanter,
@@ -134,6 +135,8 @@ export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>
   // (floor 5's temple door's key-bearers)
   keyblade,
   keyflame,
+  // (ENDLESS MODE'S FINAL BOSS, behind ENDLESS_KEY)
+  wsboss,
 };
 
 /** The rules of a kind of the descent's own (null: not one, or not built yet). */

@@ -102,7 +102,7 @@ const READY_MS = 20000;
  */
 export const PACKED: { on: boolean; figures: readonly MonsterFigure[]; budgetMB: { small: number; big: number }; holdMs: number; giveBackMs: number } = {
   on: true,
-  figures: ['moth'],
+  figures: ['moth', 'wsboss'],
   budgetMB: { small: 96, big: 320 },
   holdMs: 1500,
   // (a frame of a move let go of given back this long after: nothing holds a monster's picture past the frame it is drawn in)

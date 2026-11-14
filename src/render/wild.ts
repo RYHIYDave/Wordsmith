@@ -159,6 +159,7 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   hshape: { bits: ['#5c586c', '#8a8699', '#bab6c6'], sparks: false, blood: false, dust: false },
   rshadow: { bits: ['#303034', '#6a6a6d', '#a4a19d'], sparks: false, blood: false, dust: false },
   moth: { bits: ['#35313a', '#77717a', '#958c7e'], sparks: false, blood: false, dust: true },
+  wsboss: { bits: ['#2a2024', '#4a3a3a', '#e0287a'], sparks: true, blood: true, dust: false },
   // (the Rime Shade: shards of its frost, no blood, no dust: it comes apart into fog)
   rshade: { bits: ['#686e7c', '#9ca6b8', '#cdd4de'], sparks: false, blood: false, dust: false },
   stoker: { bits: ['#211b1e', '#574a4a', '#a63a14'], sparks: true, blood: false, dust: false },
