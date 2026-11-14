@@ -1722,7 +1722,8 @@ export class Game {
     // (ENDLESS MODE: an endless level laid fresh for its level, though its floor came before)
     const seed = (Math.imul(this.seed, 7919) + this.depth * 104729 + this.cleared * 31 + (this.inEndless ? this.endless * 15485863 : 0)) >>> 0;
     // (QUESTS15: floor 3 while its furnace burns has the Stoker's arena laid in it, at the end of a short hallway: game/furnace_arena.ts)
-    this.level = makeDungeon(this.depth, seed, { furnace: this.depth === 3 && this.furnaceBurns() });
+    // (ENDLESS MODE, NO STORY: an endless level's floor 5 without its temple door: storyHere)
+    this.level = makeDungeon(this.depth, seed, { furnace: this.depth === 3 && this.furnaceBurns(), endless: !this.storyHere });
     this.inDungeon = true;
     const h = this.hero;
     const f = this.level.floor;
@@ -1761,7 +1762,9 @@ export class Game {
     this.holdsMade(seed);
     // (ACT 2, THE HUSH: its Bells, asleep, where its map-maker laid them)
     this.bellsMade();
-    if (this.depth === 1 && this.cleared === 0) {
+    if (!this.storyHere) {
+      // (ENDLESS MODE, NO STORY: no fallen wordsmith on an endless level, nor floor 1 made gentle for a first time through: storyHere)
+    } else if (this.depth === 1 && this.cleared === 0) {
       // (THE WAYS: the first floor may be come back to before it is cleared, through its gate from
       // town; the fallen wordsmith, once searched, is laid there searched: nothing more comes of him)
       this.placeBody();
@@ -2239,7 +2242,7 @@ export class Game {
     }
     if (this.risers.length) this.updateRisers(dt);
     // (QUESTS610, PILLARS: floor 10, the Drowned Eye's last phase begun, the cult's obelisks blaze)
-    if (PILLARS.on && QUESTS610.on && this.depth === 10 && !this.level.pillars && !this.practice) this.pillarsLight();
+    if (PILLARS.on && QUESTS610.on && this.depth === 10 && !this.level.pillars && !this.practice && this.storyHere) this.pillarsLight();
     this.updateProjectiles(dt);
     this.updateTraps(dt);
     this.updateVolleys(dt);
@@ -3278,7 +3281,7 @@ export class Game {
    */
   private queenDown(m: Monster): void {
     const h = this.hero;
-    if (!QUESTS610.on || this.practice || m.kind !== 'queen') return;
+    if (!QUESTS610.on || this.practice || !this.storyHere || m.kind !== 'queen') return;
     if (h.feather !== 'got' && h.feather !== 'given') {
       h.feather = 'got';
       this.emit({ t: 'text', x: m.x, y: m.y, text: 'A FEATHER', color: '#e8dcc0' });
@@ -3327,7 +3330,7 @@ export class Game {
   /** (QUESTS610) Is the hero after the ward-stone's pieces, and has he not yet piece `n`? */
   private wantsPiece(n: number): boolean {
     const h = this.hero;
-    return QUESTS610.on && !this.practice && h.feather === 'given' && ((h.pieces ?? 0) & (1 << n)) === 0;
+    return QUESTS610.on && !this.practice && this.storyHere && h.feather === 'given' && ((h.pieces ?? 0) & (1 << n)) === 0;
   }
 
   /** (QUESTS610) A piece of the ward-stone, lying where it fell (once: none if he has it, or one of it lies already). */
@@ -3421,7 +3424,7 @@ export class Game {
   }
 
   private piecesMade(): void {
-    if (!QUESTS610.on || this.practice || this.depth !== 9 || this.hero.feather !== 'given' || piecesTaken(this.hero.pieces) >= 3) return;
+    if (!QUESTS610.on || this.practice || !this.storyHere || this.depth !== 9 || this.hero.feather !== 'given' || piecesTaken(this.hero.pieces) >= 3) return;
     const land = this.level.land;
     if (!land) return;
     const side = land.areas.find((a) => a.role === 'side');
@@ -3646,7 +3649,7 @@ export class Game {
       d.y = at.y + this.rng.range(-0.3, 0.3);
     }
     // (QUESTS1115: the first time, the clapper falls with it)
-    if (QUESTS1115.on && !this.practice && this.hero.clapper !== 'got' && this.hero.clapper !== 'given' && !this.drops.some((d) => d.kind === 'quest' && d.thing === 'clapper')) {
+    if (QUESTS1115.on && !this.practice && this.storyHere && this.hero.clapper !== 'got' && this.hero.clapper !== 'given' && !this.drops.some((d) => d.kind === 'quest' && d.thing === 'clapper')) {
       this.addDrop('quest', at.x, at.y, 0, null, null);
       const c = this.drops[this.drops.length - 1];
       c.thing = 'clapper';
@@ -14412,6 +14415,12 @@ export class Game {
    */
   private updateSpeak(dt: number): void {
     const L = this.level;
+    // (ENDLESS MODE, NO STORY: on an endless level no "Speak to" or "Return to" line: storyHere)
+    if (!this.storyHere && !L.town) {
+      this.speakTo = null;
+      this.speakLevel = L;
+      return;
+    }
     if (SPEAK_NEW.on) {
       // (SPEAK_NEW, game/quest_marks.ts: whoever has something for him now, wherever he is: the moment one of them is new, the line; on
       // coming into town, whoever waits there, what he brings back first; on coming into a floor, what he brings back, as before)
@@ -14682,7 +14691,7 @@ export class Game {
   /** (QUESTS1115) Is the hero after the unstruck pages (the jar brought), and has he not yet page `n`? */
   private wantsPage(n: number): boolean {
     const h = this.hero;
-    return QUESTS1115.on && !this.practice && h.jar === 'given' && ((h.pages ?? 0) & (1 << n)) === 0;
+    return QUESTS1115.on && !this.practice && this.storyHere && h.jar === 'given' && ((h.pages ?? 0) & (1 << n)) === 0;
   }
 
   /** (QUESTS1115) An unstruck page, lying where it fell (once: none if he has it, or one of it lies already). */
@@ -14697,7 +14706,7 @@ export class Game {
 
   /** (QUESTS1115) A boss fallen: floor 13's page (the oldest, from under all its layers), the Physician's (from his ledger). */
   private pageBossDown(m: Monster): void {
-    if (!QUESTS1115.on || this.practice || !m.boss) return;
+    if (!QUESTS1115.on || this.practice || !this.storyHere || !m.boss) return;
     // (floor 13's: the Palimpsest, now the pair of the Scraper and the Quill whose ultimate bears its name: as the last of them falls)
     if ((m.kind === 'palimpsest' || m.kind === 'scraper' || m.kind === 'quill') && !partnerOf(this, m)) this.dropPage(0, m.x, m.y);
     else if (m.kind === 'physician') this.dropPage(1, m.x, m.y);
@@ -14772,7 +14781,7 @@ export class Game {
 
   /** (QUESTS1115) Whether an unstruck page may be laid down now: in the Censor's fight, his ink lying on the floor, a page in hand. */
   private pageReady(): boolean {
-    if (!QUESTS1115.on || this.practice || this.depth !== 15 || this.level.town) return false;
+    if (!QUESTS1115.on || this.practice || !this.storyHere || this.depth !== 15 || this.level.town) return false;
     if (pagesInHand(this.hero.pages, this.level.pagesUsed) <= 0) return false;
     if (!this.monsters.some((m) => m.boss && m.kind === 'censor' && !m.dead)) return false;
     return INK.count(this.level) >= PAGES.least;
@@ -14799,6 +14808,21 @@ export class Game {
   private captainJarAt: PropInst | null = null;
 
   /** (QUESTS1620) Whether the quests of floors 16 to 20 are on: their switch, and the High City's floors in the game (game/act1.ts). */
+  /**
+   * ENDLESS MODE, NO STORY. His words, 14 Nov 2026, 13:26 (Eastern): “For endless mode, I’d like all the stuff that happens for the
+   * story or quests to be turned off.  Like I don’t need the fallen wordsmith in the warden’s quarters in endless if that level cycles
+   * up.” Asked what of the floors' own events goes with it, his picks: the bosses' opening lines “Keep their lines”; floor 5's chained
+   * temple door “Door open, no key-bearers (Recommended)”. So on an endless level: no fallen wordsmith (nor floor 1 made gentle), no
+   * quest pieces, quest items or quest people (the furnace and the Stoker of 3, the Queen's feather, the Pinewood's pieces, the
+   * pillars of 10, the Hush's clapper, jar and pages, the captain's jar of 12, the songbird and the knight-captain of 19, the song on
+   * 20), no "Speak to" or "Return to" line nor the marker over the waypoint, and floor 5's temple open with no key-bearers. The
+   * strongholds, the Bells, the bosses and their lines stay. True where the story and the quests are played (every floor but an
+   * endless level, and town).
+   */
+  get storyHere(): boolean {
+    return !(ENDLESS.on && this.inEndless);
+  }
+
   private get on1620(): boolean {
     return QUESTS1620.on && HIGH_CITY.on;
   }
@@ -14896,7 +14920,7 @@ export class Game {
     this.captainJarAt = null;
     const h = this.hero;
     const L = this.level;
-    if (!this.on1620 || this.practice) return;
+    if (!this.on1620 || this.practice || !this.storyHere) return;
     L.sungIn = 0;
     if (this.depth === 12 && h.captainJar === undefined) {
       // (in a side chamber of the sewers, the one nearest the Rat King's cistern: on a tile of floor where nothing stands)
@@ -14976,7 +15000,7 @@ export class Game {
   /** (QUESTS1620) Whether he stands beside the knight-captain (floor 19). */
   private captainNear(): boolean {
     const c = this.level.captain;
-    return this.on1620 && !this.practice && this.depth === 19 && !!c && Math.hypot(c.x - this.hero.x, c.y - this.hero.y) <= SONG.captainNear;
+    return this.on1620 && !this.practice && this.storyHere && this.depth === 19 && !!c && Math.hypot(c.x - this.hero.x, c.y - this.hero.y) <= SONG.captainNear;
   }
 
   /** (QUESTS1620) The knight-captain spoken to: with his voice in hand, he speaks, his knights stand down, his gift; else, silent. */
@@ -15001,7 +15025,7 @@ export class Game {
 
   /** (QUESTS1620) Whether the songbird may sing now: the Moth's fight, the bird mended, not yet in this phase of it. */
   private songReady(): boolean {
-    if (!this.on1620 || this.practice || this.depth !== 20 || this.hero.bird !== 'mended') return false;
+    if (!this.on1620 || this.practice || !this.storyHere || this.depth !== 20 || this.hero.bird !== 'mended') return false;
     const m = this.monsters.find((q) => q.kind === 'moth' && !q.dead);
     if (!m) return false;
     const k = m.life / m.maxLife;
@@ -15044,7 +15068,7 @@ export class Game {
   /** QUESTS15: floor 3's furnace still burns for this hero (a hero who has been down past floor 3 already has it out). */
   furnaceBurns(): boolean {
     const h = this.hero;
-    if (!QUESTS15.on || this.practice || h.furnace === 'out' || h.furnace === 'done') return false;
+    if (!QUESTS15.on || this.practice || !this.storyHere || h.furnace === 'out' || h.furnace === 'done') return false;
     return !(this.cleared >= 3 || this.wayDepth >= 4);
   }
 
