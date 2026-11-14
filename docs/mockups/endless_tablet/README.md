@@ -615,6 +615,7 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   the first to go up (no chain out of turn). Told him honestly how the art stands: the big effects read well; his fist on the staff
   never quite right; he looks small beside some of the spells; his other facing still to turn round; the films' effects are drawn
   in the film tool and the main chat must build them into the game to this look.
+  HIS YES: “Yes, on to Frostbite (Recommended)”.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
