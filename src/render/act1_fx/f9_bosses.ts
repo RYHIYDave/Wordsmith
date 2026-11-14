@@ -157,7 +157,7 @@ function blowGlow(c: Act1FxCtx, p: Peril, flashOnly: boolean): void {
   if (flashOnly) {
     const dark = 'dark' in gl ? (gl as { dark: number }).dark : 0;
     if (dark > 0) {
-      wash(c, 'rgba(14,10,30,1)', dark * 0.6, true);
+      wash(c, 'rgba(14,10,30,1)', dark * 0.45, true);
       mistIn(c, dark);
     }
     wash(c, chief ? '#fff6e8' : '#f2f0ff', gl.flash);
@@ -185,13 +185,13 @@ const fx = (prefix: string): Act1Fx => ({
   glow(c, m, p) {
     // (THE RAGE: the screen's edges red while it is on him, beating; a heavy blow: the screen flashed white)
     if (m) {
-      if (prefix === CHIEF_FX && raging(m) && !m.dead) wash(c, 'rgba(200,24,70,1)', (0.22 + 0.1 * Math.sin(c.t * 9)) * Math.min(1, (m.a1?.rage ?? 0) / 1.5), true);
+      if (prefix === CHIEF_FX && raging(m) && !m.dead) wash(c, 'rgba(200,24,70,1)', (0.14 + 0.06 * Math.sin(c.t * 9)) * Math.min(1, (m.a1?.rage ?? 0) / 1.5), true);
       return;
     }
     if (p && p.a1?.startsWith(prefix)) blowGlow(c, p, true);
   },
   // (a body as big as these, struck again and again: a flash of white over it, faint, that it is not lost in white)
-  flash: 0.3,
+  flash: 0.18,
 });
 
 export const FX_CHIEF: Act1Fx | null = fx(CHIEF_FX);

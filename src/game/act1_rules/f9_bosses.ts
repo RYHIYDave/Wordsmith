@@ -64,8 +64,8 @@ export const F9_TUNE = {
   strideGap: 1.0,
   /** The heavy blows: how long the game holds still, and how far the screen kicks (game pixels), as each lands; heard and felt within `near` tiles. */
   beat: {
-    smash: [0.16, 12], slam: [0.2, 16], warcry: [0.14, 13], rush: [0.16, 13],
-    bite: [0.1, 6], claw: [0.15, 10], howl: [0.08, 7], lunge: [0.12, 8], cloud: [0.08, 7],
+    smash: [0.14, 8], slam: [0.18, 11], warcry: [0.12, 8], rush: [0.14, 9],
+    bite: [0.08, 4], claw: [0.12, 6], howl: [0.06, 4], lunge: [0.1, 5], cloud: [0.06, 4],
   } as Record<string, readonly [number, number]>,
   beatNear: 14,
   /** His footfalls as he walks: how far the screen shakes, felt within so many tiles. */
