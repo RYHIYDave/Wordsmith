@@ -610,6 +610,11 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   the rune he flings sparks of fire arcing high into the clouds one after another: each cloud reached goes up whole in billowing
   fire, and any touching it goes up after it in a chain; black smoke rolls up off them and thins over scorched floor. The fumes
   are vapour, drawn soft and banded as the steam is.
+  HIS WORDS, by pop-up: “Very good.  Are you feeling okay about the art?  So your poisoned if you get into the cloud then they
+  explode in order they spawned”. SO: the clouds vent one after another and the sparks go into them in that order, the first out
+  the first to go up (no chain out of turn). Told him honestly how the art stands: the big effects read well; his fist on the staff
+  never quite right; he looks small beside some of the spells; his other facing still to turn round; the films' effects are drawn
+  in the film tool and the main chat must build them into the game to this look.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

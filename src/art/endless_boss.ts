@@ -3825,10 +3825,10 @@ export const WILDFIRE = { at: 2.2, spots: 16, first: 0.35, over: 3.0, warn: 0.42
 // shade writes Poison; melded, the slam drives the rune into the floor before him and the floor cracks open in VENTS all over the
 // room, each belching a rolling cloud of sulphur-yellow poison that spreads low over the floor (one in it is poisoned; its edge on
 // the floor in the bosses' warning colour); then out of the rune he flings SPARKS of fire, arcing into the clouds one after
-// another: each cloud they reach EXPLODES, the whole of it going up in fire, and any cloud touching it goes up after it, in a
-// chain; black smoke rolls up off them and thins. His rules for the words stand: one rune (the meld's); the fumes are vapour, the
+// another, in the order the clouds came: each cloud they reach EXPLODES, the whole of it going up in fire; black smoke rolls up off
+// them and thins. His rules for the words stand: one rune (the meld's); the fumes are vapour, the
 // fire flame and light.
-export const FUMES = { at: 2.2, clouds: 7, vent: [0.1, 0.7] as const, spread: 1.2, sparks: 1.9, every: 0.42, fly: 0.4, chain: 0.16, boom: 0.45, smoke: 1.2, end: 7.8 };
+export const FUMES = { at: 2.2, clouds: 7, vent: [0.1, 1.0] as const, spread: 1.2, sparks: 1.9, every: 0.42, fly: 0.4, boom: 0.45, smoke: 1.2, end: 7.8 };
 /** The fumes' clouds: where each vents (his floor point's own lengths), how wide it spreads, when it vents, and when it goes up. */
 export const FUMES_CLOUDS: ReadonlyArray<{ at: V3; R: number; vent: number; spark: number | null; boom: number }> = ((): { at: V3; R: number; vent: number; spark: number | null; boom: number }[] => {
   const out: { at: V3; R: number; vent: number; spark: number | null; boom: number }[] = [];
@@ -3839,14 +3839,10 @@ export const FUMES_CLOUDS: ReadonlyArray<{ at: V3; R: number; vent: number; spar
     const i = out.length;
     out.push({ at: [x, y, 0], R: (1.6 + 0.5 * hash(i, 3, 9803)) * TILE, vent: MELD.slam + FUMES.vent[0] + (FUMES.vent[1] - FUMES.vent[0]) * hash(i, 4, 9804), spark: null, boom: Infinity });
   }
-  // (the sparks: thrown at each cloud in turn; one touching a cloud already gone up goes up from it first)
-  out.forEach((c, i) => { c.spark = MELD.slam + FUMES.sparks + FUMES.every * i + FUMES.fly; });
-  for (let pass = 0; pass < out.length; pass++) for (const c of out) {
-    let b = c.spark ?? Infinity;
-    for (const o of out) if (o !== c && Math.hypot(o.at[0] - c.at[0], o.at[1] - c.at[1]) < (o.R + c.R) * 0.95) b = Math.min(b, o.boom + FUMES.chain);
-    c.boom = b;
-  }
-  for (const c of out) if (!isFinite(c.boom)) c.boom = MELD.slam + FUMES.sparks + FUMES.every * out.length;
+  // (IN THE ORDER THEY CAME (his words, 13 Nov 2026: “So your poisoned if you get into the cloud then they explode in order they
+  // spawned”): they vent one after another, and the sparks go into them in that order, the first out the first to go up)
+  out.sort((a, b) => a.vent - b.vent);
+  out.forEach((c, i) => { c.vent = MELD.slam + FUMES.vent[0] + ((FUMES.vent[1] - FUMES.vent[0]) * i) / (out.length - 1); c.spark = MELD.slam + FUMES.sparks + FUMES.every * i + FUMES.fly; c.boom = c.spark; });
   return out;
 })();
 /** How far a cloud has spread (0 ... 1), `t` into the move. */
