@@ -659,6 +659,16 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   ahead flushed in the bosses' warning colour, hottest at the front), the sick floor glowing toxic green and bubbling, a low poison
   mist over it crackling with shock; each patch burns out a moment after and cannot sicken again, so the safe ground is where it
   has already been: the hero dodges back through its front onto burned ground. Through the bosses' checks (0 findings).
+  (Sent again lighter, `boss_contagion_small.mp4`, when the first didn't reach him.) HIS YES: “Yes, on to Frostbite's gale
+  (Recommended)”.
+- FROSTBITE AGAIN, AS THE GALE (`FROSTBITE`, `frostbiteRime`, `frostbiteGale`, `frostbiteBits`; the film's `biteFloor`, `biteGale`,
+  `heroChilled`; `pictures/standard/boss_frostbite.mp4`): a move you take (his kind “direct damage that you’re just going to have to
+  take as a trade off to do damage”), and his opening. The slam plants the rune at his feet and he stands rooted, his staff planted,
+  the eye of a freezing venom gale: frost mist whirling low round him, the wind streaming out from him to the walls in long
+  streaks, snow and his pink venom in it, the room going cold, frost blasted out over the floor in streaks from him, a few crystals
+  of ice growing out by the walls. No dodging it: one in it is chilled (frost over him), slowed and poisoned (his poison rising off
+  him) the whole while; but he is rooted the whole while, so the hero fights his way in against the wind and pours damage on him
+  (blows landing in sparks). It ends; the frost cracks off the hero and melts. Through the bosses' checks (0 findings).
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

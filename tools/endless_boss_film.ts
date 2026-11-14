@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CONTAGION, CONTAGION_FIELD, contagionAt, contagionCell, FROSTBITE, FROSTBITE_CANVAS, frostbiteIced, frostbiteIsle, frostbiteWave, paintFrostbite, FUMES, FUMES_CLOUDS, fumesSpread, WILDFIRE, SCALD, SCALD_CANVAS, paintScald, scaldBeam, scaldIce, scaldIn, scaldSteamAt, scaldWall, BLIGHT, BLIGHT_AT, BLIGHT_CANVAS, BLIGHT_FIELD, BLIGHT_TREES, blightAt, blightReach, paintBlight, THUNDER, THUNDER_CANVAS, THUNDER_STRIKES, paintThunder, thunderClapR, thunderClapAt, ARENA, AVAL, AVAL_CANVAS, AVAL_OUT, avalFront, avalSpared, avalTail, paintAvalanche, TURN, turnYaw, shadeGlide, HAIL, HAIL_BOLTS, HAIL_CANVAS, HAIL_HERO, HAIL_STONES, hailCloudAt, paintHail, DEATH, ERUPT, ERUPT_AT, ERUPT_CANVAS, ERUPT_VENTS, MELD, eruptRace, meldSmeared, paintEruption, FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { CONTAGION, CONTAGION_FIELD, contagionAt, contagionCell, FROSTBITE, FROSTBITE_CANVAS, frostbiteGale, frostbiteRime, paintFrostbite, FUMES, FUMES_CLOUDS, fumesSpread, WILDFIRE, SCALD, SCALD_CANVAS, paintScald, scaldBeam, scaldIce, scaldIn, scaldSteamAt, scaldWall, BLIGHT, BLIGHT_AT, BLIGHT_CANVAS, BLIGHT_FIELD, BLIGHT_TREES, blightAt, blightReach, paintBlight, THUNDER, THUNDER_CANVAS, THUNDER_STRIKES, paintThunder, thunderClapR, thunderClapAt, ARENA, AVAL, AVAL_CANVAS, AVAL_OUT, avalFront, avalSpared, avalTail, paintAvalanche, TURN, turnYaw, shadeGlide, HAIL, HAIL_BOLTS, HAIL_CANVAS, HAIL_HERO, HAIL_STONES, hailCloudAt, paintHail, DEATH, ERUPT, ERUPT_AT, ERUPT_CANVAS, ERUPT_VENTS, MELD, eruptRace, meldSmeared, paintEruption, FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -1898,82 +1898,76 @@ function contAir(s: Px, t: number, ox: number, oy: number, from: V2, dir: number
     }
   }
 }
-/** WHERE THE HERO IS in Frostbite's film (his own lengths): out in the room as the wave rolls over him (chilled, so slowed);
- * struggling to the nearest bare island before the ice locks. */
-const BITE_ISLE: [number, number, number] = [FROSTBITE.isles[0][0] * TILE, FROSTBITE.isles[0][1] * TILE, 0];
-const BITE_FROM: [number, number, number] = [4.6 * TILE, -0.6 * TILE, 0];
-/** When the wave reaches him. */
-const BITE_HIT = ((): number => { for (let t = MELD.slam; t < MELD.slam + 3; t += 0.01) if (frostbiteWave(t) > Math.hypot(BITE_FROM[0], BITE_FROM[1])) return t; return MELD.slam + 1; })();
+/** WHERE THE HERO IS in Frostbite's film (his own lengths): out in the room as the gale starts; fighting his way in against it,
+ * slowed, to stand at him and hit him while he is rooted. */
+const BITE_FROM: [number, number, number] = [5.6 * TILE, -1.4 * TILE, 0], BITE_TO: [number, number, number] = [1.55 * TILE, -0.75 * TILE, 0];
+const BITE_IN = (): number => MELD.slam + FROSTBITE.gale[0] + 0.3;
 function biteHeroAt(t: number): [number, number, number] {
-  // (slowed: a laboured walk, not a dash)
-  const u = Math.min(1, Math.max(0, (t - BITE_HIT - 0.2) / 1.2)), e = u * (2 - u);
-  return [BITE_FROM[0] + (BITE_ISLE[0] - BITE_FROM[0]) * e, BITE_FROM[1] + (BITE_ISLE[1] - BITE_FROM[1]) * e, 0];
+  const u = Math.min(1, Math.max(0, (t - BITE_IN()) / 2.2));
+  const lurch = Math.sin(u * Math.PI * 9) * 3 * (1 - u);
+  return [BITE_FROM[0] + (BITE_TO[0] - BITE_FROM[0]) * u + lurch, BITE_FROM[1] + (BITE_TO[1] - BITE_FROM[1]) * u, 0];
 }
-/** THE FROSTBITE ON THE FLOOR: the room; behind the wave, the floor iced over, frosted, his pink venom in its veins; the bare islands
- * it leaves, their edges hot gold; the ice flushing in every boss's warning colour, faster and faster, before it locks; locked,
- * white, then melting to wet floor. Venom rising off it as vapour. */
+/** THE FROSTBITE ON THE FLOOR: the room; rime creeping out from him over the floor to the walls, white, his pink venom in a few thin
+ * veins, the wind's streaks frosted into it; melting after. */
 function biteFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
   roomWalls(s, ox, oy, from, dir);
-  if (t < MELD.slam) return;
+  const rime = frostbiteRime(t);
+  if (rime <= 0) return;
   const P = (x: number, y: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, 0]); return [Math.round(ox + px), Math.round(oy + py)]; };
-  const f0 = MELD.slam + FROSTBITE.freeze, fr = Math.floor(t * 30);
-  const melt = Math.max(0, Math.min(1, (t - f0 - FROSTBITE.sweep - FROSTBITE.hold) / FROSTBITE.melt));
+  const melt = Math.max(0, Math.min(1, (t - MELD.slam - FROSTBITE.gale[1] - 0.2) / FROSTBITE.melt));
   if (melt >= 1) return;
-  const warn = t < f0 ? Math.max(0, (t - (f0 - 1.2)) / 1.2) : 0, rate = 6 + 18 * warn;
-  const throb = 0.5 + 0.5 * Math.sin(t * rate);
-  const W = frostbiteWave(t);
   for (let y = ARENA.y[0] * TILE; y <= ARENA.y[1] * TILE; y += 1.2) for (let x = ARENA.x[0] * TILE; x <= ARENA.x[1] * TILE; x += 1.2) {
     const r = Math.hypot(x, y);
-    if (r > W) continue;
-    const [px, py] = P(x, y);
-    if (frostbiteIsle(x, y)) {
-      // (a bare island: the floor itself, warm, its edge hot gold: safe)
-      mix(s, px, py, FLAME[3], 0.1 * (1 - melt));
-      if (!frostbiteIsle(x, y, -3)) mix(s, px, py, FLAME[3], 0.9 * (1 - melt));
-      continue;
-    }
-    if (!frostbiteIced(x, y, t)) continue;
-    // (the ice: broad frosted plates, cracked between; his pink venom running in it in wavy veins; a glint here and there)
-    const v = vnoise(x * 0.035, y * 0.035, 9961), g = hash(Math.floor(x / 2), Math.floor(y / 2), 9963);
-    const cx = Math.floor(x / 22 + 0.3 * Math.sin(y / 15)), cy = Math.floor(y / 22 + 0.3 * Math.sin(x / 13));
-    const fx = x / 22 + 0.3 * Math.sin(y / 15) - cx, fy = y / 22 + 0.3 * Math.sin(x / 13) - cy;
-    const crack = (fx < 0.05 || fy < 0.05) && hash(cx, cy, 9964 + (fx < 0.05 ? 0 : 1)) > 0.3;
-    const vein = Math.abs(Math.sin(x * 0.045 + 2.2 * Math.sin(y * 0.03)) * Math.cos(y * 0.021 + x * 0.006)) < 0.035;
-    const locked = t >= f0 + FROSTBITE.sweep * (r / (13.4 * TILE));
-    const c = crack ? '#22508a' : locked ? (v > 0.55 ? '#ffffff' : '#e4f4ff') : v > 0.62 ? '#e4f4ff' : v > 0.4 ? '#8cc0ec' : '#5a94cc';
-    mix(s, px, py, c, (locked ? 0.72 : 0.6) * (1 - melt));
-    if (g > 0.992) mix(s, px, py, '#ffffff', 0.9 * (1 - melt));
-    if (vein) mix(s, px, py, '#ff4f8a', 0.8 * (1 - melt));
-    if (warn > 0) mix(s, px, py, FLAME[2], (0.12 + 0.3 * warn) * throb);
-    // (the wave's front: a hard white rim of frost rolling out)
-    if (W - r < 5 && W < 13.5 * TILE) mix(s, px, py, '#ffffff', 0.9);
+    if (r > rime) continue;
+    const [px, py] = P(x, y), a = Math.atan2(y, x);
+    // (rime blown out from him: streaks of frost running away from him, clean between)
+    const streak = vnoise(a * 40, r / 30, 9931), edge = Math.max(0, 1 - (rime - r) / 30);
+    if (streak > 0.55) mix(s, px, py, streak > 0.72 ? '#ffffff' : '#e4f4ff', (streak > 0.72 ? 0.45 : 0.25) * (1 - melt) * (1 - 0.5 * edge));
+    else mix(s, px, py, '#8cc0ec', 0.1 * (1 - melt));
+    if (Math.abs(Math.sin(x * 0.05 + 2.4 * Math.sin(y * 0.033))) < 0.012) mix(s, px, py, '#ff4f8a', 0.55 * (1 - melt));
   }
 }
-/** THE FROSTBITE'S MIST AND VENOM: the wave's front rolling out over the floor, a bank of frost mist, white and ice-blue, his pink
- * glinting in it; venom vapour rising off the ice; the crack of the ice locking, a white flash sweeping out. */
-function biteMist(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
-  const Wp = (x: number, y: number, z: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, z]); return [ox + px, oy + py]; };
-  const W = frostbiteWave(t), f0 = MELD.slam + FROSTBITE.freeze;
-  if (t > MELD.slam && W < 13.5 * TILE) {
+/** THE GALE: his shade's breath pouring out of its mouth and down over him, a torrent of frost mist; the wind streaming out from him
+ * to the walls in streaks, snow and ice in it, his pink venom flecked through; the whole room going cold; and, while the hero is at
+ * him, his blows landing (sparks off him: he is open). As it ends, the frost on the hero cracks off. */
+function biteGale(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
+  const W = (x: number, y: number, z: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, z]); return [ox + px, oy + py]; };
+  const g = frostbiteGale(t), fr = Math.floor(t * 30);
+  if (g > 0) {
+    for (let yy = 0; yy < s.h; yy += 1) for (let xx = (yy & 1); xx < s.w; xx += 2) mix(s, xx, yy, '#8cc0ec', 0.1 * g);
+    // (he is the eye of it: frost mist whirling round him, low and fast)
     const puffs: { X: number; Y: number; R: number; v: number; seed: number }[] = [];
-    for (let i = 0; i < 90; i++) {
-      const a = (i / 90) * Math.PI * 2 + 0.02 * Math.sin(i * 3.1);
-      const x = Math.cos(a) * W, y = Math.sin(a) * W;
-      if (x < ARENA.x[0] * TILE || x > ARENA.x[1] * TILE || y < ARENA.y[0] * TILE || y > ARENA.y[1] * TILE) continue;
-      const [X, Y] = Wp(x, y, 10 + 8 * hash(i, 1, 9971));
-      puffs.push({ X, Y, R: 16 + 8 * hash(i, 2, 9972), v: 0.9, seed: i });
+    for (let i = 0; i < 30; i++) {
+      const a = (i / 30) * Math.PI * 2 + t * 3.2, r = (0.5 + 0.35 * hash(i, 1, 9930)) * TILE;
+      const [X, Y] = W(Math.cos(a) * r, Math.sin(a) * r, 4 + 10 * hash(i, 2, 9929) + 4 * Math.sin(t * 5 + i));
+      puffs.push({ X, Y, R: 8 + 5 * hash(i, 3, 9928), v: 0.5 * g, seed: i });
     }
-    puffPass(s, puffs, t, (d, L, x, y) => (d < 0.2 ? ((x + y) % 2 ? null : ['#8cc0ec', 0.4]) : [hash(x >> 2, y >> 2, 9973 + Math.floor(t * 6)) > 0.985 ? '#ff9cc0' : L > 0.55 ? '#ffffff' : L > 0.35 ? '#e4f4ff' : '#8cc0ec', d > 0.6 ? 0.9 : 0.65]));
+    puffPass(s, puffs, t, (d, L, x, y) => (d < 0.2 ? ((x + y) % 2 ? null : ['#8cc0ec', 0.4]) : [hash(x >> 2, y >> 2, 9933 + fr) > 0.98 ? '#ff9cc0' : L > 0.55 ? '#ffffff' : L > 0.35 ? '#e4f4ff' : '#8cc0ec', d > 0.6 ? 0.85 : 0.6]));
+    for (let i = 0; i < 480; i++) {
+      const a = hash(i, 1, 9934) * Math.PI * 2, sp = (9 + 5 * hash(i, 2, 9935)) * TILE, R0 = 14 * TILE;
+      const r = (hash(i, 3, 9936) * R0 + sp * t) % R0, len = (22 + 30 * hash(i, 4, 9937)) * g;
+      if (r < 1.2 * TILE) continue;
+      const x0 = Math.cos(a + r * 0.0007) * r, y0 = Math.sin(a + r * 0.0007) * r;
+      if (x0 < ARENA.x[0] * TILE || x0 > ARENA.x[1] * TILE || y0 < ARENA.y[0] * TILE || y0 > ARENA.y[1] * TILE) continue;
+      const z = 4 + 40 * hash(i, 5, 9938);
+      const [ax, ay] = W(x0, y0, z), [bx, by] = W(x0 + Math.cos(a) * len, y0 + Math.sin(a) * len, z);
+      const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay))), c = i % 11 === 0 ? '#ff9cc0' : i % 3 ? '#e4f4ff' : '#ffffff';
+      for (let q = 0; q <= n; q++) mix(s, Math.round(ax + ((bx - ax) * q) / n), Math.round(ay + ((by - ay) * q) / n), c, 0.75 * g * (q / n));
+      // (a flake at its head)
+      if (i % 2 === 0) { mix(s, Math.round(bx), Math.round(by), c, 0.95 * g); mix(s, Math.round(bx) + 1, Math.round(by), c, 0.95 * g); mix(s, Math.round(bx), Math.round(by) + 1, c, 0.8 * g); }
+    }
   }
-  // (venom vapour rising off the ice)
-  if (t > MELD.slam + 0.3 && t < f0 + FROSTBITE.sweep + FROSTBITE.hold) for (let i = 0; i < 140; i++) {
-    const x = (ARENA.x[0] + (ARENA.x[1] - ARENA.x[0]) * hash(i, 1, 9974)) * TILE, y = (ARENA.y[0] + (ARENA.y[1] - ARENA.y[0]) * hash(i, 2, 9975)) * TILE;
-    if (!frostbiteIced(x, y, t)) continue;
-    const u = (t * 0.7 + hash(i, 3, 9976)) % 1, [X, Y] = Wp(x, y, 4 + 36 * u);
-    mix(s, Math.round(X), Math.round(Y), i % 3 ? '#ff9cc0' : '#c8e0b0', 0.7 * (1 - u));
+  const at0 = BITE_IN() + 2.2;
+  if (t > at0 && t < MELD.slam + FROSTBITE.gale[1] && ((t - at0) % 0.32) < 0.07) {
+    const [X, Y] = W(6, -4, 62), seed = Math.floor((t - at0) / 0.32);
+    for (let i = 0; i < 14; i++) { const a = hash(seed, i, 9939) * Math.PI * 2, d = 4 + 14 * hash(seed, i, 9940); mix(s, Math.round(X + Math.cos(a) * d), Math.round(Y + Math.sin(a) * d), i % 3 ? '#ffffff' : '#ffd0e0', 0.95); }
+    for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) if (Math.abs(dx) + Math.abs(dy) < 7 && (dx === 0 || dy === 0)) mix(s, Math.round(X + dx), Math.round(Y + dy), '#ffffff', 0.9);
   }
-  // (the ice locking: a white flash for a frame)
-  if (t >= f0 && t < f0 + 1 / 30) for (let yy = 0; yy < s.h; yy++) for (let xx = 0; xx < s.w; xx++) mix(s, xx, yy, '#e4f4ff', 0.3);
+  const c = t - (MELD.slam + FROSTBITE.gale[1]);
+  if (c > 0 && c < 0.5) {
+    const h = biteHeroAt(t), [X, Y] = W(h[0], h[1], 20);
+    for (let i = 0; i < 24; i++) { const a = hash(i, 1, 9948) * Math.PI * 2, d = 6 + 40 * c * (0.5 + hash(i, 2, 9949)); mix(s, Math.round(X + Math.cos(a) * d), Math.round(Y + Math.sin(a) * d * 0.7 - 30 * c * (1 - c)), i % 2 ? '#e4f4ff' : '#8cc0ec', 0.9 * (1 - c / 0.5)); }
+  }
 }
 /** The hero chilled and poisoned: frost over him, pale blue; his poison rising off him as pink bubbles, more the longer he stood on
  * the ice. */
@@ -2334,7 +2328,7 @@ for (const sg of segs) {
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
-    const kick = sg.move === 'contagion' ? Math.max(0, ...CONTAGION.seeds.map(([, , st]) => 1 - Math.abs(t - MELD.slam - st - 0.03) / 0.2)) * 4 : sg.move === 'frostbite' ? Math.max(0, 1 - Math.abs(t - MELD.slam - FROSTBITE.freeze - 0.05) / 0.3) * 8 + (t > MELD.slam + FROSTBITE.wave[0] && t < MELD.slam + FROSTBITE.wave[1] ? 1.5 : 0) : sg.move === 'fumes' ? Math.max(0, ...FUMES_CLOUDS.map((c) => 1 - Math.abs(t - c.boom - 0.04) / 0.3)) * 8 + Math.max(0, ...FUMES_CLOUDS.map((c) => 1 - Math.abs(t - c.vent) / 0.12)) * 2 : sg.move === 'wildfire' ? Math.max(0, ...WILD_NODES.map((n) => 1 - Math.abs(t - n.t - 0.02) / 0.12)) * 3 + Math.max(0, 1 - Math.abs(t - WILD_BOOM() - 0.05) / 0.35) * 9 : sg.move === 'scald' ? (t > MELD.slam + SCALD.heat[0] && t < MELD.slam + SCALD.flash ? 0.5 + 1.5 * ((t - MELD.slam - SCALD.heat[0]) / (SCALD.heat[1] - SCALD.heat[0])) : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - SCALD.flash - 0.05) / 0.35) * 7 + (t > MELD.slam + SCALD.beams[0] && t < MELD.slam + SCALD.beams[1] ? 1.2 : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - SCALD.beams[0] - 0.03) / 0.2) * 4 : sg.move === 'blight' ? (t > MELD.slam + BLIGHT.spread[0] && t < MELD.slam + BLIGHT.heave ? 0.6 + 1.2 * ((t - MELD.slam) / BLIGHT.heave) : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - BLIGHT.heave - 0.08) / 0.3) * 7 : sg.move === 'avalanche' ? (t > MELD.slam + AVAL.rumble[0] && t < AVAL_OUT() + AVAL.cross + AVAL.stream ? 1 + 5 * Math.min(1, Math.max(0, (t - MELD.slam - AVAL.rumble[0]) / (AVAL.rumble[1] - AVAL.rumble[0]))) : 0) : sg.move === 'thunder' ? Math.max(0, ...THUNDER_STRIKES.map((st) => Math.max(4 * (1 - Math.abs(t - st.t - 0.02) / 0.12), 9 * (1 - Math.abs(t - st.t - THUNDER.clapAfter - 0.05) / 0.3), t > st.lock && t < st.t ? 0.8 + 1.4 * ((t - st.lock) / (st.t - st.lock)) : 0))) : sg.move === 'death' ? Math.max(0, 1 - Math.abs(t - 0.02) / 0.12) * 3 + Math.max(0, 1 - Math.abs(t - DEATH.burst - 0.02) / 0.25) * 7 + (t > 0.3 && t < 1.35 ? 1.5 : 0) : sg.move === 'fall' ? Math.max(0, 1 - Math.abs(t - FALL.kill - 0.02) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - FALL.kill - 0.22) / 0.15) * 5 + Math.max(0, 1 - Math.abs(t - FALL.slam - 0.03) / 0.3) * 8 : sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : sg.move === 'frost' ? Math.max(0, 1 - Math.abs(t - FROST.hit - 0.03) / 0.25) * 5 : sg.move === 'lightning' ? Math.max(0, ...[...BOLT.bursts, ...BOLT.zaps].map((b) => 1 - Math.abs(t - b - 0.03) / 0.15), 1 - Math.abs(t - BOLT.crack) / 0.12) * 4 : 0;
+    const kick = sg.move === 'contagion' ? Math.max(0, ...CONTAGION.seeds.map(([, , st]) => 1 - Math.abs(t - MELD.slam - st - 0.03) / 0.2)) * 4 : sg.move === 'frostbite' ? frostbiteGale(t) * 1.4 + Math.max(0, 1 - Math.abs(t - MELD.slam - FROSTBITE.gale[0] - 0.05) / 0.3) * 4 : sg.move === 'fumes' ? Math.max(0, ...FUMES_CLOUDS.map((c) => 1 - Math.abs(t - c.boom - 0.04) / 0.3)) * 8 + Math.max(0, ...FUMES_CLOUDS.map((c) => 1 - Math.abs(t - c.vent) / 0.12)) * 2 : sg.move === 'wildfire' ? Math.max(0, ...WILD_NODES.map((n) => 1 - Math.abs(t - n.t - 0.02) / 0.12)) * 3 + Math.max(0, 1 - Math.abs(t - WILD_BOOM() - 0.05) / 0.35) * 9 : sg.move === 'scald' ? (t > MELD.slam + SCALD.heat[0] && t < MELD.slam + SCALD.flash ? 0.5 + 1.5 * ((t - MELD.slam - SCALD.heat[0]) / (SCALD.heat[1] - SCALD.heat[0])) : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - SCALD.flash - 0.05) / 0.35) * 7 + (t > MELD.slam + SCALD.beams[0] && t < MELD.slam + SCALD.beams[1] ? 1.2 : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - SCALD.beams[0] - 0.03) / 0.2) * 4 : sg.move === 'blight' ? (t > MELD.slam + BLIGHT.spread[0] && t < MELD.slam + BLIGHT.heave ? 0.6 + 1.2 * ((t - MELD.slam) / BLIGHT.heave) : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - BLIGHT.heave - 0.08) / 0.3) * 7 : sg.move === 'avalanche' ? (t > MELD.slam + AVAL.rumble[0] && t < AVAL_OUT() + AVAL.cross + AVAL.stream ? 1 + 5 * Math.min(1, Math.max(0, (t - MELD.slam - AVAL.rumble[0]) / (AVAL.rumble[1] - AVAL.rumble[0]))) : 0) : sg.move === 'thunder' ? Math.max(0, ...THUNDER_STRIKES.map((st) => Math.max(4 * (1 - Math.abs(t - st.t - 0.02) / 0.12), 9 * (1 - Math.abs(t - st.t - THUNDER.clapAfter - 0.05) / 0.3), t > st.lock && t < st.t ? 0.8 + 1.4 * ((t - st.lock) / (st.t - st.lock)) : 0))) : sg.move === 'death' ? Math.max(0, 1 - Math.abs(t - 0.02) / 0.12) * 3 + Math.max(0, 1 - Math.abs(t - DEATH.burst - 0.02) / 0.25) * 7 + (t > 0.3 && t < 1.35 ? 1.5 : 0) : sg.move === 'fall' ? Math.max(0, 1 - Math.abs(t - FALL.kill - 0.02) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - FALL.kill - 0.22) / 0.15) * 5 + Math.max(0, 1 - Math.abs(t - FALL.slam - 0.03) / 0.3) * 8 : sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : sg.move === 'frost' ? Math.max(0, 1 - Math.abs(t - FROST.hit - 0.03) / 0.25) * 5 : sg.move === 'lightning' ? Math.max(0, ...[...BOLT.bursts, ...BOLT.zaps].map((b) => 1 - Math.abs(t - b - 0.03) / 0.15), 1 - Math.abs(t - BOLT.crack) / 0.12) * 4 : 0;
     const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
     const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
     const s = floor(-ox, -oy);
@@ -2538,8 +2532,9 @@ for (const sg of segs) {
       const [x, y] = base();
       if (beforeHim) layOver(s, beforeHim, amid.paint(t, sg.view, [0, 0, 0]), amid.can, x, y);
       if (sg.move === 'frostbite') {
-        biteMist(s, t, ox, oy, sg.from, k);
-        if (t > BITE_HIT) { const h = biteHeroAt(t), [hx, hy] = at([sg.from[0] + k * h[0], sg.from[1] + k * h[1], 0]); heroChilled(s, ox + hx, oy + hy, t, Math.min(1, (t - BITE_HIT) / 1.4)); }
+        biteGale(s, t, ox, oy, sg.from, k);
+        const g = frostbiteGale(t);
+        if (g > 0.05) { const h = biteHeroAt(t), [hx, hy] = at([sg.from[0] + k * h[0], sg.from[1] + k * h[1], 0]); heroChilled(s, ox + hx, oy + hy, t, Math.min(1, (t - BITE_IN()) / 3) * g); }
       }
       if (sg.move === 'scald') { scaldBeams(s, t, ox, oy, sg.from, k); steam(s, t, ox, oy, sg.from, k, false); }
       meldScene(s, t, ox, oy, sg.from, k, sg.move, amid.words[0], amid.words[1], MELD_GLYPH[sg.move as 'blight'], [MELD_RAMP[sg.move as 'blight'][3], MELD_RAMP[sg.move as 'blight'][4]], amid.into, false);

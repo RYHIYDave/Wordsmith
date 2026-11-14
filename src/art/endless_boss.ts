@@ -3860,41 +3860,44 @@ export const fumesSpread = (c: { vent: number }, t: number): number => smooth01(
 // warning colour, faster and faster; then IT LOCKS: frost bursts up in crystals all over it, sweeping out from him, and one still
 // on it is frozen solid (frozen, the poison eats twice as fast); it holds, then melts away. His rules for the words stand: one rune
 // (the meld's), what strikes made as solids (the crystals).
-export const FROSTBITE = { wave: [0.05, 1.15] as const, isles: [[6.6, -2.8], [2.8, 3.2], [10.0, 2.4], [1.4, -4.3]] as const, isle: 1.15, freeze: 2.9, sweep: 0.35, hold: 0.8, melt: 1.2, end: 6.6 };
+// REMADE AGAIN, AS A MOVE YOU TAKE (his words, 14 Nov 2026, to the frost wave and its islands: “It looks bad and is boring”; his four
+// kinds of move, “things that are stationary that you need to be aware of, things that are coming at you and you need to dodge, and
+// direct damage that you’re just going to have to take as a trade off to do damage, and open spots in the fight to pour on damage”;
+// then, to the pitch, “Yes, on to Frostbite's gale (Recommended)”): the slam plants the rune at his feet and he plants his staff,
+// rooted; his shade throws back its head and BREATHES a freezing venom gale out over the whole room, the wind streaming out from
+// him to the walls, frost and his pink venom in it, rime and crystals of ice growing over the floor, the room going cold. No
+// dodging it: one in it is chilled, slowed and poisoned the whole while (the trade); but he stands rooted the whole while, so it is
+// the moment to go in and pour damage on him. When it ends the frost cracks off and melts. (The jaws, then the wave and its
+// islands, are gone.)
+export const FROSTBITE = { gale: [0.25, 4.75] as const, rime: 1.4, melt: 1.0, end: 6.9 };
 export const FROSTBITE_CANVAS: MobCanvas = { w: 1300, h: 960, ax: 560, ay: 600 };
 const BITE_ICE: Ramp = ['#142a50', '#22508a', '#3a78b8', '#8cc0ec', '#e4f4ff'];
-/** How far the wave of frost has rolled out from him (his floor point's own lengths), `t` into the move. */
-export const frostbiteWave = (t: number): number => {
-  const u = clamp01((t - MELD.slam - FROSTBITE.wave[0]) / (FROSTBITE.wave[1] - FROSTBITE.wave[0]));
-  return (0.4 + 13.6 * (1 - (1 - u) * (1 - u))) * TILE;
+/** How far out the rime has crept from him (his own lengths), `t` into the move; and how much the gale is blowing (0 ... 1). */
+export const frostbiteRime = (t: number): number => (14 * TILE) * smooth01((t - MELD.slam - FROSTBITE.gale[0]) / FROSTBITE.rime);
+export const frostbiteGale = (t: number): number => {
+  const u = t - MELD.slam;
+  return Math.min(smooth01((u - FROSTBITE.gale[0]) / 0.35), 1 - smooth01((u - FROSTBITE.gale[1]) / 0.35));
 };
-/** Whether a spot of the floor is one of the bare islands the ice leaves. */
-export const frostbiteIsle = (x: number, y: number, pad = 0): boolean => FROSTBITE.isles.some(([ix, iy]) => Math.hypot(x - ix * TILE, y - iy * TILE) < FROSTBITE.isle * TILE + pad);
-/** Whether a spot of the floor is iced over (inside the room, behind the wave, not an island, not his own ground). */
-export const frostbiteIced = (x: number, y: number, t: number): boolean => x > ARENA.x[0] * TILE && x < ARENA.x[1] * TILE && y > ARENA.y[0] * TILE && y < ARENA.y[1] * TILE && Math.hypot(x, y) < frostbiteWave(t) && Math.hypot(x, y) > 1.0 * TILE && !frostbiteIsle(x, y);
-/** THE FROSTBITE'S SOLIDS, `t` into the move: as the ice locks, crystals of frost bursting up all over it, sweeping out from him,
- * clusters of them, ice-blue, his pink venom glinting in a few; they hold, then melt down. Only those `keep` keeps. */
+/** THE FROSTBITE'S SOLIDS, `t` into the move: crystals of ice growing over the floor in the gale, leaning away from him with the
+ * wind, his pink venom glinting in a few; melting after. Only those `keep` keeps. */
 export function frostbiteBits(t: number, put: Put, keep: (x: number, y: number) => boolean = () => true): void {
-  const f0 = MELD.slam + FROSTBITE.freeze;
-  if (t < f0) return;
-  const melt = clamp01((t - f0 - FROSTBITE.sweep - FROSTBITE.hold) / FROSTBITE.melt);
+  const rime = frostbiteRime(t);
+  if (rime <= 0) return;
+  const melt = clamp01((t - MELD.slam - FROSTBITE.gale[1] - 0.2) / FROSTBITE.melt);
   if (melt >= 1) return;
-  const far = Math.hypot(ARENA.x[1], ARENA.y[0]) * TILE;
-  for (let gy = ARENA.y[0] * TILE + 12; gy < ARENA.y[1] * TILE - 8; gy += 0.85 * TILE) for (let gx = ARENA.x[0] * TILE + 12; gx < ARENA.x[1] * TILE - 8; gx += 0.85 * TILE) {
-    const i = Math.round(gx / 7), j = Math.round(gy / 7);
-    const x = gx + (hash(i, j, 9951) - 0.5) * 0.6 * TILE, y = gy + (hash(i, j, 9952) - 0.5) * 0.6 * TILE;
-    if (!frostbiteIced(x, y, t) || frostbiteIsle(x, y, 10) || !keep(x, y)) continue;
-    const at = f0 + FROSTBITE.sweep * (Math.hypot(x, y) / far);
-    const g = smooth01((t - at) / 0.12) * (1 - melt);
-    if (g <= 0) continue;
-    const part = `frost${(i + j) & 3}`;
-    const n = 2 + Math.floor(hash(i, j, 9953) * 3);
+  for (let i = 0; i < 90; i++) {
+    const x = (ARENA.x[0] + 0.3 + (ARENA.x[1] - ARENA.x[0] - 0.6) * hash(i, 1, 9941)) * TILE, y = (ARENA.y[0] + 0.3 + (ARENA.y[1] - ARENA.y[0] - 0.6) * hash(i, 2, 9942)) * TILE;
+    const r = Math.hypot(x, y);
+    if (r < 4.5 * TILE || r > rime || !keep(x, y)) continue;
+    const grow = clamp01((t - MELD.slam - FROSTBITE.gale[0] - (r / (14 * TILE)) * FROSTBITE.rime) / 1.6) * (1 - melt);
+    if (grow <= 0) continue;
+    const ox = x / r, oy = y / r, n = 1 + Math.floor(hash(i, 3, 9943) * 3);
     for (let c = 0; c < n; c++) {
-      const a = hash(i, j * 7 + c, 9954) * TAU, lean = 0.25 + 0.5 * hash(i, j * 7 + c, 9955), L = (14 + 22 * hash(i, j * 7 + c, 9956)) * g;
-      const tip: V3 = [x + Math.cos(a) * lean * L, y + Math.sin(a) * lean * L, L * (1 - lean * 0.4)];
-      put(part, 'crystal', { k: 'rod', a: [x, y, 1], b: tip, ra: (2.6 + 2 * hash(i, j * 7 + c, 9957)) * Math.max(0.4, g), rb: 0.4, ramp: BITE_ICE });
-      if (c === 0 && hash(i, j, 9958) > 0.8 && melt === 0) put('glints', 'venom', { k: 'mote', p: tip, c: '#ff9cc0', size: 1 });
+      const L = (8 + 16 * hash(i, 4 + c, 9944)) * grow, sw = (hash(i, 7 + c, 9945) - 0.5) * 0.9;
+      const dx = ox * Math.cos(sw) - oy * Math.sin(sw), dy = ox * Math.sin(sw) + oy * Math.cos(sw);
+      put(`ice${i & 3}`, 'crystal', { k: 'rod', a: [x, y, 1], b: [x + dx * L * 0.6, y + dy * L * 0.6, L * 0.8], ra: (1.8 + 1.6 * hash(i, 10 + c, 9946)) * Math.max(0.4, grow), rb: 0.3, ramp: BITE_ICE });
     }
+    if (hash(i, 5, 9947) > 0.82 && melt === 0) put('glints', 'venom', { k: 'mote', p: [x, y, 10 * grow], c: '#ff9cc0', size: 1 });
   }
 }
 /** The frostbite's picture; with `nearer` (a floor point in his own lengths), only its jaws nearer the eye than that, inked but
