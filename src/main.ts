@@ -3032,6 +3032,52 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     game: () => game,
     /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
     levelSelect: LEVEL_SELECT,
+    /** (FLOOR 9'S TWO SIDE BOSSES, behind F9_LAIRS: off until his yes) Each of them, for the films of them in play (tools/scenarios/f9_bosses_film.mjs). */
+    f9Bosses: {
+      sw: F9_LAIRS,
+      /** Where they are, how they fare, what they do ('warchief', 'mistwolf'). */
+      list: () => (game ? game.monsters.filter((m) => m.kind === 'warchief' || m.kind === 'mistwolf').map((m) => ({ id: m.id, kind: m.kind, x: m.x, y: m.y, life: m.life, dead: m.dead, state: m.state, act: m.act ? { id: m.act.id, t: m.act.t } : null, piece: m.piece, rage: m.a1?.rage ?? 0 })) : []),
+      /** One brought `dist` tiles before the hero, `side` tiles to his side, facing him and awake, still. */
+      at: (kind: string, dist: number, side = 0) => {
+        const g = game;
+        const m = g?.monsters.find((o) => o.kind === kind && !o.dead);
+        if (!g || !m) return null;
+        const h = g.hero;
+        m.x = h.x + h.fx * dist - h.fy * side;
+        m.y = h.y + h.fy * dist + h.fx * side;
+        const d = Math.hypot(h.x - m.x, h.y - m.y) || 1;
+        m.fx = (h.x - m.x) / d;
+        m.fy = (h.y - m.y) / d;
+        m.state = 'chase';
+        m.cd = 99;
+        m.moveCd = undefined;
+        m.act = undefined;
+        m.gait = { mode: 'stand', t: 0 };
+        return { x: m.x, y: m.y };
+      },
+      /** One made to begin its act `id` now ('warchief:slam', 'mistwolf:lunge', ...), and to do nothing of its own after till `hold` seconds have gone. */
+      act: (kind: string, id: string, hold = 99) => {
+        const g = game;
+        const m = g?.monsters.find((o) => o.kind === kind && !o.dead);
+        const acts = m ? actsOf(m) : null;
+        const i = acts ? acts.findIndex((a) => a.id === id) : -1;
+        if (!g || !m || !acts || i < 0) return false;
+        g.bosses.startAct(m, acts, i);
+        m.cd = hold;
+        return true;
+      },
+      /** One still, doing nothing of its own (its wait made long), or let go (0). */
+      hold: (kind: string, secs = 99) => {
+        const m = game?.monsters.find((o) => o.kind === kind && !o.dead);
+        if (m) m.cd = secs;
+      },
+      /** One killed where it stands. */
+      kill: (kind: string) => {
+        const m = game?.monsters.find((o) => o.kind === kind && !o.dead);
+        if (game && m) game.kill(m);
+        return !!m;
+      },
+    },
     /** (THE HIGH CITY, behind HIGH_CITY, game/act1.ts: off until his yes) Its switch, for the playtests and pictures. */
     highCity: HIGH_CITY,
     /** (THE HIGH CITY, FLOOR 17) the ebony clock made to chime now, for the films: game/act2/masque_rules.ts. */
