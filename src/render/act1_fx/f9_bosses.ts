@@ -4,7 +4,7 @@
 // began, in the frame its picture is shown in (in front or behind, turned over or not: game/act1_rules/stoker.ts FRAMES), afresh at
 // PAINT_FPS, its pictures let go once it is done; under what stands (`ground`: the warnings, the ground broken, the mist's clouds) and
 // over it (`air`: the bursts, stone and dust flung up, mist bursting). And THE RAGE on the chieftain while it lasts after his war cry:
-// its embers rising off him, its light. Behind F9_LAIRS, off.
+// its embers rising off him, its light. Behind F9_LAIRS, on at his yes of 14 Nov 2026.
 
 import { F9_FX_AFTER, F9_FX_CANVAS, chiefFxGlow, chiefFxPaint, wolfFxGlow, wolfFxPaint } from '../../art/f9_bosses_fx';
 import type { F9View } from '../../art/f9_bosses_art';

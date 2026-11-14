@@ -741,7 +741,7 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     for (const [tx, ty] of list) if (beds < 2 && free(tx, ty, false)) { put(rng.pick(CAMP.lying), tx, ty, false); beds++; }
   }
 
-  // ---- (F9_LAIRS, off: game/f9_lairs.ts) FLOOR 9'S SIDE AREAS DRESSED FOR ITS SIDE BOSSES: the trolls' camp in its lair, the misty glade
+  // ---- (F9_LAIRS, on at his yes of 14 Nov 2026: game/f9_lairs.ts) FLOOR 9'S SIDE AREAS DRESSED FOR ITS SIDE BOSSES: the trolls' camp in its lair, the misty glade
   // in its side area; nothing else of the floor's laid in them below
   const lairsHere = f9Lairs(depth);
   if (lairsHere) {

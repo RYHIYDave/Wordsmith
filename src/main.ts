@@ -3033,7 +3033,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     game: () => game,
     /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
     levelSelect: LEVEL_SELECT,
-    /** (FLOOR 9'S TWO SIDE BOSSES, behind F9_LAIRS: off until his yes) Each of them, for the films of them in play (tools/scenarios/f9_bosses_film.mjs). */
+    /** (FLOOR 9'S TWO SIDE BOSSES, behind F9_LAIRS: on at his yes of 14 Nov 2026) Each of them, for the films of them in play (tools/scenarios/f9_bosses_film.mjs). */
     f9Bosses: {
       sw: F9_LAIRS,
       /** Where they are, how they fare, what they do ('warchief', 'mistwolf'). */

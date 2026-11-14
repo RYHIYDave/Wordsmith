@@ -14,7 +14,11 @@ import type { Blob, Lane } from './act1_layout';
 import { blobDist } from './act1_layout';
 import type { RNG } from '../engine/rng';
 
-export const F9_LAIRS = { on: false };
+/**
+ * ON at his yes, 14 Nov 2026, by 10:31 (Eastern), asked with the fight films (each move its own effect) and the quest line's picture
+ * (a DEFEAT for each boss): “Yes, switch them on (Recommended)”.
+ */
+export const F9_LAIRS = { on: true };
 
 /** The lair grown for the chieftain's camp (a boss's room, as the floor's boss's area: game/act1_layout.ts sizer). */
 export const LAIR9 = { rx: 8, ry: 7, wob: 0.1 };

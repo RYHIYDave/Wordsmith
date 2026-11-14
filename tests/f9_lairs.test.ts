@@ -30,8 +30,8 @@ const floor9 = (seed: number, on: boolean): Game => {
   }
 };
 
-test('the switch is off until his yes; off, floor 9 has nothing of the camp or the glade', () => {
-  assert.equal(F9_LAIRS.on, false);
+test('the switch is on at his yes (14 Nov 2026); off, floor 9 has nothing of the camp or the glade', () => {
+  assert.equal(F9_LAIRS.on, true);
   for (const seed of [9, 4]) {
     const names = new Set(floor9(seed, false).level.props.map((p) => p.name));
     for (const n of [...CAMP, ...GLADE]) assert.ok(!names.has(n), `seed ${seed}: no ${n}`);

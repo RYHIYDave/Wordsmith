@@ -3323,7 +3323,7 @@ export class Game {
   }
 
   /**
-   * FLOOR 9'S TWO SIDE BOSSES (game/act1_rules/f9_bosses.ts; behind F9_LAIRS, off): THE TROLL CHIEFTAIN before his seat at the back of
+   * FLOOR 9'S TWO SIDE BOSSES (game/act1_rules/f9_bosses.ts; behind F9_LAIRS, on at his yes of 14 Nov 2026): THE TROLL CHIEFTAIN before his seat at the back of
    * his camp, facing its way in; THE MIST WOLF on the moonbeam in the middle of its glade, facing its way in. Each as hard for its floor
    * as a floor's boss is for his (as the Stoker is: the life of its kind grown with the floor's power), not the floor's boss: its falling
    * opens no way on. Each carries its area's piece of the ward-stone where the quest wants it (piecesMade).

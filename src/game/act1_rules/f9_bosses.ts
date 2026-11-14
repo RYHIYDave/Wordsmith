@@ -1,5 +1,5 @@
 // FLOOR 9'S TWO SIDE BOSSES: their rules (game/act1_rules/types.ts). Each guards a piece of the ward-stone in a side area of the
-// Pinewood (game/f9_lairs.ts; game.ts f9SideBosses), behind F9_LAIRS (off until his yes to them in play). His words, 13 Nov 2026: “I need
+// Pinewood (game/f9_lairs.ts; game.ts f9SideBosses), behind F9_LAIRS (on at his yes of 14 Nov 2026, shown them in play). His words, 13 Nov 2026: “I need
 // two side bosses for level 9. There are three pieces that need to drop for the three obelisks in the swamp boss fight. The deer boss
 // drops one, I was a spectral wolf boss, and I want a guardian boss, the troll guys from the prison”. Their moves as he picked them and
 // saw them filmed (docs/mockups/f9_side_bosses/README.md); his word to build them in, 14 Nov 2026: “Yes, build them in (Recommended)”.

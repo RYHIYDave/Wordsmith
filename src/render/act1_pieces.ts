@@ -154,7 +154,7 @@ export function forgetAct1(keep: number): void {
 const MOVING = new Set(['a brazier on its tripod', "the cult's watchfire", "the cult's cauldron", "the cult's brazier", "the cult's banner", "the cult's ring of magic", 'the half-cut obelisk', "the cult's obelisk", "the redoubt's gatehouse",
   // (THE HIGH CITY, FLOOR 19, THE KEEP: its honest fire, its frames over and over: the braziers, the pitch heating, the torches on the walls)
   'a brazier', 'a cauldron of pitch', 'a torch in its sconce',
-  // (F9_LAIRS, off: floor 9's side areas' fire and moonbeam: art/f9_lairs.ts)
+  // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's side areas' fire and moonbeam: art/f9_lairs.ts)
   ...F9_LAIR_MOVING]);
 const LOOP_FPS = 8;
 /**

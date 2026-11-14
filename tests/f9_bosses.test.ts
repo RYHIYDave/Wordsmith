@@ -48,8 +48,8 @@ const floor9 = (seed: number, on: boolean, quest = false): Game => {
   }
 };
 
-test('1. built and registered: their rules, their pictures with every clip their acts name, what they draw; off until his yes', () => {
-  assert.equal(F9_LAIRS.on, false, 'behind F9_LAIRS, off');
+test('1. built and registered: their rules, their pictures with every clip their acts name, what they draw; on at his yes', () => {
+  assert.equal(F9_LAIRS.on, true, 'F9_LAIRS on at his yes, 14 Nov 2026');
   for (const [kind, rules] of [['warchief', RULES_CHIEF], ['mistwolf', RULES_WOLF]] as const) {
     assert.ok(act1Rules(kind) === rules && rules, `${kind}: its rules`);
     assert.ok(act1Fig(kind)?.heavy, `${kind}: its pictures, painted for its floor`);
