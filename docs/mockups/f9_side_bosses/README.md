@@ -26,3 +26,21 @@ word after floor 5's temple door. Everything is to go behind a switch of its own
 
 Pictures first (his rule): each boss standing, front and back, beside a hero; their two side areas pictured; each attack on film; then
 the rules behind the switch, the pieces they drop, and the whole of it filmed in play for his yes.
+
+## The looks
+
+- First shown (pictures/f9_bosses_look.png, first version, commit 4ee6f012): the floor's fog wolf and the pack leaders' chieftain made
+  bigger and touched up. His word, 13 Nov 2026: “No draw them correctly”. Read as: draw each new, sculpted as the game's newest
+  figures are, on no other figure's bones. The first try's code was taken out.
+- Drawn again (pictures/f9_bosses_look.png, now): both sculpted from scratch in src/dev/sculpt_f9_bosses.ts (a mock-up tool; nothing
+  of the game imports it), standing, front and back, beside the Brawler, a troll guardian and a fog wolf for size
+  (tools/f9_bosses_sheet.ts, .py).
+  - THE TROLL CHIEFTAIN: half again a troll guardian's height. A hunched barrel of a troll, slate-blue and mottled; boulder shoulders,
+    long arms with iron cuffs, fists like anvils; a crown of bone with two great antlers and three skulls; glowing pink-gold eyes in a
+    red war-paint mask, white streaks under them, two tusks; a necklace of teeth; a white zigzag across his chest, a red handprint
+    over his heart, three white slashes down his back; a ragged skirt of hide and fur strips on a leather belt; a tree-trunk club,
+    two iron bands round its head, leant on the floor before him.
+  - THE MIST WOLF: twice a fog wolf's size, its shoulder at the knight's head; pale mist streaked like fur, a heavy ruff, a long head
+    low and forward, ears laid back, fangs, pink-gold eyes; its legs, its belly fringe and its tail's end thinning into see-through
+    mist; puffs of mist streaming off its back and tail; a haze of mist on the floor round its feet. Pink edge (an enemy's); nothing
+    cyan.

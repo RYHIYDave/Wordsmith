@@ -273,9 +273,9 @@ function club(p: Px, hand: V, deg: number, S: number, bound: boolean, glow: numb
   const x0 = hand[0] - dx * GRIP * S;
   const y0 = hand[1] - dy * GRIP * S;
   // (`long`: how much of its length shows. Trailing away from us or toward us it is seen partly end on.)
-  const L = (GRIP + CLUB * long * (NINE ? 1.12 : 1)) * S;
+  const L = (GRIP + CLUB * long) * S;
   const neck = (GRIP + 4) * S;
-  const fat = (NINE ? 8.2 : 7) * S;
+  const fat = 7 * S;
   const rad = (a: number): number => (a < 2 * S ? 2.7 * S : a < neck ? 2.3 * S : 2.3 * S + (fat - 2.3 * S) * ((a - neck) / (L - neck)) ** 1.05);
   // (two iron bands, each this wide either side of its middle; the outer one is spiked)
   const bands = [(GRIP + (14 - GRIP) * long) * S, (GRIP + (24.5 - GRIP) * long) * S];
@@ -295,13 +295,7 @@ function club(p: Px, hand: V, deg: number, S: number, bound: boolean, glow: numb
       const tone = s > 0.5 ? 3 : s < -0.45 ? 1 : 2;
       if (d2 <= r * r) {
         let c = INDIGO[tone];
-        if (NINE) {
-          // (a tree's trunk: its bark ridged along it, knots in it, two bands of iron round it)
-          const ridge = hash(Math.floor(along / (1.6 * S)), Math.floor((Math.atan2(oy, ox) + 4) * 3), 77);
-          c = BARK[Math.max(0, Math.min(4, tone + (ridge < 0.22 ? -1 : ridge > 0.85 ? 1 : 0)))];
-          for (const b of bands) if (Math.abs(along - b) <= bw * 0.8) c = IRON[Math.max(0, tone - 1)];
-          if (along < GRIP * S + 2 * S) c = BARK[Math.max(0, tone - 1)];
-        } else if (bound) {
+        if (bound) {
           for (const b of bands) {
             const off = Math.abs(along - b);
             // (hot at its edges, where it bites the wood)
@@ -315,22 +309,6 @@ function club(p: Px, hand: V, deg: number, S: number, bound: boolean, glow: numb
         if (out <= 4 * S && Math.abs(along - bands[1]) <= (1 - out / (4 * S)) * 1.9 * S) p.set(x, y, IRON[s > 0 ? 3 : 2]);
       }
     }
-  }
-  if (NINE) {
-    // (knots in its bark, and the stumps of two branches near its head)
-    for (const [a0, v] of [[11, 1.5], [17, -2.5], [21, 2.8]] as const) {
-      const a = (GRIP + (a0 - GRIP) * long) * S;
-      const kx = snap(x0 + dx * a - dy * v * S);
-      const ky = snap(y0 + dy * a + dx * v * S);
-      if (p.has(kx, ky)) p.set(kx, ky, BARK[0]).set(kx + 1, ky, BARK[1]);
-    }
-    for (const [a0, side] of [[26, 1], [29, -1]] as const) {
-      const a = (GRIP + (a0 - GRIP) * long) * S;
-      const bx = x0 + dx * a;
-      const by = y0 + dy * a;
-      limb(p, bx, by, bx - dy * side * fat * 1.25 + dx * 2 * S, by + dx * side * fat * 1.25 + dy * 2 * S, 1.3 * S, 0.8 * S, BARK);
-    }
-    return;
   }
   if (bound) {
     for (const b of bands) lights.push({ x: x0 + dx * b, y: y0 + dy * b, r: 8.5 * S, color: FLAME[2], a: 0.3 + glow * 0.08 });
@@ -1073,7 +1051,6 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   const crownSheet = sheet();
   const banner = sheet();
   if (chief) crown(crownSheet, hx, hy);
-  if (NINE && !back) warPaint(skull, body, hx, hy, [X - farSide * u(1), shY + u(9)], S);
   if (flag) paintBanner(banner, flag, back, S, q.wind);
   // (the light in his eyes: it flares as he roars)
   if (eyes) lights.push({ x: eyes[0], y: eyes[1], r: (G ? 5.5 : 4.5) + roar * 2.5, color: SOCKET, a: (G ? 0.42 : 0.32) + roar * 0.18 });
@@ -1117,25 +1094,6 @@ let TAKE_OFF: ReadonlyArray<'banner' | 'crown'> | null = null;
  * one that would hang lower than the floor lies on it.
  */
 let DOWN: { sink: number } | null = null;
-/**
- * FLOOR 9'S TROLL CHIEFTAIN (art/troll_chief9.ts, the side boss: his pick “Huge, crowned in bones (Recommended)”): while he is painted,
- * his club is a tree's trunk bound with iron, skulls sit in his crown, and war paint is on his face and his chest.
- */
-let NINE = false;
-/** Paint with floor 9's chieftain's own things, or not. */
-export function withNine<T>(f: () => T): T {
-  const was = NINE;
-  NINE = true;
-  try {
-    return f();
-  } finally {
-    NINE = was;
-  }
-}
-/** His tree-trunk club's bark, dark to light; his war paint, bone white and old blood. */
-const BARK: Ramp = ['#1e140e', '#3a281a', '#5a3e26', '#7a5636', '#9a7048'];
-const PAINT_WHITE = '#e8e0cc';
-const PAINT_RED = '#a8302a';
 
 /** The brute, and the guardian (the brute's rig, a third bigger, in red and iron), carrying their clubs as the game has them (CARRY). */
 export const paintBrute: Rig = (q, back) => ogre(q, back, false, CARRY);
@@ -1848,47 +1806,6 @@ function crown(p: Px, cx: number, top: number): void {
     p.set(x, y0 + 1, BONE[1]);
     if ((x - x0) % 3 === 1) p.set(x, y0 - 1, BONE[3]);
   }
-  // (floor 9's chieftain: three little skulls set in it, the middle one highest)
-  if (NINE) {
-    for (const [sx, sy] of [[x0 + 2, y0 - 3], [x0 + 6, y0 - 4], [x0 + 10, y0 - 3]] as const) {
-      const SK = ['.BBB.', 'BBBBB', 'BKBKB', '.BBB.', '.B.B.'];
-      SK.forEach((row, j) => [...row].forEach((ch, i) => {
-        if (ch === 'B') p.set(sx + i, sy + j, j < 2 ? BONE[4] : BONE[3]);
-        else if (ch === 'K') p.set(sx + i, sy + j, INK);
-      }));
-    }
-  }
-}
-
-/** FLOOR 9'S CHIEFTAIN'S WAR PAINT on his face (the head's stamp at (cx, top), facing us) and on his chest: bone white and old blood. */
-function warPaint(face: Px, body: Px, cx: number, top: number, chest: V, S: number): void {
-  const x0 = snap(cx - 7.5);
-  const y0 = snap(top);
-  // (a band of old blood across his brow; two white streaks down from under each eye)
-  for (let x = x0 + 5; x <= x0 + 12; x++) if (face.has(x, y0 + 3)) face.set(x, y0 + 3, PAINT_RED);
-  for (const ex of [x0 + 6, x0 + 11]) for (let y = y0 + 6; y <= y0 + 8; y++) if (face.has(ex, y)) face.set(ex, y, PAINT_WHITE);
-  // (on his chest, a jagged stripe of white across it, and a red handprint)
-  const n = 7;
-  for (let i = 0; i < n; i++) {
-    const ax = chest[0] - 9 * S + (18 * S * i) / (n - 1);
-    const ay = chest[1] + (i % 2 ? 2.4 : -1.2) * S;
-    const bx = chest[0] - 9 * S + (18 * S * (i + 1)) / (n - 1);
-    const by = chest[1] + ((i + 1) % 2 ? 2.4 : -1.2) * S;
-    if (i < n - 1) {
-      const steps = Math.ceil(Math.hypot(bx - ax, by - ay));
-      for (let k = 0; k <= steps; k++) {
-        const x = snap(ax + ((bx - ax) * k) / steps);
-        const y = snap(ay + ((by - ay) * k) / steps);
-        for (const [dx, dy] of [[0, 0], [0, 1]] as const) if (body.has(x + dx, y + dy)) body.set(x + dx, y + dy, PAINT_WHITE);
-      }
-    }
-  }
-  const hx = snap(chest[0] + 4 * S);
-  const hy = snap(chest[1] + 6 * S);
-  const HAND = ['.R.R.R', '.R.R.R', 'RRRRRR', 'RRRRR.', '.RRR..'];
-  HAND.forEach((row, j) => [...row].forEach((ch, i) => {
-    if (ch === 'R' && body.has(hx + i, hy + j)) body.set(hx + i, hy + j, PAINT_RED);
-  }));
 }
 
 /** A timeline played slower by `k` (its blow too). */
@@ -1984,14 +1901,3 @@ export function makeChieftainArt(): ActorArt {
 
 /** One frame of the troll chieftain, as a painting (for pictures). */
 export const paintChieftain: Rig = (q, back) => ogre(q, back, false, CARRY, null, true);
-
-/**
- * FLOOR 9'S TROLL CHIEFTAIN, THE SIDE BOSS (art/troll_chief9.ts; docs/mockups/f9_side_bosses/README.md), as the game holds a monster:
- * the troll chieftain with floor 9's own things (NINE): his tree-trunk club bound with iron, skulls in his crown, his war paint. His
- * moves to come; for now the chieftain's.
- */
-export function makeChief9Art(): ActorArt {
-  const how = CARRY;
-  const moves = (back: boolean): MonsterMoves => ({ attack: slower(smash(back), CHIEF_SLOW), more: { swing: slower(swingMove(), CHIEF_SLOW) }, die: (k) => withNine(() => chiefDeath(k, back, how)) });
-  return monsterArt((q, back) => withNine(() => ogre(q, back, false, how, null, true)), moves(false), moves(true), { canvas: CHIEF_CANVAS, rest: { aim: 80 }, aura: CHIEF_AURA, idleFps: 7, walkFps: 8, dieTime: CHIEF_DIE_TIME });
-}

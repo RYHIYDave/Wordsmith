@@ -1,11 +1,11 @@
-// FLOOR 9'S TWO SIDE BOSSES (art/mist_wolf.ts, art/troll_chief9.ts), standing, beside the figures they are made from and the Brawler,
+// FLOOR 9'S TWO SIDE BOSSES (dev/sculpt_f9_bosses.ts, sculpted), standing, beside the figures they are made from and the Brawler,
 // as a picture's pixels:   node node_modules/tsx/dist/cli.mjs tools/f9_bosses_sheet.ts [t] > /tmp/f9.json   (then tools/f9_bosses_sheet.py)
 import { wolfPainted, WOLF_CANVAS } from '../src/art/fog_wolves';
-import { MIST_CANVAS, mistWolfPainted } from '../src/art/mist_wolf';
+import { CHIEF9_CANVAS, WOLF9_CANVAS, sculptChief9, sculptWolf9 } from '../src/dev/sculpt_f9_bosses';
 import { makeHeroArt3 } from '../src/art/heroes3';
 import { frameAt } from '../src/dev/action_f1_scene';
 import { spriteLaid } from '../src/dev/king_scene';
-import { makeChief9Art, makeChieftainArt, makeGuardianArt } from '../src/art/monster_brute';
+import { makeGuardianArt } from '../src/art/monster_brute';
 import { Px } from '../src/engine/px';
 (Px.prototype as unknown as { toCanvas: (this: Px) => unknown }).toCanvas = function (this: Px): unknown {
   return this;
@@ -23,19 +23,13 @@ const l = frameAt(art, 'front', 'stand', t);
 take('THE BRAWLER\n(for size)', l.px, l.ax, l.ay);
 if (only === 'wolf') {
   take('A FOG WOLF\n(floor 9)', wolfPainted('stand', t, 'front').px, WOLF_CANVAS.ax, WOLF_CANVAS.ay);
-  take('THE MIST WOLF', mistWolfPainted('stand', t, 'front').px, MIST_CANVAS.ax, MIST_CANVAS.ay);
-  take('behind', mistWolfPainted('stand', t, 'back').px, MIST_CANVAS.ax, MIST_CANVAS.ay);
+  take('THE MIST WOLF', sculptWolf9('front', t).px, WOLF9_CANVAS.ax, WOLF9_CANVAS.ay);
+  take('behind', sculptWolf9('back', t).px, WOLF9_CANVAS.ax, WOLF9_CANVAS.ay);
 }
 if (only === 'troll') {
   const g = spriteLaid((makeGuardianArt() as { front: { idle: never[] } }).front.idle[0]);
-  take('THE RED TROLL\nGUARDIAN', g.px, g.ax, g.ay);
-  const c = makeChieftainArt() as { front: { idle: never[] }; back: { idle: never[] } };
-  const f = spriteLaid(c.front.idle[0]);
-  take("THE PACK LEADERS'\nCHIEFTAIN", f.px, f.ax, f.ay);
-  const c9 = makeChief9Art() as { front: { idle: never[] }; back: { idle: never[] } };
-  const f9 = spriteLaid(c9.front.idle[0]);
-  take('THE TROLL CHIEFTAIN\n(floor 9)', f9.px, f9.ax, f9.ay);
-  const b9 = spriteLaid(c9.back.idle[0]);
-  take('behind', b9.px, b9.ax, b9.ay);
+  take('A TROLL GUARDIAN\n(for size)', g.px, g.ax, g.ay);
+  take('THE TROLL CHIEFTAIN\n(floor 9)', sculptChief9('front', t).px, CHIEF9_CANVAS.ax, CHIEF9_CANVAS.ay);
+  take('behind', sculptChief9('back', t).px, CHIEF9_CANVAS.ax, CHIEF9_CANVAS.ay);
 }
 console.log(JSON.stringify(out));
