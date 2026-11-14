@@ -42,7 +42,7 @@ import type { Bit, Mob, MobCanvas, Moment, Put, Shape } from './new_mobs3';
 import type { BossShape, CheckLimb, CheckLump, Handover } from './boss_checks';
 import type { PaintView, Ring, Skin, Stage } from './skin';
 import { stage, wornOn } from './skin';
-import { add, buildOf, cross, lerp3, mul, norm, solve, standing, sub } from './skeleton';
+import { add, buildOf, cross, lerp3, mul, norm, project, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
 const D = Math.PI / 180;
@@ -4552,5 +4552,23 @@ export function paintIceCluster(v: number, big: number, u: number): Painted {
   const bits: Bit[] = [];
   iceClusterBits(v, big, u, (part, piece, shape) => bits.push({ part, piece, shape }));
   const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
+/** (for the game) Where he stands at the end of the boar's death, as its own points are (the boar's floor point, carried down its
+ * lane by `fallCarry`, at nothing): his pelvis over the floor, thrown clear and risen. */
+export function fallLandedAt(): V3 {
+  const p = fallRiderAt(FALL.long).pelvis;
+  return [p[0], p[1], 0];
+}
+/** (for the game) THE BLIGHT'S TREES ONE AT A TIME: the art's `n`th tree, `u` seconds after it bursts up out of the rot (its rise, its
+ * stand, its crumbling: blightBits), painted alone on a canvas of its own, its floor point at the canvas's anchor. */
+export const BLIGHT_TREE_CANVAS: MobCanvas = { w: 260, h: 400, ax: 130, ay: 350 };
+export function paintBlightTree(n: number, u: number): Painted {
+  const tr = BLIGHT_TREES[n];
+  const [px, py] = project(tr.at, 'front');
+  const st = stage('front', BLIGHT_TREE_CANVAS.ax - px, BLIGHT_TREE_CANVAS.ay - py, BLIGHT_TREE_CANVAS);
+  const bits: Bit[] = [];
+  blightBits(tr.t + u, (part, piece, shape) => bits.push({ part, piece, shape }), (x, y) => Math.hypot(x - tr.at[0], y - tr.at[1]) < 1);
+  const lights = paintBits(st, bits, [tr.at[0], tr.at[1], 20]);
   return { px: st.whole(ENEMY_RIM), lights } as Painted;
 }

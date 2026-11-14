@@ -16,7 +16,11 @@ import { ORB_HIGH, ORB_N, THING_FPS, WS_THING_MAKERS, iceFrame, meteorFrame, tra
 import type { AnimSet } from '../../art/actor_types';
 import { drawSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
-import { ICE_FROM, ICE_STEPS, SLAMS, WS_TUNE, artAt, hammerAt, orbSwell, ringAt } from '../../game/act1_rules/wsboss';
+import { ICE_FROM, ICE_STEPS, SLAMS, WS_TUNE, artAt, hammerAt, inSaddle, orbSwell, ringAt } from '../../game/act1_rules/wsboss';
+import { FOOT_LONG } from '../../art/endless_boss';
+import { MELD_CLIP } from '../../art/act1_figs/wsboss';
+import { drawnHere, meldAir, meldGround, meldStanding, runesAir } from './wsboss2';
+import type { Side } from './wsboss2';
 import { clipFrame } from '../figure';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx, Act1FxCtx } from './types';
@@ -39,7 +43,7 @@ const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
  * faces (his moves go straight at the hero, his pick: “Straight at me (Recommended)”), kept until he has turned 55 degrees from it. */
 const SIDES = ['front', 'frontL', 'backL', 'back'] as const;
 const sides = new WeakMap<object, number>();
-function sideOf(m: { fx: number; fy: number }): string {
+function sideOf(m: { fx: number; fy: number }): Side {
   const a = Math.atan2(m.fy, m.fx);
   const want = ((Math.round(a / (Math.PI / 2)) % 4) + 4) % 4;
   const was = sides.get(m);
@@ -74,11 +78,14 @@ export const FX: Act1Fx | null = {
     const set = (art as unknown as Record<string, AnimSet | undefined>)[sideOf(m)] ?? set0;
     const moves = set.clips?.moves ?? {};
     if (m.act) {
-      const clip = moves[m.act.id.slice(7)];
+      // (on foot, every meld played by his one picture of it)
+      const id = m.act.id.slice(7);
+      const clip = moves[id === 'meld' ? MELD_CLIP : id];
       return clip ? clipFrame(clip, m.act.t) : null;
     }
-    // (his stand, by its own clock: the boar breathing, snorting, shaking its head, stamping)
+    // (his stand, by its own clock: the boar breathing, snorting, shaking its head, stamping; on foot, hunched, his shade over him)
     const k = m.a1?.clock ?? 0;
+    if (!inSaddle(m) && moves.foot) return clipFrame(moves.foot, k % FOOT_LONG);
     return set.idle.length ? set.idle[Math.floor(k * (set.idleFps ?? 15)) % set.idle.length] : null;
   },
   ground(c, m, p) {
@@ -138,6 +145,10 @@ export const FX: Act1Fx | null = {
       }
     }
     if (!p) return;
+    if (drawnHere(p)) {
+      meldGround(c, p);
+      return;
+    }
     switch (p.a1) {
       case 'wsboss:rings': {
         // (the stomp's three shock rings rolling out, each a bright edge, the floor darkened behind it)
@@ -281,6 +292,10 @@ export const FX: Act1Fx | null = {
       }
     }
     if (!p) return;
+    if (drawnHere(p)) {
+      meldStanding(c, p);
+      return;
+    }
     const [sx, sy] = c.at(p.x, p.y);
     switch (p.a1) {
       case 'wsboss:meteor': {
@@ -320,8 +335,14 @@ export const FX: Act1Fx | null = {
       }
     }
   },
-  air(c, _m, p) {
+  air(c, m, p) {
     const g = c.g;
+    // (his runes, written and thrown)
+    if (m && g) runesAir(c, m, sideOf(m));
+    if (p && g && drawnHere(p)) {
+      meldAir(c, p);
+      return;
+    }
     if (!g || !p || p.a1 !== 'wsboss:orb') return;
     const B = WS_TUNE.bolt;
     const [ox, oy0] = c.at(p.x, p.y);

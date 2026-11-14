@@ -261,9 +261,10 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       }
       // (ENDLESS MODE'S FINAL BOSS, behind ENDLESS_KEY: his first phase as he said yes to it, every move brought by his own beats
       // (forced, drawn at random: his words, “i dont want a move to be gaurenteed to happen”): the boar's charge with its wheel round
-      // and its winded stand, its gore and its stomp; his five words: game/act1_rules/wsboss.ts, tests/final_fight.test.ts)
+      // and its winded stand, its gore and its stomp; his five words; then the boar's death, and on foot his melds (one act, the meld
+      // drawn as it begins) and his spent stand: game/act1_rules/wsboss.ts and wsboss2.ts, tests/final_fight.test.ts)
       if (kind === 'wsboss') {
-        assert.equal(acts?.length, 10, `${what}: the boar's five and his five words`);
+        assert.equal(acts?.length, 13, `${what}: the boar's five, his five words, the boar's death, his meld and his spent stand`);
         continue;
       }
       // (FLOOR 18'S REFLECTIONS, REFLECTIONS_UP on at his yes of 12 Nov 2026: one kind, each form (Monster.form: the hero's class, the

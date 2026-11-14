@@ -29,10 +29,19 @@
 //   Never two of his words' FLOORs at once (the meteors' burning, the traps).
 //   HIS AIM: each move goes the way he faces, turned straight at the hero as it begins (his pick, 14 Nov 2026, of the charge and
 //   the ice: “Straight at me (Recommended)”); his picture the nearest of the four ways he is painted from (art/act1_figs/wsboss.ts).
-//   AT HALF HIS LIFE the boar dies and he fights on foot: the next stage's (THE BUILD's stage 3). Until it is built his life is held
-//   at half.
+//   AT HALF HIS LIFE THE BOAR DIES (stage 3): his life held at half until it is done. On his next charge, flat out down its lane,
+//   it is killed (the art's FALL, his pick “Crashes onto its side (Recommended)”): it ploughs on and over, he is thrown clear and
+//   lands on his feet, its power streams into him and his shade tears up out of him. Nothing hurts the hero and nothing hurts him
+//   the while (FIGHT_FLOW: “Nothing hurts you; he cannot be hit”). Then HIS SECOND PHASE, ON FOOT (game/act1_rules/wsboss2.ts):
+//     A MELD at a time: he writes his word, his shade the other; they meld; THE SLAM, its small ring over the whole floor (TAKE IT),
+//     and the meld's own move. Drawn at random (never the same twice running; a FLOOR meld never straight after another).
+//     HALF TO A QUARTER: once what comes at you is done, he stands SPENT 3 s (OPENING); the next once its floor is gone.
+//     A QUARTER TO NONE: no rest: the next meld's writing begins while the last one's floor still stands. Frostbite the one opening.
+//   His life is held at 1 on foot until his death is made (stage 4).
 
-import { BOLT, CHARGE, CHARGE_SKID, CHARGE_STRIKE, FIRE, FIRE_DROPS, FROST, GORE, POWER, SPORE, SPORE_PODS, STOMP, WHEEL, WINDED, chargeCarry } from '../../art/endless_boss';
+import { BOLT, CHARGE, CHARGE_SKID, CHARGE_STRIKE, FALL, FIRE, FIRE_DROPS, FROST, GORE, MELD, POWER, SPENT, SPORE, SPORE_PODS, STOMP, WHEEL, WINDED, chargeCarry, fallCarry, fallLandedAt } from '../../art/endless_boss';
+import { MELDS, MELD_IDS, drawMeld, meldBegins, meldPeril } from './wsboss2';
+import type { MeldId } from './wsboss2';
 import { TILE3 } from '../../art/new_mobs3';
 import { FINAL_BOSS_AT, FINAL_PLACE, onArena, toEdge } from '../../art/final_arena';
 import type { ActDef, BossRules } from '../bosses';
@@ -75,6 +84,10 @@ const ACTS: readonly ActDef[] = [
   { id: 'wsboss:frost', clip: 'frost', long: FROST.long, hit: FROST.hit, dmg: WS_TUNE.frost.dmg, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
   { id: 'wsboss:lightning', clip: 'lightning', long: BOLT.long, hit: BOLT.crack, dmg: 1, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
   { id: 'wsboss:poison', clip: 'poison', long: SPORE.long, hit: SPORE.burst, dmg: 1, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
+  // (the boar's death; and on foot: a meld, whichever it is, played by its one clip; spent)
+  { id: 'wsboss:fall', clip: 'fall', long: FALL.long, hit: FALL.slam, dmg: 0, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
+  { id: 'wsboss:meld', clip: 'hailstorm', long: MELD.long, hit: MELD.slam, dmg: 1, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
+  { id: 'wsboss:spent', clip: 'spent', long: SPENT.long, hit: SPENT.long, dmg: 0, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
 ];
 const IX = (id: string): number => ACTS.findIndex((a) => a.id === `wsboss:${id}`);
 /** The boar's moves and his words, as the beats draw them. */
@@ -85,8 +98,24 @@ const FLOORS = new Set(['flame', 'poison']);
 /** Each word's element, as the hero's are. */
 const EL: Record<(typeof WORDS)[number], Element> = { power: 'phys', flame: 'fire', frost: 'frost', lightning: 'lightning', poison: 'phys' };
 
-/** Is it in its first phase (in the saddle)? Stage 2 has only this. */
-export const inSaddle = (_m: Monster): boolean => true;
+/** Is it in its first phase (in the saddle)? Thrown clear of the boar, on foot, no more. */
+export const inSaddle = (m: Monster): boolean => !(m.a1?.foot);
+/** The meld he is making, or made last (wsboss2.ts MELD_IDS). */
+export const meldOf = (m: Monster): MeldId | null => (m.a1?.meld === undefined ? null : MELD_IDS[m.a1.meld | 0] ?? null);
+/** HIS LINES (his, with his yes: FIGHT_FLOW.md; the sound chat's item boss-voices-and-roars gives them his voice). */
+export const WS_LINES = {
+  fall: 'Rest, old friend. Your fury lives in me.',
+  rise: 'You will pay for this!',
+  melds: { eruption: 'Rise, fire!', hailstorm: 'Shatter!', avalanche: 'Be buried.', thunder: 'Hear me!', blight: 'Wither.', scald: 'Boil.', wildfire: 'Ignite!', fumes: 'Breathe deep.', frostbite: 'Come closer.', contagion: 'Catch it.' } as Record<MeldId, string>,
+};
+function say(R: BossRules, m: Monster, text: string, secs = 2.6): void {
+  R.g.emit({ t: 'bossSay', text, x: m.x, y: m.y, secs, voice: m.kind });
+}
+/** Where he lands, thrown clear (tiles), from the boar's floor point (x, y) facing (fx, fy) at the end of its death. */
+export function fallLanding(x: number, y: number, fx: number, fy: number): { x: number; y: number } {
+  const L = fallLandedAt();
+  return artAt(x, y, fx, fy, L[0], L[1]);
+}
 
 /** The axis of the grid nearest a way (he is painted facing along one of the four). */
 export function axisOf(dx: number, dy: number): { fx: number; fy: number } {
@@ -152,6 +181,28 @@ function draw<K extends string>(R: BossRules, list: readonly (readonly [K, numbe
   return list[list.length - 1][0];
 }
 
+/** HIS BEAT ON FOOT: a meld, then (half to a quarter of his life) spent once what comes at you is done, and the next once its floor
+ * is gone; (below a quarter) the next as soon as what comes at you is done, its floor still standing. */
+function footBeat(R: BossRules, m: Monster): number {
+  const k = a1Of(m);
+  const now = k.clock ?? 0;
+  const late = m.life <= m.maxLife * 0.25;
+  if (now < (k.meldUntil ?? 0)) return -1;
+  if (k.spentNext) {
+    k.spentNext = 0;
+    return IX('spent');
+  }
+  if (!late && now < (k.floorUntil ?? 0) - 1.0) return -1;
+  const last = meldOf(m);
+  // (`want`, for the films and the tests alone: the meld to make next, its place in MELD_IDS and one)
+  const next = (k.want ?? 0) > 0 ? MELD_IDS[(k.want as number) - 1] : drawMeld(R, last);
+  k.want = 0;
+  k.meld = MELD_IDS.indexOf(next);
+  // (half to a quarter: spent after it, once what comes at you is done; Frostbite is its own opening, and below a quarter none)
+  k.spentNext = !late && next !== 'frostbite' ? 1 : 0;
+  return IX('meld');
+}
+
 export const RULES: Act1Rules | null = {
   // (he never walks: the boar goes over the floor by its charges alone; between moves it stands, turned to him)
   gait: { pace: 1, cycle: 1, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 999, slack: 1, trueBack: true },
@@ -169,14 +220,20 @@ export const RULES: Act1Rules | null = {
     return false;
   },
   lifeFloor(_R, m) {
-    // (STAGE 2: the boar's death and his second phase are the next stage's: until then his life is held at half)
-    return inSaddle(m) ? Math.ceil(m.maxLife * 0.5) : 0;
+    // (in the saddle, held at half until the boar is dead; on foot, at 1 until his death is made: the next stage's)
+    return inSaddle(m) ? Math.ceil(m.maxLife * 0.5) : 1;
+  },
+  invulnerable(m) {
+    // (the boar's death: he cannot be hit)
+    return m.act?.id === 'wsboss:fall';
   },
   tick(R, m, dt) {
     const k = a1Of(m);
     // (his stand's own clock, for its pictures)
     k.clock = (k.clock ?? 0) + dt;
     if (!m.act) k.wait = Math.max(0, (k.wait ?? 0) - dt);
+    // (brought to half his life in the saddle: the boar's death is due, on its next charge)
+    if (inSaddle(m) && !k.fallDue && m.life <= Math.ceil(m.maxLife * 0.5)) k.fallDue = 1;
     // (mid-charge, between its runs and its wheel, it keeps the way it faces down its lane)
     if (!m.act && (k.runs ?? 0) > 0) {
       m.fx = k.fx ?? m.fx;
@@ -190,6 +247,15 @@ export const RULES: Act1Rules | null = {
     if ((k.wait ?? 0) > 0) return -1;
     const h = R.g.hero;
     const dist = Math.hypot(h.x - m.x, h.y - m.y);
+    if (!inSaddle(m)) return footBeat(R, m);
+    // (the boar's death due: its next charge, one run, is its last)
+    if (k.fallDue && !((k.runs ?? 0) > 0)) {
+      k.windNext = 0;
+      k.runs = 1;
+      k.run = 0;
+      k.wheel = 0;
+      return IX('charge');
+    }
     // (a charge going on: the next run, wheeling round first; when its runs are done, winded)
     if ((k.runs ?? 0) > 0) return k.wheel ? IX('wheel') : IX('charge');
     if (k.windNext) {
@@ -229,7 +295,7 @@ export const RULES: Act1Rules | null = {
     const id = a.id.slice(7);
     // (turned to the axis nearest him; but the wheel spins round from the way it ran, a run after a wheel goes back down its lane
     // the way it now faces, and winded it stands where it stopped)
-    const keep = id === 'wheel' || id === 'winded' || (id === 'charge' && (k.run ?? 0) > 0);
+    const keep = id === 'wheel' || id === 'winded' || id === 'fall' || id === 'spent' || (id === 'charge' && (k.run ?? 0) > 0);
     const dh = Math.hypot(h.x - m.x, h.y - m.y);
     if (!keep && dh > 0.01) {
       m.fx = (h.x - m.x) / dh;
@@ -259,6 +325,20 @@ export const RULES: Act1Rules | null = {
     } else if (id === 'lightning' || id === 'poison' || id === 'flame') {
       k.cx = h.x;
       k.cy = h.y;
+    } else if (id === 'fall') {
+      // (killed flat out down its lane: what of his words lies on the floor is done with; carried on as far as the floor lets it)
+      for (const p of g.perils) if (p.a1?.startsWith('wsboss:')) p.dur = Math.min(p.dur, p.t + 0.4);
+      const room = toEdge(m.x, m.y, m.fx, m.fy, WS_TUNE.charge.wall);
+      const all = fallCarry(FALL.long);
+      k.scale = Math.max(0.15, Math.min(1, room / all));
+      k.runs = 0;
+      k.fallDue = 0;
+      g.sfx('bossRoar', 0.9);
+      return;
+    } else if (id === 'meld') {
+      // (the meld drawn: his line, said as it begins, so it is heard coming)
+      const mi = meldOf(m);
+      if (mi) say(R, m, WS_LINES.melds[mi], 1.8);
     }
     g.sfx('bossRoar', 0.35);
   },
@@ -266,6 +346,23 @@ export const RULES: Act1Rules | null = {
     const k = a1Of(m);
     const id = a.id.slice(7);
     k.wait = R.g.rng.range(WS_TUNE.pause[0], WS_TUNE.pause[1]);
+    if (id === 'fall') {
+      // (thrown clear, risen: on foot where he landed; the boar is ash)
+      const L = fallLanding(m.x, m.y, k.fx ?? m.fx, k.fy ?? m.fy);
+      const p = onArena(L.x, L.y, 0.8) ? L : { x: (L.x + FINAL_PLACE.cx) / 2, y: (L.y + FINAL_PLACE.cy) / 2 };
+      m.x = p.x;
+      m.y = p.y;
+      k.foot = 1;
+      k.clock = 0;
+      k.wait = 0.6;
+      k.meldUntil = 0;
+      k.floorUntil = 0;
+      return;
+    }
+    if (id === 'meld' || id === 'spent') {
+      k.wait = 0.25;
+      return;
+    }
     if (id === 'charge') {
       k.run = ((k.run ?? 0) | 0) + 1;
       k.runs = Math.max(0, ((k.runs ?? 0) | 0) - 1);
@@ -294,6 +391,11 @@ export const RULES: Act1Rules | null = {
     const roll = g.rollMonsterDmg(m);
     switch (a.id) {
       case 'wsboss:charge': {
+        // (the boar's death due: flat out down its lane, it is killed)
+        if (k.fallDue && t0 < FALL.from && t1 >= FALL.from) {
+          R.startAct(m, ACTS, IX('fall'));
+          return;
+        }
         // THE RUN: carried down its lane; struck, he is thrown aside, once a run
         const d = carried(t1, k.scale ?? 1);
         const nx = (k.x0 ?? m.x) + fx * d;
@@ -319,6 +421,47 @@ export const RULES: Act1Rules | null = {
         if (at(CHARGE_SKID[0])) g.sfx('slam', 0.4);
         return;
       }
+      case 'wsboss:fall': {
+        // (carried on down its lane as it dies; his lines; the slam as he rises, harming nothing)
+        const d = fallCarry(t1) * (k.scale ?? 1);
+        const nx = (k.x0 ?? m.x) + fx * d;
+        const ny = (k.y0 ?? m.y) + fy * d;
+        if (onArena(nx, ny, 0.6)) {
+          m.x = nx;
+          m.y = ny;
+        }
+        if (at(FALL.kill)) {
+          g.sfx('slam', 1);
+          g.emit({ t: 'shake', amount: 6 });
+        }
+        if (at(FALL.look[0])) say(R, m, WS_LINES.fall, 2.4);
+        if (at(FALL.slam)) {
+          g.sfx('slam', 1);
+          g.emit({ t: 'shake', amount: 9 });
+          say(R, m, WS_LINES.rise, 2.0);
+          // (his staff driven into the floor where he stands: its ring rolling out, harming nothing; the boar's ash blown away from
+          // where it lay, a scorch left)
+          const L = fallLanding(m.x, m.y, fx, fy);
+          R.peril(m, 'act1', L.x, L.y, { a1: 'wsboss:fallring', dur: FALL.ring.long * 1.2, hit: 0 });
+          R.peril(m, 'act1', m.x, m.y, { a1: 'wsboss:scorch', dur: 40, hit: 0, b: L.x, c: L.y });
+        }
+        return;
+      }
+      case 'wsboss:meld': {
+        // (THE SLAM: the meld's own move begins, and its ring rolls out)
+        if (!at(MELD.slam)) return;
+        const mi = meldOf(m);
+        if (!mi) return;
+        g.sfx('slam', 1);
+        g.emit({ t: 'shake', amount: 7 });
+        meldBegins(R, m, mi, fx, fy);
+        const now = k.clock ?? 0;
+        k.meldUntil = now + MELDS[mi].dodge;
+        k.floorUntil = now + MELDS[mi].end;
+        return;
+      }
+      case 'wsboss:spent':
+        return;
       case 'wsboss:gore': {
         if (!at(GORE.hit)) return;
         g.emit({ t: 'shake', amount: 4 });
@@ -421,6 +564,11 @@ export const RULES: Act1Rules | null = {
     const h = g.hero;
     if (g.over) return;
     const hurt = (mult: number, ox = p.x, oy = p.y): void => g.hurtHero(p.dmg * mult, p.el, p.words, null, p.from, ox, oy, p.half);
+    // (his melds, on foot: wsboss2.ts)
+    if (p.a1 && (p.a1 === 'wsboss:slamring' || p.a1.slice(7) in MELDS)) {
+      meldPeril(R, p, dt);
+      return;
+    }
     switch (p.a1) {
       case 'wsboss:rings': {
         // (each of the three rings strikes him once as it rolls under him)
