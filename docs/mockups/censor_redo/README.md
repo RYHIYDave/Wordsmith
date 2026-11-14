@@ -1,6 +1,6 @@
 # Floor 15's boss, the Censor, made again
 
-Branch `design/censor-redo` (built on `design/f9-side-bosses`). Behind `CENSOR2` (art/censor2_art.ts), off until his yes.
+Branch `design/censor-redo` (built on `design/f9-side-bosses`). Behind `CENSOR2` (art/censor2_art.ts), ON at his yes (below).
 
 ## His words
 
@@ -19,3 +19,13 @@ Branch `design/censor-redo` (built on `design/f9-side-bosses`). Behind `CENSOR2`
 
 - pictures/censor_look_1.png: the first look (three times the knight; made smaller at his word).
 - pictures/censor_fight.mp4: the fight in the game, at his phone's size.
+
+## His yes
+
+- Asked with pictures/censor_fight.mp4, “Is the Censor's fight up to par for the end of floors 11–15?”: “Yes, switch him on (Recommended)”. `CENSOR2.on` is true; his size as the game measures a figure, 80 up (his hood's peak) and 18 to either side, his robe's reach 0.85 of a tile (art/bestiary.ts useCensor2).
+
+## Checked
+
+- tsc clean. On a653e139: `node tools/unit.mjs --only censor2,act2_censor,censor,new_mobs3,act2,bosses,boss_calls,quests1115` and the core, 29 of 30; the one, new_mobs3's import check, fails on main already (art/key_bearers.ts and art/unique_play_art2.ts, the temple door's and the uniques', not in its list) and not for him. On 8dc418e3 also monsters_baked, monster_attacks, inklings, f9_bosses, f9_hunt: passed. tests/censor2.test.ts (new) holds his new pictures; tests/act2_censor.test.ts and tests/censor.test.ts hold the rules and the art chat's old pictures, as they were.
+- In play: his fight on a page built from 69cb1e70, his switch as the game has it (tools/scenarios/censor2_fight.mjs): his new pictures by default, the painter's workers too.
+
