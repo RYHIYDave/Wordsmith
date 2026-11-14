@@ -137,3 +137,7 @@ nothing new is drawn. The film is `pictures/eight_melds_on_monsters.mp4` (tools/
 captions with ffmpeg). Shiver's critical is made sure in the film (`__dbg.foeTune`); in the game it is about one blow in five.
 
 CHECKED: tsc clean; `tests/foe_melds.test.ts` 14 of 14; the film. NOT CHECKED: his phone; the whole suite.
+
+HIS YES, 14 Nov 2026, sent the film and asked by pop-up whether to ship them in the evening's update: “Yes, ship it (Recommended)”.
+FOE_WORDS is ON in main, so they are live once merged. Also checked: `node tools/unit.mjs --only foe_melds,melds8,melds,volatile_melds,hold_altar,last_words,city_words`
+and the core on f6ac4f70: 29 files, all passed.
