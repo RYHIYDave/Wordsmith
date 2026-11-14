@@ -20,7 +20,8 @@
 //   again (CLOUD.hurts).
 // EACH IS DRAWN IN THE FRAME ITS PICTURE HAS (as the Stoker's: game/act1_rules/stoker.ts FRAMES): as each act begins it is turned square
 // to the nearest of the four ways toward the hero, and every blow is reckoned in that frame, where its picture lands. Each move keeps it
-// over the floor point under it as its picture has it, and the ground it covers is covered here (`carry`). Heavy blows land with the
+// over the floor point under it as its picture has it, and the ground it covers is covered here (`carry`). As a move comes, it SQUARES UP:
+// goes to stand with the hero square before it along one of its four ways, as far off as its blows reach (`squareUp`). Heavy blows land with the
 // game held still a moment and the screen kicked (his rulebook, Movement 7). Drawn: render/act1_fx/f9_bosses.ts.
 
 import { CHIEF_MOVES, CHIEF_PLAY, LUNGE_LONG, TILE3, WOLF_MOVES, WOLF_PLAY, chiefCarry, wolfCarry } from '../../art/f9_bosses_moves';
@@ -39,8 +40,14 @@ export const WOLF_FX = 'mistwolf:fx:';
 
 /** THE RULES' OWN NUMBERS: how hard each blow is (times its own blow); the rage; the howl; how near each comes. */
 export const F9_TUNE = {
-  chief: { smash: 1.4, slam: 1.2, rush: 1.6, roar: 0.5, stopAt: 2.0 },
-  wolf: { bite: 1.0, claw: 1.3, lunge: 1.4, cloud: 0.35, stopAt: 1.7 },
+  chief: { smash: 1.4, slam: 1.2, rush: 1.6, roar: 0.5, stopAt: 2.9 },
+  wolf: { bite: 1.0, claw: 1.3, lunge: 1.4, cloud: 0.35, stopAt: 1.5 },
+  /**
+   * SQUARING UP: its pictures face only the four ways along the floor's grid, and its blows land where its pictures' do, so as a move
+   * comes it goes to stand with the hero square before it along one of them, as far off as its blows reach him (tiles: `band`);
+   * so long at most (`most` seconds), then not again for `rest`.
+   */
+  square: { chief: { near: 2.3, far: 3.7 }, wolf: { near: 1.1, far: 2.0 }, ready: 0.6, most: 2.6, rest: 2.5, off: 0.35, pace: 1.2 },
   /** The war cry's rage: how long, how much quicker his moves and his readiness, how much faster his feet. */
   rage: { lasts: 9, quick: 1.3, fast: 1.45 },
   /** The howl: how many of its wolves may be about at once. */
@@ -122,6 +129,64 @@ function beat(R: BossRules, m: Monster, move: string): void {
   R.g.emit({ t: 'shake', amount: b[1], hold: b[0] });
 }
 
+/**
+ * SQUARING UP (F9_TUNE.square) as a move comes: to the spot on the hero's line along the nearest of its four ways, as far off as its
+ * blows reach him, walking. True while it goes there (that step is all it does).
+ */
+function squareUp(R: BossRules, m: Monster, dt: number, band: { near: number; far: number }, pace: number): boolean {
+  const g = R.g;
+  const h = g.hero;
+  const S = T.square;
+  const a = (m.a1 ??= {});
+  if (m.state === 'act' || m.cd > S.ready || g.over) {
+    a.sq = 0;
+    return false;
+  }
+  if ((a.sqRest ?? 0) > 0) {
+    a.sqRest = Math.max(0, (a.sqRest ?? 0) - dt);
+    return false;
+  }
+  const dx = h.x - m.x;
+  const dy = h.y - m.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist > band.far + 2 || !g.sees(m.x, m.y, h.x, h.y)) {
+    a.sq = 0;
+    return false;
+  }
+  const F = FRAMES[nearestFrame(dx, dy)];
+  const r = inFrame(F, m.x, m.y, h.x, h.y);
+  // (there: it stands, and makes its move)
+  const done = (rest: number): false => {
+    if (a.sq) m.gait = { mode: 'stand', t: 0 };
+    a.sq = 0;
+    a.sqRest = rest;
+    return false;
+  };
+  if (Math.abs(r.left) <= S.off && r.fwd >= band.near && r.fwd <= band.far) return done(0);
+  const fwd = Math.max(band.near, Math.min(band.far, r.fwd));
+  const tx = h.x - F.f[0] * fwd;
+  const ty = h.y - F.f[1] * fwd;
+  const off = Math.hypot(tx - m.x, ty - m.y);
+  if (off < 0.15) return done(0);
+  if ((a.sq ?? 0) > S.most) return done(S.rest);
+  a.sq = (a.sq ?? 0) + dt;
+  const step = Math.min(off, m.speed * S.pace * dt);
+  const ux = (tx - m.x) / off;
+  const uy = (ty - m.y) / off;
+  const x0 = m.x;
+  const y0 = m.y;
+  g.slide(m, Math.min(m.r, 0.42), ux * step, uy * step, g.level.walk, true);
+  // (barred: it gives up, and makes its move as it stands)
+  if (Math.hypot(m.x - x0, m.y - y0) < step * 0.3) return done(S.rest);
+  m.fx = ux;
+  m.fy = uy;
+  m.anim = 'walk';
+  m.state = 'chase';
+  if (!m.gait || m.gait.mode !== 'walk') m.gait = { mode: 'walk', t: 0 };
+  m.gait.t += step / pace;
+  return true;
+}
+
 /** As an act begins: turned square to the nearest of its four ways toward the hero; its move's peril laid where it stands; quicker if raging. */
 function begin(R: BossRules, m: Monster, a: ActDef, prefix: string): void {
   const h = R.g.hero;
@@ -170,10 +235,11 @@ export const RULES_CHIEF: Act1Rules | null = {
     if (!p) return;
     const free = !h.move && h.invuln <= 0 && !g.over;
     const struck = (bit: number): boolean => (p.d & bit) !== 0;
+    // (struck from where the blow lands; thrown back away from him)
     const strike = (bit: number, mult: number, knock: number, fx: number, fy: number): void => {
       p.d |= bit;
       g.hurtHero(p.dmg * mult, p.el, p.words, m, '', fx, fy, p.half);
-      if (knock > 0) g.knockHero(fx, fy, knock);
+      if (knock > 0) g.knockHero(m.x, m.y, knock);
     };
     if (at(a.hit)) {
       beat(R, m, move);
@@ -229,11 +295,12 @@ export const RULES_CHIEF: Act1Rules | null = {
       m.cd -= more;
       if (m.moveCd) for (let k = 0; k < m.moveCd.length; k++) m.moveCd[k] -= more;
     } else m.speed = a.base;
+    const squaring = squareUp(R, m, dt, T.square.chief, CHIEF_PLAY.walk.pace);
     // (the floor shaking at each footfall as he walks, two a turn of his walk; felt near him)
     const walking = m.state !== 'act' && m.gait?.mode === 'walk';
     if (!walking) {
       a.step = 0;
-      return false;
+      return squaring;
     }
     a.step = (a.step ?? 0) + (dt * m.speed) / CHIEF_PLAY.walk.pace;
     const every = CHIEF_PLAY.walk.frames / CHIEF_PLAY.walk.fps / 2;
@@ -241,7 +308,7 @@ export const RULES_CHIEF: Act1Rules | null = {
       a.step -= every;
       if (Math.hypot(g.hero.x - m.x, g.hero.y - m.y) < T.footfall.near) g.emit({ t: 'shake', amount: T.footfall.by });
     }
-    return false;
+    return squaring;
   },
   peril(R, p) {
     if (!p.a1?.startsWith(CHIEF_FX)) return;
@@ -326,6 +393,9 @@ export const RULES_WOLF: Act1Rules | null = {
   peril(R, p) {
     if (!p.a1?.startsWith(WOLF_FX)) return;
     keepTime(p);
+  },
+  tick(R, m, dt) {
+    return squareUp(R, m, dt, T.square.wolf, WOLF_PLAY.walk.pace);
   },
   reachable(m) {
     // (nothing reaches it while it is mist: going through you, and gone into its cloud)

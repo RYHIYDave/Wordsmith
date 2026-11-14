@@ -108,3 +108,32 @@ frames, followed through.
   club's smear filled solid and the after-images made a fading checker of the body (they had read as stripes and scribbles); and a
   film at the phone's own size (pictures/f9_bosses_film_phone.mp4: 1278 picture pixels across, as the game shows a phone 852 points
   wide), each scene a pixel to a pixel.
+- His word to the phone-size film, 14 Nov 2026: “Yes, build them in (Recommended)”.
+
+## In the game (behind F9_LAIRS, off until his yes to them in play)
+
+Built in on this branch, the switch F9_LAIRS (game/f9_lairs.ts) holding the side areas and their bosses together:
+- THEIR PICTURES (art/f9_bosses_art.ts; the sculpts and the moves moved from dev/ into art/: f9_bosses_sculpt.ts, f9_bosses_moves.ts):
+  each seen from in front and from behind (its back as the camera truly sees it, his club in his right hand), facing along the floor's
+  grid and turned over for the other way, as every monster is. THE TROLL CHIEFTAIN ('warchief'): his stand (heaving, his jaw working),
+  his walk (a heavy rolling stomp, his feet gripping the floor, the floor shaking at each footfall), the smash (his `attack`), the
+  slam, the war cry, the bull rush, struck, and HIS DEATH: down on one knee on his club, a last roar at the sky, and TURNED TO STONE
+  as he roars (as trolls are), left kneeling there. THE MIST WOLF ('mistwolf'): its stand, its walk (a long low trot), the bite (its
+  `attack`), the claw sweep, the howl, the lunge, the mist cloud, struck, and ITS DEATH: its legs give, it sinks down, and it comes
+  apart into the mist it was, its eyes last. New since the films: the walks, the stands, the flinches and the deaths (he has not seen
+  them yet), and the smash's end (his feet stepped back under him, so he ends as he stands).
+- WHAT FOLLOWS THEM is in their pictures (the strike's after-images, the club's smear, the rage's fire and embers, the roar's and the
+  howl's arcs, the mist drawn in and streaming off, the jaws' and claws' crescents, speed lines); WHAT LIES ON THE FLOOR is painted
+  where it is (art/f9_bosses_fx.ts, render/act1_fx/f9_bosses.ts: the warnings, the ground broken, the bursts, stone and dust, the
+  mist's clouds), all of it the films' own painting (art/f9_bosses_paint.ts).
+- THEIR RULES (game/act1_rules/f9_bosses.ts): each blow lands where and when its picture's does: the smash on its ring; the slam's
+  crack as it reaches you; the bull rush into you; the war cry's roar near him, then THE RAGE (his pick: attack speed and move speed):
+  his moves 1.3 times quicker, his feet 1.45 times faster, ready sooner, for 9 seconds; the bite in its ring; the claw across its arc;
+  the howl calls two of the floor's fog wolves out of the mist (three about at most); the lunge through you as mist (nothing reaches it
+  then, and it lands well beyond you); the mist cloud, its claws at you four times while you stand in it (nothing reaches the wolf in
+  it). Heavy blows land with the game held still a moment (0.05 to 0.13 s) and the screen kicked; those that throw you, throw you.
+- WHERE: the chieftain before his seat at the back of his camp, the wolf on the moonbeam in its glade, each facing its way in; each as
+  hard for the floor as a floor's boss is (as the Stoker is), not the floor's boss. THE PIECES: the wolf carries the side area's piece
+  of the ward-stone, the chieftain the lair's, the Hollow Stag his own (game.ts piecesMade).
+- Tests: tests/f9_bosses.test.ts. The film of them in play: tools/scenarios/f9_bosses_film.mjs, cut by tools/f9_bosses_cut.py
+  (pictures/f9_bosses_in_play.mp4).

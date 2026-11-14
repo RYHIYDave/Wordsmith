@@ -1,6 +1,6 @@
 // FLOOR 9'S TWO SIDE BOSSES IN PLAY (game/act1_rules/f9_bosses.ts, art/f9_bosses_art.ts, behind F9_LAIRS), filmed for him in the game
 // itself at his phone's size: the troll chieftain in his camp, the mist wolf in its glade; each of their blows made at the hero, who
-// stands (made unhurtable); each walking up to him; each killed. A frame every thirtieth of the game's second; tools/f9_bosses_cut.py
+// stands (made unhurtable) square before it, as each squares up to him in play; each walking up to him from off its ways; each killed. A frame every thirtieth of the game's second; tools/f9_bosses_cut.py
 // makes the film of them, each part named.
 //   node tools/build_to.mjs dist/f9bosses.html
 //   node tools/playtest.mjs --file dist/f9bosses.html --touch --size 852x393 --dpr 2 --scenario tools/scenarios/f9_bosses_film.mjs --out shots/f9bosses/b
@@ -10,19 +10,19 @@ import { log } from './lib.mjs';
 const FPS = 30;
 // [name, kind, act ('walk', 'kill'), how far off, to his side, seconds, the part's title]
 const PARTS = [
-  ['smash', 'warchief', 'warchief:smash', 3.1, 0.2, 2.7, 'THE TROLL CHIEFTAIN: CLUB SMASH'],
-  ['slam', 'warchief', 'warchief:slam', 3.2, 0.2, 2.8, 'THE TROLL CHIEFTAIN: GROUND SLAM'],
-  ['warcry', 'warchief', 'warchief:warcry', 2.0, 0.2, 3.5, 'THE TROLL CHIEFTAIN: WAR CRY (THE RAGE)'],
-  ['rush', 'warchief', 'warchief:rush', 4.0, 0.0, 2.8, 'THE TROLL CHIEFTAIN: BULL RUSH'],
+  ['smash', 'warchief', 'warchief:smash', 3.1, 0, 2.7, 'THE TROLL CHIEFTAIN: CLUB SMASH'],
+  ['slam', 'warchief', 'warchief:slam', 3.2, 0, 2.8, 'THE TROLL CHIEFTAIN: GROUND SLAM'],
+  ['warcry', 'warchief', 'warchief:warcry', 2.0, 0, 3.5, 'THE TROLL CHIEFTAIN: WAR CRY (THE RAGE)'],
+  ['rush', 'warchief', 'warchief:rush', 4.0, 0, 2.8, 'THE TROLL CHIEFTAIN: BULL RUSH'],
   ['chiefwalk', 'warchief', 'walk', 6.5, 1.0, 3.2, 'THE TROLL CHIEFTAIN: HIS WALK'],
-  ['chiefdie', 'warchief', 'kill', 2.6, 0.4, 3.4, 'THE TROLL CHIEFTAIN FALLS: TURNED TO STONE'],
-  ['bite', 'mistwolf', 'mistwolf:bite', 1.6, 0.0, 1.6, 'THE MIST WOLF: BITE'],
-  ['claw', 'mistwolf', 'mistwolf:claw', 1.3, 0.2, 1.8, 'THE MIST WOLF: CLAW SWEEP'],
-  ['howl', 'mistwolf', 'mistwolf:howl', 2.6, 0.3, 3.2, 'THE MIST WOLF: HOWL (ITS WOLVES COME)'],
-  ['lunge', 'mistwolf', 'mistwolf:lunge', 1.8, 0.0, 1.9, 'THE MIST WOLF: LUNGE (THROUGH YOU AS MIST)'],
-  ['cloud', 'mistwolf', 'mistwolf:cloud', 1.4, 0.2, 3.4, 'THE MIST WOLF: MIST CLOUD'],
+  ['chiefdie', 'warchief', 'kill', 2.6, 0, 3.4, 'THE TROLL CHIEFTAIN FALLS: TURNED TO STONE'],
+  ['bite', 'mistwolf', 'mistwolf:bite', 1.6, 0, 1.6, 'THE MIST WOLF: BITE'],
+  ['claw', 'mistwolf', 'mistwolf:claw', 1.3, 0, 1.8, 'THE MIST WOLF: CLAW SWEEP'],
+  ['howl', 'mistwolf', 'mistwolf:howl', 2.6, 0, 3.2, 'THE MIST WOLF: HOWL (ITS WOLVES COME)'],
+  ['lunge', 'mistwolf', 'mistwolf:lunge', 1.8, 0, 1.9, 'THE MIST WOLF: LUNGE (THROUGH YOU AS MIST)'],
+  ['cloud', 'mistwolf', 'mistwolf:cloud', 1.4, 0, 3.4, 'THE MIST WOLF: MIST CLOUD'],
   ['wolfwalk', 'mistwolf', 'walk', 6.5, 1.0, 2.6, 'THE MIST WOLF: ITS WALK'],
-  ['wolfdie', 'mistwolf', 'kill', 2.0, 0.4, 2.6, 'THE MIST WOLF FALLS: GONE TO MIST'],
+  ['wolfdie', 'mistwolf', 'kill', 2.0, 0, 2.6, 'THE MIST WOLF FALLS: GONE TO MIST'],
 ];
 
 export default async function (page, snap) {
@@ -77,7 +77,7 @@ export default async function (page, snap) {
           const y = Math.floor(m.y) + dy + 0.5;
           if (!g.isOpen(x, y)) continue;
           let n = 0;
-          for (let a = 0; a < 16; a++) for (const r of [2, 4, 6.5]) if (g.isOpen(x - 0.6 * r + Math.cos(a) * 0.35 * r, y - 0.6 * r + Math.sin(a) * 0.35 * r)) n++;
+          for (let a = 0; a < 16; a++) for (const r of [2, 4, 6.5]) if (g.isOpen(x - r + Math.cos(a) * 0.35 * r, y + Math.sin(a) * 0.35 * r)) n++;
           n -= Math.hypot(dx, dy) * 0.5;
           if (n > most) {
             most = n;
@@ -100,8 +100,9 @@ export default async function (page, snap) {
       const h = g.hero;
       h.x = stand.x;
       h.y = stand.y;
-      h.fx = -0.6;
-      h.fy = -0.8;
+      // (facing along the floor's grid, up the screen to the left: each boss before him square, as it squares up to him in play)
+      h.fx = -1;
+      h.fy = 0;
       g.perils.length = 0;
       // (the wolves its howl called, gone)
       for (const m of g.monsters) if (m.kind === 'wolf') m.dead = true;

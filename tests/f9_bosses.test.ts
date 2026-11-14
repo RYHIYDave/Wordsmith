@@ -300,3 +300,21 @@ test('7. their pictures: in the enemy\'s colours, never cyan, their edge of ligh
   const wolfDead = wolf.front.clips!.die!.frames;
   assert.ok(pixels(wolfDead[wolfDead.length - 1]).n < 40, 'the wolf at the last: gone');
 });
+
+test('8. squaring up: a hero standing off its four ways, as a move comes it goes to stand with him square before it, and its blow finds him', () => {
+  for (const [kind, id, k] of [['warchief', 'warchief:smash', CK], ['mistwolf', 'mistwolf:bite', WK]] as const) {
+    const { g, m } = room(kind, 2, id);
+    const h = g.hero;
+    // (the hero half way between two of its ways, as far off as its blow reaches)
+    const reach = kind === 'warchief' ? (CHIEF_LANDS.smash[0] * k) / TILE3 : (BITE_RING.f * k) / TILE3;
+    h.x = m.x + reach / Math.SQRT2;
+    h.y = m.y + reach / Math.SQRT2;
+    let lined = -1;
+    const s = watch(g, m, 6, () => {
+      if (lined < 0 && m.state === 'act') lined = Math.min(Math.abs(h.x - m.x), Math.abs(h.y - m.y));
+      return null;
+    });
+    assert.ok(lined >= 0 && lined < F9_TUNE.square.off + 0.1, `${kind}: square to him as it strikes (${lined.toFixed(2)} tiles off its way)`);
+    assert.ok(s.hurts.length >= 1, `${kind}: its blow finds him`);
+  }
+});
