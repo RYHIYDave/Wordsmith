@@ -19,8 +19,12 @@ export async function bakeCode() {
   return { code, mark };
 }
 
-/** The bake of the heroes' art as it is now, made if it is not there yet. Its mark and its folder. */
-export async function bakeHeroes({ log = console.log } = {}) {
+/**
+ * The bake of the heroes' art as it is now, made if it is not there yet. Its mark and its folder. `only`: just those groups
+ * (for a look at a few on a page of their own, tools/bake_some.mjs): the bake is not marked done, and a whole bake of the same
+ * art later keeps them and bakes the rest.
+ */
+export async function bakeHeroes({ log = console.log, only = null } = {}) {
   const { code, mark } = await bakeCode();
   const dir = path.join(ROOT, '.bake', mark);
   if (fs.existsSync(path.join(dir, 'done.json'))) return { mark, dir, fresh: false };
@@ -44,8 +48,10 @@ export async function bakeHeroes({ log = console.log } = {}) {
   };
   try {
     const first = await open();
-    const groups = await first.evaluate(() => window.bake.groups());
+    const all = await first.evaluate(() => window.bake.groups());
     await first.close();
+    const groups = only ? all.filter((g) => only.includes(g)) : all;
+    if (only && groups.length !== only.length) throw new Error(`no such group: ${only.filter((g) => !all.includes(g)).join(', ')}`);
     for (const g of groups) {
       if (fs.existsSync(saidOf(g))) {
         said.groups[g] = JSON.parse(fs.readFileSync(saidOf(g), 'utf8'));
@@ -88,6 +94,7 @@ export async function bakeHeroes({ log = console.log } = {}) {
   } finally {
     await browser.close();
   }
+  if (only) return { mark, dir, fresh: true };
   said.s = Math.round((Date.now() - t0) / 1000);
   fs.writeFileSync(path.join(dir, 'done.json'), JSON.stringify(said, null, 1));
   for (const f of fs.readdirSync(dir)) if (f.startsWith('.said-')) fs.rmSync(path.join(dir, f));

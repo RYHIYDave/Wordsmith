@@ -71,12 +71,33 @@ is untouched, nothing is published. THE SWITCH (`STAFF_SKINS`, src/art/staff_ski
 - Bring in `art/staff-skins`. THE HEROES' BAKE HAS A NEW MARK (art/mage_up.ts changed, though she is painted the same):
   bake again as the build does. With the switch on the bake has four more groups, `mage-crook`, `mage-ebb`,
   `mage-resonance`, `mage-rod` (her set four times more: about 8 MB more on the server, fetched only when she holds that
-  staff), so the bake takes longer by about four of her groups.
+  staff), so the bake takes longer by about four of her groups: her own group took 813 s to paint here (14 Nov 2026, this
+  machine, two cores), so about 55 minutes more.
 - Checks: `node tools/unit.mjs --changed` (tests/staff_skins.test.ts, tests/staff_skins_game.test.ts, tests/baked.test.ts);
   the published page's own playtests, the heroes' bake taken in (tools/scenarios/baked.mjs).
 - Known limit: where there is no bake (it failed, or a page built without one), her pictures are painted by the worker as
   before, and a staff's set painted is kept when she takes up another (the let-go is the bake's).
 
+- `tools/bake_heroes.mjs` takes `only` (a few groups, not marked done; a whole bake later keeps them), and
+  `tools/bake_some.mjs` builds a page with just those baked: for looking at a few groups in a real browser.
+
 ## Checked
 
-(below, as it was done)
+- tsc clean.
+- Her own staff as a skin: 1432 frames of her (every move, all eight sides) hashed the same as `main`'s.
+- tests/staff_skins.test.ts (5: her own staff the same frame; each skin over her exact; each its own staff and light; the
+  heads laid on her) and tests/staff_skins_game.test.ts (5: the switch; the four uniques worn and their places; her art
+  painted with that staff; a bake group each; a staff's set let go of, its places put back, its sheets closed, taken in
+  again, the last one let go as she takes up another): with the core and tests/baked.test.ts, baked_packs, hero_cards_baked
+  and heroes3, 27 of 27 on c298b41 (switch off); with the switch on, the staff tests, baked, hero_cards_baked and the core,
+  26 of 26 on 7b06f28.
+- IN THE GAME (dist/staff_look.html, unbaked): her with each staff put on from her bag, on floor 11 and in town, filmed
+  (docs/mockups/staff_skins/pictures/staves_in_game.mp4, and _sides.png): his yes.
+- BAKED, IN A REAL BROWSER (tools/bake_some.mjs dist/staff_baked.html mage,mage-crook,mage-rod; served;
+  tools/scenarios/staff_swap_baked.mjs): she starts with her own staff; the inventory open, she puts on the Crook, the Rod,
+  then her own staff again. Each time the staff's group came from the bake, and the sheets held were one group's: 5 sheets,
+  20.2, 18.9, 18.1 and 20.2 million pixels (about 80 MB, 76, 72, 80), never two groups' at once. Her frames with each staff
+  left to be painted: 79, as many as with her own staff (so none of it the staves'; why those 79 are not given from the bake
+  was not looked into). The
+  staff in her hand right each time (looked at). Each group about 1.9 MB and 13.5 to 14 minutes to bake.
+- NOT CHECKED: his phone; a whole bake; the release page.
