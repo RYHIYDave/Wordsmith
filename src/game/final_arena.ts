@@ -11,14 +11,14 @@
 // the hero's end: his pick for endless mode), but no floor of the game's: its depth FINAL_DEPTH, past the last built, so that no
 // floor's own rules wake in it.
 
-import { FINAL_ARRIVE, FINAL_BOSS_AT, FINAL_PLACE } from '../art/final_arena';
+import { FINAL_ARRIVE, FINAL_BOSS_AT, FINAL_PLACE, onArena, toEdge } from '../art/final_arena';
 import { RNG } from '../engine/rng';
 import { finish } from './level';
 import type { Level } from './state';
 import { T_FLOOR, T_VOID, T_WALL } from './types';
 import type { Floor } from './types';
 
-export { FINAL_ARRIVE, FINAL_BOSS_AT, FINAL_PLACE };
+export { FINAL_ARRIVE, FINAL_BOSS_AT, FINAL_PLACE, onArena, toEdge };
 
 /** The arena's depth as the game counts floors: past the last built (it is no floor of theirs). */
 export const FINAL_DEPTH = 99;
@@ -30,23 +30,6 @@ export const FINAL_NAME = { place: 'The Shaft', level: 'The Bottom of the Shaft'
 /** Is this level the arena? */
 export function isFinal(L: Level | null | undefined): boolean {
   return !!L && !!L.final;
-}
-
-/** Whether a body of radius `r` may stand at (x, y): on the floor, held off its edge by its round. */
-export function onArena(x: number, y: number, r: number): boolean {
-  return Math.hypot(x - FINAL_PLACE.cx, y - FINAL_PLACE.cy) <= FINAL_PLACE.floor - r;
-}
-
-/** How far (tiles) from (x, y) along (dx, dy) the floor goes before its edge, for a body of radius `r` (0 if it is off it). */
-export function toEdge(x: number, y: number, dx: number, dy: number, r: number): number {
-  const ox = x - FINAL_PLACE.cx;
-  const oy = y - FINAL_PLACE.cy;
-  const R = FINAL_PLACE.floor - r;
-  const b = ox * dx + oy * dy;
-  const c = ox * ox + oy * oy - R * R;
-  const disc = b * b - c;
-  if (disc < 0) return 0;
-  return Math.max(0, -b + Math.sqrt(disc));
 }
 
 /** THE ARENA, laid. */

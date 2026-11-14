@@ -190,24 +190,23 @@ export const FX: Act1Fx | null = {
         const fade = 1 - clamp01((p.t - (p.dur - 1)) / 1);
         const reached = 0.6 + Math.max(0, (p.t - FROST.hit - 0.04) / FROST.race) * FROST.step;
         const reach = Math.min(reached, 0.6 + (FROST.steps - 1) * FROST.step);
+        // (rime: a frost of pale dots laid along each line, thicker near its middle, glinting here and there; never a beam of light)
         const was = g.globalAlpha;
-        g.globalAlpha = was * 0.5 * fade;
-        g.strokeStyle = '#b4d6f6';
-        g.lineCap = 'round';
-        g.lineWidth = 9;
         for (let l = 0; l < FROST.lines; l++) {
           const ang = (l / (FROST.lines - 1) - 0.5) * FROST.fan * D;
           const lx = p.fx * Math.cos(ang) + p.fy * Math.sin(ang);
           const ly = p.fy * Math.cos(ang) - p.fx * Math.sin(ang);
-          const [ax, ay] = c.at(p.x + lx * 0.4, p.y + ly * 0.4);
-          const [bx, by] = c.at(p.x + lx * reach, p.y + ly * reach);
-          g.beginPath();
-          g.moveTo(ax, ay);
-          g.lineTo(bx, by);
-          g.stroke();
+          for (let i = 0; i < 70; i++) {
+            const u = 0.4 + (reach - 0.4) * ((i * 0.618) % 1);
+            const across = (((i * 0.371 + l * 0.17) % 1) - 0.5) * 0.9;
+            const [sx, sy] = c.at(p.x + lx * u + ly * across, p.y + ly * u - lx * across);
+            const glint = (i * 7 + l * 3 + Math.floor(c.t * 4)) % 23 === 0;
+            g.globalAlpha = was * fade * (glint ? 0.85 : 0.3 * (1 - Math.abs(across) * 1.4));
+            g.fillStyle = glint ? '#f2f6ff' : (i & 1 ? '#a5c6d7' : '#e2f0f8');
+            g.fillRect(Math.round(sx), Math.round(sy), 2, 1);
+          }
         }
         g.globalAlpha = was;
-        g.lineCap = 'butt';
         return;
       }
       case 'wsboss:orb': {

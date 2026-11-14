@@ -34,7 +34,7 @@
 
 import { BOLT, CHARGE, CHARGE_SKID, CHARGE_STRIKE, FIRE, FIRE_DROPS, FROST, FROST_SPIKES, GORE, POWER, SPORE, SPORE_PODS, STOMP, WHEEL, WINDED, chargeCarry } from '../../art/endless_boss';
 import { TILE3 } from '../../art/new_mobs3';
-import { FINAL_BOSS_AT, FINAL_PLACE, onArena, toEdge } from '../final_arena';
+import { FINAL_BOSS_AT, FINAL_PLACE, onArena, toEdge } from '../../art/final_arena';
 import type { ActDef, BossRules } from '../bosses';
 import type { Monster, Peril } from '../state';
 import type { Element } from '../types';
@@ -105,8 +105,8 @@ function rel(x: number, y: number, fx: number, fy: number, px: number, py: numbe
 
 /** How far the boar has been carried down its lane, `t` seconds into a run (tiles), as far as the lane lets it (`scale`). */
 export const carried = (t: number, scale: number): number => chargeCarry(t) * scale;
-/** Its run's whole carry (tiles). */
-export const CARRY = chargeCarry(CHARGE.long);
+/** Its run's whole carry (tiles; asked each time, not kept as the module is read: the art's numbers are whole by then). */
+export const carryAll = (): number => chargeCarry(CHARGE.long);
 /** How far the stomp's ring `j` has rolled out `u` seconds after it struck (tiles; -1 not yet or gone). */
 export function ringAt(j: number, u: number): number {
   const s = u - STOMP.rings[j];
@@ -238,8 +238,9 @@ export const RULES: Act1Rules | null = {
       m.act.rate = WS_TUNE.charge.rate[Math.min(n, 2)];
       // (its lane: as long as its run, or to the floor's edge)
       const room = toEdge(m.x, m.y, m.fx, m.fy, WS_TUNE.charge.wall);
-      k.scale = Math.max(0.15, Math.min(1, room / CARRY));
-      k.lane = CARRY * k.scale;
+      const all = carryAll();
+      k.scale = Math.max(0.15, Math.min(1, room / all));
+      k.lane = all * k.scale;
     } else if (id === 'power') {
       // (the hammer's shadow: under him to begin with, chasing him a beat behind)
       k.hx = h.x;

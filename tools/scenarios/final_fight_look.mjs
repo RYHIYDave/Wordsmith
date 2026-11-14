@@ -40,7 +40,7 @@ export default async function (page, snap) {
   for (let i = 0; i < 60; i++) { if (await page.evaluate(() => !!window.__dbg.game().level.final)) break; await page.waitForTimeout(100); }
   log('down', await page.evaluate(() => { const g = window.__dbg.game(); return { final: !!g.level.final, monsters: g.monsters.map((m) => m.kind), boss: g.boss && g.boss.name }; }));
   // (kept alive: his life put back each tenth of a second, as the pictures are taken)
-  await page.evaluate(() => { window.__keep = setInterval(() => { const h = window.__dbg.game().hero; if (h.life > 0) h.life = h.d.maxLife; }, 60); });
+  await page.evaluate(() => { const d = window.__dbg; d.god = true; d.game().hero.d.maxLife = 60000; window.__keep = setInterval(() => { const h = d.game().hero; if (h.life > 0) h.life = h.d.maxLife; }, 60); });
   await page.waitForTimeout(1600);
   await clean();
   await snap('01_the_bottom_of_the_shaft');
@@ -61,7 +61,7 @@ export default async function (page, snap) {
   while (Date.now() < until) {
     const s = await page.evaluate(() => {
       const d = window.__dbg; const g = d.game(); const b = g.monsters.find((m) => m.kind === 'wsboss');
-      return { act: b && b.act ? b.act.id.slice(7) : '', t: b && b.act ? b.act.t : 0, hero: [g.hero.x, g.hero.y], over: g.over, perils: g.perils.map((p) => p.a1).filter(Boolean) };
+      return { a1: b && b.a1 && b.act && b.act.id === 'wsboss:charge' ? { lane: b.a1.lane, scale: b.a1.scale, fx: b.a1.fx, fy: b.a1.fy } : null, act: b && b.act ? b.act.id.slice(7) : '', t: b && b.act ? b.act.t : 0, hero: [g.hero.x, g.hero.y], over: g.over, perils: g.perils.map((p) => p.a1).filter(Boolean) };
     });
     if (s.over) { log('fallen', s); break; }
     // (a picture of each move as it comes to its most telling moment)
@@ -70,7 +70,7 @@ export default async function (page, snap) {
       seen.add(s.act);
       if (down) { await finger('touchEnd', 0, 0); down = false; }
       await snap(`02_${String(seen.size).padStart(2, '0')}_${s.act}`);
-      log('move', { act: s.act, t: s.t.toFixed(2), perils: s.perils.length });
+      log('move', { act: s.act, t: s.t.toFixed(2), perils: s.perils.length, a1: s.a1 });
     }
     // (now and then he walks to another spot of the floor)
     if (cdp && Date.now() > next) {

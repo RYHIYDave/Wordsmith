@@ -2073,7 +2073,8 @@ export class Game {
     const bare = this.bareDungeon();
     // (ENDLESS MODE: how many words a monster carries goes by its strength's depth, `power`; a lair boss's three by its floor)
     const P = this.power;
-    const want = pack ? pack.words.length : bare ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (P >= 10 ? 3 : P >= 3 ? 2 : 1) : elite ? (P >= 6 ? 2 : 1) : 0;
+    // (ENDLESS_KEY: the final boss carries no words of the floors': he is himself, his words his own five)
+    const want = pack ? pack.words.length : bare || kind === 'wsboss' ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (P >= 10 ? 3 : P >= 3 ? 2 : 1) : elite ? (P >= 6 ? 2 : 1) : 0;
     const words: WordId[] = pack ? [...pack.words] : this.drawWords(rng, want);
     // (MONSTER PACKS: a minion has its leader's words at half strength)
     let half: WordId[] = pack && pack.rarity === 'minion' ? [...pack.words] : [];
@@ -2852,8 +2853,8 @@ export class Game {
     const f = this.level.floor;
     this.flow = new Uint16Array(f.w * f.h);
     const rng = new RNG(seed ^ 0x5bd1e995);
-    const lot = new RNG(seed ^ 0x2c1b3c6d);
-    this.boss = this.spawn('wsboss', FINAL_BOSS_AT.x, FINAL_BOSS_AT.y, -2, 0, true, rng, lot);
+    // (no words of the endless levels' on him: he is himself, and his words are his own five)
+    this.boss = this.spawn('wsboss', FINAL_BOSS_AT.x, FINAL_BOSS_AT.y, -2, 0, true, rng, null);
     this.boss.fx = FINAL_BOSS_AT.fx;
     this.boss.fy = FINAL_BOSS_AT.fy;
     this.updateVision(1);
@@ -11982,6 +11983,11 @@ export class Game {
   private updateVision(dt: number): void {
     const L = this.level;
     if (L.town) return;
+    // (ENDLESS_KEY: the bottom of the shaft is seen whole: a round floor in the portal's light, nothing in it to hide behind)
+    if (L.final) {
+      L.visible.fill(1);
+      return;
+    }
     this.visionT -= dt;
     if (this.visionT > 0) return;
     this.visionT = 0.1;

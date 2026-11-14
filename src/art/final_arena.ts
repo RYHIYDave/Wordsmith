@@ -19,6 +19,23 @@ export const FINAL_PLACE = { w: 24, h: 24, cx: 12, cy: 12, floor: 8.0, rubble: 8
 export const FINAL_ARRIVE = { x: FINAL_PLACE.cx + 3.0, y: FINAL_PLACE.cy + 3.0, fx: -Math.SQRT1_2, fy: -Math.SQRT1_2 } as const;
 export const FINAL_BOSS_AT = { x: FINAL_PLACE.cx - 3.4, y: FINAL_PLACE.cy - 3.4, fx: Math.SQRT1_2, fy: Math.SQRT1_2 } as const;
 
+/** Whether a body of radius `r` may stand at (x, y): on the floor, held off its edge by its round. */
+export function onArena(x: number, y: number, r: number): boolean {
+  return Math.hypot(x - FINAL_PLACE.cx, y - FINAL_PLACE.cy) <= FINAL_PLACE.floor - r;
+}
+
+/** How far (tiles) from (x, y) along (dx, dy) the floor goes before its edge, for a body of radius `r` (0 if it is off it). */
+export function toEdge(x: number, y: number, dx: number, dy: number, r: number): number {
+  const ox = x - FINAL_PLACE.cx;
+  const oy = y - FINAL_PLACE.cy;
+  const R = FINAL_PLACE.floor - r;
+  const b = ox * dx + oy * dy;
+  const c = ox * ox + oy * oy - R * R;
+  const disc = b * b - c;
+  if (disc < 0) return 0;
+  return Math.max(0, -b + Math.sqrt(disc));
+}
+
 /** The ground's picture, in game pixels from tile (0, 0): its corner and size (two picture pixels to a game pixel). */
 export const FINAL_GROUND = { gx: -360, gy: (FINAL_PLACE.cx + FINAL_PLACE.cy) * 8 - 112 - 170, w: 720, h: 112 * 2 + 170 + 20 };
 const MID_Y = (FINAL_PLACE.cx + FINAL_PLACE.cy) * 8;
