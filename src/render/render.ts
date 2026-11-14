@@ -3801,7 +3801,8 @@ export class Renderer {
         }
       } else {
         const w = L.ways?.way;
-        if (w && game.turnInFor() && L.explored[Math.floor(w.y) * f.w + Math.floor(w.x)]) this.questMarks.push({ x: wx(cam, w.x, w.y), y: wy(cam, w.x, w.y) - WAY_MARK_LIFT });
+        // (ENDLESS MODE, NO STORY: none on an endless level: game.ts storyHere)
+        if (w && game.storyHere && game.turnInFor() && L.explored[Math.floor(w.y) * f.w + Math.floor(w.x)]) this.questMarks.push({ x: wx(cam, w.x, w.y), y: wy(cam, w.x, w.y) - WAY_MARK_LIFT });
       }
     }
     // (EXIT_LABELS: a floor's way out, once its boss has fallen and it has opened, carries its name as they do: game/exit_labels.ts)
