@@ -143,7 +143,8 @@ export function piecesTaken(bits: number | undefined): number {
 }
 
 /**
- * THE MUSTER ROLL (MUSTER: OFF until his yes to its pictures): the strongholds' own quest, floors 6 to 10. Planned with him
+ * THE MUSTER ROLL (MUSTER: ON at his yes to its pictures, 13 Nov 2026: “Yes, switch it on (Recommended)”): the strongholds' own
+ * quest, floors 6 to 10. Planned with him
  * 13 Nov 2026 (his doc "Wordsmith Act 1: The Descent (Levels 6–10)", its "Side quest: The Muster Roll"). His words, 18:03:
  * “Yeah we want quests pertaining to the encounter for the level set.  So a bell quest and a stronghold quest”; of its reward,
  * “How about it offers a fully modded belt amulet or ring, player chooses”; asked what to build next, “Build the Muster Roll
@@ -156,7 +157,7 @@ export function piecesTaken(bits: number | undefined): number {
  *    pick's way: game.ts layOut): one taken, the others go back; kept until taken.
  */
 export const MUSTER = {
-  on: false,
+  on: true,
   /** Pages of the roll she asks for. */
   pages: 3,
   /** What she lays out to pick from. */
