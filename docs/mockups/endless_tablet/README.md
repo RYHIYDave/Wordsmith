@@ -600,6 +600,7 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   sixteen spots burst up at random all over the room (none near another), each its own moment, each marked first; lightning
   crackles between spots near each other (a web with gaps); the hero dodges out of one marked under him into a gap and stands
   there as it detonates. The room's walls drawn.
+  HIS YES: “Yes, on to Fumes (Recommended)”.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
