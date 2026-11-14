@@ -269,11 +269,11 @@ test("the armourer's pick: one taken, the others go back; left lying, laid out a
     g.hero.clapper = 'got';
     campBeside(g, 'armourer');
     assert.ok(inner(g).handIn());
-    const ids = g.hero.laidOut!.map((it) => it.uid);
+    const ids = g.hero.laidOut!.armourer!.map((it) => it.uid);
     // (gone off and come again: the same three)
     const s = JSON.parse(JSON.stringify(g.save())) as RunSave;
     const back = Game.restore(s);
-    assert.deepEqual(back.hero.laidOut!.map((it) => it.uid), ids, 'kept in the save');
+    assert.deepEqual(back.hero.laidOut!.armourer!.map((it) => it.uid), ids, 'kept in the save');
     g.enterTown();
     const laid = g.drops.filter((d) => d.choice);
     assert.deepEqual(laid.map((d) => d.item!.uid).sort(), [...ids].sort(), 'laid out again');

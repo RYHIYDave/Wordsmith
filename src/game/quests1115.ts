@@ -31,7 +31,7 @@
 //    (asked for or not).
 // 3. BROUGHT: the armourer hangs it in the camp's bell (its picture the art chat's, behind the switch), and lays out three
 //    fully modded rares, gloves, boots and a helm: he takes one, the others go back. Until one is taken they are kept for
-//    him (Hero.laidOut), and laid out again each time he comes into the camp.
+//    him (Hero.laidOut.armourer), and laid out again each time he comes into the camp.
 
 import type { Item, WordId } from './types';
 import { DEEP_WORD_IDS } from './types';
@@ -42,7 +42,10 @@ export const QUESTS1115 = { on: true };
 export type Step1115 = 'asked' | 'got' | 'given';
 
 /** What of these lies on the floor as a drop ('quest' drops): one of the three pages, or the clapper. */
-export type QuestThing = 'page' | 'clapper';
+export type QuestThing = 'page' | 'clapper' | 'roll';
+
+/** Who lays out a pick of three for him (Hero.laidOut): the armourer (the clapper's), the mystic (the muster roll's, quests610.ts MUSTER). */
+export type PickBy = 'armourer' | 'mystic';
 
 export const PAGES = {
   /** How near the hero walks to the Crier's jar to take it (tiles from its middle). */
@@ -74,11 +77,17 @@ export function pagesInHand(bits: number | undefined, used: number | undefined):
   return Math.max(0, pagesTaken(bits) - (used ?? 0));
 }
 
-/** A kept offer, as read from a save: up to three items, each through `clean`. */
-export function cleanOffer(v: unknown, clean: (it: Item) => Item): Item[] | undefined {
-  if (!Array.isArray(v)) return undefined;
-  const out = v.filter((it) => !!it && typeof it === 'object').slice(0, 3).map((it) => clean(it as Item));
-  return out.length ? out : undefined;
+/** The picks laid out and not yet taken, as read from a save: each giver's up to three items, each through `clean`. */
+export function cleanLaidOut(v: unknown, clean: (it: Item) => Item): Partial<Record<PickBy, Item[]>> | undefined {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
+  const out: Partial<Record<PickBy, Item[]>> = {};
+  for (const by of ['armourer', 'mystic'] as const) {
+    const list = (v as Record<string, unknown>)[by];
+    if (!Array.isArray(list)) continue;
+    const items = list.filter((it) => !!it && typeof it === 'object').slice(0, 3).map((it) => clean(it as Item));
+    if (items.length) out[by] = items;
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 export const QUEST1115_TEXT = {
@@ -100,6 +109,6 @@ export const QUEST1115_TEXT = {
   clapperLabel: 'Bell clapper',
   clapperGivePrompt: 'Armourer: the clapper',
   clapperGiven: 'The armourer hangs the clapper in the camp\'s bell, and it rings. "For your trouble. Take your pick of the three."',
-  offerAgain: 'Your pick is laid out by the forge.',
-  offerTaken: 'The armourer takes the others back.',
+  offerAgain: (by: PickBy) => (by === 'armourer' ? 'Your pick is laid out by the forge.' : 'Your pick is laid out by the mystic.'),
+  offerTaken: (by: PickBy) => `The ${by} takes the others back.`,
 };

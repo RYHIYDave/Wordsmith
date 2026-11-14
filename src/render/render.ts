@@ -159,10 +159,10 @@ import { act1Def } from '../game/act1';
 import { holdShows, inHold } from '../game/act1_layout';
 import { risenBy, risingSprite } from './arrivals';
 import { drawPillars } from './pillars';
-import { EYRIE_SCENE, QUEST610_TEXT } from '../game/quests610';
+import { EYRIE_SCENE, MUSTER_TEXT, QUEST610_TEXT } from '../game/quests610';
 import { QUEST1115_TEXT } from '../game/quests1115';
 import { CRIERS_JAR } from '../game/act2/undercity';
-import { clapperSprite, pageSprite } from '../art/quest1115';
+import { clapperSprite, pageSprite, rollSprite } from '../art/quest1115';
 import { shrineBellFrames } from '../art/floor11';
 import { onTop } from '../game/act2/quiettower';
 /** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
@@ -3762,11 +3762,11 @@ export class Renderer {
       }
       // (QUESTS1115, behind its switch: an unstruck page, or the clapper, sculpted: art/quest1115.ts)
       if (dr.kind === 'quest') {
-        const qs = dr.thing === 'clapper' ? clapperSprite() : pageSprite();
+        const qs = dr.thing === 'clapper' ? clapperSprite() : dr.thing === 'roll' ? rollSprite() : pageSprite();
         this.stand(dr.x + dr.y - 0.2, qs, sx, sy - pop);
         hid?.(dr.x, dr.y);
         if (qs.lights) this.propLit.push({ s: qs, x: Math.round(sx), y: Math.round(sy - pop) });
-        this.labels.push({ x: sx, y: sy - 18, text: dr.thing === 'clapper' ? QUEST1115_TEXT.clapperLabel : QUEST1115_TEXT.pageLabel, color: '#e8dcc0' });
+        this.labels.push({ x: sx, y: sy - 18, text: dr.thing === 'clapper' ? QUEST1115_TEXT.clapperLabel : dr.thing === 'roll' ? MUSTER_TEXT.label : QUEST1115_TEXT.pageLabel, color: '#e8dcc0' });
         if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, ['#7fe8ff', P.white]);
         continue;
       }

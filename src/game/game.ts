@@ -61,8 +61,9 @@ import { giveBackAll, inTheSave } from './act1_rules/physician';
 import { rallyOf } from './act1_rules/kknight';
 import { blobDist, inHold } from './act1_layout';
 import { ARRIVALS, riftSize } from './arrivals';
-import { EYRIE_LINES, EYRIE_SCENE, PILLARS, QUEST610_TEXT, QUESTS610, lightPillars, pillarsBurning, piecesInHand, piecesTaken } from './quests610';
-import { CLAPPER_REWARD, PAGES, QUEST1115_TEXT, QUESTS1115, cleanOffer, jarWords, pagesInHand, pagesTaken } from './quests1115';
+import { EYRIE_LINES, EYRIE_SCENE, MUSTER, MUSTER_TEXT, PILLARS, QUEST610_TEXT, QUESTS610, lightPillars, pillarsBurning, piecesInHand, piecesTaken } from './quests610';
+import { CLAPPER_REWARD, PAGES, QUEST1115_TEXT, QUESTS1115, cleanLaidOut, jarWords, pagesInHand, pagesTaken } from './quests1115';
+import type { PickBy } from './quests1115';
 import { COLOSSUS, JETTY, STONE, stoneToWorld, worldToStone } from './colossus_fight';
 import type { ColossusFight } from './colossus_fight';
 /** (COLOSSUS) How near the landing on the boss's ground carries the hero across to the stone (tiles). */
@@ -169,7 +170,10 @@ export interface RunSave {
   jar?: 'asked' | 'got' | 'given';
   pages?: number;
   clapper?: 'asked' | 'got' | 'given';
-  laidOut?: Item[];
+  laidOut?: Partial<Record<PickBy, Item[]>>;
+  /** (MUSTER: game/quests610.ts) */
+  roll?: 'asked' | 'given';
+  rollPages?: number;
   citySeen?: boolean;
   pieces?: number;
   meldAsk?: boolean;
@@ -1023,7 +1027,7 @@ export class Game {
   save(): RunSave {
     const h = this.hero;
     let maxUid = 0;
-    for (const it of [...EQUIP_SLOTS.map((s) => h.gear[s]), ...h.bag, ...this.meta.stash, ...this.shops.armourer, ...this.shops.mystic, ...(h.laidOut ?? [])]) if (it) maxUid = Math.max(maxUid, it.uid);
+    for (const it of [...EQUIP_SLOTS.map((s) => h.gear[s]), ...h.bag, ...this.meta.stash, ...this.shops.armourer, ...this.shops.mystic, ...Object.values(h.laidOut ?? {}).flat()]) if (it) maxUid = Math.max(maxUid, it.uid);
     const run: RunSave = {
       v: 1, cls: h.cls, seed: this.seed, level: h.level, xp: h.xp, pending: h.pending, attrs: { ...h.attrs },
       gear: { ...h.gear }, bag: [...h.bag], words: savedWords(this.ringWord ? { ...h.words, [this.ringWord.word]: h.words[this.ringWord.word] + 1 } : { ...h.words }),
@@ -1058,7 +1062,11 @@ export class Game {
       ...(QUESTS15.on ? { furnace: h.furnace, meldAsk: h.meldAsk } : {}),
       ...(QUESTS610.on ? { feather: h.feather, citySeen: h.citySeen, pieces: h.pieces } : {}),
       // (QUESTS1115: nothing of it in a save made with its switch off)
-      ...(QUESTS1115.on ? { jar: h.jar, pages: h.pages, clapper: h.clapper, laidOut: h.laidOut ? [...h.laidOut] : undefined } : {}),
+      ...(QUESTS1115.on ? { jar: h.jar, pages: h.pages, clapper: h.clapper } : {}),
+      // (MUSTER: the strongholds' roll)
+      ...(MUSTER.on ? { roll: h.roll, rollPages: h.rollPages } : {}),
+      // (the picks laid out and not yet taken: the armourer's, the mystic's)
+      ...(h.laidOut ? { laidOut: Object.fromEntries(Object.entries(h.laidOut).map(([k, v]) => [k, [...(v ?? [])]])) } : {}),
     };
     // (ACT 2, THE HUSH: a word the Physician holds is the hero's in the save, where it would go back to: game/act1_rules/physician.ts)
     inTheSave(run, this.monsters);
@@ -1130,7 +1138,10 @@ export class Game {
     h.jar = step(s.jar);
     h.pages = typeof s.pages === 'number' && s.pages >= 0 && s.pages <= 7 ? Math.floor(s.pages) : undefined;
     h.clapper = step(s.clapper);
-    h.laidOut = cleanOffer(s.laidOut, migrateItem);
+    h.laidOut = cleanLaidOut(s.laidOut, migrateItem);
+    // (MUSTER: the mystic's ask and the roll brought; its pages taken)
+    h.roll = s.roll === 'asked' || s.roll === 'given' ? s.roll : undefined;
+    h.rollPages = typeof s.rollPages === 'number' && s.rollPages >= 0 ? Math.min(MUSTER.pages, Math.floor(s.rollPages)) : undefined;
     // (THE SKILL TREES: only this class's talents, each once, in an order that could have been taken)
     // (THE RANGER'S COMPANIONS: the picks, only of their own groups)
     if (COMPANIONS.on && s.pets) h.pets = cleanPicks(s.pets);
@@ -3805,6 +3816,8 @@ export class Game {
         const items = LOOT2.on ? LOOT2.hold[n] : HOLD_TUNE.items[n];
         for (let i = 0; i < items; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(LOOT2.on ? (i < 2 ? 4 : 2) : i === 0 ? 2 : 1), null);
         this.addDrop('gold', at.x, at.y, this.rng.int(15, 30) * Math.max(1, this.power) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
+        // (MUSTER: a page of the cult's muster roll)
+        this.rollPageAt(at.x, at.y);
         this.sfx('rare');
         this.msg('The stronghold falls.', MSG.good);
       }
@@ -13768,11 +13781,11 @@ export class Game {
    * HAND_IN (game/defs.ts): what the hero would give the one he stands beside in town, if anything:
    * the master rune-stone, to the wordsmith. Null with HAND_IN off (then it is given by walking up).
    */
-  handInNear(): 'stone' | 'meldstone' | 'quest' | 'furnace' | 'reward' | 'meldAsk' | 'featherAsk' | 'featherGive' | 'jarAsk' | 'jarGive' | 'clapperAsk' | 'clapperGive' | null {
+  handInNear(): 'stone' | 'meldstone' | 'quest' | 'furnace' | 'reward' | 'meldAsk' | 'featherAsk' | 'featherGive' | 'rollAsk' | 'rollGive' | 'jarAsk' | 'jarGive' | 'clapperAsk' | 'clapperGive' | null {
     if (!HAND_IN.on || !this.level.town) return null;
     const st = this.stationNear();
-    // (QUESTS610: the mystic's feather quest, given and brought; QUESTS1115: then her jar)
-    if (st === 'mystic') return (QUESTS610.on ? this.mysticDue() : null) ?? this.jarDue();
+    // (QUESTS610: the mystic's feather quest, given and brought; MUSTER: then the strongholds' roll; QUESTS1115: then her jar)
+    if (st === 'mystic') return (QUESTS610.on ? this.mysticDue() : null) ?? this.rollDue() ?? this.jarDue();
     // (QUESTS15: the armourer's furnace quest, given and rewarded; QUESTS1115: then his clapper)
     if (st === 'armourer') return (QUESTS15.on ? this.armourerDue() : null) ?? this.clapperDue();
     if (st !== 'wordsmith') return null;
@@ -13793,7 +13806,7 @@ export class Game {
     const out: Station[] = [];
     if (h.quest || h.meld === 'stone' || this.questDue() || this.meldAskDue()) out.push('wordsmith');
     if ((QUESTS15.on && this.armourerDue()) || this.clapperDue()) out.push('armourer');
-    if ((QUESTS610.on && this.mysticDue()) || this.jarDue()) out.push('mystic');
+    if ((QUESTS610.on && this.mysticDue()) || this.rollDue() || this.jarDue()) out.push('mystic');
     return out;
   }
 
@@ -13804,7 +13817,8 @@ export class Game {
     if (h.quest || h.meld === 'stone') return 'wordsmith';
     if (QUESTS15.on && h.ring && h.furnace === 'out') return 'armourer';
     if (QUESTS610.on && h.feather === 'got') return 'mystic';
-    // (QUESTS1115)
+    // (MUSTER, QUESTS1115)
+    if (MUSTER.on && h.roll !== 'given' && (h.rollPages ?? 0) >= MUSTER.pages) return 'mystic';
     if (QUESTS1115.on && h.jar === 'got') return 'mystic';
     if (QUESTS1115.on && h.clapper === 'got') return 'armourer';
     return null;
@@ -13934,12 +13948,12 @@ export class Game {
     // (the clapper: hung in the camp's bell; his pick of three fully modded rares laid out before the armourer)
     h.clapper = 'given';
     const ilvl = Math.max(1, this.power, Math.min(15, this.cleared));
-    h.laidOut = CLAPPER_REWARD.slots.map((sl) => this.forHim(rollFullRare(ilvl, sl, this.rng, { cls: h.cls })));
+    h.laidOut = { ...(h.laidOut ?? {}), armourer: CLAPPER_REWARD.slots.map((sl) => this.forHim(rollFullRare(ilvl, sl, this.rng, { cls: h.cls }))) };
     this.emit({ t: 'questGiven', x, y });
     this.sfx('rare');
     this.msg(QUEST1115_TEXT.clapperGiven, MSG.quest);
     this.campBellHung(true);
-    this.layOut(x, y);
+    this.layOut('armourer', x, y);
   }
 
   /**
@@ -13982,9 +13996,9 @@ export class Game {
     }
   }
 
-  /** (QUESTS1115) The armourer's pick, laid out before him at (x, y), a piece on each of three tiles of floor apart, nearest the hero first. */
-  private layOut(x: number, y: number): void {
-    const items = this.hero.laidOut;
+  /** (QUESTS1115, MUSTER) A pick of three, laid out before the armourer or the mystic at (x, y), a piece on each of three tiles of floor apart, nearest the hero first. */
+  private layOut(by: PickBy, x: number, y: number): void {
+    const items = this.hero.laidOut?.[by];
     if (!items?.length) return;
     const L = this.level;
     const f = L.floor;
@@ -14008,27 +14022,77 @@ export class Game {
       if (chosen.length >= items.length) break;
       if (chosen.every((c) => Math.hypot(c.x - sp.x, c.y - sp.y) >= CLAPPER_REWARD.apart)) chosen.push(sp);
     }
-    this.drops = this.drops.filter((d) => !d.choice);
+    this.drops = this.drops.filter((d) => d.choice !== by);
     items.forEach((it, i) => {
       const at = chosen[i] ?? this.floorNear(x + (i - 1) * CLAPPER_REWARD.apart, y + CLAPPER_REWARD.before);
-      this.drops.push({ x: at.x, y: at.y, kind: 'item', gold: 0, item: it, word: null, age: 0, choice: true });
+      this.drops.push({ x: at.x, y: at.y, kind: 'item', gold: 0, item: it, word: null, age: 0, choice: by });
     });
   }
 
-  /** (QUESTS1115) Coming into the camp with the armourer's pick still laid out for him: it is laid out again. */
+  /** (QUESTS1115, MUSTER) Coming into town with a pick still laid out for him (the armourer's, the mystic's): it is laid out again. */
   private laidOutAgain(): void {
-    if (!QUESTS1115.on || this.practice || !this.hero.laidOut?.length) return;
-    const ar = this.level.stations.find((s) => s.kind === 'armourer');
-    if (!ar) return;
-    this.layOut(ar.x, ar.y);
-    this.msg(QUEST1115_TEXT.offerAgain, MSG.quest);
+    const laid = this.hero.laidOut;
+    if (!laid || this.practice) return;
+    for (const by of ['armourer', 'mystic'] as const) {
+      if (!laid[by]?.length) continue;
+      const st = this.level.stations.find((s) => s.kind === by);
+      if (!st) continue;
+      this.layOut(by, st.x, st.y);
+      this.msg(QUEST1115_TEXT.offerAgain(by), MSG.quest);
+    }
   }
 
   /** (QUESTS1115) One of the armourer's pick taken (already in the bag): the others laid with it go back. */
   private pickTaken(dr: Drop): void {
-    this.drops = this.drops.filter((d) => d !== dr && !d.choice);
-    this.hero.laidOut = undefined;
-    this.msg(QUEST1115_TEXT.offerTaken, MSG.quest);
+    const by = dr.choice!;
+    const h = this.hero;
+    this.drops = this.drops.filter((d) => d !== dr && d.choice !== by);
+    if (h.laidOut) {
+      delete h.laidOut[by];
+      if (!Object.keys(h.laidOut).length) h.laidOut = undefined;
+    }
+    this.msg(QUEST1115_TEXT.offerTaken(by), MSG.quest);
+  }
+
+  /** (MUSTER, game/quests610.ts) What the mystic has for this hero of the strongholds' roll: her ask (after the feather's), or the roll brought. */
+  rollDue(): 'rollAsk' | 'rollGive' | null {
+    const h = this.hero;
+    if (!MUSTER.on || this.practice || this.trial) return null;
+    if (h.roll !== 'given' && (h.rollPages ?? 0) >= MUSTER.pages) return 'rollGive';
+    if (h.roll === undefined && this.wayDepth >= 6 && (h.feather !== undefined || !QUESTS610.on)) return 'rollAsk';
+    return null;
+  }
+
+  /** (MUSTER) The mystic, at (x, y): asks for the roll, or takes it, tells what it names, and lays out his pick. */
+  private rollHandIn(what: 'rollAsk' | 'rollGive', x: number, y: number): void {
+    const h = this.hero;
+    this.emit({ t: 'questGiven', x, y });
+    if (what === 'rollAsk') {
+      h.roll = 'asked';
+      this.sfx('power', 0.6);
+      this.msg(MUSTER_TEXT.ask, MSG.quest);
+      return;
+    }
+    h.roll = 'given';
+    const ilvl = Math.max(1, this.power, Math.min(10, this.cleared));
+    h.laidOut = { ...(h.laidOut ?? {}), mystic: MUSTER.slots.map((sl) => this.forHim(rollFullRare(ilvl, sl, this.rng, { cls: h.cls }))) };
+    this.sfx('rare');
+    this.msg(MUSTER_TEXT.given, MSG.quest);
+    this.layOut('mystic', x, y);
+  }
+
+  /** (MUSTER) A stronghold of the cult won on floors 6 to 10: a page of its roll with its reward, while he has not all he needs. */
+  private rollPageAt(x: number, y: number): void {
+    const h = this.hero;
+    if (!MUSTER.on || this.practice || this.inEndless || this.depth < 6 || this.depth > 10 || h.roll === 'given') return;
+    const lying = this.drops.filter((d) => d.kind === 'quest' && d.thing === 'roll').length;
+    if ((h.rollPages ?? 0) + lying >= MUSTER.pages) return;
+    const at = this.floorNear(x, y);
+    this.addDrop('quest', at.x, at.y, 0, null, null);
+    const d = this.drops[this.drops.length - 1];
+    d.thing = 'roll';
+    d.x = at.x;
+    d.y = at.y;
   }
 
   /** (QUESTS1115) Is the hero after the unstruck pages (the jar brought), and has he not yet page `n`? */
@@ -14058,6 +14122,13 @@ export class Game {
   /** (QUESTS1115) A page or the clapper picked up. */
   private questThingTaken(dr: Drop): void {
     const h = this.hero;
+    if (dr.thing === 'roll') {
+      h.rollPages = Math.min(MUSTER.pages, (h.rollPages ?? 0) + 1);
+      this.sfx('rare');
+      this.msg(MUSTER_TEXT.got(h.rollPages), MSG.quest);
+      this.emit({ t: 'text', x: h.x, y: h.y, text: `MUSTER ROLL ${h.rollPages} / ${MUSTER.pages}`, color: '#e8dcc0' });
+      return;
+    }
     if (dr.thing === 'clapper') {
       h.clapper = 'got';
       this.sfx('rare');
@@ -14394,6 +14465,13 @@ export class Game {
       this.mysticHandIn(what, my.x, my.y);
       return true;
     }
+    // (MUSTER: the mystic's roll)
+    if (what === 'rollAsk' || what === 'rollGive') {
+      const my = this.level.stations.find((s) => s.kind === 'mystic');
+      if (!my) return false;
+      this.rollHandIn(what, my.x, my.y);
+      return true;
+    }
     // (QUESTS1115: the mystic's jar, the armourer's clapper)
     if (what === 'jarAsk' || what === 'jarGive' || what === 'clapperAsk' || what === 'clapperGive') {
       const by = this.level.stations.find((s) => s.kind === (what === 'jarAsk' || what === 'jarGive' ? 'mystic' : 'armourer'));
@@ -14487,7 +14565,7 @@ export class Game {
       if (!st) return null;
       // (HAND_IN: beside the one a quest item is for, his prompt says it is given)
       const giving = this.handInNear();
-      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : giving === 'furnace' ? QUEST_TEXT.furnaceAskPrompt : giving === 'reward' ? QUEST_TEXT.rewardPrompt : giving === 'meldAsk' ? QUEST_TEXT.meldAskPrompt : giving === 'featherAsk' ? QUEST610_TEXT.featherAskPrompt : giving === 'featherGive' ? QUEST610_TEXT.featherGivePrompt : giving === 'jarAsk' ? QUEST1115_TEXT.jarAskPrompt : giving === 'jarGive' ? QUEST1115_TEXT.jarGivePrompt : giving === 'clapperAsk' ? QUEST1115_TEXT.clapperAskPrompt : giving === 'clapperGive' ? QUEST1115_TEXT.clapperGivePrompt : HAND_IN.prompt;
+      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : giving === 'furnace' ? QUEST_TEXT.furnaceAskPrompt : giving === 'reward' ? QUEST_TEXT.rewardPrompt : giving === 'meldAsk' ? QUEST_TEXT.meldAskPrompt : giving === 'featherAsk' ? QUEST610_TEXT.featherAskPrompt : giving === 'featherGive' ? QUEST610_TEXT.featherGivePrompt : giving === 'rollAsk' ? MUSTER_TEXT.askPrompt : giving === 'rollGive' ? MUSTER_TEXT.givePrompt : giving === 'jarAsk' ? QUEST1115_TEXT.jarAskPrompt : giving === 'jarGive' ? QUEST1115_TEXT.jarGivePrompt : giving === 'clapperAsk' ? QUEST1115_TEXT.clapperAskPrompt : giving === 'clapperGive' ? QUEST1115_TEXT.clapperGivePrompt : HAND_IN.prompt;
       return st === 'gate' ? (this.level.rim ? `Gate: words for ${endlessName(this.endless)}` : `Gate: dungeon ${this.depth}`) : st === 'wordsmith' ? 'Wordsmith' : st === 'armourer' ? 'Armourer' : st === 'mystic' ? 'Mystic' : st === 'lexicon' ? 'Lexicon' : st === 'stranger' ? 'Stranger' : 'Stash';
     }
     // (QUESTS610, PILLARS: beside a burning obelisk, with a piece in hand)

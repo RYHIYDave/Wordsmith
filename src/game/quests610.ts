@@ -141,3 +141,33 @@ export function piecesTaken(bits: number | undefined): number {
   const b = bits ?? 0;
   return (b & 1) + ((b >> 1) & 1) + ((b >> 2) & 1);
 }
+
+/**
+ * THE MUSTER ROLL (MUSTER: OFF until his yes to its pictures): the strongholds' own quest, floors 6 to 10. Planned with him
+ * 13 Nov 2026 (his doc "Wordsmith Act 1: The Descent (Levels 6–10)", its "Side quest: The Muster Roll"). His words, 18:03:
+ * “Yeah we want quests pertaining to the encounter for the level set.  So a bell quest and a stronghold quest”; of its reward,
+ * “How about it offers a fully modded belt amulet or ring, player chooses”; asked what to build next, “Build the Muster Roll
+ * (Recommended)”. So:
+ * 1. THE PAGES: every stronghold of the cult's won on floors 6 to 10 gives up a page of its muster roll, with its reward, until
+ *    he has `pages` of them (Hero.rollPages), asked for or not.
+ * 2. THE MYSTIC'S ASK: once she has asked for the feather (the gate down the mountain open), she asks for the roll.
+ * 3. BROUGHT, `pages` of them: she reads in it the cult's inner circle, the SILENT ORDER, and their way into the city, the sewers
+ *    (Act 2's beginning); and lays out his pick of three fully modded rares, a belt, an amulet and a ring (the armourer's clapper
+ *    pick's way: game.ts layOut): one taken, the others go back; kept until taken.
+ */
+export const MUSTER = {
+  on: false,
+  /** Pages of the roll she asks for. */
+  pages: 3,
+  /** What she lays out to pick from. */
+  slots: ['belt', 'amulet', 'ring'] as const,
+};
+
+export const MUSTER_TEXT = {
+  ask: 'The mystic: "Every one of the cult\'s strongholds keeps a page of its muster roll. Bring me three, and we will know who truly leads them."',
+  askPrompt: 'Mystic: a task',
+  got: (k: number) => `MUSTER ROLL PAGE (${k} of 3).`,
+  label: 'Muster roll page',
+  givePrompt: 'Mystic: the muster roll',
+  given: 'The mystic reads the roll: "Under all their names, a circle with none: the SILENT ORDER. They will not come through the gate. They will come in under the city, through the sewers." She lays out three pieces: take your pick.',
+};

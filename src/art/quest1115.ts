@@ -19,14 +19,29 @@ import type { Ramp } from './kit';
 import { CYAN, hash, mix } from './kit';
 
 let PAGE: Sprite | null = null;
+let ROLL: Sprite | null = null;
 let CLAPPER: Sprite | null = null;
+
+/** The cult's wax: its violet, dark, a seal (not a glow: his rulebook, only the enemy's eyes, runes and fire glow pink). */
+const WAX: Ramp = ['#22102a', '#36183e', '#4e2456', '#6a3472', '#84468a'];
 
 /** The soft shadow on the floor: a dark oval, half there (no seam round it). */
 const SHADOW = '#08060c';
 
 /** An unstruck page lying on the floor (anchored where its middle lies). */
 export function pageSprite(): Sprite {
-  if (PAGE) return PAGE;
+  return (PAGE ??= leaf('page'));
+}
+
+/**
+ * (MUSTER, game/quests610.ts) A page of the cult's muster roll lying on the floor: the same old leaf, written as a list of names
+ * (short lines, each with its mark), the cult's violet seal pressed at its foot; no cyan in it (it is the enemy's).
+ */
+export function rollSprite(): Sprite {
+  return (ROLL ??= leaf('roll'));
+}
+
+function leaf(kind: 'page' | 'roll'): Sprite {
   const S = scene(64, 40, 32, 22);
   // (the leaf's own frame, turned a little on the floor: `a` along its lines, `b` down the page)
   const turn = 0.32;
@@ -53,6 +68,21 @@ export function pageSprite(): Sprite {
     const eb = B - Math.abs(b);
     const rough = hash(Math.floor(a * 2), Math.floor(b * 2), 1151);
     if (ea < 0.9 + rough * 0.6 || eb < 0.9 + rough * 0.6) return PAPER[2];
+    if (kind === 'roll') {
+      // the cult's seal, pressed at the foot of the list, a drip of wax under it
+      const sd = Math.hypot(a - 6.5, b - 5.2);
+      if (sd < 2.6 || (Math.abs(a - 7.6) < 0.5 && b > 5.2 && b < 8.4)) return sd < 1.2 ? WAX[1] : sd > 2.1 ? WAX[2] : WAX[3];
+      // the names, a list: short lines, each with its mark at the left
+      const row = (b + B - 1.8) / 1.85;
+      const n = Math.floor(row);
+      const f = row - n;
+      if (n >= 0 && n <= 7 && f < 0.4) {
+        if (a > -A + 2 && a < -A + 2.9) return BLACK[2];
+        const len = 6 + 9 * hash(n, 3, 1159);
+        if (a > -A + 3.8 && a < -A + 3.8 + len && !(a > -A + 3.8 + len * 0.45 && a < -A + 4.6 + len * 0.45)) return BLACK[3];
+      }
+      return hash(Math.floor(a), Math.floor(b), 1157) < 0.08 ? PAPER[3] : PAPER[4];
+    }
     // the capital: the first letter, the friend's cyan
     if (a > -A + 1.8 && a < -A + 4.6 && b > -B + 1.7 && b < -B + 4.6) {
       const inner = a > -A + 2.5 && a < -A + 3.9 && b > -B + 2.4 && b < -B + 3.9;
@@ -80,8 +110,7 @@ export function pageSprite(): Sprite {
   const mid = P(A - CURL * 0.22, B - CURL * 0.22, 3.4);
   const nrm: V3 = [-0.45, -0.45, 0.77];
   S.quad([k0, mid, k1, tip], (u, v) => (u + v > 1.6 ? PAPER[1] : toneAt(nrm, PAPER, 0.05)), 2);
-  PAGE = done(S, 32, 22, [{ at: [-4, -4, 1], r: 9, color: CYAN[2], a: 0.18 }]);
-  return PAGE;
+  return kind === 'page' ? done(S, 32, 22, [{ at: [-4, -4, 1], r: 9, color: CYAN[2], a: 0.18 }]) : done(S, 32, 22);
 }
 
 /** The Bells' iron, rung: a breath of the friend's cyan in its lights (as a rung bell's metal, art/floor11.ts). */
@@ -133,5 +162,6 @@ export function clapperSprite(): Sprite {
 /** Forget what was made (a test's painting without a canvas). */
 export function forgetQuest1115Art(): void {
   PAGE = null;
+  ROLL = null;
   CLAPPER = null;
 }
