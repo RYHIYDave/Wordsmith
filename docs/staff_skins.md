@@ -1,8 +1,7 @@
 # THE MAGE'S UNIQUE STAVES IN HER HANDS: FOR THE MAIN CHAT (14 Nov 2026)
 
 A chat of his of 13 and 14 Nov (the skins chat), on `art/staff-skins`, from `main` 8ccc8b9 (25.3.19). Not the main chat: `main`
-is untouched, nothing is published. Behind a switch that is off (`STAFF_SKINS`, src/art/staff_skins.ts) until his yes to her
-in the game.
+is untouched, nothing is published. THE SWITCH (`STAFF_SKINS`, src/art/staff_skins.ts) IS ON, at his yes to her in the game.
 
 ## His words
 
@@ -19,6 +18,9 @@ in the game.
 - Shown the Rod: “Yes, the Rod's right (Recommended)”.
 - “will it swap seamlessly if im switching between different staves?”; told what each way costs on his phone (below), by
   pop-up: “Bake each staff whole (Recommended)”.
+- Shown her in the game with each staff (docs/mockups/staff_skins/pictures/staves_in_game.mp4, put on from her bag as a player
+  does, on floor 11), asked by pop-up whether to turn the four on for tonight's update, by 16:11 Eastern: “Yes, switch them on
+  (Recommended)”.
 
 ## What it is
 
@@ -67,9 +69,9 @@ in the game.
 ## What the main chat must do
 
 - Bring in `art/staff-skins`. THE HEROES' BAKE HAS A NEW MARK (art/mage_up.ts changed, though she is painted the same):
-  bake again as the build does.
-- With the switch off nothing changes in play. With it on (his yes), the bake has four more groups (her set four times more:
-  about 8 MB more on the server, fetched only when she holds that staff).
+  bake again as the build does. With the switch on the bake has four more groups, `mage-crook`, `mage-ebb`,
+  `mage-resonance`, `mage-rod` (her set four times more: about 8 MB more on the server, fetched only when she holds that
+  staff), so the bake takes longer by about four of her groups.
 - Checks: `node tools/unit.mjs --changed` (tests/staff_skins.test.ts, tests/staff_skins_game.test.ts, tests/baked.test.ts);
   the published page's own playtests, the heroes' bake taken in (tools/scenarios/baked.mjs).
 - Known limit: where there is no bake (it failed, or a page built without one), her pictures are painted by the worker as

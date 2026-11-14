@@ -1,4 +1,4 @@
-// THE MAGE'S UNIQUE STAVES IN HER HANDS, IN THE GAME (art/staff_skins.ts STAFF_SKINS, off; switched on here, for this page only):
+// THE MAGE'S UNIQUE STAVES IN HER HANDS, IN THE GAME (art/staff_skins.ts STAFF_SKINS; made while it was off, so switched on here):
 // a film for the owner of her with each staff, put in her hand as a player would (the unique made and put on from her bag), on
 // floor 11, the Gate Ward, and stills of her with each in town. Her own staff first, then the Shepherd's Crook, Ebb and Flow,
 // Resonance and the Kindling Rod. A page built as the game is: node tools/build_to.mjs dist/staff_look.html

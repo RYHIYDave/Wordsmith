@@ -1,6 +1,6 @@
-// SKINS FOR THE MAGE'S STAFF (14 Nov 2026). BEHIND A SWITCH THAT IS OFF: `STAFF_SKINS`. Nothing of the game draws from this file
-// while it is off; with it off the game's Mage is exactly as she is (her own staff is PLAIN_STAFF, art/mage_up.ts, painted as
-// it always was: tests/staff_skins.test.ts).
+// SKINS FOR THE MAGE'S STAFF (14 Nov 2026). THE SWITCH `STAFF_SKINS` IS ON, at his yes (below): the four unique staves of the
+// game are drawn in her hands. Her own staff is PLAIN_STAFF (art/mage_up.ts), painted as it always was (tests/staff_skins.test.ts);
+// with the switch off the game's Mage is exactly as she was.
 //
 // His question, 13 Nov 2026, 18:22: “How hard would it be to have weapon skins?  Like can we just put a grey stick in the mage’s
 // hand, build a basic skin for the staff, then have unique staves map over the grey stick the same way the basic staff does?  Or
@@ -38,12 +38,14 @@ import { five } from './warrior_up';
 import type { StaffId } from './heroes';
 
 /**
- * THE SWITCH: off. On, the Mage holding a unique staff is drawn holding it (render/render.ts heroArt: her place with that staff,
+ * THE SWITCH: ON, at his yes, 14 Nov 2026 (by 16:11 Eastern), shown her in the game with each staff
+ * (docs/mockups/staff_skins/pictures/staves_in_game.mp4) and asked whether to turn them on: “Yes, switch them on (Recommended)”.
+ * On, the Mage holding a unique staff is drawn holding it (render/render.ts heroArt: her place with that staff,
  * art/heroes.ts STAFF_PLACES), its pictures baked whole, a group of their own for each staff (render/baked.ts bakeGroups), as the
  * Warrior's axe and maul are: his pick, 14 Nov 2026, told the split layers would cost about an eighth more memory while she is
  * played and each staff baked whole about 2 MB of download and none: “Bake each staff whole (Recommended)”.
  */
-export const STAFF_SKINS = { on: false };
+export const STAFF_SKINS = { on: true };
 
 const SK_BROWN: Ramp = five(BROWN);
 const SK_TEAL: Ramp = five(TEAL);

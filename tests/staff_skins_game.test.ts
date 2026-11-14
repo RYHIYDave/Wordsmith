@@ -1,10 +1,11 @@
-// THE MAGE'S UNIQUE STAVES IN HER HANDS (art/staff_skins.ts STAFF_SKINS, off): which staff she holds picks her pictures, each
+// THE MAGE'S UNIQUE STAVES IN HER HANDS (art/staff_skins.ts STAFF_SKINS, on at his yes, 14 Nov 2026: “Yes, switch them on
+// (Recommended)”): which staff she holds picks her pictures, each
 // staff's a set of its own, baked whole (his pick, 14 Nov 2026: “Bake each staff whole (Recommended)”), and only the set of the
 // staff she holds is kept (render/baked.ts letGoGroup, holdOnly).
-//   1. with the switch off nothing changes: no staff is worn, no staff's group is baked;
-//   2. on: the four unique staves of the game are worn, each its own place in town and in a dungeon, its look that staff;
+//   1. the switch is on; with it off nothing changes: no staff is worn, no staff's group is baked;
+//   2. the four unique staves of the game are worn, each its own place in town and in a dungeon, its look that staff;
 //   3. her pictures in a staff's place are painted with that staff (a frame of hers with it, not as with another);
-//   4. on: each staff a bake group of its own, her in town and in a dungeon with it;
+//   4. each staff a bake group of its own, her in town and in a dungeon with it;
 //   5. a staff's set let go of: its places put back as they were, its sheets closed, and taken in again when asked;
 //      holding another staff lets the last one's go.
 
@@ -26,10 +27,15 @@ paintWithoutCanvas();
 
 const uniqueStaff = (unique: string) => ({ rarity: 3, unique });
 
-test('1. with the switch off nothing changes: no staff is worn, no staff\'s group is baked', () => {
-  assert.equal(STAFF_SKINS.on, false);
-  assert.equal(staffWorn(uniqueStaff('shepherdscrook')), null);
-  assert.ok(!Object.keys(bakeGroups(true)).some((g) => g.startsWith('mage-')));
+test('1. the switch is on; with it off nothing changes: no staff is worn, no staff\'s group is baked', () => {
+  assert.equal(STAFF_SKINS.on, true);
+  STAFF_SKINS.on = false;
+  try {
+    assert.equal(staffWorn(uniqueStaff('shepherdscrook')), null);
+    assert.ok(!Object.keys(bakeGroups(true)).some((g) => g.startsWith('mage-')));
+  } finally {
+    STAFF_SKINS.on = true;
+  }
 });
 
 test('2. on: the four unique staves of the game are worn, each its own place in town and in a dungeon, its look that staff', () => {
@@ -50,7 +56,7 @@ test('2. on: the four unique staves of the game are worn, each its own place in 
     }
     assert.equal(staffOfPlace('dungeon'), null);
   } finally {
-    STAFF_SKINS.on = false;
+    STAFF_SKINS.on = true;
   }
 });
 
@@ -82,7 +88,7 @@ test('4. on: each staff a bake group of its own, her in town and in a dungeon wi
     const all = Object.values(g).flat().map(keyName);
     assert.equal(new Set(all).size, all.length, 'none twice');
   } finally {
-    STAFF_SKINS.on = false;
+    STAFF_SKINS.on = true;
   }
 });
 
@@ -143,7 +149,7 @@ test('5. a staff\'s set let go of: its places put back, its sheets closed, taken
     assert.ok('value' in first('crook'));
     assert.equal(typeof Object.getOwnPropertyDescriptor(bakeLists(heroSides(of('rodTown') as never)[0])[0], 0)!.get, 'function', 'the Rod\'s let go of');
   } finally {
-    STAFF_SKINS.on = false;
+    STAFF_SKINS.on = true;
     g0.createImageBitmap = had;
   }
 });

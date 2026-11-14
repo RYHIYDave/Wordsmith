@@ -2,8 +2,8 @@
 // 13 Nov 2026: “can we just put a grey stick in the mage’s hand, build a basic skin for the staff, then have unique staves map
 // over the grey stick the same way the basic staff does?”; his pick “Yes, split layer (Recommended)”; shown the three staves of
 // his doc on her, 14 Nov: “Yes, all three (Recommended)”.
-//   1. the switch is off, and the game reads art/staff_skins.ts only where she is drawn, baked and loaded (what it does there:
-//      tests/staff_skins_game.test.ts);
+//   1. the switch is on (his yes, 14 Nov 2026: “Yes, switch them on (Recommended)”), and the game reads art/staff_skins.ts only
+//      where she is drawn, baked and loaded (what it does there: tests/staff_skins_game.test.ts);
 //   2. her own staff is the first skin, and painted with it she is as she was painted before it was one (the same frame);
 //   3. laid over her painted with no staff, each skin's layer gives back the whole frame painted with that staff, exactly; and
 //      no pixel of a layer that is not wholly solid lies over one of hers (so the canvas, laying one over the other, does too);
@@ -33,12 +33,13 @@ paintWithoutCanvas();
 
 const same = (a: { d: Uint8ClampedArray }, b: { d: Uint8ClampedArray }): boolean => a.d.length === b.d.length && a.d.every((v, k) => v === b.d[k]);
 
-test('1. the switch is off, and the game reads art/staff_skins.ts only where she is drawn, baked and loaded', () => {
-  assert.equal(STAFF_SKINS.on, false);
+test('1. the switch is on (his yes), and the game reads art/staff_skins.ts only where she is drawn, baked and loaded', () => {
+  assert.equal(STAFF_SKINS.on, true);
   const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e: { name: string; isDirectory(): boolean }) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.ts') ? [`${dir}/${e.name}`] : []));
   const readers = walk('src').filter((f) => f !== 'src/art/staff_skins.ts' && !f.startsWith('src/dev/') && /from '[^']*staff_skins'/.test(readFileSync(f, 'utf8'))).sort();
   // (which staff she holds: render.ts and main.ts's loading screen, by staffWorn, null with the switch off; her art with that
-  // staff: heroes3.ts, only for a staff's place; its bake groups and their let-go: baked.ts, only with the switch on.
+  // staff: heroes3.ts, only for a staff's place; its bake groups and their let-go: baked.ts, only with the switch on;
+  // main.ts the test pages' switch.
   // tests/staff_skins_game.test.ts)
   assert.deepEqual(readers, ['src/art/heroes3.ts', 'src/main.ts', 'src/render/baked.ts', 'src/render/render.ts']);
 });

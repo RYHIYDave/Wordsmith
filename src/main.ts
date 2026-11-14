@@ -3488,7 +3488,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** (UNIQUE ITEMS, SET 1: the battle axe's and the warhammer's, game/uniques.ts SET1 and render/set1_fx.ts SET1_LOOK) their switches, off until his yes: `set1.on`, `set1Look.on`. */
     set1: SET1,
     set1Look: SET1_LOOK,
-    /** (THE MAGE'S UNIQUE STAVES IN HER HANDS, art/staff_skins.ts) their switch, off until his yes: `staffSkins.on`. */
+    /** (THE MAGE'S UNIQUE STAVES IN HER HANDS, art/staff_skins.ts) their switch, on at his yes (14 Nov 2026): `staffSkins.on`. */
     staffSkins: STAFF_SKINS,
     /** (A UNIQUE'S PIPS, ui/panels.ts) which of its lines they count and their colour, for pictures of each: `uniquePips.count`, `.colour`, `.free`. */
     uniquePips: UNIQUE_PIPS,
