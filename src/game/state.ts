@@ -1808,7 +1808,7 @@ export type GameEvent =
   | { t: 'voice'; who: ClassId; cry: 'attack' | 'hurt' | 'death' }
   /** A door has begun to swing open ('open'); the boss's gate has fallen ('fall') or begun to rise ('rise'). At the middle of its doorway. */
   | { t: 'door'; x: number; y: number; kind: 'open' | 'fall' | 'rise' }
-  | { t: 'shake'; amount: number }
+  | { t: 'shake'; amount: number; hold?: number }
   | { t: 'station'; kind: Station }
   /** ACT 1: the hero uses a stronghold's altar (game/act1_holds.ts): the interface opens it beside the inventory. */
   | { t: 'altar'; n: number }

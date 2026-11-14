@@ -65,8 +65,9 @@ import { PAIR, partnerOf } from './act1_rules/pair';
 import { giveBackAll, inTheSave } from './act1_rules/physician';
 import { rallyOf } from './act1_rules/kknight';
 import { blobDist, inHold } from './act1_layout';
+import { F9_LAIRS, f9Lairs, mouthOf } from './f9_lairs';
 import { ARRIVALS, riftSize } from './arrivals';
-import { EYRIE_LINES, EYRIE_SCENE, MUSTER, MUSTER_TEXT, PILLARS, QUEST610_TEXT, QUESTS610, lightPillars, pillarsBurning, piecesInHand, piecesTaken } from './quests610';
+import { EYRIE_LINES, EYRIE_SCENE, HUNT_LINE, MUSTER, MUSTER_TEXT, PIECE_BOSSES, PILLARS, QUEST610_TEXT, QUESTS610, lightPillars, pillarsBurning, piecesInHand, piecesTaken } from './quests610';
 import { CLAPPER_REWARD, PAGES, QUEST1115_TEXT, QUESTS1115, cleanLaidOut, jarWords, pagesInHand, pagesTaken } from './quests1115';
 import type { PickBy } from './quests1115';
 import { BIRD_ALL, BIRD_BODY, BIRD_KEY, BIRD_SPRING, BROKEN_BIRD, CAPTAIN_JAR_VARIANT, QUEST1620_TEXT, QUESTS1620, SONG, birdPartsTaken, birdWords } from './quests1620';
@@ -455,6 +456,8 @@ export class Game {
   speakTo: { who: Station | 'knight-captain'; t: number; back?: boolean } | null = null;
   /** (SPEAK_RETURN, game/quest_marks.ts) Whom he last had something to bring back to, a frame ago (turnInFor). */
   private backWas: Station | null = null;
+  /** (QUESTS610, F9_LAIRS) The ward-stone's hunt on the quest line at the top: how long it has yet to show (quests610.ts HUNT_LINE), and the bosses of it fallen on this floor. */
+  hunt: { t: number; fallen: number } | null = null;
   /** (the same) who had a quest for him in town last frame, and the level that was (a level come into is not news). */
   private giversWas: Station[] = [];
   private speakLevel: unknown = null;
@@ -1775,6 +1778,8 @@ export class Game {
     }
     // (QUESTS15: floor 3's furnace room, its keeper and crank, and its fire before the Chained One's hall)
     if (this.depth === 3) this.furnaceMade();
+    // (FLOOR 9'S TWO SIDE BOSSES, behind F9_LAIRS: the troll chieftain in his camp, the mist wolf in its glade)
+    if (f9Lairs(this.depth)) this.f9SideBosses();
     // (QUESTS610: the Pinewood's pieces of the ward-stone)
     if (this.depth === 9) this.piecesMade();
     // (QUESTS1115: what of the Hush's quests is on this floor: the line that says so; the stacks' page)
@@ -3425,12 +3430,17 @@ export class Game {
     const land = this.level.land;
     if (!land) return;
     const side = land.areas.find((a) => a.role === 'side');
-    if (side && this.wantsPiece(0)) {
+    // (FLOOR 9'S SIDE BOSSES, behind F9_LAIRS: the mist wolf carries the side area's piece, the troll chieftain the lair's)
+    const wolf = this.monsters.find((m) => !m.dead && m.kind === 'mistwolf');
+    const chief = this.monsters.find((m) => !m.dead && m.kind === 'warchief');
+    if (wolf && this.wantsPiece(0)) wolf.piece = 0;
+    if (chief && this.wantsPiece(1)) chief.piece = 1;
+    if (side && !wolf && this.wantsPiece(0)) {
       this.addDrop('piece', side.blob.x, side.blob.y, 0, null, null);
       this.drops[this.drops.length - 1].piece = 0;
     }
     const lair = land.areas.find((a) => a.role === 'lair');
-    if (lair && this.wantsPiece(1)) {
+    if (lair && !chief && this.wantsPiece(1)) {
       const guard = this.monsters.filter((m) => !m.dead && !m.boss && (m.champion || m.rarity === 'leader')).sort((a, b) => Math.hypot(a.x - lair.blob.x, a.y - lair.blob.y) - Math.hypot(b.x - lair.blob.x, b.y - lair.blob.y))[0];
       if (guard && Math.hypot(guard.x - lair.blob.x, guard.y - lair.blob.y) < Math.max(lair.blob.rx, lair.blob.ry) + 2) guard.piece = 1;
       else {
@@ -3440,7 +3450,67 @@ export class Game {
     }
     const stag = this.monsters.find((m) => m.boss && m.kind === 'stag');
     if (stag && this.wantsPiece(2)) stag.piece = 2;
-    this.msg(QUEST610_TEXT.piecesHere, MSG.quest);
+    // (FLOOR 9'S SIDE BOSSES: the quest line at the top, a line for each boss to defeat; his 14 Nov 2026: “"defeat the __________" for each boss”)
+    if (wolf || chief) {
+      this.msg(QUEST610_TEXT.piecesHereBosses, MSG.quest);
+      this.hunt = { t: HUNT_LINE.enter, fallen: 0 };
+    } else this.msg(QUEST610_TEXT.piecesHere, MSG.quest);
+  }
+
+  /**
+   * FLOOR 9'S TWO SIDE BOSSES (game/act1_rules/f9_bosses.ts; behind F9_LAIRS, on at his yes of 14 Nov 2026): THE TROLL CHIEFTAIN before his seat at the back of
+   * his camp, facing its way in; THE MIST WOLF on the moonbeam in the middle of its glade, facing its way in. Each as hard for its floor
+   * as a floor's boss is for his (as the Stoker is: the life of its kind grown with the floor's power), not the floor's boss: its falling
+   * opens no way on. Each carries its area's piece of the ward-stone where the quest wants it (piecesMade).
+   */
+  private f9SideBosses(): void {
+    if (this.practice) return;
+    const L = this.level;
+    const land = L.land;
+    if (!land) return;
+    const W = L.floor.w;
+    const near = (x: number, y: number): { x: number; y: number } | null => {
+      for (let r = 0; r <= 3; r++) {
+        for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const tx = Math.floor(x) + dx;
+          const ty = Math.floor(y) + dy;
+          if (tx < 0 || ty < 0 || tx >= W || ty >= L.floor.h || L.walk[ty * W + tx] !== 1) continue;
+          if (L.props.some((p) => p.solid && p.tx === tx && p.ty === ty)) continue;
+          return { x: tx + 0.5, y: ty + 0.5 };
+        }
+      }
+      return null;
+    };
+    const put = (kind: 'warchief' | 'mistwolf', at: { x: number; y: number }, ux: number, uy: number, pack: number): void => {
+      const m = this.spawn(kind, at.x, at.y, pack, 0, false, this.rng);
+      m.maxLife = Math.round(MONSTERS[kind].life * (1 + 0.4 * (this.power - 1)) * this.tough);
+      m.life = m.maxLife;
+      m.elite = true;
+      const n = Math.hypot(ux, uy) || 1;
+      m.fx = ux / n;
+      m.fy = uy / n;
+    };
+    const lair = land.areas.find((a) => a.role === 'lair');
+    const seat = L.props.find((p) => p.name === "the chieftain's seat");
+    if (lair && seat) {
+      // (before his seat, toward the middle of his camp)
+      const sx = seat.tx + 1;
+      const sy = seat.ty + 1;
+      const dx = lair.blob.x - sx;
+      const dy = lair.blob.y - sy;
+      const d = Math.hypot(dx, dy) || 1;
+      const at = near(sx + (dx / d) * 2.2, sy + (dy / d) * 2.2);
+      const m = mouthOf(lair.blob, land.lanes);
+      if (at) put('warchief', at, m.ux, m.uy, -4);
+    }
+    const side = land.areas.find((a) => a.role === 'side');
+    const beam = L.props.find((p) => p.name === 'the moonbeam');
+    if (side && beam) {
+      const at = near(beam.x, beam.y);
+      const m = mouthOf(side.blob, land.lanes);
+      if (at) put('mistwolf', at, m.ux, m.uy, -5);
+    }
   }
 
   /** (QUESTS610) A step of the scene playing; what the player would do is set aside, and what it has him do given instead. */
@@ -5202,6 +5272,8 @@ export class Game {
     for (const m of this.monsters) {
       if (through) break;
       if (m.dead || m.state === 'sleep' || m.kind === 'bat') continue;
+      // (ACT 1: nor one going through him, as its kind's rules have it: floor 9's mist wolf, its lunge, as mist)
+      if (ACT1.on && act1Rules(m.kind)?.through?.(m)) continue;
       const dx = h.x - m.x;
       const dy = h.y - m.y;
       const min = TUNE.heroRadius + m.r * 0.8;
@@ -11311,11 +11383,15 @@ export class Game {
       this.wordRec('plunder_spray');
     }
     this.dropLoot(m);
-    // (QUESTS610: a piece of the ward-stone it carried)
+    // (QUESTS610: a piece of the ward-stone it carried; the quest line at the top ticks it off)
     if (m.piece !== undefined) this.dropPiece(m.piece, m.x, m.y);
     // (QUESTS1115: the Palimpsest's page, the Physician's; QUESTS1620: the songbird's key, its spring)
     this.pageBossDown(m);
     this.birdBossDown(m);
+    if (this.hunt && this.depth === 9) {
+      const b = PIECE_BOSSES.find((q) => q.kind === m.kind);
+      if (b) this.hunt = { t: HUNT_LINE.fallen, fallen: this.hunt.fallen | (1 << b.piece) };
+    }
     this.gainXp(m.xp);
     this.quip(m);
     if (m.boss) {
@@ -14457,6 +14533,19 @@ export class Game {
     if (this.speakTo) this.speakTo.t -= dt;
   }
 
+  /** (QUESTS610, F9_LAIRS) The ward-stone's hunt on the quest line: each boss of it, and whether it is done (fallen here, or its piece already his). */
+  huntLines(): { name: string; done: boolean }[] | null {
+    const H = this.hunt;
+    if (!H || H.t <= 0 || this.depth !== 9 || this.level.town) return null;
+    const has = this.hero.pieces ?? 0;
+    return PIECE_BOSSES.map((b) => ({ name: b.name, done: ((H.fallen | has) & (1 << b.piece)) !== 0 }));
+  }
+
+  /** (the same) the hunt's line has been on the screen for `dt` more seconds. */
+  huntSeen(dt: number): void {
+    if (this.hunt) this.hunt.t -= dt;
+  }
+
   /** QUESTS610: what the mystic has for this hero: the feather quest (the gate down the mountain open), or the feather taken from him. */
   mysticDue(): 'featherAsk' | 'featherGive' | null {
     const h = this.hero;
@@ -14478,7 +14567,7 @@ export class Game {
     }
     h.feather = 'given';
     this.sfx('rare');
-    this.msg(QUEST610_TEXT.featherGiven, MSG.quest);
+    this.msg(F9_LAIRS.on ? QUEST610_TEXT.featherGivenBosses : QUEST610_TEXT.featherGiven, MSG.quest);
   }
 
   // ---------------------------------------------------------------------------------------------------

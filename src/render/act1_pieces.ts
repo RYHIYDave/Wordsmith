@@ -25,6 +25,8 @@ import { quarryPieceSteps, quarryPieces } from '../art/floor6';
 import { ledgePieces } from '../art/floor7';
 import { canyonPieceSteps, canyonPieces } from '../art/floor8';
 import { pinewoodPieces } from '../art/floor9';
+import { F9_LAIR_MOVING, f9LairPieces } from '../art/f9_lairs';
+import { F9_LAIRS } from '../game/f9_lairs';
 import { fenPieces } from '../art/floor10';
 import { COLOSSUS, STONE, worldToStone } from '../game/colossus_fight';
 import { redoubtPieceSteps, redoubtPieces } from '../art/redoubt';
@@ -103,7 +105,7 @@ function act1ListsOf(n: number, part: ListPart): Piece[] {
     const own2 = (): Piece[] => (n === 11 ? gateWardPieces() : n === 12 ? undercityPieces() : n === 13 ? millracePieces() : n === 14 ? houseOfQuietPieces() : greatLibraryPieces());
     return [...part('hush', hushSetPieces), ...part('own', own2)];
   }
-  const own = (): Piece[] => (n === 6 ? quarryPieces() : n === 7 ? ledgePieces() : n === 8 ? canyonPieces() : n === 9 ? pinewoodPieces() : fenPieces());
+  const own = (): Piece[] => (n === 6 ? quarryPieces() : n === 7 ? ledgePieces() : n === 8 ? canyonPieces() : n === 9 ? (F9_LAIRS.on ? [...pinewoodPieces(), ...f9LairPieces()] : pinewoodPieces()) : fenPieces());
   // (the strongholds' gatehouse, court, altar, braziers and banners are the Quarry's: art/floor6.ts; the hall's, the redoubt's)
   const shared = (): Piece[] => (n === 6 ? [] : quarryPieces().filter((p) => p.name.startsWith("the redoubt's") || p.name.startsWith("the court's") || p.name === 'the altar of the words' || p.name === "the cult's brazier" || p.name === "the cult's banner" || p.name === 'pine' || p.name === 'boulder'));
   return [...part('camp', campPieces), ...part('redoubt', redoubtPieces), ...part('shared', shared), ...part('own', own)];
@@ -152,7 +154,9 @@ export function forgetAct1(keep: number): void {
 /** The pieces that move (their frames a loop), at LOOP_FPS; every other's frames are its looks, one a place. */
 const MOVING = new Set(['a brazier on its tripod', "the cult's watchfire", "the cult's cauldron", "the cult's brazier", "the cult's banner", "the cult's ring of magic", 'the half-cut obelisk', "the cult's obelisk", "the redoubt's gatehouse",
   // (THE HIGH CITY, FLOOR 19, THE KEEP: its honest fire, its frames over and over: the braziers, the pitch heating, the torches on the walls)
-  'a brazier', 'a cauldron of pitch', 'a torch in its sconce']);
+  'a brazier', 'a cauldron of pitch', 'a torch in its sconce',
+  // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's side areas' fire and moonbeam: art/f9_lairs.ts)
+  ...F9_LAIR_MOVING]);
 const LOOP_FPS = 8;
 /**
  * ACT 2, THE BELLS (game/bells.ts): THE BELLS' PICTURES BY THEIR STATE. A small bell's frames are the art's: quiet, awake (ready

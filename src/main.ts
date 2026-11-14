@@ -8,6 +8,7 @@ import { actsOf } from './game/bosses';
 import { ENEMY_MOVES, useEnemyMoves } from './game/enemy_moves';
 // (FLOORS 8 AND 9 FROM HIS PHONE: the switch, for the playtests' pictures: game/f8f9.ts)
 import { F8F9_FIX } from './game/f8f9';
+import { F9_LAIRS } from './game/f9_lairs';
 import { FLOOR_LOOKS, useFloorLooks } from './game/floor_looks';
 import { ALL_OF_IT, useAllOfIt } from './game/all_of_it';
 import { DOOR_WALLS, WHOLE_WALLS, BACK_STAND } from './render/walls';
@@ -146,7 +147,7 @@ import { TOPS_CACHE } from './render/tops_cache';
 import type { Art } from './render/render';
 import { drawHud, drawMap } from './ui/hud';
 import type { HudIn, HudOut } from './ui/hud';
-import { guideAttack, guideBanner, questBanner } from './ui/guide';
+import { guideAttack, guideBanner, huntBanner, questBanner } from './ui/guide';
 import { WORD_HALF, WORD_LEX, WORD_ROOM, drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import { EXIT_LABELS, exitLabels } from './game/exit_labels';
 import { LOW_STACKS } from './art/low_stacks';
@@ -2757,9 +2758,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // while the floor's name is up, which it would cover. The owner, 12 Oct 2026, 07:45: "One thing
       // I noticed is you cant see the warden level introduction.  It gets hidden by the tap to attack
       // pop up". FLOOR_CARD_FIRST, game/defs.ts)
-      const banner = paused || (floorCard && FLOOR_CARD_FIRST.on) ? null : guideBanner(g, input.touchMode) ?? questBanner(g);
-      // (QUEST MARKERS: its line's time runs only while it is seen)
-      if (banner && banner.step === 'speak') g.speakSeen(dt);
+      const banner = paused || (floorCard && FLOOR_CARD_FIRST.on) ? null : guideBanner(g, input.touchMode) ?? questBanner(g) ?? huntBanner(g);
+      // (QUEST MARKERS: its line's time runs only while it is seen; the ward-stone's hunt's the same)
+      if (banner && banner.hunt) g.huntSeen(dt);
+      else if (banner && banner.step === 'speak') g.speakSeen(dt);
       // (a fight is on while something awake can be seen on the screen: the attacks written along
       // the bottom are not buttons then, so that a press meant for a monster is never a press on one)
       const fightOn = !paused && g.monsters.some((m) => {
@@ -3149,6 +3151,52 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       /** The keys lying on the floor (their bearers fallen), and the hero brought onto the first. */
       keysLying: () => (game ? game.perils.filter((p) => p.a1 === 'keyblade:key').map((p) => ({ x: p.x, y: p.y, t: p.t })) : []),
     },
+    /** (FLOOR 9'S TWO SIDE BOSSES, behind F9_LAIRS: on at his yes of 14 Nov 2026) Each of them, for the films of them in play (tools/scenarios/f9_bosses_film.mjs). */
+    f9Bosses: {
+      sw: F9_LAIRS,
+      /** Where they are, how they fare, what they do ('warchief', 'mistwolf'). */
+      list: () => (game ? game.monsters.filter((m) => m.kind === 'warchief' || m.kind === 'mistwolf').map((m) => ({ id: m.id, kind: m.kind, x: m.x, y: m.y, life: m.life, dead: m.dead, state: m.state, act: m.act ? { id: m.act.id, t: m.act.t } : null, piece: m.piece, rage: m.a1?.rage ?? 0 })) : []),
+      /** One brought `dist` tiles before the hero, `side` tiles to his side, facing him and awake, still. */
+      at: (kind: string, dist: number, side = 0) => {
+        const g = game;
+        const m = g?.monsters.find((o) => o.kind === kind && !o.dead);
+        if (!g || !m) return null;
+        const h = g.hero;
+        m.x = h.x + h.fx * dist - h.fy * side;
+        m.y = h.y + h.fy * dist + h.fx * side;
+        const d = Math.hypot(h.x - m.x, h.y - m.y) || 1;
+        m.fx = (h.x - m.x) / d;
+        m.fy = (h.y - m.y) / d;
+        m.state = 'chase';
+        m.cd = 99;
+        m.moveCd = undefined;
+        m.act = undefined;
+        m.gait = { mode: 'stand', t: 0 };
+        return { x: m.x, y: m.y };
+      },
+      /** One made to begin its act `id` now ('warchief:slam', 'mistwolf:lunge', ...), and to do nothing of its own after till `hold` seconds have gone. */
+      act: (kind: string, id: string, hold = 99) => {
+        const g = game;
+        const m = g?.monsters.find((o) => o.kind === kind && !o.dead);
+        const acts = m ? actsOf(m) : null;
+        const i = acts ? acts.findIndex((a) => a.id === id) : -1;
+        if (!g || !m || !acts || i < 0) return false;
+        g.bosses.startAct(m, acts, i);
+        m.cd = hold;
+        return true;
+      },
+      /** One still, doing nothing of its own (its wait made long), or let go (0). */
+      hold: (kind: string, secs = 99) => {
+        const m = game?.monsters.find((o) => o.kind === kind && !o.dead);
+        if (m) m.cd = secs;
+      },
+      /** One killed where it stands. */
+      kill: (kind: string) => {
+        const m = game?.monsters.find((o) => o.kind === kind && !o.dead);
+        if (game && m) game.kill(m);
+        return !!m;
+      },
+    },
     /** (THE HIGH CITY, behind HIGH_CITY, game/act1.ts: off until his yes) Its switch, for the playtests and pictures. */
     highCity: HIGH_CITY,
     /** (THE HIGH CITY, FLOOR 17) the ebony clock made to chime now, for the films: game/act2/masque_rules.ts. */
@@ -3508,7 +3556,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** THE FOREST AS A FEW PICTURES (render/tops_cache.ts): its switch (renderer.topsCache has what it did). */
     topsCache: TOPS_CACHE,
     /** THE NEXT VERSION'S LOOKS, each off until he has seen it (his pictures: tools/scenarios/looks_next.mjs). */
-    looks: { BODIES, ALTAR_GOES, DRESS_EDGES, PINE_PATH, F8F9_FIX },
+    looks: { BODIES, ALTAR_GOES, DRESS_EDGES, PINE_PATH, F8F9_FIX, F9_LAIRS },
     /** The level-up choice opens by itself in a quiet moment. Tests that need an uninterrupted fight switch this off. */
     autoLevel: true,
     /** The inventory opens by itself for a new word that has somewhere to go. Likewise. */

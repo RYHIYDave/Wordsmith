@@ -61,6 +61,7 @@ import { FIG as hshape } from './hshape';
 import { FIG as rshade } from './rshade';
 import { FIG as stoker } from './stoker';
 import { FIG_BLADE as keyblade, FIG_FLAME as keyflame } from './keybearers';
+import { FIG_CHIEF as warchief, FIG_WOLF as mistwolf } from './f9_bosses';
 import { FIG as rshadow } from './rshadow';
 import { FIG as moth } from './moth';
 
@@ -130,6 +131,8 @@ export const ACT1_FIGS: Readonly<Partial<Record<MonsterKind, Act1Fig | null>>> =
   stoker,
   keyblade,
   keyflame,
+  warchief,
+  mistwolf,
 };
 
 export function act1Fig(kind: string): Act1Fig | null {

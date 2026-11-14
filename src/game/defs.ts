@@ -1052,6 +1052,10 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // (floor 5's temple door's key-bearers, behind TEMPLE_DOOR: mini-bosses, each as hard for its floor as the rules make it, game.ts keyBearers)
   keyblade: { kind: 'keyblade', name: 'The Keybearer of the Knife', life: 120, dmgMin: 8, dmgMax: 12, speed: 3.224, radius: 0.4, range: 2.4, windup: 0.5, cooldown: 1.6, xp: 60, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'large' },
   keyflame: { kind: 'keyflame', name: 'The Keybearer of the Flame', life: 100, dmgMin: 9, dmgMax: 13, speed: 1.4, radius: 0.4, range: 8, windup: 1.2, cooldown: 2.4, xp: 60, ranged: false, projSpeed: 0, keepMax: 0, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'large' },
+  // (FLOOR 9'S TWO SIDE BOSSES, behind F9_LAIRS: each guards a piece of the ward-stone in its side area, as hard for its floor as a
+  // floor's boss is for his (game.ts f9SideBosses), the Hollow Stag's own a little more; their acts and their numbers: game/act1_rules/f9_bosses.ts)
+  warchief: { kind: 'warchief', name: 'The Troll Chieftain', life: 380, dmgMin: 16, dmgMax: 23, speed: 1.3, radius: 1.1, range: 2.4, windup: 1.1, cooldown: 2.0, xp: 260, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  mistwolf: { kind: 'mistwolf', name: 'The Mist Wolf', life: 320, dmgMin: 14, dmgMax: 20, speed: 2.4, radius: 0.9, range: 2.4, windup: 0.66, cooldown: 1.6, xp: 240, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   moth: { kind: 'moth', name: 'The Moth', life: 780, dmgMin: 27, dmgMax: 38, speed: 3.0, radius: 1.4, range: 8.0, windup: 0.9, cooldown: 2.2, xp: 1250, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };

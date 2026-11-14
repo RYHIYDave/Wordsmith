@@ -33,6 +33,7 @@
 // Everything is by the floor's own dice: the same depth and seed give the same floor, here and in the worker.
 
 import { F8F9_FIX, squareBridge } from './f8f9';
+import { LAIR9, f9Lairs, mouthOf } from './f9_lairs';
 import { RNG } from '../engine/rng';
 import { COLOSSUS, onStoneOrJetty, stoneToWorld, worldToStone } from './colossus_fight';
 import type { StoneAt } from './colossus_fight';
@@ -801,7 +802,8 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
   }
   const extra = kind === 'ledge' ? 0 : 1;
   for (let n = 0; n < extra; n++) growSide(rng, plan, 'side', size(rng, 'path'), kind === 'fen' ? 2 : 2.8, 3);
-  if (depth >= 7 && kind !== 'ledge') growSide(rng, plan, 'lair', { rx: 4.5, ry: 4, wob: 0.12 }, kind === 'fen' ? 2 : 2.8, 3);
+  // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's lair grown to a boss's room for the troll chieftain's camp, if it fits: game/f9_lairs.ts)
+  if (depth >= 7 && kind !== 'ledge' && !(f9Lairs(depth) && growSide(rng, plan, 'lair', LAIR9, 2.8, 3) >= 0)) growSide(rng, plan, 'lair', { rx: 4.5, ry: 4, wob: 0.12 }, kind === 'fen' ? 2 : 2.8, 3);
 
   // THE BOUNDS: everything moved so the open ground starts MARGIN tiles in; the halls inside laid beyond it
   let x0 = Infinity;
@@ -1309,6 +1311,20 @@ function placePacks(rng: RNG, f: Floor, plan: Plan, areaRoom: readonly number[],
       n = Math.floor(owed);
       owed -= n;
     } else n = a.role === 'lair' ? 1 : Math.max(1, Math.round(area / (kind === 'ledge' ? 22 : 70)));
+    // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's side area the mist wolf's glade, no pack of the floor's in it: his wolves come at his howl)
+    if (a.role === 'side' && f9Lairs(depth)) return;
+    // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's lair's guardians milling round its way in, his “Some guardians milling around the entrance”)
+    if (a.role === 'lair' && f9Lairs(depth)) {
+      const m = mouthOf(b, plan.lanes);
+      for (const k of [0.55, 0.45, 0.65, 0.35]) {
+        const x = b.x + m.ux * m.edge * k;
+        const y = b.y + m.uy * m.edge * k;
+        if (!free(x, y, 1)) continue;
+        const p = act1Pack(depth, rng, 'champion');
+        put(x, y, room.id, 'champion', p.kind, p.size);
+        return;
+      }
+    }
     for (let k = 0; k < n; k++) {
       for (let tries = 0; tries < 30; tries++) {
         const ang = rng.range(0, Math.PI * 2);
@@ -1331,6 +1347,8 @@ function placePacks(rng: RNG, f: Floor, plan: Plan, areaRoom: readonly number[],
     if (len < 12 || rng.chance(0.5)) continue;
     const mid = l.pts[Math.floor(l.pts.length / 2)];
     if (!free(mid[0], mid[1], 0.5) || used.some(([ux, uy]) => Math.hypot(ux - mid[0], uy - mid[1]) < 6) || Math.hypot(mid[0] - startX, mid[1] - startY) < 10) continue;
+    // (F9_LAIRS, on at his yes of 14 Nov 2026: none at floor 9's glade's edge either)
+    if (f9Lairs(depth) && plan.areas.some((q) => q.role === 'side' && blobDist(q.blob, mid[0], mid[1]) < 1.5)) continue;
     const p = act1Pack(depth, rng, 'normal');
     put(mid[0], mid[1], -1, 'normal', p.kind, Math.max(2, Math.ceil(p.size * 0.6)));
   }

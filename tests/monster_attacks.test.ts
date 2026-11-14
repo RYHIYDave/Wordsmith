@@ -270,6 +270,12 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
         assert.equal(n, 8, `${what}: four royals' two each`);
         continue;
       }
+      // (FLOOR 9'S MIST WOLF, a side boss: five, at his word, 13 Nov 2026: “Bite, claw sweep, howl calling the wolves, lunge, I like the
+      // mist cloud too”: game/act1_rules/f9_bosses.ts)
+      if (kind === 'mistwolf') {
+        assert.equal(n, 5, `${what}: five, at his word`);
+        continue;
+      }
       assert.ok(waiting || (n >= want[size][0] && n <= want[size][1] + leads), `${what}: ${n} attacks (his rule: ${want[size].join(' to ')}${leads ? ', and one more for a leader' : ''})`);
       if (!moves) continue;
       const first = moves[0];
