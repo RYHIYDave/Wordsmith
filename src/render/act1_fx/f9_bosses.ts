@@ -6,7 +6,7 @@
 // over it (`air`: the bursts, stone and dust flung up, mist bursting). And THE RAGE on the chieftain while it lasts after his war cry:
 // its embers rising off him, its light. Behind F9_LAIRS, off.
 
-import { F9_FX_AFTER, F9_FX_CANVAS, chiefFxGlow, chiefFxPaint, wolfFxPaint } from '../../art/f9_bosses_fx';
+import { F9_FX_AFTER, F9_FX_CANVAS, chiefFxGlow, chiefFxPaint, wolfFxGlow, wolfFxPaint } from '../../art/f9_bosses_fx';
 import type { F9View } from '../../art/f9_bosses_art';
 import { CHIEF_MOVES, TILE3, WOLF_MOVES } from '../../art/f9_bosses_moves';
 import type { ChiefMove, WolfMove } from '../../art/f9_bosses_moves';
@@ -118,15 +118,45 @@ function wash(c: Act1FxCtx, color: string, a: number, edges = false): void {
   g.restore();
 }
 
-/** A heavy blow of his landing: its light where it lands, and the screen flashed white. */
+/** THE MIST rolling in from the screen's edges (the wolf's howl, its cloud): great pale billows drifting along them, `a` of it. */
+function mistIn(c: Act1FxCtx, a: number): void {
+  const g = c.g;
+  const cv = g?.canvas as HTMLCanvasElement | undefined;
+  if (!g || !cv || a <= 0.01) return;
+  const w = cv.width;
+  const h = cv.height;
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  for (let i = 0; i < 18; i++) {
+    const side = i % 4;
+    const u = ((i * 0.618 + c.t * 0.05 * (1 + (i % 3))) % 1) * (side < 2 ? w : h);
+    const r = Math.min(w, h) * (0.16 + 0.1 * ((i * 7) % 5) / 5) * (0.6 + 0.4 * a);
+    const x = side === 0 ? u : side === 1 ? u : side === 2 ? -r * 0.2 + r * 0.5 * a : w + r * 0.2 - r * 0.5 * a;
+    const y = side === 0 ? -r * 0.2 + r * 0.5 * a : side === 1 ? h + r * 0.2 - r * 0.5 * a : u;
+    g.globalAlpha = 0.16 * a;
+    g.fillStyle = i % 2 ? '#c6c2da' : '#eeecf8';
+    g.beginPath();
+    g.ellipse(x, y, r * 1.3, r * 0.8, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.restore();
+}
+
+/** A heavy blow landing: its light where it lands, and the screen flashed; the wolf's howl and its cloud: the screen darkened, the mist rolling in. */
 function blowGlow(c: Act1FxCtx, p: Peril, flashOnly: boolean): void {
-  if (!p.a1!.startsWith(CHIEF_FX)) return;
-  const move = p.a1!.slice(CHIEF_FX.length) as ChiefMove;
+  const chief = p.a1!.startsWith(CHIEF_FX);
+  const move = p.a1!.slice((chief ? CHIEF_FX : WOLF_FX).length);
   const F = FRAMES[p.a];
-  const gl = chiefFxGlow(move, p.t, F.view === 'front' ? 'front' : 'rear');
+  const view = F.view === 'front' ? 'front' : 'rear';
+  const gl = chief ? chiefFxGlow(move as ChiefMove, p.t, view) : wolfFxGlow(move as WolfMove, p.t, view);
   if (!gl) return;
   if (flashOnly) {
-    wash(c, '#fff6e8', gl.flash);
+    const dark = 'dark' in gl ? (gl as { dark: number }).dark : 0;
+    if (dark > 0) {
+      wash(c, 'rgba(14,10,30,1)', dark * 0.6, true);
+      mistIn(c, dark);
+    }
+    wash(c, chief ? '#fff6e8' : '#f2f0ff', gl.flash);
     return;
   }
   const C = F9_FX_CANVAS;

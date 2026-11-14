@@ -256,8 +256,8 @@ export function mistCloud(px: Px, pr: Pr, cf: number, cl: number, R: number, k: 
   for (let y = Math.floor(c[1] - ry * 1.4); y < c[1] + ry; y++) {
     for (let x = Math.floor(c[0] - rx); x < c[0] + rx; x++) {
       const q = Math.hypot((x - c[0]) / rx, (y - c[1]) / ry);
-      // (soft billows: slow waves through it, drifting, not cells)
-      const swirl = 0.5 + 0.25 * Math.sin(x * 0.11 + Math.sin(y * 0.07 + t * 1.3) * 2.2 + t * 0.9) + 0.25 * Math.sin(y * 0.16 - x * 0.05 + Math.cos(x * 0.09 - t) * 1.8 - t * 1.1);
+      // (soft billows rolling through it, drifting: smooth noise at two sizes, never a pattern)
+      const swirl = 0.62 * vnoise(x / 22 + t * 0.5, y / 13 - t * 0.2, 9501) + 0.38 * vnoise(x / 9 - t * 0.7, y / 6 + t * 0.3, 9502);
       const d = (1 - q) * 1.6 + (swirl - 0.5) * 0.5 - thin;
       if (d <= 0) continue;
       const B = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5][(y & 3) * 4 + (x & 3)];
@@ -502,6 +502,12 @@ export function puff(px: Px, x: number, y: number, r: number, ramp: readonly str
       const Y = Math.round(y + j);
       if (fade > 0 && hash(X, Y, seed) < fade * 1.1 - (1 - q) * 0.2) continue;
       if (fade > 0.45 && (X + Y) % 2) continue;
+      // (mist: soft, a dither thinning to its edge, no rim)
+      if (ramp === MISTY) {
+        if ((X + Y) % 2 || hash(X >> 1, Y >> 1, seed + 3) < q * q * 0.9) continue;
+        put(px, X, Y, ramp[q < 0.5 && -j / r > 0 ? 3 : 2]);
+        continue;
+      }
       const lit = -j / r * 0.7 - i / r * 0.3;
       const k = q > 0.86 ? 0 : lit > 0.35 ? 3 : lit > -0.1 ? 2 : 1;
       put(px, X, Y, ramp[Math.min(ramp.length - 1, k)]);
@@ -509,7 +515,7 @@ export function puff(px: Px, x: number, y: number, r: number, ramp: readonly str
   }
 }
 /** A GREAT SHOCKWAVE rolling out over the ground from (cf, cl) to `R` (its own lengths), `k` 0..1: a thick bright band, a wall of dust riding it. */
-export function bigShock(px: Px, pr: Pr, cf: number, cl: number, R: number, k: number, thick: number, seed: number): void {
+export function bigShock(px: Px, pr: Pr, cf: number, cl: number, R: number, k: number, thick: number, seed: number, hot: readonly string[] = SHOCK_HOT, dusty: readonly string[] = DUSTY): void {
   if (k <= 0 || k >= 1) return;
   const r = R * (1 - (1 - k) ** 2.2);
   const band = Math.max(3, thick * (1 - k * 0.6));
@@ -525,16 +531,21 @@ export function bigShock(px: Px, pr: Pr, cf: number, cl: number, R: number, k: n
       if (rr < 0) break;
       const p = pr(cf + Math.cos(a) * rr, cl + Math.sin(a) * rr, 0);
       const q = b / band;
-      put(px, p[0], p[1], q < 0.2 ? '#fffaf0' : q < 0.45 ? FLAME[4] : q < 0.75 ? FLAME[3] : FLAME[2]);
+      put(px, p[0], p[1], q < 0.2 ? hot[0] : q < 0.45 ? hot[1] : q < 0.75 ? hot[2] : hot[3]);
     }
   }
   // (the dust it throws up as it goes: puffs riding its front)
   for (let i = 0; i < 26; i++) {
     const a = (i / 26) * Math.PI * 2 + hash(i, 1, seed) * 0.2;
     const p = pr(cf + Math.cos(a) * r * 0.97, cl + Math.sin(a) * r * 0.97, 4 + 10 * k);
-    puff(px, p[0], p[1] - 6, 9 + 24 * k * (0.6 + hash(i, 2, seed) * 0.6), DUSTY, Math.max(0, k * 1.2 - 0.25), seed + i);
+    puff(px, p[0], p[1] - 6, 9 + 24 * k * (0.6 + hash(i, 2, seed) * 0.6), dusty, Math.max(0, k * 1.2 - 0.25), seed + i);
   }
 }
+/** A shockwave's colours, its front to its back: the enemy's fire; the mist's. */
+export const SHOCK_HOT = ['#fffaf0', FLAME[4], FLAME[3], FLAME[2]];
+export const SHOCK_MIST = ['#ffffff', '#eeecf8', '#c6c2da', FLAME[2]];
+/** The mist's puffs, dark to pale. */
+export const MISTY = ['#4a4664', '#8a86a8', '#c6c2da', '#f2f0fa'];
 /** Dust's colours, dark to pale; stone's. */
 export const DUSTY = ['#2e261e', '#5a4c3c', '#857258', '#b09a78'];
 export const STONEY = ['#1e1c1a', '#3e3b37', '#625e57', '#8e897f'];
@@ -648,13 +659,13 @@ export function rocks(px: Px, pr: Pr, cf: number, cl: number, t: number, seed: n
   }
 }
 /** A CLOUD OF DUST billowing up and out from (cf, cl) to `R`, `k` 0..1 of its life, `n` great puffs. */
-export function plume(px: Px, pr: Pr, cf: number, cl: number, k: number, R: number, seed: number, n = 14, big = 18): void {
+export function plume(px: Px, pr: Pr, cf: number, cl: number, k: number, R: number, seed: number, n = 14, big = 18, ramp: readonly string[] = DUSTY): void {
   if (k <= 0 || k >= 1) return;
   for (let i = 0; i < n; i++) {
     const a = hash(i, 1, seed) * Math.PI * 2;
     const d = R * (0.25 + 0.75 * hash(i, 2, seed)) * Math.sqrt(k);
     const p = pr(cf + Math.cos(a) * d, cl + Math.sin(a) * d, 8 + 40 * k * hash(i, 3, seed));
-    puff(px, p[0], p[1], big * (0.5 + 0.7 * hash(i, 4, seed)) * (0.4 + 0.8 * k), DUSTY, Math.max(0, k * 1.3 - 0.3), seed + i * 7);
+    puff(px, p[0], p[1], big * (0.5 + 0.7 * hash(i, 4, seed)) * (0.4 + 0.8 * k), ramp, Math.max(0, k * 1.3 - 0.3), seed + i * 7);
   }
 }
 /** A GREAT BURST where a heavy blow lands: a blinding disc and thick rays out across the screen, `k` 0..1. */
@@ -697,4 +708,52 @@ export function fireRing(px: Px, pr: Pr, cf: number, cl: number, R: number, k: n
       }
     }
   }
+}
+
+/** GOUGES torn in the ground (a claw's), from `a` to `b` round `c` (its own lengths), `n` of them side by side, `k` of the way torn, glowing till `fade`. */
+export function gouges(px: Px, pr: Pr, c: V3, a: V3, b: V3, n: number, k: number, fade: number, seed: number): void {
+  if (k <= 0) return;
+  const glow = Math.max(0, Math.min(1, 1 - fade));
+  for (let j = 0; j < n; j++) {
+    const off = (j - (n - 1) / 2) * 9;
+    const pts = arcPath([c[0], c[1], 0], [a[0] + off * 0.6, a[1] + off, 0], [b[0] - off * 0.4, b[1] + off * 0.5, 0], 22);
+    for (let i = 1; i < pts.length; i++) {
+      if (i / pts.length > Math.min(1, k)) break;
+      const p0 = pr(pts[i - 1][0], pts[i - 1][1], 0);
+      const p1 = pr(pts[i][0], pts[i][1], 0);
+      const w = Math.max(2, Math.round(7 * Math.sin((i / pts.length) * Math.PI)));
+      line(px, p0, p1, '#120a10', w + 2);
+      if (glow > 0 && hash(i, j, seed) < glow) line(px, p0, p1, i % 3 ? FLAME[3] : '#fffaf0', Math.max(1, w - 2));
+    }
+  }
+}
+/** EYES, pink, burning, in pairs, moving in a cloud round (cf, cl) (its own lengths), `n` pairs, `t` the clock. */
+export function eyesIn(px: Px, pr: Pr, cf: number, cl: number, R: number, n: number, t: number, seed: number): void {
+  for (let i = 0; i < n; i++) {
+    const a = hash(i, 1, seed) * Math.PI * 2 + t * (0.6 + hash(i, 2, seed));
+    const d = R * (0.25 + 0.7 * hash(i, 3, seed));
+    const blink = Math.sin(t * 3 + i * 1.7) > -0.7;
+    if (!blink) continue;
+    const c = pr(cf + Math.cos(a) * d, cl + Math.sin(a) * d, 30 + 20 * hash(i, 4, seed));
+    for (const dx of [0, 10]) {
+      blob(px, c[0] + dx, c[1], 6, 3.5, FLAME[1], true);
+      blob(px, c[0] + dx, c[1], 3.5, 2.2, FLAME[2]);
+      blob(px, c[0] + dx, c[1], 1.6, 1, FLAME[4]);
+    }
+  }
+}
+
+/** Smooth noise, 0..1, of a point (bilinear between the corners of its cell, eased). */
+export function vnoise(x: number, y: number, seed: number): number {
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const fx = x - x0;
+  const fy = y - y0;
+  const u = fx * fx * (3 - 2 * fx);
+  const v = fy * fy * (3 - 2 * fy);
+  const a = hash(x0, y0, seed);
+  const b = hash(x0 + 1, y0, seed);
+  const c = hash(x0, y0 + 1, seed);
+  const d = hash(x0 + 1, y0 + 1, seed);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
 }
