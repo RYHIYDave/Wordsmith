@@ -1,5 +1,5 @@
-// FLOOR 9'S TWO SIDE BOSSES, SCULPTED (docs/mockups/f9_side_bosses/README.md has every word of his). A DEV TOOL FOR MOCK-UPS; nothing of
-// the game imports it. Shown them first as the old figures made bigger and touched up, his word, 13 Nov 2026: “No draw them correctly”.
+// FLOOR 9'S TWO SIDE BOSSES, SCULPTED (docs/mockups/f9_side_bosses/README.md has every word of his). Their pictures in the game are
+// made from these (art/f9_bosses_art.ts, behind game/f9_lairs.ts F9_LAIRS, off). Shown them first as the old figures made bigger and touched up, his word, 13 Nov 2026: “No draw them correctly”.
 // So each is drawn new, sculpted as the game's newest figures are (dev/sculpt.ts: solids melted into each other, each pixel's ray,
 // lit and inked as the style asks), on no other figure's bones.
 //
@@ -19,17 +19,18 @@
 // long legs, a long head low and forward, its ears laid back, its jaws a little open, white fangs; its mist streaked along it like fur,
 // thinning to nothing at its legs, its belly and the end of its tail, and streaming off it; its eyes the enemy's pink burning to gold.
 
-import type { Ramp } from '../art/kit';
-import { INK } from '../art/kit';
-import { ENEMY_RIM } from '../art/mkit';
-import type { GameView } from '../art/skin';
-import { add, cross, mul, norm, sub } from '../art/skeleton';
-import type { V3 } from '../art/skeleton';
-import { Sculpt, draw, onCone } from './sculpt';
-import type { Cone, Drawn } from './sculpt';
-import { shadeOf } from './sculpt_classes';
+import type { Ramp } from './kit';
+import { INK } from './kit';
+import { ENEMY_RIM } from './mkit';
+import type { PaintView } from './skin';
+import { add, cross, mul, norm, sub } from './skeleton';
+import type { V3 } from './skeleton';
+import { Sculpt, draw, onCone } from '../dev/sculpt';
+import type { Cone, Drawn, Hit, Mat } from '../dev/sculpt';
 
 const D = Math.PI / 180;
+/** A tone of a ramp, held to its five. */
+const shadeOf = (r: Ramp, k: number): string => r[Math.max(0, Math.min(4, k))];
 const dot3 = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const hash = (a: number, b: number, s: number): number => {
   const v = Math.sin(a * 127.1 + b * 311.7 + s * 74.7) * 43758.5453;
@@ -50,6 +51,8 @@ const BARK: Ramp = ['#1a120c', '#33241a', '#523a26', '#745236', '#946c46'];
 const IRON9: Ramp = ['#14141c', '#2a2a36', '#46465a', '#6e6e86', '#a2a2b8'];
 const PAINT_WHITE = '#e8e2d0';
 const PAINT_RED = '#a42c26';
+/** What he turns to as he dies (his death: TURNED TO STONE, as trolls are). */
+const STONE: Ramp = ['#1c1c20', '#36363a', '#56544f', '#7a766e', '#9e988c'];
 const EYE: Ramp = ['#7a1030', '#c0206a', '#ff3a78', '#ffb070', '#fff0c0'];
 
 /** Every solid of a sculpted figure made `k` times as big, about the floor point under it (its painters must measure by `/ k`). */
@@ -64,7 +67,7 @@ function grow(sc: Sculpt, k: number): void {
 }
 
 /** The troll chieftain's size: half again his prison trolls' (his pick, “Huge, crowned in bones”). */
-const CK = 1.16;
+export const CK = 1.16;
 
 /** A frame for the figure: forward, to its left, up, built facing the eye's lower right turned by `yaw` degrees. */
 function frame(yaw: number): { F: V3; L: V3; U: V3; P: (f: number, l: number, u: number) => V3; X: (rf: number, rl: number, ru: number) => readonly [V3, V3, V3] } {
@@ -108,6 +111,10 @@ export interface ChiefPose {
   footR: V3;
   /** How far what hangs off him (his kilt's strips, his necklace) has been left behind by his going (LOOSE THINGS FOLLOW). */
   swing: V3;
+  /** (his death) How far he has TURNED TO STONE, 0 to 1: the stone creeping up him from the floor. */
+  stone?: number;
+  /** (his death) No edge of light round him: a dying thing has none (art/new_mobs3.ts mobSet). */
+  rimless?: boolean;
 }
 
 /** HIM STANDING: his club over his right shoulder, his left arm hanging. */
@@ -144,7 +151,7 @@ function bend(a: V3, b: V3, la: number, lb: number, hint: V3): V3 {
 }
 
 /** THE TROLL CHIEFTAIN as he stands at `pose` (standing, unless given), seen `view`, turned `yaw`; on a canvas of `size` (his). */
-export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw = -10, size: { w: number; h: number; ax: number; ay: number } = CHIEF9_CANVAS): Drawn {
+export function sculptChief9(view: PaintView, pose: Partial<ChiefPose> = {}, yaw = -10, size: { w: number; h: number; ax: number; ay: number } = CHIEF9_CANVAS): Drawn {
   const Q: ChiefPose = { ...CHIEF_STAND, ...pose };
   const sc = new Sculpt();
   const { F, L, U, P, X } = frame(yaw);
@@ -186,13 +193,24 @@ export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw 
   const loc = (p: V3): V3 => [dot3(p, F) / CK, dot3(p, L) / CK, p[2] / CK];
   const onBody = (p: V3): V3 => add(unrot(sub(sub(loc(p), Q.hip), PIV)), PIV);
   const onHead = (p: V3): V3 => add(headUnrot(sub(onBody(p), NECK)), NECK);
+  // (HIS DEATH: the stone creeping up him from the floor, everything of him under its line grey stone, cracked; its edge ragged)
+  const line = Q.stone ? -14 + Q.stone * 164 : -Infinity;
+  const stoneOf = (h: Hit): string | null => {
+    if (line === -Infinity) return null;
+    const u = h.p[2] / CK + (hash(Math.floor(h.x / 3), Math.floor(h.y / 3), 61) - 0.5) * 8;
+    if (u > line) return null;
+    if (u > line - 2.5) return shadeOf(STONE, h.tone + 1);
+    const c = hash(Math.floor(h.x / 2), Math.floor(h.y / 2), 63);
+    return c < 0.08 ? shadeOf(STONE, h.tone - 2) : c > 0.9 ? shadeOf(STONE, h.tone + 1) : shadeOf(STONE, h.tone);
+  };
+  const mat = (m: Mat): number => sc.mat({ ...m, paint: (h) => stoneOf(h) ?? (m.paint ? m.paint(h) : null) });
   // (the hide's mottle by where it is on its own part, so it does not crawl as he moves)
   const anchor = (h: { p: V3; prim: { k: string } }): V3 => {
     const pr = h.prim as unknown as { c?: V3; a?: V3 };
     return sub(h.p, pr.c ?? pr.a ?? [0, 0, 0]);
   };
   // HIS HIDE: mottled; darker down his back; his war paint where it is on him
-  const hide = sc.mat({
+  const hide = mat({
     ramp: HIDE,
     paint: (h) => {
       const tag = h.prim.tag;
@@ -222,7 +240,7 @@ export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw 
       return back ? shadeOf(HIDE, h.tone - 1) : null;
     },
   });
-  const kilt = sc.mat({
+  const kilt = mat({
     ramp: KILT,
     paint: (h) => {
       // (its hide spotted; its fur ragged at the hem)
@@ -233,12 +251,12 @@ export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw 
       return null;
     },
   });
-  const leather = sc.mat({ ramp: LEATHER });
-  const fur = sc.mat({ ramp: FUR9, paint: (h) => {
+  const leather = mat({ ramp: LEATHER });
+  const fur = mat({ ramp: FUR9, paint: (h) => {
     const m = anchor(h);
     return hash(Math.floor(m[0] / 1.5), Math.floor(m[2] / 1.2), 19) < 0.3 ? shadeOf(FUR9, h.tone - 1) : null;
   } });
-  const bone = sc.mat({
+  const bone = mat({
     ramp: BONE9,
     paint: (h) => {
       // (a skull's sockets and its nose, dark)
@@ -253,7 +271,7 @@ export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw 
       return null;
     },
   });
-  const bark = sc.mat({
+  const bark = mat({
     ramp: BARK,
     paint: (h) => {
       if (h.prim.k === 'cone' && h.prim.tag === 'handle') {
@@ -269,9 +287,9 @@ export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw 
       return null;
     },
   });
-  const iron = sc.mat({ ramp: IRON9 });
-  const eye = sc.mat({ ramp: EYE, paint: (h) => (h.tone >= 2 ? EYE[4] : EYE[2]) });
-  const maw = sc.mat({ ramp: ['#14060e', '#220a16', '#3a1226', '#541c36', '#6e2846'] });
+  const iron = mat({ ramp: IRON9 });
+  const eye = mat({ ramp: EYE, paint: (h) => (h.tone >= 2 ? EYE[4] : EYE[2]) });
+  const maw = mat({ ramp: ['#14060e', '#220a16', '#3a1226', '#541c36', '#6e2846'] });
 
   // HIS LEGS: short and thick, his knees bent under his weight (toward where he faces), his feet wide and flat
   for (const s of [1, -1]) {
@@ -402,7 +420,7 @@ export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw 
     sc.cone(hide, piece, add(at(d0 - 5), mul(out, -1)), add(add(at(d0 + 0.5), mul(out, 2.4)), mul(fwd, 3.4)), 1.9, 1.5, 0.8);
   }
   grow(sc, CK);
-  return draw(sc, view, size.ax, size.ay, size, undefined, ENEMY_RIM);
+  return draw(sc, view, size.ax, size.ay, size, undefined, Q.rimless ? null : ENEMY_RIM);
 }
 
 /** Where a point of the chieftain's (his own lengths, before he is grown) is on his canvas, seen `view` at `yaw`. */
@@ -416,7 +434,7 @@ const MIST: Ramp = ['#4a4664', '#6c688a', '#9692b2', '#c6c2da', '#eeecf8'];
 const FANG: Ramp = ['#6a6458', '#9a9284', '#c4baa8', '#e2dac8', '#f6f0e4'];
 const MOUTH: Ramp = ['#1a0a18', '#2c1028', '#4a1a3a', '#6a2a50', '#8a3a66'];
 /** Its size: twice a fog wolf's (his pick); its shoulder near the knight's head. */
-const WK = 0.82;
+export const WK = 0.82;
 
 /**
  * HOW THE MIST WOLF STANDS (dev/f9_bosses_moves.ts sets it a moment at a time for its moves): its own lengths, before it is made its
@@ -445,6 +463,10 @@ export interface WolfPose {
   ghost: number;
   /** How far its loose mist (its belly's fringe, its tail) is left behind by its going (LOOSE THINGS FOLLOW). */
   swing: V3;
+  /** (its death) How far it has come apart into nothing, 0 to 1: its mist blown away, its eyes last. */
+  gone?: number;
+  /** (its death) No edge of light round it. */
+  rimless?: boolean;
 }
 
 /** IT STANDING. */
@@ -465,7 +487,7 @@ export const WOLF_STAND: WolfPose = {
 };
 
 /** THE MIST WOLF as it stands at `pose` (standing, unless given), seen `view`, turned `yaw`; on a canvas of `size` (its own). */
-export function sculptWolf9(view: GameView, pose: Partial<WolfPose> = {}, yaw = 42, size: { w: number; h: number; ax: number; ay: number } = WOLF9_CANVAS): Drawn {
+export function sculptWolf9(view: PaintView, pose: Partial<WolfPose> = {}, yaw = 42, size: { w: number; h: number; ax: number; ay: number } = WOLF9_CANVAS): Drawn {
   const Q: WolfPose = { ...WOLF_STAND, ...pose };
   const sc = new Sculpt();
   const fr = frame(yaw);
@@ -594,12 +616,12 @@ export function sculptWolf9(view: GameView, pose: Partial<WolfPose> = {}, yaw = 
   const tail = tailL.map(W);
   const tr = [4.5, 6.5, 7.5, 6.5, 3.5];
   for (let i = 1; i < tail.length; i++) cone(mist, 'tail', tail[i - 1], tail[i], tr[i - 1], tr[i], 2.4);
-  const drawn = draw(sc, view, size.ax, size.ay, size, undefined, ENEMY_RIM);
+  const drawn = draw(sc, view, size.ax, size.ay, size, undefined, Q.rimless ? null : ENEMY_RIM);
   const tailEnd = drawn.st.at(tail[tail.length - 1]);
   const back = drawn.st.at(BP(-30, 0, 72));
   const head = drawn.st.at(BP(40, 0, 80));
   const floor = drawn.st.at(W([Q.root[0], Q.root[1], 0]));
-  seeThrough(drawn, Q.t, tailEnd, back, head, floor[1], Q.ghost);
+  seeThrough(drawn, Q.t, tailEnd, back, head, floor[1], Q.ghost, Q.gone ?? 0);
   return drawn;
 }
 
@@ -614,7 +636,7 @@ export function wolfAt(d: Drawn, yaw: number, q: V3): readonly number[] {
  * other pixel and then none) so the floor shows through; wisps streaming off its back and tail, away from its head; its mist lying
  * on the floor round its feet.
  */
-function seeThrough(d: Drawn, t: number, tailEnd: readonly number[], back: readonly number[], head: readonly number[], floorY: number, ghost: number): void {
+function seeThrough(d: Drawn, t: number, tailEnd: readonly number[], back: readonly number[], head: readonly number[], floorY: number, ghost: number, gone = 0): void {
   const px = d.px;
   const W = px.w;
   const H = px.h;
@@ -680,6 +702,18 @@ function seeThrough(d: Drawn, t: number, tailEnd: readonly number[], back: reado
         if (age > 0.3 && (x + y) % 2) continue;
         if (q > 0.6 && hash(x, y, 29 + j) < 0.5 + age * 0.4) continue;
         set(x, y, col);
+      }
+    }
+  }
+  // (COMING APART INTO NOTHING, as it dies: blown away in drifting patches from its tail to its head, its eyes last)
+  if (gone > 0) {
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 4;
+        if (px.d[i + 3] === 0) continue;
+        const toward = Math.max(0, Math.min(1, (x - tailEnd[0]) / ((head[0] - tailEnd[0]) || 1)));
+        const n = hash(Math.floor((x - t * 14 * away) / 3), Math.floor(y / 3), 37) * 0.7 + hash(x, y, 39) * 0.3;
+        if (n < gone * 1.5 - toward * 0.5) px.d[i + 3] = 0;
       }
     }
   }

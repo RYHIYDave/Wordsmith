@@ -1,5 +1,5 @@
-// FLOOR 9'S SIDE BOSSES' MOVES, AS POSES A MOMENT AT A TIME AND WHAT THEY THROW ABOUT (a mock-up for his films: tools/f9_bosses_film.ts;
-// docs/mockups/f9_side_bosses/README.md). Nothing of the game imports it.
+// FLOOR 9'S SIDE BOSSES' MOVES, AS POSES A MOMENT AT A TIME AND WHAT THEY THROW ABOUT (his films: tools/f9_bosses_film.ts;
+// docs/mockups/f9_side_bosses/README.md; and their pictures in the game, art/f9_bosses_art.ts, behind F9_LAIRS, off).
 //
 // THE TROLL CHIEFTAIN (his pick, 13 Nov 2026: “The first one, but I want the warcry to be a rage that gives him attack speed and move
 // speed”): a heavy club smash, two-handed from over his head; a ground slam that cracks the ground in a line before him; his war cry,
@@ -21,9 +21,10 @@
 //     dust flung up, the rage's fire); the wolf's is mist and speed (after-images of it, crescents of its jaws and claws, mist
 //     bursting).
 
-import type { V3 } from '../art/skeleton';
-import { CHIEF_STAND, WOLF_STAND } from './sculpt_f9_bosses';
-import type { ChiefPose, WolfPose } from './sculpt_f9_bosses';
+import { GRID } from './skeleton';
+import type { V3 } from './skeleton';
+import { CHIEF_STAND, CK, CLUB_LONG, WK, WOLF_STAND } from './f9_bosses_sculpt';
+import type { ChiefPose, WolfPose } from './f9_bosses_sculpt';
 
 /** How a span between two keys is eased: `io` slow out and in; `out` fast away then settling; `in` slow then fast; `lin` even. */
 type Ease = 'io' | 'in' | 'out' | 'lin';
@@ -105,7 +106,12 @@ const SMASH: Key<ChiefPose>[] = [
   [1.7, { ...club([44, -6, 44], [58, 0, -38]), lean: 40, hip: [15, 0, -14], jaw: 0.5 }],
   // (the wind-down: hauled up out of the ground and back onto his shoulder)
   [2.1, { twoHand: false, ...club([26, -30, 72], [-14, -24, 44]), lean: 10, twist: 0, hip: [8, 0, -3], headUp: 0, jaw: 0.3 }],
-  [2.5, { ...CHIEF_STAND, footL: [18, 18, 5], footR: [-2, -18, 5], hip: [6, 0, 0] }],
+  [2.5, { ...CHIEF_STAND, footL: [18, 18, 5], footR: [-2, -18, 5] }],
+];
+/** (the smash's end: his feet stepped back under him, one and then the other, each lifted as it goes: so he ends as he stands) */
+const SMASH_STEPS: readonly { foot: 'footL' | 'footR'; t0: number; t1: number; from: V3; to: V3 }[] = [
+  { foot: 'footR', t0: 2.1, t1: 2.3, from: [-2, -18, 5], to: CHIEF_STAND.footR },
+  { foot: 'footL', t0: 2.28, t1: 2.5, from: [18, 18, 5], to: CHIEF_STAND.footL },
 ];
 
 const SLAM: Key<ChiefPose>[] = [
@@ -172,11 +178,24 @@ const RUSH: Key<ChiefPose>[] = (() => {
   return k;
 })();
 
+/** His feet stepped where a move has them step (the smash's end), each lifted as it goes. */
+function stepped(move: ChiefMove, p: ChiefPose, t: number): ChiefPose {
+  if (move !== 'smash') return p;
+  const q = { ...p };
+  for (const st of SMASH_STEPS) {
+    if (t <= st.t0) continue;
+    const k = Math.min(1, (t - st.t0) / (st.t1 - st.t0));
+    const e = k * k * (3 - 2 * k);
+    q[st.foot] = [st.from[0] + (st.to[0] - st.from[0]) * e, st.from[1] + (st.to[1] - st.from[1]) * e, st.from[2] + (st.to[2] - st.from[2]) * e + 10 * Math.sin(Math.PI * k)];
+  }
+  return q;
+}
+
 /** The troll chieftain at `t` seconds into `move`: breathing, straining where he holds, what hangs off him left behind by his going. */
 export function chiefPose(move: ChiefMove, t: number): ChiefPose {
   const keys = move === 'smash' ? SMASH : move === 'slam' ? SLAM : move === 'warcry' ? WARCRY : RUSH;
   const at = (q: number): ChiefPose => posed<ChiefPose>(CHIEF_STAND, keys, q);
-  const p = at(t);
+  const p = stepped(move, at(t), t);
   const was = at(t - 0.07);
   const v = [(p.hip[0] - was.hip[0]) / 0.07, (p.hip[1] - was.hip[1]) / 0.07, (p.hip[2] - was.hip[2]) / 0.07];
   const dl = (p.lean - was.lean) / 0.07;
@@ -287,4 +306,251 @@ export function wolfPose(move: WolfMove, t: number): WolfPose {
   const held = move === 'bite' ? t > 0.35 && t < 0.55 : move === 'claw' ? t > 0.35 && t < 0.55 : move === 'lunge' ? t > 0.4 && t < 0.7 : move === 'howl' ? t > 0.9 && t < 2.3 : t > 0.45 && t < 0.6;
   const sh = held ? shiver(t, 0.8) : [0, 0, 0];
   return { ...p, t, root: [p.root[0] + sh[0], p.root[1] + sh[1], p.root[2] + sh[2]], swing: [cl(-v[0] * 0.08), cl(-v[1] * 0.08), cl(-v[2] * 0.1)] };
+}
+
+// =================================================================================================
+// IN THE GAME (art/f9_bosses_art.ts; behind F9_LAIRS, off): each move with him kept on the floor point under him, the ground he
+// covers covered by the rules moving him (game/act1_rules/f9_bosses.ts), so that he ends each as he stands; his stand, his walk,
+// struck, and his death; and the same of the wolf.
+
+/** A tile, in the figures' own lengths before they are grown (art/new_mobs3.ts TILE3). */
+export const TILE3 = 32 / GRID;
+/** A tremble's and the poses' own clock for a held loop: `t` round a loop `long` seconds. */
+const round = (t: number, long: number): number => ((t % long) + long) % long;
+
+/**
+ * HOW FAR A MOVE HAS CARRIED HIM, his own lengths forward, `t` seconds in (the rules move him so far; his picture is kept over the
+ * floor point under him): the bull rush and the war cry's strides as far as his pelvis has gone; the slam as far as he leaps, through
+ * the time he is off the ground; the smash nowhere.
+ */
+export function chiefCarry(move: ChiefMove, t: number): number {
+  if (move === 'smash') return 0;
+  if (move === 'slam') {
+    const k = Math.max(0, Math.min(1, (t - 0.3) / 0.72));
+    return 11 * k * k * (3 - 2 * k);
+  }
+  const keys = move === 'warcry' ? WARCRY : RUSH;
+  return Math.max(0, posed<ChiefPose>(CHIEF_STAND, keys, t).hip[0]);
+}
+/** A pose of his moved back `d` (his own lengths) along his forward: kept over a floor point that has gone on so far. */
+export function chiefBack(p: ChiefPose, d: number): ChiefPose {
+  if (!d) return p;
+  return { ...p, hip: [p.hip[0] - d, p.hip[1], p.hip[2]], footL: [p.footL[0] - d, p.footL[1], p.footL[2]], footR: [p.footR[0] - d, p.footR[1], p.footR[2]] };
+}
+/** The chieftain at `t` seconds into `move` as the game shows him: over the floor point the rules have carried him to. */
+export function chiefInPlay(move: ChiefMove, t: number): ChiefPose {
+  return chiefBack(chiefPose(move, t), chiefCarry(move, t));
+}
+
+/** HIS STAND, WALK, STRUCK AND DEATH IN THE GAME: how many pictures each, how fast; his walk's pace (tiles a second) and loop. */
+export const CHIEF_PLAY = {
+  idle: { frames: 12, fps: 6 },
+  walk: { frames: 12, fps: 12, pace: 1.3 },
+  reel: 0.3,
+  dies: 3.0,
+  /** As his death turns him to stone: from, to (seconds into it). */
+  stone: [0.95, 2.5] as const,
+} as const;
+
+/** HIM STANDING (his stand's loop, `t` round it): his great chest heaving, his jaw working, his club shifting on his shoulder. */
+export function chiefStill(t: number): ChiefPose {
+  const L = CHIEF_PLAY.idle.frames / CHIEF_PLAY.idle.fps;
+  const a = (round(t, L) / L) * Math.PI * 2;
+  const s = CHIEF_STAND;
+  return {
+    ...s,
+    breath: 0.5 + 0.5 * Math.sin(a),
+    hip: [0, Math.sin(a) * 1.2, -0.8 + Math.cos(a) * 0.8],
+    lean: 4 + Math.sin(a + 0.6) * 2,
+    twist: Math.sin(a) * 2,
+    headUp: Math.sin(a + 1.2) * 3,
+    jaw: 0.25 + 0.2 * Math.max(0, Math.sin(a * 2)),
+    fistR: [s.fistR[0], s.fistR[1], s.fistR[2] + Math.sin(a) * 1.4],
+    clubEnd: [s.clubEnd[0] + Math.sin(a) * 1.5, s.clubEnd[1], s.clubEnd[2] + Math.sin(a) * 1.4],
+    fistL: [s.fistL[0] + Math.sin(a + 0.5) * 1.5, s.fistL[1], s.fistL[2]],
+    swing: [0, Math.sin(a) * -0.8, 0],
+  };
+}
+
+/**
+ * HIS WALK (one turn of it, `t` round it): a heavy, rolling stomp, each foot planted flat and the floor going by under it, the other
+ * lifted high and set down; his weight rolling over onto the foot that is down, his body turning with his stride, his free arm
+ * swinging, his club bouncing on his shoulder, his kilt left behind by his going.
+ */
+export function chiefWalk(t: number): ChiefPose {
+  const W = CHIEF_PLAY.walk;
+  const L = W.frames / W.fps;
+  const u = round(t, L) / L;
+  // (his stride: the floor he covers in a turn, his own lengths; each foot down 0.55 of it)
+  const S = (W.pace * L * TILE3) / CK;
+  const down = 0.55;
+  const foot = (ph: number, l: number): V3 => {
+    const v = round(ph, 1);
+    if (v < down) return [5 + S * down * (0.5 - v / down), l, 5];
+    const k = (v - down) / (1 - down);
+    const e = k * k * (3 - 2 * k);
+    return [5 + S * down * (-0.5 + e), l * (1 - 0.1 * Math.sin(Math.PI * k)), 5 + 12 * Math.sin(Math.PI * k)];
+  };
+  const a = u * Math.PI * 2;
+  const s = CHIEF_STAND;
+  const p: ChiefPose = {
+    ...s,
+    breath: 0.5 + 0.5 * Math.sin(a * 2),
+    footL: foot(u, 18),
+    footR: foot(u + 0.5, -18),
+    // (lowest as each foot comes down; rolling over onto the foot that is down)
+    hip: [3, 4 * Math.cos(a), -2.5 - 3 * Math.cos(a * 2)],
+    lean: 12 + Math.cos(a * 2) * 1.5,
+    twist: -8 * Math.sin(a),
+    headUp: -4 + 2 * Math.cos(a * 2),
+    jaw: 0.35,
+    fistR: [s.fistR[0], s.fistR[1], s.fistR[2] - 2 * Math.cos(a * 2)],
+    clubEnd: [s.clubEnd[0], s.clubEnd[1], s.clubEnd[2] - 3 * Math.cos(a * 2)],
+    fistL: [16 - 12 * Math.sin(a), 34, 27 + 4 * Math.cos(a)],
+    swing: [0, 0, 0],
+  };
+  // (what hangs off him, left behind by his going over the floor and by his body's own roll)
+  const was = { hip: [3, 4 * Math.cos(a - 0.4), -2.5 - 3 * Math.cos(a * 2 - 0.8)] };
+  const dt = (0.4 / (Math.PI * 2)) * L;
+  const v = [S / L, (p.hip[1] - was.hip[1]) / dt, (p.hip[2] - was.hip[2]) / dt];
+  const cl = (x: number): number => Math.max(-12, Math.min(12, x));
+  p.swing = [cl(-v[0] * 0.07), cl(-v[1] * 0.07), cl(-v[2] * 0.09)];
+  return p;
+}
+
+/** HIM STRUCK (`t` seconds in): rocked back, his head snapped up, a snarl. */
+export function chiefReel(t: number): ChiefPose {
+  const k = Math.max(0, Math.min(1, t / CHIEF_PLAY.reel));
+  const r = Math.sin(Math.PI * Math.min(1, k * 1.6)) * (1 - k * 0.4);
+  const s = CHIEF_STAND;
+  return { ...s, lean: -9 * r, hip: [-4 * r, 0, 1.5 * r], headUp: 14 * r, jaw: 0.3 + 0.6 * r, fistL: [s.fistL[0] - 6 * r, s.fistL[1] + 6 * r, s.fistL[2] + 8 * r], swing: [5 * r, 0, 2 * r] };
+}
+
+const DIES: Key<ChiefPose>[] = [
+  [0, {}],
+  // (struck his death blow: thrown back, his head snapped up, his free arm flung out, a roar)
+  [0.2, { lean: -24, hip: [-7, 0, 4], headUp: 34, jaw: 1, fistL: [-6, 54, 72], ...club([12, -40, 104], [-30, -34, 36]) }, 'out'],
+  // (his knees give: down on one knee, the club driven head-first into the ground before him, both hands on it, his head hung)
+  [0.62, { twoHand: true, lean: 14, hip: [6, 0, -17], headUp: -12, jaw: 0.6, ...club([28, -8, 46], [52, 0, -22]), footL: [18, 18, 5], footR: [-20, -18, 5] }, 'in'],
+  [0.85, { lean: 18, hip: [6, 0, -19], headUp: -18, jaw: 0.4 }, 'out'],
+  // (a last roar up at the sky, as the stone creeps up him from the floor: and he is stone, kneeling on his club, roaring)
+  [1.3, { lean: 4, hip: [6, 0, -18], headUp: 30, jaw: 1, ...club([28, -8, 48], [52, 0, -24]) }],
+  [1.7, { lean: 3, headUp: 33 }],
+  [3.0, { lean: 3, headUp: 33 }],
+];
+/** HIS DEATH (`t` seconds in): to one knee on his club, a last roar, and TURNED TO STONE as he roars (as trolls are), kneeling there. */
+export function chiefDie(t: number): ChiefPose {
+  const p = posed<ChiefPose>({ ...CHIEF_STAND }, DIES, t);
+  const [a, b] = CHIEF_PLAY.stone;
+  const k = Math.max(0, Math.min(1, (t - a) / (b - a)));
+  // (shaking as the stone takes him, stopping as it does)
+  const sh = t > 1.3 && k < 1 ? shiver(t, 1.2 * (1 - k)) : [0, 0, 0];
+  const was = posed<ChiefPose>({ ...CHIEF_STAND }, DIES, t - 0.07);
+  const v = [(p.hip[0] - was.hip[0]) / 0.07, (p.hip[1] - was.hip[1]) / 0.07, (p.hip[2] - was.hip[2]) / 0.07];
+  const cl = (x: number): number => Math.max(-12, Math.min(12, x));
+  return { ...p, hip: [p.hip[0] + sh[0], p.hip[1] + sh[1], p.hip[2] + sh[2]], stone: k, rimless: true, swing: k > 0.3 ? [0, 0, 0] : [cl(-v[0] * 0.07), cl(-v[1] * 0.07), cl(-v[2] * 0.09)] };
+}
+
+// THE MIST WOLF'S, IN THE GAME
+
+/** How far a move has carried it, its own lengths forward, `t` seconds in: as far as its body has gone forward (never back past where it stood). */
+export function wolfCarry(move: WolfMove, t: number): number {
+  if (move === 'howl' || move === 'cloud') return 0;
+  const keys = move === 'bite' ? BITE : move === 'claw' ? CLAW : LUNGE;
+  return Math.max(0, posed<WolfPose>(WOLF_STAND, keys, t).root[0]);
+}
+/** A pose of its moved back `d` (its own lengths) along its forward. */
+export function wolfBack(p: WolfPose, d: number): WolfPose {
+  if (!d) return p;
+  const b = (q: V3): V3 => [q[0] - d, q[1], q[2]];
+  return { ...p, root: b(p.root), pawFL: b(p.pawFL), pawFR: b(p.pawFR), pawHL: b(p.pawHL), pawHR: b(p.pawHR) };
+}
+/** The mist wolf at `t` seconds into `move` as the game shows it: over the floor point the rules have carried it to. */
+export function wolfInPlay(move: WolfMove, t: number): WolfPose {
+  return wolfBack(wolfPose(move, t), wolfCarry(move, t));
+}
+
+export const WOLF_PLAY = {
+  idle: { frames: 12, fps: 6 },
+  walk: { frames: 10, fps: 16, pace: 2.4 },
+  reel: 0.3,
+  dies: 2.4,
+} as const;
+
+/** IT STANDING: its flanks heaving, its head low and turning a little, its tail swaying, its mist drifting off it. */
+export function wolfStill(t: number): WolfPose {
+  const L = WOLF_PLAY.idle.frames / WOLF_PLAY.idle.fps;
+  const a = (round(t, L) / L) * Math.PI * 2;
+  return { ...WOLF_STAND, t, root: [0, 0, Math.sin(a) * 0.9], pitch: 2 + Math.sin(a + 0.8) * 1.5, headUp: -4 + Math.sin(a + 1.4) * 3, headTurn: Math.sin(a) * 5, jaw: 0.3 + 0.12 * Math.sin(a * 2), tailUp: -4 + Math.sin(a) * 5, swing: [Math.sin(a) * 1.5, Math.cos(a) * 2, 0] };
+}
+
+/**
+ * ITS WALK (one turn of it, `t` round it): a long, low, gliding trot, each foreleg and the hind leg across from it together, its paws
+ * gripping the floor as it goes by; its back level, its head low and forward, its tail out behind it streaming.
+ */
+export function wolfWalk(t: number): WolfPose {
+  const W = WOLF_PLAY.walk;
+  const L = W.frames / W.fps;
+  const u = round(t, L) / L;
+  const S = (W.pace * L * TILE3) / WK;
+  const down = 0.5;
+  const paw = (ph: number, home: V3): V3 => {
+    const v = round(ph, 1);
+    if (v < down) return [home[0] + S * down * (0.5 - v / down), home[1], 3];
+    const k = (v - down) / (1 - down);
+    const e = k * k * (3 - 2 * k);
+    return [home[0] + S * down * (-0.5 + e), home[1], 3 + 9 * Math.sin(Math.PI * k)];
+  };
+  const a = u * Math.PI * 2;
+  const s = WOLF_STAND;
+  return {
+    ...s,
+    t,
+    root: [4, 0, -3 + 1.6 * Math.cos(a * 2)],
+    pitch: 4 + Math.sin(a * 2) * 1.2,
+    headUp: -10 + 2 * Math.cos(a * 2),
+    headTurn: 0,
+    jaw: 0.4,
+    pawFL: paw(u, s.pawFL),
+    pawHR: paw(u, s.pawHR),
+    pawFR: paw(u + 0.5, s.pawFR),
+    pawHL: paw(u + 0.5, s.pawHL),
+    tailUp: 6 + 3 * Math.sin(a * 2),
+    swing: [-Math.min(14, (S / L) * 0.08), 0, -1.6 * Math.sin(a * 2)],
+  };
+}
+
+/** IT STRUCK: flinched back, its head flung up, a snarl. */
+export function wolfReel(t: number): WolfPose {
+  const k = Math.max(0, Math.min(1, t / WOLF_PLAY.reel));
+  const r = Math.sin(Math.PI * Math.min(1, k * 1.6)) * (1 - k * 0.4);
+  return { ...WOLF_STAND, t, root: [-6 * r, 0, 2 * r], pitch: -8 * r, headUp: 14 * r, jaw: 0.25 + 0.7 * r, tailUp: -10 * r, swing: [6 * r, 0, 1 * r] };
+}
+
+const WOLF_DIES: Key<WolfPose>[] = [
+  [0, {}],
+  // (struck its death blow: rearing back, its head flung up, a howl cut short)
+  [0.18, { root: [-9, 0, 7], pitch: -16, headUp: 30, jaw: 1, tailUp: -20 }, 'out'],
+  // (its legs give; it sinks down onto its belly, its head going down)
+  [0.55, { root: [-4, 0, -17], pitch: 6, headUp: -14, jaw: 0.5, pawFL: [30, 12, 3], pawFR: [35, -12, 3], pawHL: [-14, 11, 3], pawHR: [-19, -11, 3], ghost: 0.2 }, 'in'],
+  [0.95, { root: [0, 0, -27], pitch: 10, headUp: -26, jaw: 0.3, ghost: 0.45 }, 'out'],
+  // (and it comes apart into the mist it was, from its tail to its eyes, and is blown away)
+  [1.2, { ghost: 0.6, gone: 0 }],
+  [2.2, { ghost: 0.9, gone: 1 }],
+  [2.4, { gone: 1 }],
+];
+/** ITS DEATH (`t` seconds in): its legs give, it sinks down, and it comes apart into nothing, its eyes last. */
+export function wolfDie(t: number): WolfPose {
+  const p = posed<WolfPose>({ ...WOLF_STAND, gone: 0 }, WOLF_DIES, t);
+  return { ...p, t, rimless: true };
+}
+
+/** His club's head at a pose (his own lengths): where it lands. */
+export function chiefClubHead(p: ChiefPose): V3 {
+  const a = p.fistR;
+  const b = p.clubEnd;
+  const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  const n = Math.hypot(d[0], d[1], d[2]) || 1;
+  const L = CLUB_LONG * 0.95;
+  return [a[0] + p.hip[0] + (d[0] / n) * L, a[1] + p.hip[1] + (d[1] / n) * L, a[2] + p.hip[2] + (d[2] / n) * L];
 }

@@ -83,6 +83,7 @@ import { FX as gking } from './gking';
 import { FX as hshape } from './hshape';
 import { FX as rshade } from './rshade';
 import { FX as stoker } from './stoker';
+import { FX_CHIEF as warchief, FX_WOLF as mistwolf } from './f9_bosses';
 import { FX as rshadow } from './rshadow';
 import { FX as moth } from './moth';
 
@@ -166,6 +167,9 @@ export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   moth,
   rshade,
   stoker,
+  // (floor 9's two side bosses)
+  warchief,
+  mistwolf,
 };
 
 export function act1Fx(kind: string): Act1Fx | null {

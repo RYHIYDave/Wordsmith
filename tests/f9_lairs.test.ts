@@ -70,7 +70,7 @@ test('ON: the lair grown to a boss room and dressed as the trolls\' camp, its gu
     const toward = guards.reduce((s, q) => s + (q.x - lair!.blob.x) * m.ux + (q.y - lair!.blob.y) * m.uy, 0) / guards.length;
     assert.ok(toward > 0.5, `seed ${seed}: the guardians toward the way in (${toward.toFixed(2)})`);
     // (no pack of the floor's in the glade)
-    assert.ok(!g.monsters.some((q) => !q.dead && !q.boss && inside(side, q, 0.9)), `seed ${seed}: the glade empty of packs`);
+    assert.ok(!g.monsters.some((q) => !q.dead && !q.boss && q.kind !== 'mistwolf' && inside(side, q, 0.9)), `seed ${seed}: the glade empty of packs (but its own boss, the mist wolf)`);
     // (the way in to the camp walkable from its mouth to the fire)
     const fire = props.find((p) => p.name === "the trolls' fire")!;
     for (let k = 0.95; k > 0.25; k -= 0.1) {

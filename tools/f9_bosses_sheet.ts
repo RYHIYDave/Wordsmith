@@ -1,7 +1,7 @@
 // FLOOR 9'S TWO SIDE BOSSES (dev/sculpt_f9_bosses.ts, sculpted), standing, beside the figures they are made from and the Brawler,
 // as a picture's pixels:   node node_modules/tsx/dist/cli.mjs tools/f9_bosses_sheet.ts [t] > /tmp/f9.json   (then tools/f9_bosses_sheet.py)
 import { wolfPainted, WOLF_CANVAS } from '../src/art/fog_wolves';
-import { CHIEF9_CANVAS, WOLF9_CANVAS, sculptChief9, sculptWolf9 } from '../src/dev/sculpt_f9_bosses';
+import { CHIEF9_CANVAS, WOLF9_CANVAS, sculptChief9, sculptWolf9 } from '../src/art/f9_bosses_sculpt';
 import { makeHeroArt3 } from '../src/art/heroes3';
 import { frameAt } from '../src/dev/action_f1_scene';
 import { spriteLaid } from '../src/dev/king_scene';

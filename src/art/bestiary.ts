@@ -314,6 +314,9 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   rshade: { top: 32, half: 11 },
   // (floor 3's Stoker twice the knight, his firebox broad: art/stoker.ts)
   stoker: { top: 90, half: 18 },
+  // (floor 9's side bosses: the troll chieftain half again a troll's height and his antlers over him; the mist wolf long and low)
+  warchief: { top: 86, half: 24 },
+  mistwolf: { top: 48, half: 26 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
   ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)

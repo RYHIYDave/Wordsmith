@@ -1,7 +1,7 @@
 // THE TWO SIDE BOSSES' STANDING PICTURES (dev/sculpt_f9_bosses.ts) as pixels, for laying into the game's own pictures of their side
 // areas (tools/f9_lairs_composite.py; the spots from tools/scenarios/f9_lairs.mjs with CANVAS_OUT):
 //   node node_modules/tsx/dist/cli.mjs tools/f9_lairs_composite.ts > /tmp/f9b.json
-import { CHIEF9_CANVAS, WOLF9_CANVAS, sculptChief9, sculptWolf9 } from '../src/dev/sculpt_f9_bosses';
+import { CHIEF9_CANVAS, WOLF9_CANVAS, sculptChief9, sculptWolf9 } from '../src/art/f9_bosses_sculpt';
 import type { Px } from '../src/engine/px';
 const take = (p: Px, ax: number, ay: number): { w: number; h: number; ax: number; ay: number; px: (string | null)[] } => {
   const px: (string | null)[] = [];
