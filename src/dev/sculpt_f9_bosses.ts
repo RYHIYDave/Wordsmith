@@ -106,6 +106,8 @@ export interface ChiefPose {
   /** Where his ankles are (`u` the foot off the floor). */
   footL: V3;
   footR: V3;
+  /** How far what hangs off him (his kilt's strips, his necklace) has been left behind by his going (LOOSE THINGS FOLLOW). */
+  swing: V3;
 }
 
 /** HIM STANDING: his club over his right shoulder, his left arm hanging. */
@@ -122,6 +124,7 @@ export const CHIEF_STAND: ChiefPose = {
   twoHand: false,
   footL: [1, 18, 5],
   footR: [1, -18, 5],
+  swing: [0, 0, 0],
 };
 
 /** THE CLUB'S LENGTH, fist to head. */
@@ -332,18 +335,20 @@ export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw 
   for (let i = 0; i < 9; i++) {
     const a = ((i - 4) / 4) * 62 * D;
     const at: V3 = [19 * Math.cos(a) + 2, 23 * Math.sin(a), 74 + b - 6 * Math.cos(a)];
-    sc.cone(bone, 'neck', W(T(at)), add(W(T(at)), P(1.2, 0, -4.4 - (i % 2) * 1.6)), 1.2, 0.4, 0.3);
+    sc.cone(bone, 'neck', W(T(at)), add(W(T(at)), P(1.2 + Q.swing[0] * 0.5, Q.swing[1] * 0.5, -4.4 - (i % 2) * 1.6 + Math.max(0, Q.swing[2]) * 0.4)), 1.2, 0.4, 0.3);
   }
   // HIS BELT, wide leather, an iron boss on it; HIS KILT of hide in ragged flaps, the front and back ones longest
   sc.ell(leather, 'belt', PP(-0.5, 0, 37), X(21.5, 25.2, 4.2), 0.6, { tag: 'belt' });
   sc.ell(iron, 'boss', PP(21.2, 0, 37.4), X(2, 4.2, 4.2), 0.4);
   // (the flaps swing back as he goes forward)
   const swing = Math.max(-6, Math.min(6, Q.lean * 0.12));
+  const sw = Q.swing;
   for (let i = 0; i < 18; i++) {
     const a = ((i + 0.5) / 18) * 360 * D;
     const rad = (k: number): V3 => [Math.cos(a) * (17 + k), Math.sin(a) * (21.5 + k), 0];
     const long = 9 + 5 * Math.abs(Math.cos(a)) + hash(i, 1, 41) * 4;
-    const tip = add(rad(3.5), [-swing, 0, 36 - long * (i % 3 === 1 ? 0.75 : 1)]);
+    const lift = Math.max(0, sw[2]) * (0.6 + hash(i, 2, 41) * 0.6);
+    const tip = add(rad(3.5 + Math.max(0, sw[0] * Math.cos(a) + sw[1] * Math.sin(a)) * 0.4), [-swing + sw[0] * (0.7 + hash(i, 3, 41) * 0.6), sw[1] * (0.7 + hash(i, 4, 41) * 0.6), 36 - long * (i % 3 === 1 ? 0.75 : 1) + lift]);
     sc.cone(i % 3 === 1 ? fur : kilt, `kilt${i % 2}`, W(add(add(rad(0), [0, 0, 36]), Q.hip)), W(add(tip, Q.hip)), 4.6, 1.2, 0.3);
   }
   // (his spine: a ridge of knobs down from his hump)
@@ -438,6 +443,8 @@ export interface WolfPose {
   tailUp: number;
   /** How far gone to mist it is, 0 to 1 (its lunge passes through you). */
   ghost: number;
+  /** How far its loose mist (its belly's fringe, its tail) is left behind by its going (LOOSE THINGS FOLLOW). */
+  swing: V3;
 }
 
 /** IT STANDING. */
@@ -454,6 +461,7 @@ export const WOLF_STAND: WolfPose = {
   pawHR: [-21.5, -8.5, 3],
   tailUp: 0,
   ghost: 0,
+  swing: [0, 0, 0],
 };
 
 /** THE MIST WOLF as it stands at `pose` (standing, unless given), seen `view`, turned `yaw`; on a canvas of `size` (its own). */
@@ -572,15 +580,16 @@ export function sculptWolf9(view: GameView, pose: Partial<WolfPose> = {}, yaw = 
   for (let i = 0; i < 9; i++) {
     const f = 30 - i * 5.5;
     const u = i < 3 ? 42 + i * 3 : 54;
-    for (const s of [1, -1]) cone(mist, 'body', BP(f, s * 5, u + 2), W(add(B([f, s * 6, u - 4]), [-4, 0, -6 - (i % 3) * 3])), 3.4, 0.7, 1.6);
+    for (const s of [1, -1]) cone(mist, 'body', BP(f, s * 5, u + 2), W(add(B([f, s * 6, u - 4]), [-4 + Q.swing[0] * 0.8, Q.swing[1] * 0.8, -6 - (i % 3) * 3 + Math.max(0, Q.swing[2]) * 0.6])), 3.4, 0.7, 1.6);
   }
   // ITS TAIL: long and heavy, hanging in a curve, bushy, its end fraying into mist; raised as far as `tailUp`
   const TB: V3 = [-31, 0, 68];
   const ct = Math.cos(Q.tailUp * D);
   const stt = Math.sin(Q.tailUp * D);
-  const tailL: V3[] = [[-31, 0, 68], [-43, 0, 64], [-53, 0, 56], [-59, 0, 46], [-61, 0, 36]].map((q) => {
+  const tailL: V3[] = [[-31, 0, 68], [-43, 0, 64], [-53, 0, 56], [-59, 0, 46], [-61, 0, 36]].map((q, i) => {
     const d = sub(q as unknown as V3, TB);
-    return B(add(TB, [d[0] * ct - d[2] * stt, d[1], d[0] * stt + d[2] * ct]));
+    // (the tail trails the body: its far end left furthest behind)
+    return add(B(add(TB, [d[0] * ct - d[2] * stt, d[1], d[0] * stt + d[2] * ct])), mul(Q.swing, i * 0.35));
   });
   const tail = tailL.map(W);
   const tr = [4.5, 6.5, 7.5, 6.5, 3.5];

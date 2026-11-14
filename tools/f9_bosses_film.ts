@@ -13,11 +13,13 @@ import { FLAME } from '../src/art/mkit';
 import { makeHeroArt3 } from '../src/art/heroes3';
 import { WOLF_CANVAS, wolfPainted } from '../src/art/fog_wolves';
 import { frameAt } from '../src/dev/action_f1_scene';
-import { cut, scaled } from '../src/dev/king_scene';
-import { chiefAt, sculptChief9, sculptWolf9, wolfAt } from '../src/dev/sculpt_f9_bosses';
+import { cut, scaled, spriteLaid } from '../src/dev/king_scene';
+import type { Sprite } from '../src/engine/px';
+import { CLUB_LONG, chiefAt, sculptChief9, sculptWolf9, wolfAt } from '../src/dev/sculpt_f9_bosses';
+import type { ChiefPose } from '../src/dev/sculpt_f9_bosses';
 import type { Drawn } from '../src/dev/sculpt';
 import { CHIEF_MOVES, LUNGE_LONG, RUSH_LONG, WOLF_MOVES, chiefPose, wolfPose } from '../src/dev/f9_bosses_moves';
-import type { ChiefMove, WolfMove } from '../src/dev/f9_bosses_moves';
+import type { Beat, ChiefMove, WolfMove } from '../src/dev/f9_bosses_moves';
 import type { V3 } from '../src/art/skeleton';
 import { png } from './king_png';
 
@@ -314,6 +316,217 @@ function lay(px: Px, fig: Px, ax: number, ay: number, x: number, y: number, keep
 }
 
 // =================================================================================================
+// THE RULES' OWN: the freeze where a heavy blow lands, the screen's kick, the blow smeared with after-images, the one struck rocked
+
+/** The move's own time at the film's `t`: held still through each blow's freeze (Movement 7). */
+function clockOf(beats: readonly Beat[], t: number): number {
+  let m = t;
+  for (const b of beats) {
+    if (m <= b.at) break;
+    if (m < b.at + b.freeze) return b.at;
+    m -= b.freeze;
+  }
+  return m;
+}
+/** The film's own time at which a beat lands (later by every freeze before it). */
+function beatFilm(beats: readonly Beat[], i: number): number {
+  let t = beats[i].at;
+  for (let j = 0; j < i; j++) t += beats[j].freeze;
+  return t;
+}
+/** How far the screen is kicked at the film's `t` (Animations: the screen kicks on big hits), and for the war cry's roar, a long rumble. */
+function kickOf(beats: readonly Beat[], t: number, f: number): [number, number] {
+  let a = 0;
+  beats.forEach((b, i) => {
+    const s = t - beatFilm(beats, i);
+    if (s >= 0 && s < b.ring) a = Math.max(a, b.shake * (1 - s / b.ring) ** 1.5);
+  });
+  return [Math.round((hash(f, 1, 1401) - 0.5) * 2 * a), Math.round((hash(f, 2, 1401) - 0.5) * 2 * a)];
+}
+/** A frame kicked by (dx, dy): what runs off one side comes in from the ground's colour. */
+function kicked(p: Px, d: [number, number]): Px {
+  if (!d[0] && !d[1]) return p;
+  const out = new Px(p.w, p.h);
+  for (let y = 0; y < p.h; y++) {
+    const sy = Math.min(p.h - 1, Math.max(0, y - d[1]));
+    for (let x = 0; x < p.w; x++) {
+      const sx = Math.min(p.w - 1, Math.max(0, x - d[0]));
+      const i = (sy * p.w + sx) * 4;
+      out.d.set(p.d.subarray(i, i + 4), (y * p.w + x) * 4);
+    }
+  }
+  return out;
+}
+/** AN AFTER-IMAGE of a figure: every other pixel of it, in `ramp`'s pale and its colour, `k` (0..1) of it left. */
+function ghost(px: Px, fig: Px, ramp: readonly string[], k: number, seed: number): void {
+  const a = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < fig.w && y < fig.h && fig.d[(y * fig.w + x) * 4 + 3] > 0;
+  for (let y = 0; y < fig.h; y++) {
+    for (let x = 0; x < fig.w; x++) {
+      if (!a(x, y)) continue;
+      const edge = !a(x - 1, y) || !a(x + 1, y) || !a(x, y - 1) || !a(x, y + 1);
+      if (edge) {
+        if (hash(x, y, seed) < k * 1.2) put(px, x, y, ramp[ramp.length - 2]);
+        continue;
+      }
+      if ((x + y) % 2 || (x >> 1) % 2 === (y >> 1) % 2) continue;
+      if (hash(x >> 1, y >> 1, seed) > k * 0.8) continue;
+      put(px, x, y, ramp[Math.max(0, ramp.length - 4)]);
+    }
+  }
+}
+/** A SMEAR along a path (picture points, oldest first): thick at its head, thinning to its tail; white at its heart, then `ramp`. */
+function smear(px: Px, path: readonly (readonly number[])[], w: number, ramp: readonly string[], k = 1, inner?: readonly (readonly number[])[]): void {
+  // (filled between the arc its head swept and the arc its middle swept, as a crescent: the heart white, then the ramp, its edge the ramp's darker)
+  const n = path.length;
+  for (let i = 1; i < n; i++) {
+    const t = i / (n - 1);
+    if (t < 1 - k) continue;
+    const o0 = path[i - 1];
+    const o1 = path[i];
+    const i0 = inner ? inner[i - 1] : o0;
+    const i1 = inner ? inner[i] : o1;
+    const steps = 8;
+    for (let s = 0; s <= steps; s++) {
+      const q = s / steps;
+      // (thin at the tail, full at the head)
+      if (q > 0.25 + 0.75 * t) continue;
+      const a = [o0[0] + (i0[0] - o0[0]) * q, o0[1] + (i0[1] - o0[1]) * q];
+      const b = [o1[0] + (i1[0] - o1[0]) * q, o1[1] + (i1[1] - o1[1]) * q];
+      const c = q < 0.12 ? ramp[ramp.length - 3] : q < 0.35 ? '#fffaf0' : q < 0.6 ? ramp[ramp.length - 1] : ramp[ramp.length - 2];
+      line(px, a, b, c, q < 0.12 ? 2 : Math.max(1, Math.round(w * 0.12)));
+    }
+  }
+}
+/** Points along an arc from `a` round to `b` about `c` (its own lengths), `n` of them, the radius going from one's to the other's. */
+function arcPath(c: V3, a: V3, b: V3, n: number): V3[] {
+  const va = [a[0] - c[0], a[1] - c[1], a[2] - c[2]];
+  const vb = [b[0] - c[0], b[1] - c[1], b[2] - c[2]];
+  const ra = Math.hypot(va[0], va[1], va[2]) || 1;
+  const rb = Math.hypot(vb[0], vb[1], vb[2]) || 1;
+  const ua = va.map((v) => v / ra);
+  const ub = vb.map((v) => v / rb);
+  const om = Math.acos(Math.max(-1, Math.min(1, ua[0] * ub[0] + ua[1] * ub[1] + ua[2] * ub[2])));
+  const out: V3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const s0 = om < 1e-3 ? 1 - t : Math.sin((1 - t) * om) / Math.sin(om);
+    const s1 = om < 1e-3 ? t : Math.sin(t * om) / Math.sin(om);
+    const r = ra + (rb - ra) * t;
+    out.push([c[0] + (ua[0] * s0 + ub[0] * s1) * r, c[1] + (ua[1] * s0 + ub[1] * s1) * r, c[2] + (ua[2] * s0 + ub[2] * s1) * r]);
+  }
+  return out;
+}
+/** SPEED LINES behind something going fast along (vx, vy) (picture), from (x, y). */
+function speedLines(px: Px, x: number, y: number, vx: number, vy: number, n: number, spread: number, seed: number, col: string): void {
+  const len = Math.hypot(vx, vy) || 1;
+  const ux = vx / len;
+  const uy = vy / len;
+  for (let i = 0; i < n; i++) {
+    const o = (hash(i, 1, seed) - 0.5) * 2 * spread;
+    const back = 6 + hash(i, 2, seed) * 30;
+    const l = 14 + hash(i, 3, seed) * 36;
+    const sx = x - ux * back - uy * o;
+    const sy = y - uy * back + ux * o;
+    line(px, [sx, sy], [sx - ux * l, sy - uy * l], col);
+  }
+}
+/** THE BURST where a heavy blow lands: a flash and rays thrown out, gold to pink, `k` 0..1 of its blink. */
+function burst(px: Px, x: number, y: number, k: number, size: number, seed: number): void {
+  if (k < 0 || k >= 1) return;
+  const r0 = size * (0.3 + 0.7 * k);
+  // (the flash: a squashed disc, white at its heart)
+  for (let j = -r0 * 0.5; j <= r0 * 0.5; j++) for (let i = -r0; i <= r0; i++) {
+    const q = Math.hypot(i / r0, j / (r0 * 0.5));
+    if (q > 1 - k * 0.6) continue;
+    if (k > 0.4 && (Math.round(x + i) + Math.round(y + j)) % 2) continue;
+    put(px, x + i, y + j, q < 0.4 ? '#fffaf0' : q < 0.7 ? FLAME[4] : FLAME[3]);
+  }
+  // (rays)
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 + hash(i, 1, seed) * 0.4;
+    const L = size * (1.2 + hash(i, 2, seed) * 1.4) * (0.4 + k);
+    const a0 = L * k * 0.6;
+    line(px, [x + Math.cos(a) * a0, y + Math.sin(a) * a0 * 0.6], [x + Math.cos(a) * L, y + Math.sin(a) * L * 0.6], i % 2 ? FLAME[3] : FLAME[4], k < 0.3 ? 2 : 1);
+  }
+}
+/** EMBERS of the enemy's fire rising off something, `t` the clock, `n` of them in a band `w` wide at (x, y). */
+function embers(px: Px, x: number, y: number, w: number, h: number, t: number, n: number, seed: number): void {
+  for (let i = 0; i < n; i++) {
+    const ph = (t * (0.6 + hash(i, 1, seed) * 0.8) + hash(i, 2, seed)) % 1;
+    const ex = x + (hash(i, 3, seed) - 0.5) * w + Math.sin(t * 4 + i) * 3;
+    const ey = y - ph * h;
+    const c = ph < 0.3 ? FLAME[4] : ph < 0.7 ? FLAME[3] : FLAME[2];
+    put(px, ex, ey, c);
+    if (ph < 0.5) put(px, ex, ey + 1, FLAME[2]);
+  }
+}
+/** PILLARS OF THE RAGE'S FIRE bursting up round him from the ground, `k` 0..1 of their life, flickering by frame `f`. */
+function flamePillars(px: Px, pr: Pr, cf: number, cl: number, r: number, k: number, f: number): void {
+  if (k <= 0 || k >= 1) return;
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + 0.3;
+    const b = pr(cf + Math.cos(a) * r, cl + Math.sin(a) * r, 0);
+    const tall = (26 + 30 * hash(i, 1, 9901)) * Math.sin(k * Math.PI) * (0.8 + 0.4 * hash(i, f >> 1, 9903));
+    for (let y = 0; y < tall; y++) {
+      const wv = Math.max(1, Math.round((1 - y / tall) * 5));
+      for (let x = -wv; x <= wv; x++) {
+        if (hash(Math.round(b[0] + x), Math.round(b[1] - y) + f, 9905) < y / tall * 0.7) continue;
+        put(px, b[0] + x + Math.sin((y + f) * 0.5) * 1.5, b[1] - y, y < tall * 0.3 ? FLAME[4] : y < tall * 0.6 ? FLAME[3] : FLAME[2]);
+      }
+    }
+  }
+}
+/** SHARDS OF ROCK thrust up out of the ground at (x, y), `up` of their height `tall`. */
+function spike(px: Px, x: number, y: number, tall: number, up: number, lean: number): void {
+  const h = tall * up;
+  for (let j = 0; j < h; j++) {
+    const w = Math.max(1, Math.round((1 - j / tall) * tall * 0.28));
+    for (let i = -w; i <= w; i++) put(px, x + i + lean * j * 0.15, y - j, i < -w * 0.3 ? ROCK[3] : i > w * 0.4 ? ROCK[1] : ROCK[2]);
+  }
+  line(px, [x - tall * 0.3, y], [x + tall * 0.3, y], ROCK[0], 2);
+}
+
+/** Someone struck: when (the move's own time) and which way he is thrown (picture), and how far. */
+interface Struck {
+  at: number;
+  dx: number;
+  dy: number;
+  far: number;
+}
+/** The Brawler's own reel (his clips are kept by name, not under `moves`), `s` seconds in. */
+function reelAt(look: 'front' | 'back', s: number): { px: Px; ax: number; ay: number } {
+  const c = ((BRAWLER as unknown as Record<string, { clips: Record<string, { frames: Sprite[]; fps: number }> }>)[look]).clips.reel;
+  return spriteLaid(c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.round(s * c.fps)))]);
+}
+/** THE BRAWLER, struck or not (Hits 3: a struck figure flashes and is knocked back; a heavy blow rocks it): his picture and where he is. */
+function brawlerAt(view: 'front' | 'back', t: number, m: number, hits: readonly Struck[], x: number, y: number): { px: Px; ax: number; ay: number; x: number; y: number } {
+  let h: Struck | null = null;
+  for (const q of hits) if (m >= q.at) h = q;
+  const look = view === 'front' ? 'back' : 'front';
+  if (!h || m - h.at > 1.2) return { ...frameAt(BRAWLER, look, 'stand', t), x, y };
+  const s = m - h.at;
+  const thrown = h.far * (1 - (1 - Math.min(1, s / 0.3)) ** 3);
+  const l = s < 0.5 ? reelAt(look, s) : frameAt(BRAWLER, look, 'stand', t);
+  let px = l.px;
+  if (s < 0.08) {
+    // (the flash: white, then the enemy's pink)
+    px = l.px.clone();
+    for (let i = 0; i < px.w * px.h; i++) if (px.d[i * 4 + 3]) px.set(i % px.w, Math.floor(i / px.w), s < 0.04 ? '#ffffff' : FLAME[3]);
+  }
+  return { px, ax: l.ax, ay: l.ay, x: x + h.dx * thrown, y: y + h.dy * thrown };
+}
+
+/** The chieftain's club's head at a pose (his own lengths). */
+const clubHead = (p: ChiefPose): V3 => {
+  const a = p.fistR;
+  const b = p.clubEnd;
+  const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  const n = Math.hypot(d[0], d[1], d[2]) || 1;
+  const L = CLUB_LONG * 0.95;
+  return [a[0] + p.hip[0] + (d[0] / n) * L, a[1] + p.hip[1] + (d[1] / n) * L, a[2] + p.hip[2] + (d[2] / n) * L];
+};
+
+// =================================================================================================
 // THE SCENES
 
 type View = 'front' | 'back';
@@ -323,181 +536,392 @@ interface Part {
   line: string;
   frame: (t: number) => Px;
 }
+type Scene = ((t: number) => Px) & { k: number; long: number };
 
-/** A chieftain scene: `move` seen `view` at `yaw`, his floor point at (bx, by), the Brawler `tf` ahead of him and `tl` to his left; whichever of them is farther drawn first. */
-function chiefFilm(move: ChiefMove, view: View, yaw: number, bx: number, by: number, tf: number, tl: number, k = 2) {
+/** A chieftain scene: `move` seen `view` at `yaw`, his floor point at (bx, by), the Brawler `tf` ahead of him and `tl` to his left. */
+function chiefFilm(move: ChiefMove, view: View, yaw: number, bx: number, by: number, tf: number, tl: number, k = 2): Scene {
   const size = { w: Math.ceil(W / k), h: Math.ceil(H / k), ax: bx, ay: by };
   const GROUND = groundFor(k);
-  return (t: number): Px => {
-    const pose = chiefPose(move, t);
+  const M = CHIEF_MOVES[move];
+  const long = M.long + M.beats.reduce((s, b) => s + b.freeze, 0);
+  const f = (t: number): Px => {
+    const m = clockOf(M.beats, t);
+    const fr = Math.floor(t * 30);
+    const pose = chiefPose(move, m);
     const d: Drawn = sculptChief9(view, pose, yaw, size);
-    const pr: Pr = (f, l, u) => chiefAt(d, yaw, [f, l, u]);
+    const pr: Pr = (ff, l, u) => chiefAt(d, yaw, [ff, l, u]);
     const tg = pr(tf, tl, 0);
     const hip = pr(pose.hip[0], pose.hip[1], 0);
-    const hero = frameAt(BRAWLER, view === 'front' ? 'back' : 'front', 'stand', t);
-    const M = CHIEF_MOVES[move];
-    const since = t - M.hit;
-    const impact: V3 = move === 'smash' ? [87, -8, 0] : [56, -5, 0];
+    const beat = M.beats[0];
+    const since = m - beat.at;
+    const sinceF = t - beatFilm(M.beats, 0);
+    const impact: V3 = move === 'smash' ? clubHead(chiefPose('smash', beat.at)) : move === 'slam' ? clubHead(chiefPose('slam', beat.at)) : [0, 0, 0];
+    // (who is struck, and which way he is thrown: away from the blow)
+    const away = (fromF: number, fromL: number, far: number): Struck => {
+      const a = pr(fromF, fromL, 0);
+      const dx = tg[0] - a[0];
+      const dy = tg[1] - a[1];
+      const n = Math.hypot(dx, dy) || 1;
+      return { at: beat.at, dx: dx / n, dy: dy / n, far };
+    };
+    const hits: Struck[] = move === 'smash' ? [away(impact[0], impact[1], 22)] : move === 'rush' ? [away(pose.hip[0] - 40, 0, 46)] : move === 'warcry' ? [away(0, 0, 14)] : [];
+    // (the slam's crack reaches him a little after it lands)
+    const crackAt = 0.3 * Math.min(1, Math.max(0, (tf - impact[0]) / 132));
+    if (move === 'slam') hits.push({ ...away(impact[0], impact[1], 30), at: beat.at + crackAt });
     const p = GROUND.clone();
-    // (on the ground)
+    // ON THE GROUND
     if (move === 'smash') {
-      if (t > 0.35 && since < 0) warnRing(p, pr, impact[0], impact[1], 26, t);
-      if (since >= 0) {
-        crack(p, pr, impact[0] - 6, impact[1], 20, 1, since / 1.2, 77);
-        crack(p, pr, impact[0] + 4, impact[1] + 6, -16, 1, since / 1.2, 79);
+      if (m > 0.5 && since < 0) warnRing(p, pr, impact[0], impact[1], 34, t);
+      if (since >= 0) for (let i = 0; i < 7; i++) {
+        const a = (i / 7) * Math.PI * 2 + 0.4;
+        crackRay(p, pr, impact[0], impact[1], a, 26 + 26 * hash(i, 1, 77), Math.min(1, sinceF / 0.12), (since - 0.6) / 1.0, 77 + i);
       }
-      shock(p, pr, impact[0], impact[1], 32, since / 0.4);
+      shock(p, pr, impact[0], impact[1], 70, sinceF / 0.45);
+      shock(p, pr, impact[0], impact[1], 44, (sinceF - 0.08) / 0.4);
     }
     if (move === 'slam') {
-      if (t > 0.6 && since < 0) warnLane(p, pr, impact[0] - 6, impact[0] + 150, impact[1], 10, t);
-      if (since >= 0) crack(p, pr, impact[0] - 6, impact[1], 156, since / 0.5, (since - 0.6) / 0.8, 81);
-      shock(p, pr, impact[0], impact[1], 22, since / 0.35);
+      if (m > 0.45 && since < 0) warnLane(p, pr, impact[0] - 8, impact[0] + 126, impact[1], 13, t);
+      if (since >= 0) crack(p, pr, impact[0] - 8, impact[1], 132, Math.min(1, sinceF / 0.3), (since - 0.7) / 0.9, 81);
+      shock(p, pr, impact[0], impact[1], 46, sinceF / 0.4);
     }
-    if (move === 'rush' && t > 0.25 && t < 1.15) warnLane(p, pr, 20, RUSH_LONG + 30, 0, 22, t);
-    // (the two of them, the farther first)
-    const heroFirst = tg[1] < hip[1];
-    const layHero = (): void => lay(p, hero.px, hero.ax, hero.ay, tg[0], tg[1]);
+    if (move === 'warcry') shock(p, pr, 0, 0, 130, sinceF / 0.6);
+    if (move === 'rush' && m > 0.3 && m < 1.15) warnLane(p, pr, 10, RUSH_LONG + 20, 0, 24, t);
+    // (the rage's after-images, his ghosts under him while he strikes)
+    const strike = M.strikes.find(([a, b]) => m >= a && m <= b + 0.1);
+    if (strike) {
+      const [a, b] = strike;
+      const n = move === 'rush' ? 5 : 3;
+      for (let i = n; i >= 1; i--) {
+        const q = Math.max(a - 0.05, Math.min(m, b) - (i * (b - a)) / n);
+        const gd = sculptChief9(view, chiefPose(move, q), yaw, size);
+        ghost(p, gd.px, FLAME, (1 - i / (n + 1)) * (m > b ? 1 - (m - b) / 0.1 : 1), 9800 + i);
+      }
+    }
+    // THE TWO OF THEM, the farther first
+    const hero = brawlerAt(view, t, m, hits, tg[0], tg[1]);
+    const heroFirst = hero.y < hip[1];
+    const layHero = (): void => lay(p, hero.px, hero.ax, hero.ay, hero.x, hero.y);
     if (heroFirst) layHero();
     lay(p, d.px, 0, 0, 0, 0);
     if (!heroFirst) layHero();
-    // (over them)
+    // OVER THEM
+    // (the club's smear, from where the strike began to where it is)
+    if (strike && (move === 'smash' || move === 'slam' || move === 'warcry')) {
+      const [a, b] = strike;
+      const p0 = chiefPose(move, a);
+      const p1 = chiefPose(move, Math.min(m, b));
+      const piv: V3 = [p1.hip[0], p1.hip[1] - 12, p1.hip[2] + 76];
+      const outer = arcPath(piv, clubHead(p0), clubHead(p1), 14).map((q) => pr(q[0], q[1], q[2]));
+      const mid = (q: ChiefPose): V3 => {
+        const h = clubHead(q);
+        const f0 = [q.fistR[0] + q.hip[0], q.fistR[1] + q.hip[1], q.fistR[2] + q.hip[2]];
+        return [(h[0] + f0[0]) / 2, (h[1] + f0[1]) / 2, (h[2] + f0[2]) / 2];
+      };
+      const inner = arcPath(piv, mid(p0), mid(p1), 14).map((q) => pr(q[0], q[1], q[2]));
+      smear(p, outer, 22, FLAME, m > b ? 1 - (m - b) / 0.1 : 1, inner);
+    }
     if (move === 'smash' || move === 'slam') {
-      dust(p, pr, impact[0], impact[1], since / 0.9, 9701, 12, 34);
-      chips(p, pr, impact[0], impact[1], since, 9703);
-      if (move === 'slam') for (let i = 1; i <= 4; i++) dust(p, pr, impact[0] + i * 34, impact[1], (since - i * 0.12) / 0.8, 9705 + i, 5, 14);
+      const c = pr(impact[0], impact[1], 4);
+      burst(p, c[0], c[1], sinceF / 0.22, 26, 9707);
+      dust(p, pr, impact[0], impact[1], since / 1.0, 9701, 16, 60);
+      chips(p, pr, impact[0], impact[1], since, 9703, 26);
+      if (since >= 0 && since < 1.4) embers(p, c[0], c[1], 40, 60, since, 14, 9709);
+      if (move === 'slam') {
+        // (the rock thrust up along the crack as it runs, each with its own burst of stone and dust)
+        for (let i = 1; i <= 5; i++) {
+          const ff = impact[0] + i * 24;
+          const when = (i * 24) / 132 * 0.3;
+          const s2 = since - when;
+          if (s2 < 0) continue;
+          const b2 = pr(ff, impact[1] + (hash(i, 1, 9711) - 0.5) * 10, 0);
+          spike(p, b2[0], b2[1], 18 + 14 * hash(i, 2, 9711), Math.min(1, s2 / 0.06) * (s2 > 1.1 ? Math.max(0, 1 - (s2 - 1.1) / 0.4) : 1), hash(i, 3, 9711) - 0.5);
+          chips(p, pr, ff, impact[1], s2, 9713 + i, 8);
+          dust(p, pr, ff, impact[1], s2 / 0.8, 9715 + i, 6, 22);
+        }
+      }
     }
     if (move === 'warcry') {
-      const head = pr(pose.hip[0] + 28, 0, 112);
-      if (since > 0 && since < 1.1) arcs(p, head[0], head[1], since / 1.1, -Math.PI / 2, 1.3, 3, FLAME);
-      if (since > 0.05) rage(p, d.px, Math.floor(t * 30), Math.min(1, (since - 0.05) / 0.3));
-      for (const [ts, s] of [[2.1, 1], [2.3, -1], [2.5, 1], [2.7, -1]] as const) dust(p, pr, pose.hip[0] + 10, s * 18, (t - ts) / 0.5, Math.round(9711 + ts * 10), 4, 10);
+      // (gathering: embers drawn in to him; the roar: arcs, the burst, the fire bursting up round him, the rage on him after)
+      const head = pr(pose.hip[0] + 30, 0, 118);
+      const feet = pr(pose.hip[0], 0, 0);
+      if (m > 0.3 && m < 0.97) for (let i = 0; i < 18; i++) {
+        const ph = ((m - 0.3) * 1.6 + hash(i, 1, 9921)) % 1;
+        const a = hash(i, 2, 9921) * Math.PI * 2;
+        const r = 80 * (1 - ph);
+        put(p, feet[0] + Math.cos(a) * r, feet[1] - 50 + Math.sin(a) * r * 0.6, ph > 0.6 ? FLAME[4] : FLAME[2]);
+      }
+      burst(p, head[0], head[1], sinceF / 0.25, 30, 9923);
+      if (since > 0 && since < 0.95) arcs(p, head[0], head[1], since / 0.95, -Math.PI / 2, 1.5, 4, FLAME);
+      if (since > 0.6 && since < 1.6) arcs(p, head[0], head[1], (since - 0.6) / 1.0, -Math.PI / 2, 1.5, 3, FLAME);
+      flamePillars(p, pr, pose.hip[0], 0, 30, since / 1.1, fr);
+      if (since > 0) {
+        rage(p, d.px, fr, Math.min(1, since / 0.2));
+        embers(p, feet[0], feet[1], 70, 150, m, 26, 9925);
+      }
+      dust(p, pr, 0, 0, since / 0.8, 9927, 18, 120);
+      for (const [ts, s] of [[2.3, -1], [2.4, 1], [2.5, -1], [2.6, 1]] as const) dust(p, pr, pose.hip[0] + 12, s * 18, (m - ts) / 0.45, Math.round(9931 + ts * 10), 6, 16);
+      if (m > 2.2 && m < 2.7) speedLines(p, hip[0], hip[1] - 60, tg[0] - hip[0], tg[1] - hip[1], 10, 40, 9933 + fr, FLAME[2]);
     }
     if (move === 'rush') {
-      for (const ts of [0.58, 0.88]) dust(p, pr, 0, -18, (t - ts) / 0.6, Math.round(9721 + ts * 100), 5, 12);
-      if (t > 1.05 && t < 1.95) for (let i = 0; i < 6; i++) dust(p, pr, pose.hip[0] - 16 - i * 16, (hash(i, 1, 9723) - 0.5) * 22, 0.25 + i * 0.1, 9725 + i, 2, 8);
-      dust(p, pr, RUSH_LONG + 18, 0, (t - 1.75) / 0.7, 9727, 10, 26);
+      for (const ts of [0.52, 0.76]) {
+        dust(p, pr, 0, -18, (m - ts) / 0.6, Math.round(9941 + ts * 100), 8, 18);
+        chips(p, pr, 0, -18, m - ts, Math.round(9943 + ts * 100), 6);
+      }
+      // (breath steaming off his snout as he paws)
+      if (m > 0.3 && m < 1.15) {
+        const sn = pr(pose.hip[0] + 40, 0, 72);
+        for (let i = 0; i < 8; i++) {
+          const ph = (m * 2 + hash(i, 1, 9945)) % 1;
+          put(p, sn[0] + ph * 14 + (hash(i, 2, 9945) - 0.5) * 6, sn[1] - ph * 8, ph < 0.5 ? '#d8d4e0' : '#9a96a8');
+        }
+      }
+      if (m > 1.15 && m < 1.5) {
+        speedLines(p, hip[0], hip[1] - 50, tg[0] - pr(0, 0, 0)[0], tg[1] - pr(0, 0, 0)[1], 16, 50, 9947 + fr, '#d8d0c0');
+        for (let i = 0; i < 6; i++) dust(p, pr, pose.hip[0] - 20 - i * 18, (hash(i, 1, 9949) - 0.5) * 24, 0.2 + i * 0.1, 9951 + i + fr, 3, 10);
+      }
+      const hc = pr(RUSH_LONG - 10, 0, 50);
+      burst(p, hc[0], hc[1], sinceF / 0.22, 30, 9953);
+      dust(p, pr, RUSH_LONG + 24, 0, since / 0.8, 9955, 16, 40);
+      chips(p, pr, RUSH_LONG + 24, 0, since, 9957, 16);
     }
-    return p;
+    return kicked(p, kickOf(M.beats, t, fr));
   };
+  return Object.assign(f, { k, long });
+}
+
+/** A crack run straight out from (cf, cl) at angle `a` (on the ground), `len` long, `k` of it shown, its glow fading after `fade`. */
+function crackRay(px: Px, pr: Pr, cf: number, cl: number, a: number, len: number, k: number, fade: number, seed: number): void {
+  if (k <= 0) return;
+  const n = 10;
+  let prev = pr(cf, cl, 0);
+  for (let i = 1; i <= n * k; i++) {
+    const r = (i / n) * len;
+    const j = (hash(i, 1, seed) - 0.5) * 0.5;
+    const p2 = pr(cf + Math.cos(a + j) * r, cl + Math.sin(a + j) * r, 0);
+    line(px, prev, p2, '#1e1218', Math.max(1, 3 - Math.floor(i / 4)));
+    if (fade < 1) line(px, prev, p2, hash(i, 2, seed) > fade ? (i < 4 ? FLAME[3] : FLAME[2]) : '#3a1c28', i < 4 ? 2 : 1);
+    prev = p2;
+  }
 }
 
 /** A mist wolf scene: `move` seen `view` at `yaw`, its floor point at (bx, by), the Brawler `tf` ahead and `tl` to its left. */
-function wolfFilm(move: WolfMove, view: View, yaw: number, bx: number, by: number, tf: number, tl: number, k = 3) {
+function wolfFilm(move: WolfMove, view: View, yaw: number, bx: number, by: number, tf: number, tl: number, k = 3): Scene {
   const size = { w: Math.ceil(W / k), h: Math.ceil(H / k), ax: bx, ay: by };
   const GROUND = groundFor(k);
-  const FOGS: [number, number][] = [[50, 75], [0, -75]];
-  return (t: number): Px => {
-    const pose = wolfPose(move, t);
+  const FOGS: [number, number][] = [[50, 80], [0, -80]];
+  const M = WOLF_MOVES[move];
+  const long = M.long + M.beats.reduce((s, b) => s + b.freeze, 0);
+  const f = (t: number): Px => {
+    const m = clockOf(M.beats, t);
+    const fr = Math.floor(t * 30);
+    const pose = wolfPose(move, m);
     const d: Drawn = sculptWolf9(view, pose, yaw, size);
-    const pr: Pr = (f, l, u) => wolfAt(d, yaw, [f, l, u]);
+    const pr: Pr = (ff, l, u) => wolfAt(d, yaw, [ff, l, u]);
     const tg = pr(tf, tl, 0);
     const root = pr(pose.root[0], pose.root[1], 0);
-    const hero = frameAt(BRAWLER, view === 'front' ? 'back' : 'front', 'stand', t);
-    const M = WOLF_MOVES[move];
-    const since = t - M.hit;
+    const beat = M.beats[0];
+    const since = m - beat.at;
+    const sinceF = t - beatFilm(M.beats, 0);
+    const away = (fromF: number, fromL: number, far: number, at = beat.at): Struck => {
+      const a = pr(fromF, fromL, 0);
+      const dx = tg[0] - a[0];
+      const dy = tg[1] - a[1];
+      const n = Math.hypot(dx, dy) || 1;
+      return { at, dx: dx / n, dy: dy / n, far };
+    };
+    const hits: Struck[] =
+      move === 'bite' ? [away(0, 0, 14)] : move === 'claw' ? [{ ...away(0, 0, 18), dx: 0.4, dy: -0.9 }] : move === 'lunge' ? [away(0, 0, 20)] : move === 'cloud' ? [0.95, 1.35, 1.75, 2.15].map((q) => away(0, 0, 6, q)) : [];
     const p = GROUND.clone();
-    if (move === 'lunge' && t > 0.3 && t < 0.68) warnLane(p, pr, 30, LUNGE_LONG + 40, 0, 14, t);
-    if (move === 'bite' && t > 0.15 && since < 0) warnRing(p, pr, 62, 0, 18, t);
-    if (move === 'claw' && t > 0.15 && since < 0) warnRing(p, pr, 54, 0, 22, t);
-    // (the fog wolves it calls, out of the mist either side of it)
-    const fogs: { px: Px; ax: number; ay: number; x: number; y: number; keep: number }[] = [];
-    if (move === 'howl' && t > 0.9) {
-      for (const [k, [ff, ll]] of FOGS.entries()) {
-        const fp = wolfPainted('stand', t + k * 0.3, 'front');
-        const at = pr(ff, ll, 0);
-        fogs.push({ px: fp.px, ax: WOLF_CANVAS.ax, ay: WOLF_CANVAS.ay, x: at[0], y: at[1], keep: Math.min(1, (t - 0.9 - k * 0.2) / 0.7) });
-        mistCloud(p, pr, ff, ll, 26, Math.min(1, (t - 0.8) / 0.4), t, Math.max(0, (t - 1.6) / 0.8));
+    if (move === 'lunge' && m > 0.35 && m < 0.72) warnLane(p, pr, 20, LUNGE_LONG + 30, 0, 16, t);
+    if (move === 'bite' && m > 0.25 && since < 0) warnRing(p, pr, 74, 0, 20, t);
+    if (move === 'claw' && m > 0.25 && since < 0) warnRing(p, pr, 62, 0, 28, t);
+    if (move === 'cloud' && m > 0.3 && since < 0) warnRing(p, pr, 20, 0, 100, t);
+    // (after-images of it while it strikes)
+    const strike = M.strikes.find(([a, b]) => m >= a && m <= b + 0.1);
+    if (strike && move !== 'howl' && move !== 'cloud') {
+      const [a, b] = strike;
+      for (let i = 4; i >= 1; i--) {
+        const q = Math.max(a - 0.04, Math.min(m, b) - (i * (b - a)) / 4);
+        const gd = sculptWolf9(view, { ...wolfPose(move, q), ghost: 0 }, yaw, size);
+        ghost(p, gd.px, MIST, (1 - i / 5) * (m > b ? 1 - (m - b) / 0.1 : 1), 9810 + i);
       }
     }
-    const items = [
-      { kind: 'hero', y: tg[1] },
-      { kind: 'wolf', y: root[1] },
-      ...fogs.map((f, i) => ({ kind: `fog${i}`, y: f.y })),
-    ].sort((a, b) => a.y - b.y);
-    // (the lunge passes through you: you are struck as it does)
-    const struck = move === 'lunge' ? Math.abs(pose.root[0] - tf) < 30 && t > 0.68 && t < 0.95 : false;
+    // (the fog wolves it calls, bursting out of mist either side of it)
+    const fogs: { px: Px; ax: number; ay: number; x: number; y: number; keep: number }[] = [];
+    if (move === 'howl') {
+      FOGS.forEach(([ff, ll], i) => {
+        const when = 1.2 + i * 0.25;
+        mistCloud(p, pr, ff, ll, 34, Math.min(1, Math.max(0, (m - 0.95 - i * 0.2) / 0.3)), m, Math.max(0, (m - when - 0.6) / 0.6));
+        if (m > when) {
+          const fp = wolfPainted('stand', m + i * 0.3, 'front');
+          const at = pr(ff, ll, 0);
+          fogs.push({ px: fp.px, ax: WOLF_CANVAS.ax, ay: WOLF_CANVAS.ay, x: at[0], y: at[1], keep: Math.min(1, (m - when) / 0.25) });
+        }
+      });
+    }
+    // (the mist cloud, under the Brawler: he stays in sight in it, Animations 4)
+    if (move === 'cloud') {
+      const g = since < 0 ? 0 : Math.min(1, sinceF / 0.18);
+      const thin = m < 2.5 ? 0 : (m - 2.5) / 0.7;
+      mistCloud(p, pr, pose.root[0] + 20, 0, 120, g, m, thin * 1.2);
+    }
+    const hero = brawlerAt(view, t, m, hits, tg[0], tg[1]);
+    const items = [{ kind: 'hero', y: hero.y }, { kind: 'wolf', y: root[1] }, ...fogs.map((q, i) => ({ kind: `fog${i}`, y: q.y }))].sort((a, b) => a.y - b.y);
     for (const it of items) {
-      if (it.kind === 'hero') lay(p, hero.px, hero.ax, hero.ay, tg[0] + (struck ? 1 : 0), tg[1]);
+      if (it.kind === 'hero') lay(p, hero.px, hero.ax, hero.ay, hero.x, hero.y);
       else if (it.kind === 'wolf') lay(p, d.px, 0, 0, 0, 0);
       else {
-        const f = fogs[Number(it.kind.slice(3))];
-        if (f.keep > 0) lay(p, f.px, f.ax, f.ay, f.x, f.y, f.keep);
+        const q = fogs[Number(it.kind.slice(3))];
+        lay(p, q.px, q.ax, q.ay, q.x, q.y, q.keep);
       }
     }
-    // (over them)
-    const muzzle = pr(pose.root[0] + 70, 0, 74 + pose.root[2]);
+    // OVER THEM
+    const muzzle = pr(pose.root[0] + 72, 0, 74 + pose.root[2]);
+    const hitAt = pr(tf, tl, 30);
     if (move === 'bite') {
-      slash(p, muzzle[0] - 4, muzzle[1] + 2, 12, -2.4, -0.6, (t - 0.42) / 0.22, MIST, 3);
-      slash(p, muzzle[0] - 4, muzzle[1] + 4, 12, 2.4, 0.6, (t - 0.44) / 0.22, MIST, 3);
-      hit(p, tg[0], tg[1] - 40, (t - 0.5) / 0.25);
+      // (the jaws' crescents closing on you, huge; mist sprayed off the bite)
+      if (m > 0.58) {
+        slash(p, hitAt[0] - 4, hitAt[1] + 4, 22, -2.6, -0.4, (m - 0.58) / 0.2, [MIST[2], FLAME[2], '#fffaf0'], 4);
+        slash(p, hitAt[0] - 4, hitAt[1] - 2, 22, 2.6, 0.4, (m - 0.6) / 0.2, [MIST[2], FLAME[2], '#fffaf0'], 4);
+      }
+      burst(p, hitAt[0], hitAt[1], sinceF / 0.18, 16, 9961);
+      mistBurst(p, pr, -15, 0, (m - 0.55) / 0.5, 9963);
+      mistBurst(p, pr, tf, tl, since / 0.5, 9965);
+      if (strike) speedLines(p, muzzle[0], muzzle[1], 1, 0.55, 12, 20, 9967 + fr, MIST[4]);
     }
     if (move === 'claw') {
-      const pc = pr(46, 0, 30);
-      for (let i = 0; i < 3; i++) slash(p, pc[0] - 6, pc[1] + i * 4 - 4, 30, -2.2, 0.4, (t - 0.36 - i * 0.02) / 0.3, [MIST[2], FLAME[2], MIST[4]], 2);
-      hit(p, tg[0], tg[1] - 36, (t - 0.47) / 0.25);
+      // (three great claw crescents across you, white at the heart, edged with its pink; wind off them)
+      for (let i = 0; i < 3; i++) slash(p, hitAt[0] - 8 + i * 4, hitAt[1] - 6 + i * 6, 34, -2.5, 0.6, (m - 0.54 - i * 0.015) / 0.32, [MIST[2], FLAME[2], '#fffaf0'], 4);
+      burst(p, hitAt[0], hitAt[1], sinceF / 0.18, 18, 9971);
+      mistBurst(p, pr, tf, tl, since / 0.5, 9973);
+      if (m > 0.3 && m < 0.55) embersMist(p, root[0], root[1] - 50, 60, 70, m, 14, 9975);
     }
     if (move === 'howl') {
-      const head = pr(pose.root[0] + 52, 0, 104);
-      if (t > 0.55 && t < 2.1) arcs(p, head[0], head[1], ((t - 0.55) % 0.75) / 0.75, -Math.PI / 2 - 0.3, 1.0, 2, ['#6c688a', '#c6c2da', '#eeecf8']);
+      const head = pr(pose.root[0] + 40, 0, 112);
+      if (m > 0.88 && m < 2.4) {
+        arcs(p, head[0], head[1], ((m - 0.88) % 0.5) / 0.5, -Math.PI / 2 - 0.25, 1.4, 3, [MIST[2], MIST[3], MIST[4]]);
+        arcs(p, head[0], head[1], ((m - 0.63) % 0.5) / 0.5, -Math.PI / 2 - 0.25, 1.4, 3, [MIST[2], MIST[3], FLAME[2]]);
+      }
+      burst(p, head[0], head[1], sinceF / 0.2, 14, 9981);
+      FOGS.forEach(([ff, ll], i) => mistBurst(p, pr, ff, ll, (m - 1.2 - i * 0.25) / 0.6, 9983 + i));
+      if (m > 0.9 && m < 2.3) embersMist(p, root[0], root[1], 120, 40, m, 20, 9985);
     }
     if (move === 'lunge') {
-      // (the mist it leaves along its way)
-      if (t > 0.6) for (let i = 0; i < 10; i++) {
-        const f = Math.min(pose.root[0], LUNGE_LONG) - i * 16;
-        if (f < 0) break;
-        mistCloud(p, pr, f, (hash(i, 1, 9801) - 0.5) * 8, 10, 1, t + i, Math.min(1, (t - 0.6) * 1.2 + i * 0.07));
+      // (gathering: mist drawn into it; the streak of mist where it went; you, struck as it passes through)
+      if (m > 0.35 && m < 0.7) for (let i = 0; i < 20; i++) {
+        const ph = ((m - 0.35) * 2.2 + hash(i, 1, 9991)) % 1;
+        const a = hash(i, 2, 9991) * Math.PI * 2;
+        const r = 60 * (1 - ph);
+        put(p, root[0] + Math.cos(a) * r, root[1] - 26 + Math.sin(a) * r * 0.6, ph > 0.6 ? MIST[4] : MIST[3]);
       }
-      if (struck) hit(p, tg[0], tg[1] - 34, ((t - 0.7) % 0.2) / 0.2);
+      if (m > 0.7) {
+        const reach = Math.min(LUNGE_LONG, pose.root[0]);
+        for (let i = 0; i < 14; i++) {
+          const ff = reach - i * 13;
+          if (ff < -16) break;
+          mistCloud(p, pr, ff, (hash(i, 1, 9993) - 0.5) * 10, 12, 1, m + i, Math.min(1.4, Math.max(0, (m - 0.84) * 1.6) + i * 0.05));
+        }
+      }
+      if (strike) speedLines(p, root[0], root[1] - 30, 1, 0.55, 18, 26, 9995 + fr, MIST[4]);
+      burst(p, hitAt[0], hitAt[1], sinceF / 0.2, 18, 9997);
+      mistBurst(p, pr, LUNGE_LONG, 0, (m - 0.84) / 0.6, 9999);
     }
     if (move === 'cloud') {
-      const g = t < 0.4 ? 0 : t < 1.0 ? (t - 0.4) / 0.6 : 1;
-      const thin = t < 2.4 ? 0 : (t - 2.4) / 0.6;
-      mistCloud(p, pr, pose.root[0] + 20, 0, 110, g, t, thin * 1.2);
-      // (its eyes, through the mist)
-      const eyes = pr(pose.root[0] + 57, 0, 81);
-      if (g > 0.3 && thin < 0.7) {
-        put(p, eyes[0], eyes[1], FLAME[4]);
-        put(p, eyes[0] + 3, eyes[1] - 1, FLAME[4]);
+      // (drawing the mist in; the blast of it outward; its claws in it at you; its eyes moving in it)
+      if (m > 0.2 && m < 0.66) for (let i = 0; i < 24; i++) {
+        const ph = ((m - 0.2) * 2.4 + hash(i, 1, 9801)) % 1;
+        const a = hash(i, 2, 9801) * Math.PI * 2;
+        const r = 90 * (1 - ph);
+        put(p, muzzle[0] + Math.cos(a) * r, muzzle[1] + Math.sin(a) * r * 0.6, ph > 0.6 ? MIST[4] : MIST[3]);
       }
-      if (g >= 1 && thin < 0.5) hit(p, tg[0], tg[1] - 34, ((t - 1.0) % 0.45) / 0.3);
+      mistRing(p, pr, pose.root[0] + 20, 0, 150, sinceF / 0.35);
+      burst(p, muzzle[0], muzzle[1], sinceF / 0.18, 14, 9803);
+      for (const q of [0.95, 1.35, 1.75, 2.15]) {
+        slash(p, hitAt[0] - 2, hitAt[1] - 4, 18, q * 3 % 6.28, q * 3 % 6.28 + 2.2, (m - q + 0.06) / 0.25, [MIST[2], FLAME[2], '#fffaf0'], 3);
+        burst(p, hitAt[0], hitAt[1], (m - q) / 0.12, 8, 9805);
+      }
+      if (since > 0 && m < 2.6) {
+        const a = m * 2.2;
+        const c = pr(pose.root[0] + 20 + Math.cos(a) * 50, Math.sin(a) * 50, 50);
+        put(p, c[0], c[1], FLAME[4]);
+        put(p, c[0] + 4, c[1] - 1, FLAME[4]);
+        put(p, c[0] + 1, c[1], FLAME[2]);
+        put(p, c[0] + 5, c[1] - 1, FLAME[2]);
+      }
     }
-    return p;
+    return kicked(p, kickOf(M.beats, t, fr));
   };
+  return Object.assign(f, { k, long });
 }
 
-/** A part: `long` seconds of a scene `k` times as big, played from `from`, `slow` times slower. */
-function part(scene: ((t: number) => Px) & { k?: number }, long: number, title: string, line2: string, from = 0, slow = 1): Part {
-  return { long: long * slow, title, line: line2, frame: (t) => cut(scaled(scene(from + t / slow), scene.k ?? 2), 0, 0, W, H) };
+/** MIST BURSTING out of a point on the ground, `k` 0..1 of its life: a puff thrown up and out, thinning. */
+function mistBurst(px: Px, pr: Pr, cf: number, cl: number, k: number, seed: number): void {
+  if (k <= 0 || k >= 1) return;
+  for (let i = 0; i < 18; i++) {
+    const a = hash(i, 1, seed) * Math.PI * 2;
+    const r = (10 + 30 * hash(i, 2, seed)) * Math.sqrt(k);
+    const c = pr(cf + Math.cos(a) * r, cl + Math.sin(a) * r, 8 + 30 * k * hash(i, 3, seed));
+    const s = 2 + 5 * k;
+    for (let y = -s; y <= s; y++) for (let x = -s * 1.3; x <= s * 1.3; x++) {
+      if (Math.hypot(x / 1.3, y) > s) continue;
+      if ((Math.round(c[0] + x) + Math.round(c[1] + y)) % 2 && k > 0.3) continue;
+      if (hash(Math.round(c[0] + x), Math.round(c[1] + y), seed + i) < k * 0.85) continue;
+      put(px, c[0] + x, c[1] + y, k < 0.4 ? MIST[4] : MIST[3]);
+    }
+  }
 }
-const at = <T extends (t: number) => Px>(f: T, k: number): T & { k: number } => Object.assign(f, { k });
+/** A RING OF MIST blasting out along the ground, `k` 0..1. */
+function mistRing(px: Px, pr: Pr, cf: number, cl: number, R: number, k: number): void {
+  if (k <= 0 || k >= 1) return;
+  const r = R * (1 - (1 - k) ** 2);
+  for (let i = 0; i < 90; i++) {
+    const a = (i / 90) * Math.PI * 2;
+    const c = pr(cf + Math.cos(a) * r, cl + Math.sin(a) * r, 6);
+    for (let j = 0; j < 4; j++) {
+      if (hash(i, j, 9811) < k * 0.8) continue;
+      put(px, c[0] + (hash(i, j + 4, 9811) - 0.5) * 6, c[1] - j * 2, j < 2 ? MIST[4] : MIST[3]);
+    }
+  }
+}
+/** MOTES OF MIST rising off it (its own embers), in a band `w` wide at (x, y). */
+function embersMist(px: Px, x: number, y: number, w: number, h: number, t: number, n: number, seed: number): void {
+  for (let i = 0; i < n; i++) {
+    const ph = (t * (0.6 + hash(i, 1, seed) * 0.8) + hash(i, 2, seed)) % 1;
+    put(px, x + (hash(i, 3, seed) - 0.5) * w + Math.sin(t * 3 + i) * 3, y - ph * h, ph < 0.5 ? MIST[4] : MIST[3]);
+  }
+}
 
-const C = CHIEF_MOVES;
-const Wm = WOLF_MOVES;
-const smashF = at(chiefFilm('smash', 'front', 25, 250, 195, 100, -14), 2);
-const smashB = at(chiefFilm('smash', 'back', 25, 330, 300, 100, 45), 2);
-const slamF = at(chiefFilm('slam', 'front', 40, 150, 175, 150, 0), 2);
-const cryF = at(chiefFilm('warcry', 'front', 25, 230, 200, 128, 0), 2);
-const rushF = at(chiefFilm('rush', 'front', 40, 110, 195, 120, 75), 2);
-const biteF = at(wolfFilm('bite', 'front', 42, 130, 150, 105, 0), 3);
-const clawF = at(wolfFilm('claw', 'front', 42, 140, 150, 92, 0), 3);
-const howlF = at(wolfFilm('howl', 'front', 42, 150, 150, 110, -40), 3);
-const lungeF = at(wolfFilm('lunge', 'front', 42, 110, 125, 80, 0), 3);
-const cloudF = at(wolfFilm('cloud', 'front', 42, 130, 150, 90, 0), 3);
+/** A part: `long` seconds of a scene, played from `from`, `slow` times slower. */
+function part(scene: Scene, title: string, line2: string, from = 0, long = scene.long, slow = 1): Part {
+  return { long: long * slow, title, line: line2, frame: (t) => cut(scaled(scene(from + t / slow), scene.k), 0, 0, W, H) };
+}
 
+const smashF = chiefFilm('smash', 'front', 25, 250, 228, 104, -10);
+const smashB = chiefFilm('smash', 'back', 25, 330, 300, 104, 40);
+const slamF = chiefFilm('slam', 'front', 55, 135, 246, 118, 0);
+const cryF = chiefFilm('warcry', 'front', 25, 230, 215, 140, 0);
+const rushF = chiefFilm('rush', 'front', 40, 110, 195, RUSH_LONG + 40, 0);
+const biteF = wolfFilm('bite', 'front', 42, 130, 150, 104, 0);
+const clawF = wolfFilm('claw', 'front', 42, 140, 150, 90, 0);
+const howlF = wolfFilm('howl', 'front', 42, 150, 150, 110, -40);
+const lungeF = wolfFilm('lunge', 'front', 42, 110, 125, 84, 0);
+const cloudF = wolfFilm('cloud', 'front', 42, 130, 150, 92, 0);
+
+const CS = CHIEF_MOVES.smash.beats[0].at;
 export const parts: Part[] = [
-  part(smashF, C.smash.long, 'THE TROLL CHIEFTAIN’S CLUB SMASH', 'Both hands on it, swung up over his head, HELD, where it lands marked · down in two frames · a shockwave, the ground cracked'),
-  part(smashF, 0.7, 'THE CLUB SMASH · HALF SPEED', 'Over and down: wound up, swung, landed', C.smash.hit - 0.25, 2),
-  part(smashB, C.smash.long, 'THE CLUB SMASH · FROM BEHIND', 'The ring marked where it will land: get out of it while he holds it up'),
-  part(slamF, C.slam.long, 'HIS GROUND SLAM', 'Crouched, then up on his toes, the club straight up, HELD, a line marked · driven down: the ground cracks open along the line'),
-  part(cryF, C.warcry.long, 'HIS WAR CRY: HIS RAGE', 'Gathered in, then thrown open: the roar · the rage on him, burning pink and gold: his blows quicker and his feet quicker'),
-  part(rushF, C.rush.long, 'HIS BULL RUSH', 'Head down, the club tucked like a ram, he paws the ground: his line marked · down it at a run · skids to a stop'),
-  part(biteF, Wm.bite.long, 'THE MIST WOLF’S BITE', 'Gathered back, HELD · the lunge in, jaws flung open · snapped shut'),
-  part(biteF, 0.45, 'THE BITE · HALF SPEED', 'Jaws open, shut', Wm.bite.hit - 0.15, 2),
-  part(clawF, Wm.claw.long, 'ITS CLAW SWEEP', 'Up on its hind legs a little, a forepaw raised, HELD · swept across before it'),
-  part(howlF, Wm.howl.long, 'ITS HOWL', 'Its head thrown back: the howl · the floor’s wolves come out of the mist to it'),
-  part(lungeF, Wm.lunge.long, 'ITS LUNGE', 'Crouched, its line marked · gone to mist, it passes through you and takes its shape again beyond'),
-  part(lungeF, 0.5, 'THE LUNGE · HALF SPEED', 'Through you', 0.62, 2),
-  part(cloudF, Wm.cloud.long, 'ITS MIST CLOUD', 'It breathes the mist out and is gone into it · inside, it hurts · it thins'),
+  part(smashF, 'THE TROLL CHIEFTAIN’S CLUB SMASH', 'Rears right back, the club over and behind him, HELD, its ring marked · down in two frames · the freeze, the ground broken'),
+  part(smashF, 'THE CLUB SMASH · HALF SPEED', 'Over and down in a flash, after-images and all · the burst · thrown back', CS - 0.12, 0.6, 2),
+  part(smashB, 'THE CLUB SMASH · FROM BEHIND', 'Get out of the ring while he holds it up'),
+  part(slamF, 'HIS GROUND SLAM', 'Squats, LEAPS, hangs there with the club straight up, the line marked · down with all his weight: the ground split open, rock thrust up along it'),
+  part(cryF, 'HIS WAR CRY: HIS RAGE', 'Gathers it in, shaking · thrown open: the roar, the fire bursting up round him · the rage on him: quicker blows, quicker feet'),
+  part(rushF, 'HIS BULL RUSH', 'Head down, the club a ram, pawing the ground, coiled, his line marked · down it in a blur · into you'),
+  part(biteF, 'THE MIST WOLF’S BITE', 'Coiled back on its haunches, HELD · flung at you, jaws wide, in two frames · snapped shut, worried, let go'),
+  part(biteF, 'THE BITE · HALF SPEED', 'Flung, snapped', WOLF_MOVES.bite.beats[0].at - 0.13, 0.45, 2),
+  part(clawF, 'ITS CLAW SWEEP', 'Reared up, a forepaw high and back, HELD · down and across you in two frames'),
+  part(howlF, 'ITS HOWL', 'Head down, then thrown back: the howl · the floor’s wolves burst out of the mist to it'),
+  part(lungeF, 'ITS LUNGE', 'Crouched flat, the mist drawn into it, its line marked · gone to mist, through you in a blink · lands beyond, turned back'),
+  part(lungeF, 'THE LUNGE · HALF SPEED', 'Through you', 0.66, 0.4, 2),
+  part(cloudF, 'ITS MIST CLOUD', 'Draws the mist in · blasts it out and is gone into it · its claws come at you out of it · it thins'),
 ];
 
 const [out = 'f9_bosses_film.mp4', mode = ''] = process.argv.slice(2);

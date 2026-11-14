@@ -84,3 +84,20 @@ frames, followed through.
   forepaw raised, swept across); the howl (head thrown back, rings of it rising; the floor's fog wolves out of the mist either side);
   the lunge (crouched, its line marked; gone to mist, through you, its shape again beyond); the mist cloud (breathed out, it goes into
   it; glints where it hurts; it thins).
+- His answer to that film: “No man this all sucks.  There are rules and these animations do not follow any of the rules.  They need to
+  be wild and crazy”. Read as: they broke his art rulebook (Animations 1, as far as it will go; Movement 9, big wind-up and a lightning
+  strike; Movement 7, the freeze; the screen's kick; Hits 3, the one struck flashes and is thrown; Movement 4, loose things follow).
+  Done again to the rules, each checked against them before he saw it:
+  - every blow wound up big and HELD, straining (a tremble in the held pose), its warning marked on the ground; struck in two frames,
+    smeared (a crescent along the arc the club swept), with after-images of the body; the scene frozen a tenth of a second where it
+    lands, the screen kicked; a big wind-down;
+  - the Brawler struck: a white flash, his reel, thrown back away from the blow;
+  - his kilt and necklace, the wolf's belly mist and tail, left behind by their going and settling after;
+  - the chieftain's own wild (the earth and brute force): the smash's burst, rings of shock, the ground cracked out from it glowing,
+    stone flung up, embers; the slam a leap and a crash, the line split open with rock thrust up along it as it runs; the war cry
+    gathered in shaking, then thrown open: the burst, the roar's rings, the rage's fire bursting up round him and on him, the blast
+    throwing you back, then quick strides with speed lines; the bull rush a blur of after-images and speed lines into you;
+  - the wolf's own (mist and speed): after-images of it in every strike, the jaws' crescents closing, three great claw crescents, mist
+    bursting where it struck and where it went; the howl's rings, the fog wolves bursting out of mist; the lunge gone to mist through
+    you in a blink, its streak of mist behind; the mist cloud drawn in, blasted out in a ring, its claws at you out of it (you stay in
+    sight in it), its eyes moving in it.
