@@ -18,6 +18,7 @@
 // ahead of need. The art of the first builds (monsters.ts, and the Warden in boss.ts) is no
 // longer in the game.
 
+import { CENSOR2, CENSOR2_SIZE } from './censor2_art';
 import { releaseSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { AM_ACTION, BOSSES5, CO_ACTION, useCoLook } from '../game/bosses';
@@ -108,6 +109,13 @@ export function useAmAction(on: boolean): void {
   AMALGAM_ACTION.on = on;
 }
 useAmAction(AM_ACTION.on);
+/** THE CENSOR MADE AGAIN (art/censor2_art.ts CENSOR2): his pictures, and his size as the game measures a figure, together. */
+export function useCensor2(on: boolean): void {
+  CENSOR2.on = on;
+  const z = FIGURE_SIZE.censor as { top: number; half: number };
+  z.top = on ? CENSOR2_SIZE.top : 41;
+  z.half = on ? CENSOR2_SIZE.half : 16;
+}
 /** THE FLESHMANCER'S MOVES DONE THE ACTION WAY (game/fm_action.ts FM_ACTION): the rules and the art chat's pictures (FLESH_ACTION) together. */
 export function useFmAction(on: boolean): void {
   FM_ACTION.on = on;

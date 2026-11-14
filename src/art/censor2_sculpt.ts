@@ -8,7 +8,7 @@
 // blacked out at half his life; “when he falls, the book bursts and the words fly home”.
 //
 // HIS NEW LOOK, sculpted as the game's newest figures are (dev/sculpt.ts: solids melted into each other, lit and inked as the style
-// asks): TOWERING, three times the knight's height, as the floor's boss must be beside the Troll Chieftain and the Drowned Eye; gaunt
+// asks): TALL, about twice the knight's height (not gargantuan: the fight is what matters, his word below); gaunt
 // and upright as a pillar; he GLIDES, his robe to the floor and dragging (no feet: nothing to slide). HIS ROBE the Order's black with a
 // cold sheen, flaring wide to its hem, folded, down its front a page of grey writing struck through with black bars; a sash; HIS CHAIN
 // OF OFFICE across his chest, its lock hanging, its keyhole burning the enemy's pink. HIS HEAD: a tall peaked hood drooping back; the
@@ -36,9 +36,12 @@ const hash = (a: number, b: number, s: number): number => {
 };
 
 /** His canvas: room for the brush raised high over his head, and swept out to either side. */
-export const CENSOR2_CANVAS = { w: 560, h: 700, ax: 280, ay: 600 } as const;
-/** His size: his own lengths made this many times as big (three times the knight, the ruff's top). */
-export const CS = 1.45;
+export const CENSOR2_CANVAS = { w: 440, h: 470, ax: 220, ay: 380 } as const;
+/**
+ * His size: his own lengths made this many times as big: about twice the knight. (First drawn three times the knight; his word,
+ * 14 Nov 2026: “so the bosses dont need to be gargantuan, i just want the fights to be up to par as a lynchpin of the 5 levels”.)
+ */
+export const CS = 1.0;
 
 // HIS COLOURS: the Order's black, a cold sheen on it; grey writing struck out in black; bone-white; bamboo; brass; iron
 const ROBE: Ramp = ['#08080c', '#14141c', '#252532', '#3c3c50', '#5c5c76'];
@@ -121,6 +124,8 @@ export interface CensorPose {
   slump?: number;
   /** No edge of light (a dying thing has none). */
   rimless?: boolean;
+  /** (his death) The brush let go of and fallen to the floor, 0 (in his hand) to 1 (lying there). */
+  dropped?: number;
 }
 
 /** HIM STANDING: the brush in his right hand resting low, its point by his feet, dripping (Monsters 5: weapons rest low); his left hand at his side, half open. */
@@ -163,8 +168,19 @@ function bend(a: V3, b: V3, la: number, lb: number, hint: V3): V3 {
 /** The brush, as he holds it at `Q`: its butt, its axis, where the ferrule and the bristles begin, its point (his own lengths). */
 export function brushOf(Q: CensorPose): { butt: V3; axis: V3; ferrule: V3; base: V3; tip: V3 } {
   const hand = add(Q.handR, Q.hip);
-  const axis = norm(sub(add(Q.brushAt, Q.hip), hand));
-  const butt = sub(hand, mul(axis, BRUSH_LONG * Q.grip));
+  let axis = norm(sub(add(Q.brushAt, Q.hip), hand));
+  let butt = sub(hand, mul(axis, BRUSH_LONG * Q.grip));
+  const k = Math.min(1, Math.max(0, Q.dropped ?? 0));
+  if (k > 0) {
+    // (falling from his hand, tumbling flat onto the floor before him)
+    const g = k * k;
+    const tip0 = add(butt, mul(axis, BRUSH_LONG));
+    const lieB: V3 = [26, -58, 2.4];
+    const lieT: V3 = [26 + BRUSH_LONG * 0.94, -58 + BRUSH_LONG * 0.34, 2.4];
+    butt = add(mul(butt, 1 - g), mul(lieB, g));
+    const tip = add(mul(tip0, 1 - g), mul(lieT, g));
+    axis = norm(sub(tip, butt));
+  }
   const at = (d: number): V3 => add(butt, mul(axis, d));
   return { butt, axis, ferrule: at(BRUSH_LONG - BRISTLES - 8), base: at(BRUSH_LONG - BRISTLES), tip: at(BRUSH_LONG) };
 }
@@ -421,8 +437,13 @@ export function sculptCensor2(view: PaintView, pose: Partial<CensorPose> = {}, y
   };
   const B = brushOf(Q);
   const handR = add(Q.handR, Q.hip);
-  // (his right arm to the brush; his hand round it)
-  {
+  // (his right arm to the brush; his hand round it; or, the brush let go of, his hand open and empty)
+  if ((Q.dropped ?? 0) > 0) {
+    const wrist = sub(handR, [0, 0, 3]);
+    armTo(-1, wrist, rot([-0.7, -0.15, -1]));
+    const dir = norm(add(sub(handR, shoulder(-1)), [0, 0, -4]));
+    handAt('handR', wrist, dir, norm(cross([0, 0, 1], dir)), 0.2, 0);
+  } else {
     const wrist = sub(handR, mul(norm(sub(handR, shoulder(-1))), 3.5));
     armTo(-1, wrist, rot([-0.7, -0.15, -1]));
     const side = norm(cross(B.axis, [0, 0, 1]));
@@ -474,10 +495,17 @@ export function sculptCensor2(view: PaintView, pose: Partial<CensorPose> = {}, y
     const w0 = 2.2;
     const w1 = 8.4;
     const curl: V3 = [1.6 * (i % 2 ? 1 : 0.4), 0, 0];
-    const bl = W(H(add(base, mul(side, -w0 * 0.5))));
-    const br = W(H(add(base, mul(side, w0 * 0.5))));
-    const tl = W(H(add(add(tip, mul(side, -w1 * 0.5)), curl)));
-    const tr = W(H(add(tip, mul(side, w1 * 0.5))));
+    // (stiff, it stands upright behind his neck however he leans: it turns with his shoulders only, and rides where his neck goes)
+    const neckAt = T(NECK);
+    const R = (q: V3): V3 => {
+      const d = sub(q, NECK);
+      const tw = (Q.twist + Q.headTurn * 0.3) * D;
+      return add(neckAt, [d[0] * Math.cos(tw) - d[1] * Math.sin(tw), d[0] * Math.sin(tw) + d[1] * Math.cos(tw), d[2]]);
+    };
+    const bl = W(R(add(base, mul(side, -w0 * 0.5))));
+    const br = W(R(add(base, mul(side, w0 * 0.5))));
+    const tl = W(R(add(add(tip, mul(side, -w1 * 0.5)), curl)));
+    const tr = W(R(add(tip, mul(side, w1 * 0.5))));
     sc.tri(page, 'ruff', bl, tl, tr, 0.45, 0.3, { tag: 'page' });
     sc.tri(page, 'ruff', bl, tr, br, 0.45, 0.3, { tag: 'page' });
   }
