@@ -827,10 +827,13 @@ const CRIES = {
  * `lineGap`); how loud.
  * THE ATTACK SHOUTS A QUARTER AS OFTEN (his words, 9 Nov 2026, 22:34: “The random voice lines for characters are happening too
  * often”; asked which and how much, his picks by 22:40: “Attack shouts (Recommended)”, “About a quarter as often”): at first one
- * attack in 3.5 and never within 1.2 s; now both four times that, so the shouts come a quarter as often however fast he attacks.
- * The grunts, the hurt lines and his death cry are as they were.
+ * attack in 3.5 and never within 1.2 s; then both four times that, so the shouts came a quarter as often however fast he attacks.
+ * AND A THIRD AS OFTEN AGAIN, THE GRUNTS TOO (his words, 14 Nov 2026, 14:14: “the voice lines still trigger too often”; asked which
+ * and how much, his picks by 14:17: “Grunts when hit”, “Attack shouts”, and “About a third as often (Recommended)”): the shouts one
+ * attack in 42 and never within 14.4 s; the grunts never within 2.1 s of the last (was 0.7). The hurt lines and his death cry are
+ * as they were.
  */
-export const VOICE_TUNE = { attackOne: 14, attackGap: 4.8, gruntGap: 0.7, lineOne: 8, lineGap: 25, vol: 0.9 } as const;
+export const VOICE_TUNE = { attackOne: 42, attackGap: 14.4, gruntGap: 2.1, lineOne: 8, lineGap: 25, vol: 0.9 } as const;
 
 /** THE TITLE THEME: its file, and the stretch it goes round for ever once it has played from its start (seconds). */
 export const TITLE = { file: 'title.mp3', loop: [94.024, 162.275] as const, vol: 0.8 } as const;
