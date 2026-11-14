@@ -675,6 +675,7 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   forces you to go against your instincts if youre ranged”. SO: the eye is safe: a calm ring round him (1.8 tiles), its floor
   bare and its edge hot gold, the gale's wall of frost mist whirling at its edge; the hero fights in through the gale, chilled and
   poisoned, the frost cracking off him as he gets into the eye, and hits him there out of the gale.
+  HIS YES: “Yes, all ten melds done (Recommended)” (offered as: then his other facing turned round, and the hand-off).
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
