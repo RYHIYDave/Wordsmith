@@ -160,3 +160,23 @@ as: his rulebook (Animations 1, a notch too high) means he should be reining the
 - In play: each squares up to the hero before a move (its pictures face the floor's four ways), the smash strikes under the club too.
 - Films of real fights (the game's automatic player fighting each, unhurtable): pictures/f9_chieftain_fight.mp4,
   pictures/f9_mist_wolf_fight.mp4 (tools/scenarios/f9_bosses_fight.mjs, tools/f9_bosses_cut.py).
+
+## Made again, and ON (14 Nov 2026)
+
+- HIS WORDS on the films: “I need the animation of the actual attacker to be more interesting.” So each attack's body was made
+  anew (art/f9_bosses_moves.ts): the wolf's bite a leap, a snap and a thrash; its claw three rakes and a two-paw stomp; its howl
+  stood upright pawing the air; its lunge spun round in its skid; its cloud a spinning tornado. The chieftain's smash a whole whirl
+  on the spot first; his war cry his chest beaten; his bull rush antlers first and an uppercut. The slam as he liked it.
+- “Tone it down some more”, his pick “Yes, the effects (Recommended)”: the effects smaller and softer, the screen's kick lighter.
+- “you have the same impact art for a big front paw stomp as a minion being raised from the mist.  these are two completely
+  different things.” So each blow its own effect (art/f9_bosses_paint.ts, its foot; art/f9_bosses_fx.ts): the bite jaws of mist
+  snapping shut; the rakes mist flicked off the claws; the stomp two paw prints with mist splashed up out of them; the howl's wolves
+  rising out of a coil of mist, eyes first; the lunge one long cut, parting; the cloud a funnel with grass and leaves whirled in it;
+  the smash a crater and dust rolling out low; the war cry roar waves and the dust blown flat; the rush an uppercut's crescent and the
+  earth sprayed before the skid. No burst or shock ring shared between them (only the slam keeps its own).
+- THE QUEST LINE, his words, 10:14: “i need the quest to be updated so it has "defeat the __________" for each boss”: in the
+  Pinewood after the ward-stone, the QUEST box at the top reads DEFEAT the MIST WOLF / the TROLL CHIEFTAIN / the HOLLOW STAG, ticked
+  off as each falls (game/quests610.ts PIECE_BOSSES, HUNT_LINE; game.ts huntLines; ui/guide.ts huntBanner; tests/f9_hunt.test.ts).
+  Picture: pictures/f9_quest_defeat_each.png.
+- ON at his yes, by 10:31, asked with the fight films (pictures/f9_mist_wolf_fight.mp4, pictures/f9_chieftain_fight.mp4) and the
+  quest's picture: “Yes, switch them on (Recommended)”. F9_LAIRS is on.
