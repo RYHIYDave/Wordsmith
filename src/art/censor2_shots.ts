@@ -16,8 +16,9 @@
 
 import { hash } from './kit';
 import { FLAME } from './mkit';
-import type { FloorAt } from './mob_shots';
 import type { Bar } from './censor_shots';
+/** Where a spot of the floor (tiles) is in game pixels: mob_shots' FloorAt, the same shape, kept here (tests/new_mobs3.test.ts). */
+export type FloorAt = (x: number, y: number) => readonly [number, number];
 import { REDACT_FOR, REDACT_WARN, ROOM_HUSH_FOR, ROOM_HUSH_RING, SLASH_MARK_FOR, SLASH_MARK_HALF, SLASH_MARK_REACH, STRIKE_FOR, STRIKE_SPEED } from './censor_shots';
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);

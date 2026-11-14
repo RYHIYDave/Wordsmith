@@ -43,8 +43,9 @@ import type { Pr } from './f9_bosses_paint';
  * his fight filmed in the game (docs/mockups/censor_redo/pictures/censor_fight.mp4): “Yes, switch him on (Recommended)”.
  */
 export const CENSOR2 = { on: true };
-/** His size as the game measures a figure (game pixels: his ruff's top; half his body's width), made again. */
-export const CENSOR2_SIZE = { top: 64, half: 18 };
+/** His size as the game measures a figure (game pixels: the top of him as he stands, his hood's peak over the ruff, as the hall measures
+ * every kind, tests/act1_kinds_room_c.ts measuredSize; half his body's width), made again. */
+export const CENSOR2_SIZE = { top: 80, half: 18 };
 
 /** The two views: from in front, and from behind as the camera truly sees him. */
 export type CensorView = 'front' | 'rear';

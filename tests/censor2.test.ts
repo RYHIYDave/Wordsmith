@@ -14,6 +14,7 @@ import { MONSTERS } from '../src/game/defs';
 import { drawRedaction, drawRoomHush, drawSlashMark, drawStrikeLine } from '../src/art/censor2_shots';
 import { paintWithoutCanvas } from './helpers';
 import { cyanGlow } from './act1_kinds_room';
+import { measuredSize } from './act1_kinds_room_c';
 
 paintWithoutCanvas();
 
@@ -24,12 +25,18 @@ test('1. on at his yes; his pictures, his size and his robe\'s reach go with the
   assert.equal(MONSTERS.censor.radius, 0.85);
   useCensor2(false);
   try {
-    assert.equal(FIGURE_SIZE.censor.top, 41);
+    assert.equal(FIGURE_SIZE.censor.top, 45, "the art chat's size with his old pictures");
     assert.equal(act1Fig('censor')!.size.top, 45);
     assert.equal(MONSTERS.censor.radius, 0.6);
   } finally {
     useCensor2(true);
   }
+  assert.equal(CENSOR2_SIZE.top, 80, 'his own size left as it is');
+  assert.equal(FIGURE_SIZE.censor.top, 80);
+  // (the game's size of him his picture's own: as the hall measures every kind, tests/act1_kinds_room_c.ts)
+  const m = measuredSize('censor');
+  assert.ok(Math.abs(m.size.top - m.head) <= 4, `the game takes him to be ${m.size.top} up; in the picture he is ${m.head}`);
+  assert.ok(m.size.half <= m.reach + 1 && m.size.half >= m.reach * 0.4, `${m.size.half} to either side; the picture reaches ${m.reach}`);
 });
 
 test('2. every clip his acts name, both ways round, on his rules\' own beats', () => {
