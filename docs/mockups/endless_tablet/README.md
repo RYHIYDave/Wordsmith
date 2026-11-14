@@ -669,6 +669,12 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   of ice growing out by the walls. No dodging it: one in it is chilled (frost over him), slowed and poisoned (his poison rising off
   him) the whole while; but he is rooted the whole while, so the hero fights his way in against the wind and pours damage on him
   (blows landing in sparks). It ends; the frost cracks off the hero and melts. Through the bosses' checks (0 findings).
+  HIS QUESTION, “what does it do?” (told him: he roots himself about 4.5 s; the gale fills the room, no dodging it; chilled, slowed,
+  poisoned a dose a second, Frostbite's chilled losing life; the trade, he is a sitting target; offered that hitting him hard
+  enough might break it early). HIS ANSWER: “make it safe if youre very close to him, so you can hit him if youre melee, and
+  forces you to go against your instincts if youre ranged”. SO: the eye is safe: a calm ring round him (1.8 tiles), its floor
+  bare and its edge hot gold, the gale's wall of frost mist whirling at its edge; the hero fights in through the gale, chilled and
+  poisoned, the frost cracking off him as he gets into the eye, and hits him there out of the gale.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

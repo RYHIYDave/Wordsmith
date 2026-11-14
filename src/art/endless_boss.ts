@@ -3869,7 +3869,10 @@ export const fumesSpread = (c: { vent: number }, t: number): number => smooth01(
 // dodging it: one in it is chilled, slowed and poisoned the whole while (the trade); but he stands rooted the whole while, so it is
 // the moment to go in and pour damage on him. When it ends the frost cracks off and melts. (The jaws, then the wave and its
 // islands, are gone.)
-export const FROSTBITE = { gale: [0.25, 4.75] as const, rime: 1.4, melt: 1.0, end: 6.9 };
+// THE EYE IS SAFE (his words, 14 Nov 2026, asked whether hitting him hard enough should break it: “make it safe if youre very close
+// to him, so you can hit him if youre melee, and forces you to go against your instincts if youre ranged”): a calm ring round him,
+// the gale's wall swirling at its edge, its floor bare and its edge hot gold; in it, out of the gale.
+export const FROSTBITE = { gale: [0.25, 4.75] as const, eye: 1.8, rime: 1.4, melt: 1.0, end: 6.9 };
 export const FROSTBITE_CANVAS: MobCanvas = { w: 1300, h: 960, ax: 560, ay: 600 };
 const BITE_ICE: Ramp = ['#142a50', '#22508a', '#3a78b8', '#8cc0ec', '#e4f4ff'];
 /** How far out the rime has crept from him (his own lengths), `t` into the move; and how much the gale is blowing (0 ... 1). */

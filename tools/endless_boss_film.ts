@@ -1900,8 +1900,10 @@ function contAir(s: Px, t: number, ox: number, oy: number, from: V2, dir: number
 }
 /** WHERE THE HERO IS in Frostbite's film (his own lengths): out in the room as the gale starts; fighting his way in against it,
  * slowed, to stand at him and hit him while he is rooted. */
-const BITE_FROM: [number, number, number] = [5.6 * TILE, -1.4 * TILE, 0], BITE_TO: [number, number, number] = [1.55 * TILE, -0.75 * TILE, 0];
+const BITE_FROM: [number, number, number] = [5.6 * TILE, -1.4 * TILE, 0], BITE_TO: [number, number, number] = [1.2 * TILE, -0.5 * TILE, 0];
 const BITE_IN = (): number => MELD.slam + FROSTBITE.gale[0] + 0.3;
+/** When he gets into the eye, out of the gale. */
+const BITE_SAFE = (): number => { for (let t = BITE_IN(); t < BITE_IN() + 4; t += 0.01) { const h = biteHeroAt(t); if (Math.hypot(h[0], h[1]) < FROSTBITE.eye * TILE - 4) return t; } return Infinity; };
 function biteHeroAt(t: number): [number, number, number] {
   const u = Math.min(1, Math.max(0, (t - BITE_IN()) / 2.2));
   const lurch = Math.sin(u * Math.PI * 9) * 3 * (1 - u);
@@ -1920,6 +1922,9 @@ function biteFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
     const r = Math.hypot(x, y);
     if (r > rime) continue;
     const [px, py] = P(x, y), a = Math.atan2(y, x);
+    // (the eye: bare floor round him, out of the gale, its edge hot gold: safe)
+    const eye = FROSTBITE.eye * TILE;
+    if (r < eye) { if (r > eye - 3 && frostbiteGale(t) > 0.05) mix(s, px, py, FLAME[3], 0.85 * frostbiteGale(t)); continue; }
     // (rime blown out from him: streaks of frost running away from him, clean between)
     const streak = vnoise(a * 40, r / 30, 9931), edge = Math.max(0, 1 - (rime - r) / 30);
     if (streak > 0.55) mix(s, px, py, streak > 0.72 ? '#ffffff' : '#e4f4ff', (streak > 0.72 ? 0.45 : 0.25) * (1 - melt) * (1 - 0.5 * edge));
@@ -1935,18 +1940,18 @@ function biteGale(s: Px, t: number, ox: number, oy: number, from: V2, dir: numbe
   const g = frostbiteGale(t), fr = Math.floor(t * 30);
   if (g > 0) {
     for (let yy = 0; yy < s.h; yy += 1) for (let xx = (yy & 1); xx < s.w; xx += 2) mix(s, xx, yy, '#8cc0ec', 0.1 * g);
-    // (he is the eye of it: frost mist whirling round him, low and fast)
+    // (the eye's wall: frost mist whirling round the calm ring about him, low and fast)
     const puffs: { X: number; Y: number; R: number; v: number; seed: number }[] = [];
-    for (let i = 0; i < 30; i++) {
-      const a = (i / 30) * Math.PI * 2 + t * 3.2, r = (0.5 + 0.35 * hash(i, 1, 9930)) * TILE;
+    for (let i = 0; i < 44; i++) {
+      const a = (i / 44) * Math.PI * 2 + t * 2.6, r = (FROSTBITE.eye + 0.1 + 0.3 * hash(i, 1, 9930)) * TILE;
       const [X, Y] = W(Math.cos(a) * r, Math.sin(a) * r, 4 + 10 * hash(i, 2, 9929) + 4 * Math.sin(t * 5 + i));
-      puffs.push({ X, Y, R: 8 + 5 * hash(i, 3, 9928), v: 0.5 * g, seed: i });
+      puffs.push({ X, Y, R: 9 + 6 * hash(i, 3, 9928), v: 0.6 * g, seed: i });
     }
     puffPass(s, puffs, t, (d, L, x, y) => (d < 0.2 ? ((x + y) % 2 ? null : ['#8cc0ec', 0.4]) : [hash(x >> 2, y >> 2, 9933 + fr) > 0.98 ? '#ff9cc0' : L > 0.55 ? '#ffffff' : L > 0.35 ? '#e4f4ff' : '#8cc0ec', d > 0.6 ? 0.85 : 0.6]));
     for (let i = 0; i < 480; i++) {
       const a = hash(i, 1, 9934) * Math.PI * 2, sp = (9 + 5 * hash(i, 2, 9935)) * TILE, R0 = 14 * TILE;
       const r = (hash(i, 3, 9936) * R0 + sp * t) % R0, len = (22 + 30 * hash(i, 4, 9937)) * g;
-      if (r < 1.2 * TILE) continue;
+      if (r < (FROSTBITE.eye + 0.2) * TILE) continue;
       const x0 = Math.cos(a + r * 0.0007) * r, y0 = Math.sin(a + r * 0.0007) * r;
       if (x0 < ARENA.x[0] * TILE || x0 > ARENA.x[1] * TILE || y0 < ARENA.y[0] * TILE || y0 > ARENA.y[1] * TILE) continue;
       const z = 4 + 40 * hash(i, 5, 9938);
@@ -1963,7 +1968,8 @@ function biteGale(s: Px, t: number, ox: number, oy: number, from: V2, dir: numbe
     for (let i = 0; i < 14; i++) { const a = hash(seed, i, 9939) * Math.PI * 2, d = 4 + 14 * hash(seed, i, 9940); mix(s, Math.round(X + Math.cos(a) * d), Math.round(Y + Math.sin(a) * d), i % 3 ? '#ffffff' : '#ffd0e0', 0.95); }
     for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) if (Math.abs(dx) + Math.abs(dy) < 7 && (dx === 0 || dy === 0)) mix(s, Math.round(X + dx), Math.round(Y + dy), '#ffffff', 0.9);
   }
-  const c = t - (MELD.slam + FROSTBITE.gale[1]);
+  // (the frost cracking off the hero as he gets into the eye)
+  const c = t - BITE_SAFE();
   if (c > 0 && c < 0.5) {
     const h = biteHeroAt(t), [X, Y] = W(h[0], h[1], 20);
     for (let i = 0; i < 24; i++) { const a = hash(i, 1, 9948) * Math.PI * 2, d = 6 + 40 * c * (0.5 + hash(i, 2, 9949)); mix(s, Math.round(X + Math.cos(a) * d), Math.round(Y + Math.sin(a) * d * 0.7 - 30 * c * (1 - c)), i % 2 ? '#e4f4ff' : '#8cc0ec', 0.9 * (1 - c / 0.5)); }
@@ -2534,7 +2540,7 @@ for (const sg of segs) {
       if (sg.move === 'frostbite') {
         biteGale(s, t, ox, oy, sg.from, k);
         const g = frostbiteGale(t);
-        if (g > 0.05) { const h = biteHeroAt(t), [hx, hy] = at([sg.from[0] + k * h[0], sg.from[1] + k * h[1], 0]); heroChilled(s, ox + hx, oy + hy, t, Math.min(1, (t - BITE_IN()) / 3) * g); }
+        if (g > 0.05 && t < BITE_SAFE()) { const h = biteHeroAt(t), [hx, hy] = at([sg.from[0] + k * h[0], sg.from[1] + k * h[1], 0]); heroChilled(s, ox + hx, oy + hy, t, Math.min(1, (t - BITE_IN()) / 2) * g); }
       }
       if (sg.move === 'scald') { scaldBeams(s, t, ox, oy, sg.from, k); steam(s, t, ox, oy, sg.from, k, false); }
       meldScene(s, t, ox, oy, sg.from, k, sg.move, amid.words[0], amid.words[1], MELD_GLYPH[sg.move as 'blight'], [MELD_RAMP[sg.move as 'blight'][3], MELD_RAMP[sg.move as 'blight'][4]], amid.into, false);
