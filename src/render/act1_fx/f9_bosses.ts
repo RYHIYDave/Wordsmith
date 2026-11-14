@@ -156,8 +156,8 @@ const fx = (prefix: string): Act1Fx => ({
     }
     if (p && p.a1?.startsWith(prefix)) blowGlow(c, p, true);
   },
-  // (a body as big as these, struck: a flash not quite white over all of it)
-  flash: 0.8,
+  // (a body as big as these, struck again and again: a flash of white over it, faint, that it is not lost in white)
+  flash: 0.3,
 });
 
 export const FX_CHIEF: Act1Fx | null = fx(CHIEF_FX);
