@@ -60,6 +60,7 @@ const bossOf = (g: Game): Monster => {
   assert.ok(m, 'the level has its boss');
   return m as Monster;
 };
+const lines = (g: Game): string[] => g.events.flatMap((e) => (e.t === 'msg' ? [e.text] : []));
 const quarters = (g: Game): Drop[] => g.drops.filter((d) => d.kind === 'quest' && d.thing === 'quarter');
 
 test('the quarters: floors 5, 10, 15, 20 in order; bits as the four', () => {
@@ -91,6 +92,8 @@ test('on: the boss of endless floor 5 drops the first quarter, once; taken, it i
   inner(g).questThingTaken(q[0]);
   assert.equal(g.meta.quarters, 1);
   assert.deepEqual(g.quartersHeld(), [true, false, false, false]);
+  // (his name for it, 14 Nov: “Tablet Shard”, not the boss's)
+  assert.ok(lines(g).some((l) => /Tablet Shard\. 1 of 4/.test(l)));
   // (kept in the account's record, cleaned; what is not a quarter thrown out)
   assert.equal(cleanMeta({ ...g.meta, quarters: 1 }).quarters, 1);
   assert.equal(cleanMeta({ ...g.meta, quarters: 'x' as unknown as number }).quarters, undefined);
@@ -139,7 +142,7 @@ test('the Rim: the four held, the wordsmith sets them; used up; the landing open
   g.hero.x = ws.x;
   g.hero.y = ws.y;
   assert.equal(g.handInNear(), 'tablet');
-  assert.match(g.interactHint() ?? '', /tablet/);
+  assert.match(g.interactHint() ?? '', /shards/);
   assert.ok(inner(g).handIn());
   assert.equal(g.meta.quarters, 0, 'used up: collect again');
   assert.equal(g.hero.finalOpen, true);

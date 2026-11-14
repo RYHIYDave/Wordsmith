@@ -58,13 +58,14 @@ export const PORTAL_NEAR = 0.7;
 
 /** What is said. */
 export const KEY_TEXT = {
-  label: (k: number): string => `${QUARTER_BOSS[k].replace(/^the /, 'The ')}'s quarter`,
-  got: (k: number, n: number): string => `A quarter of the stone tablet, ${QUARTER_BOSS[k]}'s. ${n} of 4 (kept with the stash).`,
-  float: (n: number): string => `TABLET ${n} / 4`,
-  set: 'The four quarters are set in the bench. The landing opens.',
+  // (HIS PICK, 14 Nov 2026, asked for a name “not so on the nose” than the boss's: “Tablet Shard”, the same for all four)
+  label: (_k: number): string => 'Tablet Shard',
+  got: (_k: number, n: number): string => `A Tablet Shard. ${n} of 4 (kept with the stash).`,
+  float: (n: number): string => `SHARD ${n} / 4`,
+  set: 'The four shards are set in the bench. The landing opens.',
   open: 'The landing at the shaft stands open.',
   through: 'Down into the light.',
   /** (until the next stage builds the fight below) */
   notYet: 'Below the landing, something waits. (The fight is still being built.)',
-  prompt: 'Wordsmith: set the tablet in the bench',
+  prompt: 'Wordsmith: set the four shards in the bench',
 } as const;

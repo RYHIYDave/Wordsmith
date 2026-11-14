@@ -698,3 +698,12 @@ a game pixel, lit from the upper left, an ink seam round every part, banded glow
 `tablet.py`, `portal.py` (painted over `docs/mockups/endless_town/pictures/rim3_whole.png`), `bosses.py`, `beasts.py`, `rider.py`,
 `mountains.py`; `sheets.py` and `round2.py` to `round6.py` make the sheets in `pictures/`. `brawler.png` is the Brawler's standing
 frame from the live heroes' bake (1fdc8d09059a), for size.
+
+### THE BUILD (the Queue chat, branch `build/endless-final-boss`, behind `ENDLESS_KEY` in `src/game/endless_key.ts`, off)
+
+- STAGE 1, THE KEY, 14 Nov 2026: the quarters drop from the bosses of endless floors 5, 10, 15 and 20 (the account's, kept with
+  the stash); they hang on the trophies wall and lie dark in the bench's socket; all four held, a tap on the wordsmith sets them,
+  they burn and the landing opens. Pictures from the game: `pictures/build/` (`key_in_game.mp4`, `key_stills.png`,
+  `key_shard_named.png`). Made by `tools/scenarios/endless_key_look.mjs`; tested by `tests/endless_key.test.ts`.
+- HIS WORDS, 14 Nov 2026, shown the first pictures: “The fleshmancer’s quarter is not good.  Let’s try to name it something not so
+  on the nose”; asked by pop-up what to call them, his pick: “Tablet Shard” (the same for all four; the count says SHARD n / 4).
