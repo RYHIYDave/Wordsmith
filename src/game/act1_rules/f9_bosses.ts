@@ -53,7 +53,9 @@ export const F9_TUNE = {
   /** The howl: how many of its wolves may be about at once. */
   howl: { most: 3 },
   /** How far a blow throws the hero back (times a heavy blow's), each. */
-  knock: { smash: 1.0, slam: 0.7, rush: 1.4, roar: 1.0, claw: 0.9 },
+  knock: { smash: 1.0, slam: 0.7, rush: 2.0, roar: 1.0, claw: 0.9 },
+  /** The bull rush, once it has struck: how much of its run is left to it (skidding on). */
+  rushSkid: 0.25,
   /** The heavy blows: how long the game holds still, and how far the screen kicks (game pixels), as each lands; heard and felt within `near` tiles. */
   beat: {
     smash: [0.12, 4], slam: [0.13, 5], warcry: [0.1, 4.5], rush: [0.12, 4.5],
@@ -228,10 +230,16 @@ export const RULES_CHIEF: Act1Rules | null = {
     const move = moveOf(a.id) as ChiefMove;
     const at = (q: number): boolean => t0 < q && t1 >= q;
     const p = actPeril.get(m);
-    // (the ground he covers)
+    // (the ground he covers: his war cry's strides at you no further than up to you; his bull rush, once it has struck you, only
+    // skidding on a little)
     const x0 = m.x;
     const y0 = m.y;
-    carried(R, m, tC(chiefCarry(move, t1) - chiefCarry(move, t0)));
+    let d = tC(chiefCarry(move, t1) - chiefCarry(move, t0));
+    const ahead = (h.x - m.x) * m.fx + (h.y - m.y) * m.fy;
+    const beside = Math.abs((h.x - m.x) * m.fy - (h.y - m.y) * m.fx);
+    if (move === 'warcry' && beside < m.r + r0 && ahead > 0) d = Math.min(d, Math.max(0, ahead - (m.r + r0 + 0.2)));
+    if (move === 'rush' && p && p.d & 1) d *= T.rushSkid;
+    carried(R, m, d);
     if (!p) return;
     const free = !h.move && h.invuln <= 0 && !g.over;
     const struck = (bit: number): boolean => (p.d & bit) !== 0;
