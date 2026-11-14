@@ -191,5 +191,6 @@ test('where its worker cannot pack, every frame is taken in as before, and nothi
 
 test('the Moth is the one kept packed, and on', () => {
   assert.ok(PACKED.on);
-  assert.deepEqual([...PACKED.figures], ['moth']);
+  // (and the final boss of endless mode, kept packed as the Moth is: game/act1_rules/wsboss.ts)
+  assert.deepEqual([...PACKED.figures], ['moth', 'wsboss']);
 });

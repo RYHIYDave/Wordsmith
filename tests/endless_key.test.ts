@@ -7,7 +7,7 @@
 //      hero's), cleaned and kept in its record; none from floor 6, none when held already, none outside endless mode;
 //   3. at the Shaft's Rim the quarters held hang on the trophies wall; the four held, the wordsmith sets them in his bench: they
 //      are used up, the landing opens when the bench's flare is done, and stays open for him (kept in his save) until he goes
-//      down; walked into, it does not take him yet (the fight is the next stage's).
+//      down; walked into, it takes him down into its light (stage 2: tests/final_fight.test.ts).
 //   run: tsx --test tests/endless_key.test.ts
 
 // @ts-ignore - node typings are not part of this project
@@ -161,9 +161,9 @@ test('the Rim: the four held, the wordsmith sets them; used up; the landing open
   // (kept in his save: back at the Rim it stands open)
   const back = Game.restore(JSON.parse(JSON.stringify(g.save())), g.meta);
   assert.equal(back.hero.finalOpen, true);
-  // (walked into: not taken yet; set back off the hole, and told)
+  // (walked into: he goes down into its light, to the bottom of the shaft: tests/final_fight.test.ts)
   g.hero.x = LANDING[0];
   g.hero.y = LANDING[1];
   inner(g).updateKey(0.05);
-  assert.ok(Math.hypot(g.hero.x - LANDING[0], g.hero.y - LANDING[1]) > 0.7, 'set back off the hole');
+  assert.equal((g as unknown as { leaving: { to: string } | null }).leaving?.to, 'final', 'on his way down');
 }));
