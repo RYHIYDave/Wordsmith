@@ -23,8 +23,8 @@ const l = frameAt(art, 'front', 'stand', t);
 take('THE BRAWLER\n(for size)', l.px, l.ax, l.ay);
 if (only === 'wolf') {
   take('A FOG WOLF\n(floor 9)', wolfPainted('stand', t, 'front').px, WOLF_CANVAS.ax, WOLF_CANVAS.ay);
-  take('THE MIST WOLF', sculptWolf9('front', t).px, WOLF9_CANVAS.ax, WOLF9_CANVAS.ay);
-  take('behind', sculptWolf9('back', t).px, WOLF9_CANVAS.ax, WOLF9_CANVAS.ay);
+  take('THE MIST WOLF', sculptWolf9('front', { t }).px, WOLF9_CANVAS.ax, WOLF9_CANVAS.ay);
+  take('behind', sculptWolf9('back', { t }).px, WOLF9_CANVAS.ax, WOLF9_CANVAS.ay);
 }
 if (only === 'troll') {
   const g = spriteLaid((makeGuardianArt() as { front: { idle: never[] } }).front.idle[0]);

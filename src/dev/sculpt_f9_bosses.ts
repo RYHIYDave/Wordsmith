@@ -413,8 +413,52 @@ const MOUTH: Ramp = ['#1a0a18', '#2c1028', '#4a1a3a', '#6a2a50', '#8a3a66'];
 /** Its size: twice a fog wolf's (his pick); its shoulder near the knight's head. */
 const WK = 0.82;
 
-/** THE MIST WOLF, standing (for now), seen `view`; `t` seconds into its stand (its mist streams). Seen from its side and a little ahead. */
-export function sculptWolf9(view: GameView, t = 0, yaw = 42): Drawn {
+/**
+ * HOW THE MIST WOLF STANDS (dev/f9_bosses_moves.ts sets it a moment at a time for its moves): its own lengths, before it is made its
+ * size (WK); `f` forward, `l` to its left, `u` up, from the floor under it.
+ */
+export interface WolfPose {
+  /** Seconds into it (its mist drifts by it). */
+  t: number;
+  /** Where its body has gone from where it stands. */
+  root: V3;
+  /** Its body pitched nose down, degrees (up, less than 0). */
+  pitch: number;
+  /** Its head raised, degrees; turned to its left, degrees. */
+  headUp: number;
+  headTurn: number;
+  /** Its jaws open, 0 to 1. */
+  jaw: number;
+  /** Where its paws are: front left and right, hind left and right. */
+  pawFL: V3;
+  pawFR: V3;
+  pawHL: V3;
+  pawHR: V3;
+  /** Its tail raised, degrees. */
+  tailUp: number;
+  /** How far gone to mist it is, 0 to 1 (its lunge passes through you). */
+  ghost: number;
+}
+
+/** IT STANDING. */
+export const WOLF_STAND: WolfPose = {
+  t: 0,
+  root: [0, 0, 0],
+  pitch: 0,
+  headUp: 0,
+  headTurn: 0,
+  jaw: 0.25,
+  pawFL: [25, 8.5, 3],
+  pawFR: [30, -8.5, 3],
+  pawHL: [-16.5, 8.5, 3],
+  pawHR: [-21.5, -8.5, 3],
+  tailUp: 0,
+  ghost: 0,
+};
+
+/** THE MIST WOLF as it stands at `pose` (standing, unless given), seen `view`, turned `yaw`; on a canvas of `size` (its own). */
+export function sculptWolf9(view: GameView, pose: Partial<WolfPose> = {}, yaw = 42, size: { w: number; h: number; ax: number; ay: number } = WOLF9_CANVAS): Drawn {
+  const Q: WolfPose = { ...WOLF_STAND, ...pose };
   const sc = new Sculpt();
   const fr = frame(yaw);
   const P = (f: number, l: number, u: number): V3 => fr.P(f * WK, l * WK, u * WK);
@@ -425,15 +469,44 @@ export function sculptWolf9(view: GameView, t = 0, yaw = 42): Drawn {
   const ell = (m: number, pc: string, c: V3, ax: readonly [V3, V3, V3], bl: number): void => {
     sc.ell(m, pc, c, ax, bl * WK);
   };
-  const loc = (p: V3): [number, number, number] => [dot3(p, fr.F) / WK, dot3(p, fr.L) / WK, p[2] / WK];
-  // ITS MIST: streaked along it like fur, back from its head (long thin streaks); darker under
+  // (its body pitched about its middle and moved; its head raised and turned about the base of its neck)
+  const MID: V3 = [0, 0, 62];
+  const NECK: V3 = [36, 0, 72];
+  const cp = Math.cos(Q.pitch * D);
+  const sp = Math.sin(Q.pitch * D);
+  const cu = Math.cos(-Q.headUp * D);
+  const su = Math.sin(-Q.headUp * D);
+  const cn = Math.cos(Q.headTurn * D);
+  const sn = Math.sin(Q.headTurn * D);
+  const rotB = (q: V3): V3 => [q[0] * cp + q[2] * sp, q[1], -q[0] * sp + q[2] * cp];
+  const rotH = (q: V3): V3 => {
+    const f1 = q[0] * cu + q[2] * su;
+    const u1 = -q[0] * su + q[2] * cu;
+    return [f1 * cn - q[1] * sn, f1 * sn + q[1] * cn, u1];
+  };
+  const B = (q: V3): V3 => add(add(rotB(sub(q, MID)), MID), Q.root);
+  const Hd = (q: V3): V3 => B(add(rotH(sub(q, NECK)), NECK));
+  const W = (q: V3): V3 => P(q[0], q[1], q[2]);
+  const BP = (f: number, l: number, u: number): V3 => W(B([f, l, u]));
+  const HP = (f: number, l: number, u: number): V3 => W(Hd([f, l, u]));
+  const axes = (r: (q: V3) => V3, rf: number, rl: number, ru: number): readonly [V3, V3, V3] => {
+    const [a1, c1, e1] = [r([1, 0, 0]), r([0, 1, 0]), r([0, 0, 1])];
+    return [mul(W(a1), rf), mul(W(c1), rl), mul(W(e1), ru)];
+  };
+  const BX = (rf: number, rl: number, ru: number): readonly [V3, V3, V3] => axes(rotB, rf, rl, ru);
+  const HX = (rf: number, rl: number, ru: number): readonly [V3, V3, V3] => axes((q) => rotB(rotH(q)), rf, rl, ru);
+  void X;
+  // ITS MIST: streaked along it like fur, back from its head (long thin streaks); darker under. The streaks go with it as it moves.
   const mist = sc.mat({
     ramp: MIST,
     paint: (h) => {
-      const [f, l, u] = loc(h.p);
-      const row = Math.floor((u + 200) / 1.1) + Math.floor((l + 200) / 2.5) * 37;
-      const streak = hash(row, Math.floor((f + 200 + hash(row, 0, 2) * 6) / 6), 5);
-      if (u < 46 && streak < 0.45) return shadeOf(MIST, h.tone - 1);
+      const pr = h.prim as unknown as { c?: V3; a?: V3 };
+      const o = pr.c ?? pr.a ?? [0, 0, 0];
+      const q: V3 = [dot3(sub(h.p, o), fr.F) / WK, dot3(sub(h.p, o), fr.L) / WK, (h.p[2] - o[2]) / WK];
+      const lowU = h.p[2] / WK - Q.root[2];
+      const row = Math.floor((q[2] + 200) / 1.1) + Math.floor((q[1] + 200) / 2.5) * 37 + h.prim.piece.length * 11;
+      const streak = hash(row, Math.floor((q[0] + 200 + hash(row, 0, 2) * 6) / 6), 5);
+      if (lowU < 46 && streak < 0.45) return shadeOf(MIST, h.tone - 1);
       if (streak < 0.14) return shadeOf(MIST, h.tone - 1);
       if (streak > 0.86) return shadeOf(MIST, h.tone + 1);
       return null;
@@ -443,63 +516,88 @@ export function sculptWolf9(view: GameView, t = 0, yaw = 42): Drawn {
   const mouth = sc.mat({ ramp: MOUTH });
   const eye = sc.mat({ ramp: EYE, paint: (h) => (h.tone >= 3 ? EYE[4] : EYE[2]) });
   // ITS BODY: a deep chest under a heavy ruff, a lean waist tucked up, its haunch
-  ell(mist, 'body', P(23, 0, 59), X(16, 13, 20), 4.6);
-  ell(mist, 'body', P(2, 0, 65), X(17, 9.5, 10), 3.6);
-  ell(mist, 'body', P(-20, 0, 63), X(14, 12, 13.5), 3.2);
+  ell(mist, 'body', BP(23, 0, 59), BX(16, 13, 20), 4.6);
+  ell(mist, 'body', BP(2, 0, 65), BX(17, 9.5, 10), 3.6);
+  ell(mist, 'body', BP(-20, 0, 63), BX(14, 12, 13.5), 3.2);
   // (its ruff: the mist piled up round its neck and shoulders, in tufts, melted into it)
   for (let i = 0; i < 7; i++) {
     const a = ((i - 3) / 3) * 80 * D;
-    ell(mist, 'body', P(30 + 2 * Math.cos(a), 12 * Math.sin(a), 71 + 5 * Math.cos(a)), X(7, 5.5, 8), 4.4);
+    ell(mist, 'body', BP(30 + 2 * Math.cos(a), 12 * Math.sin(a), 71 + 5 * Math.cos(a)), BX(7, 5.5, 8), 4.4);
   }
   // ITS NECK AND HEAD: long, low and forward; a broad skull, a long snout
-  cone(mist, 'body', P(34, 0, 70), P(45, 0, 77), 10.5, 8.5, 3.0);
-  ell(mist, 'head', P(50, 0, 79), X(10, 9.5, 9), 2.6);
+  cone(mist, 'body', BP(34, 0, 70), HP(45, 0, 77), 10.5, 8.5, 3.0);
+  ell(mist, 'head', HP(50, 0, 79), HX(10, 9.5, 9), 2.6);
   // (its cheeks: tufts of mist swept back)
-  for (const s of [1, -1]) ell(mist, 'head', P(46, s * 7.5, 74), X(6.5, 3.6, 5.5), 1.6);
-  // (its snout, long; its nose; its jaws a little open, white fangs)
-  cone(mist, 'head', P(55, 0, 79), P(72, 0, 74.5), 6.6, 3.8, 2.4);
-  ell(mouth, 'nose', P(73.2, 0, 75.8), X(2.4, 2.6, 2.0), 0.6);
-  cone(mist, 'jaw', P(53, 0, 72), P(69, 0, 68.6), 4.6, 2.4, 1.6);
-  cone(mouth, 'mouth', P(56, 0, 73.4), P(70, 0, 71.4), 3.0, 1.4, 0.6);
+  for (const s of [1, -1]) ell(mist, 'head', HP(46, s * 7.5, 74), HX(6.5, 3.6, 5.5), 1.6);
+  // (its snout, long; its nose; its jaws open as far as `jaw`, white fangs)
+  const jw = Q.jaw;
+  cone(mist, 'head', HP(55, 0, 79), HP(72, 0, 74.5), 6.6, 3.8, 2.4);
+  ell(mouth, 'nose', HP(73.2, 0, 75.8), HX(2.4, 2.6, 2.0), 0.6);
+  const jt: V3 = [53 + 16 * Math.cos((5 + jw * 30) * D), 0, 72 - 16 * Math.sin((5 + jw * 30) * D) - 2];
+  cone(mist, 'jaw', HP(53, 0, 72), HP(jt[0], 0, jt[2]), 4.6, 2.4, 1.6);
+  cone(mouth, 'mouth', HP(56, 0, 73.4), HP((70 + jt[0]) / 2 + 1, 0, (71.4 + jt[2] + 2) / 2), 3.0 + jw * 2, 1.4 + jw, 0.6);
   for (const s of [1, -1]) {
-    cone(fang, 'fang', P(69, s * 2.3, 73.8), P(69.8, s * 2.3, 70.2), 1.1, 0.3, 0.2);
-    cone(fang, 'fang', P(66.5, s * 2.0, 69.4), P(67, s * 1.9, 72.6), 1.0, 0.3, 0.2);
+    cone(fang, 'fang', HP(69, s * 2.3, 73.8), HP(69.8, s * 2.3, 70.2), 1.1, 0.3, 0.2);
+    const lf: V3 = [jt[0] - 2.5, s * 2.0, jt[2] + 0.8];
+    cone(fang, 'fang', HP(lf[0], lf[1], lf[2]), HP(lf[0] + 0.5, lf[1], lf[2] + 3.2), 1.0, 0.3, 0.2);
   }
   // (its ears laid back, flat to its skull)
-  for (const s of [1, -1]) cone(mist, 'ear', P(47, s * 5.5, 86), P(37, s * 9, 90), 4.4, 0.6, 1.0);
+  for (const s of [1, -1]) cone(mist, 'ear', HP(47, s * 5.5, 86), HP(37, s * 9, 90), 4.4, 0.6, 1.0);
   // (its brow, heavy; its eyes burning under it)
-  ell(mist, 'head', P(55, 0, 83), X(4, 7.5, 2.4), 1.4);
-  for (const s of [1, -1]) ell(eye, 'eye', P(57.4, s * 4.8, 81.4), X(1.9, 1.7, 1.4), 0.2);
-  // ITS LEGS: long and lean; its front legs planted under its chest, its hind legs bent at the hock; its far legs a step apart
+  ell(mist, 'head', HP(55, 0, 83), HX(4, 7.5, 2.4), 1.4);
+  for (const s of [1, -1]) ell(eye, 'eye', HP(57.4, s * 4.8, 81.4), HX(1.9, 1.7, 1.4), 0.2);
+  // ITS LEGS: long and lean, each to its paw; its elbows back, its knees forward, its hocks back
   for (const s of [1, -1]) {
     const k = s > 0 ? -5 : 0;
     const pf = s > 0 ? 'legFL' : 'legFR';
-    cone(mist, pf, P(26 + k, s * 8, 52), P(22 + k, s * 8.5, 31), 7, 4.2, 2.4);
-    cone(mist, pf, P(22 + k, s * 8.5, 31), P(25 + k, s * 8.5, 9), 4.0, 2.8, 1.6);
-    cone(mist, pf, P(25 + k, s * 8.5, 9), P(28 + k, s * 8.5, 4), 2.8, 2.8, 1.2);
-    ell(mist, pf, P(30 + k, s * 8.5, 3.0), X(4.8, 3.2, 2.8), 1.2);
+    const paw = s > 0 ? Q.pawFL : Q.pawFR;
+    const sh0 = B([26 + k, s * 8, 52]);
+    const wrist = add(paw, [-5, 0, 6]);
+    const elbow = bend(sh0, wrist, 21.4, 22.2, [-1, 0, 0]);
+    cone(mist, pf, W(sh0), W(elbow), 7, 4.2, 2.4);
+    cone(mist, pf, W(elbow), W(wrist), 4.0, 2.8, 1.6);
+    cone(mist, pf, W(wrist), W(add(paw, [-2, 0, 1])), 2.8, 2.8, 1.2);
+    ell(mist, pf, W(paw), X(4.8, 3.2, 2.8), 1.2);
     const ph = s > 0 ? 'legHL' : 'legHR';
-    cone(mist, ph, P(-21 - k, s * 8.5, 58), P(-12 - k, s * 9.5, 36), 9, 5, 2.6);
-    cone(mist, ph, P(-12 - k, s * 9.5, 36), P(-28 - k, s * 8.5, 17), 4.8, 3.2, 1.8);
-    cone(mist, ph, P(-28 - k, s * 8.5, 17), P(-25 - k, s * 8.5, 5), 3.0, 2.8, 1.2);
-    ell(mist, ph, P(-21.5 - k, s * 8.5, 3.0), X(4.8, 3.2, 2.8), 1.2);
+    const hp = s > 0 ? Q.pawHL : Q.pawHR;
+    const hip = B([-21 - k, s * 8.5, 58]);
+    const hock = add(hp, [-6.5, 0, 14]);
+    const knee = bend(hip, hock, 24.4, 25, [1, 0, 0]);
+    cone(mist, ph, W(hip), W(knee), 9, 5, 2.6);
+    cone(mist, ph, W(knee), W(hock), 4.8, 3.2, 1.8);
+    cone(mist, ph, W(hock), W(add(hp, [-3.5, 0, 2])), 3.0, 2.8, 1.2);
+    ell(mist, ph, W(hp), X(4.8, 3.2, 2.8), 1.2);
   }
   // (its mist hanging from under its chest and belly in a ragged fringe, thinning to nothing)
   for (let i = 0; i < 9; i++) {
     const f = 30 - i * 5.5;
     const u = i < 3 ? 42 + i * 3 : 54;
-    for (const s of [1, -1]) cone(mist, 'body', P(f, s * 5, u + 2), P(f - 4, s * 6, u - 10 - (i % 3) * 3), 3.4, 0.7, 1.6);
+    for (const s of [1, -1]) cone(mist, 'body', BP(f, s * 5, u + 2), W(add(B([f, s * 6, u - 4]), [-4, 0, -6 - (i % 3) * 3])), 3.4, 0.7, 1.6);
   }
-  // ITS TAIL: long and heavy, hanging in a curve, bushy, its end fraying into mist
-  const tail: V3[] = [P(-31, 0, 68), P(-43, 0, 64), P(-53, 0, 56), P(-59, 0, 46), P(-61, 0, 36)];
+  // ITS TAIL: long and heavy, hanging in a curve, bushy, its end fraying into mist; raised as far as `tailUp`
+  const TB: V3 = [-31, 0, 68];
+  const ct = Math.cos(Q.tailUp * D);
+  const stt = Math.sin(Q.tailUp * D);
+  const tailL: V3[] = [[-31, 0, 68], [-43, 0, 64], [-53, 0, 56], [-59, 0, 46], [-61, 0, 36]].map((q) => {
+    const d = sub(q as unknown as V3, TB);
+    return B(add(TB, [d[0] * ct - d[2] * stt, d[1], d[0] * stt + d[2] * ct]));
+  });
+  const tail = tailL.map(W);
   const tr = [4.5, 6.5, 7.5, 6.5, 3.5];
   for (let i = 1; i < tail.length; i++) cone(mist, 'tail', tail[i - 1], tail[i], tr[i - 1], tr[i], 2.4);
-  const drawn = draw(sc, view, WOLF9_CANVAS.ax, WOLF9_CANVAS.ay, WOLF9_CANVAS, undefined, ENEMY_RIM);
+  const drawn = draw(sc, view, size.ax, size.ay, size, undefined, ENEMY_RIM);
   const tailEnd = drawn.st.at(tail[tail.length - 1]);
-  const back = drawn.st.at(P(-30, 0, 72));
-  const head = drawn.st.at(P(40, 0, 80));
-  seeThrough(drawn, t, tailEnd, back, head);
+  const back = drawn.st.at(BP(-30, 0, 72));
+  const head = drawn.st.at(BP(40, 0, 80));
+  const floor = drawn.st.at(W([Q.root[0], Q.root[1], 0]));
+  seeThrough(drawn, Q.t, tailEnd, back, head, floor[1], Q.ghost);
   return drawn;
+}
+
+/** Where a point of the wolf's (its own lengths) is on its canvas, seen at `yaw`. */
+export function wolfAt(d: Drawn, yaw: number, q: V3): readonly number[] {
+  const { P } = frame(yaw);
+  return d.st.at(P(q[0] * WK, q[1] * WK, q[2] * WK));
 }
 
 /**
@@ -507,7 +605,7 @@ export function sculptWolf9(view: GameView, t = 0, yaw = 42): Drawn {
  * other pixel and then none) so the floor shows through; wisps streaming off its back and tail, away from its head; its mist lying
  * on the floor round its feet.
  */
-function seeThrough(d: Drawn, t: number, tailEnd: readonly number[], back: readonly number[], head: readonly number[]): void {
+function seeThrough(d: Drawn, t: number, tailEnd: readonly number[], back: readonly number[], head: readonly number[], floorY: number, ghost: number): void {
   const px = d.px;
   const W = px.w;
   const H = px.h;
@@ -531,11 +629,11 @@ function seeThrough(d: Drawn, t: number, tailEnd: readonly number[], back: reado
       const c = '#' + [px.d[i], px.d[i + 1], px.d[i + 2]].map((v) => v.toString(16).padStart(2, '0')).join('');
       if (keep.has(c)) continue;
       // (thinner the lower it is: its lower legs; thinner toward its tail's end; and in patches that drift back along it)
-      const low = Math.max(0, Math.min(1, (y - (WOLF9_CANVAS.ay - 44)) / 44));
+      const low = Math.max(0, Math.min(1, (y - (floorY - 44)) / 44));
       const dt = Math.hypot(x - tailEnd[0], y - tailEnd[1]);
       const tip = Math.max(0, Math.min(1, 1 - dt / 26));
       const n = hash(Math.floor((x - (head[0] < back[0] ? -1 : 1) * t * 10) / 4), Math.floor(y / 3), 11) * 0.65 + hash(x, y, 13) * 0.35;
-      const thin = 0.34 * low * low + 0.45 * tip + 0.1 * edge[y * W + x] / 3;
+      const thin = Math.min(0.97, 0.34 * low * low + 0.45 * tip + 0.1 * edge[y * W + x] / 3 + ghost * 0.85);
       if (n < thin * 0.7) px.d[i + 3] = 0;
       else if (n < thin && (x + y) % 2 === 1) px.d[i + 3] = 0;
       else if (n < thin * 1.4) px.set(x, y, (x + y) % 2 ? pale : MIST[3]);
@@ -546,9 +644,9 @@ function seeThrough(d: Drawn, t: number, tailEnd: readonly number[], back: reado
   };
   // (its mist on the floor round its feet: a pale haze, thinning out)
   const fx = (back[0] + head[0]) / 2;
-  for (let y = WOLF9_CANVAS.ay - 10; y <= WOLF9_CANVAS.ay + 12; y++) {
+  for (let y = Math.round(floorY) - 10; y <= floorY + 12; y++) {
     for (let x = Math.round(fx - 90); x <= fx + 90; x++) {
-      const r = Math.hypot((x - fx) / 80, (y - WOLF9_CANVAS.ay) / 11);
+      const r = Math.hypot((x - fx) / 80, (y - floorY) / 11);
       if (r > 1) continue;
       const n = hash(Math.floor((x + t * 6) / 3), Math.floor(y / 2), 17);
       if (n > 1 - r * 0.9 || (x + y) % 2) continue;
