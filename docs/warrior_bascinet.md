@@ -50,8 +50,11 @@ The axe and the hammer are painted on the same body, so they wear it too.
 ## Checked
 
 - tsc clean.
-- `tests/warrior_up.test.ts` 3 (every frame of every move through every boss check, from all eight sides) and 8 (the slits).
-- `tests/warrior_weapons.test.ts` 8, 13 and 19 (his helm seen in every frame of every axe and maul move from every side).
+- `tests/warrior_up.test.ts` 3 (every frame of every move through every boss check, from all eight sides), 6 (every frame
+  from all eight sides: crisp, the friend's cyan edge, nothing of the enemy's colours, nothing cut off) and 8 (the slits), on
+  5e18946.
+- `tests/warrior_weapons.test.ts` 8, 13 and 19 (his helm seen in every frame of every axe and maul move from every side), on
+  5e18946.
 - Pictures from all eight sides and in his run, strike, town stance, card draw and slam, at close size and the card's.
-- NOT run: the slow whole-figure sweeps of tests/warrior_up.test.ts (4, 6, 9 to 11: his legs, sword, cover and edge), which
-  the head does not touch; a baked page; his phone.
+- NOT run: tests/warrior_up.test.ts 4, 9 to 11 (what he wears over his mail, his legs, his sword), which the head does not
+  touch; a baked page; his phone.
