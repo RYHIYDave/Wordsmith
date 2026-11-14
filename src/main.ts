@@ -136,6 +136,7 @@ import { BakedTownsfolk, TOWNSFOLK_BAKED } from './render/townsfolk_baked';
 import { BakedMonsters, CUT_MS, MONSTERS_BAKED, bringsOf } from './render/monsters_baked';
 import { formOf as reflectionForm } from './game/act1_rules/reflection';
 import { HEAVY_FIGURES, framesOf, paintOrder } from './art/bestiary';
+import { heroSides } from './art/sides';
 import type { MonsterFigure } from './art/bestiary';
 import { act1Stages } from './art/act1_figs/index';
 import { movesOf } from './game/defs';
@@ -3004,8 +3005,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const mine = art.bestiary.of(figure);
       const fresh = makeBestiary();
       const other = fresh.of(figure);
-      const lists = [framesOf(mine.front), framesOf(mine.back)];
-      const olists = [framesOf(other.front), framesOf(other.back)];
+      // (every side it is seen from: floor 18's reflections from eight, as paintOrder numbers them: art/sides.ts heroSides)
+      const lists = heroSides(mine).map(framesOf);
+      const olists = heroSides(other).map(framesOf);
       const order = paintOrder(mine);
       const out = { places: order.length, fromFiles: 0, unpainted: 0, checked: 0, differ: 0, worst: '' };
       const held: (Sprite | null)[] = order.map(([v, l, i]) => {
