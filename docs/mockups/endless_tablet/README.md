@@ -601,6 +601,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   crackles between spots near each other (a web with gaps); the hero dodges out of one marked under him into a gap and stands
   there as it detonates. The room's walls drawn.
   HIS YES: “Yes, on to Fumes (Recommended)”.
+- FUMES (Flame and Poison; `fumes`, `FUMES`, `FUMES_CLOUDS`, `fumesSpread`; the film's `fumesFloor`, `fumesClouds`, `puffPass`;
+  `pictures/standard/boss_fumes.mp4`), made for his yes: the game's meld is “fumes billowing up off a fire”, “Burning poisoned
+  enemies give off a toxic cloud”, “The poison cloud explodes when anything burning enters it”. He writes Flame, his shade Poison;
+  melded, the slam drives the rune into the floor before him and the floor cracks open in seven vents all over the room, each
+  belching a rolling cloud of sulphur-yellow poison that spreads low over the floor (in it, poisoned; its edge on the floor in the
+  bosses' warning colour), his pink in a few bubbles in it; the hero, in the way of one as it spreads, gets out of it; then out of
+  the rune he flings sparks of fire arcing high into the clouds one after another: each cloud reached goes up whole in billowing
+  fire, and any touching it goes up after it in a chain; black smoke rolls up off them and thins over scorched floor. The fumes
+  are vapour, drawn soft and banded as the steam is.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
