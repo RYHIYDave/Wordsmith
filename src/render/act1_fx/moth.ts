@@ -14,6 +14,7 @@ import { TILE3, paintViewOf } from '../../art/new_mobs3';
 import type { Painted } from '../../art/kit';
 import type { V3 } from '../../art/skeleton';
 import { PASSING_MS, flipSprite, retireSprite } from '../../engine/px';
+import { onWing } from '../../art/moth';
 import type { Sprite } from '../../engine/px';
 import { CLOUD_LONG, MOTH_TUNE, artToWorld, beatOf, bookOf, mothPhase, perched, swarmFrom, waveAt } from '../../game/act1_rules/moth';
 import { clipFrame } from '../figure';
@@ -21,7 +22,7 @@ import { keptPictures } from './kept';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx, Act1FxCtx } from './types';
 import { ECLIPSE, MOTH2, PHANTOMS, phantomWay } from '../../art/moth2';
-import { GHOST_WING, HUSH_FX, deathLights, drawEclipse, drawGhostWing, drawHushGround, drawHushSnow, drawMoon, drawPagesLoosing, drawPhantoms, drawPhantomsGather, drawUnwritingGround, drawUnwritingPages, moonAt } from '../../art/moth2_fx';
+import { GHOST_WING, HUSH_FX, deathLights, drawDeathMotes, drawEclipse, drawGhostWing, drawHushGround, drawHushSnow, drawMoon, drawPagesLoosing, drawPhantoms, drawPhantomsGather, drawUnwritingGround, drawUnwritingPages, moonAt } from '../../art/moth2_fx';
 
 const FPS = 30;
 /**
@@ -81,6 +82,14 @@ let REAR_H = 0;
 let WRAP_H = 0;
 const rearH = (): number => (REAR_H ||= Math.max(60, mothGeomAt('eyes', MOTH_EYES.warn[1]).TC[2] / 2));
 const wrapH = (): number => (WRAP_H ||= Math.max(50, mothGeomAt('swarm', MOTH_SWARM.warn[1]).TC[2] / 2));
+/** Where every part of her is as she dies, kept a twentieth of a second at a time (her death's light comes off her wings). */
+const DYING = new Map<number, ReturnType<typeof mothGeomAt>>();
+const dyingAt = (t: number): ReturnType<typeof mothGeomAt> => {
+  const k = Math.round(t * 20);
+  let G = DYING.get(k);
+  if (!G) DYING.set(k, (G = mothGeomAt('dying', k / 20)));
+  return G;
+};
 /** Its Hush's reach (tiles from its middle): the old cloud's. */
 const HUSH_R = DUST_CLOUD.tiles / 2;
 /** The light in the dark, from a painter: as `c.spot`. */
@@ -94,11 +103,29 @@ const heroOn = (c: Act1FxCtx): readonly [number, number] => {
 function eclipseDrawn(c: Act1FxCtx, x: number, y: number, ax: number, ay: number, t: number): void {
   if (!c.g) return;
   const [sx, sy] = c.at(x, y);
-  drawMoon(c.g, sx, sy - rearH() - 74, moonAt(t), c.t, spotOf(c));
+  // (the moon up in the sky on her far side from him, where its light throws her shadow at him; kept on the screen)
+  const [qx, qy] = c.at(x + ax * 4, y + ay * 4);
+  const d = Math.hypot(qx - sx, qy - sy) || 1;
+  const H = c.g.canvas?.height ?? 1e9;
+  const W = c.g.canvas?.width ?? 1e9;
+  const mx = Math.min(W - 60, Math.max(60, sx - ((qx - sx) / d) * 230));
+  const my = Math.min(H - 60, Math.max(60, sy - rearH() - 40 - ((qy - sy) / d) * 70));
+  drawMoon(c.g, mx, my, moonAt(t), c.t, spotOf(c));
   const [hx, hy] = heroOn(c);
   drawEclipse(c.g, c.at, x, y, ax, ay, t, hx, hy, c.t, spotOf(c));
 }
-/** Her phantoms' lanes marked, each until it has set off (`t`: seconds into her Swarm's move). */
+/** How far from (x, y) along (wx, wy) the top goes on (tiles), or `most`: the lane's warning marked only over the top. */
+function onTop(c: Act1FxCtx, x: number, y: number, wx: number, wy: number, most: number): number {
+  const T = c.game.level.land?.tower;
+  if (!T) return most;
+  const dx = x - T.top.cx;
+  const dy = y - T.top.cy;
+  const b = dx * wx + dy * wy;
+  const q = dx * dx + dy * dy - T.top.r * T.top.r;
+  const disc = b * b - q;
+  return disc < 0 ? most : Math.max(PHANTOMS.start, Math.min(most, -b + Math.sqrt(disc)));
+}
+/** Her phantoms' lanes marked, each until it has set off (`t`: seconds into her Swarm's move); over the top only. */
 function lanesDrawn(c: Act1FxCtx, x: number, y: number, ax: number, ay: number, t: number): void {
   if (!c.g) return;
   for (let i = 0; i < PHANTOMS.n; i++) {
@@ -106,7 +133,7 @@ function lanesDrawn(c: Act1FxCtx, x: number, y: number, ax: number, ay: number, 
     const k = warnK(t, PHANTOMS.warn, off);
     if (k < 0) continue;
     const [wx, wy] = phantomWay(ax, ay, i);
-    drawStripWarn(c.g, c.at, { x, y, fx: wx, fy: wy, hand: 1 }, PHANTOMS.start, PHANTOMS.long, -PHANTOMS.half, PHANTOMS.half, k, c.t);
+    drawStripWarn(c.g, c.at, { x, y, fx: wx, fy: wy, hand: 1 }, PHANTOMS.start, onTop(c, x, y, wx, wy, PHANTOMS.long), -PHANTOMS.half, PHANTOMS.half, k, c.t);
   }
 }
 
@@ -254,6 +281,14 @@ export const FX: Act1Fx | null = {
     void mothPhase;
   },
   air(c, m, p) {
+    if (!MOTH2.on || !c.g || !p || p.a1 !== 'moth:words') return;
+    // (the light she comes apart into: its light in the dark)
+    const [sx, sy] = c.at(p.x, p.y);
+    deathLights(sx, sy, (p.t - MOTH_DIES.crumble[0]) / (MOTH_DIES.crumble[1] - MOTH_DIES.crumble[0]), c.t, spotOf(c));
+    void m;
+  },
+  glow(c, m, p) {
+    // (what shines, drawn over the dark: her phantoms, her glowing scales, the burning pages)
     if (!MOTH2.on || !c.g) return;
     if (m && m.act && !m.dead) {
       const a = m.act;
@@ -266,28 +301,35 @@ export const FX: Act1Fx | null = {
         // (the chapter's pages tearing loose as she rears)
         const B = bookOf(c.game.level);
         const k = Math.min(1, Math.max(0, (a.t - 0.3) / (MOTH_BEAT_BLOW.hit - 0.3)));
-        if (B) drawPagesLoosing(c.g, c.at, B.book.x, B.book.y, k, c.t, spotOf(c));
+        if (B) drawPagesLoosing(c.g, c.at, B.book.x, B.book.y, k, c.t);
       }
       return;
     }
     if (!p) return;
     switch (p.a1) {
+      case 'moth:words': {
+        // (the light she comes apart into, off her wings and body as they crumble)
+        const at = c.at;
+        drawDeathMotes(c.g, p.t, MOTH_DIES.crumble, (i, born) => {
+          const G = dyingAt(born);
+          const w = G.wings[i % 4];
+          const q: V3 = i % 5 === 0 ? (G.ab[(i * 7) % G.ab.length] ?? G.TC) : onWing(w, (0.2 + 0.75 * ((i * 0.618) % 1)) * w.len, (0.06 + 0.5 * ((i * 0.381) % 1)) * w.len);
+          const f = artToWorld(p.x, p.y, p.fx, p.fy, q);
+          const [sx, sy] = at(f.x, f.y);
+          return [sx, sy - q[2] / 2];
+        });
+        return;
+      }
       case 'moth:phantoms':
-        drawPhantoms(c.g, c.at, p.x, p.y, p.fx, p.fy, p.t, spotOf(c));
+        drawPhantoms(c.g, c.at, p.x, p.y, p.fx, p.fy, p.t);
         return;
       case 'moth:dust':
       case 'moth:shed':
-        drawHushSnow(c.g, c.at, p.x, p.y, HUSH_R, p.t, spotOf(c));
+        drawHushSnow(c.g, c.at, p.x, p.y, HUSH_R, p.t);
         return;
       case 'moth:wave':
-        drawUnwritingPages(c.g, c.at, p.x, p.y, waveAt(p.t), p.t, 1 - Math.min(1, Math.max(0, (p.t - WAVE_FX.reach) / (WAVE_FX.long - WAVE_FX.reach))), spotOf(c));
+        drawUnwritingPages(c.g, c.at, p.x, p.y, waveAt(p.t), p.t, 1 - Math.min(1, Math.max(0, (p.t - WAVE_FX.reach) / (WAVE_FX.long - WAVE_FX.reach))));
         return;
-      case 'moth:words': {
-        // (the light she comes apart into)
-        const [sx, sy] = c.at(p.x, p.y);
-        deathLights(sx, sy, (p.t - MOTH_DIES.crumble[0]) / (MOTH_DIES.crumble[1] - MOTH_DIES.crumble[0]), c.t, spotOf(c));
-        return;
-      }
     }
   },
 };

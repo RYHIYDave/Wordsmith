@@ -228,7 +228,7 @@ export function drawGhostWing(g: CanvasRenderingContext2D, at: FloorAt, x: numbe
     const pts = flatRim(w, 44).map(([u, v]) => lay(u, v));
     const rim40 = flatRim(w, 40);
     // (the sheet of it, see-through; its scales' bands a shade deeper)
-    fill(g, [pts], GHOST[3], 0.26 * fade);
+    fill(g, [pts], GHOST[3], 0.38 * fade);
     const band = flatRim({ ...w, len: w.len * 0.7 }, 30).map(([u, v]) => lay(u, v));
     fill(g, [band], GHOST[4], 0.1 * fade);
     // (its veins out from its root)
@@ -242,7 +242,7 @@ export function drawGhostWing(g: CanvasRenderingContext2D, at: FloorAt, x: numbe
     }
     g.globalAlpha = was;
     // (its edge: bright, broken toward its trailing side)
-    rim(g, pts, GHOST[5], 0.8 * fade, 1.4, 0.15, w.hind ? 2 : 1);
+    rim(g, pts, GHOST[5], fade, 1.2, 0.1, w.hind ? 2 : 1, w.hind ? 1 : 2);
     // (its eye)
     const e = flatEye(w);
     flatEyeDrawn(g, lay, e.u, e.v, e.r * 1.2, 0.75, rx, ry - 40, 0.75 * fade, spot);
@@ -392,6 +392,8 @@ export function drawEclipse(g: CanvasRenderingContext2D, at: FloorAt, x: number,
   // (darkening as it grows; black as it strikes; gone up out of it after)
   const gone = sm((after - 0.45) / (ECLIPSE.after - 0.45));
   const dark = after < 0 ? 0.25 + 0.5 * sm((t - ECLIPSE.grow[0]) / 0.9) : 0.92 * (1 - gone);
+  // (its edge soft: a penumbra a little wider, the Hush's violet in it)
+  fillUnion(g, shadowShapes(layOf(at, x, y, ax, ay, 0), s * 1.07), DARK[2], dark * 0.4);
   fillUnion(g, shapes, DARK[0], dark);
   // (its edge, the outline of the whole of it: the moonlight round it, and the warning on it till the blow)
   const S = eclipseShape(s);
@@ -459,11 +461,11 @@ function drawPhantom(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: num
   for (const w of wings) {
     const pts = flatRim(w, 36).map(([u, v]) => lay(u, v));
     if (solid) {
-      fill(g, [pts], GHOST[3], 0.3 * alpha);
+      fill(g, [pts], GHOST[3], 0.45 * alpha);
       const band = flatRim({ ...w, len: w.len * 0.62 }, 24).map(([u, v]) => lay(u, v));
-      fill(g, [band], GHOST[4], 0.16 * alpha);
+      fill(g, [band], GHOST[4], 0.22 * alpha);
     }
-    rim(g, pts, GHOST[5], (solid ? 0.85 : 0.5) * alpha, 1.3, solid ? 0.1 : 0.45, seed + (w.hind ? 2 : 1));
+    rim(g, pts, GHOST[5], (solid ? 1 : 0.55) * alpha, 1.2, solid ? 0.05 : 0.4, seed + (w.hind ? 2 : 1), solid && !w.hind ? 2 : 1);
     if (solid) {
       const e = flatEye(w);
       const [ex, ey] = lay(e.u, e.v);
@@ -555,8 +557,8 @@ export function drawHushGround(g: CanvasRenderingContext2D, at: FloorAt, x: numb
     const rr = R * (1 + 0.07 * Math.sin(a * 5 + 1) + 0.05 * Math.sin(a * 11 + clock * 0.4));
     ragged.push([...at(x + Math.cos(a) * rr, y + Math.sin(a) * rr)] as [number, number]);
   }
-  fill(g, [ragged], GHOST[2], 0.26 * haze);
-  fill(g, [floorCircle(at, x, y, R * 0.62, 0, 28)], GHOST[3], 0.14 * haze);
+  fill(g, [ragged], GHOST[2], 0.36 * haze);
+  fill(g, [floorCircle(at, x, y, R * 0.62, 0, 28)], GHOST[3], 0.18 * haze);
   // (its edge: a slow ring of light going round)
   const was = g.globalAlpha;
   for (let i = 0; i < ragged.length; i++) {
@@ -731,6 +733,33 @@ export function drawUnwritingPages(g: CanvasRenderingContext2D, at: FloorAt, x: 
 // =============================================================================================
 // HER DEATH: the light she comes apart into, over what her own pictures paint (art/moth_moves.ts)
 
+/**
+ * THE LIGHT SHE COMES APART INTO, over the dark: motes rising off her wings and body as they crumble (`t` seconds into her death,
+ * `from(i, born)` where on the screen mote `i` leaves her, at the moment it is born), drifting up, flickering, going out.
+ */
+export function drawDeathMotes(g: CanvasRenderingContext2D, t: number, crumble: readonly [number, number], from: (i: number, born: number) => readonly [number, number] | null): void {
+  const [c0, c1] = crumble;
+  if (t < c0 || t > c1 + 2.2) return;
+  const was = g.globalAlpha;
+  const N = 220;
+  for (let i = 0; i < N; i++) {
+    const born = c0 + (c1 - c0) * Math.pow(hash(i, 1, 7395), 0.8);
+    const life = 1.2 + 1.0 * hash(i, 2, 7395);
+    const age = t - born;
+    if (age < 0 || age > life) continue;
+    const src = from(i, born);
+    if (!src) continue;
+    const u = age / life;
+    const x = src[0] + Math.sin(age * 2.2 + i) * 9 * u + (hash(i, 3, 7395) - 0.5) * 18 * u;
+    const y = src[1] - age * 38 - age * age * 16;
+    if (hash(i, Math.floor(t * 14), 7396) < 0.15) continue;
+    const c = hash(i, 4, 7395);
+    g.globalAlpha = was * (1 - u * u) * 0.95;
+    const big = u < 0.5 && hash(i, 5, 7395) < 0.45;
+    dot(g, x, y, c < 0.08 ? FLAME[2] : c < 0.4 ? MOON[4] : c < 0.75 ? GHOST[5] : GHOST[4], big ? 2 : 1, big ? 2 : 1);
+  }
+  g.globalAlpha = was;
+}
 /** Lights as she comes apart (`k`: how far she has crumbled), about (sx, sy) on the screen, her middle. */
 export function deathLights(sx: number, sy: number, k: number, clock: number, spot: Spot): void {
   if (k <= 0 || k >= 1) return;

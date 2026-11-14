@@ -653,7 +653,7 @@ function lightGrains(t: number, G: MothGeom, k: number): [V3, string, number][] 
     const p: V3 = [src[0] + Math.sin(age * 2.4 + i) * 14 * u, src[1] + Math.cos(age * 2 + i) * 14 * u, Math.min(src[2] + rise, 640)];
     const c = hash(i, 4, 9961);
     const col = u > 0.8 ? GLOW_DUST[1] : c < 0.07 ? FLAME_DULL : c < 0.45 ? GLOW_DUST[3] : GLOW_DUST[2];
-    out.push([p, col, u < 0.4 && hash(i, 6, 9961) < 0.35 ? 2 : 1]);
+    out.push([p, col, u < 0.5 && hash(i, 6, 9961) < 0.5 ? 4 : 2]);
   }
   void k;
   return out;
@@ -691,6 +691,13 @@ function crawlersOf(move: string, t: number): [number, number, number, number][]
   return out;
 }
 
+/** For the checks (tests/moth2.test.ts): what is laid after its edge at a moment of a move, and the little moths crawling on it. */
+export function mothGrainsAt(move: string, t: number): [V3, string, number][] {
+  return moreOf(move, { t } as Moment);
+}
+export function mothCrawlersAt(move: string, t: number): [number, number, number, number][] {
+  return crawlersOf(move, t);
+}
 const keyOf = (m: Moment): MoveName => byName[m.move ?? ''] ?? (m.dying ? 'dying' : 'stand');
 const SAY: MothSay = {
   smear: (m) => smearOf(keyOf(m), m.t),
