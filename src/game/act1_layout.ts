@@ -1347,6 +1347,8 @@ function placePacks(rng: RNG, f: Floor, plan: Plan, areaRoom: readonly number[],
     if (len < 12 || rng.chance(0.5)) continue;
     const mid = l.pts[Math.floor(l.pts.length / 2)];
     if (!free(mid[0], mid[1], 0.5) || used.some(([ux, uy]) => Math.hypot(ux - mid[0], uy - mid[1]) < 6) || Math.hypot(mid[0] - startX, mid[1] - startY) < 10) continue;
+    // (F9_LAIRS, off: none at floor 9's glade's edge either)
+    if (f9Lairs(depth) && plan.areas.some((q) => q.role === 'side' && blobDist(q.blob, mid[0], mid[1]) < 1.5)) continue;
     const p = act1Pack(depth, rng, 'normal');
     put(mid[0], mid[1], -1, 'normal', p.kind, Math.max(2, Math.ceil(p.size * 0.6)));
   }
