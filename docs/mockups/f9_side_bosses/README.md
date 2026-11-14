@@ -137,3 +137,26 @@ Built in on this branch, the switch F9_LAIRS (game/f9_lairs.ts) holding the side
   of the ward-stone, the chieftain the lair's, the Hollow Stag his own (game.ts piecesMade).
 - Tests: tests/f9_bosses.test.ts. The film of them in play: tools/scenarios/f9_bosses_film.mjs, cut by tools/f9_bosses_cut.py
   (pictures/f9_bosses_in_play.mp4).
+
+## Made too much (14 Nov 2026)
+
+His word to the film of them in play (f9_bosses_in_play.mp4): “That is some of the most uninspired shit I’ve seen so far.   I know you
+can do so much better than whatever this is”; and, told what was flat about it: “Nothing was added is  an admonishment that should
+never happen.  I have rules in place specifically designed to not have to deal with this.   These animations are boring.  I’m supposed
+to be looking for insane animations that need to be toned down but I have yet to see one issue with something being TOO intense”. Read
+as: his rulebook (Animations 1, a notch too high) means he should be reining them in, never pushing them; so both redone to be too much:
+- GROWN to fill the screen (the chieftain 1.5 of his sculpt, the wolf 1.1: art/f9_bosses_sculpt.ts CK, WK).
+- THEIR MOVES PUSHED FURTHER: the smash wound right back behind him and driven down into a crouch; the slam a leap high off the
+  ground; the war cry thrown wider; the bull rush lower, a ram; the wolf coiled lower, rearing higher, its howl thrown further back,
+  its lunge longer.
+- EVERY HEAVY BLOW: the screen flashed white, held still (0.1 to 0.2 s) and kicked hard (up to 16 game pixels); a crater, cracks out
+  from it glowing; shockwaves rolling out across the arena; rocks flung high, bouncing; dust boiling up; a burst; speed lines out to the
+  screen's edges; its light (art/f9_bosses_paint.ts, art/f9_bosses_fx.ts, render/act1_fx/f9_bosses.ts).
+- THE WAR CRY: a wall of fire bursting up round him, the screen's edges red while the rage is on him. THE BULL RUSH: a trench torn
+  as he runs. THE SLAM: the ground split open the length of its lane, slabs of rock heaved up along it.
+- THE MIST WOLF: shockwaves of mist; the claw's three gouges torn deep and glowing; the howl rolling out again and again, the screen
+  darkened and the mist rolling in at its edges; the lunge's tunnel of mist and its streak; the cloud grown (4.8 tiles round), many
+  eyes burning in it.
+- In play: each squares up to the hero before a move (its pictures face the floor's four ways), the smash strikes under the club too.
+- Films of real fights (the game's automatic player fighting each, unhurtable): pictures/f9_chieftain_fight.mp4,
+  pictures/f9_mist_wolf_fight.mp4 (tools/scenarios/f9_bosses_fight.mjs, tools/f9_bosses_cut.py).
