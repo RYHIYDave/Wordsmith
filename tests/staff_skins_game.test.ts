@@ -14,8 +14,8 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { paintWithoutCanvas } from './helpers';
-import { STAFF_SKINS, STAFF_SKIN_OF, staffWorn } from '../src/art/staff_skins';
-import { STAFF_IDS, STAFF_PLACES, isTownPlace, lookOfPlace, staffOfPlace } from '../src/art/heroes';
+import { STAFF_SKIN_OF } from '../src/art/staff_skins';
+import { STAFF_IDS, STAFF_PLACES, STAFF_SKINS, isTownPlace, lookOfPlace, staffOfPlace, staffWorn } from '../src/art/heroes';
 import type { HeroArt, HeroPlace } from '../src/art/heroes';
 import { makeHeroArt3, bakeLists } from '../src/art/heroes3';
 import { BakedHeroes, bakeGroups, keyName, listLengths } from '../src/render/baked';

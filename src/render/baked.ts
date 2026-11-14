@@ -13,8 +13,7 @@
 import { bakeLists, cardLists, readyList } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
-import { HEAVY_PLACES, STAFF_IDS, STAFF_PLACES } from '../art/heroes';
-import { STAFF_SKINS } from '../art/staff_skins';
+import { HEAVY_PLACES, STAFF_IDS, STAFF_PLACES, STAFF_SKINS } from '../art/heroes';
 import { WARRIOR_TREE2 } from '../game/talents';
 import type { AnimSet } from '../art/actor_types';
 import { ASKED } from '../art/asked';

@@ -4,11 +4,14 @@
 // same art, the same mark, and the bake is kept (in .bake/<mark>/) and not made again; the art changed, a new mark and a new
 // bake. The game is built knowing the mark (tools/build.mjs), and takes in only a bake of that mark.
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import os from 'node:os';
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import { RELEASE_DEFINES, ROOT, bundle } from './lib.mjs';
 import { encodePng } from './png.mjs';
+import { groupMarks } from './bake_marks.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -19,10 +22,52 @@ export async function bakeCode() {
   return { code, mark };
 }
 
+/** A group of an earlier bake whose heroes are painted with the same code (`gmark`, tools/bake_marks.mjs): its file and where its sheets are. */
+function keptGroup(g, gmark, mark, log) {
+  const want = (f) => f && f.group === g && f.gmark === gmark;
+  const sheetsOf = (f) => [...f.sheets, ...(f.packs ?? []).map((p) => p.sheet)];
+  // (an earlier bake on this machine, .bake/<mark>/)
+  const bakes = path.join(ROOT, '.bake');
+  for (const m of fs.existsSync(bakes) ? fs.readdirSync(bakes) : []) {
+    if (m === mark) continue;
+    const j = path.join(bakes, m, `${g}.json`);
+    if (!fs.existsSync(j)) continue;
+    let f;
+    try { f = JSON.parse(fs.readFileSync(j, 'utf8')); } catch { continue; }
+    if (!want(f) || !sheetsOf(f).every((n) => fs.existsSync(path.join(bakes, m, n)))) continue;
+    return { f, from: `.bake/${m}`, read: (n) => fs.readFileSync(path.join(bakes, m, n)) };
+  }
+  // (the bake published with the game, on gh-pages: heroes/<mark>/, for a machine that has not baked before)
+  for (const ref of ['origin/gh-pages', 'gh-pages']) {
+    let dirs;
+    try { dirs = execFileSync('git', ['ls-tree', '--name-only', `${ref}:heroes`], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split('\n').filter(Boolean); } catch { continue; }
+    for (const m of dirs) {
+      if (m === mark) continue;
+      let f;
+      try { f = JSON.parse(execFileSync('git', ['show', `${ref}:heroes/${m}/${g}.json`], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'ignore'] })); } catch { continue; }
+      if (!want(f)) continue;
+      const read = (n) => execFileSync('git', ['show', `${ref}:heroes/${m}/${n}`], { cwd: ROOT, maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'ignore'] });
+      try { sheetsOf(f).forEach((n) => read(n).length); } catch { log(`${g}: ${ref} heroes/${m} has its file but not all its sheets`); continue; }
+      return { f, from: `${ref} heroes/${m}`, read };
+    }
+    break;
+  }
+  return null;
+}
+
+/** How many groups are baked at once, each in a browser of its own: one for each core, two at most (BAKE_JOBS to say). */
+const JOBS = Math.max(1, Number(process.env.BAKE_JOBS) || Math.min(2, os.cpus().length));
+
 /**
  * The bake of the heroes' art as it is now, made if it is not there yet. Its mark and its folder. `only`: just those groups
  * (for a look at a few on a page of their own, tools/bake_some.mjs): the bake is not marked done, and a whole bake of the same
  * art later keeps them and bakes the rest.
+ *
+ * EACH GROUP KEPT WHERE ITS HEROES' CODE HAS NOT CHANGED (14 Nov 2026, tools/bake_marks.mjs): every group's file carries its
+ * `gmark`, the hash of the code its heroes are painted with; a group whose gmark is that of a group of an earlier bake (on this
+ * machine in .bake/, or as published on gh-pages) is taken from it as it is, its sheets byte for byte, and not painted again.
+ * FULL=1 paints every group. And TWO GROUPS AT ONCE where there are two cores (a group is painted on one), each in a browser
+ * of its own.
  */
 export async function bakeHeroes({ log = console.log, only = null } = {}) {
   const { code, mark } = await bakeCode();
@@ -33,11 +78,11 @@ export async function bakeHeroes({ log = console.log, only = null } = {}) {
   // And each group on a page of its own, closed once it is baked, so that what one held is all given back before the next.)
   fs.mkdirSync(dir, { recursive: true });
   const { chromium } = require('playwright');
-  const browser = await chromium.launch();
+  const browsers = [];
   const t0 = Date.now();
   const said = { mark, groups: {} };
   const saidOf = (g) => path.join(dir, `.said-${g}.json`);
-  const open = async () => {
+  const open = async (browser) => {
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -47,18 +92,40 @@ export async function bakeHeroes({ log = console.log, only = null } = {}) {
     return page;
   };
   try {
-    const first = await open();
+    browsers.push(await chromium.launch());
+    const first = await open(browsers[0]);
     const all = await first.evaluate(() => window.bake.groups());
+    const names = await first.evaluate(() => window.bake.names());
     await first.close();
     const groups = only ? all.filter((g) => only.includes(g)) : all;
     if (only && groups.length !== only.length) throw new Error(`no such group: ${only.filter((g) => !all.includes(g)).join(', ')}`);
+    const gmarks = await groupMarks(names);
+    const todo = [];
     for (const g of groups) {
       if (fs.existsSync(saidOf(g))) {
         said.groups[g] = JSON.parse(fs.readFileSync(saidOf(g), 'utf8'));
         log(`baked ${g} already (kept from a bake that stopped)`);
         continue;
       }
-      const page = await open();
+      const kept = process.env.FULL === '1' ? null : keptGroup(g, gmarks[g], mark, log);
+      if (kept) {
+        const { f, from, read } = kept;
+        let bytes = 0;
+        for (const n of [...f.sheets, ...(f.packs ?? []).map((p) => p.sheet)]) {
+          const b = read(n);
+          fs.writeFileSync(path.join(dir, n), b);
+          bytes += b.length;
+        }
+        fs.writeFileSync(path.join(dir, `${g}.json`), JSON.stringify({ ...f, mark }));
+        said.groups[g] = { kept: from, gmark: gmarks[g], sheets: f.sheets.length + (f.packs?.length ?? 0), mb: +(bytes / 1e6).toFixed(2) };
+        log(`kept ${g} from ${from}: its heroes' code as it was (${gmarks[g]})`);
+        fs.writeFileSync(saidOf(g), JSON.stringify(said.groups[g]));
+        continue;
+      }
+      todo.push(g);
+    }
+    const bakeOne = async (browser, g) => {
+      const page = await open(browser);
       const info = await page.evaluate((name) => window.bake.group(name), g);
       if (info.dropped.length) throw new Error(`${g}: a frame has parts that cannot be kept (${info.dropped.join(', ')})`);
       const file = JSON.parse(await page.evaluate((name) => window.bake.file(name), g));
@@ -84,15 +151,21 @@ export async function bakeHeroes({ log = console.log, only = null } = {}) {
         bytes += png.length;
       }
       await page.evaluate((name) => window.bake.drop(name), g);
-      fs.writeFileSync(path.join(dir, `${g}.json`), JSON.stringify({ mark, ...file, sheets: names.slice(0, info.held) }));
-      said.groups[g] = { frames: info.frames, places: info.places, sheets: names.length, mb: +(bytes / 1e6).toFixed(2), s: +(info.ms / 1000).toFixed(1) };
+      fs.writeFileSync(path.join(dir, `${g}.json`), JSON.stringify({ mark, gmark: gmarks[g], ...file, sheets: names.slice(0, info.held) }));
+      said.groups[g] = { gmark: gmarks[g], frames: info.frames, places: info.places, sheets: names.length, mb: +(bytes / 1e6).toFixed(2), s: +(info.ms / 1000).toFixed(1) };
       if (info.packs) Object.assign(said.groups[g], { packs: info.packs, heldMb: +(info.heldBytes / 1048576).toFixed(1), packsMb: +(info.packBytes / 1048576).toFixed(1) });
       log(`baked ${g}: ${info.frames} frames for ${info.places} places, ${names.length} sheets, ${(bytes / 1e6).toFixed(2)} MB (${(info.ms / 1000).toFixed(1)} s to paint)${info.packs ? `; ${info.packs} packs: ${(info.heldBytes / 1048576).toFixed(1)} MB always held, ${(info.packBytes / 1048576).toFixed(1)} MB in packs, unpacked` : ''}`);
       fs.writeFileSync(saidOf(g), JSON.stringify(said.groups[g]));
       await page.close();
-    }
+    };
+    // (the groups left, two at a time where there are two cores: each in a browser of its own, so each paints on a core of its own)
+    const jobs = Math.min(JOBS, todo.length);
+    while (browsers.length < jobs) browsers.push(await chromium.launch());
+    await Promise.all(browsers.slice(0, jobs).map(async (b) => {
+      for (let g = todo.shift(); g !== undefined; g = todo.shift()) await bakeOne(b, g);
+    }));
   } finally {
-    await browser.close();
+    for (const b of browsers) await b.close();
   }
   if (only) return { mark, dir, fresh: true };
   said.s = Math.round((Date.now() - t0) / 1000);

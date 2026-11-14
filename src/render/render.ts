@@ -43,7 +43,7 @@ import { FIGURE_SIZE, HEAVY_FIGURES, figureOf } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { HeroArt } from '../art/heroes';
 import { HEAVY_PLACES, STAFF_PLACES } from '../art/heroes';
-import { staffWorn } from '../art/staff_skins';
+import { staffWorn } from '../art/heroes';
 import { heavyDrawn } from '../game/talents';
 import { AXE_FLIGHT, axeFlying } from '../art/warrior_up_axe_moves';
 import { WARRIOR_UP, WU_SIDES } from '../art/warrior_up';
