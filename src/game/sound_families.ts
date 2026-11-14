@@ -19,13 +19,13 @@ export const ENEMY_SOUNDS = { on: true };
 /** Each enemy's attack, by its family. */
 export const ATK: Partial<Record<MonsterKind, string>> = {
   skeleton: 'atkBones', champion: 'atkBones', beast: 'atkBones', mite: 'atkBones',
-  brute: 'atkTroll', chieftain: 'atkTroll',
+  brute: 'atkTroll', chieftain: 'atkTroll', warchief: 'atkTroll',
   bat: 'atkBat',
   dagger: 'atkDagger',
   cultist: 'atkHex', priest: 'atkHex', chanter: 'atkHex',
   boneward: 'atkShield', qguard: 'atkShield',
   shade: 'atkSpirit', rshadow: 'atkSpirit', reflection: 'atkSpirit', drowned: 'atkSpirit',
-  wolf: 'atkBite',
+  wolf: 'atkBite', mistwolf: 'atkBite',
   rat: 'atkRat', ratking: 'atkRat',
   deer: 'atkAntler', stag: 'atkAntler',
   vulture: 'atkVulture', queen: 'atkVulture',
@@ -46,11 +46,11 @@ export const ATK: Partial<Record<MonsterKind, string>> = {
 /** Each enemy's voice, by its family (aggro, hurt, death). */
 export const VOICE: Partial<Record<MonsterKind, string>> = {
   skeleton: 'bones', archer: 'bones', marksman: 'bones', champion: 'bones', beast: 'bones', mite: 'bones', boneward: 'bones',
-  brute: 'troll', chieftain: 'troll',
+  brute: 'troll', chieftain: 'troll', warchief: 'troll',
   bat: 'bat',
   shade: 'spirit', rshadow: 'spirit', drowned: 'spirit', reflection: 'spirit',
   golem: 'flesh',
-  wolf: 'wolf',
+  wolf: 'wolf', mistwolf: 'wolf',
   rat: 'rat',
   deer: 'deer',
   vulture: 'vulture',
