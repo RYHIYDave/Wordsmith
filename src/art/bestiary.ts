@@ -115,6 +115,8 @@ export function useCensor2(on: boolean): void {
   const z = FIGURE_SIZE.censor as { top: number; half: number };
   z.top = on ? CENSOR2_SIZE.top : 41;
   z.half = on ? CENSOR2_SIZE.half : 16;
+  // (his robe's hem wider than his old: the hero kept off it)
+  (MONSTERS.censor as { radius: number }).radius = on ? 0.85 : 0.6;
 }
 /** THE FLESHMANCER'S MOVES DONE THE ACTION WAY (game/fm_action.ts FM_ACTION): the rules and the art chat's pictures (FLESH_ACTION) together. */
 export function useFmAction(on: boolean): void {
