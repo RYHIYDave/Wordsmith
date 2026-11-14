@@ -684,6 +684,8 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   turning his right-facing pictures over (the main chat's, as it builds him in). `pictures/standard/boss_facings.png` (riding, and
   on foot with his shade: down-right, down-left, up-right, up-left); `tools/_ws_faces4.ts`, `tools/_ws_shade_faces.ts` make it.
   His boss tests now take in the six new melds: 4 of 4 pass.
+  HIS YES: “Yes, hand it to the main chat (Recommended)” (offered as: put the whole boss on the ship list to be built into the
+  game). Handed over on the queue page's ship list.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
