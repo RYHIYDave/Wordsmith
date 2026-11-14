@@ -115,6 +115,8 @@ export interface ChiefPose {
   swing: V3;
   /** (his death) How far he has TURNED TO STONE, 0 to 1: the stone creeping up him from the floor. */
   stone?: number;
+  /** All of him turned about the floor point under him, degrees to his left (a whirl, his feet going round with him). */
+  turn?: number;
   /** (his death) No edge of light round him: a dying thing has none (art/new_mobs3.ts mobSet). */
   rimless?: boolean;
 }
@@ -156,7 +158,7 @@ function bend(a: V3, b: V3, la: number, lb: number, hint: V3): V3 {
 export function sculptChief9(view: PaintView, pose: Partial<ChiefPose> = {}, yaw = -10, size: { w: number; h: number; ax: number; ay: number } = CHIEF9_CANVAS): Drawn {
   const Q: ChiefPose = { ...CHIEF_STAND, ...pose };
   const sc = new Sculpt();
-  const { F, L, U, P, X } = frame(yaw);
+  const { F, L, U, P, X } = frame(yaw + (Q.turn ?? 0));
   const b = Q.breath * 1.2;
   // (his body's turn: pitched forward `lean` about his pelvis, turned `twist`, moved `hip`; his head thrown back about his neck)
   const PIV: V3 = [0, 0, 38];
@@ -449,6 +451,11 @@ export interface WolfPose {
   root: V3;
   /** Its body pitched nose down, degrees (up, less than 0). */
   pitch: number;
+  /** Its whole body turned to its left about its middle, degrees (a thrash, a spin); and rolled over onto its right side, degrees (a twist). */
+  turn?: number;
+  roll?: number;
+  /** How much of its turn its paws go round with it (1: spinning in the air or on the spot, its feet with it; 0: planted). */
+  pawsTurn?: number;
   /** Its head raised, degrees; turned to its left, degrees. */
   headUp: number;
   headTurn: number;
@@ -510,7 +517,25 @@ export function sculptWolf9(view: PaintView, pose: Partial<WolfPose> = {}, yaw =
   const su = Math.sin(-Q.headUp * D);
   const cn = Math.cos(Q.headTurn * D);
   const sn = Math.sin(Q.headTurn * D);
-  const rotB = (q: V3): V3 => [q[0] * cp + q[2] * sp, q[1], -q[0] * sp + q[2] * cp];
+  const cy = Math.cos((Q.turn ?? 0) * D);
+  const sy = Math.sin((Q.turn ?? 0) * D);
+  const cr = Math.cos((Q.roll ?? 0) * D);
+  const sr = Math.sin((Q.roll ?? 0) * D);
+  // (rolled about its length, pitched, then turned about the upright: the whole body together)
+  const rotB = (q0: V3): V3 => {
+    const q: V3 = [q0[0], q0[1] * cr - q0[2] * sr, q0[1] * sr + q0[2] * cr];
+    const p: V3 = [q[0] * cp + q[2] * sp, q[1], -q[0] * sp + q[2] * cp];
+    return [p[0] * cy - p[1] * sy, p[0] * sy + p[1] * cy, p[2]];
+  };
+  // (its paws carried round with its turn as far as `pawsTurn` says, about the point under its middle)
+  const pk = Q.pawsTurn ?? 0;
+  const pawAt = (p0: V3): V3 => {
+    if (!pk || !(Q.turn ?? 0)) return p0;
+    const a = (Q.turn ?? 0) * D * pk;
+    const dx = p0[0] - Q.root[0];
+    const dy = p0[1] - Q.root[1];
+    return [Q.root[0] + dx * Math.cos(a) - dy * Math.sin(a), Q.root[1] + dx * Math.sin(a) + dy * Math.cos(a), p0[2]];
+  };
   const rotH = (q: V3): V3 => {
     const f1 = q[0] * cu + q[2] * su;
     const u1 = -q[0] * su + q[2] * cu;
@@ -582,7 +607,7 @@ export function sculptWolf9(view: PaintView, pose: Partial<WolfPose> = {}, yaw =
   for (const s of [1, -1]) {
     const k = s > 0 ? -5 : 0;
     const pf = s > 0 ? 'legFL' : 'legFR';
-    const paw = s > 0 ? Q.pawFL : Q.pawFR;
+    const paw = pawAt(s > 0 ? Q.pawFL : Q.pawFR);
     const sh0 = B([26 + k, s * 8, 52]);
     const wrist = add(paw, [-5, 0, 6]);
     const elbow = bend(sh0, wrist, 21.4, 22.2, [-1, 0, 0]);
@@ -591,7 +616,7 @@ export function sculptWolf9(view: PaintView, pose: Partial<WolfPose> = {}, yaw =
     cone(mist, pf, W(wrist), W(add(paw, [-2, 0, 1])), 2.8, 2.8, 1.2);
     ell(mist, pf, W(paw), X(4.8, 3.2, 2.8), 1.2);
     const ph = s > 0 ? 'legHL' : 'legHR';
-    const hp = s > 0 ? Q.pawHL : Q.pawHR;
+    const hp = pawAt(s > 0 ? Q.pawHL : Q.pawHR);
     const hip = B([-21 - k, s * 8.5, 58]);
     const hock = add(hp, [-6.5, 0, 14]);
     const knee = bend(hip, hock, 24.4, 25, [1, 0, 0]);

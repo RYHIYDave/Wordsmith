@@ -14,20 +14,21 @@ const [out = '/tmp/poses.png', who = 'chief', what = 'walk', view = 'front', nAr
 const n = Number(nArg);
 const scale = Number(scaleArg);
 const chief = who === 'chief';
-const C = chief ? { w: 300, h: 300, ax: 150, ay: 250 } : { w: 380, h: 280, ax: 190, ay: 236 };
+const C = chief ? CHIEF9_CANVAS : WOLF9_CANVAS;
 void CHIEF9_CANVAS;
 void WOLF9_CANVAS;
-const long = what === 'walk' ? (chief ? CHIEF_PLAY.walk.frames / CHIEF_PLAY.walk.fps : WOLF_PLAY.walk.frames / WOLF_PLAY.walk.fps) : what === 'die' ? (chief ? CHIEF_PLAY.dies : WOLF_PLAY.dies) : what === 'still' ? 2 : what === 'reel' ? 0.3 : chief ? CHIEF_MOVES[what.slice(5) as ChiefMove].long : WOLF_MOVES[what.slice(5) as WolfMove].long;
+const long = what === 'walk' ? (chief ? CHIEF_PLAY.walk.frames / CHIEF_PLAY.walk.fps : WOLF_PLAY.walk.frames / WOLF_PLAY.walk.fps) : what === 'die' ? (chief ? CHIEF_PLAY.dies : WOLF_PLAY.dies) : what === 'still' ? 2 : what === 'reel' ? 0.3 : chief ? CHIEF_MOVES[what.slice(5).split('@')[0] as ChiefMove].long : WOLF_MOVES[what.slice(5).split('@')[0] as WolfMove].long;
 const cols = Math.min(n, 6);
 const rows = Math.ceil(n / cols);
 const sheet = new Px(C.w * cols * scale, C.h * rows * scale);
 for (let i = 0; i < sheet.w * sheet.h; i++) sheet.set(i % sheet.w, Math.floor(i / sheet.w), (Math.floor(i % sheet.w / 16) + Math.floor(i / sheet.w / 16)) % 2 ? '#3a4a2c' : '#34442a');
+const times = what.includes('@') ? what.split('@')[1].split(',').map(Number) : null;
 for (let i = 0; i < n; i++) {
-  const t = what === 'walk' ? (i / n) * long : (i / Math.max(1, n - 1)) * long;
+  const t = times ? times[i] : what === 'walk' ? (i / n) * long : (i / Math.max(1, n - 1)) * long;
   const v = view as 'front' | 'rear';
   const d = chief
-    ? sculptChief9(v, what === 'walk' ? chiefWalk(t) : what === 'die' ? chiefDie(t) : what === 'still' ? chiefStill(t) : what === 'reel' ? chiefReel(t) : chiefInPlay(what.slice(5) as ChiefMove, t), 45, C)
-    : sculptWolf9(v, what === 'walk' ? wolfWalk(t) : what === 'die' ? wolfDie(t) : what === 'still' ? wolfStill(t) : what === 'reel' ? wolfReel(t) : wolfInPlay(what.slice(5) as WolfMove, t), 45, C);
+    ? sculptChief9(v, what === 'walk' ? chiefWalk(t) : what === 'die' ? chiefDie(t) : what === 'still' ? chiefStill(t) : what === 'reel' ? chiefReel(t) : chiefInPlay(what.slice(5).split('@')[0] as ChiefMove, t), 45, C)
+    : sculptWolf9(v, what === 'walk' ? wolfWalk(t) : what === 'die' ? wolfDie(t) : what === 'still' ? wolfStill(t) : what === 'reel' ? wolfReel(t) : wolfInPlay(what.slice(5).split('@')[0] as WolfMove, t), 45, C);
   const ox = (i % cols) * C.w * scale;
   const oy = Math.floor(i / cols) * C.h * scale;
   for (let y = 0; y < C.h; y++) for (let x = 0; x < C.w; x++) {

@@ -41,7 +41,7 @@ export const WOLF_FX = 'mistwolf:fx:';
 /** THE RULES' OWN NUMBERS: how hard each blow is (times its own blow); the rage; the howl; how near each comes. */
 export const F9_TUNE = {
   chief: { smash: 1.4, slam: 1.2, rush: 1.6, roar: 0.5, stopAt: 3.8 },
-  wolf: { bite: 1.0, claw: 1.3, lunge: 1.4, cloud: 0.35, stopAt: 2.0 },
+  wolf: { bite: 1.0, claw: 1.3, lunge: 1.4, cloud: 0.35, stopAt: 2.0, rakes: [0.45, 0.45, 0.7] as readonly number[] },
   /**
    * SQUARING UP: its pictures face only the four ways along the floor's grid, and its blows land where its pictures' do, so as a move
    * comes it goes to stand with the hero square before it along one of them, near enough that its blows reach him (tiles: no nearer
@@ -372,12 +372,15 @@ export const RULES_WOLF: Act1Rules | null = {
       // (in its ring, or under its jaws as it goes there)
       if (at(a.hit) && free && (Math.hypot(f - BITE_RING.f, l) <= BITE_RING.r + rr + 10 || (f > 10 && f < BITE_RING.f && Math.abs(l) <= BITE_RING.r + rr))) strike(1, 1, 0, m.x, m.y);
     } else if (move === 'claw') {
+      // (its frenzy: three rakes, each striking across its arc; the last, both paws, throws him)
       const S = CLAW_SWEEP;
-      if (at(a.hit) && free) {
+      WOLF_MOVES.claw.beats.forEach((b, i) => {
+        if (i > 0 && at(b.at)) beat(R, m, 'claw');
+        if (!at(b.at) || !free) return;
         const d = Math.hypot(f - S.f, l);
         const ang = Math.atan2(l, f - S.f);
-        if (d >= S.r0 - rr - 8 && d <= S.r1 + rr && ang >= S.a0 - 0.2 && ang <= S.a1 + 0.2) strike(1, 1, T.knock.claw, m.x, m.y);
-      }
+        if (d >= S.r0 - rr - 8 && d <= S.r1 + rr && ang >= S.a0 - 0.2 && ang <= S.a1 + 0.2) strike(1 << i, T.wolf.rakes[i], i === 2 ? T.knock.claw : 0, m.x, m.y);
+      });
     } else if (move === 'lunge') {
       // (through him as mist: struck as it passes)
       if (t1 > 0.7 && t0 < 0.9 && !(p.d & 1) && free && nearLine(h.x, h.y, x0, y0, m.x, m.y) <= m.r + r0) strike(1, 1, 0, x0, y0);
@@ -406,6 +409,13 @@ export const RULES_WOLF: Act1Rules | null = {
         o.fx = dx / n;
         o.fy = dy / n;
       });
+    }
+  },
+  end(R, m, a) {
+    // (the lunge: it spun round in its skid to face back the way it came, at you)
+    if (a.id === 'mistwolf:lunge') {
+      m.fx = -m.fx;
+      m.fy = -m.fy;
     }
   },
   peril(R, p) {

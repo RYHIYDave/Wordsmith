@@ -47,7 +47,7 @@ export const ROAR_RING = 70;
 export const BITE_RING = { f: 74, r: 20 } as const;
 export const CLAW_SWEEP = { f: 22, r0: 30, r1: 78, a0: -1.1, a1: 1.2 } as const;
 export const LUNGE_LANE = { from: 20, to: LUNGE_LONG + 30, half: 16 } as const;
-export const CLOUD = { f: 20, r: 125, hurts: [0.95, 1.35, 1.75, 2.15] as readonly number[], thins: 2.5 } as const;
+export const CLOUD = { f: 20, r: 170, hurts: [0.95, 1.35, 1.75, 2.15] as readonly number[], thins: 2.5 } as const;
 /** Where the wolves it howls for come out of the mist (its own lengths: forward, to its left), and when. */
 export const HOWL_FOGS: readonly { f: number; l: number; at: number }[] = [
   { f: 50, l: 80, at: 1.2 },
@@ -211,32 +211,37 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
   if (move === 'bite') {
     if (layer === 'ground') {
       if (t > 0.2 && since < 0) warnBig(px, pr, BITE_RING.f, 0, BITE_RING.r + 6, t);
-      bigShock(px, pr, BITE_RING.f, 0, 65, since / 0.45, 12, 9301, SHOCK_MIST, MISTY);
+      bigShock(px, pr, BITE_RING.f, 0, 110, since / 0.5, 12, 9301, SHOCK_MIST, MISTY);
       // (where it pushed off: the ground torn up behind it)
       plume(px, pr, -15, 0, (t - 0.55) / 0.9, 40, 9963, 10, 26, MISTY);
     } else {
       const at = pr(BITE_RING.f, 0, 30);
       bigBurst(px, at[0], at[1], since / 0.22, 80, 9961);
-      radial(px, at[0], at[1], since / 0.25, 36, 44, 280, 9962, '#f2f0fa');
-      plume(px, pr, BITE_RING.f, 0, since / 0.9, 45, 9965, 12, 26, MISTY);
+      radial(px, at[0], at[1], since / 0.25, 40, 50, 460, 9962, '#f2f0fa');
+      plume(px, pr, BITE_RING.f, 0, since / 0.9, 70, 9965, 14, 30, MISTY);
     }
   } else if (move === 'claw') {
     const S = CLAW_SWEEP;
+    const mid = S.f + (S.r0 + S.r1) / 2;
     if (layer === 'ground') {
       if (t > 0.25 && since < 0) {
         warnArc(px, pr, S.f, 0, S.r0, S.r1, S.a0, S.a1, t);
         warnArc(px, pr, S.f, 0, S.r0 + 3, S.r1 - 3, S.a0 + 0.03, S.a1 - 0.03, t + 0.05);
       }
-      // (the ground torn by its three claws along the sweep, deep, glowing, fading)
-      if (since >= 0) gouges(px, pr, [CLAW_ARC.about[0], CLAW_ARC.about[1], 0], [CLAW_ARC.from[0] + 24, CLAW_ARC.from[1], 0], [CLAW_ARC.to[0] + 6, CLAW_ARC.to[1], 0], 3, since / 0.06, (since - 0.9) / 0.8, 9871);
-      bigShock(px, pr, S.f + (S.r0 + S.r1) / 2, 0, 85, since / 0.5, 14, 9303, SHOCK_MIST, MISTY);
+      // (the ground torn by each rake: the first across one way, the second back the other; the last both paws, a shockwave of mist)
+      const [b0, b1, b2] = M.beats.map((b) => t - b.at);
+      if (b0 >= 0) gouges(px, pr, [CLAW_ARC.about[0], CLAW_ARC.about[1], 0], [CLAW_ARC.from[0] + 24, CLAW_ARC.from[1], 0], [CLAW_ARC.to[0] + 6, CLAW_ARC.to[1], 0], 3, b0 / 0.06, (b0 - 1.0) / 0.8, 9871);
+      if (b1 >= 0) gouges(px, pr, [CLAW_ARC.about[0], -CLAW_ARC.about[1], 0], [CLAW_ARC.from[0] + 24, -CLAW_ARC.from[1], 0], [CLAW_ARC.to[0] + 6, -CLAW_ARC.to[1], 0], 3, b1 / 0.06, (b1 - 1.0) / 0.8, 9873);
+      bigShock(px, pr, mid, 0, 150, b2 / 0.6, 16, 9303, SHOCK_MIST, MISTY);
     } else {
-      const at = pr(S.f + (S.r0 + S.r1) / 2, 0, 30);
-      bigBurst(px, at[0], at[1], since / 0.24, 100, 9971);
-      radial(px, at[0], at[1], since / 0.28, 44, 50, 300, 9972, '#f2f0fa');
-      rocks(px, pr, S.f + (S.r0 + S.r1) / 2, 0, since, 9975, 12, 7, 70);
-      plume(px, pr, S.f + (S.r0 + S.r1) / 2, 0, since / 1.1, 60, 9973, 14, 28, MISTY);
-      plume(px, pr, CLAW_ARC.to[0], CLAW_ARC.to[1], since / 1.0, 50, 9977, 8, 26, MISTY);
+      M.beats.forEach((b, i) => {
+        const sb = t - b.at;
+        const at = pr(mid + (i === 2 ? 0 : i === 0 ? -6 : 6), i === 0 ? 14 : i === 1 ? -14 : 0, 30);
+        bigBurst(px, at[0], at[1], sb / 0.22, i === 2 ? 100 : 60, 9971 + i);
+        if (i === 2) radial(px, at[0], at[1], sb / 0.28, 50, 60, 520, 9972, '#f2f0fa');
+        plume(px, pr, mid, i === 0 ? 14 : i === 1 ? -14 : 0, sb / 1.0, i === 2 ? 100 : 50, 9973 + i, i === 2 ? 16 : 8, i === 2 ? 32 : 24, MISTY);
+      });
+      rocks(px, pr, mid, 0, t - M.beats[2].at, 9975, 14, 8, 110);
     }
   } else if (move === 'howl') {
     HOWL_FOGS.forEach((q, i) => {
@@ -250,7 +255,7 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
       }
     });
     // (the howl itself rolling out from it over the ground, again and again)
-    if (layer === 'ground') for (let k = 0; k < 3; k++) bigShock(px, pr, 0, 0, 150, (since - k * 0.45) / 0.8, 10, 9321 + k, SHOCK_MIST, MISTY);
+    if (layer === 'ground') for (let k = 0; k < 3; k++) bigShock(px, pr, 0, 0, 260, (since - k * 0.45) / 0.9, 10, 9321 + k, SHOCK_MIST, MISTY);
   } else if (move === 'lunge') {
     const L = LUNGE_LANE;
     if (layer === 'ground') {
@@ -277,9 +282,9 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
       }
       const mid = pr(LUNGE_LONG * 0.5, 0, 30);
       bigBurst(px, mid[0], mid[1], since / 0.22, 80, 9997);
-      radial(px, mid[0], mid[1], since / 0.25, 36, 44, 280, 9998, '#f2f0fa');
+      radial(px, mid[0], mid[1], since / 0.25, 40, 50, 460, 9998, '#f2f0fa');
       plume(px, pr, LUNGE_LONG, 0, (t - 0.84) / 1.0, 70, 9999, 14, 30, MISTY);
-      bigShock(px, pr, LUNGE_LONG, 0, 75, (t - 0.84) / 0.45, 10, 9331, SHOCK_MIST, MISTY);
+      bigShock(px, pr, LUNGE_LONG, 0, 120, (t - 0.84) / 0.5, 10, 9331, SHOCK_MIST, MISTY);
     }
   } else if (move === 'cloud') {
     const cf = pose.root[0] + CLOUD.f;
@@ -289,8 +294,8 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
       const thin = t < CLOUD.thins ? 0 : (t - CLOUD.thins) / 0.7;
       mistCloud(px, pr, cf, 0, CLOUD.r, g, t, thin * 1.2);
     } else {
-      bigShock(px, pr, cf, 0, CLOUD.r * 0.9, since / 0.45, 14, 9341, SHOCK_MIST, MISTY);
-      plume(px, pr, cf, 0, since / 1.0, CLOUD.r * 0.7, 9343, 18, 30, MISTY);
+      bigShock(px, pr, cf, 0, 190, since / 0.5, 16, 9341, SHOCK_MIST, MISTY);
+      plume(px, pr, cf, 0, since / 1.0, 160, 9343, 22, 34, MISTY);
       // (its claws in the cloud where the hero is, as each of its blows strikes him; its eyes, many, moving in it)
       if (hero) {
         const at = pr(hero.f, hero.l, 30);

@@ -216,7 +216,7 @@ test('5. the chieftain\'s blows: the smash on its ring, the slam\'s crack as it 
   }
 });
 
-test('6. the wolf\'s: the bite in its ring, the claw across its arc, the lunge through you (nothing reaching it as mist), the cloud\'s claws again and again, the howl\'s wolves', () => {
+test('6. the wolf\'s: the bite in its ring, the claw\'s three rakes across its arc, the lunge through you (nothing reaching it as mist), the cloud\'s claws again and again, the howl\'s wolves', () => {
   const W = RULES_WOLF!;
   {
     const { g, m } = room('mistwolf', 1.5, 'mistwolf:bite');
@@ -235,7 +235,7 @@ test('6. the wolf\'s: the bite in its ring, the claw across its arc, the lunge t
       const p = before(m, WK, f, l);
       g.hero.x = p.x;
       g.hero.y = p.y;
-      assert.equal(watch(g, m, 1.7).hurts.length, n, `the claw, ${n ? 'across its arc' : 'behind it'}`);
+      assert.equal(watch(g, m, 2.0).hurts.length, n * 3, `the claw, ${n ? 'across its arc: its three rakes' : 'behind it'}`);
     }
   }
   {

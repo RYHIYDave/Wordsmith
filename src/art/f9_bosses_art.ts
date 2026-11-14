@@ -128,6 +128,15 @@ export function chiefMovePainted(view: F9View, move: ChiefMove, i: number): Pain
       ghost(out, g, FLAME, (1 - k / (n + 1)) * fade, 9800 + k, Math.round(PAD + dx), Math.round(PAD + dy));
     }
   }
+  // (the smash's whirl: the frames before this one left behind him, fading, as he goes round)
+  if (move === 'smash' && t > 0.35 && t < 1.02) {
+    for (const [back, k] of [[6, 0.3], [4, 0.45], [2, 0.65]] as const) {
+      const j = i - back;
+      if (j < 0) continue;
+      const g = kept(`chief:${view}:${move}:${j}`, () => chiefPx(view, chiefInPlay(move, j / F9_FPS)));
+      ghost(out, g, FLAME, k, 9820 + back, PAD, PAD);
+    }
+  }
   lay(out, body, PAD, PAD);
   // (OVER HIM)
   const fr = i;
@@ -276,21 +285,25 @@ export function wolfMovePainted(view: F9View, move: WolfMove, i: number): Painte
     if (strike) speedLines(out, muzzle[0], muzzle[1], ux, uy, 12, 20, 9967 + fr, MIST[4]);
   }
   if (move === 'claw') {
-    // (three great claw crescents along the sweep, round from above its shoulder: white at the heart, edged with its pink)
-    const [s0, s1] = M.strikes[0];
+    // (each rake's three great claw crescents along its sweep, round from above its shoulder: white at the heart, edged with its pink;
+    // the first across one way, the second back the other, the last straight down with both paws)
     const at = pr(76 - carry, 0, 30);
-    if (t >= s0 && since < 0.25) {
-      const sp = pr(CLAW_ARC.about[0] - carry, CLAW_ARC.about[1], CLAW_ARC.about[2]);
+    M.strikes.forEach(([s0, s1], k) => {
+      const since2 = t - s1;
+      if (t < s0 || since2 > 0.25) return;
+      const side = k === 1 ? -1 : 1;
+      const sp = pr(CLAW_ARC.about[0] - carry, CLAW_ARC.about[1] * side, CLAW_ARC.about[2]);
       const dx = at[0] - sp[0];
       const dy = at[1] - sp[1];
       const r = Math.hypot(dx, dy);
       const ah = Math.atan2(dy, dx);
-      const k = since < 0 ? ((t - s0) / (s1 - s0)) * 0.5 : 0.5 + since / 0.5;
-      for (let c = -1; c <= 1; c++) slash(out, sp[0], sp[1], r + c * 7, ah - 1.7, ah + 1.0, k, CRESCENT, 6);
-    }
+      const kk = since2 < 0 ? ((t - s0) / (s1 - s0)) * 0.5 : 0.5 + since2 / 0.5;
+      const [a0, a1] = k === 2 ? [ah - 1.2, ah + 0.3] : side > 0 ? [ah - 1.7, ah + 1.0] : [ah + 1.7, ah - 1.0];
+      for (let c = -1; c <= 1; c++) slash(out, sp[0] + (k === 2 ? c * 10 : 0), sp[1], r + (k === 2 ? 0 : c * 7), a0, a1, kk, CRESCENT, 6);
+      if (t <= s1 + 0.05) speedLines(out, at[0], at[1], -ux * side, uy * 0.3, 14, 30, 9979 + fr + k, MIST[4]);
+    });
     // (the mist streaming up off it as it rears)
     if (t > 0.2 && t < 0.62) embersMist(out, root[0] + 10, root[1] - 40, 70, 110, t, 26, 9975);
-    if (t >= s0 && t <= s1 + 0.05) speedLines(out, at[0], at[1], -ux, uy * 0.3, 16, 30, 9979 + fr, MIST[4]);
   }
   if (move === 'howl') {
     const head = pr(pose.root[0] + 40, 0, 112);
