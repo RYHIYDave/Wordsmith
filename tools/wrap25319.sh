@@ -3,7 +3,7 @@
 # the site serves it (the site's <head> and reset, then the fragment), SERVED from dist/ with the heroes', sounds', Colossus's, townsfolk's AND MONSTERS'
 # files beside it as they are beside the published page, and the playtests of what this update changes played on it two at a time
 # (his rule of 7 Nov 2026: test only what the change is about). 
-#   node tools/build.mjs && bash tools/wrap25318.sh   (25.3.19 was built by the Bells chat's build25319.mjs: tools/build.mjs with 25.3.17's picture marks, none baked anew)
+#   node tools/build.mjs && bash tools/wrap25319.sh   (25.3.19 was built by the Bells chat with 25.3.18's picture marks, which are this tree's too: nothing baked anew)
 # Each one's log is in shots/wrap/<name>.log, the verdicts in shots/wrap/summary.txt.
 set -u
 mkdir -p shots/wrap
@@ -39,7 +39,7 @@ two; run touch_wide $P --scenario $S/touch.mjs &
 two; run towntap_phone $P --scenario $S/towntap.mjs &
 two; CLS=warrior run guide_phone_warrior $P --scenario $S/guide.mjs &
 wait
-# THE FLOORS' MONSTERS FROM THEIR FILES (25.3.17's, monsters/1792f9618620: their art unchanged), alone
+# THE FLOORS' MONSTERS FROM THEIR FILES (25.3.18's, monsters/fe60947db695: this tree's mark too), alone
 FLOORS=1,6,11,18 PLAY=8 run monsters_baked_phone $P --scenario $S/monsters_baked.mjs
 ) 2>&1 | tee shots/wrap/summary.txt
 total=$(grep -c . shots/wrap/summary.txt)
