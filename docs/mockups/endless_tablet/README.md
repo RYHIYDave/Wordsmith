@@ -676,6 +676,14 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   bare and its edge hot gold, the gale's wall of frost mist whirling at its edge; the hero fights in through the gale, chilled and
   poisoned, the frost cracking off him as he gets into the eye, and hits him there out of the gale.
   HIS YES: “Yes, all ten melds done (Recommended)” (offered as: then his other facing turned round, and the hand-off).
+- HIS OTHER FACINGS, TURNED ROUND, NOT FLIPPED (his words of 12 Nov: “I see his staff swapping hands.  It’s gonna have to get
+  unmirrored at some point”): the painter has two more views, `frontL` (facing down and to the left) and `rearL` (up and to the
+  left), the figure truly turned on the floor and seen so (art/skeleton.ts `project`, art/skin.ts `PaintView`), and `paintMob`
+  paints a monster in them; he (already `trueBack` from behind) and his shade (`paintShade`) are painted in all four, so his staff,
+  and his shade's, stay in their right hands every way he faces. The game must use these two for the left-facing ways instead of
+  turning his right-facing pictures over (the main chat's, as it builds him in). `pictures/standard/boss_facings.png` (riding, and
+  on foot with his shade: down-right, down-left, up-right, up-left); `tools/_ws_faces4.ts`, `tools/_ws_shade_faces.ts` make it.
+  His boss tests now take in the six new melds: 4 of 4 pass.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
