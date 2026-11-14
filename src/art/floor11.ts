@@ -1222,6 +1222,11 @@ function doorbell(state: number): { left: Sprite; right: Sprite } {
  * and braced, a little shingled hood over the beam the bell hangs from, a ladder up its side, the bell-rope
  * hanging to a man's hand. Quiet; awake; rung. 170 x 240 at (85, 196).
  */
+/** (QUESTS1115, game/quests1115.ts) A wayside shrine's bell, for the camp's bell: still, and its two swings, rung. */
+export function shrineBellFrames(): Sprite[] {
+  return [0, 2, 3].map(shrineBell);
+}
+
 function watchBell(state: number): Sprite {
   const S = scene(170, 240, 85, 196);
   for (const x of [-10, 10]) {

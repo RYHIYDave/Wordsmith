@@ -161,7 +161,11 @@ import { act1Def } from '../game/act1';
 import { holdShows, inHold } from '../game/act1_layout';
 import { risenBy, risingSprite } from './arrivals';
 import { drawPillars } from './pillars';
-import { EYRIE_SCENE, QUEST610_TEXT } from '../game/quests610';
+import { EYRIE_SCENE, MUSTER_TEXT, QUEST610_TEXT } from '../game/quests610';
+import { QUEST1115_TEXT } from '../game/quests1115';
+import { CRIERS_JAR } from '../game/act2/undercity';
+import { clapperSprite, pageSprite, rollSprite } from '../art/quest1115';
+import { shrineBellFrames } from '../art/floor11';
 import { onTop } from '../game/act2/quiettower';
 /** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
 const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as const;
@@ -944,6 +948,8 @@ export class Renderer {
   private hallWays: ReturnType<typeof lookWays> | null = null;
   /** (THE CAMP) Its three people's pictures, painted once each as they are first wanted. */
   private folkFrames = new Map<string, Sprite>();
+  /** (QUESTS1115) The camp's bell's three pictures: still, and its two swings. */
+  private campBellFrames: Sprite[] | null = null;
 
   /** THE WAYS: what stands over the level's waypoint: the motes of light while it is awake; the column of a warp, by the level's own time (`now`). */
   private standWays(L: Game['level'], t: number, now: number, game: Game): void {
@@ -3585,6 +3591,8 @@ export class Renderer {
       // (ACT 1, THE DESCENT: the floor's own pieces that stand, and its breakables whole; the tall seen through while someone is behind them)
       if (this.act1Dressed && (p.kind === 'piece' || p.kind === 'barrel' || p.kind === 'urn')) {
         if (this.act1.lies(p) || p.state === 1 && p.kind !== 'piece') continue;
+        // (QUESTS1115: the Crier's jar, taken from the Rat King's nest)
+        if (p.state === 1 && p.name === CRIERS_JAR) continue;
         // (ACT 2, THE GATE WARD: a trap of its own by its beat; nothing in a house standing whole gives light out of it)
         // (ACT 2, THE HUSH: a trap that stands goes by the game's clock, its trap's; a piece the art drew its own picture for
         // being seen through, the Millrace's drying lines, shows that picture whole while someone is behind it: render/act1_pieces.ts)
@@ -3647,6 +3655,17 @@ export class Renderer {
         const sx = wx(cam, f.x, f.y);
         const sy = wy(cam, f.x, f.y);
         this.stand(f.x + f.y + 0.02, sp, sx, sy, null, 0, 1, veil(sp, sx, sy, f.x + f.y));
+      }
+      // (QUESTS1115: the camp's bell, the clapper hung in it: floor 11's wayside shrine's bell, still, swinging a moment as it is rung)
+      if (L.campBell) {
+        const cb = L.campBell;
+        const since = game.time - cb.rungAt;
+        const fr = (this.campBellFrames ??= shrineBellFrames());
+        const sp = since >= 0 && since < 2.4 ? fr[1 + (Math.floor(since * 5) % 2)] : fr[0];
+        const sx = wx(cam, cb.x, cb.y);
+        const sy = wy(cam, cb.x, cb.y);
+        this.stand(cb.x + cb.y, sp, sx, sy, null, 0, 1, veil(sp, sx, sy, cb.x + cb.y));
+        hid?.(cb.x, cb.y);
       }
     } else if (this.folkFrames.size) this.folkFrames.clear();
     // (THE WORDSMITH'S RING MADE NEW, art/ring3.ts, behind art/smith3.ts SMITH3: the letters of light
@@ -3744,6 +3763,16 @@ export class Renderer {
         this.stand(dr.x + dr.y - 0.2, royalCardSprite(dr.royal), sx, sy - pop);
         hid?.(dr.x, dr.y);
         this.labels.push({ x: sx, y: sy - 14, text: `The ${ROYAL_NAMES[dr.royal].one}'s card`, color: royalLabelColor(dr.royal) });
+        continue;
+      }
+      // (QUESTS1115, behind its switch: an unstruck page, or the clapper, sculpted: art/quest1115.ts)
+      if (dr.kind === 'quest') {
+        const qs = dr.thing === 'clapper' ? clapperSprite() : dr.thing === 'roll' ? rollSprite() : pageSprite();
+        this.stand(dr.x + dr.y - 0.2, qs, sx, sy - pop);
+        hid?.(dr.x, dr.y);
+        if (qs.lights) this.propLit.push({ s: qs, x: Math.round(sx), y: Math.round(sy - pop) });
+        this.labels.push({ x: sx, y: sy - 18, text: dr.thing === 'clapper' ? QUEST1115_TEXT.clapperLabel : dr.thing === 'roll' ? MUSTER_TEXT.label : QUEST1115_TEXT.pageLabel, color: '#e8dcc0' });
+        if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, ['#7fe8ff', P.white]);
         continue;
       }
       let sp: Sprite;

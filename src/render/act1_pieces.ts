@@ -31,6 +31,7 @@ import { redoubtPieceSteps, redoubtPieces } from '../art/redoubt';
 import { hushSetPieceSteps, hushSetPieces } from '../art/act2_set';
 import { gateWardPieceSteps, gateWardPieces } from '../art/floor11';
 import { undercityPieceSteps, undercityPieces } from '../art/floor12';
+import { CRIERS_JAR } from '../game/act2/undercity';
 import { WHEEL_STEPS, WHEEL_TURN, millracePieceSteps, millracePieces } from '../art/floor13';
 import { houseOfQuietPieceSteps, houseOfQuietPieces } from '../art/floor14';
 import { greatLibraryPieceSteps, greatLibraryPieces } from '../art/floor15';
@@ -426,6 +427,8 @@ export class Act1Pieces {
     if (p.kind !== 'piece' || !p.name) return 0;
     // (F8F9_FIX: the door carved into the canyon's wall casts no shadow out on the floor)
     if (F8F9_FIX.on && p.name === "the waystation's gate" && this.dress?.floor === 8) return 0;
+    // (QUESTS1115: the Crier's jar, taken from the Rat King's nest: nothing of it left, its shadow too)
+    if (p.state === 1 && p.name === CRIERS_JAR) return 0;
     return this.piece(p.name)?.shadow ?? 0;
   }
 

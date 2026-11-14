@@ -2372,6 +2372,12 @@ export const MSG = {
   /** The flasks. */
   life: '#ff9aa0',
   bad: '#ff6e80',
+  /**
+   * Every line of a quest, one colour. His words, 13 Nov 2026, shown the quests of floors 11 to 15: “It looks good but I don’t like
+   * that the quest text are all different colors.  It should be the same color, with less info.  The quest givers should give the
+   * context”. The quest's own cyan, as the QUEST line at the top.
+   */
+  quest: '#7af8f0',
 } as const;
 
 /**

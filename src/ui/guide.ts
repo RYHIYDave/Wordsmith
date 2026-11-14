@@ -103,13 +103,14 @@ export function guideAttack(game: Game): number {
 /** What the first dungeon's prompt points at for that ability: its plate at the bottom of the screen, or the button of the evasive move. */
 const pointOf = (slot: number): Banner['point'] => (slot === 0 ? 'plate0' : slot === 1 ? 'plate1' : 'dodge');
 
-/** QUEST MARKERS (game/quest_marks.ts): the line "Speak to the ..." while it is due, or null. */
+/** QUEST MARKERS (game/quest_marks.ts): the line "Speak to the ..." (or, bringing back what was asked for, "Return to the ...") while it is due, or null. */
 export function questBanner(game: Game): Banner | null {
   const sp = game.speakTo;
   if (!QUEST_MARKS.on || !sp || sp.t <= 0) return null;
   const name = sp.who.toUpperCase();
   const sub = game.level.town ? (game.level.rim ? SPEAK_WHERE_RIM[sp.who] : undefined) ?? SPEAK_WHERE[sp.who] ?? '' : SPEAK_BACK;
-  return { step: 'speak', caption: 'QUEST', text: `Speak to the ${name}`, sub, lines: [], point: null };
+  // (SPEAK_RETURN: bringing back what was asked for, "Return to the ...")
+  return { step: 'speak', caption: 'QUEST', text: `${sp.back ? 'Return to' : 'Speak to'} the ${name}`, sub, lines: [], point: null };
 }
 
 /** The prompt over the game for this moment, or null when there is none. */

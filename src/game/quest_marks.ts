@@ -33,6 +33,15 @@ export const QUEST_MARKS = { on: true, secs: 6 };
  */
 export const SPEAK_NEW = { on: true };
 
+/**
+ * “RETURN TO THE ...” WHEN A QUEST IS DONE. His words, 13 Nov 2026, 18:19 (Eastern), as the quests of floors 11 to 15 were being
+ * built: “Remember we want triggers for “speak to ______” when the quest becomes available and “return to __________” when the
+ * quest is complete”. So, with SPEAK_NEW: when what he has to do with someone is bring back what they asked for (game.ts
+ * turnInFor: the master rune-stone, the Meldstone, the furnace put out, the feather, the Crier's jar, the clapper), the line says
+ * "Return to the ..." in place of "Speak to the ..."; and the moment he picks up such a thing, wherever he is, it says so.
+ */
+export const SPEAK_RETURN = { on: true };
+
 /** What the line at the top says under "Speak to the ...": where they are, or how to get to them. */
 export const SPEAK_WHERE: Partial<Record<Station, string>> = {
   wordsmith: 'He stands in the ring of stones.',
