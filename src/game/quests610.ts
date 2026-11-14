@@ -68,8 +68,12 @@ export const PIECE_BOSSES: readonly { kind: 'mistwolf' | 'warchief' | 'stag'; na
   { kind: 'warchief', name: 'the TROLL CHIEFTAIN', piece: 1 },
   { kind: 'stag', name: 'the HOLLOW STAG', piece: 2 },
 ];
-/** How long the line stays up on coming into the Pinewood, and as each boss falls (seconds on the screen). */
-export const HUNT_LINE = { enter: 8, fallen: 4 };
+/**
+ * How long the line stays up on coming into the Pinewood, and as each boss falls (seconds on the screen): never the whole level. His
+ * words, 14 Nov 2026, shown it: “i dont want tthat text to be at the top of the screen the whole level”: up as long as the other quest
+ * lines (quest_marks.ts QUEST_MARKS.secs), then gone; a moment again as each falls, to tick it off.
+ */
+export const HUNT_LINE = { enter: 6, fallen: 4 };
 
 export const QUEST610_TEXT = {
   featherAsk: 'The mystic: "No word has come up from the town below in weeks, and the stars will not say why. The Queen vulture nests on the Ledge Road and sees everything. Bring me one of her feathers, and I will see what she has seen."',

@@ -26,6 +26,10 @@ export default async function (page, snap) {
   });
   await page.waitForTimeout(2500);
   await snap('enter');
+  // (gone in its time: never the whole level)
+  await page.waitForFunction(() => { const h = window.__dbg.game().hunt; return !h || h.t <= 0; }, null, { timeout: 30000 });
+  await page.waitForTimeout(500);
+  await snap('gone');
   const left = await page.evaluate(() => {
     const g = window.__dbg.game();
     const w = g.monsters.find((m) => m.kind === 'mistwolf');
@@ -35,4 +39,8 @@ export default async function (page, snap) {
   log('hunt', JSON.stringify(left));
   await page.waitForTimeout(1500);
   await snap('wolf_down');
+  await page.waitForFunction(() => { const h = window.__dbg.game().hunt; return !h || h.t <= 0; }, null, { timeout: 30000 });
+  await page.waitForTimeout(500);
+  await snap('gone_again');
+  log('gone', JSON.stringify(await page.evaluate(() => ({ hunt: window.__dbg.game().hunt, time: window.__dbg.game().time }))));
 }
