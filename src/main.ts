@@ -114,6 +114,7 @@ import { EXITS, WAYS, errandWalk, onwardKey, stairMiddle, startKey, topStep } fr
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
+import { ENDLESS_KEY } from './game/endless_key';
 import { ACT2, HIGH_CITY, lastFloor } from './game/act1';
 import { BOSS_CALLS } from './game/boss_calls';
 import { chimeNow } from './game/act2/masque_rules';
@@ -3212,6 +3213,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       game.endlessFloor = endlessFloorFor(game.seed, level, 0);
       game.enterTown();
     },
+    /** (ENDLESS MODE'S KEY: the tablet's quarters and the landing's portal, game/endless_key.ts, off until his yes) Its switch, for the playtests and pictures. */
+    endlessKey: ENDLESS_KEY,
     endless: (on: boolean, level = -1, floor = 0) => {
       ENDLESS.on = on;
       if (!game || level < 0) return;

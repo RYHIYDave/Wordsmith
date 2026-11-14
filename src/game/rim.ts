@@ -105,6 +105,8 @@ export interface RimTown {
   words: readonly WordId[];
   /** The round things (the pit's brink first). */
   rounds: RimRound[];
+  /** (ENDLESS_KEY, game/endless_key.ts) The tablet set in the bench: seconds since it was set (its burning and the landing's opening run by it; a large number if set on an earlier visit), and the landing open. Absent: not set. */
+  key?: { age: number; open: boolean };
 }
 
 /** Is this level the Shaft's Rim? */

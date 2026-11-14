@@ -34,7 +34,7 @@ import { forgetMade as forget_chapel } from '../art/chapel';
 import { forgetMade as forget_chapel_gate } from '../art/chapel_gate';
 import { forgetMade as forget_lair_temple } from '../art/lair_temple';
 import { forgetMade as forget_lair_gate } from '../art/lair_gate';
-import { HEAVY, LEFT_TO_PAINTER } from '../art/kit';
+import { GRAIN, HEAVY, LEFT_TO_PAINTER } from '../art/kit';
 import { deathOf, isPainted } from './left_to_painter';
 /** HEAVY FRAMES (art/kit.ts HEAVY) left to the side painter while the world is drawn: on in the game; off, every frame painted when first shown. */
 export const PAINT_DEFER = { on: true };
@@ -167,6 +167,8 @@ import { EYRIE_SCENE, MUSTER_TEXT, QUEST610_TEXT } from '../game/quests610';
 import { QUEST1115_TEXT } from '../game/quests1115';
 import { CRIERS_JAR } from '../game/act2/undercity';
 import { clapperSprite, pageSprite, rollSprite } from '../art/quest1115';
+import { QUARTER_N, QUARTER_RARITY, paintQuarter } from '../art/endless_tablet';
+import { KEY_TEXT } from '../game/endless_key';
 import { keySprite, springSprite } from '../art/quest1620';
 import { CAPTAIN_JAR_VARIANT, QUEST1620_TEXT } from '../game/quests1620';
 import { shrineBellFrames } from '../art/floor11';
@@ -783,6 +785,8 @@ export class Renderer {
   private wholeNow = false;
   private gameNow: Game | null = null;
   private clockNow = 0;
+  /** (ENDLESS_KEY) The tablet's quarters as they lie on the floor, painted once each. */
+  private quarterPics: Sprite[] = [];
   /** (WHOLE_WALLS) An empty grid: no wall left out. */
   private noneAway: Uint8Array | null = null;
   /** (WHOLE_WALLS) Does every wall stand on this level: floors 1 to 5 of the dungeon, the switch on? */
@@ -3822,6 +3826,16 @@ export class Renderer {
         continue;
       }
       // (QUESTS1115, behind its switch: an unstruck page, or the clapper, sculpted: art/quest1115.ts)
+      // (ENDLESS_KEY: a quarter of the stone tablet, its item picture, in the uniques' orange: art/endless_tablet.ts, game/endless_key.ts)
+      if (dr.kind === 'quest' && dr.thing === 'quarter') {
+        const k = dr.quarter ?? 0;
+        const qs = (this.quarterPics[k] ??= paintQuarter(k).sprite(QUARTER_N / 2, QUARTER_N / 2, GRAIN));
+        this.stand(dr.x + dr.y - 0.2, qs, sx, sy - pop - bob - 4);
+        hid?.(dr.x, dr.y);
+        this.labels.push({ x: sx, y: sy - 20, text: KEY_TEXT.label(k), color: RARITY_COLOR[QUARTER_RARITY] });
+        if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, [RARITY_COLOR[QUARTER_RARITY], P.white]);
+        continue;
+      }
       if (dr.kind === 'quest') {
         // (QUESTS1620: the songbird's key and spring, sculpted: art/quest1620.ts)
         const qs = dr.thing === 'clapper' ? clapperSprite() : dr.thing === 'roll' ? rollSprite() : dr.thing === 'key' ? keySprite() : dr.thing === 'spring' ? springSprite() : pageSprite();

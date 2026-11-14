@@ -19,12 +19,15 @@ import { makeWaypointArt } from '../art/crypt_ways';
 import type { WaypointArt } from '../art/crypt_ways';
 import { lookStairs } from '../art/floors';
 import { WORD_COLOR } from '../art/icons';
-import { SPARK } from '../art/kit';
+import { GRAIN, SPARK } from '../art/kit';
+import { PORTAL_IDLE, PORTAL_OPEN_FRAMES, paintPortalFloor, paintPortalRise } from '../art/endless_portal';
+import { SOCKET_LIT, SOCKET_LIT_FRAMES, paintSocketTablet } from '../art/endless_tablet';
 import { GATE_SOCKETS, TORCH_FRAMES, rimPieces, rimProps } from '../art/shaft_props';
 import type { RimProps } from '../art/shaft_props';
-import { ENDLESS_TOWN, FLAME_FRAMES, GROUND, RIM, groundAt, paintFlame, paintPitGlow, paintPost, paintRimGround, pitGlowAt, rimPosts, shaftTorches } from '../art/shaft_rim';
+import { ENDLESS_TOWN, FLAME_FRAMES, GROUND, LANDING, RIM, groundAt, paintFlame, paintPitGlow, paintPost, paintRimGround, pitGlowAt, rimPosts, shaftTorches } from '../art/shaft_rim';
 import { RIM_SHADOWS, RIM_SLAB, RIM_THEME, rimShadow } from '../art/shaft_town';
 import type { Sprite } from '../engine/px';
+import { ENDLESS_KEY, KEY_TIMES } from '../game/endless_key';
 import { RIM_AT, recordLine } from '../game/rim';
 import type { Level, PropInst } from '../game/state';
 import type { WordId } from '../game/types';
@@ -81,6 +84,10 @@ export class RimView implements LookView {
   private records = new Map<string, Sprite>();
   private wallPics = new Map<string, Sprite>();
   private gems = new Map<string, Sprite>();
+  /** (ENDLESS_KEY) The tablet in the bench's socket (by the quarters lying in it, dark; or by its burning frame) and the landing's portal, by frame. */
+  private sockets = new Map<string, Sprite>();
+  private portalFloors = new Map<number, Sprite>();
+  private portalRises = new Map<number, Sprite>();
   private lit: { of: Level; list: LookLight[] } | null = null;
   private shadows: { of: Level; list: LookStand[] } | null = null;
   /** How long its pictures took to paint the last time they were made, ms (the ground; the new things). */
@@ -217,6 +224,9 @@ export class RimView implements LookView {
     }
     const out: LookStand[] = [...this.shadows.list, { x: 0, y: 0, s: A.glow, add: true, alpha: pitGlowAt(t) }];
     for (const q of A.torches) out.push({ x: q.x, y: q.y, s: A.flames[Math.floor(t * 30 + q.k * 5) % FLAME_FRAMES] });
+    // (ENDLESS_KEY: the landing's portal, what lies flat of it)
+    const pf = this.portalFrame(L);
+    if (pf >= 0) out.push({ x: LANDING[0], y: LANDING[1], s: this.portalPic(pf, false) });
     return out;
   }
 
@@ -273,6 +283,64 @@ export class RimView implements LookView {
     return s;
   }
 
+  /**
+   * (ENDLESS_KEY, game/endless_key.ts) THE TABLET IN THE BENCH'S SOCKET (art/endless_tablet.ts): the quarters he holds lying in it,
+   * dark; once the four are set, burning (its frames at 30 a second from the moment they were set, the last 48 going round).
+   * Nothing while none is held and none set.
+   */
+  private socket(L: Level): Sprite | null {
+    const R = L.rim;
+    if (!ENDLESS_KEY.on || !R) return null;
+    let held: boolean[];
+    let lit = -1;
+    if (R.key) {
+      held = [true, true, true, true];
+      const f = Math.floor(R.key.age * 30);
+      const burn = SOCKET_LIT.kindle + SOCKET_LIT.flare;
+      lit = f < SOCKET_LIT_FRAMES ? f : burn + ((f - burn) % SOCKET_LIT.burn);
+    } else {
+      held = R.held;
+      if (!held.some(Boolean)) return null;
+    }
+    const key = lit >= 0 ? `lit${lit}` : held.map((h) => (h ? 1 : 0)).join('');
+    let s = this.sockets.get(key);
+    if (!s) {
+      // (a new set of dark quarters lets the old go; the burning frames are kept, as they go round)
+      if (lit < 0) this.sockets.clear();
+      const p = paintSocketTablet(held, lit);
+      s = p.px.sprite(p.ox, p.oy, GRAIN);
+      if (p.lights?.length) s.lights = p.lights;
+      this.sockets.set(key, s);
+    }
+    return s;
+  }
+
+  /** (ENDLESS_KEY) The landing's portal frame now (-1: shut): its opening once, as the bench's flare is done, then standing open, round. */
+  private portalFrame(L: Level): number {
+    const K = ENDLESS_KEY.on ? L.rim?.key : undefined;
+    if (!K) return -1;
+    const f = Math.floor((K.age - KEY_TIMES.portal) * 30);
+    if (f < 0) return -1;
+    return f < PORTAL_OPEN_FRAMES ? f : PORTAL_OPEN_FRAMES + ((f - PORTAL_OPEN_FRAMES) % PORTAL_IDLE);
+  }
+  private portalPic(f: number, rise: boolean): Sprite {
+    const m = rise ? this.portalRises : this.portalFloors;
+    let s = m.get(f);
+    if (!s) {
+      const p = rise ? paintPortalRise(f) : paintPortalFloor(f);
+      s = p.px.sprite(p.ox, p.oy, GRAIN);
+      // (the flat part is laid as the ground is, without lights: its cyan pool goes with what rises, moved to its anchor)
+      const lights = rise ? [...p.lights] : [];
+      if (rise) {
+        const fl = paintPortalFloor(f);
+        for (const q of fl.lights) lights.push({ ...q, x: q.x - fl.ox / GRAIN + p.ox / GRAIN, y: q.y - fl.oy / GRAIN + p.oy / GRAIN });
+      }
+      if (lights.length) s.lights = lights;
+      m.set(f, s);
+    }
+    return s;
+  }
+
   /** WHAT STANDS: the gate and its words, the record stone, the trophies wall, the torches on posts, the low posts at the brink and round the landing. */
   stands(L: Level, t: number): readonly LookStand[] {
     const A = this.A();
@@ -297,6 +365,15 @@ export class RimView implements LookView {
       else out.push({ x, y, s: this.wall(R?.held ?? []), d });
     }
     for (const p of A.posts) out.push({ x: p.x, y: p.y, s: A.post });
+    // (ENDLESS_KEY: the tablet in the bench's socket, laid over the slab at its anchor, just before it in depth; what rises out of the
+    // open landing, in depth at its middle)
+    const sock = this.socket(L);
+    if (sock) {
+      const slab = L.props.find((p) => p.kind === 'runeSlab');
+      if (slab) out.push({ x: slab.x, y: slab.y, s: sock, d: slab.x + slab.y + 0.002 });
+    }
+    const pf = this.portalFrame(L);
+    if (pf >= 0) out.push({ x: LANDING[0], y: LANDING[1], s: this.portalPic(pf, true) });
     return out;
   }
 
