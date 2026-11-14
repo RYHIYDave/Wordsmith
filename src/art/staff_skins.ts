@@ -35,8 +35,14 @@ import { add, cross, lerp3, mul, norm } from './skeleton';
 import type { V3 } from './skeleton';
 import type { Stage } from './skin';
 import { five } from './warrior_up';
+import type { StaffId } from './heroes';
 
-/** THE SWITCH: off. On, the game would draw the Mage as her two layers with the skin she holds (not yet wired: pictures first). */
+/**
+ * THE SWITCH: off. On, the Mage holding a unique staff is drawn holding it (render/render.ts heroArt: her place with that staff,
+ * art/heroes.ts STAFF_PLACES), its pictures baked whole, a group of their own for each staff (render/baked.ts bakeGroups), as the
+ * Warrior's axe and maul are: his pick, 14 Nov 2026, told the split layers would cost about an eighth more memory while she is
+ * played and each staff baked whole about 2 MB of download and none: “Bake each staff whole (Recommended)”.
+ */
 export const STAFF_SKINS = { on: false };
 
 const SK_BROWN: Ramp = five(BROWN);
@@ -321,8 +327,101 @@ export const RESONANCE_STAFF: StaffSkin = {
   },
 };
 
+/** An honest fire's colours (as the endless stair's torches burn: art/endless_stair.ts): its heart, its body, its edge. */
+const FIRE_HEART = '#fff0a0';
+const FIRE_BODY = '#ffc24a';
+const FIRE_EDGE = '#ff8a2a';
+const SK_CHAR: Ramp = ['#140f14', '#21181c', '#33252a', '#4a3536', '#644844'];
+const SK_IRON: Ramp = ['#1e1c26', '#302e3c', '#4a4858', '#6c6a7c', '#9492a4'];
+
+/**
+ * THE KINDLING ROD (the game's levelling unique of floor 8, art/game/uniques.ts `kindlingrod`: “Every hit is fire. Can deal no
+ * other type of damage.”): a rod of charred wood, black and cracked, the cracks lit as embers are; at its head an iron cresset,
+ * its ribs curving up round a bed of coals, and AN HONEST FIRE standing up out of it (the art rulebook's Glows: an honest fire
+ * burns orange), flickering; it flares taller and whiter as she casts.
+ */
+export const ROD_STAFF: StaffSkin = {
+  id: 'rod',
+  name: 'The Kindling Rod',
+  sculpt(sc, at) {
+    const { s, p3, foot, tip3 } = at;
+    const wood = sc.mat({ ramp: SK_CHAR, crease: 0.32, paint: (h) => {
+      const t = h.tone;
+      if (h.prim.tag === 'wrap') return (h.x + h.y) % 2 === 0 ? SK_BROWN[Math.max(0, Math.min(2, t - 1))] : SK_BROWN[Math.max(0, t - 2)];
+      // (charred: cracks in it lit as embers are, here and there)
+      if (h.prim.tag === 'pole' && hash(h.x, h.y, 23) < 0.05) return hash(h.x, h.y, 29) < 0.5 ? FIRE_EDGE : '#b8501c';
+      return SK_CHAR[Math.max(0, Math.min(4, t + 1))];
+    } });
+    const iron = sc.mat({ ramp: SK_IRON, crease: 0.3 });
+    const way = headWay(at);
+    const across = norm(cross(p3, way), s.across);
+    const collar = add(tip3, mul(p3, -5.2));
+    sc.cone(wood, 'staff', foot, collar, 1.05, 1.2, 0.4, { tag: 'pole' });
+    sc.cone(wood, 'staff', add(s.handR, mul(p3, -3.2)), add(s.handR, mul(p3, 3.2)), 1.3, 1.3, 0.2, { tag: 'wrap' });
+    // the cresset: an iron collar, and four ribs curving up and out from it round the coals
+    sc.cone(iron, 'staffhead', add(collar, mul(p3, -0.6)), add(collar, mul(p3, 0.8)), 1.55, 1.55, 0.2, { tag: 'collar' });
+    for (let r = 0; r < 4; r++) {
+      const a = (r / 4) * Math.PI * 2 + Math.PI / 4;
+      const out = norm(add(mul(way, Math.cos(a)), mul(across, Math.sin(a))), way);
+      let last = add(collar, mul(p3, 0.6));
+      for (let i = 1; i <= 4; i++) {
+        const k = i / 4;
+        const pt = add(collar, add(mul(p3, 0.6 + 4.2 * k), mul(out, 1.2 + 2.0 * Math.sin(k * Math.PI * 0.62))));
+        sc.cone(iron, 'staffhead', last, pt, 0.5, 0.42, 0.3, { tag: 'rib' });
+        last = pt;
+      }
+    }
+    return [wood, iron];
+  },
+  extras(st, at, lights) {
+    const { p3, tip3, burn, around } = at;
+    // (the coals in the cresset: the fire's foot)
+    const coals3 = add(tip3, mul(p3, -2.2));
+    const [cx, cy] = st.at(coals3);
+    streakAt(st, around, tip3, cx, cy - 4);
+    const fire = st.part(st.near(coals3) + 0.8);
+    const z = st.near(coals3) + 0.8;
+    // (a bed of coals, glowing, as wide as the cresset)
+    for (let dx = -3; dx <= 3; dx++) for (let dy = -1; dy <= 1; dy++) {
+      if (Math.abs(dx) + Math.abs(dy) * 2 > 4) continue;
+      const x = Math.round(cx + dx - 0.5);
+      const y = Math.round(cy + dy - 0.5);
+      fire.put(x, y, hash(x, y, 31) < 0.4 ? FIRE_BODY : hash(x, y, 37) < 0.5 ? FIRE_EDGE : '#b8501c', z);
+    }
+    // THE FIRE: standing straight up out of the coals whichever way the rod is held, flickering (by the wind's turn), taller and
+    // whiter as she casts
+    const heat = Math.max(0, burn - 1);
+    const ph = ((around.wind ?? 0) * 7) % 1;
+    const tall = 7 + 2.2 * Math.min(2.4, heat) + 1.2 * Math.sin(ph * Math.PI * 2);
+    const wide = 2.6 + 0.5 * Math.min(2.4, heat);
+    for (let fy = 0; fy <= Math.ceil(tall); fy++) {
+      const k = fy / tall;
+      if (k > 1) break;
+      const half = wide * Math.pow(Math.sin(Math.min(1, k * 1.15 + 0.12) * Math.PI), 0.8) * (1 - k * 0.45);
+      const sway = 0.9 * Math.sin(k * 5 + ph * Math.PI * 2) * k;
+      for (let fx = -Math.ceil(half); fx <= Math.ceil(half); fx++) {
+        const d = Math.abs(fx - sway);
+        if (d > half) continue;
+        const c = d < half * 0.35 && k < 0.6 ? FIRE_HEART : d < half * 0.7 ? FIRE_BODY : FIRE_EDGE;
+        fire.put(Math.round(cx + fx - 0.5), Math.round(cy - 1 - fy - 0.5), heat > 1.6 && c === FIRE_BODY ? FIRE_HEART : c, z);
+      }
+    }
+    lights.push({ x: cx, y: cy - tall * 0.45, r: 18 + Math.min(2, heat) * 6, color: FIRE_BODY, a: 0.32 + Math.min(2, heat) * 0.16 });
+  },
+};
+
+/** Each unique staff's skin, by the id of its place (art/heroes.ts StaffId). */
+export const STAFF_SKIN_OF: Readonly<Record<StaffId, StaffSkin>> = { crook: CROOK_STAFF, ebb: EBB_STAFF, resonance: RESONANCE_STAFF, rod: ROD_STAFF };
+/** The unique staves of the game (game/uniques.ts) that are drawn in her hands, and the skin each is. */
+export const STAFF_OF_UNIQUE: Readonly<Record<string, StaffId>> = { shepherdscrook: 'crook', tide: 'ebb', tuningstaff: 'resonance', kindlingrod: 'rod' };
+/** The skin of the staff an item is, if it is one of those (and the switch is on); null: her own staff. */
+export function staffWorn(item: { unique?: string; rarity?: number } | null | undefined): StaffId | null {
+  if (!STAFF_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;
+  return STAFF_OF_UNIQUE[item.unique] ?? null;
+}
+
 /** The skins of her staff, her own first. */
-export const STAFF_SKIN_LIST: readonly StaffSkin[] = [PLAIN_STAFF, CROOK_STAFF, EBB_STAFF, RESONANCE_STAFF];
+export const STAFF_SKIN_LIST: readonly StaffSkin[] = [PLAIN_STAFF, CROOK_STAFF, EBB_STAFF, RESONANCE_STAFF, ROD_STAFF];
 
 /**
  * THE SKIN'S LAYER: the frame painted whole with a staff (`whole`), kept only where it differs from her painted with none

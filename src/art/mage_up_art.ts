@@ -97,8 +97,8 @@ export function paintMuMove(m: Move3, t: number, view: MuSide, rim: string | nul
 }
 
 /** A frame of a move as the game holds it: cut down to her, with her lights, her pool of light and where her braids are fixed. */
-export function muSprite(m: Move3, t: number, view: MuSide): Sprite {
-  const f = paintMuMove(m, t, view);
+export function muSprite(m: Move3, t: number, view: MuSide, staff?: StaffSkin): Sprite {
+  const f = paintMuMove(m, t, view, undefined, staff);
   const out = muPosed(m, t).q.out;
   // (the three sides that face left are painted with her floor point 98 across the canvas: her pool of light goes with it)
   const aura = { ...AURA, x: f.ax + (f.ax === CANVAS3.ax ? AURA.x - CANVAS3.ax : CANVAS3.ax - AURA.x) };
@@ -110,14 +110,14 @@ export function muSprite(m: Move3, t: number, view: MuSide): Sprite {
 
 type Shared = Map<string, Sprite[]>;
 
-function setOf(view: MuSide, place: 'dungeon' | 'town' | 'card', shared: Shared): AnimSet {
+function setOf(view: MuSide, place: 'dungeon' | 'town' | 'card', shared: Shared, staff?: StaffSkin): AnimSet {
   const list = (key: string, make: () => Sprite[]): Sprite[] => {
     const k = `${view}:${key}`;
     let l = shared.get(k);
     if (!l) shared.set(k, (l = make()));
     return l;
   };
-  const at = (m: Move3, t: number): Sprite => muSprite(m, t, view);
+  const at = (m: Move3, t: number): Sprite => muSprite(m, t, view, staff);
   /** A move that goes round, as a list of frames to be shown one after another for ever. */
   const round = (m: Move3, fps: number): Sprite[] =>
     list(`round:${m.name}:${fps}`, () => {
@@ -193,11 +193,15 @@ function setOf(view: MuSide, place: 'dungeon' | 'town' | 'card', shared: Shared)
 /** HER PICTURES FROM ALL EIGHT SIDES, each an AnimSet of the very same lists (as art/warrior_up_art.ts WuActorArt). */
 export type MuActorArt = ActorArt & { toward: AnimSet; frontL: AnimSet; sideL: AnimSet; backL: AnimSet; away: AnimSet; side: AnimSet };
 
-/** THE MAGE'S PICTURES, BROUGHT UP, for a place: what art/heroes3.ts gives in her place while MAGE_UP is on. */
-export function makeMageUpArt(place: 'dungeon' | 'town' | 'card', shared: Shared = new Map()): MuActorArt {
+/**
+ * THE MAGE'S PICTURES, BROUGHT UP, for a place: what art/heroes3.ts gives in her place while MAGE_UP is on. `staff`: a unique
+ * staff's skin in her hands (art/staff_skins.ts), every list painted with it; her own where not said. (`shared` must be a map of
+ * that staff's own: a list is the same in two places only for the same staff.)
+ */
+export function makeMageUpArt(place: 'dungeon' | 'town' | 'card', shared: Shared = new Map(), staff?: StaffSkin): MuActorArt {
   const out = {} as Record<MuSide, AnimSet>;
   for (const side of WU_SIDES) Object.defineProperty(out, side, { enumerable: true, configurable: true, get: () => {
-    const set = setOf(side, place, shared);
+    const set = setOf(side, place, shared, staff);
     Object.defineProperty(out, side, { value: set, enumerable: true });
     return set;
   } });

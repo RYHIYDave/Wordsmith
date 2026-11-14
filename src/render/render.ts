@@ -42,7 +42,8 @@ import type { ActorArt } from '../art/actor_types';
 import { FIGURE_SIZE, HEAVY_FIGURES, figureOf } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { HeroArt } from '../art/heroes';
-import { HEAVY_PLACES } from '../art/heroes';
+import { HEAVY_PLACES, STAFF_PLACES } from '../art/heroes';
+import { staffWorn } from '../art/staff_skins';
 import { heavyDrawn } from '../game/talents';
 import { AXE_FLIGHT, axeFlying } from '../art/warrior_up_axe_moves';
 import { WARRIOR_UP, WU_SIDES } from '../art/warrior_up';
@@ -2876,6 +2877,8 @@ export class Renderer {
     // (and whether they are in town: the heroes painted over the bones have their weapons on their backs there, art/heroes3.ts)
     // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES: each always drawn with his own weapon, the warrior's the great sword)
     const arms = heavyDrawn(h.cls, h.talents);
+    // (THE MAGE'S STAFF, art/staff_skins.ts STAFF_SKINS: the unique staff in her hand, drawn there; her own staff otherwise)
+    const staff = h.cls === 'mage' ? staffWorn(h.gear.mainhand) : null;
     const look = {
       twoHanded: OWN_MOVES.on ? h.cls === 'warrior' : h.gear.mainhand !== null && h.gear.mainhand.weapon === 'greatsword',
       town: !!game.level.town,
@@ -2883,6 +2886,7 @@ export class Renderer {
       ...(h.cls === 'warlock' ? { demon: h.form === 'demon', blaze: h.form !== 'demon' && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full } : {}),
       // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: the war axe or the maul in his hands, once his tree has picked it)
       ...(arms ? { weapon: arms } : {}),
+      ...(staff ? { staff } : {}),
     };
     // (THE WARLOCK KEPT IN PACKS: what he shows and may show next, from his side, asked for a moment ahead: render/warlock_packs.ts)
     if (h.cls === 'warlock' && this.warlockPacks) warlockAskAhead(this.warlockPacks, h, !!look.blaze, !!game.level.town, !!game.over);
@@ -2959,7 +2963,8 @@ export class Renderer {
     const pw = this.painter && this.art.heroes.give ? this.painter : null;
     // (THE WARLOCK: the one he is now first, then his others: the demon's, his arm blazing, as a man in a dungeon)
     // (THE WARRIOR'S WEAPON: his places with the war axe or the maul, art/heroes.ts HEAVY_PLACES)
-    const places = arms ? HEAVY_PLACES[arms] : { dungeon: 'dungeon' as const, town: 'town' as const };
+    // (THE MAGE'S STAFF: her places with the unique staff she holds, art/heroes.ts STAFF_PLACES)
+    const places = arms ? HEAVY_PLACES[arms] : staff ? STAFF_PLACES[staff] : { dungeon: 'dungeon' as const, town: 'town' as const };
     const now = h.cls === 'warlock' && !look.town ? (h.form === 'demon' ? 'demon' : look.blaze ? 'blaze' : 'dungeon') : look.town ? places.town : places.dungeon;
     const byWorker = !!pw && pw.hero(h.cls, now) && (!look.town || pw.hero(h.cls, places.dungeon)) && (h.cls !== 'warlock' || look.town || (pw.hero(h.cls, 'dungeon') && pw.hero(h.cls, 'blaze') && pw.hero(h.cls, 'demon')));
     const hero = (): boolean => !byWorker && this.art.heroes.warm(h.cls, look);

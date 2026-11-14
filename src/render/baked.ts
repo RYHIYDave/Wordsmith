@@ -13,7 +13,8 @@
 import { bakeLists, cardLists, readyList } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
-import { HEAVY_PLACES } from '../art/heroes';
+import { HEAVY_PLACES, STAFF_IDS, STAFF_PLACES } from '../art/heroes';
+import { STAFF_SKINS } from '../art/staff_skins';
 import { WARRIOR_TREE2 } from '../game/talents';
 import type { AnimSet } from '../art/actor_types';
 import { ASKED } from '../art/asked';
@@ -187,6 +188,10 @@ export function bakeGroups(vet: boolean): Record<string, BakeKey[]> {
   // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: him with the war axe, and with the maul, each a group of its own, taken in
   // only where his weapon is that one; his great sword's group as it was. Baked only while the tree is on: off, nothing asks for them)
   if (WARRIOR_TREE2.on) for (const w of ['axe', 'hammer'] as const) out[`warrior-${w}`] = [k('warrior', HEAVY_PLACES[w].town), k('warrior', HEAVY_PLACES[w].dungeon)];
+  // (THE MAGE'S STAFF, art/staff_skins.ts STAFF_SKINS: her with each unique staff, each a group of its own, baked whole (his pick,
+  // 14 Nov 2026: “Bake each staff whole (Recommended)”), taken in only while she holds that staff. Baked only while the switch is
+  // on: off, nothing asks for them)
+  if (STAFF_SKINS.on) for (const id of STAFF_IDS) out[`mage-${id}`] = [k('mage', STAFF_PLACES[id].town), k('mage', STAFF_PLACES[id].dungeon)];
   return out;
 }
 
@@ -312,6 +317,11 @@ export class BakedHeroes {
   private readonly groupOf = new Map<string, string>();
   /** The sheets in hand: a hero's pictures are kept once they have come (but a packed hero's packs: PACKS). */
   private readonly sheets: FrameSheet[] = [];
+  /**
+   * (THE MAGE'S STAFF, art/staff_skins.ts) A group that may be let go of whole (letGoGroup): its sheets, and every place a frame
+   * of it was given into with what was there before, to put back.
+   */
+  private readonly whole = new Map<string, { sheets: FrameSheet[]; held: { list: Sprite[]; i: number; was: PropertyDescriptor; s: Sprite }[] }>();
   /**
    * For measuring: frames taken in, frames not wanted (painted already), how long each group took (ms), what failed, and the
    * sheets held and their pixels (what a hero always holds; his packs' sheets are counted in `packs`).
@@ -612,6 +622,55 @@ export class BakedHeroes {
     return this.state.get(group) === 'done';
   }
 
+  /** (THE MAGE'S STAFF) May this group be let go of whole: the Mage's, with her own staff or with a unique one, while STAFF_SKINS is on. */
+  private lettable(g: string): boolean {
+    return STAFF_SKINS.on && (g === 'mage' || g.startsWith('mage-'));
+  }
+
+  /**
+   * LET GO OF A GROUP WHOLE (THE MAGE'S STAFF, art/staff_skins.ts): she holds one staff at a time, and each staff's pictures are a
+   * whole set of her (about 80 MB of sheets open, five sheets of 2048), so only the set of the staff she holds is kept: as she
+   * takes up another, the last one's is let go of (its places put back as they were, its frames given back, its sheets closed),
+   * and taken in again if she takes it up again. A group not in hand, or not one that may be let go of, is left as it is.
+   */
+  letGoGroup(g: string): boolean {
+    const w = this.whole.get(g);
+    if (!w) return false;
+    const gone = new Set<Sprite>();
+    for (const h of w.held) {
+      const d = Object.getOwnPropertyDescriptor(h.list, h.i);
+      if (d && 'value' in d && d.value === h.s) Object.defineProperty(h.list, h.i, h.was);
+      gone.add(h.s);
+    }
+    for (const s of gone) {
+      this.onLetGo?.(s);
+      retireSprite(s);
+    }
+    for (const sheet of w.sheets) {
+      const img = sheet.img;
+      if (img) this.stats.sheetPx -= img.width * img.height;
+      sheet.img = null;
+      img?.close?.();
+      const at = this.sheets.indexOf(sheet);
+      if (at >= 0) this.sheets.splice(at, 1);
+      this.stats.sheets--;
+    }
+    this.whole.delete(g);
+    this.state.delete(g);
+    return true;
+  }
+
+  /**
+   * (THE MAGE'S STAFF) She is in this place now: every other group of hers that may be let go of is (her own staff's while she
+   * holds a unique one, the last staff's as she takes up another). Her class card's group is not hers alone and is kept.
+   */
+  holdOnly(cls: ClassId, place: HeroPlace, vet: boolean): void {
+    if (!STAFF_SKINS.on || cls !== 'mage') return;
+    const g = this.group(cls, place, vet);
+    if (!g || !this.lettable(g)) return;
+    for (const other of [...this.whole.keys()]) if (other !== g) this.letGoGroup(other);
+  }
+
   private async load(g: string): Promise<void> {
     this.state.set(g, 'loading');
     const t0 = performance.now();
@@ -625,6 +684,9 @@ export class BakedHeroes {
       const wants = new Map<number, [BakeFile['keys'][number], number, number, number][]>();
       /** (for the packs: each hero's lists, by side and by list) */
       const lists: Sprite[][][][] = [];
+      // (A GROUP THAT MAY BE LET GO OF WHOLE, letGoGroup: each hero's lists, to know what was in each place before it was given)
+      const keep = this.lettable(g) ? { sheets: [] as FrameSheet[], held: [] as { list: Sprite[]; i: number; was: PropertyDescriptor; s: Sprite }[] } : null;
+      const listsOf = new Map<BakeFile['keys'][number], Sprite[][][]>();
       for (const k of f.keys) {
         // (the hero's art for each place set up in a go of its own, a frame let in between (main.ts LOAD_SLICE): the Tinkerer's,
         // her held move's poses solved, took some 2.5 s here in one go; `artMax` the longest)
@@ -634,6 +696,7 @@ export class BakedHeroes {
         this.stats.artMax = Math.max(this.stats.artMax, Math.round(performance.now() - a0));
         if (JSON.stringify(listLengths(heroSides(a))) !== JSON.stringify(k.lens)) throw new Error(`${keyName(k)}: its lists are not as baked`);
         if (f.packs?.length) lists.push(heroSides(a).map((side) => bakeLists(side)));
+        if (keep) listsOf.set(k, heroSides(a).map((side) => bakeLists(side)));
         for (let n = 0; n + 3 < k.at.length; n += 4) {
           const fi = k.at[n + 3];
           let w = wants.get(fi);
@@ -667,7 +730,12 @@ export class BakedHeroes {
           const sprite = sheetSprite(f.parts[part], sheet, x, y, w, h);
           let took = false;
           for (const [k, v, l, i] of wants.get(fi) ?? []) {
-            if (this.give(k.cls, k.place, v, l, i, sprite, k.vet)) took = true;
+            const list = keep ? listsOf.get(k)?.[v]?.[l] : undefined;
+            const was = list ? Object.getOwnPropertyDescriptor(list, i) : undefined;
+            if (this.give(k.cls, k.place, v, l, i, sprite, k.vet)) {
+              took = true;
+              if (keep && list && was) keep.held.push({ list, i, was, s: sprite });
+            }
           }
           if (took) {
             this.stats.given++;
@@ -680,6 +748,7 @@ export class BakedHeroes {
         this.stats.handMax = Math.max(this.stats.handMax, Math.round((end - h1) * 10) / 10);
         if (kept) {
           this.sheets.push(sheet);
+          keep?.sheets.push(sheet);
           this.stats.sheets++;
           this.stats.sheetPx += bmp.width * bmp.height;
         } else {
@@ -690,6 +759,7 @@ export class BakedHeroes {
       }
       // (a hero kept in packs, PACKS: his packs fetched and kept packed; what came above is what he always holds)
       if (f.packs?.length) await this.takePacks(g, f, lists);
+      if (keep) this.whole.set(g, keep);
       this.state.set(g, 'done');
       this.stats.ms[g] = Math.round(performance.now() - t0);
     } catch (e) {
