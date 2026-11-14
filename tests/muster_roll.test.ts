@@ -148,3 +148,20 @@ test('three pages: "Return to the MYSTIC"; brought, she lays out a fully modded 
     assert.equal(g.hero.laidOut, undefined);
     assert.equal(g.rollDue(), null, 'done');
   }));
+
+test('what he brings back is taken before a new ask: the jar handed in while the roll is still to be asked', () =>
+  on(() => {
+    const g = seasoned(new Game('warrior', 9), 30);
+    g.hero.feather = 'given';
+    g.hero.jar = 'got';
+    g.cleared = 12;
+    g.wayDepth = 12;
+    assert.equal(g.rollDue(), 'rollAsk');
+    g.enterTown();
+    const s = g.level.stations.find((q) => q.kind === 'mystic')!;
+    g.hero.x = s.x;
+    g.hero.y = s.y;
+    assert.equal(g.handInNear(), 'jarGive', 'the jar first');
+    assert.ok(inner(g).handIn());
+    assert.equal(g.handInNear(), 'rollAsk', 'then her ask');
+  }));

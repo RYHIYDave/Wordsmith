@@ -106,6 +106,7 @@ test('the mystic asks for a bottled voice once floor 11 is cleared (her feather 
     g.cleared = 11;
     assert.equal(g.jarDue(), 'jarAsk');
     g.hero.feather = 'given';
+    g.hero.roll = 'given';
     campBeside(g, 'mystic');
     assert.equal(g.handInNear(), 'jarAsk');
     assert.ok(inner(g).handIn());

@@ -13784,10 +13784,17 @@ export class Game {
   handInNear(): 'stone' | 'meldstone' | 'quest' | 'furnace' | 'reward' | 'meldAsk' | 'featherAsk' | 'featherGive' | 'rollAsk' | 'rollGive' | 'jarAsk' | 'jarGive' | 'clapperAsk' | 'clapperGive' | null {
     if (!HAND_IN.on || !this.level.town) return null;
     const st = this.stationNear();
-    // (QUESTS610: the mystic's feather quest, given and brought; MUSTER: then the strongholds' roll; QUESTS1115: then her jar)
-    if (st === 'mystic') return (QUESTS610.on ? this.mysticDue() : null) ?? this.rollDue() ?? this.jarDue();
-    // (QUESTS15: the armourer's furnace quest, given and rewarded; QUESTS1115: then his clapper)
-    if (st === 'armourer') return (QUESTS15.on ? this.armourerDue() : null) ?? this.clapperDue();
+    // (QUESTS610: the mystic's feather quest, given and brought; MUSTER: the strongholds' roll; QUESTS1115: her jar. What he brings
+    // back is taken first, before any new ask, so that he is never sent off again with the thing in his hand)
+    if (st === 'mystic') {
+      const due = [QUESTS610.on ? this.mysticDue() : null, this.rollDue(), this.jarDue()];
+      return due.find((d) => d === 'featherGive' || d === 'rollGive' || d === 'jarGive') ?? due.find((d) => d !== null) ?? null;
+    }
+    // (QUESTS15: the armourer's furnace quest, given and rewarded; QUESTS1115: his clapper; what he brings back first, as hers)
+    if (st === 'armourer') {
+      const due = [QUESTS15.on ? this.armourerDue() : null, this.clapperDue()];
+      return due.find((d) => d === 'reward' || d === 'clapperGive') ?? due.find((d) => d !== null) ?? null;
+    }
     if (st !== 'wordsmith') return null;
     // (WORDMELDING: the Meldstone, to the wordsmith too)
     // (EXITS: and while his ring is dark, used, he gives the quest for the master rune-stone, once)
