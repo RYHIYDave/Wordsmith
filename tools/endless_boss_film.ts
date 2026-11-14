@@ -1392,9 +1392,19 @@ function scaldFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
     }
   }
 }
-/** THE BEAMS, out of the steam to the wall: the fire's, molten gold at its core, orange, his pink round it; the cold's, white at its
- * core, ice-pale, his pink round it; each bright at its root in the steam, flickering, throwing sparks (or frost) off where it
- * hits the wall. Light, not solids, as his Lightning's bolts are. */
+/** Smooth noise over the picture (0 ... 1): hashed at whole steps, blended between. */
+function vnoise(x: number, y: number, seed: number): number {
+  const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi;
+  const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+  const a = hash(xi, yi, seed), b = hash(xi + 1, yi, seed), c = hash(xi, yi + 1, seed), d = hash(xi + 1, yi + 1, seed);
+  return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+}
+/** THE BEAMS, out of the steam to the wall, reading as what they are (his words, 13 Nov 2026: “Yes but can we get the beams to read
+ * fire and cold”). THE FIRE: a roaring stream of flame, widening as it goes, rolling out along its length, tongues of it licking
+ * upward off it; white-gold at its heart, orange, red, his pink at its ragged edges; embers flung up off it, a little smoke. THE
+ * COLD: a freezing blast, white at its core, streaked along its length with icy wind, its edges breaking into frost mist that sinks
+ * off it; ice shards glittering along it, his pink in a few. Each blazing at its root in the steam where he is, bursting on the
+ * wall. Light and flame, not solids, as his Lightning's bolts are. */
 function scaldBeams(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
   const W = (x: number, y: number, z: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, z]); return [ox + px, oy + py]; };
   const fr = Math.floor(t * 30);
@@ -1403,30 +1413,79 @@ function scaldBeams(s: Px, t: number, ox: number, oy: number, from: V2, dir: num
     if (!b || b.on <= 0) continue;
     const end = scaldWall(b.deg);
     const [x0, y0] = W(0, 0, 34), [x1, y1] = W(end[0], end[1], 22);
-    const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
-    const cols = kind === 'fire' ? ['#ff4f8a', '#ff6a1a', '#ffb43a', '#fff0a0'] : ['#ff4f8a', '#a5c6d7', '#e2f0f8', '#ffffff'];
-    const wob = 1 + 0.15 * Math.sin(t * 40 + (kind === 'fire' ? 0 : 2));
-    for (const [layer, r, a] of [[0, 16, 0.25], [1, 8, 0.88], [2, 4.2, 0.95], [3, 1.8, 1]] as const) {
-      const rr = r * wob * b.on;
-      for (let j = 0; j <= n; j += 1) {
-        const X = x0 + ((x1 - x0) * j) / n, Y = y0 + ((y1 - y0) * j) / n;
-        for (let dy = -Math.ceil(rr); dy <= Math.ceil(rr); dy++) {
-          const v = 1 - Math.abs(dy) / (rr + 0.5);
-          if (v <= 0) continue;
-          mix(s, Math.round(X), Math.round(Y + dy), cols[layer], layer === 0 ? a * v : a);
+    const L = Math.hypot(x1 - x0, y1 - y0) || 1, ux = (x1 - x0) / L, uy = (y1 - y0) / L;
+    // (across it, on the picture: the side of it toward the top of the picture first)
+    let nx = -uy, ny = ux;
+    if (ny > 0) { nx = -nx; ny = -ny; }
+    const heat = new Map<number, number>();
+    const put = (X: number, Y: number, v: number): void => { const k = Math.round(Y) * 100000 + Math.round(X); if ((heat.get(k) ?? 0) < v) heat.set(k, v); };
+    if (kind === 'fire') {
+      for (let d = 0; d < L; d += 0.6) {
+        const f = d / L, w = (5 + 15 * f) * b.on;
+        const flow = d * 0.09 - t * 22;
+        for (let q = -w * 1.3; q <= w * 1.3; q += 0.6) {
+          const n = vnoise(flow, q * 0.22 + t * 3, 9651) * 0.65 + vnoise(flow * 2.3, q * 0.5 - t * 5, 9652) * 0.35;
+          const v = 1 - Math.abs(q) / w + (n - 0.45) * 0.9;
+          if (v > 0.12) put(x0 + ux * d + nx * q, y0 + uy * d + ny * q, v);
+        }
+        // (tongues of it licking up off it)
+        const H = w * (0.4 + 1.8 * vnoise(d * 0.06 - t * 9, 1, 9653) ** 2);
+        for (let h = 0; h < H; h += 0.6) {
+          const sway = 3 * Math.sin(h * 0.25 + d * 0.1 - t * 14);
+          const v = (1 - h / H) * 0.75 + (vnoise(d * 0.15 - t * 15, h * 0.2 - t * 8, 9654) - 0.5) * 0.5;
+          if (v > 0.12) put(x0 + ux * d + nx * w * 0.5 + sway, y0 + uy * d + ny * w * 0.5 - h, v);
         }
       }
+      for (const [k, v] of heat) {
+        const Y = Math.floor(k / 100000), X = k - Y * 100000;
+        const c = v > 0.92 ? '#fffbe0' : v > 0.75 ? '#fff0a0' : v > 0.55 ? '#ffb43a' : v > 0.38 ? '#ff6a1a' : v > 0.24 ? '#d8303a' : '#ff4f8a';
+        mix(s, X, Y, c, v > 0.24 ? 0.95 : 0.6);
+      }
+      // (embers flung up off it, drifting, and a little smoke)
+      for (let i = 0; i < 60; i++) {
+        const d = L * hash(i, 1, 9655), u = (t * 1.6 + hash(i, 2, 9656)) % 1, w = 5 + 15 * (d / L);
+        const X = x0 + ux * d + nx * w * 0.6 + 8 * Math.sin(i + t * 3) * u, Y = y0 + uy * d + ny * w * 0.6 - 50 * u;
+        mix(s, Math.round(X), Math.round(Y), u < 0.5 ? '#ffb43a' : '#ff4f8a', 0.9 * (1 - u));
+        if (i % 5 === 0) for (let r = 0; r < 4; r++) mix(s, Math.round(X + r - 2), Math.round(Y - 14 - 30 * u), '#3a2c30', 0.25 * (1 - u));
+      }
+    } else {
+      for (let d = 0; d < L; d += 0.6) {
+        const f = d / L, w = (6 + 14 * f) * b.on;
+        const flow = d * 0.04 - t * 30;
+        for (let q = -w * 2.1; q <= w * 1.7; q += 0.6) {
+          // (streaked along its length: icy wind)
+          const n = vnoise(flow, q * 0.9, 9661) * 0.7 + vnoise(flow * 3, q * 1.6, 9662) * 0.3;
+          let v = 1 - Math.abs(q) / w + (n - 0.5) * 0.7;
+          // (frost mist sinking off its lower edge)
+          v = Math.max(v, (1 - Math.abs(q) / (w * (q < 0 ? 2.1 : 1.7))) * (q < 0 ? 0.62 : 0.45) * vnoise(d * 0.08 - t * 6, q * 0.25 + t * 4, 9663));
+          if (v > 0.1) put(x0 + ux * d + nx * q, y0 + uy * d + ny * q, v);
+        }
+      }
+      for (const [k, v] of heat) {
+        const Y = Math.floor(k / 100000), X = k - Y * 100000;
+        if (v < 0.22 && (X + Y) % 2) continue;
+        const c = v > 0.9 ? '#ffffff' : v > 0.7 ? '#f0f8ff' : v > 0.5 ? '#e2f0f8' : v > 0.33 ? '#a5c6d7' : v > 0.22 ? '#6a8aa2' : '#a5c6d7';
+        mix(s, X, Y, c, v > 0.33 ? 0.95 : 0.55);
+      }
+      // (ice shards glittering along it, streaming out with it; his pink in a few)
+      for (let i = 0; i < 70; i++) {
+        const d = ((hash(i, 1, 9664) + t * 2.2) % 1) * L, q = (hash(i, 2, 9665) - 0.5) * 2.6 * (6 + 14 * (d / L));
+        const X = Math.round(x0 + ux * d + nx * q), Y = Math.round(y0 + uy * d + ny * q), c = i % 7 === 0 ? '#ff9cc0' : '#ffffff';
+        for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) mix(s, X + dx, Y + dy, dx || dy ? '#e2f0f8' : c, 0.95);
+        if ((fr + i) % 3 === 0) { mix(s, X + 2, Y, c, 0.9); mix(s, X - 2, Y, c, 0.9); mix(s, X, Y + 2, c, 0.9); mix(s, X, Y - 2, c, 0.9); }
+      }
     }
-    // (its shadow of light on the floor under it)
-    for (let j = 0; j <= n; j += 2) { const u = j / n; const [px, py] = W(end[0] * u, end[1] * u, 0); mix(s, Math.round(px), Math.round(py), cols[1], 0.35); }
+    const cols = kind === 'fire' ? ['#ff4f8a', '#ff6a1a', '#ffb43a', '#fff0a0'] : ['#ff4f8a', '#a5c6d7', '#e2f0f8', '#ffffff'];
+    // (its light on the floor under it)
+    for (let j = 0; j <= L; j += 2) { const u = j / L; const [px, py] = W(end[0] * u, end[1] * u, 0); mix(s, Math.round(px), Math.round(py), cols[1], 0.3); }
     // (where it hits the wall: a splash of sparks, or of frost)
-    for (let i = 0; i < 26; i++) {
-      const a = hash(i, fr, kind === 'fire' ? 9641 : 9642) * Math.PI * 2, d = 4 + 16 * hash(i, fr, 9643);
+    for (let i = 0; i < 30; i++) {
+      const a = hash(i, fr, kind === 'fire' ? 9641 : 9642) * Math.PI * 2, d = 4 + 20 * hash(i, fr, 9643);
       mix(s, Math.round(x1 + Math.cos(a) * d), Math.round(y1 + Math.sin(a) * d * 0.7), i % 3 ? cols[2] : cols[3], 0.9);
     }
-    for (let dy = -10; dy <= 10; dy++) for (let dx = -14; dx <= 14; dx++) { const q = Math.hypot(dx / 14, dy / 10); if (q < 1) mix(s, Math.round(x1 + dx), Math.round(y1 + dy), cols[3], 0.5 * (1 - q)); }
+    for (let dy = -12; dy <= 12; dy++) for (let dx = -18; dx <= 18; dx++) { const q = Math.hypot(dx / 18, dy / 12); if (q < 1) mix(s, Math.round(x1 + dx), Math.round(y1 + dy), cols[3], 0.5 * (1 - q)); }
     // (its root, blazing out of the steam where he is)
-    for (let dy = -12; dy <= 12; dy++) for (let dx = -12; dx <= 12; dx++) { const q = Math.hypot(dx, dy) / 12; if (q < 1) mix(s, Math.round(x0 + dx), Math.round(y0 + dy), cols[2], 0.45 * (1 - q)); }
+    for (let dy = -14; dy <= 14; dy++) for (let dx = -14; dx <= 14; dx++) { const q = Math.hypot(dx, dy) / 14; if (q < 1) mix(s, Math.round(x0 + dx), Math.round(y0 + dy), cols[2], 0.5 * (1 - q)); }
   }
 }
 /** THE STEAM, soft (vapour, not a solid): every plume's puffs heaped up into one thickness over the picture, swirling at their

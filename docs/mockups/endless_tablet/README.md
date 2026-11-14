@@ -581,6 +581,10 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   sweeping round counter-clockwise, each from him to the room's wall, scissoring past each other for 4.5 s; the hero dodges
   through each as it comes; the floor they sweep is left scorched and glowing, or rimed; they stop, the steam thins, and he stands
   there again. The room's walls drawn so the beams are seen to reach them. Through the bosses' checks (0 findings).
+  HIS WORDS, by pop-up: “Yes but can we get the beams to read fire and cold”. SO (the film's `scaldBeams`): the fire a roaring
+  stream of flame widening as it goes, rolling out along its length, tongues licking up off it, white-gold at its heart through
+  orange and red to his pink at its ragged edges, embers and a little smoke; the cold a freezing blast, white at its core,
+  streaked along its length with icy wind, frost mist rolling off it, ice shards glittering along it, his pink in a few.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
