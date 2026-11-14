@@ -2,7 +2,7 @@
 // 511 files a version, so they cannot go beside it one by one. So the build packs them: every mp3 into a few packs, each its files'
 // bytes one after another (`<group>-pack.mp3`: an mp3 by its name, as the page serves only the kinds of file it knows, and it is mp3s
 // end to end; first `<group>.pak`, which the page would not take), and `index.json` saying where each lies (its pack, its start, its length); the loops
-// (WAV) and the title theme stay files of their own. The game (engine/audio.ts) fetches the index, then a pack the first time one
+// (WAV), the title theme and the level music stay files of their own (MP3 since 14 Nov 2026: below). The game (engine/audio.ts) fetches the index, then a pack the first time one
 // of its sounds is wanted, and decodes each sound from its own bytes as it is wanted (never the whole pack).
 //   packSounds(fromDir, outDir) -> { files, index }
 import fs from 'node:fs';
@@ -72,7 +72,10 @@ export function packSounds(fromDir, outDir) {
   const bosses = new Set(all.filter((f) => /_roar_\d+\.mp3$/.test(f)).map((f) => f.split('_')[0]).filter((b) => b !== 'boss' && b !== 'colossus'));
   const files = [];
   for (const f of all) {
-    if (!f.endsWith('.mp3')) {
+    // (the title theme and the level music, MP3 since 14 Nov 2026 (they were AAC in .mp4, which claude.ai's check of a page's
+    // files before it is shared does not take: his game page could not be shared), stay files of their own as they were: each is
+    // fetched by itself as its place is come to, not with a pack)
+    if (!f.endsWith('.mp3') || /^(music_|title\.)/.test(f)) {
       fs.copyFileSync(path.join(fromDir, f), path.join(outDir, f));
       index[f] = { file: f };
       files.push(f);

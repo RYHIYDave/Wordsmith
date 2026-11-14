@@ -2,8 +2,8 @@
 //   node tools/build.mjs; dist/page.html (shots/wrap's head line + dist/artifact.html)
 //   node tools/playtest.mjs --serve --file dist/page.html --scenario tools/scenarios/sounds.mjs --out shots/sounds
 // The title theme comes and plays once the sound is started by a tap; a run begun, it stops and is let go of, and the combat
-// sounds and the hero's voice come; none fails. (Playwright's Chromium has no AAC: the title theme, title.mp4, cannot be decoded
-// here and is said to fail; Safari and Chrome decode it.)
+// sounds and the hero's voice come; none fails. (The title theme is MP3 since 14 Nov 2026, title.mp3: it was AAC in title.mp4,
+// which Playwright's Chromium could not decode.)
 import { log } from './lib.mjs';
 
 export default async function (page, snap) {

@@ -1,5 +1,14 @@
 # The game's recorded sounds (the sound chat's)
 
+**EVERY SOUND FILE IS MP3 OR WAV, NEVER .mp4, .m4a OR .ogg.** claude.ai now checks every file of a page
+before it can be shared (by email or by link), and takes only JPEG, PNG, GIF or WebP pictures, MP4 or WebM video and MP3 or WAV
+sound. The title theme and Act 1's level music were AAC in .mp4, and his game page could not be shared: his words, 14 Nov 2026,
+09:39, the message he got: “This version couldn’t be reviewed for sharing. Edit the artifact, and use JPEG, PNG, GIF, or WebP for
+any images, MP4 or WebM for any video, and MP3 or WAV for any audio. Then publish a new version and try again.” Asked, his pick:
+“Yes, convert to MP3 (Recommended)”. The twelve were made MP3 (ffmpeg libmp3lame, VBR quality 1, 48 kHz stereo, from the .mp4s
+decoded), and every one decodes in Chrome lined up to the sample with the .mp4 it replaced (tools/music_align.mjs), so the loop
+points below stand as they were.
+
 Shipped beside the game's page in `sounds/<mark>/` (tools/build.mjs: the mark is the hash of these files), fetched by
 engine/audio.ts once the sound has started. Until a file has come, or where it cannot (a page opened from a file), the
 sound made in code plays.
@@ -9,7 +18,7 @@ sound made in code plays.
   three or four; since his pick of 9 Nov 2026, “About a quarter as often”, on one in fourteen and never within 4.8 s of the
   last: engine/audio.ts VOICE_TUNE), `_hurt_a_1/2` (grunts over the hurt sound), `_hurt_b_1/2` (lines, rarely), `_death_1/2`. Men for the
   Warrior, Ranger, Warlock and Brawler; women for the Mage and Tinkerer.
-- The title theme, `title.mp4` (his “Throw it in for now”, 6 Nov 2026, 23:15: a stand-in until he picks the final take):
+- The title theme, `title.mp3` (MP3 since 14 Nov 2026: the top of this file) (his “Throw it in for now”, 6 Nov 2026, 23:15: a stand-in until he picks the final take):
   from 0:00 once, then round between 94.024 s and 162.275 s for ever; let go of once the title screen closes.
 
 ## Second batch: spells, enemies, bosses (the sound chat, 7 Nov 2026)
@@ -444,24 +453,24 @@ His six songs, made by him in Suno from the sound chat's briefs (the doc "Wordsm
 Eleven files, nothing wired in, no name clashes. The game has no level music yet: playing them, and the switch between walk and
 fight, is the main chat's to build (the briefs doc: “The main chat builds the switch between walk and fight”).
 
-### The files: AAC in mp4, 48 kHz stereo, as the title theme (`title.mp4`)
+### The files: MP3, 48 kHz stereo, as the title theme (`title.mp3`) (AAC in .mp4 until 14 Nov 2026: the top of this file)
 Each is one loop and then its first 2 s again (a guard, so the decoder's padding at the file's end is never reached). Play each
 as `titleMusic` plays the title: the decoded buffer, `loop = true`, `loopStart = 0`, `loopEnd` = its loop length below (to the
 sample, at 48 kHz). Every join was checked in the browser's own decode of these files, looped: no seam.
 
 | Place | File | Loop length (s) | Fight in at (s) | From his song |
 |---|---|---|---|---|
-| The town | `music_town_walk.mp4` | 36.9299 | | “Prison Town” 0:56 to 1:33 |
-| Floor 1, the Warden's Tomb | `music_f1_walk.mp4` | 21.1096 | | “Warden's Quarters” 0:30 to 0:52 |
-| | `music_f1_fight.mp4` | 34.2715 | 0.822 | 2:38 to 3:12 |
-| Floor 2, the Headsman's Yard | `music_f2_walk.mp4` | 23.9810 | | “Headman's Yard” 0:58 to 1:22 |
-| | `music_f2_fight.mp4` | 27.6495 | 0.011 | 1:48 to 2:16 |
-| Floor 3, the Chained One's Pit | `music_f3_walk.mp4` | 29.4062 | | “Chained One's Furnace” 0:14 to 0:44 |
-| | `music_f3_fight.mp4` | 30.0115 | 0.945 | 0:43 to 1:13 |
-| Floor 4, the Ossuary | `music_f4_walk.mp4` | 29.9445 | | “Ossuary” 0:41 to 1:11 |
-| | `music_f4_fight.mp4` | 35.1143 | 0.006 | 2:36 to 3:12 |
-| Floor 5, the Fleshmancer's Lair | `music_f5_walk.mp4` | 27.9472 | | “Fleshmancer's Temple” 1:03 to 1:31 |
-| | `music_f5_fight.mp4` | 31.4438 | 0.497 | 2:50 to 3:22 |
+| The town | `music_town_walk.mp3` | 36.9299 | | “Prison Town” 0:56 to 1:33 |
+| Floor 1, the Warden's Tomb | `music_f1_walk.mp3` | 21.1096 | | “Warden's Quarters” 0:30 to 0:52 |
+| | `music_f1_fight.mp3` | 34.2715 | 0.822 | 2:38 to 3:12 |
+| Floor 2, the Headsman's Yard | `music_f2_walk.mp3` | 23.9810 | | “Headman's Yard” 0:58 to 1:22 |
+| | `music_f2_fight.mp3` | 27.6495 | 0.011 | 1:48 to 2:16 |
+| Floor 3, the Chained One's Pit | `music_f3_walk.mp3` | 29.4062 | | “Chained One's Furnace” 0:14 to 0:44 |
+| | `music_f3_fight.mp3` | 30.0115 | 0.945 | 0:43 to 1:13 |
+| Floor 4, the Ossuary | `music_f4_walk.mp3` | 29.9445 | | “Ossuary” 0:41 to 1:11 |
+| | `music_f4_fight.mp3` | 35.1143 | 0.006 | 2:36 to 3:12 |
+| Floor 5, the Fleshmancer's Lair | `music_f5_walk.mp3` | 27.9472 | | “Fleshmancer's Temple” 1:03 to 1:31 |
+| | `music_f5_fight.mp3` | 31.4438 | 0.497 | 2:50 to 3:22 |
 
 Loudness (EBU R128): the town -20 LUFS, the walks -19, the fights -17 (2 LU over their walk, so a fight comes in bigger); the
 title theme is -16, played at `TITLE.vol` 0.8. One music volume for all of them, set against the combat sounds on a phone.
