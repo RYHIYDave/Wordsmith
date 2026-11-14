@@ -113,3 +113,27 @@ items.ts imbueItem, state.ts four fields, lexicon.ts, panels.ts, inventory.ts, m
 changes in play: melded and ranked words go on stronghold altars and the town gate and count as two; monsters carry their twists.
 To tune once he has played it: FOE_TUNE (foe_melds.ts) and the strongholds' tables past three words (upTo). When the eight new
 melds go live (put-eight-new-melds-live), add their eight twists here as the table above has them.
+
+## THE EIGHT NEW MELDS' TWISTS (branch `build/foe-melds-twists`, from main 8ccc8b9)
+
+Built by the Queue chat of 12 Nov (session ...KKtBp) from the queue's `build-eight-melds-twists-on-monsters`, at his word, asked
+whether to start it: “Yes, the melds' twists (Recommended)”. His picks were already made (the table above, 12 Nov 2026). In
+`src/game/foe_melds.ts`, behind FOE_WORDS like the fifteen, with their numbers in FOE_TUNE, their words in FOE_TEXT, and a test
+for each in `tests/foe_melds.test.ts`.
+
+| Word | What it does on a monster | Where it hooks in |
+|---|---|---|
+| Siphon | while its poison is on you, every heal is halved (flask, orb, regeneration, life on hit); “Healing cut” shows | foeAfterBlow; Game.healHero and the regeneration |
+| Cauterize | below 30% of its life, a flash of fire, then 0.6 s later it gets 35% of its life back, once | foeTick (`seared`) |
+| Forking | each lightning blow forks: a second bolt is marked where you were struck and lands 0.5 s later | foeAfterBlow (a warning, as Hailstorm's hail) |
+| Shiver | about one blow in five is a critical hit, 1.5 times as hard, and freezes you for 0.45 s | foeHarder, foeAfterBlow (`iceT`) |
+| Sunder | a blow within 2 s of one that knocked you back hits 1.8 times as hard; that one does not set up another | foeHarder, foeAfterBlow (`sunderAt`) |
+| Fervor | each enemy dying within 5 tiles feeds it, up to five times for 8 s: 10% faster and its fire 12% hotter each time | foeDeath, foeRage (its haste), foeHarder |
+| Rime Ward | a blow of yours on its shield chills you (at most every 0.6 s) | foeShield, from Game.damageMonster |
+| Implode | its dying blast is marked 2.6 tiles wide and goes off after 1.2 s; meanwhile it pulls you toward it from 4.5 tiles | foeBlast, foeDeath, foeZone (its own vortex, drawing the hero, not the monsters) |
+
+Their looks are the game's own (the warning rings, bursts and words over the head, the frozen and chilled hero, the pull):
+nothing new is drawn. The film is `pictures/eight_melds_on_monsters.mp4` (tools/scenarios/foe_melds8_look.mjs on a built page,
+captions with ffmpeg). Shiver's critical is made sure in the film (`__dbg.foeTune`); in the game it is about one blow in five.
+
+CHECKED: tsc clean; `tests/foe_melds.test.ts` 14 of 14; the film. NOT CHECKED: his phone; the whole suite.

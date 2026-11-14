@@ -186,6 +186,7 @@ import { mothFxBytes } from './render/act1_fx/moth';
 import { COLOSSUS, GAZE2_AIMED, onStoneOrJetty, worldToStone } from './game/colossus_fight';
 import { ITEM_WORDS, MELD_LINE, POISON_DMG } from './game/items';
 import { FOE_WORDS } from './game/defs';
+import { FOE_TUNE } from './game/foe_melds';
 import { LEVEL_UNIQUES, SET1, UNIQUES, uniqueOf } from './game/uniques';
 import { UNIQUE_PLAY } from './render/unique_play';
 import { SET1_LOOK } from './render/set1_fx';
@@ -3558,6 +3559,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     arcChain: ARC_CHAIN,
     /** EVERY WORD ON A DUNGEON (game/foe_melds.ts, FOE_WORDS) and the one-line meld card (game/items.ts, MELD_LINE): OFF in the game until his yes; their pictures switch them on for themselves. */
     foeWords: FOE_WORDS,
+    /** (its numbers, for the films only: the eight new melds' film makes Shiver's critical sure, to show its freeze) */
+    foeTune: FOE_TUNE,
     meldLine: MELD_LINE,
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
