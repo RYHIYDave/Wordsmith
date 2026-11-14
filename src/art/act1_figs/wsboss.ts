@@ -20,7 +20,7 @@ import type { Act1Fig } from './types';
 import { toSprite } from '../kit';
 import type { Painted } from '../kit';
 import type { Sprite } from '../../engine/px';
-import { CLOUD_CANVAS, FIRE, FROST, HAMMER_CANVAS, ICE_CANVAS, METEOR_CANVAS, ORB_CANVAS, POWER, SPORE, SPORE_CANVAS, TRAP_CANVAS, paintFrostAt, paintMeteor, paintOrbAt, paintPowerHammer, paintSporeCloud, paintSporeFlight, paintTrap } from '../endless_boss';
+import { CLOUD_CANVAS, FIRE, FROST, HAMMER_CANVAS, ICE_CLUSTER_CANVAS, METEOR_CANVAS, ORB_CANVAS, POWER, SPORE, SPORE_CANVAS, TRAP_CANVAS, paintIceCluster, paintMeteor, paintOrbAt, paintPowerHammer, paintSporeCloud, paintSporeFlight, paintTrap } from '../endless_boss';
 import type { MobCanvas } from '../new_mobs3';
 
 /** His first phase's moves (art/endless_boss.ts wsMob's `more`, by name). */
@@ -61,8 +61,6 @@ export const FIG: Act1Fig | null = {
 export const THING_FPS = 15;
 /** How high the orb hangs over its floor point (its own lengths). */
 export const ORB_HIGH = 70;
-/** The four ways he is painted from, as the frost's lists are named. */
-export const WS_VIEWS = ['front', 'frontL', 'rear', 'rearL'] as const;
 const sp = (p: Painted, C: MobCanvas): Sprite => toSprite(p, null, C.ax, C.ay);
 const n = (secs: number): number => Math.max(1, Math.ceil(secs * THING_FPS));
 
@@ -76,6 +74,17 @@ const METEOR_FALL = n(FIRE.fall);
 const METEOR_LAND = n(0.6);
 const METEOR_BURN = 8;
 const meteorU = (i: number): number => (i < METEOR_FALL ? -FIRE.fall + i / THING_FPS : i < METEOR_FALL + METEOR_LAND ? (i - METEOR_FALL) / THING_FPS : 0.6 + (i - METEOR_FALL - METEOR_LAND) / THING_FPS);
+/** A cluster of the ice's moments (seconds since it burst): bursting up, settled, standing, shattering. */
+export const ICE_U = [0.03, 0.07, 0.12, 0.4, FROST.stand + 0.05, FROST.stand + 0.1, FROST.stand + 0.15] as const;
+/** Which of a cluster's frames is shown `u` seconds since it burst (-1: none). */
+export function iceFrame(u: number): number {
+  if (u <= 0 || u > FROST.stand + 0.18) return -1;
+  if (u < 0.05) return 0;
+  if (u < 0.09) return 1;
+  if (u < 0.2) return 2;
+  if (u < FROST.stand) return 3;
+  return Math.min(6, 4 + Math.floor((u - FROST.stand) / 0.06));
+}
 /** A trap's frames: growing in, its pulse going round, its snap. */
 export const TRAP_N = { grow: n(SPORE.sprout), pulse: 24, snap: 4 } as const;
 export function trapFrame(u: number, sw: number): number {
@@ -92,7 +101,7 @@ export const ORB_SWELLS = [0, 0.5, 1] as const;
 export const WS_THING_MAKERS: Record<string, { n: number; make: (i: number) => Sprite }> = {
   hammer: { n: n(POWER.long - POWER.cast), make: (i) => sp(paintPowerHammer(POWER.cast + i / THING_FPS, 'front'), HAMMER_CANVAS) },
   ...Object.fromEntries([0, 1, 2, 3].map((k) => [`meteor${k}`, { n: METEOR_FALL + METEOR_LAND + METEOR_BURN, make: (i: number) => sp(paintMeteor(k, meteorU(i), 1), METEOR_CANVAS) }])),
-  ...Object.fromEntries(WS_VIEWS.map((v) => [`frost:${v}`, { n: n(FROST.long - FROST.hit), make: (i: number) => sp(paintFrostAt(FROST.hit + i / THING_FPS, v), ICE_CANVAS) }])),
+  ...Object.fromEntries([0, 1].flatMap((v) => [0, 1, 2].map((big) => [`ice${v}${big}`, { n: ICE_U.length, make: (i: number) => sp(paintIceCluster(v, big, ICE_U[i]), ICE_CLUSTER_CANVAS) }]))),
   ...Object.fromEntries(ORB_SWELLS.map((s, j) => [`orb${j}`, { n: ORB_N, make: (i: number) => sp(paintOrbAt(i / THING_FPS, s, ORB_HIGH), ORB_CANVAS) }])),
   flight: { n: n(SPORE.land[1] - SPORE.burst), make: (i) => sp(paintSporeFlight(SPORE.burst + i / THING_FPS), SPORE_CANVAS) },
   trap: { n: TRAP_N.grow + TRAP_N.pulse + TRAP_N.snap, make: (i) => { const [u, sw] = trapAt(i); return sp(paintTrap(0, u, sw), TRAP_CANVAS); } },

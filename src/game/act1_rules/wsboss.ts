@@ -27,12 +27,12 @@
 //                POISON (FLOOR): spore traps over the floor about him, each a rune burned in; come near one and it snaps into a
 //                cloud of poison that hangs a while.
 //   Never two of his words' FLOORs at once (the meteors' burning, the traps).
-//   HIS FACING: one of the four ways he is painted from (art/act1_figs/wsboss.ts): along the grid's axes; each move goes the way he
-//   faces, turned to the axis nearest the hero as it begins.
+//   HIS AIM: each move goes the way he faces, turned straight at the hero as it begins (his pick, 14 Nov 2026, of the charge and
+//   the ice: “Straight at me (Recommended)”); his picture the nearest of the four ways he is painted from (art/act1_figs/wsboss.ts).
 //   AT HALF HIS LIFE the boar dies and he fights on foot: the next stage's (THE BUILD's stage 3). Until it is built his life is held
 //   at half.
 
-import { BOLT, CHARGE, CHARGE_SKID, CHARGE_STRIKE, FIRE, FIRE_DROPS, FROST, FROST_SPIKES, GORE, POWER, SPORE, SPORE_PODS, STOMP, WHEEL, WINDED, chargeCarry } from '../../art/endless_boss';
+import { BOLT, CHARGE, CHARGE_SKID, CHARGE_STRIKE, FIRE, FIRE_DROPS, FROST, GORE, POWER, SPORE, SPORE_PODS, STOMP, WHEEL, WINDED, chargeCarry } from '../../art/endless_boss';
 import { TILE3 } from '../../art/new_mobs3';
 import { FINAL_BOSS_AT, FINAL_PLACE, onArena, toEdge } from '../../art/final_arena';
 import type { ActDef, BossRules } from '../bosses';
@@ -118,8 +118,19 @@ export function ringAt(j: number, u: number): number {
 export const hammerAt = (m: Monster): { x: number; y: number } => ({ x: m.a1?.hx ?? m.x, y: m.a1?.hy ?? m.y });
 /** When each of the hammer's three blows lands (seconds into his Power). */
 export const SLAMS = POWER.slams;
-/** The ice's clusters: where each is from the place the rune struck (its own lengths, along the way he faces) and when it bursts. */
-export const ICE_STEPS: ReadonlyArray<{ a: number; b: number; t: number }> = FROST_SPIKES.filter((_, i) => i % 3 === 0).map((s) => ({ a: s.at[0], b: s.at[1], t: s.t }));
+/** The ice's clusters: where each is from the place the rune struck (its own lengths, along the way he faces: its five lines fanned
+ * out, a cluster at each step, as the film's), how big (0 near, 2 far), and when it bursts (seconds into his Frost). */
+export const ICE_STEPS: ReadonlyArray<{ a: number; b: number; t: number; big: number; v: number }> = ((): { a: number; b: number; t: number; big: number; v: number }[] => {
+  const out: { a: number; b: number; t: number; big: number; v: number }[] = [];
+  for (let l = 0; l < FROST.lines; l++) {
+    const ang = (l / (FROST.lines - 1) - 0.5) * FROST.fan * (Math.PI / 180);
+    for (let j = 0; j < FROST.steps; j++) {
+      const d = (0.6 + j * FROST.step) * T;
+      out.push({ a: Math.cos(ang) * d, b: Math.sin(ang) * d, t: FROST.hit + 0.04 + j * FROST.race, big: Math.min(2, Math.floor((j * 3) / FROST.steps)), v: (l + j) % 2 });
+    }
+  }
+  return out;
+})();
 /** Where the ice starts: this far before him (tiles). */
 export const ICE_FROM = FROST.from;
 /** How swollen the orb is `u` seconds into its life (0 ... 1, before it bursts). */
@@ -219,11 +230,11 @@ export const RULES: Act1Rules | null = {
     // (turned to the axis nearest him; but the wheel spins round from the way it ran, a run after a wheel goes back down its lane
     // the way it now faces, and winded it stands where it stopped)
     const keep = id === 'wheel' || id === 'winded' || (id === 'charge' && (k.run ?? 0) > 0);
-    if (!keep) {
-      const w = axisOf(h.x - m.x, h.y - m.y);
-      m.fx = w.fx;
-      m.fy = w.fy;
-    } else {
+    const dh = Math.hypot(h.x - m.x, h.y - m.y);
+    if (!keep && dh > 0.01) {
+      m.fx = (h.x - m.x) / dh;
+      m.fy = (h.y - m.y) / dh;
+    } else if (keep) {
       m.fx = k.fx ?? m.fx;
       m.fy = k.fy ?? m.fy;
     }

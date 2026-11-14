@@ -12,7 +12,8 @@
 // - WHAT THE FLOOR KEEPS a while: the stomp's rings rolling out, each crater where the hammer fell, the frozen floor.
 
 import { CHARGE_STRIKE, FIRE, FROST, GORE, POWER, SPORE, STOMP } from '../../art/endless_boss';
-import { ORB_HIGH, ORB_N, THING_FPS, WS_THING_MAKERS, meteorFrame, trapFrame } from '../../art/act1_figs/wsboss';
+import { ORB_HIGH, ORB_N, THING_FPS, WS_THING_MAKERS, iceFrame, meteorFrame, trapFrame } from '../../art/act1_figs/wsboss';
+import type { AnimSet } from '../../art/actor_types';
 import { drawSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { ICE_FROM, ICE_STEPS, SLAMS, WS_TUNE, artAt, hammerAt, orbSwell, ringAt } from '../../game/act1_rules/wsboss';
@@ -34,9 +35,23 @@ function thing(c: Act1FxCtx, name: string, i: number): Sprite | null {
   return (list[k] ??= M.make(k));
 }
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
+/** HIS PICTURE'S SIDE: of the four he is painted from (facing +x, +y, -x, -y: art/act1_figs/wsboss.ts), the nearest to the way he
+ * faces (his moves go straight at the hero, his pick: “Straight at me (Recommended)”), kept until he has turned 55 degrees from it. */
+const SIDES = ['front', 'frontL', 'backL', 'back'] as const;
+const sides = new WeakMap<object, number>();
+function sideOf(m: { fx: number; fy: number }): string {
+  const a = Math.atan2(m.fy, m.fx);
+  const want = ((Math.round(a / (Math.PI / 2)) % 4) + 4) % 4;
+  const was = sides.get(m);
+  let k = want;
+  if (was !== undefined && was !== want) {
+    const d = Math.abs(Math.atan2(Math.sin(a - (was * Math.PI) / 2), Math.cos(a - (was * Math.PI) / 2)));
+    if (d <= (55 * Math.PI) / 180) k = was;
+  }
+  sides.set(m, k);
+  return SIDES[k];
+}
 const D = Math.PI / 180;
-/** The way he is painted facing along an axis, as the ice's lists are named. */
-const viewOf = (fx: number, fy: number): string => (Math.abs(fx) >= Math.abs(fy) ? (fx >= 0 ? 'front' : 'rearL') : fy >= 0 ? 'frontL' : 'rear');
 
 /** A ring on the floor about (x, y), `r` tiles, as the screen sees it. */
 function floorRing(c: Act1FxCtx, x: number, y: number, r: number): void {
@@ -53,8 +68,10 @@ function floorRing(c: Act1FxCtx, x: number, y: number, r: number): void {
 export const FX: Act1Fx | null = {
   films: [THINGS],
   flash: 0.5,
-  sprite(m, _art, set) {
+  sprite(m, art, set0) {
     if (m.dead) return null;
+    // (the nearest of the four ways he is painted from to the way he faces, kept until he has clearly turned out of it)
+    const set = (art as unknown as Record<string, AnimSet | undefined>)[sideOf(m)] ?? set0;
     const moves = set.clips?.moves ?? {};
     if (m.act) {
       const clip = moves[m.act.id.slice(7)];
@@ -274,11 +291,16 @@ export const FX: Act1Fx | null = {
         return;
       }
       case 'wsboss:ice': {
-        const i = Math.floor((p.t - FROST.hit) * THING_FPS);
-        if (i < 0 || i >= (WS_THING_MAKERS['frost:front']?.n ?? 0)) return;
-        const s = thing(c, `frost:${viewOf(p.fx, p.fy)}`, i);
-        // (in depth at the ice's middle, some way out along it)
-        if (s) c.stand(p.x + p.y + 2 * (p.fx + p.fy), s, sx, sy);
+        // (each cluster of spikes bursting up where it is along its line, the way he aimed it, each in depth where it stands)
+        for (const st of ICE_STEPS) {
+          const i = iceFrame(p.t - st.t);
+          if (i < 0) continue;
+          const s = thing(c, `ice${st.v}${st.big}`, i);
+          if (!s) continue;
+          const w = artAt(p.x, p.y, p.fx, p.fy, st.a, st.b);
+          const [wx, wy] = c.at(w.x, w.y);
+          c.stand(w.x + w.y, s, wx, wy);
+        }
         return;
       }
       case 'wsboss:orb': {

@@ -4515,3 +4515,42 @@ export function paintSporeCloud(k: number, u: number): Painted {
   const lights = paintBits(st, bits, [0, 0, 20]);
   return { px: st.whole(ENEMY_RIM), lights } as Painted;
 }
+/** ONE CLUSTER OF THE ICE, for the game (his pick, 14 Nov 2026, of the charge and the ice: “Straight at me (Recommended)”: so the
+ * ice races out along any way, not only the four he is painted facing): a few spikes bursting up out of the floor at its own floor
+ * point, `u` seconds since they burst (up in a flash, shards flung off; standing; shattering after FROST.stand), the very solids
+ * of frostBits; `v` its looks (0 ... 1), `big` how big (0 small, near him; 2 big, far out along the line, as the film's grow). */
+export function iceClusterBits(v: number, big: number, u: number, put: Put): void {
+  if (u <= 0) return;
+  const grow = Math.min(1, u / FROST.grow);
+  const gone = smooth01((u - FROST.stand) / 0.18);
+  if (gone >= 1) return;
+  const n = 3 + ((v + big) % 2);
+  const k0 = 977 + v * 31 + big * 7;
+  for (let m = 0; m < n; m++) {
+    const k = k0 * 100 + m;
+    const off: V3 = m === 0 ? [0, 0, 0] : [(hash(k, 1, 8994) - 0.5) * 12, (hash(k, 2, 8995) - 0.5) * 12, 0];
+    const lean = norm([(hash(k, 3, 8996) - 0.5) * 0.9, (hash(k, 4, 8997) - 0.5) * 0.9, 1], [0, 0, 1]);
+    const tall = (m === 0 ? 30 : 14 + 12 * hash(k, 5, 8998)) * (1 + 0.175 * big);
+    const r = m === 0 ? 6.5 : 3.5 + 2 * hash(k, 6, 8999);
+    const h = tall * (grow < 1 ? 0.25 + 0.75 * grow : 1 + 0.08 * Math.exp(-(u - FROST.grow) * 12)) * (1 - 0.7 * gone);
+    const tip = add(off, mul(lean, h));
+    put(`ice${(v + m) % 5}`, 'spike', { k: 'rod', a: add(off, [0, 0, -2]), b: tip, ra: r * (1 - 0.4 * gone), rb: 0.35, ramp: ICE });
+    if (r > 6) put(`ice${(v + m) % 5}`, 'spike', { k: 'dot', p: lerp3(off, tip, 0.35), c: '#ff4f8a', facing: [1, 0, 0], c2: '#e0287a' });
+    if (u < 0.15 || gone > 0) {
+      const w = u < 0.15 ? u : u - FROST.stand;
+      for (let s = 0; s < 5; s++) {
+        const a = (s / 5) * TAU + hash(k, s, 9001);
+        const q: V3 = [off[0] + Math.cos(a) * (4 + 60 * w), off[1] + Math.sin(a) * (4 + 60 * w), 2 + 40 * w - 120 * w * w + (gone > 0 ? h * 0.5 : 0)];
+        if (q[2] > 0) put('iceShards', 'shards', { k: 'mote', p: q, c: s % 2 ? ICE[4] : ICE[3], size: 1 });
+      }
+    }
+  }
+}
+export const ICE_CLUSTER_CANVAS: MobCanvas = { w: 140, h: 150, ax: 70, ay: 112 };
+export function paintIceCluster(v: number, big: number, u: number): Painted {
+  const st = stage('front', ICE_CLUSTER_CANVAS.ax, ICE_CLUSTER_CANVAS.ay, ICE_CLUSTER_CANVAS);
+  const bits: Bit[] = [];
+  iceClusterBits(v, big, u, (part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(ENEMY_RIM), lights } as Painted;
+}
