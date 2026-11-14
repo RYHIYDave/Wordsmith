@@ -9,7 +9,7 @@
 // action rule we kind of want all that updated to a certain level certain benchmark as the rest of the characters so that
 // they’re all at the same level.”
 //
-// THE SAME MAN, BETTER DRAWN: the Scarf Knight he picked (his pig-faced helm, a round steel skull with its snouted visor, a mail coif, a
+// THE SAME MAN, BETTER DRAWN: the Scarf Knight he picked (his pig-faced helm, since 14 Nov 2026 a hounskull bascinet, a mail coif, a
 // red tabard over mail, its skirt cut into points, a dark red scarf whose two ends fly, layered steel pauldrons, couters,
 // vambraces, plum gloves and belt with its cyan buckle, knee cops, greaves and pointed steel shoes, the great sword whose
 // blade glows the friend's cyan), on his own broad body (moves3.ts KNIGHT_BODY), in his own colours. What changes is how he
@@ -26,6 +26,11 @@
 // helm is back (a round skull; the visor a snout jutting forward like a pig's face), forged: a crisp ridge down the snout,
 // rivets at the visor's pivots, rows of breathing holes, and the slit cut dark across the top of the snout, its upper lip lit
 // and its lower edge in shadow, so that it reads at the game's size from every side that shows his face.
+// 14 Nov 2026, his words: “i dont like the warriors helmet.. i feel like he lost his pig helmet look”; shown a short pig's
+// snout: “No, I want a houndskull bascinet”; shown it: “Kind of, the eyes are kinda all over the place”; shown an eye fixed in
+// each slit: “Yes, ship it (Recommended)”. So his helm is a HOUNSKULL BASCINET (THE HEAD, below; BASCINET): the skull drawn up
+// to a point, the beaked visor out the way his head faces, its two eye slits with an eye in each, its breathing holes, and an
+// aventail of mail.
 //
 // HIS EIGHT SIDES (`WuSide`), each him truly turned before the game's camera, 45 degrees apart: as he said yes to drawing him
 // from eight sides, and then, asked whether some were only mirrored, “Paint all 8 (Recommended)”: every facing true, his
@@ -37,7 +42,7 @@ import { blade, bladeLights, KNIGHT_LOOK } from './hero_warrior';
 import { BLADE, CYAN, GLINT, INK, MAIL, PLUM, STEEL, hash } from './kit';
 import type { Painted, Ramp } from './kit';
 import { GREAT_BLADE } from './moves3';
-import { CANVAS3, eyesToward, girdle, laidAlong, mid, stage } from './skin';
+import { CANVAS3, girdle, laidAlong, mid, stage } from './skin';
 import type { GameView, Stage } from './skin';
 import { onBack } from './carried';
 import { add, cross, dot, len, lerp3, mul, norm, sub, trunkOf } from './skeleton';
@@ -77,6 +82,18 @@ export const WU_SCARF: Ramp = five(KNIGHT_LOOK.scarf);
 const D = Math.PI / 180;
 /** The helm: how much bigger than his head, front to back, side to side and in height (his own: hero3_knight.ts HELM). */
 const HELM: V3 = [1.18, 1.26, 1.12];
+/** HIS HOUNSKULL BASCINET (14 Nov 2026: below, THE HEAD), in shares of his head's depth and height where not said: the visor's
+ * root and point, out the way his head faces and up; how thick it is at each (sculpt units); the skull's point, up and back;
+ * the eye slits' height, how far round they run each side and the bridge between them, and how far round each eye is
+ * (degrees); the breathing holes, as [along the muzzle, degrees round on his right, on his left]; the aventail's rim, its
+ * drop below his neck and its width at the rim and at its foot (sculpt units). */
+export const BASCINET = {
+  root: [0.5, -0.2], point: [2.7, -0.42], rootR: 3.3, pointR: 0.35,
+  apexU: 1.45, apexB: 0.45, low: [-0.4, 0.5],
+  slit: 0.22, slitW: 78, bridge: 5, eyeAz: 36,
+  holes: [[0.38, [64, 82, 100], [76]], [0.5, [68, 88, 108], []], [0.62, [74, 96], []]] as [number, number[], number[]][],
+  rimU: 0.7, mailDrop: 0.4, mailTop: 3.9, mailFoot: 5.0,
+};
 const FLOOR = { n: [0, 0, -1] as V3, o: 0 };
 
 /**
@@ -371,55 +388,69 @@ export function paintWarriorUp(s: Skeleton, q: Posed, side: WuSide, B: Build, ar
   const knotAt = add(s.neck, add(mul(cf, -4.2), mul(cu, 1.2)));
   sc.ell(wine, 'scarf', knotAt, [mul(cf, 1.6), mul(cl, 2.0), mul(cu, 1.6)], 0.8, { tag: 'knot' });
 
-  // ---- THE HEAD: THE PIG-FACED HELM, his own as the game has always had it (his words, 6 Nov 2026: “I really like the look of
-  // his old pig helmet but it looks old.  And the visor slit never really pops.”), forged anew: the mail coif at his neck; a
-  // rounded skull of steel, drawn up a little to the back of the crown; out from where his face is, THE SNOUT, the visor
-  // jutting forward and a little down like a pig's face, a crisp ridge down its top; a rivet at each pivot of the visor, at his
-  // temples; rows of holes he breathes through on its cheeks; and THE EYE SLIT across the top of the snout where it meets the
-  // skull: deep and dark, its upper lip lit bright and its lower edge in shadow, so it reads at a glance (no glow in it: the
-  // faint cyan point of his eyes he has always had) ----
+  // ---- THE HEAD: A HOUNSKULL BASCINET, the pig-faced bascinet. His words, 14 Nov 2026: “i dont like the warriors helmet.. i
+  // feel like he lost his pig helmet look”; then, shown a short pig's snout in its place: “No, I want a houndskull bascinet”.
+  // As the real ones of about 1370 to 1420 are: THE SKULL tall and drawn up to a point behind the crown, its back falling
+  // steeply, coming down low at the sides and the back over his nape; THE VISOR a muzzle over the whole of his face, drawn out
+  // to a sharp point well out in front of him and a little down (the way his head faces, so that it stands out of his head's
+  // outline), a crisp ridge down its top; its TWO EYE SLITS across the top of the muzzle, each with its flange lit above it and
+  // in shadow below, the ridge between them (so they pop at a glance: his words of 6 Nov 2026, “the visor slit never really
+  // pops”), the faint cyan of his eyes in them; its BREATHING HOLES in rows on its right cheek, as the real ones have, a few on
+  // the left, and a slit for his mouth under the point; a rivet at each pivot of the visor, at his temples; and THE AVENTAIL, a
+  // mantle of mail hung from the skull's rim over his neck and the tops of his shoulders, under his scarf. ----
   const [ff, fl, fu] = s.face;
   const R = B.headR;
+  // THE AVENTAIL (and the mail at his throat under it)
   sc.cone(mail, 'coif', s.neck, add(s.skull, mul(fu, -0.6)), 2.7, 2.6, 1.0, { tag: 'coif' });
+  const helmRim = add(s.head, add(mul(fu, -R[2] * BASCINET.rimU), mul(ff, -R[0] * 0.12)));
+  sc.cone(mail, 'coif', helmRim, add(s.neck, add(mul(cu, -BASCINET.mailDrop), mul(cf, -0.6))), BASCINET.mailTop, BASCINET.mailFoot, 0.8, { tag: 'aventail' });
+  // THE SKULL: round over his head, coming down low at the sides and the back
   const helmC = add(s.head, mul(fu, R[2] * 0.06));
   sc.ell(steel, 'helm', helmC, [mul(ff, R[0] * HELM[0]), mul(fl, R[1] * HELM[1]), mul(fu, R[2] * HELM[2])], 1.0, { tag: 'skull' });
-  // (the skull full and round at the back, as his old pig helm's is: no point to its crown, from any side)
-  sc.ell(steel, 'helm', add(helmC, add(mul(fu, R[2] * 0.15), mul(ff, -R[0] * 0.35))), [mul(ff, R[0] * 0.9), mul(fl, R[1] * 1.0), mul(fu, R[2] * 0.95)], 1.2, { tag: 'skull' });
-  // (its rim flaring a little over the mail at the back and the sides)
-  sc.ell(steel, 'helm', add(s.head, add(mul(fu, -R[2] * 0.62), mul(ff, -R[0] * 0.18))), [mul(ff, R[0] * 1.08), mul(fl, R[1] * 1.22), mul(fu, R[2] * 0.36)], 0.8, { tag: 'skull' });
-  const eyes = eyesToward(st0, s);
-  const midTurn = ((eyes[0] + eyes[1]) / 2) * D;
-  const outF = add(mul(ff, Math.cos(midTurn)), mul(fl, Math.sin(midTurn)));
-  // THE SNOUT: from the whole of his face, jutting forward and a little down to a blunt point
-  const root = add(s.head, add(mul(outF, R[0] * 0.5), mul(fu, -R[2] * 0.2)));
-  const point = add(s.head, add(mul(outF, R[0] * 2.65), mul(fu, -R[2] * 0.6)));
-  const RA = 3.4;
-  const RB = 1.05;
+  sc.ell(steel, 'helm', add(s.head, add(mul(fu, R[2] * BASCINET.low[0]), mul(ff, -R[0] * 0.25))), [mul(ff, R[0] * 1.02), mul(fl, R[1] * 1.2), mul(fu, R[2] * BASCINET.low[1])], 1.0, { tag: 'skull' });
+  // (drawn up to its point, a little behind the crown, its back falling steeply)
+  const apex = add(s.head, add(mul(fu, R[2] * BASCINET.apexU), mul(ff, -R[0] * BASCINET.apexB)));
+  sc.cone(steel, 'helm', add(helmC, add(mul(fu, R[2] * 0.35), mul(ff, -R[0] * 0.12))), apex, R[0] * 0.95, 0.5, 1.1, { tag: 'apex' });
+  // THE VISOR: the muzzle, from the whole of his face to a sharp point out in front of him and a little down
+  const root = add(s.head, add(mul(ff, R[0] * BASCINET.root[0]), mul(fu, R[2] * BASCINET.root[1])));
+  const point = add(s.head, add(mul(ff, R[0] * BASCINET.point[0]), mul(fu, R[2] * BASCINET.point[1])));
   // (a plate of its own over his face: barely melted into the skull, so the seam round it shows where it stands proud)
-  sc.cone(steel, 'visor', root, point, RA, RB, 0.15, { tag: 'visor' });
-  // (its crisp ridge down the top, from the slit to the point)
-  const snoutUp = norm(sub(fu, mul(norm(sub(point, root)), dot(fu, norm(sub(point, root))))), fu);
-  sc.cone(steel, 'visor', add(root, mul(snoutUp, RA * 0.82)), add(point, mul(snoutUp, RB * 0.75)), 0.75, 0.35, 0.35, { tag: 'snoutRidge' });
-  /** A point on the helm's skull: degrees round from where his face is drawn, a share of his head's height above its middle. */
-  const onHelm = (az: number, upK: number): V3 => add(s.head, add(add(mul(ff, Math.cos(az * D) * R[0] * HELM[0]), mul(fl, Math.sin(az * D) * R[1] * HELM[1])), mul(fu, upK * R[2])));
-  /** A point on the snout's skin: `u` along it from root to point, `round` degrees round it from its top toward his left. */
+  sc.cone(steel, 'visor', root, point, BASCINET.rootR, BASCINET.pointR, 0.15, { tag: 'visor' });
   const snoutAxis = norm(sub(point, root));
+  const snoutUp = norm(sub(fu, mul(snoutAxis, dot(fu, snoutAxis))), fu);
   const snoutLeft = norm(cross(snoutUp, snoutAxis), fl);
+  // (its crisp ridge down the top, from between the eye slits to the point)
+  sc.cone(steel, 'visor', add(root, mul(snoutUp, BASCINET.rootR * 0.8)), add(point, mul(snoutUp, BASCINET.pointR * 0.7)), 0.7, 0.3, 0.35, { tag: 'ridge' });
+  /** A point on the muzzle's skin: `u` along it from root to point, `round` degrees round it from its top toward his left. */
   const onSnout = (u: number, round: number): V3 => {
-    const r = RA + (RB - RA) * u;
+    const r = BASCINET.rootR + (BASCINET.pointR - BASCINET.rootR) * u;
     const a = round * D;
     return add(lerp3(root, point, u), add(mul(snoutUp, Math.cos(a) * r), mul(snoutLeft, -Math.sin(a) * r)));
   };
-  // THE EYE SLIT, painted on the steel where it crosses the snout's top and the front of the skull: dark, lit above, shaded below
-  const SLIT = 0.2;
+  /** A point on the helm's skull: degrees round from his nose, a share of his head's height above its middle. */
+  const onHelm = (az: number, upK: number): V3 => add(s.head, add(add(mul(ff, Math.cos(az * D) * R[0] * HELM[0]), mul(fl, Math.sin(az * D) * R[1] * HELM[1])), mul(fu, upK * R[2])));
+  // THE EYE SLITS, painted on the muzzle's top where it meets the skull: dark, the flange lit above, shaded below; the ridge
+  // between the two
+  const SLIT = BASCINET.slit;
   const facesAt = (p: V3): boolean => dot(sub(p, s.head), eye) > 0;
   const slitOf = (p: V3): number => {
-    // (how far above the slit's middle a point of the helm is, in shares of his head's height; NaN where the slit does not run)
+    // (how far above the slits' middle a point of the helm is, in shares of his head's height; NaN where they do not run)
     const v = sub(p, s.head);
-    const f = dot(v, outF);
-    const l = dot(v, norm(sub(fl, mul(outF, dot(fl, outF))), fl));
-    if (f < R[0] * 0.25 || Math.abs(Math.atan2(l, f)) > 66 * D) return NaN;
+    const f = dot(v, ff);
+    const l = dot(v, fl);
+    const az = Math.abs(Math.atan2(l, f)) / D;
+    if (f < R[0] * 0.25 || az > BASCINET.slitW || az < BASCINET.bridge) return NaN;
     return dot(v, fu) / R[2] - SLIT;
+  };
+  /** Whether a point of a slit is where an eye is: each eye this far round from the middle, the whole height of its slit; and
+   * only an eye that looks out toward the one watching (not glimpsed past the muzzle from behind him). */
+  const eyeAt = (p: V3, up: number): boolean => {
+    const v = sub(p, s.head);
+    const side = dot(v, fl) >= 0 ? 1 : -1;
+    const az = Math.abs(Math.atan2(dot(v, fl), dot(v, ff))) / D;
+    if (Math.abs(up) >= 0.12 || Math.abs(az - BASCINET.eyeAz) >= 6) return false;
+    const way = add(mul(ff, Math.cos(BASCINET.eyeAz * D)), mul(fl, side * Math.sin(BASCINET.eyeAz * D)));
+    return dot(way, eye) > 0.2;
   };
   const helmPaint = sc.mats[steel].paint;
   sc.mats[steel].paint = (h) => {
@@ -427,33 +458,41 @@ export function paintWarriorUp(s: Skeleton, q: Posed, side: WuSide, B: Build, ar
     if (piece === 'helm' || piece === 'visor') {
       const up = slitOf(h.p);
       if (up === up) {
-        if (Math.abs(up) < 0.13) return INK;
-        if (up >= 0.13 && up < 0.3) return WU_STEEL[4];
-        if (up <= -0.13 && up > -0.27) return WU_STEEL[1];
+        // (THE FAINT CYAN POINT OF EACH EYE, in the dark of its slit and nowhere else: his words, 14 Nov 2026, of the eyes as they
+        // were marked where they were turned toward the eye, “Kind of, the eyes are kinda all over the place”)
+        if (eyeAt(h.p, up)) return GLINT;
+        if (Math.abs(up) < 0.12) return INK;
+        if (up >= 0.12 && up < 0.28) return WU_STEEL[4];
+        if (up <= -0.12 && up > -0.25) return WU_STEEL[1];
       }
-      // (the ridge down the snout: its crest lit, its flanks a step darker)
-      if (h.prim.tag === 'snoutRidge') return h.tone >= 2 ? WU_STEEL[4] : WU_STEEL[Math.max(1, h.tone)];
-      // (the snout lifted a tone, as a hero's face is, so that his pig's face reads though it is turned from the light)
+      // (the ridge: its crest lit, its flanks a step darker)
+      if (h.prim.tag === 'ridge') return h.tone >= 2 ? WU_STEEL[4] : WU_STEEL[Math.max(1, h.tone)];
+      // (the muzzle a tone over the light it is in, as a hero's face is, so that it reads though it is turned from the light)
       if (h.prim.tag === 'visor') return WU_STEEL[Math.min(4, Math.max(1, h.tone + 1))];
     }
     return helmPaint ? helmPaint(h) : null;
   };
-  // the faint cyan point of his eyes in the slit (as he has always had), the rivets at the visor's pivots, the breathing holes
-  for (const turn of eyes) {
-    if (!facesAt(onHelm(turn, SLIT))) continue;
-    sc.mark(add(s.head, add(mul(add(mul(ff, Math.cos(turn * D)), mul(fl, Math.sin(turn * D))), R[0] * 1.32), mul(fu, R[2] * SLIT))), GLINT, 1, 1, 0, 0, 3.5);
-  }
-  for (const az of [midTurn / D - 92, midTurn / D + 92]) {
+  // the rivets at the visor's pivots
+  for (const az of [-92, 92]) {
     const pv = onHelm(az, SLIT - 0.08);
     if (!facesAt(pv)) continue;
     sc.mark(pv, WU_STEEL[4], 1, 1, 0, 0, 2.5, steel);
     sc.mark(pv, INK, 1, 1, 1, 1, 2.5, steel);
   }
-  for (const [u0, rounds] of [[0.34, [62, 80, 98]], [0.5, [66, 86, 104]], [0.64, [72, 94]]] as const) {
-    for (const rd of rounds) for (const sgn of [1, -1]) {
-      const hp = onSnout(u0, rd * sgn);
+  // the breathing holes: rows of them on his right cheek of the muzzle, a few on his left; and his mouth's slit under the point
+  for (const [u0, right, left] of BASCINET.holes) {
+    for (const rd of right) {
+      const hp = onSnout(u0, -rd);
       if (facesAt(hp)) sc.mark(hp, INK, 1, 1, 0, 0, 1.6, steel);
     }
+    for (const rd of left) {
+      const hp = onSnout(u0, rd);
+      if (facesAt(hp)) sc.mark(hp, INK, 1, 1, 0, 0, 1.6, steel);
+    }
+  }
+  for (const rd of [-14, 0, 14]) {
+    const hp = onSnout(0.62, 180 + rd);
+    if (facesAt(hp)) sc.mark(hp, INK, 1, 1, 0, 0, 1.6, steel);
   }
   const knot = add(s.neck, add(mul(cf, -4.2), mul(cu, 1.2)));
 

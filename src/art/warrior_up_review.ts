@@ -11,7 +11,7 @@ import type { Move3 } from './moves3';
 import { add, bonesAt, mul, solve, trunkOf } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { wuSmeared } from './warrior_up_art';
-import { WU_MAIL, WU_SPIN, spun, turnedStage } from './warrior_up';
+import { BASCINET, WU_MAIL, WU_SPIN, spun, turnedStage } from './warrior_up';
 import { onBack } from './carried';
 import { girdle, stage } from './skin';
 import type { WuSide } from './warrior_up';
@@ -51,13 +51,13 @@ export function wuBody(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[] } 
     limbs.push({ name: `fore${side}`, a: side === 'L' ? s.elbowL : s.elbowR, b: side === 'L' ? s.handL : s.handR, r: aE });
   }
   limbs.push({ name: 'neck', a: s.neck, b: s.skull, r: 2.4 });
-  // (the snout of his pig-faced helm, out from his face and a little down: art/warrior_up.ts)
+  // (the muzzle of his hounskull bascinet, out from his face to a point and a little down: art/warrior_up.ts BASCINET)
   {
     const [hf, , hu] = s.face;
     const R0 = B.headR;
-    const root = add(s.head, add(mul(hf, R0[0] * 0.5), mul(hu, -R0[2] * 0.2)));
-    const tip = add(s.head, add(mul(hf, R0[0] * 2.65), mul(hu, -R0[2] * 0.6)));
-    limbs.push({ name: 'snout', a: root, b: tip, r: 2.0 });
+    const root = add(s.head, add(mul(hf, R0[0] * BASCINET.root[0]), mul(hu, R0[2] * BASCINET.root[1])));
+    const tip = add(s.head, add(mul(hf, R0[0] * BASCINET.point[0]), mul(hu, R0[2] * BASCINET.point[1])));
+    limbs.push({ name: 'snout', a: root, b: tip, r: (BASCINET.rootR + BASCINET.pointR) / 2 });
   }
   const [ribs, belly, pel] = trunkOf(B, s);
   const R = B.headR;
