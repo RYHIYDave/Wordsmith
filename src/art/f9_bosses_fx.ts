@@ -1,12 +1,16 @@
 // FLOOR 9'S SIDE BOSSES: WHAT THEIR MOVES DO TO THE FLOOR AND THROW UP FROM IT, PAINTED WHERE IT IS (render/act1_fx/f9_bosses.ts paints it
 // live, at the floor point where each move began, in the frame its picture is shown in: game/act1_rules/stoker.ts FRAMES). As he saw
 // them filmed (tools/f9_bosses_film.ts, docs/mockups/f9_side_bosses/README.md), each wild in its own way (his rulebook, Animations 3):
-// THE TROLL CHIEFTAIN'S is the earth and brute force: the warning laid on the ground in the enemy's pink before each blow (a ring where
-//   the club will land, a lane where the crack will run and where he will charge), the ground broken (cracks glowing in their depths,
-//   rock thrust up, shockwaves rolling out), stone and dust flung up, the burst where a blow lands, the rage's fire bursting up round him;
-// THE MIST WOLF'S is mist and speed: its warnings (a ring, the claw's arc, the lunge's lane, the cloud's ring), the ground scored by its
-//   claws, mist bursting where it strikes and pushes off, the mist where its wolves come out of it, the streak of mist where it went
-//   through, its cloud (laid under what stands, so the hero is seen in it: Animations 4) with its glints and its eyes moving in it.
+// EACH BLOW ITS OWN (his word, 14 Nov 2026: “you have the same impact art for a big front paw stomp as a minion being raised from the
+// mist.  these are two completely different things.”): no burst, no shock ring shared between them.
+// THE TROLL CHIEFTAIN'S is the earth and brute force: the warning laid on the ground in the enemy's pink before each blow; the smash a
+//   crater, cracks, stone skipping off and dust rolling out low; the slam as he saw it and liked it; the war cry no blow but a roar,
+//   its waves out of his mouth, the dust round him blown flat, the rage's fire up round him; the bull rush its uppercut's great crescent
+//   and the earth sprayed on before his skid;
+// THE MIST WOLF'S is mist: the bite jaws of mist snapped shut; the rakes the ground torn and mist flicked off its claws; the stomp its
+//   two forepaws' prints driven into the ground and the mist splashed up out of them like water; the howl no blow, its wolves rising
+//   out of a coil of mist, their eyes kindling first; the lunge one long cut through, parting, the mist torn in two; the cloud a
+//   spinning funnel, grass and leaves whirled in it, its claws flashing out of it where the hero is.
 // `ground` is laid under everything that stands; `air` over it. Behind F9_LAIRS, off.
 
 import type { Px } from '../engine/px';
@@ -14,9 +18,10 @@ import { FLAME } from './mkit';
 import type { F9View } from './f9_bosses_art';
 import { f9At } from './f9_bosses_art';
 import { CHIEF_MOVES, CLAW_ARC, LUNGE_LONG, RUSH_LONG, WOLF_MOVES, chiefClubHead, chiefPose, wolfPose } from './f9_bosses_moves';
+import type { V3 } from './skeleton';
 import type { ChiefMove, WolfMove } from './f9_bosses_moves';
 import { CK, WK } from './f9_bosses_sculpt';
-import { MISTY, SHOCK_MIST, bigBurst, bigCrack, bigShock, crater, embers, eyesIn, fireRing, gouges, line, mistCloud, plume, radial, rocks, slash, warnArc, warnLane, warnRing } from './f9_bosses_paint';
+import { MISTY, bigBurst, bigCrack, bigShock, blownFlat, crater, cutThrough, dustRoll, embers, eyesIn, fangSnap, fireRing, flung, gouges, line, mistCloud, mistRise, mistSplash, pawPrint, plume, radial, roarWaves, rocks, slash, smear, warnArc, warnLane, warnRing, whirl } from './f9_bosses_paint';
 import type { Pr } from './f9_bosses_paint';
 
 /** The canvas it is painted on (picture pixels), the floor point where the move began at (ax, ay). */
@@ -79,19 +84,17 @@ export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t
   const fr = Math.floor(t * 30);
   const pose = chiefPose(move, Math.min(t, M.long));
   if (move === 'smash') {
+    // (THE CLUB DRIVEN INTO THE EARTH: its crater, cracks run out from it, chips of stone skipping off low and fast, a wall of brown
+    // dust rolling out over the ground, the dust then boiling up; no light but where it bit)
     const [cf, cl] = CHIEF_LANDS.smash;
     if (layer === 'ground') {
       if (t > 0.4 && since < 0) warnBig(px, pr, cf, cl, SMASH_RING, t);
-      crater(px, pr, cf, cl, 34, since / 0.08, (since - 0.9) / 1.0, 77, 11);
-      bigShock(px, pr, cf, cl, 80, since / 0.55, 14, 9201);
-      bigShock(px, pr, cf, cl, 50, (since - 0.1) / 0.5, 10, 9203);
+      crater(px, pr, cf, cl, 30, since / 0.08, (since - 0.9) / 1.0, 77, 11);
+      dustRoll(px, pr, cf, cl, 78, since / 0.9, 9201);
     } else {
-      const c = pr(cf, cl, 6);
-      bigBurst(px, c[0], c[1], since / 0.26, 60, 9707);
-      radial(px, c[0], c[1], since / 0.3, 18, 40, 150, 9708);
-      rocks(px, pr, cf, cl, since, 9703, 20, 10, 80);
-      plume(px, pr, cf, cl, since / 1.5, 60, 9701, 16, 34);
-      if (since >= 0 && since < 1.4) embers(px, c[0], c[1], 60, 80, since, 20, 9709);
+      rocks(px, pr, cf, cl, since, 9703, 12, 9, 60);
+      flung(px, pr, cf, cl, 0, Math.PI, since, 18, 150, 9704, 'dirt');
+      plume(px, pr, cf, cl, (since - 0.15) / 1.5, 46, 9701, 12, 28);
     }
   } else if (move === 'slam') {
     const [cf, cl] = CHIEF_LANDS.slam;
@@ -119,19 +122,16 @@ export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t
       }
     }
   } else if (move === 'warcry') {
+    // (THE ROAR: waves of it out of his open mouth, again and again while he roars; the dust round him blown flat and out by it, pebbles
+    // skittering off; the rage's fire bursting up round him; no blow, so nothing bursts)
     if (layer === 'ground') {
-      bigShock(px, pr, 0, 0, 105, since / 0.65, 16, 9221);
-      bigShock(px, pr, 0, 0, 72, (since - 0.15) / 0.6, 11, 9223);
-      bigShock(px, pr, 0, 0, 48, (since - 0.3) / 0.5, 8, 9225);
-      // (the ground scorched in a ring round him where the fire burst up)
+      blownFlat(px, pr, ROAR_RING + 20, since / 0.9, 9221);
       if (since > 0.2) crater(px, pr, 0, 0, 10, 1, (since - 1.5) / 1.0, 9227, 14);
     } else {
-      fireRing(px, pr, 0, 0, 48, since / 1.4, fr, 12, 105);
-      fireRing(px, pr, 0, 0, 80, (since - 0.15) / 1.1, fr + 3, 16, 60);
-      rocks(px, pr, 0, 0, since, 9229, 18, 8, 100);
-      plume(px, pr, 0, 0, since / 1.2, 70, 9231, 14, 26);
-      const head = pr(pose.hip[0] + 30, 0, 130);
-      radial(px, head[0], head[1], since / 0.5, 18, 36, 150, 9233, FLAME[4]);
+      fireRing(px, pr, 0, 0, 52, since / 1.4, fr, 12, 115);
+      const head = pr(pose.hip[0] + 12, 0, 116);
+      const ahead = pr(pose.hip[0] + 50, 0, 140);
+      roarWaves(px, head[0], head[1], ahead[0] - head[0], ahead[1] - head[1], since, 0.85, 9233);
       for (const [ts, sd] of [[2.3, -1], [2.4, 1], [2.5, -1], [2.6, 1]] as const) {
         plume(px, pr, Math.max(0, pose.hip[0]) + 12, sd * 18, (t - ts) / 0.7, 28, Math.round(9931 + ts * 10), 6, 22);
         rocks(px, pr, Math.max(0, pose.hip[0]) + 12, sd * 18, t - ts, Math.round(9941 + ts * 10), 5, 7, 40);
@@ -155,7 +155,6 @@ export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t
           line(px, pr(f0, w - 6, 0), pr(f1, w - 6, 0), '#5a4636', 3);
         }
       }
-      bigShock(px, pr, RUSH_LONG + 10, 0, 70, since / 0.5, 10, 9241);
     } else {
       for (const ts of [0.52, 0.76]) {
         plume(px, pr, 0, -18, (t - ts) / 0.7, 30, Math.round(9941 + ts * 100), 7, 22);
@@ -166,11 +165,19 @@ export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t
         rocks(px, pr, at, 0, (t - 1.15) * 0.7, 9945 + Math.floor(t * 20), 8, 8, 70);
         for (let i = 0; i < 7; i++) plume(px, pr, at - 20 - i * 26, (hash01(i, 3) - 0.5) * 30, 0.25 + i * 0.1, 26, 9951 + i + fr, 3, 26);
       }
-      const hc = pr(RUSH_LONG - 10, 0, 50);
-      bigBurst(px, hc[0], hc[1], since / 0.26, 65, 9953);
-      radial(px, hc[0], hc[1], since / 0.3, 18, 40, 150, 9954);
-      rocks(px, pr, RUSH_LONG + 24, 0, since, 9957, 18, 10, 80);
-      plume(px, pr, RUSH_LONG + 24, 0, since / 1.3, 55, 9955, 14, 32);
+      // (THE UPPERCUT: the club's swing up from under, a great crescent of it; and the skid, the earth sprayed on before his feet)
+      if (since >= -0.03 && since < 0.3) {
+        // (a great crescent before him, from down at the ground up over his head, in the club's hand's side)
+        const hf = Math.max(0, Math.min(RUSH_LONG, pose.hip[0])) + 26;
+        const arc = (R: number): V3[] => Array.from({ length: 13 }, (_, i) => {
+          const th = (-75 + (i / 12) * 165) * (Math.PI / 180);
+          return [hf + Math.cos(th) * R, -14, 64 + Math.sin(th) * R] as V3;
+        });
+        const k = since < 0.05 ? Math.max(0.1, (since + 0.03) / 0.08) : 1 - (since - 0.05) / 0.25;
+        smear(px, arc(78).map((v) => pr(v[0], v[1], v[2])), 0, [FLAME[2], FLAME[3], FLAME[4]], Math.max(0.05, k), arc(46).map((v) => pr(v[0], v[1], v[2])));
+      }
+      flung(px, pr, at + 20, 0, 0, 0.7, since, 16, 170, 9957, 'dirt');
+      plume(px, pr, at + 18, 0, since / 1.3, 40, 9955, 10, 26);
     }
   }
 }
@@ -192,7 +199,7 @@ export function chiefFxGlow(move: ChiefMove, t: number, view: F9View): { x: numb
   const at = move === 'smash' ? CHIEF_LANDS.smash : move === 'slam' ? CHIEF_LANDS.slam : move === 'rush' ? [RUSH_LONG - 10, 0] : [0, 0];
   const c = pr(at[0], at[1], 20);
   const k = 1 - since / 0.9;
-  return { x: c[0], y: c[1], r: 190 * (0.5 + 0.5 * k), a: 0.7 * k * k, flash: since < 0.12 ? (1 - since / 0.12) * (move === 'slam' ? 0.35 : 0.25) : 0 };
+  return { x: c[0], y: c[1], r: 190 * (0.5 + 0.5 * k), a: (move === 'warcry' ? 0.35 : 0.7) * k * k, flash: since < 0.12 && (move === 'smash' || move === 'slam') ? (1 - since / 0.12) * (move === 'slam' ? 0.35 : 0.25) : 0 };
 }
 
 /**
@@ -209,82 +216,49 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
   const pose = wolfPose(move, Math.min(t, M.long));
   const CRESCENT = [MIST_PALE, FLAME[2], '#fffaf0'];
   if (move === 'bite') {
+    // (THE BITE: jaws of mist snapped shut where its own jaws close, spit flung off them; where it pushed off, the ground torn up)
     if (layer === 'ground') {
       if (t > 0.2 && since < 0) warnBig(px, pr, BITE_RING.f, 0, BITE_RING.r + 6, t);
-      bigShock(px, pr, BITE_RING.f, 0, 70, since / 0.5, 10, 9301, SHOCK_MIST, MISTY);
-      // (where it pushed off: the ground torn up behind it)
       plume(px, pr, -15, 0, (t - 0.55) / 0.9, 40, 9963, 10, 26, MISTY);
     } else {
-      const at = pr(BITE_RING.f, 0, 30);
-      bigBurst(px, at[0], at[1], since / 0.22, 48, 9961);
-      radial(px, at[0], at[1], since / 0.25, 16, 36, 150, 9962, '#f2f0fa');
-      plume(px, pr, BITE_RING.f, 0, since / 0.9, 48, 9965, 10, 26, MISTY);
+      // (at its jaws as they close)
+      const bp = wolfPose('bite', M.beats[0].at);
+      const at = pr(bp.root[0] + 58, 0, 54 + bp.root[2]);
+      fangSnap(px, at[0], at[1], (since + 0.08) / 0.5, 40, 9961);
     }
   } else if (move === 'claw') {
     const S = CLAW_SWEEP;
-    const mid = S.f + (S.r0 + S.r1) / 2;
     if (layer === 'ground') {
       if (t > 0.25 && since < 0) {
         warnArc(px, pr, S.f, 0, S.r0, S.r1, S.a0, S.a1, t);
         warnArc(px, pr, S.f, 0, S.r0 + 3, S.r1 - 3, S.a0 + 0.03, S.a1 - 0.03, t + 0.05);
       }
-      // (the ground torn by each rake: the first across one way, the second back the other; the last both paws, a shockwave of mist)
+      // (THE RAKES: the ground torn by each, the first across one way, the second back the other. THE STOMP: both forepaws driven into
+      // the ground, their prints stamped deep in it and cracked out from)
       const [b0, b1, b2] = M.beats.map((b) => t - b.at);
       if (b0 >= 0) gouges(px, pr, [CLAW_ARC.about[0], CLAW_ARC.about[1], 0], [CLAW_ARC.from[0] + 24, CLAW_ARC.from[1], 0], [CLAW_ARC.to[0] + 6, CLAW_ARC.to[1], 0], 3, b0 / 0.06, (b0 - 1.0) / 0.8, 9871);
       if (b1 >= 0) gouges(px, pr, [CLAW_ARC.about[0], -CLAW_ARC.about[1], 0], [CLAW_ARC.from[0] + 24, -CLAW_ARC.from[1], 0], [CLAW_ARC.to[0] + 6, -CLAW_ARC.to[1], 0], 3, b1 / 0.06, (b1 - 1.0) / 0.8, 9873);
-      bigShock(px, pr, mid, 0, 95, b2 / 0.6, 12, 9303, SHOCK_MIST, MISTY);
+      for (const [pf, pl] of STOMP) pawPrint(px, pr, pf, pl, 13, 0, b2 / 0.05, (b2 - 1.1) / 0.7, 9875 + pl);
     } else {
-      M.beats.forEach((b, i) => {
-        const sb = t - b.at;
-        const at = pr(mid + (i === 2 ? 0 : i === 0 ? -6 : 6), i === 0 ? 14 : i === 1 ? -14 : 0, 30);
-        bigBurst(px, at[0], at[1], sb / 0.22, i === 2 ? 60 : 36, 9971 + i);
-        if (i === 2) radial(px, at[0], at[1], sb / 0.28, 18, 40, 170, 9972, '#f2f0fa');
-        plume(px, pr, mid, i === 0 ? 14 : i === 1 ? -14 : 0, sb / 1.0, i === 2 ? 100 : 50, 9973 + i, i === 2 ? 16 : 8, i === 2 ? 32 : 24, MISTY);
-      });
-      rocks(px, pr, mid, 0, t - M.beats[2].at, 9975, 14, 8, 110);
+      // (mist flicked off the claws the way each rake swept; and the stomp, the mist splashed up out of the prints like water)
+      const [b0, b1, b2] = M.beats.map((b) => t - b.at);
+      flung(px, pr, CLAW_ARC.to[0], CLAW_ARC.to[1], Math.atan2(CLAW_ARC.to[1] - CLAW_ARC.from[1], CLAW_ARC.to[0] - CLAW_ARC.from[0]), 0.45, b0, 9, 110, 9971, 'mist');
+      flung(px, pr, CLAW_ARC.to[0], -CLAW_ARC.to[1], Math.atan2(-CLAW_ARC.to[1] + CLAW_ARC.from[1], CLAW_ARC.to[0] - CLAW_ARC.from[0]), 0.45, b1, 9, 110, 9972, 'mist');
+      for (const [pf, pl] of STOMP) mistSplash(px, pr, pf, pl, b2, 52, 9973 + pl, 10);
     }
   } else if (move === 'howl') {
+    // (THE HOWL: no blow. Where each of its wolves comes, mist seeps up out of the ground and coils up into a column, two eyes kindling
+    // in it, and the wolf steps out of it)
     HOWL_FOGS.forEach((q, i) => {
-      if (layer === 'ground') {
-        mistCloud(px, pr, q.f, q.l, 60, Math.min(1, Math.max(0, (t - 0.95 - i * 0.2) / 0.3)), t, Math.max(0, (t - q.at - 0.7) / 0.6));
-        bigShock(px, pr, q.f, q.l, 60, (t - q.at) / 0.5, 8, 9311 + i, SHOCK_MIST, MISTY);
-      } else {
-        plume(px, pr, q.f, q.l, (t - q.at) / 1.0, 60, 9983 + i, 14, 30, MISTY);
-        const c = pr(q.f, q.l, 20);
-        bigBurst(px, c[0], c[1], (t - q.at) / 0.2, 34, 9985 + i);
-      }
+      if (layer === 'air') mistRise(px, pr, q.f, q.l, t - q.at, 9983 + i);
     });
-    // (the howl itself rolling out from it over the ground, again and again)
-    if (layer === 'ground') for (let k = 0; k < 2; k++) bigShock(px, pr, 0, 0, 160, (since - k * 0.45) / 0.9, 8, 9321 + k, SHOCK_MIST, MISTY);
   } else if (move === 'lunge') {
     const L = LUNGE_LANE;
     if (layer === 'ground') {
       if (t > 0.3 && t < 0.72) laneBig(px, pr, L.from, L.to, 0, L.half + 4, t);
-      // (the tunnel of mist where it went through, thick, churning, thinning)
-      if (t > 0.7) {
-        const reach = Math.min(LUNGE_LONG, pose.root[0]);
-        for (let i = 0; i < 18; i++) {
-          const ff = reach - i * 12;
-          if (ff < -16) break;
-          mistCloud(px, pr, ff, (tiny(i, 1, 9993) - 0.5) * 12, 22, 1, t + i, Math.min(1.4, Math.max(0, (t - 0.9) * 1.4) + i * 0.04));
-        }
-      }
     } else {
-      if (t > 0.7 && t < 1.0) {
-        // (the streak it leaves: long white lines along its way)
-        const reach = Math.min(LUNGE_LONG, pose.root[0]);
-        for (let i = 0; i < 14; i++) {
-          const l = (tiny(i, 2, 9994) - 0.5) * 40;
-          const z = 10 + tiny(i, 3, 9994) * 60;
-          const f0 = reach - 40 - tiny(i, 4, 9994) * 120;
-          line(px, pr(Math.max(-10, f0), l, z), pr(reach, l * 0.6, z), i % 3 ? '#f2f0fa' : FLAME[2], i % 4 ? 2 : 3);
-        }
-      }
-      const mid = pr(LUNGE_LONG * 0.5, 0, 30);
-      bigBurst(px, mid[0], mid[1], since / 0.22, 48, 9997);
-      radial(px, mid[0], mid[1], since / 0.25, 16, 36, 150, 9998, '#f2f0fa');
-      plume(px, pr, LUNGE_LONG, 0, (t - 0.84) / 1.0, 70, 9999, 14, 30, MISTY);
-      bigShock(px, pr, LUNGE_LONG, 0, 80, (t - 0.84) / 0.5, 8, 9331, SHOCK_MIST, MISTY);
+      // (THROUGH: one long cut along where it went, parting; the mist it went through torn in two and pushed off either side)
+      cutThrough(px, pr, L.from, LUNGE_LONG, 28, since, 9997);
     }
   } else if (move === 'cloud') {
     const cf = pose.root[0] + CLOUD.f;
@@ -294,15 +268,16 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
       const thin = t < CLOUD.thins ? 0 : (t - CLOUD.thins) / 0.7;
       mistCloud(px, pr, cf, 0, CLOUD.r, g, t, thin * 1.2);
     } else {
-      bigShock(px, pr, cf, 0, 130, since / 0.5, 12, 9341, SHOCK_MIST, MISTY);
-      plume(px, pr, cf, 0, since / 1.0, 160, 9343, 22, 34, MISTY);
-      // (its claws in the cloud where the hero is, as each of its blows strikes him; its eyes, many, moving in it)
+      // (THE FUNNEL: grass and leaves torn up and whirled round in it, bands of mist wound round it; its claws flashing out of it where
+      // the hero is, as each of its blows strikes him; its eyes, many, moving in it)
+      const g = since < 0 ? 0 : Math.min(1, since / 0.3) * (t < CLOUD.thins ? 1 : Math.max(0, 1 - (t - CLOUD.thins) / 0.6));
+      whirl(px, pr, cf, 0, CLOUD.r * 0.9, t, g, 9343);
       if (hero) {
         const at = pr(hero.f, hero.l, 30);
         CLOUD.hurts.forEach((q, i) => {
           if (!(hero.struck & (1 << i))) return;
           for (let c = -1; c <= 1; c++) slash(px, at[0] - 2, at[1] - 4, 30 + c * 7, (q * 3) % 6.28, ((q * 3) % 6.28) + 2.4, (t - q + 0.06) / 0.25, CRESCENT, 5);
-          bigBurst(px, at[0], at[1], (t - q) / 0.14, 28, 9805 + i);
+          flung(px, pr, hero.f, hero.l, (q * 3) % 6.28, 0.6, t - q, 5, 70, 9805 + i, 'mist');
         });
       }
       if (since > 0 && t < CLOUD.thins + 0.3) eyesIn(px, pr, cf, 0, CLOUD.r * 0.8, 7, t, 9807);
@@ -310,19 +285,24 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
     }
   }
 }
+/** Where its forepaws come down in the claw's stomp (its own lengths: forward, to its left). */
+const STOMP: readonly (readonly [number, number])[] = (() => {
+  const q = wolfPose('claw', WOLF_MOVES.claw.beats[2].at);
+  return [[q.pawFL[0], q.pawFL[1]], [q.pawFR[0], q.pawFR[1]]];
+})();
 
 /** ITS BLOWS' LIGHT AND FLASH (as the chieftain's: chiefFxGlow), and how dark its howl and its cloud make the screen (0..1). */
 export function wolfFxGlow(move: WolfMove, t: number, view: F9View): { x: number; y: number; r: number; a: number; flash: number; dark: number } | null {
   const C = F9_FX_CANVAS;
   const pr: Pr = f9At(view, WK, C.ax, C.ay);
   const M = WOLF_MOVES[move];
-  const since = t - M.beats[0].at;
+  const since = t - M.beats[move === 'claw' ? 2 : 0].at;
   const dark = move === 'howl' ? Math.max(0, Math.min(1, (t - 0.6) / 0.4)) * Math.max(0, Math.min(1, (M.long - t) / 0.6)) : move === 'cloud' ? Math.max(0, Math.min(1, since / 0.3)) * Math.max(0, Math.min(1, (CLOUD.thins + 0.5 - t) / 0.6)) * 0.7 : 0;
   if ((since < 0 || since > 0.8) && dark <= 0) return null;
   const f = move === 'bite' ? BITE_RING.f : move === 'claw' ? CLAW_SWEEP.f + (CLAW_SWEEP.r0 + CLAW_SWEEP.r1) / 2 : move === 'lunge' ? LUNGE_LONG * 0.5 : CLOUD.f;
   const c = pr(f, 0, 20);
   const k = since >= 0 && since <= 0.8 ? 1 - since / 0.8 : 0;
-  const strong = move === 'claw' || move === 'lunge' ? 0.3 : 0.2;
-  return { x: c[0], y: c[1], r: 170 * (0.5 + 0.5 * k), a: 0.6 * k * k, flash: since >= 0 && since < 0.12 && move !== 'howl' ? (1 - since / 0.12) * strong : 0, dark };
+  const strong = move === 'claw' ? 0.25 : 0;
+  return { x: c[0], y: c[1], r: 170 * (0.5 + 0.5 * k), a: (move === 'claw' ? 0.6 : move === 'cloud' ? 0 : 0.3) * k * k, flash: since >= 0 && since < 0.12 && move !== 'howl' ? (1 - since / 0.12) * strong : 0, dark };
 }
 const MIST_PALE = '#9692b2';

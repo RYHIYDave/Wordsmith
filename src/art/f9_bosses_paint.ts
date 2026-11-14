@@ -772,3 +772,382 @@ export function vnoise(x: number, y: number, seed: number): number {
   const d = hash(x0 + 1, y0 + 1, seed);
   return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
 }
+
+// =================================================================================================
+// EACH BLOW ITS OWN: his word, 14 Nov 2026: “you have the same impact art for a big front paw stomp as a minion being raised from the
+// mist.  these are two completely different things.” So no burst and no shock ring shared between them: the wolf's blows splash and
+// snap and tear its mist; its wolves rise out of mist; the chieftain's break the earth, blow its dust flat, and swing.
+
+const smooth = (a: number, b: number, x: number): number => {
+  const q = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return q * q * (3 - 2 * q);
+};
+const MIST_DROP = ['#6c688a', '#9692b2', '#c6c2da', '#eeecf8'];
+
+/** THINGS FLUNG: `n` of them thrown from (f, l) its own lengths, about the way `ang` (radians, its own ground: 0 forward, + to its
+ * left) and `spread` either side of it, `t` seconds since; each a drop of mist with its streak, or a clod of earth; landing, a splat. */
+export function flung(px: Px, pr: Pr, f: number, l: number, ang: number, spread: number, t: number, n: number, speed: number, seed: number, kind: 'mist' | 'dirt'): void {
+  if (t < 0 || t > 1.3) return;
+  const g = 560;
+  for (let i = 0; i < n; i++) {
+    const a = ang + (hash(i, 1, seed) * 2 - 1) * spread;
+    const v = speed * (0.45 + 0.75 * hash(i, 2, seed));
+    const vz = 90 + 170 * hash(i, 3, seed);
+    const land = (2 * vz) / g;
+    const at = (q: number): readonly number[] => pr(f + Math.cos(a) * v * Math.min(q, land), l + Math.sin(a) * v * Math.min(q, land), Math.max(0, vz * q - 0.5 * g * q * q));
+    const s = (kind === 'mist' ? 2 : 3) + 2.5 * hash(i, 4, seed);
+    if (t < land) {
+      const p = at(t);
+      const q = at(Math.max(0, t - 0.05));
+      if (kind === 'mist') {
+        line(px, q, p, MIST_DROP[1], 2);
+        blob(px, p[0], p[1], s, s * 0.8, MIST_DROP[2]);
+        blob(px, p[0] - s * 0.3, p[1] - s * 0.3, s * 0.45, s * 0.4, MIST_DROP[3]);
+      } else {
+        blob(px, p[0], p[1], s, s * 0.8, DUSTY[1]);
+        blob(px, p[0] - s * 0.3, p[1] - s * 0.3, s * 0.5, s * 0.4, DUSTY[3]);
+        put(px, p[0] + s * 0.4, p[1] + s * 0.3, DUSTY[0]);
+      }
+    } else {
+      // (landed: a splat of it on the ground, drying away)
+      const fade = (t - land) / 0.6;
+      if (fade >= 1) continue;
+      const p = at(land);
+      const c = kind === 'mist' ? MIST_DROP[1] : DUSTY[1];
+      for (let j = -s * 1.4; j <= s * 1.4; j++) for (let k = -s * 0.5; k <= s * 0.5; k++) {
+        if ((j / (s * 1.4)) ** 2 + (k / (s * 0.5)) ** 2 > 1 || hash(Math.round(p[0] + j), Math.round(p[1] + k), seed) < fade) continue;
+        put(px, p[0] + j, p[1] + k, c);
+      }
+    }
+  }
+}
+
+/** MIST SPLASHED UP where something came down hard into it, as water would: a crown of it thrown up in a ring round (cf, cl) and
+ * slumping, drops of it flung out in arcs, and a skirt of it rolling out low over the ground to `R`; `t` seconds since. */
+export function mistSplash(px: Px, pr: Pr, cf: number, cl: number, t: number, R: number, seed: number, n = 16): void {
+  if (t < 0 || t > 1.5) return;
+  // (the skirt: low, soft, rolling out and thinning)
+  const k = t / 1.5;
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2 + hash(i, 1, seed + 1) * 0.3;
+    const d = R * (0.25 + 0.75 * Math.sqrt(k)) * (0.85 + 0.25 * hash(i, 2, seed + 1));
+    const p = pr(cf + Math.cos(a) * d, cl + Math.sin(a) * d, 3);
+    puff(px, p[0], p[1], 6 + 9 * Math.sqrt(k), MISTY, Math.max(0, k * 1.3 - 0.25), seed + 11 + i);
+  }
+  // (the crown: thin sheets of it thrown straight up in a ring, leaning out, the back of the ring first)
+  if (t < 0.55) {
+    const q = t / 0.55;
+    const rr = R * (0.16 + 0.12 * q);
+    const h = 44 * Math.sin(Math.min(1, q * 1.8) * Math.PI * 0.5) * (1 - 0.7 * q * q);
+    const o = pr(cf, cl, 0);
+    const m = 20;
+    const order = Array.from({ length: m }, (_, i) => i).sort((i, j) => pr(cf + Math.cos((i / m) * 6.283) * rr, cl + Math.sin((i / m) * 6.283) * rr, 0)[1] - pr(cf + Math.cos((j / m) * 6.283) * rr, cl + Math.sin((j / m) * 6.283) * rr, 0)[1]);
+    for (const i of order) {
+      const a = (i / m) * Math.PI * 2;
+      const hh = h * (0.55 + 0.45 * hash(i, 3, seed));
+      const b = pr(cf + Math.cos(a) * rr, cl + Math.sin(a) * rr, 0);
+      const top = pr(cf + Math.cos(a) * rr * 1.5, cl + Math.sin(a) * rr * 1.5, hh);
+      const steps = Math.max(2, Math.ceil(Math.abs(b[1] - top[1])));
+      for (let s = 0; s <= steps; s++) {
+        const v = s / steps;
+        if (q > 0.5 && hash(i, s, seed + 5) < (q - 0.5) * 2) continue;
+        const x = b[0] + (top[0] - b[0]) * v;
+        const y = b[1] + (top[1] - b[1]) * v;
+        const w = Math.max(1, Math.round(3.5 * (1 - v)));
+        for (let d = -w; d <= w; d++) put(px, x + d, y, Math.abs(d) < w * 0.5 ? MIST_DROP[3] : MIST_DROP[2]);
+      }
+      blob(px, top[0], top[1], 2.5, 2.2, MIST_DROP[3]);
+    }
+    void o;
+  }
+  flung(px, pr, cf, cl, 0, Math.PI, t, n, R * 1.6, seed + 21, 'mist');
+}
+
+/** A PAW'S PRINT stamped into the ground at (cf, cl) (its own lengths), `s` across, its toes the way `ang`: the pad and the four
+ * toes driven in deep, the claws' slits before them, the earth heaved up round it and cracked out from it; `k` 0..1 stamped,
+ * `fade` 0..1 gone. */
+export function pawPrint(px: Px, pr: Pr, cf: number, cl: number, s: number, ang: number, k: number, fade: number, seed: number): void {
+  if (k <= 0 || fade >= 1) return;
+  const ca = Math.cos(ang);
+  const sa = Math.sin(ang);
+  const at = (u: number, v: number, z = 0): readonly number[] => pr(cf + u * ca - v * sa, cl + u * sa + v * ca, z);
+  const pads: readonly [number, number, number, number][] = [
+    [0, 0, s * 0.42, s * 0.5],
+    [s * 0.62, s * 0.2, s * 0.2, s * 0.17],
+    [s * 0.62, -s * 0.2, s * 0.2, s * 0.17],
+    [s * 0.42, s * 0.52, s * 0.18, s * 0.15],
+    [s * 0.42, -s * 0.52, s * 0.18, s * 0.15],
+  ];
+  const sz = Math.min(1, k);
+  const inside = (u: number, v: number, grow: number): boolean => pads.some(([pu, pv, ru, rv]) => ((u - pu) / (ru * grow * sz)) ** 2 + ((v - pv) / (rv * grow * sz)) ** 2 <= 1);
+  // (cracks out from it first, under the earth heaved up)
+  const glow = Math.max(0, 1 - fade * 2);
+  for (let c = 0; c < 7; c++) {
+    let a = hash(c, 1, seed) * Math.PI * 2;
+    let u = Math.cos(a) * s * 0.45;
+    let v = Math.sin(a) * s * 0.5;
+    const L = s * (0.7 + 1.0 * hash(c, 2, seed)) * sz;
+    for (let j = 0; j < 4; j++) {
+      a += (hash(c, j + 3, seed) - 0.5) * 0.9;
+      const u2 = u + Math.cos(a) * L / 4;
+      const v2 = v + Math.sin(a) * L / 4;
+      if (hash(c, j, seed + 9) >= fade) {
+        line(px, at(u, v), at(u2, v2), '#120a10', j < 2 ? 2 : 1);
+        if (glow > 0 && j < 2) line(px, at(u, v), at(u2, v2), FLAME[2], 1, (q) => hash(c * 9 + j, Math.round(q * 9), seed) < glow * 0.7);
+      }
+      u = u2;
+      v = v2;
+    }
+  }
+  for (let u = -s * 0.8; u <= s * 1.3; u += 0.45) {
+    for (let v = -s * 0.85; v <= s * 0.85; v += 0.45) {
+      const deep = inside(u, v, 1);
+      const rim = !deep && inside(u, v, 1.35);
+      if (!deep && !rim) continue;
+      const p = at(u, v);
+      if (hash(Math.round(p[0]), Math.round(p[1]), seed + 3) < fade) continue;
+      put(px, p[0], p[1], deep ? '#140c10' : (v * ca + u * sa) < 0 ? STONEY[3] : STONEY[2]);
+    }
+  }
+  // (the claws' slits, driven in before the toes)
+  for (const [pu, pv, ru] of pads.slice(1)) {
+    if (hash(Math.round(pu), Math.round(pv), seed) < fade) continue;
+    line(px, at(pu + ru * sz, pv), at(pu + ru * sz + s * 0.3 * sz, pv * 1.2), '#120a10', 2);
+  }
+}
+
+/** FANGS OF MIST SNAPPING SHUT at (x, y) on the picture, `s` across: the jaws open, then slammed shut on what is between them, then
+ * gone to wisps; spit flung off them as they meet; `k` 0..1 of its life (shut by 0.3). */
+export function fangSnap(px: Px, x: number, y: number, k: number, s: number, seed: number): void {
+  if (k <= 0 || k >= 1) return;
+  const shut = smooth(0, 0.3, k);
+  const gap = s * 0.6 * (1 - shut);
+  const grow = 1 + 0.25 * Math.max(0, k - 0.3);
+  const gone = Math.max(0, (k - 0.35) / 0.65);
+  const keep = (X: number, Y: number): boolean => gone <= 0 || hash(Math.round(X) >> 1, Math.round(Y) >> 1, seed) > gone;
+  for (const up of [true, false]) {
+    const sg = up ? -1 : 1;
+    // (the jaw: a curve, its middle drawn back)
+    for (let i = -20; i <= 20; i++) {
+      const xn = i / 20;
+      const X = x + xn * s * grow;
+      const Y = y + sg * (gap + s * 0.2 * (1 - xn * xn)) * grow;
+      for (let d = 0; d < 3; d++) if (keep(X, Y + sg * d)) put(px, X, Y + sg * d, d ? MIST_DROP[1] : MIST_DROP[2]);
+    }
+    // (the fangs on it, pointing in: the long ones at the corners)
+    for (let j = 0; j < 7; j++) {
+      const xn = -0.8 + (j / 6) * 1.6;
+      const long = Math.abs(Math.abs(xn) - 0.55) < 0.15 ? 0.42 : 0.22;
+      const bx = x + xn * s * grow;
+      const by = y + sg * (gap + s * 0.2 * (1 - xn * xn)) * grow;
+      const L = s * long * grow;
+      const w = s * 0.13 * grow;
+      for (let r = 0; r <= L; r++) {
+        const half = w * (1 - r / L);
+        for (let d = -half; d <= half; d++) {
+          const X = bx + d;
+          const Y = by - sg * r;
+          if (!keep(X, Y)) continue;
+          put(px, X, Y, Math.abs(d) > half - 1 ? MIST_DROP[1] : '#f8f6ff');
+        }
+      }
+    }
+  }
+  // (spit flung off them as they meet)
+  if (k > 0.26 && k < 0.85) {
+    const q = (k - 0.26) / 0.59;
+    for (let i = 0; i < 12; i++) {
+      const a = (hash(i, 1, seed + 7) - 0.5) * 1.4 + (i % 2 ? 0 : Math.PI);
+      const d = s * (0.4 + 1.6 * q) * (0.6 + 0.6 * hash(i, 2, seed + 7));
+      const X = x + Math.cos(a) * d;
+      const Y = y + Math.sin(a) * d * 0.6 + 90 * q * q;
+      if (hash(i, 3, seed + 7) < q * 0.8) continue;
+      blob(px, X, Y, 2, 1.6, MIST_DROP[3]);
+      put(px, X - 1, Y - 1, '#ffffff');
+    }
+  }
+}
+
+/** A WOLF RISING OUT OF THE MIST at (cf, cl) (its own lengths), `t` seconds from when it steps out (it begins before): mist seeping
+ * up out of the ground into a pool, coiling up from it in a twisting column, two pink eyes kindling in it; then the column
+ * unwinding and drifting off as the wolf comes out of it. No blow: nothing bursts. */
+export function mistRise(px: Px, pr: Pr, cf: number, cl: number, t: number, seed: number): void {
+  if (t < -0.8 || t > 1.2) return;
+  const env = smooth(-0.8, -0.35, t) * (1 - smooth(0.35, 1.2, t));
+  if (env <= 0) return;
+  // (the pool: soft, seeping out, churning)
+  const c = pr(cf, cl, 0);
+  const e = pr(cf + 30 * (0.6 + 0.4 * smooth(-0.8, 0.2, t)), cl, 0);
+  const rx = Math.abs(e[0] - c[0]) + 6;
+  const ry = rx * 0.5;
+  for (let y = Math.floor(c[1] - ry); y <= c[1] + ry; y++) {
+    for (let x = Math.floor(c[0] - rx); x <= c[0] + rx; x++) {
+      const q = Math.hypot((x - c[0]) / rx, (y - c[1]) / ry);
+      const nz = vnoise(x / 9 + t * 0.6, y / 6 - t * 0.4, seed);
+      const d = (1 - q) * 1.5 + (nz - 0.5) * 0.6;
+      if (d <= 0 || (x + y) % 2 || hash(x >> 1, y >> 1, seed + 1) > env * Math.min(1, d * 1.4)) continue;
+      put(px, x, y, nz > 0.6 ? MIST_DROP[2] : MIST_DROP[1]);
+    }
+  }
+  // (the column: three strands of it coiling up and round, thinning as they rise; spreading out as it unwinds)
+  const loose = Math.max(0, t) * 1.6;
+  const wisps: { y: number; p: readonly number[]; r: number; f: number }[] = [];
+  for (let st = 0; st < 3; st++) {
+    for (let j = 0; j < 10; j++) {
+      const ph = (t * 0.9 + j / 10 + st * 0.033) % 1;
+      const u = 6 + ph * 96;
+      const a = st * 2.094 + ph * Math.PI * 3 + t * 5;
+      const rad = 18 * (1 - ph * 0.45) * (1 + loose);
+      const p = pr(cf + Math.cos(a) * rad, cl + Math.sin(a) * rad, u);
+      wisps.push({ y: Math.sin(a), p, r: 9.5 * (1 - ph * 0.5), f: Math.max(0, 1 - env * (1 - ph * 0.8)) });
+    }
+  }
+  wisps.sort((a, b) => a.y - b.y);
+  for (const [i, w] of wisps.entries()) puff(px, w.p[0], w.p[1], w.r, MISTY, w.f, seed + 30 + i);
+  // (the eyes kindling in it, just before it steps out)
+  const eye = smooth(-0.45, -0.1, t) * (1 - smooth(0.15, 0.45, t));
+  if (eye > 0) {
+    const h = pr(cf, cl, 36);
+    for (const dx of [-5, 5]) {
+      if (eye > 0.2) blob(px, h[0] + dx, h[1], 5 * eye, 3 * eye, FLAME[1], true);
+      blob(px, h[0] + dx, h[1], 3 * eye + 0.5, 2 * eye + 0.5, FLAME[2]);
+      if (eye > 0.6) blob(px, h[0] + dx, h[1], 1.5, 1, FLAME[4]);
+    }
+  }
+}
+
+/** A CUT RIGHT THROUGH, along the ground from `f0` to `f1` (its own lengths) at the height `z`: one long hair-thin line laid in an
+ * instant, then parting along it, the two edges sliding apart and gone; the mist it went through torn in two and pushed off either
+ * side; `t` seconds since. */
+export function cutThrough(px: Px, pr: Pr, f0: number, f1: number, z: number, t: number, seed: number): void {
+  if (t < 0 || t > 1.0) return;
+  const a = pr(f0, 0, z);
+  const b = pr(f1, 0, z);
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const n = Math.hypot(dx, dy) || 1;
+  const nx = -dy / n;
+  const ny = dx / n;
+  if (t < 0.2) {
+    // (the cut: white, hard, its edges pink, tapering to points at its ends)
+    const taper = (k: number): boolean => k > 0.03 && k < 0.97;
+    line(px, [a[0] + nx * 3, a[1] + ny * 3], [b[0] + nx * 3, b[1] + ny * 3], FLAME[2], 2, taper);
+    line(px, [a[0] - nx * 3, a[1] - ny * 3], [b[0] - nx * 3, b[1] - ny * 3], FLAME[2], 2, taper);
+    line(px, [a[0] + nx * 1, a[1] + ny * 1], [b[0] + nx * 1, b[1] + ny * 1], '#fff4f8', 2, (k) => k > 0.01 && k < 0.99);
+    line(px, a, b, '#ffffff', 2);
+  } else if (t < 0.55) {
+    // (parting: two edges sliding apart, thinning)
+    const q = (t - 0.2) / 0.35;
+    const o = 3 + 16 * q;
+    for (const sg of [-1, 1]) line(px, [a[0] + nx * o * sg, a[1] + ny * o * sg], [b[0] + nx * o * sg, b[1] + ny * o * sg], q < 0.5 ? '#f2f0fa' : FLAME[2], q < 0.5 ? 2 : 1, (k) => hash(Math.round(k * 80), sg + 3, seed) > q);
+  }
+  // (the mist torn in two, pushed off either side)
+  for (let i = 0; i < 14; i++) {
+    const f = f0 + (f1 - f0) * (i + 0.5) / 14;
+    const sg = i % 2 ? 1 : -1;
+    const l = sg * (6 + 46 * Math.sqrt(t) * (0.7 + 0.5 * hash(i, 1, seed)));
+    const p = pr(f, l, z * 0.5 + 6);
+    puff(px, p[0], p[1], 7 + 6 * t, MISTY, Math.max(0, t * 1.2 - 0.15), seed + 40 + i);
+  }
+}
+
+/** THE CLOUD SPINNING: grass and leaves torn up and whirled round in it, bands of mist wound round it, round (cf, cl) to `R`, `t`
+ * the clock, `k` 0..1 how much of it there is. */
+export function whirl(px: Px, pr: Pr, cf: number, cl: number, R: number, t: number, k: number, seed: number): void {
+  if (k <= 0) return;
+  // (the funnel: bands of mist wound round it, narrow at the ground, wide above, each band a thick streak whipping round)
+  for (let b = 0; b < 7; b++) {
+    const h = b / 6;
+    const u = 6 + h * 120;
+    const d = R * (0.28 + 0.62 * h) * (0.6 + 0.4 * k);
+    const a0 = b * 2.4 + t * (9 - h * 3);
+    const len = 1.6 + 0.6 * hash(b, 1, seed);
+    const n = Math.ceil(d * len * 1.1);
+    for (let j = 0; j <= n; j++) {
+      const q = j / n;
+      if (hash(b, Math.floor(j / 4), seed) > k * 1.2) continue;
+      const a = a0 + q * len;
+      const p = pr(cf + Math.cos(a) * d, cl + Math.sin(a) * d, u + Math.sin(q * Math.PI) * 6);
+      const th = Math.max(1, Math.round(4 * Math.sin(q * Math.PI)));
+      for (let e = 0; e < th; e++) put(px, p[0], p[1] - e, e === 0 ? MIST_DROP[1] : q > 0.6 ? MIST_DROP[3] : MIST_DROP[2]);
+    }
+  }
+  // (the grass and the leaves in it)
+  const COLS = ['#4a6a2c', '#7a8a3a', '#6a4a2a', '#9a8a4a'];
+  for (let i = 0; i < 54; i++) {
+    if (hash(i, 9, seed) > k) continue;
+    const d = R * (0.3 + 0.65 * hash(i, 1, seed));
+    const a = hash(i, 2, seed) * 6.283 + t * (4 + 4 * hash(i, 3, seed)) * Math.sqrt(R / d);
+    const u = 8 + 70 * hash(i, 4, seed) + 12 * Math.sin(t * 3 + i);
+    const p = pr(cf + Math.cos(a) * d, cl + Math.sin(a) * d, u);
+    const c = COLS[i % 4];
+    if (i % 3) {
+      const sp = t * 14 + i;
+      line(px, p, [p[0] + Math.cos(sp) * 7, p[1] + Math.sin(sp) * 3], c, 2);
+    } else {
+      blob(px, p[0], p[1], 3.5, 2.2, c);
+      put(px, p[0] - 1, p[1] - 1, '#b8c46a');
+    }
+  }
+}
+
+/** ITS ROAR, seen: waves of it out of his mouth at (x, y) on the picture, the way (dx, dy), one after another while he roars (from
+ * `t` 0 to `long`), each opening out and thinning: the enemy's pink. */
+export function roarWaves(px: Px, x: number, y: number, dx: number, dy: number, t: number, long: number, seed: number): void {
+  const base = Math.atan2(dy, dx);
+  for (let e = 0; e * 0.13 < long; e++) {
+    const w = t - e * 0.13;
+    if (w < 0 || w > 0.55) continue;
+    const q = w / 0.55;
+    const r = 16 + 210 * q ** 0.8;
+    const span = 0.75 + 0.25 * q;
+    const n = Math.ceil(r * span * 2);
+    for (let i = 0; i <= n; i++) {
+      const a = base - span + (i / n) * span * 2;
+      const edge = Math.abs(i / n - 0.5) * 2;
+      if (hash(e, Math.floor(i / 4), seed) < q * 0.7 - (1 - edge) * 0.3) continue;
+      const th = Math.max(1, Math.round((8 - 6 * q) * (1 - edge * 0.7)));
+      for (let d = 0; d < th; d++) {
+        const rr = r - d;
+        put(px, x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.75, d === 0 && q < 0.4 ? '#fff0f4' : d < th / 2 ? FLAME[2] : FLAME[1]);
+      }
+    }
+  }
+}
+
+/** HIS ROAR BLOWING THE DUST FLAT: streaks of dust driven out along the ground from round him, pebbles skittering ahead of them, to
+ * about `R` (his own lengths), `k` 0..1. */
+export function blownFlat(px: Px, pr: Pr, R: number, k: number, seed: number): void {
+  if (k <= 0 || k >= 1) return;
+  for (let i = 0; i < 40; i++) {
+    const a = hash(i, 1, seed) * Math.PI * 2;
+    const r0 = 26 + R * 0.75 * k ** 0.6 * (0.6 + 0.5 * hash(i, 2, seed));
+    const len = (14 + 22 * hash(i, 3, seed)) * (1 - k * 0.5);
+    if (hash(i, 4, seed) < k * 0.9 - 0.2) continue;
+    const p0 = pr(Math.cos(a) * r0, Math.sin(a) * r0, 1);
+    const p1 = pr(Math.cos(a) * (r0 + len), Math.sin(a) * (r0 + len), 2);
+    line(px, p0, p1, i % 3 ? DUSTY[2] : DUSTY[3], i % 4 ? 1 : 2);
+    if (i % 2 === 0) puff(px, p1[0], p1[1] - 2, 3 + 4 * k, DUSTY, Math.max(0, k * 1.2 - 0.1), seed + i);
+  }
+  for (let i = 0; i < 16; i++) {
+    const a = hash(i, 5, seed) * Math.PI * 2;
+    const r = 30 + R * k ** 0.7 * (0.7 + 0.5 * hash(i, 6, seed));
+    const hop = Math.abs(Math.sin(k * 14 + i)) * 7 * (1 - k);
+    const p = pr(Math.cos(a) * r, Math.sin(a) * r, hop);
+    blob(px, p[0], p[1], 2.5, 2, STONEY[2]);
+    put(px, p[0] - 1, p[1] - 1, STONEY[3]);
+  }
+}
+
+/** DUST ROLLING OUT LOW OVER THE GROUND from where something heavy came down, to `R` (its own lengths), `k` 0..1: a wall of brown dust
+ * hugging the ground, no light in it. */
+export function dustRoll(px: Px, pr: Pr, cf: number, cl: number, R: number, k: number, seed: number): void {
+  if (k <= 0 || k >= 1) return;
+  const r = R * (1 - (1 - k) ** 2.4);
+  const m = 30;
+  const pts = Array.from({ length: m }, (_, i) => {
+    const a = (i / m) * Math.PI * 2 + hash(i, 1, seed) * 0.15;
+    return { a, p: pr(cf + Math.cos(a) * r, cl + Math.sin(a) * r, 2 + 4 * hash(i, 2, seed)) };
+  }).sort((x, y) => x.p[1] - y.p[1]);
+  for (const [i, q] of pts.entries()) puff(px, q.p[0], q.p[1] - 3, (6 + 12 * k) * (0.7 + 0.5 * hash(i, 3, seed)), DUSTY, Math.max(0, k * 1.25 - 0.3), seed + 50 + i);
+}
