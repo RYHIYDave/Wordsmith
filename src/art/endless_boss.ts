@@ -1066,25 +1066,30 @@ export function boarPoseAt(move: string, t: number): BoarPose {
 // WINDED (the fight's flow, his yes, 14 Nov 2026, “besides that its good”: the boar's charge costs it; FIGHT_FLOW.md): after its
 // runs it stands blown, head hung low, its flanks heaving fast, steam snorted down out of its snout at every breath out, his power in
 // it ebbing (its eyes and runes dim), he sat back on it: an opening, nothing of it coming at you. Eased in from its stand and back.
-export const WINDED = { long: 3.0, breaths: 2.4 };
+// MORE TIRED (his words, 14 Nov 2026: “The guy is good, the boar doesn’t read tired enough”): sunk low on buckling legs, its
+// hindquarters sagging; great slow heaves that rock its whole body; its head hung to the floor, swaying, drool dripping from its
+// jaws; once it staggers, a forefoot stumbling out to catch itself; steam rising off its back.
+export const WINDED = { long: 3.2, breaths: 1.5, stagger: [1.35, 1.95] as const };
 export function windedPoseAt(t: number): BoarPose {
-  const e = smooth01(t / 0.35) * (1 - smooth01((t - (WINDED.long - 0.45)) / 0.45));
+  const e = smooth01(t / 0.4) * (1 - smooth01((t - (WINDED.long - 0.5)) / 0.5));
   const br = 0.5 - 0.5 * Math.cos(t * TAU * WINDED.breaths);
+  const st = bumpOf(t, WINDED.stagger[0], WINDED.stagger[1]);
+  const stepF = stampLift((t - WINDED.stagger[0] - 0.05) * 1.1) * 0.9;
   return {
     ...BOAR_STAND,
-    z: (1.6 * br - 1.4) * e,
-    pitch: (3 + 2.4 * br) * e,
-    roll: 0.8 * Math.sin(t * TAU * 1.2) * e,
-    low: BOAR_STAND.low + (26 - 5 * br) * e,
-    look: 4 * Math.sin(t * 1.7) * e,
-    tilt: 4 * Math.sin(t * 2.3) * e,
+    z: (-6 + 5.5 * br - 3 * st) * e,
+    pitch: (5 + 6 * br - 3 * st) * e,
+    roll: (4 * Math.sin(t * TAU * 0.45) + 12 * st) * e,
+    low: BOAR_STAND.low + (36 - 10 * br + 4 * st) * e,
+    look: (9 * Math.sin(t * TAU * 0.35) - 8 * st) * e,
+    tilt: (6 * Math.sin(t * TAU * 0.3 + 1) + 8 * st) * e,
     flap: 0,
     legs: BOAR_STAND.legs,
-    lift: [0, 0, 0, 0],
+    lift: [stepF * e, 0, 0, 0],
     breath: e * br + (1 - e) * 0.5,
-    sway: t * 0.35,
-    pulse: 0.1 + 0.06 * br + 0.5 * (1 - e),
-    ride: { lean: 4 * e, brace: 0 },
+    sway: t * 0.25,
+    pulse: 0.05 + 0.05 * br + 0.5 * (1 - e),
+    ride: { lean: 6 * e, brace: 2 * st },
   };
 }
 /** Its breath as it stands blown: a puff out of each nostril at every breath out, blown down at the floor, spreading and thinning. */
@@ -1094,23 +1099,48 @@ function windedGrains(t: number): [V3, string, number][] {
     const t0 = (k + 0.5) / WINDED.breaths;
     if (t0 > WINDED.long - 0.4) break;
     const u = t - t0;
-    if (u <= 0 || u > 0.5) continue;
+    if (u <= 0 || u > 0.6) continue;
     const H = headOf(windedPoseAt(t0));
     const fh = norm([H.f[0], H.f[1], 0], [1, 0, 0]);
     const blow = norm(add(fh, [0, 0, -0.7]), fh);
-    const age = u / 0.5;
+    const age = u / 0.6;
     for (const side of [-1, 1]) {
       const nose = H.at(22.6, side * 1.2, -8.2);
       const m0 = add(add(nose, mul(blow, 9 * S * (1 - Math.exp(-u * 6)))), mul(H.l, side * 2.5 * u * S));
       const mid: V3 = [m0[0], m0[1], Math.max(1, m0[2])];
-      const r = (1.2 + 5.5 * Math.sqrt(u)) * S;
-      for (let i = 0; i < 10; i++) {
-        const a = (i / 10) * TAU + 2.4 * hash(i, side + 3, 8851 + k);
+      const r = (2.5 + 13 * Math.sqrt(u)) * S;
+      for (let i = 0; i < 30; i++) {
+        const a = (i / 30) * TAU + 2.4 * hash(i, side + 3, 8851 + k);
         const rr = r * Math.sqrt(0.15 + 0.85 * hash(i, side + 4, 8852 + k));
         const p: V3 = add(mid, [Math.cos(a) * rr, Math.sin(a) * rr * 0.9, Math.abs(Math.sin(a * 2 + 1)) * rr * 0.3]);
         if (hash(i, Math.floor(u * 20), 8854 + k) < age * (0.45 + 0.6 * (rr / r))) continue;
-        out.push([p, BREATH[Math.min(3, Math.floor(age * 3 + (rr / r) * 1.2))], age < 0.5 && rr < r * 0.7 ? 2 : 1]);
+        out.push([p, BREATH[Math.min(3, Math.floor(age * 2.4 + (rr / r) * 1.0))], age < 0.7 && rr < r * 0.8 ? 2 : 1]);
       }
+    }
+  }
+  const e = smooth01(t / 0.4) * (1 - smooth01((t - (WINDED.long - 0.5)) / 0.5));
+  if (e > 0.05) {
+    const P = windedPoseAt(t), H = headOf(P), seat = saddleOf(P);
+    // (drool: strings hanging from its jaws, drops falling off them)
+    for (const side of [-1, 1]) {
+      const lip = H.at(18, side * 3.2, -10);
+      const n = 3 + Math.floor(3 * (0.5 + 0.5 * Math.sin(t * 3 + side)));
+      for (let j = 0; j < n; j++) out.push([[lip[0], lip[1], lip[2] - j * 1.1 * S], j < n - 1 ? '#c9c6d0' : '#e6e4ea', 1]);
+      for (let d = 0; d < 2; d++) {
+        const u = ((t * 1.3 + d * 0.5 + (side > 0 ? 0.25 : 0)) % 1);
+        const z = lip[2] - n * 1.1 * S - u * u * 40;
+        if (z > 0.5) out.push([[lip[0], lip[1], z], '#e6e4ea', 1]);
+      }
+    }
+    // (steam rising off its back, its heat in the cold)
+    for (let i = 0; i < 26; i++) {
+      const u = ((t * 0.55 + hash(i, 1, 8861)) % 1);
+      // (off its rump and its neck, either side of him)
+      const fwd = i % 2 ? -20 + 7 * hash(i, 2, 8862) : 16 + 7 * hash(i, 2, 8862), out2 = (hash(i, 3, 8863) - 0.5) * 18;
+      const base = add(add(seat.at, mul(seat.f, fwd * S * 0.6)), mul(seat.l, out2 * S * 0.5));
+      const p: V3 = [base[0] + 3 * Math.sin(u * 5 + i), base[1], base[2] + 4 * S + u * 26 * S];
+      if (hash(i, Math.floor(t * 8), 8864) < u * 0.8) continue;
+      out.push([p, u < 0.3 ? '#ffffff' : BREATH[Math.min(3, Math.floor(u * 3))], u < 0.5 ? 2 : 1]);
     }
   }
   return out;

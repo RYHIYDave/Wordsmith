@@ -81,8 +81,11 @@ the safe ground is close to him); Contagion “Catch it.”.
 
 ## The openings, drawn
 
-- THE BOAR WINDED (`winded`, `WINDED`, `windedPoseAt`, `windedGrains`; `pictures/standard/boss_winded.mp4`, after a charge): its head
-  hung to the floor, its flanks heaving fast, steam snorted down at every breath out, his power in it dimmed; he sits back on it.
+- THE BOAR WINDED (`winded`, `WINDED`, `windedPoseAt`, `windedGrains`; `pictures/standard/boss_winded.mp4`, after a charge): his
+  words, “The guy is good, the boar doesn’t read tired enough”: so sunk low on buckling legs, its hindquarters sagging, great slow
+  heaves rocking its whole body, its head hung with its snout on the floor, swaying, big clouds of breath at every heave, drool
+  dripping from its jaws, once a stagger (a forefoot stumbling out to catch itself), steam rising off its rump and neck, his power
+  in it dimmed; he sits slumped forward on it.
 - HIM SPENT (`spent`, `SPENT`, `spentAt`; `pictures/standard/boss_spent.mp4`): sagging on his staff, head hung, writing arm hanging,
   shoulders heaving; his shade dimmed and flickering. Both through the bosses' checks (0 findings).
 

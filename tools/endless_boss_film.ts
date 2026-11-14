@@ -2306,7 +2306,6 @@ const segs: Seg[] = [];
   const plan: [string, 'front' | 'rear', number, number?][] = move === 'charge3'
     ? [['charge', 'front', 1], ['wheel', 'front', 1], ['charge', 'rear', 1.15], ['wheel', 'rear', 1.15], ['charge', 'front', 1.3]]
     : move === 'fall' ? [['charge', view, 1, FALL.from], ['fall', view, 1]]
-    : move === 'winded' ? [['charge', view, 1], ['winded', view, 1]]
     : [[move, view, 1]];
   let from: V2 = [0, 0];
   for (const [mv, vw, speed, until] of plan) {
@@ -2452,7 +2451,7 @@ for (const sg of segs) {
     }
     if (sg.move === 'winded') {
       // (the hero, in on its flank while it stands blown, hitting it)
-      const h = openHeroAt(t, [3.4 * TILE, -2.6 * TILE], [0.6 * TILE, -1.5 * TILE]), [hx, hy] = at([sg.from[0] + k * h[0], sg.from[1] + k * h[1], 0]);
+      const h = openHeroAt(t, [3.6 * TILE, -3.4 * TILE], [0.4 * TILE, -2.5 * TILE]), [hx, hy] = at([sg.from[0] + k * h[0], sg.from[1] + k * h[1], 0]);
       hero(s, ox + hx, oy + hy);
     }
     if (sg.move === 'gore') sweep(s, t, ox, oy, sg.from, k);
