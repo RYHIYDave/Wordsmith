@@ -202,7 +202,7 @@ export const LUNGE_LONG = 170;
 
 export const WOLF_MOVES: Record<WolfMove, MoveInfo> = {
   bite: { long: 1.4, beats: [{ at: 0.66, freeze: 0.1, shake: 4, ring: 0.3 }], strikes: [[0.55, 0.66]] },
-  claw: { long: 1.4, beats: [{ at: 0.61, freeze: 0.1, shake: 5, ring: 0.3 }], strikes: [[0.55, 0.61]] },
+  claw: { long: 1.6, beats: [{ at: 0.68, freeze: 0.12, shake: 7, ring: 0.4 }], strikes: [[0.61, 0.68]] },
   howl: { long: 3.0, beats: [{ at: 0.9, freeze: 0.06, shake: 4, ring: 1.4 }], strikes: [[0.8, 0.9]] },
   lunge: { long: 1.7, beats: [{ at: 0.76, freeze: 0.08, shake: 5, ring: 0.3 }], strikes: [[0.7, 0.84]] },
   cloud: { long: 3.2, beats: [{ at: 0.66, freeze: 0.06, shake: 5, ring: 0.6 }], strikes: [[0.6, 0.66]] },
@@ -223,15 +223,22 @@ const BITE: Key<WolfPose>[] = [
   [1.4, { ...S, root: [16, 0, 0], pawFL: [41, 8.5, 3], pawFR: [46, -8.5, 3], pawHL: [-0.5, 8.5, 3], pawHR: [-5.5, -8.5, 3] }],
 ];
 
+/** Where the claw sweep's forepaw is raised from and swept to (its own lengths), and round what: the sweep's arc. */
+export const CLAW_ARC = { from: [14, -40, 92] as V3, to: [58, 46, 8] as V3, about: [30, 0, 58] as V3 };
 const CLAW: Key<WolfPose>[] = [
   [0, {}],
-  // (rears up on its hind legs, its near forepaw raised high and far back: HELD)
-  [0.35, { root: [-8, 0, 12], pitch: -32, headUp: 14, jaw: 0.9, pawFR: [26, -24, 62], pawFL: [34, 10, 26], tailUp: 12 }],
-  [0.55, { root: [-9, 0, 13], pitch: -33, pawFR: [25, -25, 63] }],
-  // (THE STRIKE: down and across before it in two frames)
-  [0.61, { root: [12, 0, 2], pitch: 2, headUp: 0, pawFR: [60, 24, 8], pawFL: [40, 10, 3] }, 'lin'],
-  [0.8, { root: [12, 0, 0], pawFR: [48, 10, 3] }, 'out'],
-  [1.4, { ...S, root: [8, 0, 0], pawFL: [33, 8.5, 3], pawFR: [38, -8.5, 3], pawHL: [-8.5, 8.5, 3], pawHR: [-13.5, -8.5, 3] }],
+  // (rears right up on its hind legs, tall as a man and more, both forelegs up, the near one cocked high and far back, its head
+  // turned up snarling, the mist streaming up off it: HELD, straining)
+  [0.4, { root: [-12, 0, 22], pitch: -52, headUp: 18, headTurn: 14, jaw: 1, pawFR: CLAW_ARC.from, pawFL: [30, 14, 52], tailUp: 22, pawHL: [-20, 8.5, 3], pawHR: [-25, -8.5, 3] }],
+  [0.61, { root: [-13, 0, 23], pitch: -53, pawFR: [13, -41, 93] }],
+  // (THE STRIKE, two frames: it crashes down forward, the forepaw swept round in one huge arc across before it, its body thrown
+  // round after it)
+  [0.645, { root: [6, 0, 12], pitch: -20, headTurn: 0, pawFR: [62, -6, 48], pawFL: [40, 14, 30] }, 'lin'],
+  [0.68, { root: [20, 0, -4], pitch: 10, headUp: -6, headTurn: -26, pawFR: CLAW_ARC.to, pawFL: [50, 14, 3], tailUp: -6 }, 'lin'],
+  // (skids on, its claws scoring the ground; shakes itself; gathers back)
+  [0.9, { root: [24, 0, -2], pitch: 6, pawFR: [56, 40, 3] }, 'out'],
+  [1.05, { headTurn: 12 }],
+  [1.6, { ...S, root: [16, 0, 0], pawFL: [41, 8.5, 3], pawFR: [46, -8.5, 3], pawHL: [-0.5, 8.5, 3], pawHR: [-5.5, -8.5, 3] }],
 ];
 
 const HOWL: Key<WolfPose>[] = [

@@ -18,7 +18,7 @@ import type { Sprite } from '../src/engine/px';
 import { CLUB_LONG, chiefAt, sculptChief9, sculptWolf9, wolfAt } from '../src/dev/sculpt_f9_bosses';
 import type { ChiefPose } from '../src/dev/sculpt_f9_bosses';
 import type { Drawn } from '../src/dev/sculpt';
-import { CHIEF_MOVES, LUNGE_LONG, RUSH_LONG, WOLF_MOVES, chiefPose, wolfPose } from '../src/dev/f9_bosses_moves';
+import { CHIEF_MOVES, CLAW_ARC, LUNGE_LONG, RUSH_LONG, WOLF_MOVES, chiefPose, wolfPose } from '../src/dev/f9_bosses_moves';
 import type { Beat, ChiefMove, WolfMove } from '../src/dev/f9_bosses_moves';
 import type { V3 } from '../src/art/skeleton';
 import { png } from './king_png';
@@ -48,11 +48,22 @@ function grass(SW: number, SH: number): Px {
   }
   return px;
 }
+/** (AT YOUR PHONE'S OWN SIZE, `phone`: see `part`) */
+const PHONE = process.argv[3] === 'phone';
+const PW = 1278;
+const PH = 590;
+const PHONE_GROUND = PHONE ? grass(PW, PH) : null;
 const GROUNDS = new Map<number, Px>();
 /** The ground for a scene `k` times as big as the film's picture. */
 const groundFor = (k: number): Px => {
   let g = GROUNDS.get(k);
-  if (!g) GROUNDS.set(k, (g = grass(Math.ceil(W / k), Math.ceil(H / k))));
+  if (!g) {
+    const w = Math.ceil(W / k);
+    const h = Math.ceil(H / k);
+    // (at the phone's size, the scene's ground the very piece of the phone's ground it is laid on, so that no seam shows)
+    g = PHONE_GROUND ? cut(PHONE_GROUND, Math.round((PW - w) / 2), Math.round((PH - h) / 2), w, h) : grass(w, h);
+    GROUNDS.set(k, g);
+  }
   return g;
 };
 
@@ -99,6 +110,25 @@ function warnRing(px: Px, pr: Pr, cf: number, cl: number, r: number, t: number):
     if ((Math.round(c[0] + x) + Math.round(c[1] + y)) % 3 !== 0 || Math.round(c[1] + y) % 2) continue;
     const [ff, ll] = invGround(pr, c[0] + x, c[1] + y);
     if (Math.hypot(ff - cf, ll - cl) < r) put(px, c[0] + x, c[1] + y, FLAME[1]);
+  }
+}
+/** A WARNING ARC on the ground (a claw's sweep): its curved edges and its ends dashed pink, from angle `a0` to `a1` round (cf, cl), `r0` to `r1` out. */
+function warnArc(px: Px, pr: Pr, cf: number, cl: number, r0: number, r1: number, a0: number, a1: number, t: number): void {
+  const n = 30;
+  for (const r of [r0, r1]) for (let i = 0; i < n; i++) {
+    if ((i + Math.floor(t * 10)) % 3 === 2) continue;
+    const u = a0 + ((a1 - a0) * i) / n;
+    const v = a0 + ((a1 - a0) * (i + 1)) / n;
+    line(px, pr(cf + Math.cos(u) * r, cl + Math.sin(u) * r, 0), pr(cf + Math.cos(v) * r, cl + Math.sin(v) * r, 0), FLAME[2], 2);
+  }
+  for (const a of [a0, a1]) line(px, pr(cf + Math.cos(a) * r0, cl + Math.sin(a) * r0, 0), pr(cf + Math.cos(a) * r1, cl + Math.sin(a) * r1, 0), FLAME[2], 2);
+  const c = pr(cf, cl, 0);
+  for (let y = -80; y <= 80; y++) for (let x = -120; x <= 120; x++) {
+    if ((Math.round(c[0] + x) + Math.round(c[1] + y)) % 3 !== 0 || Math.round(c[1] + y) % 2) continue;
+    const [ff, ll] = invGround(pr, c[0] + x, c[1] + y);
+    const r = Math.hypot(ff - cf, ll - cl);
+    const a = Math.atan2(ll - cl, ff - cf);
+    if (r > r0 && r < r1 && a > a0 && a < a1) put(px, c[0] + x, c[1] + y, FLAME[1]);
   }
 }
 /** A WARNING LANE on the ground: its edges dashed pink, its middle a faint pink dither. */
@@ -363,14 +393,11 @@ function ghost(px: Px, fig: Px, ramp: readonly string[], k: number, seed: number
   for (let y = 0; y < fig.h; y++) {
     for (let x = 0; x < fig.w; x++) {
       if (!a(x, y)) continue;
-      const edge = !a(x - 1, y) || !a(x + 1, y) || !a(x, y - 1) || !a(x, y + 1);
-      if (edge) {
-        if (hash(x, y, seed) < k * 1.2) put(px, x, y, ramp[ramp.length - 2]);
-        continue;
-      }
-      if ((x + y) % 2 || (x >> 1) % 2 === (y >> 1) % 2) continue;
-      if (hash(x >> 1, y >> 1, seed) > k * 0.8) continue;
-      put(px, x, y, ramp[Math.max(0, ramp.length - 4)]);
+      // (a checker of it, thinning as it fades: the body a step darker, its outline its colour)
+      if ((x + y) % 2) continue;
+      if (hash(x >> 2, y >> 2, seed) > k * 1.1) continue;
+      const edge = !a(x - 2, y) || !a(x + 2, y) || !a(x, y - 2) || !a(x, y + 2);
+      put(px, x, y, edge ? ramp[ramp.length - 3] : ramp[Math.max(0, ramp.length - 4)]);
     }
   }
 }
@@ -385,16 +412,18 @@ function smear(px: Px, path: readonly (readonly number[])[], w: number, ramp: re
     const o1 = path[i];
     const i0 = inner ? inner[i - 1] : o0;
     const i1 = inner ? inner[i] : o1;
-    const steps = 8;
+    // (filled solid: as many strokes across as it is pixels wide, twice over)
+    const steps = Math.max(4, Math.ceil(Math.max(Math.hypot(i0[0] - o0[0], i0[1] - o0[1]), Math.hypot(i1[0] - o1[0], i1[1] - o1[1])) * 2));
     for (let s = 0; s <= steps; s++) {
       const q = s / steps;
       // (thin at the tail, full at the head)
-      if (q > 0.25 + 0.75 * t) continue;
+      if (q > 0.2 + 0.8 * t) continue;
       const a = [o0[0] + (i0[0] - o0[0]) * q, o0[1] + (i0[1] - o0[1]) * q];
       const b = [o1[0] + (i1[0] - o1[0]) * q, o1[1] + (i1[1] - o1[1]) * q];
-      const c = q < 0.12 ? ramp[ramp.length - 3] : q < 0.35 ? '#fffaf0' : q < 0.6 ? ramp[ramp.length - 1] : ramp[ramp.length - 2];
-      line(px, a, b, c, q < 0.12 ? 2 : Math.max(1, Math.round(w * 0.12)));
+      const c = q < 0.14 ? '#fffaf0' : q < 0.4 ? ramp[ramp.length - 1] : q < 0.7 ? ramp[ramp.length - 2] : ramp[ramp.length - 3];
+      line(px, a, b, c, 2);
     }
+    void w;
   }
 }
 /** Points along an arc from `a` round to `b` about `c` (its own lengths), `n` of them, the radius going from one's to the other's. */
@@ -590,7 +619,7 @@ function chiefFilm(move: ChiefMove, view: View, yaw: number, bx: number, by: num
     const strike = M.strikes.find(([a, b]) => m >= a && m <= b + 0.1);
     if (strike) {
       const [a, b] = strike;
-      const n = move === 'rush' ? 5 : 3;
+      const n = move === 'rush' ? 5 : 2;
       for (let i = n; i >= 1; i--) {
         const q = Math.max(a - 0.05, Math.min(m, b) - (i * (b - a)) / n);
         const gd = sculptChief9(view, chiefPose(move, q), yaw, size);
@@ -730,11 +759,24 @@ function wolfFilm(move: WolfMove, view: View, yaw: number, bx: number, by: numbe
       return { at, dx: dx / n, dy: dy / n, far };
     };
     const hits: Struck[] =
-      move === 'bite' ? [away(0, 0, 14)] : move === 'claw' ? [{ ...away(0, 0, 18), dx: 0.4, dy: -0.9 }] : move === 'lunge' ? [away(0, 0, 20)] : move === 'cloud' ? [0.95, 1.35, 1.75, 2.15].map((q) => away(0, 0, 6, q)) : [];
+      move === 'bite' ? [away(0, 0, 14)] : move === 'claw' ? [{ ...away(0, 0, 22), dx: 0.55, dy: -0.85 }] : move === 'lunge' ? [away(0, 0, 20)] : move === 'cloud' ? [0.95, 1.35, 1.75, 2.15].map((q) => away(0, 0, 6, q)) : [];
     const p = GROUND.clone();
     if (move === 'lunge' && m > 0.35 && m < 0.72) warnLane(p, pr, 20, LUNGE_LONG + 30, 0, 16, t);
     if (move === 'bite' && m > 0.25 && since < 0) warnRing(p, pr, 74, 0, 20, t);
-    if (move === 'claw' && m > 0.25 && since < 0) warnRing(p, pr, 62, 0, 28, t);
+    if (move === 'claw' && m > 0.3 && since < 0) warnArc(p, pr, 22, 0, 30, 78, -1.1, 1.2, t);
+    // (the ground scored by its three claws along the sweep, glowing, fading)
+    if (move === 'claw' && since >= 0) {
+      for (let c = 0; c < 3; c++) {
+        const pts = arcPath([CLAW_ARC.about[0], CLAW_ARC.about[1], 0], [CLAW_ARC.from[0] + 20, CLAW_ARC.from[1] + c * 6, 0], [CLAW_ARC.to[0] + 6 - c * 4, CLAW_ARC.to[1] + c * 3, 0], 16);
+        for (let i = 1; i < pts.length; i++) {
+          if (i / pts.length > Math.min(1, sinceF / 0.06)) break;
+          const a = pr(pts[i - 1][0], pts[i - 1][1], 0);
+          const b2 = pr(pts[i][0], pts[i][1], 0);
+          line(p, a, b2, '#1e1820', 2);
+          if (since < 1.0 && hash(i, c, 9871) > since) line(p, a, b2, FLAME[2], 1);
+        }
+      }
+    }
     if (move === 'cloud' && m > 0.3 && since < 0) warnRing(p, pr, 20, 0, 100, t);
     // (after-images of it while it strikes)
     const strike = M.strikes.find(([a, b]) => m >= a && m <= b + 0.1);
@@ -790,11 +832,25 @@ function wolfFilm(move: WolfMove, view: View, yaw: number, bx: number, by: numbe
       if (strike) speedLines(p, muzzle[0], muzzle[1], 1, 0.55, 12, 20, 9967 + fr, MIST[4]);
     }
     if (move === 'claw') {
-      // (three great claw crescents across you, white at the heart, edged with its pink; wind off them)
-      for (let i = 0; i < 3; i++) slash(p, hitAt[0] - 8 + i * 4, hitAt[1] - 6 + i * 6, 34, -2.5, 0.6, (m - 0.54 - i * 0.015) / 0.32, [MIST[2], FLAME[2], '#fffaf0'], 4);
-      burst(p, hitAt[0], hitAt[1], sinceF / 0.18, 18, 9971);
+      // (three great claw crescents along the whole sweep, from where the paw was cocked to where it struck, white at the heart, edged
+      // with its pink, the mist sprayed off them; they hang a moment and fade)
+      const [s0, s1] = M.strikes[0];
+      if (m >= s0 && since < 0.25) {
+        // (three long claw marks swept down across you, round from above its shoulder, past you: white at the heart, its pink at the edge)
+        const sp = pr(CLAW_ARC.about[0], CLAW_ARC.about[1], CLAW_ARC.about[2]);
+        const dx = hitAt[0] - sp[0];
+        const dy = hitAt[1] - sp[1];
+        const r = Math.hypot(dx, dy);
+        const ah = Math.atan2(dy, dx);
+        const k = since < 0 ? (m - s0) / (s1 - s0) * 0.5 : 0.5 + since / 0.5;
+        for (let c = -1; c <= 1; c++) slash(p, sp[0], sp[1], r + c * 7, ah - 1.7, ah + 1.0, k, [MIST[2], FLAME[2], '#fffaf0'], 6);
+      }
+      burst(p, hitAt[0], hitAt[1], sinceF / 0.2, 22, 9971);
       mistBurst(p, pr, tf, tl, since / 0.5, 9973);
-      if (m > 0.3 && m < 0.55) embersMist(p, root[0], root[1] - 50, 60, 70, m, 14, 9975);
+      mistBurst(p, pr, CLAW_ARC.to[0], CLAW_ARC.to[1], since / 0.6, 9977);
+      // (the mist streaming up off it while it rears)
+      if (m > 0.2 && m < 0.62) embersMist(p, root[0] + 10, root[1] - 40, 70, 110, m, 26, 9975);
+      if (m >= s0 && m <= s1 + 0.05) speedLines(p, hitAt[0], hitAt[1], -1, 0.3, 16, 30, 9979 + fr, MIST[4]);
     }
     if (move === 'howl') {
       const head = pr(pose.root[0] + 40, 0, 112);
@@ -891,8 +947,22 @@ function embersMist(px: Px, x: number, y: number, w: number, h: number, t: numbe
   }
 }
 
+/**
+ * AT YOUR PHONE'S OWN SIZE (`phone`): his question, 13 Nov 2026, 23:50: “Most of the guardian stuff is bad but from the phone screen it’s
+ * probably okay??”. The game shows 639 game pixels across a phone 852 points wide (his: tools/scenarios/f9_lairs.mjs's canvas, 1662
+ * picture pixels across at 1.3 times as wide), so 1278 picture pixels; a film that many pixels across, played across his phone held
+ * sideways, shows them as big as the game does: each scene laid in its middle a pixel to a pixel, the grass round it.
+ */
 /** A part: `long` seconds of a scene, played from `from`, `slow` times slower. */
 function part(scene: Scene, title: string, line2: string, from = 0, long = scene.long, slow = 1): Part {
+  if (PHONE) {
+    return { long: long * slow, title, line: line2, frame: (t) => {
+      const sc = scene(from + t / slow);
+      const out = PHONE_GROUND!.clone();
+      out.blit(sc, Math.round((PW - sc.w) / 2), Math.round((PH - sc.h) / 2));
+      return out;
+    } };
+  }
   return { long: long * slow, title, line: line2, frame: (t) => cut(scaled(scene(from + t / slow), scene.k), 0, 0, W, H) };
 }
 
@@ -909,15 +979,15 @@ const cloudF = wolfFilm('cloud', 'front', 42, 130, 150, 92, 0);
 
 const CS = CHIEF_MOVES.smash.beats[0].at;
 export const parts: Part[] = [
-  part(smashF, 'THE TROLL CHIEFTAIN’S CLUB SMASH', 'Rears right back, the club over and behind him, HELD, its ring marked · down in two frames · the freeze, the ground broken'),
+  part(smashF, 'THE TROLL CHIEFTAIN’S CLUB SMASH', 'Rears right back, the club over his head, HELD, its ring marked · down in two frames · the freeze, the ground broken'),
   part(smashF, 'THE CLUB SMASH · HALF SPEED', 'Over and down in a flash, after-images and all · the burst · thrown back', CS - 0.12, 0.6, 2),
   part(smashB, 'THE CLUB SMASH · FROM BEHIND', 'Get out of the ring while he holds it up'),
-  part(slamF, 'HIS GROUND SLAM', 'Squats, LEAPS, hangs there with the club straight up, the line marked · down with all his weight: the ground split open, rock thrust up along it'),
+  part(slamF, 'HIS GROUND SLAM', 'Squats, LEAPS, hangs there, the line marked · crashes down: the ground split open, rock thrust up along it'),
   part(cryF, 'HIS WAR CRY: HIS RAGE', 'Gathers it in, shaking · thrown open: the roar, the fire bursting up round him · the rage on him: quicker blows, quicker feet'),
   part(rushF, 'HIS BULL RUSH', 'Head down, the club a ram, pawing the ground, coiled, his line marked · down it in a blur · into you'),
   part(biteF, 'THE MIST WOLF’S BITE', 'Coiled back on its haunches, HELD · flung at you, jaws wide, in two frames · snapped shut, worried, let go'),
   part(biteF, 'THE BITE · HALF SPEED', 'Flung, snapped', WOLF_MOVES.bite.beats[0].at - 0.13, 0.45, 2),
-  part(clawF, 'ITS CLAW SWEEP', 'Reared up, a forepaw high and back, HELD · down and across you in two frames'),
+  part(clawF, 'ITS CLAW SWEEP', 'Rears right up, a forepaw cocked high, HELD, its sweep marked · crashes down across you in two frames: three claw marks'),
   part(howlF, 'ITS HOWL', 'Head down, then thrown back: the howl · the floor’s wolves burst out of the mist to it'),
   part(lungeF, 'ITS LUNGE', 'Crouched flat, the mist drawn into it, its line marked · gone to mist, through you in a blink · lands beyond, turned back'),
   part(lungeF, 'THE LUNGE · HALF SPEED', 'Through you', 0.66, 0.4, 2),
@@ -950,11 +1020,13 @@ if (mode === 'stills') {
     writeFileSync(`${dir}/l${i}.txt`, p.line);
     const en = `:enable='between(t,${at.toFixed(3)},${(at + p.long - 0.001).toFixed(3)})'`;
     filters.push(`drawtext=fontfile=${font}:textfile=${dir}/t${i}.txt:x=18:y=14:fontsize=26:fontcolor=0xf0e8d0:box=1:boxcolor=0x07060c@0.65:boxborderw=8${en}`);
-    filters.push(`drawtext=fontfile=${font2}:textfile=${dir}/l${i}.txt:x=18:y=${H}-44:fontsize=18:fontcolor=0xd8d2e6:box=1:boxcolor=0x07060c@0.65:boxborderw=8${en}`);
+    filters.push(`drawtext=fontfile=${font2}:textfile=${dir}/l${i}.txt:x=18:y=${PHONE ? PH : H}-44:fontsize=18:fontcolor=0xd8d2e6:box=1:boxcolor=0x07060c@0.65:boxborderw=8${en}`);
     at += p.long;
   });
-  const ff = spawn('ffmpeg', ['-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', `${W}x${H}`, '-r', String(FPS), '-i', '-', '-vf', filters.join(','), '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-tune', 'animation', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
-  const rgb = Buffer.alloc(W * H * 3);
+  const OW = PHONE ? PW : W;
+  const OH = PHONE ? PH : H;
+  const ff = spawn('ffmpeg', ['-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', `${OW}x${OH}`, '-r', String(FPS), '-i', '-', '-vf', filters.join(','), '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-tune', 'animation', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
+  const rgb = Buffer.alloc(OW * OH * 3);
   let n = 0;
   const t0 = Date.now();
   const write = async (): Promise<void> => {
@@ -962,7 +1034,7 @@ if (mode === 'stills') {
       const frames = Math.round(p.long * FPS);
       for (let f = 0; f < frames; f++) {
         const px = p.frame(f / FPS);
-        for (let k = 0, j = 0; k < W * H * 4; k += 4, j += 3) {
+        for (let k = 0, j = 0; k < OW * OH * 4; k += 4, j += 3) {
           rgb[j] = px.d[k];
           rgb[j + 1] = px.d[k + 1];
           rgb[j + 2] = px.d[k + 2];

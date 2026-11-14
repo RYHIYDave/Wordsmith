@@ -101,3 +101,10 @@ frames, followed through.
     bursting where it struck and where it went; the howl's rings, the fog wolves bursting out of mist; the lunge gone to mist through
     you in a blink, its streak of mist behind; the mist cloud drawn in, blasted out in a ring, its claws at you out of it (you stay in
     sight in it), its eyes moving in it.
+- His word to that film, 13 Nov 2026, 23:50: “The claw sweep is bad.  Most of the guardian stuff is bad but from the phone screen it’s
+  probably okay??”. Read as: the claw sweep done again; the guardian (the troll chieftain) rough close up, and his question whether it
+  will look all right at the phone's size. Done: the claw sweep made a rear right up on its hind legs, a forepaw cocked high, its sweep
+  marked on the ground as an arc, then a crash down across you in two frames with three long claw marks and the ground scored; the
+  club's smear filled solid and the after-images made a fading checker of the body (they had read as stripes and scribbles); and a
+  film at the phone's own size (pictures/f9_bosses_film_phone.mp4: 1278 picture pixels across, as the game shows a phone 852 points
+  wide), each scene a pixel to a pixel.
