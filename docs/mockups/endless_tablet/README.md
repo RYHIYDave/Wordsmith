@@ -585,6 +585,8 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   stream of flame widening as it goes, rolling out along its length, tongues licking up off it, white-gold at its heart through
   orange and red to his pink at its ragged edges, embers and a little smoke; the cold a freezing blast, white at its core,
   streaked along its length with icy wind, frost mist rolling off it, ice shards glittering along it, his pink in a few.
+  (The film sent again lighter, `boss_scald_small.mp4`, when the first didn't reach him.) HIS YES: “Yes, on to Wildfire
+  (Recommended)”.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
