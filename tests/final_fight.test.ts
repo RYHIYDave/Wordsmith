@@ -2,7 +2,7 @@
 // first phase.
 //   1. down through the open landing at the Shaft's Rim: the arena, round; he stands in the portal's light; the boss across it,
 //      the only monster; an endless level to the rest of the game; saved there, he is back at the Rim, the landing still open;
-//   2. a minute of the fight, the hero standing in it: the boar's moves and his words take turns, every one of the ten made, none
+//   2. two minutes of the fight, the hero standing in it: the boar's moves and his words take turns, every one of the ten made, none
 //      twice running (his words; the boar's but for the runs of a charge), never two of his words' floors lying at once, the
 //      winded stand only ever straight after a charge's last run; he is hurt by them; the boss stays on the floor;
 //   3. his life is held at half (the boar's death is the next stage's).
@@ -73,7 +73,7 @@ test('down through the landing: the arena, the boss across it, an endless level;
   assert.equal(back.hero.finalOpen, true);
 }));
 
-test('a minute of his first phase: the beats take turns, all ten made, none twice running, his floors one at a time', () => keyed(() => {
+test('two minutes of his first phase: the beats take turns, all ten made, none twice running, his floors one at a time', () => keyed(() => {
   const g = atTheLanding(72);
   g.enterArena();
   const h = g.hero;
@@ -87,7 +87,7 @@ test('a minute of his first phase: the beats take turns, all ten made, none twic
     hurt++;
   };
   void h;
-  for (let i = 0; i < 30 * 75; i++) {
+  for (let i = 0; i < 30 * 150; i++) {
     g.update(1 / 30, emptyControls());
     const id = b.act?.id ?? '';
     if (id && id !== last) made.push(id.slice(7));
