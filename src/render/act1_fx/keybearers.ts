@@ -1,6 +1,6 @@
 // FLOOR 5: THE TEMPLE DOOR'S TWO KEY-BEARERS, what they throw and leave, drawn (render/act1_fx/types.ts) where their rules have it
 // (game/act1_rules/keybearers.ts), from their pictures (art/key_bearers_fx.ts; the great sigil the fire cultist's own, art/
-// action_f2_fx.ts, at its bigger ring). Behind art/temple_door.ts TEMPLE_DOOR, off.
+// action_f2_fx.ts, at its bigger ring). Behind art/temple_door.ts TEMPLE_DOOR, on at his yes of 13 Nov 2026.
 //   THE KEY ('keyblade:key'): tumbling from the bearer's hip to the floor, a bounce as it rings there; then lying, glinting, its light
 //     on the floor round it, until he walks onto it.
 //   THE KNIFE ('keyblade:knife'): turning over and over as it flies, a shadow under it; where it strikes, gone in a glint.

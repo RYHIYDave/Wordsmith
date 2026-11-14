@@ -1,7 +1,7 @@
 // FLOOR 5, THE TEMPLE'S DOOR, ITS RULES (his idea, 13 Nov 2026: “I want The the moment when you enter the temple from the line in
 // level five to be an event when there’s a gate, the gate is locked. There’s two many bosses with keys you kill both of them you
 // collect the two keys and then you unlock two chains across the door that then open the way into the temple”; the door, his pick,
-// “Great black stone doors (Recommended)”; its pictures: art/temple_door.ts). Behind art/temple_door.ts TEMPLE_DOOR, off.
+// “Great black stone doors (Recommended)”; its pictures: art/temple_door.ts). Behind art/temple_door.ts TEMPLE_DOOR, on at his yes of 13 Nov 2026.
 //
 //   THE DOOR stands in the threshold where the mine meets the temple (game/lair_way.ts: the one way in), its three tiles wall to
 //     whatever walks, flies, is shot or looks until it is opened. The first time he comes near it, a line says what it wants.

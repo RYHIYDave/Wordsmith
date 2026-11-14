@@ -1,4 +1,4 @@
-// FLOOR 5, THE TEMPLE DOOR'S TWO KEY-BEARERS: their rules (game/act1_rules/types.ts), behind art/temple_door.ts TEMPLE_DOOR, off.
+// FLOOR 5, THE TEMPLE DOOR'S TWO KEY-BEARERS: their rules (game/act1_rules/types.ts), behind art/temple_door.ts TEMPLE_DOOR, on at his yes of 13 Nov 2026.
 // His idea, 13 Nov 2026 (game/temple_door.ts has it whole): two mini-bosses in the mine carry the temple door's two keys; kill both,
 // take the keys, and the chains come off the door. His picks: “I think just like a souped up version of the dagger cultist and a super
 // version of the plane cult that makes sense flame fire cultist”; their blows, “The leap and the stab, a thrown dagger ranged attack”

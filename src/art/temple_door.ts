@@ -2,7 +2,7 @@
 // “I want The the moment when you enter the temple from the line in level five to be an event when there’s a gate, the gate is
 // locked. There’s two many bosses with keys you kill both of them you collect the two keys and then you unlock two chains across
 // the door that then open the way into the temple”; read as the mine, and two mini-bosses; his pick for the door, “Great black stone
-// doors (Recommended)”). Behind TEMPLE_DOOR, off, until his yes to it in play (game/temple_door.ts has the rules).
+// doors (Recommended)”). Behind TEMPLE_DOOR, on at his yes (13 Nov 2026) (game/temple_door.ts has the rules).
 //
 // WHAT IS PAINTED HERE, an original design, in floor 5's look A (art/lair_temple.ts: the threshold's black worked stone, the
 // mine's dark iron; nothing cyan, the friend's; the only glow the enemy's pink in the locks and in the mark):
@@ -26,8 +26,11 @@ import { FLAME } from './mkit';
 import { Deep, IRON, THRESHOLD, inThresholdWay, litTone, markPx } from './lair_temple';
 import type { Solid } from './lair_temple';
 
-/** THE SWITCH: off until his yes to the door and its key-bearers in play. */
-export const TEMPLE_DOOR = { on: false };
+/**
+ * THE SWITCH: ON, his yes to the door and its key-bearers in play (13 Nov 2026, shown the whole event filmed from the game,
+ * docs/mockups/temple_door/pictures/temple_event_film.mp4): “Yes, switch it on (Recommended)”.
+ */
+export const TEMPLE_DOOR = { on: true };
 
 /** The door's stone: the threshold's black worked stone, a step darker (it is set back in the way). */
 const STONE = ['#0d0c13', '#1b1824', '#282432', '#38334a', '#504866'] as const;

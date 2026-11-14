@@ -1,4 +1,4 @@
-// FLOOR 5, THE TEMPLE DOOR'S TWO KEY-BEARERS (game/temple_door.ts, behind TEMPLE_DOOR, off; docs/mockups/temple_door/README.md has
+// FLOOR 5, THE TEMPLE DOOR'S TWO KEY-BEARERS (game/temple_door.ts, behind TEMPLE_DOOR, on at his yes of 13 Nov 2026; docs/mockups/temple_door/README.md has
 // every word of his). His words, 13 Nov 2026: “I think just like a souped up version of the dagger cultist and a super version of the
 // plane cult that makes sense flame fire cultist”; their brief: “Head taller, broad, menacing (Recommended)”, “Bone mask / burning robe
 // (Recommended)”, “Key rings to the floor (Recommended)”.

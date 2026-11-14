@@ -2,7 +2,7 @@
 // held as art/new_mobs3.ts holds its mobs on the heroes' bones (`mobSet`, from in front and from behind, each walk at the pace it is
 // painted for). The Knife's clips: stand, walk (his run), attack (his stab, the frenzy), reel, die (his key torn off as he falls), and in
 // clips.moves his leap and his throw. The Flame's: stand, walk (his procession), attack (his great sigil), reel, die (his fire going
-// out), and in clips.moves his fan and his ring. Behind art/temple_door.ts TEMPLE_DOOR (off): its switch is not held here, as
+// out), and in clips.moves his fan and his ring. Behind art/temple_door.ts TEMPLE_DOOR (on at his yes, 13 Nov 2026): its switch is not held here, as
 // useAct1Figs (art/bestiary.ts) throws every figure's with the descent's; nothing makes a key-bearer while it is off.
 
 import { KEY_BLADE, KEY_FLAME } from '../key_bearers';

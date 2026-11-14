@@ -1,6 +1,6 @@
 // FLOOR 5, THE TEMPLE DOOR'S KEY-BEARERS: WHAT THEY THROW AND WHAT THEY DROP (art/key_bearers.ts the figures; game/act1_rules/
 // keybearers.ts their rules; render/act1_fx/keybearers.ts draws these where the rules have them). Behind art/temple_door.ts
-// TEMPLE_DOOR, off.
+// TEMPLE_DOOR, on at his yes of 13 Nov 2026.
 //   THE KEY, brass, as it tumbles from a bearer's hip and lies ringing on the floor (his pick: “Key rings to the floor (Recommended)”).
 //   THE KNIFE the Keybearer of the Knife throws, turning over and over as it flies, the light on its edge the enemy's pink.
 //   A BALL OF FIRE of the Keybearer of the Flame's fan; and A TONGUE OF FIRE of his ring, at a height.
