@@ -395,6 +395,11 @@ export interface Hero {
   pages?: number;
   clapper?: 'asked' | 'got' | 'given';
   laidOut?: Partial<Record<PickBy, Item[]>>;
+  /** THE QUEST LINE OF FLOORS 16 TO 20 (game/quests1620.ts, QUESTS1620): the armourer's songbird, asked and mended, its parts taken (a bit each: 1 the key, 2 the spring, 4 the bird); the stranger's whole court; the knight-captain's voice, taken and given him. */
+  bird?: 'asked' | 'mended';
+  birdParts?: number;
+  court?: 'asked' | 'given';
+  captainJar?: 'got' | 'given';
   /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
   talents: string[];
   /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three); `collar`, the Pack Collar's. */
@@ -1469,6 +1474,9 @@ export interface Level {
   pillars?: Pillar[];
   /** (QUESTS1115) How many unstruck pages have been laid down on this floor (spent for this fight). */
   pagesUsed?: number;
+  /** (QUESTS1620) The knight-captain standing silent in the Keep's barracks (floor 19): where; the Moth's phases the songbird has sung in, a bit each (floor 20). */
+  captain?: { x: number; y: number };
+  sungIn?: number;
   /** (QUESTS1115) The camp's bell, the clapper hung in it: where it stands, and when it was last rung (Game.time). */
   campBell?: { x: number; y: number; rungAt: number };
   /** THE ENDLESS TOWN, THE SHAFT'S RIM (game/rim.ts, behind ENDLESS_TOWN): what only it has, as it stands now; absent on every other level. */
