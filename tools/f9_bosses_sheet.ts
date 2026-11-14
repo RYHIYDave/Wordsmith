@@ -29,7 +29,7 @@ if (only === 'wolf') {
 if (only === 'troll') {
   const g = spriteLaid((makeGuardianArt() as { front: { idle: never[] } }).front.idle[0]);
   take('A TROLL GUARDIAN\n(for size)', g.px, g.ax, g.ay);
-  take('THE TROLL CHIEFTAIN\n(floor 9)', sculptChief9('front', t).px, CHIEF9_CANVAS.ax, CHIEF9_CANVAS.ay);
-  take('behind', sculptChief9('back', t).px, CHIEF9_CANVAS.ax, CHIEF9_CANVAS.ay);
+  take('THE TROLL CHIEFTAIN\n(floor 9)', sculptChief9('front', { breath: t }).px, CHIEF9_CANVAS.ax, CHIEF9_CANVAS.ay);
+  take('behind', sculptChief9('back', { breath: t }).px, CHIEF9_CANVAS.ax, CHIEF9_CANVAS.ay);
 }
 console.log(JSON.stringify(out));

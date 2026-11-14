@@ -79,20 +79,125 @@ function frame(yaw: number): { F: V3; L: V3; U: V3; P: (f: number, l: number, u:
   return { F, L, U, P, X };
 }
 
-/** THE TROLL CHIEFTAIN, standing (for now), seen `view`; `breath` 0 to 1 his chest's rise. */
-export function sculptChief9(view: GameView, breath = 0, yaw = -10): Drawn {
+/**
+ * HOW THE TROLL CHIEFTAIN STANDS (dev/f9_bosses_moves.ts sets it a moment at a time for his moves). Lengths as his figure's own,
+ * before he is grown (CK): `f` forward, `l` to his left, `u` up, from the floor under him.
+ */
+export interface ChiefPose {
+  /** His chest's rise, 0 to 1. */
+  breath: number;
+  /** Where his pelvis has gone from where it stands (a crouch is down, a charge forward). */
+  hip: V3;
+  /** His body pitched forward from the hips, degrees (back, less than 0). */
+  lean: number;
+  /** His body turned to his left from the hips, degrees. */
+  twist: number;
+  /** His head thrown back, degrees. */
+  headUp: number;
+  /** His jaw open, 0 to 1. */
+  jaw: number;
+  /** His right fist (round the club's handle), and his left: where each is. */
+  fistR: V3;
+  fistL: V3;
+  /** Where the club's head is (its handle in his right fist). */
+  clubEnd: V3;
+  /** His left fist on the handle too, under the right (both hands on it). */
+  twoHand: boolean;
+  /** Where his ankles are (`u` the foot off the floor). */
+  footL: V3;
+  footR: V3;
+}
+
+/** HIM STANDING: his club over his right shoulder, his left arm hanging. */
+export const CHIEF_STAND: ChiefPose = {
+  breath: 0,
+  hip: [0, 0, 0],
+  lean: 0,
+  twist: 0,
+  headUp: 0,
+  jaw: 0,
+  fistR: [20, -33, 82],
+  fistL: [14, 34, 25],
+  clubEnd: [-9, -60, 124],
+  twoHand: false,
+  footL: [1, 18, 5],
+  footR: [1, -18, 5],
+};
+
+/** THE CLUB'S LENGTH, fist to head. */
+export const CLUB_LONG = Math.hypot(CHIEF_STAND.clubEnd[0] - CHIEF_STAND.fistR[0], CHIEF_STAND.clubEnd[1] - CHIEF_STAND.fistR[1], CHIEF_STAND.clubEnd[2] - CHIEF_STAND.fistR[2]);
+
+/** A joint between two ends `a` and `b` of limbs `la` and `lb` long, bent toward `hint`. */
+function bend(a: V3, b: V3, la: number, lb: number, hint: V3): V3 {
+  const ab = sub(b, a);
+  let d = Math.hypot(...ab);
+  const dir = mul(ab, 1 / (d || 1));
+  d = Math.min(d, la + lb - 0.5);
+  const x = (la * la - lb * lb + d * d) / (2 * d);
+  const h = Math.sqrt(Math.max(0, la * la - x * x));
+  const along = dot3(hint, dir);
+  const perp = norm(sub(hint, mul(dir, along)));
+  return add(add(a, mul(dir, x)), mul(perp, h));
+}
+
+/** THE TROLL CHIEFTAIN as he stands at `pose` (standing, unless given), seen `view`, turned `yaw`; on a canvas of `size` (his). */
+export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw = -10, size: { w: number; h: number; ax: number; ay: number } = CHIEF9_CANVAS): Drawn {
+  const Q: ChiefPose = { ...CHIEF_STAND, ...pose };
   const sc = new Sculpt();
   const { F, L, U, P, X } = frame(yaw);
-  const loc = (p: V3): [number, number, number] => [dot3(p, F) / CK, dot3(p, L) / CK, p[2] / CK];
-  const b = breath * 1.2;
+  const b = Q.breath * 1.2;
+  // (his body's turn: pitched forward `lean` about his pelvis, turned `twist`, moved `hip`; his head thrown back about his neck)
+  const PIV: V3 = [0, 0, 38];
+  const NECK: V3 = [10, 0, 84];
+  const cl = Math.cos(Q.lean * D);
+  const sl = Math.sin(Q.lean * D);
+  const ct = Math.cos(Q.twist * D);
+  const st = Math.sin(Q.twist * D);
+  const ch = Math.cos(-Q.headUp * D);
+  const sh = Math.sin(-Q.headUp * D);
+  const rot = (q: V3): V3 => {
+    const f1 = q[0] * cl + q[2] * sl;
+    const u1 = -q[0] * sl + q[2] * cl;
+    return [f1 * ct - q[1] * st, f1 * st + q[1] * ct, u1];
+  };
+  const unrot = (q: V3): V3 => {
+    const f1 = q[0] * ct + q[1] * st;
+    const l1 = -q[0] * st + q[1] * ct;
+    return [f1 * cl - q[2] * sl, l1, f1 * sl + q[2] * cl];
+  };
+  const headRot = (q: V3): V3 => [q[0] * ch + q[2] * sh, q[1], -q[0] * sh + q[2] * ch];
+  const headUnrot = (q: V3): V3 => [q[0] * ch - q[2] * sh, q[1], q[0] * sh + q[2] * ch];
+  const T = (q: V3): V3 => add(add(rot(sub(q, PIV)), PIV), Q.hip);
+  const H = (q: V3): V3 => T(add(headRot(sub(q, NECK)), NECK));
+  const W = (q: V3): V3 => P(q[0], q[1], q[2]);
+  const TP = (f: number, l: number, u: number): V3 => W(T([f, l, u]));
+  const HP = (f: number, l: number, u: number): V3 => W(H([f, l, u]));
+  const PP = (f: number, l: number, u: number): V3 => W(add([f, l, u], Q.hip));
+  const axes = (r: (q: V3) => V3, rf: number, rl: number, ru: number): readonly [V3, V3, V3] => {
+    const [a, c, e] = [r([1, 0, 0]), r([0, 1, 0]), r([0, 0, 1])];
+    return [mul(W(a), rf), mul(W(c), rl), mul(W(e), ru)];
+  };
+  const TX = (rf: number, rl: number, ru: number): readonly [V3, V3, V3] => axes(rot, rf, rl, ru);
+  const HX = (rf: number, rl: number, ru: number): readonly [V3, V3, V3] => axes((q) => rot(headRot(q)), rf, rl, ru);
+  // (a point of him as painted, back where it is on him as he stands: his paint stays where it is on him as he moves)
+  const loc = (p: V3): V3 => [dot3(p, F) / CK, dot3(p, L) / CK, p[2] / CK];
+  const onBody = (p: V3): V3 => add(unrot(sub(sub(loc(p), Q.hip), PIV)), PIV);
+  const onHead = (p: V3): V3 => add(headUnrot(sub(onBody(p), NECK)), NECK);
+  // (the hide's mottle by where it is on its own part, so it does not crawl as he moves)
+  const anchor = (h: { p: V3; prim: { k: string } }): V3 => {
+    const pr = h.prim as unknown as { c?: V3; a?: V3 };
+    return sub(h.p, pr.c ?? pr.a ?? [0, 0, 0]);
+  };
   // HIS HIDE: mottled; darker down his back; his war paint where it is on him
   const hide = sc.mat({
     ramp: HIDE,
     paint: (h) => {
-      const [f, l, u] = loc(h.p);
-      const n = hash(Math.floor(h.p[0] / 5), Math.floor(h.p[1] / 5) + Math.floor(h.p[2] / 5) * 7, 3);
+      const tag = h.prim.tag;
+      const [f, l, u] = tag === 'face' ? onHead(h.p) : onBody(h.p);
+      const m = anchor(h);
+      const n = hash(Math.floor(m[0] / 5) + h.prim.piece.length * 3, Math.floor(m[1] / 5) + Math.floor(m[2] / 5) * 7, 3);
       // (war paint, on his front only: a jagged white band across his chest, a red handprint over his heart)
-      if (f > 8 && h.prim.tag === 'chest') {
+      if (f > 8 && tag === 'chest') {
         const zig = 64 + b + 2.2 * Math.abs(((l + 40) % 8) - 4) - 4;
         if (Math.abs(u - zig) < 1.3) return PAINT_WHITE;
         const hx = l - 9;
@@ -102,15 +207,14 @@ export function sculptChief9(view: GameView, breath = 0, yaw = -10): Drawn {
           if (hy <= 0 || finger) return PAINT_RED;
         }
       }
-      if (h.prim.tag === 'face') {
-        // (a band of red over his brow; two white streaks down from under each eye)
+      if (tag === 'face') {
         // (a band of red across his eyes, like a mask; two white streaks down from under each eye)
         if (u > 87.6 + b && u < 91.6 + b && f > 28 && Math.abs(l) > 1.6) return PAINT_RED;
         if (f > 28 && u > 82 + b && u < 87.6 + b && (Math.abs(l - 4.4) < 0.8 || Math.abs(l + 4.4) < 0.8)) return PAINT_WHITE;
       }
       // (three white slashes of war paint down his back)
-      if (f < -10 && u > 58 && u < 84) for (const k of [-9, 0, 9]) if (Math.abs(l - k - (u - 70) * 0.35) < 1.2) return PAINT_WHITE;
-      const back = f < -4 ? 1 : 0;
+      if (tag !== 'face' && h.prim.piece === 'body' && f < -10 && u > 58 && u < 84) for (const k of [-9, 0, 9]) if (Math.abs(l - k - (u - 70) * 0.35) < 1.2) return PAINT_WHITE;
+      const back = h.prim.piece === 'body' && f < -4 ? 1 : 0;
       if (n < 0.18) return shadeOf(HIDE, h.tone - 1 - back);
       return back ? shadeOf(HIDE, h.tone - 1) : null;
     },
@@ -119,21 +223,25 @@ export function sculptChief9(view: GameView, breath = 0, yaw = -10): Drawn {
     ramp: KILT,
     paint: (h) => {
       // (its hide spotted; its fur ragged at the hem)
-      const n = hash(Math.floor(h.p[0] / 2.5), Math.floor(h.p[1] / 2.5) + Math.floor(h.p[2] / 2.5) * 13, 9);
+      const m = anchor(h);
+      const n = hash(Math.floor(m[0] / 2.5), Math.floor(m[1] / 2.5) + Math.floor(m[2] / 2.5) * 13, 9);
       if (n < 0.16) return shadeOf(KILT, h.tone - 1);
       if (n > 0.92) return shadeOf(KILT, h.tone + 1);
       return null;
     },
   });
   const leather = sc.mat({ ramp: LEATHER });
-  const fur = sc.mat({ ramp: FUR9, paint: (h) => (hash(Math.floor(h.p[0] / 1.5), Math.floor(h.p[2] / 1.2), 19) < 0.3 ? shadeOf(FUR9, h.tone - 1) : null) });
+  const fur = sc.mat({ ramp: FUR9, paint: (h) => {
+    const m = anchor(h);
+    return hash(Math.floor(m[0] / 1.5), Math.floor(m[2] / 1.2), 19) < 0.3 ? shadeOf(FUR9, h.tone - 1) : null;
+  } });
   const bone = sc.mat({
     ramp: BONE9,
     paint: (h) => {
       // (a skull's sockets and its nose, dark)
       if (h.prim.tag === 'skull') {
-        const [f, l, u] = loc(h.p);
-        const c = loc((h.prim as { c: V3 }).c);
+        const [f, l, u] = onHead(h.p);
+        const c = onHead((h.prim as { c: V3 }).c);
         const dl = l - c[1];
         const du = u - c[2];
         if (f > c[0] + 0.8 && Math.abs(Math.abs(dl) - 1.1) < 0.6 && du > -0.2 && du < 1.0) return INK;
@@ -160,91 +268,107 @@ export function sculptChief9(view: GameView, breath = 0, yaw = -10): Drawn {
   });
   const iron = sc.mat({ ramp: IRON9 });
   const eye = sc.mat({ ramp: EYE, paint: (h) => (h.tone >= 2 ? EYE[4] : EYE[2]) });
+  const maw = sc.mat({ ramp: ['#14060e', '#220a16', '#3a1226', '#541c36', '#6e2846'] });
 
-  // HIS LEGS: short and thick, his knees bent under his weight, his feet wide and flat
+  // HIS LEGS: short and thick, his knees bent under his weight (toward where he faces), his feet wide and flat
   for (const s of [1, -1]) {
     const piece = s > 0 ? 'legL' : 'legR';
-    sc.cone(hide, piece, P(-2, s * 15, 36), P(4, s * 17, 18), 12, 10, 2.4);
-    sc.cone(hide, piece, P(4, s * 17, 18), P(1, s * 18, 5), 10, 8.5, 2.4);
-    sc.ell(hide, piece, P(6, s * 18.5, 3.6), X(12, 8, 4), 1.6, { tag: 'foot' });
+    const hipJ: V3 = add([-2, s * 15, 36], Q.hip);
+    const ankle = s > 0 ? Q.footL : Q.footR;
+    const knee = bend(hipJ, ankle, 19, 13.4, [1, s * 0.15, 0]);
+    sc.cone(hide, piece, W(hipJ), W(knee), 12, 10, 2.4);
+    sc.cone(hide, piece, W(knee), W(ankle), 10, 8.5, 2.4);
+    sc.ell(hide, piece, W(add(ankle, [5, s * 0.5, -1.4])), X(12, 8, 4), 1.6, { tag: 'foot' });
     // (his toes: three blunt lumps)
-    for (const k of [-1, 0, 1]) sc.ell(hide, piece, P(16, s * 18.5 + k * 3.6, 2.4), X(3, 2, 2.2), 0.6);
+    for (const k of [-1, 0, 1]) sc.ell(hide, piece, W(add(ankle, [15, s * 0.5 + k * 3.6, -2.6])), X(3, 2, 2.2), 0.6);
   }
   // HIS HIPS AND BELLY: the belly hanging over his belt
-  sc.ell(hide, 'body', P(-2, 0, 40), X(16, 22, 13), 3.0);
-  sc.ell(hide, 'body', P(8, 0, 48 + b * 0.5), X(17, 21, 15), 3.0, { tag: 'chest' });
+  sc.ell(hide, 'body', PP(-2, 0, 40), X(16, 22, 13), 3.0);
+  sc.ell(hide, 'body', TP(8, 0, 48 + b * 0.5), TX(17, 21, 15), 3.0, { tag: 'chest' });
   // HIS CHEST: a great barrel, hunched forward
-  sc.ell(hide, 'body', P(4, 0, 64 + b), X(17, 27, 17), 3.4, { tag: 'chest' });
-  sc.ell(hide, 'body', P(-6, 0, 72 + b), X(16, 25, 15), 3.4);
+  sc.ell(hide, 'body', TP(4, 0, 64 + b), TX(17, 27, 17), 3.4, { tag: 'chest' });
+  sc.ell(hide, 'body', TP(-6, 0, 72 + b), TX(16, 25, 15), 3.4);
   // (his hump: the top of his back thrust up behind his head)
-  sc.ell(hide, 'body', P(-4, 0, 82 + b), X(13, 18, 9), 3.0);
-  // HIS SHOULDERS, boulders; his left arm long, hanging down past his knee; his right raised, its fist before his shoulder, the
-  // club over it
-  const CLUB_FIST = P(20, -33, 82 + b);
+  sc.ell(hide, 'body', TP(-4, 0, 82 + b), TX(13, 18, 9), 3.0);
+  // HIS SHOULDERS, boulders; his arms long, each to its fist (his elbows out and back)
   for (const s of [1, -1]) {
     const piece = s > 0 ? 'armL' : 'armR';
-    sc.ell(hide, piece, P(0, s * 29, 80 + b), X(13, 12, 12), 2.8);
-    const elbow = s > 0 ? P(4, s * 37, 56 + b) : P(13, -43, 60 + b);
-    sc.cone(hide, piece, P(1, s * 31, 78 + b), elbow, 10, 8.5, 2.6);
-    const wrist = s > 0 ? P(12, s * 35, 32) : add(CLUB_FIST, P(-1.5, -2, -6));
-    sc.cone(hide, piece, elbow, wrist, 10.5, 8, 2.6);
+    const sh0: V3 = T([0, s * 29, 80 + b]);
+    sc.ell(hide, piece, W(sh0), TX(13, 12, 12), 2.8);
+    const top = T([1, s * 31, 78 + b]);
+    const fist = s > 0 ? Q.fistL : Q.fistR;
+    // (the wrist a little back from the fist, along the forearm)
+    const wrist = add(fist, mul(norm(sub(top, fist)), 6));
+    const elbow = bend(top, wrist, 24, 24, rot([-0.3, s * 0.8, -1]));
+    sc.cone(hide, piece, W(top), W(elbow), 10, 8.5, 2.6);
+    sc.cone(hide, piece, W(elbow), W(wrist), 10.5, 8, 2.6);
     // (his forearm thicker than his upper arm: the swell of it)
-    sc.ell(hide, piece, add(mul(elbow, 0.55), mul(wrist, 0.45)), X(10, 10, 11), 2.0);
+    sc.ell(hide, piece, W(add(mul(elbow, 0.55), mul(wrist, 0.45))), X(10, 10, 11), 2.0);
+    // (an iron cuff round his wrist)
+    const fa = norm(sub(wrist, elbow));
+    sc.cone(iron, s > 0 ? 'cuffL' : 'cuffR', W(sub(wrist, mul(fa, 4.5))), W(add(wrist, mul(fa, -0.5))), 8.6, 8.5, 0.4);
   }
-  // HIS LEFT FIST: hanging, half shut, its knuckles a ridge across it, its thumb along its side
-  sc.ell(hide, 'fistL', P(14, 34, 25), X(6.5, 6, 7.5), 2.0, { tag: 'fist' });
-  for (let k = 0; k < 4; k++) sc.ell(hide, 'fistL', P(19.5, 37.5 - k * 2.4, 21 - k * 0.3), X(2.4, 1.6, 2.6), 1.0);
-  sc.cone(hide, 'fistL', P(17, 30, 27), P(20.5, 31.5, 22), 2.4, 1.8, 1.0);
-  sc.cone(iron, 'cuffL', P(11.6, 35, 36.5), P(12.6, 34.8, 33), 8.6, 8.5, 0.4);
-  sc.cone(iron, 'cuffR', add(CLUB_FIST, P(-3.6, -4.3, -13)), add(CLUB_FIST, P(-2.4, -3, -9)), 8.4, 8.3, 0.4);
-  // HIS HEAD: thrust forward and low between his shoulders; a heavy brow, an underbite, two tusks, little ears
+  // HIS LEFT FIST, if not on the club: half shut, its knuckles a ridge across it, its thumb along its side
+  if (!Q.twoHand) {
+    const c = Q.fistL;
+    sc.ell(hide, 'fistL', W(c), X(6.5, 6, 7.5), 2.0, { tag: 'fist' });
+    for (let k = 0; k < 4; k++) sc.ell(hide, 'fistL', W(add(c, [5.5, 3.5 - k * 2.4, -4 - k * 0.3])), X(2.4, 1.6, 2.6), 1.0);
+    sc.cone(hide, 'fistL', W(add(c, [3, -4, 2])), W(add(c, [6.5, -2.5, -3])), 2.4, 1.8, 1.0);
+  }
+  // HIS HEAD: thrust forward and low between his shoulders; a heavy brow, an underbite, two tusks, little ears; his jaw drops open
   const HF = 6;
-  sc.cone(hide, 'body', P(6, 0, 82 + b), P(15 + HF, 0, 85 + b), 12, 10, 3.0);
-  sc.ell(hide, 'head', P(19 + HF, 0, 88 + b), X(10.5, 10.5, 10), 2.4, { tag: 'face' });
-  sc.ell(hide, 'head', P(26 + HF, 0, 93 + b), X(3.4, 9.5, 2.6), 1.6, { tag: 'face' });
-  sc.ell(hide, 'head', P(26.5 + HF, 0, 81 + b), X(7, 9.5, 5), 1.8, { tag: 'face' });
+  const jd = Q.jaw;
+  sc.cone(hide, 'body', TP(6, 0, 82 + b), HP(15 + HF, 0, 85 + b), 12, 10, 3.0);
+  sc.ell(hide, 'head', HP(19 + HF, 0, 88 + b), HX(10.5, 10.5, 10), 2.4, { tag: 'face' });
+  sc.ell(hide, 'head', HP(26 + HF, 0, 93 + b), HX(3.4, 9.5, 2.6), 1.6, { tag: 'face' });
+  sc.ell(hide, 'jaw', HP(26.5 + HF - jd * 1.5, 0, 81 + b - jd * 6), HX(7, 9.5, 5), 1.8, { tag: 'face' });
+  if (jd > 0.05) sc.ell(maw, 'maw', HP(27 + HF, 0, 84.5 + b - jd * 3), HX(4.5, 7, 1 + jd * 4), 0.4);
   // (his nose: broad and flat)
-  sc.ell(hide, 'head', P(29 + HF, 0, 87 + b), X(2.6, 3.2, 2.8), 1.0, { tag: 'face' });
-  for (const s of [1, -1]) sc.cone(hide, 'ear', P(16 + HF, s * 9.5, 90 + b), P(13 + HF, s * 15.5, 93 + b), 2.8, 0.8, 1.0);
-  for (const s of [1, -1]) sc.ell(eye, 'eye', P(29.2 + HF, s * 4.4, 89.6 + b), X(1.6, 2.1, 1.5), 0.2);
-  for (const s of [1, -1]) sc.cone(bone, 'tusk', P(32 + HF, s * 6, 81.5 + b), P(34 + HF, s * 7.6, 90 + b), 2.2, 0.5, 0.3);
+  sc.ell(hide, 'head', HP(29 + HF, 0, 87 + b), HX(2.6, 3.2, 2.8), 1.0, { tag: 'face' });
+  for (const s of [1, -1]) sc.cone(hide, 'ear', HP(16 + HF, s * 9.5, 90 + b), HP(13 + HF, s * 15.5, 93 + b), 2.8, 0.8, 1.0);
+  for (const s of [1, -1]) sc.ell(eye, 'eye', HP(29.2 + HF, s * 4.4, 89.6 + b), HX(1.6, 2.1, 1.5), 0.2);
+  for (const s of [1, -1]) sc.cone(bone, 'tusk', HP(32 + HF - jd * 1.5, s * 6, 81.5 + b - jd * 6), HP(34 + HF - jd * 1.5, s * 7.6, 90 + b - jd * 6), 2.2, 0.5, 0.3);
   // HIS NECKLACE: teeth and finger bones on a thong, hanging over his chest
   for (let i = 0; i < 9; i++) {
     const a = ((i - 4) / 4) * 62 * D;
-    const at = P(19 * Math.cos(a) + 2, 23 * Math.sin(a), 74 + b - 6 * Math.cos(a));
-    sc.cone(bone, 'neck', at, add(at, P(1.2, 0, -4.4 - (i % 2) * 1.6)), 1.2, 0.4, 0.3);
+    const at: V3 = [19 * Math.cos(a) + 2, 23 * Math.sin(a), 74 + b - 6 * Math.cos(a)];
+    sc.cone(bone, 'neck', W(T(at)), add(W(T(at)), P(1.2, 0, -4.4 - (i % 2) * 1.6)), 1.2, 0.4, 0.3);
   }
   // HIS BELT, wide leather, an iron boss on it; HIS KILT of hide in ragged flaps, the front and back ones longest
-  sc.ell(leather, 'belt', P(-0.5, 0, 37), X(21.5, 25.2, 4.2), 0.6, { tag: 'belt' });
-  sc.ell(iron, 'boss', P(21.2, 0, 37.4), X(2, 4.2, 4.2), 0.4);
+  sc.ell(leather, 'belt', PP(-0.5, 0, 37), X(21.5, 25.2, 4.2), 0.6, { tag: 'belt' });
+  sc.ell(iron, 'boss', PP(21.2, 0, 37.4), X(2, 4.2, 4.2), 0.4);
+  // (the flaps swing back as he goes forward)
+  const swing = Math.max(-6, Math.min(6, Q.lean * 0.12));
   for (let i = 0; i < 18; i++) {
     const a = ((i + 0.5) / 18) * 360 * D;
-    const rad = (k: number): V3 => add(mul(F, Math.cos(a) * (17 + k)), mul(L, Math.sin(a) * (21.5 + k)));
+    const rad = (k: number): V3 => [Math.cos(a) * (17 + k), Math.sin(a) * (21.5 + k), 0];
     const long = 9 + 5 * Math.abs(Math.cos(a)) + hash(i, 1, 41) * 4;
-    sc.cone(i % 3 === 1 ? fur : kilt, `kilt${i % 2}`, add(rad(0), [0, 0, 36]), add(rad(3.5), [0, 0, 36 - long * (i % 3 === 1 ? 0.75 : 1)]), 4.6, 1.2, 0.3);
+    const tip = add(rad(3.5), [-swing, 0, 36 - long * (i % 3 === 1 ? 0.75 : 1)]);
+    sc.cone(i % 3 === 1 ? fur : kilt, `kilt${i % 2}`, W(add(add(rad(0), [0, 0, 36]), Q.hip)), W(add(tip, Q.hip)), 4.6, 1.2, 0.3);
   }
   // (his spine: a ridge of knobs down from his hump)
-  for (let i = 0; i < 4; i++) sc.ell(hide, 'body', P(-17.5 + i * 0.6, 0, 86 - i * 6.5 + b), X(3.4, 4.2, 3.2), 1.4);
+  for (let i = 0; i < 4; i++) sc.ell(hide, 'body', TP(-17.5 + i * 0.6, 0, 86 - i * 6.5 + b), TX(3.4, 4.2, 3.2), 1.4);
   // HIS CROWN: a circlet of bone round his head, two great antlers branching up and out of it, three skulls along its front
   for (let i = 0; i < 12; i++) {
     const a = (i / 12) * 360 * D;
-    sc.ell(bone, 'crown', P(21 + 9.2 * Math.cos(a), 9.2 * Math.sin(a), 97.5 - 1.5 * Math.cos(a) + b), X(2.4, 2.4, 1.7), 0.6);
+    sc.ell(bone, 'crown', HP(21 + 9.2 * Math.cos(a), 9.2 * Math.sin(a), 97.5 - 1.5 * Math.cos(a) + b), HX(2.4, 2.4, 1.7), 0.6);
   }
   for (const s of [1, -1]) {
-    const pts: V3[] = [P(18, s * 8, 98.5 + b), P(16, s * 13, 105 + b), P(14, s * 19, 113 + b), P(12, s * 22, 123 + b), P(9, s * 21, 132 + b)];
+    const pts: V3[] = [HP(18, s * 8, 98.5 + b), HP(16, s * 13, 105 + b), HP(14, s * 19, 113 + b), HP(12, s * 22, 123 + b), HP(9, s * 21, 132 + b)];
     for (let i = 1; i < pts.length; i++) sc.cone(bone, `antler${s > 0 ? 'L' : 'R'}`, pts[i - 1], pts[i], 2.6 - i * 0.35, 2.6 - (i + 1) * 0.35, 0.8);
-    for (const [j, df, dl, du] of [[1, 3, 1, 7], [2, -4, 3, 6], [3, 3, -2, 7], [2, 5, 4, 3]] as const) sc.cone(bone, `antler${s > 0 ? 'L' : 'R'}`, pts[j], add(pts[j], P(df, s * dl, du)), 1.4, 0.4, 0.5);
+    const lp = [[18, 8, 98.5], [16, 13, 105], [14, 19, 113], [12, 22, 123]];
+    for (const [j, df, dl, du] of [[1, 3, 1, 7], [2, -4, 3, 6], [3, 3, -2, 7], [2, 5, 4, 3]] as const) sc.cone(bone, `antler${s > 0 ? 'L' : 'R'}`, pts[j], HP(lp[j][0] + df, s * (lp[j][1] + dl), lp[j][2] + du + b), 1.4, 0.4, 0.5);
   }
-  for (const [l, u] of [[-6.4, 100.5], [0, 102], [6.4, 100.5]] as const) sc.ell(bone, 'crown', P(25 + (l === 0 ? 1 : 0), l, u + b), X(2.8, 2.6, 3), 0.4, { tag: 'skull' });
-  // HIS CLUB: A TREE'S TRUNK over his right shoulder, its handle in his fist before the shoulder, its great head behind him; its
-  // handle's end a knob under his fist; knots on it, two bands of iron round its head, its end flaring to root stubs
-  const grip = CLUB_FIST;
-  const end = P(-9, -60, 124 + b);
-  const A = norm(sub(end, grip));
+  for (const [l, u] of [[-6.4, 100.5], [0, 102], [6.4, 100.5]] as const) sc.ell(bone, 'crown', HP(25 + (l === 0 ? 1 : 0), l, u + b), HX(2.8, 2.6, 3), 0.4, { tag: 'skull' });
+  // HIS CLUB: A TREE'S TRUNK, its handle in his right fist (and his left under it, with both hands); knots on it, two bands of iron
+  // round its head, its end flaring to root stubs
+  const grip = W(Q.fistR);
+  const A = norm(sub(W(Q.clubEnd), grip));
   const at = (d: number): V3 => add(grip, mul(A, d));
-  const len = Math.hypot(...sub(end, grip));
-  sc.cone(bark, 'club', at(-8), at(6), 2.9, 3.2, 0.6, { tag: 'handle' });
-  sc.ell(bark, 'club', at(-8.5), X(2.6, 2.6, 2.6), 0.6, { tag: 'handle' });
+  const len = CLUB_LONG * 1;
+  const end = at(len);
+  sc.cone(bark, 'club', at(Q.twoHand ? -16 : -8), at(6), 2.9, 3.2, 0.6, { tag: 'handle' });
+  sc.ell(bark, 'club', at(Q.twoHand ? -16.5 : -8.5), X(2.6, 2.6, 2.6), 0.6, { tag: 'handle' });
   sc.cone(bark, 'club', at(5), end, 3.3, 10, 1.0, { tag: 'trunk' });
   for (const [d, k, r] of [[0.38, 0, 2.2], [0.55, 1, 2.6], [0.74, 2, 2.4]] as const) {
     const ang = k * 2.1 + 0.6;
@@ -257,19 +381,29 @@ export function sculptChief9(view: GameView, breath = 0, yaw = -10): Drawn {
     const side = norm(cross(A, [Math.cos(ang), Math.sin(ang), 0.7]));
     sc.cone(bark, 'club', add(at(len - 4), mul(side, 7)), add(add(at(len + 1.5), mul(side, 11.5)), mul(A, 0.5)), 3.2, 1.2, 1.2, { tag: 'root' });
   }
-  // HIS RIGHT FIST round the handle: the back of his hand outside it, his knuckles a ridge over it, his fingers wrapped round it in
-  // front, his thumb across them
-  const out = norm(cross(A, [0, 0, 1]));
+  // HIS FISTS round the handle: the back of each hand outside it, the knuckles a ridge over it, the fingers wrapped round it in front,
+  // the thumb across them
+  const up: V3 = Math.abs(A[2]) > 0.95 ? norm(cross(A, F)) : [0, 0, 1];
+  const out = norm(cross(A, up));
   const fwd = norm(cross(out, A));
-  sc.ell(hide, 'fistR', add(grip, mul(out, -2.4)), [mul(A, 6), mul(out, 4.6), mul(fwd, 5.4)], 1.6, { tag: 'fist' });
-  for (let k = 0; k < 4; k++) {
-    const c = at(-4.2 + k * 2.7);
-    sc.ell(hide, 'fistR', add(add(c, mul(out, -3.6)), mul(fwd, 3.2)), X(1.9, 1.9, 1.9), 0.8);
-    sc.cone(hide, 'fistR', add(add(c, mul(out, -2.6)), mul(fwd, 4.2)), add(add(c, mul(out, 2.2)), mul(fwd, 3.6)), 1.5, 1.35, 0.6);
+  for (const [piece, d0] of Q.twoHand ? ([['fistR', 0], ['fistL', -9]] as const) : ([['fistR', 0]] as const)) {
+    const g = at(d0);
+    sc.ell(hide, piece, add(g, mul(out, -2.4)), [mul(A, 6), mul(out, 4.6), mul(fwd, 5.4)], 1.6, { tag: 'fist' });
+    for (let k = 0; k < 4; k++) {
+      const c = at(d0 - 4.2 + k * 2.7);
+      sc.ell(hide, piece, add(add(c, mul(out, -3.6)), mul(fwd, 3.2)), X(1.9, 1.9, 1.9), 0.8);
+      sc.cone(hide, piece, add(add(c, mul(out, -2.6)), mul(fwd, 4.2)), add(add(c, mul(out, 2.2)), mul(fwd, 3.6)), 1.5, 1.35, 0.6);
+    }
+    sc.cone(hide, piece, add(at(d0 - 5), mul(out, -1)), add(add(at(d0 + 0.5), mul(out, 2.4)), mul(fwd, 3.4)), 1.9, 1.5, 0.8);
   }
-  sc.cone(hide, 'fistR', add(at(-5), mul(out, -1)), add(add(at(0.5), mul(out, 2.4)), mul(fwd, 3.4)), 1.9, 1.5, 0.8);
   grow(sc, CK);
-  return draw(sc, view, CHIEF9_CANVAS.ax, CHIEF9_CANVAS.ay, CHIEF9_CANVAS, undefined, ENEMY_RIM);
+  return draw(sc, view, size.ax, size.ay, size, undefined, ENEMY_RIM);
+}
+
+/** Where a point of the chieftain's (his own lengths, before he is grown) is on his canvas, seen `view` at `yaw`. */
+export function chiefAt(d: Drawn, yaw: number, q: V3): readonly number[] {
+  const { P } = frame(yaw);
+  return d.st.at(mul(P(q[0], q[1], q[2]), CK));
 }
 
 // THE WOLF'S COLOURS: a pale mist, a ghost's: near white at its brightest, a cold violet in its shadow
