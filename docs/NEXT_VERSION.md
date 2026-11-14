@@ -4617,3 +4617,7 @@ The evening's one update, the whole ship list: the Bells' loot at the last bell 
 ## VERSION 25.3.18, LIVE 13 NOV 2026 BY 22:40 (Eastern), BOTH ADDRESSES (the main chat of 12 Nov, session ...STLst)
 
 A second update the same evening, at his “Tonight, a second update”: the quests of floors 11 to 15 (the Unstruck Pages, the Stolen Clapper) and the Muster Roll; “Return to the ...” for every quest, every quest line one colour; floor 5's temple door, barred by two chains, and its two key-bearers. No spoken line in two lists. Marks: heroes 1232d77721dc, monsters fe60947db695; the rest as 25.3.17. gh-pages d8a866a4; the claude.ai page Version 125 (`1794627617-ba0a`).
+
+## VERSION 25.3.19, LIVE 13 NOV 2026 BY 23:00 (Eastern), THE GAME'S OWN WEB ADDRESS (the Bells chat of 13 Nov)
+
+A third update the same evening, at his word to the Bells chat, 22:31: “Put that shit in the game”: the quests of floors 16 to 20 (the Clockwork Songbird, the Whole Court, the Captain's Voice). Marks: all as 25.3.18. gh-pages 4940af6c; main bca58ba2. The claude.ai page still shows 25.3.18: this session could not publish there (session_network_off); the main chat to put it there.
