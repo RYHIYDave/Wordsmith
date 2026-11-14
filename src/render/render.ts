@@ -4,6 +4,8 @@
 
 import { drawAura as drawSwapAura, drawBall, drawRally, drawRallyAir, drawSnare, drawSnipeDraw, drawSnipeStreak, drawSpear, drawSplashes } from './swap_fx';
 import { SWAP_MOVES } from '../game/talents';
+import { thresholdFace } from '../game/lair_way';
+import { DOOR as TEMPLE_DOOR_AT, chains as templeChains, doorLights as templeLights, glowAt as templeGlow, leaf as templeLeaf, transom as templeTransom } from '../art/temple_door';
 import { LIVING_SHADOW } from '../art/shadow_art';
 import { warlockAskAhead } from './warlock_packs';
 import type { AskPack } from './warlock_packs';
@@ -1077,6 +1079,39 @@ export class Renderer {
           put(x + y + STRIP / 64, q.s, x, y);
         }
       };
+      // (FLOOR 5, behind TEMPLE_DOOR: the temple's door in its threshold: the way's head closed over it, its two leaves of black
+      // stone swinging into the temple as it opens, its two chains and their locks: art/temple_door.ts, game/temple_door.ts)
+      if (s.kind === 'templedoor' && L.temple) {
+        const T = L.temple;
+        const th = T.at;
+        const tf = thresholdFace(th);
+        const on = (u: number): [number, number] => (th.alongX ? [th.a + u, tf] : [tf, th.a + u]);
+        for (const q of templeTransom(th.alongX)) {
+          const [x, y] = on(q.t);
+          put(x + y + STRIP / 64 + 0.01, q.s, x, y);
+        }
+        for (const which of ['a', 'b'] as const) {
+          const [hx, hy] = on((which === 'a' ? TEMPLE_DOOR_AT.hingeA : TEMPLE_DOOR_AT.hingeB) / 32);
+          const ang = (d.open * Math.PI) / 2;
+          const half = TEMPLE_DOOR_AT.wide / 64;
+          const pa = Math.cos(ang) * (which === 'a' ? 1 : -1) * half;
+          const pb = Math.sin(ang) * th.temple * half;
+          const [mx, my] = th.alongX ? [hx + pa, hy + pb] : [hx + pb, hy + pa];
+          put(mx + my, templeLeaf(which, d.open, th.alongX, th.temple), hx, hy);
+        }
+        for (const q of templeChains(th.alongX, T.chain[0], T.chain[1])) {
+          const [x, y] = on(q.t);
+          // (in front of the leaves, shut: they lie over them)
+          put(x + y + 1.1, q.s, x, y);
+        }
+        // (its lights: each lock's keyhole, and the seal's glow over it while barred, so it is seen across the mine's dark)
+        for (const g of templeLights(T.chain[0], T.chain[1])) {
+          const u = th.alongX ? g.du + 48 : 48 - g.du;
+          const [x, y] = on(u / 32);
+          put(x + y + 1.2, templeGlow(g.v / 2, g.r, g.color, g.a), x, y);
+        }
+        continue;
+      }
       if (!isLeaf(s.kind)) {
         // (the boss's, heavy and carved; or a plain one: a lever's, a locking room's)
         const boss = s.kind === 'bossgate';
@@ -3681,7 +3716,7 @@ export class Renderer {
     // chains in his hall; the chapel's way in and break-ins: render/looks.ts)
     if (this.lookNow) {
       for (const q of this.lookNow.stands(L, t)) {
-        if (!L.explored[Math.floor(q.y) * L.floor.w + Math.floor(q.x)]) continue;
+        if (!L.explored[q.seen ?? Math.floor(q.y) * L.floor.w + Math.floor(q.x)]) continue;
         const sx = Math.round(wx(cam, q.x, q.y));
         const sy = Math.round(wy(cam, q.x, q.y));
         if (sx < -160 || sx > W + 160 || sy < -40 || sy > H + 260) continue;

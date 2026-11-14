@@ -119,7 +119,11 @@ export class LairView implements LookView {
       const face = thresholdFace(t);
       for (const q of A.threshold(t.alongX)) {
         const [x, y] = t.alongX ? [t.a + q.t, face] : [face, t.a + q.t];
-        strips.push({ x, y, s: q.s, d: x + y + STRIP / 64 });
+        // (FLOOR 5'S TEMPLE DOOR in it, behind TEMPLE_DOOR: it shuts out sight of the temple, so the threshold is shown as its own
+        // row is seen from the mine: game/temple_door.ts)
+        const k = Math.max(t.a - 1, Math.min(t.a + 3, t.a + Math.floor(q.t)));
+        const seen = L.temple && L.temple.at === t ? (t.alongX ? t.line * W + k : k * W + t.line) : undefined;
+        strips.push({ x, y, s: q.s, d: x + y + STRIP / 64, seen });
       }
       for (const k of [t.a - 1, t.a + 3]) {
         const [x, y] = t.alongX ? [k, t.line] : [t.line, k];

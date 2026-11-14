@@ -1,6 +1,7 @@
 // Entry point: builds the art, then runs the frame loop that ties input, rules, drawing and
 // interface together.
 
+import { TEMPLE_DOOR } from './art/temple_door';
 import { STORIES } from './game/stories';
 import { LAIR_STORY } from './art/lair_story';
 import { actsOf } from './game/bosses';
@@ -3063,6 +3064,91 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     game: () => game,
     /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
     levelSelect: LEVEL_SELECT,
+    /** THE LEVEL SELECT'S TEST HERO on floor `floor` (as its page's), for the playtests: nothing saved. */
+    trial: (cls: ClassId, floor: number, seed = 9) => {
+      saving = false;
+      saved = null;
+      begin(Game.forTrial(cls, seed, floor, meta));
+      loading = null;
+    },
+    /**
+     * FLOOR 5'S TEMPLE DOOR (art/temple_door.ts, game/temple_door.ts), for the pictures and the playtests: its switch; give him
+     * `n` keys; its state; stand him before it on the mine's side, `back` tiles out, facing it.
+     */
+    templeDoor: {
+      sw: TEMPLE_DOOR,
+      keys: (n: number) => {
+        const T = game?.level.temple;
+        if (T) T.keys = n;
+      },
+      state: () => {
+        const L = game?.level;
+        const T = L?.temple;
+        return L && T ? { keys: T.keys, chain: [...T.chain], began: T.began, open: L.doors[T.door].open, at: { ...T.at }, time: game?.time } : null;
+      },
+      standBefore: (back = 2.6) => {
+        const g = game;
+        const T = g?.level.temple;
+        if (!g || !T) return null;
+        const m = doorMiddle(g.level.doors[T.door].spot);
+        const out = -T.at.temple;
+        const h = g.hero;
+        if (T.at.alongX) {
+          h.x = m.x;
+          h.y = m.y + out * back;
+        } else {
+          h.x = m.x + out * back;
+          h.y = m.y;
+        }
+        h.fx = T.at.alongX ? 0 : -out;
+        h.fy = T.at.alongX ? -out : 0;
+        return { x: h.x, y: h.y };
+      },
+      /** Its key-bearers ('keyblade', 'keyflame'): where they are, how they fare, what they do. */
+      bearers: () => (game ? game.monsters.filter((m) => m.kind === 'keyblade' || m.kind === 'keyflame').map((m) => ({ id: m.id, kind: m.kind, x: m.x, y: m.y, life: m.life, dead: m.dead, state: m.state, act: m.act ? { id: m.act.id, t: m.act.t } : null })) : []),
+      /** One of them brought `dist` tiles before the hero, `side` tiles to his side, facing him and awake (for the films). */
+      bearerAt: (kind: string, dist: number, side = 0) => {
+        const g = game;
+        const m = g?.monsters.find((o) => o.kind === kind && !o.dead);
+        if (!g || !m) return null;
+        const h = g.hero;
+        m.x = h.x + h.fx * dist - h.fy * side;
+        m.y = h.y + h.fy * dist + h.fx * side;
+        const d = Math.hypot(h.x - m.x, h.y - m.y) || 1;
+        m.fx = (h.x - m.x) / d;
+        m.fy = (h.y - m.y) / d;
+        m.state = 'chase';
+        m.cd = 99;
+        m.moveCd = undefined;
+        m.act = undefined;
+        m.gait = { mode: 'stand', t: 0 };
+        return { x: m.x, y: m.y };
+      },
+      /** One of them made to begin its act `id` now ('keyblade:throw', 'keyflame:ring', ...), and to do nothing of its own after it till `hold` seconds have gone. */
+      act: (kind: string, id: string, hold = 99) => {
+        const g = game;
+        const m = g?.monsters.find((o) => o.kind === kind && !o.dead);
+        const acts = m ? actsOf(m) : null;
+        const i = acts ? acts.findIndex((a) => a.id === id) : -1;
+        if (!g || !m || !acts || i < 0) return false;
+        g.bosses.startAct(m, acts, i);
+        m.cd = hold;
+        return true;
+      },
+      /** One of them still, doing nothing of its own (its wait made long) or let go (0). */
+      hold: (kind: string, secs = 99) => {
+        const m = game?.monsters.find((o) => o.kind === kind && !o.dead);
+        if (m) m.cd = secs;
+      },
+      /** One of them killed where it stands. */
+      kill: (kind: string) => {
+        const m = game?.monsters.find((o) => o.kind === kind && !o.dead);
+        if (game && m) game.kill(m);
+        return !!m;
+      },
+      /** The keys lying on the floor (their bearers fallen), and the hero brought onto the first. */
+      keysLying: () => (game ? game.perils.filter((p) => p.a1 === 'keyblade:key').map((p) => ({ x: p.x, y: p.y, t: p.t })) : []),
+    },
     /** (THE HIGH CITY, behind HIGH_CITY, game/act1.ts: off until his yes) Its switch, for the playtests and pictures. */
     highCity: HIGH_CITY,
     /** (THE HIGH CITY, FLOOR 17) the ebony clock made to chime now, for the films: game/act2/masque_rules.ts. */

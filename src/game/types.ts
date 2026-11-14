@@ -191,7 +191,9 @@ export type MonsterKind =
   // (floor 20's frost creature, the art chat's, behind RIME_SHADE_ON: game/act1_rules/rshade.ts)
   | 'rshade'
   // (floor 3's side boss, the furnace's keeper, the art chat's: game/act1_rules/stoker.ts, the quest line's, game/quests15.ts)
-  | 'stoker';
+  | 'stoker'
+  // (floor 5's temple door's two key-bearers, behind TEMPLE_DOOR: game/act1_rules/keybearers.ts, game/temple_door.ts)
+  | 'keyblade' | 'keyflame';
 /** The monsters of Version 14 (the figures the tests of their pictures go through). */
 export const MONSTER_KINDS: readonly MonsterKind[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'warden'];
 /** THE NEW MONSTERS (Version 19.9): the art chat's, painted on the heroes' bones. */
@@ -203,7 +205,7 @@ export const NEW_KINDS: readonly MonsterKind[] = ['shade', 'boneward', 'golem', 
  */
 export const FIRST5_KINDS: readonly MonsterKind[] = ['headsman', 'chained', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm'];
 /** ACT 1, THE DESCENT (game/act1.ts): the cult's two new kinds, the floors' own creatures and the five bosses, the art chat's. */
-export const ACT1_KINDS: readonly MonsterKind[] = ['chanter', 'firepot', 'qgolem', 'rubbling', 'vulture', 'crawler', 'scorpion', 'devil', 'deer', 'wolf', 'drowned', 'leech', 'spawn', 'unfinished', 'queen', 'cantor', 'stag', 'eye', 'stoker'];
+export const ACT1_KINDS: readonly MonsterKind[] = ['chanter', 'firepot', 'qgolem', 'rubbling', 'vulture', 'crawler', 'scorpion', 'devil', 'deer', 'wolf', 'drowned', 'leech', 'spawn', 'unfinished', 'queen', 'cantor', 'stag', 'eye', 'stoker', 'keyblade', 'keyflame'];
 /** ACT 2, THE HUSH (game/act1.ts ACT2): floors 11 to 15's own mobs and their five bosses, the art chat's (its branches mockup/act2-gateward to mockup/act2-library). */
 export const ACT2_MOBS: readonly MonsterKind[] = ['hushed', 'watch', 'scribe', 'hound', 'rat', 'dredger', 'fieldhand', 'carter', 'patient', 'orderly', 'inkling', 'bookwarden'];
 export const ACT2_BOSSES: readonly MonsterKind[] = ['crier', 'ratking', 'palimpsest', 'physician', 'censor', 'scraper', 'quill'];
@@ -546,8 +548,9 @@ export interface PackSpot {
  *               only to a hit from an attack that carries its word; then it swings open as a
  *               door does, and stays open. Sealed, nothing passes it, nor a shot, nor sight.
  */
-/** (THE WAYS, game/ways.ts, behind WAYS: 'waygate', the gate of the way between town and the first floor.) */
-export type DoorKind = 'door' | 'bossgate' | 'gate' | 'trapgate' | 'worddoor' | 'waygate';
+/** (THE WAYS, game/ways.ts, behind WAYS: 'waygate', the gate of the way between town and the first floor. FLOOR 5, behind TEMPLE_DOOR:
+ * 'templedoor', the temple's door in the threshold, barred by two chains until he brings both keys: game/temple_door.ts.) */
+export type DoorKind = 'door' | 'bossgate' | 'gate' | 'trapgate' | 'worddoor' | 'waygate' | 'templedoor';
 
 /** (THE MIX) A LEVER: the tile it stands on (a prop of kind 'lever' stands there), and the room whose way in its gate bars. */
 export interface LeverSpot {

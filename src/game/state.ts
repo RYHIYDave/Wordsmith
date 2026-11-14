@@ -7,6 +7,7 @@ import type { PickBy, QuestThing } from './quests1115';
 import type { PrisonChannel } from './prison_way';
 import type { ChapelPlan } from './chapel_way';
 import type { GroundsPlan } from './grounds_way';
+import type { TempleDoorState } from './temple_door';
 import type { LairPlan } from './lair_way';
 import type { CompanionGroup, CompanionKind, PetPicks } from './companions';
 import type { Royal } from './royal_cards';
@@ -1451,6 +1452,8 @@ export interface Level {
   grounds?: GroundsPlan;
   /** FLOOR 5, LAIR_TEMPLE: the mine and the temple, the thresholds between, the rails and the rift's cracks (game/lair_way.ts). */
   lair?: LairPlan;
+  /** FLOOR 5, behind TEMPLE_DOOR: the temple's door, its keys and its chains (game/temple_door.ts). */
+  temple?: TempleDoorState;
   /**
    * ACT 1, THE DESCENT (game/act1_layout.ts): a floor of open ground, not a dungeon's rooms: what only it
    * has (the drop, the river, the boardwalks, its strongholds), for the painter of its ground and its rules;

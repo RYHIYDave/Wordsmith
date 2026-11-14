@@ -10,6 +10,7 @@
 // it was: it is a button, and a button wants to be under a thumb. (The life is also a bar over the
 // hero's head: render/lifebar.ts.)
 
+import { keySprite } from '../art/key_bearers_fx';
 import { isCamp } from '../game/camp';
 import { RIM_NAME } from '../game/rim';
 import { WORD_COLOR } from '../art/icons';
@@ -1359,6 +1360,25 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     const cx = lx + (spare > 0 ? 26 : 0) + both + 7;
     const cy = btnY + btnH / 2;
     g.drawImage(ic.img, Math.round(cx - ic.ax * pop), Math.round(cy - ic.ay * pop), Math.round(ic.w * pop), Math.round(ic.h * pop));
+  }
+  // (FLOOR 5, behind TEMPLE_DOOR: THE TEMPLE DOOR'S KEYS here with what else of a quest he carries, his word of 13 Nov 2026: “keep the key
+  // count on the side with the other quest information”: once he knows of them, until the door opens, a key for each of its two, brass if
+  // held and dark if not, and how many of them he holds)
+  {
+    const T = game.level.temple;
+    if (T && (T.told || T.keys > 0) && game.level.doors[T.door].open < 1) {
+      const both = (QUEST3.on && QUEST3.carried ? 16 : 0) + (MELD_DROPS.on && game.hero.meld === 'stone' ? 16 : 0);
+      let kx = lx + (spare > 0 ? 26 : 0) + both + 7;
+      const cy = btnY + btnH / 2;
+      const s = keySprite(0);
+      for (let i = 0; i < T.need; i++) {
+        g.globalAlpha = i < T.keys ? 1 : 0.35;
+        g.drawImage(s.img, Math.round(kx - s.ax), Math.round(cy - s.ay), s.w, s.h);
+        kx += 13;
+      }
+      g.globalAlpha = 1;
+      drawText(g, `${T.keys}/${T.need}`, kx - 4, Math.round(cy - 3), '#dcaa52', { font: 'small', shadow: P.ink });
+    }
   }
 
   // ---- top right: minimap and pause ---------------------------------------------------------

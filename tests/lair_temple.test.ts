@@ -102,7 +102,9 @@ const edgeCount = (p: Px): number => {
 test('the mine that becomes his temple, and his gate: off; brought into the game by the main chat, and by nothing else', () => {
   // (2 Nov 2026, his “New looks for the first 5 floors are almost done.  We want those in the release as well”: the main chat brought
   // it in behind its switches, off until his yes to it in play)
-  const BROUGHT = ['art/lair_temple.ts', 'art/lair_gate.ts', 'art/films.ts', 'art/floors.ts', 'game/lair_way.ts', 'game/floor_looks.ts', 'main.ts', 'render/lair.ts', 'render/render.ts'].map((f) => join('src', f));
+  const BROUGHT = ['art/lair_temple.ts', 'art/lair_gate.ts', 'art/films.ts', 'art/floors.ts', 'game/lair_way.ts', 'game/floor_looks.ts', 'main.ts', 'render/lair.ts', 'render/render.ts',
+    // (floor 5's temple door, set in its threshold, his yes of 13 Nov 2026: art/temple_door.ts)
+    'art/temple_door.ts'].map((f) => join('src', f));
   assert.ok(LAIR_TEMPLE.on === false && LAIR_GATE.on === false, 'LAIR_TEMPLE and LAIR_GATE are off');
   const found: string[] = [];
   const walk = (d: string): void => {

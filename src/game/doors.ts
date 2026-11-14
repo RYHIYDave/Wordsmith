@@ -366,6 +366,8 @@ export function shutGrid(f: Floor): Uint8Array | null {
 export function stepDoors(doors: DoorInst[], bodies: ReadonlyArray<Vec>, dt: number): DoorInst[] {
   const began: DoorInst[] = [];
   for (const d of doors) {
+    // (FLOOR 5's temple door keeps its own time: game/temple_door.ts)
+    if (d.spot.kind === 'templedoor') continue;
     if (d.spot.kind === 'door' && d.want === 0) {
       const m = doorMiddle(d.spot);
       for (const b of bodies) {

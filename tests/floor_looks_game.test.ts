@@ -127,7 +127,8 @@ test('3. THE MINE AND THE TEMPLE: the parts, the thresholds, the rails, the crac
           assert.equal(P.part[y * W + x], 1, 'its way in the mine');
           const [tx, ty] = t.alongX ? [x, y + t.temple] : [x + t.temple, y];
           assert.equal(P.part[ty * W + tx], 2, 'the temple across it');
-          for (const d of L.doors) assert.ok(!(d.spot.alongX === t.alongX && Math.abs(d.spot.a - t.a) < 3 && Math.abs(d.spot.plane - t.line) < 2), 'no door in it');
+          // (but the temple's own door, set in it with TEMPLE_DOOR, his yes of 13 Nov 2026: tests/temple_door.test.ts)
+          for (const d of L.doors) assert.ok(d.spot.kind === 'templedoor' || !(d.spot.alongX === t.alongX && Math.abs(d.spot.a - t.a) < 3 && Math.abs(d.spot.plane - t.line) < 2), 'no door in it');
         }
       }
       assert.ok(P.rails.length >= 3, `seed ${seed}: the rails`);
