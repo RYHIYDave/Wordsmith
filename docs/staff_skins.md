@@ -81,6 +81,26 @@ is untouched, nothing is published. THE SWITCH (`STAFF_SKINS`, src/art/staff_ski
 - `tools/bake_heroes.mjs` takes `only` (a few groups, not marked done; a whole bake later keeps them), and
   `tools/bake_some.mjs` builds a page with just those baked: for looking at a few groups in a real browser.
 
+## The heroes' bake, made quicker (14 Nov 2026, after his yes; commit d19a1ff)
+
+Told him, as the other heroes' unique weapons were begun (each weapon a group of its own, about 14 minutes to bake, 22 more to
+come): “before the weapons, I'll make the bake redo only the hero whose pictures changed”.
+
+- A GROUP KEPT WHERE ITS HEROES' CODE HAS NOT CHANGED (tools/bake_marks.mjs, tools/bake_heroes.mjs keptGroup): each group's
+  file now carries `gmark`, a hash of the code its heroes are painted with (the bake page's import graph: what is shared,
+  and each hero's own files from his roots, HERO_ROOTS). A bake takes a group whose gmark matches one of an earlier bake, on
+  this machine (.bake/) or as published (gh-pages heroes/<mark>/), byte for byte, and does not paint it. A change to a
+  hero's own files marks his groups (and the cards') anew; the Warrior's body (art/warrior_up.ts) is the Ranger's, the
+  Mage's and the Warlock's too, so a change there marks those four; anything shared marks all. FULL=1 paints every group.
+  THE PUBLISHED BAKE HAS NO gmark YET: the first bake after this paints everything, as before; from then on it keeps.
+- TWO GROUPS AT ONCE on two cores, each in a browser of its own (BAKE_JOBS to say how many).
+- The staves' switch, STAFF_OF_UNIQUE and staffWorn moved to art/heroes.ts (art/staff_skins.ts says them again), so that the
+  bake's groups (render/baked.ts) do not take the staves' art in.
+- MEASURED HERE: the Crook's and the Rod's groups baked at once, 15 min 7 s for both (each alone about 13.8 min); baked again
+  after a change to the Ranger's art, both kept from the bake before, 3.4 s, the sheets the same bytes; kept from a gh-pages
+  copy of a bake, the same; the kept groups taken in by the game in a real browser (tools/scenarios/staff_swap_baked.mjs).
+  tests/bake_marks.test.ts (3). With the staff tests, baked, hero_cards_baked and the core: 27 of 27 on d19a1ff.
+
 ## Checked
 
 - tsc clean.
