@@ -1,5 +1,5 @@
 // FLOOR 9'S SIDE BOSSES' MOVES, AS POSES A MOMENT AT A TIME AND WHAT THEY THROW ABOUT (his films: tools/f9_bosses_film.ts;
-// docs/mockups/f9_side_bosses/README.md; and their pictures in the game, art/f9_bosses_art.ts, behind F9_LAIRS, off).
+// docs/mockups/f9_side_bosses/README.md; and their pictures in the game, art/f9_bosses_art.ts, behind F9_LAIRS, on at his yes of 14 Nov 2026).
 //
 // THE TROLL CHIEFTAIN (his pick, 13 Nov 2026: “The first one, but I want the warcry to be a rage that gives him attack speed and move
 // speed”): a heavy club smash, two-handed from over his head; a ground slam that cracks the ground in a line before him; his war cry,
@@ -364,7 +364,7 @@ export function wolfPose(move: WolfMove, t: number): WolfPose {
 }
 
 // =================================================================================================
-// IN THE GAME (art/f9_bosses_art.ts; behind F9_LAIRS, off): each move with him kept on the floor point under him, the ground he
+// IN THE GAME (art/f9_bosses_art.ts; behind F9_LAIRS, on at his yes of 14 Nov 2026): each move with him kept on the floor point under him, the ground he
 // covers covered by the rules moving him (game/act1_rules/f9_bosses.ts), so that he ends each as he stands; his stand, his walk,
 // struck, and his death; and the same of the wolf.
 

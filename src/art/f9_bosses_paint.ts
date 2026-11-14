@@ -2,7 +2,7 @@
 // the figures' own size and in their own camera: the warnings laid on the ground (rings, arcs, lanes), the ground broken (cracks,
 // shockwaves, dust, chips of stone, rock thrust up), the blows' bursts and smears and after-images and speed lines, the rage's fire,
 // the mist's clouds and puffs. First painted for his films (tools/f9_bosses_film.ts, docs/mockups/f9_side_bosses/README.md); the
-// game's pictures of them are painted with the same (art/f9_bosses_art.ts, art/f9_bosses_fx.ts), behind F9_LAIRS, off.
+// game's pictures of them are painted with the same (art/f9_bosses_art.ts, art/f9_bosses_fx.ts), behind F9_LAIRS, on at his yes of 14 Nov 2026.
 
 import { Px } from '../engine/px';
 import { hash } from './kit';

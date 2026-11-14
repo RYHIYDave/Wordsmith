@@ -1,5 +1,5 @@
 // FLOOR 9'S TWO SIDE BOSSES, THEIR PICTURES AS THE GAME HOLDS A MONSTER'S (art/act1_figs/f9_bosses.ts; behind game/f9_lairs.ts
-// F9_LAIRS, off until his yes to them in play). Made from their sculpts (art/f9_bosses_sculpt.ts) and their moves (art/f9_bosses_moves.ts),
+// F9_LAIRS, on at his yes of 14 Nov 2026). Made from their sculpts (art/f9_bosses_sculpt.ts) and their moves (art/f9_bosses_moves.ts),
 // as he saw them filmed at his phone's own size and said, 14 Nov 2026: “Yes, build them in (Recommended)”.
 //
 // Each seen from in front and from behind (its back as the camera truly sees it: his club stays in his right hand), each facing up or

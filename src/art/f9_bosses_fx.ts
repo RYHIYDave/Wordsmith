@@ -11,7 +11,7 @@
 //   two forepaws' prints driven into the ground and the mist splashed up out of them like water; the howl no blow, its wolves rising
 //   out of a coil of mist, their eyes kindling first; the lunge one long cut through, parting, the mist torn in two; the cloud a
 //   spinning funnel, grass and leaves whirled in it, its claws flashing out of it where the hero is.
-// `ground` is laid under everything that stands; `air` over it. Behind F9_LAIRS, off.
+// `ground` is laid under everything that stands; `air` over it. Behind F9_LAIRS, on at his yes of 14 Nov 2026.
 
 import type { Px } from '../engine/px';
 import { FLAME } from './mkit';
