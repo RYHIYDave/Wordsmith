@@ -62,10 +62,10 @@ test('1. built and registered: their rules, their pictures with every clip their
       for (const a of act1Rules(kind)!.acts) {
         const clip = a.clip === 'attack' ? set.clips!.attack : set.clips!.moves![a.clip];
         assert.ok(clip, `${kind}, ${view}: ${a.id}'s clip`);
-        const mv = (a.id.split(':')[1]) as keyof typeof M;
-        assert.equal(clip!.frames.length, Math.round(M[mv].long * 30) + 1, `${kind}, ${view}: ${a.id}, a frame each thirtieth of its ${M[mv].long} s`);
+        const long = (M as Record<string, { long: number }>)[a.id.split(':')[1]].long;
+        assert.equal(clip!.frames.length, Math.round(long * 30) + 1, `${kind}, ${view}: ${a.id}, a frame each thirtieth of its ${long} s`);
         near(clip!.hit!, a.hit, 1e-9, `${kind}, ${view}: ${a.id} lands as its picture does`);
-        near(a.long, M[mv].long, 1e-9, `${kind}: ${a.id} as long as its picture`);
+        near(a.long, long, 1e-9, `${kind}: ${a.id} as long as its picture`);
       }
       assert.ok(set.clips!.die!.frames.length > 40 && set.clips!.reel!.frames.length >= 9, `${kind}, ${view}: its death and its flinch`);
     }
@@ -239,7 +239,7 @@ test('6. the wolf\'s: the bite in its ring, the claw across its arc, the lunge t
     }
   }
   {
-    const { g, m } = room('mistwolf', 2.4, 'mistwolf:lunge');
+    const { g, m } = room('mistwolf', 1.8, 'mistwolf:lunge');
     start(g, m, W, 'mistwolf:lunge');
     let unreached = false;
     const s = watch(g, m, 1.8, (t) => {

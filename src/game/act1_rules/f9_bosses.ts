@@ -23,9 +23,9 @@
 // over the floor point under it as its picture has it, and the ground it covers is covered here (`carry`). Heavy blows land with the
 // game held still a moment and the screen kicked (his rulebook, Movement 7). Drawn: render/act1_fx/f9_bosses.ts.
 
-import { CHIEF_MOVES, CHIEF_PLAY, TILE3, WOLF_MOVES, WOLF_PLAY, chiefCarry, wolfCarry } from '../../art/f9_bosses_moves';
+import { CHIEF_MOVES, CHIEF_PLAY, LUNGE_LONG, TILE3, WOLF_MOVES, WOLF_PLAY, chiefCarry, wolfCarry } from '../../art/f9_bosses_moves';
 import type { ChiefMove, WolfMove } from '../../art/f9_bosses_moves';
-import { BITE_RING, CHIEF_LANDS, CLAW_SWEEP, CLOUD, F9_FX_AFTER, HOWL_FOGS, LUNGE_LANE, ROAR_RING, RUSH_LANE, SLAM_CRACK, SMASH_RING } from '../../art/f9_bosses_fx';
+import { BITE_RING, CHIEF_LANDS, CLAW_SWEEP, CLOUD, F9_FX_AFTER, HOWL_FOGS, ROAR_RING, RUSH_LANE, SLAM_CRACK, SMASH_RING } from '../../art/f9_bosses_fx';
 import { CK, WK } from '../../art/f9_bosses_sculpt';
 import { MSG, TUNE as GAME_TUNE } from '../defs';
 import type { ActDef, BossRules } from '../bosses';
@@ -73,7 +73,8 @@ const CHIEF_ACTS: readonly ActDef[] = [
 const WOLF_ACTS: readonly ActDef[] = [
   { id: 'mistwolf:bite', clip: 'attack', ...wolf('bite'), dmg: T.wolf.bite, cooldown: 0, first: 0.5, after: 0.5, near: 0, far: tW(BITE_RING.f) + 0.6 },
   { id: 'mistwolf:claw', clip: 'claw', ...wolf('claw'), dmg: T.wolf.claw, cooldown: 4.5, first: 2, after: 0.6, near: 0, far: tW(CLAW_SWEEP.f + CLAW_SWEEP.r1) - 0.2 },
-  { id: 'mistwolf:lunge', clip: 'lunge', ...wolf('lunge'), dmg: T.wolf.lunge, cooldown: 6, first: 3, after: 0.7, near: 1.8, far: tW(LUNGE_LANE.to) - 0.4 },
+  // (made only at a hero near enough that it lands well beyond him: through him, never into him)
+  { id: 'mistwolf:lunge', clip: 'lunge', ...wolf('lunge'), dmg: T.wolf.lunge, cooldown: 6, first: 3, after: 0.7, near: 1.0, far: tW(LUNGE_LONG) - 1.5 },
   { id: 'mistwolf:cloud', clip: 'cloud', ...wolf('cloud'), dmg: T.wolf.cloud, cooldown: 13, first: 6, after: 0.8, near: 0, far: tW(CLOUD.r) * 0.8 },
   { id: 'mistwolf:howl', clip: 'howl', ...wolf('howl'), dmg: 0, cooldown: 20, first: 7, after: 0.8, near: 0, far: 12 },
 ];
@@ -93,7 +94,7 @@ export function raging(m: Monster): boolean {
 
 /** Where on the floor (tiles) a point of its own lengths is, from the peril of the act it began (its frame and where it stood). */
 function spot(p: Peril, k: number, f: number, l: number): [number, number] {
-  return spotOf(FRAMES[p.a], p.x, p.y, f * k, l * k);
+  return spotOf(FRAMES[p.a], p.x, p.y, (f * k) / TILE3, (l * k) / TILE3);
 }
 
 /** How near the hero is to the line from (x0, y0) to (x1, y1) (tiles). */
@@ -336,10 +337,19 @@ export const RULES_WOLF: Act1Rules | null = {
   },
   aloft(m) {
     // (going through you as mist: it neither jostles nor is jostled)
-    const a = m.act;
-    return !!a && m.state === 'act' && a.id === 'mistwolf:lunge' && a.t >= 0.66 && a.t <= 0.95;
+    return lunging(m);
+  },
+  through(m) {
+    // (nor does it bar your way, nor you its)
+    return lunging(m);
   },
 };
+
+/** Going through as mist, in its lunge (and a moment after, as it lands beyond). */
+function lunging(m: Monster): boolean {
+  const a = m.act;
+  return !!a && m.state === 'act' && a.id === 'mistwolf:lunge' && a.t >= 0.66 && a.t <= 1.0;
+}
 
 /** How many of the wolves it has called are about. */
 function calledOf(R: BossRules, m: Monster): number {

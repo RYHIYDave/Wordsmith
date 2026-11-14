@@ -5018,6 +5018,8 @@ export class Game {
     for (const m of this.monsters) {
       if (through) break;
       if (m.dead || m.state === 'sleep' || m.kind === 'bat') continue;
+      // (ACT 1: nor one going through him, as its kind's rules have it: floor 9's mist wolf, its lunge, as mist)
+      if (ACT1.on && act1Rules(m.kind)?.through?.(m)) continue;
       const dx = h.x - m.x;
       const dy = h.y - m.y;
       const min = TUNE.heroRadius + m.r * 0.8;

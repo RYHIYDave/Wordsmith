@@ -53,6 +53,8 @@ export interface Act1Rules {
   seenBy?(m: Monster, sees: (tx: number, ty: number) => boolean): boolean;
   /** Whether the hero's blows reach it now (false: under the water, below the lip). */
   reachable?(m: Monster): boolean;
+  /** Going through the hero now (floor 9's mist wolf, its lunge, as mist): it does not bar his way, nor he its (game.ts). */
+  through?(m: Monster): boolean;
   /** Up in the air now, over what is on the ground: it neither jostles nor is jostled by what stands under it (game.ts). Struck all the same: a vulture overhead. */
   aloft?(m: Monster): boolean;
   /** How high its body is off the floor now (game pixels): killed, it falls from there as its death plays (the 'die' event's `lift`). */
