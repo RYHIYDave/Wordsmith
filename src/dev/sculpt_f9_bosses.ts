@@ -96,10 +96,10 @@ export interface ChiefPose {
   headUp: number;
   /** His jaw open, 0 to 1. */
   jaw: number;
-  /** His right fist (round the club's handle), and his left: where each is. */
+  /** His right fist (round the club's handle), and his left: where each is, as he stands (they go with his pelvis, `hip`). */
   fistR: V3;
   fistL: V3;
-  /** Where the club's head is (its handle in his right fist). */
+  /** Which way the club's head is from his fist: a point it points at, as he stands (it goes with `hip`; the club is as long as it is). */
   clubEnd: V3;
   /** His left fist on the handle too, under the right (both hands on it). */
   twoHand: boolean;
@@ -296,7 +296,7 @@ export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw 
     const sh0: V3 = T([0, s * 29, 80 + b]);
     sc.ell(hide, piece, W(sh0), TX(13, 12, 12), 2.8);
     const top = T([1, s * 31, 78 + b]);
-    const fist = s > 0 ? Q.fistL : Q.fistR;
+    const fist = add(s > 0 ? Q.fistL : Q.fistR, Q.hip);
     // (the wrist a little back from the fist, along the forearm)
     const wrist = add(fist, mul(norm(sub(top, fist)), 6));
     const elbow = bend(top, wrist, 24, 24, rot([-0.3, s * 0.8, -1]));
@@ -310,7 +310,7 @@ export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw 
   }
   // HIS LEFT FIST, if not on the club: half shut, its knuckles a ridge across it, its thumb along its side
   if (!Q.twoHand) {
-    const c = Q.fistL;
+    const c = add(Q.fistL, Q.hip);
     sc.ell(hide, 'fistL', W(c), X(6.5, 6, 7.5), 2.0, { tag: 'fist' });
     for (let k = 0; k < 4; k++) sc.ell(hide, 'fistL', W(add(c, [5.5, 3.5 - k * 2.4, -4 - k * 0.3])), X(2.4, 1.6, 2.6), 1.0);
     sc.cone(hide, 'fistL', W(add(c, [3, -4, 2])), W(add(c, [6.5, -2.5, -3])), 2.4, 1.8, 1.0);
@@ -362,8 +362,8 @@ export function sculptChief9(view: GameView, pose: Partial<ChiefPose> = {}, yaw 
   for (const [l, u] of [[-6.4, 100.5], [0, 102], [6.4, 100.5]] as const) sc.ell(bone, 'crown', HP(25 + (l === 0 ? 1 : 0), l, u + b), HX(2.8, 2.6, 3), 0.4, { tag: 'skull' });
   // HIS CLUB: A TREE'S TRUNK, its handle in his right fist (and his left under it, with both hands); knots on it, two bands of iron
   // round its head, its end flaring to root stubs
-  const grip = W(Q.fistR);
-  const A = norm(sub(W(Q.clubEnd), grip));
+  const grip = W(add(Q.fistR, Q.hip));
+  const A = norm(sub(W(add(Q.clubEnd, Q.hip)), grip));
   const at = (d: number): V3 => add(grip, mul(A, d));
   const len = CLUB_LONG * 1;
   const end = at(len);

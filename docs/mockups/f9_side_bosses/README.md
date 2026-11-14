@@ -67,3 +67,20 @@ art/f9_lairs.ts draws their thirteen pieces (render/act1_pieces.ts takes them on
   his right arm raised, his fist before the shoulder wrapped round a leather-bound handle (knuckles, fingers, thumb), its knob below
   the fist; the trunk long, knotted, two iron bands round its head, its end flaring to root stubs; seen at its length from in front
   and behind. Pictured: pictures/f9_chief_club.png (and f9_bosses_look.png, f9_side_areas.png made again with it).
+- His answer to the club drawn again: “Yes, film the attacks (Recommended)”.
+
+## Their attacks, on film
+
+pictures/f9_bosses_film.mp4 (tools/f9_bosses_film.ts): each move beside the Brawler on a stand-in of the Pinewood's grass, the
+blows also at half speed, captioned. Both bosses now sculpted on a rig (dev/sculpt_f9_bosses.ts ChiefPose and WolfPose); their moves as
+poses a moment at a time (dev/f9_bosses_moves.ts). Each strike wound up and HELD with its warning marked on the ground, struck in two
+frames, followed through.
+- THE TROLL CHIEFTAIN: the club smash (both hands, up over his head, a ring marked where it lands; a shockwave, the ground cracked;
+  also from behind); the ground slam (crouched, up on his toes with the club straight up, a line marked; driven down, the ground
+  cracks open along the line, rock thrust up along it); the war cry (gathered in, then the roar; the rage on him, pink and gold flames
+  off him, then three quick heavy strides: his blows and feet quicker); the bull rush (head down, the club tucked like a ram, pawing
+  the ground, his line marked; down it at a run; skids to a stop).
+- THE MIST WOLF: the bite (gathered back, the lunge in, jaws open, snapped shut); the claw sweep (up a little on its hind legs, a
+  forepaw raised, swept across); the howl (head thrown back, rings of it rising; the floor's fog wolves out of the mist either side);
+  the lunge (crouched, its line marked; gone to mist, through you, its shape again beyond); the mist cloud (breathed out, it goes into
+  it; glints where it hurts; it thins).
