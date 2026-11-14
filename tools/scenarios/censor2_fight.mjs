@@ -14,7 +14,9 @@ export default async function (page, snap) {
     const d = window.__dbg;
     d.saving(false);
     if (d.paintDefer) d.paintDefer.on = false;
-    d.censor2.use(!old);
+    // (on by default since his yes, 14 Nov 2026: the switch left as the game has it unless OLD asks for his old pictures)
+    const asIs = d.censor2.sw.on;
+    if (old) d.censor2.use(false);
     d.run(cls, seed);
     d.seasoned(12);
     d.autoLevel = false;
@@ -40,7 +42,7 @@ export default async function (page, snap) {
     g.bossMet = true;
     g.level.explored.fill(1);
     b.life = b.maxLife = 1e7;
-    return { boss: b.kind, at: [b.x, b.y], sw: d.censor2.sw.on };
+    return { boss: b.kind, at: [b.x, b.y], sw: d.censor2.sw.on, asIs };
   }, [process.env.CLS || 'brawler', Number(process.env.SEED || 5), process.env.OLD === '1']);
   log('floor 15', JSON.stringify(info));
   await page.waitForFunction(() => window.__dbg.game().time > 3, null, { timeout: 180000 });
