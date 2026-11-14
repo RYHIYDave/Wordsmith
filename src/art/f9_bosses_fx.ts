@@ -122,9 +122,8 @@ export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t
       // (the ground scorched in a ring round him where the fire burst up)
       if (since > 0.2) crater(px, pr, 0, 0, 10, 1, (since - 1.5) / 1.0, 9227, 14);
     } else {
-      fireRing(px, pr, 0, 0, 50, since / 1.7, fr, 16, 170);
-      fireRing(px, pr, 0, 0, 100, (since - 0.12) / 1.5, fr + 3, 22, 120);
-      fireRing(px, pr, 0, 0, 160, (since - 0.25) / 1.2, fr + 5, 30, 80);
+      fireRing(px, pr, 0, 0, 56, since / 1.7, fr, 12, 190);
+      fireRing(px, pr, 0, 0, 120, (since - 0.15) / 1.4, fr + 3, 18, 120);
       rocks(px, pr, 0, 0, since, 9229, 22, 9, 170);
       plume(px, pr, 0, 0, since / 1.2, 180, 9231, 24, 36);
       const head = pr(pose.hip[0] + 30, 0, 130);

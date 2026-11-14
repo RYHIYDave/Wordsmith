@@ -502,6 +502,13 @@ export function puff(px: Px, x: number, y: number, r: number, ramp: readonly str
       const Y = Math.round(y + j);
       if (fade > 0 && hash(X, Y, seed) < fade * 1.1 - (1 - q) * 0.2) continue;
       if (fade > 0.45 && (X + Y) % 2) continue;
+      // (dust: soft, no rim; its edge a dither thinning out, lit on top, a shade under)
+      if (ramp === DUSTY) {
+        if (q > 0.62 && ((X + Y) % 2 || hash(X >> 1, Y >> 1, seed + 5) < (q - 0.62) * 2.2)) continue;
+        const up = -j / r * 0.7 - i / r * 0.3;
+        put(px, X, Y, ramp[up > 0.3 ? 3 : up > -0.25 ? 2 : 1]);
+        continue;
+      }
       // (mist: soft, a dither thinning to its edge, no rim)
       if (ramp === MISTY) {
         if ((X + Y) % 2 || hash(X >> 1, Y >> 1, seed + 3) < q * q * 0.9) continue;
@@ -547,7 +554,7 @@ export const SHOCK_MIST = ['#ffffff', '#eeecf8', '#c6c2da', FLAME[2]];
 /** The mist's puffs, dark to pale. */
 export const MISTY = ['#4a4664', '#8a86a8', '#c6c2da', '#f2f0fa'];
 /** Dust's colours, dark to pale; stone's. */
-export const DUSTY = ['#2e261e', '#5a4c3c', '#857258', '#b09a78'];
+export const DUSTY = ['#2e261e', '#6a5a46', '#93806a', '#b8a68a'];
 export const STONEY = ['#1e1c1a', '#3e3b37', '#625e57', '#8e897f'];
 /** A CRATER where something came down: a dark pit, its rim of broken stone, cracks out from it glowing pink and gold in their depths, far. */
 export function crater(px: Px, pr: Pr, cf: number, cl: number, r: number, k: number, fade: number, seed: number, rays = 9): void {
@@ -696,15 +703,23 @@ export function radial(px: Px, x: number, y: number, k: number, n: number, from:
 export function fireRing(px: Px, pr: Pr, cf: number, cl: number, R: number, k: number, f: number, n = 18, tall = 90): void {
   if (k <= 0 || k >= 1) return;
   const up = Math.sin(Math.min(1, k * 1.4) * Math.PI * 0.5) * (k > 0.7 ? (1 - k) / 0.3 : 1);
-  for (let i = 0; i < n; i++) {
+  // (a wall of fire: tongues fat at the root and running into each other, the white of its heart low in each, its pink at the edges
+  // and the tips; the back of the ring first, so its front burns over it)
+  const order = Array.from({ length: n }, (_, i) => i).sort((i, j) => Math.sin((i / n) * Math.PI * 2 + 0.2) - Math.sin((j / n) * Math.PI * 2 + 0.2));
+  for (const i of order) {
     const a = (i / n) * Math.PI * 2 + 0.2;
     const b = pr(cf + Math.cos(a) * R, cl + Math.sin(a) * R, 0);
-    const h = tall * (0.55 + 0.45 * hash(i, 1, 9911)) * up * (0.8 + 0.35 * hash(i, f >> 1, 9913));
+    const h = tall * (0.6 + 0.4 * hash(i, 1, 9911)) * up * (0.85 + 0.3 * hash(i, f >> 1, 9913));
+    const root = 13 + 7 * hash(i, 2, 9911);
     for (let y = 0; y < h; y++) {
-      const w = Math.max(1, Math.round((1 - y / h) * 9));
+      const v = y / h;
+      const w = root * (1 - v) ** 0.8 * (0.85 + 0.15 * Math.sin(y * 0.3 + f));
+      const sway = Math.sin((y + f * 3) * 0.12 + i) * 4 * v;
       for (let x = -w; x <= w; x++) {
-        if (hash(Math.round(b[0] + x), Math.round(b[1] - y) + f, 9915) < (y / h) * 0.6) continue;
-        put(px, b[0] + x + Math.sin((y + f * 2) * 0.35) * 2, b[1] - y, y < h * 0.25 ? '#fffaf0' : y < h * 0.5 ? FLAME[4] : y < h * 0.8 ? FLAME[3] : FLAME[2]);
+        const e = Math.abs(x) / Math.max(1, w);
+        if (v > 0.55 && hash(Math.round(b[0] + x), Math.round(b[1] - y) + f, 9915) < (v - 0.55) * 1.6) continue;
+        const c = e < 0.3 && v < 0.35 ? '#fff6d0' : e < 0.55 && v < 0.6 ? FLAME[4] : e < 0.8 && v < 0.8 ? FLAME[3] : v < 0.92 ? FLAME[2] : FLAME[1];
+        put(px, b[0] + x + sway, b[1] - y, c);
       }
     }
   }
