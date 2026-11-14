@@ -27,7 +27,7 @@ import { CANVAS3 } from './skin';
 import { add, bonesAt, mul, solve } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { paintMageUp } from './mage_up';
-import type { MuFrame, MuSide } from './mage_up';
+import type { MuFrame, MuSide, StaffSkin } from './mage_up';
 import { MU_MOVES } from './mage_up_moves';
 import { WU_SIDES } from './warrior_up';
 
@@ -79,9 +79,10 @@ function before(m: Move3, t: number, back: number): number {
 /**
  * HER AT A MOMENT OF A MOVE, painted: with the figure a frame and three frames before (cloth follows), the wind, and where the
  * head of her staff has been over the last frame (the streak of light a swung crystal leaves: art/heroes3.ts paintMove3, the
- * same eight moments, from half way up her staff to its crystal).
+ * same eight moments, from half way up her staff to its crystal). `staff`: a skin of her staff, or none (null); her own where
+ * not said (art/staff_skins.ts).
  */
-export function paintMuMove(m: Move3, t: number, view: MuSide, rim: string | null | undefined = undefined): MuFrame {
+export function paintMuMove(m: Move3, t: number, view: MuSide, rim: string | null | undefined = undefined, staff?: StaffSkin | null): MuFrame {
   const { q, s } = muPosed(m, t);
   const prev = muPosed(m, before(m, t, FRAME));
   const past = muPosed(m, before(m, t, 3 * FRAME)).s;
@@ -90,7 +91,7 @@ export function paintMuMove(m: Move3, t: number, view: MuSide, rim: string | nul
     const sk = i === 0 ? s : muPosed(m, before(m, t, (FRAME * i) / 8)).s;
     trail.push([add(sk.handR, mul(sk.point, STAFF_UP * 0.5)), add(sk.handR, mul(sk.point, STAFF_UP))]);
   }
-  const f = paintMageUp(s, q, view, m.build, { prev: prev.s, past, wind: windOf(m, t), trail }, rim === undefined ? undefined : rim);
+  const f = paintMageUp(s, q, view, m.build, { prev: prev.s, past, wind: windOf(m, t), trail, ...(staff !== undefined ? { staff } : {}) }, rim === undefined ? undefined : rim);
   if (q.out > 0.01) return { ...f, ...lightsOut(f, q.out) };
   return f;
 }
