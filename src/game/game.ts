@@ -14433,6 +14433,12 @@ export class Game {
     }
   }
 
+  /** (QUESTS1620) Where the broken songbird lies for him to take, the King fallen (render.ts names it), or null. */
+  birdSpot(): { x: number; y: number } | null {
+    const b = this.birdAt;
+    return b && !this.monsters.some((m) => m.kind === 'gking' && !m.dead) ? b : null;
+  }
+
   /** (QUESTS1620) Whether he stands beside the knight-captain (floor 19). */
   private captainNear(): boolean {
     const c = this.level.captain;

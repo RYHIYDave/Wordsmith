@@ -3679,8 +3679,11 @@ export class Renderer {
       const sy = wy(cam, c.x, c.y);
       this.stand(c.x + c.y, sp, sx, sy, null, 0, 1, veil(sp, sx, sy, c.x + c.y));
       hid?.(c.x, c.y);
-      this.labels.push({ x: sx, y: sy - (FIGURE_SIZE[fig]?.top ?? 40) - 8, text: 'Knight-Captain', color: '#e8dcc0' });
+      this.labels.push({ x: sx, y: sy - (FIGURE_SIZE[fig]?.top ?? 40) - 8, text: QUEST1620_TEXT.captainLabel, color: '#e8dcc0' });
     }
+    // (QUESTS1620: the songbird before the King's throne, his to take now the King has fallen, named)
+    const bird = !L.town ? game.birdSpot() : null;
+    if (bird) this.labels.push({ x: wx(cam, bird.x, bird.y), y: wy(cam, bird.x, bird.y) - 22, text: QUEST1620_TEXT.birdLabel, color: '#e8dcc0' });
     // (THE WORDSMITH'S RING MADE NEW, art/ring3.ts, behind art/smith3.ts SMITH3: the letters of light
     // that swirl round, each stood among everything else, and the column of light over the slab)
     if (L.town && SMITH3.on && art.town.ring3) this.standRing3(game, cam, t);

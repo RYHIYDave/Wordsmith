@@ -82,6 +82,8 @@ export const QUEST1620_TEXT = {
   sang: 'The songbird sings. The dust blows away.',
   keyLabel: 'Songbird\'s key',
   springLabel: 'Songbird\'s spring',
+  birdLabel: 'The songbird',
+  captainLabel: 'Knight-Captain',
   courtAsk: 'The stranger: "Royal cards, eh? Bring me one of each. Princess, Prince, Queen and King. A whole court is worth more than any hand."',
   courtAskPrompt: 'Stranger: a task',
   courtGivePrompt: 'Stranger: the whole court',

@@ -25,54 +25,55 @@ const SHADOW = '#08060c';
 const SAPPHIRE = '#3c4a8a';
 const SAPPHIRE_HI = '#7c8ad0';
 /** Blued steel: the spring's temper, the floor's steel a breath toward blue. */
-const BLUED: Ramp = [STEEL[0], STEEL[1], '#4c5674', '#6e7c9c', STEEL[4]];
+const BLUED: Ramp = [STEEL[0], '#3c4660', '#5e6c8e', '#8c9cc0', '#c8d2e8'];
 
 /** The songbird's key, lying on the floor (anchored where its middle lies). */
 export function keySprite(): Sprite {
   if (KEY) return KEY;
-  const S = scene(64, 44, 32, 26);
-  // (it lies across the screen: along the world's +x and -y, the bow to the left)
+  const S = scene(80, 52, 40, 30);
+  // (it lies across the screen: along the world's +x and -y, the bow to the left; drawn at K times the first size, to read)
+  const K = 1.45;
   const dx = 0.8;
   const dy = -0.6;
   const side: V3 = [-dy, dx, 0];
-  const at = (a: number, b: number, z: number): V3 => [a * dx + b * side[0], a * dy + b * side[1], z];
+  const at = (a: number, b: number, z: number): V3 => [(a * dx + b * side[0]) * K, (a * dy + b * side[1]) * K, z * K];
   const bowC = at(-7, 0, 1.4);
   const tip = at(9, 0, 1.2);
   // its shadow on the floor
-  S.quad([[-16, -16, 0.05], [16, -16, 0.05], [16, 16, 0.05], [-16, 16, 0.05]], (_u, _v, w) => {
-    const a = w[0] * dx + w[1] * dy - 0.6;
-    const b = w[0] * side[0] + w[1] * side[1] - 0.6;
+  S.quad([[-22, -22, 0.05], [22, -22, 0.05], [22, 22, 0.05], [-22, 22, 0.05]], (_u, _v, w) => {
+    const a = (w[0] * dx + w[1] * dy) / K - 0.6;
+    const b = (w[0] * side[0] + w[1] * side[1]) / K - 0.6;
     const wing = Math.hypot((a + 7) / 4.6, Math.abs(b) - 2.6 < 0 ? 0 : (Math.abs(b) - 2.6) / 2.6) < 1 && Math.abs(b) < 6.2;
     const shaft = a > -4 && a < 10.5 && Math.abs(b) < 1.6;
     return (wing || shaft) && checker(S, w) ? SHADOW : null;
   }, SOFT_ID + 1);
   // its bow: two rounded wings, flat on the floor, either side of the shaft
   for (const s of [-1, 1]) {
-    S.egg(at(-7.4, s * 3.1, 1.2), [[dx, dy, 0], side, [0, 0, 1]], [3.6, 3, 1.1], (n, w) => {
+    S.egg(at(-7.4, s * 3.1, 1.2), [[dx, dy, 0], side, [0, 0, 1]], [3.6 * K, 3 * K, 1.1 * K], (n, w) => {
       // (each wing pierced: a hole through it, the floor's dark showing)
       const c = at(-7.8, s * 3.5, 0);
-      if (Math.hypot(w[0] - c[0], w[1] - c[1]) < 1.1) return null;
+      if (Math.hypot(w[0] - c[0], w[1] - c[1]) < 1.1 * K) return null;
       return toneAt(n, GOLD, 0.2);
     }, 1);
   }
   // the boss where the wings meet, a sapphire set in it
-  S.egg(bowC, [[dx, dy, 0], side, [0, 0, 1]], [2.2, 2.2, 1.6], (n, w) => (Math.hypot(w[0] - bowC[0], w[1] - bowC[1]) < 1.1 && w[2] > 2.2 ? (n[0] + n[1] < -0.2 ? SAPPHIRE_HI : SAPPHIRE) : toneAt(n, GOLD, 0.25)), 2);
+  S.egg(bowC, [[dx, dy, 0], side, [0, 0, 1]], [2.2 * K, 2.2 * K, 1.6 * K], (n, w) => (Math.hypot(w[0] - bowC[0], w[1] - bowC[1]) < 1.1 * K && w[2] > 2.2 * K ? (n[0] + n[1] < -0.2 ? SAPPHIRE_HI : SAPPHIRE) : toneAt(n, GOLD, 0.25)), 2);
   // the shaft, a collar on it, and the square socket that winds the bird
-  S.rod(at(-5, 0, 1.3), tip, 0.9, 0.9, GOLD, 3);
-  S.ball(at(-3.6, 0, 1.3), 1.4, GOLD, 4, undefined, 0.2);
-  S.box(at(9.6, 0, 1.4), [[dx, dy, 0], side, [0, 0, 1]], [1.6, 1.4, 1.4], (f, _u, _v, n) => (f === 0 ? GOLD[0] : toneAt(n, GOLD, 0.1)), 5);
-  KEY = done(S, 32, 26, [{ at: bowC, r: 7, color: CYAN[2], a: 0.14 }]);
+  S.rod(at(-5, 0, 1.3), tip, 0.9 * K, 0.9 * K, GOLD, 3);
+  S.ball(at(-3.6, 0, 1.3), 1.4 * K, GOLD, 4, undefined, 0.2);
+  S.box(at(9.6, 0, 1.4), [[dx, dy, 0], side, [0, 0, 1]], [1.6 * K, 1.4 * K, 1.4 * K], (f, _u, _v, n) => (f === 0 ? GOLD[0] : toneAt(n, GOLD, 0.1)), 5);
+  KEY = done(S, 40, 30, [{ at: bowC, r: 9, color: CYAN[2], a: 0.14 }]);
   return KEY;
 }
 
 /** The songbird's mainspring, lying on the floor (anchored where its coil's heart lies). */
 export function springSprite(): Sprite {
   if (SPRING) return SPRING;
-  const S = scene(64, 44, 30, 24);
-  const turns = 4.2;
-  const steps = 90;
-  const r0 = 1.4;
-  const r1 = 7.2;
+  const S = scene(84, 52, 38, 28);
+  const turns = 2.4;
+  const steps = 110;
+  const r0 = 2;
+  const r1 = 11;
   const ptAt = (t: number): V3 => {
     const a = t * turns * Math.PI * 2;
     const r = r0 + (r1 - r0) * t;
@@ -80,9 +81,9 @@ export function springSprite(): Sprite {
   };
   // (its outer end sprung loose, running out across the floor, a little hooked at the last)
   const end = ptAt(1);
-  const loose: V3[] = [end, [end[0] + 3, end[1] - 2.4, 1], [end[0] + 6.2, end[1] - 3.2, 1], [end[0] + 9, end[1] - 2.6, 1.2], [end[0] + 9.8, end[1] - 1.2, 1.6]];
+  const loose: V3[] = [end, [end[0] + 4, end[1] - 3, 1], [end[0] + 8, end[1] - 4, 1], [end[0] + 11.5, end[1] - 3.2, 1.2], [end[0] + 12.6, end[1] - 1.4, 1.8]];
   // its shadow on the floor: under the coil, and under the loose end
-  S.quad([[-12, -12, 0.05], [20, -12, 0.05], [20, 12, 0.05], [-12, 12, 0.05]], (_u, _v, w) => {
+  S.quad([[-16, -16, 0.05], [28, -16, 0.05], [28, 16, 0.05], [-16, 16, 0.05]], (_u, _v, w) => {
     const coil = Math.hypot(w[0] - 0.8, w[1] - 0.8) < r1 + 1.2;
     let near = false;
     for (let i = 0; i < loose.length - 1 && !near; i++) {
@@ -98,13 +99,13 @@ export function springSprite(): Sprite {
   for (let i = 0; i < steps; i++) {
     const a = ptAt(i / steps);
     const b = ptAt((i + 1) / steps);
-    S.rod(a, b, 0.62, 0.62, BLUED, 1);
+    S.rod(a, b, 0.95, 0.95, BLUED, 1);
   }
   // the loose end
-  for (let i = 0; i < loose.length - 1; i++) S.rod(loose[i], loose[i + 1], 0.62, 0.62, BLUED, 2);
-  // the hook at its heart, a small bar across it
-  S.rod([-1.1, -0.4, 1.3], [1.1, 0.4, 1.3], 0.7, 0.7, STEEL, 3);
-  SPRING = done(S, 30, 24, [{ at: [0, 0, 1], r: 8, color: CYAN[2], a: 0.14 }]);
+  for (let i = 0; i < loose.length - 1; i++) S.rod(loose[i], loose[i + 1], 0.95, 0.95, BLUED, 2);
+  // the arbor at its heart, the spring's inner end hooked on it
+  S.ball([0, 0, 1.6], 1.6, STEEL, 3, undefined, 0.2);
+  SPRING = done(S, 38, 28, [{ at: [0, 0, 1], r: 11, color: CYAN[2], a: 0.14 }]);
   return SPRING;
 }
 
