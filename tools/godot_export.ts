@@ -12,7 +12,10 @@ import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { makeGroundArt } from '../src/art/ground';
 import { CRYPT_FLOORS } from '../src/art/crypt';
-import { makeDungeon } from '../src/game/level';
+import { Game } from '../src/game/game';
+import { MONSTERS } from '../src/game/defs';
+import { figureOf } from '../src/art/bestiary';
+import { bakeName } from '../src/render/monsters_bake_list';
 
 declare const process: { argv: string[] };
 paintWithoutCanvas();
@@ -78,10 +81,14 @@ writeFileSync(`${OUT}/ground.png`, png(SHEET_W, SHEET_H, sheet));
 writeFileSync(`${OUT}/ground.json`, JSON.stringify({ theme: 'crypt 1', period, sprites: placed }, null, 0));
 console.log(`ground: ${placed.length} pictures (floor repeats every ${period} tiles; ${g.faceLeft.length} + ${g.faceRight.length} wall faces) in a ${SHEET_W}x${SHEET_H} sheet`);
 
-// --- 2. the layout of a floor 1 ---
+// --- 2. a floor 1 as the game itself sets it up: a new Warrior's game, into the first dungeon (as tests/action_f1_game.test.ts
+// does), its layout and every monster spawned on it ---
 // (a Level, game/state.ts: its Floor, game/types.ts, and the grids made from it: `walk` where a body may stand, `low` the
 // walls drawn cut down low because floor lies behind them)
-const level = makeDungeon(1, seed);
+const game = new Game('warrior', seed);
+game.depth = 1;
+game.enterDungeon();
+const level = game.level;
 const L = level.floor;
 const arr = (a: ArrayLike<number> | undefined | null): number[] | null => (a ? Array.from(a) : null);
 const count = (v: number): number => L.tiles.reduce((n, t) => n + (t === v ? 1 : 0), 0);
@@ -89,9 +96,28 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   depth: 1, seed, w: L.w, h: L.h,
   tiles: arr(L.tiles), variant: arr(L.variant), cut: arr(L.cut), height: arr(L.height),
   walk: arr(level.walk), low: arr(level.low),
-  start: L.start, boss: L.boss,
+  start: { x: game.hero.x, y: game.hero.y }, boss: L.boss,
   rooms: L.rooms.map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h, kind: r.kind, path: r.path })),
 }));
+
+// --- 3. its monsters: each as game.ts spawn made it (life, damage and speed with the first floor's softening in them), its
+// figure (art/bestiary.ts figureOf: the pictures it is drawn with) and its kind's numbers (game/defs.ts MONSTERS) ---
+const plain = (o: object): Record<string, number | string | boolean> => {
+  const out: Record<string, number | string | boolean> = {};
+  for (const [k, v] of Object.entries(o)) if (typeof v === 'number' || typeof v === 'string' || typeof v === 'boolean') out[k] = v;
+  return out;
+};
+const kinds = new Set<string>();
+const monsters = game.monsters.map((m) => {
+  kinds.add(m.kind);
+  return { ...plain(m), figure: bakeName(figureOf(m)) };
+});
+const defs: Record<string, Record<string, number | string | boolean>> = {};
+for (const k of kinds) defs[k] = plain(MONSTERS[k as keyof typeof MONSTERS]);
+writeFileSync(`${OUT}/monsters.json`, JSON.stringify({ hero: plain(game.hero), monsters, defs }, null, 1));
+const tally: Record<string, number> = {};
+for (const m of monsters) tally[`${m.kind}/${m.figure}`] = (tally[`${m.kind}/${m.figure}`] ?? 0) + 1;
+console.log(`monsters: ${monsters.length}: ${Object.entries(tally).map(([k, n]) => `${n} ${k}`).join(', ')}`);
 const cuts = L.cut ? Array.from(L.cut).filter((c) => c !== 0).length : 0;
 const raised = L.height ? Array.from(L.height).filter((c) => c !== 0).length : 0;
 const lows = Array.from(level.low).filter((c) => c !== 0).length;

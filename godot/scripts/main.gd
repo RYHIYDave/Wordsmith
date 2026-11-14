@@ -14,8 +14,14 @@ const FloorLayer := preload("res://scripts/floor_layer.gd")
 const Stands := preload("res://scripts/stands.gd")
 const Hero := preload("res://scripts/hero.gd")
 
+const Monsters := preload("res://scripts/monsters.gd")
+const Monster := preload("res://scripts/monster.gd")
+
 const FLOOR_DIR := "res://assets/floor1"
 const HERO_DIR := "res://assets/heroes"
+const MONSTER_DIR := "res://assets/monsters"
+
+var _monsters: Monsters
 
 ## The dark of the dungeon deeper with distance from the middle of the screen (an approximation of render.ts's dark and
 ## vignette, to be replaced by the game's own).
@@ -56,6 +62,16 @@ func _ready() -> void:
 	hero.world = map.start
 	stands.add_child(hero)
 	stands.hero = hero
+
+	var monsters := Monsters.new()
+	monsters.map = map
+	monsters.sfx = sfx
+	monsters.hero = hero
+	monsters.stands = stands
+	add_child(monsters)
+	monsters.load_floor(FLOOR_DIR + "/monsters.json", MONSTER_DIR)
+	hero.monsters = monsters
+	_monsters = monsters
 
 	var layer := CanvasLayer.new()
 	var veil := ColorRect.new()
@@ -111,23 +127,78 @@ func _arg(name: String) -> String:
 	return ""
 
 
-## SHOT MODE: the hero stands, walks each of four ways, swings; a picture of each, at twice the size, then the game quits.
+## SHOT MODE: the hero where he comes in; then set down near the nearest pack of skeletons, swinging at whatever comes,
+## pictures as they wake, close in and fall; then near an archer pack, and in sight of the Warden. Each picture at twice
+## the size; then the game quits, saying how the fight went.
 func _shoot(hero: Hero, dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	await _wait(1.2)
-	await _snap(dir + "/1_standing.png")
-	var ways := [["2_walk_right", Vector2(1, 0)], ["3_walk_down", Vector2(0, 1)], ["4_walk_left", Vector2(-1, 0)], ["5_walk_up", Vector2(0, -1)]]
-	for w in ways:
-		hero.auto_dir = w[1]
-		await _wait(0.8)
-		await _snap("%s/%s.png" % [dir, w[0]])
-	hero.auto_dir = Vector2.ZERO
-	await _wait(0.4)
-	hero.auto_attack = true
-	await _wait(0.4)
-	await _snap(dir + "/6_swing.png")
-	print("SHOTS DONE ", dir, " hero at ", hero.world)
+	await _snap(dir + "/1_start.png")
+	var n0 := _alive()
+	var skel := _nearest_kind(hero.world, "skeleton", 12.0)
+	if skel != null:
+		hero.world = _spot_near(skel.world, 5.0, hero.world)
+		await _wait(0.6)
+		await _snap(dir + "/2_pack_wakes.png")
+		for i in 16:
+			hero.auto_attack = true
+			await _wait(0.5)
+			if i == 3:
+				await _snap(dir + "/3_fight.png")
+			if i == 8:
+				await _snap(dir + "/4_fight_on.png")
+		await _snap(dir + "/5_after.png")
+	print("FIGHT: ", n0 - _alive(), " monsters down; hero life ", int(hero.life), " alive ", hero.alive)
+	var arch := _nearest_kind(hero.world, "archer", 0.0)
+	if arch != null:
+		hero.world = _spot_near(arch.world, 6.0, hero.world)
+		await _wait(1.6)
+		await _snap(dir + "/6_archers.png")
+	var boss := _nearest_kind(hero.world, "warden", 0.0)
+	if boss != null:
+		hero.world = _spot_near(boss.world, 7.0, hero.world)
+		await _wait(0.9)
+		await _snap(dir + "/7_warden.png")
+	print("SHOTS DONE ", dir, " monsters standing ", _alive(), " of ", n0)
 	get_tree().quit()
+
+
+func _alive() -> int:
+	var n := 0
+	for m in _monsters.list:
+		if is_instance_valid(m) and not m.dead:
+			n += 1
+	return n
+
+
+## The monster of that kind nearest `from`, at least `beyond` tiles off (so as not to pick the soft pack at the start).
+func _nearest_kind(from: Vector2, kind: String, beyond: float) -> Monster:
+	var best: Monster = null
+	var best_d := INF
+	for m in _monsters.list:
+		if is_instance_valid(m) and not m.dead and m.kind == kind:
+			var d := m.world.distance_to(from)
+			if d >= beyond and d < best_d:
+				best_d = d
+				best = m
+	return best
+
+
+## A tile centre the hero may stand on, about `away` tiles from `at` and in sight of it.
+func _spot_near(at: Vector2, away: float, otherwise: Vector2) -> Vector2:
+	var best := otherwise
+	var best_err := INF
+	var map: FloorMap = _monsters.map
+	for ty in range(floori(at.y - away - 2), floori(at.y + away + 3)):
+		for tx in range(floori(at.x - away - 2), floori(at.x + away + 3)):
+			if not map.walkable(tx, ty):
+				continue
+			var p := Vector2(tx + 0.5, ty + 0.5)
+			var err := absf(p.distance_to(at) - away)
+			if err < best_err and _monsters.sees(p, at):
+				best_err = err
+				best = p
+	return best
 
 
 func _wait(s: float) -> void:
