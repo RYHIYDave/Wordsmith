@@ -89,6 +89,8 @@ the safe ground is close to him); Contagion “Catch it.”.
 - HIM SPENT (`spent`, `SPENT`, `spentAt`; `pictures/standard/boss_spent.mp4`): sagging on his staff, head hung, writing arm hanging,
   shoulders heaving; his shade dimmed and flickering. Both through the bosses' checks (0 findings).
 
+HIS YES to both openings: “Yes, hand it all on (Recommended)”.
+
 ## Still to settle
 
 - The numbers (damage, life, timings) are the main chat's to tune.
