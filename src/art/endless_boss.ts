@@ -2925,7 +2925,7 @@ export function wsMob(): Mob {
       for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
     },
     grains: (st: Stage, m: Moment) => m.move === 'death' ? deathGrains(m.t, DEATH_HEART()) : boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, blight: { name: 'blight', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, scald: { name: 'scald', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, wildfire: { name: 'wildfire', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, fumes: { name: 'fumes', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, frostbite: { name: 'frostbite', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, blight: { name: 'blight', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, scald: { name: 'scald', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, wildfire: { name: 'wildfire', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, fumes: { name: 'fumes', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, frostbite: { name: 'frostbite', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, contagion: { name: 'contagion', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -3909,6 +3909,54 @@ export function paintFrostbite(t: number, view: 'front' | 'rear', nearer: V3 | n
 }
 
 
+// CONTAGION (Lightning and Poison, melded: the game's meld, render/melds3.ts, “the sick, each passing it on”; as the game has it,
+// Lightning “Arcs to nearby enemies”, Poison “poisons. Poison stacks” and “Leaves a cloud of poison”, Contagion “Every enemy an arc
+// touches is poisoned” and “The poison cloud shocks whatever stands in it”). Not hits, an OUTBREAK (his words, 14 Nov 2026: “just
+// make sure they all read the elements of the melds.  Don’t make everything 3 hits, look outside the box and do something
+// interesting”): he writes Lightning, his shade writes Poison; melded, the slam drives the rune into the floor and it splits into
+// sparks that leap out to a few spots over the room (each marked as it lands); from each the SICKNESS SPREADS over the floor, patch
+// by patch, every sick patch arcing lightning on to the next and passing it on (the floor just ahead of it flushed in the bosses'
+// warning colour), the sick floor bubbling green poison, a shocking mist over it; each patch burns out a moment after it sickens
+// and cannot sicken again: so the safe ground is where it has already been, and the hero dodges through its front onto it. His
+// rules for the words stand: one rune (the meld's); the sickness light and vapour on the floor.
+export const CONTAGION = { cell: 0.45, seeds: [[3.0, -3.2, 0.7], [8.6, 2.4, 1.1], [9.4, -3.4, 1.6], [2.2, 3.0, 2.0]] as const, step: [0.06, 0.32] as const, sick: 0.55, mark: 0.5, fade: 2.0, end: 7.4 };
+/** THE OUTBREAK over the floor, worked out once: a grid of patches (his floor point's own lengths, a patch `CONTAGION.cell` tiles),
+ * when each sickens (Infinity, never) and which patch passed it on. */
+export const CONTAGION_FIELD = ((): { x0: number; y0: number; n: number; m: number; size: number; at: Float64Array; from: Int32Array } => {
+  const size = CONTAGION.cell * TILE, x0 = ARENA.x[0] * TILE, y0 = ARENA.y[0] * TILE;
+  const n = Math.floor(((ARENA.x[1] - ARENA.x[0]) * TILE) / size), m = Math.floor(((ARENA.y[1] - ARENA.y[0]) * TILE) / size);
+  const at = new Float64Array(n * m).fill(Infinity), from = new Int32Array(n * m).fill(-1);
+  const open: number[] = [];
+  for (const [sx, sy, st] of CONTAGION.seeds) {
+    const i = Math.floor((sx * TILE - x0) / size), j = Math.floor((sy * TILE - y0) / size), k = j * n + i;
+    at[k] = MELD.slam + st; open.push(k);
+  }
+  // (the earliest each patch could be reached, each step its own little delay: so the fronts go ragged and branch)
+  while (open.length) {
+    let bi = 0;
+    for (let q = 1; q < open.length; q++) if (at[open[q]] < at[open[bi]]) bi = q;
+    const k = open.splice(bi, 1)[0], i = k % n, j = Math.floor(k / n);
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+      const ii = i + di, jj = j + dj;
+      if (ii < 0 || jj < 0 || ii >= n || jj >= m) continue;
+      const kk = jj * n + ii;
+      const cx = x0 + (ii + 0.5) * size, cy = y0 + (jj + 0.5) * size;
+      if (Math.hypot(cx, cy) < 1.3 * TILE) continue;
+      const d = (CONTAGION.step[0] + (CONTAGION.step[1] - CONTAGION.step[0]) * hash(ii, jj, 9981 + (di + 2) * 5 + dj)) * (di && dj ? 1.41 : 1);
+      if (at[k] + d < at[kk]) { if (!isFinite(at[kk])) open.push(kk); at[kk] = at[k] + d; from[kk] = k; }
+    }
+  }
+  return { x0, y0, n, m, size, at, from };
+})();
+/** The middle of a patch (his own lengths). */
+export const contagionAt = (k: number): [number, number] => [CONTAGION_FIELD.x0 + ((k % CONTAGION_FIELD.n) + 0.5) * CONTAGION_FIELD.size, CONTAGION_FIELD.y0 + (Math.floor(k / CONTAGION_FIELD.n) + 0.5) * CONTAGION_FIELD.size];
+/** The patch a spot of the floor is in (-1 off the floor). */
+export const contagionCell = (x: number, y: number): number => {
+  const i = Math.floor((x - CONTAGION_FIELD.x0) / CONTAGION_FIELD.size), j = Math.floor((y - CONTAGION_FIELD.y0) / CONTAGION_FIELD.size);
+  return i < 0 || j < 0 || i >= CONTAGION_FIELD.n || j >= CONTAGION_FIELD.m ? -1 : j * CONTAGION_FIELD.n + i;
+};
+
+
 // THUNDER (Power and Lightning, melded: “a storm cloud and its one great bolt”): he writes Power, his shade writes Lightning; melded,
 // the slam flings the rune straight up out of sight; a GREAT RING of crackling violet locks onto where the hero stands, tightening as
 // it charges (the warning); then ONE GREAT BOLT, a pillar of violet-white lightning the width of a man, hammers down on it: the
@@ -4181,7 +4229,7 @@ export const WS_SHAPE: BossShape = {
   },
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : move === 'fall' ? fallCarry(t) * TILE : 0),
-  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE, avalanche: MELD_STRIKE, thunder: MELD_STRIKE, blight: MELD_STRIKE, scald: MELD_STRIKE, wildfire: MELD_STRIKE, fumes: MELD_STRIKE, frostbite: MELD_STRIKE },
+  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE, avalanche: MELD_STRIKE, thunder: MELD_STRIKE, blight: MELD_STRIKE, scald: MELD_STRIKE, wildfire: MELD_STRIKE, fumes: MELD_STRIKE, frostbite: MELD_STRIKE, contagion: MELD_STRIKE },
   // (his hammer from the sky: three blows of his staff, each its own wind-up, flash and follow-through)
   blows: { power: POWER.slams.map((h, i) => ({ hit: h, strike: POWER_STRIKES[i], from: i ? POWER.slams[i - 1] + 0.1 : 0, until: i < 2 ? POWER.slams[i + 1] - POWER.raise : Infinity })) },
   smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)) || (move === 'frost' && frostSmeared(t)) || (move === 'fall' && slamSmeared(t)) || (FOOT_MOVES.has(move) && move !== 'foot' && meldSmeared(t)),
@@ -4199,7 +4247,7 @@ export const WS_SHAPE: BossShape = {
     { from: 'fall', at: 'end', to: 'foot', toAt: 0, shift: footFrom() },
     { from: 'foot', at: 0, to: 'death', toAt: 0 },
     { from: 'foot', at: 0, to: 'turn', toAt: 0 },
-    ...['eruption', 'hailstorm', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'frostbite'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
+    ...['eruption', 'hailstorm', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'frostbite', 'contagion'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
   ],

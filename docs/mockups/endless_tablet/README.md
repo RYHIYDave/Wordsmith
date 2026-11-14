@@ -640,6 +640,25 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   HIS WORDS, going to bed: “I’m headed to bed, just go with these meld animations”; and: “That’s a lot of different attacks and
   just make sure they all read the elements of the melds.  Don’t make everything 3 hits, look outside the box and do something
   interesting”.
+  HIS WORDS, to the new Frostbite: “Nah that’s pretty shit”; asked what's worst: “It looks bad and is boring.  The problem with
+  just doing every move before figuring out the fight is I can’t get a flow for the thing.  I cont see the timing of what’s going to
+  happen.  Are these different attacks going to overlap?  How many are you going to have to be aware of at any time.  There are
+  things that are stationary that you need to be aware of, things that are coming at you and you need to dodge, and direct damage
+  that you’re just going to have to take as a trade off to do damage, and open spots in the fight to pour on damage”; then “What do
+  we have for moves in these categories so far?” (told him: phase 1's dodges, the charge, gore, stomp, hammer, meteors, ice spikes,
+  orb zaps; its stationary, the spore traps and burning craters; phase 2's dodges, Eruption, Hailstorm, Thunder, Avalanche,
+  Scald's beams; its stationary, Blight, Fumes, Wildfire, Scald's steam, Frostbite's ice; nothing yet you just take; no openings);
+  asked whether to draft the fight's flow first, HIS PICK: “Keep making moves”. SO the last two aimed at the gaps: Contagion the
+  outbreak you dodge through; Frostbite remade as a move you take (a gale he channels, rooted: your opening).
+- CONTAGION (Lightning and Poison; `contagion`, `CONTAGION`, `CONTAGION_FIELD`, `contagionAt`, `contagionCell`; the film's
+  `contFloor`, `contAir`; `pictures/standard/boss_contagion.mp4`): the game's meld is “the sick, each passing it on”; Lightning
+  “Arcs to nearby enemies”, Poison “poisons. Poison stacks”, Contagion “Every enemy an arc touches is poisoned”, “The poison cloud
+  shocks whatever stands in it”. An outbreak, not hits: he writes Lightning, his shade Poison; melded, the rune splits into sparks
+  that leap to four spots over the room, each marked as it lands; from each the sickness spreads over the floor patch by patch,
+  ragged and branching, every patch it reaches struck by an arc of lightning from the patch that passed it on (the floor just
+  ahead flushed in the bosses' warning colour, hottest at the front), the sick floor glowing toxic green and bubbling, a low poison
+  mist over it crackling with shock; each patch burns out a moment after and cannot sicken again, so the safe ground is where it
+  has already been: the hero dodges back through its front onto burned ground. Through the bosses' checks (0 findings).
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { FROSTBITE, FROSTBITE_CANVAS, frostbiteIced, frostbiteIsle, frostbiteWave, paintFrostbite, FUMES, FUMES_CLOUDS, fumesSpread, WILDFIRE, SCALD, SCALD_CANVAS, paintScald, scaldBeam, scaldIce, scaldIn, scaldSteamAt, scaldWall, BLIGHT, BLIGHT_AT, BLIGHT_CANVAS, BLIGHT_FIELD, BLIGHT_TREES, blightAt, blightReach, paintBlight, THUNDER, THUNDER_CANVAS, THUNDER_STRIKES, paintThunder, thunderClapR, thunderClapAt, ARENA, AVAL, AVAL_CANVAS, AVAL_OUT, avalFront, avalSpared, avalTail, paintAvalanche, TURN, turnYaw, shadeGlide, HAIL, HAIL_BOLTS, HAIL_CANVAS, HAIL_HERO, HAIL_STONES, hailCloudAt, paintHail, DEATH, ERUPT, ERUPT_AT, ERUPT_CANVAS, ERUPT_VENTS, MELD, eruptRace, meldSmeared, paintEruption, FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { CONTAGION, CONTAGION_FIELD, contagionAt, contagionCell, FROSTBITE, FROSTBITE_CANVAS, frostbiteIced, frostbiteIsle, frostbiteWave, paintFrostbite, FUMES, FUMES_CLOUDS, fumesSpread, WILDFIRE, SCALD, SCALD_CANVAS, paintScald, scaldBeam, scaldIce, scaldIn, scaldSteamAt, scaldWall, BLIGHT, BLIGHT_AT, BLIGHT_CANVAS, BLIGHT_FIELD, BLIGHT_TREES, blightAt, blightReach, paintBlight, THUNDER, THUNDER_CANVAS, THUNDER_STRIKES, paintThunder, thunderClapR, thunderClapAt, ARENA, AVAL, AVAL_CANVAS, AVAL_OUT, avalFront, avalSpared, avalTail, paintAvalanche, TURN, turnYaw, shadeGlide, HAIL, HAIL_BOLTS, HAIL_CANVAS, HAIL_HERO, HAIL_STONES, hailCloudAt, paintHail, DEATH, ERUPT, ERUPT_AT, ERUPT_CANVAS, ERUPT_VENTS, MELD, eruptRace, meldSmeared, paintEruption, FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -1814,6 +1814,90 @@ function steam(s: Px, t: number, ox: number, oy: number, from: V2, dir: number, 
     mix(s, x, y, c, a * fade);
   }
 }
+/** WHERE THE HERO IS in Contagion's film (his own lengths): out in the room as a front of the sickness comes for him; a moment
+ * before it reaches him he dodges back through it, onto ground it has already burned through, and stands there safe. */
+const CONT_HERO = ((): { from: [number, number]; to: [number, number]; at: number } => {
+  const from: [number, number] = [5.4 * TILE, -0.4 * TILE];
+  const k = contagionCell(from[0], from[1]), T = CONTAGION_FIELD.at[k];
+  let a = k;
+  while (CONTAGION_FIELD.from[a] >= 0 && CONTAGION_FIELD.at[a] > T - 0.55) a = CONTAGION_FIELD.from[a];
+  return { from, to: contagionAt(a), at: T - 0.16 };
+})();
+function contHeroAt(t: number): [number, number, number] {
+  const u = Math.min(1, Math.max(0, (t - CONT_HERO.at) / 0.24)), e = u * u * (3 - 2 * u), { from: a, to: b } = CONT_HERO;
+  return [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e, 0];
+}
+/** THE OUTBREAK ON THE FLOOR: the room; the floor in patches; each patch about to sicken flushed in every boss's warning colour,
+ * hottest at the front; sick, glowing toxic green, bubbling; burned out after, dark, ash in it (it cannot sicken again); each spot
+ * where it breaks out, marked as the spark lands. */
+function contFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
+  roomWalls(s, ox, oy, from, dir);
+  if (t < MELD.slam) return;
+  const P = (x: number, y: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, 0]); return [Math.round(ox + px), Math.round(oy + py)]; };
+  const F = CONTAGION_FIELD, fr = Math.floor(t * 30), half = F.size / 2 - 1.5;
+  for (let k = 0; k < F.n * F.m; k++) {
+    const T = F.at[k];
+    if (!isFinite(T)) continue;
+    const d = t - T;
+    if (d < -0.45) continue;
+    const [cx, cy] = contagionAt(k);
+    let c: string, a: number;
+    if (d < 0) { const w = 1 + d / 0.45; c = d > -0.1 ? FLAME[3] : FLAME[2]; a = 0.15 + 0.6 * w; }
+    else if (d < CONTAGION.sick) { c = d < 0.08 ? '#c4ffb0' : (fr + k) % 7 === 0 ? '#62ff5a' : '#22a02c'; a = 0.8; }
+    else { const f = Math.max(0, 1 - (d - CONTAGION.sick) / CONTAGION.fade); if (f <= 0) continue; c = '#08240c'; a = 0.6 * f + 0.15; }
+    for (let yy = -half; yy <= half; yy += 1.1) for (let xx = -half; xx <= half; xx += 1.1) {
+      const [px, py] = P(cx + xx, cy + yy);
+      mix(s, px, py, c, a);
+      if (d >= 0 && d < CONTAGION.sick && hash(Math.floor(xx / 2) + k * 9, Math.floor(yy / 2), 9991 + (fr >> 1)) > 0.93) mix(s, px, py, '#f4fff0', 0.9);
+      if (d >= CONTAGION.sick && hash(Math.floor(xx / 2) + k * 9, Math.floor(yy / 2), 9992) > 0.95) mix(s, px, py, '#3a3a36', 0.6);
+    }
+  }
+  // (each outbreak's spot, marked as its spark lands)
+  for (const [sx, sy, st] of CONTAGION.seeds) {
+    const u = t - (MELD.slam + st - CONTAGION.mark);
+    if (u < 0 || u > CONTAGION.mark) continue;
+    const R = 0.8 * TILE * (1.3 - 0.3 * (u / CONTAGION.mark));
+    for (let i = 0; i < 180; i++) { const a2 = (i / 180) * Math.PI * 2; for (let w = 0; w < 3; w++) { const [px, py] = P(sx * TILE + Math.cos(a2) * (R - w), sy * TILE + Math.sin(a2) * (R - w)); mix(s, px, py, w === 0 ? FLAME[3] : FLAME[2], 0.9); } }
+  }
+}
+/** THE OUTBREAK'S LIGHTNING AND MIST: each patch as it sickens, struck by an arc from the patch that passed it on; sick patches
+ * crackling arcs to their sick neighbours; a low poison mist over the sick floor, sparks of shock in it; the sparks that carry it
+ * out from the rune to where it breaks out. */
+function contAir(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
+  if (t < MELD.slam) return;
+  const W = (x: number, y: number, z: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, z]); return [ox + px, oy + py]; };
+  const F = CONTAGION_FIELD, fr = Math.floor(t * 30);
+  // (the mist)
+  const puffs: { X: number; Y: number; R: number; v: number; seed: number }[] = [];
+  for (let k = 0; k < F.n * F.m; k++) {
+    const d = t - F.at[k];
+    if (!(d >= 0 && d < CONTAGION.sick + 0.25) || ((k % F.n) + Math.floor(k / F.n)) % 2) continue;
+    const [cx, cy] = contagionAt(k), [X, Y] = W(cx, cy, 3 + 3 * Math.sin(t * 3 + k));
+    puffs.push({ X, Y, R: 19, v: 0.55 * Math.min(1, d / 0.1) * Math.max(0, 1 - Math.max(0, d - CONTAGION.sick) / 0.25), seed: k });
+  }
+  puffPass(s, puffs, t, (dd, L, x, y) => (dd < 0.22 ? ((x + y) % 2 ? null : ['#22a02c', 0.35]) : [hash(x >> 1, y >> 1, 9993 + fr) > 0.985 ? '#f4fff0' : L > 0.55 ? '#c4ffb0' : L > 0.35 ? '#62ff5a' : '#22a02c', dd > 0.6 ? 0.45 : 0.32]));
+  // (the arcs: passing it on)
+  const fresh: [number, number][][] = [], crackle: [number, number][][] = [];
+  for (let k = 0; k < F.n * F.m; k++) {
+    const d = t - F.at[k], p = F.from[k];
+    if (p < 0 || d < 0 || d >= CONTAGION.sick) continue;
+    const rnd = seeded(k * 131 + Math.floor(t * 15));
+    const [ax, ay] = contagionAt(p), [bx, by] = contagionAt(k);
+    if (d < 0.1) fresh.push(jagLine(W(ax, ay, 10), W(bx, by, 10), 0.5, rnd));
+    else if ((k + fr) % 9 === 0) crackle.push(jagLine(W(ax, ay, 8), W(bx, by, 8), 0.6, rnd));
+  }
+  glowLines(s, fresh, [[3.5, '#62ff5a', 0.3], [1.5, '#c4ffb0', 0.9], [0.6, '#ffffff', 1]]);
+  glowLines(s, crackle, [[2.5, '#62ff5a', 0.25], [0.6, '#f4fff0', 0.9]]);
+  // (the sparks carrying it out from the rune, arcing high, his pink in their wake)
+  for (const [sx, sy, st] of CONTAGION.seeds) {
+    const land = MELD.slam + st - CONTAGION.mark, u = (t - (land - 0.35)) / 0.35;
+    if (u < 0 || u > 1) continue;
+    for (let q = 6; q >= 0; q--) {
+      const v = Math.max(0, u - q * 0.04), [X, Y] = W(sx * TILE * v, sy * TILE * v, 40 + 90 * Math.sin(v * Math.PI));
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const r = Math.hypot(dx, dy) / (q === 0 ? 4 : 2.5); if (r < 1) mix(s, Math.round(X + dx), Math.round(Y + dy), r < 0.4 ? '#ffffff' : q === 0 ? '#62ff5a' : '#ff4f8a', q === 0 ? 0.95 : 0.5); }
+    }
+  }
+}
 /** WHERE THE HERO IS in Frostbite's film (his own lengths): out in the room as the wave rolls over him (chilled, so slowed);
  * struggling to the nearest bare island before the ice locks. */
 const BITE_ISLE: [number, number, number] = [FROSTBITE.isles[0][0] * TILE, FROSTBITE.isles[0][1] * TILE, 0];
@@ -2202,7 +2286,7 @@ const floorOf = (mv: string) => (t: number): V2 => {
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : mv === 'fall' ? FALL.long : mv === 'eruption' ? ERUPT.end : mv === 'foot' ? 4.8 : mv === 'death' ? DEATH.long : mv === 'hailstorm' ? HAIL.end : mv === 'turn' ? TURN.long : mv === 'avalanche' ? AVAL.end : mv === 'thunder' ? THUNDER.end : mv === 'blight' ? BLIGHT.end : mv === 'scald' ? SCALD.end : mv === 'wildfire' ? WILDFIRE.end : mv === 'fumes' ? FUMES.end : mv === 'frostbite' ? FROSTBITE.end : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : mv === 'fall' ? FALL.long : mv === 'eruption' ? ERUPT.end : mv === 'foot' ? 4.8 : mv === 'death' ? DEATH.long : mv === 'hailstorm' ? HAIL.end : mv === 'turn' ? TURN.long : mv === 'avalanche' ? AVAL.end : mv === 'thunder' ? THUNDER.end : mv === 'blight' ? BLIGHT.end : mv === 'scald' ? SCALD.end : mv === 'wildfire' ? WILDFIRE.end : mv === 'fumes' ? FUMES.end : mv === 'frostbite' ? FROSTBITE.end : mv === 'contagion' ? CONTAGION.end : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
@@ -2246,11 +2330,11 @@ for (const sg of segs) {
     // (as his shade rises, the camera lifts to take it in)
     const lift = sg.move === 'fall' ? 60 * Math.min(1, Math.max(0, (t - FALL.shade[0]) / (FALL.shade[1] - FALL.shade[0]))) : 0;
     const blightFilm = sg.move === 'blight';
-    const [tx, ty] = sg.move === 'frostbite' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 40]) : sg.move === 'fumes' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 40]) : sg.move === 'wildfire' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 50]) : sg.move === 'scald' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 40]) : blightFilm ? at([sg.from[0] + BLIGHT_AT[0] + 1.6 * TILE, sg.from[1] + BLIGHT_AT[1], 110]) : thunderFilm ? at([sg.from[0] + 4.85 * TILE, sg.from[1] - 1.75 * TILE, 70]) : avalFilm ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 30]) : turnFilm ? at([sg.from[0] + 0.6 * TILE, sg.from[1] - 0.2 * TILE, 70]) : hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    const [tx, ty] = sg.move === 'contagion' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 40]) : sg.move === 'frostbite' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 40]) : sg.move === 'fumes' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 40]) : sg.move === 'wildfire' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 50]) : sg.move === 'scald' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 40]) : blightFilm ? at([sg.from[0] + BLIGHT_AT[0] + 1.6 * TILE, sg.from[1] + BLIGHT_AT[1], 110]) : thunderFilm ? at([sg.from[0] + 4.85 * TILE, sg.from[1] - 1.75 * TILE, 70]) : avalFilm ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 30]) : turnFilm ? at([sg.from[0] + 0.6 * TILE, sg.from[1] - 0.2 * TILE, 70]) : hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)
-    const kick = sg.move === 'frostbite' ? Math.max(0, 1 - Math.abs(t - MELD.slam - FROSTBITE.freeze - 0.05) / 0.3) * 8 + (t > MELD.slam + FROSTBITE.wave[0] && t < MELD.slam + FROSTBITE.wave[1] ? 1.5 : 0) : sg.move === 'fumes' ? Math.max(0, ...FUMES_CLOUDS.map((c) => 1 - Math.abs(t - c.boom - 0.04) / 0.3)) * 8 + Math.max(0, ...FUMES_CLOUDS.map((c) => 1 - Math.abs(t - c.vent) / 0.12)) * 2 : sg.move === 'wildfire' ? Math.max(0, ...WILD_NODES.map((n) => 1 - Math.abs(t - n.t - 0.02) / 0.12)) * 3 + Math.max(0, 1 - Math.abs(t - WILD_BOOM() - 0.05) / 0.35) * 9 : sg.move === 'scald' ? (t > MELD.slam + SCALD.heat[0] && t < MELD.slam + SCALD.flash ? 0.5 + 1.5 * ((t - MELD.slam - SCALD.heat[0]) / (SCALD.heat[1] - SCALD.heat[0])) : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - SCALD.flash - 0.05) / 0.35) * 7 + (t > MELD.slam + SCALD.beams[0] && t < MELD.slam + SCALD.beams[1] ? 1.2 : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - SCALD.beams[0] - 0.03) / 0.2) * 4 : sg.move === 'blight' ? (t > MELD.slam + BLIGHT.spread[0] && t < MELD.slam + BLIGHT.heave ? 0.6 + 1.2 * ((t - MELD.slam) / BLIGHT.heave) : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - BLIGHT.heave - 0.08) / 0.3) * 7 : sg.move === 'avalanche' ? (t > MELD.slam + AVAL.rumble[0] && t < AVAL_OUT() + AVAL.cross + AVAL.stream ? 1 + 5 * Math.min(1, Math.max(0, (t - MELD.slam - AVAL.rumble[0]) / (AVAL.rumble[1] - AVAL.rumble[0]))) : 0) : sg.move === 'thunder' ? Math.max(0, ...THUNDER_STRIKES.map((st) => Math.max(4 * (1 - Math.abs(t - st.t - 0.02) / 0.12), 9 * (1 - Math.abs(t - st.t - THUNDER.clapAfter - 0.05) / 0.3), t > st.lock && t < st.t ? 0.8 + 1.4 * ((t - st.lock) / (st.t - st.lock)) : 0))) : sg.move === 'death' ? Math.max(0, 1 - Math.abs(t - 0.02) / 0.12) * 3 + Math.max(0, 1 - Math.abs(t - DEATH.burst - 0.02) / 0.25) * 7 + (t > 0.3 && t < 1.35 ? 1.5 : 0) : sg.move === 'fall' ? Math.max(0, 1 - Math.abs(t - FALL.kill - 0.02) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - FALL.kill - 0.22) / 0.15) * 5 + Math.max(0, 1 - Math.abs(t - FALL.slam - 0.03) / 0.3) * 8 : sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : sg.move === 'frost' ? Math.max(0, 1 - Math.abs(t - FROST.hit - 0.03) / 0.25) * 5 : sg.move === 'lightning' ? Math.max(0, ...[...BOLT.bursts, ...BOLT.zaps].map((b) => 1 - Math.abs(t - b - 0.03) / 0.15), 1 - Math.abs(t - BOLT.crack) / 0.12) * 4 : 0;
+    const kick = sg.move === 'contagion' ? Math.max(0, ...CONTAGION.seeds.map(([, , st]) => 1 - Math.abs(t - MELD.slam - st - 0.03) / 0.2)) * 4 : sg.move === 'frostbite' ? Math.max(0, 1 - Math.abs(t - MELD.slam - FROSTBITE.freeze - 0.05) / 0.3) * 8 + (t > MELD.slam + FROSTBITE.wave[0] && t < MELD.slam + FROSTBITE.wave[1] ? 1.5 : 0) : sg.move === 'fumes' ? Math.max(0, ...FUMES_CLOUDS.map((c) => 1 - Math.abs(t - c.boom - 0.04) / 0.3)) * 8 + Math.max(0, ...FUMES_CLOUDS.map((c) => 1 - Math.abs(t - c.vent) / 0.12)) * 2 : sg.move === 'wildfire' ? Math.max(0, ...WILD_NODES.map((n) => 1 - Math.abs(t - n.t - 0.02) / 0.12)) * 3 + Math.max(0, 1 - Math.abs(t - WILD_BOOM() - 0.05) / 0.35) * 9 : sg.move === 'scald' ? (t > MELD.slam + SCALD.heat[0] && t < MELD.slam + SCALD.flash ? 0.5 + 1.5 * ((t - MELD.slam - SCALD.heat[0]) / (SCALD.heat[1] - SCALD.heat[0])) : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - SCALD.flash - 0.05) / 0.35) * 7 + (t > MELD.slam + SCALD.beams[0] && t < MELD.slam + SCALD.beams[1] ? 1.2 : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - SCALD.beams[0] - 0.03) / 0.2) * 4 : sg.move === 'blight' ? (t > MELD.slam + BLIGHT.spread[0] && t < MELD.slam + BLIGHT.heave ? 0.6 + 1.2 * ((t - MELD.slam) / BLIGHT.heave) : 0) + Math.max(0, 1 - Math.abs(t - MELD.slam - BLIGHT.heave - 0.08) / 0.3) * 7 : sg.move === 'avalanche' ? (t > MELD.slam + AVAL.rumble[0] && t < AVAL_OUT() + AVAL.cross + AVAL.stream ? 1 + 5 * Math.min(1, Math.max(0, (t - MELD.slam - AVAL.rumble[0]) / (AVAL.rumble[1] - AVAL.rumble[0]))) : 0) : sg.move === 'thunder' ? Math.max(0, ...THUNDER_STRIKES.map((st) => Math.max(4 * (1 - Math.abs(t - st.t - 0.02) / 0.12), 9 * (1 - Math.abs(t - st.t - THUNDER.clapAfter - 0.05) / 0.3), t > st.lock && t < st.t ? 0.8 + 1.4 * ((t - st.lock) / (st.t - st.lock)) : 0))) : sg.move === 'death' ? Math.max(0, 1 - Math.abs(t - 0.02) / 0.12) * 3 + Math.max(0, 1 - Math.abs(t - DEATH.burst - 0.02) / 0.25) * 7 + (t > 0.3 && t < 1.35 ? 1.5 : 0) : sg.move === 'fall' ? Math.max(0, 1 - Math.abs(t - FALL.kill - 0.02) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - FALL.kill - 0.22) / 0.15) * 5 + Math.max(0, 1 - Math.abs(t - FALL.slam - 0.03) / 0.3) * 8 : sg.move === 'charge' ? Math.max(0, 1 - Math.abs(t - CHARGE_STRIKE[1]) / 0.1) * 3 + Math.max(0, 1 - Math.abs(t - CHARGE_SKID[0] - 0.1) / 0.12) * 2 : sg.move === 'gore' ? Math.max(0, 1 - Math.abs(t - GORE.hit - 0.02) / 0.12) * 4 : sg.move === 'stomp' ? Math.max(0, 1 - Math.abs(t - STOMP.hit - 0.03) / 0.25) * 7 : sg.move === 'power' ? Math.max(0, ...POWER.slams.map((h) => 1 - Math.abs(t - h - 0.03) / 0.2)) * 6 : sg.move === 'flame' ? Math.max(0, ...FIRE_DROPS.map((d) => 1 - Math.abs(t - d.t - 0.02) / 0.1)) * 2 : sg.move === 'frost' ? Math.max(0, 1 - Math.abs(t - FROST.hit - 0.03) / 0.25) * 5 : sg.move === 'lightning' ? Math.max(0, ...[...BOLT.bursts, ...BOLT.zaps].map((b) => 1 - Math.abs(t - b - 0.03) / 0.15), 1 - Math.abs(t - BOLT.crack) / 0.12) * 4 : 0;
     const ox = sx - Math.round(camX) + Math.round(kick * Math.sin(i * 2.7));
     const oy = sy - Math.round(camY) + Math.round(kick * Math.cos(i * 3.1));
     const s = floor(-ox, -oy);
@@ -2301,12 +2385,13 @@ for (const sg of segs) {
     }
     if (sg.move === 'scald') { scaldFloor(s, t, ox, oy, sg.from, k); steam(s, t, ox, oy, sg.from, k, true); }
     if (sg.move === 'frostbite') biteFloor(s, t, ox, oy, sg.from, k);
+    if (sg.move === 'contagion') contFloor(s, t, ox, oy, sg.from, k);
     const amid = AMID[sg.move];
     const [, fumesSplit] = sg.move === 'fumes' ? ((): [number, number] => { const h = fumesHeroAt(t), [, y] = at([sg.from[0] + k * h[0], sg.from[1] + k * h[1], 0]); return [0, oy + y]; })() : [0, 0];
     if (sg.move === 'fumes') { fumesFloor(s, t, ox, oy, sg.from, k); fumesClouds(s, t, ox, oy, sg.from, k, false, fumesSplit); }
     const [, wildSplit] = sg.move === 'wildfire' ? ((): [number, number] => { const h = wildHeroAt(t), [, y] = at([sg.from[0] + k * h[0], sg.from[1] + k * h[1], 0]); return [0, oy + y]; })() : [0, 0];
     if (sg.move === 'wildfire') { wildFloor(s, t, ox, oy, sg.from, k); wildfire(s, t, ox, oy, sg.from, k, false, wildSplit); }
-    if (sg.move === 'eruption' || sg.move === 'foot' || sg.move === 'hailstorm' || sg.move === 'turn' || sg.move === 'avalanche' || sg.move === 'thunder' || sg.move === 'wildfire' || sg.move === 'fumes' || amid) {
+    if (sg.move === 'eruption' || sg.move === 'foot' || sg.move === 'hailstorm' || sg.move === 'turn' || sg.move === 'avalanche' || sg.move === 'thunder' || sg.move === 'wildfire' || sg.move === 'fumes' || sg.move === 'contagion' || amid) {
       // (the hero, out before him)
       const [bx0, by0] = at([sg.from[0], sg.from[1], 0]);
       // (what the meld makes stands among them all (the dead trees, the steam): all of it laid first; then, over each figure as it
@@ -2319,7 +2404,7 @@ for (const sg of segs) {
         const [gx, gy] = at([sg.from[0] + k * p[0], sg.from[1] + k * p[1], 0]);
         hero(s, ox + gx, oy + gy, a);
       }
-      const hh = sg.move === 'fumes' ? fumesHeroAt(t) : sg.move === 'wildfire' ? wildHeroAt(t) : amid ? amid.hero(t) : sg.move === 'thunder' ? thunderHeroAt(t) : sg.move === 'hailstorm' ? HAIL_HERO : sg.move === 'avalanche' ? [AVAL.safe.at[0] * TILE, AVAL.safe.at[1] * TILE, 0] : [5.0 * TILE, -1.6 * TILE, 0];
+      const hh = sg.move === 'contagion' ? contHeroAt(t) : sg.move === 'fumes' ? fumesHeroAt(t) : sg.move === 'wildfire' ? wildHeroAt(t) : amid ? amid.hero(t) : sg.move === 'thunder' ? thunderHeroAt(t) : sg.move === 'hailstorm' ? HAIL_HERO : sg.move === 'avalanche' ? [AVAL.safe.at[0] * TILE, AVAL.safe.at[1] * TILE, 0] : [5.0 * TILE, -1.6 * TILE, 0];
       const [hx, hy] = at([sg.from[0] + k * hh[0], sg.from[1] + k * hh[1], 0]);
       if (sg.move === 'thunder') for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) {
         // (dashing: after-images of him where he was a moment ago)
@@ -2397,11 +2482,11 @@ for (const sg of segs) {
       const [x, y] = at([sg.from[0] + k * (fallCarry(t) * TILE + sk.pelvis[0]), sg.from[1] + k * sk.pelvis[1], 0]);
       layShade(s, paintShade(sk, t, sg.view, g), ox + x, oy + y, 0.25 + 0.42 * g);
     }
-    if ((sg.move === 'eruption' || sg.move === 'hailstorm' || sg.move === 'avalanche' || sg.move === 'thunder' || sg.move === 'blight' || sg.move === 'scald' || sg.move === 'wildfire' || sg.move === 'fumes' || sg.move === 'frostbite') && meldSmeared(t)) {
+    if ((sg.move === 'eruption' || sg.move === 'hailstorm' || sg.move === 'avalanche' || sg.move === 'thunder' || sg.move === 'blight' || sg.move === 'scald' || sg.move === 'wildfire' || sg.move === 'fumes' || sg.move === 'frostbite' || sg.move === 'contagion') && meldSmeared(t)) {
       const [x, y] = base();
       for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) lay(s, sg.move, sg.view, t - m * (1 / 90), x, y, a);
     }
-    if (sg.move === 'foot' || sg.move === 'turn' || sg.move === 'avalanche' || sg.move === 'thunder' || sg.move === 'blight' || sg.move === 'scald' || sg.move === 'wildfire' || sg.move === 'fumes' || sg.move === 'frostbite' || sg.move === 'death' || sg.move === 'eruption' || sg.move === 'hailstorm' || sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost' || sg.move === 'lightning' || sg.move === 'poison') {
+    if (sg.move === 'foot' || sg.move === 'turn' || sg.move === 'avalanche' || sg.move === 'thunder' || sg.move === 'blight' || sg.move === 'scald' || sg.move === 'wildfire' || sg.move === 'fumes' || sg.move === 'frostbite' || sg.move === 'contagion' || sg.move === 'death' || sg.move === 'eruption' || sg.move === 'hailstorm' || sg.move === 'wheel' || sg.move === 'gore' || sg.move === 'stomp' || sg.move === 'power' || sg.move === 'flame' || sg.move === 'frost' || sg.move === 'lightning' || sg.move === 'poison') {
       const [x, y] = base();
       lay(s, sg.move, sg.view, t, x, y);
     } else {
@@ -2436,6 +2521,10 @@ for (const sg of segs) {
       // (the hero, nearer the eye than where it struck: over it)
       { const hh = thunderHeroAt(t), [hx, hy] = at([sg.from[0] + k * hh[0], sg.from[1] + k * hh[1], 0]); if (oy + hy > hit && hit > -Infinity) hero(s, ox + hx, oy + hy); }
       meldScene(s, t, ox, oy, sg.from, k, 'thunder', 'power', 'lightning', MELD_GLYPH.thunder, [MELD_RAMP.thunder[3], MELD_RAMP.thunder[4]], [0, 0, 0], false, true);
+    }
+    if (sg.move === 'contagion') {
+      contAir(s, t, ox, oy, sg.from, k);
+      meldScene(s, t, ox, oy, sg.from, k, 'contagion', 'lightning', 'poison', MELD_GLYPH.contagion, [MELD_RAMP.contagion[3], MELD_RAMP.contagion[4]], [0, 0, 0], false);
     }
     if (sg.move === 'fumes') {
       fumesClouds(s, t, ox, oy, sg.from, k, true, fumesSplit);
