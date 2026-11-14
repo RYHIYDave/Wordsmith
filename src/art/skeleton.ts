@@ -957,8 +957,14 @@ export type View = 'side' | 'front' | 'back';
 export const GRID = Math.sqrt(2 / 3);
 
 /** Where a point of the figure is seen: across and down the picture from the figure's place on the floor, and how near the eye it is. */
-export function project(p: V3, view: View | 'rear'): readonly [number, number, number] {
+export function project(p: V3, view: View | 'rear' | 'frontL' | 'rearL'): readonly [number, number, number] {
   if (view === 'side') return [p[0], -p[2], -p[1]];
+  // (THE GAME'S OTHER TWO FACINGS, TURNED ROUND, NOT FLIPPED (the owner's words, 12 Nov 2026, of the endless boss: “I see his staff
+  // swapping hands.  It’s gonna have to get unmirrored at some point”): the figure turned on the floor to face down and to the left
+  // (`frontL`), or up and to the left (`rearL`), and seen so, not its other facing in a mirror: what is in his right hand stays in
+  // his right. As `front` with him turned a quarter round (`frontL`) or half round (`rearL`).)
+  if (view === 'frontL') return [GRID * (p[1] - p[0]), GRID * 0.5 * (p[1] + p[0]) - p[2], 0.612 * (p[1] + p[0]) + 0.5 * p[2]];
+  if (view === 'rearL') return [-GRID * (p[0] + p[1]), GRID * 0.5 * (p[1] - p[0]) - p[2], 0.612 * (p[1] - p[0]) + 0.5 * p[2]];
   // (from behind as the game's camera truly sees one who faces up the screen and to the right: over
   // his right shoulder, not turned over, so that what is in his right hand is on the right of the
   // picture. For a figure who holds one thing on one side and is seen beside himself from in front,
