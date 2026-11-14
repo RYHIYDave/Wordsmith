@@ -26,7 +26,7 @@ export const FINAL_DEPTH = 99;
  * WHAT HE LEAVES (stage 4; the main chat's numbers, to tune): his drops are the best in the game (his idea of 7 Nov: “Its drops are the
  * best in the game (strong uniques, powerful words)”): a great hoard of gold (a boss's is 25 to 45 times the floor's power), every piece
  * of gear a rare, words, a life orb; and, one kill in four, one of his own two uniques (game/uniques.ts finalUniques, UNIQUE_DROPS.final:
- * the Uniques chat's proposal, his yes still to come). The way back up opens in the portal's light once he is dead: walked into a
+ * the Uniques chat's proposal; his yes, 14 Nov 2026, shown it filmed: “that sounds good.  nice job”). The way back up opens in the portal's light once he is dead: stood in a
  * moment after, the hero is back at the Rim, the tablet used up (his pick: “Used up, collect again (Recommended)”).
  */
 export const FINAL_LOOT = { gold: [70, 110] as const, items: 6, words: 2 } as const;
