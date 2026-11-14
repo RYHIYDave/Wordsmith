@@ -99,6 +99,30 @@ const heroOn = (c: Act1FxCtx): readonly [number, number] => {
   const [x, y] = c.at(c.game.hero.x, c.game.hero.y);
   return [x, y - 14];
 };
+/** What is drawn on the floor kept to the top (her shadow, her haze, her ring of pages lie on its stones, not over the drop). */
+function onTheTop(c: Act1FxCtx, draw: () => void): void {
+  const g = c.g;
+  const T = c.game.level.land?.tower;
+  if (!g || !T || typeof g.clip !== 'function') {
+    draw();
+    return;
+  }
+  g.save();
+  g.beginPath();
+  for (let i = 0; i < 48; i++) {
+    const a = (i / 48) * Math.PI * 2;
+    const [x, y] = c.at(T.top.cx + Math.cos(a) * (T.top.r + 0.25), T.top.cy + Math.sin(a) * (T.top.r + 0.25));
+    if (i === 0) g.moveTo(x, y);
+    else g.lineTo(x, y);
+  }
+  g.closePath();
+  g.clip();
+  try {
+    draw();
+  } finally {
+    g.restore();
+  }
+}
 /** The moon behind her and her shadow, `t` seconds into her Eyes' move (on past the blow), she at (x, y) casting along (ax, ay). */
 function eclipseDrawn(c: Act1FxCtx, x: number, y: number, ax: number, ay: number, t: number): void {
   if (!c.g) return;
@@ -112,7 +136,9 @@ function eclipseDrawn(c: Act1FxCtx, x: number, y: number, ax: number, ay: number
   const my = Math.min(H - 60, Math.max(60, sy - rearH() - 40 - ((qy - sy) / d) * 70));
   drawMoon(c.g, mx, my, moonAt(t), c.t, spotOf(c));
   const [hx, hy] = heroOn(c);
-  drawEclipse(c.g, c.at, x, y, ax, ay, t, hx, hy, c.t, spotOf(c));
+  const g = c.g;
+  onTheTop(c, () => drawEclipse(g, c.at, x, y, ax, ay, t, hx, hy, c.t, spotOf(c), 'floor'));
+  drawEclipse(g, c.at, x, y, ax, ay, t, hx, hy, c.t, spotOf(c), 'rising');
 }
 /** How far from (x, y) along (wx, wy) the top goes on (tiles), or `most`: the lane's warning marked only over the top. */
 function onTop(c: Act1FxCtx, x: number, y: number, wx: number, wy: number, most: number): number {
@@ -215,12 +241,16 @@ export const FX: Act1Fx | null = {
           lanesDrawn(c, p.x, p.y, p.fx, p.fy, PHANTOMS.hit + p.t);
           break;
         case 'moth:dust':
-        case 'moth:shed':
-          drawHushGround(c.g, c.at, p.x, p.y, HUSH_R, p.t, c.t, spotOf(c));
+        case 'moth:shed': {
+          const g = c.g;
+          onTheTop(c, () => drawHushGround(g, c.at, p.x, p.y, HUSH_R, p.t, c.t, spotOf(c)));
           break;
-        case 'moth:wave':
-          drawUnwritingGround(c.g, c.at, p.x, p.y, waveAt(p.t), MOTH_TUNE.beat.wide, 1 - Math.min(1, Math.max(0, (p.t - WAVE_FX.reach) / (WAVE_FX.long - WAVE_FX.reach))));
+        }
+        case 'moth:wave': {
+          const g = c.g;
+          onTheTop(c, () => drawUnwritingGround(g, c.at, p.x, p.y, waveAt(p.t), MOTH_TUNE.beat.wide, 1 - Math.min(1, Math.max(0, (p.t - WAVE_FX.reach) / (WAVE_FX.long - WAVE_FX.reach)))));
           break;
+        }
       }
     }
     // (the dust it sheds over him: where it will fall)

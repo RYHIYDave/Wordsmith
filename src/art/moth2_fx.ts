@@ -295,24 +295,30 @@ export function drawMoon(g: CanvasRenderingContext2D, sx: number, sy: number, k:
     for (let s = r + 6; s < r + 150; s += 3) if (hash(i, s, 7322) > 0.3) dot(g, sx + Math.cos(a) * s, cy + Math.sin(a) * s, MOON[4]);
   }
   g.globalAlpha = was;
-  // (its face: pale, its seas)
-  const disc: [number, number][] = [];
-  for (let i = 0; i < 40; i++) {
-    const a = (i / 40) * Math.PI * 2;
-    disc.push([sx + Math.cos(a) * r, cy + Math.sin(a) * r]);
-  }
+  // (its face: pale, its seas faint; a soft glow round it)
+  const ring = (rr: number): [number, number][] => {
+    const out: [number, number][] = [];
+    for (let i = 0; i < 48; i++) {
+      const a = (i / 48) * Math.PI * 2;
+      out.push([sx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+    }
+    return out;
+  };
+  const disc = ring(r);
+  fill(g, [ring(r + 30), ring(r + 12)], GHOST[5], 0.1 * k);
+  fill(g, [ring(r + 12), disc], MOON[4], 0.22 * k);
   fill(g, [disc], MOON[3], k);
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 6; i++) {
     const a = hash(i, 1, 7323) * Math.PI * 2;
     const d = Math.sqrt(hash(i, 2, 7323)) * r * 0.7;
-    const rr = 5 + hash(i, 3, 7323) * 12;
+    const rr = 4 + hash(i, 3, 7323) * 9;
     const sea: [number, number][] = [];
     for (let j = 0; j < 14; j++) {
       const b = (j / 14) * Math.PI * 2;
       const wob = 1 + 0.18 * Math.sin(b * 3 + i);
       sea.push([sx + Math.cos(a) * d + Math.cos(b) * rr * wob, cy + Math.sin(a) * d + Math.sin(b) * rr * wob * 0.9]);
     }
-    fill(g, [sea], i % 3 ? MOON[2] : MOON[1], k * 0.8);
+    fill(g, [sea], i % 3 ? MOON[2] : MOON[1], k * 0.38);
   }
   rim(g, disc, MOON[4], k, 1);
   g.globalAlpha = was;
@@ -383,7 +389,7 @@ function warnDots(g: CanvasRenderingContext2D, pts: readonly (readonly [number, 
  * HER SHADOW, cast from (x, y) along (ax, ay), `t` seconds into her Eyes' move (on after the blow too: t > ECLIPSE.hit), (hx, hy)
  * on the screen where he is (her eyes in it follow him), `clock` the screen's.
  */
-export function drawEclipse(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, ax: number, ay: number, t: number, hx: number, hy: number, clock: number, spot?: Spot): void {
+export function drawEclipse(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, ax: number, ay: number, t: number, hx: number, hy: number, clock: number, spot?: Spot, part: 'floor' | 'rising' | 'all' = 'all'): void {
   const after = t - ECLIPSE.hit;
   if (t < ECLIPSE.grow[0] || after > ECLIPSE.after) return;
   const s = eclipseSize(t);
@@ -392,12 +398,13 @@ export function drawEclipse(g: CanvasRenderingContext2D, at: FloorAt, x: number,
   // (darkening as it grows; black as it strikes; gone up out of it after)
   const gone = sm((after - 0.45) / (ECLIPSE.after - 0.45));
   const dark = after < 0 ? 0.25 + 0.5 * sm((t - ECLIPSE.grow[0]) / 0.9) : 0.92 * (1 - gone);
+  const floor = part !== 'rising';
   // (its edge soft: a penumbra a little wider, the Hush's violet in it)
-  fillUnion(g, shadowShapes(layOf(at, x, y, ax, ay, 0), s * 1.07), DARK[2], dark * 0.4);
-  fillUnion(g, shapes, DARK[0], dark);
+  if (floor) fillUnion(g, shadowShapes(layOf(at, x, y, ax, ay, 0), s * 1.07), DARK[2], dark * 0.4);
+  if (floor) fillUnion(g, shapes, DARK[0], dark);
   // (its edge, the outline of the whole of it: the moonlight round it, and the warning on it till the blow)
   const S = eclipseShape(s);
-  if (after < 0) {
+  if (floor && after < 0) {
     const edge = shadowEdge(S, lay);
     rim(g, edge, GHOST[4], 0.25, 1, 0.5, 9);
     if (t >= ECLIPSE.warn) warnDots(g, edge, clamp01((t - ECLIPSE.warn) / (ECLIPSE.hit - ECLIPSE.warn)), clock);
@@ -405,7 +412,7 @@ export function drawEclipse(g: CanvasRenderingContext2D, at: FloorAt, x: number,
   // (darkness rising out of it as it waits: thin wisps; as it strikes, a whole wall of them, then motes going up)
   const rims = S.wings.map((w) => flatRim(w, 30));
   const was = g.globalAlpha;
-  const n = after < 0 ? Math.round(30 + 40 * sm((t - 0.5) / 0.6)) : 170;
+  const n = part === 'floor' ? 0 : after < 0 ? Math.round(30 + 40 * sm((t - 0.5) / 0.6)) : 170;
   for (let i = 0; i < n; i++) {
     const w = S.wings[i % 4];
     const q = rims[i % 4][Math.floor(hash(i, 1, 7331) * 30)];
@@ -440,11 +447,11 @@ export function drawEclipse(g: CanvasRenderingContext2D, at: FloorAt, x: number,
   g.globalAlpha = was;
   // (the eyes of her wings in it: opening as it waits, following him; burning as it strikes, then shutting)
   const open = after < 0 ? sm((t - 0.45) / 0.55) : after < 0.35 ? 1.3 : 1.3 * (1 - sm((after - 0.35) / 0.35));
-  for (const w of S.wings) {
+  if (floor) for (const w of S.wings) {
     const e = flatEye(w);
     flatEyeDrawn(g, lay, e.u, e.v, e.r * 1.45, open, hx, hy, after < 0 ? 0.95 : 1 - gone, spot);
   }
-  if (spot && after >= 0 && after < 0.3) {
+  if (spot && floor && after >= 0 && after < 0.3) {
     const [sx, sy] = lay(ECLIPSE.thorax, 0);
     spot(sx, sy, 160, 0.4 * (1 - after / 0.3));
   }
