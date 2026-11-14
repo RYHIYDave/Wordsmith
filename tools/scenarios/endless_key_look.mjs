@@ -40,7 +40,7 @@ export default async function (page, snap) {
     const h = g.hero;
     const a = Math.atan2(1, 1);
     let at = null;
-    for (let r = 3.6; r < 6 && !at; r += 0.4) for (let k = 0; k < 16 && !at; k++) {
+    for (let r = 6.4; r < 9 && !at; r += 0.4) for (let k = 0; k < 16 && !at; k++) {
       const x = b.x + Math.cos(a + (k * Math.PI) / 8) * r; const y = b.y + Math.sin(a + (k * Math.PI) / 8) * r;
       if (g.free(g.level.walk, x, y, 0.3)) at = { x, y };
     }
@@ -64,7 +64,7 @@ export default async function (page, snap) {
     return q.map((d) => ({ k: d.quarter, x: d.x.toFixed(1), y: d.y.toFixed(1) }));
   });
   log('the quarter dropped', dropped);
-  await page.waitForTimeout(1600);
+  await page.waitForTimeout(5200);
   await clean();
   await hands.settle();
   await snap('01_floor5_his_quarter_where_he_fell');
@@ -126,19 +126,40 @@ export default async function (page, snap) {
   if (didSet.panel !== 'none' && shut) await hands.press(shut);
   await page.waitForTimeout(1300);
   await snap('06_set_burning');
-  // (he walks toward the tongue's foot as the landing opens)
-  const tongueFoot = await page.evaluate(() => { const d = window.__dbg; return d.at(8.5, 12.5); });
-  await hands.pressAt(tongueFoot.x, tongueFoot.y);
-  await page.waitForTimeout(1600);
-  await snap('07_the_landing_opening');
-  await page.waitForTimeout(2600);
-  await snap('08_the_landing_open');
-  log('open', await page.evaluate(() => window.__dbg.game().level.rim.key));
-  // (out onto it: set back off the hole, and told)
-  const mid = await page.evaluate(() => window.__dbg.at(10.27, 12.24));
-  await hands.pressAt(mid.x, mid.y);
-  await page.waitForTimeout(2200);
-  await snap('09_walked_into_set_back');
+  // (he walks round the pit to the tongue's foot as the landing opens, by the left thumb's stick, as a person does on a phone)
+  const cdp = hands.touch ? await page.context().newCDPSession(page) : null;
+  const stickAt = { x: Math.round(view.w * 0.17), y: Math.round(view.h * 0.62) };
+  const finger = async (type, x, y) => {
+    const c = await hands.client(x, y);
+    await cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x: Math.round(c.x), y: Math.round(c.y), id: 3 }] });
+  };
+  const walkTo = async (tx, ty, near = 0.3, ms = 7000) => {
+    const t1 = Date.now();
+    let down = false;
+    while (Date.now() - t1 < ms) {
+      const s = await page.evaluate(([x, y]) => { const d = window.__dbg; const h = d.game().hero; return { a: d.at(h.x, h.y), b: d.at(x, y), dist: Math.hypot(h.x - x, h.y - y) }; }, [tx, ty]);
+      if (s.dist < near) break;
+      const dx = s.b.x - s.a.x; const dy = s.b.y - s.a.y; const l = Math.hypot(dx, dy) || 1;
+      if (!down) { await finger('touchStart', stickAt.x, stickAt.y); down = true; }
+      await finger('touchMove', stickAt.x + (dx / l) * 26, stickAt.y + (dy / l) * 26);
+      await page.waitForTimeout(70);
+    }
+    if (down) await finger('touchEnd', 0, 0);
+    await page.waitForTimeout(60);
+  };
+  if (cdp) {
+    await walkTo(9.4, 16.4);
+    await walkTo(7.7, 14.6);
+    await snap('07_the_landing_opening');
+    await walkTo(7.8, 12.6);
+    await page.waitForTimeout(1800);
+    await snap('08_the_landing_open');
+    log('open', await page.evaluate(() => window.__dbg.game().level.rim.key));
+    // (out along the tongue onto it: set back off the hole, and told)
+    await walkTo(10.27, 12.24, 0.3, 4000);
+    await page.waitForTimeout(500);
+    await snap('09_walked_into_set_back');
+  }
   log('after', await page.evaluate(() => ({ hero: [window.__dbg.game().hero.x.toFixed(2), window.__dbg.game().hero.y.toFixed(2)], lines: window.__dbg.fx.messages.slice(-3).map((m) => m.text) })));
   await page.waitForTimeout(800);
   if (snap.videoAt) log('the film ends at', `${snap.videoAt().toFixed(1)} s`);

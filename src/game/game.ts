@@ -2737,7 +2737,8 @@ export class Game {
     const k = quarterOf(this.depth);
     if (k === null || quartersOf(this.meta.quarters)[k]) return;
     if (this.drops.some((d) => d.kind === 'quest' && d.thing === 'quarter')) return;
-    const at = this.floorNear(m.x, m.y);
+    // (a tile nearer the eye than where he fell, so that it lies before his gear, not buried in it)
+    const at = this.floorNear(m.x + 0.8, m.y + 0.8);
     this.addDrop('quest', at.x, at.y, 0, null, null);
     const d = this.drops[this.drops.length - 1];
     d.thing = 'quarter';
