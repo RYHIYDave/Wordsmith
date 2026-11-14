@@ -625,6 +625,21 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   meshing, the venom splashing; it holds, then shatters, leaving its ice on the floor with his pink venom in its veins (crossing it
   poisons). Three times, each quicker, each where the hero has gone; the hero gets out of each across its short way a moment
   before it snaps. Through the bosses' checks (0 findings).
+  HIS WORDS, by pop-up: “This is not good”; then: “The “three times” is the biggest issue.  This is poison and frost melded?  So
+  what about this is frost and what is poison?  We have rules for all three including the meld so what do they do that could
+  become a boss move”. Told him the game's rules (Frost: “Chills, then freezes”, leaves ice that slows; Poison: “poisons. Poison
+  stacks”; Frostbite: “Chilled enemies lose life over time, and frozen ones twice as fast”, “The ice on the ground poisons what
+  crosses it”) and pitched one move from them; HIS PICK: “Yes, build it (Recommended)”. REMADE SO (`FROSTBITE`, `frostbiteWave`,
+  `frostbiteIsle`, `frostbiteIced`, `frostbiteBits`; the film's `biteFloor`, `biteMist`, `heroChilled`): the slam drives the rune
+  into the floor at his feet and a wave of venomous frost rolls out from him over the whole room, a bank of frost mist at its
+  front (caught in it: chilled and slowed, frost over him, poisoned, his poison rising off him as pink bubbles); behind it the floor
+  is iced over, frosted plates with his pink venom running in wavy veins, venom vapour rising off it, all but four bare islands
+  (warm, their edges hot gold; on the ice the poison stacks); the ice flushes in the bosses' warning colour, faster and faster;
+  then it locks: crystals of frost (solids) burst up all over it, sweeping out from him (one still on it frozen solid, the poison
+  eating twice as fast); it holds, then melts away. The hero, chilled, struggles to an island and stands there as it locks.
+  HIS WORDS, going to bed: “I’m headed to bed, just go with these meld animations”; and: “That’s a lot of different attacks and
+  just make sure they all read the elements of the melds.  Don’t make everything 3 hits, look outside the box and do something
+  interesting”.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

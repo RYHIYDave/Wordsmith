@@ -3849,82 +3849,51 @@ export const FUMES_CLOUDS: ReadonlyArray<{ at: V3; R: number; vent: number; spar
 export const fumesSpread = (c: { vent: number }, t: number): number => smooth01((t - c.vent) / FUMES.spread);
 
 
-// FROSTBITE (Frost and Poison, melded: the game's meld, render/melds3.ts, “jaws of ice and a drop of venom”; as the game has it,
-// “Chilled enemies lose life over time, and frozen ones twice as fast” and “The ice on the ground poisons what crosses it”): he
-// writes Frost, his shade writes Poison; melded, the slam drives the rune down into the floor and it dives under the hero: the floor
-// there opens in an oval (the warning: flushed in the bosses' ground-warning colour, its edge hot), and GREAT FANGS OF ICE rise
-// round its rim, a trap of ice, a drop of his pink venom falling into it; then it SNAPS SHUT, the fangs of either side meshing,
-// the venom splashing; it holds, then shatters, leaving its ice on the floor (crossing it poisons). Three times, each quicker,
-// each where the hero has gone. His rules for the words stand: one rune (the meld's), what strikes made as solids (the fangs).
-export const FROSTBITE = { jaws: [{ at: [4.4, -1.2], axis: 136.8 }, { at: [5.9, 0.4], axis: 42.9 }, { at: [4.6, 1.8], axis: -33.7 }] as const, first: 0.6, rise: [0.75, 0.65, 0.55] as const, gap: 0.2, half: [2.0, 1.2] as const, snap: 0.08, hold: 0.45, shatter: 0.35, melt: 2.2, end: 6.4 };
-export const FROSTBITE_CANVAS: MobCanvas = { w: 1100, h: 800, ax: 400, ay: 520 };
+// FROSTBITE (Frost and Poison, melded: the game's meld, render/melds3.ts, “jaws of ice and a drop of venom”). BUILT FROM THE
+// GAME'S OWN RULES (his words, 14 Nov 2026: “The “three times” is the biggest issue.  This is poison and frost melded?  So what
+// about this is frost and what is poison?  We have rules for all three including the meld so what do they do that could become a
+// boss move”; then, to the pitch, “Yes, build it (Recommended)”): Frost “Chills, then freezes” and “leaves ice that slows”; Poison
+// “poisons. Poison stacks”; Frostbite “Chilled enemies lose life over time, and frozen ones twice as fast” and “The ice on the
+// ground poisons what crosses it”. So, one move: he writes Frost, his shade writes Poison; melded, the slam drives the rune into the
+// floor at his feet and A WAVE OF VENOMOUS FROST rolls out from him over the whole room (caught in it: chilled, slowed, poisoned);
+// behind it the floor is ICED OVER, all but a few bare islands (on the ice, the poison stacks); the ice flushes in the bosses'
+// warning colour, faster and faster; then IT LOCKS: frost bursts up in crystals all over it, sweeping out from him, and one still
+// on it is frozen solid (frozen, the poison eats twice as fast); it holds, then melts away. His rules for the words stand: one rune
+// (the meld's), what strikes made as solids (the crystals).
+export const FROSTBITE = { wave: [0.05, 1.15] as const, isles: [[6.6, -2.8], [2.8, 3.2], [10.0, 2.4], [1.4, -4.3]] as const, isle: 1.15, freeze: 2.9, sweep: 0.35, hold: 0.8, melt: 1.2, end: 6.6 };
+export const FROSTBITE_CANVAS: MobCanvas = { w: 1300, h: 960, ax: 560, ay: 600 };
 const BITE_ICE: Ramp = ['#142a50', '#22508a', '#3a78b8', '#8cc0ec', '#e4f4ff'];
-/** Each jaw: where (his floor point's own lengths), its long way over the floor (radians), when it locks on and when it snaps. */
-export const FROSTBITE_JAWS: ReadonlyArray<{ c: V3; a: number; lock: number; snap: number }> = ((): { c: V3; a: number; lock: number; snap: number }[] => {
-  const out: { c: V3; a: number; lock: number; snap: number }[] = [];
-  let t = MELD.slam + FROSTBITE.first;
-  for (const [k, j] of FROSTBITE.jaws.entries()) {
-    out.push({ c: [j.at[0] * TILE, j.at[1] * TILE, 0], a: j.axis * D, lock: t, snap: t + FROSTBITE.rise[k] });
-    t += FROSTBITE.rise[k] + FROSTBITE.gap;
-  }
-  return out;
-})();
-/** Whether a spot of the floor is in a jaw's oval (its long and short half-lengths, his own lengths). */
-export function frostbiteIn(j: { c: V3; a: number }, x: number, y: number, pad = 0): boolean {
-  const dx = x - j.c[0], dy = y - j.c[1], u = dx * Math.cos(j.a) + dy * Math.sin(j.a), v = -dx * Math.sin(j.a) + dy * Math.cos(j.a);
-  return (u / (FROSTBITE.half[0] * TILE + pad)) ** 2 + (v / (FROSTBITE.half[1] * TILE + pad)) ** 2 < 1;
-}
-/** THE FROSTBITE'S SOLIDS, `t` into the move: each jaw's fangs of ice rising round its rim, snapping shut and meshing, holding,
- * shattering and sinking; its ridge of ice; the drop of venom falling into it and splashing as it snaps; shards as it breaks. Only
- * those `keep` keeps (by their floor point). */
+/** How far the wave of frost has rolled out from him (his floor point's own lengths), `t` into the move. */
+export const frostbiteWave = (t: number): number => {
+  const u = clamp01((t - MELD.slam - FROSTBITE.wave[0]) / (FROSTBITE.wave[1] - FROSTBITE.wave[0]));
+  return (0.4 + 13.6 * (1 - (1 - u) * (1 - u))) * TILE;
+};
+/** Whether a spot of the floor is one of the bare islands the ice leaves. */
+export const frostbiteIsle = (x: number, y: number, pad = 0): boolean => FROSTBITE.isles.some(([ix, iy]) => Math.hypot(x - ix * TILE, y - iy * TILE) < FROSTBITE.isle * TILE + pad);
+/** Whether a spot of the floor is iced over (inside the room, behind the wave, not an island, not his own ground). */
+export const frostbiteIced = (x: number, y: number, t: number): boolean => x > ARENA.x[0] * TILE && x < ARENA.x[1] * TILE && y > ARENA.y[0] * TILE && y < ARENA.y[1] * TILE && Math.hypot(x, y) < frostbiteWave(t) && Math.hypot(x, y) > 1.0 * TILE && !frostbiteIsle(x, y);
+/** THE FROSTBITE'S SOLIDS, `t` into the move: as the ice locks, crystals of frost bursting up all over it, sweeping out from him,
+ * clusters of them, ice-blue, his pink venom glinting in a few; they hold, then melt down. Only those `keep` keeps. */
 export function frostbiteBits(t: number, put: Put, keep: (x: number, y: number) => boolean = () => true): void {
-  for (const [k, j] of FROSTBITE_JAWS.entries()) {
-    const u = t - j.lock;
-    if (u < 0 || !keep(j.c[0], j.c[1])) continue;
-    const sh = clamp01((t - j.snap - FROSTBITE.hold) / FROSTBITE.shatter);
-    if (sh >= 1) continue;
-    const rise = smooth01(u / 0.4) * (1 - sh);
-    const sv = clamp01((t - j.snap) / FROSTBITE.snap), close = sv < 1 ? sv : 1 + 0.08 * Math.sin(Math.min(1, (t - j.snap - FROSTBITE.snap) / 0.15) * Math.PI);
-    const open = -15 * D;
-    const ca = Math.cos(j.a), sa = Math.sin(j.a), Lh = FROSTBITE.half[0] * TILE, Wh = FROSTBITE.half[1] * TILE;
-    const along: V3 = [ca, sa, 0], across: V3 = [-sa, ca, 0];
-    const part = `jaw${k}`;
-    // (its ridge: a low jawbone of ice round the oval)
-    for (let i = 0; i < 20; i++) {
-      const p = (i / 20) * TAU, q = ((i + 1) / 20) * TAU;
-      const A: V3 = add(j.c, add(mul(along, Math.cos(p) * Lh), mul(across, Math.sin(p) * Wh))), B: V3 = add(j.c, add(mul(along, Math.cos(q) * Lh), mul(across, Math.sin(q) * Wh)));
-      put(part, 'ridge', { k: 'rod', a: [A[0], A[1], 3 * rise], b: [B[0], B[1], 3 * rise], ra: 4.5 * Math.max(0.3, rise), rb: 4.5 * Math.max(0.3, rise), ramp: BITE_ICE });
-    }
-    // (its fangs, either side, meshing as they close: great in the middle, smaller toward its ends)
-    for (const side of [1, -1]) for (let i = 0; i < 9; i++) {
-      const w = -0.9 + (1.8 * (i + (side < 0 ? 0.5 : 0))) / 9;
-      if (Math.abs(w) > 0.92) continue;
-      const rim = Math.sqrt(Math.max(0, 1 - w * w));
-      const base: V3 = add(j.c, add(mul(along, w * Lh), mul(across, side * Wh * rim * 0.95)));
-      const len = (46 + 40 * rim) * rise, inward = mul(across, -side);
-      // (shut, each fang reaching just past the middle, meshing with the other side's)
-      const shut = Math.asin(Math.min(1, (Wh * rim * 1.08) / Math.max(1, 46 + 40 * rim)));
-      const th = open + (shut - open) * close;
-      const tip: V3 = add(base, add(mul(inward, Math.sin(th) * len), [0, 0, Math.cos(th) * len]));
-      put(`${part}${side > 0 ? 'a' : 'b'}${i % 2}`, 'fang', { k: 'rod', a: [base[0], base[1], 2], b: tip, ra: (5 + 3.5 * rim) * Math.max(0.35, rise), rb: 0.6, ramp: BITE_ICE });
-      if (sh === 0 && rise > 0.6) put('glints', 'glint', { k: 'mote', p: tip, c: (i + k) % 3 ? '#e4f4ff' : '#ff9cc0', size: 1 });
-    }
-    // (the drop of venom, falling into it, landing as it snaps; splashing up as it does)
-    const df = (t - (j.snap - 0.35)) / 0.35;
-    if (df > 0 && df < 1) {
-      const z = 130 * (1 - df * df);
-      put('venom', 'drop', { k: 'ball', c: [j.c[0], j.c[1], z + 6], ax: [[5, 0, 0], [0, 5, 0], [0, 0, 7]], skin: (n3, tone) => (n3[2] > 0.5 && n3[0] < 0 ? '#ffd0e0' : ['#7a1058', '#c0206a', '#ff4f8a', '#ff9cc0', '#ffd0e0'][T5(tone)]) });
-    }
-    const sp = t - j.snap;
-    if (sp > 0 && sp < 0.6) for (let i = 0; i < 26; i++) {
-      const a = hash(k, i, 9901) * TAU, v = 30 + 50 * hash(k, i, 9902), vz = 70 + 90 * hash(k, i, 9903), z = vz * sp - 300 * sp * sp;
-      if (z < 0) continue;
-      put('venom', 'splash', { k: 'mote', p: [j.c[0] + Math.cos(a) * v * sp, j.c[1] + Math.sin(a) * v * sp, z], c: i % 3 ? '#ff4f8a' : '#ffd0e0', size: 2 });
-    }
-    // (shards of it flung off as it shatters)
-    if (sh > 0) for (let i = 0; i < 30; i++) {
-      const a = hash(k, i, 9904) * TAU, v = 40 + 60 * hash(k, i, 9905), z = 10 + 60 * hash(k, i, 9906) * (1 - sh) + 40 * sh * (1 - sh);
-      put('shards', 'shard', { k: 'mote', p: [j.c[0] + Math.cos(a) * (Wh * 0.8 + v * sh), j.c[1] + Math.sin(a) * (Wh * 0.8 + v * sh), z], c: i % 4 ? '#8cc0ec' : '#e4f4ff', size: 2 });
+  const f0 = MELD.slam + FROSTBITE.freeze;
+  if (t < f0) return;
+  const melt = clamp01((t - f0 - FROSTBITE.sweep - FROSTBITE.hold) / FROSTBITE.melt);
+  if (melt >= 1) return;
+  const far = Math.hypot(ARENA.x[1], ARENA.y[0]) * TILE;
+  for (let gy = ARENA.y[0] * TILE + 12; gy < ARENA.y[1] * TILE - 8; gy += 0.85 * TILE) for (let gx = ARENA.x[0] * TILE + 12; gx < ARENA.x[1] * TILE - 8; gx += 0.85 * TILE) {
+    const i = Math.round(gx / 7), j = Math.round(gy / 7);
+    const x = gx + (hash(i, j, 9951) - 0.5) * 0.6 * TILE, y = gy + (hash(i, j, 9952) - 0.5) * 0.6 * TILE;
+    if (!frostbiteIced(x, y, t) || frostbiteIsle(x, y, 10) || !keep(x, y)) continue;
+    const at = f0 + FROSTBITE.sweep * (Math.hypot(x, y) / far);
+    const g = smooth01((t - at) / 0.12) * (1 - melt);
+    if (g <= 0) continue;
+    const part = `frost${(i + j) & 3}`;
+    const n = 2 + Math.floor(hash(i, j, 9953) * 3);
+    for (let c = 0; c < n; c++) {
+      const a = hash(i, j * 7 + c, 9954) * TAU, lean = 0.25 + 0.5 * hash(i, j * 7 + c, 9955), L = (14 + 22 * hash(i, j * 7 + c, 9956)) * g;
+      const tip: V3 = [x + Math.cos(a) * lean * L, y + Math.sin(a) * lean * L, L * (1 - lean * 0.4)];
+      put(part, 'crystal', { k: 'rod', a: [x, y, 1], b: tip, ra: (2.6 + 2 * hash(i, j * 7 + c, 9957)) * Math.max(0.4, g), rb: 0.4, ramp: BITE_ICE });
+      if (c === 0 && hash(i, j, 9958) > 0.8 && melt === 0) put('glints', 'venom', { k: 'mote', p: tip, c: '#ff9cc0', size: 1 });
     }
   }
 }
