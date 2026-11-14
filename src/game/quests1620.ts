@@ -1,4 +1,4 @@
-// THE QUEST LINE OF FLOORS 16 TO 20 (QUESTS1620: OFF until his yes to its pictures; pictures first, his rule).
+// THE QUEST LINE OF FLOORS 16 TO 20 (QUESTS1620: ON at his yes to its pictures, 13 Nov 2026: “Yes, switch them on (Recommended)”).
 //
 // Planned with him 13 Nov 2026 (Eastern), and written into his doc "Wordsmith Act 2, Part Two: The High City (Levels 16–20)"
 // (https://claude.ai/artifact/Vk5k8RPTdwyMhdpSUd4fuX), its section "The quest line: The Clockwork Songbird". His words: of the
@@ -32,7 +32,7 @@
 import type { WordId } from './types';
 import { LAST_WORD_IDS } from './types';
 
-export const QUESTS1620 = { on: false };
+export const QUESTS1620 = { on: true };
 
 /** The songbird's parts, a bit each (Hero.birdParts). */
 export const BIRD_KEY = 1;
