@@ -47,7 +47,7 @@ export const ROAR_RING = 70;
 export const BITE_RING = { f: 74, r: 20 } as const;
 export const CLAW_SWEEP = { f: 22, r0: 30, r1: 78, a0: -1.1, a1: 1.2 } as const;
 export const LUNGE_LANE = { from: 20, to: LUNGE_LONG + 30, half: 16 } as const;
-export const CLOUD = { f: 20, r: 170, hurts: [0.95, 1.35, 1.75, 2.15] as readonly number[], thins: 2.5 } as const;
+export const CLOUD = { f: 20, r: 125, hurts: [0.95, 1.35, 1.75, 2.15] as readonly number[], thins: 2.5 } as const;
 /** Where the wolves it howls for come out of the mist (its own lengths: forward, to its left), and when. */
 export const HOWL_FOGS: readonly { f: number; l: number; at: number }[] = [
   { f: 50, l: 80, at: 1.2 },
@@ -65,7 +65,11 @@ function laneBig(px: Px, pr: Pr, f0: number, f1: number, l: number, half: number
   warnLane(px, pr, f0, f1, l, half - 2.5, t + 0.05);
 }
 
-/** THE TROLL CHIEFTAIN'S MOVE `move`, `t` seconds in, what it does to the floor, laid on `px` (`layer`) in the frame `view` shows him in. */
+/**
+ * THE TROLL CHIEFTAIN'S MOVE `move`, `t` seconds in, what it does to the floor, laid on `px` (`layer`) in the frame `view` shows him in.
+ * As far as each goes: his word, 14 Nov 2026, of them made too much: “The slam looks great, but it being the size of the entire arena
+ * is where we pull it back”: every blow as fierce, its shockwaves and what it throws reaching about a third of the camp, not all of it.
+ */
 export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t: number, view: F9View): void {
   const C = F9_FX_CANVAS;
   const pr: Pr = f9At(view, CK, C.ax, C.ay);
@@ -79,14 +83,14 @@ export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t
     if (layer === 'ground') {
       if (t > 0.4 && since < 0) warnBig(px, pr, cf, cl, SMASH_RING, t);
       crater(px, pr, cf, cl, 34, since / 0.08, (since - 0.9) / 1.0, 77, 11);
-      bigShock(px, pr, cf, cl, 210, since / 0.65, 22, 9201);
-      bigShock(px, pr, cf, cl, 130, (since - 0.1) / 0.6, 14, 9203);
+      bigShock(px, pr, cf, cl, 110, since / 0.55, 18, 9201);
+      bigShock(px, pr, cf, cl, 70, (since - 0.1) / 0.5, 12, 9203);
     } else {
       const c = pr(cf, cl, 6);
       bigBurst(px, c[0], c[1], since / 0.26, 100, 9707);
-      radial(px, c[0], c[1], since / 0.3, 46, 60, 520, 9708);
-      rocks(px, pr, cf, cl, since, 9703, 22, 11, 130);
-      plume(px, pr, cf, cl, since / 1.5, 100, 9701, 18, 40);
+      radial(px, c[0], c[1], since / 0.3, 40, 50, 300, 9708);
+      rocks(px, pr, cf, cl, since, 9703, 20, 10, 80);
+      plume(px, pr, cf, cl, since / 1.5, 60, 9701, 16, 34);
       if (since >= 0 && since < 1.4) embers(px, c[0], c[1], 90, 120, since, 30, 9709);
     }
   } else if (move === 'slam') {
@@ -96,14 +100,14 @@ export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t
       if (t > 0.35 && since < 0) laneBig(px, pr, cf - K.back, cf + K.long - K.back, cl, K.half + 6, t);
       if (since >= 0) bigCrack(px, pr, cf - K.back, cl, K.long, Math.min(1, since / K.runs), (since - 0.9) / 0.9, 81, 12);
       crater(px, pr, cf, cl, 40, since / 0.08, (since - 0.9) / 0.9, 83, 12);
-      bigShock(px, pr, cf, cl, 250, since / 0.7, 26, 9211);
-      bigShock(px, pr, cf, cl, 160, (since - 0.12) / 0.6, 16, 9213);
+      bigShock(px, pr, cf, cl, 120, since / 0.6, 22, 9211);
+      bigShock(px, pr, cf, cl, 80, (since - 0.12) / 0.5, 14, 9213);
     } else {
       const c = pr(cf, cl, 6);
       bigBurst(px, c[0], c[1], since / 0.3, 120, 9707);
-      radial(px, c[0], c[1], since / 0.35, 60, 70, 600, 9712);
-      rocks(px, pr, cf, cl, since, 9703, 28, 12, 160);
-      plume(px, pr, cf, cl, since / 1.6, 130, 9701, 22, 44);
+      radial(px, c[0], c[1], since / 0.35, 50, 60, 320, 9712);
+      rocks(px, pr, cf, cl, since, 9703, 24, 11, 90);
+      plume(px, pr, cf, cl, since / 1.6, 70, 9701, 18, 36);
       if (since >= 0 && since < 1.4) embers(px, c[0], c[1], 110, 140, since, 34, 9709);
       // (rock flung up all along the crack as it runs)
       for (let i = 1; i <= 6; i++) {
@@ -116,18 +120,18 @@ export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t
     }
   } else if (move === 'warcry') {
     if (layer === 'ground') {
-      bigShock(px, pr, 0, 0, 290, since / 0.75, 28, 9221);
-      bigShock(px, pr, 0, 0, 190, (since - 0.15) / 0.7, 18, 9223);
-      bigShock(px, pr, 0, 0, 115, (since - 0.3) / 0.6, 12, 9225);
+      bigShock(px, pr, 0, 0, 150, since / 0.65, 22, 9221);
+      bigShock(px, pr, 0, 0, 100, (since - 0.15) / 0.6, 14, 9223);
+      bigShock(px, pr, 0, 0, 65, (since - 0.3) / 0.5, 10, 9225);
       // (the ground scorched in a ring round him where the fire burst up)
       if (since > 0.2) crater(px, pr, 0, 0, 10, 1, (since - 1.5) / 1.0, 9227, 14);
     } else {
       fireRing(px, pr, 0, 0, 56, since / 1.7, fr, 12, 190);
       fireRing(px, pr, 0, 0, 120, (since - 0.15) / 1.4, fr + 3, 18, 120);
-      rocks(px, pr, 0, 0, since, 9229, 22, 9, 170);
-      plume(px, pr, 0, 0, since / 1.2, 180, 9231, 24, 36);
+      rocks(px, pr, 0, 0, since, 9229, 18, 8, 100);
+      plume(px, pr, 0, 0, since / 1.2, 100, 9231, 20, 30);
       const head = pr(pose.hip[0] + 30, 0, 130);
-      radial(px, head[0], head[1], since / 0.5, 50, 40, 480, 9233, FLAME[4]);
+      radial(px, head[0], head[1], since / 0.5, 44, 40, 300, 9233, FLAME[4]);
       for (const [ts, sd] of [[2.3, -1], [2.4, 1], [2.5, -1], [2.6, 1]] as const) {
         plume(px, pr, Math.max(0, pose.hip[0]) + 12, sd * 18, (t - ts) / 0.7, 28, Math.round(9931 + ts * 10), 6, 22);
         rocks(px, pr, Math.max(0, pose.hip[0]) + 12, sd * 18, t - ts, Math.round(9941 + ts * 10), 5, 7, 40);
@@ -151,7 +155,7 @@ export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t
           line(px, pr(f0, w - 6, 0), pr(f1, w - 6, 0), '#5a4636', 3);
         }
       }
-      bigShock(px, pr, RUSH_LONG + 10, 0, 160, since / 0.6, 12, 9241);
+      bigShock(px, pr, RUSH_LONG + 10, 0, 90, since / 0.5, 12, 9241);
     } else {
       for (const ts of [0.52, 0.76]) {
         plume(px, pr, 0, -18, (t - ts) / 0.7, 30, Math.round(9941 + ts * 100), 7, 22);
@@ -164,9 +168,9 @@ export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t
       }
       const hc = pr(RUSH_LONG - 10, 0, 50);
       bigBurst(px, hc[0], hc[1], since / 0.26, 110, 9953);
-      radial(px, hc[0], hc[1], since / 0.3, 46, 60, 520, 9954);
-      rocks(px, pr, RUSH_LONG + 24, 0, since, 9957, 22, 11, 130);
-      plume(px, pr, RUSH_LONG + 24, 0, since / 1.3, 80, 9955, 16, 36);
+      radial(px, hc[0], hc[1], since / 0.3, 40, 50, 300, 9954);
+      rocks(px, pr, RUSH_LONG + 24, 0, since, 9957, 18, 10, 80);
+      plume(px, pr, RUSH_LONG + 24, 0, since / 1.3, 55, 9955, 14, 32);
     }
   }
 }
@@ -207,14 +211,14 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
   if (move === 'bite') {
     if (layer === 'ground') {
       if (t > 0.2 && since < 0) warnBig(px, pr, BITE_RING.f, 0, BITE_RING.r + 6, t);
-      bigShock(px, pr, BITE_RING.f, 0, 110, since / 0.5, 12, 9301, SHOCK_MIST, MISTY);
+      bigShock(px, pr, BITE_RING.f, 0, 65, since / 0.45, 12, 9301, SHOCK_MIST, MISTY);
       // (where it pushed off: the ground torn up behind it)
       plume(px, pr, -15, 0, (t - 0.55) / 0.9, 40, 9963, 10, 26, MISTY);
     } else {
       const at = pr(BITE_RING.f, 0, 30);
       bigBurst(px, at[0], at[1], since / 0.22, 80, 9961);
-      radial(px, at[0], at[1], since / 0.25, 40, 50, 460, 9962, '#f2f0fa');
-      plume(px, pr, BITE_RING.f, 0, since / 0.9, 70, 9965, 14, 30, MISTY);
+      radial(px, at[0], at[1], since / 0.25, 36, 44, 280, 9962, '#f2f0fa');
+      plume(px, pr, BITE_RING.f, 0, since / 0.9, 45, 9965, 12, 26, MISTY);
     }
   } else if (move === 'claw') {
     const S = CLAW_SWEEP;
@@ -225,13 +229,13 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
       }
       // (the ground torn by its three claws along the sweep, deep, glowing, fading)
       if (since >= 0) gouges(px, pr, [CLAW_ARC.about[0], CLAW_ARC.about[1], 0], [CLAW_ARC.from[0] + 24, CLAW_ARC.from[1], 0], [CLAW_ARC.to[0] + 6, CLAW_ARC.to[1], 0], 3, since / 0.06, (since - 0.9) / 0.8, 9871);
-      bigShock(px, pr, S.f + (S.r0 + S.r1) / 2, 0, 150, since / 0.6, 16, 9303, SHOCK_MIST, MISTY);
+      bigShock(px, pr, S.f + (S.r0 + S.r1) / 2, 0, 85, since / 0.5, 14, 9303, SHOCK_MIST, MISTY);
     } else {
       const at = pr(S.f + (S.r0 + S.r1) / 2, 0, 30);
       bigBurst(px, at[0], at[1], since / 0.24, 100, 9971);
-      radial(px, at[0], at[1], since / 0.28, 50, 60, 520, 9972, '#f2f0fa');
-      rocks(px, pr, S.f + (S.r0 + S.r1) / 2, 0, since, 9975, 14, 8, 110);
-      plume(px, pr, S.f + (S.r0 + S.r1) / 2, 0, since / 1.1, 100, 9973, 16, 32, MISTY);
+      radial(px, at[0], at[1], since / 0.28, 44, 50, 300, 9972, '#f2f0fa');
+      rocks(px, pr, S.f + (S.r0 + S.r1) / 2, 0, since, 9975, 12, 7, 70);
+      plume(px, pr, S.f + (S.r0 + S.r1) / 2, 0, since / 1.1, 60, 9973, 14, 28, MISTY);
       plume(px, pr, CLAW_ARC.to[0], CLAW_ARC.to[1], since / 1.0, 50, 9977, 8, 26, MISTY);
     }
   } else if (move === 'howl') {
@@ -246,7 +250,7 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
       }
     });
     // (the howl itself rolling out from it over the ground, again and again)
-    if (layer === 'ground') for (let k = 0; k < 3; k++) bigShock(px, pr, 0, 0, 260, (since - k * 0.45) / 0.9, 10, 9321 + k, SHOCK_MIST, MISTY);
+    if (layer === 'ground') for (let k = 0; k < 3; k++) bigShock(px, pr, 0, 0, 150, (since - k * 0.45) / 0.8, 10, 9321 + k, SHOCK_MIST, MISTY);
   } else if (move === 'lunge') {
     const L = LUNGE_LANE;
     if (layer === 'ground') {
@@ -273,9 +277,9 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
       }
       const mid = pr(LUNGE_LONG * 0.5, 0, 30);
       bigBurst(px, mid[0], mid[1], since / 0.22, 80, 9997);
-      radial(px, mid[0], mid[1], since / 0.25, 40, 50, 460, 9998, '#f2f0fa');
+      radial(px, mid[0], mid[1], since / 0.25, 36, 44, 280, 9998, '#f2f0fa');
       plume(px, pr, LUNGE_LONG, 0, (t - 0.84) / 1.0, 70, 9999, 14, 30, MISTY);
-      bigShock(px, pr, LUNGE_LONG, 0, 120, (t - 0.84) / 0.5, 10, 9331, SHOCK_MIST, MISTY);
+      bigShock(px, pr, LUNGE_LONG, 0, 75, (t - 0.84) / 0.45, 10, 9331, SHOCK_MIST, MISTY);
     }
   } else if (move === 'cloud') {
     const cf = pose.root[0] + CLOUD.f;
@@ -285,8 +289,8 @@ export function wolfFxPaint(px: Px, layer: 'ground' | 'air', move: WolfMove, t: 
       const thin = t < CLOUD.thins ? 0 : (t - CLOUD.thins) / 0.7;
       mistCloud(px, pr, cf, 0, CLOUD.r, g, t, thin * 1.2);
     } else {
-      bigShock(px, pr, cf, 0, 190, since / 0.5, 16, 9341, SHOCK_MIST, MISTY);
-      plume(px, pr, cf, 0, since / 1.0, 160, 9343, 22, 34, MISTY);
+      bigShock(px, pr, cf, 0, CLOUD.r * 0.9, since / 0.45, 14, 9341, SHOCK_MIST, MISTY);
+      plume(px, pr, cf, 0, since / 1.0, CLOUD.r * 0.7, 9343, 18, 30, MISTY);
       // (its claws in the cloud where the hero is, as each of its blows strikes him; its eyes, many, moving in it)
       if (hero) {
         const at = pr(hero.f, hero.l, 30);
