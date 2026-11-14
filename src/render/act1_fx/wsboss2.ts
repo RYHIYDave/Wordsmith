@@ -500,9 +500,10 @@ function floorTint(c: Act1FxCtx, col: string, a: number): void {
   if (a <= 0) return;
   pool(c, FINAL_PLACE.cx, FINAL_PLACE.cy, FINAL_PLACE.floor + 0.3, [[0, col], [0.85, col], [1, 'rgba(0,0,0,0)']], a);
 }
-const meldOfPeril = (p: Peril): MeldId | 'slamring' | 'scorch' | 'fallring' | null => {
+const OWN_PERILS = new Set(['slamring', 'scorch', 'fallring', 'deathring']);
+const meldOfPeril = (p: Peril): MeldId | 'slamring' | 'scorch' | 'fallring' | 'deathring' | null => {
   const id = (p.a1 ?? '').slice(7);
-  return id in MELDS || id === 'slamring' || id === 'scorch' || id === 'fallring' ? (id as MeldId) : null;
+  return id in MELDS || OWN_PERILS.has(id) ? (id as MeldId) : null;
 };
 /** Is this peril one of his melds' (drawn here)? */
 export const drawnHere = (p: Peril): boolean => meldOfPeril(p) !== null;
@@ -525,6 +526,19 @@ export function meldGround(c: Act1FxCtx, p: Peril): void {
       stroke(g, PINK, 2, 0.5 + 0.5 * fade);
       floorRing(c, p.x, p.y, r + 0.08);
       stroke(g, '#ffd0e0', 1, 0.8 * fade);
+      return;
+    }
+    case 'deathring': {
+      // (his death: the burst, a ring of his light thrown out over the floor from where he was, as his runes fly)
+      const u = t / 0.7;
+      if (u >= 1) return;
+      const r = (6 + 120 * (1 - (1 - u) * (1 - u))) / T;
+      floorRing(c, p.x, p.y, r);
+      stroke(g, PINK, 4, 0.8 * (1 - u));
+      floorRing(c, p.x, p.y, r + 0.05);
+      stroke(g, '#ffd8e6', 1.5, 0.9 * (1 - u));
+      const [sx, sy] = c.at(p.x, p.y);
+      c.spot(sx, sy, 90, 1 - u);
       return;
     }
     case 'fallring': {

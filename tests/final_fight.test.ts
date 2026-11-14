@@ -207,7 +207,9 @@ test('on foot, half to a quarter: one meld at a time, drawn at random, spent aft
   assert.deepEqual(IDS.filter((x) => !hits[x]), [], `each hurts: ${JSON.stringify(hits)}`);
   assert.ok((hits.slamring ?? 0) > 0, 'the ring cannot be dodged');
   g.damageMonster(b, b.maxLife, 'phys', false, 0);
-  assert.ok(!b.dead && b.life >= 1, 'held at 1 (his death is the next stage\'s)');
+  assert.ok(!b.dead && b.life >= 1, 'held at 1 as his death begins');
+  g.update(1 / 30, emptyControls());
+  assert.equal(b.act?.id, 'wsboss:death', 'his death, whatever he was doing');
 }));
 
 test('below a quarter: no rest, the next meld written while the last one\'s floor still stands', () => keyed(() => {
@@ -227,4 +229,72 @@ test('below a quarter: no rest, the next meld written while the last one\'s floo
   }
   assert.equal(spent, 0, 'never spent');
   assert.ok(overlap >= 3, `written over the last one's floor ${overlap} times`);
+}));
+
+test('his death: whatever he is doing, nothing of his hurts while it plays; then his drops, and the way back up', () => keyed(() => {
+  const { g, b } = onFoot(76, 0.3);
+  const IDS = ['eruption', 'hailstorm', 'thunder', 'avalanche', 'contagion', 'scald', 'blight', 'fumes', 'wildfire', 'frostbite'];
+  // (into the fight until a meld of his is on the floor)
+  for (let i = 0; i < 30 * 30 && !g.perils.some((p) => IDS.includes((p.a1 ?? '').slice(7))); i++) {
+    g.hero.poisonT = 0;
+    g.update(1 / 30, emptyControls());
+  }
+  assert.ok(g.perils.some((p) => IDS.includes((p.a1 ?? '').slice(7))), 'a meld of his on the floor');
+  let hurt = 0;
+  (g as unknown as { hurtHero: () => void }).hurtHero = () => {
+    hurt++;
+  };
+  const drops0 = g.drops.length;
+  g.damageMonster(b, b.maxLife, 'phys', false, 0);
+  g.update(1 / 30, emptyControls());
+  assert.equal(b.act?.id, 'wsboss:death');
+  let t = 1;
+  for (; t < 30 * 6 && !b.dead; t++) {
+    g.update(1 / 30, emptyControls());
+    if (!b.dead) {
+      g.damageMonster(b, b.maxLife, 'phys', false, 0);
+      assert.ok(b.life >= 1, 'he cannot be hit as he dies');
+    }
+  }
+  assert.ok(b.dead, 'dead as his death ends');
+  assert.ok(Math.abs(t / 30 - 3.9) < 0.3, `his death played whole: ${(t / 30).toFixed(2)} s`);
+  assert.equal(hurt, 0, 'nothing of his hurt the hero as he died');
+  const left = g.drops.slice(drops0);
+  const items = left.filter((d) => d.kind === 'item' && d.item && !d.item.unique);
+  assert.ok(left.some((d) => d.kind === 'gold' && d.gold > 0), 'gold');
+  assert.ok(items.length >= 6 && items.every((d) => (d.item?.rarity ?? 0) >= 2), `every piece a rare: ${items.map((d) => d.item?.rarity).join(',')}`);
+  assert.ok(left.some((d) => d.kind === 'orb'), 'a life orb');
+  // (the tablet used up; the way back up opens in the portal's light, and takes him to the Rim)
+  g.hero.x = g.level.final!.arrive.x;
+  g.hero.y = g.level.final!.arrive.y;
+  for (let i = 0; i < 30 * 3; i++) g.update(1 / 30, emptyControls());
+  assert.ok(g.level.final?.won && !g.level.rim, 'won; one standing in the light as it opens is not carried up');
+  g.hero.x -= 2;
+  g.update(1 / 30, emptyControls());
+  // (walked through the light, not carried up)
+  for (let i = 0; i <= 12; i++) {
+    g.hero.x = g.level.final!.arrive.x - 1.2 + (2.4 * i) / 12;
+    g.update(1 / 30, emptyControls());
+  }
+  assert.ok(!g.level.rim && !g.leaving, 'walked through the light: not carried up');
+  assert.ok(!g.hero.finalOpen, 'the tablet used up');
+  g.hero.x = g.level.final!.arrive.x;
+  g.hero.y = g.level.final!.arrive.y;
+  for (let i = 0; i < 30 * 4 && !g.level.rim; i++) g.update(1 / 30, emptyControls());
+  assert.ok(g.level.rim, 'back up at the Rim');
+  assert.ok(!g.inFinal);
+}));
+
+test('one kill in four, one of his own two uniques: The Third Word or The Ghostwriter', () => keyed(() => {
+  const { g, b } = onFoot(77, 0.3);
+  const got: Record<string, number> = {};
+  for (let i = 0; i < 400; i++) {
+    const n0 = g.drops.length;
+    (g as unknown as { finalLoot: (m: Monster) => void }).finalLoot(b);
+    for (const d of g.drops.slice(n0)) if (d.item?.unique === 'thirdword' || d.item?.unique === 'ghostwriter') got[d.item.unique] = (got[d.item.unique] ?? 0) + 1;
+    g.drops.length = n0;
+  }
+  const n = (got.thirdword ?? 0) + (got.ghostwriter ?? 0);
+  assert.deepEqual(Object.keys(got).sort(), ['ghostwriter', 'thirdword'], JSON.stringify(got));
+  assert.ok(n > 70 && n < 130, `${n} of 400`);
 }));

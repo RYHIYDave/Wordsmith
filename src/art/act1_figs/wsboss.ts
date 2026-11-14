@@ -12,7 +12,7 @@
 // worker, kept packed (render/painter.ts PACKED), never baked (render/monsters_bake_list.ts TOO_BIG).
 
 import type { ActorArt } from '../actor_types';
-import { FALL, SHADE, SHADE_CANVAS, SPENT, paintShade, wsMob } from '../endless_boss';
+import { DEATH, FALL, SHADE, SHADE_CANVAS, SPENT, paintShade, wsMob } from '../endless_boss';
 import { mobSet, skeletonAt } from '../new_mobs3';
 import type { Mob, Moment } from '../new_mobs3';
 import type { Px } from '../../engine/px';
@@ -46,14 +46,21 @@ export function wsPhase1Mob(): Mob {
  * behind him) is laid in each of these pictures under him, see-through, as the art's films lay it: risen through the fall's last
  * moments, dimmed and flickering when he is spent.
  */
-export const WS_PHASE2 = ['fall', 'foot', 'hailstorm', 'spent'] as const;
+export const WS_PHASE2 = ['fall', 'foot', 'hailstorm', 'spent', 'death'] as const;
 /** His melds' one picture (the art's melds share his body's every move). */
 export const MELD_CLIP = 'hailstorm';
 /** The picture's canvas on foot: room for the shade looming over him (a little off the shade's own size, so that its pool of
  * sheets is never the shade's: art/skin.ts stage). */
 const FOOT_CANVAS = { w: SHADE_CANVAS.w + 2, h: SHADE_CANVAS.h + 40, ax: SHADE_CANVAS.ax + 1, ay: SHADE_CANVAS.ay + 40 };
 /** How strongly his shade is laid under him (the films' layShade), and whether it is shown, `t` seconds into `move`. */
-export function shadeLaid(move: string, t: number): { a: number; grow: number; at: number } | null {
+export function shadeLaid(move: string, t: number): { a: number; grow: number; at: number; lean?: number } | null {
+  if (move === 'death') {
+    // (his death: dragged back down into him, writhing, flickering, gone: the film's)
+    const g0 = Math.min(1, Math.max(0, (t - DEATH.shade[0]) / (DEATH.shade[1] - DEATH.shade[0])));
+    const g = 1 - g0 * g0;
+    if (g <= 0.02 || (g0 > 0 && Math.floor(t * 30) % 3 === 0)) return null;
+    return { a: 0.67 * (0.4 + 0.6 * g), grow: g, at: Math.max(0, t - SHADE.lag), lean: 6 * Math.sin(t * 40) * g0 };
+  }
   if (move === 'fall') {
     if (t <= FALL.shade[0]) return null;
     const u = Math.min(1, (t - FALL.shade[0]) / (FALL.shade[1] - FALL.shade[0]));
@@ -81,7 +88,7 @@ export function wsPhase2Mob(): Mob {
     if (!laid) return;
     // (his shade, from his bones a beat before, anchored on his pelvis's floor point, laid under him, see-through)
     const sk = skeletonAt(mob, move, laid.at);
-    const sh = paintShade(sk, mo.t, st.view as 'front' | 'rear' | 'frontL' | 'rearL', laid.grow).px;
+    const sh = paintShade(sk, mo.t, st.view as 'front' | 'rear' | 'frontL' | 'rearL', laid.grow, laid.lean ?? 0).px;
     const [px0, py0] = st.at([sk.pelvis[0], sk.pelvis[1], 0]);
     const x0 = Math.round(px0 - SHADE_CANVAS.ax);
     const y0 = Math.round(py0 - SHADE_CANVAS.ay);
@@ -113,7 +120,8 @@ export function makeWsArt(): ActorArt {
   const side = (v: 'front' | 'back' | 'frontL' | 'rearL') => {
     const a = mobSet(m1, v, 1);
     const b = mobSet(m2, v, 1);
-    a.clips = { ...(a.clips ?? {}), moves: { ...(a.clips?.moves ?? {}), ...(b.clips?.moves ?? {}) } };
+    // (his death is his own act, and of him nothing is left lying: no fall of the figure's)
+    a.clips = { ...(a.clips ?? {}), moves: { ...(a.clips?.moves ?? {}), ...(b.clips?.moves ?? {}) }, die: undefined };
     return a;
   };
   const front = side('front');

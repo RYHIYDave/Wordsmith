@@ -22,6 +22,20 @@ export { FINAL_ARRIVE, FINAL_BOSS_AT, FINAL_PLACE, onArena, toEdge };
 
 /** The arena's depth as the game counts floors: past the last built (it is no floor of theirs). */
 export const FINAL_DEPTH = 99;
+/**
+ * WHAT HE LEAVES (stage 4; the main chat's numbers, to tune): his drops are the best in the game (his idea of 7 Nov: “Its drops are the
+ * best in the game (strong uniques, powerful words)”): a great hoard of gold (a boss's is 25 to 45 times the floor's power), every piece
+ * of gear a rare, words, a life orb; and, one kill in four, one of his own two uniques (game/uniques.ts finalUniques, UNIQUE_DROPS.final:
+ * the Uniques chat's proposal, his yes still to come). The way back up opens in the portal's light once he is dead: walked into a
+ * moment after, the hero is back at the Rim, the tablet used up (his pick: “Used up, collect again (Recommended)”).
+ */
+export const FINAL_LOOT = { gold: [70, 110] as const, items: 6, words: 2 } as const;
+/** How long after his death the way back up may be taken (seconds): long enough to see his runes go out and gather what he left. */
+export const FINAL_WAY_UP = 2.0;
+/** How long he stands in the light before it takes him up (seconds): one only walking through it, gathering what was left, stays. */
+export const FINAL_UP_HOLD = 0.8;
+/** What the hero is told as he dies, and as the way up opens. */
+export const FINAL_TEXT = { won: 'The Warped Wordsmith is undone.', up: 'The light above is open: stand in it to go back up.' } as const;
 /** How long after he has come down the boss wakes, if the hero has not come near him first (seconds). */
 export const FINAL_WAKE = 2.5;
 /** Its name, as the floors' names come up across the screen. */

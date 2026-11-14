@@ -50,7 +50,7 @@ import { ENDLESS, ENDLESS_OPENS, ENDLESS_WARN, endlessFloorFor, endlessName, end
 import { ENDLESS_KEY, KEY_TEXT, KEY_TIMES, PORTAL_NEAR, quarterCount, quarterOf, quartersOf, tabletWhole } from './endless_key';
 import { PORTAL_OPEN_FRAMES } from '../art/endless_portal';
 import { LANDING } from '../art/shaft_rim';
-import { FINAL_ARRIVE, FINAL_BOSS_AT, FINAL_DEPTH, FINAL_NAME, FINAL_WAKE, makeFinalArena } from './final_arena';
+import { FINAL_ARRIVE, FINAL_BOSS_AT, FINAL_DEPTH, FINAL_LOOT, FINAL_NAME, FINAL_TEXT, FINAL_UP_HOLD, FINAL_WAKE, FINAL_WAY_UP, makeFinalArena } from './final_arena';
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
 // (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds)
 import { inNettles, nettleSlow, stepGardens } from './act2/garden_rules';
@@ -113,7 +113,7 @@ import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 import { leadPoint } from './lock';
 import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_SOUNDS, HURT_BIG, VOICE, bossSound } from './sound_families';
 import { BOSS_CALLS, bossCall } from './boss_calls';
-import { LEVEL_DEFS, LEVEL_UNIQUES, UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, levelChance, levelPoolFor, rolledTune, uniqueDef, urollOf, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
+import { LEVEL_DEFS, LEVEL_UNIQUES, UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, finalUniques, levelChance, levelPoolFor, rolledTune, uniqueDef, urollOf, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
 import type { BendCtx, UniqueDef } from './uniques';
 import { FOE_WORDS } from './defs';
 import { foeAfterBlow, foeBlast, foeDeath, foeHarder, foeTick, foeWordsOf, foeZone, layProblem, rankOfElement, secondElement, upTo, wordsWeight } from './foe_melds';
@@ -144,7 +144,7 @@ const VOLATILE_ONLY: readonly WordId[] = ['volatile'];
 const RISEN_PACK = -7;
 
 /** THE WAYS (ways.ts): where a way out of a level goes: down the stairwell; through the gate into the first floor, or out of it to town; by a waypoint to town, or back from town. */
-type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut' | 'stairsIn' | 'quarry' | 'towerUp' | 'towerDown' | 'stoneIn' | 'stoneOut' | 'final';
+type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut' | 'stairsIn' | 'quarry' | 'towerUp' | 'towerDown' | 'stoneIn' | 'stoneOut' | 'final' | 'finalUp';
 
 /**
  * What survives closing the game in the middle of a run: the character and how far they have got.
@@ -2522,6 +2522,12 @@ export class Game {
       this.enterArena();
       return;
     }
+    // (ENDLESS_KEY: the warped wordsmith dead, back up the shaft in the portal's light, to the Rim)
+    if (to === 'finalUp') {
+      this.inFinal = false;
+      this.enterTown();
+      return;
+    }
     // (ENDLESS MODE: from an endless level, every way on, the stairwell, the mine shaft and the way on alike, to the next)
     if (ENDLESS.on && this.inEndless && !this.inFinal && (to === 'up' || to === 'on' || to === 'down')) {
       this.nextEndless();
@@ -2821,13 +2827,53 @@ export class Game {
     this.leave('final');
   }
 
-  /** (ENDLESS_KEY) A step in the arena: the boss wakes as he comes near, or a moment after he has come down, whichever is first. */
+  /**
+   * (ENDLESS_KEY) A step in the arena: the boss wakes as he comes near, or a moment after he has come down, whichever is first. Once he
+   * is dead (stage 4): the tablet is used up (his pick, “Used up, collect again (Recommended)”: the landing above closes behind him),
+   * and a moment later the portal's light is the way back up, walked into.
+   */
   private updateArena(dt: number): void {
     this.arenaT += dt;
     const b = this.boss;
     if (b && !b.dead && b.state === 'sleep' && this.arenaT >= FINAL_WAKE) this.wakeUp(b);
+    const F = this.level.final;
+    if (!F) return;
+    const won = !this.monsters.some((m) => m.kind === 'wsboss' && !m.dead);
+    if (won && !F.won) {
+      F.won = true;
+      this.wonT = 0;
+      this.wayArmed = false;
+      this.upT = 0;
+      this.hero.finalOpen = undefined;
+      this.msg(FINAL_TEXT.won, MSG.good);
+    }
+    if (!F.won) return;
+    // (the arena has no ways of the game's own: its way up is stepped here, the curtain falling as for any way)
+    if (this.leaving?.to === 'finalUp') {
+      this.leaving.t += dt;
+      if (this.leaving.t >= CURTAIN_SECS) this.takeWay('finalUp');
+      return;
+    }
+    const was = this.wonT;
+    this.wonT += dt;
+    if (was < FINAL_WAY_UP && this.wonT >= FINAL_WAY_UP) {
+      this.msg(FINAL_TEXT.up, MSG.quest);
+      this.sfx('portal');
+    }
+    // (stood in: one standing in the light as it opens has to step out of it first, and one only walking through it as he gathers
+    // what was left is not carried up: he stands in it a moment)
+    const h = this.hero;
+    const inLight = Math.hypot(h.x - F.arrive.x, h.y - F.arrive.y) < PORTAL_NEAR;
+    if (!inLight) {
+      this.wayArmed = true;
+      this.upT = 0;
+    } else if (this.wonT >= FINAL_WAY_UP && this.wayArmed) this.upT += dt;
+    if (this.upT >= FINAL_UP_HOLD && !this.leaving && !this.over) this.leave('finalUp');
   }
+  private upT = 0;
   private arenaT = 0;
+  private wonT = 0;
+  private wayArmed = false;
 
   /**
    * (ENDLESS_KEY) THE BOTTOM OF THE SHAFT (game/final_arena.ts): he comes down in the portal's light; the warped wordsmith waits on
@@ -14146,6 +14192,11 @@ export class Game {
     }
     // whatever else it leaves, a monster that carried a word gives it up
     for (const w of m.carries) this.addDrop('word', m.x, m.y, 0, null, w);
+    // (ENDLESS_KEY: the warped wordsmith, the best in the game: game/final_arena.ts FINAL_LOOT)
+    if (m.kind === 'wsboss') {
+      this.finalLoot(m);
+      return;
+    }
     // (THE ROYAL CARDS: one a royal touched drops that royal's card: game/royal_cards.ts)
     if (m.royal && royalFloor(this.depth)) {
       this.addDrop('card', m.x, m.y, 0, null, null);
@@ -17028,6 +17079,32 @@ export class Game {
     if (weapon) pool = pool.filter((d) => uniqueWeapon(d) === weapon);
     if (!pool.length) return null;
     return makeUnique(this.rng.pick(pool).id, Math.max(1, this.power), this.rng);
+  }
+
+  /**
+   * (ENDLESS_KEY) WHAT THE WARPED WORDSMITH LEAVES (game/final_arena.ts FINAL_LOOT): a great hoard of gold, every piece of gear a
+   * rare, words, a life orb; and one kill in four (UNIQUE_DROPS.final) one of his own two uniques (finalUniques: The Third Word, The
+   * Ghostwriter), made as the bosses' own are.
+   */
+  private finalLoot(m: Monster): void {
+    const rng = this.rng;
+    const goldBase = Math.max(1, this.power);
+    this.addDrop('gold', m.x, m.y, rng.int(FINAL_LOOT.gold[0], FINAL_LOOT.gold[1]) * goldBase, null, null);
+    for (let i = 0; i < FINAL_LOOT.items; i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(4), null);
+    if (this.wordsFall()) for (let i = 0; i < FINAL_LOOT.words; i++) this.addDrop('word', m.x, m.y, 0, null, rng.pick(wordsAt(this.power)));
+    if (UNIQUES.on && !this.practice) {
+      const two = finalUniques();
+      if (two.length && rng.chance(UNIQUE_DROPS.final)) {
+        const d = rng.pick(two);
+        const it = makeUnique(d.id, Math.max(1, this.power), rng);
+        if (it) {
+          this.addDrop('item', m.x, m.y, 0, it, null);
+          this.emit({ t: 'unique', id: d.id, what: 'drop', x: m.x, y: m.y });
+          this.sfx('rare', 0.9);
+        }
+      }
+    }
+    this.addDrop('orb', m.x, m.y, 0, null, null);
   }
 
   /** A boss dies: his own unique, now and then. */

@@ -135,6 +135,8 @@ export class FinalArenaView implements LookView {
       g.fill();
       this.beam = fine(cv, 30, 175);
     }
+    // (the warped wordsmith dead: the way back up, the light brighter, beating)
+    if (L.final?.won) return [{ x: A.x, y: A.y, s: this.beam, add: true, alpha: 1 }, { x: A.x, y: A.y, s: this.beam, add: true, alpha: 0.35 + 0.35 * Math.sin(t * 4) }];
     return [{ x: A.x, y: A.y, s: this.beam, add: true, alpha: 0.75 + 0.2 * Math.sin(t * 1.7) }];
   }
   stands(): readonly LookStand[] {

@@ -37,9 +37,12 @@
 //     and the meld's own move. Drawn at random (never the same twice running; a FLOOR meld never straight after another).
 //     HALF TO A QUARTER: once what comes at you is done, he stands SPENT 3 s (OPENING); the next once its floor is gone.
 //     A QUARTER TO NONE: no rest: the next meld's writing begins while the last one's floor still stands. Frostbite the one opening.
-//   His life is held at 1 on foot until his death is made (stage 4).
+//   HIS DEATH (stage 4) when his life runs out, whatever he is doing (FIGHT_FLOW): the art's DEATH, his brief: “he is overwhelmed by
+//   the word power he is using and implodes in pink energy that dissipates into tiny runes that blink out until nothing is left”.
+//   His life held at 1 while it plays, nothing of his hurting any more; killed as the last rune goes out: his drops where he was
+//   (game/game.ts finalLoot), the way back up (game.ts updateArena).
 
-import { BOLT, CHARGE, CHARGE_SKID, CHARGE_STRIKE, FALL, FIRE, FIRE_DROPS, FROST, GORE, MELD, POWER, SPENT, SPORE, SPORE_PODS, STOMP, WHEEL, WINDED, chargeCarry, fallCarry, fallLandedAt } from '../../art/endless_boss';
+import { BOLT, CHARGE, CHARGE_SKID, CHARGE_STRIKE, DEATH, FALL, FIRE, FIRE_DROPS, FROST, GORE, MELD, POWER, SPENT, SPORE, SPORE_PODS, STOMP, WHEEL, WINDED, chargeCarry, fallCarry, fallLandedAt } from '../../art/endless_boss';
 import { MELDS, MELD_IDS, drawMeld, meldBegins, meldPeril } from './wsboss2';
 import type { MeldId } from './wsboss2';
 import { TILE3 } from '../../art/new_mobs3';
@@ -88,6 +91,7 @@ const ACTS: readonly ActDef[] = [
   { id: 'wsboss:fall', clip: 'fall', long: FALL.long, hit: FALL.slam, dmg: 0, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
   { id: 'wsboss:meld', clip: 'hailstorm', long: MELD.long, hit: MELD.slam, dmg: 1, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
   { id: 'wsboss:spent', clip: 'spent', long: SPENT.long, hit: SPENT.long, dmg: 0, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
+  { id: 'wsboss:death', clip: 'death', long: DEATH.long, hit: DEATH.burst, dmg: 0, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
 ];
 const IX = (id: string): number => ACTS.findIndex((a) => a.id === `wsboss:${id}`);
 /** The boar's moves and his words, as the beats draw them. */
@@ -220,12 +224,12 @@ export const RULES: Act1Rules | null = {
     return false;
   },
   lifeFloor(_R, m) {
-    // (in the saddle, held at half until the boar is dead; on foot, at 1 until his death is made: the next stage's)
+    // (in the saddle, held at half until the boar is dead; on foot, at 1 while his death plays: it kills him at its end)
     return inSaddle(m) ? Math.ceil(m.maxLife * 0.5) : 1;
   },
   invulnerable(m) {
-    // (the boar's death: he cannot be hit)
-    return m.act?.id === 'wsboss:fall';
+    // (the boar's death, and his own: he cannot be hit)
+    return m.act?.id === 'wsboss:fall' || m.act?.id === 'wsboss:death';
   },
   tick(R, m, dt) {
     const k = a1Of(m);
@@ -234,6 +238,12 @@ export const RULES: Act1Rules | null = {
     if (!m.act) k.wait = Math.max(0, (k.wait ?? 0) - dt);
     // (brought to half his life in the saddle: the boar's death is due, on its next charge)
     if (inSaddle(m) && !k.fallDue && m.life <= Math.ceil(m.maxLife * 0.5)) k.fallDue = 1;
+    // (on foot, his life run out: his death, whatever he is doing; what of his is on the floor harms nothing more)
+    if (!inSaddle(m) && !k.dying && m.life <= 1 && m.act?.id !== 'wsboss:fall') {
+      k.dying = 1;
+      for (const p of R.g.perils) if (p.a1?.startsWith('wsboss:') && p.a1 !== 'wsboss:scorch') p.dur = Math.min(p.dur, p.t + 0.4);
+      R.startAct(m, ACTS, IX('death'));
+    }
     // (mid-charge, between its runs and its wheel, it keeps the way it faces down its lane)
     if (!m.act && (k.runs ?? 0) > 0) {
       m.fx = k.fx ?? m.fx;
@@ -295,7 +305,7 @@ export const RULES: Act1Rules | null = {
     const id = a.id.slice(7);
     // (turned to the axis nearest him; but the wheel spins round from the way it ran, a run after a wheel goes back down its lane
     // the way it now faces, and winded it stands where it stopped)
-    const keep = id === 'wheel' || id === 'winded' || id === 'fall' || id === 'spent' || (id === 'charge' && (k.run ?? 0) > 0);
+    const keep = id === 'wheel' || id === 'winded' || id === 'fall' || id === 'spent' || id === 'death' || (id === 'charge' && (k.run ?? 0) > 0);
     const dh = Math.hypot(h.x - m.x, h.y - m.y);
     if (!keep && dh > 0.01) {
       m.fx = (h.x - m.x) / dh;
@@ -361,6 +371,12 @@ export const RULES: Act1Rules | null = {
     }
     if (id === 'meld' || id === 'spent') {
       k.wait = 0.25;
+      return;
+    }
+    if (id === 'death') {
+      // (the last of his runes gone out: nothing is left of him)
+      m.life = 0;
+      R.g.kill(m);
       return;
     }
     if (id === 'charge') {
@@ -462,6 +478,22 @@ export const RULES: Act1Rules | null = {
       }
       case 'wsboss:spent':
         return;
+      case 'wsboss:death': {
+        // (struck: a scream (the sound chat's), cut short as he implodes; the burst of his runes)
+        if (at(DEATH.struck)) {
+          g.sfx('bossRoar', 1);
+          g.emit({ t: 'shake', amount: 5 });
+        }
+        if (at(DEATH.implode[1])) {
+          g.sfx('slam', 1);
+          g.emit({ t: 'shake', amount: 10 });
+        }
+        if (at(DEATH.burst)) {
+          g.sfx('rare', 0.6);
+          R.peril(m, 'act1', m.x, m.y, { a1: 'wsboss:deathring', dur: 0.8, hit: 0 });
+        }
+        return;
+      }
       case 'wsboss:gore': {
         if (!at(GORE.hit)) return;
         g.emit({ t: 'shake', amount: 4 });
