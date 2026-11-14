@@ -657,12 +657,13 @@ function moveOf(mob: Mob, which: MobAct | string): MobMove {
 
 /** ONE FRAME of a monster's move, seen from in front or from behind, with its pink edge (or `rim`). */
 /** The view a monster's pictures for one of the game's two are painted in (`trueBack`). */
-export function paintViewOf(mob: Mob, view: GameView): PaintView {
+export function paintViewOf(mob: Mob, view: GameView): GameView | 'rear' {
   return view === 'back' && mob.trueBack ? 'rear' : view;
 }
-export function paintMob(mob: Mob, which: MobAct | string, t: number, view: GameView, rim: string | null = ENEMY_RIM): Painted {
+export function paintMob(mob: Mob, which: MobAct | string, t: number, view: GameView | 'frontL' | 'rearL', rim: string | null = ENEMY_RIM): Painted {
   const can = canvasOf(mob);
-  const st = stage(paintViewOf(mob, view), can.ax, can.ay, can);
+  // (`frontL` and `rearL`: the game's other two facings turned round, not flipped (skeleton.ts `project`))
+  const st = stage(view === 'frontL' || view === 'rearL' ? view : paintViewOf(mob, view), can.ax, can.ay, can);
   const mv = moveOf(mob, which);
   const m = momentOf(mob, mv, t, which === 'attack' ? mob.hit : mv.blurAt);
   const bits = mob.bits(st, m);

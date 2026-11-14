@@ -4123,7 +4123,7 @@ function shadeOf(c: string): string {
 /** HIS SHADE (his words, 13 Nov 2026, of a remake as raw fire: “I take it back, I like the old shade better”: his own figure made
  * great and made of his pink), `t` seconds into a move, risen as far as `grow` (0, inside him ... 1, looming over him), from his skeleton then: his
  * picture made great and made of his pink, bands of it rising through it. Its canvas's anchor is his floor point. */
-export function paintShade(s: Skeleton, t: number, view: 'front' | 'rear', grow = 1, lean = 0, around = Math.atan2(SHADE.side, -SHADE.behind)): Painted {
+export function paintShade(s: Skeleton, t: number, view: 'front' | 'rear' | 'frontL' | 'rearL', grow = 1, lean = 0, around = Math.atan2(SHADE.side, -SHADE.behind)): Painted {
   const st = stage(view, SHADE_CANVAS.ax, SHADE_CANVAS.ay, SHADE_CANVAS);
   const raw: Bit[] = [];
   const put0: Put = (part, piece, shape) => raw.push({ part, piece, shape });

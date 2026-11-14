@@ -31,8 +31,8 @@ import type { Build, Skeleton, Solid, V3 } from './skeleton';
 
 /** One of the game's two views of a figure (the other two are these in a mirror). */
 export type GameView = 'front' | 'back';
-/** A view a figure is painted in: one of the game's two, or `rear`, its back as the camera truly sees it (skeleton.ts `project`), for a figure whose back pictures are painted so (`Mob.trueBack`). */
-export type PaintView = GameView | 'rear';
+/** A view a figure is painted in: one of the game's two, or `rear`, its back as the camera truly sees it (skeleton.ts `project`), for a figure whose back pictures are painted so (`Mob.trueBack`); or `frontL` and `rearL`, the game's other two facings turned round, not flipped (skeleton.ts `project`), for one whose mirror would put what he holds in his other hand. */
+export type PaintView = GameView | 'rear' | 'frontL' | 'rearL';
 
 /**
  * The canvas a hero on bones is painted on, and where on it the floor under them is. It is
