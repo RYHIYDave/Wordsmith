@@ -29,14 +29,25 @@ through chat, so the art and sounds go into the project whole).
 Keys: WASD or the arrows to walk; Space or the left mouse button to swing (the mouse aims; from the keys he aims at the
 nearest monster close by). A controller: the left stick, A.
 
+- **The monsters' own moves** (at his pick, "Monsters' own moves", 14 Nov 2026; game/defs.ts MONSTER_MOVES with the
+  first floor's MORE ACTION, `scripts/monster_moves.gd`): each makes the biggest of its moves that is ready and in reach,
+  as game.ts pickMove does. The bone archer's ARROW RAIN (a gold ring where he stood, struck 1.5 s later); the
+  marksman's GREAT SHOT (his line of aim run out and following him till 0.4 s before the loose, then an arrow through
+  whoever it meets); the red troll's SWING, SLAM (the red circle) and CHARGE (his line marked, then run at 10 tiles a
+  second, the hero knocked aside, only where he has a clear run past him); the Warden's SWING, his fan of seven BOLTS,
+  the LOCKDOWN (the bars' shadows across his hall, then the bars crashing down in rows, a cell safe, standing 1.5 s as a
+  cage the hero cannot walk through) and the DEAD HE CALLS (four skeletons crawling up out of the floor, no more while six
+  stand). The champion's cleave; his rallying cry is heard only by minions carrying his words, and on floor 1 none do.
+
 ## Not in it yet
 
-The monsters' own moves (the guardian's slam and charge, the archer's rain, the marksman's pierce, the champion's rally,
-the Warden's summons: they use their one attack for now), the Warrior's other moves (Whirl from level 2, Leap), words,
-loot, levels, potions, the floor's own dressing (render/pieces.ts, its looks), raised and sunken floor, the tiles cut
-corner to corner (drawn whole for now), doors, props, the rest of the heroes, the town, menus, music (its 12 tracks are
-`.mp4`, which Godot does not play: they need making into `.ogg`). The Colossus and townsfolk pictures are in, held back
-from Godot with `.gdignore` until they are wired in.
+The game's own pictures of the moves' marks (the rings, lines and bars here are plain stand-ins drawn on the floor, the
+bars under the figures), the Warden's spoken lines as he makes them, the Warrior's other moves (Whirl from level 2,
+Leap; his swipe, which carries him through the Lockdown's bars), words, loot, levels, potions, the floor's own dressing
+(render/pieces.ts, its looks), raised and sunken floor, the tiles cut corner to corner (drawn whole for now), doors,
+props, the rest of the heroes, the town, menus, music (its 12 tracks are `.mp4`, which Godot does not play: they need
+making into `.ogg`). The Colossus and townsfolk pictures are in, held back from Godot with `.gdignore` until they are
+wired in.
 
 ## How it is made
 
@@ -49,6 +60,8 @@ from Godot with `.gdignore` until they are wired in.
 | `assets/monsters/lists.json` | each figure's lists named, from the game's art: `npx tsx tools/godot_monster_lists.ts` |
 | `scripts/` | GDScript, each file saying which TypeScript it follows |
 
-Checking it without hands on the keys: `godot --path godot -- --shots=<folder>` pictures the hero where he comes in, sets
-him down near a pack of skeletons swinging at what comes (pictures as they wake, close in and fall), then near the
-archers and in sight of the Warden, says how the fight went, and quits.
+Checking it without hands on the keys: `godot --path godot -- --shots=<folder>` sets the hero down, unharmed, in sight
+of each monster that has moves and pictures each move the moment it shows (the troll's charge line, run and slam; the
+rain's ring and its arrows; the marksman's aim and great arrow; the Warden's bolts, the Lockdown's shadows and bars, the
+dead he calls), says which moves were made, and quits. (Neither lair on this floor leaves the troll a clear run, so for
+the charge he is set down in the floor's biggest hall.)

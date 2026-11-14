@@ -9,6 +9,8 @@ const BakedFigure := preload("res://scripts/baked_figure.gd")
 const Monster := preload("res://scripts/monster.gd")
 const Sfx := preload("res://scripts/sfx.gd")
 const Arrow := preload("res://scripts/arrow.gd")
+const MM := preload("res://scripts/monster_moves.gd")
+const Perils := preload("res://scripts/perils.gd")
 
 const FLOW_REACH := 28
 const FLOW_EVERY := 0.25
@@ -19,7 +21,13 @@ var map: FloorMap
 var sfx: Sfx
 var hero  # hero.gd
 var stands: Node2D
+var perils: Perils
 var list: Array[Monster] = []
+## (shot mode: how many times each move was made)
+var used := {}
+var _defs := {}
+var _info := {}
+var _figures_dir := ""
 var _flow := PackedInt32Array()
 var _flow_in := 0.0
 var _arrows: Array = []  # {pos, dir, speed, left, dmg, node}
@@ -29,6 +37,9 @@ var _figures := {}
 func load_floor(path: String, figures_dir: String) -> void:
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
 	var info: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(figures_dir + "/lists.json"))
+	_defs = data["defs"]
+	_info = info
+	_figures_dir = figures_dir
 	for m in data["monsters"]:
 		var figure: String = m["figure"]
 		if not _figures.has(figure):
@@ -78,7 +89,7 @@ func strike_target(from: Vector2, way: Vector2, reach: float) -> Monster:
 	var best: Monster = null
 	var best_score := INF
 	for m in list:
-		if not is_instance_valid(m) or m.dead:
+		if not is_instance_valid(m) or m.dead or m.state == "rise":
 			continue
 		var to := m.world - from
 		var dist := to.length()
@@ -97,7 +108,7 @@ func nearest(from: Vector2, reach: float) -> Monster:
 	var best: Monster = null
 	var best_d := reach
 	for m in list:
-		if is_instance_valid(m) and not m.dead and m.state != "sleep" and m.world.distance_to(from) <= best_d:
+		if is_instance_valid(m) and not m.dead and m.state != "sleep" and m.state != "rise" and m.world.distance_to(from) <= best_d:
 			best_d = m.world.distance_to(from)
 			best = m
 	return best
@@ -151,12 +162,56 @@ func flow_dir(at: Vector2) -> Vector2:
 	return to.normalized() if to != Vector2.ZERO else Vector2.ZERO
 
 
-func shoot(from: Monster, at: Vector2, speed: float, reach: float, dmg: float) -> void:
-	var dir := (at - from.world).normalized()
+## Something loosed at the hero from monster `from`, the way `dir` on the floor: an arrow (0.2 round), one of the Warden's
+## bolts, or the marksman's great arrow (`pierce`: it goes through whoever it meets, and on to its end).
+func shoot(from: Monster, dir: Vector2, speed: float, reach: float, dmg: float, look := "arrow", r := ARROW_R, pierce := false) -> void:
 	var node := Arrow.new()
 	node.dir = dir
+	node.look = look
 	stands.add_child(node)
-	_arrows.append({"pos": from.world + dir * (from.r + 0.1), "dir": dir, "speed": speed, "left": reach, "dmg": dmg, "node": node})
+	_arrows.append({"pos": from.world + dir * (from.r + 0.1), "dir": dir, "speed": speed, "left": reach, "dmg": dmg, "node": node, "r": r, "pierce": pierce, "hit": false})
+
+
+## THE WARDEN CALLS THE DEAD (game.ts callDead): four skeletons crawl up out of the ground on open floor round him, a little
+## after one another; till each is out it is only a picture (not to be hit, doing nothing); then it joins the fight.
+func summon(w: Monster) -> void:
+	var spots: Array[Vector2] = []
+	var tries := 0
+	while spots.size() < MM.SUMMON["count"] and tries < 200:
+		tries += 1
+		var p := w.world + Vector2(randf_range(-4.0, 4.0), randf_range(-4.0, 4.0))
+		p = Vector2(floorf(p.x) + 0.5, floorf(p.y) + 0.5)
+		if p.distance_to(w.world) < 1.5 or not map.walkable(floori(p.x), floori(p.y)) or not sees(w.world, p):
+			continue
+		var apart := true
+		for s in spots:
+			if s.distance_to(p) < 1.0:
+				apart = false
+		if apart:
+			spots.append(p)
+	for k in spots.size():
+		var m := Monster.new()
+		m.mgr = self
+		var to: Vector2 = hero.world - spots[k]
+		var d := {"kind": "skeleton", "x": spots[k].x, "y": spots[k].y, "fx": to.normalized().x, "fy": to.normalized().y, "r": float(_defs["skeleton"]["radius"]),
+			"life": float(_defs["skeleton"]["life"]), "maxLife": float(_defs["skeleton"]["life"]), "dmgMin": float(_defs["skeleton"]["dmgMin"]),
+			"dmgMax": float(_defs["skeleton"]["dmgMax"]), "speed": float(_defs["skeleton"]["speed"]), "packId": w.pack_id, "boss": false, "champion": false}
+		if not _figures.has("skeleton"):
+			_figures["skeleton"] = BakedFigure.new(_figures_dir, "skeleton", _info)
+		m.setup(d, _defs["skeleton"], _figures["skeleton"])
+		m.rise(MM.SUMMON["rise"] + k * MM.SUMMON["apart"])
+		stands.add_child(m)
+		list.append(m)
+	sfx.play("boss_roar")
+
+
+## How many of the dead the Warden has called still stand, or are coming up out of the ground.
+func called(w: Monster) -> int:
+	var n := 0
+	for o in list:
+		if is_instance_valid(o) and o != w and not o.dead and o.pack_id == w.pack_id and o.kind == "skeleton":
+			n += 1
+	return n
 
 
 func _fly(dt: float) -> void:
@@ -168,9 +223,10 @@ func _fly(dt: float) -> void:
 		var p: Vector2 = a["pos"]
 		var t := map.tile(floori(p.x), floori(p.y))
 		var gone: bool = a["left"] <= 0.0 or (t != FloorMap.FLOOR and t != FloorMap.PIT)
-		if not gone and hero.alive and p.distance_to(hero.world) <= ARROW_R + HERO_R:
+		if not gone and not a["hit"] and hero.alive and p.distance_to(hero.world) <= a["r"] + HERO_R:
 			hero.hurt(a["dmg"])
-			gone = true
+			a["hit"] = true
+			gone = not a["pierce"]
 		if gone:
 			a["node"].queue_free()
 		else:
@@ -184,7 +240,7 @@ func _fly(dt: float) -> void:
 func _part() -> void:
 	for i in list.size():
 		var a := list[i]
-		if a.dead or a.state == "sleep":
+		if a.dead or a.state == "sleep" or a.state == "rise":
 			continue
 		if hero != null and hero.alive:
 			var h: Vector2 = a.world - hero.world
@@ -192,11 +248,11 @@ func _part() -> void:
 			var hneed := a.r + HERO_R
 			if hl < hneed:
 				var out := (h / hl if hl > 0.0001 else Vector2(1, 0)) * (hneed - hl)
-				if clear(a.world.x + out.x, a.world.y + out.y, a.r):
+				if clear(a.world.x + out.x, a.world.y + out.y, minf(a.r, 0.42)):
 					a.world += out
 		for j in range(i + 1, list.size()):
 			var b := list[j]
-			if b.dead:
+			if b.dead or b.state == "rise":
 				continue
 			var d := b.world - a.world
 			var need := a.r + b.r
@@ -204,9 +260,9 @@ func _part() -> void:
 			if l >= need or l < 0.0001:
 				continue
 			var push := d / l * (need - l) * 0.5
-			if clear(a.world.x - push.x, a.world.y - push.y, a.r):
+			if clear(a.world.x - push.x, a.world.y - push.y, minf(a.r, 0.42)):
 				a.world -= push
-			if b.state != "sleep" and clear(b.world.x + push.x, b.world.y + push.y, b.r):
+			if b.state != "sleep" and clear(b.world.x + push.x, b.world.y + push.y, minf(b.r, 0.42)):
 				b.world += push
 
 

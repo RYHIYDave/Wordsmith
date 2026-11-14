@@ -48,9 +48,13 @@ var home := Vector2.ZERO
 var face := Vector2(1, 0)
 var life := MAX_LIFE
 var alive := true
-## Shot mode (main.gd): a screen direction held as if pressed, and a swing asked for.
+## Shot mode (main.gd): a screen direction held as if pressed, a swing asked for, and blows that flash but do not harm
+## (so that every move can be seen to its end).
 var auto_dir := Vector2.ZERO
 var auto_attack := false
+var unhurt := false
+var _knock := Vector2.ZERO
+var _knock_t := 0.0
 
 var _sprite: Sprite2D
 var _cam: Camera2D
@@ -96,6 +100,11 @@ func _process(dt: float) -> void:
 			_back()
 		return
 	life = minf(MAX_LIFE, life + REGEN * dt)
+	# (knocked: carried the way he was struck over 0.12 s, walls stopping him: game.ts knockHero, his `step`)
+	if _knock_t > 0.0:
+		var k := minf(dt, _knock_t)
+		_slide(_knock * (k / 0.12))
+		_knock_t -= dt
 	var d := Input.get_vector("move_left", "move_right", "move_up", "move_down") + auto_dir
 	var way := Iso.screen_dir_to_world(d)
 	var asked := Input.is_action_just_pressed("attack") or Input.is_action_just_pressed("attack2") or auto_attack
@@ -115,7 +124,11 @@ func _process(dt: float) -> void:
 	if not _swinging:
 		if way != Vector2.ZERO:
 			_turn(way)
+			var was := world
 			_slide(way * SPEED * dt)
+			# (the Lockdown's bars, standing, keep him on his side of them as he walks: action_f1.ts cageHero)
+			if monsters != null and monsters.perils != null:
+				world = monsters.perils.cage(was, world, RADIUS)
 			_set_list(BakedHero.WALK)
 			_step_in -= dt
 			if _step_in <= 0.0:
@@ -162,10 +175,21 @@ func _land() -> void:
 		sfx.play("hit", -4.0)
 
 
+## Knocked `dist` tiles the way `way` (a unit vector on the floor).
+func knock(way: Vector2, dist: float) -> void:
+	_knock = way * dist
+	_knock_t = 0.12
+
+
+func shake() -> void:
+	_shake = 0.18
+
+
 func hurt(dmg: float) -> void:
 	if not alive:
 		return
-	life -= dmg
+	if not unhurt:
+		life -= dmg
 	_flash = 0.15
 	_shake = 0.15
 	sfx.play("hurt", -6.0)
@@ -187,6 +211,7 @@ func _back() -> void:
 		for m in monsters.list:
 			if is_instance_valid(m) and not m.dead and m.state != "sleep":
 				m.state = "sleep"
+		monsters.perils.list.clear()
 	_place()
 	_show()
 

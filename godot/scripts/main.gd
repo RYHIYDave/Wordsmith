@@ -16,6 +16,7 @@ const Hero := preload("res://scripts/hero.gd")
 
 const Monsters := preload("res://scripts/monsters.gd")
 const Monster := preload("res://scripts/monster.gd")
+const Perils := preload("res://scripts/perils.gd")
 
 const FLOOR_DIR := "res://assets/floor1"
 const HERO_DIR := "res://assets/heroes"
@@ -46,6 +47,11 @@ func _ready() -> void:
 	floor_layer.art = ground
 	add_child(floor_layer)
 
+	# (what the monsters' moves mark on the floor: over the floor, under everyone)
+	var perils := Perils.new()
+	perils.map = map
+	add_child(perils)
+
 	var stands := Stands.new()
 	stands.map = map
 	stands.art = ground
@@ -68,6 +74,9 @@ func _ready() -> void:
 	monsters.sfx = sfx
 	monsters.hero = hero
 	monsters.stands = stands
+	monsters.perils = perils
+	perils.hero = hero
+	perils.sfx = sfx
 	add_child(monsters)
 	monsters.load_floor(FLOOR_DIR + "/monsters.json", MONSTER_DIR)
 	hero.monsters = monsters
@@ -127,40 +136,139 @@ func _arg(name: String) -> String:
 	return ""
 
 
-## SHOT MODE: the hero where he comes in; then set down near the nearest pack of skeletons, swinging at whatever comes,
-## pictures as they wake, close in and fall; then near an archer pack, and in sight of the Warden. Each picture at twice
-## the size; then the game quits, saying how the fight went.
+## SHOT MODE: the monsters' moves, each pictured the moment it shows. The hero is set down in sight of each monster that has
+## moves and stands there, unharmed (its blows flash him but take nothing, so that each move is seen to its end): the red
+## troll (his charge's line, his run, his slam's circle), the archers (the rain's ring, the arrows come down), the
+## marksman (his line of aim, his great arrow), the Warden (his bolts, the Lockdown's shadows and its bars, the dead he
+## calls). Each picture at twice the size; then the game quits, saying which moves were made.
 func _shoot(hero: Hero, dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
-	await _wait(1.2)
-	await _snap(dir + "/1_start.png")
-	var n0 := _alive()
-	var skel := _nearest_kind(hero.world, "skeleton", 12.0)
-	if skel != null:
-		hero.world = _spot_near(skel.world, 5.0, hero.world)
-		await _wait(0.6)
-		await _snap(dir + "/2_pack_wakes.png")
-		for i in 16:
-			hero.auto_attack = true
-			await _wait(0.5)
-			if i == 3:
-				await _snap(dir + "/3_fight.png")
-			if i == 8:
-				await _snap(dir + "/4_fight_on.png")
-		await _snap(dir + "/5_after.png")
-	print("FIGHT: ", n0 - _alive(), " monsters down; hero life ", int(hero.life), " alive ", hero.alive)
+	hero.unhurt = true
+	await _wait(1.0)
+	await _snap(dir + "/01_start.png")
+	var P := _monsters.perils
+	# (the troll whose lair leaves room for a charge)
+	var troll: Monster = null
+	var spot := Vector2.INF
+	for m in _monsters.list:
+		if m.kind == "brute" and not m.dead:
+			var s := _charge_spot(m, 6.0, Vector2.INF)
+			if s != Vector2.INF:
+				troll = m
+				spot = s
+				break
+	if troll == null:
+		# (neither lair leaves room for a run: the troll is set down in the floor's biggest hall, the hero 6 tiles off)
+		troll = _nearest_kind(hero.world, "brute", 0.0)
+		var big: Dictionary = {}
+		for r in _monsters.map.rooms:
+			if big.is_empty() or r["w"] * r["h"] > big["w"] * big["h"]:
+				big = r
+		troll.world = Vector2(floorf(big["x"] + big["w"] / 2.0) + 0.5, floorf(big["y"] + big["h"] / 2.0) + 0.5)
+		spot = _charge_spot(troll, 6.0, _spot_near(troll.world, 6.0, hero.world))
+		print("TROLL MOVED to the biggest hall ", big["w"], "x", big["h"])
+	if troll != null:
+		hero.world = spot
+		if _arg("debug") != "":
+			for i in 6:
+				await _wait(0.5)
+				print("TROLL state=", troll.state, " dist=", snappedf(troll.world.distance_to(hero.world), 0.01), " sees=", _monsters.sees(troll.world, hero.world), " moves=", troll._moves.size(), " cd=", snappedf(troll._cd, 0.01), " movecd=", troll._move_cd, " lane=", troll._lane(troll.world.distance_to(hero.world)))
+		await _snap_when(dir + "/02_troll_charge_line.png", func(): return _has(P, "lane"), 6.0)
+		await _snap_when(dir + "/03_troll_charging.png", func(): return is_instance_valid(troll) and troll.state == "charge", 3.0)
+		await _snap_when(dir + "/04_troll_slam.png", func(): return _has(P, "warn"), 8.0)
 	var arch := _nearest_kind(hero.world, "archer", 0.0)
 	if arch != null:
 		hero.world = _spot_near(arch.world, 6.0, hero.world)
-		await _wait(1.6)
-		await _snap(dir + "/6_archers.png")
+		await _snap_when(dir + "/05_archer_rain_ring.png", func(): return _has(P, "rain", 0.7), 10.0)
+		await _snap_when(dir + "/06_archer_rain_falls.png", func(): return _has(P, "rain", 1.6), 3.0)
+	var mark := _nearest_kind(hero.world, "marksman", 0.0)
+	if mark != null:
+		hero.world = _spot_near(mark.world, 7.0, hero.world)
+		await _snap_when(dir + "/07_marksman_aims.png", func(): return _has(P, "aim", 1.0), 10.0)
+		await _snap_when(dir + "/08_marksman_great_arrow.png", func(): return _flying("great"), 3.0)
 	var boss := _nearest_kind(hero.world, "warden", 0.0)
 	if boss != null:
-		hero.world = _spot_near(boss.world, 7.0, hero.world)
-		await _wait(0.9)
-		await _snap(dir + "/7_warden.png")
-	print("SHOTS DONE ", dir, " monsters standing ", _alive(), " of ", n0)
+		hero.world = _spot_near(boss.world, 6.0, hero.world)
+		await _snap_when(dir + "/09_warden_bolts.png", func(): return _flying("bolt"), 6.0)
+		await _snap_when(dir + "/10_warden_lockdown_shadows.png", func(): return _has_bars(P, -0.5, 0.0), 10.0)
+		await _snap_when(dir + "/11_warden_lockdown_bars.png", func(): return _has_bars(P, 0.3, 1.2), 3.0)
+		await _snap_when(dir + "/12_warden_calls_the_dead.png", func(): return _rising() >= 2, 16.0)
+		await _wait(1.8)
+		await _snap(dir + "/13_the_dead_risen.png")
+	print("MOVES MADE: ", _monsters.used)
+	print("SHOTS DONE ", dir)
 	get_tree().quit()
+
+
+## A spot about `away` tiles from the troll with a clear run for his charge through it and on (open floor behind the hero).
+func _charge_spot(troll: Monster, away: float, otherwise: Vector2) -> Vector2:
+	var best := otherwise
+	var best_err := INF
+	var map: FloorMap = _monsters.map
+	for ty in range(floori(troll.world.y - away - 2), floori(troll.world.y + away + 3)):
+		for tx in range(floori(troll.world.x - away - 2), floori(troll.world.x + away + 3)):
+			if not map.walkable(tx, ty):
+				continue
+			var p := Vector2(tx + 0.5, ty + 0.5)
+			var d := p.distance_to(troll.world)
+			var err := absf(d - away)
+			# (he charges from 3.5 tiles to 9: far enough that he will, near enough that he wakes)
+			if err >= best_err or d < 4.5 or d > 8.5:
+				continue
+			var f := (p - troll.world) / d
+			var ok := true
+			var a := 0.2
+			while a <= d + 1.6 and ok:
+				var q := troll.world + f * a
+				ok = _monsters.clear(q.x, q.y, 0.42)
+				a += 0.2
+			if ok:
+				best_err = err
+				best = p
+	return best
+
+
+func _has(P: Perils, kind: String, after := 0.0) -> bool:
+	for p in P.list:
+		if p["kind"] == kind and p["t"] >= after:
+			return true
+	return false
+
+
+func _has_bars(P: Perils, from: float, to: float) -> bool:
+	for p in P.list:
+		if p["kind"] == "bars" and p["t"] >= from and p["t"] <= to:
+			return true
+	return false
+
+
+func _flying(look: String) -> bool:
+	for a in _monsters._arrows:
+		if is_instance_valid(a["node"]) and a["node"].look == look:
+			return true
+	return false
+
+
+func _rising() -> int:
+	var n := 0
+	for m in _monsters.list:
+		if is_instance_valid(m) and m.state == "rise":
+			n += 1
+	return n
+
+
+## A picture the moment `cond` holds (looked at every frame), or after `timeout` seconds whatever holds (named so).
+func _snap_when(path: String, cond: Callable, timeout: float) -> bool:
+	var t := 0.0
+	while t < timeout:
+		if cond.call():
+			await _snap(path)
+			return true
+		await get_tree().process_frame
+		t += get_process_delta_time()
+	await _snap(path.replace(".png", "_timeout.png"))
+	print("TIMEOUT ", path.get_file())
+	return false
 
 
 func _alive() -> int:
