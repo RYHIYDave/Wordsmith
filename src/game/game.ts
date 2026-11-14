@@ -64,6 +64,7 @@ import { ARRIVALS, riftSize } from './arrivals';
 import { EYRIE_LINES, EYRIE_SCENE, MUSTER, MUSTER_TEXT, PILLARS, QUEST610_TEXT, QUESTS610, lightPillars, pillarsBurning, piecesInHand, piecesTaken } from './quests610';
 import { CLAPPER_REWARD, PAGES, QUEST1115_TEXT, QUESTS1115, cleanLaidOut, jarWords, pagesInHand, pagesTaken } from './quests1115';
 import type { PickBy } from './quests1115';
+import { BIRD_ALL, BIRD_BODY, BIRD_KEY, BIRD_SPRING, BROKEN_BIRD, CAPTAIN_JAR_VARIANT, QUEST1620_TEXT, QUESTS1620, SONG, birdPartsTaken, birdWords } from './quests1620';
 import { COLOSSUS, JETTY, STONE, stoneToWorld, worldToStone } from './colossus_fight';
 import type { ColossusFight } from './colossus_fight';
 /** (COLOSSUS) How near the landing on the boss's ground carries the hero across to the stone (tiles). */
@@ -174,6 +175,11 @@ export interface RunSave {
   /** (MUSTER: game/quests610.ts) */
   roll?: 'asked' | 'given';
   rollPages?: number;
+  /** (QUESTS1620: game/quests1620.ts) */
+  bird?: 'asked' | 'mended';
+  birdParts?: number;
+  court?: 'asked' | 'given';
+  captainJar?: 'got' | 'given';
   citySeen?: boolean;
   pieces?: number;
   meldAsk?: boolean;
@@ -439,7 +445,7 @@ export class Game {
   /** THE LEVEL SELECT (defs.ts LEVEL_SELECT): a test hero, made ready for the floor he was sent to (Game.forTrial). Played as any hero is, but never saved: main.ts leaves the saved run as it was. */
   trial = false;
   /** QUEST MARKERS (game/quest_marks.ts): the line at the top, "Speak to the ...", whom, and the seconds it still shows. */
-  speakTo: { who: Station; t: number; back?: boolean } | null = null;
+  speakTo: { who: Station | 'knight-captain'; t: number; back?: boolean } | null = null;
   /** (SPEAK_RETURN, game/quest_marks.ts) Whom he last had something to bring back to, a frame ago (turnInFor). */
   private backWas: Station | null = null;
   /** (the same) who had a quest for him in town last frame, and the level that was (a level come into is not news). */
@@ -1065,6 +1071,8 @@ export class Game {
       ...(QUESTS1115.on ? { jar: h.jar, pages: h.pages, clapper: h.clapper } : {}),
       // (MUSTER: the strongholds' roll)
       ...(MUSTER.on ? { roll: h.roll, rollPages: h.rollPages } : {}),
+      // (QUESTS1620: the songbird, the whole court, the captain's voice)
+      ...(QUESTS1620.on ? { bird: h.bird, birdParts: h.birdParts, court: h.court, captainJar: h.captainJar } : {}),
       // (the picks laid out and not yet taken: the armourer's, the mystic's)
       ...(h.laidOut ? { laidOut: Object.fromEntries(Object.entries(h.laidOut).map(([k, v]) => [k, [...(v ?? [])]])) } : {}),
     };
@@ -1142,6 +1150,11 @@ export class Game {
     // (MUSTER: the mystic's ask and the roll brought; its pages taken)
     h.roll = s.roll === 'asked' || s.roll === 'given' ? s.roll : undefined;
     h.rollPages = typeof s.rollPages === 'number' && s.rollPages >= 0 ? Math.min(MUSTER.pages, Math.floor(s.rollPages)) : undefined;
+    // (QUESTS1620)
+    h.bird = s.bird === 'asked' || s.bird === 'mended' ? s.bird : undefined;
+    h.birdParts = typeof s.birdParts === 'number' && s.birdParts >= 0 && s.birdParts <= BIRD_ALL ? Math.floor(s.birdParts) : undefined;
+    h.court = s.court === 'asked' || s.court === 'given' ? s.court : undefined;
+    h.captainJar = s.captainJar === 'got' || s.captainJar === 'given' ? s.captainJar : undefined;
     // (THE SKILL TREES: only this class's talents, each once, in an order that could have been taken)
     // (THE RANGER'S COMPANIONS: the picks, only of their own groups)
     if (COMPANIONS.on && s.pets) h.pets = cleanPicks(s.pets);
@@ -1722,6 +1735,8 @@ export class Game {
     if (this.depth === 9) this.piecesMade();
     // (QUESTS1115: what of the Hush's quests is on this floor: the line that says so; the stacks' page)
     this.quests1115Made();
+    // (QUESTS1620: the captain's jar on 12; the broken bird and the knight-captain on 19)
+    this.quests1620Made();
     this.updateVision(1);
     // (FLOOR_NAMES: the floor's own name comes up across the screen, its level under it, in place of the line)
     // (ENDLESS MODE: on an endless level, the floor's own name, the level under it, and the warning: his pick, a death here is the hero's end)
@@ -2205,6 +2220,8 @@ export class Game {
     if (QUEST_MARKS.on) this.updateSpeak(dt);
     // (QUESTS1115: the Crier's jar, walked up to on floor 12)
     if (QUESTS1115.on) this.jarTick();
+    // (QUESTS1620: the broken bird before the throne, the captain's jar in the sewers, walked up to)
+    if (QUESTS1620.on) this.tick1620();
   }
 
   // ===========================================================================================
@@ -2470,6 +2487,15 @@ export class Game {
       // (ACT 1, THE DESCENT: on down the mountain to the next floor; from the tenth, the Fen, home to town: the siege broken)
       this.meta.bestDepth = Math.max(this.meta.bestDepth, this.depth);
       this.cleared++;
+      // (QUESTS1620: from the Keep, the Quiet Tower's door opens only to the songbird's song: not mended, home to the camp)
+      if (this.towerShut()) {
+        this.enterTown(null);
+        this.cameT = 0;
+        this.sfx('portal');
+        this.msg(`${floorTitle(19).level} cleared.`, MSG.good);
+        this.msg(QUEST1620_TEXT.towerShut, MSG.quest);
+        return;
+      }
       // (ACT 2, PART TWO, THE HIGH CITY: from the fifteenth home too, its payoff as it was; the waypoint on up the hill, floor 16)
       if (this.depth === 10 || (this.depth === 15 && HIGH_CITY.on) || this.depth >= lastFloor()) {
         const from = this.depth;
@@ -10875,8 +10901,9 @@ export class Game {
     this.dropLoot(m);
     // (QUESTS610: a piece of the ward-stone it carried)
     if (m.piece !== undefined) this.dropPiece(m.piece, m.x, m.y);
-    // (QUESTS1115: the Palimpsest's page, the Physician's)
+    // (QUESTS1115: the Palimpsest's page, the Physician's; QUESTS1620: the songbird's key, its spring)
     this.pageBossDown(m);
+    this.birdBossDown(m);
     this.gainXp(m.xp);
     this.quip(m);
     if (m.boss) {
@@ -13736,6 +13763,15 @@ export class Game {
         const st = this.stationNear();
         if (st && !this.handIn()) this.emit({ t: 'station', kind: st });
       } else {
+        // (QUESTS1620: the knight-captain, spoken to; the songbird, in the Moth's fight)
+        if (this.captainNear()) {
+          this.captainUsed();
+          return;
+        }
+        if (this.songReady()) {
+          this.sing();
+          return;
+        }
         // (QUESTS1115: in the Censor's fight, with his ink on the floor and an unstruck page in hand, it is laid down)
         if (this.pageReady()) {
           this.layPage();
@@ -13781,7 +13817,7 @@ export class Game {
    * HAND_IN (game/defs.ts): what the hero would give the one he stands beside in town, if anything:
    * the master rune-stone, to the wordsmith. Null with HAND_IN off (then it is given by walking up).
    */
-  handInNear(): 'stone' | 'meldstone' | 'quest' | 'furnace' | 'reward' | 'meldAsk' | 'featherAsk' | 'featherGive' | 'rollAsk' | 'rollGive' | 'jarAsk' | 'jarGive' | 'clapperAsk' | 'clapperGive' | null {
+  handInNear(): 'stone' | 'meldstone' | 'quest' | 'furnace' | 'reward' | 'meldAsk' | 'featherAsk' | 'featherGive' | 'rollAsk' | 'rollGive' | 'jarAsk' | 'jarGive' | 'clapperAsk' | 'clapperGive' | 'birdAsk' | 'birdGive' | 'courtAsk' | 'courtGive' | null {
     if (!HAND_IN.on || !this.level.town) return null;
     const st = this.stationNear();
     // (QUESTS610: the mystic's feather quest, given and brought; MUSTER: the strongholds' roll; QUESTS1115: her jar. What he brings
@@ -13792,9 +13828,11 @@ export class Game {
     }
     // (QUESTS15: the armourer's furnace quest, given and rewarded; QUESTS1115: his clapper; what he brings back first, as hers)
     if (st === 'armourer') {
-      const due = [QUESTS15.on ? this.armourerDue() : null, this.clapperDue()];
-      return due.find((d) => d === 'reward' || d === 'clapperGive') ?? due.find((d) => d !== null) ?? null;
+      const due = [QUESTS15.on ? this.armourerDue() : null, this.clapperDue(), this.birdDue()];
+      return due.find((d) => d === 'reward' || d === 'clapperGive' || d === 'birdGive') ?? due.find((d) => d !== null) ?? null;
     }
+    // (QUESTS1620: the stranger's whole court)
+    if (st === 'stranger') return this.courtDue();
     if (st !== 'wordsmith') return null;
     // (WORDMELDING: the Meldstone, to the wordsmith too)
     // (EXITS: and while his ring is dark, used, he gives the quest for the master rune-stone, once)
@@ -13812,7 +13850,8 @@ export class Game {
     const h = this.hero;
     const out: Station[] = [];
     if (h.quest || h.meld === 'stone' || this.questDue() || this.meldAskDue()) out.push('wordsmith');
-    if ((QUESTS15.on && this.armourerDue()) || this.clapperDue()) out.push('armourer');
+    if ((QUESTS15.on && this.armourerDue()) || this.clapperDue() || this.birdDue()) out.push('armourer');
+    if (this.courtDue()) out.push('stranger');
     if ((QUESTS610.on && this.mysticDue()) || this.rollDue() || this.jarDue()) out.push('mystic');
     return out;
   }
@@ -13828,6 +13867,8 @@ export class Game {
     if (MUSTER.on && h.roll !== 'given' && (h.rollPages ?? 0) >= MUSTER.pages) return 'mystic';
     if (QUESTS1115.on && h.jar === 'got') return 'mystic';
     if (QUESTS1115.on && h.clapper === 'got') return 'armourer';
+    if (QUESTS1620.on && h.bird !== 'mended' && (h.birdParts ?? 0) === BIRD_ALL) return 'armourer';
+    if (this.courtDue() === 'courtGive') return 'stranger';
     return null;
   }
 
@@ -13848,6 +13889,8 @@ export class Game {
       if (this.speakLevel !== L) {
         const who = back ?? (L.town ? due[0] : undefined);
         if (who) this.speakTo = { who, t: QUEST_MARKS.secs, back: ret(who) };
+        // (QUESTS1620: into the Keep with the knight-captain's voice in hand)
+        else if (SPEAK_RETURN.on && QUESTS1620.on && this.depth === 19 && this.hero.captainJar === 'got') this.speakTo = { who: 'knight-captain', t: QUEST_MARKS.secs, back: true };
       } else if (SPEAK_RETURN.on && back && back !== this.backWas) {
         this.speakTo = { who: back, t: QUEST_MARKS.secs, back: true };
       } else {
@@ -13858,7 +13901,7 @@ export class Game {
       this.backWas = back;
       this.speakLevel = L;
       const at = this.speakTo;
-      if (at && (at.t <= 0 || !due.includes(at.who))) this.speakTo = null;
+      if (at && (at.t <= 0 || (at.who === 'knight-captain' ? this.hero.captainJar !== 'got' : !due.includes(at.who)))) this.speakTo = null;
       return;
     }
     const now = L.town ? this.questGivers() : [];
@@ -13872,7 +13915,7 @@ export class Game {
     this.giversWas = now;
     this.speakLevel = L;
     const sp = this.speakTo;
-    if (sp && (sp.t <= 0 || (L.town && !now.includes(sp.who)))) this.speakTo = null;
+    if (sp && (sp.t <= 0 || (L.town && (sp.who === 'knight-captain' || !now.includes(sp.who))))) this.speakTo = null;
   }
 
   /** (the same) the line has been on the screen for `dt` more seconds (main.ts: it waits behind a floor's name and the first dungeon's prompts). */
@@ -14129,6 +14172,10 @@ export class Game {
   /** (QUESTS1115) A page or the clapper picked up. */
   private questThingTaken(dr: Drop): void {
     const h = this.hero;
+    if (dr.thing === 'key' || dr.thing === 'spring') {
+      this.birdPartTaken(dr.thing === 'key' ? BIRD_KEY : BIRD_SPRING, dr.thing);
+      return;
+    }
     if (dr.thing === 'roll') {
       h.rollPages = Math.min(MUSTER.pages, (h.rollPages ?? 0) + 1);
       this.sfx('rare');
@@ -14208,6 +14255,235 @@ export class Game {
     this.emit({ t: 'spark', x: h.x, y: h.y, el: 'frost', n: 24 });
     this.sfx('power', 0.8);
     this.msg(QUEST1115_TEXT.pageLaid(pagesInHand(h.pages, L.pagesUsed)), MSG.quest);
+  }
+
+  // ---------------------------------------------------------------------------------------------------
+  // THE QUEST LINE OF FLOORS 16 TO 20 (game/quests1620.ts, QUESTS1620): THE CLOCKWORK SONGBIRD, THE WHOLE COURT, THE CAPTAIN'S VOICE
+
+  /** (QUESTS1620) The broken songbird before the King's throne, while he has not taken it (floor 19); the captain's jar (floor 12). */
+  private birdAt: PropInst | null = null;
+  private captainJarAt: PropInst | null = null;
+
+  /** (QUESTS1620) Whether the quests of floors 16 to 20 are on: their switch, and the High City's floors in the game (game/act1.ts). */
+  private get on1620(): boolean {
+    return QUESTS1620.on && HIGH_CITY.on;
+  }
+
+  /** (QUESTS1620) What the armourer has for this hero of the songbird: his ask (the Princess fallen), or the three parts brought. */
+  birdDue(): 'birdAsk' | 'birdGive' | null {
+    const h = this.hero;
+    if (!this.on1620 || this.practice || this.trial) return null;
+    if (h.bird !== 'mended' && (h.birdParts ?? 0) === BIRD_ALL) return 'birdGive';
+    if (h.bird === undefined && this.cleared >= 16) return 'birdAsk';
+    return null;
+  }
+
+  /** (QUESTS1620) What the stranger has for this hero: his ask for a whole court (a royal's card held), or the four brought. */
+  courtDue(): 'courtAsk' | 'courtGive' | null {
+    const h = this.hero;
+    if (!this.on1620 || this.practice || this.trial || h.court === 'given') return null;
+    const cards = h.cards ?? {};
+    if (ROYALS.every((r) => (cards[r] ?? 0) > 0)) return 'courtGive';
+    if (h.court === undefined && ROYALS.some((r) => (cards[r] ?? 0) > 0)) return 'courtAsk';
+    return null;
+  }
+
+  /** (QUESTS1620) The armourer or the stranger, at (x, y): asks, or takes what was asked for and rewards it. */
+  private handIn1620(what: 'birdAsk' | 'birdGive' | 'courtAsk' | 'courtGive', x: number, y: number): void {
+    const h = this.hero;
+    this.emit({ t: 'questGiven', x, y });
+    if (what === 'birdAsk' || what === 'courtAsk') {
+      if (what === 'birdAsk') h.bird = 'asked';
+      else h.court = 'asked';
+      this.sfx('power', 0.6);
+      this.msg(what === 'birdAsk' ? QUEST1620_TEXT.birdAsk : QUEST1620_TEXT.courtAsk, MSG.quest);
+      return;
+    }
+    if (what === 'birdGive') {
+      // (mended: a word for it; and, the King fallen, the camp's waypoint on up to the Quiet Tower)
+      h.bird = 'mended';
+      const w = this.rng.pick(birdWords());
+      h.words[w]++;
+      if (!this.practice) this.meta.known[w].found = true;
+      this.refresh();
+      const tower = this.cleared >= 19 && this.wayDepth < 20;
+      if (tower) this.wayDepth = 20;
+      this.emit({ t: 'wordGot', word: w });
+      this.sfx('rare');
+      this.msg(QUEST1620_TEXT.birdMended(WORDS[w].name.toUpperCase(), tower), MSG.quest);
+      return;
+    }
+    // (the whole court: one of each royal's card taken from his hand; a unique of his pool, at his feet)
+    const cards = { ...(h.cards ?? {}) };
+    for (const r of ROYALS) cards[r] = Math.max(0, (cards[r] ?? 0) - 1);
+    h.cards = cards;
+    h.court = 'given';
+    const ilvl = Math.max(1, this.power, Math.min(20, this.cleared));
+    const it = this.makePoolUnique() ?? this.forHim(rollFullRare(ilvl, this.rng.pick(['amulet', 'ring', 'belt'] as const), this.rng, { cls: h.cls }));
+    this.addDrop('item', h.x, h.y, 0, it, null);
+    this.sfx('rare');
+    this.msg(QUEST1620_TEXT.courtGiven, MSG.quest);
+  }
+
+  /** (QUESTS1620) From the Keep (19) the way on, the songbird not mended: the Quiet Tower's door shut (not for one who has been up it). */
+  private towerShut(): boolean {
+    return this.on1620 && !this.practice && !this.inEndless && this.depth === 19 && this.hero.bird !== 'mended' && this.wayDepth < 20;
+  }
+
+  /** (QUESTS1620) A boss fallen: the Prince's key, the Queen's spring (each once, asked for or not). */
+  private birdBossDown(m: Monster): void {
+    if (!this.on1620 || this.practice || this.inEndless || !m.boss) return;
+    if (m.kind === 'prince') this.dropBirdPart(BIRD_KEY, 'key', m.x, m.y);
+    else if (m.kind === 'gqueen') this.dropBirdPart(BIRD_SPRING, 'spring', m.x, m.y);
+  }
+
+  private dropBirdPart(bit: number, thing: 'key' | 'spring', x: number, y: number): void {
+    if (((this.hero.birdParts ?? 0) & bit) !== 0 || this.drops.some((d) => d.kind === 'quest' && d.thing === thing)) return;
+    const at = this.floorNear(x, y);
+    this.addDrop('quest', at.x, at.y, 0, null, null);
+    const d = this.drops[this.drops.length - 1];
+    d.thing = thing;
+    d.x = at.x;
+    d.y = at.y;
+  }
+
+  /** (QUESTS1620) A part of the songbird taken (the key, the spring, the bird itself). */
+  private birdPartTaken(bit: number, what: string): void {
+    const h = this.hero;
+    h.birdParts = (h.birdParts ?? 0) | bit;
+    this.sfx('rare');
+    this.msg(QUEST1620_TEXT.partGot(what, birdPartsTaken(h.birdParts)), MSG.quest);
+    this.emit({ t: 'text', x: h.x, y: h.y, text: `SONGBIRD ${birdPartsTaken(h.birdParts)} / 3`, color: '#e8dcc0' });
+  }
+
+  /** (QUESTS1620) Come into a floor: the captain's jar in the sewers (12); the broken bird and the knight-captain in the Keep (19). */
+  private quests1620Made(): void {
+    this.birdAt = null;
+    this.captainJarAt = null;
+    const h = this.hero;
+    const L = this.level;
+    if (!this.on1620 || this.practice) return;
+    L.sungIn = 0;
+    if (this.depth === 12 && h.captainJar === undefined) {
+      // (in a side chamber of the sewers, the one nearest the Rat King's cistern: on a tile of floor where nothing stands)
+      const land = L.land;
+      const boss = land?.areas.find((a) => a.role === 'boss');
+      const sides = (land?.areas ?? []).filter((a) => a.role === 'side').sort((a, b) => (boss ? Math.hypot(a.blob.x - boss.blob.x, a.blob.y - boss.blob.y) - Math.hypot(b.blob.x - boss.blob.x, b.blob.y - boss.blob.y) : 0));
+      const side = sides[0];
+      if (side) {
+        const f = L.floor;
+        let best: { tx: number; ty: number } | null = null;
+        let bd = Infinity;
+        for (let ty = Math.floor(side.blob.y) - 4; ty <= Math.floor(side.blob.y) + 4; ty++) {
+          for (let tx = Math.floor(side.blob.x) - 4; tx <= Math.floor(side.blob.x) + 4; tx++) {
+            if (tx < 1 || ty < 1 || tx >= f.w - 1 || ty >= f.h - 1 || L.walk[ty * f.w + tx] !== 1) continue;
+            if (L.props.some((p) => p.tx === tx && p.ty === ty)) continue;
+            const d = Math.hypot(tx + 0.5 - side.blob.x, ty + 0.5 - side.blob.y);
+            if (d < bd) {
+              bd = d;
+              best = { tx, ty };
+            }
+          }
+        }
+        if (best) {
+          const jar: PropInst = { kind: 'piece', name: CRIERS_JAR, tx: best.tx, ty: best.ty, x: best.tx + 0.5, y: best.ty + 0.5, solid: false, state: 0, variant: CAPTAIN_JAR_VARIANT };
+          L.props.push(jar);
+          this.captainJarAt = jar;
+        }
+      }
+    }
+    if (this.depth === 19 && !this.inEndless) {
+      // (the broken bird before the throne: his to take once the King has fallen; taken, it is not there again)
+      const bird = L.props.find((p) => p.kind === 'piece' && p.name === BROKEN_BIRD && p.state === 0) ?? null;
+      if (((h.birdParts ?? 0) & BIRD_BODY) === 0) this.birdAt = bird;
+      else if (bird) L.props.splice(L.props.indexOf(bird), 1);
+      // (the knight-captain, silent in the barracks, the knights' lair: at its middle, stood on no more)
+      const lair = L.land?.areas.find((a) => a.role === 'lair');
+      if (lair) {
+        const at = this.floorNear(lair.blob.x, lair.blob.y);
+        L.captain = { x: at.x, y: at.y };
+        L.walk[Math.floor(at.y) * L.floor.w + Math.floor(at.x)] = 0;
+      }
+      // (his voice given him: his knights stand down, every time after)
+      if (h.captainJar === 'given') this.monsters = this.monsters.filter((m) => m.kind !== 'kknight');
+    }
+  }
+
+  /** (QUESTS1620) Each frame: the broken bird (the King fallen) and the captain's jar, walked up to, are his. */
+  private tick1620(): void {
+    const h = this.hero;
+    const L = this.level;
+    if (L.town) return;
+    const b = this.birdAt;
+    if (b && Math.hypot(b.x - h.x, b.y - h.y) <= SONG.reach && !this.monsters.some((m) => m.kind === 'gking' && !m.dead)) {
+      b.state = 1;
+      // (its song at his death ends in his hands: game/act1_rules/gking.ts 'gking:bird')
+      for (const p of this.perils) if (p.a1 === 'gking:bird') p.dur = Math.min(p.dur, p.t);
+      this.birdAt = null;
+      this.birdPartTaken(BIRD_BODY, 'body');
+    }
+    const j = this.captainJarAt;
+    if (j && Math.hypot(j.x - h.x, j.y - h.y) <= SONG.reach) {
+      j.state = 1;
+      this.captainJarAt = null;
+      h.captainJar = 'got';
+      this.sfx('rare');
+      this.msg(QUEST1620_TEXT.captainJarGot, MSG.quest);
+      if (SPEAK_RETURN.on && QUEST_MARKS.on) this.speakTo = { who: 'knight-captain', t: QUEST_MARKS.secs, back: true };
+    }
+  }
+
+  /** (QUESTS1620) Whether he stands beside the knight-captain (floor 19). */
+  private captainNear(): boolean {
+    const c = this.level.captain;
+    return this.on1620 && !this.practice && this.depth === 19 && !!c && Math.hypot(c.x - this.hero.x, c.y - this.hero.y) <= SONG.captainNear;
+  }
+
+  /** (QUESTS1620) The knight-captain spoken to: with his voice in hand, he speaks, his knights stand down, his gift; else, silent. */
+  private captainUsed(): void {
+    const h = this.hero;
+    const c = this.level.captain!;
+    if (h.captainJar !== 'got') {
+      this.msg(h.captainJar === 'given' ? QUEST1620_TEXT.captainAgain : QUEST1620_TEXT.captainSilent, MSG.quest);
+      return;
+    }
+    h.captainJar = 'given';
+    for (const m of this.monsters) if (m.kind === 'kknight' && !m.dead) this.emit({ t: 'text', x: m.x, y: m.y, text: 'Stands down', color: '#e8dcc0' });
+    this.monsters = this.monsters.filter((m) => m.kind !== 'kknight' || m.dead);
+    const ilvl = Math.max(1, this.power, Math.min(20, this.cleared));
+    const it = this.makePoolUnique('mainhand') ?? this.forHim(rollFullRare(ilvl, 'mainhand', this.rng, { cls: h.cls, forWeapon: this.weapon() }));
+    this.addDrop('item', h.x, h.y, 0, it, null);
+    this.emit({ t: 'questGiven', x: c.x, y: c.y });
+    this.sfx('rare');
+    this.msg(QUEST1620_TEXT.captainSpeaks, MSG.quest);
+    if (this.speakTo?.who === 'knight-captain') this.speakTo = null;
+  }
+
+  /** (QUESTS1620) Whether the songbird may sing now: the Moth's fight, the bird mended, not yet in this phase of it. */
+  private songReady(): boolean {
+    if (!this.on1620 || this.practice || this.depth !== 20 || this.hero.bird !== 'mended') return false;
+    const m = this.monsters.find((q) => q.kind === 'moth' && !q.dead);
+    if (!m) return false;
+    const k = m.life / m.maxLife;
+    const phase = k > 2 / 3 ? 0 : k > 1 / 3 ? 1 : 2;
+    return ((this.level.sungIn ?? 0) & (1 << phase)) === 0;
+  }
+
+  /** (QUESTS1620) The songbird sings: the Moth's dust blown away, his words back, the Moth stunned a moment; once a phase. */
+  private sing(): void {
+    const L = this.level;
+    const h = this.hero;
+    const m = this.monsters.find((q) => q.kind === 'moth' && !q.dead)!;
+    const k = m.life / m.maxLife;
+    const phase = k > 2 / 3 ? 0 : k > 1 / 3 ? 1 : 2;
+    L.sungIn = (L.sungIn ?? 0) | (1 << phase);
+    for (const p of this.perils) if (p.a1 === 'moth:dust' || p.a1 === 'moth:shed') p.dur = Math.min(p.dur, p.t);
+    this.hushT = 0;
+    m.stunT = Math.max(m.stunT, SONG.stun);
+    this.emit({ t: 'stun', id: m.id, x: m.x, y: m.y, secs: SONG.stun });
+    this.emit({ t: 'bells', what: 'ring', x: h.x, y: h.y, k: 0, n: 0 });
+    this.sceneSound('songbird', 0.9, 'rare', 0.7, true);
+    this.msg(QUEST1620_TEXT.sang, MSG.quest);
   }
 
   /** QUESTS15: what the armourer has for this hero: the furnace quest (his ring lit, the furnace burning), or its reward (the furnace out). */
@@ -14472,6 +14748,13 @@ export class Game {
       this.mysticHandIn(what, my.x, my.y);
       return true;
     }
+    // (QUESTS1620: the armourer's songbird, the stranger's whole court)
+    if (what === 'birdAsk' || what === 'birdGive' || what === 'courtAsk' || what === 'courtGive') {
+      const by = this.level.stations.find((s) => s.kind === (what === 'birdAsk' || what === 'birdGive' ? 'armourer' : 'stranger'));
+      if (!by) return false;
+      this.handIn1620(what, by.x, by.y);
+      return true;
+    }
     // (MUSTER: the mystic's roll)
     if (what === 'rollAsk' || what === 'rollGive') {
       const my = this.level.stations.find((s) => s.kind === 'mystic');
@@ -14572,11 +14855,14 @@ export class Game {
       if (!st) return null;
       // (HAND_IN: beside the one a quest item is for, his prompt says it is given)
       const giving = this.handInNear();
-      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : giving === 'furnace' ? QUEST_TEXT.furnaceAskPrompt : giving === 'reward' ? QUEST_TEXT.rewardPrompt : giving === 'meldAsk' ? QUEST_TEXT.meldAskPrompt : giving === 'featherAsk' ? QUEST610_TEXT.featherAskPrompt : giving === 'featherGive' ? QUEST610_TEXT.featherGivePrompt : giving === 'rollAsk' ? MUSTER_TEXT.askPrompt : giving === 'rollGive' ? MUSTER_TEXT.givePrompt : giving === 'jarAsk' ? QUEST1115_TEXT.jarAskPrompt : giving === 'jarGive' ? QUEST1115_TEXT.jarGivePrompt : giving === 'clapperAsk' ? QUEST1115_TEXT.clapperAskPrompt : giving === 'clapperGive' ? QUEST1115_TEXT.clapperGivePrompt : HAND_IN.prompt;
+      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : giving === 'furnace' ? QUEST_TEXT.furnaceAskPrompt : giving === 'reward' ? QUEST_TEXT.rewardPrompt : giving === 'meldAsk' ? QUEST_TEXT.meldAskPrompt : giving === 'featherAsk' ? QUEST610_TEXT.featherAskPrompt : giving === 'featherGive' ? QUEST610_TEXT.featherGivePrompt : giving === 'birdAsk' ? QUEST1620_TEXT.birdAskPrompt : giving === 'birdGive' ? QUEST1620_TEXT.birdGivePrompt : giving === 'courtAsk' ? QUEST1620_TEXT.courtAskPrompt : giving === 'courtGive' ? QUEST1620_TEXT.courtGivePrompt : giving === 'rollAsk' ? MUSTER_TEXT.askPrompt : giving === 'rollGive' ? MUSTER_TEXT.givePrompt : giving === 'jarAsk' ? QUEST1115_TEXT.jarAskPrompt : giving === 'jarGive' ? QUEST1115_TEXT.jarGivePrompt : giving === 'clapperAsk' ? QUEST1115_TEXT.clapperAskPrompt : giving === 'clapperGive' ? QUEST1115_TEXT.clapperGivePrompt : HAND_IN.prompt;
       return st === 'gate' ? (this.level.rim ? `Gate: words for ${endlessName(this.endless)}` : `Gate: dungeon ${this.depth}`) : st === 'wordsmith' ? 'Wordsmith' : st === 'armourer' ? 'Armourer' : st === 'mystic' ? 'Mystic' : st === 'lexicon' ? 'Lexicon' : st === 'stranger' ? 'Stranger' : 'Stash';
     }
     // (QUESTS610, PILLARS: beside a burning obelisk, with a piece in hand)
     if (this.pillarNear()) return QUEST610_TEXT.pillarPrompt;
+    // (QUESTS1620: the knight-captain; the songbird, in the Moth's fight)
+    if (this.captainNear()) return this.hero.captainJar === 'got' ? QUEST1620_TEXT.captainGivePrompt : QUEST1620_TEXT.captainPrompt;
+    if (this.songReady()) return QUEST1620_TEXT.songPrompt;
     // (QUESTS1115: an unstruck page, in the Censor's fight)
     if (this.pageReady()) return QUEST1115_TEXT.pagePrompt(pagesInHand(this.hero.pages, this.level.pagesUsed));
     const p = this.level.portal;

@@ -163,6 +163,8 @@ import { EYRIE_SCENE, MUSTER_TEXT, QUEST610_TEXT } from '../game/quests610';
 import { QUEST1115_TEXT } from '../game/quests1115';
 import { CRIERS_JAR } from '../game/act2/undercity';
 import { clapperSprite, pageSprite, rollSprite } from '../art/quest1115';
+import { keySprite, springSprite } from '../art/quest1620';
+import { CAPTAIN_JAR_VARIANT, QUEST1620_TEXT } from '../game/quests1620';
 import { shrineBellFrames } from '../art/floor11';
 import { onTop } from '../game/act2/quiettower';
 /** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
@@ -3597,6 +3599,8 @@ export class Renderer {
           const seen = thin < 1 ? this.act1.seenOf(p) : null;
           this.stand(p.x + p.y, seen ?? a, sx, sy, null, 0, 1, seen ? 1 : thin);
           if (a.lights && !this.houses.hides(p.x, p.y)) this.propLit.push({ s: a, x: Math.round(sx), y: Math.round(sy) });
+          // (QUESTS1620: the second jar of the sewers, the knight-captain's voice, named)
+          if (p.name === CRIERS_JAR && p.variant === CAPTAIN_JAR_VARIANT && p.state === 0) this.labels.push({ x: sx, y: sy - a.ay / (a.density ?? 1) - 6, text: QUEST1620_TEXT.captainJarLabel, color: '#e8dcc0' });
         }
         continue;
       }
@@ -3663,6 +3667,20 @@ export class Renderer {
         hid?.(cb.x, cb.y);
       }
     } else if (this.folkFrames.size) this.folkFrames.clear();
+    // (QUESTS1620: the knight-captain, silent at his post in the Keep's barracks, floor 19: the Keep's own knight, turned to the hero)
+    if (L.captain && !L.town && L.explored[Math.floor(L.captain.y) * L.floor.w + Math.floor(L.captain.x)]) {
+      const c = L.captain;
+      const fig = figureOf({ kind: 'kknight', champion: false });
+      const dx = h.x - c.x;
+      const dy = h.y - c.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const sp = this.actorSprite(this.art.bestiary.of(fig), 'idle', t, 0, dx / d, dy / d);
+      const sx = wx(cam, c.x, c.y);
+      const sy = wy(cam, c.x, c.y);
+      this.stand(c.x + c.y, sp, sx, sy, null, 0, 1, veil(sp, sx, sy, c.x + c.y));
+      hid?.(c.x, c.y);
+      this.labels.push({ x: sx, y: sy - (FIGURE_SIZE[fig]?.top ?? 40) - 8, text: 'Knight-Captain', color: '#e8dcc0' });
+    }
     // (THE WORDSMITH'S RING MADE NEW, art/ring3.ts, behind art/smith3.ts SMITH3: the letters of light
     // that swirl round, each stood among everything else, and the column of light over the slab)
     if (L.town && SMITH3.on && art.town.ring3) this.standRing3(game, cam, t);
@@ -3762,11 +3780,12 @@ export class Renderer {
       }
       // (QUESTS1115, behind its switch: an unstruck page, or the clapper, sculpted: art/quest1115.ts)
       if (dr.kind === 'quest') {
-        const qs = dr.thing === 'clapper' ? clapperSprite() : dr.thing === 'roll' ? rollSprite() : pageSprite();
+        // (QUESTS1620: the songbird's key and spring, sculpted: art/quest1620.ts)
+        const qs = dr.thing === 'clapper' ? clapperSprite() : dr.thing === 'roll' ? rollSprite() : dr.thing === 'key' ? keySprite() : dr.thing === 'spring' ? springSprite() : pageSprite();
         this.stand(dr.x + dr.y - 0.2, qs, sx, sy - pop);
         hid?.(dr.x, dr.y);
         if (qs.lights) this.propLit.push({ s: qs, x: Math.round(sx), y: Math.round(sy - pop) });
-        this.labels.push({ x: sx, y: sy - 18, text: dr.thing === 'clapper' ? QUEST1115_TEXT.clapperLabel : dr.thing === 'roll' ? MUSTER_TEXT.label : QUEST1115_TEXT.pageLabel, color: '#e8dcc0' });
+        this.labels.push({ x: sx, y: sy - 18, text: dr.thing === 'clapper' ? QUEST1115_TEXT.clapperLabel : dr.thing === 'roll' ? MUSTER_TEXT.label : dr.thing === 'key' ? QUEST1620_TEXT.keyLabel : dr.thing === 'spring' ? QUEST1620_TEXT.springLabel : QUEST1115_TEXT.pageLabel, color: '#e8dcc0' });
         if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, ['#7fe8ff', P.white]);
         continue;
       }

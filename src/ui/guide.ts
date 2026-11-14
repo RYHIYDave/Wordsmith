@@ -12,6 +12,7 @@
 import { PAD_USE } from '../engine/gamepad';
 import { CLASSES, FIRST_LEVELS, FIRST_WORD, HAND_IN, QUEST_ITEM, SKILLS, WORDS, firstWordSkill } from '../game/defs';
 import { QUEST_MARKS, SPEAK_BACK, SPEAK_WHERE, SPEAK_WHERE_RIM } from '../game/quest_marks';
+import { CAPTAIN_WHERE } from '../game/quests1620';
 import type { SkillId } from '../game/defs';
 import type { Game } from '../game/game';
 import type { GuideRow, GuideStep, SlotRef } from '../game/state';
@@ -108,7 +109,9 @@ export function questBanner(game: Game): Banner | null {
   const sp = game.speakTo;
   if (!QUEST_MARKS.on || !sp || sp.t <= 0) return null;
   const name = sp.who.toUpperCase();
-  const sub = game.level.town ? (game.level.rim ? SPEAK_WHERE_RIM[sp.who] : undefined) ?? SPEAK_WHERE[sp.who] ?? '' : SPEAK_BACK;
+  // (QUESTS1620: the knight-captain stands on floor 19, not in town)
+  const who = sp.who;
+  const sub = who === 'knight-captain' ? CAPTAIN_WHERE : game.level.town ? (game.level.rim ? SPEAK_WHERE_RIM[who] : undefined) ?? SPEAK_WHERE[who] ?? '' : SPEAK_BACK;
   // (SPEAK_RETURN: bringing back what was asked for, "Return to the ...")
   return { step: 'speak', caption: 'QUEST', text: `${sp.back ? 'Return to' : 'Speak to'} the ${name}`, sub, lines: [], point: null };
 }

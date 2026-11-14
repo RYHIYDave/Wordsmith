@@ -42,7 +42,7 @@ export const QUESTS1115 = { on: true };
 export type Step1115 = 'asked' | 'got' | 'given';
 
 /** What of these lies on the floor as a drop ('quest' drops): one of the three pages, or the clapper. */
-export type QuestThing = 'page' | 'clapper' | 'roll';
+export type QuestThing = 'page' | 'clapper' | 'roll' | 'key' | 'spring';
 
 /** Who lays out a pick of three for him (Hero.laidOut): the armourer (the clapper's), the mystic (the muster roll's, quests610.ts MUSTER). */
 export type PickBy = 'armourer' | 'mystic';
