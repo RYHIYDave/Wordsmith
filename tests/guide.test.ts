@@ -22,6 +22,7 @@ import { PAD_USE } from '../src/engine/gamepad';
 import { land, toFirstFloor, withoutExits } from './helpers';
 import { OWN_MOVES } from '../src/game/defs';
 import { warriorAsBefore } from './warrior_as_before';
+import { SWAP_MOVES } from '../src/game/talents';
 
 // (the Warrior's old moves, as this file was written for them: tests/warrior_as_before.ts)
 warriorAsBefore();
@@ -1086,6 +1087,11 @@ test('a monster with Poison poisons the hero: most of the blow again, over the n
 // Twin's drawback
 
 test('Twin: two arrows, each weaker, and no enemy takes both of the same shot', () => {
+  // (THE MAGE'S MOVES TO SWAP, game/swap_moves.ts, set aside here, on since 25.3.17: with them a wand keeps her Orb, and the
+  // Beam is a talent's; it is the beam's rule under Twin that is tested, as a wand gave it before)
+  const swapWas = SWAP_MOVES.on;
+  SWAP_MOVES.on = false;
+  try {
   // The owner: "splitting adds more projectiles but reduces damage. i dont want splitting to
   // suddenly double your damage if youre shotgunning enemies with a bow at close range".
   const hits = (ev: GameEvent[], m: Monster): number[] => ev.filter((e) => e.t === 'hit' && !e.onHero && !e.poison && Math.abs(e.x - m.x) < 0.01 && Math.abs(e.y - m.y) < 0.01).map((e) => (e.t === 'hit' ? e.amount : 0));
@@ -1151,6 +1157,9 @@ test('Twin: two arrows, each weaker, and no enemy takes both of the same shot', 
   const t = dummy(w, 1.1, 0);
   assert.equal(hits(use(w, 0, 1.1, 0, 1), t).length, 2);
   assert.ok(w.hero.skills[0].r.countDmg <= 0.8);
+  } finally {
+    SWAP_MOVES.on = swapWas;
+  }
 });
 
 // =============================================================================================
