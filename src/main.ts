@@ -9,12 +9,13 @@ import { ENEMY_MOVES, useEnemyMoves } from './game/enemy_moves';
 // (FLOORS 8 AND 9 FROM HIS PHONE: the switch, for the playtests' pictures: game/f8f9.ts)
 import { F8F9_FIX } from './game/f8f9';
 import { F9_LAIRS } from './game/f9_lairs';
+import { CENSOR2 } from './art/censor2_art';
 import { FLOOR_LOOKS, useFloorLooks } from './game/floor_looks';
 import { ALL_OF_IT, useAllOfIt } from './game/all_of_it';
 import { DOOR_WALLS, WHOLE_WALLS, BACK_STAND } from './render/walls';
 import { GROUNDS_ALL } from './render/grounds';
 import type { MonsterKind } from './game/types';
-import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useMonsterAttacks, useNewMonsters } from './art/bestiary';
+import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useCensor2, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import type { HeroPlace } from './art/heroes';
 import { makeHeroArt3, THRUST } from './art/heroes3';
@@ -3153,6 +3154,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       keysLying: () => (game ? game.perils.filter((p) => p.a1 === 'keyblade:key').map((p) => ({ x: p.x, y: p.y, t: p.t })) : []),
     },
     /** (FLOOR 9'S TWO SIDE BOSSES, behind F9_LAIRS: on at his yes of 14 Nov 2026) Each of them, for the films of them in play (tools/scenarios/f9_bosses_film.mjs). */
+    /** (THE CENSOR MADE AGAIN, behind CENSOR2: off until his yes) His switch, and its use (his pictures and his size together). */
+    censor2: { sw: CENSOR2, use: useCensor2 },
     f9Bosses: {
       sw: F9_LAIRS,
       /** Where they are, how they fare, what they do ('warchief', 'mistwolf'). */

@@ -116,7 +116,8 @@ test('1. the switch is off, and only his pictures and drawings for the game (beh
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     for (const m of text.matchAll(/from ['"]([^'"]+)['"]/g)) if (art.has(resolve(f, m[1]))) users.push(f);
   }
-  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/censor.ts render/act1_fx/censor.ts', 'game files that import them');
+  // (and his floor's drawings made again, art/censor2_shots.ts, which take his rules' numbers from his own: tests/censor2.test.ts)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/censor.ts art/censor2_shots.ts render/act1_fx/censor.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE OF HIS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

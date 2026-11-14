@@ -18,6 +18,7 @@
 // ahead of need. The art of the first builds (monsters.ts, and the Warden in boss.ts) is no
 // longer in the game.
 
+import { CENSOR2 } from './censor2_art';
 import { releaseSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { AM_ACTION, BOSSES5, CO_ACTION, useCoLook } from '../game/bosses';
@@ -108,6 +109,15 @@ export function useAmAction(on: boolean): void {
   AMALGAM_ACTION.on = on;
 }
 useAmAction(AM_ACTION.on);
+/** THE CENSOR MADE AGAIN (art/censor2_art.ts CENSOR2): his pictures, and his size as the game measures a figure, together. */
+export function useCensor2(on: boolean): void {
+  CENSOR2.on = on;
+  // (his size the picture's own, as his figure gives it with the switch as it stands: CENSOR2_SIZE, or the art chat's)
+  const fig = act1Fig('censor');
+  if (fig) (FIGURE_SIZE as Record<MonsterFigure, { top: number; half: number }>).censor = fig.size;
+  // (his robe's hem wider than his old: the hero kept off it)
+  (MONSTERS.censor as { radius: number }).radius = on ? 0.85 : 0.6;
+}
 /** THE FLESHMANCER'S MOVES DONE THE ACTION WAY (game/fm_action.ts FM_ACTION): the rules and the art chat's pictures (FLESH_ACTION) together. */
 export function useFmAction(on: boolean): void {
   FM_ACTION.on = on;
@@ -327,6 +337,8 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)
   ...Object.fromEntries(act1Looks().map((k) => [k, act1Fig(k)!.size])),
 };
+// (the Censor made again: his size and his robe's reach set as his switch stands: useCensor2)
+useCensor2(CENSOR2.on);
 
 export interface Bestiary {
   /** The pictures of a figure. (Making them is quick: a frame is painted when it is first shown.) */

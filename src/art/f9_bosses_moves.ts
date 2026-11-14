@@ -28,12 +28,12 @@ import type { ChiefPose, WolfPose } from './f9_bosses_sculpt';
 
 /** How a span between two keys is eased: `io` slow out and in; `out` fast away then settling; `in` slow then fast; `lin` even. */
 type Ease = 'io' | 'in' | 'out' | 'lin';
-type Key<T> = [number, Partial<T>, Ease?];
+export type Key<T> = [number, Partial<T>, Ease?];
 
 const easeOf = (e: Ease, k: number): number => (e === 'lin' ? k : e === 'in' ? k * k * k : e === 'out' ? 1 - (1 - k) ** 3 : k * k * (3 - 2 * k));
 
 /** The pose at `t` between keys (each key's values held from it on, eased in from the key before by its own ease). */
-function posed<T extends object>(base: T, keys: readonly Key<T>[], t: number): T {
+export function posed<T extends object>(base: T, keys: readonly Key<T>[], t: number): T {
   const full: T[] = [];
   let was: T = base;
   for (const [, v] of keys) {

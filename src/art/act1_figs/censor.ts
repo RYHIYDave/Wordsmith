@@ -13,14 +13,20 @@
 // it goes on with the Hush when the planning chat puts the act in.
 
 import { makeCensorArt } from '../censor_moves';
+import { CENSOR2, CENSOR2_SIZE, makeCensor2Art } from '../censor2_art';
 import type { Act1Fig } from './types';
 
 /** What his frames take, as measured (19 Oct 2026: every frame of both his views painted once, under the tests' paintWithoutCanvas, on this container's two shared cores): frames, megabytes held (four bytes a pixel, at the art's grain), seconds of painting. A tenth of what each of the descent's three big bosses holds (about 300 MB: docs/act1_build.md). */
 export const CENSOR_COST = { frames: 816, mb: 25.9, seconds: 33 };
 
+const OLD_SIZE = { top: 45, half: 12 };
+
 export const FIG: Act1Fig | null = {
-  make: () => makeCensorArt(),
-  // (measured off his stand as tests/act2_censor.test.ts measures it)
-  size: { top: 45, half: 12 },
+  // (MADE AGAIN, behind CENSOR2, off until his yes: art/censor2_art.ts; his pick of 14 Nov 2026, “The Censor first (Recommended)”)
+  make: () => (CENSOR2.on ? makeCensor2Art() : makeCensorArt()),
+  // (measured off his stand as tests/act2_censor.test.ts measures it; made again, art/censor2_art.ts CENSOR2_SIZE)
+  get size() {
+    return CENSOR2.on ? CENSOR2_SIZE : OLD_SIZE;
+  },
   heavy: true,
 };

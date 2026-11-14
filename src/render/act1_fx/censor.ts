@@ -17,12 +17,19 @@
 import { hash } from '../../art/kit';
 import { FLAME } from '../../art/mkit';
 import type { FloorAt } from '../../art/mob_shots';
-import { drawRedaction, drawRoomHush, drawSlashMark, drawStrikeAim, drawStrikeLine } from '../../art/censor_shots';
+import { drawRedaction as redaction1, drawRoomHush as roomHush1, drawSlashMark as slashMark1, drawStrikeAim, drawStrikeLine as strikeLine1 } from '../../art/censor_shots';
+import { drawRedaction as redaction2, drawRoomHush as roomHush2, drawSlashMark as slashMark2, drawStrikeLine as strikeLine2 } from '../../art/censor2_shots';
+import { CENSOR2 } from '../../art/censor2_art';
 import { BLACKED_TILE, CENSOR, CENSOR_FIGHT, barsOf, lastingOf, strikeFrom, tilesOf } from '../../game/act1_rules/censor';
 import type { Peril } from '../../game/state';
 import { act1Pieces } from '../act1_pieces';
 import type { Act1Fx, Act1FxCtx } from './types';
 
+// (MADE AGAIN, behind CENSOR2: his blows' own pictures, art/censor2_shots.ts, in place of the old)
+const drawRedaction: typeof redaction1 = (...a) => (CENSOR2.on ? redaction2 : redaction1)(...a);
+const drawRoomHush: typeof roomHush1 = (...a) => (CENSOR2.on ? roomHush2 : roomHush1)(...a);
+const drawSlashMark: typeof slashMark1 = (...a) => (CENSOR2.on ? slashMark2 : slashMark1)(...a);
+const drawStrikeLine: typeof strikeLine1 = (...a) => (CENSOR2.on ? strikeLine2 : strikeLine1)(...a);
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 const sm = (v: number): number => {
   const c = clamp01(v);
