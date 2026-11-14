@@ -20,7 +20,8 @@ import type { WordId } from '../game/types';
 
 /** One line of the fight prompt: "TAP + HOLD" "to SLAM". */
 export interface GuideLine {
-  id: GuideRow['id'];
+  /** (the fight's rows; the ward-stone's hunt's, `hunt` and the piece) */
+  id: GuideRow['id'] | `hunt${number}`;
   /** The gesture or the key, which is what the eye should catch. */
   how: string;
   /** What it does. */
@@ -39,6 +40,8 @@ export interface Banner {
   lines: GuideLine[];
   /** What on the screen to point at: an attack's phrase (0 the quick one, 1 the slow one), the dodge, the flask, or nothing. */
   point: 'plate0' | 'plate1' | 'dodge' | 'flask' | null;
+  /** (QUESTS610, F9_LAIRS) The ward-stone's hunt on the quest line, not the first dungeon's fight prompt. */
+  hunt?: boolean;
 }
 
 /** The word a new player's prompts are about: the one in their pouch, else the one lying nearest on the floor, else their class's first. */
@@ -110,6 +113,16 @@ export function questBanner(game: Game): Banner | null {
   const name = sp.who.toUpperCase();
   const sub = game.level.town ? (game.level.rim ? SPEAK_WHERE_RIM[sp.who] : undefined) ?? SPEAK_WHERE[sp.who] ?? '' : SPEAK_BACK;
   return { step: 'speak', caption: 'QUEST', text: `Speak to the ${name}`, sub, lines: [], point: null };
+}
+
+/**
+ * THE WARD-STONE'S HUNT on the quest line (game.ts huntLines; quests610.ts PIECE_BOSSES): his words, 14 Nov 2026: “i need the quest
+ * to be updated so it has "defeat the __________" for each boss”. A line for each, ticked off as it falls.
+ */
+export function huntBanner(game: Game): Banner | null {
+  const rows = game.huntLines();
+  if (!rows) return null;
+  return { step: 'speak', caption: 'QUEST', text: '', sub: '', lines: rows.map((r, i) => ({ id: `hunt${i}` as const, how: 'DEFEAT', what: r.name, done: r.done })), point: null, hunt: true };
 }
 
 /** The prompt over the game for this moment, or null when there is none. */

@@ -56,9 +56,9 @@ import { PAIR, partnerOf } from './act1_rules/pair';
 import { giveBackAll, inTheSave } from './act1_rules/physician';
 import { rallyOf } from './act1_rules/kknight';
 import { blobDist, inHold } from './act1_layout';
-import { f9Lairs, mouthOf } from './f9_lairs';
+import { F9_LAIRS, f9Lairs, mouthOf } from './f9_lairs';
 import { ARRIVALS, riftSize } from './arrivals';
-import { EYRIE_LINES, EYRIE_SCENE, PILLARS, QUEST610_TEXT, QUESTS610, lightPillars, pillarsBurning, piecesInHand, piecesTaken } from './quests610';
+import { EYRIE_LINES, EYRIE_SCENE, HUNT_LINE, PIECE_BOSSES, PILLARS, QUEST610_TEXT, QUESTS610, lightPillars, pillarsBurning, piecesInHand, piecesTaken } from './quests610';
 import { COLOSSUS, JETTY, STONE, stoneToWorld, worldToStone } from './colossus_fight';
 import type { ColossusFight } from './colossus_fight';
 /** (COLOSSUS) How near the landing on the boss's ground carries the hero across to the stone (tiles). */
@@ -427,6 +427,8 @@ export class Game {
   trial = false;
   /** QUEST MARKERS (game/quest_marks.ts): the line at the top, "Speak to the ...", whom, and the seconds it still shows. */
   speakTo: { who: Station; t: number } | null = null;
+  /** (QUESTS610, F9_LAIRS) The ward-stone's hunt on the quest line at the top: how long it has yet to show (quests610.ts HUNT_LINE), and the bosses of it fallen on this floor. */
+  hunt: { t: number; fallen: number } | null = null;
   /** (the same) who had a quest for him in town last frame, and the level that was (a level come into is not news). */
   private giversWas: Station[] = [];
   private speakLevel: unknown = null;
@@ -3313,7 +3315,11 @@ export class Game {
     }
     const stag = this.monsters.find((m) => m.boss && m.kind === 'stag');
     if (stag && this.wantsPiece(2)) stag.piece = 2;
-    this.msg(QUEST610_TEXT.piecesHere, MSG.omen);
+    // (FLOOR 9'S SIDE BOSSES: the quest line at the top, a line for each boss to defeat; his 14 Nov 2026: “"defeat the __________" for each boss”)
+    if (wolf || chief) {
+      this.msg(QUEST610_TEXT.piecesHereBosses, MSG.omen);
+      this.hunt = { t: HUNT_LINE.enter, fallen: 0 };
+    } else this.msg(QUEST610_TEXT.piecesHere, MSG.omen);
   }
 
   /**
@@ -10875,8 +10881,12 @@ export class Game {
       this.wordRec('plunder_spray');
     }
     this.dropLoot(m);
-    // (QUESTS610: a piece of the ward-stone it carried)
+    // (QUESTS610: a piece of the ward-stone it carried; the quest line at the top ticks it off)
     if (m.piece !== undefined) this.dropPiece(m.piece, m.x, m.y);
+    if (this.hunt && this.depth === 9) {
+      const b = PIECE_BOSSES.find((q) => q.kind === m.kind);
+      if (b) this.hunt = { t: HUNT_LINE.fallen, fallen: this.hunt.fallen | (1 << b.piece) };
+    }
     this.gainXp(m.xp);
     this.quip(m);
     if (m.boss) {
@@ -13822,6 +13832,19 @@ export class Game {
     if (this.speakTo) this.speakTo.t -= dt;
   }
 
+  /** (QUESTS610, F9_LAIRS) The ward-stone's hunt on the quest line: each boss of it, and whether it is done (fallen here, or its piece already his). */
+  huntLines(): { name: string; done: boolean }[] | null {
+    const H = this.hunt;
+    if (!H || H.t <= 0 || this.depth !== 9 || this.level.town) return null;
+    const has = this.hero.pieces ?? 0;
+    return PIECE_BOSSES.map((b) => ({ name: b.name, done: ((H.fallen | has) & (1 << b.piece)) !== 0 }));
+  }
+
+  /** (the same) the hunt's line has been on the screen for `dt` more seconds. */
+  huntSeen(dt: number): void {
+    if (this.hunt) this.hunt.t -= dt;
+  }
+
   /** QUESTS610: what the mystic has for this hero: the feather quest (the gate down the mountain open), or the feather taken from him. */
   mysticDue(): 'featherAsk' | 'featherGive' | null {
     const h = this.hero;
@@ -13843,7 +13866,7 @@ export class Game {
     }
     h.feather = 'given';
     this.sfx('rare');
-    this.msg(QUEST610_TEXT.featherGiven, MSG.word);
+    this.msg(F9_LAIRS.on ? QUEST610_TEXT.featherGivenBosses : QUEST610_TEXT.featherGiven, MSG.word);
   }
 
   /** QUESTS15: what the armourer has for this hero: the furnace quest (his ring lit, the furnace burning), or its reward (the furnace out). */
