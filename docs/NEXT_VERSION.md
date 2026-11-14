@@ -4609,3 +4609,7 @@ Eleven from the ship list, his “Yes, start it now (Recommended)”: Act 1's le
 ## VERSION 25.3.16, LIVE 12 NOV 2026 BY 20:57 (Eastern), BOTH ADDRESSES (the main chat of 12 Nov, session ...STLst)
 
 The ship list's four: the unique items on (all 62, their pictures, what they show in play); every arrow of a tap splits; the skill tree's lines both ways on every tree; steady backgrounds, their standout sounds now and then at random (the sound chat's eleventh batch). Marks: sounds 1bc0efee1e05; the rest as 25.3.15. gh-pages 16955f7a; the claude.ai page Version 120 (`1794535034-b049`). His new rule: one update a day, the ship list put out each evening.
+
+## VERSION 25.3.17, LIVE 13 NOV 2026 BY 19:59 (Eastern), BOTH ADDRESSES (the main chat of 12 Nov, session ...STLst)
+
+The evening's one update, the whole ship list: the Bells' loot at the last bell rung; the Brawler from eight sides; a build's parts compound and lightning's arcs keep jumping; the eight new melds, with their sounds (the sound chat's twelfth batch); melded and ranked words on altars and the gate; Set 1, the twenty leveling uniques and their pictures, the Warrior's weapon uniques and renames; the Mage's and the Ranger's moves to swap. Marks: heroes 896d76b24677, sounds c2516687bc3e, monsters 1792f9618620; the rest as 25.3.16. gh-pages da126282; the claude.ai page Version 123 (`1794617950-c302`).
