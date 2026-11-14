@@ -65,6 +65,12 @@ function baseOf(name) {
   return name.replace(/_\d+$/, '');
 }
 
+/** Whether a sound file is shipped as a file of its own, not in a pack: all but the mp3s; and of the mp3s, the title theme and the
+ *  level music (MP3 since 14 Nov 2026). */
+export function ownFile(f) {
+  return !f.endsWith('.mp3') || /^(music_|title\.)/.test(f);
+}
+
 export function packSounds(fromDir, outDir) {
   const all = fs.readdirSync(fromDir).filter((f) => /\.(mp3|mp4|m4a|ogg|wav)$/.test(f)).sort();
   const index = {};
@@ -75,7 +81,7 @@ export function packSounds(fromDir, outDir) {
     // (the title theme and the level music, MP3 since 14 Nov 2026 (they were AAC in .mp4, which claude.ai's check of a page's
     // files before it is shared does not take: his game page could not be shared), stay files of their own as they were: each is
     // fetched by itself as its place is come to, not with a pack)
-    if (!f.endsWith('.mp3') || /^(music_|title\.)/.test(f)) {
+    if (ownFile(f)) {
       fs.copyFileSync(path.join(fromDir, f), path.join(outDir, f));
       index[f] = { file: f };
       files.push(f);
