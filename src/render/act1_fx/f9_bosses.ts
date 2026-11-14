@@ -6,7 +6,7 @@
 // over it (`air`: the bursts, stone and dust flung up, mist bursting). And THE RAGE on the chieftain while it lasts after his war cry:
 // its embers rising off him, its light. Behind F9_LAIRS, off.
 
-import { F9_FX_AFTER, F9_FX_CANVAS, chiefFxPaint, wolfFxPaint } from '../../art/f9_bosses_fx';
+import { F9_FX_AFTER, F9_FX_CANVAS, chiefFxGlow, chiefFxPaint, wolfFxPaint } from '../../art/f9_bosses_fx';
 import type { F9View } from '../../art/f9_bosses_art';
 import { CHIEF_MOVES, TILE3, WOLF_MOVES } from '../../art/f9_bosses_moves';
 import type { ChiefMove, WolfMove } from '../../art/f9_bosses_moves';
@@ -98,6 +98,42 @@ function rageOn(c: Act1FxCtx, m: Monster): void {
   c.spot(sx, sy - 40, 46, 0.35 * left);
 }
 
+/** The whole screen washed with `color` at `a` (a heavy blow's flash; the rage's red at its edges). */
+function wash(c: Act1FxCtx, color: string, a: number, edges = false): void {
+  const g = c.g;
+  const cv = g?.canvas as HTMLCanvasElement | undefined;
+  if (!g || !cv || a <= 0.003) return;
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalAlpha = Math.min(1, a);
+  if (edges && typeof g.createRadialGradient === 'function') {
+    const w = cv.width;
+    const h = cv.height;
+    const gr = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.62);
+    gr.addColorStop(0, 'rgba(0,0,0,0)');
+    gr.addColorStop(1, color);
+    g.fillStyle = gr;
+  } else g.fillStyle = color;
+  g.fillRect(0, 0, cv.width, cv.height);
+  g.restore();
+}
+
+/** A heavy blow of his landing: its light where it lands, and the screen flashed white. */
+function blowGlow(c: Act1FxCtx, p: Peril, flashOnly: boolean): void {
+  if (!p.a1!.startsWith(CHIEF_FX)) return;
+  const move = p.a1!.slice(CHIEF_FX.length) as ChiefMove;
+  const F = FRAMES[p.a];
+  const gl = chiefFxGlow(move, p.t, F.view === 'front' ? 'front' : 'rear');
+  if (!gl) return;
+  if (flashOnly) {
+    wash(c, '#fff6e8', gl.flash);
+    return;
+  }
+  const C = F9_FX_CANVAS;
+  const [sx, sy] = c.at(p.x, p.y);
+  c.spot(sx + ((gl.x - C.ax) / 2) * (F.flip ? -1 : 1), sy + (gl.y - C.ay) / 2, gl.r / 2, gl.a);
+}
+
 const fx = (prefix: string): Act1Fx => ({
   ground(c, m, p) {
     if (m || !p || !p.a1?.startsWith(prefix)) return;
@@ -110,6 +146,15 @@ const fx = (prefix: string): Act1Fx => ({
     }
     if (!p || !p.a1?.startsWith(prefix)) return;
     layerOf(c, p, 'air');
+    blowGlow(c, p, false);
+  },
+  glow(c, m, p) {
+    // (THE RAGE: the screen's edges red while it is on him, beating; a heavy blow: the screen flashed white)
+    if (m) {
+      if (prefix === CHIEF_FX && raging(m) && !m.dead) wash(c, 'rgba(200,24,70,1)', (0.22 + 0.1 * Math.sin(c.t * 9)) * Math.min(1, (m.a1?.rage ?? 0) / 1.5), true);
+      return;
+    }
+    if (p && p.a1?.startsWith(prefix)) blowGlow(c, p, true);
   },
   // (a body as big as these, struck: a flash not quite white over all of it)
   flash: 0.8,

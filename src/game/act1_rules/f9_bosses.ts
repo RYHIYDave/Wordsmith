@@ -40,28 +40,29 @@ export const WOLF_FX = 'mistwolf:fx:';
 
 /** THE RULES' OWN NUMBERS: how hard each blow is (times its own blow); the rage; the howl; how near each comes. */
 export const F9_TUNE = {
-  chief: { smash: 1.4, slam: 1.2, rush: 1.6, roar: 0.5, stopAt: 2.9 },
-  wolf: { bite: 1.0, claw: 1.3, lunge: 1.4, cloud: 0.35, stopAt: 1.5 },
+  chief: { smash: 1.4, slam: 1.2, rush: 1.6, roar: 0.5, stopAt: 3.8 },
+  wolf: { bite: 1.0, claw: 1.3, lunge: 1.4, cloud: 0.35, stopAt: 2.0 },
   /**
    * SQUARING UP: its pictures face only the four ways along the floor's grid, and its blows land where its pictures' do, so as a move
-   * comes it goes to stand with the hero square before it along one of them, as far off as its blows reach him (tiles: `band`);
+   * comes it goes to stand with the hero square before it along one of them, as far off as its blows reach him (tiles from where its
+   * basic blow lands: `chief`, `wolf`);
    * so long at most (`most` seconds), then not again for `rest`.
    */
-  square: { chief: { near: 2.3, far: 3.7 }, wolf: { near: 1.1, far: 2.0 }, ready: 0.6, most: 2.6, rest: 2.5, off: 0.35, pace: 1.2 },
+  square: { chief: { near: -0.9, far: 0.5 }, wolf: { near: -0.5, far: 0.4 }, ready: 0.6, most: 2.6, rest: 2.5, off: 0.4, pace: 1.3 },
   /** The war cry's rage: how long, how much quicker his moves and his readiness, how much faster his feet. */
   rage: { lasts: 9, quick: 1.3, fast: 1.45 },
   /** The howl: how many of its wolves may be about at once. */
   howl: { most: 3 },
   /** How far a blow throws the hero back (times a heavy blow's), each. */
-  knock: { smash: 1.0, slam: 0.7, rush: 3.0, roar: 1.0, claw: 0.9 },
+  knock: { smash: 1.8, slam: 1.2, rush: 3.6, roar: 1.8, claw: 1.4 },
   /** The bull rush, once it has struck: how much of its run is left to it (skidding on). */
   rushSkid: 0.1,
   /** His war cry's strides: how near the hero they bring him at most (tiles between them, past his and the hero's own room). */
   strideGap: 1.0,
   /** The heavy blows: how long the game holds still, and how far the screen kicks (game pixels), as each lands; heard and felt within `near` tiles. */
   beat: {
-    smash: [0.12, 4], slam: [0.13, 5], warcry: [0.1, 4.5], rush: [0.12, 4.5],
-    bite: [0.08, 2], claw: [0.12, 3.5], howl: [0.05, 2], lunge: [0.08, 2.5], cloud: [0.05, 2.5],
+    smash: [0.16, 12], slam: [0.2, 16], warcry: [0.14, 13], rush: [0.16, 13],
+    bite: [0.1, 6], claw: [0.15, 10], howl: [0.08, 7], lunge: [0.12, 8], cloud: [0.08, 7],
   } as Record<string, readonly [number, number]>,
   beatNear: 14,
   /** His footfalls as he walks: how far the screen shakes, felt within so many tiles. */
@@ -305,7 +306,8 @@ export const RULES_CHIEF: Act1Rules | null = {
       m.cd -= more;
       if (m.moveCd) for (let k = 0; k < m.moveCd.length; k++) m.moveCd[k] -= more;
     } else m.speed = a.base;
-    const squaring = squareUp(R, m, dt, T.square.chief, CHIEF_PLAY.walk.pace);
+    const reach = tC(CHIEF_LANDS.smash[0]);
+    const squaring = squareUp(R, m, dt, { near: reach + T.square.chief.near, far: reach + T.square.chief.far }, CHIEF_PLAY.walk.pace);
     // (the floor shaking at each footfall as he walks, two a turn of his walk; felt near him)
     const walking = m.state !== 'act' && m.gait?.mode === 'walk';
     if (!walking) {
@@ -405,7 +407,8 @@ export const RULES_WOLF: Act1Rules | null = {
     keepTime(p);
   },
   tick(R, m, dt) {
-    return squareUp(R, m, dt, T.square.wolf, WOLF_PLAY.walk.pace);
+    const reach = tW(BITE_RING.f);
+    return squareUp(R, m, dt, { near: reach + T.square.wolf.near, far: reach + T.square.wolf.far }, WOLF_PLAY.walk.pace);
   },
   reachable(m) {
     // (nothing reaches it while it is mist: going through you, and gone into its cloud)

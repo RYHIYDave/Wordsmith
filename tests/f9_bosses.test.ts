@@ -7,7 +7,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { CHIEF_STAND, CK, WK, WOLF_STAND } from '../src/art/f9_bosses_sculpt';
-import { CHIEF_MOVES, CHIEF_PLAY, TILE3, WOLF_MOVES, WOLF_PLAY, chiefCarry, chiefDie, chiefInPlay, chiefWalk, wolfCarry, wolfDie, wolfInPlay, wolfWalk } from '../src/art/f9_bosses_moves';
+import { CHIEF_MOVES, CHIEF_PLAY, LUNGE_LONG, RUSH_LONG, TILE3, WOLF_MOVES, WOLF_PLAY, chiefCarry, chiefDie, chiefInPlay, chiefWalk, wolfCarry, wolfDie, wolfInPlay, wolfWalk } from '../src/art/f9_bosses_moves';
 import type { ChiefMove, WolfMove } from '../src/art/f9_bosses_moves';
 import { BITE_RING, CHIEF_LANDS, CLAW_SWEEP, SLAM_CRACK } from '../src/art/f9_bosses_fx';
 import { makeMistWolfArt, makeWarchiefArt } from '../src/art/f9_bosses_art';
@@ -118,8 +118,8 @@ test('4. each move ends as it stands, over the floor point the rules carried it 
     for (const k of ['root', 'pawFL', 'pawFR', 'pawHL', 'pawHR'] as const) assert.ok(off(p[k], WOLF_STAND[k]) < 1.6, `the wolf's ${mv}: its ${k} ends as it stands (${off(p[k], WOLF_STAND[k]).toFixed(2)} off)`);
   }
   // (the ground covered: the rush and the lunge carry them on past where the hero stood, the bite and the slam a little)
-  near((chiefCarry('rush', CHIEF_MOVES.rush.long) * CK) / TILE3, 5.27, 0.1, 'the bull rush, tiles');
-  near((wolfCarry('lunge', WOLF_MOVES.lunge.long) * WK) / TILE3, 3.56, 0.1, 'the lunge, tiles');
+  near(chiefCarry('rush', CHIEF_MOVES.rush.long), RUSH_LONG + 10, 0.5, 'the bull rush: on past where he was aimed, his own lengths');
+  near(wolfCarry('lunge', WOLF_MOVES.lunge.long), LUNGE_LONG, 0.5, 'the lunge: through and on past, its own lengths');
   // (their walks: round, and a foot that is down goes back under them as fast as they go on)
   for (const [who, walk, W, K, feet] of [['the chieftain', chiefWalk, CHIEF_PLAY.walk, CK, ['footL', 'footR']], ['the wolf', wolfWalk, WOLF_PLAY.walk, WK, ['pawFL', 'pawFR', 'pawHL', 'pawHR']]] as const) {
     const L = W.frames / W.fps;

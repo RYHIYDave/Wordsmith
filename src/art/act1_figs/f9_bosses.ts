@@ -12,12 +12,12 @@ export const FIG_CHIEF: Act1Fig = {
   make: () => makeWarchiefArt(),
   // (half again a prison troll's height, as the game measures him over his floor point: his hump, his head thrust out before it,
   // his antlers over that; his body broad)
-  size: { top: 70, half: 24 },
+  size: { top: 86, half: 31 },
   heavy: true,
 };
 export const FIG_WOLF: Act1Fig = {
   make: () => makeMistWolfArt(),
   // (its back over its floor point a head over the knight's; long and low)
-  size: { top: 35, half: 26 },
+  size: { top: 44, half: 35 },
   heavy: true,
 };

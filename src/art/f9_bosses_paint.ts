@@ -475,3 +475,226 @@ export const DUST = ['#4a4034', '#6a5c48', '#8a7a60', '#a89878'];
 export const ROCK = ['#2e2c2a', '#4a4844', '#6a6862', '#8c8a82'];
 
 export const MIST = ['#4a4664', '#6c688a', '#9692b2', '#c6c2da', '#eeecf8'];
+
+// =================================================================================================
+// THE GAME'S OWN, BIG: what the side bosses throw about painted to fill the screen at the phone's size (his word, 14 Nov 2026, of them
+// in play: “These animations are boring.  I’m supposed to be looking for insane animations that need to be toned down but I have yet
+// to see one issue with something being TOO intense”). Thick, wide, many: never a hairline.
+
+/** A filled ellipse, `rx` by `ry`, in `c`; every other pixel only where `dither`. */
+export function blob(px: Px, x: number, y: number, rx: number, ry: number, c: string, dither = false): void {
+  for (let j = Math.floor(-ry); j <= ry; j++) {
+    const w = rx * Math.sqrt(Math.max(0, 1 - (j / ry) ** 2));
+    for (let i = Math.floor(-w); i <= w; i++) {
+      if (dither && (Math.round(x + i) + Math.round(y + j)) % 2) continue;
+      put(px, x + i, y + j, c);
+    }
+  }
+}
+/** A PUFF OF DUST OR SMOKE, round and shaded: dark under, pale on top; `fade` 0..1 thins it to a dither and to nothing. */
+export function puff(px: Px, x: number, y: number, r: number, ramp: readonly string[], fade: number, seed: number): void {
+  if (r < 1 || fade >= 1) return;
+  for (let j = Math.floor(-r); j <= r; j++) {
+    for (let i = Math.floor(-r * 1.15); i <= r * 1.15; i++) {
+      const q = Math.hypot(i / 1.15, j) / r;
+      if (q > 1) continue;
+      const X = Math.round(x + i);
+      const Y = Math.round(y + j);
+      if (fade > 0 && hash(X, Y, seed) < fade * 1.1 - (1 - q) * 0.2) continue;
+      if (fade > 0.45 && (X + Y) % 2) continue;
+      const lit = -j / r * 0.7 - i / r * 0.3;
+      const k = q > 0.86 ? 0 : lit > 0.35 ? 3 : lit > -0.1 ? 2 : 1;
+      put(px, X, Y, ramp[Math.min(ramp.length - 1, k)]);
+    }
+  }
+}
+/** A GREAT SHOCKWAVE rolling out over the ground from (cf, cl) to `R` (its own lengths), `k` 0..1: a thick bright band, a wall of dust riding it. */
+export function bigShock(px: Px, pr: Pr, cf: number, cl: number, R: number, k: number, thick: number, seed: number): void {
+  if (k <= 0 || k >= 1) return;
+  const r = R * (1 - (1 - k) ** 2.2);
+  const band = Math.max(3, thick * (1 - k * 0.6));
+  // (as many steps round it as it is pixels round, and more: a solid band, not a string of dots)
+  const o = pr(cf, cl, 0);
+  const o1 = pr(cf + Math.max(1, r), cl, 0);
+  const n = Math.max(64, Math.round(Math.hypot(o1[0] - o[0], o1[1] - o[1]) * Math.PI * 2 * 1.3));
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    if (k > 0.55 && hash(Math.floor(i / 6), Math.floor(k * 30), seed) < (k - 0.55) * 2) continue;
+    for (let b = 0; b < band; b += 0.7) {
+      const rr = r - b;
+      if (rr < 0) break;
+      const p = pr(cf + Math.cos(a) * rr, cl + Math.sin(a) * rr, 0);
+      const q = b / band;
+      put(px, p[0], p[1], q < 0.2 ? '#fffaf0' : q < 0.45 ? FLAME[4] : q < 0.75 ? FLAME[3] : FLAME[2]);
+    }
+  }
+  // (the dust it throws up as it goes: puffs riding its front)
+  for (let i = 0; i < 26; i++) {
+    const a = (i / 26) * Math.PI * 2 + hash(i, 1, seed) * 0.2;
+    const p = pr(cf + Math.cos(a) * r * 0.97, cl + Math.sin(a) * r * 0.97, 4 + 10 * k);
+    puff(px, p[0], p[1] - 6, 9 + 24 * k * (0.6 + hash(i, 2, seed) * 0.6), DUSTY, Math.max(0, k * 1.2 - 0.25), seed + i);
+  }
+}
+/** Dust's colours, dark to pale; stone's. */
+export const DUSTY = ['#2e261e', '#5a4c3c', '#857258', '#b09a78'];
+export const STONEY = ['#1e1c1a', '#3e3b37', '#625e57', '#8e897f'];
+/** A CRATER where something came down: a dark pit, its rim of broken stone, cracks out from it glowing pink and gold in their depths, far. */
+export function crater(px: Px, pr: Pr, cf: number, cl: number, r: number, k: number, fade: number, seed: number, rays = 9): void {
+  if (k <= 0) return;
+  const glow = Math.max(0, Math.min(1, 1 - fade));
+  const R = r * Math.min(1, k * 1.6);
+  // (the cracks out from it, thick, jagged, branching, the full length at once)
+  for (let i = 0; i < rays; i++) {
+    const a = (i / rays) * Math.PI * 2 + hash(i, 1, seed) * 0.5;
+    const long = r * (2.2 + hash(i, 2, seed) * 2.2) * Math.min(1, k * 2.5);
+    let prev = pr(cf + Math.cos(a) * R * 0.7, cl + Math.sin(a) * R * 0.7, 0);
+    const steps = 14;
+    for (let s = 1; s <= steps; s++) {
+      const d = R * 0.7 + (long - R * 0.7) * (s / steps);
+      const w = (hash(i, s, seed + 1) - 0.5) * r * 0.35;
+      const q = pr(cf + Math.cos(a) * d - Math.sin(a) * w, cl + Math.sin(a) * d + Math.cos(a) * w, 0);
+      const wide = Math.max(2, Math.round(6 * (1 - s / steps)) + 2);
+      line(px, prev, q, '#120a10', wide);
+      if (glow > 0 && s < steps) line(px, prev, q, hash(i, s, seed + 2) < glow ? (s % 3 ? FLAME[3] : FLAME[4]) : '#3a1428', Math.max(1, wide - 3));
+      if (s % 5 === 2) {
+        const sa = a + (hash(i, s, seed + 3) < 0.5 ? -0.9 : 0.9);
+        line(px, q, pr(cf + Math.cos(a) * d + Math.cos(sa) * r * 0.8, cl + Math.sin(a) * d + Math.sin(sa) * r * 0.8, 0), '#120a10', 3);
+      }
+      prev = q;
+    }
+  }
+  // (the pit, dark, its heart glowing as it cools)
+  const c = pr(cf, cl, 0);
+  const e = pr(cf + R, cl, 0);
+  const rx = Math.max(4, Math.abs(e[0] - c[0]) * 1.35);
+  blob(px, c[0], c[1], rx, rx * 0.5, '#140c12');
+  if (glow > 0) blob(px, c[0], c[1], rx * 0.55, rx * 0.26, glow > 0.5 ? FLAME[2] : FLAME[1], glow < 0.5);
+  if (glow > 0.6) blob(px, c[0], c[1], rx * 0.3, rx * 0.14, FLAME[4]);
+  // (its rim of broken stone, heaved up)
+  for (let i = 0; i < 22; i++) {
+    const a = (i / 22) * Math.PI * 2 + hash(i, 4, seed) * 0.25;
+    const p = pr(cf + Math.cos(a) * R * 1.05, cl + Math.sin(a) * R * 1.05, 0);
+    const s = 3 + hash(i, 5, seed) * 5;
+    blob(px, p[0], p[1] - s * 0.5, s * 1.2, s * 0.8, STONEY[1 + (i % 3)]);
+    put(px, p[0] - s * 0.4, p[1] - s, STONEY[3]);
+  }
+}
+/** A GREAT CRACK run out along the ground from (f0, l), `k` of `long` of it run, glowing in its depths till `fade`; slabs of rock heaved up along it. */
+export function bigCrack(px: Px, pr: Pr, f0: number, l: number, long: number, k: number, fade: number, seed: number, wide = 10): void {
+  if (k <= 0) return;
+  const glow = Math.max(0, Math.min(1, 1 - fade));
+  const n = 46;
+  let prev = pr(f0, l, 0);
+  for (let i = 1; i <= n * Math.min(1, k); i++) {
+    const f = f0 + (i / n) * long;
+    const j = (hash(i, 1, seed) - 0.5) * 9 + Math.sin(i * 0.8 + seed) * 4;
+    const p = pr(f, l + j, 0);
+    const w = Math.max(3, Math.round(wide * (1 - (i / n) * 0.5)));
+    line(px, prev, p, '#120a10', w);
+    if (glow > 0) line(px, prev, p, hash(i, 2, seed) < glow ? (i % 3 ? FLAME[3] : FLAME[4]) : '#3a1428', Math.max(1, w - 4));
+    if (i % 5 === 2) {
+      const s = hash(i, 3, seed) < 0.5 ? -1 : 1;
+      line(px, p, pr(f + 10, l + j + s * 16, 0), '#120a10', 3);
+      line(px, pr(f + 10, l + j + s * 16, 0), pr(f + 16, l + j + s * 26, 0), '#120a10', 2);
+    }
+    // (slabs of rock heaved up either side as it runs)
+    if (i % 3 === 0) {
+      const age = k * n - i;
+      const up = Math.min(1, age / 2.5) * (12 + 16 * hash(i, 4, seed));
+      if (up > 0) {
+        for (const side of [-1, 1]) {
+          const base = pr(f, l + j + side * (wide * 0.9 + hash(i, 5, seed) * 6), 0);
+          const h = up * (0.6 + 0.4 * hash(i, side + 7, seed));
+          for (let y = 0; y < h; y++) {
+            const ww = Math.max(1, Math.round((1 - y / h) * (5 + hash(i, 6, seed) * 4)));
+            for (let x = -ww; x <= ww; x++) put(px, base[0] + x + side * y * 0.25, base[1] - y, x < -ww * 0.3 ? STONEY[3] : x > ww * 0.4 ? STONEY[1] : STONEY[2]);
+          }
+        }
+      }
+    }
+    prev = p;
+  }
+}
+/** ROCKS flung up high from where a blow landed, tumbling, each with its shadow on the ground, coming down and bouncing: `t` seconds after. */
+export function rocks(px: Px, pr: Pr, cf: number, cl: number, t: number, seed: number, n: number, size: number, reach: number): void {
+  if (t < 0 || t > 1.6) return;
+  for (let i = 0; i < n; i++) {
+    const a = hash(i, 1, seed) * Math.PI * 2;
+    const v = reach * (0.5 + 0.9 * hash(i, 2, seed));
+    const vz = 160 + 220 * hash(i, 3, seed);
+    const g = 520;
+    const land = (2 * vz) / g;
+    let u: number;
+    let d: number;
+    if (t < land) {
+      u = vz * t - 0.5 * g * t * t;
+      d = v * t;
+    } else {
+      // (a bounce, lower, then still)
+      const t2 = t - land;
+      const vz2 = vz * 0.3;
+      u = Math.max(0, vz2 * t2 - 0.5 * g * t2 * t2);
+      d = v * land + v * 0.3 * Math.min(t2, (2 * vz2) / g);
+    }
+    const s = size * (0.6 + 1.1 * hash(i, 4, seed));
+    const gp = pr(cf + Math.cos(a) * d, cl + Math.sin(a) * d, 0);
+    blob(px, gp[0], gp[1], s * 0.9, s * 0.35, '#0e0a0c', true);
+    const p = pr(cf + Math.cos(a) * d, cl + Math.sin(a) * d, u);
+    const spin = t * (6 + 10 * hash(i, 5, seed));
+    const w = s * (0.7 + 0.3 * Math.abs(Math.cos(spin)));
+    blob(px, p[0], p[1] - s * 0.5, w, s * 0.75, STONEY[1]);
+    blob(px, p[0] - w * 0.25, p[1] - s * 0.75, w * 0.6, s * 0.4, STONEY[3]);
+    put(px, p[0] + w * 0.4, p[1] - s * 0.2, STONEY[0]);
+  }
+}
+/** A CLOUD OF DUST billowing up and out from (cf, cl) to `R`, `k` 0..1 of its life, `n` great puffs. */
+export function plume(px: Px, pr: Pr, cf: number, cl: number, k: number, R: number, seed: number, n = 14, big = 18): void {
+  if (k <= 0 || k >= 1) return;
+  for (let i = 0; i < n; i++) {
+    const a = hash(i, 1, seed) * Math.PI * 2;
+    const d = R * (0.25 + 0.75 * hash(i, 2, seed)) * Math.sqrt(k);
+    const p = pr(cf + Math.cos(a) * d, cl + Math.sin(a) * d, 8 + 40 * k * hash(i, 3, seed));
+    puff(px, p[0], p[1], big * (0.5 + 0.7 * hash(i, 4, seed)) * (0.4 + 0.8 * k), DUSTY, Math.max(0, k * 1.3 - 0.3), seed + i * 7);
+  }
+}
+/** A GREAT BURST where a heavy blow lands: a blinding disc and thick rays out across the screen, `k` 0..1. */
+export function bigBurst(px: Px, x: number, y: number, k: number, size: number, seed: number): void {
+  if (k < 0 || k >= 1) return;
+  const r0 = size * (0.35 + 0.65 * k);
+  blob(px, x, y, r0 * (1 - k * 0.5), r0 * 0.55 * (1 - k * 0.5), k < 0.35 ? '#fffaf0' : FLAME[4], k > 0.5);
+  if (k < 0.6) blob(px, x, y, r0 * 0.55 * (1 - k), r0 * 0.3 * (1 - k), '#ffffff');
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2 + hash(i, 1, seed) * 0.3;
+    const L = size * (1.8 + hash(i, 2, seed) * 2.2) * (0.5 + k);
+    const a0 = L * k * 0.55;
+    const w = k < 0.3 ? 6 : k < 0.6 ? 4 : 2;
+    line(px, [x + Math.cos(a) * a0, y + Math.sin(a) * a0 * 0.6], [x + Math.cos(a) * L, y + Math.sin(a) * L * 0.6], i % 2 ? FLAME[3] : '#fffaf0', w);
+  }
+}
+/** RADIAL SPEED LINES out from a point to the screen's edge (a heavy blow: the manga's), `k` 0..1. */
+export function radial(px: Px, x: number, y: number, k: number, n: number, from: number, to: number, seed: number, col = '#fffaf0'): void {
+  if (k <= 0 || k >= 1) return;
+  for (let i = 0; i < n; i++) {
+    const a = hash(i, 1, seed) * Math.PI * 2;
+    const r0 = from + (to - from) * (0.15 + 0.5 * k) * hash(i, 2, seed);
+    const r1 = r0 + (to - from) * (0.25 + 0.35 * hash(i, 3, seed)) * (1 - k * 0.5);
+    line(px, [x + Math.cos(a) * r0, y + Math.sin(a) * r0 * 0.7], [x + Math.cos(a) * r1, y + Math.sin(a) * r1 * 0.7], col, i % 3 ? 2 : 3);
+  }
+}
+/** A RING OF FIRE bursting up round (cf, cl) at `R`, `k` 0..1 of its life: tall tongues of the rage's pink and gold, flickering by frame `f`. */
+export function fireRing(px: Px, pr: Pr, cf: number, cl: number, R: number, k: number, f: number, n = 18, tall = 90): void {
+  if (k <= 0 || k >= 1) return;
+  const up = Math.sin(Math.min(1, k * 1.4) * Math.PI * 0.5) * (k > 0.7 ? (1 - k) / 0.3 : 1);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + 0.2;
+    const b = pr(cf + Math.cos(a) * R, cl + Math.sin(a) * R, 0);
+    const h = tall * (0.55 + 0.45 * hash(i, 1, 9911)) * up * (0.8 + 0.35 * hash(i, f >> 1, 9913));
+    for (let y = 0; y < h; y++) {
+      const w = Math.max(1, Math.round((1 - y / h) * 9));
+      for (let x = -w; x <= w; x++) {
+        if (hash(Math.round(b[0] + x), Math.round(b[1] - y) + f, 9915) < (y / h) * 0.6) continue;
+        put(px, b[0] + x + Math.sin((y + f * 2) * 0.35) * 2, b[1] - y, y < h * 0.25 ? '#fffaf0' : y < h * 0.5 ? FLAME[4] : y < h * 0.8 ? FLAME[3] : FLAME[2]);
+      }
+    }
+  }
+}

@@ -93,17 +93,17 @@ export const CHIEF_MOVES: Record<ChiefMove, MoveInfo> = {
 const SMASH: Key<ChiefPose>[] = [
   [0, {}],
   // (gathers: sinks, both hands to the handle, the club drawn down off his shoulder)
-  [0.25, { twoHand: true, ...club([22, -16, 60], [-30, -40, -10]), lean: 10, twist: -6, hip: [0, 0, -7], jaw: 0.3 }],
+  [0.25, { twoHand: true, ...club([22, -16, 60], [-30, -40, -10]), lean: 16, twist: -10, hip: [0, 0, -11], jaw: 0.4 }],
   // (rears up and back as far as he goes: the club right over and down behind his back, his front foot stepped out, up on his toes:
   // HELD, straining)
-  [0.75, { ...club([-2, -12, 132], [-22, 4, 40]), lean: -26, twist: -32, hip: [-6, 0, 5], headUp: 20, jaw: 0.9, footL: [18, 18, 5], footR: [-4, -18, 9] }],
-  [1.05, { ...club([-3, -12, 133], [-24, 4, 40]), lean: -27, twist: -33, headUp: 21 }],
+  [0.75, { ...club([-10, -10, 138], [-28, 6, 30]), lean: -40, twist: -52, hip: [-10, 0, 10], headUp: 32, jaw: 1, footL: [22, 18, 5], footR: [-8, -18, 13] }],
+  [1.05, { ...club([-11, -10, 139], [-30, 6, 30]), lean: -42, twist: -54, headUp: 34 }],
   // (THE STRIKE, two frames: over and down, the club's head into the ground far before him, his body folded after it)
-  [1.08, { ...club([28, -8, 108], [44, 0, 26]), lean: 6, twist: -4, hip: [6, 0, -4] }, 'in'],
-  [1.12, { ...club([46, -6, 40], [58, 0, -40]), lean: 42, twist: 18, hip: [16, 0, -15], headUp: -6, jaw: 1, footR: [-2, -18, 5] }, 'lin'],
+  [1.08, { ...club([30, -8, 110], [46, 0, 24]), lean: 8, twist: -6, hip: [8, 0, -4] }, 'in'],
+  [1.12, { ...club([50, -6, 34], [58, 0, -46]), lean: 54, twist: 24, hip: [20, 0, -22], headUp: -8, jaw: 1, footR: [-2, -18, 5] }, 'lin'],
   // (it bounces in his hands; he holds there, heaving)
-  [1.3, { ...club([42, -6, 50], [58, 0, -30]), lean: 38, hip: [14, 0, -13] }, 'out'],
-  [1.7, { ...club([44, -6, 44], [58, 0, -38]), lean: 40, hip: [15, 0, -14], jaw: 0.5 }],
+  [1.3, { ...club([46, -6, 46], [58, 0, -34]), lean: 48, hip: [18, 0, -19] }, 'out'],
+  [1.7, { ...club([48, -6, 40], [58, 0, -42]), lean: 51, hip: [19, 0, -20], jaw: 0.6 }],
   // (the wind-down: hauled up out of the ground and back onto his shoulder)
   [2.1, { twoHand: false, ...club([26, -30, 72], [-14, -24, 44]), lean: 10, twist: 0, hip: [8, 0, -3], headUp: 0, jaw: 0.3 }],
   [2.5, { ...CHIEF_STAND, footL: [18, 18, 5], footR: [-2, -18, 5] }],
@@ -117,14 +117,14 @@ const SMASH_STEPS: readonly { foot: 'footL' | 'footR'; t0: number; t1: number; f
 const SLAM: Key<ChiefPose>[] = [
   [0, {}],
   // (squats deep, the club across before him in both hands)
-  [0.3, { twoHand: true, ...club([28, -16, 44], [-6, -58, 4]), lean: 30, hip: [0, 0, -17], headUp: -10, jaw: 0.4, footL: [3, 20, 5], footR: [3, -20, 5] }],
+  [0.3, { twoHand: true, ...club([28, -16, 44], [-6, -58, 4]), lean: 36, hip: [0, 0, -22], headUp: -12, jaw: 0.5, footL: [3, 21, 5], footR: [3, -21, 5] }],
   // (LEAPS: up off the ground, knees drawn up, the club straight up over his head; he hangs there: HELD, the line marked under him)
-  [0.62, { ...club([6, -6, 128], [-44, -2, 34]), lean: -18, hip: [6, 0, 32], headUp: 16, jaw: 0.9, footL: [10, 18, 30], footR: [6, -18, 25] }, 'out'],
-  [0.95, { ...club([5, -6, 130], [-46, -2, 34]), lean: -20, hip: [6, 0, 35], footL: [10, 18, 33], footR: [6, -18, 28] }],
+  [0.62, { ...club([6, -6, 128], [-44, -2, 34]), lean: -24, hip: [6, 0, 84], headUp: 22, jaw: 1, footL: [10, 18, 76], footR: [6, -18, 70] }, 'out'],
+  [0.95, { ...club([5, -6, 130], [-46, -2, 34]), lean: -26, hip: [6, 0, 90], footL: [10, 18, 82], footR: [6, -18, 76] }],
   // (THE STRIKE, two frames: down onto the ground with all his weight, the club driven into it before him; he sinks)
-  [0.98, { ...club([26, -5, 110], [22, 0, -50]), lean: 14, hip: [8, 0, 20], footL: [12, 20, 18], footR: [12, -20, 14] }, 'in'],
-  [1.02, { ...club([42, -4, 44], [16, 0, -60]), lean: 44, hip: [10, 0, -18], headUp: -8, jaw: 1, footL: [12, 22, 5], footR: [12, -22, 5] }, 'lin'],
-  [1.5, { ...club([42, -4, 48], [16, 0, -58]), lean: 40, hip: [10, 0, -16], jaw: 0.6 }],
+  [0.98, { ...club([26, -5, 110], [22, 0, -50]), lean: 16, hip: [8, 0, 44], footL: [12, 20, 38], footR: [12, -20, 34] }, 'in'],
+  [1.02, { ...club([42, -4, 40], [16, 0, -60]), lean: 50, hip: [10, 0, -25], headUp: -10, jaw: 1, footL: [12, 24, 5], footR: [12, -24, 5] }, 'lin'],
+  [1.5, { ...club([42, -4, 46], [16, 0, -58]), lean: 44, hip: [10, 0, -20], jaw: 0.6 }],
   // (the wind-down: heaves it up out of the crack and back onto his shoulder)
   [1.95, { twoHand: false, ...club([26, -30, 72], [-14, -24, 44]), lean: 10, hip: [10, 0, -4], headUp: 0, jaw: 0.3 }],
   [2.6, { ...CHIEF_STAND, hip: [10, 0, 0], footL: [12, 18, 5], footR: [12, -18, 5] }],
@@ -136,8 +136,8 @@ const WARCRY: Key<ChiefPose>[] = [
   [0.45, { lean: 34, hip: [0, 0, -12], headUp: -22, jaw: 0.2, fistL: [24, 8, 62], ...club([26, -10, 70], [-20, -36, 40]), footL: [1, 21, 5], footR: [1, -21, 5] }],
   [0.9, { lean: 35, hip: [0, 0, -13], headUp: -23 }],
   // (THROWN OPEN, two frames: up on his toes, chest out, head back, jaw wide, both arms flung up and out: the roar)
-  [0.97, { lean: -28, hip: [0, 0, 8], headUp: 46, jaw: 1, fistL: [-2, 60, 108], ...club([2, -54, 130], [-6, -30, 50]), footL: [1, 21, 9], footR: [1, -21, 9] }, 'lin'],
-  [1.85, { lean: -30, hip: [0, 0, 9], headUp: 48, jaw: 1, fistL: [-3, 61, 110], ...club([1, -55, 132], [-6, -30, 50]) }],
+  [0.97, { lean: -38, hip: [0, 0, 12], headUp: 60, jaw: 1, fistL: [-6, 68, 118], ...club([-2, -62, 138], [-8, -34, 50]), footL: [1, 23, 11], footR: [1, -23, 11] }, 'lin'],
+  [1.85, { lean: -40, hip: [0, 0, 13], headUp: 62, jaw: 1, fistL: [-7, 69, 120], ...club([-3, -63, 140], [-8, -34, 50]) }],
   // (down into a crouch, the rage on him)
   [2.2, { ...CHIEF_STAND, lean: 20, hip: [0, 0, -8], jaw: 0.7, headUp: -4, ...club([26, -28, 66], [-10, -30, 40]), footL: [1, 18, 5], footR: [1, -18, 5] }],
   // (and at you, quick: three heavy strides in the time of one)
@@ -154,15 +154,15 @@ const RUSH: Key<ChiefPose>[] = (() => {
   const k: Key<ChiefPose>[] = [
     [0, {}],
     // (head down, shoulder down, the club tucked under his arm before him like a ram)
-    [0.3, { lean: 34, hip: [-8, 0, -12], headUp: -14, jaw: 0.6, ...club([24, -22, 54], [56, 6, 10]), fistL: [26, 16, 50] }],
+    [0.3, { lean: 44, hip: [-8, 0, -16], headUp: -18, jaw: 0.8, ...club([24, -22, 54], [56, 6, 10]), fistL: [26, 16, 50] }],
     // (he paws the ground, twice, hard)
     [0.42, { footR: [-10, -18, 15] }],
     [0.52, { footR: [-2, -18, 5] }, 'in'],
     [0.66, { footR: [-12, -18, 15] }],
     [0.76, { footR: [-2, -18, 5] }, 'in'],
     // (coiled back on his haunches: HELD, the line marked, straining)
-    [0.95, { lean: 30, hip: [-16, 0, -16] }],
-    [1.15, { lean: 31, hip: [-17, 0, -16] }],
+    [0.95, { lean: 40, hip: [-20, 0, -20] }],
+    [1.15, { lean: 41, hip: [-21, 0, -20] }],
   ];
   // (THE CHARGE, a blur: down the line to you at a run, faster than you can follow)
   let f = -17;
@@ -170,7 +170,7 @@ const RUSH: Key<ChiefPose>[] = (() => {
     const t = 1.15 + (i + 1) * 0.05;
     f += (RUSH_LONG + 17) / 6;
     const L = i % 2 === 0;
-    k.push([t, { lean: 36, hip: [f, 0, -8 + (i % 2) * 3], footL: L ? [f + 16, 18, 5] : [f - 12, 18, 14], footR: L ? [f - 12, -18, 14] : [f + 16, -18, 5] }, 'lin']);
+    k.push([t, { lean: 50, hip: [f, 0, -10 + (i % 2) * 5], footL: L ? [f + 16, 18, 5] : [f - 12, 18, 14], footR: L ? [f - 12, -18, 14] : [f + 16, -18, 5] }, 'lin']);
   }
   // (he hits; skids back on his heels, the ground piling up before his feet)
   k.push([1.7, { hip: [f + 10, 0, -10], lean: 6, footL: [f + 24, 18, 5], footR: [f + 18, -18, 5], jaw: 1 }, 'out']);
@@ -217,7 +217,7 @@ export function chiefPose(move: ChiefMove, t: number): ChiefPose {
 export type WolfMove = 'bite' | 'claw' | 'howl' | 'lunge' | 'cloud';
 
 /** How far the lunge carries it (its own lengths), through where you stood. */
-export const LUNGE_LONG = 170;
+export const LUNGE_LONG = 200;
 
 export const WOLF_MOVES: Record<WolfMove, MoveInfo> = {
   bite: { long: 1.4, beats: [{ at: 0.66, freeze: 0.1, shake: 4, ring: 0.3 }], strikes: [[0.55, 0.66]] },
@@ -231,10 +231,10 @@ const S = WOLF_STAND;
 const BITE: Key<WolfPose>[] = [
   [0, {}],
   // (coils back onto its haunches, head down and drawn in, lips back, the mist on its back standing up: HELD, straining)
-  [0.35, { root: [-14, 0, -11], pitch: 10, headUp: -18, jaw: 0.4, tailUp: -16, pawHL: [-22, 8.5, 3], pawHR: [-27, -8.5, 3] }],
-  [0.55, { root: [-15, 0, -12], pitch: 11, headUp: -19 }],
+  [0.35, { root: [-18, 0, -15], pitch: 14, headUp: -22, jaw: 0.5, tailUp: -18, pawHL: [-24, 8.5, 3], pawHR: [-29, -8.5, 3] }],
+  [0.55, { root: [-19, 0, -16], pitch: 15, headUp: -23 }],
   // (THE STRIKE: flung at you off its hind legs, jaws wide; snapped shut on you)
-  [0.62, { root: [34, 0, 6], pitch: -4, headUp: 12, jaw: 1, pawFL: [62, 8.5, 14], pawFR: [66, -8.5, 10], pawHL: [-4, 8.5, 3], pawHR: [-8, -8.5, 3] }, 'in'],
+  [0.62, { root: [34, 0, 16], pitch: -10, headUp: 18, jaw: 1, pawFL: [62, 8.5, 14], pawFR: [66, -8.5, 10], pawHL: [-4, 8.5, 3], pawHR: [-8, -8.5, 3] }, 'in'],
   [0.66, { root: [38, 0, 2], headUp: 4, jaw: 0, pawFL: [62, 8.5, 3], pawFR: [66, -8.5, 3] }, 'lin'],
   // (it worries at you, and lets go, and backs off)
   [0.8, { headTurn: 14, root: [34, 0, 0] }],
@@ -243,13 +243,13 @@ const BITE: Key<WolfPose>[] = [
 ];
 
 /** Where the claw sweep's forepaw is raised from and swept to (its own lengths), and round what: the sweep's arc. */
-export const CLAW_ARC = { from: [14, -40, 92] as V3, to: [58, 46, 8] as V3, about: [30, 0, 58] as V3 };
+export const CLAW_ARC = { from: [8, -46, 112] as V3, to: [62, 50, 8] as V3, about: [30, 0, 62] as V3 };
 const CLAW: Key<WolfPose>[] = [
   [0, {}],
   // (rears right up on its hind legs, tall as a man and more, both forelegs up, the near one cocked high and far back, its head
   // turned up snarling, the mist streaming up off it: HELD, straining)
-  [0.4, { root: [-12, 0, 22], pitch: -52, headUp: 18, headTurn: 14, jaw: 1, pawFR: CLAW_ARC.from, pawFL: [30, 14, 52], tailUp: 22, pawHL: [-20, 8.5, 3], pawHR: [-25, -8.5, 3] }],
-  [0.61, { root: [-13, 0, 23], pitch: -53, pawFR: [13, -41, 93] }],
+  [0.4, { root: [-14, 0, 34], pitch: -64, headUp: 22, headTurn: 14, jaw: 1, pawFR: CLAW_ARC.from, pawFL: [26, 14, 64], tailUp: 26, pawHL: [-20, 8.5, 3], pawHR: [-25, -8.5, 3] }],
+  [0.61, { root: [-15, 0, 35], pitch: -65, pawFR: [CLAW_ARC.from[0] - 1, CLAW_ARC.from[1] - 1, CLAW_ARC.from[2] + 1] }],
   // (THE STRIKE, two frames: it crashes down forward, the forepaw swept round in one huge arc across before it, its body thrown
   // round after it)
   [0.645, { root: [6, 0, 12], pitch: -20, headTurn: 0, pawFR: [62, -6, 48], pawFL: [40, 14, 30] }, 'lin'],
@@ -266,8 +266,8 @@ const HOWL: Key<WolfPose>[] = [
   [0.5, { root: [0, 0, -6], pitch: 10, headUp: -22, jaw: 0.1, tailUp: -8 }],
   [0.8, { root: [0, 0, -7], pitch: 11, headUp: -24 }],
   // (thrown back: its forequarters up, its head straight up, jaws wide: the howl)
-  [0.9, { root: [-6, 0, -2], pitch: -26, headUp: 62, jaw: 1, tailUp: 18 }, 'lin'],
-  [2.3, { root: [-6, 0, -3], pitch: -27, headUp: 64, jaw: 1, tailUp: 18 }],
+  [0.9, { root: [-8, 0, 10], pitch: -40, headUp: 72, jaw: 1, tailUp: 24 }, 'lin'],
+  [2.3, { root: [-8, 0, 9], pitch: -41, headUp: 74, jaw: 1, tailUp: 24 }],
   [3.0, { ...S }],
 ];
 
@@ -290,7 +290,7 @@ const CLOUD: Key<WolfPose>[] = [
   [0.45, { root: [-4, 0, 4], pitch: -8, headUp: 24, jaw: 0.3 }],
   [0.6, { root: [-5, 0, 5], pitch: -9, headUp: 26 }],
   // (THE BLAST: head flung down, jaws wide, the mist bursting out of it; it is gone into it)
-  [0.66, { root: [4, 0, -6], pitch: 12, headUp: -14, jaw: 1, ghost: 0.75 }, 'lin'],
+  [0.66, { root: [6, 0, -8], pitch: 16, headUp: -18, jaw: 1, ghost: 0.75 }, 'lin'],
   [2.5, { ghost: 0.8, jaw: 0.6 }],
   [3.2, { ...S }],
 ];

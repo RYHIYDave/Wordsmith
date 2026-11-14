@@ -38,8 +38,8 @@ const hash = (a: number, b: number, s: number): number => {
 };
 
 /** Their canvases: room for the chieftain's antlers and his club behind him; for the wolf's length and its mist. */
-export const CHIEF9_CANVAS = { w: 300, h: 300, ax: 150, ay: 250 } as const;
-export const WOLF9_CANVAS = { w: 380, h: 280, ax: 190, ay: 236 } as const;
+export const CHIEF9_CANVAS = { w: 420, h: 500, ax: 210, ay: 420 } as const;
+export const WOLF9_CANVAS = { w: 560, h: 420, ax: 280, ay: 340 } as const;
 
 // THE TROLL'S COLOURS
 const HIDE: Ramp = ['#1a2238', '#2c3a5e', '#465a8a', '#6a82b2', '#94acd6'];
@@ -67,7 +67,9 @@ function grow(sc: Sculpt, k: number): void {
 }
 
 /** The troll chieftain's size: half again his prison trolls' (his pick, “Huge, crowned in bones”). */
-export const CK = 1.16;
+// (in the game, grown again: they fill the screen. His word, 14 Nov 2026, of them in play at 1.16 and 0.82: “That is some of the most
+// uninspired shit I’ve seen so far.  I know you can do so much better than whatever this is”)
+export const CK = 1.5;
 
 /** A frame for the figure: forward, to its left, up, built facing the eye's lower right turned by `yaw` degrees. */
 function frame(yaw: number): { F: V3; L: V3; U: V3; P: (f: number, l: number, u: number) => V3; X: (rf: number, rl: number, ru: number) => readonly [V3, V3, V3] } {
@@ -433,8 +435,8 @@ export function chiefAt(d: Drawn, yaw: number, q: V3): readonly number[] {
 const MIST: Ramp = ['#4a4664', '#6c688a', '#9692b2', '#c6c2da', '#eeecf8'];
 const FANG: Ramp = ['#6a6458', '#9a9284', '#c4baa8', '#e2dac8', '#f6f0e4'];
 const MOUTH: Ramp = ['#1a0a18', '#2c1028', '#4a1a3a', '#6a2a50', '#8a3a66'];
-/** Its size: twice a fog wolf's (his pick); its shoulder near the knight's head. */
-export const WK = 0.82;
+/** Its size: twice a fog wolf's (his pick), and in the game grown again to fill the screen (with the chieftain's, CK). */
+export const WK = 1.1;
 
 /**
  * HOW THE MIST WOLF STANDS (dev/f9_bosses_moves.ts sets it a moment at a time for its moves): its own lengths, before it is made its
@@ -675,9 +677,10 @@ function seeThrough(d: Drawn, t: number, tailEnd: readonly number[], back: reado
   };
   // (its mist on the floor round its feet: a pale haze, thinning out)
   const fx = (back[0] + head[0]) / 2;
-  for (let y = Math.round(floorY) - 10; y <= floorY + 12; y++) {
-    for (let x = Math.round(fx - 90); x <= fx + 90; x++) {
-      const r = Math.hypot((x - fx) / 80, (y - floorY) / 11);
+  const HZ = WK / 0.82;
+  for (let y = Math.round(floorY - 10 * HZ); y <= floorY + 12 * HZ; y++) {
+    for (let x = Math.round(fx - 90 * HZ); x <= fx + 90 * HZ; x++) {
+      const r = Math.hypot((x - fx) / (80 * HZ), (y - floorY) / (11 * HZ));
       if (r > 1) continue;
       const n = hash(Math.floor((x + t * 6) / 3), Math.floor(y / 2), 17);
       if (n > 1 - r * 0.9 || (x + y) % 2) continue;

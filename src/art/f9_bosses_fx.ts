@@ -16,11 +16,11 @@ import { f9At } from './f9_bosses_art';
 import { CHIEF_MOVES, CLAW_ARC, LUNGE_LONG, RUSH_LONG, WOLF_MOVES, chiefClubHead, chiefPose, wolfPose } from './f9_bosses_moves';
 import type { ChiefMove, WolfMove } from './f9_bosses_moves';
 import { CK, WK } from './f9_bosses_sculpt';
-import { arcPath, burst, chips, crack, crackRay, dust, embers, flamePillars, line, mistBurst, mistCloud, mistRing, put, shock, slash, spike, warnArc, warnLane, warnRing } from './f9_bosses_paint';
+import { arcPath, bigBurst, bigCrack, bigShock, burst, crater, embers, fireRing, line, mistBurst, mistCloud, mistRing, plume, put, radial, rocks, slash, warnArc, warnLane, warnRing } from './f9_bosses_paint';
 import type { Pr } from './f9_bosses_paint';
 
 /** The canvas it is painted on (picture pixels), the floor point where the move began at (ax, ay). */
-export const F9_FX_CANVAS = { w: 780, h: 540, ax: 340, ay: 300 } as const;
+export const F9_FX_CANVAS = { w: 1200, h: 760, ax: 560, ay: 450 } as const;
 /** How long after a move begins what it left is still to be seen (the cracks' glow dying, the dust settling). */
 export const F9_FX_AFTER = 0.6;
 
@@ -54,6 +54,17 @@ export const HOWL_FOGS: readonly { f: number; l: number; at: number }[] = [
   { f: 0, l: -80, at: 1.45 },
 ];
 
+/** A WARNING laid on the ground, thick: two rings, dashed, the enemy's pink, pulsing. */
+function warnBig(px: Px, pr: Pr, cf: number, cl: number, r: number, t: number): void {
+  warnRing(px, pr, cf, cl, r, t);
+  warnRing(px, pr, cf, cl, r - 3, t + 0.05);
+  if (Math.floor(t * 8) % 2 === 0) warnRing(px, pr, cf, cl, r * 0.55, t);
+}
+function laneBig(px: Px, pr: Pr, f0: number, f1: number, l: number, half: number, t: number): void {
+  warnLane(px, pr, f0, f1, l, half, t);
+  warnLane(px, pr, f0, f1, l, half - 2.5, t + 0.05);
+}
+
 /** THE TROLL CHIEFTAIN'S MOVE `move`, `t` seconds in, what it does to the floor, laid on `px` (`layer`) in the frame `view` shows him in. */
 export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t: number, view: F9View): void {
   const C = F9_FX_CANVAS;
@@ -66,67 +77,119 @@ export function chiefFxPaint(px: Px, layer: 'ground' | 'air', move: ChiefMove, t
   if (move === 'smash') {
     const [cf, cl] = CHIEF_LANDS.smash;
     if (layer === 'ground') {
-      if (t > 0.5 && since < 0) warnRing(px, pr, cf, cl, SMASH_RING, t);
-      if (since >= 0) for (let i = 0; i < 7; i++) {
-        const a = (i / 7) * Math.PI * 2 + 0.4;
-        crackRay(px, pr, cf, cl, a, 26 + 26 * tiny(i, 1, 77), Math.min(1, since / 0.12), (since - 0.6) / 1.0, 77 + i);
-      }
-      shock(px, pr, cf, cl, 70, since / 0.45);
-      shock(px, pr, cf, cl, 44, (since - 0.08) / 0.4);
+      if (t > 0.4 && since < 0) warnBig(px, pr, cf, cl, SMASH_RING, t);
+      crater(px, pr, cf, cl, 34, since / 0.08, (since - 0.9) / 1.0, 77, 11);
+      bigShock(px, pr, cf, cl, 210, since / 0.65, 22, 9201);
+      bigShock(px, pr, cf, cl, 130, (since - 0.1) / 0.6, 14, 9203);
     } else {
-      const c = pr(cf, cl, 4);
-      burst(px, c[0], c[1], since / 0.22, 26, 9707);
-      dust(px, pr, cf, cl, since / 1.0, 9701, 16, 60);
-      chips(px, pr, cf, cl, since, 9703, 26);
-      if (since >= 0 && since < 1.4) embers(px, c[0], c[1], 40, 60, since, 14, 9709);
+      const c = pr(cf, cl, 6);
+      bigBurst(px, c[0], c[1], since / 0.26, 100, 9707);
+      radial(px, c[0], c[1], since / 0.3, 46, 60, 520, 9708);
+      rocks(px, pr, cf, cl, since, 9703, 22, 11, 130);
+      plume(px, pr, cf, cl, since / 1.5, 100, 9701, 18, 40);
+      if (since >= 0 && since < 1.4) embers(px, c[0], c[1], 90, 120, since, 30, 9709);
     }
   } else if (move === 'slam') {
     const [cf, cl] = CHIEF_LANDS.slam;
     const K = SLAM_CRACK;
     if (layer === 'ground') {
-      if (t > 0.45 && since < 0) warnLane(px, pr, cf - K.back, cf + K.long - K.back, cl, K.half, t);
-      if (since >= 0) crack(px, pr, cf - K.back, cl, K.long, Math.min(1, since / K.runs), (since - 0.7) / 0.9, 81);
-      shock(px, pr, cf, cl, 46, since / 0.4);
+      if (t > 0.35 && since < 0) laneBig(px, pr, cf - K.back, cf + K.long - K.back, cl, K.half + 6, t);
+      if (since >= 0) bigCrack(px, pr, cf - K.back, cl, K.long, Math.min(1, since / K.runs), (since - 0.9) / 0.9, 81, 12);
+      crater(px, pr, cf, cl, 40, since / 0.08, (since - 0.9) / 0.9, 83, 12);
+      bigShock(px, pr, cf, cl, 250, since / 0.7, 26, 9211);
+      bigShock(px, pr, cf, cl, 160, (since - 0.12) / 0.6, 16, 9213);
     } else {
-      const c = pr(cf, cl, 4);
-      burst(px, c[0], c[1], since / 0.22, 26, 9707);
-      dust(px, pr, cf, cl, since / 1.0, 9701, 16, 60);
-      chips(px, pr, cf, cl, since, 9703, 26);
-      if (since >= 0 && since < 1.4) embers(px, c[0], c[1], 40, 60, since, 14, 9709);
-      // (the rock thrust up along the crack as it runs, each with its own burst of stone and dust)
-      for (let i = 1; i <= 5; i++) {
-        const ff = cf + i * 24;
-        const s2 = since - ((i * 24) / K.long) * K.runs;
+      const c = pr(cf, cl, 6);
+      bigBurst(px, c[0], c[1], since / 0.3, 120, 9707);
+      radial(px, c[0], c[1], since / 0.35, 60, 70, 600, 9712);
+      rocks(px, pr, cf, cl, since, 9703, 28, 12, 160);
+      plume(px, pr, cf, cl, since / 1.6, 130, 9701, 22, 44);
+      if (since >= 0 && since < 1.4) embers(px, c[0], c[1], 110, 140, since, 34, 9709);
+      // (rock flung up all along the crack as it runs)
+      for (let i = 1; i <= 6; i++) {
+        const ff = cf + (i * K.long) / 6.5;
+        const s2 = since - ((i / 6.5) * K.runs);
         if (s2 < 0) continue;
-        const b2 = pr(ff, cl + (tiny(i, 1, 9711) - 0.5) * 10, 0);
-        spike(px, b2[0], b2[1], 18 + 14 * tiny(i, 2, 9711), Math.min(1, s2 / 0.06) * (s2 > 1.1 ? Math.max(0, 1 - (s2 - 1.1) / 0.4) : 1), tiny(i, 3, 9711) - 0.5);
-        chips(px, pr, ff, cl, s2, 9713 + i, 8);
-        dust(px, pr, ff, cl, s2 / 0.8, 9715 + i, 6, 22);
+        rocks(px, pr, ff, cl, s2, 9713 + i, 6, 8, 60);
+        plume(px, pr, ff, cl, s2 / 1.1, 34, 9715 + i, 6, 24);
       }
     }
   } else if (move === 'warcry') {
-    if (layer === 'ground') shock(px, pr, 0, 0, 130, since / 0.6);
-    else {
-      flamePillars(px, pr, 0, 0, 30, since / 1.1, fr);
-      dust(px, pr, 0, 0, since / 0.8, 9927, 18, 120);
-      for (const [ts, s] of [[2.3, -1], [2.4, 1], [2.5, -1], [2.6, 1]] as const) dust(px, pr, Math.max(0, pose.hip[0]) + 12, s * 18, (t - ts) / 0.45, Math.round(9931 + ts * 10), 6, 16);
+    if (layer === 'ground') {
+      bigShock(px, pr, 0, 0, 290, since / 0.75, 28, 9221);
+      bigShock(px, pr, 0, 0, 190, (since - 0.15) / 0.7, 18, 9223);
+      bigShock(px, pr, 0, 0, 115, (since - 0.3) / 0.6, 12, 9225);
+      // (the ground scorched in a ring round him where the fire burst up)
+      if (since > 0.2) crater(px, pr, 0, 0, 10, 1, (since - 1.5) / 1.0, 9227, 14);
+    } else {
+      fireRing(px, pr, 0, 0, 50, since / 1.7, fr, 16, 170);
+      fireRing(px, pr, 0, 0, 100, (since - 0.12) / 1.5, fr + 3, 22, 120);
+      fireRing(px, pr, 0, 0, 160, (since - 0.25) / 1.2, fr + 5, 30, 80);
+      rocks(px, pr, 0, 0, since, 9229, 22, 9, 170);
+      plume(px, pr, 0, 0, since / 1.2, 180, 9231, 24, 36);
+      const head = pr(pose.hip[0] + 30, 0, 130);
+      radial(px, head[0], head[1], since / 0.5, 50, 40, 480, 9233, FLAME[4]);
+      for (const [ts, sd] of [[2.3, -1], [2.4, 1], [2.5, -1], [2.6, 1]] as const) {
+        plume(px, pr, Math.max(0, pose.hip[0]) + 12, sd * 18, (t - ts) / 0.7, 28, Math.round(9931 + ts * 10), 6, 22);
+        rocks(px, pr, Math.max(0, pose.hip[0]) + 12, sd * 18, t - ts, Math.round(9941 + ts * 10), 5, 7, 40);
+      }
     }
   } else if (move === 'rush') {
     const L = RUSH_LANE;
+    const at = Math.max(0, Math.min(RUSH_LONG, pose.hip[0]));
     if (layer === 'ground') {
-      if (t > 0.3 && t < 1.15) warnLane(px, pr, L.from, L.to, 0, L.half, t);
+      if (t > 0.3 && t < 1.15) laneBig(px, pr, L.from, L.to, 0, L.half + 4, t);
+      // (the trench he tears in the ground as he runs, fading)
+      if (t > 1.15) {
+        const fade = Math.max(0, (t - 1.9) / 1.2);
+        for (let i = 0; i < 30; i++) {
+          const f0 = (i / 30) * at;
+          const f1 = ((i + 1) / 30) * at;
+          const w = (hash01(i, 1) - 0.5) * 6;
+          if (hash01(i, 2) < fade) continue;
+          line(px, pr(f0, w, 0), pr(f1, w, 0), '#140c10', 10);
+          line(px, pr(f0, w + 6, 0), pr(f1, w + 6, 0), '#3a2c22', 3);
+          line(px, pr(f0, w - 6, 0), pr(f1, w - 6, 0), '#5a4636', 3);
+        }
+      }
+      bigShock(px, pr, RUSH_LONG + 10, 0, 160, since / 0.6, 12, 9241);
     } else {
       for (const ts of [0.52, 0.76]) {
-        dust(px, pr, 0, -18, (t - ts) / 0.6, Math.round(9941 + ts * 100), 8, 18);
-        chips(px, pr, 0, -18, t - ts, Math.round(9943 + ts * 100), 6);
+        plume(px, pr, 0, -18, (t - ts) / 0.7, 30, Math.round(9941 + ts * 100), 7, 22);
+        rocks(px, pr, 0, -18, t - ts, Math.round(9943 + ts * 100), 6, 7, 50);
       }
-      if (t > 1.15 && t < 1.5) for (let i = 0; i < 6; i++) dust(px, pr, pose.hip[0] - 20 - i * 18, (tiny(i, 1, 9949) - 0.5) * 24, 0.2 + i * 0.1, 9951 + i + fr, 3, 10);
+      if (t > 1.15 && t < 1.6) {
+        // (clods of earth thrown off to either side of him as he runs, dust boiling up behind)
+        rocks(px, pr, at, 0, (t - 1.15) * 0.7, 9945 + Math.floor(t * 20), 8, 8, 70);
+        for (let i = 0; i < 7; i++) plume(px, pr, at - 20 - i * 26, (hash01(i, 3) - 0.5) * 30, 0.25 + i * 0.1, 26, 9951 + i + fr, 3, 26);
+      }
       const hc = pr(RUSH_LONG - 10, 0, 50);
-      burst(px, hc[0], hc[1], since / 0.22, 30, 9953);
-      dust(px, pr, RUSH_LONG + 24, 0, since / 0.8, 9955, 16, 40);
-      chips(px, pr, RUSH_LONG + 24, 0, since, 9957, 16);
+      bigBurst(px, hc[0], hc[1], since / 0.26, 110, 9953);
+      radial(px, hc[0], hc[1], since / 0.3, 46, 60, 520, 9954);
+      rocks(px, pr, RUSH_LONG + 24, 0, since, 9957, 22, 11, 130);
+      plume(px, pr, RUSH_LONG + 24, 0, since / 1.3, 80, 9955, 16, 36);
     }
   }
+}
+const hash01 = (a: number, b: number): number => {
+  const v = Math.sin(a * 127.1 + b * 311.7 + 9.7) * 43758.5453;
+  return v - Math.floor(v);
+};
+
+/**
+ * HIS HEAVY BLOWS' LIGHT, and their flash over the whole screen (render/act1_fx/f9_bosses.ts): `t` seconds into `move`, where on the
+ * canvas it shines (picture pixels), how wide, how strongly; and how white the screen is flashed (0..1).
+ */
+export function chiefFxGlow(move: ChiefMove, t: number, view: F9View): { x: number; y: number; r: number; a: number; flash: number } | null {
+  const C = F9_FX_CANVAS;
+  const pr: Pr = f9At(view, CK, C.ax, C.ay);
+  const M = CHIEF_MOVES[move];
+  const since = t - M.beats[0].at;
+  if (since < 0 || since > 0.9) return null;
+  const at = move === 'smash' ? CHIEF_LANDS.smash : move === 'slam' ? CHIEF_LANDS.slam : move === 'rush' ? [RUSH_LONG - 10, 0] : [0, 0];
+  const c = pr(at[0], at[1], 20);
+  const k = 1 - since / 0.9;
+  return { x: c[0], y: c[1], r: 260 * (0.5 + 0.5 * k), a: 0.95 * k * k, flash: since < 0.14 ? (1 - since / 0.14) * (move === 'slam' ? 0.75 : 0.6) : 0 };
 }
 
 /**
