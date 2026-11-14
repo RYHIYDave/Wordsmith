@@ -73,7 +73,7 @@ export const CAPTAIN_WHERE = "In the Keep's barracks, floor 19.";
 export const QUEST1620_TEXT = {
   birdAsk: 'The armourer: "The King had a clockwork songbird, the finest thing I ever saw made. They say it could sing over any silence. It\'s broken now. Bring me its key, its spring and the bird, and I\'ll make it sing again."',
   birdAskPrompt: 'Armourer: a task',
-  partGot: (what: string, k: number) => `You take the songbird's ${what} (${k} of 3).`,
+  partGot: (what: string, k: number) => `You take ${what === 'body' ? 'the songbird' : `the songbird's ${what}`} (${k} of 3).`,
   birdGivePrompt: 'Armourer: the songbird',
   birdMended: (word: string, tower: boolean) =>
     `The armourer winds the songbird, and it sings. "That song will open any door." He gives you ${word}.${tower ? ' The waypoint will take you up to the Quiet Tower.' : ''}`,
