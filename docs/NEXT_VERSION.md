@@ -4613,3 +4613,7 @@ The ship list's four: the unique items on (all 62, their pictures, what they sho
 ## VERSION 25.3.17, LIVE 13 NOV 2026 BY 19:59 (Eastern), BOTH ADDRESSES (the main chat of 12 Nov, session ...STLst)
 
 The evening's one update, the whole ship list: the Bells' loot at the last bell rung; the Brawler from eight sides; a build's parts compound and lightning's arcs keep jumping; the eight new melds, with their sounds (the sound chat's twelfth batch); melded and ranked words on altars and the gate; Set 1, the twenty leveling uniques and their pictures, the Warrior's weapon uniques and renames; the Mage's and the Ranger's moves to swap. Marks: heroes 896d76b24677, sounds c2516687bc3e, monsters 1792f9618620; the rest as 25.3.16. gh-pages da126282; the claude.ai page Version 123 (`1794617950-c302`).
+
+## VERSION 25.3.18, LIVE 13 NOV 2026 BY 22:40 (Eastern), BOTH ADDRESSES (the main chat of 12 Nov, session ...STLst)
+
+A second update the same evening, at his “Tonight, a second update”: the quests of floors 11 to 15 (the Unstruck Pages, the Stolen Clapper) and the Muster Roll; “Return to the ...” for every quest, every quest line one colour; floor 5's temple door, barred by two chains, and its two key-bearers. No spoken line in two lists. Marks: heroes 1232d77721dc, monsters fe60947db695; the rest as 25.3.17. gh-pages d8a866a4; the claude.ai page Version 125 (`1794627617-ba0a`).
