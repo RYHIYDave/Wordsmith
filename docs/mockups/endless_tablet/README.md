@@ -616,6 +616,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   never quite right; he looks small beside some of the spells; his other facing still to turn round; the films' effects are drawn
   in the film tool and the main chat must build them into the game to this look.
   HIS YES: “Yes, on to Frostbite (Recommended)”.
+- FROSTBITE (Frost and Poison; `frostbite`, `FROSTBITE`, `FROSTBITE_JAWS`, `frostbiteBits`; the film's `biteFloor`;
+  `pictures/standard/boss_frostbite.mp4`), made for his yes: the game's meld is “jaws of ice and a drop of venom”, “Chilled enemies
+  lose life over time, and frozen ones twice as fast”, “The ice on the ground poisons what crosses it”. He writes Frost, his shade
+  Poison; melded, the slam drives the rune down into the floor and it dives under the hero: the floor there opens in an oval (the
+  warning, in the bosses' ground-warning colours) and great fangs of ice (solids) rise round its rim, a trap of ice opening like a
+  crown, a drop of his pink venom falling into it; then it snaps shut, the fangs of either side reaching just past the middle and
+  meshing, the venom splashing; it holds, then shatters, leaving its ice on the floor with his pink venom in its veins (crossing it
+  poisons). Three times, each quicker, each where the hero has gone; the hero gets out of each across its short way a moment
+  before it snaps. Through the bosses' checks (0 findings).
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

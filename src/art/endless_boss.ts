@@ -2925,7 +2925,7 @@ export function wsMob(): Mob {
       for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
     },
     grains: (st: Stage, m: Moment) => m.move === 'death' ? deathGrains(m.t, DEATH_HEART()) : boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, blight: { name: 'blight', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, scald: { name: 'scald', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, wildfire: { name: 'wildfire', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, fumes: { name: 'fumes', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, blight: { name: 'blight', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, scald: { name: 'scald', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, wildfire: { name: 'wildfire', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, fumes: { name: 'fumes', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, frostbite: { name: 'frostbite', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -3849,6 +3849,97 @@ export const FUMES_CLOUDS: ReadonlyArray<{ at: V3; R: number; vent: number; spar
 export const fumesSpread = (c: { vent: number }, t: number): number => smooth01((t - c.vent) / FUMES.spread);
 
 
+// FROSTBITE (Frost and Poison, melded: the game's meld, render/melds3.ts, “jaws of ice and a drop of venom”; as the game has it,
+// “Chilled enemies lose life over time, and frozen ones twice as fast” and “The ice on the ground poisons what crosses it”): he
+// writes Frost, his shade writes Poison; melded, the slam drives the rune down into the floor and it dives under the hero: the floor
+// there opens in an oval (the warning: flushed in the bosses' ground-warning colour, its edge hot), and GREAT FANGS OF ICE rise
+// round its rim, a trap of ice, a drop of his pink venom falling into it; then it SNAPS SHUT, the fangs of either side meshing,
+// the venom splashing; it holds, then shatters, leaving its ice on the floor (crossing it poisons). Three times, each quicker,
+// each where the hero has gone. His rules for the words stand: one rune (the meld's), what strikes made as solids (the fangs).
+export const FROSTBITE = { jaws: [{ at: [4.4, -1.2], axis: 136.8 }, { at: [5.9, 0.4], axis: 42.9 }, { at: [4.6, 1.8], axis: -33.7 }] as const, first: 0.6, rise: [0.75, 0.65, 0.55] as const, gap: 0.2, half: [2.0, 1.2] as const, snap: 0.08, hold: 0.45, shatter: 0.35, melt: 2.2, end: 6.4 };
+export const FROSTBITE_CANVAS: MobCanvas = { w: 1100, h: 800, ax: 400, ay: 520 };
+const BITE_ICE: Ramp = ['#142a50', '#22508a', '#3a78b8', '#8cc0ec', '#e4f4ff'];
+/** Each jaw: where (his floor point's own lengths), its long way over the floor (radians), when it locks on and when it snaps. */
+export const FROSTBITE_JAWS: ReadonlyArray<{ c: V3; a: number; lock: number; snap: number }> = ((): { c: V3; a: number; lock: number; snap: number }[] => {
+  const out: { c: V3; a: number; lock: number; snap: number }[] = [];
+  let t = MELD.slam + FROSTBITE.first;
+  for (const [k, j] of FROSTBITE.jaws.entries()) {
+    out.push({ c: [j.at[0] * TILE, j.at[1] * TILE, 0], a: j.axis * D, lock: t, snap: t + FROSTBITE.rise[k] });
+    t += FROSTBITE.rise[k] + FROSTBITE.gap;
+  }
+  return out;
+})();
+/** Whether a spot of the floor is in a jaw's oval (its long and short half-lengths, his own lengths). */
+export function frostbiteIn(j: { c: V3; a: number }, x: number, y: number, pad = 0): boolean {
+  const dx = x - j.c[0], dy = y - j.c[1], u = dx * Math.cos(j.a) + dy * Math.sin(j.a), v = -dx * Math.sin(j.a) + dy * Math.cos(j.a);
+  return (u / (FROSTBITE.half[0] * TILE + pad)) ** 2 + (v / (FROSTBITE.half[1] * TILE + pad)) ** 2 < 1;
+}
+/** THE FROSTBITE'S SOLIDS, `t` into the move: each jaw's fangs of ice rising round its rim, snapping shut and meshing, holding,
+ * shattering and sinking; its ridge of ice; the drop of venom falling into it and splashing as it snaps; shards as it breaks. Only
+ * those `keep` keeps (by their floor point). */
+export function frostbiteBits(t: number, put: Put, keep: (x: number, y: number) => boolean = () => true): void {
+  for (const [k, j] of FROSTBITE_JAWS.entries()) {
+    const u = t - j.lock;
+    if (u < 0 || !keep(j.c[0], j.c[1])) continue;
+    const sh = clamp01((t - j.snap - FROSTBITE.hold) / FROSTBITE.shatter);
+    if (sh >= 1) continue;
+    const rise = smooth01(u / 0.4) * (1 - sh);
+    const sv = clamp01((t - j.snap) / FROSTBITE.snap), close = sv < 1 ? sv : 1 + 0.08 * Math.sin(Math.min(1, (t - j.snap - FROSTBITE.snap) / 0.15) * Math.PI);
+    const open = -15 * D;
+    const ca = Math.cos(j.a), sa = Math.sin(j.a), Lh = FROSTBITE.half[0] * TILE, Wh = FROSTBITE.half[1] * TILE;
+    const along: V3 = [ca, sa, 0], across: V3 = [-sa, ca, 0];
+    const part = `jaw${k}`;
+    // (its ridge: a low jawbone of ice round the oval)
+    for (let i = 0; i < 20; i++) {
+      const p = (i / 20) * TAU, q = ((i + 1) / 20) * TAU;
+      const A: V3 = add(j.c, add(mul(along, Math.cos(p) * Lh), mul(across, Math.sin(p) * Wh))), B: V3 = add(j.c, add(mul(along, Math.cos(q) * Lh), mul(across, Math.sin(q) * Wh)));
+      put(part, 'ridge', { k: 'rod', a: [A[0], A[1], 3 * rise], b: [B[0], B[1], 3 * rise], ra: 4.5 * Math.max(0.3, rise), rb: 4.5 * Math.max(0.3, rise), ramp: BITE_ICE });
+    }
+    // (its fangs, either side, meshing as they close: great in the middle, smaller toward its ends)
+    for (const side of [1, -1]) for (let i = 0; i < 9; i++) {
+      const w = -0.9 + (1.8 * (i + (side < 0 ? 0.5 : 0))) / 9;
+      if (Math.abs(w) > 0.92) continue;
+      const rim = Math.sqrt(Math.max(0, 1 - w * w));
+      const base: V3 = add(j.c, add(mul(along, w * Lh), mul(across, side * Wh * rim * 0.95)));
+      const len = (46 + 40 * rim) * rise, inward = mul(across, -side);
+      // (shut, each fang reaching just past the middle, meshing with the other side's)
+      const shut = Math.asin(Math.min(1, (Wh * rim * 1.08) / Math.max(1, 46 + 40 * rim)));
+      const th = open + (shut - open) * close;
+      const tip: V3 = add(base, add(mul(inward, Math.sin(th) * len), [0, 0, Math.cos(th) * len]));
+      put(`${part}${side > 0 ? 'a' : 'b'}${i % 2}`, 'fang', { k: 'rod', a: [base[0], base[1], 2], b: tip, ra: (5 + 3.5 * rim) * Math.max(0.35, rise), rb: 0.6, ramp: BITE_ICE });
+      if (sh === 0 && rise > 0.6) put('glints', 'glint', { k: 'mote', p: tip, c: (i + k) % 3 ? '#e4f4ff' : '#ff9cc0', size: 1 });
+    }
+    // (the drop of venom, falling into it, landing as it snaps; splashing up as it does)
+    const df = (t - (j.snap - 0.35)) / 0.35;
+    if (df > 0 && df < 1) {
+      const z = 130 * (1 - df * df);
+      put('venom', 'drop', { k: 'ball', c: [j.c[0], j.c[1], z + 6], ax: [[5, 0, 0], [0, 5, 0], [0, 0, 7]], skin: (n3, tone) => (n3[2] > 0.5 && n3[0] < 0 ? '#ffd0e0' : ['#7a1058', '#c0206a', '#ff4f8a', '#ff9cc0', '#ffd0e0'][T5(tone)]) });
+    }
+    const sp = t - j.snap;
+    if (sp > 0 && sp < 0.6) for (let i = 0; i < 26; i++) {
+      const a = hash(k, i, 9901) * TAU, v = 30 + 50 * hash(k, i, 9902), vz = 70 + 90 * hash(k, i, 9903), z = vz * sp - 300 * sp * sp;
+      if (z < 0) continue;
+      put('venom', 'splash', { k: 'mote', p: [j.c[0] + Math.cos(a) * v * sp, j.c[1] + Math.sin(a) * v * sp, z], c: i % 3 ? '#ff4f8a' : '#ffd0e0', size: 2 });
+    }
+    // (shards of it flung off as it shatters)
+    if (sh > 0) for (let i = 0; i < 30; i++) {
+      const a = hash(k, i, 9904) * TAU, v = 40 + 60 * hash(k, i, 9905), z = 10 + 60 * hash(k, i, 9906) * (1 - sh) + 40 * sh * (1 - sh);
+      put('shards', 'shard', { k: 'mote', p: [j.c[0] + Math.cos(a) * (Wh * 0.8 + v * sh), j.c[1] + Math.sin(a) * (Wh * 0.8 + v * sh), z], c: i % 4 ? '#8cc0ec' : '#e4f4ff', size: 2 });
+    }
+  }
+}
+/** The frostbite's picture; with `nearer` (a floor point in his own lengths), only its jaws nearer the eye than that, inked but
+ * without their rim or light: laid over a figure (him, his shade, the hero) where it stands among them. */
+export function paintFrostbite(t: number, view: 'front' | 'rear', nearer: V3 | null = null): Painted {
+  const st = stage(view, FROSTBITE_CANVAS.ax, FROSTBITE_CANVAS.ay, FROSTBITE_CANVAS);
+  const bits: Bit[] = [];
+  const lo = nearer ? st.near(nearer) : -Infinity;
+  frostbiteBits(t, (part, piece, shape) => bits.push({ part, piece, shape }), (x, y) => st.near([x, y, 0]) >= lo);
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return { px: st.whole(nearer ? null : ENEMY_RIM), lights: nearer ? [] : lights } as Painted;
+}
+
+
 // THUNDER (Power and Lightning, melded: “a storm cloud and its one great bolt”): he writes Power, his shade writes Lightning; melded,
 // the slam flings the rune straight up out of sight; a GREAT RING of crackling violet locks onto where the hero stands, tightening as
 // it charges (the warning); then ONE GREAT BOLT, a pillar of violet-white lightning the width of a man, hammers down on it: the
@@ -4121,7 +4212,7 @@ export const WS_SHAPE: BossShape = {
   },
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : move === 'fall' ? fallCarry(t) * TILE : 0),
-  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE, avalanche: MELD_STRIKE, thunder: MELD_STRIKE, blight: MELD_STRIKE, scald: MELD_STRIKE, wildfire: MELD_STRIKE, fumes: MELD_STRIKE },
+  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE, avalanche: MELD_STRIKE, thunder: MELD_STRIKE, blight: MELD_STRIKE, scald: MELD_STRIKE, wildfire: MELD_STRIKE, fumes: MELD_STRIKE, frostbite: MELD_STRIKE },
   // (his hammer from the sky: three blows of his staff, each its own wind-up, flash and follow-through)
   blows: { power: POWER.slams.map((h, i) => ({ hit: h, strike: POWER_STRIKES[i], from: i ? POWER.slams[i - 1] + 0.1 : 0, until: i < 2 ? POWER.slams[i + 1] - POWER.raise : Infinity })) },
   smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)) || (move === 'frost' && frostSmeared(t)) || (move === 'fall' && slamSmeared(t)) || (FOOT_MOVES.has(move) && move !== 'foot' && meldSmeared(t)),
@@ -4139,7 +4230,7 @@ export const WS_SHAPE: BossShape = {
     { from: 'fall', at: 'end', to: 'foot', toAt: 0, shift: footFrom() },
     { from: 'foot', at: 0, to: 'death', toAt: 0 },
     { from: 'foot', at: 0, to: 'turn', toAt: 0 },
-    ...['eruption', 'hailstorm', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
+    ...['eruption', 'hailstorm', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'frostbite'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
   ],
