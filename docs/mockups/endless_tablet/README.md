@@ -587,6 +587,15 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   streaked along its length with icy wind, frost mist rolling off it, ice shards glittering along it, his pink in a few.
   (The film sent again lighter, `boss_scald_small.mp4`, when the first didn't reach him.) HIS YES: “Yes, on to Wildfire
   (Recommended)”.
+- WILDFIRE (Flame and Lightning; `wildfire`, `WILDFIRE`; the film's `WILD_NODES`, `WILD_LINKS`, `wildPillar`, `wildFloor`,
+  `wildfire`; `pictures/standard/boss_wildfire.mp4`), made for his yes: the game's meld is “a flame with lightning at its heart”,
+  “Burning jumps to nearby enemies the way lightning arcs”, “The burning ground throws sparks at enemies near it”. He writes Flame,
+  his shade Lightning; melded, the slam drives the rune into the floor before him and it bursts into a pillar of flame with
+  lightning crackling in its heart; then the fire leaps after the hero as lightning does, jump after jump onto where he was a
+  moment before (each landing marked first in the bosses' ground-warning colours), each bursting into a towering pillar, every
+  third throwing a branch off sideways; burning spots near each other are linked by crackling arcs of fire, a burning web over
+  the room (crossing it burns and shocks); then the whole web detonates at once, the room flashing, and dies to embers. In the
+  film the hero sprints right across the room, the fire chasing him.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.

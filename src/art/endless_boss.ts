@@ -2925,7 +2925,7 @@ export function wsMob(): Mob {
       for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
     },
     grains: (st: Stage, m: Moment) => m.move === 'death' ? deathGrains(m.t, DEATH_HEART()) : boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, blight: { name: 'blight', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, scald: { name: 'scald', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, blight: { name: 'blight', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, scald: { name: 'scald', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, wildfire: { name: 'wildfire', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -3806,6 +3806,17 @@ export function paintScald(t: number, view: 'front' | 'rear', nearer: V3 | null 
 }
 
 
+// WILDFIRE (Flame and Lightning, melded: the game's meld, render/melds3.ts, “a flame with lightning at its heart”; as the game has it,
+// “Burning jumps to nearby enemies the way lightning arcs” and “The burning ground throws sparks at enemies near it”): he writes
+// Flame, his shade writes Lightning; melded, the slam drives the rune into the floor before him and it bursts into a pillar of flame
+// with lightning crackling in its heart; then THE FIRE LEAPS after the hero as lightning does, jump after jump, each landing marked
+// first (the bosses' own ground-warning colours), each bursting into another pillar, now and then a branch leaping off sideways;
+// every burning spot near another is linked to it by crackling arcs of fire, a burning web over the room (one who crosses them is
+// burned and shocked); then the whole web DETONATES at once, and dies to embers. His rules for the words stand: one rune (the
+// meld's); fire and lightning are drawn as light and flame, as his Lightning's bolts are.
+export const WILDFIRE = { at: 2.2, first: 0.4, every: 0.45, jumps: 11, lag: 0.62, warn: 0.32, link: 2.8, hold: 0.7, boom: 0.35, die: 1.0, end: 8.7 };
+
+
 // THUNDER (Power and Lightning, melded: “a storm cloud and its one great bolt”): he writes Power, his shade writes Lightning; melded,
 // the slam flings the rune straight up out of sight; a GREAT RING of crackling violet locks onto where the hero stands, tightening as
 // it charges (the warning); then ONE GREAT BOLT, a pillar of violet-white lightning the width of a man, hammers down on it: the
@@ -4078,7 +4089,7 @@ export const WS_SHAPE: BossShape = {
   },
   // (the charge: the game carries it down its lane; its burst is a lightning strike, smeared)
   carried: (move: string, t: number) => (move === 'charge' ? chargeCarry(t) * TILE : move === 'fall' ? fallCarry(t) * TILE : 0),
-  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE, avalanche: MELD_STRIKE, thunder: MELD_STRIKE, blight: MELD_STRIKE, scald: MELD_STRIKE },
+  strikes: { charge: CHARGE_STRIKE, gore: GORE_STRIKE, stomp: STOMP_STRIKE, frost: FROST_STRIKE, fall: SLAM_STRIKE, eruption: MELD_STRIKE, hailstorm: MELD_STRIKE, avalanche: MELD_STRIKE, thunder: MELD_STRIKE, blight: MELD_STRIKE, scald: MELD_STRIKE, wildfire: MELD_STRIKE },
   // (his hammer from the sky: three blows of his staff, each its own wind-up, flash and follow-through)
   blows: { power: POWER.slams.map((h, i) => ({ hit: h, strike: POWER_STRIKES[i], from: i ? POWER.slams[i - 1] + 0.1 : 0, until: i < 2 ? POWER.slams[i + 1] - POWER.raise : Infinity })) },
   smeared: (move: string, t: number) => (move === 'charge' && chargeSmeared(t)) || (move === 'gore' && goreSmeared(t)) || (move === 'stomp' && stompSmeared(t)) || (move === 'power' && powerSmeared(t)) || (move === 'frost' && frostSmeared(t)) || (move === 'fall' && slamSmeared(t)) || (FOOT_MOVES.has(move) && move !== 'foot' && meldSmeared(t)),
@@ -4096,7 +4107,7 @@ export const WS_SHAPE: BossShape = {
     { from: 'fall', at: 'end', to: 'foot', toAt: 0, shift: footFrom() },
     { from: 'foot', at: 0, to: 'death', toAt: 0 },
     { from: 'foot', at: 0, to: 'turn', toAt: 0 },
-    ...['eruption', 'hailstorm', 'avalanche', 'thunder', 'blight', 'scald'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
+    ...['eruption', 'hailstorm', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },
   ],
