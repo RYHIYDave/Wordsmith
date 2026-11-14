@@ -1016,6 +1016,7 @@ export function boarPoseAt(move: string, t: number): BoarPose {
   if (move === 'frost') return frostPoseAt(t);
   if (move === 'lightning') return boltPoseAt(t);
   if (move === 'poison') return sporePoseAt(t);
+  if (move === 'winded') return windedPoseAt(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   const A = BOAR_STAND_AT;
@@ -1060,6 +1061,59 @@ export function boarPoseAt(move: string, t: number): BoarPose {
     // (his power in it: a throb every 1.2 s, struck fast and dying slow; at its height through each snort and each stamp)
     pulse: Math.max(throbAt(tt), snort, 0.8 * Math.max(lift[0], lift[1])),
   };
+}
+// =============================================================================================
+// WINDED (the fight's flow, his yes, 14 Nov 2026, “besides that its good”: the boar's charge costs it; FIGHT_FLOW.md): after its
+// runs it stands blown, head hung low, its flanks heaving fast, steam snorted down out of its snout at every breath out, his power in
+// it ebbing (its eyes and runes dim), he sat back on it: an opening, nothing of it coming at you. Eased in from its stand and back.
+export const WINDED = { long: 3.0, breaths: 2.4 };
+export function windedPoseAt(t: number): BoarPose {
+  const e = smooth01(t / 0.35) * (1 - smooth01((t - (WINDED.long - 0.45)) / 0.45));
+  const br = 0.5 - 0.5 * Math.cos(t * TAU * WINDED.breaths);
+  return {
+    ...BOAR_STAND,
+    z: (1.6 * br - 1.4) * e,
+    pitch: (3 + 2.4 * br) * e,
+    roll: 0.8 * Math.sin(t * TAU * 1.2) * e,
+    low: BOAR_STAND.low + (26 - 5 * br) * e,
+    look: 4 * Math.sin(t * 1.7) * e,
+    tilt: 4 * Math.sin(t * 2.3) * e,
+    flap: 0,
+    legs: BOAR_STAND.legs,
+    lift: [0, 0, 0, 0],
+    breath: e * br + (1 - e) * 0.5,
+    sway: t * 0.35,
+    pulse: 0.1 + 0.06 * br + 0.5 * (1 - e),
+    ride: { lean: 4 * e, brace: 0 },
+  };
+}
+/** Its breath as it stands blown: a puff out of each nostril at every breath out, blown down at the floor, spreading and thinning. */
+function windedGrains(t: number): [V3, string, number][] {
+  const out: [V3, string, number][] = [];
+  for (let k = 0; ; k++) {
+    const t0 = (k + 0.5) / WINDED.breaths;
+    if (t0 > WINDED.long - 0.4) break;
+    const u = t - t0;
+    if (u <= 0 || u > 0.5) continue;
+    const H = headOf(windedPoseAt(t0));
+    const fh = norm([H.f[0], H.f[1], 0], [1, 0, 0]);
+    const blow = norm(add(fh, [0, 0, -0.7]), fh);
+    const age = u / 0.5;
+    for (const side of [-1, 1]) {
+      const nose = H.at(22.6, side * 1.2, -8.2);
+      const m0 = add(add(nose, mul(blow, 9 * S * (1 - Math.exp(-u * 6)))), mul(H.l, side * 2.5 * u * S));
+      const mid: V3 = [m0[0], m0[1], Math.max(1, m0[2])];
+      const r = (1.2 + 5.5 * Math.sqrt(u)) * S;
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * TAU + 2.4 * hash(i, side + 3, 8851 + k);
+        const rr = r * Math.sqrt(0.15 + 0.85 * hash(i, side + 4, 8852 + k));
+        const p: V3 = add(mid, [Math.cos(a) * rr, Math.sin(a) * rr * 0.9, Math.abs(Math.sin(a * 2 + 1)) * rr * 0.3]);
+        if (hash(i, Math.floor(u * 20), 8854 + k) < age * (0.45 + 0.6 * (rr / r))) continue;
+        out.push([p, BREATH[Math.min(3, Math.floor(age * 3 + (rr / r) * 1.2))], age < 0.5 && rr < r * 0.7 ? 2 : 1]);
+      }
+    }
+  }
+  return out;
 }
 // =============================================================================================
 // THE CHARGE (his pick, 12 Nov 2026: “Boar charge (Recommended)”, offered as: it stamps and snorts as a warning, then charges in a
@@ -1231,6 +1285,7 @@ export function boarGrains(t: number, move = 'stand', near = -1): [V3, string, n
   if (move === 'wheel') return wheelGrains(t);
   if (move === 'gore') return goreGrains(t);
   if (move === 'stomp') return stompGrains(t);
+  if (move === 'winded') return windedGrains(t);
   const T = WS_STAND_LONG;
   const tt = ((t % T) + T) % T;
   for (const s0 of BOAR_STAND_AT.snorts) {
@@ -2925,7 +2980,7 @@ export function wsMob(): Mob {
       for (let i = 0; i < fix.length; i += 2) px.d[(fix[i + 1] * px.w + fix[i]) * 4 + 3] = 0;
     },
     grains: (st: Stage, m: Moment) => m.move === 'death' ? deathGrains(m.t, DEATH_HEART()) : boarGrains(m.t, m.move ?? 'stand', st.near(add(m.s.pelvis, [0, -3, 0])) > st.near(add(m.s.pelvis, [0, 3, 0])) ? -1 : 1),
-    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, blight: { name: 'blight', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, scald: { name: 'scald', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, wildfire: { name: 'wildfire', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, fumes: { name: 'fumes', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, frostbite: { name: 'frostbite', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, contagion: { name: 'contagion', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
+    more: { charge: { name: 'charge', motion: moveMotion('charge', CHARGE.long), rest: REST }, wheel: { name: 'wheel', motion: moveMotion('wheel', WHEEL.long), rest: REST }, gore: { name: 'gore', motion: { ...moveMotion('gore', GORE.long), hit: GORE.hit }, rest: REST }, stomp: { name: 'stomp', motion: { ...moveMotion('stomp', STOMP.long), hit: STOMP.hit }, rest: REST }, power: { name: 'power', motion: { ...moveMotion('power', POWER.long), hit: POWER.slams[2] }, rest: REST }, flame: { name: 'flame', motion: moveMotion('flame', FIRE.long), rest: REST }, frost: { name: 'frost', motion: { ...moveMotion('frost', FROST.long), hit: FROST.hit }, rest: REST }, lightning: { name: 'lightning', motion: moveMotion('lightning', BOLT.long), rest: REST }, poison: { name: 'poison', motion: moveMotion('poison', SPORE.long), rest: REST }, fall: { name: 'fall', motion: fallMotion(), rest: REST }, foot: { name: 'foot', motion: footMotion(footStandAt, FOOT_LONG, true), rest: REST }, death: { name: 'death', motion: footMotion(deathRiderAt, DEATH.long), rest: REST }, turn: { name: 'turn', motion: footMotion(turnAt, TURN.long), rest: REST }, hailstorm: { name: 'hailstorm', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, avalanche: { name: 'avalanche', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, thunder: { name: 'thunder', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, blight: { name: 'blight', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, winded: { name: 'winded', motion: moveMotion('winded', WINDED.long), rest: REST }, spent: { name: 'spent', motion: footMotion(spentAt, SPENT.long), rest: REST }, scald: { name: 'scald', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, wildfire: { name: 'wildfire', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, fumes: { name: 'fumes', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, frostbite: { name: 'frostbite', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, contagion: { name: 'contagion', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST }, eruption: { name: 'eruption', motion: { ...footMotion(meldRiderAt, MELD.long), hit: MELD.slam }, rest: REST } },
   } as unknown as Mob;
 }
 
@@ -2983,6 +3038,18 @@ export function footStandAt(t: number): Partial<Bones> {
   const jerk = bumpOf(tt, 1.5, 2.1) - 0.7 * bumpOf(tt, 3.3, 3.9);
   const L: Look = { ...FOOT_OVER, hunch: FOOT_OVER.hunch + 2 * br, faceTurn: 14 * jerk, faceTilt: 2 - 6 * jerk, faceUp: FOOT_OVER.faceUp + 2 * br, pitch: FOOT_OVER.pitch + 1.2 * br };
   return footBones(L, 4 - 0.8 * br, t);
+}
+/** SPENT (the fight's flow, his yes, 14 Nov 2026; FIGHT_FLOW.md): after a meld, for a moment the word power has taken too much out of
+ * him: he sags on his staff, his weight on it, his head hung, his writing arm hanging, his shoulders heaving; his shade dimmed and
+ * flickering behind him (the film). An opening. Eased in from his stand and back. */
+export const SPENT = { long: 3.0 };
+const FOOT_SPENT: Look = { ...FOOT_OVER, pitch: 22, bend: 22, hunch: 24, faceUp: -4, faceTilt: 6, twist: -4, lk: 14, rk: -14, lhx: 5, lhy: 6, lhz: -19, le: 12, rhx: 7, rhy: -14, rhz: -3, re: 10 };
+export function spentAt(t: number): Partial<Bones> {
+  const e = smooth01(t / 0.35) * (1 - smooth01((t - (SPENT.long - 0.45)) / 0.45));
+  const br = Math.sin(t * TAU * 1.6);
+  const L0 = mixLook(FOOT_OVER, FOOT_SPENT, e);
+  const L: Look = { ...L0, hunch: L0.hunch + 3 * br * e, pitch: L0.pitch + 1.6 * br * e, faceUp: L0.faceUp - 2 * br * e, lhz: L0.lhz + 1.2 * br * e };
+  return footBones(L, 4 + (4 - 1.2 * br) * e, t, 0.3);
 }
 // THE MELDS: he writes his word at his hand as he did in the saddle, and his shade, a moment after him, writes the other at its own
 // great hand; his staff thrust high, the two runes fly up and meet over him, wheel round each other faster and faster and MELD in a
@@ -4062,7 +4129,7 @@ export function footFrom(): [number, number] {
 /** Whether his staff is planted on the floor (on foot: his fist sliding along it, its foot down), or held as he rides. */
 export const plantedIn = (move: string, t: number): number => (move === 'turn' ? 1 - TURN.turns.reduce((m, [a0, b0]) => Math.max(m, bumpOf(t, a0 - 0.1, b0 + 0.1)), 0) : FOOT_MOVES.has(move) ? 1 : move === 'fall' ? smooth01((t - FALL.kill - FALL.throw - FALL.fly) / 0.35) : 0);
 /** His moves on foot (no boar under him). */
-export const FOOT_MOVES = new Set<string>(['foot', 'turn', 'death', 'eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion']);
+export const FOOT_MOVES = new Set<string>(['foot', 'turn', 'spent', 'death', 'eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion']);
 
 // =============================================================================================
 // HIS SHADE (his words, 12 Nov 2026, for the second phase: “how about a large pink energy shade that looms above him and mimics his
@@ -4245,7 +4312,7 @@ export const WS_SHAPE: BossShape = {
   // game shows it from its other side and the next run goes back down the lane: that hand-over is the charge's own start drawn the
   // other way round, and is not one these checks can draw)
   handovers: [
-    ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power', 'flame', 'frost', 'lightning', 'poison'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
+    ...['attack', 'reel', 'charge', 'gore', 'stomp', 'power', 'flame', 'frost', 'lightning', 'poison', 'winded'].flatMap((m): Handover[] => [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0 }]),
     { from: 'charge', at: 'end', to: 'wheel', toAt: 0 },
     // (killed mid-charge, flat out down its lane)
     { from: 'charge', at: FALL.from, to: 'fall', toAt: 0 },
@@ -4253,6 +4320,8 @@ export const WS_SHAPE: BossShape = {
     { from: 'fall', at: 'end', to: 'foot', toAt: 0, shift: footFrom() },
     { from: 'foot', at: 0, to: 'death', toAt: 0 },
     { from: 'foot', at: 0, to: 'turn', toAt: 0 },
+    { from: 'foot', at: 0, to: 'spent', toAt: 0 },
+    { from: 'spent', at: 'end', to: 'foot', toAt: 0 },
     ...['eruption', 'hailstorm', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'frostbite', 'contagion'].flatMap((m): Handover[] => [{ from: 'foot', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'foot', toAt: 0 }]),
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     { from: 'stand', at: 0, to: 'walk', toAt: 0 },

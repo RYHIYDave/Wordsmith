@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintMob, paintViewOf } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
-import { CONTAGION, CONTAGION_FIELD, contagionAt, contagionCell, FROSTBITE, FROSTBITE_CANVAS, frostbiteGale, frostbiteRime, paintFrostbite, FUMES, FUMES_CLOUDS, fumesSpread, WILDFIRE, SCALD, SCALD_CANVAS, paintScald, scaldBeam, scaldIce, scaldIn, scaldSteamAt, scaldWall, BLIGHT, BLIGHT_AT, BLIGHT_CANVAS, BLIGHT_FIELD, BLIGHT_TREES, blightAt, blightReach, paintBlight, THUNDER, THUNDER_CANVAS, THUNDER_STRIKES, paintThunder, thunderClapR, thunderClapAt, ARENA, AVAL, AVAL_CANVAS, AVAL_OUT, avalFront, avalSpared, avalTail, paintAvalanche, TURN, turnYaw, shadeGlide, HAIL, HAIL_BOLTS, HAIL_CANVAS, HAIL_HERO, HAIL_STONES, hailCloudAt, paintHail, DEATH, ERUPT, ERUPT_AT, ERUPT_CANVAS, ERUPT_VENTS, MELD, eruptRace, meldSmeared, paintEruption, FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
+import { WINDED, SPENT, CONTAGION, CONTAGION_FIELD, contagionAt, contagionCell, FROSTBITE, FROSTBITE_CANVAS, frostbiteGale, frostbiteRime, paintFrostbite, FUMES, FUMES_CLOUDS, fumesSpread, WILDFIRE, SCALD, SCALD_CANVAS, paintScald, scaldBeam, scaldIce, scaldIn, scaldSteamAt, scaldWall, BLIGHT, BLIGHT_AT, BLIGHT_CANVAS, BLIGHT_FIELD, BLIGHT_TREES, blightAt, blightReach, paintBlight, THUNDER, THUNDER_CANVAS, THUNDER_STRIKES, paintThunder, thunderClapR, thunderClapAt, ARENA, AVAL, AVAL_CANVAS, AVAL_OUT, avalFront, avalSpared, avalTail, paintAvalanche, TURN, turnYaw, shadeGlide, HAIL, HAIL_BOLTS, HAIL_CANVAS, HAIL_HERO, HAIL_STONES, hailCloudAt, paintHail, DEATH, ERUPT, ERUPT_AT, ERUPT_CANVAS, ERUPT_VENTS, MELD, eruptRace, meldSmeared, paintEruption, FALL, fallCarry, slamAt, slamRing, paintShade, SHADE, SHADE_CANVAS, CHARGE, CHARGE_SKID, CHARGE_STRIKE, GORE, GORE_STRIKE, FIRE, FIRE_BURST, FIRE_CANVAS, FIRE_DROPS, BOLT, ORB_CANVAS, paintOrb, SPORE, SPORE_CANVAS, SPORE_PODS, paintSpores, FROST, FROST_SPIKES, FROST_STRIKE, ICE_CANVAS, frostSmeared, paintFrost, HAMMER_CANVAS, POWER, paintFirestorm, POWER_GLYPH, POWER_RED, POWER_STRIKES, STOMP, paintPowerHammer, STOMP_STRIKE, WHEEL, WS_CANVAS, boarPoseAt, chargeCarry, chargeSmeared, goreSmeared, powerRuneAt, powerSmeared, stompSmeared, wsMob } from '../src/art/endless_boss';
 import { skeletonAt } from '../src/art/new_mobs3';
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -1814,6 +1814,18 @@ function steam(s: Px, t: number, ox: number, oy: number, from: V2, dir: number, 
     mix(s, x, y, c, a * fade);
   }
 }
+/** WHERE THE HERO IS in an opening's film (his own lengths): running in from `a` to `b`, beside him, and staying there. */
+function openHeroAt(t: number, a: [number, number], b: [number, number]): [number, number, number] {
+  const u = Math.min(1, Math.max(0, (t - 0.15) / 0.75)), e = u * u * (3 - 2 * u);
+  return [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e, 0];
+}
+/** The hero's blows landing on him (or the boar) while it is open: a burst of sparks on it every third of a second, from `from`. */
+function openBlows(s: Px, t: number, X: number, Y: number, from: number, to: number): void {
+  if (t < from || t > to || ((t - from) % 0.32) > 0.07) return;
+  const seed = Math.floor((t - from) / 0.32);
+  for (let i = 0; i < 16; i++) { const a = hash(seed, i, 9739) * Math.PI * 2, d = 4 + 16 * hash(seed, i, 9740); mix(s, Math.round(X + Math.cos(a) * d), Math.round(Y + Math.sin(a) * d), i % 3 ? '#ffffff' : '#ffd0e0', 0.95); }
+  for (let dy = -7; dy <= 7; dy++) for (let dx = -7; dx <= 7; dx++) if (Math.abs(dx) + Math.abs(dy) < 8 && (dx === 0 || dy === 0)) mix(s, Math.round(X + dx), Math.round(Y + dy), '#ffffff', 0.9);
+}
 /** WHERE THE HERO IS in Contagion's film (his own lengths): out in the room as a front of the sickness comes for him; a moment
  * before it reaches him he dodges back through it, onto ground it has already burned through, and stands there safe. */
 const CONT_HERO = ((): { from: [number, number]; to: [number, number]; at: number } => {
@@ -2286,7 +2298,7 @@ const floorOf = (mv: string) => (t: number): V2 => {
   }
   return [0, 0];
 };
-const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : mv === 'fall' ? FALL.long : mv === 'eruption' ? ERUPT.end : mv === 'foot' ? 4.8 : mv === 'death' ? DEATH.long : mv === 'hailstorm' ? HAIL.end : mv === 'turn' ? TURN.long : mv === 'avalanche' ? AVAL.end : mv === 'thunder' ? THUNDER.end : mv === 'blight' ? BLIGHT.end : mv === 'scald' ? SCALD.end : mv === 'wildfire' ? WILDFIRE.end : mv === 'fumes' ? FUMES.end : mv === 'frostbite' ? FROSTBITE.end : mv === 'contagion' ? CONTAGION.end : 3);
+const longOf = (mv: string): number => (mv === 'charge' ? CHARGE.long : mv === 'wheel' ? WHEEL.long : mv === 'gore' ? GORE.long : mv === 'stomp' ? STOMP.long : mv === 'power' ? POWER.long : mv === 'flame' ? FIRE.long : mv === 'frost' ? FROST.long : mv === 'lightning' ? BOLT.long : mv === 'poison' ? SPORE.long : mv === 'fall' ? FALL.long : mv === 'eruption' ? ERUPT.end : mv === 'foot' ? 4.8 : mv === 'death' ? DEATH.long : mv === 'hailstorm' ? HAIL.end : mv === 'turn' ? TURN.long : mv === 'avalanche' ? AVAL.end : mv === 'thunder' ? THUNDER.end : mv === 'blight' ? BLIGHT.end : mv === 'scald' ? SCALD.end : mv === 'wildfire' ? WILDFIRE.end : mv === 'fumes' ? FUMES.end : mv === 'frostbite' ? FROSTBITE.end : mv === 'contagion' ? CONTAGION.end : mv === 'winded' ? WINDED.long : mv === 'spent' ? SPENT.long : 3);
 /** The film: one move, or (charge3) three runs, wheeling round between, each faster. */
 const segs: Seg[] = [];
 {
@@ -2294,6 +2306,7 @@ const segs: Seg[] = [];
   const plan: [string, 'front' | 'rear', number, number?][] = move === 'charge3'
     ? [['charge', 'front', 1], ['wheel', 'front', 1], ['charge', 'rear', 1.15], ['wheel', 'rear', 1.15], ['charge', 'front', 1.3]]
     : move === 'fall' ? [['charge', view, 1, FALL.from], ['fall', view, 1]]
+    : move === 'winded' ? [['charge', view, 1], ['winded', view, 1]]
     : [[move, view, 1]];
   let from: V2 = [0, 0];
   for (const [mv, vw, speed, until] of plan) {
@@ -2391,7 +2404,7 @@ for (const sg of segs) {
     if (sg.move === 'fumes') { fumesFloor(s, t, ox, oy, sg.from, k); fumesClouds(s, t, ox, oy, sg.from, k, false, fumesSplit); }
     const [, wildSplit] = sg.move === 'wildfire' ? ((): [number, number] => { const h = wildHeroAt(t), [, y] = at([sg.from[0] + k * h[0], sg.from[1] + k * h[1], 0]); return [0, oy + y]; })() : [0, 0];
     if (sg.move === 'wildfire') { wildFloor(s, t, ox, oy, sg.from, k); wildfire(s, t, ox, oy, sg.from, k, false, wildSplit); }
-    if (sg.move === 'eruption' || sg.move === 'foot' || sg.move === 'hailstorm' || sg.move === 'turn' || sg.move === 'avalanche' || sg.move === 'thunder' || sg.move === 'wildfire' || sg.move === 'fumes' || sg.move === 'contagion' || amid) {
+    if (sg.move === 'eruption' || sg.move === 'foot' || sg.move === 'hailstorm' || sg.move === 'turn' || sg.move === 'avalanche' || sg.move === 'thunder' || sg.move === 'wildfire' || sg.move === 'fumes' || sg.move === 'contagion' || sg.move === 'spent' || amid) {
       // (the hero, out before him)
       const [bx0, by0] = at([sg.from[0], sg.from[1], 0]);
       // (what the meld makes stands among them all (the dead trees, the steam): all of it laid first; then, over each figure as it
@@ -2404,7 +2417,7 @@ for (const sg of segs) {
         const [gx, gy] = at([sg.from[0] + k * p[0], sg.from[1] + k * p[1], 0]);
         hero(s, ox + gx, oy + gy, a);
       }
-      const hh = sg.move === 'contagion' ? contHeroAt(t) : sg.move === 'fumes' ? fumesHeroAt(t) : sg.move === 'wildfire' ? wildHeroAt(t) : amid ? amid.hero(t) : sg.move === 'thunder' ? thunderHeroAt(t) : sg.move === 'hailstorm' ? HAIL_HERO : sg.move === 'avalanche' ? [AVAL.safe.at[0] * TILE, AVAL.safe.at[1] * TILE, 0] : [5.0 * TILE, -1.6 * TILE, 0];
+      const hh = sg.move === 'spent' ? openHeroAt(t, [5.2 * TILE, -0.6 * TILE], [1.9 * TILE, 0.2 * TILE]) : sg.move === 'contagion' ? contHeroAt(t) : sg.move === 'fumes' ? fumesHeroAt(t) : sg.move === 'wildfire' ? wildHeroAt(t) : amid ? amid.hero(t) : sg.move === 'thunder' ? thunderHeroAt(t) : sg.move === 'hailstorm' ? HAIL_HERO : sg.move === 'avalanche' ? [AVAL.safe.at[0] * TILE, AVAL.safe.at[1] * TILE, 0] : [5.0 * TILE, -1.6 * TILE, 0];
       const [hx, hy] = at([sg.from[0] + k * hh[0], sg.from[1] + k * hh[1], 0]);
       if (sg.move === 'thunder') for (const [m, a] of [[2, 0.25], [1, 0.45]] as const) {
         // (dashing: after-images of him where he was a moment ago)
@@ -2424,7 +2437,9 @@ for (const sg of segs) {
       const [bx, by] = at([sg.from[0], sg.from[1], 0]);
       if (sg.move === 'avalanche') layPainted(s, paintAvalanche(t, sg.view), AVAL_CANVAS, ox + bx, oy + by, 0);
       const was = sg.move === 'avalanche' || amid ? s.d.slice() : null;
-      layShade(s, paintShade(sk, t, sg.view, 1, 0, sg.move === 'turn' ? shadeGlide(turnYaw, t) : undefined), ox + x, oy + y, 0.78);
+      // (spent: his shade dimmed, flickering, nearly out)
+      const dim = sg.move === 'spent' ? Math.min(1, t / 0.35) * (1 - Math.min(1, Math.max(0, (t - (SPENT.long - 0.45)) / 0.45))) : 0;
+      if (!(dim > 0.5 && Math.floor(t * 30) % 4 === 0)) layShade(s, paintShade(sk, t, sg.view, 1, 0, sg.move === 'turn' ? shadeGlide(turnYaw, t) : undefined), ox + x, oy + y, 0.78 * (1 - 0.65 * dim));
       if (was && sg.move === 'avalanche') layOver(s, was, paintAvalanche(t, sg.view, AVAL_SHADE_AT), AVAL_CANVAS, ox + bx, oy + by);
       if (was && amid) layOver(s, was, amid.paint(t, sg.view, AVAL_SHADE_AT), amid.can, ox + bx, oy + by);
     }
@@ -2433,6 +2448,11 @@ for (const sg of segs) {
       // (the hero, out of its lane, watching; just past where his ring will reach)
       const last = segs[segs.length - 1];
       const [hx, hy] = at([last.from[0] + FALL_END + 130 + 3.3 * TILE, last.from[1] - 3.6 * TILE, 0]);
+      hero(s, ox + hx, oy + hy);
+    }
+    if (sg.move === 'winded') {
+      // (the hero, in on its flank while it stands blown, hitting it)
+      const h = openHeroAt(t, [3.4 * TILE, -2.6 * TILE], [0.6 * TILE, -1.5 * TILE]), [hx, hy] = at([sg.from[0] + k * h[0], sg.from[1] + k * h[1], 0]);
       hero(s, ox + hx, oy + hy);
     }
     if (sg.move === 'gore') sweep(s, t, ox, oy, sg.from, k);
@@ -2493,6 +2513,8 @@ for (const sg of segs) {
       const [x, y] = where(t);
       lay(s, sg.move, sg.view, t, x, y);
     }
+    if (sg.move === 'winded') { const [bx, by] = at([sg.from[0], sg.from[1] - k * 0.5 * TILE, 40]); openBlows(s, t, ox + bx, oy + by, 1.0, WINDED.long - 0.3); }
+    if (sg.move === 'spent') { const [bx, by] = at([sg.from[0] + k * 4, sg.from[1] - k * 4, 60]); openBlows(s, t, ox + bx, oy + by, 1.0, SPENT.long - 0.3); }
     if (sg.move === 'death' && t < 2.5 / 30) {
       const [x, y] = base();
       flash(s, sg.move, sg.view, t, x, y, t < 1 / 30 ? 0.75 : 0.4);
