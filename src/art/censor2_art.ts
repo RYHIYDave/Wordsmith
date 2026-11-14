@@ -38,8 +38,11 @@ import type { CensorMove } from './censor2_moves';
 import { arcPath, ghost, put } from './f9_bosses_paint';
 import type { Pr } from './f9_bosses_paint';
 
-/** HIS SWITCH, off until his yes: his pictures made again (art/act1_figs/censor.ts; art/bestiary.ts useCensor2). */
-export const CENSOR2 = { on: false };
+/**
+ * HIS SWITCH: his pictures made again (art/act1_figs/censor.ts; art/bestiary.ts useCensor2). ON at his yes, 14 Nov 2026, asked with
+ * his fight filmed in the game (docs/mockups/censor_redo/pictures/censor_fight.mp4): “Yes, switch him on (Recommended)”.
+ */
+export const CENSOR2 = { on: true };
 /** His size as the game measures a figure (game pixels: his ruff's top; half his body's width), made again. */
 export const CENSOR2_SIZE = { top: 64, half: 18 };
 

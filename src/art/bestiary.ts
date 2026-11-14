@@ -335,6 +335,8 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)
   ...Object.fromEntries(act1Looks().map((k) => [k, act1Fig(k)!.size])),
 };
+// (the Censor made again: his size and his robe's reach set as his switch stands: useCensor2)
+useCensor2(CENSOR2.on);
 
 export interface Bestiary {
   /** The pictures of a figure. (Making them is quick: a frame is painted when it is first shown.) */
