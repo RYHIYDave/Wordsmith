@@ -44,11 +44,14 @@ export const F9_TUNE = {
   wolf: { bite: 1.0, claw: 1.3, lunge: 1.4, cloud: 0.35, stopAt: 2.0 },
   /**
    * SQUARING UP: its pictures face only the four ways along the floor's grid, and its blows land where its pictures' do, so as a move
-   * comes it goes to stand with the hero square before it along one of them, as far off as its blows reach him (tiles from where its
-   * basic blow lands: `chief`, `wolf`);
+   * comes it goes to stand with the hero square before it along one of them, near enough that its blows reach him (tiles: no nearer
+   * than `near`, no further than `far` past where its basic blow lands: `chief`, `wolf`);
    * so long at most (`most` seconds), then not again for `rest`.
    */
-  square: { chief: { near: -0.9, far: 0.5 }, wolf: { near: -0.5, far: 0.4 }, ready: 0.6, most: 2.6, rest: 2.5, off: 0.4, pace: 1.3 },
+  square: { chief: { near: 1.3, far: 0.5 }, wolf: { near: 1.0, far: 0.4 }, ready: 0.6, most: 2.6, rest: 2.5, off: 0.4, pace: 1.3 },
+  /** The smash strikes under the club as it comes down too: from so far before him (his own lengths), so wide either side (tiles). */
+  under: 30,
+  underHalf: 0.6,
   /** The war cry's rage: how long, how much quicker his moves and his readiness, how much faster his feet. */
   rage: { lasts: 9, quick: 1.3, fast: 1.45 },
   /** The howl: how many of its wolves may be about at once. */
@@ -259,8 +262,10 @@ export const RULES_CHIEF: Act1Rules | null = {
     if (move === 'smash') {
       if (at(0.4)) g.sfx('swing', 0.4);
       if (at(a.hit) && free) {
+        // (on its ring where the club lands; and under the club as it comes down, between him and there)
         const [cx, cy] = spot(p, CK, CHIEF_LANDS.smash[0], CHIEF_LANDS.smash[1]);
-        if (Math.hypot(h.x - cx, h.y - cy) <= tC(SMASH_RING) + r0) strike(1, 1, T.knock.smash, cx, cy);
+        const [nx, ny] = spot(p, CK, T.under, CHIEF_LANDS.smash[1]);
+        if (Math.hypot(h.x - cx, h.y - cy) <= tC(SMASH_RING) + r0 || nearLine(h.x, h.y, nx, ny, cx, cy) <= T.underHalf + r0) strike(1, 1, T.knock.smash, cx, cy);
       }
     } else if (move === 'slam') {
       // (the crack running out along the lane: struck as it reaches him)
@@ -307,7 +312,7 @@ export const RULES_CHIEF: Act1Rules | null = {
       if (m.moveCd) for (let k = 0; k < m.moveCd.length; k++) m.moveCd[k] -= more;
     } else m.speed = a.base;
     const reach = tC(CHIEF_LANDS.smash[0]);
-    const squaring = squareUp(R, m, dt, { near: reach + T.square.chief.near, far: reach + T.square.chief.far }, CHIEF_PLAY.walk.pace);
+    const squaring = squareUp(R, m, dt, { near: T.square.chief.near, far: reach + T.square.chief.far }, CHIEF_PLAY.walk.pace);
     // (the floor shaking at each footfall as he walks, two a turn of his walk; felt near him)
     const walking = m.state !== 'act' && m.gait?.mode === 'walk';
     if (!walking) {
@@ -364,7 +369,8 @@ export const RULES_WOLF: Act1Rules | null = {
     const l = (r.left * TILE3) / WK;
     const rr = (r0 * TILE3) / WK;
     if (move === 'bite') {
-      if (at(a.hit) && free && Math.hypot(f - BITE_RING.f, l) <= BITE_RING.r + rr + 10) strike(1, 1, 0, m.x, m.y);
+      // (in its ring, or under its jaws as it goes there)
+      if (at(a.hit) && free && (Math.hypot(f - BITE_RING.f, l) <= BITE_RING.r + rr + 10 || (f > 10 && f < BITE_RING.f && Math.abs(l) <= BITE_RING.r + rr))) strike(1, 1, 0, m.x, m.y);
     } else if (move === 'claw') {
       const S = CLAW_SWEEP;
       if (at(a.hit) && free) {
@@ -408,7 +414,7 @@ export const RULES_WOLF: Act1Rules | null = {
   },
   tick(R, m, dt) {
     const reach = tW(BITE_RING.f);
-    return squareUp(R, m, dt, { near: reach + T.square.wolf.near, far: reach + T.square.wolf.far }, WOLF_PLAY.walk.pace);
+    return squareUp(R, m, dt, { near: T.square.wolf.near, far: reach + T.square.wolf.far }, WOLF_PLAY.walk.pace);
   },
   reachable(m) {
     // (nothing reaches it while it is mist: going through you, and gone into its cloud)

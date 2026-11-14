@@ -54,21 +54,29 @@ export default async function (page, snap) {
     }
     m.life = m.maxLife = 1e7;
     m.words = [];
-    // (the hero a few steps before it, as it faces)
+    // (the fight in the open middle of its area: the hero there, it a few steps off toward where it waited, facing him)
     const h = g.hero;
-    let best = null;
-    for (const dd of [5, 4.5, 4, 3.5, 3, 5.5]) {
-      const x = m.x + m.fx * dd;
-      const y = m.y + m.fy * dd;
-      if (g.isOpen(x, y)) {
-        best = { x, y };
-        break;
+    const area = g.level.land.areas.find((a) => a.role === (kind === 'warchief' ? 'lair' : 'side'));
+    const near = (x, y) => {
+      for (let r = 0; r <= 4; r += 0.5) for (let a = 0; a < 16; a++) {
+        const xx = x + Math.cos(a) * r;
+        const yy = y + Math.sin(a) * r;
+        if (g.isOpen(xx, yy)) return { x: xx, y: yy };
       }
-    }
-    if (best) {
-      h.x = best.x;
-      h.y = best.y;
-    }
+      return { x, y };
+    };
+    const mid = near(area.blob.x, area.blob.y);
+    const dx = m.x - mid.x;
+    const dy = m.y - mid.y;
+    const dd = Math.hypot(dx, dy) || 1;
+    const back = Math.min(4, dd);
+    const at = near(mid.x + (dx / dd) * back, mid.y + (dy / dd) * back);
+    h.x = mid.x;
+    h.y = mid.y;
+    m.x = at.x;
+    m.y = at.y;
+    m.fx = (h.x - m.x) / (Math.hypot(h.x - m.x, h.y - m.y) || 1);
+    m.fy = (h.y - m.y) / (Math.hypot(h.x - m.x, h.y - m.y) || 1);
     d.bot(true);
     return { m: [m.x, m.y], h: [h.x, h.y] };
   }, kind);
