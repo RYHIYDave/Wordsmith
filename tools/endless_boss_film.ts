@@ -1294,33 +1294,41 @@ function avalFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: numb
     mix(s, px, py, '#ff4f8a', 0.3 * on * throb);
   }
 }
-/** WHERE THE HERO IS in Wildfire's film (his own lengths): sprinting right across the room, weaving, the fire leaping after him. */
+/** WHERE THE HERO IS in Wildfire's film (his own lengths): standing out in the room; a spot marked under him, he dodges out of it
+ * into a gap in the web, and stays there. */
+const WILD_HERO: { from: [number, number, number]; to: [number, number, number] } = { from: [6.9 * TILE, 1.1 * TILE, 0], to: [5.3 * TILE, -1.0 * TILE, 0] };
 function wildHeroAt(t: number): [number, number, number] {
-  const t0 = MELD.slam + 0.15, u = Math.min(1, Math.max(0, (t - t0) / (WILDFIRE.first + WILDFIRE.every * WILDFIRE.jumps)));
-  return [(0.5 + 10.3 * u) * TILE, (-4.6 + 7.6 * u + 1.8 * Math.sin(u * Math.PI * 2)) * TILE, 0];
+  const d0 = WILD_NODES.find((n) => n.under)!.t - 0.2, u = Math.min(1, Math.max(0, (t - d0) / 0.25)), e = u * u * (3 - 2 * u);
+  const { from: a, to: b } = WILD_HERO;
+  return [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e, 0];
 }
-/** THE WILDFIRE'S BURNING SPOTS (his own lengths): the first where the rune went in; then each where the fire leaps, onto where the
- * hero was a moment before (it chases him); now and then a branch leaping off sideways, away from him. Each: where, when it lands,
- * the spot it leapt from. */
-const WILD_NODES = ((): { at: [number, number]; t: number; from: number }[] => {
-  const out: { at: [number, number]; t: number; from: number }[] = [{ at: [WILDFIRE.at * TILE, 0], t: MELD.slam, from: -1 }];
-  for (let k = 1; k <= WILDFIRE.jumps; k++) {
-    const tl = MELD.slam + WILDFIRE.first + WILDFIRE.every * (k - 1);
-    const h = wildHeroAt(tl - WILDFIRE.lag);
-    out.push({ at: [h[0] + (hash(k, 1, 9701) - 0.5) * 0.4 * TILE, h[1] + (hash(k, 2, 9702) - 0.5) * 0.4 * TILE], t: tl, from: out.length - 1 });
-    if (k % 3 === 0) {
-      const me = out[out.length - 1].at, hn = wildHeroAt(tl), dx = hn[0] - me[0], dy = hn[1] - me[1], dl = Math.hypot(dx, dy) || 1;
-      const side = k % 2 ? 1 : -1;
-      out.push({ at: [me[0] - (dy / dl) * side * 2.4 * TILE - (dx / dl) * 0.8 * TILE, me[1] + (dx / dl) * side * 2.4 * TILE - (dy / dl) * 0.8 * TILE], t: tl + 0.15, from: out.length - 1 });
-    }
+/** THE WILDFIRE'S BURNING SPOTS (his own lengths): the first where the rune went in; then at random all over the room, each its own
+ * moment, none near another, none where the hero stands in the end (one where he stands at first, which he dodges); each linked by
+ * lightning to those near it, never across the hero's gap. */
+const WILD_NODES = ((): { at: [number, number]; t: number; from: number; under?: boolean }[] => {
+  const out: { at: [number, number]; t: number; from: number; under?: boolean }[] = [{ at: [WILDFIRE.at * TILE, 0], t: MELD.slam, from: -1 }];
+  const gap = WILD_HERO.to, start = WILD_HERO.from;
+  for (let k = 0, tries = 0; out.length < WILDFIRE.spots && tries < 4000; tries++) {
+    const x = (ARENA.x[0] + 0.8 + (ARENA.x[1] - ARENA.x[0] - 1.6) * hash(tries, 1, 9731)) * TILE, y = (ARENA.y[0] + 0.8 + (ARENA.y[1] - ARENA.y[0] - 1.6) * hash(tries, 2, 9732)) * TILE;
+    if (Math.hypot(x - gap[0], y - gap[1]) < 2.0 * TILE || Math.hypot(x, y) < 1.4 * TILE) continue;
+    if (out.some((n) => Math.hypot(n.at[0] - x, n.at[1] - y) < 1.9 * TILE)) continue;
+    out.push({ at: [x, y], t: 0, from: -1 });
+    k++;
   }
+  // (one under where he stands at first)
+  out.push({ at: [start[0], start[1]], t: 0, from: -1, under: true });
+  // (their moments, at random over the spread, the one under him early)
+  const rest = out.slice(1);
+  rest.forEach((n, i) => { n.t = MELD.slam + WILDFIRE.first + WILDFIRE.over * (n.under ? 0.3 : hash(i, 3, 9733)); });
   return out;
 })();
 const WILD_LINKS = ((): [number, number][] => {
   const out: [number, number][] = [];
+  const gap = WILD_HERO.to;
+  const nearSeg = (a: [number, number], b: [number, number]): number => { const dx = b[0] - a[0], dy = b[1] - a[1], u = Math.max(0, Math.min(1, ((gap[0] - a[0]) * dx + (gap[1] - a[1]) * dy) / (dx * dx + dy * dy))); return Math.hypot(a[0] + dx * u - gap[0], a[1] + dy * u - gap[1]); };
   for (let i = 0; i < WILD_NODES.length; i++) for (let j = 0; j < i; j++) {
     const a = WILD_NODES[i].at, b = WILD_NODES[j].at;
-    if (WILD_NODES[i].from === j || Math.hypot(a[0] - b[0], a[1] - b[1]) < WILDFIRE.link * TILE) out.push([j, i]);
+    if (Math.hypot(a[0] - b[0], a[1] - b[1]) < WILDFIRE.link * TILE && nearSeg(a, b) > 1.1 * TILE) out.push(WILD_NODES[i].t < WILD_NODES[j].t ? [i, j] : [j, i]);
   }
   return out;
 })();
@@ -1376,6 +1384,7 @@ function wildPillar(s: Px, X: number, Y: number, H: number, Wd: number, t: numbe
 /** THE WILDFIRE ON THE FLOOR: where each leap will land, marked first in every boss's warning colour, a ring tightening; where it
  * has landed, the floor scorched black, embers glowing in it, flickering; dying away at the end. */
 function wildFloor(s: Px, t: number, ox: number, oy: number, from: V2, dir: number): void {
+  roomWalls(s, ox, oy, from, dir);
   const P = (x: number, y: number): [number, number] => { const [px, py] = at([from[0] + dir * x, from[1] + dir * y, 0]); return [Math.round(ox + px), Math.round(oy + py)]; };
   const boom = WILD_BOOM(), fr = Math.floor(t * 30);
   const fadeOut = Math.max(0, 1 - Math.max(0, t - boom - WILDFIRE.boom) / 1.5);
@@ -1420,7 +1429,7 @@ function wildfire(s: Px, t: number, ox: number, oy: number, from: V2, dir: numbe
       if (!lit(i) || !lit(j)) continue;
       const age = t - Math.max(WILD_NODES[i].t, WILD_NODES[j].t);
       const a = WILD_NODES[i].at, c = WILD_NODES[j].at, rnd = seeded(k * 131 + Math.floor(t * 15));
-      if (age < 0.12 && WILD_NODES[j].from === i) {
+      if (age < 0.12) {
         // (the leap: a great arc of it, up over and down)
         const pts: [number, number][] = [];
         for (let q = 0; q <= 8; q++) { const u = q / 8; pts.push(W(a[0] + (c[0] - a[0]) * u, a[1] + (c[1] - a[1]) * u, 14 + 46 * Math.sin(u * Math.PI))); }
@@ -2025,7 +2034,7 @@ for (const sg of segs) {
     // (as his shade rises, the camera lifts to take it in)
     const lift = sg.move === 'fall' ? 60 * Math.min(1, Math.max(0, (t - FALL.shade[0]) / (FALL.shade[1] - FALL.shade[0]))) : 0;
     const blightFilm = sg.move === 'blight';
-    const [tx, ty] = sg.move === 'wildfire' ? at([sg.from[0] + 5.6 * TILE, sg.from[1] - 0.8 * TILE, 50]) : sg.move === 'scald' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 40]) : blightFilm ? at([sg.from[0] + BLIGHT_AT[0] + 1.6 * TILE, sg.from[1] + BLIGHT_AT[1], 110]) : thunderFilm ? at([sg.from[0] + 4.85 * TILE, sg.from[1] - 1.75 * TILE, 70]) : avalFilm ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 30]) : turnFilm ? at([sg.from[0] + 0.6 * TILE, sg.from[1] - 0.2 * TILE, 70]) : hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
+    const [tx, ty] = sg.move === 'wildfire' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 50]) : sg.move === 'scald' ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 40]) : blightFilm ? at([sg.from[0] + BLIGHT_AT[0] + 1.6 * TILE, sg.from[1] + BLIGHT_AT[1], 110]) : thunderFilm ? at([sg.from[0] + 4.85 * TILE, sg.from[1] - 1.75 * TILE, 70]) : avalFilm ? at([sg.from[0] + 4.6 * TILE, sg.from[1] - 0.2 * TILE, 30]) : turnFilm ? at([sg.from[0] + 0.6 * TILE, sg.from[1] - 0.2 * TILE, 70]) : hailFilm ? at([sg.from[0] + 3.3 * TILE, sg.from[1] - 0.4 * TILE, 75]) : deathFilm ? at([sg.from[0] + 0.9 * TILE, sg.from[1] - 0.3 * TILE, 70]) : meldFilm ? at([sg.from[0] + 3.4 * TILE, sg.from[1] - 0.2 * TILE, 80]) : fallFilm ? at([world(t)[0] + lead - lift, world(t)[1] - 50 * (lead / 110) + lift, 0]) : sg.move === 'power' ? at([sg.from[0] + 3.1 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'flame' ? at([sg.from[0] + STORM_AT[0] - 1.0 * TILE, sg.from[1] + STORM_AT[1], 0]) : sg.move === 'frost' ? at([sg.from[0] + 3.6 * TILE, sg.from[1] + 0.4 * TILE, 0]) : sg.move === 'lightning' ? at([sg.from[0] + 3.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : sg.move === 'poison' ? at([sg.from[0] + 4.8 * TILE, sg.from[1] + 0.2 * TILE, 0]) : at(world(t));
     camX += (tx - camX) * (i === 0 ? 1 : 0.32);
     camY += (ty - camY) * (i === 0 ? 1 : 0.32);
     // (the screen kicks as it bursts off and as it digs in to stop: his rulebook's Animations, “the screen kicks on big casts and hits”)

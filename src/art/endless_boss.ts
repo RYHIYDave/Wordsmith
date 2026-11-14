@@ -3814,7 +3814,10 @@ export function paintScald(t: number, view: 'front' | 'rear', nearer: V3 | null 
 // every burning spot near another is linked to it by crackling arcs of fire, a burning web over the room (one who crosses them is
 // burned and shocked); then the whole web DETONATES at once, and dies to embers. His rules for the words stand: one rune (the
 // meld's); fire and lightning are drawn as light and flame, as his Lightning's bolts are.
-export const WILDFIRE = { at: 2.2, first: 0.4, every: 0.45, jumps: 11, lag: 0.62, warn: 0.32, link: 2.8, hold: 0.7, boom: 0.35, die: 1.0, end: 8.7 };
+// NOT FOLLOWING (his words, 13 Nov 2026: “I don’t want it to follow you, just random all over the arena with lightning between
+// them”): the fire bursts up at random all over the room, each spot marked first, lightning crackling between spots near each
+// other; the hero picks his way through the gaps.
+export const WILDFIRE = { at: 2.2, spots: 16, first: 0.35, over: 3.0, warn: 0.42, link: 3.3, hold: 0.8, boom: 0.35, die: 1.0, end: 7.6 };
 
 
 // THUNDER (Power and Lightning, melded: “a storm cloud and its one great bolt”): he writes Power, his shade writes Lightning; melded,

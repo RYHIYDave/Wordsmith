@@ -596,6 +596,10 @@ the staff, the boar's hooves as what grips the floor); his stand passes `checkBo
   third throwing a branch off sideways; burning spots near each other are linked by crackling arcs of fire, a burning web over
   the room (crossing it burns and shocks); then the whole web detonates at once, the room flashing, and dies to embers. In the
   film the hero sprints right across the room, the fire chasing him.
+  HIS WORDS, by pop-up: “I don’t want it to follow you, just random all over the arena with lightning between them”. REMADE SO:
+  sixteen spots burst up at random all over the room (none near another), each its own moment, each marked first; lightning
+  crackles between spots near each other (a web with gaps); the hero dodges out of one marked under him into a gap and stands
+  there as it detonates. The room's walls drawn.
 - Through the bosses' checks (0 findings, every move) and the boss tests.
 - NEXT: the other seven melds (Thunder, Blight, Scald, Wildfire, Fumes, Frostbite, Contagion), each for his yes; his other facing
   turned round, not flipped.
