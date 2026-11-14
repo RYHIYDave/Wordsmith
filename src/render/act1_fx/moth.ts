@@ -15,11 +15,13 @@ import type { Painted } from '../../art/kit';
 import type { V3 } from '../../art/skeleton';
 import { PASSING_MS, flipSprite, retireSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
-import { CLOUD_LONG, MOTH_TUNE, artToWorld, beatOf, bookOf, mothPhase, perched, swarmFrom } from '../../game/act1_rules/moth';
+import { CLOUD_LONG, MOTH_TUNE, artToWorld, beatOf, bookOf, mothPhase, perched, swarmFrom, waveAt } from '../../game/act1_rules/moth';
 import { clipFrame } from '../figure';
 import { keptPictures } from './kept';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
-import type { Act1Fx } from './types';
+import type { Act1Fx, Act1FxCtx } from './types';
+import { ECLIPSE, MOTH2, PHANTOMS, phantomWay } from '../../art/moth2';
+import { GHOST_WING, HUSH_FX, deathLights, drawEclipse, drawGhostWing, drawHushGround, drawHushSnow, drawMoon, drawPagesLoosing, drawPhantoms, drawPhantomsGather, drawUnwritingGround, drawUnwritingPages, moonAt } from '../../art/moth2_fx';
 
 const FPS = 30;
 /**
@@ -72,6 +74,42 @@ const viewOf = (fx: number, fy: number): { back: boolean; flip: boolean } => ({ 
 const pv = (back: boolean): 'front' | 'rear' | 'back' => paintViewOf(MOTH, back ? 'back' : 'front');
 const D = Math.PI / 180;
 
+// THE MOTH MADE GHOSTLY (art/moth2.ts MOTH2, off until his yes): her new attacks drawn straight onto the game's pixels
+// (art/moth2_fx.ts), in place of the old paintings.
+/** How high her thorax is as she rears for Eclipse, and as she wraps her wings round herself for her Phantoms (game pixels). */
+let REAR_H = 0;
+let WRAP_H = 0;
+const rearH = (): number => (REAR_H ||= Math.max(60, mothGeomAt('eyes', MOTH_EYES.warn[1]).TC[2] / 2));
+const wrapH = (): number => (WRAP_H ||= Math.max(50, mothGeomAt('swarm', MOTH_SWARM.warn[1]).TC[2] / 2));
+/** Its Hush's reach (tiles from its middle): the old cloud's. */
+const HUSH_R = DUST_CLOUD.tiles / 2;
+/** The light in the dark, from a painter: as `c.spot`. */
+const spotOf = (c: Act1FxCtx) => (x: number, y: number, r: number, a: number): void => c.spot(x, y, r, a);
+/** Where he is on the screen (her eyes follow him). */
+const heroOn = (c: Act1FxCtx): readonly [number, number] => {
+  const [x, y] = c.at(c.game.hero.x, c.game.hero.y);
+  return [x, y - 14];
+};
+/** The moon behind her and her shadow, `t` seconds into her Eyes' move (on past the blow), she at (x, y) casting along (ax, ay). */
+function eclipseDrawn(c: Act1FxCtx, x: number, y: number, ax: number, ay: number, t: number): void {
+  if (!c.g) return;
+  const [sx, sy] = c.at(x, y);
+  drawMoon(c.g, sx, sy - rearH() - 74, moonAt(t), c.t, spotOf(c));
+  const [hx, hy] = heroOn(c);
+  drawEclipse(c.g, c.at, x, y, ax, ay, t, hx, hy, c.t, spotOf(c));
+}
+/** Her phantoms' lanes marked, each until it has set off (`t`: seconds into her Swarm's move). */
+function lanesDrawn(c: Act1FxCtx, x: number, y: number, ax: number, ay: number, t: number): void {
+  if (!c.g) return;
+  for (let i = 0; i < PHANTOMS.n; i++) {
+    const off = PHANTOMS.hit + i * PHANTOMS.apart + 0.12;
+    const k = warnK(t, PHANTOMS.warn, off);
+    if (k < 0) continue;
+    const [wx, wy] = phantomWay(ax, ay, i);
+    drawStripWarn(c.g, c.at, { x, y, fx: wx, fy: wy, hand: 1 }, PHANTOMS.start, PHANTOMS.long, -PHANTOMS.half, PHANTOMS.half, k, c.t);
+  }
+}
+
 /** Where its death's words come out of it (its head, as it dies), by the death's moment; kept a twentieth of a second at a time. */
 const MOUTH = new Map<number, V3>();
 const mouthAt = (t: number): V3 => {
@@ -110,6 +148,11 @@ export const FX: Act1Fx | null = {
           if ((k = warnK(a.t, MOTH_DUST.warn[0] - 0.2, MOTH_DUST.hit)) >= 0) drawFanWarn(c.g, c.at, { ...w, x: m.x + wx * DUST_CLOUD.ahead, y: m.y + wy * DUST_CLOUD.ahead }, -Math.PI, Math.PI, DUST_CLOUD.tiles / 2, k, c.t);
           break;
         case 'moth:eyes':
+          // (made ghostly: ECLIPSE, the moon and her shadow till the blow; after it, its peril's)
+          if (MOTH2.on) {
+            if (a.t < ECLIPSE.hit) eclipseDrawn(c, m.x, m.y, m.a1?.ax ?? wx, m.a1?.ay ?? wy, a.t);
+            break;
+          }
           if ((k = warnK(a.t, MOTH_EYES.warn[0] - 0.2, MOTH_EYES.hit)) >= 0) {
             for (const b of beamLines(mothGeomAt('eyes', MOTH_EYES.hit))) {
               const s = artToWorld(m.x, m.y, wx, wy, [b.from[0] + MOTH_TUNE.eyes.from * TILE3, b.from[1], 0]);
@@ -120,10 +163,36 @@ export const FX: Act1Fx | null = {
           }
           break;
         case 'moth:swarm':
+          // (made ghostly: her PHANTOMS' three lanes, each marked till it sets off)
+          if (MOTH2.on) {
+            if (a.t < PHANTOMS.hit) lanesDrawn(c, m.x, m.y, m.a1?.ax ?? wx, m.a1?.ay ?? wy, a.t);
+            break;
+          }
           if ((k = warnK(a.t, MOTH_SWARM.warn[0] - 0.2, MOTH_SWARM.hit)) >= 0) drawStripWarn(c.g, c.at, w, 1, SWARM.tiles, -SWARM.wide / 2, SWARM.wide / 2, k * 0.7, c.t);
           break;
         case 'moth:beat':
           if ((k = warnK(a.t, MOTH_BEAT_BLOW.warn[0] - 0.2, MOTH_BEAT_BLOW.hit)) >= 0) drawFanWarn(c.g, c.at, w, -Math.PI, Math.PI, 11, k * 0.55, c.t);
+          break;
+      }
+    }
+    // (made ghostly: what her blows leave on the floor, drawn in place of the old paintings)
+    if (p && MOTH2.on) {
+      switch (p.a1) {
+        case 'moth:gust':
+          drawGhostWing(c.g, c.at, p.x, p.y, p.fx, p.fy, p.t, spotOf(c));
+          break;
+        case 'moth:eclipse':
+          eclipseDrawn(c, p.x, p.y, p.fx, p.fy, ECLIPSE.hit + p.t);
+          break;
+        case 'moth:phantoms':
+          lanesDrawn(c, p.x, p.y, p.fx, p.fy, PHANTOMS.hit + p.t);
+          break;
+        case 'moth:dust':
+        case 'moth:shed':
+          drawHushGround(c.g, c.at, p.x, p.y, HUSH_R, p.t, c.t, spotOf(c));
+          break;
+        case 'moth:wave':
+          drawUnwritingGround(c.g, c.at, p.x, p.y, waveAt(p.t), MOTH_TUNE.beat.wide, 1 - Math.min(1, Math.max(0, (p.t - WAVE_FX.reach) / (WAVE_FX.long - WAVE_FX.reach))));
           break;
       }
     }
@@ -144,6 +213,8 @@ export const FX: Act1Fx | null = {
       return;
     }
     if (!p) return;
+    // (made ghostly: these drawn straight on the floor and in the air, art/moth2_fx.ts: none of the old paintings)
+    if (MOTH2.on && (p.a1 === 'moth:gust' || p.a1 === 'moth:dust' || p.a1 === 'moth:shed' || p.a1 === 'moth:wave')) return;
     const v = viewOf(p.fx, p.fy);
     const k = Math.floor(p.t * FPS);
     const [sx, sy] = c.at(p.x, p.y);
@@ -182,4 +253,43 @@ export const FX: Act1Fx | null = {
     void m;
     void mothPhase;
   },
+  air(c, m, p) {
+    if (!MOTH2.on || !c.g) return;
+    if (m && m.act && !m.dead) {
+      const a = m.act;
+      if (a.id === 'moth:swarm' && a.t < PHANTOMS.hit) {
+        // (copies of her shimmering off her as she wraps her wings round herself)
+        const k = Math.min(1, Math.max(0, (a.t - 0.4) / (PHANTOMS.hit - 0.4)));
+        drawPhantomsGather(c.g, c.at, m.x, m.y, m.a1?.ax ?? m.fx, m.a1?.ay ?? m.fy, k * k, wrapH(), c.t);
+      }
+      if (a.id === 'moth:beat' && a.t < MOTH_BEAT_BLOW.hit) {
+        // (the chapter's pages tearing loose as she rears)
+        const B = bookOf(c.game.level);
+        const k = Math.min(1, Math.max(0, (a.t - 0.3) / (MOTH_BEAT_BLOW.hit - 0.3)));
+        if (B) drawPagesLoosing(c.g, c.at, B.book.x, B.book.y, k, c.t, spotOf(c));
+      }
+      return;
+    }
+    if (!p) return;
+    switch (p.a1) {
+      case 'moth:phantoms':
+        drawPhantoms(c.g, c.at, p.x, p.y, p.fx, p.fy, p.t, spotOf(c));
+        return;
+      case 'moth:dust':
+      case 'moth:shed':
+        drawHushSnow(c.g, c.at, p.x, p.y, HUSH_R, p.t, spotOf(c));
+        return;
+      case 'moth:wave':
+        drawUnwritingPages(c.g, c.at, p.x, p.y, waveAt(p.t), p.t, 1 - Math.min(1, Math.max(0, (p.t - WAVE_FX.reach) / (WAVE_FX.long - WAVE_FX.reach))), spotOf(c));
+        return;
+      case 'moth:words': {
+        // (the light she comes apart into)
+        const [sx, sy] = c.at(p.x, p.y);
+        deathLights(sx, sy, (p.t - MOTH_DIES.crumble[0]) / (MOTH_DIES.crumble[1] - MOTH_DIES.crumble[0]), c.t, spotOf(c));
+        return;
+      }
+    }
+  },
 };
+void GHOST_WING;
+void HUSH_FX;

@@ -30,6 +30,7 @@
 
 import { FIRST5_FIGURES, HEAVY_FIGURES, framesOf, giveFrame, makeBestiary, paintOrder, useCensor2 } from '../art/bestiary';
 import { CENSOR2 } from '../art/censor2_art';
+import { MOTH2 } from '../art/moth2_switch';
 import { deathOf } from './left_to_painter';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { ActorArt, AnimSet } from '../art/actor_types';
@@ -181,8 +182,9 @@ interface Given {
 export type WarlockPart = 'soon' | 'soonMan' | 'rest' | 'man' | 'demon';
 
 type Ask =
-  // (`censor2`: the Censor made again, art/censor2_art.ts CENSOR2: the worker has no switch of its own, so it is told, as the Veteran's)
-  | { t: 'mob'; figure: MonsterFigure; pri: number; side?: boolean; censor2?: boolean }
+  // (`censor2`: the Censor made again, art/censor2_art.ts CENSOR2: the worker has no switch of its own, so it is told, as the Veteran's;
+  // `moth2`: the Moth made ghostly, art/moth2_switch.ts MOTH2, the same)
+  | { t: 'mob'; figure: MonsterFigure; pri: number; side?: boolean; censor2?: boolean; moth2?: boolean }
   | { t: 'film'; key: string; pri: number }
   | { t: 'drop'; figure: MonsterFigure }
   // (A FIGURE KEPT PACKED, PACKED: one of its moves unpacked, from frame `from` on; a move no longer wanted)
@@ -363,7 +365,7 @@ export class Painter {
     this.figures.set(figure, { left: -1 });
     // (one too big to hold whole, PACKED: its worker packs it, and says so with the first frames it hands over)
     if (PACKED.on && PACKED.figures.includes(figure)) this.packedFigs.set(figure, { packs: null, moves: new Map(), asked: null, bytes: 0, kept: 0, keptBytes: 0, shown: 0, standIns: 0, unpacks: 0, letGo: 0, packedN: 0, packedBytes: 0 });
-    this.ask(lane, { t: 'mob', figure, pri: 1, ...(figure === 'censor' ? { censor2: CENSOR2.on } : {}) });
+    this.ask(lane, { t: 'mob', figure, pri: 1, ...(figure === 'censor' ? { censor2: CENSOR2.on } : {}), ...(figure === 'moth' ? { moth2: MOTH2.on } : {}) });
     return true;
   }
 
@@ -774,7 +776,7 @@ export class Painter {
     }
     this.sideFigures.set(figure, { left: -1 });
     lane.open++;
-    lane.worker.postMessage({ t: 'mob', figure, pri: 2, side: true, ...(figure === 'censor' ? { censor2: CENSOR2.on } : {}) } satisfies Ask);
+    lane.worker.postMessage({ t: 'mob', figure, pri: 2, side: true, ...(figure === 'censor' ? { censor2: CENSOR2.on } : {}), ...(figure === 'moth' ? { moth2: MOTH2.on } : {}) } satisfies Ask);
     return true;
   }
 
@@ -1717,6 +1719,10 @@ export function paintWorkerMain(): void {
         if (!job.run && job.ask.figure === 'censor' && CENSOR2.on !== !!job.ask.censor2) {
           useCensor2(!!job.ask.censor2);
           bestiary.forget('censor');
+        }
+        if (!job.run && job.ask.figure === 'moth' && MOTH2.on !== !!job.ask.moth2) {
+          MOTH2.on = !!job.ask.moth2;
+          bestiary.forget('moth');
         }
         job.run ??= mob(job.ask.figure, !!job.ask.side);
         if (job.run.next().done) done();
