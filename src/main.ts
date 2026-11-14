@@ -7,6 +7,7 @@ import { actsOf } from './game/bosses';
 import { ENEMY_MOVES, useEnemyMoves } from './game/enemy_moves';
 // (FLOORS 8 AND 9 FROM HIS PHONE: the switch, for the playtests' pictures: game/f8f9.ts)
 import { F8F9_FIX } from './game/f8f9';
+import { F9_LAIRS } from './game/f9_lairs';
 import { FLOOR_LOOKS, useFloorLooks } from './game/floor_looks';
 import { ALL_OF_IT, useAllOfIt } from './game/all_of_it';
 import { DOOR_WALLS, WHOLE_WALLS, BACK_STAND } from './render/walls';
@@ -3385,7 +3386,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** THE FOREST AS A FEW PICTURES (render/tops_cache.ts): its switch (renderer.topsCache has what it did). */
     topsCache: TOPS_CACHE,
     /** THE NEXT VERSION'S LOOKS, each off until he has seen it (his pictures: tools/scenarios/looks_next.mjs). */
-    looks: { BODIES, ALTAR_GOES, DRESS_EDGES, PINE_PATH, F8F9_FIX },
+    looks: { BODIES, ALTAR_GOES, DRESS_EDGES, PINE_PATH, F8F9_FIX, F9_LAIRS },
     /** The level-up choice opens by itself in a quiet moment. Tests that need an uninterrupted fight switch this off. */
     autoLevel: true,
     /** The inventory opens by itself for a new word that has somewhere to go. Likewise. */

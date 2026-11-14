@@ -44,3 +44,21 @@ the rules behind the switch, the pieces they drop, and the whole of it filmed in
     low and forward, ears laid back, fangs, pink-gold eyes; its legs, its belly fringe and its tail's end thinning into see-through
     mist; puffs of mist streaming off its back and tail; a haze of mist on the floor round its feet. Pink edge (an enemy's); nothing
     cyan.
+- His answer to the looks drawn again: “Yes, film their attacks (Recommended)” (offered as: next, their two side areas, then each
+  attack on film).
+
+## Their side areas
+
+Behind F9_LAIRS (off): game/f9_lairs.ts lays them (game/act1_dress.ts calls it; game/act1_layout.ts grows the lair and sets its pack);
+art/f9_lairs.ts draws their thirteen pieces (render/act1_pieces.ts takes them on floor 9 while the switch is on).
+- THE TROLLS' CAMP, the floor's lair grown to a boss's room (8 by 7 tiles, as the Stag's): barricades of sharpened logs lashed
+  across it either side of the way in, skull poles flanking the gap, crooked palisade round the rest of its edge, the trolls' fire
+  (the enemy's pink and gold, as the cult's) in its middle, two hide lean-tos, gnawed bones, and the chieftain's seat of boulders,
+  logs, a fur and a stag's antlers at its back. Its pack of guardians stands just inside the way in (his “Some guardians milling
+  around the entrance”).
+- THE MISTY GLADE, the floor's side area: the moonbeam coming down slantwise into its middle (pale, dithered, never a glow), a ring of
+  clawed standing stones round it open toward the way in, white dead trees toward its edge, mist lying in drifts, moonflowers, a
+  deer's bones. No pack of the floor's is laid in it (his wolves come at the mist wolf's howl); its chests stay.
+- Pictured (pictures/f9_side_areas.png): the game's own pictures of both on floor 9 (seed 9), the bosses' standing pictures laid in
+  at their spots (they are not in the game yet): tools/scenarios/f9_lairs.mjs (ON=1, WIDE=1.3, CANVAS_OUT), tools/f9_lairs_composite.ts
+  and .py. The pieces alone: tools/f9_lairs_sheet.ts and .py.

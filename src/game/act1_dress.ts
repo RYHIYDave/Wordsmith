@@ -31,6 +31,7 @@ import type { Level, PropInst } from './state';
 import { T_FLOOR, T_WALL } from './types';
 import type { HazardSpot } from './types';
 import { makeHazards } from './traps';
+import { dressMistGlade, dressTrollCamp, f9Lairs, mouthOf } from './f9_lairs';
 
 /** A floor tile laid with one of the floor's pieces. */
 export interface Act1Tile {
@@ -740,6 +741,30 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     for (const [tx, ty] of list) if (beds < 2 && free(tx, ty, false)) { put(rng.pick(CAMP.lying), tx, ty, false); beds++; }
   }
 
+  // ---- (F9_LAIRS, off: game/f9_lairs.ts) FLOOR 9'S SIDE AREAS DRESSED FOR ITS SIDE BOSSES: the trolls' camp in its lair, the misty glade
+  // in its side area; nothing else of the floor's laid in them below
+  const lairsHere = f9Lairs(depth);
+  if (lairsHere) {
+    const hands = {
+      rng,
+      free,
+      open: (x: number, y: number): boolean => whole(x, y) && !taken[y * W + x] && !boardSet.has(y * W + x) && !bridgeSet.has(y * W + x),
+      put: (name: string, x: number, y: number, solid: boolean, variant = 0): void => void put(name, x, y, solid, variant),
+      block: (x: number, y: number): void => {
+        taken[y * W + x] = 1;
+        L.walk[y * W + x] = 0;
+      },
+      keep: (x: number, y: number): void => {
+        if (x >= 0 && y >= 0 && x < W && y < H) keep[y * W + x] = 1;
+      },
+    };
+    for (const a of land.areas) {
+      if (a.role === 'lair') dressTrollCamp(hands, a.blob, mouthOf(a.blob, land.lanes));
+      if (a.role === 'side') dressMistGlade(hands, a.blob, mouthOf(a.blob, land.lanes));
+    }
+  }
+  const ownDress = (role: string): boolean => lairsHere && (role === 'lair' || role === 'side');
+
   // ---- ACT1_SCENES: each open area's things together as one of the floor's scenes, in its outer band
   const scened = ACT1_SCENES.on && ACT1_SCENES.floors.includes(n) && !!ACT1_SCENE_SETS[n];
   const used = new Map<string, number>();
@@ -781,7 +806,7 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
   if (scened) {
     const set6 = ACT1_SCENE_SETS[n];
     for (const a of rng.shuffle([...land.areas])) {
-      if (a.role === 'yard' || a.role === 'start' || a.role === 'boss') continue;
+      if (a.role === 'yard' || a.role === 'start' || a.role === 'boss' || ownDress(a.role)) continue;
       const band = tilesOf(a.blob, (x, y) => blobDist(a.blob, x, y) > DRESS_EDGES.from && blobDist(a.blob, x, y) < DRESS_EDGES.to - 0.1);
       // (the big scenes first, while there is room; then the others in an order of the dice's; a big area takes two)
       const order = [...set6.open.filter((q) => q.most === 1), ...rng.shuffle(set6.open.filter((q) => q.most > 1))];
@@ -803,7 +828,7 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
   // ---- THE OPEN AREAS: a big thing or two on the floor, its things that stand, its small things that lie about
   let bigs = 0;
   for (const a of rng.shuffle([...land.areas])) {
-    if (a.role === 'yard' || a.role === 'start') continue;
+    if (a.role === 'yard' || a.role === 'start' || ownDress(a.role)) continue;
     const boss = a.role === 'boss';
     // (ACT1_SCENES: a floor laid so has no things standing about at random but in the boss's ground)
     if (scened && !boss) continue;
