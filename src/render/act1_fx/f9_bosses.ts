@@ -133,11 +133,15 @@ function mistIn(c: Act1FxCtx, a: number): void {
     const r = Math.min(w, h) * (0.16 + 0.1 * ((i * 7) % 5) / 5) * (0.6 + 0.4 * a);
     const x = side === 0 ? u : side === 1 ? u : side === 2 ? -r * 0.2 + r * 0.5 * a : w + r * 0.2 - r * 0.5 * a;
     const y = side === 0 ? -r * 0.2 + r * 0.5 * a : side === 1 ? h + r * 0.2 - r * 0.5 * a : u;
-    g.globalAlpha = 0.16 * a;
-    g.fillStyle = i % 2 ? '#c6c2da' : '#eeecf8';
-    g.beginPath();
-    g.ellipse(x, y, r * 1.3, r * 0.8, 0, 0, Math.PI * 2);
-    g.fill();
+    // (each billow soft all through, thinning to nothing at its edge: never a shape with an edge of its own)
+    if (typeof g.createRadialGradient !== 'function') continue;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r * 1.3);
+    gr.addColorStop(0, i % 2 ? 'rgba(198,194,218,0.55)' : 'rgba(238,236,248,0.5)');
+    gr.addColorStop(0.55, i % 2 ? 'rgba(198,194,218,0.25)' : 'rgba(238,236,248,0.22)');
+    gr.addColorStop(1, 'rgba(238,236,248,0)');
+    g.globalAlpha = a;
+    g.fillStyle = gr;
+    g.fillRect(x - r * 1.3, y - r * 1.3, r * 2.6, r * 2.6);
   }
   g.restore();
 }
