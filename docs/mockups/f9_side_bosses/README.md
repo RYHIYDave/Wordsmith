@@ -62,3 +62,8 @@ art/f9_lairs.ts draws their thirteen pieces (render/act1_pieces.ts takes them on
 - Pictured (pictures/f9_side_areas.png): the game's own pictures of both on floor 9 (seed 9), the bosses' standing pictures laid in
   at their spots (they are not in the game yet): tools/scenarios/f9_lairs.mjs (ON=1, WIDE=1.3, CANVAS_OUT), tools/f9_lairs_composite.ts
   and .py. The pieces alone: tools/f9_lairs_sheet.ts and .py.
+- His answer to the side areas: “It’s good but his club kinda looks like shit in his hand”. Read as: the areas are right; the
+  chieftain's club wrong where he holds it (a stub jutting at the eye, no hand seen round it). Drawn again: over his right shoulder,
+  his right arm raised, his fist before the shoulder wrapped round a leather-bound handle (knuckles, fingers, thumb), its knob below
+  the fist; the trunk long, knotted, two iron bands round its head, its end flaring to root stubs; seen at its length from in front
+  and behind. Pictured: pictures/f9_chief_club.png (and f9_bosses_look.png, f9_side_areas.png made again with it).

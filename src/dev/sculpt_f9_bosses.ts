@@ -23,7 +23,7 @@ import type { Ramp } from '../art/kit';
 import { INK } from '../art/kit';
 import { ENEMY_RIM } from '../art/mkit';
 import type { GameView } from '../art/skin';
-import { add, mul, norm } from '../art/skeleton';
+import { add, cross, mul, norm, sub } from '../art/skeleton';
 import type { V3 } from '../art/skeleton';
 import { Sculpt, draw, onCone } from './sculpt';
 import type { Cone, Drawn } from './sculpt';
@@ -145,6 +145,11 @@ export function sculptChief9(view: GameView, breath = 0, yaw = -10): Drawn {
   const bark = sc.mat({
     ramp: BARK,
     paint: (h) => {
+      if (h.prim.k === 'cone' && h.prim.tag === 'handle') {
+        // (its handle worn smooth and bound in a strip of leather, wound round it)
+        const { t, around } = onCone(h.prim as Cone, h.p, U);
+        return Math.floor((t * 8 + around / (Math.PI * 2)) * 2) % 2 === 0 ? shadeOf(LEATHER, h.tone) : shadeOf(BARK, h.tone + 1);
+      }
       if (h.prim.k !== 'cone' || h.prim.tag !== 'trunk') return null;
       const { t, around } = onCone(h.prim as Cone, h.p, U);
       // (two bands of iron round it; its bark ridged along it)
@@ -173,21 +178,25 @@ export function sculptChief9(view: GameView, breath = 0, yaw = -10): Drawn {
   sc.ell(hide, 'body', P(-6, 0, 72 + b), X(16, 25, 15), 3.4);
   // (his hump: the top of his back thrust up behind his head)
   sc.ell(hide, 'body', P(-4, 0, 82 + b), X(13, 18, 9), 3.0);
-  // HIS SHOULDERS, boulders; his arms long, down past his knees
+  // HIS SHOULDERS, boulders; his left arm long, hanging down past his knee; his right raised, its fist before his shoulder, the
+  // club over it
+  const CLUB_FIST = P(20, -33, 82 + b);
   for (const s of [1, -1]) {
     const piece = s > 0 ? 'armL' : 'armR';
     sc.ell(hide, piece, P(0, s * 29, 80 + b), X(13, 12, 12), 2.8);
-    const elbow = P(4, s * 37, 56 + b);
+    const elbow = s > 0 ? P(4, s * 37, 56 + b) : P(13, -43, 60 + b);
     sc.cone(hide, piece, P(1, s * 31, 78 + b), elbow, 10, 8.5, 2.6);
-    const wrist = P(12, s * 35, 32);
+    const wrist = s > 0 ? P(12, s * 35, 32) : add(CLUB_FIST, P(-1.5, -2, -6));
     sc.cone(hide, piece, elbow, wrist, 10.5, 8, 2.6);
     // (his forearm thicker than his upper arm: the swell of it)
     sc.ell(hide, piece, add(mul(elbow, 0.55), mul(wrist, 0.45)), X(10, 10, 11), 2.0);
   }
-  // HIS FISTS: like anvils; his right round the club's handle, his left hanging, half shut; IRON CUFFS round his wrists
-  sc.box(hide, 'fistL', P(14, 34, 24), X(8, 7, 8), 4.2, 1.6, { tag: 'fist' });
-  sc.box(hide, 'fistR', P(14, -34, 24), X(8.5, 7, 8.5), 4.2, 1.6, { tag: 'fist' });
-  for (const s of [1, -1]) sc.cone(iron, s > 0 ? 'cuffL' : 'cuffR', P(11.6, s * 35, 36.5), P(12.6, s * 34.8, 33), 8.6, 8.5, 0.4);
+  // HIS LEFT FIST: hanging, half shut, its knuckles a ridge across it, its thumb along its side
+  sc.ell(hide, 'fistL', P(14, 34, 25), X(6.5, 6, 7.5), 2.0, { tag: 'fist' });
+  for (let k = 0; k < 4; k++) sc.ell(hide, 'fistL', P(19.5, 37.5 - k * 2.4, 21 - k * 0.3), X(2.4, 1.6, 2.6), 1.0);
+  sc.cone(hide, 'fistL', P(17, 30, 27), P(20.5, 31.5, 22), 2.4, 1.8, 1.0);
+  sc.cone(iron, 'cuffL', P(11.6, 35, 36.5), P(12.6, 34.8, 33), 8.6, 8.5, 0.4);
+  sc.cone(iron, 'cuffR', add(CLUB_FIST, P(-3.6, -4.3, -13)), add(CLUB_FIST, P(-2.4, -3, -9)), 8.4, 8.3, 0.4);
   // HIS HEAD: thrust forward and low between his shoulders; a heavy brow, an underbite, two tusks, little ears
   const HF = 6;
   sc.cone(hide, 'body', P(6, 0, 82 + b), P(15 + HF, 0, 85 + b), 12, 10, 3.0);
@@ -227,13 +236,38 @@ export function sculptChief9(view: GameView, breath = 0, yaw = -10): Drawn {
     for (const [j, df, dl, du] of [[1, 3, 1, 7], [2, -4, 3, 6], [3, 3, -2, 7], [2, 5, 4, 3]] as const) sc.cone(bone, `antler${s > 0 ? 'L' : 'R'}`, pts[j], add(pts[j], P(df, s * dl, du)), 1.4, 0.4, 0.5);
   }
   for (const [l, u] of [[-6.4, 100.5], [0, 102], [6.4, 100.5]] as const) sc.ell(bone, 'crown', P(25 + (l === 0 ? 1 : 0), l, u + b), X(2.8, 2.6, 3), 0.4, { tag: 'skull' });
-  // HIS CLUB: a tree's trunk, its handle in his right fist, its great head leant on the floor before him
-  const top = P(6, -31, 42);
-  const end = P(40, -47, 9);
-  sc.cone(bark, 'club', top, end, 3.6, 9.5, 0.8, { tag: 'trunk' });
-  const along = (k: number): V3 => add(mul(top, 1 - k), mul(end, k));
-  sc.cone(bark, 'club', along(0.66), add(along(0.66), P(2, -6, 7)), 2.6, 1.6, 0.8);
-  sc.cone(bark, 'club', along(0.84), add(along(0.84), P(-4, 6, 6)), 2.8, 1.8, 0.8);
+  // HIS CLUB: A TREE'S TRUNK over his right shoulder, its handle in his fist before the shoulder, its great head behind him; its
+  // handle's end a knob under his fist; knots on it, two bands of iron round its head, its end flaring to root stubs
+  const grip = CLUB_FIST;
+  const end = P(-9, -60, 124 + b);
+  const A = norm(sub(end, grip));
+  const at = (d: number): V3 => add(grip, mul(A, d));
+  const len = Math.hypot(...sub(end, grip));
+  sc.cone(bark, 'club', at(-8), at(6), 2.9, 3.2, 0.6, { tag: 'handle' });
+  sc.ell(bark, 'club', at(-8.5), X(2.6, 2.6, 2.6), 0.6, { tag: 'handle' });
+  sc.cone(bark, 'club', at(5), end, 3.3, 10, 1.0, { tag: 'trunk' });
+  for (const [d, k, r] of [[0.38, 0, 2.2], [0.55, 1, 2.6], [0.74, 2, 2.4]] as const) {
+    const ang = k * 2.1 + 0.6;
+    const side = norm(cross(A, [Math.cos(ang), Math.sin(ang), 0.4]));
+    sc.ell(bark, 'club', add(at(len * d), mul(side, 3.6 + d * 6.5)), X(r, r, r), 1.2, { tag: 'knot' });
+  }
+  // (its end flaring to root stubs)
+  for (let k = 0; k < 5; k++) {
+    const ang = (k / 5) * Math.PI * 2;
+    const side = norm(cross(A, [Math.cos(ang), Math.sin(ang), 0.7]));
+    sc.cone(bark, 'club', add(at(len - 4), mul(side, 7)), add(add(at(len + 1.5), mul(side, 11.5)), mul(A, 0.5)), 3.2, 1.2, 1.2, { tag: 'root' });
+  }
+  // HIS RIGHT FIST round the handle: the back of his hand outside it, his knuckles a ridge over it, his fingers wrapped round it in
+  // front, his thumb across them
+  const out = norm(cross(A, [0, 0, 1]));
+  const fwd = norm(cross(out, A));
+  sc.ell(hide, 'fistR', add(grip, mul(out, -2.4)), [mul(A, 6), mul(out, 4.6), mul(fwd, 5.4)], 1.6, { tag: 'fist' });
+  for (let k = 0; k < 4; k++) {
+    const c = at(-4.2 + k * 2.7);
+    sc.ell(hide, 'fistR', add(add(c, mul(out, -3.6)), mul(fwd, 3.2)), X(1.9, 1.9, 1.9), 0.8);
+    sc.cone(hide, 'fistR', add(add(c, mul(out, -2.6)), mul(fwd, 4.2)), add(add(c, mul(out, 2.2)), mul(fwd, 3.6)), 1.5, 1.35, 0.6);
+  }
+  sc.cone(hide, 'fistR', add(at(-5), mul(out, -1)), add(add(at(0.5), mul(out, 2.4)), mul(fwd, 3.4)), 1.9, 1.5, 0.8);
   grow(sc, CK);
   return draw(sc, view, CHIEF9_CANVAS.ax, CHIEF9_CANVAS.ay, CHIEF9_CANVAS, undefined, ENEMY_RIM);
 }
