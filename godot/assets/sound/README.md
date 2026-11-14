@@ -1,0 +1,573 @@
+# The game's recorded sounds (the sound chat's)
+
+Shipped beside the game's page in `sounds/<mark>/` (tools/build.mjs: the mark is the hash of these files), fetched by
+engine/audio.ts once the sound has started. Until a file has come, or where it cannot (a page opened from a file), the
+sound made in code plays.
+
+- Combat (his “okay”, 6 Nov 2026, 22:21): swing, hit, crit, slam, monster_die, hurt; two takes each (`_1`, `_2`).
+- The heroes' voices (his “good”, 6 Nov 2026, 22:34): `<hero>_attack_a_1/2`, `_attack_b_1/2` (at first on about one attack in
+  three or four; since his pick of 9 Nov 2026, “About a quarter as often”, on one in fourteen and never within 4.8 s of the
+  last: engine/audio.ts VOICE_TUNE), `_hurt_a_1/2` (grunts over the hurt sound), `_hurt_b_1/2` (lines, rarely), `_death_1/2`. Men for the
+  Warrior, Ranger, Warlock and Brawler; women for the Mage and Tinkerer.
+- The title theme, `title.mp4` (his “Throw it in for now”, 6 Nov 2026, 23:15: a stand-in until he picks the final take):
+  from 0:00 once, then round between 94.024 s and 162.275 s for ever; let go of once the title screen closes.
+
+## Second batch: spells, enemies, bosses (the sound chat, 7 Nov 2026)
+
+His word on them, 7 Nov 2026, 09:34 Eastern, after the enemy voices page: “all good”. On the boss sounds, earlier that
+morning: “the sounds are good for now”. Each sound has two takes (`_1`, `_2`): one at random each time, tuned by
+PITCH_SPREAD, as the combat sounds. Made by the same chain as the combat sounds and as loud, so RECORDED_GAIN holds.
+Nothing here is wired in yet: the main chat maps them to the game's sounds.
+
+### Spells and skills (`<name>_1/2.mp3`)
+- New files for sounds the game already has (Sfx): `shot`, `nova`, `trapSet`, `trapBoom`, `fire`, `frost`, `zap`, `explode`,
+  `dodge`, `power`, `gust`, `leech`, `rune`, `shatter`, `thunder`, `wave`, `orbSet`, `beam`, `beamHum` (made to loop:
+  its end runs into its start), `whirl`, `familiar`, `familiarShot`, `volley`, `arrowLand`.
+- New, needing a sound of their own: `poison`, `warp`, `lunge`, `hellbolt` (today the game plays `shot`), `curse`,
+  `smokestep`, `rake`, `damning`, `vial`, `mortar`, `golemPunch`, `cannon`, `whistle`, the Brawler's `jab`, `haymaker`,
+  `hook`, `kick`, `heavyKick` and `punchWhoosh`, and the bow's `bowDraw` and `arrowHit`.
+
+### Enemy attacks (`atk<Kind>_1/2.mp3`), by family
+`atkBones` skeletons, champions, bone beasts, mites · `atkTroll` brutes, chieftains · `atkBat` · `atkDagger` dagger cultists ·
+`atkHex` cultists, priests, chanters casting · `atkShield` bonewards, guards · `atkSpirit` shades, shadows, reflections, the
+drowned · `atkBite` wolves, hounds · `atkRat` · `atkAntler` the twisted deer, the Stag · `atkVulture` · `atkSwan` · `atkMoth` ·
+`atkSting` cliff crawlers, scorpions · `atkLeech` leeches, eyespawn · `atkStone` rubblings, quarry golems · `atkSteel`
+footmen, guards, the King's knights · `atkSpear` · `atkCrossbow` · `atkFirepot` · `atkClub` the Hushed, the watch ·
+`atkInk` inklings · `atkBook` bookwardens.
+
+### Enemy voices (`<family>_aggro_1/2`, `_hurt_1/2`, `_death_1/2`)
+`aggro` once, as it first notices the hero; `hurt` on big hits only (crits, or one in a few), or it gets old fast; `death`
+as it dies, in place of `monsterDie`. Families: `bones` (skeletons and kin), `troll`, `bat`, `spirit`, `flesh` (the
+Ossuary Golem), `wolf`, `rat`, `deer` (the twisted deer), `vulture`, `swan`, `moth`, `bug` (crawlers, scorpions), `leech`
+(leeches, eyespawn), `stone` (rubblings, quarry golems), `devil` (dust devils), `ink` (inklings), `book` (bookwardens).
+Silent by design, given nothing: the Mute Hound, the Silent Order, the Hush shapes, the Hushed, the Hushed Watchman, the
+Rime Shade. The human enemies (cultists, guards, footmen, crossbowmen, firepot throwers) will talk: their voices come later.
+
+### Bosses
+- Those that roar, `<boss>_roar_1/2` (as the fight starts, in place of `bossRoar`), `_hurt_1/2` (big hits only),
+  `_death_1/2`: `chained` the Chained One, `stoker` the Stoker, `amalgam` the Ossuary Amalgamation, `unfinished` the
+  Unfinished, `cqueen` the Carrion Queen (kind 'queen'), `stag` the Hollow Stag, `eye` the Drowned Eye (made for his old
+  look: his fight is being redone, so his may change), `ratking` the Rat King.
+- The silent ones, the sound of what they do: `crier_slam` (his horn slammed down), `crier_shout` (the Silent Shout, air
+  through the horn), `crier_toll` (his bell); `palimpsest_slam`, `palimpsest_whirl`; `scraper_claw`; `quill_nib`;
+  `censor_stamp`, `censor_line` (the strike-through); `princess_vine`.
+- The bosses that talk wait for their voices.
+
+These 306 files come to about 5 MB: fetch a floor's enemies' and bosses' sounds as the floor is come into, not all at once.
+
+
+## Third batch: the silent bosses and enemies (the sound chat, 7 Nov 2026)
+
+His words, 7 Nov 2026: “I get that they’re supposed to be silent per the Hush but they should probably have SOMETHING
+anyway”; “Just a boss that makes no sound isn’t the best game design”; “The quill needs bird noises too”; “And the scraper
+should have gurgling and claw snapping”. Shown them, asked whether they go to the main chat, at 20:50 his pick: “Yes, hand
+them over (Recommended)”. No voices in them: breath, cloth, armour, ink, paper, fog, frost. Two takes each, as before.
+
+- The silent bosses, `<boss>_roar_1/2` (as the fight starts, in place of `bossRoar`), `_hurt_1/2` (big hits only),
+  `_death_1/2`: `crier` the Crier, `palimpsest` the Palimpsest, `scraper` the Scraper (ink gurgling, claws snapping),
+  `quill` the Quill (a heron's croak and wings; its death ends with the nib snapping), `censor` the Censor (his stamp
+  three times as he enters), `princess` the Princess (thorns, her steed). Their move sounds of the second batch stand.
+- New for the Quill: `quill_swoop_1/2`, the wingbeat of its swoop.
+- The silent enemies, `<family>_aggro_1/2`, `_hurt_1/2`, `_death_1/2`, as the other enemy voices: `hound` the Mute
+  Hound, `order` the Silent Order, `hshape` the Hush shapes (they come in on a breath played backwards), `hushed` the
+  Hushed, `watch` the Hushed Watchman, `rshade` the Rime Shade.
+## Fourth batch: the world sounds (the sound chat, 7 Nov 2026)
+
+His words, 7 Nov 2026: “Even the scene stuff like the wordsmith altar powering up or the armorer hammering his anvil in
+town. Or the owl in the rafters”; “Footsteps yes”. At 20:50, what first: “Everywhere + town (Recommended)”; the Hush
+floors: “Thin and muffled (Recommended)”. Shown them on try-out 9 (World Sounds), at 21:20 Eastern his pick: “All good,
+hand over (Recommended)”; of the background loops: “Keep the stitched ones (Recommended)”.
+
+Two takes of each sound (`_1`, `_2`), four of each footstep (`_1` to `_4`). Made by the same chain as the combat sounds,
+so RECORDED_GAIN holds; the menu sounds are a little quieter on purpose (click, equip, buy, deny), the footsteps and
+loops quieter still. Nothing is wired in. 102 mp3 (1.9 MB) and 6 loops as WAV (3.2 MB).
+
+### The game's own sounds, recorded (the synth still makes these today)
+Add each to RECORDED_SFX with its two takes. Names follow monsterDie → monster_die:
+`pickup`, `gold`, `word`, `rare`, `potion` (cork, gulps, a shimmer), `levelUp` → `level_up`, `portal`, `door`,
+`gateRise` → `gate_rise`, `gateFall` → `gate_fall`, `click`, `equip`, `buy`, `deny`, `imbue`, `death` (the hero
+falls), `echo` (a deep bell struck twice; the Cantor's, the Crier's and the King's ringing), `might`, `orb`,
+`bossRoar` → `boss_roar` (only for a boss with no `_roar` of its own).
+
+### New sounds the game hasn't got (new Sfx names)
+- Breaking props, by what they're made of, in place of the combat `hit`: `break_pottery` (urns, jars, pots),
+  `break_wood` (crates, barrels, baskets), `break_bone` (bone boxes, skull jars), `break_glass` (the Glass Gallery's
+  mirrors, bottles; in place of `shatter` there).
+- `chest`: coffers and strongboxes opening, in place of `rare` (keep `rare` for what drops out).
+- `rift_open`, `rift_close`: an enemy climbing up out of the floor (ARRIVALS) and the rift sealing behind it.
+- The dungeons' traps: `trap_plate` (the dart wall's plate stepped on: the click is the warning), `trap_darts` (the
+  three darts), `trap_spikes` (the spike floor coming up on its beat); `sealed_door` (struck with its word, breaking open).
+
+### Footsteps, `step_<ground>_1` to `_4`
+`stone` (the prison, the city, the keep), `wood` (floorboards, bridges, the wards), `earth` (the Pinewood, the
+gardens), `gravel` (the Quarry, the Ledge Road, Echo Canyon), `water` (the Fen, the Undercity's channels), `carpet`
+(the Masque, the Glass Gallery). One step each time a foot lands in the run; a take at random but never the same twice
+running, pitch spread as the combat sounds. They are 4 dB under the combat sounds already; play them at about half
+the volume of a hit again, or they wear on you. Try-out 9's Walk button plays them 0.42 s apart (water 0.55).
+
+### The town
+`anvil` (the armorer's hammer and its sparks), `owl_hoot` (now and then, from its beam; 20 to 40 s apart),
+`owl_ruffle` (it lifts and smooths its feathers), `crystal` (the mystic's crystal flaring under her hand),
+`rune_write` (the wordsmith writing a rune on the air), `rune_drive` (driving it into the ring), `ring_power` (the
+ring flaring up when the master rune-stone is given), `coin` (the stranger's coin toss).
+
+### Loops, `<name>_loop.wav`
+`fire_small_loop` (braziers, cressets, candles, heard as you pass), `fire_big_loop` (forges, furnaces, a fire across a
+way; the armorer's forge), `water_loop` (wells, channels, fountains), `ring_hum_loop` (the ring of runes burning, heard
+near it), `bed_hall_loop` (the castle hall's background: wind through the boarded windows, a far-off fire),
+`bed_camp_loop` (Act 2's camp inside the gate). WAV on purpose: mp3 and aac add silence at the ends, which clicks
+every time a loop comes round. 32 kHz mono, 8 to 10 s, end runs into start. Play with an AudioBufferSourceNode,
+`loop = true`; fade in and out over about a second. The fires, the water and the ring by distance (heard near them);
+the hall and the camp under the whole room. Already quiet (4 to 8 dB under the combat sounds); his pick was to keep
+them stitched, so the floors' loops will be made the same way.
+
+### The Hush floors (11 to 15): thin and muffled
+His pick. On those floors put the world's sounds (footsteps, scene sounds, loops) through a low-pass filter at about
+900 Hz (Q 0.5) and about two thirds of their volume: the switch on try-out 9 does exactly that. My suggestion is to keep
+the combat sounds and the voices clear there, so a fight still reads; try it both ways.
+
+### Made again
+The owl's ruffle and the potion were made a second time (the first ruffles were low thumps a phone can't play; the
+first potions only the cork). The click is one take cut two ways (the other came back as a hiss).
+
+## Fifth batch: the Swamp Colossus's entrance (the sound chat, 7 Nov 2026)
+
+Asked for by the art chat on the board (its 20:55: the roar from frame 117, the rumble from frame 18, the water pouring off
+him, the slime and spittle, the tentacles' bursts). His word in the sound chat: “Make them now (Recommended)”; shown them
+on try-out 10, “All good, hand over (Recommended)”. For floor 10's new fight (EYE2, the art chat's art/eye-redo).
+
+- `colossus_entrance_1/2`: his whole entrance as one sound, 9.8 s (the entrance's 270 frames, 9.0 s, then the last
+  splash dying away). Start it on frame 0 of his entrance and everything lands on the art's frames: the rumble from
+  frame 18, building; the water breaking at 38 and pouring off him; THE ROAR at 117 (3.90 s), the first frame his jaws
+  part, through his full gape, dying by 161; slime and spittle from 131; the swamp settling; a wet click as his eye
+  snaps open at 186; the three tentacles bursting up at 232, 237 and 242. One of the two takes at random.
+- The same sounds on their own, for his fight: `colossus_rise_1/2` (3.3 s, the rumble building), `colossus_pour_1/2`
+  (2.6 s), `colossus_roar_1/2` (his roar, 1.6 s), `colossus_slime_1/2`, `colossus_tentacle_1/2` (a tentacle bursting
+  up out of the water: for every phase's tentacles as they burst up).
+- The old `eye_roar`, `eye_hurt`, `eye_death` (second batch) were made for his old look. His fight's other sounds (the
+  slams, the waves, his hurt and his death) come once the art chat has drawn them.
+
+## Sixth batch: the ten new words (the sound chat, 9 Nov 2026)
+
+His words, 9 Nov 2026: what next, “Words, then the Colossus (Recommended)”. Shown them on try-out 11 (The Ten New
+Words), by 20:20 Eastern his pick: “All good, hand over (Recommended)”. Asked about the art chat's two small
+extras: “Both (Recommended)” (the Lexicon's page turn is here; the Colossus's ward hum is in the seventh batch).
+
+Two takes of each sound (`_1`, `_2`): one at random each time, pitch spread as the combat sounds. Made by the same chain
+as the combat sounds, so RECORDED_GAIN holds. Nothing is wired in. 52 mp3, about 1 MB.
+
+Each sound starts with its event: its big moment lands on the art chat's beat (its 13:45 and 19:01 posts of 9 Nov),
+so play it as the event is sent. Names are the art chat's events as it read them from your words7 and words10.
+
+### Piercing
+- `pierce_shot`: `pierceLine`, the bolt kindling (0.03 s) and zipping through what it pierces, bursting at the end.
+- `pierce_lance`: `lance`, light seeping along the crack (0 to 0.5 s), the spear slamming down at 0.5 s, the crack
+  cooling. About 2 s.
+
+### Bleeding
+- `bleed_open`: `bleedOn`, a wound opening, the spurt at 0.05 s. Also `heroBleed` (a monster's slash on him).
+- `bleed_thorns`: the thorns zone, the briars bursting up at 0.22 s.
+- `bleed_cut`: something walking in the briars, cut. 0.4 s, so it can repeat; no more than three a second.
+
+### Reaping
+- `reap_soul`: `reapSoul`, torn out at 0.15 s, streaking in, taken at 0.7 s.
+- `reap_spirit`: `spirit`, the little grey Shade rising (0.45 s). Its rising away at 6 s can use it again at half
+  volume, or nothing.
+- `reap_rake`: `spiritHit`, the Shade's claw rake.
+- `reap_rise`: `rise`, a corpse catching the enemy's fire at 0.2 s and lurching up by 1.0 s.
+
+### Culling
+- `cull_kill`: `culled`, a held hush, then the scythe's sweep at about 0.23 s. No thud of its own: the monster's own
+  death sound still plays after it.
+- `cull_mark`: the reaper zone taking one, flaring, its blade rising at 0.2 s, burning out.
+- `cull_kindle`: a monster's fire kindling when he is low (Culling on a monster).
+
+### Surging
+- `surge_wave`: `surge`, a flash at his feet and the ring running out (0.05, 0.42). Also out of his dodge.
+- `surge_warn`: a monster's warning ring (`surgeWarn`, or your usual warning ring), its beat quickening for 1.0 s.
+- `surge_foe`: that monster's wave, at the end of its warning.
+
+### Plundering
+- `plunder_spray`: `goldBurst` and `goldSpray`, coins spraying at 0.05 s and clinking down.
+- `plunder_stream`: gold arcing coin by coin into his purse, 0.1 to 1.0 s.
+- `plunder_steal`: `goldStolen`, coins snatched on hooks. The coins bursting out of it when it dies:
+  `plunder_spray`.
+
+### Mirroring
+- `mirror_swing`: his reflection's glass swing (the game's own swing, on the reflection).
+- `mirror_rise`: `mirrorCast`, the pane growing up (about 0.25 s); also `reflection`, his reflection forming, a little
+  softer.
+- `mirror_break`: the pane cracking and shattering.
+- `mirror_back`: `mirrorBack`, a monster cracking like a mirror, held 0.12 s, then the shards flying back into him.
+
+### The three, on top of the skill they change (3 to 4 dB quieter on purpose)
+- `word_lasting`: as Lasting extends something: a long shimmer, built in 0.3 s, lingering.
+- `word_fleeting`: Fleeting's quick rising flick.
+- `word_vast`: Vast's broad whoomph, the strike at 0.15 s, settling by 0.75 s. Also a monster's Vast warning, softer.
+
+### The Lexicon
+- `page_turn`: a soft page turn as a tab is tapped. As quiet as the menu sounds.
+
+### As wired (the ten words chat, 11 Nov 2026: game/word_sounds.ts has each sound's loudness and its least gap)
+Played by the rules as each event is sent (game/game.ts `wordRec`), behind `WORD_SOUNDS` (on). Where the game's moment
+is not the event's own:
+- `reap_rise` begins 1.0 s before the rules stand the monster up again (0.5 s after `rise` is sent, which is as it
+  dies): as its body begins to rise in its picture.
+- `cull_kill` on a cull in front, `cull_mark` on one taken by a reaper's mark (`culled` with `mark`). `cull_kindle`
+  once each time he comes under 35% of his life with an awake monster carrying Culling within 10 tiles.
+- `surge_warn` as a monster's surge lays its warning ring; `surge_foe` as that warning runs out and its wave lands.
+- `plunder_spray` on `goldSpray` (in front) and `goldBurst` (behind), and as a monster that dies carrying his gold
+  drops it; `plunder_stream` with `goldBurst`.
+- `mirror_rise` as the mirror's pane begins to grow up, which the picture decides (it waits till he has stepped clear
+  of where he stood: render/words7.ts `soundsW7`, played by main.ts); and, softer (0.7), as his reflection forms
+  (`reflection`), with `mirror_swing`. On `mirrorCast`: `mirror_swing`, then `mirror_break` 0.38 s after (the pane's
+  attack, then its cracking).
+- `word_lasting` and `word_fleeting` at a use of an ability carrying the word, where it has something to work on (it
+  makes something that lasts, lays poison, burning or bleeding, or gives a boost); `word_vast` on an area landed wider
+  by Vast in front and on Vast behind's splash (`vastSplash`), and softer (0.6) as a monster's warning is laid wider.
+- `reap_spirit` again at half volume as the Shade rises away.
+- `page_turn` as one of the Lexicon's tabs is tapped and its page turns (the menus' click until it has come).
+Packed apart (tools/sound_packs.mjs): the ten words' 50 files in `words-pack.mp3`, fetched a word at a time as it comes
+into play (main.ts `warmWords`); the page turn with the town's.
+
+## Seventh batch: the rest of the Swamp Colossus's fight (the sound chat, 9 Nov 2026)
+
+His words, 9 Nov 2026: “Words, then the Colossus (Recommended)”. Shown them on try-out 12 (The Swamp Colossus's
+Fight), by 20:20 Eastern his pick: “All good, hand over (Recommended)”; the ward's hum, the art chat's suggestion:
+“Both (Recommended)”.
+
+Two takes of each (`_1`, `_2`). Same chain as the combat sounds, so RECORDED_GAIN holds. 80 mp3, about 2.8 MB. Nothing
+is wired in. Frames are the art chat's, 30 a second, from the start of each move (its posts of 8 Nov 14:57, 18:44 and
+22:29; your 22:50 for his waking). This covers your 13:20 list: the tentacle and eye slams, the waves, his hurt, his
+death's burst and melt, and the rest. Every name starts `colossus_`; none clashes with the fifth batch's.
+
+### His set moves, whole: each sound laid on its frame, to play as one sound from frame 0, like his entrance
+- `colossus_wake`: from the hero's first step on the stone. Still water to 1.2 s, bubbling to a boil by 4.2 s, his
+  eye's glow from 3.4 s, his two tentacles bursting up at 4.2 s. 5.8 s. (In place of `colossus_rise` at his waking.)
+- `colossus_bile`: from frame 0 of the bile arc. His gullet heaving, the retch at 27, THE SPLASH AT 49 on the hero's
+  spot, the pool hissing to 3 s after. 4.7 s.
+- `colossus_gaze`: from frame 0 of the gaze. His eye rearing and fixing, THE BEAM ON AT 27, burning across, guttering
+  out by 72, the stone sizzling. 3.4 s. (The phase 3 gaze has the same beats: the same sound.)
+- `colossus_eyeslam`: from frame 0 of the eye slam. Rearing, THE SLAM AT 28, the eye lying there, dragged back from 66.
+  3.4 s.
+- `colossus_slide`: from frame 0 of his slide. Three lunges (4, 42, 78), THE GRIP AT 103, the three pillars kindling
+  (122, 127, 132). 5.8 s. Then `colossus_ward_on` at 132, on its own.
+- `colossus_death`: from the killing blow landing. His eye seizing (0 to 35), THE BURST AT 36, the thrash, his grip
+  tearing loose (from 58), HIS LAST ROAR AT 64 (the entrance's roar, in it: play no separate `colossus_roar` there),
+  the melt from 96 with his teeth dropping in, the sink from 176, the water boiling and still by 316. 10.5 s.
+
+### Each sound on its own, for whatever the set moves don't cover
+- His waking: `colossus_boil` (3 s, building to a boil), `colossus_glow` (his eye's glow rising, a low swell).
+- The tentacles: `colossus_tentacle_coil` (drawn back before a slam), `colossus_tentacle_slam` (on the stone, in place
+  of the game's own slam), `colossus_tentacle_drag` (dragged back after), `colossus_water_slam` (a water slam),
+  `colossus_tentacle_death` (one killed: thrashing, sinking). Each tentacle bursting up stays `colossus_tentacle`.
+- The water: `colossus_wave` (a wave rolling over the stone, 2 to 2.5 s), `colossus_wave_crash` (two meeting).
+- His body: `colossus_burst` (him bursting up: his shovel's burst, in place of `colossus_pour` there),
+  `colossus_growl` (his jaws flexing), `colossus_snap` (his snap, in place of `colossus_slime` there),
+  `colossus_tentacle_scrape` (the shovel's hooks scraping the stone), `colossus_smash` (each piece his first shovel
+  smashes: the far back column at 99, the drums 105, the back mossy stones 110, the near ones 133, the column by his
+  end 137).
+- The bile and gaze, in parts: `colossus_retch` (the heaving, the retch at 0.9 s, frame 27; in place of
+  `colossus_slime` there), `colossus_bile_splash` (at 49), `colossus_bile_pool` (2.6 s), `colossus_gaze_charge`
+  (0 to 26), `colossus_gaze_beam` (from 27).
+- Phase 3: `colossus_lunge`, `colossus_grip`, `colossus_pillar_kindle`, `colossus_ward_on` (his ward humming on, a
+  swell into a low hum, 1.5 s), `colossus_ward_ping` (a blow glancing off it), `colossus_pillar_set` (a ward-stone
+  piece set: the chime, the fire guttering over 30 frames), `colossus_pillar_topple` (on the 12th blow, toppling into
+  the water), `colossus_ward_break` (24 frames after the last pillar goes out), `colossus_bolt` (a siege bolt: play it
+  at frame 33, as it strikes), `colossus_eye_slam` (the slam alone, at 28; in place of `colossus_slime` there),
+  `colossus_eye_hurt` (his eye struck: his hurt).
+- His death, in parts: `colossus_death_seize` (1.2 s), `colossus_death_burst`, `colossus_death_melt` (3.3 s),
+  `colossus_death_sink` (2.5 s).
+
+### Made to fit
+The boil, the bile pool and the melt came back short, so each is stitched from both takes to fill its time, as his
+rise was. The sink is played a quarter slower: longer and deeper. His snap's second take is one take's click over the
+other's crunch.
+
+### As wired (the Colossus sounds chat, 11 Nov 2026; branch `colossus-sounds`; docs/requests/colossus_fight_sounds.md)
+Played by game/act1_rules/colossus.ts (`sounds`, `wardSounds`, `died`) and, for his pillars and his hurt, game/game.ts; fetched
+ahead with floor 10 (game/sound_families.ts COLOSSUS_SOUND_NAMES: only those the game plays, 28 sounds, 56 files).
+- The six set moves, each from its frame 0 at its own pitch and length: `colossus_wake` as the hero first steps onto the stone,
+  `colossus_bile` and `colossus_gaze` as their warnings are laid (the gaze in phases 2 and 3), `colossus_eyeslam` as its warning
+  is laid, `colossus_slide` as his slide begins (frame 24 of the change), `colossus_death` as the killing blow lands.
+- On their own: `colossus_tentacle_coil` as a slam's warning is laid (on the stone or on the water), `colossus_tentacle_slam` at
+  28, `colossus_tentacle_drag` at 42, `colossus_water_slam` and `colossus_wave` at a water slam's 28, `colossus_wave_crash` as two
+  waves meet, `colossus_tentacle_death` as one is killed; `colossus_burst` (with `colossus_roar`) at his shovel's burst,
+  `colossus_tentacle_scrape` 8 frames into each hook, `colossus_growl` as he twitches and `colossus_snap` 7 frames after;
+  `colossus_bolt` as a bolt strikes; `colossus_ward_on` 12 frames into phase 3 (frame 132 of his slide), `colossus_ward_ping` as
+  a blow is turned (no more than one each 0.45 s), `colossus_ward_break` 4 frames after the last pillar goes out (the art's 4 to
+  28: the sound is that long); `colossus_pillar_set`, `colossus_pillar_topple`; `colossus_eye_hurt` as his eye takes a big blow.
+- Still played from the fifth batch: `colossus_entrance`, `colossus_tentacle` (as his tentacles come back up after a shovel),
+  `colossus_roar` (at his shovel's burst), `colossus_pour` (as his slide begins: `colossus_slide` has no water in it).
+- No longer played: `colossus_rise`, `colossus_slime`, the game's own slam in his fight, the thunder as his pillars blaze, the old
+  `eye_hurt` and `eye_death`. The old `eye_roar` still plays as he is first come upon.
+- NOT PLAYED YET: `colossus_smash` (the pieces his first shovel smashes are not on the stone in the game). The parts that are
+  inside a set move (`colossus_boil`, `_glow`, `_retch`, `_bile_splash`, `_bile_pool`, `_gaze_charge`, `_gaze_beam`,
+  `_eye_slam`, `_lunge`, `_grip`, `_pillar_kindle`, `_death_seize`, `_death_burst`, `_death_melt`, `_death_sink`) are in the
+  files and not fetched.
+
+## Eighth batch: the floors' scene sounds, floors 1 to 20 (the sound chat, 9 Nov 2026)
+
+His word, 9 Nov 2026: “Scene sounds”. Shown them on try-out 13 (The Floors' Sounds), by 21:10 Eastern his pick:
+“All good, hand over (Recommended)”; the loops: “They're fine (Recommended)”.
+
+Two takes of each one-shot (`_1`, `_2`), mp3, the same chain as the combat sounds, so RECORDED_GAIN holds. One
+background loop per floor (`bed_f<n>_loop.wav`) and two more loops (`furnace_loop.wav`, `pillar_fire_loop.wav`): WAV at
+32 kHz, as the fourth batch's loops, because mp3 adds silence at the ends and that clicks in a loop. 82 mp3 and 22 WAV,
+about 17 MB. No name clashes with the earlier batches.
+
+WIRED IN (11 Nov 2026, the branch `sound/scene-wiring`, off work-f5; not yet in the released game): `src/game/scene_sounds.ts`
+says which floor plays which and where each is asked for; `docs/sound/scene_sounds_wiring.md` is the account of it.
+
+### The backgrounds: one loop per floor, played under it, quiet
+Each is 10 s round (the furnace and the pillars 8 s) and comes round with no seam. They are mixed quiet (about 4 to 8 dB
+under the combat), so play them at full volume. One floor's loop at a time; cross-fade between floors.
+- Floors 1 to 5, the prison: `bed_f1` (still crypt air, slow drips, a far door), `bed_f2` (wind through the scaffold, a
+  rope creaking), `bed_f3` (chains clinking, the furnace rumbling through the walls), `bed_f4` (mine timbers creaking,
+  bones settling), `bed_f5` (a low wet pulse, six beats a loop, his fire hissing).
+- Floors 6 to 10, the wilds: `bed_f6` (the Quarry: wind, a chisel far off striking in threes, the crane creaking),
+  `bed_f7` (the Ledge Road: high wind, vultures far off), `bed_f8` (Echo Canyon: wind down the gorge, a rockfall echoing
+  once), `bed_f9` (the Pinewood: birds, wind in the pines), `bed_f10` (the Sunken Fen: frogs, insects, the bog).
+- Floors 11 to 15, the Hush: `bed_f11` (the Gate Ward: an empty square, wind, the heavy quiet), `bed_f12` (the Undercity:
+  running water), `bed_f13` (the Millrace: the wheel churning, the stamping mill thumping), `bed_f14` (the House of
+  Quiet: the ward's creaks, a coal stove ticking), `bed_f15` (the Great Library: a vast still room, pages stirring).
+- Floors 16 to 20, the court: `bed_f16` (the Swan Gardens: birdsong, a breeze in the roses, the lake), `bed_f17` (the
+  Masque: an empty ballroom, the big clock ticking once a second), `bed_f18` (the Glass Gallery: glass faintly ringing),
+  `bed_f19` (the Keep: wind on the battlements, banners snapping), `bed_f20` (the Quiet Tower: high wind, guttering
+  candles).
+- `furnace_loop`: the Stoker's furnace on floor 3, heard near it while it burns. `pillar_fire_loop`: the Colossus's
+  pillars burning on floor 10 (the siege magic, phase 3), heard near each while it burns.
+
+The Hush floors (11 to 15): your plan stands, everything there through the game's muffling filter, a little quieter
+(“Thin and muffled”, his pick, 7 Nov). These sounds are made full; the filter does the rest.
+
+### The moments: each made whole, to play once from the moment's frame 0
+Every part sits on the art chat's frame (30 a second, from its floor READMEs), so play the sound as the moment starts
+and it lands on the jolts. Named as the moments are in the code.
+- Floor 1: `f1_stone` (“dust and a falling stone”, 2.8 s: grit pouring, strikes at 27 and 51), `f1_rats` (“rats bolt”,
+  1.9 s: freezing at 3, bolting at 10), `f1_candles` (“a candle gutters out”, 2 s: the draught, out at 12, 17 and 22).
+- Floor 2: `f2_ravens` (“the ravens take flight”, 2.7 s: heads up at 5, the burst 9 to 13), `f2_bell` (“the bell
+  tolls”, 4.9 s: strikes at 49, 76, 100, then dying away), `f2_gibbet` (“the gibbet swings”, 3.1 s: jolts at 2 and 10,
+  the skull at 20, swinging on).
+- Floor 3: `f3_chains` (“the chains pull”, 2.2 s: hauls at 8 and 17, the rip at 26, slaps at 34 and 41), `f3_bars` (“the
+  bars shake”, 2.17 s: heaves at 11, 20, 30, a pin pinging away), `f3_ball` (“the ball falls”, 2.73 s: the lurch at 14,
+  the smash at 23, the bounce at 33, rolling away).
+- Floor 4: `f4_wall` (“the skull wall spills”, 5.6 s: bulging, jolts at 32, 43, 50, 61, at rest by 96), `f4_cart` (“the
+  cart runs”, 6.3 s: rolling from 22, the crash at 66, landing at 82, a wheel rolling away, flat by 147), `f4_bones` (“the
+  bones stir”, 5.7 s: the burst at 42, slams at 55 and 79, the upper arm landing at 106).
+- Floor 5: `f5_roof` (“the roof comes in”, 5.67 s: the props groaning, the snap at 44, the slab at 69, the last rock at
+  122), `f5_winch` (“the winch runs wild”, 4.3 s: the brake slipping at 26, the drum spinning, the far crash at 58, the
+  lever at 66), `f5_rift` (“the rift breathes”, 5 s: heaves at 36 and 70, roaring to 104, sunk by 134).
+- Floor 11: `f11_pigeons` (“the pigeons burst off a roof”, 2.5 s: up within 6 frames).
+- Floor 12: `f12_surge` (“the surge”, 3.8 s: the rattle, the flap flung up at 8, the torrent and the wave, the flap
+  clanking shut at 91).
+- Floor 13: `f13_whirl` (“the whirl of pages”, 5.6 s: the gust, the whirl up from 10, full by 26, falling apart at 74,
+  the sheets fluttering down).
+- Floor 14: `f14_screen` (“the screen falls”, 3.2 s: rocking, the crash at 56, settled by 70). Its README says it makes
+  no sound in the House of Quiet; his Hush rule is thin and muffled, so it has one, through the filter.
+- Floor 15: `f15_chandelier` (“the chandelier falls”, 4.3 s: the chain creaking, the link giving at 26, the snap at 52,
+  the crash at 63, still by 92).
+
+### The quest pieces, the traps and the rest: one-shots for the game to time
+- Floor 3, the Stoker's quest: `crank_gear` (the gear set into the crank), `crank_turn` (one turn of the crank: play it
+  for each turn), `furnace_out` (the furnace dying out as the crank is turned, 2.5 to 4 s), `gate_fire_out` (the fire
+  across the Chained One's gateway going out).
+- Floor 5, the mine shaft's cage: `cage_down` (4.3 s: it plunges at frame 32, slams onto its catches at 50, bounces at
+  60, the gate opening over the last 17 frames), `cage_up` (3.37 s: the gate slams at 10, it lurches at 30, gone by 64).
+  Frames as the art chat's floor 5 README; play from the ride's frame 0.
+- Floor 7: `ledge_crumble` (rock giving way under the hero), `eyrie_wind` (the eyrie's edge: the wind swelling as the
+  picture pans out over the drop, 3.6 s, at its height at 2.2 s).
+- Floor 8: `singing_stones` (a low hum as you pass one, about 2 to 2.6 s).
+- Floor 10: `bog_step` (stepping into the sucking bog).
+- Every stronghold, 6 to 10: `altar_word` (a word set into the altar of the words: the clunk, then the chime),
+  `seal_burn` (the door's seal burning away as the stronghold opens).
+- Every Hush floor: `bell_ring` (a hit at one of the bells, ringing out, 4 s; in place of the portal sound there),
+  `bell_muffled` (the Muffled Bell struck as the Hush starts: a dead clunk).
+- Floor 16: `nettle` (walking through a nettle bed). Floor 17: `clock_chime` (the ebony clock's chime as every dancer
+  stops dead, 4.2 s; in place of the placeholder echo). Floor 18: `mirror_crack` (a blow lands near a mirror),
+  `skylight` (the skylight trap falling). Floor 19: `portcullis` (slamming down across a hall, its chain falling first,
+  so the slam lands at about 0.5 s), `pitch_pour` (the murder hole's trap), `songbird` (the clockwork songbird singing
+  as the King dies and running down, 3.1 to 3.5 s).
+
+### Made to fit
+The takes came back 0.5 to 3 seconds long. Each loop is stitched from short stretches of its takes, its end running
+into its start; the Quarry's chisel, the Masque's clock and floor 5's pulse are laid in on a beat. Where a take didn't
+have what a moment needed, another take from this batch stands in: the ravens' wings are the pigeons' slowed down, the
+cart rolls on the iron ball's roll, the floor 1 stone strikes are the ledge's rock, the bells and the clock ring on a
+little longer than their takes did.
+
+## Ninth batch: the Shaft's Rim, the Endless town's own sounds (the sound chat, 12 Nov 2026)
+
+His word, 12 Nov 2026, asked about 10:05 Eastern whether the town should have sounds of its own: “Yes, make them
+(Recommended)”. Shown them on try-out 14 (Wordsmith Unique & Rim Sounds, https://claude.ai/artifact/2nRWUUX6xjbcFKqw1no2ka),
+about 10:45 his word: “It good, kinda loud but I’m sure it’ll be evened out in the mix for game”. So the three loops here
+are 3 dB under the try-out's. Seven files, nothing wired in, no name clashes with the earlier batches. Made and levelled as
+the floors' scene sounds (the eighth batch), so RECORDED_GAIN holds.
+
+### The loops: WAV at 32 kHz, as the fourth and eighth batches' (mp3 adds silence at the ends, which clicks in a loop)
+Each comes round with no seam. They go in `loopWants` (src/game/world_sounds.ts), where its note says the rim's own sounds
+are the sound chat's to make (`L.rim`).
+- `rim_rumble_loop.wav` (10.4 s): the shaft, always on in the town: its far low rumble and the fire roaring far below.
+  Mixed quiet, like the floors' backgrounds, so play it at full volume (`out.rim_rumble = 1`). It swells with the far
+  fire's glow (art/shaft_rim.ts `pitGlowAt`: 0.62 + 0.3 sin²(2πt / 2.6), a swell every 1.3 s), eight swells to the loop,
+  at its quietest at the loop's start. To keep it in step with the glow, start it at offset (t mod 10.4) on the clock
+  `pitGlowAt` is given; `setLoops` starts every loop at 0, so that is an offset there. Out of step it still sounds right.
+- `rim_draught_loop.wav` (8 s): the cold air coming up out of the shaft, louder at the brink (the art chat's list). My
+  suggestion: by his distance from the brink, `Math.abs(Math.hypot(x - RIM.cx, y - RIM.cy) - RIM.pit)` (art/shaft_rim.ts
+  `RIM`), at 0.25 + 0.75 × `byNearness(d, 1, 7)`, so it is never quite gone in this town.
+- `rim_torch_loop.wav` (8 s): one of the four torches on posts round the shaft (`rimPieces()` of kind `'torch'`,
+  art/shaft_props.ts; not `shaftTorches()`, which are the ones down in the pit). The nearest heard, as the braziers'
+  `fire_small`: 0.55 × `byNearness(d, 1.5, 7)`. The braziers keep the game's own `fire_small`.
+
+### The one-shots: two takes each, mp3, one at random each time
+- `notch` (`notch_1` 2.2 s, `notch_2` 1.9 s): a notch cut in the record stone, on the event `{ t: 'notch', x, y, n, cut }`
+  as he comes home (Game.comeToRim). Take 1: three chisel strikes, then a faint ring as the notch glows. Take 2: two
+  strikes, the second ringing. Play it once even when several notches are cut at once.
+- `trophy_hang` (`trophy_hang_1` 1.6 s, `trophy_hang_2` 1.5 s): a trophy hung on its mount, iron onto the hook, then a dull
+  knock against the wall. For later: the mounts stay empty until the tablet's quarters are built
+  (build-endless-tablet-and-final-boss).
+- A word set in one of the gate's three sockets keeps the game's own sound for a word set on the gate (the art chat's list).
+
+### The unique drop: no new sound, his pick
+The queue's make-unique-drop-sound (his words to the Uniques art chat, 11 Nov: “We need a new sound for when I unique drops”)
+was made as two ideas and shown on try-out 14 beside what plays today. His pick, 12 Nov, about 10:50: “Keep today's rare
+chime” (offered as: no new sound; every unique plays what a boss's unique plays now). And for picking one up: “Keep the rare
+chime (Recommended)”. So no files for it here. For the main chat: as built (behind UNIQUES), only a boss's own unique plays `rare`
+as it lands (Game.dropBossUnique); a unique of the pool (poolUnique, through rollGear) lands with no sound. To follow his pick,
+play `this.sfx('rare', 0.9)` as any unique lands. The stranger's gamble already plays `rare` as one is bought.
+
+## Tenth batch: Act 1's level music, the town and floors 1 to 5, looped (the sound chat, 12 Nov 2026)
+
+His six songs, made by him in Suno from the sound chat's briefs (the doc "Wordsmith Level Music Briefs"), sent 12 Nov 2026,
+14:51 Eastern: “That’s all the tracks for the first five levels and the town”. Cut into loops and shown on try-out 15
+(Wordsmith Act 1 Music, https://claude.ai/artifact/DBwbacoNiM2Zfw4LmtT7gX), his pick: “All good, hand over (Recommended)”.
+Eleven files, nothing wired in, no name clashes. The game has no level music yet: playing them, and the switch between walk and
+fight, is the main chat's to build (the briefs doc: “The main chat builds the switch between walk and fight”).
+
+### The files: AAC in mp4, 48 kHz stereo, as the title theme (`title.mp4`)
+Each is one loop and then its first 2 s again (a guard, so the decoder's padding at the file's end is never reached). Play each
+as `titleMusic` plays the title: the decoded buffer, `loop = true`, `loopStart = 0`, `loopEnd` = its loop length below (to the
+sample, at 48 kHz). Every join was checked in the browser's own decode of these files, looped: no seam.
+
+| Place | File | Loop length (s) | Fight in at (s) | From his song |
+|---|---|---|---|---|
+| The town | `music_town_walk.mp4` | 36.9299 | | “Prison Town” 0:56 to 1:33 |
+| Floor 1, the Warden's Tomb | `music_f1_walk.mp4` | 21.1096 | | “Warden's Quarters” 0:30 to 0:52 |
+| | `music_f1_fight.mp4` | 34.2715 | 0.822 | 2:38 to 3:12 |
+| Floor 2, the Headsman's Yard | `music_f2_walk.mp4` | 23.9810 | | “Headman's Yard” 0:58 to 1:22 |
+| | `music_f2_fight.mp4` | 27.6495 | 0.011 | 1:48 to 2:16 |
+| Floor 3, the Chained One's Pit | `music_f3_walk.mp4` | 29.4062 | | “Chained One's Furnace” 0:14 to 0:44 |
+| | `music_f3_fight.mp4` | 30.0115 | 0.945 | 0:43 to 1:13 |
+| Floor 4, the Ossuary | `music_f4_walk.mp4` | 29.9445 | | “Ossuary” 0:41 to 1:11 |
+| | `music_f4_fight.mp4` | 35.1143 | 0.006 | 2:36 to 3:12 |
+| Floor 5, the Fleshmancer's Lair | `music_f5_walk.mp4` | 27.9472 | | “Fleshmancer's Temple” 1:03 to 1:31 |
+| | `music_f5_fight.mp4` | 31.4438 | 0.497 | 2:50 to 3:22 |
+
+Loudness (EBU R128): the town -20 LUFS, the walks -19, the fights -17 (2 LU over their walk, so a fight comes in bigger); the
+title theme is -16, played at `TITLE.vol` 0.8. One music volume for all of them, set against the combat sounds on a phone.
+
+### How try-out 15 plays them, which he heard and said yes to
+- THE WALK: on coming onto the floor (or into the town), from 0, faded in over 0.6 s, round for as long as he is there.
+- A FIGHT STARTS: the fight's buffer started at its “Fight in at” point (its first big hit) at full volume at once, and the walk
+  faded to 0 over 0.6 s but kept running, silent.
+- THE FIGHT IS OVER: the fight faded out over 1.5 s and stopped; the walk faded back up over 1.5 s, where it had got to.
+- The town has only a walk. For now each floor's fight is its boss's music too (the briefs doc).
+
+What counts as a fight starting and ending is the main chat's call. My suggestion: it starts when an enemy first sees him, and is
+over a few seconds after the last enemy near him has died or lost him, so the music doesn't flip back and forth in a running
+fight.
+
+### Memory
+Decoded, a loop is about 8 to 14 MB (stereo, 32-bit, 48 kHz); a floor's walk and fight together about 20 to 25 MB. Fetch a
+floor's two as it is entered and let them go as it is left, as the title theme is let go when the title screen closes.
+
+### Made to fit
+Suno's songs drift in tempo a little (up to 3% over a song), so each loop's end was found by matching the music just before it
+with the music just before its start, then aligned to the sample on the waveform; its last 80 ms are crossfaded into the audio just
+before the start. Floor 3's walk is two whole phrases of its machine groove, each ending on the song's own one-second stop; its
+synth break at 1:30 (a held drone and two big hits) is not a groove, so it was not used. On a phone speaker floor 3 loses the
+most (about 9 dB, most of it low synth bass); the rest lose 4 to 6.
+
+## Eleventh batch: steady backgrounds, their standout sounds played at random (the sound chat, 12 Nov 2026)
+
+His words to the sound chat, 12 Nov 2026, from 17:59 Eastern: “there is a sound effect in the town im hearing way too often”,
+“the swap sounds are repeating way too often as well in area 10”, “its like a rustling sound in the town”. Found: every
+background loop below was 8 or 10 s round with sounds in it that stand out (the castle hall's far fire crackling, the Fen's
+frogs croaking on a beat, floor 1's drips, floor 4's timbers ...), so each came back on the same beat every pass. Asked how to fix
+it: “Steady loops, sounds at random (Recommended)”; and the other loops like it: “Yes, all of them (Recommended)”. Shown on
+try-out 16 (Wordsmith Steady Backgrounds, https://claude.ai/artifact/Mc84z3Q37xmQKym4nJBVDx), before and after: “All good, hand
+over (Recommended)”.
+
+### 13 loops, replacing the files of the same name (WAV at 32 kHz, as before; the same volumes as now)
+`bed_hall_loop.wav`, `bed_camp_loop.wav`, `fire_small_loop.wav`, `water_loop.wav` (the fourth batch's) and `bed_f1_loop.wav`,
+`bed_f2_loop.wav`, `bed_f3_loop.wav`, `bed_f4_loop.wav`, `bed_f6_loop.wav`, `bed_f7_loop.wav`, `bed_f8_loop.wav`,
+`bed_f10_loop.wav`, `bed_f14_loop.wav` (the eighth batch's). The same place's background with nothing in it that stands out: the
+takes' steady parts stitched in short random pieces, three layers deep, so nothing comes round on a beat; the same length and
+loudness as before, so `loopWants` stays as it is. Floor 10's is a new take: the insects' drone, made without frogs. Floors 5, 13
+and 17 keep their beat (the pulse, the mill, the clock); the other floors had nothing in them that stood out: not touched.
+
+### 13 sounds to play now and then at random (two takes each, mp3, through `worldSound`, which picks a take and its pitch)
+Each is one of the sounds that stood out in its loop, levelled so that at the volume below it is as loud as it was in the loop.
+Each has its own countdown, as the owl's hoot (`OWL_HOOT`, main.ts): when it runs out, play the sound and set the countdown again
+at random between the two times; the first one, too, at random between them, from coming onto the floor or into the town.
+
+| Where | Sound | Every (s, at random) | Volume | What |
+|---|---|---|---|---|
+| The castle hall (as `bed_hall`) | `amb_hall` | 8 to 20 | 1.78 | the far fire crackling |
+| The camp (as `bed_camp`) | `amb_camp` | 8 to 20 | 1.42 | its fire crackling |
+| Near a brazier (as `fire_small`) | `fire_pop` | 3 to 9 | 2.15 × the nearest brazier's nearness, `byNearness(d, 1.5, 7)` | a pop |
+| Floor 1 | `amb_f1` | 5 to 15 | 1 | a drip, or a far door |
+| Floor 2 | `amb_f2` | 8 to 20 | 1 | the rope creaking |
+| Floor 3 | `amb_f3` | 6 to 16 | 1 | chains clinking |
+| Floor 4 | `amb_f4` | 8 to 20 | 1.13 | a timber creaking, or bones settling |
+| Floor 6 | `amb_f6` | 10 to 24 | 1 | the far chisel striking three times, or rubble |
+| Floor 7 | `amb_f7` | 10 to 25 | 1 | a vulture far off |
+| Floor 8 | `amb_f8` | 25 to 50 | 1 | a rockfall echoing down the gorge |
+| Floor 10 | `amb_f10` | 3 to 10 | 2.36 | a frog |
+| Floor 10 | `amb_f10_bog` | 6 to 15 | 1.16 | the bog bubbling |
+| Floor 14 | `amb_f14` | 8 to 20 | 1.28 | the ward creaking |
+
+The volumes are `worldSound`'s (it plays a take at half, RECORDED_GAIN): the hall's and the camp's are their loop's 0.45 × 3.96 and
+× 3.15, the brazier's its loop's 0.55 × 3.91, because those crackles are sharp and their files had to stay under full scale. Floor
+14 is a Hush floor: its sound goes through the muffling with everything else. None at the Shaft's Rim (its own sounds are steady
+already) or in a fight's set moves.
+
+Try-out 16 plays them so (the first one there comes a little sooner, so it is heard). Made from the earlier batches' own takes, but
+floor 10's new drone (34 credits). Nothing is wired in.
+
+## Twelfth batch: the eight melds' sounds (the sound chat, 12 Nov 2026)
+
+His ask, 12 Nov 2026, 20:18 Eastern: “Need sounds for the new melds.  It's in the queue” (the queue's
+make-sounds-for-eight-melds). Shown them on try-out 17 (Wordsmith Eight Melds, https://claude.ai/artifact/SAWrZdpzaPiaejzAVggVx8),
+the art chat's film of the eight at work with each sound played on its event: “All good, hand over (Recommended)”.
+
+Two takes of each sound (`_1`, `_2`), through `worldSound`, which picks a take and its pitch. Made by the same chain as the
+combat sounds, so RECORDED_GAIN holds. Nothing is wired in. 20 mp3, about 430 KB.
+
+### Which sound for which moment
+Each plays as the rules send its look's event (`{ t: 'meld8', id, ... }`, src/render/melds8.ts on art/melds8-looks), from its
+start: its big moment is built in on the look's own beat (M8_LOOK), so nothing needs delaying.
+
+| Event | Sound | Its beats (s from the event) |
+|---|---|---|
+| `siphon` (a tick of his poison that heals him) | `meld_siphon` | venom squeezed out 0, drawn off to him, the pulse on him at 0.44 (the beads' flight × 0.8). About 0.95 s. |
+| `cauterize` (a burning one killed) | `meld_cauterize` | the flash 0, its fire torn off 0.16, thrown at him 0.42, the brand at 0.78 (flash + tear + fly), steam. 1.9 s. |
+| `forking` (a hit's arc) | `meld_forking` | the bolt 0, its fork 0.12, the after-image 0.3. 0.6 s. |
+| `shiver` (a critical hit that freezes) | `meld_shiver` | the cross-hairs' click 0, the white crack and the needles 0.14, mist. 1.4 s. |
+| `sunder` (one stunned by a Sunder hit) | `meld_sunder` | the blow's thud 0, the crack splitting 0.05 to 0.5, embers. 1.45 s. |
+| `sunder`, `what: 'hit'` (a blow on one sundered) | `meld_sunder_hit` | the crack flaring, chips. 0.45 s. |
+| `fervor` (a kill), `n` under `most` | `meld_fervor` | the embers streaming in 0 to 0.4, flames catching at his feet at 0.4. 1.3 s. |
+| `fervor`, `n === most` (the fifth) | `meld_fervor_flare` | in place of `meld_fervor`: a whoomp, the flare at 0.5. 1.4 s. |
+| `rimeward` (a blow he blocked) | `meld_rimeward` | the pane of rime 0, its shatter at 0.22 (the pane × 0.7), a cold breath 0.75. 1.3 s. |
+| `implode` (a hit that will burst) | `meld_implode` | the pull 0 to 0.4, the burst at 0.4. Play it as the hit lands: the burst is built in at the rules' `wait` (0.4); if `wait` changes, ask the sound chat for a new cut. 1.35 s. |
+
+### How loud
+`worldSound(name, 1)` in front (`k` 1); behind (`k` MELD8_TUNE.behind, 0.5) at 0.6: `worldSound(name, k < 1 ? 0.6 : 1)`, as try-out 17
+plays them.
+
+### How often
+Siphon comes on every tick of his poison and Forking on every hit, so they are the quietest (made 4 to 5 dB under the loudest) and
+short. Even so, give Siphon at most one every 0.5 s (the film's ticks are 0.55 apart), and Forking at most four a second; the others
+come seldom enough as they are.
+
+Wired in by the main chat for 25.3.17 (13 Nov 2026): game/meld8_sounds.ts.

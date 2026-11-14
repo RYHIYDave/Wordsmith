@@ -1,0 +1,5 @@
+heroes=1232d77721dc
+monsters=fe60947db695
+sounds=c2516687bc3e
+colossus=f133999cbf23
+townsfolk=d4c898fe370d
