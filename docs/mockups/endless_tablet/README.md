@@ -707,3 +707,19 @@ frame from the live heroes' bake (1fdc8d09059a), for size.
   `key_shard_named.png`). Made by `tools/scenarios/endless_key_look.mjs`; tested by `tests/endless_key.test.ts`.
 - HIS WORDS, 14 Nov 2026, shown the first pictures: “The fleshmancer’s quarter is not good.  Let’s try to name it something not so
   on the nose”; asked by pop-up what to call them, his pick: “Tablet Shard” (the same for all four; the count says SHARD n / 4).
+- HIS PICK, 14 Nov 2026, by pop-up, shown the shards renamed: “Yes, on to stage 2 (Recommended)”.
+- STAGE 2, THE ARENA AND HIS FIRST PHASE, 14 Nov 2026 (behind the same switch): THE BOTTOM OF THE SHAFT (`src/game/final_arena.ts`,
+  its look `src/art/final_arena.ts` and `src/render/final_arena.ts`): round as the shaft is, 16 tiles across, the shaft's stone in
+  rings about his seal in the middle (cut in four as the tablet is, its seams burning faintly with his pink), the shaft's wall
+  rising round the back; he comes down in the portal's light (the friend's cyan); the warped wordsmith on his boar across the floor,
+  waking as he comes near or a moment after. An endless level to the rest of the game (its strength the endless level reached,
+  a death there the hero's end); saved there, he is back at the Rim, the landing still open. HIS FIRST PHASE
+  (`src/game/act1_rules/wsboss.ts`, drawn by `src/render/act1_fx/wsboss.ts`, his pictures `src/art/act1_figs/wsboss.ts` from his
+  four sides, never mirrored): the boar's moves and his words take turns, each drawn at random from those that fit, none twice
+  running (the charge's two or three runs, wheeling round between, each faster, then winded; the gore if close; the stomp's rings);
+  his five words (the hammer on his shadow three times; the meteors onto their marks, burning where they fell; the ice in five
+  lines, the floor frozen behind; the orb drifting after him, zapping, bursting; the spore traps); never two of his words' floors
+  at once; every warning before it can hurt, in the bosses' ground-warning pink. His life is held at half until stage 3. Tested by
+  `tests/final_fight.test.ts`; pictures from the game `pictures/build/fight_phase1.mp4`, `fight_phase1_stills.png`, made by
+  `tools/scenarios/final_fight_look.mjs`. THE NUMBERS (`WS_TUNE`, his life and blows in game/defs.ts) are the main chat's to tune:
+  at the endless levels his strength is the endless level's, as every monster's there is.
