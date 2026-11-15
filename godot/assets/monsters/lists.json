@@ -1510,6 +1510,84 @@
    }
   ]
  },
+ "warchief": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 6
+   },
+   {
+    "name": "walk",
+    "fps": 12
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "slam",
+    "fps": 30
+   },
+   {
+    "name": "warcry",
+    "fps": 30
+   },
+   {
+    "name": "rush",
+    "fps": 30
+   }
+  ]
+ },
+ "mistwolf": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 6
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "claw",
+    "fps": 30
+   },
+   {
+    "name": "howl",
+    "fps": 30
+   },
+   {
+    "name": "lunge",
+    "fps": 30
+   },
+   {
+    "name": "cloud",
+    "fps": 30
+   }
+  ]
+ },
  "hushed": {
   "sides": 2,
   "lists": [

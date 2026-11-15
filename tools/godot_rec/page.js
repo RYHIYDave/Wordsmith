@@ -818,7 +818,8 @@
       const s = REC.srcs[id];
       const k = dens.get(id) === 1 ? 2 : 1;
       return { id, w: s.width * k, h: s.height * k, k };
-    }).sort((a, b) => b.h - a.h || b.w - a.w);
+      // (a picture of no width or no height has nothing in it to draw: none is put on a sheet, and what drew it draws nothing)
+    }).filter((s) => s.w > 0 && s.h > 0).sort((a, b) => b.h - a.h || b.w - a.w);
     const pages = [];
     let page = null;
     const place = new Map();
