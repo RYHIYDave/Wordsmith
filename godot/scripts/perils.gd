@@ -20,9 +20,14 @@ const BL3 := Color("#a81c2c")
 const BL4 := Color("#e03c44")
 const BL5 := Color("#ff8a80")
 ## (art/mkit.ts FLAME[2], FLAME[3]: the enemy's pink and its gold, of the bosses' dotted marks)
+const FLAME0 := Color("#7a1058")
 const FLAME2 := Color("#ff4f8a")
 const FLAME3 := Color("#ffb070")
 var _air: Node2D
+## (the screen's own clock, for marks whose dots run: seconds)
+var _clock := 0.0
+## (the Chained One's hook or ball in flight, a picture among what stands: by whose it is)
+var _flung := {}
 const GOLD := Color(1.0, 0.78, 0.35)
 const SHADOW := Color(0.02, 0.02, 0.07)
 
@@ -155,12 +160,14 @@ func _film_frame(name: String, t: float) -> int:
 
 
 ## A picture of a film's layer, by its number in it, drawn with its floor point at `at` (picture pixels) on `c`.
-func _film_pic(c: CanvasItem, name: String, layer: String, i: int, at: Vector2) -> void:
+func _film_pic(c: CanvasItem, name: String, layer: String, i: int, at: Vector2, flip := false) -> void:
 	var L: Array = _fx["films"][name]["layers"].get(layer, [])
 	if i < 0 or i >= L.size() or int(L[i]) < 0:
 		return
 	var q: Array = _fx["pics"][int(L[i])]
-	c.draw_texture_rect_region(_fx_sheets[int(q[0])], Rect2(at + Vector2(q[5], q[6]), Vector2(q[3], q[4])), Rect2(q[1], q[2], q[3], q[4]))
+	# (`flip`: mirrored about its floor point, as the game turns a picture over: a rect of less than no width draws it so)
+	var r := Rect2(at.x - float(q[5]), at.y + float(q[6]), -float(q[3]), float(q[4])) if flip else Rect2(at + Vector2(q[5], q[6]), Vector2(q[3], q[4]))
+	c.draw_texture_rect_region(_fx_sheets[int(q[0])], r, Rect2(q[1], q[2], q[3], q[4]))
 
 
 ## A film's floor layer at its frame, drawn at a place on the floor (in _draw: under the figures).
@@ -314,6 +321,13 @@ func _dot_line(a: Vector2, b: Vector2, k: float) -> void:
 ## WHAT IS OVER EVERYTHING THAT STANDS (render/act1_fx `air`): drawn on a layer of its own over the figures, under the dark.
 func _draw_air(c: CanvasItem) -> void:
 	for p in list:
+		if p["kind"] == "co_flung" and has_film("co_hook_front"):
+			# (the chain out from his hand to his hook or his ball, over what stands: render/bossfx.ts air, drawChainOut)
+			var h: Vector2 = p["hand"]
+			var e: Vector2 = p["at"]
+			var ball: bool = p["what"] == "ball"
+			var sag := (8.0 if ball else 6.0) if p["flying"] else (2.0 if ball else 1.0)
+			_chain_out(c, Iso.to_screen(h.x, h.y) / 2.0 - Vector2(0, float(p["hand_high"])), Iso.to_screen(e.x, e.y) / 2.0 - Vector2(0, float(p["high"])), sag)
 		if p["kind"] == "am_drop" and has_film("am_skull"):
 			# (the skull in flight, out of its niche and down onto its shadow, tumbling: art/amalgam_action_fx.ts dropAt)
 			var n: Dictionary = p["n"]
@@ -330,6 +344,133 @@ func _draw_air(c: CanvasItem) -> void:
 			_film_pic(c, "am_skull", "air", i, Vector2(roundf(at.x), roundf(at.y - maxf(0.0, z))) * 2.0)
 
 
+## How a figure facing `f` on the floor is seen (game/facing.ts viewOf): from in front or from behind, and whether mirrored.
+func _view_of(f: Vector2) -> Array:
+	return ["back" if f.x + f.y < -0.2 else "front", f.x - f.y < 0.0]
+
+
+## A LINE OF AIM on the floor from `a` toward `b` (tiles), `k` (0 to 1) as the light gathers (art/mob_shots.ts drawAimLine):
+## it runs out from him as he draws, a dotted line of the enemy's pink whose dots run away from him along it, brighter the
+## nearer the shot is; at its height, small chevrons along it, pointing the way it will go.
+func _aim_line(a: Vector2, b: Vector2, k: float, t: float) -> void:
+	var kk := clampf(k, 0.0, 1.0)
+	if kk <= 0.01:
+		return
+	var A := Iso.to_screen(a.x, a.y) / 2.0
+	var B := Iso.to_screen(b.x, b.y) / 2.0
+	var full := A.distance_to(B)
+	if full < 1.0:
+		return
+	var u := (B - A) / full
+	var reach := full * clampf(kk * 1.4, 0.0, 1.0)
+	var d := 6.0 + fmod(t * 26.0, 4.0)
+	while d < reach:
+		var fade := minf(1.0, (reach - d) / 18.0) * minf(1.0, (d - 4.0) / 8.0)
+		draw_rect(Rect2(roundf(A.x + u.x * d) * 2.0, roundf(A.y + u.y * d) * 2.0, 4.0, 2.0), Color(FLAME3 if kk > 0.85 else FLAME2, (0.25 + 0.55 * kk) * fade))
+		d += 4.0
+	if kk > 0.7:
+		var n := Vector2(-u.y, u.x)
+		d = 14.0 + fmod(t * 30.0, 14.0)
+		while d < reach - 6.0:
+			var c := Color(FLAME3, (kk - 0.7) * 3.0 * 0.8 * minf(1.0, (reach - d) / 18.0))
+			for side in [-1.0, 1.0]:
+				for j in [1.0, 2.0, 3.0]:
+					draw_rect(Rect2(roundf(A.x + u.x * (d - j) + n.x * side * j) * 2.0, roundf(A.y + u.y * (d - j) + n.y * side * j * 0.5) * 2.0, 2.0, 2.0), c)
+			d += 14.0
+
+
+## THE REACH OF A SWEEP marked round a point (art/boss_shots.ts drawSweepRing): a ring of the warning's dots, brighter as it
+## comes (`k`), an arc of it running round the way the sweep will come.
+func _sweep_ring(x: float, y: float, r: float, k: float, t: float) -> void:
+	if k <= 0.0:
+		return
+	var n := maxi(48, roundi(r * 40.0))
+	var run := fmod(t * 1.6, 1.0)
+	for i in n:
+		var a := float(i) / n * TAU
+		var q := Iso.to_screen(x + cos(a) * r, y + sin(a) * r) / 2.0
+		var lead := 1.0 - fposmod(float(i) / n - run, 1.0)
+		var hot := (lead - 0.85) / 0.15 if lead > 0.85 else 0.0
+		var al := minf(1.0, 0.25 + 0.6 * k + 0.4 * hot)
+		draw_rect(Rect2(roundf(q.x) * 2.0, roundf(q.y) * 2.0, 2.0, 2.0), Color(FLAME3 if hot > 0.5 else FLAME2, al))
+		if i % 2 == 0:
+			draw_rect(Rect2(roundf(q.x) * 2.0, roundf(q.y + 1.0) * 2.0, 2.0, 2.0), Color(FLAME0, al))
+
+
+## WHAT IS DRAGGED SCRAPES THE FLOOR (art/boss_shots.ts drawScrape): a pale scratch from where it is back the way it came.
+func _scrape(a: Vector2, b: Vector2, k: float) -> void:
+	var A := Iso.to_screen(a.x, a.y) / 2.0
+	var B := Iso.to_screen(b.x, b.y) / 2.0
+	var n := maxi(1, ceili(A.distance_to(B)))
+	for i in n + 1:
+		var f := float(i) / n
+		var q := A.lerp(B, f)
+		draw_rect(Rect2(roundf(q.x) * 2.0, roundf(q.y) * 2.0, 2.0, 2.0), Color(Color("#857888") if i % 4 == 0 else Color("#655868"), clampf(k, 0.0, 1.0) * (0.35 + 0.4 * (1.0 - f))))
+	for o in [Vector2(-2, -2), Vector2(1, -3), Vector2(3, -1), Vector2(-1, -4)]:
+		draw_rect(Rect2(roundf(A.x + o.x) * 2.0, roundf(A.y + o.y) * 2.0, 2.0, 2.0), Color(Color("#4d4252"), clampf(k, 0.0, 1.0) * 0.7))
+
+
+## A CHAIN OUT ACROSS THE ROOM from one point of the screen to another (game pixels), sagging `sag` at its middle
+## (art/boss_shots.ts drawChainOut): its links, each turned a quarter round from the last, in his old iron; a dark seam under it.
+func _chain_out(c: CanvasItem, a: Vector2, b: Vector2, sag: float) -> void:
+	var n := maxi(2, ceili(a.distance_to(b) / 1.25))
+	for i in n + 1:
+		var k := float(i) / n
+		var x := roundf(lerpf(a.x, b.x, k))
+		var y := lerpf(a.y, b.y, k) + sag * 4.0 * k * (1.0 - k)
+		var w := 4.0 if i % 2 == 0 else 2.0
+		c.draw_rect(Rect2(x * 2.0, roundf(y + 1.0) * 2.0, w, 2.0), Color("#120d18"))
+		c.draw_rect(Rect2(x * 2.0, roundf(y) * 2.0, w, 2.0), Color("#7672b0") if i % 2 == 0 else Color("#3e3a70"))
+
+
+## THE CHAINED ONE'S HOOK OR BALL, IN FLIGHT OR DRAGGED: the game's own picture of it among what stands, at its own depth and
+## its height (render/bossfx.ts standing: the hook tumbling 2.5 times a second in flight, lying when dragged; the ball
+## turning 1.6 times a second), seen as he is. Kept by whose it is from frame to frame, and gone when it is.
+func _flung_step() -> void:
+	var live := {}
+	for p in list:
+		if p["kind"] != "co_flung" or stands == null:
+			continue
+		var src = p["src"]
+		if not is_instance_valid(src):
+			continue
+		var ball: bool = p["what"] == "ball"
+		var v := _view_of(src.face)
+		var film := "co_%s_%s" % ["ball" if ball else "hook", v[0]]
+		if not has_film(film):
+			continue
+		live[src] = true
+		var s = _flung.get(src)
+		if s == null or not is_instance_valid(s):
+			s = Sprite2D.new()
+			s.centered = false
+			s.region_enabled = true
+			stands.add_child(s)
+			_flung[src] = s
+		var frames := int(_fx["films"][film]["n"])
+		var i := 0
+		if ball:
+			i = floori(_clock * 1.6 * frames) % frames if p["flying"] else 0
+		else:
+			i = floori(_clock * 2.5 * (frames - 1)) % (frames - 1) if p["flying"] else frames - 1
+		var pi := int(_fx["films"][film]["layers"]["stand"][i])
+		s.visible = pi >= 0
+		if pi < 0:
+			continue
+		var q: Array = _fx["pics"][pi]
+		var at: Vector2 = p["at"]
+		s.texture = _fx_sheets[int(q[0])]
+		s.region_rect = Rect2(q[1], q[2], q[3], q[4])
+		s.flip_h = v[1]
+		s.position = Iso.to_screen(at.x, at.y)
+		s.offset = Vector2(-(float(q[5]) + float(q[3])) if v[1] else float(q[5]), float(q[6]) - 2.0 * float(p["high"]))
+	for src in _flung.keys():
+		if not live.has(src):
+			if is_instance_valid(_flung[src]):
+				_flung[src].queue_free()
+			_flung.erase(src)
+
+
 ## The layer over the figures (see _draw_air).
 class _Air extends Node2D:
 	var perils
@@ -339,6 +480,7 @@ class _Air extends Node2D:
 
 
 func _process(dt: float) -> void:
+	_clock += dt
 	var keep: Array = []
 	for p in list:
 		p["t"] += dt
@@ -439,6 +581,7 @@ func _process(dt: float) -> void:
 		else:
 			_film_free(p)
 	list = keep
+	_flung_step()
 	queue_redraw()
 	if _air != null:
 		_air.queue_redraw()
@@ -878,12 +1021,9 @@ func _draw() -> void:
 			"lane":
 				_lane_at(p["a"], p["b"], p["half"], clampf(p["t"] / p["dur"], 0.0, 1.0), clampf(p["gone"], 0.0, 1.0))
 			"aim":
-				var k: float = clampf(p["t"] / p["dur"], 0.0, 1.0)
-				var a: Vector2 = p["a"]
-				var b: Vector2 = a.lerp(p["b"], k)
-				var lift := Vector2(0, -40)
-				draw_line(Iso.to_screen(a.x, a.y) + lift, Iso.to_screen(b.x, b.y) + lift, Color(GOLD, 0.5 + 0.5 * k), 2.0)
-				draw_line(Iso.to_screen(a.x, a.y), Iso.to_screen(b.x, b.y), Color(GOLD, 0.25), 1.0)
+				# (THE GAME'S OWN line of aim, art/mob_shots.ts drawAimLine: it runs out from him as he draws, from 0.52 s into his
+				# draw (defs.ts AIM.from), a dotted line of the enemy's pink whose dots run away from him, chevrons at its height)
+				_aim_line(p["a"], p["b"], (float(p["t"]) - 0.52) / maxf(0.01, float(p["dur"]) - 0.52), _clock)
 			"rain":
 				var t: float = p["t"]
 				var R: float = MM.RAIN["radius"]
@@ -1447,14 +1587,11 @@ func _draw_co(p: Dictionary) -> void:
 		"co_left":
 			_draw_co_left(p)
 		"co_aim":
-			var k := clampf(t / maxf(0.01, float(p["dur"])), 0.0, 1.0)
-			var a: Vector2 = p["a"]
-			var b: Vector2 = a.lerp(p["b"], clampf(k * 1.4, 0.0, 1.0))
-			if a.distance_to(b) > 0.05:
-				draw_dashed_line(Iso.to_screen(a.x, a.y), Iso.to_screen(b.x, b.y), Color(ENEMY, 0.3 + 0.6 * k), 2.0, 8.0)
+			# (THE GAME'S OWN: the line his hook will fly along, as the marksman's line of aim is drawn: art/mob_shots.ts drawAimLine)
+			_aim_line(p["a"], p["b"], clampf(t / maxf(0.01, float(p["dur"])), 0.0, 1.0), _clock)
 		"co_reach":
-			var k := clampf(t / maxf(0.01, float(p["dur"]) - 0.05), 0.0, 1.0)
-			draw_polyline(_ring(p["x"], p["y"], p["r"], 64), Color(GOLD, 0.25 + 0.65 * k), 2.0)
+			# (THE GAME'S OWN: his chains' reach marked round him as he gathers them: art/boss_shots.ts drawSweepRing)
+			_sweep_ring(p["x"], p["y"], p["r"], clampf(t / maxf(0.01, float(p["dur"]) - 0.05), 0.0, 1.0), _clock)
 		"co_flung":
 			_draw_co_flung(p)
 
@@ -1546,6 +1683,12 @@ func _draw_co_left(p: Dictionary) -> void:
 	var o := Vector2(p["x"], p["y"])
 	var way: Vector2 = p["way"]
 	var hand: int = p["hand"]
+	var v := _view_of(way)
+	var film := "co_left_%d_%s" % [int(p["which"]), v[0]]
+	if has_film(film):
+		# (THE GAME'S OWN picture of what his breaking chain left lying, as he was seen then: art/bosses3.ts makeLeftBehindArt)
+		_film_pic(self, film, "floor", 0, Iso.to_screen(o.x, o.y), v[1])
+		return
 	if int(p["which"]) == 0:
 		# (his left chain, lying where it fell beside him)
 		_co_chain(_co_lying(o, way, hand, Vector2(0.25, 0.7), Vector2(1.05, 1.25)))
@@ -1568,8 +1711,11 @@ func _draw_co_flung(p: Dictionary) -> void:
 		var k: float = p["k"]
 		draw_colored_polygon(_ring(far.x, far.y, 0.13 + 0.27 * k, 20), Color(0.0, 0.0, 0.0, 0.2 + 0.55 * k))
 	if not flying and at.distance_to(far) > 0.05:
-		# (what he hauls in scrapes the floor: a pale scratch back the way it has come)
-		draw_line(s, Iso.to_screen(far.x, far.y), Color(CO_DUST, 0.35), 1.0)
+		# (THE GAME'S OWN: what he hauls in scrapes the floor, a pale scratch back the way it has come: drawScrape)
+		_scrape(at, far, 1.0)
+	if has_film("co_%s_front" % ("ball" if ball else "hook")):
+		# (THE GAME'S OWN pictures of his hook and his ball stand among the figures (_flung_step), their chain over them (_draw_air))
+		return
 	# (its chain, out from his hand)
 	var h: Vector2 = p["hand"]
 	var from := Iso.to_screen(h.x, h.y) + Vector2(0.0, -2.0 * float(p["hand_high"]))

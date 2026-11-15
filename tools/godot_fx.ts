@@ -11,6 +11,11 @@
 //   co_ring_<r>  the Chained One's rings (art/chained_action_fx.ts ringPainted; render/act1_fx/chained.ts): the whirl's (3.5
 //                tiles), the ball's (2.5), the hammer's (1.5). 1.6 s each.
 //   co_crack_<w> his lash's crack, run along way w of the sixteen round (crackPainted). 1.8 s each.
+//   co_hook_<v>  his hook, seen from in front or from behind (art/bosses3.ts makeHookShotArt; render/bossfx.ts): 8 pictures of
+//                it tumbling in flight, and a ninth of it lying, dragged (layer `stand`; the game picks one by its clock).
+//   co_ball_<v>  his ball: 8 pictures of it turning in flight, the first of it also lying (makeBallShotArt).
+//   co_left_<w>_<v>  what a broken chain left lying, as he was seen then: his left chain (0), his ball and its chain (1)
+//                (makeLeftBehindArt: one picture, layer `floor`).
 //   am_ring_<r>  the Ossuary Amalgamation's slam rings (art/amalgam_action_fx.ts slamRingPainted; render/act1_fx/amalgam.ts):
 //                the bone rain's (3.2 tiles) and the floor arms' (2.8).
 //   am_drop_<s>  a skull of its rain, by its seed (0 to 7; dropPainted): its shadow and its mark from the second before it
@@ -41,6 +46,7 @@ import { RING as F3_RING, RING_CANVAS, ringPainted as f3Ring } from '../src/art/
 import { CRACK, CRACK_CANVAS, RING as CO_RING, crackPainted, ringCanvas, ringPainted as coRing } from '../src/art/chained_action_fx';
 import { BIG_ARM_FPS, BIG_ARM_FRAMES, BIG_ARM_TIME, DROP_CANVAS, RAIN, RAIN_SKULL_FRAMES, SLAM_RING, dropPainted, makeBigArmArt, makeRainSkullArt, slamRingCanvas, slamRingPainted } from '../src/art/amalgam_action_fx';
 import { ARM_CRACK_AFTER, ARM_CRACK_WARN, drawArmCrack } from '../src/art/boss_shots';
+import { BALL_SHOT_FRAMES, HOOK_SHOT_FRAMES, makeBallShotArt, makeHookShotArt, makeLeftBehindArt } from '../src/art/bosses3';
 import { drawBurningSmoke } from '../src/art/mob_shots';
 import { SMOKE } from '../src/game/defs';
 import { FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, makeRingHandArt } from '../src/art/fleshmancer';
@@ -158,6 +164,17 @@ const WAYS = 16;
 for (let w = 0; w < WAYS; w++) {
   const a = (w / WAYS) * 2 * Math.PI;
   film(`co_crack_${w}`, CRACK.long, three((what, k) => toSprite(crackPainted(k / FPS, what === 'floor' ? 'floor' : 'air', [Math.cos(a), Math.sin(a)], what === 'floor' ? 'all' : what), null, CRACK_CANVAS.ax, CRACK_CANVAS.ay)));
+}
+
+// the Chained One's hook and ball in flight, and what his broken chains left lying (render/bossfx.ts)
+for (const view of ['front', 'back'] as const) {
+  const hooks = makeHookShotArt(view);
+  films[`co_hook_${view}`] = { fps: 0, n: HOOK_SHOT_FRAMES + 1, k0: 0, layers: { stand: Array.from({ length: HOOK_SHOT_FRAMES + 1 }, (_, i) => pic(hooks[i])) } };
+  const balls = makeBallShotArt(view);
+  films[`co_ball_${view}`] = { fps: 0, n: BALL_SHOT_FRAMES, k0: 0, layers: { stand: Array.from({ length: BALL_SHOT_FRAMES }, (_, i) => pic(balls[i])) } };
+  (['L', 'ball'] as const).forEach((which, w) => {
+    films[`co_left_${w}_${view}`] = { fps: 0, n: 1, k0: 0, layers: { floor: [pic(makeLeftBehindArt(which, view))] } };
+  });
 }
 
 // the Ossuary Amalgamation's (render/act1_fx/amalgam.ts, render/bossfx.ts)
