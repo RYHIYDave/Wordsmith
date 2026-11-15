@@ -57,13 +57,35 @@ export const EYRIE_LINES: Readonly<Record<ClassId, string>> = {
   brawler: 'They have caged the whole town.',
 };
 
+/**
+ * THE WARD-STONE'S HUNT, ON THE QUEST LINE AT THE TOP (FLOOR 9'S SIDE BOSSES, F9_LAIRS on). His words, 14 Nov 2026, 10:14 (Eastern):
+ * “i need the quest to be updated so it has "defeat the __________" for each boss”. So on coming into the Pinewood after the ward-stone,
+ * the line at the top (QUEST) reads a line for each boss that carries a piece, ticked off as it falls; it comes up again for a moment as
+ * each falls. Which boss carries which piece (Hero.pieces' bits): the Mist Wolf the first, the Troll Chieftain the second, the Stag the third.
+ */
+export const PIECE_BOSSES: readonly { kind: 'mistwolf' | 'warchief' | 'stag'; name: string; piece: number }[] = [
+  { kind: 'mistwolf', name: 'the MIST WOLF', piece: 0 },
+  { kind: 'warchief', name: 'the TROLL CHIEFTAIN', piece: 1 },
+  { kind: 'stag', name: 'the HOLLOW STAG', piece: 2 },
+];
+/**
+ * How long the line stays up on coming into the Pinewood, and as each boss falls (seconds on the screen): never the whole level. His
+ * words, 14 Nov 2026, shown it: “i dont want tthat text to be at the top of the screen the whole level”: up as long as the other quest
+ * lines (quest_marks.ts QUEST_MARKS.secs), then gone; a moment again as each falls, to tick it off.
+ */
+export const HUNT_LINE = { enter: 6, fallen: 4 };
+
 export const QUEST610_TEXT = {
   featherAsk: 'The mystic: "No word has come up from the town below in weeks, and the stars will not say why. The Queen vulture nests on the Ledge Road and sees everything. Bring me one of her feathers, and I will see what she has seen."',
   featherAskPrompt: 'Mystic: a task',
   featherGot: 'You pluck the Queen\'s FEATHER.',
   featherGivePrompt: 'Mystic: the Queen\'s feather',
   featherGiven: 'The mystic: "A dome of the cult\'s siege magic, fed from three pillars in the Sunken Fen. Only a ward-stone can put them out, and the cult broke theirs in three. Two pieces are hidden in the Pinewood. The Stag carries the third."',
+  /** (FLOOR 9'S SIDE BOSSES, F9_LAIRS on) the same, its pieces with the Pinewood's three bosses. */
+  featherGivenBosses: 'The mystic: "A dome of the cult\'s siege magic, fed from three pillars in the Sunken Fen. Only a ward-stone can put them out, and the cult broke theirs in three. The beasts of the Pinewood carry the pieces: the Mist Wolf, the Troll Chieftain and the Hollow Stag."',
   piecesHere: 'Pieces of the ward-stone are on this floor.',
+  /** (FLOOR 9'S SIDE BOSSES, F9_LAIRS on) the same: who carries them. */
+  piecesHereBosses: 'The Mist Wolf, the Troll Chieftain and the Hollow Stag carry the ward-stone\'s pieces.',
   pieceGot: (k: number) => `You take a piece of the WARD-STONE (${k} of 3).`,
   piecesWhole: 'All three pieces of the WARD-STONE. The pillars in the Sunken Fen wait.',
   pieceLabel: 'Ward-stone piece',

@@ -19,10 +19,14 @@ export function isEight(a: ActorArt): a is EightArt {
 }
 
 /**
- * The way a class card's hero faces (ui/panels.ts): down the screen, at the camera. A hero painted from eight sides is seen there
- * from the side for that way, not from his front (art/heroes3.ts cardLists).
+ * The way a class card's hero faces (ui/panels.ts): DOWN AND TO THE RIGHT, every hero the same way, a hero painted from eight
+ * sides seen from his front (art/heroes3.ts cardLists), as the Brawler and the Tinkerer, who have two, are seen. His words, 13 Nov
+ * 2026, 20:53 (Eastern): “The idle animations on the character selection screen snap the sprites to the side.  All the sprites
+ * should be facing the same way.  Probably down right like the brawler”. (Till then the Warrior, the Ranger, the Mage and the
+ * Warlock faced down the screen, `toward`, and turned to their front for what they do left standing and for making ready,
+ * which are painted from the front only: the snap.)
  */
-export const CARD_FACING = { fx: 0.7071, fy: 0.7071 } as const;
+export const CARD_FACING = { fx: 1, fy: 0 } as const;
 
 /** A hero's sides as the game numbers them: two, or eight. */
 export function heroSides(a: ActorArt): AnimSet[] {

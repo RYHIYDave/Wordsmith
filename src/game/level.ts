@@ -824,7 +824,7 @@ export function insideDoorway(s: DoorSpot): { x: number; y: number } {
 }
 
 /** Dungeon number `depth`: one large generated level whose boss room holds the way home. */
-export function makeDungeon(depth: number, seed: number, opts: { furnace?: boolean; tries?: number } = {}): Level {
+export function makeDungeon(depth: number, seed: number, opts: { furnace?: boolean; endless?: boolean; tries?: number } = {}): Level {
   // (ACT 1, THE DESCENT: floors 6 to 10 are open ground, laid by a map-maker of their own: game/act1_layout.ts)
   if (act1Floor(depth)) return makeAct1Level(depth, seed);
   const floor = generateFloor(depth, seed);
@@ -942,7 +942,8 @@ export function makeDungeon(depth: number, seed: number, opts: { furnace?: boole
     layLair(level);
     // (FLOOR 5, behind TEMPLE_DOOR: the temple's door set in its threshold; a floor with no threshold to set it in is laid again,
     // from the next seed, until one has; and one without two rooms of the mine for the door's key-bearers: game/temple_door.ts)
-    if (TEMPLE_DOOR.on && (!placeTempleDoor(level) || keyBearerSpots(level).length < 2) && (opts.tries ?? 0) < 12) return makeDungeon(depth, seed + 7919, { ...opts, tries: (opts.tries ?? 0) + 1 });
+    // (ENDLESS MODE, NO STORY: an endless level's floor 5 has no temple door, his pick “Door open, no key-bearers (Recommended)”: game.ts storyHere)
+    if (TEMPLE_DOOR.on && !opts.endless && (!placeTempleDoor(level) || keyBearerSpots(level).length < 2) && (opts.tries ?? 0) < 12) return makeDungeon(depth, seed + 7919, { ...opts, tries: (opts.tries ?? 0) + 1 });
   }
   return level;
 }

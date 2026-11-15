@@ -92,7 +92,7 @@ function markOnRound(a: number, z: number, r: number, a0: number, zc: number, w:
 }
 
 /** A FLAME LAYER under or over a scene: the cult's fire at a scene's point, body and tongues, frame `f`. */
-function cultFire(p: Px, x: number, y: number, f: number, size: number): void {
+export function cultFire(p: Px, x: number, y: number, f: number, size: number): void {
   const lean = [1, -2, 2, -1][f % 4];
   pinkFlame(p, x, y + 1, Math.round(12 * size), 8.5 * size, lean * 0.5);
   pinkFlame(p, x - 2, y - 2, Math.round((18 + [2, 6, 0, 5][f % 4]) * size), 4.6 * size, lean);
@@ -101,7 +101,7 @@ function cultFire(p: Px, x: number, y: number, f: number, size: number): void {
 }
 
 /** Sparks rising off a fire, two pixels each. */
-function sparks(p: Px, x: number, y: number, f: number, n: number, reach: number): void {
+export function sparks(p: Px, x: number, y: number, f: number, n: number, reach: number): void {
   for (let k = 0; k < n; k++) {
     const sy = Math.round(y - reach * 0.55 - ((f * 7 + k * 11) % Math.round(reach * 0.6)));
     const sx = Math.round(x + Math.sin(f + k * 2.1) * 7);
@@ -110,7 +110,7 @@ function sparks(p: Px, x: number, y: number, f: number, n: number, reach: number
 }
 
 /** A ring of stones round a fire, on the floor. */
-function fireStones(S: Scene, R: number, id: number): void {
+export function fireStones(S: Scene, R: number, id: number): void {
   for (let k = 0; k < 10; k++) {
     const a = (k / 10) * Math.PI * 2 + hash(k, 1, 1101) * 0.3;
     S.egg([Math.cos(a) * R, Math.sin(a) * R, 2], XYZ, [3.4 + hash(k, 2, 1101) * 1.2, 3 + hash(k, 3, 1101), 2.8], facetOf(ROCK, 0.08), id);
@@ -118,7 +118,7 @@ function fireStones(S: Scene, R: number, id: number): void {
 }
 
 /** The light of the cult's fire at a scene's point (picture pixels), in game pixels for the sprite. */
-const fireLight = (x: number, y: number, r: number, a: number): Light => ({ x: x / GRAIN, y: y / GRAIN, r, color: FLAME[2], a });
+export const fireLight = (x: number, y: number, r: number, a: number): Light => ({ x: x / GRAIN, y: y / GRAIN, r, color: FLAME[2], a });
 
 // =================================================================================================
 // WHERE THEY SLEEP

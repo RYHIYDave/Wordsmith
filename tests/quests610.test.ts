@@ -11,6 +11,7 @@ import { EYRIE_LINES, EYRIE_SCENE, QUESTS610, piecesTaken } from '../src/game/qu
 import { emptyControls } from '../src/game/state';
 import type { GameEvent, Monster } from '../src/game/state';
 import { EXITS } from '../src/game/ways';
+import { F9_LAIRS } from '../src/game/f9_lairs';
 import { seasoned } from './helpers';
 
 const DT = 1 / 30;
@@ -115,7 +116,7 @@ test('the Queen fallen: her feather taken; the scene walks him to the edge, pans
   });
 });
 
-test('the feather brought to the mystic; in the Pinewood, two pieces in its side areas and the third with the Stag', () => {
+test('the feather brought to the mystic; in the Pinewood, two pieces in its side areas (carried by its side bosses, F9_LAIRS on) and the third with the Stag', () => {
   on(() => {
     const g = seasoned(new Game('warrior', 4), 24);
     (g as unknown as { god: boolean }).god = true;
@@ -137,7 +138,11 @@ test('the feather brought to the mystic; in the Pinewood, two pieces in its side
     assert.ok(carried.some((m) => m.boss && m.kind === 'stag' && m.piece === 2), 'the Stag carries the third');
     const land = g.level.land!;
     const side = land.areas.find((a) => a.role === 'side')!;
-    assert.ok(lying.some((d) => d.piece === 0 && Math.hypot(d.x - side.blob.x, d.y - side.blob.y) < 2), 'one in the side area');
+    // (floor 9's side bosses on, at his yes of 14 Nov 2026: the mist wolf carries the side area's piece, the troll chieftain the lair's)
+    if (F9_LAIRS.on) {
+      assert.ok(carried.some((m) => m.kind === 'mistwolf' && m.piece === 0), 'the Mist Wolf carries the side area\'s');
+      assert.ok(carried.some((m) => m.kind === 'warchief' && m.piece === 1), 'the Troll Chieftain carries the lair\'s');
+    } else assert.ok(lying.some((d) => d.piece === 0 && Math.hypot(d.x - side.blob.x, d.y - side.blob.y) < 2), 'one in the side area');
     for (const m of carried) inner(g).kill(m);
     for (let k = 0; k < 6; k++) {
       const d = g.drops.find((q) => q.kind === 'piece');

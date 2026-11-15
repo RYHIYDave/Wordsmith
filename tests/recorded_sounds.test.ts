@@ -29,10 +29,12 @@ test('every hero has his voice, all of it: attack cries, grunts, lines, his deat
   }
   assert.deepEqual(HERO_VOICE, { warrior: 'male', ranger: 'male', mage: 'female', warlock: 'male', tinkerer: 'female', brawler: 'male' });
   assert.equal(VOICE_TOGGLE.on, false, 'the male/female toggle gone');
-  // (THE ATTACK SHOUTS A QUARTER AS OFTEN, his pick, 9 Nov 2026: at first one attack in 3.5, never within 1.2 s; both four times that)
-  assert.equal(VOICE_TUNE.attackOne, 3.5 * 4, 'one attack in fourteen');
-  assert.ok(Math.abs(VOICE_TUNE.attackGap - 1.2 * 4) < 1e-9, 'and never within 4.8 s of the last');
-  assert.deepEqual([VOICE_TUNE.gruntGap, VOICE_TUNE.lineOne, VOICE_TUNE.lineGap], [0.7, 8, 25], 'the grunts and the hurt lines as they were');
+  // (THE ATTACK SHOUTS A QUARTER AS OFTEN, his pick, 9 Nov 2026: at first one attack in 3.5, never within 1.2 s; both four times that;
+  // and A THIRD AS OFTEN AGAIN, the grunts too, his picks, 14 Nov 2026: “Grunts when hit”, “Attack shouts”, “About a third as often”)
+  assert.equal(VOICE_TUNE.attackOne, 3.5 * 4 * 3, 'one attack in forty-two');
+  assert.ok(Math.abs(VOICE_TUNE.attackGap - 1.2 * 4 * 3) < 1e-9, 'and never within 14.4 s of the last');
+  assert.ok(Math.abs(VOICE_TUNE.gruntGap - 0.7 * 3) < 1e-9, 'a grunt never within 2.1 s of the last');
+  assert.deepEqual([VOICE_TUNE.lineOne, VOICE_TUNE.lineGap], [8, 25], 'the hurt lines as they were');
 });
 
 test('the title theme: its file, and the stretch it goes round (68.25 s, 32 bars at 112.5 a minute)', () => {

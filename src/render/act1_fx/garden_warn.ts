@@ -115,3 +115,14 @@ export function drawFanWarn(g: CanvasRenderingContext2D, at: FloorAt, w: WarnFro
   for (let i = 0; i <= arc; i++) pts.push(p(b0 + ((b1 - b0) * i) / arc, r));
   edge(g, at, pts, k, t, shown);
 }
+
+/**
+ * (ENDLESS MODE'S FINAL BOSS: render/act1_fx/wsboss2.ts) ANY SHAPE OF FLOOR: `pts` its edge (a closed run of floor points), `n`
+ * points through it (`inside(i)`, null where one falls outside it), `k` how far through the warning, `t` the clock.
+ */
+export function drawPolyWarn(g: CanvasRenderingContext2D, at: FloorAt, pts: ReadonlyArray<readonly [number, number]>, n: number, inside: (i: number) => readonly [number, number] | null, k: number, t: number): void {
+  if (k < 0 || k > 1) return;
+  const shown = sm(k / 0.25);
+  shade(g, at, n, inside, k, shown);
+  edge(g, at, pts, k, t, shown);
+}

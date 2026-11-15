@@ -2,10 +2,9 @@
 // he begins one; the town's walk faded in; floor 1's walk, the town's let go of; a fight on floor 1 (an enemy woken beside him):
 // its music in at full, the walk down to nothing; the fight over (the enemy gone off and asleep): the fight's faded out, the walk
 // back; floor 3's, floor 1's let go of; the title: none held. What failed, and no errors. Served with its sounds: --serve.
-// THE TEST BROWSER CANNOT DECODE THE MUSIC'S AAC (Playwright's Chromium has no AAC, as the title theme's title.mp4 shows: every
-// phone's web view and real Chrome and Safari do): so each music file it asks for is handed it as the same music made WAV, as long
-// to the sample (ffmpeg, 8 kHz mono, made here), and what is tested is the game's playing of it: when each loop starts, fades and is
-// let go.
+// EACH MUSIC FILE THE PAGE ASKS FOR IS HANDED IT AS THE SAME MUSIC MADE A SMALL WAV, as long to the sample (ffmpeg, 8 kHz mono,
+// made here), and what is tested is the game's playing of it: when each loop starts, fades and is let go. (Made so when the music
+// was AAC in .mp4, which Playwright's Chromium could not decode; MP3 since 14 Nov 2026, kept for being light.)
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,7 +13,7 @@ export default async function (page, snap) {
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e && e.stack || e)));
   const wavs = new Map();
-  await page.route(/\/sounds\/[0-9a-f]+\/music_[a-z0-9_]+\.mp4$/, (route) => {
+  await page.route(/\/sounds\/[0-9a-f]+\/music_[a-z0-9_]+\.mp3$/, (route) => {
     const name = route.request().url().replace(/.*\//, '');
     let b = wavs.get(name);
     if (!b) {
@@ -23,7 +22,7 @@ export default async function (page, snap) {
     }
     return route.fulfill({ status: 200, contentType: 'audio/wav', body: b });
   });
-  if (!fs.existsSync(path.join('assets', 'sound', 'music_town_walk.mp4'))) console.log('  !! the music files are not in assets/sound');
+  if (!fs.existsSync(path.join('assets', 'sound', 'music_town_walk.mp3'))) console.log('  !! the music files are not in assets/sound');
   const hands = await makeHands(page);
   await page.waitForTimeout(300);
   await hands.press('button:NEW GAME');
@@ -40,13 +39,13 @@ export default async function (page, snap) {
   const near = (v, to) => v !== null && Math.abs(v - to) < 0.05;
   const t = await music();
   log('town', show(t));
-  check('the town: its walk, at its loudness', t.place === 'town' && near(t.walk, VOL) && t.fight === null && t.held.includes('music_town_walk.mp4'));
+  check('the town: its walk, at its loudness', t.place === 'town' && near(t.walk, VOL) && t.fight === null && t.held.includes('music_town_walk.mp3'));
   // floor 1
   await page.evaluate(() => { const g = window.__dbg.game(); g.depth = 1; g.cleared = 0; g.enterDungeon('gate'); for (const m of g.monsters) { m.state = 'sleep'; } });
   await page.waitForTimeout(5000);
   const f1 = await music();
   log('floor 1, walking', show(f1));
-  check("floor 1: its walk; its fight's come; the town's let go of", f1.place === 'f1' && near(f1.walk, VOL) && f1.fight === null && f1.held.includes('music_f1_walk.mp4') && f1.held.includes('music_f1_fight.mp4') && !f1.held.includes('music_town_walk.mp4'));
+  check("floor 1: its walk; its fight's come; the town's let go of", f1.place === 'f1' && near(f1.walk, VOL) && f1.fight === null && f1.held.includes('music_f1_walk.mp3') && f1.held.includes('music_f1_fight.mp3') && !f1.held.includes('music_town_walk.mp3'));
   // a fight: an enemy woken beside him (he is kept alive)
   const woke = await page.evaluate(() => {
     const g = window.__dbg.game();
@@ -82,7 +81,7 @@ export default async function (page, snap) {
   await page.waitForTimeout(5000);
   const f3 = await music();
   log('floor 3, walking', show(f3));
-  check("floor 3: its walk; floor 1's let go of", f3.place === 'f3' && near(f3.walk, VOL) && f3.held.includes('music_f3_walk.mp4') && !f3.held.some((f) => f.startsWith('music_f1_')));
+  check("floor 3: its walk; floor 1's let go of", f3.place === 'f3' && near(f3.walk, VOL) && f3.held.includes('music_f3_walk.mp3') && !f3.held.some((f) => f.startsWith('music_f1_')));
   await page.evaluate(() => clearInterval(window.__keep));
   const d = await page.evaluate(() => window.__dbg.soundsDetail());
   log('music failed', d.failed.filter((f) => f.startsWith('music_')));

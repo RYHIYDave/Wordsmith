@@ -400,11 +400,15 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   hshape: ['#5c586c', '#8a8699', '#bab6c6', '#e9e5ed'],
   rshadow: ['#303034', '#6a6a6d', '#a4a19d', '#e6e0d3'],
   moth: ['#35313a', '#77717a', '#958c7e', '#e3dccd'],
+  wsboss: ['#2a2024', '#5a4848', '#e0287a', '#ff8ab0'],
   // (the Rime Shade: its fog and its frost, art/rime_shade.ts RS_FOG, RS_FROST)
   rshade: ['#3a3d44', '#6f737b', '#9ca6b8', '#eef2f6'],
   stoker: ['#211b1e', '#574a4a', '#d25a1e', '#f6b468'],
   keyblade: [GLOOM[4], GLOOM[2], PINK[2], BONE[3]],
   keyflame: [GLOOM[4], GLOOM[2], PINK[2], '#f6b468'],
+  // (floor 9's side bosses: the chieftain's stone, the wolf's mist)
+  warchief: ['#1c1c20', '#36363a', '#56544f', '#9e988c'],
+  mistwolf: ['#4a4664', '#6c688a', '#9692b2', '#eeecf8'],
   physician: ['#1e1a22', '#3a3440', '#929f84', '#d0ccbc'],
   censor: ['#141218', '#24202b', '#3a3440', '#cbc1a6'],
 };
@@ -1748,6 +1752,8 @@ export class Fx {
           break;
         case 'shake':
           this.shake = Math.max(this.shake, e.amount);
+          // (a heavy blow landing: the game holds still a moment, as his rulebook asks, Movement 7: floor 9's side bosses)
+          if (e.hold) this.hold(e.hold);
           break;
         case 'wordDrop': {
           // a word falls to the floor: its colour bursts up where it lands, and it is heard
