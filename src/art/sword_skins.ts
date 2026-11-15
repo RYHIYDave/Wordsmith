@@ -178,5 +178,9 @@ export const UNDERTOW_SWORD: SwordSkin = {
   lights: lightsAlong('#36c0c8', 0.28),
 };
 
+/** His unique great swords, by their ids (art/heroes.ts WarriorSkinId). */
+export type SwordSkinId = 'millstone' | 'windcutter' | 'undertow';
+export const SWORD_SKIN_OF: Readonly<Record<SwordSkinId, SwordSkin>> = { millstone: MILLSTONE_SWORD, windcutter: WINDCUTTER_SWORD, undertow: UNDERTOW_SWORD };
+
 /** The skins of his great sword, his own first. */
 export const SWORD_SKIN_LIST: readonly SwordSkin[] = [PLAIN_SWORD, MILLSTONE_SWORD, WINDCUTTER_SWORD, UNDERTOW_SWORD];

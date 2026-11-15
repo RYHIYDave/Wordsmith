@@ -2878,7 +2878,7 @@ export class Renderer {
     const arms = heavyDrawn(h.cls, h.talents);
     // (THE UNIQUE WEAPON IN HIS HAND, art/heroes.ts wornSkin: the Mage's staff, art/staff_skins.ts STAFF_SKINS; the Ranger's bow,
     // art/bow_skins.ts BOW_SKINS; his own otherwise)
-    const skin = wornSkin(h.cls, h.gear.mainhand);
+    const skin = wornSkin(h.cls, h.gear.mainhand, arms);
     const look = {
       twoHanded: OWN_MOVES.on ? h.cls === 'warrior' : h.gear.mainhand !== null && h.gear.mainhand.weapon === 'greatsword',
       town: !!game.level.town,
@@ -2964,7 +2964,8 @@ export class Renderer {
     // (THE WARLOCK: the one he is now first, then his others: the demon's, his arm blazing, as a man in a dungeon)
     // (THE WARRIOR'S WEAPON: his places with the war axe or the maul, art/heroes.ts HEAVY_PLACES)
     // (THE UNIQUE WEAPON IN HIS HAND: his places with it, art/heroes.ts STAFF_PLACES, BOW_PLACES)
-    const places = arms ? HEAVY_PLACES[arms] : skin ? skin.places : { dungeon: 'dungeon' as const, town: 'town' as const };
+    // (and the Warrior's unique great sword, battle axe or warhammer, of the kind he is drawn with: art/heroes.ts WARRIOR_SKIN_PLACES)
+    const places = skin ? skin.places : arms ? HEAVY_PLACES[arms] : { dungeon: 'dungeon' as const, town: 'town' as const };
     const now = h.cls === 'warlock' && !look.town ? (h.form === 'demon' ? 'demon' : look.blaze ? 'blaze' : 'dungeon') : look.town ? places.town : places.dungeon;
     const byWorker = !!pw && pw.hero(h.cls, now) && (!look.town || pw.hero(h.cls, places.dungeon)) && (h.cls !== 'warlock' || look.town || (pw.hero(h.cls, 'dungeon') && pw.hero(h.cls, 'blaze') && pw.hero(h.cls, 'demon')));
     const hero = (): boolean => !byWorker && this.art.heroes.warm(h.cls, look);

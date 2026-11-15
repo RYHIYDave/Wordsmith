@@ -30,6 +30,27 @@ const WRENCHES = [
   ['foremanswrench', 'foremanswrench', "The Foreman's Wrench"],
   ['borrowedspanner', 'borrowedspanner', 'The Borrowed Spanner'],
 ];
+// (HERO=warrior: the Warrior's unique weapons, art/sword_skins.ts and art/heavy_skins.ts, their switch art/heroes.ts WARRIOR_SKINS
+// put on here; TREE=battleaxe or warhammer: his tree's first point given him first, and his axes or hammers; none, his swords)
+const SWORDS = [
+  ['plain', null, 'His own great sword'],
+  ['millstone', 'millstone', 'Millstone'],
+  ['windcutter', 'windcutter', 'Windcutter'],
+  ['undertow', 'undertow', 'Undertow'],
+];
+const AXES = [
+  ['plain', null, 'His war axe'],
+  ['gyre', 'gyre', 'Gyre'],
+  ['redtithe', 'redtithe', 'Red Tithe'],
+  ['widowfall', 'widowfall', 'Widowfall'],
+  ['rotaxe', 'rotaxe', 'The Rot Axe'],
+];
+const HAMMERS = [
+  ['plain', null, 'His maul'],
+  ['deathknell', 'deathknell', 'Death Knell'],
+  ['deadweight', 'deadweight', 'Deadweight'],
+  ['starbreaker', 'starbreaker', 'Starbreaker'],
+];
 // (HERO=ranger: the Ranger's unique bows, art/bow_skins.ts, their switch art/heroes.ts BOW_SKINS put on here)
 const BOWS = [
   ['plain', null, 'His own bow'],
@@ -41,7 +62,8 @@ const BOWS = [
 
 export default async function (page, snap) {
   const hero = process.env.HERO || 'mage';
-  const WEAPONS = hero === 'ranger' ? BOWS : hero === 'tinkerer' ? WRENCHES : STAVES;
+  const tree = process.env.TREE || '';
+  const WEAPONS = hero === 'ranger' ? BOWS : hero === 'tinkerer' ? WRENCHES : hero === 'warrior' ? (tree === 'battleaxe' ? AXES : tree === 'warhammer' ? HAMMERS : SWORDS) : STAVES;
   const out = process.env.OUT || '/dev/shm/staffs';
   const only = process.env.ONLY || '';
   const [cw, ch] = [150, 110];
@@ -54,8 +76,14 @@ export default async function (page, snap) {
     d.staffSkins.on = true;
     d.bowSkins.on = true;
     d.wrenchSkins.on = true;
+    d.warriorSkins.on = true;
+    if (d.set1) d.set1.on = true;
     d.run(hero, 9); d.seasoned(20); d.autoLevel = false; d.autoWords = false; d.god = true;
   }, hero);
+  if (hero === 'warrior' && tree) {
+    const took = await page.evaluate((w) => window.__dbg.game().takeTalent(w), tree);
+    if (took !== null) bad(`his tree's first point, ${tree}: ${took}`);
+  }
   await page.waitForTimeout(600);
   const raf = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
   const scr = await page.evaluate(() => ({ w: window.__dbg.screen.w, cw: window.innerWidth }));

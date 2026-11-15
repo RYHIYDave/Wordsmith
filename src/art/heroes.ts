@@ -58,6 +58,12 @@ export interface HeroLook {
    * eight sides; absent, her own wrench, as ever.
    */
   wrench?: WrenchId;
+  /**
+   * THE WARRIOR'S UNIQUE WEAPON (art/sword_skins.ts, art/heavy_skins.ts; WARRIOR_SKINS): the unique great sword, battle axe or
+   * warhammer in his hands, of the kind he is drawn with (his great sword, or the war axe or maul his tree has given him: `weapon`);
+   * absent, his own, as ever.
+   */
+  warriorSkin?: WarriorSkinId;
 }
 
 /** (THE MAGE'S STAFF, art/staff_skins.ts) The unique staves drawn in her hands, each a skin of her staff. */
@@ -72,12 +78,22 @@ export const BOW_IDS: readonly BowId[] = ['rainwalker', 'threefold', 'poachers',
 export type WrenchId = 'secondwhistle' | 'stickywrench' | 'foremanswrench' | 'borrowedspanner';
 export const WRENCH_IDS: readonly WrenchId[] = ['secondwhistle', 'stickywrench', 'foremanswrench', 'borrowedspanner'];
 
+/** (THE WARRIOR'S UNIQUE WEAPONS) His unique great swords, battle axes and warhammers, each a skin of the one he is drawn with. */
+export type WarriorSkinId = 'millstone' | 'windcutter' | 'undertow' | 'gyre' | 'redtithe' | 'widowfall' | 'rotaxe' | 'deathknell' | 'deadweight' | 'starbreaker';
+export const WARRIOR_SKIN_IDS: readonly WarriorSkinId[] = ['millstone', 'windcutter', 'undertow', 'gyre', 'redtithe', 'widowfall', 'rotaxe', 'deathknell', 'deadweight', 'starbreaker'];
+/** Which of his weapons each is a skin of: his great sword (null), or the war axe or the maul. */
+export const WARRIOR_SKIN_KIND: Readonly<Record<WarriorSkinId, HeavyWeapon | null>> = {
+  millstone: null, windcutter: null, undertow: null,
+  gyre: 'axe', redtithe: 'axe', widowfall: 'axe', rotaxe: 'axe',
+  deathknell: 'hammer', deadweight: 'hammer', starbreaker: 'hammer',
+};
+
 /**
  * WHICH OF A HERO'S PICTURES the side painter paints ahead (render/painter.ts): in town, in a dungeon; and the warlock's
  * others (art/warlock_art.ts): the demon's, and his with his arm blazing; and (28 Oct 2026) the new classes on their class
  * cards, too heavy for the start screen to paint as it draws them (`card`).
  */
-export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card' | 'axe' | 'axeTown' | 'hammer' | 'hammerTown' | 'crook' | 'crookTown' | 'ebb' | 'ebbTown' | 'resonance' | 'resonanceTown' | 'rod' | 'rodTown' | 'rainwalker' | 'rainwalkerTown' | 'threefold' | 'threefoldTown' | 'poachers' | 'poachersTown' | 'fledgling' | 'fledglingTown' | 'secondwhistle' | 'secondwhistleTown' | 'stickywrench' | 'stickywrenchTown' | 'foremanswrench' | 'foremanswrenchTown' | 'borrowedspanner' | 'borrowedspannerTown';
+export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card' | 'axe' | 'axeTown' | 'hammer' | 'hammerTown' | 'crook' | 'crookTown' | 'ebb' | 'ebbTown' | 'resonance' | 'resonanceTown' | 'rod' | 'rodTown' | 'rainwalker' | 'rainwalkerTown' | 'threefold' | 'threefoldTown' | 'poachers' | 'poachersTown' | 'fledgling' | 'fledglingTown' | 'secondwhistle' | 'secondwhistleTown' | 'stickywrench' | 'stickywrenchTown' | 'foremanswrench' | 'foremanswrenchTown' | 'borrowedspanner' | 'borrowedspannerTown' | 'millstone' | 'millstoneTown' | 'windcutter' | 'windcutterTown' | 'undertow' | 'undertowTown' | 'gyre' | 'gyreTown' | 'redtithe' | 'redtitheTown' | 'widowfall' | 'widowfallTown' | 'rotaxe' | 'rotaxeTown' | 'deathknell' | 'deathknellTown' | 'deadweight' | 'deadweightTown' | 'starbreaker' | 'starbreakerTown';
 /** (THE WARRIOR'S WEAPON, WARRIOR_TREE2) His places with the war axe and the maul: in a dungeon, and in town. */
 export const HEAVY_PLACES: Readonly<Record<HeavyWeapon, { dungeon: HeroPlace; town: HeroPlace }>> = { axe: { dungeon: 'axe', town: 'axeTown' }, hammer: { dungeon: 'hammer', town: 'hammerTown' } };
 /** (THE MAGE'S STAFF, art/staff_skins.ts) Her places with each unique staff: in a dungeon, and in town. */
@@ -159,10 +175,35 @@ export function wrenchOfPlace(place: HeroPlace): WrenchId | null {
 }
 
 /**
+ * THE WARRIOR'S UNIQUE WEAPONS' SWITCH: OFF until he has been seen holding them in play and the owner says yes (his yes to their
+ * pictures, 14 Nov 2026: the great swords, shown docs/mockups/warrior_skins/pictures/swords_moves.mp4, “Yes, all three
+ * (Recommended)”; the axes and hammers, shown axes_moves.mp4 and hammers_moves.mp4, “Yes, all seven (Recommended)”). On, the
+ * Warrior holding a unique great sword, battle axe or warhammer of the kind he is drawn with is drawn holding it (his places with
+ * it, WARRIOR_SKIN_PLACES), each a bake group of its own (render/baked.ts), as the Mage's staves are.
+ */
+export const WARRIOR_SKINS = { on: false };
+/** The skin of the unique weapon an item is, if it is one of his and of the kind he is drawn with (`arms`: his tree's war axe or maul; null, his great sword), and the switch is on. */
+export function warriorWorn(item: { unique?: string; rarity?: number } | null | undefined, arms: HeavyWeapon | null): WarriorSkinId | null {
+  if (!WARRIOR_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;
+  const id = item.unique as WarriorSkinId;
+  if (!(WARRIOR_SKIN_IDS as readonly string[]).includes(id)) return null;
+  return WARRIOR_SKIN_KIND[id] === arms ? id : null;
+}
+/** (THE WARRIOR'S UNIQUE WEAPONS) His places with each: in a dungeon, and in town. */
+export const WARRIOR_SKIN_PLACES: Readonly<Record<WarriorSkinId, { dungeon: HeroPlace; town: HeroPlace }>> = Object.fromEntries(
+  WARRIOR_SKIN_IDS.map((id) => [id, { dungeon: id as HeroPlace, town: `${id}Town` as HeroPlace }]),
+) as Record<WarriorSkinId, { dungeon: HeroPlace; town: HeroPlace }>;
+/** Is a place one of his unique weapons' (and which). */
+export function warriorSkinOfPlace(place: HeroPlace): WarriorSkinId | null {
+  for (const id of WARRIOR_SKIN_IDS) if (WARRIOR_SKIN_PLACES[id].dungeon === place || WARRIOR_SKIN_PLACES[id].town === place) return id;
+  return null;
+}
+
+/**
  * THE UNIQUE WEAPON A HERO HOLDS, DRAWN IN HIS HAND (the Mage's staves, art/staff_skins.ts; the Ranger's bows, art/bow_skins.ts):
  * the look it is and his places with it, in a dungeon and in town; null: his own weapon, as ever (or its switch is off).
  */
-export function wornSkin(cls: ClassId, item: { unique?: string; rarity?: number } | null | undefined): { look: Pick<HeroLook, 'staff' | 'bow' | 'wrench'>; places: { dungeon: HeroPlace; town: HeroPlace } } | null {
+export function wornSkin(cls: ClassId, item: { unique?: string; rarity?: number } | null | undefined, arms: HeavyWeapon | null = null): { look: Pick<HeroLook, 'staff' | 'bow' | 'wrench' | 'warriorSkin'>; places: { dungeon: HeroPlace; town: HeroPlace } } | null {
   if (cls === 'mage') {
     const staff = staffWorn(item);
     if (staff) return { look: { staff }, places: STAFF_PLACES[staff] };
@@ -174,6 +215,11 @@ export function wornSkin(cls: ClassId, item: { unique?: string; rarity?: number 
   if (cls === 'tinkerer') {
     const wrench = wrenchWorn(item);
     if (wrench) return { look: { wrench }, places: WRENCH_PLACES[wrench] };
+  }
+  // (THE WARRIOR: a unique of the kind he is drawn with, `arms`)
+  if (cls === 'warrior') {
+    const warriorSkin = warriorWorn(item, arms);
+    if (warriorSkin) return { look: { warriorSkin }, places: WARRIOR_SKIN_PLACES[warriorSkin] };
   }
   return null;
 }
@@ -189,9 +235,10 @@ export const isTownPlace = (place: HeroPlace): boolean =>
   place === 'hammerTown' ||
   (staffOfPlace(place) !== null && STAFF_PLACES[staffOfPlace(place)!].town === place) ||
   (bowOfPlace(place) !== null && BOW_PLACES[bowOfPlace(place)!].town === place) ||
-  (wrenchOfPlace(place) !== null && WRENCH_PLACES[wrenchOfPlace(place)!].town === place);
-/** Is a place a skin's (a staff's, a bow's or a wrench's), in a dungeon or in town. */
-export const isSkinPlace = (place: HeroPlace): boolean => staffOfPlace(place) !== null || bowOfPlace(place) !== null || wrenchOfPlace(place) !== null;
+  (wrenchOfPlace(place) !== null && WRENCH_PLACES[wrenchOfPlace(place)!].town === place) ||
+  (warriorSkinOfPlace(place) !== null && WARRIOR_SKIN_PLACES[warriorSkinOfPlace(place)!].town === place);
+/** Is a place a skin's (a staff's, a bow's, a wrench's or one of the Warrior's), in a dungeon or in town. */
+export const isSkinPlace = (place: HeroPlace): boolean => staffOfPlace(place) !== null || bowOfPlace(place) !== null || wrenchOfPlace(place) !== null || warriorSkinOfPlace(place) !== null;
 /** The look each of those is. */
 export function lookOfPlace(place: HeroPlace): HeroLook {
   if (place === 'card') return { twoHanded: true, town: true, card: true };
@@ -201,6 +248,11 @@ export function lookOfPlace(place: HeroPlace): HeroLook {
   if (bow) return { twoHanded: true, town: BOW_PLACES[bow].town === place, bow };
   const wrench = wrenchOfPlace(place);
   if (wrench) return { twoHanded: true, town: WRENCH_PLACES[wrench].town === place, wrench };
+  const warriorSkin = warriorSkinOfPlace(place);
+  if (warriorSkin) {
+    const kind = WARRIOR_SKIN_KIND[warriorSkin];
+    return { twoHanded: true, town: WARRIOR_SKIN_PLACES[warriorSkin].town === place, ...(kind ? { weapon: kind } : {}), warriorSkin };
+  }
   if (place === 'axe' || place === 'axeTown') return { twoHanded: true, town: place === 'axeTown', weapon: 'axe' };
   if (place === 'hammer' || place === 'hammerTown') return { twoHanded: true, town: place === 'hammerTown', weapon: 'hammer' };
   return { twoHanded: true, town: place === 'town', ...(place === 'demon' ? { demon: true } : place === 'blaze' ? { blaze: true } : {}) };

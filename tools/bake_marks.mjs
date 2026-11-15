@@ -17,7 +17,7 @@ import { RELEASE_DEFINES, ROOT, load } from './lib.mjs';
 
 /** Where each hero's own art begins: what art/heroes3.ts takes from each. */
 export const HERO_ROOTS = {
-  warrior: ['src/art/hero3_knight.ts', 'src/art/warrior_up.ts', 'src/art/warrior_up_art.ts', 'src/art/warrior_up_heavy_art.ts'],
+  warrior: ['src/art/hero3_knight.ts', 'src/art/warrior_up.ts', 'src/art/warrior_up_art.ts', 'src/art/warrior_up_heavy_art.ts', 'src/art/sword_skins.ts', 'src/art/heavy_skins.ts'],
   ranger: ['src/art/hero3_ranger.ts', 'src/art/ranger_up.ts', 'src/art/ranger_up_art.ts', 'src/art/bow_skins.ts'],
   mage: ['src/art/hero3_mage.ts', 'src/art/mage_up.ts', 'src/art/mage_up_art.ts', 'src/art/staff_skins.ts'],
   warlock: ['src/art/warlock_art.ts'],

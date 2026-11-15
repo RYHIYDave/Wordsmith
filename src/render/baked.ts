@@ -13,7 +13,7 @@
 import { bakeLists, cardLists, readyList } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
-import { BOW_IDS, BOW_PLACES, BOW_SKINS, HEAVY_PLACES, STAFF_IDS, STAFF_PLACES, STAFF_SKINS, WRENCH_IDS, WRENCH_PLACES, WRENCH_SKINS } from '../art/heroes';
+import { BOW_IDS, BOW_PLACES, BOW_SKINS, HEAVY_PLACES, STAFF_IDS, STAFF_PLACES, STAFF_SKINS, WARRIOR_SKINS, WARRIOR_SKIN_IDS, WARRIOR_SKIN_KIND, WARRIOR_SKIN_PLACES, WRENCH_IDS, WRENCH_PLACES, WRENCH_SKINS } from '../art/heroes';
 import { WARRIOR_TREE2 } from '../game/talents';
 import type { AnimSet } from '../art/actor_types';
 import { ASKED } from '../art/asked';
@@ -195,6 +195,9 @@ export function bakeGroups(vet: boolean): Record<string, BakeKey[]> {
   if (BOW_SKINS.on) for (const id of BOW_IDS) out[`ranger-${id}`] = [k('ranger', BOW_PLACES[id].town), k('ranger', BOW_PLACES[id].dungeon)];
   // (THE TINKERER'S WRENCH, art/wrench_skins.ts WRENCH_SKINS: her with each unique wrench, each a group of its own)
   if (WRENCH_SKINS.on) for (const id of WRENCH_IDS) out[`tinkerer-${id}`] = [k('tinkerer', WRENCH_PLACES[id].town), k('tinkerer', WRENCH_PLACES[id].dungeon)];
+  // (THE WARRIOR'S UNIQUE WEAPONS, art/heroes.ts WARRIOR_SKINS: him with each, a group of its own; an axe's or a hammer's only while
+  // his tree may give him that weapon, as the war axe's and the maul's)
+  if (WARRIOR_SKINS.on) for (const id of WARRIOR_SKIN_IDS) if (WARRIOR_SKIN_KIND[id] === null || WARRIOR_TREE2.on) out[`warrior-${id}`] = [k('warrior', WARRIOR_SKIN_PLACES[id].town), k('warrior', WARRIOR_SKIN_PLACES[id].dungeon)];
   return out;
 }
 
@@ -628,13 +631,15 @@ export class BakedHeroes {
   /**
    * (THE UNIQUE WEAPON IN HIS HAND) May this group be let go of whole: the Mage's, with her own staff or a unique one, while
    * STAFF_SKINS is on; the Ranger's, with his own bow or a unique one, while BOW_SKINS is on; the Tinkerer's, with her own
-   * wrench or a unique one, while WRENCH_SKINS is on.
+   * wrench or a unique one, while WRENCH_SKINS is on; the Warrior's, with his great sword, war axe or maul or a unique one, while
+   * WARRIOR_SKINS is on.
    */
   private lettable(g: string): boolean {
     return (
       (STAFF_SKINS.on && (g === 'mage' || g.startsWith('mage-'))) ||
       (BOW_SKINS.on && (g === 'ranger' || g.startsWith('ranger-'))) ||
-      (WRENCH_SKINS.on && (g === 'tinkerer' || g.startsWith('tinkerer-')))
+      (WRENCH_SKINS.on && (g === 'tinkerer' || g.startsWith('tinkerer-'))) ||
+      (WARRIOR_SKINS.on && (g === 'warrior' || g.startsWith('warrior-')))
     );
   }
 
@@ -676,7 +681,7 @@ export class BakedHeroes {
    * while he holds a unique one, the last one's as he takes up another). His class card's group is not his alone and is kept.
    */
   holdOnly(cls: ClassId, place: HeroPlace, vet: boolean): void {
-    if (cls !== 'mage' && cls !== 'ranger' && cls !== 'tinkerer') return;
+    if (cls !== 'mage' && cls !== 'ranger' && cls !== 'tinkerer' && cls !== 'warrior') return;
     const g = this.group(cls, place, vet);
     if (!g || !this.lettable(g)) return;
     for (const other of [...this.whole.keys()]) if (other !== g && (other === cls || other.startsWith(`${cls}-`))) this.letGoGroup(other);

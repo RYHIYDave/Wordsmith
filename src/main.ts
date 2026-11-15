@@ -14,7 +14,7 @@ import { DOOR_WALLS, WHOLE_WALLS, BACK_STAND } from './render/walls';
 import { GROUNDS_ALL } from './render/grounds';
 import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useMonsterAttacks, useNewMonsters } from './art/bestiary';
-import { BOW_SKINS, STAFF_SKINS, WRENCH_SKINS, makeHeroArt, wornSkin } from './art/heroes';
+import { BOW_SKINS, STAFF_SKINS, WARRIOR_SKINS, WRENCH_SKINS, makeHeroArt, wornSkin } from './art/heroes';
 import type { HeroPlace } from './art/heroes';
 import { makeHeroArt3, THRUST } from './art/heroes3';
 import { tinkererAhead } from './art/tinkerer_art';
@@ -31,7 +31,7 @@ import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
-import { SWAP_MOVES, TALENTS, TALENTS2, WARRIOR_TREE2 } from './game/talents';
+import { SWAP_MOVES, TALENTS, TALENTS2, WARRIOR_TREE2, heavyDrawn } from './game/talents';
 import { QUEST_MARKS, SPEAK_NEW } from './game/quest_marks';
 import { SMALL_NOTES } from './art/small_notes';
 import { onTop } from './game/act2/quiettower';
@@ -2152,7 +2152,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const b = painter.baked;
     if (b && art.heroes.give) {
       // (THE UNIQUE WEAPON IN HIS HAND, art/heroes.ts wornSkin: holding a unique staff or bow, his pictures with it)
-      const skin = wornSkin(g.hero.cls, g.hero.gear.mainhand);
+      const skin = wornSkin(g.hero.cls, g.hero.gear.mainhand, heavyDrawn(g.hero.cls, g.hero.talents));
       const place: HeroPlace = skin ? (g.level.town ? skin.places.town : skin.places.dungeon) : g.level.town ? 'town' : 'dungeon';
       painter.hero(g.hero.cls, place);
       const grp = b.group(g.hero.cls, place, g.hero.cls === 'brawler' && VETERAN.on);
@@ -3493,6 +3493,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     bowSkins: BOW_SKINS,
     /** (THE TINKERER'S UNIQUE WRENCHES IN HER HAND, art/wrench_skins.ts) their switch, on at his yes (14 Nov 2026): `wrenchSkins.on`. */
     wrenchSkins: WRENCH_SKINS,
+    /** (THE WARRIOR'S UNIQUE WEAPONS IN HIS HANDS, art/sword_skins.ts, art/heavy_skins.ts) their switch, off until his yes in play: `warriorSkins.on`. */
+    warriorSkins: WARRIOR_SKINS,
     /** (A UNIQUE'S PIPS, ui/panels.ts) which of its lines they count and their colour, for pictures of each: `uniquePips.count`, `.colour`, `.free`. */
     uniquePips: UNIQUE_PIPS,
     /** Game steps per frame while the test bot plays. */

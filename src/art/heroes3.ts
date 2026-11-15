@@ -47,8 +47,12 @@ import { makeMageUpArt } from './mage_up_art';
 import { STAFF_SKIN_OF } from './staff_skins';
 import { BOW_SKIN_OF } from './bow_skins';
 import { WRENCH_SKIN_OF } from './wrench_skins';
+import { SWORD_SKIN_OF } from './sword_skins';
+import type { SwordSkinId } from './sword_skins';
+import { HEAVY_SKIN_OF } from './heavy_skins';
+import type { SkinTakeId } from './warrior_up_weapons';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
-import { lookOfPlace } from './heroes';
+import { WARRIOR_SKIN_KIND, lookOfPlace } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
 import type { Painted } from './kit';
 import { COMBO_MENDS, GREAT_BLADE, MOVES3, SETTLES, SLASH3, STAFF_UP, STRIKE3, WALKS, holdStartOf, runWaysOf, settlesOf, startsOf, walkingOf } from './moves3';
@@ -478,6 +482,7 @@ export function makeHeroArt3(): HeroArt {
   const mageShare = new Map<string, Sprite[]>();
   const staffShares = new Map<string, Map<string, Sprite[]>>();
   const bowShares = new Map<string, Map<string, Sprite[]>>();
+  const swordShares = new Map<string, Map<string, Sprite[]>>();
   const of = (cls: ClassId, look: HeroLook): ActorArt => {
     // (one figure of each hero in each place: the knight with the great sword, whatever he carries, until he is painted with a sword and a shield)
     const place = look.card ? 'card' : look.town ? 'town' : 'dungeon';
@@ -540,14 +545,29 @@ export function makeHeroArt3(): HeroArt {
     // Movement 9: art/warrior_up_art.ts. Off, he is as he was, every frame the same: tests/warrior_up.test.ts)
     // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: with the war axe or the maul, his pictures with it from his eight
     // sides, art/warrior_up_heavy_art.ts; his class card is the great sword's, as ever)
+    // (THE WARRIOR'S UNIQUE AXES AND HAMMERS, art/heavy_skins.ts: the one in his hands in place of the war axe or the maul)
     if (cls === 'warrior' && WARRIOR_UP.on && look.weapon && place !== 'card') {
-      const hkey = `warriorheavy:${look.weapon}:${place}`;
+      const skin = look.warriorSkin && WARRIOR_SKIN_KIND[look.warriorSkin] === look.weapon ? (look.warriorSkin as SkinTakeId) : null;
+      const hkey = `warriorheavy:${look.weapon}:${place}${skin ? `:${skin}` : ''}`;
       let hart = made.get(hkey);
       if (!hart) {
-        hart = makeWarriorHeavyArt(look.weapon, place) as unknown as ActorArt;
+        hart = makeWarriorHeavyArt(look.weapon, place, skin ? HEAVY_SKIN_OF[skin] : undefined) as unknown as ActorArt;
         made.set(hkey, hart);
       }
       return hart;
+    }
+    // (THE WARRIOR'S UNIQUE GREAT SWORDS, art/sword_skins.ts: holding one, his pictures painted with it, each a set of its own;
+    // his class card his own sword's, as ever)
+    if (cls === 'warrior' && WARRIOR_UP.on && look.warriorSkin && WARRIOR_SKIN_KIND[look.warriorSkin] === null && place !== 'card') {
+      const skey = `warriorup:${look.warriorSkin}:${place}`;
+      let sart = made.get(skey);
+      if (!sart) {
+        let share = swordShares.get(look.warriorSkin);
+        if (!share) swordShares.set(look.warriorSkin, (share = new Map()));
+        sart = makeWarriorUpArt(place, share, SWORD_SKIN_OF[look.warriorSkin as SwordSkinId]);
+        made.set(skey, sart);
+      }
+      return sart;
     }
     if (cls === 'warrior' && WARRIOR_UP.on) {
       const ukey = `warriorup:${place}`;
