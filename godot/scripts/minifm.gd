@@ -161,7 +161,7 @@ func _acting(m, a: Dictionary, t0: float, t1: float, hero) -> void:
 		"minifire":
 			# (his fire is a peril with its own clock from here, its harm rolled once: perils.gd fm_fire)
 			if at.call(1e-4):
-				m.mgr.perils.fm_fire(m.world, m.face, act["hand"], m._roll() * a["dmg"], true)
+				m.mgr.perils.fm_fire(m.world, m.face, act["hand"], m._roll() * a["dmg"], true, m)
 			if at.call(a["hit"]):
 				m.mgr.sfx.play("fire")
 				hero.kick(1.0)

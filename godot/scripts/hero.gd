@@ -50,6 +50,18 @@
 ##     Fuel, Searing, Venom, Deep Freeze, Forking, Cadence and the rest), the unique items (worn, wears), the melded words
 ##     (r.meld, meldHit, MELDS8), the other classes, and every word but the seven (Twin's second blows, Echoes, the last
 ##     words): where the game's code branches on one of those, the branch is not here.
+##
+## WHAT THE MONSTERS' WORDS DO TO HIM (game.ts hurtHero; hurt_by here): a blow comes with its striker's element and words (a
+## pack's minion's at half, monster.gd half_of). Its harm: the part of it that is plain less his armour, the parts of Flame,
+## Frost and Lightning less what he withstands of each; a fifth more while he is SHOCKED; a whole number, 1 at least. HEAVY
+## knocks him back a step. Then what it leaves on him: POISON, most of the blow again over 4 s (less what he withstands of
+## poison); FLAME, he BURNS for 3 s; FROST, he is CHILLED for 2 s (slower on his feet by its share, Strike slower by half of
+## it); LIGHTNING, he is SHOCKED for 3 s. What burns and poisons him bites twice a second, on the monsters' clock (dots); all
+## of it runs down as he goes (game.ts updateHero, updateDots), and is gone once he has fallen (_back).
+##   LEFT OUT, as not on a floor 1 to 5 monster's words, or not a new Warrior's: blocking (Guarding), Precise, Hexing, the
+##     wards, the skill trees (Bulwark, Thick Skin, Iron Chin, Slip Reflex, Thorns, Bitter Cold, Unbreakable, Resolute),
+##     the unique items, Culling, Pulling, Stilling, Binding, Bleeding, Plundering, Leech, Lasting, Fleeting, the shield,
+##     the melded and ranked words on a dungeon (FOE_WORDS), and Frostbite and Blight that ride on them.
 extends Node2D
 
 const Iso := preload("res://scripts/iso.gd")
@@ -121,6 +133,24 @@ var might := 0.0
 var might_t := 0.0
 var haste := 0.0
 var haste_t := 0.0
+## WHAT THE MONSTERS' WORDS HAVE LEFT ON HIM, named as the monsters' are (game/state.ts Hero burnT, burnDps, chillT, chill,
+## shockT, poisonT, poisonDps):
+##   burn_t, burn_dps       FLAME: he burns so many seconds more, so much a second
+##   chill_t, chill_k       FROST: slowed by `chill_k` of his pace (Strike by half of it) for so many seconds more
+##   shock_t                LIGHTNING: shocked, every blow a fifth harder, for so many seconds more
+##   poison_t, poison_dps   POISON: so many seconds more, so much a second
+var burn_t := 0.0
+var burn_dps := 0.0
+var chill_t := 0.0
+var chill_k := 0.0
+var shock_t := 0.0
+var poison_t := 0.0
+var poison_dps := 0.0
+## (the last blow that reached him, as hurt_by weighed it: for a check to read)
+var last_blow := {}
+## (defs.ts TUNE.poisonTime: how long a monster's poison works on him; PACKS.minion: a minion's share of its leader's words)
+const POISON_TIME := 4.0
+const PACK_MINION := 0.5
 
 ## Shot mode (main.gd): a screen direction held as if pressed, attacks asked for, and blows that flash but do not harm.
 var auto_dir := Vector2.ZERO
@@ -197,9 +227,23 @@ func set_max_life(v: float) -> void:
 
 
 ## Strike's blows a second, with its words: Swift in front faster, Heavy in front slower (game.ts useBasic: never fewer than
-## 0.3 a second).
+## 0.3 a second); chilled by a monster's Frost, slower by half the chill.
 func rate() -> float:
-	return maxf(0.3, float(loadout.r(0)["rate"]))
+	var r := maxf(0.3, float(loadout.r(0)["rate"]))
+	if chill_t > 0.0:
+		r *= 1.0 - chill_k * 0.5
+	return r
+
+
+## His pace on his feet, tiles a second (game.ts walkPace): his own and his gear's, quickened by his haste; chilled by a
+## monster's Frost, slower by the chill's share; in the Shade's rime, slower by its.
+func walk_pace() -> float:
+	var sp: float = SPEED * (1.0 + stats["move_speed"] / 100.0) * (1.0 + haste / 100.0)
+	if chill_t > 0.0:
+		sp *= 1.0 - chill_k
+	if _slow_t > 0.0:
+		sp *= 1.0 - _slow_by
+	return sp
 
 
 ## How long into a Strike its blow lands (useBasic): its wind-up, never more than two fifths of the time between blows.
@@ -460,6 +504,15 @@ func _process(dt: float) -> void:
 		haste_t -= dt
 		if haste_t <= 0.0:
 			haste = 0.0
+	# (what the monsters' words left on him runs down: game.ts updateHero)
+	if chill_t > 0.0:
+		chill_t -= dt
+	if shock_t > 0.0:
+		shock_t -= dt
+	if burn_t > 0.0:
+		burn_t -= dt
+	if poison_t > 0.0:
+		poison_t -= dt
 	_t += dt
 	var d := Input.get_vector("move_left", "move_right", "move_up", "move_down") + auto_dir
 	var way := Iso.screen_dir_to_world(d)
@@ -521,10 +574,8 @@ func _process(dt: float) -> void:
 			_turn(way)
 		var was := world
 		var walk_was := world
-		if _slow_t > 0.0:
-			slow *= 1.0 - _slow_by
-		# (his pace: his own, his gear's, and his haste while it lasts: game.ts walkPace)
-		_slide(way * SPEED * (1.0 + stats["move_speed"] / 100.0) * (1.0 + haste / 100.0) * slow * dt)
+		# (his pace: his own, his gear's, his haste while it lasts, a chill and the rime: game.ts walkPace)
+		_slide(way * walk_pace() * slow * dt)
 		walked += world.distance_to(walk_was)
 		# (the Lockdown's bars, standing, keep him on his side of them as he walks: action_f1.ts cageHero)
 		if monsters != null and monsters.perils != null:
@@ -742,22 +793,132 @@ func kick(amount: float) -> void:
 	_kick = maxf(_kick, amount)
 
 
-## `raw`: before his armour (a trap's share of his life: game.ts stepSpikes, a dart).
+## A plain blow, with no words: less his armour, or `raw`, before it (a trap's share of his life: game.ts stepSpikes, a dart).
 func hurt(dmg: float, raw := false) -> void:
+	hurt_by(dmg, "phys", [], {}, null, Vector2.INF, raw)
+
+
+## How much his armour takes of the plain part of a blow (stats.ts armorReduction: armour / (armour + 40 + 20 a floor), at
+## most 75%; the floor is never less than the first: game.ts `Math.max(1, this.power)`).
+func armour_cut() -> float:
+	var a: float = stats.get("armor", 0.0)
+	if a <= 0.0:
+		return 0.0
+	return minf(0.75, a / (a + 40.0 + 20.0 * maxf(1.0, float(map.depth) if map != null else 1.0)))
+
+
+## What he withstands of an element, % (his gear's, capped: loot.gd derive): Flame, Frost; anything else not plain, Lightning's.
+func resist(el: String) -> float:
+	match el:
+		"fire":
+			return stats.get("res_fire", 0.0)
+		"frost":
+			return stats.get("res_frost", 0.0)
+	return stats.get("res_light", 0.0)
+
+
+## A BLOW ON HIM (game.ts hurtHero, step by step): `raw` before what he withstands, of element `el`, carrying `words`; `half`,
+## a pack's minion's {words: its leader's it has at half, base: its kind's own element} (none given: read off `src`, the
+## monster whose own blow it is); `from`, where a blow that has no monster behind it came from (a shot, a mark): the way
+## Heavy knocks him. `bare`: before his armour (a trap's).
+##   Nothing, in the air of his Lunge or while nothing harms him.
+##   How much of each word's power it has: a minion's of its leader's words half; and where the word that made it Flame, Frost
+##     or Lightning is one of those, only half the blow is of that element, the rest of the minion's own.
+##   Its harm: its plain part less his armour, the others less what he withstands of each; a fifth more while he is shocked;
+##     a whole number, 1 at least. HEAVY knocks him back a step (a minion's, half a step).
+##   Then what it leaves: POISON, most of the blow again over 4 s, less what he withstands of poison, as hard as the harder of
+##     what he has and this; each element of it: FLAME burns (three tenths of it over 3 s, a minion's half of Flame half as
+##     hard), FROST chills (three tenths, for 2 s), LIGHTNING shocks (3 s).
+## (Left out, with the game's switches for them: see the head of this file.)
+func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null, from := Vector2.INF, bare := false) -> void:
 	if not alive or _invuln > 0.0:
 		return
-	# (armour takes its share: armour / (armour + 40 + 20 a floor), at most 75%: stats.ts)
-	var cut := minf(0.75, stats["armor"] / (stats["armor"] + 40.0 + 20.0 * map.depth)) if stats["armor"] > 0.0 and not raw else 0.0
+	var by: Vector2 = world + face
+	if src != null and is_instance_valid(src):
+		by = src.world
+	elif from != Vector2.INF:
+		by = from
+	var hv: Dictionary = half
+	if hv.is_empty() and src != null and is_instance_valid(src) and src.has_method("half_of"):
+		hv = src.half_of()
+	var hw: Array = hv.get("words", [])
+	var k := func(w: String) -> float: return 0.0 if not words.has(w) else (PACK_MINION if hw.has(w) else 1.0)
+	var base: String = hv.get("base", "phys")
+	var el_k := PACK_MINION if not hv.is_empty() and el != base and hw.has(el) else 1.0
+	var parts: Array = [[el, el_k], [base, 1.0 - el_k]] if el_k < 1.0 else [[el, 1.0]]
+	var dmg := 0.0
+	var each: Array = []
+	for p in parts:
+		var part: float = raw * float(p[1]) * (1.0 - ((0.0 if bare else armour_cut()) if p[0] == "phys" else resist(p[0]) / 100.0))
+		each.append([p[0], p[1], part])
+		dmg += part
+	var shocked := shock_t > 0.0
+	if shocked:
+		dmg *= 1.2
+	dmg = maxf(1.0, roundf(dmg))
+	# HEAVY, on a monster: its blow knocks him back a step (game.ts knockHero)
+	var knocked := 0.0
+	if k.call("heavy") > 0.0:
+		var d := world - by
+		var way := d / d.length() if d.length() >= 0.01 else -face
+		knocked = float(Words.data()["heavy"]["knock"]) * float(k.call("heavy"))
+		knock(way, knocked)
 	if not unhurt:
-		life -= dmg * (1.0 - cut)
+		life -= dmg
 	_flash = 0.15
-	_shake = 0.15
+	_tell({"t": "hit", "x": world.x, "y": world.y, "amount": dmg, "crit": false, "el": el, "onHero": true})
+	kick(minf(5.0, 1.0 + dmg / 8.0))
 	sfx.play("hurt", -6.0)
+	# POISON, on a monster: most of the blow again, over the next few seconds, less what he withstands of poison
+	if k.call("poison") > 0.0:
+		var kept: float = 1.0 - stats.get("res_poison", 0.0) / 100.0
+		poison_dps = maxf(poison_dps if poison_t > 0.0 else 0.0, dmg * 0.6 * float(k.call("poison")) * kept / POISON_TIME)
+		poison_t = POISON_TIME
+	# (what each element of the blow leaves: a minion's half of Flame burns half as hard)
+	for p in parts:
+		var share: float = p[1]
+		match p[0]:
+			"fire":
+				burn_dps = maxf(burn_dps if burn_t > 0.0 else 0.0, dmg * 0.3 * share / 3.0)
+				burn_t = 3.0
+			"frost":
+				chill_k = maxf(chill_k if chill_t > 0.0 else 0.0, 0.3 * share)
+				chill_t = 2.0
+			"lightning":
+				shock_t = maxf(shock_t, 3.0 * share)
+	last_blow = {"raw": raw, "el": el, "words": words, "half": hw, "parts": each, "shocked": shocked, "dmg": dmg, "knock": knocked}
 	if life <= 0.0:
-		life = 0.0
-		alive = false
-		_down_for = 0.0
-		_end_act()
+		_fall()
+
+
+## WHAT BURNS AND POISONS HIM BITES (game.ts updateDots, twice a second, on the monsters' clock: monsters.gd _dots): his
+## burning half its burning a second, his poison half its poison a second, 1 at least; neither is less for his armour.
+func dots() -> void:
+	if not alive:
+		return
+	if burn_t > 0.0:
+		var b := maxf(1.0, roundf(burn_dps * 0.5))
+		if not unhurt:
+			life -= b
+		_tell({"t": "hit", "x": world.x, "y": world.y, "amount": b, "crit": false, "el": "fire", "onHero": true})
+		if life <= 0.0:
+			_fall()
+			return
+	if poison_t > 0.0:
+		var p := maxf(1.0, roundf(poison_dps * 0.5))
+		if not unhurt:
+			life -= p
+		_tell({"t": "hit", "x": world.x, "y": world.y, "amount": p, "crit": false, "el": "phys", "onHero": true, "poison": true})
+		if life <= 0.0:
+			_fall()
+
+
+## He falls.
+func _fall() -> void:
+	life = 0.0
+	alive = false
+	_down_for = 0.0
+	_end_act()
 
 
 func heal(share: float) -> void:
@@ -775,6 +936,14 @@ func _back() -> void:
 	might_t = 0.0
 	haste = 0.0
 	haste_t = 0.0
+	# (and what the monsters' words had left on him: game.ts, a fallen hero's burning, chill, shock and poison are over)
+	burn_t = 0.0
+	burn_dps = 0.0
+	chill_t = 0.0
+	chill_k = 0.0
+	shock_t = 0.0
+	poison_t = 0.0
+	poison_dps = 0.0
 	if wakes != null and is_instance_valid(wakes):
 		wakes.list.clear()
 		wakes.queue_redraw()
@@ -890,7 +1059,8 @@ func _show() -> void:
 	_sprite.self_modulate = Color(2.0, 0.7, 0.7) if _flash > 0.0 else Color.WHITE
 
 
-## His life over his head in a fight or when he is hurt (Version 11.2).
+## His life over his head in a fight or when he is hurt (Version 11.2). Its edge takes the colour of what ails him (render.ts,
+## the hero's life bar): burning P.fr4, poisoned P.vn4, chilled P.bu4, shocked P.lt3.
 func _draw() -> void:
 	if not alive:
 		return
@@ -899,7 +1069,16 @@ func _draw() -> void:
 		return
 	var w := 44.0
 	var top := -104.0 - _lift
-	draw_rect(Rect2(-w / 2 - 1, top - 1, w + 2, 7), Color(0.04, 0.04, 0.1, 0.85))
+	var edge := Color(0.04, 0.04, 0.1, 0.85)
+	if burn_t > 0.0:
+		edge = Color("#ff8a2a")
+	elif poison_t > 0.0:
+		edge = Color("#b4cc24")
+	elif chill_t > 0.0:
+		edge = Color("#58a8f0")
+	elif shock_t > 0.0:
+		edge = Color("#fff060")
+	draw_rect(Rect2(-w / 2 - 1, top - 1, w + 2, 7), edge)
 	draw_rect(Rect2(-w / 2, top, w * clampf(life / max_life, 0.0, 1.0), 5), Color(0.86, 0.16, 0.24))
 
 

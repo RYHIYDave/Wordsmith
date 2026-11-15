@@ -307,21 +307,21 @@ func _acting(m, a: Dictionary, t0: float, t1: float, hero) -> void:
 		"shards":
 			if begun:
 				var aim: Vector2 = hero.world - m.world
-				perils.fm_shards(m.world, atan2(aim.y, aim.x), m._roll() * a["dmg"])
+				perils.fm_shards(m.world, atan2(aim.y, aim.x), m._roll() * a["dmg"], m)
 			for T in SHARD_HITS:
 				if at.call(T):
 					m.mgr.sfx.play("fire", -3.0)
 					hero.kick(2.0)
 		"rings":
 			if begun:
-				perils.fm_rings(m.world, atan2(m.face.y, m.face.x), m._roll() * a["dmg"])
+				perils.fm_rings(m.world, atan2(m.face.y, m.face.x), m._roll() * a["dmg"], m)
 			for k in RING_HITS.size():
 				if at.call(RING_HITS[k]):
 					hero.kick(5.0 if k == 0 else 4.0)
 					m.mgr.sfx.play("slam", -2.0)
 		"fire":
 			if begun:
-				perils.fm_fire(m.world, m.face, act["hand"], m._roll() * a["dmg"], false)
+				perils.fm_fire(m.world, m.face, act["hand"], m._roll() * a["dmg"], false, m)
 			if at.call(a["hit"]):
 				m.mgr.sfx.play("fire")
 				hero.kick(3.0)
@@ -352,7 +352,7 @@ func _acting(m, a: Dictionary, t0: float, t1: float, hero) -> void:
 				var d: Vector2 = hero.world - m.world
 				if d.length() > 0.0:
 					m.face = d.normalized()
-			perils.fm_rise(m.world, FM2["pause"] + FM2["up"], m._roll() * FM2["riseDmg"])
+			perils.fm_rise(m.world, FM2["pause"] + FM2["up"], m._roll() * FM2["riseDmg"], m)
 
 
 ## endAct: he stands as his pictures leave him, and waits his moment; gone, he comes back at once.

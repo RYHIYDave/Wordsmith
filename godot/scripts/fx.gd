@@ -1160,6 +1160,9 @@ func ambient(list: Array, dt: float) -> void:
 		if marked or bits & (Figures.STUNNED | Figures.STAGGERED) != 0:
 			words3.watch(m, bits & Figures.STUNNED != 0, bits & Figures.STAGGERED != 0)
 	figures.thaws()
+	# the hero burning, from a monster's Flame: embers rise off him (render.ts; his tint, chilled or poisoned: fx_figures.gd)
+	if h != null and float(h.get("burn_t")) > 0.0 and h.alive and randf() < 0.4 * amb:
+		mote(h.world.x, h.world.y, L.EL["fire"])
 	# "of Swiftness": while the haste lasts the hero leaves green afterimages and a wake of wind (render.ts)
 	if haste_t > 0.0:
 		haste_t -= dt

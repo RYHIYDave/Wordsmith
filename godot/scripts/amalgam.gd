@@ -241,7 +241,7 @@ func _acting(m, a: Dictionary, t0: float, t1: float, dt: float, hero) -> void:
 			for d in rain_drops():
 				var p: Vector2 = m.world + d["at"]
 				if Kit.free_at(m.mgr, p.x, p.y, RAIN["edge"]):
-					perils.am_drop(p.x, p.y, d["land"], dmg, m.world + d["from"], d["seed"], RAIN, form)
+					perils.am_drop(p.x, p.y, d["land"], dmg, m.world + d["from"], d["seed"], RAIN, form, m)
 		"floorArms":
 			if not at.call(a["hit"]):
 				return
@@ -272,7 +272,7 @@ func _acting(m, a: Dictionary, t0: float, t1: float, dt: float, hero) -> void:
 					spots.append(p)
 			for k in spots.size():
 				var hit: float = ARMS["first"] + (ARMS["last"] - ARMS["first"]) * k / maxf(1.0, ARMS["n"] - 1.0)
-				perils.am_arm(spots[k].x, spots[k].y, hit, dmg, ARMS)
+				perils.am_arm(spots[k].x, spots[k].y, hit, dmg, ARMS, m)
 		"devour":
 			var maw := Kit.beside(m.world, m.face, hand, DEVOUR["maw"], 0.0)
 			# (its cone marked on the floor from its warning to its rake)
@@ -358,7 +358,8 @@ func died(m) -> void:
 
 func _blow(m, hero, mult: float) -> void:
 	if hero.alive:
-		hero.hurt(m._roll() * mult)
+		# (with its words: bosses.ts blow, hurtHero(roll, monsterElement(m), m.words, m))
+		m.harm_hero(hero, m._roll() * mult)
 
 
 ## Devour's drag: a body (the hero, a beast) `rad` round that is in its cone is moved a step toward its maw, sliding along walls
@@ -694,7 +695,7 @@ class Beast extends RefCounted:
 			# (acting 'bite': a hero within 1.5 tiles and half his radius, and not behind it)
 			var rel := Kit.from_figure(m.world, m.face, hand, hero.world)
 			if hero.alive and hero.world.distance_to(m.world) <= BITE["reach"] + HERO_R * 0.5 and rel.x > -0.2:
-				hero.hurt(m._roll() * BITE["dmg"])
+				m.harm_hero(hero, m._roll() * BITE["dmg"])
 			m.mgr.sfx.play("swing", -10.0)
 		if t >= LONG[act]:
 			# (endAct: it stands, and waits its moment)
@@ -774,7 +775,7 @@ class Mite extends RefCounted:
 					Kit.family_sound(m.mgr, "atkBones", 0.25, -4.0)
 					m.mgr.sfx.play("swing", -10.0)
 					if hero.alive and dist <= reach + 0.45 + HERO_R:
-						hero.hurt(m._roll())
+						m.harm_hero(hero, m._roll())
 				return
 			"recover":
 				t -= dt

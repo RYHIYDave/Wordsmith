@@ -3,7 +3,10 @@
 ## open ground: floor or pit), their arrows in flight, and their pack waking with one of them (game.ts wakeUp).
 ## And of what the hero's words do, what spans more than one of them: LIGHTNING's arcs from the one struck to those near it
 ## and on from each, a moment apart (`arcs`; game.ts hitMonster, ARC_CHAIN), and the clock by which burning and poison bite
-## them all, twice a second (`_dots`; game.ts updateDots).
+## them all, twice a second (`_dots`; game.ts updateDots), and the hero too (hero.gd dots).
+## And of THE MONSTERS' OWN WORDS, what spans more than one of them: the skeleton champion's RALLYING CRY, heard only by the
+## minions of his pack that carry his words (`hears_cry`, `rally`; game.ts hearsCry, rally); their shots carrying their words
+## to the hero (`shoot`, `throw_spear`); and which of a blue pack has its name over it (`speaks`; render.ts drawBars).
 extends Node
 
 const Iso := preload("res://scripts/iso.gd")
@@ -47,6 +50,12 @@ var _flow := PackedInt32Array()
 var _flow_in := 0.0
 var _arrows: Array = []  # {pos, dir, speed, left, dmg, node}
 var _figures := {}
+## (render.ts drawBars, `speaks`: a blue pack's name is written once, over the first of it still standing in sight: by pack)
+var speaks := {}
+## (defs.ts RALLY: how long the champion's cry makes his minions' words whole, and how far from him it is heard)
+const RALLY := {"dur": 5.0, "reach": 8.0}
+## (defs.ts MSG.foe: the colour of a line that names something dangerous)
+const MSG_FOE := Color("#ff8a3a")
 ## (the floor's boss has fallen, and where: the ways on open clear of him, ways.gd)
 var boss_fell := false
 var boss_at := Vector2.ZERO
@@ -86,6 +95,10 @@ func _process(dt: float) -> void:
 			m.step(dt, hero)
 			standing.append(m)
 	list = standing
+	speaks.clear()
+	for m in list:
+		if not m.dead and m.seen and m.rarity == "blue" and not speaks.has(m.pack_id):
+			speaks[m.pack_id] = m
 	_part()
 	_fly(dt)
 	_dots(dt)
@@ -196,6 +209,9 @@ func _dots(dt: float) -> void:
 			m.damage(maxf(1.0, roundf(m.burn_dps * 0.5)), "fire", false, false, [], false, true)
 		if not m.dead and m.poison_t > 0.0 and m.poison_dps > 0.0:
 			m.damage(maxf(1.0, roundf(m.poison_dps * 0.5)), "phys", false, false, [], true)
+	# (and what burns and poisons the hero, on the same clock)
+	if hero != null and is_instance_valid(hero):
+		hero.dots()
 
 
 func _tell(e: Dictionary) -> void:
@@ -215,6 +231,31 @@ func voice(name: String, gap: float, db: float) -> void:
 		return
 	_voiced[name] = now
 	sfx.play(name, db)
+
+
+## THE SKELETON CHAMPION'S CRY (game.ts hearsCry): whether one of his minions would hear it: one of his pack that carries his
+## words at half, within RALLY.reach of him, and not rallied but now (more than a second of it left).
+func hears_cry(m: Monster) -> bool:
+	for o in list:
+		if is_instance_valid(o) and not o.dead and o != m and o.pack_id == m.pack_id and o.rarity == "minion" and not o.half.is_empty() and o.rally_t <= 1.0 and o.world.distance_to(m.world) <= RALLY["reach"]:
+			return true
+	return false
+
+
+## HE CRIES OUT (game.ts rally): his minions within RALLY.reach of him have his words whole for RALLY.dur seconds; the roar,
+## the screen kicked, and the line that says so.
+func rally(m: Monster) -> void:
+	for o in list:
+		if not is_instance_valid(o) or o.dead or o == m or o.pack_id != m.pack_id or o.rarity != "minion":
+			continue
+		if o.world.distance_to(m.world) <= RALLY["reach"]:
+			o.rally_t = RALLY["dur"]
+	used["rallied"] = used.get("rallied", 0) + 1
+	sfx.play("boss_roar", linear_to_db(0.5))
+	if hero != null:
+		hero.kick(1.0)
+	if loot != null:
+		loot.say("%s rallies his pack" % m.title, MSG_FOE)
 
 
 ## Pack-mates within 14 tiles wake with it; a boss roars, the others call out.
@@ -384,13 +425,14 @@ func _pass(i: int) -> bool:
 
 
 ## Something loosed at the hero from monster `from`, the way `dir` on the floor: an arrow (0.2 round), one of the Warden's
-## bolts, or the marksman's great arrow (`pierce`: it goes through whoever it meets, and on to its end).
+## bolts, or the marksman's great arrow (`pierce`: it goes through whoever it meets, and on to its end). It carries its
+## monster's words as they were as it was loosed (game.ts shootAt: `element`, `words`, `half`).
 func shoot(from: Monster, dir: Vector2, speed: float, reach: float, dmg: float, look := "arrow", r := ARROW_R, pierce := false) -> void:
 	var node := Arrow.new()
 	node.dir = dir
 	node.look = look
 	stands.add_child(node)
-	_arrows.append({"pos": from.world + dir * (from.r + 0.1), "dir": dir, "speed": speed, "left": reach, "dmg": dmg, "node": node, "r": r, "pierce": pierce, "hit": false})
+	_arrows.append({"pos": from.world + dir * (from.r + 0.1), "dir": dir, "speed": speed, "left": reach, "dmg": dmg, "node": node, "r": r, "pierce": pierce, "hit": false, "by": from.blow()})
 
 
 ## THE BONEWARD'S SPEAR (game.ts throwSpear): from its hand `at`, the way `dir`, as far as `reach` (where the hero stood); where
@@ -400,7 +442,7 @@ func throw_spear(from: Monster, at: Vector2, dir: Vector2, reach: float, dmg: fl
 	node.dir = dir
 	node.look = "spear"
 	stands.add_child(node)
-	_arrows.append({"pos": at, "dir": dir, "speed": MM.SPEAR["speed"], "left": reach, "dmg": dmg, "node": node, "r": MM.SPEAR["r"], "pierce": false, "hit": false, "spear": from, "way": reach})
+	_arrows.append({"pos": at, "dir": dir, "speed": MM.SPEAR["speed"], "left": reach, "dmg": dmg, "node": node, "r": MM.SPEAR["r"], "pierce": false, "hit": false, "spear": from, "way": reach, "by": from.blow()})
 
 
 ## A spear has come down at `p`: it lies there, on the nearest floor one could walk to, till its Boneward picks it up.
@@ -477,7 +519,9 @@ func _fly(dt: float) -> void:
 		var p: Vector2 = a["pos"]
 		var gone: bool = a["left"] <= 0.0 or not map.open_at(floori(p.x), floori(p.y))
 		if not gone and not a["hit"] and hero.alive and p.distance_to(hero.world) <= a["r"] + HERO_R:
-			hero.hurt(a["dmg"])
+			# (with its monster's words, from a second back along its flight: game.ts updateProjectiles, hurtHero's (ox, oy))
+			var by: Dictionary = a["by"]
+			hero.hurt_by(a["dmg"], by["el"], by["words"], by["half"], null, p - a["dir"] * float(a["speed"]))
 			a["hit"] = true
 			gone = not a["pierce"]
 		if gone:

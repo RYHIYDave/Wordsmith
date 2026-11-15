@@ -54,8 +54,25 @@ static var _fx_sheets: Array = []
 static var _fx_asked := {}
 
 
+## WHAT A MONSTER'S MARK CARRIES OF ITS WORDS (game.ts: a zone's or a peril's `element`, `words`, `half`, set as it is made,
+## from the monster that made it): its blow as monster.gd `blow` gives it then, {el, words, half}; none for a mark of no one's.
+func _by(src) -> Dictionary:
+	if src != null and is_instance_valid(src) and src.has_method("blow"):
+		return src.blow()
+	return {}
+
+
+## A MARK'S BLOW ON THE HERO, `dmg` (game.ts hurtFrom, and bosses.ts stepPerils `hurt`: hurtHero(p.dmg, p.el, p.words, null,
+## p.from, p.x, p.y, p.half)): with the words it was made with, from where it lies (or `at`); `el`, an element of its own the
+## game gives it in place of its monster's (the high priest's smoke and the Stoker's fire are Flame).
+func _hurt(p: Dictionary, dmg: float, at := Vector2.INF, el := "") -> void:
+	var by: Dictionary = p.get("by", {})
+	var from := at if at != Vector2.INF else Vector2(float(p.get("x", hero.world.x)), float(p.get("y", hero.world.y)))
+	hero.hurt_by(dmg, el if el != "" else str(by.get("el", "phys")), by.get("words", []), by.get("half", {}), null, from)
+
+
 func warn(x: float, y: float, r: float, dur: float, dmg: float, src: Object) -> void:
-	list.append({"kind": "warn", "x": x, "y": y, "r": r, "t": 0.0, "dur": dur, "dmg": dmg, "src": src})
+	list.append({"kind": "warn", "x": x, "y": y, "r": r, "t": 0.0, "dur": dur, "dmg": dmg, "src": src, "by": _by(src)})
 
 
 func lane(src: Object, a: Vector2, b: Vector2, half: float, dur: float) -> void:
@@ -68,14 +85,15 @@ func aim(src: Object, a: Vector2, b: Vector2, dur: float) -> Dictionary:
 	return p
 
 
-## `from`, `face`: where its archer stood and the way it faced as it loosed (for what it loosed, flying up over it).
-func rain(x: float, y: float, dmg: float, from := Vector2.INF, face := Vector2.ZERO) -> void:
+## `from`, `face`: where its archer stood and the way it faced as it loosed (for what it loosed, flying up over it); `src`, the
+## archer (its words go with the rain).
+func rain(x: float, y: float, dmg: float, from := Vector2.INF, face := Vector2.ZERO, src: Object = null) -> void:
 	var sticks := PackedVector2Array()
 	for i in 26:
 		var ang := randf() * TAU
 		var d := sqrt(randf()) * MM.RAIN["radius"]
 		sticks.append(Vector2(x + cos(ang) * d, y + sin(ang) * d))
-	list.append({"kind": "rain", "x": x, "y": y, "t": 0.0, "dmg": dmg, "done": false, "sticks": sticks, "from": from, "face": face})
+	list.append({"kind": "rain", "x": x, "y": y, "t": 0.0, "dmg": dmg, "done": false, "sticks": sticks, "from": from, "face": face, "by": _by(src)})
 
 
 ## The Lockdown, cast with the Warden at (x, y): its rows across the room he stands in (action_f1.ts barRows).
@@ -95,7 +113,7 @@ func bars(src: Object, x: float, y: float, dmg: float, windup: float) -> void:
 			rows_x.append(y + d)
 		if x + d > room["x"] and x + d < room["x"] + room["w"]:
 			rows_y.append(x + d)
-	list.append({"kind": "bars", "x": x, "y": y, "t": -windup, "dmg": dmg, "done": false, "src": src, "room": room, "rx": rows_x, "ry": rows_y})
+	list.append({"kind": "bars", "x": x, "y": y, "t": -windup, "dmg": dmg, "done": false, "src": src, "room": room, "rx": rows_x, "ry": rows_y, "by": _by(src)})
 
 
 ## A monster that falls takes its marks with it (game.ts: its warn, lane and aim go).
@@ -111,7 +129,7 @@ func blast(x: float, y: float, r: float) -> void:
 
 ## THE CULTIST'S FIRE SIGIL (game/action_f2.ts): its clock from -windup (the cast) to its eruption at 0, then the floor burning.
 func sigil(x: float, y: float, dmg: float, windup: float, src: Object) -> void:
-	list.append({"kind": "sigil", "x": x, "y": y, "t": -windup, "cast": windup, "dmg": dmg, "src": src, "done": 0})
+	list.append({"kind": "sigil", "x": x, "y": y, "t": -windup, "cast": windup, "dmg": dmg, "src": src, "done": 0, "by": _by(src)})
 
 
 ## THE SHADE'S RIME (game/action_f2.ts): frost on the floor that slows the hero while he stands in it.
@@ -133,7 +151,7 @@ func spear(at: Vector2, way: Vector2, src: Object) -> void:
 ## THE HIGH PRIEST'S BURNING SMOKE (game.ts swingCenser, the 'smoke' zone; defs.ts SMOKE): settled on the floor, it burns
 ## whoever is in it (and half his own width more) every `tick`, from the moment it settles, `dmg` each time.
 func smoke(x: float, y: float, dmg: float, src: Object) -> void:
-	list.append({"kind": "smoke", "x": x, "y": y, "t": 0.0, "dmg": dmg, "tick": 0.0, "src": src})
+	list.append({"kind": "smoke", "x": x, "y": y, "t": 0.0, "dmg": dmg, "tick": 0.0, "src": src, "by": _by(src)})
 
 
 ## THE HERO FALLEN AND COME BACK: what his enemies had sent out is gone, and what of it stood among the figures with it; a
@@ -710,7 +728,7 @@ func _process(dt: float) -> void:
 						sfx.play("slam", -2.0)
 						hero.shake()
 						if hero.alive and hero.world.distance_to(Vector2(p["x"], p["y"])) <= p["r"] + 0.1:
-							hero.hurt(p["dmg"])
+							_hurt(p, p["dmg"])
 						keep.append({"kind": "blast", "x": p["x"], "y": p["y"], "r": p["r"], "t": 0.0})
 					stays = false
 				elif p.get("mark", false) and (not is_instance_valid(p["src"]) or p["src"].dead):
@@ -725,7 +743,7 @@ func _process(dt: float) -> void:
 				elif p["done"] == 0 and p["t"] >= 0.0:
 					p["done"] = 1
 					if hero.alive and hero.world.distance_to(at) <= MM.SIGIL["radius"]:
-						hero.hurt(p["dmg"])
+						_hurt(p, p["dmg"])
 					sfx.play("fire")
 					hero.kick(2.5)
 				elif p["done"] > 0 and p["t"] > MM.SIGIL["strike"]:
@@ -734,7 +752,7 @@ func _process(dt: float) -> void:
 					if p["t"] >= next:
 						p["done"] += 1
 						if hero.alive and hero.world.distance_to(at) <= MM.burn_radius(p["t"]):
-							hero.hurt(p["dmg"] * MM.SIGIL["share"])
+							_hurt(p, p["dmg"] * MM.SIGIL["share"])
 				if p["t"] >= MM.SIGIL["pillar"] + MM.SIGIL["fall"] + MM.SIGIL["burn"]:
 					stays = false
 			"rime":
@@ -761,14 +779,14 @@ func _process(dt: float) -> void:
 				if p["tick"] <= 0.0:
 					p["tick"] += MM.SMOKE["tick"]
 					if hero.alive and hero.world.distance_to(Vector2(p["x"], p["y"])) <= MM.SMOKE["r"] + 0.15:
-						hero.hurt(p["dmg"])
+						_hurt(p, p["dmg"], Vector2.INF, "fire")
 				stays = p["t"] < MM.SMOKE["dur"]
 			"rain":
 				if not p["done"] and p["t"] >= MM.RAIN["delay"]:
 					p["done"] = true
 					sfx.play("hit", -4.0)
 					if hero.alive and hero.world.distance_to(Vector2(p["x"], p["y"])) <= MM.RAIN["radius"]:
-						hero.hurt(p["dmg"])
+						_hurt(p, p["dmg"])
 				stays = p["t"] < MM.RAIN["delay"] + MM.RAIN["stuck"] + MM.RAIN["gone"]
 			"bars":
 				var w = p["src"]
@@ -779,7 +797,7 @@ func _process(dt: float) -> void:
 					sfx.play("slam")
 					hero.shake()
 					if hero.alive and _on_a_row(p, hero.world):
-						hero.hurt(p["dmg"])
+						_hurt(p, p["dmg"])
 				if p["t"] >= MM.LOCKDOWN["stand"] + MM.LOCKDOWN["rise"]:
 					stays = false
 			"am_lines", "am_ring", "am_drop", "am_arm":
@@ -914,18 +932,19 @@ const FM_HAND_TIME := 24.0 / 20.0
 var _fm_tasks: Array = []
 
 
-func fm_shards(at: Vector2, aim: float, dmg: float) -> void:
-	list.append({"kind": "fm_shards", "x": at.x, "y": at.y, "t": 0.0, "dur": FM.FM2["lasts"]["shards"], "dmg": dmg, "aim": aim, "aim2": NAN, "struck": 0})
+## (`src`, here and below: he who made it, whose words it carries: game/bosses.ts peril)
+func fm_shards(at: Vector2, aim: float, dmg: float, src: Object = null) -> void:
+	list.append({"kind": "fm_shards", "x": at.x, "y": at.y, "t": 0.0, "dur": FM.FM2["lasts"]["shards"], "dmg": dmg, "aim": aim, "aim2": NAN, "struck": 0, "by": _by(src)})
 
 
-func fm_rings(at: Vector2, aim: float, dmg: float) -> void:
-	list.append({"kind": "fm_rings", "x": at.x, "y": at.y, "t": 0.0, "dur": FM.FM2["lasts"]["rings"], "dmg": dmg, "aim": aim, "struck": 0})
+func fm_rings(at: Vector2, aim: float, dmg: float, src: Object = null) -> void:
+	list.append({"kind": "fm_rings", "x": at.x, "y": at.y, "t": 0.0, "dur": FM.FM2["lasts"]["rings"], "dmg": dmg, "aim": aim, "struck": 0, "by": _by(src)})
 
 
 ## `face`, `hand`: the way he faced as he began, and the hand he is drawn with (the stream turns to the left he is drawn with).
-func fm_fire(at: Vector2, face: Vector2, hand: int, dmg: float, mini: bool) -> void:
+func fm_fire(at: Vector2, face: Vector2, hand: int, dmg: float, mini: bool, src: Object = null) -> void:
 	var dur: float = FM.FM2["lasts"]["mini" if mini else "fire"]
-	list.append({"kind": "fm_fire", "x": at.x, "y": at.y, "t": 0.0, "dur": dur, "dmg": dmg, "face": face, "hand": hand, "mini": mini, "last": -1.0})
+	list.append({"kind": "fm_fire", "x": at.x, "y": at.y, "t": 0.0, "dur": dur, "dmg": dmg, "face": face, "hand": hand, "mini": mini, "last": -1.0, "by": _by(src)})
 
 
 ## `which`: which of the heaps he calls on it is (each bursts a little after the one before).
@@ -938,8 +957,8 @@ func fm_pit(at: Vector2) -> void:
 
 
 ## `before`: how long until he erupts there.
-func fm_rise(at: Vector2, before: float, dmg: float) -> void:
-	list.append({"kind": "fm_rise", "x": at.x, "y": at.y, "t": -before, "dur": 1.0, "dmg": dmg, "done": false})
+func fm_rise(at: Vector2, before: float, dmg: float, src: Object = null) -> void:
+	list.append({"kind": "fm_rise", "x": at.x, "y": at.y, "t": -before, "dur": 1.0, "dmg": dmg, "done": false, "by": _by(src)})
 
 
 ## `before`: how long until it begins; `secs`: how long it burns before the dead one stands.
@@ -971,7 +990,7 @@ func _step_fm(p: Dictionary) -> bool:
 					if h.distance_to(at + Vector2(s["x"], s["y"])) > FM.SHARDS["r"]:
 						continue
 					p["struck"] = int(p["struck"]) | bit
-					hero.hurt(p["dmg"])
+					_hurt(p, p["dmg"])
 		"fm_rings":
 			for i in FM.RINGS["radii"].size():
 				var burst := FM.ring_burst(i)
@@ -980,19 +999,19 @@ func _step_fm(p: Dictionary) -> bool:
 				if not FM.ring_strikes(i, h - at, p["aim"]):
 					continue
 				p["struck"] = int(p["struck"]) | (1 << i)
-				hero.hurt(p["dmg"])
+				_hurt(p, p["dmg"])
 				hero.kick(1.5)
 		"fm_fire":
 			if t - float(p["last"]) >= FM.FM2["tick"]:
 				var rel := FM.from_figure(at, p["face"], p["hand"], h)
 				if FM.fire_strikes(t, rel.x, rel.y, p["mini"]):
 					p["last"] = t
-					hero.hurt(float(p["dmg"]) * (1.0 if FM.in_stream(t, rel.x, rel.y, p["mini"]) else float(FM.FM2["laneShare"])))
+					_hurt(p, float(p["dmg"]) * (1.0 if FM.in_stream(t, rel.x, rel.y, p["mini"]) else float(FM.FM2["laneShare"])))
 		"fm_rise":
 			if not p["done"] and t >= 0.0:
 				p["done"] = true
 				if hero.alive and h.distance_to(at) <= FM.RISE_MARK["r"]:
-					hero.hurt(p["dmg"])
+					_hurt(p, p["dmg"])
 					var way := h - at
 					hero.knock(way.normalized() if way.length() >= 0.01 else -hero.face, FM.HEAVY_KNOCK)
 				hero.kick(4.0)
@@ -1569,13 +1588,14 @@ func am_ring(x: float, y: float, r: float, n: Dictionary) -> void:
 ## A skull of the bone rain that will land at (x, y) `land` seconds from now, falling from its niche at `from`; `which`: its
 ## own number among the rain's (for its picture, when it has one); `n`: {fly, r, mite_at, scuff, high}; `form`: called with
 ## where it burst, to make its mite.
-func am_drop(x: float, y: float, land: float, dmg: float, from: Vector2, which: int, n: Dictionary, form: Callable) -> void:
-	list.append({"kind": "am_drop", "x": x, "y": y, "t": -land, "dmg": dmg, "from": from, "which": which, "n": n, "form": form, "done": 0})
+## (`src`, here and below: it that made it, whose words it carries: game/bosses.ts peril)
+func am_drop(x: float, y: float, land: float, dmg: float, from: Vector2, which: int, n: Dictionary, form: Callable, src: Object = null) -> void:
+	list.append({"kind": "am_drop", "x": x, "y": y, "t": -land, "dmg": dmg, "from": from, "which": which, "n": n, "form": form, "done": 0, "by": _by(src)})
 
 
 ## A hole of arms of the dead at (x, y), bursting up `hit` seconds from now; `n`: {warn, up, r, time, after}.
-func am_arm(x: float, y: float, hit: float, dmg: float, n: Dictionary) -> void:
-	list.append({"kind": "am_arm", "x": x, "y": y, "t": 0.0, "hit": hit, "dmg": dmg, "n": n, "done": 0})
+func am_arm(x: float, y: float, hit: float, dmg: float, n: Dictionary, src: Object = null) -> void:
+	list.append({"kind": "am_arm", "x": x, "y": y, "t": 0.0, "hit": hit, "dmg": dmg, "n": n, "done": 0, "by": _by(src)})
 
 
 ## A step of one of them (its clock has run on already); false: it is over.
@@ -1594,7 +1614,7 @@ func _am_step(p: Dictionary) -> bool:
 				# (it bursts where it lands)
 				p["done"] = 1
 				if hero.alive and hero.world.distance_to(at) <= n["r"]:
-					hero.hurt(p["dmg"])
+					_hurt(p, p["dmg"])
 				hero.kick(0.6)
 				# (heard, but not every skull of a wave at once: they would take every voice there is)
 				var now := Time.get_ticks_msec() / 1000.0
@@ -1613,7 +1633,7 @@ func _am_step(p: Dictionary) -> bool:
 				# (the arms are up: whoever stands over them is struck)
 				p["done"] = 1
 				if hero.alive and hero.world.distance_to(at) <= n["r"]:
-					hero.hurt(p["dmg"])
+					_hurt(p, p["dmg"])
 				hero.kick(1.0)
 			return p["t"] < p["hit"] + n["time"] + n["after"]
 	return false
@@ -2062,18 +2082,19 @@ const KB_LINE := Color("#1a0c10")
 
 ## The Knife's dagger ("kb_knife") or a ball of the Flame's fan ("kb_ball"), sent from over `at`, `high` game pixels up,
 ## the way `way` (a unit on the floor).
-func kb_fly(kind: String, at: Vector2, way: Vector2, dmg: float, high: float) -> void:
-	list.append({"kind": kind, "x": at.x, "y": at.y, "way": way, "t": 0.0, "dmg": dmg, "high": high, "went": 0.0, "done": false, "hit": 0.0, "dur": 1e9})
+## (`src`, here and below: he who sent it, whose words it carries: game/bosses.ts peril)
+func kb_fly(kind: String, at: Vector2, way: Vector2, dmg: float, high: float, src: Object = null) -> void:
+	list.append({"kind": kind, "x": at.x, "y": at.y, "way": way, "t": 0.0, "dmg": dmg, "high": high, "went": 0.0, "done": false, "hit": 0.0, "dur": 1e9, "by": _by(src)})
 
 
 ## The Flame's great sigil under `at`, its clock at `t` (less than 0: so long before its eruption), cast by `src`.
 func kb_sigil(at: Vector2, t: float, dmg: float, src: Object) -> void:
-	list.append({"kind": "kb_sigil", "x": at.x, "y": at.y, "t": t, "dmg": dmg, "src": src, "done": 0})
+	list.append({"kind": "kb_sigil", "x": at.x, "y": at.y, "t": t, "dmg": dmg, "src": src, "done": 0, "by": _by(src)})
 
 
 ## His ring of fire, burst out from `at`.
-func kb_ring(at: Vector2, dmg: float) -> void:
-	list.append({"kind": "kb_ring", "x": at.x, "y": at.y, "t": 0.0, "dmg": dmg, "done": false})
+func kb_ring(at: Vector2, dmg: float, src: Object = null) -> void:
+	list.append({"kind": "kb_ring", "x": at.x, "y": at.y, "t": 0.0, "dmg": dmg, "done": false, "by": _by(src)})
 
 
 ## The ring's reach marked round `src` for `dur` seconds, while he gathers it.
@@ -2101,7 +2122,8 @@ func _kb_step(p: Dictionary, dt: float) -> bool:
 				at += way * (go / steps)
 				p["went"] = float(p["went"]) + go / steps
 				if h.distance_to(at) <= float(n["r"]) and KBS.Kit.can_strike(hero):
-					hero.hurt(p["dmg"])
+					# (from a step back along its flight: keybearers.ts, p.x - p.fx)
+					_hurt(p, p["dmg"], at - way)
 					ended = true
 				elif float(p["went"]) >= float(n["reach"]) or not _kb_open(at):
 					ended = true
@@ -2125,14 +2147,14 @@ func _kb_step(p: Dictionary, dt: float) -> bool:
 				if t >= 0.0:
 					p["done"] = 1
 					if h.distance_to(at) <= float(n["r"]) and KBS.Kit.can_strike(hero):
-						hero.hurt(p["dmg"])
+						_hurt(p, p["dmg"])
 					sfx.play("fire")
 					hero.kick(3.0)
 			elif t > float(n["strike"]) and t >= float(n["strike"]) + float(n["every"]) * int(p["done"]):
 				# (the floor burning on: a tick every half second he stands in what still burns)
 				p["done"] = int(p["done"]) + 1
 				if h.distance_to(at) <= KBS.Kit.burn_radius(t) and KBS.Kit.can_strike(hero):
-					hero.hurt(float(p["dmg"]) * float(n["share"]))
+					_hurt(p, float(p["dmg"]) * float(n["share"]))
 			return t < KBS.SIGIL_LONG
 		"kb_ring":
 			if not p["done"]:
@@ -2143,7 +2165,7 @@ func _kb_step(p: Dictionary, dt: float) -> bool:
 				var d := h.distance_to(Vector2(p["x"], p["y"]))
 				if d >= r0 - half and d <= KBS.Kit.ring_at(t) + half and KBS.Kit.can_strike(hero):
 					p["done"] = true
-					hero.hurt(p["dmg"])
+					_hurt(p, p["dmg"])
 			return t < KBS.RING_LASTS
 		"kb_reach":
 			var s = p["src"]
@@ -2351,7 +2373,7 @@ const ST_ACROSS := 45.254833995939045
 ## `frame`, from where he stands; `aim`, where the hero stands (tiles along his forward, to his left); `dmg`, his blow,
 ## rolled once; `hit`, when its blow lands. Handed back, for his act to keep.
 func st_act(src, kind: String, frame: int, aim: Vector2, dmg: float, hit: float) -> Dictionary:
-	var p := {"kind": kind, "x": src.world.x, "y": src.world.y, "t": 0.0, "dur": ST.lasts(kind), "dmg": dmg, "hit": hit, "frame": frame, "aim": aim, "landed": 0, "done": 0, "struck": false, "src": src}
+	var p := {"kind": kind, "x": src.world.x, "y": src.world.y, "t": 0.0, "dur": ST.lasts(kind), "dmg": dmg, "hit": hit, "frame": frame, "aim": aim, "landed": 0, "done": 0, "struck": false, "src": src, "by": _by(src)}
 	list.append(p)
 	return p
 
@@ -2400,7 +2422,8 @@ func _st_coals(p: Dictionary, t: float, o: Vector2) -> void:
 		p["landed"] = int(p["landed"]) | (1 << i)
 		if not struck and _st_free() and hero.world.distance_to(ST.coal_spot(k, o, aim, i)) <= reach:
 			struck = true
-			hero.hurt(float(p["dmg"]) * ST.TUNE["coal"])
+			# (his fire is Flame whatever his words: act1_rules/stoker.ts)
+			_hurt(p, float(p["dmg"]) * ST.TUNE["coal"], ST.coal_spot(k, o, aim, i), "fire")
 		if i == 0:
 			hero.kick(1.0)
 	if int(p["landed"]) == 0:
@@ -2411,7 +2434,7 @@ func _st_coals(p: Dictionary, t: float, o: Vector2) -> void:
 	p["done"] = tick
 	for i in int(ST.COALS["n"]):
 		if ST.coal_burning(i, t) and hero.world.distance_to(ST.coal_spot(k, o, aim, i)) <= reach:
-			hero.hurt(float(p["dmg"]) * ST.TUNE["burn"])
+			_hurt(p, float(p["dmg"]) * ST.TUNE["burn"], ST.coal_spot(k, o, aim, i), "fire")
 			break
 
 
@@ -2428,7 +2451,7 @@ func _st_rake(p: Dictionary, t: float, o: Vector2) -> void:
 	var way := clampf(deg, ST.RAKE_ARC[0], ST.RAKE_ARC[1])
 	if not p["struck"] and in_band and in_arc and _st_free() and absf(ST.rake_way(since) - way) < 10.0:
 		p["struck"] = true
-		hero.hurt(float(p["dmg"]) * ST.TUNE["rake"])
+		_hurt(p, float(p["dmg"]) * ST.TUNE["rake"], hero.world, "fire")
 	var tick := floori(since / ST.TUNE["tick"])
 	if tick < 1 or tick <= int(p["done"]):
 		return
@@ -2437,7 +2460,7 @@ func _st_rake(p: Dictionary, t: float, o: Vector2) -> void:
 		return
 	var age := since - ST.rake_passes(way)
 	if age >= 0.0 and age < ST.RAKE_FIRE["burns"] - ST.RAKE_FIRE["dies"] * 0.5:
-		hero.hurt(float(p["dmg"]) * ST.TUNE["burn"])
+		_hurt(p, float(p["dmg"]) * ST.TUNE["burn"], hero.world, "fire")
 
 
 ## THE RING: a hero within its depth as it passes him, and not in one of its gaps, is struck once.
@@ -2450,7 +2473,7 @@ func _st_ring(p: Dictionary, t: float, o: Vector2) -> void:
 	var rel := ST.in_frame(p["frame"], o, hero.world)
 	if absf(rel.length() - front) <= ST.RING["deep"] / 2.0 + ST.HERO_R * 0.5 and not ST.in_gap(ST.way_of(rel)) and _st_free():
 		p["struck"] = true
-		hero.hurt(float(p["dmg"]) * ST.TUNE["ring"])
+		_hurt(p, float(p["dmg"]) * ST.TUNE["ring"], hero.world, "fire")
 
 
 ## The way `deg` (degrees off his forward, to his left) in frame `k`, on the floor; and the place `r` tiles from `o` that way.

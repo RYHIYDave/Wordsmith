@@ -24,6 +24,16 @@
 ##     a boss); it is POISONED (each hit a dose, 8 at most, 4 s from the last; half its poison a second every half second); it
 ##     is STUNNED (Heavy: 0.8 s, an elite half that; never a boss) or STAGGERED by cracked ground (0.55 s, and not again for
 ##     1.5 s after; never a boss): frozen, stunned or staggered it does nothing, and what it was winding up is broken off.
+##   ITS OWN WORDS (game.ts monsterElement, halfOf, wordShare, hurtHero; the harm itself is the hero's: hero.gd hurt_by): its
+##     blow is of the first of Flame, Frost and Lightning among its words, else of its kind's own element; every blow, shot and
+##     mark of its carries its words to him (`blow`, `harm_hero`); a pack's minion carries its leader's at half strength (and
+##     half of a blow made Flame, Frost or Lightning so is of its kind's own element), whole for 5 s after the skeleton
+##     champion's cry (`rally_t`; heard only by minions carrying his words: monsters.gd hears_cry). SWIFT: its waits between
+##     blows 30% shorter (a minion's 15%: game.ts monsterAttack, landMove). What Power and Swift give its life, its damage and
+##     its pace is in its numbers already (game.ts spawn, monsters.json).
+##   OVER ITS HEAD, over the dark (render.ts drawBars): its life's bar while it is hurt, and always over an elite and each of a
+##     blue pack; an elite's name, and a blue pack's once over the first of it in sight, in its colours; the rune of the word
+##     it carries over an elite's or a boss's head, bobbing: what its death will leave (`_Over`).
 extends Node2D
 
 const Iso := preload("res://scripts/iso.gd")
@@ -95,6 +105,10 @@ var summoned := false
 var words: Array = []
 var half: Array = []
 var carries: Array = []
+## (MONSTER PACKS: "blue", a blue pack's; "leader", a yellow pack's leader; "minion", one he leads; "" for any other. And how
+## long a minion's leader's words are whole yet since the skeleton champion's cry: game.ts rallyT)
+var rarity := ""
+var rally_t := 0.0
 ## (its number among the floor's monsters, the game's `id`: what a telling of a stun or a stagger names it by. One made here,
 ## the Warden's dead or a boss's brood, has its own.)
 var id := -1
@@ -172,6 +186,7 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	words = m.get("words", [])
 	half = m.get("half", [])
 	carries = m.get("carries", [])
+	rarity = str(m.get("rarity", ""))
 	def = kind_def
 	art = figure
 	world = Vector2(m["x"], m["y"])
@@ -209,11 +224,17 @@ func _ready() -> void:
 	_sprite = Sprite2D.new()
 	_sprite.centered = false
 	add_child(_sprite)
+	_over = _Over.new()
+	_over.m = self
+	add_child(_over)
 	_place()
 	_show()
 
 
 func step(dt: float, hero) -> void:
+	# (a minion's leader's words whole since the champion's cry, for so long yet: game.ts updateMonsters)
+	if rally_t > 0.0:
+		rally_t = maxf(0.0, rally_t - dt)
 	if dead:
 		_dead_for += dt
 		_anim_t += dt
@@ -378,8 +399,9 @@ func _pick(dist: float, sees: bool) -> int:
 				continue
 		elif not sees:
 			continue
-		# (the champion's cry is heard only by minions carrying his words: none on floor 1)
-		if mv["id"] == "rally":
+		# (the champion's cry, only if one of his minions would hear it: near him, carrying his words, and not rallied but now:
+		# game.ts pickMove, hearsCry. None does on floor 1, where no monster has words)
+		if mv["id"] == "rally" and not mgr.hears_cry(self):
 			continue
 		if mv["id"] == "charge" and _lane(dist).is_empty():
 			continue
@@ -428,11 +450,13 @@ func _start(i: int, hero, dist: float) -> void:
 
 ## landMove: the end of its wind-up.
 func _land(hero, dist: float, reach: float) -> void:
+	# (SWIFT: its waits between blows shorter, 30% for the whole word, 15% for a minion's half: game.ts monsterAttack, landMove)
+	var swift := 1.0 - 0.3 * word_share("swift")
 	if _move < 0:
 		# (its one blow, or its one shot)
 		state = "recover"
 		_t = RECOVER
-		_cd = float(def["cooldown"]) * randf_range(0.9, 1.2)
+		_cd = float(def["cooldown"]) * swift * randf_range(0.9, 1.2)
 		if def["ranged"]:
 			mgr.shoot(self, (hero.world - world).normalized(), float(def["projSpeed"]), float(def["range"]) + 3.0, _roll())
 			mgr.sfx.play("shot", -6.0)
@@ -442,9 +466,9 @@ func _land(hero, dist: float, reach: float) -> void:
 	var mv: Dictionary = _moves[_move]
 	state = "recover"
 	_t = mv["recover"]
-	_cd = mv["after"] * randf_range(0.9, 1.2)
+	_cd = mv["after"] * swift * randf_range(0.9, 1.2)
 	if mv["cooldown"] > 0.0:
-		_move_cd[_move] = mv["cooldown"]
+		_move_cd[_move] = mv["cooldown"] * swift
 	match mv["id"]:
 		"swing":
 			_blow(hero, dist, reach, mv["dmg"])
@@ -475,7 +499,7 @@ func _land(hero, dist: float, reach: float) -> void:
 			# (the slam: the ring where it was marked, or before him if it never was, and out it goes)
 			var rg: Vector2 = _carry["ring"] if _carry.get("marked", false) else world + face * MM.RING["ahead"]
 			if hero.alive and hero.world.distance_to(rg) <= MM.RING["radius"]:
-				hero.hurt(_roll() * mv["dmg"] * MM.RAMPAGE["slam"])
+				harm_hero(hero, _roll() * mv["dmg"] * MM.RAMPAGE["slam"])
 			mgr.perils.drop(self, ["warn"])
 			mgr.perils.ring(rg.x, rg.y, MM.RING["radius"])
 			hero.kick(3.0)
@@ -493,8 +517,11 @@ func _land(hero, dist: float, reach: float) -> void:
 			mgr.shoot(self, (hero.world - world).normalized(), float(def["projSpeed"]), float(def["range"]) + 3.0, _roll() * mv["dmg"], "arrow" if arrow else "bolt")
 			mgr.sfx.play("shot" if arrow else "fire", -6.0)
 		"rain":
-			mgr.perils.rain(hero.world.x, hero.world.y, _roll() * mv["dmg"], world, face)
+			mgr.perils.rain(hero.world.x, hero.world.y, _roll() * mv["dmg"], world, face, self)
 			mgr.sfx.play("shot", -4.0)
+		"rally":
+			# (the skeleton champion cries out: his minions near him have his words whole for a while: game.ts rally)
+			mgr.rally(self)
 		"pierce":
 			var way := face
 			if not _aim.is_empty():
@@ -532,7 +559,7 @@ func _blow(hero, dist: float, reach: float, share: float) -> bool:
 	mgr.sfx.play("swing", -10.0)
 	var struck: bool = hero.alive and dist <= reach + 0.45 + HERO_R
 	if struck:
-		hero.hurt(_roll() * share)
+		harm_hero(hero, _roll() * share)
 	# (FLOOR 2: the Shade's rake, cold: a patch of rime before it as it lands: game/action_f2.ts)
 	if kind == "shade":
 		mgr.perils.rime(world.x + face.x * MM.RIME["ahead"], world.y + face.y * MM.RIME["ahead"], self)
@@ -626,7 +653,7 @@ func _carry_reach(hero, want: float) -> float:
 func _rampage_swing(hero, mv: Dictionary) -> void:
 	var d: Vector2 = hero.world - world
 	if hero.alive and d.length() <= MM.RAMPAGE["reach"] + HERO_R and d.dot(_carry["f"]) >= -HERO_R:
-		hero.hurt(_roll() * mv["dmg"] * MM.RAMPAGE["swing"])
+		harm_hero(hero, _roll() * mv["dmg"] * MM.RAMPAGE["swing"])
 	mgr.sfx.play("atkTroll", -4.0)
 	mgr.sfx.play("swing", -4.0)
 	mgr.used["rampage_swing"] = mgr.used.get("rampage_swing", 0) + 1
@@ -638,7 +665,7 @@ func _frenzy_stab(hero, at: Vector2, mv: Dictionary) -> void:
 	var l := d.length()
 	var ahead: bool = l < 1e-6 or d.dot(_carry["f"]) / l >= cos(deg_to_rad(MM.FRENZY["arc"] / 2.0))
 	if hero.alive and l <= MM.FRENZY["reach"] + HERO_R and ahead:
-		hero.hurt(_roll() * mv["dmg"])
+		harm_hero(hero, _roll() * mv["dmg"])
 	mgr.sfx.play("swing", -9.0)
 	mgr.used["frenzy_stab"] = mgr.used.get("frenzy_stab", 0) + 1
 
@@ -740,7 +767,7 @@ func _run_charge(dt: float, hero) -> void:
 			p["gone"] = clampf(along / len, 0.0, 1.0)
 	if not _charge["hit"] and hero.alive and hero.world.distance_to(world) <= r + HERO_R + 0.15:
 		_charge["hit"] = true
-		hero.hurt(_roll() * _moves[_move]["dmg"])
+		harm_hero(hero, _roll() * _moves[_move]["dmg"])
 		var o := a + f * along
 		var side := 1.0 if (hero.world - o).dot(Vector2(-f.y, f.x)) >= 0.0 else -1.0
 		hero.knock(Vector2(-f.y, f.x) * side, P["knock"])
@@ -826,6 +853,48 @@ func _turn_to(to: Vector2, dist: float) -> void:
 
 func _roll() -> float:
 	return randf_range(dmg_min, dmg_max)
+
+
+# --- its own words ---
+
+## (defs.ts PACKS.minion: the share a minion has of each of its leader's words)
+const PACK_MINION := 0.5
+
+
+## What its blows are of (game.ts monsterElement): the first of Flame, Frost and Lightning among its words, else its kind's own.
+func element() -> String:
+	for w in words:
+		if w == "fire" or w == "frost" or w == "lightning":
+			return w
+	return str(def.get("element", "phys"))
+
+
+## MONSTER PACKS (game.ts halfOf): what a minion's blow carries of its leader's words at half strength, and its kind's own
+## element (the rest of a blow that one of those makes Flame, Frost or Lightning is of it). None for any other, nor for a
+## minion the champion's cry has rallied: his words are whole in it for a while.
+func half_of() -> Dictionary:
+	if rally_t > 0.0 or half.is_empty():
+		return {}
+	return {"words": half, "base": str(def.get("element", "phys"))}
+
+
+## How much of word `w`'s power it has (defs.ts wordShare): none, if it has not the word; half, a minion's of its leader's
+## (whole while it is rallied); else whole.
+func word_share(w: String) -> float:
+	if not words.has(w):
+		return 0.0
+	return PACK_MINION if half.has(w) and rally_t <= 0.0 else 1.0
+
+
+## What a blow of its carries to him, as a shot or a mark of its keeps it from when it was made (game.ts: a projectile's, a
+## zone's, a peril's `element`, `words`, `half`): {el, words, half}.
+func blow() -> Dictionary:
+	return {"el": element(), "words": words, "half": half_of()}
+
+
+## A blow of its own lands on the hero, `dmg` before what he withstands (game.ts hurtHero(roll, monsterElement(m), m.words, m)).
+func harm_hero(hero, dmg: float) -> void:
+	hero.hurt_by(dmg, element(), words, half_of(), self)
 
 
 func wake_up() -> void:
@@ -1184,8 +1253,108 @@ func _draw() -> void:
 			var rise := roundf((0.9 - _not_yet) * 12.0)
 			PF.draw(self, "Not yet", 0, top / 2.0 - 4 - rise, Color(SAY_GOLD, clampf(_not_yet / 0.3, 0.0, 1.0)), {"align": "center", "shadow": Color(SAY_INK, clampf(_not_yet / 0.3, 0.0, 1.0))})
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	if _bar <= 0.0 or dead:
+	# (a boss's life over him for a while after he is struck; any other's is drawn over the dark as the game draws it: _Over)
+	if _bar <= 0.0 or dead or not boss:
 		return
-	var w := 36.0 if not boss else 80.0
+	var w := 80.0
 	draw_rect(Rect2(-w / 2 - 1, top - 1, w + 2, 6), Color(0.04, 0.04, 0.1, 0.85))
 	draw_rect(Rect2(-w / 2, top, w * clampf(life / max_life, 0.0, 1.0), 4), Color(0.86, 0.18, 0.28))
+
+
+# --- over its head (render.ts drawBars) ---
+
+## (art/palette.ts: P.ink, P.bl1, P.bl4, P.fr4; RARITY_COLOR's blue and yellow, a blue pack's name and a yellow pack's leader's)
+const INK := Color("#120d18")
+const BL1 := Color("#3a0a12")
+const BL4 := Color("#e03c44")
+const FR4 := Color("#ff8a2a")
+const BLUE_NAME := Color("#6f8cff")
+const YELLOW_NAME := Color("#ffe070")
+## (the game's looks: art/bestiary.ts FIGURE_SIZE, art/icons.ts WORD_COLOR: fx_looks.gd)
+const Looks := preload("res://scripts/fx_looks.gd")
+var _over: _Over
+
+
+## How far up its head is from the floor point under it, game pixels (FIGURE_SIZE[figureOf(m)].top).
+func _head() -> float:
+	Looks.ready_up()
+	var size = Looks.FIGURE_SIZE.get(art.name if art != null else kind, Looks.FIGURE_SIZE.get(kind))
+	return float(size["top"]) if size != null else 30.0
+
+
+## Drawn as an elite is, its name over it and its bar always (render.ts named): an elite (a yellow pack's leader is one), and
+## every one of a blue pack.
+func named() -> bool:
+	return elite or rarity == "blue"
+
+
+## Whether anything is over its head now: its bar, its name, the rune of what it carries.
+func _shows_over() -> bool:
+	if dead or not seen or boss and carries.is_empty():
+		return false
+	return _bar > 0.0 or named() or ((elite or boss) and not carries.is_empty())
+
+
+## What is over its head, in game pixels from the floor point under it (render.ts drawBars):
+##   ITS BAR, for any but a boss (his is the screen's): while it shows its life after a blow (BAR_FOR), and always for one
+##     drawn as an elite is; 34 wide for a guardian, 24 for one named, 16 for any other, five over its head; red on dark,
+##     orange for one named. One of a blue pack that is whole and has not been struck shows none (ART_TWEAKS.bars), its name only.
+##   ITS NAME, for one named: over its bar, in the small letters, a blue pack's blue (once, over the first of it in sight:
+##     monsters.gd speaks), a yellow pack's leader's yellow, else its first word's colour (nameColor).
+##   THE RUNE OF THE WORD IT CARRIES, over an elite's or a boss's head: each word's stone on a dark square, a line of its
+##     colour under it, bobbing; what you see is what its death will leave on the floor.
+func _draw_over(c: CanvasItem) -> void:
+	if not _shows_over():
+		return
+	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
+	var lift := _lift / 2.0
+	var y := roundf(-_head() - 5.0 - lift)
+	if not boss and (_bar > 0.0 or named()):
+		var w := 34.0 if champion else (24.0 if named() else 16.0)
+		var quiet := named() and not elite and life >= max_life and _bar <= 0.0
+		if not quiet:
+			c.draw_rect(Rect2(-w / 2.0 - 1.0, y - 1.0, w + 2.0, 4.0), INK)
+			c.draw_rect(Rect2(-w / 2.0, y, w, 2.0), BL1)
+			c.draw_rect(Rect2(-w / 2.0, y, maxf(0.0, roundf(w * life / max_life)), 2.0), FR4 if named() else BL4)
+		if named() and (rarity != "blue" or mgr.speaks.get(pack_id) == self):
+			var hue := FR4
+			if rarity == "blue":
+				hue = BLUE_NAME
+			elif rarity == "leader":
+				hue = YELLOW_NAME
+			elif not words.is_empty():
+				hue = Looks.WORD.get(str(words[0]), FR4)
+			PF.draw(c, title, 0.0, y - 8.0, hue, {"align": "center", "font": "small", "shadow": INK})
+	if (elite or boss) and not carries.is_empty() and mgr.loot != null and mgr.loot.sheet != null:
+		var top := roundf(-_head() - (6.0 if boss else 15.0) - lift)
+		var bob := roundf(sin(Time.get_ticks_msec() / 1000.0 * 3.0 + id) * 1.5)
+		var n := carries.size()
+		for i in n:
+			var w: String = carries[i]
+			var x := -floorf((n * 14.0 - 2.0) / 2.0) + i * 14.0
+			var iy := top - 13.0 + bob
+			c.draw_rect(Rect2(x - 1.0, iy - 1.0, 14.0, 14.0), INK)
+			c.draw_rect(Rect2(x - 1.0, iy + 13.0, 14.0, 1.0), Looks.WORD.get(w, FR4))
+			var pic: Dictionary = mgr.loot.pics.get("word:" + w, {})
+			if not pic.is_empty():
+				c.draw_texture_rect_region(mgr.loot.sheet, Rect2(x, iy, 12.0, 12.0), pic["rect"])
+	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## What is over its head, drawn over the dark (the game draws its bars, names and runes after its lighting: render.ts), and
+## drawn again each frame while there is something to show, and once as it goes.
+class _Over extends Node2D:
+	var m
+	var _was := false
+
+	func _ready() -> void:
+		z_index = 60
+
+	func _process(_dt: float) -> void:
+		var now: bool = m._shows_over()
+		if now or _was:
+			queue_redraw()
+		_was = now
+
+	func _draw() -> void:
+		m._draw_over(self)

@@ -485,7 +485,8 @@ func died(m) -> void:
 ## What a blow of his own does to the hero, `mult` times his blow.
 func _blow(m, hero, mult: float) -> void:
 	if hero.alive:
-		hero.hurt(m._roll() * mult)
+		# (with his words: bosses.ts blow, hurtHero(roll, monsterElement(m), m.words, m))
+		m.harm_hero(hero, m._roll() * mult)
 
 
 ## game.ts knockHero: a blow from `from` knocks the hero back `share` steps (walls stop him).
