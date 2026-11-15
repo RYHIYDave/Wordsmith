@@ -51,6 +51,22 @@ const HAMMERS = [
   ['deadweight', 'deadweight', 'Deadweight'],
   ['starbreaker', 'starbreaker', 'Starbreaker'],
 ];
+// (HERO=brawler: the Brawler's unique wraps, art/wrap_skins.ts; HERO=warlock: the Warlock's unique tomes, art/tome_skins.ts; their
+// switches art/heroes.ts WRAP_SKINS and TOME_SKINS put on here)
+const WRAPS = [
+  ['plain', null, 'His own wraps'],
+  ['lastround', 'lastround', 'The Last Round'],
+  ['fourthglobe', 'fourthglobe', 'The Fourth Globe'],
+  ['winningstreak', 'winningstreak', 'Hot Streak'],
+  ['tapedknuckles', 'tapedknuckles', 'Taped Knuckles'],
+];
+const TOMES = [
+  ['plain', null, 'His own book'],
+  ['ledgerofdebts', 'ledgerofdebts', 'The Ledger of Debts'],
+  ['restlesstome', 'restlesstome', 'The Restless Tome'],
+  ['burningverse', 'burningverse', 'The Burning Verse'],
+  ['hornbook', 'hornbook', 'The Hornbook'],
+];
 // (HERO=ranger: the Ranger's unique bows, art/bow_skins.ts, their switch art/heroes.ts BOW_SKINS put on here)
 const BOWS = [
   ['plain', null, 'His own bow'],
@@ -63,7 +79,7 @@ const BOWS = [
 export default async function (page, snap) {
   const hero = process.env.HERO || 'mage';
   const tree = process.env.TREE || '';
-  const WEAPONS = hero === 'ranger' ? BOWS : hero === 'tinkerer' ? WRENCHES : hero === 'warrior' ? (tree === 'battleaxe' ? AXES : tree === 'warhammer' ? HAMMERS : SWORDS) : STAVES;
+  const WEAPONS = hero === 'ranger' ? BOWS : hero === 'tinkerer' ? WRENCHES : hero === 'brawler' ? WRAPS : hero === 'warlock' ? TOMES : hero === 'warrior' ? (tree === 'battleaxe' ? AXES : tree === 'warhammer' ? HAMMERS : SWORDS) : STAVES;
   const out = process.env.OUT || '/dev/shm/staffs';
   const only = process.env.ONLY || '';
   const [cw, ch] = [150, 110];
@@ -77,6 +93,8 @@ export default async function (page, snap) {
     d.bowSkins.on = true;
     d.wrenchSkins.on = true;
     d.warriorSkins.on = true;
+    if (d.wrapSkins) d.wrapSkins.on = true;
+    if (d.tomeSkins) d.tomeSkins.on = true;
     if (d.set1) d.set1.on = true;
     d.run(hero, 9); d.seasoned(20); d.autoLevel = false; d.autoWords = false; d.god = true;
   }, hero);

@@ -25,7 +25,7 @@ export async function bakeCode() {
 /** A group of an earlier bake whose heroes are painted with the same code (`gmark`, tools/bake_marks.mjs): its file and where its sheets are. */
 function keptGroup(g, gmark, mark, log) {
   const want = (f) => f && f.group === g && f.gmark === gmark;
-  const sheetsOf = (f) => [...f.sheets, ...(f.packs ?? []).map((p) => p.sheet)];
+  const sheetsOf = (f) => [...new Set([...f.sheets, ...(f.packs ?? []).map((p) => p.sheet)])];
   // (an earlier bake on this machine, .bake/<mark>/)
   const bakes = path.join(ROOT, '.bake');
   for (const m of fs.existsSync(bakes) ? fs.readdirSync(bakes) : []) {
@@ -111,13 +111,14 @@ export async function bakeHeroes({ log = console.log, only = null } = {}) {
       if (kept) {
         const { f, from, read } = kept;
         let bytes = 0;
-        for (const n of [...f.sheets, ...(f.packs ?? []).map((p) => p.sheet)]) {
+        const files = [...new Set([...f.sheets, ...(f.packs ?? []).map((p) => p.sheet)])];
+        for (const n of files) {
           const b = read(n);
           fs.writeFileSync(path.join(dir, n), b);
           bytes += b.length;
         }
         fs.writeFileSync(path.join(dir, `${g}.json`), JSON.stringify({ ...f, mark }));
-        said.groups[g] = { kept: from, gmark: gmarks[g], sheets: f.sheets.length + (f.packs?.length ?? 0), mb: +(bytes / 1e6).toFixed(2) };
+        said.groups[g] = { kept: from, gmark: gmarks[g], sheets: files.length, mb: +(bytes / 1e6).toFixed(2) };
         log(`kept ${g} from ${from}: its heroes' code as it was (${gmarks[g]})`);
         fs.writeFileSync(saidOf(g), JSON.stringify(said.groups[g]));
         continue;
@@ -131,6 +132,14 @@ export async function bakeHeroes({ log = console.log, only = null } = {}) {
       const file = JSON.parse(await page.evaluate((name) => window.bake.file(name), g));
       const names = [];
       let bytes = 0;
+      // (A HERO'S PACKS IN ONE FILE, 14 Nov 2026, the skins chat: the Brawler's and the Warlock's ~100 packs each a file of its own
+      // had the bake some 200 files of the game's page's 511, and their unique weapons, each a set of him, would have been 700
+      // more. So a group's packs go in ONE FILE, <group>-packs.png: each pack's PNG whole, one after another (a PNG by its first
+      // bytes, as the page serves only the kinds of file it knows: tools/monster_packs.mjs), each pack's `sheet` that file and its
+      // `off` and `len` where its bytes lie in it (render/baked.ts takePacks reads each from its own bytes, a part of the file).)
+      const bundle = `${g}-packs.png`;
+      const packBytes = [];
+      let at = 0;
       for (let n = 0; n < info.sheets.length; n++) {
         const { w, h } = info.sheets[n];
         const b64 = await page.evaluate(([name, k]) => window.bake.sheet(name, k), [g, n]);
@@ -143,12 +152,22 @@ export async function bakeHeroes({ log = console.log, only = null } = {}) {
         // (a hero kept in packs, render/baked.ts PACKS: after the sheets he always holds, one for each pack, named by it:
         // <group>-<move>-<side>.png)
         const pack = n >= info.held ? file.packs[n - info.held] : null;
-        const name = pack ? `${g}-${pack.name.replace(/[^a-zA-Z0-9]+/g, '-')}.png` : `${g}-${n}.png`;
-        if (names.includes(name)) throw new Error(`${g}: two sheets named ${name}`);
-        fs.writeFileSync(path.join(dir, name), png);
-        names.push(name);
-        if (pack) pack.sheet = name;
+        if (pack) {
+          pack.sheet = bundle;
+          pack.off = at;
+          pack.len = png.length;
+          at += png.length;
+          packBytes.push(png);
+        } else {
+          const name = `${g}-${n}.png`;
+          fs.writeFileSync(path.join(dir, name), png);
+          names.push(name);
+        }
         bytes += png.length;
+      }
+      if (packBytes.length) {
+        fs.writeFileSync(path.join(dir, bundle), Buffer.concat(packBytes));
+        names.push(bundle);
       }
       await page.evaluate((name) => window.bake.drop(name), g);
       fs.writeFileSync(path.join(dir, `${g}.json`), JSON.stringify({ mark, gmark: gmarks[g], ...file, sheets: names.slice(0, info.held) }));

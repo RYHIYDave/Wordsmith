@@ -32,6 +32,8 @@ import { PRESS_RUNS, makeBrawlerArt, makeBrawlerCardArt } from './brawler_art';
 import { VET_LISTS, makeVeteranArt, makeVeteranCardArt } from './veteran_art';
 import { VETERAN } from '../game/veteran';
 import { makeWarlockArt } from './warlock_art';
+import { WRAP_SKIN_OF } from './wrap_skins';
+import { TOME_SKIN_OF } from './tome_skins';
 import type { WarlockShare } from './warlock_art';
 // (THE WARRIOR BROUGHT UP TO THE BRAWLER'S LEVEL, behind its switch, off: art/warrior_up.ts)
 import { WARRIOR_UP } from './warrior_up';
@@ -487,24 +489,29 @@ export function makeHeroArt3(): HeroArt {
     // (one figure of each hero in each place: the knight with the great sword, whatever he carries, until he is painted with a sword and a shield)
     const place = look.card ? 'card' : look.town ? 'town' : 'dungeon';
     // (THE WARLOCK: sculpted, art/warlock_art.ts; a man or the demon, his arm blazing or not)
+    // (THE WARLOCK'S BOOK, art/tome_skins.ts: the man with a unique tome at his hip, a set of him of its own; the demon, and his
+    // class card, as ever)
     if (cls === 'warlock') {
       const form = look.demon ? 'demon' : 'man';
       const blaze = form === 'man' && !!look.blaze;
-      const wkey = `warlock:${place}:${form}:${blaze ? 1 : 0}`;
+      const tome = form === 'man' && place !== 'card' && look.tome ? look.tome : null;
+      const wkey = `warlock:${place}:${form}:${blaze ? 1 : 0}${tome ? `:${tome}` : ''}`;
       let wart = made.get(wkey);
       if (!wart) {
-        wart = makeWarlockArt({ form, place, blaze }, warlockShare);
+        wart = makeWarlockArt({ form, place, blaze, ...(tome ? { tome: TOME_SKIN_OF[tome] } : {}) }, warlockShare);
         made.set(wkey, wart);
       }
       return wart;
     }
     // (THE VETERAN, the Brawler made again, while game/veteran.ts VETERAN is on (or the look says he is: the painter's worker,
     // which has no switch of its own): art/veteran_art.ts; one set of him for every place)
+    // (THE BRAWLER'S WRAPS, art/wrap_skins.ts: wearing unique ones, a set of him with them on his fists; his class card his own)
     if (cls === 'brawler' && (look.vet ?? VETERAN.on)) {
-      const vkey = place === 'card' ? 'veteran:card' : 'veteran';
+      const wraps = place !== 'card' ? look.wraps : undefined;
+      const vkey = place === 'card' ? 'veteran:card' : wraps ? `veteran:${wraps}` : 'veteran';
       let vart = made.get(vkey);
       if (!vart) {
-        vart = place === 'card' ? makeVeteranCardArt() : makeVeteranArt();
+        vart = place === 'card' ? makeVeteranCardArt() : makeVeteranArt(wraps ? WRAP_SKIN_OF[wraps] : undefined);
         made.set(vkey, vart);
       }
       return vart;

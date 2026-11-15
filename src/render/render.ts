@@ -41,7 +41,7 @@ export const PAINT_DEFER = { on: true };
 import type { ActorArt } from '../art/actor_types';
 import { FIGURE_SIZE, HEAVY_FIGURES, figureOf } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
-import type { HeroArt } from '../art/heroes';
+import type { HeroArt, HeroPlace } from '../art/heroes';
 import { HEAVY_PLACES, wornSkin } from '../art/heroes';
 import { heavyDrawn } from '../game/talents';
 import { AXE_FLIGHT, axeFlying } from '../art/warrior_up_axe_moves';
@@ -2965,9 +2965,11 @@ export class Renderer {
     // (THE WARRIOR'S WEAPON: his places with the war axe or the maul, art/heroes.ts HEAVY_PLACES)
     // (THE UNIQUE WEAPON IN HIS HAND: his places with it, art/heroes.ts STAFF_PLACES, BOW_PLACES)
     // (and the Warrior's unique great sword, battle axe or warhammer, of the kind he is drawn with: art/heroes.ts WARRIOR_SKIN_PLACES)
-    const places = skin ? skin.places : arms ? HEAVY_PLACES[arms] : { dungeon: 'dungeon' as const, town: 'town' as const };
-    const now = h.cls === 'warlock' && !look.town ? (h.form === 'demon' ? 'demon' : look.blaze ? 'blaze' : 'dungeon') : look.town ? places.town : places.dungeon;
-    const byWorker = !!pw && pw.hero(h.cls, now) && (!look.town || pw.hero(h.cls, places.dungeon)) && (h.cls !== 'warlock' || look.town || (pw.hero(h.cls, 'dungeon') && pw.hero(h.cls, 'blaze') && pw.hero(h.cls, 'demon')));
+    const places: { dungeon: HeroPlace; town: HeroPlace; blaze?: HeroPlace } = skin ? skin.places : arms ? HEAVY_PLACES[arms] : { dungeon: 'dungeon', town: 'town' };
+    // (THE WARLOCK'S BOOK, art/heroes.ts TOME_PLACES: with a unique tome at his hip, his places with it, his arm blazing too)
+    const blazeAt = places.blaze ?? 'blaze';
+    const now = h.cls === 'warlock' && !look.town ? (h.form === 'demon' ? 'demon' : look.blaze ? blazeAt : places.dungeon) : look.town ? places.town : places.dungeon;
+    const byWorker = !!pw && pw.hero(h.cls, now) && (!look.town || pw.hero(h.cls, places.dungeon)) && (h.cls !== 'warlock' || look.town || (pw.hero(h.cls, places.dungeon) && pw.hero(h.cls, blazeAt) && pw.hero(h.cls, 'demon')));
     const hero = (): boolean => !byWorker && this.art.heroes.warm(h.cls, look);
     const beast = (): boolean => figs.length > 0 && this.art.bestiary.warm(figs);
     // (Version 19.4: in town, once all of the town's are painted, the hero's pictures for the

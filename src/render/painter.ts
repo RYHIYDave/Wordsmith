@@ -35,7 +35,7 @@ import type { ActorArt, AnimSet } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
 import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { heroSides } from '../art/sides';
-import { isSkinPlace, isTownPlace, lookOfPlace } from '../art/heroes';
+import { isSkinPlace, isTownPlace, lookOfPlace, tomeOfPlace } from '../art/heroes';
 import type { HeroPlace } from '../art/heroes';
 import { paintTerrain, terrainOf } from '../art/terrain';
 import { nearOf, paintWithStanding, standingBits } from '../art/standing';
@@ -646,7 +646,8 @@ export class Painter {
     // (his lag, 30 Oct 2026): the first frame of each of his lists soon, before the floor's monsters (a frame of theirs is a
     // few thousandths of a second to paint, of his a tenth to half a second), so that none is painted where the game is
     // played; then the rest. The worker: warlock().)
-    if (cls === 'warlock' && place !== 'card' && place !== 'town') {
+    // (a unique tome's places, art/heroes.ts TOME_PLACES, as any hero's other places: below)
+    if (cls === 'warlock' && place !== 'card' && place !== 'town' && tomeOfPlace(place) === null) {
       if (!this.heroAsked.has('warlock:all')) {
         this.heroAsked.add('warlock:all');
         const two = this.many >= 2 && this.startHeroLane();

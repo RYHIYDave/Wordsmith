@@ -167,16 +167,19 @@ export function makeShadowArt(): ActorArt {
  * THE CHANGE INTO IT, for the man's set (art/warlock_art.ts, `clips.change`), laid over the rules' time for it as the game's
  * change is: him becoming it on the change's scene (dev/shadow_change.ts), then its roar on its own canvas. Thirty a second.
  */
-export function shadowChangeClip(view: GameView, turn = 0): Clip {
+export function shadowChangeClip(view: GameView, turn = 0, around: (paint: () => Sprite) => Sprite = (paint) => paint()): Clip {
   const roar = shadowChangeRoar();
   const n = Math.round(SHADOW_CHANGE_ALL * SHADOW_FPS.lists) + 1;
   return spread(0, SHADOW_CHANGE_ALL, n, (t) =>
     // (its roar with what leaves its mouth and the ring on the floor painted in: the README's (2); the game's own ring at the change's
     // end is not laid over it while LIVING_SHADOW is on: render/warlock_fx.ts)
-    t < ROAR_AT ? asSprite(shadowChangeFrame(view, t, turn).d.px, AURA_CHANGE, CHANGE_SCENE.ax, CHANGE_SCENE.ay) : onScene(roarScene(roar, t - ROAR_AT, view, turn)),
+    t < ROAR_AT ? around(() => asSprite(shadowChangeFrame(view, t, turn).d.px, AURA_CHANGE, CHANGE_SCENE.ax, CHANGE_SCENE.ay)) : onScene(roarScene(roar, t - ROAR_AT, view, turn)),
   );
 }
-/** The same from a side of the man brought up (art/warlock_up_art.ts): from in front, truly turned `turn` (art/warrior_up.ts WU_SPIN). */
-export function shadowChangeClipOf(turn: number): Clip {
-  return shadowChangeClip('front', turn);
+/**
+ * The same from a side of the man brought up (art/warlock_up_art.ts): from in front, truly turned `turn` (art/warrior_up.ts WU_SPIN).
+ * `around`: each frame of him painted inside it (THE UNIQUE TOME AT HIS HIP, art/tome_skins.ts: painted with it as he changes).
+ */
+export function shadowChangeClipOf(turn: number, around?: (paint: () => Sprite) => Sprite): Clip {
+  return shadowChangeClip('front', turn, around);
 }
