@@ -13,6 +13,10 @@ list; read docs/staff_skins.md, docs/bow_skins.md, docs/wrench_skins.md and docs
   all four (Recommended)”.
 - Shown the Warlock's four unique tomes (docs/mockups/tome_skins/pictures/tomes_moves.mp4, tomes_stills.png; told the Restless
   Tome is not at his hip, as it flies round him in play, only its chain hanging empty), by pop-up: “Yes, all four (Recommended)”.
+- Shown them in the game (docs/mockups/wrap_skins/pictures/wraps_in_game.mp4, docs/mockups/tome_skins/pictures/tomes_in_game.mp4,
+  and their `_sides.png`: put on from the bag as a player does, on floor 11 and in town), told their pictures load and swap from
+  the bake in a real browser, asked whether to turn them on for the next update, by pop-up, by 09:16 Eastern, 15 Nov: “Yes,
+  switch them on (Recommended)”.
 - Told, as the pictures were sent, that each weapon is a whole set of the hero baked, as the other heroes' are, and not a layer of
   only the fists or the book laid over his own (which cannot take the Restless Tome's book away), and that a hero's packs go in
   one file to keep the page under its files.
@@ -33,10 +37,11 @@ list; read docs/staff_skins.md, docs/bow_skins.md, docs/wrench_skins.md and docs
   frames hashed the same. src/art/tome_skins.ts: THE LEDGER OF DEBTS, THE RESTLESS TOME (no book: its chain empty, a link broken
   open), THE BURNING VERSE, THE HORNBOOK. art/warlock_up_art.ts: the man brought up with a tome (`look.tome`), his change into the
   Living Shadow painted with it too (art/shadow_art.ts shadowChangeClipOf takes `around`). The demon, his class card: as ever.
-- IN THE GAME (art/heroes.ts `WRAP_SKINS`, `TOME_SKINS`, BOTH OFF until his yes in play): `wrapWorn`, `tomeWorn`, `wornSkin`
+- IN THE GAME (art/heroes.ts `WRAP_SKINS`, `TOME_SKINS`, BOTH ON at his yes in play): `wrapWorn`, `tomeWorn`, `wornSkin`
   for both; their places (`WRAP_PLACES`: town and dungeon; `TOME_PLACES`: town, dungeon and his arm blazing); heroes3 paints
   them; render.ts asks for the Warlock's places with his tome, the loading screen waits for his demon too; the painter paints a
-  tome's places as any hero's (render/painter.ts).
+  tome's places as any hero's, and lets the Veteran's last set go as the Veteran (render/painter.ts: it had asked as the Brawler
+  of old, found in a real browser with both his sets held).
 - THE BAKE (render/baked.ts): a group for each, `brawler-<wraps>` (the Veteran's only) and `warlock-<tome>` (town, dungeon,
   blazing), kept in packs as their own pictures are; while TOME_SKINS is on, THE WARLOCK'S DEMON IS A GROUP OF ITS OWN,
   `warlock-demon`, kept whatever book he wears. A packed group may now be let go of whole (letGoGroup: its packs let go and
@@ -51,11 +56,32 @@ list; read docs/staff_skins.md, docs/bow_skins.md, docs/wrench_skins.md and docs
 
 ## What the main chat must do
 
-(below, as done)
+- Bring in `art/wrap-tome-skins` (it holds `art/warrior-skins`, with main 25.3.20 merged in: bring in this one in its place, or
+  after it).
+- THE HEROES' BAKE: every packed group's packs are now ONE FILE (`<group>-packs.png`): the Brawler's group is 3 files where it was
+  98, the Warlock's man 3 and his demon 5 where the two were 109; the bake's page knows to read them (render/baked.ts), and a bake
+  of the old way is read as before. NEW GROUPS: `brawler-lastround`, `brawler-fourthglobe`, `brawler-winningstreak`,
+  `brawler-tapedknuckles` (each 3 files, about 4.4 MB, about 7 minutes to paint), `warlock-ledgerofdebts`,
+  `warlock-restlesstome`, `warlock-burningverse`, `warlock-hornbook` (each 3 files, about 4.1 MB, about 10 minutes), and
+  `warlock-demon` (5 files, about 4 MB, 5 minutes): the eight unique sets 24 files, and the Brawler's and the Warlock's own 11 where
+  they were 207. Measured here, two at
+  once: the Brawler 409 s, the Last Round 425 s, the Warlock's man 622 s, his demon 320 s, the Hornbook 613 s. The Brawler's and
+  the Warlock's own groups are baked again (their art files changed, their pictures the same), and the cards'.
+- On the release page: tools/scenarios/wraps_swap_baked.mjs and tools/scenarios/tomes_swap_baked.mjs (each flags only the cards'
+  404 on a page with only these groups baked; on the release page, none), and tools/scenarios/baked.mjs (CLS=brawler, warlock).
 
 ## Checked
 
 - tsc clean.
 - His own wraps and his own book as skins: 1,654 and 717 frames hashed the same as before.
 - tests/wrap_skins.test.ts (4), tests/tome_skins.test.ts (5), tests/packs_one_file.test.ts (2: one file fetched once, each pack
-  its own bytes, the old way as before; a packed group let go of whole and fetched again, wantOf).
+  its own bytes, the old way as before; a packed group let go of whole and fetched again, wantOf); tests/baked.test.ts (his demon's
+  group), tests/veteran.test.ts (his wraps reach his sculptor). Before the switches went on, with them and the pack tests, baked,
+  hero_cards_baked, warlock_up, veteran and the core: 30 of 30 on ad79f31f; with the switches on, those and the bow, wrench, warrior and staff skins' tests and the core: 36 of 36 on d8887293.
+- In the game (dist/wraptome_look.html, unbaked): each put on from the bag, on floor 11 and in town, filmed: his yes.
+- BAKED, IN A REAL BROWSER (tools/bake_some.mjs dist/wraps_baked.html brawler,brawler-lastround,warlock,warlock-demon,
+  warlock-hornbook, the switches on): the Brawler with his own wraps, the Last Round and his own again, throwing his combo; the
+  Warlock with his own book, the Hornbook and his own again, casting, changing into his demon and burning out: each group's packs
+  from its one file, fetched once; one set of the man held at a time (his last let go of whole), the demon's kept and fetched
+  once; no pack missed; nothing painted where the game is played.
+- NOT CHECKED: a whole bake; the release page; his phone.
