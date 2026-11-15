@@ -78,6 +78,34 @@ per picture pixel, flat tones, light in bands, a dither only where two bands mee
 Pictures: `pictures/isle2_whole.png`, `pictures/isle2_view_1..3.png` (the page: `src/dev/preview_isle.ts`, modes `whole2`,
 `view2:1..3`; the first mock-up's are still `whole`, `view:1..3`). Painted in under 2 s, once.
 
+## Step 3: the isle's own vendors and stalls (14 Nov 2026)
+
+Shown step 2 and asked what to change, his words: “We want different looking vendors for different towns”. Asked whether
+that meant the isle's armourer, mystic and stranger given new looks that fit the isle, on their same moves, their stalls redone
+to match, the wordsmith the same in every town: “Yes, that (Recommended)”. So:
+
+- THE PEOPLE (`src/dev/sculpt_isle_folk.ts`), sculpted as the town's are, on the same builds and the same moves
+  (`dev/townsfolk_moves.ts`): THE SMITH (copper hair tied back, his beard one thick braid ringed with iron, a short cape of
+  grey fur, a sleeveless tunic of undyed wool, bare arms banded with old ink, a sealskin apron, legs bound in strips, fur
+  boots, his hammer and its sparks); THE SEER (an old man in a hood and cloak of hide edged in pale fur, a robe of the sea's
+  deep green, his white beard in two braids, ink across his brow, bone charms on a cord, shells and a carved bone disc; over
+  his palm a round sea-stone with a cyan rune, which lifts and blazes as the mystic's crystal did); THE STRANGER (a long coat
+  of oiled sailcloth, a knitted jumper, tall sea boots, a broad hat pulled down so that his face is a shadow with two pale
+  points in it, never gold; his coin).
+- THE STALLS (`src/art/isle_stalls.ts`), each where the town's stands and as big: a beehive forge of piled fieldstones with
+  its fire, a stone chimney and peat stacked by it; the anvil on a block of stone; a rack of driftwood (axe, spear, sword, a
+  round shield of planks); a hollowed boulder for the trough; the seer's shelter of stitched hides on whalebone poles,
+  charms and a stone lamp under its eave; his table a slab on two standing stones, with shells, bones, sea-green bottles,
+  herbs and a sea-stone on a little cairn; a seal's pelt where he stands; and a broad stone with a net over it for the
+  stranger to lean on (the isle has no wall).
+
+Pictures: `pictures/isle3_whole.png`, `pictures/isle3_view_1..3.png`, `pictures/isle3_people.png` (each beside the town's).
+Pages: `src/dev/preview_isle.ts` modes `whole3`, `view3:1..3`; `src/dev/preview_isle_folk.ts`.
+
 ## For the main chat
 
 How the towns are won (unlocked or bought) is not settled: his “unlockable or purchasable”.
+
+When the isle comes into the game: its three people need their frames baked as the town's are (`tools/bake_townsfolk.mjs`,
+`art/townsfolk3.ts`), from `sculptIsleSmith`, `sculptIsleSeer` and `sculptIsleStranger` on the town's own moves. The helpers
+they share with the town's people are now exported from `dev/sculpt_townsfolk.ts`; nothing those paint has changed.

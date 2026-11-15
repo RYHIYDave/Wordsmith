@@ -28,6 +28,13 @@ import { TORCH_FRAMES, paintGate as gatePiece, paintRecord as recordPiece, paint
 import type { Piece } from '../art/shaft_props';
 import { stoneOf } from '../art/props';
 import { ISLE_STONES, auroraNow, paintIsleAurora, paintIsleGround, paintStandingStone } from '../art/isle_of_stones';
+import { isleAnvil, isleForge, isleRack, isleShelterBack, isleShelterTable, islePelt, isleTrough, strangerStone } from '../art/isle_stalls';
+import { toSprite } from '../art/kit';
+import type { Light } from '../engine/px';
+import { FACING_TURN3 } from '../art/townsfolk3';
+import { TOWN_CANVAS, paintFigure } from './sculpt_townsfolk';
+import { ARMOURER_MOVES, MYSTIC_MOVES, STRANGER_MOVES } from './townsfolk_moves';
+import { sculptIsleSeer, sculptIsleSmith, sculptIsleStranger } from './sculpt_isle_folk';
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // THE PLACE, in tiles: the isle's middle, its turf, its shore, the ring of standing stones.
@@ -436,6 +443,26 @@ function standard(): NonNullable<typeof STD> {
   return (STD = { ground: G.canvas, aurora: A.canvas, gx: G.gx, gy: G.gy, stones, ms: performance.now() - t0 });
 }
 
+/** STEP 3: the isle's own people and stalls (art/isle_stalls.ts, dev/sculpt_isle_folk.ts), made once. */
+let ISLE_ART: Record<string, Sprite | Sprite[]> | null = null;
+const FOLK_AURA: Light = { x: TOWN_CANVAS.ax - 4, y: TOWN_CANVAS.ay - 30, r: 46, color: '#28dcf0', a: 0.2 };
+function isleArt(): Record<string, Sprite | Sprite[]> {
+  return (ISLE_ART ??= {
+    forge: [0, 1, 2, 3].map(isleForge),
+    anvil: isleAnvil(),
+    rack: isleRack(),
+    trough: isleTrough(),
+    tentBack: isleShelterBack(),
+    tentTable: isleShelterTable(),
+    rug: islePelt(),
+    armourer: toSprite(paintFigure(sculptIsleSmith(ARMOURER_MOVES.idle(0), FACING_TURN3.sw)), FOLK_AURA, TOWN_CANVAS.ax, TOWN_CANVAS.ay),
+    mystic: toSprite(paintFigure(sculptIsleSeer(MYSTIC_MOVES.idle(0), FACING_TURN3.sw)), FOLK_AURA, TOWN_CANVAS.ax, TOWN_CANVAS.ay),
+    stranger: toSprite(paintFigure(sculptIsleStranger(STRANGER_MOVES.idle(0), 0)), null, TOWN_CANVAS.ax, TOWN_CANVAS.ay),
+  });
+}
+/** Which vendors and stalls: the town's (the first mock-up, and step 2), or the isle's own (step 3). */
+let OWN = false;
+
 export function scene(heroAt: [number, number] | null, t = 0, std = false): { cv: HTMLCanvasElement; labels: { x: number; y: number; text: string }[] } {
   const B = new Buf();
   const lights: Lit[] = [];
@@ -465,7 +492,8 @@ export function scene(heroAt: [number, number] | null, t = 0, std = false): { cv
   // ---- what lies flat
   const c = (p: readonly [number, number]): [number, number] => [p[0] + 0.5, p[1] + 0.5];
   const flat = (kind: string, p: [number, number]): void => {
-    const s = townSprite(ART, kind, 0, TIME);
+    const own = OWN ? isleArt()[kind] : undefined;
+    const s = own ? (Array.isArray(own) ? own[0] : own) : townSprite(ART, kind, 0, TIME);
     if (s) B.sprite(s, ...at(p[0], p[1]));
   };
   const [wx, wy] = LAYOUT.wordsmith;
@@ -485,7 +513,8 @@ export function scene(heroAt: [number, number] | null, t = 0, std = false): { cv
   };
   const P3 = props3();
   const stand = (kind: string, p: [number, number], variant = 0, shadow = 0.36): void => {
-    const s = kind === 'runeSlab' ? P3.slab[Math.floor((T0 + t) * 8) % 8] : townSprite(ART, kind, variant, T0 + t + variant * 0.37);
+    const own = OWN ? isleArt()[kind] : undefined;
+    const s = kind === 'runeSlab' ? P3.slab[Math.floor((T0 + t) * 8) % 8] : own ? (Array.isArray(own) ? own[Math.floor((T0 + t) * 8) % own.length] : own) : townSprite(ART, kind, variant, T0 + t + variant * 0.37);
     if (!s) return;
     put(p[0], p[1], () => {
       const [gx, gy] = at(p[0], p[1]);
@@ -514,6 +543,16 @@ export function scene(heroAt: [number, number] | null, t = 0, std = false): { cv
   label(LAYOUT.lexicon[0] + 0.5, LAYOUT.lexicon[1] + 0.5, 30, 'lexicon');
   stand('stash', c(LAYOUT.stash));
   label(LAYOUT.stash[0] + 0.5, LAYOUT.stash[1] + 0.5, 8, 'stash');
+  if (OWN) {
+    // (the stranger's own stone to lean on, half a tile behind him: there is no wall on the isle)
+    const [sx, sy] = c(LAYOUT.stranger);
+    const st = strangerStone();
+    put(sx - 0.5 - 0.14, sy, () => {
+      const [gx, gy] = at(sx - 0.5 - 0.14, sy);
+      B.shadow(gx, gy, 0.5);
+      B.sprite(st.s, gx, gy);
+    });
+  }
   stand('stranger', c(LAYOUT.stranger));
   label(LAYOUT.stranger[0] + 0.5, LAYOUT.stranger[1] + 0.5, 30, 'stranger');
   // the waypoint at the head of the steps down into the sea: the way down
@@ -623,8 +662,10 @@ const CAP = 90;
 function main(): void {
   const mode0 = decodeURIComponent(location.hash.slice(1)) || 'whole';
   // (whole2, view2:n: STEP 2, drawn at the game's standard)
-  const std = mode0.startsWith('whole2') || mode0.startsWith('view2');
-  const mode = mode0.replace('whole2', 'whole').replace('view2', 'view');
+  // (whole3, view3:n: STEP 3, with the isle's own people and stalls)
+  OWN = mode0.startsWith('whole3') || mode0.startsWith('view3');
+  const std = OWN || mode0.startsWith('whole2') || mode0.startsWith('view2');
+  const mode = mode0.replace(/whole[23]/, 'whole').replace(/view[23]/, 'view');
   const out = document.createElement('canvas');
   document.body.style.margin = '0';
   document.body.style.background = '#05040f';
