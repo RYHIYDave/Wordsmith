@@ -26,12 +26,16 @@
 //     fog: WHAT IS SEEN WHEN: { g, s, glows, holes }: for each of the ground's things (in the ground's lists taken together),
 //       each of items, each glow and each hole, the tile (its place in the level's grid) that must have been seen for it to be
 //       drawn (Level.explored), or -1: always drawn. (--nofog leaves it out; the town has none.)
+//     sky (the Ledge Road): the sky behind everything, held to the screen (render/outdoor.ts drawSky): P_sky.png, coming round
+//       every `wrap` picture pixels and sliding at half the ground's pace, its horizon `horizon` above the screen's middle; the
+//       town below in it (P_skytown.png) at (x, y) of the sky's own measure; `fill` over the screen first, `haze` under it.
 //     variants: THE PLACE'S STATES, by name: door<i> (the level's doors and gates, shut to open in 21 steps), prop<i> (a
 //       chest open, a barrel or an urn broken, a lever pulled: steps 0 and 1), temple (floor 5's temple door unlocked: its
 //       two chains, then its leaves, over `secs`), crank_set and furnace (floor 3's forge crank with its gear set in; the
 //       crank turned, the furnace and the fire in the hall's way going out, over `secs` at `fps`; a frame's `hl` and `hw`:
 //       the place's holes in the dark and glows that are not there in it), stair<j> (the stairwell breaking open at each of its places),
-//       exit, cave, shaft (floor 3's door, floor 4's cave, floor 5's cage, as they open), way (the waypoint awake: its loop,
+//       exit, cave, shaft (floor 3's door, floor 4's cave, floor 5's cage, as they open), onward (floors 6 to 10: the way on
+//       from shut, through its film, to open), way (the waypoint awake: its loop,
 //       12 frames at `fps`), warp (the column of light of a warp on it, 12 frames at `fps`). Each
 //       { kind, (secs), steps: [which frame each step shows], frames: [{ hg: [the ground's things that are gone, by their
 //       place in the ground's lists taken together], hs: [what stands that is gone, by its place in items], g: [what is
@@ -109,11 +113,13 @@ console.log(`${name}: ${where.w}x${where.h}, ${ready.props} props, ${ready.doors
     console.log(same ? '  the same level as godot/assets/' + name + '/layout.json (tiles, doors, chests, barrels, urns and levers)' : `  !! NOT the level in godot/assets/${name}/layout.json: tiles ${hash === ready.sig.tiles ? 'the same' : 'differ'}, doors ${JSON.stringify(doors) === JSON.stringify(ready.sig.doors) ? 'the same' : 'differ'}, props ${JSON.stringify(props) === JSON.stringify(ready.sig.props) ? 'the same' : `differ (${props.length} against ${ready.sig.props.length})`}`);
   } else console.log(`  (no godot/assets/${name}/layout.json to hold it against)`);
 }
-// (under the open sky, floors 6 and down: where a view from where he can stand reaches, the screen round him and a margin
-// wide enough for a wider screen than this one; the open ground's pieces no view reaches are not painted, and what else is
-// out of every view is let go of once the frames are taken: tools/godot_rec/page.js REC.reach, REC.cut)
+// (under the open sky, floors 6 and down: where a view from where he can stand reaches; the open ground's pieces no view
+// reaches are not painted, and what else is out of every view is let go of once the frames are taken: tools/godot_rec/page.js
+// REC.reach, REC.cut. The game's screen is 270 game pixels tall and as wide as the screen it is on makes it (engine/screen.ts
+// TARGET_H): 480 on a screen of 16 by 9, the Godot version's; about 590 on the widest phones, 690 on a wide desktop screen.
+// A view reaches 400 to each side, room for a screen 800 wide, and 240 up and down, room for the camera's lift and shake.)
 if (depth >= 6) {
-  const r = await page.evaluate(({ mx, my }) => window.__rec.reach(mx, my), { mx: 680, my: 400 });
+  const r = await page.evaluate(({ mx, my }) => window.__rec.reach(mx, my), { mx: 400, my: 240 });
   if (r.err) console.log('  !! where a view reaches: ' + r.err);
 }
 // the frames: three thrown away (what fades by the clock settles), then N a thirtieth of a second apart
@@ -173,7 +179,9 @@ if (!args.includes('--still')) {
   const layoutFile = path.resolve(ROOT, `godot/assets/${name}/layout.json`);
   const layout = fs.existsSync(layoutFile) ? JSON.parse(fs.readFileSync(layoutFile, 'utf8')) : null;
   // (the lengths of the films, as the game has them: game/ways.ts; game/temple_door.ts TEMPLE_TIMES; game/quests15.ts CRANK_TIMES)
-  const consts = { stair: 3.5, exit: layout?.ways?.exit?.secs ?? 3, cave: 126 / 30, shaft: 129 / 30, temple: { chain: 1.5, second: 1.1, swingAt: 2.9, swing: 1.6 }, crank: { turn: 1.2, furnaceOut: 1.6, fireOut: 1.5 } };
+  // (and the descent's way on, floors 6 to 10: game/ways.ts ONWARD secs)
+  const onward = { 6: 112 / 30, 7: 120 / 30, 8: 124 / 30, 9: 126 / 30, 10: 130 / 30 }[depth] ?? 0;
+  const consts = { stair: 3.5, exit: layout?.ways?.exit?.secs ?? 3, cave: 126 / 30, shaft: 129 / 30, onward, temple: { chain: 1.5, second: 1.1, swingAt: 2.9, swing: 1.6 }, crank: { turn: 1.2, furnaceOut: 1.6, fireOut: 1.5 } };
   const ts = Date.now();
   const base = await page.evaluate(({ T0, W, H }) => window.__rec.statesBegin(T0, W, H), { T0, ...size });
   if (base.err) { console.error('the renderer threw:\n' + base.err); await browser.close(); process.exit(1); }
@@ -212,6 +220,9 @@ if (depth >= 6) {
   if (c.err) console.log('  !! what can be seen: ' + c.err);
   else console.log(`  what can be seen from the ${c.at} tiles he can stand on: ${c.ground[1]} of the ${c.ground[0]} things on the ground, ${c.stands[1]} of the ${c.stands[0]} that stand`);
 }
+// the sky, where the place has one (the Ledge Road): its own layer behind everything (look.gd `sky`)
+const skyRec = await page.evaluate(() => window.__rec.sky());
+if (skyRec) console.log(`  its sky: ${skyRec.wrap}x${skyRec.h} (${skyRec.done} painted)${skyRec.town ? `, the town below ${skyRec.town.w}x${skyRec.town.h} at ${skyRec.town.x},${skyRec.town.y}` : ''}`);
 const res = await page.evaluate(() => window.__rec.result);
 const sheets = await page.evaluate(() => window.__rec.sheets(4096));
 const pageErrors = await page.evaluate(() => window.__rec.errors);
@@ -239,6 +250,13 @@ const items = res.stands.map((q) => ({ f: q.f.map(key), ...(q.f.length > 1 ? { f
 const sheetNames = sheets.pages.map((_, i) => (i === 0 ? `${name}.png` : `${name}_${i}.png`));
 sheets.pages.forEach((p, i) => fs.writeFileSync(path.join(OUT, sheetNames[i]), Buffer.from(p.png, 'base64')));
 fs.writeFileSync(path.join(OUT, `${name}_pics.json`), JSON.stringify(sheets.pics));
+// (the sky: render/outdoor.ts drawSky's own colours and its horizon, HORIZON, held here as the game has them)
+let sky = null;
+if (skyRec) {
+  fs.writeFileSync(path.join(OUT, `${name}_sky.png`), Buffer.from(skyRec.png, 'base64'));
+  if (skyRec.town) fs.writeFileSync(path.join(OUT, `${name}_skytown.png`), Buffer.from(skyRec.town.png, 'base64'));
+  sky = { pic: `${name}_sky.png`, wrap: skyRec.wrap, h: skyRec.h, horizon: 232, fill: '#7a90bc', haze: '#8a98b4', ...(skyRec.town ? { town: { pic: `${name}_skytown.png`, x: skyRec.town.x, y: skyRec.town.y } } : {}) };
+}
 const doc = {
   format: 2, place: name, depth, seed, rate: 30, samples: N, w: where.w, h: where.h,
   dark, vignette: ready.vignette, clear: res.clear, sheets: sheetNames,
@@ -246,6 +264,9 @@ const doc = {
   holes: res.holes.map((h) => [h.x, h.y, h.r, h.ry, h.a, h.flicker]),
   glows: res.glows.map((g) => [key(g.f), g.x, g.y, g.w, g.h, g.a, g.flicker]),
   ...(fog ? { fog } : {}),
+  // (the sky behind it all, held to the screen: { pic, wrap, h, horizon, fill, haze, town: { pic, x, y } } in picture pixels;
+  // render/outdoor.ts drawSky)
+  ...(sky ? { sky } : {}),
   // (the traps' pictures by their keys, and where in a tile each spike stands, game/traps.ts SPIKE_SPOTS: three by three, a
   // third of a tile apart: as godot/scripts/traps.gd reads them)
   ...(traps ? { traps: { holes: traps.holes.map(key), spikes: traps.spikes.map(key), plate: traps.plate.map(key), slot: { x: key(traps.slot.x), y: key(traps.slot.y) }, spots: [-1 / 3, 0, 1 / 3].flatMap((u) => [-1 / 3, 0, 1 / 3].map((v) => [u, v])), steps: traps.steps } } : {}),

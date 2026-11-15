@@ -804,6 +804,21 @@ func _ready2() -> void:
 			var w: Array = it["wall"]
 			stands.add_wall(s, float(w[2]), Vector2(w[0], w[1]) * 2.0, int(w[3]) if w.size() > 3 else -1)
 	_fog_begin()
+	if data.has("sky"):
+		_make_sky(data["sky"])
+
+
+## THE SKY (the Ledge Road's: render/outdoor.ts drawSky), behind everything and held to the screen (the look's `sky`).
+func _make_sky(S: Dictionary) -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = -10
+	var sky := _Sky.new()
+	sky.S = S
+	sky.tex = load(DIR + str(S["pic"]))
+	if S.has("town"):
+		sky.town = load(DIR + str(S["town"]["pic"]))
+	layer.add_child(sky)
+	add_child(layer)
 
 
 ## WHAT IS SEEN WHEN (the look's `fog`): every thing that waits on a tile is not drawn until that tile has been seen
@@ -1367,6 +1382,40 @@ func _flush_dark() -> void:
 				alpha *= 1.0 - q[3] * clampf(pool, 0.0, 1.0)
 			_dark_img.set_pixel(x, y, Color(col.r, col.g, col.b, clampf(_dark_a * alpha, 0.0, 1.0)))
 	_dark.texture.update(_dark_img)
+
+
+## THE SKY, drawn on the screen as the game draws it (render/outdoor.ts drawSky; the screen here is the game's, 480 by 270 game
+## pixels, at two picture pixels to one): its colour over the whole screen; its picture laid across it from `horizon` picture
+## pixels above the middle, sliding at half the ground's pace (the camera's) and coming round every `wrap`; the town far below
+## in it, at its place in the sky's own measure; and under the picture, its haze.
+class _Sky extends Node2D:
+	var S: Dictionary
+	var tex: Texture2D
+	var town: Texture2D
+
+	func _process(_dt: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		var vp := get_viewport()
+		var size := vp.get_visible_rect().size
+		var cam := vp.get_camera_2d()
+		var cx: float = cam.get_screen_center_position().x if cam != null else 0.0
+		# (the game's cam.ox, where world (0, 0) falls across the screen, here in picture pixels; the sky slides by half of it)
+		var ox := size.x / 2.0 - cx
+		draw_rect(Rect2(Vector2.ZERO, size), Color(str(S["fill"])))
+		var wrap := float(S["wrap"])
+		var h := float(S["h"])
+		var top := roundf(size.y / 4.0 - float(S["horizon"]) / 2.0) * 2.0
+		var x := -fposmod(-ox / 2.0, wrap)
+		while x < size.x:
+			draw_texture_rect(tex, Rect2(x, top, wrap, h), false)
+			x += wrap
+		if town != null:
+			var tw: Dictionary = S["town"]
+			draw_texture(town, Vector2(float(tw["x"]) + ox / 2.0, top + float(tw["y"]) + float(S["horizon"])))
+		if top + h < size.y:
+			draw_rect(Rect2(0, top + h, size.x, size.y - top - h), Color(str(S["haze"])))
 
 
 ## A stretch of the recorded ground's still pictures, drawn in one go in the renderer's order.

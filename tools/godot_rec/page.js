@@ -531,6 +531,11 @@
         }
         if (e.k !== 'img') { note('ground ' + e.k); continue; }
         if (e.op !== 'source-over' && e.op !== 'lighter') { note('ground blend ' + e.op); continue; }
+        // (THE SKY behind the Ledge Road, and the town far below in it: held to the screen and sliding at half the ground's
+        // pace, not where they fall on this screen: written down on their own, REC.sky)
+        const od = d.renderer.outdoor;
+        const sv = REC.srcs[e.src];
+        if (od && sv && (sv === od.sky || (od.town && sv === od.town.cvs))) { note('the sky (its own layer)'); continue; }
         const q = drawOf(e, note);
         if (!q) continue;
         if (nearHero(q.x, q.y, q.w, q.h)) { note('by the hero'); continue; }
@@ -552,7 +557,7 @@
         } else if (e.k === 'img') {
           const s = REC.srcs[e.src];
           if (!(s && s.__fake === 'dark')) note('after the dark: a picture ' + e.op);
-        } else note('after the dark: ' + e.k);
+        } else note('after the dark: ' + e.k + (e.k === 'rect' && typeof e.style === 'string' ? ' ' + e.style : ''));
       } else note(e.phase + ' ' + e.k);
     }
     // what stands
@@ -1122,6 +1127,16 @@
         if (r.err) note.shaft = r.err;
         else out.shaft = { kind: 'shaft', secs: consts.shaft, frames: r.frames };
       }
+      // (THE DESCENT'S WAY ON, floors 6 to 10: shut while the boss lives; its film from the moment he dies; then open, as
+      // render/dress.ts onwardNow draws it)
+      if (Wy.onward && Wy.a1 && consts.onward) {
+        const on = Wy.onward;
+        const a1 = Wy.a1;
+        const was = { awake: on.awake, warpAt: on.warpAt, open: a1.open };
+        const r = REC.variant(T0, W, H, film(consts.onward, 10), (v) => { on.awake = true; on.warpAt = REC.time0 - v * consts.onward; a1.open = v >= 1; }, () => { on.awake = was.awake; on.warpAt = was.warpAt; a1.open = was.open; });
+        if (r.err) note.onward = r.err;
+        else out.onward = { kind: 'onward', secs: consts.onward, frames: r.frames };
+      }
       if (Wy.way) {
         // THE WAYPOINT: awake, its dais's loop and the motes over it, 12 frames at 10 a second; and a warp on it, the column of
         // light, 12 frames at 20 a second (render.ts standWays; art/crypt_ways.ts)
@@ -1405,5 +1420,25 @@
       }
     }
     return { ground: [was.ground, res.ground.length], stands: [was.stands, res.stands.length], at: REC.reachAt };
+  };
+})();
+
+
+// ====================================================================================================================
+// THE SKY (the Ledge Road's: render/outdoor.ts drawSky): not a thing of the place but held to the screen, its picture
+// sliding across at half the ground's pace and coming round every `wrap` picture pixels, the town far below under the
+// cult's dome drawn in it where the eyrie's edge looks out (paintTownLayer, as the game makes it on its own 960-wide
+// screen). Its pictures as PNGs, with where the town's stands in the sky's own measure.
+(() => {
+  const d = window.__dbg;
+  const REC = window.__rec;
+  REC.sky = () => {
+    const od = d.renderer.outdoor;
+    if (!od || !od.land || !od.land.sky || !od.sky) return null;
+    const town = od.land.kind === 'ledge' && od.paintTownLayer ? od.paintTownLayer(960) : null;
+    return {
+      wrap: od.sky.width, h: od.sky.height, done: od.skyDone, png: od.sky.toDataURL('image/png').split(',')[1],
+      town: town ? { x: town.x, y: town.y, w: town.cvs.width, h: town.cvs.height, png: town.cvs.toDataURL('image/png').split(',')[1] } : null,
+    };
   };
 })();
