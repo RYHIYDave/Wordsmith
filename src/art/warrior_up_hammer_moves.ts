@@ -521,8 +521,8 @@ const FPS = 30;
 /** How many pictures of the drive the game spreads over it, by how far through he is (as his Lunge's and the Leaping Chop's). */
 export const HAMMER_DRIVE_FRAMES = 16;
 
-function setOf(side: WuSide): AnimSet {
-  const at = (m: AxeMove, t: number): Sprite => axeSprite(m, t, side);
+function setOf(side: WuSide, skin?: WeaponTake): AnimSet {
+  const at = (m: AxeMove, t: number): Sprite => axeSprite(m, t, side, skin);
   const end = (m: AxeMove): number => m.keys[m.keys.length - 1].at;
   const round = (m: AxeMove): Sprite[] => {
     const t0 = m.loop ?? 0;
@@ -577,10 +577,10 @@ function setOf(side: WuSide): AnimSet {
  * made when first asked for and each frame painted when first read (his struck, his fall, town and his card with it:
  * art/warrior_up_heavy_art.ts).
  */
-export function makeWarriorHammerArt(): Record<WuSide, AnimSet> {
+export function makeWarriorHammerArt(skin?: WeaponTake): Record<WuSide, AnimSet> {
   const out = {} as Record<WuSide, AnimSet>;
   for (const side of WU_SIDES) Object.defineProperty(out, side, { enumerable: true, configurable: true, get: () => {
-    const set = setOf(side);
+    const set = setOf(side, skin);
     Object.defineProperty(out, side, { value: set, enumerable: true });
     return set;
   } });
