@@ -232,7 +232,13 @@ if (depth > 0) {
 if (depth >= 6) {
   const c = await page.evaluate(() => window.__rec.cut());
   if (c.err) console.log('  !! what can be seen: ' + c.err);
-  else console.log(`  what can be seen from the ${c.at} tiles he can stand on: ${c.ground[1]} of the ${c.ground[0]} things on the ground, ${c.stands[1]} of the ${c.stands[0]} that stand`);
+  else {
+    console.log(`  what can be seen from the ${c.at} tiles he can stand on: ${c.ground[1]} of the ${c.ground[0]} things on the ground, ${c.stands[1]} of the ${c.stands[0]} that stand`);
+    // (the states and what is seen when, as the cut has put them right: what was fetched before it points by the places in
+    // the lists before it)
+    if (!args.includes('--still')) variants = await page.evaluate(() => window.__rec.variants);
+    if (fog) fog = await page.evaluate(() => window.__rec.fogOut);
+  }
 }
 // the sky, where the place has one (the Ledge Road): its own layer behind everything (look.gd `sky`)
 const skyRec = await page.evaluate(() => window.__rec.sky());
@@ -348,5 +354,19 @@ const doc = {
     return [k, { kind: v.kind, ...(v.secs ? { secs: v.secs } : {}), ...(v.fps ? { fps: v.fps } : {}), ...(v.at !== undefined ? { at: v.at } : {}), steps, frames: uniq }];
   })),
 };
+// (held to itself before it is written: every place a state or what is seen when points at is in the lists)
+{
+  const NG = ground.reduce((n, r) => n + r.list.length, 0);
+  const NS = items.length;
+  const bad = [];
+  for (const [k, v] of Object.entries(doc.variants)) {
+    for (const f of v.frames) {
+      if (f.hg.some((i) => !Number.isInteger(i) || i < 0 || i >= NG)) bad.push(`${k}: the ground's`);
+      if (f.hs.some((i) => !Number.isInteger(i) || i < 0 || i >= NS)) bad.push(`${k}: what stands`);
+    }
+  }
+  if (fog && (fog.g.length !== NG || fog.s.length !== NS)) bad.push(`what is seen when: ${fog.g.length} of the ground's ${NG}, ${fog.s.length} of the ${NS} that stand`);
+  for (const b of [...new Set(bad)]) console.log('  !! out of its lists: ' + b);
+}
 fs.writeFileSync(path.join(OUT, `${name}.json`), JSON.stringify(doc));
 console.log(`  written: ${sheetNames.map((n, i) => `${n} (${sheets.pages[i].w}x${sheets.pages[i].h})`).join(', ')}, ${name}_pics.json (${Object.keys(sheets.pics).length}), ${name}.json (${(fs.statSync(path.join(OUT, `${name}.json`)).size / 1024).toFixed(0)} KB); the dark ${JSON.stringify(dark)}${errors ? `; ${errors} errors on the page` : ''}`);
