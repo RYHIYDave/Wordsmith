@@ -1,5 +1,5 @@
 // ENDLESS MODE'S KEY (the art chat's of 12 Nov 2026, the queue's draw-endless-tablet-portal-final-boss): the tablet, the portal and
-// the final boss's look, behind ENDLESS_TABLET (off). Pictures only; nothing of the game reads them yet.
+// the final boss's look, behind ENDLESS_TABLET (on since 14 Nov 2026, his yes). Read by the final boss's own files, the Rim and their drawing.
 // @ts-ignore
 import test from 'node:test';
 // @ts-ignore
@@ -17,12 +17,15 @@ const PINKISH = (c: string): boolean => {
   return r > 150 && r - g > 80 && b > 60 && b < r;
 };
 
-test('the switch is on (his yes, 14 Nov 2026), and nothing of the game imports these files', () => {
+// (built into the game since, the queue's build-endless-tablet-and-final-boss, behind ENDLESS_KEY: the files that read these are
+// the final boss's own, the Rim's socket and the game's drawing of them; nothing else)
+const READERS = ['src/game/act1_rules/wsboss.ts', 'src/game/act1_rules/wsboss2.ts', 'src/game/game.ts', 'src/render/rim.ts', 'src/render/act1_fx/wsboss.ts', 'src/render/act1_fx/wsboss2.ts', 'src/render/render.ts'];
+test('the switch is on (his yes, 14 Nov 2026), and only the final boss, the Rim and their drawing read these files', () => {
   assert.equal(ENDLESS_TABLET.on, true, 'his “Yes, switch it on (Recommended)”');
   const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e: { isDirectory: () => boolean; name: string }) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.ts') ? [`${dir}/${e.name}`] : []));
   for (const f of walk('src').filter((f) => !f.startsWith('src/dev/') && !/endless_(tablet|portal|boss)\.ts$/.test(f))) {
     const s = readFileSync(f, 'utf8');
-    assert.ok(!/from '\.\/endless_(tablet|portal|boss)'|art\/endless_(tablet|portal|boss)'/.test(s), `${f} imports it`);
+    if (/from '\.\/endless_(tablet|portal|boss)'|art\/endless_(tablet|portal|boss)'/.test(s)) assert.ok(READERS.includes(f), `${f} imports it`);
   }
 });
 
