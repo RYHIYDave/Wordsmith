@@ -665,6 +665,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await _map_shots(hero, dir)
 		get_tree().quit()
 		return
+	if _arg("only") == "kind":
+		await _kind_shots(hero, dir)
+		get_tree().quit()
+		return
 	await _wait(1.0)
 	await _snap(dir + "/01_start.png")
 	await _hero_moves(hero, dir)
@@ -1445,6 +1449,108 @@ func _free_near(at: Vector2) -> Vector2:
 				if map.walkable(tx, ty):
 					return Vector2(tx + 0.5, ty + 0.5)
 	return at
+
+
+## SHOT MODE, ONE KIND OF MONSTER'S OWN MOVES (--only=kind --floor=N --kind=brute|boneward|priest|dagger): the one of that kind
+## nearest the way in (a brute that is no champion: the green troll) is left alone on the floor, the hero set down in sight of
+## it, unharmed, far and then near as its moves want; each move pictured at its moments; then, for the Boneward, a blow from
+## before its shield (it glances off) and one from behind (it lands). Says which moves were made.
+func _kind_shots(h: Hero, dir: String) -> void:
+	var n := int(_arg("floor")) if _arg("floor") != "" else 3
+	var kind := _arg("kind") if _arg("kind") != "" else "brute"
+	go_to("floor%d" % n, "down" if n > 1 else "start")
+	await _wait(1.4)
+	if sight != null:
+		sight.see_all()
+	var m: Monster = null
+	for o in _monsters.list:
+		if is_instance_valid(o) and not o.dead and o.kind == kind and not o.champion and not o.boss and (m == null or o.world.distance_to(h.world) < m.world.distance_to(h.world)):
+			m = o
+	if m == null:
+		print("KIND: floor %d has no %s" % [n, kind])
+		return
+	for o in _monsters.list:
+		if is_instance_valid(o) and o != m:
+			o.queue_free()
+	# (in the middle of the biggest room near it, so that there is room for a run and a throw)
+	var room: Dictionary = {}
+	for r in map.rooms:
+		if FloorMap.in_room(r, m.world):
+			room = r
+	var big: Dictionary = room
+	for r in map.rooms:
+		if r.get("kind", "") != "boss" and (big.is_empty() or r["w"] * r["h"] > big["w"] * big["h"]):
+			big = r
+	m.world = _free_near(Vector2(big["x"] + big["w"] / 2.0, big["y"] + big["h"] / 2.0))
+	var P := _monsters.perils
+	var tag := dir + "/k%d_%s_" % [n, kind]
+	var plans := {
+		"brute": [[7.5, 3.2], [7.0, 6.0], [1.8, 9.0]],
+		"boneward": [[5.5, 6.0], [1.5, 5.0], [6.5, 8.0], [1.5, 4.0]],
+		"priest": [[6.0, 6.0], [2.4, 9.0]],
+		"dagger": [[2.0, 9.0]],
+	}
+	var marks := {
+		"brute": {
+			"rush_lane": func(): return _has(P, "lane", 0.6), "rush_run": func(): return m.state == "charge", "rush_stop": func(): return m._rush_stop > 0.4,
+			"rampage_swing_1": func(): return _monsters.used.get("rampage_swing", 0) >= 1, "rampage_swing_2": func(): return _monsters.used.get("rampage_swing", 0) >= 2,
+			"rampage_ring_marked": func(): return _has(P, "warn", 0.5), "rampage_slam": func(): return _has(P, "ring", 0.04),
+		},
+		"boneward": {
+			"thrust": func(): return not m.bare and m.state == "recover" and m._move >= 0 and m._moves[m._move]["id"] == "swing",
+			"spear_thrown": func(): return _flying("spear"), "spear_lies": func(): return _has(P, "spear", 0.3),
+			"shield_bash": func(): return m.bare and m.state == "recover", "stoops": func(): return m.state == "pickup" and m._t < 0.55,
+		},
+		"priest": {
+			"fire_bolt": func(): return _flying("bolt"), "censer_swung": func(): return _has(P, "smoke", 0.05), "smoke_burns": func(): return _has(P, "smoke", 1.2),
+		},
+		"dagger": {
+			"frenzy_coiled": func(): return m.state == "windup" and m._t < 0.8, "frenzy_stab_2": func(): return _monsters.used.get("frenzy_stab", 0) >= 2,
+			"frenzy_stab_4": func(): return _monsters.used.get("frenzy_stab", 0) >= 4, "winded": func(): return m.state == "recover" and m._t < 0.9,
+		},
+	}
+	var todo: Dictionary = marks.get(kind, {})
+	var done := {}
+	var life0: float = h.life
+	var hits := 0
+	var k := 0
+	h.unhurt = false
+	for ph in plans.get(kind, [[4.0, 10.0]]):
+		if not is_instance_valid(m) or m.dead:
+			break
+		h.world = _charge_spot(m, ph[0], _spot_near(m.world, ph[0], h.world)) if kind == "brute" and ph[0] > 3.0 else _spot_near(m.world, ph[0], h.world)
+		var t := 0.0
+		while t < ph[1]:
+			await get_tree().process_frame
+			t += get_process_delta_time()
+			if h.life < life0:
+				hits += 1
+			h.life = h.max_life
+			life0 = h.life
+			for name in todo:
+				if not done.has(name) and todo[name].call():
+					done[name] = true
+					k += 1
+					await _snap(tag + "%02d_%s.png" % [k, name])
+	var said := ""
+	if kind == "boneward" and is_instance_valid(m) and not m.dead:
+		# (its shield: wait till the wall is up; a blow from before it glances off, one from behind lands)
+		var w := 0.0
+		h.world = _spot_near(m.world, 1.6, h.world)
+		while w < 6.0 and not (m.wall_up() and m.state == "chase"):
+			await get_tree().process_frame
+			w += get_process_delta_time()
+		var up: bool = m.wall_up()
+		h.world = m.world + m.face * 1.2
+		var l0: float = m.life
+		m.hurt(3.0)
+		var l1: float = m.life
+		await _wait(0.12)
+		await _snap(tag + "%02d_glance.png" % (k + 1))
+		h.world = m.world - m.face * 1.2
+		m.hurt(3.0)
+		said = "; its wall up %s; a blow from before it took %.1f, from behind %.1f; glances %d" % [up, l0 - l1, l1 - m.life, _monsters.used.get("glance", 0)]
+	print("KIND floor %d %s: moves made %s; pictured %s; the hero struck in %d frames%s" % [n, kind, _monsters.used, done.keys(), hits, said])
 
 
 ## SHOT MODE, THE MAPS (--only=map --floor=N): the small map as he comes in; after he has been set down in the rooms along

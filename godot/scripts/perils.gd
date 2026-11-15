@@ -87,6 +87,23 @@ func rime(x: float, y: float, src: Object) -> void:
 	list.append({"kind": "rime", "x": x, "y": y, "t": 0.0, "src": src})
 
 
+## THE GREEN TROLL'S SLAM (game/action_f3.ts RING_PERIL; art/action_f3_fx.ts RING): the ring going out over the floor from
+## where his club came down, and the cracks it leaves (drawn only: the blow is the slam's own).
+func ring(x: float, y: float, r: float) -> void:
+	list.append({"kind": "ring", "x": x, "y": y, "r": r, "t": 0.0})
+
+
+## THE BONEWARD'S SPEAR, LYING WHERE IT CAME DOWN (game.ts laySpear), until its Boneward picks it up (or falls).
+func spear(at: Vector2, way: Vector2, src: Object) -> void:
+	list.append({"kind": "spear", "x": at.x, "y": at.y, "way": way, "t": 0.0, "src": src})
+
+
+## THE HIGH PRIEST'S BURNING SMOKE (game.ts swingCenser, the 'smoke' zone; defs.ts SMOKE): settled on the floor, it burns
+## whoever is in it (and half his own width more) every `tick`, from the moment it settles, `dmg` each time.
+func smoke(x: float, y: float, dmg: float, src: Object) -> void:
+	list.append({"kind": "smoke", "x": x, "y": y, "t": 0.0, "dmg": dmg, "tick": 0.0, "src": src})
+
+
 func drop(src: Object, kinds := ["warn", "lane", "aim"]) -> void:
 	list = list.filter(func(p): return not (p.get("src") == src and p["kind"] in kinds))
 
@@ -141,6 +158,18 @@ func _process(dt: float) -> void:
 				stays = _step_fm(p)
 			"blast":
 				stays = p["t"] < 0.3
+			"ring":
+				stays = p["t"] < MM.RING["long"]
+			"spear":
+				var o = p["src"]
+				stays = is_instance_valid(o) and not o.dead and o.bare
+			"smoke":
+				p["tick"] -= dt
+				if p["tick"] <= 0.0:
+					p["tick"] += MM.SMOKE["tick"]
+					if hero.alive and hero.world.distance_to(Vector2(p["x"], p["y"])) <= MM.SMOKE["r"] + 0.15:
+						hero.hurt(p["dmg"])
+				stays = p["t"] < MM.SMOKE["dur"]
 			"rain":
 				if not p["done"] and p["t"] >= MM.RAIN["delay"]:
 					p["done"] = true
@@ -633,6 +662,20 @@ func _draw() -> void:
 						draw_line(at, at + Vector2(3, -14), Color(0.8, 0.72, 0.58, fade), 2.0)
 			"bars":
 				_draw_bars(p)
+			"ring":
+				_draw_slam_ring(p)
+			"spear":
+				# (lying on the floor: its shaft and its bone point, the way it flew)
+				var w: Vector2 = p["way"]
+				var c := Vector2(p["x"], p["y"])
+				var tail := Iso.to_screen(c.x - w.x * 0.55, c.y - w.y * 0.55)
+				var neck := Iso.to_screen(c.x + w.x * 0.3, c.y + w.y * 0.3)
+				var tip := Iso.to_screen(c.x + w.x * 0.55, c.y + w.y * 0.55)
+				draw_line(tail + Vector2(1, 2), tip + Vector2(1, 2), Color(SHADOW, 0.5), 3.0)
+				draw_line(tail, neck, Color(0.36, 0.3, 0.42), 3.0)
+				draw_line(neck, tip, Color(0.9, 0.86, 0.74), 3.0)
+			"smoke":
+				_draw_smoke(p)
 			"sigil":
 				_draw_sigil(p)
 			"rime":
@@ -642,6 +685,41 @@ func _draw() -> void:
 				_am_draw(p)
 			"co_crack", "co_ring", "co_left", "co_aim", "co_reach", "co_flung":
 				_draw_co(p)
+
+
+## The slam's ring (a stand-in for art/action_f3_fx.ts): out to its edge over RING.wave, easing; breaking up over RING.fade;
+## the cracks it leaves fading to RING.long.
+func _draw_slam_ring(p: Dictionary) -> void:
+	var t: float = p["t"]
+	var k := clampf(t / MM.RING["wave"], 0.0, 1.0)
+	var out: float = p["r"] * (1.0 - pow(1.0 - k, 3.0))
+	var fade := clampf(1.0 - (t - MM.RING["wave"]) / MM.RING["fade"], 0.0, 1.0)
+	if fade > 0.0:
+		draw_polyline(_ring(p["x"], p["y"], out, 48), Color(1.0, 0.8, 0.84, fade), 5.0)
+		draw_polyline(_ring(p["x"], p["y"], out * 0.86, 48), Color(ENEMY, 0.7 * fade), 3.0)
+	# (the cracks: short dark strokes out from the middle, fading)
+	var left := clampf(1.0 - t / MM.RING["long"], 0.0, 1.0)
+	for i in 9:
+		var a := TAU * i / 9.0 + 0.3
+		var from := Iso.to_screen(p["x"] + cos(a) * 0.35, p["y"] + sin(a) * 0.35)
+		var to := Iso.to_screen(p["x"] + cos(a + 0.12) * p["r"] * (0.55 + 0.3 * sin(i * 2.7)), p["y"] + sin(a + 0.12) * p["r"] * (0.55 + 0.3 * sin(i * 2.7)))
+		draw_line(from, to, Color(SHADOW, 0.55 * left), 2.0)
+
+
+## The burning smoke (a stand-in for the game's): a low cloud of dull red-grey over its round of floor, coming in over the
+## first 0.3 s and thinning over the last 0.6, its edge the enemy's pink, embers in it.
+func _draw_smoke(p: Dictionary) -> void:
+	var t: float = p["t"]
+	var a := clampf(t / 0.3, 0.0, 1.0) * clampf((MM.SMOKE["dur"] - t) / 0.6, 0.0, 1.0)
+	var R: float = MM.SMOKE["r"]
+	draw_colored_polygon(_ring(p["x"], p["y"], R), Color(0.42, 0.2, 0.2, 0.42 * a))
+	draw_colored_polygon(_ring(p["x"], p["y"], R * 0.6), Color(0.62, 0.3, 0.22, 0.3 * a))
+	draw_polyline(_ring(p["x"], p["y"], R), Color(ENEMY, 0.75 * a), 2.0)
+	for i in 7:
+		var ang := i * 2.4 + t * 0.7
+		var d := R * (0.25 + 0.6 * fmod(i * 0.37 + t * 0.21, 1.0))
+		var at := Iso.to_screen(p["x"] + cos(ang) * d, p["y"] + sin(ang) * d) + Vector2(0, -6.0 - 22.0 * fmod(t * 0.9 + i * 0.31, 1.0))
+		draw_rect(Rect2(at, Vector2(2, 2)), Color(1.0, 0.72, 0.3, 0.8 * a))
 
 
 ## The fire sigil (a stand-in for the art chat's pictures, art/action_f2_fx.ts sigilPainted): its ring traced round under the hero as

@@ -175,7 +175,8 @@ func shut_in(m) -> bool:
 
 
 ## The way down the flow field from where a body stands: toward the neighbouring tile nearest the hero.
-func flow_dir(at: Vector2) -> Vector2:
+func flow_dir(at: Vector2, field = null) -> Vector2:
+	var _flow: PackedInt32Array = self._flow if field == null else field
 	var tx := floori(at.x)
 	var ty := floori(at.y)
 	if tx < 0 or ty < 0 or tx >= map.w or ty >= map.h:
@@ -212,6 +213,39 @@ func shoot(from: Monster, dir: Vector2, speed: float, reach: float, dmg: float, 
 	node.look = look
 	stands.add_child(node)
 	_arrows.append({"pos": from.world + dir * (from.r + 0.1), "dir": dir, "speed": speed, "left": reach, "dmg": dmg, "node": node, "r": r, "pierce": pierce, "hit": false})
+
+
+## THE BONEWARD'S SPEAR (game.ts throwSpear): from its hand `at`, the way `dir`, as far as `reach` (where the hero stood); where
+## it comes down (on the hero, at a wall, or where it was aimed) it lies until its Boneward picks it up (laySpear).
+func throw_spear(from: Monster, at: Vector2, dir: Vector2, reach: float, dmg: float) -> void:
+	var node := Arrow.new()
+	node.dir = dir
+	node.look = "spear"
+	stands.add_child(node)
+	_arrows.append({"pos": at, "dir": dir, "speed": MM.SPEAR["speed"], "left": reach, "dmg": dmg, "node": node, "r": MM.SPEAR["r"], "pierce": false, "hit": false, "spear": from})
+
+
+## A spear has come down at `p`: it lies there, on the nearest floor one could walk to, till its Boneward picks it up.
+func _lay_spear(a: Dictionary) -> void:
+	var owner = a["spear"]
+	if not is_instance_valid(owner) or owner.dead:
+		return
+	var p: Vector2 = a["pos"]
+	var at := p
+	if not map.walkable(floori(p.x), floori(p.y)):
+		var best := INF
+		for rr in [1, 2]:
+			if best < INF:
+				break
+			for oy in range(-rr, rr + 1):
+				for ox in range(-rr, rr + 1):
+					var c := Vector2(floorf(p.x) + ox + 0.5, floorf(p.y) + oy + 0.5)
+					var d := c.distance_to(p)
+					if d < best and map.walkable(floori(c.x), floori(c.y)):
+						best = d
+						at = c
+	owner.spear_lies(at, a["dir"], flow_to(at))
+	perils.spear(at, a["dir"], owner)
 
 
 ## THE WARDEN CALLS THE DEAD (game.ts callDead): four skeletons crawl up out of the ground on open floor round him, a little
@@ -269,6 +303,11 @@ func _fly(dt: float) -> void:
 			a["hit"] = true
 			gone = not a["pierce"]
 		if gone:
+			if a.has("spear"):
+				# (a spear that met a wall lies before it: back to the last open ground it flew over)
+				if not map.open_at(floori(p.x), floori(p.y)):
+					a["pos"] = p - a["dir"] * step
+				_lay_spear(a)
 			a["node"].queue_free()
 		else:
 			a["node"].position = Iso.to_screen(p.x, p.y)
@@ -320,8 +359,21 @@ func _make_flow() -> void:
 	_flow.fill(-1)
 	if hero == null or not hero.alive:
 		return
-	var sx := floori(hero.world.x)
-	var sy := floori(hero.world.y)
+	_fill_flow(_flow, hero.world)
+
+
+## A flow field toward any spot on the floor (a Boneward's spear where it lies: game.ts laySpear).
+func flow_to(at: Vector2) -> PackedInt32Array:
+	var f := PackedInt32Array()
+	f.resize(map.w * map.h)
+	f.fill(-1)
+	_fill_flow(f, at)
+	return f
+
+
+func _fill_flow(_flow: PackedInt32Array, from: Vector2) -> void:
+	var sx := floori(from.x)
+	var sy := floori(from.y)
 	if not map.walkable(sx, sy):
 		return
 	var q := PackedInt32Array([sy * map.w + sx])

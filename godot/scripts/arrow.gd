@@ -1,5 +1,5 @@
 ## Something in flight at the hero (monsters.gd moves it): a bone arrow, one of the Warden's bolts (a pink glow: the enemy's),
-## or the marksman's great arrow (longer, its gold trail). Stand-ins for the game's own pictures of them.
+## the marksman's great arrow (longer, its gold trail), or the Boneward's spear. Stand-ins for the game's own pictures of them.
 extends Node2D
 
 const Iso := preload("res://scripts/iso.gd")
@@ -20,6 +20,10 @@ func _draw() -> void:
 			draw_line(lift - s * 40.0, lift - s * 10.0, Color(1.0, 0.78, 0.35, 0.45), 4.0)
 			draw_line(lift - s * 22.0, lift + s * 10.0, Color(0.85, 0.78, 0.62), 3.0)
 			draw_line(lift + s * 10.0, lift + s * 16.0, Color(1.0, 0.9, 0.6), 3.0)
+		"spear":
+			# (the Boneward's spear: a long dark shaft, its bone point forward)
+			draw_line(lift - s * 26.0, lift + s * 14.0, Color(0.36, 0.3, 0.42), 3.0)
+			draw_line(lift + s * 14.0, lift + s * 24.0, Color(0.9, 0.86, 0.74), 3.0)
 		_:
 			draw_line(lift - s * 14.0, lift + s * 6.0, Color(0.78, 0.7, 0.55), 2.0)
 			draw_line(lift + s * 6.0, lift + s * 10.0, Color(1.0, 0.85, 0.55), 2.0)
