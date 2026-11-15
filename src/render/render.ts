@@ -532,6 +532,17 @@ export function fallenLift(f: { lift?: number; away?: boolean; t: number }): { u
   return { up: L * (1 - k * k), alpha: Math.max(0, Math.min(1, 1 - (f.t - FALL.fade) / (FALL.gone - FALL.fade))) };
 }
 
+/**
+ * THE CHAINED ONE'S LAG (15 Nov 2026; his words to the main chat: “Also got a big lag spike in the chained one’s fight”). On a
+ * phone a boss's pictures are not taken in from the bake (render/monsters_baked.ts: too many for a phone's room); they are the
+ * painter's worker's, beside the game, and it takes minutes over a floor's boss (the Chained One's three forms: 236 s on a cloud
+ * machine's phone screen). A frame of his the worker had not come to yet was painted here as he was shown: up to 0.6 s a frame,
+ * twelve frames over 0.1 s in his first 30 s (tools/scenarios/chained_lag.mjs). So, as his fall already was and as a figure whose
+ * baked pictures are still coming is, such a frame is shown as the nearest of its move that is painted (art/kit.ts
+ * LEFT_TO_PAINTER; the worker paints the first frame of every move first), never painted where the game is played. Off: as before.
+ */
+export const PAINTER_STANDS_IN = { on: true };
+
 export class Renderer {
   /** ACT 2, THE BELLS: the Hush's fog and the bells' arrows (render/bells.ts). */
   private bellsLook = new BellsLook();
@@ -3110,9 +3121,13 @@ export class Renderer {
     // art/kit.ts LEFT_TO_PAINTER. A list with none here yet paints the one asked for, as ever.)
     // (A FIGURE KEPT PACKED, THE MOTH: likewise, its moves unpacked as they are shown; each picture of it shown told to the
     // painter, render/painter.ts PACKED, which unpacks its move and keeps what is unpacked within its budget)
+    // (ONE THE PAINTER'S WORKER IS PAINTING, as a boss is on a phone (render/monsters_baked.ts: his pictures too many to take in
+    // whole there): likewise, a frame of his not painted yet shown as the nearest that is, as his fall already was, never painted
+    // here as he is shown: PAINTER_STANDS_IN)
     const f = figureOf(m);
     const packed = !!this.painter && this.painter.packs(f);
-    if (!packed && (!this.bakedMobs || !this.bakedMobs.coming(f))) return this.monsterSpriteNow(m);
+    const byPainter = PAINTER_STANDS_IN.on && !!this.painter && this.painter.paints(f);
+    if (!packed && !byPainter && (!this.bakedMobs || !this.bakedMobs.coming(f))) return this.monsterSpriteNow(m);
     const left = LEFT_TO_PAINTER.on;
     LEFT_TO_PAINTER.on = true;
     const stood = HEAVY.deferred;

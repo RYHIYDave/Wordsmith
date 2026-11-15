@@ -931,6 +931,19 @@ function pumpFetches(): void {
 }
 
 /**
+ * HOW MANY TAKES A SOUND BY NAME HAS (<name>_1 … _n): two, as every batch made them, but where it says more (the sound chat's
+ * fifteenth batch, 15 Nov 2026: the breeze in through the hall's door, three).
+ */
+export const TAKES: Readonly<Record<string, number>> = { breeze: 3 };
+export function takesOf(name: string): number {
+  return TAKES[name] ?? 2;
+}
+/** A sound's takes' names, <name>_1 … _n (takesOf). */
+function takeNames(name: string): string[] {
+  return Array.from({ length: takesOf(name) }, (_, k) => `${name}_${k + 1}`);
+}
+
+/**
  * A SOUND OF THE SECOND BATCH BY ITS NAME (an enemy's attack or voice, a boss's: game/sound_families.ts): one of its two takes
  * (<name>_1, _2), fetched the first time it is asked for; until one has come, `or` made in code (or nothing). Never throws.
  */
@@ -938,7 +951,7 @@ export function sfxNamed(name: string, vol = 1, or?: Sfx, exact = false): void {
   try {
     const c = ctx;
     if (!c || !bus || muted || c.state !== 'running' || !(vol > 0)) return;
-    const takes = [`${name}_1`, `${name}_2`];
+    const takes = takeNames(name);
     for (const t of takes) fetchRecorded(c, `${t}.mp3`);
     // (`exact`: played at its own pitch and length, a sound timed to a picture's frames: the Swamp Colossus's entrance)
     if (RECORDED.on && playTake(c, bus, `rec:${name}`, takes, nowMs(), vol, undefined, !exact)) return;
@@ -973,7 +986,7 @@ export function warmNamed(names: readonly string[]): boolean {
   const c = ctx;
   if (!c || !RECORDED.on) return false;
   const files = new Set<string>();
-  for (const n of names) for (const k of [1, 2]) files.add(`${n}_${k}.mp3`);
+  for (const n of names) for (const t of takeNames(n)) files.add(`${t}.mp3`);
   for (const f of warmedEver) {
     if (files.has(f) || warmedLast.has(f)) continue;
     const v = recorded.get(f);
@@ -1002,8 +1015,8 @@ export function warmAlso(names: readonly string[]): boolean {
   const c = ctx;
   if (!c || !RECORDED.on) return false;
   for (const n of names) {
-    for (const k of [1, 2]) {
-      const f = `${n}_${k}.mp3`;
+    for (const t of takeNames(n)) {
+      const f = `${t}.mp3`;
       warmedLast.add(f);
       warmedEver.add(f);
       fetchRecorded(c, f, false);
@@ -1070,7 +1083,7 @@ export function worldSound(name: string, vol = 1, or?: Sfx, exact = false): bool
     if (!c || !bus || muted || c.state !== 'running' || !(vol > 0)) return false;
     const into = worldBus(c);
     if (!into) return false;
-    const takes = [`${name}_1`, `${name}_2`];
+    const takes = takeNames(name);
     for (const t of takes) fetchRecorded(c, `${t}.mp3`);
     if (RECORDED.on && playTake(c, into, `world:${name}`, takes, nowMs(), vol, undefined, !exact)) {
       heardTill.set(name, c.currentTime + takesLong(takes));

@@ -14,14 +14,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { Game } from '../src/game/game';
 import { RIM_AT, makeRim } from '../src/game/rim';
-import { RIM_SOUNDS, loopWants } from '../src/game/world_sounds';
+import { RIM_SOUNDS, WORLD_LOOPS, loopWants } from '../src/game/world_sounds';
 // @ts-ignore - a tool of the build, plain JavaScript
 import { packOf } from '../tools/sound_packs.mjs';
 
 const DIR = 'assets/sound';
 
 test('1. the Rim\'s files: three loops, two takes of the notch and of the trophy hung, packed with the town\'s', () => {
-  for (const f of ['rim_rumble_loop.wav', 'rim_draught_loop.wav', 'rim_torch_loop.wav', 'notch_1.mp3', 'notch_2.mp3', 'trophy_hang_1.mp3', 'trophy_hang_2.mp3']) {
+  // (its three loops gone with the fifteenth batch, no constant sound but the music)
+  for (const f of ['rim_rumble_loop.wav', 'rim_draught_loop.wav', 'rim_torch_loop.wav']) assert.ok(!fs.existsSync(`${DIR}/${f}`), `${f}: none now`);
+  for (const f of ['notch_1.mp3', 'notch_2.mp3', 'trophy_hang_1.mp3', 'trophy_hang_2.mp3']) {
     assert.ok(fs.existsSync(`${DIR}/${f}`), f);
   }
   assert.equal(packOf('notch'), 'town');
@@ -33,6 +35,10 @@ test('2. in the Rim: the rumble always at full, the draught louder at the brink 
   g.level = makeRim(11, true);
   const h = g.hero;
   const P = RIM_AT.pit;
+  // (NO CONSTANT SOUND BUT THE MUSIC, the fifteenth batch: none; the rules kept below, were the loops on again)
+  assert.deepEqual(loopWants(g, true), {}, 'the Rim: no loop');
+  WORLD_LOOPS.on = true;
+  try {
   // at the brink
   h.x = P.x + P.r;
   h.y = P.y;
@@ -57,12 +63,17 @@ test('2. in the Rim: the rumble always at full, the draught louder at the brink 
     h.y = P.y;
     assert.equal(loopWants(g, true).rim_torch, undefined, 'far from every torch: none');
   }
+  } finally {
+    WORLD_LOOPS.on = false;
+  }
 });
 
 test('3. none of them in another town; a rim loop is a place\'s own, let go once unwanted', () => {
   const g = new Game('warrior', 3);
   assert.equal(g.level.town, true);
+  WORLD_LOOPS.on = true;
   const want = loopWants(g, true);
+  WORLD_LOOPS.on = false;
   assert.ok(!Object.keys(want).some((k) => k.startsWith('rim_')), 'the first town: none of the Rim\'s');
   const src = fs.readFileSync('src/engine/audio.ts', 'utf8');
   const m = /const FLOOR_LOOP = (\/.*\/);/.exec(src);

@@ -46,13 +46,17 @@ export function byNearness(d: number, near: number, far: number): number {
 }
 
 /**
- * QUIETER FIRES (the sound chat's try-out 20, “Quieter Fires”, https://claude.ai/artifact/SzwS1FB11nfPJairxg4gz4, its After; his
- * words to the main chat, 15 Nov 2026, 14:26 Eastern: “Can you give me a small update with the new torch sound changes”): a torch,
- * brazier, cresset or candle heard only right beside it, within 2.5 tiles (was 7) and at full within 1 (was 1.5), a third quieter
- * (0.35, was 0.55), the nearest one only as before; its pop every 10 to 25 s (was 3 to 9), only near one; the castle hall's and the
- * camp's hearth every 25 to 60 s (was 8 to 20) and half as loud; the Rim's four torches on posts heard as near as the others. The
- * armourer's forge, the Wordsmith's ring, floor 3's furnace and floor 10's burning pillars as they were.
+ * NO CONSTANT SOUND BUT THE MUSIC (the sound chat's fifteenth batch, 15 Nov 2026: assets/sound/README.md, “Fifteenth batch”). His
+ * words in the sound chat: 14:18 Eastern, “The fire sound is too much.  It’s coming off of every torch and brazier and only gets
+ * stronger when you’re close.  They overlap on top of each other and it seems like the levels and towns are crackling non-stop.
+ * It’s all you hear”; on try-out 20, “The hearth is too much as well.  Just take it out”; 14:43, “The only constant sound I want in
+ * levels or towns is the music.  Everything else is sound effects.”; shown that, “All good, hand over (Recommended)”; and to the
+ * main chat, 14:26, “Can you give me a small update with the new torch sound changes”, 14:51, “K sound should be ready to go”.
+ * So the world's loops are OFF (loopWants gives none: the halls' air, every floor's background, the torches' and braziers' crackle,
+ * the forge, the ring, the water, the furnace, the pillars, the Rim's): only the music goes on. A fire's pop is heard only right
+ * beside one (within 2.5 tiles, at full within 1; was 1.5 to 7): FIRE_REACH. `vol`: the crackle's, were the loops ever on again.
  */
+export const WORLD_LOOPS = { on: false };
 export const FIRE_REACH = { near: 1, far: 2.5, vol: 0.35 } as const;
 
 /**
@@ -71,6 +75,8 @@ export const RIM_SOUNDS = {
 
 /** The loops wanted now and how loud: the fires near him, the water on the wet floors, the ring's hum, the hall's and the camp's air; the floor's own background, its furnace, its burning pillars. */
 export function loopWants(g: Game, castleHall: boolean): Record<string, number> {
+  // (NO CONSTANT SOUND BUT THE MUSIC: the fifteenth batch, WORLD_LOOPS)
+  if (!WORLD_LOOPS.on) return {};
   const L = g.level;
   const h = g.hero;
   const out: Record<string, number> = {};
@@ -127,7 +133,7 @@ export const FOLK_SOUND: Readonly<Record<string, string>> = {
   stranger: 'coin',
 };
 /** The owl's hoot, now and then: once in this many seconds, at random between. */
-export const OWL_HOOT = { from: 20, to: 40 };
+export const OWL_HOOT = { from: 40, to: 80 };
 
 /**
  * THE STANDOUT SOUNDS, NOW AND THEN (the sound chat's eleventh batch, 12 Nov 2026: assets/sound/README.md). His words from 17:59
@@ -139,28 +145,28 @@ export const OWL_HOOT = { from: 20, to: 40 };
  */
 export type Ambient = { readonly name: string; readonly from: number; readonly to: number; readonly vol: number };
 export const AMBIENT = {
-  /** (the hearth: QUIETER FIRES, every 25 to 60 s and half as loud; was 8 to 20, 1.78) */
-  hall: { name: 'amb_hall', from: 25, to: 60, vol: 0.89 },
-  /** (QUIETER FIRES, as the hall's; was 8 to 20, 1.42) */
-  camp: { name: 'amb_camp', from: 25, to: 60, vol: 0.71 },
-  /** (near a brazier: its pop, at `vol` times the nearest brazier's nearness, as the fire's loop: FIRE_REACH; QUIETER FIRES, every
-   * 10 to 25 s, was 3 to 9) */
+  /** (the fifteenth batch: the hearth gone, a gust of breeze in through the door in its place, three takes; was amb_hall, 8 to 20 s) */
+  hall: { name: 'breeze', from: 13, to: 30, vol: 0.9 },
+  /** (the same: was amb_camp) */
+  camp: { name: 'breeze', from: 13, to: 30, vol: 0.9 },
+  /** (near a brazier: its pop, at `vol` times the nearest brazier's nearness, FIRE_REACH; the fifteenth batch, every 10 to 25 s, was 3 to 9) */
   fire: { name: 'fire_pop', from: 10, to: 25, vol: 2.15 },
 } as const satisfies Record<string, Ambient>;
 /** Each floor's own (none on 5, 13 and 17, whose loops keep their beat, nor on the floors whose loops had nothing standing out). */
 export const AMBIENT_FLOORS: Readonly<Record<number, readonly Ambient[]>> = {
-  1: [{ name: 'amb_f1', from: 5, to: 15, vol: 1 }],
-  2: [{ name: 'amb_f2', from: 8, to: 20, vol: 1 }],
-  3: [{ name: 'amb_f3', from: 6, to: 16, vol: 1 }],
-  4: [{ name: 'amb_f4', from: 8, to: 20, vol: 1.13 }],
-  6: [{ name: 'amb_f6', from: 10, to: 24, vol: 1 }],
-  7: [{ name: 'amb_f7', from: 10, to: 25, vol: 1 }],
-  8: [{ name: 'amb_f8', from: 25, to: 50, vol: 1 }],
+  // (the fifteenth batch: each half as often as the eleventh's)
+  1: [{ name: 'amb_f1', from: 10, to: 30, vol: 1 }],
+  2: [{ name: 'amb_f2', from: 16, to: 40, vol: 1 }],
+  3: [{ name: 'amb_f3', from: 12, to: 32, vol: 1 }],
+  4: [{ name: 'amb_f4', from: 16, to: 40, vol: 1.13 }],
+  6: [{ name: 'amb_f6', from: 20, to: 48, vol: 1 }],
+  7: [{ name: 'amb_f7', from: 20, to: 50, vol: 1 }],
+  8: [{ name: 'amb_f8', from: 50, to: 100, vol: 1 }],
   10: [
-    { name: 'amb_f10', from: 3, to: 10, vol: 2.36 },
-    { name: 'amb_f10_bog', from: 6, to: 15, vol: 1.16 },
+    { name: 'amb_f10', from: 6, to: 20, vol: 2.36 },
+    { name: 'amb_f10_bog', from: 12, to: 30, vol: 1.16 },
   ],
-  14: [{ name: 'amb_f14', from: 8, to: 20, vol: 1.28 }],
+  14: [{ name: 'amb_f14', from: 16, to: 40, vol: 1.28 }],
 };
 
 /** The standout sounds of this place, each with how loud it is heard now (0: not now, its countdown going on all the same). */
