@@ -22,7 +22,7 @@
 ##     gold (15 to 30 x the floor's power x the words x LOOT2.gold), a page of the cult's muster roll (MUSTER), "The stronghold
 ##     falls."
 ##   Words laid on an altar and not burned go back to him when he leaves the floor (game.ts leave).
-## RUNEDUST is the meld's material, and melding is not in the Godot version: it is counted as the game counts it (loot.gd `dust`,
+## RUNEDUST is the meld's material, spent at the wordsmith (loot.gd meld_words): it is counted as the game counts it (quest610.gd `dust`,
 ## shown beside the bag on the gear screen) and lies and is taken as the game draws it (quest610.gd `Thing`).
 extends Node2D
 

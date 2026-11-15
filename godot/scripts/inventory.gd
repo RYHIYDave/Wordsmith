@@ -189,6 +189,7 @@ func toggle() -> void:
 	else:
 		shop = ""
 		altar = -1
+		wsmith = ""
 	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
 
 
@@ -313,6 +314,10 @@ func _begin_drag() -> void:
 func _target_at(at: Vector2) -> Dictionary:
 	if altar >= 0 and at.x >= size.x / 2.0:
 		return {"kind": "altar", "r": Rect2(size.x / 2.0, 0, size.x / 2.0, size.y)}
+	# (WORDMELDING: over the wordsmith's half, melding: the next free hollow)
+	if wsmith == "meld" and at.x >= size.x / 2.0:
+		var nx: int = meld_in.find(null)
+		return {"kind": "meld", "r": _ws_hollows()[nx] if nx >= 0 else Rect2(size.x / 2.0, 0, size.x / 2.0, size.y)}
 	for c in _slots:
 		if c["r"].grow_individual(2.0 * K, 3.0 * K, 2.0 * K, 3.0 * K).has_point(at):
 			return {"kind": "slot", "i": c["i"], "side": c["side"], "k": c["k"], "r": c["r"]}
@@ -406,6 +411,8 @@ func _press(action: String, arg) -> void:
 			toggle()
 		"altar_put", "altar_take", "altar_open":
 			_altar_press(action, arg)
+		"ws_tab", "ws_hollow", "ws_meld", "ws_to_meld":
+			_ws_press(action, arg)
 	_hover = {}
 
 
@@ -500,6 +507,13 @@ func _drop(w: String, to: Dictionary) -> void:
 	_look = null
 	if to["kind"] == "altar":
 		var why: String = altar_holds.lay(altar, w)
+		if why != "":
+			_say(why)
+		else:
+			_word = ""
+		return
+	if to["kind"] == "meld":
+		var why := _ws_lay(w)
 		if why != "":
 			_say(why)
 		else:
@@ -663,6 +677,8 @@ func _draw() -> void:
 		_shelf()
 	if altar >= 0:
 		_altar_side(blink)
+	if wsmith != "":
+		_ws_side(blink)
 	_draw_reading(blink, first)
 	if _note_t > 0.0:
 		var nw := minf(W - 8.0, _width(_note, NORMAL) + 16.0)
@@ -1084,7 +1100,14 @@ func _draw_reading(blink: bool, first: bool) -> void:
 			about = _over["r"]
 			if _over["kind"] == "slot":
 				_slot_rows(rows, _word, _over["i"], _over["side"], _over["k"], inner, dragging)
-			else:
+			elif _over["kind"] == "meld":
+				# (WORDMELDING: over the wordsmith's half: what letting go does, or why it will not go in: ui/meld.ts wordRead)
+				var no := _ws_problem(_word)
+				if no != "":
+					_lines(rows, no, BAD, NORMAL, inner)
+				else:
+					_lines(rows, "Let go, and %s is laid in to be melded." % Words.word(_word)["name"], PICK, SMALL, inner)
+			elif _over.has("where"):
 				_piece_rows(rows, _word, _over["where"], false, inner)
 		"result":
 			var lit: bool = _result["t"] < 0.7 and int(_result["t"] * 10.0) % 2 == 0
@@ -1103,6 +1126,12 @@ func _draw_reading(blink: bool, first: bool) -> void:
 				_lines(rows, "Drag it onto an attack, or click a slot: it can be taken out again.", TEXT, SMALL, inner)
 			else:
 				_lines(rows, "Click a piece of gear to burn it in: it is used up. Hold it over a piece to see what it could become.", TEXT, SMALL, inner)
+			# (WORDMELDING: with the wordsmith's half melding, its hint and TO THE MELD: ui/meld.ts wordHint, wordButtons)
+			if wsmith == "meld":
+				var hint := _ws_hint(_word)
+				if hint != "":
+					_lines(rows, hint, DIM, SMALL, inner)
+				buttons = [["TO THE MELD", "ws_to_meld"]]
 		"look":
 			for c in _slots:
 				if _look == [c["i"], c["side"], c["k"]]:
@@ -1117,6 +1146,8 @@ func _draw_reading(blink: bool, first: bool) -> void:
 				if str(l).begins_with(label + ":"):
 					_lines(rows, l, Color.WHITE, SMALL, inner)
 			_lines(rows, "Drag it out, or right-click it, to take it back.", DIM, SMALL, inner)
+	if rows.is_empty():
+		return
 	var tall := 0.0
 	for r in rows:
 		tall += _row_h(r)
@@ -1142,7 +1173,7 @@ func _draw_reading(blink: bool, first: bool) -> void:
 	var bw := minf(78.0 * K, floorf((inner - 3.0 * K * (buttons.size() - 1)) / maxf(1.0, buttons.size())))
 	for b in buttons:
 		var r := Rect2(bx, cy + ch - 4.0 * K - bh, bw, bh)
-		var pink: bool = b[1] == "yes"
+		var pink: bool = b[1] == "yes" or (b[1] == "ws_to_meld" and _ws_problem(_word) == "")
 		draw_rect(r, Color(PRESS, 0.35 if blink else 0.18) if pink else BOX)
 		draw_rect(r, PRESS if pink else EDGE, false, 1.5)
 		_mid(r, b[0], NORMAL, Color.WHITE if pink else TEXT)
@@ -1493,3 +1524,298 @@ func _film_pic(name: String, at: Vector2) -> void:
 		return
 	var q: Array = P._fx["pics"][int(L[0])]
 	draw_texture_rect_region(P._sheet(int(q[0])), Rect2(at, Vector2(q[3], q[4])), Rect2(q[1], q[2], q[3], q[4]))
+
+
+# --- THE WORDSMITH'S HALF (ui/trades.ts wordsmithSide, ui/meld.ts meldSide; game.ts meldProblem, meldWords): at the wordsmith in
+# town, once the Meldstone has been given him (loot.gd `meld` "open"), the right half beside the gear screen as a vendor's shelf
+# is, its title WORDSMITH and a tab at its right that turns it from one page to the other. Its first page, TRADE, is his words for
+# sale and buying back (not in the Godot version yet: the page says so). Its second, MELDING: what melding is, the runedust he
+# carries and what a meld takes; two hollows, a word laid in each by pressing it and then a hollow, or dragging it there, or TO THE
+# MELD on its card (still his until melded; pressed again, taken back out), the game's refusals in its own words; "=" and what
+# comes out: "?" (cyan once the two meld, faint until then), not shown before it is made, but for two of one word, whose next rank
+# is plain and shown beforehand ("MAKES POWER II"); MELD: 1 RUNEDUST, pink when it can be pressed, why not in red beside it; the
+# word just made in the third place, "A NEW WORD, FOUND" (or "MELDED", or "POWER II, MADE"), and its page read under it (ui/lexicon.ts
+# drawWordPage, tight). Godot's plain letters and frames, as the rest of the gear screen. ---
+
+## (the wordsmith's half open, and its page: "trade" or "meld"; "": not open. The two words laid in its hollows, null where one is
+## empty: still his until melded: ui/panels.ts meldIn)
+var wsmith := ""
+var meld_in: Array = [null, null]
+## (ui/meld.ts: what melding is, RANK2 on)
+const WS_INTRO := "Two damage words and runedust go in; one word comes out. Two different words make a melded word, found by trying. Two of the same make that word a rank higher."
+
+
+## Opened at the wordsmith (town.gd): his half on its first page, nothing laid (main.ts: meldPage false, meldIn emptied).
+func open_wordsmith() -> void:
+	shop = ""
+	altar = -1
+	if not visible:
+		toggle()
+	wsmith = "trade"
+	meld_in = [null, null]
+	loot.melded = {}
+
+
+## Where its things are: the two hollows and what comes out, a row under the runedust, on the right half.
+func _ws_layout() -> Dictionary:
+	var x0 := size.x / 2.0 + 12.0
+	var w := size.x / 2.0 - 24.0
+	var intro: Array = _wrap(WS_INTRO, w, 10)
+	var dust_y := 42.0 + intro.size() * 13.0 + 6.0
+	var row_y := dust_y + 22.0
+	var gap := 16.0 * K
+	return {"x0": x0, "w": w, "intro": intro, "dust_y": dust_y, "row_y": row_y, "gap": gap,
+		"hollows": [Rect2(x0, row_y, CELL, CELL), Rect2(x0 + CELL + gap, row_y, CELL, CELL)],
+		"out": Rect2(x0 + 2.0 * (CELL + gap), row_y, CELL, CELL)}
+
+
+func _ws_hollows() -> Array:
+	return _ws_layout()["hollows"]
+
+
+## A word laid in that is no longer his to give (set in an attack or burned since) comes out (ui/meld.ts; RANK II: the same word
+## laid in twice takes two of it).
+func _ws_tidy() -> void:
+	for i in 2:
+		var w = meld_in[i]
+		if w != null and int(loot.words.get(w, 0)) < meld_in.count(w):
+			meld_in[i] = null
+
+
+## Why word `w` cannot be laid in, or "" if it can (ui/meld.ts problem): the game's own words.
+func _ws_problem(w: String) -> String:
+	if w == "":
+		return ""
+	var laid: int = meld_in.count(w)
+	if int(loot.words.get(w, 0)) <= laid:
+		return "No second one to give" if laid > 0 else "No spare word"
+	if Words.is_rank(w):
+		return "Rank II is the top, for now"
+	if Words.is_meld(w):
+		return "A melded word melds no further"
+	# (VOLATILE'S MELDS: Volatile goes in too)
+	var volt := w == "volatile"
+	if str(Words.word(w)["kind"]) != "damage" and not volt:
+		return "Only damage words and Volatile meld"
+	if volt and meld_in.has(w):
+		return "Volatile melds with a damage word"
+	if meld_in.find(null) < 0:
+		return "Both hollows are full"
+	return ""
+
+
+## Word `w` laid in the next free hollow: "" if it went in, else why not.
+func _ws_lay(w: String) -> String:
+	var no := _ws_problem(w)
+	if no != "":
+		return no
+	meld_in[meld_in.find(null)] = w
+	loot.melded = {}
+	return ""
+
+
+## The hint on a word's card while his half is melding (ui/meld.ts wordHint).
+func _ws_hint(w: String) -> String:
+	if w == "volatile":
+		return "The wordsmith melds Volatile with a damage word into one."
+	if str(Words.word(w)["kind"]) == "damage":
+		return "The wordsmith melds two damage words into one, or two of one word into its next rank."
+	return ""
+
+
+func _ws_press(action: String, arg) -> void:
+	if wsmith == "":
+		return
+	_ws_tidy()
+	match action:
+		"ws_tab":
+			wsmith = "meld" if wsmith == "trade" else "trade"
+		"ws_hollow":
+			var i := int(arg)
+			if meld_in[i] != null:
+				# (a word laid in: pressing it takes it out again)
+				meld_in[i] = null
+				_word = ""
+			elif _word != "":
+				var no := _ws_lay(_word)
+				if no != "":
+					_say(no)
+				else:
+					_word = ""
+			else:
+				_say("Pick one of your damage words first, or drag it here")
+		"ws_to_meld":
+			var no := _ws_lay(_word)
+			if no != "":
+				_say(no)
+			else:
+				_word = ""
+		"ws_meld":
+			_word = ""
+			var a: String = meld_in[0] if meld_in[0] != null else ""
+			var b: String = meld_in[1] if meld_in[1] != null else ""
+			var no: String = loot.meld_words(a, b)
+			_say(no)
+			if no == "":
+				meld_in = [null, null]
+
+
+## Why the two laid in cannot be melded now, or "" (game.ts meldProblem).
+func _ws_why() -> String:
+	return loot.meld_problem(meld_in[0] if meld_in[0] != null else "", meld_in[1] if meld_in[1] != null else "")
+
+
+func _ws_side(blink: bool) -> void:
+	_ws_tidy()
+	var L := _ws_layout()
+	var x0: float = L["x0"]
+	var w: float = L["w"]
+	draw_rect(Rect2(x0 - 12, 0, w + 24, size.y), PANEL)
+	_text(Vector2(x0, 22), "WORDSMITH", 16, PICK)
+	var tw := _width("WORDSMITH", 16)
+	if wsmith == "meld":
+		_text(Vector2(x0 + tw + 10, 22), "MELDING", 10, DIM)
+	# (the tab at the right of his title that turns his half to its other page; MELD only once the Meldstone is his)
+	var label := "TRADE" if wsmith == "meld" else "MELD"
+	if wsmith == "meld" or loot.meld == "open":
+		var bw := _width(label, SMALL) + 12.0 * K
+		var tab := Rect2(x0 + w - bw, 6, bw, 22)
+		draw_rect(tab, HOT if wsmith == "trade" else BOX)
+		draw_rect(tab, PICK if wsmith == "trade" else EDGE, false, 1.5)
+		_mid(tab, label, SMALL, PICK if wsmith == "trade" else TEXT)
+		_hits.append([tab, "ws_tab", null, null])
+	if wsmith == "trade":
+		var y := 42.0
+		for l in _wrap("His words for sale, and buying back what you sold him, are not in the Godot version yet.", w, 10):
+			_text(Vector2(x0, y), l, 10, DIM)
+			y += 13.0
+		return
+	# what melding is
+	var y: float = 42.0
+	for l in L["intro"]:
+		_text(Vector2(x0, y), l, 10, TEXT)
+		y += 13.0
+	# the runedust carried, and what a meld takes
+	var dc := Color(str(Words.data()["melds"]["dust"]))
+	var dy: float = L["dust_y"]
+	_film_pic("rd_icon", Vector2(x0, dy))
+	var dt := "%d RUNEDUST" % loot.dust()
+	_text(Vector2(x0 + 12.0 * K, dy + 16), dt, 11, dc)
+	_text(Vector2(x0 + 12.0 * K + _width(dt, 11) + 16, dy + 16), "A MELD TAKES %d" % loot.meld_cost(), 10, DIM)
+	# the two hollows, and what comes out
+	var hol: Array = L["hollows"]
+	var nx: int = meld_in.find(null)
+	var hand: String = _word
+	var ok: bool = hand != "" and _ws_problem(hand) == ""
+	var hang: String = hand if not _over.is_empty() and _over["kind"] == "meld" and not _drag.is_empty() and _drag["moving"] else ""
+	for i in 2:
+		var r: Rect2 = hol[i]
+		var laid = meld_in[i]
+		if laid != null:
+			_tile(r, laid, "name", {"stone": true, "lit": r.has_point(_mouse)})
+		elif i == nx and hang != "" and ok:
+			draw_rect(r, PICK_BG)
+			_tile(r, hang, "name", {"stone": true, "lit": true, "edge": Color.WHITE})
+		else:
+			# (an empty hollow: a dark notch with a plus, lit while the word in hand could go in)
+			var lit := i == nx and ok
+			draw_rect(r, (PICK_BG if blink else Color(PICK_BG, 0.6)) if lit else INK)
+			draw_rect(r, (PICK if blink else PICK_LO) if lit else EDGE, false, 1.5)
+			var c := r.get_center().floor()
+			draw_rect(Rect2(c.x - 6, c.y, 14, 2), PICK if lit else EDGE)
+			draw_rect(Rect2(c.x, c.y - 6, 2, 14), PICK if lit else EDGE)
+		_hits.append([r, "ws_hollow", i, null])
+	var gap: float = L["gap"]
+	var mid: float = float(L["row_y"]) + CELL / 2.0
+	_mid(Rect2(x0 + CELL, mid - 8, gap, 16), "+", NORMAL, DIM)
+	_mid(Rect2(x0 + 2.0 * CELL + gap, mid - 8, gap, 16), "=", NORMAL, DIM)
+	var out: Rect2 = L["out"]
+	var a = meld_in[0]
+	var b = meld_in[1]
+	var why := _ws_why()
+	var made: Dictionary = loot.melded
+	# (RANK II: two of the same word: what it makes is plain, and is shown before it is made)
+	var up: String = Words.rank_up(a) if made.is_empty() and a != null and a == b else ""
+	if not made.is_empty():
+		_tile(out, made["word"], "name", {"stone": true, "lit": true, "edge": loot.word_color(made["word"])})
+	elif up != "":
+		draw_rect(out, INK)
+		draw_rect(out, EDGE, false, 1.0)
+		_icon("word:" + up, Rect2(out.position + ((out.size - Vector2(12.0 * K, 12.0 * K)) / 2.0).floor(), Vector2(12.0 * K, 12.0 * K)), 0.45 if why != "" else 0.85)
+	else:
+		draw_rect(out, INK)
+		draw_rect(out, EDGE, false, 1.0)
+		_mid(out, "?", NORMAL, dc if a != null and b != null and why == "" else FAINT)
+	# under them: the word just made, or what two of a word make, or how it is done (none while a word of his is being read)
+	var reading := _word != "" or not _pending.is_empty() or not _result.is_empty() or _look != null
+	var ty: float = float(L["row_y"]) + CELL + 14.0
+	var label2 := "MELD: %d RUNEDUST" % loot.meld_cost()
+	var bwid := _width(label2, NORMAL) + 32.0
+	var br := Rect2(x0 + w - bwid, size.y - 52.0, bwid, 30.0)
+	var room: float = br.position.y - 8.0
+	if not made.is_empty() and not reading:
+		var mw: String = made["word"]
+		var title: String = ("%s, MADE" % str(Words.word(mw)["name"]).to_upper()) if Words.is_rank(mw) else ("A NEW WORD, FOUND" if made["first"] else "MELDED")
+		_text(Vector2(x0, ty), title, 9, dc if made["first"] else DIM)
+		_ws_page(mw, x0, ty + 8.0, w, room)
+	elif up != "" and not reading:
+		_text(Vector2(x0, ty), "MAKES %s" % str(Words.word(up)["name"]).to_upper(), 10, loot.word_color(up))
+		var yy := ty + 16.0
+		for l in _wrap(str(Words.word(up)["about"]), w, 10):
+			if yy + 13.0 > room:
+				break
+			_text(Vector2(x0, yy), l, 10, TEXT)
+			yy += 13.0
+		var ft := str(Words.word(up)["frontText"])
+		for l in _wrap("In front and behind, %s%s" % [ft.substr(0, 1).to_lower(), ft.substr(1)], w, 10):
+			if yy + 13.0 > room:
+				break
+			_text(Vector2(x0, yy), l, 10, DIM)
+			yy += 13.0
+	elif not reading and a == null and b == null:
+		_text(Vector2(x0, ty + 4), "Click a damage word of yours, then a hollow. Or drag it here.", 9, FAINT)
+	# the button, and why it cannot be pressed yet
+	if why != "" and a != null and b != null:
+		_text(Vector2(br.position.x - 8.0 - _width(why, 10), br.position.y + 19), why, 10, BAD)
+	var can := why == ""
+	draw_rect(br, Color(PRESS, (0.35 if blink else 0.18) if can else 0.06))
+	draw_rect(br, PRESS if can else FAINT, false, 1.5)
+	_mid(br, label2, NORMAL, Color.WHITE if can else FAINT)
+	_hits.append([br, "ws_meld", null, null])
+
+
+## A made word's page under it (ui/lexicon.ts drawWordPage, tight): its name and what it grows with; what it is; ON AN ATTACK, in
+## front and behind (known once made); ON GEAR (what it becomes there, once he has burned it into a piece); ON A DUNGEON (not in
+## the Godot version: undiscovered). A part with no room left is not drawn, nor those after it.
+func _ws_page(w: String, x: float, y: float, pw: float, end: float) -> void:
+	var wd: Dictionary = Words.word(w)
+	var k: Dictionary = loot._know(w)
+	var nw := _width(str(wd["name"]).to_upper(), NORMAL)
+	_top(Vector2(x, y), str(wd["name"]).to_upper(), NORMAL, loot.word_color(w))
+	_top(Vector2(x + nw + 8.0 * K, y + 2.0 * K), str(_hud["words"][w]["grows"]), SMALL, DIM)
+	y += 11.0 * K
+	var unknown := "Undiscovered."
+	var page: Dictionary = Words.data()["page"][w]
+	var gear: String = (" ".join(PackedStringArray(page["gear"])) + " " + str(page["note"])) if k["gear"] else unknown
+	var parts: Array = [
+		[0.0, [[str(wd["about"]), Color.WHITE, NORMAL, 0.0]]],
+		[4.0 * K, [["ON AN ATTACK", PICK, SMALL, 0.0],
+			["In front (%s ...): %s" % [str(wd["front"]).to_upper(), wd["frontText"]] if k["front"] else "In front: " + unknown, TEXT if k["front"] else FAINT, SMALL, 4.0 * K],
+			["Behind (... %s): %s" % [str(wd["behind"]).replace("of ", "OF ").to_upper(), wd["behindText"]] if k["behind"] else "Behind: " + unknown, TEXT if k["behind"] else FAINT, SMALL, 4.0 * K]]],
+		[2.0 * K, [["ON GEAR", PICK, SMALL, 0.0], [gear, TEXT if k["gear"] else FAINT, SMALL, 4.0 * K]]],
+		[2.0 * K, [["ON A DUNGEON", PICK, SMALL, 0.0], [unknown, FAINT, SMALL, 4.0 * K]]],
+	]
+	for part in parts:
+		var rows: Array = []
+		for r in part[1]:
+			for l in _wrap(r[0], pw - r[3], r[2]):
+				rows.append([l, r[1], r[2], r[3]])
+		var h := 0.0
+		for r in rows:
+			h += 6.0 * K if r[2] <= SMALL else 9.0 * K
+		if y + part[0] + h - 1.0 > end:
+			return
+		y += part[0]
+		for r in rows:
+			_top(Vector2(x + r[3], y), r[0], r[2], r[1])
+			y += 6.0 * K if r[2] <= SMALL else 9.0 * K

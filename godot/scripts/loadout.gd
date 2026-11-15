@@ -89,6 +89,17 @@ func behinds(i: int) -> Array:
 	return behind[i].filter(func(w): return w != null)
 
 
+## WORDMELDING: the words in front of move `i` as the fight's rules and looks go by them (game.ts fronts; melds.ts withParts): each
+## melded word and after it its two words; a ranked word as its word. (`fronts` is the words as they are set: the screens'.)
+func wfronts(i: int) -> Array:
+	return Words.with_parts(front[i])
+
+
+## The same of the words behind move `i`.
+func wbehinds(i: int) -> Array:
+	return Words.with_parts(behind[i])
+
+
 ## Whether move `i` carries word `w` on either side.
 func has(i: int, w: String) -> bool:
 	return front[i].has(w) or behind[i].has(w)

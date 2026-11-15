@@ -1756,6 +1756,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await _foewords_shots(hero, dir)
 		get_tree().quit()
 		return
+	# (WORDMELDING: the wordsmith's meld page: check_melds.gd)
+	if _arg("only") == "meld":
+		await CheckMelds.new(self, hero).page(dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "rmb":
 		await _rmb_test(hero, dir)
 		get_tree().quit()
@@ -2121,6 +2126,8 @@ const W_ROLL := 100.0
 const W_LIFE := 1000000.0
 ## (floors 6 to 10's words' cases, in each of the three words' checks: check_words610.gd)
 const CheckWords610 := preload("res://scripts/check_words610.gd")
+## (WORDMELDING: the words melding makes, in the fight, and the wordsmith's meld page: check_melds.gd)
+const CheckMelds := preload("res://scripts/check_melds.gd")
 ## (where the six stand from him: tiles before him, tiles to his side)
 const W_FORM := [[1.2, 0.0], [1.2, 0.9], [2.1, -0.5], [3.8, 0.4], [5.2, -0.6], [9.5, 0.5]]
 var _w_pack: Array = []
@@ -2181,6 +2188,10 @@ func _words_shots(h: Hero, dir: String) -> void:
 	var words: Array = Hero.Words.ids().filter(func(w): return not Hero.Words.data()["wilds"].has(w))
 	if _arg("cases").begins_with("610"):
 		words = []
+	# (WORDMELDING: `--cases=meld`, the words melding makes alone; `--cases=meld:<word>,<word>`, those: check_melds.gd)
+	var melds_only: bool = _arg("cases").begins_with("meld")
+	if melds_only:
+		words = []
 	print("WORDS begin: floor 2, he at %s facing %s, the pack A to F %s to %s tiles before him; his Str %d Dex %d Int %d, his roll fixed at %d, no critical hits, %.3f blows a second; a frame takes %.3f s" % [
 		_w_home, _w_face, W_FORM[0][0], W_FORM[5][0], h.stats["str"], h.stats["dex"], h.stats["int"], W_ROLL, h.stats["aps"], _w_frame])
 	for w in words:
@@ -2198,7 +2209,11 @@ func _words_shots(h: Hero, dir: String) -> void:
 		await _w_chilled(h)
 		await _w_tough(h, elite, boss)
 	# (FLOORS 6 TO 10'S NINE WORDS, each in front of and behind each of his moves: check_words610.gd)
-	await CheckWords610.new(self, h).words(_arg("cases").trim_prefix("610").trim_prefix(":"))
+	if not melds_only:
+		await CheckWords610.new(self, h).words(_arg("cases").trim_prefix("610").trim_prefix(":"))
+	# (WORDMELDING: the 28 words melding makes, each in front of and behind his Strike: check_melds.gd)
+	if melds_only or _arg("cases") == "":
+		await CheckMelds.new(self, h).words(_arg("cases").trim_prefix("meld").trim_prefix(":"))
 	print("WORDS: %d cases, %d as the game's formula gives, %d not%s" % [_w_n, _w_n - _w_bad.size(), _w_bad.size(), "" if _w_bad.is_empty() else ": " + "; ".join(PackedStringArray(_w_bad))])
 
 

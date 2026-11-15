@@ -57,10 +57,12 @@
 ##     circle (leavePatches; hurt_by). LASTING and FLEETING on all that lasts and ticks (the Whirlwind's hold and turns, what it
 ##     leaves, burning, poison, might, haste, the frenzy, the shield). Which move last struck a monster is kept on it (monster.gd
 ##     last_skill): its death answers to that move's words (killed).
+##   WORDMELDING (melds.gd): a melded word does the work of its two words (the fight reads a move's words with their parts:
+##     loadout.gd wfronts, wbehinds) and its own twist, in front and behind (r.meld, meldHit, meldArc, MELDS8: melds.gd's head);
+##     a ranked word is its word, stronger (words.gd resolve).
 ##   LEFT OUT, as not a new Warrior's on floors 1 to 10: the skill trees (game.ts has, was, now: Sweeping Cut, Master Stroke,
-##     Fuel, Searing, Venom, Deep Freeze, Forking, Cadence and the rest), the unique items (worn, wears), the melded words
-##     (r.meld, meldHit, MELDS8), the other classes, and the city's and the last words: where the game's code branches on one
-##     of those, the branch is not here.
+##     Fuel, Searing, Venom, Deep Freeze, Forking, Cadence and the rest), the unique items (worn, wears), the other classes, and
+##     the city's and the last words: where the game's code branches on one of those, the branch is not here.
 ##
 ## WHAT THE MONSTERS' WORDS DO TO HIM (game.ts hurtHero; hurt_by here): a blow comes with its striker's element and words (a
 ## pack's minion's at half, monster.gd half_of). Its harm: the part of it that is plain less his armour, the parts of Flame,
@@ -96,6 +98,14 @@ const STEP_EVERY := 0.25
 const AIM_REACH := 2.4
 const BACK_AFTER := 2.5
 const Loadout := preload("res://scripts/loadout.gd")
+## (WORDMELDING: the melded words' twists in the fight, and what their looks read: melds.gd)
+const Melds := preload("res://scripts/melds.gd")
+var _melds = null
+var melds:
+	get:
+		if _melds == null:
+			_melds = Melds.new(self)
+		return _melds
 
 ## (each move's share of the weapon's damage and its wait are the words' to change: loadout.r(i) `dmg_mult`, `cooldown`.
 ## `wake`, defs.ts TUNE.channelWake: how often the Whirlwind leaves what the words behind it leave, as it goes on)
@@ -368,7 +378,8 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 	var r: Dictionary = loadout.r(i)
 	var el: String = r["element"]
 	var base := base_for(el)
-	var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(el) + might) / 100.0)
+	# (FERVOR, melds.gd: its kills burning hotter a while)
+	var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(el) + melds.fervor_pct(el) + might) / 100.0)
 	var crit: bool = randf() * 100.0 < stats["crit_chance"]
 	# PRECISE behind: his next hit on a marked enemy is a certain critical, and spends the mark
 	var spent: bool = m.mark_t > 0.0
@@ -377,8 +388,13 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 		m.mark_t = 0.0
 	if crit:
 		dmg *= 1.0 + stats["crit_mult"] / 100.0
+	# (WORDMELDING: Avalanche behind, a hit on a chilled enemy hits harder: melds.gd)
+	dmg = melds.avalanche(m, r, dmg, quiet)
 	dmg = maxf(1.0, roundf(dmg))
 	var at: Vector2 = m.world
+	# (WORDMELDING: what it was before this hit, for Scald's crack and Cauterize)
+	var was_burning: bool = m.burn_t > 0.0
+	var was_chilled: bool = m.chill_t > 0.0
 	# FLAME in front: what it strikes burns for `ignite` of the hit more, over 3 s (LASTING: as hard a second, for longer;
 	# FLEETING: harder a second, the same in all in its shorter time)
 	if r["ignite"] > 0.0:
@@ -386,13 +402,15 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 	# FROST in front: it is chilled; a second chilling hit freezes it
 	if r["chill"] > 0.0:
 		m.chill_by(r["chill"])
-	var front: Array = [] if quiet else loadout.fronts(i)
+	# (WORDMELDING: Thunder in front, one big bolt out of the sky in place of the arcs)
+	melds.thunder_bolt(r, at, quiet)
+	var front: Array = [] if quiet else loadout.wfronts(i)
 	# (LEECH behind: what it strikes, still alive, is marked for the harvest)
 	if r["orb_chance"] > 0.0 and not quiet:
 		_tell({"t": "mark", "x": at.x, "y": at.y})
 	# (lightning comes down on the one it hits before it jumps to the others)
 	if r["arcs"] > 0 and not quiet:
-		_tell({"t": "arc", "x0": at.x, "y0": at.y, "x1": at.x, "y1": at.y, "sky": true})
+		_tell(Melds.tag(r, {"t": "arc", "x0": at.x, "y0": at.y, "x1": at.x, "y1": at.y, "sky": true}))
 	if spent:
 		_tell({"t": "markSpent", "id": m.id, "x": at.x, "y": at.y, "dx": at.x - world.x, "dy": at.y - world.y})
 	m.damage(dmg, el, crit, not quiet and front.has("power"), front, false, false, i)
@@ -407,15 +425,21 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 			o.damage(maxf(1.0, roundf(dmg * float(r["vast"]))), el, false, false, [], false, false, i)
 		if not ids.is_empty():
 			_tell({"t": "vastSplash", "x": at.x, "y": at.y, "r": reach, "ids": ids, "el": el})
+	# (WORDMELDING, THE EIGHT ACROSS THE GROUPS: Shiver, a critical hit freezes; Sunder; Cauterize and Fervor, a kill: melds.gd)
+	melds.struck8(m, i, crit, was_burning)
 	# POISON in front: each hit adds a dose of `poison` of the hit a second (and what his gear adds to a hit that poisons, over
-	# the poison's time: items.ts POISON_DMG, which loot.gd does not give yet); LASTING and FLEETING as for burning
-	var dose: float = dmg * float(r["poison"]) * float(r["pace"]) if r["poison"] > 0.0 else 0.0
+	# the poison's time: items.ts POISON_DMG, which loot.gd does not give yet); LASTING and FLEETING as for burning; BLIGHT in
+	# front, its poison biting harder the lower the enemy's life
+	var dose: float = dmg * float(r["poison"]) * Melds.blight_k(r, m) * float(r["pace"]) if r["poison"] > 0.0 else 0.0
 	var p_min: float = stats.get("poison_min", 0.0)
 	var p_max: float = stats.get("poison_max", 0.0)
 	if dose > 0.0 and (p_min != 0.0 or p_max != 0.0):
 		dose += randf_range(p_min, maxf(p_min, p_max)) / float(Words.data()["poison"]["time"])
 	if dose > 0.0:
 		m.dose(dose, float(Words.data()["poison"]["time"]) * float(r["last"]))
+	# (WORDMELDING: the melded word's twist on this hit, in front and behind: melds.gd)
+	if r["meld"] != null or r["meld_behind"] != null:
+		melds.hit(m, i, dmg, at, quiet, was_burning, was_chilled)
 	if not m.dead:
 		# PRECISE behind marks the first enemy each use hits (not one whose mark this very hit spent)
 		if r["mark"] and not spent and _marked[i] != uses[i]:
@@ -425,7 +449,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 		# HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too (its chance, 50% at most: none yet here)
 		var heavy: Dictionary = Words.data()["heavy"]
 		if r["stun"] > 0.0:
-			m.stun_for(r["stun"])
+			m.stun_for(r["stun"], "thunder" if r["meld"] == "thunder" else "")
 		else:
 			var chance: float = minf(float(heavy["stunCap"]), stats.get("stun_chance", 0.0))
 			if chance > 0.0 and randf() * 100.0 < chance:
@@ -437,7 +461,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 	heal_flat(stats["life_on_hit"])
 	# LIGHTNING in front: it jumps to the nearest other enemies, and on from each (monsters.gd arcs)
 	if r["arcs"] > 0 and not quiet:
-		monsters.arcs(m, int(r["arcs"]), maxf(1.0, roundf(dmg * float(r["arc_dmg"]))), i)
+		monsters.arcs(m, int(r["arcs"]), maxf(1.0, roundf(dmg * float(r["arc_dmg"]))), i, r["meld"] if r["meld"] != null else "")
 
 
 ## "of Power" behind move `i` (game.ts landed): a blow of it has landed on an enemy, and his might grows by the word's share,
@@ -489,6 +513,9 @@ func killed(m) -> void:
 		_tell({"t": "frenzyFed", "x": m.world.x, "y": m.world.y})
 	if r["volatile"] > 0.0:
 		_explode(m, r, i)
+	# (WORDMELDING: Shatter in front, a frozen one bursts into shards; Rupture, a poisoned one bursts its poison: melds.gd)
+	if r["meld"] != null:
+		melds.killed(m, r, i)
 	if r["orb_chance"] > 0.0 and randf() < float(r["orb_chance"]):
 		if monsters != null and monsters.loot != null:
 			monsters.loot.orb_at(m.world)
@@ -499,6 +526,10 @@ func killed(m) -> void:
 ## VOLATILE in front (game.ts explodeKill): what move `i` killed explodes a moment after, for the word's share of the dead one's
 ## life, harming what is round it.
 func _explode(m, r: Dictionary, i: int) -> void:
+	# (VOLATILE'S MELDS: Demolition's bigger, Powderkeg's and Chain Reaction's: melds.gd explode, the game's explodeKill)
+	if r["meld"] != null:
+		melds.explode(m, r, i)
+		return
 	var at: Vector2 = m.world
 	var rad := 1.8
 	var hurt := maxf(1.0, roundf(float(m.max_life) * float(r["volatile"])))
@@ -516,8 +547,8 @@ func _explode(m, r: Dictionary, i: int) -> void:
 ## The words on move `i` told as it is made (game.ts deliver, beginChannel, useEvasive: `cast`), where it has any: from `at`,
 ## the way `way`; `kind` the game's name for what sort of move it is.
 func _cast(i: int, kind: String, at: Vector2, way: Vector2, echo := false) -> void:
-	var front: Array = loadout.fronts(i)
-	var behind: Array = loadout.behinds(i)
+	var front: Array = loadout.wfronts(i)
+	var behind: Array = loadout.wbehinds(i)
 	if front.is_empty() and behind.is_empty() and not echo:
 		return
 	_tell({"t": "cast", "x": at.x, "y": at.y, "dx": way.x, "dy": way.y, "kind": kind, "el": loadout.r(i)["element"], "words": front, "behind": behind, "echo": echo})
@@ -554,7 +585,7 @@ func _break_props(i: int, at: Vector2, rad: float) -> void:
 	if pillars != null and is_instance_valid(pillars):
 		pillars.struck(at, rad)
 	if doors != null and is_instance_valid(doors):
-		doors.unseal({"front": loadout.fronts(i), "behind": loadout.behinds(i)}, at, rad)
+		doors.unseal({"front": loadout.wfronts(i), "behind": loadout.wbehinds(i)}, at, rad)
 
 
 ## WHAT MOVE `i` LEAVES where it struck (game.ts wake, leavePatches): the ground of an element behind it, no smaller than a
@@ -564,14 +595,15 @@ func _wake(i: int, at: Vector2, rad: float, frac: float) -> void:
 	if wakes == null or not is_instance_valid(wakes):
 		return
 	var r: Dictionary = loadout.r(i)
+	# (WORDMELDING: what a melded word behind leaves is its own, its twist and all: wakes.gd)
 	if r["zone"] != null:
-		wakes.add_ground(r["zone"], i, at, maxf(1.0, rad), avg_hit(i, frac))
+		wakes.add_ground(r["zone"], i, at, maxf(1.0, rad), avg_hit(i, frac), r["meld_behind"])
 	# (LASTING and FLEETING: what it leaves lasts longer or shorter, Fleeting's doing as much in all)
 	if r["cloud"] > 0.0:
-		wakes.add_cloud(i, at, maxf(1.5, rad), avg_hit(i, frac) * float(r["cloud"]) * float(r["pace"]), 5.0 * float(r["last"]))
+		wakes.add_cloud(i, at, maxf(1.5, rad), avg_hit(i, frac) * float(r["cloud"]) * float(r["pace"]), 5.0 * float(r["last"]), r["meld_behind"])
 	# VOLATILE behind: a rune, where it struck, that goes off a moment later (game.ts addRune)
 	if r["rune"] > 0.0:
-		wakes.add_rune(i, at, 2.0 * float(r["size"]), avg_hit(i, frac) * float(r["rune"]), r["element"])
+		wakes.add_rune(i, at, 2.0 * float(r["size"]), avg_hit(i, frac) * float(r["rune"]), r["element"], r["meld_behind"])
 	if r["cracks"] > 0.0:
 		wakes.add_cracks(i, at, maxf(1.0, rad), float(r["cracks"]) * float(r["last"]))
 	# GUARDING behind: a ward circle (game.ts leavePatches, addPatch 'ward')
@@ -585,7 +617,7 @@ func _wake(i: int, at: Vector2, rad: float, frac: float) -> void:
 func _strike(i: int, from: Vector2, way: Vector2, frac: float, n := 0, echo := false) -> void:
 	var r: Dictionary = loadout.r(i)
 	var reach: float = STRIKE["reach"] * float(r["size"])
-	var front: Array = loadout.fronts(i)
+	var front: Array = loadout.wfronts(i)
 	_tell({"t": "swing", "x": from.x, "y": from.y, "dx": way.x, "dy": way.y, "reach": reach, "el": r["element"], "words": front, "n": n, "echo": echo})
 	var best = monsters.strike_target(from, way, reach) if monsters != null else null
 	_break_props(i, from + way * reach * 0.6, 0.9)
@@ -621,7 +653,7 @@ func _strike(i: int, from: Vector2, way: Vector2, frac: float, n := 0, echo := f
 ## it struck.
 func _blast(i: int, at: Vector2, rad: float, frac: float, style: String, leaves: bool, db: float, n := 0, echo := false) -> int:
 	var r: Dictionary = loadout.r(i)
-	var front: Array = loadout.fronts(i)
+	var front: Array = loadout.wfronts(i)
 	_tell(_vast_edge(r, rad, {"t": "burst", "x": at.x, "y": at.y, "r": rad, "el": r["element"], "style": style, "words": front, "n": n, "echo": echo}))
 	if front.has("power"):
 		sfx.play("power", -4.0)
@@ -671,6 +703,8 @@ func _process(dt: float) -> void:
 	_whirl_cd = maxf(0.0, _whirl_cd - dt * frenzy_pace())
 	_lunge_cd = maxf(0.0, _lunge_cd - dt * frenzy_pace())
 	_run_later(dt)
+	# (WORDMELDING: Implode's bursts to come, Fervor's time: melds.gd)
+	melds.step(dt)
 	_cam.offset = Vector2(0, -24 - _lift) + lean + (Vector2(randf_range(-3, 3), randf_range(-3, 3)) if _shake > 0.0 else Vector2.ZERO)
 	if _kick > 0.3:
 		_cam.offset += Vector2(roundf(randf_range(-_kick, _kick)), roundf(randf_range(-_kick, _kick) * 0.6)) * 2.0
@@ -1118,6 +1152,8 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	# GUARDING burned into his gear: a chance to block the blow, which then does nothing at all (50% at most)
 	var block: float = minf(float(Words.data()["guard"]["blockCap"]), stats.get("block_chance", 0.0))
 	if block > 0.0 and randf() * 100.0 < block:
+		# (RIME WARD: what he blocks, chilled: melds.gd)
+		melds.blocked(src)
 		_tell({"t": "blocked", "x": world.x, "y": world.y, "fromX": by.x, "fromY": by.y})
 		_tell({"t": "text", "x": world.x, "y": world.y, "text": "Blocked", "color": "#9fe8c0"})
 		sfx.play("hit", linear_to_db(0.5))

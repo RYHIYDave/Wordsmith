@@ -236,3 +236,45 @@ Smaller:
   game never uses that: blows reach it only at its root, out in the water. The old pink ring standing in for the pillars is
   still drawn under his own pillar fire.
 - **The quest line.** A muster roll page drops even if the mystic never asked for the roll.
+
+## In the game, found while bringing over wordmelding (15 Nov 2026)
+
+33. **The eight melds across the groups can't be made at the wordsmith.** Their rules let Leech and Poison (and the other seven
+    pairs) meld (melds.ts meldProblem), but the wordsmith's melding page lets only damage words and Volatile into its hollows
+    (ui/meld.ts: "Only damage words and Volatile meld"), so Leech, Twin, Precise, Heavy, Frenzied, Guarding and Pulling can never
+    be laid in. Siphon, Cauterize, Forking, Shiver, Sunder, Fervor, Rime Ward and Implode come only from the practice room.
+    Copied: in the Godot version too they are in the rules and the fight, but the page refuses their words.
+
+34. **Rime Ward does almost nothing.** Its twist only happens when a blow is blocked, and blocking comes only from Guarding burned
+    into gear; its "+5 block chance" in front (melds8.ts MELD8_TUNE.rimeward.block) is not read anywhere; and the chill it gives
+    sets only how long the monster is chilled, not how much (its 40% slow is never set), so one not chilled already is "chilled"
+    by nothing. Copied.
+
+35. **Fervor never makes him faster.** Its card and his page say "attack faster and burn hotter", but its attack speed
+    (MELD8_TUNE.fervor.speed) is not read anywhere: each kill only makes his fire hotter. Copied.
+
+36. **A melded word's second property on gear can come out as half a number.** Where its second word's property is added damage
+    (Eruption on a weapon: "+5 to 11% Physical Damage and Adds 1-2 Fire Damage to Fire Hits" is offered), the game rolls only its
+    least, so the piece gets "+1 Minimum Fire Damage" and no most (items.ts imbueItem rolls `also` with rollStat). Copied.
+
+37. **Melded and ranked words do go on gear.** The notes at the head of melds.ts still say "for now on attacks only", but since
+    EVERY WORD ON GEAR (8 Nov 2026) the game burns them into gear (a melded word's two properties in one place, each 0.75 of its
+    word's; a ranked word's half as strong again). The Godot version follows the game: on gear too.
+
+Smaller:
+
+- Powderkeg's burning ground and Rupture's cloud, left by their runes, are a fifth of what MELD_TUNE says (game.ts runeTwist
+  multiplies by 0.2 again).
+- A monster once struck by a Sunder attack takes 30% more from every hit for as long as it is stunned by anything, ever after
+  (its `sunder` is never cleared).
+- Implode is made of Pulling, a city word found only from floor 11, so it can't be made before then even by the rules.
+
+## In the Godot version (wordmelding)
+
+38. **Some melds' own looks are not drawn yet.** The fight's rules are all in, and tell what they do as the game tells it, but
+    what is drawn is only what the plain words' looks already give: Scald's steam behind is not drawn at all (the floor's looks know
+    no steam), and the twists' own pictures (Eruption's pool, Avalanche's shove, the meld runes' colours in the fight and the rest:
+    render/melds3.ts, volatile3.ts, melds8.ts) wait for their port.
+
+39. **The wordsmith's first page is empty.** His words for sale and buying back are not in yet; his half opens on that page, as
+    the game's does, and says so; MELD at its top turns it to melding. Before the Meldstone, using him is the old talk, as before.
