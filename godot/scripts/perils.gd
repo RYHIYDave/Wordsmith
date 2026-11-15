@@ -1,6 +1,7 @@
 ## What the monsters' moves mark on the floor, and what each does when its time comes (game.ts zones and perils; game/
 ## action_f1.ts). Pink and gold are the enemy's (CLAUDE.md: what glows on a friend is cyan). Drawn on the floor, under
-## everyone; the game's own pictures of them (render/act1_fx, art/action_f1_fx.ts) are to come: these are stand-ins.
+## everyone. THE RED CIRCLE AND THE CHARGE'S LANE ARE THE GAME'S OWN, drawn as it draws them (render.ts 'warn',
+## art/charge_lane.ts); the game's own pictures of the others (render/act1_fx, art/action_f1_fx.ts) are to come: stand-ins.
 ##   warn  a slam's red circle: when its time is out, whoever is within it (and 0.1) is struck.
 ##   lane  a charge's line, from the troll through where the hero stood and on: drawn while he winds up and as he runs it.
 ##   aim   the marksman's line of aim, run out as he draws (it follows the hero until 0.4 s before he looses).
@@ -14,6 +15,10 @@ const FloorMap := preload("res://scripts/floor_map.gd")
 const MM := preload("res://scripts/monster_moves.gd")
 
 const ENEMY := Color(0.96, 0.27, 0.47)
+## (art/palette.ts P.bl3, bl4, bl5: the reds of the game's warning circle and of a charge's lane)
+const BL3 := Color("#a81c2c")
+const BL4 := Color("#e03c44")
+const BL5 := Color("#ff8a80")
 const GOLD := Color(1.0, 0.78, 0.35)
 const SHADOW := Color(0.02, 0.02, 0.07)
 
@@ -618,12 +623,13 @@ func _draw() -> void:
 	for p in list:
 		match p["kind"]:
 			"warn":
+				# (THE GAME'S RED CIRCLE, as render.ts draws a 'warn' zone: its faint ground darkening as the moment comes, the
+				# fill growing from its middle, and its ring of single pixels)
 				var k: float = clampf(p["t"] / p["dur"], 0.0, 1.0)
-				var ring := _ring(p["x"], p["y"], p["r"])
-				draw_colored_polygon(ring, Color(ENEMY, 0.10 + 0.25 * k))
-				draw_polyline(ring, Color(ENEMY, 0.9), 2.0)
-				if k > 0.02:
-					draw_polyline(_ring(p["x"], p["y"], p["r"] * k), Color(ENEMY, 0.7), 2.0)
+				draw_colored_polygon(_ring(p["x"], p["y"], p["r"]), Color(BL3, 0.16 + 0.3 * k))
+				if p["r"] * k > 0.03:
+					draw_colored_polygon(_ring(p["x"], p["y"], p["r"] * k), Color(BL4, 0.3))
+				_ring_dots(p["x"], p["y"], p["r"], BL5)
 			"blast":
 				var k: float = p["t"] / 0.3
 				draw_polyline(_ring(p["x"], p["y"], p["r"] * (0.6 + 0.5 * k)), Color(1, 0.75, 0.8, 1.0 - k), 4.0)
@@ -631,14 +637,7 @@ func _draw() -> void:
 				# (THE FLESHMANCER'S: its own block below)
 				_draw_fm(p)
 			"lane":
-				var k: float = clampf(p["t"] / p["dur"], 0.0, 1.0)
-				var a: Vector2 = p["a"]
-				var b: Vector2 = p["b"]
-				var from := a.lerp(b, p["gone"])
-				draw_colored_polygon(_band(from, b, p["half"]), Color(ENEMY, 0.12 + 0.2 * k))
-				var edge := _band(from, b, p["half"])
-				edge.append(edge[0])
-				draw_polyline(edge, Color(ENEMY, 0.85), 2.0)
+				_draw_lane(p)
 			"aim":
 				var k: float = clampf(p["t"] / p["dur"], 0.0, 1.0)
 				var a: Vector2 = p["a"]
@@ -720,6 +719,79 @@ func _draw_smoke(p: Dictionary) -> void:
 		var d := R * (0.25 + 0.6 * fmod(i * 0.37 + t * 0.21, 1.0))
 		var at := Iso.to_screen(p["x"] + cos(ang) * d, p["y"] + sin(ang) * d) + Vector2(0, -6.0 - 22.0 * fmod(t * 0.9 + i * 0.31, 1.0))
 		draw_rect(Rect2(at, Vector2(2, 2)), Color(1.0, 0.72, 0.3, 0.8 * a))
+
+
+## (render.ts ringDots) A ring of single game pixels round a circle of `r` tiles on the floor, every `gap`th of them.
+func _ring_dots(x: float, y: float, r: float, c: Color, gap := 1) -> void:
+	var o := Iso.to_screen(x, y) / 2.0
+	var n := maxi(16, roundi(r * 44.0))
+	for i in range(0, n, gap):
+		var a := float(i) / n * TAU
+		draw_rect(Rect2(roundf(o.x + (cos(a) - sin(a)) * 16.0 * r) * 2.0, roundf(o.y + (cos(a) + sin(a)) * 8.0 * r) * 2.0, 2.0, 2.0), c)
+
+
+## A line of the game's pixels from one point of the screen to another (game pixels), every `every`th one of it
+## (art/charge_lane.ts line).
+func _px_line(from: Vector2, to: Vector2, c: Color, every := 1) -> void:
+	var x0 := roundi(from.x)
+	var y0 := roundi(from.y)
+	var x1 := roundi(to.x)
+	var y1 := roundi(to.y)
+	var dx := absi(x1 - x0)
+	var dy := -absi(y1 - y0)
+	var sx := 1 if x0 < x1 else -1
+	var sy := 1 if y0 < y1 else -1
+	var err := dx + dy
+	for n in 600:
+		if n % every == 0:
+			draw_rect(Rect2(x0 * 2.0, y0 * 2.0, 2.0, 2.0), c)
+		if x0 == x1 and y0 == y1:
+			break
+		var e2 := 2 * err
+		if e2 >= dy:
+			err += dy
+			x0 += sx
+		if e2 <= dx:
+			err += dx
+			y0 += sy
+
+
+## THE LINE OF A CHARGE on the floor, at its moment (art/charge_lane.ts drawChargeLane): the circle's own kind: the same reds,
+## the same faint ground that darkens as the moment comes, the same fill that runs to the far end as the wind-up runs out,
+## its two edges dotted and its far end, and chevrons along it pointing the way he will come, bright where the fill has
+## reached. While he runs it, what he has left behind is gone and the rest fades a little.
+func _draw_lane(p: Dictionary) -> void:
+	var a: Vector2 = p["a"]
+	var b: Vector2 = p["b"]
+	var len := a.distance_to(b)
+	if len < 0.05:
+		return
+	var f := (b - a) / len
+	var c := Vector2(-f.y, f.x)
+	var k: float = clampf(p["t"] / p["dur"], 0.0, 1.0)
+	var gone: float = clampf(p["gone"], 0.0, 1.0)
+	var from := gone * len
+	var fade := 1.0 - 0.35 * gone
+	var h: float = p["half"]
+	# (a point `along` tiles along it and `across` across it: on the screen, picture pixels; and in game pixels)
+	var pt := func(along: float, across: float) -> Vector2:
+		var w: Vector2 = a + f * along + c * across
+		return Iso.to_screen(w.x, w.y)
+	draw_colored_polygon(PackedVector2Array([pt.call(from, h), pt.call(len, h), pt.call(len, -h), pt.call(from, -h)]), Color(BL3, (0.16 + 0.3 * k) * fade))
+	var run := maxf(from, len * k)
+	if run > from + 0.01:
+		draw_colored_polygon(PackedVector2Array([pt.call(from, h), pt.call(run, h), pt.call(run, -h), pt.call(from, -h)]), Color(BL4, 0.3 * fade))
+	for side in [-1.0, 1.0]:
+		_px_line(pt.call(from, h * side) / 2.0, pt.call(len, h * side) / 2.0, Color(BL5, fade), 2)
+	_px_line(pt.call(len, h) / 2.0, pt.call(len, -h) / 2.0, Color(BL5, fade))
+	var at := 0.55 * 0.75
+	while at < len - 0.15:
+		if at >= from:
+			var lit := at <= run
+			var tip: Vector2 = pt.call(at + 0.12, 0.0) / 2.0
+			for side in [-1.0, 1.0]:
+				_px_line(pt.call(at - 0.12, h * 0.62 * side) / 2.0, tip, Color(BL5 if lit else BL4, fade * (1.0 if lit else 0.55)))
+		at += 0.55
 
 
 ## The fire sigil (a stand-in for the art chat's pictures, art/action_f2_fx.ts sigilPainted): its ring traced round under the hero as
