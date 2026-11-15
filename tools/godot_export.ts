@@ -119,6 +119,8 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   // (stairSpots; it opens in the first clear of where he fell: stairFor), and the floor's waypoint, where it has one)
   stairs: (level.ways?.stairs ?? []).map((s) => ({ x: s.x, y: s.y, way: s.way })),
   waypoint: level.ways?.way ? { x: level.ways.way.x, y: level.ways.way.y } : null,
+  // (game/traps.ts: the floor's spike floors, {kind, x, y, w, h, phase}, and dart walls, {kind, x, y, w, h (the plate), slot})
+  hazards: (L.hazards ?? []).map((h) => ({ ...h })),
 }));
 
 // --- 3. its monsters: each as game.ts spawn made it (life, damage and speed with the first floor's softening in them), its

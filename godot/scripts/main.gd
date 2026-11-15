@@ -30,6 +30,8 @@ const Look := preload("res://scripts/look.gd")
 const Doors := preload("res://scripts/doors.gd")
 const Props := preload("res://scripts/props.gd")
 const Stairs := preload("res://scripts/stairs.gd")
+const Waypoint := preload("res://scripts/waypoint.gd")
+const Traps := preload("res://scripts/traps.gd")
 
 const FLOOR_DIR := "res://assets/floor1"
 const TOWN_DIR := "res://assets/town"
@@ -63,6 +65,9 @@ var _place: Node2D
 var _monsters: Monsters
 var _doors: Doors
 var _stairs: Stairs
+var _way: Waypoint
+## THE WAYS: the deepest floor whose waypoint he has reached (game.ts wayDepth): the town's waypoint takes him back down to it.
+var way_depth := 1
 var _hud
 var _loot: Loot
 var _inv
@@ -125,7 +130,7 @@ func _ready() -> void:
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
-	_build("floor2" if _arg("only") in ["floor2", "f2moves"] else "floor1" if shots != "" and not _arg("only") in ["town", "music"] else "town", "start")
+	_build("floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music"] else "town", "start")
 	if shots != "":
 		_shoot(hero, shots)
 
@@ -197,6 +202,13 @@ func _build(where: String, arrive: String) -> void:
 			# (game.ts enterDungeon('gate'): 1.7 tiles inside floor 1's gate, facing into the room)
 			at = Vector2(_gate["hero"]["x"], _gate["hero"]["y"])
 			face = Vector2(_gate["hero"]["fx"], _gate["hero"]["fy"])
+		"way":
+			# (game.ts enterTown('way'), enterDungeon('way'): out of the waypoint's column of light)
+			if where == "town" and looked and look.data.has("waypoint"):
+				at = Vector2(look.data["waypoint"]["wx"], look.data["waypoint"]["wy"])
+				face = Vector2(0.7071, 0.7071)
+			elif map.waypoint != null:
+				at = Vector2(map.waypoint["x"], map.waypoint["y"])
 		"gate":
 			# (game.ts enterTown('stairs'): by the top step of the town's stairs, facing away from them)
 			var st: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TOWN_DIR + "/layout.json"))["stair"]
@@ -261,6 +273,34 @@ func _build(where: String, arrive: String) -> void:
 		stairs.loot = loot
 		stairs.sfx = sfx
 		_place.add_child(stairs)
+	# (the floor's traps: traps.gd)
+	if looked and not map.hazards.is_empty() and look.data.has("traps"):
+		var traps := Traps.new()
+		traps.map = map
+		traps.look = look
+		traps.hero = hero
+		traps.monsters = monsters
+		traps.sfx = sfx
+		_place.add_child(traps)
+	# (THE WAYS: the waypoint, at the start of every floor but the first and in town: waypoint.gd)
+	_way = null
+	if looked and look.data.has("waypoint"):
+		_way = Waypoint.new()
+		_way.main = self
+		_way.look = look
+		_way.hero = hero
+		_way.sfx = sfx
+		_way.in_town = where == "town"
+		_place.add_child(_way)
+		if where != "town":
+			way_depth = maxi(way_depth, map.depth)
+		if arrive == "way":
+			_way.awake = true
+			look.wake_waypoint()
+			look.play_warp(0.25)
+	# (FLOOR_NAMES: the floor's own name across the screen as he comes into it, its level under it: ui/cards.ts drawFloorCard)
+	if where != "town" and _hud != null:
+		_hud.floor_card_for(where)
 	loot.enter_place(map, stands, monsters, where == "floor1")
 
 	town = null
@@ -363,8 +403,17 @@ func go_down() -> void:
 	go_to(next, "down")
 
 
-## What E would do where he stands: [what is shown, what it does] (town.gd).
+## By the waypoint (waypoint.gd): no curtain, its column of light hides him; the place laid out, he comes out of its light.
+func go_warp(where: String) -> void:
+	if _going:
+		return
+	_build(where, "way")
+
+
+## What E would do where he stands: [what is shown, what it does] (town.gd; the waypoint, waypoint.gd).
 func prompt() -> Array:
+	if _way != null and _way.here():
+		return _way.prompt()
 	return town.prompt if town != null else ["", ""]
 
 
@@ -484,6 +533,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "f2moves":
 		await _f2_move_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "f2ways":
+		await _f2_way_shots(hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "props":
@@ -924,6 +977,73 @@ func _f2_move_shots(h: Hero, dir: String) -> void:
 		t += get_process_delta_time()
 	print("HEADSMAN acts seen: ", seen.keys(), " after ", snappedf(t, 0.1), " s; mode now ", hs.h2.mode, "; hero life ", h.life)
 	print("F2 MOVES: ", _monsters.used)
+
+
+## FLOOR 2'S WAYS AND TRAPS, pictured: the floor's name as he comes in; the waypoint woken, and the warp to town and back down
+## by the town's; a spike floor rising under him; a dart wall's plate and its darts; the sealed door, what it wants, and its
+## seal broken by a Strike carrying POWER.
+func _f2_way_shots(h: Hero, dir: String) -> void:
+	await _wait(0.7)
+	await _snap(dir + "/80_floor2_its_name.png")
+	await _wait(3.0)
+	print("WAY: awake ", _way.awake, " here ", _way.here(), " way_depth ", way_depth)
+	h.world = _way.at
+	await _wait(0.2)
+	print("WAY: prompt ", prompt())
+	await _snap(dir + "/81_on_the_waypoint.png")
+	_way.warp()
+	await _wait(0.12)
+	await _snap(dir + "/82_the_warp.png")
+	await _wait(0.4)
+	print("WARP: place ", place, " hero at ", h.world, " town way awake ", _way.awake if _way != null else null, " prompt ", prompt())
+	await _snap(dir + "/83_out_in_town.png")
+	await _wait(0.8)
+	_way.warp()
+	await _wait(0.6)
+	print("WARP BACK: place ", place, " hero at ", h.world)
+	await _snap(dir + "/84_back_on_floor2.png")
+	# (a spike floor: him on it until it rises; hurt, a sixth of his life)
+	h.unhurt = false
+	var sp: Dictionary = map.hazards[0]
+	h.world = Vector2(float(sp["x"]) + 1.0, float(sp["y"]) + 1.5)
+	var was := h.life
+	await _snap_when(dir + "/85_spikes_up.png", func(): return h.life < was, 4.0)
+	print("SPIKES: life ", was, " -> ", h.life, " (a sixth of ", h.max_life, ")")
+	h.life = h.max_life
+	# (a dart wall: on its plate, and the darts)
+	var dw: Dictionary = map.hazards[2]
+	h.world = Vector2(float(dw["x"]) + 0.5, float(dw["y"]) + 0.5)
+	was = h.life
+	await _wait(0.35)
+	await _snap(dir + "/86_darts_fly.png")
+	await _wait(1.6)
+	print("DARTS: life ", was, " -> ", h.life)
+	h.life = h.max_life
+	h.unhurt = true
+	# (the sealed door)
+	var wd: Dictionary = {}
+	for d in map.doors:
+		if d["kind"] == "worddoor":
+			wd = d
+	var mid := Vector2(wd["middle"]["x"], wd["middle"]["y"])
+	# (out of its room: `out` the way out of it, along the axis across its doorway)
+	var out := Vector2(0, float(wd["out"])) if wd["alongX"] else Vector2(float(wd["out"]), 0)
+	for m in _monsters.list:
+		if is_instance_valid(m) and not m.dead and m.world.distance_to(mid) < 10.0:
+			m.hurt(999999.0)
+	h.world = mid + out * 4.0
+	await _wait(0.6)
+	print("SEALED: walk ", map.walk[int(wd["way"][0])], " shut ", map.shut[int(wd["way"][0])], " told ", wd.get("told", false))
+	await _snap(dir + "/87_a_sealed_door.png")
+	h.world = mid + out * 1.3
+	h.face = -out
+	h.strike_words["front"] = "power"
+	await _wait(0.2)
+	h._begin_strike()
+	await _wait(0.6)
+	print("SEAL: hero at ", h.world, " facing ", h.face, " door at ", mid)
+	print("SEAL: want ", wd["want"], " walk ", map.walk[int(wd["way"][0])], " shut ", map.shut[int(wd["way"][0])])
+	await _snap(dir + "/88_the_seal_breaks.png")
 
 
 func _perils_of(kind: String, t0: float, t1: float) -> bool:

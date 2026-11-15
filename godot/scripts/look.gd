@@ -56,6 +56,8 @@ var vignette_now := -1.0
 var _way_node: Sprite2D
 var _motes: Sprite2D
 var _way_awake := false
+var _warp_node: Sprite2D
+var _warp_t := -1.0
 
 
 ## Whether a place has a recorded look.
@@ -157,6 +159,14 @@ func _ready() -> void:
 		_motes.offset.y += wat.y - wd * HH
 		stands.add_child(_motes)
 		_anim.append({"node": _motes, "frames": w["motes"], "fps": float(w["fps"]), "t0": 0.0, "secs": null, "dy": _motes.offset.y + _pics[w["motes"][0]]["anchor"].y})
+		# (a warp's column of light, stood a little in front of him on the dais: render.ts standWays)
+		_warp_node = Sprite2D.new()
+		_warp_node.texture = _sheet
+		_warp_node.region_enabled = true
+		_warp_node.centered = false
+		_warp_node.visible = false
+		_warp_node.position = Vector2(wat.x, (wd + 0.05) * HH)
+		stands.add_child(_warp_node)
 
 
 ## THE WAYPOINT WAKES (game.ts: as he first comes near it): its dais awake, its loop at 10 a second, the motes rising over it.
@@ -167,6 +177,34 @@ func wake_waypoint() -> void:
 	var w: Dictionary = data["waypoint"]
 	_anim.append({"node": _way_node, "frames": w["awake"], "fps": float(w["fps"]), "t0": 0.0, "secs": null, "dy": _way_node.offset.y + _pics[w["awake"][0]]["anchor"].y})
 	_motes.visible = true
+
+
+## A WARP on the waypoint (render.ts standWays): the column of light, its frames at 20 a second from `from` seconds in (0 as he
+## goes; 0.25 as he comes out of it, its second half), in place of the motes while it plays.
+func play_warp(from: float) -> void:
+	if _warp_node == null:
+		return
+	_warp_t = from
+	_step_warp(0.0)
+
+
+func _step_warp(dt: float) -> void:
+	if _warp_t < 0.0 or _warp_node == null:
+		return
+	_warp_t += dt
+	var frames: Array = data["waypoint"]["warp"]
+	var f := int(floor(_warp_t * 20.0))
+	if f >= frames.size():
+		_warp_t = -1.0
+		_warp_node.visible = false
+		_motes.visible = _way_awake
+		return
+	_motes.visible = false
+	_warp_node.visible = true
+	var w: Dictionary = data["waypoint"]
+	var wat := Vector2(float(w["x"]), float(w["y"])) * 2.0
+	_pic_on(_warp_node, frames[f])
+	_warp_node.offset.y += wat.y - (float(w["d"]) + 0.05) * HH
 
 
 ## The skies of floor 2 (`zones`): for each courtyard, then the yard, its pictures under a clip of the region above the line of its
@@ -402,6 +440,7 @@ func _process(dt: float) -> void:
 		a["node"].offset = Vector2(-p["anchor"].x, a["dy"] - p["anchor"].y)
 	if _dark != null and _hero != null:
 		_dark.material.set_shader_parameter("hero", _hero.position)
+	_step_warp(dt)
 	if _hero != null and data.has("zones"):
 		_step_zone(_hero.world)
 		if _zone["yard"] and not _see.is_empty():

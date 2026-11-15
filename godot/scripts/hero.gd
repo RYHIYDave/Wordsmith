@@ -285,6 +285,9 @@ func _land_strike() -> void:
 	# (what it reaches of the barrels and urns: game.ts, breakProps a little way before him)
 	if props != null and is_instance_valid(props):
 		props.strike(world + face * _strike_reach() * 0.6, 0.9)
+	# (and a sealed door there opens to it if it carries the door's word: game.ts unseal)
+	if doors != null and is_instance_valid(doors):
+		doors.unseal(strike_words, world + face * _strike_reach() * 0.6, 0.9)
 	if monsters == null:
 		return
 	var m = monsters.strike_target(world, face, _strike_reach())
@@ -465,11 +468,12 @@ func kick(amount: float) -> void:
 	_kick = maxf(_kick, amount)
 
 
-func hurt(dmg: float) -> void:
+## `raw`: before his armour (a trap's share of his life: game.ts stepSpikes, a dart).
+func hurt(dmg: float, raw := false) -> void:
 	if not alive or _invuln > 0.0:
 		return
 	# (armour takes its share: armour / (armour + 40 + 20 a floor), at most 75%: stats.ts)
-	var cut := minf(0.75, stats["armor"] / (stats["armor"] + 40.0 + 20.0 * map.depth)) if stats["armor"] > 0.0 else 0.0
+	var cut := minf(0.75, stats["armor"] / (stats["armor"] + 40.0 + 20.0 * map.depth)) if stats["armor"] > 0.0 and not raw else 0.0
 	if not unhurt:
 		life -= dmg * (1.0 - cut)
 	_flash = 0.15

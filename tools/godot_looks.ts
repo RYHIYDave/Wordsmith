@@ -67,7 +67,9 @@ import type { StairWay } from '../src/game/ways';
 import { WALL_LOOK, makeGroundArt, edgesOf } from '../src/art/ground';
 import type { GroundArt, WallPart } from '../src/art/ground';
 import { DOOR_WALLS, FACE_LEFT, FACE_RIGHT, doorWallsBack, wallFaces, wallsAway, wholeFaces, WHOLE_WALLS } from '../src/render/walls';
-import { floorLook, lookGround, lookPieces, lookProps, lookWays, lookStairs } from '../src/art/floors';
+import { floorLook, lookGround, lookHazards, lookPieces, lookProps, lookWays, lookStairs } from '../src/art/floors';
+import { FLOOR_SETS } from '../src/game/first5';
+import { SPIKE_SPOTS, SPIKE_STEPS } from '../src/art/hazards';
 import type { Piece } from '../src/art/floor1';
 import { makeTombGateArt } from '../src/art/tomb_gate';
 import { GATE_UP, PILLAR, POST, STRIP, SWING_STEPS, makeGateArt } from '../src/art/gates';
@@ -1528,12 +1530,35 @@ function recordZones(P: Place, atlas: Atlas): Zones | null {
  */
 function recordWaypoint(P: Place, atlas: Atlas): { x: number; y: number; wx: number; wy: number; d: number; asleep: string; awake: string[]; motes: string[]; warp: string[]; fps: number } | null {
   const w = P.L.ways?.way;
-  if (!w || P.L.town) return null;
+  if (!w) return null;
   const W = P.ways.way;
   const k = (list: Sprite[], hint: string): string[] => list.map((s) => atlas.key(s, hint));
   return {
     x: Math.round(wx(P.cam, w.x, w.y)), y: Math.round(wy(P.cam, w.x, w.y)), wx: w.x, wy: w.y, d: w.x + w.y,
     asleep: atlas.key(W.asleep, 'waypoint'), awake: k(W.awake, 'waypoint awake'), motes: k(W.motes, 'waypoint motes'), warp: k(W.warp, 'waypoint warp'), fps: 10,
+  };
+}
+
+/**
+ * THE TRAPS' PICTURES, for the Godot side (godot/scripts/traps.gd; render.ts the floor's loop and standHazards, art/hazards.ts in
+ * the floor's own pieces: art/floors.ts lookHazards): a spike floor's holes (and glinting, the moment before its spikes come up),
+ * laid at each of its tiles' middles; its spikes 1 to SPIKE_STEPS steps up, stood at SPIKE_SPOTS round each tile's middle; a dart
+ * wall's plate (and pressed), laid at its tile's middle; its slot, stood in the face of its wall (along x: `y`, its face turned
+ * to y; `x` the other).
+ */
+function recordTraps(P: Place, atlas: Atlas): { holes: string[]; spikes: string[]; plate: string[]; slot: { x: string; y: string }; spots: (readonly [number, number])[]; steps: number } | null {
+  if (!P.L.hazards.length || P.L.town) return null;
+  const k = floorLook(P.L.floor.depth);
+  const A = lookHazards(k, FLOOR_SETS[k - 1].traps);
+  const spikes: string[] = [];
+  for (let i = 1; i <= SPIKE_STEPS; i++) spikes.push(atlas.key(A.spike(i), `spike ${i}`));
+  return {
+    holes: [atlas.key(A.holes(false), 'spike holes'), atlas.key(A.holes(true), 'spike holes glinting')],
+    spikes,
+    plate: [atlas.key(A.plate(false), 'dart plate'), atlas.key(A.plate(true), 'dart plate pressed')],
+    slot: { x: atlas.key(A.slot(false), 'dart slot x'), y: atlas.key(A.slot(true), 'dart slot y') },
+    spots: [...SPIKE_SPOTS],
+    steps: SPIKE_STEPS,
   };
 }
 
@@ -1618,6 +1643,7 @@ function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; 
   const dark = { a: look.dark, rgb: [...(look.tint ?? [6, 4, 14])] };
   const zones = recordZones(P, atlas);
   const waypoint = recordWaypoint(P, atlas);
+  const traps = recordTraps(P, atlas);
   const sheet = writeSheet(atlas, P.name, sheetWidth);
   writeFileSync(`${OUT}/${P.name}.json`, JSON.stringify({
     place: P.name,
@@ -1630,6 +1656,7 @@ function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; 
     stairs,
     ...(zones ? { zones } : {}),
     ...(waypoint ? { waypoint } : {}),
+    ...(traps ? { traps } : {}),
     lights,
     pic_lights: Object.fromEntries(picLightsOf(atlas)),
   }));

@@ -10,6 +10,10 @@
 ##   THE BOSS WAITS (BOSS_INTRO): standing at the back of his hall, looking at the hero, nothing harming him ("Not yet"), until
 ##   his gate has fallen and he has said his line (3.2 s): his line over his head for 1.9 s, his name across the screen from
 ##   1 s in; then he fights.
+##   A SEALED DOOR (THE TRAPS, game/doors.ts 'worddoor'), a door whose leaf is a slab with the rune of a word, opens to nobody
+##   who comes near: only to a hit from an attack carrying its word (game.ts unseal: the hit reaching within its reach and 0.65
+##   of its middle); then it swings open as a door does, and stays open. Sealed, its tile is wall to whatever walks, flies, is
+##   shot or looks. The first time it is seen from near, a line says what it wants.
 ## Their pictures as they open: look.gd show_door (what the game's renderer draws at each step, tools/godot_looks.ts).
 extends Node
 
@@ -36,11 +40,22 @@ var monsters  # monsters.gd
 var sfx
 
 var intro_t := 0.0
+## (defs.ts WORDS: the names its words are called by, and MSG's colours)
+const WORD_NAMES := {"power": "Power"}
+const OMEN := Color("#ffc24a")
+const WORD := Color("#7af8f0")
+const AGGRO := 9.0
 
 
 func _ready() -> void:
 	for i in map.doors.size():
 		_show(i)
+		# (a sealed door's tile: wall to whatever walks, flies, is shot or looks, until its seal breaks)
+		var d: Dictionary = map.doors[i]
+		if d["kind"] == "worddoor" and int(d["want"]) == 0:
+			for t in d["way"]:
+				map.shut[int(t)] = 1
+				map.walk[int(t)] = 0
 
 
 func _process(dt: float) -> void:
@@ -60,6 +75,13 @@ func _process(dt: float) -> void:
 				for t in d["way"]:
 					map.shut[int(t)] = 0
 				sfx.play("door", linear_to_db(0.5))
+		# (a sealed door, the first time it is seen from near: what it wants)
+		if kind == "worddoor" and int(d["want"]) == 0 and not d.get("told", false) and hero.alive:
+			var at := Vector2(d["middle"]["x"], d["middle"]["y"])
+			if hero.world.distance_to(at) <= AGGRO and monsters.sees(hero.world, at + (hero.world - at).normalized() * 0.7):
+				d["told"] = true
+				if main.loot != null:
+					main.loot.say("A sealed door. It wants %s." % _word_name(d.get("word", "")).to_upper(), OMEN)
 		# (the boss's gate: down behind him once he is well inside with the boss alive; up once the boss is dead)
 		if kind == "bossgate":
 			if int(d["want"]) == 1 and alive and hero.alive and _well_inside(d, hero.world):
@@ -72,7 +94,7 @@ func _process(dt: float) -> void:
 		var open := float(d["open"])
 		var want := float(d["want"])
 		if open != want:
-			var secs := DOOR_SWING if kind == "door" else (GATE_RISE if want == 1.0 else GATE_FALL)
+			var secs := DOOR_SWING if kind == "door" or kind == "worddoor" else (GATE_RISE if want == 1.0 else GATE_FALL)
 			d["open"] = move_toward(open, want, dt / secs)
 			_show(i)
 	if intro_t > 0.0:
@@ -83,6 +105,33 @@ func _process(dt: float) -> void:
 		# (his wait over: he fights)
 		if waited and not boss.waits and boss.state == "sleep":
 			monsters.wake(boss)
+
+
+## (game.ts unseal) A hit of his reaches everything within `rad` of `at`: a sealed door in its reach opens if the hit carries
+## its word, in front or behind (`words`: {front, behind}).
+func unseal(words: Dictionary, at: Vector2, rad: float) -> void:
+	for d in map.doors:
+		var w: String = d.get("word", "")
+		if d["kind"] != "worddoor" or int(d["want"]) != 0 or w == "":
+			continue
+		var mid := Vector2(d["middle"]["x"], d["middle"]["y"])
+		if mid.distance_to(at) > rad + 0.65:
+			continue
+		if words.get("front", "") != w and words.get("behind", "") != w:
+			continue
+		d["want"] = 1
+		d["told"] = true
+		for t in d["way"]:
+			map.shut[int(t)] = 0
+			map.walk[int(t)] = 1
+		sfx.play("sealed_door", linear_to_db(0.9))
+		sfx.play("word", linear_to_db(0.6))
+		if main.loot != null:
+			main.loot.say("The %s seal breaks." % _word_name(w).to_upper(), WORD)
+
+
+static func _word_name(w: String) -> String:
+	return WORD_NAMES.get(w, w.capitalize())
 
 
 ## The hero fallen and set back where he came in: the boss's gate up again behind him, the boss waiting again.

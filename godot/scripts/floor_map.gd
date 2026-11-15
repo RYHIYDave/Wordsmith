@@ -29,6 +29,8 @@ var pier := PackedByteArray()
 ## his hall's middle first (stairs.gd opens it as he falls); and the floor's waypoint {x, y}, where it has one.
 var stairs: Array = []
 var waypoint = null
+## THE TRAPS (game/traps.ts): spike floors {kind, x, y, w, h, phase} and dart walls {kind, x, y, w, h, slot} (traps.gd).
+var hazards: Array = []
 
 
 func _init(path: String) -> void:
@@ -46,6 +48,7 @@ func _init(path: String) -> void:
 	props = data.get("props", [])
 	stairs = data.get("stairs", [])
 	waypoint = data.get("waypoint", null)
+	hazards = data.get("hazards", [])
 	shut.resize(w * h)
 	pier.resize(w * h)
 	for d in doors:

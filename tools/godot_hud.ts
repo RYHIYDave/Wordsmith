@@ -93,5 +93,8 @@ writeFileSync(`${OUT}/hud.json`, JSON.stringify({
   sizes: { slot_w: 11, slot_h: 12, piece_gap: 3 },
   // (the place's name, top left: Game.floorLevel; in town, "Town")
   places: { town: 'Town', ...Object.fromEntries([1, 2, 3, 4, 5].map((d) => [`floor${d}`, FLOOR_NAMES.on ? floorTitle(d).level : `Dungeon ${d}`])) },
+  // (FLOOR_NAMES: the name card across the screen as he comes into a floor, ui/cards.ts drawFloorCard: its name, its level under it)
+  floor_cards: Object.fromEntries([1, 2, 3, 4, 5].map((d) => [`floor${d}`, floorTitle(d)])),
+  floor_card_secs: FLOOR_NAMES.secs,
 }));
 console.log(`hud: ${pics.size} pictures in a ${SHEET_W}x${H} sheet; skills ${ids.join(', ')}`);
