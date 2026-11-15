@@ -135,6 +135,32 @@ through chat, so the art and sounds go into the project whole).
   - LEDGES, STAIRS AND SLANTING WALLS (`scripts/floor_map.gd`, game/height.ts and game/cut.ts): raised and sunken floor
     stands as high as it is, he and the monsters are drawn at its height and climb by its stairs; a ledge holds a body as
     a wall does; a tile cut corner to corner is stood on in its floor half and slid along.
+  - THE THREE BOSSES, each by the game's own rules as it starts (game/bosses.ts), each a script of its own beside the
+    Headsman's (`monster.gd` BOSS_AI):
+    THE CHAINED ONE (`scripts/chained.gd`): his gait; the LASH (two swings, then the crack along its lane); the WHIRL (he
+    spins after the hero, his chains striking, then the ring); the HOOK (flung, the hero caught, held and dragged to his
+    feet, then the hammer); the BALL heaved onto its circle; his chains breaking at two thirds and one third of his life
+    (he is quicker each time, and is drawn without them); his lines.
+    THE OSSUARY AMALGAMATION (`scripts/amalgam.gd`): its crawl; the FAN of twelve arms; the RAIN of skulls that come down
+    as bone mites; the ARMS up through the floor; DEVOUR (the hero dragged to its maw, then the bite; a bone beast dragged
+    in is eaten); a bone beast burst out at each fifth of its life lost; its mites and beasts; its lines.
+    THE FLESHMANCER (`scripts/fleshmancer.gd`) and the MINI FLESHMANCERS (`scripts/minifm.gd`): his glide; two fans of bone
+    SHARDS; five RINGS OF HANDS; the whipping stream of FIRE and the lanes it leaves burning; the dead RAISED from his bone
+    heaps; his going under the floor and coming up elsewhere (nothing reaches him between); the minis' fire and the dead
+    they call up out of cult bodies; their lines.
+  - THE MONSTERS' OWN MOVES OF FLOORS 3 TO 5 (`scripts/monster.gd`, `monster_moves.gd`; game/defs.ts MONSTER_MOVES,
+    game/action_f3.ts, action_f4.ts): the green troll's RAMPAGE (two swings and a leaping slam, its ring marked first) and
+    BULL RUSH; the Boneward's thrust, its spear thrown (it lies where it comes down; it fights with its shield, goes for
+    its spear and stoops for it) and its SHIELD WALL (a blow from before it glances off); the high priest's fire bolt and
+    his censer's burning smoke; the dagger cultist's FRENZY of four stabs.
+  - THE GATES (`scripts/doors.gd`, `temple.gd`, `furnace.gd`): on each of these floors a GATE WITH A LEVER bars the main
+    path until its lever, in a nook nearby, is walked up to; a ROOM THAT LOCKS drops its gates with him inside and raises
+    them when its pack is dead (floors 4 and 5); floor 5's TEMPLE DOOR is barred by two chains until he holds both keys
+    (the keys shown top left), then the chains fall and its leaves swing open; floor 3's FURNACE keeps fire in the Chained
+    One's gateway until the forge crank is turned with its gear (the Stoker's), when the furnace and the fire go out.
+    Until these were in, none of the three bosses could be walked to.
+  - THE WAY MONSTERS FIND HIM (`scripts/monsters.gd`; game/nav.ts flowField): a step to a side counts 10 and to a corner
+    14, as in the game (it had counted them alike, and they came by odd ways).
 - **The small map, the large map and the pause panel** (the cloud chat, 15 Nov 2026; `scripts/minimap.gd`; ui/hud.ts minimap
   and drawMap, ui/panels.ts drawPause): top right, the floor round him as he has seen it, a tile a pixel (in sight bright, seen
   before dim, wall dark), with the game's marks: the waypoint (bright once awake), the town's gate, floor 1's gate home, the
@@ -162,7 +188,9 @@ A controller: the left stick, RT, LT, A, B, X.
 ## Not in it yet
 
 The game's own pictures of the moves' marks (the rings, lines, bars, the sigil and the rime here are plain stand-ins drawn on
-the floor, under the figures), the monsters' words (floor 2's blue packs and leaders carry words that change what they do, and
+the floor, under the figures; so are what the three bosses of floors 3 to 5 send out), the bosses' own voices, the armourer's
+quest and its word and the wordsmith's ask for the Meldstone (floor 3's furnace burns and is put out without them), the sealed
+doors of floors 3 and 4 (they want FIRE and POISON, words not in it yet), the monsters' words (floor 2's blue packs and leaders carry words that change what they do, and
 the champions' rallying cry needs them; here they fight without), the
 Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: its
 gate in the back wall (barred on a new game, drawn as wall here), the stone floating from him to the slab, the letters
@@ -177,7 +205,8 @@ breaks, what stands behind raised ground cut off by it, the rest of the heroes, 
 | --- | --- |
 | `assets/heroes`, `assets/monsters`, `assets/colossus`, `assets/townsfolk` | the released game's baked folders on `gh-pages` (marks in `assets/MARKS.txt`) |
 | `assets/sound` | `assets/sound` on `main` |
-| `assets/floor1`, `assets/floor2` | `npx tsx tools/godot_export.ts 1 1` and `... 1 2` (from the repository's root, with `npm install` done; seed, then depth): the game's own painter, a new Warrior's game into that dungeon (its layout, its stairwell's places, waypoint and traps, and its monsters) |
+| `assets/floor1` to `assets/floor5` | `npx tsx tools/godot_export.ts 1 1` ... `1 5` (from the repository's root, with `npm install` done; seed, then depth): the game's own painter, a new Warrior's game into that dungeon (its layout, its ways on, its waypoint and traps, its doors, gates and levers, each pack's room, floor 3's furnace and arena, floor 5's temple door and bone heaps, and its monsters) |
+| `assets/looks/floor3`, `floor4`, `floor5` | `node tools/godot_record.mjs 3` (4, 5): the floor's look taken from the game itself in a headless browser (needs the Playwright the repository's playtests use; it builds `dist/godot_rec.html` if it is not there), with its states and what is seen when; it says whether the level it drew is the level in `assets/floor<N>/layout.json` |
 | `assets/monsters/*.json`, `*-N.png` | the packs unpacked: `node tools/godot_unpack_monsters.mjs` |
 | `assets/monsters/lists.json` | each figure's lists named, from the game's art: `npx tsx tools/godot_monster_lists.ts` |
 | `assets/loot` | the game's own gear rolled on floor 1, the vendors' shelves, prices, its pictures, the fallen wordsmith: `npx tsx tools/godot_loot.ts 1` |
@@ -198,3 +227,10 @@ and the Headsman; `--only=f2moves` a cultist's sigil, a Shade's rime and every o
 the floor's name, the waypoint's warp to town and back, the spikes, the darts and the sealed door. `--only=music` says what music plays as he goes from the town to
 floor 1, up to a skeleton and away when the fight is over. (Neither lair on this floor leaves the troll a clear run, so for
 the charge he is set down in the floor's biggest hall.)
+The cloud chat's checks, each `--only=<name> --floor=N`: `floors` (each floor where he comes in, a room on, the boss's
+hall), `ways` (a door, a chest, a barrel; the boss struck dead, the way on opening, taken, and where he comes out),
+`boss` (`--secs=40`: the boss's moves pictured as he makes them, and which he made), `kind` (`--kind=brute`, `boneward`,
+`priest`, `dagger`, `stoker`, `keyblade`, `keyflame`: one such monster alone with the hero, each move pictured; one with
+rules of its own struck dead and what it leaves taken up), `gates` (the lever and its gate, the room that locks, the
+temple door, the furnace; and whether the boss's hall can be walked to before and after), `waypoint`, `heights`, `traps`,
+`map` (the small map, the large one and the pause panel, by the keys and the pointer too).
