@@ -186,6 +186,26 @@ func on_kill(m) -> void:
 			_orb(at)
 
 
+## A barrel or an urn broken (game.ts breakProps): maybe gold (1 to 5), a life orb, a piece of gear.
+func from_breakable(at: Vector2) -> void:
+	if randf() < 0.4:
+		_gold(at, randi_range(1, 5))
+	if randf() < 0.08:
+		_orb(at)
+	if randf() < 0.04:
+		_item(at, 0)
+
+
+## A chest opened (game.ts updateProps): one piece (in a treasure vault perhaps two, the first a hoard's), and gold, laid
+## before it.
+func from_chest(at: Vector2, vault: bool) -> void:
+	var before := at + Vector2(0, 0.6)
+	var n := 1 + (1 if vault and randf() < 0.5 else 0)
+	for i in n:
+		_item(before, 2 if vault and i == 0 else 1)
+	_gold(before, randi_range(10, 20) * (2 if vault else 1))
+
+
 ## Where a thing lands: about where it fell, on open floor, a little apart from the rest.
 func _scatter(at: Vector2) -> Vector2:
 	for i in 12:

@@ -18,6 +18,9 @@
 //       frames: picture keys; the frame shown at time t (seconds) is frames[floor((t - t0) * fps) mod n] (t0 0 where absent); or,
 //         where `secs` is given (the owl), frame i holds secs[i] seconds, the loop beginning at t0;
 //       door: on a door's leaf and a gate's portcullis, which of the level's doors it is (drawn by `doors` as it opens).
+//     props: for each chest, barrel and urn, { i (its place in the level's props), kind, x, y (world), open: [key, x, y, d] (a chest
+//       standing open) | null, broken: [key, x, y] (what a broken one leaves, lying flat) | null } (recordProps); whole, each is
+//       among the items, `prop` saying which.
 //     doors: for each of the level's doors and gates, { kind, steps }: what moves of it at each step of its opening from shut to
 //       open (a door's leaf at each of the renderer's turns, a gate's portcullis at GATE_STEPS + 1 heights), each step a list of
 //       [picture key, x, y, d] as the items have them (recordDoors).
@@ -295,6 +298,8 @@ interface Raw {
   fixed?: { frames: Sprite[]; secs: number[]; t0: number };
   /** (a door's leaf, a gate's portcullis: which of the level's doors it is, drawn on the Godot side by `doors` as it opens) */
   door?: number;
+  /** (a chest, a barrel, an urn: which of the level's props it is, swapped on the Godot side by `props` as it is opened or broken) */
+  prop?: number;
 }
 interface LightOut {
   type: 'hole' | 'glow';
@@ -493,7 +498,7 @@ function recordScene(P: Place, t: number): Recorder {
   }
 
   // EVERYTHING THAT STANDS UP (render.ts drawWorld: the props, the doors, the ways, the look's own, the floor's moments)
-  for (const p of L.props) {
+  for (const [pi, p] of L.props.entries()) {
     const sx = wx(cam, p.x, p.y);
     const sy = wy(cam, p.x, p.y);
     const own = P.dressed ? P.pieces.standing(game, p, t) : undefined;
@@ -521,7 +526,10 @@ function recordScene(P: Place, t: number): Recorder {
         else sp = L.town && !isTownFlat(p.kind) && P.town ? townSprite({ town: P.town, folk: null } as unknown as TownArt, p.kind, p.variant, t) : null;
         break;
     }
-    if (sp) R.addStand('prop', p.x + p.y, sp, sx, sy, false, hint, what);
+    if (sp) {
+      const r = R.addStand('prop', p.x + p.y, sp, sx, sy, false, hint, what);
+      if (OPENED.has(p.kind)) r.prop = pi;
+    }
   }
   if (L.hazards.length) throw new Error('traps: not brought over');
   standDoors(R);
@@ -921,6 +929,44 @@ function standDoors(R: Recorder): void {
 }
 
 /**
+ * THE CHESTS, BARRELS AND URNS, for the Godot side (godot/scripts/props.gd): each of the level's (by its place in L.props) with
+ * what the renderer draws of it once it is opened or broken: a chest standing open ([key, x, y, d], as a stand); a barrel's or an
+ * urn's leavings lying on the floor ([key, x, y], drawn flat: render.ts, the floor's pieces' `flat`, or the vault's staves and
+ * shards). (Whole, each is among the items, `prop` saying which.)
+ */
+const OPENED = new Set(['chest', 'barrel', 'urn']);
+interface PropOut { i: number; kind: string; x: number; y: number; open: [string, number, number, number] | null; broken: [string, number, number] | null }
+function recordProps(P: Place, atlas: Atlas): PropOut[] {
+  const { L, game, look } = P;
+  const cam = P.cam;
+  const out: PropOut[] = [];
+  for (const [i, p] of L.props.entries()) {
+    if (!OPENED.has(p.kind)) continue;
+    const was = p.state;
+    p.state = 1;
+    const sx = Math.round(wx(cam, p.x, p.y));
+    const sy = Math.round(wy(cam, p.x, p.y));
+    const name = P.pieces.nameOf(p) ?? p.kind;
+    let open: PropOut['open'] = null;
+    let broken: PropOut['broken'] = null;
+    if (p.kind === 'chest') {
+      const own = P.dressed ? P.pieces.standing(game, p, 0) : undefined;
+      const lookOwn = own === undefined && look.own ? look.own(L, p, 0) : undefined;
+      const sp = own !== undefined ? own : lookOwn !== undefined ? lookOwn : P.props.chestOpen;
+      if (sp) open = [atlas.key(sp, `${name} open`), sx, sy, p.x + p.y];
+    } else {
+      const own = P.dressed ? P.pieces.flat(p) : undefined;
+      const list = p.kind === 'barrel' ? P.props.staves : P.props.shards;
+      const sp = own !== undefined ? own : list[p.variant % list.length];
+      if (sp) broken = [atlas.key(sp, `${name} broken`), sx, sy];
+    }
+    p.state = was;
+    out.push({ i, kind: p.kind, x: p.x, y: p.y, open, broken });
+  }
+  return out;
+}
+
+/**
  * THE DOORS AS THEY OPEN, for the Godot side (godot/scripts/doors.gd): for each of the level's doors and gates, what standDoors
  * draws of its moving part at each step of its opening, from shut (0) to open (1): a door's leaf at each of the renderer's
  * SWING_STEPS + 1 turns (its depth turning with it), a gate's portcullis strips at GATE_STEPS + 1 heights (none for a way's
@@ -1167,6 +1213,7 @@ interface ItemOut {
   secs?: number[];
   what?: string;
   door?: number;
+  prop?: number;
 }
 
 function recordPlace(P: Place, atlas: Atlas): { items: ItemOut[]; lights: LightOut[] } {
@@ -1186,7 +1233,7 @@ function recordPlace(P: Place, atlas: Atlas): { items: ItemOut[]; lights: LightO
   }
   const items: ItemOut[] = first.map((a, i) => {
     const r2 = (n: number): number => Math.round(n * 1000) / 1000;
-    const base = { layer: a.layer, kind: a.kind, x: r2(a.x), y: r2(a.y), d: a.d === null ? null : r2(a.d), ...(a.door !== undefined ? { door: a.door } : {}) };
+    const base = { layer: a.layer, kind: a.kind, x: r2(a.x), y: r2(a.y), d: a.d === null ? null : r2(a.d), ...(a.door !== undefined ? { door: a.door } : {}), ...(a.prop !== undefined ? { prop: a.prop } : {}) };
     if (a.fixed) {
       const frames = a.fixed.frames.map((s) => atlas.key(s, a.hint));
       return { ...base, frames, fps: null, t0: a.fixed.t0, secs: a.fixed.secs, ...(a.what ? { what: a.what } : {}) };
@@ -1291,6 +1338,7 @@ function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; 
   const atlas = new Atlas();
   const { items, lights } = recordPlace(P, atlas);
   const doors = recordDoors(P, atlas);
+  const props = recordProps(P, atlas);
   more?.(atlas);
   const sheet = writeSheet(atlas, P.name, sheetWidth);
   const picLights = new Map<string, [number, number, number, number, string][]>();
@@ -1304,6 +1352,7 @@ function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; 
     hero: { x: Math.round(wx(P.cam, P.game.hero.x, P.game.hero.y) * 100) / 100, y: Math.round(wy(P.cam, P.game.hero.x, P.game.hero.y) * 100) / 100, wx: P.game.hero.x, wy: P.game.hero.y },
     items,
     doors,
+    props,
     lights,
     pic_lights: Object.fromEntries(picLights),
   }));

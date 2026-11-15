@@ -51,6 +51,7 @@ var art: BakedHero
 var sfx: Sfx
 var monsters  # monsters.gd
 var doors  # doors.gd, on a floor that has them (null in town)
+var props  # props.gd, on a floor that has chests, barrels or urns (null in town)
 var world := Vector2.ZERO
 var home := Vector2.ZERO
 var face := Vector2(1, 0)
@@ -270,6 +271,9 @@ func _begin_strike() -> void:
 func _land_strike() -> void:
 	_landed = true
 	sfx.play("swing", -6.0)
+	# (what it reaches of the barrels and urns: game.ts, breakProps a little way before him)
+	if props != null and is_instance_valid(props):
+		props.strike(world + face * _strike_reach() * 0.6, 0.9)
 	if monsters == null:
 		return
 	var m = monsters.strike_target(world, face, _strike_reach())
@@ -324,6 +328,8 @@ func _spin(dt: float, held: bool) -> void:
 		return
 	if _next_bite <= 1e-9:
 		sfx.play("whirl", -6.0)
+		if props != null and is_instance_valid(props):
+			props.strike(world, WHIRL["radius"] * stats["area"])
 		if monsters != null and monsters.blast(world, WHIRL["radius"] * stats["area"], func(): return roll_hit(WHIRL["share"])) > 0:
 			sfx.play("hit", -8.0)
 		_bites += 1
@@ -387,6 +393,8 @@ func _fly(dt: float) -> void:
 		# (landing: a blow 1.6 round, a tile before him; then his landing, if he stands)
 		sfx.play("slam", -4.0)
 		_shake = 0.15
+		if props != null and is_instance_valid(props):
+			props.strike(world + face * LUNGE["ahead"], LUNGE["radius"] * stats["area"])
 		if monsters != null and monsters.blast(world + face * LUNGE["ahead"], LUNGE["radius"] * stats["area"], func(): return roll_hit(LUNGE["share"])) > 0:
 			sfx.play("hit", -4.0)
 		_act = ""

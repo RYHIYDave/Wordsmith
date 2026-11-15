@@ -21,6 +21,8 @@ var walk := PackedByteArray()
 var start := Vector2.ZERO
 var rooms: Array = []
 var doors: Array = []
+## The chests, barrels and urns ({i, kind, x, y, tx, ty, state, solid}: props.gd opens and breaks them).
+var props: Array = []
 var shut := PackedByteArray()
 var pier := PackedByteArray()
 
@@ -37,6 +39,7 @@ func _init(path: String) -> void:
 	start = Vector2(data["start"]["x"], data["start"]["y"])
 	rooms = data["rooms"]
 	doors = data.get("doors", [])
+	props = data.get("props", [])
 	shut.resize(w * h)
 	pier.resize(w * h)
 	for d in doors:

@@ -102,6 +102,10 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   walk: arr(level.walk), low: arr(level.low),
   start: { x: game.hero.x, y: game.hero.y }, boss: L.boss,
   rooms: L.rooms.map((r) => ({ id: r.id, x: r.x, y: r.y, w: r.w, h: r.h, kind: r.kind, path: r.path })),
+  // (the chests, barrels and urns: each by its place in the level's props (the looks' `props` go by it), where it stands, its
+  // tile (solid: out of the walk grid until it is broken), and whether it is in a treasure vault)
+  props: level.props.map((p, i) => ({ i, kind: p.kind, x: p.x, y: p.y, tx: p.tx, ty: p.ty, state: p.state, solid: p.solid }))
+    .filter((p) => p.kind === 'chest' || p.kind === 'barrel' || p.kind === 'urn'),
   // (game/doors.ts: each door and gate the map-maker laid, as the game keeps it (open, want), with its doorway's three tiles,
   // the tiles passed through (a door's middle one, a gate's three), the stone either side of a door, and its middle)
   doors: level.doors.map((d) => ({

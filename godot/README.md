@@ -77,6 +77,11 @@ through chat, so the art and sounds go into the project whole).
   "Not yet"; as the gate falls he says one of his lines ("None leave my halls."), his name comes up across the screen, and
   he fights. Their pictures as they open are the game's own, step by step (tools/godot_looks.ts). Fallen, the hero is set
   back where he came in and the gate goes up again behind him (in the game a fallen hero wakes in town).
+- **Chests, barrels and urns** (`scripts/props.gd`; game.ts breakProps, updateProps): in the King's Tomb the king's coffers,
+  and the funeral urns, squat urns, skull jars and bone boxes (art/floor1.ts). A coffer opens as he comes up to it: a piece
+  of gear and 10 to 20 gold laid before it (in a treasure vault a better piece, perhaps two, and twice the gold). An urn or
+  box breaks under the Strike, each cut of the Whirlwind and the Lunge's landing: its own broken leavings on the floor, and
+  sometimes gold, a life orb or a piece of gear. Their pictures open and broken are the game's own.
 - **The music** (`scripts/music.gd`, game/level_music.ts and engine/audio.ts levelMusic): the town's walk, and floor 1's
   walk and fight, his songs from the sound chat's tenth batch, each looping where the game loops it. Coming into a place,
   its walk fades up; when something awake is within 10 tiles of him, the fight comes in at once from its first big hit and
@@ -105,7 +110,7 @@ bars under the figures), the Warden's spoken lines as he makes them, the moves' 
 gate in the back wall (barred on a new game, drawn as wall here), the stone floating from him to the slab, the letters
 swirling round the ring and its column of light, the wordsmith's words for sale, the stranger's gamble, the stash, the
 Lexicon, buying back, the town's own lighting and music; words other than Power, uniques, magic find, the game's own
-lettering and frames for the screens (these use Godot's plain letters), chests, barrels and urns, the floor's own
+lettering and frames for the screens (these use Godot's plain letters), the sparks as a pot breaks, the floor's own
 dressing (render/pieces.ts, its looks), raised and sunken floor, the tiles cut corner to corner (drawn whole for now),
 props, the rest of the heroes, menus, the title screen's music. The Colossus pictures are in, held back from Godot with `.gdignore` until they are wired in.
 
@@ -127,7 +132,8 @@ props, the rest of the heroes, menus, the title screen's music. The Colossus pic
 Checking it without hands on the keys: `godot --path godot -- --shots=<folder>` sets the hero down, unharmed, in sight
 of each monster that has moves and pictures each move the moment it shows (the troll's charge line, run and slam; the
 rain's ring and its arrows; the marksman's aim and great arrow; the Warden's bolts, the Lockdown's shadows and bars, the
-dead he calls), says which moves were made, and quits. `--only=doors` pictures a door shut, swinging and open, and the Warden's gate up, falling, his line and name, and rising
+dead he calls), says which moves were made, and quits. `--only=props` pictures a coffer shut and open, an urn whole and broken, and a Whirlwind through a row of them.
+`--only=doors` pictures a door shut, swinging and open, and the Warden's gate up, falling, his line and name, and rising
 once he is dead. `--only=music` says what music plays as he goes from the town to
 floor 1, up to a skeleton and away when the fight is over. (Neither lair on this floor leaves the troll a clear run, so for
 the charge he is set down in the floor's biggest hall.)

@@ -28,6 +28,7 @@ const Town := preload("res://scripts/town.gd")
 const Guide := preload("res://scripts/guide.gd")
 const Look := preload("res://scripts/look.gd")
 const Doors := preload("res://scripts/doors.gd")
+const Props := preload("res://scripts/props.gd")
 
 const FLOOR_DIR := "res://assets/floor1"
 const TOWN_DIR := "res://assets/town"
@@ -234,6 +235,17 @@ func _build(where: String, arrive: String) -> void:
 		_doors.sfx = sfx
 		_place.add_child(_doors)
 		hero.doors = _doors
+	# (the floor's chests, barrels and urns: props.gd)
+	hero.props = null
+	if not map.props.is_empty():
+		var props := Props.new()
+		props.map = map
+		props.look = look if looked else null
+		props.hero = hero
+		props.loot = loot
+		props.sfx = sfx
+		_place.add_child(props)
+		hero.props = props
 	loot.enter_place(map, stands, monsters, where == "floor1")
 
 	town = null
@@ -432,6 +444,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "doors":
 		await _door_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "props":
+		await _prop_shots(hero, dir)
 		get_tree().quit()
 		return
 	await _wait(1.0)
@@ -811,6 +827,57 @@ func _door_shots(h: Hero, dir: String) -> void:
 	h.world = gm + Vector2(0, 1.5 * float(g["out"]))
 	await _wait(0.3)
 	await _snap(dir + "/48_gate_risen.png")
+
+
+## THE CHESTS, BARRELS AND URNS, pictured: a king's coffer shut, then open with what was in it; an urn whole, then struck and
+## broken; a Whirlwind through a row of them.
+func _prop_shots(h: Hero, dir: String) -> void:
+	var chest: Dictionary = {}
+	for p in map.props:
+		if p["kind"] == "chest" and chest.is_empty():
+			chest = p
+	var c := Vector2(chest["x"], chest["y"])
+	h.world = _spot_near(c, 2.6, h.world)
+	await _wait(0.6)
+	await _snap(dir + "/50_chest_shut.png")
+	h.world = _spot_near(c, 1.3, h.world)
+	await _wait(1.0)
+	print("CHEST: state ", chest["state"], ", ", loot._drops.size(), " things lie about")
+	await _snap(dir + "/51_chest_open.png")
+	# (the urn with the most of its kind round it)
+	var best: Dictionary = {}
+	var most := -1
+	for p in map.props:
+		if p["kind"] == "chest":
+			continue
+		var n := 0
+		for q in map.props:
+			if q["kind"] != "chest" and Vector2(q["x"], q["y"]).distance_to(Vector2(p["x"], p["y"])) < 2.6:
+				n += 1
+		if n > most:
+			most = n
+			best = p
+	var u := Vector2(best["x"], best["y"])
+	h.world = _spot_near(u, 1.3, h.world)
+	h.face = (u - h.world).normalized()
+	await _wait(0.5)
+	await _snap(dir + "/52_urn_whole.png")
+	var walk_was := map.walk[int(best["ty"]) * map.w + int(best["tx"])]
+	h.auto_attack = true
+	await _wait(0.9)
+	h.auto_attack = false
+	print("URN: ", best["kind"], " state ", best["state"], ", its tile walkable ", walk_was, " -> ", map.walk[int(best["ty"]) * map.w + int(best["tx"])])
+	await _snap(dir + "/53_urn_broken.png")
+	h.auto_whirl = true
+	await _wait(1.2)
+	h.auto_whirl = false
+	var broken := 0
+	for p in map.props:
+		if p["kind"] != "chest" and int(p["state"]) == 1:
+			broken += 1
+	print("WHIRL: ", broken, " broken in all")
+	await _wait(0.3)
+	await _snap(dir + "/54_whirled_through.png")
 
 
 func _nearest_in(r: Dictionary) -> Monster:

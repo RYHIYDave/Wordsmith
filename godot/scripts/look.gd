@@ -37,6 +37,7 @@ var _add: CanvasItemMaterial
 var _dark: Sprite2D
 var _hero: Node2D
 var _doors: Array = []  # for each door: {steps, sprites, shown}
+var _props := {}  # a chest's, barrel's or urn's place in the level's props -> {node, open, broken}
 
 
 ## Whether a place has a recorded look.
@@ -79,12 +80,19 @@ func _ready() -> void:
 			s.position = Vector2(at.x, d * HH)
 			s.offset.y += at.y - d * HH
 			stands.add_child(s)
+			if it.has("prop"):
+				_props[int(it["prop"])] = {"node": s}
 			if it.get("kind", "") == "wall":
 				stands.add_wall(s, d, at)
 		if frames.size() > 1:
 			_anim.append({"node": s, "frames": frames, "fps": _num(it.get("fps"), 30.0), "t0": _num(it.get("t0"), 0.0),
 				"secs": it.get("secs", null), "dy": s.offset.y + _pics[frames[0]]["anchor"].y})
 	_make_doors()
+	for p in data.get("props", []):
+		var q: Dictionary = _props.get(int(p["i"]), {})
+		q["open"] = p["open"]
+		q["broken"] = p["broken"]
+		_props[int(p["i"])] = q
 	for layer in still:
 		var drawer := _Still.new()
 		drawer.look = self
@@ -137,6 +145,37 @@ func show_door(i: int, open: float) -> void:
 		_pic_on(s, p[0])
 		s.position = Vector2(at.x, dd * HH)
 		s.offset.y += at.y - dd * HH
+
+
+## A chest opened: shown standing open (look's `props`).
+func prop_opened(i: int) -> void:
+	var q: Dictionary = _props.get(i, {})
+	if not q.has("node") or q.get("open") == null:
+		return
+	var o: Array = q["open"]
+	var s: Sprite2D = q["node"]
+	var at := Vector2(float(o[1]), float(o[2])) * 2.0
+	var dd := float(o[3])
+	_pic_on(s, o[0])
+	s.position = Vector2(at.x, dd * HH)
+	s.offset.y += at.y - dd * HH
+
+
+## A barrel or an urn broken: gone from where it stood, its leavings lying on the floor.
+func prop_broken(i: int) -> void:
+	var q: Dictionary = _props.get(i, {})
+	if q.has("node"):
+		q["node"].visible = false
+	if q.get("broken") == null:
+		return
+	var b: Array = q["broken"]
+	var s := Sprite2D.new()
+	s.texture = _sheet
+	s.region_enabled = true
+	s.centered = false
+	_pic_on(s, b[0])
+	s.position = Vector2(float(b[1]), float(b[2])) * 2.0
+	flat_layer.add_child(s)
 
 
 func _pic_on(s: Sprite2D, key: String) -> void:
