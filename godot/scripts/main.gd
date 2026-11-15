@@ -1861,6 +1861,14 @@ func _rising() -> int:
 	return n
 
 
+## Whether a mark of floors 6 to 8's of that name is on the floor (scripts/act1/marks.gd), and `ok` holds of it.
+func _a1(P: Perils, name: String, ok := Callable()) -> bool:
+	for p in P.list:
+		if p["kind"] == "a1" and p["a1"] == name and (not ok.is_valid() or ok.call(p)):
+			return true
+	return false
+
+
 ## A picture the moment `cond` holds (looked at every frame), or after `timeout` seconds whatever holds (named so).
 func _snap_when(path: String, cond: Callable, timeout: float) -> bool:
 	var t := 0.0
@@ -3766,9 +3774,18 @@ func _kind_shots(h: Hero, dir: String) -> void:
 	if m == null:
 		print("KIND: floor %d has no %s" % [n, kind])
 		return
+	# (the chanter: one of the cult it would shield kept, standing still 2 tiles from it, so that its ward is seen and weighed)
+	var ally: Monster = null
+	if kind == "chanter":
+		for o in _monsters.list:
+			if is_instance_valid(o) and not o.dead and o.kind in Monster.Act1.WARD["kinds"] and (ally == null or o.world.distance_to(m.world) < ally.world.distance_to(m.world)):
+				ally = o
 	for o in _monsters.list:
-		if is_instance_valid(o) and o != m:
+		if is_instance_valid(o) and o != m and o != ally:
 			o.queue_free()
+	if ally != null:
+		ally.world = _free_near(m.world + Vector2(1.4, 1.4))
+		ally.rise(1e9)
 	# (in the middle of the biggest room near it, so that there is room for a run and a throw; one with rules of its own stays
 	# where the floor has it: the Stoker in his arena, a keybearer in its room)
 	var own: bool = Monster.BOSS_AI.has(kind)
@@ -3796,6 +3813,9 @@ func _kind_shots(h: Hero, dir: String) -> void:
 		# (the Stoker: far for his coals, near for his rake; then put to under a third of his life, so that his furnace bursts:
 		# a third number in a plan is the share of its life it is put to as that part begins)
 		"stoker": [[5.0, 8.0], [3.0, 8.0], [4.0, 12.0, 0.3]],
+		# (FLOORS 6 TO 8'S COMMON MONSTERS, each by rules of its own: near for its blow, further off for what it throws)
+		"qgolem": [[1.6, 7.0], [5.0, 9.0]], "rubbling": [[0.7, 6.0]], "firepot": [[5.0, 9.0]], "chanter": [[5.0, 9.0]],
+		"vulture": [[3.0, 14.0]], "crawler": [[1.3, 14.0]], "devil": [[1.8, 10.0]], "scorpion": [[1.6, 6.0], [4.0, 10.0]],
 	}
 	var marks := {
 		"brute": {
@@ -3827,6 +3847,46 @@ func _kind_shots(h: Hero, dir: String) -> void:
 			"coals_marked": func(): return _has(P, "st_coals", 1.5), "coals_in_the_air": func(): return _has(P, "st_coals", 2.25), "coals_burn": func(): return _has(P, "st_coals", 3.0),
 			"rake_marked": func(): return _has(P, "st_rake", 0.8), "rake_fire": func(): return _has(P, "st_rake", 1.3), "rake_burns": func(): return _has(P, "st_rake", 2.0),
 			"ring_marked": func(): return _has(P, "st_ring", 1.2), "ring_rolls": func(): return _has(P, "st_ring", 1.75),
+		},
+		# (floors 6 to 8's: what each lays on the floor and throws, as it comes, flies and lands: scripts/act1/marks.gd)
+		"qgolem": {
+			"hammer_marked": func(): return _has(P, "warn", 0.3), "quake": func(): return _a1(P, "qgolem:quake", func(p): return p["t"] >= 0.1),
+			"boulder_lane": func(): return _a1(P, "qgolem:boulder", func(p): return p["t"] >= -0.3),
+			"boulder_rolls": func(): return _a1(P, "qgolem:boulder", func(p): return p["t"] >= 0.05 and p["hit"] >= 1e9),
+			"boulder_smash": func(): return _a1(P, "qgolem:boulder", func(p): return p["hit"] < 1e9 and p["t"] - p["hit"] >= 0.12),
+		},
+		"rubbling": {
+			"a_pile": func(): return int(m.h2.a1.get("pile", 0)) == 1,
+			"climbs_out": func(): return m.state == "act" and m.h2.act != null and m.h2.act["i"] == 1 and m.h2.act["t"] > 0.35,
+		},
+		"firepot": {
+			"pot_flies": func(): return _a1(P, "firepot:pot", func(p): return p["t"] >= 0.35 and p["t"] < p["hit"]),
+			"pot_bursts": func(): return _a1(P, "firepot:pot", func(p): return p["t"] - p["hit"] >= 0.15),
+			"floor_burns": func(): return _a1(P, "firepot:pot", func(p): return p["t"] - p["hit"] >= 2.0),
+		},
+		"chanter": {
+			"ward": func(): return _a1(P, "chanter:ward"), "ring": func(): return _a1(P, "chanter:chain", func(p): return p["t"] >= -0.25),
+			"lightning": func(): return _a1(P, "chanter:chain", func(p): return p["done"] == 1 and p["t"] >= 0.05),
+			"static": func(): return _a1(P, "chanter:chain", func(p): return p["d"] == 1 and p["t"] >= 0.2),
+		},
+		"vulture": {
+			"aloft": func(): return m.state == "chase" and float(m.h2.a1.get("lift", 0.0)) >= 25.0,
+			"dive_line": func(): return m.h2.act != null and m.h2.act["t"] >= 0.4, "stoops": func(): return m.h2.act != null and m.h2.act["t"] >= 0.62,
+			"pulls_out": func(): return m.h2.act != null and m.h2.act["t"] >= 0.95,
+		},
+		"crawler": {
+			"under_the_lip": func(): return int(m.h2.a1.get("hid", 0)) == 1,
+			"climbs": func(): return int(m.h2.a1.get("hid", 0)) == 2 and m.h2.act != null and m.h2.act["t"] >= 0.5,
+			"leap_ring": func(): return _a1(P, "crawler:leap") and m.h2.act != null and m.h2.act["t"] >= 0.45,
+			"grabbed": func(): return int(m.h2.a1.get("grab", 0)) == 1 and m.h2.act != null and m.h2.act["t"] >= 1.0,
+		},
+		"devil": {
+			"twister_spins_up": func(): return _a1(P, "devil:twister") and m.h2.act != null and m.h2.act["t"] >= 0.6,
+			"twister": func(): return _a1(P, "devil:twister") and m.h2.act != null and m.h2.act["t"] >= 2.05,
+		},
+		"scorpion": {
+			"glob_flies": func(): return _a1(P, "scorpion:glob", func(p): return p["t"] >= 0.25 and p["t"] < p["hit"]),
+			"acid_pool": func(): return _a1(P, "scorpion:glob", func(p): return p["t"] - p["hit"] >= 0.6),
 		},
 	}
 	var todo: Dictionary = marks.get(kind, {})
@@ -3873,6 +3933,9 @@ func _kind_shots(h: Hero, dir: String) -> void:
 						done[q[1]] = true
 						await _snap(tag + "%02d_%s.png" % [k, q[1]])
 	var said := ""
+	if ally != null and is_instance_valid(m) and not m.dead:
+		# (a blow of 10 on the one it shields, its ward weighed: 6 while the chanter is awake and near)
+		said = "; the %s 2 tiles from it takes %.0f of a blow of 10 (warded)" % [ally.kind, Monster.Act1.warded(_monsters, ally, 10.0)]
 	if kind == "boneward" and is_instance_valid(m) and not m.dead:
 		# (its shield: wait till the wall is up; a blow from before it glances off, one from behind lands)
 		var w := 0.0
