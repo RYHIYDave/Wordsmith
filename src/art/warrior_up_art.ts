@@ -26,7 +26,7 @@ import type { Posed, Skeleton, V3 } from './skeleton';
 import { GREAT_BLADE } from './moves3';
 import { onBack } from './carried';
 import { paintWarriorUp } from './warrior_up';
-import type { WuFrame, WuSide } from './warrior_up';
+import type { SwordSkin, WuFrame, WuSide } from './warrior_up';
 import { WU_SIDES } from './warrior_up';
 import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLASH3, WU_STRIKE3, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3 } from './warrior_up_moves';
 
@@ -103,7 +103,7 @@ export function wuSmeared(m: Move3, t: number): boolean {
 }
 
 /** HIM AT A MOMENT OF A MOVE, painted: with the figure a frame and three frames before (cloth follows), the wind, and his smear. */
-export function paintWu(m: Move3, t: number, view: WuSide, rim: string | null | undefined = undefined): WuFrame {
+export function paintWu(m: Move3, t: number, view: WuSide, rim: string | null | undefined = undefined, sword?: SwordSkin): WuFrame {
   const { q, s } = wuPosed(m, t);
   const prev = wuPosed(m, before(m, t, FRAME)).s;
   const past = wuPosed(m, before(m, t, 3 * FRAME)).s;
@@ -115,7 +115,8 @@ export function paintWu(m: Move3, t: number, view: WuSide, rim: string | null | 
     trail = [];
     for (let i = 0; i <= 10; i++) trail.push(bladeAt(m, before(m, t, (span * i) / 10)));
   }
-  const f = paintWarriorUp(s, q, view, m.build, { prev, past, trail, smear: smeared ? 1 : 0, wind: windOf(m, t) }, rim === undefined ? undefined : rim);
+  // (THE WARRIOR'S UNIQUE GREAT SWORDS, art/sword_skins.ts: the sword in his hand)
+  const f = paintWarriorUp(s, q, view, m.build, { prev, past, trail, smear: smeared ? 1 : 0, wind: windOf(m, t), ...(sword ? { sword } : {}) }, rim === undefined ? undefined : rim);
   if (q.out > 0.01) {
     const o = lightsOut(f, q.out);
     return { ...f, ...o };
@@ -124,8 +125,8 @@ export function paintWu(m: Move3, t: number, view: WuSide, rim: string | null | 
 }
 
 /** A frame of a move as the game holds it: cut down to him, with his lights, his pool of light and where his scarf's ends are fixed. */
-export function wuSprite(m: Move3, t: number, view: WuSide): Sprite {
-  const f = paintWu(m, t, view);
+export function wuSprite(m: Move3, t: number, view: WuSide, sword?: SwordSkin): Sprite {
+  const f = paintWu(m, t, view, undefined, sword);
   const out = wuPosed(m, t).q.out;
   // (his pool of light where it is under every hero, by his feet: on a side that faces left, as far the other way)
   const aura = { ...AURA, x: f.ax + (f.ax === CANVAS3.ax ? AURA.x - CANVAS3.ax : CANVAS3.ax - AURA.x) };
@@ -138,14 +139,14 @@ export function wuSprite(m: Move3, t: number, view: WuSide): Sprite {
 /** The lists, made once for each view and shared by every place that shows the same (one HeroArt's worth). */
 type Shared = Map<string, Sprite[]>;
 
-function setOf(view: WuSide, place: 'dungeon' | 'town' | 'card', shared: Shared): AnimSet {
+function setOf(view: WuSide, place: 'dungeon' | 'town' | 'card', shared: Shared, sword?: SwordSkin): AnimSet {
   const list = (key: string, make: () => Sprite[]): Sprite[] => {
     const k = `${view}:${key}`;
     let l = shared.get(k);
     if (!l) shared.set(k, (l = make()));
     return l;
   };
-  const at = (m: Move3, t: number): Sprite => wuSprite(m, t, view);
+  const at = (m: Move3, t: number): Sprite => wuSprite(m, t, view, sword);
   const round = (m: Move3, fps: number): Sprite[] =>
     list(`round:${m.name}:${fps}`, () => {
       const { end, from } = spanOf(m);
@@ -211,11 +212,11 @@ function setOf(view: WuSide, place: 'dungeon' | 'town' | 'card', shared: Shared)
  * THE WARRIOR'S PICTURES, BROUGHT UP, for a place (a dungeon, town, his class card): what art/heroes3.ts gives in his place while
  * WARRIOR_UP is on. `shared`: one map for every place of one HeroArt, so that a list the same in two places is one list.
  */
-export function makeWarriorUpArt(place: 'dungeon' | 'town' | 'card', shared: Shared = new Map()): WuActorArt {
+export function makeWarriorUpArt(place: 'dungeon' | 'town' | 'card', shared: Shared = new Map(), sword?: SwordSkin): WuActorArt {
   const out = {} as Record<WuSide, AnimSet>;
   // (each side's lists made when first asked for: a set of lists is cheap, its frames are painted when first read)
   for (const side of WU_SIDES) Object.defineProperty(out, side, { enumerable: true, configurable: true, get: () => {
-    const set = setOf(side, place, shared);
+    const set = setOf(side, place, shared, sword);
     Object.defineProperty(out, side, { value: set, enumerable: true });
     return set;
   } });
