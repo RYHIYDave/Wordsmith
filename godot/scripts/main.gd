@@ -1451,10 +1451,13 @@ func _free_near(at: Vector2) -> Vector2:
 	return at
 
 
-## SHOT MODE, ONE KIND OF MONSTER'S OWN MOVES (--only=kind --floor=N --kind=brute|boneward|priest|dagger): the one of that kind
-## nearest the way in (a brute that is no champion: the green troll) is left alone on the floor, the hero set down in sight of
-## it, unharmed, far and then near as its moves want; each move pictured at its moments; then, for the Boneward, a blow from
-## before its shield (it glances off) and one from behind (it lands). Says which moves were made.
+## SHOT MODE, ONE KIND OF MONSTER'S OWN MOVES (--only=kind --floor=N --kind=brute|boneward|priest|dagger|stoker|keyblade|...
+## [--away=4] [--secs=14]): the one of that kind nearest the way in (a brute that is no champion: the green troll) is left
+## alone on the floor, the hero set down in sight of it, unharmed, far and then near as its moves want; each move pictured at
+## its moments (a kind with rules of its own: each of its moves pictured twice, 0.5 s in, as mgr.used counts it); then, for
+## the Boneward, a blow from before its shield (it glances off) and one from behind (it lands); for a kind with rules of its
+## own, it is struck dead, pictured fallen, and the hero walked to where it fell (what it leaves is taken up). Says which
+## moves were made.
 func _kind_shots(h: Hero, dir: String) -> void:
 	var n := int(_arg("floor")) if _arg("floor") != "" else 3
 	var kind := _arg("kind") if _arg("kind") != "" else "brute"
@@ -1472,7 +1475,9 @@ func _kind_shots(h: Hero, dir: String) -> void:
 	for o in _monsters.list:
 		if is_instance_valid(o) and o != m:
 			o.queue_free()
-	# (in the middle of the biggest room near it, so that there is room for a run and a throw)
+	# (in the middle of the biggest room near it, so that there is room for a run and a throw; one with rules of its own stays
+	# where the floor has it: the Stoker in his arena, a keybearer in its room)
+	var own: bool = Monster.BOSS_AI.has(kind)
 	var room: Dictionary = {}
 	for r in map.rooms:
 		if FloorMap.in_room(r, m.world):
@@ -1481,7 +1486,8 @@ func _kind_shots(h: Hero, dir: String) -> void:
 	for r in map.rooms:
 		if r.get("kind", "") != "boss" and (big.is_empty() or r["w"] * r["h"] > big["w"] * big["h"]):
 			big = r
-	m.world = _free_near(Vector2(big["x"] + big["w"] / 2.0, big["y"] + big["h"] / 2.0))
+	if not own:
+		m.world = _free_near(Vector2(big["x"] + big["w"] / 2.0, big["y"] + big["h"] / 2.0))
 	var P := _monsters.perils
 	var tag := dir + "/k%d_%s_" % [n, kind]
 	var plans := {
@@ -1515,7 +1521,11 @@ func _kind_shots(h: Hero, dir: String) -> void:
 	var hits := 0
 	var k := 0
 	h.unhurt = false
-	for ph in plans.get(kind, [[4.0, 10.0]]):
+	var away := float(_arg("away")) if _arg("away") != "" else 4.0
+	var secs := float(_arg("secs")) if _arg("secs") != "" else 14.0
+	var seen := {}
+	var due: Array = []
+	for ph in plans.get(kind, [[away, secs]]):
 		if not is_instance_valid(m) or m.dead:
 			break
 		h.world = _charge_spot(m, ph[0], _spot_near(m.world, ph[0], h.world)) if kind == "brute" and ph[0] > 3.0 else _spot_near(m.world, ph[0], h.world)
@@ -1532,6 +1542,20 @@ func _kind_shots(h: Hero, dir: String) -> void:
 					done[name] = true
 					k += 1
 					await _snap(tag + "%02d_%s.png" % [k, name])
+			if todo.is_empty():
+				# (a kind with rules of its own: each of its moves pictured the first two times, half a second in)
+				for id in _monsters.used:
+					var c: int = _monsters.used[id]
+					if c > seen.get(id, 0):
+						seen[id] = c
+						if c <= 2:
+							due.append([t + 0.5, "%s_%d" % [id, c]])
+				for q in due.duplicate():
+					if t >= q[0]:
+						due.erase(q)
+						k += 1
+						done[q[1]] = true
+						await _snap(tag + "%02d_%s.png" % [k, q[1]])
 	var said := ""
 	if kind == "boneward" and is_instance_valid(m) and not m.dead:
 		# (its shield: wait till the wall is up; a blow from before it glances off, one from behind lands)
@@ -1550,6 +1574,26 @@ func _kind_shots(h: Hero, dir: String) -> void:
 		h.world = m.world - m.face * 1.2
 		m.hurt(3.0)
 		said = "; its wall up %s; a blow from before it took %.1f, from behind %.1f; glances %d" % [up, l0 - l1, l1 - m.life, _monsters.used.get("glance", 0)]
+	if own and is_instance_valid(m) and not m.dead:
+		# (struck dead; what it leaves pictured where it fell; then the hero walked there, and it is taken up)
+		var fell: Vector2 = m.world
+		var got: Array = []
+		_monsters.quest_item.connect(func(what: String, at: Vector2): got.append("%s at %s" % [what, at]))
+		h.world = _spot_near(m.world, 3.0, h.world)
+		m.hurt(1e9)
+		if not m.dead:
+			# (one that nothing reaches just now: tried again for a while)
+			var w2 := 0.0
+			while w2 < 8.0 and not m.dead:
+				await get_tree().process_frame
+				w2 += get_process_delta_time()
+				m.hurt(1e9)
+		await _wait(1.6)
+		await _snap(tag + "%02d_fallen.png" % (k + 1))
+		h.world = fell
+		await _wait(0.6)
+		await _snap(tag + "%02d_where_it_fell.png" % (k + 2))
+		said += "; dead %s; taken up: %s" % [m.dead, got]
 	print("KIND floor %d %s: moves made %s; pictured %s; the hero struck in %d frames%s" % [n, kind, _monsters.used, done.keys(), hits, said])
 
 
