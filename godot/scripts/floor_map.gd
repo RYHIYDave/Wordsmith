@@ -25,6 +25,10 @@ var doors: Array = []
 var props: Array = []
 var shut := PackedByteArray()
 var pier := PackedByteArray()
+## THE STAIRWELL DOWN (game/ways.ts stairSpots): the places in the boss's hall where it may open, {x, y, way}, the nearest
+## his hall's middle first (stairs.gd opens it as he falls); and the floor's waypoint {x, y}, where it has one.
+var stairs: Array = []
+var waypoint = null
 
 
 func _init(path: String) -> void:
@@ -40,6 +44,8 @@ func _init(path: String) -> void:
 	rooms = data["rooms"]
 	doors = data.get("doors", [])
 	props = data.get("props", [])
+	stairs = data.get("stairs", [])
+	waypoint = data.get("waypoint", null)
 	shut.resize(w * h)
 	pier.resize(w * h)
 	for d in doors:

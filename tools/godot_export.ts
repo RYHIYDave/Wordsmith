@@ -5,7 +5,8 @@
 //      casts on the floor at its foot and the floor's edges, packed in one sheet. Every rect and anchor in picture pixels,
 //      two to a game pixel (the grain the heroes are baked at).
 //   2. godot/assets/floor1/layout.json: a floor 1 laid out by the game's own map-maker (game/level.ts makeDungeon).
-//   npx tsx tools/godot_export.ts [seed]
+//   3. godot/assets/floor1/monsters.json: its monsters as the game spawns them.
+//   npx tsx tools/godot_export.ts [seed] [depth]      (depth 2: the same for floor 2, into godot/assets/floor2)
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
@@ -24,7 +25,8 @@ paintWithoutCanvas();
 // (the game's own switches, as it starts: tools/godot_switches.ts)
 gameSwitches();
 const seed = Number(process.argv[2] ?? 1) >>> 0;
-const OUT = 'godot/assets/floor1';
+const depth = Math.max(1, Math.min(4, Number(process.argv[3] ?? 1) | 0));
+const OUT = `godot/assets/floor${depth}`;
 mkdirSync(OUT, { recursive: true });
 
 // --- a PNG with its alpha (tools/px_png.ts lays pictures on a background; Godot wants them clear) ---
@@ -43,7 +45,7 @@ function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
 }
 
 // --- 1. the ground: every picture at two picture pixels to a game pixel, shelf-packed in one sheet ---
-const g = makeGroundArt(CRYPT_FLOORS[0]);
+const g = makeGroundArt(CRYPT_FLOORS[depth - 1]);
 // (the floor's tiles repeat every PERIOD tiles each way: art/ground.ts keeps PERIOD to itself, so find it)
 let period = 1;
 while (period < 64 && g.floor(period, 0) !== g.floor(0, 0)) period++;
@@ -82,7 +84,7 @@ named.forEach(([, s], n) => {
   }
 });
 writeFileSync(`${OUT}/ground.png`, png(SHEET_W, SHEET_H, sheet));
-writeFileSync(`${OUT}/ground.json`, JSON.stringify({ theme: 'crypt 1', period, sprites: placed }, null, 0));
+writeFileSync(`${OUT}/ground.json`, JSON.stringify({ theme: `crypt ${depth}`, period, sprites: placed }, null, 0));
 console.log(`ground: ${placed.length} pictures (floor repeats every ${period} tiles; ${g.faceLeft.length} + ${g.faceRight.length} wall faces) in a ${SHEET_W}x${SHEET_H} sheet`);
 
 // --- 2. a floor 1 as the game itself sets it up: a new Warrior's game, into the first dungeon (as tests/action_f1_game.test.ts
@@ -90,14 +92,14 @@ console.log(`ground: ${placed.length} pictures (floor repeats every ${period} ti
 // (a Level, game/state.ts: its Floor, game/types.ts, and the grids made from it: `walk` where a body may stand, `low` the
 // walls drawn cut down low because floor lies behind them)
 const game = new Game('warrior', seed);
-game.depth = 1;
+game.depth = depth;
 game.enterDungeon();
 const level = game.level;
 const L = level.floor;
 const arr = (a: ArrayLike<number> | undefined | null): number[] | null => (a ? Array.from(a) : null);
 const count = (v: number): number => L.tiles.reduce((n, t) => n + (t === v ? 1 : 0), 0);
 writeFileSync(`${OUT}/layout.json`, JSON.stringify({
-  depth: 1, seed, w: L.w, h: L.h,
+  depth, seed, w: L.w, h: L.h,
   tiles: arr(L.tiles), variant: arr(L.variant), cut: arr(L.cut), height: arr(L.height),
   walk: arr(level.walk), low: arr(level.low),
   start: { x: game.hero.x, y: game.hero.y }, boss: L.boss,
@@ -111,7 +113,12 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   doors: level.doors.map((d) => ({
     kind: d.spot.kind, room: d.spot.room, alongX: d.spot.alongX, near: d.spot.near, a: d.spot.a, plane: d.spot.plane, out: d.spot.out,
     tiles: doorTiles(L, d.spot), way: doorWay(L, d.spot), piers: doorPiers(L, d.spot), middle: doorMiddle(d.spot), open: d.open, want: d.want,
+    ...(d.spot.word ? { word: d.spot.word } : {}),
   })),
+  // (game/ways.ts: the places in the boss's hall where the stairwell down may open, the nearest his hall's middle first
+  // (stairSpots; it opens in the first clear of where he fell: stairFor), and the floor's waypoint, where it has one)
+  stairs: (level.ways?.stairs ?? []).map((s) => ({ x: s.x, y: s.y, way: s.way })),
+  waypoint: level.ways?.way ? { x: level.ways.way.x, y: level.ways.way.y } : null,
 }));
 
 // --- 3. its monsters: each as game.ts spawn made it (life, damage and speed with the first floor's softening in them), its

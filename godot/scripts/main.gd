@@ -29,6 +29,7 @@ const Guide := preload("res://scripts/guide.gd")
 const Look := preload("res://scripts/look.gd")
 const Doors := preload("res://scripts/doors.gd")
 const Props := preload("res://scripts/props.gd")
+const Stairs := preload("res://scripts/stairs.gd")
 
 const FLOOR_DIR := "res://assets/floor1"
 const TOWN_DIR := "res://assets/town"
@@ -61,6 +62,7 @@ var map: FloorMap
 var _place: Node2D
 var _monsters: Monsters
 var _doors: Doors
+var _stairs: Stairs
 var _hud
 var _loot: Loot
 var _inv
@@ -139,7 +141,7 @@ func _build(where: String, arrive: String) -> void:
 	_place = Node2D.new()
 	add_child(_place)
 	move_child(_place, 0)
-	var dir := TOWN_DIR if where == "town" else FLOOR_DIR
+	var dir := TOWN_DIR if where == "town" else "res://assets/" + where
 	map = FloorMap.new(dir + "/layout.json")
 	var ground := GroundArt.new(dir)
 
@@ -218,8 +220,8 @@ func _build(where: String, arrive: String) -> void:
 	perils.hero = hero
 	perils.sfx = sfx
 	_place.add_child(monsters)
-	if where == "floor1":
-		monsters.load_floor(FLOOR_DIR + "/monsters.json", MONSTER_DIR)
+	if where != "town":
+		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
 	hero.monsters = monsters
 	_monsters = monsters
 	# (the floor's doors and the boss's gate: doors.gd)
@@ -246,6 +248,19 @@ func _build(where: String, arrive: String) -> void:
 		props.sfx = sfx
 		_place.add_child(props)
 		hero.props = props
+	# (the stairwell down in the boss's hall, shut until he falls: stairs.gd)
+	_stairs = null
+	if not map.stairs.is_empty():
+		var stairs := Stairs.new()
+		_stairs = stairs
+		stairs.main = self
+		stairs.map = map
+		stairs.look = look if looked else null
+		stairs.hero = hero
+		stairs.monsters = monsters
+		stairs.loot = loot
+		stairs.sfx = sfx
+		_place.add_child(stairs)
 	loot.enter_place(map, stands, monsters, where == "floor1")
 
 	town = null
@@ -269,7 +284,7 @@ func _build(where: String, arrive: String) -> void:
 	else:
 		if not looked:
 			_floor_gate(flats)
-		sfx.background("bed_f1_loop.wav", "amb_f1")
+		sfx.background("bed_f%d_loop.wav" % map.depth, "amb_f%d" % map.depth)
 		_veil.material.set_shader_parameter("deep", Look._num(look.data.get("vignette"), 0.62) if looked else 0.82)
 
 
@@ -307,7 +322,7 @@ func _process(dt: float) -> void:
 
 ## Which place's music (game/level_music.ts musicPlace): the town's, or floor 1's.
 func _music_place() -> String:
-	return "town" if place == "town" else ("f1" if place == "floor1" else "")
+	return "town" if place == "town" else "f%d" % map.depth
 
 
 ## Is there a fight on: something awake within reach of him (game.ts inFight; no doors here yet to shut one in)?
@@ -333,6 +348,16 @@ func go_to(where: String, arrive: String) -> void:
 	back.tween_property(_curtain, "color:a", 0.0, CURTAIN)
 	await back.finished
 	_going = false
+
+
+## Down the stairwell (game.ts leave('down'), takeWay): the next floor, where he comes in at its start, looking down the
+## screen and to the right (enterDungeon).
+func go_down() -> void:
+	var next := "floor%d" % (map.depth + 1)
+	if not FileAccess.file_exists("res://assets/" + next + "/layout.json"):
+		loot.say("The stairs go down into the dark. (Floor %d is not in the Godot version yet.)" % (map.depth + 1))
+		return
+	go_to(next, "down")
 
 
 ## What E would do where he stands: [what is shown, what it does] (town.gd).
@@ -444,6 +469,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "doors":
 		await _door_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "stairs":
+		await _stair_shots(hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "props":
@@ -765,6 +794,48 @@ func _town_shots(h: Hero, dir: String) -> void:
 	await _snap(dir + "/43_the_armourers_shelf.png")
 	_inv.toggle()
 	print("TOWN: place ", place, " gold ", loot.gold, " bag ", loot.bag.size(), " ring ", loot.ring_lit, " words ", loot.words, " strike ", h.strike_words)
+
+
+## THE STAIRWELL DOWN, pictured: the Warden's gate down behind him, the Warden felled, the floor of his hall breaking open
+## (three moments of its film), the stairwell lying open; then onto its top step, and down to floor 2, where he comes in.
+func _stair_shots(h: Hero, dir: String) -> void:
+	var g: Dictionary = {}
+	for q in map.doors:
+		if q["kind"] == "bossgate":
+			g = q
+	var gm := Vector2(g["middle"]["x"], g["middle"]["y"])
+	var warden: Monster = null
+	for m in _monsters.list:
+		if m.boss:
+			warden = m
+	h.world = gm + Vector2(0, -3.2 * float(g["out"]))
+	h.face = Vector2(0, -float(g["out"]))
+	await _wait(3.8)
+	h.world = _spot_near(warden.world, 2.5, h.world)
+	await _wait(0.3)
+	warden.hurt(999999.0)
+	await _wait(0.25)
+	var st: Dictionary = map.stairs[_stairs.opened] if _stairs.opened >= 0 else {}
+	print("STAIRS: opened at ", _stairs.opened, " ", st, "; the Warden fell at ", warden.world, ", walk past its top step ", [map.walk[int(st["y"]) * map.w + int(st["x"]) + 1], map.walk[int(st["y"]) * map.w + int(st["x"]) + 2]] if not st.is_empty() else [])
+	await _snap(dir + "/50_the_floor_breaks.png")
+	await _wait(0.8)
+	await _snap(dir + "/51_breaking_open.png")
+	await _wait(0.9)
+	await _snap(dir + "/52_breaking_open_more.png")
+	await _wait(1.7)
+	print("STAIRS: after ", snappedf(_stairs.t, 0.01), " s")
+	await _snap(dir + "/53_the_stairwell_open.png")
+	h.world = Vector2(float(st["x"]) - 1.2, float(st["y"]) + 0.6)
+	h.face = Vector2(1, 0)
+	await _wait(0.3)
+	await _snap(dir + "/54_at_its_top_step.png")
+	h.world = Vector2(float(st["x"]) + 0.5, float(st["y"]) + 0.6)
+	await _wait(1.2)
+	print("DOWN: place ", place, " depth ", map.depth, " hero at ", h.world, ", ", _monsters.list.size(), " monsters")
+	await _snap(dir + "/55_floor2_where_he_comes_in.png")
+	h.world += Vector2(4, 0)
+	await _wait(0.6)
+	await _snap(dir + "/56_floor2_a_few_steps_in.png")
 
 
 ## (A TEST: a real right-button press sent through Godot's input, as a mouse would send it, and what he does with it.)

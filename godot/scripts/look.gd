@@ -38,6 +38,7 @@ var _dark: Sprite2D
 var _hero: Node2D
 var _doors: Array = []  # for each door: {steps, sprites, shown}
 var _props := {}  # a chest's, barrel's or urn's place in the level's props -> {node, open, broken}
+var _under := {}  # a place the stairwell may open -> the sprites of what lies there (gone down it as it opens)
 
 
 ## Whether a place has a recorded look.
@@ -62,7 +63,10 @@ func _ready() -> void:
 		var at := Vector2(it["x"], it["y"]) * 2.0
 		if frames.is_empty() or not _pics.has(frames[0]) or it.has("door"):
 			continue
-		if still.has(layer) and frames.size() == 1:
+		# (the fallen wordsmith is loot.gd's own: searched, or not there at all once his stone is found)
+		if it.get("what", "") == "the fallen wordsmith":
+			continue
+		if still.has(layer) and frames.size() == 1 and not it.has("stair"):
 			still[layer].append([frames[0], at])
 			continue
 		var s := Sprite2D.new()
@@ -84,6 +88,11 @@ func _ready() -> void:
 				_props[int(it["prop"])] = {"node": s}
 			if it.get("kind", "") == "wall":
 				stands.add_wall(s, d, at)
+		if it.has("stair"):
+			var k := int(it["stair"])
+			if not _under.has(k):
+				_under[k] = []
+			_under[k].append(s)
 		if frames.size() > 1:
 			_anim.append({"node": s, "frames": frames, "fps": _num(it.get("fps"), 30.0), "t0": _num(it.get("t0"), 0.0),
 				"secs": it.get("secs", null), "dy": s.offset.y + _pics[frames[0]]["anchor"].y})
@@ -176,6 +185,13 @@ func prop_broken(i: int) -> void:
 	_pic_on(s, b[0])
 	s.position = Vector2(float(b[1]), float(b[2])) * 2.0
 	flat_layer.add_child(s)
+
+
+## The stairwell opened at its place `k`: what lay there gone down it (game.ts openStair).
+func stair_opened(k: int) -> void:
+	for s in _under.get(k, []):
+		if is_instance_valid(s):
+			s.visible = false
 
 
 func _pic_on(s: Sprite2D, key: String) -> void:

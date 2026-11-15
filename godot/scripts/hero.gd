@@ -108,6 +108,8 @@ var _clock := 0.0
 var _step_in := 0.0
 var _flash := 0.0
 var _shake := 0.0
+## (render/fx.ts shake: the screen kicked so many game pixels, falling off 22 a second; a film's jolts kick it: kick())
+var _kick := 0.0
 var _down_for := 0.0
 
 
@@ -165,10 +167,13 @@ func _process(dt: float) -> void:
 	_clock += dt
 	_flash = maxf(0.0, _flash - dt)
 	_shake = maxf(0.0, _shake - dt)
+	_kick = maxf(0.0, _kick - dt * 22.0)
 	_invuln = maxf(0.0, _invuln - dt)
 	_whirl_cd = maxf(0.0, _whirl_cd - dt)
 	_lunge_cd = maxf(0.0, _lunge_cd - dt)
 	_cam.offset = Vector2(0, -24) + (Vector2(randf_range(-3, 3), randf_range(-3, 3)) if _shake > 0.0 else Vector2.ZERO)
+	if _kick > 0.3:
+		_cam.offset += Vector2(roundf(randf_range(-_kick, _kick)), roundf(randf_range(-_kick, _kick) * 0.6)) * 2.0
 	if not alive:
 		_down_for += dt
 		_sprite.modulate.a = clampf(1.0 - _down_for, 0.0, 1.0)
@@ -441,6 +446,11 @@ func knock(way: Vector2, dist: float) -> void:
 
 func shake() -> void:
 	_shake = 0.18
+
+
+## The screen kicked `amount` game pixels (render/fx.ts: fx.shake = max(fx.shake, amount)).
+func kick(amount: float) -> void:
+	_kick = maxf(_kick, amount)
 
 
 func hurt(dmg: float) -> void:
