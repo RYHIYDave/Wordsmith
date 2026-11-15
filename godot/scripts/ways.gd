@@ -173,6 +173,8 @@ func _opened() -> void:
 		"exit", "cave":
 			for i in _way_tiles():
 				map.walk[i] = 1
+			# (game.ts joinSteps: on a floor with heights the way's tiles are joined to the floor beside them)
+			map.join_steps(_way_tiles())
 	main.say_way(way_kind(), true)
 
 

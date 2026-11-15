@@ -131,12 +131,22 @@ func nearest(from: Vector2, reach: float) -> Monster:
 	return best
 
 
-func clear(x: float, y: float, r: float) -> bool:
+func clear(x: float, y: float, r: float, fly := false) -> bool:
+	# (game.ts free: a monster that walks goes by the walk grid, the rules of height and the slanting walls, and a shut door
+	# holds it; one that flies, a bat, by the open grid alone: floor_map.gd free)
+	if not fly:
+		return map.fits(x, y, r, false, true)
 	for ty in range(floori(y - r), floori(y + r) + 1):
 		for tx in range(floori(x - r), floori(x + r) + 1):
-			if not map.passable(tx, ty):
+			if not map.open_at(tx, ty):
 				return false
 	return true
+
+
+## May a body step from tile (tx, ty) to the one (dx, dy) from it by the rules of height (height.ts: never over a ledge, a
+## flight of stairs only at its ends; a corner only if both ways round are open)? Always, on a floor of one height.
+func may_step(tx: int, ty: int, dx: int, dy: int) -> bool:
+	return map.step.is_empty() or map.may_overlap(tx, ty, tx + dx, ty + dy)
 
 
 ## Whether `a` sees `b`: every tile on the line between them is open ground (not a shut door: game/doors.ts).
@@ -184,6 +194,8 @@ func flow_dir(at: Vector2) -> Vector2:
 			if not map.passable(nx, ny):
 				continue
 			if dx != 0 and dy != 0 and not (map.passable(tx + dx, ty) and map.passable(tx, ty + dy)):
+				continue
+			if not may_step(tx, ty, dx, dy):
 				continue
 			var v := _flow[ny * map.w + nx]
 			if v >= 0 and v < best:
@@ -326,6 +338,8 @@ func _make_flow() -> void:
 				if not map.passable(nx, ny):
 					continue
 				if dx != 0 and dy != 0 and not (map.passable(tx + dx, ty) and map.passable(tx, ty + dy)):
+					continue
+				if not may_step(tx, ty, dx, dy):
 					continue
 				var j := ny * map.w + nx
 				if _flow[j] < 0:

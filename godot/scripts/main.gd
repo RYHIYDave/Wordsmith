@@ -642,6 +642,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await _waypoint_shots(hero, dir)
 		get_tree().quit()
 		return
+	if _arg("only") == "heights":
+		await _height_shots(hero, dir)
+		get_tree().quit()
+		return
 	await _wait(1.0)
 	await _snap(dir + "/01_start.png")
 	await _hero_moves(hero, dir)
@@ -1580,3 +1584,102 @@ func _waypoint_shots(h: Hero, dir: String) -> void:
 		await _wait(1.4)
 		await _snap(tag + "4_back.png")
 	print("WAYPOINT: back in %s (%s) at %s" % [place, place_title(), h.world])
+
+
+## SHOT MODE, LEDGES AND STAIRS (--only=heights --floor=N): he is walked up the floor's first flight of stairs (pictured at its
+## foot, half way and at its head: lifted as the ground is), then at each ledge round where he stands (he is held by it), and
+## along a slanting wall. Says how high he stood at each and what held him.
+func _height_shots(h: Hero, dir: String) -> void:
+	var n := int(_arg("floor")) if _arg("floor") != "" else 1
+	go_to("floor%d" % n, "down" if n > 1 else "start")
+	await _wait(1.5)
+	var tag := dir + "/h%d_" % n
+	var st := -1
+	for i in map.stair.size():
+		if map.stair[i] != 0:
+			st = i
+			break
+	if st < 0:
+		print("HEIGHTS: floor %d has no stairs (%d raised or sunken tiles)" % [n, _count_raised()])
+	else:
+		var tx := st % map.w
+		var ty := st / map.w
+		var up := Vector2(0, -1) if map.stair[st] == 1 else Vector2(-1, 0)
+		# (a flight may be several tiles long: its foot is the first plain tile down it, its head the first up it)
+		var foot := Vector2(tx + 0.5, ty + 0.5) - up
+		var head := Vector2(tx + 0.5, ty + 0.5) + up
+		while map.stair[floori(head.y) * map.w + floori(head.x)] != 0:
+			head += up
+		h.world = foot
+		await _wait(0.4)
+		await _snap(tag + "1_at_the_foot.png")
+		var l0: float = map.level_at(h.world.x, h.world.y)
+		var steps := 0
+		var mid := false
+		while h.world.distance_to(head) > 0.08 and steps < 400:
+			h._slide((head - h.world).normalized() * 4.6 / 60.0)
+			h.face = up
+			steps += 1
+			if not mid and h.world.distance_to(foot) >= foot.distance_to(head) * 0.5:
+				mid = true
+				await get_tree().process_frame
+				await _snap(tag + "2_half_way.png")
+		await _wait(0.3)
+		await _snap(tag + "3_at_the_head.png")
+		print("HEIGHTS floor %d: stairs at (%d, %d) going %s: from level %.2f at the foot to %.2f at the head in %d steps (%.2f from it)" % [n, tx, ty, "up -y" if map.stair[st] == 1 else "up -x", l0, map.level_at(h.world.x, h.world.y), steps, h.world.distance_to(head)])
+	# the ledges: every place two plain tiles side by side stand at different heights, walked at from the higher: he is held
+	var held := 0
+	var tried := 0
+	var shown := false
+	for ty2 in range(1, map.h - 1):
+		for tx2 in range(1, map.w - 1):
+			if tried >= 40:
+				break
+			var i2 := ty2 * map.w + tx2
+			if not map.walkable(tx2, ty2) or map.stair[i2] != 0:
+				continue
+			for q: Vector2i in [Vector2i(1, 0), Vector2i(0, 1)]:
+				var j2: int = (ty2 + q.y) * map.w + tx2 + q.x
+				if not map.walkable(tx2 + q.x, ty2 + q.y) or map.stair[j2] != 0 or map.height[i2] == map.height[j2]:
+					continue
+				tried += 1
+				var hi := Vector2(tx2 + 0.5, ty2 + 0.5) if map.height[i2] > map.height[j2] else Vector2(tx2 + q.x + 0.5, ty2 + q.y + 0.5)
+				var lo := Vector2(tx2 + q.x + 0.5, ty2 + q.y + 0.5) if map.height[i2] > map.height[j2] else Vector2(tx2 + 0.5, ty2 + 0.5)
+				h.world = hi
+				for k in 60:
+					h._slide((lo - hi) * 4.6 / 60.0)
+				if floori(h.world.x) == floori(hi.x) and floori(h.world.y) == floori(hi.y):
+					held += 1
+				if not shown:
+					shown = true
+					await _wait(0.3)
+					await _snap(tag + "5_at_a_ledge.png")
+	print("HEIGHTS: %d ledges walked at from the higher side, held at %d" % [tried, held])
+	# a slanting wall: walked into, he slides along it
+	var c := -1
+	for i in map.cut.size():
+		if map.cut[i] != 0 and map.tiles[i] == FloorMap.FLOOR:
+			c = i
+			break
+	if c >= 0:
+		var cx := c % map.w
+		var cy := c / map.w
+		var half := FloorMap.cut_half(int(map.cut[c]))
+		# (stood on its floor half, walked straight at its wall half)
+		var into := Vector2(-1, -1) if half == 1 else Vector2(1, 1) if half == 2 else Vector2(-1, 1) if half == 3 else Vector2(1, -1)
+		h.world = Vector2(cx + 0.5, cy + 0.5) - into * 0.28
+		var from := h.world
+		var ok: bool = map.fits(h.world.x, h.world.y, 0.3)
+		for k in 40:
+			h._slide(Vector2(into.x, 0.0) * 4.6 / 60.0)
+		await _wait(0.3)
+		await _snap(tag + "4_slanting_wall.png")
+		print("HEIGHTS: a tile cut %d at (%d, %d): he stood on its floor half %s, walked at the wall along x and went from %s to %s (in the wall half: %s)" % [half, cx, cy, ok, from, h.world, map.in_wall(h.world.x, h.world.y)])
+
+
+func _count_raised() -> int:
+	var k := 0
+	for v in map.height:
+		if v != 0:
+			k += 1
+	return k

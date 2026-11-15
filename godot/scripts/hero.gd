@@ -85,6 +85,8 @@ var _knock_t := 0.0
 var _invuln := 0.0
 var _sprite: Sprite2D
 var _cam: Camera2D
+## (how high the ground he stands on lifts him on the screen, picture pixels: floor_map.gd lift_at)
+var _lift := 0.0
 var _side := 0
 var _list := BakedHero.IDLE
 var _t := 0.0
@@ -175,7 +177,7 @@ func _process(dt: float) -> void:
 	_invuln = maxf(0.0, _invuln - dt)
 	_whirl_cd = maxf(0.0, _whirl_cd - dt)
 	_lunge_cd = maxf(0.0, _lunge_cd - dt)
-	_cam.offset = Vector2(0, -24) + (Vector2(randf_range(-3, 3), randf_range(-3, 3)) if _shake > 0.0 else Vector2.ZERO)
+	_cam.offset = Vector2(0, -24 - _lift) + (Vector2(randf_range(-3, 3), randf_range(-3, 3)) if _shake > 0.0 else Vector2.ZERO)
 	if _kick > 0.3:
 		_cam.offset += Vector2(roundf(randf_range(-_kick, _kick)), roundf(randf_range(-_kick, _kick) * 0.6)) * 2.0
 	if not alive:
@@ -523,10 +525,8 @@ func _turn(way: Vector2) -> void:
 ## The game's slide: the step along x kept if the body is clear there, then the step along y.
 func _slide(step: Vector2) -> void:
 	var was := world
-	if _clear(world.x + step.x, world.y):
-		world.x += step.x
-	if _clear(world.x, world.y + step.y):
-		world.y += step.y
+	# (game.ts slide: along walls and slanting walls; a ledge is as solid as a wall, stairs are entered at their ends)
+	world = map.slide(world, RADIUS, step)
 	_into_door(step, was)
 
 
@@ -572,15 +572,16 @@ func _into_door(step: Vector2, was: Vector2) -> void:
 
 ## Every tile the body's box overlaps is one a body may stand on (game.ts free).
 func _clear(x: float, y: float) -> bool:
-	for ty in range(floori(y - RADIUS), floori(y + RADIUS) + 1):
-		for tx in range(floori(x - RADIUS), floori(x + RADIUS) + 1):
-			if not map.walkable(tx, ty):
-				return false
-	return true
+	return map.fits(x, y, RADIUS)
 
 
+## Where he is on the screen; on raised or sunken ground and on stairs he is drawn as high as the ground is there, and the
+## picture follows him up (render.ts heroLift; floor_map.gd lift_at).
 func _place() -> void:
 	position = Iso.to_screen(world.x, world.y)
+	_lift = map.lift_at(world.x, world.y) if map != null else 0.0
+	if _sprite != null:
+		_sprite.position.y = -_lift
 
 
 func _show() -> void:
@@ -615,7 +616,7 @@ func _draw() -> void:
 	if not fighting and life >= max_life - 0.01:
 		return
 	var w := 44.0
-	var top := -104.0
+	var top := -104.0 - _lift
 	draw_rect(Rect2(-w / 2 - 1, top - 1, w + 2, 7), Color(0.04, 0.04, 0.1, 0.85))
 	draw_rect(Rect2(-w / 2, top, w * clampf(life / max_life, 0.0, 1.0), 5), Color(0.86, 0.16, 0.24))
 

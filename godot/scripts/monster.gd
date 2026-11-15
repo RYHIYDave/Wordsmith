@@ -83,6 +83,8 @@ var _bar := 0.0
 var _dead_for := 0.0
 var _weave := randf() * TAU
 var _sprite: Sprite2D
+## (how high the ground it stands on lifts it on the screen, picture pixels)
+var _lift := 0.0
 ## (THE HEADSMAN MADE NEW: his prowl and his acts are his own: headsman.gd)
 var h2 = null
 
@@ -446,9 +448,10 @@ func _go(dt: float, to: Vector2, dist: float, sees: bool) -> bool:
 	var step := way * speed * dt
 	# (game.ts: a monster walks with a body no bigger than 0.42 round, so that a big one gets through a doorway)
 	var rr := minf(r, 0.42)
-	if mgr.clear(world.x + step.x, world.y, rr):
+	var fly := kind == "bat"
+	if mgr.clear(world.x + step.x, world.y, rr, fly):
 		world.x += step.x
-	if mgr.clear(world.x, world.y + step.y, rr):
+	if mgr.clear(world.x, world.y + step.y, rr, fly):
 		world.y += step.y
 	return true
 
@@ -545,8 +548,13 @@ func _set_list(list: String, again := false) -> void:
 		_anim_t = 0.0
 
 
+## Where it is on the screen; on raised or sunken ground and on stairs it is drawn as high as the ground is there
+## (floor_map.gd lift_at).
 func _place() -> void:
 	position = Iso.to_screen(world.x, world.y)
+	_lift = mgr.map.lift_at(world.x, world.y) if mgr != null and mgr.map != null else 0.0
+	if _sprite != null:
+		_sprite.position.y = -_lift
 
 
 func _show() -> void:
@@ -566,7 +574,7 @@ func _show() -> void:
 
 ## Its life over its head for a while after it is struck (game.ts barT).
 func _draw() -> void:
-	var top := _sprite.offset.y * _sprite.scale.y - 10.0
+	var top := _sprite.offset.y * _sprite.scale.y - 10.0 - _lift
 	if (_said_t > 0.0 or _not_yet > 0.0) and not dead:
 		# (in the game's letters, in game pixels: render/fx.ts)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))

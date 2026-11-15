@@ -117,6 +117,10 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   body: level.body ? { x: level.body.x, y: level.body.y } : null,
   tiles: arr(L.tiles), variant: arr(L.variant), cut: arr(L.cut), height: arr(L.height),
   walk: arr(level.walk), low: arr(level.low),
+  // (LEDGES AND STAIRS, game/height.ts: which floor tiles are a flight of stairs and which way each goes up; the side steps a
+  // body may take from each tile by the rules of height (null: a floor all of one height); the open grid: what sight, shots
+  // and what flies pass over)
+  stair: arr(L.stair), step: arr(level.step), open: arr(level.open),
   start: { x: game.hero.x, y: game.hero.y, fx: game.hero.fx, fy: game.hero.fy }, boss: L.boss,
   rooms: L.rooms.map((r) => ({ id: r.id, x: r.x, y: r.y, w: r.w, h: r.h, kind: r.kind, path: r.path })),
   // (the chests, barrels and urns: each by its place in the level's props (the looks' `props` go by it), where it stands, its
