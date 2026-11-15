@@ -182,7 +182,7 @@ func _ready() -> void:
 			var d: float = it["d"] if it["d"] != null else at.y / (2.0 * HH)
 			s.position = Vector2(at.x, d * HH)
 			s.offset.y += at.y - d * HH
-			stands.add_child(s)
+			_stand(s)
 			if it.has("prop"):
 				_props[int(it["prop"])] = {"node": s}
 			if it.get("kind", "") == "wall":
@@ -256,7 +256,7 @@ func _ready() -> void:
 		_pic_on(_motes, w["motes"][0])
 		_motes.position = Vector2(wat.x, wd * HH)
 		_motes.offset.y += wat.y - wd * HH
-		stands.add_child(_motes)
+		_stand(_motes)
 		_anim.append({"node": _motes, "frames": w["motes"], "fps": float(w["fps"]), "t0": 0.0, "secs": null, "dy": _motes.offset.y + _pics[w["motes"][0]]["anchor"].y})
 		# (a warp's column of light, stood a little in front of him on the dais: render.ts standWays)
 		_warp_node = Sprite2D.new()
@@ -265,7 +265,7 @@ func _ready() -> void:
 		_warp_node.centered = false
 		_warp_node.visible = false
 		_warp_node.position = Vector2(wat.x, (wd + 0.05) * HH)
-		stands.add_child(_warp_node)
+		_stand(_warp_node)
 
 
 ## THE WAYPOINT WAKES (game.ts: as he first comes near it): its dais awake, its loop at 10 a second, the motes rising over it.
@@ -446,7 +446,7 @@ func _make_doors() -> void:
 			s.texture = _sheet
 			s.region_enabled = true
 			s.centered = false
-			stands.add_child(s)
+			_stand(s)
 			sprites.append(s)
 		_doors.append({"steps": steps, "sprites": sprites, "shown": -1})
 		show_door(_doors.size() - 1, float(d.get("open", 0.0)) if d.has("open") else (1.0 if d["kind"] == "bossgate" else 0.0))
@@ -824,7 +824,7 @@ func _ready2() -> void:
 			grp.alpha.fill(1.0)
 			grp.position = Vector2(float(it["x"]) * 2.0, float(it["d"]) * HH)
 			_s_node.append(grp)
-			stands.add_child(grp)
+			_stand(grp)
 			for k in grp.parts.size():
 				var q: Array = grp.parts[k]
 				_see_add(str(q[0]), Vector2(float(q[1]), float(q[2])) * 2.0, float(it["d"]), grp, k)
@@ -838,7 +838,7 @@ func _ready2() -> void:
 		s.position = Vector2(at.x, d * HH)
 		s.set_meta("dy", at.y - d * HH)
 		_place2(s, _first2(it["f"]))
-		stands.add_child(s)
+		_stand(s)
 		if (it["f"] as Array).size() == 1 and not it.has("wall") and not it.has("w"):
 			_see_add(_first2(it["f"]), at, d, s, -1)
 		if it.has("prop"):
@@ -863,6 +863,7 @@ func _make_sky(S: Dictionary) -> void:
 		sky.town = load(DIR + str(S["town"]["pic"]))
 	layer.add_child(sky)
 	add_child(layer)
+	_sky_node = sky
 
 
 ## WHAT IS SEEN WHEN (the look's `fog`): every thing that waits on a tile is not drawn until that tile has been seen
@@ -1102,6 +1103,7 @@ func _lighting2(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 	var glows_root := Node2D.new()
 	glows_root.z_index = 51
 	root.add_child(glows_root)
+	_glow_root = glows_root
 	for g in data.get("glows", []):
 		var key := str(g[0])
 		if not _pics.has(key):
@@ -1333,7 +1335,7 @@ func _show_step(name: String, v: Dictionary, si: int) -> void:
 		s.position = Vector2(p.x, d * HH)
 		s.set_meta("dy", p.y - d * HH)
 		_place2(s, _first2(it["f"]))
-		stands.add_child(s)
+		_stand(s)
 		now["nodes"].append(s)
 	_shown[name] = now
 
@@ -1694,6 +1696,35 @@ class _Still extends Node2D:
 
 	func _draw() -> void:
 		look.draw_still(self, items, fog)
+
+
+# --- (THE CULT'S STRONGHOLDS, act1/holds.gd) a look kept on a layer of the screen's own, to be shown or not as a whole ---
+
+## (what this look stands among the figures is marked as its own, and goes on its layer: set_cull)
+var cull := 0
+var _glow_root: Node2D
+var _sky_node: Node2D
+
+
+func _stand(n: Node) -> void:
+	n.set_meta("look", self)
+	if cull > 0:
+		n.visibility_layer = 1 << cull
+	stands.add_child(n)
+
+
+## Everything of this look (its layers, what it stands among the figures, its dark, its glows, its sky) drawn on the screen's
+## layer `bit` (CanvasItem.visibility_layer): shown or not as a whole by the viewport's canvas_cull_mask. A stronghold's hall is
+## drawn as the game draws it from in it, a look of its own; while he is in it the floor's own is not drawn (act1/holds.gd).
+func set_cull(bit: int) -> void:
+	cull = bit
+	var v := 1 << bit
+	for layer in [back_layer, floor_layer, flat_layer, _dark, _glow_root, _sky_node]:
+		if layer != null and is_instance_valid(layer):
+			layer.visibility_layer = v
+	for c in stands.get_children():
+		if c.has_meta("look") and c.get_meta("look") == self:
+			c.visibility_layer = v
 
 
 static func _num(v, otherwise: float) -> float:

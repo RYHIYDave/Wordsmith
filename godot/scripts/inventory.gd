@@ -188,6 +188,7 @@ func toggle() -> void:
 			_word = on
 	else:
 		shop = ""
+		altar = -1
 	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
 
 
@@ -310,6 +311,8 @@ func _begin_drag() -> void:
 
 ## What the pointer is over that a word could go to: an exact slot of a move, or a piece of gear.
 func _target_at(at: Vector2) -> Dictionary:
+	if altar >= 0 and at.x >= size.x / 2.0:
+		return {"kind": "altar", "r": Rect2(size.x / 2.0, 0, size.x / 2.0, size.y)}
 	for c in _slots:
 		if c["r"].grow_individual(2.0 * K, 3.0 * K, 2.0 * K, 3.0 * K).has_point(at):
 			return {"kind": "slot", "i": c["i"], "side": c["side"], "k": c["k"], "r": c["r"]}
@@ -401,6 +404,8 @@ func _press(action: String, arg) -> void:
 			_burn_now = _word != ""
 		"close":
 			toggle()
+		"altar_put", "altar_take", "altar_open":
+			_altar_press(action, arg)
 	_hover = {}
 
 
@@ -493,6 +498,13 @@ func _unsocket(i: int, side: String, k: int) -> bool:
 func _drop(w: String, to: Dictionary) -> void:
 	_result = {}
 	_look = null
+	if to["kind"] == "altar":
+		var why: String = altar_holds.lay(altar, w)
+		if why != "":
+			_say(why)
+		else:
+			_word = ""
+		return
 	if to["kind"] == "slot":
 		var why := place(to["i"], to["side"], to["k"], w)
 		if why != "":
@@ -649,6 +661,8 @@ func _draw() -> void:
 	_draw_words(first)
 	if shop != "":
 		_shelf()
+	if altar >= 0:
+		_altar_side(blink)
 	_draw_reading(blink, first)
 	if _note_t > 0.0:
 		var nw := minf(W - 8.0, _width(_note, NORMAL) + 16.0)
@@ -886,6 +900,12 @@ func _draw_bag(_blink: bool, first: bool) -> void:
 	if M + (W - 2.0 * M) - ix >= 30.0 * K:
 		_hud_pic("gold", Rect2(ix, _bag_y, 16, 16))
 		_top(Vector2(ix + 20, _bag_y + 2.0 * K), "%d" % loot.gold, SMALL, GOLD)
+		# (WORDMELDING: the runedust carried, beside the gold, once there is any or the Meldstone has been found: act1/quest610.gd)
+		var q6 = main.quest610 if main != null else null
+		if q6 != null and (q6.dust > 0 or loot.meld != ""):
+			var dx := ix + 20 + _width("%d" % loot.gold, SMALL) + 6.0 * K
+			_film_pic("rd_icon", Vector2(dx, _bag_y + K))
+			_top(Vector2(dx + 12.0 * K, _bag_y + 2.0 * K), "%d" % q6.dust, SMALL, Color(str(q6.Q["dust"]["color"])))
 		_top(Vector2(ix, _bag_y + 14.0 * K), "LEVEL %d" % loot.level, SMALL, DIM)
 		_top(Vector2(ix, _bag_y + 22.0 * K), "WARRIOR", SMALL, FAINT)
 
@@ -1355,3 +1375,121 @@ func _shelf() -> void:
 		_text(r.position + Vector2(40, 30), it["kind"], 9, DIM)
 		_text(r.position + Vector2(w - 60, 22), "%d g" % int(it["value"]), 12, GOLD if can else Color(0.45, 0.4, 0.3))
 		_hits.append([r, "buy", i, it])
+
+
+# --- THE ALTAR OF THE WORDS (act1/holds.gd; ui/town.ts altarSide): a stronghold's altar, at its door, on the right half beside the
+# gear screen as a vendor's shelf is. Its three hollows (the dark slot with a cyan rim of an empty word slot, a plus in it, lit
+# while the word in hand could go in; a word laid in one, its rune stone, its name in its colour and what it does to every one
+# within), a word laid by pressing it and then a hollow, or dragging it there; one laid taken back by pressing it; what it refuses
+# said in the game's own words; and OPEN THE DOOR, pink, which burns them and breaks the door's seal. ---
+
+## (the stronghold whose altar is open, and its holds.gd; -1: none)
+var altar := -1
+var altar_holds = null
+
+
+func open_altar(n: int, h) -> void:
+	shop = ""
+	if not visible:
+		toggle()
+	altar = n
+	altar_holds = h
+
+
+func _altar_press(action: String, arg) -> void:
+	if altar < 0 or altar_holds == null:
+		return
+	match action:
+		"altar_open":
+			if altar_holds.st[altar]["words"].is_empty():
+				_say("Give the altar a word first")
+			elif altar_holds.open_door(altar):
+				toggle()
+		"altar_take":
+			altar_holds.take_back(altar, int(arg))
+		"altar_put":
+			if _word != "":
+				var why: String = altar_holds.lay(altar, _word)
+				if why != "":
+					_say(why)
+				else:
+					_word = ""
+			else:
+				_say("Pick one of your words first, or drag it here")
+
+
+func _altar_side(blink: bool) -> void:
+	var x0 := size.x / 2.0 + 12.0
+	var w := size.x / 2.0 - 24.0
+	draw_rect(Rect2(x0 - 12, 0, w + 24, size.y), PANEL)
+	_text(Vector2(x0, 22), "ALTAR OF THE WORDS", 16, PICK)
+	var y := 42.0
+	for l in _wrap("The door opens only to words given to it. Lay up to three spare words in the altar: they are burned. Each past the first makes the cult within harder, and its runedust richer.", w, 10):
+		_text(Vector2(x0, y), l, 10, TEXT)
+		y += 13.0
+	y += 8.0
+	_text(Vector2(x0, y), "GIVEN TO THE DOOR", 9, DIM)
+	y += 8.0
+	var laid: Array = altar_holds.st[altar]["words"]
+	var next := laid.size()
+	var hang: String = _word if _word != "" and not _over.is_empty() and _over["kind"] == "altar" else ""
+	var ok: bool = _word != "" and altar_holds.problem(altar, _word) == ""
+	for i in 3:
+		var r := Rect2(x0, y + i * (CELL + 12.0), CELL, CELL)
+		var row := Rect2(x0 - 6.0, r.position.y - 6.0, w + 12.0, CELL + 12.0)
+		var tx := x0 + CELL + 10.0
+		if i < laid.size():
+			_tile(r, laid[i], "name", {"stone": true, "lit": row.has_point(_mouse)})
+			_text(Vector2(tx, r.position.y + 16), str(Words.word(laid[i])["name"]).to_upper(), 12, loot.word_color(laid[i]))
+			_text(Vector2(tx, r.position.y + 32), "Every one within: %s" % _lower(str(Words.word(laid[i])["monsterText"])), 9, TEXT)
+			_hits.append([row, "altar_take", i, null])
+		else:
+			var here := i == next
+			var lit := here and ok
+			draw_rect(r, (PICK_BG if blink else Color(PICK_BG, 0.6)) if lit else INK)
+			draw_rect(r, (PICK if blink else PICK_LO) if lit else EDGE, false, 1.5)
+			var c := r.get_center().floor()
+			draw_rect(Rect2(c.x - 6, c.y, 14, 2), PICK if lit else EDGE)
+			draw_rect(Rect2(c.x, c.y - 6, 2, 14), PICK if lit else EDGE)
+			if here and hang != "" and not ok:
+				_text(Vector2(tx, r.position.y + 24), altar_holds.problem(altar, hang), 11, BAD)
+			elif here and laid.is_empty():
+				_text(Vector2(tx, r.position.y + 24), "Click one of your words, then here. Or drag it here.", 9, FAINT)
+			_hits.append([row, "altar_put", i, null])
+	y += 3.0 * (CELL + 12.0) + 6.0
+	if not laid.is_empty():
+		var dust := int(_holds_dust(laid.size()))
+		for l in _wrap("Within: a yellow pack of the cult's best. Reward: %d runedust, and gear." % dust, w, 10):
+			_text(Vector2(x0, y), l, 10, PICK)
+			y += 13.0
+	var label := "OPEN THE DOOR"
+	var bw := _width(label, NORMAL) + 48.0
+	var br := Rect2(x0 + w - bw, size.y - 52.0, bw, 30.0)
+	var can := not laid.is_empty()
+	draw_rect(br, Color(PRESS, (0.35 if blink else 0.18) if can else 0.06))
+	draw_rect(br, PRESS if can else FAINT, false, 1.5)
+	_mid(br, label, NORMAL, Color.WHITE if can else FAINT)
+	_hits.append([br, "altar_open", null, null])
+
+
+## (ui/town.ts: HOLD_TUNE.dust by how many words are laid, as the altar's half reads it)
+func _holds_dust(n: int) -> float:
+	var t: Array = altar_holds.T["dust"]
+	return float(t[mini(n, t.size() - 1)])
+
+
+static func _lower(t: String) -> String:
+	return t.substr(0, 1).to_lower() + t.substr(1)
+
+
+## One of the game's own pictures of the films (perils.gd holds the sheets), its top left at `at`, twice its size.
+func _film_pic(name: String, at: Vector2) -> void:
+	var P = load("res://scripts/perils.gd")
+	var F = P._fx.get("films", {}).get(name)
+	if F == null:
+		return
+	var L: Array = F["layers"].get("stand", [])
+	if L.is_empty() or int(L[0]) < 0:
+		return
+	var q: Array = P._fx["pics"][int(L[0])]
+	draw_texture_rect_region(P._sheet(int(q[0])), Rect2(at, Vector2(q[3], q[4])), Rect2(q[1], q[2], q[3], q[4]))

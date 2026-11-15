@@ -53,7 +53,8 @@ func banner(seen := true) -> Dictionary:
 	if not b.is_empty():
 		return b
 	if _speak.is_empty():
-		return {}
+		# (QUESTS610, F9_LAIRS: the ward-stone's hunt, DEFEAT each boss, when nothing else is to be said: ui/guide.ts huntBanner)
+		return main.quest610.hunt_banner(seen and not main.get_tree().paused, dt) if main.quest610 != null else {}
 	if seen and not main.get_tree().paused:
 		_speak["t"] -= dt
 	var who: String = _speak["who"]
@@ -125,6 +126,9 @@ func _givers_now() -> Array:
 		out.append("wordsmith")
 	if loot.armourer_due() != "":
 		out.append("armourer")
+	# (QUESTS610: the mystic, her ask for the Queen's feather and the feather brought: act1/quest610.gd)
+	if main.quest610 != null and main.quest610.mystic_due() != "":
+		out.append("mystic")
 	return out
 
 
@@ -135,6 +139,8 @@ func _back_now() -> String:
 		return "wordsmith"
 	if loot.ring_lit and loot.furnace == "out":
 		return "armourer"
+	if main.quest610 != null and main.quest610.on() and main.quest610.feather == "got":
+		return "mystic"
 	return ""
 
 

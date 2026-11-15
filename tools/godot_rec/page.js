@@ -518,7 +518,9 @@
     const note = (k) => { out.odd[k] = (out.odd[k] || 0) + 1; };
     const hx = cam.ox + (hero.x - hero.y) * 16;
     const hy = cam.oy + (hero.x + hero.y) * 8;
-    const nearHero = (x, y, w, h) => Math.abs(x + w / 2 - hx) < 48 && Math.abs(y + h / 2 - hy) < 48;
+    // (a stronghold's hall, REC.hall: he stands in it, where the renderer draws it as it is drawn from in it; nothing round him is
+    // his but his figure, which is left out as any figure is, and his own two pools of light, just round him)
+    const nearHero = REC.heroAway ? () => false : (x, y, w, h) => Math.abs(x + w / 2 - hx) < 48 && Math.abs(y + h / 2 - hy) < 48;
     const byStand = new Map();
     for (const e of fr.g) {
       if (e.phase === 'floor') {
@@ -579,7 +581,7 @@
       const s = st[i];
       if (s.figure || s.skip) continue;
       // (what stands by the hero, out in the empty stone: the fallen wordsmith set aside there)
-      if (Math.abs(s.x - hx) < 48 && Math.abs(s.y - hy) < 48) { note('standing by the hero'); continue; }
+      if (!REC.heroAway && Math.abs(s.x - hx) < 48 && Math.abs(s.y - hy) < 48) { note('standing by the hero'); continue; }
       const list = byStand.get(i);
       if (!list) { note('a stand not drawn'); continue; }
       let wall = null;
@@ -612,7 +614,7 @@
         const [x, y, w, h] = e.a;
         const cx = x + w / 2;
         const cy = y + h / 2;
-        if (Math.abs(cx - hx) < 48 && Math.abs(cy - hy) < 48) continue;
+        if (REC.heroAway ? Math.abs(cx - hx) < 2 && Math.abs(cy - (hy - 8)) < 2 : Math.abs(cx - hx) < 48 && Math.abs(cy - hy) < 48) continue;
         out.holes.push({ x: cx - cam.ox, y: cy - cam.oy, r: w / 2, ry: h / 2, a: e.alpha });
         continue;
       }
@@ -1098,6 +1100,23 @@
       if (r.err) { note[`prop${i}`] = r.err; return; }
       out[`prop${i}`] = { kind: p.kind, frames: [none(), r.frames[0]] };
     });
+    // THE CULT'S STRONGHOLDS (floors 6 to 10; game/act1_holds.ts, game.ts openHold): each one's door, its seal broken (its gatehouse
+    // open, game/act1_dress.ts HOLD.gate at the gate's foot), and with ALTAR_GOES (`consts.altarGoes`) its altar gone: steps 0 and 1
+    for (const q of (L.land && L.land.holds) || []) {
+      const gate = L.props.find((p) => p.kind === 'piece' && p.tx === q.gx && p.ty === q.gy && /gate/.test(p.name || ''));
+      const ai = L.props.findIndex((p) => p.kind === 'piece' && p.name === 'the altar of the words' && p.tx === q.gx && p.ty === q.gy + 1);
+      const altar = ai >= 0 ? L.props[ai] : null;
+      const was = gate ? gate.state : 0;
+      const r = REC.variant(T0, W, H, [1], () => {
+        if (gate) gate.state = 1;
+        if (altar && consts.altarGoes) { const k = L.props.indexOf(altar); if (k >= 0) L.props.splice(k, 1); }
+      }, () => {
+        if (gate) gate.state = was;
+        if (altar && !L.props.includes(altar)) L.props.splice(ai, 0, altar);
+      });
+      if (r.err) { note[`hold${q.n}`] = r.err; continue; }
+      out[`hold${q.n}`] = { kind: 'hold', frames: [none(), r.frames[0]] };
+    }
     // FLOOR 5, THE TEMPLE'S DOOR UNLOCKED (game/temple_door.ts stepTempleDoor; `consts.temple`, its TEMPLE_TIMES): its first chain
     // from the beginning, its second a little after, then its leaves swinging into the temple: one film, 10 frames a second
     if (L.temple && L.doors && L.doors[L.temple.door] && consts.temple) {
@@ -1441,6 +1460,45 @@
     return { W: Math.ceil(x1 - x0), H: Math.ceil(y1 - y0), park: REC.park[0] };
   };
 
+  /**
+   * (THE CULT'S STRONGHOLDS, floors 6 to 10: game/act1_layout.ts Hold) STRONGHOLD `n`'S HALL as it is drawn from in it: the renderer
+   * draws a stronghold's hall, while he is in it, as a dungeon's room in the dark (only the hall's own tiles and its walls, in the
+   * redoubt's stone: render.ts hallNow, holdShows). So he is stood where he comes in (its hallway's far end), and the screen is made
+   * just the hall and its walls with room round them (as REC.fit makes it for the open ground); nothing round him is let go of but
+   * his figure and his own pools of light (REC.analyze, REC.heroAway).
+   */
+  REC.hall = (n) => {
+    const g = d.game();
+    const L = g.level;
+    const f = L.floor;
+    const R = d.renderer;
+    const q = (L.land && L.land.holds || []).find((o) => o.n === n);
+    if (!q) return { err: `no stronghold ${n} on this floor` };
+    g.hero.x = q.entry.x;
+    g.hero.y = q.entry.y;
+    REC.park[0] = { x: q.entry.x, y: q.entry.y, clear: 0 };
+    REC.heroAway = true;
+    // (its tiles and the walls round them, game/act1_layout.ts holdShows; a tile's diamond and a wall's height over it)
+    const rects = [q.inside, ...(q.way ? [q.way] : [])];
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const r of rects) {
+      for (let ty = r.y - 1; ty <= r.y + r.h; ty++) {
+        for (let tx = r.x - 1; tx <= r.x + r.w; tx++) {
+          if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
+          const sx = (tx - ty) * 16;
+          const sy = (tx + ty) * 8;
+          x0 = Math.min(x0, sx - 16); x1 = Math.max(x1, sx + 48);
+          y0 = Math.min(y0, sy - 96); y1 = Math.max(y1, sy + 32);
+        }
+      }
+    }
+    x0 -= 64; x1 += 64; y0 -= 64; y1 += 64;
+    const lift = typeof R.heroLift === 'function' ? R.heroLift(g) : 0;
+    const view = { x: -x0 + (q.entry.x - q.entry.y) * 16, y: -y0 - 12 + (q.entry.x + q.entry.y) * 8 - lift };
+    Object.defineProperty(R, 'view', { get: () => view, set: () => {}, configurable: true });
+    return { W: Math.ceil(x1 - x0), H: Math.ceil(y1 - y0), park: REC.park[0] };
+  };
+
   /** What no view reaches let go of (REC.reach first), and what points at things by their places in the lists put right. */
   REC.cut = () => {
     const A = REC.acc;
@@ -1506,15 +1564,17 @@
 // ====================================================================================================================
 // THE SKY (the Ledge Road's: render/outdoor.ts drawSky): not a thing of the place but held to the screen, its picture
 // sliding across at half the ground's pace and coming round every `wrap` picture pixels, the town far below under the
-// cult's dome drawn in it where the eyrie's edge looks out (paintTownLayer, as the game makes it on its own 960-wide
-// screen). Its pictures as PNGs, with where the town's stands in the sky's own measure.
+// cult's dome drawn in it where the eyrie's edge looks out (paintTownLayer, as the game makes it on a screen of 16 by 9: its
+// width W is the game's screen in game pixels, 480 (engine/screen.ts, TARGET_H 270); 960, the page's width in the browser's
+// pixels, laid the town 224 game pixels further out, off the screen as the eyrie's scene looks out over the drop). Its pictures
+// as PNGs, with where the town's stands in the sky's own measure.
 (() => {
   const d = window.__dbg;
   const REC = window.__rec;
   REC.sky = () => {
     const od = d.renderer.outdoor;
     if (!od || !od.land || !od.land.sky || !od.sky) return null;
-    const town = od.land.kind === 'ledge' && od.paintTownLayer ? od.paintTownLayer(960) : null;
+    const town = od.land.kind === 'ledge' && od.paintTownLayer ? od.paintTownLayer(480) : null;
     return {
       wrap: od.sky.width, h: od.sky.height, done: od.skyDone, png: od.sky.toDataURL('image/png').split(',')[1],
       town: town ? { x: town.x, y: town.y, w: town.cvs.width, h: town.cvs.height, png: town.cvs.toDataURL('image/png').split(',')[1] } : null,

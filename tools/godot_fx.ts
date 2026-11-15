@@ -128,6 +128,10 @@ import { GATE_UP, PILLAR, STRIP, makeGateArt } from '../src/art/gates';
 import type { Strip } from '../src/art/gates';
 import { gateBars, unbarFilm } from '../src/art/town_ways';
 import { CRACK_STEPS, STONE_FPS, STONE_FRAMES, STONE_SPIN, makeMeldDropsArt } from '../src/art/meld_drops';
+// (floors 6 to 10 besides their fights: runedust, the ward-stone's piece, the muster roll's page)
+import { SPILL_FRAMES, WHIRL_FRAMES } from '../src/art/meld_drops';
+import { makeIconArt } from '../src/art/icons';
+import { rollSprite } from '../src/art/quest1115';
 import { BOULDER, HAMMER, SMASH_CANVAS, smashPainted } from '../src/art/action_f6_golem';
 import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, RING_CANVAS as CH_RING_CANVAS, STATIC_CANVAS, blazePainted, makeFlyingPotArt, potShadowPainted, ringPainted as chRing, staticPainted } from '../src/art/action_f6_cult';
 import { markRing } from '../src/art/action_f6_fx';
@@ -509,6 +513,29 @@ for (const view of ['front', 'back'] as const) {
   stills('ms_burst', [M.burst]);
   stills('ms_crack', Array.from({ length: CRACK_STEPS }, (_, i) => M.crack[i]));
   tables.ms = { fps: STONE_FPS, frames: STONE_FRAMES, spin: STONE_SPIN };
+}
+
+// FLOORS 6 TO 10 BESIDES THEIR FIGHTS (godot/scripts/act1/quest610.gd, holds.gd): RUNEDUST lying (`rd_heap_<h>`, heapOf's three
+// heaps, 16 pictures at DUST_FPS), dropping (`rd_spill_<h>`, SPILL_FRAMES at 30 a second) and taken (`rd_whirl_back`,
+// `rd_whirl_front`, WHIRL_FRAMES at 30 a second, at his feet), and its small picture for the screens (`rd_icon`) (art/meld_drops.ts,
+// art/icons.ts; render.ts standMeldDrop, standMeldMoments); A PIECE OF THE WARD-STONE lying (`q6_piece`: the game stands the
+// Meldstone's icon in for it until the art chat draws it, render.ts drops); A PAGE OF THE MUSTER ROLL lying (`q6_roll`:
+// art/quest1115.ts rollSprite).
+{
+  const M = makeMeldDropsArt();
+  const I = makeIconArt();
+  const stills = (name: string, list: Sprite[]): void => {
+    films[name] = { fps: 0, n: list.length, k0: 0, layers: { stand: list.map((s) => pic(s)) } };
+  };
+  for (let h = 0; h < 3; h++) {
+    stills(`rd_heap_${h}`, Array.from({ length: 16 }, (_, i) => M.heap[h][i]));
+    stills(`rd_spill_${h}`, Array.from({ length: SPILL_FRAMES }, (_, i) => M.spill[h][i]));
+  }
+  stills('rd_whirl_back', Array.from({ length: WHIRL_FRAMES }, (_, i) => M.whirl[i].back));
+  stills('rd_whirl_front', Array.from({ length: WHIRL_FRAMES }, (_, i) => M.whirl[i].front));
+  stills('rd_icon', [I.runedust]);
+  stills('q6_piece', [I.meldstone]);
+  stills('q6_roll', [rollSprite()]);
 }
 
 // floors 6 to 8's common monsters, as the game starts with their new moves on (render/act1_fx/qgolem.ts, firepot.ts, chanter.ts,
