@@ -141,3 +141,31 @@ Smaller:
 - A cloud's poison is not raised by gear's Poison Damage and never adds doses.
 - With Power behind, Strike's splash is rolled with the might the blow has just earned; the blow itself was not.
 - Burning bites on one clock for every monster, so a 3 second burn bites 5 or 6 times by when it began.
+
+## In the game, found while bringing over the words of floors 6 to 10 (15 Nov 2026)
+
+Twin, Leech, Volatile, Precise, Frenzied, Guarding, Lasting, Fleeting and Vast were read out of `game.ts` as the first seven
+were, and held against the game's own formula. These came up. All are copied as they are.
+
+19. **Twin does nothing on most of the Wilds' monsters.** Only the old kind of monster reads Twin (its one blow, or a move's
+    swing, shot, rain or slam: game.ts monsterAttack, landMove). The descent's own kinds and the bosses fight by acts
+    (game/bosses.ts, act1_rules) and none of those reads it: the Twin fog wolves of floor 9, and THE TWIN VOLATILE HOLLOW STAG,
+    carry it in their names and do nothing with it.
+
+20. **Vast on a monster mostly only widens its red circles.** Its reach is wider only for a monster with no moves at all
+    (monsterAttack); a move's swing reaches as far as ever (landMove uses reachOf, without Vast). What it widens everywhere is a
+    warned blow (addWarn), and a mark too: a Vast quarry golem's hammer ring is drawn 30% wider than where its fists strike,
+    whose reach is its own (act1_rules/qgolem.ts HAMMER.r).
+
+21. **Fleeting's stronger boosts are not on the move's card.** Fleeting makes might, haste and Guarding's shield a third
+    stronger (resolveSkill's last lines), but the lines of "of Power", "of Swiftness" and "Guarding" are written before, with
+    the smaller number.
+
+Smaller:
+
+- "of Echoes" on the Whirlwind: the phantom's three turns come at the Whirlwind's own pace even with Fleeting, which makes the
+  real turns come faster (endChannel uses the move's tick, not the word's pace).
+- Leech in front heals for every enemy each turn of a Whirlwind strikes, the fourth and later too, with no cap (LEECH.cap is
+  none as the game starts).
+- Volatile in front makes a boss explode for 12% or more of his whole life when he dies (explodeKill reads maxLife).
+- A ward (Guarding behind) counts him inside by his middle alone; the ground's bites count half a monster's body.

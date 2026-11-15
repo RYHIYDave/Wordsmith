@@ -43,8 +43,9 @@
 ##
 ## WHAT IS LEFT OUT (each said again where it would be): the looks of melded words (`e.meld`), of unique items, of the
 ## skill trees and of the other classes (the Mage's beams, orbs and arcs of power, the Ranger's arrows, volleys and traps,
-## the Brawler's, the Warlock's, the Tinkerer's); of the words that are not Power, Poison, Frost, Flame, Lightning, Swift or
-## Heavy (Twin's mirror and phantoms, Leeching's blood and wisps, Volatile's violet, the city's and the last words'); a word
+## the Brawler's, the Warlock's, the Tinkerer's); of the city's and the last words, and Lasting's, Fleeting's and Vast's own
+## (render/words10.ts; FLOORS 6 TO 10'S other six, Twin's mirror and phantoms, Leeching's blood and wisps, Volatile's violet,
+## Precise's, Frenzied's and Guarding's, are fx_words610.gd's, handed on from here); a word
 ## joining a move, dropping and being taken up; the fallen, and the lines said over heads (monster.gd's and the HUD's); the
 ## thrust's take-off and flight (wild.ts ongoing: from the hero's own move, which no telling carries).
 ## THE SOUNDS the game's `handle` makes with these tellings are not made here (this is what is SEEN): `poisoned` "leech"

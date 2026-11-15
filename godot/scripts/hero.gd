@@ -46,10 +46,21 @@
 ##   What the rules have done they TELL (fx.gd event, the game's own tellings): swing, cast, hit, burst, heavy, buff here;
 ##     ignite, freeze, shatter, poisoned, stun, stagger from the monster (monster.gd); arc from monsters.gd and the storm; zone
 ##     from wakes.gd.
-##   LEFT OUT, as not a new Warrior's on floors 1 to 5: the skill trees (game.ts has, was, now: Sweeping Cut, Master Stroke,
+##   FLOORS 6 TO 10'S WORDS (the same functions of game.ts): TWIN in front, two of each blow, cut and shock, each its share, the
+##     second a moment after (deliver, channelBite, land); behind, "of Echoes", a phantom makes the move again a moment later
+##     from where it was made (deliver, endChannel, echoOf). LEECH in front, life back for every enemy hit; behind, the struck
+##     marked, and an enemy it kills drops a life orb now and then (hitMonster, kill). VOLATILE in front, what it kills explodes
+##     (explodeKill); behind, a rune that goes off (addRune; wakes.gd). PRECISE in front, harder and narrower (resolve); behind,
+##     the first enemy each use hits is marked, his next hit on it a certain critical. VAST in front, wider and softer; behind,
+##     each hit splashes onto all near what it hit. FRENZIED in front, each use a stack, his Strike and every wait faster
+##     (boons, frenzyPace); behind, each kill a stack and the frenzy held longer. GUARDING in front, a shield; behind, a ward
+##     circle (leavePatches; hurt_by). LASTING and FLEETING on all that lasts and ticks (the Whirlwind's hold and turns, what it
+##     leaves, burning, poison, might, haste, the frenzy, the shield). Which move last struck a monster is kept on it (monster.gd
+##     last_skill): its death answers to that move's words (killed).
+##   LEFT OUT, as not a new Warrior's on floors 1 to 10: the skill trees (game.ts has, was, now: Sweeping Cut, Master Stroke,
 ##     Fuel, Searing, Venom, Deep Freeze, Forking, Cadence and the rest), the unique items (worn, wears), the melded words
-##     (r.meld, meldHit, MELDS8), the other classes, and every word but the seven (Twin's second blows, Echoes, the last
-##     words): where the game's code branches on one of those, the branch is not here.
+##     (r.meld, meldHit, MELDS8), the other classes, and the city's and the last words: where the game's code branches on one
+##     of those, the branch is not here.
 ##
 ## WHAT THE MONSTERS' WORDS DO TO HIM (game.ts hurtHero; hurt_by here): a blow comes with its striker's element and words (a
 ## pack's minion's at half, monster.gd half_of). Its harm: the part of it that is plain less his armour, the parts of Flame,
@@ -58,10 +69,14 @@
 ## poison); FLAME, he BURNS for 3 s; FROST, he is CHILLED for 2 s (slower on his feet by its share, Strike slower by half of
 ## it); LIGHTNING, he is SHOCKED for 3 s. What burns and poisons him bites twice a second, on the monsters' clock (dots); all
 ## of it runs down as he goes (game.ts updateHero, updateDots), and is gone once he has fallen (_back).
-##   LEFT OUT, as not on a floor 1 to 5 monster's words, or not a new Warrior's: blocking (Guarding), Precise, Hexing, the
-##     wards, the skill trees (Bulwark, Thick Skin, Iron Chin, Slip Reflex, Thorns, Bitter Cold, Unbreakable, Resolute),
-##     the unique items, Culling, Pulling, Stilling, Binding, Bleeding, Plundering, Leech, Lasting, Fleeting, the shield,
-##     the melded and ranked words on a dungeon (FOE_WORDS), and Frostbite and Blight that ride on them.
+##   FLOORS 6 TO 10'S: Guarding burned into his gear blocks a blow outright now and then; PRECISE on a monster, its blows
+##     through half his armour; inside his ward circle (Guarding behind) he takes less, and his shield (Guarding in front)
+##     takes what is left first; LASTING on a monster, its poison, burning and chill on him longer, FLEETING its poison and
+##     burning sooner, the same in all; LEECH on a monster, it heals what its blow took.
+##   LEFT OUT, as not on a floor 1 to 10 monster's words, or not a new Warrior's: Hexing, the skill trees (Bulwark, Thick
+##     Skin, Iron Chin, Slip Reflex, Thorns, Bitter Cold, Unbreakable, Resolute), the unique items, Culling, Pulling, Stilling,
+##     Binding, Bleeding, Plundering, the melded and ranked words on a dungeon (FOE_WORDS), and Frostbite and Blight that ride
+##     on them.
 extends Node2D
 
 const Iso := preload("res://scripts/iso.gd")
@@ -332,10 +347,10 @@ func avg_hit(i: int, frac: float) -> float:
 ## ONE HIT OF MOVE `i` ON A MONSTER, `frac` of it, with everything a word in front adds (game.ts hitMonster, in its order).
 ## `quiet`: a splash's hit, or the fourth and later of an area's: no lightning jumps from it and it carries no weight of
 ## Power; all else it does as any hit.
-## (Left out, with the game's switches for them: the talents' and uniques' multipliers and certain criticals, Precise's mark,
-## Avalanche, Prismheart, Thunder, the Rot Axe, Vast's splash, the melds, the Warlock, Splitting, Giant Slayer, Kindling, Deep
-## Freeze, Blight, Hexing, Stilling, the Warhammer's stuns and staggers, Rend, Widowfall, Binding, Bleeding, Culling, Leech,
-## Forking, the shock that Overload works on, Charged.)
+## (Left out, with the game's switches for them: the talents' and uniques' multipliers and certain criticals, Avalanche,
+## Prismheart, Thunder, the Rot Axe, the melds, the Warlock, Splitting, Giant Slayer, Kindling, Deep Freeze, Blight, Hexing,
+## Stilling, the Warhammer's stuns and staggers, Rend, Widowfall, Binding, Bleeding, Culling, Forking, the shock that Overload
+## works on, Charged.)
 func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 	# (what is shut in a room is out of reach; one still crawling up out of the ground is only a picture)
 	if not is_instance_valid(m) or m.dead or m.state == "rise" or monsters.shut_in(m):
