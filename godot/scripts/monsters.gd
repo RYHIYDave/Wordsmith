@@ -144,7 +144,8 @@ func forget() -> void:
 ## each for `dmg` (plain lightning harm: no word of the hit goes with it). ARCS KEEP JUMPING (ARC_CHAIN): each arc jumps on
 ## from the one it struck to the nearest within 3.5 tiles that this hit has not struck, enemy to enemy, as many jumps in all
 ## as the hit had arcs, each 0.07 s after the last, so that the eye can follow it. How many it jumped to at once.
-func arcs(m: Monster, n: int, dmg: float) -> int:
+## (`skill`: the hero's move whose hit it is, which each it strikes is struck by last: monster.gd last_skill)
+func arcs(m: Monster, n: int, dmg: float, skill := -1) -> int:
 	var chain: Dictionary = Words.data()["arcChain"]
 	var from := m.world
 	var near: Array = []
@@ -156,7 +157,7 @@ func arcs(m: Monster, n: int, dmg: float) -> int:
 		near.resize(n)
 	for o in near:
 		_tell({"t": "arc", "x0": from.x, "y0": from.y, "x1": o.world.x, "y1": o.world.y})
-		o.damage(dmg, "lightning")
+		o.damage(dmg, "lightning", false, false, [], false, false, skill)
 	if near.is_empty():
 		return 0
 	sfx.play("zap", linear_to_db(0.6))
@@ -165,13 +166,13 @@ func arcs(m: Monster, n: int, dmg: float) -> int:
 		for o in near:
 			struck[o] = true
 		for o in near:
-			_jump(o, near.size() - 1, 1, struck, dmg, float(chain["reach"]), float(chain["gap"]))
+			_jump(o, near.size() - 1, 1, struck, dmg, float(chain["reach"]), float(chain["gap"]), skill)
 	return near.size()
 
 
 ## An arc jumps on from `from`, `left` jumps more, in `gap` x `k` seconds: to the nearest within `reach` that the hit has not
 ## struck (`struck`, shared by all the hit's arcs); from there on again, a gap later.
-func _jump(from: Monster, left: int, k: int, struck: Dictionary, dmg: float, reach: float, gap: float) -> void:
+func _jump(from: Monster, left: int, k: int, struck: Dictionary, dmg: float, reach: float, gap: float, skill := -1) -> void:
 	if left <= 0:
 		return
 	var on := func() -> void:
@@ -190,8 +191,8 @@ func _jump(from: Monster, left: int, k: int, struck: Dictionary, dmg: float, rea
 			return
 		struck[next] = true
 		_tell({"t": "arc", "x0": from.world.x, "y0": from.world.y, "x1": next.world.x, "y1": next.world.y})
-		next.damage(dmg, "lightning")
-		_jump(next, left - 1, 1, struck, dmg, reach, gap)
+		next.damage(dmg, "lightning", false, false, [], false, false, skill)
+		_jump(next, left - 1, 1, struck, dmg, reach, gap, skill)
 	after(gap * k, on)
 
 

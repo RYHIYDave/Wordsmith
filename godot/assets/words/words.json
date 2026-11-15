@@ -355,6 +355,68 @@
   "fleeting",
   "vast"
  ],
+ "looks": {
+  "ramp": {
+   "precise": [
+    "#262c3a",
+    "#4e5870",
+    "#94a2bc",
+    "#eef4fa",
+    "#ffffff",
+    "#ffffff"
+   ],
+   "frenzied": [
+    "#380a06",
+    "#7c1a0c",
+    "#c03616",
+    "#ff5c33",
+    "#ff9670",
+    "#fff0e8"
+   ],
+   "guarding": [
+    "#0a2a1c",
+    "#124e32",
+    "#1e8048",
+    "#30a868",
+    "#8ae4ac",
+    "#eafff2"
+   ],
+   "lasting": [
+    "#1c1412",
+    "#3e2e28",
+    "#6e564c",
+    "#aa8880",
+    "#ecceb0",
+    "#fff4e6"
+   ],
+   "fleeting": [
+    "#1e1630",
+    "#5a4486",
+    "#b48ce6",
+    "#f8e4f8",
+    "#fff4ff",
+    "#ffffff"
+   ],
+   "vast": [
+    "#140e08",
+    "#2e2214",
+    "#4a3620",
+    "#6e4e2e",
+    "#c4a47e",
+    "#f0e2cc"
+   ]
+  },
+  "guardGlyph": [
+   "XXXXXX",
+   "X.oo.X",
+   "X.oo.X",
+   "X....X",
+   ".X..X.",
+   "..XX.."
+  ],
+  "wardDark": "#06140c",
+  "sightDark": "#0a0c14"
+ },
  "arcChain": {
   "on": true,
   "reach": 3.5,

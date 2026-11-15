@@ -155,6 +155,13 @@ var poison_n := 0
 var stun_t := 0.0
 var stagger_t := 0.0
 var stagger_cd := 0.0
+## FLOORS 6 TO 10'S WORDS (game/state.ts Monster markT, shield, lastSkill): `mark_t`, PRECISE behind: marked, his next hit on it
+## a certain critical, so many seconds more; `shield`, GUARDING on it: so much harm its shield takes first (a fifth of its
+## life as it comes into the world: the floor's monsters.json); `last_skill`, which of his moves last struck it (0 Strike, 1
+## Whirlwind, 2 Lunge; -1 none): the move whose words its death answers to (hero.gd killed).
+var mark_t := 0.0
+var shield := 0.0
+var last_skill := -1
 ## (game.ts struckT: how long since a blow last landed on it; not what burns or poisons it. One that reels reels by it:
 ## stoker.gd, keybearers.gd)
 var struck_t := 1e9
@@ -229,6 +236,7 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	summoned = not m.has("xp")
 	xp = float(m.get("xp", kind_def.get("xp", 0)))
 	_anim_t = m.get("animT", 0.0)
+	shield = float(m.get("shield", 0.0))
 	_moves = MM.moves_of(kind, champion)
 	own_seed = float(m.get("seed", randf()))
 	if BOSS_AI.has(kind):
@@ -303,9 +311,10 @@ func step(dt: float, hero) -> void:
 		_show()
 		queue_redraw()
 		return
-	_cd -= dt
+	# (FRENZIED, on it: the more it is hurt, the sooner it attacks again: rage)
+	_cd -= dt * rage()
 	for i in _move_cd.size():
-		_move_cd[i] = maxf(0.0, _move_cd[i] - dt)
+		_move_cd[i] = maxf(0.0, _move_cd[i] - dt * rage())
 	var to: Vector2 = hero.world - world
 	var dist := to.length()
 	var sees: bool = hero.alive and dist <= 15.0 and mgr.sees(world, hero.world)
@@ -483,10 +492,19 @@ func _land(hero, dist: float, reach: float) -> void:
 		_t = RECOVER
 		_cd = float(def["cooldown"]) * swift * randf_range(0.9, 1.2)
 		if def["ranged"]:
-			mgr.shoot(self, (hero.world - world).normalized(), float(def["projSpeed"]), float(def["range"]) + 3.0, _roll())
+			# (TWIN, on it: two shots fanned apart, the second its share: game.ts monsterAttack)
+			var aim: Vector2 = (hero.world - world).normalized()
+			if twin() > 0.0:
+				mgr.shoot(self, aim.rotated(-0.12), float(def["projSpeed"]), float(def["range"]) + 3.0, _roll())
+				mgr.shoot(self, aim.rotated(0.12), float(def["projSpeed"]), float(def["range"]) + 3.0, _roll() * twin())
+			else:
+				mgr.shoot(self, aim, float(def["projSpeed"]), float(def["range"]) + 3.0, _roll())
 			mgr.sfx.play("shot", -6.0)
 		else:
-			_blow(hero, dist, reach, 1.0)
+			# (VAST, on it: its blow reaches further; TWIN, a second blow a moment after, its share: game.ts monsterAttack)
+			var far: float = float(def["range"]) * vast() + (r - 0.32)
+			_blow(hero, dist, far, 1.0)
+			_twice(hero, func() -> bool: return hero.world.distance_to(world) <= far + 0.45 + HERO_R, 1.0)
 		return
 	var mv: Dictionary = _moves[_move]
 	state = "recover"
@@ -497,10 +515,12 @@ func _land(hero, dist: float, reach: float) -> void:
 	match mv["id"]:
 		"swing":
 			_blow(hero, dist, reach, mv["dmg"])
+			_twice(hero, func() -> bool: return hero.world.distance_to(world) <= _reach() + 0.45 + HERO_R, mv["dmg"])
 		"bash":
 			# (the Boneward's shield, while its spear is gone, shoves the hero back too)
 			if _blow(hero, dist, reach, mv["dmg"]):
 				hero.knock((hero.world - world).normalized() if dist > 0.01 else face, MM.SPEAR["knock"])
+			_twice(hero, func() -> bool: return hero.world.distance_to(world) <= _reach() + 0.45 + HERO_R, mv["dmg"])
 		"throw":
 			# (its spear, from its hand, at where the hero stands; its hand is empty till it picks the spear up again)
 			var hand := world + face * MM.SPEAR["hand"]
@@ -531,6 +551,9 @@ func _land(hero, dist: float, reach: float) -> void:
 			mgr.sfx.play("slam", -1.0)
 			if not _carry.is_empty():
 				face = _carry["f"]
+			# (a Twin troll follows it with a second, quicker one, where the hero stands)
+			if twin() > 0.0:
+				mgr.perils.warn(hero.world.x, hero.world.y, MM.RING["radius"] * 0.6, 0.6, _roll() * mv["dmg"] * MM.RAMPAGE["slam"] * twin(), self)
 		"frenzy":
 			# (its fourth stab, then winded where it has carried him)
 			if not _carry.is_empty():
@@ -539,11 +562,23 @@ func _land(hero, dist: float, reach: float) -> void:
 		"shoot":
 			# (a leader who shoots, as those he leads shoot: the marksman's and the archer's arrow, the high priest's fire bolt)
 			var arrow := kind == "marksman" or kind == "archer"
-			mgr.shoot(self, (hero.world - world).normalized(), float(def["projSpeed"]), float(def["range"]) + 3.0, _roll() * mv["dmg"], "arrow" if arrow else "bolt")
+			var aim: Vector2 = (hero.world - world).normalized()
+			# (a Twin one, two at once, fanned apart)
+			if twin() > 0.0:
+				mgr.shoot(self, aim.rotated(-0.12), float(def["projSpeed"]), float(def["range"]) + 3.0, _roll() * mv["dmg"], "arrow" if arrow else "bolt")
+				mgr.shoot(self, aim.rotated(0.12), float(def["projSpeed"]), float(def["range"]) + 3.0, _roll() * mv["dmg"] * twin(), "arrow" if arrow else "bolt")
+			else:
+				mgr.shoot(self, aim, float(def["projSpeed"]), float(def["range"]) + 3.0, _roll() * mv["dmg"], "arrow" if arrow else "bolt")
 			mgr.sfx.play("shot" if arrow else "fire", -6.0)
 		"rain":
 			mgr.perils.rain(hero.world.x, hero.world.y, _roll() * mv["dmg"], world, face, self)
 			mgr.sfx.play("shot", -4.0)
+			# (a Twin archer's second ring where he stands a moment after)
+			if twin() > 0.0:
+				var share: float = mv["dmg"]
+				mgr.after(0.35, func() -> void:
+					if not dead:
+						mgr.perils.rain(hero.world.x, hero.world.y, _roll() * share * twin(), world, face, self))
 		"rally":
 			# (the skeleton champion cries out: his minions near him have his words whole for a while: game.ts rally)
 			mgr.rally(self)
@@ -564,7 +599,9 @@ func _land(hero, dist: float, reach: float) -> void:
 				mgr.shoot(self, Vector2(cos(a), sin(a)), float(def["projSpeed"]), MM.BOLTS["range"], _roll() * mv["dmg"], "bolt")
 			mgr.sfx.play("fire", -4.0)
 		"slam":
-			pass  # (the red circle does the harm: perils.gd)
+			# (the red circle does the harm: perils.gd; a Twin monster follows it with a second, quicker one)
+			if twin() > 0.0:
+				mgr.perils.warn(hero.world.x, hero.world.y, float(def["aoe"]) * 0.8, 0.6, _roll() * mv["dmg"] * twin(), self)
 		"lockdown":
 			pass  # (its bars crash at the peril's own clock: perils.gd)
 		"sigil":
@@ -577,6 +614,21 @@ func _land(hero, dist: float, reach: float) -> void:
 				_t = (_charge["b"] - _charge["a"]).length() / _charge_of()["speed"] + 0.5
 				_set_list("charge", true)
 				mgr.sfx.play("slam", -6.0)
+
+
+## TWIN, on it (game.ts wordShare 'twin'): how hard its second blow is, a share of its first; 0 for one without the word.
+func twin() -> float:
+	return word_share("twin")
+
+
+## TWIN, on it: its blow comes again 0.28 s later, `share` of a roll and its Twin's share of that, if it lives and the hero is
+## still where it reaches (`reaches`) (game.ts monsterAttack, landMove, rampageSwing).
+func _twice(hero, reaches: Callable, share: float) -> void:
+	if twin() <= 0.0:
+		return
+	mgr.after(0.28, func() -> void:
+		if not dead and hero.alive and reaches.call():
+			harm_hero(hero, _roll() * share * twin()))
 
 
 func _blow(hero, dist: float, reach: float, share: float) -> bool:
@@ -679,6 +731,8 @@ func _rampage_swing(hero, mv: Dictionary) -> void:
 	var d: Vector2 = hero.world - world
 	if hero.alive and d.length() <= MM.RAMPAGE["reach"] + HERO_R and d.dot(_carry["f"]) >= -HERO_R:
 		harm_hero(hero, _roll() * mv["dmg"] * MM.RAMPAGE["swing"])
+	var f: Vector2 = _carry["f"]
+	_twice(hero, func() -> bool: return (hero.world - world).length() <= MM.RAMPAGE["reach"] + HERO_R and (hero.world - world).dot(f) >= -HERO_R, mv["dmg"] * MM.RAMPAGE["swing"])
 	mgr.sfx.play("atkTroll", -4.0)
 	mgr.sfx.play("swing", -4.0)
 	mgr.used["rampage_swing"] = mgr.used.get("rampage_swing", 0) + 1
@@ -859,8 +913,8 @@ func _go(dt: float, to: Vector2, dist: float, sees: bool) -> bool:
 		_weave += dt * 7.0
 		way = (way + Vector2(-way.y, way.x) * sin(_weave) * 0.6).normalized()
 	face = way
-	# (chilled, it walks slower by the chill's share: game.ts updateMonsters, `slow`)
-	var step := way * speed * slow() * dt
+	# (chilled, it walks slower by the chill's share: game.ts updateMonsters, `slow`; FRENZIED, faster the more it is hurt)
+	var step := way * speed * slow() * rage() * dt
 	# (game.ts: a monster walks with a body no bigger than 0.42 round, so that a big one gets through a doorway)
 	var rr := minf(r, 0.42)
 	var fly := kind == "bat"
@@ -909,6 +963,20 @@ func word_share(w: String) -> float:
 	if not words.has(w):
 		return 0.0
 	return PACK_MINION if half.has(w) and rally_t <= 0.0 else 1.0
+
+
+## FRENZIED, on it (game.ts updateMonsters `rage`): the more it is hurt, the faster it moves and the sooner it attacks again, up
+## to half again as fast near death (a minion's, of its leader's Frenzied, at half); 1 for one without the word.
+func rage() -> float:
+	var share := word_share("frenzied")
+	if share <= 0.0:
+		return 1.0
+	return 1.0 + float(Words.data()["frenzy"]["monster"]) * share * (1.0 - maxf(0.0, life) / max_life)
+
+
+## VAST, on it (game.ts addWarn, monsterAttack): how many times as wide its warned blows and as far its own blow's reach are.
+func vast() -> float:
+	return 1.0 + float(Words.data()["vast"]["monster"]) * word_share("vast")
 
 
 ## What a blow of its carries to him, as a shot or a mark of its keeps it from when it was made (game.ts: a projectile's, a
@@ -963,13 +1031,14 @@ func glance() -> void:
 ## or poisons it. `el`: its element; `crit`: a critical hit; `heavy`: Power's weight in it (a longer flash); `front`: the words
 ## in front of the move that did it (what the telling shows); `poison`: the poison working; `dot`: harm over time (burning,
 ## burning or iced ground). Those two do not flash it, nor make it cry out. What is shut in a room is out of reach.
-func damage(dmg: float, el := "phys", crit := false, heavy := false, front: Array = [], poison := false, dot := false) -> void:
+## `skill`: which of his moves did it (0 to 2; -1: none of them, or none that changes which last struck it).
+func damage(dmg: float, el := "phys", crit := false, heavy := false, front: Array = [], poison := false, dot := false, skill := -1) -> void:
 	if dead or state == "rise" or mgr.shut_in(self):
 		return
-	_take(dmg, el, crit, heavy, front, poison, dot)
+	_take(dmg, el, crit, heavy, front, poison, dot, skill)
 
 
-func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison: bool, dot: bool) -> void:
+func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison: bool, dot: bool, skill := -1) -> void:
 	# (nor is a boss who waits: game.ts damageMonster, "Not yet")
 	if waits:
 		if _not_yet_t <= 0.0:
@@ -982,7 +1051,15 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 		return
 	# (one of the cult near a chanter that lives and is awake takes less: its ward, act1.gd warded)
 	dmg = Act1.warded(mgr, self, dmg)
-	life -= dmg
+	# (GUARDING, on it: its shield takes the harm first)
+	if shield > 0.0:
+		var soak := minf(shield, dmg)
+		shield -= soak
+		life -= dmg - soak
+	else:
+		life -= dmg
+	if skill >= 0:
+		last_skill = skill
 	if not poison and not dot:
 		_flash = 0.2 if heavy else 0.12
 		struck_t = 0.0
@@ -1034,6 +1111,8 @@ func _afflicted(dt: float) -> bool:
 		chill_t -= dt
 	if freeze_immune > 0.0:
 		freeze_immune -= dt
+	if mark_t > 0.0:
+		mark_t = maxf(0.0, mark_t - dt)
 	if stagger_cd > 0.0:
 		stagger_cd -= dt
 	if poison_t > 0.0:
@@ -1056,14 +1135,14 @@ func _afflicted(dt: float) -> bool:
 	return false
 
 
-## FLAME in front (game.ts hitMonster, `r.ignite`): it burns `dps` a second for 3 s; burning already, it burns as hard as the
-## harder of the two, and its 3 s begin again.
-func set_alight(dps: float) -> void:
+## FLAME in front (game.ts hitMonster, `r.ignite`): it burns `dps` a second for 3 s (`secs`: LASTING longer, FLEETING shorter);
+## burning already, it burns as hard as the harder of the two, and its time begins again.
+func set_alight(dps: float, secs := 3.0) -> void:
 	if burn_t <= 0.0:
 		_tell({"t": "ignite", "x": world.x, "y": world.y})
 	if burn_t <= 0.0 or dps > burn_dps:
 		burn_dps = dps
-	burn_t = 3.0
+	burn_t = secs
 
 
 ## FROST in front, a chilling hit that slows it by `by` (game.ts chillMonster): a second one on a chilled one freezes it,
@@ -1162,6 +1241,7 @@ func clear_afflictions() -> void:
 	stun_t = 0.0
 	stagger_t = 0.0
 	stagger_cd = 0.0
+	mark_t = 0.0
 
 
 const PF := preload("res://scripts/pixel_font.gd")
@@ -1210,6 +1290,13 @@ func _die() -> void:
 	if boss:
 		mgr.boss_fell = true
 		mgr.boss_at = world
+	# (FLOORS 6 TO 10'S WORDS, game.ts kill: what the words of the move that killed it add, the hero's; and VOLATILE, on it, it
+	# goes off after a short warning, of its element and none of its words (a minion, of its leader's Volatile, at half))
+	if mgr.hero != null and is_instance_valid(mgr.hero) and mgr.hero.has_method("killed"):
+		mgr.hero.killed(self)
+	var blast := word_share("volatile")
+	if blast > 0.0:
+		mgr.perils.warn(world.x, world.y, 1.8, 0.7, (dmg_min + dmg_max) / 2.0 * 1.5 * blast, null, {"el": element(), "words": [], "half": half_of()})
 	if mgr.loot != null:
 		mgr.loot.on_kill(self)
 	if boss and BOSS_VOICE.has(kind):

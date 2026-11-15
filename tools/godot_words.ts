@@ -18,6 +18,8 @@ import { MANA_AS_CDR } from '../src/game/items';
 import { FURNACE_WORD, MELDSTONE_WORDS } from '../src/game/quests15';
 import { resolveSkill, socketProblem } from '../src/game/words';
 import { PRISON_WORD_IDS, WORD_IDS } from '../src/game/types';
+import { NEW_GLYPH, NEW_RAMP } from '../src/render/words3';
+import { W10_RAMP } from '../src/render/words10';
 import type { Derived } from '../src/game/state';
 import type { WordId } from '../src/game/types';
 
@@ -35,6 +37,14 @@ const gameConst = (name: string): number => {
   const m = new RegExp(`const ${name} = ([0-9.]+);`).exec(GAME_TS);
   if (!m) throw new Error(`game.ts has no ${name}`);
   return Number(m[1]);
+};
+// (the first colour a function of the game's renderer writes straight into what it draws)
+const hexIn = (file: string, fn: string): string => {
+  const text = readFileSync(file, 'utf8');
+  const at = text.search(new RegExp(`^(?:export )?function ${fn}\\(`, 'm'));
+  const m = at < 0 ? null : /'(#[0-9a-fA-F]{6})'/.exec(text.slice(at, text.indexOf('\n}\n', at)));
+  if (!m) throw new Error(`no colour in ${fn}`);
+  return m[1];
 };
 const moves = skillsFor('warrior', 'greatsword');
 const words = Object.fromEntries(OURS.map((w) => [w, WORDS[w]]));
@@ -62,6 +72,16 @@ writeFileSync(`${OUT}/words.json`, JSON.stringify({
   leechCap: Number.isFinite(LEECH.cap) ? LEECH.cap : null,
   echo: { delay: gameConst('ECHO_DELAY'), bites: gameConst('ECHO_BITES') },
   wilds: WILDS,
+  // (THEIR LOOKS' COLOURS, for godot/scripts/fx_words610.gd: Precise's, Frenzied's and Guarding's ramps, darkest to brightest,
+  // and Guarding's shield as the ward draws it (render/words3.ts NEW_RAMP, NEW_GLYPH); Lasting's, Fleeting's and Vast's
+  // (render/words10.ts W10_RAMP); and the dark the ward's shields and Precise's sight are edged in, read out of the functions
+  // that draw them)
+  looks: {
+    ramp: { precise: NEW_RAMP.precise, frenzied: NEW_RAMP.frenzied, guarding: NEW_RAMP.guarding, ...W10_RAMP },
+    guardGlyph: NEW_GLYPH.guarding,
+    wardDark: hexIn('src/render/words3.ts', 'drawWard'),
+    sightDark: hexIn('src/render/words3.ts', 'drawSight'),
+  },
   arcChain: ARC_CHAIN,
   primaryDmg: ATTR_GIVES.primaryDmg,
   intCdr: ATTR_GIVES.intCdr,

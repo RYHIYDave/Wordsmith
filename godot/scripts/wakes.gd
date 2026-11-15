@@ -47,14 +47,43 @@ func add_ground(zone: Dictionary, skill: int, at: Vector2, rad: float, hit: floa
 	_tell({"t": "zone", "kind": zone["kind"], "x": at.x, "y": at.y, "r": rad, "el": zone["element"]})
 
 
-## POISON behind move `skill` (addCloud): a cloud `rad` round `at` that poisons for `dps` a second, 5 s.
-func add_cloud(skill: int, at: Vector2, rad: float, dps: float) -> void:
+## POISON behind move `skill` (addCloud): a cloud `rad` round `at` that poisons for `dps` a second, 5 s (`dur`: LASTING longer,
+## FLEETING shorter).
+func add_cloud(skill: int, at: Vector2, rad: float, dps: float, dur := 5.0) -> void:
 	if _again("venom", at, rad, 0.6) != null:
 		return
 	if not _room() or not _on_floor(at):
 		return
-	list.append({"kind": "venom", "x": at.x, "y": at.y, "r": rad, "t": 0.0, "dur": 5.0, "element": "phys", "dmg": dps, "slow": 0.0, "tick": 0.2, "skill": skill})
+	list.append({"kind": "venom", "x": at.x, "y": at.y, "r": rad, "t": 0.0, "dur": dur, "element": "phys", "dmg": dps, "slow": 0.0, "tick": 0.2, "skill": skill})
 	_tell({"t": "zone", "kind": "venom", "x": at.x, "y": at.y, "r": rad, "el": "phys"})
+
+
+## FLOORS 6 TO 10'S WORDS BEHIND A MOVE:
+## VOLATILE behind move `skill` (addRune): a rune `rad` round `at`, written now, that goes off 1.2 s later for `dmg` on whatever
+## is in it, of `el`, breaking what it reaches; never laid again over one, nor given way for others (roomForZone).
+func add_rune(skill: int, at: Vector2, rad: float, dmg: float, el: String) -> void:
+	if not _room() or not _on_floor(at):
+		return
+	list.append({"kind": "rune", "x": at.x, "y": at.y, "r": rad, "t": 0.0, "dur": 1.2, "element": el, "dmg": dmg, "slow": 0.0, "tick": 0.0, "skill": skill})
+	_tell({"t": "zone", "kind": "rune", "x": at.x, "y": at.y, "r": rad, "el": el})
+	if sfx != null:
+		sfx.play("rune", linear_to_db(0.7))
+
+
+## GUARDING behind move `skill` (addPatch 'ward'): a ward circle `rad` round `at` for `dur` seconds; inside it the hero takes
+## `share` less harm (hero.gd hurt_by). Laid again where one lies, that one lasts as long again from now, and wards as well as
+## the better of the two.
+func add_ward(skill: int, at: Vector2, rad: float, dur: float, share: float) -> void:
+	var o = _again("ward", at, rad, 0.6)
+	if o != null:
+		o["dur"] = dur
+		o["dmg"] = maxf(float(o["dmg"]), share)
+		_tell({"t": "zone", "kind": "ward", "x": o["x"], "y": o["y"], "r": o["r"], "el": "phys", "dur": dur})
+		return
+	if not _room() or not _on_floor(at):
+		return
+	list.append({"kind": "ward", "x": at.x, "y": at.y, "r": rad, "t": 0.0, "dur": dur, "element": "phys", "dmg": share, "slow": 0.0, "tick": 0.0, "skill": skill})
+	_tell({"t": "zone", "kind": "ward", "x": at.x, "y": at.y, "r": rad, "el": "phys", "dur": dur})
 
 
 ## HEAVY behind move `skill` (addPatch 'cracks'): cracked ground `rad` round `at` for `dur` seconds. Laid again where some
@@ -90,6 +119,9 @@ func _room() -> bool:
 	var left := INF
 	for k in list.size():
 		var o: Dictionary = list[k]
+		# (a rune is never taken away)
+		if o["kind"] == "rune":
+			continue
 		if o["dur"] - o["t"] < left:
 			left = o["dur"] - o["t"]
 			oldest = k
@@ -115,6 +147,13 @@ func _process(dt: float) -> void:
 		if z["kind"] == "cracks":
 			_crack(z)
 			continue
+		# (a ward does its work in hero.gd hurt_by, for as long as it lasts; a rune waits, and goes off)
+		if z["kind"] == "ward":
+			continue
+		if z["kind"] == "rune":
+			if z["t"] >= z["dur"]:
+				_rune(z)
+			continue
 		z["tick"] -= dt
 		if z["tick"] <= 0.0:
 			z["tick"] += 0.5
@@ -135,6 +174,22 @@ func _crack(z: Dictionary) -> void:
 			m.stagger_from(at)
 
 
+## A rune goes off (game.ts updateZones 'rune'): everything in it struck for what it carries, what it reaches broken.
+func _rune(z: Dictionary) -> void:
+	var at := Vector2(z["x"], z["y"])
+	_tell({"t": "burst", "x": at.x, "y": at.y, "r": z["r"], "el": z["element"], "style": "ruin", "words": ["volatile"]})
+	if monsters == null:
+		return
+	if monsters.hero != null and is_instance_valid(monsters.hero):
+		monsters.hero.kick(3.0)
+		monsters.hero._break_props(int(z["skill"]), at, float(z["r"]))
+	if sfx != null:
+		sfx.play("explode", linear_to_db(0.8))
+	for m in monsters.list.duplicate():
+		if is_instance_valid(m) and not m.dead and m.world.distance_to(at) <= float(z["r"]) + m.r:
+			m.damage(maxf(1.0, roundf(z["dmg"])), z["element"], false, false, [], false, false, int(z["skill"]))
+
+
 ## A bite of burning, iced or storming ground, or of a cloud, on those standing in it (within its radius and half their own).
 func _bite(z: Dictionary) -> void:
 	if monsters == null:
@@ -150,7 +205,7 @@ func _bite(z: Dictionary) -> void:
 				return
 			var m = inside.pick_random()
 			_tell({"t": "arc", "x0": at.x, "y0": at.y, "x1": m.world.x, "y1": m.world.y, "sky": true})
-			m.damage(maxf(1.0, roundf(z["dmg"])), "lightning")
+			m.damage(maxf(1.0, roundf(z["dmg"])), "lightning", false, false, [], false, false, int(z.get("skill", -1)))
 			if sfx != null:
 				sfx.play("thunder", linear_to_db(0.5))
 		"venom":
@@ -162,12 +217,14 @@ func _bite(z: Dictionary) -> void:
 					_tell({"t": "poisoned", "x": m.world.x, "y": m.world.y})
 				m.poison_dps = maxf(m.poison_dps, z["dmg"])
 				m.poison_t = maxf(m.poison_t, 2.0)
+				if int(z.get("skill", -1)) >= 0:
+					m.last_skill = int(z["skill"])
 		_:
 			for m in inside:
 				if z["kind"] == "ice":
 					m.chill = maxf(m.chill if m.chill_t > 0.0 else 0.0, z["slow"])
 					m.chill_t = 0.7
-				m.damage(maxf(1.0, roundf(z["dmg"] * 0.5)), z["element"], false, false, [], false, true)
+				m.damage(maxf(1.0, roundf(z["dmg"] * 0.5)), z["element"], false, false, [], false, true, int(z.get("skill", -1)))
 
 
 ## Told as it is laid (fx.gd `zone`); and it is to be drawn from now.

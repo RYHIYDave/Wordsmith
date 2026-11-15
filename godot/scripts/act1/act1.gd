@@ -135,8 +135,10 @@ func step(m, dt: float, hero) -> void:
 	_struck = m.struck_t
 	var to: Vector2 = hero.world - m.world
 	var dist := to.length()
-	# (its wait runs down every step, whatever it is doing: game.ts updateMonsters)
-	m._cd -= dt
+	# (its wait runs down every step, whatever it is doing: game.ts updateMonsters; FRENZIED, on it, the faster the more it is
+	# hurt, its acts' own waits and its pace too: bosses.ts step `rage`)
+	var rage: float = m.rage()
+	m._cd -= dt * rage
 	# (put to sleep in the middle of an act, as the hero fell, or stopped in it, and woken again: it is broken off)
 	if act != null and m.state != "act":
 		act = null
@@ -151,7 +153,7 @@ func step(m, dt: float, hero) -> void:
 		for a in A:
 			cds.append(float(a["first"]) * randf_range(0.7, 1.2))
 	for k in cds.size():
-		cds[k] -= dt
+		cds[k] -= dt * rage
 	if act != null:
 		_step_act(m, A, dt, hero)
 		return
@@ -174,7 +176,7 @@ func step(m, dt: float, hero) -> void:
 		_show(m)
 		return
 	# CARRIED OVER THE FLOOR AT ITS PACE, from the first moment of setting off to the last of stopping
-	var sp: float = m.speed * m.slow()
+	var sp: float = m.speed * m.slow() * rage
 	var v := Vector2.ZERO
 	if dist > 0.01:
 		v = to / dist if dist < 2.5 and los else m.mgr.flow_dir(m.world)

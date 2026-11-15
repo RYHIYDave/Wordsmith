@@ -2120,7 +2120,8 @@ func _words_shots(h: Hero, dir: String) -> void:
 		await get_tree().process_frame
 		frames += get_process_delta_time()
 	_w_frame = frames / 30.0
-	var words: Array = Hero.Words.ids()
+	# (the first seven's cases; floors 6 to 10's nine have their own, at the end: check_words610.gd)
+	var words: Array = Hero.Words.ids().filter(func(w): return not Hero.Words.data()["wilds"].has(w))
 	print("WORDS begin: floor 2, he at %s facing %s, the pack A to F %s to %s tiles before him; his Str %d Dex %d Int %d, his roll fixed at %d, no critical hits, %.3f blows a second; a frame takes %.3f s" % [
 		_w_home, _w_face, W_FORM[0][0], W_FORM[5][0], h.stats["str"], h.stats["dex"], h.stats["int"], W_ROLL, h.stats["aps"], _w_frame])
 	for w in words:
