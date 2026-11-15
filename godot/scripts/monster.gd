@@ -63,6 +63,11 @@ const BOSS_AI := {
 	"firepot": preload("res://scripts/act1/firepot.gd"), "chanter": preload("res://scripts/act1/chanter.gd"),
 	"vulture": preload("res://scripts/act1/vulture.gd"), "crawler": preload("res://scripts/act1/crawler.gd"),
 	"devil": preload("res://scripts/act1/devil.gd"), "scorpion": preload("res://scripts/act1/scorpion.gd"),
+	# (THE COMMON MONSTERS OF FLOORS 9 AND 10, and floor 9's two side bosses: game/act1_rules/; scripts/act1/)
+	"wolf": preload("res://scripts/act1/wolf.gd"), "deer": preload("res://scripts/act1/deer.gd"),
+	"leech": preload("res://scripts/act1/leech.gd"), "spawn": preload("res://scripts/act1/spawn.gd"),
+	"drowned": preload("res://scripts/act1/drowned.gd"),
+	"warchief": preload("res://scripts/act1/warchief.gd"), "mistwolf": preload("res://scripts/act1/mistwolf.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -79,11 +84,14 @@ const VOICE := {
 	"skeleton": "bones", "archer": "bones", "champion": "bones", "marksman": "bones", "beast": "bones", "mite": "bones", "boneward": "bones",
 	"brute": "troll", "bat": "bat", "shade": "spirit",
 	"vulture": "vulture", "crawler": "bug", "scorpion": "bug", "rubbling": "stone", "qgolem": "stone", "devil": "devil",
+	# (floors 9 and 10's, and floor 9's side bosses)
+	"wolf": "wolf", "mistwolf": "wolf", "deer": "deer", "leech": "leech", "spawn": "leech", "drowned": "spirit", "warchief": "troll",
 }
 const ATK := {
 	"skeleton": "atkBones", "champion": "atkBones", "beast": "atkBones", "mite": "atkBones", "brute": "atkTroll", "bat": "atkBat",
 	"dagger": "atkDagger", "cultist": "atkHex", "priest": "atkHex", "boneward": "atkShield", "shade": "atkSpirit",
 	"chanter": "atkHex", "vulture": "atkVulture", "crawler": "atkSting", "scorpion": "atkSting", "rubbling": "atkStone", "qgolem": "atkStone", "firepot": "atkFirepot",
+	"wolf": "atkBite", "mistwolf": "atkBite", "deer": "atkAntler", "leech": "atkLeech", "spawn": "atkLeech", "drowned": "atkSpirit", "warchief": "atkTroll",
 }
 ## (sound_families.ts BOSS_VOICE: the bosses that roar: their roar as the fight begins, their hurt, their death. The Stoker's
 ## is in the game's table too and is never heard there: he is an elite, and these wait on a boss. The Warden, the Headsman
@@ -1226,6 +1234,12 @@ func _place() -> void:
 	# (one with rules of its own drawn up off the floor, or let down under its edge: a vulture overhead, a crawler under the lip)
 	if h2 != null and h2.has_method("lift"):
 		_lift += 2.0 * h2.lift(self)
+	# (one with rules of its own drawn later than its depth would have it, over the hero it has latched on to: render/act1_fx
+	# leech.ts `over`, so much added to its depth; where it is on the screen is kept, only its place among what stands moves)
+	if h2 != null and h2.has_method("over"):
+		var later := 16.0 * float(h2.over(self))
+		position.y += later
+		_lift += later
 	if _sprite != null:
 		# (the dagger cultist's frenzy: his pictures carry him along the way they face, and the rules the way he truly faces, so
 		# his picture is drawn back by what it carries him: action_f4.ts frenzyShift)

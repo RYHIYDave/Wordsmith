@@ -31,6 +31,8 @@ const DV := preload("res://scripts/act1/devil.gd")
 const SC := preload("res://scripts/act1/scorpion.gd")
 const VU := preload("res://scripts/act1/vulture.gd")
 const CR := preload("res://scripts/act1/crawler.gd")
+## (floors 9 and 10's, and floor 9's two side bosses': their own marks, act1/marks9.gd, each by its name)
+const M9 := preload("res://scripts/act1/marks9.gd")
 
 ## (the enemy's pinks of the boulder's lane; the lightning's white heart, its pale violet, violet, deep violet, and the
 ## enemy's pink and rose about it: art/action_f6_fx.ts BOLT)
@@ -40,6 +42,8 @@ const BOLT := {"white": Color("#fff6ff"), "pale": Color("#e6c8ff"), "violet": Co
 
 ## A step of one (its clock has run on already); false: it is gone.
 static func step(P, p: Dictionary, _dt: float) -> bool:
+	if M9.mine(p):
+		return M9.step(P, p, _dt)
 	var hero = P.hero
 	var h: Vector2 = hero.world
 	var t: float = p["t"]
@@ -144,6 +148,9 @@ static func step(P, p: Dictionary, _dt: float) -> bool:
 
 ## What of one stands among the figures (in its own depth), each frame it is there.
 static func stands(P, p: Dictionary) -> void:
+	if M9.mine(p):
+		M9.stands(P, p)
+		return
 	var t: float = p["t"]
 	var at := Vector2(p["x"], p["y"])
 	match str(p["a1"]):
@@ -217,6 +224,9 @@ static func _hide(p: Dictionary, key: String) -> void:
 # --- on the floor (in perils.gd _draw) ---
 
 static func draw(P, p: Dictionary) -> void:
+	if M9.mine(p):
+		M9.draw(P, p)
+		return
 	var t: float = p["t"]
 	var at := Vector2(p["x"], p["y"])
 	var src = p.get("src")
@@ -297,6 +307,9 @@ static func _first_ward(m, o) -> bool:
 # --- over what stands (in perils.gd _draw_air) ---
 
 static func air(P, c: CanvasItem, p: Dictionary) -> void:
+	if M9.mine(p):
+		M9.air(P, c, p)
+		return
 	if p["a1"] != "chanter:chain" or int(p["done"]) == 0:
 		return
 	var t: float = p["t"]
@@ -314,9 +327,19 @@ static func air(P, c: CanvasItem, p: Dictionary) -> void:
 		P._film_pic(c, "ch_static", "air", P._film_frame("ch_static", t), Iso.to_screen(h.x, h.y))
 
 
+# --- over the dark (perils.gd _draw_glow): floors 9 and 10's alone have any ---
+
+static func glow(P, c: CanvasItem, p: Dictionary) -> void:
+	if M9.mine(p):
+		M9.glow(P, c, p)
+
+
 # --- their lights in the dark (the game's c.spot; perils.gd _spots_of) ---
 
 static func spots(P, p: Dictionary) -> void:
+	if M9.mine(p):
+		M9.spots(P, p)
+		return
 	var t: float = p["t"]
 	var at := Vector2(p["x"], p["y"])
 	match str(p["a1"]):
