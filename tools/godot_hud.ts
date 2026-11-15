@@ -4,7 +4,9 @@
 //     pics: { key: [x, y, w, h, ax, ay] } in picture pixels, two to a game pixel: the flask (art.icons.potion), the coin
 //       (art.icons.gold[0]), each word's rune (art.icons.word), and the abilities' icons (art.icons.ability, by SKILLS' icon);
 //     theme: ui/ui.ts THEME; palette: art/palette.ts P; word_color: art/icons.ts WORD_COLOR; words: each word's forms as the
-//       attacks' plates write them (ui/words.ts wordForm: FRONT, BEHIND without its "of");
+//       attacks' plates write them (ui/words.ts wordForm: FRONT, BEHIND without its "of"), its name, and what its card says it
+//       grows with (defs.ts growsWith); element_ramp: the colours of a move whose words have made it fire, frost or
+//       lightning (art/palette.ts ELEMENT_RAMP: its plate's rim, its damage on the gear screen);
 //     skills: the Warrior's three (CLASSES.warrior: tap, hold, evade), each { id, name, icon, cooldown, channel };
 //     sizes: ui/hud.ts SLOT_W, SLOT_H, PIECE_GAP; places: the name written top left in each place (Game.floorLevel); and the
 //     Master Rune-stone's icon (art/quest3.ts), shown there while it is carried.
@@ -14,11 +16,11 @@ import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
-import { CLASSES, FLOOR_NAMES, SKILLS, WORDS, floorTitle } from '../src/game/defs';
+import { CLASSES, FLOOR_NAMES, SKILLS, WORDS, floorTitle, growsWith } from '../src/game/defs';
 import { makeStoneArt } from '../src/art/quest3';
 import { keySprite } from '../src/art/key_bearers_fx';
 import { WORD_COLOR, makeIconArt } from '../src/art/icons';
-import { P } from '../src/art/palette';
+import { ELEMENT_RAMP, P } from '../src/art/palette';
 import { THEME } from '../src/ui/ui';
 import { wordForm } from '../src/ui/words';
 
@@ -92,7 +94,8 @@ writeFileSync(`${OUT}/hud.json`, JSON.stringify({
   theme: THEME,
   palette: P,
   word_color: WORD_COLOR,
-  words: Object.fromEntries(Object.keys(WORDS).map((w) => [w, { front: wordForm(w as keyof typeof WORDS, 'front'), behind: wordForm(w as keyof typeof WORDS, 'behind'), name: WORDS[w as keyof typeof WORDS].name }])),
+  words: Object.fromEntries(Object.keys(WORDS).map((w) => [w, { front: wordForm(w as keyof typeof WORDS, 'front'), behind: wordForm(w as keyof typeof WORDS, 'behind'), name: WORDS[w as keyof typeof WORDS].name, grows: growsWith(w as keyof typeof WORDS) }])),
+  element_ramp: ELEMENT_RAMP,
   skills: ids.map((id) => ({ id, name: SKILLS[id].name, icon: SKILLS[id].icon, cooldown: SKILLS[id].cooldown, channel: SKILLS[id].channel ?? 0 })),
   sizes: { slot_w: 11, slot_h: 12, piece_gap: 3 },
   // (the place's name, top left: Game.floorLevel; in town, "Town")

@@ -1,17 +1,32 @@
 ## THE SCREEN OVER THE GAME, drawn as the game's ui/hud.ts drawHud draws it, in its own letters (pixel_font.gd), colours and
 ## pictures (assets/hud: tools/godot_hud.ts), in game pixels (two picture pixels to one):
 ##   the LIFE GLOBE bottom left, the FLASK beside it with the level over it; the LUNGE's button bottom right with SPACE over
-##   it; between them THE TWO ATTACKS written out on their plates with their word sockets ("[+] STRIKE", "POWER STRIKE of
-##   POWER"), each with its key over it and how soon it is ready; his experience along the foot;
+##   it; between them THE TWO ATTACKS written out on their plates as they read, each with its key over it and how soon it is
+##   ready; his experience along the foot;
 ##   LEVEL UP and what E would do here, as buttons over the plates;
-##   top left the place's name, his gold, the INVENTORY button (pink while a word waits for a place), the Master Rune-stone
-##   while he carries it; the BOSS'S BAR at the top once he fights; the guide's PROMPT in its panel at the top; what has just
-##   happened, over the flask; and the boss's name across the screen (ui/cards.ts).
+##   top left the place's name, his gold, the INVENTORY button (pink while a word waits for a place) with the rune of the
+##   first word he holds and how many he holds beside it, the Master Rune-stone while he carries it; the BOSS'S BAR at the
+##   top once he fights; the guide's PROMPT in its panel at the top; what has just happened, over the flask; and the boss's
+##   name across the screen (ui/cards.ts).
+##   THE MOVES AS THEY READ (hud.ts phrase, drawPhrase; the words set in them: loadout.gd): the words in front, the move's
+##   name, the words behind after a small "of" and "and": FLAME STRIKE of POWER. Each word is written in its own colour
+##   (art/icons.ts WORD_COLOR), or, where the two plates would not fit, drawn as its rune stone (the words behind first, then
+##   all); every empty slot is a dark notch with a plus, glowing while a word he holds could go into it. A move whose words
+##   have given it an element has its picture rimmed in that element's colour. THE LUNGE, a button, shows its words as pips
+##   in their colours, those in front along its top and those behind along its foot, and its name with its words in the
+##   small letters over it. (A move has the slots the hero's level and the lit ring give it: none before the ring; the
+##   Whirlwind's from level 2 and the Lunge's from 5, when the game opens those moves. Here all three moves are shown from
+##   the first, since the port lets him make them from the first.)
+##   A MOVE'S CARD: under the pointer, a plate or the Lunge's button shows what the move does, words included: its name with
+##   its words, and its lines (words.gd resolve). A press on one, out of a fight, opens the gear screen at that move.
+##   WORD FOUND (hud.ts drawToast): the word just come by on its tile at the top of the screen for a moment, in the
+##   prompt's place; a new player's first, large, with what a word is for.
 ## The small map and the pause button top right, the large map and the pause panel: minimap.gd.
-## Not yet: a skill's card under the pointer, the fight's own prompt lines.
+## Not yet: the fight's own prompt lines.
 extends Control
 
 const PF := preload("res://scripts/pixel_font.gd")
+const Words := preload("res://scripts/words.gd")
 const DIR := "res://assets/hud/"
 
 var main  # main.gd
@@ -31,6 +46,12 @@ var P := {}  # art/palette.ts P
 var _t := 0.0
 var _banner_key := ""
 var _banner_at := -9.0
+## (where the two attacks' plates, the Lunge's button and the INVENTORY button were last drawn, in game pixels: a press on
+## one of them; and, in shot mode, where the pointer is taken to be, null for the mouse itself)
+var _plates: Array = []
+var _lunge := Rect2()
+var _inv_button := Rect2()
+var pointer = null
 
 
 func _ready() -> void:
@@ -62,6 +83,31 @@ func _process(dt: float) -> void:
 	if words != "" and Engine.get_process_frames() > words_frame and not get_tree().paused and (Input.is_action_just_pressed("interact") or Input.is_action_just_pressed("attack")):
 		words = ""
 	queue_redraw()
+
+
+## A press on the INVENTORY button opens the gear screen; a press on an attack's plate or the Lunge's button, out of a
+## fight, opens it at that move's line of word slots (hud.ts: "Pressing one opens the Words screen"; in a fight a press
+## there is an attack). The game is held from then, so the press is not a blow as well.
+func _input(e: InputEvent) -> void:
+	if not (e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT):
+		return
+	if main == null or hero == null or not hero.alive or get_tree().paused or main._inv == null:
+		return
+	var p: Vector2 = e.position / 2.0
+	if _inv_button.has_point(p):
+		main._inv.toggle()
+		get_viewport().set_input_as_handled()
+		return
+	if main._in_fight():
+		return
+	for s in _plates.size():
+		if _plates[s].has_point(p):
+			main._inv.open_on(s)
+			get_viewport().set_input_as_handled()
+			return
+	if _lunge.has_point(p):
+		main._inv.open_on(2)
+		get_viewport().set_input_as_handled()
 
 
 # --- the game's drawing kit (ui/ui.ts, ui/hud.ts), in game pixels ---
@@ -211,11 +257,46 @@ func _draw() -> void:
 	var ready: Dictionary = hero.readiness()
 	var skills: Array = _data["skills"]
 	var ex := W - ps - 5
+	# (what the prompt points at, an attack's plate or the Lunge's button, and which of them is under the pointer)
+	var point: int = int(main.guide.point) if main != null else -1
+	var mouse: Vector2 = pointer if pointer != null else get_viewport().get_mouse_position() / 2.0
+	var hover_skill := -1
+	_lunge = Rect2(ex, py, ps, ps)
+	if _lunge.has_point(mouse):
+		hover_skill = 2
 	_slot(ex, py, ps, "ability:" + skills[2]["icon"], T["edgeHi"])
+	# (its words: a pip for each in its colour, those in front along the top of the button and those behind along the bottom)
+	var fi := 0
+	for w in hero.loadout.fronts(2):
+		_rect(ex + 1 + fi * 5, py + 1, 5, 5, ink)
+		_rect(ex + 2 + fi * 5, py + 2, 3, 3, Color(_data["word_color"][w]))
+		fi += 1
+	var bi := 0
+	for w in hero.loadout.behinds(2):
+		_rect(ex + 1 + bi * 5, py + ps - 6, 5, 5, ink)
+		_rect(ex + 2 + bi * 5, py + ps - 5, 3, 3, Color(_data["word_color"][w]))
+		bi += 1
 	var lunge_cover := clampf(1.0 - float(ready["lunge"]), 0.0, 1.0)
 	if lunge_cover > 0.0:
 		_rect(ex + 1, py + 1, ps - 2, ceilf((ps - 2) * lunge_cover), Color(P["black"], 0.72))
-	_text("SPACE", ex + floorf(ps / 2.0), py - 7, T["dim"], {"align": "center", "font": "small", "shadow": ink})
+	_text("SPACE", ex + floorf(ps / 2.0), py - 7, T["accent"] if point == 2 else T["dim"], {"align": "center", "font": "small", "shadow": ink})
+	# (its name with its words, in the small letters over its button, once it has any)
+	var lunge_named: bool = not hero.loadout.fronts(2).is_empty() or not hero.loadout.behinds(2).is_empty()
+	if lunge_named:
+		var parts := _name_parts(2)
+		var nw := 0.0
+		for i in parts.size():
+			nw += _width(parts[i][0], "small") + (3.0 if i > 0 else 0.0)
+		var nx := W - 3 - nw
+		for p in parts:
+			nx += _text(p[0], nx, py - 14, p[1], {"font": "small", "shadow": ink}) + 3
+	if point == 2:
+		if pulse:
+			_rect(ex, py, ps, 1, T["accent"])
+			_rect(ex, py + ps - 1, ps, 1, T["accent"])
+			_rect(ex, py, 1, ps, T["accent"])
+			_rect(ex + ps - 1, py, 1, ps, T["accent"])
+		_arrow(ex + floorf(ps / 2.0), py - (17 if lunge_named else 9), T["accent"])
 
 	# ---- the two attacks, written out with their word sockets ----
 	var PH := 20.0
@@ -231,12 +312,21 @@ func _draw() -> void:
 	var w1 := _plate_w(pieces[1])
 	var x0 := roundf((avail_l + avail_r - w0 - w1 - 5) / 2.0)
 	var plates := [Rect2(x0, H - PH - 4, w0, PH), Rect2(x0 + w0 + 5, H - PH - 4, w1, PH)]
+	_plates = plates
 	var keys := ["LEFT CLICK", "HOLD RIGHT CLICK"]
+	# (a plate is a button out of a fight: under the pointer it lights, and a press on it opens the gear screen at its move)
+	var button: bool = main != null and not main._in_fight()
 	for s in 2:
 		var r: Rect2 = plates[s]
-		_box(r.position.x, r.position.y, r.size.x, r.size.y, T["bg2"], T["edge"])
+		var asked: bool = point == s
+		var hot: bool = (button or asked) and r.has_point(mouse)
+		if hot:
+			hover_skill = s
+		_box(r.position.x, r.position.y, r.size.x, r.size.y, T["hot"] if hot or (asked and pulse) else T["bg2"], ((T["accent"] if pulse else T["accentLo"]) if asked else (T["accent"] if hot else T["edge"])))
 		var iy := r.position.y + floorf((PH - 20) / 2.0)
-		_slot(r.position.x, iy, 20, "ability:" + skills[s]["icon"], T["edgeHi"])
+		# (a move whose words have given it an element: its picture rimmed in that element's colour)
+		var el: String = hero.loadout.r(s)["element"]
+		_slot(r.position.x, iy, 20, "ability:" + skills[s]["icon"], Color(_data["element_ramp"][el][2]) if el != "phys" else T["edgeHi"])
 		if s == 1:
 			var cover := clampf(1.0 - float(ready["whirl"]), 0.0, 1.0)
 			var going: bool = hero._act == "whirl" and hero._spun >= 0.0
@@ -249,7 +339,25 @@ func _draw() -> void:
 				_rect(r.position.x + 2, iy + 16, roundf(16 * left), 2, T["accent"])
 		_draw_phrase(pieces[s], r.position.x + 20 + PAD, r.position.y, PH, pulse)
 		_text(keys[s], r.position.x + 1, r.position.y - 6, T["dim"], {"font": "small", "shadow": ink})
+		if asked:
+			_arrow(r.position.x + floorf(r.size.x / 2.0), r.position.y - 8, T["accent"])
 	var bar_top: float = plates[0].position.y
+	if hover_skill >= 0 and not get_tree().paused:
+		# what the move under the pointer does, words included
+		var move: Dictionary = hero.loadout.r(hover_skill)
+		var card: Array = []
+		for l in move["lines"]:
+			card.append_array(PF.wrap(l, 170, "small"))
+		if hover_skill < 2:
+			card.append("Click to change its words.")
+		var cw := 178.0
+		var ch := 14.0 + card.size() * 6.0
+		var tx := clampf(floorf(W / 2.0 - cw / 2.0), 2.0, W - cw - 2.0)
+		var ty := bar_top - ch - 10.0
+		_box(tx, ty, cw, ch, T["bg"], T["edgeHi"])
+		_text(move["name"], tx + 4, ty + 3, T["accent"])
+		for k in card.size():
+			_text(card[k], tx + 4, ty + 13 + k * 6, T["dim"] if k == card.size() - 1 and hover_skill < 2 else T["text"], {"font": "small"})
 	# experience
 	var xw := avail_r - avail_l
 	_rect(avail_l, H - 3, xw, 2, T["ink"])
@@ -274,7 +382,7 @@ func _draw() -> void:
 			_button(floorf(W / 2.0 - w2 / 2.0), prompt_y, w2, pbh, label2, false, false, p[1] != "")
 
 	# ---- top left: where we are, gold, and the inventory ----
-	var spare: int = loot.words.get("power", 0) if loot != null else 0
+	var spare: int = loot.spare() if loot != null else 0
 	var lx := 4.0
 	var btn_y := 24.0
 	var btn_h := 13.0
@@ -285,11 +393,14 @@ func _draw() -> void:
 	var inv_label := "INVENTORY (I)"
 	var iw := _width(inv_label, "small") + 10
 	_button(lx, btn_y, iw, btn_h, inv_label, true, spare > 0, spare > 0 and int(floorf(_t * 2.0)) % 2 == 0)
+	_inv_button = Rect2(lx, btn_y, iw, btn_h)
 	lx += iw + 3
 	if spare > 0:
+		# (spare words waiting for a place: the rune of the first of them, and how many he holds in all)
+		var held: String = loot.first_spare()
 		var wy := btn_y + floorf((btn_h - 12) / 2.0)
-		_pic("word:power", lx, wy)
-		_text("%d" % spare, lx + 14, wy + 4, Color(_data["word_color"]["power"]), {"font": "small", "shadow": ink})
+		_pic("word:" + held, lx, wy)
+		_text("%d" % spare, lx + 14, wy + 4, Color(_data["word_color"][held]), {"font": "small", "shadow": ink})
 	if loot != null and loot.quest != "":
 		# (the Master Rune-stone while it is carried: art/quest3.ts)
 		var st := _pic_size("stone")
@@ -309,11 +420,15 @@ func _draw() -> void:
 		_rect(bx, 15, bw, 4, T["lifeLo"])
 		_rect(bx, 15, roundf(bw * maxf(0.0, boss.life) / boss.max_life), 4, T["life"])
 
-	# ---- the prompt ----
-	if main != null and not boss_up:
-		var b: Dictionary = main.guide.banner()
-		if not b.is_empty():
-			_banner(b, W)
+	# ---- the prompt, and the word just found ----
+	# (a word found is the bigger news: for its moment it takes the prompt's place, under the boss's bar where that is up; it
+	# is not shown while the game is held)
+	var toast_up: bool = loot != null and not loot.toast.is_empty() and not get_tree().paused
+	var b: Dictionary = main.guide.banner(not boss_up and not toast_up) if main != null else {}
+	if toast_up:
+		_toast(loot.toast["word"], loot.toast["t"], 4.0 + (20.0 if boss_up else 0.0), loot.toast["big"], W)
+	elif not b.is_empty() and not boss_up:
+		_banner(b, W)
 
 	# ---- what has just happened: above the flask, the newest lowest ----
 	if loot != null:
@@ -322,7 +437,8 @@ func _draw() -> void:
 		for i in range(loot.msgs.size() - 1, maxi(-1, loot.msgs.size() - 5), -1):
 			var m: Dictionary = loot.msgs[i]
 			var parts: Array = PF.wrap(m["text"], msg_w)
-			var a := clampf(3.5 - m["t"], 0.0, 1.0)
+			# (it goes over its last second)
+			var a := clampf(float(m["life"]) - float(m["t"]), 0.0, 1.0)
 			for k in range(parts.size() - 1, -1, -1):
 				_text(parts[k], 4, my, Color(m["color"], a), {"shadow": Color(ink, a)})
 				my -= 9
@@ -356,29 +472,54 @@ func _boss():
 
 # --- the attacks as they read: the words in front, the name, the words behind (hud.ts phrase, drawPhrase) ---
 
-## The pieces of attack `s`: {kind: word | rune | empty | name | link, text, color, w, word, glow}. `tight` 1 shows the words
-## behind as their rune stones, 2 all of them.
+## The pieces of attack `s` as it reads: {kind: word | rune | empty | name | link, text, color, w, word, glow}: the words in
+## its slots in front, its name, the words in its slots behind (loadout.gd: a slot not yet open is not there). `tight` 0
+## writes every word out; 1 shows the words behind as their rune stones; 2 all of them (four long words do not fit).
 func _phrase(s: int, tight: int) -> Array:
 	var out: Array = []
-	var level: int = loot.level if loot != null else 1
-	# (the sockets as they open: one in front from the first level, one behind from the fourth; only STRIKE takes a word here)
-	var front: Array = [hero.strike_words["front"] if s == 0 else ""]
-	var behind: Array = [hero.strike_words["behind"] if s == 0 else ""] if level >= 4 else []
-	var spare: bool = loot != null and loot.words.get("power", 0) > 0 and s == 0
+	var front: Array = hero.loadout.front[s]
+	var behind: Array = hero.loadout.behind[s]
+	# (an empty socket glows while a word he holds could go into it right now: words.ts socketProblem)
+	var glow_f := _fits(front)
+	var glow_b := _fits(behind)
 	for w in front:
-		out.append(_word_piece(w, "front", tight >= 2) if w != "" else _empty(spare))
+		out.append(_word_piece(w, "front", tight >= 2) if w != null else _empty(glow_f))
 	var name: String = String(_data["skills"][s]["name"]).to_upper()
 	out.append({"kind": "name", "text": name, "color": P["white"], "w": _width(name)})
 	var first := true
 	for w in behind:
-		if w == "":
-			out.append(_empty(spare))
+		if w == null:
+			out.append(_empty(glow_b))
 			continue
 		var link := "of" if first else "and"
 		out.append({"kind": "link", "text": link, "color": T["dim"], "w": _width(link, "small")})
 		out.append(_word_piece(w, "behind", tight >= 1))
 		first = false
 	return out
+
+
+## Could one of the words he holds go into that side's slots now?
+func _fits(group: Array) -> bool:
+	if loot == null or group.is_empty():
+		return false
+	for w in loot.held():
+		if Words.socket_problem(group, w) == "":
+			return true
+	return false
+
+
+## The pieces of move `s`'s whole name, each with its colour (ui/words.ts nameParts): [text, colour].
+func _name_parts(s: int) -> Array:
+	var parts: Array = []
+	for w in hero.loadout.fronts(s):
+		parts.append([_data["words"][w]["front"], Color(_data["word_color"][w])])
+	parts.append([String(_data["skills"][s]["name"]).to_upper(), P["white"]])
+	var first := true
+	for w in hero.loadout.behinds(s):
+		parts.append(["of" if first else "and", T["dim"]])
+		parts.append([_data["words"][w]["behind"], Color(_data["word_color"][w])])
+		first = false
+	return parts
 
 
 func _word_piece(w: String, form: String, rune: bool) -> Dictionary:
@@ -424,6 +565,53 @@ func _draw_phrase(ps: Array, x0: float, y: float, h: float, pulse: bool) -> void
 				_rect(x + 3, sy + 6, 5, 1, plus)
 				_rect(x + 5, sy + 4, 1, 5, plus)
 		x += float(p["w"]) + float(_data["sizes"]["piece_gap"])
+
+
+# --- WORD FOUND (hud.ts drawToast): the word just come by, at the top of the screen for a moment ---
+
+## `big`: a new player's first word, the moment the game is about: its rune stone and its name large, with a line saying
+## what a word is for (3 s and 0.5 to go); any other, the word on its tile (2.3 s and 0.5 to go). It drops into place.
+func _toast(word: String, age: float, top: float, big: bool, W: float) -> void:
+	var hue := Color(_data["word_color"][word])
+	var name: String = String(_data["words"][word]["name"]).to_upper()
+	var icon := "word:" + word
+	var isz := _pic_size(icon)
+	if big:
+		var scale := 3 if W >= 380 else 2
+		var nw := _width(name) * scale
+		var line := "A power word. Words change your attacks."
+		var small := _width(line) > W - 24
+		var bw := minf(W - 8, maxf(nw + 12 * 2 + 12 + 24, _width(line, "small" if small else "normal") + 20))
+		var bh := 14.0 + 9 * scale + 16
+		var bx := floorf((W - bw) / 2.0)
+		var by := top - roundf((1.0 - minf(1.0, age / 0.18)) * 10.0)
+		var fade := maxf(0.0, 1.0 - (age - 3.0) / 0.5) if age > 3.0 else 1.0
+		_box(bx, by, bw, bh, Color(P["white"] if age < 0.1 else T["bg"], 0.92 * fade), Color(hue, 0.92 * fade))
+		_rect(bx + 2, by, bw - 4, 1.5, Color(hue, fade))
+		_rect(bx + 2, by + bh - 1.5, bw - 4, 1.5, Color(hue, fade))
+		_text("WORD FOUND", floorf(W / 2.0), by + 5, Color(T["accent"], fade), {"align": "center", "font": "small"})
+		# the rune stone, twice its size, and the word beside it
+		var tw := isz.x * 2 + 8 + nw
+		var x := floorf((W - tw) / 2.0)
+		var lit := age < 0.6 and int(floorf(age * 12.0)) % 2 == 0
+		_pic(icon, x, by + 13 + floorf((9 * scale - isz.y * 2) / 2.0), isz.x * 2, isz.y * 2, Color(1, 1, 1, fade))
+		_text(name, x + isz.x * 2 + 8, by + 13, Color(P["white"] if lit else hue, fade), {"scale": scale, "shadow": Color(P["ink"], fade)})
+		_text(line, floorf(W / 2.0), by + 15 + 9 * scale, Color(T["text"], fade), {"align": "center", "font": "small" if small else "normal", "shadow": Color(P["ink"], fade)})
+		return
+	var tw2 := 16.0 + _width(name) + 5.0
+	var bw2 := maxf(tw2, _width("WORD FOUND", "small")) + 14
+	var bx2 := floorf((W - bw2) / 2.0)
+	var by2 := top - roundf((1.0 - minf(1.0, age / 0.14)) * 8.0)
+	var fade2 := maxf(0.0, 1.0 - (age - 2.3) / 0.5) if age > 2.3 else 1.0
+	_box(bx2, by2, bw2, 32, Color(T["bg"], 0.9 * fade2), Color(hue, 0.9 * fade2))
+	_text("WORD FOUND", floorf(W / 2.0), by2 + 3, Color(T["accent"], fade2), {"align": "center", "font": "small"})
+	# (the word on its tile: ui/words.ts drawWordTile)
+	var tx := floorf((W - tw2) / 2.0)
+	var ty := by2 + 10
+	_box(tx, ty, tw2, 18, Color(T["hot"] if age < 0.4 else T["bg2"], fade2), Color(hue, fade2))
+	_rect(tx + 1, ty + 1, tw2 - 2, 1, Color(T["edgeHi"] if age < 0.4 else T["edge"], fade2))
+	_pic(icon, tx + 2, ty + floorf((18 - isz.y) / 2.0), -1.0, -1.0, Color(1, 1, 1, fade2))
+	_text(name, tx + 16, ty + floorf((18 - 8) / 2.0) + 1, Color(hue, fade2))
 
 
 # --- the prompt at the top (hud.ts drawBanner): one large line and a smaller one under it ---

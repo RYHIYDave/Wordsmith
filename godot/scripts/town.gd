@@ -11,6 +11,10 @@
 ##   own runes are cold while it is dark, and catch as it flares.
 ##   USING THINGS (E; game.ts interact, TUNE.useRange 1.9): the wordsmith, the armourer, the mystic (across her table);
 ##   the stairs' top step takes him down (ways.ts onTopStep).
+##   THE ARMOURER'S QUEST (game/quests15.ts; game.ts handIn, armourerHandIn): once the wordsmith's ring is lit the armourer
+##   has a task ("Armourer: a task"): used, he asks the hero to put out floor 3's furnace; the furnace out ("Armourer: the
+##   furnace is out"), used, he gives his word, HEAVY. While he has either, using him gives it in place of his shelves; with
+##   neither, his shelves. Where the hero stands in it is his own (loot.gd `furnace`).
 ##   THE GATE in the back wall is barred on a new game (it opens much later): drawn as wall here for now.
 extends Node2D
 
@@ -166,7 +170,7 @@ func _process(dt: float) -> void:
 	_t += dt
 	if given_at >= 0.0 and _word_due > 0.0 and _t >= _word_due:
 		_word_due = -1.0
-		loot.give_word("power")
+		loot.give_word(loot.first_word())
 	_show()
 	_use()
 	# THE STAIRS DOWN: on their top step he goes down to floor 1 (ways.ts onTopStep)
@@ -365,7 +369,15 @@ func _use() -> void:
 			else:
 				prompt = ["E: Talk to the wordsmith", "talk"]
 		"armourer":
-			prompt = ["E: Armourer", "armourer"]
+			# (THE ARMOURER'S QUEST, game.ts handInNear, interactHint: while he has a quest to give or its reward, his prompt
+			# says so, and using him gives it in place of his shelves; used again, his shelves)
+			var due: String = loot.armourer_due()
+			if due == "furnace":
+				prompt = ["E: " + str(loot.quest_text["furnaceAskPrompt"]), "task"]
+			elif due == "reward":
+				prompt = ["E: " + str(loot.quest_text["rewardPrompt"]), "task"]
+			else:
+				prompt = ["E: Armourer", "armourer"]
 		"mystic":
 			prompt = ["E: Mystic", "mystic"]
 		"stash", "lexicon", "stranger":
@@ -396,6 +408,9 @@ func _do(what: String) -> void:
 			_word_due = _t + float(_ring["power"]["done"])
 			loot.say("The ring is lit.", Color(0.35, 0.9, 1.0))
 			sfx.play("ring_power")
+		"task":
+			# (game.ts armourerHandIn: he asks the hero to put out floor 3's furnace; or, the furnace out, gives his word, HEAVY)
+			loot.armourer_hand_in()
 		"armourer", "mystic":
 			main.open_shop(what)
 		"later":
