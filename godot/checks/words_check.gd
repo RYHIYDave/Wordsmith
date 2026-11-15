@@ -2,7 +2,8 @@
 ##   npx tsx tools/godot_words.ts check
 ##   godot --headless --path godot -s res://checks/words_check.gd
 ## The first writes assets/words/check.json: what the game's own resolveSkill makes of the Warrior's three moves with every
-## word and pair of words in them, for four heroes (1671 loadouts), and what its sockets refuse (socketProblem). This reads
+## word and pair of words in them, for four heroes (32163 loadouts, the sixteen words of floors 1 to 10), and what its sockets
+## refuse (socketProblem). This reads
 ## it, resolves each with scripts/words.gd, and says how many differ, in a number, a name or a line of text: there must be
 ## none. (check.json is not kept in the repository: it is made when wanted.)
 extends SceneTree
@@ -10,7 +11,12 @@ extends SceneTree
 const Words := preload("res://scripts/words.gd")
 const NUMBERS := {"dmgMult": "dmg_mult", "size": "size", "rate": "rate", "cooldown": "cooldown", "splash": "splash", "splashDmg": "splash_dmg",
 	"ignite": "ignite", "chill": "chill", "arcs": "arcs", "arcDmg": "arc_dmg", "poison": "poison", "stun": "stun", "might": "might", "haste": "haste",
-	"cloud": "cloud", "cracks": "cracks"}
+	"cloud": "cloud", "cracks": "cracks",
+	# (floors 6 to 10's words)
+	"count": "count", "countDmg": "count_dmg", "echo": "echo", "leech": "leech", "orbChance": "orb_chance", "volatile": "volatile", "rune": "rune",
+	"shield": "shield", "ward": "ward", "last": "last", "pace": "pace", "boost": "boost", "vast": "vast", "wide": "wide"}
+## (what is said yes or no: floors 6 to 10's Precise in front and behind, Frenzied in front and behind)
+const FLAGS := {"precise": "precise", "mark": "mark", "frenzy": "frenzy", "frenzyFeed": "frenzy_feed"}
 
 
 func _init() -> void:
@@ -35,6 +41,9 @@ func _init() -> void:
 			why += " element %s not %s;" % [got["element"], want["element"]]
 		if bool(got["pierce"]) != bool(want["pierce"]):
 			why += " pierce;"
+		for k in FLAGS:
+			if bool(got[FLAGS[k]]) != bool(want[k]):
+				why += " %s %s not %s;" % [k, got[FLAGS[k]], want[k]]
 		if (got["zone"] == null) != (want["zone"] == null):
 			why += " zone there or not;"
 		elif got["zone"] != null:

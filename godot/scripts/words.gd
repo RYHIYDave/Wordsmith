@@ -1,15 +1,16 @@
 ## THE WORDS ON A MOVE (game/words.ts resolveSkill; game/defs.ts WORDS, SKILLS, SLOT_OPENS, MOVE_OPENS). One rule covers every
 ## pairing: A WORD IN FRONT OF A MOVE CHANGES THE HIT; A WORD BEHIND IT CHANGES WHAT THE MOVE LEAVES BEHIND.
 ##
-## The words here are those a Warrior can come by on floors 1 to 5: the prison's six (Power, Poison, Frost, Flame, Lightning,
-## Swift) and Heavy, the armourer's reward. The game's other words are found from floor 6 down, and its melded and ranked
-## words are made at the wordsmith after the Meldstone: none of those is here yet.
+## The words here are those a Warrior can come by on floors 1 to 10: the prison's six (Power, Poison, Frost, Flame, Lightning,
+## Swift) and Heavy, the armourer's reward; and the nine more found from floor 6 down (Twin, Leech, Volatile, Precise,
+## Frenzied, Guarding, Lasting, Fleeting, Vast). The city's words (floor 11) and the last words (floor 16) are not here yet,
+## and the melded and ranked words, made at the wordsmith after the Meldstone, are not here at all.
 ##
 ## Every table and number is the game's own, taken out of it by tools/godot_words.ts into assets/words/words.json: the words
 ## (their names in front and behind, the attribute each grows with, its element), his three moves (Strike, Whirlwind, Lunge),
 ## Heavy's and the poison's numbers, when a move and its slots open. What is written here is only the rule itself, word by
 ## word as resolveSkill has it, in its order. `godot --headless --path godot -s res://checks/words_check.gd` holds it
-## against what the game's own resolveSkill makes of 1671 loadouts (tools/godot_words.ts check): every number, name and
+## against what the game's own resolveSkill makes of 32163 loadouts (tools/godot_words.ts check): every number, name and
 ## line of text the same.
 ##
 ## WHAT A MOVE WITH ITS WORDS COMES TO (`resolve`; the game's Resolved), the keys the fight reads:
@@ -31,6 +32,23 @@
 ##   zone          an element behind: the ground it leaves, {kind: "burn" | "ice" | "storm", element, dps, slow, dur}; null
 ##   cloud         POISON behind: a cloud left that poisons for this share of the hit a second
 ##   cracks        HEAVY behind: seconds of cracked ground left; an enemy walking onto it is staggered
+## FLOORS 6 TO 10'S WORDS:
+##   count, count_dmg  TWIN in front: so many of each hit (2), each for this share of it
+##   echo          TWIN behind: the move repeats a moment later for this share
+##   leech         LEECH in front: life back for each enemy hit
+##   orb_chance    LEECH behind: the chance an enemy it kills drops a life orb
+##   volatile      VOLATILE in front: an enemy it kills explodes for this share of its life
+##   rune          VOLATILE behind: it leaves a rune that goes off for this share of the hit
+##   precise       PRECISE in front (the hit harder and the area smaller: in dmg_mult and size)
+##   mark          PRECISE behind: the first enemy each use hits is marked; his next hit on it is a certain critical
+##   frenzy        FRENZIED in front: each use adds a stack of the frenzy (each a share faster: Strike, and every wait)
+##   frenzy_feed   FRENZIED behind: each kill adds a stack, and holds the frenzy longer
+##   shield        GUARDING in front: each use gives him a shield of this share of his life
+##   ward          GUARDING behind: it leaves a ward circle; inside it he takes this share less harm
+##   last, pace    LASTING, FLEETING: how long what it makes and gives lasts, as a share of its own time; how fast it ticks
+##   boost         FLEETING: how much stronger the boosts it gives are (already in might, haste and shield)
+##   wide          VAST in front: how many times as wide its area is for the word (already in size)
+##   vast          VAST behind: each hit splashes this share of itself onto every enemy near what it hits
 ##   lines         what it does, in the game's own words, for its card
 extends RefCounted
 
@@ -124,6 +142,11 @@ static func skill_name(id: String, front: Array, behind: Array) -> String:
 	return name
 
 
+## A number to one place as the game writes it (toFixed(1): "2.1").
+static func _fixed1(n: float) -> String:
+	return "%.1f" % n
+
+
 ## A share as the game writes it: a whole number of hundredths, a half rounded up ("17%").
 static func _pct(n: float) -> String:
 	return "%d%%" % int(floorf(n + 0.5))
@@ -169,7 +192,12 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 		"splash": 0.0, "splash_dmg": 0.0, "pierce": false,
 		"ignite": 0.0, "chill": 0.0, "arcs": 0, "arc_dmg": 0.0, "poison": 0.0, "stun": 0.0,
 		"might": 0.0, "haste": 0.0, "zone": null, "cloud": 0.0, "cracks": 0.0, "lines": lines,
+		# (floors 6 to 10's words)
+		"count": 1, "count_dmg": 1.0, "echo": 0.0, "leech": 0.0, "orb_chance": 0.0, "volatile": 0.0, "rune": 0.0, "precise": false, "mark": false,
+		"frenzy": false, "frenzy_feed": false, "shield": 0.0, "ward": 0.0, "last": 1.0, "pace": 1.0, "boost": 1.0, "vast": 0.0, "wide": 1.0,
 	}
+	var frenzy: Dictionary = D["frenzy"]
+	var guard: Dictionary = D["guard"]
 
 	# ----- in front: the hit -----
 	if has.call(front, "power"):
@@ -192,6 +220,18 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 			var fast := 25.0 + 0.5 * a
 			rate *= 1.0 + fast / 100.0
 			lines.append("Swift: +%s attack speed." % _pct(fast))
+	if has.call(front, "twin"):
+		# (the owner's rule for words that add: they take something too. Two of everything, each the weaker for it)
+		var each := minf(80.0, 55.0 + 0.25 * grows_by.call("twin"))
+		r["count"] = 2
+		r["count_dmg"] = each / 100.0
+		match def["kind"]:
+			"whirl":
+				lines.append("Twin: every turn cuts twice, each for %s." % _pct(each))
+			"leap":
+				lines.append("Twin: lands with two shocks, each for %s." % _pct(each))
+			_:
+				lines.append("Twin: hits twice, each for %s." % _pct(each))
 	if has.call(front, "fire"):
 		var burn: float = 30.0 + 0.8 * grows_by.call("fire")
 		r["ignite"] = burn / 100.0
@@ -212,12 +252,19 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 		r["arcs"] = 2 + floori(a / 40.0)
 		r["arc_dmg"] = arc / 100.0
 		lines.append("Lightning: lightning damage, arcs to %d more enemies for %s." % [r["arcs"], _pct(arc)])
+	if has.call(front, "leech"):
+		r["leech"] = 1.0 + 0.08 * grows_by.call("leech")
+		lines.append("Leeching: heals %s life per enemy hit." % _fixed1(r["leech"]))
 	if has.call(front, "poison"):
 		# (a weaker hit, and the poison does the work: every hit adds a dose)
 		var dose: float = 20.0 + 0.4 * grows_by.call("poison")
 		r["poison"] = dose / 100.0
 		dmg_mult *= 0.8
 		lines.append("Poison: hits 20%% softer; poisons for %s of the hit a second for %s s. Up to %s doses add up." % [_pct(dose), _num(D["poison"]["time"]), _num(D["poison"]["stacks"])])
+	if has.call(front, "volatile"):
+		var boom: float = 12.0 + 0.2 * grows_by.call("volatile")
+		r["volatile"] = boom / 100.0
+		lines.append("Volatile: enemies it kills explode for %s of their life." % _pct(boom))
 	if has.call(front, "heavy"):
 		# (slower, much harder, and it stuns)
 		var more: float = 50.0 + 0.5 * grows_by.call("heavy")
@@ -228,6 +275,28 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 			rate /= float(heavy["slower"])
 		r["stun"] = float(heavy["stun"])
 		lines.append("Heavy: +%s damage, %s slower; stuns for %s s." % [_pct(more), _pct((float(heavy["slower"]) - 1.0) * 100.0), _num(heavy["stun"])])
+	if has.call(front, "precise"):
+		# (more damage, not a critical chance; and a smaller area)
+		var more: float = 30.0 + 0.5 * grows_by.call("precise")
+		var area: float = D["precise"]["area"]
+		dmg_mult *= 1.0 + more / 100.0
+		size *= area
+		r["precise"] = true
+		lines.append("Precise: +%s damage, %s smaller area." % [_pct(more), _pct((1.0 - area) * 100.0)])
+	if has.call(front, "vast"):
+		# (the opposite of Precise)
+		var V: Dictionary = D["vast"]
+		var wider := minf(float(V["widerMost"]), float(V["wider"]) + 0.001 * grows_by.call("vast"))
+		size *= 1.0 + wider
+		r["wide"] = 1.0 + wider
+		dmg_mult *= 1.0 - float(V["softer"])
+		lines.append("Vast: %s bigger area, %s less damage." % [_pct(wider * 100.0), _pct(float(V["softer"]) * 100.0)])
+	if has.call(front, "frenzied"):
+		r["frenzy"] = true
+		lines.append("Frenzied: each use makes the next %s faster, up to %s times; it fades %s s after the last." % [_pct(float(frenzy["each"]) * 100.0), _num(frenzy["max"]), _num(frenzy["hold"])])
+	if has.call(front, "guarding"):
+		r["shield"] = minf(0.2, float(guard["shield"]) + 0.001 * grows_by.call("guarding"))
+		lines.append("Guarding: each use gives you a shield of %s of your life for %s s." % [_pct(r["shield"] * 100.0), _num(guard["shieldTime"])])
 
 	# ----- behind: the wake -----
 	var softer := false
@@ -237,6 +306,10 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 	if has.call(behind, "swift"):
 		r["haste"] = 15.0 + 0.2 * grows_by.call("swift")
 		lines.append("of Swiftness: +%s movement speed for 3 s after each use." % _pct(r["haste"]))
+	if has.call(behind, "twin"):
+		var again := minf(100.0, 40.0 + 0.5 * grows_by.call("twin"))
+		r["echo"] = again / 100.0
+		lines.append("of Echoes: repeats a moment later for %s." % _pct(again))
 	for w in behind:
 		if w != "fire" and w != "frost" and w != "lightning":
 			continue
@@ -258,16 +331,58 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 			lines.append("of Lightning: passes through, leaves a storm that strikes for %s." % _pct(zap))
 		# (one element behind)
 		break
+	if has.call(behind, "leech"):
+		var chance := minf(90.0, 35.0 + 0.4 * grows_by.call("leech"))
+		r["orb_chance"] = chance / 100.0
+		lines.append("of Leeching: enemies it kills drop a life orb %s of the time." % _pct(chance))
 	if has.call(behind, "poison"):
 		var dose: float = 25.0 + 0.5 * grows_by.call("poison")
 		r["cloud"] = dose / 100.0
 		lines.append("of Venom: leaves a cloud that poisons for %s of the hit a second." % _pct(dose))
+	if has.call(behind, "volatile"):
+		var boom: float = 70.0 + grows_by.call("volatile")
+		r["rune"] = boom / 100.0
+		lines.append("of Ruin: leaves a rune that detonates for %s." % _pct(boom))
 	if has.call(behind, "heavy"):
 		r["cracks"] = float(heavy["cracks"])
 		lines.append("of Quakes: leaves cracked ground for %s s; an enemy walking onto it is staggered." % _num(r["cracks"]))
+	if has.call(behind, "precise"):
+		r["mark"] = true
+		lines.append("of the Mark: marks the first enemy it hits; your next hit on it is a certain critical.")
+	if has.call(behind, "frenzied"):
+		r["frenzy_feed"] = true
+		lines.append("of Frenzy: each kill adds a stack and holds the frenzy %s s more." % _num(frenzy["hold"]))
+	if has.call(behind, "guarding"):
+		r["ward"] = minf(0.5, float(guard["ward"]) + 0.002 * grows_by.call("guarding"))
+		lines.append("of Warding: leaves a ward circle for %s s; inside it you take %s less damage." % [_num(guard["wardTime"]), _pct(r["ward"] * 100.0)])
+	if has.call(behind, "vast"):
+		var V: Dictionary = D["vast"]
+		r["vast"] = minf(float(V["splashMost"]), float(V["splash"]) + 0.001 * grows_by.call("vast"))
+		lines.append("of the Expanse: each hit splashes %s of itself onto every enemy within %s tiles of what it hits." % [_pct(r["vast"] * 100.0), _num(V["splashR"])])
+	# LASTING and FLEETING, the same wherever they sit (his "Well it makes everything connected to lasting last longer")
+	var last_front: bool = has.call(front, "lasting")
+	if last_front or has.call(behind, "lasting"):
+		var LA: Dictionary = D["lasting"]
+		var longer := minf(float(LA["longerMost"]), float(LA["longer"]) + 0.001 * grows_by.call("lasting"))
+		r["last"] *= 1.0 + longer
+		lines.append("%s: everything it makes and gives lasts %s longer; its poison and burning as hard, for longer." % ["Lasting" if last_front else "of Ages", _pct(longer * 100.0)])
+	if has.call(front, "fleeting") or has.call(behind, "fleeting"):
+		var FL: Dictionary = D["fleeting"]
+		r["last"] *= 1.0 - float(FL["shorter"])
+		r["pace"] /= 1.0 - float(FL["shorter"])
+		r["boost"] *= 1.0 + float(FL["stronger"])
+		lines.append("%s: everything it makes is %s shorter and does as much in that time; its boosts %s stronger." % ["Fleeting" if has.call(front, "fleeting") else "of Moments", _pct(float(FL["shorter"]) * 100.0), _pct(float(FL["stronger"]) * 100.0)])
 	# (an element behind: it passes through, and hits softer)
 	if softer:
 		dmg_mult *= 0.7
+	# (LASTING and FLEETING on what it leaves and the boosts it gives: its ground longer or shorter, Fleeting's as much in all; the
+	# boosts Fleeting's stronger)
+	if r["zone"] != null:
+		var z: Dictionary = r["zone"]
+		r["zone"] = {"kind": z["kind"], "element": z["element"], "dps": float(z["dps"]) * r["pace"], "slow": z["slow"], "dur": float(z["dur"]) * r["last"]}
+	r["might"] *= r["boost"]
+	r["haste"] *= r["boost"]
+	r["shield"] *= r["boost"]
 
 	r["dmg_mult"] = dmg_mult
 	r["size"] = size
