@@ -251,6 +251,16 @@ through chat, so the art and sounds go into the project whole).
     after its film's length ("The way on is open."; on the Fen "The siege magic falters. The way home is open."), what it threw
     out solid, and stepping onto its way in takes him to the next floor; from the Fen, home through the town's gate (in the game,
     the camp inside Vellum's gate). The way on's own pictures come with each floor's recorded look (its state "onward").
+  - THEIR LOOKS, recorded from the game itself as the Prison's are (`node tools/godot_record.mjs 6` ... `10`): THE QUARRY (THE
+    UNFINISHED CUT), THE LEDGE ROAD (THE QUEEN'S EYRIE) with its sky behind it, ECHO CANYON (THE CANTOR'S GORGE), THE PINEWOOD
+    (THE HOLLOW WOOD) and THE SUNKEN FEN (THE DROWNED EYE), each with its way on's film from shut to open. Under the open sky
+    the game paints its ground as far as any screen reaches, so the recorder keeps only what a view from where he can stand
+    reaches (the game's screen, 480 by 270 game pixels on a screen of 16 by 9, and room for a wider one: 400 to each side, 240
+    up and down) and draws it on a screen just that big (`REC.reach`, `REC.fit`, `REC.cut` in `tools/godot_rec/page.js`). The
+    Ledge Road's SKY is held to the screen and slides at half the ground's pace, the town far below in it, as the game draws it
+    (render/outdoor.ts drawSky; `look.gd` `_Sky`). The Pinewood's trees, some 57,000 standing things in what can be seen, are
+    written a row at a time (a run of still things at one depth within 256 game pixels across, `g`; `look.gd` `_Group`): what
+    is drawn and how a figure sorts against them is the same.
   - `--only=descent` pictures and checks every step of it, and sums it up in one line, `DESCENT:`.
 - **A desktop icon**, "Wordsmith (Godot)", opens this project to play (it needs the `wordsmith` folder on this branch).
 
@@ -284,7 +294,10 @@ A controller: the left stick, RT, LT, A, B, X.
 ## Not in it yet
 
 Melding words (the wordsmith's meld screen; the Meldstone and its two words are in), runedust, the Meldstone shown by
-INVENTORY while it is carried and its flight to the wordsmith's slab, words found from floor 6 down, what a red circle or the
+INVENTORY while it is carried and its flight to the wordsmith's slab, words found from floor 6 down (and the nine words the
+Wilds' monsters carry that the Godot version has not yet: Fleeting, Frenzied, Guarding, Lasting, Twin, Vast, Volatile, Leech
+and Precise; a boss carrying one shows its dark square without the word's stone), the trees seen through when he is behind
+them (the game's SEEN_THROUGH), what a red circle or the
 Headsman's vault sends up as it lands and a bone arrow and the Warden's bolts in flight (plain drawings: the game's
 general effects are brought over only for the words so far), the glow that burning things and some figures give off (the game adds it over them; here only the
 places' own lights glow, and the moves cut their light in the dark), the bosses' spoken lines aloud (the Chained One and
@@ -304,7 +317,7 @@ breaks, what stands behind raised ground cut off by it, the rest of the heroes, 
 | `assets/heroes`, `assets/monsters`, `assets/colossus`, `assets/townsfolk` | the released game's baked folders on `gh-pages` (marks in `assets/MARKS.txt`) |
 | `assets/sound` | `assets/sound` on `main` |
 | `assets/floor1` to `assets/floor5` | `npx tsx tools/godot_export.ts 1 1` ... `1 5` (from the repository's root, with `npm install` done; seed, then depth): the game's own painter, a new Warrior's game into that dungeon (its layout, its ways on, its waypoint and traps, its doors, gates and levers, each pack's room, floor 3's furnace and arena, floor 5's temple door and bone heaps, and its monsters) |
-| `assets/looks/floor3`, `floor4`, `floor5` | `node tools/godot_record.mjs 3` (4, 5): the floor's look taken from the game itself in a headless browser (needs the Playwright the repository's playtests use; it builds `dist/godot_rec.html` if it is not there), with its states and what is seen when; it says whether the level it drew is the level in `assets/floor<N>/layout.json` |
+| `assets/looks/floor3` to `floor10` | `node tools/godot_record.mjs 3` (4 ... 10; under the open sky, floors 6 to 10, only what a view from where he can stand reaches, and the Ledge Road's sky as `floor7_sky.png` and `floor7_skytown.png`): the floor's look taken from the game itself in a headless browser (needs the Playwright the repository's playtests use; it builds `dist/godot_rec.html` if it is not there), with its states and what is seen when; it says whether the level it drew is the level in `assets/floor<N>/layout.json` |
 | `assets/monsters/*.json`, `*-N.png` | the packs unpacked: `node tools/godot_unpack_monsters.mjs` |
 | `assets/monsters/lists.json` | each figure's lists named, from the game's art: `npx tsx tools/godot_monster_lists.ts` |
 | `assets/loot` | the game's own gear rolled on floor 1, the vendors' shelves, prices, its pictures, the fallen wordsmith: `npx tsx tools/godot_loot.ts 1` |
