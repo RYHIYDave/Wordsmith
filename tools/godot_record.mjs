@@ -118,13 +118,22 @@ console.log(`${name}: ${where.w}x${where.h}, ${ready.props} props, ${ready.doors
 // REC.reach, REC.cut. The game's screen is 270 game pixels tall and as wide as the screen it is on makes it (engine/screen.ts
 // TARGET_H): 480 on a screen of 16 by 9, the Godot version's; about 590 on the widest phones, 690 on a wide desktop screen.
 // A view reaches 400 to each side, room for a screen 800 wide, and 240 up and down, room for the camera's lift and shake.)
+// (and the screen it is drawn on only as big as that, the hero parked at a corner of the map out of every view and the
+// renderer told where on the screen he stands so that the screen is just what can be seen: REC.fit. The whole map drawn
+// at once, as for the dungeon's floors, is a screen of up to 15000 by 8000 game pixels, and Echo Canyon's 180,000 standing
+// things on it were more than the browser could hold)
+let fit = null;
 if (depth >= 6) {
   const r = await page.evaluate(({ mx, my }) => window.__rec.reach(mx, my), { mx: 400, my: 240 });
   if (r.err) console.log('  !! where a view reaches: ' + r.err);
+  else {
+    fit = await page.evaluate((box) => window.__rec.fit(box), r.box);
+    console.log(fit ? `  drawn on a screen ${fit.W}x${fit.H}, just what can be seen, the hero parked at ${fit.park.x},${fit.park.y} out of sight` : '  (no corner of the map out of every view: drawn on a screen the whole map wide)');
+  }
 }
 // the frames: three thrown away (what fades by the clock settles), then N a thirtieth of a second apart
 const T0 = 100;
-const size = await page.evaluate(() => {
+const size = fit ? { W: fit.W, H: fit.H } : await page.evaluate(() => {
   const f = window.__dbg.game().level.floor;
   return { W: 2 * (f.w + f.h) * 16 + 800, H: 2 * (f.w + f.h) * 8 + 800 };
 });

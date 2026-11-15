@@ -1362,6 +1362,36 @@
     return { at: pts.length, box: [x0, y0, x1, y1] };
   };
 
+  /**
+   * The screen made just what can be seen (`box`, REC.reach's): the hero parked at a corner of the map out of every view
+   * (with room round him, what is drawn near him being taken for his own), and the renderer told where on the screen he
+   * stands (its `view`, as a panel over half the screen tells it) so that the box's corner is the screen's. Null where no
+   * corner of the map is out of every view.
+   */
+  REC.fit = (box) => {
+    const g = d.game();
+    const f = g.level.floor;
+    const R = d.renderer;
+    const [x0, y0, x1, y1] = box;
+    const corners = [[0.5, 0.5], [f.w - 0.5, 0.5], [0.5, f.h - 0.5], [f.w - 0.5, f.h - 0.5]];
+    const out = corners.find(([x, y]) => {
+      const sx = (x - y) * 16;
+      const sy = (x + y) * 8;
+      return sx < x0 - 96 || sx > x1 + 96 || sy < y0 - 96 || sy > y1 + 96;
+    });
+    if (!out) return null;
+    REC.park[0] = { x: out[0], y: out[1], clear: 0 };
+    g.hero.x = out[0];
+    g.hero.y = out[1];
+    const lift = typeof R.heroLift === 'function' ? R.heroLift(g) : 0;
+    // (render.ts draw: cam.ox = view.x - (x - y) * 16, cam.oy = view.y + 12 - (x + y) * 8 + his lift; the world's (x0, y0) at the
+    // screen's corner. Held there: the game's own loop goes on running under the recorder and sets the view every frame, to
+    // none while no panel is open)
+    const view = { x: -x0 + (out[0] - out[1]) * 16, y: -y0 - 12 + (out[0] + out[1]) * 8 - lift };
+    Object.defineProperty(R, 'view', { get: () => view, set: () => {}, configurable: true });
+    return { W: Math.ceil(x1 - x0), H: Math.ceil(y1 - y0), park: REC.park[0] };
+  };
+
   /** What no view reaches let go of (REC.reach first), and what points at things by their places in the lists put right. */
   REC.cut = () => {
     const A = REC.acc;
