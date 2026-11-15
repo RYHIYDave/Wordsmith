@@ -53,6 +53,11 @@ var kills := 0
 var words := {"power": 0}
 var quest := ""
 var ring_lit := false
+## the wordsmith has asked for the stone (guide: "Take the STAIRS down" from then on)
+var quest_given := false
+## seconds left of the "carry" or "ring" prompt (QUEST_ITEM.promptSecs)
+var prompt_t := 0.0
+var main  # main.gd
 ## a level-up's +5 still to be placed (inventory.gd asks which)
 var points := 0
 var msgs: Array = []  # {text, t, color}
@@ -61,6 +66,9 @@ var sheet: Texture2D
 var pics := {}
 var stat_info := {}
 var _pools := {}
+## the vendors' shelves (Game.rollShop on his first day in town), and the word's plain lines (defs.ts WORDS.power)
+var shops := {}
+var power_text := {}
 var _tune := {}
 var _attr := {}
 var _drops: Array = []  # {kind, at, node, age, amount?, item?}
@@ -72,6 +80,8 @@ func _ready() -> void:
 	_font = ThemeDB.fallback_font
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/items.json"))
 	_pools = data["pools"]
+	shops = data["shops"]
+	power_text = data["power"]
 	stat_info = data["stats"]
 	_tune = data["tune"]
 	_attr = data["attr"]
@@ -234,6 +244,7 @@ func _pic_tex(key: String) -> AtlasTexture:
 # --- taking it ---
 
 func _process(dt: float) -> void:
+	prompt_t = maxf(0.0, prompt_t - dt)
 	for m in msgs:
 		m["t"] += dt
 	msgs = msgs.filter(func(m): return m["t"] < 3.5)
@@ -380,20 +391,45 @@ func choose_attr(a: String) -> void:
 # --- the fallen wordsmith and the first word ---
 
 func _search_body() -> void:
-	if _body == null or _body["searched"]:
+	if _body == null or _body["searched"] or _body["node"] == null:
 		return
 	if hero.world.distance_to(_body["at"]) > SEARCH:
 		return
 	_body["searched"] = true
 	_body["node"].texture = _pic_tex("body:searched")
+	_body["node"].offset = -pics["body:searched"]["anchor"]
+	# (game.ts searchBody, FIRST_LEVELS: the Master Rune-stone, and the flasks filled; it is carried to the wordsmith in town)
 	quest = "heart"
 	potions = POTIONS
-	say("The Master Rune-stone", Color(0.35, 0.9, 1.0))
+	prompt_t = 6.0
+	say("You carry the MASTER RUNE-STONE", Color(0.35, 0.9, 1.0))
 	sfx.play("pickup")
-	# (STAND-IN for the town: in the game the stone is carried to the wordsmith, who lights the ring and gives the word)
-	ring_lit = true
-	words["power"] += 1
-	say("The ring is lit: the word POWER (in the game, the wordsmith in town gives it)", Color(0.35, 0.9, 1.0))
+
+
+## (game.ts giveRingWord) The wordsmith gives the word, and the gear screen opens on it (`offer`).
+func give_word(w: String) -> void:
+	words[w] = words.get(w, 0) + 1
+	say("The wordsmith gives you a word: %s." % w.to_upper(), Color(0.35, 0.9, 1.0))
+	sfx.play("word")
+	if main != null:
+		main.offer_word(w)
+
+
+## A new place: what lay on the floor of the last is gone with it; the fallen wordsmith is on floor 1, searched once his
+## stone has been taken (the game lays floor 1 again each time it is come into, its body with it).
+func enter_place(m, st: Node2D, mons, is_floor1: bool) -> void:
+	map = m
+	stands = st
+	monsters = mons
+	_drops = []
+	if _body != null:
+		_body["node"] = null
+		if is_floor1:
+			setup_body()
+			if quest != "" or ring_lit:
+				_body["searched"] = true
+				_body["node"].texture = _pic_tex("body:searched")
+				_body["node"].offset = -pics["body:searched"]["anchor"]
 
 
 ## Burn a word into a worn piece (game.ts imbue): one of the outcomes the game itself rolled for that piece.
@@ -411,6 +447,7 @@ func burn(word: String, slot: String) -> String:
 	it["rarity"] = maxi(int(it["rarity"]), int(o["rarity"]))
 	it["burn"] = "That piece is full" if it["lines"].size() >= 4 else "It already has what this word gives"
 	it["power"] = []
+	it["value"] = roundi(float(it.get("value", 0)) * 1.2)
 	words[word] -= 1
 	derive()
 	sfx.play("imbue")
@@ -445,3 +482,37 @@ func draw_hud(c: Control, font: Font) -> void:
 		var a := clampf(3.5 - m["t"], 0.0, 1.0)
 		c.draw_string(font, Vector2(x + 2, my), m["text"], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(m["color"], a))
 		my += 15.0
+
+
+# --- the vendors ---
+
+## Buy a piece off a vendor's shelf (game.ts buy): its price, into the bag; gone from the shelf.
+func buy(shop: String, i: int) -> void:
+	var stock: Array = shops.get(shop, [])
+	if i < 0 or i >= stock.size():
+		return
+	var it: Dictionary = stock[i]
+	var price := int(it["value"])
+	if gold < price:
+		say("Not enough gold", Color(0.96, 0.27, 0.47))
+		return
+	if bag.size() >= BAG:
+		say("Your bag is full", Color(0.96, 0.27, 0.47))
+		return
+	gold -= price
+	stock.remove_at(i)
+	bag.append(it)
+	say("Bought %s" % it["name"], RARITY_COLOR[int(it["rarity"])])
+	sfx.play("coin", -4.0)
+
+
+## Sell a piece from the bag (game.ts sell): a quarter of its worth.
+func sell(i: int) -> void:
+	if i < 0 or i >= bag.size():
+		return
+	var it: Dictionary = bag[i]
+	var n := floori(float(it.get("value", 0)) * 0.25)
+	bag.remove_at(i)
+	gold += n
+	say("Sold %s: +%d gold" % [it["name"], n], Color(1.0, 0.85, 0.4))
+	sfx.play("coin", -4.0)

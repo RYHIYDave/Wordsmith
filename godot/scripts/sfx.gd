@@ -35,6 +35,10 @@ func play(name: String, volume_db := 0.0) -> void:
 ## The floor's background: `bed` a loop played all the while (bed_f1_loop.wav), `amb` the name of its now-and-then
 ## sounds (amb_f1), one every 6 to 14 seconds.
 func background(bed: String, amb: String) -> void:
+	# (a new place: the last one's loop stops)
+	if _bed != null:
+		_bed.queue_free()
+		_bed = null
 	if ResourceLoader.exists(DIR + bed):
 		_bed = AudioStreamPlayer.new()
 		_bed.stream = load(DIR + bed)

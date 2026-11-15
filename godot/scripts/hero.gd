@@ -49,6 +49,8 @@ var world := Vector2.ZERO
 var home := Vector2.ZERO
 var face := Vector2(1, 0)
 var alive := true
+## how far he has walked (the guide's first prompt goes once he has walked 3 tiles)
+var walked := 0.0
 
 ## HIS STATS (game/stats.ts derive), as a new Warrior has them (defs.ts CLASSES.warrior) with the Iron Greatsword (7 to 11,
 ## 1.05 a second, his Dex making it 1.09); his gear, his levels and his words change them (loot.gd derive).
@@ -223,7 +225,9 @@ func _process(dt: float) -> void:
 		if _act == "":
 			_turn(way)
 		var was := world
+		var walk_was := world
 		_slide(way * SPEED * (1.0 + stats["move_speed"] / 100.0) * slow * dt)
+		walked += world.distance_to(walk_was)
 		# (the Lockdown's bars, standing, keep him on his side of them as he walks: action_f1.ts cageHero)
 		if monsters != null and monsters.perils != null:
 			world = monsters.perils.cage(was, world, RADIUS)

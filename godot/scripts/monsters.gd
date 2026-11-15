@@ -282,6 +282,8 @@ func _part() -> void:
 
 ## nav.ts flowField: steps from the hero's tile over the walk grid, eight ways round (no corner cut), out to 28.
 func _make_flow() -> void:
+	if _flow.size() != map.w * map.h:
+		_flow.resize(map.w * map.h)
 	_flow.fill(-1)
 	if hero == null or not hero.alive:
 		return

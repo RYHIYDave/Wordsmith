@@ -1,9 +1,11 @@
-## WORDSMITH IN GODOT, THE FIRST SLICE: floor 1 of the Crypt, laid out by the game's own map-maker and painted in its own
-## stone (tools/godot_export.ts), with the Warrior from the released game's baked pictures walking it and swinging, his
-## steps and swings and the floor's background sounding from the game's own recordings.
-##   Keys: WASD or the arrows to walk; the left button to strike, the right button to whirl, Space to lunge (main.gd _inputs).
-##   A controller: the left stick; RT strike, LT whirl, A lunge.
-## Shot mode, for checking it without anyone at the keys:  godot --path godot -- --shots=<folder>
+## WORDSMITH IN GODOT: a new Warrior's game, as the TypeScript game has it. He begins in the TOWN (town.gd), its wordsmith
+## asking for the Master Rune-stone; the stairs take him down to FLOOR 1 of the Crypt (its layout, its stone and its
+## monsters the game's own: tools/godot_export.ts), where the fallen wordsmith lies with the stone; floor 1's gate takes
+## him back up. What he carries, wears and knows goes with him (loot.gd); a floor is laid again, its monsters fresh, each
+## time it is come into (game.ts enterDungeon).
+##   Keys: WASD or the arrows to walk; the left button to strike, the right to whirl, Space to lunge; E to use; Q a flask;
+##   I or Tab the gear screen (main.gd _inputs). A controller: the left stick; RT, LT, A; B to use; X a flask.
+## Shot mode, for checking it without anyone at the keys:  godot --path godot -- --shots=<folder> [--only=loot|town]
 extends Node2D
 
 const FloorMap := preload("res://scripts/floor_map.gd")
@@ -13,6 +15,7 @@ const Sfx := preload("res://scripts/sfx.gd")
 const FloorLayer := preload("res://scripts/floor_layer.gd")
 const Stands := preload("res://scripts/stands.gd")
 const Hero := preload("res://scripts/hero.gd")
+const Iso := preload("res://scripts/iso.gd")
 
 const Monsters := preload("res://scripts/monsters.gd")
 const Monster := preload("res://scripts/monster.gd")
@@ -20,58 +23,149 @@ const Perils := preload("res://scripts/perils.gd")
 const Hud := preload("res://scripts/hud.gd")
 const Loot := preload("res://scripts/loot.gd")
 const Inventory := preload("res://scripts/inventory.gd")
+const Town := preload("res://scripts/town.gd")
+const Guide := preload("res://scripts/guide.gd")
 
 const FLOOR_DIR := "res://assets/floor1"
+const TOWN_DIR := "res://assets/town"
 const HERO_DIR := "res://assets/heroes"
 const MONSTER_DIR := "res://assets/monsters"
+## (game.ts leave: the curtain drawn as he goes from one place to the next)
+const CURTAIN := 0.35
 
-var _monsters: Monsters
-var _hud
-var _loot: Loot
-var _inv
-
-## The dark of the dungeon deeper with distance from the middle of the screen (an approximation of render.ts's dark and
-## vignette, to be replaced by the game's own).
+## The dark round the edges of the screen (an approximation of render.ts's dark and vignette: the dungeon's deep, the
+## town's lighter, VIGNETTE_TOWN), to be replaced by the game's own lighting.
 const DARK := """
 shader_type canvas_item;
 uniform vec4 dark : source_color = vec4(0.02, 0.025, 0.09, 1.0);
+uniform float deep = 0.82;
 void fragment() {
 	vec2 p = (UV - vec2(0.5, 0.53)) * vec2(1.7778, 1.0);
-	float a = smoothstep(0.32, 0.98, length(p)) * 0.82;
+	float a = smoothstep(0.32, 0.98, length(p)) * deep;
 	COLOR = vec4(dark.rgb, a);
 }
 """
 
+var place := ""
+var hero: Hero
+var loot: Loot
+var sfx: Sfx
+var guide: Guide
+var town: Town
+var map: FloorMap
+var _place: Node2D
+var _monsters: Monsters
+var _hud
+var _loot: Loot
+var _inv
+var _veil: ColorRect
+var _curtain: ColorRect
+var _going := false
+var _gate := {}
+
 
 func _ready() -> void:
 	_inputs()
-	var map := FloorMap.new(FLOOR_DIR + "/layout.json")
-	var ground := GroundArt.new(FLOOR_DIR)
+	sfx = Sfx.new()
+	add_child(sfx)
+	hero = Hero.new()
+	hero.art = BakedHero.new(HERO_DIR, "warrior")
+	hero.sfx = sfx
+	# (what he carries, wears and knows, from place to place: loot.gd)
+	loot = Loot.new()
+	loot.hero = hero
+	loot.sfx = sfx
+	loot.main = self
+	add_child(loot)
+	_loot = loot
+	guide = Guide.new()
+	guide.main = self
+	_gate = JSON.parse_string(FileAccess.get_file_as_string(TOWN_DIR + "/floor1_gate.json"))
+
+	var layer := CanvasLayer.new()
+	_veil = ColorRect.new()
+	_veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = Shader.new()
+	mat.shader.code = DARK
+	_veil.material = mat
+	layer.add_child(_veil)
+	var hud := Hud.new()
+	hud.hero = hero
+	hud.loot = loot
+	hud.main = self
+	layer.add_child(hud)
+	_hud = hud
+	var inv := Inventory.new()
+	inv.loot = loot
+	inv.hero = hero
+	inv.main = self
+	layer.add_child(inv)
+	_inv = inv
+	_curtain = ColorRect.new()
+	_curtain.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_curtain.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_curtain.color = Color(0, 0, 0, 0)
+	layer.add_child(_curtain)
+	add_child(layer)
+
+	var shots := _arg("shots")
+	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
+	_build("floor1" if shots != "" and _arg("only") != "town" else "town", "start")
+	if shots != "":
+		_shoot(hero, shots)
+
+
+## Lay a place out, and set him down in it: `arrive` says where (the town's start, the foot of floor 1's gate, the top of
+## the town's stairs).
+func _build(where: String, arrive: String) -> void:
+	if hero.get_parent() != null:
+		hero.get_parent().remove_child(hero)
+	if _place != null:
+		_place.free()
+	place = where
+	_place = Node2D.new()
+	add_child(_place)
+	move_child(_place, 0)
+	var dir := TOWN_DIR if where == "town" else FLOOR_DIR
+	map = FloorMap.new(dir + "/layout.json")
+	var ground := GroundArt.new(dir)
 
 	var floor_layer := FloorLayer.new()
 	floor_layer.map = map
 	floor_layer.art = ground
-	add_child(floor_layer)
-
-	# (what the monsters' moves mark on the floor: over the floor, under everyone)
+	_place.add_child(floor_layer)
+	# (what lies flat on the floor: a rug, the circle of runes, stairs; then the moves' marks; then everyone, in order)
+	var flats := Node2D.new()
+	_place.add_child(flats)
 	var perils := Perils.new()
 	perils.map = map
-	add_child(perils)
-
+	_place.add_child(perils)
 	var stands := Stands.new()
 	stands.map = map
 	stands.art = ground
-	add_child(stands)
+	_place.add_child(stands)
 
-	var sfx := Sfx.new()
-	add_child(sfx)
-	sfx.background("bed_f1_loop.wav", "amb_f1")
-
-	var hero := Hero.new()
 	hero.map = map
-	hero.art = BakedHero.new(HERO_DIR, "warrior")
-	hero.sfx = sfx
-	hero.world = map.start
+	var at := map.start
+	var face := Vector2(1, 0)
+	match arrive:
+		"start":
+			if where == "town":
+				face = Vector2(-0.7071, -0.7071)
+		"stairs":
+			# (game.ts enterDungeon('gate'): 1.7 tiles inside floor 1's gate, facing into the room)
+			at = Vector2(_gate["hero"]["x"], _gate["hero"]["y"])
+			face = Vector2(_gate["hero"]["fx"], _gate["hero"]["fy"])
+		"gate":
+			# (game.ts enterTown('stairs'): by the top step of the town's stairs, facing away from them)
+			var st: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TOWN_DIR + "/layout.json"))["stair"]
+			at = Vector2(st["x"] - 1.1, st["y"] + 1.0)
+			face = Vector2(-1, 0)
+	hero.world = at
+	hero.home = at
+	hero.face = face
 	stands.add_child(hero)
 	stands.hero = hero
 
@@ -81,49 +175,113 @@ func _ready() -> void:
 	monsters.hero = hero
 	monsters.stands = stands
 	monsters.perils = perils
+	monsters.loot = loot
 	perils.hero = hero
 	perils.sfx = sfx
-	add_child(monsters)
-	monsters.load_floor(FLOOR_DIR + "/monsters.json", MONSTER_DIR)
+	_place.add_child(monsters)
+	if where == "floor1":
+		monsters.load_floor(FLOOR_DIR + "/monsters.json", MONSTER_DIR)
 	hero.monsters = monsters
 	_monsters = monsters
+	loot.enter_place(map, stands, monsters, where == "floor1")
 
-	# (what falls, his gear, his levels, his words: loot.gd)
-	var loot := Loot.new()
-	loot.hero = hero
-	loot.monsters = monsters
-	loot.stands = stands
-	loot.sfx = sfx
-	loot.map = map
-	add_child(loot)
-	loot.setup_body()
-	monsters.loot = loot
-	_loot = loot
+	town = null
+	if where == "town":
+		# (game.ts enterTown: life and flasks filled)
+		hero.life = hero.max_life
+		loot.potions = loot.POTIONS
+		if loot.quest != "":
+			loot.prompt_t = 6.0
+		town = Town.new()
+		town.main = self
+		town.hero = hero
+		town.loot = loot
+		town.sfx = sfx
+		town.stands = stands
+		town.flats = flats
+		_place.add_child(town)
+		sfx.background("fire_small_loop.wav", "")
+		_veil.material.set_shader_parameter("deep", 0.45)
+	else:
+		_floor_gate(flats)
+		sfx.background("bed_f1_loop.wav", "amb_f1")
+		_veil.material.set_shader_parameter("deep", 0.82)
 
-	var layer := CanvasLayer.new()
-	var veil := ColorRect.new()
-	veil.set_anchors_preset(Control.PRESET_FULL_RECT)
-	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	mat.shader = Shader.new()
-	mat.shader.code = DARK
-	veil.material = mat
-	layer.add_child(veil)
-	var hud := Hud.new()
-	hud.hero = hero
-	layer.add_child(hud)
-	hud.loot = loot
-	_hud = hud
-	var inv := Inventory.new()
-	inv.loot = loot
-	inv.hero = hero
-	layer.add_child(inv)
-	_inv = inv
-	add_child(layer)
 
-	var shots := _arg("shots")
-	if shots != "":
-		_shoot(hero, shots)
+## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.
+func _floor_gate(flats: Node2D) -> void:
+	var data: Dictionary = {}
+	for p in JSON.parse_string(FileAccess.get_file_as_string(TOWN_DIR + "/pics.json")):
+		if p["name"] == _gate["pic"]:
+			data = p
+	if data.is_empty():
+		return
+	var n := Sprite2D.new()
+	n.texture = load(TOWN_DIR + "/pics.png")
+	n.region_enabled = true
+	n.region_rect = Rect2(data["x"], data["y"], data["w"], data["h"])
+	n.centered = false
+	n.offset = -Vector2(data["ax"], data["ay"])
+	n.position = Iso.to_screen(_gate["up"]["x"], _gate["up"]["y"])
+	flats.add_child(n)
+
+
+func _process(dt: float) -> void:
+	# FLOOR 1'S GATE: walking into its doorway takes him up to the town (game.ts leave('gateOut'), enterTown('stairs'))
+	if place == "floor1" and hero.alive and not _going:
+		var tx := floori(hero.world.x)
+		var ty := floori(hero.world.y)
+		for t in _gate["tiles"]:
+			if tx == int(t[0]) and ty == int(t[1]):
+				go_to("town", "gate")
+				break
+	if guide.use_t > 0.0:
+		guide.use_t -= dt
+
+
+## Go to another place: the curtain drawn (0.35 s), the place laid out, the curtain lifted.
+func go_to(where: String, arrive: String) -> void:
+	if _going:
+		return
+	_going = true
+	var tw := create_tween()
+	tw.tween_property(_curtain, "color:a", 1.0, CURTAIN)
+	await tw.finished
+	_build(where, arrive)
+	var back := create_tween()
+	back.tween_property(_curtain, "color:a", 0.0, CURTAIN)
+	await back.finished
+	_going = false
+
+
+## What E would do where he stands: [what is shown, what it does] (town.gd).
+func prompt() -> Array:
+	return town.prompt if town != null else ["", ""]
+
+
+func show_words(text: String) -> void:
+	_hud.words = text
+	_hud.words_frame = Engine.get_process_frames()
+
+
+func open_shop(id: String) -> void:
+	_inv.open_shop(id)
+
+
+## (game.ts giveRingWord: `offer`, the gear screen opened on the word) and the guide's next prompt.
+func offer_word(_w: String) -> void:
+	if not _inv.visible:
+		_inv.toggle()
+
+
+## The word has been put on Strike: the guide shows what it does for a while (guide.gd USE).
+func word_placed() -> void:
+	guide.use_t = 10.0
+
+
+func sees(a: Vector2, b: Vector2) -> bool:
+	return _monsters.sees(a, b)
+
 
 
 ## The controls, as main.ts has them: WASD or the arrows to walk; STRIKE the left button (or J; a controller's RT); WHIRL
@@ -133,7 +291,7 @@ func _inputs() -> void:
 	var keys := {
 		"move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN],
 		"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
-		"attack": [KEY_J], "whirl": [KEY_K], "lunge": [KEY_SPACE], "potion": [KEY_Q],
+		"attack": [KEY_J], "whirl": [KEY_K], "lunge": [KEY_SPACE], "potion": [KEY_Q], "interact": [KEY_E, KEY_F],
 	}
 	var sticks := {
 		"move_up": [JOY_AXIS_LEFT_Y, -1.0], "move_down": [JOY_AXIS_LEFT_Y, 1.0],
@@ -162,6 +320,9 @@ func _inputs() -> void:
 	var x := InputEventJoypadButton.new()
 	x.button_index = JOY_BUTTON_X
 	InputMap.action_add_event("potion", x)
+	var b := InputEventJoypadButton.new()
+	b.button_index = JOY_BUTTON_B
+	InputMap.action_add_event("interact", b)
 
 
 func _arg(name: String) -> String:
@@ -179,6 +340,10 @@ func _arg(name: String) -> String:
 func _shoot(hero: Hero, dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	hero.unhurt = true
+	if _arg("only") == "town":
+		await _town_shots(hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "loot":
 		await _loot_shots(hero, dir)
 		get_tree().quit()
@@ -422,6 +587,7 @@ func _loot_shots(hero: Hero, dir: String) -> void:
 	_inv.queue_redraw()
 	await _snap(dir + "/25_gear_screen.png")
 	_inv._hover = {}
+	loot.words["power"] += 1
 	_inv._press("front", null)
 	_loot.gain_xp(_loot.xp_to_next(1) + 10)
 	await _wait(0.2)
@@ -436,3 +602,61 @@ func _loot_shots(hero: Hero, dir: String) -> void:
 	await _snap(dir + "/27_power_burned_into_the_sword.png")
 	_inv.toggle()
 	print("LOOT: level ", _loot.level, " gold ", _loot.gold, " bag ", _loot.bag.size(), " worn ", _loot.gear.values().filter(func(i): return i != null).size(), " strike ", hero.strike_words, " stats ", hero.stats)
+
+
+## SHOT MODE, THE TOWN AND THE FIRST QUEST: the town as he comes into it; up to the wordsmith, and what he asks; down the
+## stairs to floor 1; the fallen wordsmith searched; up through the gate; the stone given and the ring lighting; the word
+## given and the gear screen opened on it; the armourer's shelf, and a piece bought.
+func _town_shots(h: Hero, dir: String) -> void:
+	await _wait(1.2)
+	await _snap(dir + "/30_town.png")
+	h.walked = 5.0
+	var smith := Vector2(9.5, 14.5)
+	h.world = _spot_near(smith, 1.4, h.world)
+	await _wait(0.6)
+	await _snap(dir + "/31_up_to_the_wordsmith.png")
+	town._do("talk")
+	await _wait(0.3)
+	await _snap(dir + "/32_what_he_asks.png")
+	_hud.words = ""
+	go_to("floor1", "stairs")
+	await _wait(1.4)
+	await _snap(dir + "/33_floor1_by_its_gate.png")
+	var b = loot._body
+	if b != null:
+		h.world = _spot_near(b["at"], 3.0, h.world)
+		await _wait(0.4)
+		await _snap(dir + "/34_someone_fell_here.png")
+		h.world = b["at"] + Vector2(0.5, 0.5)
+		await _wait(0.4)
+		await _snap(dir + "/35_the_stone.png")
+	var t0: Array = _gate["tiles"][1]
+	h.world = Vector2(t0[0] + 0.5, t0[1] + 0.5)
+	await _wait(1.4)
+	await _snap(dir + "/36_back_in_town.png")
+	h.world = _spot_near(smith, 1.4, h.world)
+	await _wait(0.4)
+	town._do("give")
+	await _wait(1.6)
+	await _snap(dir + "/37_the_stone_laid_in.png")
+	await _wait(1.6)
+	await _snap(dir + "/38_the_light_runs_round.png")
+	await _wait(1.0)
+	await _snap(dir + "/39_the_ring_flares.png")
+	await _wait(1.0)
+	await _snap(dir + "/40_the_word_given.png")
+	_inv._press("front", null)
+	_inv.toggle()
+	await _wait(0.4)
+	await _snap(dir + "/41_power_on_strike.png")
+	loot.gold = 120
+	h.world = _spot_near(Vector2(19.5, 7.5), 1.5, h.world)
+	await _wait(0.4)
+	await _snap(dir + "/42_by_the_armourer.png")
+	town._do("armourer")
+	await _wait(0.3)
+	_inv._press("buy", 3)
+	await _wait(0.2)
+	await _snap(dir + "/43_the_armourers_shelf.png")
+	_inv.toggle()
+	print("TOWN: place ", place, " gold ", loot.gold, " bag ", loot.bag.size(), " ring ", loot.ring_lit, " words ", loot.words, " strike ", h.strike_words)

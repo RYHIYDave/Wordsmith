@@ -23,11 +23,15 @@ const SLOT_NAMES := {"mainhand": "WEAPON", "offhand": "OFF-HAND", "helm": "HELM"
 const BEHIND_OPENS := 4
 
 var loot  # loot.gd
+var main  # main.gd
 var hero  # hero.gd
 var _font: Font
 var _hits: Array = []  # [Rect2, action, arg]
 var _hover := {}
 var _burning := false
+## THE VENDORS (game.ts, ui/town.ts vendorSide): open at a vendor's, his shelf on the right half; a piece there bought for
+## its price (items.ts itemValue) into the bag; a piece in the bag sold for a quarter of it (game.ts sell).
+var shop := ""
 
 
 func _ready() -> void:
@@ -57,6 +61,8 @@ func toggle() -> void:
 	visible = not visible
 	get_tree().paused = visible
 	_burning = false
+	if not visible:
+		shop = ""
 	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
 
 
@@ -64,7 +70,7 @@ func _gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseMotion:
 		_hover = {}
 		for h in _hits:
-			if h[0].has_point(e.position) and (h[1] == "worn" or h[1] == "bag"):
+			if h[0].has_point(e.position) and (h[1] == "worn" or h[1] == "bag" or h[1] == "buy"):
 				_hover = {"item": h[3], "at": e.position}
 	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 		for h in _hits:
@@ -85,7 +91,12 @@ func _press(action: String, arg) -> void:
 			else:
 				loot.unequip(arg)
 		"bag":
-			loot.equip_from_bag(arg)
+			if shop != "":
+				loot.sell(arg)
+			else:
+				loot.equip_from_bag(arg)
+		"buy":
+			loot.buy(shop, arg)
 		"attr":
 			loot.choose_attr(arg)
 		"front", "behind":
@@ -94,6 +105,8 @@ func _press(action: String, arg) -> void:
 				loot.words["power"] += 1
 			elif loot.words["power"] > 0 and (action == "front" or loot.level >= BEHIND_OPENS):
 				hero.strike_words[action] = "power"
+				if main != null:
+					main.word_placed()
 				loot.words["power"] -= 1
 		"burn":
 			_burning = not _burning and loot.words["power"] > 0
@@ -177,6 +190,8 @@ func _draw() -> void:
 			_hits.append([r, side, null, null])
 	if loot.words["power"] > 0:
 		_button(Rect2(16, wy + 70, 200, 22), "BURN INTO A WORN PIECE" if not _burning else "NOW PICK A WORN PIECE", "burn", null, PRESS)
+	if shop != "":
+		_shelf()
 	# the card of what is pointed at
 	if not _hover.is_empty() and _hover["item"] != null:
 		_card(_hover["item"], _hover["at"])
@@ -191,6 +206,8 @@ func _card(it: Dictionary, at: Vector2) -> void:
 	if it["weapon"]:
 		rows.append(["%.2f attacks a second" % it["aps"], DIM, 10])
 	rows.append(["Level %d" % it["req"], DIM, 10])
+	if shop != "":
+		rows.append(["Sells for %d gold" % floori(float(it.get("value", 0)) * 0.25), Color(1.0, 0.85, 0.4), 10])
 	var w := 230.0
 	var h := 10.0 + rows.size() * 16.0
 	var p := at + Vector2(16, 0)
@@ -223,3 +240,31 @@ func _text(at: Vector2, s: String, px: int, c: Color) -> void:
 
 func _short(s: String, n: int) -> String:
 	return s if s.length() <= n else s.substr(0, n - 1) + "."
+
+
+func open_shop(id: String) -> void:
+	shop = id
+	if not visible:
+		toggle()
+
+
+## The vendor's shelf, on the right half: each piece, its price; what he cannot afford dimmed.
+func _shelf() -> void:
+	var x0 := size.x / 2.0 + 12.0
+	var w := size.x / 2.0 - 24.0
+	draw_rect(Rect2(x0 - 12, 0, w + 24, size.y), PANEL)
+	_text(Vector2(x0, 22), "THE %s" % shop.to_upper(), 16, PICK)
+	_text(Vector2(x0 + 200, 22), "%d GOLD" % loot.gold, 13, Color(1.0, 0.85, 0.4))
+	_text(Vector2(x0, 42), "FOR SALE: click to buy. In the bag: click to sell.", 10, DIM)
+	var stock: Array = loot.shops.get(shop, [])
+	for i in stock.size():
+		var it: Dictionary = stock[i]
+		var r := Rect2(x0, 52 + i * 40, w, 36)
+		var can: bool = loot.gold >= int(it["value"])
+		draw_rect(r, BOX)
+		draw_rect(r, EDGE, false, 1.0)
+		_icon(it["icon"], Rect2(r.position + Vector2(3, 3), Vector2(30, 30)))
+		_text(r.position + Vector2(40, 15), it["name"], 11, loot.RARITY_COLOR[int(it["rarity"])] if can else Color(0.4, 0.42, 0.55))
+		_text(r.position + Vector2(40, 30), it["kind"], 9, DIM)
+		_text(r.position + Vector2(w - 60, 22), "%d g" % int(it["value"]), 12, Color(1.0, 0.85, 0.4) if can else Color(0.45, 0.4, 0.3))
+		_hits.append([r, "buy", i, it])

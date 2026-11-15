@@ -12,7 +12,8 @@ import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { Game } from '../src/game/game';
-import { STAT_INFO, imbueItem, imbueProblem, itemMods, kindName, modLines, starterWeapon } from '../src/game/items';
+import { STAT_INFO, imbueItem, imbueProblem, itemMods, itemValue, kindName, modLines, starterWeapon } from '../src/game/items';
+import { WORDS } from '../src/game/defs';
 import { TUNE, ATTR_GIVES } from '../src/game/defs';
 import { itemPic, makeIconArt } from '../src/art/icons';
 import { makeBodyArt } from '../src/art/body';
@@ -51,7 +52,7 @@ const plain = (it: Item): Record<string, unknown> => {
   const mods = itemMods(it);
   return {
     name: it.name, base: it.baseName, kind: kindName(it), slot: it.slot, rarity: it.rarity, ilvl: it.ilvl, req: it.reqLevel,
-    icon: picKey(it), weapon: !!it.weapon, hands: it.hands ?? 0, aps: it.aps ?? 0,
+    icon: picKey(it), weapon: !!it.weapon, hands: it.hands ?? 0, aps: it.aps ?? 0, value: itemValue(it),
     mods: mods.map((m) => [m.stat, m.value]),
     implicit: modLines(it.implicit, 'cooldown'),
     lines: modLines(it.affixes.flatMap((a) => a.mods), 'cooldown'),
@@ -74,8 +75,13 @@ for (const [q, n] of POOLS) {
 const starter = plain(starterWeapon('warrior'));
 const stats: Record<string, { label: string; pct: boolean }> = {};
 for (const [k, v] of Object.entries(STAT_INFO)) stats[k] = { label: (v as { label: string }).label, pct: !!(v as { pct?: boolean }).pct };
+// (the vendors' shelves on a new Warrior's first day in town: Game.rollShop, as enterTown has it; each piece's price itemValue)
+const inTown = new Game('warrior', seed);
+const shopsOf = (inTown as unknown as { shops: Record<string, (Item | null)[]> }).shops;
+const shops: Record<string, unknown[]> = {};
+for (const [id, list] of Object.entries(shopsOf)) shops[id] = list.filter((it): it is Item => it !== null).map(plain);
 const body = game.level.body;
-writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null }));
+writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, power: { frontText: WORDS.power.frontText, behindText: WORDS.power.behindText } }));
 
 // --- the pictures in one sheet: each at two picture pixels to a game pixel, its anchor kept ---
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
