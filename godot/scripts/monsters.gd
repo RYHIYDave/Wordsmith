@@ -170,7 +170,9 @@ func shut_in(m) -> bool:
 	if map == null or map.doors.is_empty() or hero == null:
 		return false
 	for d in map.doors:
-		if d["kind"] != "door" or int(d["want"]) != 0:
+		# (a door that is shut; THE MIX: a lever's gate that is down; a sealed door. Not the boss's gate, nor a locking room's:
+		# when those are down the hero is inside)
+		if not (d["kind"] in ["door", "gate", "worddoor"]) or int(d["want"]) != 0:
 			continue
 		var r: Dictionary = map.room(int(d["room"]))
 		if FloorMap.in_room(r, m.world) and not FloorMap.in_room(r, hero.world):

@@ -58,6 +58,13 @@ var _fog_g := {}
 var _fog_s := {}
 var _fog_glow := {}
 var _glow_nodes: Array = []
+## (each of the look's glows, by its place in the list, as its node, or null where it has no picture; the dark's own picture
+## and what it was made by, kept so that a hole in it can be taken out and put back: a furnace gone out)
+var _glow_at: Array = []
+var _dark_img: Image
+var _dark_lo := Vector2.ZERO
+var _dark_a := 0.0
+var _dark_dirty := Rect2i()
 var _fogged := false
 ## (the states playing by the clock: play_variant)
 var _plays: Array = []
@@ -639,6 +646,9 @@ func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 		bytes[i * 4 + 2] = b8
 		bytes[i * 4 + 3] = int(clampf(alpha[i], 0.0, 1.0) * 255.0)
 	var img := Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, bytes)
+	_dark_img = img
+	_dark_lo = lo
+	_dark_a = a
 	_dark = Sprite2D.new()
 	_dark.texture = ImageTexture.create_from_image(img)
 	_dark.centered = false
@@ -860,7 +870,8 @@ func reveal(tiles: PackedInt32Array) -> void:
 			_fog_s.erase(t)
 		if _fog_glow.has(t):
 			for n in _fog_glow[t]:
-				n.visible = true
+				n.set_meta("fog", false)
+				n.visible = not n.get_meta("hid", false)
 			_fog_glow.erase(t)
 	for node in redraw:
 		node.queue_redraw()
@@ -983,6 +994,7 @@ func _lighting2(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 	for g in data.get("glows", []):
 		var key := str(g[0])
 		if not _pics.has(key):
+			_glow_at.append(null)
 			continue
 		var p: Dictionary = _pics[key]
 		var s := Sprite2D.new()
@@ -996,6 +1008,7 @@ func _lighting2(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 		s.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		glows_root.add_child(s)
 		_glow_nodes.append(s)
+		_glow_at.append(s)
 	if _fogged:
 		var gl: Array = data["fog"].get("glows", [])
 		var k := 0
@@ -1007,6 +1020,7 @@ func _lighting2(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 				if not _fog_glow.has(t):
 					_fog_glow[t] = []
 				_fog_glow[t].append(_glow_nodes[k])
+				_glow_nodes[k].set_meta("fog", true)
 				_glow_nodes[k].visible = false
 			k += 1
 	if a <= 0.0:
@@ -1136,6 +1150,11 @@ func clear_variant(name: String) -> void:
 		_hide_ground(int(gi), -1)
 	for si in was["hs"]:
 		_hide_stand(int(si), -1)
+	for li in was.get("hl", []):
+		_hide_hole(int(li), -1)
+	for wi in was.get("hw", []):
+		_hide_glow(int(wi), -1)
+	_flush_dark()
 	_shown.erase(name)
 
 
@@ -1152,12 +1171,22 @@ func _show_step(name: String, v: Dictionary, si: int) -> void:
 		_hide_ground(int(gi), -1)
 	for si2 in was["hs"]:
 		_hide_stand(int(si2), -1)
+	for li in was.get("hl", []):
+		_hide_hole(int(li), -1)
+	for wi in was.get("hw", []):
+		_hide_glow(int(wi), -1)
 	var F: Dictionary = v["frames"][fi]
-	var now := {"frame": fi, "nodes": [], "hg": F["hg"], "hs": F["hs"]}
+	var now := {"frame": fi, "nodes": [], "hg": F["hg"], "hs": F["hs"], "hl": F.get("hl", []), "hw": F.get("hw", [])}
 	for gi in F["hg"]:
 		_hide_ground(int(gi), 1)
 	for si2 in F["hs"]:
 		_hide_stand(int(si2), 1)
+	# (the lights that are not there in it: a furnace gone out, a fire gone from a doorway)
+	for li in now["hl"]:
+		_hide_hole(int(li), 1)
+	for wi in now["hw"]:
+		_hide_glow(int(wi), 1)
+	_flush_dark()
 	# what it draws on the ground, each after the ground's thing it was drawn after (those after the same one in their order)
 	var after_n := {}
 	for e in F["g"]:
@@ -1222,6 +1251,78 @@ func _hide_stand(si: int, by: int) -> void:
 	_hidden[key] = n
 	_s_node[si].set_meta("hid", n > 0)
 	_s_node[si].visible = n <= 0 and not _s_node[si].get_meta("fog", false) and not _s_node[si].get_meta("blank", false)
+
+
+## One of the look's glows hidden (by: 1) or shown again (-1): hidden while any state hides it.
+func _hide_glow(wi: int, by: int) -> void:
+	if wi < 0 or wi >= _glow_at.size() or _glow_at[wi] == null:
+		return
+	var key := "w%d" % wi
+	var n: int = int(_hidden.get(key, 0)) + by
+	_hidden[key] = n
+	var node: Node2D = _glow_at[wi]
+	node.set_meta("hid", n > 0)
+	node.visible = n <= 0 and not node.get_meta("fog", false)
+
+
+## One of the holes the look's lights cut in the dark taken out (by: 1) or put back (-1): the dark's picture is made again
+## there, once for all that changed (_flush_dark).
+func _hide_hole(li: int, by: int) -> void:
+	var holes: Array = data.get("holes", [])
+	if li < 0 or li >= holes.size() or _dark_img == null:
+		return
+	var key := "l%d" % li
+	var was: int = int(_hidden.get(key, 0))
+	var n := was + by
+	_hidden[key] = n
+	if (was > 0) == (n > 0):
+		return
+	var hole: Array = holes[li]
+	var c: Vector2 = (Vector2(hole[0], hole[1]) - _dark_lo) / DARK_GRAIN
+	var rx: float = float(hole[2]) / DARK_GRAIN
+	var ry: float = float(hole[3]) / DARK_GRAIN
+	var r := Rect2i(floori(c.x - rx) - 1, floori(c.y - ry) - 1, ceili(rx * 2.0) + 3, ceili(ry * 2.0) + 3)
+	_dark_dirty = r if _dark_dirty.size == Vector2i.ZERO else _dark_dirty.merge(r)
+
+
+## The dark's picture made again where its holes changed: every hole still there that reaches into it, as it was first made.
+func _flush_dark() -> void:
+	if _dark_dirty.size == Vector2i.ZERO or _dark_img == null or _dark == null:
+		return
+	var w := _dark_img.get_width()
+	var h := _dark_img.get_height()
+	var r := _dark_dirty.intersection(Rect2i(0, 0, w, h))
+	_dark_dirty = Rect2i()
+	if r.size.x <= 0 or r.size.y <= 0:
+		return
+	var holes: Array = data.get("holes", [])
+	var near: Array = []
+	for i in holes.size():
+		if int(_hidden.get("l%d" % i, 0)) > 0:
+			continue
+		var hole: Array = holes[i]
+		var c: Vector2 = (Vector2(hole[0], hole[1]) - _dark_lo) / DARK_GRAIN
+		var rx: float = float(hole[2]) / DARK_GRAIN
+		var ry: float = float(hole[3]) / DARK_GRAIN
+		if rx <= 0.0 or ry <= 0.0:
+			continue
+		if c.x + rx < r.position.x or c.x - rx > r.end.x or c.y + ry < r.position.y or c.y - ry > r.end.y:
+			continue
+		near.append([c, rx, ry, clampf(float(hole[4]), 0.0, 1.0)])
+	var col := _dark_img.get_pixel(0, 0)
+	for y in range(r.position.y, r.end.y):
+		for x in range(r.position.x, r.end.x):
+			var alpha := 1.0
+			for q in near:
+				var dx: float = (x - q[0].x) / q[1]
+				var dy: float = (y - q[0].y) / q[2]
+				var k := sqrt(dx * dx + dy * dy)
+				if k >= 1.0:
+					continue
+				var pool := 1.0 - 0.6 * k if k < 0.5 else 1.4 * (1.0 - k)
+				alpha *= 1.0 - q[3] * clampf(pool, 0.0, 1.0)
+			_dark_img.set_pixel(x, y, Color(col.r, col.g, col.b, clampf(_dark_a * alpha, 0.0, 1.0)))
+	_dark.texture.update(_dark_img)
 
 
 ## A stretch of the recorded ground's still pictures, drawn in one go in the renderer's order.

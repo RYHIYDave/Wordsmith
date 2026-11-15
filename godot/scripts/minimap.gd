@@ -187,10 +187,30 @@ func _draw() -> void:
 	if main.place != "town":
 		_text("M", W - mw - 2, 6, T["dim"], {"font": "small", "shadow": P["ink"]})
 	_button(W - 14 - 4, MH + 7, 14, 12, "II", true)
+	_keys()
 	if open == "map":
 		_large(W, H)
 	elif open == "pause":
 		_pause(W, H)
+
+
+## FLOOR 5, THE TEMPLE DOOR'S KEYS (ui/hud.ts): top left, after the inventory button (and the word he may place, and the stone
+## he may carry): a key for each the door wants, whole for each he holds and faint for each he lacks, and how many of how
+## many; from when he has been told of the door or holds one, until the door is open.
+func _keys() -> void:
+	var T = main.temple
+	if T == null or not is_instance_valid(T) or not (T.told or T.keys > 0) or T.open:
+		return
+	var p: Array = hud._data["pics"].get("key", [])
+	if p.is_empty():
+		return
+	var spare: int = main.loot.words.get("power", 0) if main.loot != null else 0
+	var kx := 4.0 + PF.width("INVENTORY (I)", "small") + 10.0 + 3.0 + (26.0 if spare > 0 else 0.0) + (16.0 if main.loot != null and main.loot.quest != "" else 0.0) + 7.0
+	var cy := 24.0 + 13.0 / 2.0
+	for i in T.need:
+		draw_texture_rect_region(hud._tex, Rect2(roundf(kx - p[4] / 2.0), roundf(cy - p[5] / 2.0), p[2] / 2.0, p[3] / 2.0), Rect2(p[0], p[1], p[2], p[3]), Color(1, 1, 1, 1.0 if i < T.keys else 0.35))
+		kx += 13.0
+	_text("%d/%d" % [T.keys, T.need], kx - 4.0, roundf(cy - 3.0), Color("#dcaa52"), {"font": "small", "shadow": P["ink"]})
 
 
 ## Whether a tile has been seen, and whether it is in sight now (the town is seen whole).

@@ -50,6 +50,8 @@ var hazards: Array = []
 ## THE MIX (game/dungeon.ts): each lever's tile and the room whose way in its gate bars, {x, y, room} (a prop of kind
 ## "lever" stands on it); the rooms carry `gated`, `nook` and `locks` where the map-maker marked them.
 var levers: Array = []
+## (the room each pack is of, by the pack's id: a room that locks counts the living of its own packs inside it)
+var packs: Array = []
 ## QUESTS15, floor 3 while its furnace burns: {crank (its place among the props), keeper (the Stoker's id), gate (the door its
 ## fire bars), room, spot}, and the Stoker's arena {room, hall, furnace, crank, keeper}; null elsewhere.
 var furnace = null
@@ -93,6 +95,7 @@ func _init(path: String) -> void:
 	waypoint = data.get("waypoint", null)
 	hazards = data.get("hazards", [])
 	levers = data.get("levers", [])
+	packs = data.get("packs", [])
 	furnace = data.get("furnace")
 	arena = data.get("arena")
 	temple = data.get("temple")

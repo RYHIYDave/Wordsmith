@@ -27,7 +27,10 @@
 //       each of items, each glow and each hole, the tile (its place in the level's grid) that must have been seen for it to be
 //       drawn (Level.explored), or -1: always drawn. (--nofog leaves it out; the town has none.)
 //     variants: THE PLACE'S STATES, by name: door<i> (the level's doors and gates, shut to open in 21 steps), prop<i> (a
-//       chest open, a barrel or an urn broken: steps 0 and 1), stair<j> (the stairwell breaking open at each of its places),
+//       chest open, a barrel or an urn broken, a lever pulled: steps 0 and 1), temple (floor 5's temple door unlocked: its
+//       two chains, then its leaves, over `secs`), crank_set and furnace (floor 3's forge crank with its gear set in; the
+//       crank turned, the furnace and the fire in the hall's way going out, over `secs` at `fps`; a frame's `hl` and `hw`:
+//       the place's holes in the dark and glows that are not there in it), stair<j> (the stairwell breaking open at each of its places),
 //       exit, cave, shaft (floor 3's door, floor 4's cave, floor 5's cage, as they open), way (the waypoint awake: its loop,
 //       12 frames at `fps`), warp (the column of light of a warp on it, 12 frames at `fps`). Each
 //       { kind, (secs), steps: [which frame each step shows], frames: [{ hg: [the ground's things that are gone, by their
@@ -103,7 +106,7 @@ console.log(`${name}: ${where.w}x${where.h}, ${ready.props} props, ${ready.doors
     const doors = (lay.doors ?? []).map((q) => `${q.kind}:${q.alongX ? 'x' : 'y'}:${q.a}:${q.plane}`);
     const props = (lay.props ?? []).map((p) => `${p.i}:${p.kind}:${p.tx}:${p.ty}`);
     const same = hash === ready.sig.tiles && JSON.stringify(doors) === JSON.stringify(ready.sig.doors) && JSON.stringify(props) === JSON.stringify(ready.sig.props);
-    console.log(same ? '  the same level as godot/assets/' + name + '/layout.json (tiles, doors, chests, barrels and urns)' : `  !! NOT the level in godot/assets/${name}/layout.json: tiles ${hash === ready.sig.tiles ? 'the same' : 'differ'}, doors ${JSON.stringify(doors) === JSON.stringify(ready.sig.doors) ? 'the same' : 'differ'}, props ${JSON.stringify(props) === JSON.stringify(ready.sig.props) ? 'the same' : `differ (${props.length} against ${ready.sig.props.length})`}`);
+    console.log(same ? '  the same level as godot/assets/' + name + '/layout.json (tiles, doors, chests, barrels, urns and levers)' : `  !! NOT the level in godot/assets/${name}/layout.json: tiles ${hash === ready.sig.tiles ? 'the same' : 'differ'}, doors ${JSON.stringify(doors) === JSON.stringify(ready.sig.doors) ? 'the same' : 'differ'}, props ${JSON.stringify(props) === JSON.stringify(ready.sig.props) ? 'the same' : `differ (${props.length} against ${ready.sig.props.length})`}`);
   } else console.log(`  (no godot/assets/${name}/layout.json to hold it against)`);
 }
 // the frames: three thrown away (what fades by the clock settles), then N a thirtieth of a second apart
@@ -162,7 +165,8 @@ let waypoint = null;
 if (!args.includes('--still')) {
   const layoutFile = path.resolve(ROOT, `godot/assets/${name}/layout.json`);
   const layout = fs.existsSync(layoutFile) ? JSON.parse(fs.readFileSync(layoutFile, 'utf8')) : null;
-  const consts = { stair: 3.5, exit: layout?.ways?.exit?.secs ?? 3, cave: 126 / 30, shaft: 129 / 30 };
+  // (the lengths of the films, as the game has them: game/ways.ts; game/temple_door.ts TEMPLE_TIMES; game/quests15.ts CRANK_TIMES)
+  const consts = { stair: 3.5, exit: layout?.ways?.exit?.secs ?? 3, cave: 126 / 30, shaft: 129 / 30, temple: { chain: 1.5, second: 1.1, swingAt: 2.9, swing: 1.6 }, crank: { turn: 1.2, furnaceOut: 1.6, fireOut: 1.5 } };
   const ts = Date.now();
   const base = await page.evaluate(({ T0, W, H }) => window.__rec.statesBegin(T0, W, H), { T0, ...size });
   if (base.err) { console.error('the renderer threw:\n' + base.err); await browser.close(); process.exit(1); }
@@ -241,6 +245,8 @@ const doc = {
     const steps = v.frames.map((f) => {
       const out = {
         hg: f.hg, hs: f.hs,
+        // (the lights that are not there in it: the holes in the dark and the glows, by their place in the look's lists)
+        ...(f.hl && f.hl.length ? { hl: f.hl } : {}), ...(f.hw && f.hw.length ? { hw: f.hw } : {}),
         g: f.g.map((e) => [key(e.f), e.x, e.y, e.a, e.w, e.h, e.add, e.after]),
         s: f.s.map((e) => ({ f: [key(e.f)], x: e.x, y: e.y, d: e.d, ...(e.a !== 1 ? { a: e.a } : {}), ...(e.w || e.h ? { w: e.w, h: e.h } : {}), ...(e.add ? { add: 1 } : {}), ...(e.wall ? { wall: e.wall } : {}) })),
       };

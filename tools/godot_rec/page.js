@@ -368,7 +368,7 @@
     // (what the level is, to hold against the layout the Godot side has: its tiles, its doors, its chests, barrels and urns)
     let hash = 0;
     for (let i = 0; i < f.tiles.length; i++) hash = (Math.imul(hash, 31) + f.tiles[i]) | 0;
-    const sig = { tiles: hash, doors: (L.doors || []).map((q) => `${q.spot.kind}:${q.spot.alongX ? 'x' : 'y'}:${q.spot.a}:${q.spot.plane}`), props: L.props.map((p, i) => (p.kind === 'chest' || p.kind === 'barrel' || p.kind === 'urn' ? `${i}:${p.kind}:${p.tx}:${p.ty}` : '')).filter((x) => x) };
+    const sig = { tiles: hash, doors: (L.doors || []).map((q) => `${q.spot.kind}:${q.spot.alongX ? 'x' : 'y'}:${q.spot.a}:${q.spot.plane}`), props: L.props.map((p, i) => (p.kind === 'chest' || p.kind === 'barrel' || p.kind === 'urn' || p.kind === 'lever' ? `${i}:${p.kind}:${p.tx}:${p.ty}` : '')).filter((x) => x) };
     const look = d.renderer.lookOf ? d.renderer.lookOf(L) : null;
     return { w: f.w, h: f.h, park: REC.park, monsters: REC.kept.monsters.length, props: L.props.length, doors: L.doors ? L.doors.length : 0, look: !!look, vignette: look && look.vignette !== undefined ? look.vignette : null, sig };
   };
@@ -925,6 +925,16 @@
       if (seen.has(ti) || first(T) < 0 || T.pos === undefined) return;
       (T.kind === 'g' ? out.hg : out.hs).push(T.pos);
     });
+    // THE LIGHTS: which of the place's holes in the dark (`hl`) and of its glows (`hw`), by their place in the look's lists, are
+    // not there in this frame (each known by where it is, as REC.fog knows them): a furnace gone out, a fire gone from a doorway
+    out.hl = [];
+    out.hw = [];
+    if (res && res.holes && res.glows && fr.holes && fr.glows) {
+      const hk = new Set(fr.holes.map((q) => `${Math.round(q.x / 2)},${Math.round(q.y / 2)}`));
+      const gk = new Set(fr.glows.map((q) => `${Math.round(q.x)},${Math.round(q.y)}`));
+      res.holes.forEach((q, i) => { if (!hk.has(`${Math.round(q.x / 2)},${Math.round(q.y / 2)}`)) out.hl.push(i); });
+      res.glows.forEach((q, i) => { if (!gk.has(`${Math.round(q.x)},${Math.round(q.y)}`)) out.hw.push(i); });
+    }
     return out;
   };
 
@@ -944,7 +954,7 @@
         const fr = REC.take(T0 + sample / 30, W, H);
         if (fr.err) return { err: fr.err };
         const df = REC.differ(fr, sample);
-        REC.baseDiffs.set(sample, { hg: new Set(df.hg), hs: new Set(df.hs), g: new Set(df.g.map((e) => `${e.f}|${e.x}|${e.y}`)), s: new Set(df.s.map((e) => `${e.f}|${e.x}|${e.y}|${e.d}`)) });
+        REC.baseDiffs.set(sample, { hg: new Set(df.hg), hs: new Set(df.hs), g: new Set(df.g.map((e) => `${e.f}|${e.x}|${e.y}`)), s: new Set(df.s.map((e) => `${e.f}|${e.x}|${e.y}|${e.d}`)), hl: new Set(df.hl), hw: new Set(df.hw) });
       }
       g.time = REC.time0;
     }
@@ -963,6 +973,8 @@
         const drop = (list, base) => list.filter((x) => !base.has(x));
         df.hg = drop(df.hg, B.hg);
         df.hs = drop(df.hs, B.hs);
+        df.hl = drop(df.hl, B.hl ?? new Set());
+        df.hw = drop(df.hw, B.hw ?? new Set());
         df.g = df.g.filter((e) => !B.g.has(`${e.f}|${e.x}|${e.y}`));
         df.s = df.s.filter((e) => !B.s.has(`${e.f}|${e.x}|${e.y}|${e.d}`));
       }
@@ -983,7 +995,7 @@
     const fr = REC.take(T0, W, H);
     if (fr.err) return { err: fr.err };
     const df = REC.differ(fr);
-    REC.baseDiff = { hg: new Set(df.hg), hs: new Set(df.hs), g: new Set(df.g.map((e) => `${e.f}|${e.x}|${e.y}`)), s: new Set(df.s.map((e) => `${e.f}|${e.x}|${e.y}|${e.d}`)) };
+    REC.baseDiff = { hg: new Set(df.hg), hs: new Set(df.hs), g: new Set(df.g.map((e) => `${e.f}|${e.x}|${e.y}`)), s: new Set(df.s.map((e) => `${e.f}|${e.x}|${e.y}|${e.d}`)), hl: new Set(df.hl), hw: new Set(df.hw) };
     return { hg: df.hg.length, hs: df.hs.length, g: df.g.length, s: df.s.length };
   };
 
@@ -994,6 +1006,8 @@
     const out = {};
     const note = {};
     const steps = (n) => Array.from({ length: n + 1 }, (_, i) => i / n);
+    const film = (secs, fps) => steps(Math.max(1, Math.round(secs * fps)));
+    const none = () => ({ hg: [], hs: [], g: [], s: [], hl: [], hw: [] });
     // the doors and gates, each from shut to open
     (L.doors || []).forEach((door, i) => {
       const was = { open: door.open, want: door.want };
@@ -1001,18 +1015,65 @@
       if (r.err) { note[`door${i}`] = r.err; return; }
       out[`door${i}`] = { kind: door.spot.kind, at: was.open, frames: r.frames };
     });
-    // the chests, barrels and urns: opened, broken
+    // the chests, barrels and urns: opened, broken; THE MIX's levers: pulled (not floor 3's forge crank, a lever by kind: below)
     L.props.forEach((p, i) => {
-      if (p.kind !== 'chest' && p.kind !== 'barrel' && p.kind !== 'urn') return;
+      if (p.kind !== 'chest' && p.kind !== 'barrel' && p.kind !== 'urn' && p.kind !== 'lever') return;
+      if (L.furnace && p === L.furnace.crank) return;
       const was = p.state;
       const r = REC.variant(T0, W, H, [1], () => { p.state = 1; }, () => { p.state = was; });
       if (r.err) { note[`prop${i}`] = r.err; return; }
-      out[`prop${i}`] = { kind: p.kind, frames: [{ hg: [], hs: [], g: [], s: [] }, r.frames[0]] };
+      out[`prop${i}`] = { kind: p.kind, frames: [none(), r.frames[0]] };
     });
+    // FLOOR 5, THE TEMPLE'S DOOR UNLOCKED (game/temple_door.ts stepTempleDoor; `consts.temple`, its TEMPLE_TIMES): its first chain
+    // from the beginning, its second a little after, then its leaves swinging into the temple: one film, 10 frames a second
+    if (L.temple && L.doors && L.doors[L.temple.door] && consts.temple) {
+      const T = L.temple;
+      const door = L.doors[T.door];
+      const TT = consts.temple;
+      const was = { c0: T.chain[0], c1: T.chain[1], open: door.open, want: door.want };
+      const secs = TT.swingAt + TT.swing;
+      const cl = (x) => Math.max(0, Math.min(1, x));
+      const r = REC.variant(T0, W, H, film(secs, 10), (v) => {
+        const sT = v * secs;
+        T.chain[0] = cl(sT / TT.chain);
+        T.chain[1] = cl((sT - TT.second) / TT.chain);
+        door.open = cl((sT - TT.swingAt) / TT.swing);
+      }, () => { T.chain[0] = was.c0; T.chain[1] = was.c1; door.open = was.open; door.want = was.want; });
+      if (r.err) note.temple = r.err;
+      else out.temple = { kind: 'temple', secs, frames: r.frames };
+    }
+    // QUESTS15, FLOOR 3'S FURNACE (render.ts standFurnace, crankSprite, the fire in the Chained One's way; `consts.crank`, the
+    // game's CRANK_TIMES): the forge crank with its gear set in (the hero carrying it); and the crank turned: its one turn, then
+    // the furnace going out and the fire in the hall's way with it, to the furnace cold, the crank turned and a bed of ash:
+    // one film, 15 frames a second
+    if (L.furnace && consts.crank) {
+      const F = L.furnace;
+      const hh = g.hero;
+      const C = consts.crank;
+      const was = { out: F.out, turnedAt: F.turnedAt, gone: F.gone, furnace: hh.furnace };
+      const back = () => {
+        F.out = was.out;
+        F.turnedAt = was.turnedAt;
+        if (was.gone === undefined) delete F.gone;
+        else F.gone = was.gone;
+        hh.furnace = was.furnace;
+      };
+      const r1 = REC.variant(T0, W, H, [1], () => { hh.furnace = 'gear'; }, back);
+      if (r1.err) note.crank_set = r1.err;
+      else out.crank_set = { kind: 'crank', frames: [none(), r1.frames[0]] };
+      const secs = C.turn + Math.max(C.furnaceOut, C.fireOut);
+      const r2 = REC.variant(T0, W, H, film(secs, 15), (v) => {
+        hh.furnace = 'out';
+        F.out = true;
+        F.turnedAt = REC.time0 - v * secs;
+        F.gone = v * secs >= C.turn + C.fireOut - 1e-6;
+      }, back);
+      if (r2.err) note.furnace = r2.err;
+      else out.furnace = { kind: 'furnace', secs, fps: 15, frames: r2.frames };
+    }
     // the ways on
     const Wy = L.ways;
     if (Wy) {
-      const film = (secs, fps) => steps(Math.max(1, Math.round(secs * fps)));
       (Wy.stairs || []).forEach((st, j) => {
         const was = { stair: Wy.stair, open: st.open, t: st.t };
         const walk = L.walk.slice();
@@ -1060,7 +1121,7 @@
     const sum = {};
     for (const k in out) {
       const kind = out[k].kind;
-      const changed = out[k].frames.filter((f) => f.hg.length || f.hs.length || f.g.length || f.s.length).length;
+      const changed = out[k].frames.filter((f) => f.hg.length || f.hs.length || f.g.length || f.s.length || (f.hl && f.hl.length) || (f.hw && f.hw.length)).length;
       if (!sum[kind]) sum[kind] = { n: 0, frames: 0, changed: 0 };
       sum[kind].n++;
       sum[kind].frames += out[k].frames.length;

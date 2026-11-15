@@ -14,6 +14,14 @@
 ##   who comes near: only to a hit from an attack carrying its word (game.ts unseal: the hit reaching within its reach and 0.65
 ##   of its middle); then it swings open as a door does, and stays open. Sealed, its tile is wall to whatever walks, flies, is
 ##   shot or looks. The first time it is seen from near, a line says what it wants.
+##   A GATE WITH A LEVER (THE MIX, game/doors.ts 'gate'; game.ts pullLever): in the way in of one room of the main path, DOWN as
+##   he comes to the floor, wall to whatever walks, flies, is shot or looks; the first time it is seen from near a line says
+##   so. Its lever stands in a small room at a dead end nearby: he pulls it by walking up to it (within 1.5 tiles), and the
+##   gate rises (1.1 s) and stays up.
+##   THE GATES OF A ROOM THAT LOCKS ('trapgate'; game.ts updateLocks): one in every doorway of it, up, until he is inside the
+##   room, 2.7 tiles and more from the middle of every doorway of it, with a living monster of the room's own packs inside;
+##   then they fall, and rise when none of that pack is left alive in the room.
+##   (Floor 5's temple door, 'templedoor', is temple.gd's; floor 3's fire in the boss's gateway, furnace.gd's.)
 ## Their pictures as they open: look.gd show_door (what the game's renderer draws at each step, tools/godot_looks.ts).
 extends Node
 
@@ -24,6 +32,9 @@ const DOOR_SWING := 0.32
 const GATE_FALL := 0.22
 const GATE_RISE := 1.1
 const GATE_INSIDE := 2.2
+## (game/doors.ts LEVER_NEAR, LOCK_CLEAR)
+const LEVER_NEAR := 1.5
+const LOCK_CLEAR := 2.7
 ## (defs.ts BOSS_INTRO, BOSS_LINES)
 const INTRO := 3.2
 const SAY_FOR := 1.9
@@ -47,6 +58,7 @@ var intro_t := 0.0
 const WORD_NAMES := {"power": "Power"}
 const OMEN := Color("#ffc24a")
 const WORD := Color("#7af8f0")
+const GOOD := Color("#8af078")
 const AGGRO := 9.0
 
 
@@ -57,6 +69,11 @@ func _ready() -> void:
 		var d: Dictionary = map.doors[i]
 		if d["kind"] == "worddoor" and int(d["want"]) == 0:
 			for t in d["way"]:
+				map.shut[int(t)] = 1
+				map.walk[int(t)] = 0
+		# (THE MIX: a lever's gate begins down, its doorway wall to everything: game/level.ts)
+		if d["kind"] == "gate" and int(d["want"]) == 0:
+			for t in d["tiles"]:
 				map.shut[int(t)] = 1
 				map.walk[int(t)] = 0
 
@@ -85,6 +102,12 @@ func _process(dt: float) -> void:
 				d["told"] = true
 				if main.loot != null:
 					main.loot.say("A sealed door. It wants %s." % _word_name(d.get("word", "")).to_upper(), OMEN)
+		# (THE MIX: a lever's gate, down: the first time it is seen from near, a line says what it is)
+		if kind == "gate" and int(d["want"]) == 0 and not d.get("told", false) and hero.alive:
+			var gat := Vector2(d["middle"]["x"], d["middle"]["y"])
+			if hero.world.distance_to(gat) <= AGGRO and _in_sight(d["tiles"]):
+				d["told"] = true
+				_say("A gate bars the way. Its lever is near.", OMEN)
 		# (the boss's gate: down behind him once he is well inside with the boss alive; up once the boss is dead)
 		if kind == "bossgate":
 			if int(d["want"]) == 1 and alive and hero.alive and _well_inside(d, hero.world):
@@ -100,6 +123,8 @@ func _process(dt: float) -> void:
 			var secs := DOOR_SWING if kind == "door" or kind == "worddoor" else (GATE_RISE if want == 1.0 else GATE_FALL)
 			d["open"] = move_toward(open, want, dt / secs)
 			_show(i)
+	_levers()
+	_locks()
 	if intro_t > 0.0:
 		intro_t = maxf(0.0, intro_t - dt)
 	if boss != null:
@@ -137,17 +162,104 @@ static func _word_name(w: String) -> String:
 	return WORD_NAMES.get(w, w.capitalize())
 
 
-## The hero fallen and set back where he came in: the boss's gate up again behind him, the boss waiting again.
+## The hero fallen and set back where he came in: the boss's gate up again behind him, the boss waiting again; and the gates
+## of a room that locks, up again (he is outside it now).
 func reset() -> void:
 	intro_t = 0.0
 	for d in map.doors:
-		if d["kind"] == "bossgate" and int(d["want"]) == 0:
+		if (d["kind"] == "bossgate" or d["kind"] == "trapgate") and int(d["want"]) == 0:
 			_raise(d)
 
 
 func _show(i: int) -> void:
-	if look != null:
+	# (floor 5's temple door is shown by its own film: temple.gd)
+	if look != null and map.doors[i]["kind"] != "templedoor":
 		look.show_door(i, float(map.doors[i]["open"]))
+
+
+func _say(text: String, color: Color) -> void:
+	if main != null and main.loot != null:
+		main.loot.say(text, color)
+
+
+## Is any of these tiles in his sight now (sight.gd; where the floor has no sight, always)?
+func _in_sight(tiles: Array) -> bool:
+	if main == null or main.sight == null:
+		return true
+	for t in tiles:
+		if main.sight.visible_now[int(t)] == 1:
+			return true
+	return false
+
+
+## (THE MIX) THE HERO PULLS A LEVER by walking up to it: its gate rises, and stays up (game.ts pullLever: the lever knows its
+## gate by the room the gate bars; one that knows none raises every lever's gate of the level). Not floor 3's forge crank, a
+## lever by kind: that one is turned (furnace.gd).
+func _levers() -> void:
+	if not hero.alive:
+		return
+	for p in map.props:
+		if p["kind"] != "lever" or int(p["state"]) != 0 or p.get("name", "") == "crank":
+			continue
+		if hero.world.distance_to(Vector2(p["x"], p["y"])) >= LEVER_NEAR:
+			continue
+		p["state"] = 1
+		if look != null:
+			look.prop_opened(int(p["i"]))
+		var room := -1
+		for l in map.levers:
+			if int(l["x"]) == int(p["tx"]) and int(l["y"]) == int(p["ty"]):
+				room = int(l["room"])
+		var raised := 0
+		for d in map.doors:
+			if d["kind"] != "gate" or int(d["want"]) != 0 or (room >= 0 and int(d["room"]) != room):
+				continue
+			_raise(d)
+			raised += 1
+		sfx.play("door", linear_to_db(0.8))
+		if raised > 0:
+			_say("A gate rises.", GOOD)
+
+
+## (THE MIX) THE ROOMS THAT LOCK (game.ts updateLocks): their gates fall when the hero is inside the room, LOCK_CLEAR and more
+## from the middle of every one of its doorways, and a living monster of the room's own packs is inside it with him; they rise
+## when no living monster of the room's own packs is inside the room.
+func _locks() -> void:
+	for r in map.rooms:
+		if not r.get("locks", false):
+			continue
+		var gates: Array = []
+		for d in map.doors:
+			if d["kind"] == "trapgate" and int(d["room"]) == int(r["id"]):
+				gates.append(d)
+		if gates.is_empty():
+			continue
+		var pack := false
+		for m in monsters.list:
+			if is_instance_valid(m) and not m.dead and m.pack_id >= 0 and m.pack_id < map.packs.size() and int(map.packs[m.pack_id]) == int(r["id"]) and FloorMap.in_room(r, m.world):
+				pack = true
+				break
+		var down := false
+		for d in gates:
+			if int(d["want"]) == 0:
+				down = true
+		if not down:
+			if not pack or not hero.alive or not FloorMap.in_room(r, hero.world):
+				continue
+			var clear := true
+			for d in gates:
+				if hero.world.distance_to(Vector2(d["middle"]["x"], d["middle"]["y"])) < LOCK_CLEAR:
+					clear = false
+			if not clear:
+				continue
+			for d in gates:
+				_drop(d)
+			_say("The gates fall.", OMEN)
+		elif not pack:
+			for d in gates:
+				if int(d["want"]) == 0:
+					_raise(d)
+			_say("The gates rise.", GOOD)
 
 
 func _boss():

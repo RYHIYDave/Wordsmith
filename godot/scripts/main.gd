@@ -29,6 +29,8 @@ const Hud := preload("res://scripts/hud.gd")
 const Loot := preload("res://scripts/loot.gd")
 const Inventory := preload("res://scripts/inventory.gd")
 const Minimap := preload("res://scripts/minimap.gd")
+const Temple := preload("res://scripts/temple.gd")
+const Furnace := preload("res://scripts/furnace.gd")
 const Town := preload("res://scripts/town.gd")
 const Guide := preload("res://scripts/guide.gd")
 const Look := preload("res://scripts/look.gd")
@@ -93,6 +95,10 @@ var _hero_light: Node
 var ways: Ways
 ## (what he has seen of the floor: sight.gd)
 var sight: Sight
+## (floor 5's temple door, its chains and keys: temple.gd; null elsewhere)
+var temple: Temple
+## (floor 3's furnace, its crank and the fire in the Chained One's way: furnace.gd; null elsewhere)
+var furnace: Furnace
 
 
 ## Which floor a place is (0: the town).
@@ -297,6 +303,28 @@ func _build(where: String, arrive: String) -> void:
 		_doors.sfx = sfx
 		_place.add_child(_doors)
 		hero.doors = _doors
+	# (floor 5: the temple's door, barred by two chains until both keys are brought: temple.gd)
+	temple = null
+	if map.temple != null:
+		temple = Temple.new()
+		temple.main = self
+		temple.map = map
+		temple.look = look if looked else null
+		temple.hero = hero
+		temple.monsters = monsters
+		temple.sfx = sfx
+		_place.add_child(temple)
+	# (floor 3 while its furnace burns: the fire in the Chained One's gateway, the forge crank: furnace.gd)
+	furnace = null
+	if map.furnace != null:
+		furnace = Furnace.new()
+		furnace.main = self
+		furnace.map = map
+		furnace.look = look if looked else null
+		furnace.hero = hero
+		furnace.monsters = monsters
+		furnace.sfx = sfx
+		_place.add_child(furnace)
 	# (the floor's chests, barrels and urns: props.gd)
 	hero.props = null
 	if not map.props.is_empty():
@@ -667,6 +695,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "kind":
 		await _kind_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "gates":
+		await _gate_shots(hero, dir)
 		get_tree().quit()
 		return
 	await _wait(1.0)
@@ -1449,6 +1481,159 @@ func _free_near(at: Vector2) -> Vector2:
 				if map.walkable(tx, ty):
 					return Vector2(tx + 0.5, ty + 0.5)
 	return at
+
+
+## Can a body walk from `from` to the room `r` (four ways, over the walk grid as it is now, through doors that open of
+## themselves: a door's tile is in the walk grid, shut or not)?
+func _walks_to(from: Vector2, r: Dictionary) -> bool:
+	var seen := PackedByteArray()
+	seen.resize(map.w * map.h)
+	var q := PackedInt32Array([floori(from.y) * map.w + floori(from.x)])
+	seen[q[0]] = 1
+	var head := 0
+	while head < q.size():
+		var i := q[head]
+		head += 1
+		var tx := i % map.w
+		var ty := i / map.w
+		if FloorMap.in_room(r, Vector2(tx + 0.5, ty + 0.5)):
+			return true
+		for dxy in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var nx: int = tx + dxy.x
+			var ny: int = ty + dxy.y
+			if nx < 0 or ny < 0 or nx >= map.w or ny >= map.h:
+				continue
+			var j := ny * map.w + nx
+			if seen[j] == 0 and map.walk[j] != 0:
+				seen[j] = 1
+				q.append(j)
+	return false
+
+
+## SHOT MODE, THE GATES OF A FLOOR (--only=gates --floor=N): whether the boss's hall can be walked to as he comes in; the
+## lever's gate seen down (its line), its lever walked up to (the gate rises); a room that locks walked into (its gates
+## fall), its pack struck dead (they rise); floor 5's temple door come to without its keys (its line), a key taken, and
+## another, and come to again (its chains fall, its leaves swing open); and whether the boss's hall can be walked to then.
+func _gate_shots(h: Hero, dir: String) -> void:
+	var n := int(_arg("floor")) if _arg("floor") != "" else 3
+	go_to("floor%d" % n, "down" if n > 1 else "start")
+	await _wait(1.4)
+	var tag := dir + "/g%d_" % n
+	var hall: Dictionary = {}
+	for r in map.rooms:
+		if r.get("kind", "") == "boss":
+			hall = r
+	var said: Array = ["the boss's hall walked to as he comes in: %s" % _walks_to(h.world, hall)]
+	for m in _monsters.list:
+		if is_instance_valid(m) and not m.boss:
+			m.state = "sleep"
+	# --- the lever's gate
+	for d in map.doors:
+		if d["kind"] != "gate":
+			continue
+		var mid := Vector2(d["middle"]["x"], d["middle"]["y"])
+		# (before it, outside the room it bars)
+		var out := mid + (Vector2(0, d["out"]) if d["alongX"] else Vector2(d["out"], 0)) * 2.5
+		h.world = _free_near(out)
+		await _wait(0.6)
+		await _snap(tag + "1_the_gate_down.png")
+		said.append("the gate: want %d, its tiles walked %s, told %s" % [int(d["want"]), [map.walk[int(d["tiles"][0])], map.walk[int(d["tiles"][1])]], d.get("told", false)])
+		for p in map.props:
+			if p["kind"] == "lever" and p.get("name", "") != "crank":
+				h.world = _free_near(Vector2(p["x"], p["y"]) + Vector2(2.6, 0))
+				await _wait(0.5)
+				await _snap(tag + "2_the_lever.png")
+				var at := Vector2(p["x"], p["y"])
+				var best := h.world
+				for ty in range(floori(at.y) - 1, floori(at.y) + 2):
+					for tx in range(floori(at.x) - 1, floori(at.x) + 2):
+						if map.walkable(tx, ty) and Vector2(tx + 0.5, ty + 0.5).distance_to(at) < best.distance_to(at):
+							best = Vector2(tx + 0.5, ty + 0.5)
+				h.world = best
+				await _wait(0.5)
+				await _snap(tag + "3_the_lever_pulled.png")
+				said.append("the lever %.1f off: state %d" % [h.world.distance_to(at), int(p["state"])])
+		h.world = _free_near(out)
+		await _wait(1.3)
+		await _snap(tag + "4_the_gate_up.png")
+		said.append("the gate: want %d open %.2f, its tiles walked %s" % [int(d["want"]), float(d["open"]), [map.walk[int(d["tiles"][0])], map.walk[int(d["tiles"][1])]]])
+	# --- a room that locks
+	for r in map.rooms:
+		if not r.get("locks", false):
+			continue
+		var pack: Array = []
+		for m in _monsters.list:
+			if is_instance_valid(m) and not m.dead and m.pack_id >= 0 and m.pack_id < map.packs.size() and int(map.packs[m.pack_id]) == int(r["id"]):
+				pack.append(m)
+		h.world = _free_near(Vector2(r["x"] + r["w"] / 2.0, r["y"] + r["h"] / 2.0))
+		await _wait(0.8)
+		await _snap(tag + "5_the_room_locks.png")
+		var gates: Array = []
+		for d in map.doors:
+			if d["kind"] == "trapgate" and int(d["room"]) == int(r["id"]):
+				gates.append(int(d["want"]))
+		said.append("the room that locks (%d of its pack): its gates want %s" % [pack.size(), gates])
+		for m in pack:
+			if is_instance_valid(m):
+				m.hurt(1e9)
+		await _wait(1.5)
+		await _snap(tag + "6_its_pack_dead.png")
+		gates = []
+		for d in map.doors:
+			if d["kind"] == "trapgate" and int(d["room"]) == int(r["id"]):
+				gates.append(int(d["want"]))
+		said.append("its pack dead: its gates want %s" % [gates])
+	# --- floor 5's temple door
+	if temple != null:
+		var d: Dictionary = map.doors[int(map.temple["door"])]
+		var mid := Vector2(d["middle"]["x"], d["middle"]["y"])
+		var out := mid + (Vector2(0, d["out"]) if d["alongX"] else Vector2(d["out"], 0)) * 2.0
+		h.world = _free_near(out)
+		await _wait(0.7)
+		await _snap(tag + "7_the_temple_door_barred.png")
+		said.append("the temple door: told %s keys %d, walked %s" % [temple.told, temple.keys, map.walk[int(d["tiles"][1])]])
+		h.world = _free_near(out + (out - mid).normalized() * 4.0)
+		await _wait(0.2)
+		_monsters.quest_item.emit("key", h.world)
+		await _wait(0.3)
+		_monsters.quest_item.emit("key", h.world)
+		await _wait(0.3)
+		h.world = _free_near(out)
+		for k in [[0.9, "8a_its_first_chain"], [1.2, "8b_its_second_chain"], [1.3, "8c_its_leaves_swing"], [1.4, "8d_the_temple_open"]]:
+			await _wait(k[0])
+			await _snap(tag + "%s.png" % k[1])
+		said.append("with both keys: keys %d, open %s, walked %s" % [temple.keys, temple.open, map.walk[int(d["tiles"][1])]])
+	# --- floor 3's furnace: the fire in the hall's way, the crank without its gear, the gear taken, the crank turned
+	if furnace != null and not furnace._door.is_empty():
+		var d: Dictionary = furnace._door
+		var mid := Vector2(d["middle"]["x"], d["middle"]["y"])
+		var out := mid + (Vector2(0, d["out"]) if d["alongX"] else Vector2(d["out"], 0)) * 2.5
+		h.world = _free_near(out)
+		await _wait(0.7)
+		await _snap(tag + "7_fire_bars_the_hall.png")
+		said.append("the fire: told %s, its way walked %s, the hall walked to %s" % [furnace.told, map.walk[int(d["tiles"][1])], _walks_to(h.world, hall)])
+		var c := Vector2(furnace._crank["x"], furnace._crank["y"])
+		var by := _free_near(c + Vector2(0.9, 0.4))
+		h.world = by
+		await _wait(0.6)
+		await _snap(tag + "8a_the_crank_without_its_gear.png")
+		said.append("the crank %.1f off without the gear: step '%s', told %s" % [by.distance_to(c), furnace.step, furnace.told_crank])
+		h.world = _free_near(c + Vector2(4.0, 0.0))
+		await _wait(0.2)
+		_monsters.quest_item.emit("gear", h.world)
+		await _wait(0.4)
+		await _snap(tag + "8b_the_gear_set_in.png")
+		h.world = by
+		for k in [[0.5, "8c_the_crank_turning"], [1.3, "8d_the_furnace_going_out"], [1.4, "8e_the_furnace_out"]]:
+			await _wait(k[0])
+			await _snap(tag + "%s.png" % k[1])
+		said.append("the crank turned: step '%s', gone %s" % [furnace.step, furnace.gone])
+		h.world = _free_near(out)
+		await _wait(0.6)
+		await _snap(tag + "9_the_way_open.png")
+		said.append("the fire's way walked %s" % map.walk[int(d["tiles"][1])])
+	said.append("the boss's hall walked to now: %s" % _walks_to(h.world, hall))
+	print("GATES floor %d: %s" % [n, "; ".join(said)])
 
 
 ## SHOT MODE, ONE KIND OF MONSTER'S OWN MOVES (--only=kind --floor=N --kind=brute|boneward|priest|dagger|stoker|keyblade|...

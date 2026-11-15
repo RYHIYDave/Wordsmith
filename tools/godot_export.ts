@@ -132,6 +132,8 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
     .filter((p) => p.kind === 'chest' || p.kind === 'barrel' || p.kind === 'urn' || p.kind === 'lever'),
   // (THE MIX: each lever's tile and the room whose way in its gate bars: types.ts LeverSpot)
   levers: (L.levers ?? []).map((l) => ({ ...l })),
+  // (the room each pack is of, by the pack's id: a room that locks counts the living of its own packs inside it, game.ts updateLocks)
+  packs: (L.packs ?? []).map((q) => q.roomId),
   // (QUESTS15, floor 3 while its furnace burns: the furnace quest as the game keeps it (its crank's place among the props, its
   // keeper's id among the monsters, the gate its fire bars); the Stoker's arena (game/furnace_arena.ts); the fire channels)
   furnace: level.furnace ? { crank: level.props.indexOf(level.furnace.crank), keeper: level.furnace.keeper, gate: level.furnace.gate, room: level.furnace.room, spot: level.furnace.spot } : null,

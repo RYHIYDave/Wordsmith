@@ -16,6 +16,7 @@ import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { CLASSES, FLOOR_NAMES, SKILLS, WORDS, floorTitle } from '../src/game/defs';
 import { makeStoneArt } from '../src/art/quest3';
+import { keySprite } from '../src/art/key_bearers_fx';
 import { WORD_COLOR, makeIconArt } from '../src/art/icons';
 import { P } from '../src/art/palette';
 import { THEME } from '../src/ui/ui';
@@ -39,6 +40,9 @@ for (const id of ids) {
   const icon = SKILLS[id].icon;
   pics.set(`ability:${icon}`, (icons.ability as Record<string, Sprite>)[icon]);
 }
+// (floor 5: one of the temple door's keys, lying: shown top left for each he holds, and faint for each he lacks: ui/hud.ts;
+// art/key_bearers_fx.ts keySprite. Last, so that the pictures before it keep their places in the sheet.)
+pics.set('key', keySprite(0));
 
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);
