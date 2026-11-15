@@ -17,11 +17,19 @@
 ##     glances off); the high priest's fire bolt and his CENSER's burning smoke; the dagger cultist's FRENZY of four stabs.
 ##   Struck: it flashes (0.12 s), shows its life for 4 s, wakes. Killed: it falls (its die list) and lies 30 s, fading
 ##   over the last 1.5 (BODIES); its marks on the floor go with it.
+##   WHAT THE HERO'S WORDS DO TO IT (game.ts hitMonster, chillMonster, poisonMonster, stunMonster, staggerMonster, damageMonster,
+##     updateMonsters, updateDots; the hit itself is the hero's: hero.gd hit_monster): it BURNS (Flame: half its burning a
+##     second every half second, 3 s); it is CHILLED (Frost: its steps and its charge slower by the chill's share, its wind-ups
+##     by two fifths of it, 2.5 s) and a second chilling hit FREEZES it (1.1 s, an elite 0.6 s, then not again for 4 s; never
+##     a boss); it is POISONED (each hit a dose, 8 at most, 4 s from the last; half its poison a second every half second); it
+##     is STUNNED (Heavy: 0.8 s, an elite half that; never a boss) or STAGGERED by cracked ground (0.55 s, and not again for
+##     1.5 s after; never a boss): frozen, stunned or staggered it does nothing, and what it was winding up is broken off.
 extends Node2D
 
 const Iso := preload("res://scripts/iso.gd")
 const BakedFigure := preload("res://scripts/baked_figure.gd")
 const MM := preload("res://scripts/monster_moves.gd")
+const Words := preload("res://scripts/words.gd")
 const Headsman := preload("res://scripts/headsman.gd")
 const Amalgam := preload("res://scripts/amalgam.gd")
 const Chained := preload("res://scripts/chained.gd")
@@ -87,6 +95,31 @@ var summoned := false
 var words: Array = []
 var half: Array = []
 var carries: Array = []
+## (its number among the floor's monsters, the game's `id`: what a telling of a stun or a stagger names it by. One made here,
+## the Warden's dead or a boss's brood, has its own.)
+var id := -1
+## WHAT THE HERO'S WORDS HAVE DONE TO IT, named as the game names them (game/state.ts Monster):
+##   burn_t, burn_dps                 FLAME in front: it burns so many seconds more, so much a second
+##   chill_t, chill                   FROST: slowed by `chill` of its pace for so many seconds more
+##   frozen_t, freeze_immune          a second chilling hit froze it; and how long before it can be frozen again
+##   poison_t, poison_dps, poison_n   POISON: so many seconds more, so much a second, of so many doses
+##   stun_t                           HEAVY in front: stunned
+##   stagger_t, stagger_cd            HEAVY behind's cracked ground: it reels; and how long before that ground can stagger it again
+var burn_t := 0.0
+var burn_dps := 0.0
+var chill_t := 0.0
+var chill := 0.0
+var frozen_t := 0.0
+var freeze_immune := 0.0
+var poison_t := 0.0
+var poison_dps := 0.0
+var poison_n := 0
+var stun_t := 0.0
+var stagger_t := 0.0
+var stagger_cd := 0.0
+## (game.ts struckT: how long since a blow last landed on it; not what burns or poisons it. One that reels reels by it:
+## stoker.gd, keybearers.gd)
+var struck_t := 1e9
 var xp := 0.0
 var state := "sleep"
 var dead := false
@@ -135,6 +168,7 @@ var h2 = null
 
 func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	kind = m["kind"]
+	id = int(m["id"]) if m.has("id") else int(get_instance_id())
 	words = m.get("words", [])
 	half = m.get("half", [])
 	carries = m.get("carries", [])
@@ -199,12 +233,19 @@ func step(dt: float, hero) -> void:
 		_glance_t += dt
 	if _raised_t >= 0.0:
 		_raised_t += dt
+	struck_t += dt
 	# (BOSS_INTRO: until his gate has fallen and his line is said, the boss stands and looks at the hero)
 	if waits:
 		var d0: float = hero.world.distance_to(world)
 		if state != "sleep" or (hero.alive and d0 <= 32.0 and mgr.sees(world, hero.world)):
 			_turn_to(hero.world - world, d0)
 		_set_list("idle")
+		_place()
+		_show()
+		queue_redraw()
+		return
+	# (awake, what the hero's words have done to it runs down; frozen, stunned or staggered, it does nothing: _afflicted)
+	if state != "sleep" and state != "rise" and _afflicted(dt):
 		_place()
 		_show()
 		queue_redraw()
@@ -256,13 +297,19 @@ func step(dt: float, hero) -> void:
 			else:
 				_turn_to(to, dist)
 		"windup":
-			var id: String = _moves[_move]["id"] if _move >= 0 else ""
-			if id == "pierce":
-				_hold_aim(hero)
-			elif not id in ["charge", "lockdown", "rampage", "frenzy", "throw", "censer", "bash"]:
+			var doing: String = _moves[_move]["id"] if _move >= 0 else ""
+			if doing != "pierce" and not doing in ["charge", "lockdown", "rampage", "frenzy", "throw", "censer", "bash"]:
 				_turn_to(to, dist)
-			_t -= dt
-			if id == "rampage" or id == "frenzy":
+			# (chilled, it winds up slower, by two fifths of the chill: game.ts updateMonsters)
+			_t -= dt * (0.6 + 0.4 * slow())
+			# (the line a charge will run along fills as his wind-up runs out; the marksman's line of aim runs out as he draws)
+			if doing == "charge":
+				for p in mgr.perils.list:
+					if p["kind"] == "lane" and p.get("src") == self:
+						p["t"] = maxf(0.0, float(p["dur"]) - _t)
+			elif doing == "pierce":
+				_hold_aim(hero)
+			if doing == "rampage" or doing == "frenzy":
 				_carried(hero)
 			if _t <= 0.0:
 				_land(hero, dist, reach)
@@ -617,7 +664,7 @@ func _for_spear(dt: float, dist: float) -> bool:
 	if way == Vector2.ZERO:
 		return false
 	face = way
-	var step := way * speed * dt
+	var step := way * speed * slow() * dt
 	var rr := minf(r, 0.42)
 	if mgr.clear(world.x + step.x, world.y, rr):
 		world.x += step.x
@@ -640,10 +687,10 @@ func wall_up() -> bool:
 	if _raised_t >= 0.0 and _raised_t < MM.WALL["raised_again"]:
 		return false
 	if _move >= 0 and (state == "windup" or state == "recover"):
-		var id: String = _moves[_move]["id"]
-		if id == "throw":
+		var doing: String = _moves[_move]["id"]
+		if doing == "throw":
 			return false
-		if id == "swing" and (state == "recover" or _moves[_move]["windup"] - _t >= MM.WALL["thrust_open"]):
+		if doing == "swing" and (state == "recover" or _moves[_move]["windup"] - _t >= MM.WALL["thrust_open"]):
 			return false
 	return true
 
@@ -677,7 +724,8 @@ func _run_charge(dt: float, hero) -> void:
 	var len := maxf((b - a).length(), 0.01)
 	var f := (b - a) / len
 	var P := _charge_of()
-	var step: float = P["speed"] * dt
+	# (chilled, he runs slower by the chill's share)
+	var step: float = P["speed"] * slow() * dt
 	var was := world
 	var rr := minf(r, 0.42)
 	if mgr.clear(world.x + f.x * step, world.y, rr):
@@ -703,18 +751,28 @@ func _run_charge(dt: float, hero) -> void:
 	var run: float = _charge.get("run", len)
 	var may_end: bool = P["stop"] <= 0.0 or (int(_anim_t * 30.0 + 1e-6) % 6) in MM.RUSH["end_on"]
 	if (along >= run - 0.05 and may_end) or world.distance_to(was) < step * 0.3 or _t <= 0.0:
-		state = "recover"
-		_t = _moves[_move]["recover"]
-		if P["stop"] > 0.0:
-			_rush_stop = 0.0
-		_charge = {}
-		mgr.perils.drop(self, ["lane"])
-		_set_list("chargeStop", true)
+		_end_charge()
+
+
+## The charge is over: he pulls up, skidding, and stands a moment; the green troll's stop carries him on (game.ts endCharge).
+## So too one frozen as he runs it: he is stopped in it (chillMonster).
+func _end_charge() -> void:
+	state = "recover"
+	_t = _moves[_move]["recover"] if _move >= 0 and _move < _moves.size() else RECOVER
+	if _charge_of()["stop"] > 0.0:
+		_rush_stop = 0.0
+	_charge = {}
+	mgr.perils.drop(self, ["lane"])
+	_set_list("chargeStop", true)
 
 
 ## THE MARKSMAN DRAWS: his line of aim follows the hero until 0.4 s before he looses, then holds still (game.ts holdAim).
 func _hold_aim(hero) -> void:
-	if _aim.is_empty() or _t <= MM.AIM["lock"]:
+	if _aim.is_empty():
+		return
+	# (his line has no clock of its own: his draw moves it on, so a chill that slows the draw slows the line)
+	_aim["t"] = maxf(0.0, float(_aim["dur"]) - _t)
+	if _t <= MM.AIM["lock"]:
 		return
 	var to: Vector2 = hero.world - world
 	if to.length() < 0.01:
@@ -749,7 +807,8 @@ func _go(dt: float, to: Vector2, dist: float, sees: bool) -> bool:
 		_weave += dt * 7.0
 		way = (way + Vector2(-way.y, way.x) * sin(_weave) * 0.6).normalized()
 	face = way
-	var step := way * speed * dt
+	# (chilled, it walks slower by the chill's share: game.ts updateMonsters, `slow`)
+	var step := way * speed * slow() * dt
 	# (game.ts: a monster walks with a body no bigger than 0.42 round, so that a big one gets through a doorway)
 	var rr := minf(r, 0.42)
 	var fly := kind == "bat"
@@ -775,10 +834,49 @@ func wake_up() -> void:
 		_cd = randf_range(0.2, 0.9)
 
 
+## A blow on it that is no move of the hero's (a trap's spikes, a check's own blow): from before a Boneward's shield it glances
+## off; else it is harmed. A hit of one of his moves, with its words, is hero.gd hit_monster.
 func hurt(dmg: float) -> void:
 	if dead or state == "rise":
 		return
-	# (nor is a boss who waits: game.ts damage, "Not yet")
+	if mgr.hero != null and glances(mgr.hero.world):
+		glance()
+		return
+	_take(dmg, "phys", false, false, [], false, false)
+
+
+## (FLOOR 3: the Boneward behind its shield) Whether a blow from where `from` stands comes from before its shield, and so
+## glances off (game.ts hitMonster; action_f3.ts glances).
+func glances(from: Vector2) -> bool:
+	if not wall_up():
+		return false
+	var hd: Vector2 = from - world
+	var ang := rad_to_deg(acos(clampf(hd.normalized().dot(face), -1.0, 1.0))) if hd.length() > 0.0001 else 0.0
+	return absf(ang) <= MM.WALL["arc"] / 2.0
+
+
+## The blow glances off its shield, and does nothing (game.ts hitMonster).
+func glance() -> void:
+	_glance_t = 0.0
+	if state == "sleep":
+		mgr.wake(self)
+	mgr.sfx.play("hit", -9.0)
+	mgr.used["glance"] = mgr.used.get("glance", 0) + 1
+	_tell({"t": "hit", "x": world.x, "y": world.y, "amount": 0, "crit": false, "el": "phys", "onHero": false, "heavy": false})
+
+
+## HARM DONE TO IT (game.ts damageMonster) by a hit of the hero's, an arc of his lightning, the ground he left, or what burns
+## or poisons it. `el`: its element; `crit`: a critical hit; `heavy`: Power's weight in it (a longer flash); `front`: the words
+## in front of the move that did it (what the telling shows); `poison`: the poison working; `dot`: harm over time (burning,
+## burning or iced ground). Those two do not flash it, nor make it cry out. What is shut in a room is out of reach.
+func damage(dmg: float, el := "phys", crit := false, heavy := false, front: Array = [], poison := false, dot := false) -> void:
+	if dead or state == "rise" or mgr.shut_in(self):
+		return
+	_take(dmg, el, crit, heavy, front, poison, dot)
+
+
+func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison: bool, dot: bool) -> void:
+	# (nor is a boss who waits: game.ts damageMonster, "Not yet")
 	if waits:
 		if _not_yet_t <= 0.0:
 			_not_yet_t = 0.7
@@ -788,34 +886,186 @@ func hurt(dmg: float) -> void:
 	# (nor one whose own rules say nothing reaches it now: the Fleshmancer gone under the floor, game.ts damage, blinkedAway)
 	if h2 != null and h2.has_method("reachable") and not h2.reachable(self):
 		return
-	# (FLOOR 3: the Boneward behind its shield: a blow from before it glances off, and does nothing: game.ts hitMonster)
-	if wall_up() and mgr.hero != null:
-		var hd: Vector2 = mgr.hero.world - world
-		var from := rad_to_deg(acos(clampf(hd.normalized().dot(face), -1.0, 1.0))) if hd.length() > 0.0001 else 0.0
-		if absf(from) <= MM.WALL["arc"] / 2.0:
-			_glance_t = 0.0
-			if state == "sleep":
-				mgr.wake(self)
-			mgr.sfx.play("hit", -9.0)
-			mgr.used["glance"] = mgr.used.get("glance", 0) + 1
-			return
 	life -= dmg
-	_flash = 0.12
+	if not poison and not dot:
+		_flash = 0.2 if heavy else 0.12
+		struck_t = 0.0
 	_bar = BAR_FOR
 	if state == "sleep":
 		mgr.wake(self)
+	var told := {"t": "hit", "x": world.x, "y": world.y, "amount": dmg, "crit": crit, "el": el, "onHero": false, "heavy": heavy}
+	if not front.is_empty():
+		told["words"] = front
+	if poison:
+		told["poison"] = true
+	_tell(told)
 	if life <= 0.0:
 		_die()
+	elif poison or dot:
+		pass
 	elif boss and BOSS_VOICE.has(kind):
-		# (ITS VOICE AS IT IS HURT, game.ts hitMonster: a boss who roars, on a blow of a twenty-fifth of his life or more, no
-		# oftener than every 2.5 s; another, on a big blow only, a quarter of its life or more, or every sixth blow, no
-		# oftener than every 0.7 s: sound_families.ts ENEMY_GAPS, HURT_BIG. The game's crits are not in the Godot version.)
-		if dmg >= max_life * 0.04:
+		# (ITS VOICE AS IT IS HURT, game.ts damageMonster: a boss who roars, on a critical hit or a blow of a twenty-fifth of his
+		# life or more, no oftener than every 2.5 s; another, on a big blow only, a critical hit, a quarter of its life or more,
+		# or every sixth blow, no oftener than every 0.7 s: sound_families.ts ENEMY_GAPS, HURT_BIG.)
+		if crit or dmg >= max_life * 0.04:
 			mgr.voice(BOSS_VOICE[kind] + "_hurt", 2.5, -1.0)
 	elif not boss and VOICE.has(kind):
 		mgr.hurt_tick = (mgr.hurt_tick + 1) % 6
-		if dmg >= max_life * 0.25 or mgr.hurt_tick == 0:
+		if crit or dmg >= max_life * 0.25 or mgr.hurt_tick == 0:
 			mgr.voice(VOICE[kind] + "_hurt", 0.7, -4.4)
+
+
+## What it tells of itself (fx.gd: the game's own telling; the place may have none).
+func _tell(e: Dictionary) -> void:
+	if mgr != null and mgr.fx != null:
+		mgr.fx.event(e)
+
+
+# --- what the hero's words do to it ---
+
+## How much of its pace a chill leaves it (game.ts updateMonsters `slow`): all of it, or less by the chill's share. Its steps
+## and its charge go by it; its wind-ups by two fifths of what it takes (0.6 + 0.4 of it).
+func slow() -> float:
+	return 1.0 - chill if chill_t > 0.0 else 1.0
+
+
+## What has been done to it runs down (game.ts updateMonsters, for one awake). True if it does nothing this step: frozen,
+## or stunned or staggered (what it was winding up was broken off as that began).
+func _afflicted(dt: float) -> bool:
+	if burn_t > 0.0:
+		burn_t -= dt
+	if chill_t > 0.0:
+		chill_t -= dt
+	if freeze_immune > 0.0:
+		freeze_immune -= dt
+	if stagger_cd > 0.0:
+		stagger_cd -= dt
+	if poison_t > 0.0:
+		poison_t -= dt
+		if poison_t <= 0.0:
+			poison_dps = 0.0
+			poison_n = 0
+	if frozen_t > 0.0:
+		frozen_t -= dt
+		if frozen_t <= 0.0:
+			# (it thaws: the ice breaks off it)
+			_tell({"t": "shatter", "x": world.x, "y": world.y})
+			mgr.sfx.play("shatter", linear_to_db(0.5))
+		return true
+	if stun_t > 0.0 or stagger_t > 0.0:
+		stun_t = maxf(0.0, stun_t - dt)
+		stagger_t = maxf(0.0, stagger_t - dt)
+		_set_list("idle")
+		return true
+	return false
+
+
+## FLAME in front (game.ts hitMonster, `r.ignite`): it burns `dps` a second for 3 s; burning already, it burns as hard as the
+## harder of the two, and its 3 s begin again.
+func set_alight(dps: float) -> void:
+	if burn_t <= 0.0:
+		_tell({"t": "ignite", "x": world.x, "y": world.y})
+	if burn_t <= 0.0 or dps > burn_dps:
+		burn_dps = dps
+	burn_t = 3.0
+
+
+## FROST in front, a chilling hit that slows it by `by` (game.ts chillMonster): a second one on a chilled one freezes it,
+## 1.1 s (an elite 0.6 s), and then it cannot be frozen again for 4 s; never a boss. A troll frozen as he runs his charge is
+## stopped in it. The chill is the greater of what it has and this, 2.5 s from now.
+func chill_by(by: float) -> void:
+	if chill_t > 0.0 and freeze_immune <= 0.0 and not boss:
+		frozen_t = 0.6 if elite else 1.1
+		freeze_immune = 4.0
+		if state == "charge":
+			_end_charge()
+		_tell({"t": "freeze", "x": world.x, "y": world.y})
+		mgr.sfx.play("frost", linear_to_db(0.7))
+	chill = maxf(chill if chill_t > 0.0 else 0.0, by)
+	chill_t = 2.5
+
+
+## POISON in front, a dose of `dps` a second (game.ts poisonMonster): doses add up, 8 at most (after that the poison is no
+## weaker than 8 of this one), and each new one starts its 4 s again. The hero's Poison Damage makes it more.
+func dose(dps: float, secs := -1.0) -> void:
+	if dead:
+		return
+	var tune: Dictionary = Words.data()["poison"]
+	var more: float = mgr.hero.stats.get("poison_pct", 0.0) if mgr.hero != null else 0.0
+	if more != 0.0:
+		dps *= maxf(0.0, 1.0 + more / 100.0)
+	if poison_t <= 0.0:
+		poison_dps = 0.0
+		poison_n = 0
+		_tell({"t": "poisoned", "x": world.x, "y": world.y})
+		mgr.sfx.play("poison", linear_to_db(0.5))
+	var most := int(tune["stacks"])
+	if poison_n < most:
+		poison_dps += dps
+		poison_n += 1
+	else:
+		poison_dps = maxf(poison_dps, dps * most)
+	poison_t = secs if secs >= 0.0 else float(tune["time"])
+
+
+## HEAVY in front (game.ts stunMonster): stunned `secs` (an elite half that; never a boss), unless it is stunned for longer
+## already; what it was winding up is broken off.
+func stun_for(secs: float) -> void:
+	if dead or boss:
+		return
+	var t := secs / 2.0 if elite else secs
+	if t <= stun_t:
+		return
+	stun_t = t
+	break_off()
+	_tell({"t": "stun", "id": id, "x": world.x, "y": world.y, "secs": t})
+
+
+## HEAVY behind (game.ts staggerMonster): it has walked onto cracked ground lying at `from`, and reels (0.55 s), its attack
+## broken off; that ground cannot stagger it again for 1.5 s after. Never a boss.
+func stagger_from(from: Vector2) -> void:
+	if dead or boss or stagger_cd > 0.0:
+		return
+	var heavy: Dictionary = Words.data()["heavy"]
+	stagger_t = float(heavy["stagger"])
+	stagger_cd = float(heavy["stagger"]) + float(heavy["staggerAgain"])
+	break_off()
+	_tell({"t": "stagger", "id": id, "x": world.x, "y": world.y, "fromX": from.x, "fromY": from.y})
+
+
+## An attack it was winding up is broken off, with the warning of a blow it was about to bring down (game.ts breakOff): its
+## wind-up, its charge, a Boneward's stoop for its spear. One with rules of its own, in the middle of an act: it stands again
+## (game/bosses.ts breakOff), and its own script ends the act as it finds it is no longer in it; a bone mite's bite, wound
+## up by its own script as any monster's one blow is, is broken off as theirs is.
+func break_off() -> void:
+	if h2 != null:
+		if state == "act" or state == "windup":
+			state = "chase"
+			_set_list("idle", true)
+		return
+	if state != "windup" and state != "charge" and state != "pickup":
+		return
+	state = "chase"
+	_set_list("idle")
+	_charge = {}
+	_aim = {}
+	mgr.perils.drop(self, ["warn", "lane", "aim"])
+
+
+## All that the hero's words had done to it is gone (the hero fallen and come back: hero.gd _back; its body carries none).
+func clear_afflictions() -> void:
+	burn_t = 0.0
+	burn_dps = 0.0
+	chill_t = 0.0
+	chill = 0.0
+	frozen_t = 0.0
+	freeze_immune = 0.0
+	poison_t = 0.0
+	poison_dps = 0.0
+	poison_n = 0
+	stun_t = 0.0
+	stagger_t = 0.0
+	stagger_cd = 0.0
 
 
 const PF := preload("res://scripts/pixel_font.gd")
@@ -852,6 +1102,11 @@ func _die() -> void:
 	dead = true
 	state = "dead"
 	_bar = 0.0
+	# (killed frozen, it shatters: game.ts kill; what had been done to it is over with it)
+	if frozen_t > 0.0:
+		_tell({"t": "shatter", "x": world.x, "y": world.y})
+		mgr.sfx.play("shatter", linear_to_db(0.8))
+	clear_afflictions()
 	_set_list("die", true)
 	mgr.perils.drop(self)
 	if h2 != null and h2.has_method("died"):
@@ -896,13 +1151,20 @@ func _place() -> void:
 
 
 func _show() -> void:
-	var n := art.count(0, _list)
+	var list := _list
+	# (FROZEN, it is its first standing picture, held: render.ts `m.frozenT > 0`; a Boneward whose spear is gone, its bare one)
+	var held := frozen_t > 0.0 and not dead
+	if held:
+		list = "standBare" if bare and art.has("standBare") else "idle"
+	var n := art.count(0, list)
 	if n == 0:
 		return
-	var i := int(_anim_t * art.fps(_list))
+	var i := int(_anim_t * art.fps(list))
 	# (standing, walking and running go round; a blow, a fall, a call play once and hold their last frame)
-	i = i % n if _list in ["idle", "walk", "charge", "standBare", "walkBare"] else mini(i, n - 1)
-	var f := art.frame(face.x, face.y, _list, i)
+	i = i % n if list in ["idle", "walk", "charge", "standBare", "walkBare"] else mini(i, n - 1)
+	if held:
+		i = 0
+	var f := art.frame(face.x, face.y, list, i)
 	_sprite.texture = f["tex"]
 	_sprite.offset = f["offset"]
 	_sprite.flip_h = f["flip"]

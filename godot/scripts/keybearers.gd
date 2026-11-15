@@ -164,9 +164,8 @@ class Bearer extends RefCounted:
 	var cds: Array = []
 	## The act he is making: {i, t, hand, a}; null: none. `a`: how far his leap carries him on.
 	var act = null
-	## (how long since he was last struck, and his life when last looked at: game.ts struckT)
+	## (how long since a blow last landed on him: game.ts struckT)
 	var _struck := 1e9
-	var _life_was := -1.0
 
 	func _gait() -> Dictionary:
 		return {}
@@ -195,10 +194,8 @@ class Bearer extends RefCounted:
 				cds.append(float(a["first"]) * randf_range(0.7, 1.2))
 		for k in cds.size():
 			cds[k] -= dt
-		if _life_was < 0.0:
-			_life_was = m.max_life
-		_struck = 0.0 if m.life < _life_was else _struck + dt
-		_life_was = m.life
+		# (struck, he reels from the blow, not from what burns or poisons him: monster.gd struck_t)
+		_struck = m.struck_t
 		# (put to sleep in the middle of a move, as the hero fell, and woken again: the move is broken off)
 		if act != null and m.state != "act":
 			act = null
@@ -227,7 +224,8 @@ class Bearer extends RefCounted:
 			_picture(m)
 			return
 		# CARRIED OVER THE FLOOR AT HIS PACE, from the first moment of setting off to the last of stopping
-		var sp: float = m.speed
+		# (chilled, slower by the chill's share: bosses.ts step, `slow`; monster.gd slow)
+		var sp: float = m.speed * m.slow()
 		var v := Vector2.ZERO
 		if dist > 0.01:
 			v = to / dist if dist < 2.5 and los else m.mgr.flow_dir(m.world)
