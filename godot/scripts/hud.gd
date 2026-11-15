@@ -7,7 +7,8 @@
 ##   top left the place's name, his gold, the INVENTORY button (pink while a word waits for a place), the Master Rune-stone
 ##   while he carries it; the BOSS'S BAR at the top once he fights; the guide's PROMPT in its panel at the top; what has just
 ##   happened, over the flask; and the boss's name across the screen (ui/cards.ts).
-## Not yet: the small map and the pause button top right, a skill's card under the pointer, the fight's own prompt lines.
+## The small map and the pause button top right, the large map and the pause panel: minimap.gd.
+## Not yet: a skill's card under the pointer, the fight's own prompt lines.
 extends Control
 
 const PF := preload("res://scripts/pixel_font.gd")

@@ -28,6 +28,7 @@ const Perils := preload("res://scripts/perils.gd")
 const Hud := preload("res://scripts/hud.gd")
 const Loot := preload("res://scripts/loot.gd")
 const Inventory := preload("res://scripts/inventory.gd")
+const Minimap := preload("res://scripts/minimap.gd")
 const Town := preload("res://scripts/town.gd")
 const Guide := preload("res://scripts/guide.gd")
 const Look := preload("res://scripts/look.gd")
@@ -79,6 +80,8 @@ var way_depth := 1
 var _hud
 var _loot: Loot
 var _inv
+## (the small map top right, the large one and the pause panel: minimap.gd)
+var _mini
 var _veil: ColorRect
 var _curtain: ColorRect
 var _going := false
@@ -142,12 +145,18 @@ func _ready() -> void:
 	hud.main = self
 	layer.add_child(hud)
 	_hud = hud
+	var mini := Minimap.new()
+	mini.main = self
+	mini.hud = hud
+	layer.add_child(mini)
+	_mini = mini
 	var inv := Inventory.new()
 	inv.loot = loot
 	inv.hero = hero
 	inv.main = self
 	layer.add_child(inv)
 	_inv = inv
+	mini.inv = inv
 	_curtain = ColorRect.new()
 	_curtain.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_curtain.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -439,7 +448,7 @@ func _in_fight() -> bool:
 	if _monsters == null:
 		return false
 	for m in _monsters.list:
-		if not m.dead and m.state != "sleep" and m.world.distance_to(hero.world) < Music.NEAR and not _monsters.shut_in(m):
+		if is_instance_valid(m) and not m.dead and m.state != "sleep" and m.world.distance_to(hero.world) < Music.NEAR and not _monsters.shut_in(m):
 			return true
 	return false
 
@@ -652,6 +661,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await _trap_shots(hero, dir)
 		get_tree().quit()
 		return
+	if _arg("only") == "map":
+		await _map_shots(hero, dir)
+		get_tree().quit()
+		return
 	await _wait(1.0)
 	await _snap(dir + "/01_start.png")
 	await _hero_moves(hero, dir)
@@ -816,6 +829,41 @@ func _spot_near(at: Vector2, away: float, otherwise: Vector2) -> Vector2:
 				best_err = err
 				best = p
 	return best
+
+
+## A key pressed and let go, as from the keyboard; a press of the left button at a place on the screen (game pixels).
+func _key(k: Key) -> void:
+	for down in [true, false]:
+		var e := InputEventKey.new()
+		e.physical_keycode = k
+		e.keycode = k
+		e.pressed = down
+		Input.parse_input_event(e)
+		await _wait(0.12)
+
+
+var _acts_seen := 0
+
+
+func _click(at: Vector2) -> void:
+	var where: Vector2 = get_viewport().get_final_transform() * (at * 2.0)
+	for down in [true, false]:
+		var e := InputEventMouseButton.new()
+		e.button_index = MOUSE_BUTTON_LEFT
+		e.pressed = down
+		e.position = where
+		e.global_position = where
+		Input.parse_input_event(e)
+		# (whether he begins a blow on it: looked at every frame)
+		var was: String = hero._act
+		var t := 0.0
+		while t < 0.12:
+			await get_tree().process_frame
+			t += get_process_delta_time()
+			if hero._act != was:
+				if hero._act != "":
+					_acts_seen += 1
+				was = hero._act
 
 
 func _wait(s: float) -> void:
@@ -1397,6 +1445,87 @@ func _free_near(at: Vector2) -> Vector2:
 				if map.walkable(tx, ty):
 					return Vector2(tx + 0.5, ty + 0.5)
 	return at
+
+
+## SHOT MODE, THE MAPS (--only=map --floor=N): the small map as he comes in; after he has been set down in the rooms along
+## the way, so that he has seen more of the floor; the large map open; the pause panel; and the town's small map. Says how
+## much of the floor he had seen, and whether the game was held while each was open.
+func _map_shots(h: Hero, dir: String) -> void:
+	var n := int(_arg("floor")) if _arg("floor") != "" else 3
+	go_to("floor%d" % n, "down" if n > 1 else "start")
+	await _wait(1.4)
+	var tag := dir + "/m%d_" % n
+	await _snap(tag + "1_coming_in.png")
+	var seen0 := 0
+	for i in map.w * map.h:
+		seen0 += sight.explored[i]
+	for m in _monsters.list:
+		if is_instance_valid(m) and not m.boss:
+			m.queue_free()
+	var back := h.world
+	var rooms: Array = map.rooms.duplicate()
+	rooms.sort_custom(func(a, b): return int(a.get("path", 0)) < int(b.get("path", 0)))
+	for k in mini(rooms.size(), 7):
+		var r: Dictionary = rooms[k]
+		h.world = _free_near(Vector2(r["x"] + r["w"] / 2.0, r["y"] + r["h"] / 2.0))
+		await _wait(0.3)
+	await _snap(tag + "2_seven_rooms_on.png")
+	var seen1 := 0
+	for i in map.w * map.h:
+		seen1 += sight.explored[i]
+	_mini.show_panel("map")
+	await _wait(0.3)
+	var held_map := get_tree().paused
+	await _snap(tag + "3_the_large_map.png")
+	_mini.show_panel("")
+	await _wait(0.2)
+	var went_on := not get_tree().paused
+	_mini.show_panel("pause")
+	await _wait(0.3)
+	var held_pause := get_tree().paused
+	await _snap(tag + "4_paused.png")
+	_mini.show_panel("")
+	await _wait(0.2)
+	print("MAP floor %d (%d by %d): seen %d tiles coming in, %d seven rooms on; held under the large map %s, went on after %s, held under pause %s, goes on now %s" % [n, map.w, map.h, seen0, seen1, held_map, went_on, held_pause, not get_tree().paused])
+	# (and by the keys and the pointer, as he would: M and M; a press on the small map and a press anywhere, which must not be
+	# a blow as well; Esc and RESUME; the pause button and Esc)
+	var W := 480.0
+	var said: Array = []
+	_acts_seen = 0
+	await _key(KEY_M)
+	said.append("M opens %s held %s" % [_mini.open, get_tree().paused])
+	await _key(KEY_M)
+	said.append("M closes '%s' held %s" % [_mini.open, get_tree().paused])
+	await _click(Vector2(W - 37, 27))
+	said.append("a press on the small map opens %s held %s" % [_mini.open, get_tree().paused])
+	await _click(Vector2(240, 135))
+	said.append("a press closes '%s' held %s, blows begun %d" % [_mini.open, get_tree().paused, _acts_seen])
+	await _key(KEY_ESCAPE)
+	said.append("Esc opens %s held %s" % [_mini.open, get_tree().paused])
+	var resume: Rect2 = _mini._hits[0][0] if not _mini._hits.is_empty() else Rect2()
+	await _click(resume.get_center())
+	said.append("RESUME closes '%s' held %s, blows begun %d" % [_mini.open, get_tree().paused, _acts_seen])
+	# (and a press on the floor, with nothing open, is a blow: the count is not blind)
+	await _click(Vector2(240, 100))
+	said.append("a press on the floor: blows begun %d" % _acts_seen)
+	await _click(Vector2(W - 11, 59))
+	said.append("the pause button opens %s held %s" % [_mini.open, get_tree().paused])
+	var sound: Rect2 = _mini._hits[1][0] if _mini._hits.size() > 1 else Rect2()
+	await _click(sound.get_center())
+	said.append("SOUND: off %s" % AudioServer.is_bus_mute(0))
+	await _click(sound.get_center())
+	said.append("again: off %s" % AudioServer.is_bus_mute(0))
+	await _key(KEY_ESCAPE)
+	said.append("Esc closes '%s' held %s" % [_mini.open, get_tree().paused])
+	_inv.toggle()
+	await _wait(0.2)
+	await _key(KEY_ESCAPE)
+	said.append("Esc closes the gear screen: shown %s held %s" % [_inv.visible, get_tree().paused])
+	print("MAP by hand: ", "; ".join(said))
+	h.world = back
+	go_to("town", "start")
+	await _wait(1.4)
+	await _snap(tag + "5_in_town.png")
 
 
 ## SHOT MODE, A FLOOR'S STATES AND ITS WAY ON (--only=ways --floor=N): a door come up to (it swings open), a chest come up to
