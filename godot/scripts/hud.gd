@@ -20,6 +20,8 @@ var words := ""
 var words_frame := 0
 ## THE BOSS'S NAME ACROSS THE SCREEN (ui/cards.ts drawBossCard): {name, t, secs}, empty when none.
 var card := {}
+## THE FLOOR'S NAME ACROSS THE SCREEN (ui/cards.ts drawFloorCard): {name, level, t, secs}, empty when none.
+var floor_card := {}
 
 var _data := {}
 var _tex: Texture2D
@@ -51,6 +53,11 @@ func _process(dt: float) -> void:
 			card["t"] += dt
 		if card["t"] > card["secs"]:
 			card = {}
+	if not floor_card.is_empty():
+		if not get_tree().paused:
+			floor_card["t"] += dt
+		if floor_card["t"] > floor_card["secs"]:
+			floor_card = {}
 	if words != "" and Engine.get_process_frames() > words_frame and not get_tree().paused and (Input.is_action_just_pressed("interact") or Input.is_action_just_pressed("attack")):
 		words = ""
 	queue_redraw()
@@ -333,6 +340,8 @@ func _draw() -> void:
 
 	if not card.is_empty():
 		_boss_card(W, H)
+	elif not floor_card.is_empty():
+		_floor_card(W, H)
 
 
 func _boss():
@@ -510,6 +519,72 @@ func _boss_card(W: float, H: float) -> void:
 	_text(name, cx, y, Color(Color.WHITE if flash else ENEMY_LIGHT, a), {"align": "center", "scale": scale})
 	if not flash:
 		PF.draw(self, name, cx, y, Color(ENEMY_GOLD, a), {"align": "center", "scale": scale, "from": roundf(h * 0.55)})
+
+
+## The floor's name card for place `where` (hud.json floor_cards), up for FLOOR_NAMES.secs; a boss's card puts it away.
+func floor_card_for(where: String) -> void:
+	var c = _data.get("floor_cards", {}).get(where)
+	# (a floor the table has not: its names as its layout has them, defs.ts floorTitle)
+	if c == null and main != null and main.map != null and main.map.title.has("name"):
+		c = main.map.title
+	if c == null:
+		return
+	floor_card = {"name": c["name"], "level": c["level"], "t": 0.0, "secs": float(_data.get("floor_card_secs", 3.4))}
+	card = {}
+
+
+# --- THE FLOOR'S NAME ACROSS THE SCREEN (ui/cards.ts drawFloorCard) ---
+## In the stone's pale violet, large, with its level under it in the small letters, spaced out, between two short rules; it
+## fades in (0.5 s, dropping 4 pixels) and out (the last 0.8 s).
+const STONE_EDGE := Color("#2a2466")
+const STONE_FACE := Color("#ece8ff")
+const STONE_UNDER := Color("#b0a4e0")
+const STONE_SMALL := Color("#a3abd8")
+const STONE_INK := Color("#07050a")
+
+
+func _floor_card(W: float, H: float) -> void:
+	var name: String = str(floor_card["name"]).to_upper()
+	var scale := 2
+	while scale > 1 and _width(name) * scale > W - 32:
+		scale -= 1
+	var h := 9.0 * scale
+	var t: float = floor_card["t"]
+	var secs: float = floor_card["secs"]
+	var a := clampf(t / 0.5, 0.0, 1.0) if t < secs - 0.8 else clampf((secs - t) / 0.8, 0.0, 1.0)
+	if a <= 0.0:
+		return
+	var e := 1.0 - (1.0 - clampf(t / 0.5, 0.0, 1.0)) * (1.0 - clampf(t / 0.5, 0.0, 1.0))
+	var cx := roundf(W / 2.0)
+	var y := roundf(H * 0.2) + roundf((1.0 - e) * 4.0)
+	var k := maxi(1, scale / 2)
+	_text(name, cx + k, y + 2 * k, Color(STONE_INK, a), {"align": "center", "scale": scale})
+	for d in [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]]:
+		_text(name, cx + d[0] * k, y + d[1] * k, Color(STONE_EDGE, a), {"align": "center", "scale": scale})
+	_text(name, cx, y, Color(STONE_FACE, a), {"align": "center", "scale": scale})
+	PF.draw(self, name, cx, y, Color(STONE_UNDER, a), {"align": "center", "scale": scale, "from": roundf(h * 0.55)})
+	# the level under it, its letters spaced out, between two short rules
+	var level: String = str(floor_card["level"]).to_upper()
+	var gap := 2.0
+	var widths: Array = []
+	var lw := 0.0
+	for i in level.length():
+		var ch := level[i]
+		var cw := 3.0 if ch == " " else PF.width(ch, "small")
+		widths.append(cw)
+		lw += cw
+	lw += gap * (level.length() - 1)
+	var x := cx - roundf(lw / 2.0)
+	var ly := y + h + 5.0
+	for i in level.length():
+		var ch := level[i]
+		if ch != " ":
+			PF.draw(self, ch, x + 1, ly + 1, Color(STONE_INK, a), {"font": "small"})
+			PF.draw(self, ch, x, ly, Color(STONE_SMALL, a), {"font": "small"})
+		x += widths[i] + gap
+	var ry := ly + 2.0
+	_rule(cx - lw / 2.0 - 5, cx - lw / 2.0 - 5 - 18, ry, Color(STONE_UNDER, a), Color(STONE_FACE, a))
+	_rule(cx + lw / 2.0 + 5, cx + lw / 2.0 + 5 + 18, ry, Color(STONE_UNDER, a), Color(STONE_FACE, a))
 
 
 func _rule(x0: float, x1: float, y: float, c: Color, tip: Color) -> void:

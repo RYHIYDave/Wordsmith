@@ -108,6 +108,11 @@ var _clock := 0.0
 var _step_in := 0.0
 var _flash := 0.0
 var _shake := 0.0
+## (render/fx.ts shake: the screen kicked so many game pixels, falling off 22 a second; a film's jolts kick it: kick())
+var _kick := 0.0
+## (game.ts slowT, slowBy: the Shade's rime underfoot, a while and how much slower he walks)
+var _slow_t := 0.0
+var _slow_by := 0.0
 var _down_for := 0.0
 
 
@@ -165,10 +170,14 @@ func _process(dt: float) -> void:
 	_clock += dt
 	_flash = maxf(0.0, _flash - dt)
 	_shake = maxf(0.0, _shake - dt)
+	_kick = maxf(0.0, _kick - dt * 22.0)
+	_slow_t = maxf(0.0, _slow_t - dt)
 	_invuln = maxf(0.0, _invuln - dt)
 	_whirl_cd = maxf(0.0, _whirl_cd - dt)
 	_lunge_cd = maxf(0.0, _lunge_cd - dt)
 	_cam.offset = Vector2(0, -24) + (Vector2(randf_range(-3, 3), randf_range(-3, 3)) if _shake > 0.0 else Vector2.ZERO)
+	if _kick > 0.3:
+		_cam.offset += Vector2(roundf(randf_range(-_kick, _kick)), roundf(randf_range(-_kick, _kick) * 0.6)) * 2.0
 	if not alive:
 		_down_for += dt
 		_sprite.modulate.a = clampf(1.0 - _down_for, 0.0, 1.0)
@@ -233,6 +242,8 @@ func _process(dt: float) -> void:
 			_turn(way)
 		var was := world
 		var walk_was := world
+		if _slow_t > 0.0:
+			slow *= 1.0 - _slow_by
 		_slide(way * SPEED * (1.0 + stats["move_speed"] / 100.0) * slow * dt)
 		walked += world.distance_to(walk_was)
 		# (the Lockdown's bars, standing, keep him on his side of them as he walks: action_f1.ts cageHero)
@@ -274,6 +285,9 @@ func _land_strike() -> void:
 	# (what it reaches of the barrels and urns: game.ts, breakProps a little way before him)
 	if props != null and is_instance_valid(props):
 		props.strike(world + face * _strike_reach() * 0.6, 0.9)
+	# (and a sealed door there opens to it if it carries the door's word: game.ts unseal)
+	if doors != null and is_instance_valid(doors):
+		doors.unseal(strike_words, world + face * _strike_reach() * 0.6, 0.9)
 	if monsters == null:
 		return
 	var m = monsters.strike_target(world, face, _strike_reach())
@@ -443,11 +457,23 @@ func shake() -> void:
 	_shake = 0.18
 
 
-func hurt(dmg: float) -> void:
+## Slowed for `secs` by `by` (a share of his pace): the Shade's rime while he stands in it (game/action_f2.ts).
+func chill(secs: float, by: float) -> void:
+	_slow_by = maxf(_slow_by if _slow_t > 0.0 else 0.0, by)
+	_slow_t = maxf(_slow_t, secs)
+
+
+## The screen kicked `amount` game pixels (render/fx.ts: fx.shake = max(fx.shake, amount)).
+func kick(amount: float) -> void:
+	_kick = maxf(_kick, amount)
+
+
+## `raw`: before his armour (a trap's share of his life: game.ts stepSpikes, a dart).
+func hurt(dmg: float, raw := false) -> void:
 	if not alive or _invuln > 0.0:
 		return
 	# (armour takes its share: armour / (armour + 40 + 20 a floor), at most 75%: stats.ts)
-	var cut := minf(0.75, stats["armor"] / (stats["armor"] + 40.0 + 20.0 * map.depth)) if stats["armor"] > 0.0 else 0.0
+	var cut := minf(0.75, stats["armor"] / (stats["armor"] + 40.0 + 20.0 * map.depth)) if stats["armor"] > 0.0 and not raw else 0.0
 	if not unhurt:
 		life -= dmg * (1.0 - cut)
 	_flash = 0.15

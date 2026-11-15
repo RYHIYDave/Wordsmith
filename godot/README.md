@@ -95,6 +95,22 @@ through chat, so the art and sounds go into the project whole).
   its walk fades up; when something awake is within 10 tiles of him, the fight comes in at once from its first big hit and
   the walk fades out under it; 4 s after the last of them has fallen or lost him, the fight fades out and the walk comes back
   where it had got to. Never a fight in town. (Floors 2 to 5's are in too, for when they come.)
+- **The stairs down, and floor 2** (14 Nov 2026, after "K now what?"): as the Warden falls, the floor of his hall breaks
+  open (the art chat's film of it, frame for frame, the screen kicked and the blow heard at each jolt; `scripts/stairs.gd`,
+  game.ts openStair), clear of where he fell; once open, its top step takes him down to FLOOR 2, THE HEADSMAN'S YARD:
+  - its own look, THE PRISON'S GROUNDS AT NIGHT, recorded from the game's renderer as floor 1's is (render/grounds.ts,
+    render/yard.ts): courtyards of cobbles under the night sky, cell blocks with lit windows, the outer wall and its torches,
+    the gaoler's house where he comes in (darker indoors), the night sky and the tower over a courtyard's far walls while he
+    is in it, and the Headsman's yard outdoors with its scaffold, gallows, bell and gibbet;
+  - its 188 monsters, among them the CULTISTS' fire sigil (a burning ring under him that erupts and burns on), the SHADES'
+    rime that slows him, and the HEADSMAN made new (`scripts/headsman.gd`, game/bosses.ts): his prowl, the lunge, the dashes,
+    the flurry of three cuts, the blade wheel, the vault whose spot is marked before it comes down, his calls;
+  - its traps (`scripts/traps.gd`): spike floors on their beat, dart walls with their plates;
+  - its SEALED DOOR on the treasure vault, opened only by a Strike carrying POWER;
+  - its WAYPOINT, which wakes as he comes near and warps him to town in its column of light, and the town's, which takes him
+    back down (`scripts/waypoint.gd`);
+  - the floors' names across the screen as he comes in ("The Headsman's Yard", "Prison Level 2" under it).
+  The walls between the eye and the hero now fade by the game's own rule (render.ts wallVeil).
 - **A desktop icon**, "Wordsmith (Godot)", opens this project to play (it needs the `wordsmith` folder on this branch).
 
 Keys: WASD or the arrows to walk; the left button to Strike, the right to Whirl, Space to Lunge (the mouse aims; from
@@ -113,8 +129,10 @@ A controller: the left stick, RT, LT, A, B, X.
 
 ## Not in it yet
 
-The game's own pictures of the moves' marks (the rings, lines and bars here are plain stand-ins drawn on the floor, the
-bars under the figures), the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: its
+The game's own pictures of the moves' marks (the rings, lines, bars, the sigil and the rime here are plain stand-ins drawn on
+the floor, under the figures), the monsters' words (floor 2's blue packs and leaders carry words that change what they do, and
+the champions' rallying cry needs them; here they fight without), floor 3 (the stairs from the Headsman's yard say so), the
+Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: its
 gate in the back wall (barred on a new game, drawn as wall here), the stone floating from him to the slab, the letters
 swirling round the ring and its column of light, the wordsmith's words for sale, the stranger's gamble, the stash, the
 Lexicon, buying back, the town's own lighting and music; words other than Power, uniques, magic find, the game's own
@@ -129,12 +147,12 @@ props, the rest of the heroes, menus, the title screen's music. The Colossus pic
 | --- | --- |
 | `assets/heroes`, `assets/monsters`, `assets/colossus`, `assets/townsfolk` | the released game's baked folders on `gh-pages` (marks in `assets/MARKS.txt`) |
 | `assets/sound` | `assets/sound` on `main` |
-| `assets/floor1` | `npx tsx tools/godot_export.ts 1` (from the repository's root, with `npm install` done): the game's own painter, a new Warrior's game into its first dungeon (its layout and its monsters) |
+| `assets/floor1`, `assets/floor2` | `npx tsx tools/godot_export.ts 1 1` and `... 1 2` (from the repository's root, with `npm install` done; seed, then depth): the game's own painter, a new Warrior's game into that dungeon (its layout, its stairwell's places, waypoint and traps, and its monsters) |
 | `assets/monsters/*.json`, `*-N.png` | the packs unpacked: `node tools/godot_unpack_monsters.mjs` |
 | `assets/monsters/lists.json` | each figure's lists named, from the game's art: `npx tsx tools/godot_monster_lists.ts` |
 | `assets/loot` | the game's own gear rolled on floor 1, the vendors' shelves, prices, its pictures, the fallen wordsmith: `npx tsx tools/godot_loot.ts 1` |
 | `assets/town` | the town a new game begins in, its pictures, floor 1's gate up: `npx tsx tools/godot_town.ts 1` |
-| `assets/looks` | floor 1 as THE KING'S TOMB and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light): `npx tsx tools/godot_looks.ts town` and `... floor1` (all the tools put the game's startup switches on first: tools/godot_switches.ts) |
+| `assets/looks` | floor 1 as THE KING'S TOMB, floor 2 as THE PRISON'S GROUNDS AT NIGHT and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light; the stairwell's opening film in `<place>_stair.png`; floor 2's skies and dark by where he is; the traps' and the waypoint's pictures): `npx tsx tools/godot_looks.ts town`, `... floor1`, `... floor2` (all the tools put the game's startup switches on first: tools/godot_switches.ts) |
 | `assets/music` | the town's and floors 1 to 5's tracks from `assets/sound` made into `.ogg` (Godot does not play `.mp4`), each cut where the game loops it, and the game's table of them: `node tools/godot_music.mjs` (needs ffmpeg) |
 | `assets/font`, `assets/hud` | the game's two pixel fonts, `npx tsx tools/godot_font.ts`; the HUD's pictures, colours and names, `npx tsx tools/godot_hud.ts` |
 | `scripts/` | GDScript, each file saying which TypeScript it follows |
@@ -144,6 +162,9 @@ of each monster that has moves and pictures each move the moment it shows (the t
 rain's ring and its arrows; the marksman's aim and great arrow; the Warden's bolts, the Lockdown's shadows and bars, the
 dead he calls), says which moves were made, and quits. `--only=props` pictures a coffer shut and open, an urn whole and broken, and a Whirlwind through a row of them.
 `--only=doors` pictures a door shut, swinging and open, and the Warden's gate up, falling, his line and name, and rising
-once he is dead. `--only=music` says what music plays as he goes from the town to
+once he is dead. `--only=stairs` pictures the floor of the Warden's hall breaking open as he falls, the stairwell open, and
+the way down to floor 2. `--only=floor2` pictures floor 2 where he comes in, a courtyard, the sky over a far wall, the yard
+and the Headsman; `--only=f2moves` a cultist's sigil, a Shade's rime and every one of the Headsman's acts; `--only=f2ways`
+the floor's name, the waypoint's warp to town and back, the spikes, the darts and the sealed door. `--only=music` says what music plays as he goes from the town to
 floor 1, up to a skeleton and away when the fight is over. (Neither lair on this floor leaves the troll a clear run, so for
 the charge he is set down in the floor's biggest hall.)

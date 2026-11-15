@@ -24,6 +24,12 @@
 //     doors: for each of the level's doors and gates, { kind, steps }: what moves of it at each step of its opening from shut to
 //       open (a door's leaf at each of the renderer's turns, a gate's portcullis at GATE_STEPS + 1 heights), each step a list of
 //       [picture key, x, y, d] as the items have them (recordDoors).
+//     stairs: for each place in the boss's hall where the stairwell down may open (layout.json `stairs`, in its order), { x, y,
+//       way, still: [key, x, y] (the stairwell open, lying flat: render.ts flatWays), film: { fps, jolts, kicks, x, y, d, frames }
+//       (its breaking open, art/stairwell_open.ts by way of art/films.ts: each frame stood at (x, y), depth d, the screen kicked
+//       kicks[j] game pixels as frame jolts[j] is shown: render/dress.ts standing), under: the props lying on its opening, gone
+//       down it as it opens (game.ts openStair) }; the film's frames in P_stair.png + P_stair_pics.json. Items drawn of one of
+//       those props carry `stair`: the place it lies on.
 //     The items of the layers back, floor, flat and flat_add are in the renderer's drawing order (floor 1's raised ground and its
 //     ledges are drawn after what lies on the low floor: they come in the flat layer, in their place).
 //     lights: { type: "hole" | "glow", x, y, r, a, color, flicker?, of? }: a hole is the renderer's `spot` (render.ts light: the
@@ -43,6 +49,10 @@ import { gameSwitches } from './godot_switches';
 import { Game } from '../src/game/game';
 import type { Level } from '../src/game/state';
 import { TombView } from '../src/render/tomb';
+import { GroundsView } from '../src/render/grounds';
+import { YardView, YARD_DARK, YARD_SKY_LIFT, YARD_VIGNETTE } from '../src/render/yard';
+import { GROUNDS_LIGHTS } from '../src/art/grounds';
+import { makeYardGateArt } from '../src/art/yard_gate';
 import { CastleView, CASTLE_LAID } from '../src/render/castle';
 import type { LookView, LookStand } from '../src/render/looks';
 import { FloorPieces } from '../src/render/pieces';
@@ -50,12 +60,16 @@ import { FloorDress } from '../src/render/dress';
 import type { Stage } from '../src/render/dress';
 import type { Painter } from '../src/render/painter';
 import type { Cam } from '../src/render/fx';
-import { makeFilm } from '../src/art/films';
-import type { MomentFilm } from '../src/art/films';
+import { makeFilm, stairKey } from '../src/art/films';
+import type { MomentFilm, StairFilm } from '../src/art/films';
+import { STAIR_LONG, STAIR_WIDE, stairMiddle } from '../src/game/ways';
+import type { StairWay } from '../src/game/ways';
 import { WALL_LOOK, makeGroundArt, edgesOf } from '../src/art/ground';
 import type { GroundArt, WallPart } from '../src/art/ground';
 import { DOOR_WALLS, FACE_LEFT, FACE_RIGHT, doorWallsBack, wallFaces, wallsAway, wholeFaces, WHOLE_WALLS } from '../src/render/walls';
-import { floorLook, lookGround, lookPieces, lookProps, lookWays, lookStairs } from '../src/art/floors';
+import { floorLook, lookGround, lookHazards, lookPieces, lookProps, lookWays, lookStairs } from '../src/art/floors';
+import { FLOOR_SETS } from '../src/game/first5';
+import { SPIKE_SPOTS, SPIKE_STEPS } from '../src/art/hazards';
 import type { Piece } from '../src/art/floor1';
 import { makeTombGateArt } from '../src/art/tomb_gate';
 import { GATE_UP, PILLAR, POST, STRIP, SWING_STEPS, makeGateArt } from '../src/art/gates';
@@ -300,6 +314,14 @@ interface Raw {
   door?: number;
   /** (a chest, a barrel, an urn: which of the level's props it is, swapped on the Godot side by `props` as it is opened or broken) */
   prop?: number;
+  /** (a prop lying where the stairwell may open: which of its places, layout.json `stairs`; gone as it opens there) */
+  stair?: number;
+  /** (FLOOR 2: not drawn while the hero is in the Headsman's yard: render/yard.ts shows) */
+  yh?: boolean;
+  /** (FLOOR 2: one of the strips of the yard's scaffold or gallows, seen through where the hero is behind it: render/yard.ts) */
+  see?: string;
+  /** (the floor's waypoint asleep: swapped on the Godot side as it wakes) */
+  waypoint?: boolean;
 }
 interface LightOut {
   type: 'hole' | 'glow';
@@ -318,12 +340,15 @@ interface Relief {
 
 /** All a place's recording needs: the game's Level and the pictures the game has in force there (main.ts placeFrame). */
 interface Place {
-  name: 'floor1' | 'town';
+  name: 'floor1' | 'town' | 'floor2';
   game: Game;
   L: Level;
   look: LookView;
   tomb: TombView | null;
   castle: CastleView | null;
+  /** FLOOR 2, THE PRISON'S GROUNDS AT NIGHT (render/grounds.ts), and THE HEADSMAN'S YARD, its boss hall outdoors (render/yard.ts). */
+  grounds: GroundsView | null;
+  yard: YardView | null;
   /** art.ground, art.props, art.gates, art.town as main.ts sets them for the place. */
   ground: GroundArt;
   props: DungeonProps;
@@ -346,6 +371,8 @@ interface Place {
   owlFrames: Sprite[] | null;
   /** The floor's own pieces' pictures, by name (art/floors.ts lookPieces). */
   pieceNames: Map<Sprite, string>;
+  /** The props lying where the stairwell may open (game.ts openStair `on`): each prop's place in L.props -> the stairwell's place. */
+  underStair: Map<number, number>;
 }
 
 function cutPart(c: number): WallPart {
@@ -360,18 +387,22 @@ class Recorder {
   /** flat and flat_add, in drawing order (and floor 1's raised ground, drawn among them) */
   readonly flat: Raw[] = [];
   readonly stand: Raw[] = [];
+  /** (while a prop that lies where the stairwell may open is being drawn: that place) */
+  stairOf: number | undefined;
+  /** (FLOOR 2: while what is being drawn is not drawn from in the Headsman's yard) */
+  yardHides = false;
   constructor(readonly P: Place, readonly t: number) {}
   addBack(kind: Kind, s: Sprite, x: number, y: number, hint: string, what?: string): void {
-    this.back.push({ layer: 'back', kind, x, y, d: null, s, hint, what });
+    this.back.push({ layer: 'back', kind, x, y, d: null, s, hint, what, ...(this.yardHides ? { yh: true } : {}) });
   }
   addFloor(kind: Kind, s: Sprite, x: number, y: number, hint: string, what?: string): void {
-    this.floor.push({ layer: 'floor', kind, x, y, d: null, s, hint, what });
+    this.floor.push({ layer: 'floor', kind, x, y, d: null, s, hint, what, ...(this.yardHides ? { yh: true } : {}) });
   }
   addFlat(kind: Kind, s: Sprite, x: number, y: number, add: boolean, hint: string, what?: string): void {
-    this.flat.push({ layer: add ? 'flat_add' : 'flat', kind, x, y, d: null, s, hint, what });
+    this.flat.push({ layer: add ? 'flat_add' : 'flat', kind, x, y, d: null, s, hint, what, ...(this.stairOf !== undefined ? { stair: this.stairOf } : {}), ...(this.yardHides ? { yh: true } : {}) });
   }
   addStand(kind: Kind, d: number, s: Sprite, x: number, y: number, add: boolean, hint: string, what?: string): Raw {
-    const r: Raw = { layer: add ? 'stand_add' : 'stand', kind, x: Math.round(x), y: Math.round(y), d, s, hint, what };
+    const r: Raw = { layer: add ? 'stand_add' : 'stand', kind, x: Math.round(x), y: Math.round(y), d, s, hint, what, ...(this.stairOf !== undefined ? { stair: this.stairOf } : {}), ...(this.yardHides ? { yh: true } : {}) };
     this.stand.push(r);
     return r;
   }
@@ -452,6 +483,8 @@ function recordScene(P: Place, t: number): Recorder {
       const kind = f.tiles[idx];
       const px = df * 16;
       const py = s * 8;
+      // (FLOOR 2: what of the floor's loop is not drawn from in the Headsman's yard)
+      R.yardHides = yardHidesAt(P, tx, ty);
       // (TRIANGLES: a tile cut corner to corner)
       if (f.cut && f.cut[idx] !== 0 && (kind === T_FLOOR || kind === T_WALL)) {
         const up = !relief ? 0 : kind === T_FLOOR ? Math.max(0, relief.top[idx]) : 0;
@@ -473,8 +506,11 @@ function recordScene(P: Place, t: number): Recorder {
           const faces0 = P.whole ? wholeFaces(f, idx) : wallFaces(f, idx);
           const which = look.unfaced(L, idx, faces0);
           const again = P.doorBack !== null && P.doorBack[idx] === 1;
-          if (which & FACE_LEFT) R.addStand('wall', s + 1, look.face(L, true, tx, ty, t), px, py, false, 'face left', again ? 'beside a door' : undefined);
-          if (which & FACE_RIGHT) R.addStand('wall', s + 1, look.face(L, false, tx, ty, t), px, py, false, 'face right', again ? 'beside a door' : undefined);
+          // (THE HEADSMAN'S YARD: the ring of wall round it is the prison's wall: render/yard.ts)
+          const prison = !!P.yard && P.yard.ring(f, tx, ty);
+          const v = f.variant[idx];
+          if (which & FACE_LEFT) R.addStand('wall', s + 1, prison ? P.yard!.face(true, v) : look.face(L, true, tx, ty, t), px, py, false, prison ? 'prison wall left' : 'face left', again ? 'beside a door' : undefined);
+          if (which & FACE_RIGHT) R.addStand('wall', s + 1, prison ? P.yard!.face(false, v) : look.face(L, false, tx, ty, t), px, py, false, prison ? 'prison wall right' : 'face right', again ? 'beside a door' : undefined);
           if (which && P.dressed && !again) {
             stageKind = 'wallpiece';
             stageHint = 'wall piece';
@@ -489,6 +525,9 @@ function recordScene(P: Place, t: number): Recorder {
     }
   }
 
+  R.yardHides = false;
+  // (THE HEADSMAN'S YARD: its wide puddles, flat on its cobbles)
+  if (P.yard) for (const q of P.yard.puddles(f, cam)) R.addFlat('other', q.s, q.x, q.y, false, 'yard puddle', 'a puddle in the yard');
   // WHAT LIES ON THE FLOOR (render.ts flat; on a level with ledges: the low floor's, the raised floor, the raised floor's)
   if (!relief) flat(R, G, -1, stage, () => { stageKind = 'other'; stageHint = 'piece'; stageWhat = undefined; }, noCanvas);
   else {
@@ -498,9 +537,27 @@ function recordScene(P: Place, t: number): Recorder {
   }
 
   // EVERYTHING THAT STANDS UP (render.ts drawWorld: the props, the doors, the ways, the look's own, the floor's moments)
+  // (THE HEADSMAN'S YARD: the torches on its far walls, burning: render/yard.ts)
+  if (P.yard) {
+    for (const q of P.yard.torches(f)) {
+      const ts = P.yard.torch(q.alongX, t);
+      R.addStand('prop', q.x + q.y - 0.49, ts, wx(cam, q.x, q.y), wy(cam, q.x, q.y), false, 'yard torch', "the yard's torch");
+    }
+  }
   for (const [pi, p] of L.props.entries()) {
     const sx = wx(cam, p.x, p.y);
     const sy = wy(cam, p.x, p.y);
+    R.yardHides = yardHidesAt(P, p.tx, p.ty);
+    // (THE HEADSMAN'S YARD: its scaffold and its gallows, in strips each in its place; what stands on their other tiles is nothing to see)
+    const big = P.yard && p.kind === 'piece' ? P.yard.owns(p.name) : null;
+    if (big === 'foot') continue;
+    if (big === 'piece') {
+      for (const st of P.yard!.bigStands(p.name!, p.x, p.y, cam, 1)) {
+        const r = R.addStand('prop', st.d, st.s, st.x, st.y, false, `${p.name} strip`, p.name);
+        r.see = p.name;
+      }
+      continue;
+    }
     const own = P.dressed ? P.pieces.standing(game, p, t) : undefined;
     const lookOwn = own === undefined && look.own ? look.own(L, p, t) : undefined;
     let sp: Sprite | null = null;
@@ -527,11 +584,14 @@ function recordScene(P: Place, t: number): Recorder {
         break;
     }
     if (sp) {
+      R.stairOf = P.underStair.get(pi);
       const r = R.addStand('prop', p.x + p.y, sp, sx, sy, false, hint, what);
+      R.stairOf = undefined;
       if (OPENED.has(p.kind)) r.prop = pi;
     }
   }
-  if (L.hazards.length) throw new Error('traps: not brought over');
+  R.yardHides = false;
+  if (L.hazards.length && !P.grounds) throw new Error('traps: not brought over');
   standDoors(R);
   // (THE WAYS: the motes over an awake waypoint)
   for (const w of [L.ways?.way]) {
@@ -624,10 +684,13 @@ function floorTile(R: Recorder, _G: GroundArt, idx: number, tx: number, ty: numb
       R.addFloor('floor', o, px, py, `hall ${n}`, n);
     }
   } else {
-    const laid = look.laid(L, tx, ty, t);
-    const own = !laid && P.dressed ? P.pieces.tile(idx) : null;
-    sp = laid || own || look.flags(tx, ty);
-    R.addFloor('floor', sp, px, py, laid ? 'tomb tile' : own ? 'floor piece' : 'tomb flags');
+    // (THE HEADSMAN'S YARD: its cobbles and its own tiles: render/yard.ts)
+    const yardSp = P.yard ? P.yard.floor(f, tx, ty) : null;
+    const laid = yardSp ? null : look.laid(L, tx, ty, t);
+    const own = !yardSp && !laid && P.dressed ? P.pieces.tile(idx) : null;
+    sp = yardSp || laid || own || look.flags(tx, ty);
+    const name = P.grounds ? 'grounds' : 'tomb';
+    R.addFloor('floor', sp, px, py, yardSp ? 'yard tile' : laid ? `${name} tile` : own ? 'floor piece' : `${name} flags`);
   }
   const gone = WALL_LOOK.away && WALL_LOOK.front === 'none';
   const lowGrid = P.lowGrid;
@@ -805,10 +868,12 @@ function flat(R: Recorder, _G: GroundArt, pass: number, stage: Stage, plain: () 
   plain();
   if (L.ways && pass <= 0) P.dress.flat(noCanvas, game, stage);
   if (P.dressed) P.pieces.shadows(noCanvas, game, stage, here);
-  for (const p of L.props) {
+  for (const [pi, p] of L.props.entries()) {
     if (!here(p.x, p.y)) continue;
     const sx = Math.round(wx(cam, p.x, p.y));
     const sy = Math.round(wy(cam, p.x, p.y));
+    R.stairOf = P.underStair.get(pi);
+    R.yardHides = yardHidesAt(P, Math.floor(p.x), Math.floor(p.y));
     const own = P.dressed ? P.pieces.flat(p) : undefined;
     if (own !== undefined) {
       if (own) R.addFlat('other', own, sx, sy, false, P.pieces.nameOf(p) ?? p.kind, P.pieces.nameOf(p) ?? p.kind);
@@ -824,13 +889,16 @@ function flat(R: Recorder, _G: GroundArt, pass: number, stage: Stage, plain: () 
       R.addFlat('other', p.state === 1 ? P.props.fallenSearched : P.props.fallen, sx, sy, false, 'fallen wordsmith', 'the fallen wordsmith');
     }
   }
+  R.stairOf = undefined;
+  R.yardHides = false;
   // (the look's own laid flat, added where it is light: floor 1's pools of daylight, the hall's slats of sun)
   if (look.flats && pass <= 0) {
     for (const q of look.flats(L, R.t)) {
       const sx = Math.round(wx(cam, q.x, q.y));
       const sy = Math.round(wy(cam, q.x, q.y));
       if (q.alpha !== undefined) throw new Error('a flat drawn faint: not brought over');
-      R.addFlat('light', q.s, sx, sy, !!q.add, P.tomb ? 'daylight pool' : 'sun slats', P.tomb ? 'daylight on the floor' : 'the sun on the floor');
+      if (P.grounds) R.addFlat('other', q.s, sx, sy, !!q.add, 'court puddle', 'a puddle in a courtyard');
+      else R.addFlat('light', q.s, sx, sy, !!q.add, P.tomb ? 'daylight pool' : 'sun slats', P.tomb ? 'daylight on the floor' : 'the sun on the floor');
     }
   }
 }
@@ -863,6 +931,7 @@ function flatWays(R: Recorder): void {
     const WAY_FRAMES = P.ways.way.awake.length;
     const sp = w.awake ? P.ways.way.awake[Math.floor(R.t * 10) % WAY_FRAMES] : P.ways.way.asleep;
     R.addFlat('other', sp, Math.round(wx(cam, w.x, w.y)), Math.round(wy(cam, w.x, w.y)), false, 'waypoint', 'the waypoint');
+    R.flat[R.flat.length - 1].waypoint = true;
   }
 }
 
@@ -987,8 +1056,10 @@ function recordDoors(P: Place, atlas: Atlas): DoorOut[] {
       [atlas.key(sp, hint), Math.round(wx(cam, x, y)), Math.round(wy(cam, x, y)), r2(depth)];
     const steps: [string, number, number, number][][] = [];
     if (isLeaf(s.kind)) {
-      if (s.kind !== 'door') throw new Error('a sealed door: not brought over');
+      if (s.kind !== 'door' && !(s.kind === 'worddoor' && s.word)) throw new Error('a sealed door: not brought over');
       const [hx, hy] = at(1);
+      // (a word-door: sealed, its word lit, while shut; its leaf without the light as it swings: render.ts standDoors, A.seal)
+      const word = s.kind === 'worddoor' ? s.word : undefined;
       for (let k = 0; k <= SWING_STEPS; k++) {
         const turn = ((k / SWING_STEPS) * Math.PI) / 2;
         const along = Math.cos(turn);
@@ -997,7 +1068,8 @@ function recordDoors(P: Place, atlas: Atlas): DoorOut[] {
         const dy = s.alongX ? -back : along;
         const ex = Math.round(32 * (dx - dy));
         const ey = Math.round(16 * (dx + dy));
-        steps.push([pic(hx + hy + 0.5 * along - 0.2 * back, A.leaf(ex, ey), hx, hy, 'door leaf')]);
+        const leaf = word ? A.seal(ex, ey, word, k === 0) : A.leaf(ex, ey);
+        steps.push([pic(hx + hy + 0.5 * along - 0.2 * back, leaf, hx, hy, word ? 'word door leaf' : 'door leaf')]);
       }
     } else if (s.kind !== 'waygate' && !P.dress.stairsUp(game, s)) {
       const boss = s.kind === 'bossgate';
@@ -1097,14 +1169,62 @@ function tombPlace(): Place {
     if (k) for (const s of pc.frames ?? []) kinds.set(s, [k, pc.name]);
   }
   return {
-    name: 'floor1', game, L, look: tomb, tomb, castle: null,
+    name: 'floor1', game, L, look: tomb, tomb, castle: null, grounds: null, yard: null,
     ground: lookGround(1), props: lookProps(1), gates: makeTombGateArt(), town: null, ways: lookWays(1),
     grade: (s) => gradeSprite(s),
     relief, whole, lowGrid: new Uint8Array(f.w * f.h), doorBack: null, dressed, pieces, dress,
     cam: { ox: 0, oy: 0, lift: relief ? (x: number, y: number) => levelAt(f, x, y) * LEDGE_H : null },
     vignette: 0.62,
     standKinds: kinds, owlFrames: null, pieceNames: momentNames(namesOf(lookPieces(1)), painter.filmOf<MomentFilm[]>('moments:1') ?? []),
+    underStair: underStairs(L),
   };
+}
+
+/** game.ts openStair `on`: is (x, y) on the opening of stairwell `st` (whatever lies there goes down it)? */
+function onStair(st: StairWay, x: number, y: number): boolean {
+  const along = st.way === 'x' ? x - st.x : y - st.y;
+  const across = st.way === 'x' ? y - st.y : x - st.x;
+  return along > -0.35 && along < STAIR_LONG + 0.1 && across > -0.3 && across < STAIR_WIDE + 0.3;
+}
+/** The props that are not solid lying where each of the level's stairwells may open (openStair takes them away as it opens). */
+function underStairs(L: Level): Map<number, number> {
+  const out = new Map<number, number>();
+  const spots = L.ways?.stairs ?? [];
+  for (const [i, p] of L.props.entries()) {
+    if (p.solid) continue;
+    const k = spots.findIndex((st) => onStair(st, p.x, p.y));
+    if (k >= 0) out.set(i, k);
+  }
+  return out;
+}
+
+/**
+ * THE STAIRWELL DOWN, for the Godot side (godot/scripts/stairs.gd): for each place in the boss's hall where it may open, the
+ * stairwell lying open there (render.ts flatWays: `ways.stair`, anchored at its corner) and the film of its breaking open
+ * (render/dress.ts standing: each frame stood at its corner, in depth at its middle), its frames into their own sheet.
+ */
+interface StairOut { x: number; y: number; way: 'x' | 'y'; still: [string, number, number]; film: { fps: number; jolts: number[]; kicks: number[]; x: number; y: number; d: number; frames: string[] } | null; under: number[] }
+function recordStairs(P: Place, atlas: Atlas, films: Atlas): StairOut[] {
+  const { L } = P;
+  const cam = P.cam;
+  if (L.town) return [];
+  return (L.ways?.stairs ?? []).map((st, k) => {
+    const x = Math.round(wx(cam, st.x, st.y));
+    const y = Math.round(wy(cam, st.x, st.y));
+    const still: [string, number, number] = [atlas.key(P.ways.stair[st.way], 'stairs down'), x, y];
+    let film: StairOut['film'] = null;
+    try {
+      const m = makeFilm(stairKey(floorLook(L.floor.depth), st)) as StairFilm;
+      const mid = stairMiddle(st);
+      film = { fps: m.fps, jolts: [...m.jolts], kicks: [...m.kicks], x, y, d: Math.round((mid.x + mid.y) * 1000) / 1000, frames: m.frames.map((s) => films.key(s, 'stairwell opening')) };
+      if (m.frames.some((s) => s.lights && s.lights.length)) throw new Error('the stairwell film gives off light: not brought over');
+    } catch (e) {
+      if ((e as Error).message.includes('not brought over')) throw e;
+      console.warn(`stairwell film at ${st.x},${st.y}: ${(e as Error).message}`);
+    }
+    const under = [...P.underStair.entries()].filter(([, s]) => s === k).map(([i]) => i);
+    return { x: st.x, y: st.y, way: st.way, still, film, under };
+  });
 }
 
 function hallPlace(): Place {
@@ -1139,7 +1259,7 @@ function hallPlace(): Place {
   }
   for (const s of A.owl.frames) kinds.set(s, ['prop', 'the owl']);
   return {
-    name: 'town', game, L, look: castle, tomb: null, castle,
+    name: 'town', game, L, look: castle, tomb: null, castle, grounds: null, yard: null,
     ground: { ...vault.ground, ...edgesOf(CASTLE_THEME) }, props, gates: makeGateArt(), town: A.town,
     ways: { stair: lookStairs(1), way: A.way },
     grade: (s) => s,
@@ -1147,6 +1267,7 @@ function hallPlace(): Place {
     cam: { ox: 0, oy: 0, lift: null },
     vignette: castle.vignette,
     standKinds: kinds, owlFrames: A.owl.frames, pieceNames: new Map(),
+    underStair: new Map(),
   };
 }
 
@@ -1214,6 +1335,10 @@ interface ItemOut {
   what?: string;
   door?: number;
   prop?: number;
+  stair?: number;
+  yh?: 1;
+  see?: string;
+  waypoint?: 1;
 }
 
 function recordPlace(P: Place, atlas: Atlas): { items: ItemOut[]; lights: LightOut[] } {
@@ -1233,7 +1358,7 @@ function recordPlace(P: Place, atlas: Atlas): { items: ItemOut[]; lights: LightO
   }
   const items: ItemOut[] = first.map((a, i) => {
     const r2 = (n: number): number => Math.round(n * 1000) / 1000;
-    const base = { layer: a.layer, kind: a.kind, x: r2(a.x), y: r2(a.y), d: a.d === null ? null : r2(a.d), ...(a.door !== undefined ? { door: a.door } : {}), ...(a.prop !== undefined ? { prop: a.prop } : {}) };
+    const base = { layer: a.layer, kind: a.kind, x: r2(a.x), y: r2(a.y), d: a.d === null ? null : r2(a.d), ...(a.door !== undefined ? { door: a.door } : {}), ...(a.prop !== undefined ? { prop: a.prop } : {}), ...(a.stair !== undefined ? { stair: a.stair } : {}), ...(a.yh ? { yh: 1 as const } : {}), ...(a.see ? { see: a.see } : {}), ...(a.waypoint ? { waypoint: 1 as const } : {}) };
     if (a.fixed) {
       const frames = a.fixed.frames.map((s) => atlas.key(s, a.hint));
       return { ...base, frames, fps: null, t0: a.fixed.t0, secs: a.fixed.secs, ...(a.what ? { what: a.what } : {}) };
@@ -1331,6 +1456,174 @@ function preview(file: string, items: ItemOut[], lights: LightOut[], picLights: 
 }
 
 // ================================================================================================================================
+// FLOOR 2, THE PRISON'S GROUNDS AT NIGHT, AND THE HEADSMAN'S YARD
+
+/** render.ts yardOnly: is tile (tx, ty) left undrawn while the hero is in the Headsman's yard (render/yard.ts shows)? */
+function yardHidesAt(P: Place, tx: number, ty: number): boolean {
+  return !!P.yard && !P.yard.shows(P.L.floor, tx, ty);
+}
+
+/** The lights each picture gives off (Sprite.lights), from its anchor in game pixels. */
+function picLightsOf(atlas: Atlas): Map<string, [number, number, number, number, string][]> {
+  const out = new Map<string, [number, number, number, number, string][]>();
+  for (const [k, s] of atlas.pics) if (s.lights && s.lights.length) out.set(k, s.lights.map((l) => [Math.round((l.x - s.ax) * 100) / 100, Math.round((l.y - s.ay) * 100) / 100, l.r, l.a ?? 0.5, l.color]));
+  return out;
+}
+
+/**
+ * THE PLACES OF FLOOR 2'S OWN LIGHT AND SKY, for the Godot side (look.gd): the dark and the vignette under the open sky (render/
+ * grounds.ts: the yard's, in every courtyard and the ways), and indoors, in the gaoler's room and the passage out through his house
+ * (the Crypt's); for each courtyard (render/grounds.ts skyOver: each of the floor's rooms but the boss's and the start), the night
+ * sky and the tower over what lies behind its two far walls on the screen (drawSky: the pictures, and the line of its far walls,
+ * the sky shown only above it), and the sky's own light over those walls (skyLift: the dark taken down by `lift` above the line
+ * `up` game pixels over it); and the Headsman's yard's own (render/yard.ts back, skyLift; the hero in it while within `in`).
+ */
+interface Zones {
+  rgb: number[];
+  out: { dark: number; vignette: number };
+  indoors: { rects: { x: number; y: number; w: number; h: number }[]; dark: number; vignette: number };
+  skies: { rect: { x: number; y: number; w: number; h: number }; pics: [string, number, number][]; line: [number, number][]; up: number; lift: number }[];
+  through: number;
+  yard: { x: number; y: number; n: number; door: number; dark: number; vignette: number; pics: [string, number, number][]; line: [number, number][]; up: number; lift: number; in: { x0: number; x1: number; y0: number; y1: number } } | null;
+}
+function recordZones(P: Place, atlas: Atlas): Zones | null {
+  const G = P.grounds;
+  if (!G) return null;
+  const L = P.L;
+  const plan = L.grounds!;
+  const cam = P.cam;
+  const r2 = (n: number): number => Math.round(n * 100) / 100;
+  const pt = (x: number, y: number): [number, number] => [r2(wx(cam, x, y)), r2(wy(cam, x, y))];
+  const A = G.A();
+  const skies = L.floor.rooms.filter((r) => r.kind !== 'boss' && r.kind !== 'start').map((r) => {
+    const pics: [string, number, number][] = [];
+    const spots = (G as unknown as { skySpots(r: { x: number; y: number; w: number; h: number }): [number, number][] }).skySpots(r);
+    for (const [ox, oy] of spots) pics.push([atlas.key(A.beyond, 'night sky'), Math.round(wx(cam, r.x + ox, r.y + oy)), Math.round(wy(cam, r.x + ox, r.y + oy))]);
+    pics.push([atlas.key(A.tower, 'the tower'), Math.round(wx(cam, r.x, r.y)), Math.round(wy(cam, r.x, r.y))]);
+    return { rect: { x: r.x, y: r.y, w: r.w, h: r.h }, pics, line: [pt(r.x, r.y + r.h), pt(r.x, r.y), pt(r.x + r.w, r.y)], up: 84, lift: GROUNDS_LIGHTS.dark.skyLift };
+  });
+  let yard: Zones['yard'] = null;
+  const Y = L.floor.yard;
+  if (P.yard && Y) {
+    const YA = (P.yard as unknown as { A(): { beyond: Sprite; tower: Sprite } }).A();
+    const at: [number, number] = [Math.round(wx(cam, Y.x, Y.y)), Math.round(wy(cam, Y.x, Y.y))];
+    yard = {
+      x: Y.x, y: Y.y, n: Y.n, door: Y.door, dark: YARD_DARK, vignette: YARD_VIGNETTE,
+      pics: [[atlas.key(YA.beyond, 'yard sky'), ...at], [atlas.key(YA.tower, 'yard tower'), ...at]],
+      line: [pt(Y.x, Y.y + Y.n), pt(Y.x, Y.y), pt(Y.x + Y.n, Y.y)], up: 87, lift: YARD_SKY_LIFT,
+      in: { x0: Y.x - 0.5, x1: Y.x + Y.n + 0.5, y0: Y.y - 1.5, y1: Y.y + Y.n + 0.5 },
+    };
+  }
+  return {
+    rgb: [...GROUNDS_LIGHTS.dark.rgb],
+    out: { dark: GROUNDS_LIGHTS.dark.a, vignette: GROUNDS_LIGHTS.dark.vignette },
+    indoors: { rects: [plan.gaol, ...(plan.house ? [plan.house] : [])].map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h })), dark: GROUNDS_LIGHTS.gaol.a, vignette: 0.62 },
+    skies,
+    through: 4,
+    yard,
+  };
+}
+
+/**
+ * THE FLOOR'S WAYPOINT, for the Godot side: its dais asleep (among the items, `waypoint`), awake (its loop at 10 a second), the
+ * motes over it while awake (standing, at its depth), and the column of light of a warp (render.ts flatWays, standWays).
+ */
+function recordWaypoint(P: Place, atlas: Atlas): { x: number; y: number; wx: number; wy: number; d: number; asleep: string; awake: string[]; motes: string[]; warp: string[]; fps: number } | null {
+  const w = P.L.ways?.way;
+  if (!w) return null;
+  const W = P.ways.way;
+  const k = (list: Sprite[], hint: string): string[] => list.map((s) => atlas.key(s, hint));
+  return {
+    x: Math.round(wx(P.cam, w.x, w.y)), y: Math.round(wy(P.cam, w.x, w.y)), wx: w.x, wy: w.y, d: w.x + w.y,
+    asleep: atlas.key(W.asleep, 'waypoint'), awake: k(W.awake, 'waypoint awake'), motes: k(W.motes, 'waypoint motes'), warp: k(W.warp, 'waypoint warp'), fps: 10,
+  };
+}
+
+/**
+ * THE TRAPS' PICTURES, for the Godot side (godot/scripts/traps.gd; render.ts the floor's loop and standHazards, art/hazards.ts in
+ * the floor's own pieces: art/floors.ts lookHazards): a spike floor's holes (and glinting, the moment before its spikes come up),
+ * laid at each of its tiles' middles; its spikes 1 to SPIKE_STEPS steps up, stood at SPIKE_SPOTS round each tile's middle; a dart
+ * wall's plate (and pressed), laid at its tile's middle; its slot, stood in the face of its wall (along x: `y`, its face turned
+ * to y; `x` the other).
+ */
+function recordTraps(P: Place, atlas: Atlas): { holes: string[]; spikes: string[]; plate: string[]; slot: { x: string; y: string }; spots: (readonly [number, number])[]; steps: number } | null {
+  if (!P.L.hazards.length || P.L.town) return null;
+  const k = floorLook(P.L.floor.depth);
+  const A = lookHazards(k, FLOOR_SETS[k - 1].traps);
+  const spikes: string[] = [];
+  for (let i = 1; i <= SPIKE_STEPS; i++) spikes.push(atlas.key(A.spike(i), `spike ${i}`));
+  return {
+    holes: [atlas.key(A.holes(false), 'spike holes'), atlas.key(A.holes(true), 'spike holes glinting')],
+    spikes,
+    plate: [atlas.key(A.plate(false), 'dart plate'), atlas.key(A.plate(true), 'dart plate pressed')],
+    slot: { x: atlas.key(A.slot(false), 'dart slot x'), y: atlas.key(A.slot(true), 'dart slot y') },
+    spots: [...SPIKE_SPOTS],
+    steps: SPIKE_STEPS,
+  };
+}
+
+/** render/yard.ts stripsOf, without a page's canvas: a big piece's picture cut into strips 8 game pixels wide. */
+function stripsOfPx(s: Sprite): { s: Sprite; u: number }[] {
+  const p = paintingOf(s);
+  const d = s.density ?? 1;
+  const out: { s: Sprite; u: number }[] = [];
+  const step = 8;
+  for (let x0 = 0; x0 < s.w; x0 += step) {
+    const w = Math.min(step, s.w - x0);
+    const pw = Math.round(w * d);
+    const px0 = Math.round(x0 * d);
+    const q = new Px(pw, p.h);
+    for (let j = 0; j < p.h; j++) for (let i = 0; i < pw && px0 + i < p.w; i++) {
+      const o = (j * p.w + px0 + i) * 4;
+      const o2 = (j * pw + i) * 4;
+      for (let c = 0; c < 4; c++) q.d[o2 + c] = p.d[o + c];
+    }
+    out.push({ s: made(q, s.ax - x0, s.ay, d), u: x0 + w / 2 - s.ax });
+  }
+  return out;
+}
+
+function groundsPlace(): Place {
+  const game = new Game('warrior', 1);
+  game.depth = 2;
+  game.enterDungeon();
+  const L = game.level;
+  const f = L.floor;
+  const grounds = new GroundsView();
+  if (!grounds.on(L)) throw new Error('floor 2 is not the prison grounds');
+  grounds.warm();
+  // (the courtyards' sky as the hero comes in: none indoors; render.ts asks each frame, before the floor is drawn)
+  grounds.skyOver(L, game.hero.x, game.hero.y, false);
+  const yard = new YardView();
+  if (!yard.on(f)) throw new Error('floor 2 without the Headsman\'s yard');
+  yard.warm();
+  const strips = new Map<Sprite, { s: Sprite; u: number }[]>();
+  (yard as unknown as { stripsOf(s: Sprite): { s: Sprite; u: number }[] }).stripsOf = (s: Sprite) => {
+    let list = strips.get(s);
+    if (!list) strips.set(s, (list = stripsOfPx(s)));
+    return list;
+  };
+  const painter = fakePainter();
+  const pieces = new FloorPieces(() => painter);
+  const dress = new FloorDress(() => painter);
+  const dressed = pieces.begin(game);
+  if (L.step) throw new Error('floor 2 with ledges: not brought over');
+  const whole = WHOLE_WALLS.on && WALL_LOOK.faces && floorLook(f.depth) >= 1 && floorLook(f.depth) <= 5;
+  if (!whole) throw new Error('floor 2 without its walls whole');
+  const kinds = new Map<Sprite, [Kind, string]>();
+  return {
+    name: 'floor2', game, L, look: grounds, tomb: null, castle: null, grounds, yard,
+    ground: lookGround(2), props: lookProps(2), gates: makeYardGateArt(), town: null, ways: lookWays(2),
+    grade: (s) => s,
+    relief: null, whole, lowGrid: new Uint8Array(f.w * f.h), doorBack: null, dressed, pieces, dress,
+    cam: { ox: 0, oy: 0, lift: null },
+    vignette: GROUNDS_LIGHTS.dark.vignette,
+    standKinds: kinds, owlFrames: null, pieceNames: momentNames(namesOf(lookPieces(2)), painter.filmOf<MomentFilm[]>('moments:2') ?? []),
+    underStair: underStairs(L),
+  };
+}
+
+// ================================================================================================================================
 // EACH PLACE: recorded, its pictures packed, written, and previewed
 
 function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; w: number; h: number }, more?: (A: Atlas) => void): void {
@@ -1339,12 +1632,19 @@ function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; 
   const { items, lights } = recordPlace(P, atlas);
   const doors = recordDoors(P, atlas);
   const props = recordProps(P, atlas);
+  const films = new Atlas();
+  const stairs = recordStairs(P, atlas, films);
   more?.(atlas);
-  const sheet = writeSheet(atlas, P.name, sheetWidth);
-  const picLights = new Map<string, [number, number, number, number, string][]>();
-  for (const [k, s] of atlas.pics) if (s.lights && s.lights.length) picLights.set(k, s.lights.map((l) => [Math.round((l.x - s.ax) * 100) / 100, Math.round((l.y - s.ay) * 100) / 100, l.r, l.a ?? 0.5, l.color]));
+  if (films.pics.size) {
+    const fs = writeSheet(films, `${P.name}_stair`, 4096);
+    console.log(`  the stairwell's opening: ${stairs.length} places, ${films.pics.size} frames in a ${fs.W}x${fs.H} sheet`);
+  }
   const look = P.look;
   const dark = { a: look.dark, rgb: [...(look.tint ?? [6, 4, 14])] };
+  const zones = recordZones(P, atlas);
+  const waypoint = recordWaypoint(P, atlas);
+  const traps = recordTraps(P, atlas);
+  const sheet = writeSheet(atlas, P.name, sheetWidth);
   writeFileSync(`${OUT}/${P.name}.json`, JSON.stringify({
     place: P.name,
     dark,
@@ -1353,9 +1653,14 @@ function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; 
     items,
     doors,
     props,
+    stairs,
+    ...(zones ? { zones } : {}),
+    ...(waypoint ? { waypoint } : {}),
+    ...(traps ? { traps } : {}),
     lights,
-    pic_lights: Object.fromEntries(picLights),
+    pic_lights: Object.fromEntries(picLightsOf(atlas)),
   }));
+  const picLights = picLightsOf(atlas);
   const h = P.game.hero;
   const hx = wx(P.cam, h.x, h.y);
   const hy = wy(P.cam, h.x, h.y) - 8;
@@ -1402,6 +1707,13 @@ if (!only || only === 'town') {
 }
 if (!only || only === 'floor1') {
   const P = tombPlace();
+  const h = P.game.hero;
+  const cx = wx(P.cam, h.x, h.y);
+  const cy = wy(P.cam, h.x, h.y);
+  writePlace(P, 4096, { x: Math.round(cx - 640), y: Math.round(cy - 440), w: 1280, h: 800 });
+}
+if (!only || only === 'floor2') {
+  const P = groundsPlace();
   const h = P.game.hero;
   const cx = wx(P.cam, h.x, h.y);
   const cy = wy(P.cam, h.x, h.y);

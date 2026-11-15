@@ -29,12 +29,17 @@ var doors: Array = []
 var props: Array = []
 var shut := PackedByteArray()
 var pier := PackedByteArray()
-## (any floor: its names ({name, level}: defs.ts floorTitle), its ways on (game/ways.ts: ways.gd), its traps' spots, where
-## the fallen wordsmith lies)
+## (any floor: its names ({name, level}: defs.ts floorTitle), its ways on as the game keeps them (game/ways.ts: ways.gd, for
+## the floors whose look is recorded from the game), where the fallen wordsmith lies)
 var title := {}
 var ways = null
-var hazards: Array = []
 var body = null
+## THE STAIRWELL DOWN (game/ways.ts stairSpots): the places in the boss's hall where it may open, {x, y, way}, the nearest
+## his hall's middle first (stairs.gd opens it as he falls); and the floor's waypoint {x, y}, where it has one.
+var stairs: Array = []
+var waypoint = null
+## THE TRAPS (game/traps.ts): spike floors {kind, x, y, w, h, phase} and dart walls {kind, x, y, w, h, slot} (traps.gd).
+var hazards: Array = []
 
 
 func _init(path: String) -> void:
@@ -56,8 +61,10 @@ func _init(path: String) -> void:
 	props = data.get("props", [])
 	title = data.get("title", {})
 	ways = data.get("ways")
-	hazards = data.get("hazards", [])
 	body = data.get("body")
+	stairs = data.get("stairs", [])
+	waypoint = data.get("waypoint", null)
+	hazards = data.get("hazards", [])
 	shut.resize(w * h)
 	pier.resize(w * h)
 	for d in doors:

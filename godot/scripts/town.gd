@@ -346,6 +346,9 @@ func _use() -> void:
 	prompt = ["", ""]
 	if not hero.alive:
 		return
+	# (on the waypoint, the use button is the waypoint's: waypoint.gd)
+	if main._way != null and main._way.here():
+		return
 	var best := ""
 	var best_d := USE
 	for s in data["stations"]:

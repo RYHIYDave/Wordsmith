@@ -18,6 +18,7 @@ extends Node2D
 const Iso := preload("res://scripts/iso.gd")
 const BakedFigure := preload("res://scripts/baked_figure.gd")
 const MM := preload("res://scripts/monster_moves.gd")
+const Headsman := preload("res://scripts/headsman.gd")
 
 const AGGRO := 9.0
 const WAKE_PACK := 14.0
@@ -27,8 +28,8 @@ const BODY_LIES := 30.0
 const BODY_FADES := 1.5
 const BAR_FOR := 4.0
 ## (game.ts: the voice of each kind, sound_families.ts VOICE, and its blow's sound, ATK; each name has two takes)
-const VOICE := {"skeleton": "bones", "archer": "bones", "champion": "bones", "marksman": "bones", "brute": "troll", "bat": "bat"}
-const ATK := {"skeleton": "atkBones", "champion": "atkBones", "brute": "atkTroll", "bat": "atkBat"}
+const VOICE := {"skeleton": "bones", "archer": "bones", "champion": "bones", "marksman": "bones", "brute": "troll", "bat": "bat", "shade": "spirit"}
+const ATK := {"skeleton": "atkBones", "champion": "atkBones", "brute": "atkTroll", "bat": "atkBat", "cultist": "atkHex", "shade": "atkSpirit"}
 
 var mgr  # monsters.gd
 var art: BakedFigure
@@ -77,6 +78,8 @@ var _bar := 0.0
 var _dead_for := 0.0
 var _weave := randf() * TAU
 var _sprite: Sprite2D
+## (THE HEADSMAN MADE NEW: his prowl and his acts are his own: headsman.gd)
+var h2 = null
 
 
 func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
@@ -100,6 +103,8 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	xp = float(m.get("xp", kind_def.get("xp", 0)))
 	_anim_t = m.get("animT", 0.0)
 	_moves = MM.moves_of(kind, champion)
+	if kind == "headsman":
+		h2 = Headsman.new()
 
 
 ## Called up out of the ground (the Warden's dead): `secs` till it is out.
@@ -139,6 +144,13 @@ func step(dt: float, hero) -> void:
 		if state != "sleep" or (hero.alive and d0 <= 32.0 and mgr.sees(world, hero.world)):
 			_turn_to(hero.world - world, d0)
 		_set_list("idle")
+		_place()
+		_show()
+		queue_redraw()
+		return
+	# (the Headsman, awake: his own prowl and acts)
+	if h2 != null and state != "sleep" and state != "rise":
+		h2.step(self, dt, hero)
 		_place()
 		_show()
 		queue_redraw()
@@ -256,6 +268,10 @@ func _start(i: int, hero, dist: float) -> void:
 			mgr.sfx.play("boss_roar", -6.0)
 		"pierce":
 			_aim = mgr.perils.aim(self, world, _aim_end(face), mv["windup"])
+		"sigil":
+			# (FLOOR 2: the cultist's fire sigil, its ring under where the hero stands as it begins its cast: game/action_f2.ts)
+			mgr.perils.sigil(hero.world.x, hero.world.y, _roll() * mv["dmg"], mv["windup"], self)
+			mgr.sfx.play("fire", -8.0)
 
 
 ## landMove: the end of its wind-up.
@@ -306,6 +322,8 @@ func _land(hero, dist: float, reach: float) -> void:
 			pass  # (the red circle does the harm: perils.gd)
 		"lockdown":
 			pass  # (its bars crash at the peril's own clock: perils.gd)
+		"sigil":
+			pass  # (its sigil erupts at the peril's own clock: perils.gd)
 		"summon":
 			mgr.summon(self)
 		"charge":
@@ -321,6 +339,9 @@ func _blow(hero, dist: float, reach: float, share: float) -> void:
 	mgr.sfx.play("swing", -10.0)
 	if hero.alive and dist <= reach + 0.45 + HERO_R:
 		hero.hurt(_roll() * share)
+	# (FLOOR 2: the Shade's rake, cold: a patch of rime before it as it lands: game/action_f2.ts)
+	if kind == "shade":
+		mgr.perils.rime(world.x + face.x * MM.RIME["ahead"], world.y + face.y * MM.RIME["ahead"], self)
 
 
 ## THE RED TROLL'S CHARGE: his line, from him through where the hero stands and 1.5 on, if he has a clear run there (no wall

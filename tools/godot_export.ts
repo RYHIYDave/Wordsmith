@@ -5,6 +5,7 @@
 //      casts on the floor at its foot and the floor's edges, packed in one sheet. Every rect and anchor in picture pixels,
 //      two to a game pixel (the grain the heroes are baked at).
 //   2. godot/assets/floor1/layout.json: a floor 1 laid out by the game's own map-maker (game/level.ts makeDungeon).
+//   3. godot/assets/floor1/monsters.json: its monsters as the game spawns them.
 //   npx tsx tools/godot_export.ts [seed] [floor]
 // ANY FLOOR: the second number is the floor (1 if not given), written to godot/assets/floor<N>/: its layout as the game's
 // map-maker lays it for that seed, where a new Warrior comes in, its ways on (the stairwell that opens in the boss's hall,
@@ -113,8 +114,6 @@ if (ways?.cave) ways.cave.tiles = doorTiles(L, level.ways!.cave!.spot);
 writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   depth, seed, w: L.w, h: L.h, title: floorTitle(depth),
   ways: ways ?? null,
-  // (the traps, game/traps.ts: each spot as the map-maker laid it)
-  hazards: (level.hazards ?? []).map((h) => h.spot),
   body: level.body ? { x: level.body.x, y: level.body.y } : null,
   tiles: arr(L.tiles), variant: arr(L.variant), cut: arr(L.cut), height: arr(L.height),
   walk: arr(level.walk), low: arr(level.low),
@@ -129,7 +128,14 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   doors: level.doors.map((d) => ({
     kind: d.spot.kind, room: d.spot.room, alongX: d.spot.alongX, near: d.spot.near, a: d.spot.a, plane: d.spot.plane, out: d.spot.out,
     tiles: doorTiles(L, d.spot), way: doorWay(L, d.spot), piers: doorPiers(L, d.spot), middle: doorMiddle(d.spot), open: d.open, want: d.want,
+    ...(d.spot.word ? { word: d.spot.word } : {}),
   })),
+  // (game/ways.ts: the places in the boss's hall where the stairwell down may open, the nearest his hall's middle first
+  // (stairSpots; it opens in the first clear of where he fell: stairFor), and the floor's waypoint, where it has one)
+  stairs: (level.ways?.stairs ?? []).map((s) => ({ x: s.x, y: s.y, way: s.way })),
+  waypoint: level.ways?.way ? { x: level.ways.way.x, y: level.ways.way.y } : null,
+  // (game/traps.ts: the floor's spike floors, {kind, x, y, w, h, phase}, and dart walls, {kind, x, y, w, h (the plate), slot})
+  hazards: (L.hazards ?? []).map((h) => ({ ...h })),
 }));
 
 // --- 3. its monsters: each as game.ts spawn made it (life, damage and speed with the first floor's softening in them), its
