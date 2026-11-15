@@ -91,6 +91,13 @@
 //   sc_pool      the canyon scorpion's acid where its glob comes down (poolPainted): its reach marked from 0.8 s before, the
 //                splash, the pool lying and hissing, its fumes, shrinking away. sc_shadow: the glob's shadow (globShadowPainted,
 //                21 pictures, a 20th of its flight each).
+//   uf_block     the Unfinished's hurled block, tumbling (art/unfinished.ts hurledBlock 0 to 3, layer `stand`) and lying as cover
+//                (4); uf_boulder: a boulder of its rockslide rolling (boulderRolling: 8); uf_cracks: the terrace its stomp cracks
+//                (stompCracks: 4, layer `floor`); uf_crash: where its block comes down and a boulder breaks (art/boss_shots.ts
+//                drawBallCrash). 1.4 s.
+//   qn_burst     the Carrion Queen's dive struck (art/carrion_queen_action_fx.ts paintDiveMarks after its blow, paintDiveBurst;
+//                render/act1_fx/queen.ts 'queen:burst'): the crater and the rock bursting behind where she strikes (`floor`), and
+//                before it over the figures (`air`). Its floor point where her talons strike. 2.5 s.
 // A film's `k0`: the frame its first picture is, counted from the film's own time 0 (less than 0: it begins before it).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
@@ -143,6 +150,11 @@ import { FLAME } from '../src/art/mkit';
 import { act1Pieces } from '../src/render/act1_pieces';
 import { CLUMP9, clump9Sprite } from '../src/art/act1_figs/stag';
 import { WALL as SG_WALL, forgetClumps } from '../src/art/stag_action_fx';
+// (the bosses of floors 6 and 7)
+import { boulderRolling, hurledBlock, stompCracks } from '../src/art/unfinished';
+import { BALL_CRASH_FOR, drawBallCrash } from '../src/art/boss_shots';
+import { QA_DIVE } from '../src/art/carrion_queen_action';
+import { paintDiveBurst, paintDiveMarks } from '../src/art/carrion_queen_action_fx';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -632,6 +644,49 @@ for (const view of ['front', 'back'] as const) {
   }
 }
 
+// THE BOSSES OF FLOORS 6 AND 7 (render/act1_fx/unfinished.ts, queen.ts): the Unfinished's things and the floor it breaks; the
+// Carrion Queen's crater and the rock bursting where her dive strikes (what of hers aims any way is painted in Godot itself:
+// godot/scripts/act1/queen_marks.gd)
+{
+  const stills = (name: string, n: number, layer: string, at: (i: number) => Sprite): void => {
+    films[name] = { fps: 0, n, k0: 0, layers: { [layer]: Array.from({ length: n }, (_, i) => pic(at(i))) } };
+  };
+  // the hurled block tumbling end over end (0 to 3), and lying where it fell (4); a boulder of the rockslide rolling, an eighth of
+  // a turn each; the stomp's cracks growing (0 to 3, the last as they stay) (art/unfinished.ts hurledBlock, boulderRolling,
+  // stompCracks)
+  stills('uf_block', 5, 'stand', (i) => hurledBlock(i));
+  stills('uf_boulder', 8, 'stand', (i) => boulderRolling(i));
+  stills('uf_cracks', 4, 'floor', (i) => stompCracks(i));
+  // where the block comes down and a boulder breaks (art/boss_shots.ts drawBallCrash, the game's own painter on a canvas of the
+  // game's pixels, its floor point the canvas's middle)
+  const W = 120;
+  const H = 72;
+  film('uf_crash', BALL_CRASH_FOR - 1 / FPS, {
+    floor: (k) => {
+      const g = new Dots(W, H);
+      drawBallCrash(g as unknown as CanvasRenderingContext2D, (x, y) => [W / 2 + (x - y) * 16, H / 2 + (x + y) * 8] as const, 0, 0, k / FPS);
+      return rawPic(g, 2, W, H);
+    },
+  });
+  // her dive struck (render/act1_fx/queen.ts ACTION_FX, 'queen:burst'): the crater and the half of the burst behind where she
+  // struck on the floor (paintDiveMarks after its blow, paintDiveBurst 'back'), and its half before it over the figures
+  // ('front'); its floor point where her talons strike, its time 0 her blow
+  const ROOM = { w: 2 * 360 + 24, h: 2 * 180 + 24 + 220, ax: 372, ay: 192 + 220 };
+  const B: [number, number] = [-QA_DIVE.at, 0];
+  const live = (paint: (px: Px, at: (x: number, y: number, z?: number) => readonly [number, number]) => void): number => {
+    const px = new Px(ROOM.w, ROOM.h);
+    paint(px, (x, y, z = 0) => [ROOM.ax + 32 * (x - y), ROOM.ay + 16 * (x + y) - z] as const);
+    return rawPic(px, 1, ROOM.ax, ROOM.ay);
+  };
+  film('qn_burst', Math.max(QA_DIVE.dust, QA_DIVE.crater) + 0.2, {
+    floor: (k) => live((px, at) => {
+      paintDiveMarks(px, at, B, 0, QA_DIVE.hit + k / FPS);
+      paintDiveBurst(px, at, B, 0, QA_DIVE.hit + k / FPS, 'back');
+    }),
+    air: (k) => live((px, at) => paintDiveBurst(px, at, B, 0, QA_DIVE.hit + k / FPS, 'front')),
+  });
+}
+
 // --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a
 // floor that has its kind), the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
 /** The set a film is packed with: the first word of its name; the cultist's sigil and the Flame keybearer's apart. */
@@ -645,6 +700,8 @@ const KIND_SETS: Record<string, string[]> = {
   deer: ['de'], drowned: ['dr'], warchief: ['wc'], mistwolf: ['mw'],
   // (the bosses of floors 8 and 9)
   cantor: ['cn'], stag: ['sg'],
+  // (the bosses of floors 6 and 7)
+  unfinished: ['uf'], queen: ['qn'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

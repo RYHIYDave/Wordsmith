@@ -289,3 +289,8 @@ static func air(_P, _c: CanvasItem, _p: Dictionary) -> void:
 
 static func spots(_P, _p: Dictionary) -> void:
 	pass
+
+
+## (none of his lies on the floor as its own: nothing to undo when one is taken away before its time)
+static func gone(_P, _p: Dictionary) -> void:
+	pass

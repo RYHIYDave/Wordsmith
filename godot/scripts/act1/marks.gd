@@ -19,6 +19,7 @@
 ##   devil:twister   the sand swirling in under its twister, and its lightning on the floor.
 ##   scorpion:glob   the glob in flight, its splash and the pool of acid: see scorpion.gd. `a`, `b` where it left the sting,
 ##                   `c` its height there, `d` its arc.
+##   unfinished:*, queen:*  floors 6 and 7's bosses': unfinished_marks.gd, queen_marks.gd.
 extends RefCounted
 
 const Iso := preload("res://scripts/iso.gd")
@@ -40,15 +41,23 @@ const LANE: Array[Color] = [Color("#ff7aa8"), Color("#e0287a"), Color("#7a1058")
 const BOLT := {"white": Color("#fff6ff"), "pale": Color("#e6c8ff"), "violet": Color("#b070ff"), "deep": Color("#6a2cc0"), "pink": Color("#ff4f8a"), "rose": Color("#ff7aa8")}
 
 
-## (THE BOSSES OF FLOORS 8 AND 9: their marks are stepped and drawn by scripts of their own, by the first word of the mark's
-## name: act1/cantor_marks.gd, act1/stag_marks.gd)
-const OWN := {"cantor": preload("res://scripts/act1/cantor_marks.gd"), "stag": preload("res://scripts/act1/stag_marks.gd")}
+## (THE BOSSES OF FLOORS 6 TO 9: their marks are stepped and drawn by scripts of their own, by the first word of the mark's
+## name: act1/unfinished_marks.gd, queen_marks.gd, cantor_marks.gd, stag_marks.gd)
+const OWN := {"unfinished": preload("res://scripts/act1/unfinished_marks.gd"), "queen": preload("res://scripts/act1/queen_marks.gd"),
+	"cantor": preload("res://scripts/act1/cantor_marks.gd"), "stag": preload("res://scripts/act1/stag_marks.gd")}
 
 
 static func _own(p: Dictionary):
 	var n := str(p["a1"])
 	var k := n.find(":")
 	return OWN.get(n.substr(0, k)) if k > 0 else null
+
+
+## One taken away before its time (the hero fallen and come back: perils.gd clear): what it did to the floor undone (a hurled
+## block's tile floor again).
+static func gone(P, p: Dictionary) -> void:
+	if _own(p) != null:
+		_own(p).gone(P, p)
 
 
 ## A step of one (its clock has run on already); false: it is gone.
@@ -333,6 +342,7 @@ static func air(P, c: CanvasItem, p: Dictionary) -> void:
 		M9.air(P, c, p)
 		return
 	if _own(p) != null:
+		_own(p).air(P, c, p)
 		return
 	if p["a1"] != "chanter:chain" or int(p["done"]) == 0:
 		return
@@ -365,6 +375,7 @@ static func spots(P, p: Dictionary) -> void:
 		M9.spots(P, p)
 		return
 	if _own(p) != null:
+		_own(p).spots(P, p)
 		return
 	var t: float = p["t"]
 	var at := Vector2(p["x"], p["y"])
