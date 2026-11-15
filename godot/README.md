@@ -219,6 +219,11 @@ through chat, so the art and sounds go into the project whole).
     wordsmith on floor 1 only (and later only for a hero who has not found him); any word burned into a piece of gear by
     the game's own outcomes; THE ARMOURER'S QUEST: asked once the ring is lit, he wants floor 3's furnace put out and gives
     HEAVY for it; the sealed doors of floors 2, 3 and 4 open to Power, Flame and Poison. `--only=wordsui`, 55 lines.
+  - THE MONSTERS' OWN WORDS (`hero.gd` hurt_by, `monster.gd`, `perils.gd`; game.ts hurtHero, monsterElement, hearsCry):
+    an elite's, a guardian's, a boss's or a pack's words on its blows and on what it leaves on the floor: armour against
+    the plain part, his resistances against fire, frost and lightning; poison, burning, chill and shock left on him;
+    Swift's quicker blows; a minion's words at half; the rune over a carrier's head and a monster's name in its colours; the
+    champion's rallying cry, heard by those that carry his words. `--only=foewords`, 18 cases.
 - **The small map, the large map and the pause panel** (the cloud chat, 15 Nov 2026; `scripts/minimap.gd`; ui/hud.ts minimap
   and drawMap, ui/panels.ts drawPause): top right, the floor round him as he has seen it, a tile a pixel (in sight bright, seen
   before dim, wall dark), with the game's marks: the waypoint (bright once awake), the town's gate, floor 1's gate home, the
@@ -245,8 +250,7 @@ A controller: the left stick, RT, LT, A, B, X.
 
 ## Not in it yet
 
-Melding words and the Meldstone (the wordsmith's second ask), words found from floor 6 down, the monsters' own words (what
-an elite's or a pack's words do to its blows on him, the rune over a carrier's head, the champions' rallying cry), what a red circle or the
+Melding words and the Meldstone (the wordsmith's second ask), words found from floor 6 down, what a red circle or the
 Headsman's vault sends up as it lands and a bone arrow and the Warden's bolts in flight (plain drawings: the game's
 general effects are brought over only for the words so far), the glow that burning things and some figures give off (the game adds it over them; here only the
 places' own lights glow, and the moves cut their light in the dark), the bosses' spoken lines aloud (the Chained One and

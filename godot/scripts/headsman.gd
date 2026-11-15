@@ -243,7 +243,8 @@ func _end(m, a: Dictionary) -> void:
 
 func _blow(m, hero, mult: float) -> void:
 	if hero.alive:
-		hero.hurt(m._roll() * mult)
+		# (with his words: bosses.ts blow, hurtHero(roll, monsterElement(m), m.words, m))
+		m.harm_hero(hero, m._roll() * mult)
 
 
 ## h2Clear: whether a move that carries him has a clear way toward the hero, every step of it on floor he may walk, and room to

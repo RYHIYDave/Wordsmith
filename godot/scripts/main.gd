@@ -524,6 +524,7 @@ func go_to(where: String, arrive: String) -> void:
 	tw.tween_property(_curtain, "color:a", 1.0, CURTAIN)
 	await tw.finished
 	_build(where, arrive)
+	hero.fresh_place()
 	var back := create_tween()
 	back.tween_property(_curtain, "color:a", 0.0, CURTAIN)
 	await back.finished
@@ -1303,6 +1304,349 @@ func _wordsui_shots(h: Hero, dir: String) -> void:
 	print("WORDSUI: %d lines, %d wrong%s" % [_wu_n, _wu_bad.size(), "" if _wu_bad.is_empty() else ": " + str(_wu_bad)])
 
 
+# --- SHOT MODE, THE MONSTERS' OWN WORDS ---
+
+## (its cases, and those not as the game's formula gives them; the roll of every blow; his armour and what he withstands)
+var _fw_n := 0
+var _fw_bad: Array = []
+const FW_ROLL := 40.0
+const FW_GEAR := {"armor": 30.0, "res_fire": 20.0, "res_frost": 10.0, "res_light": 30.0, "res_poison": 25.0}
+
+
+## SHOT MODE, THE MONSTERS' OWN WORDS (--only=foewords). On floor 2, in a hall clear of its traps (_w_find), the floor's other
+## monsters sent away and those kept standing still: a monster with each of the six words there strikes him (its own blow,
+## monster.gd _blow), its roll fixed at FW_ROLL, his armour and what he withstands set (FW_GEAR), his life too big to lose and
+## none of it coming back; then a minion with its leader's word at half, and the Headsman with two. ONE LINE A CASE: the harm and
+## its parts by element beside the game's formula (game.ts hurtHero), what it left on him, for how long and what it took over
+## its time, the knock (Heavy, which no monster on floors 1 to 5 carries, tried with a blow handed the word); a shot and two
+## marks carrying their monster's words; Swift's waits beside a plain one's (monsterAttack, landMove); the champion's cry heard
+## and not (hearsCry, rally), and a minion's half word whole after it. Pictures: the runes and names over the carriers, the hero
+## burning, chilled and poisoned. Then one line for all of it, beginning FOEWORDS:.
+func _foewords_shots(h: Hero, dir: String) -> void:
+	go_to("floor2", "down")
+	await _wait(1.4)
+	if sight != null:
+		sight.see_all()
+	h.walked = 5.0
+	if not _w_find():
+		print("FOEWORDS: no hall on floor 2 is clear for the check")
+		return
+	var power := _fw_one("skeleton", "blue", ["power"])
+	var plain := _fw_one("skeleton", "", [])
+	var bat := _fw_one("bat", "blue", ["poison"])
+	var frost := _fw_one("champion", "leader", ["frost"])
+	var shade := _fw_one("shade", "blue", ["fire"])
+	var light := _fw_one("champion", "leader", ["lightning"])
+	var swift := _fw_one("skeleton", "blue", ["swift"])
+	var archer := _fw_one("archer", "", [])
+	var sarcher := _fw_one("archer", "blue", ["swift"])
+	var cultist := _fw_one("cultist", "", [])
+	var carrier: Monster = null
+	var boss: Monster = null
+	for m in _monsters.list:
+		if m.kind == "champion" and not m.carries.is_empty():
+			carrier = m
+		elif m.boss:
+			boss = m
+	var need := [power, plain, bat, frost, shade, light, swift, archer, sarcher, cultist, carrier, boss]
+	if need.has(null):
+		print("FOEWORDS: floor 2 lacks one of the monsters the check wants: %s" % [need.map(func(o): return o.title if o != null else "-")])
+		return
+	# (the frost champion's minions, the carrier's, and the swift skeleton's pack: kept, for the cry and the pictures)
+	var minions: Array = []
+	var keep: Array = need.duplicate()
+	for m in _monsters.list:
+		if m.pack_id >= 0 and m.pack_id in [frost.pack_id, carrier.pack_id, swift.pack_id]:
+			keep.append(m)
+			if m.pack_id == frost.pack_id and m.rarity == "minion":
+				minions.append(m)
+	if minions.is_empty():
+		print("FOEWORDS: %s leads no minions" % frost.title)
+		return
+	var minion: Monster = minions[0]
+	# (what Power and Swift give a monster is in its numbers already, as the game's spawn gave them: monsters.json)
+	var dmg_k: float = power.dmg_min / plain.dmg_min
+	var pace_k: float = swift.speed / plain.speed
+	for m in _monsters.list:
+		if not keep.has(m):
+			m.queue_free()
+	for m in keep:
+		if m == boss:
+			m.waits = true
+			continue
+		_fw_still(m)
+	await _wait(0.3)
+	var g: Dictionary = FW_GEAR
+	print("FOEWORDS begin: floor 2 (armour against floor %d), he at %s; every blow's roll %d; his armour %d (%.1f%% of a plain blow), Flame %d%%, Frost %d%%, Lightning %d%%, Poison %d%% withstood" % [
+		maxi(1, map.depth), _w_home, FW_ROLL, g["armor"], _fw_cut() * 100.0, g["res_fire"], g["res_frost"], g["res_light"], g["res_poison"]])
+
+	# POWER: nothing more in the blow itself; harder blows and more life in its numbers
+	var b := _fw_hit(h, power)
+	_fw_case("power", b, [], "its damage %.2fx a plain Skeleton's (the game: 1.40x), its life %d to the plain one's %d" % [dmg_k, power.max_life, plain.max_life], absf(dmg_k - 1.4) < 0.01)
+	# POISON: most of the blow again over 4 s
+	b = _fw_hit(h, bat)
+	var dps: float = b["dmg"] * 0.6 * (1.0 - g["res_poison"] / 100.0) / 4.0
+	var took := await _fw_over(h, h.life, 4.6, maxf(1.0, roundf(dps * 0.5)), 8)
+	_fw_case("poison", b, [["poisoned", b["poison_t"], 4.0, "%.3f a second" % b["poison_dps"], dps, b["poison_dps"]]], took[0], took[1])
+	# FROST: chilled 2 s, slower on his feet and in his Strike
+	_fw_clean(h)
+	var pace0 := h.walk_pace()
+	var rate0 := h.rate()
+	b = _fw_hit(h, frost)
+	await _wait(0.3)
+	await _snap(dir + "/fw2_chilled.png")
+	var pace1 := h.walk_pace() / pace0
+	var rate1 := h.rate() / rate0
+	await _wait(1.8)
+	var back := h.chill_t <= 0.0 and absf(h.walk_pace() - pace0) < 1e-6
+	_fw_case("frost", b, [["chilled", b["chill_t"], 2.0, "%.2f" % b["chill_k"], 0.3, b["chill_k"]]], "his pace x%.2f (the game: 0.70), Strike's blows a second x%.3f (0.850); after 2.1 s %s" % [pace1, rate1, "both whole again" if back else "STILL SLOWED"], absf(pace1 - 0.7) < 1e-4 and absf(rate1 - 0.85) < 1e-4 and back)
+	# FLAME: he burns 3 s
+	b = _fw_hit(h, shade)
+	var after_blow := h.life
+	await _wait(0.5)
+	await _snap(dir + "/fw3_burning.png")
+	dps = b["dmg"] * 0.3 / 3.0
+	took = await _fw_over(h, after_blow, 3.1, maxf(1.0, roundf(dps * 0.5)), 6)
+	_fw_case("fire", b, [["burning", b["burn_t"], 3.0, "%.3f a second" % b["burn_dps"], dps, b["burn_dps"]]], took[0], took[1])
+	# LIGHTNING: shocked 3 s, and the next blow a fifth harder
+	b = _fw_hit(h, light)
+	var b2 := _fw_hit(h, light, false)
+	var want2 := maxf(1.0, roundf(_fw_exact("lightning", [], "") * 1.2))
+	_fw_case("lightning", b, [["shocked", b["shock_t"], 3.0, "", 0.0, 0.0]], "a second blow while shocked: %d (the game: %d, a fifth more)" % [b2["dmg"], want2], b2["dmg"] == want2 and b2["shocked"])
+	# SWIFT: nothing more in the blow; its waits shorter, its pace in its numbers
+	b = _fw_hit(h, swift)
+	_fw_case("swift", b, [], "its pace %.2fx a plain Skeleton's (the game: 1.35x); its waits: below" % pace_k, absf(pace_k - 1.35) < 0.01)
+	# A MINION, its leader's Frost at half: half the blow frost, half its own; half the chill
+	b = _fw_hit(h, minion)
+	_fw_case("half", b, [["chilled", b["chill_t"], 2.0, "%.2f" % b["chill_k"], 0.15, b["chill_k"]]], "%s, of %s's pack" % [minion.title, frost.title], true)
+	# TWO WORDS: the Headsman's Power and Flame, his own blow by his own rules (headsman.gd _blow)
+	boss.dmg_min = FW_ROLL
+	boss.dmg_max = FW_ROLL
+	_fw_clean(h)
+	boss.h2._blow(boss, h, 1.0)
+	b = h.last_blow.duplicate()
+	_fw_case("two", b, [["burning", h.burn_t, 3.0, "%.3f a second" % h.burn_dps, b["dmg"] * 0.3 / 3.0, h.burn_dps]], "%s, words %s: his blow Flame, the first element among them" % [boss.title, boss.words], b["el"] == "fire")
+	# HEAVY, on no monster of floors 1 to 5: a blow handed the word knocks him a step, a minion's half a step
+	for hv in [{}, {"words": ["heavy"], "base": "phys"}]:
+		_fw_clean(h)
+		var at0 := h.world
+		h.hurt_by(FW_ROLL, "phys", ["heavy"], hv, null, h.world - _w_face)
+		await _wait(0.25)
+		var went := h.world.distance_to(at0)
+		var want := 0.6 * (0.5 if not hv.is_empty() else 1.0)
+		_fw_line("heavy%s" % ("_half" if not hv.is_empty() else ""), "a blow handed Heavy%s knocks him %.3f tiles away from where it came from (the game: %.2f, knockHero)" % [" at half" if not hv.is_empty() else "", went, want], absf(went - want) < 0.02)
+
+	# A SHOT: the swift archer's arrow carries its words to him (game.ts shootAt, updateProjectiles)
+	_fw_clean(h)
+	sarcher.world = _w_home + _w_face * 3.0
+	sarcher.dmg_min = FW_ROLL
+	sarcher.dmg_max = FW_ROLL
+	h.last_blow = {}
+	_monsters.shoot(sarcher, -_w_face, float(sarcher.def["projSpeed"]), 6.0, FW_ROLL)
+	await _wait(1.0)
+	_fw_line("shot", "%s's arrow lands: %s, words %s, %d harm (the game: phys, [\"swift\"], %d)" % [sarcher.title, h.last_blow.get("el", "-"), h.last_blow.get("words", []), h.last_blow.get("dmg", 0), _fw_exact("phys", [], "")], h.last_blow.get("el", "") == "phys" and h.last_blow.get("words", []) == ["swift"] and h.last_blow.get("dmg", 0) == _fw_exact("phys", [], ""))
+	# A MARK: the cultist's sigil, its own element Flame, no words (game.ts cultistSigil, stepActionF2)
+	_fw_clean(h)
+	h.last_blow = {}
+	_monsters.perils.sigil(h.world.x, h.world.y, FW_ROLL, 0.0, cultist)
+	await _wait(0.2)
+	_fw_line("sigil", "%s's sigil erupts under him: %s, words %s, %d harm, burning %.2f s (the game: fire, [], %d, 3 s)" % [cultist.title, h.last_blow.get("el", "-"), h.last_blow.get("words", []), h.last_blow.get("dmg", 0), h.burn_t, _fw_exact("fire", [], "")], h.last_blow.get("el", "") == "fire" and h.last_blow.get("dmg", 0) == _fw_exact("fire", [], "") and h.burn_t > 2.5)
+
+	# SWIFT'S WAITS, the same roll of chance for both (monsterAttack: its wait after its one blow; landMove: after a move, and
+	# the move's own cooldown)
+	_monsters.perils.clear()
+	var waits := []
+	for m in [plain, swift]:
+		seed(11)
+		m.state = "windup"
+		m._move = -1
+		m._land(h, 20.0, m._reach())
+		waits.append(m._cd)
+		_fw_still(m)
+	_fw_line("swift_wait", "a skeleton's wait after its blow: %.3f s plain, %.3f s Swift, x%.3f (the game: x0.700)" % [waits[0], waits[1], waits[1] / waits[0]], absf(waits[1] / waits[0] - 0.7) < 1e-4)
+	var after: Array = []
+	var cools: Array = []
+	for m in [archer, sarcher]:
+		m._pick(20.0, false)
+		seed(12)
+		m.state = "windup"
+		m._move = 1
+		m._land(h, 5.0, m._reach())
+		after.append(m._cd)
+		cools.append(m._move_cd[1])
+		_fw_still(m)
+		if m == archer:
+			_monsters.perils.clear()
+	_fw_line("swift_moves", "an archer's arrow rain: its wait after %.3f s plain, %.3f s Swift (x%.3f); its own cooldown %.2f s plain, %.2f s Swift (the game: x0.700, 7.00 and 4.90)" % [after[0], after[1], after[1] / after[0], cools[0], cools[1]], absf(after[1] / after[0] - 0.7) < 1e-4 and absf(cools[0] - 7.0) < 1e-4 and absf(cools[1] - 4.9) < 1e-4)
+	_fw_clean(h)
+	h.last_blow = {}
+	await _wait(1.7)
+	var rain := _fw_exact("phys", [], "", FW_ROLL * float(sarcher._moves[1]["dmg"]))
+	_fw_line("rain", "the swift archer's rain comes down on him: %s, words %s, %d harm (the game: phys, [\"swift\"], %d)" % [h.last_blow.get("el", "-"), h.last_blow.get("words", []), h.last_blow.get("dmg", 0), rain], h.last_blow.get("words", []) == ["swift"] and h.last_blow.get("dmg", 0) == rain)
+
+	# THE CHAMPION'S CRY: heard by his minions near him carrying his words; not, with them far off; then whole in them
+	frost._pick(3.0, true)
+	for i in frost._move_cd.size():
+		frost._move_cd[i] = 0.0
+	var heard: int = frost._pick(3.0, true)
+	var was_at: Array = []
+	for o in minions:
+		was_at.append(o.world)
+		o.world = frost.world + Vector2(20.0, 0.0)
+	var far: int = frost._pick(3.0, true)
+	for k in minions.size():
+		minions[k].world = was_at[k]
+	var blue_hears: bool = _monsters.hears_cry(swift)
+	_fw_line("cry", "%s, %d minions carrying %s at half within 8 tiles: his cry %s; with them 20 tiles off: %s; a blue pack (no minions) %s" % [frost.title, minions.size(), minion.half, "made" if heard >= 0 and frost._moves[heard]["id"] == "rally" else "NOT made", "made" if far >= 0 and frost._moves[far]["id"] == "rally" else "not made", "would hear" if blue_hears else "hears none"], heard >= 0 and frost._moves[heard]["id"] == "rally" and far == -1 and not blue_hears)
+	frost.state = "windup"
+	frost._move = heard
+	frost._land(h, 3.0, frost._reach())
+	_fw_still(frost)
+	b = _fw_hit(h, minion)
+	_fw_case("rallied", b, [["chilled", b["chill_t"], 2.0, "%.2f" % b["chill_k"], 0.3, b["chill_k"]]], "the minion rallied %.2f s more: its leader's Frost whole in it; the line \"%s\"" % [minion.rally_t, loot.msgs[-1]["text"] if not loot.msgs.is_empty() else "-"], minion.rally_t > 4.5 and not loot.msgs.is_empty() and loot.msgs[-1]["text"] == "%s rallies his pack" % frost.title)
+
+	# PICTURES: the runes and the names over the carriers, the hero poisoned
+	_fw_clean(h)
+	var side := Vector2(-_w_face.y, _w_face.x)
+	carrier.world = _w_home + _w_face * 2.6 + side * 1.4
+	var n := 0
+	for m in keep:
+		if m.pack_id == carrier.pack_id and m != carrier and n < 2:
+			m.world = carrier.world + side * (0.8 + 0.8 * n) - _w_face * 0.4
+			n += 1
+	frost.world = _w_home + _w_face * 2.6 - side * 1.6
+	n = 0
+	for m in keep:
+		if m.pack_id == swift.pack_id and n < 3:
+			m.world = _w_home - _w_face * 1.8 + side * (n - 1) * 1.1
+			n += 1
+	power.world = _w_home + side * 2.6
+	sight.see_all()
+	await _wait(0.4)
+	await _snap(dir + "/fw1_carriers.png")
+	var shown := "%s carries %s (rune over his head, his name in a leader's yellow); %s's name in %s" % [carrier.title, carrier.carries, swift.title, "blue, once over the first of its pack in sight" if _monsters.speaks.get(swift.pack_id) != null else "NOTHING"]
+	_fw_line("over", shown, carrier._shows_over() and _monsters.speaks.get(swift.pack_id) != null)
+	_fw_hit(h, bat)
+	await _wait(0.4)
+	await _snap(dir + "/fw4_poisoned.png")
+	print("FOEWORDS: %d cases, %d as the game's formula gives, %d not%s" % [_fw_n, _fw_n - _fw_bad.size(), _fw_bad.size(), "" if _fw_bad.is_empty() else ": " + ", ".join(PackedStringArray(_fw_bad))])
+
+
+## The first on the floor of `kind` and pack rarity `rar` ("" for none) whose words are `ws`.
+func _fw_one(kind: String, rar: String, ws: Array) -> Monster:
+	for m in _monsters.list:
+		if is_instance_valid(m) and not m.dead and m.kind == kind and m.rarity == rar and m.words == ws and not m.boss:
+			return m
+	return null
+
+
+## It stands, and does nothing of its own (held as one that has just struck is).
+func _fw_still(m: Monster) -> void:
+	m.state = "recover"
+	m._t = 1e9
+	m._cd = 1e9
+	m._move = -1
+	m._set_list("idle")
+
+
+## A case begins afresh: nothing on him, his life whole and too big to lose, none of it coming back, his armour and what he
+## withstands set; where the check has him, still; the monsters' clock of what burns and poisons a quarter second off a bite.
+func _fw_clean(h: Hero) -> void:
+	h.max_life = 1e6
+	h.life = 1e6
+	h.unhurt = false
+	h.stats["life_regen"] = 0.0
+	for k in FW_GEAR:
+		h.stats[k] = FW_GEAR[k]
+	h.burn_t = 0.0
+	h.burn_dps = 0.0
+	h.chill_t = 0.0
+	h.chill_k = 0.0
+	h.shock_t = 0.0
+	h.poison_t = 0.0
+	h.poison_dps = 0.0
+	h._knock_t = 0.0
+	h._invuln = 0.0
+	h.world = _w_home
+	h.auto_dir = Vector2.ZERO
+	_monsters._dot_t = 0.25
+
+
+## How much his armour takes of a plain blow (stats.ts armorReduction, the floor never less than the first).
+func _fw_cut() -> float:
+	var a: float = FW_GEAR["armor"]
+	return minf(0.75, a / (a + 40.0 + 20.0 * maxf(1.0, map.depth)))
+
+
+## THE GAME'S FORMULA, for the check to set beside what the rules did (game.ts hurtHero): a blow of FW_ROLL of `el`, a minion's
+## with `half` of its leader's words at half and `base` its own element; its harm before it is made a whole number.
+func _fw_exact(el: String, half: Array, base: String, raw := FW_ROLL) -> float:
+	var res := {"fire": FW_GEAR["res_fire"], "frost": FW_GEAR["res_frost"], "lightning": FW_GEAR["res_light"]}
+	var k := 0.5 if half.has(el) and el != base else 1.0
+	var parts := [[el, k]] if k >= 1.0 else [[el, k], [base, 1.0 - k]]
+	var d := 0.0
+	for p in parts:
+		d += raw * p[1] * (1.0 - (_fw_cut() if p[0] == "phys" else res[p[0]] / 100.0))
+	return maxf(1.0, roundf(d))
+
+
+## One blow of `m`'s own on him, its roll fixed (monster.gd _blow, as it lands within its reach): what the rules weighed, with
+## what it left on him then. `fresh`: begun afresh (a second blow on what the first left: not).
+func _fw_hit(h: Hero, m: Monster, fresh := true) -> Dictionary:
+	if fresh:
+		_fw_clean(h)
+	m.dmg_min = FW_ROLL
+	m.dmg_max = FW_ROLL
+	var was := h.life
+	m._blow(h, 0.5, m._reach(), 1.0)
+	var b: Dictionary = h.last_blow.duplicate()
+	b["took"] = was - h.life
+	b["poison_t"] = h.poison_t
+	b["poison_dps"] = h.poison_dps
+	b["burn_t"] = h.burn_t
+	b["burn_dps"] = h.burn_dps
+	b["chill_t"] = h.chill_t
+	b["chill_k"] = h.chill_k
+	b["shock_t"] = h.shock_t
+	h.last_blow = b
+	return b
+
+
+## What burns or poisons him took from the moment after the blow, when he had `was` life, to `secs` more from now: by the
+## game's rule `n` bites of `bite` each, the monsters' clock a quarter second off a bite as the blow lands. [The line, whether
+## it is so.]
+func _fw_over(h: Hero, was: float, secs: float, bite: float, n: int) -> Array:
+	await _wait(secs)
+	var took := was - h.life
+	return ["over its time it took %d, %d bites of %d (the game: %d bites of %d, twice a second)" % [took, roundi(took / bite), bite, n, bite], absf(took - n * bite) < 0.5]
+
+
+## A case's line: the blow as the rules weighed it beside the game's formula, what it left (`left`: [what, seconds, the game's
+## seconds, how hard, the game's, the rules']), the knock, and `more`; it is so if all of it is (`ok`).
+func _fw_case(name: String, b: Dictionary, left: Array, more: String, ok: bool) -> void:
+	var half: Array = b.get("half", [])
+	var base: String = "phys"
+	var want := _fw_exact(b["el"], half, base)
+	var parts := PackedStringArray()
+	for p in b["parts"]:
+		parts.append("%s %.0f%% %.2f" % [p[0], float(p[1]) * 100.0, p[2]])
+	var line := "%s %d of %s%s: %s -> %d (the game: %d)" % [b["el"], FW_ROLL, b["words"], (", half " + str(half)) if not half.is_empty() else "", " + ".join(parts), b["dmg"], want]
+	var good: bool = ok and b["dmg"] == want and b["knock"] == 0.0
+	var on := PackedStringArray()
+	for l in left:
+		on.append("%s %.2f s (the game: %.1f)%s" % [l[0], l[1], l[2], (", " + l[3] + (" (the game: %.3f)" % l[4] if l[4] is float and l[4] > 0.0 else "")) if l[3] != "" else ""])
+		good = good and absf(float(l[1]) - float(l[2])) < 0.05 and (l[3] == "" or absf(float(l[4]) - float(l[5])) < 1e-4)
+	line += "; leaves %s; no knock; %s" % [", ".join(on) if not on.is_empty() else "nothing", more]
+	_fw_line(name, line, good)
+
+
+func _fw_line(name: String, line: String, ok: bool) -> void:
+	_fw_n += 1
+	if not ok:
+		_fw_bad.append(name)
+	print("FOEWORDS %s: %s %s" % [name, line, "OK" if ok else "WRONG"])
+
+
 ## SHOT MODE: the monsters' moves, each pictured the moment it shows. The hero is set down in sight of each monster that has
 ## moves and stands there, unharmed (its blows flash him but take nothing, so that each move is seen to its end): the red
 ## troll (his charge's line, his run, his slam's circle), the archers (the rain's ring, the arrows come down), the
@@ -1317,6 +1661,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "wordsui":
 		await _wordsui_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "foewords":
+		await _foewords_shots(hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "rmb":

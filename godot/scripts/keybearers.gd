@@ -313,7 +313,8 @@ class Bearer extends RefCounted:
 	## What a blow of his own does to the hero, `mult` times his blow (BossRules.blow).
 	func _blow(m, hero, mult: float) -> void:
 		if hero.alive:
-			hero.hurt(m._roll() * mult)
+			# (with his words: bosses.ts blow, hurtHero(roll, monsterElement(m), m.words, m))
+			m.harm_hero(hero, m._roll() * mult)
 
 	## game.ts slide, for him as he walks: the step along x kept if his body (no bigger than 0.42 round) is clear there, then
 	## the step along y.
@@ -399,7 +400,7 @@ class Knife extends Bearer:
 			"kb_throw":
 				if Kit.at(t0, t1, a["hit"]):
 					var o := Kit.beside(m.world, m.face, act["hand"], THROW_FROM[0], THROW_FROM[1])
-					m.mgr.perils.kb_fly("kb_knife", o, _toward(hero, o, m.face), m._roll() * float(a["dmg"]), THROW_FROM[2])
+					m.mgr.perils.kb_fly("kb_knife", o, _toward(hero, o, m.face), m._roll() * float(a["dmg"]), THROW_FROM[2], m)
 					m.mgr.sfx.play("lunge", linear_to_db(0.45))
 
 	## (his frenzy has carried him on, in his picture: he is where it left him)
@@ -435,11 +436,11 @@ class Flame extends Bearer:
 					var way := _toward(hero, o, m.face)
 					var dmg: float = m._roll() * float(a["dmg"])
 					for deg in [-float(BALL["wide"]), 0.0, float(BALL["wide"])]:
-						m.mgr.perils.kb_fly("kb_ball", o, way.rotated(deg_to_rad(deg)), dmg, FAN_FROM[2])
+						m.mgr.perils.kb_fly("kb_ball", o, way.rotated(deg_to_rad(deg)), dmg, FAN_FROM[2], m)
 					m.mgr.sfx.play("fire", linear_to_db(0.6))
 			"kb_ring":
 				if Kit.at(t0, t1, a["hit"]):
-					m.mgr.perils.kb_ring(m.world, m._roll() * float(a["dmg"]))
+					m.mgr.perils.kb_ring(m.world, m._roll() * float(a["dmg"]), m)
 					m.mgr.sfx.play("fire")
 					m.mgr.sfx.play("slam", linear_to_db(0.5))
 					hero.kick(3.0)

@@ -264,6 +264,43 @@ func follow() -> void:
 			if is_instance_valid(_tints[id]):
 				_tints[id].queue_free()
 			_tints.erase(id)
+	_hero_tint()
+
+
+## WHAT THE MONSTERS' WORDS HAVE LEFT ON THE HERO, over his picture (render.ts drawWorld, the hero): CHILLED, 0.3 of P.bu4; else
+## POISONED, 0.3 of P.vn4; nothing while a blow flashes him (hero.gd's own), nor once he has fallen. Read off his `chill_t`
+## and `poison_t` (hero.gd). The tint is a picture of his, a child of his node named "StateTint", kept from place to place.
+func _hero_tint() -> void:
+	var h = fx.hero()
+	if h == null:
+		return
+	var sp = h.get("_sprite")
+	if not (sp is Sprite2D):
+		return
+	var tint := Color(0, 0, 0, 0)
+	if h.alive and float(h.get("_flash")) <= 0.0:
+		if float(h.get("chill_t")) > 0.0:
+			tint = Color(L.P["bu4"], 0.3)
+		elif float(h.get("poison_t")) > 0.0:
+			tint = Color(L.P["vn4"], 0.3)
+	var over = h.get_node_or_null("StateTint")
+	if tint.a <= 0.0:
+		if over != null:
+			over.visible = false
+		return
+	if over == null:
+		over = Sprite2D.new()
+		over.name = "StateTint"
+		over.centered = false
+		over.material = _flat_material()
+		h.add_child(over)
+	over.visible = true
+	over.texture = sp.texture
+	over.offset = sp.offset
+	over.flip_h = sp.flip_h
+	over.scale = sp.scale
+	over.position = sp.position
+	over.modulate = Color(tint, tint.a * sp.modulate.a)
 
 
 ## A monster's picture moved `by` (picture pixels) from where it stands. monster.gd puts its picture in its place afresh

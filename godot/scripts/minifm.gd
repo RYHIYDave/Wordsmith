@@ -161,7 +161,7 @@ func _acting(m, a: Dictionary, t0: float, t1: float, hero) -> void:
 		"minifire":
 			# (his fire is a peril with its own clock from here, its harm rolled once: perils.gd fm_fire)
 			if at.call(1e-4):
-				m.mgr.perils.fm_fire(m.world, m.face, act["hand"], m._roll() * a["dmg"], true)
+				m.mgr.perils.fm_fire(m.world, m.face, act["hand"], m._roll() * a["dmg"], true, m)
 			if at.call(a["hit"]):
 				m.mgr.sfx.play("fire")
 				hero.kick(1.0)
@@ -185,9 +185,11 @@ func _end(m, a: Dictionary) -> void:
 	m.state = "chase"
 	act = null
 	_to("stand")
-	m._cd = float(a["after"]) * randf_range(0.9, 1.15)
+	# (SWIFT on him, bosses.ts endAct: his wait after a move and the move's own wait shorter, a minion's word half as much)
+	var swift: float = 1.0 - 0.3 * m.word_share("swift")
+	m._cd = float(a["after"]) * swift * randf_range(0.9, 1.15)
 	if a["cooldown"] > 0.0:
-		cds[i] = a["cooldown"]
+		cds[i] = a["cooldown"] * swift
 	m._set_list("idle", true)
 
 
