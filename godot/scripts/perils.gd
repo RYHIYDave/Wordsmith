@@ -532,6 +532,9 @@ func _dot_line(a: Vector2, b: Vector2, k: float) -> void:
 ## WHAT IS OVER EVERYTHING THAT STANDS (render/act1_fx `air`): drawn on a layer of its own over the figures, under the dark.
 func _draw_air(c: CanvasItem) -> void:
 	for p in list:
+		if p["kind"] == "a1":
+			A1M.air(self, c, p)
+			continue
 		if p["kind"] == "st_coals" and has_film("st_lump_0"):
 			# (the Stoker's coals in the air: each one's trail of sparks behind it, the way it came, flickering: coalInAir)
 			var since := float(p["t"]) - ST.COALS_HIT
@@ -812,6 +815,9 @@ func _process(dt: float) -> void:
 			"kb_knife", "kb_ball", "kb_sigil", "kb_ring", "kb_reach":
 				# (THE KEYBEARERS', floor 5's two: at the foot of this file)
 				stays = _kb_step(p, dt)
+			"a1":
+				# (THE COMMON MONSTERS OF FLOORS 6 TO 8: scripts/act1/marks.gd)
+				stays = A1M.step(self, p, dt)
 			_:
 				var s = p.get("src")
 				if s != null and not is_instance_valid(s):
@@ -836,6 +842,8 @@ func _process(dt: float) -> void:
 				_bars_stands(p)
 			elif p["kind"] == "fm_death":
 				_fm2_death_hands(p)
+			elif p["kind"] == "a1":
+				A1M.stands(self, p)
 		else:
 			_film_free(p)
 	list = keep
@@ -1321,6 +1329,8 @@ func _draw() -> void:
 				_draw_co(p)
 			"kb_knife", "kb_ball", "kb_sigil", "kb_ring", "kb_reach":
 				_draw_kb(p)
+			"a1":
+				A1M.draw(self, p)
 
 
 ## The slam's ring (a stand-in for art/action_f3_fx.ts): out to its edge over RING.wave, easing; breaking up over RING.fade;
@@ -2955,6 +2965,8 @@ func _spots_of(p: Dictionary) -> void:
 		return
 	var t: float = p["t"]
 	match p["kind"]:
+		"a1":
+			A1M.spots(self, p)
 		"fm_circle":
 			# (his circle, lighting him: art/fm2_fx.ts drawCircle)
 			if _fm2_lit(p):
@@ -3022,3 +3034,17 @@ func _spots_of(p: Dictionary) -> void:
 				for i in int(ST.COALS["n"]):
 					if since <= ST.coal_lands(i):
 						look.spot(_st_coal(p["frame"], Vector2(p["x"], p["y"]), ST.coal_at(i, since, p["aim"])) / 2.0, 14.0, 0.4)
+
+
+# =====================================================================================================================
+# THE COMMON MONSTERS OF FLOORS 6 TO 8 (the quarry golem, the firepot thrower, the chanter, the vulture, the cliff crawler,
+# the dust devil, the canyon scorpion): their marks are of kind "a1", named as the game names them, stepped and drawn by
+# scripts/act1/marks.gd.
+
+const A1M := preload("res://scripts/act1/marks.gd")
+
+
+## The picture of a film's layer that is a set of stills (its `fps` 0: one picked by the mark's own clock), by its number.
+func _still(name: String, layer: String, i: int) -> int:
+	var L: Array = _fx["films"][name]["layers"][layer]
+	return int(L[posmod(i, L.size())])

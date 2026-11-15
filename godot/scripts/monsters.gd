@@ -551,7 +551,8 @@ func _fly(dt: float) -> void:
 func _part() -> void:
 	for i in list.size():
 		var a := list[i]
-		if a.dead or a.state == "sleep" or a.state == "rise":
+		# (nor one up in the air or under the lip, floors 6 to 8's: it neither jostles nor is jostled, nor is held off the hero)
+		if a.dead or a.state == "sleep" or a.state == "rise" or Monster.Act1.away(a):
 			continue
 		if hero != null and hero.alive:
 			var h: Vector2 = a.world - hero.world
@@ -568,7 +569,7 @@ func _part() -> void:
 			var d := b.world - a.world
 			var need := a.r + b.r
 			var l := d.length()
-			if l >= need or l < 0.0001:
+			if l >= need or l < 0.0001 or Monster.Act1.away(b):
 				continue
 			# (how much of the way `a` gives: none if it is a boss and the other is not, all if the other is the boss, else half)
 			var sa := 0.0 if a.boss and not b.boss else (1.0 if b.boss and not a.boss else 0.5)

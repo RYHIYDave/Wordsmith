@@ -76,6 +76,21 @@
 //                ms_apart, ms_whole: spinning, torn apart and fused (16 steps of its turn); ms_burst: its light as it slams
 //                together; ms_crack: the crack of its light in the floor before it bursts up (6, shut to open). Stills, stood
 //                as the game's riseOf and takenOf say (godot/scripts/loot.gd).
+//   qg_smash     the quarry golem's boulder smashing (art/action_f6_golem.ts smashPainted; render/act1_fx/qgolem.ts): the
+//                flash, the ring of dust, the floor cracked, its rock flung out and lying, crumbling. 1.6 s. qg_quake: the
+//                floor its hammer's fists crack, the ring of dust and the chips (the same painter's `quake`).
+//   fp_mark      the reach of the firepot thrower's burst marked where its pot will come down, filling as it comes (art/
+//                action_f6_fx.ts markRing: 25 pictures, a 24th of its flight each, layer `floor`); fp_shadow: the pot's shadow
+//                under it, growing (potShadowPainted, the same); fp_pot_<v>: the pot itself, tumbling (makeFlyingPotArt: 8
+//                pictures, layer `stand`); fp_blaze: its burst and the floor burning after (blazePainted). 5.6 s.
+//   ch_ring      the chanter's ring where its lightning will strike, crackling from its aim, scorched after (art/action_f6_cult.ts
+//                ringPainted; render/act1_fx/chanter.ts); ch_static: the static round the hero it struck (staticPainted, layer
+//                `air`); ch_ward: its ward at the feet of each it shields (art/act1_cultists.ts chantWard: 4 pictures, 8 a second).
+//   dv_swirl     the dust devil's twister (art/action_f6_canyon.ts swirlPainted and layTwisterBolts; render/act1_fx/devil.ts):
+//                the sand swirling in, its reach, where each bolt will strike and the bolts thrown out. 5.2 s.
+//   sc_pool      the canyon scorpion's acid where its glob comes down (poolPainted): its reach marked from 0.8 s before, the
+//                splash, the pool lying and hissing, its fumes, shrinking away. sc_shadow: the glob's shadow (globShadowPainted,
+//                21 pictures, a 20th of its flight each).
 // A film's `k0`: the frame its first picture is, counted from the film's own time 0 (less than 0: it begins before it).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
@@ -106,6 +121,11 @@ import { GATE_UP, PILLAR, STRIP, makeGateArt } from '../src/art/gates';
 import type { Strip } from '../src/art/gates';
 import { gateBars, unbarFilm } from '../src/art/town_ways';
 import { CRACK_STEPS, STONE_FPS, STONE_FRAMES, STONE_SPIN, makeMeldDropsArt } from '../src/art/meld_drops';
+import { BOULDER, HAMMER, SMASH_CANVAS, smashPainted } from '../src/art/action_f6_golem';
+import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, RING_CANVAS as CH_RING_CANVAS, STATIC_CANVAS, blazePainted, makeFlyingPotArt, potShadowPainted, ringPainted as chRing, staticPainted } from '../src/art/action_f6_cult';
+import { markRing } from '../src/art/action_f6_fx';
+import { chantWard } from '../src/art/act1_cultists';
+import { POOL_CANVAS, SPIT, SWIRL_CANVAS, TW, globShadowPainted, layTwisterBolts, poolPainted, swirlPainted } from '../src/art/action_f6_canyon';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -462,6 +482,52 @@ for (const view of ['front', 'back'] as const) {
   tables.ms = { fps: STONE_FPS, frames: STONE_FRAMES, spin: STONE_SPIN };
 }
 
+// floors 6 to 8's common monsters, as the game starts with their new moves on (render/act1_fx/qgolem.ts, firepot.ts, chanter.ts,
+// devil.ts, scorpion.ts: each painted afresh a frame at a time by the art's own painter, render/act1_fx/live.ts)
+{
+  const stills = (name: string, n: number, layer: string, at: (i: number) => Sprite | number): void => {
+    films[name] = { fps: 0, n, k0: 0, layers: { [layer]: Array.from({ length: n }, (_, i) => { const q = at(i); return typeof q === 'number' ? q : pic(q); }) } };
+  };
+  // the quarry golem: its boulder smashing, and the floor its hammer cracks (art/action_f6_golem.ts smashPainted)
+  for (const quake of [false, true]) {
+    film(quake ? 'qg_quake' : 'qg_smash', BOULDER.rubble, three((what, k) => toSprite(smashPainted(k / FPS, what === 'floor' ? 'floor' : 'air', quake ? HAMMER.r : BOULDER.r, quake, what === 'floor' ? 'all' : what), null, SMASH_CANVAS.ax, SMASH_CANVAS.ay)));
+  }
+  // the firepot thrower: the reach of its burst marked, by how far its pot has come (a 24th at a time, as the game keeps it);
+  // the pot's shadow under it; the pot itself, tumbling, from in front and from behind; its blaze where it comes down
+  const F = FIRE_CANVAS;
+  stills('fp_mark', 25, 'floor', (q) => {
+    const px = new Px(F.w, F.h);
+    markRing(px, F.ax, F.ay, BLAZE.r, q / 24);
+    return rawPic(px, 1, F.ax, F.ay);
+  });
+  stills('fp_shadow', 25, 'floor', (q) => toSprite(potShadowPainted(q / 24), null, 30, 15));
+  for (const view of ['front', 'back'] as const) {
+    const pots = makeFlyingPotArt(view).frames as Sprite[];
+    stills(`fp_pot_${view}`, pots.length, 'stand', (i) => pots[i]);
+  }
+  const blaze = (what: Layer, k: number): Sprite | null => (what !== 'floor' && k / FPS > BLAZE.burstLong ? null : toSprite(blazePainted(k / FPS, what === 'floor' ? 'floor' : 'air', what === 'floor' ? 'all' : what), null, F.ax, F.ay));
+  film('fp_blaze', BLAZE.burstLong + BLAZE.burn, { floor: (k) => blaze('floor', k), behind: (k) => blaze('behind', k), before: (k) => blaze('before', k) });
+  // the chanter: its ring where its lightning will strike, from its aim; the static round the hero it struck; its ward
+  film('ch_ring', 0.6, { floor: (k) => toSprite(chRing(k / FPS), null, CH_RING_CANVAS.ax, CH_RING_CANVAS.ay) }, -(CAST_HIT - CHAIN.aim));
+  film('ch_static', CHAIN.crackle, { air: (k) => toSprite(staticPainted(k / FPS), null, STATIC_CANVAS.ax, STATIC_CANVAS.ay) });
+  stills('ch_ward', 4, 'floor', (i) => chantWard(i));
+  // the dust devil's twister: the sand swirling in over the floor, its reach, and the lightning it throws out round it
+  film('dv_swirl', TW.long, {
+    floor: (k) => {
+      const C = SWIRL_CANVAS;
+      const px = new Px(C.w, C.h);
+      px.d.set(swirlPainted(k / FPS).px.d);
+      layTwisterBolts(px, C.ax, C.ay, k / FPS);
+      return rawPic(px, 1, C.ax, C.ay);
+    },
+  });
+  // the canyon scorpion's acid: the splash's reach marked as the glob comes, the splash and the pool lying, its fumes; the
+  // glob's shadow (a 20th at a time)
+  const pool = (what: Layer, k: number): Sprite | null => (what !== 'floor' && k < 0 ? null : toSprite(poolPainted(k / FPS, what === 'floor' ? 'floor' : 'air', what === 'floor' ? 'all' : what), null, POOL_CANVAS.ax, POOL_CANVAS.ay));
+  film('sc_pool', SPIT.stays, { floor: (k) => pool('floor', k), behind: (k) => pool('behind', k), before: (k) => pool('before', k) }, -0.8);
+  stills('sc_shadow', 21, 'floor', (q) => toSprite(globShadowPainted(q / 20), null, 25, 13));
+}
+
 // --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a
 // floor that has its kind), the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
 /** The set a film is packed with: the first word of its name; the cultist's sigil and the Flame keybearer's apart. */
@@ -470,6 +536,7 @@ const setOf = (name: string): string => (name.startsWith('sigil_') ? (name === `
 const KIND_SETS: Record<string, string[]> = {
   archer: ['rain'], warden: ['lock'], cultist: ['sigil'], shade: ['rime'], brute: ['brute'], priest: ['smoke'], stoker: ['st'], chained: ['co'],
   amalgam: ['am'], mite: ['am'], beast: ['am'], fleshmancer: ['fm'], minifm: ['fm'], keyblade: ['kb'], keyflame: ['kb'],
+  qgolem: ['qg'], firepot: ['fp'], chanter: ['ch'], devil: ['dv'], scorpion: ['sc'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

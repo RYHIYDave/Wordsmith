@@ -58,7 +58,14 @@ const BOSS_AI := {
 	"minifm": MiniFm,
 	"keyblade": Keybearers.Knife,
 	"keyflame": Keybearers.Flame,
+	# (THE COMMON MONSTERS OF FLOORS 6 TO 8, each by its kind's own rules: game/act1_rules/; scripts/act1/)
+	"qgolem": preload("res://scripts/act1/qgolem.gd"), "rubbling": preload("res://scripts/act1/rubbling.gd"),
+	"firepot": preload("res://scripts/act1/firepot.gd"), "chanter": preload("res://scripts/act1/chanter.gd"),
+	"vulture": preload("res://scripts/act1/vulture.gd"), "crawler": preload("res://scripts/act1/crawler.gd"),
+	"devil": preload("res://scripts/act1/devil.gd"), "scorpion": preload("res://scripts/act1/scorpion.gd"),
 }
+## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
+const Act1 := preload("res://scripts/act1/act1.gd")
 
 const AGGRO := 9.0
 const WAKE_PACK := 14.0
@@ -71,10 +78,12 @@ const BAR_FOR := 4.0
 const VOICE := {
 	"skeleton": "bones", "archer": "bones", "champion": "bones", "marksman": "bones", "beast": "bones", "mite": "bones", "boneward": "bones",
 	"brute": "troll", "bat": "bat", "shade": "spirit",
+	"vulture": "vulture", "crawler": "bug", "scorpion": "bug", "rubbling": "stone", "qgolem": "stone", "devil": "devil",
 }
 const ATK := {
 	"skeleton": "atkBones", "champion": "atkBones", "beast": "atkBones", "mite": "atkBones", "brute": "atkTroll", "bat": "atkBat",
 	"dagger": "atkDagger", "cultist": "atkHex", "priest": "atkHex", "boneward": "atkShield", "shade": "atkSpirit",
+	"chanter": "atkHex", "vulture": "atkVulture", "crawler": "atkSting", "scorpion": "atkSting", "rubbling": "atkStone", "qgolem": "atkStone", "firepot": "atkFirepot",
 }
 ## (sound_families.ts BOSS_VOICE: the bosses that roar: their roar as the fight begins, their hurt, their death. The Stoker's
 ## is in the game's table too and is never heard there: he is an elite, and these wait on a boss. The Warden, the Headsman
@@ -112,6 +121,9 @@ var rally_t := 0.0
 ## (its number among the floor's monsters, the game's `id`: what a telling of a stun or a stagger names it by. One made here,
 ## the Warden's dead or a boss's brood, has its own.)
 var id := -1
+## (its own moment, the game's `seed` (0 to 1, from the floor's monsters.json): when a rubbling climbs out of its pile, a crawler
+## up over the lip, how a dust devil's weave begins)
+var own_seed := 0.0
 ## WHAT THE HERO'S WORDS HAVE DONE TO IT, named as the game names them (game/state.ts Monster):
 ##   burn_t, burn_dps                 FLAME in front: it burns so many seconds more, so much a second
 ##   chill_t, chill                   FROST: slowed by `chill` of its pace for so many seconds more
@@ -206,6 +218,7 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	xp = float(m.get("xp", kind_def.get("xp", 0)))
 	_anim_t = m.get("animT", 0.0)
 	_moves = MM.moves_of(kind, champion)
+	own_seed = float(m.get("seed", randf()))
 	if BOSS_AI.has(kind):
 		h2 = BOSS_AI[kind].new()
 		# (what one with rules of its own has about it from the first, before it wakes: the Fleshmancer's circle)
@@ -955,6 +968,8 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 	# (nor one whose own rules say nothing reaches it now: the Fleshmancer gone under the floor, game.ts damage, blinkedAway)
 	if h2 != null and h2.has_method("reachable") and not h2.reachable(self):
 		return
+	# (one of the cult near a chanter that lives and is awake takes less: its ward, act1.gd warded)
+	dmg = Act1.warded(mgr, self, dmg)
 	life -= dmg
 	if not poison and not dot:
 		_flash = 0.2 if heavy else 0.12
@@ -1208,6 +1223,9 @@ func _set_list(list: String, again := false) -> void:
 func _place() -> void:
 	position = Iso.to_screen(world.x, world.y)
 	_lift = mgr.map.lift_at(world.x, world.y) if mgr != null and mgr.map != null else 0.0
+	# (one with rules of its own drawn up off the floor, or let down under its edge: a vulture overhead, a crawler under the lip)
+	if h2 != null and h2.has_method("lift"):
+		_lift += 2.0 * h2.lift(self)
 	if _sprite != null:
 		# (the dagger cultist's frenzy: his pictures carry him along the way they face, and the rules the way he truly faces, so
 		# his picture is drawn back by what it carries him: action_f4.ts frenzyShift)
@@ -1233,6 +1251,12 @@ func _show() -> void:
 	i = i % n if list in ["idle", "walk", "charge", "standBare", "walkBare"] else mini(i, n - 1)
 	if held:
 		i = 0
+	# (one with rules of its own may be shown otherwise: a rubbling still a pile, a crawler under the lip, a vulture frozen aloft)
+	var own: Dictionary = h2.shown(self) if h2 != null and h2.has_method("shown") else {}
+	_sprite.visible = not own.has("hide")
+	if own.has("list") and art.has(own["list"]):
+		list = own["list"]
+		i = clampi(int(own["i"]), 0, art.count(0, list) - 1)
 	var f := art.frame(face.x, face.y, list, i)
 	_sprite.texture = f["tex"]
 	_sprite.offset = f["offset"]
