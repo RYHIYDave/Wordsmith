@@ -60,6 +60,10 @@ var arena = null
 ## Fleshmancer's hall [{x, y}]; null elsewhere.
 var temple = null
 var heaps = null
+## (floor 10, THE SWAMP COLOSSUS'S STONE: its middle {cx, cy}, the world point; and the landing on the boss's ground the hero is
+## carried across to it from {x, y}: game/act1_layout.ts. Null elsewhere.)
+var stone = null
+var landing = null
 
 
 func _init(path: String) -> void:
@@ -100,6 +104,8 @@ func _init(path: String) -> void:
 	arena = data.get("arena")
 	temple = data.get("temple")
 	heaps = data.get("heaps")
+	stone = data.get("stone")
+	landing = data.get("landing")
 	shut.resize(w * h)
 	pier.resize(w * h)
 	for d in doors:

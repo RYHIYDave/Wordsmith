@@ -68,6 +68,8 @@ const BOSS_AI := {
 	"leech": preload("res://scripts/act1/leech.gd"), "spawn": preload("res://scripts/act1/spawn.gd"),
 	"drowned": preload("res://scripts/act1/drowned.gd"),
 	"warchief": preload("res://scripts/act1/warchief.gd"), "mistwolf": preload("res://scripts/act1/mistwolf.gd"),
+	# (FLOOR 10'S BOSS, THE SWAMP COLOSSUS, and his tentacles, of his kind: game/act1_rules/colossus.ts; scripts/act1/colossus.gd)
+	"eye": preload("res://scripts/act1/colossus.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -96,7 +98,9 @@ const ATK := {
 ## (sound_families.ts BOSS_VOICE: the bosses that roar: their roar as the fight begins, their hurt, their death. The Stoker's
 ## is in the game's table too and is never heard there: he is an elite, and these wait on a boss. The Warden, the Headsman
 ## and the Fleshmancer have none: the common roar.)
-const BOSS_VOICE := {"chained": "chained", "amalgam": "amalgam"}
+const BOSS_VOICE := {"chained": "chained", "amalgam": "amalgam",
+	# (the Swamp Colossus: his roar as he is first come upon is the old Eye's; his hurt and his death his own: colossus.gd hurt_voice, died)
+	"eye": "eye"}
 
 var mgr  # monsters.gd
 var art: BakedFigure
@@ -995,6 +999,9 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 		_die()
 	elif poison or dot:
 		pass
+	elif boss and h2 != null and h2.has_method("hurt_voice"):
+		# (a boss with a hurt of his own: the Swamp Colossus's eye struck)
+		h2.hurt_voice(self, dmg, crit)
 	elif boss and BOSS_VOICE.has(kind):
 		# (ITS VOICE AS IT IS HURT, game.ts damageMonster: a boss who roars, on a critical hit or a blow of a twenty-fifth of his
 		# life or more, no oftener than every 2.5 s; another, on a big blow only, a critical hit, a quarter of its life or more,
@@ -1208,7 +1215,10 @@ func _die() -> void:
 		mgr.boss_at = world
 	if mgr.loot != null:
 		mgr.loot.on_kill(self)
-	if boss and BOSS_VOICE.has(kind):
+	if boss and h2 != null and h2.has_method("hurt_voice"):
+		# (a boss whose death is his fight's own sound, begun as he is killed: the Swamp Colossus's, colossus.gd died)
+		pass
+	elif boss and BOSS_VOICE.has(kind):
 		# (a boss who roars: his own death)
 		mgr.sfx.play(BOSS_VOICE[kind] + "_death")
 	elif VOICE.has(kind):

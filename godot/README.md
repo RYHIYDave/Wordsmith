@@ -307,6 +307,27 @@ A controller: the left stick, RT, LT, A, B, X.
   ward-stone pieces they guard are still to come.) `--only=kind --floor=9 --kind=wolf|deer|warchief|mistwolf`, `--floor=10
   --kind=leech|spawn|drowned`.
 
+- **Floor 10's boss, THE SWAMP COLOSSUS** (the Drowned Eye redone, as the game starts; `scripts/act1/colossus_fight.gd`, `colossus.gd`,
+  `colossus_draw.gd`, `colossus_art.gd`, `stone.gd`; game/colossus_fight.ts, act1_rules/colossus.ts, act1_layout.ts stoneOn, game.ts
+  updateStone, render/act1_fx/colossus.ts and colossus_fx.ts, render/colossus_baked.ts). HIS STONE, an island of its own (its middle
+  and the landing now in the export: `stone`, `landing`): his ground come into, he wakes, says his line, his name across the screen;
+  the landing walked to carries the hero across to the stone's jetty, the picture drawn back to show the whole fight and leaned up
+  toward him (turned on him as his phases change); back from the jetty's end before the fight or once it is won. HIS FIGHT, line for
+  line: his waking (the still water, the boil, his two tentacles bursting up); PHASE 1, their slams along lines laid toward the hero;
+  both killed, the flasks refilled; HIS ENTRANCE and its three tentacles; PHASE 2, the slams, the water slams (left, right, both: the
+  waves rolling across the whole stone, shoving him, and the crash where two meet), the SHOVEL (he sinks, bursts up at an end gaping,
+  four hooks scrape the hero toward his maw, his snap), the BILE ARC and its burning pool, and the GAZE aimed along the nearest of
+  its aims; all three killed, the flasks refilled; HIS SLIDE forward and his grip; PHASE 3, his eye's gaze and slam, the siege's
+  bolts, his eye struck at rest flinching; his bar his phase's (his tentacles' life together, then his own); his death (12.5 s) and
+  the way home. His tentacles are monsters of their own, struck only while the fight lets them be. Drawn in the released game's
+  baked pictures of him (`assets/colossus`, 121 sheets, fetched behind the game as each part of the fight wants them and let go
+  after), and round them what the game paints a frame at a time, its painters brought over line for line (the waves, the crash,
+  the slams' cracks, chunks, goo and slime, the bile, the scorch, the rings on the water, the bubbles, the warnings, the bolts, his
+  death's water, sludge, gore, spray and teeth). His sounds, the sound chat's fifth and seventh batches, at the game's beats.
+  (The cult's pillars of his phase 3, his ward while they burn, and the pieces set into them come with the descent's quest; with
+  none standing, as the game has it where none stand, his ward is down and the bolts fall throughout phase 3.)
+  `--only=boss --floor=10` goes through the whole fight and sums it up in one line, `BOSS floor 10`.
+
 ## Not in it yet
 
 Melding words (the wordsmith's meld screen; the Meldstone and its two words are in), runedust, the Meldstone shown by
@@ -324,7 +345,7 @@ it becomes from floor 10 on, the stone floating from him to the slab, the letter
 swirling round the ring and its column of light, the wordsmith's words for sale, the stranger's gamble, the stash, the
 Lexicon, buying back, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
-breaks, what stands behind raised ground cut off by it, the rest of the heroes, menus, the title screen's music. The Colossus pictures are in, held back from Godot with `.gdignore` until they are wired in.
+breaks, what stands behind raised ground cut off by it, the rest of the heroes, menus, the title screen's music.
 
 ## How it is made
 

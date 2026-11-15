@@ -33,6 +33,9 @@ const VU := preload("res://scripts/act1/vulture.gd")
 const CR := preload("res://scripts/act1/crawler.gd")
 ## (floors 9 and 10's, and floor 9's two side bosses': their own marks, act1/marks9.gd, each by its name)
 const M9 := preload("res://scripts/act1/marks9.gd")
+## (floor 10's boss, the Swamp Colossus: his whole fight drawn from one mark, "eye:fight": act1/colossus_draw.gd; its step colossus.gd)
+const C10 := preload("res://scripts/act1/colossus_draw.gd")
+const C10R := preload("res://scripts/act1/colossus.gd")
 
 ## (the enemy's pinks of the boulder's lane; the lightning's white heart, its pale violet, violet, deep violet, and the
 ## enemy's pink and rose about it: art/action_f6_fx.ts BOLT)
@@ -42,6 +45,8 @@ const BOLT := {"white": Color("#fff6ff"), "pale": Color("#e6c8ff"), "violet": Co
 
 ## A step of one (its clock has run on already); false: it is gone.
 static func step(P, p: Dictionary, _dt: float) -> bool:
+	if C10.mine(p):
+		return C10R.step_mark(P, p, _dt)
 	if M9.mine(p):
 		return M9.step(P, p, _dt)
 	var hero = P.hero
@@ -148,6 +153,8 @@ static func step(P, p: Dictionary, _dt: float) -> bool:
 
 ## What of one stands among the figures (in its own depth), each frame it is there.
 static func stands(P, p: Dictionary) -> void:
+	if C10.mine(p):
+		return
 	if M9.mine(p):
 		M9.stands(P, p)
 		return
@@ -224,6 +231,9 @@ static func _hide(p: Dictionary, key: String) -> void:
 # --- on the floor (in perils.gd _draw) ---
 
 static func draw(P, p: Dictionary) -> void:
+	if C10.mine(p):
+		C10.draw(P, p)
+		return
 	if M9.mine(p):
 		M9.draw(P, p)
 		return
@@ -307,6 +317,9 @@ static func _first_ward(m, o) -> bool:
 # --- over what stands (in perils.gd _draw_air) ---
 
 static func air(P, c: CanvasItem, p: Dictionary) -> void:
+	if C10.mine(p):
+		C10.air(P, c, p)
+		return
 	if M9.mine(p):
 		M9.air(P, c, p)
 		return
@@ -337,6 +350,9 @@ static func glow(P, c: CanvasItem, p: Dictionary) -> void:
 # --- their lights in the dark (the game's c.spot; perils.gd _spots_of) ---
 
 static func spots(P, p: Dictionary) -> void:
+	if C10.mine(p):
+		C10.spots(P, p)
+		return
 	if M9.mine(p):
 		M9.spots(P, p)
 		return
