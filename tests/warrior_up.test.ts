@@ -162,8 +162,9 @@ test('1. the switch is ON (his yes, 7 Nov 2026); of the game only art/heroes3.ts
   assert.ok(!/paintWarriorUp|makeWarriorUpArt/.test(fig), 'the figure paints nothing of him');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (art/heroes3.ts reaches the Ranger's mock-up only through its own switch, RANGER_UP: tests/ranger_up.test.ts holds that)
-    // (and floor 18's reflections of him, and his moves to swap sculpted on his body, art/swap_moves_art.ts)
-    if (!f.endsWith('.ts') || f.startsWith('art/ranger_up') || f === 'art/heroes3.ts' || f === 'art/reflections_up.ts' || f === 'art/swap_moves_art.ts') continue;
+    // (and floor 18's reflections of him, and his moves to swap sculpted on his body, art/swap_moves_art.ts; and his unique bows,
+    // art/bow_skins.ts, skins of his bow, BowSkin: the skins chat, 14 Nov 2026, read only by art/heroes3.ts, tests/bow_skins.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('art/ranger_up') || f === 'art/heroes3.ts' || f === 'art/reflections_up.ts' || f === 'art/swap_moves_art.ts' || f === 'art/bow_skins.ts') continue;
     assert.ok(!/from ['"][^'"]*ranger_up(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8')), `${f} imports the Ranger's mock-up`);
   }
   const h3 = fs.readFileSync('src/art/heroes3.ts', 'utf8');
