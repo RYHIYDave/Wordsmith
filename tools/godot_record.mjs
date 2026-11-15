@@ -189,6 +189,12 @@ if (depth > 0 && !args.includes('--nofog')) {
     console.log(`  what is seen when, in ${((Date.now() - tf) / 1000).toFixed(1)} s: of the ground's things and what stands, ${r.things.one} wait on one tile, ${r.things.many} on more than one (put on the tile they stand on), ${r.things.always} are always drawn${r.things.never ? `, ${r.things.never} never came` : ''}`);
   }
 }
+// the traps' pictures, where the floor has traps (the Godot side lays and works them: godot/scripts/traps.gd)
+let traps = null;
+if (depth > 0) {
+  traps = await page.evaluate(() => { if (!window.__rec.extra) window.__rec.extra = new Set(); return window.__rec.trapPics(); });
+  if (traps) console.log(`  its traps' pictures: the holes (and glinting), ${traps.spikes.length} steps of the spikes, the plate (and pressed), the slot`);
+}
 const res = await page.evaluate(() => window.__rec.result);
 const sheets = await page.evaluate(() => window.__rec.sheets(4096));
 const pageErrors = await page.evaluate(() => window.__rec.errors);
@@ -223,6 +229,9 @@ const doc = {
   holes: res.holes.map((h) => [h.x, h.y, h.r, h.ry, h.a, h.flicker]),
   glows: res.glows.map((g) => [key(g.f), g.x, g.y, g.w, g.h, g.a, g.flicker]),
   ...(fog ? { fog } : {}),
+  // (the traps' pictures by their keys, and where in a tile each spike stands, game/traps.ts SPIKE_SPOTS: three by three, a
+  // third of a tile apart: as godot/scripts/traps.gd reads them)
+  ...(traps ? { traps: { holes: traps.holes.map(key), spikes: traps.spikes.map(key), plate: traps.plate.map(key), slot: { x: key(traps.slot.x), y: key(traps.slot.y) }, spots: [-1 / 3, 0, 1 / 3].flatMap((u) => [-1 / 3, 0, 1 / 3].map((v) => [u, v])), steps: traps.steps } } : {}),
   // (the floor's waypoint, where it has one: its middle on the floor, in tiles; its pictures are the states `way` and `warp`)
   ...(waypoint ? { waypoint } : {}),
   variants: Object.fromEntries(Object.entries(variants).map(([k, v]) => {

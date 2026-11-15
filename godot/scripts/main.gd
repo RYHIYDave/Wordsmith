@@ -646,6 +646,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await _height_shots(hero, dir)
 		get_tree().quit()
 		return
+	if _arg("only") == "traps":
+		await _trap_shots(hero, dir)
+		get_tree().quit()
+		return
 	await _wait(1.0)
 	await _snap(dir + "/01_start.png")
 	await _hero_moves(hero, dir)
@@ -1683,3 +1687,57 @@ func _count_raised() -> int:
 		if v != 0:
 			k += 1
 	return k
+
+
+## SHOT MODE, A FLOOR'S TRAPS (--only=traps --floor=N): he is stood on the floor's first spike floor through one beat of it
+## (pictured as its holes glint and as the spikes are up; what it took of his life) and on its first dart wall's plate
+## (pictured as the darts fly; what they took).
+func _trap_shots(h: Hero, dir: String) -> void:
+	var n := int(_arg("floor")) if _arg("floor") != "" else 3
+	go_to("floor%d" % n, "down" if n > 1 else "start")
+	await _wait(1.5)
+	var tag := dir + "/t%d_" % n
+	if map.hazards.is_empty():
+		print("TRAPS: floor %d has none" % n)
+		return
+	# (nobody else about: what the traps take is theirs alone)
+	for m in _monsters.list:
+		if is_instance_valid(m):
+			m.queue_free()
+	_monsters.list.clear()
+	await _wait(0.2)
+	h.unhurt = false
+	var done := {}
+	for s in map.hazards:
+		var kind: String = s["kind"]
+		if done.has(kind):
+			continue
+		done[kind] = true
+		h.life = h.max_life
+		var at := Vector2(float(s["x"]) + float(s["w"]) / 2.0, float(s["y"]) + float(s["h"]) / 2.0)
+		if kind == "spikes":
+			h.world = at
+			await _wait(0.2)
+			await _snap(tag + "1_spikes_down.png")
+			var l0 := h.life
+			var t := 0.0
+			var shot := false
+			while t < 3.2:
+				await get_tree().process_frame
+				t += get_process_delta_time()
+				h.world = at
+				if not shot and h.life < l0:
+					shot = true
+					await _snap(tag + "2_spikes_up.png")
+			print("TRAPS floor %d: spikes at %s (%dx%d, phase %.1f): his life %.1f -> %.1f in one beat (a sixth of %.0f is %.1f)" % [n, at, int(s["w"]), int(s["h"]), float(s.get("phase", 0.0)), l0, h.life, h.max_life, h.max_life / 6.0])
+		elif s.has("slot"):
+			h.world = _free_near(at + Vector2(float(s["slot"]["dx"]), float(s["slot"]["dy"])) * 3.0)
+			await _wait(0.5)
+			h.world = at
+			var l1 := h.life
+			await _wait(0.45)
+			await _snap(tag + "3_darts.png")
+			await _wait(1.2)
+			await _snap(tag + "4_darts_after.png")
+			print("TRAPS floor %d: darts, plate at %s, slot %s: his life %.1f -> %.1f (12%% of %.0f a dart is %.1f)" % [n, at, s["slot"], l1, h.life, h.max_life, h.max_life * 0.12])
+	h.unhurt = true

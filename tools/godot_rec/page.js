@@ -302,6 +302,9 @@
     if (L.visible) L.visible.fill(1);
     REC.kept = { monsters: g.monsters.slice(), hero: { x: g.hero.x, y: g.hero.y } };
     g.monsters.length = 0;
+    // (THE TRAPS are the Godot side's own to draw and to work, traps.gd: set aside; their pictures go with the look, REC.trapPics)
+    REC.kept.hazards = (L.hazards || []).slice();
+    if (L.hazards) L.hazards.length = 0;
     for (const k of ['drops', 'projectiles', 'zones', 'orbs', 'volleys', 'familiars', 'perils', 'risers', 'spears']) if (Array.isArray(g[k])) g[k].length = 0;
     d.renderer.skip.add('vignette');
     // the emptiest spot: the tile furthest (by steps of a king) from anything that is not empty stone
@@ -1159,5 +1162,44 @@
     out.holes = out.holes.map((t, i) => (t === -2 ? tileAt(res.holes[i].x, res.holes[i].y) : t));
     REC.fogOut = out;
     return { bits, things: t2, withLights: tally };
+  };
+})();
+
+
+// ====================================================================================================================
+// THE TRAPS' PICTURES (art/hazards.ts, as the renderer has them for this floor: Renderer.art.hazards): a spike floor's holes
+// (and glinting), its spikes at each step of their rise, a dart wall's plate (and pressed) and its slot in a wall along x and
+// along y. The Godot side lays and works the traps itself (godot/scripts/traps.gd); these go on the look's sheet.
+(() => {
+  const d = window.__dbg;
+  const REC = window.__rec;
+  REC.trapPics = () => {
+    const H = d.renderer.art && d.renderer.art.hazards;
+    if (!H || !REC.kept || !REC.kept.hazards || REC.kept.hazards.length === 0) return null;
+    const A = REC.acc;
+    const r3 = (n) => Math.round(n * 1000) / 1000;
+    const key = (sp) => {
+      const q = { src: REC.idOf(sp.img), sub: null, ax: sp.ax, ay: sp.ay, nat: (sp.density || 1) === 2 ? 2 : 1 };
+      const k = `${q.src}a${r3(q.ax)}_${r3(q.ay)}`;
+      let i = A.keyIds.get(k);
+      if (i === undefined) {
+        i = A.keys.length;
+        A.keyIds.set(k, i);
+        A.keys.push({ key: k, src: q.src, sub: null, ax: q.ax, ay: q.ay, nat: q.nat });
+      }
+      REC.extra.add(i);
+      return i;
+    };
+    const spikes = [];
+    for (let k = 1; k <= 12; k++) {
+      let sp = null;
+      try { sp = H.spike(k); } catch (e) { sp = null; }
+      if (!sp) break;
+      // (the last step asked for again and again is the same picture: stop there)
+      if (spikes.length && key(sp) === spikes[spikes.length - 1] && k > 7) break;
+      spikes.push(key(sp));
+      if (k >= 7) break;
+    }
+    return { holes: [key(H.holes(false)), key(H.holes(true))], spikes, plate: [key(H.plate(false)), key(H.plate(true))], slot: { x: key(H.slot(false)), y: key(H.slot(true)) }, steps: spikes.length };
   };
 })();
