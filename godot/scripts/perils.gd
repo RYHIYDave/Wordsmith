@@ -204,6 +204,10 @@ func _film_stands(p: Dictionary, name: String, t: float, at: Vector2) -> void:
 
 ## A mark gone: what of its film stood among the figures goes with it.
 func _film_free(p: Dictionary) -> void:
+	for s in p.get("hands", {}).values():
+		if is_instance_valid(s):
+			s.queue_free()
+	p.erase("hands")
 	for key: String in ["fx_behind", "fx_before", "fx_stand"]:
 		var s = p.get(key)
 		if s != null and is_instance_valid(s):
@@ -234,7 +238,66 @@ func _film_of(p: Dictionary) -> Array:
 		"am_arm":
 			# (the arms of the dead up out of their hole, from when they burst: render/bossfx.ts)
 			return ["am_arm", float(p["t"]) - float(p["hit"]), Vector2(p["x"], p["y"])]
+		"fm_pit":
+			# (the pit under the Fleshmancer as he is yanked down: render/act1_fx/fm.ts)
+			return ["fm_pit", p["t"], Vector2(p["x"], p["y"])]
+		"fm_rise":
+			# (where he will rise: its mark from a second before, the burst as he erupts)
+			return ["fm_rise", p["t"], Vector2(p["x"], p["y"])]
+		"fm_heap":
+			# (a bone heap as he raises his dead from it, by which of his call it is)
+			return ["fm_heap_%d" % clampi(int(p["which"]), 0, 2), p["t"], Vector2(p["x"], p["y"])]
 	return []
+
+
+## THE HANDS OF HIS DEAD, ring by ring as each bursts up, each among the figures at its own depth (render/act1_fx/fm.ts; the
+## game's own hands, art/fleshmancer.ts makeRingHandArt: three kinds, 24 frames at 20 a second, each begun a hair apart).
+## Each a picture among what stands while its frames run, kept with the rings' mark and gone with it.
+func _fm_hands(p: Dictionary) -> void:
+	if stands == null or not has_film("fm_hand_0"):
+		return
+	var t: float = p["t"]
+	var at := Vector2(p["x"], p["y"])
+	var aim: float = p["aim"]
+	var radii: Array = FM.RINGS["radii"]
+	var have: Dictionary = p.get("hands", {})
+	p["hands"] = have
+	for i in radii.size():
+		var since := t - FM.ring_burst(i)
+		if since < 0.0:
+			continue
+		var ring: Dictionary = FM.ring_hands(i)
+		var r: float = radii[i]
+		for a in ring["hands"]:
+			var j := roundi(float(a) / float(ring["step"]))
+			var key := i * 1000 + j
+			var f := floori((since - ((j * 7) % 5) * 0.012) * 20.0)
+			var s = have.get(key)
+			if f < 0 or f >= 24:
+				if s != null and is_instance_valid(s):
+					s.queue_free()
+					have.erase(key)
+				continue
+			var on := at + Vector2(cos(aim + a), sin(aim + a)) * r
+			if s == null or not is_instance_valid(s):
+				if not _fm_floor(on):
+					continue
+				s = Sprite2D.new()
+				s.centered = false
+				s.region_enabled = true
+				stands.add_child(s)
+				have[key] = s
+			var L: Array = _fx["films"]["fm_hand_%d" % (j % 3)]["layers"]["stand"]
+			var pi := int(L[f])
+			s.visible = pi >= 0
+			if pi < 0:
+				continue
+			var q: Array = _fx["pics"][pi]
+			var scr := Iso.to_screen(on.x, on.y)
+			s.texture = _fx_sheets[int(q[0])]
+			s.region_rect = Rect2(q[1], q[2], q[3], q[4])
+			s.position = scr
+			s.offset = Vector2(q[5], q[6])
 
 
 ## A dotted line of the warning along the floor from `a` to `b` (tiles), `k` (0 to 1) of the way to its full strength, as the
@@ -371,6 +434,8 @@ func _process(dt: float) -> void:
 			var fm := _film_of(p)
 			if not fm.is_empty() and has_film(fm[0]):
 				_film_stands(p, fm[0], fm[1], fm[2])
+			if p["kind"] == "fm_rings":
+				_fm_hands(p)
 		else:
 			_film_free(p)
 	list = keep
@@ -571,13 +636,18 @@ func _draw_fm(p: Dictionary) -> void:
 			_draw_fm_rings(p, t, at)
 		"fm_fire":
 			_draw_fm_fire(p, t, at)
-		"fm_heap":
-			_draw_fm_heap(int(p["which"]), t, at)
-		"fm_pit":
-			var open: float = FM.smooth((t - FM.PIT["open"]) / 0.12) * (1.0 - FM.smooth((t - FM.PIT["shut"]) / 0.06))
-			_draw_fm_pit(at, FM.PIT["r"] * open)
-		"fm_rise":
-			_draw_fm_rise(t, at)
+		"fm_heap", "fm_pit", "fm_rise":
+			# (THE GAME'S OWN, where its film is there: what of it is on the floor here, the rest among the figures)
+			var fm := _film_of(p)
+			if has_film(fm[0]):
+				_film_floor(fm[0], t, at)
+			elif p["kind"] == "fm_heap":
+				_draw_fm_heap(int(p["which"]), t, at)
+			elif p["kind"] == "fm_pit":
+				var open: float = FM.smooth((t - FM.PIT["open"]) / 0.12) * (1.0 - FM.smooth((t - FM.PIT["shut"]) / 0.06))
+				_draw_fm_pit(at, FM.PIT["r"] * open)
+			else:
+				_draw_fm_rise(t, at)
 		"fm_glow":
 			_draw_fm_glow(float(p["secs"]), t, at)
 
@@ -650,7 +720,7 @@ func _draw_fm_rings(p: Dictionary, t: float, at: Vector2) -> void:
 				arc.append(Iso.to_screen(on.x, on.y))
 			if arc.size() > 1:
 				draw_polyline(arc, col, 3.0)
-		if since >= 0.0 and since < FM_HAND_TIME:
+		if since >= 0.0 and since < FM_HAND_TIME and not has_film("fm_hand_0"):
 			var tall := 38.0 * clampf(since / 0.1, 0.0, 1.0) * clampf((FM_HAND_TIME - since) / 0.35, 0.0, 1.0)
 			var hot: bool = since <= FM.FM2["handUp"]
 			for a in ring["hands"]:

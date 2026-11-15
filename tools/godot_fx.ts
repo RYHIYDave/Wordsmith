@@ -20,6 +20,14 @@
 //   am_arm_crack the floor cracking open where they will burst up, glowing, and dark round the hole after (art/boss_shots.ts
 //                drawArmCrack, the game's own painter, painted here onto a canvas of the game's pixels): from 0.5 s before
 //                they burst to 0.8 s after they are gone.
+//   fm_pit       the pit under the Fleshmancer as he is yanked down (art/fleshmancer_action_fx.ts paintSinkPit;
+//                render/act1_fx/fm.ts). 1 s.
+//   fm_rise      where he will rise: its ring of fire filling in from a second before (floor), then the burst as he erupts
+//                (`before`: among the figures, before him) (paintRiseMark).
+//   fm_heap_<i>  a bone heap as he raises his dead from it, the i'th of his call: lit from under and cracking as it shakes,
+//                bursting as its dead comes up (paintHeap: floor, and `before`).
+//   fm_hand_<k>  a hand of his dead bursting up out of a ring, of kind k (art/fleshmancer.ts makeRingHandArt: 24 frames at
+//                20 a second, layer `stand`; the game stands each at its own place round the ring).
 // A film's `k0`: the frame its first picture is, counted from the film's own time 0 (less than 0: it begins before it).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
@@ -31,6 +39,9 @@ import { RING as F3_RING, RING_CANVAS, ringPainted as f3Ring } from '../src/art/
 import { CRACK, CRACK_CANVAS, RING as CO_RING, crackPainted, ringCanvas, ringPainted as coRing } from '../src/art/chained_action_fx';
 import { BIG_ARM_FPS, BIG_ARM_FRAMES, BIG_ARM_TIME, DROP_CANVAS, RAIN, RAIN_SKULL_FRAMES, SLAM_RING, dropPainted, makeBigArmArt, makeRainSkullArt, slamRingCanvas, slamRingPainted } from '../src/art/amalgam_action_fx';
 import { ARM_CRACK_AFTER, ARM_CRACK_WARN, drawArmCrack } from '../src/art/boss_shots';
+import { FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, makeRingHandArt } from '../src/art/fleshmancer';
+import { RISE_MARK, paintHeap, paintRiseMark, paintSinkPit } from '../src/art/fleshmancer_action_fx';
+import { Px } from '../src/engine/px';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -170,6 +181,40 @@ for (let seed = 0; seed < 8; seed++) {
       return rawPic(g, 2, W, H);
     },
   }, -ARM_CRACK_WARN);
+}
+
+// the Fleshmancer's that sit in one place (render/act1_fx/fm.ts: each painted afresh a frame at a time by the art's own painter,
+// onto plain picture pixels through an `at`: render/act1_fx/live.ts picAt, and its `room`)
+{
+  const room = (r: number, up: number): { w: number; h: number; ax: number; ay: number } => {
+    const hw = Math.ceil(45.3 * r) + 12;
+    const hh = Math.ceil(22.7 * r) + 12;
+    return { w: hw * 2, h: hh * 2 + up, ax: hw, ay: hh + up };
+  };
+  type At = (x: number, y: number, z?: number) => readonly [number, number];
+  const live = (R: { w: number; h: number; ax: number; ay: number }, paint: (px: Px, at: At) => void): number => {
+    const px = new Px(R.w, R.h);
+    paint(px, (x, y, z = 0) => [R.ax + 32 * (x - y), R.ay + 16 * (x + y) - z] as const);
+    return rawPic(px, 1, R.ax, R.ay);
+  };
+  const PIT_ROOM = room(1.2, 20);
+  const RISE_ROOM = room(RISE_MARK.r + 0.6, 90);
+  const HEAP_ROOM = room(2.0, 120);
+  film('fm_pit', 1.0, { floor: (k) => live(PIT_ROOM, (px, at) => paintSinkPit(px, at as never, k / FPS, [0, 0])) });
+  film('fm_rise', 0.9, {
+    floor: (k) => live(RISE_ROOM, (px, at) => paintRiseMark(px, at as never, k / FPS, [0, 0], 'floor')),
+    before: (k) => (k < 0 ? -1 : live(RISE_ROOM, (px, at) => paintRiseMark(px, at as never, k / FPS, [0, 0], 'air'))),
+  }, -RISE_MARK.warn);
+  for (let i = 0; i < 3; i++) {
+    film(`fm_heap_${i}`, 3.6, {
+      floor: (k) => live(HEAP_ROOM, (px, at) => paintHeap(px, at as never, k / FPS, [0, 0], i, 'floor')),
+      before: (k) => live(HEAP_ROOM, (px, at) => paintHeap(px, at as never, k / FPS, [0, 0], i, 'air')),
+    });
+  }
+  for (let kind = 0; kind < FM_HAND_KINDS; kind++) {
+    const hands = makeRingHandArt('front', kind);
+    films[`fm_hand_${kind}`] = { fps: FM_HAND_FPS, n: FM_HAND_FRAMES, k0: 0, layers: { stand: Array.from({ length: FM_HAND_FRAMES }, (_, i) => pic(hands[i])) } };
+  }
 }
 
 // --- the sheets: the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
