@@ -46,6 +46,8 @@ func _ready() -> void:
 			var y := float(q["y"]) + 0.5 + float(q["dy"]) * 0.5
 			var sp := _stand(T["slot"]["y"] if int(q["dy"]) != 0 else T["slot"]["x"], x, y, x + y + 4.0 / 64.0)
 			sp.visible = true
+			z["slot_node"] = sp
+			z["slot_at"] = Vector2(float(q["x"]) + 0.5 + float(q["dx"]), float(q["y"]) + 0.5 + float(q["dy"]))
 		_traps.append(z)
 	# (the holes and the plates lie flat on the floor, drawn with what lies there)
 	_flat = _Flat.new()
@@ -102,6 +104,9 @@ func _process(dt: float) -> void:
 	var T: Dictionary = look.data["traps"]
 	for z in _traps:
 		var s: Dictionary = z["spot"]
+		# (a dart wall's slot is seen once the floor in front of it has been: render.ts standHazards)
+		if z.has("slot_node"):
+			z["slot_node"].visible = look.seen_at(z["slot_at"])
 		if s["kind"] == "spikes":
 			_spikes(z, s, T)
 		else:
@@ -120,11 +125,14 @@ func _spikes(z: Dictionary, s: Dictionary, T: Dictionary) -> void:
 	z["was_up"] = up
 	# (its spikes, so many steps up)
 	var k := roundi(_height(s) * int(T["steps"]))
-	if k != z["k"]:
+	# (a trap is not drawn until its floor has been seen: look.gd seen_at)
+	var seen: bool = look.seen_at(Vector2(float(s["x"]) + float(s["w"]) / 2.0, float(s["y"]) + float(s["h"]) / 2.0))
+	if k != z["k"] or seen != z.get("seen", true):
 		z["k"] = k
+		z["seen"] = seen
 		for q in z["spikes"]:
 			var sp: Sprite2D = q[0]
-			sp.visible = k > 0
+			sp.visible = k > 0 and seen
 			if k > 0:
 				look._pic_on(sp, T["spikes"][k - 1])
 				sp.offset.y += float(q[1]) - float(q[2]) * HH
@@ -206,6 +214,8 @@ func draw_flat(c: CanvasItem) -> void:
 		var p: Dictionary = look._pics[key]
 		for ty in range(int(s["y"]), int(s["y"]) + int(s["h"])):
 			for tx in range(int(s["x"]), int(s["x"]) + int(s["w"])):
+				if not look.seen_at(Vector2(tx + 0.5, ty + 0.5)):
+					continue
 				var at := Iso.to_screen(tx + 0.5, ty + 0.5)
 				c.draw_texture_rect_region(look._sheet, Rect2(at - p["anchor"], p["rect"].size), p["rect"])
 

@@ -363,8 +363,10 @@ func _build(where: String, arrive: String) -> void:
 		sight.hero = hero
 		sight.look = look if looked else null
 		sight.monsters = monsters
-		sight.all = _arg("seeall") != "" or not (looked and look.data.has("fog"))
+		sight.all = _arg("seeall") != "" or not (looked and look._fogged)
 		_place.add_child(sight)
+		if looked:
+			look.sight = sight
 
 	town = null
 	if where == "town":

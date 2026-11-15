@@ -61,6 +61,11 @@ var _glow_nodes: Array = []
 var _fogged := false
 ## (the states playing by the clock: play_variant)
 var _plays: Array = []
+## (what he has seen of the floor, sight.gd: main.gd sets it; none, everything is seen)
+var sight = null
+## (a look of the first kind, what is seen when: each of its things by the tile it stands on, read off its place on the
+## screen: tile -> [[0, its sprite] or [1, its drawer, which of its pictures]])
+var _fog1 := {}
 var _pics := {}
 var _anim: Array = []  # {node, frames, fps, t0, secs, dy}
 var _t := 0.0
@@ -121,8 +126,10 @@ func _ready() -> void:
 		# (the fallen wordsmith is loot.gd's own: searched, or not there at all once his stone is found)
 		if it.get("what", "") == "the fallen wordsmith":
 			continue
+		# (WHAT IS SEEN WHEN, on a floor: the tile this stands on, by its place on the screen; what is behind everything is always drawn)
+		var tile := _tile1(it) if place != "town" and layer != "back" else -1
 		if still.has(layer) and frames.size() == 1 and not it.has("stair") and not it.has("waypoint"):
-			(still_yh if it.has("yh") else still)[layer].append([frames[0], at])
+			(still_yh if it.has("yh") else still)[layer].append([frames[0], at, tile])
 			continue
 		var s := Sprite2D.new()
 		s.texture = _sheet
@@ -143,6 +150,8 @@ func _ready() -> void:
 				_props[int(it["prop"])] = {"node": s}
 			if it.get("kind", "") == "wall":
 				stands.add_wall(s, d, at)
+		if tile >= 0:
+			_fog_sprite1(s, tile)
 		if it.has("stair"):
 			var k := int(it["stair"])
 			if not _under.has(k):
@@ -175,10 +184,28 @@ func _ready() -> void:
 			var drawer := _Still.new()
 			drawer.look = self
 			drawer.items = list
+			drawer.fog.resize(list.size())
+			for i in list.size():
+				var t := int(list[i][2])
+				if t >= 0:
+					drawer.fog[i] = 1
+					if not _fog1.has(t):
+						_fog1[t] = []
+					_fog1[t].append([1, drawer, i])
 			layers[layer].add_child(drawer)
 			layers[layer].move_child(drawer, 1 if yh else 0)
 			if yh:
 				_yh_nodes.append(drawer)
+	if place != "town":
+		_fogged = true
+		# (a door's leaf and a gate's bars wait on the tile they stand on too)
+		for D in _doors:
+			if D["steps"].is_empty() or D["steps"][0].is_empty():
+				continue
+			var p0: Array = D["steps"][0][0]
+			var t := _tile_at1(float(p0[1]), float(p0[2]))
+			for sp in D["sprites"]:
+				_fog_sprite1(sp, t)
 	_make_skies()
 	if data.has("waypoint") and _way_node != null:
 		var w: Dictionary = data["waypoint"]
@@ -505,8 +532,11 @@ func _process(dt: float) -> void:
 			_see_through(_hero.world)
 
 
-func draw_still(c: CanvasItem, items: Array) -> void:
-	for it in items:
+func draw_still(c: CanvasItem, items: Array, fog := PackedByteArray()) -> void:
+	for i in items.size():
+		var it: Array = items[i]
+		if i < fog.size() and fog[i] != 0:
+			continue
 		var p: Dictionary = _pics[it[0]]
 		var r: Rect2 = p["rect"]
 		c.draw_texture_rect_region(_sheet, Rect2(it[1] - p["anchor"], r.size), r)
@@ -638,6 +668,10 @@ func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 		s.modulate.a = clampf(g[2], 0.0, 1.0)
 		s.z_index = 51
 		root.add_child(s)
+		# (a glow is not seen until the tile it is over has been)
+		if _fogged:
+			var gp: Vector2 = g[0]
+			_fog_sprite1(s, _tile_at1(gp.x, gp.y + 8.0))
 	return null
 
 
@@ -750,12 +784,64 @@ func _fog_begin() -> void:
 		_s_node[si].visible = false
 
 
+## (a look of the first kind) The tile a thing stands on, by its place on the screen: a floor tile's and a wall's anchor is their
+## tile's top corner, a thing that stands has its anchor on the ground under it.
+func _tile1(it: Dictionary) -> int:
+	return _tile_at1(float(it["x"]), float(it["y"]))
+
+
+func _tile_at1(x: float, y: float) -> int:
+	var wx := (x / 16.0 + y / 8.0) / 2.0
+	var wy := (y / 8.0 - x / 16.0) / 2.0
+	var w: int = int(data.get("w", 0))
+	if w <= 0:
+		w = _width1()
+	var tx := floori(wx + 0.01)
+	var ty := floori(wy + 0.01)
+	if tx < 0 or ty < 0 or tx >= w:
+		return -1
+	return ty * w + tx
+
+
+## (a look of the first kind does not say how wide its level is: the floor's layout does)
+func _width1() -> int:
+	var path := "res://assets/%s/layout.json" % place
+	if not data.has("_w"):
+		data["_w"] = int(JSON.parse_string(FileAccess.get_file_as_string(path))["w"]) if FileAccess.file_exists(path) else 0
+	return int(data["_w"])
+
+
+## A sprite not drawn until its tile has been seen: by its own strength alone, so that what else shows and hides it (a door's
+## steps, the yard's zones, a wall's fading) goes on as it does.
+func _fog_sprite1(s: CanvasItem, tile: int) -> void:
+	if tile < 0:
+		return
+	s.self_modulate.a = 0.0
+	if not _fog1.has(tile):
+		_fog1[tile] = []
+	_fog1[tile].append([0, s])
+
+
+## Whether a place on the floor has been seen (for what others draw there: the traps).
+func seen_at(p: Vector2) -> bool:
+	return sight == null or sight.seen_at(p)
+
+
 ## These tiles have been seen: what waited on them is drawn.
 func reveal(tiles: PackedInt32Array) -> void:
 	if not _fogged:
 		return
 	var redraw := {}
 	for t in tiles:
+		if _fog1.has(t):
+			for e in _fog1[t]:
+				if int(e[0]) == 0:
+					if is_instance_valid(e[1]):
+						e[1].self_modulate.a = 1.0
+				else:
+					e[1].fog[int(e[2])] = 0
+					redraw[e[1]] = true
+			_fog1.erase(t)
 		if _fog_g.has(t):
 			for gi in _fog_g[t]:
 				var node = _g_node[gi]
@@ -782,6 +868,8 @@ func reveal(tiles: PackedInt32Array) -> void:
 
 func reveal_all() -> void:
 	var tiles := PackedInt32Array()
+	for t in _fog1:
+		tiles.append(t)
 	for t in _fog_g:
 		tiles.append(t)
 	for t in _fog_s:
@@ -1151,9 +1239,10 @@ class _Still2 extends Node2D:
 class _Still extends Node2D:
 	var look
 	var items: Array = []
+	var fog := PackedByteArray()
 
 	func _draw() -> void:
-		look.draw_still(self, items)
+		look.draw_still(self, items, fog)
 
 
 static func _num(v, otherwise: float) -> float:

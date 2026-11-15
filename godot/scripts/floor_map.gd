@@ -57,15 +57,16 @@ func _init(path: String) -> void:
 	h = int(data["h"])
 	tiles = _bytes(data["tiles"])
 	variant = _bytes(data["variant"])
-	if data.get("cut") != null:
+	# (the town's layout keeps its stairs down under `stair`, a place, not a grid: only a grid is taken here)
+	if data.get("cut") is Array:
 		cut = _bytes(data["cut"])
-	if data.get("height") != null:
+	if data.get("height") is Array:
 		height.resize(data["height"].size())
 		for i in data["height"].size():
 			height[i] = int(data["height"][i])
-	if data.get("stair") != null:
+	if data.get("stair") is Array:
 		stair = _bytes(data["stair"])
-	if data.get("step") != null:
+	if data.get("step") is Array:
 		step = _bytes(data["step"])
 	walk = _bytes(data["walk"]) if data["walk"] != null else _floor_grid()
 	start = Vector2(data["start"]["x"], data["start"]["y"])
