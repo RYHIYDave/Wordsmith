@@ -62,6 +62,10 @@
 //                in the air (coalInAir: one picture, layer `stand`, its middle the floor point).
 //   st_gear      the crank's gear lying where it fell, glinting (art/stoker_room.ts gearDropped: 8 pictures at 8 a second,
 //                layer `stand`).
+//   lock_shadow_<w>  the Warden's Lockdown (art/action_f1_fx.ts lockShadowPainted, lockBarsPainted; render/act1_fx/warden.ts):
+//                one tile of a row of bars, along the floor's x way or its y way: its shadow on the floor from a second before
+//                the crash, darker and pink-edged as it comes. lock_bars_<w>_<wear>: its bars crashing down, standing as a
+//                cage and rising away (four wears; layer `stand`; the game stands one on every floor tile of every row).
 //   smoke        the high priest's burning smoke (art/mob_shots.ts drawBurningSmoke, the game's own painter, painted here
 //                onto a canvas of the game's pixels): billowing, burning and thinning away. 3 s.
 // A film's `k0`: the frame its first picture is, counted from the film's own time 0 (less than 0: it begins before it).
@@ -78,6 +82,7 @@ import { ARM_CRACK_AFTER, ARM_CRACK_WARN, drawArmCrack } from '../src/art/boss_s
 import { BALL_SHOT_FRAMES, HOOK_SHOT_FRAMES, makeBallShotArt, makeHookShotArt, makeLeftBehindArt } from '../src/art/bosses3';
 import { drawBurningSmoke } from '../src/art/mob_shots';
 import { RAIN as F1_RAIN, RAIN_CANVAS, RAIN_LONG, RISE_CANVAS, rainPainted, rainRisePainted } from '../src/art/action_f1_fx';
+import { LOCKDOWN, LOCKDOWN_LONG, lockBarsPainted, lockCanvas, lockShadowPainted } from '../src/art/action_f1_fx';
 import { RIME, RIME_CANVAS, SIGIL, SIGIL_CANVAS, SIGIL_LONG, rimePainted, sigilPainted } from '../src/art/action_f2_fx';
 import { KF } from '../src/game/act1_rules/keybearers';
 import { fireBallSprite, keySprite, knifeSprite, ringTongue } from '../src/art/key_bearers_fx';
@@ -349,6 +354,17 @@ for (const view of ['front', 'back'] as const) {
   films.st_gear = { fps: GEAR_GLINT.fps, n: GEAR_GLINT.frames, k0: 0, layers: { stand: Array.from({ length: GEAR_GLINT.frames }, (_, i) => pic(STOKER_ROOM.gearDropped(i))) } };
 }
 
+// the Warden's Lockdown, a tile of a row at a time (render/act1_fx/warden.ts): its time 0 the crash
+{
+  const C = lockCanvas(1);
+  for (const way of ['x', 'y'] as const) {
+    film(`lock_shadow_${way}`, LOCKDOWN_LONG, { floor: (k) => toSprite(lockShadowPainted(way, k / FPS, 1), null, C.ax, C.ay) }, -LOCKDOWN.warn);
+    for (let wear = 0; wear < 4; wear++) {
+      film(`lock_bars_${way}_${wear}`, LOCKDOWN_LONG, { stand: (k) => (k / FPS < LOCKDOWN.strike[0] - 1e-6 ? null : toSprite(lockBarsPainted(way, k / FPS, 1, wear), null, C.ax, C.ay)) }, -LOCKDOWN.warn);
+    }
+  }
+}
+
 // the high priest's burning smoke (render.ts, the 'smoke' zone: its share of its life, and the clock)
 {
   const W = 160;
@@ -368,7 +384,7 @@ for (const view of ['front', 'back'] as const) {
 const setOf = (name: string): string => (name.startsWith('sigil_') ? (name === `sigil_${SIGIL.radius}` ? 'sigil' : 'kb') : name.split('_')[0]);
 /** Which sets each kind of monster plays (godot/scripts/perils.gd warm: fetched as a floor with that kind on it begins). */
 const KIND_SETS: Record<string, string[]> = {
-  archer: ['rain'], cultist: ['sigil'], shade: ['rime'], brute: ['brute'], priest: ['smoke'], stoker: ['st'], chained: ['co'],
+  archer: ['rain'], warden: ['lock'], cultist: ['sigil'], shade: ['rime'], brute: ['brute'], priest: ['smoke'], stoker: ['st'], chained: ['co'],
   amalgam: ['am'], mite: ['am'], beast: ['am'], fleshmancer: ['fm'], minifm: ['fm'], keyblade: ['kb'], keyflame: ['kb'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {

@@ -807,6 +807,8 @@ func _process(dt: float) -> void:
 				_kb_stands(p)
 			elif p["kind"] == "st_coals":
 				_st_stands(p)
+			elif p["kind"] == "bars":
+				_bars_stands(p)
 			elif p["kind"] == "fm_death":
 				_fm2_death_hands(p)
 		else:
@@ -1280,7 +1282,13 @@ func _draw() -> void:
 						var at := Iso.to_screen(s.x, s.y)
 						draw_line(at, at + Vector2(3, -14), Color(0.8, 0.72, 0.58, fade), 2.0)
 			"bars":
-				_draw_bars(p)
+				if has_film("lock_shadow_x"):
+					# (THE GAME'S OWN, art/action_f1_fx.ts lockShadowPainted: the bars' shadow on every floor tile of every row,
+					# from a second before the crash; the bars themselves stand among the figures: _bars_stands)
+					for q in _bar_tiles(p):
+						_film_floor("lock_shadow_%s" % q[1], p["t"], q[0])
+				else:
+					_draw_bars(p)
 			"ring":
 				if has_film("brute_ring"):
 					_film_floor("brute_ring", p["t"], Vector2(p["x"], p["y"]))
@@ -1473,6 +1481,45 @@ func _draw_rime(p: Dictionary) -> void:
 	draw_colored_polygon(pts, Color(frost, 0.35))
 	pts.append(pts[0])
 	draw_polyline(pts, Color(0.62, 0.65, 0.8, 0.8), 2.0)
+
+
+## The tiles of the Lockdown's rows that are floor (render/act1_fx/warden.ts tilesOf): each its middle, the way its row runs
+## ("x" or "y") and its wear (which of four); found once and kept with the mark.
+func _bar_tiles(p: Dictionary) -> Array:
+	if p.has("tiles"):
+		return p["tiles"]
+	var out: Array = []
+	var r: Dictionary = p["room"]
+	for y in p["rx"]:
+		for x in range(int(r["x"]), int(r["x"]) + int(r["w"])):
+			if map.tile(x, floori(y)) == FloorMap.FLOOR:
+				out.append([Vector2(x + 0.5, y), "x", (x * 7 + roundi(y) * 3) & 3])
+	for x in p["ry"]:
+		for y in range(int(r["y"]), int(r["y"]) + int(r["h"])):
+			if map.tile(floori(x), y) == FloorMap.FLOOR:
+				out.append([Vector2(x, y + 0.5), "y", (y * 5 + roundi(x) * 11) & 3])
+	p["tiles"] = out
+	return out
+
+
+## THE LOCKDOWN'S BARS (the game's own, lockBarsPainted): crashing down, standing as a cage and rising away, a tile of a row
+## at a time, each among the figures by its floor point.
+func _bars_stands(p: Dictionary) -> void:
+	if stands == null or not has_film("lock_bars_x_0"):
+		return
+	var tiles := _bar_tiles(p)
+	var pool: Array = p.get("fx_pool", [])
+	p["fx_pool"] = pool
+	if float(p["t"]) < -2.0 / 30.0:
+		return
+	while pool.size() < tiles.size():
+		pool.append(_film_sprite())
+	for i in tiles.size():
+		var q: Array = tiles[i]
+		var film := "lock_bars_%s_%d" % [q[1], q[2]]
+		var k := _film_frame(film, p["t"])
+		var at: Vector2 = q[0]
+		_film_set(pool[i], int(_fx["films"][film]["layers"]["stand"][k]) if k >= 0 else -1, at, at.x + at.y)
 
 
 func _draw_bars(p: Dictionary) -> void:
