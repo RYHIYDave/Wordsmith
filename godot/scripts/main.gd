@@ -3827,8 +3827,14 @@ func _kind_shots(h: Hero, dir: String) -> void:
 		for o in _monsters.list:
 			if is_instance_valid(o) and not o.dead and o.kind in Monster.Act1.WARD["kinds"] and (ally == null or o.world.distance_to(m.world) < ally.world.distance_to(m.world)):
 				ally = o
+	# (FLOORS 9 AND 10: the fog wolf with three of its pack, so that the pack's ring and its turns are seen)
+	var pack: Array = []
+	if kind == "wolf":
+		for o in _monsters.list:
+			if is_instance_valid(o) and o != m and not o.dead and o.kind == "wolf" and o.pack_id == m.pack_id and pack.size() < 3:
+				pack.append(o)
 	for o in _monsters.list:
-		if is_instance_valid(o) and o != m and o != ally:
+		if is_instance_valid(o) and o != m and o != ally and not pack.has(o):
 			o.queue_free()
 	if ally != null:
 		ally.world = _free_near(m.world + Vector2(1.4, 1.4))
@@ -3863,6 +3869,11 @@ func _kind_shots(h: Hero, dir: String) -> void:
 		# (FLOORS 6 TO 8'S COMMON MONSTERS, each by rules of its own: near for its blow, further off for what it throws)
 		"qgolem": [[1.6, 7.0], [5.0, 9.0]], "rubbling": [[0.7, 6.0]], "firepot": [[5.0, 9.0]], "chanter": [[5.0, 9.0]],
 		"vulture": [[3.0, 14.0]], "crawler": [[1.3, 14.0]], "devil": [[1.8, 10.0]], "scorpion": [[1.6, 6.0], [4.0, 10.0]],
+		# (FLOORS 9 AND 10'S, and floor 9's two side bosses: near for the blow, further off for the charge, the retch, the rush,
+		# the lunge; long enough for each side boss's slower moves to come round)
+		"wolf": [[4.0, 14.0]], "deer": [[1.4, 5.0], [5.0, 9.0], [5.5, 6.0]], "leech": [[1.0, 12.0]], "spawn": [[1.2, 5.0], [2.0, 12.0]],
+		"drowned": [[2.0, 16.0]], "warchief": [[5.0, 10.0], [3.0, 14.0], [5.5, 10.0], [3.0, 12.0]],
+		"mistwolf": [[3.0, 12.0], [3.5, 14.0], [2.5, 16.0]],
 	}
 	var marks := {
 		"brute": {
@@ -3935,6 +3946,46 @@ func _kind_shots(h: Hero, dir: String) -> void:
 			"glob_flies": func(): return _a1(P, "scorpion:glob", func(p): return p["t"] >= 0.25 and p["t"] < p["hit"]),
 			"acid_pool": func(): return _a1(P, "scorpion:glob", func(p): return p["t"] - p["hit"] >= 0.6),
 		},
+		# (floors 9 and 10's: what each lays and throws, and how it stands, as it comes: scripts/act1/marks9.gd)
+		"wolf": {
+			"on_the_ring": func(): return m.state == "chase" and float(m.h2.a1.get("held", 0.0)) >= 0.3,
+			"crouched": func(): return m.h2.act != null and m.h2.act["t"] >= 0.4, "leaps": func(): return m.h2.act != null and m.h2.act["t"] >= 0.6,
+			"landed": func(): return m.h2.act != null and m.h2.act["t"] >= 1.0,
+		},
+		"deer": {
+			"lane_marked": func(): return _a1(P, "deer:charge", func(p): return p["t"] >= 0.6), "charges": func(): return _a1(P, "deer:charge", func(p): return p["t"] >= 1.12),
+			"hedge_bursts": func(): return _a1(P, "deer:charge", func(p): return p["t"] >= 1.6), "hedge_stands": func(): return _a1(P, "deer:charge", func(p): return p["t"] >= 3.0),
+			"hedge_withers": func(): return _a1(P, "deer:charge", func(p): return p["t"] >= 5.35),
+		},
+		"leech": {
+			"springs": func(): return m.state == "act" and m.h2.act != null and m.h2.act["t"] >= 0.56 and m.h2.act["t"] < 0.62,
+			"latched": func(): return m.h2.latched(m) and float(m.h2.a1["held"]) >= 0.3, "drinks": func(): return m.h2.latched(m) and float(m.h2.a1["held"]) >= 2.2,
+			"lets_go": func(): return m.state == "act" and m.h2.act != null and m.h2.act["t"] >= 1.35 and int(m.h2.a1.get("on", 0)) == 0,
+		},
+		"spawn": {
+			"gaze_marked": func(): return m.state == "act" and m.h2.act != null and m.h2.act["i"] == 1 and m.h2.act["t"] >= 0.6,
+			"gaze_burns": func(): return m.state == "act" and m.h2.act != null and m.h2.act["i"] == 1 and m.h2.act["t"] >= 1.35,
+		},
+		"drowned": {
+			"under_the_water": func(): return int(m.h2.a1.get("under", 0)) == 1,
+			"rises": func(): return m.state == "act" and m.h2.act != null and m.h2.act["i"] == 2 and m.h2.act["t"] >= 0.9,
+			"rime": func(): return _a1(P, "drowned:rime", func(p): return p["t"] >= 0.15), "frozen_in_ice": func(): return _a1(P, "drowned:rime", func(p): return p["d"] == 1 and p["t"] >= 0.3),
+			"cone_marked": func(): return _a1(P, "drowned:slick", func(p): return p["t"] >= -0.25), "gush": func(): return _a1(P, "drowned:slick", func(p): return p["t"] >= 0.12),
+			"slick": func(): return _a1(P, "drowned:slick", func(p): return p["t"] >= 1.5),
+		},
+		"warchief": {
+			"smash_marked": func(): return _a1(P, "warchief:fx:smash", func(p): return p["t"] >= 1.05), "smash_lands": func(): return _a1(P, "warchief:fx:smash", func(p): return p["t"] >= 1.42),
+			"slam_marked": func(): return _a1(P, "warchief:fx:slam", func(p): return p["t"] >= 0.8), "slam_cracks": func(): return _a1(P, "warchief:fx:slam", func(p): return p["t"] >= 1.2),
+			"warcry_roars": func(): return _a1(P, "warchief:fx:warcry", func(p): return p["t"] >= 1.15), "raging": func(): return _a1(P, "warchief:rage") and m.state != "act",
+			"rush_lane": func(): return _a1(P, "warchief:fx:rush", func(p): return p["t"] >= 0.9), "rush_runs": func(): return _a1(P, "warchief:fx:rush", func(p): return p["t"] >= 1.35),
+		},
+		"mistwolf": {
+			"bite_marked": func(): return _a1(P, "mistwolf:fx:bite", func(p): return p["t"] >= 0.5), "claw_marked": func(): return _a1(P, "mistwolf:fx:claw", func(p): return p["t"] >= 0.55),
+			"claw_stomp": func(): return _a1(P, "mistwolf:fx:claw", func(p): return p["t"] >= 1.08), "lunge_lane": func(): return _a1(P, "mistwolf:fx:lunge", func(p): return p["t"] >= 0.6),
+			"lunge_through": func(): return _a1(P, "mistwolf:fx:lunge", func(p): return p["t"] >= 0.82), "cloud": func(): return _a1(P, "mistwolf:fx:cloud", func(p): return p["t"] >= 1.1),
+			"cloud_claws": func(): return _a1(P, "mistwolf:fx:cloud", func(p): return p["d"] != 0 and p["t"] >= 1.5),
+			"howl_mist": func(): return _a1(P, "mistwolf:fx:howl", func(p): return p["t"] >= 1.35), "howl_wolves": func(): return _a1(P, "mistwolf:fx:howl", func(p): return p["t"] >= 2.4),
+		},
 	}
 	var todo: Dictionary = marks.get(kind, {})
 	var done := {}
@@ -3950,6 +4001,13 @@ func _kind_shots(h: Hero, dir: String) -> void:
 		if not is_instance_valid(m) or m.dead:
 			break
 		h.world = _charge_spot(m, ph[0], _spot_near(m.world, ph[0], h.world)) if kind == "brute" and ph[0] > 3.0 else _spot_near(m.world, ph[0], h.world)
+		# (the eyespawn: square before it along one of the floor's four ways, where its gaze burns)
+		if kind == "spawn":
+			for w in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]:
+				var q: Vector2 = m.world + w * float(ph[0])
+				if map.walkable(floori(q.x), floori(q.y)) and _monsters.sees(m.world, q):
+					h.world = q
+					break
 		if ph.size() > 2:
 			m.life = m.max_life * float(ph[2])
 		var t := 0.0

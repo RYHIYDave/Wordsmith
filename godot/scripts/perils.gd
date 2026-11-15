@@ -2862,6 +2862,9 @@ func _draw_glow(c: CanvasItem) -> void:
 				_fm2_motes(c, Iso.to_screen(w.x, w.y) / 2.0, 38.0, _clock)
 		elif p["kind"] == "fm_death" and has_film("fm_death_pillar"):
 			_film_pic(c, "fm_death_pillar", "air", _film_frame("fm_death_pillar", p["t"]), Iso.to_screen(p["x"], p["y"]))
+		elif p["kind"] == "a1":
+			# (floors 9 and 10's: a side boss's blow flashing the screen, its rage, the mist rolling in: act1/marks9.gd)
+			A1M.glow(self, c, p)
 
 
 ## The layer over the dark (see _draw_glow).

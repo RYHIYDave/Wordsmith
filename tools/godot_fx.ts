@@ -126,6 +126,19 @@ import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, RING_CANVAS as CH_RING_CANVAS, STA
 import { markRing } from '../src/art/action_f6_fx';
 import { chantWard } from '../src/art/act1_cultists';
 import { POOL_CANVAS, SPIT, SWIRL_CANVAS, TW, globShadowPainted, layTwisterBolts, poolPainted, swirlPainted } from '../src/art/action_f6_canyon';
+// (floors 9 and 10's, and floor 9's side bosses')
+import { HEDGE_AT } from '../src/art/action_f9_pinewood';
+import { CLUMP_FRAMES, clumpSprite } from '../src/art/act1_figs/deer';
+import { SLICK_N, slickSprite } from '../src/art/act1_figs/drowned';
+import { FROST as FR_FROST, RIME_CANVAS as FEN_RIME, SLICK_CANVAS, gushPainted, rimePainted as fenRime } from '../src/art/action_f9_fen';
+import { CLOUD as CF9_CLOUD, F9_FX_AFTER, F9_FX_CANVAS, chiefFxGlow, chiefFxPaint, wolfFxGlow, wolfFxPaint } from '../src/art/f9_bosses_fx';
+import { CHIEF_MOVES, WOLF_MOVES } from '../src/art/f9_bosses_moves';
+import type { ChiefMove, WolfMove } from '../src/art/f9_bosses_moves';
+import { f9At } from '../src/art/f9_bosses_art';
+import { WK } from '../src/art/f9_bosses_sculpt';
+import { flung, slash } from '../src/art/f9_bosses_paint';
+import type { Pr } from '../src/art/f9_bosses_paint';
+import { FLAME } from '../src/art/mkit';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -528,6 +541,76 @@ for (const view of ['front', 'back'] as const) {
   stills('sc_shadow', 21, 'floor', (q) => toSprite(globShadowPainted(q / 20), null, 25, 13));
 }
 
+// FLOORS 9 AND 10'S COMMON MONSTERS AND FLOOR 9'S TWO SIDE BOSSES, as the game starts with their new moves on (render/act1_fx/deer.ts,
+// drowned.ts, f9_bosses.ts): each painted by the art's own painter, as the game paints it ahead (art/films.ts things:deer,
+// things:drowned) or live (render/act1_fx/live.ts)
+//   de_clump_<v>_<j>  the twisted deer's hedge, clump j of it (art/act1_figs/deer.ts clumpSprite: CLUMP_FRAMES' rise, writhe and
+//                     wither, layer `stand`; the game picks one by clumpFrame); de_earth_<v>_<j>: the torn earth at its foot (`floor`)
+//   dr_slick_<v>      the Drowned's retch: its cone marked, the slick spreading, lying and shrinking (slickSprite: SLICK_N stills,
+//                     SLICK_FPS a second from its mark, layer `floor`; the game picks one by slickFrame); dr_gush_<v>: the gush over
+//                     the cone (gushPainted, `behind` and `before`, 30 a second)
+//   dr_rime, dr_ice   its frost grab: the rime racing out over the floor where its hands close (rimePainted `floor`), and the ice
+//                     round the feet of a hero it froze (`air`, `behind` and `before`), 30 a second
+//   wc_<move>_<v>     the Troll Chieftain's moves (art/f9_bosses_fx.ts chiefFxPaint: `floor` its ground, `air` over what stands, at
+//                     the game's PAINT_FPS, from where the move began, in the frame its picture is shown in: front or rear, turned
+//                     over by the frame); mw_<move>_<v>: the Mist Wolf's (wolfFxPaint, the hero away); mw_claws_<v>_<i>: its
+//                     claws flashing out of its cloud where the hero is, its i'th blow (wolfFxPaint's own slash and flung, painted
+//                     round the hero's own spot: stood where he is)
+//   `tables.f9glow`   each of their moves' light, flash and darkening, 30 a second (chiefFxGlow, wolfFxGlow: [x, y, r, a, flash,
+//                     dark], or 0 for none)
+{
+  const stills = (name: string, n: number, layer: string, at: (i: number) => Sprite | number): void => {
+    films[name] = { fps: 0, n, k0: 0, layers: { [layer]: Array.from({ length: n }, (_, i) => { const q = at(i); return typeof q === 'number' ? q : pic(q); }) } };
+  };
+  for (const view of ['front', 'back'] as const) {
+    for (let j = 0; j < HEDGE_AT.length; j++) {
+      stills(`de_clump_${view}_${j}`, CLUMP_FRAMES.rise + CLUMP_FRAMES.stand + CLUMP_FRAMES.wither, 'stand', (i) => clumpSprite(j, i, view, 'air'));
+      stills(`de_earth_${view}_${j}`, 1, 'floor', () => clumpSprite(j, 0, view, 'floor'));
+    }
+    stills(`dr_slick_${view}`, SLICK_N, 'floor', (i) => slickSprite(i, view));
+    const gush = (side: 'behind' | 'before', k: number): Sprite => toSprite(gushPainted(k / FPS, view, side), null, SLICK_CANVAS.ax, SLICK_CANVAS.ay);
+    film(`dr_gush_${view}`, 0.6, { behind: (k) => gush('behind', k), before: (k) => gush('before', k) });
+  }
+  film('dr_rime', FR_FROST.seen, { floor: (k) => toSprite(fenRime(k / FPS, 'floor'), null, FEN_RIME.ax, FEN_RIME.ay) });
+  film('dr_ice', FR_FROST.seen, { behind: (k) => toSprite(fenRime(k / FPS, 'air', 'behind'), null, FEN_RIME.ax, FEN_RIME.ay), before: (k) => toSprite(fenRime(k / FPS, 'air', 'before'), null, FEN_RIME.ax, FEN_RIME.ay) });
+  // the side bosses' (render/act1_fx/f9_bosses.ts layerOf, painted afresh PAINT_FPS a second on F9_FX_CANVAS)
+  const B9 = 15;
+  const C = F9_FX_CANVAS;
+  const glow: Record<string, (number[] | 0)[]> = {};
+  const cut = (paint: (px: Px) => void): number => {
+    const px = new Px(C.w, C.h);
+    paint(px);
+    return rawPic(px, 1, C.ax, C.ay);
+  };
+  for (const view of ['front', 'rear'] as const) {
+    for (const move of Object.keys(CHIEF_MOVES) as ChiefMove[]) {
+      const long = CHIEF_MOVES[move].long + F9_FX_AFTER;
+      film(`wc_${move}_${view}`, long, { floor: (k) => cut((px) => chiefFxPaint(px, 'ground', move, k / B9, view)), air: (k) => cut((px) => chiefFxPaint(px, 'air', move, k / B9, view)) }, 0, B9);
+      glow[`wc_${move}_${view}`] = Array.from({ length: Math.floor(long * FPS) + 1 }, (_, i) => { const g = chiefFxGlow(move, i / FPS, view); return g ? [g.x, g.y, g.r, g.a, g.flash, 0] : 0; });
+    }
+    for (const move of Object.keys(WOLF_MOVES) as WolfMove[]) {
+      const long = WOLF_MOVES[move].long + F9_FX_AFTER;
+      film(`mw_${move}_${view}`, long, { floor: (k) => cut((px) => wolfFxPaint(px, 'ground', move, k / B9, view)), air: (k) => cut((px) => wolfFxPaint(px, 'air', move, k / B9, view)) }, 0, B9);
+      glow[`mw_${move}_${view}`] = Array.from({ length: Math.floor(long * FPS) + 1 }, (_, i) => { const g = wolfFxGlow(move, i / FPS, view); return g ? [g.x, g.y, g.r, g.a, g.flash, g.dark] : 0; });
+    }
+    // (its claws in its cloud, each of its blows (CLOUD.hurts) as wolfFxPaint lays them where the hero is, here round (0, 0): from a
+    // moment before it to when what it flings has gone, or the cloud's pictures end)
+    const pr: Pr = f9At(view, WK, C.ax, C.ay);
+    const CRESCENT = ['#9692b2', FLAME[2], '#fffaf0'];
+    CF9_CLOUD.hurts.forEach((q, i) => {
+      film(`mw_claws_${view}_${i}`, Math.min(q + 1.3, WOLF_MOVES.cloud.long + F9_FX_AFTER), {
+        air: (k) => cut((px) => {
+          const t = k / B9;
+          const at = pr(0, 0, 30);
+          for (let c = -1; c <= 1; c++) slash(px, at[0] - 2, at[1] - 4, 30 + c * 7, (q * 3) % 6.28, ((q * 3) % 6.28) + 2.4, (t - q + 0.06) / 0.25, CRESCENT, 5);
+          flung(px, pr, 0, 0, (q * 3) % 6.28, 0.6, t - q, 5, 70, 9805 + i, 'mist');
+        }),
+      }, Math.max(0, q - 0.07), B9);
+    });
+  }
+  tables.f9glow = glow;
+}
+
 // --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a
 // floor that has its kind), the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
 /** The set a film is packed with: the first word of its name; the cultist's sigil and the Flame keybearer's apart. */
@@ -537,6 +620,8 @@ const KIND_SETS: Record<string, string[]> = {
   archer: ['rain'], warden: ['lock'], cultist: ['sigil'], shade: ['rime'], brute: ['brute'], priest: ['smoke'], stoker: ['st'], chained: ['co'],
   amalgam: ['am'], mite: ['am'], beast: ['am'], fleshmancer: ['fm'], minifm: ['fm'], keyblade: ['kb'], keyflame: ['kb'],
   qgolem: ['qg'], firepot: ['fp'], chanter: ['ch'], devil: ['dv'], scorpion: ['sc'],
+  // (floors 9 and 10's, and floor 9's two side bosses: the mist wolf's wolves are its own kind's, with none)
+  deer: ['de'], drowned: ['dr'], warchief: ['wc'], mistwolf: ['mw'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

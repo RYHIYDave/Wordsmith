@@ -290,6 +290,22 @@ A controller: the left stick, RT, LT, A, B, X.
   that grabs the hero and drags him back; THE DUST DEVILS weaving in, their twister dragging and scouring him and throwing
   lightning round its foot, then scattering; THE CANYON SCORPIONS darting and still, their snap and their acid spit, its pool
   burning and its splash poisoning. `--only=kind --floor=N --kind=<kind>` shows each.
+- **The common monsters of floors 9 and 10, and floor 9's two side bosses' fights** (`scripts/act1/`; game/act1_rules/wolf.ts,
+  deer.ts, leech.ts, spawn.ts, drowned.ts, f9_bosses.ts, with the new moves the game starts with), each by its kind's own rules on
+  `act1.gd`, what it lays and throws in the game's own pictures (`act1/marks9.gd`; films `de_`, `dr_`, `wc_`, `mw_` of
+  `tools/godot_fx.ts`). THE FOG WOLVES' PACK STRIKE: the pack spreads on a ring round the hero and holds, then one after another,
+  a beat apart, each leaps clean through him and lands across the ring. THE TWISTED DEER's gore and its BRAMBLE CHARGE down a
+  marked lane, a hedge of living bramble bursting up behind it that he cannot cross while it stands, its thorns stinging. THE
+  BOG LEECH's leap and latch: it rides along on him, drawn over him, drinking and healing, until he lunges it off, it has drunk
+  its fill or a wall scrapes it off. THE EYESPAWN's lash and its gold gaze along the way its picture faces. THE DROWNED lying
+  unseen under the water's edge until it rises; its frost grab that slows him and can freeze him in place in its rime, and its
+  bog retch, the cone marked, the gush, the slick that slows and stings. FLOOR 9'S SIDE BOSSES (`act1/f9_boss.gd`, `warchief.gd`,
+  `mistwolf.gd`): THE TROLL CHIEFTAIN's club smash, ground slam and its running crack, bull rush, and bull roar with its rage
+  (quicker, faster, the screen's edges red); THE MIST WOLF's bite, claw frenzy, lunge through him as mist, mist cloud with its
+  claws, and howl that calls the floor's wolves out of the mist (the screen darkening, the mist rolling in). Each turns square to
+  one of its four ways as each move comes, and its heavy blows hold the game still a moment. (Their lairs, gates and the
+  ward-stone pieces they guard are still to come.) `--only=kind --floor=9 --kind=wolf|deer|warchief|mistwolf`, `--floor=10
+  --kind=leech|spawn|drowned`.
 
 ## Not in it yet
 

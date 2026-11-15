@@ -3,6 +3,8 @@
 ## of floors 6 to 8 that fight by rules of their own, each a script of its own beside this one, extending it:
 ##   qgolem.gd (the quarry golem), rubbling.gd, firepot.gd (the firepot thrower), chanter.gd, vulture.gd, crawler.gd (the cliff
 ##   crawler), devil.gd (the dust devil), scorpion.gd (the canyon scorpion).
+## And floors 9 and 10's: wolf.gd (the fog wolf), deer.gd (the twisted deer), leech.gd (the bog leech), spawn.gd (the eyespawn),
+##   drowned.gd; floor 9's two side bosses, warchief.gd (the Troll Chieftain) and mistwolf.gd (the Mist Wolf), on f9_boss.gd.
 ## Each is handed its monster every frame it is awake (monster.gd BOSS_AI, `step`), and as it comes into the world (`begun`:
 ## the game's `spawned`) and as it falls (`died`).
 ##   ITS GAIT: it stands; it sets off after a hero further off than it likes (`stopAt` + `slack`), or out of its sight; it is
@@ -28,7 +30,9 @@ const HEAVY_KNOCK := 0.6
 const POISON_TIME := 4.0
 ## (sound_families.ts ATK: its attack's sound by its family, heard as each act begins, no oftener than every 0.25 s: game.ts
 ## atkSound, enemyRec)
-const ATK := {"qgolem": "atkStone", "rubbling": "atkStone", "firepot": "atkFirepot", "chanter": "atkHex", "vulture": "atkVulture", "crawler": "atkSting", "scorpion": "atkSting"}
+const ATK := {"qgolem": "atkStone", "rubbling": "atkStone", "firepot": "atkFirepot", "chanter": "atkHex", "vulture": "atkVulture", "crawler": "atkSting", "scorpion": "atkSting",
+	# (floors 9 and 10's, and floor 9's two side bosses: act1/wolf.gd, deer.gd, leech.gd, spawn.gd, drowned.gd, warchief.gd, mistwolf.gd)
+	"wolf": "atkBite", "mistwolf": "atkBite", "deer": "atkAntler", "leech": "atkLeech", "spawn": "atkLeech", "drowned": "atkSpirit", "warchief": "atkTroll"}
 ## (chanter.ts CHANTER.ward: the cult's kinds a chanter shields, within `r` tiles of it, each taking `share` less harm)
 const WARD := {"r": 4.5, "share": 0.4, "kinds": ["dagger", "cultist", "firepot", "minifm", "priest"]}
 
@@ -231,7 +235,8 @@ func start_act(m, A: Array, i: int, hero) -> void:
 func _step_act(m, A: Array, dt: float, hero) -> void:
 	var a: Dictionary = A[act["i"]]
 	var t0: float = act["t"]
-	act["t"] = minf(float(a["long"]), t0 + dt * ((0.6 + 0.4 * m.slow()) if t0 < float(a["hit"]) else 1.0))
+	# (`rate`: an act made quicker, the Troll Chieftain's in his rage: act.rate)
+	act["t"] = minf(float(a["long"]), t0 + dt * float(act.get("rate", 1.0)) * ((0.6 + 0.4 * m.slow()) if t0 < float(a["hit"]) else 1.0))
 	var t1: float = act["t"]
 	m._anim_t = t1
 	var was = act
