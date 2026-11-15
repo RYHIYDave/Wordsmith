@@ -85,7 +85,7 @@ export interface FigureState {
    * `clips.release`; on the run `clips.moves.runCatch`); the tap now being made began with them empty (its first pictures the axe
    * appearing, `clips.moves.cleaveAppear`, then the Cleave's own).
    */
-  axe?: { empty: boolean; caughtT: number; appear: boolean };
+  axe?: { empty: boolean; caughtT: number; appear: boolean; twin?: boolean };
   /** (THE WARRIOR'S WEAPONS) How far into a leap's crouch, in seconds, before he leaves the floor (`clips.moves.chopCrouch`, `chargeCrouch`). */
   crouchT?: number;
 }
@@ -150,6 +150,15 @@ export const GESTURE_GAP: readonly [number, number] = [5, 9];
  * switch: ON at his yes to its film, 14 Nov 2026: “Yes, put it in (Recommended)”.
  */
 export const WHIRL_SPIN = { on: true, hitAt: 6 / 30 };
+
+/**
+ * THE WARRIOR'S TWIN AXES SHOWN (game/talents.ts twinaxes: two axes thrown, one to each side of the aim). The art chat drew him
+ * throwing both, braced with both out, catching both standing and on the run (clips.moves twinThrow, twinBraced, twinCatch,
+ * twinRunCatch: docs/mockups/warrior_weapons/README.md), and the bake has them; but the figure showed his one axe's throw, brace
+ * and catch while two flew. Found by the main chat, 15 Nov 2026, at his words: “make sure all the animations for the warrior are
+ * correct”. Behind this switch: OFF until his yes to a film of it.
+ */
+export const TWIN_AXES_SHOWN = { on: false };
 const ONCE_ROUND = new WeakMap<Clip, Clip>();
 
 /** A figure's whirlwind (`clips.whirl`, its turn from its loop round) as one turn: an attack whose blow lands at WHIRL_SPIN.hitAt. */
@@ -174,8 +183,10 @@ function frameOf(c: Clip, seconds: number): Sprite {
  */
 function axeFrame(set: AnimSet, axe: NonNullable<FigureState['axe']>, walking: boolean, animT: number, walked: number | undefined): Sprite | null {
   const moves = set.clips?.moves;
+  // (TWIN AXES: both caught, standing or on the run; braced with both out: TWIN_AXES_SHOWN)
+  const twin = TWIN_AXES_SHOWN.on && axe.twin === true;
   if (axe.caughtT >= 0) {
-    const c = walking ? moves?.runCatch : set.clips?.release;
+    const c = walking ? ((twin ? moves?.twinRunCatch : undefined) ?? moves?.runCatch) : ((twin ? moves?.twinCatch : undefined) ?? set.clips?.release);
     if (c && axe.caughtT < (c.frames.length - 1) / c.fps) return frameOf(c, axe.caughtT);
   }
   if (!axe.empty) return null;
@@ -186,7 +197,7 @@ function axeFrame(set: AnimSet, axe: NonNullable<FigureState['axe']>, walking: b
     const at = set.walkStride !== undefined && walked !== undefined ? Math.round((walked / set.walkStride) * n) : Math.floor(animT * run.fps);
     return run.frames[((at % n) + n) % n];
   }
-  const hold = set.clips?.hold;
+  const hold = (twin ? moves?.twinBraced : undefined) ?? set.clips?.hold;
   return hold ? heldFrame(hold, animT) : null;
 }
 
@@ -677,11 +688,13 @@ export class Figure {
       // (THE WARRIOR'S WHIRL, behind WHIRL_SPIN: his whirlwind's spin gone round once, where he has one: spinOnce)
       const once = WHIRL_SPIN.on && st.attackMove === 'whirl' && set.clips?.whirl ? spinOnce(set.clips.whirl) : undefined;
       const own = st.attackMove !== undefined ? (set.clips?.moves?.[st.attackMove] ?? once) : undefined;
-      let c = own ?? (st.punch !== undefined ? set.clips?.punches?.[st.punch] : undefined) ?? (st.attackSkill === 1 ? set.clips?.heavy : st.attackSkill === 2 ? set.clips?.attack2 : undefined) ?? (st.tapAs !== undefined ? set.clips?.tapAs?.[st.tapAs] : undefined) ?? set.clips?.attack;
+      // (TWIN AXES: his throw with both, TWIN_AXES_SHOWN; the axe's throw is his second move)
+      const twinThrow = TWIN_AXES_SHOWN.on && st.axe?.twin === true && st.attackSkill === 1 ? set.clips?.moves?.twinThrow : undefined;
+      let c = own ?? twinThrow ?? (st.punch !== undefined ? set.clips?.punches?.[st.punch] : undefined) ?? (st.attackSkill === 1 ? set.clips?.heavy : st.attackSkill === 2 ? set.clips?.attack2 : undefined) ?? (st.tapAs !== undefined ? set.clips?.tapAs?.[st.tapAs] : undefined) ?? set.clips?.attack;
       // MADE WALKING (clips.attackWalk, heavyWalk): the one for the way the hero goes as they face
       // their mark, as the picture has them (the view from behind is a mirror, and so is a figure
       // turned to screen-left: what is the figure's left in the picture is the world's right in each)
-      const walkers = own ? undefined : st.attackSkill === 1 ? set.clips?.heavyWalk : st.attackSkill === 0 ? set.clips?.attackWalk : st.attackSkill === 2 ? set.clips?.attack2Walk : undefined;
+      const walkers = own || twinThrow ? undefined : st.attackSkill === 1 ? set.clips?.heavyWalk : st.attackSkill === 0 ? set.clips?.attackWalk : st.attackSkill === 2 ? set.clips?.attack2Walk : undefined;
       if (walkers && walkers.length === 4 && way >= 0) c = walkers[way];
       this.swungWalking = !!walkers && walkers.length === 4 && way >= 0;
       const holding = st.holdT !== undefined && st.holdT >= 0;
