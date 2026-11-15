@@ -147,17 +147,17 @@ Smaller:
 Twin, Leech, Volatile, Precise, Frenzied, Guarding, Lasting, Fleeting and Vast were read out of `game.ts` as the first seven
 were, and held against the game's own formula. These came up. All are copied as they are.
 
-19. **Twin does nothing on most of the Wilds' monsters.** Only the old kind of monster reads Twin (its one blow, or a move's
+26. **Twin does nothing on most of the Wilds' monsters.** Only the old kind of monster reads Twin (its one blow, or a move's
     swing, shot, rain or slam: game.ts monsterAttack, landMove). The descent's own kinds and the bosses fight by acts
     (game/bosses.ts, act1_rules) and none of those reads it: the Twin fog wolves of floor 9, and THE TWIN VOLATILE HOLLOW STAG,
     carry it in their names and do nothing with it.
 
-20. **Vast on a monster mostly only widens its red circles.** Its reach is wider only for a monster with no moves at all
+27. **Vast on a monster mostly only widens its red circles.** Its reach is wider only for a monster with no moves at all
     (monsterAttack); a move's swing reaches as far as ever (landMove uses reachOf, without Vast). What it widens everywhere is a
     warned blow (addWarn), and a mark too: a Vast quarry golem's hammer ring is drawn 30% wider than where its fists strike,
     whose reach is its own (act1_rules/qgolem.ts HAMMER.r).
 
-21. **Fleeting's stronger boosts are not on the move's card.** Fleeting makes might, haste and Guarding's shield a third
+28. **Fleeting's stronger boosts are not on the move's card.** Fleeting makes might, haste and Guarding's shield a third
     stronger (resolveSkill's last lines), but the lines of "of Power", "of Swiftness" and "Guarding" are written before, with
     the smaller number.
 
