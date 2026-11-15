@@ -356,7 +356,8 @@ func _build(where: String, arrive: String) -> void:
 	# (the floor's doors and the boss's gate: doors.gd)
 	_doors = null
 	hero.doors = null
-	if not map.doors.is_empty():
+	# (and on the descent's open ground, where the boss waits for the hero to come into his ground: doors.gd, meetOutdoorBoss)
+	if not map.doors.is_empty() or map.land != null:
 		_doors = Doors.new()
 		_doors.main = self
 		_doors.map = map
@@ -4300,6 +4301,10 @@ func _boss_shots(h: Hero, dir: String) -> void:
 	if boss == null:
 		print("BOSS: floor %d has none" % n)
 		return
+	# (floors 8 and 9: a check of their own, at the foot of this file)
+	if boss.kind == "cantor" or boss.kind == "stag":
+		await _boss89_shots(h, dir, boss)
+		return
 	var tag := dir + "/b%d_" % n
 	h.world = _spot_near(boss.world, 5.0, boss.world)
 	await _wait(0.5)
@@ -5048,3 +5053,272 @@ func _descent_shots(h: Hero, dir: String) -> void:
 		await _d_step(dir, "home", home != "" and town.gate_open == 1.0 and h.world.distance_to(Vector2(14.5, 7.2)) < 0.3,
 			"home: in town just inside the gate, up behind him (%.2f): \"%s\"" % [town.gate_open, home])
 	print("DESCENT: %d of %d steps as the game has them%s" % [_d_n - _d_bad.size(), _d_n, ("; not: " + ", ".join(_d_bad)) if not _d_bad.is_empty() else ""])
+
+
+# =============================================================================================================================
+# THE BOSSES OF FLOORS 8 AND 9 (the Cantor, the Hollow Stag: scripts/act1/cantor.gd, stag.gd), their check: --only=boss --floor=8
+# (or 9). He waits on his ground for the hero (pictured from 8.5 tiles off), meets him within 6 and says his line (pictured);
+# then the hero, struck now (his life kept full, each blow counted by what dealt it), is kept in his reach while he fights, and
+# each of his moves' moments is pictured as it comes (`_b89_moments`). The Cantor's copies are then made to repeat each of his
+# three moves in turn; the Stag is put at 3/4, 1/2 and 1/4 of his life, so that the wood closes in three times, the hero
+# standing on the new edge the first time (thrown in), and the fence is tried. Then he is struck dead, his death pictured, and
+# the way on watched as it wakes. Two lines, BOSS89.
+
+var _b89_hits := {}
+var _b89_done := {}
+var _b89_k := 0
+
+
+func _boss89_shots(h: Hero, dir: String, boss: Monster) -> void:
+	var n: int = map.depth
+	var tag := dir + "/b%d_" % n
+	var P := _monsters.perils
+	var said: Array = []
+	# (the floor's other monsters near his ground taken away, so that what strikes the hero is his)
+	for o in _monsters.list:
+		if is_instance_valid(o) and o != boss and o.world.distance_to(boss.world) < 30.0:
+			o.queue_free()
+	await _wait(0.1)
+	# 1. HE WAITS ON HIS GROUND, until the hero comes into it
+	h.world = _spot_near(boss.world, 13.0, boss.world)
+	await _wait(0.8)
+	said.append("waits with the hero %.1f off: %s" % [h.world.distance_to(boss.world), boss.waits])
+	await _snap(tag + "00_he_waits.png")
+	h.world = _spot_near(boss.world, 5.0, boss.world)
+	await _wait(1.4)
+	await _snap(tag + "01_his_line.png")
+	var t := 0.0
+	while boss.waits and t < 8.0:
+		await get_tree().process_frame
+		t += get_process_delta_time()
+	said.append("met and woken (%s), his line said, fighting after %.1f s more" % [boss.state, t])
+	# 2. THE FIGHT, the hero struck
+	h.unhurt = false
+	h.max_life = 1e6
+	h.life = h.max_life
+	_monsters.used = {}
+	_b89_hits = {}
+	_b89_done = {}
+	_b89_k = 1
+	var moments := _b89_moments(boss, P)
+	var SG = Monster.BOSS_AI["stag"]
+	if boss.kind == "cantor":
+		await _b89_watch(h, boss, P, moments, tag, 50.0, 3.0, "")
+		# (his copies made to repeat each of his three moves: his last move set, his copies' wait run out)
+		for last in [0, 1, 2]:
+			await _b89_watch(h, boss, P, moments, tag, 8.0, 3.0, "free")
+			boss.h2.a1["last"] = last
+			# (his copies' wait run out, his shout's and his rockfall's not, so that the copies are what he makes next)
+			if boss.h2.cds.size() > 3:
+				boss.h2.cds[2] = 0.0
+				boss.h2.cds[1] = maxf(boss.h2.cds[1], 4.0)
+				boss.h2.cds[3] = maxf(boss.h2.cds[3], 4.0)
+			boss._cd = 0.0
+			h.world = _spot_near(boss.world, 4.0, h.world)
+			await _b89_watch(h, boss, P, moments, tag, 6.0, 4.0, "copies")
+			await _b89_watch(h, boss, P, moments, tag, 4.0, 4.0, "copies out")
+			var rep := []
+			for p in boss.h2.copies_of(boss):
+				rep.append(["his strike", "his shout", "his rockfall"][int(p["a"])])
+			await _b89_watch(h, boss, P, moments, tag, 6.5, 4.0, "no copies")
+			said.append("copies made, set to repeat %s: repeating %s" % [["his strike", "his shout", "his rockfall"][last], rep])
+		# (and once more, to be struck dead while his copies stand)
+		await _b89_watch(h, boss, P, moments, tag, 8.0, 3.0, "free")
+		boss.h2.cds[2] = 0.0
+		boss._cd = 0.0
+		h.world = _spot_near(boss.world, 4.0, h.world)
+		await _b89_watch(h, boss, P, moments, tag, 6.0, 4.0, "copies")
+		await _b89_watch(h, boss, P, moments, tag, 4.0, 4.0, "copies out")
+		await _b89_watch(h, boss, P, moments, tag, 0.6, 4.0, "")
+	else:
+		await _b89_watch(h, boss, P, moments, tag, 45.0, 4.0, "")
+		# (the wood closes in at 3/4, 1/2 and 1/4 of his life; the first time the hero stands on the new edge)
+		var a1: Dictionary = boss.h2.own(boss)
+		var mid := Vector2(a1["cx"], a1["cy"])
+		for s in 3:
+			await _b89_watch(h, boss, P, moments, tag, 6.0, 4.0, "idle")
+			boss.life = boss.max_life * float([0.74, 0.49, 0.24][s])
+			if s == 0:
+				h.world = _free_near(mid + SG.edge(atan2(h.world.y - mid.y, h.world.x - mid.x), 0.8))
+			var struck: int = _b89_hits.get("stag:close", 0)
+			await _b89_watch(h, boss, P, moments, tag, 6.0, 4.0, "closed %d" % (s + 1))
+			var inside: bool = SG.inside_clearing(h.world.x, h.world.y, mid.x, mid.y, a1["k"], 0.0)
+			said.append("closed to %.1f (stage %d): the hero %s by it, inside after %s" % [a1["k"], a1.get("stage", 0), "struck" if _b89_hits.get("stag:close", 0) > struck else "not struck", inside])
+			if s == 0:
+				# (the fence: past the wall a body may not stand; inside it, it may)
+				var out: Vector2 = mid + SG.edge(0.3, 0.9)
+				var inn: Vector2 = mid + SG.edge(0.3, 0.55)
+				said.append("fence: past the wall %s, inside it %s" % [map.fits(out.x, out.y, 0.3), map.fits(inn.x, inn.y, 0.3)])
+				# (his charge: the hero set down 6 tiles off him, inside the wall, his run clear; a few times, so that it is made)
+				for tries in 4:
+					await _b89_watch(h, boss, P, moments, tag, 6.0, 4.0, "idle")
+					var was: int = _monsters.used.get("stag_charge", 0)
+					var spot := _b89_charge_spot(boss, mid, float(a1["k"]))
+					if spot == Vector2.INF:
+						continue
+					h.world = spot
+					boss.h2.cds[2] = 0.0
+					boss._cd = 0.0
+					await _b89_watch(h, boss, P, moments, tag, 3.0, 9.0, "charged %d" % was)
+					await _b89_watch(h, boss, P, moments, tag, 3.0, 9.0, "idle")
+				said.append("charges made: %d" % _monsters.used.get("stag_charge", 0))
+			await _b89_watch(h, boss, P, moments, tag, 8.0, 4.0, "")
+	print("BOSS89 floor %d moves made: %s" % [n, _monsters.used])
+	# 3. HIS DEATH, AND THE WAY ON
+	h.life = h.max_life
+	var copies := 0
+	if boss.kind == "cantor":
+		copies = boss.h2.copies_of(boss).size()
+	boss.hurt(1e9)
+	var after := ""
+	if boss.kind == "cantor":
+		var fading := 0
+		var gone_by := 0.0
+		for p in boss.h2.copies_of(boss):
+			fading += 1 if int(p["done"]) & 64 else 0
+			gone_by = maxf(gone_by, float(p["dur"]) - float(p["t"]))
+		after = "%d copies out as he died, %d of them ringing out, gone %.2f s after" % [copies, fading, gone_by]
+	await _wait(0.2)
+	await _snap(tag + "%02d_dying.png" % (_b89_k + 1))
+	if boss.kind == "cantor":
+		pass
+	else:
+		after = "the fence %s, his wall %s" % ["gone" if map.fence == null else "STILL UP", "sinking" if SG.wall_of(boss) != null else "never risen"]
+	await _wait(1.4)
+	await _snap(tag + "%02d_fallen.png" % (_b89_k + 2))
+	var w := 0.0
+	while ways != null and ways.state != "opening" and ways.state != "open" and w < 3.0:
+		await get_tree().process_frame
+		w += get_process_delta_time()
+	var way_then: String = ways.state if ways != null else "none"
+	if map.ways != null and map.ways.get("onward") != null:
+		var on: Dictionary = map.ways["onward"]
+		h.world = _free_near(Vector2(on["x"], on["y"]) + (boss.world - Vector2(on["x"], on["y"])).normalized() * 4.0)
+		await _wait(0.8)
+		await _snap(tag + "%02d_the_way_on.png" % (_b89_k + 3))
+	print("BOSS89 floor %d (%s, %s): %s; moments pictured %d of %d: %s; not: %s; the hero struck %s; dead %s, %s; the way on: %s" % [
+		n, boss.kind, boss.title, "; ".join(said), _b89_done.size(), moments.size(), _b89_done.keys(), moments.keys().filter(func(q): return not _b89_done.has(q)),
+		_b89_hits, boss.dead, after, way_then])
+
+
+## A while of the fight, at most `secs`, or until `until` holds ("free": he makes no act and has no copies out; "copies": he has
+## made his copies again; "no copies": none of his are out; "idle": he makes no act; "closed N": his wood has closed in N times
+## and he is free again): every blow on the hero counted by what dealt it and his life filled again; every moment pictured the
+## first time it holds; the hero put back in his reach if he is far.
+func _b89_watch(h: Hero, boss: Monster, P: Perils, moments: Dictionary, tag: String, secs: float, away: float, until: String) -> void:
+	var copies0: int = _monsters.used.get("cantor_copies", 0)
+	var w := 0.0
+	while w < secs and not boss.dead:
+		var acting: bool = boss.h2.act != null
+		var copies: int = boss.h2.copies_of(boss).size() if boss.kind == "cantor" else 0
+		if until == "free" and not acting and copies == 0:
+			return
+		if until == "copies" and _monsters.used.get("cantor_copies", 0) > copies0:
+			return
+		if until == "no copies" and copies == 0 and not acting:
+			return
+		if until == "copies out" and copies > 0:
+			return
+		if until == "idle" and not acting:
+			return
+		if until.begins_with("closed ") and int(boss.h2.a1.get("stage", 0)) >= int(until.substr(7)) and not acting:
+			return
+		if until.begins_with("charged ") and _monsters.used.get("stag_charge", 0) > int(until.substr(8)):
+			return
+		await get_tree().process_frame
+		w += get_process_delta_time()
+		if h.life < h.max_life:
+			var by := _b89_by(boss, P)
+			_b89_hits[by] = _b89_hits.get(by, 0) + 1
+			h.life = h.max_life
+		for name in moments:
+			if not _b89_done.has(name) and moments[name].call():
+				_b89_done[name] = true
+				await _snap(tag + "%02d_%s.png" % [_b89_k + 1, name])
+				_b89_k += 1
+		if h.world.distance_to(boss.world) > 9.0:
+			h.world = _spot_near(boss.world, away, boss.world)
+
+
+## A place 6 tiles from the Stag inside his wall, with his run to it and on clear (his charge's), or INF.
+func _b89_charge_spot(boss: Monster, mid: Vector2, k: float) -> Vector2:
+	var SG = Monster.BOSS_AI["stag"]
+	for i in 16:
+		var f := Vector2(cos(i * TAU / 16.0), sin(i * TAU / 16.0))
+		var p: Vector2 = boss.world + f * 6.0
+		if not SG.inside_clearing(p.x, p.y, mid.x, mid.y, k, 0.3, 0.3):
+			continue
+		var ok := true
+		var d := 0.4
+		while d <= 6.0 and ok:
+			var q: Vector2 = boss.world + f * d
+			ok = map.fits(q.x, q.y, 0.42)
+			d += 0.3
+		if ok:
+			return p
+	return Vector2.INF
+
+
+## What dealt the blow the hero has just taken: a rock just come down, one of the Cantor's copies, the boss's own blow (the act
+## he is making, at the moment its blow lands), or another (one he called up, one of the floor's).
+const _B89_BLOWS := {"cantor:strike": [[1.0, 1.1], [1.45, 1.55]], "cantor:shout": [[1.0, 2.0]], "stag:gore": [[0.9, 1.0]], "stag:stare": [[0.0, 0.1]],
+	"stag:charge": [[1.0, 1.6]], "stag:close": [[1.4, 1.5]]}
+
+
+func _b89_by(boss: Monster, P: Perils) -> String:
+	for p in P.list:
+		if p["kind"] == "a1" and p["a1"] == "cantor:rock" and int(p["done"]) == 1 and float(p["t"]) - float(p["hit"]) < 0.06:
+			return "rock" if int(p["a"]) == 1 else "his rock"
+	for p in P.list:
+		if p["kind"] == "a1" and p["a1"] == "cantor:copy" and int(p["done"]) & 32 and not (int(p["done"]) & 64):
+			return "copy repeating %s" % ["strike", "shout", "rockfall"][int(p["a"])]
+	if not boss.dead and boss.h2 != null and boss.h2.act != null:
+		var id := str(boss.h2.acts()[boss.h2.act["i"]]["id"])
+		for w in _B89_BLOWS.get(id, []):
+			if float(boss.h2.act["t"]) >= float(w[0]) and float(boss.h2.act["t"]) <= float(w[1]) + 0.05:
+				return id
+	return "another (one he called up, one of the floor's)"
+
+
+## The moments of each one's moves to picture, by name: each pictured the first time it holds.
+func _b89_moments(boss: Monster, P: Perils) -> Dictionary:
+	var acting := func(id: String, t0: float, t1: float) -> Callable:
+		return func() -> bool:
+			var a = boss.h2.act
+			return a != null and boss.h2.acts()[a["i"]]["id"] == id and float(a["t"]) >= t0 and float(a["t"]) <= t1
+	var copy := func(which: int, t0: float, t1: float) -> Callable:
+		return func() -> bool:
+			for p in P.list:
+				if p["kind"] == "a1" and p["a1"] == "cantor:copy" and int(p["a"]) == which and float(p["t"]) - float(p["d"]) >= t0 and float(p["t"]) - float(p["d"]) <= t1:
+					return true
+			return false
+	var has := func(name: String, ok: Callable) -> Callable:
+		return func() -> bool:
+			for p in P.list:
+				if p["kind"] == "a1" and p["a1"] == name and ok.call(p):
+					return true
+			return false
+	if boss.kind == "cantor":
+		return {
+			"strike_held": acting.call("cantor:strike", 0.7, 0.97), "strike_blow": acting.call("cantor:strike", 1.0, 1.12),
+			"strike_echo_glows": acting.call("cantor:strike", 1.2, 1.4),
+			"shout_marked": acting.call("cantor:shout", 0.6, 0.95), "shout_out": acting.call("cantor:shout", 1.15, 1.4), "shout_back": acting.call("cantor:shout", 1.6, 1.85),
+			"copies_tear": acting.call("cantor:copies", 0.9, 1.4),
+			"copies_stand": has.call("cantor:copy", func(p): return float(p["t"]) < float(p["d"])),
+			"copy_strike": copy.call(0, 0.98, 1.3), "copy_shout": copy.call(1, 1.2, 1.6), "copy_rockfall": copy.call(2, 1.45, 1.75),
+			"copy_rings_out": has.call("cantor:copy", func(p): return float(p["t"]) > float(p["dur"]) - 0.25),
+			"rockfall_sings": acting.call("cantor:rockfall", 0.95, 1.25), "rocks_fall": acting.call("cantor:rockfall", 1.45, 1.62),
+			"rubble": acting.call("cantor:rockfall", 2.05, 2.4),
+		}
+	var wall := func(k: float, t0: float) -> Callable:
+		return has.call("stag:wall", func(p): return absf(float(p["c"]) - k) < 0.01 and float(p["t"]) - float(p["hit"]) >= t0)
+	return {
+		"bounds": func() -> bool: return boss.h2.act == null and boss.h2.mode == "walk" and boss.h2.gt > 0.3,
+		"gore_marked": acting.call("stag:gore", 0.55, 0.85), "gore_sweep": acting.call("stag:gore", 0.93, 1.15),
+		"stares": acting.call("stag:stare", 0.4, 1.0),
+		"charge_lane": acting.call("stag:charge", 0.55, 0.95), "charge_runs": acting.call("stag:charge", 1.12, 1.4), "charge_crash": acting.call("stag:charge", 1.56, 1.9),
+		"bellows": acting.call("stag:bellow", 0.9, 1.25), "wolves_answer": acting.call("stag:bellow", 1.6, 2.2),
+		"close_marked": acting.call("stag:close", 0.7, 1.3), "close_bursts": acting.call("stag:close", 1.43, 1.55),
+		"wall_stands": wall.call(0.8, 1.3), "wall_inside_sinks": wall.call(0.6, 0.62), "wall_at_0.4": wall.call(0.4, 1.3),
+		"wall_splintered": has.call("stag:wall", func(p): return float(p["fy"]) >= 0.0 and float(p["t"]) - float(p["fy"]) >= 0.2 and float(p["t"]) - float(p["fy"]) <= 1.2),
+	}

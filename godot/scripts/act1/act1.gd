@@ -32,7 +32,9 @@ const POISON_TIME := 4.0
 ## atkSound, enemyRec)
 const ATK := {"qgolem": "atkStone", "rubbling": "atkStone", "firepot": "atkFirepot", "chanter": "atkHex", "vulture": "atkVulture", "crawler": "atkSting", "scorpion": "atkSting",
 	# (floors 9 and 10's, and floor 9's two side bosses: act1/wolf.gd, deer.gd, leech.gd, spawn.gd, drowned.gd, warchief.gd, mistwolf.gd)
-	"wolf": "atkBite", "mistwolf": "atkBite", "deer": "atkAntler", "leech": "atkLeech", "spawn": "atkLeech", "drowned": "atkSpirit", "warchief": "atkTroll"}
+	"wolf": "atkBite", "mistwolf": "atkBite", "deer": "atkAntler", "leech": "atkLeech", "spawn": "atkLeech", "drowned": "atkSpirit", "warchief": "atkTroll",
+	# (floor 9's boss; a boss's heard at 0.9; the Cantor has none)
+	"stag": "atkAntler"}
 ## (chanter.ts CHANTER.ward: the cult's kinds a chanter shields, within `r` tiles of it, each taking `share` less harm)
 const WARD := {"r": 4.5, "share": 0.4, "kinds": ["dagger", "cultist", "firepot", "minifm", "priest"]}
 
@@ -227,7 +229,7 @@ func start_act(m, A: Array, i: int, hero) -> void:
 	var named: String = str(a["id"]).replace(":", "_")
 	m.mgr.used[named] = m.mgr.used.get(named, 0) + 1
 	if ATK.has(m.kind):
-		m.mgr.voice(ATK[m.kind], 0.25, linear_to_db(0.6))
+		m.mgr.voice(ATK[m.kind], 0.25, linear_to_db(0.9 if m.boss else 0.6))
 	start(m, a, hero)
 
 

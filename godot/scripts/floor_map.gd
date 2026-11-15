@@ -60,9 +60,18 @@ var arena = null
 ## Fleshmancer's hall [{x, y}]; null elsewhere.
 var temple = null
 var heaps = null
+## THE DESCENT'S OPEN GROUND (floors 6 and down: game/act1_layout.ts Land; land.json beside the layout, tools/godot_export.ts):
+## {kind, areas: [{role, room, blob: {x, y, rx, ry, rot, wob, seed}}]}; null on a floor that has none. And A FENCE that is no
+## wall of its tiles (Level.fence: the Hollow Stag's wood closing in, act1/stag.gd): a Callable (x, y, r) -> bool, whether a body
+## of radius r may stand at (x, y); null, none. `fits` asks it first, as game.ts free does.
+var land = null
+var fence = null
 
 
 func _init(path: String) -> void:
+	var land_path := path.get_base_dir() + "/land.json"
+	if FileAccess.file_exists(land_path):
+		land = JSON.parse_string(FileAccess.get_file_as_string(land_path))
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
 	depth = int(data["depth"])
 	map_seed = int(data["seed"])
@@ -284,6 +293,9 @@ func may_overlap(hx: int, hy: int, tx: int, ty: int) -> bool:
 ## `flat`: the walls and the things alone, as if the floor were all of one height. `held`: a monster's step, which a shut
 ## door holds.
 func fits(x: float, y: float, r: float, flat := false, held := false) -> bool:
+	# (a fence that is no wall of its tiles: game.ts free)
+	if fence != null and not fence.call(x, y, r):
+		return false
 	var hx := floori(x)
 	var hy := floori(y)
 	var stepped := not flat and not step.is_empty()
@@ -414,3 +426,49 @@ func _floor_grid() -> PackedByteArray:
 	for i in tiles.size():
 		out[i] = 1 if tiles[i] == FLOOR else 0
 	return out
+
+
+# --- THE DESCENT'S OPEN GROUND (game/act1_layout.ts) ---
+
+## The area of the open ground with that role ('boss', 'start', 'lair', ...), {role, room, blob}; null if the floor has none.
+func area(role: String):
+	if land == null:
+		return null
+	for a in land.get("areas", []):
+		if a.get("role", "") == role:
+			return a
+	return null
+
+
+## blobDist: how far into a blob `b` ({x, y, rx, ry, rot, wob, seed}) the point `p` is: below 1 inside.
+static func blob_dist(b: Dictionary, p: Vector2) -> float:
+	var c := cos(float(b["rot"]))
+	var s := sin(float(b["rot"]))
+	var u := ((p.x - float(b["x"])) * c + (p.y - float(b["y"])) * s) / float(b["rx"])
+	var v := (-(p.x - float(b["x"])) * s + (p.y - float(b["y"])) * c) / float(b["ry"])
+	var d := Vector2(u, v).length()
+	var a := atan2(v, u)
+	var wob := float(b.get("wob", 0.0))
+	var k := 1.0 + wob * (_noise(cos(a) * 1.6 + float(b["seed"]), sin(a) * 1.6, 77) - 0.5) * 2.0 if wob != 0.0 else 1.0
+	return d / k
+
+
+## (act1_layout.ts noise: steady noise in 0..1, a cell a unit, for the edges' wander)
+static func _noise(x: float, y: float, k: int) -> float:
+	var xi := floori(x)
+	var yi := floori(y)
+	var fx := x - xi
+	var fy := y - yi
+	var u := fx * fx * (3.0 - 2.0 * fx)
+	var v := fy * fy * (3.0 - 2.0 * fy)
+	var a := _hash(xi, yi, k)
+	var b := _hash(xi + 1, yi, k)
+	var c := _hash(xi, yi + 1, k)
+	var d := _hash(xi + 1, yi + 1, k)
+	return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v
+
+
+static func _hash(x: int, y: int, k: int) -> float:
+	var h := (x * 374761393 + y * 668265263 + k * 2147483647) & 0xFFFFFFFF
+	h = ((h ^ (h >> 13)) * 1274126177) & 0xFFFFFFFF
+	return (h ^ (h >> 16)) / 4294967296.0

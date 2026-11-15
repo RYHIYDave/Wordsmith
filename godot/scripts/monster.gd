@@ -68,6 +68,8 @@ const BOSS_AI := {
 	"leech": preload("res://scripts/act1/leech.gd"), "spawn": preload("res://scripts/act1/spawn.gd"),
 	"drowned": preload("res://scripts/act1/drowned.gd"),
 	"warchief": preload("res://scripts/act1/warchief.gd"), "mistwolf": preload("res://scripts/act1/mistwolf.gd"),
+	# (THE BOSSES OF FLOORS 8 AND 9, each by his own rules: game/act1_rules/cantor.ts, stag.ts; scripts/act1/)
+	"cantor": preload("res://scripts/act1/cantor.gd"), "stag": preload("res://scripts/act1/stag.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -96,7 +98,9 @@ const ATK := {
 ## (sound_families.ts BOSS_VOICE: the bosses that roar: their roar as the fight begins, their hurt, their death. The Stoker's
 ## is in the game's table too and is never heard there: he is an elite, and these wait on a boss. The Warden, the Headsman
 ## and the Fleshmancer have none: the common roar.)
-const BOSS_VOICE := {"chained": "chained", "amalgam": "amalgam"}
+const BOSS_VOICE := {"chained": "chained", "amalgam": "amalgam",
+	# (the Hollow Stag, floor 9's, a beast who bellows; the Cantor has none: the common roar)
+	"stag": "stag"}
 
 var mgr  # monsters.gd
 var art: BakedFigure

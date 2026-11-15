@@ -40,10 +40,24 @@ const LANE: Array[Color] = [Color("#ff7aa8"), Color("#e0287a"), Color("#7a1058")
 const BOLT := {"white": Color("#fff6ff"), "pale": Color("#e6c8ff"), "violet": Color("#b070ff"), "deep": Color("#6a2cc0"), "pink": Color("#ff4f8a"), "rose": Color("#ff7aa8")}
 
 
+## (THE BOSSES OF FLOORS 8 AND 9: their marks are stepped and drawn by scripts of their own, by the first word of the mark's
+## name: act1/cantor_marks.gd, act1/stag_marks.gd)
+const OWN := {"cantor": preload("res://scripts/act1/cantor_marks.gd"), "stag": preload("res://scripts/act1/stag_marks.gd")}
+
+
+static func _own(p: Dictionary):
+	var n := str(p["a1"])
+	var k := n.find(":")
+	return OWN.get(n.substr(0, k)) if k > 0 else null
+
+
 ## A step of one (its clock has run on already); false: it is gone.
 static func step(P, p: Dictionary, _dt: float) -> bool:
 	if M9.mine(p):
 		return M9.step(P, p, _dt)
+	var own = _own(p)
+	if own != null:
+		return own.step(P, p, _dt)
 	var hero = P.hero
 	var h: Vector2 = hero.world
 	var t: float = p["t"]
@@ -151,6 +165,10 @@ static func stands(P, p: Dictionary) -> void:
 	if M9.mine(p):
 		M9.stands(P, p)
 		return
+	var own = _own(p)
+	if own != null:
+		own.stands(P, p)
+		return
 	var t: float = p["t"]
 	var at := Vector2(p["x"], p["y"])
 	match str(p["a1"]):
@@ -226,6 +244,10 @@ static func _hide(p: Dictionary, key: String) -> void:
 static func draw(P, p: Dictionary) -> void:
 	if M9.mine(p):
 		M9.draw(P, p)
+		return
+	var own = _own(p)
+	if own != null:
+		own.draw(P, p)
 		return
 	var t: float = p["t"]
 	var at := Vector2(p["x"], p["y"])
@@ -310,6 +332,8 @@ static func air(P, c: CanvasItem, p: Dictionary) -> void:
 	if M9.mine(p):
 		M9.air(P, c, p)
 		return
+	if _own(p) != null:
+		return
 	if p["a1"] != "chanter:chain" or int(p["done"]) == 0:
 		return
 	var t: float = p["t"]
@@ -339,6 +363,8 @@ static func glow(P, c: CanvasItem, p: Dictionary) -> void:
 static func spots(P, p: Dictionary) -> void:
 	if M9.mine(p):
 		M9.spots(P, p)
+		return
+	if _own(p) != null:
 		return
 	var t: float = p["t"]
 	var at := Vector2(p["x"], p["y"])

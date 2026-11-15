@@ -46,7 +46,19 @@ const LINES := {
 	"chained": ["HRRRNNGH!", "Mmmph... FREE...", "GRRRAAAH!"],
 	"amalgam": ["Join us.", "More bones. More.", "We are many. Be one of us."],
 	"fleshmancer": ["Your bones will serve.", "Fall, and rise for me.", "The cult thanks you for the flesh."],
+	# (ACT 1, THE DESCENT)
+	"unfinished": ["The chisel never finished me.", "Stone does not tire.", "Lie still. Be carved."],
+	"queen": ["SKRAAAAA!", "KRAAA-AAK!", "SKREEEEE!"],
+	"cantor": ["Hear the hymn.", "Your echo is mine now.", "Sing with me. Scream with me."],
+	"stag": ["HRRAAAWWNN!", "BRRRAAAWN!", "HAAARRRNN!"],
+	"eye": ["You are seen.", "Drown.", "The siege is my dream. Sleep in it."],
 }
+## (ACT 1, game.ts meetOutdoorBoss: out on the open ground there is no gate to fall behind the hero: the boss waits until he
+## comes into his ground, well inside its area (blobDist under 0.8) or within 6 tiles of him; then he is woken and says his
+## line as a boss whose gate has fallen does)
+const MEET_INSIDE := 0.8
+const MEET_NEAR := 6.0
+var _met := false
 
 var main  # main.gd
 var map: FloorMap
@@ -127,6 +139,16 @@ func _process(dt: float) -> void:
 			_show(i)
 	_levers()
 	_locks()
+	# (ACT 1: out on the open ground he waits, as behind a gate still up, until the hero comes into his ground: meetOutdoorBoss)
+	if map.land != null and alive and not _met:
+		var area = map.area("boss")
+		if hero.alive and ((area != null and FloorMap.blob_dist(area["blob"], hero.world) < MEET_INSIDE) or boss.world.distance_to(hero.world) <= MEET_NEAR):
+			_met = true
+			if boss.state == "sleep":
+				monsters.wake(boss)
+			_intro(boss)
+		else:
+			gate_up = true
 	if intro_t > 0.0:
 		intro_t = maxf(0.0, intro_t - dt)
 	if boss != null:
@@ -178,6 +200,7 @@ static func _word_name(w: String) -> String:
 ## of a room that locks, up again (he is outside it now).
 func reset() -> void:
 	intro_t = 0.0
+	_met = false
 	for d in map.doors:
 		if (d["kind"] == "bossgate" or d["kind"] == "trapgate") and int(d["want"]) == 0:
 			_raise(d)
