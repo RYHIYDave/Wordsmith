@@ -641,7 +641,8 @@ export class Painter {
     // (THE HEROES BAKED, render/baked.ts: where this hero in this place is baked, his pictures are taken from the bake, and
     // the worker is not asked to paint them; where they cannot be had, they are painted, as before)
     // (THE MAGE'S STAFF, art/staff_skins.ts: only the set of the staff she holds is kept, the others let go of first)
-    this.baked?.holdOnly(cls, place, false);
+    // (and the Brawler's wraps, art/wrap_skins.ts: his groups are the Veteran's, as he is taken)
+    this.baked?.holdOnly(cls, place, cls === 'brawler' && VETERAN.on);
     if (this.baked && this.baked.take(cls, place, cls === 'brawler' && VETERAN.on)) return true;
     if (!this.warmGround() || !this.groundLane || !this.groundLane.ready) return false;
     // (THE WARLOCK, as a man in a dungeon, his arm blazing, or the demon: all three in one order, the order he needs them in

@@ -103,6 +103,9 @@ test('4. on: the four unique wraps worn, their places and looks, his pictures pa
     assert.ok(!Object.keys(bakeGroups(false)).some((k) => k.startsWith('brawler-')), 'the Brawler of old wears none');
     const all = Object.values(g).flat().map(keyName);
     assert.equal(new Set(all).size, all.length, 'none twice');
+    // (his groups are the Veteran's: the painter lets his last set go as the Veteran, as it takes him; found in a real browser,
+    // 15 Nov 2026, his own set and the Last Round's both held while it asked as the Brawler of old)
+    assert.ok(/holdOnly\(cls, place, cls === 'brawler' && VETERAN\.on\)/.test(readFileSync('src/render/painter.ts', 'utf8')), 'the painter lets go as the Veteran');
   } finally {
     WRAP_SKINS.on = false;
   }
