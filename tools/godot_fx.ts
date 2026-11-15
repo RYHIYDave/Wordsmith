@@ -34,6 +34,12 @@
 //                bursting as its dead comes up (paintHeap: floor, and `before`).
 //   fm_hand_<k>  a hand of his dead bursting up out of a ring, of kind k (art/fleshmancer.ts makeRingHandArt: 24 frames at
 //                20 a second, layer `stand`; the game stands each at its own place round the ring).
+//   fm_death_floor  the Fleshmancer's death, brought up to par (art/fm2_fx.ts drawDeathFloor, the game's own painter, painted
+//                here onto a canvas of the game's pixels; render/act1_fx/fm.ts): his light bursting out over the floor in a
+//                ring, the floor cracking out from under him, lit, going dark. 3.4 s. fm_death_pillar: his power going up
+//                out of the pit in a pillar of his fire, and gone in motes (drawDeathPillar: layer `air`, over the dark;
+//                from 2.25 s into his death). `tables.fm_death_hands`: where and when each of the twelve hands of his dead
+//                comes up round him ([tiles east, tiles south, seconds, which hand]: deathHands).
 //   sigil_<r>    the cultist's fire sigil (art/action_f2_fx.ts sigilPainted; render/act1_fx/cultist.ts), 1.75 tiles round, and
 //                the Flame keybearer's great one (2.5): the ring traced round and filling on the floor, the pillar of fire and
 //                its embers, the floor burning on. Its time 0 is 1.04 s before the eruption (SIGIL.delay): what stands of it
@@ -82,6 +88,7 @@ import { SMOKE } from '../src/game/defs';
 import { FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, makeRingHandArt } from '../src/art/fleshmancer';
 import { RISE_MARK, paintHeap, paintRiseMark, paintSinkPit } from '../src/art/fleshmancer_action_fx';
 import { Px } from '../src/engine/px';
+import { FM_END, deathHands, drawDeathFloor, drawDeathPillar } from '../src/art/fm2_fx';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -268,6 +275,31 @@ for (let seed = 0; seed < 8; seed++) {
   }
 }
 
+// the Fleshmancer's death, brought up to par (art/fm2_fx.ts; render/act1_fx/fm.ts ground and glow: the game's own painters on
+// a canvas of the game's pixels, its floor point his)
+const tables: Record<string, unknown> = {};
+{
+  const W = 200;
+  const H = 120;
+  film('fm_death_floor', FM_END.long, {
+    floor: (k) => {
+      const g = new Dots(W, H);
+      drawDeathFloor(g as unknown as CanvasRenderingContext2D, (x, y) => [W / 2 + (x - y) * 16, H / 2 + (x + y) * 8] as const, 0, 0, k / FPS);
+      return rawPic(g, 2, W, H);
+    },
+  });
+  const PW = 160;
+  const PH = 300;
+  film('fm_death_pillar', FM_END.pillar[1] + 0.6, {
+    air: (k) => {
+      const g = new Dots(PW, PH);
+      drawDeathPillar(g as unknown as CanvasRenderingContext2D, PW / 2, PH - 10, k / FPS);
+      return rawPic(g, 2, PW, (PH - 10) * 2);
+    },
+  }, FM_END.pillar[0]);
+  tables.fm_death_hands = deathHands().map((q) => [q.dx, q.dy, q.at, q.j]);
+}
+
 // the cultist's fire sigil and the Flame keybearer's great one; the Shade's rime; the bone archer's arrow rain
 for (const r of [SIGIL.radius, KF.sigilR]) {
   const sig = (what: Layer, k: number): Sprite => toSprite(sigilPainted(k / FPS - SIGIL.delay, what === 'floor' ? 'floor' : 'air', r, what === 'floor' ? 'all' : what), null, SIGIL_CANVAS.ax, SIGIL_CANVAS.ay);
@@ -403,6 +435,6 @@ sheets.forEach((S, n) => {
   names.push(name);
   writeFileSync(`${OUT}/${name}`, png(SHEET_W, S.h, img));
 });
-writeFileSync(`${OUT}/fx.json`, JSON.stringify({ sheets: names, sets, kinds: KIND_SETS, pics: placed, films }));
+writeFileSync(`${OUT}/fx.json`, JSON.stringify({ sheets: names, sets, kinds: KIND_SETS, tables, pics: placed, films }));
 const frames = Object.values(films).reduce((n, f) => n + f.n * Object.keys(f.layers).length, 0);
 console.log(`fx: ${Object.keys(films).length} films, ${frames} frames, ${pics.length} pictures in ${sheets.length} sheet(s): ${sheets.map((S, n) => `${names[n]} ${SHEET_W}x${S.h}`).join(', ')}`);
