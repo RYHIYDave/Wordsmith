@@ -24,6 +24,8 @@ const FLAME0 := Color("#7a1058")
 const FLAME2 := Color("#ff4f8a")
 const FLAME3 := Color("#ffb070")
 var _air: Node2D
+## (the layer over the dark: what shines in it)
+var _glow: Node2D
 ## (the screen's own clock, for marks whose dots run: seconds)
 var _clock := 0.0
 ## (the Chained One's hook or ball in flight, a picture among what stands: by whose it is)
@@ -37,6 +39,8 @@ var sfx  # sfx.gd
 var list: Array = []
 ## (what stands on the floor, in the painter's order: a film's `behind` and `before` layers stand among the figures there)
 var stands: Node2D
+## (the place's look, whose dark the moves' lights are cut in: look.gd spot; null where a place has none)
+var look
 
 ## THE GAME'S OWN FILMS OF WHAT ITS MOVES MARK AND THROW UP (assets/fx: tools/godot_fx.ts, painted by the game's own painters
 ## as render/act1_fx asks for them): each {fps, n, layers: {floor, behind, before}: for each frame a picture, or -1}; a
@@ -137,7 +141,7 @@ func smoke(x: float, y: float, dmg: float, src: Object) -> void:
 func clear() -> void:
 	var keep: Array = []
 	for p in list:
-		if p["kind"] == "spear":
+		if p["kind"] == "spear" or p["kind"] == "fm_circle":
 			keep.append(p)
 		else:
 			_film_free(p)
@@ -156,6 +160,10 @@ func _ready() -> void:
 	_air.perils = self
 	_air.z_index = 40
 	add_child(_air)
+	_glow = _Glow.new()
+	_glow.perils = self
+	_glow.z_index = 52
+	add_child(_glow)
 	if _fx.is_empty():
 		_fx = {"films": {}, "pics": [], "sheets": []}
 		if FileAccess.file_exists(FX_DIR + "fx.json"):
@@ -456,6 +464,9 @@ func _fm_hands(p: Dictionary) -> void:
 			var j := roundi(float(a) / float(ring["step"]))
 			var key := i * 1000 + j
 			var f := floori((since - ((j * 7) % 5) * 0.012) * 20.0)
+			# (he is dead: every hand of his rings dragged back down at once)
+			if p.has("sunk"):
+				f = maxi(f, FM2_SINK_FRAME + floori((t - float(p["sunk"])) * 20.0))
 			var s = have.get(key)
 			if f < 0 or f >= 24:
 				if s != null and is_instance_valid(s):
@@ -730,6 +741,9 @@ func _process(dt: float) -> void:
 			"fm_shards", "fm_rings", "fm_fire", "fm_heap", "fm_pit", "fm_rise", "fm_glow":
 				# (THE FLESHMANCER'S: its own block below)
 				stays = _step_fm(p)
+			"fm_circle", "fm_death":
+				# (HIS LIGHT AND HIS DEATH, brought up to par: at the foot of this file)
+				stays = _fm2_stays(p)
 			"blast":
 				stays = p["t"] < 0.3
 			"ring":
@@ -781,6 +795,7 @@ func _process(dt: float) -> void:
 					stays = false
 		if stays:
 			keep.append(p)
+			_spots_of(p)
 			var fm := _film_of(p)
 			if not fm.is_empty() and has_film(fm[0]):
 				_film_stands(p, fm[0], fm[1], fm[2])
@@ -792,6 +807,8 @@ func _process(dt: float) -> void:
 				_kb_stands(p)
 			elif p["kind"] == "st_coals":
 				_st_stands(p)
+			elif p["kind"] == "fm_death":
+				_fm2_death_hands(p)
 		else:
 			_film_free(p)
 	list = keep
@@ -799,6 +816,8 @@ func _process(dt: float) -> void:
 	queue_redraw()
 	if _air != null:
 		_air.queue_redraw()
+	if _glow != null:
+		_glow.queue_redraw()
 
 
 func _on_a_row(p: Dictionary, at: Vector2) -> bool:
@@ -919,6 +938,9 @@ func _step_fm(p: Dictionary) -> bool:
 	var t: float = p["t"]
 	var at := Vector2(p["x"], p["y"])
 	var h: Vector2 = hero.world
+	# (he is dead: nothing of his harms the hero, and it is soon over: fm_died)
+	if p.get("dead", false):
+		return t < float(p["dur"])
 	match p["kind"]:
 		"fm_shards":
 			# (the second fan's aim, as it is drawn up: turned toward where the hero is then by whole steps of the first fan's,
@@ -1232,6 +1254,8 @@ func _draw() -> void:
 			"fm_shards", "fm_rings", "fm_fire", "fm_heap", "fm_pit", "fm_rise", "fm_glow":
 				# (THE FLESHMANCER'S: its own block below)
 				_draw_fm(p)
+			"fm_circle", "fm_death":
+				_draw_fm2(p)
 			"lane":
 				_lane_at(p["a"], p["b"], p["half"], clampf(p["t"] / p["dur"], 0.0, 1.0), clampf(p["gone"], 0.0, 1.0))
 			"aim":
@@ -2710,3 +2734,250 @@ func _draw_st_blast(t: float, k: int, o: Vector2) -> void:
 	_st_arc(k, o, maxf(ST.BLAST["r0"], front - ST.BLAST["deep"] * 0.8), 0.0, 360.0, Color(ST_SMOKE, 0.6 * thin), 4.0)
 	_st_arc(k, o, front, 0.0, 360.0, Color(ST_FLAME, thin), 6.0)
 	_st_arc(k, o, front, 0.0, 360.0, Color(ST_WHITE, thin), 2.0)
+
+
+# =====================================================================================================================
+# THE FLESHMANCER BROUGHT UP TO PAR (the game's FLESH2, art/fm2_switch.ts, on at his yes of 14 Nov 2026; art/fm2_fx.ts,
+# render/act1_fx/fm.ts, game/bosses.ts died): HIS LIGHT ABOUT HIM AND HIS DEATH.
+#   fm_circle  his ritual circle under him wherever he glides (not while he is gone under the floor): its two rings, its
+#              seven runes turning, his pink light pooled in it; and his power rising off him in motes, over the dark.
+#              Kept while he lives (a fallen hero's coming back does not clear it away).
+#   fm_death   as he falls: his light bursts out over the floor in a ring and the floor cracks out from under him, lit,
+#              going dark (the game's own film, fm_death_floor); twelve hands of his dead burst up round him (the game's
+#              own hands) as his own pictures drag him under; then his power goes up out of the pit in a pillar of his fire
+#              and is gone in motes (fm_death_pillar, over the dark).
+# And from the moment he is dead nothing of his harms the hero: what he had sent out is marked dead and is over in 0.6 s,
+# his rings' hands dragged back down at once (fm_died).
+# The game draws his circle and his motes straight onto its own pixels each frame, by the screen's clock: so are they
+# here (drawCircle, drawPowerMotes), with the game's own noise (art/kit.ts hash). Their light in the dark (the game's
+# `spot`) is not in the Godot version yet.
+
+## (art/mkit.ts FLAME, his pink and gold, dark to light)
+const FM2_FLAME: Array[Color] = [Color("#7a1058"), Color("#c0206a"), Color("#ff4f8a"), Color("#ffb070"), Color("#fff0a0")]
+## (art/fm2_fx.ts CIRCLE; RUNES, each three across and four down)
+const FM2_CIRCLE := {"r": 1.15, "runes": 7}
+const FM2_RUNES: Array[String] = ["010111010010", "101010101010", "111001010100", "100110101011", "011100110001", "110011100110", "001011101100"]
+## (FM_END.long: how long his death is drawn)
+const FM2_DEATH_LONG := 3.4
+## (render/act1_fx/fm.ts FM_SINK_FRAME: the frame of a ring's hand from which it is dragged back down: 0.72 s at 20 a second)
+const FM2_SINK_FRAME := 14
+
+
+## His circle and his motes, for as long as he lives: `src` his monster.gd (its `h2` his rules, fleshmancer.gd `lit`).
+func fm_circle(src: Object) -> void:
+	list.append({"kind": "fm_circle", "t": 0.0, "src": src})
+
+
+## HE IS DEAD (game/bosses.ts died): nothing of his harms the hero from now, his rings' hands sink with him and what he
+## had sent out is over in 0.6 s (a mini fleshmancer's fire is its own); and his death is drawn where he fell.
+func fm_died(src: Object) -> void:
+	for p in list:
+		if p["kind"] in ["fm_shards", "fm_rings", "fm_fire", "fm_heap", "fm_pit", "fm_rise"] and not p.get("mini", false):
+			p["dead"] = true
+			if p["kind"] == "fm_rings":
+				p["sunk"] = p["t"]
+			p["dur"] = minf(float(p["dur"]), float(p["t"]) + 0.6)
+	list.append({"kind": "fm_death", "x": src.world.x, "y": src.world.y, "t": 0.0, "dur": FM2_DEATH_LONG})
+
+
+func _fm2_stays(p: Dictionary) -> bool:
+	if p["kind"] == "fm_death":
+		return float(p["t"]) < float(p["dur"])
+	var m = p["src"]
+	return is_instance_valid(m) and not m.dead
+
+
+## Whether he is there to be lit (render/act1_fx/fm.ts lit): alive, and not gone down under the floor in his teleport.
+func _fm2_lit(p: Dictionary) -> bool:
+	var m = p["src"]
+	return is_instance_valid(m) and not m.dead and m.visible and m.h2 != null and m.h2.has_method("lit") and m.h2.lit(m)
+
+
+## What of them lies on the floor, under the figures.
+func _draw_fm2(p: Dictionary) -> void:
+	if p["kind"] == "fm_death":
+		if has_film("fm_death_floor"):
+			_film_floor("fm_death_floor", p["t"], Vector2(p["x"], p["y"]))
+	elif _fm2_lit(p):
+		_fm2_circle(p["src"].world, _clock)
+
+
+## What of them shines over the dark (render/act1_fx/fm.ts glow): his power rising off him; the pillar of it as he dies.
+func _draw_glow(c: CanvasItem) -> void:
+	for p in list:
+		if p["kind"] == "fm_circle":
+			if _fm2_lit(p):
+				var w: Vector2 = p["src"].world
+				_fm2_motes(c, Iso.to_screen(w.x, w.y) / 2.0, 38.0, _clock)
+		elif p["kind"] == "fm_death" and has_film("fm_death_pillar"):
+			_film_pic(c, "fm_death_pillar", "air", _film_frame("fm_death_pillar", p["t"]), Iso.to_screen(p["x"], p["y"]))
+
+
+## The layer over the dark (see _draw_glow).
+class _Glow extends Node2D:
+	var perils
+
+	func _draw() -> void:
+		perils._draw_glow(self)
+
+
+## The hands of his dead bursting up all round him as he dies, each among the figures at its own depth (the game's own
+## hands, the same films as his rings': 24 frames at 20 a second; where and when each comes up: art/fm2_fx.ts deathHands,
+## kept in the films' tables).
+func _fm2_death_hands(p: Dictionary) -> void:
+	if stands == null or not has_film("fm_hand_0"):
+		return
+	var rows: Array = _fx.get("tables", {}).get("fm_death_hands", [])
+	var pool: Array = p.get("fx_pool", [])
+	p["fx_pool"] = pool
+	while pool.size() < rows.size():
+		pool.append(_film_sprite())
+	for i in rows.size():
+		var q: Array = rows[i]
+		var f := floori((float(p["t"]) - float(q[2])) * 20.0)
+		var on := Vector2(float(p["x"]) + float(q[0]), float(p["y"]) + float(q[1]))
+		var pi := -1
+		if f >= 0 and f < 24:
+			pi = int(_fx["films"]["fm_hand_%d" % (int(q[3]) % 3)]["layers"]["stand"][f])
+		_film_set(pool[i], pi, on, on.x + on.y)
+
+
+## One of the game's pixels laid (art/fm2_fx.ts dot): at (x, y) game pixels, rounded as the game rounds, `w` by `h`.
+func _fm2_dot(c: CanvasItem, x: float, y: float, col: Color, a: float, w := 1, h := 1) -> void:
+	c.draw_rect(Rect2(floorf(x + 0.5) * 2.0, floorf(y + 0.5) * 2.0, w * 2.0, h * 2.0), Color(col, a))
+
+
+## HIS CIRCLE under him at `o`, by the clock `t` (drawCircle): his light pooled in it, a dither thicker in the middle; its
+## two rings, the outer burning and turning one way, the inner dim and turning the other, both flickering; its runes
+## between them, turning slowly.
+func _fm2_circle(o: Vector2, t: float) -> void:
+	var R: float = FM2_CIRCLE["r"]
+	var beat := 0.75 + 0.25 * sin(t * 3.2)
+	for i in 90:
+		var a := _hash(i, 1, 6101) * TAU + t * 0.2
+		var d := sqrt(_hash(i, 2, 6101)) * R * 0.95
+		var q := Iso.to_screen(o.x + cos(a) * d, o.y + sin(a) * d) / 2.0
+		_fm2_dot(self, q.x, q.y, FM2_FLAME[1], 0.35 * beat * (1.0 - d / R), 2, 1)
+	for ring in [[R, FM2_FLAME[2], 0.75, t * 0.35], [R * 0.72, FM2_FLAME[1], 0.55, -t * 0.5]]:
+		var r: float = ring[0]
+		var n := roundi(r * 46.0)
+		for i in n:
+			if _hash(i, floori(t * 6.0), 6102) < 0.12:
+				continue
+			var a := float(i) / n * TAU + float(ring[3])
+			var q := Iso.to_screen(o.x + cos(a) * r, o.y + sin(a) * r) / 2.0
+			_fm2_dot(self, q.x, q.y, ring[1], float(ring[2]) * beat)
+	var runes: int = FM2_CIRCLE["runes"]
+	for k in runes:
+		var a := float(k) / runes * TAU + t * 0.35
+		var q := Iso.to_screen(o.x + cos(a) * R * 0.86, o.y + sin(a) * R * 0.86) / 2.0
+		var rune: String = FM2_RUNES[k % FM2_RUNES.size()]
+		for j in 12:
+			if rune[j] == "1":
+				_fm2_dot(self, q.x - 2.0 + (j % 3), q.y - 2.0 + (j / 3), FM2_FLAME[3] if j % 2 == 1 else FM2_FLAME[2], 0.85 * beat)
+
+
+## HIS POWER RISING OFF HIM in motes (drawPowerMotes): `s` his floor point (game pixels), `tall` how tall he is there.
+func _fm2_motes(c: CanvasItem, s: Vector2, tall: float, t: float) -> void:
+	for i in 16:
+		var life := fposmod(t * (0.4 + 0.3 * _hash(i, 1, 6103)) + _hash(i, 2, 6103), 1.0)
+		var a := _hash(i, 3, 6103) * TAU
+		var r := 6.0 + 10.0 * _hash(i, 4, 6103)
+		_fm2_dot(c, s.x + cos(a + life * 2.0) * r, s.y - 4.0 - life * (tall + 14.0) + sin(a) * r * 0.4, FM2_FLAME[3] if i % 4 == 0 else FM2_FLAME[2], sin(PI * life) * 0.9)
+
+
+## The game's own noise (art/kit.ts hash): a steady number from 0 to 1 out of three whole ones, the very same as the game's
+## (its sums are of 32 bits: Math.imul).
+static func _hash(x: int, y: int, k := 0) -> float:
+	var h := (_imul(x, 374761393) + _imul(y, 668265263) + _imul(k, 2147483647)) & 0xffffffff
+	h = _imul(h ^ (h >> 13), 1274126177)
+	return float(h ^ (h >> 16)) / 4294967296.0
+
+
+static func _imul(a: int, b: int) -> int:
+	a &= 0xffffffff
+	b &= 0xffffffff
+	return ((a & 0xffff) * b + ((((a >> 16) * b) & 0xffff) << 16)) & 0xffffffff
+
+
+# =====================================================================================================================
+# THE LIGHTS THE MOVES THROW IN THE DARK (the game's `c.spot`, as render/act1_fx gives them): a mark that shines cuts a
+# hole in the place's dark round itself, afresh every frame (look.gd spot). Game pixels on the screen.
+
+## A place on the floor as the screen has it, game pixels.
+func _px(w: Vector2) -> Vector2:
+	return Iso.to_screen(w.x, w.y) / 2.0
+
+
+func _spots_of(p: Dictionary) -> void:
+	if look == null:
+		return
+	var t: float = p["t"]
+	match p["kind"]:
+		"fm_circle":
+			# (his circle, lighting him: art/fm2_fx.ts drawCircle)
+			if _fm2_lit(p):
+				look.spot(_px(p["src"].world) + Vector2(0, -14), 64.0, 0.5 * (0.75 + 0.25 * sin(_clock * 3.2)))
+		"fm_death":
+			# (his light bursting out; the pillar of his power; each hand of his dead as it bursts up: drawDeathFloor,
+			# drawDeathPillar, render/act1_fx/fm.ts)
+			var s := _px(Vector2(p["x"], p["y"]))
+			var k := (t - 0.08) / (0.6 - 0.08)
+			if k >= 0.0 and k <= 1.0:
+				look.spot(s, 60.0 + 120.0 * k, 0.9 * (1.0 - k))
+			var u := (t - 2.25) / (3.3 - 2.25)
+			if u >= 0.0 and t <= 3.3 + 0.6:
+				var c := clampf((u - 0.45) / 0.55, 0.0, 1.0)
+				var fade := 1.0 - c * c * (3.0 - 2.0 * c)
+				if fade > 0.01:
+					look.spot(s + Vector2(0, -(1.0 - pow(1.0 - clampf(u / 0.25, 0.0, 1.0), 3.0)) * 190.0 * 0.5), 90.0, 0.8 * fade)
+					look.spot(s, 70.0, 0.6 * fade)
+				if u <= 1.0:
+					look.spot(s + Vector2(0, -60), 110.0, 0.9 * (1.0 - u))
+					look.spot(s, 80.0, 0.7 * (1.0 - u))
+			for q in _fx.get("tables", {}).get("fm_death_hands", []):
+				var f := floori((t - float(q[2])) * 20.0)
+				if f >= 0 and f < 6:
+					look.spot(_px(Vector2(float(p["x"]) + float(q[0]), float(p["y"]) + float(q[1]))) + Vector2(0, -10), 24.0, 0.5)
+		"fm_rings":
+			# (each hand of his rings as it bursts up)
+			var radii: Array = FM.RINGS["radii"]
+			for i in radii.size():
+				var since := t - FM.ring_burst(i)
+				if since < 0.0 or since > 0.4:
+					continue
+				var ring: Dictionary = FM.ring_hands(i)
+				for a in ring["hands"]:
+					var j := roundi(float(a) / float(ring["step"]))
+					var f := floori((since - ((j * 7) % 5) * 0.012) * 20.0)
+					if f >= 0 and f < 6 and not p.has("sunk"):
+						look.spot(_px(Vector2(p["x"], p["y"]) + Vector2(cos(float(p["aim"]) + a), sin(float(p["aim"]) + a)) * float(radii[i])) + Vector2(0, -10), 22.0, 0.5)
+		"fm_fire":
+			# (his fire's light, while it pours)
+			var mini: bool = p["mini"]
+			if t < (2.6 if mini else 4.0) and not p.get("dead", false):
+				look.spot(_px(Vector2(p["x"], p["y"])) + Vector2(0, -10), 50.0 if mini else 110.0, 0.6)
+		"kb_knife", "kb_ball":
+			# (the knife's glint and a ball of fire's light as they fly; brighter and going out where they end:
+			# render/act1_fx/keybearers.ts)
+			var knife: bool = p["kind"] == "kb_knife"
+			var s := _px(Vector2(p["x"], p["y"])) + Vector2(0, -float(p["high"]))
+			if not p["done"]:
+				look.spot(s, 10.0 if knife else 22.0, 0.35 if knife else 0.6)
+			else:
+				var left := 1.0 - minf(1.0, (t - float(p["hit"])) / (0.18 if knife else float(KBS.BALL["burst"])))
+				if left > 0.0:
+					look.spot(s, 14.0 if knife else 30.0, (0.6 if knife else 0.7) * left)
+		"kb_ring":
+			var r := KBS.Kit.ring_at(t)
+			var end: float = KBS.RING["to"]
+			var dying := 1.0 - minf(1.0, (t - (end - float(KBS.RING["from"])) / float(KBS.RING["speed"])) / float(KBS.RING["fade"])) if r >= end else 1.0
+			if dying > 0.0:
+				look.spot(_px(Vector2(p["x"], p["y"])), 40.0 + 30.0 * r, 0.35 * dying)
+		"st_coals":
+			# (each of the Stoker's coals in the air: render/act1_fx/stoker.ts air)
+			var since := t - ST.COALS_HIT
+			if since >= 0.0:
+				for i in int(ST.COALS["n"]):
+					if since <= ST.coal_lands(i):
+						look.spot(_st_coal(p["frame"], Vector2(p["x"], p["y"]), ST.coal_at(i, since, p["aim"])) / 2.0, 14.0, 0.4)

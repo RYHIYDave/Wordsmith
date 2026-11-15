@@ -286,6 +286,7 @@ func _build(where: String, arrive: String) -> void:
 	monsters.loot = loot
 	perils.hero = hero
 	perils.sfx = sfx
+	perils.look = look if looked else null
 	_place.add_child(monsters)
 	if where != "town":
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
@@ -2093,8 +2094,33 @@ func _boss_shots(h: Hero, dir: String) -> void:
 			h.world = _spot_near(boss.world, 5.0, boss.world)
 	print("BOSS floor %d (%s, %s): moves made in %.0f s: %s; his life %.0f of %.0f; the hero's %.0f" % [n, boss.kind, boss.title, t, _monsters.used, boss.life, boss.max_life, h.life])
 	boss.waits = false
+	# (floor 5: he is struck dead in the middle of what he has sent out, the hero standing in it: nothing of his may harm
+	# him after; and his death is pictured: his light bursting out, the hands of his dead, the pillar of his fire)
+	var marks_left := 0
+	if boss.kind == "fleshmancer":
+		for p in _monsters.perils.list:
+			if str(p["kind"]).begins_with("fm_") and not p.get("mini", false):
+				marks_left += 1
+	h.unhurt = false
+	h.life = h.max_life
 	boss.hurt(1e9)
-	await _wait(1.6)
+	if boss.kind == "fleshmancer":
+		var harmed := 0
+		var shown := 0.0
+		for q in [[0.35, "96_death_burst"], [0.6, "97_death_hands"], [1.75, "98_death_pillar"]]:
+			var w := 0.0
+			while w < float(q[0]):
+				await get_tree().process_frame
+				w += get_process_delta_time()
+				if h.life < h.max_life:
+					harmed += 1
+					h.life = h.max_life
+			shown += float(q[0])
+			await _snap(tag + "%s.png" % q[1])
+		print("BOSS floor 5: struck dead with %d of his marks out; the hero harmed in %d frames after; his death pictured to %.2f s" % [marks_left, harmed, shown])
+		await _wait(1.0)
+	else:
+		await _wait(1.6)
 	await _snap(tag + "99_fallen.png")
 	print("BOSS floor %d: dead %s" % [n, boss.dead])
 

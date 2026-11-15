@@ -79,6 +79,11 @@ var _t := 0.0
 var _add: CanvasItemMaterial
 var _dark: Sprite2D
 var _hero: Node2D
+## (the moves' lights in the dark this frame: where, picture pixels; how wide and how strong: spot)
+const SPOTS_MOST := 96
+var _spots_at := PackedVector2Array()
+var _spots_rs := PackedVector2Array()
+var _spots_were := 0
 var _doors: Array = []  # for each door: {steps, sprites, shown}
 var _props := {}  # a chest's, barrel's or urn's place in the level's props -> {node, open, broken}
 var _under := {}  # a place the stairwell may open -> the sprites of what lies there (gone down it as it opens)
@@ -504,8 +509,36 @@ func _pic_on(s: Sprite2D, key: String) -> void:
 	s.offset = -p["anchor"]
 
 
+## THE MOVES' LIGHTS IN THE DARK (the game's `c.spot`, render.ts spot, as render/act1_fx gives them): a hole cut in the dark
+## for this frame round a point of the screen (`at`, game pixels), `r` across its half and 0.62 of that up and down, as strong
+## as `a`. Asked for afresh every frame by whatever shines (perils.gd); no more than SPOTS_MOST at once.
+func spot(at: Vector2, r: float, a: float) -> void:
+	if _dark == null or a <= 0.0 or r <= 0.0 or _spots_at.size() >= SPOTS_MOST:
+		return
+	_spots_at.append(at * 2.0)
+	_spots_rs.append(Vector2(r * 2.0, minf(a, 1.0)))
+
+
+## The frame's spots handed to the dark, and the list begun again.
+func _send_spots() -> void:
+	if _dark == null:
+		return
+	var n := _spots_at.size()
+	if n > 0 or _spots_were > 0:
+		_spots_at.resize(SPOTS_MOST)
+		_spots_rs.resize(SPOTS_MOST)
+		var m: ShaderMaterial = _dark.material
+		m.set_shader_parameter("spot_n", n)
+		m.set_shader_parameter("spot_at", _spots_at)
+		m.set_shader_parameter("spot_rs", _spots_rs)
+	_spots_were = n
+	_spots_at = PackedVector2Array()
+	_spots_rs = PackedVector2Array()
+
+
 func _process(dt: float) -> void:
 	_t += dt
+	_send_spots()
 	if _format == 2:
 		_run2()
 		_step_plays(dt)
@@ -562,6 +595,9 @@ uniform float lift = 0.0;
 uniform vec2 l0;
 uniform vec2 l1;
 uniform vec2 l2;
+uniform int spot_n = 0;
+uniform vec2 spot_at[96];
+uniform vec2 spot_rs[96];
 void fragment() {
 	vec2 world = origin + UV * extent;
 	vec2 d = (world - hero) / vec2(pool, pool * 0.62);
@@ -575,6 +611,14 @@ void fragment() {
 		if (world.y <= ly) {
 			a *= 1.0 - lift;
 		}
+	}
+	// (the moves' lights: each a hole round its point, as the lights of the place are cut)
+	for (int i = 0; i < 96; i++) {
+		if (i >= spot_n) {
+			break;
+		}
+		vec2 q = (world - spot_at[i]) / vec2(spot_rs[i].x, spot_rs[i].x * 0.62);
+		a *= 1.0 - spot_rs[i].y * (1.0 - smoothstep(0.3, 1.0, clamp(length(q), 0.0, 1.0)));
 	}
 	COLOR = vec4(c.rgb, a);
 }

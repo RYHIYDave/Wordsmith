@@ -140,6 +140,9 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	_moves = MM.moves_of(kind, champion)
 	if BOSS_AI.has(kind):
 		h2 = BOSS_AI[kind].new()
+		# (what one with rules of its own has about it from the first, before it wakes: the Fleshmancer's circle)
+		if h2.has_method("begun"):
+			h2.begun(self)
 
 
 ## Called up out of the ground (the Warden's dead): `secs` till it is out.

@@ -139,6 +139,13 @@ var _coming: Array = []
 
 
 ## A step of him, awake (monster.gd step hands him here).
+## BROUGHT UP TO PAR (the game's FLESH2): his ritual circle under him and his power rising off him, from the first and for
+## as long as he lives (perils.gd fm_circle).
+func begun(m) -> void:
+	if m.mgr != null and m.mgr.perils != null:
+		m.mgr.perils.fm_circle(m)
+
+
 func step(m, dt: float, hero) -> void:
 	_clock += dt
 	_come_up(m, dt, hero)
@@ -379,11 +386,23 @@ func reachable(_m) -> bool:
 	return not ((act["i"] == BLINK_ACT and act["t"] >= FM2["gone"]) or (act["i"] == RISE_ACT and act["t"] < FM2["up"]))
 
 
-## died: THE DEAD HE RAISED FALL WITH HIM: they were up by his will alone.
+## died: THE DEAD HE RAISED FALL WITH HIM: they were up by his will alone. And, brought up to par (the game's FLESH2,
+## game/bosses.ts died): nothing of his harms the hero once he is dead, and his death is drawn (perils.gd fm_died).
 func died(m) -> void:
 	m.modulate.a = 1.0
 	_coming.clear()
 	fall_with(m)
+	m.mgr.perils.fm_died(m)
+
+
+## Whether he is there to be lit (render/act1_fx/fm.ts lit): not gone down under the floor in his teleport (from 0.3 s
+## into his going, until he is up again).
+func lit(_m) -> bool:
+	if _rise_next:
+		return false
+	if act == null:
+		return true
+	return not ((act["i"] == BLINK_ACT and act["t"] > 0.3) or (act["i"] == RISE_ACT and act["t"] < FM2["up"]))
 
 
 # --- raising the dead ---

@@ -480,6 +480,9 @@ class Gear extends Node2D:
 			mgr.quest_item.emit("gear", at)
 			queue_free()
 			return
+		# (lying, its light in the dark round it: render/act1_fx/stoker.ts gear)
+		if t >= DIES_LONG and mgr.perils != null and mgr.perils.look != null:
+			mgr.perils.look.spot(Iso.to_screen(at.x, at.y) / 2.0, 16.0, 0.35)
 		queue_redraw()
 
 	func _draw() -> void:

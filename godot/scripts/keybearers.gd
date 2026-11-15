@@ -484,6 +484,9 @@ class TempleKey extends Node2D:
 			mgr.sfx.play("gold", linear_to_db(0.9))
 		var on := _on_floor()
 		position = Iso.to_screen(on.x, on.y)
+		# (lying, its light in the dark round it, so that it is seen: render/act1_fx/keybearers.ts)
+		if t >= fall and mgr.perils != null and mgr.perils.look != null:
+			mgr.perils.look.spot(Iso.to_screen(at.x, at.y) / 2.0 + Vector2(0, -2), 20.0 + 4.0 * sin(t * 3.0), 0.45)
 		queue_redraw()
 
 	## Over which place of the floor it is now (keyNow): from its bearer's hip to where it lies, as it falls.
