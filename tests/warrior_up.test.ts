@@ -13,7 +13,7 @@
 //   7. his hits and lengths as stated (the main chat's numbers), and Movement 9 in each blow: a held wind-up, a strike of two
 //      smeared frames;
 //   8. his eight sides, each a facing of its own, truly painted (art/warrior_up_art.ts wuFacing), each facing the way it is
-//      chosen for; his pig-faced helm's slit dark across his visor, its lip lit above it, from every side;
+//      chosen for; his hounskull bascinet's eye slits dark across its muzzle, their flanges lit above, from every side;
 //   9. HIS LEGS READ TRUE ON THE SCREEN (the owner, 6 Nov 2026: “Can you make sure his leg ratio is correct cause it seems like
 //      all these guys have long upper legs and short legs below the knee”): in every frame of his stances and of every pose he
 //      holds, from each of his eight sides, each leg whose shin is seen reads at least 1.05 times as long below the knee as above
@@ -466,7 +466,7 @@ test('8. eight facings, each truly painted: each facing the game may give him is
   }
 });
 
-test('8. his pig-faced helm: the slit dark across the top of his snout with its lip lit above it, from every side that shows his face', () => {
+test('8. his hounskull bascinet: its eye slits dark across the top of its muzzle with their flanges lit above them, from every side that shows his face', () => {
   const key = (c: string): string => rgba(c).slice(0, 3).join(',');
   const ink = key(INK);
   const lit = new Set([key(WU_STEEL[4]), key(WU_STEEL[3])]);
