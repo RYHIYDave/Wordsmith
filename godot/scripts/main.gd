@@ -31,6 +31,7 @@ const Inventory := preload("res://scripts/inventory.gd")
 const Minimap := preload("res://scripts/minimap.gd")
 const Temple := preload("res://scripts/temple.gd")
 const Furnace := preload("res://scripts/furnace.gd")
+const Fx := preload("res://scripts/fx.gd")
 const Town := preload("res://scripts/town.gd")
 const Guide := preload("res://scripts/guide.gd")
 const Look := preload("res://scripts/look.gd")
@@ -99,6 +100,8 @@ var sight: Sight
 var temple: Temple
 ## (floor 3's furnace, its crank and the fire in the Chained One's way: furnace.gd; null elsewhere)
 var furnace: Furnace
+## (what the fight shows of a blow and of a word: fx.gd; a place's own)
+var fx: Fx
 
 
 ## Which floor a place is (0: the town).
@@ -287,6 +290,13 @@ func _build(where: String, arrive: String) -> void:
 	perils.hero = hero
 	perils.sfx = sfx
 	perils.look = look if looked else null
+	# (what the fight shows of a blow and of a word: the rules tell it, fx.gd draws it. Over the floor and its marks, under
+	# what stands)
+	fx = Fx.new()
+	_place.add_child(fx)
+	_place.move_child(fx, perils.get_index() + 1)
+	hero.fx = fx
+	monsters.fx = fx
 	_place.add_child(monsters)
 	if where != "town":
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)

@@ -51,6 +51,8 @@ var map: FloorMap
 var art: BakedHero
 var sfx: Sfx
 var monsters  # monsters.gd
+## (what the fight shows of his blows and words: the rules tell it with fx.event, fx.gd draws it; null where a place has none)
+var fx
 var doors  # doors.gd, on a floor that has them (null in town)
 var props  # props.gd, on a floor that has chests, barrels or urns (null in town)
 var world := Vector2.ZERO

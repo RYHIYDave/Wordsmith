@@ -30,6 +30,8 @@ var sfx: Sfx
 var hero  # hero.gd
 var stands: Node2D
 var perils: Perils
+## (what the fight shows of a blow and of a word: fx.gd; the rules tell it with fx.event)
+var fx
 var loot  # loot.gd
 var list: Array[Monster] = []
 ## (shot mode: how many times each move was made)
