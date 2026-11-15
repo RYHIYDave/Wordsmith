@@ -195,6 +195,30 @@ through chat, so the art and sounds go into the project whole).
   - THE MOVES' LIGHTS IN THE DARK (`scripts/look.gd` spot; the game's `c.spot`): what shines cuts its light in the place's
     dark as it goes: the Fleshmancer's circle, his fire and his death, the hands of his dead, the keybearers' knife, balls
     and ring of fire, a key lying, the Stoker's coals in the air and his gear lying.
+- **THE WORDS: wordsmithing** (the cloud chat, 15 Nov 2026, at his pick that day, asked what to build next: “The words
+  (Recommended)”). The seven words a Warrior can come by on floors 1 to 5 (the prison's six, Power, Poison, Frost, Flame,
+  Lightning and Swift, and Heavy, the armourer's reward), in front of and behind each of his three moves.
+  - WHAT A MOVE BECOMES WITH ITS WORDS (`scripts/words.gd`; game/words.ts resolveSkill; its tables taken from the game by
+    `tools/godot_words.ts`): held against the game's own on 1671 loadouts, every number, name and line of text the same.
+    The slots open as the game opens them (`scripts/loadout.gd`): none until the wordsmith's ring is lit, one in front at
+    once, one behind from level 4, the seconds at 15 and 20; one damage word a side.
+  - WHAT THEY DO IN THE FIGHT (`scripts/hero.gd` hit_monster, `monster.gd`, `monsters.gd`, `wakes.gd`; game.ts strike,
+    hitMonster, landed, wake, updateZones): Power's harder, bigger blow and its splash, and behind, might that builds;
+    Flame's explosion and burning; Frost's burst, its chill and a second hit's freeze; Lightning jumping on from enemy to
+    enemy; Poison's doses; Swift's quicker blows and shorter waits, and behind, speed; Heavy's stun and slower blows; behind
+    an element, ground left burning, iced or storming; behind Poison, a venom cloud; behind Heavy, cracked ground that
+    staggers. Bosses are never frozen or stunned. Each held against the game's formula: `--only=words`, 36 cases.
+  - WHAT THE FIGHT SHOWS OF THEM (`scripts/fx.gd` and its `fx_*.gd`; render/fx.ts, wild.ts, words3.ts, with the game's
+    colours from `tools/godot_fxlooks.ts`): the swing's streak, a hit's sparks and number, the bursts, lightning out of the
+    sky, flames, ice, poison, a stun's stars, Heavy's weight, might and haste on him; burning, chilled, frozen and poisoned
+    monsters as the game shows them; the ground a move leaves, with what it sends up.
+  - HOW THEY ARE COME BY AND SET (`inventory.gd`, `hud.gd`, `loot.gd`, `town.gd`, `doors.gd`): the gear screen laid out as
+    the game's, each open move with its slots, a word set by pressing or dragging and taken out again, the game's refusals
+    in its own words, a move's card; every word's piece on the moves at the bottom of the screen; a monster that carries a
+    word gives it up where it falls (not on floor 1, nor before the ring is lit), taken by walking onto it; the fallen
+    wordsmith on floor 1 only (and later only for a hero who has not found him); any word burned into a piece of gear by
+    the game's own outcomes; THE ARMOURER'S QUEST: asked once the ring is lit, he wants floor 3's furnace put out and gives
+    HEAVY for it; the sealed doors of floors 2, 3 and 4 open to Power, Flame and Poison. `--only=wordsui`, 55 lines.
 - **The small map, the large map and the pause panel** (the cloud chat, 15 Nov 2026; `scripts/minimap.gd`; ui/hud.ts minimap
   and drawMap, ui/panels.ts drawPause): top right, the floor round him as he has seen it, a tile a pixel (in sight bright, seen
   before dim, wall dark), with the game's marks: the waypoint (bright once awake), the town's gate, floor 1's gate home, the
@@ -221,19 +245,17 @@ A controller: the left stick, RT, LT, A, B, X.
 
 ## Not in it yet
 
-The game's bursts and sparks (what flies up as a red circle or the Headsman's vault lands is a plain ring here, and a bone
-arrow and the Warden's bolts in flight are plain drawings: in the game these come from its general effects, render/fx.ts,
-which are not brought over; everything else the moves mark and throw up is the game's own, see above), the glow that burning things and some figures give off (the game adds it over them; here only the
+Melding words and the Meldstone (the wordsmith's second ask), words found from floor 6 down, the monsters' own words (what
+an elite's or a pack's words do to its blows on him, the rune over a carrier's head, the champions' rallying cry), what a red circle or the
+Headsman's vault sends up as it lands and a bone arrow and the Warden's bolts in flight (plain drawings: the game's
+general effects are brought over only for the words so far), the glow that burning things and some figures give off (the game adds it over them; here only the
 places' own lights glow, and the moves cut their light in the dark), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
-and blows; what a boss says is shown, not spoken), the armourer's
-quest and its word and the wordsmith's ask for the Meldstone (floor 3's furnace burns and is put out without them), the sealed
-doors of floors 3 and 4 (they want FIRE and POISON, words not in it yet), the monsters' words (floor 2's blue packs and leaders carry words that change what they do, and
-the champions' rallying cry needs them; here they fight without), the
+and blows; what a boss says is shown, not spoken), the
 Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: its
 gate in the back wall (barred on a new game, drawn as wall here), the stone floating from him to the slab, the letters
 swirling round the ring and its column of light, the wordsmith's words for sale, the stranger's gamble, the stash, the
-Lexicon, buying back, the town's own lighting and music; words other than Power, uniques, magic find, the game's own
+Lexicon, buying back, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
 breaks, what stands behind raised ground cut off by it, the rest of the heroes, menus, the title screen's music. The Colossus pictures are in, held back from Godot with `.gdignore` until they are wired in.
 
