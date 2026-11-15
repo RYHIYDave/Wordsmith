@@ -21,12 +21,16 @@ const MM := preload("res://scripts/monster_moves.gd")
 const Headsman := preload("res://scripts/headsman.gd")
 const Amalgam := preload("res://scripts/amalgam.gd")
 const Chained := preload("res://scripts/chained.gd")
+const Fleshmancer := preload("res://scripts/fleshmancer.gd")
+const MiniFm := preload("res://scripts/minifm.gd")
 ## THE BOSSES THAT FIGHT BY THEIR OWN RULES (game/bosses.ts BossRules), each a script of its own with `step(m, dt, hero)`, handed
 ## the monster every frame it is awake in place of the common rules below (and `died(m)`, if it has one, as it falls): by kind.
 const BOSS_AI := {
 	"headsman": Headsman,
 	"amalgam": Amalgam, "mite": Amalgam.Mite, "beast": Amalgam.Beast,
 	"chained": Chained,
+	"fleshmancer": Fleshmancer,
+	"minifm": MiniFm,
 }
 
 const AGGRO := 9.0
@@ -484,6 +488,9 @@ func hurt(dmg: float) -> void:
 			_not_yet_t = 0.7
 			_not_yet = 0.9
 		queue_redraw()
+		return
+	# (nor one whose own rules say nothing reaches it now: the Fleshmancer gone under the floor, game.ts damage, blinkedAway)
+	if h2 != null and h2.has_method("reachable") and not h2.reachable(self):
 		return
 	life -= dmg
 	_flash = 0.12

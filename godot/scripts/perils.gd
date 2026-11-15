@@ -136,6 +136,9 @@ func _process(dt: float) -> void:
 				if e > 0.0 and d.length() <= e:
 					hero.chill(0.12, MM.RIME["slow"])
 				stays = p["t"] < MM.RIME["lie"]
+			"fm_shards", "fm_rings", "fm_fire", "fm_heap", "fm_pit", "fm_rise", "fm_glow":
+				# (THE FLESHMANCER'S: its own block below)
+				stays = _step_fm(p)
 			"blast":
 				stays = p["t"] < 0.3
 			"rain":
@@ -220,6 +223,352 @@ func _room_at(x: float, y: float):
 	return null
 
 
+# =============================================================================================================================
+# THE FLESHMANCER'S, AND THE MINI FLESHMANCER'S FIRE (game/fm_action.ts stepFm; fleshmancer.gd, minifm.gd): what his moves,
+# done the action way, send out. Each has its own clock from his act's beginning (0 as it begins, unless said) and its harm
+# rolled once as the act begins. As in the game they go on by themselves once begun, whether he still stands or not. Their
+# numbers are his pictures' own, kept in fleshmancer.gd. Drawn as stand-ins for the art chat's painters
+# (art/fleshmancer_action_fx.ts, render/act1_fx/fm.ts), on the floor only: what of them would lie across a wall is left out
+# (his rules take no heed of walls: what strikes is as the game has it).
+#   fm_shards  his two fans of bone shards: drawn up out of the floor and hung before him, each its lane marked; flung at his
+#              hammer, 15 tiles a second out to 10 tiles; a hero within 0.3 of a flying shard is struck, once by each. `aim`
+#              the first fan's (taken as he begins), `aim2` the second's (taken as it is drawn up, in the first's gaps).
+#   fm_rings   his five rings of hands round where he stood: the cracks lit; rings 1, 3 and 5 burst up at his first slam, 2
+#              and 4 at his second; a hero within 0.5 of a hand as its ring comes up (and 0.3 s after) is struck, once a ring.
+#   fm_fire    his fire, or a mini fleshmancer's (`mini`): the stream whipped round, the floor left burning in lanes where it
+#              gouted; a hero in the stream, or in a lane burning, is burned every 0.22 s (in a lane, half as much).
+#   fm_heap    a bone heap of his hall shaking while he summons and bursting as its dead come up (drawn only).
+#   fm_pit     the pit of his dead under him as he is dragged down (drawn only).
+#   fm_rise    where he will rise, marked a second before he erupts; its 0 his eruption: a hero within 2 tiles of it then is
+#              struck and thrown back.
+#   fm_glow    his light on the floor where one of the dead he has called comes up (drawn only).
+
+const FM := preload("res://scripts/fleshmancer.gd")
+
+## (art/mkit.ts FLAME, the enemy's fire, hot and white-hot; bone; his dead's flesh, dark and lit; scorched stone)
+const FM_HOT := Color("#ffb070")
+const FM_WHITE := Color("#fff6e0")
+const FM_BONE := Color("#f2e8d4")
+const FM_FLESH := Color("#1c0a1e")
+const FM_FLESH_LIT := Color("#82306e")
+const FM_CHAR := Color("#170b14")
+## (art/fleshmancer.ts FM_HAND_FRAMES at FM_HAND_FPS: how long a ring's hands stand up out of the floor)
+const FM_HAND_TIME := 24.0 / 20.0
+
+
+func fm_shards(at: Vector2, aim: float, dmg: float) -> void:
+	list.append({"kind": "fm_shards", "x": at.x, "y": at.y, "t": 0.0, "dur": FM.FM2["lasts"]["shards"], "dmg": dmg, "aim": aim, "aim2": NAN, "struck": 0})
+
+
+func fm_rings(at: Vector2, aim: float, dmg: float) -> void:
+	list.append({"kind": "fm_rings", "x": at.x, "y": at.y, "t": 0.0, "dur": FM.FM2["lasts"]["rings"], "dmg": dmg, "aim": aim, "struck": 0})
+
+
+## `face`, `hand`: the way he faced as he began, and the hand he is drawn with (the stream turns to the left he is drawn with).
+func fm_fire(at: Vector2, face: Vector2, hand: int, dmg: float, mini: bool) -> void:
+	var dur: float = FM.FM2["lasts"]["mini" if mini else "fire"]
+	list.append({"kind": "fm_fire", "x": at.x, "y": at.y, "t": 0.0, "dur": dur, "dmg": dmg, "face": face, "hand": hand, "mini": mini, "last": -1.0})
+
+
+## `which`: which of the heaps he calls on it is (each bursts a little after the one before).
+func fm_heap(at: Vector2, which: int) -> void:
+	list.append({"kind": "fm_heap", "x": at.x, "y": at.y, "t": 0.0, "dur": FM.RAISE_LONG + 0.8, "which": which})
+
+
+func fm_pit(at: Vector2) -> void:
+	list.append({"kind": "fm_pit", "x": at.x, "y": at.y, "t": 0.0, "dur": FM.FM2["sink"]})
+
+
+## `before`: how long until he erupts there.
+func fm_rise(at: Vector2, before: float, dmg: float) -> void:
+	list.append({"kind": "fm_rise", "x": at.x, "y": at.y, "t": -before, "dur": 1.0, "dmg": dmg, "done": false})
+
+
+## `before`: how long until it begins; `secs`: how long it burns before the dead one stands.
+func fm_glow(at: Vector2, before: float, secs: float) -> void:
+	list.append({"kind": "fm_glow", "x": at.x, "y": at.y, "t": -before, "dur": secs + 0.3, "secs": secs})
+
+
+## A step of one of his perils (stepFm). False: it is over.
+func _step_fm(p: Dictionary) -> bool:
+	var t: float = p["t"]
+	var at := Vector2(p["x"], p["y"])
+	var h: Vector2 = hero.world
+	match p["kind"]:
+		"fm_shards":
+			# (the second fan's aim, as it is drawn up: turned toward where the hero is then by whole steps of the first fan's,
+			# so that it still hangs in the first one's gaps: who stood in a gap of the first is struck by the second)
+			if is_nan(p["aim2"]) and t >= FM.SHARD_DRAW[1][0]:
+				var step: float = FM.SHARDS["apart"] * PI / 180.0
+				var off: float = atan2(h.y - at.y, h.x - at.x) - float(p["aim"])
+				p["aim2"] = float(p["aim"]) + step * floorf(atan2(sin(off), cos(off)) / step + 0.5)
+			if t >= FM.SHARD_HITS[0]:
+				for s in FM.shards_now(t, p["aim"], p["aim2"]):
+					var bit: int = 1 << int(s["i"])
+					if s["state"] != "flying" or (int(p["struck"]) & bit) != 0:
+						continue
+					if h.distance_to(at + Vector2(s["x"], s["y"])) > FM.SHARDS["r"]:
+						continue
+					p["struck"] = int(p["struck"]) | bit
+					hero.hurt(p["dmg"])
+		"fm_rings":
+			for i in FM.RINGS["radii"].size():
+				var burst := FM.ring_burst(i)
+				if t < burst or t > burst + FM.FM2["handUp"] or (int(p["struck"]) & (1 << i)) != 0:
+					continue
+				if not FM.ring_strikes(i, h - at, p["aim"]):
+					continue
+				p["struck"] = int(p["struck"]) | (1 << i)
+				hero.hurt(p["dmg"])
+				hero.kick(1.5)
+		"fm_fire":
+			if t - float(p["last"]) >= FM.FM2["tick"]:
+				var rel := FM.from_figure(at, p["face"], p["hand"], h)
+				if FM.fire_strikes(t, rel.x, rel.y, p["mini"]):
+					p["last"] = t
+					hero.hurt(float(p["dmg"]) * (1.0 if FM.in_stream(t, rel.x, rel.y, p["mini"]) else float(FM.FM2["laneShare"])))
+		"fm_rise":
+			if not p["done"] and t >= 0.0:
+				p["done"] = true
+				if hero.alive and h.distance_to(at) <= FM.RISE_MARK["r"]:
+					hero.hurt(p["dmg"])
+					var way := h - at
+					hero.knock(way.normalized() if way.length() >= 0.01 else -hero.face, FM.HEAVY_KNOCK)
+				hero.kick(4.0)
+				sfx.play("slam", -2.0)
+	return t < float(p["dur"])
+
+
+## Is there floor at a place? (His stand-ins are drawn on the floor only, not across a wall into the dark beyond it. What
+## strikes goes by his rules alone, as in the game: his shards, rings and fire take no heed of walls.)
+func _fm_floor(at: Vector2) -> bool:
+	return map.open_at(floori(at.x), floori(at.y))
+
+
+## How far the floor runs unbroken from `at` the way `u`: from `from` tiles out, to `to` at most.
+func _fm_floor_to(at: Vector2, u: Vector2, from: float, to: float) -> float:
+	if not _fm_floor(at + u * from):
+		return from
+	var d := from
+	while d < to:
+		var next := minf(to, d + 0.25)
+		if not _fm_floor(at + u * next):
+			return d
+		d = next
+	return to
+
+
+func _draw_fm(p: Dictionary) -> void:
+	var t: float = p["t"]
+	var at := Vector2(p["x"], p["y"])
+	match p["kind"]:
+		"fm_shards":
+			_draw_fm_shards(p, t, at)
+		"fm_rings":
+			_draw_fm_rings(p, t, at)
+		"fm_fire":
+			_draw_fm_fire(p, t, at)
+		"fm_heap":
+			_draw_fm_heap(int(p["which"]), t, at)
+		"fm_pit":
+			var open: float = FM.smooth((t - FM.PIT["open"]) / 0.12) * (1.0 - FM.smooth((t - FM.PIT["shut"]) / 0.06))
+			_draw_fm_pit(at, FM.PIT["r"] * open)
+		"fm_rise":
+			_draw_fm_rise(t, at)
+		"fm_glow":
+			_draw_fm_glow(float(p["secs"]), t, at)
+
+
+## His shards: each one's lane on the floor while it hangs; the sliver of bone itself, lifted over its floor point and
+## pointing its way (drawn up point first, turning to it); a streak of his fire behind one that flies; a flash where it ends.
+func _draw_fm_shards(p: Dictionary, t: float, at: Vector2) -> void:
+	var hang: float = FM.SHARDS["hang_r"]
+	var lane: float = FM.SHARDS["lane"]
+	for s in FM.shards_now(t, p["aim"], p["aim2"]):
+		var state: String = s["state"]
+		var k: float = s["k"]
+		var way := Vector2(cos(s["a"]), sin(s["a"]))
+		var on := at + Vector2(s["x"], s["y"])
+		var foot := Iso.to_screen(on.x, on.y)
+		if not _fm_floor(on):
+			continue
+		if state == "burst":
+			draw_polyline(_ring(on.x, on.y, 0.15 + 0.5 * k, 16), Color(FM_HOT, 1.0 - k), 3.0)
+			continue
+		if state != "flying":
+			var a := at + way * (hang + 0.2)
+			var b := at + way * _fm_floor_to(at, way, hang + 0.2, lane)
+			draw_dashed_line(Iso.to_screen(a.x, a.y), Iso.to_screen(b.x, b.y), Color(ENEMY, 0.2 + 0.6 * k), 2.0, 8.0)
+		var tip := foot + Vector2(0.0, -float(s["z"]))
+		var dir := Iso.to_screen(way.x, way.y).normalized()
+		if state == "rising":
+			dir = dir.lerp(Vector2(0, -1), 1.0 - k).normalized()
+		draw_line(foot + Vector2(-6, 0), foot + Vector2(6, 0), Color(SHADOW, 0.55), 3.0)
+		if state == "flying":
+			draw_line(tip - dir * 58.0, tip - dir * 10.0, Color(ENEMY, 0.75), 5.0)
+			draw_line(tip - dir * 36.0, tip - dir * 10.0, Color(FM_HOT, 0.9), 3.0)
+		draw_line(tip - dir * 30.0, tip, FM_BONE, 4.0)
+		draw_line(tip - dir * 30.0, tip - dir * 25.0, ENEMY, 4.0)
+
+
+## His rings: each one's crack in the floor, its two gaps left dark, lit in his pink from when he rises (the first slam's
+## rings hot, the others dim until it), flashing as its hands come up, then dark, and gone; and the hands of his dead standing
+## up out of it for 1.2 s (they strike only as they come up: hot then).
+func _draw_fm_rings(p: Dictionary, t: float, at: Vector2) -> void:
+	var lit: float = FM.RINGS["lit"]
+	if t < lit:
+		return
+	var aim: float = p["aim"]
+	var radii: Array = FM.RINGS["radii"]
+	for i in radii.size():
+		var r: float = radii[i]
+		var since := t - FM.ring_burst(i)
+		var ring: Dictionary = FM.ring_hands(i)
+		if since <= 1.6:
+			var up := FM.smooth((t - lit - i * 0.05) / 0.3)
+			var heat := 0.38 * up
+			if since >= 0.0:
+				heat = clampf(1.0 - since / 0.25, 0.0, 1.0)
+			elif i in FM.RINGS["first"] or t > FM.RING_HITS[0]:
+				heat = up * (0.75 + 0.25 * sin(t * 16.0 + i))
+			var fade := 1.0 - (since - 0.9) / 0.7 if since > 0.9 else up
+			var col := Color(SHADOW, 0.85 * fade).lerp(Color(ENEMY, fade), heat)
+			if since >= 0.0 and since < 0.2:
+				col = FM_WHITE
+			var arc := PackedVector2Array()
+			for k in 97:
+				var a := TAU * k / 96.0
+				var on := at + Vector2(cos(aim + a), sin(aim + a)) * r
+				if FM.in_gap(a, ring["gaps"], ring["step"], 0.02) or not _fm_floor(on):
+					if arc.size() > 1:
+						draw_polyline(arc, col, 3.0)
+					arc = PackedVector2Array()
+					continue
+				arc.append(Iso.to_screen(on.x, on.y))
+			if arc.size() > 1:
+				draw_polyline(arc, col, 3.0)
+		if since >= 0.0 and since < FM_HAND_TIME:
+			var tall := 38.0 * clampf(since / 0.1, 0.0, 1.0) * clampf((FM_HAND_TIME - since) / 0.35, 0.0, 1.0)
+			var hot: bool = since <= FM.FM2["handUp"]
+			for a in ring["hands"]:
+				var on := at + Vector2(cos(aim + a), sin(aim + a)) * r
+				if not _fm_floor(on):
+					continue
+				var foot := Iso.to_screen(on.x, on.y)
+				draw_line(foot, foot + Vector2(0, -tall), FM_HOT if hot else FM_FLESH_LIT, 3.0)
+				draw_line(foot + Vector2(-4, -tall), foot + Vector2(4, -tall), FM_BONE, 3.0)
+
+
+## His fire: the lanes left burning where the stream gouted (each dying back from its end toward him over its last moments,
+## then scorched stone a while), and the stream itself, out of him to its reach, white-hot at its heart.
+func _draw_fm_fire(p: Dictionary, t: float, at: Vector2) -> void:
+	var mini: bool = p["mini"]
+	var size: Dictionary = FM.MINI_FIRE if mini else FM.FIRE
+	var face: Vector2 = p["face"]
+	var hand: int = p["hand"]
+	var land: float = size["land"]
+	var reach: float = size["reach"]
+	var burn: float = size["burn"]
+	var die: float = size["die"]
+	var scorch: float = size["scorch"]
+	var lane_half: float = size["laneHalf"]
+	for l in FM.fire_lanes(mini):
+		var since: float = t - float(l["at"])
+		if since < 0.0 or since > burn + scorch:
+			continue
+		var u := FM.beside(Vector2.ZERO, face, hand, cos(l["a"]), sin(l["a"]))
+		var far := _fm_floor_to(at, u, land, reach)
+		if far <= land + 0.05:
+			continue
+		var cool := clampf((since - burn) / scorch, 0.0, 1.0)
+		draw_colored_polygon(_band(at + u * land, at + u * far, lane_half), Color(FM_CHAR, 0.6 * (1.0 - cool)))
+		if since > burn:
+			continue
+		var out := minf(far, reach if since < burn - die else land + (reach - land) * clampf(1.0 - (since - (burn - die)) / die, 0.0, 1.0))
+		if out > land + 0.05:
+			var flick := 0.75 + 0.25 * sin(t * 19.0 + float(l["a"]) * 7.0)
+			draw_colored_polygon(_band(at + u * land, at + u * out, lane_half), Color(ENEMY, 0.55 * flick))
+			draw_colored_polygon(_band(at + u * land, at + u * out, lane_half * 0.45), Color(FM_HOT, 0.75 * flick))
+	var now := FM.fire_way(t, mini)
+	if is_nan(now):
+		return
+	var w := FM.beside(Vector2.ZERO, face, hand, cos(now), sin(now))
+	var half: float = size["half"]
+	var run := _fm_floor_to(at, w, land, reach)
+	if run <= land + 0.05:
+		return
+	draw_colored_polygon(_band(at + w * land, at + w * run, half), Color(ENEMY, 0.7))
+	draw_colored_polygon(_band(at + w * land, at + w * run, half * 0.6), Color(FM_HOT, 0.9))
+	draw_colored_polygon(_band(at + w * land, at + w * run, half * 0.25), FM_WHITE)
+	# (out of the skull's jaws, or from between a mini's claws, down onto the floor where it lands)
+	var mouth := Iso.to_screen(at.x, at.y) + Vector2(0.0, -40.0 if mini else -70.0)
+	draw_line(mouth, Iso.to_screen(at.x + w.x * land, at.y + w.y * land), FM_HOT, 5.0)
+
+
+## A bone heap: the floor round it lit from under in his pink, beating faster, while he summons; a ring of bone and grave
+## dirt thrown out as its dead come up.
+func _draw_fm_heap(which: int, t: float, at: Vector2) -> void:
+	var shake := FM.heap_shake(t)
+	var since: float = t - (FM.RAISE_HIT + which * float(FM.HEAP["apart"]))
+	var glow := shake * (0.7 + 0.3 * sin(t * (20.0 + 20.0 * shake) + which)) if since < 0.0 else clampf(1.0 - since / 0.5, 0.0, 1.0)
+	if glow > 0.02:
+		draw_colored_polygon(_ring(at.x, at.y, 0.62), Color(ENEMY, 0.3 * glow))
+		draw_polyline(_ring(at.x, at.y, 0.62), Color(ENEMY, 0.95 * glow), 3.0)
+	var long: float = FM.HEAP["long"]
+	if since >= 0.0 and since <= long:
+		var k := since / long
+		var far: float = float(FM.HEAP["throw"]) * (1.0 - (1.0 - k) * (1.0 - k))
+		draw_polyline(_ring(at.x, at.y, far), Color(FM_BONE, 1.0 - k), 3.0)
+		draw_polyline(_ring(at.x, at.y, far * 0.6), Color(FM_HOT, 0.8 * (1.0 - k)), 2.0)
+
+
+## The pit of his dead, `r` tiles round: a churning dark mass, his pink fire at its lip.
+func _draw_fm_pit(at: Vector2, r: float) -> void:
+	if r <= 0.02:
+		return
+	draw_colored_polygon(_ring(at.x, at.y, r), Color(FM_FLESH, 0.92))
+	draw_polyline(_ring(at.x, at.y, r * 0.6), Color(FM_FLESH_LIT, 0.8), 2.0)
+	draw_polyline(_ring(at.x, at.y, r), Color(ENEMY, 0.9), 2.0)
+
+
+## Where he will rise, `t` seconds from his eruption (negative before): the ring of his fire filling in round it, the pit of
+## his dead opening in its middle; then the burst, thrown out to the ring.
+func _draw_fm_rise(t: float, at: Vector2) -> void:
+	var warn: float = FM.RISE_MARK["warn"]
+	var r: float = FM.RISE_MARK["r"]
+	var out: float = FM.RISE_MARK["out"]
+	var pit: float = FM.PIT["r"]
+	if t < -warn or t > 0.9:
+		return
+	if t < 0.0:
+		var k := 1.0 - (-t) / warn
+		var ring := _ring(at.x, at.y, r, 60)
+		var n := maxi(2, int(ring.size() * (0.25 + 0.75 * FM.smooth(k * 1.6))))
+		var beat := 0.65 + 0.35 * sin(t * (18.0 + 30.0 * k))
+		draw_colored_polygon(_ring(at.x, at.y, r), Color(ENEMY, 0.05 + 0.15 * k))
+		draw_polyline(ring.slice(0, n), Color(ENEMY, 0.55 + 0.45 * beat), 3.0)
+		draw_polyline(_ring(at.x, at.y, r * k * 0.9), Color(ENEMY, 0.45), 2.0)
+		_draw_fm_pit(at, pit * 1.15 * minf(1.0, 0.45 + 0.75 * k))
+		return
+	_draw_fm_pit(at, pit * (1.0 - FM.smooth(t / 0.5)))
+	if t < out + 0.12:
+		var k := clampf(t / out, 0.0, 1.0)
+		draw_polyline(_ring(at.x, at.y, r * FM.smooth(k)), FM_WHITE if k < 0.5 else FM_HOT, 6.0)
+		draw_polyline(_ring(at.x, at.y, r * FM.smooth(k) * 0.9), Color(ENEMY, 0.9), 3.0)
+
+
+## His light where one of the dead comes up: swelling as it stirs, a flash as it stands, and gone.
+func _draw_fm_glow(secs: float, t: float, at: Vector2) -> void:
+	if t < 0.0:
+		return
+	var k := FM.smooth(t / 0.3) * (1.0 - FM.smooth((t - secs) / 0.3))
+	var slam := 1.0 - FM.smooth(absf(t - secs) / 0.08)
+	if k <= 0.02 and slam <= 0.02:
+		return
+	draw_colored_polygon(_ring(at.x, at.y, 0.45 + 0.25 * slam, 24), Color(ENEMY, 0.3 * k + 0.4 * slam))
+	draw_polyline(_ring(at.x, at.y, 0.45 + 0.25 * slam, 24), Color(FM_HOT, 0.6 * k + 0.4 * slam), 2.0)
+
+
 # --- drawing: a circle on the floor is an ellipse on the screen ---
 
 func _ring(x: float, y: float, r: float, n := 40) -> PackedVector2Array:
@@ -249,6 +598,9 @@ func _draw() -> void:
 			"blast":
 				var k: float = p["t"] / 0.3
 				draw_polyline(_ring(p["x"], p["y"], p["r"] * (0.6 + 0.5 * k)), Color(1, 0.75, 0.8, 1.0 - k), 4.0)
+			"fm_shards", "fm_rings", "fm_fire", "fm_heap", "fm_pit", "fm_rise", "fm_glow":
+				# (THE FLESHMANCER'S: its own block below)
+				_draw_fm(p)
 			"lane":
 				var k: float = clampf(p["t"] / p["dur"], 0.0, 1.0)
 				var a: Vector2 = p["a"]
