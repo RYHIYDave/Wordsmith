@@ -27,6 +27,10 @@ const MOVES := {
 		{"id": "swing", "windup": 0.8, "dmg": 1.3, "cooldown": 0.0, "first": 0.0, "after": 2.0, "recover": 0.6, "near": 0.0, "far": 0.0},
 		{"id": "rally", "windup": 0.85, "dmg": 0.0, "cooldown": 14.0, "first": 2.0, "after": 1.4, "recover": 0.9, "near": 0.0, "far": 10.0},
 	],
+	# the cultist (floor 2): its FIRE SIGIL in place of its fire bolt, from up to 7.5 tiles (ACTION_F2: cultistSigil)
+	"cultist": [
+		{"id": "sigil", "windup": 1.2, "dmg": 1.2, "cooldown": 0.0, "first": 0.0, "after": 3.2, "recover": 0.75, "near": 0.0, "far": 7.5},
+	],
 	# the Warden: his swing, his fan of bolts, the LOCKDOWN (bars across his hall: from anywhere in it) and the dead he calls
 	"warden": [
 		{"id": "swing", "windup": 0.7, "dmg": 0.8, "cooldown": 0.0, "first": 0.0, "after": 1.5, "recover": 0.55, "near": 0.0, "far": 0.0},
@@ -43,6 +47,7 @@ const PICTURE := {
 	"archer": {"shoot": "attack", "rain": "rain"},
 	"marksman": {"shoot": "attack", "pierce": "pierce"},
 	"champion": {"swing": "attack", "rally": "rally"},
+	"cultist": {"sigil": "attack"},
 }
 
 ## THE RED TROLL'S CHARGE (defs.ts CHARGE): 10 tiles a second, on 1.5 past where the hero stood, a line 0.75 either side;
@@ -60,6 +65,14 @@ const RAIN := {"radius": 2.0, "delay": 1.5, "stuck": 0.6, "gone": 0.25}
 ## THE LOCKDOWN (art/action_f1_fx.ts LOCKDOWN): rows of bars both ways across his hall 2.75 tiles apart, he in the middle of
 ## a cell; a hero within 0.42 of a row at the crash is struck; the bars stand 1.5 s as a cage, and are gone in 0.4.
 const LOCKDOWN := {"cell": 2.75, "band": 0.42, "stand": 1.5, "rise": 0.4}
+## THE FIRE SIGIL (art/action_f2_fx.ts SIGIL; game/action_f2.ts): a ring of 1.75 tiles under where the hero stood as the cast
+## began; at the cultist's slam (its wind-up's end) it erupts, striking a hero inside; the pillar stands 0.3 s and falls in 0.2;
+## the floor burns on 3 s, its fire shrinking in to the middle (burn_radius), burning a hero inside 18% of the blow each 0.5 s.
+## If the cultist falls, or is stopped, before its slam, nothing erupts.
+const SIGIL := {"radius": 1.75, "pillar": 0.3, "fall": 0.2, "burn": 3.0, "strike": 1.0 / 30.0, "share": 0.18, "every": 0.5}
+## THE RIME (art/action_f2_fx.ts RIME): at the Shade's blow, a patch of frost 1.2 tiles round, 1 tile before it; spreading in
+## 0.2 s, lying 4 s, melting from its edge over the last 1; a hero in it walks 40% slower.
+const RIME := {"radius": 1.2, "ahead": 1.0, "form": 0.2, "lie": 4.0, "melt": 1.0, "slow": 0.4}
 ## THE WARDEN'S BOLTS: seven in a fan, 0.2 radians apart, as far as 13 tiles.
 const BOLTS := {"n": 7, "apart": 0.2, "range": 13.0}
 
@@ -69,6 +82,30 @@ static func moves_of(kind: String, champion: bool) -> Array:
 	if kind == "brute":
 		return MOVES["guardian"] if champion else []
 	return MOVES.get(kind, [])
+
+
+## How far the sigil's fire still burns, `t` seconds after it erupted (burnRadius).
+static func burn_radius(t: float) -> float:
+	if t < 0.0:
+		return 0.0
+	if t < SIGIL["pillar"]:
+		return SIGIL["radius"]
+	var u: float = (t - SIGIL["pillar"]) / (SIGIL["fall"] + SIGIL["burn"])
+	return 0.0 if u >= 1.0 else SIGIL["radius"] * pow(1.0 - u, 0.7)
+
+
+## How far out the rime lies `t` seconds after the blow, in the way `a` (radians on the floor): ragged, spreading, melting (rimeEdge).
+static func rime_edge(t: float, a: float) -> float:
+	if t < 0.0 or t > RIME["lie"]:
+		return 0.0
+	var rag := 0.86 + 0.06 * sin(3.0 * a + 1.3) + 0.05 * sin(5.0 * a + 0.4) + 0.03 * sin(9.0 * a + 2.2)
+	var grow: float = 1.0 - pow(1.0 - t / RIME["form"], 2.0) if t < RIME["form"] else 1.0
+	var from: float = RIME["lie"] - RIME["melt"]
+	var melt := 1.0
+	if t > from:
+		var u := clampf((t - from) / RIME["melt"], 0.0, 1.0)
+		melt = 1.0 - 0.55 * u * u * (3.0 - 2.0 * u)
+	return RIME["radius"] * minf(1.0, rag + 0.03) * grow * melt
 
 
 static func picture_of(figure: String, move: String) -> String:

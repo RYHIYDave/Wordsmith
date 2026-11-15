@@ -125,7 +125,7 @@ func _ready() -> void:
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
-	_build("floor2" if _arg("only") == "floor2" else "floor1" if shots != "" and not _arg("only") in ["town", "music"] else "town", "start")
+	_build("floor2" if _arg("only") in ["floor2", "f2moves"] else "floor1" if shots != "" and not _arg("only") in ["town", "music"] else "town", "start")
 	if shots != "":
 		_shoot(hero, shots)
 
@@ -480,6 +480,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "floor2":
 		await _floor2_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "f2moves":
+		await _f2_move_shots(hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "props":
@@ -874,6 +878,59 @@ func _floor2_shots(h: Hero, dir: String) -> void:
 	h.world = Vector2(float(Y["x"]) + 9.5, float(Y["y"]) + 11.0)
 	await _wait(3.4)
 	await _snap(dir + "/65_the_headsman.png")
+
+
+## FLOOR 2'S MONSTERS' MOVES, pictured: a cultist's fire sigil (its ring under him as it casts, the pillar, the floor burning),
+## a Shade's rime (and him slowed in it), the Headsman's prowl and every one of his acts (the vault's spot, the wheel, the
+## flurry, the lunge, the dashes); then the game says which moves were made.
+func _f2_move_shots(h: Hero, dir: String) -> void:
+	var c: Monster = _nearest_kind(h.world, "cultist", 0.0)
+	h.world = _spot_near(c.world, 5.0, h.world)
+	h.face = (c.world - h.world).normalized()
+	_monsters.wake(c)
+	await _snap_when(dir + "/70_sigil_cast.png", func(): return _perils_of("sigil", -0.5, -0.2), 12.0)
+	await _snap_when(dir + "/71_sigil_erupts.png", func(): return _perils_of("sigil", 0.05, 0.3), 3.0)
+	await _snap_when(dir + "/72_sigil_burns.png", func(): return _perils_of("sigil", 1.2, 3.0), 3.0)
+	var sh: Monster = _nearest_kind(h.world, "shade", 0.0)
+	h.world = _spot_near(sh.world, 1.0, h.world)
+	_monsters.wake(sh)
+	await _snap_when(dir + "/73_shade_rime.png", func(): return _perils_of("rime", 0.3, 2.0), 10.0)
+	print("RIME: hero slowed ", h._slow_t > 0.0, " by ", h._slow_by)
+	# (the Headsman: into his yard, his gate down, his line; then his acts)
+	var Y: Dictionary = look.data["zones"]["yard"]
+	h.world = Vector2(float(Y["x"]) + 3.5, float(Y["y"]) + 10.5)
+	await _wait(3.6)
+	var hs: Monster = null
+	for m in _monsters.list:
+		if m.boss:
+			hs = m
+	print("HEADSMAN: waits ", hs.waits, " state ", hs.state, " mode ", hs.h2.mode)
+	var seen := {}
+	var t := 0.0
+	var spots := [6.0, 3.0, 5.0, 2.0, 7.0]
+	var k := 0
+	while t < 60.0 and seen.size() < 6:
+		if hs.h2.act == null and fmod(t, 6.0) < 0.05:
+			h.world = _spot_near(hs.world, spots[k % spots.size()], h.world)
+			k += 1
+		if hs.h2.act != null:
+			var id: String = hs.h2.ACTS[hs.h2.act["i"]]["id"]
+			var at: float = hs.h2.act["t"]
+			var hit: float = hs.h2.ACTS[hs.h2.act["i"]]["hit"]
+			if not seen.has(id) and at >= hit * 0.8:
+				seen[id] = true
+				await _snap(dir + "/74_headsman_%s.png" % id)
+		await get_tree().process_frame
+		t += get_process_delta_time()
+	print("HEADSMAN acts seen: ", seen.keys(), " after ", snappedf(t, 0.1), " s; mode now ", hs.h2.mode, "; hero life ", h.life)
+	print("F2 MOVES: ", _monsters.used)
+
+
+func _perils_of(kind: String, t0: float, t1: float) -> bool:
+	for p in _monsters.perils.list:
+		if p["kind"] == kind and p["t"] >= t0 and p["t"] <= t1:
+			return true
+	return false
 
 
 ## (A TEST: a real right-button press sent through Godot's input, as a mouse would send it, and what he does with it.)

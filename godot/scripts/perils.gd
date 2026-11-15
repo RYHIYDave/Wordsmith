@@ -67,6 +67,26 @@ func bars(src: Object, x: float, y: float, dmg: float, windup: float) -> void:
 
 
 ## A monster that falls takes its marks with it (game.ts: its warn, lane and aim go).
+## A red circle marked on the floor for `dur` seconds, harmless of itself (the Headsman's vault: his own blow does the harm).
+func mark(x: float, y: float, r: float, dur: float, src: Object) -> void:
+	list.append({"kind": "warn", "x": x, "y": y, "r": r, "t": 0.0, "dur": dur, "dmg": 0.0, "src": src, "mark": true})
+
+
+## A ring going out over the floor where a blow came down.
+func blast(x: float, y: float, r: float) -> void:
+	list.append({"kind": "blast", "x": x, "y": y, "r": r, "t": 0.0})
+
+
+## THE CULTIST'S FIRE SIGIL (game/action_f2.ts): its clock from -windup (the cast) to its eruption at 0, then the floor burning.
+func sigil(x: float, y: float, dmg: float, windup: float, src: Object) -> void:
+	list.append({"kind": "sigil", "x": x, "y": y, "t": -windup, "cast": windup, "dmg": dmg, "src": src, "done": 0})
+
+
+## THE SHADE'S RIME (game/action_f2.ts): frost on the floor that slows the hero while he stands in it.
+func rime(x: float, y: float, src: Object) -> void:
+	list.append({"kind": "rime", "x": x, "y": y, "t": 0.0, "src": src})
+
+
 func drop(src: Object, kinds := ["warn", "lane", "aim"]) -> void:
 	list = list.filter(func(p): return not (p.get("src") == src and p["kind"] in kinds))
 
@@ -79,12 +99,43 @@ func _process(dt: float) -> void:
 		match p["kind"]:
 			"warn":
 				if p["t"] >= p["dur"]:
-					sfx.play("slam", -2.0)
-					hero.shake()
-					if hero.alive and hero.world.distance_to(Vector2(p["x"], p["y"])) <= p["r"] + 0.1:
-						hero.hurt(p["dmg"])
-					keep.append({"kind": "blast", "x": p["x"], "y": p["y"], "r": p["r"], "t": 0.0})
+					if not p.get("mark", false):
+						sfx.play("slam", -2.0)
+						hero.shake()
+						if hero.alive and hero.world.distance_to(Vector2(p["x"], p["y"])) <= p["r"] + 0.1:
+							hero.hurt(p["dmg"])
+						keep.append({"kind": "blast", "x": p["x"], "y": p["y"], "r": p["r"], "t": 0.0})
 					stays = false
+				elif p.get("mark", false) and (not is_instance_valid(p["src"]) or p["src"].dead):
+					stays = false
+			"sigil":
+				var at := Vector2(p["x"], p["y"])
+				var w = p["src"]
+				if p["t"] < -0.05:
+					# (its cultist still casting: if it has fallen, or been stopped in its cast, nothing erupts)
+					if not is_instance_valid(w) or w.dead or w.state != "windup":
+						stays = false
+				elif p["done"] == 0 and p["t"] >= 0.0:
+					p["done"] = 1
+					if hero.alive and hero.world.distance_to(at) <= MM.SIGIL["radius"]:
+						hero.hurt(p["dmg"])
+					sfx.play("fire")
+					hero.kick(2.5)
+				elif p["done"] > 0 and p["t"] > MM.SIGIL["strike"]:
+					# (the floor burning on: a tick every 0.5 s while he stands in what still burns)
+					var next: float = MM.SIGIL["strike"] + MM.SIGIL["every"] * p["done"]
+					if p["t"] >= next:
+						p["done"] += 1
+						if hero.alive and hero.world.distance_to(at) <= MM.burn_radius(p["t"]):
+							hero.hurt(p["dmg"] * MM.SIGIL["share"])
+				if p["t"] >= MM.SIGIL["pillar"] + MM.SIGIL["fall"] + MM.SIGIL["burn"]:
+					stays = false
+			"rime":
+				var d: Vector2 = hero.world - Vector2(p["x"], p["y"])
+				var e := MM.rime_edge(p["t"], atan2(d.y, d.x))
+				if e > 0.0 and d.length() <= e:
+					hero.chill(0.12, MM.RIME["slow"])
+				stays = p["t"] < MM.RIME["lie"]
 			"blast":
 				stays = p["t"] < 0.3
 			"rain":
@@ -224,6 +275,57 @@ func _draw() -> void:
 						draw_line(at, at + Vector2(3, -14), Color(0.8, 0.72, 0.58, fade), 2.0)
 			"bars":
 				_draw_bars(p)
+			"sigil":
+				_draw_sigil(p)
+			"rime":
+				_draw_rime(p)
+
+
+## The fire sigil (a stand-in for the art chat's pictures, art/action_f2_fx.ts sigilPainted): its ring traced round under the hero as
+## the cultist casts, its inner ring and marks brightening; the pillar of fire as it erupts; the floor burning on, shrinking in.
+func _draw_sigil(p: Dictionary) -> void:
+	var t: float = p["t"]
+	var R: float = MM.SIGIL["radius"]
+	var fire := Color(1.0, 0.62, 0.22)
+	var hot := Color(1.0, 0.98, 0.9)
+	if t < 0.0:
+		var k := clampf(1.0 - (-t) / maxf(0.01, float(p["cast"])), 0.0, 1.0)
+		var traced := clampf(k / 0.4, 0.0, 1.0)
+		var ring := _ring(p["x"], p["y"], R, 48)
+		var n := maxi(2, int(ring.size() * traced))
+		draw_polyline(ring.slice(0, n), Color(ENEMY, 0.85), 3.0)
+		draw_colored_polygon(_ring(p["x"], p["y"], R), Color(fire, 0.08 + 0.22 * k))
+		if k > 0.4:
+			draw_polyline(_ring(p["x"], p["y"], R * 0.62), Color(fire, 0.4 + 0.5 * k), 2.0)
+		return
+	var pillar: float = MM.SIGIL["pillar"] + MM.SIGIL["fall"]
+	if t < pillar:
+		var up := 1.0 - clampf((t - MM.SIGIL["pillar"]) / MM.SIGIL["fall"], 0.0, 1.0)
+		var base := Iso.to_screen(p["x"], p["y"])
+		var half := R * 32.0 * 0.8
+		var tall := 200.0 * up
+		draw_colored_polygon(PackedVector2Array([base + Vector2(-half, 0), base + Vector2(-half * 0.7, -tall), base + Vector2(half * 0.7, -tall), base + Vector2(half, 0)]), Color(fire, 0.55 * up))
+		draw_colored_polygon(PackedVector2Array([base + Vector2(-half * 0.4, 0), base + Vector2(-half * 0.25, -tall * 0.9), base + Vector2(half * 0.25, -tall * 0.9), base + Vector2(half * 0.4, 0)]), Color(hot, 0.7 * up))
+	var rr := MM.burn_radius(t)
+	if rr > 0.02:
+		draw_colored_polygon(_ring(p["x"], p["y"], rr), Color(fire, 0.32))
+		draw_polyline(_ring(p["x"], p["y"], rr), Color(ENEMY, 0.7), 2.0)
+
+
+## The rime (a stand-in for art/action_f2_fx.ts rimePainted): a ragged crust of pale grey-blue frost, spreading, then melting in.
+func _draw_rime(p: Dictionary) -> void:
+	var t: float = p["t"]
+	var pts := PackedVector2Array()
+	for k in 40:
+		var a := TAU * k / 40.0
+		var e := MM.rime_edge(t, a)
+		pts.append(Iso.to_screen(p["x"] + cos(a) * e, p["y"] + sin(a) * e))
+	if MM.rime_edge(t, 0.0) <= 0.01:
+		return
+	var frost := Color(0.78, 0.8, 0.9)
+	draw_colored_polygon(pts, Color(frost, 0.35))
+	pts.append(pts[0])
+	draw_polyline(pts, Color(0.62, 0.65, 0.8, 0.8), 2.0)
 
 
 func _draw_bars(p: Dictionary) -> void:
