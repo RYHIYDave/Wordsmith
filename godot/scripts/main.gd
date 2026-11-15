@@ -36,6 +36,7 @@ const Props := preload("res://scripts/props.gd")
 
 const FLOOR_DIR := "res://assets/floor1"
 const Ways := preload("res://scripts/ways.gd")
+const Sight := preload("res://scripts/sight.gd")
 ## (the deepest floor that has its files)
 const FLOORS := 5
 const TOWN_DIR := "res://assets/town"
@@ -80,6 +81,8 @@ var look: Look
 var _hero_light: Node
 ## (the floor's ways on: ways.gd)
 var ways: Ways
+## (what he has seen of the floor: sight.gd)
+var sight: Sight
 
 
 ## Which floor a place is (0: the town).
@@ -294,6 +297,16 @@ func _build(where: String, arrive: String) -> void:
 		ways.look = look if looked else null
 		ways.sfx = sfx
 		_place.add_child(ways)
+	# (what he has seen: sight.gd; the town is seen whole; --seeall, a floor too)
+	sight = null
+	if where != "town":
+		sight = Sight.new()
+		sight.map = map
+		sight.hero = hero
+		sight.look = look if looked else null
+		sight.monsters = monsters
+		sight.all = _arg("seeall") != "" or not (looked and look.data.has("fog"))
+		_place.add_child(sight)
 
 	town = null
 	if where == "town":

@@ -66,6 +66,8 @@ var sheet: Texture2D
 var pics := {}
 var stat_info := {}
 var _pools := {}
+## (any floor: the same pools as the game rolls them on each floor, tools/godot_loot.ts; floor 1's where a floor has none)
+var _by_depth := {}
 ## the vendors' shelves (Game.rollShop on his first day in town), and the word's plain lines (defs.ts WORDS.power)
 var shops := {}
 var power_text := {}
@@ -73,6 +75,9 @@ var _tune := {}
 var _attr := {}
 var _drops: Array = []  # {kind, at, node, age, amount?, item?}
 var _body = null
+## (floor 1's fallen wordsmith, where the loot's own file has him; a floor's own is where its layout says: FloorMap.body)
+var _body1 := Vector2.ZERO
+var _body_floor := 1
 var _font: Font
 
 
@@ -80,6 +85,7 @@ func _ready() -> void:
 	_font = ThemeDB.fallback_font
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/items.json"))
 	_pools = data["pools"]
+	_by_depth = data.get("byDepth", {})
 	shops = data["shops"]
 	power_text = data["power"]
 	stat_info = data["stats"]
@@ -93,6 +99,7 @@ func _ready() -> void:
 	gear["mainhand"] = data["starter"].duplicate(true)
 	if data["body"] != null:
 		_body = {"at": Vector2(data["body"]["x"], data["body"]["y"]), "searched": false, "node": null}
+		_body1 = _body["at"]
 	derive()
 	hero.life = hero.max_life
 
@@ -225,7 +232,8 @@ func _orb(at: Vector2) -> void:
 
 
 func _item(at: Vector2, quality: int) -> void:
-	var pool: Array = _pools[str(quality)]
+	var here: Dictionary = _by_depth.get(str(map.depth), _pools) if map != null else _pools
+	var pool: Array = here[str(quality)]
 	var it: Dictionary = pool[randi() % pool.size()].duplicate(true)
 	_drop("gear", _scatter(at), it["icon"], {"item": it})
 
@@ -417,6 +425,13 @@ func _search_body() -> void:
 	_body["searched"] = true
 	_body["node"].texture = _pic_tex("body:searched")
 	_body["node"].offset = -pics["body:searched"]["anchor"]
+	# (game.ts searchBody: once the ring is lit, a fallen wordsmith's satchel holds full flasks and a word, his class's first)
+	if ring_lit:
+		potions = POTIONS
+		words["power"] = int(words.get("power", 0)) + 1
+		say("A fallen wordsmith. In the satchel: full flasks, and a WORD.", Color(0.35, 0.9, 1.0))
+		sfx.play("word")
+		return
 	# (game.ts searchBody, FIRST_LEVELS: the Master Rune-stone, and the flasks filled; it is carried to the wordsmith in town)
 	quest = "heart"
 	potions = POTIONS
@@ -443,9 +458,14 @@ func enter_place(m, st: Node2D, mons, is_floor1: bool) -> void:
 	_drops = []
 	if _body != null:
 		_body["node"] = null
-		if is_floor1:
+		# (a fallen wordsmith lies on every floor: game/level.ts; where, the floor's layout says)
+		var on_floor: bool = m != null and m.depth >= 1 and (is_floor1 or m.body != null) and stands != null and m.rooms.size() > 1
+		if on_floor:
+			_body_floor = m.depth
+			_body["at"] = Vector2(m.body["x"], m.body["y"]) if m.body != null else _body1
+			_body["searched"] = false
 			setup_body()
-			if quest != "" or ring_lit:
+			if is_floor1 and (quest != "" or ring_lit):
 				_body["searched"] = true
 				_body["node"].texture = _pic_tex("body:searched")
 				_body["node"].offset = -pics["body:searched"]["anchor"]

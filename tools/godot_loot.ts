@@ -75,6 +75,20 @@ for (const [q, n] of POOLS) {
   for (const it of list) by[(it as { rarity: number }).rarity]++;
   tally.push(`quality ${q}: ${n} (plain ${by[0]}, magic ${by[1]}, rare ${by[2]}, unique ${by[3]})`);
 }
+// (ANY FLOOR: the same pools rolled by the game on each of floors 2 to 5, a new Warrior's game set down there: the deeper, the
+// better the gear, as the game's rollGear has it by the floor; loot.gd takes the pool of the floor he is on)
+const byDepth: Record<string, Record<string, unknown[]>> = { '1': pools };
+for (let depth = 2; depth <= 5; depth++) {
+  const deep = new Game('warrior', seed);
+  deep.depth = depth;
+  deep.enterDungeon();
+  const rollDeep = (q: number): Item => (deep as unknown as { rollGear(q: number): Item }).rollGear(q);
+  const here: Record<string, unknown[]> = {};
+  for (const [q, n] of POOLS) here[String(q)] = Array.from({ length: n }, () => plain(rollDeep(q)));
+  byDepth[String(depth)] = here;
+  const lv = (here['0'] as { ilvl: number }[]).reduce((a, it) => a + it.ilvl, 0) / here['0'].length;
+  tally.push(`floor ${depth}: ${POOLS.map(([q, n]) => `${n} of quality ${q}`).join(', ')}; an ordinary piece's level ${lv.toFixed(1)} on average`);
+}
 const starter = plain(starterWeapon('warrior'));
 const stats: Record<string, { label: string; pct: boolean }> = {};
 for (const [k, v] of Object.entries(STAT_INFO)) stats[k] = { label: (v as { label: string }).label, pct: !!(v as { pct?: boolean }).pct };
@@ -84,7 +98,7 @@ const shopsOf = (inTown as unknown as { shops: Record<string, (Item | null)[]> }
 const shops: Record<string, unknown[]> = {};
 for (const [id, list] of Object.entries(shopsOf)) shops[id] = list.filter((it): it is Item => it !== null).map(plain);
 const body = game.level.body;
-writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, power: { frontText: WORDS.power.frontText, behindText: WORDS.power.behindText } }));
+writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, power: { frontText: WORDS.power.frontText, behindText: WORDS.power.behindText } }));
 
 // --- the pictures in one sheet: each at two picture pixels to a game pixel, its anchor kept ---
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {

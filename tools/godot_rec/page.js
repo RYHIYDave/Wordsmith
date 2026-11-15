@@ -309,6 +309,17 @@
       if (far > secondScore) { secondScore = far; second = i; }
     }
     REC.park = [{ x: bx + 0.5, y: by + 0.5, clear: bestD }, { x: (second % f.w) + 0.5, y: ((second / f.w) | 0) + 0.5, clear: Math.min(dist[second], 99) }];
+    // (THE FALLEN WORDSMITH is the Godot side's own to draw, searched and unsearched (loot.gd): he is set down by the hero, out
+    // in the empty stone, where what is drawn of him is left out with the hero's own)
+    REC.body = null;
+    for (const p of L.props) {
+      if (p.kind !== 'body') continue;
+      REC.body = { x: p.x, y: p.y };
+      p.x = bx + 0.9;
+      p.y = by + 0.9;
+      p.tx = bx;
+      p.ty = by;
+    }
     // (what the level is, to hold against the layout the Godot side has: its tiles, its doors, its chests, barrels and urns)
     let hash = 0;
     for (let i = 0; i < f.tiles.length; i++) hash = (Math.imul(hash, 31) + f.tiles[i]) | 0;
@@ -498,6 +509,8 @@
     for (let i = 0; i < st.length; i++) {
       const s = st[i];
       if (s.figure || s.skip) continue;
+      // (what stands by the hero, out in the empty stone: the fallen wordsmith set aside there)
+      if (Math.abs(s.x - hx) < 48 && Math.abs(s.y - hy) < 48) { note('standing by the hero'); continue; }
       const list = byStand.get(i);
       if (!list) { note('a stand not drawn'); continue; }
       let wall = null;
@@ -530,7 +543,7 @@
         const [x, y, w, h] = e.a;
         const cx = x + w / 2;
         const cy = y + h / 2;
-        if (Math.abs(cx - hx) < 3 && Math.abs(cy - (hy - 8)) < 3) continue;
+        if (Math.abs(cx - hx) < 48 && Math.abs(cy - hy) < 48) continue;
         out.holes.push({ x: cx - cam.ox, y: cy - cam.oy, r: w / 2, ry: h / 2, a: e.alpha });
         continue;
       }
@@ -983,5 +996,100 @@
       sum[kind].changed += changed;
     }
     return { sum, note, extra: REC.extra.size };
+  };
+})();
+
+
+// ====================================================================================================================
+// WHAT IS SEEN WHEN: the game draws a thing only once a tile of the floor has been seen (Level.explored). Which tile each
+// thing waits on is read off the renderer itself: the place is drawn with the tiles "seen" whose number has bit b set, for
+// each bit, and again with those whose number has it clear; a thing that waits on one tile is there in exactly one of
+// each pair, and the bits spell the tile's number. (-1: drawn whatever is seen; -2: it waits on more than one tile.)
+(() => {
+  const d = window.__dbg;
+  const REC = window.__rec;
+  REC.fog = (T0, W, H) => {
+    const g = d.game();
+    const L = g.level;
+    const f = L.floor;
+    const A = REC.acc;
+    const res = REC.result;
+    const n = f.w * f.h;
+    let bits = 1;
+    while ((1 << bits) < n) bits++;
+    const NG = res.ground.length;
+    const NS = res.stands.length;
+    const codeG = new Int32Array(NG);
+    const invG = new Int32Array(NG);
+    const codeS = new Int32Array(NS);
+    const invS = new Int32Array(NS);
+    const glowKey = (q) => `${Math.round(q.x + q.w / 2)},${Math.round(q.y + q.h / 2)}`;
+    const glowIds = new Map();
+    res.glows.forEach((q, i) => glowIds.set(`${Math.round(q.x)},${Math.round(q.y)}`, i));
+    const codeL = new Int32Array(res.glows.length);
+    const invL = new Int32Array(res.glows.length);
+    const holeIds = new Map();
+    res.holes.forEach((q, i) => holeIds.set(`${Math.round(q.x / 2)},${Math.round(q.y / 2)}`, i));
+    const codeH = new Int32Array(res.holes.length);
+    const invH = new Int32Array(res.holes.length);
+    const keepE = L.explored.slice();
+    const keepV = L.visible ? L.visible.slice() : null;
+    let err = null;
+    for (let pass = 0; pass < 2 && !err; pass++) {
+      for (let b = 0; b < bits && !err; b++) {
+        for (let i = 0; i < n; i++) L.explored[i] = (((i >> b) & 1) === 1) === (pass === 0) ? 1 : 0;
+        if (L.visible) L.visible.set(L.explored);
+        g.time = REC.time0;
+        const fr = REC.take(T0, W, H);
+        if (fr.err) { err = fr.err; break; }
+        const df = REC.differ(fr);
+        const goneG = new Set(df.hg);
+        const goneS = new Set(df.hs);
+        const cg = pass === 0 ? codeG : invG;
+        const cs = pass === 0 ? codeS : invS;
+        for (let i = 0; i < NG; i++) if (!goneG.has(i)) cg[i] |= 1 << b;
+        for (let i = 0; i < NS; i++) if (!goneS.has(i)) cs[i] |= 1 << b;
+        const cl = pass === 0 ? codeL : invL;
+        for (const q of fr.glows) {
+          const i = glowIds.get(glowKey(q));
+          if (i !== undefined) cl[i] |= 1 << b;
+        }
+        const ch = pass === 0 ? codeH : invH;
+        for (const q of fr.holes) {
+          const i = holeIds.get(`${Math.round(q.x / 2)},${Math.round(q.y / 2)}`);
+          if (i !== undefined) ch[i] |= 1 << b;
+        }
+      }
+    }
+    L.explored.set(keepE);
+    if (keepV) L.visible.set(keepV);
+    if (err) return { err };
+    const mask = (1 << bits) - 1;
+    const tally = { always: 0, one: 0, many: 0, never: 0 };
+    const tileOf = (code, inv) => {
+      if (code === mask && inv === mask) { tally.always++; return -1; }
+      if ((code ^ inv) === mask && code < n) { tally.one++; return code; }
+      if (code === 0 && inv === 0) { tally.never++; return -1; }
+      tally.many++;
+      return -2;
+    };
+    const out = { g: Array.from(codeG, (c, i) => tileOf(c, invG[i])), s: Array.from(codeS, (c, i) => tileOf(c, invS[i])) };
+    const t2 = { ...tally };
+    out.glows = Array.from(codeL, (c, i) => tileOf(c, invL[i]));
+    out.holes = Array.from(codeH, (c, i) => tileOf(c, invH[i]));
+    // (a thing that waits on more than one tile: on the tile it stands on, by its place on the screen)
+    const tileAt = (x, y) => {
+      const wx = (x / 16 + y / 8) / 2;
+      const wy = (y / 8 - x / 16) / 2;
+      const tx = Math.max(0, Math.min(f.w - 1, Math.floor(wx)));
+      const ty = Math.max(0, Math.min(f.h - 1, Math.floor(wy)));
+      return ty * f.w + tx;
+    };
+    out.g = out.g.map((t, i) => (t === -2 ? tileAt(res.ground[i].x + 16, res.ground[i].y + 8) : t));
+    out.s = out.s.map((t, i) => (t === -2 ? tileAt(res.stands[i].x, res.stands[i].y - 1) : t));
+    out.glows = out.glows.map((t, i) => (t === -2 ? tileAt(res.glows[i].x, res.glows[i].y) : t));
+    out.holes = out.holes.map((t, i) => (t === -2 ? tileAt(res.holes[i].x, res.holes[i].y) : t));
+    REC.fogOut = out;
+    return { bits, things: t2, withLights: tally };
   };
 })();

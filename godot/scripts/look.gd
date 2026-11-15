@@ -46,6 +46,13 @@ var _g_at := PackedInt32Array()
 var _s_node: Array = []
 var _shown := {}
 var _hidden := {}
+## (what is seen when: the look's things by the tile each waits on, tools/godot_record.mjs `fog`; its glows, as they are in
+## the look's list)
+var _fog_g := {}
+var _fog_s := {}
+var _fog_glow := {}
+var _glow_nodes: Array = []
+var _fogged := false
 var _pics := {}
 var _anim: Array = []  # {node, frames, fps, t0, secs, dy}
 var _t := 0.0
@@ -415,7 +422,7 @@ func _ready2() -> void:
 				if pending.is_empty():
 					first = gi
 				pending.append([key if _pics.has(key) else "", Vector2(e[1], e[2]) * 2.0, alpha, size])
-				if split.has(gi):
+				if split.has(gi) or pending.size() >= 400:
 					_flush2(pending, added, first)
 					pending = []
 				gi += 1
@@ -446,6 +453,82 @@ func _ready2() -> void:
 		if it.has("wall"):
 			var w: Array = it["wall"]
 			stands.add_wall(s, float(w[2]), Vector2(w[0], w[1]) * 2.0, int(w[3]) if w.size() > 3 else -1)
+	_fog_begin()
+
+
+## WHAT IS SEEN WHEN (the look's `fog`): every thing that waits on a tile is not drawn until that tile has been seen
+## (sight.gd calls `reveal` with the tiles newly seen).
+func _fog_begin() -> void:
+	var F: Dictionary = data.get("fog", {})
+	if F.is_empty():
+		return
+	_fogged = true
+	var g: Array = F["g"]
+	for gi in mini(g.size(), _g_node.size()):
+		var t := int(g[gi])
+		if t < 0 or _g_node[gi] == null:
+			continue
+		if not _fog_g.has(t):
+			_fog_g[t] = PackedInt32Array()
+		_fog_g[t].append(gi)
+		if _g_at[gi] < 0:
+			_g_node[gi].set_meta("fog", true)
+			_g_node[gi].visible = false
+		else:
+			_g_node[gi].fog[_g_at[gi]] = 1
+	var st: Array = F["s"]
+	for si in mini(st.size(), _s_node.size()):
+		var t := int(st[si])
+		if t < 0 or _s_node[si] == null:
+			continue
+		if not _fog_s.has(t):
+			_fog_s[t] = PackedInt32Array()
+		_fog_s[t].append(si)
+		_s_node[si].set_meta("fog", true)
+		_s_node[si].visible = false
+
+
+## These tiles have been seen: what waited on them is drawn.
+func reveal(tiles: PackedInt32Array) -> void:
+	if not _fogged:
+		return
+	var redraw := {}
+	for t in tiles:
+		if _fog_g.has(t):
+			for gi in _fog_g[t]:
+				var node = _g_node[gi]
+				if _g_at[gi] < 0:
+					node.set_meta("fog", false)
+					node.visible = not node.get_meta("hid", false) and not node.get_meta("blank", false)
+				else:
+					node.fog[_g_at[gi]] = 0
+					redraw[node] = true
+			_fog_g.erase(t)
+		if _fog_s.has(t):
+			for si in _fog_s[t]:
+				var node: Node2D = _s_node[si]
+				node.set_meta("fog", false)
+				node.visible = not node.get_meta("hid", false) and not node.get_meta("blank", false)
+			_fog_s.erase(t)
+		if _fog_glow.has(t):
+			for n in _fog_glow[t]:
+				n.visible = true
+			_fog_glow.erase(t)
+	for node in redraw:
+		node.queue_redraw()
+
+
+func reveal_all() -> void:
+	var tiles := PackedInt32Array()
+	for t in _fog_g:
+		tiles.append(t)
+	for t in _fog_s:
+		if not _fog_g.has(t):
+			tiles.append(t)
+	for t in _fog_glow:
+		if not _fog_g.has(t) and not _fog_s.has(t):
+			tiles.append(t)
+	reveal(tiles)
 
 
 ## A stretch of still pictures of the ground, as one drawer.
@@ -456,6 +539,7 @@ func _flush2(items: Array, added: bool, _first := 0) -> void:
 	drawer.look = self
 	drawer.items = items
 	drawer.gone.resize(items.size())
+	drawer.fog.resize(items.size())
 	if added:
 		drawer.material = _add
 	floor_layer.add_child(drawer)
@@ -464,10 +548,10 @@ func _flush2(items: Array, added: bool, _first := 0) -> void:
 		_g_at.append(i)
 
 
-func draw_still2(c: CanvasItem, items: Array, gone: PackedByteArray) -> void:
+func draw_still2(c: CanvasItem, items: Array, gone: PackedByteArray, fog: PackedByteArray) -> void:
 	for i in items.size():
 		var it: Array = items[i]
-		if it[0] == "" or gone[i] != 0:
+		if it[0] == "" or gone[i] != 0 or fog[i] != 0:
 			continue
 		var p: Dictionary = _pics[it[0]]
 		var r: Rect2 = p["rect"]
@@ -530,9 +614,11 @@ func _run2() -> void:
 		a["shown"] = key
 		var s: Sprite2D = a["node"]
 		if key == "" or not _pics.has(key):
+			s.set_meta("blank", true)
 			s.visible = false
 			continue
-		s.visible = not s.get_meta("hid", false)
+		s.set_meta("blank", false)
+		s.visible = not s.get_meta("hid", false) and not s.get_meta("fog", false)
 		_place2(s, key)
 
 
@@ -559,6 +645,20 @@ func _lighting2(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 		s.modulate.a = clampf(float(g[5]), 0.0, 1.0)
 		s.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		glows_root.add_child(s)
+		_glow_nodes.append(s)
+	if _fogged:
+		var gl: Array = data["fog"].get("glows", [])
+		var k := 0
+		for g in data.get("glows", []):
+			if not _pics.has(str(g[0])):
+				continue
+			var t := int(gl[k]) if k < gl.size() else -1
+			if t >= 0 and k < _glow_nodes.size():
+				if not _fog_glow.has(t):
+					_fog_glow[t] = []
+				_fog_glow[t].append(_glow_nodes[k])
+				_glow_nodes[k].visible = false
+			k += 1
 	if a <= 0.0:
 		return glows_root
 	var rgb: Array = dk["rgb"]
@@ -709,7 +809,8 @@ func _hide_ground(gi: int, by: int) -> void:
 	_hidden[key] = n
 	var node = _g_node[gi]
 	if _g_at[gi] < 0:
-		node.visible = n <= 0
+		node.set_meta("hid", n > 0)
+		node.visible = n <= 0 and not node.get_meta("fog", false) and not node.get_meta("blank", false)
 	else:
 		node.gone[_g_at[gi]] = 1 if n > 0 else 0
 		node.queue_redraw()
@@ -722,7 +823,7 @@ func _hide_stand(si: int, by: int) -> void:
 	var n: int = int(_hidden.get(key, 0)) + by
 	_hidden[key] = n
 	_s_node[si].set_meta("hid", n > 0)
-	_s_node[si].visible = n <= 0
+	_s_node[si].visible = n <= 0 and not _s_node[si].get_meta("fog", false) and not _s_node[si].get_meta("blank", false)
 
 
 ## A stretch of the recorded ground's still pictures, drawn in one go in the renderer's order.
@@ -730,9 +831,10 @@ class _Still2 extends Node2D:
 	var look
 	var items: Array = []
 	var gone := PackedByteArray()
+	var fog := PackedByteArray()
 
 	func _draw() -> void:
-		look.draw_still2(self, items, gone)
+		look.draw_still2(self, items, gone, fog)
 
 
 ## What is still on a layer, drawn in one go in the renderer's order (a floor of thousands of tiles is one draw list).

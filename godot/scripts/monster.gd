@@ -51,6 +51,8 @@ var summoned := false
 var xp := 0.0
 var state := "sleep"
 var dead := false
+## (its tile is in sight now: sight.gd; where there is no sight, always)
+var seen := true
 ## (BOSS_INTRO: doors.gd) the boss waits: he stands looking at the hero and nothing harms him, until his gate has fallen and his
 ## line is said. `title` his name as the game gives it; what he says over his head, and for how long.
 var waits := false

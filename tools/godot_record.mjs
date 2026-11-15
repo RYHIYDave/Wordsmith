@@ -23,6 +23,9 @@
 //     holes: the lights cut out of the dark: [x, y, r, ry, a, flicker] (an ellipse r by ry round (x, y), strength a; its size
 //       swings by `flicker`).   glows: what is added over the dark: [key, x, y (its middle), w, h, a, flicker].
 //     A run of pictures shows frame floor(t * fps) mod n at time t.
+//     fog: WHAT IS SEEN WHEN: { g, s, glows, holes }: for each of the ground's things (in the ground's lists taken together),
+//       each of items, each glow and each hole, the tile (its place in the level's grid) that must have been seen for it to be
+//       drawn (Level.explored), or -1: always drawn. (--nofog leaves it out; the town has none.)
 //     variants: THE PLACE'S STATES, by name: door<i> (the level's doors and gates, shut to open in 21 steps), prop<i> (a
 //       chest open, a barrel or an urn broken: steps 0 and 1), stair<j> (the stairwell breaking open at each of its places),
 //       exit, cave, shaft (floor 3's door, floor 4's cave, floor 5's cage, as they open), way (the waypoint awake). Each
@@ -144,6 +147,17 @@ if (!args.includes('--still')) {
   console.log(`  its states in ${((Date.now() - ts) / 1000).toFixed(1)} s: ${Object.entries(st.sum).map(([k, v]) => `${v.n} ${k} (${v.changed} of ${v.frames} frames differ)`).join(', ')}; ${st.extra} pictures more${base.hg + base.hs + base.g + base.s ? `; (${base.hg + base.hs} gone and ${base.g + base.s} new with nothing changed: left out of every state)` : ''}`);
   for (const [k, v] of Object.entries(st.note)) console.log(`  !! ${k}: ${String(v).split('\n')[0]}`);
 }
+// what is seen when: the tile each thing waits on to have been seen
+let fog = null;
+if (depth > 0 && !args.includes('--nofog')) {
+  const tf = Date.now();
+  const r = await page.evaluate(({ T0, W, H }) => window.__rec.fog(T0, W, H), { T0, ...size });
+  if (r.err) console.log('  !! what is seen when: ' + String(r.err).split('\n')[0]);
+  else {
+    fog = await page.evaluate(() => window.__rec.fogOut);
+    console.log(`  what is seen when, in ${((Date.now() - tf) / 1000).toFixed(1)} s: of the ground's things and what stands, ${r.things.one} wait on one tile, ${r.things.many} on more than one (put on the tile they stand on), ${r.things.always} are always drawn${r.things.never ? `, ${r.things.never} never came` : ''}`);
+  }
+}
 const res = await page.evaluate(() => window.__rec.result);
 const sheets = await page.evaluate(() => window.__rec.sheets(4096));
 const pageErrors = await page.evaluate(() => window.__rec.errors);
@@ -177,6 +191,7 @@ const doc = {
   ground, items,
   holes: res.holes.map((h) => [h.x, h.y, h.r, h.ry, h.a, h.flicker]),
   glows: res.glows.map((g) => [key(g.f), g.x, g.y, g.w, g.h, g.a, g.flicker]),
+  ...(fog ? { fog } : {}),
   variants: Object.fromEntries(Object.entries(variants).map(([k, v]) => {
     // (each state: its frames, the same ones kept once: `steps` says which frame each step along it shows)
     const uniq = [];
