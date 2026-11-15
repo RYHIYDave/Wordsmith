@@ -131,12 +131,13 @@ export function bowOfPlace(place: HeroPlace): BowId | null {
   return null;
 }
 /**
- * THE TINKERER'S WRENCHES' SWITCH: OFF until she has been seen holding them in play and he says yes (his yes to their pictures,
- * 14 Nov 2026, shown docs/mockups/wrench_skins/pictures/wrenches_moves.mp4: “Yes, all four (Recommended)”). On, the Tinkerer
+ * THE TINKERER'S WRENCHES' SWITCH: ON, at his yes, 14 Nov 2026 (by 21:25 Eastern), shown the Tinkerer in the game with each wrench
+ * (docs/mockups/wrench_skins/pictures/wrenches_in_game.mp4) and asked whether to turn them on: “Yes, switch them on
+ * (Recommended)”. (His yes to their pictures before, shown wrenches_moves.mp4: “Yes, all four (Recommended)”.) On, the Tinkerer
  * holding a unique wrench is drawn holding it (her places with it, WRENCH_PLACES; the wrenches art/wrench_skins.ts), each
  * wrench's pictures a bake group of its own (render/baked.ts), as the Mage's staves and the Ranger's bows are.
  */
-export const WRENCH_SKINS = { on: false };
+export const WRENCH_SKINS = { on: true };
 /** The unique wrenches of the game (game/uniques.ts) that are drawn in her hand: each is its own skin's id. */
 export const WRENCH_OF_UNIQUE: Readonly<Record<string, WrenchId>> = { secondwhistle: 'secondwhistle', stickywrench: 'stickywrench', foremanswrench: 'foremanswrench', borrowedspanner: 'borrowedspanner' };
 /** The skin of the wrench an item is, if it is one of those (and the switch is on); null: her own wrench. */

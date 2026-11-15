@@ -3,7 +3,7 @@
 // done: “then do it for the rest of the cast”; asked whether to start, his pick: “Start the rest of the cast (Recommended)”.
 // PICTURES FIRST: nothing of the game draws these until he has seen them on her and said yes. Shown them
 // (docs/mockups/wrench_skins/pictures/wrenches_moves.mp4), 14 Nov 2026: “Yes, all four (Recommended)”. In the game behind
-// art/heroes.ts WRENCH_SKINS (off until his yes to them in play).
+// art/heroes.ts WRENCH_SKINS, ON at his yes to her holding them in play (by 21:25): “Yes, switch them on (Recommended)”.
 //
 // Her wrench is a skin laid on where it is (dev/sculpt_tinkerer.ts WrenchAt, WrenchSkin; her own wrench PLAIN_WRENCH, painted
 // exactly as before). Each of these is drawn to its picture in the bag (art/items_unique.ts), the same wrench in the hand:

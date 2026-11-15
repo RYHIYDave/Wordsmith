@@ -3491,7 +3491,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     staffSkins: STAFF_SKINS,
     /** (THE RANGER'S UNIQUE BOWS IN HIS HAND, art/bow_skins.ts) their switch, on at his yes (14 Nov 2026): `bowSkins.on`. */
     bowSkins: BOW_SKINS,
-    /** (THE TINKERER'S UNIQUE WRENCHES IN HER HAND, art/wrench_skins.ts) their switch, off until his yes in play: `wrenchSkins.on`. */
+    /** (THE TINKERER'S UNIQUE WRENCHES IN HER HAND, art/wrench_skins.ts) their switch, on at his yes (14 Nov 2026): `wrenchSkins.on`. */
     wrenchSkins: WRENCH_SKINS,
     /** (A UNIQUE'S PIPS, ui/panels.ts) which of its lines they count and their colour, for pictures of each: `uniquePips.count`, `.colour`, `.free`. */
     uniquePips: UNIQUE_PIPS,

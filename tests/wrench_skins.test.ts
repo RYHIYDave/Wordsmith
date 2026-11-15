@@ -1,7 +1,8 @@
 // THE TINKERER'S UNIQUE WRENCHES (art/wrench_skins.ts; dev/sculpt_tinkerer.ts WrenchSkin, PLAIN_WRENCH; in the game behind
 // art/heroes.ts WRENCH_SKINS). His word, 14 Nov 2026, of the Mage's staves done: “then do it for the rest of the cast”; shown
 // the four wrenches on her: “Yes, all four (Recommended)”.
-//   1. the switch is off; of the game only her art reads art/wrench_skins.ts;
+//   1. the switch is on (his yes to her in play: “Yes, switch them on (Recommended)”); off, no wrench is worn and none baked; of
+//      the game only her art reads art/wrench_skins.ts;
 //   2. her own wrench is the first skin, and painted with it she is the very frame she is painted as when nothing is said;
 //   3. each wrench is a wrench of its own;
 //   4. on: the four unique wrenches of the game are worn, each its own places in town and in a dungeon, its look that wrench,
@@ -38,11 +39,16 @@ const sample = (art: ReturnType<typeof makeTinkererArt>): Sprite[] => {
   return [sides[0].idle[0], sides[2 % sides.length].idle[3], sides[4 % sides.length].idle[0], sides[0].clips!.attack!.frames[4], sides[0].clips!.heavy!.frames[10], sides[1 % sides.length].walk[3]];
 };
 
-test('1. the switch is off; of the game only her art reads art/wrench_skins.ts', () => {
-  assert.equal(WRENCH_SKINS.on, false);
-  assert.equal(wrenchWorn({ rarity: 3, unique: 'stickywrench' }), null);
-  assert.equal(wornSkin('tinkerer', { rarity: 3, unique: 'stickywrench' }), null);
-  assert.ok(!Object.keys(bakeGroups(true)).some((k) => k.startsWith('tinkerer-')), 'off: none baked');
+test('1. the switch is on (his yes); off, no wrench is worn; of the game only her art reads art/wrench_skins.ts', () => {
+  assert.equal(WRENCH_SKINS.on, true);
+  WRENCH_SKINS.on = false;
+  try {
+    assert.equal(wrenchWorn({ rarity: 3, unique: 'stickywrench' }), null);
+    assert.equal(wornSkin('tinkerer', { rarity: 3, unique: 'stickywrench' }), null);
+    assert.ok(!Object.keys(bakeGroups(true)).some((k) => k.startsWith('tinkerer-')), 'off: none baked');
+  } finally {
+    WRENCH_SKINS.on = true;
+  }
   const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e: { name: string; isDirectory(): boolean }) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.ts') ? [`${dir}/${e.name}`] : []));
   const readers = walk('src').filter((f) => f !== 'src/art/wrench_skins.ts' && !f.startsWith('src/dev/') && /from '[^']*wrench_skins'/.test(readFileSync(f, 'utf8'))).sort();
   assert.deepEqual(readers, ['src/art/heroes3.ts']);
@@ -96,7 +102,7 @@ test('4. on: the four unique wrenches worn, their places and looks, her pictures
     const all = Object.values(g).flat().map(keyName);
     assert.equal(new Set(all).size, all.length, 'none twice');
   } finally {
-    WRENCH_SKINS.on = false;
+    WRENCH_SKINS.on = true;
   }
 });
 
@@ -152,7 +158,7 @@ test('5. on: her own wrench\'s set and a unique wrench\'s let go of as she swaps
     b.holdOnly('ranger', 'rainwalkerTown', false);
     assert.ok('value' in first('stickywrenchTown'), 'still hers');
   } finally {
-    WRENCH_SKINS.on = false;
+    WRENCH_SKINS.on = true;
     g0.createImageBitmap = had;
   }
 });
