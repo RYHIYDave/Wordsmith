@@ -35,6 +35,8 @@ import type { MonsterFigure } from '../art/bestiary';
 import { BONE } from '../art/kit';
 import { BLOOD as M_BLOOD, FLESH, FUR, GLOOM, IRON } from '../art/mkit';
 import { THRUST } from '../art/heroes3';
+import { heavyDrawn } from '../game/talents';
+import type { ClassId } from '../game/types';
 import { WILD } from '../art/moves3';
 import { OSSUARY, PALLOR, PLANK, SHROUD } from '../art/new_mobs3';
 import { P } from '../art/palette';
@@ -53,6 +55,33 @@ const STRUCK_STEEL: readonly string[] = ['#ffffff', P.gd5, P.gd4];
 const BLADE: readonly string[] = [P.white, CRACKLE[1], CRACKLE[2], CRACKLE[3]];
 /** How high a leap carries him, big and wild, in game pixels (the game's own: 24): render.ts lifts him so. */
 export const LEAP_LIFT = 40;
+/**
+ * THE WARRIOR'S SWIPE WITH THE AXE AND WITH THE MAUL, EACH ITS OWN (15 Nov 2026; his words to the main chat: “make sure all the
+ * animations for the warrior are correct”, and “Is the shoulder charge animation correct?”). Since his weapon tree (25.3.11) the
+ * game laid his great sword's Lunge on both: held 9 pixels off the floor at most, the sword's light streaming from a point before
+ * him, and at the end the Lunge's spear of light punched out of that point. But the art chat drew them otherwise
+ * (docs/mockups/warrior_weapons/README.md): LEAPING CHOP a leap up and over, the game to lift him 40 pixels at its top
+ * (art/warrior_up_axe_moves.ts AXE_CHOP_HIGH: the game's own leap's, LEAP_LIFT), the axe brought down into the floor as he lands;
+ * SHOULDER CHARGE a drive along the floor on his own run's legs, left shoulder first, then a skid. So, with this on: the Chop is
+ * the game's own leap (lifted to LEAP_LIFT, the wind off him, the blade brought down into the floor where he lands); the Charge
+ * keeps to the floor (no lift), the dust and grit torn up under him and the air streaming back off his shoulder as he drives, and
+ * dust skidding on ahead of him where he stops; the Lunge as before. Off until his yes to the film.
+ */
+export const WEAPON_LEAPS = { on: false };
+/** Which of the warrior's swipes a leap of his is: the axe's Chop, the maul's Charge, or his great sword's Lunge. */
+export function swipeOf(h: { cls?: string; talents?: readonly string[] }): 'chop' | 'charge' | 'lunge' | null {
+  if (h.cls !== 'warrior') return null;
+  const arms = heavyDrawn(h.cls as ClassId, h.talents ?? []);
+  return WEAPON_LEAPS.on && arms === 'axe' ? 'chop' : WEAPON_LEAPS.on && arms === 'hammer' ? 'charge' : 'lunge';
+}
+/** How high a hero's leap lifts them at its middle (game pixels): the warrior's Lunge low, his Charge not at all, every other leap the game's own. */
+export function leapLiftOf(h: { cls?: string; talents?: readonly string[] }): number {
+  const swipe = swipeOf(h);
+  if (THRUST.on && swipe === 'lunge') return THRUST_LIFT;
+  if (swipe === 'charge') return 0;
+  return WILD.on ? LEAP_LIFT : 24;
+}
+
 /** How high the warrior's diving thrust carries him off the floor at its middle (art/heroes3.ts THRUST): low, a dive, not a leap. */
 export const THRUST_LIFT = 9;
 /** How far before him the point of his sword is as he lands from the thrust (tiles), and how high (pixels). */
@@ -228,7 +257,7 @@ function beside(x: number, y: number, z: number, right: number, up: number): [nu
  * coming down, and the traps lying in wait.
  */
 export interface WildWorld {
-  hero: { x: number; y: number; fx: number; fy: number; cls?: string; move: { kind: string; t: number; dur: number; x0: number; y0: number; x1: number; y1: number } | null };
+  hero: { x: number; y: number; fx: number; fy: number; cls?: string; talents?: readonly string[]; move: { kind: string; t: number; dur: number; x0: number; y0: number; x1: number; y1: number } | null };
   orbs: ReadonlyArray<{ id: number; x: number; y: number; t: number; life: number }>;
   volleys: ReadonlyArray<{ id: number; x: number; y: number; r: number; t: number }>;
   traps: ReadonlyArray<{ x: number; y: number }>;
@@ -556,10 +585,14 @@ export class Wild {
     const fx = this.fx;
     const rate = (perSec: number): number => Math.floor(dt * perSec + Math.random());
     const mv = h.move;
-    const thrusting = THRUST.on && h.cls === 'warrior';
+    const swipe = swipeOf(h);
+    const thrusting = THRUST.on && swipe === 'lunge';
+    // (HIS SHOULDER CHARGE, WEAPON_LEAPS: along the floor)
+    const charging = swipe === 'charge';
     if (mv && mv !== this.moveSeen) {
       this.moveSeen = mv;
-      if (mv.kind === 'leap' && thrusting) this.thrustOff(mv.x0, mv.y0, mv.x1, mv.y1);
+      // (the Charge drives off his back foot as the Lunge does: the floor cracked, dust and grit kicked out behind, a jolt)
+      if (mv.kind === 'leap' && (thrusting || charging)) this.thrustOff(mv.x0, mv.y0, mv.x1, mv.y1);
       else if (mv.kind === 'leap') this.leapOff(mv.x0, mv.y0, mv.x1, mv.y1);
       else if (mv.kind === 'roll') this.rollOff(mv.x0, mv.y0, mv.x1, mv.y1);
     }
@@ -568,7 +601,19 @@ export class Wild {
       const len = Math.hypot(mv.x1 - mv.x0, mv.y1 - mv.y0) || 1;
       const ux = (mv.x1 - mv.x0) / len;
       const uy = (mv.y1 - mv.y0) / len;
-      if (mv.kind === 'leap' && thrusting) {
+      if (mv.kind === 'leap' && charging) {
+        // (THE CHARGE: on the floor, his left shoulder first: the air streaming back off him at his shoulder's height, and dust and
+        // grit torn up off the floor under his feet and thrown back behind him)
+        for (let i = rate(90); i > 0; i--) {
+          const v = rnd(4, 8);
+          this.spark(h.x + ux * 0.2 + rnd(-0.15, 0.15), h.y + uy * 0.2 + rnd(-0.15, 0.15), rnd(10, 22), -ux * v + rnd(-0.6, 0.6), -uy * v + rnd(-0.6, 0.6), rnd(-6, 6), rnd(0.06, 0.11), [AIR[1], AIR[2]], 0, rnd(5, 9));
+        }
+        for (let i = rate(90); i > 0; i--) {
+          const q = Math.atan2(-uy, -ux) + rnd(-0.9, 0.9);
+          const v = rnd(1.2, 3.2);
+          this.spark(h.x + rnd(-0.2, 0.2), h.y + rnd(-0.2, 0.2), 1, Math.cos(q) * v, Math.sin(q) * v, rnd(10, 40), rnd(0.25, 0.45), [P.st6, P.st5, P.st4], 200, 0, Math.random() < 0.3 ? 2 : 1);
+        }
+      } else if (mv.kind === 'leap' && thrusting) {
         // (THE DIVE: low over the floor, the point leading: wind streaming back along him from the point, the
         // blade's light left behind it in a line, and dust and grit torn up off the floor under him)
         const up = Math.sin(k * Math.PI) * THRUST_LIFT;
@@ -735,6 +780,24 @@ export class Wild {
     fx.freeze = Math.max(fx.freeze, 0.1);
   }
 
+  /** THE CHARGE STOPS (WEAPON_LEAPS): his front foot planted and sliding, dust and grit skidding on ahead of him, the floor scored under it; a jolt. */
+  private chargeStop(x: number, y: number): void {
+    const fx = this.fx;
+    const h = this.world?.hero;
+    const a = h ? Math.atan2(h.fy, h.fx) : 0;
+    const ux = Math.cos(a);
+    const uy = Math.sin(a);
+    const fx0 = x + ux * 0.35;
+    const fy0 = y + uy * 0.35;
+    this.cracksAt(fx0, fy0, 0.45, 3, 1.2);
+    for (let i = 0; i < 30; i++) {
+      const q = a + rnd(-0.7, 0.7);
+      const v = rnd(1.5, 4);
+      this.spark(fx0 + rnd(-0.12, 0.12), fy0 + rnd(-0.12, 0.12), 1, Math.cos(q) * v, Math.sin(q) * v, rnd(8, 40), rnd(0.35, 0.7), [P.st7, P.st6, P.st5, P.st4], 300, 0, Math.random() < 0.4 ? 2 : 1);
+    }
+    fx.shake = Math.max(fx.shake, 1.8);
+  }
+
   /** THE LEAP BEGINS: he drives up off the floor; it cracks under him, dust bursts out round his feet, and wind tears off him back the way he came; the screen jolts. */
   private leapOff(x0: number, y0: number, x1: number, y1: number): void {
     const fx = this.fx;
@@ -783,7 +846,13 @@ export class Wild {
    */
   landing(x: number, y: number, r: number): void {
     if (!WILD.on) return;
-    if (THRUST.on && this.world?.hero.cls === 'warrior') {
+    const swipe = this.world ? swipeOf(this.world.hero) : null;
+    // (HIS SHOULDER CHARGE, WEAPON_LEAPS: he skids to a stop, dust skidding on ahead of him; the Chop lands as the game's own leap, below)
+    if (swipe === 'charge') {
+      this.chargeStop(x, y);
+      return;
+    }
+    if (THRUST.on && swipe === 'lunge') {
       this.thrustLanding(x, y, r);
       return;
     }

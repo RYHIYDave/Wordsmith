@@ -36,6 +36,7 @@ import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
 import { SWAP_MOVES, TALENTS, TALENTS2, WARRIOR_TREE2 } from './game/talents';
 import { TWIN_AXES_SHOWN } from './render/figure';
+import { WEAPON_LEAPS } from './render/wild';
 import { QUEST_MARKS, SPEAK_NEW } from './game/quest_marks';
 import { SMALL_NOTES } from './art/small_notes';
 import { onTop } from './game/act2/quiettower';
@@ -3415,6 +3416,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     warriorTree2: WARRIOR_TREE2,
     /** THE WARRIOR'S TWIN AXES SHOWN (render/figure.ts TWIN_AXES_SHOWN), off until his yes: `twinAxesShown.on` for a film. */
     twinAxesShown: TWIN_AXES_SHOWN,
+    /** THE WARRIOR'S CHOP AND CHARGE EACH ITS OWN (render/wild.ts WEAPON_LEAPS), off until his yes: `weaponLeaps.on` for a film. */
+    weaponLeaps: WEAPON_LEAPS,
     /** THE MAGE'S AND THE RANGER'S MOVES TO SWAP, their trees drafted (game/talents.ts SWAP_MOVES), off until his yes: `swapMoves.on`. */
     swapMoves: SWAP_MOVES,
     /** THE LOADING SCREEN as a game begins (LOADING in main.ts), on at his yes: `loading.on` (dbg.run and dbg.first begin without it). */

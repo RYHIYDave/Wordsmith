@@ -192,7 +192,7 @@ import { WILD } from '../art/moves3';
 import { THRUST } from '../art/heroes3';
 import { HUSH } from '../art/crier';
 import { UNIQUE_PLAY } from './unique_play';
-import { LEAP_LIFT, THRUST_LIFT, drawWildArrow, drawWildWave } from './wild';
+import { LEAP_LIFT, drawWildArrow, drawWildWave, leapLiftOf } from './wild';
 import { golemCharge, makeContraptionArt, makeGolemArt } from '../art/tinkerer_art';
 // (THE GOLEM'S ROCKET JUMP AND ITS RUN, the art chat's, behind GOLEM_ROCKET: off until he has seen them in the game and said yes)
 import { GOLEM_ROCKET, ROCKET, RUN_STRIDE, golemRocketFrames, golemRocketFx, golemRunFrames, rocketShadow, rocketUp } from '../art/golem_rocket_fx';
@@ -2803,7 +2803,7 @@ export class Renderer {
       // (a hero in the air is further from their shadow: it is smaller and fainter at the top of a leap)
       // (THE VETERAN off the floor in a move: as high as the art has him, render/veteran_fx.ts)
       const vetUp = this.vetFx.liftOf(game);
-      const up = vetUp > 0 ? Math.min(1, vetUp / 40) : h.move && h.move.kind === 'leap' ? Math.sin(Math.PI * Math.min(1, h.move.t / h.move.dur)) * (THRUST.on && h.cls === 'warrior' ? THRUST_LIFT / LEAP_LIFT : 1) : 0;
+      const up = vetUp > 0 ? Math.min(1, vetUp / 40) : h.move && h.move.kind === 'leap' ? Math.sin(Math.PI * Math.min(1, h.move.t / h.move.dur)) * (leapLiftOf(h) / LEAP_LIFT) : 0;
       this.shadow(g, wx(cam, h.x, h.y), wy(cam, h.x, h.y), 0.36 * (1 - 0.3 * up), SHADOW * (1 - 0.35 * up));
     }
     for (const o of game.orbs) if (here(o.x, o.y)) this.shadow(g, wx(cam, o.x, o.y), wy(cam, o.x, o.y), 0.42, SHADOW * 0.85);
@@ -4104,7 +4104,8 @@ export class Renderer {
       let sy = relief ? wyFlat(cam, h.x, h.y) - heroLift : wy(cam, h.x, h.y);
       // (big and wild, art/moves3.ts WILD: higher: render/wild.ts, LEAP_LIFT)
       // (the warrior's diving thrust, in place of his leap: low over the floor, art/heroes3.ts THRUST)
-      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * (THRUST.on && h.cls === 'warrior' ? THRUST_LIFT : WILD.on ? LEAP_LIFT : 24);
+      // (his swipe with the axe a leap of the game's own height, with the maul along the floor: render/wild.ts WEAPON_LEAPS)
+      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * leapLiftOf(h);
       // (a roll that goes over a ledge or a pit is a dive: it leaves the floor, a little)
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);

@@ -86,7 +86,7 @@ export default async function (page) {
           if (t >= want) break;
           await page.waitForTimeout(15);
         }
-        const at = await ev(() => { const D = window.__dbg; const h = D.game().hero; const p = D.at(h.x, h.y); return { x: p.x, y: p.y, anim: h.anim, empty: !!h.handsEmpty }; });
+        const at = await ev(() => { const D = window.__dbg; const h = D.game().hero; const g = D.at(h.x, h.y); const p = D.screen.toClient(g.x, g.y); return { x: p.x, y: p.y, anim: h.anim, empty: !!h.handsEmpty }; });
         const clip = { x: Math.max(0, Math.round(at.x - 95)), y: Math.max(0, Math.round(at.y - 120)), width: 190, height: 160 };
         await page.screenshot({ path: `${dir}/${tag}_${String(i).padStart(2, '0')}.png`, clip });
       }
@@ -141,7 +141,7 @@ export default async function (page) {
           const secs = K.arms === 'axe' ? 2.2 : K.hold ? 1.6 : 1.2;
           if (K.hold) {
             // (held: the right button down toward a point before him, let go after a second)
-            const p = await ev((way) => { const D = window.__dbg; const h = D.game().hero; return D.at(h.x + way[0] * 3, h.y + way[1] * 3); }, way);
+            const p = await ev((way) => { const D = window.__dbg; const h = D.game().hero; const g = D.at(h.x + way[0] * 3, h.y + way[1] * 3); return D.screen.toClient(g.x, g.y); }, way);
             await page.mouse.move(p.x, p.y);
             await shoot(tag, secs, 14, async () => {
               await page.mouse.down({ button: 'right' });
@@ -159,7 +159,11 @@ export default async function (page) {
           });
           await page.keyboard.up(key);
         } else if (mv === 'swipe') {
-          await shoot(tag, 1.6, 12, () => ev((way) => { const g = window.__dbg.game(); const h = g.hero; g.useSkill(2, h.x + way[0] * 3, h.y + way[1] * 3); }, way));
+          // (the swipe is his evasive move: game.ts useEvasive, as tools/scenarios/warrior_baked.mjs makes it)
+          await shoot(tag, 1.6, 12, () => ev((way) => {
+            const g = window.__dbg.game(); const h = g.hero; const tx = h.x + way[0] * 3; const ty = h.y + way[1] * 3;
+            g.useEvasive(tx, ty, { mx: 0, my: 0, aimX: tx, aimY: ty, fire: false, approach: false, face: false, cast: false, castX: 0, castY: 0, hold: false, evade: true, evadeX: tx, evadeY: ty, potion: false, interact: false });
+          }, way));
         } else if (mv === 'walk') {
           const key = way[0] > 0 ? 'KeyS' : 'KeyW';
           await page.keyboard.down(key);
