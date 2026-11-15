@@ -65,6 +65,7 @@ var walked := 0.0
 ## HIS STATS (game/stats.ts derive), as a new Warrior has them (defs.ts CLASSES.warrior) with the Iron Greatsword (7 to 11,
 ## 1.05 a second, his Dex making it 1.09); his gear, his levels and his words change them (loot.gd derive).
 var stats := {"str": 14.0, "dex": 8.0, "int": 6.0, "level": 1, "dmg_min": 7.0, "dmg_max": 11.0, "aps": 1.092, "dmg_pct": 0.0,
+	"phys_pct": 0.0, "fire_pct": 0.0, "frost_pct": 0.0, "light_pct": 0.0, "poison_pct": 0.0, "cdr": 0.015,
 	"crit_chance": 5.8, "crit_mult": 50.0, "life_regen": 0.6, "life_on_hit": 0.0, "life_on_kill": 0.0, "armor": 0.0,
 	"move_speed": 0.0, "area": 1.0, "gold_find": 0.0}
 var max_life := 102.0
@@ -160,7 +161,7 @@ func rate() -> float:
 ## move's share x (1 + Str / 100) x (1 + his damage bonuses and Power's might / 100); a critical x(1 + crit_mult / 100).
 func roll_hit(share: float) -> float:
 	var might: float = _might * float(loadout.r(0)["might"])
-	var dmg: float = randf_range(stats["dmg_min"], stats["dmg_max"]) * share * (1.0 + stats["str"] / 100.0) * (1.0 + (stats["dmg_pct"] + might) / 100.0)
+	var dmg: float = randf_range(stats["dmg_min"], stats["dmg_max"]) * share * (1.0 + stats["str"] / 100.0) * (1.0 + (stats["dmg_pct"] + stats["phys_pct"] + might) / 100.0)
 	if randf() * 100.0 < stats["crit_chance"]:
 		dmg *= 1.0 + stats["crit_mult"] / 100.0
 	return maxf(1.0, roundf(dmg))

@@ -151,7 +151,7 @@ func _draw() -> void:
 	var s: Dictionary = hero.stats
 	_text(Vector2(sx, 46), "LEVEL %d" % loot.level, 13, PICK)
 	var lines := [
-		"DAMAGE  %d-%d" % [roundi(s["dmg_min"] * (1.0 + s["str"] / 100.0) * (1.0 + s["dmg_pct"] / 100.0)), roundi(s["dmg_max"] * (1.0 + s["str"] / 100.0) * (1.0 + s["dmg_pct"] / 100.0))],
+		"DAMAGE  %d-%d" % [roundi(s["dmg_min"] * (1.0 + s["str"] / 100.0) * (1.0 + (s["dmg_pct"] + s["phys_pct"]) / 100.0)), roundi(s["dmg_max"] * (1.0 + s["str"] / 100.0) * (1.0 + (s["dmg_pct"] + s["phys_pct"]) / 100.0))],
 		"ATTACKS  %.2f a second" % s["aps"],
 		"LIFE  %d" % roundi(hero.max_life),
 		"ARMOUR  %d" % roundi(s["armor"]),
