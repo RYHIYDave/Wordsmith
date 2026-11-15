@@ -260,7 +260,10 @@ through chat, so the art and sounds go into the project whole).
     Ledge Road's SKY is held to the screen and slides at half the ground's pace, the town far below in it, as the game draws it
     (render/outdoor.ts drawSky; `look.gd` `_Sky`). The Pinewood's trees, some 57,000 standing things in what can be seen, are
     written a row at a time (a run of still things at one depth within 256 game pixels across, `g`; `look.gd` `_Group`): what
-    is drawn and how a figure sorts against them is the same.
+    is drawn and how a figure sorts against them is the same. A TALL THING (a tree, a big rock, the gallows; 44 game pixels
+    tall or more) is SEEN THROUGH while the hero, or a monster in sight, stands behind it and its picture covers his middle,
+    his head or his feet, as the game does on the open ground (render.ts seeThrough: `look.gd` `_see_through2`, its pixels read
+    once as the look is laid out); `--only=seethrough` sets him down behind one on each floor, one line a floor.
   - `--only=descent` pictures and checks every step of it, and sums it up in one line, `DESCENT:`.
 - **A desktop icon**, "Wordsmith (Godot)", opens this project to play (it needs the `wordsmith` folder on this branch).
 
@@ -349,7 +352,7 @@ Melding words (the wordsmith's meld screen; the Meldstone and its two words are 
 INVENTORY while it is carried and its flight to the wordsmith's slab, words found from floor 6 down (and the nine words the
 Wilds' monsters carry that the Godot version has not yet: Fleeting, Frenzied, Guarding, Lasting, Twin, Vast, Volatile, Leech
 and Precise; a boss carrying one shows its dark square without the word's stone), the trees seen through when he is behind
-them (the game's SEEN_THROUGH), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's
+them on floors 1 to 5 (on the open floors they are: below), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's
 are eight big sheets, fetched as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), what a red circle or the
 Headsman's vault sends up as it lands and a bone arrow and the Warden's bolts in flight (plain drawings: the game's
 general effects are brought over only for the words so far), the glow that burning things and some figures give off (the game adds it over them; here only the

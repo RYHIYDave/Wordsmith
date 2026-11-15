@@ -467,6 +467,9 @@ func _build(where: String, arrive: String) -> void:
 		sight.hero = hero
 		sight.look = look if looked else null
 		sight.monsters = monsters
+		# (who may be behind a tall thing of the look, and seen through it: look.gd _see_through2)
+		if looked:
+			look.foes = monsters
 		sight.all = _arg("seeall") != "" or not (looked and look._fogged)
 		_place.add_child(sight)
 		if looked:
@@ -1753,6 +1756,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "floors":
 		await _floor_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "seethrough":
+		await _seethrough_shots(hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "ways":
@@ -3601,6 +3608,43 @@ func _floor_shots(h: Hero, dir: String) -> void:
 			await _wait(1.5)
 			await _snap(dir + "/f%d_3_boss.png" % n)
 		print("FLOOR %d: %s, %d monsters, %d doors, way on: %s" % [n, place_title(), _monsters.list.size(), map.doors.size(), ways.way_kind() if ways != null else ("stair" if _stairs != null else "-")])
+
+
+## SEEN THROUGH (look.gd _see_through2; render.ts seeThrough): on each of the open floors (or --floor), the hero set down
+## where a tall thing in front of him covers him (the walkable tile nearest his way in that has one), pictured; then on open
+## ground with nothing over him. One line a floor, SEETHROUGH.
+func _seethrough_shots(h: Hero, dir: String) -> void:
+	var only := int(_arg("floor")) if _arg("floor") != "" else 0
+	for n in range(6, FLOORS + 1):
+		if not has_floor(n) or (only != 0 and n != only):
+			continue
+		go_to("floor%d" % n, "down")
+		await _wait(1.0)
+		var start: Vector2 = h.world
+		var best := Vector2.INF
+		var under: Array = []
+		var clear := Vector2.INF
+		for y in map.h:
+			for x in map.w:
+				if map.walk[y * map.w + x] == 0:
+					continue
+				var w := Vector2(x + 0.5, y + 0.5)
+				var c: Array = look.covering(w)
+				if not c.is_empty() and (best == Vector2.INF or w.distance_to(start) < best.distance_to(start)):
+					best = w
+					under = c
+				elif c.is_empty() and (clear == Vector2.INF or w.distance_to(start) < clear.distance_to(start)):
+					clear = w
+		if best == Vector2.INF:
+			print("SEETHROUGH floor %d: no tile he can stand on has a tall thing in front of him" % n)
+			continue
+		h.world = best
+		await _wait(0.4)
+		var thin: int = look.seen_through()
+		await _snap(dir + "/st%d_behind.png" % n)
+		h.world = clear
+		await _wait(0.4)
+		print("SEETHROUGH floor %d: behind %d tall things at (%.1f, %.1f): %d seen through; on open ground: %d" % [n, under.size(), best.x, best.y, thin, look.seen_through()])
 
 
 ## The nearest place to `at` a body may stand.

@@ -100,6 +100,16 @@ var _motes: Sprite2D
 var _way_awake := false
 var _warp_node: Sprite2D
 var _warp_t := -1.0
+## (SEEN THROUGH: the tall things of a recorded look, each a sprite or one picture of a group, by the cells of the screen they
+## cover; each picture's solid pixels; those seen through now; and who may be behind one: the hero and the monsters (main.gd))
+const SEE_CELL := 128.0
+const SEE_TALL := 88.0  # picture pixels: act1_pieces.ts SEE_TALL, 44 game pixels
+const SEEN_THROUGH := 0.38
+var _see_cells := {}
+var _tall: Array = []
+var _see_masks := {}
+var _seen_now := {}
+var foes = null
 
 
 ## Whether a place has a recorded look.
@@ -542,6 +552,7 @@ func _process(dt: float) -> void:
 	if _format == 2:
 		_run2()
 		_step_plays(dt)
+		_see_through2()
 		if _dark != null and _hero != null:
 			_dark.material.set_shader_parameter("hero", _hero.position)
 		return
@@ -793,9 +804,14 @@ func _ready2() -> void:
 			var grp := _Group.new()
 			grp.look = self
 			grp.parts = it["g"]
+			grp.alpha.resize(grp.parts.size())
+			grp.alpha.fill(1.0)
 			grp.position = Vector2(float(it["x"]) * 2.0, float(it["d"]) * HH)
 			_s_node.append(grp)
 			stands.add_child(grp)
+			for k in grp.parts.size():
+				var q: Array = grp.parts[k]
+				_see_add(str(q[0]), Vector2(float(q[1]), float(q[2])) * 2.0, float(it["d"]), grp, k)
 			continue
 		var s := _sprite2(it, int(it.get("add", 0)) == 1)
 		_s_node.append(s)
@@ -807,12 +823,15 @@ func _ready2() -> void:
 		s.set_meta("dy", at.y - d * HH)
 		_place2(s, _first2(it["f"]))
 		stands.add_child(s)
+		if (it["f"] as Array).size() == 1 and not it.has("wall") and not it.has("w"):
+			_see_add(_first2(it["f"]), at, d, s, -1)
 		if it.has("prop"):
 			_props[int(it["prop"])] = {"node": s}
 		if it.has("wall"):
 			var w: Array = it["wall"]
 			stands.add_wall(s, float(w[2]), Vector2(w[0], w[1]) * 2.0, int(w[3]) if w.size() > 3 else -1)
 	_fog_begin()
+	_see_pictures()
 	if data.has("sky"):
 		_make_sky(data["sky"])
 
@@ -1054,6 +1073,8 @@ func _run2() -> void:
 ## The recorded dark: its veil with every hole cut (each an ellipse r by ry, its own strength), the hero's pool cut round him
 ## as he goes (the shader), and the glows, the game's own pictures of them, added over it.
 func _lighting2(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
+	# (him, for what is seen through as he goes behind it, whether or not the place is dark)
+	_hero = hero
 	var dk: Dictionary = data.get("dark", {"a": 0.0, "rgb": [0, 0, 0]})
 	var a: float = dk["a"]
 	var glows_root := Node2D.new()
@@ -1393,19 +1414,143 @@ func _flush_dark() -> void:
 	_dark.texture.update(_dark_img)
 
 
+# --- seen through (render.ts seeThrough, veil) ---
+
+## A tall thing of the look (a tree, a tall rock, a big piece) put down for SEEING THROUGH: its picture `key` with its anchor
+## at `at` (picture pixels), its depth `d`, drawn by `node` (a sprite, or a group and which of its pictures, `k`).
+func _see_add(key: String, at: Vector2, d: float, node, k: int) -> void:
+	var pic: Dictionary = _pics.get(key, {})
+	if pic.is_empty():
+		return
+	var r: Rect2 = pic["rect"]
+	# (on the descent's open ground, as the game has it: render.ts openGround; elsewhere the walls fade, stands.gd)
+	if r.size.y < SEE_TALL or int(data.get("depth", 0)) < 6:
+		return
+	var box := Rect2(at - pic["anchor"], r.size)
+	var i := _tall.size()
+	_tall.append({"key": key, "box": box, "d": d, "node": node, "k": k})
+	for cy in range(floori(box.position.y / SEE_CELL), floori(box.end.y / SEE_CELL) + 1):
+		for cx in range(floori(box.position.x / SEE_CELL), floori(box.end.x / SEE_CELL) + 1):
+			var c := Vector2i(cx, cy)
+			if not _see_cells.has(c):
+				_see_cells[c] = PackedInt32Array()
+			_see_cells[c].append(i)
+
+
+## The tall things' pictures as pictures of their own, to read their pixels by: each sheet that has any read once, as the
+## look is laid out, and let go of (a sheet's pixels are many; the tall pictures on it are few).
+func _see_pictures() -> void:
+	var by_sheet := {}
+	for e in _tall:
+		var key: String = e["key"]
+		if _see_masks.has(key):
+			continue
+		_see_masks[key] = null
+		var sheet: Texture2D = _pics[key]["sheet"]
+		if not by_sheet.has(sheet):
+			by_sheet[sheet] = []
+		by_sheet[sheet].append(key)
+	for sheet in by_sheet:
+		var img: Image = sheet.get_image()
+		if img == null:
+			continue
+		if img.is_compressed():
+			img.decompress()
+		for key in by_sheet[sheet]:
+			_see_masks[key] = img.get_region(Rect2i(_pics[key]["rect"]))
+
+
+## WHAT IS SEEN THROUGH NOW (render.ts seeThrough, on the descent's open ground; veil on any floor): a tall thing in front of
+## the hero, or of a monster in sight, whose picture covers his middle, his head or his feet (3, 14 and 28 game pixels up from
+## them) is drawn at SEEN_THROUGH; at once, as the game does it, frame by frame.
+func _see_through2() -> void:
+	if _tall.is_empty():
+		return
+	var who: Array = []
+	if _hero != null and is_instance_valid(_hero):
+		who.append(_hero.world)
+	if foes != null and is_instance_valid(foes):
+		var vp := get_viewport_rect()
+		var cam := get_viewport().get_camera_2d()
+		var mid: Vector2 = cam.get_screen_center_position() if cam != null else Vector2.ZERO
+		for m in foes.list:
+			if is_instance_valid(m) and not m.dead and m.seen:
+				var w: Vector2 = m.world
+				var sp := Vector2((w.x - w.y) * 32.0, (w.x + w.y) * 16.0)
+				if absf(sp.x - mid.x) < vp.size.x and absf(sp.y - mid.y) < vp.size.y:
+					who.append(w)
+	var now := {}
+	for w in who:
+		for i in covering(w):
+			now[i] = true
+	for i in _seen_now:
+		if not now.has(i):
+			_see_alpha(_tall[i], 1.0)
+	for i in now:
+		if not _seen_now.has(i):
+			_see_alpha(_tall[i], SEEN_THROUGH)
+	_seen_now = now
+
+
+## The tall things in front of a body standing at `w` (tiles) whose pictures cover his middle, his head or his feet.
+func covering(w: Vector2) -> Array:
+	var out: Array = []
+	var feet := Vector2((w.x - w.y) * 32.0, (w.x + w.y) * 16.0)
+	var dw: float = w.x + w.y
+	for up in [3.0, 14.0, 28.0]:
+		var pt: Vector2 = feet - Vector2(0, up * 2.0)
+		var c := Vector2i(floori(pt.x / SEE_CELL), floori(pt.y / SEE_CELL))
+		if not _see_cells.has(c):
+			continue
+		for i in _see_cells[c]:
+			if out.has(i):
+				continue
+			var e: Dictionary = _tall[i]
+			var box: Rect2 = e["box"]
+			if dw >= float(e["d"]) or not box.has_point(pt):
+				continue
+			var m: Image = _see_masks.get(e["key"])
+			if m == null:
+				continue
+			var lx := clampi(floori(pt.x - box.position.x), 0, m.get_width() - 1)
+			var ly := clampi(floori(pt.y - box.position.y), 0, m.get_height() - 1)
+			if m.get_pixel(lx, ly).a > 0.0:
+				out.append(i)
+	return out
+
+
+## How many tall things are seen through now.
+func seen_through() -> int:
+	return _seen_now.size()
+
+
+func _see_alpha(e: Dictionary, a: float) -> void:
+	var node = e["node"]
+	if not is_instance_valid(node):
+		return
+	if int(e["k"]) < 0:
+		node.self_modulate.a = a
+	else:
+		node.alpha[int(e["k"])] = a
+		node.queue_redraw()
+
+
 ## Still things that stand at one depth side by side, as one (tools/godot_record.mjs `g`: the Pinewood's trees, a row of them
 ## within a column of the screen): each picture drawn in its order, its anchor where it stands.
 class _Group extends Node2D:
 	var look
 	var parts: Array = []
+	## (how solid each is drawn: seen through while someone is behind it)
+	var alpha := PackedFloat32Array()
 
 	func _draw() -> void:
-		for p in parts:
+		for i in parts.size():
+			var p: Array = parts[i]
 			var pic: Dictionary = look._pics.get(str(p[0]), {})
 			if pic.is_empty():
 				continue
 			var r: Rect2 = pic["rect"]
-			draw_texture_rect_region(pic["sheet"], Rect2(Vector2(float(p[1]), float(p[2])) * 2.0 - position - pic["anchor"], r.size), r)
+			draw_texture_rect_region(pic["sheet"], Rect2(Vector2(float(p[1]), float(p[2])) * 2.0 - position - pic["anchor"], r.size), r, Color(1, 1, 1, alpha[i] if i < alpha.size() else 1.0))
 
 
 ## THE SKY, drawn on the screen as the game draws it (render/outdoor.ts drawSky; the screen here is the game's, 480 by 270 game
