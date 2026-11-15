@@ -65,9 +65,10 @@ export const LEAP_LIFT = 40;
  * SHOULDER CHARGE a drive along the floor on his own run's legs, left shoulder first, then a skid. So, with this on: the Chop is
  * the game's own leap (lifted to LEAP_LIFT, the wind off him, the blade brought down into the floor where he lands); the Charge
  * keeps to the floor (no lift), the dust and grit torn up under him and the air streaming back off his shoulder as he drives, and
- * dust skidding on ahead of him where he stops; the Lunge as before. Off until his yes to the film.
+ * dust skidding on ahead of him where he stops; the Lunge as before. ON at his yes to its film (warrior_swipes.mp4, the live
+ * game beside it mended), 15 Nov 2026, by 15:56: “Yes, all three (Recommended)”.
  */
-export const WEAPON_LEAPS = { on: false };
+export const WEAPON_LEAPS = { on: true };
 /** Which of the warrior's swipes a leap of his is: the axe's Chop, the maul's Charge, or his great sword's Lunge. */
 export function swipeOf(h: { cls?: string; talents?: readonly string[] }): 'chop' | 'charge' | 'lunge' | null {
   if (h.cls !== 'warrior') return null;

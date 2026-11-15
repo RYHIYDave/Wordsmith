@@ -156,9 +156,10 @@ export const WHIRL_SPIN = { on: true, hitAt: 6 / 30 };
  * throwing both, braced with both out, catching both standing and on the run (clips.moves twinThrow, twinBraced, twinCatch,
  * twinRunCatch: docs/mockups/warrior_weapons/README.md), and the bake has them; but the figure showed his one axe's throw, brace
  * and catch while two flew. Found by the main chat, 15 Nov 2026, at his words: “make sure all the animations for the warrior are
- * correct”. Behind this switch: OFF until his yes to a film of it.
+ * correct”. Behind this switch: ON at his yes to its film (warrior_swipes.mp4, the live game beside it mended), by 15:56:
+ * “Yes, all three (Recommended)”.
  */
-export const TWIN_AXES_SHOWN = { on: false };
+export const TWIN_AXES_SHOWN = { on: true };
 const ONCE_ROUND = new WeakMap<Clip, Clip>();
 
 /** A figure's whirlwind (`clips.whirl`, its turn from its loop round) as one turn: an attack whose blow lands at WHIRL_SPIN.hitAt. */

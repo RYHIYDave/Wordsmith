@@ -3414,9 +3414,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     smallNotes: SMALL_NOTES,
     /** THE WARRIOR'S NEW TREE, drafted (game/talents.ts WARRIOR_TREE2: his three weapons), off until his yes: `warriorTree2.on`. */
     warriorTree2: WARRIOR_TREE2,
-    /** THE WARRIOR'S TWIN AXES SHOWN (render/figure.ts TWIN_AXES_SHOWN), off until his yes: `twinAxesShown.on` for a film. */
+    /** THE WARRIOR'S TWIN AXES SHOWN (render/figure.ts TWIN_AXES_SHOWN), on at his yes of 15 Nov: `twinAxesShown.on`. */
     twinAxesShown: TWIN_AXES_SHOWN,
-    /** THE WARRIOR'S CHOP AND CHARGE EACH ITS OWN (render/wild.ts WEAPON_LEAPS), off until his yes: `weaponLeaps.on` for a film. */
+    /** THE WARRIOR'S CHOP AND CHARGE EACH ITS OWN (render/wild.ts WEAPON_LEAPS), on at his yes of 15 Nov: `weaponLeaps.on`. */
     weaponLeaps: WEAPON_LEAPS,
     /** THE MAGE'S AND THE RANGER'S MOVES TO SWAP, their trees drafted (game/talents.ts SWAP_MOVES), off until his yes: `swapMoves.on`. */
     swapMoves: SWAP_MOVES,
