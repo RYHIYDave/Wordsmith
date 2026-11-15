@@ -48,7 +48,8 @@ chat: `main` is untouched, nothing is published.
 - Her own wrench as a skin: 528 frames (every fifth of every list, from her eight sides) hashed the same as before.
 - tests/wrench_skins.test.ts (5: the switch; her own wrench the same frames; each wrench its own; the four worn, their places,
   looks, her art painted with each, one set of her for town and a dungeon, a bake group each; her sets let go of as she swaps,
-  not by the Ranger's places).
+  not by the Ranger's places). With the bow and staff tests, bake_marks, baked, hero_cards_baked, tinkerer and the core: 30 of 30
+  on e1eb337.
 - In the game (dist/wrench_look.html, unbaked): her with each wrench put on from her bag, on floor 11 and in town, filmed
   (wrenches_in_game.mp4 and _sides.png): his yes.
 - NOT CHECKED: her groups baked in a real browser (the let-go is the staves', checked so); a whole bake; the release page; his
