@@ -30,6 +30,7 @@ const SAY_FOR := 1.9
 const LINES := {
 	"warden": ["None leave my halls.", "Another one for the cells.", "The keys are mine. So are you."],
 	"headsman": ["Kneel.", "The block is waiting.", "Your name is on my list."],
+	"amalgam": ["Join us.", "More bones. More.", "We are many. Be one of us."],
 }
 
 var main  # main.gd

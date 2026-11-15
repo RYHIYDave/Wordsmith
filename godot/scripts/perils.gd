@@ -157,6 +157,9 @@ func _process(dt: float) -> void:
 						hero.hurt(p["dmg"])
 				if p["t"] >= MM.LOCKDOWN["stand"] + MM.LOCKDOWN["rise"]:
 					stays = false
+			"am_lines", "am_ring", "am_drop", "am_arm":
+				# (the Ossuary Amalgamation's, floor 4's boss: at the foot of this file)
+				stays = _am_step(p)
 			_:
 				var s = p.get("src")
 				if s != null and not is_instance_valid(s):
@@ -279,6 +282,9 @@ func _draw() -> void:
 				_draw_sigil(p)
 			"rime":
 				_draw_rime(p)
+			"am_lines", "am_ring", "am_drop", "am_arm":
+				# (the Ossuary Amalgamation's, floor 4's boss: at the foot of this file)
+				_am_draw(p)
 
 
 ## The fire sigil (a stand-in for the art chat's pictures, art/action_f2_fx.ts sigilPainted): its ring traced round under the hero as
@@ -364,3 +370,210 @@ func _draw_bars(p: Dictionary) -> void:
 			draw_line(at, at + Vector2(0, -tall), iron, 3.0)
 			y += 0.5
 		draw_line(Iso.to_screen(rx, y0) + Vector2(0, -tall), Iso.to_screen(rx, y1) + Vector2(0, -tall), hot, 3.0)
+
+
+# =============================================================================================
+# THE OSSUARY AMALGAMATION'S (floor 4's boss: amalgam.gd): what its moves mark on the floor and leave there (game/bosses.ts
+# amActing, stepAmPeril, and stepPerils' 'arm'). Stand-ins for the game's own pictures of them (render/act1_fx/amalgam.ts and
+# render/bossfx.ts, from art/amalgam_action_fx.ts). Each carries its own numbers, `n`, as amalgam.gd gives them.
+#   am_lines  lines marked on the floor before it while it winds up: its grasping fan's dozen arms, its devour's cone. Drawn
+#             from where it stands (they go with it), running out and brightening. Harmless: the blow is its own.
+#   am_ring   its weight landing: a ring going out over the floor round where its hands come down, the floor cracked a
+#             while. Harmless: what strikes is the skulls and the arms.
+#   am_drop   a skull of its bone rain. Its clock runs up to its landing (its 0) and on to its scuff's end: for the last `fly`
+#             seconds before it lands its shadow is on the floor, growing, the reach of its burst ringed round it, and the
+#             skull comes down out of its niche in the wall; at 0 it bursts, a hero within `r` struck; `mite_at` on, a bone
+#             mite pulls itself together there (`form`, amalgam.gd's, is called with the place).
+#   am_arm    a hole of arms of the dead. Its crack glows `warn` before; at `hit` the arms burst up, and `up` after a hero
+#             within `r` is struck; they claw at the air `time`, sinking back at the last, and the crack fades over `after`.
+
+const AM_BONE := Color(0.94, 0.91, 1.0)
+const AM_BONE_DEEP := Color(0.69, 0.64, 0.88)
+## (how ragged a crack's six ways are: a share each, the same every time)
+const AM_RAG := [0.12, 0.83, 0.41, 0.66, 0.27, 0.95]
+
+var _am_heard := 0.0
+
+
+## Lines marked on the floor before monster `src`, each [from, to] as (tiles before it, tiles to the left it is drawn with,
+## `hand`), for `dur` seconds: run out to their full length over `grow` seconds (0: whole at once, brightening over `dur`);
+## `claws`: a claw's three slashes at each line's end once it is out.
+func am_lines(src: Object, hand: int, segs: Array, dur: float, grow: float, claws: bool) -> void:
+	list.append({"kind": "am_lines", "src": src, "hand": hand, "segs": segs, "t": 0.0, "dur": dur, "grow": grow, "claws": claws})
+
+
+## The ring of its slam, `r` tiles round (x, y); `n`: {wave, fade, long}.
+func am_ring(x: float, y: float, r: float, n: Dictionary) -> void:
+	list.append({"kind": "am_ring", "x": x, "y": y, "r": r, "t": 0.0, "n": n})
+
+
+## A skull of the bone rain that will land at (x, y) `land` seconds from now, falling from its niche at `from`; `which`: its
+## own number among the rain's (for its picture, when it has one); `n`: {fly, r, mite_at, scuff, high}; `form`: called with
+## where it burst, to make its mite.
+func am_drop(x: float, y: float, land: float, dmg: float, from: Vector2, which: int, n: Dictionary, form: Callable) -> void:
+	list.append({"kind": "am_drop", "x": x, "y": y, "t": -land, "dmg": dmg, "from": from, "which": which, "n": n, "form": form, "done": 0})
+
+
+## A hole of arms of the dead at (x, y), bursting up `hit` seconds from now; `n`: {warn, up, r, time, after}.
+func am_arm(x: float, y: float, hit: float, dmg: float, n: Dictionary) -> void:
+	list.append({"kind": "am_arm", "x": x, "y": y, "t": 0.0, "hit": hit, "dmg": dmg, "n": n, "done": 0})
+
+
+## A step of one of them (its clock has run on already); false: it is over.
+func _am_step(p: Dictionary) -> bool:
+	var at := Vector2(p.get("x", 0.0), p.get("y", 0.0))
+	match p["kind"]:
+		"am_lines":
+			# (they are its own: gone with it)
+			var s = p["src"]
+			return p["t"] < p["dur"] and is_instance_valid(s) and not s.dead
+		"am_ring":
+			return p["t"] < p["n"]["long"]
+		"am_drop":
+			var n: Dictionary = p["n"]
+			if p["done"] == 0 and p["t"] >= 0.0:
+				# (it bursts where it lands)
+				p["done"] = 1
+				if hero.alive and hero.world.distance_to(at) <= n["r"]:
+					hero.hurt(p["dmg"])
+				hero.kick(0.6)
+				# (heard, but not every skull of a wave at once: they would take every voice there is)
+				var now := Time.get_ticks_msec() / 1000.0
+				if now - _am_heard >= 0.04:
+					_am_heard = now
+					sfx.play("hit", -12.0)
+			if p["done"] == 1 and p["t"] >= n["mite_at"]:
+				p["done"] = 2
+				var form: Callable = p["form"]
+				if form.is_valid():
+					form.call(at)
+			return p["t"] < n["scuff"]
+		"am_arm":
+			var n: Dictionary = p["n"]
+			if p["done"] == 0 and p["t"] >= p["hit"] + n["up"]:
+				# (the arms are up: whoever stands over them is struck)
+				p["done"] = 1
+				if hero.alive and hero.world.distance_to(at) <= n["r"]:
+					hero.hurt(p["dmg"])
+				hero.kick(1.0)
+			return p["t"] < p["hit"] + n["time"] + n["after"]
+	return false
+
+
+## A point (tiles before it, tiles to the left it is drawn with) of a figure at `world` facing `f`, on the screen.
+func _am_at(world: Vector2, f: Vector2, hand: float, v: Vector2) -> Vector2:
+	return Iso.to_screen(world.x + f.x * v.x + f.y * hand * v.y, world.y + f.y * v.x - f.x * hand * v.y)
+
+
+## An oval on the screen round `c` (picture pixels), closed.
+func _am_oval(c: Vector2, rx: float, ry: float, n := 20) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for i in n + 1:
+		var a := TAU * i / n
+		pts.append(c + Vector2(cos(a) * rx, sin(a) * ry))
+	return pts
+
+
+func _am_draw(p: Dictionary) -> void:
+	var t: float = p["t"]
+	match p["kind"]:
+		"am_lines":
+			var src = p["src"]
+			if not is_instance_valid(src):
+				return
+			var grow: float = p["grow"]
+			var k := clampf(t / (grow if grow > 0.0 else float(p["dur"])), 0.0, 1.0)
+			var c := Color(GOLD, minf(1.0, 0.25 + 0.75 * k))
+			for s in p["segs"]:
+				var a: Vector2 = s[0]
+				var b: Vector2 = a.lerp(s[1], k) if grow > 0.0 else s[1]
+				var pa := _am_at(src.world, src.face, p["hand"], a)
+				var pb := _am_at(src.world, src.face, p["hand"], b)
+				draw_line(pa, pb, Color(ENEMY, c.a * 0.35), 4.0)
+				draw_dashed_line(pa, pb, c, 2.0, 5.0)
+				if p["claws"] and k > 0.95:
+					for j in [-1.0, 0.0, 1.0]:
+						draw_line(pb + Vector2(-6.0 + j * 6.0, -3.0 - j * 2.0), pb + Vector2(6.0 + j * 6.0, 3.0 - j * 2.0), GOLD, 2.0)
+		"am_ring":
+			var n: Dictionary = p["n"]
+			var r: float = p["r"]
+			var reach := r * (1.0 - pow(1.0 - clampf(t / n["wave"], 0.0, 1.0), 3.0))
+			var a := 1.0 - clampf((t - n["wave"]) / n["fade"], 0.0, 1.0)
+			if a > 0.0:
+				draw_polyline(_ring(p["x"], p["y"], reach), Color(1, 0.75, 0.8, a), 4.0)
+				draw_polyline(_ring(p["x"], p["y"], reach * 0.9), Color(AM_BONE, a * 0.6), 2.0)
+			# (the floor cracked round where it landed, fading)
+			var left := 1.0 - clampf(t / n["long"], 0.0, 1.0)
+			for i in 12:
+				var ang := TAU * i / 12.0 + 0.4 * sin(i * 5.3)
+				var d := Vector2(cos(ang), sin(ang))
+				var from := 0.35 * r
+				var to := minf(reach, r * (0.7 + 0.25 * sin(i * 3.1)))
+				if to > from:
+					draw_line(Iso.to_screen(p["x"] + d.x * from, p["y"] + d.y * from), Iso.to_screen(p["x"] + d.x * to, p["y"] + d.y * to), Color(SHADOW, 0.55 * left), 2.0)
+		"am_drop":
+			var n: Dictionary = p["n"]
+			if t < -n["fly"]:
+				return
+			var at := Iso.to_screen(p["x"], p["y"])
+			if t < 0.0:
+				# (its shadow, growing and darkening as it comes down; the reach of its burst ringed round it, filling in)
+				var k := clampf(1.0 + t / n["fly"], 0.0, 1.0)
+				var rx := 7.0 + 20.0 * k * k
+				draw_colored_polygon(_am_oval(at, rx, rx * 0.5), Color(SHADOW, 0.25 + 0.6 * k))
+				draw_polyline(_ring(p["x"], p["y"], n["r"]), Color(ENEMY, 0.3 + 0.6 * k), 2.0)
+				# (the skull: thrown out of its niche in the wall and in over the floor high, down steep at the last onto its
+				# shadow: art/amalgam_action_fx.ts dropAt, its height in game pixels)
+				var from: Vector2 = p["from"]
+				var w := from.lerp(Vector2(p["x"], p["y"]), 1.0 - pow(1.0 - k, 2.2))
+				var z: float = 46.0 * (1.0 - k) + n["high"] * sin(PI * minf(1.0, k * 0.62 + 0.38 * k * k)) * (1.0 - k) + 300.0 * k * (1.0 - k) * (1.0 - k)
+				var s := Iso.to_screen(w.x, w.y) - Vector2(0, maxf(0.0, z) * 2.0)
+				draw_line(s + Vector2(0, -8), s + Vector2(0, -30), Color(ENEMY, 0.5), 3.0)
+				draw_circle(s, 9.0, AM_BONE)
+				draw_circle(s + Vector2(-3, 0), 2.0, ENEMY)
+				draw_circle(s + Vector2(3, 0), 2.0, ENEMY)
+				return
+			# (it bursts where it lands: a flash; a band of bone dust out to its reach in 0.12 s, fading; the scuff where it struck)
+			var scuff: float = 1.0 - clampf((t - 0.6) / (n["scuff"] - 0.6), 0.0, 1.0)
+			draw_colored_polygon(_am_oval(at, 18.0, 8.0), Color(SHADOW, 0.5 * scuff))
+			var reach: float = n["r"] * (1.0 - pow(1.0 - clampf(t / 0.12, 0.0, 1.0), 3.0))
+			var left := 1.0 - clampf((t - 0.12) / 0.25, 0.0, 1.0)
+			if left > 0.0:
+				draw_polyline(_ring(p["x"], p["y"], reach), Color(AM_BONE, left), 3.0)
+			if t < 0.08:
+				draw_circle(at + Vector2(0, -12), 4.0 + 8.0 * (1.0 - t / 0.08), Color(1, 0.97, 0.92, 0.8))
+		"am_arm":
+			var n: Dictionary = p["n"]
+			var u: float = t - float(p["hit"])
+			if u < -n["warn"]:
+				return
+			var at := Iso.to_screen(p["x"], p["y"])
+			var stay: float = n["time"]
+			# (the floor cracking open there, out every way, its cracks glowing brighter and longer as the arms come; dark round
+			# the hole while they are up; fading after: art/boss_shots.ts drawArmCrack)
+			var coming: float = 1.0 + u / n["warn"] if u < 0.0 else 1.0
+			var fade: float = 1.0 if u < stay else clampf(1.0 - (u - stay) / n["after"], 0.0, 1.0)
+			var hot: float = 0.35 + 0.65 * coming if u < 0.0 else clampf(1.0 - u / 0.25, 0.0, 1.0)
+			for i in 6:
+				var ang: float = TAU * i / 6.0 + 0.7 * AM_RAG[i]
+				var long: float = (0.28 + 0.2 * AM_RAG[5 - i]) * (0.35 + 0.65 * coming)
+				var tip := Iso.to_screen(p["x"] + cos(ang) * long, p["y"] + sin(ang) * long)
+				draw_line(at, tip, Color(GOLD if hot > 0.6 else ENEMY, fade) if hot > 0.1 else Color(SHADOW, 0.8 * fade), 2.0)
+			if u < 0.0:
+				draw_circle(at, 3.0 + 4.0 * coming, Color(GOLD, 0.25 + 0.35 * coming))
+				return
+			if u >= stay:
+				return
+			# (the hole, and four arms of the dead thrust up out of it in 0.15 s, clawing, swaying; sunk back by the end:
+			# art/amalgam_action_fx.ts bigArmsPainted)
+			var out: float = 1.0 - pow(1.0 - u / 0.15, 2.0) if u < 0.15 else 1.0 - smoothstep(0.0, 1.0, (u - 1.0) / (stay - 0.12 - 1.0))
+			draw_colored_polygon(_ring(p["x"], p["y"], 0.35), Color(SHADOW, 0.9))
+			draw_polyline(_ring(p["x"], p["y"], 0.35), Color(ENEMY, 0.8), 2.0)
+			for k in 4:
+				var base := at + Vector2(-12.0 + 8.0 * k, 3.0 * sin(k * 2.0))
+				var sway := sin(u * 7.0 + k * 2.1) * 6.0
+				var elbow := base + Vector2(sway * 0.5, -34.0 * out)
+				var hand := elbow + Vector2(sway + (k - 1.5) * 5.0, -30.0 * out)
+				draw_line(base, elbow, AM_BONE_DEEP, 5.0)
+				draw_line(elbow, hand, AM_BONE, 4.0)
+				draw_circle(hand, 4.0, AM_BONE)
