@@ -11,6 +11,16 @@
 //   co_ring_<r>  the Chained One's rings (art/chained_action_fx.ts ringPainted; render/act1_fx/chained.ts): the whirl's (3.5
 //                tiles), the ball's (2.5), the hammer's (1.5). 1.6 s each.
 //   co_crack_<w> his lash's crack, run along way w of the sixteen round (crackPainted). 1.8 s each.
+//   am_ring_<r>  the Ossuary Amalgamation's slam rings (art/amalgam_action_fx.ts slamRingPainted; render/act1_fx/amalgam.ts):
+//                the bone rain's (3.2 tiles) and the floor arms' (2.8).
+//   am_drop_<s>  a skull of its rain, by its seed (0 to 7; dropPainted): its shadow and its mark from the second before it
+//                lands (`k0` frames before the film's 0), its burst and its scuff after.
+//   am_skull     the skull itself, tumbling (makeRainSkullArt: 8 pictures, layer `air`; the game picks one by its clock).
+//   am_arm       the arms of the dead burst up out of a hole (makeBigArmArt: 13 frames at 10 a second, layer `stand`).
+//   am_arm_crack the floor cracking open where they will burst up, glowing, and dark round the hole after (art/boss_shots.ts
+//                drawArmCrack, the game's own painter, painted here onto a canvas of the game's pixels): from 0.5 s before
+//                they burst to 0.8 s after they are gone.
+// A film's `k0`: the frame its first picture is, counted from the film's own time 0 (less than 0: it begins before it).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
@@ -19,6 +29,8 @@ import { gameSwitches } from './godot_switches';
 import { toSprite } from '../src/art/kit';
 import { RING as F3_RING, RING_CANVAS, ringPainted as f3Ring } from '../src/art/action_f3_fx';
 import { CRACK, CRACK_CANVAS, RING as CO_RING, crackPainted, ringCanvas, ringPainted as coRing } from '../src/art/chained_action_fx';
+import { BIG_ARM_FPS, BIG_ARM_FRAMES, BIG_ARM_TIME, DROP_CANVAS, RAIN, RAIN_SKULL_FRAMES, SLAM_RING, dropPainted, makeBigArmArt, makeRainSkullArt, slamRingCanvas, slamRingPainted } from '../src/art/amalgam_action_fx';
+import { ARM_CRACK_AFTER, ARM_CRACK_WARN, drawArmCrack } from '../src/art/boss_shots';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -26,7 +38,7 @@ const OUT = 'godot/assets/fx';
 mkdirSync(OUT, { recursive: true });
 const FPS = 30;
 
-interface Film { fps: number; n: number; layers: Record<string, number[]> }
+interface Film { fps: number; n: number; k0: number; layers: Record<string, number[]> }
 const films: Record<string, Film> = {};
 /** The pictures, each once: its pixels (picture pixels), and where its top left lies from the floor point. */
 const pics: { w: number; h: number; d: Uint8ClampedArray; ox: number; oy: number }[] = [];
@@ -35,8 +47,11 @@ const seen = new Map<string, number>();
 /** A sprite as a picture: in picture pixels, cut to what is painted; -1 if nothing is. */
 function pic(s: Sprite | null): number {
   if (!s) return -1;
-  const p = paintingOf(s);
-  const k = 2 / (s.density ?? 1);
+  return rawPic(paintingOf(s), 2 / (s.density ?? 1), s.ax * 2, s.ay * 2);
+}
+
+/** A painting (`k` picture pixels to each of its own), its floor point at (ax2, ay2) picture pixels from its corner, as a picture. */
+function rawPic(p: { w: number; h: number; d: Uint8ClampedArray }, k: number, ax2: number, ay2: number): number {
   let x0 = p.w;
   let y0 = p.h;
   let x1 = -1;
@@ -56,8 +71,8 @@ function pic(s: Sprite | null): number {
     const o = ((y0 + Math.floor(y / k)) * p.w + x0 + Math.floor(x / k)) * 4;
     d.set(p.d.subarray(o, o + 4), (y * w + x) * 4);
   }
-  const ox = x0 * k - s.ax * 2;
-  const oy = y0 * k - s.ay * 2;
+  const ox = x0 * k - ax2;
+  const oy = y0 * k - ay2;
   let hash = 0;
   for (let i = 0; i < d.length; i++) hash = (Math.imul(hash, 31) + d[i]) | 0;
   const key = `${w}x${h}@${ox},${oy}#${hash}`;
@@ -68,12 +83,49 @@ function pic(s: Sprite | null): number {
   return pics.length - 1;
 }
 
-/** A film of `secs` seconds: each layer's frame `k` as the game paints it. */
-function film(name: string, secs: number, layers: Record<string, (k: number) => Sprite | null>): void {
-  const n = Math.floor(secs * FPS) + 1;
+/** A film from `t0` to `secs` seconds (of its own time): each layer's frame `k` (counted from its time 0) as the game paints it. */
+function film(name: string, secs: number, layers: Record<string, (k: number) => Sprite | number | null>, t0 = 0): void {
+  const k0 = Math.round(t0 * FPS);
+  const n = Math.floor(secs * FPS) - k0 + 1;
   const out: Record<string, number[]> = {};
-  for (const [layer, at] of Object.entries(layers)) out[layer] = Array.from({ length: n }, (_, k) => pic(at(k)));
-  films[name] = { fps: FPS, n, layers: out };
+  for (const [layer, at] of Object.entries(layers)) {
+    out[layer] = Array.from({ length: n }, (_, i) => {
+      const q = at(k0 + i);
+      return typeof q === 'number' ? q : pic(q);
+    });
+  }
+  films[name] = { fps: FPS, n, k0, layers: out };
+}
+
+/**
+ * A CANVAS OF THE GAME'S PIXELS for one of the game's own floor painters that lays single pixels (fillRect, globalAlpha,
+ * fillStyle '#rrggbb'): what it lays, one over another as a canvas would.
+ */
+class Dots {
+  globalAlpha = 1;
+  fillStyle = '#000000';
+  d: Uint8ClampedArray;
+  constructor(public w: number, public h: number) {
+    this.d = new Uint8ClampedArray(w * h * 4);
+  }
+  fillRect(x: number, y: number, w: number, h: number): void {
+    const c = this.fillStyle;
+    const r = parseInt(c.slice(1, 3), 16);
+    const g = parseInt(c.slice(3, 5), 16);
+    const b = parseInt(c.slice(5, 7), 16);
+    const a = Math.max(0, Math.min(1, this.globalAlpha));
+    for (let j = Math.round(y); j < Math.round(y) + h; j++) for (let i = Math.round(x); i < Math.round(x) + w; i++) {
+      if (i < 0 || j < 0 || i >= this.w || j >= this.h) continue;
+      const o = (j * this.w + i) * 4;
+      const da = this.d[o + 3] / 255;
+      const oa = a + da * (1 - a);
+      if (oa <= 0) continue;
+      this.d[o] = (r * a + this.d[o] * da * (1 - a)) / oa;
+      this.d[o + 1] = (g * a + this.d[o + 1] * da * (1 - a)) / oa;
+      this.d[o + 2] = (b * a + this.d[o + 2] * da * (1 - a)) / oa;
+      this.d[o + 3] = Math.round(oa * 255);
+    }
+  }
 }
 
 type Layer = 'floor' | 'behind' | 'before';
@@ -91,6 +143,33 @@ const WAYS = 16;
 for (let w = 0; w < WAYS; w++) {
   const a = (w / WAYS) * 2 * Math.PI;
   film(`co_crack_${w}`, CRACK.long, three((what, k) => toSprite(crackPainted(k / FPS, what === 'floor' ? 'floor' : 'air', [Math.cos(a), Math.sin(a)], what === 'floor' ? 'all' : what), null, CRACK_CANVAS.ax, CRACK_CANVAS.ay)));
+}
+
+// the Ossuary Amalgamation's (render/act1_fx/amalgam.ts, render/bossfx.ts)
+for (const r of [SLAM_RING.rain, SLAM_RING.arms]) {
+  const C = slamRingCanvas(r);
+  film(`am_ring_${r}`, SLAM_RING.long, three((what, k) => toSprite(slamRingPainted(k / FPS, what === 'floor' ? 'floor' : 'air', r, what === 'floor' ? 'all' : what), null, C.ax, C.ay)));
+}
+for (let seed = 0; seed < 8; seed++) {
+  const drop = (what: Layer, k: number): Sprite => toSprite(dropPainted(k / FPS, what === 'floor' ? 'floor' : 'air', seed, what === 'floor' ? 'all' : what), null, DROP_CANVAS.ax, DROP_CANVAS.ay);
+  // (what stands of it only from when it lands, as the game has it)
+  film(`am_drop_${seed}`, RAIN.mite.scuff, { floor: (k) => drop('floor', k), behind: (k) => (k < 0 ? null : drop('behind', k)), before: (k) => (k < 0 ? null : drop('before', k)) }, -RAIN.fly);
+}
+{
+  const skulls = makeRainSkullArt('front');
+  films.am_skull = { fps: 0, n: RAIN_SKULL_FRAMES, k0: 0, layers: { air: Array.from({ length: RAIN_SKULL_FRAMES }, (_, i) => pic(skulls[i])) } };
+  const arms = makeBigArmArt('front');
+  films.am_arm = { fps: BIG_ARM_FPS, n: BIG_ARM_FRAMES, k0: 0, layers: { stand: Array.from({ length: BIG_ARM_FRAMES }, (_, i) => pic(arms[i])) } };
+  // (the crack: the game's own painter on a canvas of the game's pixels, its floor point in the canvas's middle)
+  const W = 96;
+  const H = 64;
+  film('am_arm_crack', BIG_ARM_TIME + ARM_CRACK_AFTER, {
+    floor: (k) => {
+      const g = new Dots(W, H);
+      drawArmCrack(g as unknown as CanvasRenderingContext2D, (x, y) => [W / 2 + (x - y) * 16, H / 2 + (x + y) * 8] as const, 0, 0, k / FPS, BIG_ARM_TIME);
+      return rawPic(g, 2, W, H);
+    },
+  }, -ARM_CRACK_WARN);
 }
 
 // --- the sheets: the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---

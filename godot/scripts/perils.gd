@@ -19,6 +19,10 @@ const ENEMY := Color(0.96, 0.27, 0.47)
 const BL3 := Color("#a81c2c")
 const BL4 := Color("#e03c44")
 const BL5 := Color("#ff8a80")
+## (art/mkit.ts FLAME[2], FLAME[3]: the enemy's pink and its gold, of the bosses' dotted marks)
+const FLAME2 := Color("#ff4f8a")
+const FLAME3 := Color("#ffb070")
+var _air: Node2D
 const GOLD := Color(1.0, 0.78, 0.35)
 const SHADOW := Color(0.02, 0.02, 0.07)
 
@@ -126,6 +130,10 @@ func drop(src: Object, kinds := ["warn", "lane", "aim"]) -> void:
 
 
 func _ready() -> void:
+	_air = _Air.new()
+	_air.perils = self
+	_air.z_index = 40
+	add_child(_air)
 	if _fx.is_empty():
 		_fx = {"films": {}, "pics": [], "sheets": []}
 		if FileAccess.file_exists(FX_DIR + "fx.json"):
@@ -139,34 +147,37 @@ func has_film(name: String) -> bool:
 	return _fx.get("films", {}).has(name)
 
 
-## The frame of a film `t` seconds in (-1: over, or before it).
+## The frame of a film `t` seconds of its own time in (-1: over, or before it). A film may begin before its time 0 (`k0`).
 func _film_frame(name: String, t: float) -> int:
 	var F: Dictionary = _fx["films"][name]
-	var k := floori(t * float(F["fps"]))
-	return k if t >= 0.0 and k < int(F["n"]) else -1
+	var k := floori(t * float(F["fps"]) + 1e-6) - int(F.get("k0", 0))
+	return k if k >= 0 and k < int(F["n"]) else -1
+
+
+## A picture of a film's layer, by its number in it, drawn with its floor point at `at` (picture pixels) on `c`.
+func _film_pic(c: CanvasItem, name: String, layer: String, i: int, at: Vector2) -> void:
+	var L: Array = _fx["films"][name]["layers"].get(layer, [])
+	if i < 0 or i >= L.size() or int(L[i]) < 0:
+		return
+	var q: Array = _fx["pics"][int(L[i])]
+	c.draw_texture_rect_region(_fx_sheets[int(q[0])], Rect2(at + Vector2(q[5], q[6]), Vector2(q[3], q[4])), Rect2(q[1], q[2], q[3], q[4]))
 
 
 ## A film's floor layer at its frame, drawn at a place on the floor (in _draw: under the figures).
 func _film_floor(name: String, t: float, at: Vector2) -> void:
-	var k := _film_frame(name, t)
-	if k < 0:
-		return
-	var i := int(_fx["films"][name]["layers"]["floor"][k])
-	if i < 0:
-		return
-	var q: Array = _fx["pics"][i]
-	draw_texture_rect_region(_fx_sheets[int(q[0])], Rect2(Iso.to_screen(at.x, at.y) + Vector2(q[5], q[6]), Vector2(q[3], q[4])), Rect2(q[1], q[2], q[3], q[4]))
+	_film_pic(self, name, "floor", _film_frame(name, t), Iso.to_screen(at.x, at.y))
 
 
-## A film's layers that stand among the figures, just behind and just before one standing at its middle (render/act1_fx:
-## c.stand at depth -0.02 and +0.02): each a picture among what stands, kept with the mark and gone with it.
+## A film's layers that stand among the figures: `behind` and `before`, just behind and just before one standing at its
+## middle (render/act1_fx: c.stand at depth -0.02 and +0.02), and `stand`, at its own depth: each a picture among what stands,
+## kept with the mark and gone with it.
 func _film_stands(p: Dictionary, name: String, t: float, at: Vector2) -> void:
 	if stands == null:
 		return
 	var k := _film_frame(name, t)
 	var F: Dictionary = _fx["films"][name]
 	var scr := Iso.to_screen(at.x, at.y)
-	for layer: String in ["behind", "before"]:
+	for layer: String in ["behind", "before", "stand"]:
 		if not F["layers"].has(layer):
 			continue
 		var key: String = "fx_" + layer
@@ -184,7 +195,7 @@ func _film_stands(p: Dictionary, name: String, t: float, at: Vector2) -> void:
 		if i < 0:
 			continue
 		var q: Array = _fx["pics"][i]
-		var d := at.x + at.y + (-0.02 if layer == "behind" else 0.02)
+		var d := at.x + at.y + (-0.02 if layer == "behind" else (0.02 if layer == "before" else 0.0))
 		s.texture = _fx_sheets[int(q[0])]
 		s.region_rect = Rect2(q[1], q[2], q[3], q[4])
 		s.position = Vector2(scr.x, d * 16.0)
@@ -193,7 +204,7 @@ func _film_stands(p: Dictionary, name: String, t: float, at: Vector2) -> void:
 
 ## A mark gone: what of its film stood among the figures goes with it.
 func _film_free(p: Dictionary) -> void:
-	for key: String in ["fx_behind", "fx_before"]:
+	for key: String in ["fx_behind", "fx_before", "fx_stand"]:
 		var s = p.get(key)
 		if s != null and is_instance_valid(s):
 			s.queue_free()
@@ -214,7 +225,54 @@ func _film_of(p: Dictionary) -> Array:
 			var w: Vector2 = p["way"]
 			var way := posmod(roundi(atan2(w.y, w.x) / TAU * 16.0), 16)
 			return ["co_crack_%d" % way, p["t"], Vector2(p["x"], p["y"]) + w * ((Chained.CRACK["from"] + Chained.CRACK["to"]) / 2.0)]
+		"am_ring":
+			# (the Ossuary Amalgamation's slam rings, by their radius: render/act1_fx/amalgam.ts)
+			return ["am_ring_%s" % str(p["r"]), p["t"], Vector2(p["x"], p["y"])]
+		"am_drop":
+			# (a skull of its rain, by its seed: its burst and its scuff stand among the figures from when it lands)
+			return ["am_drop_%d" % posmod(int(p["which"]), 8), p["t"], Vector2(p["x"], p["y"])]
+		"am_arm":
+			# (the arms of the dead up out of their hole, from when they burst: render/bossfx.ts)
+			return ["am_arm", float(p["t"]) - float(p["hit"]), Vector2(p["x"], p["y"])]
 	return []
+
+
+## A dotted line of the warning along the floor from `a` to `b` (tiles), `k` (0 to 1) of the way to its full strength, as the
+## bosses' marks are drawn (render/act1_fx/amalgam.ts dotLine): single game pixels, nine to a tile, every third the brighter.
+func _dot_line(a: Vector2, b: Vector2, k: float) -> void:
+	var n := maxi(2, roundi(a.distance_to(b) * 9.0))
+	var alpha := minf(1.0, 0.25 + 0.75 * k)
+	for i in n + 1:
+		var w := a.lerp(b, float(i) / n)
+		var q := Iso.to_screen(w.x, w.y) / 2.0
+		draw_rect(Rect2(roundf(q.x) * 2.0, roundf(q.y) * 2.0, 2.0, 2.0), Color(FLAME3 if i % 3 == 0 else FLAME2, alpha))
+
+
+## WHAT IS OVER EVERYTHING THAT STANDS (render/act1_fx `air`): drawn on a layer of its own over the figures, under the dark.
+func _draw_air(c: CanvasItem) -> void:
+	for p in list:
+		if p["kind"] == "am_drop" and has_film("am_skull"):
+			# (the skull in flight, out of its niche and down onto its shadow, tumbling: art/amalgam_action_fx.ts dropAt)
+			var n: Dictionary = p["n"]
+			var t: float = p["t"]
+			if t < -n["fly"] or t >= 0.0:
+				continue
+			var k := clampf((t + n["fly"]) / n["fly"], 0.0, 1.0)
+			var from: Vector2 = p["from"]
+			var w := from.lerp(Vector2(p["x"], p["y"]), 1.0 - pow(1.0 - k, 2.2))
+			var z: float = 46.0 * (1.0 - k) + n["high"] * sin(PI * minf(1.0, k * 0.62 + 0.38 * k * k)) * (1.0 - k) + 300.0 * k * (1.0 - k) * (1.0 - k)
+			var frames := int(_fx["films"]["am_skull"]["n"])
+			var i := posmod(floori((t + n["fly"]) * frames * 2.2) + int(p["which"]), frames)
+			var at := Iso.to_screen(w.x, w.y) / 2.0
+			_film_pic(c, "am_skull", "air", i, Vector2(roundf(at.x), roundf(at.y - maxf(0.0, z))) * 2.0)
+
+
+## The layer over the figures (see _draw_air).
+class _Air extends Node2D:
+	var perils
+
+	func _draw() -> void:
+		perils._draw_air(self)
 
 
 func _process(dt: float) -> void:
@@ -317,6 +375,8 @@ func _process(dt: float) -> void:
 			_film_free(p)
 	list = keep
 	queue_redraw()
+	if _air != null:
+		_air.queue_redraw()
 
 
 func _on_a_row(p: Dictionary, at: Vector2) -> bool:
@@ -1079,6 +1139,11 @@ func _am_at(world: Vector2, f: Vector2, hand: float, v: Vector2) -> Vector2:
 	return Iso.to_screen(world.x + f.x * v.x + f.y * hand * v.y, world.y + f.y * v.x - f.x * hand * v.y)
 
 
+## The same place, on the floor (tiles).
+func _am_world(world: Vector2, f: Vector2, hand: float, v: Vector2) -> Vector2:
+	return Vector2(world.x + f.x * v.x + f.y * hand * v.y, world.y + f.y * v.x - f.x * hand * v.y)
+
+
 ## An oval on the screen round `c` (picture pixels), closed.
 func _am_oval(c: Vector2, rx: float, ry: float, n := 20) -> PackedVector2Array:
 	var pts := PackedVector2Array()
@@ -1097,20 +1162,26 @@ func _am_draw(p: Dictionary) -> void:
 				return
 			var grow: float = p["grow"]
 			var k := clampf(t / (grow if grow > 0.0 else float(p["dur"])), 0.0, 1.0)
-			var c := Color(GOLD, minf(1.0, 0.25 + 0.75 * k))
+			# (THE GAME'S OWN: each line in the warning's dots, drawn out from it; a claw's three slashes where it will close:
+			# render/act1_fx/amalgam.ts)
 			for s in p["segs"]:
 				var a: Vector2 = s[0]
 				var b: Vector2 = a.lerp(s[1], k) if grow > 0.0 else s[1]
-				var pa := _am_at(src.world, src.face, p["hand"], a)
-				var pb := _am_at(src.world, src.face, p["hand"], b)
-				draw_line(pa, pb, Color(ENEMY, c.a * 0.35), 4.0)
-				draw_dashed_line(pa, pb, c, 2.0, 5.0)
+				var wa := _am_world(src.world, src.face, p["hand"], a)
+				var wb := _am_world(src.world, src.face, p["hand"], b)
+				_dot_line(wa, wb, k)
 				if p["claws"] and k > 0.95:
-					for j in [-1.0, 0.0, 1.0]:
-						draw_line(pb + Vector2(-6.0 + j * 6.0, -3.0 - j * 2.0), pb + Vector2(6.0 + j * 6.0, 3.0 - j * 2.0), GOLD, 2.0)
+					var e := Iso.to_screen(wb.x, wb.y) / 2.0
+					for j in [-1, 0, 1]:
+						for i in range(-3, 4):
+							draw_rect(Rect2(roundf(e.x + i + j * 3) * 2.0, roundf(e.y + i * 0.5 - j) * 2.0, 2.0, 2.0), FLAME3)
 		"am_ring":
 			var n: Dictionary = p["n"]
 			var r: float = p["r"]
+			var fm := _film_of(p)
+			if has_film(fm[0]):
+				_film_floor(fm[0], t, fm[2])
+				return
 			var reach := r * (1.0 - pow(1.0 - clampf(t / n["wave"], 0.0, 1.0), 3.0))
 			var a := 1.0 - clampf((t - n["wave"]) / n["fade"], 0.0, 1.0)
 			if a > 0.0:
@@ -1128,6 +1199,12 @@ func _am_draw(p: Dictionary) -> void:
 		"am_drop":
 			var n: Dictionary = p["n"]
 			if t < -n["fly"]:
+				return
+			var fm := _film_of(p)
+			if has_film(fm[0]):
+				# (THE GAME'S OWN: its shadow and its mark the second before it lands, its burst and its scuff after; the skull
+				# itself over everything: _draw_air)
+				_film_floor(fm[0], t, fm[2])
 				return
 			var at := Iso.to_screen(p["x"], p["y"])
 			if t < 0.0:
@@ -1160,6 +1237,11 @@ func _am_draw(p: Dictionary) -> void:
 			var n: Dictionary = p["n"]
 			var u: float = t - float(p["hit"])
 			if u < -n["warn"]:
+				return
+			if has_film("am_arm_crack"):
+				# (THE GAME'S OWN: the floor cracking open and glowing, art/boss_shots.ts drawArmCrack; the arms stand among the
+				# figures: _film_of)
+				_film_floor("am_arm_crack", u, Vector2(p["x"], p["y"]))
 				return
 			var at := Iso.to_screen(p["x"], p["y"])
 			var stay: float = n["time"]
