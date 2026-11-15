@@ -13,7 +13,7 @@ import { log } from './lib.mjs';
 
 const KITS = {
   greatsword: { talents: ['greatsword'], skills: ['strike', 'whirl', 'leap'], arms: undefined },
-  gswhirlwind: { talents: ['greatsword', 'gswhirlwind'], skills: ['strike', 'whirl', 'leap'], arms: undefined, hold: true, only: ['hold'] },
+  gswhirlwind: { talents: ['greatsword', 'gswhirlwind'], skills: ['strike', 'whirlwind', 'leap'], arms: undefined, hold: true, only: ['hold'] },
   battleaxe: { talents: ['battleaxe'], skills: ['cleave', 'axethrow', 'chop'], arms: 'axe' },
   twinaxes: { talents: ['battleaxe', 'twinaxes'], skills: ['cleave', 'axethrow', 'chop'], arms: 'axe', only: ['hold', 'runthrow'] },
   warhammer: { talents: ['warhammer'], skills: ['smash', 'quake', 'charge'], arms: 'hammer' },
@@ -21,7 +21,8 @@ const KITS = {
 };
 /** What each weapon's pictures must hold, from every side (render/figure.ts reads them so). */
 const WANTS = {
-  greatsword: { clips: ['attack', 'attack2', 'whirl', 'whirlEnd', 'leap', 'reel', 'lurch', 'fall'], moves: [] },
+  // (the great sword's Whirlwind let go of has no picture of its own: it goes on into his guard, as his set was drawn)
+  greatsword: { clips: ['attack', 'attack2', 'whirl', 'leap', 'reel', 'lurch', 'fall'], moves: [] },
   axe: { clips: ['attack', 'attack2', 'heavy', 'hold', 'release', 'leap', 'land', 'reel', 'lurch', 'fall'], moves: ['chopCrouch', 'cleaveAppear', 'runEmpty', 'runCatch', 'twinThrow', 'twinBraced', 'twinCatch', 'twinRunCatch'] },
   hammer: { clips: ['attack', 'attack2', 'heavy', 'leap', 'land', 'reel', 'lurch', 'fall'], moves: ['chargeCrouch'] },
 };
