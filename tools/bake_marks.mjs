@@ -21,7 +21,7 @@ export const HERO_ROOTS = {
   ranger: ['src/art/hero3_ranger.ts', 'src/art/ranger_up.ts', 'src/art/ranger_up_art.ts', 'src/art/bow_skins.ts'],
   mage: ['src/art/hero3_mage.ts', 'src/art/mage_up.ts', 'src/art/mage_up_art.ts', 'src/art/staff_skins.ts'],
   warlock: ['src/art/warlock_art.ts'],
-  tinkerer: ['src/art/tinkerer_art.ts'],
+  tinkerer: ['src/art/tinkerer_art.ts', 'src/art/wrench_skins.ts'],
   brawler: ['src/art/brawler_art.ts', 'src/art/veteran_art.ts'],
 };
 /** The one file that hands each hero his art: its imports of the roots are where a hero's own art begins. */

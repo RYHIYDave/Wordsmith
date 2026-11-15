@@ -22,6 +22,14 @@ const STAVES = [
   ['resonance', 'tuningstaff', 'Resonance'],
   ['rod', 'kindlingrod', 'The Kindling Rod'],
 ];
+// (HERO=tinkerer: the Tinkerer's unique wrenches, art/wrench_skins.ts, their switch art/heroes.ts WRENCH_SKINS put on here)
+const WRENCHES = [
+  ['plain', null, 'Her own wrench'],
+  ['secondwhistle', 'secondwhistle', 'The Second Whistle'],
+  ['stickywrench', 'stickywrench', 'Tarwrench'],
+  ['foremanswrench', 'foremanswrench', "The Foreman's Wrench"],
+  ['borrowedspanner', 'borrowedspanner', 'The Borrowed Spanner'],
+];
 // (HERO=ranger: the Ranger's unique bows, art/bow_skins.ts, their switch art/heroes.ts BOW_SKINS put on here)
 const BOWS = [
   ['plain', null, 'His own bow'],
@@ -33,7 +41,7 @@ const BOWS = [
 
 export default async function (page, snap) {
   const hero = process.env.HERO || 'mage';
-  const WEAPONS = hero === 'ranger' ? BOWS : STAVES;
+  const WEAPONS = hero === 'ranger' ? BOWS : hero === 'tinkerer' ? WRENCHES : STAVES;
   const out = process.env.OUT || '/dev/shm/staffs';
   const only = process.env.ONLY || '';
   const [cw, ch] = [150, 110];
@@ -45,6 +53,7 @@ export default async function (page, snap) {
     if (d.paintDefer) d.paintDefer.on = false;
     d.staffSkins.on = true;
     d.bowSkins.on = true;
+    d.wrenchSkins.on = true;
     d.run(hero, 9); d.seasoned(20); d.autoLevel = false; d.autoWords = false; d.god = true;
   }, hero);
   await page.waitForTimeout(600);

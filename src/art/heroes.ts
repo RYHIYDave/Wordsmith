@@ -53,6 +53,11 @@ export interface HeroLook {
    * absent, his own bow, as ever.
    */
   bow?: BowId;
+  /**
+   * THE TINKERER'S WRENCH (art/wrench_skins.ts, WRENCH_SKINS): the skin of the unique wrench she holds, drawn in her hand from her
+   * eight sides; absent, her own wrench, as ever.
+   */
+  wrench?: WrenchId;
 }
 
 /** (THE MAGE'S STAFF, art/staff_skins.ts) The unique staves drawn in her hands, each a skin of her staff. */
@@ -63,12 +68,16 @@ export const STAFF_IDS: readonly StaffId[] = ['crook', 'ebb', 'resonance', 'rod'
 export type BowId = 'rainwalker' | 'threefold' | 'poachers' | 'fledgling';
 export const BOW_IDS: readonly BowId[] = ['rainwalker', 'threefold', 'poachers', 'fledgling'];
 
+/** (THE TINKERER'S WRENCH, art/wrench_skins.ts) The unique wrenches drawn in her hand, each a skin of her wrench. */
+export type WrenchId = 'secondwhistle' | 'stickywrench' | 'foremanswrench' | 'borrowedspanner';
+export const WRENCH_IDS: readonly WrenchId[] = ['secondwhistle', 'stickywrench', 'foremanswrench', 'borrowedspanner'];
+
 /**
  * WHICH OF A HERO'S PICTURES the side painter paints ahead (render/painter.ts): in town, in a dungeon; and the warlock's
  * others (art/warlock_art.ts): the demon's, and his with his arm blazing; and (28 Oct 2026) the new classes on their class
  * cards, too heavy for the start screen to paint as it draws them (`card`).
  */
-export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card' | 'axe' | 'axeTown' | 'hammer' | 'hammerTown' | 'crook' | 'crookTown' | 'ebb' | 'ebbTown' | 'resonance' | 'resonanceTown' | 'rod' | 'rodTown' | 'rainwalker' | 'rainwalkerTown' | 'threefold' | 'threefoldTown' | 'poachers' | 'poachersTown' | 'fledgling' | 'fledglingTown';
+export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card' | 'axe' | 'axeTown' | 'hammer' | 'hammerTown' | 'crook' | 'crookTown' | 'ebb' | 'ebbTown' | 'resonance' | 'resonanceTown' | 'rod' | 'rodTown' | 'rainwalker' | 'rainwalkerTown' | 'threefold' | 'threefoldTown' | 'poachers' | 'poachersTown' | 'fledgling' | 'fledglingTown' | 'secondwhistle' | 'secondwhistleTown' | 'stickywrench' | 'stickywrenchTown' | 'foremanswrench' | 'foremanswrenchTown' | 'borrowedspanner' | 'borrowedspannerTown';
 /** (THE WARRIOR'S WEAPON, WARRIOR_TREE2) His places with the war axe and the maul: in a dungeon, and in town. */
 export const HEAVY_PLACES: Readonly<Record<HeavyWeapon, { dungeon: HeroPlace; town: HeroPlace }>> = { axe: { dungeon: 'axe', town: 'axeTown' }, hammer: { dungeon: 'hammer', town: 'hammerTown' } };
 /** (THE MAGE'S STAFF, art/staff_skins.ts) Her places with each unique staff: in a dungeon, and in town. */
@@ -122,10 +131,37 @@ export function bowOfPlace(place: HeroPlace): BowId | null {
   return null;
 }
 /**
+ * THE TINKERER'S WRENCHES' SWITCH: OFF until she has been seen holding them in play and he says yes (his yes to their pictures,
+ * 14 Nov 2026, shown docs/mockups/wrench_skins/pictures/wrenches_moves.mp4: “Yes, all four (Recommended)”). On, the Tinkerer
+ * holding a unique wrench is drawn holding it (her places with it, WRENCH_PLACES; the wrenches art/wrench_skins.ts), each
+ * wrench's pictures a bake group of its own (render/baked.ts), as the Mage's staves and the Ranger's bows are.
+ */
+export const WRENCH_SKINS = { on: false };
+/** The unique wrenches of the game (game/uniques.ts) that are drawn in her hand: each is its own skin's id. */
+export const WRENCH_OF_UNIQUE: Readonly<Record<string, WrenchId>> = { secondwhistle: 'secondwhistle', stickywrench: 'stickywrench', foremanswrench: 'foremanswrench', borrowedspanner: 'borrowedspanner' };
+/** The skin of the wrench an item is, if it is one of those (and the switch is on); null: her own wrench. */
+export function wrenchWorn(item: { unique?: string; rarity?: number } | null | undefined): WrenchId | null {
+  if (!WRENCH_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;
+  return WRENCH_OF_UNIQUE[item.unique] ?? null;
+}
+/** (THE TINKERER'S WRENCH) Her places with each unique wrench: in a dungeon, and in town (one set of her for both, as her own). */
+export const WRENCH_PLACES: Readonly<Record<WrenchId, { dungeon: HeroPlace; town: HeroPlace }>> = {
+  secondwhistle: { dungeon: 'secondwhistle', town: 'secondwhistleTown' },
+  stickywrench: { dungeon: 'stickywrench', town: 'stickywrenchTown' },
+  foremanswrench: { dungeon: 'foremanswrench', town: 'foremanswrenchTown' },
+  borrowedspanner: { dungeon: 'borrowedspanner', town: 'borrowedspannerTown' },
+};
+/** Is a place one of a wrench's (and which). */
+export function wrenchOfPlace(place: HeroPlace): WrenchId | null {
+  for (const id of WRENCH_IDS) if (WRENCH_PLACES[id].dungeon === place || WRENCH_PLACES[id].town === place) return id;
+  return null;
+}
+
+/**
  * THE UNIQUE WEAPON A HERO HOLDS, DRAWN IN HIS HAND (the Mage's staves, art/staff_skins.ts; the Ranger's bows, art/bow_skins.ts):
  * the look it is and his places with it, in a dungeon and in town; null: his own weapon, as ever (or its switch is off).
  */
-export function wornSkin(cls: ClassId, item: { unique?: string; rarity?: number } | null | undefined): { look: Pick<HeroLook, 'staff' | 'bow'>; places: { dungeon: HeroPlace; town: HeroPlace } } | null {
+export function wornSkin(cls: ClassId, item: { unique?: string; rarity?: number } | null | undefined): { look: Pick<HeroLook, 'staff' | 'bow' | 'wrench'>; places: { dungeon: HeroPlace; town: HeroPlace } } | null {
   if (cls === 'mage') {
     const staff = staffWorn(item);
     if (staff) return { look: { staff }, places: STAFF_PLACES[staff] };
@@ -133,6 +169,10 @@ export function wornSkin(cls: ClassId, item: { unique?: string; rarity?: number 
   if (cls === 'ranger') {
     const bow = bowWorn(item);
     if (bow) return { look: { bow }, places: BOW_PLACES[bow] };
+  }
+  if (cls === 'tinkerer') {
+    const wrench = wrenchWorn(item);
+    if (wrench) return { look: { wrench }, places: WRENCH_PLACES[wrench] };
   }
   return null;
 }
@@ -143,9 +183,14 @@ export function staffOfPlace(place: HeroPlace): StaffId | null {
 }
 /** Is a place a town's (in town, or a staff's or a bow's place in town). */
 export const isTownPlace = (place: HeroPlace): boolean =>
-  place === 'town' || place === 'axeTown' || place === 'hammerTown' || (staffOfPlace(place) !== null && STAFF_PLACES[staffOfPlace(place)!].town === place) || (bowOfPlace(place) !== null && BOW_PLACES[bowOfPlace(place)!].town === place);
-/** Is a place a skin's (a staff's or a bow's), in a dungeon or in town. */
-export const isSkinPlace = (place: HeroPlace): boolean => staffOfPlace(place) !== null || bowOfPlace(place) !== null;
+  place === 'town' ||
+  place === 'axeTown' ||
+  place === 'hammerTown' ||
+  (staffOfPlace(place) !== null && STAFF_PLACES[staffOfPlace(place)!].town === place) ||
+  (bowOfPlace(place) !== null && BOW_PLACES[bowOfPlace(place)!].town === place) ||
+  (wrenchOfPlace(place) !== null && WRENCH_PLACES[wrenchOfPlace(place)!].town === place);
+/** Is a place a skin's (a staff's, a bow's or a wrench's), in a dungeon or in town. */
+export const isSkinPlace = (place: HeroPlace): boolean => staffOfPlace(place) !== null || bowOfPlace(place) !== null || wrenchOfPlace(place) !== null;
 /** The look each of those is. */
 export function lookOfPlace(place: HeroPlace): HeroLook {
   if (place === 'card') return { twoHanded: true, town: true, card: true };
@@ -153,6 +198,8 @@ export function lookOfPlace(place: HeroPlace): HeroLook {
   if (staff) return { twoHanded: true, town: STAFF_PLACES[staff].town === place, staff };
   const bow = bowOfPlace(place);
   if (bow) return { twoHanded: true, town: BOW_PLACES[bow].town === place, bow };
+  const wrench = wrenchOfPlace(place);
+  if (wrench) return { twoHanded: true, town: WRENCH_PLACES[wrench].town === place, wrench };
   if (place === 'axe' || place === 'axeTown') return { twoHanded: true, town: place === 'axeTown', weapon: 'axe' };
   if (place === 'hammer' || place === 'hammerTown') return { twoHanded: true, town: place === 'hammerTown', weapon: 'hammer' };
   return { twoHanded: true, town: place === 'town', ...(place === 'demon' ? { demon: true } : place === 'blaze' ? { blaze: true } : {}) };

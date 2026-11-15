@@ -1,7 +1,9 @@
 // SKINS FOR THE TINKERER'S WRENCH (14 Nov 2026): the game's four unique wrenches drawn in her hand, as the Mage's unique staves
 // are in hers (art/staff_skins.ts) and the Ranger's bows in his (art/bow_skins.ts). His word, 14 Nov 2026, of the Mage's staves
 // done: “then do it for the rest of the cast”; asked whether to start, his pick: “Start the rest of the cast (Recommended)”.
-// PICTURES FIRST: nothing of the game draws these until he has seen them on her and said yes.
+// PICTURES FIRST: nothing of the game draws these until he has seen them on her and said yes. Shown them
+// (docs/mockups/wrench_skins/pictures/wrenches_moves.mp4), 14 Nov 2026: “Yes, all four (Recommended)”. In the game behind
+// art/heroes.ts WRENCH_SKINS (off until his yes to them in play).
 //
 // Her wrench is a skin laid on where it is (dev/sculpt_tinkerer.ts WrenchAt, WrenchSkin; her own wrench PLAIN_WRENCH, painted
 // exactly as before). Each of these is drawn to its picture in the bag (art/items_unique.ts), the same wrench in the hand:
@@ -18,6 +20,7 @@ import type { V3 } from './skeleton';
 import type { Sculpt } from '../dev/sculpt';
 import { PLAIN_WRENCH } from '../dev/sculpt_tinkerer';
 import type { WrenchAt, WrenchSkin } from '../dev/sculpt_tinkerer';
+import type { WrenchId } from './heroes';
 
 /** Where a wrench's parts go: its head's middle, across its jaw, square to both. */
 interface Laid {
@@ -167,6 +170,9 @@ export const BORROWED_WRENCH: WrenchSkin = {
     sc.box(linen, 'wrench', add(to, mul(DOWN, 1.3 * k)), [mul(across, 1.6 * k), mul(DOWN, 1.15 * k), mul(norm(cross(across, DOWN), at.u), 0.2 * k)], 0.2, 0.15, { tag: 'tag' });
   },
 };
+
+/** Each unique wrench's skin, by the id of its place (art/heroes.ts WrenchId). */
+export const WRENCH_SKIN_OF: Readonly<Record<WrenchId, WrenchSkin>> = { secondwhistle: WHISTLE_WRENCH, stickywrench: TAR_WRENCH, foremanswrench: FOREMAN_WRENCH, borrowedspanner: BORROWED_WRENCH };
 
 /** The skins of her wrench, her own first. */
 export const WRENCH_SKIN_LIST: readonly WrenchSkin[] = [PLAIN_WRENCH, WHISTLE_WRENCH, TAR_WRENCH, FOREMAN_WRENCH, BORROWED_WRENCH];

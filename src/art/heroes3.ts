@@ -46,6 +46,7 @@ import { MAGE_UP } from './mage_up';
 import { makeMageUpArt } from './mage_up_art';
 import { STAFF_SKIN_OF } from './staff_skins';
 import { BOW_SKIN_OF } from './bow_skins';
+import { WRENCH_SKIN_OF } from './wrench_skins';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
@@ -515,6 +516,17 @@ export function makeHeroArt3(): HeroArt {
       return bart;
     }
     // (THE TINKERER: sculpted, art/tinkerer_art.ts; one set of her for every place, as yet)
+    // (THE TINKERER'S WRENCH, art/wrench_skins.ts: holding a unique wrench, her pictures painted with it, each wrench a set of its
+    // own; her class card her own wrench's, as ever)
+    if (cls === 'tinkerer' && look.wrench && place !== 'card') {
+      const wkey = `tinkerer:${look.wrench}`;
+      let wart = made.get(wkey);
+      if (!wart) {
+        wart = makeTinkererArt(WRENCH_SKIN_OF[look.wrench]);
+        made.set(wkey, wart);
+      }
+      return wart;
+    }
     if (cls === 'tinkerer') {
       const tkey = place === 'card' ? 'tinkerer:card' : 'tinkerer';
       let tart = made.get(tkey);
