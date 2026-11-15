@@ -148,10 +148,10 @@ through chat, so the art and sounds go into the project whole).
     SHARDS; five RINGS OF HANDS; the whipping stream of FIRE and the lanes it leaves burning; the dead RAISED from his bone
     heaps; his going under the floor and coming up elsewhere (nothing reaches him between); the minis' fire and the dead
     they call up out of cult bodies; their lines. He is brought over AS HE IS FROM HIS REDO (`design/fleshmancer-redo`, his
-    yes of 14 Nov 2026, merged into this branch ahead of the main chat's bringing it in): his ritual circle burning under
-    him and lighting him in his dark hall, his power rising off him, and his death (his light bursting out, the floor
-    cracking, twelve hands of his dead dragging him under, a pillar of his fire); and once he is dead nothing of his
-    harms. (His fire as flames comes with his painters: see the films, below.)
+    yes of 14 Nov 2026, merged into this branch ahead of the main chat's bringing it in): his fire as flames, his ritual
+    circle burning under him and lighting him in his dark hall, his power rising off him, and his death (his light
+    bursting out, the floor cracking, twelve hands of his dead dragging him under, a pillar of his fire); and once he is
+    dead nothing of his harms.
   - THE STOKER (`scripts/stoker.gd`; game/act1_rules/stoker.ts), floor 3's furnace keeper, in his arena at the end of a
     short hall: his slow gait; his shovel of seven COALS thrown where the hero stood (each spot marked, each fire burning
     on); his FIRE RAKE dragged round before him (a sheet of fire springs up behind the blade); below a third of his life
@@ -186,9 +186,12 @@ through chat, so the art and sounds go into the project whole).
     great sigil and key; the Fleshmancer's pit, rising, bone heaps, the hands of his dead and his death. Each kind of
     monster's films are on sheets of their own, and a floor fetches only those of the kinds on it as it begins.
     Three of the Fleshmancer's cannot be films, since he aims them any way he likes: his SHARDS, the CRACKS OF HIS RINGS
-    and his FIRE. For these the game's painters themselves are being brought over, line for line, to paint each frame as
-    the game does (`scripts/fm_paint.gd`, not in yet: until it is, these three are plain drawings, and his fire is not
-    yet his redo's flames).
+    and his FIRE (his redo's flames; a mini fleshmancer's too). For these the game's painters themselves are brought over
+    (`scripts/fm_paint.gd`: art/fleshmancer_action_fx.ts paintShards, paintRingCracks and paintFire, line for line, with
+    the game's own noise) and paint each frame of the mark's clock as the game does, thirty a second. Held against the
+    game's painters, over five thousand pictures of whole moves, not one pixel differs. A frame of his fire takes 10 to 18
+    thousandths of a second to paint, so the pictures are painted a few frames ahead on the engine's worker threads and
+    the screen never waits for one (`FmPaint.threads`; without threads, fifteen a second on the spot).
   - THE MOVES' LIGHTS IN THE DARK (`scripts/look.gd` spot; the game's `c.spot`): what shines cuts its light in the place's
     dark as it goes: the Fleshmancer's circle, his fire and his death, the hands of his dead, the keybearers' knife, balls
     and ring of fire, a key lying, the Stoker's coals in the air and his gear lying.
