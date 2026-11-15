@@ -236,3 +236,35 @@ Smaller:
   game never uses that: blows reach it only at its root, out in the water. The old pink ring standing in for the pillars is
   still drawn under his own pillar fire.
 - **The quest line.** A muster roll page drops even if the mystic never asked for the roll.
+
+## In the game, found while bringing over Lasting's, Fleeting's and Vast's looks (15 Nov 2026)
+
+33. **Vast's "laid wider" ring on ground that was not laid wider.** A Strike with Vast in front and Flame, Frost or Lightning
+    behind leaves its usual one tile of ground (Poison's cloud, a tile and a half): the Strike's ground is not widened (game.ts
+    wake, its 1.0). But Vast's look rolls its dust out over it as if it had been, from 0.71 of a tile to 1 (render/words10.ts
+    eventsW10, `zone`: its old edge taken as the patch's size over Vast's widening).
+
+34. **The Whirlwind with Vast in front and a word behind rolls two rings at once, once a second.** One for the turn (its burst)
+    and one for the ground that turn leaves (its zone), the same size in the same place, so the dust is twice as thick then.
+    For the turns alone the look keeps to one ring at a time.
+
+35. **Lasting and Fleeting show on a rune they do not change.** Volatile behind's rune goes off 1.2 s after it is written,
+    whatever the time word (addRune). Lasting's look still drifts its dunes over the rune for its last 0.4 s as if that were the
+    half again it gave, and Fleeting's tongues lick round its edge.
+
+36. **Lasting's heap on a monster's burning starts a quarter grown.** The sand heaped at its feet grows with how far through
+    the poison's time (4 s and half again, 6) it is, for burning too, which lasts 3 s and half again (4.5): so a burning's heap
+    is a quarter grown the moment it begins.
+
+Smaller:
+
+- The look of a monster's poison, burning or chill on him follows the time word of the last blow that left any of them
+  (Hero.dotBy): a Lasting monster's poison on him loses its sand the moment a plain monster chills him, the Lasting poison
+  still on him.
+- The game's dust (Vast's ring, splash and warning) and its scattered grain (Lasting's pouring sand, Vast's warning) are
+  taken from where they lie on the screen, so they shift under it as the camera follows him. The Godot version takes them from
+  where they lie on the floor; still, the same picture.
+
+In the Godot version: the three words' rune stones and colours were the main chat's stand-ins (an hourglass, a feather and
+rings drawn plainer, the colours #b09080, #e8d0f8, #7a5a3a), as floor 1's looks were (7): the export tools did not put on the
+art chat's, as the game does as it starts. Fixed (tools/godot_switches.ts).

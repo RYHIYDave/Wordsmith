@@ -240,7 +240,17 @@ through chat, so the art and sounds go into the project whole).
     words of floors 1 to 10 and how likely, what each becomes burned into gear, Guarding's block among it, floors 6 to 10's own
     gear); the bosses' runes now each their stone. AS THE FIGHT SHOWS THEM (`fx_words610.gd`, from render/fx.ts and words3.ts):
     the mirror's teal phantoms, Leeching's blood and wisps, Volatile's violet crackle, blasts, runes and column of light,
-    Precise's pins and sight, the frenzy's ring at his feet and its sparks, the shield's shell and the ward. `--only=words`,
+    Precise's pins and sight, the frenzy's ring at his feet and its sparks, the shield's shell and the ward; and LASTING'S,
+    FLEETING'S AND VAST'S OWN LOOKS (`fx_words10.gd`: render/words10.ts, the art chat's, PORTED LINE FOR LINE and held against
+    the game's own painter dot for dot, `checks/looks10_check.gd`, 60 moments and 8 s of its clock): Lasting's sand-light on
+    the ground his moves leave, dunes drifting in over it in the half again; on his Whirlwind its sand trails and the drift at
+    its edge; the ribbon of a boost along his path; its sand and heap on his poison or burning on a monster, and, pink and gold,
+    on a monster's on him; Fleeting's lilac tongues round the ground, his spin's stutter and streaks, his after-images a step
+    behind while its boost lasts, the stars of a poison ticking fast, its last sparks; Vast in front, the floor cracked where an
+    area's edge was and its dust rolled out to the new edge; behind, a ring of earth and a rock thrown to each one near; on a
+    monster, its warning drawn wider. Each moves at 30 a second through its beats, drawn from what the rules keep; the three
+    words' rune stones and colours are the art chat's (`tools/godot_switches.ts`). `--only=looks10` pictures each side at
+    work at its beats, a line a picture, and what they cost a frame. `--only=words`,
     `--only=foewords` and `--only=wordsui` each end with these words' own cases (`check_words610.gd`: 54, 13 and 5); with
     `--cases=610` the words' and the gear screen's checks run theirs alone (`--cases=610:twin,vast`, those words').
 - **The small map, the large map and the pause panel** (the cloud chat, 15 Nov 2026; `scripts/minimap.gd`; ui/hud.ts minimap
@@ -427,7 +437,7 @@ A controller: the left stick, RT, LT, A, B, X.
 
 Melding words (the wordsmith's meld screen; the Meldstone and its two words are in), runedust, the Meldstone shown by
 INVENTORY while it is carried and its flight to the wordsmith's slab, the city's words and the last words (floors 11 and 16),
-the looks of Lasting, Fleeting and Vast (render/words10.ts: their rules are in), Frenzied on the prison's bosses' own scripts
+Frenzied on the prison's bosses' own scripts
 (the mini fleshmancer's), the trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
 above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
 as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), what a red circle or the
@@ -457,6 +467,7 @@ breaks, what stands behind raised ground cut off by it, the rest of the heroes, 
 | `assets/town` | the town a new game begins in, its pictures, floor 1's gate up: `npx tsx tools/godot_town.ts 1` |
 | `assets/looks` | floor 1 as THE KING'S TOMB, floor 2 as THE PRISON'S GROUNDS AT NIGHT and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light; the stairwell's opening film in `<place>_stair.png`; floor 2's skies and dark by where he is; the traps' and the waypoint's pictures): `npx tsx tools/godot_looks.ts town`, `... floor1`, `... floor2` (all the tools put the game's startup switches on first: tools/godot_switches.ts) |
 | `assets/music` | the town's and floors 1 to 5's tracks from `assets/sound` made into `.ogg` (Godot does not play `.mp4`), each cut where the game loops it, and the game's table of them: `node tools/godot_music.mjs` (needs ffmpeg) |
+| `assets/words/looks10.json` | Lasting's, Fleeting's and Vast's colours, beats and numbers (render/words10.ts): `npx tsx tools/godot_words10.ts`; with `check`, the game's own painter on 60 moments and 8 s of its clock, for `godot --headless --path godot -s res://checks/looks10_check.gd` (not kept) |
 | `assets/fx` | the films of what the moves mark and throw up, painted by the game's own painters: `npx tsx tools/godot_fx.ts` (about a minute) |
 | `assets/floor6/holds.json` ... `floor10/holds.json`, `assets/act1/quest610.json` | the strongholds (their places, guards, halls and each one's five waves as the game spawns them), the eyrie's edge (floor 7), the cult's obelisks (floor 10), and the words and numbers of the quest line: `npx tsx tools/godot_holds.ts` |
 | `assets/looks/floor<N>_hold<n>` | a stronghold's hall as it is drawn from in it: `node tools/godot_record.mjs <N> --hold <n>` |

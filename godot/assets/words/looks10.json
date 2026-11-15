@@ -1,0 +1,187 @@
+{
+ "ramp": {
+  "lasting": [
+   "#1c1412",
+   "#3e2e28",
+   "#6e564c",
+   "#aa8880",
+   "#ecceb0",
+   "#fff4e6"
+  ],
+  "fleeting": [
+   "#1e1630",
+   "#5a4486",
+   "#b48ce6",
+   "#f8e4f8",
+   "#fff4ff",
+   "#ffffff"
+  ],
+  "vast": [
+   "#140e08",
+   "#2e2214",
+   "#4a3620",
+   "#6e4e2e",
+   "#c4a47e",
+   "#f0e2cc"
+  ]
+ },
+ "enemy": [
+  "#0e050a",
+  "#2a0c1c",
+  "#5a1438",
+  "#c02860",
+  "#ff4f8a",
+  "#ffd27a"
+ ],
+ "earth": [
+  "#1e160e",
+  "#34281a",
+  "#4e3c28",
+  "#6e563a",
+  "#94785a",
+  "#bca07c"
+ ],
+ "dust": [
+  "#2a2420",
+  "#3c3430",
+  "#52483e",
+  "#6c6050",
+  "#8a7c68"
+ ],
+ "enemyDust": [
+  "#2a1420",
+  "#401a30",
+  "#5a2440",
+  "#7a3050",
+  "#a04462"
+ ],
+ "glyph": {
+  "lasting": [
+   "XXXXXXX",
+   ".X...X.",
+   "..XoX..",
+   "...o...",
+   "..X.X..",
+   ".XoooX.",
+   "XXXXXXX"
+  ],
+  "fleeting": [
+   ".....o.",
+   "....o.o",
+   "..oo.X.",
+   ".o.oX.X",
+   ".ooX.X.",
+   ".oX.X..",
+   "X......"
+  ],
+  "vast": [
+   ".o.....",
+   "o.XXX..",
+   ".X...X.",
+   ".X.o.X.",
+   ".X...X.",
+   "o.XXX.o",
+   ".....o."
+  ]
+ },
+ "beats": {
+  "lasting:thing": {
+   "build": 0.25,
+   "hit": 0,
+   "fade": 0.7
+  },
+  "lasting:spin": {
+   "build": 0.25,
+   "hit": 0,
+   "fade": 0.7
+  },
+  "lasting:patch": {
+   "build": 0.3,
+   "hit": 0,
+   "fade": 0.7
+  },
+  "lasting:boost": {
+   "build": 0.3,
+   "hit": 0,
+   "fade": 0.4
+  },
+  "lasting:dot": {
+   "build": 0.25,
+   "hit": 0,
+   "fade": 0.6
+  },
+  "lasting:monster": {
+   "build": 0.25,
+   "hit": 0,
+   "fade": 0.6
+  },
+  "fleeting:thing": {
+   "build": 0.1,
+   "hit": 0,
+   "fade": 0.25
+  },
+  "fleeting:spin": {
+   "build": 0.08,
+   "hit": 0,
+   "fade": 0.2
+  },
+  "fleeting:patch": {
+   "build": 0.1,
+   "hit": 0,
+   "fade": 0.4
+  },
+  "fleeting:boost": {
+   "build": 0.06,
+   "hit": 0,
+   "fade": 0.3
+  },
+  "fleeting:dot": {
+   "build": 0.03,
+   "hit": 0.06,
+   "fade": 0.27
+  },
+  "fleeting:monster": {
+   "build": 0.03,
+   "hit": 0.06,
+   "fade": 0.27
+  },
+  "vast:front": {
+   "build": 0.06,
+   "hit": 0.14,
+   "fade": 0.5
+  },
+  "vast:behind": {
+   "build": 0.06,
+   "hit": 0.16,
+   "fade": 0.55
+  },
+  "vast:monster": {
+   "build": 0.2,
+   "hit": 0,
+   "fade": 0.12
+  }
+ },
+ "time": {
+  "longer": 0.5,
+  "shorter": 0.3333333333333333,
+  "wider": 0.4,
+  "splashR": 1.5,
+  "monsterWider": 0.3,
+  "crawl": 2.6,
+  "drift": 5,
+  "ribbon": 1.1,
+  "whip": 9,
+  "stutter": 0.05,
+  "flare": 0.09,
+  "ring": 0.34,
+  "ringFade": 0.3,
+  "splash": 0.32,
+  "splashFade": 0.3,
+  "jump": 15,
+  "pulse": 0.15
+ },
+ "rx": 22.6,
+ "ry": 11.3,
+ "heroTop": 24,
+ "poisonTime": 4
+}

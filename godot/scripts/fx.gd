@@ -43,9 +43,9 @@
 ##
 ## WHAT IS LEFT OUT (each said again where it would be): the looks of melded words (`e.meld`), of unique items, of the
 ## skill trees and of the other classes (the Mage's beams, orbs and arcs of power, the Ranger's arrows, volleys and traps,
-## the Brawler's, the Warlock's, the Tinkerer's); of the city's and the last words, and Lasting's, Fleeting's and Vast's own
-## (render/words10.ts; FLOORS 6 TO 10'S other six, Twin's mirror and phantoms, Leeching's blood and wisps, Volatile's violet,
-## Precise's, Frenzied's and Guarding's, are fx_words610.gd's, handed on from here); a word
+## the Brawler's, the Warlock's, the Tinkerer's); of the city's and the last words (FLOORS 6 TO 10'S words: Twin's mirror and
+## phantoms, Leeching's blood and wisps, Volatile's violet, Precise's, Frenzied's and Guarding's, are fx_words610.gd's; Lasting's,
+## Fleeting's and Vast's own, render/words10.ts, fx_words10.gd's; both handed on from here); a word
 ## joining a move, dropping and being taken up; the fallen, and the lines said over heads (monster.gd's and the HUD's); the
 ## thrust's take-off and flight (wild.ts ongoing: from the hero's own move, which no telling carries).
 ## THE SOUNDS the game's `handle` makes with these tellings are not made here (this is what is SEEN): `poisoned` "leech"
@@ -64,6 +64,9 @@ const Monster := preload("res://scripts/monster.gd")
 ## (floors 6 to 10's words at work: Twin's, Leech's, Volatile's, Precise's, Frenzied's and Guarding's looks: fx_words610.gd)
 const Words610 := preload("res://scripts/fx_words610.gd")
 var w610: Words610
+## (LASTING'S, FLEETING'S AND VAST'S OWN LOOKS, render/words10.ts: fx_words10.gd, handed on from its own lines below, each marked w10)
+const Words10 := preload("res://scripts/fx_words10.gd")
+var w10: Words10
 
 ## (main.ts: `gdt = fx.freeze > 0 ? dt * 0.06 : dt`)
 const HOLD_PACE := 0.06
@@ -212,6 +215,8 @@ func _init() -> void:
 	figures.fx = self
 	w610 = Words610.new()
 	w610.fx = self
+	w10 = Words10.new()
+	w10.fx = self
 
 
 func _ready() -> void:
@@ -241,6 +246,7 @@ func _exit_tree() -> void:
 	words3.clear()
 	figures.clear()
 	w610.clear()
+	w10.clear()
 
 
 func _notification(what: int) -> void:
@@ -260,6 +266,8 @@ func event(e: Dictionary) -> void:
 	seen[t] = int(seen.get(t, 0)) + 1
 	last[t] = e
 	_handle(e)
+	# (w10: what the rules said happened, as render/words10.ts eventsW10 reads it)
+	w10.event(e)
 	_redraw()
 
 
@@ -305,6 +313,8 @@ func advance(dt: float, lights := true) -> void:
 func _late(_dt: float) -> void:
 	var t0 := Time.get_ticks_usec() if timing else 0
 	figures.follow()
+	# (w10: his after-images, where he now is)
+	w10.follow()
 	if timing:
 		cost_update += Time.get_ticks_usec() - t0
 
@@ -370,6 +380,7 @@ func clear() -> void:
 	ground.clear()
 	figures.clear()
 	w610.clear()
+	w10.clear()
 	_redraw()
 
 
@@ -1384,6 +1395,7 @@ func update(dt: float, real: float) -> void:
 	words3.tick(dt)
 	figures.tick(dt)
 	w610.update(dt)
+	w10.update(dt)
 
 
 static func _trim(list: Array, most: int) -> void:
@@ -1409,6 +1421,7 @@ func _spots() -> void:
 		look.spot(Vector2(gx(l["x"], l["y"]), gy(l["x"], l["y"]) - 8.0), l["r"], 0.9 * (1.0 - l["t"] / l["dur"]))
 	words3.lights()
 	ground.lights()
+	w10.lights()
 
 
 # =====================================================================================================================
@@ -1505,7 +1518,7 @@ static func pline(c: CanvasItem, x0f: float, y0f: float, x1f: float, y1f: float,
 
 ## Whether anything is alive to be drawn; the layers are drawn again while there is, and once more after.
 func _alive() -> bool:
-	return pn > 0 or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive()
+	return pn > 0 or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or w10.alive()
 
 
 func _redraw() -> void:
@@ -1544,6 +1557,7 @@ func _paint_ground(c: CanvasItem) -> void:
 	var P: Dictionary = L.P
 	words3.draw_floor(c)
 	w610.draw_floor(c)
+	w10.draw_floor(c)
 	# (left out: the rifts of the enemies coming in, the other classes' and the unique items' marks, a volley's arrows
 	# standing in the floor and their shadows)
 	for d: Dictionary in decals:
@@ -1679,6 +1693,8 @@ func _paint_air(c: CanvasItem) -> void:
 	var white: Color = P["white"]
 	ground.draw_air(c)
 	words3.draw_air(c)
+	# (w10: Lasting's, Fleeting's and Vast's, over the figures and the dark: render/words10.ts airW10, before fx.drawAir)
+	w10.draw_air(c)
 	for q: Dictionary in whirls:
 		# A whirlwind's turn: two crescents, opposite each other, going round the hero. Each is thin at its tail and thick
 		# at its leading edge, which is white. They go round with the clock and not from where each began, so one turn runs

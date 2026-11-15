@@ -18,8 +18,8 @@
 ##     (`guard`); "of Warding", the ward circle on the floor with a shield at each quarter, motes rising in it (`draw_patch`
 ##     'ward', and its motes in the air).
 ## What the frenzy and the shield are is read off the hero each frame (hero.gd frenzy, frenzy_t, shield_t), as events3 does.
-## LEFT OUT: LASTING's, FLEETING's and VAST's own looks (render/words10.ts: its sand and its lilac on what they lengthen and
-## shorten, Vast's wide dust and its splash); the frenzy's copies of the hero (render.ts heroCopies3); the sound each makes.
+## (LASTING's, FLEETING's and VAST's own looks, render/words10.ts, are fx_words10.gd's.)
+## LEFT OUT: the frenzy's copies of the hero (render.ts heroCopies3); the sound each makes.
 extends RefCounted
 
 const L := preload("res://scripts/fx_looks.gd")

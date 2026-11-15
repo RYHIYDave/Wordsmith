@@ -1844,6 +1844,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await _descent_shots(hero, dir)
 		get_tree().quit()
 		return
+	# (LASTING'S, FLEETING'S AND VAST'S LOOKS, each side at work at its beats: check_looks10.gd)
+	if _arg("only") == "looks10":
+		await preload("res://scripts/check_looks10.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: the strongholds, the quest line, floor 9's side areas: act1/check610.gd)
 	if _arg("only") == "quests610":
 		await preload("res://scripts/act1/check610.gd").new().run(self, hero, dir)

@@ -165,6 +165,11 @@ var shield := 0.0
 var shield_t := 0.0
 var uses: Array = [0, 0, 0]
 var _marked: Array = [-1, -1, -1]
+## (FOR LASTING'S, FLEETING'S AND VAST'S LOOKS, fx_words10.gd, as render/words10.ts reads the game's Hero) WHICH OF HIS MOVES GAVE
+## EACH BOOST he has (game.ts Hero.boostBy: "might", "haste", "frenzy", "shield", the move's place among his three); and WHOSE
+## POISON, BURNING OR CHILL is on him (Hero.dotBy: {id: the monster's, word: "lasting", "fleeting" or "" as it was laid}).
+var boost_by := {}
+var dot_by := {}
 ## (what is to be done a moment from now, by the game's `after`: Twin's second blow, an echo, Volatile's explosion: {t, fn})
 var _later: Array = []
 ## WHAT THE MONSTERS' WORDS HAVE LEFT ON HIM, named as the monsters' are (game/state.ts Hero burnT, burnDps, chillT, chill,
@@ -450,6 +455,7 @@ func _landed_on(i: int) -> void:
 	might = minf(more * 5.0, might + more)
 	# (LASTING and FLEETING: as long as everything its move gives)
 	might_t = maxf(might_t, 5.0 * float(loadout.r(i)["last"]))
+	boost_by["might"] = i
 	_tell({"t": "buff", "kind": "might", "x": world.x, "y": world.y, "stacks": maxi(1, roundi(might / more))})
 
 
@@ -460,17 +466,20 @@ func _boons(i: int) -> void:
 	if fast > 0.0:
 		haste = fast
 		haste_t = 3.0 * float(r["last"])
+		boost_by["haste"] = i
 		_tell({"t": "buff", "kind": "haste", "x": world.x, "y": world.y, "stacks": 1, "secs": haste_t})
 	# FRENZIED in front: each use adds to the frenzy, up to its most, and holds it a while longer
 	if r["frenzy"]:
 		var F: Dictionary = Words.data()["frenzy"]
 		frenzy = mini(int(F["max"]), frenzy + 1)
 		frenzy_t = maxf(frenzy_t, float(F["hold"]) * float(r["last"]))
+		boost_by["frenzy"] = i
 		_tell({"t": "frenzy", "x": world.x, "y": world.y, "dx": face.x, "dy": face.y, "n": frenzy})
 	# GUARDING in front: each use gives a shield (a new one never weaker than what is left of the last)
 	if r["shield"] > 0.0:
 		shield = maxf(shield, roundf(max_life * float(r["shield"])))
 		shield_t = float(Words.data()["guard"]["shieldTime"]) * float(r["last"])
+		boost_by["shield"] = i
 		_tell({"t": "shield", "x": world.x, "y": world.y, "secs": shield_t})
 
 
@@ -486,6 +495,7 @@ func killed(m) -> void:
 		var F: Dictionary = Words.data()["frenzy"]
 		frenzy = mini(int(F["max"]), frenzy + 1)
 		frenzy_t = minf(float(F["hold"]) * 3.0 * float(r["last"]), frenzy_t + float(F["hold"]) * float(r["last"]))
+		boost_by["frenzy"] = i
 		_tell({"t": "frenzyFed", "x": m.world.x, "y": m.world.y})
 	if r["volatile"] > 0.0:
 		_explode(m, r, i)
@@ -842,6 +852,14 @@ func _deliver_strike(from: Vector2, way: Vector2, frac: float, primary: bool) ->
 
 # --- Whirl ---
 
+## The Whirlwind as it is held (game.ts Hero.channel, for the three's looks: fx_words10.gd): {skill: 1, t: how long it has
+## spun}, or {} while none is held (its wind-up, its follow-through once let go, and any other time).
+func channel() -> Dictionary:
+	if _act == "whirl" and _spun >= 0.0 and not _landed:
+		return {"skill": 1, "t": _spun}
+	return {}
+
+
 func _begin_whirl() -> void:
 	_whirl_cd = float(loadout.r(1)["cooldown"])
 	_whirl_full = _whirl_cd
@@ -1180,6 +1198,11 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	var FL: Dictionary = Words.data()["fleeting"]
 	var longer: float = 1.0 + float(LA["monster"]) * float(k.call("lasting"))
 	var lasts: float = longer * (1.0 - float(FL["monster"]) * float(k.call("fleeting")))
+	# (for the three's looks: whose poison, burning or chill is on him, and the word of time it was laid with: game.ts dotBy)
+	if k.call("poison") > 0.0 or parts.any(func(p): return p[0] == "fire" or p[0] == "frost"):
+		var kl: float = k.call("lasting")
+		var kf: float = k.call("fleeting")
+		dot_by = {"id": src.id if src != null and is_instance_valid(src) else null, "word": "lasting" if kl > 0.0 and kl >= kf else ("fleeting" if kf > 0.0 else "")}
 	# POISON, on a monster: most of the blow again, over the next few seconds, less what he withstands of poison
 	if k.call("poison") > 0.0:
 		var kept: float = 1.0 - stats.get("res_poison", 0.0) / 100.0
