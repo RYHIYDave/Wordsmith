@@ -28,6 +28,8 @@
 //                bursting as its dead comes up (paintHeap: floor, and `before`).
 //   fm_hand_<k>  a hand of his dead bursting up out of a ring, of kind k (art/fleshmancer.ts makeRingHandArt: 24 frames at
 //                20 a second, layer `stand`; the game stands each at its own place round the ring).
+//   smoke        the high priest's burning smoke (art/mob_shots.ts drawBurningSmoke, the game's own painter, painted here
+//                onto a canvas of the game's pixels): billowing, burning and thinning away. 3 s.
 // A film's `k0`: the frame its first picture is, counted from the film's own time 0 (less than 0: it begins before it).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
@@ -39,6 +41,8 @@ import { RING as F3_RING, RING_CANVAS, ringPainted as f3Ring } from '../src/art/
 import { CRACK, CRACK_CANVAS, RING as CO_RING, crackPainted, ringCanvas, ringPainted as coRing } from '../src/art/chained_action_fx';
 import { BIG_ARM_FPS, BIG_ARM_FRAMES, BIG_ARM_TIME, DROP_CANVAS, RAIN, RAIN_SKULL_FRAMES, SLAM_RING, dropPainted, makeBigArmArt, makeRainSkullArt, slamRingCanvas, slamRingPainted } from '../src/art/amalgam_action_fx';
 import { ARM_CRACK_AFTER, ARM_CRACK_WARN, drawArmCrack } from '../src/art/boss_shots';
+import { drawBurningSmoke } from '../src/art/mob_shots';
+import { SMOKE } from '../src/game/defs';
 import { FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, makeRingHandArt } from '../src/art/fleshmancer';
 import { RISE_MARK, paintHeap, paintRiseMark, paintSinkPit } from '../src/art/fleshmancer_action_fx';
 import { Px } from '../src/engine/px';
@@ -215,6 +219,19 @@ for (let seed = 0; seed < 8; seed++) {
     const hands = makeRingHandArt('front', kind);
     films[`fm_hand_${kind}`] = { fps: FM_HAND_FPS, n: FM_HAND_FRAMES, k0: 0, layers: { stand: Array.from({ length: FM_HAND_FRAMES }, (_, i) => pic(hands[i])) } };
   }
+}
+
+// the high priest's burning smoke (render.ts, the 'smoke' zone: its share of its life, and the clock)
+{
+  const W = 160;
+  const H = 110;
+  film('smoke', SMOKE.dur, {
+    floor: (k) => {
+      const g = new Dots(W, H);
+      drawBurningSmoke(g as unknown as CanvasRenderingContext2D, (x, y) => [W / 2 + (x - y) * 16, H / 2 + 12 + (x + y) * 8] as const, 0, 0, SMOKE.r, k / FPS / SMOKE.dur, k / FPS);
+      return rawPic(g, 2, W, H + 24);
+    },
+  });
 }
 
 // --- the sheets: the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---

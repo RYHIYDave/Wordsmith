@@ -262,7 +262,7 @@ func throw_spear(from: Monster, at: Vector2, dir: Vector2, reach: float, dmg: fl
 	node.dir = dir
 	node.look = "spear"
 	stands.add_child(node)
-	_arrows.append({"pos": at, "dir": dir, "speed": MM.SPEAR["speed"], "left": reach, "dmg": dmg, "node": node, "r": MM.SPEAR["r"], "pierce": false, "hit": false, "spear": from})
+	_arrows.append({"pos": at, "dir": dir, "speed": MM.SPEAR["speed"], "left": reach, "dmg": dmg, "node": node, "r": MM.SPEAR["r"], "pierce": false, "hit": false, "spear": from, "way": reach})
 
 
 ## A spear has come down at `p`: it lies there, on the nearest floor one could walk to, till its Boneward picks it up.
@@ -351,6 +351,12 @@ func _fly(dt: float) -> void:
 			a["node"].queue_free()
 		else:
 			a["node"].position = Iso.to_screen(p.x, p.y)
+			if a.has("way"):
+				# (a spear's height: from the hand's down to the floor where it comes down, a little arc over the way:
+				# render/mob_world.ts spearHeight, z0 21, its arc 7)
+				var k := clampf(1.0 - float(a["left"]) / maxf(0.01, float(a["way"])), 0.0, 1.0)
+				a["node"].high = 21.0 * (1.0 - k) + 4.0 * 7.0 * k * (1.0 - k)
+				a["node"].queue_redraw()
 			keep.append(a)
 	_arrows = keep
 

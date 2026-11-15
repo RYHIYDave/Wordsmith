@@ -906,17 +906,24 @@ func _draw() -> void:
 				else:
 					_draw_slam_ring(p)
 			"spear":
-				# (lying on the floor: its shaft and its bone point, the way it flew)
+				# (THE GAME'S OWN, art/mob_shots.ts drawSpearLying: lying on the floor where it fell, pointing the way it flew:
+				# its shadow, its shaft two pixels thick with its upper side in the light, its iron head)
 				var w: Vector2 = p["way"]
 				var c := Vector2(p["x"], p["y"])
-				var tail := Iso.to_screen(c.x - w.x * 0.55, c.y - w.y * 0.55)
-				var neck := Iso.to_screen(c.x + w.x * 0.3, c.y + w.y * 0.3)
-				var tip := Iso.to_screen(c.x + w.x * 0.55, c.y + w.y * 0.55)
-				draw_line(tail + Vector2(1, 2), tip + Vector2(1, 2), Color(SHADOW, 0.5), 3.0)
-				draw_line(tail, neck, Color(0.36, 0.3, 0.42), 3.0)
-				draw_line(neck, tip, Color(0.9, 0.86, 0.74), 3.0)
+				var b := Iso.to_screen(c.x - w.x * 0.435, c.y - w.y * 0.435) / 2.0
+				var tp := Iso.to_screen(c.x + w.x * 0.435, c.y + w.y * 0.435) / 2.0
+				_px_line(b + Vector2(0, 2), tp + Vector2(0, 2), Color(Color("#07050a"), 0.5))
+				_px_line(b + Vector2(0, 1), tp + Vector2(0, 1), Color("#2a2466"))
+				_px_line(b, tp, Color("#6e68cc"))
+				var hd := b.lerp(tp, 0.78)
+				_px_line(hd + Vector2(0, 1), tp + Vector2(0, 1), Color("#1c1a3a"))
+				_px_line(hd, tp, Color("#7672b0"))
 			"smoke":
-				_draw_smoke(p)
+				if has_film("smoke"):
+					# (THE GAME'S OWN, art/mob_shots.ts drawBurningSmoke: billowing, burning and thinning away)
+					_film_floor("smoke", p["t"], Vector2(p["x"], p["y"]))
+				else:
+					_draw_smoke(p)
 			"sigil":
 				_draw_sigil(p)
 			"rime":
