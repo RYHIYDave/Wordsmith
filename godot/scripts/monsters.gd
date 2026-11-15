@@ -278,6 +278,9 @@ func _fly(dt: float) -> void:
 
 ## Bodies that are awake keep apart: two that overlap are pushed apart, each half the way, where the floor lets them; and
 ## none stands in the hero: one that overlaps him is put back out of him (his own step into a swing included).
+## (As game.ts updateMonsters has it, for a boss with small fry of his own and a move that drags the hero in to him, the Ossuary
+## Amalgamation: a boss is not jostled by the small fry about him, the other gives way the whole way; and a monster is held off
+## the hero by four fifths of its own radius and his, so that the hero can be dragged to a maw 1.15 before a body 1.1 round.)
 func _part() -> void:
 	for i in list.size():
 		var a := list[i]
@@ -286,7 +289,7 @@ func _part() -> void:
 		if hero != null and hero.alive:
 			var h: Vector2 = a.world - hero.world
 			var hl := h.length()
-			var hneed := a.r + HERO_R
+			var hneed := a.r * 0.8 + HERO_R
 			if hl < hneed:
 				var out := (h / hl if hl > 0.0001 else Vector2(1, 0)) * (hneed - hl)
 				if clear(a.world.x + out.x, a.world.y + out.y, minf(a.r, 0.42)):
@@ -300,11 +303,14 @@ func _part() -> void:
 			var l := d.length()
 			if l >= need or l < 0.0001:
 				continue
-			var push := d / l * (need - l) * 0.5
-			if clear(a.world.x - push.x, a.world.y - push.y, minf(a.r, 0.42)):
-				a.world -= push
-			if b.state != "sleep" and clear(b.world.x + push.x, b.world.y + push.y, minf(b.r, 0.42)):
-				b.world += push
+			# (how much of the way `a` gives: none if it is a boss and the other is not, all if the other is the boss, else half)
+			var sa := 0.0 if a.boss and not b.boss else (1.0 if b.boss and not a.boss else 0.5)
+			var push_a := d / l * (need - l) * sa
+			var push_b := d / l * (need - l) * (1.0 - sa)
+			if sa > 0.0 and clear(a.world.x - push_a.x, a.world.y - push_a.y, minf(a.r, 0.42)):
+				a.world -= push_a
+			if sa < 1.0 and b.state != "sleep" and clear(b.world.x + push_b.x, b.world.y + push_b.y, minf(b.r, 0.42)):
+				b.world += push_b
 
 
 ## nav.ts flowField: steps from the hero's tile over the walk grid, eight ways round (no corner cut), out to 28.
