@@ -985,6 +985,9 @@ func _loot_shots(hero: Hero, dir: String) -> void:
 	_inv.queue_redraw()
 	await _snap(dir + "/25_gear_screen.png")
 	_inv._hover = {}
+	# (the ring lit, as the wordsmith in town lights it: until it is, his moves have no slots)
+	_loot.ring_lit = true
+	_loot.derive()
 	loot.words["power"] += 1
 	_inv._press("front", null)
 	_loot.gain_xp(_loot.xp_to_next(1) + 10)
@@ -1237,7 +1240,8 @@ func _f2_way_shots(h: Hero, dir: String) -> void:
 	await _snap(dir + "/87_a_sealed_door.png")
 	h.world = mid + out * 1.3
 	h.face = -out
-	h.strike_words["front"] = "power"
+	h.loadout.set_level(maxi(1, h.loadout.level), true)
+	h.loadout.put(0, "front", "power")
 	await _wait(0.2)
 	h._begin_strike()
 	await _wait(0.6)

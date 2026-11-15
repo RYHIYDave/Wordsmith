@@ -391,6 +391,7 @@ func _do(what: String) -> void:
 			# (game.ts lightRing: the quest done, the ring lit; 4.7 s later, giveRingWord)
 			loot.quest = ""
 			loot.ring_lit = true
+			loot.derive()
 			given_at = _t
 			_word_due = _t + float(_ring["power"]["done"])
 			loot.say("The ring is lit.", Color(0.35, 0.9, 1.0))

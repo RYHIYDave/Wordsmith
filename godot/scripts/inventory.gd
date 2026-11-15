@@ -100,11 +100,11 @@ func _press(action: String, arg) -> void:
 		"attr":
 			loot.choose_attr(arg)
 		"front", "behind":
-			if hero.strike_words[action] == "power":
-				hero.strike_words[action] = ""
+			var at: int = hero.loadout.slots(0, action).find("power")
+			if at >= 0:
+				hero.loadout.take(0, action, at)
 				loot.words["power"] += 1
-			elif loot.words["power"] > 0 and (action == "front" or loot.level >= BEHIND_OPENS):
-				hero.strike_words[action] = "power"
+			elif loot.words["power"] > 0 and hero.loadout.put(0, action, "power") == "":
 				if main != null:
 					main.word_placed()
 				loot.words["power"] -= 1

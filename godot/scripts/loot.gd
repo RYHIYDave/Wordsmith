@@ -153,6 +153,12 @@ func derive() -> void:
 		"gold_find": g.call("goldFind"),
 	}
 	hero.set_max_life(maxf(1.0, life))
+	# (his moves' words: the slots his level and the lit ring open, and the numbers the words read. Cooldown recovery as
+	# stats.ts derive has it: his gear's, a tenth of its mana and twice its mana regeneration, a quarter of his Intelligence,
+	# 60% at most)
+	var cdr: float = minf(0.6, (g.call("cdr") + g.call("maxMana") * 0.1 + g.call("manaRegen") * 2.0 + int_ * float(_attr["intCdr"])) / 100.0)
+	hero.loadout.set_level(level, ring_lit)
+	hero.loadout.set_stats({"str": str_, "dex": dex, "int": int_, "area": hero.stats["area"], "aps": hero.stats["aps"], "cdr": cdr})
 
 
 # --- what falls ---

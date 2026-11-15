@@ -38,6 +38,7 @@ const FACING := ["front", "toward", "frontL", "sideL", "backL", "away", "back", 
 const STEP_EVERY := 0.25
 const AIM_REACH := 2.4
 const BACK_AFTER := 2.5
+const Loadout := preload("res://scripts/loadout.gd")
 
 const STRIKE := {"share": 1.0, "reach": 1.7, "windup": 0.333, "follow": 0.3, "combo": 0.5, "step": 0.33}
 const WHIRL := {"share": 0.55, "radius": 2.0, "windup": 0.12, "channel": 2.4, "tick": 0.3, "cooldown": 3.5, "min_cool": 0.35, "follow": 0.25, "walk": 0.9, "spin": 1.6}
@@ -66,10 +67,16 @@ var stats := {"str": 14.0, "dex": 8.0, "int": 6.0, "level": 1, "dmg_min": 7.0, "
 	"move_speed": 0.0, "area": 1.0, "gold_find": 0.0}
 var max_life := 102.0
 var life := 102.0
-## THE WORDS IN HIS STRIKE (game/words.ts resolveSkill): "power" in its front slot, its behind slot, or "" (loot.gd sets them).
-## POWER IN FRONT: the blow +(25 + 0.6 Str)% harder and +(20 + 0.3 Str)% bigger, and half of it splashing 1.2 round
-## what it strikes. POWER BEHIND: each blow that lands +(6 + 0.1 Str)% to the next for 5 s, five at most.
-var strike_words := {"front": "", "behind": ""}
+## THE WORDS SET IN HIS THREE MOVES (loadout.gd; game/words.ts resolveSkill): which word is in which slot, and what each
+## move comes to with them (`loadout.r(i)`). The gear screen sets them; loot.gd gives it his level, the lit ring and his
+## numbers.
+var loadout := Loadout.new()
+## (Strike's first word in front and behind, "" for none: as the screens that came before the loadout read it)
+var strike_words: Dictionary:
+	get:
+		var f: Array = loadout.fronts(0)
+		var b: Array = loadout.behinds(0)
+		return {"front": f[0] if not f.is_empty() else "", "behind": b[0] if not b.is_empty() else ""}
 var _might := 0
 var _might_t := 0.0
 
@@ -150,7 +157,7 @@ func rate() -> float:
 ## One hit of a move with share `share` of the weapon's damage (game.ts, words.ts resolveSkill): a roll of his damage x the
 ## move's share x (1 + Str / 100) x (1 + his damage bonuses and Power's might / 100); a critical x(1 + crit_mult / 100).
 func roll_hit(share: float) -> float:
-	var might: float = _might * (6.0 + 0.1 * stats["str"]) if strike_words["behind"] == "power" else 0.0
+	var might: float = _might * float(loadout.r(0)["might"])
 	var dmg: float = randf_range(stats["dmg_min"], stats["dmg_max"]) * share * (1.0 + stats["str"] / 100.0) * (1.0 + (stats["dmg_pct"] + might) / 100.0)
 	if randf() * 100.0 < stats["crit_chance"]:
 		dmg *= 1.0 + stats["crit_mult"] / 100.0
@@ -159,11 +166,12 @@ func roll_hit(share: float) -> float:
 
 ## Strike's share and reach with the words in it.
 func _strike_share() -> float:
-	return STRIKE["share"] * (1.0 + (25.0 + 0.6 * stats["str"]) / 100.0 if strike_words["front"] == "power" else 1.0)
+	# (the move's share with its words: roll_hit lays his Strength on it, which the game's dmgMult already carries)
+	return float(loadout.r(0)["dmg_mult"]) / (1.0 + stats["str"] / 100.0)
 
 
 func _strike_reach() -> float:
-	return STRIKE["reach"] * (1.0 + (20.0 + 0.3 * stats["str"]) / 100.0 if strike_words["front"] == "power" else 1.0)
+	return STRIKE["reach"] * float(loadout.r(0)["size"])
 
 
 func heal_flat(n: float) -> void:
