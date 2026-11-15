@@ -95,7 +95,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.3552860503550619,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 2,
@@ -144,7 +147,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.777033400721848,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 3,
@@ -193,7 +199,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.16559925233013928,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 4,
@@ -242,7 +251,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.012356986058875918,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 5,
@@ -291,7 +303,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.44639764772728086,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 6,
@@ -340,7 +355,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.8290955987758934,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 7,
@@ -389,7 +407,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.8611687310039997,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 8,
@@ -438,7 +459,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.25997974374331534,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 9,
@@ -487,7 +511,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.33044039900414646,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 10,
@@ -536,7 +563,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.6487486134283245,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 11,
@@ -585,7 +615,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.7098513725213706,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 12,
@@ -634,7 +667,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.06495275907218456,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 13,
@@ -683,7 +719,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.9618980074301362,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 14,
@@ -732,7 +771,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.12466426705941558,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 15,
@@ -781,7 +823,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.9597630959469825,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 16,
@@ -831,7 +876,12 @@
    "xp": 11,
    "seed": 0.7615339043550193,
    "rarity": "blue",
-   "figure": "archer"
+   "figure": "archer",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 17,
@@ -881,7 +931,12 @@
    "xp": 11,
    "seed": 0.7977894593495876,
    "rarity": "blue",
-   "figure": "archer"
+   "figure": "archer",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 18,
@@ -931,7 +986,12 @@
    "xp": 11,
    "seed": 0.9202871762681752,
    "rarity": "blue",
-   "figure": "archer"
+   "figure": "archer",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 19,
@@ -981,7 +1041,12 @@
    "xp": 11,
    "seed": 0.2860850610304624,
    "rarity": "blue",
-   "figure": "archer"
+   "figure": "archer",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 20,
@@ -1031,7 +1096,12 @@
    "xp": 11,
    "seed": 0.5636810886207968,
    "rarity": "blue",
-   "figure": "archer"
+   "figure": "archer",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 21,
@@ -1080,7 +1150,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.933460391825065,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 22,
@@ -1129,7 +1202,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.013328497996553779,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 23,
@@ -1178,7 +1254,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.6594163444824517,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 24,
@@ -1227,7 +1306,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.7754161169286817,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 25,
@@ -1276,7 +1358,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.3292819354683161,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 26,
@@ -1325,7 +1410,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.5516271840315312,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 27,
@@ -1374,7 +1462,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.3823339310474694,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 28,
@@ -1423,7 +1514,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.22737913066521287,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 29,
@@ -1472,7 +1566,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.9783419247251004,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 30,
@@ -1521,7 +1618,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.6264592539519072,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 31,
@@ -1570,7 +1670,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.49888689653016627,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 32,
@@ -1619,7 +1722,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.4173006194178015,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 33,
@@ -1668,7 +1774,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.7189476052299142,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 34,
@@ -1717,7 +1826,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.13630907353945076,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 35,
@@ -1766,7 +1878,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.5756846000440419,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 36,
@@ -1815,7 +1930,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.035373133374378085,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 37,
@@ -1864,7 +1982,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.4255342266988009,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 38,
@@ -1913,7 +2034,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.19685214362107217,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 39,
@@ -1962,7 +2086,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.7487186333164573,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 40,
@@ -2011,7 +2138,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.09867749665863812,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 41,
@@ -2060,7 +2190,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.6342681131791323,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 42,
@@ -2109,7 +2242,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.14209268148988485,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 43,
@@ -2158,7 +2294,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.8908816438633949,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 44,
@@ -2207,7 +2346,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.5513655138202012,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 45,
@@ -2256,7 +2398,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.12481855158694088,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 46,
@@ -2305,7 +2450,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.7937759747728705,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 47,
@@ -2354,7 +2502,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.5114387457724661,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 48,
@@ -2403,7 +2554,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.9719701681751758,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 49,
@@ -2452,7 +2606,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.4299633160699159,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 50,
@@ -2501,7 +2658,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.11785242869518697,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 51,
@@ -2550,7 +2710,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.12899109395220876,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 52,
@@ -2599,7 +2762,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.7193816129583865,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 53,
@@ -2648,7 +2814,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.1227968386374414,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 54,
@@ -2697,7 +2866,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.9449280328117311,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 55,
@@ -2746,7 +2918,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.7512530907988548,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 56,
@@ -2795,7 +2970,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.4581080114003271,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 57,
@@ -2844,7 +3022,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.4644720056094229,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 58,
@@ -2893,7 +3074,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.41478309500962496,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 59,
@@ -2942,7 +3126,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.8519202631432563,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 60,
@@ -2991,7 +3178,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.19448507158085704,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 61,
@@ -3041,7 +3231,12 @@
    "xp": 6,
    "seed": 0.9410376814194024,
    "rarity": "blue",
-   "figure": "bat"
+   "figure": "bat",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 62,
@@ -3091,7 +3286,12 @@
    "xp": 6,
    "seed": 0.8601712570525706,
    "rarity": "blue",
-   "figure": "bat"
+   "figure": "bat",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 63,
@@ -3141,7 +3341,12 @@
    "xp": 6,
    "seed": 0.7317212203051895,
    "rarity": "blue",
-   "figure": "bat"
+   "figure": "bat",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 64,
@@ -3191,7 +3396,12 @@
    "xp": 6,
    "seed": 0.22038791701197624,
    "rarity": "blue",
-   "figure": "bat"
+   "figure": "bat",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 65,
@@ -3241,7 +3451,12 @@
    "xp": 6,
    "seed": 0.5848593029659241,
    "rarity": "blue",
-   "figure": "bat"
+   "figure": "bat",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 66,
@@ -3291,7 +3506,12 @@
    "xp": 6,
    "seed": 0.18509228411130607,
    "rarity": "blue",
-   "figure": "bat"
+   "figure": "bat",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 67,
@@ -3341,7 +3561,12 @@
    "xp": 6,
    "seed": 0.10064129065722227,
    "rarity": "blue",
-   "figure": "bat"
+   "figure": "bat",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 68,
@@ -3391,7 +3616,12 @@
    "xp": 6,
    "seed": 0.651971872895956,
    "rarity": "blue",
-   "figure": "bat"
+   "figure": "bat",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 69,
@@ -3441,7 +3671,12 @@
    "xp": 6,
    "seed": 0.902286124182865,
    "rarity": "blue",
-   "figure": "bat"
+   "figure": "bat",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 70,
@@ -3491,7 +3726,12 @@
    "xp": 6,
    "seed": 0.24800690915435553,
    "rarity": "blue",
-   "figure": "bat"
+   "figure": "bat",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 71,
@@ -3541,7 +3781,12 @@
    "xp": 30,
    "seed": 0.7895987322553992,
    "rarity": "leader",
-   "figure": "champion"
+   "figure": "champion",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 72,
@@ -3591,7 +3836,14 @@
    "xp": 8,
    "seed": 0.18025109102018178,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 73,
@@ -3641,7 +3893,14 @@
    "xp": 8,
    "seed": 0.9053725253324956,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 74,
@@ -3691,7 +3950,14 @@
    "xp": 8,
    "seed": 0.4974896339699626,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 75,
@@ -3741,7 +4007,14 @@
    "xp": 8,
    "seed": 0.9858211660757661,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 76,
@@ -3791,7 +4064,14 @@
    "xp": 8,
    "seed": 0.6473586694337428,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 77,
@@ -3841,7 +4121,14 @@
    "xp": 8,
    "seed": 0.06564006442204118,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 78,
@@ -3891,7 +4178,12 @@
    "xp": 9,
    "seed": 0.4690295634791255,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "power"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 79,
@@ -3941,7 +4233,12 @@
    "xp": 9,
    "seed": 0.7203693124465644,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "power"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 80,
@@ -3991,7 +4288,12 @@
    "xp": 9,
    "seed": 0.14978335867635906,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "power"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 81,
@@ -4041,7 +4343,12 @@
    "xp": 9,
    "seed": 0.2119724506046623,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "power"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 82,
@@ -4091,7 +4398,12 @@
    "xp": 9,
    "seed": 0.9029330911580473,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "power"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 83,
@@ -4140,7 +4452,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.315566495526582,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 84,
@@ -4189,7 +4504,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.6724410837050527,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 85,
@@ -4238,7 +4556,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.5783770482521504,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 86,
@@ -4287,7 +4608,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.7495924371760339,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 87,
@@ -4336,7 +4660,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.9232299802824855,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 88,
@@ -4385,7 +4712,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.3619573349133134,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 89,
@@ -4434,7 +4764,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.336579650407657,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 90,
@@ -4483,7 +4816,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.03387925215065479,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 91,
@@ -4532,7 +4868,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.027600865345448256,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 92,
@@ -4581,7 +4920,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.5126859219744802,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 93,
@@ -4630,7 +4972,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.700344008859247,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 94,
@@ -4679,7 +5024,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.8818745084572583,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 95,
@@ -4728,7 +5076,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.41791012324392796,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 96,
@@ -4777,7 +5128,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.36692811571992934,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 97,
@@ -4826,7 +5180,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.6945823456626385,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 98,
@@ -4875,7 +5232,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.8982774496544152,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 99,
@@ -4924,7 +5284,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.8276642407290637,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 100,
@@ -4973,7 +5336,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.3055011660326272,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 101,
@@ -5022,7 +5388,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.3154580472037196,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 102,
@@ -5071,7 +5440,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.1870318225119263,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 103,
@@ -5120,7 +5492,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.48865571641363204,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 104,
@@ -5169,7 +5544,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.16829573409631848,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 105,
@@ -5218,7 +5596,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.718775250017643,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 106,
@@ -5267,7 +5648,10 @@
    "dead": false,
    "xp": 6,
    "seed": 0.6136411046609282,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 107,
@@ -5316,7 +5700,10 @@
    "dead": false,
    "xp": 6,
    "seed": 0.6903340299613774,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 108,
@@ -5365,7 +5752,10 @@
    "dead": false,
    "xp": 6,
    "seed": 0.6119604429695755,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 109,
@@ -5414,7 +5804,10 @@
    "dead": false,
    "xp": 6,
    "seed": 0.3963523267302662,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 110,
@@ -5464,7 +5857,14 @@
    "xp": 30,
    "seed": 0.15301257045939565,
    "rarity": "leader",
-   "figure": "champion"
+   "figure": "champion",
+   "words": [
+    "power"
+   ],
+   "half": [],
+   "carries": [
+    "power"
+   ]
   },
   {
    "id": 111,
@@ -5514,7 +5914,14 @@
    "xp": 8,
    "seed": 0.9586138695012778,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 112,
@@ -5564,7 +5971,14 @@
    "xp": 8,
    "seed": 0.04504134552553296,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 113,
@@ -5614,7 +6028,14 @@
    "xp": 8,
    "seed": 0.3208533516153693,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 114,
@@ -5664,7 +6085,14 @@
    "xp": 8,
    "seed": 0.8073613755404949,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 115,
@@ -5714,7 +6142,14 @@
    "xp": 8,
    "seed": 0.30710162059403956,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 116,
@@ -5763,7 +6198,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.7542906026355922,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 117,
@@ -5812,7 +6250,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.965025672223419,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 118,
@@ -5861,7 +6302,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.3839269494637847,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 119,
@@ -5910,7 +6354,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.29206073679961264,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 120,
@@ -5959,7 +6406,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.1642361870035529,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 121,
@@ -6009,7 +6459,12 @@
    "xp": 8,
    "seed": 0.7661663740873337,
    "rarity": "blue",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 122,
@@ -6059,7 +6514,12 @@
    "xp": 8,
    "seed": 0.024963275995105505,
    "rarity": "blue",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 123,
@@ -6109,7 +6569,12 @@
    "xp": 8,
    "seed": 0.2821205242071301,
    "rarity": "blue",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 124,
@@ -6159,7 +6624,12 @@
    "xp": 8,
    "seed": 0.2682418536860496,
    "rarity": "blue",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 125,
@@ -6209,7 +6679,12 @@
    "xp": 8,
    "seed": 0.2020041833166033,
    "rarity": "blue",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 126,
@@ -6258,7 +6733,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.7727145659737289,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 127,
@@ -6307,7 +6785,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.043302163714542985,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 128,
@@ -6356,7 +6837,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.44645102811045945,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 129,
@@ -6405,7 +6889,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.9822159423492849,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 130,
@@ -6454,7 +6941,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.23755101091228426,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 131,
@@ -6503,7 +6993,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.9973390030208975,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 132,
@@ -6552,7 +7045,10 @@
    "dead": false,
    "xp": 5,
    "seed": 0.10309607605449855,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 133,
@@ -6602,7 +7098,12 @@
    "xp": 30,
    "seed": 0.19233138696290553,
    "rarity": "leader",
-   "figure": "champion"
+   "figure": "champion",
+   "words": [
+    "lightning"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 134,
@@ -6652,7 +7153,14 @@
    "xp": 8,
    "seed": 0.5919459068682045,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "lightning"
+   ],
+   "half": [
+    "lightning"
+   ],
+   "carries": []
   },
   {
    "id": 135,
@@ -6702,7 +7210,14 @@
    "xp": 8,
    "seed": 0.4972460111603141,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "lightning"
+   ],
+   "half": [
+    "lightning"
+   ],
+   "carries": []
   },
   {
    "id": 136,
@@ -6752,7 +7267,14 @@
    "xp": 8,
    "seed": 0.5384839815087616,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "lightning"
+   ],
+   "half": [
+    "lightning"
+   ],
+   "carries": []
   },
   {
    "id": 137,
@@ -6802,7 +7324,14 @@
    "xp": 8,
    "seed": 0.7472738416399807,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "lightning"
+   ],
+   "half": [
+    "lightning"
+   ],
+   "carries": []
   },
   {
    "id": 138,
@@ -6852,7 +7381,14 @@
    "xp": 8,
    "seed": 0.11848080391064286,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "lightning"
+   ],
+   "half": [
+    "lightning"
+   ],
+   "carries": []
   },
   {
    "id": 139,
@@ -6902,7 +7438,14 @@
    "xp": 8,
    "seed": 0.610102433944121,
    "rarity": "minion",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "lightning"
+   ],
+   "half": [
+    "lightning"
+   ],
+   "carries": []
   },
   {
    "id": 140,
@@ -6951,7 +7494,10 @@
    "dead": false,
    "xp": 6,
    "seed": 0.49347866978496313,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 141,
@@ -7000,7 +7546,10 @@
    "dead": false,
    "xp": 6,
    "seed": 0.18136993143707514,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 142,
@@ -7049,7 +7598,10 @@
    "dead": false,
    "xp": 6,
    "seed": 0.6722419268917292,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 143,
@@ -7098,7 +7650,10 @@
    "dead": false,
    "xp": 6,
    "seed": 0.7758270853664726,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 144,
@@ -7147,7 +7702,10 @@
    "dead": false,
    "xp": 6,
    "seed": 0.3376756717916578,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 145,
@@ -7196,7 +7754,10 @@
    "dead": false,
    "xp": 6,
    "seed": 0.7561215027235448,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 146,
@@ -7246,7 +7807,12 @@
    "xp": 9,
    "seed": 0.8637638112995774,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 147,
@@ -7296,7 +7862,12 @@
    "xp": 9,
    "seed": 0.7565213220659643,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 148,
@@ -7346,7 +7917,12 @@
    "xp": 9,
    "seed": 0.9088393833953887,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 149,
@@ -7396,7 +7972,12 @@
    "xp": 9,
    "seed": 0.13826592941768467,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 150,
@@ -7446,7 +8027,12 @@
    "xp": 9,
    "seed": 0.043843215331435204,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 151,
@@ -7496,7 +8082,12 @@
    "xp": 9,
    "seed": 0.8511203054804355,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 152,
@@ -7546,7 +8137,12 @@
    "xp": 9,
    "seed": 0.7104040358681232,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 153,
@@ -7595,7 +8191,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.42897721962071955,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 154,
@@ -7644,7 +8243,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.19147774437442422,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 155,
@@ -7693,7 +8295,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.8949134759604931,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 156,
@@ -7742,7 +8347,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.7833420138340443,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 157,
@@ -7791,7 +8399,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.6729930385481566,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 158,
@@ -7840,7 +8451,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.6553032223600894,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 159,
@@ -7889,7 +8503,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.05521556665189564,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 160,
@@ -7938,7 +8555,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.9616437412332743,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 161,
@@ -7987,7 +8607,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.4320720946416259,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 162,
@@ -8036,7 +8659,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.9779238244518638,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 163,
@@ -8085,7 +8711,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.8324231889564544,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 164,
@@ -8134,7 +8763,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.8042548038065434,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 165,
@@ -8183,7 +8815,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.37153115402907133,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 166,
@@ -8232,7 +8867,10 @@
    "dead": false,
    "xp": 9,
    "seed": 0.8091614688746631,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 167,
@@ -8281,7 +8919,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.8412011850159615,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 168,
@@ -8330,7 +8971,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.15714385290630162,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 169,
@@ -8379,7 +9023,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.551435488043353,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 170,
@@ -8428,7 +9075,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.29522485937923193,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 171,
@@ -8477,7 +9127,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.1160322108771652,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 172,
@@ -8526,7 +9179,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.8491592907812446,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 173,
@@ -8575,7 +9231,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.7987039058934897,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 174,
@@ -8624,7 +9283,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.5348050128668547,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 175,
@@ -8673,7 +9335,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.021958966506645083,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 176,
@@ -8722,7 +9387,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.1376616198103875,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 177,
@@ -8771,7 +9439,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.2935106314253062,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 178,
@@ -8820,7 +9491,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.46692872513085604,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 179,
@@ -8869,7 +9543,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.6838366114534438,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 180,
@@ -8918,7 +9595,12 @@
    "dead": false,
    "xp": 135,
    "seed": 0.40500259934924543,
-   "figure": "guardian"
+   "figure": "guardian",
+   "words": [
+    "power"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 181,
@@ -8967,7 +9649,12 @@
    "dead": false,
    "xp": 135,
    "seed": 0.49600995355285704,
-   "figure": "guardian"
+   "figure": "guardian",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 182,
@@ -9016,7 +9703,12 @@
    "dead": false,
    "xp": 135,
    "seed": 0.5363605215679854,
-   "figure": "guardian"
+   "figure": "guardian",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 183,
@@ -9066,7 +9758,12 @@
    "xp": 8,
    "seed": 0.8693593125790358,
    "rarity": "blue",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 184,
@@ -9116,7 +9813,12 @@
    "xp": 8,
    "seed": 0.31645843759179115,
    "rarity": "blue",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 185,
@@ -9166,7 +9868,12 @@
    "xp": 8,
    "seed": 0.9375201854854822,
    "rarity": "blue",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 186,
@@ -9216,7 +9923,12 @@
    "xp": 8,
    "seed": 0.21446377038955688,
    "rarity": "blue",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 187,
@@ -9266,7 +9978,12 @@
    "xp": 8,
    "seed": 0.9001736103091389,
    "rarity": "blue",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 188,
@@ -9315,7 +10032,15 @@
    "dead": false,
    "xp": 238,
    "seed": 0.11863070726394653,
-   "figure": "headsman"
+   "figure": "headsman",
+   "words": [
+    "power",
+    "fire"
+   ],
+   "half": [],
+   "carries": [
+    "power"
+   ]
   }
  ],
  "defs": {

@@ -96,7 +96,12 @@
    "xp": 19,
    "seed": 0.6335686100646853,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 2,
@@ -146,7 +151,12 @@
    "xp": 19,
    "seed": 0.8550282849464566,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 3,
@@ -196,7 +206,12 @@
    "xp": 19,
    "seed": 0.025271529564633965,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 4,
@@ -246,7 +261,12 @@
    "xp": 19,
    "seed": 0.2128114034421742,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 5,
@@ -296,7 +316,12 @@
    "xp": 19,
    "seed": 0.3760395753197372,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 6,
@@ -345,7 +370,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.475299880374223,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 7,
@@ -394,7 +422,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.624440799234435,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 8,
@@ -443,7 +474,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.22706440137699246,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 9,
@@ -492,7 +526,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.28551818104460835,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 10,
@@ -541,7 +578,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.6068352286238223,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 11,
@@ -590,7 +630,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.13165473751723766,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 12,
@@ -639,7 +682,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.19341430277563632,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 13,
@@ -688,7 +734,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.975147781893611,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 14,
@@ -737,7 +786,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.21309535205364227,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 15,
@@ -786,7 +838,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.361079070949927,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 16,
@@ -836,7 +891,12 @@
    "xp": 96,
    "seed": 0.8286003302782774,
    "rarity": "leader",
-   "figure": "minifm"
+   "figure": "minifm",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 17,
@@ -886,7 +946,14 @@
    "xp": 16,
    "seed": 0.6702851816080511,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 18,
@@ -936,7 +1003,14 @@
    "xp": 16,
    "seed": 0.02217635209672153,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 19,
@@ -986,7 +1060,14 @@
    "xp": 16,
    "seed": 0.0646736512426287,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 20,
@@ -1036,7 +1117,14 @@
    "xp": 16,
    "seed": 0.5209254485089332,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 21,
@@ -1085,7 +1173,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.4518485232256353,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 22,
@@ -1134,7 +1225,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.3248110059648752,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 23,
@@ -1183,7 +1277,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.5000860455911607,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 24,
@@ -1232,7 +1329,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.6791629248764366,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 25,
@@ -1281,7 +1381,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.3268758999183774,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 26,
@@ -1330,7 +1433,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.10227467631921172,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 27,
@@ -1379,7 +1485,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.7830626317299902,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 28,
@@ -1428,7 +1537,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.0541146332398057,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 29,
@@ -1477,7 +1589,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.41948709986172616,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 30,
@@ -1526,7 +1641,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.767265486298129,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 31,
@@ -1575,7 +1693,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.5818927180953324,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 32,
@@ -1624,7 +1745,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.03760015778243542,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 33,
@@ -1673,7 +1797,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.8342428121250123,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 34,
@@ -1722,7 +1849,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.7168080697301775,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 35,
@@ -1771,7 +1901,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.27884154790081084,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 36,
@@ -1820,7 +1953,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.32222555903717875,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 37,
@@ -1869,7 +2005,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.4128923087846488,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 38,
@@ -1918,7 +2057,10 @@
    "dead": false,
    "xp": 8,
    "seed": 0.10430421167984605,
-   "figure": "bat"
+   "figure": "bat",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 39,
@@ -1968,7 +2110,12 @@
    "xp": 96,
    "seed": 0.1323359441012144,
    "rarity": "leader",
-   "figure": "minifm"
+   "figure": "minifm",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 40,
@@ -2018,7 +2165,14 @@
    "xp": 16,
    "seed": 0.7550326907075942,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 41,
@@ -2068,7 +2222,14 @@
    "xp": 16,
    "seed": 0.35601814673282206,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 42,
@@ -2118,7 +2279,14 @@
    "xp": 16,
    "seed": 0.9666716230567545,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 43,
@@ -2168,7 +2336,14 @@
    "xp": 16,
    "seed": 0.5458307047374547,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 44,
@@ -2218,7 +2393,14 @@
    "xp": 16,
    "seed": 0.1724014391656965,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "frost"
+   ],
+   "half": [
+    "frost"
+   ],
+   "carries": []
   },
   {
    "id": 45,
@@ -2268,7 +2450,12 @@
    "xp": 96,
    "seed": 0.9924442288465798,
    "rarity": "leader",
-   "figure": "minifm"
+   "figure": "minifm",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 46,
@@ -2318,7 +2505,14 @@
    "xp": 16,
    "seed": 0.6167739201337099,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "fire"
+   ],
+   "half": [
+    "fire"
+   ],
+   "carries": []
   },
   {
    "id": 47,
@@ -2368,7 +2562,14 @@
    "xp": 16,
    "seed": 0.9401207414921373,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "fire"
+   ],
+   "half": [
+    "fire"
+   ],
+   "carries": []
   },
   {
    "id": 48,
@@ -2418,7 +2619,14 @@
    "xp": 16,
    "seed": 0.6304277700837702,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "fire"
+   ],
+   "half": [
+    "fire"
+   ],
+   "carries": []
   },
   {
    "id": 49,
@@ -2468,7 +2676,14 @@
    "xp": 16,
    "seed": 0.6558211804367602,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "fire"
+   ],
+   "half": [
+    "fire"
+   ],
+   "carries": []
   },
   {
    "id": 50,
@@ -2518,7 +2733,14 @@
    "xp": 16,
    "seed": 0.01668985211290419,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "fire"
+   ],
+   "half": [
+    "fire"
+   ],
+   "carries": []
   },
   {
    "id": 51,
@@ -2568,7 +2790,14 @@
    "xp": 16,
    "seed": 0.005224384134635329,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "fire"
+   ],
+   "half": [
+    "fire"
+   ],
+   "carries": []
   },
   {
    "id": 52,
@@ -2617,7 +2846,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.3299250933341682,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 53,
@@ -2666,7 +2898,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.06793747236952186,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 54,
@@ -2715,7 +2950,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.9175333662424237,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 55,
@@ -2764,7 +3002,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.6286491185892373,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 56,
@@ -2813,7 +3054,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.7523144534789026,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 57,
@@ -2862,7 +3106,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.01358478027395904,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 58,
@@ -2911,7 +3158,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.6828372727613896,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 59,
@@ -2960,7 +3210,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.1557144201360643,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 60,
@@ -3009,7 +3262,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.9848526124842465,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 61,
@@ -3058,7 +3314,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.5528054910246283,
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 62,
@@ -3108,7 +3367,12 @@
    "xp": 40,
    "seed": 0.8671514883171767,
    "rarity": "leader",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "power"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 63,
@@ -3158,7 +3422,14 @@
    "xp": 10,
    "seed": 0.7561633933801204,
    "rarity": "minion",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 64,
@@ -3208,7 +3479,14 @@
    "xp": 10,
    "seed": 0.3430180996656418,
    "rarity": "minion",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 65,
@@ -3258,7 +3536,14 @@
    "xp": 10,
    "seed": 0.9657152378931642,
    "rarity": "minion",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 66,
@@ -3308,7 +3593,14 @@
    "xp": 10,
    "seed": 0.12661012820899487,
    "rarity": "minion",
-   "figure": "shade"
+   "figure": "shade",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 67,
@@ -3357,7 +3649,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.05476987990550697,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 68,
@@ -3406,7 +3701,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.1713178709615022,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 69,
@@ -3455,7 +3753,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.5008070184849203,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 70,
@@ -3504,7 +3805,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.7121730244252831,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 71,
@@ -3553,7 +3857,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.9219197945203632,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 72,
@@ -3602,7 +3909,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.9270381883252412,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 73,
@@ -3651,7 +3961,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.7277136887423694,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 74,
@@ -3700,7 +4013,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.10275966278277338,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 75,
@@ -3749,7 +4065,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.3638989294413477,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 76,
@@ -3798,7 +4117,10 @@
    "dead": false,
    "xp": 16,
    "seed": 0.9021253159735352,
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 77,
@@ -3848,7 +4170,14 @@
    "xp": 96,
    "seed": 0.9346373605076224,
    "rarity": "leader",
-   "figure": "minifm"
+   "figure": "minifm",
+   "words": [
+    "power"
+   ],
+   "half": [],
+   "carries": [
+    "power"
+   ]
   },
   {
    "id": 78,
@@ -3898,7 +4227,14 @@
    "xp": 16,
    "seed": 0.88155522570014,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 79,
@@ -3948,7 +4284,14 @@
    "xp": 16,
    "seed": 0.8863243465311825,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 80,
@@ -3998,7 +4341,14 @@
    "xp": 16,
    "seed": 0.5009063191246241,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 81,
@@ -4048,7 +4398,14 @@
    "xp": 16,
    "seed": 0.8943843368906528,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 82,
@@ -4098,7 +4455,14 @@
    "xp": 16,
    "seed": 0.19677073857747018,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 83,
@@ -4148,7 +4512,14 @@
    "xp": 16,
    "seed": 0.45730826375074685,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 84,
@@ -4198,7 +4569,14 @@
    "xp": 16,
    "seed": 0.8781449822708964,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "power"
+   ],
+   "half": [
+    "power"
+   ],
+   "carries": []
   },
   {
    "id": 85,
@@ -4248,7 +4626,12 @@
    "xp": 19,
    "seed": 0.2321286192163825,
    "rarity": "blue",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 86,
@@ -4298,7 +4681,12 @@
    "xp": 19,
    "seed": 0.804010673891753,
    "rarity": "blue",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 87,
@@ -4348,7 +4736,12 @@
    "xp": 19,
    "seed": 0.35096218972466886,
    "rarity": "blue",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 88,
@@ -4398,7 +4791,12 @@
    "xp": 19,
    "seed": 0.16306024370715022,
    "rarity": "blue",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 89,
@@ -4448,7 +4846,12 @@
    "xp": 19,
    "seed": 0.5796088560018688,
    "rarity": "blue",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 90,
@@ -4498,7 +4901,12 @@
    "xp": 19,
    "seed": 0.5601985531393439,
    "rarity": "blue",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 91,
@@ -4548,7 +4956,12 @@
    "xp": 96,
    "seed": 0.7780931417364627,
    "rarity": "leader",
-   "figure": "minifm"
+   "figure": "minifm",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 92,
@@ -4598,7 +5011,14 @@
    "xp": 16,
    "seed": 0.3588444208726287,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "swift"
+   ],
+   "half": [
+    "swift"
+   ],
+   "carries": []
   },
   {
    "id": 93,
@@ -4648,7 +5068,14 @@
    "xp": 16,
    "seed": 0.7292241777759045,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "swift"
+   ],
+   "half": [
+    "swift"
+   ],
+   "carries": []
   },
   {
    "id": 94,
@@ -4698,7 +5125,14 @@
    "xp": 16,
    "seed": 0.7211794487666339,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "swift"
+   ],
+   "half": [
+    "swift"
+   ],
+   "carries": []
   },
   {
    "id": 95,
@@ -4748,7 +5182,14 @@
    "xp": 16,
    "seed": 0.662137747509405,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "swift"
+   ],
+   "half": [
+    "swift"
+   ],
+   "carries": []
   },
   {
    "id": 96,
@@ -4798,7 +5239,14 @@
    "xp": 16,
    "seed": 0.903584027197212,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "swift"
+   ],
+   "half": [
+    "swift"
+   ],
+   "carries": []
   },
   {
    "id": 97,
@@ -4848,7 +5296,14 @@
    "xp": 16,
    "seed": 0.16366476262919605,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "swift"
+   ],
+   "half": [
+    "swift"
+   ],
+   "carries": []
   },
   {
    "id": 98,
@@ -4898,7 +5353,14 @@
    "xp": 16,
    "seed": 0.5672137830406427,
    "rarity": "minion",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "swift"
+   ],
+   "half": [
+    "swift"
+   ],
+   "carries": []
   },
   {
    "id": 99,
@@ -4948,7 +5410,12 @@
    "xp": 19,
    "seed": 0.8414992517791688,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "lightning"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 100,
@@ -4998,7 +5465,12 @@
    "xp": 19,
    "seed": 0.30384378507733345,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "lightning"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 101,
@@ -5048,7 +5520,12 @@
    "xp": 19,
    "seed": 0.02740683499723673,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "lightning"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 102,
@@ -5098,7 +5575,12 @@
    "xp": 19,
    "seed": 0.6749828441534191,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "lightning"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 103,
@@ -5148,7 +5630,12 @@
    "xp": 19,
    "seed": 0.9333680574782193,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "lightning"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 104,
@@ -5198,7 +5685,12 @@
    "xp": 64,
    "seed": 0.33488444495014846,
    "rarity": "leader",
-   "figure": "priest"
+   "figure": "priest",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 105,
@@ -5248,7 +5740,14 @@
    "xp": 16,
    "seed": 0.6896266390103847,
    "rarity": "minion",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "swift"
+   ],
+   "half": [
+    "swift"
+   ],
+   "carries": []
   },
   {
    "id": 106,
@@ -5298,7 +5797,14 @@
    "xp": 16,
    "seed": 0.656439654296264,
    "rarity": "minion",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "swift"
+   ],
+   "half": [
+    "swift"
+   ],
+   "carries": []
   },
   {
    "id": 107,
@@ -5348,7 +5854,14 @@
    "xp": 16,
    "seed": 0.5827602988574654,
    "rarity": "minion",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "swift"
+   ],
+   "half": [
+    "swift"
+   ],
+   "carries": []
   },
   {
    "id": 108,
@@ -5398,7 +5911,14 @@
    "xp": 16,
    "seed": 0.5708364844322205,
    "rarity": "minion",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "swift"
+   ],
+   "half": [
+    "swift"
+   ],
+   "carries": []
   },
   {
    "id": 109,
@@ -5447,7 +5967,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.3514104266650975,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 110,
@@ -5496,7 +6019,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.15350321773439646,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 111,
@@ -5545,7 +6071,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.30102215078659356,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 112,
@@ -5594,7 +6123,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.45990787306800485,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 113,
@@ -5643,7 +6175,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.08117014728486538,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 114,
@@ -5692,7 +6227,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.6621945463120937,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 115,
@@ -5741,7 +6279,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.4108571936376393,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 116,
@@ -5790,7 +6331,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.6945883939042687,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 117,
@@ -5839,7 +6383,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.06142027792520821,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 118,
@@ -5888,7 +6435,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.048877129098400474,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 119,
@@ -5937,7 +6487,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.13012974942103028,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 120,
@@ -5986,7 +6539,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.047849877970293164,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 121,
@@ -6035,7 +6591,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.027198425261303782,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 122,
@@ -6084,7 +6643,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.13436646037735045,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 123,
@@ -6133,7 +6695,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.2931163730099797,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 124,
@@ -6183,7 +6748,12 @@
    "xp": 14,
    "seed": 0.10057625104673207,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 125,
@@ -6233,7 +6803,12 @@
    "xp": 14,
    "seed": 0.4702956641558558,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 126,
@@ -6283,7 +6858,12 @@
    "xp": 14,
    "seed": 0.7730122148059309,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 127,
@@ -6333,7 +6913,12 @@
    "xp": 14,
    "seed": 0.0025561584625393152,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 128,
@@ -6383,7 +6968,12 @@
    "xp": 14,
    "seed": 0.7906065913848579,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 129,
@@ -6433,7 +7023,12 @@
    "xp": 14,
    "seed": 0.40987814753316343,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 130,
@@ -6483,7 +7078,12 @@
    "xp": 14,
    "seed": 0.36231476604007185,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 131,
@@ -6533,7 +7133,12 @@
    "xp": 14,
    "seed": 0.3643240698147565,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 132,
@@ -6583,7 +7188,12 @@
    "xp": 14,
    "seed": 0.6696682719048113,
    "rarity": "blue",
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [
+    "swift"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 133,
@@ -6632,7 +7242,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.8308427515439689,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 134,
@@ -6681,7 +7294,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.7777610549237579,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 135,
@@ -6730,7 +7346,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.9542000880464911,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 136,
@@ -6779,7 +7398,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.7179124129470438,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 137,
@@ -6828,7 +7450,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.5365654083434492,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 138,
@@ -6877,7 +7502,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.15547264833003283,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 139,
@@ -6926,7 +7554,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.6869921134784818,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 140,
@@ -6975,7 +7606,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.5243290816433728,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 141,
@@ -7024,7 +7658,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.0038627060130238533,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 142,
@@ -7073,7 +7710,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.5898093027062714,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 143,
@@ -7122,7 +7762,10 @@
    "dead": false,
    "xp": 14,
    "seed": 0.28689113864675164,
-   "figure": "archer"
+   "figure": "archer",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 144,
@@ -7171,7 +7814,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.95434710662812,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 145,
@@ -7220,7 +7866,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.6585667594335973,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 146,
@@ -7269,7 +7918,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.04068410838954151,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 147,
@@ -7318,7 +7970,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.7293661315925419,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 148,
@@ -7367,7 +8022,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.48796236561611295,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 149,
@@ -7416,7 +8074,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.12110948003828526,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 150,
@@ -7465,7 +8126,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.22853669081814587,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 151,
@@ -7514,7 +8178,10 @@
    "dead": false,
    "xp": 12,
    "seed": 0.6870889789424837,
-   "figure": "skeleton"
+   "figure": "skeleton",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 152,
@@ -7564,7 +8231,12 @@
    "xp": 19,
    "seed": 0.5555599869694561,
    "rarity": "blue",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 153,
@@ -7614,7 +8286,12 @@
    "xp": 19,
    "seed": 0.8245475101284683,
    "rarity": "blue",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 154,
@@ -7664,7 +8341,12 @@
    "xp": 19,
    "seed": 0.46022292552515864,
    "rarity": "blue",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 155,
@@ -7714,7 +8396,12 @@
    "xp": 19,
    "seed": 0.40284403576515615,
    "rarity": "blue",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 156,
@@ -7764,7 +8451,12 @@
    "xp": 19,
    "seed": 0.08134345151484013,
    "rarity": "blue",
-   "figure": "cultist"
+   "figure": "cultist",
+   "words": [
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 157,
@@ -7813,7 +8505,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.558675627456978,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 158,
@@ -7862,7 +8557,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.3250892227515578,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 159,
@@ -7911,7 +8609,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.20441946433857083,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 160,
@@ -7960,7 +8661,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.5388353993184865,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 161,
@@ -8009,7 +8713,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.13635182636789978,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 162,
@@ -8058,7 +8765,10 @@
    "dead": false,
    "xp": 10,
    "seed": 0.5584956926759332,
-   "figure": "shade"
+   "figure": "shade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 163,
@@ -8108,7 +8818,12 @@
    "xp": 19,
    "seed": 0.8291685625445098,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 164,
@@ -8158,7 +8873,12 @@
    "xp": 19,
    "seed": 0.09652180597186089,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 165,
@@ -8208,7 +8928,12 @@
    "xp": 19,
    "seed": 0.24829700053669512,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 166,
@@ -8258,7 +8983,12 @@
    "xp": 19,
    "seed": 0.6774804654996842,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 167,
@@ -8308,7 +9038,12 @@
    "xp": 19,
    "seed": 0.8438078484032303,
    "rarity": "blue",
-   "figure": "dagger"
+   "figure": "dagger",
+   "words": [
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 168,
@@ -8357,7 +9092,13 @@
    "dead": false,
    "xp": 216,
    "seed": 0.805525820935145,
-   "figure": "guardian"
+   "figure": "guardian",
+   "words": [
+    "fire",
+    "poison"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 169,
@@ -8406,7 +9147,13 @@
    "dead": false,
    "xp": 216,
    "seed": 0.8281259608920664,
-   "figure": "guardian"
+   "figure": "guardian",
+   "words": [
+    "power",
+    "fire"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 170,
@@ -8456,7 +9203,12 @@
    "xp": 34,
    "seed": 0.5239230007864535,
    "rarity": "blue",
-   "figure": "boneward"
+   "figure": "boneward",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 171,
@@ -8506,7 +9258,12 @@
    "xp": 34,
    "seed": 0.208119674352929,
    "rarity": "blue",
-   "figure": "boneward"
+   "figure": "boneward",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 172,
@@ -8556,7 +9313,12 @@
    "xp": 34,
    "seed": 0.6464503991883248,
    "rarity": "blue",
-   "figure": "boneward"
+   "figure": "boneward",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 173,
@@ -8606,7 +9368,12 @@
    "xp": 34,
    "seed": 0.33719338732771575,
    "rarity": "blue",
-   "figure": "boneward"
+   "figure": "boneward",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 174,
@@ -8656,7 +9423,12 @@
    "xp": 34,
    "seed": 0.050983219873160124,
    "rarity": "blue",
-   "figure": "boneward"
+   "figure": "boneward",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 175,
@@ -8706,7 +9478,12 @@
    "xp": 34,
    "seed": 0.3976195603609085,
    "rarity": "blue",
-   "figure": "boneward"
+   "figure": "boneward",
+   "words": [
+    "frost"
+   ],
+   "half": [],
+   "carries": []
   },
   {
    "id": 176,
@@ -8755,7 +9532,10 @@
    "dead": false,
    "xp": 120,
    "seed": 0.002735721180215478,
-   "figure": "keyblade"
+   "figure": "keyblade",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 177,
@@ -8804,7 +9584,10 @@
    "dead": false,
    "xp": 120,
    "seed": 0.9810509674716741,
-   "figure": "keyflame"
+   "figure": "keyflame",
+   "words": [],
+   "half": [],
+   "carries": []
   },
   {
    "id": 178,
@@ -8853,7 +9636,17 @@
    "dead": false,
    "xp": 640,
    "seed": 0.8241886680480093,
-   "figure": "fleshmancer"
+   "figure": "fleshmancer",
+   "words": [
+    "poison",
+    "fire",
+    "power"
+   ],
+   "half": [],
+   "carries": [
+    "power",
+    "fire"
+   ]
   }
  ],
  "defs": {

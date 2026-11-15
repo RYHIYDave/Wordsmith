@@ -98,6 +98,16 @@ console.log(`ground: ${placed.length} pictures (floor repeats every ${period} ti
 const game = new Game('warrior', seed);
 game.depth = depth;
 game.enterDungeon();
+// (THE WORDS: the same floor made for a hero whose wordsmith's ring is lit, as it is once the Master Rune-stone has been
+// brought back from floor 1. Until it is, nothing in the game gives up a word (game.ts wordsFall): from this one, which of
+// the monsters carry a word to give up. Everything else is taken from the floor above, made for a hero who has not found the
+// stone: the game lays the fallen wordsmith on a floor only for him (`body`: where he lies, if he is still to be found), and
+// the floor's look was recorded so. The two floors' monsters are the same monsters in the same places.)
+const lit = new Game('warrior', seed);
+lit.depth = depth;
+lit.hero.ring = true;
+lit.enterDungeon();
+if (lit.monsters.length !== game.monsters.length || lit.monsters.some((m, i) => m.kind !== game.monsters[i].kind || m.x !== game.monsters[i].x || m.y !== game.monsters[i].y)) throw new Error('the floor made with the ring lit has other monsters');
 const level = game.level;
 const L = level.floor;
 const arr = (a: ArrayLike<number> | undefined | null): number[] | null => (a ? Array.from(a) : null);
@@ -165,9 +175,11 @@ const plain = (o: object): Record<string, number | string | boolean> => {
   return out;
 };
 const kinds = new Set<string>();
-const monsters = game.monsters.map((m) => {
+// (THE WORDS: `words`, the words it fights with (an elite's one, a guardian's, a boss's, its pack's; game.ts spawn); `half`, a
+// pack's minion's, its leader's at half strength; `carries`, the word it gives up when it dies, the rune over its head)
+const monsters = game.monsters.map((m, i) => {
   kinds.add(m.kind);
-  return { ...plain(m), figure: bakeName(figureOf(m)) };
+  return { ...plain(m), figure: bakeName(figureOf(m)), words: [...m.words], half: [...(m.half ?? [])], carries: [...lit.monsters[i].carries] };
 });
 const defs: Record<string, Record<string, number | string | boolean>> = {};
 for (const k of kinds) defs[k] = plain(MONSTERS[k as keyof typeof MONSTERS]);
