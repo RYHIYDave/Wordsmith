@@ -13,6 +13,14 @@ const MM := preload("res://scripts/monster_moves.gd")
 const Perils := preload("res://scripts/perils.gd")
 
 const FLOW_REACH := 28
+## (nav.ts: what a step to a side and to a corner cost; height.ts: the side steps a body may take from a tile, as bits)
+const STEP_ORTH := 10
+const STEP_DIAG := 14
+const STEP_E := 1
+const STEP_W := 2
+const STEP_S := 4
+const STEP_N := 8
+const FAR := 1 << 30
 const FLOW_EVERY := 0.25
 const ARROW_R := 0.2
 const HERO_R := 0.3
@@ -180,35 +188,61 @@ func shut_in(m) -> bool:
 	return false
 
 
-## The way down the flow field from where a body stands: toward the neighbouring tile nearest the hero.
+## The way down a flow field from where a body stands (nav.ts flowDir): toward the middle of the neighbouring tile that gives
+## the shortest walk left (what is left from it and the step to it: 10 to a side, 14 to a corner), among those nearer than
+## this one; a corner only where it is not cut. Nothing where no neighbour is nearer, or the tile was not reached.
 func flow_dir(at: Vector2, field = null) -> Vector2:
-	var _flow: PackedInt32Array = self._flow if field == null else field
+	var f: PackedInt32Array = _flow if field == null else field
+	var w := map.w
+	var h := map.h
 	var tx := floori(at.x)
 	var ty := floori(at.y)
-	if tx < 0 or ty < 0 or tx >= map.w or ty >= map.h:
+	if tx < 0 or ty < 0 or tx >= w or ty >= h:
 		return Vector2.ZERO
-	var here := _flow[ty * map.w + tx]
-	if here < 0:
+	var i := ty * w + tx
+	var here := f[i]
+	if here <= 0:
+		# (already on the tile, or one the field did not reach: steered to a neighbour it did, if there is one)
+		if here == 0:
+			return Vector2.ZERO
+		here = FAR
+	var steps := not map.step.is_empty()
+	var st: int = map.step[i] if steps else 15
+	var left := tx > 0 and _pass(i - 1) and (st & STEP_W) != 0
+	var right := tx < w - 1 and _pass(i + 1) and (st & STEP_E) != 0
+	var up := ty > 0 and _pass(i - w) and (st & STEP_N) != 0
+	var down := ty < h - 1 and _pass(i + w) and (st & STEP_S) != 0
+	var best := FAR + STEP_DIAG
+	var b := Vector2i.ZERO
+	# (side neighbours; the tile he stands on may not be walkable, so a neighbour at 0 always counts)
+	for q in [[tx > 0 and (left or (f[i - 1] == 0 and (st & STEP_W) != 0)), i - 1, -1, 0], [tx < w - 1 and (right or (f[i + 1] == 0 and (st & STEP_E) != 0)), i + 1, 1, 0],
+			[ty > 0 and (up or (f[i - w] == 0 and (st & STEP_N) != 0)), i - w, 0, -1], [ty < h - 1 and (down or (f[i + w] == 0 and (st & STEP_S) != 0)), i + w, 0, 1]]:
+		if not q[0]:
+			continue
+		var d: int = f[q[1]]
+		if d >= 0 and d < here and d + STEP_ORTH < best:
+			best = d + STEP_ORTH
+			b = Vector2i(q[2], q[3])
+	# (corners, only where the corner is not cut; where there are ledges, only if it could be made either way round)
+	for q in [[left and up and (not steps or ((map.step[i - 1] & STEP_N) != 0 and (map.step[i - w] & STEP_W) != 0)), i - w - 1, -1, -1],
+			[right and up and (not steps or ((map.step[i + 1] & STEP_N) != 0 and (map.step[i - w] & STEP_E) != 0)), i - w + 1, 1, -1],
+			[left and down and (not steps or ((map.step[i - 1] & STEP_S) != 0 and (map.step[i + w] & STEP_W) != 0)), i + w - 1, -1, 1],
+			[right and down and (not steps or ((map.step[i + 1] & STEP_S) != 0 and (map.step[i + w] & STEP_E) != 0)), i + w + 1, 1, 1]]:
+		if not q[0]:
+			continue
+		var d: int = f[q[1]]
+		if d >= 0 and d < here and d + STEP_DIAG < best:
+			best = d + STEP_DIAG
+			b = Vector2i(q[2], q[3])
+	if b == Vector2i.ZERO:
 		return Vector2.ZERO
-	var best := here
-	var to := Vector2.ZERO
-	for dy in [-1, 0, 1]:
-		for dx in [-1, 0, 1]:
-			if dx == 0 and dy == 0:
-				continue
-			var nx: int = tx + dx
-			var ny: int = ty + dy
-			if not map.passable(nx, ny):
-				continue
-			if dx != 0 and dy != 0 and not (map.passable(tx + dx, ty) and map.passable(tx, ty + dy)):
-				continue
-			if not may_step(tx, ty, dx, dy):
-				continue
-			var v := _flow[ny * map.w + nx]
-			if v >= 0 and v < best:
-				best = v
-				to = Vector2(nx + 0.5, ny + 0.5) - at
-	return to.normalized() if to != Vector2.ZERO else Vector2.ZERO
+	var to := Vector2(tx + b.x + 0.5, ty + b.y + 0.5) - at
+	return to.normalized() if to.length() > 1e-6 else Vector2.ZERO
+
+
+## Ground the flow goes over: the walk grid, less a shut door.
+func _pass(i: int) -> bool:
+	return map.walk[i] != 0 and map.shut[i] == 0
 
 
 ## Something loosed at the hero from monster `from`, the way `dir` on the floor: an arrow (0.2 round), one of the Warden's
@@ -358,7 +392,7 @@ func _part() -> void:
 				b.world += push_b
 
 
-## nav.ts flowField: steps from the hero's tile over the walk grid, eight ways round (no corner cut), out to 28.
+## nav.ts flowField: every tile's walk to the hero's, out to 28 tiles (a step to a side 10, to a corner 14, no corner cut).
 func _make_flow() -> void:
 	if _flow.size() != map.w * map.h:
 		_flow.resize(map.w * map.h)
@@ -377,35 +411,64 @@ func flow_to(at: Vector2) -> PackedInt32Array:
 	return f
 
 
-func _fill_flow(_flow: PackedInt32Array, from: Vector2) -> void:
+func _fill_flow(f: PackedInt32Array, from: Vector2) -> void:
+	# (nav.ts flowField: every tile's walk to `from`, a step to a side 10 and to a corner 14, out to FLOW_REACH tiles; two
+	# queues, the sides' and the corners', each in order of its cost, the cheaper front taken; a corner only where both tiles
+	# beside it are walkable, and, where there are ledges, where it could be made either way round. -1: not reached.)
+	var w := map.w
+	var h := map.h
 	var sx := floori(from.x)
 	var sy := floori(from.y)
-	if not map.walkable(sx, sy):
+	if sx < 0 or sy < 0 or sx >= w or sy >= h:
 		return
-	var q := PackedInt32Array([sy * map.w + sx])
-	_flow[sy * map.w + sx] = 0
-	var head := 0
-	while head < q.size():
-		var i := q[head]
-		head += 1
-		var d := _flow[i]
-		if d >= FLOW_REACH:
+	var limit := FLOW_REACH * STEP_ORTH
+	var steps := not map.step.is_empty()
+	var o_t := PackedInt32Array()
+	var o_c := PackedInt32Array()
+	var d_t := PackedInt32Array()
+	var d_c := PackedInt32Array()
+	var o_head := 0
+	var d_head := 0
+	var target := sy * w + sx
+	f[target] = 0
+	o_t.append(target)
+	o_c.append(0)
+	while o_head < o_t.size() or d_head < d_t.size():
+		var i: int
+		var cost: int
+		if d_head >= d_t.size() or (o_head < o_t.size() and o_c[o_head] <= d_c[d_head]):
+			i = o_t[o_head]
+			cost = o_c[o_head]
+			o_head += 1
+		else:
+			i = d_t[d_head]
+			cost = d_c[d_head]
+			d_head += 1
+		if cost != f[i]:
 			continue
-		var tx := i % map.w
-		var ty := i / map.w
-		for dy in [-1, 0, 1]:
-			for dx in [-1, 0, 1]:
-				if dx == 0 and dy == 0:
-					continue
-				var nx: int = tx + dx
-				var ny: int = ty + dy
-				if not map.passable(nx, ny):
-					continue
-				if dx != 0 and dy != 0 and not (map.passable(tx + dx, ty) and map.passable(tx, ty + dy)):
-					continue
-				if not may_step(tx, ty, dx, dy):
-					continue
-				var j := ny * map.w + nx
-				if _flow[j] < 0:
-					_flow[j] = d + 1
-					q.append(j)
+		var x := i % w
+		var y := i / w
+		var st: int = map.step[i] if steps else 15
+		var left := x > 0 and _pass(i - 1) and (st & STEP_W) != 0
+		var right := x < w - 1 and _pass(i + 1) and (st & STEP_E) != 0
+		var up := y > 0 and _pass(i - w) and (st & STEP_N) != 0
+		var down := y < h - 1 and _pass(i + w) and (st & STEP_S) != 0
+		var c1 := cost + STEP_ORTH
+		if c1 <= limit:
+			for q in [[left, i - 1], [right, i + 1], [up, i - w], [down, i + w]]:
+				var j: int = q[1]
+				if q[0] and (f[j] < 0 or f[j] > c1):
+					f[j] = c1
+					o_t.append(j)
+					o_c.append(c1)
+		var c2 := cost + STEP_DIAG
+		if c2 <= limit:
+			for q in [[left and up and (not steps or ((map.step[i - 1] & STEP_N) != 0 and (map.step[i - w] & STEP_W) != 0)), i - w - 1],
+					[right and up and (not steps or ((map.step[i + 1] & STEP_N) != 0 and (map.step[i - w] & STEP_E) != 0)), i - w + 1],
+					[left and down and (not steps or ((map.step[i - 1] & STEP_S) != 0 and (map.step[i + w] & STEP_W) != 0)), i + w - 1],
+					[right and down and (not steps or ((map.step[i + 1] & STEP_S) != 0 and (map.step[i + w] & STEP_E) != 0)), i + w + 1]]:
+				var j: int = q[1]
+				if q[0] and _pass(j) and (f[j] < 0 or f[j] > c2):
+					f[j] = c2
+					d_t.append(j)
+					d_c.append(c2)

@@ -118,10 +118,9 @@ const FOE := Color("#ff8a3a")
 ## (game.ts knockHero: HEAVY.knock tiles a step)
 const HEAVY_KNOCK := 0.6
 
-## THE BONE HEAPS OF HIS HALL, where he raises his dead (game/first5.ts LAIR_HEAPS, the game's `L.floor.heaps`), by the floor
-## and its seed ("depth:seed"). THE LAYOUT SHOULD CARRY THEM (assets/floor5/layout.json, made by tools/godot_export.ts): it
-## does not yet, so floor 5's for seed 1 are written here. A hall with none: his dead come up round him.
-const HEAPS := {"5:1": [Vector2(149.5, 98.5), Vector2(151.5, 85.5)]}
+## THE BONE HEAPS OF HIS HALL, where he raises his dead (game/first5.ts LAIR_HEAPS, the game's `L.floor.heaps`): the floor's
+## layout carries them (assets/floor5/layout.json `heaps`, tools/godot_export.ts; floor_map.gd). A hall with none: his dead
+## come up round him.
 
 var mode := "stand"
 var gt := 0.0
@@ -439,7 +438,9 @@ func _come_up(m, dt: float, hero) -> void:
 ## The bone heaps of his hall within 18 tiles of him, the nearest the hero first.
 static func heaps_near(m, hero) -> Array:
 	var out: Array = []
-	for p in HEAPS.get("%d:%d" % [m.mgr.map.depth, m.mgr.map.map_seed], []):
+	var heaps = m.mgr.map.heaps
+	for q in (heaps if heaps is Array else []):
+		var p := Vector2(q["x"], q["y"])
 		if p.distance_to(m.world) <= 18.0:
 			out.append(p)
 	out.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.distance_to(hero.world) < b.distance_to(hero.world))
