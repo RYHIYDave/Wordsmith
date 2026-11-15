@@ -10,6 +10,7 @@
 //
 // Written to godot/assets/looks/, for P = town or floor<N>:
 //   P.png (and P_1.png, ... if one sheet is not enough) + P_pics.json: the pictures, two picture pixels to a game pixel;
+//     under the open sky (floors 6 and down) the ground's pieces in blocks of their own, P_g_<bx>_<by>.png (`blocks`);
 //     { key: [x, y, w, h, ax, ay, sheet] } in picture pixels (ax, ay: where the picture's own anchor falls inside it).
 //   P.json: { format: 2, place, depth, seed, rate, dark: { a, rgb }, clear, sheets, ground, items, holes, glows, doors, props }
 //     Every (x, y) is a screen point in game pixels measured from the screen point of world (0, 0): x = (wx - wy) * 16,
@@ -244,7 +245,7 @@ if (depth >= 6) {
 const skyRec = await page.evaluate(() => window.__rec.sky());
 if (skyRec) console.log(`  its sky: ${skyRec.wrap}x${skyRec.h} (${skyRec.done} painted)${skyRec.town ? `, the town below ${skyRec.town.w}x${skyRec.town.h} at ${skyRec.town.x},${skyRec.town.y}` : ''}`);
 const res = await page.evaluate(() => window.__rec.result);
-const sheets = await page.evaluate(() => window.__rec.sheets(4096));
+const sheets = await page.evaluate((grid) => window.__rec.sheets(4096, grid), depth >= 6);
 const pageErrors = await page.evaluate(() => window.__rec.errors);
 for (const e of pageErrors) console.log('  !! ' + e);
 await browser.close();
@@ -311,6 +312,14 @@ if (items.length < items0.length) {
   for (const v of Object.values(variants)) for (const f of v.frames) f.hs = f.hs.map((i) => sMap[i]);
 }
 const sheetNames = sheets.pages.map((_, i) => (i === 0 ? `${name}.png` : `${name}_${i}.png`));
+// (what an earlier recording of the place left: its sheets past those made now, its blocks; their import notes with them)
+for (const f of fs.readdirSync(OUT)) {
+  const m = new RegExp(`^${name}(_(\\d+)|_g_-?\\d+_-?\\d+)?\\.png(\\.import)?$`).exec(f);
+  if (m && !sheetNames.includes(f.replace(/\.import$/, ''))) fs.unlinkSync(path.join(OUT, f));
+}
+// THE OPEN GROUND'S BLOCKS (floors 6 and down): each a picture of its square of the ground, P_g_<bx>_<by>.png
+const blockNames = (sheets.blocks || []).map((b) => `${name}_g_${b.bx}_${b.by}.png`);
+(sheets.blocks || []).forEach((b, i) => fs.writeFileSync(path.join(OUT, blockNames[i]), Buffer.from(b.png, 'base64')));
 sheets.pages.forEach((p, i) => fs.writeFileSync(path.join(OUT, sheetNames[i]), Buffer.from(p.png, 'base64')));
 fs.writeFileSync(path.join(OUT, `${name}_pics.json`), JSON.stringify(sheets.pics));
 // (the sky: render/outdoor.ts drawSky's own colours and its horizon, HORIZON, held here as the game has them)
@@ -323,6 +332,9 @@ if (skyRec) {
 const doc = {
   format: 2, place: name, depth, seed, rate: 30, samples: N, w: where.w, h: where.h,
   dark, vignette: ready.vignette, clear: res.clear, sheets: sheetNames,
+  // (the open ground's blocks: each [bx, by, file], `size` picture pixels a side, its corner at (bx, by) * size; a picture whose
+  // sheet is -1 - i in P_pics.json lies in block i)
+  ...(blockNames.length ? { blocks: { size: sheets.block, list: sheets.blocks.map((b, i) => [b.bx, b.by, blockNames[i]]) } } : {}),
   ground, items,
   holes: res.holes.map((h) => [h.x, h.y, h.r, h.ry, h.a, h.flicker]),
   glows: res.glows.map((g) => [key(g.f), g.x, g.y, g.w, g.h, g.a, g.flicker]),
@@ -369,4 +381,5 @@ const doc = {
   for (const b of [...new Set(bad)]) console.log('  !! out of its lists: ' + b);
 }
 fs.writeFileSync(path.join(OUT, `${name}.json`), JSON.stringify(doc));
+if (blockNames.length) console.log(`  the ground in ${blockNames.length} blocks of ${sheets.block} picture pixels a side, ${sheets.blocks.reduce((n, b) => n + b.n, 0)} pieces`);
 console.log(`  written: ${sheetNames.map((n, i) => `${n} (${sheets.pages[i].w}x${sheets.pages[i].h})`).join(', ')}, ${name}_pics.json (${Object.keys(sheets.pics).length}), ${name}.json (${(fs.statSync(path.join(OUT, `${name}.json`)).size / 1024).toFixed(0)} KB); the dark ${JSON.stringify(dark)}${errors ? `; ${errors} errors on the page` : ''}`);

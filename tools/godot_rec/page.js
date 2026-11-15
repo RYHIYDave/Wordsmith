@@ -825,13 +825,49 @@
 
   // ------------------------------------------------------------------------------------------------------------------
   // THE SHEETS: every picture used, two picture pixels to a game pixel, packed on pages no wider or taller than `side`.
-  REC.sheets = (side = 4096) => {
+  // THE OPEN GROUND IN BLOCKS (`grid`, floors 6 and down): each piece of the ground the game paints, a square of it 64 game
+  // pixels a side on the ground's grid, is not put on the sheets but laid as it lies in a BLOCK of BLOCK by BLOCK pieces, a
+  // picture of its own square of the ground, so that the Godot side fetches only the blocks near him (look.gd), as the game
+  // paints only the pieces near him. A piece is laid so only where it is the first still picture drawn whole in its square.
+  REC.sheets = (side = 4096, grid = false) => {
     const A = REC.acc;
     const res = REC.result;
+    const BLOCK = 4;
+    const inBlock = new Map();
+    const blockList = [];
+    if (grid) {
+      const uses = new Map();
+      for (const q of res.ground) for (const ki of q.f) if (ki >= 0) uses.set(ki, (uses.get(ki) || 0) + 1);
+      const cells = new Set();
+      const byBlock = new Map();
+      for (const q of res.ground) {
+        if (q.f.length !== 1 || q.f[0] < 0 || q.add || q.a !== 1 || q.w || q.h) continue;
+        const ki = q.f[0];
+        if (uses.get(ki) !== 1) continue;
+        const K = A.keys[ki];
+        const s = REC.srcs[K.src];
+        if (K.sub || K.nat !== 2 || !s || s.width !== 128 || s.height !== 128 || K.ax || K.ay) continue;
+        if (q.x % 64 !== 0 || q.y % 64 !== 0) continue;
+        const i = q.x / 64;
+        const j = q.y / 64;
+        if (cells.has(i + ',' + j)) continue;
+        cells.add(i + ',' + j);
+        const bx = Math.floor(i / BLOCK);
+        const by = Math.floor(j / BLOCK);
+        let b = byBlock.get(bx + ',' + by);
+        if (!b) {
+          b = { bx, by, at: blockList.length, list: [] };
+          byBlock.set(bx + ',' + by, b);
+          blockList.push(b);
+        }
+        b.list.push({ ki, ox: (i - bx * BLOCK) * 128, oy: (j - by * BLOCK) * 128 });
+        inBlock.set(ki, b.at);
+      }
+    }
     // (a source drawn at its own size one to one is a picture at the coarser grain: it goes on the sheet doubled)
     const dens = new Map();
-    // (and the pictures the place's states add)
-    const usedAll = [...new Set([...res.used, ...(REC.extra || [])])].sort((a, b) => a - b);
+    // (and the pictures the place's states add; the ground's laid in blocks are not on the sheets)
+    const usedAll = [...new Set([...res.used, ...(REC.extra || [])])].filter((ki) => !inBlock.has(ki)).sort((a, b) => a - b);
     for (const ki of usedAll) {
       const K = A.keys[ki];
       const was = dens.get(K.src);
@@ -882,7 +918,20 @@
       const sub = K.sub || [0, 0, s.width, s.height];
       pics[ki] = [at.x + Math.round(sub[0] * at.k), at.y + Math.round(sub[1] * at.k), Math.round(sub[2] * at.k), Math.round(sub[3] * at.k), Math.round(K.ax * 2 * 1000) / 1000, Math.round(K.ay * 2 * 1000) / 1000, at.page];
     }
-    return { pages: out, pics };
+    // the blocks: each piece where it lies in its block; its picture's sheet given as -1 - the block's place in the list
+    const blocks = blockList.map((b) => {
+      const c = document.createElement('canvas');
+      c.width = BLOCK * 128;
+      c.height = BLOCK * 128;
+      const x = c.getContext('2d');
+      x.imageSmoothingEnabled = false;
+      for (const q of b.list) {
+        x.drawImage(REC.srcs[A.keys[q.ki].src], q.ox, q.oy);
+        pics[q.ki] = [q.ox, q.oy, 128, 128, 0, 0, -1 - b.at];
+      }
+      return { bx: b.bx, by: b.by, n: b.list.length, png: c.toDataURL('image/png').split(',')[1] };
+    });
+    return { pages: out, pics, blocks, block: BLOCK * 128 };
   };
 })();
 

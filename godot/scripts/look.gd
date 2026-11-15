@@ -110,6 +110,14 @@ var _tall: Array = []
 var _see_masks := {}
 var _seen_now := {}
 var foes = null
+## (THE OPEN GROUND'S BLOCKS, floors 6 and down: tools/godot_record.mjs `blocks`. Each {path, rect (picture pixels), tex (null
+## while not fetched), asked (fetched in the background), drawers (the ground's drawers that draw from it)}; the textures let
+## go of, kept a few frames until what drew them has drawn without them)
+const BLOCK_AHEAD := 384.0  # fetched in the background this far round the screen (picture pixels)
+const BLOCK_KEEP := 1024.0  # let go of past this far
+var _blocks: Array = []
+var _blocks_t := 0.0
+var _dying: Array = []
 
 
 ## Whether a place has a recorded look.
@@ -127,9 +135,16 @@ func _ready() -> void:
 		for name in data["sheets"]:
 			_sheets.append(load(DIR + name))
 		_sheet = _sheets[0]
+		var B: Dictionary = data.get("blocks", {})
+		for b in B.get("list", []):
+			var size := float(B["size"])
+			_blocks.append({"path": DIR + str(b[2]), "rect": Rect2(float(b[0]) * size, float(b[1]) * size, size, size), "tex": null, "asked": false, "drawers": {}})
 		for k in pics:
 			var p: Array = pics[k]
-			_pics[k] = {"rect": Rect2(p[0], p[1], p[2], p[3]), "anchor": Vector2(p[4], p[5]), "sheet": _sheets[int(p[6])]}
+			if int(p[6]) < 0:
+				_pics[k] = {"rect": Rect2(p[0], p[1], p[2], p[3]), "anchor": Vector2(p[4], p[5]), "block": -1 - int(p[6])}
+			else:
+				_pics[k] = {"rect": Rect2(p[0], p[1], p[2], p[3]), "anchor": Vector2(p[4], p[5]), "sheet": _sheets[int(p[6])]}
 		_ready2()
 		return
 	_sheet = load(DIR + place + ".png")
@@ -550,6 +565,7 @@ func _process(dt: float) -> void:
 	_t += dt
 	_send_spots()
 	if _format == 2:
+		_stream_blocks(dt)
 		_run2()
 		_step_plays(dt)
 		_see_through2()
@@ -994,6 +1010,9 @@ func _flush2(items: Array, added: bool, _first := 0) -> void:
 	for i in items.size():
 		_g_node.append(drawer)
 		_g_at.append(i)
+		var p: Dictionary = _pics.get(items[i][0], {})
+		if p.has("block"):
+			_blocks[int(p["block"])]["drawers"][drawer] = true
 
 
 func draw_still2(c: CanvasItem, items: Array, gone: PackedByteArray, fog: PackedByteArray) -> void:
@@ -1003,8 +1022,11 @@ func draw_still2(c: CanvasItem, items: Array, gone: PackedByteArray, fog: Packed
 			continue
 		var p: Dictionary = _pics[it[0]]
 		var r: Rect2 = p["rect"]
+		var tex: Texture2D = _blocks[int(p["block"])]["tex"] if p.has("block") else p["sheet"]
+		if tex == null:
+			continue
 		var size: Vector2 = it[3] if it[3] != Vector2.ZERO else r.size
-		c.draw_texture_rect_region(p["sheet"], Rect2(it[1], size), r, Color(1, 1, 1, it[2]))
+		c.draw_texture_rect_region(tex, Rect2(it[1], size), r, Color(1, 1, 1, it[2]))
 
 
 ## The first of a run's pictures that is one.
@@ -1412,6 +1434,72 @@ func _flush_dark() -> void:
 				alpha *= 1.0 - q[3] * clampf(pool, 0.0, 1.0)
 			_dark_img.set_pixel(x, y, Color(col.r, col.g, col.b, clampf(_dark_a * alpha, 0.0, 1.0)))
 	_dark.texture.update(_dark_img)
+
+
+# --- the open ground's blocks, fetched near him (render/outdoor.ts paints only the pieces near the screen) ---
+
+## Every tenth of a second: the blocks on the screen fetched at once if they are not (no ground is ever seen missing), those
+## round it in the background, and those far from it let go of (a phone holds a few dozen blocks, not the floor).
+func _stream_blocks(dt: float) -> void:
+	if _blocks.is_empty():
+		return
+	# (what was let go of, dropped once what drew it has drawn without it)
+	for d in _dying:
+		d["frames"] -= 1
+	_dying = _dying.filter(func(d): return d["frames"] > 0)
+	# (those asked for in the background that have come)
+	for b in _blocks:
+		if b["asked"] and b["tex"] == null and ResourceLoader.load_threaded_get_status(b["path"]) == ResourceLoader.THREAD_LOAD_LOADED:
+			_block_in(b, ResourceLoader.load_threaded_get(b["path"]))
+	_blocks_t -= dt
+	if _blocks_t > 0.0:
+		return
+	_blocks_t = 0.1
+	var view := _view_rect()
+	if view.size == Vector2.ZERO:
+		return
+	var ahead := view.grow(BLOCK_AHEAD)
+	var keep := view.grow(BLOCK_KEEP)
+	for b in _blocks:
+		var r: Rect2 = b["rect"]
+		if b["tex"] == null:
+			if r.intersects(view):
+				_block_in(b, ResourceLoader.load_threaded_get(b["path"]) if b["asked"] else load(b["path"]))
+			elif r.intersects(ahead) and not b["asked"]:
+				ResourceLoader.load_threaded_request(b["path"])
+				b["asked"] = true
+		elif not r.intersects(keep):
+			_dying.append({"tex": b["tex"], "frames": 3})
+			b["tex"] = null
+			b["asked"] = false
+			for d in b["drawers"]:
+				d.queue_redraw()
+
+
+func _block_in(b: Dictionary, tex: Texture2D) -> void:
+	b["tex"] = tex
+	b["asked"] = false
+	for d in b["drawers"]:
+		d.queue_redraw()
+
+
+## What the screen shows now, picture pixels of the place.
+func _view_rect() -> Rect2:
+	var vp := get_viewport()
+	var cam := vp.get_camera_2d()
+	if cam == null:
+		return Rect2()
+	var size := vp.get_visible_rect().size / cam.zoom
+	return Rect2(cam.get_screen_center_position() - size / 2.0, size)
+
+
+## How many of the ground's blocks are fetched now, of how many.
+func blocks_in() -> Vector2i:
+	var n := 0
+	for b in _blocks:
+		if b["tex"] != null:
+			n += 1
+	return Vector2i(n, _blocks.size())
 
 
 # --- seen through (render.ts seeThrough, veil) ---

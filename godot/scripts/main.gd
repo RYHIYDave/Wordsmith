@@ -3607,7 +3607,8 @@ func _floor_shots(h: Hero, dir: String) -> void:
 			h.world = _free_near(Vector2(float(boss["x"]) + float(boss["w"]) / 2.0, float(boss["y"]) + float(boss["h"]) / 2.0))
 			await _wait(1.5)
 			await _snap(dir + "/f%d_3_boss.png" % n)
-		print("FLOOR %d: %s, %d monsters, %d doors, way on: %s" % [n, place_title(), _monsters.list.size(), map.doors.size(), ways.way_kind() if ways != null else ("stair" if _stairs != null else "-")])
+		var bl: Vector2i = look.blocks_in() if look != null else Vector2i.ZERO
+		print("FLOOR %d: %s, %d monsters, %d doors, way on: %s%s" % [n, place_title(), _monsters.list.size(), map.doors.size(), ways.way_kind() if ways != null else ("stair" if _stairs != null else "-"), (", the ground's blocks fetched: %d of %d" % [bl.x, bl.y]) if bl.y > 0 else ""])
 
 
 ## SEEN THROUGH (look.gd _see_through2; render.ts seeThrough): on each of the open floors (or --floor), the hero set down
