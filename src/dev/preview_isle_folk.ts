@@ -1,7 +1,7 @@
 // Dev page: THE ISLE OF STONES' OWN PEOPLE (dev/sculpt_isle_folk.ts) beside the town's (dev/sculpt_townsfolk.ts), each at his
 // work, turned the other three ways, and at the height of what he does now and then; at three times the game's size.
 //   node tools/preview.mjs src/dev/preview_isle_folk.ts out.png 1500 1100 "3"
-//   hash = <scale>[:<town>]   town = isle (default) | mere
+//   hash = <scale>[:<town>]   town = isle (default) | mere | fen
 import { drawText } from '../engine/font';
 import { drawAura, drawLights } from '../engine/px';
 import type { Light, Sprite } from '../engine/px';
@@ -12,14 +12,16 @@ import type { TownFigure } from './sculpt_townsfolk';
 import { ARMOURER_MOVES, A_BLOW, MYSTIC_MOVES, M_FLARE, STRANGER_MOVES, S_TOSS } from './townsfolk_moves';
 import { sculptIsleSeer, sculptIsleSmith, sculptIsleStranger } from './sculpt_isle_folk';
 import { sculptMereSeller, sculptMereSmith, sculptMereStranger } from './sculpt_mere_folk';
+import { sculptFenHerbalist, sculptFenSmith, sculptFenStranger } from './sculpt_fen_folk';
 
 const [scaleArg = '', townArg = 'isle'] = decodeURIComponent(location.hash.slice(1)).split(':');
 const S = Number(scaleArg) || 3;
 const MERE = townArg === 'mere';
-const smithOf = MERE ? sculptMereSmith : sculptIsleSmith;
-const seerOf = MERE ? sculptMereSeller : sculptIsleSeer;
-const strangerOf = MERE ? sculptMereStranger : sculptIsleStranger;
-const HERE = MERE ? "the mere's" : "the isle's";
+const FEN = townArg === 'fen';
+const smithOf = FEN ? sculptFenSmith : MERE ? sculptMereSmith : sculptIsleSmith;
+const seerOf = FEN ? sculptFenHerbalist : MERE ? sculptMereSeller : sculptIsleSeer;
+const strangerOf = FEN ? sculptFenStranger : MERE ? sculptMereStranger : sculptIsleStranger;
+const HERE = FEN ? "the stilt town's" : MERE ? "the mere's" : "the isle's";
 const AURA: Light = { x: TOWN_CANVAS.ax - 4, y: TOWN_CANVAS.ay - 30, r: 46, color: '#28dcf0', a: 0.2 };
 const spr = (fig: TownFigure, aura: Light | null): Sprite => toSprite(paintFigure(fig), aura, TOWN_CANVAS.ax, TOWN_CANVAS.ay);
 
@@ -38,7 +40,7 @@ const rows: Row[] = [
     ],
   },
   {
-    title: MERE ? 'THE SELLER' : 'THE SEER',
+    title: FEN ? 'THE HERBALIST' : MERE ? 'THE SELLER' : 'THE SEER',
     cells: [
       { s: spr(sculptMystic(MYSTIC_MOVES.idle(0), FACING_TURN3.sw), AURA), cap: "the town's" },
       { s: spr(seerOf(MYSTIC_MOVES.idle(0), FACING_TURN3.sw), AURA), cap: HERE },
@@ -83,7 +85,7 @@ for (const r of rows) {
     g.translate(cx, y);
     g.scale(S, S);
     // (the isle's turf under them; the town's own floor under the town's)
-    g.fillStyle = i === 0 ? '#1a1848' : MERE ? '#2c3a58' : '#16221a';
+    g.fillStyle = i === 0 ? '#1a1848' : FEN ? '#3a3024' : MERE ? '#2c3a58' : '#16221a';
     g.fillRect(0, 0, CW - 2, CH - 2);
     g.fillStyle = 'rgba(0,0,0,0.4)';
     g.beginPath();
