@@ -195,6 +195,9 @@ func _process(dt: float) -> void:
 			"co_crack", "co_ring", "co_left", "co_aim", "co_reach", "co_flung":
 				# (THE CHAINED ONE'S, at the foot of this file)
 				stays = _co_stays(p)
+			"kb_knife", "kb_ball", "kb_sigil", "kb_ring", "kb_reach":
+				# (THE KEYBEARERS', floor 5's two: at the foot of this file)
+				stays = _kb_step(p, dt)
 			_:
 				var s = p.get("src")
 				if s != null and not is_instance_valid(s):
@@ -685,6 +688,8 @@ func _draw() -> void:
 				_am_draw(p)
 			"co_crack", "co_ring", "co_left", "co_aim", "co_reach", "co_flung":
 				_draw_co(p)
+			"kb_knife", "kb_ball", "kb_sigil", "kb_ring", "kb_reach":
+				_draw_kb(p)
 
 
 ## The slam's ring (a stand-in for art/action_f3_fx.ts): out to its edge over RING.wave, easing; breaking up over RING.fade;
@@ -1259,3 +1264,280 @@ func _co_ball(at: Vector2) -> void:
 	draw_circle(at, 10.0, CO_INK)
 	draw_circle(at, 8.5, Color(0.3, 0.29, 0.38))
 	draw_circle(at + Vector2(-2.5, -3.0), 2.5, CO_IRON)
+
+
+# =====================================================================================================================
+# THE KEYBEARERS' (floor 5's two, who carry the temple door's keys: keybearers.gd, whose numbers these read). What their
+# moves send out and leave on the floor, and what each does to the hero (game/act1_rules/keybearers.ts `peril`, fly; the
+# game draws them from the art chat's pictures, render/act1_fx/keybearers.ts and art/key_bearers_fx.ts: these are
+# stand-ins, in the enemy's pink and gold). Once sent out they go on by themselves, whether their bearer still stands or
+# not, but for a sigil that has not yet erupted and the ring's warning. (A key they drop is not one of these: it is
+# keybearers.gd TempleKey, which a fallen hero's coming back does not clear away.)
+#   kb_knife  the Knife's thrown dagger: from his hand, `high` game pixels up, straight the way the hero was as it left
+#             it, 12 tiles a second, turning over and over; a hero within 0.42 of it is struck (not one in the air of his
+#             lunge: it goes on), and it is gone in a glint; so too at a wall, or 10 tiles out.
+#   kb_ball   a ball of the Flame's fan (three of them, 22 degrees apart): 7.5 tiles a second, as far as 9, striking
+#             within 0.45; where it ends it bursts and goes out.
+#   kb_sigil  his great sigil, 2.5 tiles round, under where the hero stood as his hand began to trace it. Its clock runs
+#             up to its eruption (its 0, his slam): a hero inside it then is struck; the pillar stands 0.3 s and falls in
+#             0.2; the floor burns on 3 s, its fire shrinking in to the middle, burning a hero in it 18% of the blow every
+#             half second. If its caster falls, or is stopped in his cast, before the slam, nothing erupts.
+#   kb_ring   his ring of fire, burst out from where he struck the floor: its edge runs out to 5 tiles at 7 a second (from
+#             0.8 out; in its first step, from the middle); a hero its edge passes over (within 0.45 of it) is struck,
+#             once, unless he is in the air of his lunge as it passes; at its end it stands dying 0.35 s.
+#   kb_reach  the ring's warning: its reach, 5 tiles, marked round him while he gathers it, beating faster (drawn only;
+#             gone if he falls or is stopped).
+
+const KBS := preload("res://scripts/keybearers.gd")
+## (render/act1_fx/keybearers.ts: the ring's pink, its gold edge, the floor scorched behind it; art/mkit.ts FLAME, the
+## enemy's fire from its edge to its heart; art/key_bearers_fx.ts: the thrown knife's bone, its grip, the line round it)
+const KB_PINK := Color("#ff3a78")
+const KB_GOLD := Color("#ffd890")
+const KB_SCORCH := Color("#2a0e10")
+const KB_FIRE: Array[Color] = [Color("#c0206a"), Color("#ff4f8a"), Color("#ffb070"), Color("#fff4c8")]
+const KB_BONE := Color("#dccfb6")
+const KB_GRIP := Color("#3a2418")
+const KB_LINE := Color("#1a0c10")
+
+
+## The Knife's dagger ("kb_knife") or a ball of the Flame's fan ("kb_ball"), sent from over `at`, `high` game pixels up,
+## the way `way` (a unit on the floor).
+func kb_fly(kind: String, at: Vector2, way: Vector2, dmg: float, high: float) -> void:
+	list.append({"kind": kind, "x": at.x, "y": at.y, "way": way, "t": 0.0, "dmg": dmg, "high": high, "went": 0.0, "done": false, "hit": 0.0, "dur": 1e9})
+
+
+## The Flame's great sigil under `at`, its clock at `t` (less than 0: so long before its eruption), cast by `src`.
+func kb_sigil(at: Vector2, t: float, dmg: float, src: Object) -> void:
+	list.append({"kind": "kb_sigil", "x": at.x, "y": at.y, "t": t, "dmg": dmg, "src": src, "done": 0})
+
+
+## His ring of fire, burst out from `at`.
+func kb_ring(at: Vector2, dmg: float) -> void:
+	list.append({"kind": "kb_ring", "x": at.x, "y": at.y, "t": 0.0, "dmg": dmg, "done": false})
+
+
+## The ring's reach marked round `src` for `dur` seconds, while he gathers it.
+func kb_reach(src: Object, dur: float) -> void:
+	list.append({"kind": "kb_reach", "t": 0.0, "dur": dur, "src": src})
+
+
+## A step of one of them (its clock has run on already); false: it is over.
+func _kb_step(p: Dictionary, dt: float) -> bool:
+	var t: float = p["t"]
+	var h: Vector2 = hero.world
+	match p["kind"]:
+		"kb_knife", "kb_ball":
+			if p["done"]:
+				return t < float(p["dur"])
+			# (fly: flown along its way a fifth of a tile at a time; it strikes him within its reach, or ends at a wall or at
+			# its flight's end; then its glint, or its burst)
+			var n: Dictionary = KBS.KNIFE if p["kind"] == "kb_knife" else KBS.BALL
+			var at := Vector2(p["x"], p["y"])
+			var way: Vector2 = p["way"]
+			var go: float = minf(dt, t) * float(n["speed"])
+			var steps := maxi(1, ceili(go / 0.2))
+			var ended := false
+			for s in steps:
+				at += way * (go / steps)
+				p["went"] = float(p["went"]) + go / steps
+				if h.distance_to(at) <= float(n["r"]) and KBS.Kit.can_strike(hero):
+					hero.hurt(p["dmg"])
+					ended = true
+				elif float(p["went"]) >= float(n["reach"]) or not _kb_open(at):
+					ended = true
+				if ended:
+					break
+			p["x"] = at.x
+			p["y"] = at.y
+			if ended:
+				p["done"] = true
+				p["hit"] = t
+				p["dur"] = t + float(n["burst"])
+			return true
+		"kb_sigil":
+			var n: Dictionary = KBS.SIGIL
+			var at := Vector2(p["x"], p["y"])
+			if t < -0.05:
+				# (its caster still casting: if he has fallen, or been stopped in his cast, nothing erupts)
+				var w = p["src"]
+				return is_instance_valid(w) and not w.dead and w.state == "act"
+			if int(p["done"]) == 0:
+				if t >= 0.0:
+					p["done"] = 1
+					if h.distance_to(at) <= float(n["r"]) and KBS.Kit.can_strike(hero):
+						hero.hurt(p["dmg"])
+					sfx.play("fire")
+					hero.kick(3.0)
+			elif t > float(n["strike"]) and t >= float(n["strike"]) + float(n["every"]) * int(p["done"]):
+				# (the floor burning on: a tick every half second he stands in what still burns)
+				p["done"] = int(p["done"]) + 1
+				if h.distance_to(at) <= KBS.Kit.burn_radius(t) and KBS.Kit.can_strike(hero):
+					hero.hurt(float(p["dmg"]) * float(n["share"]))
+			return t < KBS.SIGIL_LONG
+		"kb_ring":
+			if not p["done"]:
+				# (struck once, as its edge passes over him: its edge's way over the floor this step, from where it was to
+				# where it is)
+				var half: float = KBS.RING["half"]
+				var r0 := 0.0 if t - dt <= 0.0 else KBS.Kit.ring_at(t - dt)
+				var d := h.distance_to(Vector2(p["x"], p["y"]))
+				if d >= r0 - half and d <= KBS.Kit.ring_at(t) + half and KBS.Kit.can_strike(hero):
+					p["done"] = true
+					hero.hurt(p["dmg"])
+			return t < KBS.RING_LASTS
+		"kb_reach":
+			var s = p["src"]
+			return t < float(p["dur"]) and is_instance_valid(s) and not s.dead and s.state == "act"
+	return false
+
+
+## game.ts isOpen: whether what flies passes a place: open ground, and not the wall half of a tile cut corner to corner.
+func _kb_open(at: Vector2) -> bool:
+	return map.open_at(floori(at.x), floori(at.y)) and not map.in_wall(at.x, at.y)
+
+
+func _draw_kb(p: Dictionary) -> void:
+	var t: float = p["t"]
+	match p["kind"]:
+		"kb_knife", "kb_ball":
+			_draw_kb_flown(p, t)
+		"kb_sigil":
+			_draw_kb_sigil(p, t)
+		"kb_ring":
+			_draw_kb_ring(p, t)
+		"kb_reach":
+			var s = p["src"]
+			if not is_instance_valid(s):
+				return
+			# (a broken line in the enemy's pink round him, come in over half a second, beating faster as he holds it)
+			var k := minf(1.0, t / 0.5)
+			var fast := 3.0 + 9.0 * minf(1.0, t / maxf(0.01, float(p["dur"])))
+			var beat := 0.5 + 0.5 * sin(t * fast * PI)
+			var ring := _ring(s.world.x, s.world.y, KBS.RING["to"], 240)
+			for i in range(0, ring.size() - 1, 2):
+				draw_line(ring[i], ring[i + 1], Color(KB_PINK, (0.35 + 0.45 * beat) * k), 2.0)
+
+
+## The knife or a ball of fire in flight, over its shadow; where it ended, the knife's glint, the ball going out.
+func _draw_kb_flown(p: Dictionary, t: float) -> void:
+	var knife: bool = p["kind"] == "kb_knife"
+	var foot := Iso.to_screen(p["x"], p["y"])
+	var c := foot + Vector2(0.0, -2.0 * float(p["high"]))
+	if p["done"]:
+		var n: Dictionary = KBS.KNIFE if knife else KBS.BALL
+		var k := 1.0 - minf(1.0, (t - float(p["hit"])) / float(n["burst"]))
+		if k <= 0.0:
+			return
+		if knife:
+			draw_circle(c, 8.0 + 14.0 * (1.0 - k), Color(1.0, 0.96, 0.92, 0.45 * k))
+			draw_line(c - Vector2(12, 0) * k, c + Vector2(12, 0) * k, Color(KB_PINK, k), 2.0)
+			draw_line(c - Vector2(0, 12) * k, c + Vector2(0, 12) * k, Color(KB_PINK, k), 2.0)
+		else:
+			_kb_ball(c, 1.0 + 0.6 * (1.0 - k), k, t)
+		return
+	draw_colored_polygon(_kb_oval(foot, 6.0 if knife else 8.0), Color(0, 0, 0, 0.25))
+	if knife:
+		# (turning over and over, an eighth of a turn 24 times a second: its grip, its blade of bone, the enemy's pink
+		# where the light runs along its edge)
+		var a := floorf(t * 24.0) * PI / 4.0
+		var w := Vector2(cos(a), sin(a))
+		draw_line(c - w * 11.0, c + w * 11.0, KB_LINE, 6.0)
+		draw_line(c - w * 10.0, c - w * 3.0, KB_GRIP, 2.0)
+		draw_line(c - w * 2.0, c + w * 10.0, KB_BONE, 3.0)
+		draw_circle(c + w * 8.0, 2.0, KB_PINK)
+	else:
+		_kb_ball(c, 1.0, 1.0, t)
+
+
+## A ball of his fire, its middle at `c` on the screen, `grow` times its size, as faint as `a`: white at its heart, the
+## enemy's pink at its edge, flickering, its top drawn out as it licks up, its light round it.
+func _kb_ball(c: Vector2, grow: float, a: float, t: float) -> void:
+	var f := floorf(t * 20.0)
+	var r := 9.0 * grow * (1.0 + 0.1 * sin(f * 1.7))
+	draw_circle(c, 30.0 * grow, Color(KB_FIRE[2], 0.06 * a))
+	draw_circle(c, 18.0 * grow, Color(KB_FIRE[2], 0.1 * a))
+	var shares := [1.0, 0.8, 0.55, 0.3]
+	for i in 4:
+		var q: float = r * float(shares[i])
+		draw_circle(c, q, Color(KB_FIRE[i], a))
+		draw_colored_polygon(PackedVector2Array([c + Vector2(-q * 0.8, -q * 0.5), c + Vector2(q * 0.8, -q * 0.5), c + Vector2(q * 0.3 * sin(f * 2.3 + i), -q * 1.6)]), Color(KB_FIRE[i], a))
+
+
+## His great sigil: its ring drawn round under the hero as his hand goes once round its ring in the air, its inner ring and
+## its six marks of flame brightening as he gathers the fire; the pillar of fire as it erupts; the floor burning on,
+## shrinking in to the middle.
+func _draw_kb_sigil(p: Dictionary, t: float) -> void:
+	var n: Dictionary = KBS.SIGIL
+	var rad: float = n["r"]
+	var x: float = p["x"]
+	var y: float = p["y"]
+	if t < 0.0:
+		var k := clampf(1.0 + t / float(n["delay"]), 0.0, 1.0)
+		var traced := clampf((t + float(n["delay"])) / float(n["trace"]), 0.0, 1.0)
+		var ring := _ring(x, y, rad, 64)
+		draw_colored_polygon(_ring(x, y, rad), Color(KB_FIRE[2], 0.06 + 0.22 * k))
+		draw_polyline(ring.slice(0, maxi(2, int(ring.size() * traced))), Color(KB_PINK, 0.9), 3.0)
+		if traced >= 1.0:
+			draw_polyline(_ring(x, y, rad * 0.66, 48), Color(KB_FIRE[2], 0.35 + 0.55 * k), 2.0)
+			for j in 6:
+				var a := TAU * j / 6.0 + 0.5
+				draw_line(Iso.to_screen(x + cos(a) * rad * 0.72, y + sin(a) * rad * 0.72), Iso.to_screen(x + cos(a) * rad * 0.94, y + sin(a) * rad * 0.94), Color(KB_GOLD, 0.3 + 0.6 * k), 2.0)
+		return
+	var stand: float = n["pillar"]
+	var fall: float = n["fall"]
+	if t < stand + fall:
+		var up := 1.0 - clampf((t - stand) / fall, 0.0, 1.0)
+		var base := Iso.to_screen(x, y)
+		var half := rad * 32.0 * 0.8
+		var tall := 196.0 * up
+		var shares := [1.0, 0.6, 0.3]
+		for i in 3:
+			var q: float = half * float(shares[i])
+			draw_colored_polygon(PackedVector2Array([base + Vector2(-q, 0), base + Vector2(-q * 0.7, -tall), base + Vector2(q * 0.7, -tall), base + Vector2(q, 0)]), Color(KB_FIRE[i + 1], (0.5 + 0.12 * i) * up))
+	var burns := KBS.Kit.burn_radius(t)
+	if burns > 0.02:
+		draw_colored_polygon(_ring(x, y, burns), Color(KB_FIRE[2], 0.3))
+		draw_polyline(_ring(x, y, burns), Color(KB_PINK, 0.75), 2.0)
+		# (flames standing in what still burns)
+		for i in 9:
+			var a := i * 2.4 + 0.7
+			var d := burns * (0.2 + 0.7 * fmod(i * 0.37, 1.0))
+			var foot := Iso.to_screen(x + cos(a) * d, y + sin(a) * d)
+			var tall := 10.0 + 8.0 * sin(t * 11.0 + i * 1.9)
+			draw_colored_polygon(PackedVector2Array([foot + Vector2(-4, 0), foot + Vector2(4, 0), foot + Vector2(2.0 * sin(t * 7.0 + i), -tall)]), Color(KB_FIRE[1], 0.85))
+
+
+## His ring of fire: the floor scorched behind its edge; its edge burning, pink and gold; tongues of fire all round it,
+## gold at the foot and pink to the tip, lower as it runs out; dying as it stands at its end.
+func _draw_kb_ring(p: Dictionary, t: float) -> void:
+	var n: Dictionary = KBS.RING
+	var x: float = p["x"]
+	var y: float = p["y"]
+	var r := KBS.Kit.ring_at(t)
+	var end: float = n["to"]
+	var dying := 1.0 - minf(1.0, (t - (end - float(n["from"])) / float(n["speed"])) / float(n["fade"])) if r >= end else 1.0
+	if dying <= 0.0:
+		return
+	draw_polyline(_ring(x, y, r * 0.92, 72), Color(KB_SCORCH, 0.5 * dying), 6.0)
+	var edge := _ring(x, y, r, 72)
+	draw_polyline(edge, Color(KB_PINK, 0.8 * dying), 4.0)
+	draw_polyline(edge, Color(KB_GOLD, 0.9 * dying), 2.0)
+	var count := maxi(12, roundi(r * 9.0))
+	for i in count:
+		var a := TAU * i / count + t * 0.6
+		var tall := (6.0 + 5.0 * sin(i * 2.7 + t * 13.0) + 3.0 * sin(i * 1.3)) * dying * (1.15 - 0.3 * (r / end))
+		if tall < 1.0:
+			continue
+		var foot := Iso.to_screen(x + r * cos(a), y + r * sin(a))
+		var sway := 3.0 * sin(i * 1.6 + floorf(t * 20.0))
+		draw_colored_polygon(PackedVector2Array([foot + Vector2(-4, 0), foot + Vector2(4, 0), foot + Vector2(sway, -2.0 * tall)]), Color(KB_FIRE[1], dying))
+		draw_colored_polygon(PackedVector2Array([foot + Vector2(-2.5, 0), foot + Vector2(2.5, 0), foot + Vector2(sway * 0.5, -1.1 * tall)]), Color(KB_FIRE[2], dying))
+
+
+## A shadow's oval on the floor round `c` on the screen, `rx` picture pixels across its half, half as deep.
+func _kb_oval(c: Vector2, rx: float, n := 16) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for i in n:
+		var a := TAU * i / n
+		pts.append(c + Vector2(cos(a) * rx, sin(a) * rx * 0.5))
+	return pts
