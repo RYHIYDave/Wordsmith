@@ -15,10 +15,38 @@
 ##   has a task ("Armourer: a task"): used, he asks the hero to put out floor 3's furnace; the furnace out ("Armourer: the
 ##   furnace is out"), used, he gives his word, HEAVY. While he has either, using him gives it in place of his shelves; with
 ##   neither, his shelves. Where the hero stands in it is his own (loot.gd `furnace`).
-##   THE GATE in the back wall is barred on a new game (it opens much later): drawn as wall here for now.
+##   THE WORDSMITH'S QUEST (game/quests15.ts; game.ts handIn 'meldAsk', 'meldstone', takeMeldstone): the armourer's reward
+##   given, the wordsmith has a task ("Wordsmith: a task"): used, he asks for the MELDSTONE from the cult's stronghold under the
+##   ossuary (floor 5, the Fleshmancer's: loot.gd). Carried back ("Give the Meldstone"), used, he takes it: he can meld, he
+##   gives the two words to meld and the lesson, and the gate down the mountain is unbarred; from then on the stone goes round
+##   the column of light over his slab, turning as it goes (render.ts standMeldMoments, KEPT; its flight to the slab and its
+##   halves whirling there are not brought over).
+##   THE GATE in the back wall (game/ways.ts, game.ts updateWays, raiseGate, enterTown; the layout's `gate`: tools/godot_town.ts):
+##   barred until the Meldstone is brought (main.gd way_depth under 6): it does not rise, and once a visit, as he comes within 4
+##   tiles of it, "The gate is barred.". Unbarred, the first time he comes within 6 tiles of it (UNBAR_SEEN) its bars are
+##   struck off (its film, UNBAR_SECS; "The gate is unbarred. Beyond it, the mountain road."), the gate staying down while it
+##   plays; from then on it rises as he comes within 6 (GATE_RISE_AT, 1.1 s up) and falls once he is further than 8
+##   (GATE_FALL_AT, 0.22 s down); up, walking into its doorway takes him out onto the mountain: floor 6, the Quarry. Come in
+##   through it from floor 10, it stands up behind him. Its pictures are the game's own (render.ts standDoors: the portcullis at
+##   its height, art/gates.ts; the bars, their unbarring and what is left of them, art/town_ways.ts: tools/godot_fx.ts `tg_`),
+##   strip by strip, each at its own depth; until those films are made, the castle hall's look shows the gate barred.
 extends Node2D
 
 const Iso := preload("res://scripts/iso.gd")
+const Loot := preload("res://scripts/loot.gd")
+const Perils := preload("res://scripts/perils.gd")
+## (game/ways.ts: the gate rises within GATE_RISE_AT tiles of its middle and falls past GATE_FALL_AT; its unbarring seen within
+## UNBAR_SEEN and as long as its film, UNBAR_SECS; game/doors.ts GATE_RISE, GATE_FALL: how long it takes to go up and to come
+## down)
+const GATE_RISE_AT := 6.0
+const GATE_FALL_AT := 8.0
+const UNBAR_SEEN := 6.0
+const UNBAR_SECS := 78.0 / 30.0
+const GATE_RISE := 1.1
+const GATE_FALL := 0.22
+## (render/meld_drops.ts: the kept Meldstone, round the column of light over the slab: how far out, once round in so many
+## seconds, how high, how far it bobs, how much bigger)
+const ORBIT := {"r": 0.75, "secs": 7.0, "z": 40.0, "bob": 1.5, "scale": 1.35}
 
 const DIR := "res://assets/town"
 const FOLK_DIR := "res://assets/townsfolk"
@@ -59,6 +87,20 @@ var _folk: Array = []  # {kind, node, x, y, to, last_act}
 var _t := 0.0
 var _ring := {}
 var _word_due := -1.0
+## THE GATE (game.ts Ways.barred, Ways.unbar, the gate's DoorInst want and open): barred; its unbarring (-1 waiting for him to
+## come in sight of it, 0 and on how long since it began, null none to play); the line said this visit; down or up.
+var barred := true
+var unbar = null
+var told_barred := false
+var gate_want := 0.0
+var gate_open := 0.0
+var _gate := {}
+## (the gate's strips: the portcullis's and the bars', each a picture of the game's own, by its place along the plane; where
+## each stands, tools/godot_fx.ts `tables.tg`; the unbarring's last frame played, for its jolts)
+var _port := {}
+var _bars := {}
+var _unbar_f := -1
+var _kept: Array = []
 
 
 func _ready() -> void:
@@ -111,6 +153,7 @@ func _ready() -> void:
 		_stand_pic("shaft back", at, d - 0.01)
 		_stand_pic("shaft front", at, d + 0.01)
 	_sounds()
+	_lay_gate()
 	_show()
 
 
@@ -173,6 +216,9 @@ func _process(dt: float) -> void:
 		loot.give_word(loot.first_word())
 	_show()
 	_use()
+	_step_gate(dt)
+	_show_gate()
+	_show_kept()
 	# THE STAIRS DOWN: on their top step he goes down to floor 1 (ways.ts onTopStep)
 	var st = data["stair"]
 	if st != null and hero.alive:
@@ -362,10 +408,15 @@ func _use() -> void:
 			best = s["kind"]
 	match best:
 		"wordsmith":
+			# (game.ts handInNear: the rune-stone; the Meldstone (MELD_HAND_IN); his ask for it (QUEST_TEXT.meldAskPrompt))
 			if given_at >= 0.0 and _word_due > 0.0:
 				prompt = ["", ""]
 			elif loot.quest == "heart":
 				prompt = ["E: Give the rune-stone", "give"]
+			elif loot.meld == "stone":
+				prompt = ["E: Give the Meldstone", "meld"]
+			elif loot.meld_ask_due():
+				prompt = ["E: Wordsmith: a task", "meldask"]
 			else:
 				prompt = ["E: Talk to the wordsmith", "talk"]
 		"armourer":
@@ -382,11 +433,6 @@ func _use() -> void:
 			prompt = ["E: Mystic", "mystic"]
 		"stash", "lexicon", "stranger":
 			prompt = ["E: %s" % best.capitalize(), "later"]
-	# (the gate: barred, as said within 4 tiles of it)
-	if prompt[1] == "":
-		for s in data["stations"]:
-			if s["kind"] == "gate" and Vector2(s["x"], s["y"]).distance_to(hero.world) < 4.0:
-				prompt = ["The gate is barred.", ""]
 	if prompt[1] != "" and Input.is_action_just_pressed("interact"):
 		_do(prompt[1])
 
@@ -411,7 +457,157 @@ func _do(what: String) -> void:
 		"task":
 			# (game.ts armourerHandIn: he asks the hero to put out floor 3's furnace; or, the furnace out, gives his word, HEAVY)
 			loot.armourer_hand_in()
+		"meldask":
+			loot.ask_meld()
+		"meld":
+			# (game.ts takeMeldstone: he takes it, gives the two words and the lesson; and the gate down the mountain unbarred)
+			loot.give_meldstone()
+			if int(main.way_depth) < 6:
+				main.way_depth = 6
+				barred = true
+				unbar = -1.0
+				told_barred = true
+				loot.say("The wordsmith unbars the gate down the mountain.", loot.MSG_QUEST)
 		"armourer", "mystic":
 			main.open_shop(what)
 		"later":
 			loot.say("Not in the Godot version yet.", Color(0.55, 0.6, 0.8))
+
+
+# --- the gate out to the Quarry ---
+
+## The gate as he comes into town (game.ts enterTown): barred until the Meldstone is brought; to be unbarred as he comes in sight
+## of it, where the ride up from floor 5 has unbarred it (main.gd unbar_due); up behind him, come in through it from floor 10.
+## Its strips, where its films are made: the castle hall's look's own still bars put away for them.
+func _lay_gate() -> void:
+	_gate = data.get("gate", {}) if data.get("gate") != null else {}
+	if _gate.is_empty():
+		return
+	_gate["tiles"] = _gate["tiles"].map(func(i): return int(i))
+	barred = int(main.way_depth) < 6
+	if main.unbar_due:
+		main.unbar_due = false
+		barred = true
+		unbar = -1.0
+		told_barred = true
+	if main.came_in_gate:
+		gate_open = 1.0
+		gate_want = 1.0
+	_gate_walk(gate_want == 1.0)
+	var tg = Perils._fx.get("tables", {}).get("tg")
+	if tg == null or not Perils._fx.get("films", {}).has("tg_bars_1"):
+		return
+	for k in tg["port"].size():
+		if tg["port"][k] != null and Perils._fx["films"].has("tg_port_%d" % k):
+			_port[k] = _strip(tg["port"][k])
+	for k in tg["bars"].size():
+		if tg["bars"][k] != null and Perils._fx["films"].has("tg_bars_%d" % k):
+			_bars[k] = _strip(tg["bars"][k])
+	# (the look's still bars, under the same names in its sheet, put away: these are drawn as they stand now)
+	if looked and FileAccess.file_exists("res://assets/looks/town_pics.json"):
+		var rects := {}
+		var lp: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/looks/town_pics.json"))
+		for key in lp:
+			if str(key).begins_with("town gate bars"):
+				var a: Array = lp[key]
+				rects[Rect2(a[0], a[1], a[2], a[3])] = true
+		for n in stands.get_children():
+			if n is Sprite2D and n.region_enabled and rects.has(n.region_rect):
+				n.visible = false
+
+
+func _strip(at: Array) -> Dictionary:
+	var pic := Loot._FilmPic.new()
+	stands.add_child(pic)
+	return {"pic": pic, "at": Iso.to_screen(float(at[0]), float(at[1])), "d": float(at[2])}
+
+
+## Its doorway in the walk grid or out of it (game.ts raiseGate, and as it falls).
+func _gate_walk(up: bool) -> void:
+	for i in _gate.get("tiles", []):
+		main.map.walk[int(i)] = 1 if up else 0
+
+
+## game.ts updateWays, the gate of the way, in town.
+func _step_gate(dt: float) -> void:
+	if _gate.is_empty():
+		return
+	var mid := Vector2(_gate["middle"]["x"], _gate["middle"]["y"])
+	var far := mid.distance_to(hero.world)
+	# (its bars struck off the first time he comes in sight of it after the Meldstone is brought, the gate shut while they come down)
+	if unbar != null:
+		if unbar < 0.0 and far < UNBAR_SEEN:
+			unbar = 0.0
+			loot.say("The gate is unbarred. Beyond it, the mountain road.", Color("#8af078"))
+		elif unbar >= 0.0:
+			unbar += dt
+			if unbar >= UNBAR_SECS:
+				unbar = null
+				barred = false
+	# (barred, it does not rise; once, as he comes near, a line says so)
+	if barred:
+		if not told_barred and far < GATE_RISE_AT - 2.0:
+			told_barred = true
+			loot.say("The gate is barred.", Color("#f0e8ff"))
+	elif gate_want == 0.0 and far < GATE_RISE_AT:
+		gate_want = 1.0
+		_gate_walk(true)
+		sfx.play("gate_rise", linear_to_db(0.8))
+	elif gate_want == 1.0 and far > GATE_FALL_AT:
+		gate_want = 0.0
+		_gate_walk(false)
+		sfx.play("gate_fall", linear_to_db(0.35))
+	# (game/doors.ts stepDoors: up over GATE_RISE, down over GATE_FALL)
+	if gate_open != gate_want:
+		gate_open = minf(1.0, gate_open + dt / GATE_RISE) if gate_want == 1.0 else maxf(0.0, gate_open - dt / GATE_FALL)
+	# (up, walking into its doorway takes him through: out to the Quarry, floor 6)
+	var here := floori(hero.world.y) * int(main.map.w) + floori(hero.world.x)
+	if hero.alive and gate_open > 0.85 and _gate.get("tiles", []).has(here) and main.has_floor(6):
+		main.go_to("floor6", "down")
+
+
+## The gate's strips as it stands now (render.ts standDoors): the portcullis at its height (d.open x GATE_UP, as art/gates.ts
+## rounds it, 2 game pixels a step); the bars across it while it is barred, struck off frame by frame as it is unbarred (each
+## jolt kicks the screen and is heard), what is left of them at its foot from then on.
+func _show_gate() -> void:
+	if _port.is_empty() and _bars.is_empty():
+		return
+	var tg: Dictionary = Perils._fx["tables"]["tg"]
+	var step := clampi(roundi(gate_open * float(tg["up"]) / 2.0), 0, int(tg["heights"]) - 1)
+	for k in _port:
+		var p: Dictionary = _port[k]
+		p["pic"].put("tg_port_%d" % k, step, p["at"], p["d"])
+	var film := "tg_unbar_%d"
+	var f := 77
+	if unbar != null and unbar >= 0.0:
+		f = mini(77, floori(unbar * 30.0))
+		for j in range(_unbar_f + 1, f + 1):
+			if (tg["jolts"] as Array).has(j):
+				hero.kick(4.0)
+				sfx.play("slam", linear_to_db(0.6))
+		_unbar_f = f
+	elif barred:
+		film = "tg_bars_%d"
+		f = 0
+	for k in _bars:
+		var b: Dictionary = _bars[k]
+		b["pic"].put(film % k, f, b["at"], b["d"])
+
+
+## KEPT (render.ts standMeldMoments): once the wordsmith has the Meldstone, it goes round the column of light over his slab,
+## turning as it goes, a little bigger, to be seen (render/meld_drops.ts orbitAt).
+func _show_kept() -> void:
+	if loot.meld != "open":
+		return
+	if _kept.is_empty():
+		for p in data["props"]:
+			if p["kind"] == "runeSlab":
+				var pic := Loot._FilmPic.new()
+				stands.add_child(pic)
+				_kept = [pic, Vector2(p["x"], p["y"])]
+		if _kept.is_empty():
+			return
+	var a := _t / float(ORBIT["secs"]) * TAU
+	var o: Vector2 = _kept[1] + Vector2(cos(a), sin(a)) * float(ORBIT["r"])
+	var z: float = ORBIT["z"] + ORBIT["bob"] * sin(_t * PI)
+	_kept[0].put("ms_stone", floori(_t * 12.0) % 24, Iso.to_screen(o.x, o.y), o.x + o.y + 0.08, z * 2.0, ORBIT["scale"])

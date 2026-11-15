@@ -54,17 +54,33 @@ const MONSTER_DIR := "res://assets/monsters"
 const CURTAIN := 0.35
 
 ## The dark round the edges of the screen (an approximation of render.ts's dark and vignette: the dungeon's deep, the
-## town's lighter, VIGNETTE_TOWN), to be replaced by the game's own lighting.
+## town's lighter, VIGNETTE_TOWN), to be replaced by the game's own lighting. Under it, where a floor of the descent has no
+## look of its own yet, the day's veil over everything (render.ts light: its tint at its `dark`).
 const DARK := """
 shader_type canvas_item;
 uniform vec4 dark : source_color = vec4(0.02, 0.022, 0.03, 1.0);
 uniform float deep = 0.82;
+uniform vec4 veil_rgb : source_color = vec4(0.0, 0.0, 0.0, 1.0);
+uniform float veil_a = 0.0;
 void fragment() {
 	vec2 p = (UV - vec2(0.5, 0.53)) * vec2(1.7778, 1.0);
-	float a = smoothstep(0.32, 0.98, length(p)) * deep;
-	COLOR = vec4(dark.rgb, a);
+	float v = smoothstep(0.32, 0.98, length(p)) * deep;
+	float a = v + veil_a * (1.0 - v);
+	vec3 c = a > 0.0 ? (dark.rgb * v + veil_rgb.rgb * veil_a * (1.0 - v)) / a : dark.rgb;
+	COLOR = vec4(c, a);
 }
 """
+## THE DESCENT'S LIGHT (game/act1.ts ACT1_FLOORS light; render.ts light): out on the open ground the day, thin or none, the
+## dusk deepening toward the Fen: how thick the veil over the world (`dark`), its colour, how strong the screen's darkened
+## corners. (Its pool of light round the hero, 0.08 at most, is too faint to draw here.) Where a floor has its recorded look,
+## the look's own dark is drawn.
+const DESCENT_LIGHT := {
+	6: {"dark": 0.03, "tint": [40, 30, 60], "vignette": 0.26},
+	7: {"dark": 0.0, "tint": [30, 30, 60], "vignette": 0.26},
+	8: {"dark": 0.03, "tint": [50, 24, 30], "vignette": 0.26},
+	9: {"dark": 0.06, "tint": [30, 22, 40], "vignette": 0.3},
+	10: {"dark": 0.1, "tint": [14, 10, 26], "vignette": 0.32},
+}
 
 var place := ""
 var hero: Hero
@@ -80,7 +96,12 @@ var _doors: Doors
 var _stairs: Stairs
 var _way: Waypoint
 ## THE WAYS: the deepest floor whose waypoint he has reached (game.ts wayDepth): the town's waypoint takes him back down to it.
+## Under 6, the town's gate down the mountain is barred (town.gd).
 var way_depth := 1
+## (the town's gate to be unbarred as he comes in sight of it, the next time the town is laid: the ride up from floor 5 with the
+## Meldstone already given, game.ts takeWay 'up'; and whether he came into town through the gate, from floor 10)
+var unbar_due := false
+var came_in_gate := false
 var _hud
 var _loot: Loot
 var _inv
@@ -180,7 +201,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent"] else "town"
 	_build(first, "start")
 	if shots != "":
 		_shoot(hero, shots)
@@ -275,6 +296,14 @@ func _build(where: String, arrive: String) -> void:
 			# ways.ts TOWN_SHAFT)
 			at = Vector2(20.5, 18.5)
 			face = Vector2(-0.7071, -0.7071)
+		"in_gate":
+			# (game.ts enterTown('gate'), from floor 10: just inside the gate, which is up behind him as he comes through it and
+			# falls once he has walked off (town.gd); ways.ts TOWN_GATE, its doorway's first tile and its line)
+			var g = JSON.parse_string(FileAccess.get_file_as_string(TOWN_DIR + "/layout.json")).get("gate")
+			if g != null:
+				at = Vector2(float(g["a"]) + 1.5, float(g["face"]) - 1.0 + 2.2)
+			face = Vector2(0.7071, 0.7071)
+	came_in_gate = arrive == "in_gate"
 	hero.world = at
 	hero.home = at
 	hero.face = face
@@ -408,6 +437,9 @@ func _build(where: String, arrive: String) -> void:
 			_way.awake = true
 			look.wake_waypoint()
 			look.play_warp(0.25)
+	elif where != "town" and map.waypoint != null:
+		# (game.ts enterDungeon: a floor with a waypoint is reached as he comes into it, its look or none)
+		way_depth = maxi(way_depth, map.depth)
 	# (FLOOR_NAMES: the floor's own name across the screen as he comes into it, its level under it: ui/cards.ts drawFloorCard;
 	# gone with the floor if he leaves it while it is still up)
 	if where != "town" and _hud != null:
@@ -463,6 +495,14 @@ func _build(where: String, arrive: String) -> void:
 		var n := depth_of(where)
 		sfx.background("bed_f%d_loop.wav" % n, "amb_f%d" % n)
 		_veil.material.set_shader_parameter("deep", Look._num(look.data.get("vignette"), 0.62) if looked else 0.82)
+		# (THE DESCENT, its look not yet in: the day's veil and vignette, game/act1.ts)
+		var day: Dictionary = DESCENT_LIGHT.get(n, {}) if not looked else {}
+		if not day.is_empty():
+			_veil.material.set_shader_parameter("deep", day["vignette"])
+			_veil.material.set_shader_parameter("veil_rgb", Color8(day["tint"][0], day["tint"][1], day["tint"][2]))
+		_veil.material.set_shader_parameter("veil_a", float(day.get("dark", 0.0)))
+	if where == "town":
+		_veil.material.set_shader_parameter("veil_a", 0.0)
 
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.
@@ -565,6 +605,9 @@ func say_way(kind: String, open: bool) -> void:
 			loot.say("The door behind his hall stands open. The way down.", gold)
 		"cave":
 			loot.say("A cave behind the wall. The way down.", gold)
+		"onward":
+			# (game.ts wayOpenLine, MSG.good: from the Fen, the way home)
+			loot.say(ways.HOME_OPEN if map.depth >= 10 else ways.ON_OPEN, Color("#8af078"))
 
 
 ## A place's name as the game writes it top left (defs.ts floorTitle: "Prison Level 2").
@@ -1745,6 +1788,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "fx":
 		await _fx_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "descent":
+		await _descent_shots(hero, dir)
 		get_tree().quit()
 		return
 	await _wait(1.0)
@@ -4680,3 +4727,203 @@ func _fx_case(dir: String, name: String, sent: Array, moments: Array, tend := Ca
 			told.append(("at %.1f s " % q[0] if float(q[0]) > 0.0 else "") + said)
 		print("FX %s at %.2f s: sent [%s]; alive: %d particles, %d rings, %d bolts, %d numbers; and %d flashes, %d cuts, %d whirls, %d cracks, %d marks, %d spikes, %d lights, %d winds, %d phantoms" % [
 			name, t, "; ".join(told), c["particles"], c["rings"], c["bolts"], c["numbers"], c["flashes"], c["slashes"], c["whirls"], c["cracks"], c["decals"], c["spikes"], c["glows"], c["winds"], c["phantoms"]])
+
+
+# --- SHOT MODE, INTO THE DESCENT AND THROUGH IT ---
+
+## (the descent's check: how many steps it has pictured, and those not as the game has them)
+var _d_n := 0
+var _d_bad: Array = []
+
+
+## One step of the descent's check: its line (what happened, and whether that is as the game has it) and its picture.
+func _d_step(dir: String, name: String, ok: bool, what: String) -> void:
+	_d_n += 1
+	if not ok:
+		_d_bad.append(name)
+	print("DESCENT %02d %s: %s" % [_d_n, "ok" if ok else "WRONG", what])
+	await _snap(dir + "/d%02d_%s.png" % [_d_n, name])
+
+
+## (the descent's check) The Meldstone lying on the floor, or null.
+func _d_stone() -> Variant:
+	for d in loot._drops:
+		if d["kind"] == "stone":
+			return d
+	return null
+
+
+## (the descent's check) The floor's boss, or null.
+func _d_boss() -> Monster:
+	for m in _monsters.list:
+		if is_instance_valid(m) and m.boss:
+			return m
+	return null
+
+
+## (the descent's check) Struck until he is dead (a boss under the floor, or between his moves, is not to be reached for a moment).
+func _d_kill(m: Monster) -> void:
+	m.waits = false
+	var t := 0.0
+	while not m.dead and t < 4.0:
+		m.hurt(1e9)
+		await _wait(0.2)
+		t += 0.2
+
+
+## SHOT MODE, INTO THE DESCENT AND THROUGH IT (--only=descent): a hero the armourer has rewarded (the furnace out), in town: the
+## barred gate come up to; the wordsmith asking for the Meldstone; floor 5, the Fleshmancer struck dead, the Meldstone bursting up
+## where he went down, hanging, taken; the cage up to town; the stone given to the wordsmith (the two words, the lesson, the gate
+## unbarred); the gate come up to, its bars struck off, rising; through it to floor 6; on each of floors 6 to 10, where he comes in
+## (its name across the screen, its music, its light, its pits), its boss struck dead, its way on opening and taken; from floor
+## 10, home to town through its gate. A picture and a line at each step, and the sum: DESCENT.
+func _descent_shots(h: Hero, dir: String) -> void:
+	loot.ring_lit = true
+	loot.furnace = "done"
+	loot.cleared = 4
+	# (a hero well on in levels, every word slot open, so that no level he gains opens the gear screen on the way)
+	loot.level = 20
+	loot.derive()
+	h.life = h.max_life
+	# (his first word long since set: POWER on his Strike, so that a word come by is only taken up)
+	loot.taught = true
+	h.loadout.put(0, "front", "power")
+	way_depth = 5
+	await _wait(1.2)
+	# --- the town: the gate barred, the wordsmith's ask ---
+	var g: Dictionary = town._gate
+	var gm := Vector2(g["middle"]["x"], g["middle"]["y"])
+	h.world = gm + Vector2(0, 3.5)
+	h.face = Vector2(0, -1)
+	await _wait(1.6)
+	await _d_step(dir, "gate_barred", town.barred and town.gate_open == 0.0 and _wu_said("The gate is barred.") != "" and not map.walkable(int(g["tiles"][1]) % map.w, int(g["tiles"][1]) / map.w),
+		"in town, before the gate: barred, it does not rise (up %.2f, its doorway shut), and the line \"%s\"" % [town.gate_open, _wu_said("The gate is barred.")])
+	h.world = _spot_near(Vector2(9.5, 14.5), 1.4, h.world)
+	await _wait(0.5)
+	var asked: String = town.prompt[0]
+	await _key(KEY_E)
+	await _wait(0.3)
+	await _d_step(dir, "wordsmith_asks", asked == "E: Wordsmith: a task" and loot.meld_ask and _wu_said(loot.MELD_ASK) != "",
+		"the wordsmith, used (\"%s\"), asks: \"%s\"" % [asked, _wu_said("The wordsmith: \"The cult")])
+	# --- floor 5: the Fleshmancer, the Meldstone ---
+	go_to("floor5", "down")
+	await _wait(1.8)
+	var fm := _d_boss()
+	h.world = _free_near(fm.world + Vector2(2.5, 2.5))
+	await _wait(1.0)
+	await _d_step(dir, "f5_fleshmancer", fm != null and fm.kind == "fleshmancer", "%s (%s): %s in his hall" % [place_title(), map.title.get("name", ""), fm.title if fm != null else "no boss"])
+	await _d_kill(fm)
+	var fell := fm.world
+	await _wait(0.15)
+	await _d_step(dir, "f5_struck_dead", fm.dead and _d_stone() != null and _d_stone()["at"].distance_to(fell) < 0.01,
+		"the Fleshmancer struck dead at (%.2f, %.2f); the Meldstone waits under the floor there (%s)" % [fell.x, fell.y, str(_d_stone()["at"]) if _d_stone() != null else "none"])
+	await _w_until(func(): return _d_stone() == null or _d_stone()["age"] >= -0.15, 4.0)
+	await _d_step(dir, "f5_stone_crack", _d_stone() != null and _d_stone()["pics"][0].visible, "%.2f s after: the crack of its light in the floor where he went down" % (_d_stone()["age"] + loot.STONE_WAIT if _d_stone() != null else -1.0))
+	await _w_until(func(): return _d_stone() == null or _d_stone()["age"] >= 0.2, 1.0)
+	await _d_step(dir, "f5_stone_bursts_up", _d_stone() != null and loot.rise_of(_d_stone()["age"], 0.0)["shown"] == "apart", "it shoots up spinning, its halves torn apart")
+	await _w_until(func(): return _d_stone() == null or _d_stone()["age"] >= 0.62, 1.0)
+	await _d_step(dir, "f5_stone_slams", _d_stone() != null and _d_stone()["slammed"], "it slams together in a burst of light (the screen kicked)")
+	await _w_until(func(): return _d_stone() == null or _d_stone()["age"] >= 1.5, 1.5)
+	var st = _d_stone()
+	await _d_step(dir, "f5_stone_hangs", st != null and st["label"].visible and loot.meld == "", "it hangs over the floor, turning to and fro, \"Meldstone\" over it; not yet taken")
+	if st != null:
+		h.world = _free_near(st["at"] + Vector2(0.6, 0.6))
+	await _w_until(func(): return loot.meld != "", 2.0)
+	await _wait(0.33)
+	await _d_step(dir, "f5_stone_taken", loot.meld == "stone" and _wu_said("You take the MELDSTONE.") != "", "walked up to, taken: it leaps over his head and into him (meld \"%s\"; \"%s\")" % [loot.meld, _wu_said("You take the MELDSTONE.")])
+	await _w_until(func(): return ways.state == "open", 6.0)
+	var sh: Dictionary = map.ways["shaft"]
+	h.world = _free_near(Vector2(float(sh["x"]) + 0.5, float(sh["y"]) + 2.5))
+	await _wait(0.6)
+	await _d_step(dir, "f5_cage_down", ways.way_kind() == "shaft" and ways.state == "open", "the cage down the shaft (%s after %.1f s)" % [ways.state, ways._t])
+	h.world = Vector2(float(sh["x"]) + 0.5, float(sh["y"]) + 0.5)
+	await _w_until(func(): return place == "town" and not _going, 3.0)
+	await _wait(1.2)
+	await _d_step(dir, "town_up_the_cage", place == "town" and town.barred and _wu_said("Prison Level 5 cleared") != "",
+		"up the cage to town: \"%s\"; the gate still barred (way depth %d)" % [_wu_said("Prison Level 5 cleared"), way_depth])
+	# --- the Meldstone given ---
+	h.world = _spot_near(Vector2(9.5, 14.5), 1.4, h.world)
+	await _wait(0.5)
+	var giving: String = town.prompt[0]
+	var had := [int(loot.words.get("fire", 0)), int(loot.words.get("frost", 0))]
+	await _key(KEY_E)
+	await _wait(0.4)
+	var said := [_wu_said(loot.MELD_TAKES), _wu_said("He gives you two words"), _wu_said(loot.MELD_LESSON[0]), _wu_said(loot.MELD_LESSON[1]), _wu_said("The wordsmith unbars the gate")]
+	await _d_step(dir, "wordsmith_given", giving == "E: Give the Meldstone" and loot.meld == "open" and int(loot.words.get("fire", 0)) == had[0] + 1 and int(loot.words.get("frost", 0)) == had[1] + 1 and not said.has("") and way_depth == 6 and town.unbar == -1.0,
+		"\"%s\": FLAME %d -> %d, FROST %d -> %d; said: %s" % [giving, had[0], int(loot.words.get("fire", 0)), had[1], int(loot.words.get("frost", 0)), " / ".join(said)])
+	await _wait(1.4)
+	await _d_step(dir, "wordsmith_keeps_it", town._kept.size() == 2 and town._kept[0].visible, "the Meldstone kept over his slab, going round the column of light")
+	# --- the gate unbarred, rising, through it ---
+	h.world = gm + Vector2(0, 4.5)
+	h.face = Vector2(0, -1)
+	await _w_until(func(): return town.unbar != null and town.unbar >= 0.3, 2.0)
+	await _d_step(dir, "gate_unbarring", town.unbar != null and _wu_said("The gate is unbarred. Beyond it, the mountain road.") != "", "in sight of the gate: its bars begin to be struck off, the seal flaring: \"%s\"" % _wu_said("The gate is unbarred."))
+	await _w_until(func(): return town.unbar == null or town.unbar >= 0.62, 1.0)
+	await _d_step(dir, "gate_lock_bursts", town.barred, "the lock bursts, the beams fall (the gate still down)")
+	await _w_until(func(): return town.unbar == null or town.unbar >= 1.4, 1.5)
+	await _d_step(dir, "gate_chains_fall", town.barred and town.gate_open == 0.0, "the chains slither down")
+	await _w_until(func(): return not town.barred, 2.0)
+	await _wait(0.5)
+	await _d_step(dir, "gate_rising", not town.barred and town.gate_want == 1.0 and town.gate_open > 0.2 and town.gate_open < 1.0, "unbarred, it rises as he comes (up %.2f), what is left of the bars at its foot" % town.gate_open)
+	await _wait(0.9)
+	await _d_step(dir, "gate_up", town.gate_open == 1.0 and map.walkable(int(g["tiles"][1]) % map.w, int(g["tiles"][1]) / map.w), "the gate up, its doorway open")
+	h.world = gm
+	await _w_until(func(): return place == "floor6" and not _going, 3.0)
+	# --- floors 6 to 10 ---
+	for n in range(6, 11):
+		if place != "floor%d" % n:
+			await _d_step(dir, "f%d_not_come_into" % n, false, "floor %d was not come into (in %s)" % [n, place])
+			break
+		await _wait(1.3)
+		var pits := 0
+		var walked := 0
+		var shut := 0
+		for i in map.tiles.size():
+			if map.tiles[i] == FloorMap.PIT:
+				pits += 1
+				walked += 1 if map.walk[i] != 0 else 0
+				shut += 0 if map.open_at(i % map.w, i / map.w) else 1
+		var card: Dictionary = _hud.floor_card
+		var veil: float = _veil.material.get_shader_parameter("veil_a")
+		var in_ok: bool = h.world.distance_to(map.start) < 0.05 and h.face.distance_to(map.start_face) < 0.01 and card.get("name", "") == map.title.get("name", "-") and music._place == "f%d" % n and walked == 0 and shut == 0
+		await _d_step(dir, "f%d_in" % n, in_ok,
+			"floor %d: he comes in at (%.2f, %.2f) facing (%d, %d), as the game sets him down; across the screen \"%s\" / \"%s\"; the music %s; the day's veil %.2f; %d pits, %d walked on, %d not seen across" %
+			[n, h.world.x, h.world.y, h.face.x, h.face.y, card.get("name", ""), card.get("level", ""), music._place, veil, pits, walked, shut])
+		var boss := _d_boss()
+		if boss == null:
+			await _d_step(dir, "f%d_no_boss" % n, false, "floor %d has no boss" % n)
+			break
+		h.world = _free_near(boss.world + Vector2(2.5, 2.5))
+		await _wait(1.0)
+		await _d_step(dir, "f%d_boss" % n, ways != null and ways.way_kind() == "onward" and ways.state == "", "%s: by %s (%s); the way on shut while he lives" % [map.title.get("name", ""), boss.title, boss.kind])
+		await _d_kill(boss)
+		await _wait(0.3)
+		await _d_step(dir, "f%d_boss_dead" % n, boss.dead and ways.state == "opening", "%s struck dead: the way on wakes (%s)" % [boss.title, ways.state])
+		var a1: Dictionary = map.ways["a1"]
+		var ref := Vector2(float(a1["way"]["ref"]["x"]), float(a1["way"]["ref"]["y"]))
+		var back: Vector2i = ways.turn_ab(str(a1["way"]["dir"]), -3, 0)
+		h.world = _free_near(ref + Vector2(back) + Vector2(0.5, 0.5))
+		await _w_until(func(): return ways.state == "open", 6.0)
+		var line: String = _wu_said(ways.HOME_OPEN if n >= 10 else ways.ON_OPEN)
+		var thrown_ok := true
+		for i in ways.onward_tiles("thrown"):
+			if map.walk[i] != 0 and floori(h.world.y) * map.w + floori(h.world.x) != i:
+				thrown_ok = false
+		await _d_step(dir, "f%d_way_open" % n, ways.state == "open" and line != "" and thrown_ok and absf(ways._t - float(ways.ONWARD[n]["secs"])) < 0.25,
+			"its way on open after %.2f s (its film %.2f s), what it threw out solid: \"%s\"" % [ways._t, float(ways.ONWARD[n]["secs"]), line])
+		var takes: Array = ways.onward_tiles("takes")
+		var i0: int = takes[takes.size() / 2]
+		var on_at := Vector2i(i0 % map.w, i0 / map.w)
+		h.world = Vector2(i0 % map.w + 0.5, i0 / map.w + 0.5)
+		var was := place
+		await _w_until(func(): return place != was and not _going, 3.0)
+		await _wait(0.2)
+		var to := "floor%d" % (n + 1) if n < 10 else "town"
+		await _d_step(dir, "f%d_taken" % n, place == to, "onto its way in (%d, %d): on to %s (%s)" % [on_at.x, on_at.y, place, place_title()])
+	# --- home ---
+	if place == "town":
+		await _wait(1.2)
+		var home: String = _wu_said("The Sunken Fen, Level 10 cleared. The siege is broken.")
+		await _d_step(dir, "home", home != "" and town.gate_open == 1.0 and h.world.distance_to(Vector2(14.5, 7.2)) < 0.3,
+			"home: in town just inside the gate, up behind him (%.2f): \"%s\"" % [town.gate_open, home])
+	print("DESCENT: %d of %d steps as the game has them%s" % [_d_n - _d_bad.size(), _d_n, ("; not: " + ", ".join(_d_bad)) if not _d_bad.is_empty() else ""])

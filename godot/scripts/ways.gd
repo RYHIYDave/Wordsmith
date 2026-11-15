@@ -9,8 +9,18 @@
 ##   FLOOR 4'S CAVE (ways.ts placeCave): the wall over its mouth crumbles when the boss dies (CAVE_OPENING, 4.2 s); then
 ##     walking into the mouth takes him down.
 ##   FLOOR 5'S SHAFT: the cage comes down the shaft when the boss dies (SHAFT.down, 4.3 s); walking into it takes him up to
-##     town.
-## Their pictures as they open are the look's own, recorded from the game state by state (look.gd `show_variant`).
+##     town ("Prison Level 5 cleared"; with the Meldstone already given, the town's gate unbarred as he comes in sight of it).
+##   FLOORS 6 TO 10, THE DESCENT'S WAY ON (ways.ts ONWARD, layOnward, thrownTiles, onTakes; game.ts kill, updateWays, takeWay
+##     'on'; the layout's `ways.a1` and `ways.onward`): at the far end of the boss's ground, leading on the way from where he
+##     stood (its `dir`); what of it is solid already out of the walk grid (the export's own). It wakes as the boss dies and its
+##     film plays (the quarry's blocks thrown down, the flock bursting from the nest, the slot's plug blasted out, the roots
+##     withering, the causeway rising: ONWARD secs); then it is open, what it threw out lying solid where it fell (but never
+##     where someone stands), and "The way on is open." (on the Fen, "The siege magic falters. The way home is open."); then
+##     stepping onto its way in (`takes`, tiles in the way's own frame: along it, across it) takes him on, down the mountain to
+##     the next floor, where he comes in at its start; from the tenth, the Fen, home: in the game to the camp inside Vellum's
+##     gate, here (no floor 11 yet) through the town's gate ("The Sunken Fen, Level 10 cleared. The siege is broken.").
+## Their pictures as they open are the look's own, recorded from the game state by state (look.gd `show_variant`; the way on's
+## as the state "onward", where its look has it).
 extends Node
 
 const FloorMap := preload("res://scripts/floor_map.gd")
@@ -20,6 +30,17 @@ const STAIR_WIDE := 1.25
 const STAIR_CLEAR := 2.0
 const CAVE_OPENING := 126.0 / 30.0
 const SHAFT_DOWN := 129.0 / 30.0
+## (ways.ts ONWARD, floors 6 to 10: its film's length; the tiles that take him on and those it throws out, [along, across])
+const ONWARD := {
+	6: {"secs": 112.0 / 30.0, "takes": [[0, 0], [1, 0]], "thrown": [[-1, -2], [0, -4], [0, 3], [-1, 1], [1, 2]]},
+	7: {"secs": 120.0 / 30.0, "takes": [[-2, 0], [-1, 0], [0, 0]], "thrown": []},
+	8: {"secs": 124.0 / 30.0, "takes": [[0, 0], [1, 0], [2, 0]], "thrown": []},
+	9: {"secs": 126.0 / 30.0, "takes": [[0, 0], [1, 0], [2, 0], [3, 0]], "thrown": []},
+	10: {"secs": 130.0 / 30.0, "takes": [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]], "thrown": []},
+}
+## (game.ts wayOpenLine)
+const ON_OPEN := "The way on is open."
+const HOME_OPEN := "The siege magic falters. The way home is open."
 
 var main
 var map: FloorMap
@@ -92,14 +113,19 @@ func _open() -> void:
 			_secs = CAVE_OPENING
 		"shaft":
 			_secs = SHAFT_DOWN
-	if sfx != null:
+		"onward":
+			# (game.ts kill: the way on wakes, Ways.onward awake, its film from now)
+			_secs = float(ONWARD.get(int(_w["a1"]["floor"]), {}).get("secs", 4.0))
+	if sfx != null and kind != "onward":
 		sfx.play("thunder", -8.0)
 	main.say_way(kind, false)
 	_show()
 
 
-## Which way on this floor has: the stairwell, floor 3's door, floor 4's cave, floor 5's shaft ("" none).
+## Which way on this floor has: the stairwell, floor 3's door, floor 4's cave, floor 5's shaft, the descent's way on ("" none).
 func way_kind() -> String:
+	if _w.get("a1") != null and _w.get("onward") != null:
+		return "onward"
 	if _w.get("shaft") != null:
 		return "shaft"
 	if _w.get("exit") != null:
@@ -165,6 +191,9 @@ func _show() -> void:
 			look.show_variant("cave", k)
 		"shaft":
 			look.show_variant("shaft", k)
+		"onward":
+			if look.has_variant("onward"):
+				look.show_variant("onward", k)
 
 
 ## It is open: what was shut to him is his to walk into.
@@ -175,6 +204,15 @@ func _opened() -> void:
 				map.walk[i] = 1
 			# (game.ts joinSteps: on a floor with heights the way's tiles are joined to the floor beside them)
 			map.join_steps(_way_tiles())
+		"onward":
+			# (game.ts updateWays: what it threw out solid where it fell, but never where he or a living monster stands)
+			var taken := {floori(hero.world.y) * map.w + floori(hero.world.x): true}
+			for m in monsters.list:
+				if is_instance_valid(m) and not m.dead:
+					taken[floori(m.world.y) * map.w + floori(m.world.x)] = true
+			for i in onward_tiles("thrown"):
+				if not taken.has(i):
+					map.walk[i] = 0
 	main.say_way(way_kind(), true)
 
 
@@ -191,7 +229,35 @@ func _way_tiles() -> Array:
 	return out
 
 
-## Has he taken it: on the stairwell's top step, in the doorway, in the cave's mouth, in the cage?
+## The tiles of the way on, of its `takes` or its `thrown` (ways.ts tilesAB: each [along, across] from the way's tile, turned the
+## way it leads: turnAB), those on the floor.
+func onward_tiles(which: String) -> Array:
+	var a1: Dictionary = _w["a1"]
+	var ref: Dictionary = a1["way"]["ref"]
+	var dir: String = a1["way"]["dir"]
+	var out: Array = []
+	for ab in ONWARD.get(int(a1["floor"]), {}).get(which, []):
+		var d := turn_ab(dir, int(ab[0]), int(ab[1]))
+		var x: int = int(ref["x"]) + d.x
+		var y: int = int(ref["y"]) + d.y
+		if x >= 0 and y >= 0 and x < map.w and y < map.h:
+			out.append(y * map.w + x)
+	return out
+
+
+## A way's own (a along, b across) in the world's x and y (ways.ts turnAB).
+static func turn_ab(dir: String, a: int, b: int) -> Vector2i:
+	match dir:
+		"x+":
+			return Vector2i(a, b)
+		"x-":
+			return Vector2i(-a, -b)
+		"y+":
+			return Vector2i(-b, a)
+	return Vector2i(b, -a)
+
+
+## Has he taken it: on the stairwell's top step, in the doorway, in the cave's mouth, in the cage, on the way on's way in?
 func _taken() -> bool:
 	var h: Vector2 = hero.world
 	match way_kind():
@@ -205,13 +271,29 @@ func _taken() -> bool:
 		"shaft":
 			var sh: Dictionary = _w["shaft"]
 			return floori(h.x) == int(sh["x"]) and floori(h.y) == int(sh["y"])
+		"onward":
+			return onward_tiles("takes").has(floori(h.y) * map.w + floori(h.x))
 	return false
 
 
-## On to the next floor; from the fifth, up to town.
+## On to the next floor; from the fifth, up to town; from the tenth, home.
 func _go() -> void:
 	var n: int = map.depth
-	if way_kind() == "shaft" or not main.has_floor(n + 1):
+	var good := Color("#8af078")
+	if way_kind() == "shaft":
+		# (game.ts takeWay 'up': the Prison cleared; with the Meldstone given already, the gate unbarred as he comes in sight of it)
+		if main.loot.meld == "open" and main.way_depth < 6:
+			main.way_depth = 6
+			main.unbar_due = true
+		main.loot.say("%s cleared" % str(map.title.get("level", "")), good)
+		main.go_to("town", "cage")
+	elif way_kind() == "onward" and (n >= 10 or not main.has_floor(n + 1)):
+		# (game.ts takeWay 'on' from the Fen: the siege broken, in through the gate)
+		main.loot.say("%s cleared. The siege is broken." % str(map.title.get("level", "")), good)
+		if sfx != null:
+			sfx.play("portal")
+		main.go_to("town", "in_gate")
+	elif not main.has_floor(n + 1):
 		main.go_to("town", "cage")
 	else:
 		main.go_to("floor%d" % (n + 1), "down")
