@@ -83,10 +83,27 @@ func _process(dt: float) -> void:
 	_fly(dt)
 
 
+## (the count of blows by which a hurt voice is heard now and then: game.ts hurtTick)
+var hurt_tick := 0
+var _voiced := {}
+
+
+## A voice heard no oftener than every `gap` seconds (game.ts enemyRec).
+func voice(name: String, gap: float, db: float) -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - float(_voiced.get(name, -1000.0)) < gap:
+		return
+	_voiced[name] = now
+	sfx.play(name, db)
+
+
 ## Pack-mates within 14 tiles wake with it; a boss roars, the others call out.
 func wake(m: Monster) -> void:
 	var voice: String = Monster.VOICE.get(m.kind, "")
-	if voice != "":
+	if m.boss and Monster.BOSS_VOICE.has(m.kind):
+		# (a boss who roars: his own roar as the fight begins: game.ts wakeUp)
+		sfx.play(str(Monster.BOSS_VOICE[m.kind]) + "_roar")
+	elif voice != "":
 		sfx.play(voice + "_aggro", -4.0)
 	elif m.boss:
 		sfx.play("boss_roar")

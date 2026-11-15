@@ -50,8 +50,18 @@ const BODY_LIES := 30.0
 const BODY_FADES := 1.5
 const BAR_FOR := 4.0
 ## (game.ts: the voice of each kind, sound_families.ts VOICE, and its blow's sound, ATK; each name has two takes)
-const VOICE := {"skeleton": "bones", "archer": "bones", "champion": "bones", "marksman": "bones", "brute": "troll", "bat": "bat", "shade": "spirit"}
-const ATK := {"skeleton": "atkBones", "champion": "atkBones", "brute": "atkTroll", "bat": "atkBat", "cultist": "atkHex", "shade": "atkSpirit"}
+const VOICE := {
+	"skeleton": "bones", "archer": "bones", "champion": "bones", "marksman": "bones", "beast": "bones", "mite": "bones", "boneward": "bones",
+	"brute": "troll", "bat": "bat", "shade": "spirit",
+}
+const ATK := {
+	"skeleton": "atkBones", "champion": "atkBones", "beast": "atkBones", "mite": "atkBones", "brute": "atkTroll", "bat": "atkBat",
+	"dagger": "atkDagger", "cultist": "atkHex", "priest": "atkHex", "boneward": "atkShield", "shade": "atkSpirit",
+}
+## (sound_families.ts BOSS_VOICE: the bosses that roar: their roar as the fight begins, their hurt, their death. The Stoker's
+## is in the game's table too and is never heard there: he is an elite, and these wait on a boss. The Warden, the Headsman
+## and the Fleshmancer have none: the common roar.)
+const BOSS_VOICE := {"chained": "chained", "amalgam": "amalgam"}
 
 var mgr  # monsters.gd
 var art: BakedFigure
@@ -787,6 +797,16 @@ func hurt(dmg: float) -> void:
 		mgr.wake(self)
 	if life <= 0.0:
 		_die()
+	elif boss and BOSS_VOICE.has(kind):
+		# (ITS VOICE AS IT IS HURT, game.ts hitMonster: a boss who roars, on a blow of a twenty-fifth of his life or more, no
+		# oftener than every 2.5 s; another, on a big blow only, a quarter of its life or more, or every sixth blow, no
+		# oftener than every 0.7 s: sound_families.ts ENEMY_GAPS, HURT_BIG. The game's crits are not in the Godot version.)
+		if dmg >= max_life * 0.04:
+			mgr.voice(BOSS_VOICE[kind] + "_hurt", 2.5, -1.0)
+	elif not boss and VOICE.has(kind):
+		mgr.hurt_tick = (mgr.hurt_tick + 1) % 6
+		if dmg >= max_life * 0.25 or mgr.hurt_tick == 0:
+			mgr.voice(VOICE[kind] + "_hurt", 0.7, -4.4)
 
 
 const PF := preload("res://scripts/pixel_font.gd")
@@ -832,7 +852,10 @@ func _die() -> void:
 		mgr.boss_at = world
 	if mgr.loot != null:
 		mgr.loot.on_kill(self)
-	if VOICE.has(kind):
+	if boss and BOSS_VOICE.has(kind):
+		# (a boss who roars: his own death)
+		mgr.sfx.play(BOSS_VOICE[kind] + "_death")
+	elif VOICE.has(kind):
 		mgr.sfx.play(VOICE[kind] + "_death", -4.0)
 	elif boss:
 		mgr.sfx.play("boss_roar")
