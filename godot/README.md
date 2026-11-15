@@ -111,6 +111,38 @@ through chat, so the art and sounds go into the project whole).
     back down (`scripts/waypoint.gd`);
   - the floors' names across the screen as he comes in ("The Headsman's Yard", "Prison Level 2" under it).
   The walls between the eye and the hero now fade by the game's own rule (render.ts wallVeil).
+- **Floors 3, 4 and 5, and the way any floor is brought over** (the cloud chat, on branch `claude/sharp-lamport-ey7q0l`,
+  14 and 15 Nov 2026; his words to it, 14 Nov, 22:40: “Help migrate wordsmith to godot”). The Prison's five floors now
+  run on from one another: the town's stairs to floor 1, its stairwell to floor 2, its stairwell to floor 3, floor 3's door
+  out the back of the Chained One's hall to floor 4, floor 4's cave to floor 5, floor 5's cage up to the town.
+  - THE RECORDER (`tools/godot_record.mjs`, `tools/godot_rec/page.js`): a floor's look is taken from the game itself. The
+    game runs in a headless browser, as its playtests run it, and its own renderer is given a canvas that writes down
+    what it is asked to draw: the ground's pictures in the renderer's order, what stands with its depth, the walls that
+    fade, the holes in the dark and the glows; 120 frames make the runs of pictures (a flame, a candle-lit wall); then
+    the floor's STATES are taken as what differs from it (each door and gate from shut to open, each chest open, each
+    barrel and urn broken, the way on opening frame by frame, the waypoint's warp), and WHAT IS SEEN WHEN (the tile each
+    thing waits on to have been seen). No copy of the renderer's rules is kept, so one command brings any floor's look:
+    `node tools/godot_record.mjs 3`. It checks that the level it drew is the level the Godot side has laid out.
+  - FLOOR 3, THE CHAINED ONE'S PIT (the black iron prison), FLOOR 4, THE OSSUARY (the buried chapel of bones) and FLOOR 5,
+    THE FLESHMANCER'S LAIR (the mine that becomes his temple): each laid out by the game's map-maker, in its own look,
+    with its doors and gates, chests, barrels and urns, its traps (`scripts/traps.gd` on a recorded look), its waypoint
+    (`scripts/waypoint.gd`: to town and back), its fallen wordsmith (full flasks and a word), its loot rolled by the game
+    for that floor (`tools/godot_loot.ts`), its monsters where the game puts them, and its way on (`scripts/ways.gd`,
+    game/ways.ts: the door that swings open, the wall that crumbles from the cave's mouth, the cage that comes down the
+    shaft, each when the boss falls, each its own film).
+  - WHAT HE HAS SEEN (`scripts/sight.gd`, game.ts updateVision): on every floor only what he has seen is drawn, a room
+    at a time as he comes to it, and a monster only while it is in sight. Floors 1 and 2 too.
+  - LEDGES, STAIRS AND SLANTING WALLS (`scripts/floor_map.gd`, game/height.ts and game/cut.ts): raised and sunken floor
+    stands as high as it is, he and the monsters are drawn at its height and climb by its stairs; a ledge holds a body as
+    a wall does; a tile cut corner to corner is stood on in its floor half and slid along.
+- **The small map, the large map and the pause panel** (the cloud chat, 15 Nov 2026; `scripts/minimap.gd`; ui/hud.ts minimap
+  and drawMap, ui/panels.ts drawPause): top right, the floor round him as he has seen it, a tile a pixel (in sight bright, seen
+  before dim, wall dark), with the game's marks: the waypoint (bright once awake), the town's gate, floor 1's gate home, the
+  stairwell once it opens, chests seen and not yet opened, the fallen wordsmith until he is searched, the monsters in sight
+  (the boss, a champion, an elite, whoever is awake) and himself. M, or a press on it, opens THE LARGE MAP of everything
+  seen so far, as large as fits, with its legend, the game held while it is open. Esc, or the II button under the small map,
+  PAUSES: the keys this version has, RESUME and the sound on or off (the game's third button, END RUN, waits for the title
+  screen). Esc closes the gear screen too. Held beside the game's own small map coming into floor 3: the same, pixel for pixel.
 - **A desktop icon**, "Wordsmith (Godot)", opens this project to play (it needs the `wordsmith` folder on this branch).
 
 Keys: WASD or the arrows to walk; the left button to Strike, the right to Whirl, Space to Lunge (the mouse aims; from
@@ -131,15 +163,13 @@ A controller: the left stick, RT, LT, A, B, X.
 
 The game's own pictures of the moves' marks (the rings, lines, bars, the sigil and the rime here are plain stand-ins drawn on
 the floor, under the figures), the monsters' words (floor 2's blue packs and leaders carry words that change what they do, and
-the champions' rallying cry needs them; here they fight without), floor 3 (the stairs from the Headsman's yard say so), the
+the champions' rallying cry needs them; here they fight without), the
 Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: its
 gate in the back wall (barred on a new game, drawn as wall here), the stone floating from him to the slab, the letters
 swirling round the ring and its column of light, the wordsmith's words for sale, the stranger's gamble, the stash, the
 Lexicon, buying back, the town's own lighting and music; words other than Power, uniques, magic find, the game's own
-lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the small map and pause
-button top right, the sparks as a pot breaks, the floor's own
-dressing (render/pieces.ts, its looks), raised and sunken floor, the tiles cut corner to corner (drawn whole for now),
-props, the rest of the heroes, menus, the title screen's music. The Colossus pictures are in, held back from Godot with `.gdignore` until they are wired in.
+lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
+breaks, what stands behind raised ground cut off by it, the rest of the heroes, menus, the title screen's music. The Colossus pictures are in, held back from Godot with `.gdignore` until they are wired in.
 
 ## How it is made
 
