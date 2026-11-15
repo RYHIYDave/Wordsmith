@@ -108,6 +108,11 @@ Smaller things, by fight:
   His new shards, rings and fire take no heed of walls (the old shards burst on one); a mini's fire burns round a
   corner. His bone heaps burst 0.05 s apart; the dead come out of them 0.14 s apart. The stream can pass a hero
   unharmed: it burns only if 0.22 s have gone by since his last burn, so a lane's tick just before shields him.
+  In his pictures (copied as they are): his fire does not start exactly at his drawn skull unless he faces along the
+  floor's lines (the mouth is turned with his true facing while he is drawn in one of four views: up to about 25 picture
+  pixels off when he faces a diagonal; render/act1_fx/fm.ts). Each shard's grain is picked by its place in the list of
+  BOTH fans, so when the first fan's bursts end the second fan's shards change their grain at once. A flying shard's
+  streak of fire is almost wholly painted over by the shard itself.
 - **The keybearers.** A key is meant to fall "to his left as he is drawn", but only does if he dies in the middle of a
   move; otherwise it goes to the left of the way he faced. The Flame's ring strikes from the middle out in its first
   step, and still strikes while it stands dying at 5 tiles. Both keys are named `keyblade:key`, so the Flame's key runs
