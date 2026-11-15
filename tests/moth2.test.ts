@@ -1,7 +1,7 @@
-// FLOOR 20'S BOSS, THE MOTH, MADE GHOSTLY (art/moth2.ts, art/moth2_fx.ts; behind MOTH2, off until his yes). His words, 14 Nov 2026:
+// FLOOR 20'S BOSS, THE MOTH, MADE GHOSTLY (art/moth2.ts, art/moth2_fx.ts; behind MOTH2, on at his yes). His words, 14 Nov 2026:
 // “as of right now the moth is the end boss of the compaign so it needs to be good.  dont make mistakes, make some cool original
 // attacks.  very ethereal”; his pick, “Yes, build these (Recommended)”. Here:
-//   1. the switch is off; of the game only her own files reach the new ones;
+//   1. the switch is on, at his yes (“Yes, switch her on (Recommended)”, 14 Nov 2026); of the game only her own files reach the new ones;
 //   2. ECLIPSE's shadow: over him where she casts it, not under her, not past its head, not far aside; it grows; about eleven tiles across;
 //   3. ECLIPSE in play: struck in the shadow at the blow; out of it, or rolling, not; its peril laid; her shadow cast at him;
 //   4. PHANTOMS in play: three lanes, the first at him; each strikes him once as it passes over him, in turn; out of their lanes, never;
@@ -100,8 +100,8 @@ function counting(): { g: CanvasRenderingContext2D; n: () => number; colours: Se
 }
 const at = (x: number, y: number): readonly [number, number] => [300 + (x - y) * 16, 100 + (x + y) * 8];
 
-test('1. the switch is off; of the game only her own files reach the new ones', () => {
-  assert.equal(MOTH2.on, false, 'MOTH2 is off');
+test('1. the switch is on, at his yes; of the game only her own files reach the new ones', () => {
+  assert.equal(MOTH2.on, true, 'MOTH2 is on');
   const its = /^art\/moth2(_fx|_switch)?$/;
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x: string) => x.replace(/\\/g, '/'))) {
@@ -280,6 +280,7 @@ test('5b. the game draws each of her new moves, as it plays them, without a faul
 
 test('6. her pictures made ghostly: no little moths crawling on her; dying, nothing of her left lying; with the switch off, as they were', () => {
   const lying = (): number => mothGrainsAt('dying', MOTH_DIES.long).filter(([p]) => p[2] < 3).length;
+  const was = MOTH2.on;
   MOTH2.on = false;
   try {
     assert.ok(mothCrawlersAt('swarm', 0.9).length > 20, 'off: the little moths crawl on her');
@@ -296,7 +297,7 @@ test('6. her pictures made ghostly: no little moths crawling on her; dying, noth
     assert.ok(fall.length > 20 && fall.every(([, c]) => GLOW_DUST.includes(c) || c === FLAME_DULL), 'her scales glowing');
     void MOTH_SWARM;
   } finally {
-    MOTH2.on = false;
+    MOTH2.on = was;
   }
 });
 

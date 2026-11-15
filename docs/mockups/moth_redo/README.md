@@ -1,7 +1,7 @@
 # Floor 20's boss, the Moth, made ghostly
 
-Branch `design/moth-redo` (built on `design/censor-redo`, itself on `design/f9-side-bosses`). Behind `MOTH2` (art/moth2_switch.ts),
-off until his yes.
+Branch `design/moth-redo` (built on `design/censor-redo`, itself on `design/f9-side-bosses`). Behind `MOTH2` (art/moth2_switch.ts), ON at
+his yes (below).
 
 ## His words
 
@@ -25,6 +25,10 @@ off until his yes.
 ## Pictures
 
 - pictures/moth2_fight.mp4: her fight in the game, at his phone's size (tools/scenarios/moth2_fight.mjs; OLD=1 for her old moves).
+
+## His yes
+
+- Asked with pictures/moth2_fight.mp4, “Is the ghostly Moth in moth2_fight.mp4 good enough for the last boss of the campaign?”: “Yes, switch her on (Recommended)”. `MOTH2.on` is true (art/moth2_switch.ts). tests/moth.test.ts holds the art chat's pictures of her as they were (MOTH2 off there).
 
 ## Checks
 

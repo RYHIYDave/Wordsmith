@@ -1,5 +1,6 @@
 // FLOOR 20'S BOSS, THE MOTH, MADE GHOSTLY: HER NEW ATTACKS, WHERE THEY STRIKE (the rules, game/act1_rules/moth.ts, and what draws
-// them, art/moth2_fx.ts and render/act1_fx/moth.ts, both take these numbers and shapes from here). Behind MOTH2, off until his yes.
+// them, art/moth2_fx.ts and render/act1_fx/moth.ts, both take these numbers and shapes from here). Behind MOTH2, on at his yes of
+// 14 Nov 2026 (art/moth2_switch.ts).
 //
 // His words, 14 Nov 2026, 16:13 (Eastern): “as of right now the moth is the end boss of the compaign so it needs to be good.  dont
 // make mistakes, make some cool original attacks.  very ethereal”. The set offered him, his pick “Yes, build these (Recommended)”:

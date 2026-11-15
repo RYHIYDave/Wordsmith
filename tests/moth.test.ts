@@ -46,6 +46,11 @@ import { stage } from '../src/art/skin';
 import type { V3 } from '../src/art/skeleton';
 import { rgba } from '../src/engine/px';
 import { MOTH_SHAPE } from './moth_shape';
+import { MOTH2 } from '../src/art/moth2_switch';
+
+// (these hold the art chat's pictures of her as he said yes to them; made ghostly since, 14 Nov 2026, behind MOTH2, on: her scales
+// glowing, no little moths crawling on her, her death in light, held by tests/moth2.test.ts; so here her pictures as they were)
+MOTH2.on = false;
 
 interface Assert {
   ok(value: unknown, message?: string): void;
