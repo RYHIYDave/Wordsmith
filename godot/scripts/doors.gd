@@ -142,7 +142,11 @@ func _process(dt: float) -> void:
 	_levers()
 	_locks()
 	# (ACT 1: out on the open ground he waits, as behind a gate still up, until the hero comes into his ground: meetOutdoorBoss)
-	if map.land != null and alive and not _met:
+	# (floor 10, the Swamp Colossus: he lies out in the water off his stone, and his ground is met by the stone's own rule,
+	# act1/stone.gd _meet; here he is not held)
+	if map.stone != null:
+		pass
+	elif map.land != null and alive and not _met:
 		var area = map.area("boss")
 		if hero.alive and ((area != null and FloorMap.blob_dist(area["blob"], hero.world) < MEET_INSIDE) or boss.world.distance_to(hero.world) <= MEET_NEAR):
 			_met = true
