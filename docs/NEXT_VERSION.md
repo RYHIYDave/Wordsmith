@@ -4621,3 +4621,7 @@ A second update the same evening, at his “Tonight, a second update”: the que
 ## VERSION 25.3.19, LIVE 13 NOV 2026 BY 23:00 (Eastern), THE GAME'S OWN WEB ADDRESS (the Bells chat of 13 Nov)
 
 A third update the same evening, at his word to the Bells chat, 22:31: “Put that shit in the game”: the quests of floors 16 to 20 (the Clockwork Songbird, the Whole Court, the Captain's Voice). Marks: all as 25.3.18. gh-pages 4940af6c; main bca58ba2. The claude.ai page still shows 25.3.18: this session could not publish there (session_network_off); the main chat to put it there.
+
+## VERSION 25.3.20, LIVE 14 NOV 2026 BY 21:40 (Eastern), BOTH ADDRESSES (the main chat of 12 Nov, session ...STLst)
+
+The evening's one update, the whole ship list as it stood at 17:30: endless mode's Tablet Shards and its final boss, on at his “Yes, switch it on (Recommended)”; floor 9's two side bosses; the Censor made again; the Warrior's hounskull bascinet; the Mage's four unique staves in her hands; the hero cards all facing down and right; the Wilds' level music (floors 6 to 10, the sound chat's thirteenth batch); the music as MP3, so the claude.ai page can be shared again; endless mode without the story; the attack shouts and grunts when hit a third as often. Marks: heroes 7f0180f8449d, sounds 8d8d119e002b, townsfolk 9ff1ce3dcc32, monsters b982b7f72ca4; Colossus as 25.3.19. gh-pages 11ef2c5a; the claude.ai page Version 130 (`1794710067-bdb2`), 25.3.19's quests on it with it. Next: the six ship documents that came in after it was built, and the staves' quicker bake.
