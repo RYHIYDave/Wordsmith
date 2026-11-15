@@ -27,11 +27,15 @@ through chat, so the art and sounds go into the project whole).
   life (102, 0.6 a second back) over his head in a fight; fallen, he is back where he came in.
 
 - **The Warrior's other two attacks** (at his pick, "Warrior's other moves", 14 Nov 2026; defs.ts SKILLS, talents.ts):
-  WHIRL, the right button (held, again as soon as it is ready), a quarter second's wind-up then one blow all round him,
-  2 tiles, x1.4, ready again after 3 s; and his swipe, the LUNGE, Space, flung up to 6 tiles toward the pointer, not to
-  be harmed in the air, through monsters and the Lockdown's bars, a blow 1.6 round where he lands, ready again after 4 s.
-  (The Whirlwind held and spun is a talent's, not his to start with.) In the game Whirl opens at level 2 and the Lunge
-  at 5: here all three are open, to try them.
+  the WHIRLWIND, the right button held, and his swipe, the LUNGE, Space.
+  - The WHIRLWIND: he spins for as long as it is held, 2.4 s at most, cutting all round him every 0.3 s (x0.55, 2 tiles),
+    walking at 90% and through enemies; ready again after 3.5 s, less after a short spin (defs.ts SKILLS.whirlwind, game.ts
+    updateChannel). At first this was the game's starting WHIRL, one overhead slam all round him (x1.4, every 3 s), as the
+    game shows it; told "It doesn't do the whirl", and that in the game the spin is the greatsword's talent (gswhirlwind:
+    "Whirl becomes WHIRLWIND"), his pick, 14 Nov 2026: "Give him the Whirlwind spin".
+  - The LUNGE: flung up to 6 tiles toward the pointer, not to be harmed in the air, through monsters and the Lockdown's
+    bars, a blow 1.6 round where he lands, ready again after 4 s.
+  In the game Whirl opens at level 2 and the Lunge at 5: here all three are open, to try them.
 - **Loot, levels and the first word** (at his pick, "Words and loot", 14 Nov 2026; `scripts/loot.gd`, `inventory.gd`):
   what falls as the game's dropLoot has it (gold, life orbs, gear: a leader's, a guardian's and the Warden's more and
   better), every piece one the game itself rolled (`tools/godot_loot.ts`: its own rollGear, its pictures, its names and

@@ -9,8 +9,12 @@
 ##   STRIKE (left button; a controller's RT): lands 0.333 s in on the one monster before him within 1.7 tiles that is
 ##     nearest and most in front (game.ts strike); again every 1 / his attack rate; pressed again soon enough, the second
 ##     swing of the combo; a step forward each.
-##   WHIRL (right button, held: again as soon as it is ready; LT): a quarter of a second's wind-up, then one great blow all
-##     round him, 2 tiles, x1.4 (defs.ts SKILLS.whirl); ready again after 3 s; after it he walks slowed a moment.
+##   WHIRLWIND (right button, held; LT): at his pick of 14 Nov 2026, "Give him the Whirlwind spin", the greatsword's
+##     Whirlwind (in the game a talent of the tree, talents.ts gswhirlwind: "Whirl becomes WHIRLWIND: you spin round and
+##     round, more hits, each for less"; defs.ts SKILLS.whirlwind, game.ts updateChannel): 0.12 s's wind-up, then for as
+##     long as it is held, 2.4 s at most, he spins (1.6 turns a second), cutting everything within 2 tiles every 0.3 s for
+##     x0.55, walking at 90% and through enemies; let go or run out, it is ready again after 3.5 s (less after a short
+##     spin, never less than 35% of it). His spinning picture (art/warrior_up.ts WU_WHIRL3) seen from the front.
 ##   LUNGE, his swipe (Space; A): flung up to 6 tiles toward the pointer (or the way he goes), untouchable in the air,
 ##     through monsters and the Lockdown's bars; landing, a blow 1.6 round a tile before him, x0.5; ready again after 4 s
 ##     (defs.ts SKILLS.leap, LUNGE; game.ts useEvasive, land).
@@ -36,7 +40,8 @@ const AIM_REACH := 2.4
 const BACK_AFTER := 2.5
 
 const STRIKE := {"share": 1.0, "reach": 1.7, "windup": 0.333, "follow": 0.3, "combo": 0.5, "step": 0.33}
-const WHIRL := {"share": 1.4, "radius": 2.0, "windup": 0.25, "cooldown": 3.0, "after": 0.6, "slow": 0.4, "slow_for": 0.18, "cut": 0.12, "hit_frame": 15}
+const WHIRL := {"share": 0.55, "radius": 2.0, "windup": 0.12, "channel": 2.4, "tick": 0.3, "cooldown": 3.5, "min_cool": 0.35, "follow": 0.25, "walk": 0.9, "spin": 1.6}
+const WHIRL_LIST := 44
 const LUNGE := {"share": 0.5, "range": 6.0, "radius": 1.6, "ahead": 1.0, "cooldown": 4.0, "invuln": 0.06}
 const LEAP_LIST := 39
 const LAND_LIST := 45
@@ -88,6 +93,12 @@ var _landed := false
 var _last_swing := -10.0
 var _combo_next := false
 var _whirl_cd := 0.0
+## (the Whirlwind: its wait in full, how many cuts it has made, the next one's time, how long it has spun, when let go)
+var _whirl_full := 3.5
+var _bites := 0
+var _next_bite := 0.0
+var _spun := -1.0
+var _stopped_at := 0.0
 var _lunge_cd := 0.0
 var _lunge := {}
 var _landing := false
@@ -190,12 +201,11 @@ func _process(dt: float) -> void:
 		_knock_t -= dt
 
 	var strike_asked := Input.is_action_just_pressed("attack") or auto_attack
-	var whirl_asked := Input.is_action_pressed("whirl") or auto_whirl
+	var whirl_held := Input.is_action_pressed("whirl") or auto_whirl
 	auto_attack = false
-	auto_whirl = false
-	if whirl_asked and _whirl_cd <= 0.0 and (_act == "" or (_act == "strike" and _landed)):
+	if whirl_held and _whirl_cd <= 0.0 and (_act == "" or (_act == "strike" and _landed)):
 		_begin_whirl()
-	elif strike_asked and (_act == "" or (_act == "strike" and _act_t >= 1.0 / rate()) or (_act == "whirl" and _landed and _act_t >= WHIRL["windup"] + WHIRL["after"] - WHIRL["cut"])):
+	elif strike_asked and (_act == "" or (_act == "strike" and _act_t >= 1.0 / rate())):
 		_begin_strike()
 
 	var slow := 1.0
@@ -211,15 +221,10 @@ func _process(dt: float) -> void:
 				_end_act()
 				can_walk = true
 		"whirl":
-			if not _landed and _act_t >= WHIRL["windup"]:
-				_land_whirl()
-			if _landed:
-				# (after the blow he may walk, slowed for its first 0.18 s, not turning to his way while it lasts)
-				can_walk = true
-				if _act_t < WHIRL["windup"] + WHIRL["slow_for"]:
-					slow = WHIRL["slow"]
-			if _act_t >= WHIRL["windup"] + WHIRL["after"]:
-				_end_act()
+			_spin(dt, whirl_held)
+			# (he walks on while he spins, at 90%, not turning to his way: he is turning on the spot)
+			can_walk = true
+			slow = WHIRL["walk"]
 
 	if can_walk and way != Vector2.ZERO:
 		if _act == "":
@@ -285,17 +290,47 @@ func _land_strike() -> void:
 # --- Whirl ---
 
 func _begin_whirl() -> void:
-	_aim_at_foe()
 	_whirl_cd = WHIRL["cooldown"]
-	_start(BakedHero.HEAVY, "whirl")
+	_whirl_full = WHIRL["cooldown"]
+	_bites = 0
+	_next_bite = 0.0
+	_spun = -1.0
+	_start(WHIRL_LIST, "whirl")
 
 
-func _land_whirl() -> void:
-	_landed = true
-	sfx.play("slam", -2.0)
-	_shake = 0.2
-	if monsters != null and monsters.blast(world, WHIRL["radius"] * stats["area"], func(): return roll_hit(WHIRL["share"])) > 0:
-		sfx.play("hit", -4.0)
+## game.ts updateChannel: is it over (let go after its first cut, or run its length)? then its cut, if one is due; then
+## time passes; he turns on the spot. Over, its wait is all of it after a whole length, less after a shorter one.
+func _spin(dt: float, held: bool) -> void:
+	if _spun >= 0.0 and _spun >= WHIRL["channel"] + WHIRL["follow"]:
+		_end_act()
+		return
+	if _act_t < WHIRL["windup"]:
+		return
+	if _spun < 0.0:
+		_spun = 0.0
+	if _landed:
+		# (let go: the rest of its follow-through, standing out of the spin)
+		_spun += dt
+		if _spun >= _stopped_at + WHIRL["follow"]:
+			_end_act()
+		return
+	if _bites > 0 and (not held or _spun >= WHIRL["channel"]):
+		_landed = true
+		_stopped_at = _spun
+		var k := clampf(_spun / WHIRL["channel"], WHIRL["min_cool"], 1.0)
+		_whirl_cd = WHIRL["cooldown"] * k
+		_whirl_full = _whirl_cd
+		return
+	if _next_bite <= 1e-9:
+		sfx.play("whirl", -6.0)
+		if monsters != null and monsters.blast(world, WHIRL["radius"] * stats["area"], func(): return roll_hit(WHIRL["share"])) > 0:
+			sfx.play("hit", -8.0)
+		_bites += 1
+		_next_bite += WHIRL["tick"]
+	_spun += dt
+	_next_bite -= dt
+	var a := atan2(face.y, face.x) + WHIRL["spin"] * TAU * dt
+	face = Vector2(cos(a), sin(a))
 
 
 # --- Lunge ---
@@ -470,7 +505,9 @@ func _place() -> void:
 
 
 func _show() -> void:
-	var n := art.count(_side, _list)
+	# (a whirlwind is seen from the front for as long as it goes round: the picture turns him itself, figure.ts `spins`)
+	var side := BakedHero.SIDES.find("front") if _act == "whirl" else _side
+	var n := art.count(side, _list)
 	if n == 0:
 		return
 	var i := 0
@@ -478,15 +515,13 @@ func _show() -> void:
 		# (the leap's pictures go by how far through the flight he is)
 		i = mini(int(_act_t / _lunge["dur"] * n), n - 1)
 	elif _act == "whirl":
-		# (figure.ts attackFrame: the picture's own wind-up, to its blow at frame 15, sped up to land at the rules' 0.25 s)
-		var hf: int = WHIRL["hit_frame"]
-		i = int(_act_t / WHIRL["windup"] * hf) if _act_t < WHIRL["windup"] else hf + int((_act_t - WHIRL["windup"]) * CLIP_FPS)
-		i = mini(i, n - 1)
+		# (his spin goes round at 30 frames a second, from its first frame as the wind-up begins)
+		i = int(_act_t * CLIP_FPS) % n
 	elif _act == "strike" or _landing:
 		i = mini(int(_t * CLIP_FPS), n - 1)
 	else:
 		i = int(_t * (IDLE_FPS if _list == BakedHero.IDLE else RUN_FPS)) % n
-	var f := art.frame(_side, _list, i)
+	var f := art.frame(side, _list, i)
 	_sprite.texture = f["tex"]
 	_sprite.offset = f["offset"]
 	_sprite.scale = Vector2.ONE * float(f["scale"])
@@ -508,4 +543,4 @@ func _draw() -> void:
 
 ## How soon each attack is ready again, 0 to 1 (the HUD).
 func readiness() -> Dictionary:
-	return {"whirl": 1.0 - _whirl_cd / WHIRL["cooldown"], "lunge": 1.0 - _lunge_cd / LUNGE["cooldown"]}
+	return {"whirl": 1.0 - _whirl_cd / maxf(0.01, _whirl_full), "lunge": 1.0 - _lunge_cd / LUNGE["cooldown"]}

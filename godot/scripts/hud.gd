@@ -36,7 +36,7 @@ func _draw() -> void:
 	if hero == null:
 		return
 	var r: Dictionary = hero.readiness()
-	var slots := [["STRIKE", "LMB", 1.0], ["WHIRL", "RMB", r["whirl"]], ["LUNGE", "SPACE", r["lunge"]]]
+	var slots := [["STRIKE", "LMB", 1.0], ["WHIRLWIND", "HOLD RMB", r["whirl"]], ["LUNGE", "SPACE", r["lunge"]]]
 	var w := 104.0
 	var h := 34.0
 	var gap := 8.0

@@ -340,6 +340,10 @@ func _arg(name: String) -> String:
 func _shoot(hero: Hero, dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	hero.unhurt = true
+	if _arg("only") == "rmb":
+		await _rmb_test(hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "town":
 		await _town_shots(hero, dir)
 		get_tree().quit()
@@ -544,12 +548,15 @@ func _hero_moves(hero: Hero, dir: String) -> void:
 	await _wait(0.3)
 	hero.auto_whirl = true
 	await _wait(0.33)
+	await _wait(0.5)
 	await _snap(dir + "/01d_whirl.png")
+	hero.auto_whirl = false
 	for i in 8:
 		hero.auto_attack = true
 		await _wait(0.5)
 		if i == 3:
 			hero.auto_whirl = true
+	hero.auto_whirl = false
 	await _snap(dir + "/01e_after.png")
 	print("WARRIOR'S MOVES: ", n0 - _alive(), " monsters down")
 
@@ -660,3 +667,33 @@ func _town_shots(h: Hero, dir: String) -> void:
 	await _snap(dir + "/43_the_armourers_shelf.png")
 	_inv.toggle()
 	print("TOWN: place ", place, " gold ", loot.gold, " bag ", loot.bag.size(), " ring ", loot.ring_lit, " words ", loot.words, " strike ", h.strike_words)
+
+
+## (A TEST: a real right-button press sent through Godot's input, as a mouse would send it, and what he does with it.)
+func _rmb_test(h: Hero, dir: String) -> void:
+	# (set down near a pack of skeletons, so the spin has something to cut)
+	var skel := _nearest_kind(h.world, "skeleton", 12.0)
+	if skel != null:
+		h.world = _spot_near(skel.world, 2.5, h.world)
+	await _wait(1.2)
+	var e := InputEventMouseButton.new()
+	e.button_index = MOUSE_BUTTON_RIGHT
+	e.pressed = true
+	e.position = get_viewport().get_visible_rect().size / 2.0 + Vector2(60, 20)
+	e.global_position = e.position
+	Input.parse_input_event(e)
+	var n0 := _alive()
+	for i in 90:
+		await get_tree().process_frame
+		if i % 15 == 0:
+			print("RMB held frame ", i, " act=", h._act, " cuts=", h._bites, " spun=", snappedf(h._spun, 0.01), " facing=", h.face.snapped(Vector2(0.01, 0.01)))
+		if i == 20:
+			await _snap(dir + "/rmb_spin_a.png")
+		if i == 30:
+			await _snap(dir + "/rmb_spin_b.png")
+	var up := e.duplicate()
+	up.pressed = false
+	Input.parse_input_event(up)
+	for i in 30:
+		await get_tree().process_frame
+	print("RMB let go: act=", h._act, " cuts=", h._bites, " wait=", snappedf(h._whirl_cd, 0.01), " of ", snappedf(h._whirl_full, 0.01), "; monsters down ", n0 - _alive())
