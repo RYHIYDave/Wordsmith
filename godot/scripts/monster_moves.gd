@@ -89,7 +89,7 @@ const SUMMON := {"count": 4, "apart": 0.1, "rise": 1.4, "most": 6}
 const AIM := {"lock": 0.4, "speed": 16.0, "range": 14.0, "r": 0.3}
 ## THE ARROW RAIN (art/action_f1_fx.ts RAIN): a ring of 2 tiles where the hero stood as it looses, struck 1.5 s later; the
 ## arrows stand 0.6 s, gone in 0.25.
-const RAIN := {"radius": 2.0, "delay": 1.5, "stuck": 0.6, "gone": 0.25}
+const RAIN := {"radius": 2.0, "delay": 1.5, "stuck": 0.6, "gone": 0.25, "rise": 0.15}
 ## THE LOCKDOWN (art/action_f1_fx.ts LOCKDOWN): rows of bars both ways across his hall 2.75 tiles apart, he in the middle of
 ## a cell; a hero within 0.42 of a row at the crash is struck; the bars stand 1.5 s as a cage, and are gone in 0.4.
 const LOCKDOWN := {"cell": 2.75, "band": 0.42, "stand": 1.5, "rise": 0.4}
@@ -97,7 +97,7 @@ const LOCKDOWN := {"cell": 2.75, "band": 0.42, "stand": 1.5, "rise": 0.4}
 ## began; at the cultist's slam (its wind-up's end) it erupts, striking a hero inside; the pillar stands 0.3 s and falls in 0.2;
 ## the floor burns on 3 s, its fire shrinking in to the middle (burn_radius), burning a hero inside 18% of the blow each 0.5 s.
 ## If the cultist falls, or is stopped, before its slam, nothing erupts.
-const SIGIL := {"radius": 1.75, "pillar": 0.3, "fall": 0.2, "burn": 3.0, "strike": 1.0 / 30.0, "share": 0.18, "every": 0.5}
+const SIGIL := {"radius": 1.75, "delay": 1.04, "pillar": 0.3, "fall": 0.2, "burn": 3.0, "strike": 1.0 / 30.0, "share": 0.18, "every": 0.5}
 ## THE RIME (art/action_f2_fx.ts RIME): at the Shade's blow, a patch of frost 1.2 tiles round, 1 tile before it; spreading in
 ## 0.2 s, lying 4 s, melting from its edge over the last 1; a hero in it walks 40% slower.
 const RIME := {"radius": 1.2, "ahead": 1.0, "form": 0.2, "lie": 4.0, "melt": 1.0, "slow": 0.4}

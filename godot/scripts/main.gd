@@ -1716,6 +1716,13 @@ func _kind_shots(h: Hero, dir: String) -> void:
 			"frenzy_coiled": func(): return m.state == "windup" and m._t < 0.8, "frenzy_stab_2": func(): return _monsters.used.get("frenzy_stab", 0) >= 2,
 			"frenzy_stab_4": func(): return _monsters.used.get("frenzy_stab", 0) >= 4, "winded": func(): return m.state == "recover" and m._t < 0.9,
 		},
+		# (the keybearers': what they throw and leave, seen in flight and burning, beside each of their moves)
+		"keyflame": {
+			"ring_of_fire": func(): return _has(P, "kb_ring", 0.3), "fire_balls": func(): return _has(P, "kb_ball", 0.3), "sigil_burns": func(): return _has(P, "kb_sigil", 0.7),
+		},
+		"keyblade": {
+			"knife_flies": func(): return _has(P, "kb_knife", 0.1),
+		},
 	}
 	var todo: Dictionary = marks.get(kind, {})
 	var done := {}
@@ -1744,7 +1751,7 @@ func _kind_shots(h: Hero, dir: String) -> void:
 					done[name] = true
 					k += 1
 					await _snap(tag + "%02d_%s.png" % [k, name])
-			if todo.is_empty():
+			if todo.is_empty() or own:
 				# (a kind with rules of its own: each of its moves pictured the first two times, half a second in)
 				for id in _monsters.used:
 					var c: int = _monsters.used[id]

@@ -422,7 +422,7 @@ func _land(hero, dist: float, reach: float) -> void:
 			mgr.shoot(self, (hero.world - world).normalized(), float(def["projSpeed"]), float(def["range"]) + 3.0, _roll() * mv["dmg"], "arrow" if arrow else "bolt")
 			mgr.sfx.play("shot" if arrow else "fire", -6.0)
 		"rain":
-			mgr.perils.rain(hero.world.x, hero.world.y, _roll() * mv["dmg"])
+			mgr.perils.rain(hero.world.x, hero.world.y, _roll() * mv["dmg"], world, face)
 			mgr.sfx.play("shot", -4.0)
 		"pierce":
 			var way := face

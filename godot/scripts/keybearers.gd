@@ -519,10 +519,14 @@ class TempleKey extends Node2D:
 		# (the key: a quarter turn over 14 times a second as it tumbles; one more as it bounces; lying, its bow to the left)
 		var turn := floori(t * 14.0) % 4 if t < fall else (1 if t - fall < 0.16 else 0)
 		var mid := foot + Vector2(0.0, -2.0 * (high + 2.0))
-		draw_set_transform(mid, turn * PI / 2.0 + (0.35 if turn % 2 == 1 else 0.0), Vector2.ONE)
-		_draw_key(LINE, 1.0)
-		_draw_key(BRASS[3], 0.0)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		if is_instance_valid(mgr) and mgr.perils != null and mgr.perils.has_film("kb_key"):
+			# (THE GAME'S OWN picture of it, art/key_bearers_fx.ts keySprite, its middle there)
+			mgr.perils._film_pic(self, "kb_key", "stand", turn, mid)
+		else:
+			draw_set_transform(mid, turn * PI / 2.0 + (0.35 if turn % 2 == 1 else 0.0), Vector2.ONE)
+			_draw_key(LINE, 1.0)
+			_draw_key(BRASS[3], 0.0)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		# (a glint running over it now and then, as it lies)
 		if t >= fall:
 			var ph := fmod(t * 0.7 + at.x * 0.13, 1.0)

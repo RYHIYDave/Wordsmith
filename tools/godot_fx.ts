@@ -33,6 +33,19 @@
 //                bursting as its dead comes up (paintHeap: floor, and `before`).
 //   fm_hand_<k>  a hand of his dead bursting up out of a ring, of kind k (art/fleshmancer.ts makeRingHandArt: 24 frames at
 //                20 a second, layer `stand`; the game stands each at its own place round the ring).
+//   sigil_<r>    the cultist's fire sigil (art/action_f2_fx.ts sigilPainted; render/act1_fx/cultist.ts), 1.75 tiles round, and
+//                the Flame keybearer's great one (2.5): the ring traced round and filling on the floor, the pillar of fire and
+//                its embers, the floor burning on. Its time 0 is 1.04 s before the eruption (SIGIL.delay): what stands of it
+//                only from the eruption.
+//   rime         the Shade's rime (rimePainted; render/act1_fx/shade.ts): spreading, lying, melting in. 4 s.
+//   rain_<v>     the bone archer's arrow rain, seen from in front or from behind (art/action_f1_fx.ts rainPainted;
+//                render/act1_fx/archer.ts): the ring filling with the shadows of falling arrows, the arrows coming down and
+//                standing in the stones. 2.35 s. rain_rise_<v>: what the archer loosed flying up over it (layer `stand`).
+//   kb_knife     the Knife keybearer's thrown knife, an eighth of a turn over each (art/key_bearers_fx.ts knifeSprite: 8
+//                pictures, layer `stand`; the game picks one by its clock: render/act1_fx/keybearers.ts). kb_ball: a ball of
+//                the Flame's fire, flickering (fireBallSprite: 4). kb_key: the temple door's key, a quarter turn over each as
+//                it tumbles, the first of it lying (keySprite: 4). kb_tongue_<h>: a tongue of his ring's fire, h game pixels
+//                high (1 to 16), flickering (ringTongue: 4 each).
 //   smoke        the high priest's burning smoke (art/mob_shots.ts drawBurningSmoke, the game's own painter, painted here
 //                onto a canvas of the game's pixels): billowing, burning and thinning away. 3 s.
 // A film's `k0`: the frame its first picture is, counted from the film's own time 0 (less than 0: it begins before it).
@@ -48,6 +61,10 @@ import { BIG_ARM_FPS, BIG_ARM_FRAMES, BIG_ARM_TIME, DROP_CANVAS, RAIN, RAIN_SKUL
 import { ARM_CRACK_AFTER, ARM_CRACK_WARN, drawArmCrack } from '../src/art/boss_shots';
 import { BALL_SHOT_FRAMES, HOOK_SHOT_FRAMES, makeBallShotArt, makeHookShotArt, makeLeftBehindArt } from '../src/art/bosses3';
 import { drawBurningSmoke } from '../src/art/mob_shots';
+import { RAIN as F1_RAIN, RAIN_CANVAS, RAIN_LONG, RISE_CANVAS, rainPainted, rainRisePainted } from '../src/art/action_f1_fx';
+import { RIME, RIME_CANVAS, SIGIL, SIGIL_CANVAS, SIGIL_LONG, rimePainted, sigilPainted } from '../src/art/action_f2_fx';
+import { KF } from '../src/game/act1_rules/keybearers';
+import { fireBallSprite, keySprite, knifeSprite, ringTongue } from '../src/art/key_bearers_fx';
 import { SMOKE } from '../src/game/defs';
 import { FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, makeRingHandArt } from '../src/art/fleshmancer';
 import { RISE_MARK, paintHeap, paintRiseMark, paintSinkPit } from '../src/art/fleshmancer_action_fx';
@@ -236,6 +253,30 @@ for (let seed = 0; seed < 8; seed++) {
     const hands = makeRingHandArt('front', kind);
     films[`fm_hand_${kind}`] = { fps: FM_HAND_FPS, n: FM_HAND_FRAMES, k0: 0, layers: { stand: Array.from({ length: FM_HAND_FRAMES }, (_, i) => pic(hands[i])) } };
   }
+}
+
+// the cultist's fire sigil and the Flame keybearer's great one; the Shade's rime; the bone archer's arrow rain
+for (const r of [SIGIL.radius, KF.sigilR]) {
+  const sig = (what: Layer, k: number): Sprite => toSprite(sigilPainted(k / FPS - SIGIL.delay, what === 'floor' ? 'floor' : 'air', r, what === 'floor' ? 'all' : what), null, SIGIL_CANVAS.ax, SIGIL_CANVAS.ay);
+  // (what stands of it from the eruption: the frame the eruption falls in, as the game has it)
+  const from = Math.floor(SIGIL.delay * FPS);
+  film(`sigil_${r}`, SIGIL.delay + SIGIL_LONG, { floor: (k) => sig('floor', k), behind: (k) => (k < from ? null : sig('behind', k)), before: (k) => (k < from ? null : sig('before', k)) });
+}
+film('rime', RIME.lie, { floor: (k) => toSprite(rimePainted(k / FPS), null, RIME_CANVAS.ax, RIME_CANVAS.ay) });
+for (const view of ['front', 'back'] as const) {
+  film(`rain_${view}`, RAIN_LONG, three((what, k) => toSprite(rainPainted(k / FPS, view, what === 'floor' ? 'floor' : 'air', F1_RAIN.radius, what === 'floor' ? 'all' : what), null, RAIN_CANVAS.ax, RAIN_CANVAS.ay)));
+  film(`rain_rise_${view}`, F1_RAIN.rise + 1 / FPS, { stand: (k) => toSprite(rainRisePainted(k / FPS, view), null, RISE_CANVAS.ax, RISE_CANVAS.ay) });
+}
+
+// floor 5's keybearers: what they throw and drop, each a picture the game picks by its clock (render/act1_fx/keybearers.ts)
+{
+  const stills = (name: string, n: number, at: (i: number) => Sprite): void => {
+    films[name] = { fps: 0, n, k0: 0, layers: { stand: Array.from({ length: n }, (_, i) => pic(at(i))) } };
+  };
+  stills('kb_knife', 8, knifeSprite);
+  stills('kb_ball', 4, fireBallSprite);
+  stills('kb_key', 4, keySprite);
+  for (let h = 1; h <= 16; h++) stills(`kb_tongue_${h}`, 4, (i) => ringTongue(h, i));
 }
 
 // the high priest's burning smoke (render.ts, the 'smoke' zone: its share of its life, and the clock)

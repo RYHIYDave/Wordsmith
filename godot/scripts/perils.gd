@@ -60,13 +60,14 @@ func aim(src: Object, a: Vector2, b: Vector2, dur: float) -> Dictionary:
 	return p
 
 
-func rain(x: float, y: float, dmg: float) -> void:
+## `from`, `face`: where its archer stood and the way it faced as it loosed (for what it loosed, flying up over it).
+func rain(x: float, y: float, dmg: float, from := Vector2.INF, face := Vector2.ZERO) -> void:
 	var sticks := PackedVector2Array()
 	for i in 26:
 		var ang := randf() * TAU
 		var d := sqrt(randf()) * MM.RAIN["radius"]
 		sticks.append(Vector2(x + cos(ang) * d, y + sin(ang) * d))
-	list.append({"kind": "rain", "x": x, "y": y, "t": 0.0, "dmg": dmg, "done": false, "sticks": sticks})
+	list.append({"kind": "rain", "x": x, "y": y, "t": 0.0, "dmg": dmg, "done": false, "sticks": sticks, "from": from, "face": face})
 
 
 ## The Lockdown, cast with the Warden at (x, y): its rows across the room he stands in (action_f1.ts barRows).
@@ -215,11 +216,61 @@ func _film_free(p: Dictionary) -> void:
 		if is_instance_valid(s):
 			s.queue_free()
 	p.erase("hands")
-	for key: String in ["fx_behind", "fx_before", "fx_stand"]:
+	for s in p.get("fx_pool", []):
+		if is_instance_valid(s):
+			s.queue_free()
+	p.erase("fx_pool")
+	for key: String in ["fx_behind", "fx_before", "fx_stand", "fx_rise"]:
 		var s = p.get(key)
 		if s != null and is_instance_valid(s):
 			s.queue_free()
 		p.erase(key)
+
+
+## A picture among what stands, set to one of the films' pictures (-1: hidden): its floor point over `at`, `high` game pixels
+## up, at a depth of its own; `flip`: turned over about its floor point.
+func _film_set(s: Sprite2D, pi: int, at: Vector2, depth: float, flip := false, high := 0.0) -> void:
+	s.visible = pi >= 0
+	if pi < 0:
+		return
+	var q: Array = _fx["pics"][pi]
+	var scr := Iso.to_screen(at.x, at.y)
+	s.texture = _fx_sheets[int(q[0])]
+	s.region_rect = Rect2(q[1], q[2], q[3], q[4])
+	s.flip_h = flip
+	s.position = Vector2(scr.x, depth * 16.0)
+	s.offset = Vector2(-(float(q[5]) + float(q[3])) if flip else float(q[5]), float(q[6]) + scr.y - depth * 16.0 - 2.0 * high)
+
+
+## A picture among what stands for a mark, made when first wanted.
+func _film_sprite() -> Sprite2D:
+	var s := Sprite2D.new()
+	s.centered = false
+	s.region_enabled = true
+	stands.add_child(s)
+	return s
+
+
+## One picture of a film standing among the figures for a mark, kept with it under `key` (and gone with it).
+func _film_one(p: Dictionary, key: String, pi: int, at: Vector2, depth: float, flip := false, high := 0.0) -> void:
+	if stands == null:
+		return
+	var s = p.get(key)
+	if s == null or not is_instance_valid(s):
+		if pi < 0:
+			return
+		s = _film_sprite()
+		p[key] = s
+	_film_set(s, pi, at, depth, flip, high)
+
+
+## A mark's film's floor layer drawn (in _draw), where it has a film; false where it has none (a stand-in is drawn).
+func _floor_of(p: Dictionary) -> bool:
+	var fm := _film_of(p)
+	if fm.is_empty() or not has_film(fm[0]):
+		return false
+	_film_floor(fm[0], fm[1], fm[2])
+	return true
 
 
 ## Which of the game's films a mark plays, and where its floor point is: [name, t, at], or empty: none (a stand-in is drawn).
@@ -254,7 +305,83 @@ func _film_of(p: Dictionary) -> Array:
 		"fm_heap":
 			# (a bone heap as he raises his dead from it, by which of his call it is)
 			return ["fm_heap_%d" % clampi(int(p["which"]), 0, 2), p["t"], Vector2(p["x"], p["y"])]
+		"sigil":
+			# (the cultist's fire sigil: its film begins SIGIL.delay before its eruption: render/act1_fx/cultist.ts)
+			return ["sigil_%s" % str(MM.SIGIL["radius"]), float(p["t"]) + float(MM.SIGIL["delay"]), Vector2(p["x"], p["y"])]
+		"kb_sigil":
+			# (the Flame keybearer's great one, the same sigil at its bigger ring: render/act1_fx/keybearers.ts)
+			return ["sigil_%s" % str(KBS.SIGIL["r"]), float(p["t"]) + float(KBS.SIGIL["delay"]), Vector2(p["x"], p["y"])]
+		"rime":
+			# (the Shade's rime: render/act1_fx/shade.ts)
+			return ["rime", p["t"], Vector2(p["x"], p["y"])]
+		"rain":
+			# (the bone archer's arrow rain: seen from behind where it was shot away from the eye, its ring up the screen of
+			# its archer: render/act1_fx/archer.ts)
+			return ["rain_back" if _rain_back(p) else "rain_front", p["t"], Vector2(p["x"], p["y"])]
 	return []
+
+
+func _rain_back(p: Dictionary) -> bool:
+	var from: Vector2 = p["from"]
+	return from.is_finite() and float(p["x"]) + float(p["y"]) < from.x + from.y - 0.2
+
+
+## WHAT THE ARCHER LOOSED, flying up into the dark over it from the frame after the loose (render/act1_fx/archer.ts): at the
+## archer's floor point, just before it, turned as the archer faced.
+func _rain_rise(p: Dictionary) -> void:
+	var from: Vector2 = p["from"]
+	if not from.is_finite() or not has_film("rain_rise_front"):
+		return
+	var t: float = p["t"]
+	var film := "rain_rise_back" if _rain_back(p) else "rain_rise_front"
+	var pi := -1
+	if t > 1.0 / 30.0 and t < float(MM.RAIN["rise"]) + 1.0 / 30.0:
+		var k := _film_frame(film, t)
+		if k >= 0:
+			pi = int(_fx["films"][film]["layers"]["stand"][k])
+	var face: Vector2 = p["face"]
+	_film_one(p, "fx_rise", pi, from, from.x + from.y + 0.1, face.x - face.y < 0.0)
+
+
+## WHAT OF THE KEYBEARERS' STANDS AMONG THE FIGURES (render/act1_fx/keybearers.ts, the game's own pictures of them,
+## art/key_bearers_fx.ts): the knife turning over as it flies (an eighth of a turn 24 times a second), a ball of fire
+## flickering (20 times a second), each over its place at its height; the ring's tongues of fire all round its edge, each at
+## its own depth, gold at the foot and pink to the tip, lower as it runs out.
+func _kb_stands(p: Dictionary) -> void:
+	if stands == null or not has_film("kb_knife"):
+		return
+	var t: float = p["t"]
+	if p["kind"] != "kb_ring":
+		var knife: bool = p["kind"] == "kb_knife"
+		var at := Vector2(p["x"], p["y"])
+		var pi := -1
+		if not p["done"]:
+			var L: Array = _fx["films"]["kb_knife" if knife else "kb_ball"]["layers"]["stand"]
+			pi = int(L[posmod(floori(t * (24.0 if knife else 20.0)), L.size())])
+		_film_one(p, "fx_stand", pi, at, at.x + at.y, false, float(p["high"]))
+		return
+	var n: Dictionary = KBS.RING
+	var r := KBS.Kit.ring_at(t)
+	var end: float = n["to"]
+	var dying := 1.0 - minf(1.0, (t - (end - float(n["from"])) / float(n["speed"])) / float(n["fade"])) if r >= end else 1.0
+	var pool: Array = p.get("fx_pool", [])
+	p["fx_pool"] = pool
+	var used := 0
+	if dying > 0.0:
+		var count := maxi(12, roundi(r * 9.0))
+		for i in count:
+			var a := TAU * i / count + t * 0.6
+			var tall := (6.0 + 5.0 * sin(i * 2.7 + t * 13.0) + 3.0 * sin(i * 1.3)) * dying * (1.15 - 0.3 * (r / end))
+			if tall < 1.0:
+				continue
+			var on := Vector2(float(p["x"]) + r * cos(a), float(p["y"]) + r * sin(a))
+			var L: Array = _fx["films"]["kb_tongue_%d" % clampi(roundi(tall), 1, 16)]["layers"]["stand"]
+			if used >= pool.size():
+				pool.append(_film_sprite())
+			_film_set(pool[used], int(L[posmod(floori(t * 20.0) + i, L.size())]), on, on.x + on.y)
+			used += 1
+	for j in range(used, pool.size()):
+		pool[j].visible = false
 
 
 ## THE HANDS OF HIS DEAD, ring by ring as each bursts up, each among the figures at its own depth (render/act1_fx/fm.ts; the
@@ -321,6 +448,17 @@ func _dot_line(a: Vector2, b: Vector2, k: float) -> void:
 ## WHAT IS OVER EVERYTHING THAT STANDS (render/act1_fx `air`): drawn on a layer of its own over the figures, under the dark.
 func _draw_air(c: CanvasItem) -> void:
 	for p in list:
+		if p["kind"] == "kb_ball" and p["done"] and has_film("kb_ball"):
+			# (a ball of the Flame's fire going out where it struck: its picture swelling and fading, over what stands:
+			# render/act1_fx/keybearers.ts air)
+			var left := 1.0 - minf(1.0, (float(p["t"]) - float(p["hit"])) / float(KBS.BALL["burst"]))
+			if left > 0.0:
+				var L: Array = _fx["films"]["kb_ball"]["layers"]["stand"]
+				var q: Array = _fx["pics"][int(L[posmod(floori(float(p["t"]) * 20.0), L.size())])]
+				var sc := 1.0 + 0.6 * (1.0 - left)
+				var mid := Iso.to_screen(p["x"], p["y"]) + Vector2(0.0, -2.0 * float(p["high"]))
+				c.draw_texture_rect_region(_fx_sheets[int(q[0])], Rect2(mid + Vector2(q[5], q[6]) * sc, Vector2(q[3], q[4]) * sc), Rect2(q[1], q[2], q[3], q[4]), Color(1, 1, 1, left))
+			continue
 		if p["kind"] == "co_flung" and has_film("co_hook_front"):
 			# (the chain out from his hand to his hook or his ball, over what stands: render/bossfx.ts air, drawChainOut)
 			var h: Vector2 = p["hand"]
@@ -581,6 +719,10 @@ func _process(dt: float) -> void:
 				_film_stands(p, fm[0], fm[1], fm[2])
 			if p["kind"] == "fm_rings":
 				_fm_hands(p)
+			elif p["kind"] == "rain":
+				_rain_rise(p)
+			elif p["kind"] in ["kb_knife", "kb_ball", "kb_ring"]:
+				_kb_stands(p)
 		else:
 			_film_free(p)
 	list = keep
@@ -1028,6 +1170,9 @@ func _draw() -> void:
 				# draw (defs.ts AIM.from), a dotted line of the enemy's pink whose dots run away from him, chevrons at its height)
 				_aim_line(p["a"], p["b"], (float(p["t"]) - 0.52) / maxf(0.01, float(p["dur"]) - 0.52), _clock)
 			"rain":
+				# (THE GAME'S OWN, art/action_f1_fx.ts rainPainted: the ring filling with the shadows of falling arrows)
+				if _floor_of(p):
+					continue
 				var t: float = p["t"]
 				var R: float = MM.RAIN["radius"]
 				var delay: float = MM.RAIN["delay"]
@@ -1068,9 +1213,13 @@ func _draw() -> void:
 				else:
 					_draw_smoke(p)
 			"sigil":
-				_draw_sigil(p)
+				# (THE GAME'S OWN, art/action_f2_fx.ts sigilPainted: the ring traced round and filling, the floor burning on)
+				if not _floor_of(p):
+					_draw_sigil(p)
 			"rime":
-				_draw_rime(p)
+				# (THE GAME'S OWN, rimePainted: spreading, lying, melting in)
+				if not _floor_of(p):
+					_draw_rime(p)
 			"am_lines", "am_ring", "am_drop", "am_arm":
 				# (the Ossuary Amalgamation's, floor 4's boss: at the foot of this file)
 				_am_draw(p)
@@ -1899,7 +2048,8 @@ func _draw_kb(p: Dictionary) -> void:
 		"kb_knife", "kb_ball":
 			_draw_kb_flown(p, t)
 		"kb_sigil":
-			_draw_kb_sigil(p, t)
+			if not _floor_of(p):
+				_draw_kb_sigil(p, t)
 		"kb_ring":
 			_draw_kb_ring(p, t)
 		"kb_reach":
@@ -1920,6 +2070,12 @@ func _draw_kb_flown(p: Dictionary, t: float) -> void:
 	var knife: bool = p["kind"] == "kb_knife"
 	var foot := Iso.to_screen(p["x"], p["y"])
 	var c := foot + Vector2(0.0, -2.0 * float(p["high"]))
+	if has_film("kb_knife"):
+		# (THE GAME'S OWN: on the floor only its shadow under it as it flies, thrownShadow, 3 game pixels across its half
+		# for the knife and 4 for a ball; itself a picture among what stands, _kb_stands; a ball going out, _draw_air)
+		if not p["done"]:
+			draw_colored_polygon(_kb_oval(foot, 6.0 if knife else 8.0), Color(0, 0, 0, 0.25))
+		return
 	if p["done"]:
 		var n: Dictionary = KBS.KNIFE if knife else KBS.BALL
 		var k := 1.0 - minf(1.0, (t - float(p["hit"])) / float(n["burst"]))
@@ -2019,6 +2175,9 @@ func _draw_kb_ring(p: Dictionary, t: float) -> void:
 	var edge := _ring(x, y, r, 72)
 	draw_polyline(edge, Color(KB_PINK, 0.8 * dying), 4.0)
 	draw_polyline(edge, Color(KB_GOLD, 0.9 * dying), 2.0)
+	if has_film("kb_tongue_1"):
+		# (its tongues of fire the game's own pictures, each among what stands: _kb_stands)
+		return
 	var count := maxi(12, roundi(r * 9.0))
 	for i in count:
 		var a := TAU * i / count + t * 0.6
