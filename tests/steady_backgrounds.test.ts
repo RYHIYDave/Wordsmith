@@ -59,10 +59,12 @@ test("2. each standout's times and loudness are the batch's table's", () => {
   assert.ok(from >= 0, 'the eleventh batch in the README');
   const rows = [...readme.slice(from).matchAll(/^\| [^|\n]+ \| `([a-z0-9_]+)` \| (\d+) to (\d+) \| ([\d.]+)/gm)];
   assert.equal(rows.length, 13, 'thirteen rows');
+  // (the hearths and the fire's pop since QUIETER FIRES, try-out 20, at his word of 15 Nov: game/world_sounds.ts FIRE_REACH)
+  const QUIETER: Record<string, number[]> = { amb_hall: [25, 60, 0.89], amb_camp: [25, 60, 0.71], fire_pop: [10, 25, 2.15] };
   for (const r of rows) {
     const a = all.find((q) => q.name === r[1]);
     if (!a) throw new Error(`${r[1]}: not played`);
-    assert.deepEqual([a.from, a.to, a.vol], [Number(r[2]), Number(r[3]), Number(r[4])], r[1]);
+    assert.deepEqual([a.from, a.to, a.vol], QUIETER[r[1]] ?? [Number(r[2]), Number(r[3]), Number(r[4])], r[1]);
   }
 });
 

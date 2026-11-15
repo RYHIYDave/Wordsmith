@@ -46,6 +46,16 @@ export function byNearness(d: number, near: number, far: number): number {
 }
 
 /**
+ * QUIETER FIRES (the sound chat's try-out 20, “Quieter Fires”, https://claude.ai/artifact/SzwS1FB11nfPJairxg4gz4, its After; his
+ * words to the main chat, 15 Nov 2026, 14:26 Eastern: “Can you give me a small update with the new torch sound changes”): a torch,
+ * brazier, cresset or candle heard only right beside it, within 2.5 tiles (was 7) and at full within 1 (was 1.5), a third quieter
+ * (0.35, was 0.55), the nearest one only as before; its pop every 10 to 25 s (was 3 to 9), only near one; the castle hall's and the
+ * camp's hearth every 25 to 60 s (was 8 to 20) and half as loud; the Rim's four torches on posts heard as near as the others. The
+ * armourer's forge, the Wordsmith's ring, floor 3's furnace and floor 10's burning pillars as they were.
+ */
+export const FIRE_REACH = { near: 1, far: 2.5, vol: 0.35 } as const;
+
+/**
  * THE SHAFT'S RIM'S OWN SOUNDS (the sound chat's ninth batch, 12 Nov 2026: assets/sound/README.md; his “Yes, make them
  * (Recommended)”, and of try-out 14, “It good, kinda loud but I’m sure it’ll be evened out in the mix for game”): the shaft's
  * rumble always, mixed quiet so at full; the draught up out of it, louder at the brink and never quite gone in this town; the
@@ -54,7 +64,8 @@ export function byNearness(d: number, near: number, far: number): number {
 export const RIM_SOUNDS = {
   rumble: 1,
   draught: { least: 0.25, near: 1, far: 7 },
-  torch: { vol: 0.55, near: 1.5, far: 7 },
+  /** (its reach the other torches', QUIETER FIRES: FIRE_REACH; was 1.5 to 7) */
+  torch: { vol: 0.55, near: FIRE_REACH.near, far: FIRE_REACH.far },
   notch: 0.9,
 } as const;
 
@@ -64,10 +75,10 @@ export function loopWants(g: Game, castleHall: boolean): Record<string, number> 
   const h = g.hero;
   const out: Record<string, number> = {};
   const near = (x: number, y: number): number => Math.hypot(x - h.x, y - h.y);
-  // (the braziers, cressets and candles of the floor: the nearest heard)
+  // (the braziers, cressets and candles of the floor: the nearest heard, only right beside it: QUIETER FIRES, FIRE_REACH)
   let fire = 0;
-  for (const p of L.props) if (p.kind === 'brazier' && p.state !== 1) fire = Math.max(fire, byNearness(near(p.x, p.y), 1.5, 7));
-  if (fire > 0) out.fire_small = 0.55 * fire;
+  for (const p of L.props) if (p.kind === 'brazier' && p.state !== 1) fire = Math.max(fire, byNearness(near(p.x, p.y), FIRE_REACH.near, FIRE_REACH.far));
+  if (fire > 0) out.fire_small = FIRE_REACH.vol * fire;
   if (L.town) {
     for (const st of L.stations) {
       if (st.kind === 'armourer') out.fire_big = 0.5 * byNearness(near(st.x, st.y), 2, 9);
@@ -128,10 +139,13 @@ export const OWL_HOOT = { from: 20, to: 40 };
  */
 export type Ambient = { readonly name: string; readonly from: number; readonly to: number; readonly vol: number };
 export const AMBIENT = {
-  hall: { name: 'amb_hall', from: 8, to: 20, vol: 1.78 },
-  camp: { name: 'amb_camp', from: 8, to: 20, vol: 1.42 },
-  /** (near a brazier: its pop, at `vol` times the nearest brazier's nearness, as the fire's loop: byNearness(d, 1.5, 7)) */
-  fire: { name: 'fire_pop', from: 3, to: 9, vol: 2.15 },
+  /** (the hearth: QUIETER FIRES, every 25 to 60 s and half as loud; was 8 to 20, 1.78) */
+  hall: { name: 'amb_hall', from: 25, to: 60, vol: 0.89 },
+  /** (QUIETER FIRES, as the hall's; was 8 to 20, 1.42) */
+  camp: { name: 'amb_camp', from: 25, to: 60, vol: 0.71 },
+  /** (near a brazier: its pop, at `vol` times the nearest brazier's nearness, as the fire's loop: FIRE_REACH; QUIETER FIRES, every
+   * 10 to 25 s, was 3 to 9) */
+  fire: { name: 'fire_pop', from: 10, to: 25, vol: 2.15 },
 } as const satisfies Record<string, Ambient>;
 /** Each floor's own (none on 5, 13 and 17, whose loops keep their beat, nor on the floors whose loops had nothing standing out). */
 export const AMBIENT_FLOORS: Readonly<Record<number, readonly Ambient[]>> = {
@@ -161,7 +175,7 @@ export function ambientWants(g: Game, castleHall: boolean): { a: Ambient; vol: n
   for (const p of L.props) {
     if (p.kind !== 'brazier' || p.state === 1) continue;
     braziers = true;
-    fire = Math.max(fire, byNearness(Math.hypot(p.x - h.x, p.y - h.y), 1.5, 7));
+    fire = Math.max(fire, byNearness(Math.hypot(p.x - h.x, p.y - h.y), FIRE_REACH.near, FIRE_REACH.far));
   }
   if (braziers) out.push({ a: AMBIENT.fire, vol: AMBIENT.fire.vol * fire });
   // (wherever the floor's own loop plays, as loopWants's bedOf: its standouts with it)
