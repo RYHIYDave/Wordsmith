@@ -23,7 +23,10 @@ const GATE_INSIDE := 2.2
 ## (defs.ts BOSS_INTRO, BOSS_LINES)
 const INTRO := 3.2
 const SAY_FOR := 1.9
-const LINES := {"warden": ["None leave my halls.", "Another one for the cells.", "The keys are mine. So are you."]}
+const LINES := {
+	"warden": ["None leave my halls.", "Another one for the cells.", "The keys are mine. So are you."],
+	"headsman": ["Kneel.", "The block is waiting.", "Your name is on my list."],
+}
 
 var main  # main.gd
 var map: FloorMap

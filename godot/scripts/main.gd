@@ -125,7 +125,7 @@ func _ready() -> void:
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
-	_build("floor1" if shots != "" and not _arg("only") in ["town", "music"] else "town", "start")
+	_build("floor2" if _arg("only") == "floor2" else "floor1" if shots != "" and not _arg("only") in ["town", "music"] else "town", "start")
 	if shots != "":
 		_shoot(hero, shots)
 
@@ -317,6 +317,9 @@ func _process(dt: float) -> void:
 				break
 	if guide.use_t > 0.0:
 		guide.use_t -= dt
+	# (floor 2: the vignette goes by where he is, under the open sky or indoors: look.gd zones)
+	if look != null and look.vignette_now >= 0.0:
+		_veil.material.set_shader_parameter("deep", look.vignette_now)
 	music.level_music(_music_place(), _in_fight(), dt)
 
 
@@ -473,6 +476,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "stairs":
 		await _stair_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "floor2":
+		await _floor2_shots(hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "props":
@@ -836,6 +843,37 @@ func _stair_shots(h: Hero, dir: String) -> void:
 	h.world += Vector2(4, 0)
 	await _wait(0.6)
 	await _snap(dir + "/56_floor2_a_few_steps_in.png")
+
+
+## FLOOR 2, THE PRISON'S GROUNDS AT NIGHT, pictured: where he comes in (the gaoler's room, indoors: the Crypt's dark), out in
+## the first courtyard (the open sky's), by a courtyard's far corner (the sky over its far walls), the Headsman's yard (its own
+## sky, what is beyond its walls not drawn), behind its scaffold (seen through), and the Headsman waiting at its foot.
+func _floor2_shots(h: Hero, dir: String) -> void:
+	await _wait(0.5)
+	print("FLOOR 2: at ", h.world, " zone ", look._zone, " dark ", look._dark.material.get_shader_parameter("dark_a"), " vignette ", look.vignette_now)
+	await _snap(dir + "/60_floor2_where_he_comes_in.png")
+	var r: Dictionary = map.rooms[1]
+	h.world = Vector2(float(r["x"]) + 7.5, float(r["y"]) + 9.5)
+	await _wait(0.5)
+	print("COURT: at ", h.world, " zone ", look._zone, " dark ", look._dark.material.get_shader_parameter("dark_a"), " vignette ", look.vignette_now)
+	await _snap(dir + "/61_the_first_courtyard.png")
+	r = map.rooms[17]
+	h.world = Vector2(float(r["x"]) + 2.5, float(r["y"]) + 2.5)
+	await _wait(0.5)
+	print("FAR COURT: at ", h.world, " zone ", look._zone)
+	await _snap(dir + "/62_by_a_far_wall_the_sky.png")
+	var Y: Dictionary = look.data["zones"]["yard"]
+	h.world = Vector2(float(Y["x"]) + 3.5, float(Y["y"]) + 10.5)
+	h.face = Vector2(1, -1).normalized()
+	await _wait(0.6)
+	print("YARD: at ", h.world, " zone ", look._zone, " dark ", look._dark.material.get_shader_parameter("dark_a"))
+	await _snap(dir + "/63_the_headsmans_yard.png")
+	h.world = Vector2(float(Y["x"]) + 6.0, float(Y["y"]) + 4.6)
+	await _wait(0.4)
+	await _snap(dir + "/64_behind_the_scaffold.png")
+	h.world = Vector2(float(Y["x"]) + 9.5, float(Y["y"]) + 11.0)
+	await _wait(3.4)
+	await _snap(dir + "/65_the_headsman.png")
 
 
 ## (A TEST: a real right-button press sent through Godot's input, as a mouse would send it, and what he does with it.)

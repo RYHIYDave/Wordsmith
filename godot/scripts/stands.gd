@@ -19,9 +19,9 @@ const ACROSS := 192.0  # 96 game pixels
 const FAINT := 0.2
 const SECS := 0.2
 ## (how tall a wall face stands over its tile's top vertex, and how far below it its foot reaches: picture pixels)
-const WALL_TOP := 80.0
-const WALL_FOOT := 32.0
-const HERO_TALL := 90.0
+## (render.ts wallVeil: a wall more than 70 game pixels below the hero's feet, counted from its top less WALL_LOOK.tall, or
+## more than 88 above them, is not seen through; picture pixels here)
+const WALL_TALL := 80.0
 
 var map: FloorMap
 var art: GroundArt
@@ -33,6 +33,7 @@ var fade := true
 var _walls: Array[Sprite2D] = []
 var _depths := PackedFloat32Array()
 var _tops := PackedVector2Array()
+var _backs: Array[Vector3i] = []
 
 
 ## A wall face drawn by the place's look: faded round the hero as the others are. `top`: its tile's top corner on the
@@ -41,6 +42,22 @@ func add_wall(s: Sprite2D, d: float, top: Vector2) -> void:
 	_walls.append(s)
 	_depths.append(d)
 	_tops.append(top)
+	_backs.append(_back_of(top))
+
+
+## BACK_STAND (render.ts wallVeil): the faces of the wall whose tile's top corner is `top` that look out over floor (walls.ts
+## wallFaces), and its tile: a face that looks out over the ground he stands on is a back wall to him, never seen through.
+func _back_of(top: Vector2) -> Vector3i:
+	var a := top.x / Iso.HW
+	var b := top.y / Iso.HH
+	var tx := roundi((a + b) / 2.0)
+	var ty := roundi((b - a) / 2.0)
+	var faces := 0
+	if map != null and _open(tx, ty + 1):
+		faces |= FACE_LEFT
+	if map != null and _open(tx + 1, ty):
+		faces |= FACE_RIGHT
+	return Vector3i(tx, ty, faces)
 
 
 func _ready() -> void:
@@ -99,8 +116,12 @@ func _stand(p: Dictionary, tx: int, ty: int) -> void:
 	_walls.append(s)
 	_depths.append(tx + ty + 1)
 	_tops.append(top)
+	_backs.append(_back_of(top))
 
 
+## render.ts wallVeil, for the hero: a wall he is behind (his depth short of its own by half a tile) and near on the screen is
+## seen through, faint wholly within 60% of 96 game pixels either side of him (counted from 16 beyond his middle), fading back
+## to whole at 96; a back wall to him never.
 func _process(dt: float) -> void:
 	if hero == null or not fade:
 		return
@@ -110,9 +131,12 @@ func _process(dt: float) -> void:
 	for i in _walls.size():
 		var want := 1.0
 		var top := _tops[i]
-		var dx := absf(top.x - hp.x)
-		if _depths[i] > hd and dx < ACROSS and top.y - WALL_TOP < hp.y and top.y + WALL_FOOT > hp.y - HERO_TALL:
-			want = lerpf(FAINT, 1.0, clampf((dx - ACROSS * 0.6) / (ACROSS * 0.4), 0.0, 1.0))
+		var bk := _backs[i]
+		var back := (bk.z & FACE_LEFT and hero.world.y >= bk.y + 1) or (bk.z & FACE_RIGHT and hero.world.x >= bk.x + 1)
+		if hd < _depths[i] - 0.5 and not back and top.y - WALL_TALL <= hp.y + 60.0 and top.y + 32.0 >= hp.y - 144.0:
+			var off := maxf(0.0, absf(top.x - hp.x) - 32.0)
+			if off < ACROSS:
+				want = FAINT if off <= ACROSS * 0.6 else FAINT + (1.0 - FAINT) * (off - ACROSS * 0.6) / (ACROSS * 0.4)
 		var s := _walls[i]
 		if s.modulate.a != want:
 			s.modulate.a = move_toward(s.modulate.a, want, step)
