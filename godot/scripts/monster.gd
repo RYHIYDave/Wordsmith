@@ -81,6 +81,12 @@ var champion := false
 var elite := false
 ## (one the Warden called up: it leaves nothing)
 var summoned := false
+## THE WORDS IT HAS (game.ts spawn; the floor's monsters.json): `words`, the words it fights with (an elite's one, a guardian's,
+## a boss's, its pack's); `half`, a pack's minion's, its leader's at half strength; `carries`, the word it gives up when it
+## dies, shown as a rune over its head (none before the wordsmith's ring is lit).
+var words: Array = []
+var half: Array = []
+var carries: Array = []
 var xp := 0.0
 var state := "sleep"
 var dead := false
@@ -129,6 +135,9 @@ var h2 = null
 
 func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	kind = m["kind"]
+	words = m.get("words", [])
+	half = m.get("half", [])
+	carries = m.get("carries", [])
 	def = kind_def
 	art = figure
 	world = Vector2(m["x"], m["y"])
