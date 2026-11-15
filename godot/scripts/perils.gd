@@ -157,6 +157,9 @@ func _process(dt: float) -> void:
 						hero.hurt(p["dmg"])
 				if p["t"] >= MM.LOCKDOWN["stand"] + MM.LOCKDOWN["rise"]:
 					stays = false
+			"co_crack", "co_ring", "co_left", "co_aim", "co_reach", "co_flung":
+				# (THE CHAINED ONE'S, at the foot of this file)
+				stays = _co_stays(p)
 			_:
 				var s = p.get("src")
 				if s != null and not is_instance_valid(s):
@@ -279,6 +282,8 @@ func _draw() -> void:
 				_draw_sigil(p)
 			"rime":
 				_draw_rime(p)
+			"co_crack", "co_ring", "co_left", "co_aim", "co_reach", "co_flung":
+				_draw_co(p)
 
 
 ## The fire sigil (a stand-in for the art chat's pictures, art/action_f2_fx.ts sigilPainted): its ring traced round under the hero as
@@ -364,3 +369,250 @@ func _draw_bars(p: Dictionary) -> void:
 			draw_line(at, at + Vector2(0, -tall), iron, 3.0)
 			y += 0.5
 		draw_line(Iso.to_screen(rx, y0) + Vector2(0, -tall), Iso.to_screen(rx, y1) + Vector2(0, -tall), hot, 3.0)
+
+
+# =====================================================================================================================
+# THE CHAINED ONE'S (floor 3's boss: chained.gd, whose numbers these read). What his moves mark on the floor and leave on
+# it, ALL DRAWN ONLY: his blows are his own, and his red circles are `mark`, above. (game/bosses.ts CO_CRACK, CO_RING_PERIL
+# and the 'left' peril; the game draws them from the art chat's pictures, render/act1_fx/chained.ts and render/bossfx.ts:
+# these are stand-ins.)
+#   co_crack  his lash's finisher: its lane marked as his fists go up, from half a tile before him to the crack's end, as
+#             wide as it strikes; from the blow, the crack running out along it, red-hot, then dark, then closing.
+#   co_ring   a ring going out over the floor from a slam (his whirl's, the blow waiting's, the ball's), and the cracks
+#             it opens.
+#   co_left   what a chain he has broken leaves lying where he stood: his left chain (0), or the ball and its chain (1).
+#   co_aim    the line his hook will fly along, run out as he aims it.
+#   co_reach  how far his chains will reach, a ring round him as he gathers them for his whirl.
+#   co_flung  his hook or his ball out across the room, and the chain to it; the ball's shadow where it will land; the
+#             scratch of what he hauls back. chained.gd says where it is at every step of his.
+
+const Chained := preload("res://scripts/chained.gd")
+const CO_IRON := Color(0.5, 0.48, 0.6)
+const CO_INK := Color(0.05, 0.05, 0.09)
+const CO_DUST := Color(0.78, 0.76, 0.86)
+
+
+## His lash's finisher, from where he stands (`at`) the way he faces (`way`): its lane for `warn` seconds, then the crack.
+func co_crack(src: Object, at: Vector2, way: Vector2, warn: float) -> void:
+	list.append({"kind": "co_crack", "x": at.x, "y": at.y, "way": way, "t": -warn, "warn": warn, "src": src})
+
+
+## A ring going out from a slam at (x, y), `r` tiles round.
+func co_ring(x: float, y: float, r: float) -> void:
+	list.append({"kind": "co_ring", "x": x, "y": y, "r": r, "t": 0.0})
+
+
+## What a broken chain leaves lying where he stood (`at`, facing `way`, drawn with `hand`): `which` 0 his left chain, 1
+## the ball.
+func co_left(at: Vector2, way: Vector2, hand: int, which: int) -> void:
+	list.append({"kind": "co_left", "x": at.x, "y": at.y, "way": way, "hand": hand, "which": which, "t": 0.0})
+
+
+## The line his hook will fly along, from `a` to `b`, run out over `dur` seconds.
+func co_aim(src: Object, a: Vector2, b: Vector2, dur: float) -> void:
+	list.append({"kind": "co_aim", "a": a, "b": b, "t": 0.0, "dur": dur, "src": src})
+
+
+## How far his chains will reach, `r` round (x, y), for `dur` seconds.
+func co_reach(src: Object, x: float, y: float, r: float, dur: float) -> void:
+	list.append({"kind": "co_reach", "x": x, "y": y, "r": r, "t": 0.0, "dur": dur, "src": src})
+
+
+## His hook or his ball (`what`) out across the room now: over the floor at `at`, `high` game pixels up, flying or hauled
+## along the floor; its chain from over `hand` (`hand_high` up); `far`, where it bit or will land; `k`, how near to landing
+## the ball is (0 to 1).
+func co_flung(src: Object, what: String, at: Vector2, high: float, flying: bool, hand: Vector2, hand_high: float, far: Vector2, k: float) -> void:
+	var p := {}
+	for q in list:
+		if q["kind"] == "co_flung" and q.get("src") == src:
+			p = q
+	if p.is_empty():
+		p = {"kind": "co_flung", "t": 0.0, "src": src}
+		list.append(p)
+	p["what"] = what
+	p["at"] = at
+	p["high"] = high
+	p["flying"] = flying
+	p["hand"] = hand
+	p["hand_high"] = hand_high
+	p["far"] = far
+	p["k"] = k
+
+
+## Whether one of them stays on: each for its own length; what warns of a blow, or is in his hands, goes with him if he falls.
+func _co_stays(p: Dictionary) -> bool:
+	var s = p.get("src")
+	var fell: bool = s != null and (not is_instance_valid(s) or s.dead)
+	match p["kind"]:
+		"co_crack":
+			# (he fell with his fists still up: the blow never came, and its lane goes)
+			return p["t"] < Chained.CRACK["long"] and not (fell and p["t"] < 0.0)
+		"co_ring":
+			return p["t"] < Chained.RING["long"]
+		"co_left":
+			return true
+		"co_aim", "co_reach":
+			return p["t"] < p["dur"] and not fell
+	return not fell
+
+
+func _draw_co(p: Dictionary) -> void:
+	var t: float = p["t"]
+	match p["kind"]:
+		"co_crack":
+			_draw_co_crack(p, t)
+		"co_ring":
+			_draw_co_ring(p, t)
+		"co_left":
+			_draw_co_left(p)
+		"co_aim":
+			var k := clampf(t / maxf(0.01, float(p["dur"])), 0.0, 1.0)
+			var a: Vector2 = p["a"]
+			var b: Vector2 = a.lerp(p["b"], clampf(k * 1.4, 0.0, 1.0))
+			if a.distance_to(b) > 0.05:
+				draw_dashed_line(Iso.to_screen(a.x, a.y), Iso.to_screen(b.x, b.y), Color(ENEMY, 0.3 + 0.6 * k), 2.0, 8.0)
+		"co_reach":
+			var k := clampf(t / maxf(0.01, float(p["dur"]) - 0.05), 0.0, 1.0)
+			draw_polyline(_ring(p["x"], p["y"], p["r"], 64), Color(GOLD, 0.25 + 0.65 * k), 2.0)
+		"co_flung":
+			_draw_co_flung(p)
+
+
+func _draw_co_crack(p: Dictionary, t: float) -> void:
+	var c: Dictionary = Chained.CRACK
+	var from: float = c["from"]
+	var to: float = c["to"]
+	var half: float = c["half"]
+	var o := Vector2(p["x"], p["y"])
+	var way: Vector2 = p["way"]
+	var side := Vector2(-way.y, way.x)
+	if t < 0.0:
+		# (its lane, filling from his end as his fists stay up)
+		var k := clampf(1.0 + t / maxf(0.01, float(p["warn"])), 0.0, 1.0)
+		var lane := _band(o + way * 0.5, o + way * to, half)
+		draw_colored_polygon(lane, Color(ENEMY, 0.12))
+		if k > 0.02:
+			draw_colored_polygon(_band(o + way * 0.5, o + way * lerpf(0.5, to, k), half), Color(ENEMY, 0.22))
+		lane.append(lane[0])
+		draw_polyline(lane, Color(ENEMY, 0.85), 2.0)
+		return
+	var reach := Chained.crack_reach(t)
+	# (the floor heaved along it as it runs: the enemy's pink at its edges, as wide as it strikes)
+	var heave := 1.0 - clampf((t - float(c["run"])) / 0.35, 0.0, 1.0)
+	if heave > 0.0:
+		for sg in [-1.0, 1.0]:
+			var e0: Vector2 = o + way * 0.5 + side * (half * sg)
+			var e1: Vector2 = o + way * reach + side * (half * sg)
+			draw_line(Iso.to_screen(e0.x, e0.y), Iso.to_screen(e1.x, e1.y), Color(ENEMY, 0.75 * heave), 2.0)
+	# (the crack: a jagged split from where his fists came down, as far as it has run; red-hot at first, closing at the last)
+	var hot := 1.0 - clampf(t / 0.6, 0.0, 1.0)
+	var left := 1.0 - clampf((t - 1.1) / (float(c["long"]) - 1.1), 0.0, 1.0)
+	var pts := PackedVector2Array()
+	var n := maxi(2, ceili((reach - from) / 0.25))
+	for i in n + 1:
+		var a := from + (reach - from) * i / n
+		var q: Vector2 = o + way * a + side * (0.1 * sin(i * 2.4 + 1.3) if i > 0 and i < n else 0.0)
+		pts.append(Iso.to_screen(q.x, q.y))
+	draw_polyline(pts, Color(CO_INK, 0.95 * left), 5.0)
+	if hot > 0.0:
+		draw_polyline(pts, Color(1.0, 0.55, 0.4, hot), 2.0)
+
+
+func _draw_co_ring(p: Dictionary, t: float) -> void:
+	var g: Dictionary = Chained.RING
+	var rad: float = p["r"]
+	var o := Vector2(p["x"], p["y"])
+	var reach := Chained.ring_reach(t, rad)
+	# (the cracks it opens, out from its middle: red-hot at first, then dark, gone by its end)
+	var hot := 1.0 - clampf(t / 0.45, 0.0, 1.0)
+	var left := 1.0 - clampf((t - 1.0) / (float(g["long"]) - 1.0), 0.0, 1.0)
+	var n := maxi(7, roundi(5.0 + rad * 2.5))
+	for i in n:
+		var a := TAU * i / n + 0.4 * sin(i * 12.9898)
+		var far := minf(reach, rad * (0.38 + 0.34 * absf(sin(i * 78.233 + 2.0))))
+		if far <= 0.25:
+			continue
+		var way := Vector2(cos(a), sin(a))
+		var e0 := Iso.to_screen(o.x + way.x * 0.22, o.y + way.y * 0.22)
+		var e1 := Iso.to_screen(o.x + way.x * far, o.y + way.y * far)
+		draw_line(e0, e1, Color(CO_INK, 0.85 * left), 3.0)
+		if hot > 0.0:
+			draw_line(e0, e1, Color(1.0, 0.55, 0.4, 0.9 * hot), 1.0)
+	# (the ring going out over the floor, the enemy's pink at its leading edge, breaking up)
+	var wave: float = g["wave"]
+	var band := 1.0 - clampf((t - wave) / float(g["fade"]), 0.0, 1.0)
+	if band > 0.0 and reach > 0.15:
+		var ring := _ring(o.x, o.y, reach, 56)
+		draw_polyline(ring, Color(CO_DUST, 0.75 * band), 5.0)
+		if t <= wave + 0.06:
+			draw_polyline(ring, Color(ENEMY, 0.9), 2.0)
+
+
+func _draw_co_left(p: Dictionary) -> void:
+	var o := Vector2(p["x"], p["y"])
+	var way: Vector2 = p["way"]
+	var hand: int = p["hand"]
+	if int(p["which"]) == 0:
+		# (his left chain, lying where it fell beside him)
+		_co_chain(_co_lying(o, way, hand, Vector2(0.25, 0.7), Vector2(1.05, 1.25)))
+		return
+	# (the ball where it lay behind him, and its chain run out from where he stood)
+	var b := Chained.beside(o, way, hand, -0.87, 0.46)
+	_co_chain(_co_lying(o, way, hand, Vector2(-0.15, 0.05), Vector2(-0.75, 0.42)))
+	_co_ball(Iso.to_screen(b.x, b.y) + Vector2(0.0, -8.0))
+
+
+func _draw_co_flung(p: Dictionary) -> void:
+	var at: Vector2 = p["at"]
+	var far: Vector2 = p["far"]
+	var flying: bool = p["flying"]
+	var ball: bool = p["what"] == "ball"
+	var s := Iso.to_screen(at.x, at.y)
+	var end := s + Vector2(0.0, -2.0 * float(p["high"]))
+	if ball and flying:
+		# (the ball's shadow where it will come down, darker and wider as it nears)
+		var k: float = p["k"]
+		draw_colored_polygon(_ring(far.x, far.y, 0.13 + 0.27 * k, 20), Color(0.0, 0.0, 0.0, 0.2 + 0.55 * k))
+	if not flying and at.distance_to(far) > 0.05:
+		# (what he hauls in scrapes the floor: a pale scratch back the way it has come)
+		draw_line(s, Iso.to_screen(far.x, far.y), Color(CO_DUST, 0.35), 1.0)
+	# (its chain, out from his hand)
+	var h: Vector2 = p["hand"]
+	var from := Iso.to_screen(h.x, h.y) + Vector2(0.0, -2.0 * float(p["hand_high"]))
+	draw_line(from, end, Color(CO_INK, 0.9), 5.0)
+	draw_dashed_line(from, end, CO_IRON, 2.0, 4.0)
+	if ball:
+		_co_ball(end)
+		return
+	# (the hook: a barbed iron claw)
+	var way := (end - from).normalized()
+	var across := Vector2(-way.y, way.x)
+	draw_line(end - way * 6.0, end + way * 6.0, CO_INK, 5.0)
+	draw_line(end + way * 6.0, end + way * 1.0 + across * 6.0, CO_IRON, 3.0)
+	draw_line(end + way * 6.0, end + way * 1.0 - across * 6.0, CO_IRON, 3.0)
+	draw_line(end - way * 5.0, end + way * 6.0, CO_IRON, 2.0)
+
+
+## A chain lying on the floor from `a` to `b` (tiles before him, to his left), a little crooked: its points on the screen.
+func _co_lying(o: Vector2, way: Vector2, hand: int, a: Vector2, b: Vector2) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for i in 9:
+		var u := i / 8.0
+		var q := a.lerp(b, u) + Vector2(0.07 * sin(u * 9.0), 0.07 * cos(u * 7.0))
+		var w := Chained.beside(o, way, hand, q.x, q.y)
+		pts.append(Iso.to_screen(w.x, w.y))
+	return pts
+
+
+## A chain along `pts` (on the screen), in his old iron over a dark seam.
+func _co_chain(pts: PackedVector2Array) -> void:
+	draw_polyline(pts, Color(CO_INK, 0.9), 5.0)
+	for i in pts.size() - 1:
+		draw_dashed_line(pts[i], pts[i + 1], CO_IRON, 2.0, 4.0)
+
+
+## His iron ball, its middle at `at` on the screen.
+func _co_ball(at: Vector2) -> void:
+	draw_circle(at, 10.0, CO_INK)
+	draw_circle(at, 8.5, Color(0.3, 0.29, 0.38))
+	draw_circle(at + Vector2(-2.5, -3.0), 2.5, CO_IRON)

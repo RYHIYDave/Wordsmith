@@ -113,6 +113,9 @@ var _kick := 0.0
 ## (game.ts slowT, slowBy: the Shade's rime underfoot, a while and how much slower he walks)
 var _slow_t := 0.0
 var _slow_by := 0.0
+## (game.ts held: hooked by the Chained One, for so many seconds more he cannot walk or dodge: he goes where he is dragged.
+## chained.gd sets it)
+var held := 0.0
 var _down_for := 0.0
 
 
@@ -191,13 +194,18 @@ func _process(dt: float) -> void:
 	_t += dt
 	var d := Input.get_vector("move_left", "move_right", "move_up", "move_down") + auto_dir
 	var way := Iso.screen_dir_to_world(d)
+	# (HOOKED by the Chained One: he cannot walk or dodge, he goes where he is dragged; he may strike still)
+	var hooked := held > 0.0
+	if hooked:
+		held = maxf(0.0, held - dt)
+		way = Vector2.ZERO
 
 	# THE LUNGE: whatever he is doing, it breaks off (useEvasive), and he is in the air till he lands
 	var lunge_at := auto_lunge
 	auto_lunge = Vector2.INF
 	if Input.is_action_just_pressed("lunge"):
 		lunge_at = _pointer(way, LUNGE["range"])
-	if lunge_at != Vector2.INF and _lunge_cd <= 0.0 and _act != "lunge":
+	if lunge_at != Vector2.INF and _lunge_cd <= 0.0 and _act != "lunge" and not hooked:
 		_begin_lunge(lunge_at)
 	if _act == "lunge":
 		_fly(dt)
@@ -495,6 +503,7 @@ func _back() -> void:
 	world = home
 	life = max_life
 	alive = true
+	held = 0.0
 	_sprite.modulate.a = 1.0
 	_set_list(BakedHero.IDLE)
 	if monsters != null:

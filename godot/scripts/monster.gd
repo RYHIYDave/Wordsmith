@@ -19,10 +19,12 @@ const Iso := preload("res://scripts/iso.gd")
 const BakedFigure := preload("res://scripts/baked_figure.gd")
 const MM := preload("res://scripts/monster_moves.gd")
 const Headsman := preload("res://scripts/headsman.gd")
+const Chained := preload("res://scripts/chained.gd")
 ## THE BOSSES THAT FIGHT BY THEIR OWN RULES (game/bosses.ts BossRules), each a script of its own with `step(m, dt, hero)`, handed
 ## the monster every frame it is awake in place of the common rules below (and `died(m)`, if it has one, as it falls): by kind.
 const BOSS_AI := {
 	"headsman": Headsman,
+	"chained": Chained,
 }
 
 const AGGRO := 9.0
