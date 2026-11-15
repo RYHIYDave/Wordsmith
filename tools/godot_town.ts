@@ -5,8 +5,8 @@
 //     art/ring3.ts; art/props.ts makeDungeonProps' braziers, pillars, barrels, urn; art/town_ways.ts the stairs down and the
 //     shaft's head) and floor 1's stairs up (floorStairsUp), each with its anchor, two picture pixels to a game pixel.
 //   godot/assets/town/layout.json: the town Level a new Warrior's game begins in (game/level.ts makeTown, by Game.enterTown):
-//     its tiles (the barred gate's doorway shut as wall: its pictures are not brought over yet), the walk grid, where he
-//     stands, every piece (kind, place, variant, flat or standing), the stairs, the shaft, the stations, the ring's timings.
+//     its tiles, the walk grid (the gate's doorway out of it while the gate is down), where he stands, every piece (kind,
+//     place, variant, flat or standing), the stairs, the shaft, the stations, the ring's timings, the gate in the back wall.
 //   godot/assets/town/floor1_gate.json: floor 1's gate up to the town as the game has it entered from the town
 //     (Game.enterDungeon('gate')): where he stands, its doorway's tiles, where its stairs-up picture is laid.
 //   npx tsx tools/godot_town.ts [seed]
@@ -25,7 +25,7 @@ import { STONE_AT } from '../src/art/ring3';
 import { POWER } from '../src/art/quest3';
 import { TOWN } from '../src/game/level';
 import { TOWN_STAIR } from '../src/game/ways';
-import { doorTiles, doorFace } from '../src/game/doors';
+import { doorTiles, doorFace, doorMiddle } from '../src/game/doors';
 import { PILLAR } from '../src/art/gates';
 
 declare const process: { argv: string[] };
@@ -124,9 +124,11 @@ const game = new Game('warrior', seed);
 const L = game.level;
 const f = L.floor;
 const tiles = Array.from(f.tiles);
-// (the gate in the back wall, barred on a new game: its doorway drawn as wall until its pictures are brought over)
-const gateTiles = L.ways && L.ways.gate >= 0 ? doorTiles(f, L.doors[L.ways.gate].spot) : [];
-for (const i of gateTiles) tiles[i] = 2;
+// (THE GATE in the back wall, out to the Quarry, floor 6 (game/ways.ts, game.ts updateWays): its doorway's three tiles, out of
+// the walk grid while it is down; its middle, which way it lies, where it stands; godot/scripts/town.gd raises it, and its
+// pictures are the game's own: tools/godot_fx.ts `tg_`)
+const townGate = L.ways && L.ways.gate >= 0 ? L.doors[L.ways.gate] : null;
+const gateTiles = townGate ? doorTiles(f, townGate.spot) : [];
 writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   depth: 0, seed, w: f.w, h: f.h, tiles, variant: Array.from(f.variant), walk: Array.from(L.walk),
   start: { x: game.hero.x, y: game.hero.y, fx: game.hero.fx, fy: game.hero.fy },
@@ -136,6 +138,7 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   shaft: L.ways?.shaft ? { x: L.ways.shaft.x, y: L.ways.shaft.y } : null,
   stations: L.stations,
   ring: { x: TOWN.wordsmith.x + 0.5, y: TOWN.wordsmith.y + 0.5, stones: STONE_AT, power: POWER },
+  gate: townGate ? { tiles: gateTiles, middle: doorMiddle(townGate.spot), alongX: townGate.spot.alongX, a: townGate.spot.a, face: doorFace(townGate.spot), out: townGate.spot.out } : null,
 }));
 
 // --- floor 1's gate up, as it is when he comes down the stairs ---
@@ -155,5 +158,5 @@ if (gate) {
     alongX: s.alongX, up: { x: ux, y: uy }, pic: s.alongX ? 'stairs up x' : 'stairs up y',
   }));
 }
-console.log(`town: ${f.w}x${f.h}, ${L.props.length} pieces, start ${game.hero.x},${game.hero.y}; gate shut as wall (${gateTiles.length} tiles); ground ${gh}px, pictures ${named.length} in a sheet ${ph}px tall`);
+console.log(`town: ${f.w}x${f.h}, ${L.props.length} pieces, start ${game.hero.x},${game.hero.y}; gate ${gateTiles.length} tiles; ground ${gh}px, pictures ${named.length} in a sheet ${ph}px tall`);
 console.log(gate ? `floor 1's gate: ${gate.spot.alongX ? 'along x' : 'along y'} at ${gate.spot.a},${doorFace(gate.spot)}; he comes in at ${down.hero.x.toFixed(2)},${down.hero.y.toFixed(2)}` : 'floor 1 has no gate');

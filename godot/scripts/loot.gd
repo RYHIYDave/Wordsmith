@@ -32,12 +32,21 @@
 ##   THE ARMOURER'S QUEST (game/quests15.ts; game.ts armourerDue, armourerHandIn, furnaceGearTaken, turnCrank): `furnace`,
 ##   where the hero stands in it; it is his, and outlasts the place (town.gd asks and rewards; furnace.gd tells it of the
 ##   gear and of the furnace going out).
+##   THE MELDSTONE (game/quests15.ts, the wordsmith's quest; game/melds.ts STONE_RISE; game.ts dropLoot, updateDrops,
+##   takeMeldstone, meldAskDue; render/meld_drops.ts riseOf, takenOf; art/meld_drops.ts, its pictures, tools/godot_fx.ts `ms_`):
+##   once the armourer has rewarded him, the wordsmith asks for it (`meld_ask`); as the Fleshmancer dies (fleshmancer.gd) it
+##   waits under the floor while he is dragged down (2.6 s), its light cracking the floor, then bursts up spinning where he went
+##   down, its halves torn apart, slams together and comes down to hang, turning to and fro, "Meldstone" over it; it cannot be
+##   taken for 1.2 s, then comes to him as gold does and is taken (`meld` "stone"): it leaps over his head, slams together and
+##   dives into him. Given to the wordsmith (town.gd), `meld` "open": he gives the two words to meld (FLAME and FROST) and says
+##   the lesson's lines; melding itself (the wordsmith's meld screen) is not in the Godot version yet.
 extends Node
 
 const Iso := preload("res://scripts/iso.gd")
 const Hero := preload("res://scripts/hero.gd")
 const Words := preload("res://scripts/words.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
+const Perils := preload("res://scripts/perils.gd")
 
 const DIR := "res://assets/loot"
 const EQUIP := ["mainhand", "offhand", "helm", "chest", "gloves", "belt", "boots", "amulet", "ring1", "ring2"]
@@ -95,6 +104,10 @@ var cleared := 0
 ## THE ARMOURER'S QUEST, where he stands in it (quests15.ts FurnaceStep; game.ts hero.furnace): "" not asked, "asked", "gear"
 ## (he carries the crank's gear), "out" (the furnace put out), "done" (rewarded).
 var furnace := ""
+## THE MELDSTONE (game.ts hero.meld, hero.meldAsk): "" not his, "stone" carried, "open" given to the wordsmith; and whether
+## the wordsmith has asked for it.
+var meld := ""
+var meld_ask := false
 ## (game.ts toldCarrier: what the rune over a monster's head means has been said)
 var told_carrier := false
 ## A NEW PLAYER'S FIRST WORD HAS BEEN SET IN AN ATTACK (game.ts guide.set, endGuide): the lesson of the first word is over.
@@ -136,6 +149,9 @@ var _body1 = null
 var _body_floor := 1
 var _quiet := 0.0
 var _font: Font
+## (the clock the Meldstone bobs and turns by; the Meldstone taken, as it leaps over him and into him: {g, from, pics, slammed})
+var _clock := 0.0
+var _taken := {}
 
 
 func _ready() -> void:
@@ -418,13 +434,40 @@ func _found() -> String:
 	return here.pick_random()
 
 
-## Where a thing lands: about where it fell, on open floor, a little apart from the rest.
+## Where a thing lands: about where it fell, on open floor, a little apart from the rest; on a floor with pits (the Ledge
+## Road's drop, the Fen's water), what falls over one lands on the nearest floor, not in the hole (game.ts addDrop).
 func _scatter(at: Vector2) -> Vector2:
 	for i in 12:
 		var p := at + Vector2(randf_range(-0.9, 0.9), randf_range(-0.9, 0.9))
 		if map.walkable(floori(p.x), floori(p.y)):
 			return p
-	return at
+	return _off_pits(at, at)
+
+
+## (game.ts addDrop, PITS) Where a thing dropped at `p` (fallen at `at`) lies: where it is, on a floor with no pits or ledges;
+## else, off floor, where it fell if that is floor, else the nearest floor.
+func _off_pits(p: Vector2, at: Vector2) -> Vector2:
+	if map == null or map.step.is_empty() or _on_floor(p):
+		return p
+	return at if _on_floor(at) else floor_near(at)
+
+
+## Floor that can be stood on, not a pit, not a wall, not the wall half of a tile cut corner to corner (game.ts onFloor).
+func _on_floor(p: Vector2) -> bool:
+	return map.tile(floori(p.x), floori(p.y)) == FloorMap.FLOOR and not map.in_wall(p.x, p.y)
+
+
+## The middle of the nearest tile within 4 a body may stand on, or `at` itself if there is none (game.ts floorNear).
+func floor_near(at: Vector2) -> Vector2:
+	var best := at
+	var best_d := INF
+	for ty in range(floori(at.y) - 4, floori(at.y) + 5):
+		for tx in range(floori(at.x) - 4, floori(at.x) + 5):
+			var d := Vector2(tx + 0.5, ty + 0.5).distance_squared_to(at)
+			if map.walkable(tx, ty) and d < best_d:
+				best_d = d
+				best = Vector2(tx + 0.5, ty + 0.5)
+	return best
 
 
 func _gold(at: Vector2, amount: int) -> void:
@@ -453,6 +496,7 @@ func _word(at: Vector2, w: String, just_there := false) -> void:
 		p = at + Vector2(randf_range(-0.7, 0.7), randf_range(-0.7, 0.7))
 		if map == null or not map.walkable(floori(p.x), floori(p.y)):
 			p = at
+	p = _off_pits(p, at)
 	var n := _WordDrop.new()
 	n.sheet = sheet
 	n.src = pics["word:" + w]["rect"]
@@ -512,6 +556,8 @@ func _process(dt: float) -> void:
 		if toast["t"] > (TOAST_BIG if toast["big"] else TOAST):
 			toast = {}
 	_lay_tags()
+	_clock += dt
+	_show_taken(dt)
 	if hero == null or not hero.alive:
 		return
 	if Input.is_action_just_pressed("potion"):
@@ -528,8 +574,11 @@ func _process(dt: float) -> void:
 			# (a word on the floor lights the room round it: render.ts, the dark's own spot)
 			if main != null and main.look != null:
 				main.look.spot(Iso.to_screen(d["at"].x, d["at"].y) / 2.0 + Vector2(0, -10), 40.0, 0.85)
-		# (a word stands in its light for a moment before it can be taken: it is an event, not a coin)
-		if d["age"] >= (float(_tune["wordStands"]) if d["kind"] == "word" else WAIT):
+		if d["kind"] == "stone":
+			_show_stone(d)
+		# (a word stands in its light for a moment before it can be taken: it is an event, not a coin; the Meldstone, while it
+		# bursts up and comes down to hang)
+		if d["age"] >= (float(_tune["wordStands"]) if d["kind"] == "word" else STONE_STANDS if d["kind"] == "stone" else WAIT):
 			if d["kind"] == "gear":
 				take = dist <= GEAR_TAKE and _take_item(d["item"])
 			else:
@@ -538,7 +587,9 @@ func _process(dt: float) -> void:
 					d["node"].position = Iso.to_screen(d["at"].x, d["at"].y)
 				if d["at"].distance_to(hero.world) <= TAKE:
 					take = true
-					if d["kind"] == "gold":
+					if d["kind"] == "stone":
+						_stone_taken(d)
+					elif d["kind"] == "gold":
 						var n := int(round(d["amount"] * (1.0 + hero.stats["gold_find"] / 100.0)))
 						gold += n
 						say("+%d gold" % n, Color(1.0, 0.85, 0.4))
@@ -744,6 +795,7 @@ func enter_place(m, st: Node2D, mons, is_floor1: bool) -> void:
 	stands = st
 	monsters = mons
 	_drops = []
+	_taken = {}
 	_body = null
 	_quiet = 0.0
 	if m == null or int(m.depth) < 1 or stands == null or m.rooms.size() <= 1:
@@ -904,6 +956,224 @@ func furnace_out() -> void:
 		furnace = "out"
 
 
+# --- the Meldstone ---
+
+## (game/melds.ts STONE_RISE: how long it waits under the floor as he is dragged down, and how long from its rising until it
+## can be taken; MELD_DUST_COLOR, the friend's cyan it is named in)
+const STONE_WAIT := 2.6
+const STONE_STANDS := 1.2
+const MELD_COLOR := Color("#5ce8f8")
+## (game/quests15.ts QUEST_TEXT; game.ts takeMeldstone)
+const MELD_ASK := "The wordsmith: \"The cult holds the prison yet. Under the ossuary lies their stronghold, and in it the MELDSTONE. Bring it to me, and I will unbar the gate down the mountain.\""
+const MELD_TAKES := "The wordsmith takes the MELDSTONE. He can meld words now."
+const MELD_WORDS := "He gives you two words, %s and %s, to meld."
+const MELD_LESSON := [
+	"MELDING: two damage words made one. Open the wordsmith, then MELD.",
+	"Tap a word, then a hollow; then the other word, the other hollow. MELD makes them one word, for runedust.",
+]
+## (render/meld_drops.ts: how high it hangs, how far it bobs; RISE and TAKEN, the moments of its rising and of its taking)
+const HOVER := 8.0
+const BOB := 1.5
+const RISE := {"crack_from": -0.4, "top": 0.3, "slam": 0.55, "burst": 0.32, "down": 1.2, "top_z": 38.0}
+const TAKEN := {"leap": 0.22, "slam": 0.5, "burst": 0.3, "gone": 0.8, "top_z": 46.0, "chest_z": 20.0}
+
+
+## Has the wordsmith his ask for the Meldstone (game.ts meldAskDue): the armourer has rewarded him, it is not asked, not his,
+## and the gate down the mountain is still barred.
+func meld_ask_due() -> bool:
+	return furnace == "done" and not meld_ask and meld == "" and (main == null or int(main.way_depth) < 6)
+
+
+## The wordsmith asks for it (game.ts handIn 'meldAsk').
+func ask_meld() -> void:
+	meld_ask = true
+	sfx.play("power", linear_to_db(0.6))
+	say(MELD_ASK, MSG_QUEST)
+
+
+## THE FLESHMANCER DEAD (fleshmancer.gd died; game.ts dropLoot): until it has been brought to the wordsmith, and while none lies
+## there yet, the Meldstone, under the floor just where he went down (STONE_RISE), to burst up out of it.
+func meldstone_rises(at: Vector2) -> void:
+	if meld != "" or stands == null or map == null:
+		return
+	for d in _drops:
+		if d["kind"] == "stone":
+			return
+	var p := at if map.open_at(floori(at.x), floori(at.y)) else _scatter(at)
+	var holder := Node2D.new()
+	stands.add_child(holder)
+	var pics: Array = []
+	for i in 3:
+		var q := _FilmPic.new()
+		stands.add_child(q)
+		pics.append(q)
+	var label := _Tag.new()
+	label.text = "Meldstone"
+	label.color = MELD_COLOR
+	label.z_index = 60
+	label.visible = false
+	stands.add_child(label)
+	_drops.append({"kind": "stone", "at": p, "node": holder, "age": -STONE_WAIT, "pics": pics, "label": label, "slammed": false})
+
+
+## THE MELDSTONE AS IT DROPS AND LIES (render.ts standMeldDrop; render/meld_drops.ts riseOf): the crack of its light in the
+## floor, then it shoots up spinning, its halves torn apart, hangs, slams together in a burst of light (the screen kicked),
+## and comes down to hang over the floor, turning to and fro, named; its light on the floor under it.
+func _show_stone(d: Dictionary) -> void:
+	var R := rise_of(d["age"], _clock)
+	var at: Vector2 = d["at"]
+	var scr := Iso.to_screen(at.x, at.y)
+	var dd := at.x + at.y
+	var pics: Array = d["pics"]
+	var c = R["crack"]
+	pics[0].visible = c != null and pics[0].put("ms_crack", mini(5, floori(c["k"] * 6.0)), scr, dd - 0.45, 0.0, 1.0, c["alpha"])
+	var z: float = R["z"]
+	if z < 0.0:
+		pics[1].visible = false
+		pics[2].visible = false
+		d["label"].visible = false
+		return
+	pics[1].put(_stone_film(R), _stone_frame(R), scr, dd + 0.05, z * 2.0, R["scale"])
+	var b = R["burst"]
+	pics[2].visible = b != null and pics[2].put("ms_burst", 0, scr, dd + 0.06, z * 2.0, b["scale"], b["alpha"])
+	if R["slammed"] and not d["slammed"]:
+		d["slammed"] = true
+		hero.kick(3.0)
+	d["label"].visible = R["shown"] == "hang"
+	d["label"].position = scr + Vector2(0, (20.0 - z - 16.0) * 2.0)
+	if main != null and main.look != null:
+		main.look.spot(scr / 2.0, 16.0, 0.4)
+		main.look.spot(scr / 2.0 - Vector2(0, z), 14.0, 0.4)
+
+
+## TAKEN (game.ts updateDrops 'stone'): his, to be brought to the wordsmith; it leaps over his head, wrenches apart, slams
+## together and dives into him (render/meld_drops.ts takenOf).
+func _stone_taken(d: Dictionary) -> void:
+	for q in d["pics"]:
+		q.queue_free()
+	d["label"].queue_free()
+	if meld == "":
+		meld = "stone"
+	sfx.play("rare")
+	say("You take the MELDSTONE.", MSG_QUEST)
+	var pics: Array = []
+	for i in 2:
+		var q := _FilmPic.new()
+		stands.add_child(q)
+		pics.append(q)
+	_taken = {"g": 0.0, "from": d["at"], "pics": pics, "slammed": false}
+
+
+func _show_taken(dt: float) -> void:
+	if _taken.is_empty():
+		return
+	_taken["g"] += dt
+	var pics: Array = _taken["pics"]
+	var T := taken_of(_taken["g"], _taken["from"], hero.world)
+	if T.is_empty() or not is_instance_valid(pics[0]):
+		for q in pics:
+			if is_instance_valid(q):
+				q.queue_free()
+		_taken = {}
+		return
+	var scr := Iso.to_screen(T["x"], T["y"])
+	var hd := hero.world.x + hero.world.y
+	var z: float = T["z"]
+	pics[0].put(_stone_film(T), _stone_frame(T), scr, hd + 0.05, z * 2.0, T["scale"])
+	var b = T["burst"]
+	pics[1].visible = b != null and pics[1].put("ms_burst", 0, scr, hd + 0.06, z * 2.0, b["scale"], b["alpha"])
+	if T["slammed"] and not _taken["slammed"]:
+		_taken["slammed"] = true
+		hero.kick(3.5)
+
+
+## Its picture: spinning torn apart, spinning fused, or hanging (render.ts meldStoneSprite).
+func _stone_film(R: Dictionary) -> String:
+	return "ms_apart" if R["shown"] == "apart" else ("ms_whole" if R["shown"] == "whole" else "ms_stone")
+
+
+func _stone_frame(R: Dictionary) -> int:
+	if R["shown"] == "hang":
+		return floori(_clock * 12.0) % 24
+	# (art/meld_drops.ts spinStep: the step of its turn, of 16)
+	return posmod(roundi(float(R["yaw"]) / 360.0 * 16.0), 16)
+
+
+static func _ease(k: float) -> float:
+	return k * k * (3.0 - 2.0 * k)
+
+
+## render/meld_drops.ts riseOf: the Meldstone as it drops, by its age (below 0, under the floor), and the clock for its bob:
+## {z (game pixels; less than 0 not shown), yaw, shown, scale, burst {scale, alpha} or null, crack {k, alpha} or null, slammed}.
+static func rise_of(age: float, t: float) -> Dictionary:
+	var crack = null
+	if age >= RISE["crack_from"] and age < 0.25:
+		crack = {"k": clampf((age - RISE["crack_from"]) / -RISE["crack_from"], 0.0, 1.0), "alpha": 1.0 if age < 0.0 else 1.0 - age / 0.25}
+	var out := {"z": -1.0, "yaw": 0.0, "shown": "whole", "scale": 1.0, "burst": null, "crack": crack, "slammed": false}
+	if age < 0.0:
+		return out
+	var top_z: float = RISE["top_z"]
+	if age < RISE["top"]:
+		# (shot up out of the floor, spinning, torn apart)
+		var k: float = age / RISE["top"]
+		out.merge({"z": top_z * (1.0 - (1.0 - k) * (1.0 - k)), "yaw": 1080.0 * k, "shown": "apart", "scale": 0.7 + 0.3 * k}, true)
+		return out
+	if age < RISE["slam"]:
+		# (hung at the top, still spinning, straining)
+		var k: float = (age - RISE["top"]) / (RISE["slam"] - RISE["top"])
+		out.merge({"z": top_z + 2.0 * sin(k * PI), "yaw": 1080.0 + 400.0 * k, "shown": "apart", "scale": 1.0 + 0.15 * k}, true)
+		return out
+	var since: float = age - RISE["slam"]
+	if since < RISE["burst"]:
+		out["burst"] = {"scale": 0.5 + since / RISE["burst"] * 1.1, "alpha": 1.0 - since / RISE["burst"]}
+	out["slammed"] = true
+	var bob := BOB * sin(t * PI)
+	if age < RISE["down"]:
+		# (slammed together; down to hang, its spin running down)
+		var k := _ease((age - RISE["slam"]) / (RISE["down"] - RISE["slam"]))
+		out.merge({"z": top_z + (HOVER + bob - top_z) * k, "yaw": 1480.0 + 260.0 * k, "shown": "whole"}, true)
+		return out
+	out.merge({"z": HOVER + bob, "shown": "hang"}, true)
+	return out
+
+
+## render/meld_drops.ts takenOf: the Meldstone `g` seconds after it was taken, between where it hung and him: {x, y, z, yaw,
+## shown, scale, burst, slammed}; empty once it is gone into him.
+static func taken_of(g: float, from: Vector2, to: Vector2) -> Dictionary:
+	if g < 0.0 or g >= TAKEN["gone"]:
+		return {}
+	var since: float = g - TAKEN["slam"]
+	var burst = null
+	if since >= 0.0 and since < TAKEN["burst"]:
+		burst = {"scale": 0.6 + since / TAKEN["burst"] * 1.2, "alpha": 1.0 - since / TAKEN["burst"]}
+	var top_z: float = TAKEN["top_z"]
+	if g < TAKEN["leap"]:
+		var k := _ease(g / TAKEN["leap"])
+		var p := from.lerp(to, k)
+		return {"x": p.x, "y": p.y, "z": HOVER + (top_z - HOVER) * k, "yaw": 720.0 * k, "shown": "apart" if k > 0.4 else "whole", "scale": 1.0, "burst": burst, "slammed": false}
+	if g < TAKEN["slam"]:
+		# (over his head, wrenched wider and wider apart)
+		var k: float = (g - TAKEN["leap"]) / (TAKEN["slam"] - TAKEN["leap"])
+		return {"x": to.x, "y": to.y, "z": top_z + 2.0 * sin(k * PI), "yaw": 720.0 + 300.0 * k, "shown": "apart", "scale": 1.0 + 0.3 * k, "burst": burst, "slammed": false}
+	# (slammed; dives into his chest)
+	var k := clampf((g - TAKEN["slam"] - 0.06) / (TAKEN["gone"] - TAKEN["slam"] - 0.06), 0.0, 1.0)
+	return {"x": to.x, "y": to.y, "z": top_z + (TAKEN["chest_z"] - top_z) * k * k, "yaw": 1020.0 + 360.0 * k, "shown": "whole", "scale": 1.15 - 0.95 * k * k, "burst": burst, "slammed": true}
+
+
+## GIVEN TO THE WORDSMITH (game.ts takeMeldstone; town.gd gives it): he can meld from now on; the two words to meld, and his
+## lesson. (Melding itself, at his meld screen, is not in the Godot version yet.)
+func give_meldstone() -> void:
+	meld = "open"
+	sfx.play("rare")
+	say(MELD_TAKES, MSG_QUEST)
+	var ws: Array = Words.data()["meldstone"]
+	gain_word(ws[0], false)
+	words[ws[1]] = int(words.get(ws[1], 0)) + 1
+	say(MELD_WORDS % [str(Words.word(ws[0])["name"]).to_upper(), str(Words.word(ws[1])["name"]).to_upper()], MSG_QUEST)
+	for line in MELD_LESSON:
+		say(line, MSG_QUEST)
+
+
 # --- what is said ---
 
 ## A line of what has just happened (game.ts msg; render/fx.ts messages): up for 5 s, a long one longer to be read.
@@ -1050,3 +1320,34 @@ class _WordLight extends Node2D:
 		draw_rect(Rect2(px, py, tw + 8.0, 13.0), drop.color)
 		draw_rect(Rect2(px + 1.0, py + 1.0, tw + 6.0, 11.0), Color("#1b1622"))
 		PF.draw(self, drop.title, px + 4.0, py + 3.0, drop.color)
+
+
+## ONE OF THE GAME'S OWN PICTURES OF A FILM (assets/fx: tools/godot_fx.ts; perils.gd holds the sheets), stood among the figures:
+## the Meldstone's (here), the town's gate's (town.gd).
+class _FilmPic extends Node2D:
+	const Perils := preload("res://scripts/perils.gd")
+	var _s := Sprite2D.new()
+
+	func _init() -> void:
+		_s.centered = false
+		_s.region_enabled = true
+		add_child(_s)
+
+	## Picture `i` of the film `name` (its `stand` layer), its floor point at `at` (picture pixels), sorted at depth `d`, drawn
+	## `up` picture pixels over it, `scale` times its size about that point (render.ts stand), `alpha` as strong. False, and
+	## hidden, where the film or the picture is not there.
+	func put(name: String, i: int, at: Vector2, d: float, up := 0.0, scale := 1.0, alpha := 1.0) -> bool:
+		var F = Perils._fx.get("films", {}).get(name)
+		var L: Array = F["layers"].get("stand", []) if F != null else []
+		visible = i >= 0 and i < L.size() and int(L[i]) >= 0 and alpha > 0.0
+		if not visible:
+			return false
+		var q: Array = Perils._fx["pics"][int(L[i])]
+		position = Vector2(at.x, d * 16.0)
+		_s.texture = Perils._sheet(int(q[0]))
+		_s.region_rect = Rect2(q[1], q[2], q[3], q[4])
+		_s.offset = Vector2(q[5], q[6])
+		_s.position = Vector2(0.0, at.y - up - d * 16.0)
+		_s.scale = Vector2(scale, scale)
+		_s.modulate.a = alpha
+		return true

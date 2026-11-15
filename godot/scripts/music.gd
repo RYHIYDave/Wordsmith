@@ -30,7 +30,8 @@ func _ready() -> void:
 	_fades = data["music"]
 
 
-## Each frame: `place` a key of the table ("town", "f1" ... "f5"; "" none), `fight` whether something awake is near him.
+## Each frame: `place` a key of the table ("town", "f1" ... "f10": the Wilds' too, floors 6 to 10; "" none), `fight` whether
+## something awake is near him.
 func level_music(place: String, fight_now: bool, dt: float) -> void:
 	var here := place if _table.has(place) else ""
 	if here != _place:

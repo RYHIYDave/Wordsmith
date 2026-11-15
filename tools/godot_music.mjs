@@ -1,9 +1,10 @@
-// THE LEVEL MUSIC FOR THE GODOT VERSION (branch godot/port): the town's and floors 1 to 5's walks and fights, from
-// assets/sound/music_*.mp4 (AAC, which Godot does not play) made into Ogg Vorbis in godot/assets/music, each cut at its loop's
-// end (engine/audio.ts MUSIC_PLACES: the game loops each from 0 to `loop` seconds, the rest of the file unheard), so that
-// Godot's own looping (back to the start at the file's end) is the game's. And music.json: each place's two, the fight's
-// "fight in at", and the fades (MUSIC), read from engine/audio.ts as it stands.
-//   node tools/godot_music.mjs            (from the repository's root; needs ffmpeg: winget install Gyan.FFmpeg)
+// THE LEVEL MUSIC FOR THE GODOT VERSION (branch godot/port): the town's and floors 1 to 10's walks and fights, from
+// assets/sound/music_*.mp3 (.mp4 before; Godot plays neither as the game loops them) made into Ogg Vorbis in
+// godot/assets/music, each cut at its loop's end (engine/audio.ts MUSIC_PLACES: the game loops each from 0 to `loop` seconds,
+// the rest of the file unheard), so that Godot's own looping (back to the start at the file's end) is the game's. And
+// music.json: each place's two, the fight's "fight in at", and the fades (MUSIC), read from engine/audio.ts as it stands.
+// A track already made is kept as it is (`--all` makes every one again).
+//   node tools/godot_music.mjs [--all]    (from the repository's root; needs ffmpeg: winget install Gyan.FFmpeg)
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -46,8 +47,12 @@ for (const line of table.split('\n')) {
     const file = /file:\s*'([^']+)'/.exec(m[2])[1];
     const loop = Number(/loop:\s*([\d.]+)/.exec(m[2])[1]);
     const fightIn = /fightIn:\s*([\d.]+)/.exec(m[2]);
-    entry[m[1]] = { file: file.replace(/\.mp4$/, '.ogg'), loop, ...(fightIn ? { fightIn: Number(fightIn[1]) } : {}) };
+    entry[m[1]] = { file: file.replace(/\.(mp4|mp3)$/, '.ogg'), loop, ...(fightIn ? { fightIn: Number(fightIn[1]) } : {}) };
     // (made into Ogg Vorbis, cut at the loop's end to the sample)
+    if (existsSync(join(OUT, entry[m[1]].file)) && !process.argv.includes('--all')) {
+      console.log(`${place[1]} ${m[1]}: ${entry[m[1]].file} kept`);
+      continue;
+    }
     execFileSync(ffmpeg(), ['-y', '-v', 'error', '-i', join(SRC, file), '-af', `atrim=end_sample=${Math.round(loop * RATE)}`,
       '-ar', String(RATE), '-c:a', 'libvorbis', '-q:a', '6', join(OUT, entry[m[1]].file)], { stdio: 'inherit' });
     console.log(`${place[1]} ${m[1]}: ${file} -> ${entry[m[1]].file} (${loop} s)`);

@@ -232,6 +232,26 @@ through chat, so the art and sounds go into the project whole).
   seen so far, as large as fits, with its legend, the game held while it is open. Esc, or the II button under the small map,
   PAUSES: the keys this version has, RESUME and the sound on or off (the game's third button, END RUN, waits for the title
   screen). Esc closes the gear screen too. Held beside the game's own small map coming into floor 3: the same, pixel for pixel.
+- **Into the descent and through it** (floors 6 to 10, his pick of 15 Nov 2026, “Floors 6 to 10”; `scripts/ways.gd`, `town.gd`,
+  `loot.gd`; game/quests15.ts, game/ways.ts, game.ts updateWays, takeWay, takeMeldstone):
+  - THE MELDSTONE: the armourer's reward given, the wordsmith asks for it ("Wordsmith: a task"); as the Fleshmancer dies it waits
+    under the floor while he is dragged down, then bursts up where he went down (the crack of its light, spinning apart, the slam,
+    hanging, "Meldstone" over it), and is taken (over his head and into him); given to the wordsmith ("Give the Meldstone"), he
+    gives FLAME and FROST to meld and says the lesson's lines, the stone goes round the column of light over his slab, and the
+    gate down the mountain is unbarred. Its pictures the game's own (art/meld_drops.ts, films `ms_` in `tools/godot_fx.ts`),
+    stood as render/meld_drops.ts riseOf and takenOf have them.
+  - THE TOWN'S GATE: barred ("The gate is barred.", once a visit); unbarred, its bars struck off as he comes in sight of it ("The
+    gate is unbarred. Beyond it, the mountain road."); then it rises as he comes and falls as he goes, and walking through it
+    takes him to floor 6. Its portcullis, bars, unbarring and what is left of them are the game's own, strip by strip (films
+    `tg_`); the gate's doorway is in the town's layout now (`tools/godot_town.ts`).
+  - FLOORS 6 TO 10: each comes in at the game's start, its name across the screen, its music (the Wilds' walks and fights:
+    `tools/godot_music.mjs` now takes the game's `.mp3`s and keeps the tracks already made), its day's light where its look is
+    not yet in (game/act1.ts); its pits (the Ledge Road's drop, the Fen's water) never walked on, seen and shot across, and what
+    falls over one lands on the nearest floor; its waypoint reached as he comes in. Its WAY ON wakes as the boss dies, opens
+    after its film's length ("The way on is open."; on the Fen "The siege magic falters. The way home is open."), what it threw
+    out solid, and stepping onto its way in takes him to the next floor; from the Fen, home through the town's gate (in the game,
+    the camp inside Vellum's gate). The way on's own pictures come with each floor's recorded look (its state "onward").
+  - `--only=descent` pictures and checks every step of it, and sums it up in one line, `DESCENT:`.
 - **A desktop icon**, "Wordsmith (Godot)", opens this project to play (it needs the `wordsmith` folder on this branch).
 
 Keys: WASD or the arrows to walk; the left button to Strike, the right to Whirl, Space to Lunge (the mouse aims; from
@@ -250,14 +270,15 @@ A controller: the left stick, RT, LT, A, B, X.
 
 ## Not in it yet
 
-Melding words and the Meldstone (the wordsmith's second ask), words found from floor 6 down, what a red circle or the
+Melding words (the wordsmith's meld screen; the Meldstone and its two words are in), runedust, the Meldstone shown by
+INVENTORY while it is carried and its flight to the wordsmith's slab, words found from floor 6 down, what a red circle or the
 Headsman's vault sends up as it lands and a bone arrow and the Warden's bolts in flight (plain drawings: the game's
 general effects are brought over only for the words so far), the glow that burning things and some figures give off (the game adds it over them; here only the
 places' own lights glow, and the moves cut their light in the dark), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
 and blows; what a boss says is shown, not spoken), the
-Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: its
-gate in the back wall (barred on a new game, drawn as wall here), the stone floating from him to the slab, the letters
+Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: the camp
+it becomes from floor 10 on, the stone floating from him to the slab, the letters
 swirling round the ring and its column of light, the wordsmith's words for sale, the stranger's gamble, the stash, the
 Lexicon, buying back, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot

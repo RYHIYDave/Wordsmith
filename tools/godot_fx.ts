@@ -68,8 +68,16 @@
 //                cage and rising away (four wears; layer `stand`; the game stands one on every floor tile of every row).
 //   smoke        the high priest's burning smoke (art/mob_shots.ts drawBurningSmoke, the game's own painter, painted here
 //                onto a canvas of the game's pixels): billowing, burning and thinning away. 3 s.
+//   tg_port_<k>  the town's gate's portcullis, the k'th strip of it, at each of its heights from down to up (art/gates.ts
+//                portcullis, 2 game pixels apart; layer `stand`, one picture for each height). tg_bars_<k>: the bars across it
+//                (art/town_ways.ts gateBars). tg_unbar_<k>: the bars struck off (unbarFilm: 78 frames at 30 a second, the last
+//                what is left of them at its foot). `tables.tg`: where each strip stands, its jolts.
+//   ms_stone     the Meldstone hanging, turning to and fro (art/meld_drops.ts: 24 pictures, its round at 12 a second);
+//                ms_apart, ms_whole: spinning, torn apart and fused (16 steps of its turn); ms_burst: its light as it slams
+//                together; ms_crack: the crack of its light in the floor before it bursts up (6, shut to open). Stills, stood
+//                as the game's riseOf and takenOf say (godot/scripts/loot.gd).
 // A film's `k0`: the frame its first picture is, counted from the film's own time 0 (less than 0: it begins before it).
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
@@ -94,6 +102,10 @@ import { FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, makeRingHandArt } from '../
 import { RISE_MARK, paintHeap, paintRiseMark, paintSinkPit } from '../src/art/fleshmancer_action_fx';
 import { Px } from '../src/engine/px';
 import { FM_END, deathHands, drawDeathFloor, drawDeathPillar } from '../src/art/fm2_fx';
+import { GATE_UP, PILLAR, STRIP, makeGateArt } from '../src/art/gates';
+import type { Strip } from '../src/art/gates';
+import { gateBars, unbarFilm } from '../src/art/town_ways';
+import { CRACK_STEPS, STONE_FPS, STONE_FRAMES, STONE_SPIN, makeMeldDropsArt } from '../src/art/meld_drops';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -376,6 +388,78 @@ for (const view of ['front', 'back'] as const) {
       return rawPic(g, 2, W, H + 24);
     },
   });
+}
+
+// THE TOWN'S GATE OUT TO THE QUARRY (render.ts standDoors, the town's gate; art/gates.ts portcullis, art/town_ways.ts gateBars,
+// unbarFilm; tools/godot_town.ts laid the gate: its `gate`): each strip of it (a quarter of a tile of the gate's plane, stood
+// at its own depth so that he is before the part he is before) a film of its own, `tg_port_<k>`, `tg_bars_<k>`, `tg_unbar_<k>`,
+// k the strip's place along the plane (STRIP picture pixels each); `tables.tg`: where each strip stands, [x, y, depth] (tiles).
+{
+  const G = JSON.parse(readFileSync('godot/assets/town/layout.json', 'utf8')).gate as { alongX: boolean; a: number; face: number } | null;
+  if (G) {
+    const A = makeGateArt();
+    const wide = PILLAR / 32;
+    const at = (t: number, back: number): [number, number, number] => {
+      const [x, y] = G.alongX ? [G.a + t, G.face - back] : [G.face - back, G.a + t];
+      return [x, y, x + y + STRIP / 64];
+    };
+    const slot = (q: Strip): number => Math.round((q.t * 32) / STRIP);
+    const port: ([number, number, number] | null)[] = [];
+    const bars: ([number, number, number] | null)[] = [];
+    // (the portcullis at each of its heights, 2 game pixels apart, as A.portcullis rounds them: its strips stood at (-wide, wide))
+    const heights = GATE_UP / 2 + 1;
+    const portBy = new Map<number, number[]>();
+    for (let r = 0; r < heights; r++) {
+      for (const q of A.portcullis(G.alongX, false, r * 2)) {
+        const k = slot(q);
+        if (!portBy.has(k)) portBy.set(k, Array(heights).fill(-1));
+        portBy.get(k)![r] = pic(q.s);
+        port[k] = at(-wide + q.t, wide);
+      }
+    }
+    for (const [k, list] of portBy) films[`tg_port_${k}`] = { fps: 0, n: heights, k0: 0, layers: { stand: list } };
+    // (the bars, barred: their strips stood at (-wide, wide - 0.03), a hair in front of the portcullis; struck off, frame by frame
+    // at 30 a second, the last what is left of them lying at its foot)
+    const film = unbarFilm(G.alongX);
+    const barBy = new Map<number, { barred: number; frames: number[] }>();
+    const of = (k: number): { barred: number; frames: number[] } => {
+      if (!barBy.has(k)) barBy.set(k, { barred: -1, frames: Array(film.frames.length).fill(-1) });
+      return barBy.get(k)!;
+    };
+    for (const q of gateBars(G.alongX)) {
+      of(slot(q)).barred = pic(q.s);
+      bars[slot(q)] = at(-wide + q.t, wide - 0.03);
+    }
+    film.frames.forEach((list, f) => {
+      for (const q of list) {
+        of(slot(q)).frames[f] = pic(q.s);
+        bars[slot(q)] = at(-wide + q.t, wide - 0.03);
+      }
+    });
+    for (const [k, b] of barBy) {
+      films[`tg_bars_${k}`] = { fps: 0, n: 1, k0: 0, layers: { stand: [b.barred] } };
+      films[`tg_unbar_${k}`] = { fps: film.fps, n: b.frames.length, k0: 0, layers: { stand: b.frames } };
+    }
+    tables.tg = { port, bars, jolts: film.jolts, heights, up: GATE_UP };
+  }
+}
+
+// THE MELDSTONE (art/meld_drops.ts makeMeldDropsArt; render.ts standMeldDrop, standMeldMoments): its pictures, each anchored at
+// its middle (the crack's at its floor point), for godot/scripts/loot.gd to stand as the game's riseOf and takenOf have them:
+// `ms_stone` hanging (STONE_FRAMES, its round of 2 s at STONE_FPS), `ms_apart` and `ms_whole` spinning (STONE_SPIN steps of its
+// turn, torn apart and fused), `ms_burst` its light as its halves slam together, `ms_crack` the crack of its light in the floor
+// (CRACK_STEPS, shut to open).
+{
+  const M = makeMeldDropsArt();
+  const stills = (name: string, list: Sprite[]): void => {
+    films[name] = { fps: 0, n: list.length, k0: 0, layers: { stand: list.map((s) => pic(s)) } };
+  };
+  stills('ms_stone', Array.from({ length: STONE_FRAMES }, (_, i) => M.stone[i]));
+  stills('ms_apart', Array.from({ length: STONE_SPIN }, (_, i) => M.spinApart[i]));
+  stills('ms_whole', Array.from({ length: STONE_SPIN }, (_, i) => M.spinWhole[i]));
+  stills('ms_burst', [M.burst]);
+  stills('ms_crack', Array.from({ length: CRACK_STEPS }, (_, i) => M.crack[i]));
+  tables.ms = { fps: STONE_FPS, frames: STONE_FRAMES, spin: STONE_SPIN };
 }
 
 // --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a

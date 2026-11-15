@@ -388,12 +388,15 @@ func reachable(_m) -> bool:
 
 
 ## died: THE DEAD HE RAISED FALL WITH HIM: they were up by his will alone. And, brought up to par (the game's FLESH2,
-## game/bosses.ts died): nothing of his harms the hero once he is dead, and his death is drawn (perils.gd fm_died).
+## game/bosses.ts died): nothing of his harms the hero once he is dead, and his death is drawn (perils.gd fm_died). And THE
+## MELDSTONE (game.ts dropLoot, STONE_RISE): it bursts up out of his pit, just where he went down (loot.gd).
 func died(m) -> void:
 	m.modulate.a = 1.0
 	_coming.clear()
 	fall_with(m)
 	m.mgr.perils.fm_died(m)
+	if m.mgr.loot != null:
+		m.mgr.loot.meldstone_rises(m.world)
 
 
 ## Whether he is there to be lit (render/act1_fx/fm.ts lit): not gone down under the floor in his teleport (from 0.3 s
