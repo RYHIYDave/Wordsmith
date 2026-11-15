@@ -45,8 +45,9 @@ test('the figures that are baked: every one with pictures of its own, each once,
   for (const f of ['qgolem', 'rubbling', 'vulture', 'wolf', 'hushed', 'watch', 'footman', 'unfinished', 'queen', 'gking'] as MonsterFigure[]) assert.ok(all.includes(f), f);
   // (not the Drowned Eye while the Swamp Colossus is floor 10's boss: his own pictures are never shown; nor the Moth, too big to hold whole)
   assert.ok(!all.includes('eye'));
-  assert.deepEqual([...TOO_BIG], ['moth']);
-  assert.ok(!all.includes('moth'));
+  // (and the final boss of endless mode, his four sides' pictures too many to hold whole: game/act1_rules/wsboss.ts)
+  assert.deepEqual([...TOO_BIG], ['moth', 'wsboss']);
+  assert.ok(!all.includes('moth') && !all.includes('wsboss'));
   assert.equal(HOLD_MOST_MB, 600);
   // (a kind's other looks, each a figure of its own: '<kind>:<form>', its files <kind>_<form>)
   const looks = all.filter((f) => f.includes(':'));

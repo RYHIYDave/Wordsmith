@@ -1006,7 +1006,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   const pd = PAD_USE.live;
   // The fight prompt stays a moment after its last line is done, all ticked, before it goes.
   let banner = inp.banner;
-  if (banner && banner.lines.length) lastFight = { b: banner, t };
+  if (banner && banner.lines.length && !banner.hunt) lastFight = { b: banner, t };
   else if (!banner && lastFight && t - lastFight.t < 1.4 && game.guide) banner = { ...lastFight.b, point: null, lines: lastFight.b.lines.map((l) => ({ ...l, done: true })) };
   else if (banner) lastFight = null;
   const point = banner ? banner.point : null;

@@ -68,6 +68,11 @@ import { FX } from '../src/render/act1_fx/censor';
 import { colourCatcher, cyanish, floor, measuredSize, room, untilAct, watch } from './act1_kinds_room_c';
 import { fakeCtx } from './act1_kinds_room';
 import { paintWithoutCanvas } from './helpers';
+import { useCensor2 } from '../src/art/bestiary';
+
+// (these hold his rules to his OLD pictures, the art chat's: his pictures made again, art/censor2_art.ts, are held by
+// tests/censor2.test.ts; so here his old ones)
+useCensor2(false);
 
 interface Assert {
   ok(value: unknown, message?: string): void;

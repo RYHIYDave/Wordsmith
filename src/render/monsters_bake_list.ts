@@ -37,7 +37,7 @@ export const HOLD_MOST_MB = 600;
  * TOO BIG TO HOLD WHOLE: THE MOTH, floor 20's (art/act1_figs/moth.ts: 1,304 frames of up to 832 by 824, 1,984 MB in hand were
  * they all held). Not baked, not taken in: as before.
  */
-export const TOO_BIG: readonly MonsterFigure[] = ['moth'];
+export const TOO_BIG: readonly MonsterFigure[] = ['moth', 'wsboss'];
 
 /** A figure's name as its files have it ('fieldhand:1', a kind's other look, is fieldhand_1): <name>.json, <name>-<n>.png; its pack <name>-pack.png. */
 export function bakeName(figure: MonsterFigure): string {

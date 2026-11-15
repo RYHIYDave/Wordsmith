@@ -11,7 +11,7 @@ Every number here is a first proposal, for your yes. They are what the build use
 | A piece from an elite, or a chest along the way | 0.4% | 1 in 250 pieces |
 | A piece from a hoard: a boss, a guardian, a vault | 0.8% | 1 in 125 pieces |
 | The stranger's gamble | 0.5% a throw | 1 in 200 throws |
-| The endless final boss | 25% a kill, one of his two | when he is built |
+| The endless final boss | 25% a kill, one of his two | his yes, 14 Nov 2026: “that sounds good.  nice job” (built: branch build/endless-final-boss) |
 
 Counted on the game's twenty floors (tools/unique_odds.ts): about 28 pieces of gear drop on a floor, 560 in a run. So a run gives about three pool uniques and two of the bosses' own: about five uniques in all, with no magic find. 66 rares drop in the same run.
 
@@ -167,7 +167,7 @@ The same as a found affix of the item's level. A boss's unique is of his floor's
 ## What waits on something else
 
 - **The ten new words:** The Headsman's Hood (Culling), The Queen's Glass (Mirroring) and The Long Echo (Lasting) are built, and add nothing until those words are in the game.
-- **The endless final boss:** The Third Word and The Ghostwriter work, and drop from nothing until he is built.
+- **The endless final boss:** The Third Word and The Ghostwriter work, and drop from him one kill in four (built on the branch build/endless-final-boss, behind ENDLESS_KEY: game/game.ts finalLoot).
 - **Pictures, the art chat's:** an icon for each; and what is seen in play. Until those are drawn the build shows a plain stand-in (a burst, a spark) so each can be tried.
 - **The Fourth Globe:** the globes over his head are painted as three. The fourth works and is not shown yet.
 
