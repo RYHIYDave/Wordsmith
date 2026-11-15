@@ -45,6 +45,9 @@ const Traps := preload("res://scripts/traps.gd")
 const FLOOR_DIR := "res://assets/floor1"
 const Ways := preload("res://scripts/ways.gd")
 const Sight := preload("res://scripts/sight.gd")
+## (floor 10: the Swamp Colossus's stone, and his fight's check)
+const Stone := preload("res://scripts/act1/stone.gd")
+const ColossusCheck := preload("res://checks/colossus_check.gd")
 ## (the deepest floor that has its files)
 const FLOORS := 10
 const TOWN_DIR := "res://assets/town"
@@ -118,6 +121,8 @@ var _hero_light: Node
 var ways: Ways
 ## (what he has seen of the floor: sight.gd)
 var sight: Sight
+## (floor 10's stone: act1/stone.gd; null elsewhere)
+var stone: Stone
 ## (floor 5's temple door, its chains and keys: temple.gd; null elsewhere)
 var temple: Temple
 ## (floor 3's furnace, its crank and the fire in the Chained One's way: furnace.gd; null elsewhere)
@@ -459,6 +464,15 @@ func _build(where: String, arrive: String) -> void:
 		ways.look = look if looked else null
 		ways.sfx = sfx
 		_place.add_child(ways)
+	# (floor 10: THE SWAMP COLOSSUS'S STONE, the landing that carries him across to it, the picture drawn back on it: act1/stone.gd)
+	stone = null
+	if where != "town" and map.stone != null:
+		stone = Stone.new()
+		stone.main = self
+		stone.map = map
+		stone.hero = hero
+		stone.monsters = monsters
+		_place.add_child(stone)
 	# (what he has seen: sight.gd; the town is seen whole; --seeall, a floor too)
 	sight = null
 	if where != "town":
@@ -4342,6 +4356,10 @@ func _boss_shots(h: Hero, dir: String) -> void:
 		await _boss67_shots(h, dir, n)
 		return
 	var secs := float(_arg("secs")) if _arg("secs") != "" else 40.0
+	# (floor 10: the Swamp Colossus's whole fight, from the landing to the way home: checks/colossus_check.gd)
+	if n == 10:
+		await ColossusCheck.run(self, h, dir)
+		return
 	go_to("floor%d" % n, "down" if n > 1 else "start")
 	await _wait(1.5)
 	var boss: Monster = null
@@ -4940,6 +4958,9 @@ func _d_boss() -> Monster:
 ## (the descent's check) Struck until he is dead (a boss under the floor, or between his moves, is not to be reached for a moment).
 func _d_kill(m: Monster) -> void:
 	m.waits = false
+	# (one whose own rules hold off every blow until his last phase, the Swamp Colossus: brought to it first)
+	if m.h2 != null and m.h2.has_method("to_the_end"):
+		m.h2.to_the_end(m)
 	var t := 0.0
 	while not m.dead and t < 4.0:
 		m.hurt(1e9)

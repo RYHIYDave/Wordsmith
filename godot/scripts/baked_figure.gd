@@ -21,6 +21,11 @@ var _cache := {}
 
 func _init(dir: String, figure: String, lists_info: Dictionary) -> void:
 	name = figure
+	# (a figure the game draws in pictures of its own, not baked as a monster's: the Swamp Colossus, figure "eye", whose fight draws
+	# him and his tentacles (act1/colossus_draw.gd): a figure with no lists)
+	if not FileAccess.file_exists("%s/%s.json" % [dir, figure]) or not lists_info.has(figure):
+		_lists = [[]]
+		return
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("%s/%s.json" % [dir, figure]))
 	for s in data["sheets"]:
 		sheets.append(load("%s/%s" % [dir, s]))

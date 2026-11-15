@@ -165,6 +165,10 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   waypoint: level.ways?.way ? { x: level.ways.way.x, y: level.ways.way.y } : null,
   // (game/traps.ts: the floor's spike floors, {kind, x, y, w, h, phase}, and dart walls, {kind, x, y, w, h (the plate), slot})
   hazards: (L.hazards ?? []).map((h) => ({ ...h })),
+  // (THE SWAMP COLOSSUS, game/colossus_fight.ts COLOSSUS, floor 10: his stone, the world point of its middle (game/act1_layout.ts
+  // stoneAt), and the landing on the boss's ground the hero is carried across to it from (game.ts updateStone); null elsewhere)
+  stone: level.land?.stone ? { cx: level.land.stone.cx, cy: level.land.stone.cy } : null,
+  landing: level.land?.landing ? { x: level.land.landing.x, y: level.land.landing.y } : null,
 }));
 
 // --- 3. its monsters: each as game.ts spawn made it (life, damage and speed with the first floor's softening in them), its

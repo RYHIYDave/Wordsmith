@@ -412,6 +412,9 @@ func _draw() -> void:
 	# ---- the boss's bar ----
 	var boss = _boss()
 	var boss_up: bool = boss != null and not boss.dead and boss.state != "sleep" and not boss.waits
+	# (and not before his own rules say he can be hit: the Swamp Colossus's as his first tentacles stand; game.ts bossShown, `hittable`)
+	if boss_up and boss.h2 != null and boss.h2.has_method("hittable"):
+		boss_up = boss.h2.hittable(boss)
 	if boss_up:
 		var bw := minf(150.0, W - 160.0)
 		var bx := floorf(W / 2.0 - bw / 2.0)

@@ -94,6 +94,9 @@ func _show_monsters() -> void:
 		var tx := floori(m.world.x)
 		var ty := floori(m.world.y)
 		var seen: bool = all or (tx >= 0 and ty >= 0 and tx < map.w and ty < map.h and (visible_now[ty * map.w + tx] == 1 or (m.dead and explored[ty * map.w + tx] == 1)))
+		# (one with rules of its own that say when it is seen: the Swamp Colossus and his tentacles, always: game.ts r1.seenBy)
+		if m.h2 != null and m.h2.has_method("seen_by"):
+			seen = m.h2.seen_by(m)
 		m.visible = seen
 		m.seen = seen
 
