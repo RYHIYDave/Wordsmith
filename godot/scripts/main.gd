@@ -32,6 +32,7 @@ const Minimap := preload("res://scripts/minimap.gd")
 const Temple := preload("res://scripts/temple.gd")
 const Furnace := preload("res://scripts/furnace.gd")
 const Fx := preload("res://scripts/fx.gd")
+const Wakes := preload("res://scripts/wakes.gd")
 const Town := preload("res://scripts/town.gd")
 const Guide := preload("res://scripts/guide.gd")
 const Look := preload("res://scripts/look.gd")
@@ -102,6 +103,8 @@ var temple: Temple
 var furnace: Furnace
 ## (what the fight shows of a blow and of a word: fx.gd; a place's own)
 var fx: Fx
+## (the ground his moves leave: wakes.gd; a place's own)
+var wakes: Wakes
 
 
 ## Which floor a place is (0: the town).
@@ -297,6 +300,16 @@ func _build(where: String, arrive: String) -> void:
 	_place.move_child(fx, perils.get_index() + 1)
 	hero.fx = fx
 	monsters.fx = fx
+	# (the ground his moves leave, and what it does to the monsters on it: wakes.gd. On the floor, under the monsters' own
+	# marks and under what stands)
+	wakes = Wakes.new()
+	wakes.map = map
+	wakes.monsters = monsters
+	wakes.sfx = sfx
+	wakes.fx = fx
+	_place.add_child(wakes)
+	_place.move_child(wakes, perils.get_index())
+	hero.wakes = wakes
 	_place.add_child(monsters)
 	if where != "town":
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
@@ -642,6 +655,10 @@ func _arg(name: String) -> String:
 func _shoot(hero: Hero, dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	hero.unhurt = true
+	if _arg("only") == "words":
+		await _words_shots(hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "rmb":
 		await _rmb_test(hero, dir)
 		get_tree().quit()
@@ -960,6 +977,1034 @@ func _hero_moves(hero: Hero, dir: String) -> void:
 	hero.auto_whirl = false
 	await _snap(dir + "/01e_after.png")
 	print("WARRIOR'S MOVES: ", n0 - _alive(), " monsters down")
+
+
+# ===========================================================================================================================
+# THE WORDS IN THE FIGHT, CHECKED (--only=words): all of this check lies between this line and the one like it below.
+# ===========================================================================================================================
+
+## SHOT MODE, THE WORDS IN THE FIGHT (--only=words): on floor 2 a pack of six skeletons is gathered before him in a hall, and
+## the rest of the floor's monsters sent away (but its boss and one elite, for the end). The six are made to be read from:
+## they stand where they are put (A the one a Strike hits, B and C beside it, D and E an arc's jump further off, F out of
+## reach of everything), they do not fight or walk, and they have life enough that none falls; and his roll is made fixed
+## (his weapon 100 to 100, no critical hits). Then, each a case of its own, the pack made whole again before it: each of the
+## seven words IN FRONT of Strike and BEHIND it, and Flame, Frost, Lightning and Poison in front of and behind the Whirlwind
+## and the Lunge. A case sets the word (his slots as at level 20, the ring lit), makes the move, and SAYS IN ONE LINE WHAT THE
+## RULES DID beside what the game's own formula gives: the damage dealt, what is on what was struck, how many the lightning
+## jumped to, the doses, the stun, his might and his haste, the ground left and what it did over its time to those standing
+## in it, and how many of each telling fx.gd was sent; the line ends OK, or WRONG and what. A picture a case. Then a Strike
+## that meets nothing, the Whirlwind held to its end, the Lunge's wait and Heavy's landing; a chilled skeleton's pace and
+## wind-up; an elite and the boss struck with Frost and Heavy, Flame and Poison; and one line for all of it, beginning WORDS:.
+const W_ROLL := 100.0
+const W_LIFE := 1000000.0
+## (where the six stand from him: tiles before him, tiles to his side)
+const W_FORM := [[1.2, 0.0], [1.2, 0.9], [2.1, -0.5], [3.8, 0.4], [5.2, -0.6], [9.5, 0.5]]
+var _w_pack: Array = []
+var _w_home := Vector2.ZERO
+var _w_face := Vector2(1, 0)
+var _w_was: Array = []
+var _w_bad: Array = []
+var _w_n := 0
+var _w_dir := ""
+## (how long a frame takes here, seconds: what a time read off the game is allowed to be out by)
+var _w_frame := 0.02
+## (how far into his Strike he was, by his own clock, in the last frame before its blow landed)
+var _w_before := 0.0
+
+
+func _words_shots(h: Hero, dir: String) -> void:
+	go_to("floor2", "down")
+	await _wait(1.4)
+	if sight != null:
+		sight.see_all()
+	_w_dir = dir
+	# (the first prompt of the guide is not wanted across the pictures: he has walked)
+	h.walked = 5.0
+	if not _w_find():
+		print("WORDS: no hall on floor 2 has room for the pack")
+		return
+	var first := _nearest_kind(_w_home, "skeleton", 0.0)
+	var near: Array = []
+	for m in _monsters.list:
+		if is_instance_valid(m) and not m.dead and m.kind == "skeleton" and not m.elite and not m.boss:
+			near.append(m)
+	if first == null or near.size() < W_FORM.size():
+		print("WORDS: floor 2 has no pack of skeletons to gather")
+		return
+	near.sort_custom(func(a, b) -> bool: return a.world.distance_to(first.world) < b.world.distance_to(first.world))
+	_w_pack = near.slice(0, W_FORM.size())
+	var boss: Monster = null
+	var elite: Monster = null
+	for m in _monsters.list:
+		if not is_instance_valid(m) or m.dead:
+			continue
+		if m.boss:
+			boss = m
+		elif m.elite and m.kind == "champion" and (elite == null or m.world.distance_to(_w_home) < elite.world.distance_to(_w_home)):
+			elite = m
+	for o in _monsters.list:
+		if is_instance_valid(o) and not _w_pack.has(o) and o != boss and o != elite:
+			o.queue_free()
+	_w_reset(h)
+	await _wait(0.5)
+	var frames := 0.0
+	for k in 30:
+		await get_tree().process_frame
+		frames += get_process_delta_time()
+	_w_frame = frames / 30.0
+	var words: Array = Hero.Words.ids()
+	print("WORDS begin: floor 2, he at %s facing %s, the pack A to F %s to %s tiles before him; his Str %d Dex %d Int %d, his roll fixed at %d, no critical hits, %.3f blows a second; a frame takes %.3f s" % [
+		_w_home, _w_face, W_FORM[0][0], W_FORM[5][0], h.stats["str"], h.stats["dex"], h.stats["int"], W_ROLL, h.stats["aps"], _w_frame])
+	for w in words:
+		await _w_strike_front(h, w)
+	for w in words:
+		await _w_strike_behind(h, w)
+	for side in ["front", "behind"]:
+		for w in ["fire", "frost", "lightning", "poison"]:
+			await _w_whirl_case(h, side, w)
+	for side in ["front", "behind"]:
+		for w in ["fire", "frost", "lightning", "poison"]:
+			await _w_lunge_case(h, side, w)
+	await _w_more(h)
+	await _w_chilled(h)
+	await _w_tough(h, elite, boss)
+	print("WORDS: %d cases, %d as the game's formula gives, %d not%s" % [_w_n, _w_n - _w_bad.size(), _w_bad.size(), "" if _w_bad.is_empty() else ": " + "; ".join(PackedStringArray(_w_bad))])
+
+
+## A place in a hall of the floor where he and the pack before him have clear floor, away from its traps and its sealed door:
+## where he stands, and the way he faces. False: none.
+func _w_find() -> bool:
+	var rooms: Array = map.rooms.duplicate()
+	rooms.sort_custom(func(a, b) -> bool: return a["w"] * a["h"] > b["w"] * b["h"])
+	# (the place with the most clear floor to either side of them, so that as little as may be stands near to hide them, a
+	# well or a brazier; at the least, room for them alone)
+	for wide in [3.25, 2.6, 1.95, 1.3]:
+		for r in rooms:
+			if r.get("kind", "") in ["boss", "start"]:
+				continue
+			for f in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]:
+				for ty in range(int(r["y"]), int(r["y"]) + int(r["h"])):
+					for tx in range(int(r["x"]), int(r["x"]) + int(r["w"])):
+						var at := Vector2(tx + 0.5, ty + 0.5)
+						if _w_fits(r, at, f, wide):
+							_w_home = at
+							_w_face = f
+							return true
+	return false
+
+
+func _w_fits(r: Dictionary, at: Vector2, f: Vector2, wide: float) -> bool:
+	var side := Vector2(-f.y, f.x)
+	var a := -3.8
+	while a <= 10.0:
+		var b := -wide
+		while b <= wide + 0.001:
+			var q: Vector2 = at + f * a + side * b
+			if not FloorMap.in_room(r, q) or not map.fits(q.x, q.y, 0.4):
+				return false
+			for z in map.hazards:
+				if q.x > float(z["x"]) - 1.0 and q.x < float(z["x"]) + float(z["w"]) + 1.0 and q.y > float(z["y"]) - 1.0 and q.y < float(z["y"]) + float(z["h"]) + 1.0:
+					return false
+			for d in map.doors:
+				if d["kind"] == "worddoor" and Vector2(d["middle"]["x"], d["middle"]["y"]).distance_to(q) < 4.5:
+					return false
+			b += 0.65
+		a += 0.45
+	return true
+
+
+## Where one of the pack stands.
+func _w_spot(k: int) -> Vector2:
+	return _w_home + _w_face * float(W_FORM[k][0]) + Vector2(-_w_face.y, _w_face.x) * float(W_FORM[k][1])
+
+
+## The pack whole again and where it stands, nothing on it and nothing lying on the floor; he where he stands, his roll
+## fixed, nothing given him, his moves ready; the tellings counted from nothing.
+func _w_reset(h: Hero) -> void:
+	_monsters.forget()
+	wakes.list.clear()
+	wakes.queue_redraw()
+	for k in _w_pack.size():
+		var m: Monster = _w_pack[k]
+		m.world = _w_spot(k)
+		m.face = (_w_home - m.world).normalized()
+		m.speed = 0.0
+		m.max_life = W_LIFE
+		m.life = W_LIFE
+		# (it stands, and does nothing of its own: held as one that has just struck is, for as long as the check lasts)
+		m.state = "recover"
+		m._t = 1e9
+		m._cd = 1e9
+		m._move = -1
+		m._set_list("idle")
+	h.world = _w_home
+	h._end_act()
+	h._landing = false
+	h._turn(_w_face)
+	h.auto_dir = Vector2.ZERO
+	h.auto_whirl = false
+	h.might = 0.0
+	h.might_t = 0.0
+	h.haste = 0.0
+	h.haste_t = 0.0
+	h._whirl_cd = 0.0
+	h._lunge_cd = 0.0
+	h._last_swing = -10.0
+	h._combo_next = false
+	h.life = h.max_life
+	h.stats["dmg_min"] = W_ROLL
+	h.stats["dmg_max"] = W_ROLL
+	h.stats["crit_chance"] = 0.0
+	fx.seen = {}
+	fx.last = {}
+	_w_mark()
+
+
+## His moves' slots as at level 20 with the ring lit, all emptied, and `words` set in front of move `i` or behind it.
+func _w_put(h: Hero, i: int, side: String, words: Array) -> void:
+	h.loadout.set_level(20, true)
+	for k in 3:
+		for s in ["front", "behind"]:
+			for j in h.loadout.slots(k, s).size():
+				h.loadout.take(k, s, j)
+	for w in words:
+		var why: String = h.loadout.put(i, side, w)
+		if why != "":
+			print("WORDS: ", w, " would not go ", side, " of move ", i, ": ", why)
+
+
+## A case begun: the words set, everything made whole. What the move comes to with them (words.gd resolve).
+func _w_set(h: Hero, i: int, side: String, words: Array) -> Dictionary:
+	_w_put(h, i, side, words)
+	_w_reset(h)
+	return h.loadout.r(i)
+
+
+## One hit of move `i` before it is rounded, as the game's formula gives it (game.ts hitMonster, avgHit): his roll (fixed) x
+## the move's share with its words x `frac` x (1 + (his damage bonus, the bonus of the blow's element, his might) / 100).
+func _w_avg(h: Hero, i: int, frac := 1.0, might := 0.0) -> float:
+	var r: Dictionary = h.loadout.r(i)
+	var el: float = h.stats.get({"fire": "fire_pct", "frost": "frost_pct", "lightning": "light_pct"}.get(r["element"], "phys_pct"), 0.0)
+	return W_ROLL * float(r["dmg_mult"]) * frac * (1.0 + (h.stats["dmg_pct"] + el + might) / 100.0)
+
+
+## The same as it lands: rounded, 1 at least.
+func _w_hit(h: Hero, i: int, frac := 1.0, might := 0.0) -> int:
+	return int(maxf(1.0, roundf(_w_avg(h, i, frac, might))))
+
+
+## The pack's life noted; and how much each has lost since.
+func _w_mark() -> void:
+	_w_was = []
+	for m in _w_pack:
+		_w_was.append(m.life)
+
+
+func _w_lost() -> Array:
+	var out: Array = []
+	for k in _w_pack.size():
+		out.append(int(roundf(_w_was[k] - _w_pack[k].life)))
+	return out
+
+
+## A thing held against what the formula gives: noted as wrong if it is not so.
+func _w_is(wrong: Array, ok: bool, what: String) -> void:
+	if not ok:
+		wrong.append(what)
+
+
+## How near a time read off the game must be to what the formula gives: `least`, or three frames if that is more.
+func _w_tol(least: float) -> float:
+	return maxf(least, 3.0 * _w_frame)
+
+
+## LIGHTNING in front of a move that strikes an area, held against the rule once its chains have run: what each of the pack
+## lost beyond the move's own hit is whole arcs; and as many arcs were told as did harm, and three more, the ones called down
+## out of the sky on the first three struck (the fourth, struck quietly, calls none and none jumps from it).
+func _w_arcs(h: Hero, i: int, struck: int, wrong: Array) -> String:
+	var r: Dictionary = h.loadout.r(i)
+	var want := _w_hit(h, i)
+	var arc := int(maxf(1.0, roundf(want * float(r["arc_dmg"]))))
+	var lost := _w_lost()
+	var told: int = fx.seen.get("arc", 0)
+	var by_arcs := 0
+	var whole := true
+	for k in lost.size():
+		var more: int = lost[k] - (want if k < struck else 0)
+		whole = whole and more >= 0 and more % arc == 0
+		by_arcs += more
+	_w_is(wrong, whole and by_arcs == (told - 3) * arc, "the arcs took %d in all (%s), arc told %d" % [by_arcs, str(lost), told])
+	_w_is(wrong, told >= 9 and told <= 15, "arc told %d" % told)
+	return "its lightning: arc told %d: 3 called down on the first three struck, %d that did harm, %d each (formula %d x %.2f), %d in all, to the nearest 2 of each and on by chain; the fourth struck, quiet, called none; in all they lost %s" % [told, told - 3, arc, want, r["arc_dmg"], by_arcs, str(lost)]
+
+
+## The tellings sent since the case began, by name.
+func _w_told() -> String:
+	var keys: Array = fx.seen.keys()
+	keys.sort()
+	var parts: PackedStringArray = []
+	for k in keys:
+		parts.append("%s %d" % [k, fx.seen[k]])
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
+
+## A case's one line.
+func _w_say(what: String, said: String, wrong: Array) -> void:
+	_w_n += 1
+	if not wrong.is_empty():
+		_w_bad.append(what)
+	print("WORDS %02d %s: %s; told: %s :: %s" % [_w_n, what, said, _w_told(), "OK" if wrong.is_empty() else "WRONG: " + "; ".join(PackedStringArray(wrong))])
+
+
+## A case's picture.
+func _w_snap(what: String) -> void:
+	await _snap("%s/w%02d_%s.png" % [_w_dir, _w_n + 1, what.replace(" ", "_")])
+
+
+## He strikes, from where he stands (or from `at`); the frame after his blow has landed is waited for. How far into the Strike
+## it landed, by his own clock (a frame more at most); `_w_before`: how far in he was the frame before. (The clock by which burning and poison bite is held a quarter second off until then,
+## so that what is read as it lands is the hit's.)
+func _w_strike(h: Hero, at := Vector2.INF) -> float:
+	var n0: int = fx.seen.get("swing", 0)
+	var stand := _w_home if at == Vector2.INF else at
+	h._begin_strike()
+	var t := 0.0
+	while fx.seen.get("swing", 0) == n0 and t < 3.0:
+		_monsters._dot_t = 0.25
+		h.world = stand
+		_w_before = h._act_t
+		await get_tree().process_frame
+		t += get_process_delta_time()
+	return h._act_t
+
+
+## The attack held: his next blow, as soon as he may make it; the frame after it has landed is waited for. How long after
+## the last one was begun this one was, by his own clock (a frame more at most).
+func _w_strike_again(h: Hero) -> float:
+	var n0: int = fx.seen.get("swing", 0)
+	var last: float = h._last_swing
+	var t := 0.0
+	while fx.seen.get("swing", 0) == n0 and t < 4.0:
+		h.auto_attack = true
+		h.world = _w_home
+		await get_tree().process_frame
+		t += get_process_delta_time()
+	return h._last_swing - last
+
+
+## The Whirlwind held from where he stands: the frame after its first turn has cut is waited for (the biting clock held off
+## as for a Strike).
+func _w_whirl_begin(h: Hero) -> void:
+	h._whirl_cd = 0.0
+	h.auto_whirl = true
+	var t := 0.0
+	while t < 3.0 and not (h._act == "whirl" and h._bites >= 1):
+		_monsters._dot_t = 0.25
+		await get_tree().process_frame
+		t += get_process_delta_time()
+
+
+## It is held on until so many turns have cut, then let go, and he stands out of it.
+func _w_whirl_on(h: Hero, bites: int) -> void:
+	var t := 0.0
+	while t < 4.0 and h._act == "whirl" and h._bites < bites:
+		await get_tree().process_frame
+		t += get_process_delta_time()
+	h.auto_whirl = false
+	while t < 6.0 and h._act == "whirl":
+		await get_tree().process_frame
+		t += get_process_delta_time()
+
+
+## He lunges from where he stands to `to`; the frame after he has landed is waited for (the biting clock held off).
+func _w_lunge(h: Hero, to: Vector2) -> void:
+	h._lunge_cd = 0.0
+	h.auto_lunge = to
+	var t := 0.0
+	var began := false
+	while t < 3.0:
+		_monsters._dot_t = 0.25
+		await get_tree().process_frame
+		t += get_process_delta_time()
+		if h._act == "lunge":
+			began = true
+		elif began:
+			break
+
+
+## How fast a body goes over the floor, tiles a second, measured over `secs` frame by frame (each frame's step by that
+## frame's own time).
+func _w_pace_of(o, secs: float) -> float:
+	var dist := 0.0
+	var time := 0.0
+	var prev: Vector2 = o.world
+	var d_prev := -1.0
+	while time < secs:
+		await get_tree().process_frame
+		if d_prev >= 0.0:
+			dist += o.world.distance_to(prev)
+			time += d_prev
+		prev = o.world
+		d_prev = get_process_delta_time()
+	return dist / time
+
+
+## How much of the game's time passes from `begin` until `cond` holds (a frame more at most), `most` at the longest. `begin`
+## is done as a frame begins, so that every frame it then passes through is counted, and no other.
+func _w_time_from(begin: Callable, cond: Callable, most: float) -> float:
+	await get_tree().process_frame
+	begin.call()
+	var time := 0.0
+	while time < most:
+		var d := get_process_delta_time()
+		await get_tree().process_frame
+		time += d
+		if cond.call():
+			break
+	return time
+
+
+## Waited until `cond` holds, `most` seconds at the longest.
+func _w_until(cond: Callable, most: float) -> void:
+	var t := 0.0
+	while t < most and not cond.call():
+		await get_tree().process_frame
+		t += get_process_delta_time()
+
+
+## What is on a monster now, as the game names it.
+func _w_on(m: Monster) -> Dictionary:
+	return {"burn_t": m.burn_t, "burn_dps": m.burn_dps, "chill_t": m.chill_t, "chill": m.chill, "frozen_t": m.frozen_t, "freeze_immune": m.freeze_immune,
+		"poison_t": m.poison_t, "poison_dps": m.poison_dps, "poison_n": m.poison_n, "stun_t": m.stun_t, "stagger_t": m.stagger_t, "state": m.state}
+
+
+## The pack watched for `secs`, frame by frame: how many times each lost life and how much (what bites it: the ground, what
+## burns it, its poison), and the most that was on A meanwhile.
+func _w_watch(secs: float) -> Dictionary:
+	var n: Array = []
+	var lost: Array = []
+	var was: Array = []
+	for m in _w_pack:
+		n.append(0)
+		lost.append(0)
+		was.append(m.life)
+	var a: Monster = _w_pack[0]
+	var most := {"chill": 0.0, "frozen": 0.0, "poison_dps": 0.0, "poison_n": 0, "stagger": 0.0, "stun": 0.0}
+	var t := 0.0
+	while t < secs:
+		await get_tree().process_frame
+		t += get_process_delta_time()
+		for k in _w_pack.size():
+			var m: Monster = _w_pack[k]
+			if m.life < was[k] - 0.001:
+				n[k] += 1
+				lost[k] += int(roundf(was[k] - m.life))
+			was[k] = m.life
+		if a.chill_t > 0.0:
+			most["chill"] = maxf(most["chill"], a.chill)
+		most["frozen"] = maxf(most["frozen"], a.frozen_t)
+		most["poison_dps"] = maxf(most["poison_dps"], a.poison_dps)
+		most["poison_n"] = maxi(most["poison_n"], a.poison_n)
+		most["stagger"] = maxf(most["stagger"], a.stagger_t)
+		most["stun"] = maxf(most["stun"], a.stun_t)
+	return {"n": n, "lost": lost, "most": most}
+
+
+## A WORD IN FRONT OF STRIKE: the hit.
+func _w_strike_front(h: Hero, w: String) -> void:
+	var r := _w_set(h, 0, "front", [w])
+	var what := "strike front %s" % w
+	var wrong: Array = []
+	var a: Monster = _w_pack[0]
+	var want := _w_hit(h, 0)
+	if w == "heavy":
+		# (A is winding up a blow of its own: the stun is to break it off)
+		a.state = "windup"
+		a._t = 9.0
+	await _wait(0.15)
+	var wind: float = await _w_strike(h)
+	var lost := _w_lost()
+	var on := _w_on(a)
+	# (Swift's picture after its second blow: writing a picture holds the game up a moment, and its blows are timed)
+	if w != "swift":
+		await _w_snap(what)
+	var said := "\"%s\" hit A %d (formula %d = %d x %.3f)" % [r["name"], lost[0], want, W_ROLL, r["dmg_mult"]]
+	_w_is(wrong, lost[0] == want, "A took %d, not %d" % [lost[0], want])
+	var rad: float = float(r["splash"]) * float(r["size"])
+	if r["splash"] > 0.0:
+		var beside := _w_hit(h, 0, r["splash_dmg"])
+		var style: String = fx.last.get("burst", {}).get("style", "none")
+		said += "; splash %.2f round it for x%.1f, a %s: B %d C %d (formula %d), D %d" % [rad, r["splash_dmg"], style, lost[1], lost[2], beside, lost[3]]
+		_w_is(wrong, lost[1] == beside and lost[2] == beside and lost[3] == 0, "the splash took %s" % str(lost))
+		_w_is(wrong, style == ("blast" if r["splash_dmg"] >= 1.0 else "shock"), "the splash told as %s" % style)
+	elif w != "lightning":
+		_w_is(wrong, lost[1] == 0 and lost[2] == 0, "B and C took %d and %d with no splash" % [lost[1], lost[2]])
+	match w:
+		"power":
+			var reach: float = fx.last.get("swing", {}).get("reach", 0.0)
+			said += "; reach %.2f (formula 1.7 x %.3f)" % [reach, r["size"]]
+			_w_is(wrong, absf(reach - 1.7 * float(r["size"])) < 0.001, "reach %.3f" % reach)
+		"swift":
+			await _w_strike_again(h)
+			var gap: float = await _w_strike_again(h)
+			await _w_snap(what)
+			var windup := minf(0.333, 0.4 / float(r["rate"]))
+			said += "; %.3f blows a second (his weapon's %.3f): held, his third blow was begun %.3f s after his second (formula 1 / %.3f = %.3f), and his first landed %.3f s into it (formula the lesser of 0.333 and 0.4 / %.3f = %.3f)" % [r["rate"], h.stats["aps"], gap, r["rate"], 1.0 / float(r["rate"]), wind, r["rate"], windup]
+			_w_is(wrong, gap >= 1.0 / float(r["rate"]) - 0.001 and gap < 1.0 / float(r["rate"]) + 2.0 * _w_frame + 0.02, "the next blow %.3f s on" % gap)
+			_w_is(wrong, wind >= windup - 0.001 and wind < windup + 2.0 * _w_frame + 0.02, "its wind-up %.3f s" % wind)
+			# (with a faster weapon, where that wind-up is well short of the Strike's own 0.333 s: it must land in the first frame
+			# he is that far into it, whatever a frame takes here)
+			h.loadout.set_stats({"aps": 2.0})
+			h._end_act()
+			h._last_swing = -10.0
+			var fast: float = h.loadout.r(0)["rate"]
+			var landed: float = await _w_strike(h)
+			h.loadout.set_stats({"aps": h.stats["aps"]})
+			said += "; with a weapon of 2 blows a second, %.3f with Swift, his blow landed between %.3f and %.3f s into it (formula 0.4 / %.3f = %.3f, not the Strike's own 0.333)" % [fast, _w_before, landed, fast, 0.4 / fast]
+			_w_is(wrong, _w_before < 0.4 / fast and landed >= 0.4 / fast - 0.001, "with the faster weapon its blow landed between %.3f and %.3f s" % [_w_before, landed])
+		"fire":
+			var dps: float = want * float(r["ignite"]) / 3.0
+			var bite := int(maxf(1.0, roundf(dps * 0.5)))
+			said += "; A burns %.2f a second for %.2f s (formula %d x %.3f / 3 = %.2f, 3 s)" % [on["burn_dps"], on["burn_t"], want, r["ignite"], dps]
+			_w_is(wrong, absf(on["burn_dps"] - dps) < 0.01 and absf(on["burn_t"] - 3.0) < _w_tol(0.1), "A burning %.2f for %.2f s" % [on["burn_dps"], on["burn_t"]])
+			_w_mark()
+			var seen: Dictionary = await _w_watch(3.4)
+			said += "; over it A B C were bitten %d %d %d times for %d %d %d (formula 6 x %d), then out: A burn_t %.2f" % [seen["n"][0], seen["n"][1], seen["n"][2], seen["lost"][0], seen["lost"][1], seen["lost"][2], bite, a.burn_t]
+			for k in 3:
+				_w_is(wrong, seen["n"][k] in [5, 6] and seen["lost"][k] == seen["n"][k] * bite, "%s burned %d in %d bites" % ["ABC"[k], seen["lost"][k], seen["n"][k]])
+			_w_is(wrong, a.burn_t <= 0.0 and fx.seen.get("ignite", 0) == 3, "burn_t %.2f, ignite told %d" % [a.burn_t, fx.seen.get("ignite", 0)])
+		"frost":
+			said += "; A chilled %.3f for %.2f s (formula %.3f, 2.5 s), not frozen (%.2f)" % [on["chill"], on["chill_t"], r["chill"], on["frozen_t"]]
+			_w_is(wrong, absf(on["chill"] - float(r["chill"])) < 0.001 and absf(on["chill_t"] - 2.5) < _w_tol(0.1) and on["frozen_t"] <= 0.0, "A chill %.3f for %.2f, frozen %.2f" % [on["chill"], on["chill_t"], on["frozen_t"]])
+			await _w_strike_again(h)
+			var frozen: float = a.frozen_t
+			said += "; a second hit froze it %.2f s (formula 1.1), B %.2f C %.2f, not again for %.2f s (formula 4): freeze told %d" % [frozen, _w_pack[1].frozen_t, _w_pack[2].frozen_t, a.freeze_immune, fx.seen.get("freeze", 0)]
+			_w_is(wrong, absf(frozen - 1.1) < _w_tol(0.15) and absf(a.freeze_immune - 4.0) < _w_tol(0.15) and fx.seen.get("freeze", 0) == 3, "frozen %.2f, immune %.2f, freeze told %d" % [frozen, a.freeze_immune, fx.seen.get("freeze", 0)])
+			await _w_watch(1.3)
+			_w_is(wrong, a.frozen_t <= 0.0 and fx.seen.get("shatter", 0) == 3, "thawed: frozen %.2f, shatter told %d" % [a.frozen_t, fx.seen.get("shatter", 0)])
+			await _w_strike_again(h)
+			said += "; thawed (shatter told %d), a third hit did not freeze it (%.2f), freeze told %d" % [fx.seen.get("shatter", 0), a.frozen_t, fx.seen.get("freeze", 0)]
+			_w_is(wrong, a.frozen_t <= 0.0 and fx.seen.get("freeze", 0) == 3, "a third hit froze it again")
+		"lightning":
+			var arc := int(maxf(1.0, roundf(want * float(r["arc_dmg"]))))
+			said += "; %d arcs for x%.2f: at once B %d C %d (formula %d)" % [r["arcs"], r["arc_dmg"], lost[1], lost[2], arc]
+			_w_is(wrong, lost[1] == arc and lost[2] == arc and lost[3] == 0 and lost[4] == 0, "at once the arcs took %s" % str(lost))
+			await _wait(0.4)
+			lost = _w_lost()
+			var jumped := 0
+			for k in range(1, 6):
+				if lost[k] > 0:
+					jumped += 1
+			said += ", then on, a moment apart, D %d E %d, F %d: it jumped to %d" % [lost[3], lost[4], lost[5], jumped]
+			_w_is(wrong, lost[3] == arc and lost[4] == arc and lost[5] == 0 and lost[0] == want, "the chain took %s" % str(lost))
+			_w_is(wrong, fx.seen.get("arc", 0) == 5, "arc told %d, not 5" % fx.seen.get("arc", 0))
+		"poison":
+			var dose: float = want * float(r["poison"]) * (1.0 + h.stats.get("poison_pct", 0.0) / 100.0)
+			said += "; A poisoned: %d dose of %.2f a second for %.2f s (formula %d x %.3f = %.2f, 4 s)" % [on["poison_n"], on["poison_dps"], on["poison_t"], want, r["poison"], dose]
+			_w_is(wrong, on["poison_n"] == 1 and absf(on["poison_dps"] - dose) < 0.01 and absf(on["poison_t"] - 4.0) < _w_tol(0.1), "poison %d x %.2f for %.2f" % [on["poison_n"], on["poison_dps"], on["poison_t"]])
+			await _w_strike_again(h)
+			await _w_strike_again(h)
+			var bite := int(maxf(1.0, roundf(dose * 3.0 * 0.5)))
+			said += "; three hits, %d doses, %.2f a second (formula %.2f)" % [a.poison_n, a.poison_dps, dose * 3.0]
+			_w_is(wrong, a.poison_n == 3 and absf(a.poison_dps - dose * 3.0) < 0.01, "after three hits %d doses, %.2f" % [a.poison_n, a.poison_dps])
+			_w_mark()
+			var seen: Dictionary = await _w_watch(4.4)
+			said += "; from the last it bit %d times for %d (formula 8 x %d), then gone: poison_t %.2f, doses %d" % [seen["n"][0], seen["lost"][0], bite, a.poison_t, a.poison_n]
+			_w_is(wrong, seen["n"][0] in [7, 8] and seen["lost"][0] == seen["n"][0] * bite, "it bit %d times for %d" % [seen["n"][0], seen["lost"][0]])
+			_w_is(wrong, a.poison_t <= 0.0 and a.poison_n == 0 and fx.seen.get("poisoned", 0) == 1, "poison_t %.2f, doses %d, poisoned told %d" % [a.poison_t, a.poison_n, fx.seen.get("poisoned", 0)])
+		"heavy":
+			var secs: float = fx.last.get("stun", {}).get("secs", 0.0)
+			said += "; A stunned %.2f s (formula %.1f), told %.2f; the blow it was winding up broken off: it is in \"%s\"; %.3f blows a second (his weapon's %.3f / %.2f)" % [on["stun_t"], r["stun"], secs, on["state"], r["rate"], h.stats["aps"], Hero.Words.data()["heavy"]["slower"]]
+			_w_is(wrong, absf(on["stun_t"] - float(r["stun"])) < _w_tol(0.1) and absf(secs - float(r["stun"])) < 0.001, "stunned %.2f, told %.2f" % [on["stun_t"], secs])
+			_w_is(wrong, on["state"] == "chase", "its wind-up not broken off: %s" % on["state"])
+			_w_is(wrong, fx.seen.get("heavy", 0) == 1 and fx.seen.get("stun", 0) == 1, "heavy told %d, stun told %d" % [fx.seen.get("heavy", 0), fx.seen.get("stun", 0)])
+			await _w_watch(1.0)
+			said += "; a second on, no longer (%.2f)" % a.stun_t
+			_w_is(wrong, a.stun_t <= 0.0, "still stunned %.2f" % a.stun_t)
+			await _w_strike_again(h)
+			var gap: float = await _w_strike_again(h)
+			said += "; held on, his third blow was begun %.3f s after his second, whose swing was over in 0.933 s (formula 1 / %.3f = %.3f)" % [gap, r["rate"], 1.0 / float(r["rate"])]
+			_w_is(wrong, gap >= 1.0 / float(r["rate"]) - 0.001 and gap < 1.0 / float(r["rate"]) + 2.0 * _w_frame + 0.02, "his third blow %.3f s after his second" % gap)
+	_w_say(what, said, wrong)
+
+
+## A WORD BEHIND STRIKE: what the move gives him, or leaves.
+func _w_strike_behind(h: Hero, w: String) -> void:
+	var r := _w_set(h, 0, "behind", [w])
+	var what := "strike behind %s" % w
+	var wrong: Array = []
+	var a: Monster = _w_pack[0]
+	var said := "\"%s\"" % r["name"]
+	if w == "heavy":
+		# (B is winding up a blow of its own: the cracked ground is to break it off)
+		_w_pack[1].state = "windup"
+		_w_pack[1]._t = 9.0
+	await _wait(0.15)
+	if w == "power":
+		var more: float = r["might"]
+		var blows: Array = []
+		var wants: Array = []
+		var stacks: Array = []
+		for k in 6:
+			_w_mark()
+			wants.append(_w_hit(h, 0, 1.0, h.might))
+			if k == 0:
+				await _w_strike(h)
+			else:
+				await _w_strike_again(h)
+			blows.append(_w_lost()[0])
+			stacks.append(roundi(h.might / more))
+		var top: float = h.might
+		var left: float = h.might_t
+		await _w_snap(what)
+		said += " six blows on A took %s (formula %s: each with the might before it); +%.2f%% a blow that lands: his stacks after each %s (formula 1 to 5, 5), might %.2f%% for %.2f s (formula %.2f, 5 s)" % [str(blows), str(wants), more, str(stacks), top, left, more * 5.0]
+		_w_is(wrong, blows == wants, "the blows took %s, not %s" % [str(blows), str(wants)])
+		_w_is(wrong, stacks == [1, 2, 3, 4, 5, 5] and absf(top - more * 5.0) < 0.001 and absf(left - 5.0) < _w_tol(0.15), "stacks %s, might %.2f for %.2f" % [str(stacks), top, left])
+		_w_is(wrong, fx.seen.get("buff", 0) == 6 and fx.last.get("buff", {}).get("stacks", 0) == 5, "buff told %d" % fx.seen.get("buff", 0))
+		var gone := 5.0 - h.might_t
+		while h.might > 0.0 and gone < 8.0:
+			await get_tree().process_frame
+			gone += get_process_delta_time()
+		said += "; gone %.2f s after the last blow (formula 5)" % gone
+		_w_is(wrong, absf(gone - 5.0) < _w_tol(0.2) and h.might == 0.0, "his might lasted %.2f s" % gone)
+		_w_say(what, said, wrong)
+		return
+	await _w_strike(h)
+	var lost := _w_lost()
+	var want := _w_hit(h, 0)
+	said += " hit A %d (formula %d = %d x %.3f)" % [lost[0], want, W_ROLL, r["dmg_mult"]]
+	_w_is(wrong, lost[0] == want, "A took %d, not %d" % [lost[0], want])
+	if w == "swift":
+		var base: float = 4.6 * (1.0 + h.stats["move_speed"] / 100.0)
+		said += "; his haste %.2f%% for %.2f s (formula %.2f%%, 3 s)" % [h.haste, h.haste_t, r["haste"]]
+		_w_is(wrong, absf(h.haste - float(r["haste"])) < 0.001 and absf(h.haste_t - 3.0) < _w_tol(0.15), "haste %.2f for %.2f" % [h.haste, h.haste_t])
+		_w_is(wrong, fx.seen.get("buff", 0) == 1 and fx.last.get("buff", {}).get("kind", "") == "haste", "buff told %d" % fx.seen.get("buff", 0))
+		var fast: float = await _w_walk(h, 0.4)
+		await _w_snap(what)
+		said += "; he walks %.3f tiles a second (formula %.1f x %.4f = %.3f)" % [fast, base, 1.0 + float(r["haste"]) / 100.0, base * (1.0 + float(r["haste"]) / 100.0)]
+		_w_is(wrong, absf(fast - base * (1.0 + float(r["haste"]) / 100.0)) < 0.03, "his pace %.3f" % fast)
+		var t := 0.0
+		while h.haste > 0.0 and t < 5.0:
+			await get_tree().process_frame
+			t += get_process_delta_time()
+		var plain: float = await _w_walk(h, 0.4)
+		said += "; its 3 s out, %.3f (formula %.1f)" % [plain, base]
+		_w_is(wrong, absf(plain - base) < 0.03 and h.haste == 0.0, "his pace after %.3f" % plain)
+		_w_say(what, said, wrong)
+		return
+	# (an element, Poison or Heavy behind: the ground it leaves round what it struck)
+	var inside: Array = [0, 1, 2]
+	said += "; " + await _w_ground(h, 0, a.world, 1.5 if w == "poison" else 1.0, inside, what, wrong, true)
+	if w == "heavy":
+		said += "; B, winding up a blow as it stepped on the cracks, is in \"%s\"" % _w_pack[1].state
+		_w_is(wrong, _w_pack[1].state == "chase", "B's wind-up not broken off: %s" % _w_pack[1].state)
+	_w_say(what, said, wrong)
+
+
+## He walks back the way he came for `secs` and is set down again where he stands: his pace, tiles a second.
+func _w_walk(h: Hero, secs: float) -> float:
+	h.auto_dir = Iso.to_screen(-_w_face.x, -_w_face.y).normalized()
+	var t := 0.0
+	while t < 2.0 and h._act != "":
+		await get_tree().process_frame
+		t += get_process_delta_time()
+	await get_tree().process_frame
+	var pace: float = await _w_pace_of(h, secs)
+	h.auto_dir = Vector2.ZERO
+	await get_tree().process_frame
+	h.world = _w_home
+	h._turn(_w_face)
+	return pace
+
+
+## THE GROUND A MOVE LEFT (wakes.gd), said and held against the game's rule for it: what lies, `rad` round `at`; and what it
+## did over its time to those of the pack standing in it (`inside`: which of them), seen frame by frame. `whole`: a cloud's
+## poison is watched until it has worn off those it poisoned.
+func _w_ground(h: Hero, i: int, at: Vector2, rad: float, inside: Array, what: String, wrong: Array, whole: bool) -> String:
+	var r: Dictionary = h.loadout.r(i)
+	if wakes.list.size() != 1:
+		wrong.append("%d patches lie, not 1" % wakes.list.size())
+		await _w_snap(what)
+		return "%d patches left" % wakes.list.size()
+	var g: Dictionary = wakes.list[0]
+	var kind: String = g["kind"]
+	var hit := _w_avg(h, i)
+	var dmg := 0.0
+	var dur := 4.0
+	var share := 0.0
+	if r["zone"] != null:
+		share = r["zone"]["dps"]
+		dmg = hit * share
+	elif r["cloud"] > 0.0:
+		share = r["cloud"]
+		dmg = hit * share
+		dur = 5.0
+	else:
+		dur = r["cracks"]
+	var said := "it left %s %.2f round, %.2f from where it struck, for %.1f s" % [kind, g["r"], Vector2(g["x"], g["y"]).distance_to(at), g["dur"]]
+	_w_is(wrong, Vector2(g["x"], g["y"]).distance_to(at) < 0.01 and absf(float(g["r"]) - rad) < 0.001 and absf(float(g["dur"]) - dur) < 0.001, "the ground %s %.2f round for %.1f s, %.2f off" % [kind, g["r"], g["dur"], Vector2(g["x"], g["y"]).distance_to(at)])
+	if kind != "cracks":
+		said += ", %.2f %s (formula one hit %.2f x %.3f = %.2f)" % [g["dmg"], "a strike" if kind == "storm" else "a second", hit, share, dmg]
+		_w_is(wrong, absf(float(g["dmg"]) - dmg) < 0.01, "its strength %.2f, not %.2f" % [g["dmg"], dmg])
+	var names := ""
+	for k in inside:
+		names += "ABCDEF"[k]
+	_w_mark()
+	await _w_snap(what)
+	var seen: Dictionary = await _w_watch(dur + (2.3 if kind == "venom" and whole else 0.4))
+	var n: Array = seen["n"]
+	var took: Array = seen["lost"]
+	var out := 0
+	for k in _w_pack.size():
+		if not inside.has(k):
+			out += took[k]
+	_w_is(wrong, out == 0, "those not in it lost %d" % out)
+	match kind:
+		"burn", "ice":
+			var bite := int(maxf(1.0, roundf(dmg * 0.5)))
+			said += "; %s stood in it: bitten %s times for %s (formula 8 x %d each)" % [names, str(n.slice(0, inside.size())), str(took.slice(0, inside.size())), bite]
+			for k in inside:
+				_w_is(wrong, n[k] == 8 and took[k] == 8 * bite, "%s bitten %d times for %d" % ["ABCDEF"[k], n[k], took[k]])
+			if kind == "ice":
+				said += ", chilled %.3f while on it (formula %.3f)" % [seen["most"]["chill"], r["zone"]["slow"]]
+				_w_is(wrong, absf(seen["most"]["chill"] - float(r["zone"]["slow"])) < 0.001, "the ice chilled %.3f" % seen["most"]["chill"])
+		"storm":
+			var bolt := int(maxf(1.0, roundf(dmg)))
+			var bolts := 0
+			var sum := 0
+			for k in inside:
+				bolts += n[k]
+				sum += took[k]
+			said += "; %s stood in it: %d bolts, on one of them each, took %s, %d in all (formula 8 x %d = %d)" % [names, bolts, str(took.slice(0, inside.size())), sum, bolt, 8 * bolt]
+			_w_is(wrong, bolts == 8 and sum == 8 * bolt, "%d bolts took %d" % [bolts, sum])
+			_w_is(wrong, fx.seen.get("arc", 0) == 8, "arc told %d, not 8" % fx.seen.get("arc", 0))
+		"venom":
+			var bite := int(maxf(1.0, roundf(dmg * 0.5)))
+			var most: int = 13 if whole else 11
+			said += "; %s stood in it: each poisoned %.2f a second, %d dose (formula %.2f, 1), bitten %s times for %s (formula about %d x %d each%s)" % [names, seen["most"]["poison_dps"], seen["most"]["poison_n"], dmg, str(n.slice(0, inside.size())), str(took.slice(0, inside.size())), most, bite, ", the poison worn off them 2 s after the cloud" if whole else " while it was watched"]
+			_w_is(wrong, absf(seen["most"]["poison_dps"] - dmg) < 0.01 and seen["most"]["poison_n"] == 1, "the cloud's poison %.2f, %d doses" % [seen["most"]["poison_dps"], seen["most"]["poison_n"]])
+			for k in inside:
+				_w_is(wrong, absi(n[k] - most) <= 1 and took[k] == n[k] * bite, "%s bitten %d times for %d" % ["ABCDEF"[k], n[k], took[k]])
+			_w_is(wrong, fx.seen.get("poisoned", 0) == inside.size(), "poisoned told %d" % fx.seen.get("poisoned", 0))
+			if whole:
+				_w_is(wrong, _w_pack[0].poison_t <= 0.0, "A still poisoned %.2f s" % _w_pack[0].poison_t)
+		"cracks":
+			var heavy: Dictionary = Hero.Words.data()["heavy"]
+			said += "; %s stood on it: staggered %d times in all, A reeling %.2f s at a time (formula twice each: %.2f s, then not for %.1f s more)" % [names, fx.seen.get("stagger", 0), seen["most"]["stagger"], heavy["stagger"], heavy["staggerAgain"]]
+			_w_is(wrong, fx.seen.get("stagger", 0) == 2 * inside.size() and absf(seen["most"]["stagger"] - float(heavy["stagger"])) < _w_tol(0.15), "stagger told %d, A reeling %.2f" % [fx.seen.get("stagger", 0), seen["most"]["stagger"]])
+	said += "; then gone (%d lie)" % wakes.list.size()
+	_w_is(wrong, wakes.list.is_empty(), "%d patches still lie" % wakes.list.size())
+	return said
+
+
+## A WORD ON THE WHIRLWIND, in front or behind: from among the pack, A B C D within a turn's reach.
+func _w_whirl_case(h: Hero, side: String, w: String) -> void:
+	var r := _w_set(h, 1, side, [w])
+	var what := "whirlwind %s %s" % [side, w]
+	var wrong: Array = []
+	var a: Monster = _w_pack[0]
+	var at := _w_home + _w_face * 2.0 + Vector2(-_w_face.y, _w_face.x) * 0.2
+	h.world = at
+	var want := _w_hit(h, 1)
+	var rad: float = 2.0 * float(r["size"])
+	await _wait(0.15)
+	await _w_whirl_begin(h)
+	var lost := _w_lost()
+	var said := "\"%s\" its first turn, %.2f round him, struck A B C D (formula %d = %d x %.3f each): they lost %s" % [r["name"], fx.last.get("burst", {}).get("r", 0.0), want, W_ROLL, r["dmg_mult"], str(lost)]
+	# (with Lightning in front the arcs are in what they lost at once: held against the rule below, _w_arcs)
+	if not (side == "front" and w == "lightning"):
+		_w_is(wrong, lost.slice(0, 4) == [want, want, want, want] and lost[4] == 0 and lost[5] == 0, "its first turn took %s" % str(lost))
+	_w_is(wrong, absf(float(fx.last.get("burst", {}).get("r", 0.0)) - rad) < 0.001 and fx.last.get("burst", {}).get("style", "") == "whirl", "the turn told %s" % str(fx.last.get("burst", {})))
+	if side == "behind":
+		# (one turn, and let go: what it leaves, it left round him as it began)
+		h.auto_whirl = false
+		said += "; " + await _w_ground(h, 1, at, maxf(1.5 if w == "poison" else 1.0, rad), [0, 1, 2, 3], what, wrong, false)
+		_w_say(what, said, wrong)
+		return
+	match w:
+		"fire":
+			var dps: float = want * float(r["ignite"]) / 3.0
+			said += "; each burns %.2f a second (formula %d x %.3f / 3 = %.2f)" % [a.burn_dps, want, r["ignite"], dps]
+			_w_is(wrong, absf(a.burn_dps - dps) < 0.01 and absf(_w_pack[3].burn_dps - dps) < 0.01, "burning %.2f" % a.burn_dps)
+			await _w_whirl_on(h, 3)
+			await _w_snap(what)
+			said += "; three turns: still %.2f a second, its 3 s begun again by each (%.2f s left), ignite told %d (once each)" % [a.burn_dps, a.burn_t, fx.seen.get("ignite", 0)]
+			_w_is(wrong, absf(a.burn_dps - dps) < 0.01 and a.burn_t > 2.4 and fx.seen.get("ignite", 0) == 4, "after three turns burning %.2f for %.2f, ignite told %d" % [a.burn_dps, a.burn_t, fx.seen.get("ignite", 0)])
+		"frost":
+			said += "; each chilled %.3f (formula %.3f), none frozen yet (freeze told %d)" % [a.chill, r["chill"], fx.seen.get("freeze", 0)]
+			_w_is(wrong, absf(a.chill - float(r["chill"])) < 0.001 and a.frozen_t <= 0.0 and fx.seen.get("freeze", 0) == 0, "after one turn chill %.3f, frozen %.2f" % [a.chill, a.frozen_t])
+			await _w_whirl_on(h, 3)
+			await _w_snap(what)
+			said += "; three turns: the second froze all four (freeze told %d), the third could not again (not for %.2f s more)" % [fx.seen.get("freeze", 0), a.freeze_immune]
+			_w_is(wrong, fx.seen.get("freeze", 0) == 4 and a.freeze_immune > 3.0, "freeze told %d, immune %.2f" % [fx.seen.get("freeze", 0), a.freeze_immune])
+		"lightning":
+			# (one turn, and let go, so that its lightning is that turn's alone; its chains run a moment)
+			h.auto_whirl = false
+			await _w_snap(what)
+			await _wait(0.4)
+			said += "; " + _w_arcs(h, 1, 4, wrong)
+		"poison":
+			var dose: float = want * float(r["poison"]) * (1.0 + h.stats.get("poison_pct", 0.0) / 100.0)
+			said += "; each poisoned, 1 dose of %.2f a second (formula %d x %.3f = %.2f)" % [a.poison_dps, want, r["poison"], dose]
+			_w_is(wrong, a.poison_n == 1 and absf(a.poison_dps - dose) < 0.01, "after one turn %d doses, %.2f" % [a.poison_n, a.poison_dps])
+			await _w_whirl_on(h, 3)
+			await _w_snap(what)
+			said += "; three turns: %d doses, %.2f a second (formula 3, %.2f), D the same %d, %.2f" % [a.poison_n, a.poison_dps, dose * 3.0, _w_pack[3].poison_n, _w_pack[3].poison_dps]
+			_w_is(wrong, a.poison_n == 3 and absf(a.poison_dps - dose * 3.0) < 0.01 and _w_pack[3].poison_n == 3, "after three turns %d doses, %.2f" % [a.poison_n, a.poison_dps])
+	_w_say(what, said, wrong)
+
+
+## A WORD ON THE LUNGE, in front or behind: he lunges in from 3.5 tiles behind where he stands to a tile before it, so that
+## its landing takes A B C D.
+func _w_lunge_case(h: Hero, side: String, w: String) -> void:
+	var r := _w_set(h, 2, side, [w])
+	var what := "lunge %s %s" % [side, w]
+	var wrong: Array = []
+	var a: Monster = _w_pack[0]
+	var from := _w_home - _w_face * 3.5
+	var to := _w_home + _w_face * 1.0
+	var at := to + _w_face * 1.0
+	var want := _w_hit(h, 2)
+	var rad: float = 1.6 * float(r["size"])
+	h.world = from
+	await _wait(0.15)
+	await _w_lunge(h, to)
+	var lost := _w_lost()
+	var said := "\"%s\" its landing, %.2f round the point a tile before him, struck A B C D (formula %d = %d x %.3f each): they lost %s" % [r["name"], fx.last.get("burst", {}).get("r", 0.0), want, W_ROLL, r["dmg_mult"], str(lost)]
+	# (with Lightning in front the arcs are in what they lost at once: held against the rule below, _w_arcs)
+	if not (side == "front" and w == "lightning"):
+		_w_is(wrong, lost.slice(0, 4) == [want, want, want, want] and lost[4] == 0 and lost[5] == 0, "its landing took %s" % str(lost))
+	var told: Dictionary = fx.last.get("burst", {})
+	_w_is(wrong, absf(float(told.get("r", 0.0)) - rad) < 0.001 and told.get("style", "") == "land" and Vector2(told.get("x", 0.0), told.get("y", 0.0)).distance_to(at) < 0.05, "the landing told %s" % str(told))
+	if side == "behind":
+		said += "; " + await _w_ground(h, 2, at, maxf(1.5 if w == "poison" else 1.0, rad), [0, 1, 2], what, wrong, false)
+		_w_say(what, said, wrong)
+		return
+	match w:
+		"fire":
+			var dps: float = want * float(r["ignite"]) / 3.0
+			said += "; each burns %.2f a second for 3 s (formula %d x %.3f / 3 = %.2f): A %.2f D %.2f, ignite told %d" % [a.burn_dps, want, r["ignite"], dps, a.burn_t, _w_pack[3].burn_t, fx.seen.get("ignite", 0)]
+			_w_is(wrong, absf(a.burn_dps - dps) < 0.01 and absf(_w_pack[3].burn_dps - dps) < 0.01 and absf(a.burn_t - 3.0) < _w_tol(0.1) and fx.seen.get("ignite", 0) == 4, "burning %.2f for %.2f, ignite told %d" % [a.burn_dps, a.burn_t, fx.seen.get("ignite", 0)])
+			await _w_snap(what)
+		"frost":
+			said += "; each chilled %.3f for 2.5 s (formula %.3f), none frozen (freeze told %d)" % [a.chill, r["chill"], fx.seen.get("freeze", 0)]
+			_w_is(wrong, absf(a.chill - float(r["chill"])) < 0.001 and a.frozen_t <= 0.0 and fx.seen.get("freeze", 0) == 0, "chill %.3f, frozen %.2f" % [a.chill, a.frozen_t])
+			h.world = from
+			await _w_lunge(h, to)
+			said += "; a second Lunge at once froze all four: A %.2f s (formula 1.1), freeze told %d" % [a.frozen_t, fx.seen.get("freeze", 0)]
+			_w_is(wrong, absf(a.frozen_t - 1.1) < _w_tol(0.1) and fx.seen.get("freeze", 0) == 4, "frozen %.2f, freeze told %d" % [a.frozen_t, fx.seen.get("freeze", 0)])
+			await _w_snap(what)
+		"lightning":
+			await _w_snap(what)
+			await _wait(0.4)
+			said += "; " + _w_arcs(h, 2, 4, wrong)
+		"poison":
+			var dose: float = want * float(r["poison"]) * (1.0 + h.stats.get("poison_pct", 0.0) / 100.0)
+			said += "; each poisoned, 1 dose of %.2f a second for 4 s (formula %d x %.3f = %.2f): A %d dose, D %d, poisoned told %d" % [a.poison_dps, want, r["poison"], dose, a.poison_n, _w_pack[3].poison_n, fx.seen.get("poisoned", 0)]
+			_w_is(wrong, a.poison_n == 1 and _w_pack[3].poison_n == 1 and absf(a.poison_dps - dose) < 0.01 and fx.seen.get("poisoned", 0) == 4, "%d doses, %.2f, poisoned told %d" % [a.poison_n, a.poison_dps, fx.seen.get("poisoned", 0)])
+			await _w_snap(what)
+	_w_say(what, said, wrong)
+
+
+## MORE OF THE MOVES' OWN RULES: a Strike that meets nothing still leaves its wake where the blade passed; the Whirlwind held
+## to its end, what it leaves laid again as it goes on, and its wait and the Lunge's as their words make them; Heavy in front
+## of the Lunge.
+func _w_more(h: Hero) -> void:
+	# (a Strike of Flame at nothing: he stands back from the pack and turns from it)
+	var r := _w_set(h, 0, "behind", ["fire"])
+	var what := "strike behind fire, meeting nothing"
+	var wrong: Array = []
+	var from := _w_home - _w_face * 3.0
+	h.world = from
+	h._turn(-_w_face)
+	await _wait(0.15)
+	await _w_strike(h, from)
+	var reach: float = 1.7 * float(r["size"])
+	var want := from - _w_face * reach * 0.75
+	var said := "\"%s\" swung away from the pack and met nothing (hit told %d)" % [r["name"], fx.seen.get("hit", 0)]
+	_w_is(wrong, fx.seen.get("hit", 0) == 0 and _w_lost() == [0, 0, 0, 0, 0, 0], "it hit something: %s" % str(_w_lost()))
+	if wakes.list.size() == 1:
+		var g: Dictionary = wakes.list[0]
+		said += "; it left %s %.2f round, %.3f tiles before him (formula three quarters of its reach, %.3f), %.2f a second (formula one hit %.2f x %.3f)" % [g["kind"], g["r"], Vector2(g["x"], g["y"]).distance_to(from), reach * 0.75, g["dmg"], _w_avg(h, 0), r["zone"]["dps"]]
+		_w_is(wrong, Vector2(g["x"], g["y"]).distance_to(want) < 0.01 and absf(float(g["r"]) - 1.0) < 0.001 and absf(float(g["dmg"]) - _w_avg(h, 0) * float(r["zone"]["dps"])) < 0.01, "its wake %s" % str(g))
+	else:
+		said += "; %d patches lie" % wakes.list.size()
+		wrong.append("%d patches lie, not 1" % wakes.list.size())
+	await _w_snap(what)
+	_w_say(what, said, wrong)
+
+	# (the Whirlwind held to its end: Swift and Poison in front, Flame behind)
+	_w_put(h, 1, "front", ["swift", "poison"])
+	h.loadout.put(1, "behind", "fire")
+	_w_reset(h)
+	r = h.loadout.r(1)
+	what = "whirlwind held to its end"
+	wrong = []
+	var at := _w_home + _w_face * 2.0 + Vector2(-_w_face.y, _w_face.x) * 0.2
+	h.world = at
+	await _wait(0.15)
+	await _w_whirl_begin(h)
+	var lain := 0.0
+	var most := 0
+	var d_prev := -1.0
+	var snapped := false
+	var a: Monster = _w_pack[0]
+	var dose: float = _w_hit(h, 1) * float(r["poison"]) * (1.0 + h.stats.get("poison_pct", 0.0) / 100.0)
+	var doses := [-1, 0.0, -1, 0.0]
+	# (watched until what it left is gone: how long the ground lay; the button let go once the spin has ended of itself, and
+	# A given one hit more of it then: a ninth dose)
+	while lain < 12.0:
+		await get_tree().process_frame
+		if d_prev >= 0.0:
+			lain += d_prev
+		if (h._landed or h._act != "whirl") and h.auto_whirl:
+			h.auto_whirl = false
+			doses[0] = a.poison_n
+			doses[1] = a.poison_dps
+			h.hit_monster(a, 1, 1.0, false)
+			doses[2] = a.poison_n
+			doses[3] = a.poison_dps
+		most = maxi(most, wakes.list.size())
+		if wakes.list.is_empty():
+			break
+		if not snapped and lain > 1.2:
+			snapped = true
+			await _w_snap(what)
+		d_prev = get_process_delta_time()
+	said = "\"%s\" held until it ended of itself: %d turns in %.2f s (formula 8 in 2.4 s); its wait %.3f s (formula 3.5 less his cooldown recovery and Swift's cut = %.3f, the whole of it after a whole spin); what it left was laid again as he spun on, never more than %d patch, and lay %.2f s from the first (formula: laid by its first turn and by the first turn after each second of it, at 0, 1.2 and 2.1 s, then 4 s = 6.1)" % [r["name"], h._bites, h._stopped_at, h._whirl_full, r["cooldown"], most, lain]
+	_w_is(wrong, h._bites == 8 and h._stopped_at >= 2.4 and h._stopped_at < 2.4 + 2.0 * _w_frame + 0.02, "%d turns in %.2f s" % [h._bites, h._stopped_at])
+	_w_is(wrong, absf(h._whirl_full - float(r["cooldown"])) < 0.001 and float(r["cooldown"]) < 3.5, "its wait %.3f" % h._whirl_full)
+	_w_is(wrong, most == 1 and absf(lain - 6.1) < _w_tol(0.15) and fx.seen.get("zone", 0) == 1, "%d patches, lain %.2f s, zone told %d" % [most, lain, fx.seen.get("zone", 0)])
+	said += "; its eight turns left A with %d doses of poison, %.2f a second (formula 8, 8 x %.2f = %.2f); a ninth hit left %d doses, %.2f (formula still 8: no fewer than eight of the new dose)" % [doses[0], doses[1], dose, dose * 8.0, doses[2], doses[3]]
+	_w_is(wrong, doses[0] == 8 and absf(doses[1] - dose * 8.0) < 0.01 and doses[2] == 8 and absf(doses[3] - dose * 8.0) < 0.01, "doses %s" % str(doses))
+	_w_say(what, said, wrong)
+
+	# (the Lunge's wait as Swift and as Heavy in front make it; and Heavy's landing)
+	what = "lunge front swift, then heavy"
+	wrong = []
+	r = _w_set(h, 2, "front", ["swift"])
+	h.world = _w_home - _w_face * 3.5
+	await _wait(0.15)
+	await _w_lunge(h, _w_home + _w_face * 1.0)
+	var quick: float = h._lunge_full
+	said = "\"%s\" is ready again after %.3f s (formula 4 less his cooldown recovery, %.1f%%, and Swift's cut = %.3f)" % [r["name"], quick, h.stats["cdr"] * 100.0, r["cooldown"]]
+	_w_is(wrong, absf(quick - float(r["cooldown"])) < 0.001 and float(r["cooldown"]) < 4.0, "its wait %.3f" % quick)
+	r = _w_set(h, 2, "front", ["heavy"])
+	h.world = _w_home - _w_face * 3.5
+	await _wait(0.15)
+	await _w_lunge(h, _w_home + _w_face * 1.0)
+	var stunned := 0
+	for k in 4:
+		if absf(_w_pack[k].stun_t - float(r["stun"])) < _w_tol(0.1):
+			stunned += 1
+	var told: Dictionary = fx.last.get("heavy", {})
+	said += "; \"%s\" after %.3f s (formula 4 less his cooldown recovery, x %.2f = %.3f); its landing struck A B C D for %s (formula %d each) and stunned %d of them %.2f s (formula all four, %.1f s); its weight told out to %.2f round, big %s (formula the blast's edge, %.2f)" % [r["name"], h._lunge_full, Hero.Words.data()["heavy"]["slower"], r["cooldown"], str(_w_lost().slice(0, 4)), _w_hit(h, 2), stunned, _w_pack[0].stun_t, r["stun"], told.get("r", 0.0), told.get("big", false), 1.6 * float(r["size"])]
+	_w_is(wrong, absf(h._lunge_full - float(r["cooldown"])) < 0.001 and float(r["cooldown"]) > 4.0, "its wait %.3f" % h._lunge_full)
+	_w_is(wrong, _w_lost().slice(0, 4) == [_w_hit(h, 2), _w_hit(h, 2), _w_hit(h, 2), _w_hit(h, 2)] and stunned == 4 and fx.seen.get("stun", 0) == 4, "it took %s and stunned %d" % [str(_w_lost()), stunned])
+	_w_is(wrong, fx.seen.get("heavy", 0) == 1 and told.get("big", false) and absf(float(told.get("r", 0.0)) - 1.6 * float(r["size"])) < 0.001, "its weight told %s" % str(told))
+	await _w_snap(what)
+	_w_say(what, said, wrong)
+
+
+## WHAT A CHILL SLOWS, AND BY HOW MUCH: one of the pack let walk, its pace before and after a Frost hit; then its wind-up;
+## then, frozen by a second Frost hit and stunned by a Heavy one, that it goes nowhere.
+func _w_chilled(h: Hero) -> void:
+	var r := _w_set(h, 0, "front", ["frost"])
+	var what := "a chilled monster"
+	var wrong: Array = []
+	var f: Monster = _w_pack[5]
+	f.state = "chase"
+	f.speed = 3.0
+	await _wait(0.5)
+	var free: float = await _w_pace_of(f, 0.5)
+	h.hit_monster(f, 0, 1.0, false)
+	var by: float = f.chill
+	var slowed: float = await _w_pace_of(f, 0.5)
+	var wind_up := func() -> void:
+		f.state = "windup"
+		f._t = 0.5
+	var t: float = await _w_time_from(wind_up, func() -> bool: return f.state != "windup", 3.0)
+	# (walking again, a second chilling hit freezes it; thawed, a Heavy hit stuns it: it goes nowhere meanwhile)
+	f.state = "chase"
+	f._cd = 1e9
+	h.hit_monster(f, 0, 1.0, false)
+	var frozen: float = f.frozen_t
+	var iced: float = await _w_pace_of(f, 0.4)
+	await _w_until(func() -> bool: return f.frozen_t <= 0.0, 3.0)
+	_w_put(h, 0, "front", ["heavy"])
+	h.hit_monster(f, 0, 1.0, false)
+	var stun: float = f.stun_t
+	var stunned: float = await _w_pace_of(f, 0.4)
+	await _w_until(func() -> bool: return f.stun_t <= 0.0, 3.0)
+	var after: float = await _w_pace_of(f, 0.3)
+	await _w_snap(what)
+	var long := 0.5 / (0.6 + 0.4 * (1.0 - by))
+	var said := "F, a skeleton let walk at 3 tiles a second, went %.3f; chilled %.3f by a Frost Strike's hit it went %.3f (formula 3 x %.3f = %.3f); a wind-up of 0.5 s then took it %.2f s (formula 0.5 / (0.6 + 0.4 x %.3f) = %.2f)" % [free, by, slowed, 1.0 - by, 3.0 * (1.0 - by), t, 1.0 - by, long]
+	_w_is(wrong, absf(free - 3.0) < 0.03 and absf(by - float(r["chill"])) < 0.001 and absf(slowed - 3.0 * (1.0 - by)) < 0.03, "its pace %.3f, chilled %.3f" % [free, slowed])
+	_w_is(wrong, t >= long - 0.001 and t < long + 2.0 * _w_frame + 0.02, "its wind-up took %.2f s" % t)
+	said += "; walking again, a second Frost hit froze it %.2f s (formula 1.1) and it went %.3f; thawed, a Heavy hit stunned it %.2f s (formula 0.8) and it went %.3f; the stun over, it went on at %.3f" % [frozen, iced, stun, stunned, after]
+	_w_is(wrong, absf(frozen - 1.1) < 0.001 and iced == 0.0 and absf(stun - 0.8) < 0.001 and stunned == 0.0 and after > 1.5, "frozen %.2f going %.3f, stunned %.2f going %.3f, then %.3f" % [frozen, iced, stun, stunned, after])
+	_w_say(what, said, wrong)
+
+
+## AN ELITE AND THE BOSS: an elite is stunned for half as long and frozen for 0.6 s; the boss is chilled, burned and poisoned,
+## and never frozen, stunned or staggered. Each is hit by the rules' own hit (hero.gd hit_monster), he standing by it.
+func _w_tough(h: Hero, elite: Monster, boss: Monster) -> void:
+	_w_set(h, 0, "front", ["frost", "heavy"])
+	var r: Dictionary = h.loadout.r(0)
+	if elite != null:
+		var what := "an elite"
+		var wrong: Array = []
+		elite.max_life = W_LIFE
+		elite.life = W_LIFE
+		h.world = _spot_near(elite.world, 1.6, elite.world)
+		await _wait(0.3)
+		fx.seen = {}
+		h.hit_monster(elite, 0, 1.0, false)
+		var stun: float = elite.stun_t
+		await _wait(0.6)
+		h.hit_monster(elite, 0, 1.0, false)
+		await _w_snap(what)
+		var said := "\"%s\" on %s, an elite (shut in a room: %s): stunned %.2f s (formula %.1f / 2); the second hit, 0.6 s on, froze it %.2f s (formula 0.6), not again for %.2f s (formula 4)" % [r["name"], elite.title, _monsters.shut_in(elite), stun, r["stun"], elite.frozen_t, elite.freeze_immune]
+		_w_is(wrong, absf(stun - float(r["stun"]) / 2.0) < 0.001 and absf(elite.frozen_t - 0.6) < 0.001 and absf(elite.freeze_immune - 4.0) < 0.001, "stunned %.2f, frozen %.2f, immune %.2f" % [stun, elite.frozen_t, elite.freeze_immune])
+		_w_is(wrong, fx.seen.get("stun", 0) == 2 and fx.seen.get("freeze", 0) == 1, "stun told %d, freeze told %d" % [fx.seen.get("stun", 0), fx.seen.get("freeze", 0)])
+		_w_say(what, said, wrong)
+	if boss != null:
+		var what := "the boss"
+		var wrong: Array = []
+		h.world = _spot_near(boss.world, 4.0, boss.world)
+		var t := 0.0
+		while (boss.waits or boss.state == "sleep") and t < 12.0:
+			await get_tree().process_frame
+			t += get_process_delta_time()
+		fx.seen = {}
+		var life: float = boss.life
+		h.hit_monster(boss, 0, 1.0, false)
+		await _wait(0.3)
+		h.hit_monster(boss, 0, 1.0, false)
+		var took: float = life - boss.life
+		var said := "\"%s\" twice on %s (waited %.1f s for him to fight): took %d (formula 2 x %d); chilled %.3f for %.2f s (formula %.3f, 2.5 s), so he walks at %.3f of his pace; frozen %.2f, stunned %.2f (formula never), freeze told %d, stun told %d" % [r["name"], boss.title, t, took, _w_hit(h, 0), boss.chill, boss.chill_t, r["chill"], boss.slow(), boss.frozen_t, boss.stun_t, fx.seen.get("freeze", 0), fx.seen.get("stun", 0)]
+		_w_is(wrong, int(roundf(took)) == 2 * _w_hit(h, 0), "he took %d" % took)
+		_w_is(wrong, absf(boss.chill - float(r["chill"])) < 0.001 and boss.chill_t > 2.0 and absf(boss.slow() - (1.0 - float(r["chill"]))) < 0.001, "chilled %.3f for %.2f" % [boss.chill, boss.chill_t])
+		_w_is(wrong, boss.frozen_t <= 0.0 and boss.stun_t <= 0.0 and fx.seen.get("freeze", 0) == 0 and fx.seen.get("stun", 0) == 0, "frozen %.2f, stunned %.2f" % [boss.frozen_t, boss.stun_t])
+		boss.stagger_from(h.world)
+		_w_is(wrong, boss.stagger_t <= 0.0 and fx.seen.get("stagger", 0) == 0, "staggered %.2f" % boss.stagger_t)
+		_w_put(h, 0, "front", ["fire"])
+		h.hit_monster(boss, 0, 1.0, false)
+		var burn: float = boss.burn_dps
+		_w_put(h, 0, "front", ["poison"])
+		h.hit_monster(boss, 0, 1.0, false)
+		await _w_snap(what)
+		life = boss.life
+		_monsters._dot_t = 0.25
+		await _wait(1.15)
+		said += "; cracked ground did not stagger him (%.2f); a Flame hit set him burning %.2f a second, a Poison hit poisoned him %.2f a second (%d dose): in the next 1.15 s they took %d from him" % [boss.stagger_t, burn, boss.poison_dps, boss.poison_n, life - boss.life]
+		_w_is(wrong, burn > 0.0 and boss.poison_n == 1 and boss.poison_dps > 0.0 and life - boss.life > 0.0, "burning %.2f, poison %.2f x %d, took %d" % [burn, boss.poison_dps, boss.poison_n, life - boss.life])
+		_w_say(what, said, wrong)
+
+# ===========================================================================================================================
+# (the end of the check of the words in the fight)
+# ===========================================================================================================================
 
 
 ## SHOT MODE, THE LOOT: a pack fought and what it leaves; more gear put in his way; the fallen wordsmith searched (the

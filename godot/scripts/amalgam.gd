@@ -573,7 +573,8 @@ class Kit:
 	## field; its pictures go by the ground it has covered. `stop`: it means to stop where its walk next comes round to its first
 	## frame (an act is ready); it stops there too if there is no way on, or stopping would leave it as near him as it likes to stand.
 	static func carry(ai, G: Dictionary, m, dt: float, to: Vector2, dist: float, los: bool, stop: bool) -> void:
-		var sp: float = m.speed
+		# (chilled, slower by the chill's share: bosses.ts step, `slow`; monster.gd slow)
+		var sp: float = m.speed * m.slow()
 		var v: Vector2 = to / dist if dist < 2.5 and los and dist > 0.01 else m.mgr.flow_dir(m.world)
 		if ai.mode != "halt" and v != Vector2.ZERO:
 			m.face = v
@@ -805,7 +806,7 @@ class Mite extends RefCounted:
 			if dist > 0.01:
 				m.face = to / dist
 			return
-		var step: Vector2 = way * m.speed * dt
+		var step: Vector2 = way * m.speed * m.slow() * dt
 		var rr := minf(m.r, 0.42)
 		if m.mgr.clear(m.world.x + step.x, m.world.y, rr):
 			m.world.x += step.x

@@ -188,7 +188,8 @@ func _step(m, dt: float, hero) -> void:
 			_to("setOff")
 		return
 	# CARRIED OVER THE FLOOR AT HIS PACE, from the first moment of setting off to the last of stopping
-	var sp: float = m.speed
+	# (chilled, slower by the chill's share: bosses.ts step, `slow`; monster.gd slow)
+	var sp: float = m.speed * m.slow()
 	var v: Vector2 = to / dist if dist < 2.5 and los and dist > 0.01 else m.mgr.flow_dir(m.world)
 	if mode != "halt" and v != Vector2.ZERO:
 		m.face = v

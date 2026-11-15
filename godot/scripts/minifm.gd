@@ -50,6 +50,11 @@ func step(m, dt: float, hero) -> void:
 	m._cd -= dt
 	for k in cds.size():
 		cds[k] -= dt
+	# (stunned or staggered in the middle of an act, or put to sleep in it and woken again: the act is broken off, bosses.ts
+	# breakOff; monster.gd break_off)
+	if act != null and m.state != "act":
+		act = null
+		_to("stand")
 	if act != null:
 		_step_act(m, dt, hero)
 		return
@@ -71,7 +76,8 @@ func step(m, dt: float, hero) -> void:
 			_to("setOff")
 		return
 	# CARRIED OVER THE FLOOR AT HIS PACE, from the first moment of setting off to the last of stopping
-	var sp: float = m.speed
+	# (chilled, slower by the chill's share: bosses.ts step, `slow`; monster.gd slow)
+	var sp: float = m.speed * m.slow()
 	var v: Vector2 = to / dist if dist < 2.5 and los and dist > 0.01 else m.mgr.flow_dir(m.world)
 	if mode != "halt" and v != Vector2.ZERO:
 		m.face = v

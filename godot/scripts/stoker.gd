@@ -115,19 +115,15 @@ var gt := 0.0
 var cds: Array = []
 ## The act he is making: {i, t, peril: what it has laid on the floor}; null: none.
 var act = null
-## (how long he has walked since his last footfall; his life as last seen, and how long since he was last struck)
+## (how long he has walked since his last footfall, and how long since a blow last landed on him)
 var _foot := 0.0
-var _life := -1.0
 var _struck := INF
 
 
 ## A step of him, awake (monster.gd step hands him here).
 func step(m, dt: float, hero) -> void:
-	# (struck, he reels from the blow: game.ts struckT)
-	if _life < 0.0:
-		_life = m.max_life
-	_struck = 0.0 if m.life < _life else _struck + dt
-	_life = m.life
+	# (struck, he reels from the blow, not from what burns or poisons him: game.ts struckT; monster.gd struck_t)
+	_struck = m.struck_t
 	# (RULES.tick: the floor shaking at each footfall as he walks, two a round of his walk; felt near him)
 	if act == null and mode == "walk":
 		_foot += dt
@@ -168,7 +164,8 @@ func step(m, dt: float, hero) -> void:
 		_show(m)
 		return
 	# CARRIED OVER THE FLOOR AT HIS PACE, from the first moment of setting off to the last of stopping
-	var sp: float = m.speed
+	# (chilled, slower by the chill's share: bosses.ts step, `slow`; monster.gd slow)
+	var sp: float = m.speed * m.slow()
 	var v := Vector2.ZERO
 	if dist > 0.01:
 		v = to / dist if dist < 2.5 and los else m.mgr.flow_dir(m.world)

@@ -19,14 +19,44 @@
 ##     through monsters and the Lockdown's bars; landing, a blow 1.6 round a tile before him, x0.5; ready again after 4 s
 ##     (defs.ts SKILLS.leap, LUNGE; game.ts useEvasive, land).
 ## (In the game Whirl opens at level 2 and the Lunge at 5, MOVE_OPENS; here all three are open, to try them.)
-## A HIT (game.ts): a roll of the weapon's damage x the move's share x (1 + Str / 100) x (1 + his damage bonuses / 100);
-## a critical (5% + 0.1% a point of Dex) x1.5.
+##
+## HIS WORDS IN THE FIGHT ("wordsmithing"; loadout.gd, words.gd): A WORD IN FRONT OF A MOVE CHANGES THE HIT, A WORD BEHIND IT
+## CHANGES WHAT THE MOVE LEAVES. `loadout.r(i)` is move i (0 Strike, 1 Whirlwind, 2 Lunge) with its words, and each move is
+## made through it, as the game makes it:
+##   how far and how wide: Strike's reach, the Whirlwind's and the Lunge's radius, times `size`; Strike's blows a second,
+##     `rate` (and its wind-up never more than two fifths of the time between them: game.ts useBasic); the Whirlwind's and the
+##     Lunge's waits, `cooldown`.
+##   STRIKE (game.ts release, deliver, strike; _strike here): the best one before him is hit; Power's, Flame's and Frost's
+##     splash round it (`splash` x size: every other one within it for `splash_dmg` of the hit); then what it leaves, round
+##     what it struck, or where the blade passed if it met nothing.
+##   THE WHIRLWIND (beginChannel, updateChannel, channelBite, blast; _spin and _blast here): each turn hits all within its
+##     radius; what it leaves, it leaves round him by its first turn and by the first turn after each second it has gone on.
+##   THE LUNGE (useEvasive, land, blast): its landing hits all within its radius of the point a tile before him, and leaves
+##     what it leaves there.
+##   A HIT ON A MONSTER (hitMonster; hit_monster here): a roll of the weapon's damage x the move's share with its words
+##     (`dmg_mult`, his Strength in it) x (1 + (his damage bonus, the bonus of the blow's element and his might) / 100); a
+##     critical (5% + 0.1% a point of Dex) x1.5; then Flame's burning, Frost's chill (a second one freezes), Lightning's arcs,
+##     Poison's dose, Heavy's stun; life on hit. In an area the fourth one struck and those after, and a splash's, are QUIET:
+##     no lightning jumps from them, and they carry no weight of Power.
+##   WHAT A MOVE GIVES HIM: Power behind, MIGHT, so many % more damage for each blow that lands on something, five blows' worth
+##     at most, 5 s from the last (landed; _landed_on here); Swift behind, HASTE, so many % faster on his feet for 3 s after
+##     each use (boons; _boons here).
+##   WHAT A MOVE LEAVES (wake; _wake here; the ground itself and what it does, wakes.gd): Flame, Frost or Lightning behind,
+##     burning ground, ice or a storm; Poison behind, a cloud; Heavy behind, cracked ground.
+##   What the rules have done they TELL (fx.gd event, the game's own tellings): swing, cast, hit, burst, heavy, buff here;
+##     ignite, freeze, shatter, poisoned, stun, stagger from the monster (monster.gd); arc from monsters.gd and the storm; zone
+##     from wakes.gd.
+##   LEFT OUT, as not a new Warrior's on floors 1 to 5: the skill trees (game.ts has, was, now: Sweeping Cut, Master Stroke,
+##     Fuel, Searing, Venom, Deep Freeze, Forking, Cadence and the rest), the unique items (worn, wears), the melded words
+##     (r.meld, meldHit, MELDS8), the other classes, and every word but the seven (Twin's second blows, Echoes, the last
+##     words): where the game's code branches on one of those, the branch is not here.
 extends Node2D
 
 const Iso := preload("res://scripts/iso.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 const BakedHero := preload("res://scripts/baked_hero.gd")
 const Sfx := preload("res://scripts/sfx.gd")
+const Words := preload("res://scripts/words.gd")
 
 const SPEED := 4.6
 const RADIUS := 0.3
@@ -40,10 +70,12 @@ const AIM_REACH := 2.4
 const BACK_AFTER := 2.5
 const Loadout := preload("res://scripts/loadout.gd")
 
-const STRIKE := {"share": 1.0, "reach": 1.7, "windup": 0.333, "follow": 0.3, "combo": 0.5, "step": 0.33}
-const WHIRL := {"share": 0.55, "radius": 2.0, "windup": 0.12, "channel": 2.4, "tick": 0.3, "cooldown": 3.5, "min_cool": 0.35, "follow": 0.25, "walk": 0.9, "spin": 1.6}
+## (each move's share of the weapon's damage and its wait are the words' to change: loadout.r(i) `dmg_mult`, `cooldown`.
+## `wake`, defs.ts TUNE.channelWake: how often the Whirlwind leaves what the words behind it leave, as it goes on)
+const STRIKE := {"reach": 1.7, "windup": 0.333, "follow": 0.3, "combo": 0.5, "step": 0.33}
+const WHIRL := {"radius": 2.0, "windup": 0.12, "channel": 2.4, "tick": 0.3, "min_cool": 0.35, "follow": 0.25, "walk": 0.9, "spin": 1.6, "wake": 1.0}
 const WHIRL_LIST := 44
-const LUNGE := {"share": 0.5, "range": 6.0, "radius": 1.6, "ahead": 1.0, "cooldown": 4.0, "invuln": 0.06}
+const LUNGE := {"range": 6.0, "radius": 1.6, "ahead": 1.0, "invuln": 0.06}
 const LEAP_LIST := 39
 const LAND_LIST := 45
 
@@ -53,6 +85,8 @@ var sfx: Sfx
 var monsters  # monsters.gd
 ## (what the fight shows of his blows and words: the rules tell it with fx.event, fx.gd draws it; null where a place has none)
 var fx
+## (the ground his moves leave, and what it does: wakes.gd; the place's own)
+var wakes
 var doors  # doors.gd, on a floor that has them (null in town)
 var props  # props.gd, on a floor that has chests, barrels or urns (null in town)
 var world := Vector2.ZERO
@@ -80,8 +114,13 @@ var strike_words: Dictionary:
 		var f: Array = loadout.fronts(0)
 		var b: Array = loadout.behinds(0)
 		return {"front": f[0] if not f.is_empty() else "", "behind": b[0] if not b.is_empty() else ""}
-var _might := 0
-var _might_t := 0.0
+## WHAT HIS MOVES HAVE GIVEN HIM (game.ts Hero might, mightT, haste, hasteT): MIGHT, Power behind: so many % more damage on
+## every hit of his, built by blows that land, for `might_t` seconds more; HASTE, Swift behind: so many % faster on his
+## feet, for `haste_t` seconds more.
+var might := 0.0
+var might_t := 0.0
+var haste := 0.0
+var haste_t := 0.0
 
 ## Shot mode (main.gd): a screen direction held as if pressed, attacks asked for, and blows that flash but do not harm.
 var auto_dir := Vector2.ZERO
@@ -107,13 +146,17 @@ var _landed := false
 var _last_swing := -10.0
 var _combo_next := false
 var _whirl_cd := 0.0
-## (the Whirlwind: its wait in full, how many cuts it has made, the next one's time, how long it has spun, when let go)
+## (the Whirlwind: its wait in full, how many cuts it has made, the next one's time, how long it has spun, when let go, and
+## how far into the spin it next leaves what the words behind it leave: game.ts Hero.channel `wake`)
 var _whirl_full := 3.5
 var _bites := 0
 var _next_bite := 0.0
 var _spun := -1.0
 var _stopped_at := 0.0
+var _whirl_wake := 0.0
 var _lunge_cd := 0.0
+## (the Lunge's wait in full, as its words made it when it was last used)
+var _lunge_full := 4.0
 var _lunge := {}
 var _landing := false
 var _clock := 0.0
@@ -153,28 +196,235 @@ func set_max_life(v: float) -> void:
 	life = minf(life + maxf(0.0, v - was), v)
 
 
+## Strike's blows a second, with its words: Swift in front faster, Heavy in front slower (game.ts useBasic: never fewer than
+## 0.3 a second).
 func rate() -> float:
-	return stats["aps"]
+	return maxf(0.3, float(loadout.r(0)["rate"]))
 
 
-## One hit of a move with share `share` of the weapon's damage (game.ts, words.ts resolveSkill): a roll of his damage x the
-## move's share x (1 + Str / 100) x (1 + his damage bonuses and Power's might / 100); a critical x(1 + crit_mult / 100).
-func roll_hit(share: float) -> float:
-	var might: float = _might * float(loadout.r(0)["might"])
-	var dmg: float = randf_range(stats["dmg_min"], stats["dmg_max"]) * share * (1.0 + stats["str"] / 100.0) * (1.0 + (stats["dmg_pct"] + stats["phys_pct"] + might) / 100.0)
-	if randf() * 100.0 < stats["crit_chance"]:
+## How long into a Strike its blow lands (useBasic): its wind-up, never more than two fifths of the time between blows.
+func _strike_windup() -> float:
+	return minf(STRIKE["windup"], 0.4 / rate())
+
+
+# --- his words in the fight ---
+
+## What he tells of what his rules have done (fx.gd: the game's own telling; a place may have none).
+func _tell(e: Dictionary) -> void:
+	if fx != null:
+		fx.event(e)
+
+
+## How much more his gear makes of a hit of that element, % (game.ts hitMonster `el`): a plain blow his Physical Damage, a
+## word's element its own.
+func _el_pct(el: String) -> float:
+	match el:
+		"fire":
+			return stats.get("fire_pct", 0.0)
+		"frost":
+			return stats.get("frost_pct", 0.0)
+		"lightning":
+			return stats.get("light_pct", 0.0)
+	return stats.get("phys_pct", 0.0)
+
+
+## The least and the most of a hit of his of that element before what multiplies it (game.ts baseFor): his weapon's, and
+## what his gear adds flat to that element's hits (items.ts FLAT_PAIRS: loot.gd gives none of those yet, so the weapon's).
+func base_for(el: String) -> Array:
+	var k := {"fire": "fire", "frost": "frost", "lightning": "light"}.get(el, "") as String
+	var lo: float = stats["dmg_min"] + (stats.get(k + "_min", 0.0) if k != "" else 0.0)
+	var hi: float = stats["dmg_max"] + (stats.get(k + "_max", 0.0) if k != "" else 0.0)
+	return [lo, hi]
+
+
+## The average of one hit of move `i`, `frac` of it, as his numbers and his might stand, before a critical (game.ts avgHit):
+## what the ground a move leaves is sized by.
+func avg_hit(i: int, frac: float) -> float:
+	var r: Dictionary = loadout.r(i)
+	var base := base_for(r["element"])
+	return (base[0] + base[1]) / 2.0 * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(r["element"]) + might) / 100.0)
+
+
+## ONE HIT OF MOVE `i` ON A MONSTER, `frac` of it, with everything a word in front adds (game.ts hitMonster, in its order).
+## `quiet`: a splash's hit, or the fourth and later of an area's: no lightning jumps from it and it carries no weight of
+## Power; all else it does as any hit.
+## (Left out, with the game's switches for them: the talents' and uniques' multipliers and certain criticals, Precise's mark,
+## Avalanche, Prismheart, Thunder, the Rot Axe, Vast's splash, the melds, the Warlock, Splitting, Giant Slayer, Kindling, Deep
+## Freeze, Blight, Hexing, Stilling, the Warhammer's stuns and staggers, Rend, Widowfall, Binding, Bleeding, Culling, Leech,
+## Forking, the shock that Overload works on, Charged.)
+func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
+	# (what is shut in a room is out of reach; one still crawling up out of the ground is only a picture)
+	if not is_instance_valid(m) or m.dead or m.state == "rise" or monsters.shut_in(m):
+		return
+	# (FLOOR 3: the Boneward behind its shield: a blow from before it glances off, and does nothing)
+	if m.glances(world):
+		m.glance()
+		return
+	var r: Dictionary = loadout.r(i)
+	var el: String = r["element"]
+	var base := base_for(el)
+	var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(el) + might) / 100.0)
+	var crit: bool = randf() * 100.0 < stats["crit_chance"]
+	if crit:
 		dmg *= 1.0 + stats["crit_mult"] / 100.0
-	return maxf(1.0, roundf(dmg))
+	dmg = maxf(1.0, roundf(dmg))
+	var at: Vector2 = m.world
+	# FLAME in front: what it strikes burns for `ignite` of the hit more, over 3 s
+	if r["ignite"] > 0.0:
+		m.set_alight(dmg * float(r["ignite"]) / 3.0)
+	# FROST in front: it is chilled; a second chilling hit freezes it
+	if r["chill"] > 0.0:
+		m.chill_by(r["chill"])
+	var front: Array = [] if quiet else loadout.fronts(i)
+	# (lightning comes down on the one it hits before it jumps to the others)
+	if r["arcs"] > 0 and not quiet:
+		_tell({"t": "arc", "x0": at.x, "y0": at.y, "x1": at.x, "y1": at.y, "sky": true})
+	m.damage(dmg, el, crit, not quiet and front.has("power"), front)
+	# POISON in front: each hit adds a dose of `poison` of the hit a second (and what his gear adds to a hit that poisons, over
+	# the poison's time: items.ts POISON_DMG, which loot.gd does not give yet)
+	var dose: float = dmg * float(r["poison"]) if r["poison"] > 0.0 else 0.0
+	var p_min: float = stats.get("poison_min", 0.0)
+	var p_max: float = stats.get("poison_max", 0.0)
+	if dose > 0.0 and (p_min != 0.0 or p_max != 0.0):
+		dose += randf_range(p_min, maxf(p_min, p_max)) / float(Words.data()["poison"]["time"])
+	if dose > 0.0:
+		m.dose(dose)
+	if not m.dead:
+		# HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too (its chance, 50% at most: none yet here)
+		var heavy: Dictionary = Words.data()["heavy"]
+		if r["stun"] > 0.0:
+			m.stun_for(r["stun"])
+		else:
+			var chance: float = minf(float(heavy["stunCap"]), stats.get("stun_chance", 0.0))
+			if chance > 0.0 and randf() * 100.0 < chance:
+				m.stun_for(float(heavy["stun"]))
+	heal_flat(stats["life_on_hit"])
+	# LIGHTNING in front: it jumps to the nearest other enemies, and on from each (monsters.gd arcs)
+	if r["arcs"] > 0 and not quiet:
+		monsters.arcs(m, int(r["arcs"]), maxf(1.0, roundf(dmg * float(r["arc_dmg"]))))
 
 
-## Strike's share and reach with the words in it.
-func _strike_share() -> float:
-	# (the move's share with its words: roll_hit lays his Strength on it, which the game's dmgMult already carries)
-	return float(loadout.r(0)["dmg_mult"]) / (1.0 + stats["str"] / 100.0)
+## "of Power" behind move `i` (game.ts landed): a blow of it has landed on an enemy, and his might grows by the word's share,
+## five blows' worth at most, and lasts 5 s from now. Once for each blow that lands, however many it catches: a Whirlwind's
+## turn through five skeletons is one.
+func _landed_on(i: int) -> void:
+	var more: float = loadout.r(i)["might"]
+	if more <= 0.0:
+		return
+	might = minf(more * 5.0, might + more)
+	might_t = maxf(might_t, 5.0)
+	_tell({"t": "buff", "kind": "might", "x": world.x, "y": world.y, "stacks": maxi(1, roundi(might / more))})
 
 
-func _strike_reach() -> float:
-	return STRIKE["reach"] * float(loadout.r(0)["size"])
+## What a use of move `i` gives him from the words behind it (game.ts boons): "of Swiftness", his haste, for 3 s. Once a use.
+func _boons(i: int) -> void:
+	var fast: float = loadout.r(i)["haste"]
+	if fast <= 0.0:
+		return
+	haste = fast
+	haste_t = 3.0
+	_tell({"t": "buff", "kind": "haste", "x": world.x, "y": world.y, "stacks": 1})
+
+
+## The words on move `i` told as it is made (game.ts deliver, beginChannel, useEvasive: `cast`), where it has any: from `at`,
+## the way `way`; `kind` the game's name for what sort of move it is.
+func _cast(i: int, kind: String, at: Vector2, way: Vector2) -> void:
+	var front: Array = loadout.fronts(i)
+	var behind: Array = loadout.behinds(i)
+	if front.is_empty() and behind.is_empty():
+		return
+	_tell({"t": "cast", "x": at.x, "y": at.y, "dx": way.x, "dy": way.y, "kind": kind, "el": loadout.r(i)["element"], "words": front, "behind": behind, "echo": false})
+
+
+## What a blow of move `i` reaches of the things on the floor, within `rad` of `at` (game.ts breakProps): the barrels and urns
+## are broken; a sealed door there opens if the move carries its word, in front or behind (unseal).
+func _break_props(i: int, at: Vector2, rad: float) -> void:
+	if props != null and is_instance_valid(props):
+		props.strike(at, rad)
+	if doors != null and is_instance_valid(doors):
+		doors.unseal({"front": loadout.fronts(i), "behind": loadout.behinds(i)}, at, rad)
+
+
+## WHAT MOVE `i` LEAVES where it struck (game.ts wake, leavePatches): the ground of an element behind it, no smaller than a
+## tile round; Poison's cloud, no smaller than a tile and a half; Heavy's cracked ground, no smaller than a tile. `frac`: the
+## share of the move's hit that the ground and the cloud are sized by.
+func _wake(i: int, at: Vector2, rad: float, frac: float) -> void:
+	if wakes == null or not is_instance_valid(wakes):
+		return
+	var r: Dictionary = loadout.r(i)
+	if r["zone"] != null:
+		wakes.add_ground(r["zone"], i, at, maxf(1.0, rad), avg_hit(i, frac))
+	if r["cloud"] > 0.0:
+		wakes.add_cloud(i, at, maxf(1.5, rad), avg_hit(i, frac) * float(r["cloud"]))
+	if r["cracks"] > 0.0:
+		wakes.add_cracks(i, at, maxf(1.0, rad), r["cracks"])
+
+
+## ONE MELEE HIT of move `i` from `from` the way `way` (game.ts strike): the best one before him, nearest and most in front,
+## is hit; a move whose words give it a splash strikes every other one round that one, quietly, for the splash's share; then
+## what the move leaves, round what it struck. A swing that meets nothing still leaves its wake where the blade passed.
+func _strike(i: int, from: Vector2, way: Vector2, frac: float) -> void:
+	var r: Dictionary = loadout.r(i)
+	var reach: float = STRIKE["reach"] * float(r["size"])
+	var front: Array = loadout.fronts(i)
+	_tell({"t": "swing", "x": from.x, "y": from.y, "dx": way.x, "dy": way.y, "reach": reach, "el": r["element"], "words": front, "n": 0, "echo": false})
+	var best = monsters.strike_target(from, way, reach) if monsters != null else null
+	_break_props(i, from + way * reach * 0.6, 0.9)
+	if best == null:
+		var past := from + way * reach * 0.75
+		if map.open_at(floori(past.x), floori(past.y)):
+			_wake(i, past, 1.0, frac)
+		return
+	var at: Vector2 = best.world
+	hit_monster(best, i, frac, false)
+	_landed_on(i)
+	if front.has("power"):
+		sfx.play("power", -6.0)
+	else:
+		sfx.play("hit", -4.0)
+	if front.has("heavy"):
+		_tell({"t": "heavy", "x": at.x, "y": at.y, "r": 1.1, "big": false})
+	if r["splash"] > 0.0:
+		var rad: float = float(r["splash"]) * float(r["size"])
+		# (a full-strength splash is an explosion, Flame's and Frost's; Power's is a shock through the ground)
+		_tell({"t": "burst", "x": at.x, "y": at.y, "r": rad, "el": r["element"], "style": "blast" if r["splash_dmg"] >= 1.0 else "shock", "words": front, "n": 0, "echo": false})
+		for o in monsters.list:
+			if not is_instance_valid(o) or o.dead or o == best:
+				continue
+			if o.world.distance_to(at) <= rad + o.r:
+				hit_monster(o, i, frac * float(r["splash_dmg"]), true)
+	_wake(i, at, 1.0, frac)
+
+
+## AN AREA HIT of move `i`: everything within `rad` of `at` (game.ts blast), `style` the game's name for it ("whirl": a turn
+## of the Whirlwind; "land": the Lunge's landing). The first three struck are hit in full; the fourth and those after,
+## quietly. `leaves`: whether it leaves what the words behind the move leave. `db`: how loud what it strikes sounds. How many
+## it struck.
+func _blast(i: int, at: Vector2, rad: float, frac: float, style: String, leaves: bool, db: float) -> int:
+	var r: Dictionary = loadout.r(i)
+	var front: Array = loadout.fronts(i)
+	_tell({"t": "burst", "x": at.x, "y": at.y, "r": rad, "el": r["element"], "style": style, "words": front, "n": 0, "echo": false})
+	if front.has("power"):
+		sfx.play("power", -4.0)
+	# (Heavy lands out to the blast's edge; a whirlwind's turns are too many for that, its stuns show it)
+	if front.has("heavy") and style != "whirl":
+		_tell({"t": "heavy", "x": at.x, "y": at.y, "r": rad, "big": true})
+	var hits := 0
+	if monsters != null:
+		for m in monsters.list:
+			if not is_instance_valid(m) or m.dead or m.state == "rise":
+				continue
+			if m.world.distance_to(at) <= rad + m.r and not monsters.shut_in(m):
+				hit_monster(m, i, frac, hits >= 3)
+				hits += 1
+	if hits > 0:
+		_landed_on(i)
+		# (what it struck sounds by the blow's element)
+		sfx.play({"fire": "fire", "frost": "frost", "lightning": "zap"}.get(r["element"], "hit"), db)
+	_break_props(i, at, rad)
+	if leaves:
+		_wake(i, at, rad, frac)
+	return hits
 
 
 func heal_flat(n: float) -> void:
@@ -201,9 +451,15 @@ func _process(dt: float) -> void:
 			_back()
 		return
 	life = minf(max_life, life + stats["life_regen"] * dt)
-	_might_t -= dt
-	if _might_t <= 0.0:
-		_might = 0
+	# (his might and his haste run out: game.ts updateHero)
+	if might_t > 0.0:
+		might_t -= dt
+		if might_t <= 0.0:
+			might = 0.0
+	if haste_t > 0.0:
+		haste_t -= dt
+		if haste_t <= 0.0:
+			haste = 0.0
 	_t += dt
 	var d := Input.get_vector("move_left", "move_right", "move_up", "move_down") + auto_dir
 	var way := Iso.screen_dir_to_world(d)
@@ -237,7 +493,9 @@ func _process(dt: float) -> void:
 	auto_attack = false
 	if whirl_held and _whirl_cd <= 0.0 and (_act == "" or (_act == "strike" and _landed)):
 		_begin_whirl()
-	elif strike_asked and (_act == "" or (_act == "strike" and _act_t >= 1.0 / rate())):
+	# (a Strike no sooner after the last was begun than his blows a second allow, whether he still stands in the last one or
+	# has walked out of it: game.ts useBasic, `swingT`)
+	elif strike_asked and ((_act == "" and _clock - _last_swing >= 1.0 / rate()) or (_act == "strike" and _act_t >= 1.0 / rate())):
 		_begin_strike()
 
 	var slow := 1.0
@@ -246,10 +504,10 @@ func _process(dt: float) -> void:
 		_act_t += dt
 	match _act:
 		"strike":
-			if not _landed and _act_t >= STRIKE["windup"]:
+			if not _landed and _act_t >= _strike_windup():
 				_land_strike()
 			var done := int(_t * CLIP_FPS) >= art.count(_side, _list)
-			if done or (_landed and _act_t >= STRIKE["windup"] + STRIKE["follow"] and way != Vector2.ZERO):
+			if done or (_landed and _act_t >= _strike_windup() + STRIKE["follow"] and way != Vector2.ZERO):
 				_end_act()
 				can_walk = true
 		"whirl":
@@ -265,7 +523,8 @@ func _process(dt: float) -> void:
 		var walk_was := world
 		if _slow_t > 0.0:
 			slow *= 1.0 - _slow_by
-		_slide(way * SPEED * (1.0 + stats["move_speed"] / 100.0) * slow * dt)
+		# (his pace: his own, his gear's, and his haste while it lasts: game.ts walkPace)
+		_slide(way * SPEED * (1.0 + stats["move_speed"] / 100.0) * (1.0 + haste / 100.0) * slow * dt)
 		walked += world.distance_to(walk_was)
 		# (the Lockdown's bars, standing, keep him on his side of them as he walks: action_f1.ts cageHero)
 		if monsters != null and monsters.perils != null:
@@ -300,46 +559,32 @@ func _begin_strike() -> void:
 	_slide(face * STRIKE["step"])
 
 
+## The blow lands (game.ts release, deliver): its words told, the hit made from where he has got to, the way he faces
+## (_strike), and then what a use of it gives him (Swift behind: his haste).
 func _land_strike() -> void:
 	_landed = true
 	sfx.play("swing", -6.0)
-	# (what it reaches of the barrels and urns: game.ts, breakProps a little way before him)
-	if props != null and is_instance_valid(props):
-		props.strike(world + face * _strike_reach() * 0.6, 0.9)
-	# (and a sealed door there opens to it if it carries the door's word: game.ts unseal)
-	if doors != null and is_instance_valid(doors):
-		doors.unseal(strike_words, world + face * _strike_reach() * 0.6, 0.9)
-	if monsters == null:
-		return
-	var m = monsters.strike_target(world, face, _strike_reach())
-	if m != null:
-		var at: Vector2 = m.world
-		var hit := roll_hit(_strike_share())
-		m.hurt(hit)
-		heal_flat(stats["life_on_hit"])
-		sfx.play("hit", -4.0)
-		if strike_words["front"] == "power":
-			# (POWER in front: half of the blow splashes 1.2 round what it struck)
-			monsters.blast(at, 1.2, func(): return roundf(hit * 0.5), m)
-			sfx.play("power", -6.0)
-		if strike_words["behind"] == "power":
-			_might = mini(_might + 1, 5)
-			_might_t = 5.0
+	_cast(0, "melee", world, face)
+	_strike(0, world, face, 1.0)
+	_boons(0)
 
 
 # --- Whirl ---
 
 func _begin_whirl() -> void:
-	_whirl_cd = WHIRL["cooldown"]
-	_whirl_full = WHIRL["cooldown"]
+	_whirl_cd = float(loadout.r(1)["cooldown"])
+	_whirl_full = _whirl_cd
 	_bites = 0
 	_next_bite = 0.0
 	_spun = -1.0
+	_whirl_wake = 0.0
 	_start(WHIRL_LIST, "whirl")
 
 
 ## game.ts updateChannel: is it over (let go after its first cut, or run its length)? then its cut, if one is due; then
 ## time passes; he turns on the spot. Over, its wait is all of it after a whole length, less after a shorter one.
+## Its cut (channelBite): all within its radius, as its words make it, struck (_blast); what the words behind it leave, it
+## leaves round him by its first cut and by the first cut after each second it has gone on (TUNE.channelWake).
 func _spin(dt: float, held: bool) -> void:
 	if _spun >= 0.0 and _spun >= WHIRL["channel"] + WHIRL["follow"]:
 		_end_act()
@@ -347,7 +592,10 @@ func _spin(dt: float, held: bool) -> void:
 	if _act_t < WHIRL["windup"]:
 		return
 	if _spun < 0.0:
+		# (it begins: its words told, and what a use of it gives him given once, now: game.ts beginChannel)
 		_spun = 0.0
+		_cast(1, "whirl", world, face)
+		_boons(1)
 	if _landed:
 		# (let go: the rest of its follow-through, standing out of the spin)
 		_spun += dt
@@ -358,15 +606,15 @@ func _spin(dt: float, held: bool) -> void:
 		_landed = true
 		_stopped_at = _spun
 		var k := clampf(_spun / WHIRL["channel"], WHIRL["min_cool"], 1.0)
-		_whirl_cd = WHIRL["cooldown"] * k
+		_whirl_cd = float(loadout.r(1)["cooldown"]) * k
 		_whirl_full = _whirl_cd
 		return
 	if _next_bite <= 1e-9:
+		var leaves := _spun >= _whirl_wake - 1e-9
+		if leaves:
+			_whirl_wake += WHIRL["wake"]
 		sfx.play("whirl", -6.0)
-		if props != null and is_instance_valid(props):
-			props.strike(world, WHIRL["radius"] * stats["area"])
-		if monsters != null and monsters.blast(world, WHIRL["radius"] * stats["area"], func(): return roll_hit(WHIRL["share"])) > 0:
-			sfx.play("hit", -8.0)
+		_blast(1, world, WHIRL["radius"] * float(loadout.r(1)["size"]), 1.0, "whirl", leaves, -8.0)
 		_bites += 1
 		_next_bite += WHIRL["tick"]
 	_spun += dt
@@ -406,16 +654,23 @@ func _begin_lunge(target: Vector2) -> void:
 		dist -= 0.2
 	if land == Vector2.INF:
 		return
+	# (a Strike it breaks off before its blow has landed costs nothing, not even its turn: useEvasive, `swingT = 0`)
+	if _act == "strike" and not _landed:
+		_last_swing = -10.0
 	_end_act()
 	_combo_next = false
 	_turn(dir)
-	_lunge_cd = LUNGE["cooldown"]
+	_lunge_cd = float(loadout.r(2)["cooldown"])
+	_lunge_full = _lunge_cd
 	_lunge = {"from": world, "to": land, "dur": 0.26 + dist * 0.03}
 	_act = "lunge"
 	_act_t = 0.0
 	_list = LEAP_LIST
 	_t = 0.0
 	sfx.play("dodge", -4.0)
+	# (its words told, and what a use of it gives him given as the move begins: game.ts useEvasive)
+	_cast(2, "leap", world, dir)
+	_boons(2)
 	sfx.play("lunge", -6.0)
 
 
@@ -425,13 +680,11 @@ func _fly(dt: float) -> void:
 	var k := clampf(_act_t / _lunge["dur"], 0.0, 1.0)
 	world = _lunge["from"].lerp(_lunge["to"], k)
 	if k >= 1.0:
-		# (landing: a blow 1.6 round, a tile before him; then his landing, if he stands)
+		# (landing, game.ts land: a blow all round the point a tile before him, as its words make it, which leaves there what
+		# the words behind it leave; then his landing, if he stands)
 		sfx.play("slam", -4.0)
 		_shake = 0.15
-		if props != null and is_instance_valid(props):
-			props.strike(world + face * LUNGE["ahead"], LUNGE["radius"] * stats["area"])
-		if monsters != null and monsters.blast(world + face * LUNGE["ahead"], LUNGE["radius"] * stats["area"], func(): return roll_hit(LUNGE["share"])) > 0:
-			sfx.play("hit", -4.0)
+		_blast(2, world + face * LUNGE["ahead"], LUNGE["radius"] * float(loadout.r(2)["size"]), 1.0, "land", true, -4.0)
 		_act = ""
 		_landing = true
 		_list = LAND_LIST
@@ -517,12 +770,21 @@ func _back() -> void:
 	life = max_life
 	alive = true
 	held = 0.0
+	# (his might and his haste are gone, and what his words had done to the monsters and left on the floor with them)
+	might = 0.0
+	might_t = 0.0
+	haste = 0.0
+	haste_t = 0.0
+	if wakes != null and is_instance_valid(wakes):
+		wakes.list.clear()
+		wakes.queue_redraw()
 	_sprite.modulate.a = 1.0
 	_set_list(BakedHero.IDLE)
 	if monsters != null:
 		for m in monsters.list:
 			if is_instance_valid(m) and not m.dead and m.state != "sleep":
 				m.state = "sleep"
+		monsters.forget()
 		monsters.perils.clear()
 	if doors != null and is_instance_valid(doors):
 		doors.reset()
@@ -643,4 +905,4 @@ func _draw() -> void:
 
 ## How soon each attack is ready again, 0 to 1 (the HUD).
 func readiness() -> Dictionary:
-	return {"whirl": 1.0 - _whirl_cd / maxf(0.01, _whirl_full), "lunge": 1.0 - _lunge_cd / LUNGE["cooldown"]}
+	return {"whirl": 1.0 - _whirl_cd / maxf(0.01, _whirl_full), "lunge": 1.0 - _lunge_cd / maxf(0.01, _lunge_full)}

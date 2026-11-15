@@ -1,6 +1,9 @@
 ## The floor's monsters, as game.ts spawned them (tools/godot_export.ts saved them: floor1/monsters.json), and what they
 ## share: the flow field toward the hero (nav.ts flowField: out to 28 tiles, made again every 0.25 s), who sees whom (over
 ## open ground: floor or pit), their arrows in flight, and their pack waking with one of them (game.ts wakeUp).
+## And of what the hero's words do, what spans more than one of them: LIGHTNING's arcs from the one struck to those near it
+## and on from each, a moment apart (`arcs`; game.ts hitMonster, ARC_CHAIN), and the clock by which burning and poison bite
+## them all, twice a second (`_dots`; game.ts updateDots).
 extends Node
 
 const Iso := preload("res://scripts/iso.gd")
@@ -11,6 +14,7 @@ const Sfx := preload("res://scripts/sfx.gd")
 const Arrow := preload("res://scripts/arrow.gd")
 const MM := preload("res://scripts/monster_moves.gd")
 const Perils := preload("res://scripts/perils.gd")
+const Words := preload("res://scripts/words.gd")
 
 const FLOW_REACH := 28
 ## (nav.ts: what a step to a side and to a corner cost; height.ts: the side steps a body may take from a tile, as bits)
@@ -71,6 +75,7 @@ func load_floor(path: String, figures_dir: String) -> void:
 
 
 func _process(dt: float) -> void:
+	_run_later(dt)
 	_flow_in -= dt
 	if _flow_in <= 0.0:
 		_flow_in = FLOW_EVERY
@@ -83,6 +88,119 @@ func _process(dt: float) -> void:
 	list = standing
 	_part()
 	_fly(dt)
+	_dots(dt)
+
+
+# --- what the hero's words do, across them ---
+
+## (game.ts after, runLater) What is to be done a moment from now: {t: seconds left, fn}.
+var _later: Array = []
+## (game.ts dotT: seconds to the next bite of what burns and poisons)
+var _dot_t := 0.0
+
+
+## Do `fn` in `t` seconds (game.ts after).
+func after(t: float, fn: Callable) -> void:
+	_later.append({"t": t, "fn": fn})
+
+
+func _run_later(dt: float) -> void:
+	if _later.is_empty():
+		return
+	var due: Array = []
+	for l in _later:
+		l["t"] -= dt
+		if l["t"] <= 0.0:
+			due.append(l["fn"])
+	if due.is_empty():
+		return
+	_later = _later.filter(func(l): return l["t"] > 0.0)
+	for fn in due:
+		fn.call()
+
+
+## What the hero's words had begun among them is dropped (the hero fallen and come back; a check beginning afresh).
+func forget() -> void:
+	_later.clear()
+	for m in list:
+		if is_instance_valid(m):
+			m.clear_afflictions()
+
+
+## LIGHTNING in front (game.ts hitMonster, `r.arcs`): the hit on `m` jumps to the nearest `n` others within 3.5 tiles of it,
+## each for `dmg` (plain lightning harm: no word of the hit goes with it). ARCS KEEP JUMPING (ARC_CHAIN): each arc jumps on
+## from the one it struck to the nearest within 3.5 tiles that this hit has not struck, enemy to enemy, as many jumps in all
+## as the hit had arcs, each 0.07 s after the last, so that the eye can follow it. How many it jumped to at once.
+func arcs(m: Monster, n: int, dmg: float) -> int:
+	var chain: Dictionary = Words.data()["arcChain"]
+	var from := m.world
+	var near: Array = []
+	for o in list:
+		if is_instance_valid(o) and not o.dead and o.state != "rise" and o != m and o.world.distance_to(from) <= 3.5:
+			near.append(o)
+	near.sort_custom(func(a, b) -> bool: return a.world.distance_to(from) < b.world.distance_to(from))
+	if near.size() > n:
+		near.resize(n)
+	for o in near:
+		_tell({"t": "arc", "x0": from.x, "y0": from.y, "x1": o.world.x, "y1": o.world.y})
+		o.damage(dmg, "lightning")
+	if near.is_empty():
+		return 0
+	sfx.play("zap", linear_to_db(0.6))
+	if chain["on"]:
+		var struck := {m: true}
+		for o in near:
+			struck[o] = true
+		for o in near:
+			_jump(o, near.size() - 1, 1, struck, dmg, float(chain["reach"]), float(chain["gap"]))
+	return near.size()
+
+
+## An arc jumps on from `from`, `left` jumps more, in `gap` x `k` seconds: to the nearest within `reach` that the hit has not
+## struck (`struck`, shared by all the hit's arcs); from there on again, a gap later.
+func _jump(from: Monster, left: int, k: int, struck: Dictionary, dmg: float, reach: float, gap: float) -> void:
+	if left <= 0:
+		return
+	var on := func() -> void:
+		if not is_instance_valid(from):
+			return
+		var next: Monster = null
+		var best := INF
+		for o in list:
+			if not is_instance_valid(o) or o.dead or o.state == "rise" or struck.has(o):
+				continue
+			var d: float = o.world.distance_to(from.world)
+			if d <= reach and d < best:
+				best = d
+				next = o
+		if next == null:
+			return
+		struck[next] = true
+		_tell({"t": "arc", "x0": from.world.x, "y0": from.world.y, "x1": next.world.x, "y1": next.world.y})
+		next.damage(dmg, "lightning")
+		_jump(next, left - 1, 1, struck, dmg, reach, gap)
+	after(gap * k, on)
+
+
+## BURNING AND POISON BITE, twice a second (game.ts updateDots): what burns takes half its burning a second, what is poisoned
+## half its poison a second; neither flashes it.
+func _dots(dt: float) -> void:
+	_dot_t -= dt
+	if _dot_t > 0.0:
+		return
+	_dot_t += 0.5
+	for m in list:
+		if not is_instance_valid(m) or m.dead:
+			continue
+		if m.burn_t > 0.0:
+			m.damage(maxf(1.0, roundf(m.burn_dps * 0.5)), "fire", false, false, [], false, true)
+		if not m.dead and m.poison_t > 0.0 and m.poison_dps > 0.0:
+			m.damage(maxf(1.0, roundf(m.poison_dps * 0.5)), "phys", false, false, [], true)
+
+
+func _tell(e: Dictionary) -> void:
+	if fx != null:
+		fx.event(e)
 
 
 ## (the count of blows by which a hurt voice is heard now and then: game.ts hurtTick)
@@ -138,8 +256,9 @@ func strike_target(from: Vector2, way: Vector2, reach: float) -> Monster:
 	return best
 
 
-## A blow all round a point (game.ts blast): every monster standing within `rad` + its own radius is struck, each by its
-## own roll (`roll` gives one hit). How many were struck.
+## A plain blow all round a point: every monster standing within `rad` + its own radius is struck, each by its own roll
+## (`roll` gives one hit). How many were struck. (The hero's own moves do not strike through this any more: each of their
+## hits carries its words, hero.gd _blast and hit_monster.)
 func blast(at: Vector2, rad: float, roll: Callable, spare: Object = null) -> int:
 	var n := 0
 	for m in list:
