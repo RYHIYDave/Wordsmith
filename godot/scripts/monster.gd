@@ -27,6 +27,7 @@ const Amalgam := preload("res://scripts/amalgam.gd")
 const Chained := preload("res://scripts/chained.gd")
 const Fleshmancer := preload("res://scripts/fleshmancer.gd")
 const MiniFm := preload("res://scripts/minifm.gd")
+const Keybearers := preload("res://scripts/keybearers.gd")
 ## THE BOSSES THAT FIGHT BY THEIR OWN RULES (game/bosses.ts BossRules), each a script of its own with `step(m, dt, hero)`, handed
 ## the monster every frame it is awake in place of the common rules below (and `died(m)`, if it has one, as it falls): by kind.
 const BOSS_AI := {
@@ -35,6 +36,8 @@ const BOSS_AI := {
 	"chained": Chained,
 	"fleshmancer": Fleshmancer,
 	"minifm": MiniFm,
+	"keyblade": Keybearers.Knife,
+	"keyflame": Keybearers.Flame,
 }
 
 const AGGRO := 9.0
