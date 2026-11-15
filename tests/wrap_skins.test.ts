@@ -1,6 +1,7 @@
 // THE BRAWLER'S UNIQUE WRAPS (art/wrap_skins.ts; dev/sculpt_veteran.ts WrapSkin, PLAIN_WRAPS; in the game behind art/heroes.ts
-// WRAP_SKINS, off until his yes). His word, 14 Nov 2026, of the Mage's staves done: “then do it for the rest of the cast”.
-//   1. the switch is off: no wraps are worn and none baked; of the game only the heroes' art reads art/wrap_skins.ts;
+// WRAP_SKINS). His word, 14 Nov 2026, of the Mage's staves done: “then do it for the rest of the cast”; shown the wraps on him:
+// “Yes, all four (Recommended)”; shown him wearing them in play: “Yes, switch them on (Recommended)”.
+//   1. the switch is on (his yes); off, no wraps are worn and none baked; of the game only the heroes' art reads art/wrap_skins.ts;
 //   2. his own wraps are the first skin, and painted with them he is the very frame he is painted as when nothing is said;
 //   3. each of the four is its own;
 //   4. on: the four unique wraps of the game are worn by the Brawler, each its own places in town and in a dungeon, its look those
@@ -38,11 +39,16 @@ const sample = (art: ActorArt): Sprite[] => {
   return [sides[0].idle[0], sides[2 % sides.length].idle[20], c.vet!.jab.frames[9], c.vet!.hook.frames[13], sides[1 % sides.length].walk[3]];
 };
 
-test('1. the switch is off: no wraps worn, none baked; of the game only the heroes\' art reads art/wrap_skins.ts', () => {
-  assert.equal(WRAP_SKINS.on, false);
-  assert.equal(wrapWorn({ rarity: 3, unique: 'lastround' }), null);
-  assert.equal(wornSkin('brawler', { rarity: 3, unique: 'lastround' }), null);
-  assert.ok(!Object.keys(bakeGroups(true)).some((k) => k.startsWith('brawler-')), 'off: none baked');
+test('1. the switch is on (his yes); off, no wraps worn, none baked; of the game only the heroes\' art reads art/wrap_skins.ts', () => {
+  assert.equal(WRAP_SKINS.on, true);
+  WRAP_SKINS.on = false;
+  try {
+    assert.equal(wrapWorn({ rarity: 3, unique: 'lastround' }), null);
+    assert.equal(wornSkin('brawler', { rarity: 3, unique: 'lastround' }), null);
+    assert.ok(!Object.keys(bakeGroups(true)).some((k) => k.startsWith('brawler-')), 'off: none baked');
+  } finally {
+    WRAP_SKINS.on = true;
+  }
   const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e: { name: string; isDirectory(): boolean }) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.ts') ? [`${dir}/${e.name}`] : []));
   const readers = walk('src').filter((f) => f !== 'src/art/wrap_skins.ts' && !f.startsWith('src/dev/') && /from '[^']*wrap_skins'/.test(readFileSync(f, 'utf8'))).sort();
   assert.deepEqual(readers, ['src/art/heroes3.ts']);
@@ -107,6 +113,6 @@ test('4. on: the four unique wraps worn, their places and looks, his pictures pa
     // 15 Nov 2026, his own set and the Last Round's both held while it asked as the Brawler of old)
     assert.ok(/holdOnly\(cls, place, cls === 'brawler' && VETERAN\.on\)/.test(readFileSync('src/render/painter.ts', 'utf8')), 'the painter lets go as the Veteran');
   } finally {
-    WRAP_SKINS.on = false;
+    WRAP_SKINS.on = true;
   }
 });

@@ -2,6 +2,8 @@
 // chain, as the Mage's unique staves are in her hand (art/staff_skins.ts) and the rest of the cast's weapons in theirs. His word,
 // 14 Nov 2026, of the Mage's staves done: “then do it for the rest of the cast”; asked whether to start, his pick: “Start the rest
 // of the cast (Recommended)”. PICTURES FIRST: nothing of the game draws these until he has seen them on him and said yes.
+// Shown them (docs/mockups/tome_skins/pictures/tomes_moves.mp4), 14 Nov 2026: “Yes, all four (Recommended)”. In the game behind art/heroes.ts TOME_SKINS, ON at his
+// yes to him with them in play (15 Nov 2026, by 09:16): “Yes, switch them on (Recommended)”.
 //
 // His book is a skin (dev/sculpt_warlock.ts TomeAt, TomeSkin; his own PLAIN_TOME, painted exactly as before). Each of these is
 // drawn to its picture in the bag (art/items_unique.ts):

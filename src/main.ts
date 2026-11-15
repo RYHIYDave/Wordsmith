@@ -3556,9 +3556,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     wrenchSkins: WRENCH_SKINS,
     /** (THE WARRIOR'S UNIQUE WEAPONS IN HIS HANDS, art/sword_skins.ts, art/heavy_skins.ts) their switch, on at his yes (14 Nov 2026): `warriorSkins.on`. */
     warriorSkins: WARRIOR_SKINS,
-    /** (THE BRAWLER'S UNIQUE WRAPS ON HIS FISTS, art/wrap_skins.ts) their switch, off until his yes in play: `wrapSkins.on`. */
+    /** (THE BRAWLER'S UNIQUE WRAPS ON HIS FISTS, art/wrap_skins.ts) their switch, on at his yes (15 Nov 2026): `wrapSkins.on`. */
     wrapSkins: WRAP_SKINS,
-    /** (THE WARLOCK'S UNIQUE TOMES AT HIS HIP, art/tome_skins.ts) their switch, off until his yes in play: `tomeSkins.on`. */
+    /** (THE WARLOCK'S UNIQUE TOMES AT HIS HIP, art/tome_skins.ts) their switch, on at his yes (15 Nov 2026): `tomeSkins.on`. */
     tomeSkins: TOME_SKINS,
     /** (A UNIQUE'S PIPS, ui/panels.ts) which of its lines they count and their colour, for pictures of each: `uniquePips.count`, `.colour`, `.free`. */
     uniquePips: UNIQUE_PIPS,

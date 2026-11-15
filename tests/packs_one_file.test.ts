@@ -236,6 +236,7 @@ test('2. a group kept in packs let go of whole as he takes up unique wraps: its 
     WRAP_SKINS.on = false;
     b.holdOnly('brawler', WRAP_PLACES.lastround.dungeon, true);
     assert.equal(b.done('brawler'), true);
+    WRAP_SKINS.on = true;
   } finally {
     WRAP_SKINS.on = on;
     Object.assign(PACKS, was);

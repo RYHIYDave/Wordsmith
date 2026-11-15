@@ -1,7 +1,8 @@
 // THE WARLOCK'S UNIQUE TOMES (art/tome_skins.ts; dev/sculpt_warlock.ts TomeSkin, PLAIN_TOME; in the game behind art/heroes.ts
-// TOME_SKINS, off until his yes). His word, 14 Nov 2026, of the Mage's staves done: “then do it for the rest of the cast”.
-//   1. the switch is off: no tome is worn and none baked, his groups as before; of the game only the heroes' art reads
-//      art/tome_skins.ts;
+// TOME_SKINS). His word, 14 Nov 2026, of the Mage's staves done: “then do it for the rest of the cast”; shown the tomes on him:
+// “Yes, all four (Recommended)”; shown him with them in play: “Yes, switch them on (Recommended)”.
+//   1. the switch is on (his yes); off, no tome is worn and none baked, his groups as before; of the game only the heroes' art
+//      reads art/tome_skins.ts;
 //   2. his own book is the first skin, and painted with it he is the very frame he is painted as when nothing is said;
 //   3. each of the four is its own (the Restless Tome: no book at his hip, its chain empty);
 //   4. what a skin adds is of the book's stuff and the chain's: every other stuff of his keeps its number (his change tears him
@@ -37,13 +38,18 @@ const sample = (art: ActorArt): Sprite[] => {
   return [s[0].idle[3], s[0].clips!.attack!.frames[6], s[7].idle[8]];
 };
 
-test('1. the switch is off: no tome worn, none baked, his groups as before; of the game only the heroes\' art reads art/tome_skins.ts', () => {
-  assert.equal(TOME_SKINS.on, false);
-  assert.equal(tomeWorn({ rarity: 3, unique: 'hornbook' }), null);
-  assert.equal(wornSkin('warlock', { rarity: 3, unique: 'hornbook' }), null);
-  const g = bakeGroups(true);
-  assert.ok(!Object.keys(g).some((k) => k.startsWith('warlock-')), 'off: none baked');
-  assert.deepEqual(g.warlock.map(keyName), ['warlock:town', 'warlock:dungeon', 'warlock:demon', 'warlock:blaze']);
+test('1. the switch is on (his yes); off, no tome worn, none baked, his groups as before; of the game only the heroes\' art reads art/tome_skins.ts', () => {
+  assert.equal(TOME_SKINS.on, true);
+  TOME_SKINS.on = false;
+  try {
+    assert.equal(tomeWorn({ rarity: 3, unique: 'hornbook' }), null);
+    assert.equal(wornSkin('warlock', { rarity: 3, unique: 'hornbook' }), null);
+    const g = bakeGroups(true);
+    assert.ok(!Object.keys(g).some((k) => k.startsWith('warlock-')), 'off: none baked');
+    assert.deepEqual(g.warlock.map(keyName), ['warlock:town', 'warlock:dungeon', 'warlock:demon', 'warlock:blaze']);
+  } finally {
+    TOME_SKINS.on = true;
+  }
   const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e: { name: string; isDirectory(): boolean }) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.ts') ? [`${dir}/${e.name}`] : []));
   const readers = walk('src').filter((f) => f !== 'src/art/tome_skins.ts' && !f.startsWith('src/dev/') && /from '[^']*tome_skins'/.test(readFileSync(f, 'utf8'))).sort();
   assert.deepEqual(readers, ['src/art/heroes3.ts']);
@@ -120,6 +126,6 @@ test('5. on: the four unique tomes worn, their places and looks, his pictures pa
     const all = Object.values(g).flat().map(keyName);
     assert.equal(new Set(all).size, all.length, 'none twice');
   } finally {
-    TOME_SKINS.on = false;
+    TOME_SKINS.on = true;
   }
 });

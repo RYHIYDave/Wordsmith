@@ -213,11 +213,13 @@ export const WARRIOR_SKIN_PLACES: Readonly<Record<WarriorSkinId, { dungeon: Hero
   WARRIOR_SKIN_IDS.map((id) => [id, { dungeon: id as HeroPlace, town: `${id}Town` as HeroPlace }]),
 ) as Record<WarriorSkinId, { dungeon: HeroPlace; town: HeroPlace }>;
 /**
- * THE BRAWLER'S WRAPS' SWITCH: OFF until his yes. On, the Brawler (the Veteran) wearing unique wraps is drawn with them on his fists
- * (his places with them, WRAP_PLACES; the wraps art/wrap_skins.ts), each a bake group of its own (render/baked.ts), as the Mage's
- * staves are; kept in packs as his own pictures are.
+ * THE BRAWLER'S WRAPS' SWITCH: ON, at his yes, 15 Nov 2026 (by 09:16 Eastern), shown the Brawler in the game wearing each
+ * (docs/mockups/wrap_skins/pictures/wraps_in_game.mp4) and asked whether to turn them on: “Yes, switch them on (Recommended)”.
+ * (His yes to their pictures before, shown wraps_moves.mp4: “Yes, all four (Recommended)”.) On, the Brawler (the Veteran) wearing
+ * unique wraps is drawn with them on his fists (his places with them, WRAP_PLACES; the wraps art/wrap_skins.ts), each a bake group
+ * of its own (render/baked.ts), as the Mage's staves are; kept in packs as his own pictures are.
  */
-export const WRAP_SKINS = { on: false };
+export const WRAP_SKINS = { on: true };
 /** The unique wraps of the game (game/uniques.ts) that are drawn on his fists: each is its own skin's id. */
 export const WRAP_OF_UNIQUE: Readonly<Record<string, WrapId>> = { lastround: 'lastround', fourthglobe: 'fourthglobe', winningstreak: 'winningstreak', tapedknuckles: 'tapedknuckles' };
 /** The skin of the wraps an item is, if it is one of those (and the switch is on); null: his own. */
@@ -236,11 +238,13 @@ export function wrapOfPlace(place: HeroPlace): WrapId | null {
 }
 
 /**
- * THE WARLOCK'S TOMES' SWITCH: OFF until his yes. On, the Warlock wearing a unique tome is drawn with it at his hip (the man brought
+ * THE WARLOCK'S TOMES' SWITCH: ON, at his yes, 15 Nov 2026 (by 09:16 Eastern), shown the Warlock in the game with each
+ * (docs/mockups/tome_skins/pictures/tomes_in_game.mp4) and asked whether to turn them on: “Yes, switch them on (Recommended)”.
+ * (His yes to their pictures before, shown tomes_moves.mp4: “Yes, all four (Recommended)”.) On, the Warlock wearing a unique tome is drawn with it at his hip (the man brought
  * up; his places with it, TOME_PLACES: in a dungeon, in town and his arm blazing; the demon as ever), each a bake group of its own
  * (render/baked.ts), kept in packs as his own pictures are; his demon a group of its own, kept whatever book he wears.
  */
-export const TOME_SKINS = { on: false };
+export const TOME_SKINS = { on: true };
 /** The unique tomes of the game (game/uniques.ts) that are drawn at his hip: each is its own skin's id. */
 export const TOME_OF_UNIQUE: Readonly<Record<string, TomeId>> = { ledgerofdebts: 'ledgerofdebts', restlesstome: 'restlesstome', burningverse: 'burningverse', hornbook: 'hornbook' };
 /** The skin of the tome an item is, if it is one of those (and the switch is on); null: his own book. */

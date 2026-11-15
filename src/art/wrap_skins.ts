@@ -2,6 +2,8 @@
 // in her hand (art/staff_skins.ts), the Ranger's bows, the Tinkerer's wrenches and the Warrior's weapons in theirs. His word, 14
 // Nov 2026, of the Mage's staves done: “then do it for the rest of the cast”; asked whether to start, his pick: “Start the rest
 // of the cast (Recommended)”. PICTURES FIRST: nothing of the game draws these until he has seen them on him and said yes.
+// Shown them (docs/mockups/wrap_skins/pictures/wraps_moves.mp4), 14 Nov 2026: “Yes, all four (Recommended)”. In the game behind art/heroes.ts WRAP_SKINS, ON at his
+// yes to him wearing them in play (15 Nov 2026, by 09:16): “Yes, switch them on (Recommended)”.
 //
 // His wraps are a skin laid on his fists (dev/sculpt_veteran.ts WrapAt, WrapSkin; his own PLAIN_WRAPS, painted exactly as
 // before): the straps round his knuckles, hand and wrist, and what is added to each fist. Each of these is drawn to its picture
