@@ -117,3 +117,27 @@ Smaller things, by fight:
   move; otherwise it goes to the left of the way he faced. The Flame's ring strikes from the middle out in its first
   step, and still strikes while it stands dying at 5 tiles. Both keys are named `keyblade:key`, so the Flame's key runs
   by the Knife's rules (harmless).
+
+## In the game, found while bringing over the words (the cloud chat, 15 Nov 2026)
+
+What the Warrior's words do in a fight was read out of `game.ts` function by function and each case held against the
+game's own formula. These came up on the way. All are copied as they are.
+
+16. **Ice on the ground cuts a Frost hit's chill short.** Standing on iced ground SETS a monster's chill to 0.7 s
+    (`m.chillT = 0.7`): one chilled 2.5 s by a Frost hit loses most of it at the ice's next bite. (game.ts `updateZones`.)
+
+17. **Heavy in front of the Whirlwind stuns for good.** Each turn stuns for 0.8 s and a turn comes every 0.3 s: what he
+    spins among never acts. (Heavy is the Warrior's reward from the armourer, so this is the first thing he can do with it.)
+
+18. **A hit sets fire or chill before the hit is refused.** A boss still waiting ("Not yet"), or the Fleshmancer gone
+    under the floor, takes the burning or the chill without the hit; and a waiting boss's burning and chill do not run
+    down. (game.ts `hitMonster` sets them before `damageMonster` refuses.)
+
+Smaller:
+
+- The Boneward's shield turns a hit from before it, but not an arc of lightning, the ground's bites, burning or poison.
+- In an area, which three of those struck call lightning down is by the order the floor made its monsters, not by
+  nearness (a blast's fourth and later hits are "quiet").
+- A cloud's poison is not raised by gear's Poison Damage and never adds doses.
+- With Power behind, Strike's splash is rolled with the might the blow has just earned; the blow itself was not.
+- Burning bites on one clock for every monster, so a 3 second burn bites 5 or 6 times by when it began.
