@@ -198,6 +198,19 @@
   REC.frame = (t, W, H) => {
     const R = d.renderer;
     const game = d.game();
+    // (THE OPEN GROUND of floors 6 on, render/outdoor.ts: the game paints its pieces on a worker of its own and, until a piece
+    // has come, fills its place with the floor's deep colour. Here every piece the frame wants is painted there and then, as
+    // the game does on a floor's first frame: its drawing told the frame is fresh, with no worker and nothing being loaded)
+    const od = R.outdoor;
+    if (od && !od.__rec) {
+      const draw = od.draw.bind(od);
+      od.draw = (g, cam, W2, H2) => {
+        od.gid = 0;
+        od.asking = false;
+        return draw(g, cam, W2, H2, true);
+      };
+      od.__rec = true;
+    }
     const G = recorder('g', W, H);
     const D = recorder('dg', W, H);
     const realDark = R.dark;
