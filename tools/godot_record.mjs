@@ -52,7 +52,9 @@ const place = args.find((a) => !a.startsWith('--') && args[args.indexOf(a) - 1]?
 if (!place) { console.error('which place? town, or a floor number'); process.exit(1); }
 const depth = place === 'town' ? 0 : Number(place);
 if (place !== 'town' && !(depth >= 1 && depth <= 20)) { console.error(`not a place: ${place}`); process.exit(1); }
-const name = depth === 0 ? 'town' : `floor${depth}`;
+// (--hold n: a stronghold's hall on floors 6 to 10, as it is drawn from in it: floor<N>_hold<n>, REC.hall)
+const hold = opt('hold', null) === null ? null : Number(opt('hold', '0'));
+const name = depth === 0 ? 'town' : hold !== null ? `floor${depth}_hold${hold}` : `floor${depth}`;
 const seed = Number(opt('seed', '1'));
 const N = Number(opt('samples', '120'));
 const pageFile = path.resolve(ROOT, opt('page', 'dist/godot_rec.html'));
@@ -107,7 +109,7 @@ console.log(`${name}: ${where.w}x${where.h}, ${ready.props} props, ${ready.doors
 
 // (is this the level the Godot side has laid out? tools/godot_export.ts, the same seed: its tiles, doors and props held to it)
 {
-  const layoutFile = path.resolve(ROOT, `godot/assets/${name}/layout.json`);
+  const layoutFile = path.resolve(ROOT, `godot/assets/${depth === 0 ? name : `floor${depth}`}/layout.json`);
   if (fs.existsSync(layoutFile)) {
     const lay = JSON.parse(fs.readFileSync(layoutFile, 'utf8'));
     let hash = 0;
@@ -128,7 +130,12 @@ console.log(`${name}: ${where.w}x${where.h}, ${ready.props} props, ${ready.doors
 // at once, as for the dungeon's floors, is a screen of up to 15000 by 8000 game pixels, and Echo Canyon's 180,000 standing
 // things on it were more than the browser could hold)
 let fit = null;
-if (depth >= 6) {
+if (hold !== null) {
+  // (a stronghold's hall: he stood where he comes in, the screen just the hall and its walls: REC.hall)
+  fit = await page.evaluate((n) => window.__rec.hall(n), hold);
+  if (fit.err) { console.error('  !! ' + fit.err); await browser.close(); process.exit(1); }
+  console.log(`  stronghold ${hold}'s hall, drawn on a screen ${fit.W}x${fit.H} from where he comes in, ${fit.park.x},${fit.park.y}`);
+} else if (depth >= 6) {
   const r = await page.evaluate(({ mx, my }) => window.__rec.reach(mx, my), { mx: 400, my: 240 });
   if (r.err) console.log('  !! where a view reaches: ' + r.err);
   else {
@@ -189,13 +196,13 @@ if (Object.keys(sum.odd).length) console.log('  not brought over: ' + Object.ent
 // the place's states: its doors and gates opening, its chests open and its barrels and urns broken, its ways on opening
 let variants = {};
 let waypoint = null;
-if (!args.includes('--still')) {
-  const layoutFile = path.resolve(ROOT, `godot/assets/${name}/layout.json`);
+if (!args.includes('--still') && hold === null) {
+  const layoutFile = path.resolve(ROOT, `godot/assets/${depth === 0 ? name : `floor${depth}`}/layout.json`);
   const layout = fs.existsSync(layoutFile) ? JSON.parse(fs.readFileSync(layoutFile, 'utf8')) : null;
   // (the lengths of the films, as the game has them: game/ways.ts; game/temple_door.ts TEMPLE_TIMES; game/quests15.ts CRANK_TIMES)
   // (and the descent's way on, floors 6 to 10: game/ways.ts ONWARD secs)
   const onward = { 6: 112 / 30, 7: 120 / 30, 8: 124 / 30, 9: 126 / 30, 10: 130 / 30 }[depth] ?? 0;
-  const consts = { stair: 3.5, exit: layout?.ways?.exit?.secs ?? 3, cave: 126 / 30, shaft: 129 / 30, onward, temple: { chain: 1.5, second: 1.1, swingAt: 2.9, swing: 1.6 }, crank: { turn: 1.2, furnaceOut: 1.6, fireOut: 1.5 } };
+  const consts = { altarGoes: true, stair: 3.5, exit: layout?.ways?.exit?.secs ?? 3, cave: 126 / 30, shaft: 129 / 30, onward, temple: { chain: 1.5, second: 1.1, swingAt: 2.9, swing: 1.6 }, crank: { turn: 1.2, furnaceOut: 1.6, fireOut: 1.5 } };
   const ts = Date.now();
   const base = await page.evaluate(({ T0, W, H }) => window.__rec.statesBegin(T0, W, H), { T0, ...size });
   if (base.err) { console.error('the renderer threw:\n' + base.err); await browser.close(); process.exit(1); }
@@ -213,7 +220,7 @@ if (!args.includes('--still')) {
 }
 // what is seen when: the tile each thing waits on to have been seen
 let fog = null;
-if (depth > 0 && !args.includes('--nofog')) {
+if (depth > 0 && !args.includes('--nofog') && hold === null) {
   const tf = Date.now();
   const r = await page.evaluate(({ T0, W, H }) => window.__rec.fog(T0, W, H), { T0, ...size });
   if (r.err) console.log('  !! what is seen when: ' + String(r.err).split('\n')[0]);
@@ -224,18 +231,25 @@ if (depth > 0 && !args.includes('--nofog')) {
 }
 // the traps' pictures, where the floor has traps (the Godot side lays and works them: godot/scripts/traps.gd)
 let traps = null;
-if (depth > 0) {
+if (depth > 0 && hold === null) {
   traps = await page.evaluate(() => { if (!window.__rec.extra) window.__rec.extra = new Set(); return window.__rec.trapPics(); });
   if (traps) console.log(`  its traps' pictures: the holes (and glinting), ${traps.spikes.length} steps of the spikes, the plate (and pressed), the slot`);
 }
 // (under the open sky: only what a view from where he can stand reaches)
-if (depth >= 6) {
+if (depth >= 6 && hold === null) {
   const c = await page.evaluate(() => window.__rec.cut());
   if (c.err) console.log('  !! what can be seen: ' + c.err);
   else console.log(`  what can be seen from the ${c.at} tiles he can stand on: ${c.ground[1]} of the ${c.ground[0]} things on the ground, ${c.stands[1]} of the ${c.stands[0]} that stand`);
+  // (the states and what is seen when, as the cut has put them right: by the places in the lists that are left. Taken before it,
+  // they pointed at the places in the lists before anything was let go of, and on floors 6 to 10 a state hid, and a tile showed,
+  // the wrong things, or nothing at all)
+  if (!c.err) {
+    variants = await page.evaluate(() => window.__rec.variants ?? {});
+    if (fog) fog = await page.evaluate(() => window.__rec.fogOut);
+  }
 }
 // the sky, where the place has one (the Ledge Road): its own layer behind everything (look.gd `sky`)
-const skyRec = await page.evaluate(() => window.__rec.sky());
+const skyRec = hold === null ? await page.evaluate(() => window.__rec.sky()) : null;
 if (skyRec) console.log(`  its sky: ${skyRec.wrap}x${skyRec.h} (${skyRec.done} painted)${skyRec.town ? `, the town below ${skyRec.town.w}x${skyRec.town.h} at ${skyRec.town.x},${skyRec.town.y}` : ''}`);
 const res = await page.evaluate(() => window.__rec.result);
 const sheets = await page.evaluate(() => window.__rec.sheets(4096));

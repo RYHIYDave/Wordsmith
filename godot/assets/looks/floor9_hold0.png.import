@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cuvhkx4h0xexi"
-path="res://.godot/imported/floor7_2.png-814eb719c2bda00ed4117029c90a424a.ctex"
+uid="uid://c6s6303xotdkq"
+path="res://.godot/imported/floor9_hold0.png-3ca7a60bc0c27cc524216a79b733f292.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/looks/floor7_2.png"
-dest_files=["res://.godot/imported/floor7_2.png-814eb719c2bda00ed4117029c90a424a.ctex"]
+source_file="res://assets/looks/floor9_hold0.png"
+dest_files=["res://.godot/imported/floor9_hold0.png-3ca7a60bc0c27cc524216a79b733f292.ctex"]
 
 [params]
 

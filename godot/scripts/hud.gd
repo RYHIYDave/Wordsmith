@@ -617,6 +617,10 @@ func _toast(word: String, age: float, top: float, big: bool, W: float) -> void:
 # --- the prompt at the top (hud.ts drawBanner): one large line and a smaller one under it ---
 
 func _banner(b: Dictionary, W: float) -> void:
+	# (QUESTS610, F9_LAIRS: a line for each thing to do, the ward-stone's hunt's DEFEAT each boss: _banner_lines)
+	if b.has("lines"):
+		_banner_lines(b, W)
+		return
 	var key: String = b["text"]
 	if key != _banner_key:
 		_banner_key = key
@@ -659,6 +663,70 @@ func _banner(b: Dictionary, W: float) -> void:
 			_text(r[2], cx, y, P["white"] if fresh else T["accent"], {"align": "center", "scale": r[3], "shadow": P["ink"]})
 		else:
 			_text(r[2], cx, y + (1.0 if r[5] == "sub0" else 0.0), T["text"], {"align": "center", "font": r[4], "shadow": P["ink"]})
+		y += r[0]
+
+
+## (hud.ts drawBanner, its lines: QUESTS610's hunt, ui/guide.ts huntBanner) A line for each thing to do: to do, a tick box, what
+## to do in the accent's colour (white as it flashes in) and what to do it to in white, large while every one of them fits; just
+## done, flashing green; done half a second, a small ticked line in green.
+var _ticked := {}
+
+
+func _banner_lines(b: Dictionary, W: float) -> void:
+	var lines: Array = b["lines"]
+	var key := "fight:" + ",".join(lines.map(func(l): return str(l["id"])))
+	if key != _banner_key:
+		_banner_key = key
+		_banner_at = _t
+	var age := _t - _banner_at
+	var max_w := W - 156 - 16
+	var cap: String = b["caption"]
+	var cap_color: Color = T["callHi"] if cap == "WORDSMITHING" else T["accent"]
+	var cx := floorf(W / 2.0)
+	var big := true
+	for l in lines:
+		if _width("%s %s" % [l["how"], l["what"]]) * 2.0 + 12.0 > max_w:
+			big = false
+	var rows: Array = []  # [height, width, line, scale, since]
+	for l in lines:
+		var id := "%s:%s" % [l["id"], l["how"]]
+		if l["done"] and not _ticked.has(id):
+			_ticked[id] = _t
+		if not l["done"]:
+			_ticked.erase(id)
+		var since: float = _t - float(_ticked.get(id, _t)) if l["done"] else -1.0
+		var text := "%s %s" % [l["how"], l["what"]]
+		if l["done"] and since > 0.5:
+			rows.append([8.0, 10.0 + _width(text, "small"), l, 0, since])
+			continue
+		var scale := 2 if big else 1
+		rows.append([9.0 * scale + 1.0, 12.0 + _width(l["how"]) * scale + 4.0 * scale + _width(l["what"]) * scale, l, scale, since])
+	var cw := _width(cap, "small")
+	var bh := 4.0 + 8.0 + 3.0
+	for r in rows:
+		cw = maxf(cw, r[1])
+		bh += r[0]
+	var bw := cw + 16
+	var bx := floorf((W - bw) / 2.0)
+	var by := 3.0 - roundf((1.0 - minf(1.0, age / 0.16)) * 6.0)
+	_box(bx, by, bw, bh, Color(T["bg"], 0.9), Color(cap_color if age < 0.55 else T["edgeHi"], 0.9))
+	_text(cap, cx, by + 4, cap_color, {"align": "center", "font": "small"})
+	var y := by + 12
+	for r in rows:
+		var l: Dictionary = r[2]
+		var x := cx - floorf(r[1] / 2.0)
+		var text := "%s %s" % [l["how"], l["what"]]
+		if int(r[3]) == 0:
+			_tick_box(x, y, true)
+			_text(text, x + 10, y + 1, T["good"], {"font": "small", "shadow": P["ink"]})
+		else:
+			var scale: int = r[3]
+			var hw := _width(l["how"]) * scale
+			var since: float = r[4]
+			var flash: bool = (int(floorf(since * 12.0)) % 2 == 0) if l["done"] else (age < 0.5 and int(floorf(age * 10.0)) % 2 == 0)
+			_tick_box(x, y + (4.0 if scale == 2 else 1.0), l["done"])
+			_text(l["how"], x + 12, y, T["good"] if l["done"] else (P["white"] if flash else T["accent"]), {"scale": scale, "shadow": P["ink"]})
+			_text(l["what"], x + 12 + hw + 4 * scale, y, T["good"] if l["done"] else P["white"], {"scale": scale, "shadow": P["ink"]})
 		y += r[0]
 
 

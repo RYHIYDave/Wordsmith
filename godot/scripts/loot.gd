@@ -356,6 +356,9 @@ func on_kill(m) -> void:
 	if words_fall():
 		for w in m.carries:
 			_word(at, w)
+	# (FLOORS 6 TO 10: a piece of the ward-stone it carried, the Queen's feather and her eyrie's scene: act1/quest610.gd)
+	if main != null and main.quest610 != null:
+		main.quest610.killed(m)
 	if m.summoned:
 		return
 	if m.boss:

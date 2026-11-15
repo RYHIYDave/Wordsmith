@@ -126,6 +126,12 @@ var furnace: Furnace
 var fx: Fx
 ## (the ground his moves leave: wakes.gd; a place's own)
 var wakes: Wakes
+## (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: the quest line, what lies of it, the quest marks, floor 10's pillars: act1/quest610.gd,
+## the hero's own and kept from place to place; the floor's strongholds: act1/holds.gd, its own)
+var quest610
+var holds:
+	get:
+		return quest610.holds if quest610 != null else null
 
 
 ## Which floor a place is (0: the town).
@@ -196,6 +202,10 @@ func _ready() -> void:
 	_curtain.color = Color(0, 0, 0, 0)
 	layer.add_child(_curtain)
 	add_child(layer)
+	# (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: act1/quest610.gd)
+	quest610 = preload("res://scripts/act1/quest610.gd").new()
+	quest610.main = self
+	add_child(quest610)
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
@@ -210,6 +220,9 @@ func _ready() -> void:
 ## Lay a place out, and set him down in it: `arrive` says where (the town's start, the foot of floor 1's gate, the top of
 ## the town's stairs).
 func _build(where: String, arrive: String) -> void:
+	# (words laid on a stronghold's altar and not burned go back to him as he leaves the floor: act1/holds.gd)
+	if holds != null and is_instance_valid(holds):
+		holds.give_back()
 	if hero.get_parent() != null:
 		hero.get_parent().remove_child(hero)
 	if _place != null:
@@ -504,6 +517,9 @@ func _build(where: String, arrive: String) -> void:
 		_veil.material.set_shader_parameter("veil_a", float(day.get("dark", 0.0)))
 	if where == "town":
 		_veil.material.set_shader_parameter("veil_a", 0.0)
+	# (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: the floor's strongholds, its part of the quest line, the quest marks: act1/quest610.gd)
+	if quest610 != null:
+		quest610.enter(where)
 
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.
@@ -593,6 +609,9 @@ func go_warp(where: String) -> void:
 func prompt() -> Array:
 	if _way != null and _way.here():
 		return _way.prompt()
+	# (a stronghold's altar; an obelisk in the Fen: act1/quest610.gd)
+	if quest610 != null and str(quest610.prompt()[0]) != "":
+		return quest610.prompt()
 	return town.prompt if town != null else ["", ""]
 
 
@@ -1793,6 +1812,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "descent":
 		await _descent_shots(hero, dir)
+		get_tree().quit()
+		return
+	# (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: the strongholds, the quest line, floor 9's side areas: act1/check610.gd)
+	if _arg("only") == "quests610":
+		await preload("res://scripts/act1/check610.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	await _wait(1.0)
@@ -4920,6 +4944,9 @@ func _descent_shots(h: Hero, dir: String) -> void:
 	loot.taught = true
 	h.loadout.put(0, "front", "power")
 	way_depth = 5
+	# (a hero who has seen the town from the eyrie: the Queen's fall plays no scene here: act1/quest610.gd, --only=quests610)
+	if quest610 != null:
+		quest610.city_seen = true
 	await _wait(1.2)
 	# --- the town: the gate barred, the wordsmith's ask ---
 	var g: Dictionary = town._gate

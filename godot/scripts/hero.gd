@@ -101,6 +101,12 @@ var fx
 var wakes
 var doors  # doors.gd, on a floor that has them (null in town)
 var props  # props.gd, on a floor that has chests, barrels or urns (null in town)
+## (FLOORS 6 TO 10 BESIDES THEIR FIGHTS, act1/quest610.gd: floor 10's pillars, which his blows reach (pillars.gd); A SCENE
+## PLAYING, the eyrie's (game.ts sceneStep): above 0, the player's hands off him, he walks where auto_dir takes him at that share
+## of his pace; the picture's lean out over the drop (render.ts sceneLean), picture pixels)
+var pillars = null
+var scene_pace := 0.0
+var lean := Vector2.ZERO
 var world := Vector2.ZERO
 var home := Vector2.ZERO
 var face := Vector2(1, 0)
@@ -385,6 +391,8 @@ func _cast(i: int, kind: String, at: Vector2, way: Vector2) -> void:
 func _break_props(i: int, at: Vector2, rad: float) -> void:
 	if props != null and is_instance_valid(props):
 		props.strike(at, rad)
+	if pillars != null and is_instance_valid(pillars):
+		pillars.struck(at, rad)
 	if doors != null and is_instance_valid(doors):
 		doors.unseal({"front": loadout.fronts(i), "behind": loadout.behinds(i)}, at, rad)
 
@@ -485,7 +493,7 @@ func _process(dt: float) -> void:
 	_invuln = maxf(0.0, _invuln - dt)
 	_whirl_cd = maxf(0.0, _whirl_cd - dt)
 	_lunge_cd = maxf(0.0, _lunge_cd - dt)
-	_cam.offset = Vector2(0, -24 - _lift) + (Vector2(randf_range(-3, 3), randf_range(-3, 3)) if _shake > 0.0 else Vector2.ZERO)
+	_cam.offset = Vector2(0, -24 - _lift) + lean + (Vector2(randf_range(-3, 3), randf_range(-3, 3)) if _shake > 0.0 else Vector2.ZERO)
 	if _kick > 0.3:
 		_cam.offset += Vector2(roundf(randf_range(-_kick, _kick)), roundf(randf_range(-_kick, _kick) * 0.6)) * 2.0
 	if not alive:
@@ -514,7 +522,7 @@ func _process(dt: float) -> void:
 	if poison_t > 0.0:
 		poison_t -= dt
 	_t += dt
-	var d := Input.get_vector("move_left", "move_right", "move_up", "move_down") + auto_dir
+	var d := (Vector2.ZERO if scene_pace > 0.0 else Input.get_vector("move_left", "move_right", "move_up", "move_down")) + auto_dir
 	var way := Iso.screen_dir_to_world(d)
 	# (HOOKED by the Chained One: he cannot walk or dodge, he goes where he is dragged; he may strike still)
 	var hooked := held > 0.0
@@ -525,7 +533,7 @@ func _process(dt: float) -> void:
 	# THE LUNGE: whatever he is doing, it breaks off (useEvasive), and he is in the air till he lands
 	var lunge_at := auto_lunge
 	auto_lunge = Vector2.INF
-	if Input.is_action_just_pressed("lunge"):
+	if Input.is_action_just_pressed("lunge") and scene_pace <= 0.0:
 		lunge_at = _pointer(way, LUNGE["range"])
 	if lunge_at != Vector2.INF and _lunge_cd <= 0.0 and _act != "lunge" and not hooked:
 		_begin_lunge(lunge_at)
@@ -541,8 +549,8 @@ func _process(dt: float) -> void:
 		_slide(_knock * (minf(dt, _knock_t) / 0.12))
 		_knock_t -= dt
 
-	var strike_asked := Input.is_action_just_pressed("attack") or auto_attack
-	var whirl_held := Input.is_action_pressed("whirl") or auto_whirl
+	var strike_asked := (Input.is_action_just_pressed("attack") and scene_pace <= 0.0) or auto_attack
+	var whirl_held := (Input.is_action_pressed("whirl") and scene_pace <= 0.0) or auto_whirl
 	auto_attack = false
 	if whirl_held and _whirl_cd <= 0.0 and (_act == "" or (_act == "strike" and _landed)):
 		_begin_whirl()
@@ -575,7 +583,7 @@ func _process(dt: float) -> void:
 		var was := world
 		var walk_was := world
 		# (his pace: his own, his gear's, his haste while it lasts, a chill and the rime: game.ts walkPace)
-		_slide(way * walk_pace() * slow * dt)
+		_slide(way * walk_pace() * slow * dt * (scene_pace if scene_pace > 0.0 else 1.0))
 		walked += world.distance_to(walk_was)
 		# (the Lockdown's bars, standing, keep him on his side of them as he walks: action_f1.ts cageHero)
 		if monsters != null and monsters.perils != null:
