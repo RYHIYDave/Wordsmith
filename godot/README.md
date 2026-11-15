@@ -26,8 +26,27 @@ through chat, so the art and sounds go into the project whole).
   tiles, 8 to 12.5; every 0.92 s, the second swing of the combo if pressed again soon enough, a step forward each. His
   life (102, 0.6 a second back) over his head in a fight; fallen, he is back where he came in.
 
-Keys: WASD or the arrows to walk; Space or the left mouse button to swing (the mouse aims; from the keys he aims at the
-nearest monster close by). A controller: the left stick, A.
+- **The Warrior's other two attacks** (at his pick, "Warrior's other moves", 14 Nov 2026; defs.ts SKILLS, talents.ts):
+  WHIRL, the right button (held, again as soon as it is ready), a quarter second's wind-up then one blow all round him,
+  2 tiles, x1.4, ready again after 3 s; and his swipe, the LUNGE, Space, flung up to 6 tiles toward the pointer, not to
+  be harmed in the air, through monsters and the Lockdown's bars, a blow 1.6 round where he lands, ready again after 4 s.
+  (The Whirlwind held and spun is a talent's, not his to start with.) In the game Whirl opens at level 2 and the Lunge
+  at 5: here all three are open, to try them.
+- **Loot, levels and the first word** (at his pick, "Words and loot", 14 Nov 2026; `scripts/loot.gd`, `inventory.gd`):
+  what falls as the game's dropLoot has it (gold, life orbs, gear: a leader's, a guardian's and the Warden's more and
+  better), every piece one the game itself rolled (`tools/godot_loot.ts`: its own rollGear, its pictures, its names and
+  properties); gold and orbs flying to him, gear taken by walking over it, worn at once where a slot is empty; his
+  stats from his gear as the game's derive makes them; three flasks (Q), one back every 18 kills; experience and levels
+  by the game's curve, each +12 life and +5 to Str, Dex or Int, his pick. THE GEAR SCREEN (I or Tab): his ten slots, the
+  bag of 24, his stats, a piece's card, and the Power word put in Strike's front slot (+33% and bigger, half splashing)
+  or behind it from level 4, or burned into a worn piece (the game's own outcome for that piece). In the game no word
+  falls on floor 1: the fallen wordsmith's Master Rune-stone is carried to the wordsmith in town, who gives Power. With
+  no town yet, here the word is given as the stone is found (said so on the screen).
+- **A desktop icon**, "Wordsmith (Godot)", opens this project to play (it needs the `wordsmith` folder on this branch).
+
+Keys: WASD or the arrows to walk; the left button to Strike, the right to Whirl, Space to Lunge (the mouse aims; from
+the keys he aims at the nearest monster close by); Q a flask; I or Tab the gear screen. A controller: the left stick,
+RT, LT, A, X.
 
 - **The monsters' own moves** (at his pick, "Monsters' own moves", 14 Nov 2026; game/defs.ts MONSTER_MOVES with the
   first floor's MORE ACTION, `scripts/monster_moves.gd`): each makes the biggest of its moves that is ready and in reach,
@@ -42,8 +61,9 @@ nearest monster close by). A controller: the left stick, A.
 ## Not in it yet
 
 The game's own pictures of the moves' marks (the rings, lines and bars here are plain stand-ins drawn on the floor, the
-bars under the figures), the Warden's spoken lines as he makes them, the Warrior's other moves (Whirl from level 2,
-Leap; his swipe, which carries him through the Lockdown's bars), words, loot, levels, potions, the floor's own dressing
+bars under the figures), the Warden's spoken lines as he makes them, the moves' level locks, talents, the town (its
+wordsmith, his ring, the merchant), words other than Power, uniques, magic find, the game's own lettering and frames
+for the screens (these use Godot's plain letters), chests, barrels and urns, the floor's own dressing
 (render/pieces.ts, its looks), raised and sunken floor, the tiles cut corner to corner (drawn whole for now), doors,
 props, the rest of the heroes, the town, menus, music (its 12 tracks are `.mp4`, which Godot does not play: they need
 making into `.ogg`). The Colossus and townsfolk pictures are in, held back from Godot with `.gdignore` until they are
@@ -58,6 +78,7 @@ wired in.
 | `assets/floor1` | `npx tsx tools/godot_export.ts 1` (from the repository's root, with `npm install` done): the game's own painter, a new Warrior's game into its first dungeon (its layout and its monsters) |
 | `assets/monsters/*.json`, `*-N.png` | the packs unpacked: `node tools/godot_unpack_monsters.mjs` |
 | `assets/monsters/lists.json` | each figure's lists named, from the game's art: `npx tsx tools/godot_monster_lists.ts` |
+| `assets/loot` | the game's own gear rolled on floor 1, its pictures, the fallen wordsmith: `npx tsx tools/godot_loot.ts 1` |
 | `scripts/` | GDScript, each file saying which TypeScript it follows |
 
 Checking it without hands on the keys: `godot --path godot -- --shots=<folder>` sets the hero down, unharmed, in sight

@@ -22,6 +22,7 @@ var sfx: Sfx
 var hero  # hero.gd
 var stands: Node2D
 var perils: Perils
+var loot  # loot.gd
 var list: Array[Monster] = []
 ## (shot mode: how many times each move was made)
 var used := {}
@@ -101,6 +102,19 @@ func strike_target(from: Vector2, way: Vector2, reach: float) -> Monster:
 			best_score = score
 			best = m
 	return best
+
+
+## A blow all round a point (game.ts blast): every monster standing within `rad` + its own radius is struck, each by its
+## own roll (`roll` gives one hit). How many were struck.
+func blast(at: Vector2, rad: float, roll: Callable, spare: Object = null) -> int:
+	var n := 0
+	for m in list:
+		if not is_instance_valid(m) or m.dead or m.state == "rise" or m == spare:
+			continue
+		if m.world.distance_to(at) <= rad + m.r:
+			m.hurt(roll.call())
+			n += 1
+	return n
 
 
 ## The nearest monster still standing within `reach` tiles (to aim a blow made from the keys).

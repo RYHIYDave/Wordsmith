@@ -1,8 +1,8 @@
 ## WORDSMITH IN GODOT, THE FIRST SLICE: floor 1 of the Crypt, laid out by the game's own map-maker and painted in its own
 ## stone (tools/godot_export.ts), with the Warrior from the released game's baked pictures walking it and swinging, his
 ## steps and swings and the floor's background sounding from the game's own recordings.
-##   Keys: WASD or the arrows to walk; Space or the left button to swing, Shift or the right button for the second swing.
-##   A controller: the left stick, and A / B.
+##   Keys: WASD or the arrows to walk; the left button to strike, the right button to whirl, Space to lunge (main.gd _inputs).
+##   A controller: the left stick; RT strike, LT whirl, A lunge.
 ## Shot mode, for checking it without anyone at the keys:  godot --path godot -- --shots=<folder>
 extends Node2D
 
@@ -17,12 +17,18 @@ const Hero := preload("res://scripts/hero.gd")
 const Monsters := preload("res://scripts/monsters.gd")
 const Monster := preload("res://scripts/monster.gd")
 const Perils := preload("res://scripts/perils.gd")
+const Hud := preload("res://scripts/hud.gd")
+const Loot := preload("res://scripts/loot.gd")
+const Inventory := preload("res://scripts/inventory.gd")
 
 const FLOOR_DIR := "res://assets/floor1"
 const HERO_DIR := "res://assets/heroes"
 const MONSTER_DIR := "res://assets/monsters"
 
 var _monsters: Monsters
+var _hud
+var _loot: Loot
+var _inv
 
 ## The dark of the dungeon deeper with distance from the middle of the screen (an approximation of render.ts's dark and
 ## vignette, to be replaced by the game's own).
@@ -82,6 +88,18 @@ func _ready() -> void:
 	hero.monsters = monsters
 	_monsters = monsters
 
+	# (what falls, his gear, his levels, his words: loot.gd)
+	var loot := Loot.new()
+	loot.hero = hero
+	loot.monsters = monsters
+	loot.stands = stands
+	loot.sfx = sfx
+	loot.map = map
+	add_child(loot)
+	loot.setup_body()
+	monsters.loot = loot
+	_loot = loot
+
 	var layer := CanvasLayer.new()
 	var veil := ColorRect.new()
 	veil.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -91,6 +109,16 @@ func _ready() -> void:
 	mat.shader.code = DARK
 	veil.material = mat
 	layer.add_child(veil)
+	var hud := Hud.new()
+	hud.hero = hero
+	layer.add_child(hud)
+	hud.loot = loot
+	_hud = hud
+	var inv := Inventory.new()
+	inv.loot = loot
+	inv.hero = hero
+	layer.add_child(inv)
+	_inv = inv
 	add_child(layer)
 
 	var shots := _arg("shots")
@@ -98,15 +126,19 @@ func _ready() -> void:
 		_shoot(hero, shots)
 
 
+## The controls, as main.ts has them: WASD or the arrows to walk; STRIKE the left button (or J; a controller's RT); WHIRL
+## the right button, held to go again as soon as it is ready (or K; LT); the LUNGE Space, toward the pointer (A, along the
+## stick).
 func _inputs() -> void:
 	var keys := {
 		"move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN],
 		"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
-		"attack": [KEY_SPACE], "attack2": [KEY_SHIFT],
+		"attack": [KEY_J], "whirl": [KEY_K], "lunge": [KEY_SPACE], "potion": [KEY_Q],
 	}
 	var sticks := {
 		"move_up": [JOY_AXIS_LEFT_Y, -1.0], "move_down": [JOY_AXIS_LEFT_Y, 1.0],
 		"move_left": [JOY_AXIS_LEFT_X, -1.0], "move_right": [JOY_AXIS_LEFT_X, 1.0],
+		"attack": [JOY_AXIS_TRIGGER_RIGHT, 1.0], "whirl": [JOY_AXIS_TRIGGER_LEFT, 1.0],
 	}
 	for action in keys:
 		if not InputMap.has_action(action):
@@ -120,13 +152,16 @@ func _inputs() -> void:
 		j.axis = sticks[action][0]
 		j.axis_value = sticks[action][1]
 		InputMap.action_add_event(action, j)
-	for pair in [["attack", MOUSE_BUTTON_LEFT, JOY_BUTTON_A], ["attack2", MOUSE_BUTTON_RIGHT, JOY_BUTTON_B]]:
+	for pair in [["attack", MOUSE_BUTTON_LEFT], ["whirl", MOUSE_BUTTON_RIGHT]]:
 		var m := InputEventMouseButton.new()
 		m.button_index = pair[1]
 		InputMap.action_add_event(pair[0], m)
-		var b := InputEventJoypadButton.new()
-		b.button_index = pair[2]
-		InputMap.action_add_event(pair[0], b)
+	var a := InputEventJoypadButton.new()
+	a.button_index = JOY_BUTTON_A
+	InputMap.action_add_event("lunge", a)
+	var x := InputEventJoypadButton.new()
+	x.button_index = JOY_BUTTON_X
+	InputMap.action_add_event("potion", x)
 
 
 func _arg(name: String) -> String:
@@ -144,8 +179,13 @@ func _arg(name: String) -> String:
 func _shoot(hero: Hero, dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	hero.unhurt = true
+	if _arg("only") == "loot":
+		await _loot_shots(hero, dir)
+		get_tree().quit()
+		return
 	await _wait(1.0)
 	await _snap(dir + "/01_start.png")
+	await _hero_moves(hero, dir)
 	var P := _monsters.perils
 	# (the troll whose lair leaves room for a charge)
 	var troll: Monster = null
@@ -318,3 +358,81 @@ func _snap(path: String) -> void:
 	var img := get_viewport().get_texture().get_image()
 	img.resize(img.get_width() * 2, img.get_height() * 2, Image.INTERPOLATE_NEAREST)
 	img.save_png(path)
+
+
+## SHOT MODE, THE WARRIOR'S OWN MOVES: set down 7 tiles from a pack of skeletons as they wake, he lunges into them
+## (in the air; landed), whirls (the blow all round him), and strikes on; pictures of each, and how many fell.
+func _hero_moves(hero: Hero, dir: String) -> void:
+	var skel := _nearest_kind(hero.world, "skeleton", 12.0)
+	if skel == null:
+		return
+	var n0 := _alive()
+	hero.world = _spot_near(skel.world, 7.0, hero.world)
+	await _wait(1.4)
+	await _snap(dir + "/01a_pack_comes.png")
+	var pack := _nearest_kind(hero.world, "skeleton", 0.0)
+	hero.auto_lunge = pack.world
+	await _wait(0.2)
+	await _snap(dir + "/01b_lunge_in_the_air.png")
+	await _wait(0.3)
+	await _snap(dir + "/01c_lunge_landed.png")
+	await _wait(0.3)
+	hero.auto_whirl = true
+	await _wait(0.33)
+	await _snap(dir + "/01d_whirl.png")
+	for i in 8:
+		hero.auto_attack = true
+		await _wait(0.5)
+		if i == 3:
+			hero.auto_whirl = true
+	await _snap(dir + "/01e_after.png")
+	print("WARRIOR'S MOVES: ", n0 - _alive(), " monsters down")
+
+
+## SHOT MODE, THE LOOT: a pack fought and what it leaves; more gear put in his way; the fallen wordsmith searched (the
+## Master Rune-stone, and the Power word: a stand-in for the town); the gear screen with a piece's card; Power put in
+## Strike; a level gained and its +5 offered; Power burned into his weapon.
+func _loot_shots(hero: Hero, dir: String) -> void:
+	await _wait(0.8)
+	await _hero_moves(hero, dir)
+	await _wait(0.6)
+	await _snap(dir + "/20_what_fell.png")
+	# (a guardian's hoard laid at his feet, to see gear on the floor and taken)
+	for q in [2, 0, 1, 4]:
+		_loot._item(hero.world + Vector2(1.6, 0.4), q)
+	_loot._gold(hero.world + Vector2(1.2, -0.8), 30)
+	_loot._orb(hero.world + Vector2(-1.0, 1.0))
+	await _wait(0.2)
+	await _snap(dir + "/21_gear_on_the_floor.png")
+	hero.auto_dir = Vector2(1, 0)
+	await _wait(0.5)
+	hero.auto_dir = Vector2.ZERO
+	await _wait(0.6)
+	await _snap(dir + "/22_taken.png")
+	if _loot._body != null:
+		hero.world = _spot_near(_loot._body["at"], 2.5, hero.world)
+		await _wait(0.3)
+		await _snap(dir + "/23_the_fallen_wordsmith.png")
+		hero.world = _loot._body["at"] + Vector2(0.6, 0.6)
+		await _wait(0.4)
+		await _snap(dir + "/24_searched.png")
+	_inv.toggle()
+	await _wait(0.2)
+	_inv._hover = {"item": _loot.gear["mainhand"], "at": Vector2(140, 60)}
+	_inv.queue_redraw()
+	await _snap(dir + "/25_gear_screen.png")
+	_inv._hover = {}
+	_inv._press("front", null)
+	_loot.gain_xp(_loot.xp_to_next(1) + 10)
+	await _wait(0.2)
+	await _snap(dir + "/26_power_in_strike_and_a_level.png")
+	_inv._press("attr", "str")
+	_loot.words["power"] += 1
+	_inv._press("burn", null)
+	_inv._press("worn", "mainhand")
+	await _wait(0.2)
+	_inv._hover = {"item": _loot.gear["mainhand"], "at": Vector2(140, 60)}
+	_inv.queue_redraw()
+	await _snap(dir + "/27_power_burned_into_the_sword.png")
+	_inv.toggle()
+	print("LOOT: level ", _loot.level, " gold ", _loot.gold, " bag ", _loot.bag.size(), " worn ", _loot.gear.values().filter(func(i): return i != null).size(), " strike ", hero.strike_words, " stats ", hero.stats)

@@ -45,6 +45,10 @@ var speed := 1.0
 var pack_id := -1
 var boss := false
 var champion := false
+var elite := false
+## (one the Warden called up: it leaves nothing)
+var summoned := false
+var xp := 0.0
 var state := "sleep"
 var dead := false
 
@@ -79,6 +83,9 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	pack_id = int(m["packId"])
 	boss = m["boss"]
 	champion = m.get("champion", false)
+	elite = m.get("elite", false)
+	summoned = not m.has("xp")
+	xp = float(m.get("xp", kind_def.get("xp", 0)))
 	_anim_t = m.get("animT", 0.0)
 	_moves = MM.moves_of(kind, champion)
 
@@ -428,6 +435,8 @@ func _die() -> void:
 	_bar = 0.0
 	_set_list("die", true)
 	mgr.perils.drop(self)
+	if mgr.loot != null:
+		mgr.loot.on_kill(self)
 	if VOICE.has(kind):
 		mgr.sfx.play(VOICE[kind] + "_death", -4.0)
 	elif boss:
