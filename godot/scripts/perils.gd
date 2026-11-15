@@ -192,6 +192,9 @@ func _process(dt: float) -> void:
 			"am_lines", "am_ring", "am_drop", "am_arm":
 				# (the Ossuary Amalgamation's, floor 4's boss: at the foot of this file)
 				stays = _am_step(p)
+			"st_coals", "st_rake", "st_ring", "st_blast":
+				# (THE STOKER'S, floor 3's furnace keeper: at the foot of this file)
+				stays = _st_stays(p)
 			"co_crack", "co_ring", "co_left", "co_aim", "co_reach", "co_flung":
 				# (THE CHAINED ONE'S, at the foot of this file)
 				stays = _co_stays(p)
@@ -683,6 +686,9 @@ func _draw() -> void:
 			"am_lines", "am_ring", "am_drop", "am_arm":
 				# (the Ossuary Amalgamation's, floor 4's boss: at the foot of this file)
 				_am_draw(p)
+			"st_coals", "st_rake", "st_ring", "st_blast":
+				# (THE STOKER'S, floor 3's furnace keeper: at the foot of this file)
+				_draw_st(p)
 			"co_crack", "co_ring", "co_left", "co_aim", "co_reach", "co_flung":
 				_draw_co(p)
 
@@ -1259,3 +1265,400 @@ func _co_ball(at: Vector2) -> void:
 	draw_circle(at, 10.0, CO_INK)
 	draw_circle(at, 8.5, Color(0.3, 0.29, 0.38))
 	draw_circle(at + Vector2(-2.5, -3.0), 2.5, CO_IRON)
+
+
+# =====================================================================================================================
+# THE STOKER'S (floor 3's furnace keeper: stoker.gd, whose numbers and sums these read; game/act1_rules/stoker.ts `peril`).
+# What his acts lay on the floor, AND WHAT STRIKES. Each is begun as his act begins, its clock his act's, laid in the frame
+# his picture is seen in (`frame`: stoker.gd FRAMES) from where he stood then, its harm rolled once. Stopped before its blow
+# lands (he is killed, or his act broken off), it is gone with him; landed, it goes on by itself, whether he still stands
+# or not. Drawn as stand-ins for the art chat's painters (art/stoker_fx.ts; render/act1_fx/stoker.ts):
+# what is marked before it comes in the enemy's pink, his fire in its own orange and gold; on the floor only (what would
+# lie across a wall is left out: what strikes goes by his rules alone, as in the game).
+#   st_coals  his shovel of coals; `aim`, where they are thrown (tiles along his forward, to his left: stoker.gd takes it
+#             again 1.0 s in). Each coal's spot is ringed from then until it lands; from the hit the seven are in the air;
+#             as each lands a hero within its fire (and 0.15) is struck (by those landing in the same step, once); its fire
+#             burns 3 s, whoever stands in one burnt every 0.5 s until it dies down; then a scorch, fading.
+#   st_rake   his fire rake. Its band is marked while he holds the shovel up; from the hit a hero in the band as the blade
+#             passes his way is struck, once; the sheet of fire springs up behind the blade and burns 3.6 s, whoever stands
+#             in it burnt every 0.5 s until it dies down.
+#   st_ring   his furnace's burst. The ring is marked round him and its three gaps marked out while he roars; from the hit it
+#             rolls out, a hero within its depth as it passes, and not in a gap, struck once; the floor behind it scorched.
+#   st_blast  his death's blast on the floor under him (drawn only): from when he bursts the shockwave rolls out, and the
+#             floor where he stood lies scorched.
+# (His gear, left lying when he falls, is a thing of its own, not swept away with these when the hero falls: stoker.gd Gear.)
+
+const ST := preload("res://scripts/stoker.gd")
+## (art/stoker_fx.ts FX_PINK's deeper pink, for a mark's beat; FIRE, the embers' own colours; soot and smoke)
+const ST_PINK := Color("#c0206a")
+const ST_EMBER := Color("#d0501a")
+const ST_FLAME := Color("#ff8a2a")
+const ST_GOLD := Color("#ffc860")
+const ST_WHITE := Color("#fff3b0")
+const ST_SOOT := Color("#141012")
+const ST_SMOKE := Color("#6a625e")
+## (a circle one tile round on the floor is this many picture pixels across, from its middle: 32 times the root of 2)
+const ST_ACROSS := 45.254833995939045
+
+
+## One of his acts begun by `src` (his monster.gd): what it lays on the floor (`kind`: "st_coals", "st_rake" or "st_ring"), in
+## `frame`, from where he stands; `aim`, where the hero stands (tiles along his forward, to his left); `dmg`, his blow,
+## rolled once; `hit`, when its blow lands. Handed back, for his act to keep.
+func st_act(src, kind: String, frame: int, aim: Vector2, dmg: float, hit: float) -> Dictionary:
+	var p := {"kind": kind, "x": src.world.x, "y": src.world.y, "t": 0.0, "dur": ST.lasts(kind), "dmg": dmg, "hit": hit, "frame": frame, "aim": aim, "landed": 0, "done": 0, "struck": false, "src": src}
+	list.append(p)
+	return p
+
+
+## His death's blast on the floor where he fell (`at`), in the frame he was seen in.
+func st_blast(at: Vector2, frame: int) -> void:
+	list.append({"kind": "st_blast", "x": at.x, "y": at.y, "t": 0.0, "dur": ST.lasts("st_blast"), "frame": frame})
+
+
+## A step of one of them (its clock has run on already); false: it is over.
+func _st_stays(p: Dictionary) -> bool:
+	var t: float = p["t"]
+	var o := Vector2(p["x"], p["y"])
+	if p["kind"] == "st_blast":
+		return t < float(p["dur"])
+	# (stopped before its blow lands, it is gone with him: killed, or his act broken off)
+	if t < float(p["hit"]):
+		var s = p["src"]
+		return is_instance_valid(s) and not s.dead and s.state == "act" and s.h2 != null and s.h2.act != null and is_same(s.h2.act["peril"], p)
+	if hero.alive:
+		match p["kind"]:
+			"st_coals":
+				_st_coals(p, t, o)
+			"st_rake":
+				_st_rake(p, t, o)
+			"st_ring":
+				_st_ring(p, t, o)
+	return t < float(p["dur"])
+
+
+## Whether a blow of his may land on the hero now: not in the air of his lunge, nor while nothing harms him.
+func _st_free() -> bool:
+	return hero._invuln <= 0.0 and hero._act != "lunge"
+
+
+## THE COALS: each, as it lands, strikes a hero within its fire (those landing in the same step, once between them); then the
+## fires burn whoever stands in one, tick by tick from the first one's landing.
+func _st_coals(p: Dictionary, t: float, o: Vector2) -> void:
+	var k: int = p["frame"]
+	var aim: Vector2 = p["aim"]
+	var reach: float = ST.COAL_FIRE["r"] + ST.HERO_R * 0.5
+	var struck := false
+	for i in int(ST.COALS["n"]):
+		if (int(p["landed"]) & (1 << i)) != 0 or t < ST.COALS_HIT + ST.coal_lands(i):
+			continue
+		p["landed"] = int(p["landed"]) | (1 << i)
+		if not struck and _st_free() and hero.world.distance_to(ST.coal_spot(k, o, aim, i)) <= reach:
+			struck = true
+			hero.hurt(float(p["dmg"]) * ST.TUNE["coal"])
+		if i == 0:
+			hero.kick(1.0)
+	if int(p["landed"]) == 0:
+		return
+	var tick := floori((t - (ST.COALS_HIT + ST.coal_lands(0))) / ST.TUNE["tick"])
+	if tick < 1 or tick <= int(p["done"]):
+		return
+	p["done"] = tick
+	for i in int(ST.COALS["n"]):
+		if ST.coal_burning(i, t) and hero.world.distance_to(ST.coal_spot(k, o, aim, i)) <= reach:
+			hero.hurt(float(p["dmg"]) * ST.TUNE["burn"])
+			break
+
+
+## THE RAKE: a hero in its band as the blade passes his way is struck, once; the sheet of fire behind the blade burns whoever
+## stands in it, tick by tick from the hit.
+func _st_rake(p: Dictionary, t: float, o: Vector2) -> void:
+	var since := t - float(p["hit"])
+	var rel := ST.in_frame(p["frame"], o, hero.world)
+	var d := rel.length()
+	var deg := ST.way_of(rel)
+	var edge: float = ST.HERO_R * 0.5
+	var in_band: bool = d >= ST.RAKE_FIRE["r0"] - edge and d <= ST.RAKE_FIRE["r1"] + edge
+	var in_arc: bool = deg >= ST.RAKE_ARC[0] - 6.0 and deg <= ST.RAKE_ARC[1] + 6.0
+	var way := clampf(deg, ST.RAKE_ARC[0], ST.RAKE_ARC[1])
+	if not p["struck"] and in_band and in_arc and _st_free() and absf(ST.rake_way(since) - way) < 10.0:
+		p["struck"] = true
+		hero.hurt(float(p["dmg"]) * ST.TUNE["rake"])
+	var tick := floori(since / ST.TUNE["tick"])
+	if tick < 1 or tick <= int(p["done"]):
+		return
+	p["done"] = tick
+	if not in_band or not in_arc:
+		return
+	var age := since - ST.rake_passes(way)
+	if age >= 0.0 and age < ST.RAKE_FIRE["burns"] - ST.RAKE_FIRE["dies"] * 0.5:
+		hero.hurt(float(p["dmg"]) * ST.TUNE["burn"])
+
+
+## THE RING: a hero within its depth as it passes him, and not in one of its gaps, is struck once.
+func _st_ring(p: Dictionary, t: float, o: Vector2) -> void:
+	if p["struck"]:
+		return
+	var front := ST.ring_at(t - float(p["hit"]))
+	if is_nan(front):
+		return
+	var rel := ST.in_frame(p["frame"], o, hero.world)
+	if absf(rel.length() - front) <= ST.RING["deep"] / 2.0 + ST.HERO_R * 0.5 and not ST.in_gap(ST.way_of(rel)) and _st_free():
+		p["struck"] = true
+		hero.hurt(float(p["dmg"]) * ST.TUNE["ring"])
+
+
+## The way `deg` (degrees off his forward, to his left) in frame `k`, on the floor; and the place `r` tiles from `o` that way.
+func _st_dir(k: int, deg: float) -> Vector2:
+	return ST.spot_of(k, Vector2.ZERO, cos(deg_to_rad(deg)), sin(deg_to_rad(deg)))
+
+
+func _st_way(k: int, o: Vector2, r: float, deg: float) -> Vector2:
+	return o + _st_dir(k, deg) * r
+
+
+## A stretch of a ring `r` tiles round `o`, from the way `a0` round to `a1`, as far as it lies on the floor.
+func _st_arc(k: int, o: Vector2, r: float, a0: float, a1: float, col: Color, wide: float) -> void:
+	var n := maxi(2, ceili(deg_to_rad(a1 - a0) * r / 0.3))
+	var pts := PackedVector2Array()
+	for i in n + 1:
+		var w := _st_way(k, o, r, lerpf(a0, a1, float(i) / n))
+		if _fm_floor(w):
+			pts.append(Iso.to_screen(w.x, w.y))
+			continue
+		if pts.size() > 1:
+			draw_polyline(pts, col, wide)
+		pts = PackedVector2Array()
+	if pts.size() > 1:
+		draw_polyline(pts, col, wide)
+
+
+## A MARK: a ring of the enemy's pink drawn round a spot, `r` round, drawing itself closed and its dashes filling in as the
+## moment comes (`u` 0 to 1), beating faster; a cross in its middle once it is nearly come (art/stoker_fx.ts markRing).
+func _st_mark(w: Vector2, r: float, u: float, t: float) -> void:
+	if u <= 0.0 or not _fm_floor(w):
+		return
+	var col := ENEMY if sin(t * (8.0 + 22.0 * u)) > 0.0 else ST_PINK
+	draw_colored_polygon(_ring(w.x, w.y, r, 20), Color(ENEMY, 0.04 + 0.1 * u))
+	for j in 12:
+		if j / 12.0 > minf(1.0, 0.25 + u):
+			break
+		var dash := PackedVector2Array()
+		for s in 4:
+			var a := TAU * (j + (0.5 + 0.5 * u) * s / 3.0) / 12.0
+			dash.append(Iso.to_screen(w.x + cos(a) * r, w.y + sin(a) * r))
+		draw_polyline(dash, col, 2.0)
+	if u > 0.5:
+		var c := Iso.to_screen(w.x, w.y)
+		draw_line(c + Vector2(-5, 0), c + Vector2(5, 0), ST_PINK, 2.0)
+		draw_line(c + Vector2(0, -3), c + Vector2(0, 3), ST_PINK, 2.0)
+
+
+## A patch of his fire on the floor at `w`, `r` tiles round: a bed of embers and `tongues` of flame stood up on it, flickering;
+## `live` how big it is (0 none, 1 full), `age` its seconds, `own` its own number (art/stoker_fx.ts flames).
+func _st_fire(w: Vector2, r: float, live: float, age: float, own: int, tongues: int) -> void:
+	var bed := r * (0.5 + 0.5 * minf(live, 1.0))
+	if live <= 0.02 or bed < 0.05 or not _fm_floor(w):
+		return
+	draw_colored_polygon(_ring(w.x, w.y, bed, 14), Color(ST_EMBER, 0.85))
+	draw_colored_polygon(_ring(w.x, w.y, bed * 0.6, 12), ST_FLAME)
+	var c := Iso.to_screen(w.x, w.y)
+	for i in tongues:
+		var a := own * 1.7 + i * TAU / tongues
+		var foot := c + Vector2(cos(a) * bed * 20.0, sin(a) * bed * 10.0)
+		var tall := (r * 52.0 + 4.0) * live * (0.55 + 0.45 * sin(age * 9.0 + i * 2.3 + own))
+		if tall < 2.0:
+			continue
+		var wide := 2.0 + r * 9.0 * live
+		var lean := 3.0 * sin(age * 5.0 + i + own)
+		draw_colored_polygon(PackedVector2Array([foot + Vector2(-wide, 0), foot + Vector2(lean, -tall), foot + Vector2(wide, 0)]), ST_FLAME)
+		draw_colored_polygon(PackedVector2Array([foot + Vector2(-wide * 0.5, 0), foot + Vector2(lean * 0.6, -tall * 0.6), foot + Vector2(wide * 0.5, 0)]), ST_GOLD)
+
+
+## Patches of his fire, each [where, how far round, how live, its age, its own number], the farthest from the eye first.
+func _st_fires(patches: Array, tongues: int) -> void:
+	patches.sort_custom(func(a, b): return a[0].x + a[0].y < b[0].x + b[0].y)
+	for q in patches:
+		_st_fire(q[0], q[1], q[2], q[3], q[4], tongues)
+
+
+## A scorch on the floor where his fire has burnt out, `r` round: soot; `left` how much of it is left (1 all).
+func _st_scorch(w: Vector2, r: float, left: float) -> void:
+	if left > 0.02 and r >= 0.05 and _fm_floor(w):
+		draw_colored_polygon(_ring(w.x, w.y, r, 14), Color(ST_SOOT, 0.75 * left))
+
+
+func _draw_st(p: Dictionary) -> void:
+	var t: float = p["t"]
+	var k: int = p["frame"]
+	var o := Vector2(p["x"], p["y"])
+	match p["kind"]:
+		"st_coals":
+			_draw_st_coals(t, k, o, p["aim"])
+		"st_rake":
+			_draw_st_rake(t, k, o)
+		"st_ring":
+			_draw_st_ring(t, k, o)
+		"st_blast":
+			_draw_st_blast(t, k, o)
+
+
+## His coals: where each will come down, marked from when the hero's place is taken until it lands; its fire, flaring up as it
+## lands and dying over its last moments to a scorch that fades; and the seven in the air, each a burning lump, its trail
+## of sparks behind it (art/stoker_fx.ts coalsFloor, coalInAir).
+func _draw_st_coals(t: float, k: int, o: Vector2, aim: Vector2) -> void:
+	var r: float = ST.COAL_FIRE["r"]
+	var burns: float = ST.COAL_FIRE["burns"]
+	var dies: float = ST.COAL_FIRE["dies"]
+	var fires: Array = []
+	for i in int(ST.COALS["n"]):
+		var w := ST.coal_spot(k, o, aim, i)
+		var lands := ST.COALS_HIT + ST.coal_lands(i)
+		if t >= ST.COALS_MARK and t < lands:
+			_st_mark(w, r, (t - ST.COALS_MARK) / (lands - ST.COALS_MARK), t)
+		var age := t - lands
+		if age < 0.0 or age >= burns + 1.2:
+			continue
+		if age > burns - dies:
+			_st_scorch(w, r, 1.0 - ST.smooth(burns, burns + 1.2, age))
+		var live := 0.6 + 3.0 * age if age < 0.12 else 1.0 - ST.smooth(burns - dies, burns, age)
+		fires.append([w, r, live, age, i + 3])
+		# (the splash as it lands: sparks thrown out round it)
+		if age < 0.3 and _fm_floor(w):
+			draw_polyline(_ring(w.x, w.y, (4.0 + 70.0 * age) / ST_ACROSS, 16), Color(ST_GOLD, 1.0 - age / 0.3), 2.0)
+	_st_fires(fires, 3)
+	var since := t - ST.COALS_HIT
+	if since < 0.0:
+		return
+	for i in int(ST.COALS["n"]):
+		if since > ST.coal_lands(i):
+			continue
+		var at := _st_coal(k, o, ST.coal_at(i, since, aim))
+		var was := _st_coal(k, o, ST.coal_at(i, maxf(0.0, since - 1.0 / 30.0), aim))
+		draw_line(at, at + (was - at) * 4.8, ST_FLAME, 2.0)
+		draw_circle(at, 4.0, ST_EMBER)
+		draw_circle(at, 2.5, ST_WHITE)
+
+
+## Where a coal in the air is on the screen: `q` its place (tiles along his forward, to his left, up), as the game lifts it.
+func _st_coal(k: int, o: Vector2, q: Vector3) -> Vector2:
+	var w := ST.spot_of(k, o, q.x, q.y)
+	return Iso.to_screen(w.x, w.y) + Vector2(0.0, -q.z * ST.TILE3 * 0.82)
+
+
+## His rake: its band's edges and its ends dashed in his pink while he holds the shovel up, filling in, beating faster; then
+## the sheet of fire, a patch of it springing up where the blade has passed, burning, dying to a scorch (art/stoker_fx.ts
+## rakeFloor, RAKE_PATCHES).
+func _draw_st_rake(t: float, k: int, o: Vector2) -> void:
+	var r0: float = ST.RAKE_FIRE["r0"]
+	var r1: float = ST.RAKE_FIRE["r1"]
+	var a0: float = ST.RAKE_ARC[0]
+	var a1: float = ST.RAKE_ARC[1]
+	if t >= ST.RAKE_MARK and t < ST.RAKE_HIT + 0.15:
+		var u := clampf((t - ST.RAKE_MARK) / (ST.RAKE_HIT - ST.RAKE_MARK), 0.0, 1.0)
+		var col := ENEMY if sin(t * (8.0 + 20.0 * u)) > 0.0 else ST_PINK
+		var a := a0
+		while a < a1:
+			var b := minf(a1, a + 6.0 * (0.35 + 0.5 * u))
+			_st_arc(k, o, r0, a, b, col, 2.0)
+			_st_arc(k, o, r1, a, b, col, 2.0)
+			a += 6.0
+		for e in [a0, a1]:
+			_st_spoke(k, o, e, r0, r1, col, 4.0 + 6.0 * u)
+	var since := t - ST.RAKE_HIT
+	if since < 0.0:
+		return
+	var burns: float = ST.RAKE_FIRE["burns"]
+	var dies: float = ST.RAKE_FIRE["dies"]
+	var fires: Array = []
+	var nth := 0
+	var r := r0 + 0.35
+	while r < r1:
+		var step := rad_to_deg(0.62 / r)
+		var way := a0 + step / 2.0
+		while way < a1:
+			var age := since - ST.rake_passes(way)
+			if age >= 0.0 and age <= burns + 1.2:
+				var w := _st_way(k, o, r, way)
+				if age > burns - dies:
+					_st_scorch(w, 0.45, 1.0 - ST.smooth(burns, burns + 1.2, age))
+				var live := 0.5 + 5.0 * age if age < 0.1 else 1.0 - ST.smooth(burns - dies, burns, age)
+				fires.append([w, 0.45, live, age, nth + 11])
+			nth += 1
+			way += step
+		r += 0.62
+	_st_fires(fires, 2)
+
+
+## A dashed line out along the way `deg` from `from` tiles to `to`, as far as the floor runs.
+func _st_spoke(k: int, o: Vector2, deg: float, from: float, to: float, col: Color, dash: float) -> void:
+	var way := _st_dir(k, deg)
+	var far := _fm_floor_to(o, way, from, to)
+	if far > from + 0.05:
+		draw_dashed_line(Iso.to_screen(o.x + way.x * from, o.y + way.y * from), Iso.to_screen(o.x + way.x * far, o.y + way.y * far), col, 2.0, dash)
+
+
+## His furnace's ring: marked round him at its start while he roars, its dashes filling in, each gap marked out along the floor,
+## further as the moment comes; then rolling out, its flames stood up along its front, its gaps the way through; the floor
+## it has rolled over scorched a while (art/stoker_fx.ts ringFloor).
+func _draw_st_ring(t: float, k: int, o: Vector2) -> void:
+	var r0: float = ST.RING["r0"]
+	var r1: float = ST.RING["r1"]
+	var deep: float = ST.RING["deep"]
+	var half: float = ST.RING["gap"] / 2.0
+	var gaps: Array = ST.RING["gaps"]
+	# (the stretches of it between its gaps: from each gap's far edge round to the next one's near edge)
+	var arcs: Array = []
+	for j in gaps.size():
+		arcs.append([float(gaps[j]) + half, float(gaps[(j + 1) % gaps.size()]) - half + (360.0 if j == gaps.size() - 1 else 0.0)])
+	if t >= ST.BURST_MARK and t < ST.BURST_HIT:
+		var u := clampf((t - ST.BURST_MARK) / (ST.BURST_HIT - ST.BURST_MARK), 0.0, 1.0)
+		var col := ENEMY if sin(t * (8.0 + 22.0 * u)) > 0.0 else ST_PINK
+		for arc in arcs:
+			var a: float = arc[0]
+			while a < arc[1]:
+				_st_arc(k, o, r0, a, minf(arc[1], a + 10.0 * (0.4 + 0.6 * u)), col, 2.0)
+				a += 10.0
+		for g in gaps:
+			for e in [-half, half]:
+				_st_spoke(k, o, float(g) + e, r0, r0 + (r1 - r0) * u, col, 6.0)
+	var since := t - ST.BURST_HIT
+	if since < 0.0:
+		return
+	var front: float = r0 + ST.RING["pace"] * since
+	var r := r0
+	while r < minf(front - deep, r1):
+		var left := 1.0 - ST.smooth(ST.RING["scorch"], ST.RING["scorch"] + 0.8, since - (r - r0) / ST.RING["pace"])
+		if left > 0.02:
+			for arc in arcs:
+				_st_arc(k, o, r, arc[0], arc[1], Color(ST_SOOT, 0.7 * left), 12.0)
+		r += 0.55
+	if front > r1 + deep:
+		return
+	var live := 1.0 - 0.35 * ST.smooth(r1 - 1.5, r1 + deep, front)
+	var fires: Array = []
+	var nth := 0
+	var way := 0.0
+	while way < 360.0:
+		if not ST.in_gap(way):
+			fires.append([_st_way(k, o, front - deep / 2.0, way), 0.33, live, since, nth + 51])
+		nth += 1
+		way += rad_to_deg(0.5 / front)
+	_st_fires(fires, 1)
+
+
+## His death's blast: from when he bursts, the floor where he stood scorched (to the end of his death and after), a burst of
+## fire on it, and the shockwave, a ring of fire and dust rolling out, thinning as it goes (art/stoker_fx.ts blastFloor).
+func _draw_st_blast(t: float, k: int, o: Vector2) -> void:
+	var since := t - ST.DIES_HIT
+	if since < 0.0:
+		return
+	_st_scorch(o, ST.BLAST["scorch"] * clampf(since / 0.15, 0.0, 1.0), 1.0)
+	if since < 0.8:
+		_st_fire(o, (26.0 * (1.0 - since / 0.8) + 6.0) / ST_ACROSS, 1.0 - since / 0.8, since, 61, 4)
+	var front := ST.blast_at(since)
+	if is_nan(front):
+		return
+	var thin := 1.0 - 0.7 * clampf((front - ST.BLAST["r0"]) / (ST.BLAST["r1"] - ST.BLAST["r0"]), 0.0, 1.0)
+	_st_arc(k, o, maxf(ST.BLAST["r0"], front - ST.BLAST["deep"] * 0.8), 0.0, 360.0, Color(ST_SMOKE, 0.6 * thin), 4.0)
+	_st_arc(k, o, front, 0.0, 360.0, Color(ST_FLAME, thin), 6.0)
+	_st_arc(k, o, front, 0.0, 360.0, Color(ST_WHITE, thin), 2.0)

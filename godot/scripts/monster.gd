@@ -25,6 +25,7 @@ const MM := preload("res://scripts/monster_moves.gd")
 const Headsman := preload("res://scripts/headsman.gd")
 const Amalgam := preload("res://scripts/amalgam.gd")
 const Chained := preload("res://scripts/chained.gd")
+const Stoker := preload("res://scripts/stoker.gd")
 const Fleshmancer := preload("res://scripts/fleshmancer.gd")
 const MiniFm := preload("res://scripts/minifm.gd")
 ## THE BOSSES THAT FIGHT BY THEIR OWN RULES (game/bosses.ts BossRules), each a script of its own with `step(m, dt, hero)`, handed
@@ -33,6 +34,7 @@ const BOSS_AI := {
 	"headsman": Headsman,
 	"amalgam": Amalgam, "mite": Amalgam.Mite, "beast": Amalgam.Beast,
 	"chained": Chained,
+	"stoker": Stoker,
 	"fleshmancer": Fleshmancer,
 	"minifm": MiniFm,
 }
