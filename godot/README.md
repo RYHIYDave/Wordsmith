@@ -147,7 +147,20 @@ through chat, so the art and sounds go into the project whole).
     THE FLESHMANCER (`scripts/fleshmancer.gd`) and the MINI FLESHMANCERS (`scripts/minifm.gd`): his glide; two fans of bone
     SHARDS; five RINGS OF HANDS; the whipping stream of FIRE and the lanes it leaves burning; the dead RAISED from his bone
     heaps; his going under the floor and coming up elsewhere (nothing reaches him between); the minis' fire and the dead
-    they call up out of cult bodies; their lines.
+    they call up out of cult bodies; their lines. He is brought over AS HE IS FROM HIS REDO (`design/fleshmancer-redo`, his
+    yes of 14 Nov 2026, merged into this branch ahead of the main chat's bringing it in): his ritual circle burning under
+    him and lighting him in his dark hall, his power rising off him, and his death (his light bursting out, the floor
+    cracking, twelve hands of his dead dragging him under, a pillar of his fire); and once he is dead nothing of his
+    harms. (His fire as flames comes with his painters: see the films, below.)
+  - THE STOKER (`scripts/stoker.gd`; game/act1_rules/stoker.ts), floor 3's furnace keeper, in his arena at the end of a
+    short hall: his slow gait; his shovel of seven COALS thrown where the hero stood (each spot marked, each fire burning
+    on); his FIRE RAKE dragged round before him (a sheet of fire springs up behind the blade); below a third of his life
+    his FURNACE'S BURST, a ring of fire rolling out with three gaps to stand in; his death's blast; and the forge crank's
+    GEAR left lying where his death leaves it, taken by walking to it.
+  - THE TWO KEYBEARERS (`scripts/keybearers.gd`; game/act1_rules/keybearers.ts), who carry floor 5's temple door's keys:
+    THE KNIFE (his stab, his thrown knife, his leap) and THE FLAME (his fan of three balls of fire, his great sigil under
+    the hero, his ring of fire burst out from him, its reach marked while he gathers it). Each drops his key as he falls:
+    it rings on the floor and is taken by walking onto it.
   - THE MONSTERS' OWN MOVES OF FLOORS 3 TO 5 (`scripts/monster.gd`, `monster_moves.gd`; game/defs.ts MONSTER_MOVES,
     game/action_f3.ts, action_f4.ts): the green troll's RAMPAGE (two swings and a leaping slam, its ring marked first) and
     BULL RUSH; the Boneward's thrust, its spear thrown (it lies where it comes down; it fights with its shield, goes for
@@ -161,6 +174,24 @@ through chat, so the art and sounds go into the project whole).
     Until these were in, none of the three bosses could be walked to.
   - THE WAY MONSTERS FIND HIM (`scripts/monsters.gd`; game/nav.ts flowField): a step to a side counts 10 and to a corner
     14, as in the game (it had counted them alike, and they came by odd ways).
+  - THE GAME'S OWN PICTURES OF WHAT THE MOVES MARK AND THROW UP (`tools/godot_fx.ts` makes `assets/fx`; `scripts/perils.gd`
+    plays it). What a move lays on the floor and throws up is painted in the game by a painter of its own, a frame at a
+    time. The tool runs those same painters and keeps what they paint as FILMS: frames in the layers the game lays them
+    in (on the floor under the figures; just behind and just before a figure at its middle; over everything). So these
+    are the game's pictures, not drawings like them: the red circle and the charge lane; the marksman's line of aim; the
+    archer's arrow rain; the Warden's Lockdown (the bars' shadows, the bars crashing down, standing and rising away, a
+    tile of a row at a time); the cultist's fire sigil and the Shade's rime; the troll's slam ring; the priest's smoke; the
+    Boneward's spear; the Chained One's rings, crack, hook, ball and chains; the Amalgamation's rings, skull rain and
+    arms; the Stoker's coals, rake fire, furnace ring, blast and gear; the keybearers' knife, balls of fire, ring of fire,
+    great sigil and key; the Fleshmancer's pit, rising, bone heaps, the hands of his dead and his death. Each kind of
+    monster's films are on sheets of their own, and a floor fetches only those of the kinds on it as it begins.
+    Three of the Fleshmancer's cannot be films, since he aims them any way he likes: his SHARDS, the CRACKS OF HIS RINGS
+    and his FIRE. For these the game's painters themselves are being brought over, line for line, to paint each frame as
+    the game does (`scripts/fm_paint.gd`, not in yet: until it is, these three are plain drawings, and his fire is not
+    yet his redo's flames).
+  - THE MOVES' LIGHTS IN THE DARK (`scripts/look.gd` spot; the game's `c.spot`): what shines cuts its light in the place's
+    dark as it goes: the Fleshmancer's circle, his fire and his death, the hands of his dead, the keybearers' knife, balls
+    and ring of fire, a key lying, the Stoker's coals in the air and his gear lying.
 - **The small map, the large map and the pause panel** (the cloud chat, 15 Nov 2026; `scripts/minimap.gd`; ui/hud.ts minimap
   and drawMap, ui/panels.ts drawPause): top right, the floor round him as he has seen it, a tile a pixel (in sight bright, seen
   before dim, wall dark), with the game's marks: the waypoint (bright once awake), the town's gate, floor 1's gate home, the
@@ -187,8 +218,12 @@ A controller: the left stick, RT, LT, A, B, X.
 
 ## Not in it yet
 
-The game's own pictures of the moves' marks (the rings, lines, bars, the sigil and the rime here are plain stand-ins drawn on
-the floor, under the figures; so are what the three bosses of floors 3 to 5 send out), the bosses' own voices, the armourer's
+The game's bursts and sparks (what flies up as a red circle or the Headsman's vault lands is a plain ring here, and a bone
+arrow and the Warden's bolts in flight are plain drawings: in the game these come from its general effects, render/fx.ts,
+which are not brought over; everything else the moves mark and throw up is the game's own, see above), the glow that burning things and some figures give off (the game adds it over them; here only the
+places' own lights glow, and the moves cut their light in the dark), the bosses' spoken lines aloud (the Chained One and
+the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
+and blows; what a boss says is shown, not spoken), the armourer's
 quest and its word and the wordsmith's ask for the Meldstone (floor 3's furnace burns and is put out without them), the sealed
 doors of floors 3 and 4 (they want FIRE and POISON, words not in it yet), the monsters' words (floor 2's blue packs and leaders carry words that change what they do, and
 the champions' rallying cry needs them; here they fight without), the
@@ -213,6 +248,7 @@ breaks, what stands behind raised ground cut off by it, the rest of the heroes, 
 | `assets/town` | the town a new game begins in, its pictures, floor 1's gate up: `npx tsx tools/godot_town.ts 1` |
 | `assets/looks` | floor 1 as THE KING'S TOMB, floor 2 as THE PRISON'S GROUNDS AT NIGHT and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light; the stairwell's opening film in `<place>_stair.png`; floor 2's skies and dark by where he is; the traps' and the waypoint's pictures): `npx tsx tools/godot_looks.ts town`, `... floor1`, `... floor2` (all the tools put the game's startup switches on first: tools/godot_switches.ts) |
 | `assets/music` | the town's and floors 1 to 5's tracks from `assets/sound` made into `.ogg` (Godot does not play `.mp4`), each cut where the game loops it, and the game's table of them: `node tools/godot_music.mjs` (needs ffmpeg) |
+| `assets/fx` | the films of what the moves mark and throw up, painted by the game's own painters: `npx tsx tools/godot_fx.ts` (about a minute) |
 | `assets/font`, `assets/hud` | the game's two pixel fonts, `npx tsx tools/godot_font.ts`; the HUD's pictures, colours and names, `npx tsx tools/godot_hud.ts` |
 | `scripts/` | GDScript, each file saying which TypeScript it follows |
 
@@ -230,7 +266,9 @@ the charge he is set down in the floor's biggest hall.)
 The cloud chat's checks, each `--only=<name> --floor=N`: `floors` (each floor where he comes in, a room on, the boss's
 hall), `ways` (a door, a chest, a barrel; the boss struck dead, the way on opening, taken, and where he comes out),
 `boss` (`--secs=40`: the boss's moves pictured as he makes them, and which he made), `kind` (`--kind=brute`, `boneward`,
-`priest`, `dagger`, `stoker`, `keyblade`, `keyflame`: one such monster alone with the hero, each move pictured; one with
-rules of its own struck dead and what it leaves taken up), `gates` (the lever and its gate, the room that locks, the
-temple door, the furnace; and whether the boss's hall can be walked to before and after), `waypoint`, `heights`, `traps`,
+`priest`, `dagger`, `stoker`, `keyblade`, `keyflame`: one such monster alone with the hero, each move pictured, and what
+it throws and leaves pictured in flight and burning; one with rules of its own struck dead and what it leaves taken up;
+the Stoker put under a third of his life so that his furnace bursts), `gates` (the lever and its gate, the room that
+locks, the temple door with the keybearers' own keys, the furnace with the Stoker's own gear; and whether the boss's hall
+can be walked to before and after), `waypoint`, `heights`, `traps`,
 `map` (the small map, the large one and the pause panel, by the keys and the pointer too).
