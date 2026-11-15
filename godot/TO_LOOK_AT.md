@@ -141,3 +141,48 @@ Smaller:
 - A cloud's poison is not raised by gear's Poison Damage and never adds doses.
 - With Power behind, Strike's splash is rolled with the might the blow has just earned; the blow itself was not.
 - Burning bites on one clock for every monster, so a 3 second burn bites 5 or 6 times by when it began.
+
+## In the game, found while bringing over floors 6 to 10 (the cloud chat, 15 Nov 2026)
+
+The Wilds' monsters and bosses were read line by line as the earlier floors' were. None of these stops a fight; the Godot
+version does the same on purpose, so that the two play alike.
+
+19. **The Carrion Queen's rake and gust marks are cut off early.** Her moves' marks are drawn only while their clock is under
+    the dive's blow and a twentieth (1.68 s), for every move: the rake's burning gouges and the gust's blast stop short.
+    It looks as if the dive's cut-off was put on all three. (render/act1_fx/queen.ts.)
+
+20. **Her dive's warning hatching and her shadow under it almost never show.** They are drawn only where sums of fractions
+    land exactly on whole numbers. (art/carrion_queen_action_fx.ts paintDiveMarks.)
+
+21. **Her Eclipse goes on after she dies.** Killed during one, its dark and its dives carry on.
+
+22. **A standing Hollow Stag hardly ever charges a hero who stands still.** The check had to set the hero down 6 tiles off to
+    get one. His charge needs only 3.4 tiles of clear run though it runs 7.9 (the rest is cut short at the wall).
+
+23. **The wolves the Stag calls give no experience but still drop loot.**
+
+24. **The firepot thrower's pot is always Flame and the chanter's lightning always Lightning**, whatever element word the
+    monster itself carries (its other words still count).
+
+25. **The twisted deer's charge is marked 7.6 tiles long, but the deer runs 6.96 at most.**
+
+Smaller:
+
+- **The Unfinished.** In its rockslide, a hero standing within 2.6 tiles across the lanes never gets the lane through him
+  (no lane may pass through the Unfinished).
+- **The Carrion Queen.** "Never nearer the drop" measures to the nearest ground that is not open, and the Ledge Road's pits
+  count as open: it measures to the rock beyond the band of pits, not to the drop's edge.
+- **The Cantor.** His shout's wave coming back can strike in its first twentieth of a second without throwing the hero.
+- **The Hollow Stag.** The wood closing in strikes a hero caught by its wall even in the middle of a Lunge; his gore and
+  charge do not.
+- **The twisted deer.** Its hedge holds back only the hero, not monsters.
+- **The wolves.** With the pack strike on, the wolf's old circling numbers (WOLF.circle) are no longer used.
+- **The bog leech.** A stunned or frozen leech lets go only once he is 1.2 tiles off ("knocked off").
+- **The dust devil.** Its bolts land at fixed angles on the floor, not turned toward the hero, though a note in the art says
+  they turn toward him.
+- **The firepot thrower.** With the big lob on, its pot's landing height still uses the old pot's 1.5.
+- **The canyon scorpion.** Its old tail-strike warning painter is no longer used with the spit on.
+- **Floor 10.** Its map has two Drowned on one tile (115.5, 58.5), though the game checks a place is not taken by another.
+- **The descent.** He is always set down facing the same way (1, 0) as he comes into a floor, though floor 10's start points
+  the other way. Walking onto a way on's tiles before it opens does nothing (they are open floor, never solid). Once the
+  Meldstone is given, the gate is "barred and waiting to unbar", so "The gate is barred." is never said again.
