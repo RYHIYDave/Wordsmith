@@ -8,6 +8,9 @@
 ##   THE CRANK, beside the furnace: walked up to (within 1.5 tiles) without the gear, a line says a gear is missing, once; with
 ##     it, it is turned: its one turn (1.2 s), then the furnace goes out (1.6 s) and the fire in the hall's way with it (1.5 s);
 ##     2.7 s after the turn the way is open.
+##   THE ARMOURER'S QUEST (quests15.ts; game.ts hero.furnace): the gear taken and the furnace put out are told to the hero's
+##     own record of the quest (loot.gd furnace_gear, furnace_out), which outlasts this floor: back in town the armourer has
+##     his word for it (town.gd).
 ## Their pictures are the look's own, recorded from the game (tools/godot_record.mjs: the states "crank_set" and "furnace").
 extends Node
 
@@ -70,6 +73,9 @@ func _taken(what: String, _at: Vector2) -> void:
 	if what != "gear" or step != "":
 		return
 	step = "gear"
+	# (the armourer's quest is the hero's own, and outlasts the floor: loot.gd `furnace`)
+	if main != null and main.loot != null:
+		main.loot.furnace_gear()
 	sfx.play("rare")
 	_say("You take the CRANK GEAR. Set it in the forge crank.")
 	if look != null:
@@ -109,6 +115,9 @@ func _process(dt: float) -> void:
 		return
 	_crank["state"] = 1
 	step = "out"
+	# (the furnace is out: the armourer has his word for it when the hero is back in town)
+	if main != null and main.loot != null:
+		main.loot.furnace_out()
 	turned = 0.0
 	hero.kick(2.0)
 	sfx.play("crank_gear")

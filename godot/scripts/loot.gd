@@ -12,14 +12,32 @@
 ##   LEVELS (gainXp; defs.ts xpToNext = 3 x (45 + 33L + 9L^2)): each gives 12 life, all of it back, and +5 to one of Str,
 ##   Dex or Int, his choice (inventory.gd asks).
 ##   HIS STATS (stats.ts derive): every worn piece's properties added together; the weapon's own damage among them.
-##   THE FALLEN WORDSMITH (game.ts placeBody, searchBody): walking within 1.3 tiles of him searches him: the Master
-##   Rune-stone, and the flasks filled. In the game it is carried back to the wordsmith in town, who lights the ring and
-##   gives the first word, POWER (giveRingWord). The town is not in the Godot version yet: here the ring is lit, and
-##   the word given, as the stone is found (a stand-in, said so on the screen).
+##   THE FALLEN WORDSMITH (game.ts enterDungeon, placeBody, searchBody): he lies on floor 1 until its way down has been
+##   taken (searched already, if the hero has searched one); on a later floor ONLY for a hero who has neither the lit ring
+##   nor the stone and has not searched one. Walking within 1.3 tiles of him searches him: before the ring is lit, the
+##   Master Rune-stone and the flasks filled (it is carried to the wordsmith in town, who lights the ring and gives the
+##   first word, POWER: town.gd); once it is lit, the flasks filled and the Warrior's first word laid beside him.
+##   WORDS (game.ts wordsFall, spawn, dropLoot, updateProps, updateDrops): none falls before the ring is lit, nor on floor
+##   1. From then a monster that carries a word gives it up where it falls (a boss always carries one; the rune over its
+##   head says so); an ordinary monster leaves one 3 times in 1000 and a chest 5 in 100 (the first chest opened in a
+##   treasure vault 25), the likelier the deeper (wordGrowth), one of the floor's own (wordsAt). A word on the floor is an
+##   event: it stands in a shaft of its own light under its name (render.ts drawWordDrops), 1 s before it can be taken,
+##   comes to him from 3.2 tiles and is taken at 0.75. Then it is among his words (`words`), the top of the screen says
+##   WORD FOUND (hud.gd), and, while no word of his is at work yet, the gear screen opens on it at the next quiet moment
+##   (main.ts `offer`, `quiet`).
+##   BURNING A WORD INTO A PIECE (game.ts imbue; items.ts imbueProblem, imbueOptionsFor, imbueItem): the word is used up,
+##   and becomes one of the things it can become on that kind of piece, picked evenly, its size rolled (items.json `imbue`:
+##   every size the game's own imbueItem can roll). A piece has room for four properties, those it was found with and the
+##   words burned in, and never two of a kind.
+##   THE ARMOURER'S QUEST (game/quests15.ts; game.ts armourerDue, armourerHandIn, furnaceGearTaken, turnCrank): `furnace`,
+##   where the hero stands in it; it is his, and outlasts the place (town.gd asks and rewards; furnace.gd tells it of the
+##   gear and of the furnace going out).
 extends Node
 
 const Iso := preload("res://scripts/iso.gd")
 const Hero := preload("res://scripts/hero.gd")
+const Words := preload("res://scripts/words.gd")
+const FloorMap := preload("res://scripts/floor_map.gd")
 
 const DIR := "res://assets/loot"
 const EQUIP := ["mainhand", "offhand", "helm", "chest", "gloves", "belt", "boots", "amulet", "ring1", "ring2"]
@@ -35,6 +53,18 @@ const POTION_HEAL := 0.45
 const KILLS_A_POTION := 18
 const ORB_HEAL := 0.15
 const SEARCH := 1.3
+## (defs.ts MSG: news about words; every line of a quest; the flasks; what cannot be done)
+const MSG_WORD := Color("#7af8f0")
+const MSG_QUEST := Color("#7af8f0")
+const MSG_LIFE := Color("#ff9aa0")
+const MSG_BAD := Color(0.96, 0.27, 0.47)
+## (main.ts: monsters awake this near keep a moment from being quiet; a new player's first word is seen so long in its
+## light before the screen opens for it, any other so long; how long WORD FOUND stays, large and small)
+const BUSY_NEAR := 10.0
+const OFFER_FIRST := 2.4
+const OFFER_WAIT := 0.9
+const TOAST_BIG := 3.6
+const TOAST := 2.8
 
 var hero: Hero
 var monsters  # monsters.gd
@@ -50,6 +80,7 @@ var xp := 0.0
 var gold := 0
 var potions := POTIONS
 var kills := 0
+## THE WORDS HE HOLDS, unset: by id, how many (game.ts hero.words). A word he has never held has no entry.
 var words := {"power": 0}
 var quest := ""
 var ring_lit := false
@@ -57,10 +88,30 @@ var ring_lit := false
 var quest_given := false
 ## seconds left of the "carry" or "ring" prompt (QUEST_ITEM.promptSecs)
 var prompt_t := 0.0
+## (game.ts bodySearched: he has searched a fallen wordsmith)
+var body_searched := false
+## (game.ts cleared, how many floors' ways on he has taken: here the deepest floor he has come into, less one)
+var cleared := 0
+## THE ARMOURER'S QUEST, where he stands in it (quests15.ts FurnaceStep; game.ts hero.furnace): "" not asked, "asked", "gear"
+## (he carries the crank's gear), "out" (the furnace put out), "done" (rewarded).
+var furnace := ""
+## (game.ts toldCarrier: what the rune over a monster's head means has been said)
+var told_carrier := false
+## A NEW PLAYER'S FIRST WORD HAS BEEN SET IN AN ATTACK (game.ts guide.set, endGuide): the lesson of the first word is over.
+## Until then a word he holds is pressed on him (guide.gd), and goes on an attack and nowhere else.
+var taught := false
+## THE WORD JUST COME BY, for the top of the screen (main.ts toast; hud.gd WORD FOUND): {word, t, big}, empty when none.
+var toast := {}
+## A word waiting for a quiet moment to be offered a place (game.ts offer), and the word the gear screen is opened on
+## (inventory.gd takes it in hand).
+var offer := ""
+var offered := ""
+## What a word has just become on a piece (game.ts `burned`): {word, item, text}, for the gear screen's card.
+var burned := {}
 var main  # main.gd
 ## a level-up's +5 still to be placed (inventory.gd asks which)
 var points := 0
-var msgs: Array = []  # {text, t, color}
+var msgs: Array = []  # {text, t, color, life}
 
 var sheet: Texture2D
 var pics := {}
@@ -68,16 +119,22 @@ var stat_info := {}
 var _pools := {}
 ## (any floor: the same pools as the game rolls them on each floor, tools/godot_loot.ts; floor 1's where a floor has none)
 var _by_depth := {}
-## the vendors' shelves (Game.rollShop on his first day in town), and the word's plain lines (defs.ts WORDS.power)
+## the vendors' shelves (Game.rollShop on his first day in town)
 var shops := {}
-var power_text := {}
+## (what each word becomes on each kind of piece; which words are found where; the armourer's quest's own lines:
+## tools/godot_loot.ts)
+var _imbue := {}
+var _words := {}
+var quest_text := {}
 var _tune := {}
 var _attr := {}
-var _drops: Array = []  # {kind, at, node, age, amount?, item?}
+var _drops: Array = []  # {kind, at, node, age, amount?, item?, word?}
+## (the fallen wordsmith where he lies in this place: {at, searched, node}; null where none lies)
 var _body = null
 ## (floor 1's fallen wordsmith, where the loot's own file has him; a floor's own is where its layout says: FloorMap.body)
-var _body1 := Vector2.ZERO
+var _body1 = null
 var _body_floor := 1
+var _quiet := 0.0
 var _font: Font
 
 
@@ -87,7 +144,9 @@ func _ready() -> void:
 	_pools = data["pools"]
 	_by_depth = data.get("byDepth", {})
 	shops = data["shops"]
-	power_text = data["power"]
+	_imbue = data["imbue"]
+	_words = data["words"]
+	quest_text = data["quest"]
 	stat_info = data["stats"]
 	_tune = data["tune"]
 	_attr = data["attr"]
@@ -98,8 +157,7 @@ func _ready() -> void:
 		gear[s] = null
 	gear["mainhand"] = data["starter"].duplicate(true)
 	if data["body"] != null:
-		_body = {"at": Vector2(data["body"]["x"], data["body"]["y"]), "searched": false, "node": null}
-		_body1 = _body["at"]
+		_body1 = Vector2(data["body"]["x"], data["body"]["y"])
 	derive()
 	hero.life = hero.max_life
 
@@ -108,12 +166,17 @@ func setup_body() -> void:
 	if _body == null:
 		return
 	var n := Sprite2D.new()
-	n.texture = _pic_tex("body")
 	n.centered = false
-	n.offset = -pics["body"]["anchor"]
 	n.position = Iso.to_screen(_body["at"].x, _body["at"].y)
 	stands.add_child(n)
 	_body["node"] = n
+	_show_body()
+
+
+func _show_body() -> void:
+	var key := "body:searched" if _body["searched"] else "body"
+	_body["node"].texture = _pic_tex(key)
+	_body["node"].offset = -pics[key]["anchor"]
 
 
 # --- his stats ---
@@ -155,6 +218,12 @@ func derive() -> void:
 		"life_on_hit": g.call("lifeOnHit"), "life_on_kill": g.call("lifeOnKill"),
 		"armor": g.call("armor"), "move_speed": g.call("moveSpeed"), "area": 1.0 + g.call("areaPct") / 100.0,
 		"gold_find": g.call("goldFind"),
+		# (what a word burned into a piece may add besides: the damage added to his hits of one element (items.ts FLAT_PAIRS;
+		# game.ts baseFor), his chance to stun, what he withstands of each element)
+		"fire_min": g.call("fireMin"), "fire_max": g.call("fireMax"), "frost_min": g.call("frostMin"), "frost_max": g.call("frostMax"),
+		"light_min": g.call("lightMin"), "light_max": g.call("lightMax"), "poison_min": g.call("poisonMin"), "poison_max": g.call("poisonMax"),
+		"stun_chance": g.call("stunChance"),
+		"res_fire": g.call("fireRes"), "res_frost": g.call("frostRes"), "res_light": g.call("lightRes"), "res_poison": g.call("poisonRes"),
 	}
 	hero.set_max_life(maxf(1.0, life))
 	# (his moves' words: the slots his level and the lit ring open, and the numbers the words read. Cooldown recovery as
@@ -164,6 +233,96 @@ func derive() -> void:
 	hero.stats["cdr"] = cdr
 	hero.loadout.set_level(level, ring_lit)
 	hero.loadout.set_stats({"str": str_, "dex": dex, "int": int_, "area": hero.stats["area"], "aps": hero.stats["aps"], "cdr": cdr})
+
+
+# --- his words ---
+
+## How many words he holds, unset (ui/hud.ts `spare`).
+func spare() -> int:
+	var n := 0
+	for w in words:
+		n += int(words[w])
+	return n
+
+
+## The words he holds, in the order the game lists them (types.ts WORD_IDS: his pouch on the gear screen).
+func held() -> Array:
+	var out: Array = []
+	for w in _words["order"]:
+		if int(words.get(w, 0)) > 0:
+			out.append(w)
+	return out
+
+
+## The first of the words he holds, or "" (ui/hud.ts: the rune beside the INVENTORY button; ui/guide.ts guideWord).
+func first_spare() -> String:
+	var h := held()
+	return h[0] if not h.is_empty() else ""
+
+
+## The Warrior's first word (defs.ts FIRST_WORD): the wordsmith's as his ring is lit, and the fallen wordsmith's satchel's.
+func first_word() -> String:
+	return _words["first"]
+
+
+## Do words fall here and now (game.ts wordsFall): not before the ring is lit, and not on floor 1.
+func words_fall() -> bool:
+	return ring_lit and map != null and int(map.depth) > 1
+
+
+## Has he put a word to work yet (game.ts wordAtWork): one set in a move, or burned into a piece he wears or carries?
+func word_at_work() -> bool:
+	if hero.loadout.any():
+		return true
+	for slot in EQUIP:
+		if gear[slot] != null and not gear[slot].get("imbues", []).is_empty():
+			return true
+	for it in bag:
+		if not it.get("imbues", []).is_empty():
+			return true
+	return false
+
+
+## Is there a free slot somewhere that this word may go into (game.ts placeable)?
+func placeable(w: String) -> bool:
+	for i in 3:
+		for side in ["front", "behind"]:
+			if hero.loadout.problem(i, side, w) == "":
+				return true
+	return false
+
+
+## Is the lesson of the first word still to come (game.ts `guide` with nothing set): no word has been set in a move yet?
+func lesson() -> bool:
+	return not taught and not hero.loadout.any()
+
+
+## Is his first word waiting to be set (ui/guide.ts guideCoach, not done)? Until it is set it goes on an attack and nowhere
+## else.
+func first_word_waits() -> bool:
+	return lesson() and spare() > 0
+
+
+## A WORD COME BY (game.ts: hero.words[w]++, and the event wordGot): it is among his words; the top of the screen says so
+## (hud.gd WORD FOUND: large for a new player's first); and, `place` asked and no word of his at work yet, it is offered a
+## place at the next quiet moment (updateDrops: "A character's FIRST word is pressed on them").
+func gain_word(w: String, place := true) -> void:
+	words[w] = int(words.get(w, 0)) + 1
+	toast = {"word": w, "t": 0.0, "big": lesson()}
+	_quiet = 0.0
+	if place and not word_at_work() and placeable(w):
+		offer = w
+
+
+## (game.ts giveRingWord) The wordsmith gives the word, and the gear screen opens on it (`offer`). (In the game the word is
+## announced first, WORD FOUND, and the screen opens 2.4 s on; here at once, as the first quest has had it.)
+func give_word(w: String) -> void:
+	words[w] = int(words.get(w, 0)) + 1
+	say("The wordsmith gives you a word: %s." % str(Words.word(w)["name"]).to_upper(), MSG_WORD)
+	sfx.play("rare")
+	if main != null:
+		offered = w
+		main.offer_word(w)
 
 
 # --- what falls ---
@@ -176,9 +335,13 @@ func on_kill(m) -> void:
 	if kills % KILLS_A_POTION == 0 and potions < POTIONS:
 		potions += 1
 		say("A flask fills", Color(0.86, 0.3, 0.36))
+	var at: Vector2 = m.world
+	# (whatever else it leaves, a monster that carried a word gives it up: the boss's too. None before the ring is lit)
+	if words_fall():
+		for w in m.carries:
+			_word(at, w)
 	if m.summoned:
 		return
-	var at: Vector2 = m.world
 	if m.boss:
 		_gold(at, randi_range(25, 45))
 		_item(at, 4)
@@ -202,6 +365,9 @@ func on_kill(m) -> void:
 			_item(at, 0)
 		if randf() < 0.06:
 			_orb(at)
+		# (an ordinary monster holds a word very rarely: TUNE.dropWord, the likelier the deeper)
+		if randf() < float(_tune["dropWord"]) * _growth() and words_fall():
+			_word(at, _found())
 
 
 ## A barrel or an urn broken (game.ts breakProps): maybe gold (1 to 5), a life orb, a piece of gear.
@@ -215,13 +381,41 @@ func from_breakable(at: Vector2) -> void:
 
 
 ## A chest opened (game.ts updateProps): one piece (in a treasure vault perhaps two, the first a hoard's), and gold, laid
-## before it.
+## before it; and now and then a word (TUNE.chestWord; the first chest opened in a treasure vault, TUNE.vaultWord: the
+## likeliest place on a floor to find one).
 func from_chest(at: Vector2, vault: bool) -> void:
 	var before := at + Vector2(0, 0.6)
 	var n := 1 + (1 if vault and randf() < 0.5 else 0)
 	for i in n:
 		_item(before, 2 if vault and i == 0 else 1)
 	_gold(before, randi_range(10, 20) * (2 if vault else 1))
+	var chance := float(_tune["vaultWord"]) if vault and _first_in_vault(at) else float(_tune["chestWord"])
+	if randf() < chance * _growth() and words_fall():
+		_word(before, _found())
+
+
+## Is the chest at `at` the first opened in its treasure vault: no other chest of that room is open?
+func _first_in_vault(at: Vector2) -> bool:
+	if map == null:
+		return false
+	for r in map.rooms:
+		if r.get("kind", "") != "treasure" or not FloorMap.in_room(r, Vector2(floorf(at.x), floorf(at.y))):
+			continue
+		for p in map.props:
+			if p["kind"] == "chest" and int(p["state"]) == 1 and FloorMap.in_room(r, Vector2(p["tx"], p["ty"])) and Vector2(p["x"], p["y"]).distance_to(at) > 0.01:
+				return false
+		return true
+	return false
+
+
+## How many times as likely a word is on this floor (defs.ts wordGrowth), and one of the words found on it (types.ts wordsAt).
+func _growth() -> float:
+	return float(_words["growth"].get(str(map.depth), 1.0)) if map != null else 1.0
+
+
+func _found() -> String:
+	var here: Array = _words["at"].get(str(map.depth), [_words["first"]]) if map != null else [_words["first"]]
+	return here.pick_random()
 
 
 ## Where a thing lands: about where it fell, on open floor, a little apart from the rest.
@@ -247,6 +441,34 @@ func _item(at: Vector2, quality: int) -> void:
 	var pool: Array = here[str(quality)]
 	var it: Dictionary = pool[randi() % pool.size()].duplicate(true)
 	_drop("gear", _scatter(at), it["icon"], {"item": it})
+
+
+## A WORD FALLS (game.ts addDrop 'word'; the event wordDrop): within 0.7 of where it fell, or just there; it is heard.
+func _word(at: Vector2, w: String, just_there := false) -> void:
+	# (a word that is not one of floors 1 to 5's has no rune stone here yet)
+	if not pics.has("word:" + w):
+		return
+	var p := at
+	if not just_there:
+		p = at + Vector2(randf_range(-0.7, 0.7), randf_range(-0.7, 0.7))
+		if map == null or not map.walkable(floori(p.x), floori(p.y)):
+			p = at
+	var n := _WordDrop.new()
+	n.sheet = sheet
+	n.src = pics["word:" + w]["rect"]
+	n.anchor = pics["word:" + w]["anchor"]
+	n.color = word_color(w)
+	n.title = str(Words.word(w)["name"]).to_upper()
+	n.phase = p.x
+	n.position = Iso.to_screen(p.x, p.y)
+	stands.add_child(n)
+	_drops.append({"kind": "word", "at": p, "node": n, "age": 0.0, "word": w})
+	sfx.play("rare", linear_to_db(0.8))
+
+
+## A word's own colour (art/icons.ts WORD_COLOR).
+func word_color(w: String) -> Color:
+	return Color(_words["color"].get(w, "#ffffff"))
 
 
 func _drop(kind: String, at: Vector2, pic: String, extra: Dictionary) -> void:
@@ -284,19 +506,30 @@ func _process(dt: float) -> void:
 	prompt_t = maxf(0.0, prompt_t - dt)
 	for m in msgs:
 		m["t"] += dt
-	msgs = msgs.filter(func(m): return m["t"] < 3.5)
+	msgs = msgs.filter(func(m): return m["t"] < m["life"])
+	if not toast.is_empty():
+		toast["t"] += dt
+		if toast["t"] > (TOAST_BIG if toast["big"] else TOAST):
+			toast = {}
 	_lay_tags()
 	if hero == null or not hero.alive:
 		return
 	if Input.is_action_just_pressed("potion"):
 		drink()
 	_search_body()
+	_tell_carrier()
+	_offer(dt)
 	var keep: Array = []
 	for d in _drops:
 		d["age"] += dt
 		var take := false
 		var dist: float = d["at"].distance_to(hero.world)
-		if d["age"] >= WAIT:
+		if d["kind"] == "word":
+			# (a word on the floor lights the room round it: render.ts, the dark's own spot)
+			if main != null and main.look != null:
+				main.look.spot(Iso.to_screen(d["at"].x, d["at"].y) / 2.0 + Vector2(0, -10), 40.0, 0.85)
+		# (a word stands in its light for a moment before it can be taken: it is an event, not a coin)
+		if d["age"] >= (float(_tune["wordStands"]) if d["kind"] == "word" else WAIT):
 			if d["kind"] == "gear":
 				take = dist <= GEAR_TAKE and _take_item(d["item"])
 			else:
@@ -310,6 +543,9 @@ func _process(dt: float) -> void:
 						gold += n
 						say("+%d gold" % n, Color(1.0, 0.85, 0.4))
 						sfx.play("gold", -6.0)
+					elif d["kind"] == "word":
+						gain_word(d["word"])
+						sfx.play("word")
 					else:
 						hero.heal(ORB_HEAL)
 						sfx.play("pickup", -6.0)
@@ -318,6 +554,40 @@ func _process(dt: float) -> void:
 		else:
 			keep.append(d)
 	_drops = keep
+
+
+## (main.ts `quiet`, `offer`) A word come by that has somewhere to go is offered its place at the first quiet moment: nothing
+## awake within 10 tiles for 2.4 s (a new player's first word, seen in its light first) or 0.9 s; then the gear screen
+## opens on it.
+func _offer(dt: float) -> void:
+	if offer != "" and (int(words.get(offer, 0)) <= 0 or not placeable(offer)):
+		offer = ""
+	if offer == "" or main == null:
+		return
+	var busy := false
+	if monsters != null:
+		for m in monsters.list:
+			if is_instance_valid(m) and not m.dead and m.state != "sleep" and m.world.distance_to(hero.world) < BUSY_NEAR:
+				busy = true
+				break
+	_quiet = 0.0 if busy else _quiet + dt
+	if _quiet > (OFFER_FIRST if lesson() else OFFER_WAIT):
+		offered = offer
+		offer = ""
+		main.offer_word(offered)
+
+
+## (game.ts wake: "a character's first dungeon: say what the rune over its head means, once") The first time a monster that
+## carries a word, and is no boss, wakes on floor 1 before its way down has been taken. (As the game stands nothing on
+## floor 1 carries a word, so this is never said: "no words on monsters for dungeon 1".)
+func _tell_carrier() -> void:
+	if told_carrier or map == null or int(map.depth) != 1 or cleared != 0 or monsters == null:
+		return
+	for m in monsters.list:
+		if is_instance_valid(m) and not m.dead and not m.boss and m.state != "sleep" and not m.carries.is_empty():
+			told_carrier = true
+			say("%s carries a WORD. Kill it and the word is yours." % m.title, MSG_WORD)
+			return
 
 
 ## takeItem: worn at once in an empty slot it fits, else into the bag, else it stays.
@@ -334,7 +604,7 @@ func _take_item(it: Dictionary) -> bool:
 		say(it["name"], RARITY_COLOR[int(it["rarity"])])
 		sfx.play("pickup", -6.0)
 		return true
-	say("Your bag is full", Color(0.96, 0.27, 0.47))
+	say("Your bag is full", MSG_BAD)
 	return false
 
 
@@ -368,7 +638,7 @@ func equip_from_bag(i: int) -> void:
 			slot = s
 			break
 	if slot == "offhand" and _two_handed():
-		say("Your weapon takes both hands", Color(0.96, 0.27, 0.47))
+		say("Your weapon takes both hands", MSG_BAD)
 		return
 	bag.remove_at(i)
 	if gear[slot] != null:
@@ -385,7 +655,7 @@ func unequip(slot: String) -> void:
 	if gear[slot] == null:
 		return
 	if bag.size() >= BAG:
-		say("Your bag is full", Color(0.96, 0.27, 0.47))
+		say("Your bag is full", MSG_BAD)
 		return
 	bag.append(gear[slot])
 	gear[slot] = null
@@ -410,12 +680,24 @@ func gain_xp(n: float) -> void:
 	xp += n
 	while xp >= xp_to_next(level):
 		xp -= xp_to_next(level)
+		var had: Array = Words.socket_count(level) if ring_lit else [0, 0]
 		level += 1
 		points += 1
 		derive()
 		hero.life = hero.max_life
 		say("Level %d!" % level, Color(0.35, 0.9, 1.0))
 		sfx.play("levelup")
+		# (a new slot has opened on his attacks: say so, and if a word he holds fits it, offer it a place: game.ts gainXp)
+		var has: Array = Words.socket_count(level) if ring_lit else [0, 0]
+		if int(has[0]) > int(had[0]) or int(has[1]) > int(had[1]):
+			var front: bool = int(has[0]) > int(had[0])
+			var nth: String = ["A", "A second", "A third"][clampi(int(has[0] if front else has[1]) - 1, 0, 2)]
+			say("%s word slot has opened %s your attacks." % [nth, "IN FRONT of" if front else "BEHIND"], MSG_WORD)
+			for w in held():
+				if placeable(w):
+					offer = w
+					_quiet = 0.0
+					break
 
 
 func choose_attr(a: String) -> void:
@@ -434,104 +716,201 @@ func _search_body() -> void:
 	if hero.world.distance_to(_body["at"]) > SEARCH:
 		return
 	_body["searched"] = true
-	_body["node"].texture = _pic_tex("body:searched")
-	_body["node"].offset = -pics["body:searched"]["anchor"]
-	# (game.ts searchBody: once the ring is lit, a fallen wordsmith's satchel holds full flasks and a word, his class's first)
-	if ring_lit:
+	body_searched = true
+	_show_body()
+	sfx.play("rare")
+	# (game.ts searchBody, THE FIRST LEVELS: before the ring is lit the satchel holds the Master Rune-stone, not a word, and
+	# the flasks are filled; it is carried to the wordsmith in town)
+	if not ring_lit:
+		quest = "heart"
 		potions = POTIONS
-		words["power"] = int(words.get("power", 0)) + 1
-		say("A fallen wordsmith. In the satchel: full flasks, and a WORD.", Color(0.35, 0.9, 1.0))
-		sfx.play("word")
+		prompt_t = 6.0
+		say("You take the MASTER RUNE-STONE.", MSG_QUEST)
 		return
-	# (game.ts searchBody, FIRST_LEVELS: the Master Rune-stone, and the flasks filled; it is carried to the wordsmith in town)
-	quest = "heart"
+	# (the ring lit: the satchel gives up its word, the Warrior's first, laid where he lies; and the flasks: the second half
+	# of the floor is met fresh)
+	_word(_body["at"], _words["first"], true)
 	potions = POTIONS
-	prompt_t = 6.0
-	say("You carry the MASTER RUNE-STONE", Color(0.35, 0.9, 1.0))
-	sfx.play("pickup")
+	say("A fallen wordsmith. In the satchel: full flasks, and a WORD.", MSG_WORD)
 
 
-## (game.ts giveRingWord) The wordsmith gives the word, and the gear screen opens on it (`offer`).
-func give_word(w: String) -> void:
-	words[w] = words.get(w, 0) + 1
-	say("The wordsmith gives you a word: %s." % w.to_upper(), Color(0.35, 0.9, 1.0))
-	sfx.play("word")
-	if main != null:
-		main.offer_word(w)
-
-
-## A new place: what lay on the floor of the last is gone with it; the fallen wordsmith is on floor 1, searched once his
-## stone has been taken (the game lays floor 1 again each time it is come into, its body with it).
+## A new place: what lay on the floor of the last is gone with it. THE FALLEN WORDSMITH (game.ts enterDungeon): on floor 1
+## he lies until its way down has been taken, searched already if the hero has searched one (the game lays floor 1 again
+## each time it is come into, its body with it); on a later floor only for a hero who has neither the lit ring nor the
+## stone and has not searched one ("A hero who left the first dungeon without searching the fallen wordsmith finds him
+## again in the next ... and so on until he is found").
 func enter_place(m, st: Node2D, mons, is_floor1: bool) -> void:
 	map = m
 	stands = st
 	monsters = mons
 	_drops = []
-	if _body != null:
-		_body["node"] = null
-		# (a fallen wordsmith lies on every floor: game/level.ts; where, the floor's layout says)
-		var on_floor: bool = m != null and m.depth >= 1 and (is_floor1 or m.body != null) and stands != null and m.rooms.size() > 1
-		if on_floor:
-			_body_floor = m.depth
-			_body["at"] = Vector2(m.body["x"], m.body["y"]) if m.body != null else _body1
-			_body["searched"] = false
-			setup_body()
-			if is_floor1 and (quest != "" or ring_lit):
-				_body["searched"] = true
-				_body["node"].texture = _pic_tex("body:searched")
-				_body["node"].offset = -pics["body:searched"]["anchor"]
+	_body = null
+	_quiet = 0.0
+	if m == null or int(m.depth) < 1 or stands == null or m.rooms.size() <= 1:
+		return
+	var first: bool = is_floor1 and cleared == 0
+	cleared = maxi(cleared, int(m.depth) - 1)
+	var lies: bool = first or (not ring_lit and quest == "" and not body_searched)
+	var at = Vector2(m.body["x"], m.body["y"]) if m.body != null else (_body1 if is_floor1 else null)
+	if not lies or at == null:
+		return
+	_body_floor = int(m.depth)
+	_body = {"at": at, "searched": body_searched, "node": null}
+	setup_body()
 
 
-## Burn a word into a worn piece (game.ts imbue): one of the outcomes the game itself rolled for that piece.
-func burn(word: String, slot: String) -> String:
-	var it = gear[slot]
-	if it == null or words.get(word, 0) <= 0:
-		return "Nothing to burn it into"
-	if it["burn"] != null:
-		return it["burn"]
-	if it["power"].is_empty():
+# --- burning a word into a piece ---
+
+## The piece worn in a slot (`where` its name) or lying in the bag (`where` its place there), or null.
+func piece(where):
+	if where is String:
+		return gear.get(where)
+	return bag[int(where)] if int(where) >= 0 and int(where) < bag.size() else null
+
+
+## How many more words a piece will take (items.ts itemRoom): four properties in all, less those it was found with and the
+## words already in it; a unique piece none.
+func room(it: Dictionary) -> int:
+	if int(it["rarity"]) == 3:
+		return 0
+	return maxi(0, int(_words["room"]) - int(it.get("affixes", 0)) - it.get("imbues", []).size())
+
+
+## WHAT A WORD CAN STILL BECOME ON THIS PIECE (items.ts imbueOptionsFor): what it becomes on a piece of that kind and
+## level, less whatever the piece already carries, or anything of the same kind (statGroup). Empty when it has no room.
+func burn_options(w: String, it: Dictionary) -> Array:
+	if room(it) <= 0:
+		return []
+	var has: Array = it.get("has", []).duplicate()
+	for im in it.get("imbues", []):
+		has.append_array(im["stats"])
+	var kinds: Array = has.map(_group)
+	var all: Array = _imbue.get(w, {}).get("%s:%d" % [it["slot"], int(it["ilvl"])], [])
+	return all.filter(func(o): return not has.has(o["stat"]) and not kinds.has(_group(o["stat"])))
+
+
+func _group(stat: String) -> String:
+	return _words["groups"].get(stat, stat)
+
+
+## Why a word cannot be burned into that piece, or "" if it can (game.ts imbueProblem; items.ts imbueProblem).
+func burn_problem(w: String, where) -> String:
+	if not ring_lit:
+		return _words["dark"]
+	var it = piece(where)
+	if it == null:
+		return "Nothing there"
+	if first_word_waits():
+		return "Your first word goes on an attack"
+	if int(words.get(w, 0)) <= 0:
+		return "No spare word"
+	if int(it["rarity"]) == 3:
+		return "A unique piece takes no word"
+	if room(it) <= 0:
+		return "That piece is full"
+	if burn_options(w, it).is_empty():
 		return "It already has what this word gives"
-	var o: Dictionary = it["power"].pick_random()
-	it["mods"] = it["mods"] + o["mods"]
-	it["lines"] = it["lines"] + o["lines"]
-	it["rarity"] = maxi(int(it["rarity"]), int(o["rarity"]))
-	it["burn"] = "That piece is full" if it["lines"].size() >= 4 else "It already has what this word gives"
-	it["power"] = []
-	it["value"] = roundi(float(it.get("value", 0)) * 1.2)
-	words[word] -= 1
-	derive()
-	sfx.play("imbue")
-	say("POWER burned into %s" % it["name"], Color(0.35, 0.9, 1.0))
 	return ""
 
 
-# --- what is said, and the HUD's corner ---
+## BURN A WORD INTO A PIECE (game.ts imbue; items.ts imbueItem): the word is used up; which of the things it can become
+## there is picked evenly, and its size rolled as the game rolls it (each size of the table as likely as the game makes
+## it). The piece's colour follows the count of its properties. "" if it was done (`burned` says what it became), else why
+## not.
+func burn(w: String, where) -> String:
+	var why := burn_problem(w, where)
+	if why != "":
+		return why
+	var it: Dictionary = piece(where)
+	var o: Dictionary = burn_options(w, it).pick_random()
+	var total := 0.0
+	for r in o["rolls"]:
+		total += float(r[0])
+	var at := randf() * total
+	var got: Array = o["rolls"][o["rolls"].size() - 1]
+	for r in o["rolls"]:
+		at -= float(r[0])
+		if at < 0.0:
+			got = r
+			break
+	var stats: Array = []
+	for m in got[1]:
+		stats.append(m[0])
+	it["mods"] = it["mods"] + got[1]
+	if not it.has("imbues"):
+		it["imbues"] = []
+	it["imbues"].append({"word": w, "lines": got[2], "stats": stats})
+	var n: int = int(it.get("affixes", 0)) + it["imbues"].size()
+	it["rarity"] = maxi(int(it["rarity"]), 2 if n >= 3 else (1 if n >= 1 else 0))
+	# (its price with that many words in it, as the game counts it, items.ts itemValue: a fifth more for each word, and its
+	# colour's own worth where the word has changed its colour: tools/godot_loot.ts `worth`)
+	var worth: Array = it.get("worth", [])
+	var nth: int = it["imbues"].size() - 1
+	it["value"] = int(worth[nth]) if nth < worth.size() else roundi(float(it.get("value", 0)) * 1.2)
+	words[w] = int(words[w]) - 1
+	if where is String:
+		derive()
+	sfx.play("imbue")
+	burned = {"word": w, "item": it["name"], "text": ", ".join(got[2])}
+	return ""
 
+
+# --- the armourer's quest ---
+
+## Floor 3's furnace still burns for this hero (game.ts furnaceBurns): one who has been down past floor 3 has it out.
+func furnace_burns() -> bool:
+	return furnace != "out" and furnace != "done" and cleared < 3 and (main == null or int(main.way_depth) < 4)
+
+
+## What the armourer has for this hero (game.ts armourerDue): "furnace", his quest (the ring lit, the furnace burning, not
+## yet asked); "reward" (the furnace out); or "".
+func armourer_due() -> String:
+	if not ring_lit:
+		return ""
+	if furnace == "out":
+		return "reward"
+	if furnace == "" and furnace_burns():
+		return "furnace"
+	return ""
+
+
+## THE ARMOURER, USED WITH SOMETHING DUE (game.ts handIn, armourerHandIn): he asks the hero to put out floor 3's furnace;
+## or, the furnace out, he gives his word for the Warrior, HEAVY. False if he had nothing (then his shop opens).
+func armourer_hand_in() -> bool:
+	var what := armourer_due()
+	if what == "furnace":
+		furnace = "asked"
+		sfx.play("power", linear_to_db(0.6))
+		say(quest_text["furnaceAsk"], MSG_QUEST)
+		return true
+	if what == "reward":
+		furnace = "done"
+		gain_word(quest_text["word"], false)
+		sfx.play("rare")
+		say(quest_text["reward"], MSG_QUEST)
+		return true
+	return false
+
+
+## The crank's gear taken up where the Stoker fell (game.ts furnaceGearTaken); the crank turned with it and the furnace
+## out (turnCrank). furnace.gd tells both. One whom the armourer has rewarded is not sent back.
+func furnace_gear() -> void:
+	if furnace == "" or furnace == "asked":
+		furnace = "gear"
+
+
+func furnace_out() -> void:
+	if furnace != "done":
+		furnace = "out"
+
+
+# --- what is said ---
+
+## A line of what has just happened (game.ts msg; render/fx.ts messages): up for 5 s, a long one longer to be read.
 func say(text: String, color := Color.WHITE) -> void:
-	msgs.append({"text": text, "t": 0.0, "color": color})
-	if msgs.size() > 6:
+	msgs.append({"text": text, "t": 0.0, "color": color, "life": maxf(5.0, 2.5 + text.length() * 0.08)})
+	if msgs.size() > 5:
 		msgs.pop_front()
-
-
-func draw_hud(c: Control, font: Font) -> void:
-	# his level, his experience toward the next, his gold, his flasks: top left
-	var x := 10.0
-	var y := 10.0
-	c.draw_rect(Rect2(x, y, 180, 44), Color(0.06, 0.08, 0.24, 0.85))
-	c.draw_string(font, Vector2(x + 8, y + 15), "LEVEL %d" % level, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.35, 0.9, 1.0))
-	c.draw_string(font, Vector2(x + 80, y + 15), "%d GOLD" % gold, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1.0, 0.85, 0.4))
-	var k := clampf(xp / xp_to_next(level), 0.0, 1.0)
-	c.draw_rect(Rect2(x + 8, y + 22, 164, 5), Color(0.12, 0.16, 0.4))
-	c.draw_rect(Rect2(x + 8, y + 22, 164 * k, 5), Color(0.35, 0.9, 1.0))
-	c.draw_string(font, Vector2(x + 8, y + 40), "FLASKS %d (Q)" % potions, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.9, 0.45, 0.5))
-	var hint := "I: GEAR" + ("  +5 TO PLACE" if points > 0 else "") + ("  POWER x%d" % words["power"] if words["power"] > 0 else "")
-	c.draw_string(font, Vector2(x + 80, y + 40), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.35, 0.9, 1.0) if points > 0 or words["power"] > 0 else Color(0.55, 0.6, 0.8))
-	# what was just taken or said, under it
-	var my := y + 62.0
-	for m in msgs:
-		var a := clampf(3.5 - m["t"], 0.0, 1.0)
-		c.draw_string(font, Vector2(x + 2, my), m["text"], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(m["color"], a))
-		my += 15.0
 
 
 # --- the vendors ---
@@ -544,10 +923,10 @@ func buy(shop: String, i: int) -> void:
 	var it: Dictionary = stock[i]
 	var price := int(it["value"])
 	if gold < price:
-		say("Not enough gold", Color(0.96, 0.27, 0.47))
+		say("Not enough gold", MSG_BAD)
 		return
 	if bag.size() >= BAG:
-		say("Your bag is full", Color(0.96, 0.27, 0.47))
+		say("Your bag is full", MSG_BAD)
 		return
 	gold -= price
 	stock.remove_at(i)
@@ -616,3 +995,58 @@ class _Tag extends Node2D:
 		var y := -20.0
 		draw_rect(Rect2(x, y - 1.0, w, 7.0), Color(Color("#07050a"), 0.78))
 		PF.draw(self, t, x + 2.0, y, color, {"font": "small"})
+
+
+## A WORD LYING ON THE FLOOR (render.ts: the drops, and drawWordDrops): its rune stone, hopping up as it lands (9 game
+## pixels over 0.4 s) and bobbing where it hangs; over everything, a shaft of its own light 50 tall that grows in 0.35 s
+## and flickers, and its name on a plate above it, in its colour, that can be read from across the room.
+class _WordDrop extends Node2D:
+	var sheet: Texture2D
+	var src := Rect2()
+	var anchor := Vector2.ZERO
+	var color := Color.WHITE
+	var title := ""
+	var phase := 0.0
+	var age := 0.0
+	var clock := 0.0
+	var _light
+
+	func _ready() -> void:
+		_light = _WordLight.new()
+		_light.drop = self
+		_light.z_index = 60
+		add_child(_light)
+
+	func _process(dt: float) -> void:
+		age += dt
+		clock += dt
+		queue_redraw()
+		_light.queue_redraw()
+
+	func _draw() -> void:
+		var pop := sin(age / 0.4 * PI) * 9.0 if age < 0.4 else 0.0
+		var bob := sin(clock * 4.0 + phase) * 1.5 + 3.0
+		draw_texture_rect_region(sheet, Rect2(-anchor + Vector2(0, roundf(-(pop + bob) * 2.0)), src.size), src)
+
+
+## (the shaft of light a word on the floor stands in, and its name on its plate: over everything, in game pixels)
+class _WordLight extends Node2D:
+	const PF := preload("res://scripts/pixel_font.gd")
+	var drop
+
+	func _draw() -> void:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
+		var grow := minf(1.0, maxf(0.0, drop.age) / 0.35)
+		var t: float = drop.clock + drop.phase
+		var i := 0.0
+		while i < 50.0 * grow:
+			var k := 1.0 - i / 50.0
+			draw_rect(Rect2(-3, -8 - i, 7, 2), Color(drop.color, 0.32 * k * (0.8 + 0.2 * sin(t * 9.0 + i * 0.4))))
+			draw_rect(Rect2(0, -8 - i, 1, 2), Color(1, 1, 1, 0.55 * k))
+			i += 2.0
+		var tw: float = PF.width(drop.title)
+		var px := -floorf(tw / 2.0) - 4.0
+		var py := -42.0 + roundf(sin(drop.clock * 3.0 + drop.phase) * 1.5) - roundf((1.0 - grow) * 8.0)
+		draw_rect(Rect2(px, py, tw + 8.0, 13.0), drop.color)
+		draw_rect(Rect2(px + 1.0, py + 1.0, tw + 6.0, 11.0), Color("#1b1622"))
+		PF.draw(self, drop.title, px + 4.0, py + 3.0, drop.color)

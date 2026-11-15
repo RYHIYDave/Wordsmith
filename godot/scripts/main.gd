@@ -647,6 +647,658 @@ func _arg(name: String) -> String:
 	return ""
 
 
+## (the words' check: how many lines it has said, and which of them did not come out as the game has it)
+var _wu_n := 0
+var _wu_bad: Array = []
+
+
+## One line of the words' check: what happened, and whether that is as the game has it.
+func _wu(ok: bool, what: String) -> void:
+	_wu_n += 1
+	if not ok:
+		_wu_bad.append(_wu_n)
+	print("WORDS %02d %s: %s" % [_wu_n, "ok" if ok else "WRONG", what])
+
+
+## (the words' check) The line among what has just been said that begins so, or "".
+func _wu_said(begins: String) -> String:
+	for m in loot.msgs:
+		if str(m["text"]).begins_with(begins):
+			return m["text"]
+	return ""
+
+
+## (the words' check) The words lying on the floor: [word, where].
+func _wu_lying() -> Array:
+	var out: Array = []
+	for d in loot._drops:
+		if d["kind"] == "word":
+			out.append([d["word"], d["at"]])
+	return out
+
+
+## (the words' check) The mouse as the gear screen gets it: its left button pressed ("down") or let go ("up") at a place of
+## the screen, moved there with the button held ("move"), or its right button pressed ("right").
+func _wu_mouse(what: String, at: Vector2) -> void:
+	if what == "move":
+		var m := InputEventMouseMotion.new()
+		m.position = at
+		m.button_mask = MOUSE_BUTTON_MASK_LEFT
+		_inv._gui_input(m)
+		return
+	var b := InputEventMouseButton.new()
+	b.position = at
+	b.button_index = MOUSE_BUTTON_RIGHT if what == "right" else MOUSE_BUTTON_LEFT
+	b.pressed = what != "up"
+	_inv._gui_input(b)
+
+
+## (the words' check) An attack as the bottom of the screen writes it: its pieces' letters, an empty slot "[+]".
+func _wu_reads(s: int) -> Array:
+	var out: Array = []
+	for p in _hud._phrase(s, 0):
+		out.append(p["text"] if p.has("text") else "[+]")
+	return out
+
+
+## SHOT MODE, THE WORDS: HOW THEY ARE COME BY, CARRIED AND SET (--only=wordsui). A new Warrior's game, taken through all of
+## it, each step pictured and a line printed that says what happened and whether it is as the game has it:
+##   before the ring is lit, no slots; the fallen wordsmith on floor 1 searched for the stone; the stone given, the ring lit,
+##   the wordsmith's word and the gear screen opened on it (a new player's first word: it goes on an attack and nowhere else);
+##   POWER set on Strike, its new name across the screen, its card; levels gained (a slot behind opens at 4, the Whirlwind's at
+##   2, the Lunge's at 5) and more words set in front and behind of all three moves; a set word read; with the mouse itself,
+##   a word dragged onto a slot (the word there goes back), dragged out, taken out by a second press and by the right button;
+##   a slot's refusal; the moves at the bottom of the screen, a move's card under the pointer, a press on a plate and on
+##   INVENTORY; a word held over a piece, burned into it (asked first), a second and a third, and what the piece then
+##   refuses; a piece of the bag that has one of the things a word gives; a unique piece; the line that sends him to the
+##   armourer, the armourer's task; floor 1 again (the fallen wordsmith there, searched; no word falls there) and floor 3
+##   (none); a carrier struck dead on floor 3, its word lying and taken up (WORD FOUND); the boss's word; the Stoker's gear,
+##   the crank, the furnace out (the quest told, the line that sends him back); floor 3's sealed door, which wants FLAME; a
+##   word from an ordinary monster and from a chest (their chances made certain); the armourer's word, HEAVY, and his
+##   shelves again; HEAVY set where POWER was; at level 15, a second slot in front, "One damage word per side", and a word
+##   set into the exact slot pressed, the first of the two empty; the fallen wordsmith's satchel for a hero whose ring was
+##   lit before he searched one, his first word laid by him, announced large and offered its place at the next quiet
+##   moment; and the fallen wordsmith on floor 3 for a hero with neither the lit ring nor the stone who has searched none.
+## Its last line begins WORDSUI: and says how many lines were said and which, if any, were wrong.
+func _wordsui_shots(h: Hero, dir: String) -> void:
+	var L = h.loadout
+	var names := func() -> Array: return [str(L.r(0)["name"]), str(L.r(1)["name"]), str(L.r(2)["name"])]
+	var sizes := func(side: Array) -> Array: return [side[0].size(), side[1].size(), side[2].size()]
+	var smith := Vector2(9.5, 14.5)
+	var forge := Vector2(19.5, 7.5)
+	await _wait(0.8)
+
+	# --- a new hero, the ring dark: no slots; floor 1's fallen wordsmith, and his stone
+	_wu(not loot.ring_lit and sizes.call(L.front) == [0, 0, 0] and sizes.call(L.behind) == [0, 0, 0], "a new hero, the ring dark: his moves' slots in front %s, behind %s" % [sizes.call(L.front), sizes.call(L.behind)])
+	_inv.toggle()
+	_inv._press("tab", "attacks")
+	await _wait(0.2)
+	await _snap(dir + "/w01_before_the_ring_no_slots.png")
+	_wu(_inv._page == "attacks" and _inv._slots.is_empty() and _inv._plates[0] != null and _inv._plates[1] == null and _inv._plates[2] == null and _inv._pouch.is_empty(), "the gear screen's ATTACKS before the ring: %d slots, %d words; Strike shown %s, the Whirlwind %s, the Lunge %s (level %d: they open at 2 and 5)" % [_inv._slots.size(), _inv._pouch.size(), _inv._plates[0] != null, _inv._plates[1] != null, _inv._plates[2] != null, loot.level])
+	_inv.toggle()
+	var b = loot._body
+	_wu(b != null and not b["searched"], "floor 1, a new hero: the fallen wordsmith lies there %s, searched %s" % [b != null, b["searched"] if b != null else "-"])
+	if b != null:
+		h.world = b["at"] + Vector2(0.5, 0.5)
+	await _wait(0.4)
+	_wu(loot.quest == "heart" and loot.body_searched and loot.spare() == 0 and _wu_said("You take the MASTER RUNE-STONE.") != "", "searched before the ring is lit: he carries the stone (quest '%s'), no word (%d held); it says: %s" % [loot.quest, loot.spare(), _wu_said("You take")])
+
+	# --- the stone to the wordsmith: the ring lit, his word given, the gear screen opened on it
+	await go_to("town", "gate")
+	await _wait(0.6)
+	h.walked = 5.0
+	h.world = _spot_near(smith, 1.4, h.world)
+	await _wait(0.4)
+	town._do("give")
+	var t := 0.0
+	while not _inv.visible and t < 8.0:
+		await get_tree().process_frame
+		t += get_process_delta_time()
+	await _wait(0.3)
+	await _snap(dir + "/w02_the_first_word_waits.png")
+	_wu(loot.ring_lit and _inv.visible and _inv._page == "attacks" and int(loot.words.get("power", 0)) == 1 and loot.first_word_waits() and sizes.call(L.front) == [1, 0, 0] and sizes.call(L.behind) == [0, 0, 0], "the ring lit and the wordsmith's word given after %.1f s: POWER x%d; the gear screen open %s on %s; slots in front %s, behind %s; the coach's line: %s" % [t, int(loot.words.get("power", 0)), _inv.visible, _inv._page, sizes.call(L.front), sizes.call(L.behind), _inv._coach()])
+	_inv._press("tab", "gear")
+	var said_tab: String = _inv._note
+	_inv._press("word", "power")
+	_inv._press("worn", "mainhand")
+	_wu(_inv._page == "attacks" and said_tab == "Your first word goes on an attack" and _inv._note == "Your first word goes on an attack" and _inv._pending.is_empty(), "his first word waiting: GEAR pressed, the page stays %s and it says: %s; the word pressed onto his weapon, it says: %s" % [_inv._page, said_tab, _inv._note])
+	_inv._note_t = 0.0
+	await _wait(0.2)
+	await _snap(dir + "/w03_the_word_in_hand.png")
+	_wu(_inv._word == "power" and _inv._reading() == "hand", "the word pressed: in hand '%s', read on its card (%s): POWER, %s" % [_inv._word, _inv._reading(), _inv._hud["words"]["power"]["grows"]])
+	_inv._press("slot", [0, "front", 0])
+	await _wait(0.3)
+	await _snap(dir + "/w04_power_set_its_new_name.png")
+	_wu(L.front[0] == ["power"] and int(loot.words["power"]) == 0 and loot.taught and names.call()[0] == "Power Strike" and not _inv._flash.is_empty() and guide.use_t > 0.0, "POWER set in front of STRIKE: it reads '%s'; his words left %d; the lesson over %s; its name shown large %s; its lines: %s" % [names.call()[0], loot.spare(), loot.taught, not _inv._flash.is_empty(), L.r(0)["lines"]])
+	await _wait(1.2)
+	await _snap(dir + "/w05_strikes_card.png")
+	_wu(_inv._reading() == "" and _inv._coach() == "" and _inv.hit_range(0) == [11, 17], "under the three lines, Strike read out: a hit %s (8 to 13 without the word), %s; the coach's line in town, the word set: '%s'" % [_inv.hit_range(0), _inv._pace(0)[1], _inv._coach()])
+
+	# --- levels gained: the Whirlwind's and the Lunge's slots, a slot behind; more words (handed him here), set in all three
+	var xp := 1.0
+	for l in range(1, 5):
+		xp += loot.xp_to_next(l)
+	loot.gain_xp(xp)
+	_wu(loot.level == 5 and sizes.call(L.front) == [1, 1, 1] and sizes.call(L.behind) == [1, 1, 1] and _wu_said("A word slot has opened BEHIND your attacks.") != "", "level %d: slots in front %s, behind %s; it said: %s" % [loot.level, sizes.call(L.front), sizes.call(L.behind), _wu_said("A word slot")])
+	for w in ["fire", "frost", "poison", "swift", "lightning"]:
+		loot.words[w] = int(loot.words.get(w, 0)) + 1
+	var refused: Array = []
+	for q in [["fire", 1, "front"], ["poison", 0, "behind"], ["frost", 2, "front"], ["swift", 2, "behind"]]:
+		_inv._press("word", q[0])
+		_inv._press("slot", [q[1], q[2], 0])
+		if L.slots(q[1], q[2])[0] != q[0]:
+			refused.append(q)
+	_inv._press("plate", 0)
+	await _wait(1.4)
+	await _snap(dir + "/w06_words_in_several_slots.png")
+	_wu(refused.is_empty() and names.call() == ["Power Strike of Venom", "Flame Whirlwind", "Frost Lunge of Swiftness"] and loot.held() == ["lightning"], "FLAME before the Whirlwind, POISON behind Strike, FROST before the Lunge and SWIFT behind it: they read %s; refused %s; he still holds %s" % [names.call(), refused, loot.held()])
+	_inv._press("plate", 1)
+	await _wait(0.2)
+	await _snap(dir + "/w07_the_whirlwinds_card.png")
+	_wu(_inv._focus == 1 and L.r(1)["element"] == "fire", "the Whirlwind read out: %s, %s damage, a hit %s, %s; its lines: %s" % [names.call()[1], L.r(1)["element"], _inv.hit_range(1), _inv._pace(1)[1], L.r(1)["lines"]])
+	_inv._press("slot", [1, "front", 0])
+	await _wait(0.2)
+	await _snap(dir + "/w08_a_set_word_read.png")
+	_wu(_inv._look == [1, "front", 0] and _inv._reading() == "look", "FLAME pressed where it is set: it is read (%s), its own line: %s" % [_inv._reading(), L.r(1)["lines"].filter(func(l): return str(l).begins_with("Flame:"))])
+	# (with the mouse itself: LIGHTNING dragged from his words onto the Whirlwind's slot, where FLAME is)
+	var tile := Rect2()
+	for c in _inv._pouch:
+		if c["w"] == "lightning":
+			tile = c["r"]
+	var slot := Rect2()
+	for c in _inv._slots:
+		if c["i"] == 1 and c["side"] == "front":
+			slot = c["r"]
+	_wu_mouse("down", tile.get_center())
+	_wu_mouse("move", tile.get_center() + Vector2(16, -16))
+	_wu_mouse("move", slot.get_center())
+	await _wait(0.2)
+	await _snap(dir + "/w08b_a_word_dragged_onto_a_slot.png")
+	var carried: bool = not _inv._drag.is_empty() and _inv._drag["moving"] and _inv._reading() == "over"
+	_wu_mouse("up", slot.get_center())
+	_wu(carried and L.front[1] == ["lightning"] and int(loot.words["fire"]) == 1 and int(loot.words["lightning"]) == 0, "LIGHTNING dragged from his words onto the Whirlwind's slot (carried %s) and let go: it reads '%s'; FLAME, which was there, back among his words %s" % [carried, names.call()[1], loot.held()])
+	await _wait(1.3)
+	# (dragged out again: it is one of his words, and in hand; let go over nothing, and a press on nothing puts it down)
+	_wu_mouse("down", slot.get_center())
+	_wu_mouse("move", slot.get_center() + Vector2(0, 150))
+	_wu_mouse("up", slot.get_center() + Vector2(0, 150))
+	var in_hand: String = _inv._word
+	_wu_mouse("down", slot.get_center() + Vector2(0, 150))
+	_wu_mouse("up", slot.get_center() + Vector2(0, 150))
+	_wu(in_hand == "lightning" and _inv._word == "" and L.front[1] == [null] and loot.held() == ["fire", "lightning"], "dragged out of the slot: in hand '%s', the slot %s, his words %s; a press on nothing puts it down ('%s')" % [in_hand, L.front[1], loot.held(), _inv._word])
+	# (FLAME set again; a second press on it where it is set takes it out; set again; the right button takes it out; set again)
+	var ways: Array = []
+	for how in ["twice", "right"]:
+		_inv._press("word", "fire")
+		_inv._press("slot", [1, "front", 0])
+		if how == "twice":
+			for n in 2:
+				_wu_mouse("down", slot.get_center())
+				_wu_mouse("up", slot.get_center())
+		else:
+			_wu_mouse("right", slot.get_center())
+		ways.append(L.front[1] == [null] and int(loot.words["fire"]) == 1)
+	_inv._press("word", "fire")
+	_inv._press("slot", [1, "front", 0])
+	_wu(ways == [true, true] and L.front[1] == ["fire"] and loot.held() == ["lightning"], "FLAME set again and taken out by a second press on it (%s), and by the right button (%s); set again: '%s'; he holds %s" % [ways[0], ways[1], names.call()[1], loot.held()])
+	# (a slot's refusal: a second POWER onto the slot that holds POWER)
+	await _wait(1.3)
+	loot.words["power"] = int(loot.words["power"]) + 1
+	_inv._press("word", "power")
+	_inv._press("slot", [0, "front", 0])
+	await _wait(0.2)
+	await _snap(dir + "/w09_a_slots_refusal.png")
+	_wu(_inv._note == "Already there" and L.front[0] == ["power"] and int(loot.words["power"]) == 1, "a second POWER pressed onto Strike's slot in front: it says '%s'; Strike still %s, POWER still held x%d" % [_inv._note, L.front[0], int(loot.words["power"])])
+	_inv._note_t = 0.0
+	for c in _inv._slots:
+		if c["i"] == 0 and c["side"] == "front":
+			_inv._mouse = c["r"].get_center()
+	await _wait(0.2)
+	await _snap(dir + "/w10_the_refusal_on_its_card.png")
+	_wu(_inv._reading() == "over" and _inv.place_problem(0, "front", 0, "power") == "Already there" and _inv.place_problem(1, "front", 0, "power") == "" and _inv.place_problem(0, "behind", 0, "lightning") == "", "the word held over that slot: read (%s), refused '%s'; over the Whirlwind's (FLAME there) '%s', LIGHTNING over Strike's behind (VENOM there) '%s': each would take the place of the word there" % [_inv._reading(), _inv.place_problem(0, "front", 0, "power"), _inv.place_problem(1, "front", 0, "power"), _inv.place_problem(0, "behind", 0, "lightning")])
+	_inv._mouse = Vector2(-1000, -1000)
+	_inv.toggle()
+
+	# --- the moves at the bottom of the screen, and a move's card under the pointer
+	guide.use_t = 0.0
+	await _wait(0.5)
+	await _snap(dir + "/w11_the_moves_at_the_bottom.png")
+	var lunge: Array = _hud._name_parts(2).map(func(p): return p[0])
+	_wu(_wu_reads(0) == ["POWER", "STRIKE", "of", "VENOM"] and _wu_reads(1) == ["FLAME", "WHIRLWIND", "[+]"] and lunge == ["FROST", "LUNGE", "of", "SWIFTNESS"] and loot.spare() == 2 and loot.first_spare() == "power", "the bottom of the screen: Strike reads %s, the Whirlwind %s (its empty slot glows %s), the Lunge over its button %s; beside INVENTORY the rune of %s and %d" % [_wu_reads(0), _wu_reads(1), _hud._phrase(1, 0)[2].get("glow"), lunge, loot.first_spare().to_upper(), loot.spare()])
+	_hud.pointer = _hud._plates[0].get_center()
+	await _wait(0.2)
+	await _snap(dir + "/w12_a_moves_card_under_the_pointer.png")
+	_wu(_hud._plates.size() == 2 and str(L.r(0)["name"]) == "Power Strike of Venom", "the pointer on Strike's plate: its card, '%s': %s" % [L.r(0)["name"], L.r(0)["lines"]])
+	_hud.pointer = null
+	# (a press on a plate opens the gear screen at that move; a press on INVENTORY, on GEAR)
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = _hud._plates[1].get_center() * 2.0
+	_hud._input(click)
+	var by_plate: Array = [_inv.visible, _inv._page, _inv._focus]
+	_inv.toggle()
+	click.position = _hud._inv_button.get_center() * 2.0
+	_hud._input(click)
+	var by_button: Array = [_inv.visible, _inv._page]
+	_inv.toggle()
+	_wu(by_plate == [true, "attacks", 1] and by_button == [true, "gear"], "a press on the Whirlwind's plate: the gear screen open, its page, the move read out %s; a press on INVENTORY: open, its page %s" % [by_plate, by_button])
+
+	# --- a word burned into a piece: held over it, asked, burned; a second and a third; and what the piece then refuses
+	_inv.toggle()
+	await _wait(0.2)
+	var sword: Dictionary = loot.gear["mainhand"]
+	var could: Array = loot.burn_options("lightning", sword).map(func(o): return o["range"])
+	_inv._press("word", "lightning")
+	for c in _inv._cells:
+		if c["worn"] and c["where"] == "mainhand":
+			_inv._mouse = c["r"].get_center()
+	await _wait(0.2)
+	await _snap(dir + "/w13_a_word_held_over_a_piece.png")
+	_wu(_inv._page == "gear" and _inv._reading() == "over" and could.size() == 2, "the gear screen opened on %s; LIGHTNING held over the %s: it could become %s" % [_inv._page, sword["name"], could])
+	_inv._mouse = Vector2(-1000, -1000)
+	_inv._press("worn", "mainhand")
+	await _wait(0.2)
+	await _snap(dir + "/w14_burn_it_asked.png")
+	_wu(_inv._pending.get("word", "") == "lightning" and int(loot.words["lightning"]) == 1 and sword.get("imbues", []).is_empty(), "pressed onto it: it asks first (waiting %s), nothing burned yet, LIGHTNING still held x%d" % [_inv._pending, int(loot.words["lightning"])])
+	# (its price as each word goes in: items.ts itemValue, a fifth more for each word and its new colour's own worth)
+	var prices: Array = [int(sword["value"])]
+	_inv._press("yes", null)
+	await _wait(0.2)
+	await _snap(dir + "/w15_what_it_became.png")
+	var first_burn: String = _inv._result.get("text", "")
+	prices.append(int(sword["value"]))
+	_wu(int(loot.words["lightning"]) == 0 and sword.get("imbues", []).size() == 1 and first_burn != "" and int(sword["rarity"]) == 1 and loot.room(sword) == 3 and prices[1] == int(sword["worth"][0]) and prices[1] > 2.9 * prices[0] and prices[1] < 3.1 * prices[0], "BURN IT: LIGHTNING used up (x%d); the %s became: %s; its colour now %d (magic), room for %d more; its price %d, was %d (plain to magic 2.5 times, a word in it a fifth more); his lightning damage %+d%%, added to lightning hits %d-%d" % [int(loot.words["lightning"]), sword["name"], first_burn, int(sword["rarity"]), loot.room(sword), prices[1], prices[0], int(h.stats["light_pct"]), int(h.stats["light_min"]), int(h.stats["light_max"])])
+	# (two more LIGHTNING handed him: the other thing it can become there, and then nothing left of it to give)
+	loot.words["lightning"] = 2
+	var second: String = loot.burn("lightning", "mainhand")
+	var second_text: String = loot.burned.get("text", "")
+	prices.append(int(sword["value"]))
+	var third: String = loot.burn("lightning", "mainhand")
+	_wu(second == "" and second_text != "" and second_text != first_burn and third == "It already has what this word gives" and int(loot.words["lightning"]) == 1 and sword["imbues"].size() == 2 and int(sword["value"]) == prices[2], "a second LIGHTNING into it: %s (the other of the two); a third: '%s' (still held x%d)" % [second_text, third, int(loot.words["lightning"])])
+	# (POWER twice, handed him: the piece's four places full)
+	loot.words["power"] = 3
+	var p1: String = loot.burn("power", "mainhand")
+	var p1_text: String = loot.burned.get("text", "")
+	prices.append(int(sword["value"]))
+	var p2: String = loot.burn("power", "mainhand")
+	var p2_text: String = loot.burned.get("text", "")
+	prices.append(int(sword["value"]))
+	var p3: String = loot.burn("power", "mainhand")
+	_wu(p1 == "" and p2 == "" and p3 == "That piece is full" and sword["imbues"].size() == 4 and int(sword["rarity"]) == 2 and loot.room(sword) == 0 and int(loot.words["power"]) == 1 and prices.slice(1) == sword["worth"].map(func(v): return int(v)) and int(sword["value"]) == prices[4], "POWER into it twice: %s; %s; a third: '%s'; it holds %d words, its colour %d (rare), room %d; its price with no word and with one, two, three and four: %s" % [p1_text, p2_text, p3, sword["imbues"].size(), int(sword["rarity"]), loot.room(sword), prices])
+	loot.burned = {}
+	_inv._word = ""
+	_inv._result = {}
+	_inv._hover = {"item": sword, "at": Vector2(140, 60)}
+	await _wait(0.2)
+	await _snap(dir + "/w16_the_pieces_card.png")
+	_inv._hover = {}
+	# (a piece that was found with one of the things a word gives is not given it again; a word goes into a piece of the bag
+	# as into one he wears; and a unique piece takes no word. The pieces: the first such of the game's own, put in his bag)
+	var found: Dictionary = {}
+	var found_w := ""
+	var unique: Dictionary = {}
+	for q in loot._pools:
+		for it in loot._pools[q]:
+			if int(it["rarity"]) == 3:
+				if unique.is_empty():
+					unique = it.duplicate(true)
+				continue
+			for w in loot._words["order"]:
+				var all: Array = loot._imbue[w]["%s:%d" % [it["slot"], int(it["ilvl"])]]
+				var free: Array = loot.burn_options(w, it)
+				if found.is_empty() and not free.is_empty() and free.size() < all.size():
+					found = it.duplicate(true)
+					found_w = w
+	if not found.is_empty():
+		var all_stats: Array = loot._imbue[found_w]["%s:%d" % [found["slot"], int(found["ilvl"])]].map(func(o): return o["stat"])
+		var free_stats: Array = loot.burn_options(found_w, found).map(func(o): return o["stat"])
+		loot.bag.append(found)
+		loot.words[found_w] = int(loot.words.get(found_w, 0)) + 1
+		_inv._press("word", found_w)
+		_inv._press("bag", loot.bag.size() - 1)
+		var asked: bool = _inv._pending.get("where") == loot.bag.size() - 1
+		_inv._press("yes", null)
+		var gave: Array = found["imbues"][0]["stats"] if found.has("imbues") else []
+		_inv._result = {}
+		_inv._hover = {"item": found, "at": Vector2(140, 300)}
+		await _wait(0.2)
+		await _snap(dir + "/w16b_a_piece_of_the_bag.png")
+		_inv._hover = {}
+		_wu(asked and not gave.is_empty() and free_stats.has(gave[0]) and found["imbues"].size() == 1, "%s (found with %s, in his bag): %s could become %s there, less what it has: %s; asked %s, burned, it became %s" % [found["name"], found["has"], found_w.to_upper(), all_stats, free_stats, asked, found["imbues"][0]["lines"] if found.has("imbues") else "-"])
+	else:
+		_wu(false, "no piece of the game's pools was found with something a word gives")
+	if not unique.is_empty():
+		loot.bag.append(unique)
+		_wu(loot.burn_problem("power", loot.bag.size() - 1) == "A unique piece takes no word" and loot.room(unique) == 0, "%s, a unique piece, in his bag: POWER into it: '%s'" % [unique["name"], loot.burn_problem("power", loot.bag.size() - 1)])
+	_inv.toggle()
+
+	# --- the armourer's task
+	await _wait(0.4)
+	var line: Dictionary = guide.banner()
+	await _snap(dir + "/w17_speak_to_the_armourer.png")
+	_wu(line.get("text", "") == "Speak to the ARMOURER" and line.get("sub", "") == "He works at his forge." and loot.armourer_due() == "furnace", "the ring lit and his first word set: the line at the top says '%s' / '%s' (the armourer has: %s)" % [line.get("text", ""), line.get("sub", ""), loot.armourer_due()])
+	h.world = _spot_near(forge, 1.5, h.world)
+	await _wait(0.4)
+	var ask_prompt: Array = town.prompt.duplicate()
+	town._do(town.prompt[1])
+	await _wait(0.3)
+	await _snap(dir + "/w18_the_armourer_asks.png")
+	_wu(ask_prompt == ["E: Armourer: a task", "task"] and loot.furnace == "asked" and _wu_said("The armourer:") == loot.quest_text["furnaceAsk"] and not _inv.visible, "by the armourer the prompt %s; used: the quest '%s', his shelves open %s; he says: %s" % [ask_prompt, loot.furnace, _inv.visible, _wu_said("The armourer:")])
+	_wu(town.prompt == ["E: Armourer", "armourer"] and guide.banner().is_empty(), "asked, his prompt is %s (his shelves), and the line at the top is gone %s" % [town.prompt, guide.banner().is_empty()])
+
+	# --- floor 1 again, and floor 3: where the fallen wordsmith lies for a hero whose ring is lit
+	await go_to("floor1", "stairs")
+	await _wait(0.8)
+	b = loot._body
+	_wu(b != null and b["searched"] and not loot.words_fall(), "floor 1 again, the ring lit, its way down not yet taken: the fallen wordsmith lies there %s, searched %s; words fall here %s" % [b != null, b["searched"] if b != null else "-", loot.words_fall()])
+	if b != null:
+		h.world = _spot_near(b["at"], 2.0, h.world)
+	await _wait(0.5)
+	await _snap(dir + "/w19_floor1_the_fallen_wordsmith_searched.png")
+	# (floor 1: nothing gives up a word, were its chance certain: an ordinary monster struck dead, a chest opened; and what
+	# the rune over a monster's head means, said once: as the game stands nothing on floor 1 carries one, so one is made to)
+	var tune: Dictionary = loot._tune
+	var chances: Array = [tune["dropWord"], tune["chestWord"], tune["vaultWord"]]
+	var far: Monster = null
+	for m in _monsters.list:
+		if is_instance_valid(m) and not m.dead and not m.boss and not m.elite and not m.champion and m.world.distance_to(h.world) > 12.0 and far == null:
+			far = m
+	tune["dropWord"] = 1.0
+	tune["chestWord"] = 1.0
+	if far != null:
+		far.carries = ["power"]
+		_monsters.wake(far)
+		await _wait(0.3)
+		var told: String = _wu_said(far.title + " carries a WORD.")
+		far.hurt(1e9)
+		loot.from_chest(far.world, false)
+		_wu(_wu_lying().is_empty() and told == far.title + " carries a WORD. Kill it and the word is yours.", "floor 1, the chances of a word made certain: a monster that carries one struck dead and a chest opened: words lying %s (none falls on floor 1); as it woke it said: %s" % [_wu_lying(), told])
+	tune["dropWord"] = chances[0]
+	tune["chestWord"] = chances[1]
+	await go_to("floor3", "down")
+	await _wait(1.2)
+	_wu(loot._body == null and map.body != null and loot.words_fall() and loot.cleared == 2, "floor 3, the ring lit: no fallen wordsmith (%s; the floor's place for one %s); words fall here %s" % [loot._body, map.body, loot.words_fall()])
+	if map.body != null:
+		h.world = _free_near(Vector2(map.body["x"], map.body["y"]) + Vector2(1.5, 0.0))
+	await _wait(0.6)
+	await _snap(dir + "/w20_floor3_where_he_would_lie.png")
+
+	# --- a carrier struck dead: its word lying, and taken up
+	var carrier: Monster = null
+	for m in _monsters.list:
+		if is_instance_valid(m) and not m.dead and not m.boss and not m.carries.is_empty() and carrier == null:
+			carrier = m
+	if carrier != null:
+		var w: String = carrier.carries[0]
+		var had := int(loot.words.get(w, 0))
+		h.world = _spot_near(carrier.world, 2.5, h.world)
+		await _wait(0.4)
+		carrier.hurt(1e9)
+		await _wait(0.5)
+		var lying := _wu_lying()
+		await _snap(dir + "/w21_a_carrier_struck_dead_its_word_lying.png")
+		_wu(carrier.dead and lying.size() == 1 and lying[0][0] == w and int(loot.words.get(w, 0)) == had, "%s (it carries %s) struck dead at %s: lying %s; after 0.5 s not yet his (%s x%d: a word stands 1 s first)" % [carrier.title, carrier.carries, carrier.world, lying, w, int(loot.words.get(w, 0))])
+		if not lying.is_empty():
+			h.world = lying[0][1]
+		await _wait(1.3)
+		await _snap(dir + "/w22_word_found.png")
+		_wu(_wu_lying().is_empty() and int(loot.words.get(w, 0)) == had + 1 and loot.toast.get("word", "") == w and not loot.toast.get("big", true) and not _inv.visible, "it comes to him and is taken: %s x%d; the top of the screen says WORD FOUND %s (large %s); the gear screen opened on it %s (his words are at work already)" % [w, int(loot.words.get(w, 0)), str(_hud._data["words"].get(loot.toast.get("word", ""), {}).get("name", "-")).to_upper(), loot.toast.get("big"), _inv.visible])
+	else:
+		_wu(false, "no monster of floor 3 carries a word")
+	# (a boss's too)
+	var boss: Monster = null
+	for m in _monsters.list:
+		if is_instance_valid(m) and m.boss:
+			boss = m
+	if boss != null:
+		var bw: Array = boss.carries
+		var had_b := int(loot.words.get(bw[0], 0)) if not bw.is_empty() else 0
+		h.world = _spot_near(boss.world, 3.0, boss.world)
+		await _wait(0.5)
+		boss.waits = false
+		boss.hurt(1e9)
+		await _wait(0.6)
+		var lying_b := _wu_lying()
+		await _snap(dir + "/w23_the_boss_fallen_his_word.png")
+		if not lying_b.is_empty():
+			h.world = lying_b[0][1]
+		await _wait(1.4)
+		_wu(boss.dead and not bw.is_empty() and lying_b.size() == bw.size() and lying_b[0][0] == bw[0] and int(loot.words.get(bw[0], 0)) == had_b + 1, "%s (he carries %s) struck dead: lying %s; taken, %s x%d" % [boss.title, bw, lying_b, bw[0] if not bw.is_empty() else "-", int(loot.words.get(bw[0], 0)) if not bw.is_empty() else 0])
+
+	# --- floor 3's furnace: the Stoker's gear, the crank, the furnace out; the quest told
+	if furnace != null and not furnace._crank.is_empty():
+		var c := Vector2(furnace._crank["x"], furnace._crank["y"])
+		var keeper = null
+		for m in _monsters.list:
+			if is_instance_valid(m) and m.kind == "stoker" and not m.dead:
+				keeper = m
+		if keeper != null:
+			h.world = _spot_near(keeper.world, 3.0, h.world)
+			await _wait(0.2)
+			keeper.hurt(1e9)
+			await _wait(4.6)
+			for g in _monsters.perils.get_children():
+				if g.get("at") != null:
+					h.world = g.at
+			await _wait(0.4)
+		else:
+			_monsters.quest_item.emit("gear", h.world)
+			await _wait(0.4)
+		_wu(furnace.step == "gear" and loot.furnace == "gear", "the Stoker dead, his gear taken: the furnace's step '%s', the quest '%s'" % [furnace.step, loot.furnace])
+		h.world = _free_near(c + Vector2(0.9, 0.4))
+		await _wait(3.4)
+		line = guide.banner()
+		await _snap(dir + "/w24_the_furnace_out_return_to_the_armourer.png")
+		_wu(furnace.step == "out" and loot.furnace == "out" and loot.armourer_due() == "reward" and line.get("text", "") == "Return to the ARMOURER" and line.get("sub", "") == "Take the waypoint back to town.", "the crank turned: the furnace's step '%s', the quest '%s' (the armourer has: %s); it said: %s; the line at the top: '%s' / '%s'" % [furnace.step, loot.furnace, loot.armourer_due(), _wu_said("The gear bites"), line.get("text", ""), line.get("sub", "")])
+	else:
+		_wu(false, "floor 3 has no furnace")
+
+	# --- floor 3's sealed door: it wants FLAME, in whichever slot
+	var wd: Dictionary = {}
+	for d in map.doors:
+		if d["kind"] == "worddoor":
+			wd = d
+	if not wd.is_empty():
+		var mid := Vector2(wd["middle"]["x"], wd["middle"]["y"])
+		var away := Vector2(0, float(wd["out"])) if wd["alongX"] else Vector2(float(wd["out"]), 0)
+		for m in _monsters.list:
+			if is_instance_valid(m) and not m.dead and m.world.distance_to(mid) < 10.0:
+				m.hurt(1e9)
+		h.world = _free_near(mid + away * 2.5)
+		await _wait(0.7)
+		await _snap(dir + "/w25_a_sealed_door_wants_flame.png")
+		_wu(wd.get("word", "") == "fire" and wd.get("told", false) and _wu_said("A sealed door.") == "A sealed door. It wants FLAME.", "floor 3's sealed door (its word '%s'): %s" % [wd.get("word", ""), _wu_said("A sealed door.")])
+		_doors.unseal({"front": ["power"], "behind": ["poison", null]}, mid, 0.9)
+		var still := int(wd["want"])
+		_doors.unseal({"front": ["lightning", null], "behind": ["fire"]}, mid, 0.9)
+		await _wait(0.6)
+		await _snap(dir + "/w26_the_flame_seal_breaks.png")
+		_wu(still == 0 and int(wd["want"]) == 1 and map.walk[int(wd["way"][0])] == 1 and map.shut[int(wd["way"][0])] == 0 and _wu_said("The FLAME seal") == "The FLAME seal breaks.", "a hit carrying POWER and VENOM: sealed still (want %d); one carrying LIGHTNING in front and FLAME behind: want %d walk %d shut %d; %s" % [still, int(wd["want"]), map.walk[int(wd["way"][0])], map.shut[int(wd["way"][0])], _wu_said("The FLAME seal")])
+	else:
+		_wu(false, "floor 3 has no sealed door")
+
+	# --- the words an ordinary monster and a chest leave now and then (the game's chances; made certain here, far from him)
+	far = null
+	for m in _monsters.list:
+		if is_instance_valid(m) and not m.dead and not m.boss and not m.elite and not m.champion and not m.summoned and m.kind in ["skeleton", "bat", "archer", "cultist", "shade"] and m.carries.is_empty() and m.world.distance_to(h.world) > 12.0 and far == null:
+			far = m
+	if far != null:
+		var at_m: Vector2 = far.world
+		var before_n := _wu_lying().size()
+		tune["dropWord"] = 1.0
+		far.hurt(1e9)
+		tune["dropWord"] = chances[0]
+		var from_monster: Array = _wu_lying().slice(before_n)
+		tune["chestWord"] = 1.0
+		loot.from_chest(at_m, false)
+		tune["chestWord"] = chances[1]
+		var from_chest: Array = _wu_lying().slice(before_n + from_monster.size())
+		# (the first chest opened in a treasure vault has the vault's chance, the next an ordinary chest's: the vault's made
+		# certain and the ordinary none; a vault he has not been near, its two chests marked open as props.gd marks them)
+		var boxes: Array = []
+		for r in map.rooms:
+			if r.get("kind", "") != "treasure" or not boxes.is_empty():
+				continue
+			for p in map.props:
+				if p["kind"] == "chest" and int(p["state"]) == 0 and FloorMap.in_room(r, Vector2(p["tx"], p["ty"])) and Vector2(p["x"], p["y"]).distance_to(h.world) > 8.0:
+					boxes.append(p)
+			if boxes.size() < 2:
+				boxes = []
+		var from_vault: Array = []
+		if boxes.size() >= 2:
+			tune["vaultWord"] = 1.0
+			tune["chestWord"] = 0.0
+			for p in boxes.slice(0, 2):
+				var n0 := _wu_lying().size()
+				p["state"] = 1
+				loot.from_chest(Vector2(p["x"], p["y"]), true)
+				from_vault.append(_wu_lying().size() - n0)
+			tune["vaultWord"] = chances[2]
+			tune["chestWord"] = chances[1]
+		var here: Array = loot._words["at"]["3"]
+		_wu(from_monster.size() == 1 and from_chest.size() == 1 and from_vault == [1, 0] and here.has(from_monster[0][0]) and here.has(from_chest[0][0]) and not here.has("heavy"), "floor 3: an ordinary monster leaves a word %s times in 1000 and a chest %s in 100 (the first of a treasure vault %s), x%s here; made certain: the %s left %s, a chest %s; a vault's first chest and its second (the vault's chance certain, a chest's none): %s; the words found on this floor: %s" % [chances[0] * 1000.0, chances[1] * 100.0, chances[2] * 100.0, loot._growth(), far.title, from_monster.map(func(d): return d[0]), from_chest.map(func(d): return d[0]), from_vault, here])
+	else:
+		_wu(false, "floor 3 has no ordinary monster left far from him")
+
+	# --- back in town: the armourer's word, HEAVY; then his shelves
+	await go_to("town", "way")
+	await _wait(0.8)
+	line = guide.banner()
+	h.world = _spot_near(forge, 1.5, h.world)
+	await _wait(0.4)
+	var give_prompt: Array = town.prompt.duplicate()
+	var held_before: int = loot.spare()
+	town._do(town.prompt[1])
+	await _wait(0.4)
+	await _snap(dir + "/w27_heavy_given.png")
+	_wu(line.get("text", "") == "Return to the ARMOURER" and line.get("sub", "") == "He works at his forge." and give_prompt == ["E: Armourer: the furnace is out", "task"] and loot.furnace == "done" and int(loot.words.get("heavy", 0)) == 1 and loot.spare() == held_before + 1 and _wu_said("The armourer: \"The forge") == loot.quest_text["reward"] and loot.toast.get("word", "") == "heavy", "in town the line at the top '%s' / '%s'; his prompt %s; used: the quest '%s', HEAVY x%d, WORD FOUND %s; he says: %s" % [line.get("text", ""), line.get("sub", ""), give_prompt, loot.furnace, int(loot.words.get("heavy", 0)), str(_hud._data["words"].get(loot.toast.get("word", ""), {}).get("name", "-")).to_upper(), _wu_said("The armourer: \"The forge")])
+	await _wait(0.2)
+	var after_prompt: Array = town.prompt.duplicate()
+	var again: bool = loot.armourer_hand_in()
+	town._do(town.prompt[1])
+	await _wait(0.3)
+	await _snap(dir + "/w28_his_shelves_again.png")
+	_wu(after_prompt == ["E: Armourer", "armourer"] and not again and _inv.visible and _inv.shop == "armourer" and int(loot.words.get("heavy", 0)) == 1, "rewarded, his prompt is %s; asked again he has nothing (%s); used, his shelves open (%s, '%s'); HEAVY x%d" % [after_prompt, again, _inv.visible, _inv.shop, int(loot.words.get("heavy", 0))])
+	_inv.toggle()
+	# (HEAVY set where POWER was: POWER goes back to his words)
+	_inv.open_on(0)
+	_inv._press("word", "heavy")
+	_inv._press("slot", [0, "front", 0])
+	await _wait(1.4)
+	await _snap(dir + "/w29_heavy_strike.png")
+	_wu(names.call()[0] == "Heavy Strike of Venom" and int(loot.words.get("heavy", 0)) == 0 and int(loot.words["power"]) == 2, "HEAVY set in front of Strike where POWER was: '%s'; POWER back among his words x%d; its lines: %s" % [names.call()[0], int(loot.words["power"]), L.r(0)["lines"]])
+
+	# --- at level 15 (not come to on floors 1 to 5; set here to show the rule): a second slot in front, one damage word a side
+	loot.level = 15
+	loot.derive()
+	loot.words["frost"] = int(loot.words.get("frost", 0)) + 1
+	_inv._press("word", "power")
+	_inv._press("slot", [0, "front", 1])
+	await _wait(1.3)
+	_inv._press("word", "frost")
+	_inv._press("slot", [1, "front", 1])
+	await _wait(0.2)
+	await _snap(dir + "/w30_one_damage_word_per_side.png")
+	_wu(sizes.call(L.front) == [2, 2, 2] and sizes.call(L.behind) == [1, 1, 1] and names.call()[0] == "Heavy Power Strike of Venom" and _inv._note == "One damage word per side" and L.front[1] == ["fire", null] and int(loot.words["frost"]) == 1, "level 15: slots in front %s, behind %s; POWER beside HEAVY: '%s'; FROST into the Whirlwind's second slot beside FLAME: it says '%s', the Whirlwind still %s, FROST still held x%d" % [sizes.call(L.front), sizes.call(L.behind), names.call()[0], _inv._note, L.front[1], int(loot.words["frost"])])
+	_inv.toggle()
+	await _wait(0.3)
+	await _snap(dir + "/w31_two_slots_in_front_at_the_bottom.png")
+	_wu(_wu_reads(0) == ["HEAVY", "POWER", "STRIKE", "of", "VENOM"] and _wu_reads(1) == ["FLAME", "[+]", "WHIRLWIND", "[+]"], "the bottom of the screen: Strike reads %s, the Whirlwind %s" % [_wu_reads(0), _wu_reads(1)])
+	# (INTO THE EXACT SLOT PRESSED, game.ts placeWord: the Whirlwind's two slots in front both empty, a word pressed onto the
+	# second is in the second; another pressed onto it takes its place there, the first still empty; a second damage word
+	# pressed onto the empty first is refused; a word that is not one, taken from behind the Lunge, is in the first)
+	_inv.open_on(1)
+	_inv._unsocket(1, "front", 0)
+	var fire_held: int = int(loot.words.get("fire", 0))
+	_inv._press("word", "fire")
+	_inv._press("slot", [1, "front", 1])
+	var in_second: Array = L.front[1].duplicate()
+	var in_second_reads: Array = _wu_reads(1)
+	_inv._press("word", "lightning")
+	_inv._press("slot", [1, "front", 1])
+	var swapped: Array = L.front[1].duplicate()
+	var fire_back: int = int(loot.words.get("fire", 0))
+	_inv._note = ""
+	_inv._press("word", "power")
+	_inv._press("slot", [1, "front", 0])
+	var beside: String = _inv._note
+	var kept: Array = L.front[1].duplicate()
+	var power_kept: int = int(loot.words.get("power", 0))
+	_inv._unsocket(2, "behind", 0)
+	_inv._press("word", "swift")
+	_inv._press("slot", [1, "front", 0])
+	await _wait(1.4)
+	await _snap(dir + "/w31b_into_the_exact_slot.png")
+	_wu(in_second == [null, "fire"] and in_second_reads == ["[+]", "FLAME", "WHIRLWIND", "[+]"] and swapped == [null, "lightning"] and fire_back == fire_held and beside == "One damage word per side" and kept == [null, "lightning"] and power_kept == 1 and L.front[1] == ["swift", "lightning"] and names.call()[1] == "Swift Lightning Whirlwind" and _wu_reads(1) == ["SWIFT", "LIGHTNING", "WHIRLWIND", "[+]"], "into the exact slot pressed: FLAME taken out of the Whirlwind, its two slots in front empty; FLAME pressed onto the second: %s, at the bottom of the screen %s; LIGHTNING pressed onto it: %s, FLAME back among his words (x%d of %d); POWER pressed onto the first: it says '%s', the Whirlwind still %s, POWER still held x%d; SWIFT, taken from behind the Lunge, pressed onto the first: %s, '%s', at the bottom of the screen %s" % [in_second, in_second_reads, swapped, fire_back, fire_held, beside, kept, power_kept, L.front[1], names.call()[1], _wu_reads(1)])
+	_inv.toggle()
+
+	# --- the fallen wordsmith's satchel for a hero whose ring was lit before he searched one, and who has no word yet (a hero
+	# made here, by taking every word from this one: the game's is one of a player whose ring another hero of his has lit):
+	# a word laid by him; taken, it is his first: announced large, and the gear screen opened on it at the next quiet moment
+	for i in 3:
+		for side in ["front", "behind"]:
+			for k in L.slots(i, side).size():
+				L.take(i, side, k)
+	loot.words = {"power": 0}
+	loot.taught = false
+	loot.offer = ""
+	loot.gear["mainhand"].erase("imbues")
+	loot.bag.clear()
+	loot.body_searched = false
+	loot.cleared = 0
+	await go_to("floor1", "stairs")
+	await _wait(0.8)
+	b = loot._body
+	_wu(b != null and not b["searched"] and not loot.word_at_work() and loot.spare() == 0, "floor 1 for a hero whose ring is lit, who has searched none and has no word (%d held, at work %s): the fallen wordsmith lies there %s, searched %s" % [loot.spare(), loot.word_at_work(), b != null, b["searched"] if b != null else "-"])
+	if b != null:
+		# (nothing left awake about him, so that the moment is quiet)
+		for m in _monsters.list:
+			if is_instance_valid(m) and not m.dead and not m.boss and m.world.distance_to(b["at"]) < 16.0:
+				m.hurt(1e9)
+		h.world = b["at"] + Vector2(0.5, 0.5)
+		await _wait(0.4)
+		var by_him := _wu_lying()
+		await _snap(dir + "/w32_the_satchels_word.png")
+		_wu(by_him.size() == 1 and by_him[0][0] == "power" and by_him[0][1] == b["at"] and loot.quest == "" and _wu_said("A fallen wordsmith.") == "A fallen wordsmith. In the satchel: full flasks, and a WORD.", "searched: %s; laid by him %s; the stone not his (quest '%s')" % [_wu_said("A fallen wordsmith."), by_him, loot.quest])
+		t = 0.0
+		while loot.spare() == 0 and t < 4.0:
+			await get_tree().process_frame
+			t += get_process_delta_time()
+		await _wait(0.3)
+		await _snap(dir + "/w33_his_first_word_found.png")
+		_wu(int(loot.words["power"]) == 1 and loot.toast.get("big", false) and loot.offer == "power" and not _inv.visible, "taken: POWER x%d; WORD FOUND, large %s (his first); to be offered a place: '%s'; the gear screen not yet open %s" % [int(loot.words["power"]), loot.toast.get("big"), loot.offer, not _inv.visible])
+		t = 0.0
+		while not _inv.visible and t < 6.0:
+			await get_tree().process_frame
+			t += get_process_delta_time()
+		await _wait(0.3)
+		await _snap(dir + "/w34_the_gear_screen_opens_on_it.png")
+		_wu(_inv.visible and t > 1.5 and t < 3.0 and _inv._page == "attacks" and _inv._word == "" and _inv._coach() == "Drag POWER onto STRIKE, or click the word and then the slot.", "%.1f s on (2.4 s of quiet from when it was taken): the gear screen open %s on %s, the word left on its tile (in hand '%s'); the coach: %s" % [t + 0.3, _inv.visible, _inv._page, _inv._word, _inv._coach()])
+		_inv._press("word", "power")
+		_inv._press("slot", [0, "front", 0])
+		await _wait(1.3)
+		await _snap(dir + "/w35_set_on_a_floor_the_coach.png")
+		_wu(loot.taught and _inv._coach() == "POWER STRIKE! Close this and try it.", "set on a floor: the coach says: %s" % _inv._coach())
+		_inv.toggle()
+
+	# --- and on a later floor for a hero with neither the lit ring nor the stone who has searched none (made here)
+	loot.ring_lit = false
+	loot.body_searched = false
+	await go_to("floor3", "down")
+	await _wait(1.2)
+	b = loot._body
+	_wu(b != null and not b["searched"] and map.body != null and b["at"] == Vector2(map.body["x"], map.body["y"]) and not loot.words_fall(), "floor 3 for a hero with neither the lit ring nor the stone who has searched none: the fallen wordsmith lies there %s at %s; words fall %s" % [b != null, b["at"] if b != null else "-", loot.words_fall()])
+	if b != null:
+		h.world = _spot_near(b["at"], 2.0, h.world)
+		await _wait(0.5)
+		await _snap(dir + "/w36_floor3_the_fallen_wordsmith.png")
+		h.world = b["at"] + Vector2(0.5, 0.5)
+		await _wait(0.4)
+		_wu(loot.quest == "heart" and b["searched"] and _wu_lying().is_empty(), "searched there before the ring is lit: he carries the stone (quest '%s'), no word laid %s" % [loot.quest, _wu_lying()])
+	print("WORDSUI: %d lines, %d wrong%s" % [_wu_n, _wu_bad.size(), "" if _wu_bad.is_empty() else ": " + str(_wu_bad)])
+
+
 ## SHOT MODE: the monsters' moves, each pictured the moment it shows. The hero is set down in sight of each monster that has
 ## moves and stands there, unharmed (its blows flash him but take nothing, so that each move is seen to its end): the red
 ## troll (his charge's line, his run, his slam's circle), the archers (the rain's ring, the arrows come down), the
@@ -657,6 +1309,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 	hero.unhurt = true
 	if _arg("only") == "words":
 		await _words_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "wordsui":
+		await _wordsui_shots(hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "rmb":

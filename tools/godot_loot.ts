@@ -2,23 +2,38 @@
 //   godot/assets/loot/items.json  pools of gear rolled by the game's own Game.rollGear on floor 1 for a new Warrior, one pool
 //     for each quality a drop asks for (0 an ordinary monster's, 1 a leader's or a chest's, 2 a guardian's first, 4 a
 //     boss's first: game.ts dropLoot), each piece with its name, slot, rarity, picture, its mods (items.ts itemMods) and
-//     their lines (modLines), and what burning the Power word into it may give (imbueOptionsFor); the Warrior's own
-//     starting greatsword; and the numbers the hero's stats are made from (game/stats.ts derive, defs.ts TUNE, ATTR_GIVES).
+//     their lines (modLines), how many properties it was found with and which (what no word may give it again), its price
+//     (itemValue) and its price with one, two, ... words burned into it; the Warrior's own starting greatsword; and the
+//     numbers the hero's stats are made from (game/stats.ts derive, defs.ts TUNE, ATTR_GIVES).
+//     WHAT A WORD BECOMES ON A PIECE (`imbue`; items.ts imbueOptions, imbueItem): for each of the seven words a Warrior can
+//     come by on floors 1 to 5 (tools/godot_words.ts), each kind of piece and each level a piece here has: the one, two or
+//     three things the word may become there, each with the range it is read out with (ui/inventory.ts rangeText) and
+//     EVERY SIZE IT CAN ROLL, each made by the game's own imbueItem (its mods, its lines) with how likely it is. The game
+//     picks one of those things evenly and rolls its size; loot.gd does the same from this table, less what the piece
+//     already has (imbueOptionsFor), so a piece takes one word after another as in the game.
+//     HOW WORDS ARE COME BY (`words`): which may be found on each floor and how much likelier the deeper (wordsAt,
+//     wordGrowth), the Warrior's first, the order the game lists a hero's words in and each word's colour; and THE
+//     ARMOURER'S QUEST'S OWN LINES (`quest`; game/quests15.ts QUEST_TEXT, game/quest_marks.ts).
 //   godot/assets/loot/icons.png + icons.json  the pictures (art/icons.ts itemPic for each piece at its rarity; the gold piles,
-//     the life orb, the potion, the Power word's rune), two picture pixels to a game pixel.
+//     the life orb, the potion, the seven words' rune stones), two picture pixels to a game pixel.
 //   npx tsx tools/godot_loot.ts [seed]
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
-import { Game } from '../src/game/game';
-import { STAT_INFO, imbueItem, imbueProblem, itemMods, itemValue, kindName, modLines, starterWeapon } from '../src/game/items';
-import { WORDS } from '../src/game/defs';
+import { DARK_RING, Game } from '../src/game/game';
+import { ITEM_ROOM, STAT_INFO, flatPair, imbueItem, imbueLines, imbueOptions, itemMods, itemRoom, itemValue, kindName, modLines, rarityFor, starterWeapon, statGroup } from '../src/game/items';
+import { FIRST_WORD, WORDS, wordGrowth, wordsAt } from '../src/game/defs';
 import { TUNE, ATTR_GIVES } from '../src/game/defs';
-import { itemPic, makeIconArt } from '../src/art/icons';
+import { FURNACE_WORD, QUEST_TEXT } from '../src/game/quests15';
+import { QUEST_MARKS, SPEAK_BACK, SPEAK_WHERE } from '../src/game/quest_marks';
+import { WORD_COLOR, itemPic, makeIconArt } from '../src/art/icons';
 import { makeBodyArt } from '../src/art/body';
-import type { Item } from '../src/game/types';
+import type { RNG } from '../src/engine/rng';
+import { PRISON_WORD_IDS, WORD_IDS } from '../src/game/types';
+import type { Imbue, Item, Rarity, StatKey, WordId } from '../src/game/types';
+import { rangeText } from '../src/ui/inventory';
 
 declare const process: { argv: string[] };
 paintWithoutCanvas();
@@ -33,7 +48,8 @@ game.depth = 1;
 game.enterDungeon();
 const roll = (q: number): Item => (game as unknown as { rollGear(q: number): Item }).rollGear(q);
 const icons = makeIconArt();
-const rng = (game as unknown as { rng: Parameters<typeof imbueItem>[2] }).rng;
+// (the words a Warrior can come by on floors 1 to 5: the prison's six and Heavy, the armourer's reward: tools/godot_words.ts)
+const OURS: WordId[] = [...PRISON_WORD_IDS, FURNACE_WORD.warrior];
 
 // --- the pictures, each once, by key ---
 const pics = new Map<string, Sprite>();
@@ -46,24 +62,82 @@ icons.gold.forEach((s, i) => pics.set(`gold:${i}`, s));
 pics.set('orb', icons.lifeOrb);
 pics.set('potion', icons.potion);
 pics.set('word:power', icons.word.power);
+// (the other words' rune stones: a word as it lies on the floor, and on the gear screen)
+for (const w of OURS) if (w !== 'power') pics.set(`word:${w}`, icons.word[w]);
 // (the fallen wordsmith, before and after he is searched: art/body.ts)
 const bodyArt = makeBodyArt();
 pics.set('body', bodyArt.body);
 pics.set('body:searched', bodyArt.searched);
 
+/**
+ * A PIECE'S PRICE WITH WORDS BURNED INTO IT (items.ts itemValue): with one more word in it, with two, as far as it has room.
+ * A fifth more for each word, and its colour's own worth where the word changes its colour (imbueItem: a piece's colour
+ * follows the count of its properties).
+ */
+function worth(it: Item): number[] {
+  const out: number[] = [];
+  for (let n = 1; n <= itemRoom(it); n++) {
+    const imbues: Imbue[] = [...it.imbues, ...Array.from({ length: n }, (): Imbue => ({ word: 'power', kind: 'prefix', mods: [] }))];
+    out.push(itemValue({ ...it, imbues, rarity: Math.max(it.rarity, rarityFor(it.affixes.length + imbues.length)) as Rarity }));
+  }
+  return out;
+}
+
+// (every kind of piece at every level a piece here has, one of each kept: what a word becomes on it is told once for them all)
+const kinds = new Map<string, Item>();
 const plain = (it: Item): Record<string, unknown> => {
   const mods = itemMods(it);
+  if (!kinds.has(`${it.slot}:${it.ilvl}`)) kinds.set(`${it.slot}:${it.ilvl}`, it);
   return {
     name: it.name, base: it.baseName, kind: kindName(it), slot: it.slot, rarity: it.rarity, ilvl: it.ilvl, req: it.reqLevel,
     icon: picKey(it), weapon: !!it.weapon, hands: it.hands ?? 0, aps: it.aps ?? 0, value: itemValue(it),
     mods: mods.map((m) => [m.stat, m.value]),
     implicit: modLines(it.implicit, 'cooldown'),
     lines: modLines(it.affixes.flatMap((a) => a.mods), 'cooldown'),
-    // (burning the Power word in, as the game does it: three of its outcomes, each rolled by the game's own imbueItem)
-    burn: imbueProblem(it, 'power'),
-    power: imbueProblem(it, 'power') ? [] : [0, 1, 2].map(() => { const c = structuredClone(it); const im = imbueItem(c, 'power', rng)!; return { mods: im.mods.map((m) => [m.stat, m.value]), lines: modLines(im.mods, 'cooldown'), rarity: c.rarity }; }),
+    // (the properties it was found with: how many of its four places they take (items.ts itemRoom), and which they are, so
+    // that no word gives it one of them again (items.ts carried))
+    affixes: it.affixes.length,
+    has: it.affixes.flatMap((a) => a.mods.map((m) => m.stat)),
+    // (its price with one word burned into it, with two, as far as it has room)
+    worth: worth(it),
   };
 };
+
+/**
+ * WHAT A WORD BECOMES ON A PIECE OF THAT KIND AND LEVEL (items.ts imbueOptions): each thing it may become there, and every
+ * size of it the game's own imbueItem can roll, with how likely each is. imbueItem rolls a size with one draw: a whole
+ * number between two ends, each as likely as the next (rollStat), so each is made here by handing it that number; or, for
+ * "Adds X-Y Damage", an average hit anywhere between two ends (damageRange), handed it here at 400 places evenly across,
+ * the outcomes that come out the same counted together.
+ */
+function becomes(word: WordId, like: Item): unknown[] {
+  const bare: Item = structuredClone(like);
+  bare.affixes = [];
+  bare.imbues = [];
+  bare.rarity = 0;
+  delete bare.unique;
+  return imbueOptions(word, bare.slot, bare.ilvl).map((o, k) => {
+    const made = new Map<string, [number, [StatKey, number][], string[]]>();
+    const roll = (draw: Partial<RNG>): void => {
+      const im = imbueItem(structuredClone(bare), word, draw as RNG, k);
+      if (!im) throw new Error(`${word} would not burn into a bare ${bare.slot} of level ${bare.ilvl}`);
+      const mods = im.mods.map((m): [StatKey, number] => [m.stat, m.value]);
+      const key = JSON.stringify(mods);
+      const was = made.get(key);
+      if (was) was[0]++;
+      else made.set(key, [1, mods, imbueLines(im, 'cooldown')]);
+    };
+    if (flatPair(o.stat)) {
+      const N = 400;
+      for (let j = 0; j < N; j++) roll({ range: (lo: number, hi: number) => lo + ((hi - lo) * (j + 0.5)) / N });
+    } else {
+      let ends: [number, number] = [0, 0];
+      imbueItem(structuredClone(bare), word, { int: (a: number, b: number) => { ends = [a, b]; return a; } } as RNG, k);
+      for (let v = ends[0]; v <= ends[1]; v++) roll({ int: () => v });
+    }
+    return { stat: o.stat, kind: o.kind, range: rangeText(o, 'cooldown'), rolls: [...made.values()] };
+  });
+}
 
 const POOLS: [number, number][] = [[0, 300], [1, 160], [2, 100], [4, 80]];
 const pools: Record<string, unknown[]> = {};
@@ -98,7 +172,49 @@ const shopsOf = (inTown as unknown as { shops: Record<string, (Item | null)[]> }
 const shops: Record<string, unknown[]> = {};
 for (const [id, list] of Object.entries(shopsOf)) shops[id] = list.filter((it): it is Item => it !== null).map(plain);
 const body = game.level.body;
-writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, power: { frontText: WORDS.power.frontText, behindText: WORDS.power.behindText } }));
+// (what each word becomes on each kind of piece: once every piece that is written has been seen)
+const imbue: Record<string, Record<string, unknown[]>> = {};
+let sizes = 0;
+for (const w of OURS) {
+  imbue[w] = {};
+  for (const [key, like] of kinds) {
+    imbue[w][key] = becomes(w, like);
+    for (const o of imbue[w][key] as { rolls: unknown[] }[]) sizes += o.rolls.length;
+  }
+}
+// (stats that count as one property on a piece: items.ts statGroup; only those that are not their own)
+const groups: Record<string, string> = {};
+for (const k of Object.keys(STAT_INFO)) if (statGroup(k as StatKey) !== k) groups[k] = statGroup(k as StatKey);
+const FLOORS = [1, 2, 3, 4, 5];
+const words = {
+  // (the order the game lists the words a hero holds in, types.ts WORD_IDS; and each word's own colour, art/icons.ts WORD_COLOR)
+  order: WORD_IDS.filter((w) => OURS.includes(w)),
+  color: Object.fromEntries(OURS.map((w) => [w, WORD_COLOR[w]])),
+  // (the Warrior's first word, the fallen wordsmith's and the wordsmith's: defs.ts FIRST_WORD)
+  first: FIRST_WORD.warrior.word,
+  // (the words that may be found on each floor, and how many times as likely a word is there: types.ts wordsAt, defs.ts wordGrowth)
+  at: Object.fromEntries(FLOORS.map((d) => [d, wordsAt(d)])),
+  growth: Object.fromEntries(FLOORS.map((d) => [d, wordGrowth(d)])),
+  // (a piece's places for properties, and what is said of a word before the ring is lit: items.ts ITEM_ROOM, game.ts DARK_RING)
+  room: ITEM_ROOM,
+  dark: DARK_RING,
+  groups,
+};
+// (THE ARMOURER'S QUEST, game/quests15.ts: his word for the Warrior, and each of its lines as the game says it; and the line at
+// the top that sends the hero to him and back to him: game/quest_marks.ts)
+const reward = FURNACE_WORD.warrior;
+const quest = {
+  word: reward,
+  furnaceAsk: QUEST_TEXT.furnaceAsk,
+  furnaceAskPrompt: QUEST_TEXT.furnaceAskPrompt,
+  rewardPrompt: QUEST_TEXT.rewardPrompt,
+  reward: QUEST_TEXT.reward(WORDS[reward].name.toUpperCase()),
+  speakWhere: SPEAK_WHERE,
+  speakBack: SPEAK_BACK,
+  speakSecs: QUEST_MARKS.secs,
+};
+writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest }));
+tally.push(`words on gear: ${OURS.join(', ')} on ${kinds.size} kinds of piece by level, ${sizes} sizes in all`);
 
 // --- the pictures in one sheet: each at two picture pixels to a game pixel, its anchor kept ---
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {

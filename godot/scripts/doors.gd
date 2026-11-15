@@ -13,7 +13,8 @@
 ##   A SEALED DOOR (THE TRAPS, game/doors.ts 'worddoor'), a door whose leaf is a slab with the rune of a word, opens to nobody
 ##   who comes near: only to a hit from an attack carrying its word (game.ts unseal: the hit reaching within its reach and 0.65
 ##   of its middle); then it swings open as a door does, and stays open. Sealed, its tile is wall to whatever walks, flies, is
-##   shot or looks. The first time it is seen from near, a line says what it wants.
+##   shot or looks. The first time it is seen from near, a line says what it wants: floor 2's POWER, floor 3's FLAME, floor
+##   4's POISON (the door's `word` in the floor's layout), whichever slot of the attack the word is in, in front or behind.
 ##   A GATE WITH A LEVER (THE MIX, game/doors.ts 'gate'; game.ts pullLever): in the way in of one room of the main path, DOWN as
 ##   he comes to the floor, wall to whatever walks, flies, is shot or looks; the first time it is seen from near a line says
 ##   so. Its lever stands in a small room at a dead end nearby: he pulls it by walking up to it (within 1.5 tiles), and the
@@ -26,6 +27,7 @@
 extends Node
 
 const FloorMap := preload("res://scripts/floor_map.gd")
+const Words := preload("res://scripts/words.gd")
 
 const DOOR_NEAR := 2.6
 const DOOR_SWING := 0.32
@@ -54,8 +56,8 @@ var monsters  # monsters.gd
 var sfx
 
 var intro_t := 0.0
-## (defs.ts WORDS: the names its words are called by, and MSG's colours)
-const WORD_NAMES := {"power": "Power"}
+## (MSG's colours; a word's name is the game's own, defs.ts WORDS, by words.gd: floor 2's door wants POWER, floor 3's FLAME,
+## floor 4's POISON)
 const OMEN := Color("#ffc24a")
 const WORD := Color("#7af8f0")
 const GOOD := Color("#8af078")
@@ -135,9 +137,11 @@ func _process(dt: float) -> void:
 			monsters.wake(boss)
 
 
-## (game.ts unseal) A hit of his reaches everything within `rad` of `at`: a sealed door in its reach opens if the hit carries
-## its word, in front or behind (`words`: {front, behind}).
+## (game.ts unseal) A hit of his reaches everything within `rad` of `at`: a sealed door in its reach opens if the attack
+## carries its word, in front or behind. `words`: {front, behind}, the words in the attack's slots on each side, as arrays
+## (loadout.gd fronts, behinds); a side may also be the one word the screens before the loadout passed, "" for none.
 func unseal(words: Dictionary, at: Vector2, rad: float) -> void:
+	var carried: Array = _side(words.get("front")) + _side(words.get("behind"))
 	for d in map.doors:
 		var w: String = d.get("word", "")
 		if d["kind"] != "worddoor" or int(d["want"]) != 0 or w == "":
@@ -145,7 +149,7 @@ func unseal(words: Dictionary, at: Vector2, rad: float) -> void:
 		var mid := Vector2(d["middle"]["x"], d["middle"]["y"])
 		if mid.distance_to(at) > rad + 0.65:
 			continue
-		if words.get("front", "") != w and words.get("behind", "") != w:
+		if not carried.has(w):
 			continue
 		d["want"] = 1
 		d["told"] = true
@@ -158,8 +162,16 @@ func unseal(words: Dictionary, at: Vector2, rad: float) -> void:
 			main.loot.say("The %s seal breaks." % _word_name(w).to_upper(), WORD)
 
 
+## The words of one side of an attack, as a list: an array's own (its empty slots left out), or the one word of a string.
+static func _side(side) -> Array:
+	if side is Array:
+		return side.filter(func(w): return w != null and str(w) != "")
+	return [side] if side is String and side != "" else []
+
+
+## A word's name as the game calls it (defs.ts WORDS: Power, Flame, Poison, ...).
 static func _word_name(w: String) -> String:
-	return WORD_NAMES.get(w, w.capitalize())
+	return str(Words.data()["words"].get(w, {}).get("name", w.capitalize()))
 
 
 ## The hero fallen and set back where he came in: the boss's gate up again behind him, the boss waiting again; and the gates

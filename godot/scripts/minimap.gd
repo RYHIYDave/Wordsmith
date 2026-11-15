@@ -204,7 +204,8 @@ func _keys() -> void:
 	var p: Array = hud._data["pics"].get("key", [])
 	if p.is_empty():
 		return
-	var spare: int = main.loot.words.get("power", 0) if main.loot != null else 0
+	# (after the rune and the count of the words he holds, where there are any: hud.gd)
+	var spare: int = main.loot.spare() if main.loot != null else 0
 	var kx := 4.0 + PF.width("INVENTORY (I)", "small") + 10.0 + 3.0 + (26.0 if spare > 0 else 0.0) + (16.0 if main.loot != null and main.loot.quest != "" else 0.0) + 7.0
 	var cy := 24.0 + 13.0 / 2.0
 	for i in T.need:
