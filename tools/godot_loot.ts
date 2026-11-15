@@ -14,8 +14,14 @@
 //     HOW WORDS ARE COME BY (`words`): which may be found on each floor and how much likelier the deeper (wordsAt,
 //     wordGrowth), the Warrior's first, the order the game lists a hero's words in and each word's colour; and THE
 //     ARMOURER'S QUEST'S OWN LINES (`quest`; game/quests15.ts QUEST_TEXT, game/quest_marks.ts).
+//     WORDMELDING (the meld's port, 15 Nov 2026): THE WORDS MELDING MAKES too (game/melds.ts wordIds: the melded words and the
+//     ranked ones), each on gear as the game has it as it starts (items.ts EVERY WORD ON GEAR, MELD_GEAR_STRENGTH, RANK_GEAR_STRENGTH,
+//     MELD_LINE): a ranked word what its word becomes, half as strong again; a melded word one property of each of its two words in
+//     the one place (its pairs, of which a piece is offered the first two its properties leave free: imbueOptionsFor), each rolled
+//     on its own (`rolls` the first, `alsoRolls` the second), or, two of a kind, as one line at one number (MELD_LINE: `rolls` both).
 //   godot/assets/loot/icons.png + icons.json  the pictures (art/icons.ts itemPic for each piece at its rarity; the gold piles,
-//     the life orb, the potion, the seven words' rune stones), two picture pixels to a game pixel.
+//     the life orb, the potion, the words' rune stones, the made words' with their own colours and runes as the game starts:
+//     tools/godot_meld_art.ts), two picture pixels to a game pixel.
 //   npx tsx tools/godot_loot.ts [seed]
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
@@ -23,7 +29,7 @@ import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { DARK_RING, Game } from '../src/game/game';
-import { ITEM_ROOM, STAT_INFO, flatPair, imbueItem, imbueLines, imbueOptions, itemMods, itemRoom, itemValue, kindName, modLines, rarityFor, starterWeapon, statGroup } from '../src/game/items';
+import { ITEM_ROOM, STAT_INFO, flatPair, imbueItem, imbueLines, imbueOptions, imbueOptionsFor, itemMods, itemRoom, itemValue, kindName, modLines, rarityFor, starterWeapon, statGroup } from '../src/game/items';
 import { FIRST_WORD, WORDS, wordGrowth, wordsAt } from '../src/game/defs';
 import { TUNE, ATTR_GIVES } from '../src/game/defs';
 import { FURNACE_WORD, QUEST_TEXT } from '../src/game/quests15';
@@ -32,6 +38,9 @@ import { WORD_COLOR, itemPic, makeIconArt } from '../src/art/icons';
 import { makeBodyArt } from '../src/art/body';
 import type { RNG } from '../src/engine/rng';
 import { PRISON_WORD_IDS, WORD_IDS } from '../src/game/types';
+import { wordIds } from '../src/game/melds';
+import type { ImbueOption } from '../src/game/items';
+import { useMeldLooks } from './godot_meld_art';
 import type { Imbue, Item, Rarity, StatKey, WordId } from '../src/game/types';
 import { rangeText } from '../src/ui/inventory';
 
@@ -48,10 +57,14 @@ game.depth = 1;
 game.enterDungeon();
 const roll = (q: number): Item => (game as unknown as { rollGear(q: number): Item }).rollGear(q);
 const icons = makeIconArt();
+// (WORDMELDING: the melded words' own colours and runes, as the game puts them on as it starts)
+useMeldLooks(icons);
 // (the words a Warrior can come by on floors 1 to 5: the prison's six and Heavy, the armourer's reward; and floors 6 to 10's, the
 // rest of what may be found there, in the game's order: tools/godot_words.ts)
 const PRISON: WordId[] = [...PRISON_WORD_IDS, FURNACE_WORD.warrior];
 const OURS: WordId[] = [...PRISON, ...WORD_IDS.filter((w) => !PRISON.includes(w) && [6, 7, 8, 9, 10].some((d) => wordsAt(d).includes(w)))];
+// (WORDMELDING: the words melding makes, in the game's order: tools/godot_words.ts)
+const MADE: WordId[] = wordIds().filter((w) => !WORD_IDS.includes(w));
 
 // --- the pictures, each once, by key ---
 const pics = new Map<string, Sprite>();
@@ -65,7 +78,7 @@ pics.set('orb', icons.lifeOrb);
 pics.set('potion', icons.potion);
 pics.set('word:power', icons.word.power);
 // (the other words' rune stones: a word as it lies on the floor, and on the gear screen)
-for (const w of OURS) if (w !== 'power') pics.set(`word:${w}`, icons.word[w]);
+for (const w of [...OURS, ...MADE]) if (w !== 'power') pics.set(`word:${w}`, icons.word[w]);
 // (the fallen wordsmith, before and after he is searched: art/body.ts)
 const bodyArt = makeBodyArt();
 pics.set('body', bodyArt.body);
@@ -118,6 +131,8 @@ function becomes(word: WordId, like: Item): unknown[] {
   bare.imbues = [];
   bare.rarity = 0;
   delete bare.unique;
+  // (WORDMELDING: a melded word's pairs, each on its own: `twoPart`)
+  if (imbueOptions(word, bare.slot, bare.ilvl).some((o) => o.also)) return imbueOptions(word, bare.slot, bare.ilvl).map((o) => twoPart(word, bare, o));
   return imbueOptions(word, bare.slot, bare.ilvl).map((o, k) => {
     const made = new Map<string, [number, [StatKey, number][], string[]]>();
     const roll = (draw: Partial<RNG>): void => {
@@ -139,6 +154,69 @@ function becomes(word: WordId, like: Item): unknown[] {
     }
     return { stat: o.stat, kind: o.kind, range: rangeText(o, 'cooldown'), rolls: [...made.values()] };
   });
+}
+
+/**
+ * WORDMELDING: ONE PAIR OF A MELDED WORD ON A PIECE (items.ts imbueOptions `also`, imbueItem). The game offers a piece only the
+ * first two pairs its properties leave free (imbueOptionsFor), so each pair is made here on a piece that carries every other pair's
+ * stats, which leaves this pair alone to be made. imbueItem rolls the pair's first property, then its second on its own
+ * (rollStat), unless the two are of a kind and MELD_LINE gives the second the first's number (one draw). So: with two draws, each
+ * first size the game can roll (its mods and lines, the second at its least) and each second size (the first at its least), each
+ * held against the game's own lines for the whole (imbueLines) at the four ends; with one, every size of the two together.
+ */
+function twoPart(word: WordId, bare: Item, o: ImbueOption): unknown {
+  const all = imbueOptions(word, bare.slot, bare.ilvl);
+  // (the pairs before it given a piece's properties of theirs that are not its own: it is then among the first two offered)
+  const mine = [o.stat, o.also ? o.also.stat : o.stat];
+  const others = [...new Set(all.slice(0, all.indexOf(o)).flatMap((x) => [x.stat, ...(x.also ? [x.also.stat] : [])]).filter((st) => !mine.includes(st)))];
+  const lone: Item = structuredClone(bare);
+  lone.imbues = others.length ? [{ word: 'power', kind: 'prefix', mods: others.map((st) => ({ stat: st, value: 1 })) }] : [];
+  const choice = imbueOptionsFor(lone, word).findIndex((x) => x.stat === o.stat && (x.also ? x.also.stat : null) === (o.also ? o.also.stat : null));
+  if (choice < 0) throw new Error(`${word} on a ${bare.slot}: its pair ${mine.join('+')} is never offered`);
+  // (the draws imbueItem makes on its roll, and their ends: `int` for a stat's size, `range` for an average hit)
+  const calls: [string, number, number][] = [];
+  const record = { int: (a: number, b: number) => (calls.push(['int', a, b]), a), range: (a: number, b: number) => (calls.push(['range', a, b]), a), pick: () => { throw new Error('picked'); } };
+  imbueItem(structuredClone(lone), word, record as unknown as RNG, choice);
+  const made = (vals: number[]): Imbue => {
+    let k = 0;
+    const draw = (): number => vals[k++];
+    const im = imbueItem(structuredClone(lone), word, { int: draw, range: draw, pick: () => { throw new Error('picked'); } } as unknown as RNG, choice);
+    if (!im) throw new Error(`${word} would not burn into a ${bare.slot} of level ${bare.ilvl}`);
+    const want = flatPair(o.stat) ? flatPair(o.stat)!.min : o.stat;
+    if (im.mods[0].stat !== want) throw new Error(`${word} on a ${bare.slot}: the pair made (${im.mods[0].stat}) is not the one asked for (${want})`);
+    return im;
+  };
+  const span = (c: [string, number, number]): number[] => {
+    if (c[0] === 'range') return Array.from({ length: 400 }, (_, j) => c[1] + ((c[2] - c[1]) * (j + 0.5)) / 400);
+    return Array.from({ length: c[2] - c[1] + 1 }, (_, j) => c[1] + j);
+  };
+  const first = flatPair(o.stat) ? 2 : 1;
+  const tally = (vals: number[][], cut: (im: Imbue) => Imbue['mods'], whole: boolean): unknown[] => {
+    const out = new Map<string, [number, [StatKey, number][], string[]]>();
+    for (const v of vals) {
+      const im = made(v);
+      const mods = cut(im);
+      const key = JSON.stringify(mods.map((m) => [m.stat, m.value]));
+      const was = out.get(key);
+      if (was) was[0]++;
+      else out.set(key, [1, mods.map((m): [StatKey, number] => [m.stat, m.value]), whole ? imbueLines(im, 'cooldown') : modLines(mods, 'cooldown')]);
+    }
+    return [...out.values()];
+  };
+  const range = rangeText(o, 'cooldown');
+  if (calls.length === 1) return { stat: o.stat, also: o.also ? o.also.stat : null, kind: o.kind, range, rolls: tally(span(calls[0]).map((v) => [v]), (im) => im.mods, true) };
+  if (calls.length !== 2) throw new Error(`${word}: ${calls.length} draws`);
+  for (const a of [calls[0][1], calls[0][2]]) for (const b of [calls[1][1], calls[1][2]]) {
+    const im = made([a, b]);
+    const whole = imbueLines(im, 'cooldown').join('|');
+    const parts = [...modLines(im.mods.slice(0, first), 'cooldown'), ...modLines(im.mods.slice(first), 'cooldown')].join('|');
+    if (whole !== parts) throw new Error(`${word} on a ${bare.slot}: '${whole}' is not '${parts}'`);
+  }
+  return {
+    stat: o.stat, also: o.also!.stat, kind: o.kind, range,
+    rolls: tally(span(calls[0]).map((v) => [v, calls[1][1]]), (im) => im.mods.slice(0, first), false),
+    alsoRolls: tally(span(calls[1]).map((v) => [calls[0][1], v]), (im) => im.mods.slice(first), false),
+  };
 }
 
 const POOLS: [number, number][] = [[0, 300], [1, 160], [2, 100], [4, 80]];
@@ -177,11 +255,11 @@ const body = game.level.body;
 // (what each word becomes on each kind of piece: once every piece that is written has been seen)
 const imbue: Record<string, Record<string, unknown[]>> = {};
 let sizes = 0;
-for (const w of OURS) {
+for (const w of [...OURS, ...MADE]) {
   imbue[w] = {};
   for (const [key, like] of kinds) {
     imbue[w][key] = becomes(w, like);
-    for (const o of imbue[w][key] as { rolls: unknown[] }[]) sizes += o.rolls.length;
+    for (const o of imbue[w][key] as { rolls: unknown[]; alsoRolls?: unknown[] }[]) sizes += o.rolls.length + (o.alsoRolls ? o.alsoRolls.length : 0);
   }
 }
 // (stats that count as one property on a piece: items.ts statGroup; only those that are not their own)
@@ -190,8 +268,11 @@ for (const k of Object.keys(STAT_INFO)) if (statGroup(k as StatKey) !== k) group
 const FLOORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const words = {
   // (the order the game lists the words a hero holds in, types.ts WORD_IDS; and each word's own colour, art/icons.ts WORD_COLOR)
-  order: WORD_IDS.filter((w) => OURS.includes(w)),
-  color: Object.fromEntries(OURS.map((w) => [w, WORD_COLOR[w]])),
+  // (WORDMELDING: the words melding makes after them, in the game's order, melds.ts wordIds; and their own colours as the game
+  // starts, tools/godot_meld_art.ts)
+  order: [...WORD_IDS.filter((w) => OURS.includes(w)), ...MADE],
+  color: Object.fromEntries([...OURS, ...MADE].map((w) => [w, WORD_COLOR[w]])),
+  made: MADE,
   // (the Warrior's first word, the fallen wordsmith's and the wordsmith's: defs.ts FIRST_WORD)
   first: FIRST_WORD.warrior.word,
   // (the words that may be found on each floor, and how many times as likely a word is there: types.ts wordsAt, defs.ts wordGrowth)
@@ -216,7 +297,7 @@ const quest = {
   speakSecs: QUEST_MARKS.secs,
 };
 writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest }));
-tally.push(`words on gear: ${OURS.join(', ')} on ${kinds.size} kinds of piece by level, ${sizes} sizes in all`);
+tally.push(`words on gear: ${[...OURS, ...MADE].join(', ')} on ${kinds.size} kinds of piece by level, ${sizes} sizes in all`);
 
 // --- the pictures in one sheet: each at two picture pixels to a game pixel, its anchor kept ---
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {

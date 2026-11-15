@@ -2,8 +2,8 @@
 ##   npx tsx tools/godot_words.ts check
 ##   godot --headless --path godot -s res://checks/words_check.gd
 ## The first writes assets/words/check.json: what the game's own resolveSkill makes of the Warrior's three moves with every
-## word and pair of words in them, for four heroes (32163 loadouts, the sixteen words of floors 1 to 10), and what its sockets
-## refuse (socketProblem). This reads
+## word and pair of words in them, for four heroes (32163 loadouts, the sixteen words of floors 1 to 10; and, WORDMELDING, 27057
+## more with the 28 words melding makes: 59220 in all), and what its sockets refuse (socketProblem). This reads
 ## it, resolves each with scripts/words.gd, and says how many differ, in a number, a name or a line of text: there must be
 ## none. (check.json is not kept in the repository: it is made when wanted.)
 extends SceneTree
@@ -44,6 +44,11 @@ func _init() -> void:
 		for k in FLAGS:
 			if bool(got[FLAGS[k]]) != bool(want[k]):
 				why += " %s %s not %s;" % [k, got[FLAGS[k]], want[k]]
+		# (WORDMELDING: the melded word in front and behind, whose twists the fight does)
+		for k in {"meld": "meld", "meldBehind": "meld_behind"}:
+			var mk: String = {"meld": "meld", "meldBehind": "meld_behind"}[k]
+			if got[mk] != want.get(k):
+				why += " %s %s not %s;" % [k, got[mk], want.get(k)]
 		if (got["zone"] == null) != (want["zone"] == null):
 			why += " zone there or not;"
 		elif got["zone"] != null:

@@ -10,14 +10,22 @@
 // THE WORDS OF FLOORS 6 TO 10 (the words' port of the descent, 15 Nov 2026): the rest of what may be found there (types.ts wordsAt:
 // Twin, Leech, Volatile, Precise, Frenzied, Guarding, Lasting, Fleeting, Vast), after them in the game's order (types.ts WORD_IDS).
 // The city's words and the last words are found only from floor 11 and 16; the melded and ranked words are made, never found.
+// WORDMELDING (the meld's port, 15 Nov 2026): THE WORDS MELDING MAKES, after them (game/melds.ts wordIds: the ten melds of two damage
+// words, Volatile's five, the eight across the groups, the five damage words' rank II), made at the wordsmith and never found
+// (`made`); their rules' numbers (melds.ts MELD_TUNE, RANK_TUNE, melds8.ts MELD8_TUNE, defs.ts ATTR_SPLIT.melds) and what each is
+// made of (types.ts MELD_OF, RANK_OF). The check widens to them: every made word alone on a side against every word or none on
+// the other, and with each other word it may share its side with, and a sample of three.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { gameSwitches } from './godot_switches';
 import { readFileSync } from 'node:fs';
-import { ARC_CHAIN, ATTR_GIVES, ATTR_SPLIT, CLASSES, FIRST_WORD, FLEETING, FRENZY, GUARD, HEAVY, LASTING, LEECH, MOVE_OPENS, PRECISE, SKILLS, SLOT_OPENS, TUNE, VAST, WORDS, skillsFor, wordsAt } from '../src/game/defs';
+import { ARC_CHAIN, ATTR_GIVES, ATTR_SPLIT, CLASSES, FIRST_WORD, FLEETING, FRENZY, GUARD, HEAVY, LASTING, LEECH, MOVE_OPENS, PRECISE, PULL, SKILLS, SLOT_OPENS, TUNE, VAST, WORDS, skillsFor, wordsAt } from '../src/game/defs';
 import { MANA_AS_CDR } from '../src/game/items';
 import { FURNACE_WORD, MELDSTONE_WORDS } from '../src/game/quests15';
 import { resolveSkill, socketProblem } from '../src/game/words';
-import { PRISON_WORD_IDS, WORD_IDS } from '../src/game/types';
+import { MELD8_IDS, MELD_IDS, MELD_OF, PRISON_WORD_IDS, RANK_IDS, RANK_OF, VOLT_MELD_IDS, WORD_IDS } from '../src/game/types';
+import { MELD_DUST_COLOR, MELD_TUNE, RANK_TUNE, wordIds } from '../src/game/melds';
+import { MELD8_TUNE } from '../src/game/melds8';
+import { gearLines, gearNote } from '../src/ui/lexicon';
 import { NEW_GLYPH, NEW_RAMP } from '../src/render/words3';
 import { W10_RAMP } from '../src/render/words10';
 import type { Derived } from '../src/game/state';
@@ -31,6 +39,8 @@ const PRISON: WordId[] = [...PRISON_WORD_IDS, FURNACE_WORD.warrior];
 // (floors 6 to 10's: what may be found on any of them, not already among the prison's, in the game's order)
 const WILDS: WordId[] = WORD_IDS.filter((w) => !PRISON.includes(w) && [6, 7, 8, 9, 10].some((d) => wordsAt(d).includes(w)));
 const OURS: WordId[] = [...PRISON, ...WILDS];
+// (WORDMELDING: the words melding makes, in the order the game keeps a hero's words in: melds.ts wordIds)
+const MADE: WordId[] = wordIds().filter((w) => !WORD_IDS.includes(w));
 // (game.ts's own seconds for "of Echoes", kept in it unexported: read out of its source, not copied by hand)
 const GAME_TS = readFileSync('src/game/game.ts', 'utf8');
 const gameConst = (name: string): number => {
@@ -47,7 +57,7 @@ const hexIn = (file: string, fn: string): string => {
   return m[1];
 };
 const moves = skillsFor('warrior', 'greatsword');
-const words = Object.fromEntries(OURS.map((w) => [w, WORDS[w]]));
+const words = Object.fromEntries([...OURS, ...MADE].map((w) => [w, WORDS[w]]));
 const skills = Object.fromEntries(moves.map((id) => [id, SKILLS[id]]));
 writeFileSync(`${OUT}/words.json`, JSON.stringify({
   // (the words a Warrior can come by on floors 1 to 5, in the game's order; each as defs.ts WORDS has it)
@@ -94,8 +104,32 @@ writeFileSync(`${OUT}/words.json`, JSON.stringify({
   first: FIRST_WORD.warrior,
   furnace: FURNACE_WORD.warrior,
   meldstone: MELDSTONE_WORDS,
+  // WORDMELDING (game/melds.ts, melds8.ts): the words melding makes (`made`, the game's order), each group of them, what each is
+  // made of, and the numbers their rules read; the attribute each melded word grows with (ATTR_SPLIT.melds); what a meld costs and
+  // the friend's cyan runedust is told in (MELD_DUST_COLOR); and the colour Eruption's HEAT is said in (game.ts meldHit, read out of
+  // its source)
+  made: MADE,
+  melds: {
+    ten: MELD_IDS,
+    volt: VOLT_MELD_IDS,
+    eight: MELD8_IDS,
+    ranks: RANK_IDS,
+    of: Object.fromEntries(MADE.filter((w) => w in MELD_OF).map((w) => [w, MELD_OF[w as keyof typeof MELD_OF]])),
+    rankOf: RANK_OF,
+    tune: MELD_TUNE,
+    rankStep: RANK_TUNE.step,
+    eightTune: MELD8_TUNE,
+    attr: ATTR_SPLIT.melds,
+    dust: MELD_DUST_COLOR,
+    heat: (/text: 'HEAT', color: '(#[0-9a-fA-F]{6})'/.exec(GAME_TS) ?? ['', '#ffffff'])[1],
+  },
+  // (PULLING, a city word, for the meld it is part of, Implode: its numbers, defs.ts PULL)
+  pull: PULL,
+  // (each made word's page as the wordsmith's half reads it under the word just made, ui/lexicon.ts wordPage: what it becomes on
+  // gear, in the Lexicon's words, and the note under it)
+  page: Object.fromEntries(MADE.map((w) => [w, { gear: gearLines(w, 'cooldown'), note: gearNote(w) }])),
 }, null, 1));
-console.log(`words: ${OURS.join(', ')}; moves ${moves.join(', ')}`);
+console.log(`words: ${OURS.join(', ')}; made: ${MADE.join(', ')}; moves ${moves.join(', ')}`);
 
 if (process.argv[2] === 'check') {
   // (every loadout of up to two a side that the sockets allow, of the words above)
@@ -118,22 +152,59 @@ if (process.argv[2] === 'check') {
     { str: 139, dex: 64, int: 120, area: 1.3, aps: 2.05, cdr: 0 },
   ];
   const rows: unknown[] = [];
+  const row = (id: string, d: Pick<Derived, 'str' | 'dex' | 'int' | 'area' | 'aps' | 'cdr'>, front: (WordId | null)[], behind: (WordId | null)[]): void => {
+    const r = resolveSkill(SKILLS[id as keyof typeof SKILLS], front, behind, 'warrior', d as Derived, 'cooldown');
+    rows.push({ id, d, front, behind, r: { name: r.name, element: r.element, dmgMult: r.dmgMult, size: r.size, rate: r.rate, cooldown: r.cooldown, splash: r.splash, splashDmg: r.splashDmg, pierce: r.pierce, ignite: r.ignite, chill: r.chill, arcs: r.arcs, arcDmg: r.arcDmg, poison: r.poison, stun: r.stun, might: r.might, haste: r.haste, zone: r.zone, cloud: r.cloud, cracks: r.cracks, lines: r.lines,
+      // (floors 6 to 10's words)
+      count: r.count, countDmg: r.countDmg, echo: r.echo, leech: r.leech, orbChance: r.orbChance, volatile: r.volatile, rune: r.rune, precise: r.precise, mark: r.mark,
+      frenzy: r.frenzy, frenzyFeed: r.frenzyFeed, shield: r.shield, ward: r.ward, last: r.last, pace: r.pace, boost: r.boost, vast: r.vast, wide: r.wide,
+      // (WORDMELDING: the melded word in front and behind, whose twists the fight does)
+      meld: r.meld ?? null, meldBehind: r.meldBehind ?? null } });
+  };
   for (const id of moves) {
     for (const d of heroes) {
       let n = 0;
       for (const front of sides) for (const behind of sides) {
         if (!keep(d, front, behind, n++)) continue;
-        const r = resolveSkill(SKILLS[id], front, behind, 'warrior', d as Derived, 'cooldown');
-        rows.push({ id, d, front, behind, r: { name: r.name, element: r.element, dmgMult: r.dmgMult, size: r.size, rate: r.rate, cooldown: r.cooldown, splash: r.splash, splashDmg: r.splashDmg, pierce: r.pierce, ignite: r.ignite, chill: r.chill, arcs: r.arcs, arcDmg: r.arcDmg, poison: r.poison, stun: r.stun, might: r.might, haste: r.haste, zone: r.zone, cloud: r.cloud, cracks: r.cracks, lines: r.lines,
-          // (floors 6 to 10's words)
-          count: r.count, countDmg: r.countDmg, echo: r.echo, leech: r.leech, orbChance: r.orbChance, volatile: r.volatile, rune: r.rune, precise: r.precise, mark: r.mark,
-          frenzy: r.frenzy, frenzyFeed: r.frenzyFeed, shield: r.shield, ward: r.ward, last: r.last, pace: r.pace, boost: r.boost, vast: r.vast, wide: r.wide } });
+        row(id, d, front, behind);
+      }
+    }
+  }
+  // WORDMELDING: the words melding makes. Each alone on a side against nothing or any one word on the other (every hero: the first
+  // all of them, the others every third); each with every word it may share its side with, against nothing (the first hero all,
+  // the others every fifth); and of those, with one word on the other side, a sample (every 37th, every 97th)
+  const singles: (WordId | null)[][] = [[null], ...[...OURS, ...MADE].map((w) => [w])];
+  const madePairs: (WordId | null)[][] = [];
+  for (const m of MADE) for (const w of OURS) if (socketProblem([m, null], w) === null) madePairs.push([m, w]);
+  for (const id of moves) {
+    for (const d of heroes) {
+      const first = d === heroes[0];
+      let n = 0;
+      for (const m of MADE) for (const other of singles) {
+        if (first || n % 3 === 0) row(id, d, [m], other);
+        if ((first || n % 3 === 0) && other[0] !== m) row(id, d, other, [m]);
+        n++;
+      }
+      for (const p of madePairs) {
+        if (first || n % 5 === 0) {
+          row(id, d, p, [null]);
+          row(id, d, [null], p);
+        }
+        n++;
+        for (const other of singles.slice(1)) {
+          if (n % (first ? 37 : 97) === 0) {
+            row(id, d, p, other);
+            row(id, d, other, p);
+          }
+          n++;
+        }
       }
     }
   }
   // (and what a socket refuses: socketProblem, for every word into every side of up to two)
+  // (WORDMELDING: the words melding makes too, into every side, and every word into a side with one of them)
   const refused: unknown[] = [];
-  for (const g of sides) for (const w of OURS) for (const most of [1, 2]) refused.push({ group: g.length === 1 ? [g[0], null] : g, word: w, most, why: socketProblem(g.length === 1 ? [g[0], null] : g, w, most) });
+  for (const g of [...sides, ...MADE.map((m) => [m]), ...madePairs]) for (const w of [...OURS, ...MADE]) for (const most of [1, 2]) refused.push({ group: g.length === 1 ? [g[0], null] : g, word: w, most, why: socketProblem(g.length === 1 ? [g[0], null] : g, w, most) });
   writeFileSync(`${OUT}/check.json`, JSON.stringify({ rows, refused }));
   console.log(`check: ${rows.length} moves resolved, ${refused.length} sockets asked`);
 }

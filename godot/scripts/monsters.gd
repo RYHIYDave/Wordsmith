@@ -145,7 +145,9 @@ func forget() -> void:
 ## from the one it struck to the nearest within 3.5 tiles that this hit has not struck, enemy to enemy, as many jumps in all
 ## as the hit had arcs, each 0.07 s after the last, so that the eye can follow it. How many it jumped to at once.
 ## (`skill`: the hero's move whose hit it is, which each it strikes is struck by last: monster.gd last_skill)
-func arcs(m: Monster, n: int, dmg: float, skill := -1) -> int:
+## (WORDMELDING: `meld`, the melded word in front of the move: each arc told as its, and what it carries to those it first
+## strikes, Wildfire's burning, Contagion's poison, Hailstorm's chill: melds.gd arc)
+func arcs(m: Monster, n: int, dmg: float, skill := -1, meld := "") -> int:
 	var chain: Dictionary = Words.data()["arcChain"]
 	var from := m.world
 	var near: Array = []
@@ -156,8 +158,10 @@ func arcs(m: Monster, n: int, dmg: float, skill := -1) -> int:
 	if near.size() > n:
 		near.resize(n)
 	for o in near:
-		_tell({"t": "arc", "x0": from.x, "y0": from.y, "x1": o.world.x, "y1": o.world.y})
+		_tell(_melded({"t": "arc", "x0": from.x, "y0": from.y, "x1": o.world.x, "y1": o.world.y}, meld))
 		o.damage(dmg, "lightning", false, false, [], false, false, skill)
+		if meld != "" and hero != null and is_instance_valid(hero):
+			hero.melds.arc(o, m, skill, dmg, near)
 	if near.is_empty():
 		return 0
 	sfx.play("zap", linear_to_db(0.6))
@@ -166,13 +170,30 @@ func arcs(m: Monster, n: int, dmg: float, skill := -1) -> int:
 		for o in near:
 			struck[o] = true
 		for o in near:
-			_jump(o, near.size() - 1, 1, struck, dmg, float(chain["reach"]), float(chain["gap"]), skill)
+			_jump(o, near.size() - 1, 1, struck, dmg, float(chain["reach"]), float(chain["gap"]), skill, meld)
 	return near.size()
+
+
+## (a telling marked with the melded word it is of)
+static func _melded(e: Dictionary, meld: String) -> Dictionary:
+	if meld != "":
+		e["meld"] = meld
+	return e
+
+
+## WORDMELDING: is he hidden, standing in Scald's steam (game.ts updateMonsters `hidden`)? Nothing sees him to attack.
+func hero_hidden() -> bool:
+	if hero == null or not is_instance_valid(hero) or hero.wakes == null or not is_instance_valid(hero.wakes):
+		return false
+	for z in hero.wakes.list:
+		if z["kind"] == "steam" and hero.world.distance_to(Vector2(z["x"], z["y"])) <= float(z["r"]):
+			return true
+	return false
 
 
 ## An arc jumps on from `from`, `left` jumps more, in `gap` x `k` seconds: to the nearest within `reach` that the hit has not
 ## struck (`struck`, shared by all the hit's arcs); from there on again, a gap later.
-func _jump(from: Monster, left: int, k: int, struck: Dictionary, dmg: float, reach: float, gap: float, skill := -1) -> void:
+func _jump(from: Monster, left: int, k: int, struck: Dictionary, dmg: float, reach: float, gap: float, skill := -1, meld := "") -> void:
 	if left <= 0:
 		return
 	var on := func() -> void:
@@ -190,9 +211,9 @@ func _jump(from: Monster, left: int, k: int, struck: Dictionary, dmg: float, rea
 		if next == null:
 			return
 		struck[next] = true
-		_tell({"t": "arc", "x0": from.world.x, "y0": from.world.y, "x1": next.world.x, "y1": next.world.y})
+		_tell(_melded({"t": "arc", "x0": from.world.x, "y0": from.world.y, "x1": next.world.x, "y1": next.world.y}, meld))
 		next.damage(dmg, "lightning", false, false, [], false, false, skill)
-		_jump(next, left - 1, 1, struck, dmg, reach, gap, skill)
+		_jump(next, left - 1, 1, struck, dmg, reach, gap, skill, meld)
 	after(gap * k, on)
 
 
@@ -209,7 +230,14 @@ func _dots(dt: float) -> void:
 		if m.burn_t > 0.0:
 			m.damage(maxf(1.0, roundf(m.burn_dps * 0.5)), "fire", false, false, [], false, true)
 		if not m.dead and m.poison_t > 0.0 and m.poison_dps > 0.0:
-			m.damage(maxf(1.0, roundf(m.poison_dps * 0.5)), "phys", false, false, [], true)
+			var tick := maxf(1.0, roundf(m.poison_dps * 0.5))
+			m.damage(tick, "phys", false, false, [], true)
+			# (WORDMELDING, SIPHON: the poison of an attack carrying it heals him as it eats: melds.gd)
+			if hero != null and is_instance_valid(hero):
+				hero.melds.siphon(m, tick)
+		# (WORDMELDING, FROSTBITE in front: a chilled enemy loses life, a frozen one twice as fast)
+		if not m.dead and m.bite_dps > 0.0 and (m.chill_t > 0.0 or m.frozen_t > 0.0):
+			m.damage(maxf(1.0, roundf(m.bite_dps * 0.5 * (2.0 if m.frozen_t > 0.0 else 1.0))), "frost", false, false, [], false, true)
 	# (and what burns and poisons the hero, on the same clock)
 	if hero != null and is_instance_valid(hero):
 		hero.dots()

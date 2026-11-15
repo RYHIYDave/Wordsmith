@@ -170,6 +170,18 @@ var stagger_cd := 0.0
 var mark_t := 0.0
 var shield := 0.0
 var last_skill := -1
+## WORDMELDING (melds.gd; game/state.ts Monster): `scald_cd`, `fumes_cd`, how long before Scald's crack and Fumes' cloud can come
+## of it again; `blight_t`, Blight behind: while poisoned it takes more from everything, so many seconds more; `bite_dps`,
+## Frostbite in front: what it loses a second while chilled (twice that frozen); `sunder`, Sunder: how much more it takes while
+## stunned (set by a Sunder hit, kept), and `sunder_t` how long its crack shows (game.ts sunderTill); `demolished`, Demolition in
+## front has burst it at half its life.
+var scald_cd := 0.0
+var fumes_cd := 0.0
+var blight_t := 0.0
+var bite_dps := 0.0
+var sunder := 0.0
+var sunder_t := 0.0
+var demolished := false
 ## (game.ts struckT: how long since a blow last landed on it; not what burns or poisons it. One that reels reels by it:
 ## stoker.gd, keybearers.gd)
 var struck_t := 1e9
@@ -326,6 +338,8 @@ func step(dt: float, hero) -> void:
 	var to: Vector2 = hero.world - world
 	var dist := to.length()
 	var sees: bool = hero.alive and dist <= 15.0 and mgr.sees(world, hero.world)
+	# (WORDMELDING: Scald behind's steam hides him standing in it: nothing sees him to attack, game.ts `los`; a sleeper wakes as ever)
+	var los: bool = sees and not mgr.hero_hidden()
 	var reach := _reach()
 	var moved := false
 	match state:
@@ -340,23 +354,23 @@ func step(dt: float, hero) -> void:
 		"chase":
 			if not hero.alive:
 				pass
-			elif not _moves.is_empty() and _cd <= 0.0 and _pick(dist, sees) >= 0:
-				_start(_pick(dist, sees), hero, dist)
+			elif not _moves.is_empty() and _cd <= 0.0 and _pick(dist, los) >= 0:
+				_start(_pick(dist, los), hero, dist)
 			elif bare and _for_spear(dt, dist):
 				moved = state == "chase"
-			elif _moves.is_empty() and _cd <= 0.0 and sees and ((def["ranged"] and dist <= float(def["range"])) or (not def["ranged"] and dist <= reach + HERO_R)):
+			elif _moves.is_empty() and _cd <= 0.0 and los and ((def["ranged"] and dist <= float(def["range"])) or (not def["ranged"] and dist <= reach + HERO_R)):
 				_turn_to(to, dist)
 				state = "windup"
 				_t = float(def["windup"])
 				_move = -1
 				_set_list("attack", true)
 			elif def["ranged"]:
-				if sees:
+				if los:
 					_turn_to(to, dist)
-				if not (sees and dist <= float(def["keepMax"])):
-					moved = _go(dt, to, dist, sees)
+				if not (los and dist <= float(def["keepMax"])):
+					moved = _go(dt, to, dist, los)
 			elif dist > reach * 0.8 + HERO_R:
-				moved = _go(dt, to, dist, sees)
+				moved = _go(dt, to, dist, los)
 			else:
 				_turn_to(to, dist)
 		"windup":
@@ -1057,8 +1071,17 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 	# (nor one whose own rules say nothing reaches it now: the Fleshmancer gone under the floor, game.ts damage, blinkedAway)
 	if h2 != null and h2.has_method("reachable") and not h2.reachable(self):
 		return
+	# (WORDMELDING, SUNDER: stunned since a Sunder hit, it takes more from everything while the stun lasts; a blow on it while its
+	# crack shows is its look's "hit", not what burns or poisons it: melds.gd)
+	if sunder > 0.0 and stun_t > 0.0:
+		dmg *= 1.0 + sunder
+		if not dot and not poison and sunder_t > 0.0:
+			_tell({"t": "meld8", "id": "sunder", "what": "hit", "on": id})
 	# (one of the cult near a chanter that lives and is awake takes less: its ward, act1.gd warded)
 	dmg = Act1.warded(mgr, self, dmg)
+	# (WORDMELDING, BLIGHT behind: a poisoned enemy it has touched takes more from everything)
+	if blight_t > 0.0 and poison_t > 0.0:
+		dmg = maxf(1.0, roundf(dmg * (1.0 + float(Words.data()["melds"]["tune"]["blight"]["more"]))))
 	# (GUARDING, on it: its shield takes the harm first)
 	if shield > 0.0:
 		var soak := minf(shield, dmg)
@@ -1066,6 +1089,9 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 		life -= dmg - soak
 	else:
 		life -= dmg
+	# (WORDMELDING, DEMOLITION in front: an elite or a boss bursts once at half its life: melds.gd)
+	if skill >= 0 and (elite or boss) and not demolished and mgr.hero != null and is_instance_valid(mgr.hero):
+		mgr.hero.melds.half_life(self, skill)
 	if skill >= 0:
 		last_skill = skill
 	if not poison and not dot:
@@ -1122,6 +1148,17 @@ func slow() -> float:
 ## What has been done to it runs down (game.ts updateMonsters, for one awake). True if it does nothing this step: frozen,
 ## or stunned or staggered (what it was winding up was broken off as that began).
 func _afflicted(dt: float) -> bool:
+	# (WORDMELDING: game.ts updateMonsters)
+	if scald_cd > 0.0:
+		scald_cd = maxf(0.0, scald_cd - dt)
+	if fumes_cd > 0.0:
+		fumes_cd = maxf(0.0, fumes_cd - dt)
+	if blight_t > 0.0:
+		blight_t = maxf(0.0, blight_t - dt)
+	if bite_dps > 0.0 and chill_t <= 0.0 and frozen_t <= 0.0:
+		bite_dps = 0.0
+	if sunder_t > 0.0:
+		sunder_t = maxf(0.0, sunder_t - dt)
 	if burn_t > 0.0:
 		burn_t -= dt
 	if chill_t > 0.0:
@@ -1201,8 +1238,8 @@ func dose(dps: float, secs := -1.0) -> void:
 
 
 ## HEAVY in front (game.ts stunMonster): stunned `secs` (an elite half that; never a boss), unless it is stunned for longer
-## already; what it was winding up is broken off.
-func stun_for(secs: float) -> void:
+## already; what it was winding up is broken off. (`meld`: the melded word whose stun it is, Thunder's, told with it.)
+func stun_for(secs: float, meld := "") -> void:
 	if dead or boss:
 		return
 	var t := secs / 2.0 if elite else secs
@@ -1210,7 +1247,10 @@ func stun_for(secs: float) -> void:
 		return
 	stun_t = t
 	break_off()
-	_tell({"t": "stun", "id": id, "x": world.x, "y": world.y, "secs": t})
+	var e := {"t": "stun", "id": id, "x": world.x, "y": world.y, "secs": t}
+	if meld != "":
+		e["meld"] = meld
+	_tell(e)
 
 
 ## HEAVY behind (game.ts staggerMonster): it has walked onto cracked ground lying at `from`, and reels (0.55 s), its attack
@@ -1259,6 +1299,13 @@ func clear_afflictions() -> void:
 	stagger_t = 0.0
 	stagger_cd = 0.0
 	mark_t = 0.0
+	# (WORDMELDING)
+	scald_cd = 0.0
+	fumes_cd = 0.0
+	blight_t = 0.0
+	bite_dps = 0.0
+	sunder = 0.0
+	sunder_t = 0.0
 
 
 const PF := preload("res://scripts/pixel_font.gd")
@@ -1302,7 +1349,8 @@ func _die() -> void:
 	if frozen_t > 0.0:
 		_tell({"t": "shatter", "x": world.x, "y": world.y})
 		mgr.sfx.play("shatter", linear_to_db(0.8))
-	clear_afflictions()
+	# (WORDMELDING: what had been done to it is cleared once the move that killed it has answered for it, below: Shatter reads its
+	# frost, Rupture its poison, Powderkeg its burning, as game.ts kill does)
 	_set_list("die", true)
 	mgr.perils.drop(self)
 	if h2 != null and h2.has_method("died"):
@@ -1314,6 +1362,7 @@ func _die() -> void:
 	# goes off after a short warning, of its element and none of its words (a minion, of its leader's Volatile, at half))
 	if mgr.hero != null and is_instance_valid(mgr.hero) and mgr.hero.has_method("killed"):
 		mgr.hero.killed(self)
+	clear_afflictions()
 	var blast := word_share("volatile")
 	if blast > 0.0:
 		mgr.perils.warn(world.x, world.y, 1.8, 0.7, (dmg_min + dmg_max) / 2.0 * 1.5 * blast, null, {"el": element(), "words": [], "half": half_of()})

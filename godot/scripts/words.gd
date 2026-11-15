@@ -3,8 +3,13 @@
 ##
 ## The words here are those a Warrior can come by on floors 1 to 10: the prison's six (Power, Poison, Frost, Flame, Lightning,
 ## Swift) and Heavy, the armourer's reward; and the nine more found from floor 6 down (Twin, Leech, Volatile, Precise,
-## Frenzied, Guarding, Lasting, Fleeting, Vast). The city's words (floor 11) and the last words (floor 16) are not here yet,
-## and the melded and ranked words, made at the wordsmith after the Meldstone, are not here at all.
+## Frenzied, Guarding, Lasting, Fleeting, Vast). The city's words (floor 11) and the last words (floor 16) are not here yet.
+## WORDMELDING (game/melds.ts, melds8.ts): and THE WORDS MELDING MAKES at the wordsmith after the Meldstone (`made`): the ten
+## melds of two damage words, Volatile's five, the eight across the groups, the five damage words at rank II. A MELDED WORD does
+## the work of both its words (partsOf: so for every rule here it is both of them) and a twist of its own, in front and behind
+## (`meld`, `meld_behind`; the fight does the twists: melds.gd); it takes its side's one damage-word place; both its words grow
+## with the melded word's own attribute (ATTR_SPLIT.melds). A RANKED WORD is its word, its own figure half as strong again
+## (RANK_TUNE), what the attribute adds on top, its rank named in the move's lines ("Power II: ..."). Neither melds again.
 ##
 ## Every table and number is the game's own, taken out of it by tools/godot_words.ts into assets/words/words.json: the words
 ## (their names in front and behind, the attribute each grows with, its element), his three moves (Strike, Whirlwind, Lunge),
@@ -50,6 +55,13 @@
 ##   wide          VAST in front: how many times as wide its area is for the word (already in size)
 ##   vast          VAST behind: each hit splashes this share of itself onto every enemy near what it hits
 ##   lines         what it does, in the game's own words, for its card
+## WORDMELDING:
+##   pull, vortex  PULLING in front and behind, a city word here only for Implode, the meld it is part of: how far it drags, how
+##                 long its vortex lasts (numbers and lines only: neither is in the fight)
+##   meld          the melded word in front, or null: the twist its hit does (Thunder's here already: its one harder bolt, no arcs,
+##                 its stun)
+##   meld_behind   the melded word behind, or null: the twist of what it leaves (Scald's steam and Hailstorm's storm of ice are
+##                 here already, in `zone`)
 extends RefCounted
 
 const FILE := "res://assets/words/words.json"
@@ -64,9 +76,119 @@ static func data() -> Dictionary:
 	return _data
 
 
-## The words there are, in the game's order.
+## The words there are to be found, in the game's order.
 static func ids() -> Array:
 	return data()["ids"]
+
+
+# --- WORDMELDING (game/melds.ts): the words melding makes ---
+
+## The words melding makes, in the order the game keeps a hero's words in (melds.ts wordIds): the ten, Volatile's five, the eight
+## across the groups, the five at rank II. Never found: only made.
+static func made() -> Array:
+	return data()["made"]
+
+
+## Is it a melded word (melds.ts isMeld)?
+static func is_meld(w) -> bool:
+	return w != null and str(word(w)["kind"]) == "meld"
+
+
+## Is it a ranked word (melds.ts isRank)?
+static func is_rank(w) -> bool:
+	return w != null and str(word(w)["kind"]) == "rank"
+
+
+## The words a word does the work of (melds.ts partsOf): a melded word's two, a ranked word's word, or the word itself.
+static func parts_of(w: String) -> Array:
+	if is_meld(w):
+		return data()["melds"]["of"][w]
+	if is_rank(w):
+		return [data()["melds"]["rankOf"][w]["word"]]
+	return [w]
+
+
+## The words on one side as its rules and looks go by them (melds.ts withParts; game.ts fronts): each melded word and after it
+## its two words; a ranked word as its word.
+static func with_parts(side: Array) -> Array:
+	var out: Array = []
+	for w in side:
+		if w == null:
+			continue
+		if is_meld(w):
+			out.append(w)
+			out.append_array(parts_of(w))
+		elif is_rank(w):
+			out.append_array(parts_of(w))
+		else:
+			out.append(w)
+	return out
+
+
+## A word's rank: 2 for a rank II word, 1 for any other (melds.ts rankOf).
+static func rank_of(w: String) -> int:
+	return int(data()["melds"]["rankOf"][w]["rank"]) if is_rank(w) else 1
+
+
+## The word one rank up from this one, or "" (melds.ts rankUp): not a damage word, or as high as ranks go for now.
+static func rank_up(w: String) -> String:
+	var R: Dictionary = data()["melds"]["rankOf"]
+	for r in data()["melds"]["ranks"]:
+		if R[r]["word"] == w and int(R[r]["rank"]) == rank_of(w) + 1:
+			return r
+	return ""
+
+
+## What two words make when melded, or "" (melds.ts meldOf): two of a damage word, its next rank; two different words, the melded
+## word of the ten, Volatile's five or the eight that is made of them.
+static func meld_of(a: String, b: String) -> String:
+	if a == b:
+		return rank_up(a) if str(word(a)["kind"]) == "damage" else ""
+	var M: Dictionary = data()["melds"]
+	for m in M["ten"] + M["volt"] + M["eight"]:
+		var of: Array = M["of"][m]
+		if (of[0] == a and of[1] == b) or (of[0] == b and of[1] == a):
+			return m
+	return ""
+
+
+## Why two words cannot be melded, or "" if they can (melds.ts meldProblem, its switches as the game starts: RANK2, VOLT_MELDS,
+## MELDS8 on). The game's own words.
+static func meld_problem(a: String, b: String) -> String:
+	if a == "" or b == "":
+		return "Two words go in"
+	if is_rank(a) or is_rank(b):
+		return "Rank II is the top, for now" if a == b else "A ranked word melds no further"
+	if is_meld(a) or is_meld(b):
+		return "A melded word melds no further"
+	# (THE EIGHT ACROSS THE GROUPS: their two words meld, whatever their groups)
+	var m := meld_of(a, b)
+	if m != "" and data()["melds"]["eight"].has(m):
+		return ""
+	# (VOLATILE'S MELDS: Volatile melds with a damage word too)
+	var volt := (a == "volatile" and str(word(b)["kind"]) == "damage") or (b == "volatile" and str(word(a)["kind"]) == "damage")
+	if not volt and (str(word(a)["kind"]) != "damage" or str(word(b)["kind"]) != "damage"):
+		return "Only damage words and Volatile meld"
+	return "" if m != "" else "These do not meld"
+
+
+## The melded word on a side, or null (words.ts meldIn).
+static func meld_in(side: Array):
+	for x in side:
+		if x != null and is_meld(x):
+			return x
+	return null
+
+
+## The attribute a word grows with (defs.ts wordAttr, ATTR_SPLIT on): "" for the ability's own (fire, frost and lightning set
+## alone); a melded word's its own; any other word's its own.
+static func word_attr(w: String) -> String:
+	var D := data()
+	if D["byWeapon"].has(w):
+		return ""
+	if D["melds"]["attr"].has(w):
+		return D["melds"]["attr"][w]
+	return str(D["words"][w]["attr"])
 
 
 ## A word as the game has it: {name, front, behind, attr, element, kind, about, frontText, behindText, monsterText}.
@@ -84,9 +206,10 @@ static func moves() -> Array:
 	return data()["moves"]
 
 
-## A damage word (Power, Poison, Frost, Flame, Lightning): one of them to a side (melds.ts isDamageWord).
+## A damage word (Power, Poison, Frost, Flame, Lightning), or a melded or ranked word, which takes that place: one of them to a
+## side (melds.ts isDamageWord).
 static func is_damage(w: String) -> bool:
-	return word(w)["kind"] == "damage"
+	return word(w)["kind"] in ["damage", "meld", "rank"]
 
 
 ## Whether move `i` (0, 1, 2) is open at a level (defs.ts MOVE_OPENS: the quick attack at once, the slow one at 2, the evasive
@@ -164,6 +287,15 @@ static func _num(n: float) -> String:
 static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> Dictionary:
 	var D := data()
 	var def: Dictionary = D["skills"][id]
+	# (WORDMELDING: a melded word does the work of both its words, so for all that follows it is both of them; a ranked word is its
+	# word; the melded word's own twist is added after, by `meld` and `meld_behind`)
+	var has := func(side: Array, w: String) -> bool:
+		for x in side:
+			if x != null and (x == w or parts_of(x).has(w)):
+				return true
+		return false
+	var meld = meld_in(front)
+	var meld_behind = meld_in(behind)
 	# (one enemy at a time: a blade. A word that makes "the hit" bigger gives these a splash.)
 	var single: bool = def["kind"] in ["melee", "projectile", "summon"]
 	var lines: Array = [def["desc"]]
@@ -176,11 +308,22 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 	# (what the move grows with: the Warrior's own attribute, his Strength)
 	var attr: String = D["grows"]
 	var prim: float = d[attr]
-	# (HOW MUCH A WORD HERE GROWS, defs.ts ATTR_SPLIT: fire, frost and lightning by the move's own attribute; any other word by
-	# its own)
-	var grows_by := func(w: String) -> float:
-		return float(d[attr if D["byWeapon"].has(w) else str(D["words"][w]["attr"])])
-	var has := func(side: Array, w: String) -> bool: return side.has(w)
+	# (HOW MUCH A WORD HERE GROWS, defs.ts ATTR_SPLIT: by the attribute of the melded word it is a part of, on that side; fire, frost
+	# and lightning set alone, by the move's own attribute; any other word by its own)
+	var grows_by := func(side: Array, w: String) -> float:
+		var m = meld_in(side)
+		var a: String = word_attr(m) if m != null and parts_of(m).has(w) else word_attr(w)
+		return float(d[attr if a == "" else a])
+	# (RANK II: a ranked word on this side is its word half as strong again: the word's own figure grows, what the attribute adds
+	# stays on top; and its rank is named in its line)
+	var rank_in := func(side: Array, w: String) -> int:
+		for y in side:
+			if y != null and is_rank(y) and D["melds"]["rankOf"][y]["word"] == w:
+				return rank_of(y)
+		return 1
+	var step: float = D["melds"]["rankStep"]
+	var rk := func(side: Array, w: String) -> float: return 1.0 + step * (rank_in.call(side, w) - 1)
+	var rn := func(side: Array, w: String) -> String: return ["", "", " II", " III", " IV", " V"][rank_in.call(side, w)]
 	var dmg_mult: float = float(def["dmg"]) * (1.0 + prim * float(D["primaryDmg"]) / 100.0)
 	var size: float = d["area"]
 	var rate: float = d["aps"]
@@ -195,23 +338,26 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 		# (floors 6 to 10's words)
 		"count": 1, "count_dmg": 1.0, "echo": 0.0, "leech": 0.0, "orb_chance": 0.0, "volatile": 0.0, "rune": 0.0, "precise": false, "mark": false,
 		"frenzy": false, "frenzy_feed": false, "shield": 0.0, "ward": 0.0, "last": 1.0, "pace": 1.0, "boost": 1.0, "vast": 0.0, "wide": 1.0,
+		# (WORDMELDING)
+		"meld": meld, "meld_behind": meld_behind, "pull": 0.0, "vortex": 0.0,
 	}
 	var frenzy: Dictionary = D["frenzy"]
 	var guard: Dictionary = D["guard"]
 
 	# ----- in front: the hit -----
 	if has.call(front, "power"):
-		var a: float = grows_by.call("power")
-		var dmg := 25.0 + 0.6 * a
-		var big := 20.0 + 0.3 * a
+		var a: float = grows_by.call(front, "power")
+		var k: float = rk.call(front, "power")
+		var dmg := 25.0 * k + 0.6 * a
+		var big := 20.0 * k + 0.3 * a
 		dmg_mult *= 1.0 + dmg / 100.0
 		size *= 1.0 + big / 100.0
 		if single:
 			r["splash"] = maxf(r["splash"], 1.2)
 			r["splash_dmg"] = maxf(r["splash_dmg"], 0.5)
-		lines.append("Power: +%s damage, +%s size%s." % [_pct(dmg), _pct(big), ", splashes nearby enemies" if single else ""])
+		lines.append("Power%s: +%s damage, +%s size%s." % [rn.call(front, "power"), _pct(dmg), _pct(big), ", splashes nearby enemies" if single else ""])
 	if has.call(front, "swift"):
-		var a: float = grows_by.call("swift")
+		var a: float = grows_by.call(front, "swift")
 		if waits:
 			var cut := minf(60.0, 20.0 + 0.3 * a)
 			cooldown *= 1.0 - cut / 100.0
@@ -222,7 +368,7 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 			lines.append("Swift: +%s attack speed." % _pct(fast))
 	if has.call(front, "twin"):
 		# (the owner's rule for words that add: they take something too. Two of everything, each the weaker for it)
-		var each := minf(80.0, 55.0 + 0.25 * grows_by.call("twin"))
+		var each := minf(80.0, 55.0 + 0.25 * grows_by.call(front, "twin"))
 		r["count"] = 2
 		r["count_dmg"] = each / 100.0
 		match def["kind"]:
@@ -233,41 +379,46 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 			_:
 				lines.append("Twin: hits twice, each for %s." % _pct(each))
 	if has.call(front, "fire"):
-		var burn: float = 30.0 + 0.8 * grows_by.call("fire")
+		var burn: float = 30.0 * rk.call(front, "fire") + 0.8 * grows_by.call(front, "fire")
 		r["ignite"] = burn / 100.0
 		if single:
 			r["splash"] = maxf(r["splash"], 1.5)
 			r["splash_dmg"] = 1.0
-		lines.append("Flame: fire damage%s, burns for %s more over 3 s." % [", explodes on contact" if single else "", _pct(burn)])
+		lines.append("Flame%s: fire damage%s, burns for %s more over 3 s." % [rn.call(front, "fire"), ", explodes on contact" if single else "", _pct(burn)])
 	if has.call(front, "frost"):
-		var slow: float = minf(70.0, 30.0 + 0.3 * grows_by.call("frost"))
+		var slow: float = minf(70.0, 30.0 * rk.call(front, "frost") + 0.3 * grows_by.call(front, "frost"))
 		r["chill"] = slow / 100.0
 		if single:
 			r["splash"] = maxf(r["splash"], 1.5)
 			r["splash_dmg"] = 1.0
-		lines.append("Frost: frost damage%s, slows by %s; a second hit freezes." % [", bursts on contact" if single else "", _pct(slow)])
+		lines.append("Frost%s: frost damage%s, slows by %s; a second hit freezes." % [rn.call(front, "frost"), ", bursts on contact" if single else "", _pct(slow)])
 	if has.call(front, "lightning"):
-		var a: float = grows_by.call("lightning")
-		var arc := 40.0 + 0.5 * a
+		var a: float = grows_by.call(front, "lightning")
+		var arc: float = 40.0 * rk.call(front, "lightning") + 0.5 * a
 		r["arcs"] = 2 + floori(a / 40.0)
 		r["arc_dmg"] = arc / 100.0
-		lines.append("Lightning: lightning damage, arcs to %d more enemies for %s." % [r["arcs"], _pct(arc)])
+		# (THUNDER: one big bolt instead of arcs: its twist, below)
+		if meld == "thunder":
+			lines.append("Lightning: lightning damage.")
+		else:
+			lines.append("Lightning%s: lightning damage, arcs to %d more enemies for %s." % [rn.call(front, "lightning"), r["arcs"], _pct(arc)])
 	if has.call(front, "leech"):
-		r["leech"] = 1.0 + 0.08 * grows_by.call("leech")
+		r["leech"] = 1.0 + 0.08 * grows_by.call(front, "leech")
 		lines.append("Leeching: heals %s life per enemy hit." % _fixed1(r["leech"]))
 	if has.call(front, "poison"):
-		# (a weaker hit, and the poison does the work: every hit adds a dose)
-		var dose: float = 20.0 + 0.4 * grows_by.call("poison")
+		# (a weaker hit, and the poison does the work: every hit adds a dose. BLIGHT: the hit is not weakened)
+		var dose: float = 20.0 * rk.call(front, "poison") + 0.4 * grows_by.call(front, "poison")
 		r["poison"] = dose / 100.0
-		dmg_mult *= 0.8
-		lines.append("Poison: hits 20%% softer; poisons for %s of the hit a second for %s s. Up to %s doses add up." % [_pct(dose), _num(D["poison"]["time"]), _num(D["poison"]["stacks"])])
+		if meld != "blight":
+			dmg_mult *= 0.8
+		lines.append("Poison%s: %s for %s of the hit a second for %s s. Up to %s doses add up." % [rn.call(front, "poison"), "poisons" if meld == "blight" else "hits 20% softer; poisons", _pct(dose), _num(D["poison"]["time"]), _num(D["poison"]["stacks"])])
 	if has.call(front, "volatile"):
-		var boom: float = 12.0 + 0.2 * grows_by.call("volatile")
+		var boom: float = 12.0 + 0.2 * grows_by.call(front, "volatile")
 		r["volatile"] = boom / 100.0
 		lines.append("Volatile: enemies it kills explode for %s of their life." % _pct(boom))
 	if has.call(front, "heavy"):
 		# (slower, much harder, and it stuns)
-		var more: float = 50.0 + 0.5 * grows_by.call("heavy")
+		var more: float = 50.0 + 0.5 * grows_by.call(front, "heavy")
 		dmg_mult *= 1.0 + more / 100.0
 		if waits:
 			cooldown *= float(heavy["slower"])
@@ -277,7 +428,7 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 		lines.append("Heavy: +%s damage, %s slower; stuns for %s s." % [_pct(more), _pct((float(heavy["slower"]) - 1.0) * 100.0), _num(heavy["stun"])])
 	if has.call(front, "precise"):
 		# (more damage, not a critical chance; and a smaller area)
-		var more: float = 30.0 + 0.5 * grows_by.call("precise")
+		var more: float = 30.0 + 0.5 * grows_by.call(front, "precise")
 		var area: float = D["precise"]["area"]
 		dmg_mult *= 1.0 + more / 100.0
 		size *= area
@@ -286,7 +437,7 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 	if has.call(front, "vast"):
 		# (the opposite of Precise)
 		var V: Dictionary = D["vast"]
-		var wider := minf(float(V["widerMost"]), float(V["wider"]) + 0.001 * grows_by.call("vast"))
+		var wider := minf(float(V["widerMost"]), float(V["wider"]) + 0.001 * grows_by.call(front, "vast"))
 		size *= 1.0 + wider
 		r["wide"] = 1.0 + wider
 		dmg_mult *= 1.0 - float(V["softer"])
@@ -295,52 +446,65 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 		r["frenzy"] = true
 		lines.append("Frenzied: each use makes the next %s faster, up to %s times; it fades %s s after the last." % [_pct(float(frenzy["each"]) * 100.0), _num(frenzy["max"]), _num(frenzy["hold"])])
 	if has.call(front, "guarding"):
-		r["shield"] = minf(0.2, float(guard["shield"]) + 0.001 * grows_by.call("guarding"))
+		r["shield"] = minf(0.2, float(guard["shield"]) + 0.001 * grows_by.call(front, "guarding"))
 		lines.append("Guarding: each use gives you a shield of %s of your life for %s s." % [_pct(r["shield"] * 100.0), _num(guard["shieldTime"])])
+	# (PULLING, a city word, here only for the meld it is part of, Implode: its numbers and its line, as resolveSkill has them; its drag
+	# and its vortex are not in the fight)
+	if has.call(front, "pulling"):
+		var PU: Dictionary = D["pull"]
+		r["pull"] = minf(float(PU["most"]), float(PU["far"]) + 0.005 * grows_by.call(front, "pulling"))
+		lines.append("Pulling: drags the enemies it hits up to %s tiles toward where it struck." % _fixed1(r["pull"]))
 
 	# ----- behind: the wake -----
 	var softer := false
 	if has.call(behind, "power"):
-		r["might"] = 6.0 + 0.1 * grows_by.call("power")
-		lines.append("of Power: each hit that lands adds +%s damage for 5 s (up to 5 times)." % _pct(r["might"]))
+		r["might"] = 6.0 * rk.call(behind, "power") + 0.1 * grows_by.call(behind, "power")
+		lines.append("of Power%s: each hit that lands adds +%s damage for 5 s (up to 5 times)." % [rn.call(behind, "power"), _pct(r["might"])])
 	if has.call(behind, "swift"):
-		r["haste"] = 15.0 + 0.2 * grows_by.call("swift")
+		r["haste"] = 15.0 + 0.2 * grows_by.call(behind, "swift")
 		lines.append("of Swiftness: +%s movement speed for 3 s after each use." % _pct(r["haste"]))
 	if has.call(behind, "twin"):
-		var again := minf(100.0, 40.0 + 0.5 * grows_by.call("twin"))
+		var again := minf(100.0, 40.0 + 0.5 * grows_by.call(behind, "twin"))
 		r["echo"] = again / 100.0
 		lines.append("of Echoes: repeats a moment later for %s." % _pct(again))
-	for w in behind:
+	# (the first element behind, a melded word's in its own words' order)
+	var behind_parts: Array = []
+	for x in behind:
+		if x != null:
+			behind_parts.append_array(parts_of(x))
+	for w in behind_parts:
 		if w != "fire" and w != "frost" and w != "lightning":
 			continue
-		var a: float = grows_by.call(w)
+		var a: float = grows_by.call(behind, w)
+		var k: float = rk.call(behind, w)
+		var tag: String = rn.call(behind, w)
 		softer = true
 		r["pierce"] = true
 		if w == "fire":
-			var dps := 25.0 + 0.6 * a
+			var dps := 25.0 * k + 0.6 * a
 			r["zone"] = {"kind": "burn", "element": "fire", "dps": dps / 100.0, "slow": 0.0, "dur": 4.0}
-			lines.append("of Flame: passes through, leaves ground that burns for %s a second." % _pct(dps))
+			lines.append("of Flame%s: passes through, leaves ground that burns for %s a second." % [tag, _pct(dps)])
 		elif w == "frost":
-			var slow := minf(75.0, 40.0 + 0.3 * a)
-			var dps := 10.0 + 0.2 * a
+			var slow := minf(75.0, 40.0 * k + 0.3 * a)
+			var dps := 10.0 * k + 0.2 * a
 			r["zone"] = {"kind": "ice", "element": "frost", "dps": dps / 100.0, "slow": slow / 100.0, "dur": 4.0}
-			lines.append("of Frost: passes through, leaves ice that slows by %s." % _pct(slow))
+			lines.append("of Frost%s: passes through, leaves ice that slows by %s." % [tag, _pct(slow)])
 		else:
-			var zap := 30.0 + 0.6 * a
+			var zap := 30.0 * k + 0.6 * a
 			r["zone"] = {"kind": "storm", "element": "lightning", "dps": zap / 100.0, "slow": 0.0, "dur": 4.0}
-			lines.append("of Lightning: passes through, leaves a storm that strikes for %s." % _pct(zap))
+			lines.append("of Lightning%s: passes through, leaves a storm that strikes for %s." % [tag, _pct(zap)])
 		# (one element behind)
 		break
 	if has.call(behind, "leech"):
-		var chance := minf(90.0, 35.0 + 0.4 * grows_by.call("leech"))
+		var chance := minf(90.0, 35.0 + 0.4 * grows_by.call(behind, "leech"))
 		r["orb_chance"] = chance / 100.0
 		lines.append("of Leeching: enemies it kills drop a life orb %s of the time." % _pct(chance))
 	if has.call(behind, "poison"):
-		var dose: float = 25.0 + 0.5 * grows_by.call("poison")
+		var dose: float = 25.0 * rk.call(behind, "poison") + 0.5 * grows_by.call(behind, "poison")
 		r["cloud"] = dose / 100.0
-		lines.append("of Venom: leaves a cloud that poisons for %s of the hit a second." % _pct(dose))
+		lines.append("of Venom%s: leaves a cloud that poisons for %s of the hit a second." % [rn.call(behind, "poison"), _pct(dose)])
 	if has.call(behind, "volatile"):
-		var boom: float = 70.0 + grows_by.call("volatile")
+		var boom: float = 70.0 + grows_by.call(behind, "volatile")
 		r["rune"] = boom / 100.0
 		lines.append("of Ruin: leaves a rune that detonates for %s." % _pct(boom))
 	if has.call(behind, "heavy"):
@@ -353,17 +517,20 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 		r["frenzy_feed"] = true
 		lines.append("of Frenzy: each kill adds a stack and holds the frenzy %s s more." % _num(frenzy["hold"]))
 	if has.call(behind, "guarding"):
-		r["ward"] = minf(0.5, float(guard["ward"]) + 0.002 * grows_by.call("guarding"))
+		r["ward"] = minf(0.5, float(guard["ward"]) + 0.002 * grows_by.call(behind, "guarding"))
 		lines.append("of Warding: leaves a ward circle for %s s; inside it you take %s less damage." % [_num(guard["wardTime"]), _pct(r["ward"] * 100.0)])
+	if has.call(behind, "pulling"):
+		r["vortex"] = float(D["pull"]["vortex"])
+		lines.append("of the Vortex: leaves a vortex for %s s that keeps drawing enemies in to its middle." % _num(roundf(r["vortex"] * 10.0) / 10.0))
 	if has.call(behind, "vast"):
 		var V: Dictionary = D["vast"]
-		r["vast"] = minf(float(V["splashMost"]), float(V["splash"]) + 0.001 * grows_by.call("vast"))
+		r["vast"] = minf(float(V["splashMost"]), float(V["splash"]) + 0.001 * grows_by.call(behind, "vast"))
 		lines.append("of the Expanse: each hit splashes %s of itself onto every enemy within %s tiles of what it hits." % [_pct(r["vast"] * 100.0), _num(V["splashR"])])
 	# LASTING and FLEETING, the same wherever they sit (his "Well it makes everything connected to lasting last longer")
 	var last_front: bool = has.call(front, "lasting")
 	if last_front or has.call(behind, "lasting"):
 		var LA: Dictionary = D["lasting"]
-		var longer := minf(float(LA["longerMost"]), float(LA["longer"]) + 0.001 * grows_by.call("lasting"))
+		var longer := minf(float(LA["longerMost"]), float(LA["longer"]) + 0.001 * grows_by.call(front if last_front else behind, "lasting"))
 		r["last"] *= 1.0 + longer
 		lines.append("%s: everything it makes and gives lasts %s longer; its poison and burning as hard, for longer." % ["Lasting" if last_front else "of Ages", _pct(longer * 100.0)])
 	if has.call(front, "fleeting") or has.call(behind, "fleeting"):
@@ -375,6 +542,137 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 	# (an element behind: it passes through, and hits softer)
 	if softer:
 		dmg_mult *= 0.7
+
+	# ----- WORDMELDING: each melded word's twist, in front and behind (game/melds.ts, melds8.ts) -----
+	var T: Dictionary = D["melds"]["tune"]
+	var E: Dictionary = D["melds"]["eightTune"]
+	if meld != null:
+		var said := ""
+		match meld:
+			"eruption":
+				said = "the blast leaves a pool of molten ground that burns for %s of the hit a second." % _pct(float(T["eruption"]["poolDps"]) * 100.0)
+			"avalanche":
+				said = "shoves enemies %s tiles back; one that is stopped by a wall or another is frozen." % _num(T["avalanche"]["shove"])
+			"thunder":
+				# (one big bolt instead of arcs, and it stuns)
+				r["arcs"] = 0
+				r["arc_dmg"] = 0.0
+				dmg_mult *= 1.0 + float(T["thunder"]["bolt"])
+				r["stun"] = maxf(r["stun"], float(T["thunder"]["stun"]))
+				said = "one bolt %s harder instead of arcs; it stuns for %s s." % [_pct(float(T["thunder"]["bolt"]) * 100.0), _num(T["thunder"]["stun"])]
+			"blight":
+				said = "the hit is not weakened, and its poison bites up to %s times harder as the enemy's life runs out." % _num(T["blight"]["most"])
+			"scald":
+				said = "a burning enemy that gets chilled, or a chilled one set burning, cracks for %s of the hit." % _pct(float(T["scald"]["crack"]) * 100.0)
+			"wildfire":
+				said = "its arcs set burning what they strike."
+			"fumes":
+				said = "an enemy both burning and poisoned gives off a toxic cloud."
+			"hailstorm":
+				said = "its arcs chill what they strike; a frozen enemy passes the arc on."
+			"frostbite":
+				said = "a chilled enemy loses %s of the hit a second, a frozen one twice that." % _pct(float(T["frostbite"]["bite"]) * 100.0)
+			"contagion":
+				said = "every enemy its arcs strike is poisoned."
+			# (VOLATILE'S MELDS: what Volatile in front does, and more)
+			"demolition":
+				said = "its explosions %s bigger; an elite or a boss explodes once at half its life." % _pct((float(T["demolition"]["bigger"]) - 1.0) * 100.0)
+			"powderkeg":
+				said = "a burning enemy killed explodes harder, and the blast sets others burning."
+			"shatter":
+				said = "a frozen enemy killed bursts into shards that hit those around it for %s of its life." % _pct(float(T["shatter"]["share"]) * 100.0)
+			"chainreaction":
+				said = "an exploding enemy sends arcs to the %s nearest; those it kills explode too." % _num(T["chainreaction"]["arcs"])
+			"rupture":
+				said = "a poisoned enemy killed bursts, splashing its poison on those around."
+			# (THE EIGHT ACROSS THE GROUPS)
+			"siphon":
+				said = "your poison heals you %s of the harm it does." % _pct(float(E["siphon"]["heal"]) * 100.0)
+			"cauterize":
+				said = "killing a burning enemy heals you %s of your life." % _pct(float(E["cauterize"]["heal"]) * 100.0)
+			"forking":
+				said = "every hit arcs to the nearest other enemy within %s tiles for %s of it." % [_num(E["forking"]["reach"]), _pct(float(E["forking"]["share"]) * 100.0)]
+			"shiver":
+				said = "a critical hit freezes the target for %s s." % _num(E["shiver"]["secs"])
+			"sunder":
+				said = "an enemy it stuns takes %s more from every hit while stunned." % _pct(float(E["sunder"]["more"]) * 100.0)
+			"fervor":
+				said = "each kill burns %s hotter for %s s, up to %s at once." % [_pct(float(E["fervor"]["burn"]) * 100.0), _num(E["fervor"]["secs"]), _num(E["fervor"]["most"])]
+			"rimeward":
+				said = "blocking a hit chills its maker by %s for %s s." % [_pct(float(E["rimeward"]["slow"]) * 100.0), _num(E["rimeward"]["secs"])]
+			"implode":
+				said = "drags enemies within %s tiles together, then bursts there for %s of the hit." % [_num(E["implode"]["reach"]), _pct(float(E["implode"]["share"]) * 100.0)]
+		if said != "":
+			lines.append("%s: %s" % [word(meld)["name"], said])
+	if meld_behind != null:
+		var B: float = E["behind"]
+		var said := ""
+		# (a line of one of its words that its twist does in another way)
+		var drop := func(start: String) -> void:
+			for k in lines.size():
+				if str(lines[k]).begins_with(start):
+					lines.remove_at(k)
+					return
+		match meld_behind:
+			"eruption":
+				said = "each hit builds heat; at %s, the next hit erupts for %s." % [_num(T["eruption"]["heat"]), _pct(float(T["eruption"]["blast"]) * 100.0)]
+			"avalanche":
+				said = "every hit on a chilled enemy, %s harder." % _pct(float(T["avalanche"]["chilled"]) * 100.0)
+			"thunder":
+				said = "every %s hits, a thunderclap bursts around you for %s." % [_num(T["thunder"]["every"]), _pct(float(T["thunder"]["clap"]) * 100.0)]
+			"blight":
+				said = "an enemy it poisons takes %s more damage from everything while poisoned." % _pct(float(T["blight"]["more"]) * 100.0)
+			"scald":
+				# (fire meeting ice on the ground: steam, in place of either)
+				drop.call("of Flame:")
+				var a: float = grows_by.call(behind, "fire")
+				r["zone"] = {"kind": "steam", "element": "fire", "dps": float(T["scald"]["steamDps"]) + 0.004 * a, "slow": float(T["scald"]["slow"]), "dur": float(T["scald"]["dur"])}
+				said = "fire meets ice: it leaves steam that hurts and slows by %s, and hides you while you stand in it." % _pct(float(T["scald"]["slow"]) * 100.0)
+			"wildfire":
+				said = "the burning ground throws sparks at enemies within %s tiles." % _num(T["wildfire"]["reach"])
+			"fumes":
+				said = "the poison cloud explodes when anything burning comes into it."
+			"hailstorm":
+				# (a storm of ice: the storm, slowing, in place of the ice)
+				drop.call("of Frost:")
+				var a: float = grows_by.call(behind, "lightning")
+				r["zone"] = {"kind": "storm", "element": "lightning", "dps": (30.0 + 0.6 * a) / 100.0, "slow": float(T["hailstorm"]["slow"]), "dur": 4.0}
+				said = "a storm of ice that strikes and slows by %s." % _pct(float(T["hailstorm"]["slow"]) * 100.0)
+			"frostbite":
+				said = "the ice on the ground poisons what crosses it."
+			"contagion":
+				said = "the poison cloud shocks whatever stands in it."
+			# (VOLATILE'S MELDS: what Volatile behind leaves, its rune, does more)
+			"demolition":
+				said = "one huge rune, %s harder and %s times as wide, slow to go off." % [_pct((float(T["demolition"]["runeHard"]) - 1.0) * 100.0), _num(T["demolition"]["runeWide"])]
+			"powderkeg":
+				said = "the rune leaves burning ground when it goes off."
+			"shatter":
+				said = "the rune freezes what is near, then bursts."
+			"chainreaction":
+				said = "your runes are linked: one going off sets off the rest."
+			"rupture":
+				said = "the rune bursts into a poison cloud."
+			# (THE EIGHT ACROSS THE GROUPS, behind: the same twist, `behind` as strong)
+			"siphon":
+				said = "your poison heals you %s of the harm it does." % _pct(float(E["siphon"]["heal"]) * B * 100.0)
+			"cauterize":
+				said = "killing a burning enemy heals you %s of your life." % _pct(float(E["cauterize"]["heal"]) * B * 100.0)
+			"forking":
+				said = "every hit arcs to another enemy nearby for %s of it." % _pct(float(E["forking"]["share"]) * B * 100.0)
+			"shiver":
+				said = "a critical hit freezes the target for %s s." % _num(float(E["shiver"]["secs"]) * B)
+			"sunder":
+				said = "an enemy it stuns takes %s more while stunned." % _pct(float(E["sunder"]["more"]) * B * 100.0)
+			"fervor":
+				said = "each kill burns %s hotter for a few seconds." % _pct(float(E["fervor"]["burn"]) * B * 100.0)
+			"rimeward":
+				said = "blocking a hit chills its maker by %s." % _pct(float(E["rimeward"]["slow"]) * B * 100.0)
+			"implode":
+				said = "drags enemies together a little, then a small burst for %s of the hit." % _pct(float(E["implode"]["share"]) * B * 100.0)
+		if said != "":
+			lines.append("%s: %s" % [word(meld_behind)["behind"], said])
+
 	# (LASTING and FLEETING on what it leaves and the boosts it gives: its ground longer or shorter, Fleeting's as much in all; the
 	# boosts Fleeting's stronger)
 	if r["zone"] != null:

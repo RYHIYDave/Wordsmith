@@ -24,8 +24,8 @@
 ##   "SPEAK TO" / "RETURN TO" THE MYSTIC on the line at the top (guide.gd: its givers and whom he brings something back for).
 ## THE THINGS THAT LIE (the game's drops 'dust', 'piece', 'quest' roll): RUNEDUST (the strongholds' reward: holds.gd) bursting
 ## up out of the floor, lying in its heap and glittering, coming to him, whirling up round him and into him ("+N RUNEDUST");
-## counted as the game counts it (`dust`; melding is not in the Godot version, so it is only kept, and shown on the gear screen
-## by the bag); A PAGE OF THE CULT'S MUSTER ROLL (MUSTER: each stronghold won gives one, three at most: `roll_pages`; the
+## counted as the game counts it (`dust`, shown on the gear screen by the bag; spent at the wordsmith, a meld a runedust: loot.gd
+## meld_words); A PAGE OF THE CULT'S MUSTER ROLL (MUSTER: each stronghold won gives one, three at most: `roll_pages`; the
 ## mystic's ask for the roll and her reward for it are not brought over).
 extends Node
 

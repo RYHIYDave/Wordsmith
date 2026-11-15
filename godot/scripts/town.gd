@@ -18,7 +18,8 @@
 ##   THE WORDSMITH'S QUEST (game/quests15.ts; game.ts handIn 'meldAsk', 'meldstone', takeMeldstone): the armourer's reward
 ##   given, the wordsmith has a task ("Wordsmith: a task"): used, he asks for the MELDSTONE from the cult's stronghold under the
 ##   ossuary (floor 5, the Fleshmancer's: loot.gd). Carried back ("Give the Meldstone"), used, he takes it: he can meld, he
-##   gives the two words to meld and the lesson, and the gate down the mountain is unbarred; from then on the stone goes round
+##   gives the two words to meld and the lesson, and the gate down the mountain is unbarred; from then on, used ("E: Wordsmith"),
+##   he opens his half of the screen, its second page MELDING (inventory.gd, THE WORDSMITH'S HALF; loot.gd meld_words); the stone goes round
 ##   the column of light over his slab, turning as it goes (render.ts standMeldMoments, KEPT; its flight to the slab and its
 ##   halves whirling there are not brought over).
 ##   THE GATE in the back wall (game/ways.ts, game.ts updateWays, raiseGate, enterTown; the layout's `gate`: tools/godot_town.ts):
@@ -417,6 +418,9 @@ func _use() -> void:
 				prompt = ["E: Give the Meldstone", "meld"]
 			elif loot.meld_ask_due():
 				prompt = ["E: Wordsmith: a task", "meldask"]
+			elif loot.meld == "open":
+				# (WORDMELDING: the Meldstone his, he opens his half of the screen, melding its second page: inventory.gd)
+				prompt = ["E: Wordsmith", "wordsmith"]
 			else:
 				prompt = ["E: Talk to the wordsmith", "talk"]
 		"armourer":
@@ -461,6 +465,9 @@ func _do(what: String) -> void:
 			loot.armourer_hand_in()
 		"meldask":
 			loot.ask_meld()
+		"wordsmith":
+			# (WORDMELDING: his half beside the gear screen, its first page; MELD turns it to melding: inventory.gd)
+			main._inv.open_wordsmith()
 		"meld":
 			# (game.ts takeMeldstone: he takes it, gives the two words and the lesson; and the gate down the mountain unbarred)
 			loot.give_meldstone()

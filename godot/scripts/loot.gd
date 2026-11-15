@@ -39,7 +39,9 @@
 ##   down, its halves torn apart, slams together and comes down to hang, turning to and fro, "Meldstone" over it; it cannot be
 ##   taken for 1.2 s, then comes to him as gold does and is taken (`meld` "stone"): it leaps over his head, slams together and
 ##   dives into him. Given to the wordsmith (town.gd), `meld` "open": he gives the two words to meld (FLAME and FROST) and says
-##   the lesson's lines; melding itself (the wordsmith's meld screen) is not in the Godot version yet.
+##   the lesson's lines; and from then on he melds (the block WORDMELDING AT THE WORDSMITH below; his page, inventory.gd).
+##   WORDMELDING: two spare words and runedust in, one word out (game.ts meldProblem, meldWords); the words melding makes on gear
+##   as the game has them (EVERY WORD ON GEAR: a melded word's two properties in one place, `alsoRolls`; tools/godot_loot.ts).
 extends Node
 
 const Iso := preload("res://scripts/iso.gd")
@@ -849,7 +851,10 @@ func burn_options(w: String, it: Dictionary) -> Array:
 		has.append_array(im["stats"])
 	var kinds: Array = has.map(_group)
 	var all: Array = _imbue.get(w, {}).get("%s:%d" % [it["slot"], int(it["ilvl"])], [])
-	return all.filter(func(o): return not has.has(o["stat"]) and not kinds.has(_group(o["stat"])))
+	# (WORDMELDING: a melded word's two properties must both be free; of its pairs, the first two that are)
+	var free := func(st) -> bool: return st == null or (not has.has(st) and not kinds.has(_group(st)))
+	var out: Array = all.filter(func(o): return free.call(o["stat"]) and free.call(o.get("also")))
+	return out.slice(0, 2) if Words.is_meld(w) else out
 
 
 func _group(stat: String) -> String:
@@ -886,16 +891,11 @@ func burn(w: String, where) -> String:
 		return why
 	var it: Dictionary = piece(where)
 	var o: Dictionary = burn_options(w, it).pick_random()
-	var total := 0.0
-	for r in o["rolls"]:
-		total += float(r[0])
-	var at := randf() * total
-	var got: Array = o["rolls"][o["rolls"].size() - 1]
-	for r in o["rolls"]:
-		at -= float(r[0])
-		if at < 0.0:
-			got = r
-			break
+	var got: Array = _roll_of(o["rolls"])
+	# (WORDMELDING: a melded word's second property, rolled on its own: tools/godot_loot.ts twoPart)
+	if o.has("alsoRolls"):
+		var two: Array = _roll_of(o["alsoRolls"])
+		got = [got[0], got[1] + two[1], got[2] + two[2]]
 	var stats: Array = []
 	for m in got[1]:
 		stats.append(m[0])
@@ -915,6 +915,93 @@ func burn(w: String, where) -> String:
 		derive()
 	sfx.play("imbue")
 	burned = {"word": w, "item": it["name"], "text": ", ".join(got[2])}
+	# (WORDMELDING: what a made word becomes on gear is known from now on: game.ts learn(word, 'gear'))
+	if Words.made().has(w):
+		_know(w)["gear"] = true
+	return ""
+
+
+## One of a table's sizes, each as likely as its count makes it: [count, mods, lines].
+static func _roll_of(rolls: Array) -> Array:
+	var total := 0.0
+	for r in rolls:
+		total += float(r[0])
+	var at := randf() * total
+	for r in rolls:
+		at -= float(r[0])
+		if at < 0.0:
+			return r
+	return rolls[rolls.size() - 1]
+
+
+# --- WORDMELDING AT THE WORDSMITH (game.ts meldProblem, meldWords; game/melds.ts MELD_TUNE): once the Meldstone has been given
+# him (`meld` "open"), two spare words and runedust go in, one word comes out. The page itself: inventory.gd, its block THE
+# WORDSMITH'S HALF. ---
+
+## The last word the wordsmith melded, and whether it was the first of its kind (game.ts `melded`: his half shows it).
+var melded := {}
+## What the hero knows of each word melding makes (the Lexicon's meta.known): {found, front, behind, gear}.
+var known := {}
+
+
+## A made word's knowing (made when first wanted).
+func _know(w: String) -> Dictionary:
+	if not known.has(w):
+		known[w] = {"found": false, "front": false, "behind": false, "gear": false}
+	return known[w]
+
+
+## The runedust he carries (act1/quest610.gd `dust`, counted as the game counts it).
+func dust() -> int:
+	return int(main.quest610.dust) if main != null and main.quest610 != null else 0
+
+
+## What a meld costs (MELD_TUNE.cost).
+static func meld_cost() -> int:
+	return int(Words.data()["melds"]["tune"]["cost"])
+
+
+## Why the wordsmith cannot meld these two spare words just now, or "" if he can (game.ts meldProblem): the ring dark; the
+## Meldstone not yet brought to him; not two words that meld (melds.ts meldProblem); not his to give; not the runedust it takes.
+func meld_problem(a: String, b: String) -> String:
+	if not ring_lit:
+		return _words["dark"]
+	if meld != "open":
+		return "Give him the MELDSTONE first" if meld == "stone" else "He needs the MELDSTONE to meld"
+	var why := Words.meld_problem(a, b)
+	if why != "":
+		return why
+	if int(words.get(a, 0)) <= 0 or int(words.get(b, 0)) <= 0:
+		return "No spare word"
+	# (RANK II: two of the same word take two of it)
+	if a == b and int(words.get(a, 0)) < 2:
+		return "Two of the word go in"
+	if dust() < meld_cost():
+		return "Needs %d runedust" % meld_cost()
+	return ""
+
+
+## THE WORDSMITH MELDS two spare words into one, for runedust (game.ts meldWords): both used up, the word made among his words,
+## known from now on, in front and behind. `melded` says what came of it, and whether it was the first of its kind. "" if it was
+## done, else why not.
+func meld_words(a: String, b: String) -> String:
+	var why := meld_problem(a, b)
+	if why != "":
+		return why
+	var m := Words.meld_of(a, b)
+	if m == "":
+		return "These do not meld"
+	words[a] = int(words[a]) - 1
+	words[b] = int(words[b]) - 1
+	words[m] = int(words.get(m, 0)) + 1
+	main.quest610.dust -= meld_cost()
+	var k := _know(m)
+	var first: bool = not k["found"]
+	k["found"] = true
+	k["front"] = true
+	k["behind"] = true
+	melded = {"word": m, "first": first}
+	sfx.play("rare")
 	return ""
 
 
@@ -1172,7 +1259,7 @@ static func taken_of(g: float, from: Vector2, to: Vector2) -> Dictionary:
 
 
 ## GIVEN TO THE WORDSMITH (game.ts takeMeldstone; town.gd gives it): he can meld from now on; the two words to meld, and his
-## lesson. (Melding itself, at his meld screen, is not in the Godot version yet.)
+## lesson. (Melding itself: meld_words below, at his page, inventory.gd.)
 func give_meldstone() -> void:
 	meld = "open"
 	sfx.play("rare")

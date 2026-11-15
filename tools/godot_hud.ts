@@ -23,6 +23,7 @@ import { WORD_COLOR, makeIconArt } from '../src/art/icons';
 import { ELEMENT_RAMP, P } from '../src/art/palette';
 import { THEME } from '../src/ui/ui';
 import { wordForm } from '../src/ui/words';
+import { useMeldLooks } from './godot_meld_art';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -30,6 +31,8 @@ const OUT = 'godot/assets/hud';
 mkdirSync(OUT, { recursive: true });
 
 const icons = makeIconArt();
+// (WORDMELDING: the melded words' own colours and runes, as the game puts them on as it starts: tools/godot_meld_art.ts)
+useMeldLooks(icons);
 const pics = new Map<string, Sprite>();
 pics.set('potion', icons.potion);
 pics.set('gold', icons.gold[0]);
