@@ -30,7 +30,9 @@ const SAY_FOR := 1.9
 const LINES := {
 	"warden": ["None leave my halls.", "Another one for the cells.", "The keys are mine. So are you."],
 	"headsman": ["Kneel.", "The block is waiting.", "Your name is on my list."],
+	"chained": ["HRRRNNGH!", "Mmmph... FREE...", "GRRRAAAH!"],
 	"amalgam": ["Join us.", "More bones. More.", "We are many. Be one of us."],
+	"fleshmancer": ["Your bones will serve.", "Fall, and rise for me.", "The cult thanks you for the flesh."],
 }
 
 var main  # main.gd

@@ -582,6 +582,8 @@ func _am_draw(p: Dictionary) -> void:
 				draw_line(base, elbow, AM_BONE_DEEP, 5.0)
 				draw_line(elbow, hand, AM_BONE, 4.0)
 				draw_circle(hand, 4.0, AM_BONE)
+
+
 # =====================================================================================================================
 # THE CHAINED ONE'S (floor 3's boss: chained.gd, whose numbers these read). What his moves mark on the floor and leave on
 # it, ALL DRAWN ONLY: his blows are his own, and his red circles are `mark`, above. (game/bosses.ts CO_CRACK, CO_RING_PERIL
