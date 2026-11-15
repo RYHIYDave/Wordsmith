@@ -1,7 +1,7 @@
 // Dev page: THE ISLE OF STONES' OWN PEOPLE (dev/sculpt_isle_folk.ts) beside the town's (dev/sculpt_townsfolk.ts), each at his
 // work, turned the other three ways, and at the height of what he does now and then; at three times the game's size.
 //   node tools/preview.mjs src/dev/preview_isle_folk.ts out.png 1500 1100 "3"
-//   hash = <scale>
+//   hash = <scale>[:<town>]   town = isle (default) | mere
 import { drawText } from '../engine/font';
 import { drawAura, drawLights } from '../engine/px';
 import type { Light, Sprite } from '../engine/px';
@@ -11,8 +11,15 @@ import { TOWN_CANVAS, paintFigure, sculptArmourer, sculptMystic, sculptStranger 
 import type { TownFigure } from './sculpt_townsfolk';
 import { ARMOURER_MOVES, A_BLOW, MYSTIC_MOVES, M_FLARE, STRANGER_MOVES, S_TOSS } from './townsfolk_moves';
 import { sculptIsleSeer, sculptIsleSmith, sculptIsleStranger } from './sculpt_isle_folk';
+import { sculptMereSeller, sculptMereSmith, sculptMereStranger } from './sculpt_mere_folk';
 
-const S = Number(decodeURIComponent(location.hash.slice(1))) || 3;
+const [scaleArg = '', townArg = 'isle'] = decodeURIComponent(location.hash.slice(1)).split(':');
+const S = Number(scaleArg) || 3;
+const MERE = townArg === 'mere';
+const smithOf = MERE ? sculptMereSmith : sculptIsleSmith;
+const seerOf = MERE ? sculptMereSeller : sculptIsleSeer;
+const strangerOf = MERE ? sculptMereStranger : sculptIsleStranger;
+const HERE = MERE ? "the mere's" : "the isle's";
 const AURA: Light = { x: TOWN_CANVAS.ax - 4, y: TOWN_CANVAS.ay - 30, r: 46, color: '#28dcf0', a: 0.2 };
 const spr = (fig: TownFigure, aura: Light | null): Sprite => toSprite(paintFigure(fig), aura, TOWN_CANVAS.ax, TOWN_CANVAS.ay);
 
@@ -23,30 +30,30 @@ const rows: Row[] = [
     title: 'THE SMITH',
     cells: [
       { s: spr(sculptArmourer(ARMOURER_MOVES.idle(0), FACING_TURN3.sw), AURA), cap: "the town's" },
-      { s: spr(sculptIsleSmith(ARMOURER_MOVES.idle(0), FACING_TURN3.sw), AURA), cap: "the isle's" },
-      { s: spr(sculptIsleSmith(ARMOURER_MOVES.idle(0), FACING_TURN3.se), AURA), cap: 'turned' },
-      { s: spr(sculptIsleSmith(ARMOURER_MOVES.idle(0), FACING_TURN3.ne), AURA), cap: 'turned' },
-      { s: spr(sculptIsleSmith(ARMOURER_MOVES.act(A_BLOW.top), FACING_TURN3.sw), AURA), cap: 'the blow' },
-      { s: spr(sculptIsleSmith(ARMOURER_MOVES.act(A_BLOW.lands + 1), FACING_TURN3.sw), AURA), cap: 'it lands' },
+      { s: spr(smithOf(ARMOURER_MOVES.idle(0), FACING_TURN3.sw), AURA), cap: HERE },
+      { s: spr(smithOf(ARMOURER_MOVES.idle(0), FACING_TURN3.se), AURA), cap: 'turned' },
+      { s: spr(smithOf(ARMOURER_MOVES.idle(0), FACING_TURN3.ne), AURA), cap: 'turned' },
+      { s: spr(smithOf(ARMOURER_MOVES.act(A_BLOW.top), FACING_TURN3.sw), AURA), cap: 'the blow' },
+      { s: spr(smithOf(ARMOURER_MOVES.act(A_BLOW.lands + 1), FACING_TURN3.sw), AURA), cap: 'it lands' },
     ],
   },
   {
-    title: 'THE SEER',
+    title: MERE ? 'THE SELLER' : 'THE SEER',
     cells: [
       { s: spr(sculptMystic(MYSTIC_MOVES.idle(0), FACING_TURN3.sw), AURA), cap: "the town's" },
-      { s: spr(sculptIsleSeer(MYSTIC_MOVES.idle(0), FACING_TURN3.sw), AURA), cap: "the isle's" },
-      { s: spr(sculptIsleSeer(MYSTIC_MOVES.idle(0), FACING_TURN3.se), AURA), cap: 'turned' },
-      { s: spr(sculptIsleSeer(MYSTIC_MOVES.idle(0), FACING_TURN3.ne), AURA), cap: 'turned' },
-      { s: spr(sculptIsleSeer(MYSTIC_MOVES.act(M_FLARE.lifts + 10), FACING_TURN3.sw), AURA), cap: 'it lifts' },
-      { s: spr(sculptIsleSeer(MYSTIC_MOVES.act(M_FLARE.blaze), FACING_TURN3.sw), AURA), cap: 'it blazes' },
+      { s: spr(seerOf(MYSTIC_MOVES.idle(0), FACING_TURN3.sw), AURA), cap: HERE },
+      { s: spr(seerOf(MYSTIC_MOVES.idle(0), FACING_TURN3.se), AURA), cap: 'turned' },
+      { s: spr(seerOf(MYSTIC_MOVES.idle(0), FACING_TURN3.ne), AURA), cap: 'turned' },
+      { s: spr(seerOf(MYSTIC_MOVES.act(M_FLARE.lifts + 10), FACING_TURN3.sw), AURA), cap: 'it lifts' },
+      { s: spr(seerOf(MYSTIC_MOVES.act(M_FLARE.blaze), FACING_TURN3.sw), AURA), cap: 'it blazes' },
     ],
   },
   {
     title: 'THE STRANGER',
     cells: [
       { s: spr(sculptStranger(STRANGER_MOVES.idle(0), 0), null), cap: "the town's" },
-      { s: spr(sculptIsleStranger(STRANGER_MOVES.idle(0), 0), null), cap: "the isle's" },
-      { s: spr(sculptIsleStranger(STRANGER_MOVES.act(S_TOSS.flick + 8), 0), null), cap: 'the coin' },
+      { s: spr(strangerOf(STRANGER_MOVES.idle(0), 0), null), cap: HERE },
+      { s: spr(strangerOf(STRANGER_MOVES.act(S_TOSS.flick + 8), 0), null), cap: 'the coin' },
     ],
   },
 ];
@@ -76,7 +83,7 @@ for (const r of rows) {
     g.translate(cx, y);
     g.scale(S, S);
     // (the isle's turf under them; the town's own floor under the town's)
-    g.fillStyle = i === 0 ? '#1a1848' : '#16221a';
+    g.fillStyle = i === 0 ? '#1a1848' : MERE ? '#2c3a58' : '#16221a';
     g.fillRect(0, 0, CW - 2, CH - 2);
     g.fillStyle = 'rgba(0,0,0,0.4)';
     g.beginPath();
