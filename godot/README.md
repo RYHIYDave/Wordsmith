@@ -349,7 +349,8 @@ Melding words (the wordsmith's meld screen; the Meldstone and its two words are 
 INVENTORY while it is carried and its flight to the wordsmith's slab, words found from floor 6 down (and the nine words the
 Wilds' monsters carry that the Godot version has not yet: Fleeting, Frenzied, Guarding, Lasting, Twin, Vast, Volatile, Leech
 and Precise; a boss carrying one shows its dark square without the word's stone), the trees seen through when he is behind
-them (the game's SEEN_THROUGH), what a red circle or the
+them (the game's SEEN_THROUGH), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's
+are eight big sheets, fetched as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), what a red circle or the
 Headsman's vault sends up as it lands and a bone arrow and the Warden's bolts in flight (plain drawings: the game's
 general effects are brought over only for the words so far), the glow that burning things and some figures give off (the game adds it over them; here only the
 places' own lights glow, and the moves cut their light in the dark), the bosses' spoken lines aloud (the Chained One and
