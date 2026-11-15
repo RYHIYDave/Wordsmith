@@ -1,7 +1,8 @@
 // THE GODOT PORT: THE GAME'S OWN PICTURES OF WHAT ITS MOVES MARK ON THE FLOOR AND THROW UP, as films (the cloud chat, 15 Nov
 // 2026). Each is painted here by the game's own painter (art/*_fx.ts), frame by frame, as render/act1_fx/*.ts asks for them,
 // and packed into sheets for godot/scripts/perils.gd to play in place of a stand-in drawing:
-//   npx tsx tools/godot_fx.ts        -> godot/assets/fx/fx.json, fx-0.png, ...
+//   npx tsx tools/godot_fx.ts        -> godot/assets/fx/fx.json, fx-<set>-0.png, ... (a set: the films of one kind of
+//                                       monster, on sheets of their own, loaded only on a floor that has it)
 // A FILM: its frames at `fps`, in layers as the game lays them: `floor` (on the floor, under the figures), `behind` and
 // `before` (among the figures, just behind and just before one standing at its middle). Every picture in picture pixels (two
 // to a game pixel), cut to what is painted of it, the same picture kept once; `pics`: [sheet, x, y, w, h, ox, oy], (ox, oy)
@@ -46,6 +47,15 @@
 //                the Flame's fire, flickering (fireBallSprite: 4). kb_key: the temple door's key, a quarter turn over each as
 //                it tumbles, the first of it lying (keySprite: 4). kb_tongue_<h>: a tongue of his ring's fire, h game pixels
 //                high (1 to 16), flickering (ringTongue: 4 each).
+//   st_rake_<v>  the Stoker's fire, seen from in front or from behind (art/stoker_fx.ts fxPainted, as render/act1_fx/stoker.ts
+//                paints it afresh fifteen times a second; its floor point his, as his act began): his rake's arc marked, the
+//                sheet of fire springing up behind the blade and burning. st_ring_<v>: his furnace's ring marked, rolling out
+//                with its three gaps, the floor it passed scorched. st_blast_<v>: his death's blast on the floor under him.
+//   st_coal_<i>  one of his seven coals where it comes down (coalsFloor, each painted alone, its floor point its own spot):
+//                its spot marked, its fire burning and dying to a scorch. Its time his act's. st_lump_<i>: the coal itself
+//                in the air (coalInAir: one picture, layer `stand`, its middle the floor point).
+//   st_gear      the crank's gear lying where it fell, glinting (art/stoker_room.ts gearDropped: 8 pictures at 8 a second,
+//                layer `stand`).
 //   smoke        the high priest's burning smoke (art/mob_shots.ts drawBurningSmoke, the game's own painter, painted here
 //                onto a canvas of the game's pixels): billowing, burning and thinning away. 3 s.
 // A film's `k0`: the frame its first picture is, counted from the film's own time 0 (less than 0: it begins before it).
@@ -65,6 +75,9 @@ import { RAIN as F1_RAIN, RAIN_CANVAS, RAIN_LONG, RISE_CANVAS, rainPainted, rain
 import { RIME, RIME_CANVAS, SIGIL, SIGIL_CANVAS, SIGIL_LONG, rimePainted, sigilPainted } from '../src/art/action_f2_fx';
 import { KF } from '../src/game/act1_rules/keybearers';
 import { fireBallSprite, keySprite, knifeSprite, ringTongue } from '../src/art/key_bearers_fx';
+import { COALS, COAL_SPOTS, FX_CANVAS, coalInAir, fxPainted } from '../src/art/stoker_fx';
+import { GEAR_GLINT, STOKER_ROOM } from '../src/art/stoker_room';
+import { LASTS as ST_LASTS } from '../src/game/act1_rules/stoker';
 import { SMOKE } from '../src/game/defs';
 import { FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, makeRingHandArt } from '../src/art/fleshmancer';
 import { RISE_MARK, paintHeap, paintRiseMark, paintSinkPit } from '../src/art/fleshmancer_action_fx';
@@ -122,9 +135,9 @@ function rawPic(p: { w: number; h: number; d: Uint8ClampedArray }, k: number, ax
 }
 
 /** A film from `t0` to `secs` seconds (of its own time): each layer's frame `k` (counted from its time 0) as the game paints it. */
-function film(name: string, secs: number, layers: Record<string, (k: number) => Sprite | number | null>, t0 = 0): void {
-  const k0 = Math.round(t0 * FPS);
-  const n = Math.floor(secs * FPS) - k0 + 1;
+function film(name: string, secs: number, layers: Record<string, (k: number) => Sprite | number | null>, t0 = 0, fps = FPS): void {
+  const k0 = Math.round(t0 * fps);
+  const n = Math.floor(secs * fps) - k0 + 1;
   const out: Record<string, number[]> = {};
   for (const [layer, at] of Object.entries(layers)) {
     out[layer] = Array.from({ length: n }, (_, i) => {
@@ -132,7 +145,7 @@ function film(name: string, secs: number, layers: Record<string, (k: number) => 
       return typeof q === 'number' ? q : pic(q);
     });
   }
-  films[name] = { fps: FPS, n, k0, layers: out };
+  films[name] = { fps, n, k0, layers: out };
 }
 
 /**
@@ -279,6 +292,31 @@ for (const view of ['front', 'back'] as const) {
   for (let h = 1; h <= 16; h++) stills(`kb_tongue_${h}`, 4, (i) => ringTongue(h, i));
 }
 
+// the Stoker's fire (render/act1_fx/stoker.ts: painted afresh fifteen times a second by the art's own painter, on a canvas the
+// size of the floor round him, his floor point its anchor; over 0.05 s before its end)
+{
+  const ST_FPS = 15;
+  const st = (which: 'coals' | 'rake' | 'ring' | 'blast', k: number, view: 'front' | 'back'): Sprite => toSprite(fxPainted(which, k / ST_FPS, view, [0, 0]), null, FX_CANVAS.ax, FX_CANVAS.ay);
+  for (const view of ['front', 'back'] as const) {
+    film(`st_rake_${view}`, ST_LASTS.rake - 0.05, { floor: (k) => st('rake', k, view) }, 0, ST_FPS);
+    film(`st_ring_${view}`, ST_LASTS.ring - 0.05, { floor: (k) => st('ring', k, view) }, 0, ST_FPS);
+    film(`st_blast_${view}`, ST_LASTS.blast - 0.05, { floor: (k) => st('blast', k, view) }, 0, ST_FPS);
+  }
+  // (each coal alone, where it comes down: the game paints the seven on one canvas round where they are thrown; here the
+  // other six are put out of the picture, and the one at the canvas's floor point)
+  const spots = COAL_SPOTS as unknown as [number, number][];
+  const kept = spots.map((q) => [q[0], q[1]] as [number, number]);
+  for (let i = 0; i < COALS.n; i++) {
+    for (let j = 0; j < COALS.n; j++) spots[j] = j === i ? [0, 0] : [1e4, 1e4];
+    film(`st_coal_${i}`, ST_LASTS.coals - 0.05, { floor: (k) => st('coals', k, 'front') }, 0, ST_FPS);
+    const px = new Px(40, 40);
+    coalInAir(px, 20, 20, 0, i, [0, 0]);
+    films[`st_lump_${i}`] = { fps: 0, n: 1, k0: 0, layers: { stand: [rawPic(px, 1, 20, 20)] } };
+  }
+  kept.forEach((q, j) => (spots[j] = q));
+  films.st_gear = { fps: GEAR_GLINT.fps, n: GEAR_GLINT.frames, k0: 0, layers: { stand: Array.from({ length: GEAR_GLINT.frames }, (_, i) => pic(STOKER_ROOM.gearDropped(i))) } };
+}
+
 // the high priest's burning smoke (render.ts, the 'smoke' zone: its share of its life, and the clock)
 {
   const W = 160;
@@ -292,7 +330,15 @@ for (const view of ['front', 'back'] as const) {
   });
 }
 
-// --- the sheets: the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
+// --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a
+// floor that has its kind), the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
+/** The set a film is packed with: the first word of its name; the cultist's sigil and the Flame keybearer's apart. */
+const setOf = (name: string): string => (name.startsWith('sigil_') ? (name === `sigil_${SIGIL.radius}` ? 'sigil' : 'kb') : name.split('_')[0]);
+/** Which sets each kind of monster plays (godot/scripts/perils.gd warm: fetched as a floor with that kind on it begins). */
+const KIND_SETS: Record<string, string[]> = {
+  archer: ['rain'], cultist: ['sigil'], shade: ['rime'], brute: ['brute'], priest: ['smoke'], stoker: ['st'], chained: ['co'],
+  amalgam: ['am'], mite: ['am'], beast: ['am'], fleshmancer: ['fm'], minifm: ['fm'], keyblade: ['kb'], keyflame: ['kb'],
+};
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);
   for (let y = 0; y < h; y++) raw.set(rgba.subarray(y * w * 4, (y + 1) * w * 4), y * (w * 4 + 1) + 1);
@@ -315,24 +361,37 @@ function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
 }
 const SHEET_W = 2048;
 const SHEET_MAX = 4096;
-const order = pics.map((_, i) => i).sort((a, b) => pics[b].h - pics[a].h || pics[b].w - pics[a].w);
-const placed: [number, number, number, number, number, number, number][] = pics.map(() => [0, 0, 0, 0, 0, 0, 0]);
-const sheets: { h: number; at: { i: number; x: number; y: number }[] }[] = [];
-let cur = { h: 0, at: [] as { i: number; x: number; y: number }[] };
-let cx = 0;
-let cy = 0;
-let rowH = 0;
-for (const i of order) {
-  const p = pics[i];
-  if (cx + p.w > SHEET_W) { cx = 0; cy += rowH + 1; rowH = 0; }
-  if (cy + p.h > SHEET_MAX) { cur.h = cy; sheets.push(cur); cur = { h: 0, at: [] }; cx = 0; cy = 0; rowH = 0; }
-  cur.at.push({ i, x: cx, y: cy });
-  placed[i] = [sheets.length, cx, cy, p.w, p.h, p.ox, p.oy];
-  cx += p.w + 1;
-  rowH = Math.max(rowH, p.h);
+// (a picture is its first film's set's)
+const picSet: string[] = pics.map(() => '');
+const setNames: string[] = [];
+for (const [name, f] of Object.entries(films)) {
+  const set = setOf(name);
+  if (!setNames.includes(set)) setNames.push(set);
+  for (const L of Object.values(f.layers)) for (const i of L) if (i >= 0 && !picSet[i]) picSet[i] = set;
 }
-cur.h = cy + rowH;
-sheets.push(cur);
+const placed: [number, number, number, number, number, number, number][] = pics.map(() => [0, 0, 0, 0, 0, 0, 0]);
+const sheets: { h: number; set: string; at: { i: number; x: number; y: number }[] }[] = [];
+const sets: Record<string, number[]> = {};
+for (const set of setNames) {
+  const order = pics.map((_, i) => i).filter((i) => picSet[i] === set).sort((a, b) => pics[b].h - pics[a].h || pics[b].w - pics[a].w);
+  let cur = { h: 0, set, at: [] as { i: number; x: number; y: number }[] };
+  let cx = 0;
+  let cy = 0;
+  let rowH = 0;
+  sets[set] = [];
+  for (const i of order) {
+    const p = pics[i];
+    if (cx + p.w > SHEET_W) { cx = 0; cy += rowH + 1; rowH = 0; }
+    if (cy + p.h > SHEET_MAX) { cur.h = cy; sets[set].push(sheets.length); sheets.push(cur); cur = { h: 0, set, at: [] }; cx = 0; cy = 0; rowH = 0; }
+    cur.at.push({ i, x: cx, y: cy });
+    placed[i] = [sheets.length, cx, cy, p.w, p.h, p.ox, p.oy];
+    cx += p.w + 1;
+    rowH = Math.max(rowH, p.h);
+  }
+  cur.h = cy + rowH;
+  sets[set].push(sheets.length);
+  sheets.push(cur);
+}
 const names: string[] = [];
 sheets.forEach((S, n) => {
   const img = new Uint8ClampedArray(SHEET_W * S.h * 4);
@@ -340,9 +399,10 @@ sheets.forEach((S, n) => {
     const p = pics[q.i];
     for (let y = 0; y < p.h; y++) img.set(p.d.subarray(y * p.w * 4, (y + 1) * p.w * 4), ((q.y + y) * SHEET_W + q.x) * 4);
   }
-  names.push(`fx-${n}.png`);
-  writeFileSync(`${OUT}/fx-${n}.png`, png(SHEET_W, S.h, img));
+  const name = `fx-${S.set}-${n - sets[S.set][0]}.png`;
+  names.push(name);
+  writeFileSync(`${OUT}/${name}`, png(SHEET_W, S.h, img));
 });
-writeFileSync(`${OUT}/fx.json`, JSON.stringify({ sheets: names, pics: placed, films }));
+writeFileSync(`${OUT}/fx.json`, JSON.stringify({ sheets: names, sets, kinds: KIND_SETS, pics: placed, films }));
 const frames = Object.values(films).reduce((n, f) => n + f.n * Object.keys(f.layers).length, 0);
-console.log(`fx: ${Object.keys(films).length} films, ${frames} frames, ${pics.length} pictures in ${sheets.length} sheet(s): ${sheets.map((S) => `${SHEET_W}x${S.h}`).join(', ')}`);
+console.log(`fx: ${Object.keys(films).length} films, ${frames} frames, ${pics.length} pictures in ${sheets.length} sheet(s): ${sheets.map((S, n) => `${names[n]} ${SHEET_W}x${S.h}`).join(', ')}`);

@@ -512,7 +512,7 @@ func _back() -> void:
 		for m in monsters.list:
 			if is_instance_valid(m) and not m.dead and m.state != "sleep":
 				m.state = "sleep"
-		monsters.perils.list.clear()
+		monsters.perils.clear()
 	if doors != null and is_instance_valid(doors):
 		doors.reset()
 	_place()

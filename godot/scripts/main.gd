@@ -289,6 +289,11 @@ func _build(where: String, arrive: String) -> void:
 	_place.add_child(monsters)
 	if where != "town":
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
+	# (the films of what this floor's kinds mark and throw up: fetched now, behind the game; the other floors' let go)
+	var kinds := {}
+	for m in monsters.list:
+		kinds[m.kind] = true
+	perils.warm(kinds.keys())
 	hero.monsters = monsters
 	_monsters = monsters
 	# (the floor's doors and the boss's gate: doors.gd)
@@ -1631,10 +1636,29 @@ func _gate_shots(h: Hero, dir: String) -> void:
 		await _wait(0.6)
 		await _snap(tag + "8a_the_crank_without_its_gear.png")
 		said.append("the crank %.1f off without the gear: step '%s', told %s" % [by.distance_to(c), furnace.step, furnace.told_crank])
+		# (the gear: from the Stoker himself: he is struck dead, his gear lies where his death leaves it, and the hero walks to it)
+		var keeper = null
+		for m in _monsters.list:
+			if is_instance_valid(m) and m.kind == "stoker" and not m.dead:
+				keeper = m
+		if keeper != null:
+			h.world = _spot_near(keeper.world, 3.0, h.world)
+			await _wait(0.2)
+			keeper.hurt(1e9)
+			await _wait(4.6)
+			await _snap(tag + "8b_the_stoker_fallen_his_gear.png")
+			for g in _monsters.perils.get_children():
+				if g.get("at") != null:
+					h.world = g.at
+			await _wait(0.4)
+			said.append("the Stoker dead %s; the gear taken from where he fell: step '%s'" % [keeper.dead, furnace.step])
+		else:
+			h.world = _free_near(c + Vector2(4.0, 0.0))
+			await _wait(0.2)
+			_monsters.quest_item.emit("gear", h.world)
+			await _wait(0.4)
 		h.world = _free_near(c + Vector2(4.0, 0.0))
-		await _wait(0.2)
-		_monsters.quest_item.emit("gear", h.world)
-		await _wait(0.4)
+		await _wait(0.3)
 		await _snap(tag + "8b_the_gear_set_in.png")
 		h.world = by
 		for k in [[0.5, "8c_the_crank_turning"], [1.3, "8d_the_furnace_going_out"], [1.4, "8e_the_furnace_out"]]:
@@ -1697,6 +1721,9 @@ func _kind_shots(h: Hero, dir: String) -> void:
 		# ring's reach)
 		"keyblade": [[4.0, 6.0], [4.2, 4.0], [4.2, 4.0], [4.2, 4.0], [4.2, 4.0], [4.2, 4.0]],
 		"keyflame": [[3.0, 25.0]],
+		# (the Stoker: far for his coals, near for his rake; then put to under a third of his life, so that his furnace bursts:
+		# a third number in a plan is the share of its life it is put to as that part begins)
+		"stoker": [[5.0, 8.0], [3.0, 8.0], [4.0, 12.0, 0.3]],
 	}
 	var marks := {
 		"brute": {
@@ -1723,6 +1750,12 @@ func _kind_shots(h: Hero, dir: String) -> void:
 		"keyblade": {
 			"knife_flies": func(): return _has(P, "kb_knife", 0.1),
 		},
+		# (the Stoker's fire: his coals marked, in the air and burning; the sheet behind his rake; his furnace's ring rolling out)
+		"stoker": {
+			"coals_marked": func(): return _has(P, "st_coals", 1.5), "coals_in_the_air": func(): return _has(P, "st_coals", 2.25), "coals_burn": func(): return _has(P, "st_coals", 3.0),
+			"rake_marked": func(): return _has(P, "st_rake", 0.8), "rake_fire": func(): return _has(P, "st_rake", 1.3), "rake_burns": func(): return _has(P, "st_rake", 2.0),
+			"ring_marked": func(): return _has(P, "st_ring", 1.2), "ring_rolls": func(): return _has(P, "st_ring", 1.75),
+		},
 	}
 	var todo: Dictionary = marks.get(kind, {})
 	var done := {}
@@ -1738,6 +1771,8 @@ func _kind_shots(h: Hero, dir: String) -> void:
 		if not is_instance_valid(m) or m.dead:
 			break
 		h.world = _charge_spot(m, ph[0], _spot_near(m.world, ph[0], h.world)) if kind == "brute" and ph[0] > 3.0 else _spot_near(m.world, ph[0], h.world)
+		if ph.size() > 2:
+			m.life = m.max_life * float(ph[2])
 		var t := 0.0
 		while t < ph[1]:
 			await get_tree().process_frame
@@ -1799,6 +1834,16 @@ func _kind_shots(h: Hero, dir: String) -> void:
 				m.hurt(1e9)
 		await _wait(1.6)
 		await _snap(tag + "%02d_fallen.png" % (k + 1))
+		if kind == "stoker":
+			# (his death's blast, and his gear lying once his death is done: pictured; then walked to where it lies)
+			await _wait(0.5)
+			await _snap(tag + "%02d_blast.png" % (k + 2))
+			await _wait(3.0)
+			await _snap(tag + "%02d_gear_lies.png" % (k + 3))
+			k += 2
+			for c in P.get_children():
+				if c.get("at") != null:
+					fell = c.at
 		h.world = fell
 		await _wait(0.6)
 		# (a keybearer's key lies a little to his side: walked to)
