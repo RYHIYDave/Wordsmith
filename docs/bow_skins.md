@@ -49,6 +49,7 @@ quicker, on the ship list: read docs/staff_skins.md first). Not the main chat: `
 - His own bow as a skin: 1000 frames (his twenty moves, every few frames, from eight sides) hashed the same as before.
 - tests/bow_skins.test.ts (5: the switch; his own bow the same frame; each bow its own, nothing of it glowing; the four worn,
   their places, looks, his art painted with each, a bake group each; his sets let go of as he swaps, not by the Mage's places).
+  With bake_marks, the staff tests, baked, hero_cards_baked and the core: 28 of 28 on 3442f94.
 - In the game (dist/bow_look.html, unbaked): him with each bow put on from his bag, on floor 11 and in town, filmed
   (bows_in_game.mp4 and _sides.png): his yes.
 - NOT CHECKED: his groups baked in a real browser (the let-go is the staves', checked so: docs/staff_skins.md); a whole bake;
