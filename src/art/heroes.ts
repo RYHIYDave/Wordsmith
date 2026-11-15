@@ -175,13 +175,14 @@ export function wrenchOfPlace(place: HeroPlace): WrenchId | null {
 }
 
 /**
- * THE WARRIOR'S UNIQUE WEAPONS' SWITCH: OFF until he has been seen holding them in play and the owner says yes (his yes to their
- * pictures, 14 Nov 2026: the great swords, shown docs/mockups/warrior_skins/pictures/swords_moves.mp4, “Yes, all three
- * (Recommended)”; the axes and hammers, shown axes_moves.mp4 and hammers_moves.mp4, “Yes, all seven (Recommended)”). On, the
+ * THE WARRIOR'S UNIQUE WEAPONS' SWITCH: ON, at his yes, 14 Nov 2026 (by 23:15 Eastern), shown the Warrior in the game holding each
+ * (docs/mockups/warrior_skins/pictures/swords_in_game.mp4, axes_in_game.mp4, hammers_in_game.mp4) and asked whether to turn them on:
+ * “Yes, switch them on (Recommended)”. (His yes to their pictures before: the great swords, shown swords_moves.mp4, “Yes, all three
+ * (Recommended)”; the axes and hammers, shown axes_moves.mp4 and hammers_moves.mp4, “Yes, all seven (Recommended)”.) On, the
  * Warrior holding a unique great sword, battle axe or warhammer of the kind he is drawn with is drawn holding it (his places with
  * it, WARRIOR_SKIN_PLACES), each a bake group of its own (render/baked.ts), as the Mage's staves are.
  */
-export const WARRIOR_SKINS = { on: false };
+export const WARRIOR_SKINS = { on: true };
 /** The skin of the unique weapon an item is, if it is one of his and of the kind he is drawn with (`arms`: his tree's war axe or maul; null, his great sword), and the switch is on. */
 export function warriorWorn(item: { unique?: string; rarity?: number } | null | undefined, arms: HeavyWeapon | null): WarriorSkinId | null {
   if (!WARRIOR_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;

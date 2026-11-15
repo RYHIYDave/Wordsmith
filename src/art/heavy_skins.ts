@@ -2,8 +2,8 @@
 // hands, as his unique great swords are (art/sword_skins.ts). His word, 14 Nov 2026, of the Mage's staves done: “then do it for the
 // rest of the cast”; asked whether to start, his pick: “Start the rest of the cast (Recommended)”. PICTURES FIRST: nothing of the
 // game draws these until he has seen them on him and said yes. Shown them (docs/mockups/warrior_skins/pictures/axes_moves.mp4,
-// hammers_moves.mp4), 14 Nov 2026: “Yes, all seven (Recommended)”. In the game behind art/heroes.ts WARRIOR_SKINS (off until his
-// yes to them in play).
+// hammers_moves.mp4), 14 Nov 2026: “Yes, all seven (Recommended)”. In the game behind art/heroes.ts WARRIOR_SKINS, ON at his
+// yes to him holding them in play (by 23:15): “Yes, switch them on (Recommended)”.
 //
 // Each is a take (art/warrior_up_weapons.ts WeaponTake) in the war axe's or the maul's place in every frame of his with it
 // (paintAxe's `skin`): its haft as long, its grip and balance where theirs are, so his hands and every move of his are theirs;

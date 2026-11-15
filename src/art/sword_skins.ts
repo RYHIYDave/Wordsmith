@@ -1,7 +1,9 @@
 // SKINS FOR THE WARRIOR'S GREAT SWORD (14 Nov 2026): the game's three unique great swords drawn in his hands, as the Mage's
 // staves are in hers (art/staff_skins.ts). His word, 14 Nov 2026, of the Mage's staves done: “then do it for the rest of the
 // cast”; asked whether to start, his pick: “Start the rest of the cast (Recommended)”. PICTURES FIRST: nothing of the game draws
-// these until he has seen them on him and said yes.
+// these until he has seen them on him and said yes. Shown them (docs/mockups/warrior_skins/pictures/swords_moves.mp4), 14 Nov
+// 2026: “Yes, all three (Recommended)”. In the game behind art/heroes.ts WARRIOR_SKINS, ON at his yes to him holding them in play
+// (by 23:15): “Yes, switch them on (Recommended)”.
 //
 // His great sword is painted flat on its own sheet, as it always was (art/hero_warrior.ts blade: the grip at a point, the blade
 // so many degrees round, so long), and a skin paints another there (art/warrior_up.ts SwordSkin; his own PLAIN_SWORD, painted

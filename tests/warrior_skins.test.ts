@@ -1,7 +1,8 @@
 // THE WARRIOR'S UNIQUE WEAPONS (art/sword_skins.ts: his great swords; art/heavy_skins.ts: his battle axes and warhammers; in the
 // game behind art/heroes.ts WARRIOR_SKINS). His word, 14 Nov 2026, of the Mage's staves done: “then do it for the rest of the
 // cast”; shown the great swords on him: “Yes, all three (Recommended)”; the axes and hammers: “Yes, all seven (Recommended)”.
-//   1. the switch is off; of the game only his art reads art/sword_skins.ts and art/heavy_skins.ts;
+//   1. the switch is on (his yes to him in play: “Yes, switch them on (Recommended)”); off, none is worn and none baked; of the
+//      game only his art reads art/sword_skins.ts and art/heavy_skins.ts;
 //   2. his own great sword and his war axe are the first skins, and painted with them he is the very frame he is painted as when
 //      nothing is said;
 //   3. each is a weapon of its own;
@@ -42,11 +43,16 @@ const same = (a: { d: Uint8ClampedArray } | Uint8ClampedArray, b: { d: Uint8Clam
 };
 const u = (unique: string) => ({ rarity: 3, unique });
 
-test('1. the switch is off; of the game only his art reads art/sword_skins.ts and art/heavy_skins.ts', () => {
-  assert.equal(WARRIOR_SKINS.on, false);
-  assert.equal(warriorWorn(u('millstone'), null), null);
-  assert.equal(wornSkin('warrior', u('millstone')), null);
-  assert.ok(!Object.keys(bakeGroups(true)).some((k) => (WARRIOR_SKIN_IDS as readonly string[]).includes(k.replace('warrior-', ''))), 'off: none baked');
+test('1. the switch is on (his yes); off, none is worn; of the game only his art reads art/sword_skins.ts and art/heavy_skins.ts', () => {
+  assert.equal(WARRIOR_SKINS.on, true);
+  WARRIOR_SKINS.on = false;
+  try {
+    assert.equal(warriorWorn(u('millstone'), null), null);
+    assert.equal(wornSkin('warrior', u('millstone')), null);
+    assert.ok(!Object.keys(bakeGroups(true)).some((k) => (WARRIOR_SKIN_IDS as readonly string[]).includes(k.replace('warrior-', ''))), 'off: none baked');
+  } finally {
+    WARRIOR_SKINS.on = true;
+  }
   const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e: { name: string; isDirectory(): boolean }) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.ts') ? [`${dir}/${e.name}`] : []));
   for (const f of ['sword_skins', 'heavy_skins']) {
     const readers = walk('src').filter((x) => x !== `src/art/${f}.ts` && !x.startsWith('src/dev/') && new RegExp(`from '[^']*${f}'`).test(readFileSync(x, 'utf8'))).sort();
@@ -116,7 +122,7 @@ test('4. on: worn only as the kind he is drawn with; their places, looks, his pi
     const all = Object.values(g).flat().map(keyName);
     assert.equal(new Set(all).size, all.length, 'none twice');
   } finally {
-    WARRIOR_SKINS.on = false;
+    WARRIOR_SKINS.on = true;
   }
 });
 
@@ -172,7 +178,7 @@ test('5. on: his own sword\'s set and a unique sword\'s let go of as he swaps; t
     b.holdOnly('mage', 'crookTown', false);
     assert.ok('value' in first('millstoneTown'), 'still his');
   } finally {
-    WARRIOR_SKINS.on = false;
+    WARRIOR_SKINS.on = true;
     g0.createImageBitmap = had;
   }
 });
