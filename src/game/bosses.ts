@@ -28,7 +28,9 @@
 import { stepActionF1 } from './action_f1';
 import { stepActionF2 } from './action_f2';
 import { stepActionF4 } from './action_f4';
-import { FM2, FM_ACTION, FM_FIRE, FM_HEAP, FM_PIT, FM_RINGS, FM_RISE, FM_SHARDS, stepFm } from './fm_action';
+import { FM2, FM_ACTION, FM_DEATH_FX, FM_FIRE, FM_HEAP, FM_PIT, FM_RINGS, FM_RISE, FM_SHARDS, stepFm } from './fm_action';
+import { FLESH2 } from '../art/fm2_switch';
+import { FM_END } from '../art/fm2_fx';
 import { FIRE_HIT, FIRE_LONG, MINI_HIT, MINI_LONG, RAISE_HIT, RAISE_LONG, RING_HITS, RING_LONG, SHARD_HITS, SHARD_LONG } from '../art/fleshmancer_action';
 import { BALL_LAND, BALL_LET, BALL_LONG, BALL_REACH, HOOK_BACK, HOOK_BITE, HOOK_BLOW, HOOK_LET, HOOK_LONG, LASH_HITS, LASH_LONG, LASH_TRAVEL_TILES, WHIRL_HIT, WHIRL_LONG, WHIRL_LOOP, actBallPath, actHookPath } from '../art/chained_action';
 import { CRACK, RING as CO_RING, crackStrikes, ringStrikes as coRingStrikes } from '../art/chained_action_fx';
@@ -2003,6 +2005,17 @@ export class BossRules {
     if (m.kind === 'amalgam') {
       // (its bone beasts fall apart with it)
       for (const o of [...g.monsters]) if (!o.dead && o.kind === 'beast' && o.packId === m.packId) g.kill(o);
+    }
+    if (m.kind === 'fleshmancer' && FLESH2.on) {
+      // (BROUGHT UP TO PAR, art/fm2_switch.ts: nothing of his harms the hero once he is dead (game/fm_action.ts stepFm); his rings'
+      // hands sink with him and his fire dies down; and his death drawn worthy of him, render/act1_fx/fm.ts)
+      for (const p of g.perils) {
+        if (p.kind !== 'act1' || !p.a1 || !p.a1.startsWith('fleshmancer:') || p.a !== m.id) continue;
+        p.done = 2;
+        if (p.a1 === FM_RINGS) p.c = p.t;
+        p.dur = Math.min(p.dur, p.t + 0.6);
+      }
+      this.peril(m, 'act1', m.x, m.y, { a1: FM_DEATH_FX, dur: FM_END.long, hit: 0, a: m.id });
     }
     if (m.kind === 'fleshmancer' || m.kind === 'minifm') {
       // (THE DEAD HE RAISED FALL WITH HIM: they were up by his will alone. Those still coming up go back

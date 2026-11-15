@@ -21,6 +21,7 @@
 
 import { RING_HITS, RISE_HIT, RISE_LONG, SHARD_DRAW, SHARD_HITS, SHARD_LONG, SINK_GONE, SINK_LONG, FIRE_HIT, FIRE_LONG, MINI_LONG, fireWay, miniWay } from '../art/fleshmancer_action';
 import { FIRE, MINI_FIRE, RINGS, RISE_MARK, SHARDS, fireStrikes, ringBurst, ringStrikes, shardsAt } from '../art/fleshmancer_action_fx';
+import { FLESH2 } from '../art/fm2_switch';
 import { fromFigure } from './facing';
 import type { Game } from './game';
 import type { Peril } from './state';
@@ -34,6 +35,8 @@ export const FM_FIRE = 'fleshmancer:fire';
 export const FM_HEAP = 'fleshmancer:heap';
 export const FM_PIT = 'fleshmancer:pit';
 export const FM_RISE = 'fleshmancer:rise';
+/** (FLESH2) His death drawn worthy of him (render/act1_fx/fm.ts): its clock his death's. */
+export const FM_DEATH_FX = 'fleshmancer:death';
 
 /**
  * The rules' own numbers. His teleport's (`blink`: going, out of reach from `gone`, nowhere `pause`, coming back `rise`, out of reach
@@ -68,6 +71,8 @@ export function shardsNow(p: Peril): { x: number; y: number; i: number; flying: 
 /** A step of one of his perils (game/bosses.ts stepPerils). False: it is none of his. */
 export function stepFm(g: Game, p: Peril, hurt: (mult?: number) => void): boolean {
   if (!p.a1 || !p.a1.startsWith('fleshmancer:')) return false;
+  // (brought up to par, art/fm2_switch.ts FLESH2: once he is dead, nothing of his harms the hero: game/bosses.ts died marks it so)
+  if (FLESH2.on && p.done === 2) return true;
   const h = g.hero;
   // (the reaches are the art's own, the hero's body in them: SHARDS.r so that the gaps are real, RINGS.r, RISE_MARK.r)
   switch (p.a1) {
