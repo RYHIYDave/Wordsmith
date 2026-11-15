@@ -35,7 +35,7 @@ import type { ActorArt, AnimSet } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
 import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { heroSides } from '../art/sides';
-import { isTownPlace, lookOfPlace, staffOfPlace } from '../art/heroes';
+import { isSkinPlace, isTownPlace, lookOfPlace } from '../art/heroes';
 import type { HeroPlace } from '../art/heroes';
 import { paintTerrain, terrainOf } from '../art/terrain';
 import { nearOf, paintWithStanding, standingBits } from '../art/standing';
@@ -681,9 +681,9 @@ export class Painter {
       this.heroAsked.add(key);
       this.groundLane.open++;
       // (the Warlock's demon before his arm blazing: it is the heavier by far, and its frames are not painted in the game: art/kit.ts HEAVY)
-      // (a staff's places, art/heroes.ts STAFF_PLACES, as the town's and the dungeon's)
+      // (a staff's or a bow's places, art/heroes.ts STAFF_PLACES, BOW_PLACES, as the town's and the dungeon's)
       const town = isTownPlace(place);
-      const dungeon = !town && (place === 'dungeon' || place === 'axe' || place === 'hammer' || staffOfPlace(place) !== null);
+      const dungeon = !town && (place === 'dungeon' || place === 'axe' || place === 'hammer' || isSkinPlace(place));
       this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'card' ? 29 : town ? 30 : dungeon ? 31 : place === 'demon' ? 31.5 : 32, ...(vet ? { vet: true } : {}) } satisfies Ask);
     }
     return true;

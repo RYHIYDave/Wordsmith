@@ -1,7 +1,8 @@
 // SKINS FOR THE RANGER'S BOW (14 Nov 2026): the game's four unique bows drawn in his hand, as the Mage's unique staves are in
 // hers (art/staff_skins.ts). His word, 14 Nov 2026, of the Mage's staves done: “then do it for the rest of the cast”; asked
 // whether to start, his pick: “Start the rest of the cast (Recommended)”. PICTURES FIRST: nothing of the game draws these until
-// he has seen them on him and said yes.
+// he has seen them on him and said yes. Shown them (docs/mockups/bow_skins/pictures/bows_moves.mp4, bows_stills.png), 14 Nov 2026:
+// “Yes, all four (Recommended)”. In the game behind art/heroes.ts BOW_SKINS (off until his yes to them in play).
 //
 // His bow is a skin laid on where it is (art/ranger_up.ts BowAt, BowSkin; his own bow PLAIN_BOW, painted exactly as before).
 // Each of these is drawn to its picture in the bag (art/items_unique.ts), the same bow in the hand:
@@ -19,6 +20,7 @@ import type { BowAt, BowSkin } from './ranger_up';
 import { add, cross, mul, norm } from './skeleton';
 import type { V3 } from './skeleton';
 import type { Sculpt } from '../dev/sculpt';
+import type { BowId } from './heroes';
 import { five } from './warrior_up';
 
 /** A point on a quadratic curve from `a` through the pull of `c` to `b`. */
@@ -233,6 +235,9 @@ export const FLEDGLING_BOW: BowSkin = {
     return { nocks, mats: [wood, leaf] };
   },
 };
+
+/** Each unique bow's skin, by the id of its place (art/heroes.ts BowId). */
+export const BOW_SKIN_OF: Readonly<Record<BowId, BowSkin>> = { rainwalker: RAINWALKER_BOW, threefold: THREEFOLD_BOW, poachers: POACHERS_BOW, fledgling: FLEDGLING_BOW };
 
 /** The skins of his bow, his own first. */
 export const BOW_SKIN_LIST: readonly BowSkin[] = [PLAIN_BOW, RAINWALKER_BOW, THREEFOLD_BOW, POACHERS_BOW, FLEDGLING_BOW];

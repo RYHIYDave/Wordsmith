@@ -48,18 +48,27 @@ export interface HeroLook {
    * sides; absent, her own staff, as ever.
    */
   staff?: StaffId;
+  /**
+   * THE RANGER'S BOW (art/bow_skins.ts, BOW_SKINS): the skin of the unique bow he holds, drawn in his hand from his eight sides;
+   * absent, his own bow, as ever.
+   */
+  bow?: BowId;
 }
 
 /** (THE MAGE'S STAFF, art/staff_skins.ts) The unique staves drawn in her hands, each a skin of her staff. */
 export type StaffId = 'crook' | 'ebb' | 'resonance' | 'rod';
 export const STAFF_IDS: readonly StaffId[] = ['crook', 'ebb', 'resonance', 'rod'];
 
+/** (THE RANGER'S BOW, art/bow_skins.ts) The unique bows drawn in his hand, each a skin of his bow. */
+export type BowId = 'rainwalker' | 'threefold' | 'poachers' | 'fledgling';
+export const BOW_IDS: readonly BowId[] = ['rainwalker', 'threefold', 'poachers', 'fledgling'];
+
 /**
  * WHICH OF A HERO'S PICTURES the side painter paints ahead (render/painter.ts): in town, in a dungeon; and the warlock's
  * others (art/warlock_art.ts): the demon's, and his with his arm blazing; and (28 Oct 2026) the new classes on their class
  * cards, too heavy for the start screen to paint as it draws them (`card`).
  */
-export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card' | 'axe' | 'axeTown' | 'hammer' | 'hammerTown' | 'crook' | 'crookTown' | 'ebb' | 'ebbTown' | 'resonance' | 'resonanceTown' | 'rod' | 'rodTown';
+export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card' | 'axe' | 'axeTown' | 'hammer' | 'hammerTown' | 'crook' | 'crookTown' | 'ebb' | 'ebbTown' | 'resonance' | 'resonanceTown' | 'rod' | 'rodTown' | 'rainwalker' | 'rainwalkerTown' | 'threefold' | 'threefoldTown' | 'poachers' | 'poachersTown' | 'fledgling' | 'fledglingTown';
 /** (THE WARRIOR'S WEAPON, WARRIOR_TREE2) His places with the war axe and the maul: in a dungeon, and in town. */
 export const HEAVY_PLACES: Readonly<Record<HeavyWeapon, { dungeon: HeroPlace; town: HeroPlace }>> = { axe: { dungeon: 'axe', town: 'axeTown' }, hammer: { dungeon: 'hammer', town: 'hammerTown' } };
 /** (THE MAGE'S STAFF, art/staff_skins.ts) Her places with each unique staff: in a dungeon, and in town. */
@@ -85,18 +94,64 @@ export function staffWorn(item: { unique?: string; rarity?: number } | null | un
   if (!STAFF_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;
   return STAFF_OF_UNIQUE[item.unique] ?? null;
 }
+/**
+ * THE RANGER'S BOWS' SWITCH: OFF until he has seen the Ranger holding them in play and said yes (his yes to their pictures,
+ * 14 Nov 2026, shown docs/mockups/bow_skins/pictures/bows_moves.mp4: “Yes, all four (Recommended)”). On, the Ranger holding a
+ * unique bow is drawn holding it (render/render.ts heroArt: his places with that bow, BOW_PLACES; the bows art/bow_skins.ts),
+ * each bow's pictures a bake group of its own (render/baked.ts), as the Mage's staves are.
+ */
+export const BOW_SKINS = { on: false };
+/** The unique bows of the game (game/uniques.ts) that are drawn in his hand, and the skin each is. */
+export const BOW_OF_UNIQUE: Readonly<Record<string, BowId>> = { rainwalker: 'rainwalker', fan: 'threefold', poachersbow: 'poachers', fledgling: 'fledgling' };
+/** The skin of the bow an item is, if it is one of those (and the switch is on); null: his own bow. */
+export function bowWorn(item: { unique?: string; rarity?: number } | null | undefined): BowId | null {
+  if (!BOW_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;
+  return BOW_OF_UNIQUE[item.unique] ?? null;
+}
+/** (THE RANGER'S BOW) His places with each unique bow: in a dungeon, and in town. */
+export const BOW_PLACES: Readonly<Record<BowId, { dungeon: HeroPlace; town: HeroPlace }>> = {
+  rainwalker: { dungeon: 'rainwalker', town: 'rainwalkerTown' },
+  threefold: { dungeon: 'threefold', town: 'threefoldTown' },
+  poachers: { dungeon: 'poachers', town: 'poachersTown' },
+  fledgling: { dungeon: 'fledgling', town: 'fledglingTown' },
+};
+/** Is a place one of a bow's (and which). */
+export function bowOfPlace(place: HeroPlace): BowId | null {
+  for (const id of BOW_IDS) if (BOW_PLACES[id].dungeon === place || BOW_PLACES[id].town === place) return id;
+  return null;
+}
+/**
+ * THE UNIQUE WEAPON A HERO HOLDS, DRAWN IN HIS HAND (the Mage's staves, art/staff_skins.ts; the Ranger's bows, art/bow_skins.ts):
+ * the look it is and his places with it, in a dungeon and in town; null: his own weapon, as ever (or its switch is off).
+ */
+export function wornSkin(cls: ClassId, item: { unique?: string; rarity?: number } | null | undefined): { look: Pick<HeroLook, 'staff' | 'bow'>; places: { dungeon: HeroPlace; town: HeroPlace } } | null {
+  if (cls === 'mage') {
+    const staff = staffWorn(item);
+    if (staff) return { look: { staff }, places: STAFF_PLACES[staff] };
+  }
+  if (cls === 'ranger') {
+    const bow = bowWorn(item);
+    if (bow) return { look: { bow }, places: BOW_PLACES[bow] };
+  }
+  return null;
+}
 /** Is a place one of a staff's (and which). */
 export function staffOfPlace(place: HeroPlace): StaffId | null {
   for (const id of STAFF_IDS) if (STAFF_PLACES[id].dungeon === place || STAFF_PLACES[id].town === place) return id;
   return null;
 }
-/** Is a place a town's (in town, or a staff's place in town). */
-export const isTownPlace = (place: HeroPlace): boolean => place === 'town' || place === 'axeTown' || place === 'hammerTown' || (staffOfPlace(place) !== null && STAFF_PLACES[staffOfPlace(place)!].town === place);
+/** Is a place a town's (in town, or a staff's or a bow's place in town). */
+export const isTownPlace = (place: HeroPlace): boolean =>
+  place === 'town' || place === 'axeTown' || place === 'hammerTown' || (staffOfPlace(place) !== null && STAFF_PLACES[staffOfPlace(place)!].town === place) || (bowOfPlace(place) !== null && BOW_PLACES[bowOfPlace(place)!].town === place);
+/** Is a place a skin's (a staff's or a bow's), in a dungeon or in town. */
+export const isSkinPlace = (place: HeroPlace): boolean => staffOfPlace(place) !== null || bowOfPlace(place) !== null;
 /** The look each of those is. */
 export function lookOfPlace(place: HeroPlace): HeroLook {
   if (place === 'card') return { twoHanded: true, town: true, card: true };
   const staff = staffOfPlace(place);
   if (staff) return { twoHanded: true, town: STAFF_PLACES[staff].town === place, staff };
+  const bow = bowOfPlace(place);
+  if (bow) return { twoHanded: true, town: BOW_PLACES[bow].town === place, bow };
   if (place === 'axe' || place === 'axeTown') return { twoHanded: true, town: place === 'axeTown', weapon: 'axe' };
   if (place === 'hammer' || place === 'hammerTown') return { twoHanded: true, town: place === 'hammerTown', weapon: 'hammer' };
   return { twoHanded: true, town: place === 'town', ...(place === 'demon' ? { demon: true } : place === 'blaze' ? { blaze: true } : {}) };

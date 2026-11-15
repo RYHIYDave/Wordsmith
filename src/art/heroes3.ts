@@ -45,6 +45,7 @@ import { makeRangerUpArt } from './ranger_up_art';
 import { MAGE_UP } from './mage_up';
 import { makeMageUpArt } from './mage_up_art';
 import { STAFF_SKIN_OF } from './staff_skins';
+import { BOW_SKIN_OF } from './bow_skins';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
@@ -475,6 +476,7 @@ export function makeHeroArt3(): HeroArt {
   // (and the Mage brought up; and with each unique staff, art/staff_skins.ts)
   const mageShare = new Map<string, Sprite[]>();
   const staffShares = new Map<string, Map<string, Sprite[]>>();
+  const bowShares = new Map<string, Map<string, Sprite[]>>();
   const of = (cls: ClassId, look: HeroLook): ActorArt => {
     // (one figure of each hero in each place: the knight with the great sword, whatever he carries, until he is painted with a sword and a shield)
     const place = look.card ? 'card' : look.town ? 'town' : 'dungeon';
@@ -546,6 +548,19 @@ export function makeHeroArt3(): HeroArt {
     }
     // (THE RANGER BROUGHT UP, while art/ranger_up.ts RANGER_UP is on: sculpted, from all eight sides, every list at 30 a second,
     // his shot and volley by Movement 9: art/ranger_up_art.ts. Off, he is as he was, every frame the same: tests/ranger_up.test.ts)
+    // (THE RANGER'S BOW, art/bow_skins.ts: holding a unique bow, his pictures painted with it, each bow a set of its own; his
+    // class card his own bow's, as ever)
+    if (cls === 'ranger' && RANGER_UP.on && look.bow && place !== 'card') {
+      const bkey = `rangerup:${look.bow}:${place}`;
+      let bart = made.get(bkey);
+      if (!bart) {
+        let share = bowShares.get(look.bow);
+        if (!share) bowShares.set(look.bow, (share = new Map()));
+        bart = makeRangerUpArt(place, share, BOW_SKIN_OF[look.bow]);
+        made.set(bkey, bart);
+      }
+      return bart;
+    }
     if (cls === 'ranger' && RANGER_UP.on) {
       const rkey = `rangerup:${place}`;
       let rart = made.get(rkey);

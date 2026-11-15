@@ -13,7 +13,7 @@
 import { bakeLists, cardLists, readyList } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
-import { HEAVY_PLACES, STAFF_IDS, STAFF_PLACES, STAFF_SKINS } from '../art/heroes';
+import { BOW_IDS, BOW_PLACES, BOW_SKINS, HEAVY_PLACES, STAFF_IDS, STAFF_PLACES, STAFF_SKINS } from '../art/heroes';
 import { WARRIOR_TREE2 } from '../game/talents';
 import type { AnimSet } from '../art/actor_types';
 import { ASKED } from '../art/asked';
@@ -191,6 +191,8 @@ export function bakeGroups(vet: boolean): Record<string, BakeKey[]> {
   // 14 Nov 2026: “Bake each staff whole (Recommended)”), taken in only while she holds that staff. Baked only while the switch is
   // on: off, nothing asks for them)
   if (STAFF_SKINS.on) for (const id of STAFF_IDS) out[`mage-${id}`] = [k('mage', STAFF_PLACES[id].town), k('mage', STAFF_PLACES[id].dungeon)];
+  // (THE RANGER'S BOW, art/bow_skins.ts BOW_SKINS: him with each unique bow, each a group of its own, as her staves are)
+  if (BOW_SKINS.on) for (const id of BOW_IDS) out[`ranger-${id}`] = [k('ranger', BOW_PLACES[id].town), k('ranger', BOW_PLACES[id].dungeon)];
   return out;
 }
 
@@ -621,9 +623,12 @@ export class BakedHeroes {
     return this.state.get(group) === 'done';
   }
 
-  /** (THE MAGE'S STAFF) May this group be let go of whole: the Mage's, with her own staff or with a unique one, while STAFF_SKINS is on. */
+  /**
+   * (THE UNIQUE WEAPON IN HIS HAND) May this group be let go of whole: the Mage's, with her own staff or a unique one, while
+   * STAFF_SKINS is on; the Ranger's, with his own bow or a unique one, while BOW_SKINS is on.
+   */
   private lettable(g: string): boolean {
-    return STAFF_SKINS.on && (g === 'mage' || g.startsWith('mage-'));
+    return (STAFF_SKINS.on && (g === 'mage' || g.startsWith('mage-'))) || (BOW_SKINS.on && (g === 'ranger' || g.startsWith('ranger-')));
   }
 
   /**
@@ -660,14 +665,14 @@ export class BakedHeroes {
   }
 
   /**
-   * (THE MAGE'S STAFF) She is in this place now: every other group of hers that may be let go of is (her own staff's while she
-   * holds a unique one, the last staff's as she takes up another). Her class card's group is not hers alone and is kept.
+   * (THE UNIQUE WEAPON IN HIS HAND) He is in this place now: every other group of his that may be let go of is (his own weapon's
+   * while he holds a unique one, the last one's as he takes up another). His class card's group is not his alone and is kept.
    */
   holdOnly(cls: ClassId, place: HeroPlace, vet: boolean): void {
-    if (!STAFF_SKINS.on || cls !== 'mage') return;
+    if (cls !== 'mage' && cls !== 'ranger') return;
     const g = this.group(cls, place, vet);
     if (!g || !this.lettable(g)) return;
-    for (const other of [...this.whole.keys()]) if (other !== g) this.letGoGroup(other);
+    for (const other of [...this.whole.keys()]) if (other !== g && (other === cls || other.startsWith(`${cls}-`))) this.letGoGroup(other);
   }
 
   private async load(g: string): Promise<void> {
