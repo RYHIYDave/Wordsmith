@@ -293,6 +293,9 @@ func _build(where: String, arrive: String) -> void:
 	# (what the fight shows of a blow and of a word: the rules tell it, fx.gd draws it. Over the floor and its marks, under
 	# what stands)
 	fx = Fx.new()
+	# (its lights are cut in the place's dark; the monsters' state is shown off them, and through them the hero and the floor)
+	fx.look = look if looked else null
+	fx.monsters = monsters
 	_place.add_child(fx)
 	_place.move_child(fx, perils.get_index() + 1)
 	hero.fx = fx
@@ -716,6 +719,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "gates":
 		await _gate_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "fx":
+		await _fx_shots(hero, dir)
 		get_tree().quit()
 		return
 	await _wait(1.0)
@@ -2321,3 +2328,305 @@ func _trap_shots(h: Hero, dir: String) -> void:
 			await _snap(tag + "4_darts_after.png")
 			print("TRAPS floor %d: darts, plate at %s, slot %s: his life %.1f -> %.1f (12%% of %.0f a dart is %.1f)" % [n, at, s["slot"], l1, h.life, h.max_life, h.max_life * 0.12])
 	h.unhurt = true
+
+
+## SHOT MODE, WHAT THE FIGHT SHOWS OF A BLOW AND OF A WORD (--only=fx [--floor=3] [--at=x,y] [--case=<the start of a
+## look's name>] [--cases=<file>]): the hero stands in the middle of the floor's biggest room (or at `at`), its monsters
+## made to wait, the six nearest kept and the rest gone. Each telling the words' rules send is told to the effects by hand
+## at a spot beside him (a monster stood there to be struck), for each element and word it can carry, and pictured a few
+## frames into its life (twice or more, the longer ones), the effects moved on a sixtieth of a second at a time so that
+## each is seen at its own moment (no hold: fx.gd `holds` off); a move used with each word behind it; a Strike with each
+## word, as its tellings come together; then a burning, a chilled, a frozen, a poisoned and a stunned monster (their states
+## faked as metadata of those names: monster.gd keeps none yet) and the ice breaking off the frozen one; four made
+## guardians, each with a word; each kind of ground a move leaves, laid in a layer that hands it over to be drawn
+## (fx_wakes.gd Layer: what the rules' node will do); and the other ways a thing may be told. A line a picture: what was
+## sent, and what was alive. Then what a hold does to the game's pace, and what the effects cost a frame (with nothing to
+## show and all the floor's monsters there; with a hundred particles and three rings; with four hundred and eight). The
+## pictures are the part of the screen round him.
+func _fx_shots(h: Hero, dir: String) -> void:
+	var n := int(_arg("floor")) if _arg("floor") != "" else 3
+	go_to("floor%d" % n, "down" if n > 1 else "start")
+	await _wait(1.4)
+	if sight != null:
+		sight.see_all()
+	var big: Dictionary = {}
+	for r in map.rooms:
+		if r.get("kind", "") != "boss" and (big.is_empty() or float(r["w"]) * float(r["h"]) > float(big["w"]) * float(big["h"])):
+			big = r
+	# (the floor's monsters made to wait, as a boss waits before his fight: they stand where they are and look at him)
+	for o in _monsters.list:
+		if is_instance_valid(o):
+			o.waits = true
+	h.world = _free_near(Vector2(float(big["x"]) + float(big["w"]) / 2.0, float(big["y"]) + float(big["h"]) / 2.0))
+	if _arg("at") != "":
+		h.world = Vector2(float(_arg("at").split(",")[0]), float(_arg("at").split(",")[1]))
+	h._turn(Vector2(1, 0))
+	# (what it costs with nothing to show, all the floor's monsters there: 60 frames)
+	await _wait(0.3)
+	fx.timing = true
+	fx.cost_update = 0
+	fx.cost_draw = 0
+	fx.cost_frames = 0
+	for i in 60:
+		await get_tree().process_frame
+	fx.timing = false
+	var idle := "with nothing to show and %d monsters on the floor: update %.3f ms, drawing %.3f ms a frame" % [_monsters.list.size(), fx.cost_update / 1000.0 / maxi(1, fx.cost_frames), fx.cost_draw / 1000.0 / maxi(1, fx.cost_frames)]
+	# (the six nearest him kept, put out of the way, off the floor, until each is wanted; the rest gone)
+	var kept: Array = []
+	var all: Array = _monsters.list.duplicate()
+	all.sort_custom(func(a, b): return a.world.distance_to(h.world) < b.world.distance_to(h.world))
+	for o in all:
+		if kept.size() < 6 and not o.boss and not o.champion and not o.elite and not Monster.BOSS_AI.has(o.kind):
+			o.world = Vector2(-40.0 - kept.size() * 3.0, -40.0)
+			kept.append(o)
+		else:
+			o.queue_free()
+	# (and whatever any had begun before it was made to wait, gone)
+	_monsters.perils.clear()
+	await _wait(1.2)
+	# (the screen over the game put away: the pictures are of the fight)
+	_hud.visible = false
+	_mini.visible = false
+	fx.set_process(false)
+	fx.holds = false
+	fx.figures.faked = true
+	var H: Vector2 = h.world
+	var S := H + Vector2(1.6, 0.0)
+	var foe: Monster = kept[0]
+	foe.world = S
+	var at := {"x": S.x, "y": S.y}
+	var from := {"x": H.x, "y": H.y, "dx": 1.0, "dy": 0.0, "reach": 1.7}
+	print("FX floor %d: he stands at %s in a room %d by %d; struck beside him at %s, a %s (%s); kept %s" % [n, H, int(big["w"]), int(big["h"]), S, foe.kind, foe.art.name, kept.map(func(o): return o.kind)])
+
+	# THE SWING, by its element and the words in front
+	var swings := [
+		["plain", "phys", [], 0], ["plain_second", "phys", [], 1], ["power", "phys", ["power"], 0], ["swift", "phys", ["swift"], 0],
+		["fire", "fire", ["fire"], 0], ["frost", "frost", ["frost"], 0], ["lightning", "lightning", ["lightning"], 0],
+		["poison", "phys", ["poison"], 0], ["fire_power", "fire", ["fire", "power"], 0],
+	]
+	for q in swings:
+		await _fx_case(dir, "swing_" + q[0], [[0.0, from.merged({"t": "swing", "el": q[1], "words": q[2], "combo": q[3], "n": 0, "echo": false})]], [0.05, 0.13])
+	# A HIT: after his swing (the blow lands hard, and what the struck is made of flies off it), and alone by element and word
+	await _fx_case(dir, "hit_after_swing", [[0.0, from.merged({"t": "swing", "el": "phys", "words": [], "combo": 0})], [0.0, at.merged({"t": "hit", "amount": 23, "crit": false, "el": "phys", "heavy": false})]], [0.05, 0.2])
+	var hits := [
+		["crit", {"amount": 41, "crit": true, "el": "phys"}], ["power", {"amount": 30, "el": "phys", "heavy": true, "words": ["power"]}],
+		["fire", {"amount": 18, "el": "fire", "words": ["fire"]}], ["frost", {"amount": 18, "el": "frost", "words": ["frost"]}],
+		["lightning", {"amount": 18, "el": "lightning", "words": ["lightning"]}], ["swift", {"amount": 12, "el": "phys", "words": ["swift"]}],
+		["poison", {"amount": 14, "el": "phys", "words": ["poison"]}], ["poison_tick", {"amount": 4, "el": "phys", "poison": true}],
+	]
+	for q in hits:
+		await _fx_case(dir, "hit_" + q[0], [[0.0, at.merged(q[1]).merged({"t": "hit"})]], [0.08])
+	# A BURST, in its four styles
+	await _fx_case(dir, "burst_shock_power", [[0.0, at.merged({"t": "burst", "r": 1.2, "el": "phys", "style": "shock", "words": ["power"]})]], [0.05, 0.3])
+	var blasts := [
+		["fire_small", "fire", ["fire"], 1.2], ["fire_big", "fire", ["fire"], 2.2], ["frost_small", "frost", ["frost"], 1.2], ["frost_big", "frost", ["frost"], 2.2],
+		["lightning_small", "lightning", ["lightning"], 1.2], ["lightning_big", "lightning", ["lightning"], 2.2], ["plain", "phys", [], 1.5],
+		["power", "phys", ["power"], 1.5], ["swift", "phys", ["swift"], 1.5], ["poison_small", "phys", ["poison"], 1.2], ["poison_big", "phys", ["poison"], 2.2],
+	]
+	for q in blasts:
+		await _fx_case(dir, "burst_blast_" + q[0], [[0.0, at.merged({"t": "burst", "r": q[3], "el": q[1], "style": "blast", "words": q[2]})]], [0.05, 0.25])
+	var lands := [["plain", "phys", []], ["power", "phys", ["power"]], ["fire", "fire", ["fire"]], ["frost", "frost", ["frost"]], ["lightning", "lightning", ["lightning"]], ["swift", "phys", ["swift"]], ["poison", "phys", ["poison"]]]
+	for q in lands:
+		await _fx_case(dir, "burst_land_" + q[0], [[0.0, {"t": "burst", "x": H.x + 1.0, "y": H.y, "r": 1.9, "el": q[1], "style": "land", "words": q[2]}], [0.0, at.merged({"t": "hit", "amount": 11, "el": q[1], "words": q[2]})]], [0.05, 0.25])
+	for q in lands:
+		var turn := {"t": "burst", "x": H.x, "y": H.y, "r": 2.0, "el": q[1], "style": "whirl", "words": q[2]}
+		var cut: Dictionary = at.merged({"t": "hit", "amount": 9, "el": q[1], "words": q[2]})
+		await _fx_case(dir, "burst_whirl_" + q[0], [[0.0, turn], [0.0, cut], [0.3, turn], [0.3, cut], [0.6, turn], [0.6, cut]], [0.1, 0.5] if q[0] != "plain" else [0.1, 0.5, 1.12])
+	# (and a whirlwind whose beginning and end are told, as the game's rules tell them)
+	var spin := {"t": "burst", "x": H.x, "y": H.y, "r": 2.0, "el": "phys", "style": "whirl", "words": []}
+	await _fx_case(dir, "whirl_told_begun_and_ended", [[0.0, {"t": "channel", "kind": "whirl", "x": H.x, "y": H.y}], [0.12, spin], [0.42, spin], [0.6, {"t": "channelEnd", "kind": "whirl", "x": H.x, "y": H.y}]], [0.05, 0.3, 0.66, 0.8])
+	# LIGHTNING: down out of the sky, and along the ground to another
+	await _fx_case(dir, "arc_sky", [[0.0, {"t": "arc", "x0": S.x, "y0": S.y, "x1": S.x, "y1": S.y, "sky": true}]], [0.04, 0.12])
+	await _fx_case(dir, "arc_ground", [[0.0, {"t": "arc", "x0": S.x, "y0": S.y, "x1": S.x + 1.8, "y1": S.y + 1.2}]], [0.04, 0.1])
+	await _fx_case(dir, "ignite", [[0.0, at.merged({"t": "ignite"})]], [0.06, 0.3])
+	await _fx_case(dir, "freeze", [[0.0, at.merged({"t": "freeze"})]], [0.06, 0.4])
+	await _fx_case(dir, "poisoned", [[0.0, at.merged({"t": "poisoned"})]], [0.06, 0.2])
+	await _fx_case(dir, "stun", [[0.0, at.merged({"t": "stun", "id": foe, "secs": 1.5})]], [0.1, 0.5])
+	await _fx_case(dir, "stagger", [[0.0, at.merged({"t": "stagger", "id": foe, "fromX": H.x, "fromY": H.y})]], [0.06, 0.2, 0.45])
+	await _fx_case(dir, "heavy_one", [[0.0, at.merged({"t": "heavy", "r": 1.1, "big": false})]], [0.06, 0.35])
+	await _fx_case(dir, "heavy_area", [[0.0, at.merged({"t": "heavy", "r": 1.9, "big": true})]], [0.06, 0.35, 1.0])
+	# HIS OWN: might gathering a stack at a time, full, and its embers going round him; haste
+	var here := {"t": "buff", "x": H.x, "y": H.y}
+	await _fx_case(dir, "buff_might_1", [[0.0, here.merged({"kind": "might", "stacks": 1})]], [0.1, 0.6])
+	await _fx_case(dir, "buff_might_3", [[0.0, here.merged({"kind": "might", "stacks": 1})], [0.2, here.merged({"kind": "might", "stacks": 2})], [0.4, here.merged({"kind": "might", "stacks": 3})]], [0.5, 1.0])
+	await _fx_case(dir, "buff_might_full", [[0.0, here.merged({"kind": "might", "stacks": 4})], [0.3, here.merged({"kind": "might", "stacks": 5})]], [0.4, 1.2, 4.6])
+	await _fx_case(dir, "buff_haste", [[0.0, here.merged({"kind": "haste", "stacks": 1})]], [0.06, 0.16])
+	# A MOVE USED WITH A WORD BEHIND IT: the word stirs at his feet
+	for word in ["fire", "frost", "lightning", "poison", "heavy", "power", "swift"]:
+		await _fx_case(dir, "cast_behind_" + word, [[0.0, {"t": "cast", "x": H.x, "y": H.y, "dx": 1.0, "dy": 0.0, "kind": "melee", "el": "phys", "words": [], "behind": [word], "echo": false}]], [0.08])
+
+	# A STRIKE WITH EACH WORD IN FRONT, as its tellings come together
+	var strike := from.merged({"t": "swing", "combo": 0})
+	await _fx_case(dir, "strike_power", [[0.0, strike.merged({"el": "phys", "words": ["power"]})], [0.0, at.merged({"t": "hit", "amount": 31, "el": "phys", "heavy": true, "words": ["power"]})], [0.0, at.merged({"t": "burst", "r": 1.2, "el": "phys", "style": "shock", "words": ["power"]})]], [0.05, 0.25])
+	await _fx_case(dir, "strike_fire", [[0.0, strike.merged({"el": "fire", "words": ["fire"]})], [0.0, at.merged({"t": "hit", "amount": 19, "el": "fire", "words": ["fire"]})], [0.0, at.merged({"t": "ignite"})]], [0.05, 0.25])
+	await _fx_case(dir, "strike_frost", [[0.0, strike.merged({"el": "frost", "words": ["frost"]})], [0.0, at.merged({"t": "hit", "amount": 19, "el": "frost", "words": ["frost"]})], [0.0, at.merged({"t": "freeze"})]], [0.05, 0.25])
+	await _fx_case(dir, "strike_lightning", [[0.0, strike.merged({"el": "lightning", "words": ["lightning"]})], [0.0, at.merged({"t": "hit", "amount": 19, "el": "lightning", "words": ["lightning"]})], [0.0, {"t": "arc", "x0": S.x, "y0": S.y, "x1": S.x, "y1": S.y, "sky": true}], [0.0, {"t": "arc", "x0": S.x, "y0": S.y, "x1": S.x + 1.6, "y1": S.y - 1.3}]], [0.05, 0.14])
+	await _fx_case(dir, "strike_poison", [[0.0, strike.merged({"el": "phys", "words": ["poison"]})], [0.0, at.merged({"t": "hit", "amount": 15, "el": "phys", "words": ["poison"]})], [0.0, at.merged({"t": "poisoned"})]], [0.05, 0.25])
+	await _fx_case(dir, "strike_swift", [[0.0, strike.merged({"el": "phys", "words": ["swift"]})], [0.0, at.merged({"t": "hit", "amount": 13, "el": "phys", "words": ["swift"]})]], [0.03, 0.1])
+	await _fx_case(dir, "strike_heavy", [[0.0, strike.merged({"el": "phys", "words": ["heavy"]})], [0.0, at.merged({"t": "hit", "amount": 24, "el": "phys", "words": ["heavy"]})], [0.0, at.merged({"t": "heavy", "r": 1.1, "big": false})], [0.0, at.merged({"t": "stun", "id": foe, "secs": 1.0})]], [0.05, 0.3])
+
+	# WHAT THE STATE ITSELF SHOWS: five of the monsters in a row before him, each in one state; then the frozen one thaws
+	fx.clear()
+	var states := [["burn_t", 9.0], ["chill_t", 9.0], ["frozen_t", 9.0], ["poison_t", 9.0], ["stun_t", 9.0]]
+	var row: Array = []
+	for i in 5:
+		var m: Monster = kept[(i + 1) % kept.size()]
+		row.append(m)
+		m.world = H + Vector2(1.7, 1.7) + Vector2(1.2, -1.2) * (i - 2.0)
+		m.set_meta(states[i][0], states[i][1])
+		if states[i][0] == "poison_t":
+			m.set_meta("poison_n", 3)
+	if not foe in row:
+		foe.world = Vector2(-40.0, -44.0)
+	await _wait(0.2)
+	var steps := [0]
+	await _fx_case(dir, "states_burning_chilled_frozen_poisoned_stunned", [], [0.7, 1.4, 1.5, 1.7], func(_dt: float):
+		steps[0] += 1
+		if steps[0] == 86:
+			row[2].set_meta("frozen_t", 0.0))
+	for i in 5:
+		var m: Monster = row[i]
+		for st in states:
+			if m.has_meta(st[0]):
+				m.remove_meta(st[0])
+	# (and four of them made guardians for a picture, each with a word: a guardian smoulders in its first word's colour)
+	var theirs := ["fire", "frost", "poison", "leech"]
+	for i in 4:
+		row[i].champion = true
+		row[i].words = [theirs[i]]
+	row[4].world = Vector2(-52.0, -48.0)
+	await _fx_case(dir, "state_guardians_fire_frost_poison_leech", [], [1.2])
+	for i in 5:
+		var m: Monster = row[i]
+		m.champion = false
+		m.words = []
+		m.world = Vector2(-40.0 - i * 3.0, -48.0)
+	foe.world = S
+	await _wait(0.2)
+
+	# THE GROUND A MOVE LEAVES: each kind laid beside him in a layer that hands its patches to be drawn, as the rules' node will
+	var layer := Fx.Wakes.Layer.new()
+	layer.fx = fx
+	_place.add_child(layer)
+	_place.move_child(layer, fx.get_index())
+	layer.set_process(false)
+	fx.wakes = layer
+	for kind in ["burn", "ice", "storm", "venom", "cracks"]:
+		layer.list = [{"kind": kind, "x": S.x, "y": S.y, "r": 1.7, "t": 0.0, "dur": 4.0}]
+		await _fx_case(dir, "ground_" + kind, [], [0.1, 1.2, 3.8], func(dt: float): layer.age(dt))
+	# (and four small ones, the effects not given the layer: they are tended from what is handed over to be drawn)
+	layer.list = []
+	fx.wakes = null
+	for i in 4:
+		layer.list.append({"kind": ["burn", "ice", "storm", "venom"][i], "x": S.x - 1.2 + i * 1.3, "y": S.y + 1.2 - i * 1.3, "r": 0.8, "t": 0.0, "dur": 4.0})
+	# (drawn once as they are laid, as the rules' node draws its own every frame: that is when they are handed over)
+	layer.queue_redraw()
+	await _fx_case(dir, "ground_small_burn_ice_storm_venom", [], [0.1, 1.2], func(dt: float): layer.age(dt))
+	layer.queue_free()
+	# THE OTHER WAYS A THING MAY BE TOLD: ground laid and ice breaking by a telling; a blow on him; a stun by the monster's
+	# instance id, and by its place alone
+	await _fx_case(dir, "others_zone_shatter_hit_on_him_stun_by_id", [[0.0, at.merged({"t": "zone", "kind": "burn", "r": 1.2})], [0.0, {"t": "shatter", "x": S.x + 1.5, "y": S.y - 1.5}], [0.0, {"t": "hit", "x": H.x, "y": H.y, "amount": 7, "el": "phys", "onHero": true}], [0.0, at.merged({"t": "stun", "id": foe.get_instance_id(), "secs": 1.0})]], [0.08])
+	await _fx_case(dir, "others_stun_by_place", [[0.0, at.merged({"t": "stun", "secs": 1.0})]], [0.3])
+	fx.clear()
+
+	# THE HOLD: a Heavy blow told with the hold on, the effects going by themselves again: how long the game's pace is held
+	fx.holds = true
+	fx.set_process(true)
+	await get_tree().process_frame
+	var t0 := Time.get_ticks_usec()
+	fx.event(at.merged({"t": "heavy", "r": 1.1, "big": false}))
+	var held_at: float = Engine.time_scale
+	var frames := 0
+	while Engine.time_scale < 1.0 and frames < 600:
+		await get_tree().process_frame
+		frames += 1
+	var held := (Time.get_ticks_usec() - t0) / 1000000.0
+	var hold_said := "a Heavy blow held the game's pace at %.2f for %.3f s (%d frames; the game: 0.06 for 0.1 s), then %.2f" % [held_at, held, frames, Engine.time_scale]
+	await _wait(0.6)
+
+	# WHAT IT COSTS: a hundred particles and three rings kept alive for 120 frames, its update and its drawing timed; and four
+	# hundred with eight
+	fx.holds = false
+	var costs: Array = []
+	for load in [[100, 3], [400, 8]]:
+		fx.clear()
+		await get_tree().process_frame
+		fx.timing = true
+		fx.cost_update = 0
+		fx.cost_draw = 0
+		fx.cost_frames = 0
+		var seen_p := 0
+		var seen_r := 0
+		for i in 120:
+			var k := 0
+			while fx.pn < int(load[0]):
+				if k % 2 == 0:
+					fx.spray(S.x, S.y, 1, Fx.L.POWER_HOT, 3.0, 80.0, 10.0)
+				else:
+					fx.streaks(S.x, S.y, 1, Fx.L.WIND, 6.0, 6.0, {"life": 0.5})
+				k += 1
+			while fx.rings.size() < int(load[1]):
+				fx.ring(S.x, S.y, 1.2 + fx.rings.size() * 0.4, 0.4, Fx.L.VENOM, fx.rings.size() % 2 == 0)
+			seen_p += fx.pn
+			seen_r += fx.rings.size()
+			await get_tree().process_frame
+		fx.timing = false
+		costs.append("with %d particles and %d rings alive: update %.3f ms, drawing %.3f ms a frame (%d frames)" % [seen_p / 120, seen_r / 120, fx.cost_update / 1000.0 / maxi(1, fx.cost_frames), fx.cost_draw / 1000.0 / maxi(1, fx.cost_frames), fx.cost_frames])
+	fx.clear()
+	# (--cases=<file>: what was told and when, written down, so that the same can be told to the game's own page and the two
+	# held side by side)
+	if _arg("cases") != "":
+		var f := FileAccess.open(_arg("cases"), FileAccess.WRITE)
+		f.store_string(JSON.stringify({"hero": [H.x, H.y], "spot": [S.x, S.y], "foe": foe.kind, "cases": _fx_told}))
+		f.close()
+	print("FX: %d pictures in %s; tellings told %s; %s; cost %s; %s; %s" % [_fx_pics, dir, fx.seen, hold_said, costs[0], costs[1], idle])
+
+
+var _fx_pics := 0
+var _fx_told: Array = []
+
+
+## One look pictured (the fx check): the effects emptied, `sent` told to them (each [seconds in, a telling]), and a picture
+## at each of `moments` (seconds into its life), the effects moved on a sixtieth of a second at a time between (`tend`, if
+## given, called with each step: what else must move on with them).
+func _fx_case(dir: String, name: String, sent: Array, moments: Array, tend := Callable()) -> void:
+	# (--case=<the start of a name>: only the looks so named are pictured)
+	if _arg("case") != "" and not name.begins_with(_arg("case")):
+		return
+	fx.clear()
+	await get_tree().process_frame
+	_fx_told.append({"name": name, "moments": moments, "sent": sent.map(func(q):
+		var e: Dictionary = q[1].duplicate()
+		if e.has("id"):
+			e["id"] = "foe"
+		return [q[0], e])})
+	var t := 0.0
+	var next := 0
+	var step := 1.0 / 60.0
+	for k in moments.size():
+		var until := float(moments[k])
+		while true:
+			while next < sent.size() and float(sent[next][0]) <= t + 1e-6:
+				fx.event(sent[next][1])
+				next += 1
+			if t >= until - 1e-6:
+				break
+			if tend.is_valid():
+				tend.call(step)
+			fx.advance(step, t + step >= until - 1e-6)
+			t += step
+		_fx_pics += 1
+		await RenderingServer.frame_post_draw
+		var img := get_viewport().get_texture().get_image()
+		img.get_region(Rect2i(140, 0, 680, 500)).save_png("%s/fx_%s%s.png" % [dir, name, "" if moments.size() == 1 else "_%d" % (k + 1)])
+		var c: Dictionary = fx.counts()
+		var told := PackedStringArray()
+		for q in sent:
+			var e: Dictionary = q[1]
+			var said := str(e["t"])
+			for key in ["kind", "style", "el", "words", "behind", "r", "amount", "crit", "heavy", "poison", "onHero", "sky", "big", "stacks", "secs", "combo"]:
+				if e.has(key) and not (e[key] is bool and e[key] == false) and not (key == "combo" and int(e[key]) == 0):
+					said += " %s=%s" % [key, e[key]]
+			told.append(("at %.1f s " % q[0] if float(q[0]) > 0.0 else "") + said)
+		print("FX %s at %.2f s: sent [%s]; alive: %d particles, %d rings, %d bolts, %d numbers; and %d flashes, %d cuts, %d whirls, %d cracks, %d marks, %d spikes, %d lights, %d winds, %d phantoms" % [
+			name, t, "; ".join(told), c["particles"], c["rings"], c["bolts"], c["numbers"], c["flashes"], c["slashes"], c["whirls"], c["cracks"], c["decals"], c["spikes"], c["glows"], c["winds"], c["phantoms"]])
