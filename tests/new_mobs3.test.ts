@@ -108,7 +108,11 @@ test('their switch goes with the rules\' (Version 19.9), and only the bestiary, 
   }
   // (render/bossfx.ts: THE FIRST FIVE FLOORS, the bosses' own effects, which use the Golem's skull's shadow and burst and the
   // marksman's line; the descent's kinds' effects, render/act1_fx/, are let through above)
-  assert.deepEqual(users.sort(), ['art/bestiary.ts', 'render/bossfx.ts', 'render/fx.ts', 'render/render.ts', 'render/wild.ts'], 'the game files that draw them');
+  // (and three of the game's own built on their bones since: endless mode's final boss, art/endless_boss.ts (tests/final_fight.test.ts);
+  // the temple door's key-bearers, art/key_bearers.ts (tests/temple_door.test.ts); and the unique items' play pictures,
+  // art/unique_play_art2.ts (tests/unique_play2.test.ts): brought up to the game as it is, 14 Nov 2026, at his pick, asked whether to
+  // fix the checks found failing on the live game: “Fix the 3 failing checks (Recommended)”)
+  assert.deepEqual(users.sort(), ['art/bestiary.ts', 'art/endless_boss.ts', 'art/key_bearers.ts', 'art/unique_play_art2.ts', 'render/bossfx.ts', 'render/fx.ts', 'render/render.ts', 'render/wild.ts'], 'the game files that draw them');
 });
 
 test('each painter paints every pose of the pictures without throwing, and paints something', () => {

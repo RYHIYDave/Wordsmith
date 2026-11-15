@@ -154,7 +154,10 @@ test('1. their switch goes with the rules\' (game/defs.ts CULT), and only the be
     if (/from ['"][^'"]*\/cultists['"]/.test(text)) users.push(f);
   }
   // (and FLOOR 4, MORE ACTION, behind ACTION_F4: the frenzy's numbers in its rules, game/game.ts and game/action_f4.ts)
-  assert.equal(users.sort().join(' '), 'art/bestiary.ts game/action_f4.ts game/game.ts render/bossfx.ts', 'the game files that draw them, and the rules that take its numbers');
+  // (and the temple door's key-bearers, built on the cult's knife-men, art/key_bearers.ts, and their rules, which take the dagger's frenzy,
+  // game/act1_rules/keybearers.ts: tests/temple_door.test.ts; brought up to the game as it is, 14 Nov 2026, at his pick: “Fix the 3
+  // failing checks (Recommended)”)
+  assert.equal(users.sort().join(' '), 'art/bestiary.ts art/key_bearers.ts game/act1_rules/keybearers.ts game/action_f4.ts game/game.ts render/bossfx.ts', 'the game files that draw them, and the rules that take its numbers');
 });
 
 test('2. their stands paint in every frame both ways round: nothing cyan, the pink edge round each, every pixel whole or empty but the edge, no lone pixel', () => {
