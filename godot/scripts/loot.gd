@@ -239,6 +239,8 @@ func derive() -> void:
 		"fire_min": g.call("fireMin"), "fire_max": g.call("fireMax"), "frost_min": g.call("frostMin"), "frost_max": g.call("frostMax"),
 		"light_min": g.call("lightMin"), "light_max": g.call("lightMax"), "poison_min": g.call("poisonMin"), "poison_max": g.call("poisonMax"),
 		"stun_chance": g.call("stunChance"),
+		# (Guarding burned into a piece: a chance to block a blow outright, 50% at most: game.ts hurtHero)
+		"block_chance": g.call("blockChance"),
 		"res_fire": g.call("fireRes"), "res_frost": g.call("frostRes"), "res_light": g.call("lightRes"), "res_poison": g.call("poisonRes"),
 	}
 	hero.set_max_life(maxf(1.0, life))
@@ -477,6 +479,12 @@ func _gold(at: Vector2, amount: int) -> void:
 
 func _orb(at: Vector2) -> void:
 	_drop("orb", _scatter(at), "orb", {})
+
+
+## (LEECH behind, game.ts kill: an enemy killed by a move carrying it drops a life orb now and then: hero.gd killed)
+func orb_at(at: Vector2) -> void:
+	if map != null:
+		_orb(at)
 
 
 func _item(at: Vector2, quality: int) -> void:

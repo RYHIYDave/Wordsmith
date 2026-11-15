@@ -43,8 +43,9 @@
 ##
 ## WHAT IS LEFT OUT (each said again where it would be): the looks of melded words (`e.meld`), of unique items, of the
 ## skill trees and of the other classes (the Mage's beams, orbs and arcs of power, the Ranger's arrows, volleys and traps,
-## the Brawler's, the Warlock's, the Tinkerer's); of the words that are not Power, Poison, Frost, Flame, Lightning, Swift or
-## Heavy (Twin's mirror and phantoms, Leeching's blood and wisps, Volatile's violet, the city's and the last words'); a word
+## the Brawler's, the Warlock's, the Tinkerer's); of the city's and the last words, and Lasting's, Fleeting's and Vast's own
+## (render/words10.ts; FLOORS 6 TO 10'S other six, Twin's mirror and phantoms, Leeching's blood and wisps, Volatile's violet,
+## Precise's, Frenzied's and Guarding's, are fx_words610.gd's, handed on from here); a word
 ## joining a move, dropping and being taken up; the fallen, and the lines said over heads (monster.gd's and the HUD's); the
 ## thrust's take-off and flight (wild.ts ongoing: from the hero's own move, which no telling carries).
 ## THE SOUNDS the game's `handle` makes with these tellings are not made here (this is what is SEEN): `poisoned` "leech"
@@ -60,6 +61,9 @@ const Words3 := preload("res://scripts/fx_words3.gd")
 const Wakes := preload("res://scripts/fx_wakes.gd")
 const Figures := preload("res://scripts/fx_figures.gd")
 const Monster := preload("res://scripts/monster.gd")
+## (floors 6 to 10's words at work: Twin's, Leech's, Volatile's, Precise's, Frenzied's and Guarding's looks: fx_words610.gd)
+const Words610 := preload("res://scripts/fx_words610.gd")
+var w610: Words610
 
 ## (main.ts: `gdt = fx.freeze > 0 ? dt * 0.06 : dt`)
 const HOLD_PACE := 0.06
@@ -206,6 +210,8 @@ func _init() -> void:
 	ground.fx = self
 	figures = Figures.new()
 	figures.fx = self
+	w610 = Words610.new()
+	w610.fx = self
 
 
 func _ready() -> void:
@@ -234,6 +240,7 @@ func _exit_tree() -> void:
 	wild.clear()
 	words3.clear()
 	figures.clear()
+	w610.clear()
 
 
 func _notification(what: int) -> void:
@@ -362,6 +369,7 @@ func clear() -> void:
 	words3.clear()
 	ground.clear()
 	figures.clear()
+	w610.clear()
 	_redraw()
 
 
@@ -794,6 +802,10 @@ func _handle(e: Dictionary) -> void:
 				words3.grit(m.world.x, m.world.y, 6)
 		"zone":
 			ground.laid(str(e.get("kind", "")), e["x"], e["y"], e["r"], true)
+			if e.get("kind", "") == "rune":
+				# a rune is written (a ward is the new words' look: fx_words610.gd draws it from the wakes' list)
+				ring(e["x"], e["y"], 1.0, 0.22, L.VIOLET, false, {"closing": true})
+				w610.crackle(e["x"], e["y"], 0.5, 4)
 		"cast":
 			_cast(e)
 		"channel":
@@ -802,6 +814,10 @@ func _handle(e: Dictionary) -> void:
 		"channelEnd":
 			if e.get("kind", "") == "whirl":
 				wild.whirl_end(e["x"], e["y"])
+		_:
+			# (floors 6 to 10's words' own tellings: echo, mark, leech, orb, markOn, markSpent, frenzy, frenzyFed, shield,
+			# guarded, blocked)
+			w610.handle(e)
 
 
 ## The monster a telling is of: its `id` the monster itself or its instance id; failing both, the one nearest (x, y).
@@ -828,20 +844,22 @@ func _monster_of(e: Dictionary):
 
 ## A move used with words on it (fx.ts case 'cast'): every word behind it stirs at the hero's feet.
 func _cast(e: Dictionary) -> void:
-	# (left out: an echo's phantom letting go, Twin's; the launch of a shot, a wave or a volley, the other classes'; the
-	# gust heard with Swift in front)
-	if e.get("echo", false):
-		return
+	# (left out: the launch of a shot, a wave or a volley, the other classes'; the gust heard with Swift in front)
 	var x: float = e["x"]
 	var y: float = e["y"]
+	if e.get("echo", false):
+		# the phantom lets go
+		flash(x, y, 12.0, 0.5, 0.1, L.MIRROR)
+		spray(x, y, 8, L.MIRROR, 2.4, 70.0, 10.0)
+		return
 	var white: Color = L.P["white"]
 	for b in e.get("behind", []):
-		# (left out: the words that are not Power, Poison, Frost, Flame, Lightning, Swift or Heavy)
-		if not str(b) in CAST_WORDS:
+		# (left out: the words that are not a Warrior's of floors 1 to 10)
+		if not str(b) in CAST_WORDS and not L.HUE.has(str(b)):
 			continue
 		var hue: Color = L.HUE[str(b)]
-		# (Might and Swiftness have their own sign round the hero; the others get a pulse)
-		if b != "power" and b != "swift":
+		# (Might, Swiftness and Echoes have their own sign round the hero; the others get a pulse)
+		if b != "power" and b != "swift" and b != "twin":
 			ring(x, y, 0.7, 0.2, PackedColorArray([white, hue, hue]), false)
 		for i in 4:
 			var a := randf() * TAU
@@ -879,10 +897,20 @@ func _hit(e: Dictionary) -> void:
 		spray(x, y, 6, L.POWER_HOT, 3.5, 80.0, 12.0)
 		kick(2.6)
 		hold(0.045)
-	# each word in front leaves its own mark on what it hits (left out: Twin's, Leeching's, Volatile's)
+	# each word in front leaves its own mark on what it hits
 	if _has(w, "swift"):
 		streaks(x, y, 6, L.WIND, 9.0, 6.0, {"life": 0.13, "z": 12.0})
 		ring(x, y, 0.62, 0.16, L.WIND, false, {"swirl": true})
+	if _has(w, "twin"):
+		spray(x, y, 4, L.MIRROR, 2.6, 60.0, 12.0)
+	if _has(w, "leech"):
+		streaks(x, y, 4, L.BLOOD, 2.4, 2.0, {"up": 60.0, "grav": 300.0, "life": 0.4, "z": 12.0})
+	if _has(w, "volatile"):
+		w610.pop(x, y)
+	# (PRECISE, words3.ts events3: a hit that spends a mark shows the critical, not the plain Precise hit)
+	if not on_hero and _has(w, "precise") and not w610.spent_here(x, y):
+		var hh: Vector2 = hero_at()
+		w610.precise_hit(x, y, x - hh.x, y - hh.y)
 	if _has(w, "fire"):
 		flames(x, y, 0.25, 3)
 		streaks(x, y, 3, L.EMBER, 3.5, 2.0, {"up": 70.0, "grav": 180.0, "life": 0.4})
@@ -911,25 +939,40 @@ func _swing(e: Dictionary) -> void:
 	# Power on a plain blade burns white-hot; on an element it keeps the element's colours
 	var colors := L.POWER_HOT if heavy and el == "phys" else plain
 	var fast := _has(w, "swift")
+	var second := int(e.get("n", 0)) > 0
+	var echo: bool = e.get("echo", false)
 	if el == "phys" and not heavy:
 		if fast:
 			colors = L.WIND
+		elif _has(w, "leech"):
+			colors = PackedColorArray([L.P["white"], L.P["bl5"], L.P["bl4"]])
+		elif _has(w, "volatile"):
+			colors = PackedColorArray([L.P["white"], L.P["pu5"], L.P["pu4"]])
 		elif _has(w, "poison"):
 			colors = PackedColorArray([L.P["white"], L.P["vn5"], L.P["vn4"]])
-	# (left out: Twin's second cut and an echo's, in the mirror's teal, with the phantom that makes it; Leeching's and
-	# Volatile's colours)
+	# (Twin's second cut and an echo's, in the mirror's teal)
+	if second and el == "phys" and not heavy:
+		colors = L.MIRROR
+	if echo:
+		colors = L.MIRROR
 	# (big and wild: a crescent of the friend's light in place of the plain cut, with wind off its edge and dust: fx_wild.gd)
 	var combo := int(e.get("combo", figures.hero_combo()))
-	var drawn := wild.swing(x, y, dx, dy, reach, not heavy and not fast and el == "phys", combo == 1)
+	var drawn := wild.swing(x, y, dx, dy, reach, not heavy and not fast and not second and el == "phys", combo == 1, echo)
 	if not drawn:
-		slash(x, y, a, reach, 0.13 if fast else (0.24 if heavy else 0.16), colors, heavy, {"fast": fast, "jag": el == "lightning"})
+		slash(x, y, a, reach, 0.13 if fast else (0.24 if heavy else 0.16), colors, heavy, {"fast": fast, "rev": second, "jag": el == "lightning", "faint": echo})
 	var tip_x := x + dx * reach * 0.85
 	var tip_y := y + dy * reach * 0.85
 	if fast:
 		# wind thrown off the cut, and a blur of the hero behind it
 		streaks(x + dx * reach * 0.4, y + dy * reach * 0.4, 11, L.WIND, 11.0, 11.0, {"dx": dx, "dy": dy, "spread": 0.9, "life": 0.16, "z": 10.0, "r": reach * 0.5})
-		figures.phantom(x - dx * 0.6, y - dy * 0.6, dx, dy, L.P["gn4"], 0.18, 0.0, 0.42)
-		figures.phantom(x - dx * 1.2, y - dy * 1.2, dx, dy, L.P["gn3"], 0.26, 0.0, 0.24)
+		if not echo:
+			figures.phantom(x - dx * 0.6, y - dy * 0.6, dx, dy, L.P["gn4"], 0.18, 0.0, 0.42)
+			figures.phantom(x - dx * 1.2, y - dy * 1.2, dx, dy, L.P["gn3"], 0.26, 0.0, 0.24)
+	if second and not echo:
+		# the twin: a phantom beside the hero makes the second cut
+		figures.phantom(x + dy * 0.7, y - dx * 0.7, dx, dy, L.P["tl4"], 0.32, 0.0, 0.85)
+		spray(x + dy * 0.7, y - dx * 0.7, 8, L.MIRROR, 2.2, 70.0, 10.0)
+		flash(x + dy * 0.7, y - dx * 0.7, 14.0, 0.3, 0.09, L.MIRROR)
 	if el == "fire":
 		# flames stand along the path of the blade
 		for i in 6:
@@ -945,6 +988,12 @@ func _swing(e: Dictionary) -> void:
 		var b := a + L.rnd(-0.6, 0.6)
 		ground_bolt(x + cos(a - 0.7) * reach * 0.9, y + sin(a - 0.7) * reach * 0.9, x + cos(a + 0.7) * reach * 0.9, y + sin(a + 0.7) * reach * 0.9)
 		streaks(x + cos(b) * reach, y + sin(b) * reach, 4, L.VOLT, 4.0, 2.0, {"life": 0.2})
+	if _has(w, "leech"):
+		streaks(tip_x, tip_y, 5, L.BLOOD, 2.0, 2.0, {"dx": dx, "dy": dy, "spread": 1.4, "up": 20.0, "grav": 260.0, "life": 0.4, "z": 12.0, "r": 0.4})
+	if _has(w, "volatile"):
+		for i in 3:
+			var b := a + L.rnd(-0.8, 0.8)
+			w610.crackle(x + cos(b) * reach * 0.9, y + sin(b) * reach * 0.9, 0.15, 1)
 	if _has(w, "poison"):
 		# venom flies off the blade along its path
 		var drops := L.rest(L.VENOM)
@@ -967,12 +1016,23 @@ func _burst(e: Dictionary) -> void:
 	var area := style != "shock"
 	var P: Dictionary = L.P
 	# (left out: the other classes' styles and their own looks: the Tinkerer's vial, pound and bomb, the Warrior's Earthquake,
-	# a rune going off, a warp, an orb's wave, a comet; a melded word's burst; Twin's second burst and an echo's)
-	# (big and wild, fx_wild.gd: a whirlwind's turn, the thrust's landing; a trap going off in wind is the Ranger's)
-	if style == "whirl":
-		wild.whirl_turn(x, y, r)
-	elif style == "land":
-		wild.landing(x, y, r)
+	# a warp, an orb's wave, a comet; a melded word's burst)
+	var second := int(e.get("n", 0)) > 0
+	var echo: bool = e.get("echo", false)
+	# (big and wild, fx_wild.gd: a whirlwind's turn, the thrust's landing, Volatile's blast; a trap going off in wind is the
+	# Ranger's)
+	if not echo:
+		if style == "whirl":
+			wild.whirl_turn(x, y, r)
+		elif style == "land":
+			wild.landing(x, y, r)
+		elif style == "blast" and wild.has_method("blast"):
+			wild.blast(x, y, r)
+	if style == "ruin":
+		# a rune goes off
+		ring(x, y, r, 0.3, L.VIOLET, true, {"heavy": true})
+		w610.ruin(x, y, r, true)
+		return
 	if style == "whirl":
 		# One turn of a whirlwind: the path of the blade, in the colours a sword cut has, and a little of whatever the
 		# blade carries thrown off round it. (It comes three times a second: no fireballs.)
@@ -981,14 +1041,21 @@ func _burst(e: Dictionary) -> void:
 		if el == "phys" and not power:
 			if quick:
 				cs = L.WIND
+			elif _has(w, "leech"):
+				cs = PackedColorArray([P["white"], P["bl5"], P["bl4"]])
+			elif _has(w, "volatile"):
+				cs = PackedColorArray([P["white"], P["pu5"], P["pu4"]])
 			elif _has(w, "poison"):
 				cs = PackedColorArray([P["white"], P["vn5"], P["vn4"]])
-		whirls.append({"x": x, "y": y, "r": r, "t": 0.0, "dur": 0.22 if quick else 0.3, "colors": cs, "heavy": power, "jag": el == "lightning", "faint": false, "rev": false})
+		if echo or (second and el == "phys" and not power):
+			cs = L.MIRROR
+		whirls.append({"x": x, "y": y, "r": r, "t": 0.0, "dur": 0.22 if quick else 0.3, "colors": cs, "heavy": power, "jag": el == "lightning", "faint": echo, "rev": second})
 		if power:
 			kick(1.2)
+		var bits := 2 if echo else 4
 		var a0 := randf() * TAU
-		for i in 4:
-			var a := a0 + i / 4.0 * TAU
+		for i in bits:
+			var a := a0 + float(i) / bits * TAU
 			var bx := x + cos(a) * r * 0.85
 			var by := y + sin(a) * r * 0.85
 			if el == "fire":
@@ -999,6 +1066,10 @@ func _burst(e: Dictionary) -> void:
 				streaks(bx, by, 2, L.VOLT, 4.0, 2.0, {"life": 0.2})
 			if quick:
 				streaks(bx, by, 1, L.WIND, 9.0, 8.0, {"dx": -sin(a), "dy": cos(a), "spread": 0.2, "life": 0.15, "z": 10.0})
+			if _has(w, "leech") and i % 2 == 0:
+				streaks(bx, by, 1, L.BLOOD, 2.0, 2.0, {"up": 20.0, "grav": 240.0, "life": 0.4, "z": 10.0})
+			if _has(w, "volatile") and i % 2 == 1:
+				w610.crackle(bx, by, 0.15, 1)
 			if _has(w, "poison") and i % 2 == 0:
 				bubbles(bx, by, 0.2, 1)
 		return
@@ -1007,10 +1078,18 @@ func _burst(e: Dictionary) -> void:
 	if el == "phys" and not power:
 		if fast:
 			colors = L.WIND
+		elif _has(w, "leech"):
+			colors = L.BLOOD
+		elif _has(w, "volatile"):
+			colors = L.VIOLET
 		elif _has(w, "poison"):
 			colors = L.VENOM
+	if echo:
+		colors = L.MIRROR
+	elif second and el == "phys":
+		colors = L.MIRROR
 	if area:
-		ring(x, y, r, 0.14 if fast else (0.32 if style == "nova" else 0.26), colors, style != "warp", {"heavy": power, "jag": el == "lightning"})
+		ring(x, y, r, 0.14 if fast else (0.32 if style == "nova" else 0.26), colors, style != "warp" and not echo, {"heavy": power, "jag": el == "lightning", "double": second or echo})
 	if power:
 		# Power's own mark, on top of whatever the ability does
 		power_impact(x, y, r, area)
@@ -1044,8 +1123,34 @@ func _burst(e: Dictionary) -> void:
 		ring(x, y, r * 0.8, 0.2, L.WIND, false, {"swirl": true, "delay": 0.05})
 		streaks(x, y, 20, L.WIND, r / 0.1, 12.0, {"life": 0.17, "z": 3.0, "r": r * 0.3})
 		kick(1.4)
+	if second and not echo:
+		# the twin: a phantom of the hero on the far side of the blast brings down the second one
+		var hh: Vector2 = hero_at()
+		var px := 2.0 * x - hh.x
+		var py := 2.0 * y - hh.y
+		var far := Vector2(px, py).distance_to(hh) > 0.6
+		var gxx := px if far else x + 0.8
+		var gyy := py if far else y - 0.8
+		var gl := maxf(0.0001, Vector2(x - gxx, y - gyy).length())
+		figures.phantom(gxx, gyy, (x - gxx) / gl, (y - gyy) / gl, P["tl4"], 0.36, 0.0, 0.85)
+		flash(gxx, gyy, 14.0, 0.32, 0.1, L.MIRROR)
+		spray(gxx, gyy, 8, L.MIRROR, 2.2, 70.0, 8.0)
+		ring(x, y, r * 0.9, 0.28, L.MIRROR, true, {"heavy": true, "delay": 0.03})
+	elif echo and el != "phys":
+		ring(x, y, r * 0.9, 0.24, L.MIRROR, false, {"delay": 0.04})
+	if _has(w, "leech"):
+		# the blast pulls back toward its middle
+		ring(x, y, r, 0.3, L.BLOOD, false, {"closing": true, "delay": 0.08, "heavy": r > 1.7})
+		streaks(x, y, mini(24, _round(6.0 + r * 5.0)), L.BLOOD, 2.5, 2.0, {"up": 70.0, "grav": 240.0, "life": 0.45, "r": r * 0.8})
 	if _has(w, "poison"):
 		venom_splash(x, y, r, r > 1.7)
+	if _has(w, "volatile"):
+		if style == "blast" and w is Array and (w as Array).size() == 1:
+			# (what Volatile in front killed, going off)
+			w610.ruin(x, y, r, false)
+		else:
+			w610.unstable(x, y, r)
+			ring(x, y, r * 0.85, 0.24, L.VIOLET, false, {"jag": true, "heavy": true, "delay": 0.06})
 
 
 ## The hero's own (fx.ts case 'buff').
@@ -1278,6 +1383,7 @@ func update(dt: float, real: float) -> void:
 	wild.update(dt)
 	words3.tick(dt)
 	figures.tick(dt)
+	w610.update(dt)
 
 
 static func _trim(list: Array, most: int) -> void:
@@ -1399,7 +1505,7 @@ static func pline(c: CanvasItem, x0f: float, y0f: float, x1f: float, y1f: float,
 
 ## Whether anything is alive to be drawn; the layers are drawn again while there is, and once more after.
 func _alive() -> bool:
-	return pn > 0 or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive()
+	return pn > 0 or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive()
 
 
 func _redraw() -> void:
@@ -1437,6 +1543,7 @@ func _paint(c: CanvasItem, pass_id: int) -> void:
 func _paint_ground(c: CanvasItem) -> void:
 	var P: Dictionary = L.P
 	words3.draw_floor(c)
+	w610.draw_floor(c)
 	# (left out: the rifts of the enemies coming in, the other classes' and the unique items' marks, a volley's arrows
 	# standing in the floor and their shadows)
 	for d: Dictionary in decals:
@@ -1611,7 +1718,9 @@ func _paint_air(c: CanvasItem) -> void:
 				u += 0.016
 	for s: Dictionary in slashes:
 		_paint_slash(c, s)
-	# (left out: a rune's column of light, Volatile's; the wand's beams, the Mage's)
+	# (Volatile's rune's column of light, Leeching's wisps, Precise's pins and sights, Frenzied's sparks, Guarding's shell and the
+	# motes of its ward: fx_words610.gd. Left out: the wand's beams, the Mage's)
+	w610.draw_air(c, wakes.list if wakes != null and is_instance_valid(wakes) else [])
 	for f: Dictionary in flashes:
 		# a burst of light: a bright core with four rays
 		var k: float = f["t"] / f["dur"]
@@ -1668,7 +1777,7 @@ func _paint_air(c: CanvasItem) -> void:
 				var y0 := by - (at + 1) * step + (i / 2) * step * 0.7
 				pline(c, x0, y0, bx + fork[i + 1], y0 + step * 0.7, P["lt3"])
 				i += 2
-	# (left out: Leeching's wisps of life; a volley's arrows coming down)
+	# (left out: a volley's arrows coming down)
 	for i in pn:
 		var x := _px[i]
 		var y := _py[i]

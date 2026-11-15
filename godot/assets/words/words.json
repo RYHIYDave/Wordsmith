@@ -6,7 +6,16 @@
   "fire",
   "lightning",
   "swift",
-  "heavy"
+  "heavy",
+  "twin",
+  "leech",
+  "volatile",
+  "precise",
+  "frenzied",
+  "guarding",
+  "lasting",
+  "fleeting",
+  "vast"
  ],
  "words": {
   "power": {
@@ -99,6 +108,123 @@
    "frontText": "Slower, hits much harder and stuns.",
    "behindText": "Leaves cracked ground that staggers enemies.",
    "monsterText": "Its blows knock you back."
+  },
+  "twin": {
+   "id": "twin",
+   "kind": "shape",
+   "name": "Twin",
+   "front": "Twin",
+   "behind": "of Echoes",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of doubling. Two of a thing, each the weaker for it.",
+   "frontText": "Strikes, fires or bursts twice, each time weaker.",
+   "behindText": "Repeats itself a moment later, weaker.",
+   "monsterText": "Attacks twice."
+  },
+  "leech": {
+   "id": "leech",
+   "kind": "shape",
+   "name": "Leech",
+   "front": "Leeching",
+   "behind": "of Leeching",
+   "attr": "str",
+   "element": null,
+   "about": "The word of hunger. It takes life from what it touches.",
+   "frontText": "Heals you for every enemy hit.",
+   "behindText": "Enemies it kills drop life orbs.",
+   "monsterText": "Heals when it hits you."
+  },
+  "volatile": {
+   "id": "volatile",
+   "kind": "shape",
+   "name": "Volatile",
+   "front": "Volatile",
+   "behind": "of Ruin",
+   "attr": "int",
+   "element": null,
+   "about": "The word of ruin. Things burst.",
+   "frontText": "Enemies it kills explode.",
+   "behindText": "Leaves a rune that detonates a moment later.",
+   "monsterText": "Explodes when it dies."
+  },
+  "precise": {
+   "id": "precise",
+   "kind": "shape",
+   "name": "Precise",
+   "front": "Precise",
+   "behind": "of the Mark",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of the exact. Narrow, and deadly.",
+   "frontText": "More damage, a smaller area.",
+   "behindText": "Marks an enemy: your next hit on it is a certain critical.",
+   "monsterText": "Its hits find the gaps in your armour."
+  },
+  "frenzied": {
+   "id": "frenzied",
+   "kind": "shape",
+   "name": "Frenzied",
+   "front": "Frenzied",
+   "behind": "of Frenzy",
+   "attr": "str",
+   "element": null,
+   "about": "The word of rage. Faster, and faster.",
+   "frontText": "Each use makes the next faster, up to five times.",
+   "behindText": "Kills keep the frenzy going.",
+   "monsterText": "Speeds up as it is hurt."
+  },
+  "guarding": {
+   "id": "guarding",
+   "kind": "shape",
+   "name": "Guarding",
+   "front": "Guarding",
+   "behind": "of Warding",
+   "attr": "str",
+   "element": null,
+   "about": "The word of the shield. It keeps you.",
+   "frontText": "Each use gives you a brief shield.",
+   "behindText": "Leaves a ward circle: you take less damage inside it.",
+   "monsterText": "Carries a shield that soaks damage."
+  },
+  "lasting": {
+   "id": "lasting",
+   "kind": "shape",
+   "name": "Lasting",
+   "front": "Lasting",
+   "behind": "of Ages",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the long hour. What it makes, stays.",
+   "frontText": "Everything it makes and gives lasts half again as long.",
+   "behindText": "Everything it makes and gives lasts half again as long.",
+   "monsterText": "Its poison, burning and chill last longer on you."
+  },
+  "fleeting": {
+   "id": "fleeting",
+   "kind": "shape",
+   "name": "Fleeting",
+   "front": "Fleeting",
+   "behind": "of Moments",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of the moment. All of it, sooner.",
+   "frontText": "Everything it makes and gives is a third shorter, and does as much in that time.",
+   "behindText": "Everything it makes and gives is a third shorter, and does as much in that time.",
+   "monsterText": "Its poison and burning hurt you faster."
+  },
+  "vast": {
+   "id": "vast",
+   "kind": "shape",
+   "name": "Vast",
+   "front": "Vast",
+   "behind": "of the Expanse",
+   "attr": "str",
+   "element": null,
+   "about": "The word of the wide. Broad, and lighter.",
+   "frontText": "A much bigger area, a little less damage.",
+   "behindText": "Each hit splashes onto the enemies near what it hits.",
+   "monsterText": "Its attacks reach wider."
   }
  },
  "moves": [
@@ -174,6 +300,122 @@
  "poison": {
   "time": 4,
   "stacks": 8
+ },
+ "precise": {
+  "area": 0.7,
+  "markTime": 5,
+  "armourIgnored": 0.5
+ },
+ "frenzy": {
+  "each": 0.08,
+  "max": 5,
+  "hold": 3,
+  "monster": 0.5
+ },
+ "guard": {
+  "shield": 0.1,
+  "shieldTime": 3,
+  "ward": 0.3,
+  "wardTime": 4,
+  "monster": 0.2,
+  "blockCap": 50
+ },
+ "lasting": {
+  "longer": 0.5,
+  "longerMost": 0.7,
+  "monster": 0.5
+ },
+ "fleeting": {
+  "shorter": 0.3333333333333333,
+  "stronger": 0.3333333333333333,
+  "monster": 0.3333333333333333
+ },
+ "vast": {
+  "wider": 0.4,
+  "widerMost": 0.6,
+  "softer": 0.15,
+  "splash": 0.25,
+  "splashMost": 0.4,
+  "splashR": 1.5,
+  "monster": 0.3
+ },
+ "leechCap": null,
+ "echo": {
+  "delay": 0.8,
+  "bites": 3
+ },
+ "wilds": [
+  "twin",
+  "leech",
+  "volatile",
+  "precise",
+  "frenzied",
+  "guarding",
+  "lasting",
+  "fleeting",
+  "vast"
+ ],
+ "looks": {
+  "ramp": {
+   "precise": [
+    "#262c3a",
+    "#4e5870",
+    "#94a2bc",
+    "#eef4fa",
+    "#ffffff",
+    "#ffffff"
+   ],
+   "frenzied": [
+    "#380a06",
+    "#7c1a0c",
+    "#c03616",
+    "#ff5c33",
+    "#ff9670",
+    "#fff0e8"
+   ],
+   "guarding": [
+    "#0a2a1c",
+    "#124e32",
+    "#1e8048",
+    "#30a868",
+    "#8ae4ac",
+    "#eafff2"
+   ],
+   "lasting": [
+    "#1c1412",
+    "#3e2e28",
+    "#6e564c",
+    "#aa8880",
+    "#ecceb0",
+    "#fff4e6"
+   ],
+   "fleeting": [
+    "#1e1630",
+    "#5a4486",
+    "#b48ce6",
+    "#f8e4f8",
+    "#fff4ff",
+    "#ffffff"
+   ],
+   "vast": [
+    "#140e08",
+    "#2e2214",
+    "#4a3620",
+    "#6e4e2e",
+    "#c4a47e",
+    "#f0e2cc"
+   ]
+  },
+  "guardGlyph": [
+   "XXXXXX",
+   "X.oo.X",
+   "X.oo.X",
+   "X....X",
+   ".X..X.",
+   "..XX.."
+  ],
+  "wardDark": "#06140c",
+  "sightDark": "#0a0c14"
  },
  "arcChain": {
   "on": true,

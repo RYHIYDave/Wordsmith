@@ -793,6 +793,11 @@ func _wordsui_shots(h: Hero, dir: String) -> void:
 	var smith := Vector2(9.5, 14.5)
 	var forge := Vector2(19.5, 7.5)
 	await _wait(0.8)
+	# (`--cases=610`: floors 6 to 10's nine words' lines alone: check_words610.gd)
+	if _arg("cases").begins_with("610"):
+		await CheckWords610.new(self, h).ui(dir)
+		print("WORDSUI: %d lines, %d wrong%s" % [_wu_n, _wu_bad.size(), "" if _wu_bad.is_empty() else ": " + str(_wu_bad)])
+		return
 
 	# --- a new hero, the ring dark: no slots; floor 1's fallen wordsmith, and his stone
 	_wu(not loot.ring_lit and sizes.call(L.front) == [0, 0, 0] and sizes.call(L.behind) == [0, 0, 0], "a new hero, the ring dark: his moves' slots in front %s, behind %s" % [sizes.call(L.front), sizes.call(L.behind)])
@@ -1362,6 +1367,8 @@ func _wordsui_shots(h: Hero, dir: String) -> void:
 		h.world = b["at"] + Vector2(0.5, 0.5)
 		await _wait(0.4)
 		_wu(loot.quest == "heart" and b["searched"] and _wu_lying().is_empty(), "searched there before the ring is lit: he carries the stone (quest '%s'), no word laid %s" % [loot.quest, _wu_lying()])
+	# (FLOORS 6 TO 10'S NINE WORDS: found, on the gear screen, set and refused: check_words610.gd)
+	await CheckWords610.new(self, h).ui(dir)
 	print("WORDSUI: %d lines, %d wrong%s" % [_wu_n, _wu_bad.size(), "" if _wu_bad.is_empty() else ": " + str(_wu_bad)])
 
 
@@ -1590,6 +1597,8 @@ func _foewords_shots(h: Hero, dir: String) -> void:
 	_fw_hit(h, bat)
 	await _wait(0.4)
 	await _snap(dir + "/fw4_poisoned.png")
+	# (FLOORS 6 TO 10'S NINE WORDS on a monster: check_words610.gd)
+	await CheckWords610.new(self, h).foes()
 	print("FOEWORDS: %d cases, %d as the game's formula gives, %d not%s" % [_fw_n, _fw_n - _fw_bad.size(), _fw_bad.size(), "" if _fw_bad.is_empty() else ": " + ", ".join(PackedStringArray(_fw_bad))])
 
 
@@ -2086,6 +2095,8 @@ func _hero_moves(hero: Hero, dir: String) -> void:
 ## wind-up; an elite and the boss struck with Frost and Heavy, Flame and Poison; and one line for all of it, beginning WORDS:.
 const W_ROLL := 100.0
 const W_LIFE := 1000000.0
+## (floors 6 to 10's words' cases, in each of the three words' checks: check_words610.gd)
+const CheckWords610 := preload("res://scripts/check_words610.gd")
 ## (where the six stand from him: tiles before him, tiles to his side)
 const W_FORM := [[1.2, 0.0], [1.2, 0.9], [2.1, -0.5], [3.8, 0.4], [5.2, -0.6], [9.5, 0.5]]
 var _w_pack: Array = []
@@ -2141,22 +2152,29 @@ func _words_shots(h: Hero, dir: String) -> void:
 		await get_tree().process_frame
 		frames += get_process_delta_time()
 	_w_frame = frames / 30.0
-	var words: Array = Hero.Words.ids()
+	# (the first seven's cases; floors 6 to 10's nine have their own, at the end: check_words610.gd. `--cases=610`: theirs alone;
+	# `--cases=610:<word>`, one word's)
+	var words: Array = Hero.Words.ids().filter(func(w): return not Hero.Words.data()["wilds"].has(w))
+	if _arg("cases").begins_with("610"):
+		words = []
 	print("WORDS begin: floor 2, he at %s facing %s, the pack A to F %s to %s tiles before him; his Str %d Dex %d Int %d, his roll fixed at %d, no critical hits, %.3f blows a second; a frame takes %.3f s" % [
 		_w_home, _w_face, W_FORM[0][0], W_FORM[5][0], h.stats["str"], h.stats["dex"], h.stats["int"], W_ROLL, h.stats["aps"], _w_frame])
 	for w in words:
 		await _w_strike_front(h, w)
 	for w in words:
 		await _w_strike_behind(h, w)
-	for side in ["front", "behind"]:
-		for w in ["fire", "frost", "lightning", "poison"]:
-			await _w_whirl_case(h, side, w)
-	for side in ["front", "behind"]:
-		for w in ["fire", "frost", "lightning", "poison"]:
-			await _w_lunge_case(h, side, w)
-	await _w_more(h)
-	await _w_chilled(h)
-	await _w_tough(h, elite, boss)
+	if not words.is_empty():
+		for side in ["front", "behind"]:
+			for w in ["fire", "frost", "lightning", "poison"]:
+				await _w_whirl_case(h, side, w)
+		for side in ["front", "behind"]:
+			for w in ["fire", "frost", "lightning", "poison"]:
+				await _w_lunge_case(h, side, w)
+		await _w_more(h)
+		await _w_chilled(h)
+		await _w_tough(h, elite, boss)
+	# (FLOORS 6 TO 10'S NINE WORDS, each in front of and behind each of his moves: check_words610.gd)
+	await CheckWords610.new(self, h).words(_arg("cases").trim_prefix("610").trim_prefix(":"))
 	print("WORDS: %d cases, %d as the game's formula gives, %d not%s" % [_w_n, _w_n - _w_bad.size(), _w_bad.size(), "" if _w_bad.is_empty() else ": " + "; ".join(PackedStringArray(_w_bad))])
 
 

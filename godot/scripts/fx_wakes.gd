@@ -223,6 +223,9 @@ func draw(c: CanvasItem, p: Dictionary) -> void:
 		_handed = []
 	_handed.append(p)
 	var kind := str(p.get("kind", ""))
+	# (floors 6 to 10's words: Volatile's rune and Guarding's ward, fx_words610.gd)
+	if fx.w610 != null and fx.w610.draw_patch(c, p):
+		return
 	if not kind in KINDS:
 		return
 	var P: Dictionary = L.P

@@ -5,8 +5,8 @@
 //     their lines (modLines), how many properties it was found with and which (what no word may give it again), its price
 //     (itemValue) and its price with one, two, ... words burned into it; the Warrior's own starting greatsword; and the
 //     numbers the hero's stats are made from (game/stats.ts derive, defs.ts TUNE, ATTR_GIVES).
-//     WHAT A WORD BECOMES ON A PIECE (`imbue`; items.ts imbueOptions, imbueItem): for each of the seven words a Warrior can
-//     come by on floors 1 to 5 (tools/godot_words.ts), each kind of piece and each level a piece here has: the one, two or
+//     WHAT A WORD BECOMES ON A PIECE (`imbue`; items.ts imbueOptions, imbueItem): for each of the sixteen words a Warrior can
+//     come by on floors 1 to 10 (tools/godot_words.ts), each kind of piece and each level a piece here has: the one, two or
 //     three things the word may become there, each with the range it is read out with (ui/inventory.ts rangeText) and
 //     EVERY SIZE IT CAN ROLL, each made by the game's own imbueItem (its mods, its lines) with how likely it is. The game
 //     picks one of those things evenly and rolls its size; loot.gd does the same from this table, less what the piece
@@ -48,8 +48,10 @@ game.depth = 1;
 game.enterDungeon();
 const roll = (q: number): Item => (game as unknown as { rollGear(q: number): Item }).rollGear(q);
 const icons = makeIconArt();
-// (the words a Warrior can come by on floors 1 to 5: the prison's six and Heavy, the armourer's reward: tools/godot_words.ts)
-const OURS: WordId[] = [...PRISON_WORD_IDS, FURNACE_WORD.warrior];
+// (the words a Warrior can come by on floors 1 to 5: the prison's six and Heavy, the armourer's reward; and floors 6 to 10's, the
+// rest of what may be found there, in the game's order: tools/godot_words.ts)
+const PRISON: WordId[] = [...PRISON_WORD_IDS, FURNACE_WORD.warrior];
+const OURS: WordId[] = [...PRISON, ...WORD_IDS.filter((w) => !PRISON.includes(w) && [6, 7, 8, 9, 10].some((d) => wordsAt(d).includes(w)))];
 
 // --- the pictures, each once, by key ---
 const pics = new Map<string, Sprite>();
@@ -149,10 +151,10 @@ for (const [q, n] of POOLS) {
   for (const it of list) by[(it as { rarity: number }).rarity]++;
   tally.push(`quality ${q}: ${n} (plain ${by[0]}, magic ${by[1]}, rare ${by[2]}, unique ${by[3]})`);
 }
-// (ANY FLOOR: the same pools rolled by the game on each of floors 2 to 5, a new Warrior's game set down there: the deeper, the
+// (ANY FLOOR: the same pools rolled by the game on each of floors 2 to 10, a new Warrior's game set down there: the deeper, the
 // better the gear, as the game's rollGear has it by the floor; loot.gd takes the pool of the floor he is on)
 const byDepth: Record<string, Record<string, unknown[]>> = { '1': pools };
-for (let depth = 2; depth <= 5; depth++) {
+for (let depth = 2; depth <= 10; depth++) {
   const deep = new Game('warrior', seed);
   deep.depth = depth;
   deep.enterDungeon();
@@ -185,7 +187,7 @@ for (const w of OURS) {
 // (stats that count as one property on a piece: items.ts statGroup; only those that are not their own)
 const groups: Record<string, string> = {};
 for (const k of Object.keys(STAT_INFO)) if (statGroup(k as StatKey) !== k) groups[k] = statGroup(k as StatKey);
-const FLOORS = [1, 2, 3, 4, 5];
+const FLOORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const words = {
   // (the order the game lists the words a hero holds in, types.ts WORD_IDS; and each word's own colour, art/icons.ts WORD_COLOR)
   order: WORD_IDS.filter((w) => OURS.includes(w)),

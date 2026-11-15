@@ -46,10 +46,21 @@
 ##   What the rules have done they TELL (fx.gd event, the game's own tellings): swing, cast, hit, burst, heavy, buff here;
 ##     ignite, freeze, shatter, poisoned, stun, stagger from the monster (monster.gd); arc from monsters.gd and the storm; zone
 ##     from wakes.gd.
-##   LEFT OUT, as not a new Warrior's on floors 1 to 5: the skill trees (game.ts has, was, now: Sweeping Cut, Master Stroke,
+##   FLOORS 6 TO 10'S WORDS (the same functions of game.ts): TWIN in front, two of each blow, cut and shock, each its share, the
+##     second a moment after (deliver, channelBite, land); behind, "of Echoes", a phantom makes the move again a moment later
+##     from where it was made (deliver, endChannel, echoOf). LEECH in front, life back for every enemy hit; behind, the struck
+##     marked, and an enemy it kills drops a life orb now and then (hitMonster, kill). VOLATILE in front, what it kills explodes
+##     (explodeKill); behind, a rune that goes off (addRune; wakes.gd). PRECISE in front, harder and narrower (resolve); behind,
+##     the first enemy each use hits is marked, his next hit on it a certain critical. VAST in front, wider and softer; behind,
+##     each hit splashes onto all near what it hit. FRENZIED in front, each use a stack, his Strike and every wait faster
+##     (boons, frenzyPace); behind, each kill a stack and the frenzy held longer. GUARDING in front, a shield; behind, a ward
+##     circle (leavePatches; hurt_by). LASTING and FLEETING on all that lasts and ticks (the Whirlwind's hold and turns, what it
+##     leaves, burning, poison, might, haste, the frenzy, the shield). Which move last struck a monster is kept on it (monster.gd
+##     last_skill): its death answers to that move's words (killed).
+##   LEFT OUT, as not a new Warrior's on floors 1 to 10: the skill trees (game.ts has, was, now: Sweeping Cut, Master Stroke,
 ##     Fuel, Searing, Venom, Deep Freeze, Forking, Cadence and the rest), the unique items (worn, wears), the melded words
-##     (r.meld, meldHit, MELDS8), the other classes, and every word but the seven (Twin's second blows, Echoes, the last
-##     words): where the game's code branches on one of those, the branch is not here.
+##     (r.meld, meldHit, MELDS8), the other classes, and the city's and the last words: where the game's code branches on one
+##     of those, the branch is not here.
 ##
 ## WHAT THE MONSTERS' WORDS DO TO HIM (game.ts hurtHero; hurt_by here): a blow comes with its striker's element and words (a
 ## pack's minion's at half, monster.gd half_of). Its harm: the part of it that is plain less his armour, the parts of Flame,
@@ -58,10 +69,14 @@
 ## poison); FLAME, he BURNS for 3 s; FROST, he is CHILLED for 2 s (slower on his feet by its share, Strike slower by half of
 ## it); LIGHTNING, he is SHOCKED for 3 s. What burns and poisons him bites twice a second, on the monsters' clock (dots); all
 ## of it runs down as he goes (game.ts updateHero, updateDots), and is gone once he has fallen (_back).
-##   LEFT OUT, as not on a floor 1 to 5 monster's words, or not a new Warrior's: blocking (Guarding), Precise, Hexing, the
-##     wards, the skill trees (Bulwark, Thick Skin, Iron Chin, Slip Reflex, Thorns, Bitter Cold, Unbreakable, Resolute),
-##     the unique items, Culling, Pulling, Stilling, Binding, Bleeding, Plundering, Leech, Lasting, Fleeting, the shield,
-##     the melded and ranked words on a dungeon (FOE_WORDS), and Frostbite and Blight that ride on them.
+##   FLOORS 6 TO 10'S: Guarding burned into his gear blocks a blow outright now and then; PRECISE on a monster, its blows
+##     through half his armour; inside his ward circle (Guarding behind) he takes less, and his shield (Guarding in front)
+##     takes what is left first; LASTING on a monster, its poison, burning and chill on him longer, FLEETING its poison and
+##     burning sooner, the same in all; LEECH on a monster, it heals what its blow took.
+##   LEFT OUT, as not on a floor 1 to 10 monster's words, or not a new Warrior's: Hexing, the skill trees (Bulwark, Thick
+##     Skin, Iron Chin, Slip Reflex, Thorns, Bitter Cold, Unbreakable, Resolute), the unique items, Culling, Pulling, Stilling,
+##     Binding, Bleeding, Plundering, the melded and ranked words on a dungeon (FOE_WORDS), and Frostbite and Blight that ride
+##     on them.
 extends Node2D
 
 const Iso := preload("res://scripts/iso.gd")
@@ -133,6 +148,19 @@ var might := 0.0
 var might_t := 0.0
 var haste := 0.0
 var haste_t := 0.0
+## FLOORS 6 TO 10'S WORDS ON HIM (game.ts Hero frenzy, frenzyT, shield, shieldT; game.ts boons, kill): THE FRENZY, Frenzied: so
+## many stacks (5 at most), each 8% faster, his Strike and every wait of his moves, for `frenzy_t` seconds more; HIS SHIELD,
+## Guarding in front: so much life of harm it takes before he does, for `shield_t` seconds more. And how many times each of
+## his moves has been used (game.ts SkillState uses), and the use of each that last marked an enemy (Precise behind:
+## game.ts `marked`).
+var frenzy := 0
+var frenzy_t := 0.0
+var shield := 0.0
+var shield_t := 0.0
+var uses: Array = [0, 0, 0]
+var _marked: Array = [-1, -1, -1]
+## (what is to be done a moment from now, by the game's `after`: Twin's second blow, an echo, Volatile's explosion: {t, fn})
+var _later: Array = []
 ## WHAT THE MONSTERS' WORDS HAVE LEFT ON HIM, named as the monsters' are (game/state.ts Hero burnT, burnDps, chillT, chill,
 ## shockT, poisonT, poisonDps):
 ##   burn_t, burn_dps       FLAME: he burns so many seconds more, so much a second
@@ -229,7 +257,8 @@ func set_max_life(v: float) -> void:
 ## Strike's blows a second, with its words: Swift in front faster, Heavy in front slower (game.ts useBasic: never fewer than
 ## 0.3 a second); chilled by a monster's Frost, slower by half the chill.
 func rate() -> float:
-	var r := maxf(0.3, float(loadout.r(0)["rate"]))
+	# (Frenzied: the frenzy makes the quick attack faster)
+	var r := maxf(0.3, float(loadout.r(0)["rate"])) * frenzy_pace()
 	if chill_t > 0.0:
 		r *= 1.0 - chill_k * 0.5
 	return r
@@ -244,6 +273,32 @@ func walk_pace() -> float:
 	if _slow_t > 0.0:
 		sp *= 1.0 - _slow_by
 	return sp
+
+
+## FRENZIED (game.ts frenzyPace): how much faster the frenzy makes his Strike and every wait of his moves; 1, no frenzy.
+func frenzy_pace() -> float:
+	return 1.0 + float(Words.data()["frenzy"]["each"]) * frenzy
+
+
+## (game.ts `after`) `fn` done `t` seconds from now, on the hero's clock.
+func _after(t: float, fn: Callable) -> void:
+	_later.append({"t": t, "fn": fn})
+
+
+## What was to be done now is done (game.ts updateTimers).
+func _run_later(dt: float) -> void:
+	if _later.is_empty():
+		return
+	var due: Array = []
+	for q in _later:
+		q["t"] -= dt
+		if q["t"] <= 0.0:
+			due.append(q)
+	if due.is_empty():
+		return
+	_later = _later.filter(func(q): return q["t"] > 0.0)
+	for q in due:
+		q["fn"].call()
 
 
 ## How long into a Strike its blow lands (useBasic): its wind-up, never more than two fifths of the time between blows.
@@ -292,10 +347,10 @@ func avg_hit(i: int, frac: float) -> float:
 ## ONE HIT OF MOVE `i` ON A MONSTER, `frac` of it, with everything a word in front adds (game.ts hitMonster, in its order).
 ## `quiet`: a splash's hit, or the fourth and later of an area's: no lightning jumps from it and it carries no weight of
 ## Power; all else it does as any hit.
-## (Left out, with the game's switches for them: the talents' and uniques' multipliers and certain criticals, Precise's mark,
-## Avalanche, Prismheart, Thunder, the Rot Axe, Vast's splash, the melds, the Warlock, Splitting, Giant Slayer, Kindling, Deep
-## Freeze, Blight, Hexing, Stilling, the Warhammer's stuns and staggers, Rend, Widowfall, Binding, Bleeding, Culling, Leech,
-## Forking, the shock that Overload works on, Charged.)
+## (Left out, with the game's switches for them: the talents' and uniques' multipliers and certain criticals, Avalanche,
+## Prismheart, Thunder, the Rot Axe, the melds, the Warlock, Splitting, Giant Slayer, Kindling, Deep Freeze, Blight, Hexing,
+## Stilling, the Warhammer's stuns and staggers, Rend, Widowfall, Binding, Bleeding, Culling, Forking, the shock that Overload
+## works on, Charged.)
 func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 	# (what is shut in a room is out of reach; one still crawling up out of the ground is only a picture)
 	if not is_instance_valid(m) or m.dead or m.state == "rise" or monsters.shut_in(m):
@@ -309,31 +364,58 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 	var base := base_for(el)
 	var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(el) + might) / 100.0)
 	var crit: bool = randf() * 100.0 < stats["crit_chance"]
+	# PRECISE behind: his next hit on a marked enemy is a certain critical, and spends the mark
+	var spent: bool = m.mark_t > 0.0
+	if spent:
+		crit = true
+		m.mark_t = 0.0
 	if crit:
 		dmg *= 1.0 + stats["crit_mult"] / 100.0
 	dmg = maxf(1.0, roundf(dmg))
 	var at: Vector2 = m.world
-	# FLAME in front: what it strikes burns for `ignite` of the hit more, over 3 s
+	# FLAME in front: what it strikes burns for `ignite` of the hit more, over 3 s (LASTING: as hard a second, for longer;
+	# FLEETING: harder a second, the same in all in its shorter time)
 	if r["ignite"] > 0.0:
-		m.set_alight(dmg * float(r["ignite"]) / 3.0)
+		m.set_alight(dmg * float(r["ignite"]) / 3.0 * float(r["pace"]), 3.0 * float(r["last"]))
 	# FROST in front: it is chilled; a second chilling hit freezes it
 	if r["chill"] > 0.0:
 		m.chill_by(r["chill"])
 	var front: Array = [] if quiet else loadout.fronts(i)
+	# (LEECH behind: what it strikes, still alive, is marked for the harvest)
+	if r["orb_chance"] > 0.0 and not quiet:
+		_tell({"t": "mark", "x": at.x, "y": at.y})
 	# (lightning comes down on the one it hits before it jumps to the others)
 	if r["arcs"] > 0 and not quiet:
 		_tell({"t": "arc", "x0": at.x, "y0": at.y, "x1": at.x, "y1": at.y, "sky": true})
-	m.damage(dmg, el, crit, not quiet and front.has("power"), front)
+	if spent:
+		_tell({"t": "markSpent", "id": m.id, "x": at.x, "y": at.y, "dx": at.x - world.x, "dy": at.y - world.y})
+	m.damage(dmg, el, crit, not quiet and front.has("power"), front, false, false, i)
+	# VAST behind: each hit, not a splash's, splashes a share of itself onto every other enemy near what it hit
+	if r["vast"] > 0.0 and not quiet:
+		var reach: float = Words.data()["vast"]["splashR"]
+		var ids: Array = []
+		for o in monsters.list:
+			if not is_instance_valid(o) or o == m or o.dead or monsters.shut_in(o) or o.world.distance_to(at) > reach + o.r:
+				continue
+			ids.append(o.id)
+			o.damage(maxf(1.0, roundf(dmg * float(r["vast"]))), el, false, false, [], false, false, i)
+		if not ids.is_empty():
+			_tell({"t": "vastSplash", "x": at.x, "y": at.y, "r": reach, "ids": ids, "el": el})
 	# POISON in front: each hit adds a dose of `poison` of the hit a second (and what his gear adds to a hit that poisons, over
-	# the poison's time: items.ts POISON_DMG, which loot.gd does not give yet)
-	var dose: float = dmg * float(r["poison"]) if r["poison"] > 0.0 else 0.0
+	# the poison's time: items.ts POISON_DMG, which loot.gd does not give yet); LASTING and FLEETING as for burning
+	var dose: float = dmg * float(r["poison"]) * float(r["pace"]) if r["poison"] > 0.0 else 0.0
 	var p_min: float = stats.get("poison_min", 0.0)
 	var p_max: float = stats.get("poison_max", 0.0)
 	if dose > 0.0 and (p_min != 0.0 or p_max != 0.0):
 		dose += randf_range(p_min, maxf(p_min, p_max)) / float(Words.data()["poison"]["time"])
 	if dose > 0.0:
-		m.dose(dose)
+		m.dose(dose, float(Words.data()["poison"]["time"]) * float(r["last"]))
 	if not m.dead:
+		# PRECISE behind marks the first enemy each use hits (not one whose mark this very hit spent)
+		if r["mark"] and not spent and _marked[i] != uses[i]:
+			_marked[i] = uses[i]
+			m.mark_t = float(Words.data()["precise"]["markTime"])
+			_tell({"t": "markOn", "id": m.id, "x": at.x, "y": at.y, "secs": m.mark_t})
 		# HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too (its chance, 50% at most: none yet here)
 		var heavy: Dictionary = Words.data()["heavy"]
 		if r["stun"] > 0.0:
@@ -342,10 +424,14 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 			var chance: float = minf(float(heavy["stunCap"]), stats.get("stun_chance", 0.0))
 			if chance > 0.0 and randf() * 100.0 < chance:
 				m.stun_for(float(heavy["stun"]))
+	# LEECH in front: life back for every enemy it hits (LEECH.cap: none, a second, in the game as it starts)
+	if r["leech"] > 0.0:
+		heal_flat(r["leech"])
+		_tell({"t": "leech", "x": at.x, "y": at.y, "n": r["leech"]})
 	heal_flat(stats["life_on_hit"])
 	# LIGHTNING in front: it jumps to the nearest other enemies, and on from each (monsters.gd arcs)
 	if r["arcs"] > 0 and not quiet:
-		monsters.arcs(m, int(r["arcs"]), maxf(1.0, roundf(dmg * float(r["arc_dmg"]))))
+		monsters.arcs(m, int(r["arcs"]), maxf(1.0, roundf(dmg * float(r["arc_dmg"]))), i)
 
 
 ## "of Power" behind move `i` (game.ts landed): a blow of it has landed on an enemy, and his might grows by the word's share,
@@ -356,28 +442,102 @@ func _landed_on(i: int) -> void:
 	if more <= 0.0:
 		return
 	might = minf(more * 5.0, might + more)
-	might_t = maxf(might_t, 5.0)
+	# (LASTING and FLEETING: as long as everything its move gives)
+	might_t = maxf(might_t, 5.0 * float(loadout.r(i)["last"]))
 	_tell({"t": "buff", "kind": "might", "x": world.x, "y": world.y, "stacks": maxi(1, roundi(might / more))})
 
 
 ## What a use of move `i` gives him from the words behind it (game.ts boons): "of Swiftness", his haste, for 3 s. Once a use.
 func _boons(i: int) -> void:
-	var fast: float = loadout.r(i)["haste"]
-	if fast <= 0.0:
+	var r: Dictionary = loadout.r(i)
+	var fast: float = r["haste"]
+	if fast > 0.0:
+		haste = fast
+		haste_t = 3.0 * float(r["last"])
+		_tell({"t": "buff", "kind": "haste", "x": world.x, "y": world.y, "stacks": 1, "secs": haste_t})
+	# FRENZIED in front: each use adds to the frenzy, up to its most, and holds it a while longer
+	if r["frenzy"]:
+		var F: Dictionary = Words.data()["frenzy"]
+		frenzy = mini(int(F["max"]), frenzy + 1)
+		frenzy_t = maxf(frenzy_t, float(F["hold"]) * float(r["last"]))
+		_tell({"t": "frenzy", "x": world.x, "y": world.y, "dx": face.x, "dy": face.y, "n": frenzy})
+	# GUARDING in front: each use gives a shield (a new one never weaker than what is left of the last)
+	if r["shield"] > 0.0:
+		shield = maxf(shield, roundf(max_life * float(r["shield"])))
+		shield_t = float(Words.data()["guard"]["shieldTime"]) * float(r["last"])
+		_tell({"t": "shield", "x": world.x, "y": world.y, "secs": shield_t})
+
+
+## AN ENEMY IS KILLED (game.ts kill: what the killing move's words add, by the move that last struck it): FRENZIED behind, a
+## stack more and the frenzy held longer (to three times its hold); VOLATILE in front, it explodes; LEECH behind, now and then
+## a life orb. (monster.gd _die calls this as it falls.)
+func killed(m) -> void:
+	var i: int = m.last_skill
+	if i < 0 or i > 2:
 		return
-	haste = fast
-	haste_t = 3.0
-	_tell({"t": "buff", "kind": "haste", "x": world.x, "y": world.y, "stacks": 1})
+	var r: Dictionary = loadout.r(i)
+	if r["frenzy_feed"]:
+		var F: Dictionary = Words.data()["frenzy"]
+		frenzy = mini(int(F["max"]), frenzy + 1)
+		frenzy_t = minf(float(F["hold"]) * 3.0 * float(r["last"]), frenzy_t + float(F["hold"]) * float(r["last"]))
+		_tell({"t": "frenzyFed", "x": m.world.x, "y": m.world.y})
+	if r["volatile"] > 0.0:
+		_explode(m, r, i)
+	if r["orb_chance"] > 0.0 and randf() < float(r["orb_chance"]):
+		if monsters != null and monsters.loot != null:
+			monsters.loot.orb_at(m.world)
+		_tell({"t": "orb", "x": m.world.x, "y": m.world.y})
+		sfx.play("leech", linear_to_db(0.7))
+
+
+## VOLATILE in front (game.ts explodeKill): what move `i` killed explodes a moment after, for the word's share of the dead one's
+## life, harming what is round it.
+func _explode(m, r: Dictionary, i: int) -> void:
+	var at: Vector2 = m.world
+	var rad := 1.8
+	var hurt := maxf(1.0, roundf(float(m.max_life) * float(r["volatile"])))
+	var el: String = r["element"]
+	_after(0.12, func() -> void:
+		_tell({"t": "burst", "x": at.x, "y": at.y, "r": rad, "el": el, "style": "blast", "words": ["volatile"]})
+		sfx.play("explode", linear_to_db(0.6))
+		if monsters == null:
+			return
+		for o in monsters.list.duplicate():
+			if is_instance_valid(o) and not o.dead and o != m and o.world.distance_to(at) <= rad + o.r:
+				o.damage(hurt, el, false, false, [], false, false, i))
 
 
 ## The words on move `i` told as it is made (game.ts deliver, beginChannel, useEvasive: `cast`), where it has any: from `at`,
 ## the way `way`; `kind` the game's name for what sort of move it is.
-func _cast(i: int, kind: String, at: Vector2, way: Vector2) -> void:
+func _cast(i: int, kind: String, at: Vector2, way: Vector2, echo := false) -> void:
 	var front: Array = loadout.fronts(i)
 	var behind: Array = loadout.behinds(i)
-	if front.is_empty() and behind.is_empty():
+	if front.is_empty() and behind.is_empty() and not echo:
 		return
-	_tell({"t": "cast", "x": at.x, "y": at.y, "dx": way.x, "dy": way.y, "kind": kind, "el": loadout.r(i)["element"], "words": front, "behind": behind, "echo": false})
+	_tell({"t": "cast", "x": at.x, "y": at.y, "dx": way.x, "dy": way.y, "kind": kind, "el": loadout.r(i)["element"], "words": front, "behind": behind, "echo": echo})
+
+
+## LASTING's shimmer and FLEETING's flick, on top of the move they change, where it makes, lays or gives something they work on
+## (game.ts timeWordSound).
+func _time_word_sound(i: int) -> void:
+	var r: Dictionary = loadout.r(i)
+	if absf(float(r["last"]) - 1.0) < 0.001:
+		return
+	var makes: bool = i == 1 or r["zone"] != null or r["cloud"] > 0.0 or r["cracks"] > 0.0 or r["ward"] > 0.0
+	var lays: bool = r["poison"] > 0.0 or r["element"] == "fire" or r["ignite"] > 0.0
+	var gives: bool = r["might"] > 0.0 or r["haste"] > 0.0 or r["frenzy"] or r["frenzy_feed"] or r["shield"] > 0.0
+	if makes or lays or gives:
+		sfx.play("word_lasting" if float(r["last"]) > 1.0 else "word_fleeting", -6.0)
+
+
+## TWIN behind ("of Echoes") on move `i` (game.ts echoOf): it is told now, and `again` is done a moment later, its words told as
+## the phantom lets go; `kind` the game's name for the move.
+func _echo_of(i: int, kind: String, at: Vector2, way: Vector2, again: Callable) -> void:
+	var delay: float = Words.data()["echo"]["delay"]
+	_tell({"t": "echo", "x": at.x, "y": at.y, "dx": way.x, "dy": way.y, "kind": kind, "delay": delay})
+	_after(delay, func() -> void:
+		_cast(i, kind, at, way, true)
+		again.call())
 
 
 ## What a blow of move `i` reaches of the things on the floor, within `rad` of `at` (game.ts breakProps): the barrels and urns
@@ -398,20 +558,27 @@ func _wake(i: int, at: Vector2, rad: float, frac: float) -> void:
 	var r: Dictionary = loadout.r(i)
 	if r["zone"] != null:
 		wakes.add_ground(r["zone"], i, at, maxf(1.0, rad), avg_hit(i, frac))
+	# (LASTING and FLEETING: what it leaves lasts longer or shorter, Fleeting's doing as much in all)
 	if r["cloud"] > 0.0:
-		wakes.add_cloud(i, at, maxf(1.5, rad), avg_hit(i, frac) * float(r["cloud"]))
+		wakes.add_cloud(i, at, maxf(1.5, rad), avg_hit(i, frac) * float(r["cloud"]) * float(r["pace"]), 5.0 * float(r["last"]))
+	# VOLATILE behind: a rune, where it struck, that goes off a moment later (game.ts addRune)
+	if r["rune"] > 0.0:
+		wakes.add_rune(i, at, 2.0 * float(r["size"]), avg_hit(i, frac) * float(r["rune"]), r["element"])
 	if r["cracks"] > 0.0:
-		wakes.add_cracks(i, at, maxf(1.0, rad), r["cracks"])
+		wakes.add_cracks(i, at, maxf(1.0, rad), float(r["cracks"]) * float(r["last"]))
+	# GUARDING behind: a ward circle (game.ts leavePatches, addPatch 'ward')
+	if r["ward"] > 0.0:
+		wakes.add_ward(i, at, maxf(1.5, rad), float(Words.data()["guard"]["wardTime"]) * float(r["last"]), r["ward"])
 
 
 ## ONE MELEE HIT of move `i` from `from` the way `way` (game.ts strike): the best one before him, nearest and most in front,
 ## is hit; a move whose words give it a splash strikes every other one round that one, quietly, for the splash's share; then
 ## what the move leaves, round what it struck. A swing that meets nothing still leaves its wake where the blade passed.
-func _strike(i: int, from: Vector2, way: Vector2, frac: float) -> void:
+func _strike(i: int, from: Vector2, way: Vector2, frac: float, n := 0, echo := false) -> void:
 	var r: Dictionary = loadout.r(i)
 	var reach: float = STRIKE["reach"] * float(r["size"])
 	var front: Array = loadout.fronts(i)
-	_tell({"t": "swing", "x": from.x, "y": from.y, "dx": way.x, "dy": way.y, "reach": reach, "el": r["element"], "words": front, "n": 0, "echo": false})
+	_tell({"t": "swing", "x": from.x, "y": from.y, "dx": way.x, "dy": way.y, "reach": reach, "el": r["element"], "words": front, "n": n, "echo": echo})
 	var best = monsters.strike_target(from, way, reach) if monsters != null else null
 	_break_props(i, from + way * reach * 0.6, 0.9)
 	if best == null:
@@ -431,7 +598,7 @@ func _strike(i: int, from: Vector2, way: Vector2, frac: float) -> void:
 	if r["splash"] > 0.0:
 		var rad: float = float(r["splash"]) * float(r["size"])
 		# (a full-strength splash is an explosion, Flame's and Frost's; Power's is a shock through the ground)
-		_tell({"t": "burst", "x": at.x, "y": at.y, "r": rad, "el": r["element"], "style": "blast" if r["splash_dmg"] >= 1.0 else "shock", "words": front, "n": 0, "echo": false})
+		_tell(_vast_edge(r, rad, {"t": "burst", "x": at.x, "y": at.y, "r": rad, "el": r["element"], "style": "blast" if r["splash_dmg"] >= 1.0 else "shock", "words": front, "n": n, "echo": echo}))
 		for o in monsters.list:
 			if not is_instance_valid(o) or o.dead or o == best:
 				continue
@@ -444,10 +611,10 @@ func _strike(i: int, from: Vector2, way: Vector2, frac: float) -> void:
 ## of the Whirlwind; "land": the Lunge's landing). The first three struck are hit in full; the fourth and those after,
 ## quietly. `leaves`: whether it leaves what the words behind the move leave. `db`: how loud what it strikes sounds. How many
 ## it struck.
-func _blast(i: int, at: Vector2, rad: float, frac: float, style: String, leaves: bool, db: float) -> int:
+func _blast(i: int, at: Vector2, rad: float, frac: float, style: String, leaves: bool, db: float, n := 0, echo := false) -> int:
 	var r: Dictionary = loadout.r(i)
 	var front: Array = loadout.fronts(i)
-	_tell({"t": "burst", "x": at.x, "y": at.y, "r": rad, "el": r["element"], "style": style, "words": front, "n": 0, "echo": false})
+	_tell(_vast_edge(r, rad, {"t": "burst", "x": at.x, "y": at.y, "r": rad, "el": r["element"], "style": style, "words": front, "n": n, "echo": echo}))
 	if front.has("power"):
 		sfx.play("power", -4.0)
 	# (Heavy lands out to the blast's edge; a whirlwind's turns are too many for that, its stuns show it)
@@ -471,6 +638,15 @@ func _blast(i: int, at: Vector2, rad: float, frac: float, style: String, leaves:
 	return hits
 
 
+## (VAST in front, game.ts vastEdge) What an area of move `r` that lands `rad` wide says of itself: `r0`, where its edge would
+## have been without the word (its look cracks the floor there and rolls its dust out to the new edge). Nothing where it does
+## not carry it.
+func _vast_edge(r: Dictionary, rad: float, told: Dictionary) -> Dictionary:
+	if float(r["wide"]) > 1.0:
+		told["r0"] = rad / float(r["wide"])
+	return told
+
+
 func heal_flat(n: float) -> void:
 	if n > 0.0 and alive:
 		life = minf(max_life, life + n)
@@ -483,8 +659,10 @@ func _process(dt: float) -> void:
 	_kick = maxf(0.0, _kick - dt * 22.0)
 	_slow_t = maxf(0.0, _slow_t - dt)
 	_invuln = maxf(0.0, _invuln - dt)
-	_whirl_cd = maxf(0.0, _whirl_cd - dt)
-	_lunge_cd = maxf(0.0, _lunge_cd - dt)
+	# (Frenzied: the frenzy makes every wait come round faster: game.ts updateHero)
+	_whirl_cd = maxf(0.0, _whirl_cd - dt * frenzy_pace())
+	_lunge_cd = maxf(0.0, _lunge_cd - dt * frenzy_pace())
+	_run_later(dt)
 	_cam.offset = Vector2(0, -24 - _lift) + (Vector2(randf_range(-3, 3), randf_range(-3, 3)) if _shake > 0.0 else Vector2.ZERO)
 	if _kick > 0.3:
 		_cam.offset += Vector2(roundf(randf_range(-_kick, _kick)), roundf(randf_range(-_kick, _kick) * 0.6)) * 2.0
@@ -504,6 +682,17 @@ func _process(dt: float) -> void:
 		haste_t -= dt
 		if haste_t <= 0.0:
 			haste = 0.0
+	# (the frenzy and his shield run out)
+	if frenzy_t > 0.0:
+		frenzy_t -= dt
+		if frenzy_t <= 0.0:
+			frenzy_t = 0.0
+			frenzy = 0
+	if shield_t > 0.0:
+		shield_t -= dt
+		if shield_t <= 0.0:
+			shield_t = 0.0
+			shield = 0.0
 	# (what the monsters' words left on him runs down: game.ts updateHero)
 	if chill_t > 0.0:
 		chill_t -= dt
@@ -615,9 +804,32 @@ func _begin_strike() -> void:
 func _land_strike() -> void:
 	_landed = true
 	sfx.play("swing", -6.0)
-	_cast(0, "melee", world, face)
-	_strike(0, world, face, 1.0)
-	_boons(0)
+	uses[0] += 1
+	_deliver_strike(world, face, 1.0, true)
+
+
+## STRIKE MADE (game.ts deliver, a melee move): from `from` the way `way`, `frac` of it. TWIN in front: two blows, each for its
+## share, the second a moment after the first from wherever he has got to. Made in earnest (`primary`), what a use of it gives
+## him (_boons); and TWIN behind, "of Echoes": a phantom makes it again from where it was made, a moment later, for its share
+## (not primary: no boons, no echo of an echo).
+func _deliver_strike(from: Vector2, way: Vector2, frac: float, primary: bool) -> void:
+	var r: Dictionary = loadout.r(0)
+	var each: float = frac * float(r["count_dmg"])
+	var echo := not primary
+	_cast(0, "melee", from, way, echo)
+	if primary:
+		_time_word_sound(0)
+	for k in int(r["count"]):
+		if k == 0:
+			_strike(0, from, way, each, 0, echo)
+		else:
+			_after(0.13 * k, func() -> void: _strike(0, from if echo else world, way, each, k, echo))
+	if primary:
+		_boons(0)
+		if r["echo"] > 0.0:
+			var delay: float = Words.data()["echo"]["delay"]
+			_tell({"t": "echo", "x": from.x, "y": from.y, "dx": way.x, "dy": way.y, "kind": "melee", "delay": delay})
+			_after(delay, func() -> void: _deliver_strike(from, way, frac * float(loadout.r(0)["echo"]), false))
 
 
 # --- Whirl ---
@@ -637,7 +849,11 @@ func _begin_whirl() -> void:
 ## Its cut (channelBite): all within its radius, as its words make it, struck (_blast); what the words behind it leave, it
 ## leaves round him by its first cut and by the first cut after each second it has gone on (TUNE.channelWake).
 func _spin(dt: float, held: bool) -> void:
-	if _spun >= 0.0 and _spun >= WHIRL["channel"] + WHIRL["follow"]:
+	# (LASTING and FLEETING: held longer or shorter; Fleeting's turns coming faster, as many in all)
+	var r1: Dictionary = loadout.r(1)
+	var length: float = WHIRL["channel"] * float(r1["last"])
+	var tick: float = WHIRL["tick"] / float(r1["pace"])
+	if _spun >= 0.0 and _spun >= length + WHIRL["follow"]:
 		_end_act()
 		return
 	if _act_t < WHIRL["windup"]:
@@ -645,6 +861,8 @@ func _spin(dt: float, held: bool) -> void:
 	if _spun < 0.0:
 		# (it begins: its words told, and what a use of it gives him given once, now: game.ts beginChannel)
 		_spun = 0.0
+		uses[1] += 1
+		_time_word_sound(1)
 		_cast(1, "whirl", world, face)
 		_boons(1)
 	if _landed:
@@ -653,25 +871,56 @@ func _spin(dt: float, held: bool) -> void:
 		if _spun >= _stopped_at + WHIRL["follow"]:
 			_end_act()
 		return
-	if _bites > 0 and (not held or _spun >= WHIRL["channel"]):
-		_landed = true
-		_stopped_at = _spun
-		var k := clampf(_spun / WHIRL["channel"], WHIRL["min_cool"], 1.0)
-		_whirl_cd = float(loadout.r(1)["cooldown"]) * k
-		_whirl_full = _whirl_cd
+	if _bites > 0 and (not held or _spun >= length - 1e-6):
+		_end_channel(true)
 		return
 	if _next_bite <= 1e-9:
 		var leaves := _spun >= _whirl_wake - 1e-9
 		if leaves:
 			_whirl_wake += WHIRL["wake"]
-		sfx.play("whirl", -6.0)
-		_blast(1, world, WHIRL["radius"] * float(loadout.r(1)["size"]), 1.0, "whirl", leaves, -8.0)
+		_bite(world, face, 1.0, false, leaves)
 		_bites += 1
-		_next_bite += WHIRL["tick"]
+		_next_bite += tick
 	_spun += dt
 	_next_bite -= dt
 	var a := atan2(face.y, face.x) + WHIRL["spin"] * TAU * dt
 	face = Vector2(cos(a), sin(a))
+
+
+## The Whirlwind is over (game.ts endChannel: let go, run its length, or broken off by his Lunge): its wait begins, all of it
+## after a whole length, less after a shorter one (never less than 35% of it). `echoes`: TWIN behind, "of Echoes", a phantom
+## carries it on for a moment from where it stopped, its turns for the word's share.
+func _end_channel(echoes: bool) -> void:
+	var r: Dictionary = loadout.r(1)
+	var length: float = WHIRL["channel"] * float(r["last"])
+	_landed = true
+	_stopped_at = _spun
+	var k := clampf(_spun / length, WHIRL["min_cool"], 1.0)
+	_whirl_cd = float(r["cooldown"]) * k
+	_whirl_full = _whirl_cd
+	if echoes and float(r["echo"]) > 0.0 and _bites > 0:
+		var at := world
+		var way := face
+		var E: Dictionary = Words.data()["echo"]
+		_tell({"t": "echo", "x": at.x, "y": at.y, "dx": way.x, "dy": way.y, "kind": "whirl", "delay": E["delay"]})
+		_after(float(E["delay"]), func() -> void: _cast(1, "whirl", at, way, true))
+		for n in int(E["bites"]):
+			_after(float(E["delay"]) + n * WHIRL["tick"], func() -> void: _bite(at, way, float(loadout.r(1)["echo"]), true, false))
+
+
+## One turn of the Whirlwind (game.ts channelBite): all within its radius, from `at`, struck for `frac` of it (TWIN in front:
+## twice, each for its share, the second a moment after the first from wherever he has got to); `leaves`: this turn leaves
+## what the words behind it leave. `echo`: a phantom's.
+func _bite(at: Vector2, way: Vector2, frac: float, echo: bool, leaves: bool) -> void:
+	var r: Dictionary = loadout.r(1)
+	var each: float = frac * float(r["count_dmg"])
+	var rad: float = WHIRL["radius"] * float(r["size"])
+	sfx.play("whirl", linear_to_db(0.35 / 0.6) - 6.0 if echo else -6.0)
+	for k in int(r["count"]):
+		if k == 0:
+			_blast(1, at, rad, each, "whirl", leaves, -8.0, 0, echo)
+		else:
+			_after(0.12 * k, func() -> void: _blast(1, at if echo else world, rad, each, "whirl", false, -8.0, k, echo))
 
 
 # --- Lunge ---
@@ -708,6 +957,10 @@ func _begin_lunge(target: Vector2) -> void:
 	# (a Strike it breaks off before its blow has landed costs nothing, not even its turn: useEvasive, `swingT = 0`)
 	if _act == "strike" and not _landed:
 		_last_swing = -10.0
+	# (a Whirlwind it breaks off ends there, and its wait begins; and "of Echoes" carries it on: useEvasive, endChannel(true))
+	if _act == "whirl" and not _landed and _spun >= 0.0:
+		_end_channel(true)
+	uses[2] += 1
 	_end_act()
 	_combo_next = false
 	_turn(dir)
@@ -722,6 +975,7 @@ func _begin_lunge(target: Vector2) -> void:
 	# (its words told, and what a use of it gives him given as the move begins: game.ts useEvasive)
 	_cast(2, "leap", world, dir)
 	_boons(2)
+	_time_word_sound(2)
 	sfx.play("lunge", -6.0)
 
 
@@ -735,7 +989,18 @@ func _fly(dt: float) -> void:
 		# the words behind it leave; then his landing, if he stands)
 		sfx.play("slam", -4.0)
 		_shake = 0.15
-		_blast(2, world + face * LUNGE["ahead"], LUNGE["radius"] * float(loadout.r(2)["size"]), 1.0, "land", true, -4.0)
+		# (TWIN in front: a second shock a moment later, a little wider; "of Echoes": a weaker one a moment after that)
+		var r2: Dictionary = loadout.r(2)
+		var at: Vector2 = world + face * LUNGE["ahead"]
+		var rad: float = LUNGE["radius"] * float(r2["size"])
+		var each: float = r2["count_dmg"]
+		for n in int(r2["count"]):
+			if n == 0:
+				_blast(2, at, rad, each, "land", true, -4.0)
+			else:
+				_after(0.28 * n, func() -> void: _blast(2, at, rad * 1.15, each, "land", false, -4.0, n))
+		if float(r2["echo"]) > 0.0:
+			_echo_of(2, "leap", at, face, func() -> void: _blast(2, at, rad, float(loadout.r(2)["count_dmg"]) * float(loadout.r(2)["echo"]), "land", false, -4.0, 0, true))
 		_act = ""
 		_landing = true
 		_list = LAND_LIST
@@ -800,8 +1065,9 @@ func hurt(dmg: float, raw := false) -> void:
 
 ## How much his armour takes of the plain part of a blow (stats.ts armorReduction: armour / (armour + 40 + 20 a floor), at
 ## most 75%; the floor is never less than the first: game.ts `Math.max(1, this.power)`).
-func armour_cut() -> float:
-	var a: float = stats.get("armor", 0.0)
+func armour_cut(ignored := 0.0) -> float:
+	# (PRECISE, on a monster: its blows find the gaps in his armour, so much of it as if it were not there)
+	var a: float = stats.get("armor", 0.0) * (1.0 - ignored)
 	if a <= 0.0:
 		return 0.0
 	return minf(0.75, a / (a + 40.0 + 20.0 * maxf(1.0, float(map.depth) if map != null else 1.0)))
@@ -841,6 +1107,14 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	var hv: Dictionary = half
 	if hv.is_empty() and src != null and is_instance_valid(src) and src.has_method("half_of"):
 		hv = src.half_of()
+	# GUARDING burned into his gear: a chance to block the blow, which then does nothing at all (50% at most)
+	var block: float = minf(float(Words.data()["guard"]["blockCap"]), stats.get("block_chance", 0.0))
+	if block > 0.0 and randf() * 100.0 < block:
+		_tell({"t": "blocked", "x": world.x, "y": world.y, "fromX": by.x, "fromY": by.y})
+		_tell({"t": "text", "x": world.x, "y": world.y, "text": "Blocked", "color": "#9fe8c0"})
+		sfx.play("hit", linear_to_db(0.5))
+		last_blow = {"raw": raw, "el": el, "words": words, "blocked": true, "dmg": 0.0}
+		return
 	var hw: Array = hv.get("words", [])
 	var k := func(w: String) -> float: return 0.0 if not words.has(w) else (PACK_MINION if hw.has(w) else 1.0)
 	var base: String = hv.get("base", "phys")
@@ -848,13 +1122,22 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	var parts: Array = [[el, el_k], [base, 1.0 - el_k]] if el_k < 1.0 else [[el, 1.0]]
 	var dmg := 0.0
 	var each: Array = []
+	var gaps: float = float(Words.data()["precise"]["armourIgnored"]) * float(k.call("precise"))
 	for p in parts:
-		var part: float = raw * float(p[1]) * (1.0 - ((0.0 if bare else armour_cut()) if p[0] == "phys" else resist(p[0]) / 100.0))
+		var part: float = raw * float(p[1]) * (1.0 - ((0.0 if bare else armour_cut(gaps)) if p[0] == "phys" else resist(p[0]) / 100.0))
 		each.append([p[0], p[1], part])
 		dmg += part
 	var shocked := shock_t > 0.0
 	if shocked:
 		dmg *= 1.2
+	# GUARDING behind: inside a ward he takes less (the strongest ward he stands in)
+	var ward := 0.0
+	if wakes != null and is_instance_valid(wakes):
+		for z in wakes.list:
+			if z["kind"] == "ward" and world.distance_to(Vector2(z["x"], z["y"])) <= float(z["r"]):
+				ward = maxf(ward, float(z["dmg"]))
+	if ward > 0.0:
+		dmg *= 1.0 - ward
 	dmg = maxf(1.0, roundf(dmg))
 	# HEAVY, on a monster: its blow knocks him back a step (game.ts knockHero)
 	var knocked := 0.0
@@ -863,30 +1146,56 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		var way := d / d.length() if d.length() >= 0.01 else -face
 		knocked = float(Words.data()["heavy"]["knock"]) * float(k.call("heavy"))
 		knock(way, knocked)
+	# GUARDING in front: his shield takes the blow first; all of it taken, nothing reaches him
+	var soaked := 0.0
+	if shield > 0.0:
+		soaked = minf(shield, dmg)
+		shield -= soaked
+		dmg -= soaked
+		if shield <= 0.0:
+			shield = 0.0
+			shield_t = 0.0
+	if soaked > 0.0 or ward > 0.0:
+		_tell({"t": "guarded", "x": world.x, "y": world.y, "fromX": by.x, "fromY": by.y})
+	if dmg <= 0.0:
+		last_blow = {"raw": raw, "el": el, "words": words, "half": hw, "parts": each, "shocked": shocked, "dmg": 0.0, "knock": knocked, "soaked": soaked, "ward": ward}
+		return
 	if not unhurt:
 		life -= dmg
 	_flash = 0.15
 	_tell({"t": "hit", "x": world.x, "y": world.y, "amount": dmg, "crit": false, "el": el, "onHero": true})
 	kick(minf(5.0, 1.0 + dmg / 8.0))
 	sfx.play("hurt", -6.0)
+	# LASTING and FLEETING, on a monster: its poison, burning and chill on him last longer, as hard a second; its poison and
+	# burning hurt him sooner, the same in all (a minion's, of its leader's words, at half)
+	var LA: Dictionary = Words.data()["lasting"]
+	var FL: Dictionary = Words.data()["fleeting"]
+	var longer: float = 1.0 + float(LA["monster"]) * float(k.call("lasting"))
+	var lasts: float = longer * (1.0 - float(FL["monster"]) * float(k.call("fleeting")))
 	# POISON, on a monster: most of the blow again, over the next few seconds, less what he withstands of poison
 	if k.call("poison") > 0.0:
 		var kept: float = 1.0 - stats.get("res_poison", 0.0) / 100.0
-		poison_dps = maxf(poison_dps if poison_t > 0.0 else 0.0, dmg * 0.6 * float(k.call("poison")) * kept / POISON_TIME)
-		poison_t = POISON_TIME
+		poison_dps = maxf(poison_dps if poison_t > 0.0 else 0.0, dmg * 0.6 * float(k.call("poison")) * kept / POISON_TIME * (longer / lasts))
+		poison_t = POISON_TIME * lasts
 	# (what each element of the blow leaves: a minion's half of Flame burns half as hard)
 	for p in parts:
 		var share: float = p[1]
 		match p[0]:
 			"fire":
-				burn_dps = maxf(burn_dps if burn_t > 0.0 else 0.0, dmg * 0.3 * share / 3.0)
-				burn_t = 3.0
+				burn_dps = maxf(burn_dps if burn_t > 0.0 else 0.0, dmg * 0.3 * share / 3.0 * (longer / lasts))
+				burn_t = 3.0 * lasts
 			"frost":
 				chill_k = maxf(chill_k if chill_t > 0.0 else 0.0, 0.3 * share)
-				chill_t = 2.0
+				chill_t = 2.0 * longer
 			"lightning":
 				shock_t = maxf(shock_t, 3.0 * share)
-	last_blow = {"raw": raw, "el": el, "words": words, "half": hw, "parts": each, "shocked": shocked, "dmg": dmg, "knock": knocked}
+	# LEECH, on a monster: it heals what its blow takes
+	var healed := 0.0
+	if src != null and is_instance_valid(src) and not src.dead and k.call("leech") > 0.0:
+		healed = minf(float(src.max_life), float(src.life) + dmg * float(k.call("leech"))) - float(src.life)
+		src.life += healed
+		_tell({"t": "text", "x": src.world.x, "y": src.world.y, "text": "heals", "color": "#ff8a80"})
+	last_blow = {"raw": raw, "el": el, "words": words, "half": hw, "parts": each, "shocked": shocked, "dmg": dmg, "knock": knocked, "soaked": soaked, "ward": ward, "longer": longer, "lasts": lasts, "healed": healed}
 	if life <= 0.0:
 		_fall()
 
@@ -932,6 +1241,11 @@ func fresh_place() -> void:
 	might_t = 0.0
 	haste = 0.0
 	haste_t = 0.0
+	frenzy = 0
+	frenzy_t = 0.0
+	shield = 0.0
+	shield_t = 0.0
+	_later = []
 	burn_t = 0.0
 	burn_dps = 0.0
 	chill_t = 0.0

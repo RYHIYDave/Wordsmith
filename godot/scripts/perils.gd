@@ -71,8 +71,23 @@ func _hurt(p: Dictionary, dmg: float, at := Vector2.INF, el := "") -> void:
 	hero.hurt_by(dmg, el if el != "" else str(by.get("el", "phys")), by.get("words", []), by.get("half", {}), null, from)
 
 
-func warn(x: float, y: float, r: float, dur: float, dmg: float, src: Object) -> void:
-	list.append({"kind": "warn", "x": x, "y": y, "r": r, "t": 0.0, "dur": dur, "dmg": dmg, "src": src, "by": _by(src)})
+## (`by`: what its blow carries, where it is not its monster's own: a dying blast's, of its element alone)
+func warn(x: float, y: float, r: float, dur: float, dmg: float, src: Object, by := {}) -> void:
+	var b: Dictionary = by if not by.is_empty() else _by(src)
+	list.append({"kind": "warn", "x": x, "y": y, "r": r * _vast(b), "t": 0.0, "dur": dur, "dmg": dmg, "src": src, "by": b})
+
+
+## (FLOORS 6 TO 10'S WORDS: VAST, on a monster, its warned blows and its marks wider, a minion's of its leader's Vast half as
+## much more: game.ts addWarn)
+const _WORDS610 := preload("res://scripts/words.gd")
+
+
+func _vast(by: Dictionary) -> float:
+	var words: Array = by.get("words", [])
+	if not words.has("vast"):
+		return 1.0
+	var half: Array = by.get("half", {}).get("words", [])
+	return 1.0 + float(_WORDS610.data()["vast"]["monster"]) * (0.5 if half.has("vast") else 1.0)
 
 
 func lane(src: Object, a: Vector2, b: Vector2, half: float, dur: float) -> void:
@@ -119,7 +134,7 @@ func bars(src: Object, x: float, y: float, dmg: float, windup: float) -> void:
 ## A monster that falls takes its marks with it (game.ts: its warn, lane and aim go).
 ## A red circle marked on the floor for `dur` seconds, harmless of itself (the Headsman's vault: his own blow does the harm).
 func mark(x: float, y: float, r: float, dur: float, src: Object) -> void:
-	list.append({"kind": "warn", "x": x, "y": y, "r": r, "t": 0.0, "dur": dur, "dmg": 0.0, "src": src, "mark": true})
+	list.append({"kind": "warn", "x": x, "y": y, "r": r * _vast(_by(src)), "t": 0.0, "dur": dur, "dmg": 0.0, "src": src, "mark": true})
 
 
 ## A ring going out over the floor where a blow came down.

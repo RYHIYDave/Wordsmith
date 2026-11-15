@@ -301,20 +301,21 @@ func whirl_end(x: float, y: float) -> void:
 
 
 ## STRIKE, BIG AND WILD, A SWORDSMAN'S (wild.ts swing). Says whether it drew the crescent (then the plain cut is not drawn):
-## it does for a swing whose words leave the cut its plain shape. `back`: the second swing of his two, the swipe back.
-func swing(x: float, y: float, dx: float, dy: float, reach: float, plain: bool, back: bool) -> bool:
+## it does for a swing whose words leave the cut its plain shape. `back`: the second swing of his two, the swipe back. `echo`:
+## a phantom's ("of Echoes": faint, less wind off it, no kick).
+func swing(x: float, y: float, dx: float, dy: float, reach: float, plain: bool, back: bool, echo := false) -> bool:
 	var P: Dictionary = L.P
 	var a := atan2(dy, dx)
 	var r := reach * 1.15
 	var dir := -1.0 if back else 1.0
 	var light := PackedColorArray([P["white"], L.CRACKLE[1], L.CRACKLE[2], L.CRACKLE[3]])
 	if plain:
-		fx.slash(x, y, a, r, 0.24, light, true, {"rev": back})
+		fx.slash(x, y, a, r, 0.24, light, true, {"rev": back, "faint": echo})
 		# (the follow-through: on past where the blow fell, round to his other side)
 		later.append({"t": 0.05, "fn": func(): fx.slash(x, y, a + 1.55 * dir, r * 0.94, 0.2, light, false, {"rev": back, "faint": true})})
 	# (white lines of wind off the blade's edge, along the way it went)
 	var wind := PackedColorArray([P["white"], L.AIR[1]])
-	for i in 12:
+	for i in (4 if echo else 12):
 		var u := L.rnd(0.45, 1.0)
 		var rr := r * L.rnd(0.85, 1.05)
 		var at := a + (-1.25 + 2.5 * u) * dir
@@ -323,12 +324,13 @@ func swing(x: float, y: float, dx: float, dy: float, reach: float, plain: bool, 
 		_spark(x + cos(at) * rr, y + sin(at) * rr, 10.0 + L.rnd(-2, 3), cos(q) * v, sin(q) * v, 0.0, L.rnd(0.08, 0.14), wind, 0.0, L.rnd(5, 9))
 	# (dust and grit kicked up where his feet bite the floor, and a ring of it)
 	var grey := PackedColorArray([P["st6"], P["st5"], P["st4"]])
-	for i in 12:
+	for i in (4 if echo else 12):
 		var q := randf() * TAU
 		var v := L.rnd(0.6, 1.8)
 		_spark(x + cos(q) * 0.3, y + sin(q) * 0.3, 1.0, cos(q) * v, sin(q) * v, L.rnd(20, 60), L.rnd(0.25, 0.55), grey, 200.0)
 	fx.ring(x, y, 0.9, 0.2, grey, false)
-	fx.kick(1.4)
+	if not echo:
+		fx.kick(1.4)
 	var mid := a + (-1.25 + 2.5 * 0.6) * dir
 	fx.glow(x + cos(mid) * r, y + sin(mid) * r, 60.0, 0.12, 40)
 	swung = {"x": x, "y": y, "reach": r, "at": clock}

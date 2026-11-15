@@ -224,6 +224,25 @@ through chat, so the art and sounds go into the project whole).
     the plain part, his resistances against fire, frost and lightning; poison, burning, chill and shock left on him;
     Swift's quicker blows; a minion's words at half; the rune over a carrier's head and a monster's name in its colours; the
     champion's rallying cry, heard by those that carry his words. `--only=foewords`, 18 cases.
+  - FLOORS 6 TO 10'S WORDS (the words' port of the descent, 15 Nov 2026): TWIN, LEECH, VOLATILE, PRECISE, FRENZIED, GUARDING,
+    LASTING, FLEETING and VAST, the rest of what may be found from floor 6 (types.ts wordsAt), each in front of and behind each
+    of his three moves by the game's own resolveSkill (words.gd; `words_check.gd` over 32163 loadouts of the sixteen words,
+    none differing), and in the fight as game.ts has them (`hero.gd`, `monster.gd`, `wakes.gd`): Twin's second blow, cut and
+    shock, and "of Echoes", the phantom that makes the move again a moment later; Leech's life back for every enemy hit, and
+    "of Leeching"'s life orbs from kills; Volatile's kills exploding, and "of Ruin"'s rune going off; Precise's harder, narrower
+    hit, and "of the Mark", the next hit on the marked a certain critical; Vast's wider, softer area, and "of the Expanse"'s
+    splash; Frenzied's stacks (his Strike and every wait faster), and "of Frenzy"'s kills keeping them; Guarding's shield, and
+    "of Warding"'s ward circle; Lasting and Fleeting on all that lasts (ground, clouds, cracks, wards, burning, poison, might,
+    haste, the frenzy, the shield, the Whirlwind's hold and its turns). ON A MONSTER (`hurt_by`, `monster.gd`, `act1.gd`,
+    `perils.gd`): Twin's second blow, shot and ring; Frenzied's rage as it is hurt; Guarding's shield; Vast's reach and wider
+    warnings; Volatile's dying blast; Leech healing what its blow takes; Precise's blows through half his armour; Lasting's and
+    Fleeting's poison, burning and chill on him. FOUND from floor 6 (`tools/godot_loot.ts`: the sixteen words' rune stones, the
+    words of floors 1 to 10 and how likely, what each becomes burned into gear, Guarding's block among it, floors 6 to 10's own
+    gear); the bosses' runes now each their stone. AS THE FIGHT SHOWS THEM (`fx_words610.gd`, from render/fx.ts and words3.ts):
+    the mirror's teal phantoms, Leeching's blood and wisps, Volatile's violet crackle, blasts, runes and column of light,
+    Precise's pins and sight, the frenzy's ring at his feet and its sparks, the shield's shell and the ward. `--only=words`,
+    `--only=foewords` and `--only=wordsui` each end with these words' own cases (`check_words610.gd`: 54, 13 and 5); with
+    `--cases=610` the words' and the gear screen's checks run theirs alone (`--cases=610:twin,vast`, those words').
 - **The small map, the large map and the pause panel** (the cloud chat, 15 Nov 2026; `scripts/minimap.gd`; ui/hud.ts minimap
   and drawMap, ui/panels.ts drawPause): top right, the floor round him as he has seen it, a tile a pixel (in sight bright, seen
   before dim, wall dark), with the game's marks: the waypoint (bright once awake), the town's gate, floor 1's gate home, the
@@ -258,7 +277,12 @@ through chat, so the art and sounds go into the project whole).
     reaches (the game's screen, 480 by 270 game pixels on a screen of 16 by 9, and room for a wider one: 400 to each side, 240
     up and down) and draws it on a screen just that big (`REC.reach`, `REC.fit`, `REC.cut` in `tools/godot_rec/page.js`). The
     Ledge Road's SKY is held to the screen and slides at half the ground's pace, the town far below in it, as the game draws it
-    (render/outdoor.ts drawSky; `look.gd` `_Sky`). The Pinewood's trees, some 57,000 standing things in what can be seen, are
+    (render/outdoor.ts drawSky; `look.gd` `_Sky`). THE GROUND IN BLOCKS: painted afresh everywhere, nothing repeating, a
+    floor's ground loaded whole took 80 to 125 MB of a phone's memory; so each piece of it is laid where it lies in a block of
+    512 picture pixels a side, a picture of its own (`<floor>_g_<bx>_<by>.png`), and `look.gd` fetches the blocks on the
+    screen at once, those round it in the background, and lets go of those far from it, as the game paints only the pieces
+    near the screen (his pick, 15 Nov 2026: “Load only near him (Recommended)”): some 11 to 25 blocks held at a time, about
+    1 MB each. The Pinewood's trees, some 57,000 standing things in what can be seen, are
     written a row at a time (a run of still things at one depth within 256 game pixels across, `g`; `look.gd` `_Group`): what
     is drawn and how a figure sorts against them is the same. A TALL THING (a tree, a big rock, the gallows; 44 game pixels
     tall or more) is SEEN THROUGH while the hero, or a monster in sight, stands behind it and its picture covers his middle,
@@ -370,11 +394,11 @@ A controller: the left stick, RT, LT, A, B, X.
 ## Not in it yet
 
 Melding words (the wordsmith's meld screen; the Meldstone and its two words are in), runedust, the Meldstone shown by
-INVENTORY while it is carried and its flight to the wordsmith's slab, words found from floor 6 down (and the nine words the
-Wilds' monsters carry that the Godot version has not yet: Fleeting, Frenzied, Guarding, Lasting, Twin, Vast, Volatile, Leech
-and Precise; a boss carrying one shows its dark square without the word's stone), the trees seen through when he is behind
-them on floors 1 to 5 (on the open floors they are: below), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's
-are eight big sheets, fetched as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), what a red circle or the
+INVENTORY while it is carried and its flight to the wordsmith's slab, the city's words and the last words (floors 11 and 16),
+the looks of Lasting, Fleeting and Vast (render/words10.ts: their rules are in), Frenzied on the prison's bosses' own scripts
+(the mini fleshmancer's), the trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
+above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
+as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), what a red circle or the
 Headsman's vault sends up as it lands and a bone arrow and the Warden's bolts in flight (plain drawings: the game's
 general effects are brought over only for the words so far), the glow that burning things and some figures give off (the game adds it over them; here only the
 places' own lights glow, and the moves cut their light in the dark), the bosses' spoken lines aloud (the Chained One and
