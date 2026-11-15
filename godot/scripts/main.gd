@@ -12,6 +12,7 @@ const FloorMap := preload("res://scripts/floor_map.gd")
 const GroundArt := preload("res://scripts/ground_art.gd")
 const BakedHero := preload("res://scripts/baked_hero.gd")
 const Sfx := preload("res://scripts/sfx.gd")
+const Music := preload("res://scripts/music.gd")
 const FloorLayer := preload("res://scripts/floor_layer.gd")
 const Stands := preload("res://scripts/stands.gd")
 const Hero := preload("res://scripts/hero.gd")
@@ -51,6 +52,7 @@ var place := ""
 var hero: Hero
 var loot: Loot
 var sfx: Sfx
+var music: Music
 var guide: Guide
 var town: Town
 var map: FloorMap
@@ -72,6 +74,8 @@ func _ready() -> void:
 	_inputs()
 	sfx = Sfx.new()
 	add_child(sfx)
+	music = Music.new()
+	add_child(music)
 	hero = Hero.new()
 	hero.art = BakedHero.new(HERO_DIR, "warrior")
 	hero.sfx = sfx
@@ -116,7 +120,7 @@ func _ready() -> void:
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
-	_build("floor1" if shots != "" and _arg("only") != "town" else "town", "start")
+	_build("floor1" if shots != "" and not _arg("only") in ["town", "music"] else "town", "start")
 	if shots != "":
 		_shoot(hero, shots)
 
@@ -271,6 +275,22 @@ func _process(dt: float) -> void:
 				break
 	if guide.use_t > 0.0:
 		guide.use_t -= dt
+	music.level_music(_music_place(), _in_fight(), dt)
+
+
+## Which place's music (game/level_music.ts musicPlace): the town's, or floor 1's.
+func _music_place() -> String:
+	return "town" if place == "town" else ("f1" if place == "floor1" else "")
+
+
+## Is there a fight on: something awake within reach of him (game.ts inFight; no doors here yet to shut one in)?
+func _in_fight() -> bool:
+	if _monsters == null:
+		return false
+	for m in _monsters.list:
+		if not m.dead and m.state != "sleep" and m.world.distance_to(hero.world) < Music.NEAR:
+			return true
+	return false
 
 
 ## Go to another place: the curtain drawn (0.35 s), the place laid out, the curtain lifted.
@@ -384,6 +404,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "loot":
 		await _loot_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "music":
+		await _music_test(hero)
 		get_tree().quit()
 		return
 	await _wait(1.0)
@@ -704,6 +728,40 @@ func _town_shots(h: Hero, dir: String) -> void:
 
 
 ## (A TEST: a real right-button press sent through Godot's input, as a mouse would send it, and what he does with it.)
+## THE MUSIC, checked: the town's walk; floor 1's walk; a fight's coming in near a monster awake, from its "fight in at";
+## its going 4 s after the last of them has gone to sleep or fallen, and the walk back.
+func _music_test(h: Hero) -> void:
+	await _wait(1.0)
+	_music_said("town, 1 s in")
+	go_to("floor1", "stairs")
+	await _wait(1.6)
+	_music_said("floor 1, come in")
+	var m := _nearest_kind(h.world, "skeleton", 0.0)
+	var came := h.world
+	h.world = _spot_near(m.world, 3.0, h.world)
+	await _wait(0.4)
+	_music_said("by a skeleton, 0.4 s")
+	await _wait(1.0)
+	_music_said("by a skeleton, 1.4 s")
+	for x in _monsters.list:
+		if not x.dead and x.state != "sleep":
+			x.hurt(99999.0)
+	h.world = came
+	await _wait(2.0)
+	_music_said("all fallen, 2 s")
+	await _wait(2.6)
+	_music_said("all fallen, 4.6 s")
+	await _wait(1.6)
+	_music_said("all fallen, 6.2 s")
+
+
+func _music_said(when: String) -> void:
+	var said := []
+	for t in music.get_children():
+		said.append("%s %s gain %.2f at %.2f s" % [t.stream.resource_path.get_file(), "playing" if t.playing else "stopped", t.gain, t.get_playback_position()])
+	print("MUSIC ", when, ": fight ", music.fighting(), ", in fight ", _in_fight(), " | ", ", ".join(said))
+
+
 func _rmb_test(h: Hero, dir: String) -> void:
 	# (set down near a pack of skeletons, so the spin has something to cut)
 	var skel := _nearest_kind(h.world, "skeleton", 12.0)

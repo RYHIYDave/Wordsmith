@@ -67,6 +67,11 @@ through chat, so the art and sounds go into the project whole).
   as it starts (game/floor_looks.ts). Recorded from the game's own renderer (`scripts/look.gd` lays them out), the dark
   and its lights included. My first versions of both were the old looks: the export tools had not put the game's
   startup switches on.
+- **The music** (`scripts/music.gd`, game/level_music.ts and engine/audio.ts levelMusic): the town's walk, and floor 1's
+  walk and fight, his songs from the sound chat's tenth batch, each looping where the game loops it. Coming into a place,
+  its walk fades up; when something awake is within 10 tiles of him, the fight comes in at once from its first big hit and
+  the walk fades out under it; 4 s after the last of them has fallen or lost him, the fight fades out and the walk comes back
+  where it had got to. Never a fight in town. (Floors 2 to 5's are in too, for when they come.)
 - **A desktop icon**, "Wordsmith (Godot)", opens this project to play (it needs the `wordsmith` folder on this branch).
 
 Keys: WASD or the arrows to walk; the left button to Strike, the right to Whirl, Space to Lunge (the mouse aims; from
@@ -92,8 +97,7 @@ swirling round the ring and its column of light, the wordsmith's words for sale,
 Lexicon, buying back, the town's own lighting and music; words other than Power, uniques, magic find, the game's own
 lettering and frames for the screens (these use Godot's plain letters), chests, barrels and urns, the floor's own
 dressing (render/pieces.ts, its looks), raised and sunken floor, the tiles cut corner to corner (drawn whole for now),
-doors, props, the rest of the heroes, menus, music (its 12 tracks are `.mp4`, which Godot does not play: they need
-making into `.ogg`). The Colossus pictures are in, held back from Godot with `.gdignore` until they are wired in.
+doors, props, the rest of the heroes, menus, the title screen's music. The Colossus pictures are in, held back from Godot with `.gdignore` until they are wired in.
 
 ## How it is made
 
@@ -107,10 +111,12 @@ making into `.ogg`). The Colossus pictures are in, held back from Godot with `.g
 | `assets/loot` | the game's own gear rolled on floor 1, the vendors' shelves, prices, its pictures, the fallen wordsmith: `npx tsx tools/godot_loot.ts 1` |
 | `assets/town` | the town a new game begins in, its pictures, floor 1's gate up: `npx tsx tools/godot_town.ts 1` |
 | `assets/looks` | floor 1 as THE KING'S TOMB and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light): `npx tsx tools/godot_looks.ts town` and `... floor1` (all the tools put the game's startup switches on first: tools/godot_switches.ts) |
+| `assets/music` | the town's and floors 1 to 5's tracks from `assets/sound` made into `.ogg` (Godot does not play `.mp4`), each cut where the game loops it, and the game's table of them: `node tools/godot_music.mjs` (needs ffmpeg) |
 | `scripts/` | GDScript, each file saying which TypeScript it follows |
 
 Checking it without hands on the keys: `godot --path godot -- --shots=<folder>` sets the hero down, unharmed, in sight
 of each monster that has moves and pictures each move the moment it shows (the troll's charge line, run and slam; the
 rain's ring and its arrows; the marksman's aim and great arrow; the Warden's bolts, the Lockdown's shadows and bars, the
-dead he calls), says which moves were made, and quits. (Neither lair on this floor leaves the troll a clear run, so for
+dead he calls), says which moves were made, and quits. `--only=music` says what music plays as he goes from the town to
+floor 1, up to a skeleton and away when the fight is over. (Neither lair on this floor leaves the troll a clear run, so for
 the charge he is set down in the floor's biggest hall.)
