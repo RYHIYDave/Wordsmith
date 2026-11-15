@@ -192,6 +192,12 @@ const STAND_IN_EDGE := Color(0.35, 0.9, 1.0)
 
 
 func _draw() -> void:
+	# (THE GAME'S OWN LOOKS of each patch, its floor: fx.gd draw_wake, fx_wakes.gd; what it sends up, its cloud and its light
+	# are tended there from this list. The plain rings below only where there is no fx.)
+	if fx != null and is_instance_valid(fx) and fx.has_method("draw_wake"):
+		for z in list:
+			fx.draw_wake(self, z)
+		return
 	for z in list:
 		var a := clampf((z["dur"] - z["t"]) / 0.5, 0.0, 1.0)
 		var lift: float = map.lift_at(z["x"], z["y"]) if map != null else 0.0
