@@ -46,7 +46,7 @@ const FLOOR_DIR := "res://assets/floor1"
 const Ways := preload("res://scripts/ways.gd")
 const Sight := preload("res://scripts/sight.gd")
 ## (the deepest floor that has its files)
-const FLOORS := 5
+const FLOORS := 10
 const TOWN_DIR := "res://assets/town"
 const HERO_DIR := "res://assets/heroes"
 const MONSTER_DIR := "res://assets/monsters"
