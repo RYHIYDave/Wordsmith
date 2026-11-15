@@ -3489,7 +3489,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     set1Look: SET1_LOOK,
     /** (THE MAGE'S UNIQUE STAVES IN HER HANDS, art/staff_skins.ts) their switch, on at his yes (14 Nov 2026): `staffSkins.on`. */
     staffSkins: STAFF_SKINS,
-    /** (THE RANGER'S UNIQUE BOWS IN HIS HAND, art/bow_skins.ts) their switch, off until his yes in play: `bowSkins.on`. */
+    /** (THE RANGER'S UNIQUE BOWS IN HIS HAND, art/bow_skins.ts) their switch, on at his yes (14 Nov 2026): `bowSkins.on`. */
     bowSkins: BOW_SKINS,
     /** (A UNIQUE'S PIPS, ui/panels.ts) which of its lines they count and their colour, for pictures of each: `uniquePips.count`, `.colour`, `.free`. */
     uniquePips: UNIQUE_PIPS,

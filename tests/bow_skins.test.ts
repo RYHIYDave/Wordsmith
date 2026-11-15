@@ -1,7 +1,8 @@
 // THE RANGER'S UNIQUE BOWS (art/bow_skins.ts; art/ranger_up.ts BowSkin, PLAIN_BOW; in the game behind art/heroes.ts BOW_SKINS).
 // His word, 14 Nov 2026, of the Mage's staves done: “then do it for the rest of the cast”; shown the four bows on him:
 // “Yes, all four (Recommended)”.
-//   1. the switch is off; of the game only his art reads art/bow_skins.ts;
+//   1. the switch is on (his yes to him in play: “Yes, switch them on (Recommended)”); off, no bow is worn and none baked; of the
+//      game only his art reads art/bow_skins.ts;
 //   2. his own bow is the first skin, and painted with it he is the very frame he is painted as when nothing is said;
 //   3. each bow is a bow of its own, and nothing of it glows: his lights with it are his own bow's;
 //   4. on: the four unique bows of the game are worn, each its own places in town and in a dungeon, its look that bow, and his
@@ -35,10 +36,16 @@ paintWithoutCanvas();
 
 const same = (a: { d: Uint8ClampedArray }, b: { d: Uint8ClampedArray }): boolean => a.d.length === b.d.length && a.d.every((v, k) => v === b.d[k]);
 
-test('1. the switch is off; of the game only his art reads art/bow_skins.ts', () => {
-  assert.equal(BOW_SKINS.on, false);
-  assert.equal(bowWorn({ rarity: 3, unique: 'rainwalker' }), null);
-  assert.equal(wornSkin('ranger', { rarity: 3, unique: 'rainwalker' }), null);
+test('1. the switch is on (his yes); off, no bow is worn; of the game only his art reads art/bow_skins.ts', () => {
+  assert.equal(BOW_SKINS.on, true);
+  BOW_SKINS.on = false;
+  try {
+    assert.equal(bowWorn({ rarity: 3, unique: 'rainwalker' }), null);
+    assert.equal(wornSkin('ranger', { rarity: 3, unique: 'rainwalker' }), null);
+    assert.ok(!Object.keys(bakeGroups(true)).some((k) => k.startsWith('ranger-')), 'off: none baked');
+  } finally {
+    BOW_SKINS.on = true;
+  }
   const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e: { name: string; isDirectory(): boolean }) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.ts') ? [`${dir}/${e.name}`] : []));
   const readers = walk('src').filter((f) => f !== 'src/art/bow_skins.ts' && !f.startsWith('src/dev/') && /from '[^']*bow_skins'/.test(readFileSync(f, 'utf8'))).sort();
   assert.deepEqual(readers, ['src/art/heroes3.ts']);
@@ -100,9 +107,8 @@ test('4. on: the four unique bows worn, their places and looks, his pictures pai
     const all = Object.values(g).flat().map(keyName);
     assert.equal(new Set(all).size, all.length, 'none twice');
   } finally {
-    BOW_SKINS.on = false;
+    BOW_SKINS.on = true;
   }
-  assert.ok(!Object.keys(bakeGroups(true)).some((k) => k.startsWith('ranger-')), 'off: none baked');
 });
 
 test('5. on: his own bow\'s set and a unique bow\'s let go of as he swaps; the Mage\'s are not his to let go', async () => {
@@ -159,7 +165,7 @@ test('5. on: his own bow\'s set and a unique bow\'s let go of as he swaps; the M
     b.holdOnly('mage', 'crookTown', false);
     assert.ok('value' in first('threefoldTown'), 'still his');
   } finally {
-    BOW_SKINS.on = false;
+    BOW_SKINS.on = true;
     g0.createImageBitmap = had;
   }
 });

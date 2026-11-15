@@ -95,12 +95,13 @@ export function staffWorn(item: { unique?: string; rarity?: number } | null | un
   return STAFF_OF_UNIQUE[item.unique] ?? null;
 }
 /**
- * THE RANGER'S BOWS' SWITCH: OFF until he has seen the Ranger holding them in play and said yes (his yes to their pictures,
- * 14 Nov 2026, shown docs/mockups/bow_skins/pictures/bows_moves.mp4: “Yes, all four (Recommended)”). On, the Ranger holding a
+ * THE RANGER'S BOWS' SWITCH: ON, at his yes, 14 Nov 2026 (by 20:06 Eastern), shown the Ranger in the game with each bow
+ * (docs/mockups/bow_skins/pictures/bows_in_game.mp4) and asked whether to turn them on: “Yes, switch them on (Recommended)”.
+ * (His yes to their pictures before, shown bows_moves.mp4: “Yes, all four (Recommended)”.) On, the Ranger holding a
  * unique bow is drawn holding it (render/render.ts heroArt: his places with that bow, BOW_PLACES; the bows art/bow_skins.ts),
  * each bow's pictures a bake group of its own (render/baked.ts), as the Mage's staves are.
  */
-export const BOW_SKINS = { on: false };
+export const BOW_SKINS = { on: true };
 /** The unique bows of the game (game/uniques.ts) that are drawn in his hand, and the skin each is. */
 export const BOW_OF_UNIQUE: Readonly<Record<string, BowId>> = { rainwalker: 'rainwalker', fan: 'threefold', poachersbow: 'poachers', fledgling: 'fledgling' };
 /** The skin of the bow an item is, if it is one of those (and the switch is on); null: his own bow. */

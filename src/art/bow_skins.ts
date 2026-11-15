@@ -2,7 +2,8 @@
 // hers (art/staff_skins.ts). His word, 14 Nov 2026, of the Mage's staves done: “then do it for the rest of the cast”; asked
 // whether to start, his pick: “Start the rest of the cast (Recommended)”. PICTURES FIRST: nothing of the game draws these until
 // he has seen them on him and said yes. Shown them (docs/mockups/bow_skins/pictures/bows_moves.mp4, bows_stills.png), 14 Nov 2026:
-// “Yes, all four (Recommended)”. In the game behind art/heroes.ts BOW_SKINS (off until his yes to them in play).
+// “Yes, all four (Recommended)”. In the game by art/heroes.ts BOW_SKINS, ON at his yes to him holding them in play (by 20:06):
+// “Yes, switch them on (Recommended)”.
 //
 // His bow is a skin laid on where it is (art/ranger_up.ts BowAt, BowSkin; his own bow PLAIN_BOW, painted exactly as before).
 // Each of these is drawn to its picture in the bag (art/items_unique.ts), the same bow in the hand:
