@@ -47,6 +47,17 @@ var stairs: Array = []
 var waypoint = null
 ## THE TRAPS (game/traps.ts): spike floors {kind, x, y, w, h, phase} and dart walls {kind, x, y, w, h, slot} (traps.gd).
 var hazards: Array = []
+## THE MIX (game/dungeon.ts): each lever's tile and the room whose way in its gate bars, {x, y, room} (a prop of kind
+## "lever" stands on it); the rooms carry `gated`, `nook` and `locks` where the map-maker marked them.
+var levers: Array = []
+## QUESTS15, floor 3 while its furnace burns: {crank (its place among the props), keeper (the Stoker's id), gate (the door its
+## fire bars), room, spot}, and the Stoker's arena {room, hall, furnace, crank, keeper}; null elsewhere.
+var furnace = null
+var arena = null
+## FLOOR 5: the temple's door and its keys {door, keys, need, chain, at} (game/temple_door.ts), and the bone heaps of the
+## Fleshmancer's hall [{x, y}]; null elsewhere.
+var temple = null
+var heaps = null
 
 
 func _init(path: String) -> void:
@@ -81,6 +92,11 @@ func _init(path: String) -> void:
 	stairs = data.get("stairs", [])
 	waypoint = data.get("waypoint", null)
 	hazards = data.get("hazards", [])
+	levers = data.get("levers", [])
+	furnace = data.get("furnace")
+	arena = data.get("arena")
+	temple = data.get("temple")
+	heaps = data.get("heaps")
 	shut.resize(w * h)
 	pier.resize(w * h)
 	for d in doors:

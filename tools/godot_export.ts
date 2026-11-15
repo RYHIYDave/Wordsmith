@@ -122,11 +122,24 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   // and what flies pass over)
   stair: arr(L.stair), step: arr(level.step), open: arr(level.open),
   start: { x: game.hero.x, y: game.hero.y, fx: game.hero.fx, fy: game.hero.fy }, boss: L.boss,
-  rooms: L.rooms.map((r) => ({ id: r.id, x: r.x, y: r.y, w: r.w, h: r.h, kind: r.kind, path: r.path })),
+  // (THE MIX, game/dungeon.ts: the room whose way in a lever's gate bars (`gated`), the nook its lever stands in, the room that
+  // locks: only where the map-maker marked one)
+  rooms: L.rooms.map((r) => ({ id: r.id, x: r.x, y: r.y, w: r.w, h: r.h, kind: r.kind, path: r.path, ...(r.gated ? { gated: true } : {}), ...(r.nook ? { nook: true } : {}), ...(r.locks ? { locks: true } : {}) })),
   // (the chests, barrels and urns: each by its place in the level's props (the looks' `props` go by it), where it stands, its
-  // tile (solid: out of the walk grid until it is broken), and whether it is in a treasure vault)
-  props: level.props.map((p, i) => ({ i, kind: p.kind, x: p.x, y: p.y, tx: p.tx, ty: p.ty, state: p.state, solid: p.solid }))
-    .filter((p) => p.kind === 'chest' || p.kind === 'barrel' || p.kind === 'urn'),
+  // tile (solid: out of the walk grid until it is broken), and whether it is in a treasure vault; and THE MIX's levers, and
+  // floor 3's forge crank, a lever by kind, named 'crank')
+  props: level.props.map((p, i) => ({ i, kind: p.kind, x: p.x, y: p.y, tx: p.tx, ty: p.ty, state: p.state, solid: p.solid, ...(p.name ? { name: p.name } : {}) }))
+    .filter((p) => p.kind === 'chest' || p.kind === 'barrel' || p.kind === 'urn' || p.kind === 'lever'),
+  // (THE MIX: each lever's tile and the room whose way in its gate bars: types.ts LeverSpot)
+  levers: (L.levers ?? []).map((l) => ({ ...l })),
+  // (QUESTS15, floor 3 while its furnace burns: the furnace quest as the game keeps it (its crank's place among the props, its
+  // keeper's id among the monsters, the gate its fire bars); the Stoker's arena (game/furnace_arena.ts); the fire channels)
+  furnace: level.furnace ? { crank: level.props.indexOf(level.furnace.crank), keeper: level.furnace.keeper, gate: level.furnace.gate, room: level.furnace.room, spot: level.furnace.spot } : null,
+  arena: level.arena ? structuredClone(level.arena) : null,
+  channels: level.channels ? structuredClone(level.channels) : null,
+  // (FLOOR 5: the temple's door and its keys (game/temple_door.ts), and the bone heaps of the Fleshmancer's hall)
+  temple: level.temple ? structuredClone(level.temple) : null,
+  heaps: L.heaps ? L.heaps.map((q) => ({ ...q })) : null,
   // (game/doors.ts: each door and gate the map-maker laid, as the game keeps it (open, want), with its doorway's three tiles,
   // the tiles passed through (a door's middle one, a gate's three), the stone either side of a door, and its middle)
   doors: level.doors.map((d) => ({

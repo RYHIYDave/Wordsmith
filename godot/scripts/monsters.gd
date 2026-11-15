@@ -36,6 +36,10 @@ var _figures := {}
 ## (the floor's boss has fallen, and where: the ways on open clear of him, ways.gd)
 var boss_fell := false
 var boss_at := Vector2.ZERO
+## A THING OF A QUEST TAKEN UP WHERE IT LAY (game.ts furnaceGearTaken, templeKeyTaken): what ("gear": the forge crank's, the
+## Stoker's; "key": one of the temple door's, a keybearer's) and where. The monster's own script lays it down as it falls and
+## says so when the hero takes it; the floor's quest scripts listen.
+signal quest_item(what: String, at: Vector2)
 
 
 func load_floor(path: String, figures_dir: String) -> void:
