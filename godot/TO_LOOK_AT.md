@@ -214,3 +214,25 @@ Smaller:
   none as the game starts).
 - Volatile in front makes a boss explode for 12% or more of his whole life when he dies (explodeKill reads maxLife).
 - A ward (Guarding behind) counts him inside by his middle alone; the ground's bites count half a monster's body.
+
+## In the game, found while bringing over the Swamp Colossus and floors 6 to 10's quests (15 Nov 2026)
+
+29. **The Swamp Colossus is still named after the old boss.** His name across the screen and on his bar read "The Flame
+    Guarding Vast Drowned Eye", not the Swamp Colossus; the pillars' lines also still speak of "the Drowned Eye".
+
+30. **The eyrie scene looks the wrong way on this map.** On the floor the game lays (seed 1), the picture pans right, toward
+    the eyrie's own rock, so the town and the cult's dome end up mostly behind the cliff while the open drop is to the left.
+    The game picks the way from the drop tile nearest the middle of the boss's ground.
+
+31. **The crash of two waves never slows the hero.** Its surge is meant to slow him to 60% (colossus_fight.ts CRASH.slow,
+    paceAt), but nothing in the game asks it. Copied.
+
+32. **The stronghold's altar still promises the old hall.** It says "Within: a yellow pack of the cult's best", though the
+    hall is now five waves.
+
+Smaller:
+
+- **The Swamp Colossus.** A slammed tentacle is described as hittable anywhere along the line it lies on (armShape), but the
+  game never uses that: blows reach it only at its root, out in the water. The old pink ring standing in for the pillars is
+  still drawn under his own pillar fire.
+- **The quest line.** A muster roll page drops even if the mystic never asked for the roll.
