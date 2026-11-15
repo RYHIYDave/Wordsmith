@@ -1,0 +1,4 @@
+# Godot's own cache, made again whenever the editor opens the project
+.godot/
+# screenshots made by tools/shot.ps1
+shots/

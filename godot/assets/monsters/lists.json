@@ -1,0 +1,3880 @@
+{
+ "skeleton": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "crawl",
+    "fps": 20
+   }
+  ]
+ },
+ "archer": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "rain",
+    "fps": 30
+   }
+  ]
+ },
+ "cultist": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 14
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   }
+  ]
+ },
+ "bat": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 20
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   }
+  ]
+ },
+ "brute": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 8
+   },
+   {
+    "name": "walk",
+    "fps": 11
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "chargeWind",
+    "fps": 30
+   },
+   {
+    "name": "charge",
+    "fps": 30
+   },
+   {
+    "name": "chargeStop",
+    "fps": 30
+   }
+  ]
+ },
+ "guardian": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 8
+   },
+   {
+    "name": "walk",
+    "fps": 9
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "swing",
+    "fps": 30
+   },
+   {
+    "name": "chargeWind",
+    "fps": 30
+   },
+   {
+    "name": "charge",
+    "fps": 30
+   },
+   {
+    "name": "chargeStop",
+    "fps": 30
+   }
+  ]
+ },
+ "warden": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 8
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "heavy",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "swing",
+    "fps": 30
+   },
+   {
+    "name": "summon",
+    "fps": 30
+   },
+   {
+    "name": "lockdown",
+    "fps": 30
+   }
+  ]
+ },
+ "shade": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 12
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "boneward": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 16.5
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "throw",
+    "fps": 30
+   },
+   {
+    "name": "bash",
+    "fps": 30
+   },
+   {
+    "name": "pickUp",
+    "fps": 30
+   },
+   {
+    "name": "standBare",
+    "fps": 10
+   },
+   {
+    "name": "walkBare",
+    "fps": 16.5
+   },
+   {
+    "name": "glance",
+    "fps": 30
+   }
+  ]
+ },
+ "golem": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 11.555555555555555
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "throw",
+    "fps": 30
+   },
+   {
+    "name": "slam",
+    "fps": 30
+   },
+   {
+    "name": "hurled",
+    "fps": 19.200000000000003
+   }
+  ]
+ },
+ "champion": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 13.333333333333334
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "rally",
+    "fps": 30
+   }
+  ]
+ },
+ "marksman": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 12
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "pierce",
+    "fps": 30
+   }
+  ]
+ },
+ "priest": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 9
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "censer",
+    "fps": 30
+   }
+  ]
+ },
+ "chieftain": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 7
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "swing",
+    "fps": 30
+   }
+  ]
+ },
+ "headsman": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 15
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "flurry",
+    "fps": 30
+   },
+   {
+    "name": "wheel",
+    "fps": 30
+   },
+   {
+    "name": "vault",
+    "fps": 30
+   },
+   {
+    "name": "dashL",
+    "fps": 30
+   },
+   {
+    "name": "dashR",
+    "fps": 30
+   }
+  ]
+ },
+ "chained": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 6.666666666666667
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "hook",
+    "fps": 30
+   },
+   {
+    "name": "whirl",
+    "fps": 30
+   },
+   {
+    "name": "ball",
+    "fps": 30
+   },
+   {
+    "name": "breakL",
+    "fps": 30
+   }
+  ]
+ },
+ "chained1": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 6.666666666666667
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "hook",
+    "fps": 30
+   },
+   {
+    "name": "whirl",
+    "fps": 30
+   },
+   {
+    "name": "ball",
+    "fps": 30
+   },
+   {
+    "name": "breakBall",
+    "fps": 30
+   }
+  ]
+ },
+ "chained2": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 6.666666666666667
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "hook",
+    "fps": 30
+   },
+   {
+    "name": "whirl",
+    "fps": 30
+   }
+  ]
+ },
+ "amalgam": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "burst",
+    "fps": 30
+   },
+   {
+    "name": "rain",
+    "fps": 30
+   },
+   {
+    "name": "floorArms",
+    "fps": 30
+   },
+   {
+    "name": "devour",
+    "fps": 30
+   }
+  ]
+ },
+ "beast": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 20
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "emerge",
+    "fps": 30
+   },
+   {
+    "name": "dragged",
+    "fps": 20
+   }
+  ]
+ },
+ "fleshmancer": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "rings",
+    "fps": 30
+   },
+   {
+    "name": "raise",
+    "fps": 30
+   },
+   {
+    "name": "fire",
+    "fps": 30
+   },
+   {
+    "name": "sink",
+    "fps": 30
+   },
+   {
+    "name": "rise",
+    "fps": 30
+   }
+  ]
+ },
+ "dagger": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 13.000000000000002
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "minifm": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "raise",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   }
+  ]
+ },
+ "chanter": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "firepot": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "qgolem": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 8
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "throw",
+    "fps": 30
+   },
+   {
+    "name": "rolling",
+    "fps": 26.197812521451517
+   }
+  ]
+ },
+ "rubbling": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 8
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "emerge",
+    "fps": 30
+   }
+  ]
+ },
+ "vulture": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "crawler": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "leap",
+    "fps": 30
+   }
+  ]
+ },
+ "scorpion": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "spit",
+    "fps": 30
+   },
+   {
+    "name": "glob",
+    "fps": 18
+   }
+  ]
+ },
+ "devil": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 16
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "deer": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 15
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "charge",
+    "fps": 30
+   }
+  ]
+ },
+ "wolf": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 15
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "drowned": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "rise",
+    "fps": 30
+   },
+   {
+    "name": "retch",
+    "fps": 30
+   }
+  ]
+ },
+ "leech": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "spawn": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 15
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "gaze",
+    "fps": 30
+   },
+   {
+    "name": "hatch",
+    "fps": 30
+   }
+  ]
+ },
+ "unfinished": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "stomp",
+    "fps": 30
+   },
+   {
+    "name": "hurl",
+    "fps": 30
+   },
+   {
+    "name": "rockslide",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "fusedStand",
+    "fps": 10
+   },
+   {
+    "name": "fusedSlam",
+    "fps": 30
+   },
+   {
+    "name": "fusedStomp",
+    "fps": 30
+   },
+   {
+    "name": "fusedHurl",
+    "fps": 30
+   },
+   {
+    "name": "fusedRockslide",
+    "fps": 30
+   },
+   {
+    "name": "fusedReel",
+    "fps": 30
+   },
+   {
+    "name": "tearFree",
+    "fps": 30
+   }
+  ]
+ },
+ "queen": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 15
+   },
+   {
+    "name": "walk",
+    "fps": 20
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "gust",
+    "fps": 30
+   },
+   {
+    "name": "dive",
+    "fps": 30
+   },
+   {
+    "name": "call",
+    "fps": 30
+   },
+   {
+    "name": "eclipse",
+    "fps": 30
+   },
+   {
+    "name": "fall",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "cantor": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "shout",
+    "fps": 30
+   },
+   {
+    "name": "copies",
+    "fps": 30
+   },
+   {
+    "name": "rockfall",
+    "fps": 30
+   },
+   {
+    "name": "echoAttack",
+    "fps": 15
+   },
+   {
+    "name": "echoShout",
+    "fps": 15
+   },
+   {
+    "name": "echoRockfall",
+    "fps": 15
+   },
+   {
+    "name": "echoCopies",
+    "fps": 15
+   }
+  ]
+ },
+ "stag": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 15
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "charge",
+    "fps": 30
+   },
+   {
+    "name": "bellow",
+    "fps": 30
+   },
+   {
+    "name": "close",
+    "fps": 30
+   },
+   {
+    "name": "stare",
+    "fps": 30
+   }
+  ]
+ },
+ "stoker": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "rake",
+    "fps": 30
+   },
+   {
+    "name": "burst",
+    "fps": 30
+   }
+  ]
+ },
+ "keyblade": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 13.000000000000002
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "leap",
+    "fps": 30
+   },
+   {
+    "name": "throw",
+    "fps": 30
+   }
+  ]
+ },
+ "keyflame": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "fan",
+    "fps": 30
+   },
+   {
+    "name": "ring",
+    "fps": 30
+   }
+  ]
+ },
+ "hushed": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "watch": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "lantern",
+    "fps": 30
+   }
+  ]
+ },
+ "scribe": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "hound": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 15
+   },
+   {
+    "name": "walk",
+    "fps": 16
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "rat": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 15
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "look",
+    "fps": 30
+   }
+  ]
+ },
+ "dredger": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "net",
+    "fps": 30
+   }
+  ]
+ },
+ "fieldhand": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "carter": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "lashes",
+    "fps": 30
+   }
+  ]
+ },
+ "patient": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "abed",
+    "fps": 10
+   },
+   {
+    "name": "rise",
+    "fps": 30
+   }
+  ]
+ },
+ "orderly": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "gurney",
+    "fps": 30
+   }
+  ]
+ },
+ "inkling": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 12
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "melt",
+    "fps": 30
+   },
+   {
+    "name": "rise",
+    "fps": 30
+   }
+  ]
+ },
+ "bookwarden": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "barrage",
+    "fps": 30
+   }
+  ]
+ },
+ "crier": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 15
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "shout",
+    "fps": 30
+   },
+   {
+    "name": "proclaim",
+    "fps": 30
+   },
+   {
+    "name": "crowd",
+    "fps": 30
+   }
+  ]
+ },
+ "ratking": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 15
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "unknot",
+    "fps": 30
+   },
+   {
+    "name": "knot",
+    "fps": 30
+   },
+   {
+    "name": "words",
+    "fps": 30
+   },
+   {
+    "name": "roll",
+    "fps": 30
+   }
+  ]
+ },
+ "palimpsest": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "cuts",
+    "fps": 30
+   },
+   {
+    "name": "leaves",
+    "fps": 30
+   },
+   {
+    "name": "rewrite",
+    "fps": 30
+   }
+  ]
+ },
+ "physician": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "draw",
+    "fps": 30
+   },
+   {
+    "name": "rounds",
+    "fps": 30
+   },
+   {
+    "name": "diagnose",
+    "fps": 30
+   },
+   {
+    "name": "operate",
+    "fps": 30
+   }
+  ]
+ },
+ "censor": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "redact",
+    "fps": 30
+   },
+   {
+    "name": "strike",
+    "fps": 30
+   },
+   {
+    "name": "hush",
+    "fps": 30
+   }
+  ]
+ },
+ "scraper": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 12
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "scour",
+    "fps": 30
+   },
+   {
+    "name": "rush",
+    "fps": 30
+   },
+   {
+    "name": "strip",
+    "fps": 30
+   }
+  ]
+ },
+ "quill": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "lines",
+    "fps": 30
+   },
+   {
+    "name": "takeoff",
+    "fps": 30
+   },
+   {
+    "name": "fly",
+    "fps": 24
+   },
+   {
+    "name": "land",
+    "fps": 30
+   },
+   {
+    "name": "write",
+    "fps": 30
+   },
+   {
+    "name": "swoop",
+    "fps": 30
+   }
+  ]
+ },
+ "swan": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 15
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "gardener": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 15
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "groom": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 15
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "pguard": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "javelin",
+    "fps": 30
+   }
+  ]
+ },
+ "footman": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 26
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "candelabrum",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "order": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "knife",
+    "fps": 30
+   },
+   {
+    "name": "rush",
+    "fps": 30
+   }
+  ]
+ },
+ "lady": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "glideBack",
+    "fps": 30
+   },
+   {
+    "name": "glideLeft",
+    "fps": 30
+   },
+   {
+    "name": "glideRight",
+    "fps": 30
+   }
+  ]
+ },
+ "qguard": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 20
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "stepIn",
+    "fps": 30
+   },
+   {
+    "name": "stepOut",
+    "fps": 30
+   },
+   {
+    "name": "fan",
+    "fps": 30
+   }
+  ]
+ },
+ "reflection": {
+  "sides": 8,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 30
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "heavy",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "stepOut",
+    "fps": 30
+   }
+  ]
+ },
+ "kknight": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "banner",
+    "fps": 30
+   }
+  ]
+ },
+ "xbow": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 20
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "plant",
+    "fps": 30
+   },
+   {
+    "name": "reload",
+    "fps": 30
+   }
+  ]
+ },
+ "hshape": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "circleLeft",
+    "fps": 10
+   },
+   {
+    "name": "circleRight",
+    "fps": 10
+   },
+   {
+    "name": "circleLeftFast",
+    "fps": 10
+   },
+   {
+    "name": "circleRightFast",
+    "fps": 10
+   },
+   {
+    "name": "swoopLeft",
+    "fps": 30
+   },
+   {
+    "name": "swoopRight",
+    "fps": 30
+   }
+  ]
+ },
+ "rshadow": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 20
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "snare",
+    "fps": 30
+   }
+  ]
+ },
+ "rshade": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "princess": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 20
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "snare",
+    "fps": 30
+   },
+   {
+    "name": "eleven",
+    "fps": 30
+   },
+   {
+    "name": "vow",
+    "fps": 30
+   },
+   {
+    "name": "rideForm",
+    "fps": 30
+   },
+   {
+    "name": "rideLeap",
+    "fps": 30
+   },
+   {
+    "name": "rideEnd",
+    "fps": 30
+   }
+  ]
+ },
+ "prince": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   },
+   {
+    "name": "dart",
+    "fps": 30
+   },
+   {
+    "name": "dance",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 30
+   },
+   {
+    "name": "masks",
+    "fps": 30
+   },
+   {
+    "name": "midnight",
+    "fps": 30
+   }
+  ]
+ },
+ "gqueen": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 12
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "glassIn",
+    "fps": 30
+   },
+   {
+    "name": "glassOut",
+    "fps": 30
+   },
+   {
+    "name": "reflect",
+    "fps": 30
+   },
+   {
+    "name": "shatter",
+    "fps": 30
+   }
+  ]
+ },
+ "gking": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "decree",
+    "fps": 30
+   },
+   {
+    "name": "weight",
+    "fps": 30
+   },
+   {
+    "name": "curtains",
+    "fps": 30
+   },
+   {
+    "name": "climbOff",
+    "fps": 30
+   }
+  ]
+ },
+ "hushed_1": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "hushed_2": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "watch_1": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "lantern",
+    "fps": 30
+   }
+  ]
+ },
+ "fieldhand_1": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   }
+  ]
+ },
+ "palimpsest_1": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "cuts",
+    "fps": 30
+   },
+   {
+    "name": "leaves",
+    "fps": 30
+   },
+   {
+    "name": "rewrite",
+    "fps": 30
+   }
+  ]
+ },
+ "palimpsest_2": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 8
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "cuts",
+    "fps": 30
+   },
+   {
+    "name": "leaves",
+    "fps": 30
+   },
+   {
+    "name": "rewrite",
+    "fps": 30
+   }
+  ]
+ },
+ "pguard_1": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "javelin",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer_1": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer_2": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer_3": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer_4": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer_5": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer_6": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer_7": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer_8": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer_9": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer_10": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "dancer_11": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 24
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "waltz",
+    "fps": 24
+   },
+   {
+    "name": "chime",
+    "fps": 30
+   },
+   {
+    "name": "spin",
+    "fps": 30
+   }
+  ]
+ },
+ "order_1": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "knife",
+    "fps": 30
+   },
+   {
+    "name": "rush",
+    "fps": 30
+   }
+  ]
+ },
+ "order_2": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "knife",
+    "fps": 30
+   },
+   {
+    "name": "rush",
+    "fps": 30
+   }
+  ]
+ },
+ "reflection_1": {
+  "sides": 8,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 30
+   },
+   {
+    "name": "walk",
+    "fps": 60
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "heavy",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "stepOut",
+    "fps": 30
+   }
+  ]
+ },
+ "reflection_2": {
+  "sides": 8,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 30
+   },
+   {
+    "name": "walk",
+    "fps": 60
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "heavy",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "stepOut",
+    "fps": 30
+   }
+  ]
+ },
+ "reflection_3": {
+  "sides": 8,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 30
+   },
+   {
+    "name": "walk",
+    "fps": 60
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "heavy",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "stepOut",
+    "fps": 30
+   }
+  ]
+ },
+ "reflection_4": {
+  "sides": 8,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 60
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "heavy",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "stepOut",
+    "fps": 30
+   }
+  ]
+ },
+ "reflection_5": {
+  "sides": 8,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 30
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "heavy",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "stepOut",
+    "fps": 30
+   }
+  ]
+ },
+ "reflection_6": {
+  "sides": 8,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 30
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "heavy",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "stepOut",
+    "fps": 30
+   }
+  ]
+ },
+ "reflection_7": {
+  "sides": 8,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 30
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "heavy",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 30
+   },
+   {
+    "name": "stepOut",
+    "fps": 30
+   }
+  ]
+ },
+ "gking_1": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "decree",
+    "fps": 30
+   },
+   {
+    "name": "weight",
+    "fps": 30
+   },
+   {
+    "name": "curtains",
+    "fps": 30
+   }
+  ]
+ },
+ "gking_2": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": null
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "fog",
+    "fps": 30
+   },
+   {
+    "name": "wrap",
+    "fps": 30
+   },
+   {
+    "name": "struckOff",
+    "fps": 30
+   }
+  ]
+ },
+ "rshadow_1": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "masks",
+    "fps": 30
+   }
+  ]
+ },
+ "rshadow_2": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 12
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "blinkIn",
+    "fps": 30
+   },
+   {
+    "name": "blinkOut",
+    "fps": 30
+   }
+  ]
+ },
+ "rshadow_3": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "weight",
+    "fps": 30
+   }
+  ]
+ },
+ "mite": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "form",
+    "fps": 30
+   }
+  ]
+ }
+}
