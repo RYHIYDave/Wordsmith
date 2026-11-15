@@ -363,6 +363,9 @@ func _case(w: String, side: String, i: int) -> void:
 			var want := roundf(h.max_life * float(r["shield"]))
 			said += "; one use: a shield of %.0f (formula %.0f x %.3f) for %.2f s as it is given (formula %.0f)" % [h.shield, h.max_life, r["shield"], st, G["shieldTime"]]
 			M._w_is(wrong, absf(h.shield - want) < 0.5 and absf(st - float(G["shieldTime"])) < M._w_tol(0.05), "shield %.0f for %.2f" % [h.shield, st])
+			# (past the Lunge's untouchable moment as he lands, as for the ward below)
+			while h._invuln > 0.0:
+				await M.get_tree().process_frame
 			var was: float = h.life
 			var sh: float = h.shield
 			h.unhurt = false
@@ -382,6 +385,10 @@ func _case(w: String, side: String, i: int) -> void:
 			said += "; it left a ward %.2f round (formula %.2f) for %.1f s (formula %.0f), %.0f%% less harm inside (formula %.3f)" % [g.get("r", 0.0), rad, g.get("dur", 0.0), G["wardTime"], float(g.get("dmg", 0.0)) * 100.0, r["ward"]]
 			M._w_is(wrong, wards.size() == 1 and absf(float(g.get("r", 0.0)) - rad) < 0.001 and absf(float(g.get("dur", 0.0)) - float(G["wardTime"])) < 0.001 and absf(float(g.get("dmg", 0.0)) - float(r["ward"])) < 1e-9 and Vector2(g.get("x", 0.0), g.get("y", 0.0)).distance_to(at) < 0.05, "%d wards %s" % [wards.size(), str(g)])
 			h.world = at + (M._w_home - at).limit_length(rad * 0.5)
+			# (the Lunge's own untouchable moment as he lands, 0.06 s, as the game's: past it, as a monster's blow would come; on a
+			# busy machine the frame after its ward can fall inside it)
+			while h._invuln > 0.0:
+				await M.get_tree().process_frame
 			var was: float = h.life
 			h.unhurt = false
 			h.hurt_by(40.0, "phys", [], {}, null, h.world + h.face)
