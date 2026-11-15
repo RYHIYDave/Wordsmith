@@ -77,6 +77,14 @@ through chat, so the art and sounds go into the project whole).
   "Not yet"; as the gate falls he says one of his lines ("None leave my halls."), his name comes up across the screen, and
   he fights. Their pictures as they open are the game's own, step by step (tools/godot_looks.ts). Fallen, the hero is set
   back where he came in and the gate goes up again behind him (in the game a fallen hero wakes in town).
+- **The game's own letters and screen** (`scripts/pixel_font.gd`, `scripts/hud.gd`; engine/font.ts, ui/hud.ts, ui/cards.ts):
+  every word on the playing screen in the game's two pixel fonts (`tools/godot_font.ts`: each letter as the game's screen
+  draws it), and the HUD laid out as the game lays it, in its colours and pictures (`tools/godot_hud.ts`): the life globe,
+  the flask with the level over it, the Lunge's button, the two attacks written out on their plates with their word sockets
+  and keys ("[+] STRIKE", "POWER STRIKE"), the experience line, LEVEL UP and what E does as buttons, the place's name ("Prison
+  Level 1", "Town"), the gold, the INVENTORY button (pink while a word waits), the rune-stone while it is carried, the
+  Warden's bar, the guide's prompt in its panel, what has just happened, the Warden's line on its slip and his name across
+  the screen, and the names of gear lying about. (LEVEL UP says (I) here: the level's choice is made on the gear screen.)
 - **Chests, barrels and urns** (`scripts/props.gd`; game.ts breakProps, updateProps): in the King's Tomb the king's coffers,
   and the funeral urns, squat urns, skull jars and bone boxes (art/floor1.ts). A coffer opens as he comes up to it: a piece
   of gear and 10 to 20 gold laid before it (in a treasure vault a better piece, perhaps two, and twice the gold). An urn or
@@ -110,7 +118,8 @@ bars under the figures), the Warden's spoken lines as he makes them, the moves' 
 gate in the back wall (barred on a new game, drawn as wall here), the stone floating from him to the slab, the letters
 swirling round the ring and its column of light, the wordsmith's words for sale, the stranger's gamble, the stash, the
 Lexicon, buying back, the town's own lighting and music; words other than Power, uniques, magic find, the game's own
-lettering and frames for the screens (these use Godot's plain letters), the sparks as a pot breaks, the floor's own
+lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the small map and pause
+button top right, the sparks as a pot breaks, the floor's own
 dressing (render/pieces.ts, its looks), raised and sunken floor, the tiles cut corner to corner (drawn whole for now),
 props, the rest of the heroes, menus, the title screen's music. The Colossus pictures are in, held back from Godot with `.gdignore` until they are wired in.
 
@@ -127,6 +136,7 @@ props, the rest of the heroes, menus, the title screen's music. The Colossus pic
 | `assets/town` | the town a new game begins in, its pictures, floor 1's gate up: `npx tsx tools/godot_town.ts 1` |
 | `assets/looks` | floor 1 as THE KING'S TOMB and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light): `npx tsx tools/godot_looks.ts town` and `... floor1` (all the tools put the game's startup switches on first: tools/godot_switches.ts) |
 | `assets/music` | the town's and floors 1 to 5's tracks from `assets/sound` made into `.ogg` (Godot does not play `.mp4`), each cut where the game loops it, and the game's table of them: `node tools/godot_music.mjs` (needs ffmpeg) |
+| `assets/font`, `assets/hud` | the game's two pixel fonts, `npx tsx tools/godot_font.ts`; the HUD's pictures, colours and names, `npx tsx tools/godot_hud.ts` |
 | `scripts/` | GDScript, each file saying which TypeScript it follows |
 
 Checking it without hands on the keys: `godot --path godot -- --shots=<folder>` sets the hero down, unharmed, in sight

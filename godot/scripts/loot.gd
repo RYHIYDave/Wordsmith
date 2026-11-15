@@ -238,15 +238,13 @@ func _drop(kind: String, at: Vector2, pic: String, extra: Dictionary) -> void:
 	s.offset = -pics[pic]["anchor"]
 	n.add_child(s)
 	if kind == "gear":
-		var label := Label.new()
+		var tag := _Tag.new()
+		extra["tag"] = tag
 		var it: Dictionary = extra["item"]
-		label.text = it["kind"]
-		label.add_theme_font_size_override("font_size", 11)
-		label.add_theme_color_override("font_color", RARITY_COLOR[int(it["rarity"])])
-		label.add_theme_color_override("font_outline_color", Color(0.02, 0.02, 0.08))
-		label.add_theme_constant_override("outline_size", 4)
-		label.position = Vector2(-label.get_minimum_size().x / 2.0, -pics[pic]["anchor"].y - 18.0)
-		n.add_child(label)
+		tag.text = it["kind"]
+		tag.color = RARITY_COLOR[int(it["rarity"])]
+		tag.z_index = 60
+		n.add_child(tag)
 	n.position = Iso.to_screen(at.x, at.y)
 	stands.add_child(n)
 	var d := {"kind": kind, "at": at, "node": n, "age": 0.0}
@@ -268,6 +266,7 @@ func _process(dt: float) -> void:
 	for m in msgs:
 		m["t"] += dt
 	msgs = msgs.filter(func(m): return m["t"] < 3.5)
+	_lay_tags()
 	if hero == null or not hero.alive:
 		return
 	if Input.is_action_just_pressed("potion"):
@@ -536,3 +535,53 @@ func sell(i: int) -> void:
 	gold += n
 	say("Sold %s: +%d gold" % [it["name"], n], Color(1.0, 0.85, 0.4))
 	sfx.play("coin", -4.0)
+
+
+## (render.ts labels) The names of the pieces lying about, the lowest on the screen first, each moved up 8 game pixels at a
+## time (at most 12 times) while it would lie over one already placed.
+func _lay_tags() -> void:
+	var tags: Array = []
+	for d in _drops:
+		if d.has("tag") and is_instance_valid(d["tag"]) and is_instance_valid(d["node"]):
+			tags.append(d)
+	if tags.size() < 2:
+		for d in tags:
+			d["tag"].position.y = 0.0
+		return
+	tags.sort_custom(func(a, b): return a["node"].position.y > b["node"].position.y)
+	var placed: Array = []
+	for d in tags:
+		var tag: Node2D = d["tag"]
+		var at: Vector2 = d["node"].position / 2.0
+		var w := _Tag.PF.width(tag.text, "small") + 4.0
+		var x := roundf(at.x - w / 2.0)
+		var y0 := roundf(at.y - 20.0)
+		var y := y0
+		for tries in 12:
+			var hit := false
+			for p in placed:
+				if absf(p.y - y) < 8.0 and x < p.x + p.z and p.x < x + w:
+					hit = true
+					break
+			if not hit:
+				break
+			y -= 8.0
+		placed.append(Vector3(x, y, w))
+		tag.position.y = (y - y0) * 2.0
+
+
+## A piece's name over it as it lies on the floor (render.ts labels): in the small letters on a dark strip, 20 game pixels up,
+## in its rarity's colour, over the dark.
+class _Tag extends Node2D:
+	const PF := preload("res://scripts/pixel_font.gd")
+	var text := ""
+	var color := Color.WHITE
+
+	func _draw() -> void:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
+		var t := text if text.length() <= 30 else text.substr(0, 29) + "."
+		var w := PF.width(t, "small") + 4.0
+		var x := roundf(-w / 2.0)
+		var y := -20.0
+		draw_rect(Rect2(x, y - 1.0, w, 7.0), Color(Color("#07050a"), 0.78))
+		PF.draw(self, t, x + 2.0, y, color, {"font": "small"})

@@ -57,6 +57,7 @@ var waits := false
 var title := ""
 var _said := ""
 var _said_t := 0.0
+var _said_secs := 0.0
 var _not_yet := 0.0
 var _not_yet_t := 0.0
 
@@ -458,10 +459,33 @@ func hurt(dmg: float) -> void:
 		_die()
 
 
+const PF := preload("res://scripts/pixel_font.gd")
+const SAY_GOLD := Color("#ffd27a")
+const SAY_INK := Color("#120d18")
+## (render/fx.ts BOSS_SAY_LIFT: game pixels over where he stands)
+const SAY_LIFT := 84.0
+
+
+## His line on a dark slip over his head, a little tail pointing down at him (render/fx.ts, bossSay), in game pixels.
+func _say_slip() -> void:
+	var t := _said_secs - _said_t
+	var a := minf(1.0, t / 0.15) if t < _said_secs - 0.4 else maxf(0.0, (_said_secs - t) / 0.4)
+	var w := PF.width(_said) + 10.0
+	var y := -SAY_LIFT - roundf(minf(1.0, t / 0.12) * 4.0)
+	var foot := y + 1.0 + 10.0
+	var ink := Color(SAY_INK, 0.8 * a)
+	draw_rect(Rect2(-floorf(w / 2.0), y - 3.0, w, 14.0), ink)
+	draw_rect(Rect2(-2, foot, 5, 1), ink)
+	draw_rect(Rect2(-1, foot + 1, 3, 1), ink)
+	draw_rect(Rect2(0, foot + 2, 1, 1), ink)
+	PF.draw(self, _said, 0, y, Color(SAY_GOLD, a), {"align": "center", "shadow": Color(SAY_INK, a)})
+
+
 ## Say a line over his head for so many seconds (game.ts bossIntro, render/fx.ts bossSay).
 func say(text: String, secs: float) -> void:
 	_said = text
 	_said_t = secs
+	_said_secs = secs
 	queue_redraw()
 
 
@@ -510,16 +534,15 @@ func _show() -> void:
 ## Its life over its head for a while after it is struck (game.ts barT).
 func _draw() -> void:
 	var top := _sprite.offset.y * _sprite.scale.y - 10.0
-	var font := ThemeDB.fallback_font
-	if _said_t > 0.0 and not dead:
-		var a := clampf(_said_t / 0.3, 0.0, 1.0)
-		var tw := font.get_string_size(_said, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
-		draw_rect(Rect2(-tw / 2 - 6, top - 34, tw + 12, 20), Color(0.05, 0.03, 0.09, 0.7 * a))
-		draw_string(font, Vector2(-tw / 2, top - 19), _said, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 0.94, 0.63, a))
-	if _not_yet > 0.0 and not dead:
-		var rise := (0.9 - _not_yet) * 24.0
-		var nw := font.get_string_size("Not yet", HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
-		draw_string(font, Vector2(-nw / 2, top - 6 - rise), "Not yet", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1.0, 0.82, 0.48, clampf(_not_yet / 0.3, 0.0, 1.0)))
+	if (_said_t > 0.0 or _not_yet > 0.0) and not dead:
+		# (in the game's letters, in game pixels: render/fx.ts)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
+		if _said_t > 0.0:
+			_say_slip()
+		if _not_yet > 0.0:
+			var rise := roundf((0.9 - _not_yet) * 12.0)
+			PF.draw(self, "Not yet", 0, top / 2.0 - 4 - rise, Color(SAY_GOLD, clampf(_not_yet / 0.3, 0.0, 1.0)), {"align": "center", "shadow": Color(SAY_INK, clampf(_not_yet / 0.3, 0.0, 1.0))})
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if _bar <= 0.0 or dead:
 		return
 	var w := 36.0 if not boss else 80.0

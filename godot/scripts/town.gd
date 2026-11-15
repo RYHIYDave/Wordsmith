@@ -362,9 +362,9 @@ func _use() -> void:
 			else:
 				prompt = ["E: Talk to the wordsmith", "talk"]
 		"armourer":
-			prompt = ["E: Trade with the armourer", "armourer"]
+			prompt = ["E: Armourer", "armourer"]
 		"mystic":
-			prompt = ["E: Trade with the mystic", "mystic"]
+			prompt = ["E: Mystic", "mystic"]
 		"stash", "lexicon", "stranger":
 			prompt = ["E: %s" % best.capitalize(), "later"]
 	# (the gate: barred, as said within 4 tiles of it)
