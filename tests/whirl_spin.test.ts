@@ -1,7 +1,7 @@
 // THE WARRIOR'S WHIRL SHOWN AS ONE TURN OF HIS SPIN (render/figure.ts WHIRL_SPIN, spinOnce). Asked 14 Nov 2026, 20:09: “What is
 // the warrior’s whirl attack?  Is it really just an overhead swing?” (it was: it had borrowed the Slam's picture); his pick: “One turn
 // of the spin (Recommended)”. What is held here, on a figure of stand-in pictures (nothing painted):
-//   1. off: the Whirl is shown as it was, the slow attack's picture (the Slam);
+//   1. off: the Whirl is shown as it was, the slow attack’s picture (the Slam); the switch is on in the game (his yes to its film);
 //   2. on: the Whirl is the figure's whirlwind from its loop, gone round once: its first picture as it begins, the turn's halfway
 //      picture as the rules land the blow, its last picture at its end, and held there;
 //   3. on: nothing else changes: the slow attack's other skills, and a figure with no whirlwind, are as they were.
@@ -44,6 +44,10 @@ function on<T>(run: () => T, yes = true): T {
     WHIRL_SPIN.on = was;
   }
 }
+
+test('the switch is on in the game, at his yes to its film', () => {
+  assert.equal(WHIRL_SPIN.on, true);
+});
 
 test('off: the Whirl is shown as the slow attack it borrowed (the Slam)', () =>
   on(() => {

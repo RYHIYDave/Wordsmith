@@ -147,9 +147,9 @@ export const GESTURE_GAP: readonly [number, number] = [5, 9];
  * round ONCE (the figure's `clips.whirl`, baked with the greatsword already), its blow landing halfway round, in place of the
  * Slam's picture it had borrowed since it came in with his weapon tree (7 Nov 2026). Asked 14 Nov 2026, 20:09: “What is the
  * warrior’s whirl attack?  Is it really just an overhead swing?”; his pick: “One turn of the spin (Recommended)”. Behind this
- * switch, off, until his yes to its film (pictures first).
+ * switch: ON at his yes to its film, 14 Nov 2026: “Yes, put it in (Recommended)”.
  */
-export const WHIRL_SPIN = { on: false, hitAt: 6 / 30 };
+export const WHIRL_SPIN = { on: true, hitAt: 6 / 30 };
 const ONCE_ROUND = new WeakMap<Clip, Clip>();
 
 /** A figure's whirlwind (`clips.whirl`, its turn from its loop round) as one turn: an attack whose blow lands at WHIRL_SPIN.hitAt. */
