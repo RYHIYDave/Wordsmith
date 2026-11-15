@@ -14,6 +14,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
+import { gameSwitches } from './godot_switches';
 import { Game } from '../src/game/game';
 import { makeGroundArt } from '../src/art/ground';
 import { makeTownProps } from '../src/art/town';
@@ -29,6 +30,8 @@ import { PILLAR } from '../src/art/gates';
 
 declare const process: { argv: string[] };
 paintWithoutCanvas();
+// (the game's own switches, as it starts: tools/godot_switches.ts)
+gameSwitches();
 const seed = Number(process.argv[2] ?? 1) >>> 0;
 const OUT = 'godot/assets/town';
 mkdirSync(OUT, { recursive: true });

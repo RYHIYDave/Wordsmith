@@ -31,7 +31,7 @@ through chat, so the art and sounds go into the project whole).
   - The WHIRLWIND: he spins for as long as it is held, 2.4 s at most, cutting all round him every 0.3 s (x0.55, 2 tiles),
     walking at 90% and through enemies; ready again after 3.5 s, less after a short spin (defs.ts SKILLS.whirlwind, game.ts
     updateChannel). At first this was the game's starting WHIRL, one overhead slam all round him (x1.4, every 3 s), as the
-    game shows it; told "It doesn't do the whirl", and that in the game the spin is the greatsword's talent (gswhirlwind:
+    game shows it; told “It doesn’t do the whirl”, and that in the game the spin is the greatsword's talent (gswhirlwind:
     "Whirl becomes WHIRLWIND"), his pick, 14 Nov 2026: "Give him the Whirlwind spin".
   - The LUNGE: flung up to 6 tiles toward the pointer, not to be harmed in the air, through monsters and the Lockdown's
     bars, a blow 1.6 round where he lands, ready again after 4 s.
@@ -61,6 +61,12 @@ through chat, so the art and sounds go into the project whole).
   the armourer or the mystic, their shelves as the game rolls them on his first day (Game.rollShop), each piece at its
   price (itemValue), bought into the bag; a piece in the bag sold for a quarter of its worth. Coming into town fills his
   life and flasks; floor 1 is laid again, its monsters fresh, each time it is come into.
+- **The new looks** (his words, 14 Nov 2026: “And what you’re building is all old looks for the town and level 1”): floor 1
+  as THE KING'S TOMB (the roots breaking in: daylight shafts, tombs, torches, the stairs up in its stone) and the town as
+  THE CASTLE'S HALL (its roof, sun through the windows, ivy, pots, the owl, the barred gate), as the game puts them on
+  as it starts (game/floor_looks.ts). Recorded from the game's own renderer (`scripts/look.gd` lays them out), the dark
+  and its lights included. My first versions of both were the old looks: the export tools had not put the game's
+  startup switches on.
 - **A desktop icon**, "Wordsmith (Godot)", opens this project to play (it needs the `wordsmith` folder on this branch).
 
 Keys: WASD or the arrows to walk; the left button to Strike, the right to Whirl, Space to Lunge (the mouse aims; from
@@ -100,6 +106,7 @@ making into `.ogg`). The Colossus pictures are in, held back from Godot with `.g
 | `assets/monsters/lists.json` | each figure's lists named, from the game's art: `npx tsx tools/godot_monster_lists.ts` |
 | `assets/loot` | the game's own gear rolled on floor 1, the vendors' shelves, prices, its pictures, the fallen wordsmith: `npx tsx tools/godot_loot.ts 1` |
 | `assets/town` | the town a new game begins in, its pictures, floor 1's gate up: `npx tsx tools/godot_town.ts 1` |
+| `assets/looks` | floor 1 as THE KING'S TOMB and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light): `npx tsx tools/godot_looks.ts town` and `... floor1` (all the tools put the game's startup switches on first: tools/godot_switches.ts) |
 | `scripts/` | GDScript, each file saying which TypeScript it follows |
 
 Checking it without hands on the keys: `godot --path godot -- --shots=<folder>` sets the hero down, unharmed, in sight

@@ -41,6 +41,8 @@ var data: Dictionary
 ## what is said to him now, and what E would do: [text, action]
 var prompt := ["", ""]
 var given_at := -1.0
+## (the place has its recorded look, the castle's hall: look.gd draws its things; here only the ring and the people)
+var looked := false
 
 var _pics := {}
 var _sheet: Texture2D
@@ -59,7 +61,15 @@ func _ready() -> void:
 	data = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/layout.json"))
 	_sheet = load(DIR + "/pics.png")
 	for p in JSON.parse_string(FileAccess.get_file_as_string(DIR + "/pics.json")):
-		_pics[p["name"]] = {"rect": Rect2(p["x"], p["y"], p["w"], p["h"]), "anchor": Vector2(p["ax"], p["ay"])}
+		_pics[p["name"]] = {"rect": Rect2(p["x"], p["y"], p["w"], p["h"]), "anchor": Vector2(p["ax"], p["ay"]), "tex": _sheet}
+	# (the castle hall's own pictures of the ring, where its look has them: in its sheet under the same names)
+	if looked and FileAccess.file_exists("res://assets/looks/town_pics.json"):
+		var ls: Texture2D = load("res://assets/looks/town.png")
+		var lp: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/looks/town_pics.json"))
+		for k in lp:
+			if _pics.has(k):
+				var a: Array = lp[k]
+				_pics[k] = {"rect": Rect2(a[0], a[1], a[2], a[3]), "anchor": Vector2(a[4], a[5]), "tex": ls}
 	_folk_data = JSON.parse_string(FileAccess.get_file_as_string(FOLK_DIR + "/townsfolk.json"))
 	for s in _folk_data["sheets"]:
 		_folk_sheets.append(load(FOLK_DIR + "/" + s))
@@ -76,6 +86,8 @@ func _ready() -> void:
 			stands.add_child(n)
 			_folk.append({"kind": kind, "node": n, "x": at.x, "y": at.y, "to": "", "act": -1})
 			continue
+		if looked and not (kind == "runeRing" or kind == "runeSlab" or kind == "runeStone"):
+			continue
 		var flat: bool = kind == "rug" or kind == "runeRing"
 		var n := Sprite2D.new()
 		n.texture = _sheet
@@ -85,10 +97,10 @@ func _ready() -> void:
 		(flats if flat else stands).add_child(n)
 		_things.append({"kind": kind, "node": n, "variant": int(p["variant"])})
 	# the stairs down, flat on the floor (render.ts flatWays: at the stairs' own corner), and the shaft's head standing
-	var st = data["stair"]
+	var st = data["stair"] if not looked else null
 	if st != null:
 		_flat_pic("stairs down", Vector2(st["x"], st["y"]))
-	var sh = data["shaft"]
+	var sh = data["shaft"] if not looked else null
 	if sh != null:
 		var at := Vector2(sh["x"] + 0.5, sh["y"] + 0.5)
 		var d: float = sh["x"] + sh["y"] + 1.0
@@ -117,7 +129,7 @@ func _stand_pic(name: String, at: Vector2, d: float) -> void:
 
 func _pic_on(n: Sprite2D, name: String) -> void:
 	var p: Dictionary = _pics[name]
-	n.texture = _sheet
+	n.texture = p.get("tex", _sheet)
 	n.region_enabled = true
 	n.region_rect = p["rect"]
 	n.centered = false
@@ -126,7 +138,7 @@ func _pic_on(n: Sprite2D, name: String) -> void:
 
 ## (THE WORLD'S SOUNDS, world_sounds.ts) the braziers' fire, the forge's, the ring's hum: each heard from where it is.
 func _sounds() -> void:
-	for t in _things:
+	for t in data["props"]:
 		var file := ""
 		var vol := -10.0
 		match t["kind"]:
@@ -144,8 +156,9 @@ func _sounds() -> void:
 		p.volume_db = vol
 		p.max_distance = 420.0
 		p.attenuation = 1.6
+		p.position = Iso.to_screen(t["x"], t["y"])
 		p.finished.connect(p.play)
-		t["node"].add_child(p)
+		add_child(p)
 		p.play()
 
 
@@ -173,6 +186,7 @@ func _show() -> void:
 		var name := _pic_of(t["kind"], t["variant"], pw)
 		if name != "":
 			var p: Dictionary = _pics[name]
+			t["node"].texture = p.get("tex", _sheet)
 			t["node"].region_rect = p["rect"]
 			t["node"].offset = -p["anchor"]
 	for f in _folk:

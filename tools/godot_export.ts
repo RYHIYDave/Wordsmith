@@ -10,6 +10,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
+import { gameSwitches } from './godot_switches';
 import { makeGroundArt } from '../src/art/ground';
 import { CRYPT_FLOORS } from '../src/art/crypt';
 import { Game } from '../src/game/game';
@@ -19,6 +20,8 @@ import { bakeName } from '../src/render/monsters_bake_list';
 
 declare const process: { argv: string[] };
 paintWithoutCanvas();
+// (the game's own switches, as it starts: tools/godot_switches.ts)
+gameSwitches();
 const seed = Number(process.argv[2] ?? 1) >>> 0;
 const OUT = 'godot/assets/floor1';
 mkdirSync(OUT, { recursive: true });

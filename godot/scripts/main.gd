@@ -25,6 +25,7 @@ const Loot := preload("res://scripts/loot.gd")
 const Inventory := preload("res://scripts/inventory.gd")
 const Town := preload("res://scripts/town.gd")
 const Guide := preload("res://scripts/guide.gd")
+const Look := preload("res://scripts/look.gd")
 
 const FLOOR_DIR := "res://assets/floor1"
 const TOWN_DIR := "res://assets/town"
@@ -37,7 +38,7 @@ const CURTAIN := 0.35
 ## town's lighter, VIGNETTE_TOWN), to be replaced by the game's own lighting.
 const DARK := """
 shader_type canvas_item;
-uniform vec4 dark : source_color = vec4(0.02, 0.025, 0.09, 1.0);
+uniform vec4 dark : source_color = vec4(0.02, 0.022, 0.03, 1.0);
 uniform float deep = 0.82;
 void fragment() {
 	vec2 p = (UV - vec2(0.5, 0.53)) * vec2(1.7778, 1.0);
@@ -62,6 +63,9 @@ var _veil: ColorRect
 var _curtain: ColorRect
 var _going := false
 var _gate := {}
+## (the place's recorded look, where it has one, and the hero's own pool of light it gave him)
+var look: Look
+var _hero_light: Node
 
 
 func _ready() -> void:
@@ -132,10 +136,21 @@ func _build(where: String, arrive: String) -> void:
 	map = FloorMap.new(dir + "/layout.json")
 	var ground := GroundArt.new(dir)
 
-	var floor_layer := FloorLayer.new()
-	floor_layer.map = map
-	floor_layer.art = ground
+	# THE PLACE'S LOOK as the game draws it (look.gd), where tools/godot_looks.ts has recorded one; else the plain ground
+	var looked := Look.has_look(where)
+	var back := Node2D.new()
+	_place.add_child(back)
+	var floor_layer: Node2D
+	if looked:
+		floor_layer = Node2D.new()
+	else:
+		var fl := FloorLayer.new()
+		fl.map = map
+		fl.art = ground
+		floor_layer = fl
 	_place.add_child(floor_layer)
+	var look_flats := Node2D.new()
+	_place.add_child(look_flats)
 	# (what lies flat on the floor: a rug, the circle of runes, stairs; then the moves' marks; then everyone, in order)
 	var flats := Node2D.new()
 	_place.add_child(flats)
@@ -145,7 +160,22 @@ func _build(where: String, arrive: String) -> void:
 	var stands := Stands.new()
 	stands.map = map
 	stands.art = ground
+	stands.build_walls = not looked
+	# (every wall stands and fades round him on floors 1 to 5; the town's hall leaves its near walls out)
+	stands.fade = where != "town"
 	_place.add_child(stands)
+	if _hero_light != null:
+		_hero_light.queue_free()
+		_hero_light = null
+	look = null
+	if looked:
+		look = Look.new()
+		look.place = where
+		look.back_layer = back
+		look.floor_layer = floor_layer
+		look.flat_layer = look_flats
+		look.stands = stands
+		_place.add_child(look)
 
 	hero.map = map
 	var at := map.start
@@ -168,6 +198,8 @@ func _build(where: String, arrive: String) -> void:
 	hero.face = face
 	stands.add_child(hero)
 	stands.hero = hero
+	if look != null:
+		_hero_light = look.lighting(_place, hero, 170.0 if where == "town" else 165.0)
 
 	var monsters := Monsters.new()
 	monsters.map = map
@@ -199,13 +231,15 @@ func _build(where: String, arrive: String) -> void:
 		town.sfx = sfx
 		town.stands = stands
 		town.flats = flats
+		town.looked = looked
 		_place.add_child(town)
 		sfx.background("fire_small_loop.wav", "")
-		_veil.material.set_shader_parameter("deep", 0.45)
+		_veil.material.set_shader_parameter("deep", Look._num(look.data.get("vignette"), 0.26) if looked else 0.45)
 	else:
-		_floor_gate(flats)
+		if not looked:
+			_floor_gate(flats)
 		sfx.background("bed_f1_loop.wav", "amb_f1")
-		_veil.material.set_shader_parameter("deep", 0.82)
+		_veil.material.set_shader_parameter("deep", Look._num(look.data.get("vignette"), 0.62) if looked else 0.82)
 
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.

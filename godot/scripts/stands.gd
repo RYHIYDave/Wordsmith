@@ -26,13 +26,27 @@ const HERO_TALL := 90.0
 var map: FloorMap
 var art: GroundArt
 var hero: Hero
+## (false where the place's recorded look brings its own walls: look.gd adds them with add_wall)
+var build_walls := true
+## (true where every wall stands and those between the eye and the hero fade: floors 1 to 5, WHOLE_WALLS; not the town's hall)
+var fade := true
 var _walls: Array[Sprite2D] = []
 var _depths := PackedFloat32Array()
 var _tops := PackedVector2Array()
 
 
+## A wall face drawn by the place's look: faded round the hero as the others are. `top`: its tile's top corner on the
+## screen (picture px).
+func add_wall(s: Sprite2D, d: float, top: Vector2) -> void:
+	_walls.append(s)
+	_depths.append(d)
+	_tops.append(top)
+
+
 func _ready() -> void:
 	y_sort_enabled = true
+	if not build_walls:
+		return
 	for ty in map.h:
 		for tx in map.w:
 			if map.tile(tx, ty) != FloorMap.WALL:
@@ -88,7 +102,7 @@ func _stand(p: Dictionary, tx: int, ty: int) -> void:
 
 
 func _process(dt: float) -> void:
-	if hero == null:
+	if hero == null or not fade:
 		return
 	var hd: float = hero.world.x + hero.world.y
 	var hp := hero.position

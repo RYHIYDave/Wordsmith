@@ -11,6 +11,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
+import { gameSwitches } from './godot_switches';
 import { Game } from '../src/game/game';
 import { STAT_INFO, imbueItem, imbueProblem, itemMods, itemValue, kindName, modLines, starterWeapon } from '../src/game/items';
 import { WORDS } from '../src/game/defs';
@@ -21,6 +22,8 @@ import type { Item } from '../src/game/types';
 
 declare const process: { argv: string[] };
 paintWithoutCanvas();
+// (the game's own switches, as it starts: tools/godot_switches.ts)
+gameSwitches();
 const seed = Number(process.argv[2] ?? 1) >>> 0;
 const OUT = 'godot/assets/loot';
 mkdirSync(OUT, { recursive: true });
