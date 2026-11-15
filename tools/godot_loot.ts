@@ -2,9 +2,9 @@
 //   godot/assets/loot/items.json  pools of gear rolled by the game's own Game.rollGear on floor 1 for a new Warrior, one pool
 //     for each quality a drop asks for (0 an ordinary monster's, 1 a leader's or a chest's, 2 a guardian's first, 4 a
 //     boss's first: game.ts dropLoot), each piece with its name, slot, rarity, picture, its mods (items.ts itemMods) and
-//     their lines (modLines), how many properties it was found with and which (what no word may give it again); the
-//     Warrior's own starting greatsword; and the numbers the hero's stats are made from (game/stats.ts derive, defs.ts TUNE,
-//     ATTR_GIVES).
+//     their lines (modLines), how many properties it was found with and which (what no word may give it again), its price
+//     (itemValue) and its price with one, two, ... words burned into it; the Warrior's own starting greatsword; and the
+//     numbers the hero's stats are made from (game/stats.ts derive, defs.ts TUNE, ATTR_GIVES).
 //     WHAT A WORD BECOMES ON A PIECE (`imbue`; items.ts imbueOptions, imbueItem): for each of the seven words a Warrior can
 //     come by on floors 1 to 5 (tools/godot_words.ts), each kind of piece and each level a piece here has: the one, two or
 //     three things the word may become there, each with the range it is read out with (ui/inventory.ts rangeText) and
@@ -23,7 +23,7 @@ import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { DARK_RING, Game } from '../src/game/game';
-import { ITEM_ROOM, STAT_INFO, flatPair, imbueItem, imbueLines, imbueOptions, itemMods, itemValue, kindName, modLines, starterWeapon, statGroup } from '../src/game/items';
+import { ITEM_ROOM, STAT_INFO, flatPair, imbueItem, imbueLines, imbueOptions, itemMods, itemRoom, itemValue, kindName, modLines, rarityFor, starterWeapon, statGroup } from '../src/game/items';
 import { FIRST_WORD, WORDS, wordGrowth, wordsAt } from '../src/game/defs';
 import { TUNE, ATTR_GIVES } from '../src/game/defs';
 import { FURNACE_WORD, QUEST_TEXT } from '../src/game/quests15';
@@ -32,7 +32,7 @@ import { WORD_COLOR, itemPic, makeIconArt } from '../src/art/icons';
 import { makeBodyArt } from '../src/art/body';
 import type { RNG } from '../src/engine/rng';
 import { PRISON_WORD_IDS, WORD_IDS } from '../src/game/types';
-import type { Item, StatKey, WordId } from '../src/game/types';
+import type { Imbue, Item, Rarity, StatKey, WordId } from '../src/game/types';
 import { rangeText } from '../src/ui/inventory';
 
 declare const process: { argv: string[] };
@@ -69,6 +69,20 @@ const bodyArt = makeBodyArt();
 pics.set('body', bodyArt.body);
 pics.set('body:searched', bodyArt.searched);
 
+/**
+ * A PIECE'S PRICE WITH WORDS BURNED INTO IT (items.ts itemValue): with one more word in it, with two, as far as it has room.
+ * A fifth more for each word, and its colour's own worth where the word changes its colour (imbueItem: a piece's colour
+ * follows the count of its properties).
+ */
+function worth(it: Item): number[] {
+  const out: number[] = [];
+  for (let n = 1; n <= itemRoom(it); n++) {
+    const imbues: Imbue[] = [...it.imbues, ...Array.from({ length: n }, (): Imbue => ({ word: 'power', kind: 'prefix', mods: [] }))];
+    out.push(itemValue({ ...it, imbues, rarity: Math.max(it.rarity, rarityFor(it.affixes.length + imbues.length)) as Rarity }));
+  }
+  return out;
+}
+
 // (every kind of piece at every level a piece here has, one of each kept: what a word becomes on it is told once for them all)
 const kinds = new Map<string, Item>();
 const plain = (it: Item): Record<string, unknown> => {
@@ -84,6 +98,8 @@ const plain = (it: Item): Record<string, unknown> => {
     // that no word gives it one of them again (items.ts carried))
     affixes: it.affixes.length,
     has: it.affixes.flatMap((a) => a.mods.map((m) => m.stat)),
+    // (its price with one word burned into it, with two, as far as it has room)
+    worth: worth(it),
   };
 };
 

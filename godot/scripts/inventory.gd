@@ -440,20 +440,28 @@ func place_problem(i: int, side: String, k: int, w: String) -> String:
 
 
 ## Set a word he holds into a slot of a move: the word that was there goes back to his words. "" if it went in, else why
-## not (nothing changed).
+## not (nothing changed). INTO THAT EXACT SLOT (game.ts placeWord): loadout.gd `put` sets a word into the first empty slot
+## of the side, which is the slot pressed wherever a side has one slot (every level under 15) or its earlier slot is full;
+## where it is not (a side of two, the first empty, the word pressed onto the second) the slot is written here, and he is
+## made up anew as the game's placeWord does (refresh: loot.gd derive), his moves with him.
 func place(i: int, side: String, k: int, w: String) -> String:
 	var why := place_problem(i, side, k, w)
 	if why != "":
 		return why
 	var first: bool = loot.lesson()
-	var back = hero.loadout.slots(i, side)[k]
+	var g: Array = hero.loadout.slots(i, side)
+	var back = g[k]
 	if back != null:
 		hero.loadout.take(i, side, k)
-	why = hero.loadout.put(i, side, w)
-	if why != "":
-		if back != null:
-			hero.loadout.put(i, side, back)
-		return why
+	if g.find(null) == k:
+		why = hero.loadout.put(i, side, w)
+		if why != "":
+			if back != null:
+				hero.loadout.put(i, side, back)
+			return why
+	else:
+		g[k] = w
+		loot.derive()
 	loot.words[w] = int(loot.words[w]) - 1
 	if back != null:
 		loot.words[back] = int(loot.words.get(back, 0)) + 1

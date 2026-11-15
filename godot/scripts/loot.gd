@@ -319,7 +319,7 @@ func gain_word(w: String, place := true) -> void:
 func give_word(w: String) -> void:
 	words[w] = int(words.get(w, 0)) + 1
 	say("The wordsmith gives you a word: %s." % str(Words.word(w)["name"]).to_upper(), MSG_WORD)
-	sfx.play("word")
+	sfx.play("rare")
 	if main != null:
 		offered = w
 		main.offer_word(w)
@@ -842,8 +842,11 @@ func burn(w: String, where) -> String:
 	it["imbues"].append({"word": w, "lines": got[2], "stats": stats})
 	var n: int = int(it.get("affixes", 0)) + it["imbues"].size()
 	it["rarity"] = maxi(int(it["rarity"]), 2 if n >= 3 else (1 if n >= 1 else 0))
-	# (items.ts itemValue: a fifth more for each word in it)
-	it["value"] = roundi(float(it.get("value", 0)) * 1.2)
+	# (its price with that many words in it, as the game counts it, items.ts itemValue: a fifth more for each word, and its
+	# colour's own worth where the word has changed its colour: tools/godot_loot.ts `worth`)
+	var worth: Array = it.get("worth", [])
+	var nth: int = it["imbues"].size() - 1
+	it["value"] = int(worth[nth]) if nth < worth.size() else roundi(float(it.get("value", 0)) * 1.2)
 	words[w] = int(words[w]) - 1
 	if where is String:
 		derive()

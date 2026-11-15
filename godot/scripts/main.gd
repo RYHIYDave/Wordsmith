@@ -702,10 +702,10 @@ func _wu_reads(s: int) -> Array:
 ##   (none); a carrier struck dead on floor 3, its word lying and taken up (WORD FOUND); the boss's word; the Stoker's gear,
 ##   the crank, the furnace out (the quest told, the line that sends him back); floor 3's sealed door, which wants FLAME; a
 ##   word from an ordinary monster and from a chest (their chances made certain); the armourer's word, HEAVY, and his
-##   shelves again; HEAVY set where POWER was; at level 15, a second slot in front and "One damage word per side"; the fallen
-##   wordsmith's satchel for a hero whose ring was lit before he searched one, his first word laid by him, announced large
-##   and offered its place at the next quiet moment; and the fallen wordsmith on floor 3 for a hero with neither the lit
-##   ring nor the stone who has searched none.
+##   shelves again; HEAVY set where POWER was; at level 15, a second slot in front, "One damage word per side", and a word
+##   set into the exact slot pressed, the first of the two empty; the fallen wordsmith's satchel for a hero whose ring was
+##   lit before he searched one, his first word laid by him, announced large and offered its place at the next quiet
+##   moment; and the fallen wordsmith on floor 3 for a hero with neither the lit ring nor the stone who has searched none.
 ## Its last line begins WORDSUI: and says how many lines were said and which, if any, were wrong.
 func _wordsui_shots(h: Hero, dir: String) -> void:
 	var L = h.loadout
@@ -888,25 +888,31 @@ func _wordsui_shots(h: Hero, dir: String) -> void:
 	await _wait(0.2)
 	await _snap(dir + "/w14_burn_it_asked.png")
 	_wu(_inv._pending.get("word", "") == "lightning" and int(loot.words["lightning"]) == 1 and sword.get("imbues", []).is_empty(), "pressed onto it: it asks first (waiting %s), nothing burned yet, LIGHTNING still held x%d" % [_inv._pending, int(loot.words["lightning"])])
+	# (its price as each word goes in: items.ts itemValue, a fifth more for each word and its new colour's own worth)
+	var prices: Array = [int(sword["value"])]
 	_inv._press("yes", null)
 	await _wait(0.2)
 	await _snap(dir + "/w15_what_it_became.png")
 	var first_burn: String = _inv._result.get("text", "")
-	_wu(int(loot.words["lightning"]) == 0 and sword.get("imbues", []).size() == 1 and first_burn != "" and int(sword["rarity"]) == 1 and loot.room(sword) == 3, "BURN IT: LIGHTNING used up (x%d); the %s became: %s; its colour now %d (magic), room for %d more; his lightning damage %+d%%, added to lightning hits %d-%d" % [int(loot.words["lightning"]), sword["name"], first_burn, int(sword["rarity"]), loot.room(sword), int(h.stats["light_pct"]), int(h.stats["light_min"]), int(h.stats["light_max"])])
+	prices.append(int(sword["value"]))
+	_wu(int(loot.words["lightning"]) == 0 and sword.get("imbues", []).size() == 1 and first_burn != "" and int(sword["rarity"]) == 1 and loot.room(sword) == 3 and prices[1] == int(sword["worth"][0]) and prices[1] > 2.9 * prices[0] and prices[1] < 3.1 * prices[0], "BURN IT: LIGHTNING used up (x%d); the %s became: %s; its colour now %d (magic), room for %d more; its price %d, was %d (plain to magic 2.5 times, a word in it a fifth more); his lightning damage %+d%%, added to lightning hits %d-%d" % [int(loot.words["lightning"]), sword["name"], first_burn, int(sword["rarity"]), loot.room(sword), prices[1], prices[0], int(h.stats["light_pct"]), int(h.stats["light_min"]), int(h.stats["light_max"])])
 	# (two more LIGHTNING handed him: the other thing it can become there, and then nothing left of it to give)
 	loot.words["lightning"] = 2
 	var second: String = loot.burn("lightning", "mainhand")
 	var second_text: String = loot.burned.get("text", "")
+	prices.append(int(sword["value"]))
 	var third: String = loot.burn("lightning", "mainhand")
-	_wu(second == "" and second_text != "" and second_text != first_burn and third == "It already has what this word gives" and int(loot.words["lightning"]) == 1 and sword["imbues"].size() == 2, "a second LIGHTNING into it: %s (the other of the two); a third: '%s' (still held x%d)" % [second_text, third, int(loot.words["lightning"])])
+	_wu(second == "" and second_text != "" and second_text != first_burn and third == "It already has what this word gives" and int(loot.words["lightning"]) == 1 and sword["imbues"].size() == 2 and int(sword["value"]) == prices[2], "a second LIGHTNING into it: %s (the other of the two); a third: '%s' (still held x%d)" % [second_text, third, int(loot.words["lightning"])])
 	# (POWER twice, handed him: the piece's four places full)
 	loot.words["power"] = 3
 	var p1: String = loot.burn("power", "mainhand")
 	var p1_text: String = loot.burned.get("text", "")
+	prices.append(int(sword["value"]))
 	var p2: String = loot.burn("power", "mainhand")
 	var p2_text: String = loot.burned.get("text", "")
+	prices.append(int(sword["value"]))
 	var p3: String = loot.burn("power", "mainhand")
-	_wu(p1 == "" and p2 == "" and p3 == "That piece is full" and sword["imbues"].size() == 4 and int(sword["rarity"]) == 2 and loot.room(sword) == 0 and int(loot.words["power"]) == 1, "POWER into it twice: %s; %s; a third: '%s'; it holds %d words, its colour %d (rare), room %d" % [p1_text, p2_text, p3, sword["imbues"].size(), int(sword["rarity"]), loot.room(sword)])
+	_wu(p1 == "" and p2 == "" and p3 == "That piece is full" and sword["imbues"].size() == 4 and int(sword["rarity"]) == 2 and loot.room(sword) == 0 and int(loot.words["power"]) == 1 and prices.slice(1) == sword["worth"].map(func(v): return int(v)) and int(sword["value"]) == prices[4], "POWER into it twice: %s; %s; a third: '%s'; it holds %d words, its colour %d (rare), room %d; its price with no word and with one, two, three and four: %s" % [p1_text, p2_text, p3, sword["imbues"].size(), int(sword["rarity"]), loot.room(sword), prices])
 	loot.burned = {}
 	_inv._word = ""
 	_inv._result = {}
@@ -1186,6 +1192,33 @@ func _wordsui_shots(h: Hero, dir: String) -> void:
 	await _wait(0.3)
 	await _snap(dir + "/w31_two_slots_in_front_at_the_bottom.png")
 	_wu(_wu_reads(0) == ["HEAVY", "POWER", "STRIKE", "of", "VENOM"] and _wu_reads(1) == ["FLAME", "[+]", "WHIRLWIND", "[+]"], "the bottom of the screen: Strike reads %s, the Whirlwind %s" % [_wu_reads(0), _wu_reads(1)])
+	# (INTO THE EXACT SLOT PRESSED, game.ts placeWord: the Whirlwind's two slots in front both empty, a word pressed onto the
+	# second is in the second; another pressed onto it takes its place there, the first still empty; a second damage word
+	# pressed onto the empty first is refused; a word that is not one, taken from behind the Lunge, is in the first)
+	_inv.open_on(1)
+	_inv._unsocket(1, "front", 0)
+	var fire_held: int = int(loot.words.get("fire", 0))
+	_inv._press("word", "fire")
+	_inv._press("slot", [1, "front", 1])
+	var in_second: Array = L.front[1].duplicate()
+	var in_second_reads: Array = _wu_reads(1)
+	_inv._press("word", "lightning")
+	_inv._press("slot", [1, "front", 1])
+	var swapped: Array = L.front[1].duplicate()
+	var fire_back: int = int(loot.words.get("fire", 0))
+	_inv._note = ""
+	_inv._press("word", "power")
+	_inv._press("slot", [1, "front", 0])
+	var beside: String = _inv._note
+	var kept: Array = L.front[1].duplicate()
+	var power_kept: int = int(loot.words.get("power", 0))
+	_inv._unsocket(2, "behind", 0)
+	_inv._press("word", "swift")
+	_inv._press("slot", [1, "front", 0])
+	await _wait(1.4)
+	await _snap(dir + "/w31b_into_the_exact_slot.png")
+	_wu(in_second == [null, "fire"] and in_second_reads == ["[+]", "FLAME", "WHIRLWIND", "[+]"] and swapped == [null, "lightning"] and fire_back == fire_held and beside == "One damage word per side" and kept == [null, "lightning"] and power_kept == 1 and L.front[1] == ["swift", "lightning"] and names.call()[1] == "Swift Lightning Whirlwind" and _wu_reads(1) == ["SWIFT", "LIGHTNING", "WHIRLWIND", "[+]"], "into the exact slot pressed: FLAME taken out of the Whirlwind, its two slots in front empty; FLAME pressed onto the second: %s, at the bottom of the screen %s; LIGHTNING pressed onto it: %s, FLAME back among his words (x%d of %d); POWER pressed onto the first: it says '%s', the Whirlwind still %s, POWER still held x%d; SWIFT, taken from behind the Lunge, pressed onto the first: %s, '%s', at the bottom of the screen %s" % [in_second, in_second_reads, swapped, fire_back, fire_held, beside, kept, power_kept, L.front[1], names.call()[1], _wu_reads(1)])
+	_inv.toggle()
 
 	# --- the fallen wordsmith's satchel for a hero whose ring was lit before he searched one, and who has no word yet (a hero
 	# made here, by taking every word from this one: the game's is one of a player whose ring another hero of his has lit):
