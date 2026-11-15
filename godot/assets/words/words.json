@@ -1,0 +1,218 @@
+{
+ "ids": [
+  "power",
+  "poison",
+  "frost",
+  "fire",
+  "lightning",
+  "swift",
+  "heavy"
+ ],
+ "words": {
+  "power": {
+   "id": "power",
+   "kind": "damage",
+   "name": "Power",
+   "front": "Power",
+   "behind": "of Power",
+   "attr": "str",
+   "element": null,
+   "about": "The word of force.",
+   "frontText": "More damage and a bigger hit.",
+   "behindText": "Each hit that lands builds a short damage bonus.",
+   "monsterText": "Hits harder and has more life."
+  },
+  "poison": {
+   "id": "poison",
+   "kind": "damage",
+   "name": "Poison",
+   "front": "Poison",
+   "behind": "of Venom",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of venom. A slow death.",
+   "frontText": "A weaker hit that poisons. Poison stacks.",
+   "behindText": "Leaves a cloud of poison.",
+   "monsterText": "Poisons you."
+  },
+  "frost": {
+   "id": "frost",
+   "kind": "damage",
+   "name": "Frost",
+   "front": "Frost",
+   "behind": "of Frost",
+   "attr": "int",
+   "element": "frost",
+   "about": "The word of cold.",
+   "frontText": "Frost damage. Chills, then freezes.",
+   "behindText": "Passes through, hits softer, leaves ice that slows.",
+   "monsterText": "Deals frost damage and slows you."
+  },
+  "fire": {
+   "id": "fire",
+   "kind": "damage",
+   "name": "Flame",
+   "front": "Flame",
+   "behind": "of Flame",
+   "attr": "int",
+   "element": "fire",
+   "about": "The word of fire.",
+   "frontText": "Fire damage. Explodes and sets enemies burning.",
+   "behindText": "Passes through, hits softer, leaves burning ground.",
+   "monsterText": "Deals fire damage and sets you burning."
+  },
+  "lightning": {
+   "id": "lightning",
+   "kind": "damage",
+   "name": "Lightning",
+   "front": "Lightning",
+   "behind": "of Lightning",
+   "attr": "int",
+   "element": "lightning",
+   "about": "The word of storms.",
+   "frontText": "Lightning damage. Arcs to nearby enemies.",
+   "behindText": "Passes through, hits softer, leaves a storm that strikes.",
+   "monsterText": "Deals lightning damage and shocks you."
+  },
+  "swift": {
+   "id": "swift",
+   "kind": "shape",
+   "name": "Swift",
+   "front": "Swift",
+   "behind": "of Swiftness",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of speed.",
+   "frontText": "Faster to use again.",
+   "behindText": "Each use gives you a burst of speed.",
+   "monsterText": "Moves and attacks faster."
+  },
+  "heavy": {
+   "id": "heavy",
+   "kind": "shape",
+   "name": "Heavy",
+   "front": "Heavy",
+   "behind": "of Quakes",
+   "attr": "str",
+   "element": null,
+   "about": "The word of weight. Slow, and crushing.",
+   "frontText": "Slower, hits much harder and stuns.",
+   "behindText": "Leaves cracked ground that staggers enemies.",
+   "monsterText": "Its blows knock you back."
+  }
+ },
+ "moves": [
+  "strike",
+  "whirlwind",
+  "leap"
+ ],
+ "skills": {
+  "strike": {
+   "id": "strike",
+   "name": "Strike",
+   "kind": "melee",
+   "icon": "strike",
+   "dmg": 1,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 1.7,
+   "radius": 0,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Hit one enemy in front of you.",
+   "verb": "STRIKE",
+   "windup": 0.333,
+   "follow": 0.3
+  },
+  "whirlwind": {
+   "id": "whirlwind",
+   "name": "Whirlwind",
+   "kind": "whirl",
+   "icon": "whirl",
+   "dmg": 0.55,
+   "cooldown": 3.5,
+   "mana": 16,
+   "range": 0,
+   "radius": 2,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Hold to spin: you cut everything around you again and again, and pass through enemies.",
+   "verb": "WHIRL",
+   "windup": 0.12,
+   "follow": 0.25,
+   "channel": 2.4,
+   "tick": 0.3
+  },
+  "leap": {
+   "id": "leap",
+   "name": "Lunge",
+   "kind": "leap",
+   "icon": "leap",
+   "dmg": 0.5,
+   "cooldown": 4,
+   "mana": 0,
+   "range": 6,
+   "radius": 1.6,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Dive at a spot, your sword out before you. Nothing can hit you as you go, and the point strikes where you land.",
+   "verb": "LUNGE",
+   "windup": 0,
+   "follow": 0
+  }
+ },
+ "grows": "str",
+ "heavy": {
+  "slower": 1.25,
+  "stun": 0.8,
+  "cracks": 4,
+  "stagger": 0.55,
+  "staggerAgain": 1.5,
+  "knock": 0.6,
+  "stunCap": 50
+ },
+ "poison": {
+  "time": 4,
+  "stacks": 8
+ },
+ "arcChain": {
+  "on": true,
+  "reach": 3.5,
+  "gap": 0.07
+ },
+ "primaryDmg": 1,
+ "intCdr": 0.25,
+ "manaAsCdr": {
+  "perMana": 0.1,
+  "perRegen": 2
+ },
+ "byWeapon": [
+  "fire",
+  "frost",
+  "lightning"
+ ],
+ "moveOpens": [
+  1,
+  2,
+  5
+ ],
+ "slotOpens": {
+  "front": [
+   1,
+   15
+  ],
+  "behind": [
+   4,
+   20
+  ]
+ },
+ "first": {
+  "word": "power",
+  "skill": 0
+ },
+ "furnace": "heavy",
+ "meldstone": [
+  "fire",
+  "frost"
+ ]
+}
