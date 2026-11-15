@@ -925,15 +925,36 @@ export function helmSeen(f: WuFrame): { share: number; shown: number; of: number
   const H = f.px.h;
   const seenAt = new Set<number>();
   const facing = new Set<number>();
+  // (the points of its skin with the way each faces: of an ellipsoid round its whole; of a cone, since his hounskull bascinet
+  // of 14 Nov 2026, round its sides from end to end: the point of the skull and the muzzle are his helm as much as its dome)
+  const skin = (p: (typeof helm)[number]): [V3, V3][] => {
+    const out: [V3, V3][] = [];
+    if (p.k === 'ell') {
+      const [a0, a1, a2] = p.axes;
+      for (let i = 0; i < 24; i++) for (let j = 1; j < 12; j++) {
+        const th = (i / 24) * Math.PI * 2;
+        const ph = (j / 12) * Math.PI;
+        const d: V3 = [Math.sin(ph) * Math.cos(th), Math.sin(ph) * Math.sin(th), Math.cos(ph)];
+        out.push([add(p.c, add(mul(a0, d[0]), add(mul(a1, d[1]), mul(a2, d[2])))), norm(add(mul(a0, d[0] / dot(a0, a0)), add(mul(a1, d[1] / dot(a1, a1)), mul(a2, d[2] / dot(a2, a2)))))]);
+      }
+    } else if (p.k === 'cone') {
+      const ax = sub(p.b, p.a);
+      const L = Math.hypot(ax[0], ax[1], ax[2]);
+      const u = norm(ax);
+      const e1 = norm(Math.abs(u[2]) < 0.9 ? [u[1], -u[0], 0] : [0, u[2], -u[1]]);
+      const e2: V3 = [u[1] * e1[2] - u[2] * e1[1], u[2] * e1[0] - u[0] * e1[2], u[0] * e1[1] - u[1] * e1[0]];
+      for (let i = 0; i < 24; i++) for (let j = 0; j <= 10; j++) {
+        const k = j / 10;
+        const th = (i / 24) * Math.PI * 2;
+        const radial = add(mul(e1, Math.cos(th)), mul(e2, Math.sin(th)));
+        const r = p.ra + (p.rb - p.ra) * k;
+        out.push([add(add(p.a, mul(ax, k)), mul(radial, r)), norm(add(radial, mul(u, (p.ra - p.rb) / L)))]);
+      }
+    }
+    return out;
+  };
   for (const p of helm) {
-    if (p.k !== 'ell') continue;
-    const [a0, a1, a2] = p.axes;
-    for (let i = 0; i < 24; i++) for (let j = 1; j < 12; j++) {
-      const th = (i / 24) * Math.PI * 2;
-      const ph = (j / 12) * Math.PI;
-      const d: V3 = [Math.sin(ph) * Math.cos(th), Math.sin(ph) * Math.sin(th), Math.cos(ph)];
-      const at = add(p.c, add(mul(a0, d[0]), add(mul(a1, d[1]), mul(a2, d[2]))));
-      const nrm = norm(add(mul(a0, d[0] / dot(a0, a0)), add(mul(a1, d[1] / dot(a1, a1)), mul(a2, d[2] / dot(a2, a2)))));
+    for (const [at, nrm] of skin(p)) {
       if (dot(nrm, eye) < 0.2) continue;
       // (a point of one of its solids that is inside another is not of its skin)
       if (helm.some((o) => o !== p && primDist(o, at) < -0.4)) continue;

@@ -110,7 +110,76 @@ export interface MuAround {
   /** Where the head of her staff has been over the last frame, newest first, each from half way up the staff to its crystal
    * (art/heroes3.ts paintMove3): the streak of light a swung crystal leaves, as the game's Mage has it. */
   trail?: readonly (readonly [V3, V3])[];
+  /** WHICH STAFF SHE HOLDS (a skin of it: below, StaffSkin), or none (`null`): her without her staff, the picture every skin is
+   * laid over (art/staff_skins.ts). Her own staff where not said. */
+  staff?: StaffSkin | null;
 }
+
+/**
+ * WHERE HER STAFF IS IN A FRAME, for a skin of it to be laid along: the line her staff takes (his “grey stick”, 13 Nov 2026:
+ * “can we just put a grey stick in the mage’s hand, build a basic skin for the staff, then have unique staves map over the grey
+ * stick the same way the basic staff does?”). Her right hand on it; `p3` the way up it; from `foot` (STAFF_DOWN below her hand)
+ * to `tip3` (STAFF_UP above it); `bar` where her own staff's cross-bar is; `side3` across it as the eye sees it.
+ */
+export interface StaffAt {
+  s: Skeleton;
+  q: Posed;
+  p3: V3;
+  side3: V3;
+  foot: V3;
+  tip3: V3;
+  bar: V3;
+  eye: V3;
+  /** How hot the stone at its head burns (1 at rest; more as she casts), and whether a gale blows from it. */
+  burn: number;
+  gale: number;
+  around: MuAround;
+}
+
+/**
+ * A SKIN OF HER STAFF: its solids laid along her staff's line (StaffAt), and what is drawn of the old kind at its head (her
+ * crystal and the streak it leaves, its sparks and its light). `mats` are her own staff's wood and steel, for a skin that is
+ * made of them; a skin of other stuff makes its own (sc.mat). What it gives back are the stuffs it is made of.
+ */
+export interface StaffSkin {
+  id: string;
+  name: string;
+  sculpt(sc: Sculpt, at: StaffAt, mats: { wood: number; silver: number }): number[];
+  extras?(st: Stage, at: StaffAt, lights: Light[]): void;
+}
+
+/** HER OWN STAFF, the first skin, exactly as she has always held it (art/mage_up.ts until 14 Nov 2026). */
+export const PLAIN_STAFF: StaffSkin = {
+  id: 'plain',
+  name: 'Her staff',
+  // ---- HER STAFF, in her right hand: a pole of indigo wood, wrapped in leather where she holds it; at its head a cross-bar of
+  // steel curving up into two horns (the crescent of her first sketch) that cradle a long cut crystal ----
+  sculpt(sc, { s, p3, side3, foot, bar }, { wood, silver }) {
+    sc.cone(wood, 'staff', foot, bar, 0.95, 1.12, 0.4, { tag: 'pole' });
+    // (a knot in the wood here and there, and the leather wrap round her grip)
+    for (const k of [0.22, 0.61]) sc.ell(wood, 'staff', lerp3(foot, bar, k), [mul(p3, 0.9), mul(side3, 1.35), mul(norm(cross(p3, side3)), 1.35)], 0.4, { tag: 'knot' });
+    sc.cone(wood, 'staff', add(s.handR, mul(p3, -3.2)), add(s.handR, mul(p3, 3.2)), 1.25, 1.25, 0.2, { tag: 'wrap' });
+    const out3 = norm(cross(p3, side3));
+    // the cross-bar, and its horns curving up round the crystal
+    for (const sg of [1, -1]) {
+      let lastP = bar;
+      const N = 5;
+      for (let i = 1; i <= N; i++) {
+        const k = i / N;
+        const a = k * 1.25;
+        const pt = add(bar, add(mul(side3, sg * 3.3 * Math.sin(a)), mul(p3, 3.3 * (1 - Math.cos(a)) * 1.3)));
+        sc.cone(silver, 'staffhead', lastP, pt, 0.85 - 0.35 * (k - 1 / N), 0.85 - 0.35 * k, 0.4, { tag: k > 0.6 ? 'horn' : 'bar' });
+        lastP = pt;
+      }
+    }
+    sc.ell(silver, 'staffhead', bar, [mul(p3, 1.0), mul(side3, 1.5), mul(out3, 1.3)], 0.4, { tag: 'bar' });
+    return [wood, silver];
+  },
+  extras(st, at, lights) {
+    crystalAt(st, at, lights);
+  },
+};
+
 
 /** What a sculpted frame of her is, for the checks: the drawing, and the solids by part. */
 export interface MuFrame extends Painted {
@@ -140,6 +209,112 @@ const nearestOn = (p: V3, a: V3, b: V3): V3 => {
   const k = Math.max(0, Math.min(1, dot(sub(p, a), ab) / (dot(ab, ab) || 1)));
   return add(a, mul(ab, k));
 };
+
+/**
+ * THE STREAK OF LIGHT HER SWUNG STAFF'S HEAD LEAVES (as the game's Mage has it, art/hero3_mage.ts): a part of its own along where
+ * the head has been over the last frame (`around.trail`), brightest where it is now (`tx`, `ty`), thinning and breaking up behind;
+ * none unless it has moved. Every skin's head leaves it.
+ */
+export function streakAt(st: Stage, around: MuAround, tip3: V3, tx: number, ty: number): void {
+  if (around.trail && around.trail.length > 1) {
+    const tr = around.trail;
+    const n = tr.length;
+    const moved = Math.hypot(...sub(tr[0][1], tr[n - 1][1]));
+    if (moved > 8) {
+      const fan = st.part(st.near(tip3) - 0.5);
+      const inner = (e: readonly [V3, V3], age: number): V3 => mid(e[0], e[1], 0.55 + 0.42 * Math.pow(age, 0.7));
+      for (let i = n - 1; i >= 1; i--) {
+        const a = tr[i];
+        const b = tr[i - 1];
+        const age = (i - 0.5) / (n - 1);
+        fan.poly([inner(a, i / (n - 1)), a[1], b[1], inner(b, (i - 1) / (n - 1))].map((p) => st.at(p)), age < 0.3 ? SPARK[3] : age < 0.62 ? SPARK[2] : SPARK[1]);
+      }
+      const old = st.at(tr[n - 1][1]);
+      const far = Math.hypot(old[0] - tx, old[1] - ty) || 1;
+      for (let y = 0; y < fan.h; y++) for (let x = 0; x < fan.w; x++) {
+        if (!fan.has(x, y)) continue;
+        const k = 1 - Math.hypot(x - old[0], y - old[1]) / far;
+        if (k > 0.35 && hash(x, y, 9) < (k - 0.35) * 1.5) fan.erase(x, y);
+      }
+    }
+  }
+}
+
+/**
+ * HER CRYSTAL (her own staff's head, PLAIN_STAFF): a long stone, cut, held in the horns, as near the eye as the staff's head
+ * is; it swells and whitens as it burns; the streak of its light when the staff is swung; its sparks and its light. The first
+ * part drawn beside the sculpture (stuff 1000 in the drawing).
+ */
+export function crystalAt(st: Stage, { p3, tip3, burn, around }: StaffAt, lights: Light[]): void {
+  // HER CRYSTAL: a long stone, cut, held in the horns, as near the eye as the staff's head is; it swells and whitens as it
+  // burns. Its facets: the lit one nearly white, the far one her cyan, a ridge of white down it, its edge a dark cyan line.
+  // (the crystal is the first part drawn here, stuff 1000 in the drawing)
+  const gem3 = add(tip3, mul(p3, 1.2));
+  const [tx, ty] = st.at(gem3);
+  const seen3 = st.seen(p3);
+  const ul = Math.hypot(seen3[0], seen3[1]) || 1;
+  const ux = seen3[0] / ul;
+  const uy = seen3[1] / ul;
+  const gem = st.part(st.near(gem3) + 0.6);
+  // (where the crystal has just been: a streak of its light when the staff is swung, as the game's Mage has it, art/hero3_mage.ts;
+  // a part of its own, made after the crystal so the crystal stays the first part drawn here)
+  streakAt(st, around, tip3, tx, ty);
+  const half = 2.3 + 0.4 * Math.min(2, burn - 1);
+  // (as long as the stone is, seen: a crystal that points at the eye is seen from its point, short, and hides no more of the
+  // pole than it should)
+  const long = (14.5 + 1.2 * Math.min(2, burn - 1)) * Math.max(0.4, Math.min(1, ul));
+  const z = st.near(gem3) + 0.6;
+  // (a hexagonal stone: pointed at the top, a shorter point at its foot; `b` along it from its middle, `a` across)
+  const inside = (a: number, b: number, grow = 0): boolean => {
+    const top = long * 0.62 + grow;
+    const low = -long * 0.38 - grow;
+    if (b > top || b < low) return false;
+    const w = half + grow;
+    const cap = b > long * 0.18 ? w * (top - b) / (top - long * 0.18) : b < -long * 0.18 ? w * (b - low) / (-long * 0.18 - low) : w;
+    return Math.abs(a) <= cap;
+  };
+  const hot = burn >= 2.6;
+  for (let y = Math.floor(ty - long - 3); y <= Math.ceil(ty + long + 3); y++) {
+    for (let x = Math.floor(tx - long - 3); x <= Math.ceil(tx + long + 3); x++) {
+      const dx = x + 0.5 - tx;
+      const dy = y + 0.5 - ty;
+      const a = -dx * uy + dy * ux;
+      const b = dx * ux + dy * uy;
+      if (!inside(a, b, 0.9)) continue;
+      // (its edge: a dark cyan line round it, so it reads as a stone, not a blot of light)
+      if (!inside(a, b)) {
+        gem.put(x, y, hot ? CYAN[2] : CYAN[0], z);
+        continue;
+      }
+      // (which facet: the light comes from the upper left)
+      const litSide = a * (ux < 0 ? 1 : -1) * Math.sign(uy || 1) < 0;
+      let c: string;
+      if (Math.abs(a) < 0.55) c = '#ffffff';
+      else if (b > long * 0.18) c = litSide ? '#ffffff' : SPARK[3];
+      else if (b < -long * 0.18) c = litSide ? SPARK[2] : CYAN[0];
+      else c = litSide ? SPARK[3] : SPARK[2];
+      if (hot && c !== CYAN[0]) c = Math.abs(a) < half * 0.6 ? '#ffffff' : SPARK[3];
+      gem.put(x, y, c, z);
+    }
+  }
+  if (burn >= 1.5) {
+    const rays = Math.max(1, Math.min(6, Math.round((burn - 1) * 3)));
+    for (let k = 2; k <= rays + 4; k++) {
+      const c = k <= rays ? '#ffffff' : SPARK[2];
+      for (const [rx, ry] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const far = (rx !== 0 ? 3 : 9) + k;
+        if (k > rays + (rx !== 0 ? 2 : 0)) continue;
+        st.over.set(Math.round(tx - 0.5 + rx * far), Math.round(ty - 0.5 + ry * far), c);
+      }
+    }
+  }
+  const heat = Math.max(0, burn - 1);
+  if (WILD.on) {
+    const k = Math.max(0, Math.min(1, (heat - 1.2) / 1.8));
+    const sm = k * k * (3 - 2 * k);
+    lights.push({ x: tx, y: ty, r: 24 + 24 * sm + 3 * hash(Math.round(tx), Math.round(ty), Math.round(heat * 40)), color: SPARK[3], a: 0.44 + 0.28 * sm });
+  } else lights.push({ x: tx, y: ty, r: 21 + Math.min(2, heat) * 6.5, color: SPARK[3], a: 0.38 + Math.min(2, heat) * 0.185 });
+}
 
 /**
  * HER, SCULPTED, at a pose (`s` solved from `q` on her build), seen from one of her sides. Returns the painting, its lights,
@@ -724,33 +899,16 @@ export function paintMageUp(s: Skeleton, q: Posed, side: MuSide, B: Build, aroun
     sc.ell(hatM, 'hat', add(base, mul(U, 0.5)), [mul(Fh, R[0] * 1.24), mul(Lh, R[1] * 1.36), mul(U, 0.55)], 0.2, { tag: 'band' });
   }
 
-  // ---- HER STAFF, in her right hand: a pole of indigo wood, wrapped in leather where she holds it; at its head a cross-bar of
-  // steel curving up into two horns (the crescent of her first sketch) that cradle a long cut crystal ----
+  // ---- HER STAFF, in her right hand, along its line: her own (PLAIN_STAFF), a skin of it, or none (art/staff_skins.ts) ----
   const p3 = s.point;
   const side3 = norm(cross(p3, eye), s.across);
   const foot = add(s.handR, mul(p3, -STAFF_DOWN));
   const tip3 = add(s.handR, mul(p3, STAFF_UP));
   const bar = add(tip3, mul(p3, -5.4));
-  sc.cone(wood, 'staff', foot, bar, 0.95, 1.12, 0.4, { tag: 'pole' });
-  // (a knot in the wood here and there, and the leather wrap round her grip)
-  for (const k of [0.22, 0.61]) sc.ell(wood, 'staff', lerp3(foot, bar, k), [mul(p3, 0.9), mul(side3, 1.35), mul(norm(cross(p3, side3)), 1.35)], 0.4, { tag: 'knot' });
-  sc.cone(wood, 'staff', add(s.handR, mul(p3, -3.2)), add(s.handR, mul(p3, 3.2)), 1.25, 1.25, 0.2, { tag: 'wrap' });
-  {
-    const out3 = norm(cross(p3, side3));
-    // the cross-bar, and its horns curving up round the crystal
-    for (const sg of [1, -1]) {
-      let lastP = bar;
-      const N = 5;
-      for (let i = 1; i <= N; i++) {
-        const k = i / N;
-        const a = k * 1.25;
-        const pt = add(bar, add(mul(side3, sg * 3.3 * Math.sin(a)), mul(p3, 3.3 * (1 - Math.cos(a)) * 1.3)));
-        sc.cone(silver, 'staffhead', lastP, pt, 0.85 - 0.35 * (k - 1 / N), 0.85 - 0.35 * k, 0.4, { tag: k > 0.6 ? 'horn' : 'bar' });
-        lastP = pt;
-      }
-    }
-    sc.ell(silver, 'staffhead', bar, [mul(p3, 1.0), mul(side3, 1.5), mul(out3, 1.3)], 0.4, { tag: 'bar' });
-  }
+  const staffSkin = around.staff === undefined ? PLAIN_STAFF : around.staff;
+  const burn = Math.max(1 + q.draw, gale > 0.6 ? 3 : 1);
+  const staffAt: StaffAt = { s, q, p3, side3, foot, tip3, bar, eye, burn, gale, around };
+  const staffMats = staffSkin ? staffSkin.sculpt(sc, staffAt, { wood, silver }) : [];
 
   // ---- what is drawn of the old kind: her crystal and its light; what she holds when left standing; the ring the staff throws ----
   const lights: Light[] = [];
@@ -758,96 +916,11 @@ export function paintMageUp(s: Skeleton, q: Posed, side: MuSide, B: Build, aroun
   let charge = { x: 0, y: 0, heat: 0 };
   const extras = (raw: Stage): void => {
     const st = turnedStage(raw, spin);
-    // HER CRYSTAL: a long stone, cut, held in the horns, as near the eye as the staff's head is; it swells and whitens as it
-    // burns. Its facets: the lit one nearly white, the far one her cyan, a ridge of white down it, its edge a dark cyan line.
-    // (the crystal is the first part drawn here, stuff 1000 in the drawing)
-    const gem3 = add(tip3, mul(p3, 1.2));
-    const [tx, ty] = st.at(gem3);
-    const seen3 = st.seen(p3);
-    const ul = Math.hypot(seen3[0], seen3[1]) || 1;
-    const ux = seen3[0] / ul;
-    const uy = seen3[1] / ul;
-    const burn = Math.max(1 + q.draw, gale > 0.6 ? 3 : 1);
-    const gem = st.part(st.near(gem3) + 0.6);
-    // (where the crystal has just been: a streak of its light when the staff is swung, as the game's Mage has it, art/hero3_mage.ts;
-    // a part of its own, made after the crystal so the crystal stays the first part drawn here)
-    if (around.trail && around.trail.length > 1) {
-      const tr = around.trail;
-      const n = tr.length;
-      const moved = Math.hypot(...sub(tr[0][1], tr[n - 1][1]));
-      if (moved > 8) {
-        const fan = st.part(st.near(tip3) - 0.5);
-        const inner = (e: readonly [V3, V3], age: number): V3 => mid(e[0], e[1], 0.55 + 0.42 * Math.pow(age, 0.7));
-        for (let i = n - 1; i >= 1; i--) {
-          const a = tr[i];
-          const b = tr[i - 1];
-          const age = (i - 0.5) / (n - 1);
-          fan.poly([inner(a, i / (n - 1)), a[1], b[1], inner(b, (i - 1) / (n - 1))].map((p) => st.at(p)), age < 0.3 ? SPARK[3] : age < 0.62 ? SPARK[2] : SPARK[1]);
-        }
-        const old = st.at(tr[n - 1][1]);
-        const far = Math.hypot(old[0] - tx, old[1] - ty) || 1;
-        for (let y = 0; y < fan.h; y++) for (let x = 0; x < fan.w; x++) {
-          if (!fan.has(x, y)) continue;
-          const k = 1 - Math.hypot(x - old[0], y - old[1]) / far;
-          if (k > 0.35 && hash(x, y, 9) < (k - 0.35) * 1.5) fan.erase(x, y);
-        }
-      }
-    }
-    const half = 2.3 + 0.4 * Math.min(2, burn - 1);
-    // (as long as the stone is, seen: a crystal that points at the eye is seen from its point, short, and hides no more of the
-    // pole than it should)
-    const long = (14.5 + 1.2 * Math.min(2, burn - 1)) * Math.max(0.4, Math.min(1, ul));
-    const z = st.near(gem3) + 0.6;
-    // (a hexagonal stone: pointed at the top, a shorter point at its foot; `b` along it from its middle, `a` across)
-    const inside = (a: number, b: number, grow = 0): boolean => {
-      const top = long * 0.62 + grow;
-      const low = -long * 0.38 - grow;
-      if (b > top || b < low) return false;
-      const w = half + grow;
-      const cap = b > long * 0.18 ? w * (top - b) / (top - long * 0.18) : b < -long * 0.18 ? w * (b - low) / (-long * 0.18 - low) : w;
-      return Math.abs(a) <= cap;
-    };
-    const hot = burn >= 2.6;
-    for (let y = Math.floor(ty - long - 3); y <= Math.ceil(ty + long + 3); y++) {
-      for (let x = Math.floor(tx - long - 3); x <= Math.ceil(tx + long + 3); x++) {
-        const dx = x + 0.5 - tx;
-        const dy = y + 0.5 - ty;
-        const a = -dx * uy + dy * ux;
-        const b = dx * ux + dy * uy;
-        if (!inside(a, b, 0.9)) continue;
-        // (its edge: a dark cyan line round it, so it reads as a stone, not a blot of light)
-        if (!inside(a, b)) {
-          gem.put(x, y, hot ? CYAN[2] : CYAN[0], z);
-          continue;
-        }
-        // (which facet: the light comes from the upper left)
-        const litSide = a * (ux < 0 ? 1 : -1) * Math.sign(uy || 1) < 0;
-        let c: string;
-        if (Math.abs(a) < 0.55) c = '#ffffff';
-        else if (b > long * 0.18) c = litSide ? '#ffffff' : SPARK[3];
-        else if (b < -long * 0.18) c = litSide ? SPARK[2] : CYAN[0];
-        else c = litSide ? SPARK[3] : SPARK[2];
-        if (hot && c !== CYAN[0]) c = Math.abs(a) < half * 0.6 ? '#ffffff' : SPARK[3];
-        gem.put(x, y, c, z);
-      }
-    }
-    if (burn >= 1.5) {
-      const rays = Math.max(1, Math.min(6, Math.round((burn - 1) * 3)));
-      for (let k = 2; k <= rays + 4; k++) {
-        const c = k <= rays ? '#ffffff' : SPARK[2];
-        for (const [rx, ry] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-          const far = (rx !== 0 ? 3 : 9) + k;
-          if (k > rays + (rx !== 0 ? 2 : 0)) continue;
-          st.over.set(Math.round(tx - 0.5 + rx * far), Math.round(ty - 0.5 + ry * far), c);
-        }
-      }
-    }
+    // HER STAFF'S HEAD: her crystal, the streak it leaves, its sparks and its light (a skin's own, PLAIN_STAFF's crystalAt)
+    if (staffSkin?.extras) staffSkin.extras(st, staffAt, lights);
+    // (where the stone at its head burns, for the game: the same whichever staff she holds)
+    const [tx, ty] = st.at(add(tip3, mul(p3, 1.2)));
     const heat = Math.max(0, burn - 1);
-    if (WILD.on) {
-      const k = Math.max(0, Math.min(1, (heat - 1.2) / 1.8));
-      const sm = k * k * (3 - 2 * k);
-      lights.push({ x: tx, y: ty, r: 24 + 24 * sm + 3 * hash(Math.round(tx), Math.round(ty), Math.round(heat * 40)), color: SPARK[3], a: 0.44 + 0.28 * sm });
-    } else lights.push({ x: tx, y: ty, r: 21 + Math.min(2, heat) * 6.5, color: SPARK[3], a: 0.38 + Math.min(2, heat) * 0.185 });
     charge = { x: tx, y: ty, heat };
     // the staff brought down on the floor (prop 5; `pt` 1 in the frame it strikes, 0 when the ring has gone)
     if (q.prop === 5 && q.pt > 0.02) {
@@ -897,5 +970,5 @@ export function paintMageUp(s: Skeleton, q: Posed, side: MuSide, B: Build, aroun
     });
   };
   const drawn = draw(sc, view, ax, CANVAS3.ay, CANVAS3, extras, rim);
-  return { px: drawn.px, lights, tails, charge, drawn, sc, s, spin, ax, ay: CANVAS3.ay, staffMats: [wood, silver], seen: { hemZ, cuffZ }, legMats: { hose, robe, boot } };
+  return { px: drawn.px, lights, tails, charge, drawn, sc, s, spin, ax, ay: CANVAS3.ay, staffMats, seen: { hemZ, cuffZ }, legMats: { hose, robe, boot } };
 }

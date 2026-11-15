@@ -34,7 +34,7 @@ import { forgetMade as forget_chapel } from '../art/chapel';
 import { forgetMade as forget_chapel_gate } from '../art/chapel_gate';
 import { forgetMade as forget_lair_temple } from '../art/lair_temple';
 import { forgetMade as forget_lair_gate } from '../art/lair_gate';
-import { HEAVY, LEFT_TO_PAINTER } from '../art/kit';
+import { GRAIN, HEAVY, LEFT_TO_PAINTER } from '../art/kit';
 import { deathOf, isPainted } from './left_to_painter';
 /** HEAVY FRAMES (art/kit.ts HEAVY) left to the side painter while the world is drawn: on in the game; off, every frame painted when first shown. */
 export const PAINT_DEFER = { on: true };
@@ -42,7 +42,8 @@ import type { ActorArt } from '../art/actor_types';
 import { FIGURE_SIZE, HEAVY_FIGURES, figureOf } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { HeroArt } from '../art/heroes';
-import { HEAVY_PLACES } from '../art/heroes';
+import { HEAVY_PLACES, STAFF_PLACES } from '../art/heroes';
+import { staffWorn } from '../art/staff_skins';
 import { heavyDrawn } from '../game/talents';
 import { AXE_FLIGHT, axeFlying } from '../art/warrior_up_axe_moves';
 import { WARRIOR_UP, WU_SIDES } from '../art/warrior_up';
@@ -73,6 +74,7 @@ import { CITY } from '../art/hub2';
 import { TALK_FPS, TALK_FRAMES, campFolkFrame } from '../art/hub2_folk';
 import { CAMP_DUSK, campFolk, isCamp } from '../game/camp';
 import { RimView } from './rim';
+import { FinalArenaView } from './final_arena';
 import { columnSprite, folkActAt, folkActLong, folkSoundAt, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
 import { FOLK_SOUND, WORLD_SOUNDS } from '../game/world_sounds';
 import type { TownArt } from '../art/townscene';
@@ -167,6 +169,8 @@ import { EYRIE_SCENE, MUSTER_TEXT, QUEST610_TEXT } from '../game/quests610';
 import { QUEST1115_TEXT } from '../game/quests1115';
 import { CRIERS_JAR } from '../game/act2/undercity';
 import { clapperSprite, pageSprite, rollSprite } from '../art/quest1115';
+import { QUARTER_N, QUARTER_RARITY, paintQuarter } from '../art/endless_tablet';
+import { KEY_TEXT } from '../game/endless_key';
 import { keySprite, springSprite } from '../art/quest1620';
 import { CAPTAIN_JAR_VARIANT, QUEST1620_TEXT } from '../game/quests1620';
 import { shrineBellFrames } from '../art/floor11';
@@ -612,6 +616,8 @@ export class Renderer {
   readonly castle = new CastleView();
   /** THE ENDLESS TOWN, THE SHAFT'S RIM (render/rim.ts, behind ENDLESS_TOWN). */
   readonly rim = new RimView();
+  /** (ENDLESS_KEY: the bottom of the shaft, the final boss's arena: render/final_arena.ts) */
+  readonly finalArena = new FinalArenaView();
   /** FLOOR 4, THE BURIED CHAPEL OF BONES (render/chapel.ts, behind CHAPEL). */
   readonly chapel = new ChapelView();
   /** FLOOR 5, THE MINE THAT BECOMES HIS TEMPLE (render/lair.ts, behind LAIR_TEMPLE). */
@@ -624,7 +630,7 @@ export class Renderer {
   private lookNow: LookView | null = null;
   /** The new look of this level's floor, if it has one on. */
   lookOf(L: Game['level']): LookView | null {
-    for (const v of [this.rim, this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
+    for (const v of [this.rim, this.finalArena, this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
     return null;
   }
   /** (forgetLooks) The level the looks were last sorted for. */
@@ -642,7 +648,7 @@ export class Renderer {
     this.stillGlows.forget();
     this.stillFloor.forget();
     this.stillDark.forget();
-    for (const v of [this.rim, this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) {
+    for (const v of [this.rim, this.finalArena, this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) {
       if (v === keep) continue;
       v.forget?.();
       this.lookGrounds.delete(v);
@@ -783,6 +789,8 @@ export class Renderer {
   private wholeNow = false;
   private gameNow: Game | null = null;
   private clockNow = 0;
+  /** (ENDLESS_KEY) The tablet's quarters as they lie on the floor, painted once each. */
+  private quarterPics: Sprite[] = [];
   /** (WHOLE_WALLS) An empty grid: no wall left out. */
   private noneAway: Uint8Array | null = null;
   /** (WHOLE_WALLS) Does every wall stand on this level: floors 1 to 5 of the dungeon, the switch on? */
@@ -2876,6 +2884,8 @@ export class Renderer {
     // (and whether they are in town: the heroes painted over the bones have their weapons on their backs there, art/heroes3.ts)
     // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES: each always drawn with his own weapon, the warrior's the great sword)
     const arms = heavyDrawn(h.cls, h.talents);
+    // (THE MAGE'S STAFF, art/staff_skins.ts STAFF_SKINS: the unique staff in her hand, drawn there; her own staff otherwise)
+    const staff = h.cls === 'mage' ? staffWorn(h.gear.mainhand) : null;
     const look = {
       twoHanded: OWN_MOVES.on ? h.cls === 'warrior' : h.gear.mainhand !== null && h.gear.mainhand.weapon === 'greatsword',
       town: !!game.level.town,
@@ -2883,6 +2893,7 @@ export class Renderer {
       ...(h.cls === 'warlock' ? { demon: h.form === 'demon', blaze: h.form !== 'demon' && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full } : {}),
       // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: the war axe or the maul in his hands, once his tree has picked it)
       ...(arms ? { weapon: arms } : {}),
+      ...(staff ? { staff } : {}),
     };
     // (THE WARLOCK KEPT IN PACKS: what he shows and may show next, from his side, asked for a moment ahead: render/warlock_packs.ts)
     if (h.cls === 'warlock' && this.warlockPacks) warlockAskAhead(this.warlockPacks, h, !!look.blaze, !!game.level.town, !!game.over);
@@ -2959,7 +2970,8 @@ export class Renderer {
     const pw = this.painter && this.art.heroes.give ? this.painter : null;
     // (THE WARLOCK: the one he is now first, then his others: the demon's, his arm blazing, as a man in a dungeon)
     // (THE WARRIOR'S WEAPON: his places with the war axe or the maul, art/heroes.ts HEAVY_PLACES)
-    const places = arms ? HEAVY_PLACES[arms] : { dungeon: 'dungeon' as const, town: 'town' as const };
+    // (THE MAGE'S STAFF: her places with the unique staff she holds, art/heroes.ts STAFF_PLACES)
+    const places = arms ? HEAVY_PLACES[arms] : staff ? STAFF_PLACES[staff] : { dungeon: 'dungeon' as const, town: 'town' as const };
     const now = h.cls === 'warlock' && !look.town ? (h.form === 'demon' ? 'demon' : look.blaze ? 'blaze' : 'dungeon') : look.town ? places.town : places.dungeon;
     const byWorker = !!pw && pw.hero(h.cls, now) && (!look.town || pw.hero(h.cls, places.dungeon)) && (h.cls !== 'warlock' || look.town || (pw.hero(h.cls, 'dungeon') && pw.hero(h.cls, 'blaze') && pw.hero(h.cls, 'demon')));
     const hero = (): boolean => !byWorker && this.art.heroes.warm(h.cls, look);
@@ -3789,7 +3801,8 @@ export class Renderer {
         }
       } else {
         const w = L.ways?.way;
-        if (w && game.turnInFor() && L.explored[Math.floor(w.y) * f.w + Math.floor(w.x)]) this.questMarks.push({ x: wx(cam, w.x, w.y), y: wy(cam, w.x, w.y) - WAY_MARK_LIFT });
+        // (ENDLESS MODE, NO STORY: none on an endless level: game.ts storyHere)
+        if (w && game.storyHere && game.turnInFor() && L.explored[Math.floor(w.y) * f.w + Math.floor(w.x)]) this.questMarks.push({ x: wx(cam, w.x, w.y), y: wy(cam, w.x, w.y) - WAY_MARK_LIFT });
       }
     }
     // (EXIT_LABELS: a floor's way out, once its boss has fallen and it has opened, carries its name as they do: game/exit_labels.ts)
@@ -3822,6 +3835,16 @@ export class Renderer {
         continue;
       }
       // (QUESTS1115, behind its switch: an unstruck page, or the clapper, sculpted: art/quest1115.ts)
+      // (ENDLESS_KEY: a quarter of the stone tablet, its item picture, in the uniques' orange: art/endless_tablet.ts, game/endless_key.ts)
+      if (dr.kind === 'quest' && dr.thing === 'quarter') {
+        const k = dr.quarter ?? 0;
+        const qs = (this.quarterPics[k] ??= paintQuarter(k).sprite(QUARTER_N / 2, QUARTER_N / 2, GRAIN));
+        this.stand(dr.x + dr.y - 0.2, qs, sx, sy - pop - bob - 4);
+        hid?.(dr.x, dr.y);
+        this.labels.push({ x: sx, y: sy - 20, text: KEY_TEXT.label(k), color: RARITY_COLOR[QUARTER_RARITY] });
+        if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, [RARITY_COLOR[QUARTER_RARITY], P.white]);
+        continue;
+      }
       if (dr.kind === 'quest') {
         // (QUESTS1620: the songbird's key and spring, sculpted: art/quest1620.ts)
         const qs = dr.thing === 'clapper' ? clapperSprite() : dr.thing === 'roll' ? rollSprite() : dr.thing === 'key' ? keySprite() : dr.thing === 'spring' ? springSprite() : pageSprite();

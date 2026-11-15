@@ -47,6 +47,10 @@ import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, bossPace, gaitOf } from './bosses';
 import { ACT1, HIGH_CITY, act2Floor, cityFloor, highFloor, lastFloor } from './act1';
 import { ENDLESS, ENDLESS_OPENS, ENDLESS_WARN, endlessFloorFor, endlessName, endlessPower, endlessTough } from './endless';
+import { ENDLESS_KEY, KEY_TEXT, KEY_TIMES, PORTAL_NEAR, quarterCount, quarterOf, quartersOf, tabletWhole } from './endless_key';
+import { PORTAL_OPEN_FRAMES } from '../art/endless_portal';
+import { LANDING } from '../art/shaft_rim';
+import { FINAL_ARRIVE, FINAL_BOSS_AT, FINAL_DEPTH, FINAL_LOOT, FINAL_NAME, FINAL_TEXT, FINAL_UP_HOLD, FINAL_WAKE, FINAL_WAY_UP, makeFinalArena } from './final_arena';
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
 // (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds)
 import { inNettles, nettleSlow, stepGardens } from './act2/garden_rules';
@@ -110,7 +114,7 @@ import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 import { leadPoint } from './lock';
 import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_SOUNDS, HURT_BIG, VOICE, bossSound } from './sound_families';
 import { BOSS_CALLS, bossCall } from './boss_calls';
-import { LEVEL_DEFS, LEVEL_UNIQUES, UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, levelChance, levelPoolFor, rolledTune, uniqueDef, urollOf, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
+import { LEVEL_DEFS, LEVEL_UNIQUES, UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, finalUniques, levelChance, levelPoolFor, rolledTune, uniqueDef, urollOf, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
 import type { BendCtx, UniqueDef } from './uniques';
 import { FOE_WORDS } from './defs';
 import { foeAfterBlow, foeBlast, foeDeath, foeHarder, foeTick, foeWordsOf, foeZone, layProblem, rankOfElement, secondElement, upTo, wordsWeight } from './foe_melds';
@@ -141,7 +145,7 @@ const VOLATILE_ONLY: readonly WordId[] = ['volatile'];
 const RISEN_PACK = -7;
 
 /** THE WAYS (ways.ts): where a way out of a level goes: down the stairwell; through the gate into the first floor, or out of it to town; by a waypoint to town, or back from town. */
-type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut' | 'stairsIn' | 'quarry' | 'towerUp' | 'towerDown' | 'stoneIn' | 'stoneOut';
+type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut' | 'stairsIn' | 'quarry' | 'towerUp' | 'towerDown' | 'stoneIn' | 'stoneOut' | 'final' | 'finalUp';
 
 /**
  * What survives closing the game in the middle of a run: the character and how far they have got.
@@ -188,6 +192,8 @@ export interface RunSave {
   birdParts?: number;
   court?: 'asked' | 'given';
   captainJar?: 'got' | 'given';
+  /** (ENDLESS_KEY: the tablet set, the landing open for him: game/endless_key.ts) */
+  finalOpen?: boolean;
   citySeen?: boolean;
   pieces?: number;
   meldAsk?: boolean;
@@ -282,6 +288,8 @@ export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   out.deaths = typeof m.deaths === 'number' && Number.isFinite(m.deaths) ? Math.max(0, Math.floor(m.deaths)) : 0;
   out.bestDepth = typeof m.bestDepth === 'number' && Number.isFinite(m.bestDepth) ? Math.max(0, Math.floor(m.bestDepth)) : 0;
   if (typeof m.bestEndless === 'number' && Number.isFinite(m.bestEndless) && m.bestEndless > 0) out.bestEndless = Math.floor(m.bestEndless);
+  // (ENDLESS_KEY: the quarters of the stone tablet held, the account's: game/endless_key.ts)
+  if (typeof m.quarters === 'number' && Number.isFinite(m.quarters) && (m.quarters & 15) > 0) out.quarters = Math.floor(m.quarters) & 15;
   out.taught = m.taught === true;
   // (THE FIRST LEVELS: the ring is lit on a device the first time a hero brings the MASTER RUNE-STONE. A
   // device that saved before Version 19.5 has never had it lit: its next new hero goes for it, as
@@ -481,6 +489,8 @@ export class Game {
   endless = 0;
   endlessFloor = 0;
   inEndless = false;
+  /** (ENDLESS_KEY: at the bottom of the shaft, in the final boss's arena: game/final_arena.ts) An endless level to the rest of the game. */
+  inFinal = false;
   /** THE SHAFT'S RIM (game/rim.ts, behind ENDLESS_TOWN): the endless level his record stone was last cut to (a notch is cut for each one reached since, as he comes home). */
   rimSeen = 0;
   /**
@@ -1066,7 +1076,7 @@ export class Game {
       v: 1, cls: h.cls, seed: this.seed, level: h.level, xp: h.xp, pending: h.pending, attrs: { ...h.attrs },
       gear: { ...h.gear }, bag: [...h.bag], words: savedWords(this.ringWord ? { ...h.words, [this.ringWord.word]: h.words[this.ringWord.word] + 1 } : { ...h.words }),
       sockets: h.skills.map((s) => ({ front: [...s.front], behind: [...s.behind] })),
-      gold: h.gold, potionKills: h.potionKills, depth: this.depth, cleared: this.cleared, kills: this.kills, runTime: this.runTime, maxUid,
+      gold: h.gold, potionKills: h.potionKills, depth: this.inFinal ? Math.max(1, this.endlessFloor) : this.depth, cleared: this.cleared, kills: this.kills, runTime: this.runTime, maxUid,
       plan: [...this.plan],
       body: this.bodySearched,
       // (EXITS: nor whether the wordsmith has given his quest, while theirs is off)
@@ -1101,6 +1111,8 @@ export class Game {
       ...(MUSTER.on ? { roll: h.roll, rollPages: h.rollPages } : {}),
       // (QUESTS1620: the songbird, the whole court, the captain's voice)
       ...(QUESTS1620.on ? { bird: h.bird, birdParts: h.birdParts, court: h.court, captainJar: h.captainJar } : {}),
+      // (ENDLESS_KEY: the landing open for him)
+      ...(ENDLESS_KEY.on && h.finalOpen ? { finalOpen: true } : {}),
       // (the picks laid out and not yet taken: the armourer's, the mystic's)
       ...(h.laidOut ? { laidOut: Object.fromEntries(Object.entries(h.laidOut).map(([k, v]) => [k, [...(v ?? [])]])) } : {}),
     };
@@ -1184,6 +1196,8 @@ export class Game {
     h.birdParts = typeof s.birdParts === 'number' && s.birdParts >= 0 && s.birdParts <= BIRD_ALL ? Math.floor(s.birdParts) : undefined;
     h.court = s.court === 'asked' || s.court === 'given' ? s.court : undefined;
     h.captainJar = s.captainJar === 'got' || s.captainJar === 'given' ? s.captainJar : undefined;
+    // (ENDLESS_KEY)
+    h.finalOpen = ENDLESS_KEY.on && s.finalOpen === true ? true : undefined;
     // (THE SKILL TREES: only this class's talents, each once, in an order that could have been taken)
     // (THE RANGER'S COMPANIONS: the picks, only of their own groups)
     if (COMPANIONS.on && s.pets) h.pets = cleanPicks(s.pets);
@@ -1598,6 +1612,7 @@ export class Game {
     this.inDungeon = false;
     // (ENDLESS MODE: in town he is on no endless level; the waypoint takes him back to the one he reached)
     this.inEndless = false;
+    this.inFinal = false;
     this.dungeonWords = [];
     const h = this.hero;
     const f = this.level.floor;
@@ -1725,7 +1740,8 @@ export class Game {
     // (ENDLESS MODE: an endless level laid fresh for its level, though its floor came before)
     const seed = (Math.imul(this.seed, 7919) + this.depth * 104729 + this.cleared * 31 + (this.inEndless ? this.endless * 15485863 : 0)) >>> 0;
     // (QUESTS15: floor 3 while its furnace burns has the Stoker's arena laid in it, at the end of a short hallway: game/furnace_arena.ts)
-    this.level = makeDungeon(this.depth, seed, { furnace: this.depth === 3 && this.furnaceBurns() });
+    // (ENDLESS MODE, NO STORY: an endless level's floor 5 without its temple door: storyHere)
+    this.level = makeDungeon(this.depth, seed, { furnace: this.depth === 3 && this.furnaceBurns(), endless: !this.storyHere });
     this.inDungeon = true;
     const h = this.hero;
     const f = this.level.floor;
@@ -1764,7 +1780,9 @@ export class Game {
     this.holdsMade(seed);
     // (ACT 2, THE HUSH: its Bells, asleep, where its map-maker laid them)
     this.bellsMade();
-    if (this.depth === 1 && this.cleared === 0) {
+    if (!this.storyHere) {
+      // (ENDLESS MODE, NO STORY: no fallen wordsmith on an endless level, nor floor 1 made gentle for a first time through: storyHere)
+    } else if (this.depth === 1 && this.cleared === 0) {
       // (THE WAYS: the first floor may be come back to before it is cleared, through its gate from
       // town; the fallen wordsmith, once searched, is laid there searched: nothing more comes of him)
       this.placeBody();
@@ -2063,7 +2081,8 @@ export class Game {
     const bare = this.bareDungeon();
     // (ENDLESS MODE: how many words a monster carries goes by its strength's depth, `power`; a lair boss's three by its floor)
     const P = this.power;
-    const want = pack ? pack.words.length : bare ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (P >= 10 ? 3 : P >= 3 ? 2 : 1) : elite ? (P >= 6 ? 2 : 1) : 0;
+    // (ENDLESS_KEY: the final boss carries no words of the floors': he is himself, his words his own five)
+    const want = pack ? pack.words.length : bare || kind === 'wsboss' ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (P >= 10 ? 3 : P >= 3 ? 2 : 1) : elite ? (P >= 6 ? 2 : 1) : 0;
     const words: WordId[] = pack ? [...pack.words] : this.drawWords(rng, want);
     // (MONSTER PACKS: a minion has its leader's words at half strength)
     let half: WordId[] = pack && pack.rarity === 'minion' ? [...pack.words] : [];
@@ -2208,6 +2227,10 @@ export class Game {
     this.meetOutdoorBoss();
     if (this.level.holds) this.updateHolds();
     if (this.level.land?.landing) this.updateStone();
+    // (ENDLESS_KEY: the tablet set in the bench at the Shaft's Rim, the landing opening, the way down: game/endless_key.ts)
+    if (this.level.rim) this.updateKey(dt);
+    // (ENDLESS_KEY: the bottom of the shaft: he does not wait long for the hero to come to him)
+    if (this.inFinal) this.updateArena(dt);
     if (this.level.bells) this.updateBells(dt);
     // (THE WAYS: and where a way out of it has been taken, the rest is the next level's, from its next step)
     if (this.level.ways && this.updateWays(dt)) return;
@@ -2244,7 +2267,7 @@ export class Game {
     }
     if (this.risers.length) this.updateRisers(dt);
     // (QUESTS610, PILLARS: floor 10, the Drowned Eye's last phase begun, the cult's obelisks blaze)
-    if (PILLARS.on && QUESTS610.on && this.depth === 10 && !this.level.pillars && !this.practice) this.pillarsLight();
+    if (PILLARS.on && QUESTS610.on && this.depth === 10 && !this.level.pillars && !this.practice && this.storyHere) this.pillarsLight();
     this.updateProjectiles(dt);
     this.updateTraps(dt);
     this.updateVolleys(dt);
@@ -2502,8 +2525,19 @@ export class Game {
       this.throughTower(to === 'towerUp');
       return;
     }
+    // (ENDLESS_KEY: down through the open landing at the Shaft's Rim, to the bottom of the shaft)
+    if (to === 'final') {
+      this.enterArena();
+      return;
+    }
+    // (ENDLESS_KEY: the warped wordsmith dead, back up the shaft in the portal's light, to the Rim)
+    if (to === 'finalUp') {
+      this.inFinal = false;
+      this.enterTown();
+      return;
+    }
     // (ENDLESS MODE: from an endless level, every way on, the stairwell, the mine shaft and the way on alike, to the next)
-    if (ENDLESS.on && this.inEndless && (to === 'up' || to === 'on' || to === 'down')) {
+    if (ENDLESS.on && this.inEndless && !this.inFinal && (to === 'up' || to === 'on' || to === 'down')) {
       this.nextEndless();
       return;
     }
@@ -2533,6 +2567,7 @@ export class Game {
       // (EXITS, game/camp.ts: out of the camp by its barricaded street, into the city: floor 11)
       this.depth = 11;
       this.inEndless = false;
+      this.inFinal = false;
       this.enterDungeon();
       this.cameT = 0;
       return;
@@ -2588,18 +2623,21 @@ export class Game {
     } else if (to === 'gateIn') {
       this.depth = 1;
       this.inEndless = false;
+      this.inFinal = false;
       this.enterDungeon('gate');
       this.cameT = 0;
     } else if (to === 'stairsIn') {
       // (EXITS: down the town's stairs, to the first floor, in at its doorway, the stairs up)
       this.depth = 1;
       this.inEndless = false;
+      this.inFinal = false;
       this.enterDungeon('gate');
       this.cameT = 0;
     } else if (to === 'quarry') {
       // (EXITS: out of the town's gate, onto the mountain: the Quarry, the first floor of the descent)
       this.depth = 6;
       this.inEndless = false;
+      this.inFinal = false;
       this.enterDungeon();
       this.cameT = 0;
     } else if (to === 'gateOut') {
@@ -2614,6 +2652,7 @@ export class Game {
       // (ENDLESS MODE: the town's waypoint takes him back to the endless level he reached: his pick, “Pick up where you left off”)
       this.depth = this.endlessFloor;
       this.inEndless = true;
+      this.inFinal = false;
       this.enterDungeon('way');
     } else {
       this.depth = Math.max(2, this.wayDepth);
@@ -2630,6 +2669,7 @@ export class Game {
     this.endlessFloor = endlessFloorFor(this.seed, this.endless, this.depth);
     this.depth = this.endlessFloor;
     this.inEndless = true;
+    this.inFinal = false;
     this.enterDungeon();
     this.cameT = 0;
     this.msg(`${endlessName(was)} cleared`, MSG.good);
@@ -2713,11 +2753,169 @@ export class Game {
 
   /**
    * THE SHAFT'S RIM'S TROPHIES WALL: which of the four bosses' quarters of the tablet he holds (the bosses of floors 5, 10, 15 and
-   * 20, in order: game/rim.ts trophyOf). His yes was to a wall of “the bosses whose tablet quarters you hold”. THE QUARTERS ARE
-   * NOT BUILT YET (the queue's build-endless-tablet-and-final-boss): until they are, he holds none, and its mounts are empty.
+   * 20, in order: game/rim.ts trophyOf). His yes was to a wall of “the bosses whose tablet quarters you hold”. (ENDLESS_KEY: the
+   * account's, kept with the stash, game/endless_key.ts; while it is off, none, and its mounts are empty.)
    */
   quartersHeld(): boolean[] {
-    return [false, false, false, false];
+    return ENDLESS_KEY.on ? quartersOf(this.meta.quarters) : [false, false, false, false];
+  }
+
+  /**
+   * (ENDLESS_KEY, game/endless_key.ts) The boss of an endless level fallen: if its floor is 5, 10, 15 or 20 and the account lacks
+   * that quarter of the tablet (and none lies here already), it drops, his pick: “Always, if you lack it (Recommended)”.
+   */
+  private quarterBossDown(m: Monster): void {
+    if (!ENDLESS_KEY.on || !ENDLESS.on || !this.inEndless || this.practice || this.trial || !m.boss) return;
+    const k = quarterOf(this.depth);
+    if (k === null || quartersOf(this.meta.quarters)[k]) return;
+    if (this.drops.some((d) => d.kind === 'quest' && d.thing === 'quarter')) return;
+    // (a tile nearer the eye than where he fell, so that it lies before his gear, not buried in it)
+    const at = this.floorNear(m.x + 0.8, m.y + 0.8);
+    this.addDrop('quest', at.x, at.y, 0, null, null);
+    const d = this.drops[this.drops.length - 1];
+    d.thing = 'quarter';
+    d.quarter = k;
+    d.x = at.x;
+    d.y = at.y;
+  }
+
+  /** (ENDLESS_KEY) A quarter of the tablet taken: the account's from now (kept with the stash). */
+  private quarterTaken(k: number): void {
+    const h = this.hero;
+    this.meta.quarters = ((this.meta.quarters ?? 0) | (1 << k)) & 15;
+    const n = quarterCount(this.meta.quarters);
+    this.sfx('rare');
+    this.msg(KEY_TEXT.got(k, n), MSG.quest);
+    this.emit({ t: 'text', x: h.x, y: h.y, text: KEY_TEXT.float(n), color: '#ff8a3a' });
+  }
+
+  /** (ENDLESS_KEY) At the Shaft's Rim, the four held and the landing not yet open for him: the wordsmith can set them in his bench. */
+  private tabletDue(): boolean {
+    return ENDLESS_KEY.on && !this.practice && !this.trial && !!this.level.rim && tabletWhole(this.meta.quarters) && !this.hero.finalOpen;
+  }
+
+  /**
+   * (ENDLESS_KEY) THE FOUR SET IN THE BENCH: they burn (the art's moment), and as its flare goes up the shaft the landing opens.
+   * The tablet is used up (his pick, “Used up, collect again (Recommended)”): the account holds none after; the landing stays open
+   * for this hero until he goes through.
+   */
+  private setTablet(x: number, y: number): void {
+    const R = this.level.rim;
+    if (!R) return;
+    this.meta.quarters = 0;
+    this.hero.finalOpen = true;
+    R.key = { age: 0, open: false };
+    R.held = this.quartersHeld();
+    this.emit({ t: 'shake', amount: 3 });
+    this.emit({ t: 'text', x, y, text: 'THE TABLET', color: '#7fe8ff' });
+    this.sfx('power', 0.9);
+    this.msg(KEY_TEXT.set, MSG.quest);
+  }
+
+  /** (ENDLESS_KEY) Each frame at the Rim: the key's clock; the landing open; going down through it, the open landing walked into. */
+  private updateKey(dt: number): void {
+    const R = this.level.rim;
+    if (!ENDLESS_KEY.on || !R) return;
+    if (!R.key) {
+      if (this.hero.finalOpen) R.key = { age: 1e4, open: true };
+      else return;
+    }
+    R.key.age += dt;
+    if (!R.key.open && R.key.age >= KEY_TIMES.portal + PORTAL_OPEN_FRAMES / 30) {
+      R.key.open = true;
+      this.msg(KEY_TEXT.open, MSG.good);
+    }
+    const h = this.hero;
+    if (R.key.open && !this.leaving && Math.hypot(h.x - LANDING[0], h.y - LANDING[1]) < PORTAL_NEAR) this.enterFinal();
+  }
+
+  /** (ENDLESS_KEY) Down through the open landing, into its light, to the bottom of the shaft (the curtain falls as for any way). */
+  private enterFinal(): void {
+    this.msg(KEY_TEXT.through, MSG.quest);
+    this.leave('final');
+  }
+
+  /**
+   * (ENDLESS_KEY) A step in the arena: the boss wakes as he comes near, or a moment after he has come down, whichever is first. Once he
+   * is dead (stage 4): the tablet is used up (his pick, “Used up, collect again (Recommended)”: the landing above closes behind him),
+   * and a moment later the portal's light is the way back up, walked into.
+   */
+  private updateArena(dt: number): void {
+    this.arenaT += dt;
+    const b = this.boss;
+    if (b && !b.dead && b.state === 'sleep' && this.arenaT >= FINAL_WAKE) this.wakeUp(b);
+    const F = this.level.final;
+    if (!F) return;
+    const won = !this.monsters.some((m) => m.kind === 'wsboss' && !m.dead);
+    if (won && !F.won) {
+      F.won = true;
+      this.wonT = 0;
+      this.wayArmed = false;
+      this.upT = 0;
+      this.hero.finalOpen = undefined;
+      this.msg(FINAL_TEXT.won, MSG.good);
+    }
+    if (!F.won) return;
+    // (the arena has no ways of the game's own: its way up is stepped here, the curtain falling as for any way)
+    if (this.leaving?.to === 'finalUp') {
+      this.leaving.t += dt;
+      if (this.leaving.t >= CURTAIN_SECS) this.takeWay('finalUp');
+      return;
+    }
+    const was = this.wonT;
+    this.wonT += dt;
+    if (was < FINAL_WAY_UP && this.wonT >= FINAL_WAY_UP) {
+      this.msg(FINAL_TEXT.up, MSG.quest);
+      this.sfx('portal');
+    }
+    // (stood in: one standing in the light as it opens has to step out of it first, and one only walking through it as he gathers
+    // what was left is not carried up: he stands in it a moment)
+    const h = this.hero;
+    const inLight = Math.hypot(h.x - F.arrive.x, h.y - F.arrive.y) < PORTAL_NEAR;
+    if (!inLight) {
+      this.wayArmed = true;
+      this.upT = 0;
+    } else if (this.wonT >= FINAL_WAY_UP && this.wayArmed) this.upT += dt;
+    if (this.upT >= FINAL_UP_HOLD && !this.leaving && !this.over) this.leave('finalUp');
+  }
+  private upT = 0;
+  private arenaT = 0;
+  private wonT = 0;
+  private wayArmed = false;
+
+  /**
+   * (ENDLESS_KEY) THE BOTTOM OF THE SHAFT (game/final_arena.ts): he comes down in the portal's light; the warped wordsmith waits on
+   * his boar across the floor. An endless level to the rest of the game (its strength the endless level he has reached; a death
+   * here the hero's end), its own place. The landing above stays open for him until the fight is won (THE BUILD's stage 4): a
+   * hero saved down here is back at the Rim when he comes back to the game, the landing still open.
+   */
+  enterArena(): void {
+    this.clearLevel();
+    this.depth = FINAL_DEPTH;
+    this.inEndless = true;
+    this.inFinal = true;
+    this.arenaT = 0;
+    this.dungeonWords = [];
+    const seed = (Math.imul(this.seed, 7919) + this.endless * 15485863 + 0x5eed) >>> 0;
+    this.level = makeFinalArena(seed);
+    this.inDungeon = true;
+    const h = this.hero;
+    h.x = FINAL_ARRIVE.x;
+    h.y = FINAL_ARRIVE.y;
+    h.fx = FINAL_ARRIVE.fx;
+    h.fy = FINAL_ARRIVE.fy;
+    const f = this.level.floor;
+    this.flow = new Uint16Array(f.w * f.h);
+    const rng = new RNG(seed ^ 0x5bd1e995);
+    // (no words of the endless levels' on him: he is himself, and his words are his own five)
+    this.boss = this.spawn('wsboss', FINAL_BOSS_AT.x, FINAL_BOSS_AT.y, -2, 0, true, rng, null);
+    this.boss.fx = FINAL_BOSS_AT.fx;
+    this.boss.fy = FINAL_BOSS_AT.fy;
+    this.updateVision(1);
+    if (FLOOR_NAMES.on && !this.practice) this.emit({ t: 'floorName', name: FINAL_NAME.level, level: endlessName(this.endless), warn: ENDLESS_WARN });
+    else this.msg(`${FINAL_NAME.level}: ${ENDLESS_WARN}`, MSG.head);
+    this.sfx('portal');
+    this.entry = null;
   }
 
   /** THE SHAFT'S RIM: in at the gate's panel, down to the endless level he has reached, as its waypoint takes him (the words on the gate burned into it). */
@@ -2725,6 +2923,7 @@ export class Game {
     if (!(ENDLESS.on && this.endless > 0)) return;
     this.depth = this.endlessFloor;
     this.inEndless = true;
+    this.inFinal = false;
     this.enterDungeon('way');
   }
 
@@ -3283,7 +3482,7 @@ export class Game {
    */
   private queenDown(m: Monster): void {
     const h = this.hero;
-    if (!QUESTS610.on || this.practice || m.kind !== 'queen') return;
+    if (!QUESTS610.on || this.practice || !this.storyHere || m.kind !== 'queen') return;
     if (h.feather !== 'got' && h.feather !== 'given') {
       h.feather = 'got';
       this.emit({ t: 'text', x: m.x, y: m.y, text: 'A FEATHER', color: '#e8dcc0' });
@@ -3332,7 +3531,7 @@ export class Game {
   /** (QUESTS610) Is the hero after the ward-stone's pieces, and has he not yet piece `n`? */
   private wantsPiece(n: number): boolean {
     const h = this.hero;
-    return QUESTS610.on && !this.practice && h.feather === 'given' && ((h.pieces ?? 0) & (1 << n)) === 0;
+    return QUESTS610.on && !this.practice && this.storyHere && h.feather === 'given' && ((h.pieces ?? 0) & (1 << n)) === 0;
   }
 
   /** (QUESTS610) A piece of the ward-stone, lying where it fell (once: none if he has it, or one of it lies already). */
@@ -3426,7 +3625,7 @@ export class Game {
   }
 
   private piecesMade(): void {
-    if (!QUESTS610.on || this.practice || this.depth !== 9 || this.hero.feather !== 'given' || piecesTaken(this.hero.pieces) >= 3) return;
+    if (!QUESTS610.on || this.practice || !this.storyHere || this.depth !== 9 || this.hero.feather !== 'given' || piecesTaken(this.hero.pieces) >= 3) return;
     const land = this.level.land;
     if (!land) return;
     const side = land.areas.find((a) => a.role === 'side');
@@ -3716,7 +3915,7 @@ export class Game {
       d.y = at.y + this.rng.range(-0.3, 0.3);
     }
     // (QUESTS1115: the first time, the clapper falls with it)
-    if (QUESTS1115.on && !this.practice && this.hero.clapper !== 'got' && this.hero.clapper !== 'given' && !this.drops.some((d) => d.kind === 'quest' && d.thing === 'clapper')) {
+    if (QUESTS1115.on && !this.practice && this.storyHere && this.hero.clapper !== 'got' && this.hero.clapper !== 'given' && !this.drops.some((d) => d.kind === 'quest' && d.thing === 'clapper')) {
       this.addDrop('quest', at.x, at.y, 0, null, null);
       const c = this.drops[this.drops.length - 1];
       c.thing = 'clapper';
@@ -11405,6 +11604,8 @@ export class Game {
       }
       this.boss = null;
       this.emit({ t: 'shake', amount: 6 });
+      // (ENDLESS_KEY: the boss of an endless level on floor 5, 10, 15 or 20, his quarter of the tablet)
+      this.quarterBossDown(m);
       // (QUESTS610: the Queen fallen: her feather, and the town seen from her eyrie's edge)
       this.queenDown(m);
       // (THE WAYS: the stairwell down opens in his hall, clear of where he fell; where the floor has none, the portal home as before)
@@ -11907,6 +12108,11 @@ export class Game {
   private updateVision(dt: number): void {
     const L = this.level;
     if (L.town) return;
+    // (ENDLESS_KEY: the bottom of the shaft is seen whole: a round floor in the portal's light, nothing in it to hide behind)
+    if (L.final) {
+      L.visible.fill(1);
+      return;
+    }
     this.visionT -= dt;
     if (this.visionT > 0) return;
     this.visionT = 0.1;
@@ -14065,6 +14271,11 @@ export class Game {
     }
     // whatever else it leaves, a monster that carried a word gives it up
     for (const w of m.carries) this.addDrop('word', m.x, m.y, 0, null, w);
+    // (ENDLESS_KEY: the warped wordsmith, the best in the game: game/final_arena.ts FINAL_LOOT)
+    if (m.kind === 'wsboss') {
+      this.finalLoot(m);
+      return;
+    }
     // (THE ROYAL CARDS: one a royal touched drops that royal's card: game/royal_cards.ts)
     if (m.royal && royalFloor(this.depth)) {
       this.addDrop('card', m.x, m.y, 0, null, null);
@@ -14427,7 +14638,7 @@ export class Game {
    * HAND_IN (game/defs.ts): what the hero would give the one he stands beside in town, if anything:
    * the master rune-stone, to the wordsmith. Null with HAND_IN off (then it is given by walking up).
    */
-  handInNear(): 'stone' | 'meldstone' | 'quest' | 'furnace' | 'reward' | 'meldAsk' | 'featherAsk' | 'featherGive' | 'rollAsk' | 'rollGive' | 'jarAsk' | 'jarGive' | 'clapperAsk' | 'clapperGive' | 'birdAsk' | 'birdGive' | 'courtAsk' | 'courtGive' | null {
+  handInNear(): 'tablet' | 'stone' | 'meldstone' | 'quest' | 'furnace' | 'reward' | 'meldAsk' | 'featherAsk' | 'featherGive' | 'rollAsk' | 'rollGive' | 'jarAsk' | 'jarGive' | 'clapperAsk' | 'clapperGive' | 'birdAsk' | 'birdGive' | 'courtAsk' | 'courtGive' | null {
     if (!HAND_IN.on || !this.level.town) return null;
     const st = this.stationNear();
     // (QUESTS610: the mystic's feather quest, given and brought; MUSTER: the strongholds' roll; QUESTS1115: her jar. What he brings
@@ -14444,6 +14655,8 @@ export class Game {
     // (QUESTS1620: the stranger's whole court)
     if (st === 'stranger') return this.courtDue();
     if (st !== 'wordsmith') return null;
+    // (ENDLESS_KEY: at the Shaft's Rim, the four quarters of the tablet held, set in his bench: game/endless_key.ts)
+    if (this.tabletDue()) return 'tablet';
     // (WORDMELDING: the Meldstone, to the wordsmith too)
     // (EXITS: and while his ring is dark, used, he gives the quest for the master rune-stone, once)
     // (QUESTS15: and once the furnace is out and the armourer has rewarded it, his ask for the Meldstone)
@@ -14488,6 +14701,12 @@ export class Game {
    */
   private updateSpeak(dt: number): void {
     const L = this.level;
+    // (ENDLESS MODE, NO STORY: on an endless level no "Speak to" or "Return to" line: storyHere)
+    if (!this.storyHere && !L.town) {
+      this.speakTo = null;
+      this.speakLevel = L;
+      return;
+    }
     if (SPEAK_NEW.on) {
       // (SPEAK_NEW, game/quest_marks.ts: whoever has something for him now, wherever he is: the moment one of them is new, the line; on
       // coming into town, whoever waits there, what he brings back first; on coming into a floor, what he brings back, as before)
@@ -14771,7 +14990,7 @@ export class Game {
   /** (QUESTS1115) Is the hero after the unstruck pages (the jar brought), and has he not yet page `n`? */
   private wantsPage(n: number): boolean {
     const h = this.hero;
-    return QUESTS1115.on && !this.practice && h.jar === 'given' && ((h.pages ?? 0) & (1 << n)) === 0;
+    return QUESTS1115.on && !this.practice && this.storyHere && h.jar === 'given' && ((h.pages ?? 0) & (1 << n)) === 0;
   }
 
   /** (QUESTS1115) An unstruck page, lying where it fell (once: none if he has it, or one of it lies already). */
@@ -14786,7 +15005,7 @@ export class Game {
 
   /** (QUESTS1115) A boss fallen: floor 13's page (the oldest, from under all its layers), the Physician's (from his ledger). */
   private pageBossDown(m: Monster): void {
-    if (!QUESTS1115.on || this.practice || !m.boss) return;
+    if (!QUESTS1115.on || this.practice || !this.storyHere || !m.boss) return;
     // (floor 13's: the Palimpsest, now the pair of the Scraper and the Quill whose ultimate bears its name: as the last of them falls)
     if ((m.kind === 'palimpsest' || m.kind === 'scraper' || m.kind === 'quill') && !partnerOf(this, m)) this.dropPage(0, m.x, m.y);
     else if (m.kind === 'physician') this.dropPage(1, m.x, m.y);
@@ -14795,6 +15014,10 @@ export class Game {
   /** (QUESTS1115) A page or the clapper picked up. */
   private questThingTaken(dr: Drop): void {
     const h = this.hero;
+    if (dr.thing === 'quarter') {
+      this.quarterTaken(dr.quarter ?? 0);
+      return;
+    }
     if (dr.thing === 'key' || dr.thing === 'spring') {
       this.birdPartTaken(dr.thing === 'key' ? BIRD_KEY : BIRD_SPRING, dr.thing);
       return;
@@ -14861,7 +15084,7 @@ export class Game {
 
   /** (QUESTS1115) Whether an unstruck page may be laid down now: in the Censor's fight, his ink lying on the floor, a page in hand. */
   private pageReady(): boolean {
-    if (!QUESTS1115.on || this.practice || this.depth !== 15 || this.level.town) return false;
+    if (!QUESTS1115.on || this.practice || !this.storyHere || this.depth !== 15 || this.level.town) return false;
     if (pagesInHand(this.hero.pages, this.level.pagesUsed) <= 0) return false;
     if (!this.monsters.some((m) => m.boss && m.kind === 'censor' && !m.dead)) return false;
     return INK.count(this.level) >= PAGES.least;
@@ -14888,6 +15111,21 @@ export class Game {
   private captainJarAt: PropInst | null = null;
 
   /** (QUESTS1620) Whether the quests of floors 16 to 20 are on: their switch, and the High City's floors in the game (game/act1.ts). */
+  /**
+   * ENDLESS MODE, NO STORY. His words, 14 Nov 2026, 13:26 (Eastern): “For endless mode, I’d like all the stuff that happens for the
+   * story or quests to be turned off.  Like I don’t need the fallen wordsmith in the warden’s quarters in endless if that level cycles
+   * up.” Asked what of the floors' own events goes with it, his picks: the bosses' opening lines “Keep their lines”; floor 5's chained
+   * temple door “Door open, no key-bearers (Recommended)”. So on an endless level: no fallen wordsmith (nor floor 1 made gentle), no
+   * quest pieces, quest items or quest people (the furnace and the Stoker of 3, the Queen's feather, the Pinewood's pieces, the
+   * pillars of 10, the Hush's clapper, jar and pages, the captain's jar of 12, the songbird and the knight-captain of 19, the song on
+   * 20), no "Speak to" or "Return to" line nor the marker over the waypoint, and floor 5's temple open with no key-bearers. The
+   * strongholds, the Bells, the bosses and their lines stay. True where the story and the quests are played (every floor but an
+   * endless level, and town).
+   */
+  get storyHere(): boolean {
+    return !(ENDLESS.on && this.inEndless);
+  }
+
   private get on1620(): boolean {
     return QUESTS1620.on && HIGH_CITY.on;
   }
@@ -14985,7 +15223,7 @@ export class Game {
     this.captainJarAt = null;
     const h = this.hero;
     const L = this.level;
-    if (!this.on1620 || this.practice) return;
+    if (!this.on1620 || this.practice || !this.storyHere) return;
     L.sungIn = 0;
     if (this.depth === 12 && h.captainJar === undefined) {
       // (in a side chamber of the sewers, the one nearest the Rat King's cistern: on a tile of floor where nothing stands)
@@ -15065,7 +15303,7 @@ export class Game {
   /** (QUESTS1620) Whether he stands beside the knight-captain (floor 19). */
   private captainNear(): boolean {
     const c = this.level.captain;
-    return this.on1620 && !this.practice && this.depth === 19 && !!c && Math.hypot(c.x - this.hero.x, c.y - this.hero.y) <= SONG.captainNear;
+    return this.on1620 && !this.practice && this.storyHere && this.depth === 19 && !!c && Math.hypot(c.x - this.hero.x, c.y - this.hero.y) <= SONG.captainNear;
   }
 
   /** (QUESTS1620) The knight-captain spoken to: with his voice in hand, he speaks, his knights stand down, his gift; else, silent. */
@@ -15090,7 +15328,7 @@ export class Game {
 
   /** (QUESTS1620) Whether the songbird may sing now: the Moth's fight, the bird mended, not yet in this phase of it. */
   private songReady(): boolean {
-    if (!this.on1620 || this.practice || this.depth !== 20 || this.hero.bird !== 'mended') return false;
+    if (!this.on1620 || this.practice || !this.storyHere || this.depth !== 20 || this.hero.bird !== 'mended') return false;
     const m = this.monsters.find((q) => q.kind === 'moth' && !q.dead);
     if (!m) return false;
     const k = m.life / m.maxLife;
@@ -15133,7 +15371,7 @@ export class Game {
   /** QUESTS15: floor 3's furnace still burns for this hero (a hero who has been down past floor 3 already has it out). */
   furnaceBurns(): boolean {
     const h = this.hero;
-    if (!QUESTS15.on || this.practice || h.furnace === 'out' || h.furnace === 'done') return false;
+    if (!QUESTS15.on || this.practice || !this.storyHere || h.furnace === 'out' || h.furnace === 'done') return false;
     return !(this.cleared >= 3 || this.wayDepth >= 4);
   }
 
@@ -15435,7 +15673,8 @@ export class Game {
       return true;
     }
     if (!what || !st) return false;
-    if (what === 'meldstone') this.takeMeldstone(st.x, st.y);
+    if (what === 'tablet') this.setTablet(st.x, st.y);
+    else if (what === 'meldstone') this.takeMeldstone(st.x, st.y);
     else if (what === 'quest') this.giveQuest(st.x, st.y);
     else if (what === 'meldAsk') {
       // (QUESTS15: the wordsmith asks for the Meldstone)
@@ -15513,7 +15752,7 @@ export class Game {
       if (!st) return null;
       // (HAND_IN: beside the one a quest item is for, his prompt says it is given)
       const giving = this.handInNear();
-      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : giving === 'furnace' ? QUEST_TEXT.furnaceAskPrompt : giving === 'reward' ? QUEST_TEXT.rewardPrompt : giving === 'meldAsk' ? QUEST_TEXT.meldAskPrompt : giving === 'featherAsk' ? QUEST610_TEXT.featherAskPrompt : giving === 'featherGive' ? QUEST610_TEXT.featherGivePrompt : giving === 'birdAsk' ? QUEST1620_TEXT.birdAskPrompt : giving === 'birdGive' ? QUEST1620_TEXT.birdGivePrompt : giving === 'courtAsk' ? QUEST1620_TEXT.courtAskPrompt : giving === 'courtGive' ? QUEST1620_TEXT.courtGivePrompt : giving === 'rollAsk' ? MUSTER_TEXT.askPrompt : giving === 'rollGive' ? MUSTER_TEXT.givePrompt : giving === 'jarAsk' ? QUEST1115_TEXT.jarAskPrompt : giving === 'jarGive' ? QUEST1115_TEXT.jarGivePrompt : giving === 'clapperAsk' ? QUEST1115_TEXT.clapperAskPrompt : giving === 'clapperGive' ? QUEST1115_TEXT.clapperGivePrompt : HAND_IN.prompt;
+      if (giving) return giving === 'tablet' ? KEY_TEXT.prompt : giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : giving === 'furnace' ? QUEST_TEXT.furnaceAskPrompt : giving === 'reward' ? QUEST_TEXT.rewardPrompt : giving === 'meldAsk' ? QUEST_TEXT.meldAskPrompt : giving === 'featherAsk' ? QUEST610_TEXT.featherAskPrompt : giving === 'featherGive' ? QUEST610_TEXT.featherGivePrompt : giving === 'birdAsk' ? QUEST1620_TEXT.birdAskPrompt : giving === 'birdGive' ? QUEST1620_TEXT.birdGivePrompt : giving === 'courtAsk' ? QUEST1620_TEXT.courtAskPrompt : giving === 'courtGive' ? QUEST1620_TEXT.courtGivePrompt : giving === 'rollAsk' ? MUSTER_TEXT.askPrompt : giving === 'rollGive' ? MUSTER_TEXT.givePrompt : giving === 'jarAsk' ? QUEST1115_TEXT.jarAskPrompt : giving === 'jarGive' ? QUEST1115_TEXT.jarGivePrompt : giving === 'clapperAsk' ? QUEST1115_TEXT.clapperAskPrompt : giving === 'clapperGive' ? QUEST1115_TEXT.clapperGivePrompt : HAND_IN.prompt;
       return st === 'gate' ? (this.level.rim ? `Gate: words for ${endlessName(this.endless)}` : `Gate: dungeon ${this.depth}`) : st === 'wordsmith' ? 'Wordsmith' : st === 'armourer' ? 'Armourer' : st === 'mystic' ? 'Mystic' : st === 'lexicon' ? 'Lexicon' : st === 'stranger' ? 'Stranger' : 'Stash';
     }
     // (QUESTS610, PILLARS: beside a burning obelisk, with a piece in hand)
@@ -16953,6 +17192,32 @@ export class Game {
     if (weapon) pool = pool.filter((d) => uniqueWeapon(d) === weapon);
     if (!pool.length) return null;
     return makeUnique(this.rng.pick(pool).id, Math.max(1, this.power), this.rng);
+  }
+
+  /**
+   * (ENDLESS_KEY) WHAT THE WARPED WORDSMITH LEAVES (game/final_arena.ts FINAL_LOOT): a great hoard of gold, every piece of gear a
+   * rare, words, a life orb; and one kill in four (UNIQUE_DROPS.final) one of his own two uniques (finalUniques: The Third Word, The
+   * Ghostwriter), made as the bosses' own are.
+   */
+  private finalLoot(m: Monster): void {
+    const rng = this.rng;
+    const goldBase = Math.max(1, this.power);
+    this.addDrop('gold', m.x, m.y, rng.int(FINAL_LOOT.gold[0], FINAL_LOOT.gold[1]) * goldBase, null, null);
+    for (let i = 0; i < FINAL_LOOT.items; i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(4), null);
+    if (this.wordsFall()) for (let i = 0; i < FINAL_LOOT.words; i++) this.addDrop('word', m.x, m.y, 0, null, rng.pick(wordsAt(this.power)));
+    if (UNIQUES.on && !this.practice) {
+      const two = finalUniques();
+      if (two.length && rng.chance(UNIQUE_DROPS.final)) {
+        const d = rng.pick(two);
+        const it = makeUnique(d.id, Math.max(1, this.power), rng);
+        if (it) {
+          this.addDrop('item', m.x, m.y, 0, it, null);
+          this.emit({ t: 'unique', id: d.id, what: 'drop', x: m.x, y: m.y });
+          this.sfx('rare', 0.9);
+        }
+      }
+    }
+    this.addDrop('orb', m.x, m.y, 0, null, null);
   }
 
   /** A boss dies: his own unique, now and then. */

@@ -18,7 +18,8 @@ import { DOOR_WALLS, WHOLE_WALLS, BACK_STAND } from './render/walls';
 import { GROUNDS_ALL } from './render/grounds';
 import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useCensor2, useMonsterAttacks, useNewMonsters } from './art/bestiary';
-import { makeHeroArt } from './art/heroes';
+import { STAFF_PLACES, makeHeroArt } from './art/heroes';
+import { STAFF_SKINS, staffWorn } from './art/staff_skins';
 import type { HeroPlace } from './art/heroes';
 import { makeHeroArt3, THRUST } from './art/heroes3';
 import { tinkererAhead } from './art/tinkerer_art';
@@ -118,6 +119,7 @@ import { EXITS, WAYS, errandWalk, onwardKey, stairMiddle, startKey, topStep } fr
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
+import { ENDLESS_KEY } from './game/endless_key';
 import { ACT2, HIGH_CITY, lastFloor } from './game/act1';
 import { BOSS_CALLS } from './game/boss_calls';
 import { chimeNow } from './game/act2/masque_rules';
@@ -2155,7 +2157,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     let waiting = false;
     const b = painter.baked;
     if (b && art.heroes.give) {
-      const place: HeroPlace = g.level.town ? 'town' : 'dungeon';
+      // (THE MAGE'S STAFF, art/staff_skins.ts: holding a unique staff, her pictures with it)
+      const staff = g.hero.cls === 'mage' ? staffWorn(g.hero.gear.mainhand) : null;
+      const place: HeroPlace = staff ? (g.level.town ? STAFF_PLACES[staff].town : STAFF_PLACES[staff].dungeon) : g.level.town ? 'town' : 'dungeon';
       painter.hero(g.hero.cls, place);
       const grp = b.group(g.hero.cls, place, g.hero.cls === 'brawler' && VETERAN.on);
       waiting = !!grp && !b.settled(grp);
@@ -3279,6 +3283,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       game.endlessFloor = endlessFloorFor(game.seed, level, 0);
       game.enterTown();
     },
+    /** (ENDLESS MODE'S KEY: the tablet's quarters and the landing's portal, game/endless_key.ts, off until his yes) Its switch, for the playtests and pictures. */
+    endlessKey: ENDLESS_KEY,
     endless: (on: boolean, level = -1, floor = 0) => {
       ENDLESS.on = on;
       if (!game || level < 0) return;
@@ -3552,6 +3558,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** (UNIQUE ITEMS, SET 1: the battle axe's and the warhammer's, game/uniques.ts SET1 and render/set1_fx.ts SET1_LOOK) their switches, off until his yes: `set1.on`, `set1Look.on`. */
     set1: SET1,
     set1Look: SET1_LOOK,
+    /** (THE MAGE'S UNIQUE STAVES IN HER HANDS, art/staff_skins.ts) their switch, on at his yes (14 Nov 2026): `staffSkins.on`. */
+    staffSkins: STAFF_SKINS,
     /** (A UNIQUE'S PIPS, ui/panels.ts) which of its lines they count and their colour, for pictures of each: `uniquePips.count`, `.colour`, `.free`. */
     uniquePips: UNIQUE_PIPS,
     /** Game steps per frame while the test bot plays. */

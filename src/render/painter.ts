@@ -37,7 +37,7 @@ import type { ActorArt, AnimSet } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
 import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { heroSides } from '../art/sides';
-import { lookOfPlace } from '../art/heroes';
+import { isTownPlace, lookOfPlace, staffOfPlace } from '../art/heroes';
 import type { HeroPlace } from '../art/heroes';
 import { paintTerrain, terrainOf } from '../art/terrain';
 import { nearOf, paintWithStanding, standingBits } from '../art/standing';
@@ -104,7 +104,7 @@ const READY_MS = 20000;
  */
 export const PACKED: { on: boolean; figures: readonly MonsterFigure[]; budgetMB: { small: number; big: number }; holdMs: number; giveBackMs: number } = {
   on: true,
-  figures: ['moth'],
+  figures: ['moth', 'wsboss'],
   budgetMB: { small: 96, big: 320 },
   holdMs: 1500,
   // (a frame of a move let go of given back this long after: nothing holds a monster's picture past the frame it is drawn in)
@@ -642,6 +642,8 @@ export class Painter {
   hero(cls: ClassId, place: HeroPlace): boolean {
     // (THE HEROES BAKED, render/baked.ts: where this hero in this place is baked, his pictures are taken from the bake, and
     // the worker is not asked to paint them; where they cannot be had, they are painted, as before)
+    // (THE MAGE'S STAFF, art/staff_skins.ts: only the set of the staff she holds is kept, the others let go of first)
+    this.baked?.holdOnly(cls, place, false);
     if (this.baked && this.baked.take(cls, place, cls === 'brawler' && VETERAN.on)) return true;
     if (!this.warmGround() || !this.groundLane || !this.groundLane.ready) return false;
     // (THE WARLOCK, as a man in a dungeon, his arm blazing, or the demon: all three in one order, the order he needs them in
@@ -683,7 +685,10 @@ export class Painter {
       this.heroAsked.add(key);
       this.groundLane.open++;
       // (the Warlock's demon before his arm blazing: it is the heavier by far, and its frames are not painted in the game: art/kit.ts HEAVY)
-      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'card' ? 29 : place === 'town' || place === 'axeTown' || place === 'hammerTown' ? 30 : place === 'dungeon' || place === 'axe' || place === 'hammer' ? 31 : place === 'demon' ? 31.5 : 32, ...(vet ? { vet: true } : {}) } satisfies Ask);
+      // (a staff's places, art/heroes.ts STAFF_PLACES, as the town's and the dungeon's)
+      const town = isTownPlace(place);
+      const dungeon = !town && (place === 'dungeon' || place === 'axe' || place === 'hammer' || staffOfPlace(place) !== null);
+      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'card' ? 29 : town ? 30 : dungeon ? 31 : place === 'demon' ? 31.5 : 32, ...(vet ? { vet: true } : {}) } satisfies Ask);
     }
     return true;
   }

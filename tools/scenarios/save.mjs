@@ -159,7 +159,14 @@ export default async function (page, snap) {
   const mode = await page.evaluate(() => window.__dbg.game().mode);
   log('the Ranger was made in the mode the cards had', mode);
   if (mode !== 'normal') await fail('a hero made on the cards with the mode left alone should be Normal');
-  await page.evaluate(() => { const g = window.__dbg.game(); g.enterDungeon(); g.hero.gold += 50; g.hurtHero(99999, 'phys', [], null); });
+  // (25.3.19: the floor come into first, its loading let go and its first frames past, before he is struck down, as the Hardcore
+  // death below since 25.3.9: struck in the same frame as the floor is come to, its first frames are slow (the floor's monsters
+  // taken in from their files) and the fall's two seconds of the game's time took some four of the clock's, past the wait below:
+  // the playtest's fault, not the game's; YOU FELL and its Back to town came, a little later)
+  await page.evaluate(() => { const g = window.__dbg.game(); g.enterDungeon(); g.hero.gold += 50; });
+  await page.waitForFunction(() => { const d = window.__dbg; return !d.loadingNow || !d.loadingNow(); }, null, { timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(1500);
+  await page.evaluate(() => { const g = window.__dbg.game(); g.hurtHero(99999, 'phys', [], null); });
   await page.waitForTimeout(500);
   // (from Version 15.1 a hero whose life runs out FALLS first, and the words wait two seconds for
   // it: main.ts, FALL_SEEN. Half a second after the blow they are not up yet.)
@@ -167,7 +174,8 @@ export default async function (page, snap) {
   const early = await hands.mark('button:Back to town');
   log('half a second after the blow the hero is falling, and the words are not up', String(!early));
   if (early) await fail('YOU FELL came up at once: the hero was not shown falling');
-  for (let i = 0; i < 40 && !(await hands.mark('button:Back to town')); i++) await page.waitForTimeout(100);
+  // (up to eight seconds: the fall's two of the game's time, on a busy machine)
+  for (let i = 0; i < 80 && !(await hands.mark('button:Back to town')); i++) await page.waitForTimeout(100);
   await snap('fell');
   f = await stored();
   s = await st();
@@ -189,7 +197,7 @@ export default async function (page, snap) {
   await page.waitForTimeout(500);
   const early2 = await hands.mark('button:New run');
   if (early2) await fail('YOU DIED came up at once: the hero was not shown falling');
-  for (let i = 0; i < 40 && !(await hands.mark('button:New run')); i++) await page.waitForTimeout(100);
+  for (let i = 0; i < 80 && !(await hands.mark('button:New run')); i++) await page.waitForTimeout(100);
   await snap('dead');
   f = await stored();
   s = await st();

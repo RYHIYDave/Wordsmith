@@ -13,7 +13,7 @@
 //   7. his hits and lengths as stated (the main chat's numbers), and Movement 9 in each blow: a held wind-up, a strike of two
 //      smeared frames;
 //   8. his eight sides, each a facing of its own, truly painted (art/warrior_up_art.ts wuFacing), each facing the way it is
-//      chosen for; his pig-faced helm's slit dark across his visor, its lip lit above it, from every side;
+//      chosen for; his hounskull bascinet's eye slits dark across its muzzle, their flanges lit above, from every side;
 //   9. HIS LEGS READ TRUE ON THE SCREEN (the owner, 6 Nov 2026: “Can you make sure his leg ratio is correct cause it seems like
 //      all these guys have long upper legs and short legs below the knee”): in every frame of his stances and of every pose he
 //      holds, from each of his eight sides, each leg whose shin is seen reads at least 1.05 times as long below the knee as above
@@ -149,10 +149,11 @@ test('1. the switch is ON (his yes, 7 Nov 2026); of the game only art/heroes3.ts
   // (and the Mage's, brought up on his eight sides and his pieces the same way, behind MAGE_UP: held by tests/mage_up.test.ts)
   // (and the Endless town's preview page, src/dev/preview_shaft_rim.ts, which stands him in its pictures: a page of mock-ups, not
   // of the game; brought in with art/endless-town, 25.3.6)
-  // (and floor 18's reflections, art/reflections_up.ts, since 25.3.12, and the Warlock's, art/warlock_up_art.ts, on his pieces)
+  // (and floor 18's reflections, art/reflections_up.ts, since 25.3.12, and the Warlock's, art/warlock_up_art.ts, on his pieces;
+  // and the Mage's unique staves, art/staff_skins.ts, since 25.3.20, on the hand's bones)
   // (and, since his new tree went on, 12 Nov 2026, the renderer and his weapons' effects: the switch, and his eight facings for the
   // way he struck, render/render.ts and render/warrior_fx.ts; neither paints him)
-  assert.equal(users.filter((f) => !/^art\/mage_up/.test(f) && f !== 'dev/preview_shaft_rim.ts').sort().join(' '), 'art/heroes3.ts art/ranger_up.ts art/ranger_up_art.ts art/ranger_up_review.ts art/reflections_up.ts art/sides.ts art/warlock_up_art.ts render/figure.ts render/render.ts render/warrior_fx.ts', 'what imports them');
+  assert.equal(users.filter((f) => !/^art\/mage_up/.test(f) && f !== 'dev/preview_shaft_rim.ts').sort().join(' '), 'art/heroes3.ts art/ranger_up.ts art/ranger_up_art.ts art/ranger_up_review.ts art/reflections_up.ts art/sides.ts art/staff_skins.ts art/warlock_up_art.ts render/figure.ts render/render.ts render/warrior_fx.ts', 'what imports them');
   for (const f of ['src/render/render.ts', 'src/render/warrior_fx.ts']) assert.ok(!/paintWarriorUp|makeWarriorUpArt/.test(fs.readFileSync(f, 'utf8')), `${f} paints nothing of him`);
   // (the figure, only for the eight facings: wuFacing, wuTailsFacing and the sides' names; the sides, only their names' type)
   const fig = fs.readFileSync('src/render/figure.ts', 'utf8');
@@ -466,7 +467,7 @@ test('8. eight facings, each truly painted: each facing the game may give him is
   }
 });
 
-test('8. his pig-faced helm: the slit dark across the top of his snout with its lip lit above it, from every side that shows his face', () => {
+test('8. his hounskull bascinet: its eye slits dark across the top of its muzzle with their flanges lit above them, from every side that shows his face', () => {
   const key = (c: string): string => rgba(c).slice(0, 3).join(',');
   const ink = key(INK);
   const lit = new Set([key(WU_STEEL[4]), key(WU_STEEL[3])]);

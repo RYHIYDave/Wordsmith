@@ -398,6 +398,8 @@ export interface Hero {
   /** THE QUEST LINE OF FLOORS 16 TO 20 (game/quests1620.ts, QUESTS1620): the armourer's songbird, asked and mended, its parts taken (a bit each: 1 the key, 2 the spring, 4 the bird); the stranger's whole court; the knight-captain's voice, taken and given him. */
   bird?: 'asked' | 'mended';
   birdParts?: number;
+  /** (ENDLESS_KEY: the tablet set in his bench at the Shaft's Rim; the landing open for him until he goes through: game/endless_key.ts) */
+  finalOpen?: boolean;
   court?: 'asked' | 'given';
   captainJar?: 'got' | 'given';
   /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
@@ -1181,6 +1183,8 @@ export interface Drop {
   /** (QUESTS1115, 'quest': what it is, and for a page which of the three, 0 to 2: game/quests1115.ts) */
   thing?: QuestThing;
   page?: number;
+  /** (ENDLESS_KEY, 'quest' thing 'quarter': which quarter of the tablet, 0 to 3: game/endless_key.ts) */
+  quarter?: number;
   /** (QUESTS1115: one of a pick laid out, 'item', by whom: the others laid with it go once one is taken) */
   choice?: PickBy;
   item: Item | null;
@@ -1323,6 +1327,8 @@ export interface Meta {
   bestDepth: number;
   /** ENDLESS MODE (game/endless.ts): the deepest endless level any character has cleared (absent: none). */
   bestEndless?: number;
+  /** ENDLESS_KEY (game/endless_key.ts): the quarters of the stone tablet held, bits 0 to 3 (the bosses of floors 5, 10, 15, 20); the account's, kept with the stash. */
+  quarters?: number;
   /** The first dungeon's prompts have been seen through on this device: new characters begin in town. */
   taught: boolean;
   /** How the slow abilities are limited: by a cooldown, or by mana. */
@@ -1481,6 +1487,9 @@ export interface Level {
   campBell?: { x: number; y: number; rungAt: number };
   /** THE ENDLESS TOWN, THE SHAFT'S RIM (game/rim.ts, behind ENDLESS_TOWN): what only it has, as it stands now; absent on every other level. */
   rim?: import('./rim').RimTown;
+  /** (ENDLESS_KEY: the bottom of the shaft, the final boss's arena: game/final_arena.ts) Where he came down; `won`, the warped
+   * wordsmith dead, the portal's light the way back up (stage 4). */
+  final?: { arrive: { x: number; y: number }; won?: boolean };
   /**
    * A FINER GRID FOR A TOUCH'S ERRAND (game/nav.ts FineGrid), where the ways a body may walk are narrower than a tile and run
    * across the grid (the Shaft's Rim, round its pit and between its standing stones): the errand's way is found on it, not on

@@ -68,10 +68,13 @@ test('1. the switch is ON (live since 25.3.4, at his “Yes, hand her to main (R
     if (/from ['"][^'"]*mage_up(_moves|_art)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   // (and floor 18's reflections of her, since 25.3.12; and her moves to swap, art/swap_moves_art.ts, sculpted on her body)
-  assert.equal(users.join(' '), 'art/heroes3.ts art/reflections_up.ts art/swap_moves_art.ts', 'what imports them');
+  // (and her four unique staves drawn in her hands, art/staff_skins.ts, since 25.3.20)
+  assert.equal(users.join(' '), 'art/heroes3.ts art/reflections_up.ts art/staff_skins.ts art/swap_moves_art.ts', 'what imports them');
   const h3 = fs.readFileSync('src/art/heroes3.ts', 'utf8');
   assert.ok(/if \(cls === 'mage' && MAGE_UP\.on\)/.test(h3), 'heroes3 reaches them only through the switch');
-  assert.equal((h3.match(/makeMageUpArt\(/g) ?? []).length, 1, 'and only there');
+  // (twice since 25.3.20, both through the switch: her pictures, and her pictures holding a unique staff, art/staff_skins.ts)
+  assert.equal((h3.match(/makeMageUpArt\(/g) ?? []).length, 2, 'and only there');
+  assert.ok(/if \(cls === 'mage' && MAGE_UP\.on && look\.staff/.test(h3), 'the staves\' through the switch too');
 });
 
 test('1. with the switch off, every frame the game paints of the Mage is the very same picture (the hashes made from her as she is)', () => {

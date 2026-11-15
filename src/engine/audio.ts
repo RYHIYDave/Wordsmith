@@ -827,13 +827,16 @@ const CRIES = {
  * `lineGap`); how loud.
  * THE ATTACK SHOUTS A QUARTER AS OFTEN (his words, 9 Nov 2026, 22:34: “The random voice lines for characters are happening too
  * often”; asked which and how much, his picks by 22:40: “Attack shouts (Recommended)”, “About a quarter as often”): at first one
- * attack in 3.5 and never within 1.2 s; now both four times that, so the shouts come a quarter as often however fast he attacks.
- * The grunts, the hurt lines and his death cry are as they were.
+ * attack in 3.5 and never within 1.2 s; then both four times that, so the shouts came a quarter as often however fast he attacks.
+ * AND A THIRD AS OFTEN AGAIN, THE GRUNTS TOO (his words, 14 Nov 2026, 14:14: “the voice lines still trigger too often”; asked which
+ * and how much, his picks by 14:17: “Grunts when hit”, “Attack shouts”, and “About a third as often (Recommended)”): the shouts one
+ * attack in 42 and never within 14.4 s; the grunts never within 2.1 s of the last (was 0.7). The hurt lines and his death cry are
+ * as they were.
  */
-export const VOICE_TUNE = { attackOne: 14, attackGap: 4.8, gruntGap: 0.7, lineOne: 8, lineGap: 25, vol: 0.9 } as const;
+export const VOICE_TUNE = { attackOne: 42, attackGap: 14.4, gruntGap: 2.1, lineOne: 8, lineGap: 25, vol: 0.9 } as const;
 
 /** THE TITLE THEME: its file, and the stretch it goes round for ever once it has played from its start (seconds). */
-export const TITLE = { file: 'title.mp4', loop: [94.024, 162.275] as const, vol: 0.8 } as const;
+export const TITLE = { file: 'title.mp3', loop: [94.024, 162.275] as const, vol: 0.8 } as const;
 
 /** What has been fetched and decoded (a buffer), is coming (null), or could not be had (false). */
 const recorded = new Map<string, AudioBuffer | null | false>();
@@ -1382,12 +1385,19 @@ export type MusicLoop = { readonly file: string; readonly loop: number; readonly
 export const MUSIC = { vol: 0.6, walkIn: 0.6, walkDown: 0.6, fightOut: 1.5, walkBack: 1.5, leave: 0.6 } as const;
 /** Each place's walk and fight (the tenth batch's table: loop lengths and fight-in points from the sound chat, to the sample at 48 kHz). */
 export const MUSIC_PLACES: Readonly<Record<string, { readonly walk: MusicLoop; readonly fight?: MusicLoop }>> = {
-  town: { walk: { file: 'music_town_walk.mp4', loop: 36.9299 } },
-  f1: { walk: { file: 'music_f1_walk.mp4', loop: 21.1096 }, fight: { file: 'music_f1_fight.mp4', loop: 34.2715, fightIn: 0.822 } },
-  f2: { walk: { file: 'music_f2_walk.mp4', loop: 23.981 }, fight: { file: 'music_f2_fight.mp4', loop: 27.6495, fightIn: 0.011 } },
-  f3: { walk: { file: 'music_f3_walk.mp4', loop: 29.4062 }, fight: { file: 'music_f3_fight.mp4', loop: 30.0115, fightIn: 0.945 } },
-  f4: { walk: { file: 'music_f4_walk.mp4', loop: 29.9445 }, fight: { file: 'music_f4_fight.mp4', loop: 35.1143, fightIn: 0.006 } },
-  f5: { walk: { file: 'music_f5_walk.mp4', loop: 27.9472 }, fight: { file: 'music_f5_fight.mp4', loop: 31.4438, fightIn: 0.497 } },
+  town: { walk: { file: 'music_town_walk.mp3', loop: 36.9299 } },
+  f1: { walk: { file: 'music_f1_walk.mp3', loop: 21.1096 }, fight: { file: 'music_f1_fight.mp3', loop: 34.2715, fightIn: 0.822 } },
+  f2: { walk: { file: 'music_f2_walk.mp3', loop: 23.981 }, fight: { file: 'music_f2_fight.mp3', loop: 27.6495, fightIn: 0.011 } },
+  f3: { walk: { file: 'music_f3_walk.mp3', loop: 29.4062 }, fight: { file: 'music_f3_fight.mp3', loop: 30.0115, fightIn: 0.945 } },
+  f4: { walk: { file: 'music_f4_walk.mp3', loop: 29.9445 }, fight: { file: 'music_f4_fight.mp3', loop: 35.1143, fightIn: 0.006 } },
+  f5: { walk: { file: 'music_f5_walk.mp3', loop: 27.9472 }, fight: { file: 'music_f5_fight.mp3', loop: 31.4438, fightIn: 0.497 } },
+  // (THE WILDS, floors 6 to 10: the sound chat's thirteenth batch, his songs, “Should be everything for 6-10”, and on try-out 18 his
+  // “All good, hand over (Recommended)”; its table, to the sample at 48 kHz: assets/sound/README.md, "Thirteenth batch")
+  f6: { walk: { file: 'music_f6_walk.mp3', loop: 26.7458 }, fight: { file: 'music_f6_fight.mp3', loop: 25.7787, fightIn: 2.161 } },
+  f7: { walk: { file: 'music_f7_walk.mp3', loop: 27.6948 }, fight: { file: 'music_f7_fight.mp3', loop: 26.4213, fightIn: 0.843 } },
+  f8: { walk: { file: 'music_f8_walk.mp3', loop: 29.2397 }, fight: { file: 'music_f8_fight.mp3', loop: 39.0779, fightIn: 0.161 } },
+  f9: { walk: { file: 'music_f9_walk.mp3', loop: 27.6584 }, fight: { file: 'music_f9_fight.mp3', loop: 33.6587, fightIn: 0.641 } },
+  f10: { walk: { file: 'music_f10_walk.mp3', loop: 36.1024 }, fight: { file: 'music_f10_fight.mp3', loop: 35.6684, fightIn: 0.006 } },
 };
 
 type MusicPlaying = { src: AudioBufferSourceNode; g: GainNode };

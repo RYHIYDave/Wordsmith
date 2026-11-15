@@ -194,6 +194,8 @@ export type MonsterKind =
   | 'stoker'
   // (floor 5's temple door's two key-bearers, behind TEMPLE_DOOR: game/act1_rules/keybearers.ts, game/temple_door.ts)
   | 'keyblade' | 'keyflame'
+  // (ENDLESS MODE'S FINAL BOSS, the warped wordsmith on his boar, at the bottom of the shaft: game/act1_rules/wsboss.ts, behind ENDLESS_KEY)
+  | 'wsboss'
   // (floor 9's two side bosses, behind F9_LAIRS: the troll chieftain in his camp and the mist wolf in its glade, game/act1_rules/f9_bosses.ts)
   | 'warchief' | 'mistwolf';
 /** The monsters of Version 14 (the figures the tests of their pictures go through). */
@@ -216,6 +218,8 @@ export const ACT2_KINDS: readonly MonsterKind[] = [...ACT2_MOBS, ...ACT2_BOSSES]
 export const HIGH_MOBS: readonly MonsterKind[] = ['swan', 'gardener', 'groom', 'pguard', 'footman', 'dancer', 'order', 'lady', 'qguard', 'reflection', 'kknight', 'xbow', 'hshape', 'rshadow', 'rshade'];
 export const HIGH_BOSSES: readonly MonsterKind[] = ['princess', 'prince', 'gqueen', 'gking', 'moth'];
 export const HIGH_KINDS: readonly MonsterKind[] = [...HIGH_MOBS, ...HIGH_BOSSES];
+/** ENDLESS MODE'S FINAL BOSS (behind ENDLESS_KEY, game/endless_key.ts): the warped wordsmith on his boar, at the bottom of the shaft. */
+export const FINAL_KINDS: readonly MonsterKind[] = ['wsboss'];
 
 // ---------------------------------------------------------------------------------------------
 // Stats. Every number a character has is one of these keys. Percentages are whole numbers

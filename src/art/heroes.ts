@@ -43,19 +43,44 @@ export interface HeroLook {
    * his hands from his eight sides (art/warrior_up_heavy_art.ts); absent, the great sword, as ever.
    */
   weapon?: HeavyWeapon;
+  /**
+   * THE MAGE'S STAFF (art/staff_skins.ts STAFF_SKINS): the skin of the unique staff she holds, drawn in her hands from her eight
+   * sides; absent, her own staff, as ever.
+   */
+  staff?: StaffId;
 }
+
+/** (THE MAGE'S STAFF, art/staff_skins.ts) The unique staves drawn in her hands, each a skin of her staff. */
+export type StaffId = 'crook' | 'ebb' | 'resonance' | 'rod';
+export const STAFF_IDS: readonly StaffId[] = ['crook', 'ebb', 'resonance', 'rod'];
 
 /**
  * WHICH OF A HERO'S PICTURES the side painter paints ahead (render/painter.ts): in town, in a dungeon; and the warlock's
  * others (art/warlock_art.ts): the demon's, and his with his arm blazing; and (28 Oct 2026) the new classes on their class
  * cards, too heavy for the start screen to paint as it draws them (`card`).
  */
-export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card' | 'axe' | 'axeTown' | 'hammer' | 'hammerTown';
+export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card' | 'axe' | 'axeTown' | 'hammer' | 'hammerTown' | 'crook' | 'crookTown' | 'ebb' | 'ebbTown' | 'resonance' | 'resonanceTown' | 'rod' | 'rodTown';
 /** (THE WARRIOR'S WEAPON, WARRIOR_TREE2) His places with the war axe and the maul: in a dungeon, and in town. */
 export const HEAVY_PLACES: Readonly<Record<HeavyWeapon, { dungeon: HeroPlace; town: HeroPlace }>> = { axe: { dungeon: 'axe', town: 'axeTown' }, hammer: { dungeon: 'hammer', town: 'hammerTown' } };
+/** (THE MAGE'S STAFF, art/staff_skins.ts) Her places with each unique staff: in a dungeon, and in town. */
+export const STAFF_PLACES: Readonly<Record<StaffId, { dungeon: HeroPlace; town: HeroPlace }>> = {
+  crook: { dungeon: 'crook', town: 'crookTown' },
+  ebb: { dungeon: 'ebb', town: 'ebbTown' },
+  resonance: { dungeon: 'resonance', town: 'resonanceTown' },
+  rod: { dungeon: 'rod', town: 'rodTown' },
+};
+/** Is a place one of a staff's (and which). */
+export function staffOfPlace(place: HeroPlace): StaffId | null {
+  for (const id of STAFF_IDS) if (STAFF_PLACES[id].dungeon === place || STAFF_PLACES[id].town === place) return id;
+  return null;
+}
+/** Is a place a town's (in town, or a staff's place in town). */
+export const isTownPlace = (place: HeroPlace): boolean => place === 'town' || place === 'axeTown' || place === 'hammerTown' || (staffOfPlace(place) !== null && STAFF_PLACES[staffOfPlace(place)!].town === place);
 /** The look each of those is. */
 export function lookOfPlace(place: HeroPlace): HeroLook {
   if (place === 'card') return { twoHanded: true, town: true, card: true };
+  const staff = staffOfPlace(place);
+  if (staff) return { twoHanded: true, town: STAFF_PLACES[staff].town === place, staff };
   if (place === 'axe' || place === 'axeTown') return { twoHanded: true, town: place === 'axeTown', weapon: 'axe' };
   if (place === 'hammer' || place === 'hammerTown') return { twoHanded: true, town: place === 'hammerTown', weapon: 'hammer' };
   return { twoHanded: true, town: place === 'town', ...(place === 'demon' ? { demon: true } : place === 'blaze' ? { blaze: true } : {}) };

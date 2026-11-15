@@ -44,6 +44,7 @@ import { makeRangerUpArt } from './ranger_up_art';
 // (THE MAGE BROUGHT UP TO THE BRAWLER'S LEVEL, behind its switch, off: art/mage_up.ts)
 import { MAGE_UP } from './mage_up';
 import { makeMageUpArt } from './mage_up_art';
+import { STAFF_SKIN_OF } from './staff_skins';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
@@ -425,12 +426,14 @@ export function readyList(): number {
  * them, the lists as bakeLists has them), in the order they are wanted:
  *   STANDING AND RUNNING (the first `first` of them: what is seen as the cards come up, and a card touched or chosen), of the
  *   side a card's hero is seen from: the front of a hero with two sides; of a hero painted from eight, the side for the way he
- *   faces there, `toward` (render/figure.ts eightSide);
+ *   faces there (render/figure.ts eightSide), since 13 Nov 2026 his front as well (art/sides.ts CARD_FACING: every hero down and
+ *   to the right, his word);
  *   then COMING TO A STAND out of the run (AnimSet.stops: a card chosen, then another), of that side;
  *   then WHAT HE DOES LEFT STANDING (clips.idleA, idleB: the first card's a second and a half after the cards come up) and
  *   MAKING READY (clips.ready: the hero picked), of the front always (a hero turns to the front for a thing of his own);
- *   and `one`, single frames, as [side, list, frame]: of a hero painted from eight sides, THE FRONT'S FIRST STANDING FRAME, shown
- *   for the one frame in which a thing of his own ends, before he is turned back (render/figure.ts standingFrame).
+ *   and `one`, single frames, as [side, list, frame]: of a hero seen on his card from another side than his front, THE FRONT'S
+ *   FIRST STANDING FRAME, shown for the one frame in which a thing of his own ends, before he is turned back (render/figure.ts
+ *   standingFrame). With every card hero seen from his front, none.
  * His words, 11 Nov 2026: “Then, character screen lags.  Selecting a character lags.” Of these the bake had only the front's
  * standing and running: so of a hero painted from eight sides, nothing his card shows; every frame of the Warrior, the Ranger
  * and the Mage on their cards was painted where the game is drawn, as it was shown (on his phone, 12 Nov, 3 to 5 frames a
@@ -471,8 +474,9 @@ export function makeHeroArt3(): HeroArt {
   const warriorShare = new Map<string, Sprite[]>();
   // (and the Ranger brought up)
   const rangerShare = new Map<string, Sprite[]>();
-  // (and the Mage brought up)
+  // (and the Mage brought up; and with each unique staff, art/staff_skins.ts)
   const mageShare = new Map<string, Sprite[]>();
+  const staffShares = new Map<string, Map<string, Sprite[]>>();
   const of = (cls: ClassId, look: HeroLook): ActorArt => {
     // (one figure of each hero in each place: the knight with the great sword, whatever he carries, until he is painted with a sword and a shield)
     const place = look.card ? 'card' : look.town ? 'town' : 'dungeon';
@@ -555,6 +559,19 @@ export function makeHeroArt3(): HeroArt {
     }
     // (THE MAGE BROUGHT UP, while art/mage_up.ts MAGE_UP is on: sculpted, from all eight sides, every list at 30 a second, her
     // moves the game's own on her new bones: art/mage_up_art.ts. Off, she is as she was, every frame the same: tests/mage_up.test.ts)
+    // (THE MAGE'S STAFF, art/staff_skins.ts: holding a unique staff, her pictures painted with it, each staff a set of its own;
+    // her class card her own staff's, as ever)
+    if (cls === 'mage' && MAGE_UP.on && look.staff && place !== 'card') {
+      const skey = `mageup:${look.staff}:${place}`;
+      let sart = made.get(skey);
+      if (!sart) {
+        let share = staffShares.get(look.staff);
+        if (!share) staffShares.set(look.staff, (share = new Map()));
+        sart = makeMageUpArt(place, share, STAFF_SKIN_OF[look.staff]);
+        made.set(skey, sart);
+      }
+      return sart;
+    }
     if (cls === 'mage' && MAGE_UP.on) {
       const mkey = `mageup:${place}`;
       let mart = made.get(mkey);
