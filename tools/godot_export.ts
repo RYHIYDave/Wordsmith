@@ -5,7 +5,10 @@
 //      casts on the floor at its foot and the floor's edges, packed in one sheet. Every rect and anchor in picture pixels,
 //      two to a game pixel (the grain the heroes are baked at).
 //   2. godot/assets/floor1/layout.json: a floor 1 laid out by the game's own map-maker (game/level.ts makeDungeon).
-//   npx tsx tools/godot_export.ts [seed]
+//   npx tsx tools/godot_export.ts [seed] [floor]
+// ANY FLOOR: the second number is the floor (1 if not given), written to godot/assets/floor<N>/: its layout as the game's
+// map-maker lays it for that seed, where a new Warrior comes in, its ways on (the stairwell that opens in the boss's hall,
+// the waypoint, floor 3's door out the back, floor 4's cave, floor 5's shaft), its traps, and every monster the game spawns.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
@@ -14,8 +17,9 @@ import { gameSwitches } from './godot_switches';
 import { makeGroundArt } from '../src/art/ground';
 import { CRYPT_FLOORS } from '../src/art/crypt';
 import { Game } from '../src/game/game';
-import { MONSTERS } from '../src/game/defs';
+import { MONSTERS, floorTitle } from '../src/game/defs';
 import { doorMiddle, doorPiers, doorTiles, doorWay } from '../src/game/doors';
+import { DOOR_OPENING, prisonDoorTiles } from '../src/game/prison_way';
 import { figureOf } from '../src/art/bestiary';
 import { bakeName } from '../src/render/monsters_bake_list';
 
@@ -24,7 +28,8 @@ paintWithoutCanvas();
 // (the game's own switches, as it starts: tools/godot_switches.ts)
 gameSwitches();
 const seed = Number(process.argv[2] ?? 1) >>> 0;
-const OUT = 'godot/assets/floor1';
+const depth = Math.max(1, Number(process.argv[3] ?? 1) | 0);
+const OUT = `godot/assets/floor${depth}`;
 mkdirSync(OUT, { recursive: true });
 
 // --- a PNG with its alpha (tools/px_png.ts lays pictures on a background; Godot wants them clear) ---
@@ -43,7 +48,7 @@ function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
 }
 
 // --- 1. the ground: every picture at two picture pixels to a game pixel, shelf-packed in one sheet ---
-const g = makeGroundArt(CRYPT_FLOORS[0]);
+const g = makeGroundArt(CRYPT_FLOORS[Math.min(depth, CRYPT_FLOORS.length) - 1]);
 // (the floor's tiles repeat every PERIOD tiles each way: art/ground.ts keeps PERIOD to itself, so find it)
 let period = 1;
 while (period < 64 && g.floor(period, 0) !== g.floor(0, 0)) period++;
@@ -82,7 +87,7 @@ named.forEach(([, s], n) => {
   }
 });
 writeFileSync(`${OUT}/ground.png`, png(SHEET_W, SHEET_H, sheet));
-writeFileSync(`${OUT}/ground.json`, JSON.stringify({ theme: 'crypt 1', period, sprites: placed }, null, 0));
+writeFileSync(`${OUT}/ground.json`, JSON.stringify({ theme: `crypt ${depth}`, period, sprites: placed }, null, 0));
 console.log(`ground: ${placed.length} pictures (floor repeats every ${period} tiles; ${g.faceLeft.length} + ${g.faceRight.length} wall faces) in a ${SHEET_W}x${SHEET_H} sheet`);
 
 // --- 2. a floor 1 as the game itself sets it up: a new Warrior's game, into the first dungeon (as tests/action_f1_game.test.ts
@@ -90,17 +95,30 @@ console.log(`ground: ${placed.length} pictures (floor repeats every ${period} ti
 // (a Level, game/state.ts: its Floor, game/types.ts, and the grids made from it: `walk` where a body may stand, `low` the
 // walls drawn cut down low because floor lies behind them)
 const game = new Game('warrior', seed);
-game.depth = 1;
+game.depth = depth;
 game.enterDungeon();
 const level = game.level;
 const L = level.floor;
 const arr = (a: ArrayLike<number> | undefined | null): number[] | null => (a ? Array.from(a) : null);
 const count = (v: number): number => L.tiles.reduce((n, t) => n + (t === v ? 1 : 0), 0);
+// (the ways on from this floor, game/ways.ts: the stairwell that opens in the boss's hall when he dies and the places it may
+// open in, the waypoint by the way in, floor 3's door out the back of his hall, floor 4's cave, floor 5's shaft and the mouth
+// he comes in by; each as the game keeps it)
+const ways = level.ways ? (structuredClone(level.ways) as unknown as Record<string, any>) : null;
+if (ways?.exit) {
+  ways.exit.tiles = prisonDoorTiles(L, level.ways!.exit!);
+  ways.exit.secs = DOOR_OPENING;
+}
+if (ways?.cave) ways.cave.tiles = doorTiles(L, level.ways!.cave!.spot);
 writeFileSync(`${OUT}/layout.json`, JSON.stringify({
-  depth: 1, seed, w: L.w, h: L.h,
+  depth, seed, w: L.w, h: L.h, title: floorTitle(depth),
+  ways: ways ?? null,
+  // (the traps, game/traps.ts: each spot as the map-maker laid it)
+  hazards: (level.hazards ?? []).map((h) => h.spot),
+  body: level.body ? { x: level.body.x, y: level.body.y } : null,
   tiles: arr(L.tiles), variant: arr(L.variant), cut: arr(L.cut), height: arr(L.height),
   walk: arr(level.walk), low: arr(level.low),
-  start: { x: game.hero.x, y: game.hero.y }, boss: L.boss,
+  start: { x: game.hero.x, y: game.hero.y, fx: game.hero.fx, fy: game.hero.fy }, boss: L.boss,
   rooms: L.rooms.map((r) => ({ id: r.id, x: r.x, y: r.y, w: r.w, h: r.h, kind: r.kind, path: r.path })),
   // (the chests, barrels and urns: each by its place in the level's props (the looks' `props` go by it), where it stands, its
   // tile (solid: out of the walk grid until it is broken), and whether it is in a treasure vault)

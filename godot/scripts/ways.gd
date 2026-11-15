@@ -1,0 +1,215 @@
+## THE WAYS ON FROM A FLOOR (game/ways.ts, game.ts updateWays and the boss's death in `kill`; the layout's `ways`, as the
+## game keeps them: tools/godot_export.ts).
+##   THE STAIRWELL DOWN, in the boss's hall (floors 1 and 2): it opens in the floor when the boss dies, at the first of its
+##     places clear of where he fell (2 tiles) and of where the hero stands (ways.ts stairFor); it breaks open over 3.5 s
+##     (STAIR_OPENING), and then stepping onto its top step takes him down to the next floor. Its tiles past the top step are
+##     walked on by nobody.
+##   FLOOR 3'S DOOR OUT THE BACK OF HIS HALL (prison_way.ts): it unbars and swings open when the boss dies (DOOR_OPENING, its
+##     film's length); open, walking into its doorway takes him down.
+##   FLOOR 4'S CAVE (ways.ts placeCave): the wall over its mouth crumbles when the boss dies (CAVE_OPENING, 4.2 s); then
+##     walking into the mouth takes him down.
+##   FLOOR 5'S SHAFT: the cage comes down the shaft when the boss dies (SHAFT.down, 4.3 s); walking into it takes him up to
+##     town.
+## Their pictures as they open are the look's own, recorded from the game state by state (look.gd `show_variant`).
+extends Node
+
+const FloorMap := preload("res://scripts/floor_map.gd")
+
+const STAIR_OPENING := 3.5
+const STAIR_WIDE := 1.25
+const STAIR_CLEAR := 2.0
+const CAVE_OPENING := 126.0 / 30.0
+const SHAFT_DOWN := 129.0 / 30.0
+
+var main
+var map: FloorMap
+var hero
+var monsters
+var look
+var sfx
+
+var _w := {}
+## (the stairwell that opened, and for how long it has been opening)
+var _stair := {}
+var _stair_t := -1.0
+## ("": nothing yet; "opening": the way is breaking open; "open")
+var state := ""
+var _t := 0.0
+var _boss_dead := false
+var _secs := 0.0
+
+
+func _ready() -> void:
+	_w = map.ways if map.ways != null else {}
+
+
+func _process(dt: float) -> void:
+	if hero == null or monsters == null or main == null:
+		return
+	if not _boss_dead and _boss_fallen():
+		_boss_dead = true
+		_open()
+	if state == "opening":
+		_t += dt
+		_show()
+		if _t >= _secs:
+			state = "open"
+			_opened()
+	if state == "open" and hero.alive and _taken():
+		state = "gone"
+		_go()
+
+
+## Whether the floor's boss has fallen (there was one, and he is dead).
+func _boss_fallen() -> bool:
+	var had := false
+	for m in monsters.list:
+		if is_instance_valid(m) and m.boss:
+			had = true
+			if not m.dead:
+				return false
+	return had or monsters.boss_fell
+
+
+## The boss is dead: the floor's way on begins to open.
+func _open() -> void:
+	var kind := way_kind()
+	if kind == "":
+		return
+	state = "opening"
+	_t = 0.0
+	match kind:
+		"stair":
+			_stair = _stair_for()
+			_secs = STAIR_OPENING
+			# (its tiles past the top step are nobody's to walk on: ways.ts stairTiles)
+			for i in _stair_tiles(_stair):
+				map.walk[i] = 0
+			_aside()
+		"exit":
+			_secs = float(_w["exit"].get("secs", 3.0))
+		"cave":
+			_secs = CAVE_OPENING
+		"shaft":
+			_secs = SHAFT_DOWN
+	if sfx != null:
+		sfx.play("thunder", -8.0)
+	main.say_way(kind, false)
+	_show()
+
+
+## Which way on this floor has: the stairwell, floor 3's door, floor 4's cave, floor 5's shaft ("" none).
+func way_kind() -> String:
+	if _w.get("shaft") != null:
+		return "shaft"
+	if _w.get("exit") != null:
+		return "exit"
+	if _w.get("cave") != null:
+		return "cave"
+	if not _w.get("stairs", []).is_empty():
+		return "stair"
+	return ""
+
+
+## Where the stairwell opens: the first of its places clear of the boss's body and of the hero (ways.ts stairFor).
+func _stair_for() -> Dictionary:
+	var spots: Array = _w["stairs"]
+	var body: Vector2 = monsters.boss_at
+	for s in spots:
+		if not _near_stair(s, body, STAIR_CLEAR) and not _near_stair(s, hero.world, 0.5):
+			return s
+	for s in spots:
+		if not _near_stair(s, body, STAIR_CLEAR):
+			return s
+	return spots[0]
+
+
+## Whether a point is within `pad` tiles of a stairwell's opening (ways.ts nearStair: 2.4 long, 1.25 wide).
+func _near_stair(s: Dictionary, p: Vector2, pad: float) -> bool:
+	var along: float = p.x - float(s["x"]) if s["way"] == "x" else p.y - float(s["y"])
+	var across: float = p.y - float(s["y"]) if s["way"] == "x" else p.x - float(s["x"])
+	return along > -pad and along < 2.4 + pad and across > -pad and across < STAIR_WIDE + pad
+
+
+func _stair_tiles(s: Dictionary) -> Array:
+	var out: Array = []
+	for k in [1, 2]:
+		var tx: int = int(s["x"]) + (k if s["way"] == "x" else 0)
+		var ty: int = int(s["y"]) + (0 if s["way"] == "x" else k)
+		out.append(ty * map.w + tx)
+	return out
+
+
+## Whoever stands on the stairwell's opening as it opens is put aside to the nearer of its long sides (game.ts openStair).
+func _aside() -> void:
+	var s := _stair
+	var along: float = hero.world.x - float(s["x"]) if s["way"] == "x" else hero.world.y - float(s["y"])
+	var across: float = hero.world.y - float(s["y"]) if s["way"] == "x" else hero.world.x - float(s["x"])
+	if along > -0.35 and along < 2.5 and across > -0.3 and across < STAIR_WIDE + 0.3:
+		var a: float = clampf(along, -0.4, 2.8)
+		var c: float = -0.5 if across < STAIR_WIDE / 2.0 else STAIR_WIDE + 0.5
+		hero.world = Vector2(float(s["x"]) + a, float(s["y"]) + c) if s["way"] == "x" else Vector2(float(s["x"]) + c, float(s["y"]) + a)
+
+
+## The way's picture as far open as it is (the look's own, by its states).
+func _show() -> void:
+	if look == null:
+		return
+	var k := clampf(_t / maxf(_secs, 0.01), 0.0, 1.0)
+	match way_kind():
+		"stair":
+			look.show_variant("stair%d" % _w["stairs"].find(_stair), k)
+		"exit":
+			look.show_variant("exit", k)
+		"cave":
+			look.show_variant("cave", k)
+		"shaft":
+			look.show_variant("shaft", k)
+
+
+## It is open: what was shut to him is his to walk into.
+func _opened() -> void:
+	match way_kind():
+		"exit", "cave":
+			for i in _way_tiles():
+				map.walk[i] = 1
+	main.say_way(way_kind(), true)
+
+
+## The tiles of floor 3's doorway and floor 4's cave mouth (prison_way.ts prisonDoorTiles; doors.ts doorTiles of its spot).
+func _way_tiles() -> Array:
+	var out: Array = []
+	if _w.get("exit") != null:
+		var e: Dictionary = _w["exit"]
+		for i in e.get("tiles", []):
+			out.append(int(i))
+	elif _w.get("cave") != null:
+		for i in _w["cave"].get("tiles", []):
+			out.append(int(i))
+	return out
+
+
+## Has he taken it: on the stairwell's top step, in the doorway, in the cave's mouth, in the cage?
+func _taken() -> bool:
+	var h: Vector2 = hero.world
+	match way_kind():
+		"stair":
+			var s := _stair
+			var along: float = h.x - float(s["x"]) if s["way"] == "x" else h.y - float(s["y"])
+			var across: float = h.y - float(s["y"]) if s["way"] == "x" else h.x - float(s["x"])
+			return along >= -0.1 and along < 0.95 and across >= 0.05 and across < STAIR_WIDE - 0.05
+		"exit", "cave":
+			return _way_tiles().has(floori(h.y) * map.w + floori(h.x))
+		"shaft":
+			var sh: Dictionary = _w["shaft"]
+			return floori(h.x) == int(sh["x"]) and floori(h.y) == int(sh["y"])
+	return false
+
+
+## On to the next floor; from the fifth, up to town.
+func _go() -> void:
+	var n: int = map.depth
+	if way_kind() == "shaft" or not main.has_floor(n + 1):
+		main.go_to("town", "cage")
+	else:
+		main.go_to("floor%d" % (n + 1), "down")

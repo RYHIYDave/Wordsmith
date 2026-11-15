@@ -33,6 +33,9 @@ var _flow := PackedInt32Array()
 var _flow_in := 0.0
 var _arrows: Array = []  # {pos, dir, speed, left, dmg, node}
 var _figures := {}
+## (the floor's boss has fallen, and where: the ways on open clear of him, ways.gd)
+var boss_fell := false
+var boss_at := Vector2.ZERO
 
 
 func load_floor(path: String, figures_dir: String) -> void:

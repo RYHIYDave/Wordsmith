@@ -17,14 +17,24 @@ var w := 0
 var h := 0
 var tiles := PackedByteArray()
 var variant := PackedByteArray()
+## (the tiles cut corner to corner, game/cut.ts: 0 none, 1 far, 2 near, 3 left, 4 right, and 5 to 8 the same cut low)
+var cut := PackedByteArray()
 var walk := PackedByteArray()
 var start := Vector2.ZERO
+## (the way he faces as he comes in, where the export says: tools/godot_export.ts)
+var start_face := Vector2.ZERO
 var rooms: Array = []
 var doors: Array = []
 ## The chests, barrels and urns ({i, kind, x, y, tx, ty, state, solid}: props.gd opens and breaks them).
 var props: Array = []
 var shut := PackedByteArray()
 var pier := PackedByteArray()
+## (any floor: its names ({name, level}: defs.ts floorTitle), its ways on (game/ways.ts: ways.gd), its traps' spots, where
+## the fallen wordsmith lies)
+var title := {}
+var ways = null
+var hazards: Array = []
+var body = null
 
 
 func _init(path: String) -> void:
@@ -35,11 +45,19 @@ func _init(path: String) -> void:
 	h = int(data["h"])
 	tiles = _bytes(data["tiles"])
 	variant = _bytes(data["variant"])
+	if data.get("cut") != null:
+		cut = _bytes(data["cut"])
 	walk = _bytes(data["walk"]) if data["walk"] != null else _floor_grid()
 	start = Vector2(data["start"]["x"], data["start"]["y"])
+	if data["start"].has("fx"):
+		start_face = Vector2(data["start"]["fx"], data["start"]["fy"])
 	rooms = data["rooms"]
 	doors = data.get("doors", [])
 	props = data.get("props", [])
+	title = data.get("title", {})
+	ways = data.get("ways")
+	hazards = data.get("hazards", [])
+	body = data.get("body")
 	shut.resize(w * h)
 	pier.resize(w * h)
 	for d in doors:
@@ -87,6 +105,24 @@ func room(id: int) -> Dictionary:
 ## Whether a place is inside a room.
 static func in_room(r: Dictionary, at: Vector2) -> bool:
 	return not r.is_empty() and at.x >= r["x"] and at.y >= r["y"] and at.x < r["x"] + r["w"] and at.y < r["y"] + r["h"]
+
+
+## The faces of the wall block at tile `i` that have floor before them (render/walls.ts wallFaces): 1 the one turned to
+## screen-left (floor at y + 1), 2 the one turned to screen-right (floor at x + 1); a tile cut away on that side is no floor.
+func wall_faces(i: int) -> int:
+	var tx := i % w
+	var ty := i / w
+	var out := 0
+	if ty + 1 < h and _open_cut(i + w, 4):
+		out += 1
+	if tx + 1 < w and _open_cut(i + 1, 3):
+		out += 2
+	return out
+
+
+func _open_cut(j: int, shut_cut: int) -> bool:
+	var c := int(cut[j]) if j < cut.size() else 0
+	return tiles[j] == PIT or (tiles[j] == FLOOR and c != 1 and c != shut_cut)
 
 
 func variant_at(tx: int, ty: int) -> int:

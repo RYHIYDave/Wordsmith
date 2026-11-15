@@ -495,6 +495,9 @@ func _die() -> void:
 	_bar = 0.0
 	_set_list("die", true)
 	mgr.perils.drop(self)
+	if boss:
+		mgr.boss_fell = true
+		mgr.boss_at = world
 	if mgr.loot != null:
 		mgr.loot.on_kill(self)
 	if VOICE.has(kind):

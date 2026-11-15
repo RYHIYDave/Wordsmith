@@ -270,7 +270,7 @@ func _draw() -> void:
 	var lx := 4.0
 	var btn_y := 24.0
 	var btn_h := 13.0
-	var place: String = _data["places"].get(main.place if main != null else "", "")
+	var place: String = _data["places"].get(main.place if main != null else "", main.place_title() if main != null else "")
 	_text(place, 4, 3, T["text"], {"shadow": ink})
 	_pic("gold", 4, 14)
 	_text("%d" % (loot.gold if loot != null else 0), 4 + _pic_size("gold").x + 2, 14, T["gold"], {"font": "small", "shadow": ink})

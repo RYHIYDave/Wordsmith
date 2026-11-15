@@ -6,6 +6,10 @@
 ##   Keys: WASD or the arrows to walk; the left button to strike, the right to whirl, Space to lunge; E to use; Q a flask;
 ##   I or Tab the gear screen (main.gd _inputs). A controller: the left stick; RT, LT, A; B to use; X a flask.
 ## Shot mode, for checking it without anyone at the keys:  godot --path godot -- --shots=<folder> [--only=loot|town]
+## ANY FLOOR: a place is "town" or "floor<N>"; a floor's files are assets/floor<N>/ (tools/godot_export.ts <seed> <N>) and
+## its look assets/looks/floor<N>.* (tools/godot_record.mjs <N>). THE WAYS ON (game/ways.ts; ways.gd): the stairwell that
+## opens in the boss's hall when he dies, and the other floors' own ways down. `--place=floor3` begins there (to look at a
+## floor); `--only=floors` pictures every floor that is in.
 extends Node2D
 
 const FloorMap := preload("res://scripts/floor_map.gd")
@@ -31,6 +35,9 @@ const Doors := preload("res://scripts/doors.gd")
 const Props := preload("res://scripts/props.gd")
 
 const FLOOR_DIR := "res://assets/floor1"
+const Ways := preload("res://scripts/ways.gd")
+## (the deepest floor that has its files)
+const FLOORS := 5
 const TOWN_DIR := "res://assets/town"
 const HERO_DIR := "res://assets/heroes"
 const MONSTER_DIR := "res://assets/monsters"
@@ -71,6 +78,23 @@ var _gate := {}
 ## (the place's recorded look, where it has one, and the hero's own pool of light it gave him)
 var look: Look
 var _hero_light: Node
+## (the floor's ways on: ways.gd)
+var ways: Ways
+
+
+## Which floor a place is (0: the town).
+static func depth_of(where: String) -> int:
+	return int(where.substr(5)) if where.begins_with("floor") else 0
+
+
+## The folder of a place's files.
+static func dir_of(where: String) -> String:
+	return TOWN_DIR if where == "town" else "res://assets/" + where
+
+
+## Whether a floor's files are there.
+static func has_floor(n: int) -> bool:
+	return FileAccess.file_exists("res://assets/floor%d/layout.json" % n)
 
 
 func _ready() -> void:
@@ -123,7 +147,10 @@ func _ready() -> void:
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
-	_build("floor1" if shots != "" and not _arg("only") in ["town", "music"] else "town", "start")
+	var first := _arg("place")
+	if first == "":
+		first = "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors"] else "town"
+	_build(first, "start")
 	if shots != "":
 		_shoot(hero, shots)
 
@@ -139,7 +166,7 @@ func _build(where: String, arrive: String) -> void:
 	_place = Node2D.new()
 	add_child(_place)
 	move_child(_place, 0)
-	var dir := TOWN_DIR if where == "town" else FLOOR_DIR
+	var dir := dir_of(where)
 	map = FloorMap.new(dir + "/layout.json")
 	var ground := GroundArt.new(dir)
 
@@ -200,6 +227,15 @@ func _build(where: String, arrive: String) -> void:
 			var st: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TOWN_DIR + "/layout.json"))["stair"]
 			at = Vector2(st["x"] - 1.1, st["y"] + 1.0)
 			face = Vector2(-1, 0)
+		"down":
+			# (game.ts enterDungeon: where the floor's way in sets him down, facing as the game has him)
+			if map.start_face != Vector2.ZERO:
+				face = map.start_face
+		"cage":
+			# (game.ts enterTown('cage'): up the shaft from floor 5, in the cage in the hall's near corner, looking out of it;
+			# ways.ts TOWN_SHAFT)
+			at = Vector2(20.5, 18.5)
+			face = Vector2(-0.7071, -0.7071)
 	hero.world = at
 	hero.home = at
 	hero.face = face
@@ -218,8 +254,8 @@ func _build(where: String, arrive: String) -> void:
 	perils.hero = hero
 	perils.sfx = sfx
 	_place.add_child(monsters)
-	if where == "floor1":
-		monsters.load_floor(FLOOR_DIR + "/monsters.json", MONSTER_DIR)
+	if where != "town":
+		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
 	hero.monsters = monsters
 	_monsters = monsters
 	# (the floor's doors and the boss's gate: doors.gd)
@@ -247,6 +283,17 @@ func _build(where: String, arrive: String) -> void:
 		_place.add_child(props)
 		hero.props = props
 	loot.enter_place(map, stands, monsters, where == "floor1")
+	# (the ways on from a floor: ways.gd)
+	ways = null
+	if where != "town":
+		ways = Ways.new()
+		ways.main = self
+		ways.map = map
+		ways.hero = hero
+		ways.monsters = monsters
+		ways.look = look if looked else null
+		ways.sfx = sfx
+		_place.add_child(ways)
 
 	town = null
 	if where == "town":
@@ -267,9 +314,10 @@ func _build(where: String, arrive: String) -> void:
 		sfx.background("fire_small_loop.wav", "")
 		_veil.material.set_shader_parameter("deep", Look._num(look.data.get("vignette"), 0.26) if looked else 0.45)
 	else:
-		if not looked:
+		if not looked and where == "floor1":
 			_floor_gate(flats)
-		sfx.background("bed_f1_loop.wav", "amb_f1")
+		var n := depth_of(where)
+		sfx.background("bed_f%d_loop.wav" % n, "amb_f%d" % n)
 		_veil.material.set_shader_parameter("deep", Look._num(look.data.get("vignette"), 0.62) if looked else 0.82)
 
 
@@ -307,7 +355,7 @@ func _process(dt: float) -> void:
 
 ## Which place's music (game/level_music.ts musicPlace): the town's, or floor 1's.
 func _music_place() -> String:
-	return "town" if place == "town" else ("f1" if place == "floor1" else "")
+	return "town" if place == "town" else "f%d" % depth_of(place)
 
 
 ## Is there a fight on: something awake within reach of him (game.ts inFight; no doors here yet to shut one in)?
@@ -338,6 +386,25 @@ func go_to(where: String, arrive: String) -> void:
 ## What E would do where he stands: [what is shown, what it does] (town.gd).
 func prompt() -> Array:
 	return town.prompt if town != null else ["", ""]
+
+
+## What the game says of a floor's way on (game.ts `kill`, updateWays): as it opens, and once it is open.
+func say_way(kind: String, open: bool) -> void:
+	var gold := Color("#ffd27a")
+	if not open:
+		return
+	match kind:
+		"exit":
+			loot.say("The door behind his hall stands open. The way down.", gold)
+		"cave":
+			loot.say("A cave behind the wall. The way down.", gold)
+
+
+## A place's name as the game writes it top left (defs.ts floorTitle: "Prison Level 2").
+func place_title() -> String:
+	if map != null and map.title.has("level"):
+		return str(map.title["level"])
+	return ""
 
 
 ## The boss's name across the screen for so many seconds (doors.gd, as his gate falls).
@@ -448,6 +515,14 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "props":
 		await _prop_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "floors":
+		await _floor_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "ways":
+		await _way_shots(hero, dir)
 		get_tree().quit()
 		return
 	await _wait(1.0)
@@ -948,3 +1023,165 @@ func _rmb_test(h: Hero, dir: String) -> void:
 	for i in 30:
 		await get_tree().process_frame
 	print("RMB let go: act=", h._act, " cuts=", h._bites, " wait=", snappedf(h._whirl_cd, 0.01), " of ", snappedf(h._whirl_full, 0.01), "; monsters down ", n0 - _alive())
+
+
+## SHOT MODE, EVERY FLOOR THAT IS IN (--only=floors [--floor=N]): each come into as from the floor above, pictured where he
+## comes in, in the middle of its biggest room, before the boss's gate and in the boss's hall; what stands and fights there
+## is as the floor has it (he is not to be harmed).
+func _floor_shots(h: Hero, dir: String) -> void:
+	var only := int(_arg("floor")) if _arg("floor") != "" else 0
+	for n in range(1, FLOORS + 1):
+		if not has_floor(n) or (only != 0 and n != only):
+			continue
+		go_to("floor%d" % n, "down" if n > 1 else "start")
+		await _wait(1.6)
+		await _snap(dir + "/f%d_1_in.png" % n)
+		if _arg("debug") != "":
+			var st = h.get_parent()
+			var faint := 0
+			var near := []
+			for i in st._walls.size():
+				if st._walls[i].modulate.a < 0.99:
+					faint += 1
+				var top: Vector2 = st._tops[i]
+				if absf(top.x - h.position.x) < 200 and absf(top.y - h.position.y) < 200 and near.size() < 12:
+					near.append([st._depths[i], top - h.position, st._walls[i].modulate.a])
+			print("DEBUG walls ", st._walls.size(), " faint ", faint, " hero depth ", h.world.x + h.world.y, " pos ", h.position, " near ", near)
+		var big: Dictionary = {}
+		var boss: Dictionary = {}
+		for r in map.rooms:
+			if r["kind"] == "boss":
+				boss = r
+			elif r["kind"] == "normal" and (big.is_empty() or float(r["w"]) * float(r["h"]) > float(big["w"]) * float(big["h"])):
+				big = r
+		if not big.is_empty():
+			h.world = _free_near(Vector2(float(big["x"]) + float(big["w"]) / 2.0, float(big["y"]) + float(big["h"]) / 2.0))
+			await _wait(1.2)
+			await _snap(dir + "/f%d_2_room.png" % n)
+		if not boss.is_empty():
+			h.world = _free_near(Vector2(float(boss["x"]) + float(boss["w"]) / 2.0, float(boss["y"]) + float(boss["h"]) / 2.0))
+			await _wait(1.5)
+			await _snap(dir + "/f%d_3_boss.png" % n)
+		print("FLOOR %d: %s, %d monsters, %d doors, way on: %s" % [n, place_title(), _monsters.list.size(), map.doors.size(), ways.way_kind() if ways != null else "-"])
+
+
+## The nearest place to `at` a body may stand.
+func _free_near(at: Vector2) -> Vector2:
+	for r in range(0, 12):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r:
+					continue
+				var tx := floori(at.x) + dx
+				var ty := floori(at.y) + dy
+				if map.walkable(tx, ty):
+					return Vector2(tx + 0.5, ty + 0.5)
+	return at
+
+
+## SHOT MODE, A FLOOR'S STATES AND ITS WAY ON (--only=ways --floor=N): a door come up to (it swings open), a chest come up to
+## (it opens), a barrel or an urn struck (it breaks); then the boss struck dead in his hall, the way on pictured as it opens
+## and once it is open, and taken: where he comes out is pictured too.
+func _way_shots(h: Hero, dir: String) -> void:
+	var n := int(_arg("floor")) if _arg("floor") != "" else 2
+	go_to("floor%d" % n, "down" if n > 1 else "start")
+	await _wait(1.5)
+	var tag := dir + "/w%d_" % n
+	for d in map.doors:
+		if d["kind"] == "door" and int(d["want"]) == 0:
+			var mid := Vector2(d["middle"]["x"], d["middle"]["y"])
+			var out := Vector2(0, float(d["out"])) if d["alongX"] else Vector2(float(d["out"]), 0)
+			h.world = _free_near(mid + out * 4.0)
+			await _wait(0.4)
+			await _snap(tag + "1_door_shut.png")
+			h.world = _free_near(mid + out * 2.0)
+			await _wait(0.25)
+			await _snap(tag + "2_door_swinging.png")
+			await _wait(1.0)
+			await _snap(tag + "3_door_open.png")
+			break
+	for p in map.props:
+		if p["kind"] == "chest" and int(p["state"]) == 0:
+			h.world = _free_near(Vector2(p["x"], p["y"]) + Vector2(1.6, 1.6))
+			await _wait(0.3)
+			await _snap(tag + "4_chest.png")
+			h.world = _free_near(Vector2(p["x"], p["y"]) + Vector2(0.9, 0.9))
+			await _wait(0.8)
+			await _snap(tag + "5_chest_open.png")
+			break
+	for p in map.props:
+		if (p["kind"] == "barrel" or p["kind"] == "urn") and int(p["state"]) == 0:
+			var at := Vector2(p["x"], p["y"])
+			h.world = _free_near(at + Vector2(1.2, 1.2))
+			await _wait(0.4)
+			await _snap(tag + "6_%s.png" % p["kind"])
+			h.props.strike(at, 1.2)
+			await _wait(0.5)
+			await _snap(tag + "7_%s_broken.png" % p["kind"])
+			break
+	var boss: Monster = null
+	for m in _monsters.list:
+		if is_instance_valid(m) and m.boss:
+			boss = m
+	if boss == null:
+		print("WAYS: floor %d has no boss" % n)
+		return
+	var room: Dictionary = {}
+	for r in map.rooms:
+		if r["kind"] == "boss":
+			room = r
+	h.world = _free_near(boss.world + Vector2(2.5, 2.5))
+	await _wait(1.0)
+	await _snap(tag + "8_boss.png")
+	boss.waits = false
+	boss.hurt(1e9)
+	await _wait(0.3)
+	var kind: String = ways.way_kind()
+	if _arg("debug") != "":
+		var bosses := []
+		for m in _monsters.list:
+			if is_instance_valid(m) and m.boss:
+				bosses.append([m.kind, m.dead, m.life])
+		print("DEBUG boss ", boss.kind, " dead ", boss.dead, " life ", boss.life, " fell ", _monsters.boss_fell, " ways dead ", ways._boss_dead, " state '", ways.state, "' bosses ", bosses)
+	var k := 0
+	while ways.state == "opening" and k < 12:
+		await _snap(tag + "9_%s_opening_%02d.png" % [kind, k])
+		await _wait(0.45)
+		k += 1
+	await _wait(0.3)
+	await _snap(tag + "9_%s_open.png" % kind)
+	# (and seen from beside it)
+	var by := h.world
+	match kind:
+		"stair":
+			by = Vector2(float(ways._stair["x"]) - 1.5, float(ways._stair["y"]) + 2.4) if ways._stair["way"] == "x" else Vector2(float(ways._stair["x"]) + 2.4, float(ways._stair["y"]) - 1.5)
+		"exit", "cave":
+			var wt: Array = ways._way_tiles()
+			if not wt.is_empty() and not room.is_empty():
+				# (three tiles into the hall from its doorway)
+				var mid := Vector2(int(wt[wt.size() / 2]) % map.w + 0.5, int(wt[wt.size() / 2]) / map.w + 0.5)
+				var centre := Vector2(float(room["x"]) + float(room["w"]) / 2.0, float(room["y"]) + float(room["h"]) / 2.0)
+				by = mid + (centre - mid).normalized() * 3.0
+		"shaft":
+			by = Vector2(float(map.ways["shaft"]["x"]) + 0.5, float(map.ways["shaft"]["y"]) + 2.5)
+	h.world = _free_near(by)
+	await _wait(0.6)
+	await _snap(tag + "9_%s_open_beside.png" % kind)
+	print("WAYS: floor %d: the boss dead, its %s %s after %.1f s" % [n, kind, ways.state, ways._t])
+	# take it
+	var to := h.world
+	match kind:
+		"stair":
+			var st: Dictionary = ways._stair
+			to = Vector2(float(st["x"]) + 0.5, float(st["y"]) + 0.6) if st["way"] == "x" else Vector2(float(st["x"]) + 0.6, float(st["y"]) + 0.5)
+		"exit", "cave":
+			var tiles: Array = ways._way_tiles()
+			if not tiles.is_empty():
+				var i: int = tiles[tiles.size() / 2]
+				to = Vector2(i % map.w + 0.5, i / map.w + 0.5)
+		"shaft":
+			to = Vector2(float(map.ways["shaft"]["x"]) + 0.5, float(map.ways["shaft"]["y"]) + 0.5)
+	h.world = to
+	await _wait(2.0)
+	await _snap(tag + "10_after.png")
+	print("WAYS: now in %s (%s)" % [place, place_title()])

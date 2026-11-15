@@ -16,6 +16,12 @@
 ## (an ellipse 2r across and 1.24r high: render's `spot`), for each light a burning picture carries (`pic_lights`: a
 ## brazier, a torch), and round the hero (his pool, 165 or 170); then each GLOW added over it. Drawn here as one picture
 ## of the dark over the whole place, a quarter of a game pixel to its pixel, its holes cut once; the hero's carried with him.
+##
+## TWO WAYS A LOOK IS WRITTEN DOWN. The first two places (tools/godot_looks.ts, by a copy of the renderer's rules) are as
+## above. Every other place is RECORDED FROM THE GAME ITSELF as it draws it (tools/godot_record.mjs: "format": 2, its head
+## says what is in it): the ground's pictures in the renderer's own order (still ones drawn in one go, runs of pictures each
+## a sprite), what stands (walls marked that fade between the eye and the hero), the holes in the dark and the glows over
+## it. Laid out by `_ready2` and `_lighting2`, below.
 extends Node2D
 
 const DIR := "res://assets/looks/"
@@ -30,6 +36,16 @@ var stands  # stands.gd (y-sorted; it fades the walls round the hero)
 var data: Dictionary = {}
 
 var _sheet: Texture2D
+## (a recorded look: its sheets, and which each picture is on)
+var _sheets: Array[Texture2D] = []
+var _format := 1
+## (a recorded look's things, by their places in its lists: the ground's (the drawer or the sprite each is in, and where in
+## the drawer), what stands; and its states as they are shown now)
+var _g_node: Array = []
+var _g_at := PackedInt32Array()
+var _s_node: Array = []
+var _shown := {}
+var _hidden := {}
 var _pics := {}
 var _anim: Array = []  # {node, frames, fps, t0, secs, dy}
 var _t := 0.0
@@ -47,13 +63,23 @@ static func has_look(where: String) -> bool:
 
 func _ready() -> void:
 	data = JSON.parse_string(FileAccess.get_file_as_string(DIR + place + ".json"))
-	_sheet = load(DIR + place + ".png")
+	_format = int(data.get("format", 1))
+	_add = CanvasItemMaterial.new()
+	_add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	var pics: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + place + "_pics.json"))
+	if _format == 2:
+		for name in data["sheets"]:
+			_sheets.append(load(DIR + name))
+		_sheet = _sheets[0]
+		for k in pics:
+			var p: Array = pics[k]
+			_pics[k] = {"rect": Rect2(p[0], p[1], p[2], p[3]), "anchor": Vector2(p[4], p[5]), "sheet": _sheets[int(p[6])]}
+		_ready2()
+		return
+	_sheet = load(DIR + place + ".png")
 	for k in pics:
 		var p: Array = pics[k]
 		_pics[k] = {"rect": Rect2(p[0], p[1], p[2], p[3]), "anchor": Vector2(p[4], p[5])}
-	_add = CanvasItemMaterial.new()
-	_add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	var still := {"back": [], "floor": [], "flat": []}
 	var layers := {"back": back_layer, "floor": floor_layer, "flat": flat_layer, "flat_add": flat_layer}
 	for it in data["items"]:
@@ -122,6 +148,9 @@ func _make_doors() -> void:
 
 ## Show door `i` so far open (0 shut, 1 open), at the nearest of its steps (render.ts: the leaf's turn in SWING_STEPS).
 func show_door(i: int, open: float) -> void:
+	if _format == 2:
+		show_variant("door%d" % i, open)
+		return
 	if i < 0 or i >= _doors.size():
 		return
 	var D: Dictionary = _doors[i]
@@ -149,6 +178,9 @@ func show_door(i: int, open: float) -> void:
 
 ## A chest opened: shown standing open (look's `props`).
 func prop_opened(i: int) -> void:
+	if _format == 2:
+		show_variant("prop%d" % i, 1.0)
+		return
 	var q: Dictionary = _props.get(i, {})
 	if not q.has("node") or q.get("open") == null:
 		return
@@ -163,6 +195,9 @@ func prop_opened(i: int) -> void:
 
 ## A barrel or an urn broken: gone from where it stood, its leavings lying on the floor.
 func prop_broken(i: int) -> void:
+	if _format == 2:
+		show_variant("prop%d" % i, 1.0)
+		return
 	var q: Dictionary = _props.get(i, {})
 	if q.has("node"):
 		q["node"].visible = false
@@ -180,12 +215,19 @@ func prop_broken(i: int) -> void:
 
 func _pic_on(s: Sprite2D, key: String) -> void:
 	var p: Dictionary = _pics[key]
+	if p.has("sheet"):
+		s.texture = p["sheet"]
 	s.region_rect = p["rect"]
 	s.offset = -p["anchor"]
 
 
 func _process(dt: float) -> void:
 	_t += dt
+	if _format == 2:
+		_run2()
+		if _dark != null and _hero != null:
+			_dark.material.set_shader_parameter("hero", _hero.position)
+		return
 	for a in _anim:
 		var frames: Array = a["frames"]
 		var i := 0
@@ -237,6 +279,8 @@ void fragment() {
 ## Put the place's dark over it: its veil with every light's hole cut, the hero's pool cut round him as he goes, the glows
 ## added over it. `hero_pool`: the hero's pool's radius, game px (render.ts: 165 in the dungeon, 170 in town).
 func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
+	if _format == 2:
+		return _lighting2(root, hero, hero_pool)
 	var dk: Dictionary = data.get("dark", {"a": 0.0, "rgb": [0, 0, 0]})
 	var a: float = dk["a"]
 	if a <= 0.0:
@@ -340,6 +384,355 @@ func _glow_texture() -> GradientTexture2D:
 	t.width = 128
 	t.height = 128
 	return t
+
+
+# --- a look recorded from the game itself (tools/godot_record.mjs, "format": 2) ---
+
+## Lay the recorded place out: the ground's runs in the renderer's order on the floor's layer (a stretch of still pictures is
+## one drawer; a run of pictures is a sprite of its own, in its place among them), then what stands, by depth.
+func _ready2() -> void:
+	# (where a state draws something on the ground after one of the ground's things, the drawers part there, so that it can
+	# be put in its place)
+	var split := {}
+	for name in data.get("variants", {}):
+		for f in data["variants"][name]["frames"]:
+			for e in f["g"]:
+				split[int(e[7])] = true
+	var gi := 0
+	for run in data["ground"]:
+		var added: bool = int(run["op"]) == 1
+		var pending: Array = []
+		var first := gi
+		for e in run["list"]:
+			if e is Array:
+				var key: String = str(e[0])
+				var size := Vector2.ZERO
+				var alpha := 1.0
+				if e.size() >= 6:
+					size = Vector2(e[4], e[5]) * 2.0
+				if e.size() >= 4:
+					alpha = float(e[3])
+				if pending.is_empty():
+					first = gi
+				pending.append([key if _pics.has(key) else "", Vector2(e[1], e[2]) * 2.0, alpha, size])
+				if split.has(gi):
+					_flush2(pending, added, first)
+					pending = []
+				gi += 1
+				continue
+			_flush2(pending, added, first)
+			pending = []
+			var s := _sprite2(e, added)
+			if s != null:
+				s.position = Vector2(e["x"], e["y"]) * 2.0
+				floor_layer.add_child(s)
+			_g_node.append(s)
+			_g_at.append(-1)
+			gi += 1
+		_flush2(pending, added, first)
+	for it in data["items"]:
+		var s := _sprite2(it, int(it.get("add", 0)) == 1)
+		_s_node.append(s)
+		if s == null:
+			continue
+		var at := Vector2(it["x"], it["y"]) * 2.0
+		var d: float = it["d"]
+		s.position = Vector2(at.x, d * HH)
+		s.set_meta("dy", at.y - d * HH)
+		_place2(s, _first2(it["f"]))
+		stands.add_child(s)
+		if it.has("prop"):
+			_props[int(it["prop"])] = {"node": s}
+		if it.has("wall"):
+			var w: Array = it["wall"]
+			stands.add_wall(s, float(w[2]), Vector2(w[0], w[1]) * 2.0, int(w[3]) if w.size() > 3 else -1)
+
+
+## A stretch of still pictures of the ground, as one drawer.
+func _flush2(items: Array, added: bool, _first := 0) -> void:
+	if items.is_empty():
+		return
+	var drawer := _Still2.new()
+	drawer.look = self
+	drawer.items = items
+	drawer.gone.resize(items.size())
+	if added:
+		drawer.material = _add
+	floor_layer.add_child(drawer)
+	for i in items.size():
+		_g_node.append(drawer)
+		_g_at.append(i)
+
+
+func draw_still2(c: CanvasItem, items: Array, gone: PackedByteArray) -> void:
+	for i in items.size():
+		var it: Array = items[i]
+		if it[0] == "" or gone[i] != 0:
+			continue
+		var p: Dictionary = _pics[it[0]]
+		var r: Rect2 = p["rect"]
+		var size: Vector2 = it[3] if it[3] != Vector2.ZERO else r.size
+		c.draw_texture_rect_region(p["sheet"], Rect2(it[1], size), r, Color(1, 1, 1, it[2]))
+
+
+## The first of a run's pictures that is one.
+func _first2(frames: Array) -> String:
+	for f in frames:
+		if str(f) != "" and _pics.has(str(f)):
+			return str(f)
+	return ""
+
+
+## A sprite for one recorded thing ({f, fps, a, w, h}): its picture, how solid, its size if it is drawn at another than its
+## own; one with a run of pictures goes on the list of those that play.
+func _sprite2(e: Dictionary, added: bool) -> Sprite2D:
+	var frames: Array = e["f"]
+	var key := _first2(frames)
+	if key == "":
+		return null
+	var s := Sprite2D.new()
+	s.region_enabled = true
+	s.centered = false
+	if added:
+		s.material = _add
+	s.modulate.a = float(e.get("a", 1.0))
+	if e.has("w"):
+		s.set_meta("size", Vector2(e["w"], e["h"]) * 2.0)
+	s.set_meta("dy", 0.0)
+	_place2(s, key)
+	if frames.size() > 1:
+		_anim.append({"node": s, "frames": frames, "fps": float(e.get("fps", 30.0)), "shown": key})
+	return s
+
+
+## Put a picture on a recorded thing's sprite: by its anchor, lifted to its depth's line (`dy`), stretched if it is drawn
+## at a size not its own.
+func _place2(s: Sprite2D, key: String) -> void:
+	var p: Dictionary = _pics[key]
+	s.texture = p["sheet"]
+	s.region_rect = p["rect"]
+	var r: Rect2 = p["rect"]
+	if s.has_meta("size"):
+		var size: Vector2 = s.get_meta("size")
+		s.scale = Vector2(size.x / r.size.x, size.y / r.size.y)
+		s.offset = Vector2(-p["anchor"].x, (float(s.get_meta("dy")) - p["anchor"].y) / maxf(s.scale.y, 0.0001))
+	else:
+		s.offset = Vector2(-p["anchor"].x, float(s.get_meta("dy")) - p["anchor"].y)
+
+
+## The runs of pictures, each at its own pace (frame floor(t * fps) mod n; "" shows nothing).
+func _run2() -> void:
+	for a in _anim:
+		var frames: Array = a["frames"]
+		var key := str(frames[posmod(int(floorf(_t * a["fps"])), frames.size())])
+		if key == a["shown"]:
+			continue
+		a["shown"] = key
+		var s: Sprite2D = a["node"]
+		if key == "" or not _pics.has(key):
+			s.visible = false
+			continue
+		s.visible = not s.get_meta("hid", false)
+		_place2(s, key)
+
+
+## The recorded dark: its veil with every hole cut (each an ellipse r by ry, its own strength), the hero's pool cut round him
+## as he goes (the shader), and the glows, the game's own pictures of them, added over it.
+func _lighting2(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
+	var dk: Dictionary = data.get("dark", {"a": 0.0, "rgb": [0, 0, 0]})
+	var a: float = dk["a"]
+	var glows_root := Node2D.new()
+	glows_root.z_index = 51
+	root.add_child(glows_root)
+	for g in data.get("glows", []):
+		var key := str(g[0])
+		if not _pics.has(key):
+			continue
+		var p: Dictionary = _pics[key]
+		var s := Sprite2D.new()
+		s.texture = p["sheet"]
+		s.region_enabled = true
+		s.region_rect = p["rect"]
+		s.material = _add
+		s.position = Vector2(g[1], g[2]) * 2.0
+		s.scale = Vector2(float(g[3]) * 2.0 / p["rect"].size.x, float(g[4]) * 2.0 / p["rect"].size.y)
+		s.modulate.a = clampf(float(g[5]), 0.0, 1.0)
+		s.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		glows_root.add_child(s)
+	if a <= 0.0:
+		return glows_root
+	var rgb: Array = dk["rgb"]
+	var col := Color(rgb[0] / 255.0, rgb[1] / 255.0, rgb[2] / 255.0)
+	# (the dark's picture: over the whole place and a margin, a quarter of a game pixel to its pixel)
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for it in data["items"]:
+		var q := Vector2(it["x"], it["y"])
+		lo = lo.min(q)
+		hi = hi.max(q)
+	if lo.x == INF:
+		lo = Vector2.ZERO
+		hi = Vector2.ZERO
+	lo -= Vector2(400, 600)
+	hi += Vector2(400, 300)
+	var w := int(ceil((hi.x - lo.x) / DARK_GRAIN))
+	var h := int(ceil((hi.y - lo.y) / DARK_GRAIN))
+	var alpha := PackedFloat32Array()
+	alpha.resize(w * h)
+	alpha.fill(1.0)
+	for hole in data.get("holes", []):
+		var c: Vector2 = (Vector2(hole[0], hole[1]) - lo) / DARK_GRAIN
+		var rx: float = float(hole[2]) / DARK_GRAIN
+		var ry: float = float(hole[3]) / DARK_GRAIN
+		var strength: float = clampf(float(hole[4]), 0.0, 1.0)
+		if rx <= 0.0 or ry <= 0.0:
+			continue
+		for y in range(maxi(0, floori(c.y - ry)), mini(h, ceili(c.y + ry) + 1)):
+			for x in range(maxi(0, floori(c.x - rx)), mini(w, ceili(c.x + rx) + 1)):
+				var dx := (x - c.x) / rx
+				var dy := (y - c.y) / ry
+				var k := sqrt(dx * dx + dy * dy)
+				if k >= 1.0:
+					continue
+				# (the game's pool: solid to half way out, 0.7 there, none at its edge: render.ts light)
+				var pool := 1.0 - 0.6 * k if k < 0.5 else 1.4 * (1.0 - k)
+				alpha[y * w + x] *= 1.0 - strength * clampf(pool, 0.0, 1.0)
+	var bytes := PackedByteArray()
+	bytes.resize(w * h * 4)
+	var r8 := int(col.r * 255.0)
+	var g8 := int(col.g * 255.0)
+	var b8 := int(col.b * 255.0)
+	for i in w * h:
+		bytes[i * 4] = r8
+		bytes[i * 4 + 1] = g8
+		bytes[i * 4 + 2] = b8
+		bytes[i * 4 + 3] = int(clampf(a * alpha[i], 0.0, 1.0) * 255.0)
+	var img := Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, bytes)
+	_dark = Sprite2D.new()
+	_dark.texture = ImageTexture.create_from_image(img)
+	_dark.centered = false
+	_dark.position = lo * 2.0
+	_dark.scale = Vector2.ONE * DARK_GRAIN * 2.0
+	_dark.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_dark.z_index = 50
+	var mat := ShaderMaterial.new()
+	mat.shader = Shader.new()
+	mat.shader.code = DARK_SHADER
+	mat.set_shader_parameter("origin", lo * 2.0)
+	mat.set_shader_parameter("extent", Vector2(w, h) * DARK_GRAIN * 2.0)
+	mat.set_shader_parameter("pool", hero_pool * 2.0)
+	_dark.material = mat
+	root.add_child(_dark)
+	_hero = hero
+	return glows_root
+
+
+## One of the look's STATES shown so far along (0 to 1): a way opening, a door swinging, a chest open ("variants" in a recorded
+## look: what of the place is hidden and what is drawn in its stead, frame by frame). Nothing where the look has none of it.
+func show_variant(name: String, k: float) -> void:
+	var V: Dictionary = data.get("variants", {})
+	if not V.has(name):
+		return
+	_show_variant(name, V[name], k)
+
+
+func has_variant(name: String) -> bool:
+	return data.get("variants", {}).has(name)
+
+
+func _show_variant(name: String, v: Dictionary, k: float) -> void:
+	var steps: Array = v["steps"]
+	var fi := int(steps[clampi(roundi(k * (steps.size() - 1)), 0, steps.size() - 1)])
+	var was: Dictionary = _shown.get(name, {"frame": -1, "nodes": [], "hg": [], "hs": []})
+	if int(was["frame"]) == fi:
+		return
+	# what the last frame of it put in is taken out, and what it hid is shown again
+	for n in was["nodes"]:
+		if is_instance_valid(n):
+			n.queue_free()
+	for gi in was["hg"]:
+		_hide_ground(int(gi), -1)
+	for si in was["hs"]:
+		_hide_stand(int(si), -1)
+	var F: Dictionary = v["frames"][fi]
+	var now := {"frame": fi, "nodes": [], "hg": F["hg"], "hs": F["hs"]}
+	for gi in F["hg"]:
+		_hide_ground(int(gi), 1)
+	for si in F["hs"]:
+		_hide_stand(int(si), 1)
+	# what it draws on the ground, each after the ground's thing it was drawn after (those after the same one in their order)
+	var after_n := {}
+	for e in F["g"]:
+		var key := str(e[0])
+		if not _pics.has(key):
+			continue
+		var s := Sprite2D.new()
+		s.region_enabled = true
+		s.centered = false
+		if int(e[6]) == 1:
+			s.material = _add
+		s.modulate.a = float(e[3])
+		if float(e[4]) != 0.0 or float(e[5]) != 0.0:
+			s.set_meta("size", Vector2(e[4], e[5]) * 2.0)
+		s.set_meta("dy", 0.0)
+		_place2(s, key)
+		s.position = Vector2(e[1], e[2]) * 2.0
+		floor_layer.add_child(s)
+		var after := int(e[7])
+		var at := 0
+		if after >= 0 and after < _g_node.size() and _g_node[after] != null:
+			at = _g_node[after].get_index() + 1
+		at += int(after_n.get(after, 0))
+		after_n[after] = int(after_n.get(after, 0)) + 1
+		floor_layer.move_child(s, mini(at, floor_layer.get_child_count() - 1))
+		now["nodes"].append(s)
+	for it in F["s"]:
+		var s := _sprite2(it, int(it.get("add", 0)) == 1)
+		if s == null:
+			continue
+		var p := Vector2(it["x"], it["y"]) * 2.0
+		var d: float = it["d"]
+		s.position = Vector2(p.x, d * HH)
+		s.set_meta("dy", p.y - d * HH)
+		_place2(s, _first2(it["f"]))
+		stands.add_child(s)
+		now["nodes"].append(s)
+	_shown[name] = now
+
+
+## One of the ground's things hidden (by: 1) or shown again (-1): hidden while any state hides it.
+func _hide_ground(gi: int, by: int) -> void:
+	if gi < 0 or gi >= _g_node.size() or _g_node[gi] == null:
+		return
+	var key := "g%d" % gi
+	var n: int = int(_hidden.get(key, 0)) + by
+	_hidden[key] = n
+	var node = _g_node[gi]
+	if _g_at[gi] < 0:
+		node.visible = n <= 0
+	else:
+		node.gone[_g_at[gi]] = 1 if n > 0 else 0
+		node.queue_redraw()
+
+
+func _hide_stand(si: int, by: int) -> void:
+	if si < 0 or si >= _s_node.size() or _s_node[si] == null:
+		return
+	var key := "s%d" % si
+	var n: int = int(_hidden.get(key, 0)) + by
+	_hidden[key] = n
+	_s_node[si].set_meta("hid", n > 0)
+	_s_node[si].visible = n <= 0
+
+
+## A stretch of the recorded ground's still pictures, drawn in one go in the renderer's order.
+class _Still2 extends Node2D:
+	var look
+	var items: Array = []
+	var gone := PackedByteArray()
+
+	func _draw() -> void:
+		look.draw_still2(self, items, gone)
 
 
 ## What is still on a layer, drawn in one go in the renderer's order (a floor of thousands of tiles is one draw list).
