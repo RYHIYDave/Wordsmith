@@ -209,6 +209,12 @@
         od.asking = false;
         return draw(g, cam, W2, H2, true);
       };
+      // (and none let go of: the game lets go of the pieces far from the screen every thirty frames, which would empty the
+      // pictures of most of the floor before the sheets are made)
+      od.drop = () => {};
+      // (and a piece no view from where he can stand reaches not painted at all: REC.reach)
+      const paint = od.paint.bind(od);
+      od.paint = (i, j) => (REC.sees && !REC.sees(i * 64, j * 64, i * 64 + 64, j * 64 + 64) ? null : paint(i, j));
       od.__rec = true;
     }
     const G = recorder('g', W, H);
@@ -1276,5 +1282,128 @@
       if (k >= 7) break;
     }
     return { holes: [key(H.holes(false)), key(H.holes(true))], spikes, plate: [key(H.plate(false)), key(H.plate(true))], slot: { x: key(H.slot(false)), y: key(H.slot(true)) }, steps: spikes.length };
+  };
+})();
+
+
+// ====================================================================================================================
+// WHAT CAN BE SEEN FROM WHERE HE CAN GO. Under the open sky (floors 6 and down) the ground is painted as far as the screen
+// the place is drawn on reaches, twice the floor's width, and most of that is where no view of him ever goes. Only what a
+// view (the screen round him, and a margin) from a tile he can stand on reaches is kept: the rest of the ground and of what
+// stands is let go, and what points at them by their places in the lists (what is seen when, the place's states) is put
+// right.
+(() => {
+  const d = window.__dbg;
+  const REC = window.__rec;
+  const C = 32;
+  /**
+   * Where a view reaches (`mx`, `my`: how far, game pixels, to its side and up or down from him): REC.sees(x0, y0, x1, y1),
+   * whether it reaches any of a box on the screen (game pixels from the screen point of world (0, 0)). Asked before the
+   * frames are taken, so that the open ground's pieces no view reaches are not painted at all (REC.frame).
+   */
+  REC.reach = (mx, my) => {
+    const g = d.game();
+    const L = g.level;
+    const f = L.floor;
+    // where he can stand (game/types.ts: neither nothing nor wall; or the walk grid says so), as points on the screen
+    const pts = [];
+    for (let y = 0; y < f.h; y++) {
+      for (let x = 0; x < f.w; x++) {
+        const i = y * f.w + x;
+        const t = f.tiles[i];
+        if ((t !== 0 && t !== 2) || (L.walk && L.walk[i])) pts.push([(x - y) * 16, (x + y + 1) * 8]);
+      }
+    }
+    if (!pts.length) return { err: 'nowhere to stand' };
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [px, py] of pts) { x0 = Math.min(x0, px); y0 = Math.min(y0, py); x1 = Math.max(x1, px); y1 = Math.max(y1, py); }
+    x0 -= mx + C; y0 -= my + C; x1 += mx + C; y1 += my + C;
+    const nx = Math.ceil((x1 - x0) / C) + 1;
+    const ny = Math.ceil((y1 - y0) / C) + 1;
+    // (the cells a view reaches: each view's box marked at its corners, the marks summed into how many views reach each cell,
+    // and those summed again so that any box can be asked of at once)
+    const W1 = nx + 1;
+    const marks = new Int32Array(W1 * (ny + 1));
+    for (const [px, py] of pts) {
+      const i0 = Math.floor((px - mx - x0) / C), i1 = Math.floor((px + mx - x0) / C) + 1;
+      const j0 = Math.floor((py - my - y0) / C), j1 = Math.floor((py + my - y0) / C) + 1;
+      marks[j0 * W1 + i0]++; marks[j0 * W1 + i1]--; marks[j1 * W1 + i0]--; marks[j1 * W1 + i1]++;
+    }
+    const views = new Int32Array(W1 * (ny + 1));
+    for (let j = 0; j < ny; j++) {
+      for (let i = 0; i < nx; i++) {
+        views[j * W1 + i] = marks[j * W1 + i] + (j > 0 ? views[(j - 1) * W1 + i] : 0) + (i > 0 ? views[j * W1 + i - 1] : 0) - (j > 0 && i > 0 ? views[(j - 1) * W1 + i - 1] : 0);
+      }
+    }
+    const seen = new Int32Array(W1 * (ny + 1));
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) seen[(j + 1) * W1 + i + 1] = (views[j * W1 + i] > 0 ? 1 : 0) + seen[j * W1 + i + 1] + seen[(j + 1) * W1 + i] - seen[j * W1 + i];
+    REC.sees = (bx0, by0, bx1, by1) => {
+      const i0 = Math.max(0, Math.floor((bx0 - x0) / C)), i1 = Math.min(nx, Math.floor((bx1 - x0) / C) + 1);
+      const j0 = Math.max(0, Math.floor((by0 - y0) / C)), j1 = Math.min(ny, Math.floor((by1 - y0) / C) + 1);
+      if (i0 >= i1 || j0 >= j1) return false;
+      return seen[j1 * W1 + i1] - seen[j0 * W1 + i1] - seen[j1 * W1 + i0] + seen[j0 * W1 + i0] > 0;
+    };
+    REC.reachAt = pts.length;
+    return { at: pts.length, box: [x0, y0, x1, y1] };
+  };
+
+  /** What no view reaches let go of (REC.reach first), and what points at things by their places in the lists put right. */
+  REC.cut = () => {
+    const A = REC.acc;
+    const res = REC.result;
+    const reaches = REC.sees;
+    if (!reaches) return { err: 'where a view reaches was not asked' };
+    // a picture's own size, game pixels (a source at the finer grain is two of its pixels to one)
+    const ownSize = (ki) => {
+      const K = A.keys[ki];
+      const s = REC.srcs[K.src];
+      const w = K.sub ? K.sub[2] : s.width;
+      const h = K.sub ? K.sub[3] : s.height;
+      const k = K.nat === 1 ? 1 : 2;
+      return [w / k, h / k, K.ax, K.ay];
+    };
+    const boxOf = (q, anchored) => {
+      let box = null;
+      for (const ki of q.f) {
+        if (ki < 0) continue;
+        const [w, h, ax, ay] = ownSize(ki);
+        const W = q.w || w, H = q.h || h;
+        const bx = anchored ? q.x - ax : q.x, by = anchored ? q.y - ay : q.y;
+        box = box ? [Math.min(box[0], bx), Math.min(box[1], by), Math.max(box[2], bx + W), Math.max(box[3], by + H)] : [bx, by, bx + W, by + H];
+      }
+      return box;
+    };
+    const keepOf = (list, anchored) => list.map((q) => {
+      const b = boxOf(q, anchored);
+      return !b || reaches(b[0], b[1], b[2], b[3]);
+    });
+    const kg = keepOf(res.ground, false);
+    const ks = keepOf(res.stands, true);
+    const mapOf = (keep) => { const m = new Int32Array(keep.length); let n = 0; keep.forEach((k, i) => { m[i] = k ? n++ : -1; }); return m; };
+    const gm = mapOf(kg);
+    const sm = mapOf(ks);
+    // (what is drawn after a thing let go of is drawn after the last one kept before it)
+    const before = new Int32Array(kg.length);
+    let last = -1;
+    kg.forEach((k, i) => { if (k) last = gm[i]; before[i] = last; });
+    const was = { ground: res.ground.length, stands: res.stands.length };
+    res.ground = res.ground.filter((_, i) => kg[i]);
+    res.stands = res.stands.filter((_, i) => ks[i]);
+    const used = new Set();
+    for (const q of [...res.ground, ...res.stands]) for (const ki of q.f) if (ki >= 0) used.add(ki);
+    for (const q of res.glows) if (q.f >= 0) used.add(q.f);
+    res.used = [...used].sort((a, b) => a - b);
+    if (REC.fogOut) {
+      REC.fogOut.g = REC.fogOut.g.filter((_, i) => kg[i]);
+      REC.fogOut.s = REC.fogOut.s.filter((_, i) => ks[i]);
+    }
+    for (const name in REC.variants || {}) {
+      for (const F of REC.variants[name].frames) {
+        F.hg = F.hg.map((i) => gm[i]).filter((i) => i >= 0);
+        F.hs = F.hs.map((i) => sm[i]).filter((i) => i >= 0);
+        for (const e of F.g) e.after = e.after >= 0 && e.after < before.length ? before[e.after] : e.after;
+      }
+    }
+    return { ground: [was.ground, res.ground.length], stands: [was.stands, res.stands.length], at: REC.reachAt };
   };
 })();

@@ -109,6 +109,13 @@ console.log(`${name}: ${where.w}x${where.h}, ${ready.props} props, ${ready.doors
     console.log(same ? '  the same level as godot/assets/' + name + '/layout.json (tiles, doors, chests, barrels, urns and levers)' : `  !! NOT the level in godot/assets/${name}/layout.json: tiles ${hash === ready.sig.tiles ? 'the same' : 'differ'}, doors ${JSON.stringify(doors) === JSON.stringify(ready.sig.doors) ? 'the same' : 'differ'}, props ${JSON.stringify(props) === JSON.stringify(ready.sig.props) ? 'the same' : `differ (${props.length} against ${ready.sig.props.length})`}`);
   } else console.log(`  (no godot/assets/${name}/layout.json to hold it against)`);
 }
+// (under the open sky, floors 6 and down: where a view from where he can stand reaches, the screen round him and a margin
+// wide enough for a wider screen than this one; the open ground's pieces no view reaches are not painted, and what else is
+// out of every view is let go of once the frames are taken: tools/godot_rec/page.js REC.reach, REC.cut)
+if (depth >= 6) {
+  const r = await page.evaluate(({ mx, my }) => window.__rec.reach(mx, my), { mx: 680, my: 400 });
+  if (r.err) console.log('  !! where a view reaches: ' + r.err);
+}
 // the frames: three thrown away (what fades by the clock settles), then N a thirtieth of a second apart
 const T0 = 100;
 const size = await page.evaluate(() => {
@@ -198,6 +205,12 @@ let traps = null;
 if (depth > 0) {
   traps = await page.evaluate(() => { if (!window.__rec.extra) window.__rec.extra = new Set(); return window.__rec.trapPics(); });
   if (traps) console.log(`  its traps' pictures: the holes (and glinting), ${traps.spikes.length} steps of the spikes, the plate (and pressed), the slot`);
+}
+// (under the open sky: only what a view from where he can stand reaches)
+if (depth >= 6) {
+  const c = await page.evaluate(() => window.__rec.cut());
+  if (c.err) console.log('  !! what can be seen: ' + c.err);
+  else console.log(`  what can be seen from the ${c.at} tiles he can stand on: ${c.ground[1]} of the ${c.ground[0]} things on the ground, ${c.stands[1]} of the ${c.stands[0]} that stand`);
 }
 const res = await page.evaluate(() => window.__rec.result);
 const sheets = await page.evaluate(() => window.__rec.sheets(4096));
