@@ -26,6 +26,15 @@ var map: FloorMap
 var hero  # hero.gd
 var sfx  # sfx.gd
 var list: Array = []
+## (what stands on the floor, in the painter's order: a film's `behind` and `before` layers stand among the figures there)
+var stands: Node2D
+
+## THE GAME'S OWN FILMS OF WHAT ITS MOVES MARK AND THROW UP (assets/fx: tools/godot_fx.ts, painted by the game's own painters
+## as render/act1_fx asks for them): each {fps, n, layers: {floor, behind, before}: for each frame a picture, or -1}; a
+## picture [sheet, x, y, w, h, ox, oy], (ox, oy) where its top left lies from the film's floor point (picture pixels).
+const FX_DIR := "res://assets/fx/"
+static var _fx := {}
+static var _fx_sheets: Array = []
 
 
 func warn(x: float, y: float, r: float, dur: float, dmg: float, src: Object) -> void:
@@ -110,7 +119,102 @@ func smoke(x: float, y: float, dmg: float, src: Object) -> void:
 
 
 func drop(src: Object, kinds := ["warn", "lane", "aim"]) -> void:
+	for p in list:
+		if p.get("src") == src and p["kind"] in kinds:
+			_film_free(p)
 	list = list.filter(func(p): return not (p.get("src") == src and p["kind"] in kinds))
+
+
+func _ready() -> void:
+	if _fx.is_empty():
+		_fx = {"films": {}, "pics": [], "sheets": []}
+		if FileAccess.file_exists(FX_DIR + "fx.json"):
+			_fx = JSON.parse_string(FileAccess.get_file_as_string(FX_DIR + "fx.json"))
+			for n in _fx["sheets"]:
+				_fx_sheets.append(load(FX_DIR + str(n)))
+
+
+## Whether the game's own film of that name is there.
+func has_film(name: String) -> bool:
+	return _fx.get("films", {}).has(name)
+
+
+## The frame of a film `t` seconds in (-1: over, or before it).
+func _film_frame(name: String, t: float) -> int:
+	var F: Dictionary = _fx["films"][name]
+	var k := floori(t * float(F["fps"]))
+	return k if t >= 0.0 and k < int(F["n"]) else -1
+
+
+## A film's floor layer at its frame, drawn at a place on the floor (in _draw: under the figures).
+func _film_floor(name: String, t: float, at: Vector2) -> void:
+	var k := _film_frame(name, t)
+	if k < 0:
+		return
+	var i := int(_fx["films"][name]["layers"]["floor"][k])
+	if i < 0:
+		return
+	var q: Array = _fx["pics"][i]
+	draw_texture_rect_region(_fx_sheets[int(q[0])], Rect2(Iso.to_screen(at.x, at.y) + Vector2(q[5], q[6]), Vector2(q[3], q[4])), Rect2(q[1], q[2], q[3], q[4]))
+
+
+## A film's layers that stand among the figures, just behind and just before one standing at its middle (render/act1_fx:
+## c.stand at depth -0.02 and +0.02): each a picture among what stands, kept with the mark and gone with it.
+func _film_stands(p: Dictionary, name: String, t: float, at: Vector2) -> void:
+	if stands == null:
+		return
+	var k := _film_frame(name, t)
+	var F: Dictionary = _fx["films"][name]
+	var scr := Iso.to_screen(at.x, at.y)
+	for layer: String in ["behind", "before"]:
+		if not F["layers"].has(layer):
+			continue
+		var key: String = "fx_" + layer
+		var s = p.get(key)
+		var i := int(F["layers"][layer][k]) if k >= 0 else -1
+		if s == null or not is_instance_valid(s):
+			if i < 0:
+				continue
+			s = Sprite2D.new()
+			s.centered = false
+			s.region_enabled = true
+			stands.add_child(s)
+			p[key] = s
+		s.visible = i >= 0
+		if i < 0:
+			continue
+		var q: Array = _fx["pics"][i]
+		var d := at.x + at.y + (-0.02 if layer == "behind" else 0.02)
+		s.texture = _fx_sheets[int(q[0])]
+		s.region_rect = Rect2(q[1], q[2], q[3], q[4])
+		s.position = Vector2(scr.x, d * 16.0)
+		s.offset = Vector2(q[5], q[6] + scr.y - d * 16.0)
+
+
+## A mark gone: what of its film stood among the figures goes with it.
+func _film_free(p: Dictionary) -> void:
+	for key: String in ["fx_behind", "fx_before"]:
+		var s = p.get(key)
+		if s != null and is_instance_valid(s):
+			s.queue_free()
+		p.erase(key)
+
+
+## Which of the game's films a mark plays, and where its floor point is: [name, t, at], or empty: none (a stand-in is drawn).
+func _film_of(p: Dictionary) -> Array:
+	match p["kind"]:
+		"ring":
+			# (the green troll's slam: render/act1_fx/brute.ts)
+			return ["brute_ring", p["t"], Vector2(p["x"], p["y"])]
+		"co_ring":
+			# (the Chained One's rings, by their radius: render/act1_fx/chained.ts)
+			return ["co_ring_%s" % str(p["r"]), p["t"], Vector2(p["x"], p["y"])]
+		"co_crack":
+			# (his lash's crack, along the way he faced, by sixteen ways round; its pictures' floor point the crack's middle)
+			var w: Vector2 = p["way"]
+			var way := posmod(roundi(atan2(w.y, w.x) / TAU * 16.0), 16)
+			return ["co_crack_%d" % way, p["t"], Vector2(p["x"], p["y"]) + w * ((Chained.CRACK["from"] + Chained.CRACK["to"]) / 2.0)]
+	return []
 
 
 func _process(dt: float) -> void:
@@ -206,6 +310,11 @@ func _process(dt: float) -> void:
 					stays = false
 		if stays:
 			keep.append(p)
+			var fm := _film_of(p)
+			if not fm.is_empty() and has_film(fm[0]):
+				_film_stands(p, fm[0], fm[1], fm[2])
+		else:
+			_film_free(p)
 	list = keep
 	queue_redraw()
 
@@ -637,7 +746,7 @@ func _draw() -> void:
 				# (THE FLESHMANCER'S: its own block below)
 				_draw_fm(p)
 			"lane":
-				_draw_lane(p)
+				_lane_at(p["a"], p["b"], p["half"], clampf(p["t"] / p["dur"], 0.0, 1.0), clampf(p["gone"], 0.0, 1.0))
 			"aim":
 				var k: float = clampf(p["t"] / p["dur"], 0.0, 1.0)
 				var a: Vector2 = p["a"]
@@ -662,7 +771,10 @@ func _draw() -> void:
 			"bars":
 				_draw_bars(p)
 			"ring":
-				_draw_slam_ring(p)
+				if has_film("brute_ring"):
+					_film_floor("brute_ring", p["t"], Vector2(p["x"], p["y"]))
+				else:
+					_draw_slam_ring(p)
 			"spear":
 				# (lying on the floor: its shaft and its bone point, the way it flew)
 				var w: Vector2 = p["way"]
@@ -760,19 +872,14 @@ func _px_line(from: Vector2, to: Vector2, c: Color, every := 1) -> void:
 ## the same faint ground that darkens as the moment comes, the same fill that runs to the far end as the wind-up runs out,
 ## its two edges dotted and its far end, and chevrons along it pointing the way he will come, bright where the fill has
 ## reached. While he runs it, what he has left behind is gone and the rest fades a little.
-func _draw_lane(p: Dictionary) -> void:
-	var a: Vector2 = p["a"]
-	var b: Vector2 = p["b"]
+func _lane_at(a: Vector2, b: Vector2, h: float, k: float, gone: float) -> void:
 	var len := a.distance_to(b)
 	if len < 0.05:
 		return
 	var f := (b - a) / len
 	var c := Vector2(-f.y, f.x)
-	var k: float = clampf(p["t"] / p["dur"], 0.0, 1.0)
-	var gone: float = clampf(p["gone"], 0.0, 1.0)
 	var from := gone * len
 	var fade := 1.0 - 0.35 * gone
-	var h: float = p["half"]
 	# (a point `along` tiles along it and `across` across it: on the screen, picture pixels; and in game pixels)
 	var pt := func(along: float, across: float) -> Vector2:
 		var w: Vector2 = a + f * along + c * across
@@ -1201,6 +1308,14 @@ func _draw_co_crack(p: Dictionary, t: float) -> void:
 	var o := Vector2(p["x"], p["y"])
 	var way: Vector2 = p["way"]
 	var side := Vector2(-way.y, way.x)
+	var fm := _film_of(p)
+	if has_film(fm[0]):
+		# (THE GAME'S OWN: its lane as his fists go up, the game's charge lane, drawChargeLane; from the blow, the crack's film)
+		if t < 0.0:
+			_lane_at(o + way * 0.5, o + way * to, half, clampf(1.0 + t / maxf(0.01, float(p["warn"])), 0.0, 1.0), 0.0)
+		else:
+			_film_floor(fm[0], t, fm[2])
+		return
 	if t < 0.0:
 		# (its lane, filling from his end as his fists stay up)
 		var k := clampf(1.0 + t / maxf(0.01, float(p["warn"])), 0.0, 1.0)
@@ -1237,6 +1352,11 @@ func _draw_co_ring(p: Dictionary, t: float) -> void:
 	var g: Dictionary = Chained.RING
 	var rad: float = p["r"]
 	var o := Vector2(p["x"], p["y"])
+	var fm := _film_of(p)
+	if has_film(fm[0]):
+		# (THE GAME'S OWN ring of that radius: art/chained_action_fx.ts ringPainted)
+		_film_floor(fm[0], t, o)
+		return
 	var reach := Chained.ring_reach(t, rad)
 	# (the cracks it opens, out from its middle: red-hot at first, then dark, gone by its end)
 	var hot := 1.0 - clampf(t / 0.45, 0.0, 1.0)

@@ -217,6 +217,7 @@ func _build(where: String, arrive: String) -> void:
 	perils.map = map
 	_place.add_child(perils)
 	var stands := Stands.new()
+	perils.stands = stands
 	stands.map = map
 	stands.art = ground
 	stands.build_walls = not looked
