@@ -67,6 +67,16 @@ through chat, so the art and sounds go into the project whole).
   as it starts (game/floor_looks.ts). Recorded from the game's own renderer (`scripts/look.gd` lays them out), the dark
   and its lights included. My first versions of both were the old looks: the export tools had not put the game's
   startup switches on.
+- **Doors and the Warden's gate** (`scripts/doors.gd`; game/doors.ts, game.ts updateDoors, dropGate, raiseGate, bossIntro):
+  floor 1's nine doors where the game's map-maker lays them (every guardian's lair, and some of the other rooms), each
+  swinging open for him alone as he comes within 2.6 tiles, and staying open. Until it does, nothing passes it, nothing is
+  seen or shot through it, and what is in its room is out of his reach (his words, 7 Oct 2026, in game/doors.ts: "I don’t want
+  monsters to open doors"). Walked at the stone beside a door, he is eased into line with it, as the game does. THE WARDEN'S
+  GATE stands up until he is 2.2 tiles into the hall with the Warden alive; then it crashes down behind him and stays down
+  until the Warden is dead. Until then the Warden waits at the back of his hall, looking at him, and a blow on him only says
+  "Not yet"; as the gate falls he says one of his lines ("None leave my halls."), his name comes up across the screen, and
+  he fights. Their pictures as they open are the game's own, step by step (tools/godot_looks.ts). Fallen, the hero is set
+  back where he came in and the gate goes up again behind him (in the game a fallen hero wakes in town).
 - **The music** (`scripts/music.gd`, game/level_music.ts and engine/audio.ts levelMusic): the town's walk, and floor 1's
   walk and fight, his songs from the sound chat's tenth batch, each looping where the game loops it. Coming into a place,
   its walk fades up; when something awake is within 10 tiles of him, the fight comes in at once from its first big hit and
@@ -97,7 +107,7 @@ swirling round the ring and its column of light, the wordsmith's words for sale,
 Lexicon, buying back, the town's own lighting and music; words other than Power, uniques, magic find, the game's own
 lettering and frames for the screens (these use Godot's plain letters), chests, barrels and urns, the floor's own
 dressing (render/pieces.ts, its looks), raised and sunken floor, the tiles cut corner to corner (drawn whole for now),
-doors, props, the rest of the heroes, menus, the title screen's music. The Colossus pictures are in, held back from Godot with `.gdignore` until they are wired in.
+props, the rest of the heroes, menus, the title screen's music. The Colossus pictures are in, held back from Godot with `.gdignore` until they are wired in.
 
 ## How it is made
 
@@ -117,6 +127,7 @@ doors, props, the rest of the heroes, menus, the title screen's music. The Colos
 Checking it without hands on the keys: `godot --path godot -- --shots=<folder>` sets the hero down, unharmed, in sight
 of each monster that has moves and pictures each move the moment it shows (the troll's charge line, run and slam; the
 rain's ring and its arrows; the marksman's aim and great arrow; the Warden's bolts, the Lockdown's shadows and bars, the
-dead he calls), says which moves were made, and quits. `--only=music` says what music plays as he goes from the town to
+dead he calls), says which moves were made, and quits. `--only=doors` pictures a door shut, swinging and open, and the Warden's gate up, falling, his line and name, and rising
+once he is dead. `--only=music` says what music plays as he goes from the town to
 floor 1, up to a skeleton and away when the fight is over. (Neither lair on this floor leaves the troll a clear run, so for
 the charge he is set down in the floor's biggest hall.)

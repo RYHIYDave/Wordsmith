@@ -7,8 +7,8 @@
 // Written to godot/assets/looks/, for P = floor1 and town:
 //   P.png + P_pics.json: the pictures, two picture pixels to a game pixel; { key: [x, y, w, h, ax, ay] } in picture pixels
 //     (ax, ay: where the picture's own anchor falls inside it).
-//   P.json: { place, dark: {a, rgb}, vignette, items: [...], lights: [...], pic_lights: {...} }
-//     items, each { layer, kind, x, y, d, frames, fps[, t0][, secs][, what] }:
+//   P.json: { place, dark: {a, rgb}, vignette, items: [...], doors: [...], lights: [...], pic_lights: {...} }
+//     items, each { layer, kind, x, y, d, frames, fps[, t0][, secs][, what][, door] }:
 //       layer: "back" (drawn before the floor), "floor", "flat" / "flat_add" (over the floor, the second added, 'lighter'), "stand"
 //         / "stand_add" (sorted by d, then by their order in the list: the renderer's own sort);
 //       (x, y): the screen point, in game pixels, the picture's anchor is laid on, measured from the screen point of world (0, 0):
@@ -16,7 +16,11 @@
 //         it by its height, as the renderer's camera does: render/fx.ts wy);
 //       d: the painter's depth for a stand (x + y of its world point plus the renderer's offsets), null for the rest;
 //       frames: picture keys; the frame shown at time t (seconds) is frames[floor((t - t0) * fps) mod n] (t0 0 where absent); or,
-//         where `secs` is given (the owl), frame i holds secs[i] seconds, the loop beginning at t0.
+//         where `secs` is given (the owl), frame i holds secs[i] seconds, the loop beginning at t0;
+//       door: on a door's leaf and a gate's portcullis, which of the level's doors it is (drawn by `doors` as it opens).
+//     doors: for each of the level's doors and gates, { kind, steps }: what moves of it at each step of its opening from shut to
+//       open (a door's leaf at each of the renderer's turns, a gate's portcullis at GATE_STEPS + 1 heights), each step a list of
+//       [picture key, x, y, d] as the items have them (recordDoors).
 //     The items of the layers back, floor, flat and flat_add are in the renderer's drawing order (floor 1's raised ground and its
 //     ledges are drawn after what lies on the low floor: they come in the flat layer, in their place).
 //     lights: { type: "hole" | "glow", x, y, r, a, color, flicker?, of? }: a hole is the renderer's `spot` (render.ts light: the
@@ -289,6 +293,8 @@ interface Raw {
   what?: string;
   /** (the owl: its loop as it is, frame by frame and how long each holds, not sampled) */
   fixed?: { frames: Sprite[]; secs: number[]; t0: number };
+  /** (a door's leaf, a gate's portcullis: which of the level's doors it is, drawn on the Godot side by `doors` as it opens) */
+  door?: number;
 }
 interface LightOut {
   type: 'hole' | 'glow';
@@ -858,11 +864,14 @@ function standDoors(R: Recorder): void {
   const { L, game } = P;
   const A = P.gates;
   const cam = P.cam;
+  let door: number | undefined;
   const put = (depth: number, sp: Sprite, x: number, y: number, hint: string, what: string): void => {
-    R.addStand('strip', depth, sp, wx(cam, x, y), wy(cam, x, y), false, hint, what);
+    const r = R.addStand('strip', depth, sp, wx(cam, x, y), wy(cam, x, y), false, hint, what);
+    if (door !== undefined) r.door = door;
   };
-  for (const d of L.doors) {
+  for (const [di, d] of L.doors.entries()) {
     const s = d.spot;
+    door = undefined;
     const face = doorFace(s);
     const at = (t: number, back = 0): [number, number] => (s.alongX ? [s.a + t, face - back] : [face - back, s.a + t]);
     const strips = (list: Strip[], t0: number, back: number, hint: string, what: string): void => {
@@ -880,7 +889,9 @@ function standDoors(R: Recorder): void {
       const name = boss ? 'boss gate' : s.kind === 'waygate' ? (L.town ? 'town gate' : 'gate up') : 'gate';
       for (const [x, y] of [at(0), at(3 + wide)]) put(x + y - wide, pillar, x, y, `${name} pillar`, `${name}: pillar`);
       if (d.want === 0 && d.fell !== undefined) throw new Error('a gate falling: not brought over');
+      door = di;
       if (!P.dress.stairsUp(game, s)) strips(A.portcullis(s.alongX, boss, d.open * GATE_UP), -wide, wide, `${name} portcullis`, `${name}: portcullis`);
+      door = undefined;
       if (L.furnace) throw new Error("the Stoker's furnace: not brought over");
       strips(hallGate ? hallGate.arch(s.alongX) : A.arch(s.alongX, boss, false), -wide, 0, `${name} arch`, `${name}: arch`);
       const tw = L.town && L.ways && L.doors[L.ways.gate] === d ? P.dress.townWays(game) : null;
@@ -903,8 +914,60 @@ function standDoors(R: Recorder): void {
     const [hx, hy] = at(1);
     const ex = Math.round(32 * (dx - dy));
     const ey = Math.round(16 * (dx + dy));
+    door = di;
     put(hx + hy + 0.5 * along - 0.2 * back, s.kind === 'worddoor' && s.word ? A.seal(ex, ey, s.word, d.want === 0) : A.leaf(ex, ey), hx, hy, 'door leaf', 'door: leaf');
+    door = undefined;
   }
+}
+
+/**
+ * THE DOORS AS THEY OPEN, for the Godot side (godot/scripts/doors.gd): for each of the level's doors and gates, what standDoors
+ * draws of its moving part at each step of its opening, from shut (0) to open (1): a door's leaf at each of the renderer's
+ * SWING_STEPS + 1 turns (its depth turning with it), a gate's portcullis strips at GATE_STEPS + 1 heights (none for a way's
+ * gate, whose doorway is its stairs). Each step: [picture key, x, y, depth] for each of its pictures, as the items are.
+ */
+const GATE_STEPS = 20;
+interface DoorOut { kind: string; steps: [string, number, number, number][][] }
+function recordDoors(P: Place, atlas: Atlas): DoorOut[] {
+  const { L, game } = P;
+  const A = P.gates;
+  const cam = P.cam;
+  const r2 = (n: number): number => Math.round(n * 1000) / 1000;
+  return L.doors.map((d) => {
+    const s = d.spot;
+    const face = doorFace(s);
+    const at = (t: number, back = 0): [number, number] => (s.alongX ? [s.a + t, face - back] : [face - back, s.a + t]);
+    const pic = (depth: number, sp: Sprite, x: number, y: number, hint: string): [string, number, number, number] =>
+      [atlas.key(sp, hint), Math.round(wx(cam, x, y)), Math.round(wy(cam, x, y)), r2(depth)];
+    const steps: [string, number, number, number][][] = [];
+    if (isLeaf(s.kind)) {
+      if (s.kind !== 'door') throw new Error('a sealed door: not brought over');
+      const [hx, hy] = at(1);
+      for (let k = 0; k <= SWING_STEPS; k++) {
+        const turn = ((k / SWING_STEPS) * Math.PI) / 2;
+        const along = Math.cos(turn);
+        const back = Math.sin(turn);
+        const dx = s.alongX ? along : -back;
+        const dy = s.alongX ? -back : along;
+        const ex = Math.round(32 * (dx - dy));
+        const ey = Math.round(16 * (dx + dy));
+        steps.push([pic(hx + hy + 0.5 * along - 0.2 * back, A.leaf(ex, ey), hx, hy, 'door leaf')]);
+      }
+    } else if (s.kind !== 'waygate' && !P.dress.stairsUp(game, s)) {
+      const boss = s.kind === 'bossgate';
+      const wide = PILLAR / 32;
+      const name = boss ? 'boss gate' : 'gate';
+      for (let k = 0; k <= GATE_STEPS; k++) {
+        const step: [string, number, number, number][] = [];
+        for (const q of A.portcullis(s.alongX, boss, (k / GATE_STEPS) * GATE_UP)) {
+          const [x, y] = at(-wide + q.t, wide);
+          step.push(pic(x + y + STRIP / 64, q.s, x, y, `${name} portcullis`));
+        }
+        steps.push(step);
+      }
+    }
+    return { kind: s.kind, steps };
+  });
 }
 
 // --- the lights (render.ts light: the dark's holes; the glows over it) ---
@@ -1103,6 +1166,7 @@ interface ItemOut {
   t0?: number;
   secs?: number[];
   what?: string;
+  door?: number;
 }
 
 function recordPlace(P: Place, atlas: Atlas): { items: ItemOut[]; lights: LightOut[] } {
@@ -1122,7 +1186,7 @@ function recordPlace(P: Place, atlas: Atlas): { items: ItemOut[]; lights: LightO
   }
   const items: ItemOut[] = first.map((a, i) => {
     const r2 = (n: number): number => Math.round(n * 1000) / 1000;
-    const base = { layer: a.layer, kind: a.kind, x: r2(a.x), y: r2(a.y), d: a.d === null ? null : r2(a.d) };
+    const base = { layer: a.layer, kind: a.kind, x: r2(a.x), y: r2(a.y), d: a.d === null ? null : r2(a.d), ...(a.door !== undefined ? { door: a.door } : {}) };
     if (a.fixed) {
       const frames = a.fixed.frames.map((s) => atlas.key(s, a.hint));
       return { ...base, frames, fps: null, t0: a.fixed.t0, secs: a.fixed.secs, ...(a.what ? { what: a.what } : {}) };
@@ -1226,6 +1290,7 @@ function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; 
   const t0 = Date.now();
   const atlas = new Atlas();
   const { items, lights } = recordPlace(P, atlas);
+  const doors = recordDoors(P, atlas);
   more?.(atlas);
   const sheet = writeSheet(atlas, P.name, sheetWidth);
   const picLights = new Map<string, [number, number, number, number, string][]>();
@@ -1238,6 +1303,7 @@ function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; 
     vignette: P.vignette,
     hero: { x: Math.round(wx(P.cam, P.game.hero.x, P.game.hero.y) * 100) / 100, y: Math.round(wy(P.cam, P.game.hero.x, P.game.hero.y) * 100) / 100, wx: P.game.hero.x, wy: P.game.hero.y },
     items,
+    doors,
     lights,
     pic_lights: Object.fromEntries(picLights),
   }));

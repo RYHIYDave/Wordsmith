@@ -9,6 +9,9 @@
 ##   stand, stand_add what stands among the figures, sorted by its depth `d` (walls, pieces, props, strips; shafts of
 ##                    daylight and sun in the air, added)
 ## A run of pictures plays at its fps from t0, or by each picture's own seconds (`secs`: the owl).
+## THE DOORS (`doors`, one for each of the level's doors and gates, in its order): what moves of each as it opens, step by
+## step from shut to open (a door's leaf, a gate's portcullis), each step [picture, x, y, depth] for each of its pictures;
+## the items of a door's moving part (`door`: which) are left to it, and shown by `show_door` as doors.gd opens it.
 ## THE DARK (render.ts light): the place under its veil (how much, what colour); a HOLE cut in it for each of its lights
 ## (an ellipse 2r across and 1.24r high: render's `spot`), for each light a burning picture carries (`pic_lights`: a
 ## brazier, a torch), and round the hero (his pool, 165 or 170); then each GLOW added over it. Drawn here as one picture
@@ -33,6 +36,7 @@ var _t := 0.0
 var _add: CanvasItemMaterial
 var _dark: Sprite2D
 var _hero: Node2D
+var _doors: Array = []  # for each door: {steps, sprites, shown}
 
 
 ## Whether a place has a recorded look.
@@ -55,7 +59,7 @@ func _ready() -> void:
 		var layer: String = it["layer"]
 		var frames: Array = it["frames"]
 		var at := Vector2(it["x"], it["y"]) * 2.0
-		if frames.is_empty() or not _pics.has(frames[0]):
+		if frames.is_empty() or not _pics.has(frames[0]) or it.has("door"):
 			continue
 		if still.has(layer) and frames.size() == 1:
 			still[layer].append([frames[0], at])
@@ -80,12 +84,59 @@ func _ready() -> void:
 		if frames.size() > 1:
 			_anim.append({"node": s, "frames": frames, "fps": _num(it.get("fps"), 30.0), "t0": _num(it.get("t0"), 0.0),
 				"secs": it.get("secs", null), "dy": s.offset.y + _pics[frames[0]]["anchor"].y})
+	_make_doors()
 	for layer in still:
 		var drawer := _Still.new()
 		drawer.look = self
 		drawer.items = still[layer]
 		layers[layer].add_child(drawer)
 		layers[layer].move_child(drawer, 0)
+
+
+## Each door's sprites, as many as the most pictures any step of it has, stood among the figures; shown at its first step.
+func _make_doors() -> void:
+	for d in data.get("doors", []):
+		var steps: Array = d["steps"]
+		var most := 0
+		for st in steps:
+			most = maxi(most, st.size())
+		var sprites: Array = []
+		for k in most:
+			var s := Sprite2D.new()
+			s.texture = _sheet
+			s.region_enabled = true
+			s.centered = false
+			stands.add_child(s)
+			sprites.append(s)
+		_doors.append({"steps": steps, "sprites": sprites, "shown": -1})
+		show_door(_doors.size() - 1, float(d.get("open", 0.0)) if d.has("open") else (1.0 if d["kind"] == "bossgate" else 0.0))
+
+
+## Show door `i` so far open (0 shut, 1 open), at the nearest of its steps (render.ts: the leaf's turn in SWING_STEPS).
+func show_door(i: int, open: float) -> void:
+	if i < 0 or i >= _doors.size():
+		return
+	var D: Dictionary = _doors[i]
+	var steps: Array = D["steps"]
+	if steps.is_empty():
+		return
+	var k := clampi(roundi(open * (steps.size() - 1)), 0, steps.size() - 1)
+	if k == D["shown"]:
+		return
+	D["shown"] = k
+	var step: Array = steps[k]
+	var sprites: Array = D["sprites"]
+	for j in sprites.size():
+		var s: Sprite2D = sprites[j]
+		s.visible = j < step.size()
+		if not s.visible:
+			continue
+		var p: Array = step[j]
+		var at := Vector2(float(p[1]), float(p[2])) * 2.0
+		var dd := float(p[3])
+		_pic_on(s, p[0])
+		s.position = Vector2(at.x, dd * HH)
+		s.offset.y += at.y - dd * HH
 
 
 func _pic_on(s: Sprite2D, key: String) -> void:

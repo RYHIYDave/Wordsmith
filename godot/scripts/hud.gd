@@ -16,6 +16,8 @@ var hero  # hero.gd
 var loot  # loot.gd (may be null)
 var words := ""
 var words_frame := 0
+## THE BOSS'S NAME ACROSS THE SCREEN (ui/cards.ts drawBossCard): {name, t, secs}, empty when none.
+var card := {}
 var _font: Font
 
 
@@ -26,7 +28,12 @@ func _ready() -> void:
 	_font = ThemeDB.fallback_font
 
 
-func _process(_dt: float) -> void:
+func _process(dt: float) -> void:
+	if not card.is_empty():
+		if not get_tree().paused:
+			card["t"] += dt
+		if card["t"] > card["secs"]:
+			card = {}
 	if words != "" and Engine.get_process_frames() > words_frame and not get_tree().paused and (Input.is_action_just_pressed("interact") or Input.is_action_just_pressed("attack")):
 		words = ""
 	queue_redraw()
@@ -74,6 +81,8 @@ func _draw() -> void:
 		_centred(b["text"], 40, 15, READY)
 		if b["sub"] != "":
 			_centred(b["sub"], 56, 11, Color(0.8, 0.84, 0.95))
+	if not card.is_empty():
+		_boss_card()
 	# what is said to him
 	if words != "":
 		var lines := _wrap(words, 70)
@@ -84,6 +93,50 @@ func _draw() -> void:
 		for i in lines.size():
 			draw_string(_font, box.position + Vector2(14, 22 + i * 16), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.86, 0.9, 1.0))
 		draw_string(_font, box.position + Vector2(box.size.x - 70, box.size.y - 8), "E: ON", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, PRESS)
+
+
+## (ui/cards.ts) In the enemy's colours, large, dropped in with a flash from 1 s into his line, a rule running out to either
+## side with a diamond at its end, a band of dark behind it; gone as he begins to fight.
+const ENEMY_EDGE := Color("#ff4f8a")
+const ENEMY_DEEP := Color("#7a1058")
+const ENEMY_GOLD := Color("#ffd27a")
+const ENEMY_LIGHT := Color("#fff0a0")
+const ENEMY_INK := Color("#0d0716")
+const NAME_AT := 1.0
+
+
+func _boss_card() -> void:
+	var n: String = card["name"]
+	var name := n.to_upper() if n.to_lower().begins_with("the ") else "THE " + n.to_upper()
+	var t: float = card["t"] - NAME_AT
+	var left: float = card["secs"] - card["t"]
+	if t < 0.0:
+		return
+	var a := clampf(t / 0.12, 0.0, 1.0) if left > 0.5 else clampf(left / 0.5, 0.0, 1.0)
+	if a <= 0.0:
+		return
+	var px := 44
+	var w := _font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	var h := float(px)
+	var ease := func(v: float) -> float: return 1.0 - (1.0 - v) * (1.0 - v)
+	var drop := roundf((1.0 - ease.call(clampf(t / 0.15, 0.0, 1.0))) * -16.0)
+	var y := roundf(size.y * 0.62) + drop
+	draw_rect(Rect2(0, y - h * 0.45, size.x, h * 1.9), Color(ENEMY_INK, 0.55 * a))
+	var cx := size.x / 2.0
+	var out: float = ease.call(clampf((t - 0.08) / 0.45, 0.0, 1.0)) * minf(140.0, (size.x - w) / 2.0 - 24.0)
+	var ry := y + h * 0.5
+	for side in [-1.0, 1.0]:
+		var x0: float = cx + side * (w / 2.0 + 12.0)
+		var x1: float = x0 + side * out
+		if absf(x1 - x0) >= 4.0:
+			draw_rect(Rect2(minf(x0, x1), ry, absf(x1 - x0), 2), Color(ENEMY_EDGE, a))
+			var tip := Vector2(x1, ry + 1)
+			draw_colored_polygon(PackedVector2Array([tip + Vector2(0, -5), tip + Vector2(5, 0), tip + Vector2(0, 5), tip + Vector2(-5, 0)]), Color(ENEMY_GOLD, a))
+	var at := Vector2(cx - w / 2.0, y + h * 0.8)
+	var flash := t < 0.2
+	draw_string(_font, at + Vector2(3, 4), name, HORIZONTAL_ALIGNMENT_LEFT, -1, px, Color(ENEMY_DEEP, a))
+	draw_string_outline(_font, at, name, HORIZONTAL_ALIGNMENT_LEFT, -1, px, 6, Color(ENEMY_EDGE, a))
+	draw_string(_font, at, name, HORIZONTAL_ALIGNMENT_LEFT, -1, px, Color(Color.WHITE if flash else ENEMY_LIGHT, a))
 
 
 func _centred(s: String, y: float, px: int, c: Color) -> void:

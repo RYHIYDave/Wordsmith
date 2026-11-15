@@ -51,6 +51,14 @@ var summoned := false
 var xp := 0.0
 var state := "sleep"
 var dead := false
+## (BOSS_INTRO: doors.gd) the boss waits: he stands looking at the hero and nothing harms him, until his gate has fallen and his
+## line is said. `title` his name as the game gives it; what he says over his head, and for how long.
+var waits := false
+var title := ""
+var _said := ""
+var _said_t := 0.0
+var _not_yet := 0.0
+var _not_yet_t := 0.0
 
 var _moves: Array = []
 var _move_cd: Array = []
@@ -82,6 +90,7 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	speed = m["speed"]
 	pack_id = int(m["packId"])
 	boss = m["boss"]
+	title = str(m.get("name", kind))
 	champion = m.get("champion", false)
 	elite = m.get("elite", false)
 	summoned = not m.has("xp")
@@ -118,6 +127,19 @@ func step(dt: float, hero) -> void:
 	_anim_t += dt
 	_flash = maxf(0.0, _flash - dt)
 	_bar = maxf(0.0, _bar - dt)
+	_said_t = maxf(0.0, _said_t - dt)
+	_not_yet = maxf(0.0, _not_yet - dt)
+	_not_yet_t = maxf(0.0, _not_yet_t - dt)
+	# (BOSS_INTRO: until his gate has fallen and his line is said, the boss stands and looks at the hero)
+	if waits:
+		var d0: float = hero.world.distance_to(world)
+		if state != "sleep" or (hero.alive and d0 <= 32.0 and mgr.sees(world, hero.world)):
+			_turn_to(hero.world - world, d0)
+		_set_list("idle")
+		_place()
+		_show()
+		queue_redraw()
+		return
 	_cd -= dt
 	for i in _move_cd.size():
 		_move_cd[i] = maxf(0.0, _move_cd[i] - dt)
@@ -420,6 +442,13 @@ func wake_up() -> void:
 func hurt(dmg: float) -> void:
 	if dead or state == "rise":
 		return
+	# (nor is a boss who waits: game.ts damage, "Not yet")
+	if waits:
+		if _not_yet_t <= 0.0:
+			_not_yet_t = 0.7
+			_not_yet = 0.9
+		queue_redraw()
+		return
 	life -= dmg
 	_flash = 0.12
 	_bar = BAR_FOR
@@ -427,6 +456,13 @@ func hurt(dmg: float) -> void:
 		mgr.wake(self)
 	if life <= 0.0:
 		_die()
+
+
+## Say a line over his head for so many seconds (game.ts bossIntro, render/fx.ts bossSay).
+func say(text: String, secs: float) -> void:
+	_said = text
+	_said_t = secs
+	queue_redraw()
 
 
 func _die() -> void:
@@ -473,9 +509,19 @@ func _show() -> void:
 
 ## Its life over its head for a while after it is struck (game.ts barT).
 func _draw() -> void:
+	var top := _sprite.offset.y * _sprite.scale.y - 10.0
+	var font := ThemeDB.fallback_font
+	if _said_t > 0.0 and not dead:
+		var a := clampf(_said_t / 0.3, 0.0, 1.0)
+		var tw := font.get_string_size(_said, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+		draw_rect(Rect2(-tw / 2 - 6, top - 34, tw + 12, 20), Color(0.05, 0.03, 0.09, 0.7 * a))
+		draw_string(font, Vector2(-tw / 2, top - 19), _said, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 0.94, 0.63, a))
+	if _not_yet > 0.0 and not dead:
+		var rise := (0.9 - _not_yet) * 24.0
+		var nw := font.get_string_size("Not yet", HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+		draw_string(font, Vector2(-nw / 2, top - 6 - rise), "Not yet", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1.0, 0.82, 0.48, clampf(_not_yet / 0.3, 0.0, 1.0)))
 	if _bar <= 0.0 or dead:
 		return
 	var w := 36.0 if not boss else 80.0
-	var top := _sprite.offset.y * _sprite.scale.y - 10.0
 	draw_rect(Rect2(-w / 2 - 1, top - 1, w + 2, 6), Color(0.04, 0.04, 0.1, 0.85))
 	draw_rect(Rect2(-w / 2, top, w * clampf(life / max_life, 0.0, 1.0), 4), Color(0.86, 0.18, 0.28))

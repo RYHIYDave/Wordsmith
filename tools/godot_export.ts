@@ -15,6 +15,7 @@ import { makeGroundArt } from '../src/art/ground';
 import { CRYPT_FLOORS } from '../src/art/crypt';
 import { Game } from '../src/game/game';
 import { MONSTERS } from '../src/game/defs';
+import { doorMiddle, doorPiers, doorTiles, doorWay } from '../src/game/doors';
 import { figureOf } from '../src/art/bestiary';
 import { bakeName } from '../src/render/monsters_bake_list';
 
@@ -100,7 +101,13 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   tiles: arr(L.tiles), variant: arr(L.variant), cut: arr(L.cut), height: arr(L.height),
   walk: arr(level.walk), low: arr(level.low),
   start: { x: game.hero.x, y: game.hero.y }, boss: L.boss,
-  rooms: L.rooms.map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h, kind: r.kind, path: r.path })),
+  rooms: L.rooms.map((r) => ({ id: r.id, x: r.x, y: r.y, w: r.w, h: r.h, kind: r.kind, path: r.path })),
+  // (game/doors.ts: each door and gate the map-maker laid, as the game keeps it (open, want), with its doorway's three tiles,
+  // the tiles passed through (a door's middle one, a gate's three), the stone either side of a door, and its middle)
+  doors: level.doors.map((d) => ({
+    kind: d.spot.kind, room: d.spot.room, alongX: d.spot.alongX, near: d.spot.near, a: d.spot.a, plane: d.spot.plane, out: d.spot.out,
+    tiles: doorTiles(L, d.spot), way: doorWay(L, d.spot), piers: doorPiers(L, d.spot), middle: doorMiddle(d.spot), open: d.open, want: d.want,
+  })),
 }));
 
 // --- 3. its monsters: each as game.ts spawn made it (life, damage and speed with the first floor's softening in them), its

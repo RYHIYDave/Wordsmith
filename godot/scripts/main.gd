@@ -27,6 +27,7 @@ const Inventory := preload("res://scripts/inventory.gd")
 const Town := preload("res://scripts/town.gd")
 const Guide := preload("res://scripts/guide.gd")
 const Look := preload("res://scripts/look.gd")
+const Doors := preload("res://scripts/doors.gd")
 
 const FLOOR_DIR := "res://assets/floor1"
 const TOWN_DIR := "res://assets/town"
@@ -58,6 +59,7 @@ var town: Town
 var map: FloorMap
 var _place: Node2D
 var _monsters: Monsters
+var _doors: Doors
 var _hud
 var _loot: Loot
 var _inv
@@ -219,6 +221,19 @@ func _build(where: String, arrive: String) -> void:
 		monsters.load_floor(FLOOR_DIR + "/monsters.json", MONSTER_DIR)
 	hero.monsters = monsters
 	_monsters = monsters
+	# (the floor's doors and the boss's gate: doors.gd)
+	_doors = null
+	hero.doors = null
+	if not map.doors.is_empty():
+		_doors = Doors.new()
+		_doors.main = self
+		_doors.map = map
+		_doors.look = look if looked else null
+		_doors.hero = hero
+		_doors.monsters = monsters
+		_doors.sfx = sfx
+		_place.add_child(_doors)
+		hero.doors = _doors
 	loot.enter_place(map, stands, monsters, where == "floor1")
 
 	town = null
@@ -288,7 +303,7 @@ func _in_fight() -> bool:
 	if _monsters == null:
 		return false
 	for m in _monsters.list:
-		if not m.dead and m.state != "sleep" and m.world.distance_to(hero.world) < Music.NEAR:
+		if not m.dead and m.state != "sleep" and m.world.distance_to(hero.world) < Music.NEAR and not _monsters.shut_in(m):
 			return true
 	return false
 
@@ -311,6 +326,11 @@ func go_to(where: String, arrive: String) -> void:
 ## What E would do where he stands: [what is shown, what it does] (town.gd).
 func prompt() -> Array:
 	return town.prompt if town != null else ["", ""]
+
+
+## The boss's name across the screen for so many seconds (doors.gd, as his gate falls).
+func boss_card(name: String, secs: float) -> void:
+	_hud.card = {"name": name, "t": 0.0, "secs": secs}
 
 
 func show_words(text: String) -> void:
@@ -408,6 +428,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "music":
 		await _music_test(hero)
+		get_tree().quit()
+		return
+	if _arg("only") == "doors":
+		await _door_shots(hero, dir)
 		get_tree().quit()
 		return
 	await _wait(1.0)
@@ -728,6 +752,74 @@ func _town_shots(h: Hero, dir: String) -> void:
 
 
 ## (A TEST: a real right-button press sent through Godot's input, as a mouse would send it, and what he does with it.)
+## THE DOORS, pictured: the first room's door shut with him short of it (and what is in that room out of his reach), then swung
+## open as he comes within 2.6 tiles; the Warden's gate falling behind him in the hall, the Warden waiting ("Not yet"), his
+## line and his name, then fighting; the gate rising once he is dead.
+func _door_shots(h: Hero, dir: String) -> void:
+	var d: Dictionary = map.doors[0]
+	var mid := Vector2(d["middle"]["x"], d["middle"]["y"])
+	var r: Dictionary = map.room(int(d["room"]))
+	h.world = mid + Vector2(0, 3.6)
+	h.face = Vector2(0, -1)
+	await _wait(0.6)
+	var inside := 0
+	var held := 0
+	for m in _monsters.list:
+		if FloorMap.in_room(r, m.world):
+			inside += 1
+			if _monsters.shut_in(m):
+				held += 1
+	print("DOOR 0 shut: open ", d["open"], " shut tile ", map.shut[int(d["way"][0])], "; ", inside, " in its room, ", held, " out of reach")
+	await _snap(dir + "/40_door_shut.png")
+	h.world = mid + Vector2(0, 2.2)
+	await _wait(0.12)
+	await _snap(dir + "/41_door_swinging.png")
+	await _wait(0.5)
+	print("DOOR 0 near: open ", d["open"], " shut tile ", map.shut[int(d["way"][0])], ", out of reach now ", _monsters.shut_in(_nearest_in(r)) if _nearest_in(r) != null else "-")
+	await _snap(dir + "/42_door_open.png")
+	# (the Warden's gate)
+	var g: Dictionary = {}
+	for q in map.doors:
+		if q["kind"] == "bossgate":
+			g = q
+	var gm := Vector2(g["middle"]["x"], g["middle"]["y"])
+	var warden: Monster = null
+	for m in _monsters.list:
+		if m.boss:
+			warden = m
+	h.world = gm + Vector2(0, -2.0 * float(g["out"]))
+	h.face = Vector2(0, -float(g["out"]))
+	await _wait(0.6)
+	print("GATE before: open ", g["open"], ", warden waits ", warden.waits, " state ", warden.state)
+	await _snap(dir + "/43_gate_up.png")
+	h.world = gm + Vector2(0, -3.2 * float(g["out"]))
+	await _wait(0.08)
+	await _snap(dir + "/44_gate_falling.png")
+	await _wait(0.3)
+	warden.hurt(50.0)
+	await _wait(0.1)
+	print("GATE fallen: open ", g["open"], ", walk ", map.walk[int(g["tiles"][1])], ", warden waits ", warden.waits, " life ", warden.life, "/", warden.max_life)
+	await _snap(dir + "/45_gate_down_not_yet.png")
+	await _wait(0.9)
+	await _snap(dir + "/46_his_line_and_name.png")
+	await _wait(2.0)
+	print("GATE after intro: warden waits ", warden.waits, " state ", warden.state)
+	await _snap(dir + "/47_he_fights.png")
+	warden.hurt(999999.0)
+	await _wait(1.3)
+	print("GATE after his death: open ", g["open"], ", walk ", map.walk[int(g["tiles"][1])])
+	h.world = gm + Vector2(0, 1.5 * float(g["out"]))
+	await _wait(0.3)
+	await _snap(dir + "/48_gate_risen.png")
+
+
+func _nearest_in(r: Dictionary) -> Monster:
+	for m in _monsters.list:
+		if FloorMap.in_room(r, m.world) and not m.dead:
+			return m
+	return null
+
+
 ## THE MUSIC, checked: the town's walk; floor 1's walk; a fight's coming in near a monster awake, from its "fight in at";
 ## its going 4 s after the last of them has gone to sleep or fallen, and the walk back.
 func _music_test(h: Hero) -> void:

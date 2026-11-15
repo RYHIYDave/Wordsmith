@@ -90,7 +90,7 @@ func strike_target(from: Vector2, way: Vector2, reach: float) -> Monster:
 	var best: Monster = null
 	var best_score := INF
 	for m in list:
-		if not is_instance_valid(m) or m.dead or m.state == "rise":
+		if not is_instance_valid(m) or m.dead or m.state == "rise" or shut_in(m):
 			continue
 		var to := m.world - from
 		var dist := to.length()
@@ -109,7 +109,7 @@ func strike_target(from: Vector2, way: Vector2, reach: float) -> Monster:
 func blast(at: Vector2, rad: float, roll: Callable, spare: Object = null) -> int:
 	var n := 0
 	for m in list:
-		if not is_instance_valid(m) or m.dead or m.state == "rise" or m == spare:
+		if not is_instance_valid(m) or m.dead or m.state == "rise" or m == spare or shut_in(m):
 			continue
 		if m.world.distance_to(at) <= rad + m.r:
 			m.hurt(roll.call())
@@ -122,7 +122,7 @@ func nearest(from: Vector2, reach: float) -> Monster:
 	var best: Monster = null
 	var best_d := reach
 	for m in list:
-		if is_instance_valid(m) and not m.dead and m.state != "sleep" and m.state != "rise" and m.world.distance_to(from) <= best_d:
+		if is_instance_valid(m) and not m.dead and m.state != "sleep" and m.state != "rise" and m.world.distance_to(from) <= best_d and not shut_in(m):
 			best_d = m.world.distance_to(from)
 			best = m
 	return best
@@ -131,21 +131,34 @@ func nearest(from: Vector2, reach: float) -> Monster:
 func clear(x: float, y: float, r: float) -> bool:
 	for ty in range(floori(y - r), floori(y + r) + 1):
 		for tx in range(floori(x - r), floori(x + r) + 1):
-			if not map.walkable(tx, ty):
+			if not map.passable(tx, ty):
 				return false
 	return true
 
 
-## Whether `a` sees `b`: every tile on the line between them is open ground.
+## Whether `a` sees `b`: every tile on the line between them is open ground (not a shut door: game/doors.ts).
 func sees(a: Vector2, b: Vector2) -> bool:
 	var d := b - a
 	var n := int(ceil(d.length() * 4.0))
 	for i in range(1, n):
 		var p := a + d * (float(i) / n)
-		var t := map.tile(floori(p.x), floori(p.y))
-		if t != FloorMap.FLOOR and t != FloorMap.PIT:
+		if not map.open_at(floori(p.x), floori(p.y)):
 			return false
 	return true
+
+
+## (game.ts shutIn) What is in a room whose door is shut is out of the hero's reach altogether, awake or not, for as long as he
+## is outside it: no blow, blast or shot of his reaches it, and it is no fight.
+func shut_in(m) -> bool:
+	if map == null or map.doors.is_empty() or hero == null:
+		return false
+	for d in map.doors:
+		if d["kind"] != "door" or int(d["want"]) != 0:
+			continue
+		var r: Dictionary = map.room(int(d["room"]))
+		if FloorMap.in_room(r, m.world) and not FloorMap.in_room(r, hero.world):
+			return true
+	return false
 
 
 ## The way down the flow field from where a body stands: toward the neighbouring tile nearest the hero.
@@ -165,9 +178,9 @@ func flow_dir(at: Vector2) -> Vector2:
 				continue
 			var nx: int = tx + dx
 			var ny: int = ty + dy
-			if not map.walkable(nx, ny):
+			if not map.passable(nx, ny):
 				continue
-			if dx != 0 and dy != 0 and not (map.walkable(tx + dx, ty) and map.walkable(tx, ty + dy)):
+			if dx != 0 and dy != 0 and not (map.passable(tx + dx, ty) and map.passable(tx, ty + dy)):
 				continue
 			var v := _flow[ny * map.w + nx]
 			if v >= 0 and v < best:
@@ -235,8 +248,7 @@ func _fly(dt: float) -> void:
 		a["pos"] += a["dir"] * step
 		a["left"] -= step
 		var p: Vector2 = a["pos"]
-		var t := map.tile(floori(p.x), floori(p.y))
-		var gone: bool = a["left"] <= 0.0 or (t != FloorMap.FLOOR and t != FloorMap.PIT)
+		var gone: bool = a["left"] <= 0.0 or not map.open_at(floori(p.x), floori(p.y))
 		if not gone and not a["hit"] and hero.alive and p.distance_to(hero.world) <= a["r"] + HERO_R:
 			hero.hurt(a["dmg"])
 			a["hit"] = true
@@ -308,9 +320,9 @@ func _make_flow() -> void:
 					continue
 				var nx: int = tx + dx
 				var ny: int = ty + dy
-				if not map.walkable(nx, ny):
+				if not map.passable(nx, ny):
 					continue
-				if dx != 0 and dy != 0 and not (map.walkable(tx + dx, ty) and map.walkable(tx, ty + dy)):
+				if dx != 0 and dy != 0 and not (map.passable(tx + dx, ty) and map.passable(tx, ty + dy)):
 					continue
 				var j := ny * map.w + nx
 				if _flow[j] < 0:

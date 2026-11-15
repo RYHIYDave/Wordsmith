@@ -50,6 +50,7 @@ var map: FloorMap
 var art: BakedHero
 var sfx: Sfx
 var monsters  # monsters.gd
+var doors  # doors.gd, on a floor that has them (null in town)
 var world := Vector2.ZERO
 var home := Vector2.ZERO
 var face := Vector2(1, 0)
@@ -467,6 +468,8 @@ func _back() -> void:
 			if is_instance_valid(m) and not m.dead and m.state != "sleep":
 				m.state = "sleep"
 		monsters.perils.list.clear()
+	if doors != null and is_instance_valid(doors):
+		doors.reset()
 	_place()
 	_show()
 
@@ -485,10 +488,52 @@ func _turn(way: Vector2) -> void:
 
 ## The game's slide: the step along x kept if the body is clear there, then the step along y.
 func _slide(step: Vector2) -> void:
+	var was := world
 	if _clear(world.x + step.x, world.y):
 		world.x += step.x
 	if _clear(world.x, world.y + step.y):
 		world.y += step.y
+	_into_door(step, was)
+
+
+## DOORS (game.ts intoDoor): a door is one tile wide in a hallway of three, and no direction he walks in runs along a hallway:
+## so where his step along x (or y) was refused by the stone beside a door, he is moved sideways, at the pace of that step,
+## toward the nearest place within DOOR_HELP from which the step can be taken: into line with the opening.
+const DOOR_HELP := 1.05
+
+
+func _into_door(step: Vector2, was: Vector2) -> void:
+	if map == null or map.doors.is_empty():
+		return
+	for along_x in [true, false]:
+		var want: float = step.x if along_x else step.y
+		if want == 0.0 or (world.x != was.x if along_x else world.y != was.y):
+			continue
+		var ax: float = world.x + want if along_x else world.x
+		var ay: float = world.y if along_x else world.y + want
+		var stone := false
+		for ty in range(floori(ay - RADIUS), floori(ay + RADIUS) + 1):
+			for tx in range(floori(ax - RADIUS), floori(ax + RADIUS) + 1):
+				stone = stone or map.pier_at(tx, ty)
+		if not stone:
+			continue
+		var best := 0.0
+		var best_s := INF
+		for side in [1.0, -1.0]:
+			var k := 1
+			while k * 0.05 <= DOOR_HELP + 1e-9:
+				var s := k * 0.05
+				if _clear(ax + (0.0 if along_x else side * s), ay + (side * s if along_x else 0.0)):
+					if s < best_s:
+						best_s = s
+						best = side * minf(absf(want), s)
+					break
+				k += 1
+		if best == 0.0:
+			continue
+		var to := world + (Vector2(0.0, best) if along_x else Vector2(best, 0.0))
+		if _clear(to.x, to.y):
+			world = to
 
 
 ## Every tile the body's box overlaps is one a body may stand on (game.ts free).
