@@ -788,6 +788,15 @@ func _ready2() -> void:
 			gi += 1
 		_flush2(pending, added, first)
 	for it in data["items"]:
+		# (a run of still things at one depth side by side, the Pinewood's trees: one thing, its pictures drawn in their order)
+		if it.has("g"):
+			var grp := _Group.new()
+			grp.look = self
+			grp.parts = it["g"]
+			grp.position = Vector2(float(it["x"]) * 2.0, float(it["d"]) * HH)
+			_s_node.append(grp)
+			stands.add_child(grp)
+			continue
 		var s := _sprite2(it, int(it.get("add", 0)) == 1)
 		_s_node.append(s)
 		if s == null:
@@ -1382,6 +1391,21 @@ func _flush_dark() -> void:
 				alpha *= 1.0 - q[3] * clampf(pool, 0.0, 1.0)
 			_dark_img.set_pixel(x, y, Color(col.r, col.g, col.b, clampf(_dark_a * alpha, 0.0, 1.0)))
 	_dark.texture.update(_dark_img)
+
+
+## Still things that stand at one depth side by side, as one (tools/godot_record.mjs `g`: the Pinewood's trees, a row of them
+## within a column of the screen): each picture drawn in its order, its anchor where it stands.
+class _Group extends Node2D:
+	var look
+	var parts: Array = []
+
+	func _draw() -> void:
+		for p in parts:
+			var pic: Dictionary = look._pics.get(str(p[0]), {})
+			if pic.is_empty():
+				continue
+			var r: Rect2 = pic["rect"]
+			draw_texture_rect_region(pic["sheet"], Rect2(Vector2(float(p[1]), float(p[2])) * 2.0 - position - pic["anchor"], r.size), r)
 
 
 ## THE SKY, drawn on the screen as the game draws it (render/outdoor.ts drawSky; the screen here is the game's, 480 by 270 game

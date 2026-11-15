@@ -64,7 +64,8 @@ if (!fs.existsSync(pageFile)) {
 fs.mkdirSync(OUT, { recursive: true });
 
 const { chromium } = load('playwright');
-const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
+// (room for the open floors' thousands of standing things: the Pinewood draws some 120,000 a frame)
+const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required', '--js-flags=--max-old-space-size=8192'] });
 const ctx = await browser.newContext({ viewport: { width: 960, height: 540 }, deviceScaleFactor: 1 });
 const page = await ctx.newPage();
 let errors = 0;
@@ -80,6 +81,10 @@ const settled = async () => {
   await page.waitForTimeout(1200);
 };
 await page.evaluate((s) => window.__rec.begin('warrior', s), seed);
+// (THE PINEWOOD'S TREES drawn one by one, as the game draws them where something comes between them: the game lays the
+// trees of a slab into one picture to draw them faster (render/tops_cache.ts), made a few a frame as the camera comes to
+// them, which here would come and go between the frames; the Godot side groups them its own way, below)
+await page.evaluate(() => { if (window.__dbg.topsCache) window.__dbg.topsCache.on = false; });
 await settled();
 const where = await page.evaluate((dp) => window.__rec.enter(dp), depth);
 await settled();
@@ -255,7 +260,50 @@ for (const q of res.ground) {
   if (!run || run.op !== q.add) ground.push((run = { op: q.add, list: [] }));
   run.list.push(q.f.length === 1 ? still(q) : moving(q));
 }
-const items = res.stands.map((q) => ({ f: q.f.map(key), ...(q.f.length > 1 ? { fps: q.fps } : {}), x: q.x, y: q.y, d: q.d, ...(q.a !== 1 ? { a: q.a } : {}), ...(q.w || q.h ? { w: q.w, h: q.h } : {}), ...(q.add ? { add: 1 } : {}), ...(q.wall ? { wall: q.wall } : {}) }));
+const items0 = res.stands.map((q) => ({ f: q.f.map(key), ...(q.f.length > 1 ? { fps: q.fps } : {}), x: q.x, y: q.y, d: q.d, ...(q.a !== 1 ? { a: q.a } : {}), ...(q.w || q.h ? { w: q.w, h: q.h } : {}), ...(q.add ? { add: 1 } : {}), ...(q.wall ? { wall: q.wall } : {}) }));
+// THE FOREST AS FEWER THINGS: a run of still things that stand at one depth one after another in the renderer's order, within
+// one column of the screen GROUP game pixels wide (the Pinewood's trees, a row of them at a time), is one thing, `g`: its
+// pictures [key, x, y] drawn in that order (look.gd _Group). What is drawn is the same, and a figure sorts against them by
+// the same depth; only what a state hides, what waits on a tile to be seen, what moves, fades or is added stays on its own.
+const GROUP = 256;
+const { items, sMap } = (() => {
+  const own = new Set();
+  for (const v of Object.values(variants)) for (const f of v.frames) for (const i of f.hs) own.add(i);
+  const fogS = fog ? fog.s : null;
+  const out = [];
+  const sMap = new Int32Array(items0.length);
+  let run = null;
+  items0.forEach((it, i) => {
+    const plain = it.f.length === 1 && it.f[0] !== '' && it.a === undefined && it.w === undefined && !it.add && !it.wall && !own.has(i) && (!fogS || fogS[i] < 0);
+    const col = Math.floor(it.x / GROUP);
+    if (plain && run && run.d === it.d && run.col === col) {
+      out[run.at].g.push([it.f[0], it.x, it.y]);
+      sMap[i] = run.at;
+      return;
+    }
+    sMap[i] = out.length;
+    if (plain) {
+      run = { d: it.d, col, at: out.length };
+      out.push({ f: it.f, x: it.x, y: it.y, d: it.d, g: [[it.f[0], it.x, it.y]] });
+    } else {
+      run = null;
+      out.push(it);
+    }
+  });
+  // (one of a kind is left as it was)
+  for (let i = 0; i < out.length; i++) if (out[i].g && out[i].g.length === 1) delete out[i].g;
+  return { items: out, sMap };
+})();
+if (items.length < items0.length) {
+  console.log(`  what stands, ${items0.length} things, as ${items.length}: runs at one depth within ${GROUP} game pixels across taken together (${items.filter((q) => q.g).length} of them)`);
+  // (what is seen when, by the new places in the list: a group waits on nothing, as each of its things did)
+  if (fog) {
+    const s2 = new Array(items.length).fill(-1);
+    items0.forEach((_, i) => { if (!items[sMap[i]].g) s2[sMap[i]] = fog.s[i]; });
+    fog.s = s2;
+  }
+  for (const v of Object.values(variants)) for (const f of v.frames) f.hs = f.hs.map((i) => sMap[i]);
+}
 const sheetNames = sheets.pages.map((_, i) => (i === 0 ? `${name}.png` : `${name}_${i}.png`));
 sheets.pages.forEach((p, i) => fs.writeFileSync(path.join(OUT, sheetNames[i]), Buffer.from(p.png, 'base64')));
 fs.writeFileSync(path.join(OUT, `${name}_pics.json`), JSON.stringify(sheets.pics));
