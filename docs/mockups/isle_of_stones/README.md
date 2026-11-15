@@ -56,6 +56,28 @@ New, painted here as a mock-up, still to be drawn at the game's standard: (1) th
 the sea and the lights on it; (3) the sky and the northern lights; (4) the standing stones; (5) the steps down into the sea;
 (6) the portal's round of flat stones and its low stones.
 
+## Step 2: drawn at the game's standard (14 Nov 2026)
+
+Shown the mock-up, his word: “Actually redraw it, don’t just leave these mock up drawings”. Read as: the layout stands; draw
+the new parts properly. They are now in `src/art/isle_of_stones.ts`, painted as the Shaft's Rim's ground is (one line of sight
+per picture pixel, flat tones, light in bands, a dither only where two bands meet, two picture pixels to a game pixel):
+
+- THE GROUND, one picture (840 x 500 game pixels): the night sky and its stars; the black sea, its ripples thin dashes that are
+  never on a grid, longer toward the eye; the turf in clumps with tufts, the worn paths of earth and grit (round the wordsmith's
+  ring, out to the way down, the gate and the portal), small stones sunk in it; the shore of grey stones, each lit on its upper
+  side; the isle's front face of dark rock in strata, lit where it faces left, foam broken along its foot; the portal's round of
+  flat stones; THE STEPS: six square slabs set corner to the eye, each lower and further out, the first cut into the shore,
+  the third just over the water, the last three under it, the sea over them, green where it washes them.
+- THE NORTHERN LIGHTS, one picture added over the ground: two curtains, rays hanging each to its own length (so that their foot
+  is ragged, never a hill's line), the yellower green at their foot, green, violet up into the dark; their light on the open
+  water in broken dashes straight down from them, fading toward the eye. `auroraNow(t)`: their strength breathing, an 11 s round.
+- THE STANDING STONES, four pieces: one slab each, narrowing as it rises and leaning a little, its lit face in bands, its shaded
+  face, its pale top; grit, cracks, lichen in patches, moss at its foot; its edges bitten by the weather; the rune of the order
+  cut in its lit face, faint, in the friend's cyan, with a small light.
+
+Pictures: `pictures/isle2_whole.png`, `pictures/isle2_view_1..3.png` (the page: `src/dev/preview_isle.ts`, modes `whole2`,
+`view2:1..3`; the first mock-up's are still `whole`, `view:1..3`). Painted in under 2 s, once.
+
 ## For the main chat
 
 How the towns are won (unlocked or bought) is not settled: his “unlockable or purchasable”.

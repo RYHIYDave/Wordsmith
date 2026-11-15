@@ -27,6 +27,7 @@ import { GRAIN } from '../art/kit';
 import { TORCH_FRAMES, paintGate as gatePiece, paintRecord as recordPiece, paintSocketSlab, paintTorchFlame, paintTorchPost, paintTrophies as trophiesPiece } from '../art/shaft_props';
 import type { Piece } from '../art/shaft_props';
 import { stoneOf } from '../art/props';
+import { ISLE_STONES, auroraNow, paintIsleAurora, paintIsleGround, paintStandingStone } from '../art/isle_of_stones';
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // THE PLACE, in tiles: the isle's middle, its turf, its shore, the ring of standing stones.
@@ -424,7 +425,18 @@ interface Put { d: number; f: () => void }
 interface Lit { s?: Sprite; x: number; y: number; r?: number; c?: string; a?: number }
 let GROUND: HTMLCanvasElement | null = null;
 
-export function scene(heroAt: [number, number] | null, t = 0): { cv: HTMLCanvasElement; labels: { x: number; y: number; text: string }[] } {
+let STD: { ground: HTMLCanvasElement; aurora: HTMLCanvasElement; gx: number; gy: number; stones: Sprite[]; ms: number } | null = null;
+/** STEP 2: the isle drawn at the game's standard (art/isle_of_stones.ts), made once. */
+function standard(): NonNullable<typeof STD> {
+  if (STD) return STD;
+  const t0 = performance.now();
+  const G = paintIsleGround();
+  const A = paintIsleAurora();
+  const stones = [0, 1, 2, 3].map((v) => spr(paintStandingStone(v)));
+  return (STD = { ground: G.canvas, aurora: A.canvas, gx: G.gx, gy: G.gy, stones, ms: performance.now() - t0 });
+}
+
+export function scene(heroAt: [number, number] | null, t = 0, std = false): { cv: HTMLCanvasElement; labels: { x: number; y: number; text: string }[] } {
   const B = new Buf();
   const lights: Lit[] = [];
   const labels: { x: number; y: number; text: string }[] = [];
@@ -440,10 +452,16 @@ export function scene(heroAt: [number, number] | null, t = 0): { cv: HTMLCanvasE
     GROUND.height = GH * 2;
     (GROUND.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(G.d, GW * 2, GH * 2), 0, 0);
   }
-  B.canvasAt(GROUND, 0, 0);
+  if (std) {
+    const D = standard();
+    B.canvasAt(D.ground, (OX + D.gx) * 2, (OY + D.gy) * 2);
+    B.canvasAt(D.aurora, (OX + D.gx) * 2, (OY + D.gy) * 2, auroraNow(t));
+  } else B.canvasAt(GROUND, 0, 0);
   // the lights on the sea and over the isle: a breath of the aurora's green and violet
-  lights.push({ x: PCX - 160, y: HORIZON + 30, r: 220, c: '#4ee070', a: 0.08 });
-  lights.push({ x: PCX + 180, y: HORIZON + 20, r: 200, c: '#9a5cf0', a: 0.08 });
+  if (!std) {
+    lights.push({ x: PCX - 160, y: HORIZON + 30, r: 220, c: '#4ee070', a: 0.08 });
+    lights.push({ x: PCX + 180, y: HORIZON + 20, r: 200, c: '#9a5cf0', a: 0.08 });
+  }
   // ---- what lies flat
   const c = (p: readonly [number, number]): [number, number] => [p[0] + 0.5, p[1] + 0.5];
   const flat = (kind: string, p: [number, number]): void => {
@@ -454,8 +472,10 @@ export function scene(heroAt: [number, number] | null, t = 0): { cv: HTMLCanvasE
   const [bx, by] = LAYOUT.tentBack;
   flat('rug', c([bx, by + 1]));
   flat('runeRing', c([wx, wy]));
-  paintPortal(B);
-  portalPosts(B, false);
+  if (!std) {
+    paintPortal(B);
+    portalPosts(B, false);
+  }
   label(LAYOUT.portal[0], LAYOUT.portal[1], 24, 'portal');
 
   // ---- what stands, nearest last
@@ -505,7 +525,7 @@ export function scene(heroAt: [number, number] | null, t = 0): { cv: HTMLCanvasE
       if (s.lights?.length) lights.push({ s, x: at(x, y)[0], y: at(x, y)[1] });
     });
     lights.push({ x: at(x, y)[0], y: at(x, y)[1] - 4, r: 40, c: '#22d0e0', a: 0.35 });
-    put(x + 1.4, y + 1.4, () => paintStair(B));
+    if (!std) put(x + 1.4, y + 1.4, () => paintStair(B));
     label(x + 1.6, y + 1.6, 4, 'way down');
   }
   // the gate, the record, the trophies, the torches: the Shaft's Rim's, drawn at the game's standard (art/shaft_props.ts)
@@ -543,11 +563,24 @@ export function scene(heroAt: [number, number] | null, t = 0): { cv: HTMLCanvasE
     });
   }
   // the ring of standing stones round the whole isle
-  for (const s of STONES) {
-    const [x, y] = polar(s.a, ISLE.ring);
-    put(x, y + 0.2, () => paintStanding(B, s));
+  if (std) {
+    const D = standard();
+    for (const st of ISLE_STONES) {
+      put(st.x, st.y + 0.2, () => {
+        const [gx, gy] = at(st.x, st.y);
+        const sp = D.stones[st.v];
+        B.shadow(gx, gy, 0.3);
+        B.sprite(sp, gx, gy);
+        if (sp.lights?.length) lights.push({ s: sp, x: gx, y: gy });
+      });
+    }
+  } else {
+    for (const s of STONES) {
+      const [x, y] = polar(s.a, ISLE.ring);
+      put(x, y + 0.2, () => paintStanding(B, s));
+    }
+    put(LAYOUT.portal[0] + 1, LAYOUT.portal[1] + 1, () => portalPosts(B, true));
   }
-  put(LAYOUT.portal[0] + 1, LAYOUT.portal[1] + 1, () => portalPosts(B, true));
   // the knight
   if (heroAt) {
     const s = hero.front.idle[0];
@@ -588,7 +621,10 @@ const WHOLE = { x: 490 - 300, y: 30, w: 600, h: 430 };
 const CAP = 90;
 
 function main(): void {
-  const mode = decodeURIComponent(location.hash.slice(1)) || 'whole';
+  const mode0 = decodeURIComponent(location.hash.slice(1)) || 'whole';
+  // (whole2, view2:n: STEP 2, drawn at the game's standard)
+  const std = mode0.startsWith('whole2') || mode0.startsWith('view2');
+  const mode = mode0.replace('whole2', 'whole').replace('view2', 'view');
   const out = document.createElement('canvas');
   document.body.style.margin = '0';
   document.body.style.background = '#05040f';
@@ -596,7 +632,8 @@ function main(): void {
   out.style.display = 'block';
   const g = (): CanvasRenderingContext2D => out.getContext('2d') as CanvasRenderingContext2D;
   if (mode === 'whole') {
-    const { cv, labels } = scene(null);
+    const { cv, labels } = scene(null, 2.0, std);
+    if (std) labels.length = 0;
     out.width = WHOLE.w * 2;
     out.height = WHOLE.h * 2 + CAP;
     const G = g();
@@ -624,11 +661,12 @@ function main(): void {
     }
     G.fillStyle = '#0d1030';
     G.fillRect(0, WHOLE.h * 2, out.width, CAP);
-    drawText(G, 'THE ISLE OF STONES, WHOLE', 20, WHOLE.h * 2 + 22, '#e9ecff', { scale: 6 });
+    drawText(G, std ? 'THE ISLE OF STONES, DRAWN' : 'THE ISLE OF STONES, WHOLE', 20, WHOLE.h * 2 + 22, '#e9ecff', { scale: 6 });
+    if (STD) console.log(`the isle's ground, lights and stones painted in ${STD.ms.toFixed(0)} ms`);
   } else {
     const n = Math.max(1, Math.min(3, Number(mode.split(':')[1]) || 1));
     const v = VIEWS[n - 1];
-    const { cv } = scene(v.hero);
+    const { cv } = scene(v.hero, 2.0, std);
     const [hx, hy] = at(v.hero[0], v.hero[1]);
     const PW = 507;
     const PH = 234;
