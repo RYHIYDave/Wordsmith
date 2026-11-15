@@ -162,6 +162,9 @@ func clear() -> void:
 		if p["kind"] == "spear" or p["kind"] == "fm_circle":
 			keep.append(p)
 		else:
+			# (the descent's: what a mark did to the floor undone, a hurled block's tile floor again: act1/marks.gd gone)
+			if p["kind"] == "a1":
+				A1M.gone(self, p)
 			_film_free(p)
 	list = keep
 

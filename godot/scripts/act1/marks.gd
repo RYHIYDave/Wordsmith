@@ -19,6 +19,7 @@
 ##   devil:twister   the sand swirling in under its twister, and its lightning on the floor.
 ##   scorpion:glob   the glob in flight, its splash and the pool of acid: see scorpion.gd. `a`, `b` where it left the sting,
 ##                   `c` its height there, `d` its arc.
+##   unfinished:*, queen:*  floors 6 and 7's bosses': unfinished_marks.gd, queen_marks.gd.
 extends RefCounted
 
 const Iso := preload("res://scripts/iso.gd")
@@ -38,8 +39,25 @@ const LANE: Array[Color] = [Color("#ff7aa8"), Color("#e0287a"), Color("#7a1058")
 const BOLT := {"white": Color("#fff6ff"), "pale": Color("#e6c8ff"), "violet": Color("#b070ff"), "deep": Color("#6a2cc0"), "pink": Color("#ff4f8a"), "rose": Color("#ff7aa8")}
 
 
+## THE BOSSES OF FLOORS 6 AND 7 have marks files of their own, by the name's first word (unfinished_marks.gd, queen_marks.gd).
+const OWN := {"unfinished": preload("res://scripts/act1/unfinished_marks.gd"), "queen": preload("res://scripts/act1/queen_marks.gd")}
+
+
+static func _own(p: Dictionary):
+	return OWN.get(str(p["a1"]).get_slice(":", 0))
+
+
+## One taken away before its time (the hero fallen and come back: perils.gd clear): what it did to the floor undone (a hurled
+## block's tile floor again).
+static func gone(P, p: Dictionary) -> void:
+	if _own(p) != null:
+		_own(p).gone(P, p)
+
+
 ## A step of one (its clock has run on already); false: it is gone.
 static func step(P, p: Dictionary, _dt: float) -> bool:
+	if _own(p) != null:
+		return _own(p).step(P, p, _dt)
 	var hero = P.hero
 	var h: Vector2 = hero.world
 	var t: float = p["t"]
@@ -144,6 +162,9 @@ static func step(P, p: Dictionary, _dt: float) -> bool:
 
 ## What of one stands among the figures (in its own depth), each frame it is there.
 static func stands(P, p: Dictionary) -> void:
+	if _own(p) != null:
+		_own(p).stands(P, p)
+		return
 	var t: float = p["t"]
 	var at := Vector2(p["x"], p["y"])
 	match str(p["a1"]):
@@ -217,6 +238,9 @@ static func _hide(p: Dictionary, key: String) -> void:
 # --- on the floor (in perils.gd _draw) ---
 
 static func draw(P, p: Dictionary) -> void:
+	if _own(p) != null:
+		_own(p).draw(P, p)
+		return
 	var t: float = p["t"]
 	var at := Vector2(p["x"], p["y"])
 	var src = p.get("src")
@@ -297,6 +321,9 @@ static func _first_ward(m, o) -> bool:
 # --- over what stands (in perils.gd _draw_air) ---
 
 static func air(P, c: CanvasItem, p: Dictionary) -> void:
+	if _own(p) != null:
+		_own(p).air(P, c, p)
+		return
 	if p["a1"] != "chanter:chain" or int(p["done"]) == 0:
 		return
 	var t: float = p["t"]
@@ -317,6 +344,9 @@ static func air(P, c: CanvasItem, p: Dictionary) -> void:
 # --- their lights in the dark (the game's c.spot; perils.gd _spots_of) ---
 
 static func spots(P, p: Dictionary) -> void:
+	if _own(p) != null:
+		_own(p).spots(P, p)
+		return
 	var t: float = p["t"]
 	var at := Vector2(p["x"], p["y"])
 	match str(p["a1"]):

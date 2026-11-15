@@ -63,6 +63,8 @@ const BOSS_AI := {
 	"firepot": preload("res://scripts/act1/firepot.gd"), "chanter": preload("res://scripts/act1/chanter.gd"),
 	"vulture": preload("res://scripts/act1/vulture.gd"), "crawler": preload("res://scripts/act1/crawler.gd"),
 	"devil": preload("res://scripts/act1/devil.gd"), "scorpion": preload("res://scripts/act1/scorpion.gd"),
+	# (THE BOSSES OF FLOORS 6 AND 7, each by its own rules: game/act1_rules/unfinished.ts, queen.ts)
+	"unfinished": preload("res://scripts/act1/unfinished.gd"), "queen": preload("res://scripts/act1/queen.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -88,7 +90,9 @@ const ATK := {
 ## (sound_families.ts BOSS_VOICE: the bosses that roar: their roar as the fight begins, their hurt, their death. The Stoker's
 ## is in the game's table too and is never heard there: he is an elite, and these wait on a boss. The Warden, the Headsman
 ## and the Fleshmancer have none: the common roar.)
-const BOSS_VOICE := {"chained": "chained", "amalgam": "amalgam"}
+const BOSS_VOICE := {"chained": "chained", "amalgam": "amalgam",
+	# (the bosses of floors 6 and 7)
+	"unfinished": "unfinished", "queen": "cqueen"}
 
 var mgr  # monsters.gd
 var art: BakedFigure
@@ -983,6 +987,12 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 	if poison:
 		told["poison"] = true
 	_tell(told)
+	# (ACT 1: one whose rules hold its life up is kept there: the Carrion Queen, who must first be where her death was drawn:
+	# game.ts damageMonster, lifeFloor)
+	if h2 != null and h2.has_method("life_floor"):
+		var least: float = h2.life_floor(self)
+		if least > 0.0 and life < least:
+			life = least
 	if life <= 0.0:
 		_die()
 	elif poison or dot:
@@ -1186,6 +1196,9 @@ func _die() -> void:
 	dead = true
 	state = "dead"
 	_bar = 0.0
+	# (a body is not flashed: the game draws the fallen apart from the living, and its flash runs down only while it lives; here
+	# it would stay white all the while it lay)
+	_flash = 0.0
 	# (killed frozen, it shatters: game.ts kill; what had been done to it is over with it)
 	if frozen_t > 0.0:
 		_tell({"t": "shatter", "x": world.x, "y": world.y})
@@ -1352,9 +1365,12 @@ func _draw_over(c: CanvasItem) -> void:
 	if (elite or boss) and not carries.is_empty() and mgr.loot != null and mgr.loot.sheet != null:
 		var top := roundf(-_head() - (6.0 if boss else 15.0) - lift)
 		var bob := roundf(sin(Time.get_ticks_msec() / 1000.0 * 3.0 + id) * 1.5)
-		var n := carries.size()
+		# (only the words that have their rune stones here, which are all that its death leaves here (loot.gd _word): a word of the
+		# floors past the fifth has none yet, and was drawn as an empty dark square, two of them a dark bar over the Carrion Queen)
+		var shown: Array = carries.filter(func(w): return mgr.loot.pics.has("word:" + str(w)))
+		var n := shown.size()
 		for i in n:
-			var w: String = carries[i]
+			var w: String = shown[i]
 			var x := -floorf((n * 14.0 - 2.0) / 2.0) + i * 14.0
 			var iy := top - 13.0 + bob
 			c.draw_rect(Rect2(x - 1.0, iy - 1.0, 14.0, 14.0), INK)

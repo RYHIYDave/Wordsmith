@@ -356,7 +356,8 @@ func _build(where: String, arrive: String) -> void:
 	# (the floor's doors and the boss's gate: doors.gd)
 	_doors = null
 	hero.doors = null
-	if not map.doors.is_empty():
+	# (and on the descent's floors, where the boss waits out on the open ground for the hero to come into it: doors.gd _open_ground)
+	if not map.doors.is_empty() or (map.ways is Dictionary and map.ways.get("a1") != null):
 		_doors = Doors.new()
 		_doors.main = self
 		_doors.map = map
@@ -4173,8 +4174,9 @@ func _way_shots(h: Hero, dir: String) -> void:
 	h.world = _free_near(boss.world + Vector2(2.5, 2.5))
 	await _wait(1.0)
 	await _snap(tag + "8_boss.png")
-	boss.waits = false
-	boss.hurt(1e9)
+	# (struck until he is dead: the Carrion Queen cannot be brought below a hundredth of her life until she is home on her perch,
+	# and the descent's bosses wait out their line first: _d_kill)
+	await _d_kill(boss)
 	await _wait(0.3)
 	var kind: String = ways.way_kind()
 	if _arg("debug") != "":
@@ -4232,6 +4234,10 @@ func _way_shots(h: Hero, dir: String) -> void:
 ## and twice more as it goes on; then he is struck dead and pictured fallen. Says which moves were made, and how often.
 func _boss_shots(h: Hero, dir: String) -> void:
 	var n := int(_arg("floor")) if _arg("floor") != "" else 3
+	# (floors 6 and 7's bosses: a check of their own, each of their moves and phases made in turn: _boss67_shots)
+	if n == 6 or n == 7:
+		await _boss67_shots(h, dir, n)
+		return
 	var secs := float(_arg("secs")) if _arg("secs") != "" else 40.0
 	go_to("floor%d" % n, "down" if n > 1 else "start")
 	await _wait(1.5)
@@ -4990,3 +4996,289 @@ func _descent_shots(h: Hero, dir: String) -> void:
 		await _d_step(dir, "home", home != "" and town.gate_open == 1.0 and h.world.distance_to(Vector2(14.5, 7.2)) < 0.3,
 			"home: in town just inside the gate, up behind him (%.2f): \"%s\"" % [town.gate_open, home])
 	print("DESCENT: %d of %d steps as the game has them%s" % [_d_n - _d_bad.size(), _d_n, ("; not: " + ", ".join(_d_bad)) if not _d_bad.is_empty() else ""])
+
+
+# =============================================================================================================================
+# THE BOSSES OF FLOORS 6 AND 7 (scripts/act1/unfinished.gd, queen.gd): --only=boss --floor=6 or 7. The hero, not to be harmed,
+# comes into the boss's ground (his line, his name); then each of the boss's moves and phases is made in turn (its wait put out,
+# the others' held, the hero set where it reaches him) and pictured at its moments, and whether the hero was struck by it
+# (hero.gd last_blow) is counted; then the boss is struck dead, pictured as it falls, and its way on watched waking. The
+# Unfinished: in the wall its four, tearing free at 85% of its life, free its four and its walk; the Carrion Queen: her rake,
+# gust, dive, call (her flock called in), Eclipse (the dark, its pools, a dive of her flock), a hop about her eyrie, her life
+# held at a hundredth until she has flown home to her perch, and her fall off the edge. One line, BOSS, sums each up.
+
+var _b67 := {}
+
+
+## A step of the check: a blow that landed on him since the last, told by what struck (the boss's act, or the mark of his that
+## struck as it did).
+func _b67_tick(boss: Monster) -> void:
+	var h: Hero = hero
+	var label := ""
+	for p in _monsters.perils.list:
+		if p["kind"] != "a1":
+			continue
+		if not p.has("_n"):
+			_b67["n"] = int(_b67.get("n", 0)) + 1
+			p["_n"] = _b67["n"]
+		var was: int = _b67["done"].get(p["_n"], 0)
+		if int(p["done"]) != was:
+			_b67["done"][p["_n"]] = int(p["done"])
+			if int(p["done"]) == 1:
+				label = p["a1"]
+	if not is_same(h.last_blow, _b67.get("last")):
+		_b67["last"] = h.last_blow
+		if label == "" and is_instance_valid(boss) and boss.h2 != null and boss.h2.act != null:
+			label = boss.h2.acts()[boss.h2.act["i"]]["id"]
+		# (one of her flock, called in, diving at him)
+		for o in _monsters.list:
+			if label == "" and is_instance_valid(o) and o != boss and not o.dead and o.h2 != null and o.h2.act != null:
+				label = o.h2.acts()[o.h2.act["i"]]["id"]
+		if label == "":
+			label = "other"
+		_b67["hits"][label] = int(_b67["hits"].get(label, 0)) + 1
+	if is_instance_valid(boss) and boss.kind == "queen" and not _b67.get("roam", false) and not boss.dead:
+		boss.h2.a1["roamT"] = 999.0
+	h.life = h.max_life
+
+
+## Frames until `secs` have gone or `until` says so.
+func _b67_run(boss: Monster, secs: float, until := Callable()) -> void:
+	var t := 0.0
+	while t < secs and not (until.is_valid() and until.call()):
+		await get_tree().process_frame
+		t += get_process_delta_time()
+		_b67_tick(boss)
+
+
+## Its act `id` made now: its wait put out and every other act's held, the hero set `away` before it (along `way`, or as it
+## faces), and the act pictured at each of `times` (seconds into it; `then`, what is done there, by the time) and `after`
+## seconds after it is over.
+func _b67_act(boss: Monster, id: String, away: float, times: Array, after := 0.6, way := Vector2.ZERO, then := {}) -> bool:
+	var AI = boss.h2
+	var A: Array = AI.acts()
+	var i := -1
+	for k in A.size():
+		if A[k]["id"] == id:
+			i = k
+	if AI.cds.size() != A.size():
+		AI.cds = []
+		for a in A:
+			AI.cds.append(0.0)
+	for k in A.size():
+		AI.cds[k] = 0.0 if k == i else 99.0
+	boss._cd = 0.0
+	var f: Vector2 = way if way != Vector2.ZERO else boss.face
+	hero.world = _free_near(boss.world + f.normalized() * away)
+	var began := func() -> bool: return AI.act != null and int(AI.act["i"]) == i
+	await _b67_run(boss, 8.0, began)
+	if not began.call():
+		_b67["missed"].append(id)
+		return false
+	var act: Dictionary = AI.act
+	var name := id.get_slice(":", 1)
+	for T in times:
+		await _b67_run(boss, 6.0, func() -> bool: return not is_same(AI.act, act) or float(act["t"]) >= float(T))
+		_b67["k"] = int(_b67.get("k", 0)) + 1
+		await _snap(_b67["tag"] + "%02d_%s_%.2f.png" % [_b67["k"], name, float(T)])
+		if then.has(T):
+			then[T].call()
+	await _b67_run(boss, 6.0, func() -> bool: return not is_same(AI.act, act))
+	if after > 0.0:
+		await _b67_run(boss, after)
+		_b67["k"] = int(_b67["k"]) + 1
+		await _snap(_b67["tag"] + "%02d_%s_after.png" % [_b67["k"], name])
+	return true
+
+
+func _b67_snap(name: String) -> void:
+	_b67["k"] = int(_b67.get("k", 0)) + 1
+	await _snap(_b67["tag"] + "%02d_%s.png" % [_b67["k"], name])
+
+
+func _boss67_shots(h: Hero, dir: String, n: int) -> void:
+	go_to("floor%d" % n, "down")
+	await _wait(1.5)
+	if sight != null:
+		sight.see_all()
+	var boss := _d_boss()
+	if boss == null:
+		print("BOSS: floor %d has none" % n)
+		return
+	_b67 = {"tag": dir + "/b%d_" % n, "hits": {}, "done": {}, "missed": [], "k": 0}
+	var AI = boss.h2
+	if boss.kind == "queen":
+		AI._keep_flock(boss)
+	# (the boss alone with him)
+	for o in _monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	h.unhurt = true
+	var perch := boss.world
+	var base: Vector2 = boss.face
+	# HE COMES INTO ITS GROUND: it waits, then says its line, its name across the screen
+	h.world = _free_near(perch + base * 9.0)
+	await _wait(0.6)
+	var waited_far: bool = boss.waits
+	await _b67_snap("far_off_waits")
+	h.world = _free_near(perch + base * 5.0)
+	await _b67_run(boss, 1.0)
+	await _b67_snap("its_line_and_name")
+	var life0: float = boss.life
+	boss.hurt(50.0)
+	var not_yet: bool = boss.life == life0
+	await _b67_run(boss, 5.0, func() -> bool: return not boss.waits)
+	var intro := "it waits %s far off; met, its line and name, a blow on it %s" % [waited_far, "'Not yet'" if not_yet else "lands"]
+	var said := []
+	if boss.kind == "unfinished":
+		said = await _b67_unfinished(boss, perch, base)
+	else:
+		said = await _b67_queen(boss, perch, base)
+	# ITS DEATH, AND THE WAY ON WAKING
+	h.world = _free_near(boss.world + base * 3.0)
+	await _d_kill(boss)
+	var dead_at := Time.get_ticks_msec()
+	for q in [0.3, 0.9, 1.4, 2.0]:
+		await _b67_run(boss, maxf(0.0, q - (Time.get_ticks_msec() - dead_at) / 1000.0))
+		await _b67_snap("dead_%.1f" % q)
+	var woke := ways != null and ways.state != ""
+	await _b67_run(boss, 1.0)
+	await _b67_snap("the_way_on_waking")
+	print("BOSS floor %d (%s, %s): %s; %s; moves made %s; the hero struck by %s; not made %s; dead %s; the way on %s (%s)" % [n, boss.kind, boss.title, intro, "; ".join(said),
+		_monsters.used, _b67["hits"], _b67["missed"], boss.dead, "waking" if woke else "NOT waking", ways.state if ways != null else "-"])
+
+
+## The Unfinished: in the wall, its four (held there all the while), then torn free and its four, and its walk.
+func _b67_unfinished(boss: Monster, perch: Vector2, base: Vector2) -> Array:
+	var AI = boss.h2
+	var said := []
+	var held := true
+	await _b67_snap("in_the_wall")
+	for q in [["unfinished:slamWall", 2.2, [0.6, 1.25, 1.6]], ["unfinished:stompWall", 2.4, [0.7, 1.32, 1.6]],
+			["unfinished:hurlWall", 6.0, [0.9, 1.45, 2.1, 2.5, 2.8]], ["unfinished:rockslideWall", 6.0, [0.95, 1.65, 1.9, 2.3, 2.9]]]:
+		await _b67_act(boss, q[0], q[1], q[2], 1.2)
+		held = held and boss.world.distance_to(perch) < 1e-6
+	said.append("in the wall, held there %s, facing within %.2f radians of the way it was carved" % [held, absf(wrapf(atan2(boss.face.y, boss.face.x) - atan2(base.y, base.x), -PI, PI))])
+	var blocks := 0
+	var walled := 0
+	for p in _monsters.perils.list:
+		if p["kind"] == "a1" and p["a1"] == "unfinished:block" and int(p["done"]) == 1:
+			blocks += 1
+			var d := int(p["d"]) - 1
+			if d >= 0 and not map.walkable(d % map.w, d / map.w):
+				walled += 1
+	said.append("its blocks lying %d, %d of them a block of the floor" % [blocks, walled])
+	# TEARING FREE, below 85% of its life
+	boss.life = boss.max_life * 0.84
+	hero.world = _free_near(perch + base * 2.2)
+	var tore := func() -> bool: return AI.act != null and AI.acts()[AI.act["i"]]["id"] == "unfinished:tear"
+	await _b67_run(boss, 3.0, tore)
+	if tore.call():
+		var act: Dictionary = AI.act
+		for T in [0.6, 1.45, 2.4, 3.2]:
+			await _b67_run(boss, 4.0, func() -> bool: return not is_same(AI.act, act) or float(act["t"]) >= float(T))
+			await _b67_snap("tear_%.2f" % T)
+		await _b67_run(boss, 4.0, func() -> bool: return not is_same(AI.act, act))
+	said.append("tore free at %.0f%% of its life: free %s" % [100.0 * boss.life / boss.max_life, not AI.in_wall()])
+	# FREE: its walk, and its four
+	hero.world = _free_near(boss.world + base * 7.0)
+	var from := boss.world
+	for k in AI.cds.size():
+		AI.cds[k] = 99.0
+	await _b67_run(boss, 3.0)
+	await _b67_snap("free_walks")
+	said.append("free, it walked %.2f tiles in 3 s" % boss.world.distance_to(from))
+	for q in [["unfinished:slam", 2.2, [0.6, 1.25]], ["unfinished:stomp", 2.4, [0.7, 1.32]], ["unfinished:hurl", 6.0, [1.45, 2.4]], ["unfinished:rockslide", 6.0, [1.0, 1.9, 2.6]]]:
+		await _b67_act(boss, q[0], q[1], q[2], 0.8, base)
+	return said
+
+
+## The Carrion Queen: her rake, gust, dive, call and Eclipse; a hop about her eyrie; held at a hundredth of her life until she has
+## flown home to her perch.
+func _b67_queen(boss: Monster, perch: Vector2, base: Vector2) -> Array:
+	var AI = boss.h2
+	var said := []
+	await _b67_snap("on_her_perch")
+	await _b67_act(boss, "queen:rake", 2.0, [0.5, 1.0, 1.1, 1.4])
+	var gust := {}
+	var before_gust := func() -> void: gust["at"] = hero.world
+	var after_gust := func() -> void: gust["to"] = hero.world
+	await _b67_act(boss, "queen:gust", 3.0, [0.6, 1.0, 1.15, 1.3, 1.6], 0.3, Vector2.ZERO, {1.0: before_gust, 1.6: after_gust})
+	said.append("her gust shoved him %.2f tiles (from %.2f tiles before her: %.2f by her rules)" % [Vector2(gust.get("to", Vector2.ZERO)).distance_to(gust.get("at", Vector2.ZERO)),
+		Vector2(gust.get("at", Vector2.ZERO)).distance_to(boss.world), AI.gust_shove(Vector2(gust.get("at", Vector2.ZERO)).distance_to(boss.world))])
+	# (her dive: up out of sight, nothing reaches her)
+	var reach := {"said": "her dive not made"}
+	var struck_up := func() -> void:
+		var l0: float = boss.life
+		boss.hurt(30.0)
+		reach["said"] = "struck up out of sight in her dive: harmed %s" % (boss.life != l0)
+	await _b67_act(boss, "queen:dive", 4.0, [0.4, 0.9, 1.0, 1.4, 1.62, 1.9, 2.5], 0.0, Vector2.ZERO, {1.0: struck_up})
+	said.append(reach["said"])
+	await _b67_act(boss, "queen:call", 4.0, [0.4, 0.85, 1.3], 1.0)
+	var flock := 0
+	for o in _monsters.list:
+		if is_instance_valid(o) and not o.dead and o.kind == "vulture":
+			flock += 1
+	said.append("her flock called in: %d" % flock)
+	await _b67_run(boss, 1.5)
+	await _b67_snap("her_flock_about_him")
+	# (her flock gone again, that the Eclipse's own dives are seen)
+	for o in _monsters.list:
+		if is_instance_valid(o) and o.kind == "vulture":
+			o.queue_free()
+	await _b67_act(boss, "queen:eclipse", 3.0, [0.9, 1.75, 2.4], 0.0)
+	var E = AI.eclipse_now(_monsters.perils)
+	var dives := 0
+	if E != null:
+		# (he stands where he is out of every pool: her flock dives at him out of the dark)
+		var shot := 0
+		var t := 0.0
+		while t < 5.0:
+			await get_tree().process_frame
+			t += get_process_delta_time()
+			_b67_tick(boss)
+			for p in _monsters.perils.list:
+				if p["kind"] != "a1" or p["a1"] != "queen:vdive":
+					continue
+				if not p.has("_seen"):
+					p["_seen"] = true
+					dives += 1
+				if shot == 0 and float(p["t"]) >= -0.3:
+					shot = 1
+					await _b67_snap("eclipse_dive_marked")
+				elif shot == 1 and float(p["t"]) >= 0.05:
+					shot = 2
+					await _b67_snap("eclipse_dive_strikes")
+				elif shot == 2 and float(p["t"]) >= 0.4:
+					shot = 3
+					await _b67_snap("eclipse_dive_after")
+		await _b67_snap("eclipse_dark_and_pools")
+	said.append("the Eclipse: %d dives of her flock while he was out of its pools" % dives)
+	# (the dark over: she hops about her eyrie)
+	await _b67_run(boss, 8.0, func() -> bool: return AI.eclipse_now(_monsters.perils) == null)
+	hero.world = _free_near(perch + base * 2.5)
+	_b67["roam"] = true
+	AI.a1["roamT"] = 0.0
+	for k in AI.cds.size():
+		AI.cds[k] = 99.0
+	var hop_from := boss.world
+	await _b67_run(boss, 2.0, func() -> bool: return AI.mode == "walk")
+	await _b67_run(boss, 0.25)
+	await _b67_snap("a_hop")
+	await _b67_run(boss, 2.0, func() -> bool: return AI.mode != "walk")
+	_b67["roam"] = false
+	said.append("a hop of %.2f tiles about her eyrie" % boss.world.distance_to(hop_from))
+	# (at a hundredth of her life she flies home to her perch, and stays; then a blow kills her)
+	boss.hurt(1e9)
+	var held: bool = not boss.dead and absf(boss.life - AI.last_of(boss)) < 1e-6
+	var homing := func() -> bool: return AI.act != null and AI.acts()[AI.act["i"]]["id"] == "queen:home"
+	await _b67_run(boss, 3.0, homing)
+	var flew: bool = homing.call()
+	if flew:
+		var act: Dictionary = AI.act
+		for T in [0.6, 1.1, 1.62, 2.4]:
+			await _b67_run(boss, 4.0, func() -> bool: return not is_same(AI.act, act) or float(act["t"]) >= float(T))
+			await _b67_snap("home_%.2f" % T)
+		await _b67_run(boss, 4.0, func() -> bool: return not is_same(AI.act, act))
+	said.append("struck to the last: held at %.0f of her life %s; flown home %s, %.2f off her perch, home for good %s" % [AI.last_of(boss), held, flew, boss.world.distance_to(perch), AI.home_for_good()])
+	return said

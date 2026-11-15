@@ -46,7 +46,15 @@ const LINES := {
 	"chained": ["HRRRNNGH!", "Mmmph... FREE...", "GRRRAAAH!"],
 	"amalgam": ["Join us.", "More bones. More.", "We are many. Be one of us."],
 	"fleshmancer": ["Your bones will serve.", "Fall, and rise for me.", "The cult thanks you for the flesh."],
+	# (ACT 1, THE DESCENT: the Unfinished, the quarry's half-cut giant; the Carrion Queen, a bird, who can only screech)
+	"unfinished": ["The chisel never finished me.", "Stone does not tire.", "Lie still. Be carved."],
+	"queen": ["SKRAAAAA!", "KRAAA-AAK!", "SKREEEEE!"],
 }
+## (game.ts meetOutdoorBoss: within so many tiles of him, the hero has come into his ground)
+const MEET_NEAR := 6.0
+const BossGround := preload("res://scripts/act1/boss_ground.gd")
+## (ACT 1: out on the open ground, whether the hero has come into the boss's ground on this floor yet)
+var _met := false
 
 var main  # main.gd
 var map: FloorMap
@@ -127,6 +135,12 @@ func _process(dt: float) -> void:
 			_show(i)
 	_levers()
 	_locks()
+	# (ACT 1, OUT ON THE OPEN GROUND: there is no gate to fall behind the hero; the boss waits for him to come into his ground)
+	if _open_ground():
+		if not _met and alive and hero.alive and _into_ground(boss):
+			_met = true
+			_intro(boss)
+		gate_up = not _met
 	if intro_t > 0.0:
 		intro_t = maxf(0.0, intro_t - dt)
 	if boss != null:
@@ -178,6 +192,7 @@ static func _word_name(w: String) -> String:
 ## of a room that locks, up again (he is outside it now).
 func reset() -> void:
 	intro_t = 0.0
+	_met = false
 	for d in map.doors:
 		if (d["kind"] == "bossgate" or d["kind"] == "trapgate") and int(d["want"]) == 0:
 			_raise(d)
@@ -316,6 +331,22 @@ func _raise(d: Dictionary) -> void:
 		map.walk[int(t)] = 1
 		map.shut[int(t)] = 0
 	sfx.play("gate_rise", linear_to_db(0.8))
+
+
+## (BOSS_INTRO, ACT 1: game.ts bossWaits, meetOutdoorBoss) A floor of the descent: its boss is out on the open ground, with no gate
+## of his own.
+func _open_ground() -> bool:
+	if not (map.ways is Dictionary) or map.ways.get("a1") == null:
+		return false
+	for d in map.doors:
+		if d["kind"] == "bossgate":
+			return false
+	return true
+
+
+## Whether the hero has come into the boss's ground: well inside his area (assets/floor<N>/boss.json), or within 6 tiles of him.
+func _into_ground(boss) -> bool:
+	return BossGround.inside(BossGround.of(map.depth), hero.world) or hero.world.distance_to(boss.world) <= MEET_NEAR
 
 
 ## His gate down behind the hero, the boss says his line, and his name comes up across the screen.
