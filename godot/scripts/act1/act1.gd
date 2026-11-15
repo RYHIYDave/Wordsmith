@@ -28,7 +28,9 @@ const HEAVY_KNOCK := 0.6
 const POISON_TIME := 4.0
 ## (sound_families.ts ATK: its attack's sound by its family, heard as each act begins, no oftener than every 0.25 s: game.ts
 ## atkSound, enemyRec)
-const ATK := {"qgolem": "atkStone", "rubbling": "atkStone", "firepot": "atkFirepot", "chanter": "atkHex", "vulture": "atkVulture", "crawler": "atkSting", "scorpion": "atkSting"}
+const ATK := {"qgolem": "atkStone", "rubbling": "atkStone", "firepot": "atkFirepot", "chanter": "atkHex", "vulture": "atkVulture", "crawler": "atkSting", "scorpion": "atkSting",
+	# (floor 9's boss; a boss's heard at 0.9; the Cantor has none)
+	"stag": "atkAntler"}
 ## (chanter.ts CHANTER.ward: the cult's kinds a chanter shields, within `r` tiles of it, each taking `share` less harm)
 const WARD := {"r": 4.5, "share": 0.4, "kinds": ["dagger", "cultist", "firepot", "minifm", "priest"]}
 
@@ -223,7 +225,7 @@ func start_act(m, A: Array, i: int, hero) -> void:
 	var named: String = str(a["id"]).replace(":", "_")
 	m.mgr.used[named] = m.mgr.used.get(named, 0) + 1
 	if ATK.has(m.kind):
-		m.mgr.voice(ATK[m.kind], 0.25, linear_to_db(0.6))
+		m.mgr.voice(ATK[m.kind], 0.25, linear_to_db(0.9 if m.boss else 0.6))
 	start(m, a, hero)
 
 

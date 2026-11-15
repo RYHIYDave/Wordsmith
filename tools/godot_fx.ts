@@ -126,6 +126,10 @@ import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, RING_CANVAS as CH_RING_CANVAS, STA
 import { markRing } from '../src/art/action_f6_fx';
 import { chantWard } from '../src/art/act1_cultists';
 import { POOL_CANVAS, SPIT, SWIRL_CANVAS, TW, globShadowPainted, layTwisterBolts, poolPainted, swirlPainted } from '../src/art/action_f6_canyon';
+// (the bosses of floors 8 and 9: floor 8's rockfall, the Stag's wall of roots)
+import { act1Pieces } from '../src/render/act1_pieces';
+import { CLUMP9, clump9Sprite } from '../src/art/act1_figs/stag';
+import { WALL as SG_WALL, forgetClumps } from '../src/art/stag_action_fx';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -528,6 +532,23 @@ for (const view of ['front', 'back'] as const) {
   stills('sc_shadow', 21, 'floor', (q) => toSprite(globShadowPainted(q / 20), null, 25, 13));
 }
 
+// THE BOSSES OF FLOORS 8 AND 9 (render/act1_fx/cantor.ts, stag.ts), as the game starts (the Hollow Stag's fight done the action
+// way, STAG_ACTION on):
+//   cn_rock      floor 8's own rockfall (art/floor8.ts 'rockfall from the rim': its sign, its warning shadow, the rock come down,
+//                the rubble; 4 stills, layer `floor`, anchored at its tile's top corner), drawn where the Cantor's voice shakes
+//                rocks loose over the hero, and his copies' rocks.
+//   sg_clump_<k> the Stag's wall of roots, clump kind k of ten (art/act1_figs/stag.ts clump9Sprite: CLUMP9.n stills, layer `stand`,
+//                picked by clump9Frame); sg_earth_<k>: the torn earth at its foot (layer `floor`).
+{
+  const rocks = act1Pieces(8).get('rockfall from the rim')?.frames ?? [];
+  if (rocks.length >= 4) films.cn_rock = { fps: 0, n: 4, k0: 0, layers: { floor: rocks.slice(0, 4).map((s) => pic(s)) } };
+  for (let kind = 0; kind < SG_WALL.kinds; kind++) {
+    films[`sg_clump_${kind}`] = { fps: 0, n: CLUMP9.n, k0: 0, layers: { stand: Array.from({ length: CLUMP9.n }, (_, i) => pic(clump9Sprite(kind, i, 'air'))) } };
+    films[`sg_earth_${kind}`] = { fps: 0, n: 1, k0: 0, layers: { floor: [pic(clump9Sprite(kind, 0, 'floor'))] } };
+    forgetClumps();
+  }
+}
+
 // --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a
 // floor that has its kind), the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
 /** The set a film is packed with: the first word of its name; the cultist's sigil and the Flame keybearer's apart. */
@@ -537,6 +558,8 @@ const KIND_SETS: Record<string, string[]> = {
   archer: ['rain'], warden: ['lock'], cultist: ['sigil'], shade: ['rime'], brute: ['brute'], priest: ['smoke'], stoker: ['st'], chained: ['co'],
   amalgam: ['am'], mite: ['am'], beast: ['am'], fleshmancer: ['fm'], minifm: ['fm'], keyblade: ['kb'], keyflame: ['kb'],
   qgolem: ['qg'], firepot: ['fp'], chanter: ['ch'], devil: ['dv'], scorpion: ['sc'],
+  // (the bosses of floors 8 and 9)
+  cantor: ['cn'], stag: ['sg'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);
