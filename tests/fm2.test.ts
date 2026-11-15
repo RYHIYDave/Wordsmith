@@ -1,6 +1,6 @@
-// FLOOR 5'S BOSS, THE FLESHMANCER, BROUGHT UP TO PAR (art/fm2_switch.ts FLESH2, off until his yes): his fire as flames, his circle and
+// FLOOR 5'S BOSS, THE FLESHMANCER, BROUGHT UP TO PAR (art/fm2_switch.ts FLESH2, on at his yes): his fire as flames, his circle and
 // light about him, his death worthy of him. Here:
-//   1. the switch is off; of the game only his own files reach the new ones;
+//   1. the switch is on, at his yes (“Yes, switch him on (Recommended)”, 14 Nov 2026); of the game only his own files reach the new ones;
 //   2. his fire as flames: drawn over its whole time, crisp, his pink in it, never cyan, nothing cut off, nothing after; the floor under
 //      it (the char) as it was;
 //   3. his circle, his power, his death's burst and pillar: drawn, never cyan;
@@ -87,8 +87,8 @@ function counting(): { g: CanvasRenderingContext2D; n: () => number; colours: Se
 }
 const at = (x: number, y: number): readonly [number, number] => [300 + (x - y) * 16, 150 + (x + y) * 8];
 
-test('1. the switch is off; of the game only his own files reach the new ones', () => {
-  assert.equal(FLESH2.on, false, 'FLESH2 is off');
+test('1. the switch is on, at his yes; of the game only his own files reach the new ones', () => {
+  assert.equal(FLESH2.on, true, 'FLESH2 is on');
   const its = /^art\/fm2_(switch|fx)$/;
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x: string) => x.replace(/\\/g, '/'))) {

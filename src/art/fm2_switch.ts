@@ -4,5 +4,8 @@
 // yes to them. His words of 14 Nov 2026, asked whether the main bosses were up to par: the Censor first, then the Moth, then his pick
 // “Yes, the Fleshmancer (Recommended)”.
 
-/** HIS SWITCH: the Fleshmancer brought up to par (off until his yes, pictures first). */
-export const FLESH2 = { on: false };
+/**
+ * HIS SWITCH: the Fleshmancer brought up to par. ON at his yes, 14 Nov 2026, asked with his fight filmed in the game (docs/mockups/
+ * fleshmancer_redo/pictures/fm2_fight.mp4): “Yes, switch him on (Recommended)”.
+ */
+export const FLESH2 = { on: true };
