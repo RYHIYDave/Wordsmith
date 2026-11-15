@@ -631,6 +631,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await _way_shots(hero, dir)
 		get_tree().quit()
 		return
+	if _arg("only") == "boss":
+		await _boss_shots(hero, dir)
+		get_tree().quit()
+		return
 	await _wait(1.0)
 	await _snap(dir + "/01_start.png")
 	await _hero_moves(hero, dir)
@@ -1484,3 +1488,57 @@ func _way_shots(h: Hero, dir: String) -> void:
 	await _wait(2.0)
 	await _snap(tag + "10_after.png")
 	print("WAYS: now in %s (%s)" % [place, place_title()])
+
+
+## SHOT MODE, A FLOOR'S BOSS (--only=boss --floor=N [--secs=40]): the hero set down in the boss's hall, in his sight, not to be
+## harmed; the boss wakes (his gate, his line) and fights; every move he makes (monsters.gd `used`) is pictured as it begins
+## and twice more as it goes on; then he is struck dead and pictured fallen. Says which moves were made, and how often.
+func _boss_shots(h: Hero, dir: String) -> void:
+	var n := int(_arg("floor")) if _arg("floor") != "" else 3
+	var secs := float(_arg("secs")) if _arg("secs") != "" else 40.0
+	go_to("floor%d" % n, "down" if n > 1 else "start")
+	await _wait(1.5)
+	var boss: Monster = null
+	for m in _monsters.list:
+		if is_instance_valid(m) and m.boss:
+			boss = m
+	if boss == null:
+		print("BOSS: floor %d has none" % n)
+		return
+	var tag := dir + "/b%d_" % n
+	h.world = _spot_near(boss.world, 5.0, boss.world)
+	await _wait(0.5)
+	await _snap(tag + "00_his_hall.png")
+	var t := 0.0
+	while boss.waits and t < 8.0:
+		await get_tree().process_frame
+		t += get_process_delta_time()
+	_monsters.used = {}
+	var seen := {}
+	var pending: Array = []  # [id, at, k]
+	t = 0.0
+	while t < secs and not boss.dead:
+		await get_tree().process_frame
+		t += get_process_delta_time()
+		for id in _monsters.used:
+			if not seen.has(id):
+				seen[id] = true
+				await _snap(tag + "%02d_%s_0.png" % [seen.size(), id])
+				pending.append([id, t + 0.45, 1, seen.size()])
+				pending.append([id, t + 1.1, 2, seen.size()])
+		var keep: Array = []
+		for p in pending:
+			if t >= p[1]:
+				await _snap(tag + "%02d_%s_%d.png" % [p[3], p[0], p[2]])
+			else:
+				keep.append(p)
+		pending = keep
+		# (he is kept where the boss can come at him: back near the boss if he has been thrown or has wandered far)
+		if h.world.distance_to(boss.world) > 9.0:
+			h.world = _spot_near(boss.world, 5.0, boss.world)
+	print("BOSS floor %d (%s, %s): moves made in %.0f s: %s; his life %.0f of %.0f; the hero's %.0f" % [n, boss.kind, boss.title, t, _monsters.used, boss.life, boss.max_life, h.life])
+	boss.waits = false
+	boss.hurt(1e9)
+	await _wait(1.6)
+	await _snap(tag + "99_fallen.png")
+	print("BOSS floor %d: dead %s" % [n, boss.dead])

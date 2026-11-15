@@ -19,6 +19,11 @@ const Iso := preload("res://scripts/iso.gd")
 const BakedFigure := preload("res://scripts/baked_figure.gd")
 const MM := preload("res://scripts/monster_moves.gd")
 const Headsman := preload("res://scripts/headsman.gd")
+## THE BOSSES THAT FIGHT BY THEIR OWN RULES (game/bosses.ts BossRules), each a script of its own with `step(m, dt, hero)`, handed
+## the monster every frame it is awake in place of the common rules below (and `died(m)`, if it has one, as it falls): by kind.
+const BOSS_AI := {
+	"headsman": Headsman,
+}
 
 const AGGRO := 9.0
 const WAKE_PACK := 14.0
@@ -103,8 +108,8 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	xp = float(m.get("xp", kind_def.get("xp", 0)))
 	_anim_t = m.get("animT", 0.0)
 	_moves = MM.moves_of(kind, champion)
-	if kind == "headsman":
-		h2 = Headsman.new()
+	if BOSS_AI.has(kind):
+		h2 = BOSS_AI[kind].new()
 
 
 ## Called up out of the ground (the Warden's dead): `secs` till it is out.
@@ -518,6 +523,8 @@ func _die() -> void:
 	_bar = 0.0
 	_set_list("die", true)
 	mgr.perils.drop(self)
+	if h2 != null and h2.has_method("died"):
+		h2.died(self)
 	if boss:
 		mgr.boss_fell = true
 		mgr.boss_at = world
