@@ -1593,12 +1593,24 @@ func _gate_shots(h: Hero, dir: String) -> void:
 		await _wait(0.7)
 		await _snap(tag + "7_the_temple_door_barred.png")
 		said.append("the temple door: told %s keys %d, walked %s" % [temple.told, temple.keys, map.walk[int(d["tiles"][1])]])
-		h.world = _free_near(out + (out - mid).normalized() * 4.0)
-		await _wait(0.2)
-		_monsters.quest_item.emit("key", h.world)
-		await _wait(0.3)
-		_monsters.quest_item.emit("key", h.world)
-		await _wait(0.3)
+		# (its two keybearers struck dead, each key walked to where it lies; were they not on the floor, the keys are given)
+		var bearers: Array = []
+		for m in _monsters.list:
+			if is_instance_valid(m) and (m.kind == "keyblade" or m.kind == "keyflame"):
+				bearers.append(m)
+		for m in bearers:
+			h.world = _free_near(m.world + Vector2(2.0, 0.0))
+			await _wait(0.3)
+			m.hurt(1e9)
+			await _wait(1.3)
+			for at in Monster.Keybearers.keys_lying(_monsters):
+				h.world = at
+				await _wait(0.4)
+			await _snap(tag + "7%s_a_key_taken_%s.png" % ["b" if m.kind == "keyblade" else "c", m.kind])
+		said.append("its keybearers: %d; keys held %d" % [bearers.size(), temple.keys])
+		while temple.keys < temple.need:
+			_monsters.quest_item.emit("key", h.world)
+			await _wait(0.2)
 		h.world = _free_near(out)
 		for k in [[0.9, "8a_its_first_chain"], [1.2, "8b_its_second_chain"], [1.3, "8c_its_leaves_swing"], [1.4, "8d_the_temple_open"]]:
 			await _wait(k[0])
@@ -1681,6 +1693,10 @@ func _kind_shots(h: Hero, dir: String) -> void:
 		"boneward": [[5.5, 6.0], [1.5, 5.0], [6.5, 8.0], [1.5, 4.0]],
 		"priest": [[6.0, 6.0], [2.4, 9.0]],
 		"dagger": [[2.0, 9.0]],
+		# (the Knife: set down again 4.2 off every 4 s, so that he throws and leaps as well as stabs; the Flame: within his
+		# ring's reach)
+		"keyblade": [[4.0, 6.0], [4.2, 4.0], [4.2, 4.0], [4.2, 4.0], [4.2, 4.0], [4.2, 4.0]],
+		"keyflame": [[3.0, 25.0]],
 	}
 	var marks := {
 		"brute": {
@@ -1778,6 +1794,11 @@ func _kind_shots(h: Hero, dir: String) -> void:
 		await _snap(tag + "%02d_fallen.png" % (k + 1))
 		h.world = fell
 		await _wait(0.6)
+		# (a keybearer's key lies a little to his side: walked to)
+		if kind == "keyblade" or kind == "keyflame":
+			for at in Monster.Keybearers.keys_lying(_monsters):
+				h.world = at
+				await _wait(0.4)
 		await _snap(tag + "%02d_where_it_fell.png" % (k + 2))
 		said += "; dead %s; taken up: %s" % [m.dead, got]
 	print("KIND floor %d %s: moves made %s; pictured %s; the hero struck in %d frames%s" % [n, kind, _monsters.used, done.keys(), hits, said])
