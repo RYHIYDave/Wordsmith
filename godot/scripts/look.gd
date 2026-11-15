@@ -59,6 +59,8 @@ var _fog_s := {}
 var _fog_glow := {}
 var _glow_nodes: Array = []
 var _fogged := false
+## (the states playing by the clock: play_variant)
+var _plays: Array = []
 var _pics := {}
 var _anim: Array = []  # {node, frames, fps, t0, secs, dy}
 var _t := 0.0
@@ -204,6 +206,9 @@ func _ready() -> void:
 
 ## THE WAYPOINT WAKES (game.ts: as he first comes near it): its dais awake, its loop at 10 a second, the motes rising over it.
 func wake_waypoint() -> void:
+	# (a look recorded from the game has its waypoint awake as it stands: he comes in beside it)
+	if _format == 2:
+		return
 	if _way_awake or _way_node == null or not data.has("waypoint"):
 		return
 	_way_awake = true
@@ -215,6 +220,9 @@ func wake_waypoint() -> void:
 ## A WARP on the waypoint (render.ts standWays): the column of light, its frames at 20 a second from `from` seconds in (0 as he
 ## goes; 0.25 as he comes out of it, its second half), in place of the motes while it plays.
 func play_warp(from: float) -> void:
+	if _format == 2:
+		play_variant("warp", from)
+		return
 	if _warp_node == null:
 		return
 	_warp_t = from
@@ -466,6 +474,7 @@ func _process(dt: float) -> void:
 	_t += dt
 	if _format == 2:
 		_run2()
+		_step_plays(dt)
 		if _dark != null and _hero != null:
 			_dark.material.set_shader_parameter("hero", _hero.position)
 		return
@@ -995,7 +1004,55 @@ func has_variant(name: String) -> bool:
 
 func _show_variant(name: String, v: Dictionary, k: float) -> void:
 	var steps: Array = v["steps"]
-	var fi := int(steps[clampi(roundi(k * (steps.size() - 1)), 0, steps.size() - 1)])
+	_show_step(name, v, clampi(roundi(k * (steps.size() - 1)), 0, steps.size() - 1))
+
+
+## A state played by the clock (the warp's column of light on the waypoint: its frames at its own pace from `from` seconds in);
+## once, and then it is gone; or round and round (`loop`).
+func play_variant(name: String, from := 0.0, loop := false) -> void:
+	var V: Dictionary = data.get("variants", {})
+	if not V.has(name):
+		return
+	for p in _plays:
+		if p["name"] == name:
+			p["t"] = from
+			return
+	_plays.append({"name": name, "t": from, "loop": loop, "fps": float(V[name].get("fps", 20.0))})
+	_step_plays(0.0)
+
+
+func _step_plays(dt: float) -> void:
+	var keep: Array = []
+	for p in _plays:
+		p["t"] += dt
+		var v: Dictionary = data["variants"][p["name"]]
+		var n: int = v["steps"].size()
+		var i := int(floorf(p["t"] * p["fps"]))
+		if i >= n and not p["loop"]:
+			clear_variant(p["name"])
+			continue
+		_show_step(p["name"], v, posmod(i, n))
+		keep.append(p)
+	_plays = keep
+
+
+## A state taken away again: what it put in is taken out, what it hid is shown.
+func clear_variant(name: String) -> void:
+	var was: Dictionary = _shown.get(name, {})
+	if was.is_empty():
+		return
+	for n in was["nodes"]:
+		if is_instance_valid(n):
+			n.queue_free()
+	for gi in was["hg"]:
+		_hide_ground(int(gi), -1)
+	for si in was["hs"]:
+		_hide_stand(int(si), -1)
+	_shown.erase(name)
+
+
+func _show_step(name: String, v: Dictionary, si: int) -> void:
+	var fi := int(v["steps"][si])
 	var was: Dictionary = _shown.get(name, {"frame": -1, "nodes": [], "hg": [], "hs": []})
 	if int(was["frame"]) == fi:
 		return
@@ -1005,14 +1062,14 @@ func _show_variant(name: String, v: Dictionary, k: float) -> void:
 			n.queue_free()
 	for gi in was["hg"]:
 		_hide_ground(int(gi), -1)
-	for si in was["hs"]:
-		_hide_stand(int(si), -1)
+	for si2 in was["hs"]:
+		_hide_stand(int(si2), -1)
 	var F: Dictionary = v["frames"][fi]
 	var now := {"frame": fi, "nodes": [], "hg": F["hg"], "hs": F["hs"]}
 	for gi in F["hg"]:
 		_hide_ground(int(gi), 1)
-	for si in F["hs"]:
-		_hide_stand(int(si), 1)
+	for si2 in F["hs"]:
+		_hide_stand(int(si2), 1)
 	# what it draws on the ground, each after the ground's thing it was drawn after (those after the same one in their order)
 	var after_n := {}
 	for e in F["g"]:

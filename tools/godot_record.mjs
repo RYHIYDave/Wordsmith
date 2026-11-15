@@ -28,7 +28,8 @@
 //       drawn (Level.explored), or -1: always drawn. (--nofog leaves it out; the town has none.)
 //     variants: THE PLACE'S STATES, by name: door<i> (the level's doors and gates, shut to open in 21 steps), prop<i> (a
 //       chest open, a barrel or an urn broken: steps 0 and 1), stair<j> (the stairwell breaking open at each of its places),
-//       exit, cave, shaft (floor 3's door, floor 4's cave, floor 5's cage, as they open), way (the waypoint awake). Each
+//       exit, cave, shaft (floor 3's door, floor 4's cave, floor 5's cage, as they open), way (the waypoint awake: its loop,
+//       12 frames at `fps`), warp (the column of light of a warp on it, 12 frames at `fps`). Each
 //       { kind, (secs), steps: [which frame each step shows], frames: [{ hg: [the ground's things that are gone, by their
 //       place in the ground's lists taken together], hs: [what stands that is gone, by its place in items], g: [what is
 //       drawn on the ground instead: [key, x, y, a, w, h, add, after (the ground's thing it is drawn after, -1 the first)]],
@@ -75,6 +76,20 @@ await page.evaluate((s) => window.__rec.begin('warrior', s), seed);
 await settled();
 const where = await page.evaluate((dp) => window.__rec.enter(dp), depth);
 await settled();
+// (the films the side painter makes: waited for, so that the place is recorded with them and not with what stands in for them)
+const painted = async (what) => {
+  let p = await page.evaluate(() => window.__rec.painter());
+  const t = Date.now();
+  while (p.state === 'on' && p.made < p.asked && Date.now() - t < 60000) {
+    await page.waitForTimeout(500);
+    p = await page.evaluate(() => window.__rec.painter());
+  }
+  if (p.state !== 'on') console.log(`  (${what}: no side painter on this page (${p.state}): the films it makes are not in the recording)`);
+  else if (p.made < p.asked) console.log(`  !! ${what}: ${p.asked - p.made} of the side painter's ${p.asked} films not made after a minute`);
+  else if (p.asked) console.log(`  (${what}: the side painter's ${p.made} films made: ${p.films.join(', ')})`);
+  for (const f of p.failed ?? []) console.log('  !! the side painter: ' + f);
+};
+await painted('coming in');
 const ready = await page.evaluate(() => window.__rec.ready());
 console.log(`${name}: ${where.w}x${where.h}, ${ready.props} props, ${ready.doors} doors and gates, ${ready.monsters} monsters set aside; the hero parked at ${ready.park[0].x},${ready.park[0].y} (${ready.park[0].clear} tiles of empty stone round him)`);
 
@@ -108,10 +123,18 @@ const first = await page.evaluate(({ T0, W, H, N }) => {
     const fr = R.take(T0 + dt, W, H);
     if (fr.err) return { err: fr.err };
   }
-  R.accBegin(N);
   return {};
 }, { T0, ...size, N });
 if (first.err) { console.error('the renderer threw:\n' + first.err); await browser.close(); process.exit(1); }
+// (the whole floor drawn once has asked for every film it shows: wait for them, then begin)
+await page.waitForTimeout(1500);
+await painted('the whole floor seen');
+await page.evaluate(({ T0, W, H, N }) => {
+  const R = window.__rec;
+  const g = window.__dbg.game();
+  for (const dt of [-0.4, -0.2]) { g.time = R.time0 + dt; R.take(T0 + dt, W, H); }
+  R.accBegin(N);
+}, { T0, ...size, N });
 for (let k = 0; k < N; k += 10) {
   const r = await page.evaluate(({ T0, W, H, k, n }) => {
     const R = window.__rec;
@@ -135,6 +158,7 @@ if (Object.keys(sum.odd).length) console.log('  not brought over: ' + Object.ent
 
 // the place's states: its doors and gates opening, its chests open and its barrels and urns broken, its ways on opening
 let variants = {};
+let waypoint = null;
 if (!args.includes('--still')) {
   const layoutFile = path.resolve(ROOT, `godot/assets/${name}/layout.json`);
   const layout = fs.existsSync(layoutFile) ? JSON.parse(fs.readFileSync(layoutFile, 'utf8')) : null;
@@ -142,8 +166,15 @@ if (!args.includes('--still')) {
   const ts = Date.now();
   const base = await page.evaluate(({ T0, W, H }) => window.__rec.statesBegin(T0, W, H), { T0, ...size });
   if (base.err) { console.error('the renderer threw:\n' + base.err); await browser.close(); process.exit(1); }
+  // (the films of the ways opening are painted off to the side as they are first asked for (render/painter.ts): asked for once,
+  // waited for, and then taken)
+  await page.evaluate(({ T0, W, H, consts }) => window.__rec.states(T0, W, H, consts), { T0, ...size, consts });
+  await page.waitForTimeout(1500);
+  await painted('the states');
+  await page.evaluate(({ T0, W, H }) => window.__rec.statesBegin(T0, W, H), { T0, ...size });
   const st = await page.evaluate(({ T0, W, H, consts }) => window.__rec.states(T0, W, H, consts), { T0, ...size, consts });
   variants = await page.evaluate(() => window.__rec.variants);
+  waypoint = await page.evaluate(() => window.__rec.waypoint ?? null);
   console.log(`  its states in ${((Date.now() - ts) / 1000).toFixed(1)} s: ${Object.entries(st.sum).map(([k, v]) => `${v.n} ${k} (${v.changed} of ${v.frames} frames differ)`).join(', ')}; ${st.extra} pictures more${base.hg + base.hs + base.g + base.s ? `; (${base.hg + base.hs} gone and ${base.g + base.s} new with nothing changed: left out of every state)` : ''}`);
   for (const [k, v] of Object.entries(st.note)) console.log(`  !! ${k}: ${String(v).split('\n')[0]}`);
 }
@@ -192,6 +223,8 @@ const doc = {
   holes: res.holes.map((h) => [h.x, h.y, h.r, h.ry, h.a, h.flicker]),
   glows: res.glows.map((g) => [key(g.f), g.x, g.y, g.w, g.h, g.a, g.flicker]),
   ...(fog ? { fog } : {}),
+  // (the floor's waypoint, where it has one: its middle on the floor, in tiles; its pictures are the states `way` and `warp`)
+  ...(waypoint ? { waypoint } : {}),
   variants: Object.fromEntries(Object.entries(variants).map(([k, v]) => {
     // (each state: its frames, the same ones kept once: `steps` says which frame each step along it shows)
     const uniq = [];
@@ -206,7 +239,7 @@ const doc = {
       if (!seen.has(sig)) { seen.set(sig, uniq.length); uniq.push(out); }
       return seen.get(sig);
     });
-    return [k, { kind: v.kind, ...(v.secs ? { secs: v.secs } : {}), ...(v.at !== undefined ? { at: v.at } : {}), steps, frames: uniq }];
+    return [k, { kind: v.kind, ...(v.secs ? { secs: v.secs } : {}), ...(v.fps ? { fps: v.fps } : {}), ...(v.at !== undefined ? { at: v.at } : {}), steps, frames: uniq }];
   })),
 };
 fs.writeFileSync(path.join(OUT, `${name}.json`), JSON.stringify(doc));

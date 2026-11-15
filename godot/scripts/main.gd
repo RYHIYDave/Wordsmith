@@ -337,9 +337,12 @@ func _build(where: String, arrive: String) -> void:
 			_way.awake = true
 			look.wake_waypoint()
 			look.play_warp(0.25)
-	# (FLOOR_NAMES: the floor's own name across the screen as he comes into it, its level under it: ui/cards.ts drawFloorCard)
+	# (FLOOR_NAMES: the floor's own name across the screen as he comes into it, its level under it: ui/cards.ts drawFloorCard;
+	# gone with the floor if he leaves it while it is still up)
 	if where != "town" and _hud != null:
 		_hud.floor_card_for(where)
+	elif _hud != null:
+		_hud.floor_card = {}
 	loot.enter_place(map, stands, monsters, where == "floor1")
 	# (the ways on from a floor that has no stairwell: floor 3's door, floor 4's cave, floor 5's cage: ways.gd)
 	ways = null
@@ -633,6 +636,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "boss":
 		await _boss_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "waypoint":
+		await _waypoint_shots(hero, dir)
 		get_tree().quit()
 		return
 	await _wait(1.0)
@@ -1542,3 +1549,34 @@ func _boss_shots(h: Hero, dir: String) -> void:
 	await _wait(1.6)
 	await _snap(tag + "99_fallen.png")
 	print("BOSS floor %d: dead %s" % [n, boss.dead])
+
+
+## SHOT MODE, A FLOOR'S WAYPOINT (--only=waypoint --floor=N): come into the floor, its waypoint pictured awake beside him; he
+## steps onto it and warps to town (the column of light pictured as it flares), and from the town's waypoint back down to
+## that floor.
+func _waypoint_shots(h: Hero, dir: String) -> void:
+	var n := int(_arg("floor")) if _arg("floor") != "" else 3
+	go_to("floor%d" % n, "down" if n > 1 else "start")
+	await _wait(1.6)
+	var tag := dir + "/p%d_" % n
+	if _way == null:
+		print("WAYPOINT: floor %d has none" % n)
+		return
+	await _snap(tag + "1_awake.png")
+	print("WAYPOINT floor %d: at %s awake %s way_depth %d" % [n, _way.at, _way.awake, way_depth])
+	h.world = _way.at
+	await _wait(0.3)
+	print("WAYPOINT: here %s prompt %s" % [_way.here(), prompt()])
+	_way.warp()
+	await _wait(0.12)
+	await _snap(tag + "2_warp.png")
+	await _wait(1.2)
+	await _snap(tag + "3_in_town.png")
+	print("WAYPOINT: now in %s at %s; the town's awake %s prompt %s" % [place, h.world, _way.awake if _way != null else null, prompt()])
+	if _way != null and place == "town":
+		h.world = _way.at
+		await _wait(0.3)
+		_way.warp()
+		await _wait(1.4)
+		await _snap(tag + "4_back.png")
+	print("WAYPOINT: back in %s (%s) at %s" % [place, place_title(), h.world])

@@ -13,12 +13,45 @@
   const d = window.__dbg;
   const REC = (window.__rec = { phase: 'idle', stand: null, snapshot: null, unknown: {}, srcs: [], srcIds: new Map(), errors: [] });
 
+  // A picture is known by what is in it, not by which canvas it is: the game makes some pictures afresh every frame (a wall's
+  // piece graded to its floor's colours, a moment's film's frame), and the same picture made twice must be the same picture
+  // here. So the first time a canvas is seen its pixels are read, once, and it takes the number of the first with those pixels.
+  const byPixels = new Map();
+  let reader = null;
+  function pixelsKey(img) {
+    const w = img.width;
+    const h = img.height;
+    if (!w || !h || w * h > 4096 * 4096) return null;
+    try {
+      if (!reader) reader = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+      const c = reader.canvas;
+      if (c.width < w || c.height < h) { c.width = Math.max(c.width, w); c.height = Math.max(c.height, h); }
+      reader.clearRect(0, 0, w, h);
+      reader.drawImage(img, 0, 0);
+      const data = new Uint32Array(reader.getImageData(0, 0, w, h).data.buffer);
+      let a = 0x811c9dc5;
+      let b = 0x1b873593;
+      for (let i = 0; i < data.length; i++) {
+        a = Math.imul(a ^ data[i], 0x01000193);
+        b = (Math.imul(b, 31) + data[i]) | 0;
+      }
+      return `${w}x${h}:${a >>> 0}:${b >>> 0}`;
+    } catch (e) {
+      return null;
+    }
+  }
   REC.idOf = (img) => {
     let i = REC.srcIds.get(img);
     if (i === undefined) {
-      i = REC.srcs.length;
+      const key = img && !img.__fake && typeof img.width === 'number' ? pixelsKey(img) : null;
+      const same = key ? byPixels.get(key) : undefined;
+      if (same !== undefined) i = same;
+      else {
+        i = REC.srcs.length;
+        REC.srcs.push(img);
+        if (key) byPixels.set(key, i);
+      }
       REC.srcIds.set(img, i);
-      REC.srcs.push(img);
     }
     return i;
   };
@@ -235,6 +268,15 @@
     d.autoWords = false;
   };
   REC.loading = () => !!d.loadingNow();
+  /**
+   * The side painter (render/painter.ts): the films of a floor's moments and of its ways opening are made beside the game as
+   * they are first asked for, and until one is made the game shows what stands in for it. How many are asked for and made.
+   */
+  REC.painter = () => {
+    const p = d.painter;
+    if (!p) return { state: 'none', asked: 0, made: 0, failed: [] };
+    return { state: p.state, asked: p.asked ? p.asked.size : 0, made: p.films ? p.films.size : 0, failed: p.stats ? p.stats.failed : [], films: p.stats ? Object.keys(p.stats.films) : [] };
+  };
 
   /** Go to a floor (0: stay in town). */
   REC.enter = (depth) => {
@@ -828,7 +870,7 @@
   const picKey = (q, anchored) => `${q.src}${q.sub ? `r${q.sub.map(r3).join('_')}` : ''}${anchored ? `a${r3(q.ax)}_${r3(q.ay)}` : ''}`;
 
   /** The frame `fr` against the place as recorded: { hg, hs: what of the ground and of what stands is gone; g, s: what is new }. */
-  REC.differ = (fr) => {
+  REC.differ = (fr, sample = 0) => {
     const A = REC.acc;
     const res = REC.result;
     const count = new Map();
@@ -844,7 +886,8 @@
       }
       return i;
     };
-    const first = (T) => (T.tl ? T.tl[0] : T.born === 0 ? T.first : -1);
+    // (what each thing showed at that frame of the recording: a state taken later than the first frame is held against then)
+    const first = (T) => (T.tl ? T.tl[sample] : T.born === 0 ? T.first : -1);
     let lastBase = -1;
     for (const q of fr.ground) {
       const stretched = !q.nat;
@@ -886,16 +929,32 @@
    * A state's frames: `set(v)` puts the game in the state at each of `values`, `unset()` puts it back. `base`: what differs
    * of itself at that moment with nothing set (a frame of the place as it is), taken out of every frame.
    */
-  REC.variant = (T0, W, H, values, set, unset) => {
+  REC.variant = (T0, W, H, values, set, unset, sampleOf) => {
     const g = d.game();
     const frames = [];
+    // (what differs of itself at each later frame of the recording, with nothing set: taken first, and left out of the state)
+    if (sampleOf) {
+      for (const v of values) {
+        const sample = sampleOf(v);
+        if (sample === 0 || REC.baseDiffs.has(sample)) continue;
+        g.time = REC.time0 + sample / 30;
+        const fr = REC.take(T0 + sample / 30, W, H);
+        if (fr.err) return { err: fr.err };
+        const df = REC.differ(fr, sample);
+        REC.baseDiffs.set(sample, { hg: new Set(df.hg), hs: new Set(df.hs), g: new Set(df.g.map((e) => `${e.f}|${e.x}|${e.y}`)), s: new Set(df.s.map((e) => `${e.f}|${e.x}|${e.y}|${e.d}`)) });
+      }
+      g.time = REC.time0;
+    }
     for (const v of values) {
       set(v);
-      g.time = REC.time0;
-      const fr = REC.take(T0, W, H);
-      if (fr.err) { unset(); return { err: fr.err }; }
-      const df = REC.differ(fr);
-      const B = REC.baseDiff;
+      // (`sampleOf(v)`: the frame of the recording this value is taken at, a thirtieth of a second each: a state that moves
+      // by the clock, the waypoint awake)
+      const sample = sampleOf ? sampleOf(v) : 0;
+      g.time = REC.time0 + sample / 30;
+      const fr = REC.take(T0 + sample / 30, W, H);
+      if (fr.err) { unset(); g.time = REC.time0; return { err: fr.err }; }
+      const df = REC.differ(fr, sample);
+      const B = sample === 0 ? REC.baseDiff : REC.baseDiffs.get(sample) ?? null;
       if (B) {
         // (what differs with nothing set at all is no part of the state: a thing that flickers by more than the clock)
         const drop = (list, base) => list.filter((x) => !base.has(x));
@@ -907,6 +966,7 @@
       frames.push(df);
     }
     unset();
+    g.time = REC.time0;
     return { frames };
   };
 
@@ -914,6 +974,7 @@
   REC.statesBegin = (T0, W, H) => {
     REC.extra = new Set();
     REC.baseDiff = null;
+    REC.baseDiffs = new Map();
     const g = d.game();
     g.time = REC.time0;
     const fr = REC.take(T0, W, H);
@@ -978,11 +1039,18 @@
         else out.shaft = { kind: 'shaft', secs: consts.shaft, frames: r.frames };
       }
       if (Wy.way) {
+        // THE WAYPOINT: awake, its dais's loop and the motes over it, 12 frames at 10 a second; and a warp on it, the column of
+        // light, 12 frames at 20 a second (render.ts standWays; art/crypt_ways.ts)
         const wp = Wy.way;
-        const was = wp.awake;
-        const r = REC.variant(T0, W, H, [1], () => { wp.awake = true; }, () => { wp.awake = was; });
+        const was = { awake: wp.awake, warpAt: wp.warpAt };
+        const back = () => { wp.awake = was.awake; wp.warpAt = was.warpAt; };
+        const r = REC.variant(T0, W, H, [...Array(12).keys()], () => { wp.awake = true; wp.warpAt = null; }, back, (k) => k * 3);
         if (r.err) note.way = r.err;
-        else out.way = { kind: 'way', frames: [{ hg: [], hs: [], g: [], s: [] }, r.frames[0]] };
+        else out.way = { kind: 'way', fps: 10, frames: r.frames };
+        const r2 = REC.variant(T0, W, H, [...Array(12).keys()], (k) => { wp.awake = true; wp.warpAt = REC.time0 - k / 20; }, back);
+        if (r2.err) note.warp = r2.err;
+        else out.warp = { kind: 'warp', fps: 20, frames: r2.frames };
+        REC.waypoint = { wx: wp.x, wy: wp.y };
       }
     }
     REC.variants = out;
