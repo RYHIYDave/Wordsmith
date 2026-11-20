@@ -29,8 +29,19 @@ import { ELEMENT_RAMP, P } from '../src/art/palette';
 import { WORD_HUE } from '../src/render/fx';
 import { AIR, CRACKLE, LEAP_LIFT, THRUST_LIFT } from '../src/render/wild';
 import { NEW_RAMP, STAGGER, WORDS3 } from '../src/render/words3';
+import { MELD3, MELD_RAMP } from '../src/render/melds3';
+import { MELD_IDS } from '../src/game/types';
 
 gameSwitches();
+// THE TEN MELDED WORDS' OWN COLOURS (render/melds3.ts MELD_RAMP, the art chat's), in place of the placeholders in art/icons.ts and
+// render/fx.ts, as the game puts them as it starts (src/main.ts, MELD3: `for (const w of MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3]`,
+// and useMeldArt's WORD_COLOR): the colour a melded word stirs in at his feet as a move is used with it behind.
+if (MELD3.on) {
+  for (const w of MELD_IDS) {
+    WORD_HUE[w] = MELD_RAMP[w][3];
+    WORD_COLOR[w] = MELD_RAMP[w][3];
+  }
+}
 const OUT = 'godot/assets/fx';
 mkdirSync(OUT, { recursive: true });
 

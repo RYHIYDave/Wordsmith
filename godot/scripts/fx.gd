@@ -67,6 +67,9 @@ var w610: Words610
 ## (LASTING'S, FLEETING'S AND VAST'S OWN LOOKS, render/words10.ts: fx_words10.gd, handed on from its own lines below, each marked w10)
 const Words10 := preload("res://scripts/fx_words10.gd")
 var w10: Words10
+## (THE TEN MELDED WORDS' OWN LOOKS, render/melds3.ts: fx_melds3.gd, handed on from its own lines below, each marked m3)
+const Melds3 := preload("res://scripts/fx_melds3.gd")
+var m3: Melds3
 
 ## (main.ts: `gdt = fx.freeze > 0 ? dt * 0.06 : dt`)
 const HOLD_PACE := 0.06
@@ -217,6 +220,8 @@ func _init() -> void:
 	w610.fx = self
 	w10 = Words10.new()
 	w10.fx = self
+	m3 = Melds3.new()
+	m3.fx = self
 
 
 func _ready() -> void:
@@ -247,6 +252,7 @@ func _exit_tree() -> void:
 	figures.clear()
 	w610.clear()
 	w10.clear()
+	m3.clear()
 
 
 func _notification(what: int) -> void:
@@ -265,7 +271,11 @@ func event(e: Dictionary) -> void:
 	var t: String = e.get("t", "")
 	seen[t] = int(seen.get(t, 0)) + 1
 	last[t] = e
-	_handle(e)
+	# (m3: the melded words' looks, called up by what the rules said happened, before the effects take it: main.ts eventsM3)
+	m3.event(e)
+	# (m3: a melded word's own bolts, blasts and patches are its look's, not the effects': fx.ts handle, meldOwnsEvent)
+	if not Melds3.owns_event(e):
+		_handle(e)
 	# (w10: what the rules said happened, as render/words10.ts eventsW10 reads it)
 	w10.event(e)
 	_redraw()
@@ -315,6 +325,8 @@ func _late(_dt: float) -> void:
 	figures.follow()
 	# (w10: his after-images, where he now is)
 	w10.follow()
+	# (m3: he is drawn fainter while Scald's steam hides him: render.ts heroAlphaM3)
+	m3.follow()
 	if timing:
 		cost_update += Time.get_ticks_usec() - t0
 
@@ -381,6 +393,7 @@ func clear() -> void:
 	figures.clear()
 	w610.clear()
 	w10.clear()
+	m3.clear()
 	_redraw()
 
 
@@ -802,8 +815,8 @@ func _handle(e: Dictionary) -> void:
 		"heavy":
 			words3.heavy_hit(e["x"], e["y"], e["r"], e.get("big", false))
 		"stun":
-			# (left out: a melded word's stun, which has a look of its own)
-			var m = _monster_of(e)
+			# (m3: a melded word's stun has a look of its own, fx_melds3.gd's: words3.ts events3)
+			var m = _monster_of(e) if e.get("meld") == null else null
 			if m != null:
 				words3.stun(m, float(e.get("secs", 0.0)))
 		"stagger":
@@ -901,8 +914,9 @@ func _hit(e: Dictionary) -> void:
 	else:
 		float_text(x, y, amount + "!" if crit else amount, L.P["gd4"] if crit else (L.P["white"] if el == "phys" else ramp[ramp.size() - 2]), crit or heavy)
 	spray(x, y, 5 if on_hero else 3, PackedColorArray([L.P["bl4"], L.P["bl3"]]) if on_hero else ramp, 2.2, 50.0, 12.0)
-	var w = e.get("words")
-	if heavy:
+	# (m3: a melded word's own look stands in for its two words' marks, and for Power's weight: fx.ts meldLookWords)
+	var w = Melds3.look_words(e.get("words"))
+	if heavy and is_same(w, e.get("words")):
 		# Power lands: a burst of light on the target, and the game holds its breath
 		flash(x, y, 12.0, 0.5, 0.1, L.POWER_HOT)
 		spray(x, y, 6, L.POWER_HOT, 3.5, 80.0, 12.0)
@@ -1021,7 +1035,8 @@ func _burst(e: Dictionary) -> void:
 	var r: float = e["r"]
 	var el: String = e.get("el", "phys")
 	var style: String = e.get("style", "shock")
-	var w = e.get("words")
+	# (m3: as for a hit: fx.ts meldLookWords)
+	var w = Melds3.look_words(e.get("words"))
 	var ramp := _ramp(el)
 	var power := _has(w, "power")
 	var area := style != "shock"
@@ -1251,15 +1266,19 @@ func ambient(list: Array, dt: float) -> void:
 				mote(at.x + (randf() - 0.5) * 0.8, at.y + (randf() - 0.5) * 0.8, PackedColorArray([hue, L.P["white"]]))
 		# (its states, read at once; most are in none)
 		var bits := figures.read(m)
+		# (m3: a melded word's mark on it lays a colour over it too: a crush, Thunder's stun, Frostbite's bite, Blight's rot)
+		var m3t: bool = m3.tint(m).a > 0.0
 		if bits == 0:
 			if marked:
 				words3.watch(m, false, false)
+			if m3t:
+				figures.touched(m, false, false, false, false)
 			continue
 		var frozen := bits & Figures.FROZEN != 0
 		var chilled := bits & Figures.CHILLED != 0
 		var burning := bits & Figures.BURNING != 0
 		var poisoned := bits & Figures.POISONED != 0
-		if frozen or chilled or burning or poisoned:
+		if frozen or chilled or burning or poisoned or m3t:
 			figures.touched(m, frozen, chilled, burning, poisoned)
 		# on fire: flames off it, and its light
 		if burning:
@@ -1270,11 +1289,12 @@ func ambient(list: Array, dt: float) -> void:
 		# chilled: motes of frost about it (not one frozen solid)
 		if chilled and not frozen and randf() < 0.12 * amb:
 			mote(at.x + (randf() - 0.5) * 0.5, at.y + (randf() - 0.5) * 0.5, PackedColorArray([L.P["white"], L.P["bu5"]]))
-		# poisoned: it bubbles, the more the more doses it carries (left out: one rotting with Blight, a melded word's)
-		if poisoned and randf() < minf(0.5, 0.12 + figures.state(m, "poison_n") * 0.05) * amb:
+		# poisoned: it bubbles, the more the more doses it carries (m3: not one rotting with Blight: the rot is its sickness)
+		if poisoned and not m3.rotting(m) and randf() < minf(0.5, 0.12 + figures.state(m, "poison_n") * 0.05) * amb:
 			bubbles(at.x, at.y, 0.25, 1)
 		if marked or bits & (Figures.STUNNED | Figures.STAGGERED) != 0:
-			words3.watch(m, bits & Figures.STUNNED != 0, bits & Figures.STAGGERED != 0)
+			# (m3: Thunder's stun is its own look, not Heavy's sparks)
+			words3.watch(m, bits & Figures.STUNNED != 0 and not m3.thunders(m), bits & Figures.STAGGERED != 0)
 	figures.thaws()
 	# the hero burning, from a monster's Flame: embers rise off him (render.ts; his tint, chilled or poisoned: fx_figures.gd)
 	if h != null and float(h.get("burn_t")) > 0.0 and h.alive and randf() < 0.4 * amb:
@@ -1396,6 +1416,8 @@ func update(dt: float, real: float) -> void:
 	figures.tick(dt)
 	w610.update(dt)
 	w10.update(dt)
+	# (m3: the melded words' looks age, and what they do all the time: render.ts tickM3)
+	m3.update(dt)
 
 
 static func _trim(list: Array, most: int) -> void:
@@ -1422,6 +1444,8 @@ func _spots() -> void:
 	words3.lights()
 	ground.lights()
 	w10.lights()
+	# (m3: render.ts lightsM3)
+	m3.lights()
 
 
 # =====================================================================================================================
@@ -1518,7 +1542,7 @@ static func pline(c: CanvasItem, x0f: float, y0f: float, x1f: float, y1f: float,
 
 ## Whether anything is alive to be drawn; the layers are drawn again while there is, and once more after.
 func _alive() -> bool:
-	return pn > 0 or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or w10.alive()
+	return pn > 0 or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or w10.alive() or m3.alive()
 
 
 func _redraw() -> void:
@@ -1556,6 +1580,8 @@ func _paint(c: CanvasItem, pass_id: int) -> void:
 func _paint_ground(c: CanvasItem) -> void:
 	var P: Dictionary = L.P
 	words3.draw_floor(c)
+	# (m3: the melded words' patches, scars, Blight's brand and Eruption's heat, with the floor: render.ts floorM3)
+	m3.paint(c, 0)
 	w610.draw_floor(c)
 	w10.draw_floor(c)
 	# (left out: the rifts of the enemies coming in, the other classes' and the unique items' marks, a volley's arrows
@@ -1693,6 +1719,8 @@ func _paint_air(c: CanvasItem) -> void:
 	var white: Color = P["white"]
 	ground.draw_air(c)
 	words3.draw_air(c)
+	# (m3: the melded words' clouds, steam and fog, and what is over the monsters and him: render.ts airM3)
+	m3.paint(c, 1)
 	# (w10: Lasting's, Fleeting's and Vast's, over the figures and the dark: render/words10.ts airW10, before fx.drawAir)
 	w10.draw_air(c)
 	for q: Dictionary in whirls:
@@ -1853,6 +1881,8 @@ func _paint_air(c: CanvasItem) -> void:
 					rect(c, p.x - 1.0, p.y - 2.0, 3, 5, P["fr4"])
 					rect(c, p.x - 1.0, p.y - 1.0, 3, 3, P["fr6"])
 					rect(c, p.x, p.y, 1, 1, white)
+	# (m3: over the effects' sparks, the melded words' jaws, columns, bombs, bolts and the screen's flash: render/melds3.ts overM3)
+	m3.paint(c, 2)
 
 
 ## Where one of the embers of his might is on the screen, `b` round its ring (fx.ts drawAir, `at`).

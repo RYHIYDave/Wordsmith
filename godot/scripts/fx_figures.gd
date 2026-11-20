@@ -202,6 +202,16 @@ func _tint(q: Array) -> Color:
 	var struck = m.get("_flash")
 	if struck != null and float(struck) > 0.0:
 		return Color(0, 0, 0, 0)
+	var base := _state_tint(q, m)
+	# (m3: a melded word's mark, where it is stronger than its state's own: render.ts tintM3, `tn[1] > overA`)
+	if fx.m3 != null:
+		var t3: Color = fx.m3.tint(m)
+		if t3.a > 0.0 and (base.a <= 0.0 or t3.a > base.a):
+			return t3
+	return base
+
+
+func _state_tint(q: Array, m: Object) -> Color:
 	var t: float = fx.clock
 	var id := float(m.get_instance_id() % 997)
 	if q[1]:
@@ -222,12 +232,23 @@ func _tint(q: Array) -> Color:
 ## tint of each in a state laid over its picture where it now is.
 func follow() -> void:
 	var marks: Dictionary = fx.words3.marks
+	# (m3: and Avalanche's shove, the picture slid where the rules have put it: render.ts shiftM3)
+	var slid := {}
+	if fx.m3 != null and fx.m3.sliding():
+		for s: Dictionary in fx.m3.slides:
+			var o = instance_from_id(int(s["id"]))
+			if o != null and is_instance_valid(o):
+				slid[int(s["id"])] = o
 	for id in marks:
 		var m = marks[id]["m"]
 		if is_instance_valid(m):
-			_nudge(m, id, Vector2.ZERO if m.dead else fx.words3.shift_of(m) * 2.0)
-	for id in _moved.keys():
+			_nudge(m, id, Vector2.ZERO if m.dead else (fx.words3.shift_of(m) + (fx.m3.shift_of(id) if slid.has(id) else Vector2.ZERO)) * 2.0)
+	for id in slid:
+		var m = slid[id]
 		if not marks.has(id):
+			_nudge(m, id, Vector2.ZERO if m.dead else fx.m3.shift_of(id) * 2.0)
+	for id in _moved.keys():
+		if not marks.has(id) and not slid.has(id):
 			var m = instance_from_id(id)
 			if m != null and is_instance_valid(m):
 				_nudge(m, id, Vector2.ZERO)
