@@ -37,6 +37,12 @@ const ATK := {"qgolem": "atkStone", "rubbling": "atkStone", "firepot": "atkFirep
 	"stag": "atkAntler",
 	# (the city's: sound_families.ts ATK)
 	"rat": "atkRat", "ratking": "atkRat", "hushed": "atkClub", "watch": "atkClub", "inkling": "atkInk", "bookwarden": "atkBook"}
+## (sound_families.ts ACT_SOUND: the silent bosses' acts, each the sound of what he does)
+const ACT_SOUND := {"crier:swing": "crier_slam", "crier:shout": "crier_shout", "crier:toll": "crier_toll",
+	"palimpsest:slam": "palimpsest_slam", "palimpsest:leaves": "palimpsest_whirl", "palimpsest:cuts": "palimpsest_whirl",
+	"scraper:snap": "scraper_claw", "scraper:strip": "scraper_claw", "scraper:scour": "scraper_claw",
+	"quill:stab": "quill_nib", "quill:write": "quill_nib", "quill:lines": "quill_nib", "quill:swoop": "quill_swoop",
+	"censor:redact": "censor_stamp", "censor:blackout": "censor_stamp", "censor:strike": "censor_line", "censor:slash": "censor_line"}
 ## (chanter.ts CHANTER.ward: the cult's kinds a chanter shields, within `r` tiles of it, each taking `share` less harm)
 const WARD := {"r": 4.5, "share": 0.4, "kinds": ["dagger", "cultist", "firepot", "minifm", "priest"]}
 
@@ -232,7 +238,10 @@ func start_act(m, A: Array, i: int, hero) -> void:
 	m._set_list(a["clip"], true)
 	var named: String = str(a["id"]).replace(":", "_")
 	m.mgr.used[named] = m.mgr.used.get(named, 0) + 1
-	if ATK.has(m.kind):
+	# (a silent boss's act: the sound of what he does, sound_families.ts ACT_SOUND; else its attack, by its family: game.ts atkSound)
+	if ACT_SOUND.has(a["id"]):
+		m.mgr.voice(ACT_SOUND[a["id"]], 0.3, linear_to_db(0.9))
+	elif ATK.has(m.kind):
 		m.mgr.voice(ATK[m.kind], 0.25, linear_to_db(0.9 if m.boss else 0.6))
 	start(m, a, hero)
 

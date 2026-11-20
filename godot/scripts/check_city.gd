@@ -64,6 +64,9 @@ static func _ready_only(m, i: int) -> void:
 	for k in A.size():
 		m.h2.cds[k] = 0.0 if k == i else 999.0
 	m._cd = 0.0
+	# (standing, not walking on to the end of a step it had begun)
+	if m.h2.act == null:
+		m.h2._to("stand")
 
 
 func run(main, hero, out: String) -> void:
@@ -73,6 +76,7 @@ func run(main, hero, out: String) -> void:
 	var depth := int(M._arg("floor")) if M._arg("floor") != "" else 11
 	tag = "c%d_" % depth
 	M.loot.level = 30
+	M.loot.ring_lit = true
 	M.loot.derive()
 	h.walked = 50.0
 	# (he is struck as the game strikes him: each blow counted, then he is made whole again)
@@ -118,12 +122,14 @@ func run(main, hero, out: String) -> void:
 		await _common(k)
 	if depth == 11:
 		await _crier()
+	elif depth == 12:
+		await _ratking()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
 
 ## The kinds of each floor with rules of their own; its common ones fought alone (the boss apart).
-const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"]}
-const COMMON := {11: ["hushed", "hound", "scribe", "watch"]}
+const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"]}
+const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"]}
 
 
 var chosen := {}
@@ -154,6 +160,43 @@ func _common(kind: String) -> void:
 			await _snap("hushed_lunges")
 			await _run(1.2)
 			_line(went and struck > 0, "the Hushed: its lunge and grab (%s), the hero caught (%d)" % [M._monsters.used, struck])
+		"rat":
+			h.world = M._spot_near(m.world, 1.0, h.world)
+			_ready_only(m, 0)
+			var went: bool = await _run(6.0, func(): return m.h2.act != null and float(m.h2.act["t"]) >= 0.42)
+			await _snap("rat_leaps")
+			await _run(1.0)
+			_line(went and struck > 0, "the plague rat: its leap and bite (%s), the hero bitten (%d)" % [M._monsters.used, struck])
+		"dredger":
+			# (the hook: caught out where the hook bites, and hauled in)
+			h.world = M._spot_near(m.world + m.face * 2.0, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var d0: float = h.world.distance_to(m.world)
+			var hooked: bool = await _run(6.0, func(): return int(m.h2.a1.get("hooked", 0)) == 1)
+			var held: bool = h.held > 0.0
+			await _run(0.3)
+			await _snap("dredger_hauls")
+			await _run(1.2)
+			var d1: float = h.world.distance_to(m.world)
+			_line(hooked and held and struck > 0 and d1 < d0 - 0.3, "the dredger's hook and haul: the hero struck (%d), HOOKED, held, hauled in from %.2f to %.2f tiles" % [struck, d0, d1])
+			await _run(1.0)
+			# (the cast net, at him out past the hook)
+			struck = 0
+			var way: Vector2 = (h.world - m.world).normalized()
+			# (kept 3 tiles off before it, where its net reaches, till it casts)
+			var stay := func():
+				if m.h2.act == null:
+					h.world = M._spot_near(m.world + way * 3.0, 0.0, h.world)
+			_ready_only(m, 1)
+			var aimed: bool = await _run(6.0, func(): return not _a1("dredger:aim", func(p): return float(p["t"]) >= 0.9).is_empty(), stay)
+			await _snap("dredger_net_marked")
+			var flies: bool = await _run(2.0, func(): return not _a1("dredger:net", func(p): return float(p["t"]) >= 0.25).is_empty())
+			await _snap("dredger_net_flies")
+			var netted: bool = await _run(1.0, func(): return h.held > 0.5)
+			await _run(0.2)
+			await _snap("dredger_net_lies")
+			_line(aimed and flies and netted and struck > 0, "the dredger's cast net: where it falls marked, flying, falling on him: struck (%d) and NETTED (held %.1f s)" % [struck, h.held])
 		"hound":
 			h.world = M._spot_near(m.world, 1.0, h.world)
 			_ready_only(m, 0)
@@ -309,6 +352,130 @@ func _crier() -> void:
 	await M._wait(1.0)
 	await _snap("crier_falls")
 	_line(boss.dead and left == 0, "the Crier struck dead: the Hush pours out of him; what of his would harm gone with him (%d left)" % left)
+
+
+# --- THE RAT KING (floor 12's boss) ---
+
+func _ratking() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss:
+			boss = o
+	if boss == null:
+		_line(false, "floor 12 has no boss")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(4.0, func(): return boss._said != "")
+	await _snap("ratking_met")
+	_line(met and boss.state != "sleep", "the Rat King met in his cistern: '%s', %s, %.0f life" % [boss._said, boss.title, boss.max_life])
+	await _run(2.0)
+	var keep := func():
+		if h.world.distance_to(boss.world) > 12.0:
+			h.world = M._spot_near(boss.world, 5.0, h.world)
+	# THE BITE
+	struck = 0
+	h.world = M._spot_near(boss.world, 2.0, h.world)
+	_ready_only(boss, 0)
+	var marked: bool = await _run(6.0, func(): return not _a1("ratking:wedge", func(p): return float(p["t"]) >= 0.6).is_empty(), keep)
+	await _snap("ratking_bite_wedge")
+	await _run(0.45)
+	await _snap("ratking_bite_snaps")
+	await _run(1.5, func(): return boss.h2.act == null)
+	_line(marked and struck > 0, "the bite: the wedge marked, the front rats snapping shut on him (%d)" % struck)
+	# STOLEN WORDS: his own word FROST set, that the King steals it
+	struck = 0
+	h.loadout.put(0, "front", "frost")
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	_ready_only(boss, 1)
+	var lined: bool = await _run(6.0, func(): return not _a1("ratking:aim", func(p): return float(p["t"]) >= 1.1).is_empty(), keep)
+	await _snap("ratking_word_locked")
+	var flies: bool = await _run(1.5, func(): return not _a1("ratking:word", func(p): return float(p["t"]) >= 0.12 and int(p["done"]) == 0).is_empty())
+	await _snap("ratking_word_flies")
+	var wd: Dictionary = _a1("ratking:word")
+	var burst: bool = await _run(2.0, func(): return not _a1("ratking:word", func(p): return int(p["done"]) == 1 and float(p["t"]) - float(p["hit"]) >= 0.1).is_empty())
+	await _snap("ratking_word_bursts")
+	var stole: String = RK_STOLEN[int(wd.get("b", -1))] if wd.has("b") else "-"
+	_line(lined and flies and burst and struck > 0 and stole == "frost", "stolen words: his own FROST stolen (%s), its line following him and locked, spat, bursting on him (%d)" % [stole, struck])
+	await _run(1.5, func(): return boss.h2.act == null)
+	# THE ROLL
+	struck = 0
+	var lane := Vector2.ZERO
+	for w in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1), Vector2(0.7071, 0.7071), Vector2(-0.7071, 0.7071), Vector2(0.7071, -0.7071), Vector2(-0.7071, -0.7071)]:
+		if boss.h2.clear_for(boss, boss.world, w, 0.6, 8.0) >= 7.9:
+			lane = w
+			break
+	if lane != Vector2.ZERO:
+		h.world = boss.world + lane * 5.0
+	_ready_only(boss, 2)
+	var curled: bool = await _run(6.0, func(): return not _a1("ratking:roll9", func(p): return float(p["t"]) >= 1.0).is_empty())
+	await _snap("ratking_roll_lane")
+	var from: Vector2 = boss.world
+	await _run(0.45)
+	await _snap("ratking_rolls")
+	var opened: bool = await _run(2.0, func(): return not _a1("ratking:roll9", func(p): return float(p["t"]) >= 2.3).is_empty())
+	await _snap("ratking_bursts_open")
+	var ran: float = boss.world.distance_to(from)
+	_line(curled and opened and ran > 3.0 and struck > 0, "the roll: his lane marked, barrelling down it %.1f tiles, bursting open at its end; the hero run down (%d)" % [ran, struck])
+	await _run(2.0, func(): return boss.h2.act == null, keep)
+	# UNKNOT
+	struck = 0
+	h.world = M._spot_near(boss.world, 2.0, h.world)
+	_ready_only(boss, 3)
+	var swelled: bool = await _run(6.0, func(): return boss.h2.act != null and boss.h2.acts()[boss.h2.act["i"]]["id"] == "ratking:unknot" and float(boss.h2.act["t"]) >= 1.1)
+	await _snap("ratking_bursts_apart")
+	var at0: Vector2 = boss.world
+	var gone: bool = await _run(1.5, func(): return boss.h2.swarming())
+	var out_of_reach: bool = not boss.h2.reachable(boss)
+	await _run(0.3)
+	await _snap("ratking_swarm")
+	var back: bool = await _run(3.0, func(): return boss.h2.act == null)
+	await _snap("ratking_knotted_again")
+	_line(swelled and gone and out_of_reach and back and boss.world.distance_to(at0) > 2.0 and struck > 0, "unknot: the rats burst outward (%d struck), gone into the cracks, out of reach; the swarm across him; knotted again %.1f tiles off" % [struck, boss.world.distance_to(at0)])
+	# THE SLUICES: his fight's clock run on to their first opening; the hero in a lane, by the gates
+	struck = 0
+	_ready_only(boss, 0)
+	boss.h2.cds[0] = 999.0
+	boss.h2.a1["fight"] = 8.9
+	var opened2: bool = await _run(1.0, func(): return not _a1("ratking:sluice").is_empty())
+	# (he is held where he is while it runs, that the flood alone strikes the hero)
+	boss.rise(1e9)
+	struck = 0
+	var sl: Dictionary = _a1("ratking:sluice")
+	if not sl.is_empty():
+		var C: Dictionary = boss.h2.cistern_of_peril(sl)
+		var L: Array = boss.h2.lanes_for(C["across"])
+		# (in the lane furthest from him, by the gates)
+		var best := 0
+		for i in L.size():
+			if boss.h2.from_cistern(C, 0.0, float(L[i]["y"])).distance_to(boss.world) > boss.h2.from_cistern(C, 0.0, float(L[best]["y"])).distance_to(boss.world):
+				best = i
+		h.world = M._spot_near(boss.h2.from_cistern(C, -float(C["half"]) + 3.0, float(L[best]["y"])), 0.0, h.world)
+	await _run(1.0)
+	await _snap("ratking_sluices_marked")
+	var at1: Vector2 = h.world
+	var C1: Dictionary = boss.h2.cistern_of_peril(sl) if not sl.is_empty() else {}
+	var flooded: bool = await _run(2.5, func(): return struck > 0)
+
+	await _run(0.25)
+	await _snap("ratking_flood")
+	await _run(0.5)
+	boss._t = 0.0
+	_line(opened2 and flooded and h.world.distance_to(at1) > 0.8, "the sluices: the lanes marked, the gates grinding open, the flood down his lane: struck (%d), carried %.1f tiles" % [struck, h.world.distance_to(at1)])
+	# HIS DEATH
+	await _run(0.3)
+	boss.hurt(1e9)
+	await _run(1.2)
+	await _snap("ratking_falls")
+	_line(boss.dead, "the Rat King struck dead")
+
+
+const RK_STOLEN := ["fire", "frost", "lightning", "poison"]
 
 
 func _called() -> int:

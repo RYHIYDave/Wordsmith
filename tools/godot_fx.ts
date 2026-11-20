@@ -163,6 +163,8 @@ import { FLY_CANVAS, OIL_CANVAS, POOL as WA_POOL, SHADOW_CANVAS, lanternFlying, 
 import { OIL_FPS, oilSprite } from '../src/art/act1_figs/watch';
 import { paintToll } from '../src/art/crier_action_fx';
 import { TOLL as CR_TOLL } from '../src/art/crier_action';
+import { paintBurstRing, paintWordBurst } from '../src/art/ratking_action_fx';
+import { UNKNOT9, WORDS9 } from '../src/art/ratking_action';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -769,6 +771,28 @@ for (const view of ['front', 'back'] as const) {
   });
 }
 
+// FLOOR 12'S BOSS, THE RAT KING (render/act1_fx/ratking.ts ACTION_FX: RATKING_ACTION on, as the game starts), what of his aims no
+// way, each on the game's own canvas for it (floorPicture), its floor point where it is:
+//   rk_ring     the ring of rats bursting out round him as he comes apart, and where his roll bursts open (art/ratking_action_fx.ts
+//               paintBurstRing: 30 a second from its burst, layer `floor`)
+//   rk_wb_<w>   where his stolen word bursts, each of the four its own way (paintWordBurst: fire, frost, lightning, poison; 30 a
+//               second from its burst, layer `air`, over the figures as the game draws it)
+// What of his aims any way (the bite's wedge, the word's line and its flight, the swarm, the roll's lane) is painted in Godot itself
+// (godot/scripts/act2/rk_paint.gd); his cistern's sluices are drawn there with the canvas's own lines, as the game draws them.
+{
+  const pictureOf = (R: number, up: number, paint: (px: Px, at: (x: number, y: number, z?: number) => [number, number]) => void): number => {
+    const w = Math.ceil(64 * (R + 1)) + 8;
+    const h = Math.ceil(32 * (R + 1)) + 8 + up;
+    const px = new Px(w, h);
+    paint(px, (u, v, z = 0) => [w / 2 + 32 * (u - v), h / 2 + up + 16 * (u + v) - z]);
+    return rawPic(px, 1, w / 2, h / 2 + up);
+  };
+  film('rk_ring', 0.6, { floor: (k) => pictureOf(UNKNOT9.ring + 1, 0, (px, at) => paintBurstRing(px, at, [0, 0], k / FPS)) });
+  for (const w of ['fire', 'frost', 'lightning', 'poison'] as const) {
+    film(`rk_wb_${w}`, WORDS9.burstFor - 1 / FPS, { air: (k) => pictureOf(WORDS9.burst + 1, 40, (px, at) => paintWordBurst(px, at, w, 0, 0, k / FPS)) });
+  }
+}
+
 // --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a
 // floor that has its kind), the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
 /** The set a film is packed with: the first word of its name; the cultist's sigil and the Flame keybearer's apart. */
@@ -785,7 +809,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the bosses of floors 6 and 7)
   unfinished: ['uf'], queen: ['qn'],
   // (the city's)
-  watch: ['wa'], crier: ['cr'],
+  watch: ['wa'], crier: ['cr'], ratking: ['rk'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);
