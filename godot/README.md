@@ -255,7 +255,7 @@ through chat, so the art and sounds go into the project whole).
     `--cases=610` the words' and the gear screen's checks run theirs alone (`--cases=610:twin,vast`, those words').
   - WORDMELDING (the meld's port, 15 Nov 2026; game/melds.ts, melds8.ts, ui/meld.ts, as the game starts: MELD, RANK2,
     VOLT_MELDS, MELDS8, MELD_LINE on). AT THE WORDSMITH, once the Meldstone has been given him ("E: Wordsmith"): the gear screen
-    with his half beside it, its first page (his words for sale: not in yet, and it says so), MELD at its top turning it to its
+    with his half beside it, its first page (HIS TRADE IN WORDS, below), MELD at its top turning it to its
     second, MELDING (`inventory.gd`, its block THE WORDSMITH'S HALF; `loot.gd` meld_problem, meld_words): two of his spare words
     laid in its two hollows (pressed, dragged, or TO THE MELD on the word's card; pressed again, taken back out), MELD fusing
     them, for a runedust (the strongholds', `quest610.gd` `dust`), into one word among his, both used up; what comes out not
@@ -303,8 +303,8 @@ through chat, so the art and sounds go into the project whole).
     not yet in (game/act1.ts); its pits (the Ledge Road's drop, the Fen's water) never walked on, seen and shot across, and what
     falls over one lands on the nearest floor; its waypoint reached as he comes in. Its WAY ON wakes as the boss dies, opens
     after its film's length ("The way on is open."; on the Fen "The siege magic falters. The way home is open."), what it threw
-    out solid, and stepping onto its way in takes him to the next floor; from the Fen, home through the town's gate (in the game,
-    the camp inside Vellum's gate). The way on's own pictures come with each floor's recorded look (its state "onward").
+    out solid, and stepping onto its way in takes him to the next floor; from the Fen, home into the camp inside Vellum's gate
+    (below). The way on's own pictures come with each floor's recorded look (its state "onward").
   - THEIR LOOKS, recorded from the game itself as the Prison's are (`node tools/godot_record.mjs 6` ... `10`): THE QUARRY (THE
     UNFINISHED CUT), THE LEDGE ROAD (THE QUEEN'S EYRIE) with its sky behind it, ECHO CANYON (THE CANTOR'S GORGE), THE PINEWOOD
     (THE HOLLOW WOOD) and THE SUNKEN FEN (THE DROWNED EYE), each with its way on's film from shut to open. Under the open sky
@@ -458,10 +458,36 @@ A controller: the left stick, RT, LT, A, B, X.
   none standing, as the game has it where none stand, his ward is down and the bolts fall throughout phase 3.)
   `--only=boss --floor=10` goes through the whole fight and sums it up in one line, `BOSS floor 10`.
 
+## The town's pieces: the wordsmith's trade, the Meldstone, the camp (the cloud chat, 20 Nov 2026)
+
+His pick, asked what to build next: “Town pieces still missing (Recommended)”.
+- **The wordsmith's trade in words** (ui/trades.ts wordsmithSide; game.ts rollShop's lot of words, wordPrice, wordSellValue,
+  buyWord, sellWord, buyBackWord; `loot.gd` THE WORDSMITH'S TRADE, `inventory.gd` ITS FIRST PAGE): using him opens his half
+  whenever nothing is due to be given or asked (the game's "Wordsmith"), its first page his shelf: three words, drawn from those
+  of the floor he came from by the game's own lot for the game's seed (the same shelf, price and pay as the game's on all 20
+  cases tried: seed 1, floors 1 to 10, two points in a run each), at 300 gold for each floor cleared; a word read (its page) and
+  bought (BUY; the right button buys at once), a spare word sold from its card (SELL) or let go over his half, the last nine sold
+  him kept to be bought back for what he paid, a new shelf on each coming into town; his ring dark: "The runes are dark".
+  Every word's page is exported now (`tools/godot_words.ts` `page`). `--only=trade` (`check_trade.gd`): 11 steps.
+- **The Meldstone carried and given** (ui/hud.ts; render/meld_drops.ts givenOf; render.ts standMeldMoments): carried, its small
+  picture by INVENTORY, popping in as it dives into him; given, its flight to the wordsmith's slab (up out of him, over to the
+  slab, a shudder, its halves torn apart and whirling, slammed together in a burst that kicks the screen, out to its round of
+  the column of light). Its halves and its carried picture are the game's own (`tools/godot_fx.ts` `ms_half0`, `ms_half1`,
+  `ms_carried`; `tools/godot_hud.ts` `meldstone`). `--only=meldstone`: 8 pictures at its beats.
+- **The camp inside Vellum's gate** (game/camp.ts; game.ts takeWay 'on' from the Fen, campTown): the Fen's way on taken, he
+  comes in through the city gate into the camp, and from then on it is his town (`main.gd` home_place: the waypoints of the
+  floors lead there). Its look recorded whole from the game (`node tools/godot_record.mjs camp`: its keepers and its three
+  people by the fire among it, its ground in 216 blocks loaded only near him), its layout the game's own makeCamp's
+  (`npx tsx tools/godot_town.ts`), `town.gd` running it with `camp` on: its services as the town's (the same hand-ins, the
+  wordsmith's half with his shelf drawn from the Fen's words), the kept Meldstone over its wordsmith's slab, its dusk, no music
+  and no loop (as the game). Its way on into the city (the barricaded street) says floor 11 is not in yet; its waypoint, which
+  in the game takes him on to the city's floor 11, takes him to the deepest floor the Godot version has until the city is in.
+  `--only=camp` (`check_camp.gd`): 8 steps, in from the Fen the way the game has it.
+
 ## Not in it yet
 
-The wordsmith's words for sale (his half's first page), the Meldstone shown by
-INVENTORY while it is carried and its flight to the wordsmith's slab, the city's words and the last words (floors 11 and 16),
+The city's words and the last words (floors 11 and 16), the city itself (floors 11 on; from the camp its way on and its
+waypoint wait on it),
 Frenzied on the prison's bosses' own scripts
 (the mini fleshmancer's), the trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
 above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
@@ -471,10 +497,10 @@ general effects are brought over only for the words so far), the glow that burni
 places' own lights glow, and the moves cut their light in the dark), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
 and blows; what a boss says is shown, not spoken), the
-Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: the camp
-it becomes from floor 10 on, the stone floating from him to the slab, the letters
-swirling round the ring and its column of light, the wordsmith's words for sale, the stranger's gamble, the stash, the
-Lexicon, buying back, the town's own lighting and music; uniques, magic find, the game's own
+Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: the
+stone floating from him to the slab, the letters
+swirling round the ring and its column of light, the stranger's gamble, the stash, the
+Lexicon, the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
 breaks, what stands behind raised ground cut off by it, the rest of the heroes, menus, the title screen's music.
 
@@ -491,6 +517,7 @@ breaks, what stands behind raised ground cut off by it, the rest of the heroes, 
 | `assets/loot` | the game's own gear rolled on floor 1, the vendors' shelves, prices, its pictures, the fallen wordsmith, every word (the 28 melding makes among them) on gear and its rune stone: `npx tsx tools/godot_loot.ts 1` |
 | `assets/words` | the words' tables and numbers, the made words' among them: `npx tsx tools/godot_words.ts` (`check` also writes check.json, not kept, for `checks/words_check.gd`) |
 | `assets/town` | the town a new game begins in, its pictures, floor 1's gate up: `npx tsx tools/godot_town.ts 1` |
+| `assets/camp` | the camp inside Vellum's gate, his town from floor 10 on (game/camp.ts makeCamp, as he comes in from the Fen): `npx tsx tools/godot_town.ts 1` too; its look `assets/looks/camp*`: `node tools/godot_record.mjs camp` |
 | `assets/looks` | floor 1 as THE KING'S TOMB, floor 2 as THE PRISON'S GROUNDS AT NIGHT and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light; the stairwell's opening film in `<place>_stair.png`; floor 2's skies and dark by where he is; the traps' and the waypoint's pictures): `npx tsx tools/godot_looks.ts town`, `... floor1`, `... floor2` (all the tools put the game's startup switches on first: tools/godot_switches.ts) |
 | `assets/music` | the town's and floors 1 to 5's tracks from `assets/sound` made into `.ogg` (Godot does not play `.mp4`), each cut where the game loops it, and the game's table of them: `node tools/godot_music.mjs` (needs ffmpeg) |
 | `assets/words/melds3.json` | the ten melds' colours, beats and runes (render/melds3.ts): `npx tsx tools/godot_melds3.ts`; with `check`, the game's own painter on its moments, for `godot --headless --path godot -s res://checks/melds3_check.gd` (not kept) |
